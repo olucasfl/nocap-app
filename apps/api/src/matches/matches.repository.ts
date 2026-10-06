@@ -22,6 +22,8 @@ export interface HistoryItem {
   game: string;
   mode: string;
   kind: string;
+  /** Permite ao cliente regenerar os alvos de cada rodada (alvo x voce). */
+  seed: string;
   playedAt: string;
   /** Soma das notas em décimos (500 = 50.0). */
   totalScore: number;
@@ -116,6 +118,7 @@ export class MatchesRepository {
         game: matches.game,
         mode: matches.mode,
         kind: matches.kind,
+        seed: matches.seed,
         playedAt: matchPlayers.playedAt,
         totalScore: matchPlayers.totalScore,
         placement: matchPlayers.placement,

@@ -1,4 +1,4 @@
-/** Aba que ainda não existe. O Histórico ganha tela no passo 5; Amigos e Perfil na Etapa 2/3. */
+/** Aba que ainda não existe. Amigos e Perfil na Etapa 2/3. */
 export function Soon({ title }: { title: string }) {
   return (
     <main className="soon">

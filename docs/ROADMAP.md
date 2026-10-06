@@ -17,7 +17,7 @@ começa com uma spec em `specs/`. Decisões em aberto: `docs/PROJECT-BRIEF.md` s
 - [x] 2. **`feat(api): matches and daily`**: `GET /health` (feito), `GET /games/color/daily`, `POST /matches` (recalcula nota pela seed), `GET /players/:guestId/matches` (keyset); `db:generate` + `db:migrate` no Supabase
 - [x] 3. **`feat(web): color game`**: Hub, início, memorizar, recriar (sliders HSB), resultado (contagem, carimbo, tremor), final, `sfx.ts`, `guestId`
 - [x] 4. **`feat(web): pwa`** (feito; falta só o teste offline num Chrome real e trocar a logo provisória): ícones 192/512/maskable (`@vite-pwa/assets-generator`), precache, metas iOS, prompt de atualização, fila offline (IndexedDB)
-- [ ] 5. **`feat(web): history`**: aba Histórico ligada à API
+- [x] 5. **`feat(web): history`** (feito: lista paginada + detalhe alvo × você; falta ver contra o banco real): aba Histórico ligada à API
 - [ ] 6. Critério de pronto: partida completa salva no Supabase com nota recalculada; app instala e o solo abre offline
 
 ## Etapa 1b: ajustes pedidos após o primeiro teste (PENDENTE, nada implementado)
