@@ -14,7 +14,11 @@ Aba própria com as partidas do jogador.
 
 ## API
 
-`GET /players/:guestId/matches?cursor=`.
+`GET /players/:guestId/matches?cursor=&limit=`. Cada item traz a `seed`, para o app regenerar os alvos.
+
+## Estado
+
+Etapa 1: lista paginada ("Carregar mais") e detalhe rodada a rodada da Cor. Filtros, colocação e amigos ficam para as Etapas 2 e 3.
 
 ## Critérios de aceite
 

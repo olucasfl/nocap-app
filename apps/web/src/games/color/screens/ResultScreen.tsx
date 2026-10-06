@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { buzz, sfx } from '@/lib/sfx';
 import { toHex } from '../hex';
 import type { RoundResult } from '../types';
@@ -19,9 +19,11 @@ interface Props {
   result: RoundResult;
   isLast: boolean;
   onNext: () => void;
+  /** Substitui o botão padrão (o jogo rápido termina aqui, sem tela de total). */
+  footer?: ReactNode;
 }
 
-export function ResultScreen({ result, isLast, onNext }: Props) {
+export function ResultScreen({ result, isLast, onNext, footer }: Props) {
   const { target, guess, score } = result;
   const num = useRef<HTMLElement>(null);
   const [started, setStarted] = useState(false);
@@ -119,11 +121,13 @@ export function ResultScreen({ result, isLast, onNext }: Props) {
           </div>
         ))}
       </div>
-      <div className="stack">
-        <button type="button" className="btn" onClick={onNext}>
-          {isLast ? 'Ver resultado' : 'Próxima'}
-        </button>
-      </div>
+      {footer ?? (
+        <div className="stack">
+          <button type="button" className="btn" onClick={onNext}>
+            {isLast ? 'Ver resultado' : 'Próxima'}
+          </button>
+        </div>
+      )}
     </section>
   );
 }

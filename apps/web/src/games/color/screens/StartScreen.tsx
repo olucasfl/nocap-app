@@ -5,6 +5,7 @@ import type { Mode } from '../types';
 const MODES: { id: Mode; label: string }[] = [
   { id: 'classic', label: 'Clássico' },
   { id: 'flash', label: 'Flash' },
+  { id: 'quick', label: 'Rápido' },
   { id: 'daily', label: 'Daily' },
 ];
 
@@ -12,6 +13,7 @@ const LEAD: Record<Mode, string> = {
   classic:
     'Uma cor aparece por 3 segundos. Depois some. Recrie de memória nos controles e veja o quanto você chegou perto.',
   flash: 'A cor pisca por menos de meio segundo. Sem tempo pra pensar: confie no olho.',
+  quick: 'Só uma rodada, com 3 segundos pra decorar. Ideal pra jogar em 30 segundos.',
   daily: 'A cor de hoje é a mesma para todo mundo. Mesmas 5 cores, uma chance de brilhar.',
 };
 
@@ -52,7 +54,8 @@ export function StartScreen({ mode, onMode, onStart }: Props) {
       </div>
       <div className="cg-rules">
         <div className="cg-rule">
-          <b>{preset.rounds}</b>rodadas
+          <b>{preset.rounds}</b>
+          {preset.rounds === 1 ? 'rodada' : 'rodadas'}
         </div>
         <div className="cg-rule">
           <b>{seconds(preset.showMs)}</b>pra decorar

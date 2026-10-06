@@ -56,7 +56,7 @@
 ### Jogo 1: Cor
 
 - **Como funciona:** a cor aparece por alguns segundos e some. O jogador recria com sliders **HSB** (H 0–360, S 0–100, B 0–100) e aperta "Cravar". Depois vê as duas cores lado a lado com a nota.
-- **Nota:** **ΔE2000 no espaço Lab** (nunca distância RGB). `score = clamp(10 − 0.5·ΔE, 0, 10)`, com 1 casa decimal. 5 rodadas, máximo de 50 pontos.
+- **Nota:** **ΔE2000 no espaço Lab** (nunca distância RGB). `score = 10 / (1 + (ΔE/12)^1.6)` (curva v2, em [0, 10]), com 1 casa decimal. 5 rodadas, máximo de 50 pontos.
 - **Sorteio do alvo:** H 0–359, S 35–95, B 40–95.
 - **Resultado da rodada:** alvo e você lado a lado, nota, ΔE, diferenças de H/S/B e, no multiplayer, as cores e notas dos amigos.
 - **Modos planejados:**
@@ -248,7 +248,7 @@ head_to_head(player_a, player_b, game, wins_a int, wins_b int, last_played_at)
 ### Pedidos novos (após o primeiro teste da Cor), ainda pendentes de implementação
 
 - **Modo noturno** é requisito (fecha a decisão #12): `specs/005-modo-noturno.md`.
-- **Nota da Cor** será recalibrada para ser mais generosa (fecha a #3 quando validada): `specs/001-color-game.md`.
+- **Nota da Cor** recalibrada (curva v2, implementada); a #3 fecha quando os parâmetros 12 e 1,6 forem validados jogando: `specs/001-color-game.md`.
 - **Jogo rápido** de 1 rodada em Cor e Tempo, com ranking próprio: `specs/006-jogo-rapido.md`.
 
 ## 6. Decisões em aberto ❓
@@ -257,7 +257,7 @@ head_to_head(player_a, player_b, game, wins_a int, wins_b int, last_played_at)
 | --- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
 | 1   | Jogam mais **presencialmente ou remoto**?                            | Muda a necessidade de chat e voz (WebRTC/LiveKit) e de um "modo TV"                   |
 | 2   | **Auth**                                                             | Better Auth (planejado) vs Supabase Auth (já que o banco é Supabase); e-mail + Google |
-| 3   | **Calibrar a curva da nota da Cor**                                  | `10 − 0.5·ΔE` é provisória; testar com jogadores reais                                |
+| 3   | **Calibrar a curva da nota da Cor**                                  | curva v2 `10/(1+(ΔE/12)^1.6)` implementada; validar 12 e 1,6 com jogadores reais                                |
 | 4   | **Curva da nota do Tempo**                                           | Erro relativo → 0–10; definir a função exata (ex.: `10·max(0, 1 − 2·                  | erro | /alvo)` ou exponencial) |
 | 5   | **Tempo de exibição do Clássico da Cor**                             | 3s (protótipo aprovado) vs 5s (planejamento inicial). Hoje vale **3s**                |
 | 6   | **Anti-trapaça do Tempo**                                            | A medição é no cliente; definir checagens de plausibilidade para o ranking            |

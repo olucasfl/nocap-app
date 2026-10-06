@@ -1,5 +1,11 @@
 import { BadRequestException } from '@nestjs/common';
-import { colorGame, colorDeltaE, encodeAnswer, scoreFromDeltaE } from '@nocap/games';
+import {
+  COLOR_SCORE_VERSION,
+  colorGame,
+  colorDeltaE,
+  encodeAnswer,
+  scoreFromDeltaE,
+} from '@nocap/games';
 import type { CreateMatchInput } from './match.schema';
 
 export interface ScoredMatch {
@@ -10,7 +16,7 @@ export interface ScoredMatch {
   totalTenths: number;
   /** Respostas no formato do banco (h*10000 + s*100 + b). */
   encodedAnswers: number[];
-  settings: { rounds: number; showMs: number };
+  settings: { rounds: number; showMs: number; scoreVersion: number };
 }
 
 /**
@@ -41,6 +47,6 @@ export function scoreMatch(
     total: totalTenths / 10,
     totalTenths,
     encodedAnswers: input.answers.map(encodeAnswer),
-    settings,
+    settings: { ...settings, scoreVersion: COLOR_SCORE_VERSION },
   };
 }

@@ -1,18 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { Link } from '@tanstack/react-router';
 import { buzz, sfx } from '@/lib/sfx';
 import { saveBest } from '@/lib/records';
 import { toHex } from '../hex';
-import { submitMatch } from '../submit';
 import type { RoundResult, Run } from '../types';
-
-type SaveState = 'saving' | 'saved' | 'error';
-
-const SAVE_TEXT: Record<SaveState, string> = {
-  saving: 'SALVANDO...',
-  saved: 'SALVO NO HISTÓRICO',
-  error: 'SEM CONEXÃO: PARTIDA NÃO SALVA',
-};
+import { SAVE_TEXT, useSaveMatch } from '../useSaveMatch';
 
 interface Props {
   run: Run;
@@ -23,28 +15,11 @@ interface Props {
 export function FinalScreen({ run, results, onRematch }: Props) {
   const total = Math.round(results.reduce((a, r) => a + r.score * 10, 0)) / 10;
   const num = useRef<HTMLElement>(null);
-  const [save, setSave] = useState<SaveState>('saving');
+  const save = useSaveMatch(run, results);
 
   useEffect(() => {
     saveBest('color', total);
   }, [total]);
-
-  // O servidor recalcula as notas pela seed; o matchId deixa o reenvio idempotente.
-  useEffect(() => {
-    let alive = true;
-    submitMatch({
-      matchId: run.matchId,
-      mode: run.preset,
-      kind: run.kind,
-      seed: run.seed,
-      answers: results.map((r) => r.guess),
-    })
-      .then(() => alive && setSave('saved'))
-      .catch(() => alive && setSave('error'));
-    return () => {
-      alive = false;
-    };
-  }, [run, results]);
 
   useEffect(() => {
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;

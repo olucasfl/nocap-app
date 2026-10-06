@@ -151,3 +151,20 @@ describe('MatchesService.create', () => {
     expect(ok.total).toBe(50);
   });
 });
+
+describe('scoreMatch (modo rápido)', () => {
+  const quick = colorGame.presets.quick!;
+  const one = (seed: string) => [colorGame.generateRound(seed, quick, 0)];
+
+  it('tem 1 rodada e vale no máximo 10', () => {
+    const scored = scoreMatch({ mode: 'quick', seed: 'q1', answers: one('q1') });
+    expect(scored.rounds).toHaveLength(1);
+    expect(scored.total).toBe(10);
+    expect(scored.totalTenths).toBe(100);
+  });
+
+  it('recusa 5 respostas no modo rápido', () => {
+    const five = Array.from({ length: 5 }, () => one('q1')[0]!);
+    expect(() => scoreMatch({ mode: 'quick', seed: 'q1', answers: five })).toThrow();
+  });
+});

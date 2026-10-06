@@ -1,0 +1,74 @@
+import {
+  colorDeltaE,
+  colorPresets,
+  decodeAnswer,
+  generateColorRound,
+  scoreFromDeltaE,
+  type Hsb,
+} from '@nocap/games';
+import { apiClient } from './api-client';
+import { getGuestId } from './guest';
+
+export interface HistoryItem {
+  matchId: string;
+  game: string;
+  mode: string;
+  kind: string;
+  seed: string;
+  playedAt: string;
+  /** Décimos (500 = 50.0). */
+  totalScore: number;
+  placement: number | null;
+  answers: number[] | null;
+}
+
+export interface HistoryPage {
+  items: HistoryItem[];
+  nextCursor: string | null;
+}
+
+export function fetchHistory(cursor?: string) {
+  const qs = new URLSearchParams({ limit: '20' });
+  if (cursor) qs.set('cursor', cursor);
+  return apiClient.get<HistoryPage>(`/players/${getGuestId()}/matches?${qs}`);
+}
+
+export interface HistoryRound {
+  target: Hsb;
+  guess: Hsb;
+  score: number;
+}
+
+/**
+ * Rodadas de uma partida de Cor: o alvo é regenerado pela seed e a nota recalculada.
+ * `null` quando o detalhe já expirou (retenção das últimas 200) ou o modo é desconhecido.
+ */
+export function colorRounds(item: HistoryItem): HistoryRound[] | null {
+  const settings = colorPresets[item.mode];
+  if (!item.answers || !settings) return null;
+  return item.answers.map((raw, index) => {
+    const guess = decodeAnswer(raw);
+    const target = generateColorRound(item.seed, settings, index);
+    return { target, guess, score: scoreFromDeltaE(colorDeltaE(target, guess)) };
+  });
+}
+
+const MODE_NAME: Record<string, string> = { classic: 'Clássico', flash: 'Flash' };
+const KIND_NAME: Record<string, string> = { solo: 'Solo', daily: 'Daily', room: 'Sala' };
+
+export const modeLabel = (mode: string) => MODE_NAME[mode] ?? mode;
+export const kindLabel = (kind: string) => KIND_NAME[kind] ?? kind;
+
+/** dd/mm HH:mm em horário de São Paulo, montado à mão para não depender do locale do aparelho. */
+export function formatPlayedAt(iso: string): string {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+    timeZone: 'America/Sao_Paulo',
+  }).formatToParts(new Date(iso));
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? '';
+  return `${get('day')}/${get('month')} ${get('hour')}:${get('minute')}`;
+}

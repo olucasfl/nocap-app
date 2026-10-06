@@ -120,7 +120,7 @@ h1 {
   border: var(--border);
   border-radius: 16px;
   background: var(--ink);
-  color: var(--white);
+  color: var(--paper);
   height: 62px;
   width: 100%;
   font: 900 19px var(--font-display);
@@ -194,4 +194,17 @@ a:focus-visible,
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* Texto sobre accent (laranja/amarelo) é sempre escuro, nos dois temas. */
+:root .chip.y,
+:root .btn.alt,
+:root .update-prompt,
+:root .cg-seg button[aria-checked='true'],
+:root .hist-badge,
+:root .hub-daily,
+:root .hub-card-color,
+:root .cg-stamp,
+:root .cg-sw.b .tag {
+  color: var(--on-accent);
 }

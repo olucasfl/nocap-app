@@ -11,6 +11,7 @@ import {
 import { MuteButton } from '@/components/MuteButton';
 import { toHex } from './hex';
 import { FinalScreen } from './screens/FinalScreen';
+import { QuickActions } from './screens/QuickActions';
 import { PickScreen } from './screens/PickScreen';
 import { ResultScreen } from './screens/ResultScreen';
 import { ShowScreen } from './screens/ShowScreen';
@@ -105,6 +106,11 @@ export function ColorGame({ initialMode = 'classic' }: { initialMode?: Mode }) {
           result={last}
           isLast={index + 1 >= run.settings.rounds}
           onNext={next}
+          footer={
+            run.mode === 'quick' ? (
+              <QuickActions run={run} result={last} onAgain={() => start('quick')} />
+            ) : undefined
+          }
         />
       )}
       {phase === 'final' && run && (

@@ -1,6 +1,6 @@
 # 006: Jogo rápido (1 rodada)
 
-> **Status: pendente.** Pedido do Lucas após o primeiro teste: "tem que ter uma opção de jogar somente 1 rodada, tipo o jogo rápido; o jogo do Tempo teria isso também". Nada implementado ainda.
+> **Status: Cor implementada (preset `quick`, 3 s, sem Daily, sem atalho no Hub); Tempo fica para a Etapa 4.** Pedido do Lucas após o primeiro teste: "tem que ter uma opção de jogar somente 1 rodada, tipo o jogo rápido; o jogo do Tempo teria isso também". Nada implementado ainda.
 
 ## Objetivo
 
@@ -31,10 +31,10 @@ Cada jogo oferece uma partida de **uma rodada só**, para jogar em 30 segundos s
 
 ## Critérios de aceite
 
-- [ ] Na tela inicial da Cor existe a opção Rápido; ao jogar, há exatamente 1 rodada (memorizar, recriar, resultado) e o jogo termina.
-- [ ] A partida é salva com `mode = quick` e nota recalculada no servidor, valendo no máximo 10.
-- [ ] O recorde e o ranking do Rápido não se misturam com os do Clássico.
-- [ ] "Outra rodada" inicia nova partida rápida com seed nova.
+- [x] Na tela inicial da Cor existe a opção Rápido; ao jogar, há exatamente 1 rodada (memorizar, recriar, resultado) e o jogo termina.
+- [x] A partida é salva com `mode = quick` e nota recalculada no servidor, valendo no máximo 10.
+- [x] O recorde e o ranking do Rápido não se misturam com os do Clássico.
+- [x] "Outra rodada" inicia nova partida rápida com seed nova.
 - [ ] O mesmo vale para o Tempo quando ele existir (spec 002).
 
 ## Fora de escopo
@@ -42,6 +42,8 @@ Cada jogo oferece uma partida de **uma rodada só**, para jogar em 30 segundos s
 Escolher um número arbitrário de rodadas no solo (isso é configuração de sala, spec 004).
 
 ## Decisões em aberto
+
+> Adotados os padrões sugeridos até o Lucas dizer o contrário: 3 s, sem Daily próprio, sem atalho no Hub.
 
 - O Rápido da Cor usa 3 s (Clássico) ou 0,4 s (Flash)? Sugestão: 3 s.
 - O Rápido tem Daily próprio ("rodada do dia")?

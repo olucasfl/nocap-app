@@ -7,6 +7,7 @@ import {
 } from '@tanstack/react-router';
 import { BottomNav } from '@/components/BottomNav';
 import type { Mode } from '@/games/color/types';
+import { History } from '@/screens/History';
 import { Hub } from '@/screens/Hub';
 import { Soon } from '@/screens/Soon';
 
@@ -28,7 +29,7 @@ const hubRoute = createRoute({ getParentRoute: () => tabsRoute, path: '/', compo
 const historyRoute = createRoute({
   getParentRoute: () => tabsRoute,
   path: '/historico',
-  component: () => <Soon title="Histórico" />,
+  component: History,
 });
 const friendsRoute = createRoute({
   getParentRoute: () => tabsRoute,
@@ -41,7 +42,7 @@ const profileRoute = createRoute({
   component: () => <Soon title="Perfil" />,
 });
 
-const MODES: Mode[] = ['classic', 'flash', 'daily'];
+const MODES: Mode[] = ['classic', 'flash', 'quick', 'daily'];
 
 const colorRoute = createRoute({
   getParentRoute: () => rootRoute,

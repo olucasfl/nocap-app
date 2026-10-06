@@ -16,17 +16,17 @@ começa com uma spec em `specs/`. Decisões em aberto: `docs/PROJECT-BRIEF.md` s
 - [x] 1. **`feat(games): color game logic`**: `hsbToRgb`, `rgbToLab`, `deltaE2000`, `score`, `generateRound`, presets `classic` (3s) e `flash` (0.4s). Testes: 3 pares de Sharma, determinismo da seed, nota 0 a 10. Spec: `specs/001-color-game.md`
 - [x] 2. **`feat(api): matches and daily`**: `GET /health` (feito), `GET /games/color/daily`, `POST /matches` (recalcula nota pela seed), `GET /players/:guestId/matches` (keyset); `db:generate` + `db:migrate` no Supabase
 - [x] 3. **`feat(web): color game`**: Hub, início, memorizar, recriar (sliders HSB), resultado (contagem, carimbo, tremor), final, `sfx.ts`, `guestId`
-- [ ] 4. **`feat(web): pwa`**: ícones 192/512/maskable (`@vite-pwa/assets-generator`), precache, metas iOS, prompt de atualização, fila offline (IndexedDB)
-- [ ] 5. **`feat(web): history`**: aba Histórico ligada à API
+- [x] 4. **`feat(web): pwa`** (feito; falta só o teste offline num Chrome real e trocar a logo provisória): ícones 192/512/maskable (`@vite-pwa/assets-generator`), precache, metas iOS, prompt de atualização, fila offline (IndexedDB)
+- [x] 5. **`feat(web): history`** (feito: lista paginada + detalhe alvo × você; falta ver contra o banco real): aba Histórico ligada à API
 - [ ] 6. Critério de pronto: partida completa salva no Supabase com nota recalculada; app instala e o solo abre offline
 
 ## Etapa 1b: ajustes pedidos após o primeiro teste (PENDENTE, nada implementado)
 
 Feedback do Lucas ao jogar a Cor. Cada item tem spec; a ordem sugerida é a da lista (a nota primeiro, porque é pequena e muda o ranking).
 
-- [ ] **Nota da Cor mais generosa e mais fina:** hoje "longe, mas não tanto" dá 0 e "bem perto" dá 7 a 8. Meta: ~3 em ΔE 20, ~9 em ΔE 3 a 4. Candidata e tabela em `specs/001-color-game.md` (fecha brief #3)
-- [ ] **Jogo rápido (1 rodada)** na Cor e no Tempo: preset `quick`, ranking próprio. `specs/006-jogo-rapido.md`
-- [ ] **Modo noturno** no app inteiro (Automático/Claro/Escuro), com design escuro antes de codar. `specs/005-modo-noturno.md` (fecha brief #12)
+- [x] **Nota da Cor mais generosa e mais fina (curva v2 implementada; falta validar 12 e 1,6 jogando):** hoje "longe, mas não tanto" dá 0 e "bem perto" dá 7 a 8. Meta: ~3 em ΔE 20, ~9 em ΔE 3 a 4. Candidata e tabela em `specs/001-color-game.md` (fecha brief #3)
+- [x] **Jogo rápido (1 rodada)** na Cor (feito; o Tempo ganha o `quick` na Etapa 4) e no Tempo: preset `quick`, ranking próprio. `specs/006-jogo-rapido.md`
+- [x] **Modo noturno** no app inteiro (Automático/Claro/Escuro), implementado direto por decisão do Lucas (sem telas de referência escuras). `specs/005-modo-noturno.md` (fecha brief #12)
 
 Podem rodar antes ou depois do passo 4 (PWA); o modo noturno toca o manifesto/`theme-color`, então convém fazer junto ou logo depois dele.
 
