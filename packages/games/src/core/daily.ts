@@ -45,3 +45,18 @@ export function dailyStreak(dates: string[], today: string): DailyStreak {
   const alive = last !== undefined && dayNumber(today) - last <= 1;
   return { current: alive ? run : 0, best };
 }
+
+export type RankingPeriod = 'day' | 'week' | 'all';
+
+/**
+ * Início do recorte do ranking, em horário de São Paulo (UTC-3 fixo: o Brasil não tem horário
+ * de verão desde 2019). A semana começa na segunda. `all` não tem início (`null`).
+ */
+export function periodStart(period: RankingPeriod, now: Date = new Date()): Date | null {
+  if (period === 'all') return null;
+  const today = dailyDate(now);
+  const back = period === 'day' ? 0 : (new Date(`${today}T00:00:00Z`).getUTCDay() + 6) % 7;
+  const start = new Date(`${today}T00:00:00Z`);
+  start.setUTCDate(start.getUTCDate() - back);
+  return new Date(`${start.toISOString().slice(0, 10)}T00:00:00-03:00`);
+}
