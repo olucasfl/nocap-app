@@ -24,7 +24,7 @@ começa com uma spec em `specs/`. Decisões em aberto: `docs/PROJECT-BRIEF.md` s
 
 Feedback do Lucas ao jogar a Cor. Cada item tem spec; a ordem sugerida é a da lista (a nota primeiro, porque é pequena e muda o ranking).
 
-- [ ] **Nota da Cor mais generosa e mais fina:** hoje "longe, mas não tanto" dá 0 e "bem perto" dá 7 a 8. Meta: ~3 em ΔE 20, ~9 em ΔE 3 a 4. Candidata e tabela em `specs/001-color-game.md` (fecha brief #3)
+- [x] **Nota da Cor mais generosa e mais fina (curva v2 implementada; falta validar 12 e 1,6 jogando):** hoje "longe, mas não tanto" dá 0 e "bem perto" dá 7 a 8. Meta: ~3 em ΔE 20, ~9 em ΔE 3 a 4. Candidata e tabela em `specs/001-color-game.md` (fecha brief #3)
 - [ ] **Jogo rápido (1 rodada)** na Cor e no Tempo: preset `quick`, ranking próprio. `specs/006-jogo-rapido.md`
 - [ ] **Modo noturno** no app inteiro (Automático/Claro/Escuro), com design escuro antes de codar. `specs/005-modo-noturno.md` (fecha brief #12)
 

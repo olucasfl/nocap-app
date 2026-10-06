@@ -51,6 +51,29 @@ describe('score', () => {
     expect(scoreFromDeltaE(1000)).toBe(0);
     expect(scoreFromDeltaE(0)).toBe(10);
   });
+
+  it.each([
+    [2, 9.5, 10],
+    [3.5, 8.8, 9.3],
+    [6, 7, 8],
+    [10, 5.2, 6],
+    [20, 2.8, 3.4],
+    [35, 1, 2],
+    [60, 0.3, 1],
+  ])('ΔE %d rende entre %d e %d', (dE, min, max) => {
+    const s = scoreFromDeltaE(dE);
+    expect(s).toBeGreaterThanOrEqual(min);
+    expect(s).toBeLessThanOrEqual(max);
+  });
+
+  it('nunca aumenta quando ΔE aumenta', () => {
+    let prev = 10;
+    for (let dE = 0; dE <= 120; dE += 0.5) {
+      const s = scoreFromDeltaE(dE);
+      expect(s).toBeLessThanOrEqual(prev);
+      prev = s;
+    }
+  });
 });
 
 describe('generateColorRound', () => {

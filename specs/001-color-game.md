@@ -37,7 +37,7 @@ Referência: `docs/reference/prototipo-cor.html`, `design-cor-resultado.html`.
 
 ## Pendente: nota mais generosa e mais fina (pedido do Lucas)
 
-> **Status: pendente, nada implementado.** Feedback após o primeiro teste: "o jogo da Cor precisa ser mais exato / está muito difícil. Se eu colocar uma cor pouco parecida, preciso de uma pontuaçãozinha (um 2, não 0). E quando chego bem próximo, deveria dar uns 9, não 7 ou 8." (O texto original diz "chegar no 0"; interpretado como a nota ser dura demais nos dois extremos.)
+> **Status: implementada (curva v2, `COLOR_SCORE_VERSION = 2`); parâmetros 12 e 1,6 ainda a validar jogando.** Feedback após o primeiro teste: "o jogo da Cor precisa ser mais exato / está muito difícil. Se eu colocar uma cor pouco parecida, preciso de uma pontuaçãozinha (um 2, não 0). E quando chego bem próximo, deveria dar uns 9, não 7 ou 8." (O texto original diz "chegar no 0"; interpretado como a nota ser dura demais nos dois extremos.)
 
 **Diagnóstico.** A curva atual, `10 − 0.5·ΔE`, é uma reta que zera em ΔE = 20. Isso pune duas vezes: quem está "longe, mas não tanto" (ΔE 20 ou mais) leva 0, e quem acerta "bem perto no olho" (ΔE 4 a 6, algo comum com sliders HSB) leva 7 a 8. Falta uma cauda longa embaixo e um topo mais largo em cima.
 
@@ -65,18 +65,18 @@ Os parâmetros (12 e 1,6) são ponto de partida: ajustar com partidas reais do L
 **Consequências a tratar quando for implementar:**
 
 - A função mora em `packages/games/src/color` (`scoreFromDeltaE`) e é usada pelo web e pela API: trocar ali muda os dois. Atualizar os testes (hoje fixam `10 − 0.5·ΔE`).
-- Os veredictos da tela de resultado (`cravou ≥ 9.5`, `quase! ≥ 8`, `meh ≥ 5`, `errou`) foram pensados para a curva antiga: recalibrar os limiares.
-- **Versionar a curva.** Guardar `scoreVersion` em `matches.settings` para nunca comparar nota de curvas diferentes no ranking. Como as respostas ficam salvas (e o alvo é regenerado pela seed), partidas antigas podem ser re-pontuadas.
+- Os veredictos da tela de resultado (`cravou ≥ 9.5`, `quase! ≥ 8`, `meh ≥ 5`, `errou`) foram pensados para a curva antiga: limiares revisados e mantidos: ΔE 2 → 9,5 (cravou), ΔE 5 → 8 (quase), ΔE ~11 → 5 (meh) seguem coerentes com a curva v2.
+- **Versionar a curva (feito: `scoreVersion` guardado).** Guardar `scoreVersion` em `matches.settings` para nunca comparar nota de curvas diferentes no ranking. Como as respostas ficam salvas (e o alvo é regenerado pela seed), partidas antigas podem ser re-pontuadas.
 - Hoje o banco só tem dados de teste, então é o melhor momento para trocar a curva (antes de qualquer ranking real).
 - Fecha a decisão #3 do brief.
 
-**Critérios de aceite (pendentes):**
+**Critérios de aceite (atendidos):**
 
-- [ ] Uma cor "pouco parecida" (ΔE ~20) rende cerca de 3, e uma "longe" (ΔE 30 a 40) ainda rende 1 a 2, em vez de 0.
-- [ ] Uma cor "bem próxima" (ΔE 3 a 4) rende cerca de 9.
-- [ ] Cor idêntica continua valendo 10, e a nota nunca sai de [0, 10] nem tem mais de 1 casa.
-- [ ] Os testes cobrem os pontos da tabela e a monotonia (ΔE maior nunca dá nota maior).
-- [ ] Os veredictos da tela de resultado batem com a nova distribuição.
+- [x] Uma cor "pouco parecida" (ΔE ~20) rende cerca de 3, e uma "longe" (ΔE 30 a 40) ainda rende 1 a 2, em vez de 0.
+- [x] Uma cor "bem próxima" (ΔE 3 a 4) rende cerca de 9.
+- [x] Cor idêntica continua valendo 10, e a nota nunca sai de [0, 10] nem tem mais de 1 casa.
+- [x] Os testes cobrem os pontos da tabela e a monotonia (ΔE maior nunca dá nota maior).
+- [x] Os veredictos da tela de resultado batem com a nova distribuição.
 
 ## Pendente: jogo rápido
 

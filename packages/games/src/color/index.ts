@@ -30,9 +30,16 @@ export function colorDeltaE(round: ColorRound, answer: ColorAnswer): number {
   return deltaE2000(rgbToLab(hsbToRgb(round)), rgbToLab(hsbToRgb(answer)));
 }
 
-/** Curva provisória (brief #3): 10 − 0.5·ΔE, em [0, 10], 1 casa. */
+/** Muda sempre que a curva muda; guardada em `matches.settings` para nunca misturar curvas no ranking. */
+export const COLOR_SCORE_VERSION = 2;
+
+/**
+ * Curva logística 10 / (1 + (ΔE/12)^1.6), em [0, 10], 1 casa (brief #3, spec 001).
+ * Cauda longa embaixo (ΔE 20 ainda rende ~3) e topo largo (ΔE 3 a 4 rende ~9).
+ */
 export function scoreFromDeltaE(dE: number): number {
-  return Math.max(0, Math.min(10, Math.round((10 - dE * 0.5) * 10) / 10));
+  const raw = 10 / (1 + (Math.max(0, dE) / 12) ** 1.6);
+  return Math.max(0, Math.min(10, Math.round(raw * 10) / 10));
 }
 
 export function scoreColor(round: ColorRound, answer: ColorAnswer): number {
