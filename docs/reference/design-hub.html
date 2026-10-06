@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>NoCap — Hub de jogos</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,500;0,700;0,900;1,900&amp;family=Space+Mono:wght@400;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#111111}a:hover{color:#2F5BFF}
+button{font:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; position: relative; overflow: hidden; background: #F4F4EF; color: #111111; font-family: 'Archivo', sans-serif; padding: 20px 20px 0">
+
+  <div style="display: flex; justify-content: space-between; align-items: center; height: 48px">
+    <div style="font-size: 34px; font-weight: 900; font-style: italic; letter-spacing: -0.05em; text-transform: uppercase">no cap<span style="color: {{accent}}">!</span></div>
+    <div style="width: 44px; height: 44px; border-radius: 12px; border: 2.5px solid #111111; background: {{accent2}}; box-shadow: 3px 3px 0 #111111; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 15px">LU</div>
+  </div>
+
+  <h1 style="margin: 18px 0 0; font-size: 44px; line-height: 0.95; font-weight: 900; letter-spacing: -0.045em; text-transform: uppercase">O que vai<br>ser hoje?</h1>
+
+  <div style="margin-top: 20px; transform: rotate(-1.5deg); background: #FFD23F; border: 2.5px solid #111111; border-radius: 14px; box-shadow: 4px 4px 0 #111111; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between">
+    <div>
+      <div style="font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; letter-spacing: 0.08em">DAILY · 06/10</div>
+      <div style="font-size: 17px; font-weight: 900; margin-top: 2px">Falta o Tempo de hoje</div>
+    </div>
+    <a href="B-Tempo.dc.html" style="height: 44px; padding: 0 14px; border-radius: 10px; background: #111111; color: #FFD23F; display: flex; align-items: center; font-weight: 900; text-decoration: none; font-size: 14px">JOGAR</a>
+  </div>
+
+  <div style="margin-top: 22px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px">
+
+    <a href="B-Cor.dc.html" style="display: block; height: 236px; box-sizing: border-box; border: 2.5px solid #111111; border-radius: 18px; box-shadow: 5px 5px 0 #111111; background: {{accent}}; color: #111111; text-decoration: none; position: relative; overflow: hidden; padding: 14px">
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px">
+        <div style="height: 34px; border: 2px solid #111111; border-radius: 8px; background: #FFD23F"></div>
+        <div style="height: 34px; border: 2px solid #111111; border-radius: 8px; background: #2F5BFF"></div>
+        <div style="height: 34px; border: 2px solid #111111; border-radius: 8px; background: #F4F4EF"></div>
+        <div style="height: 34px; border: 2px solid #111111; border-radius: 8px; background: #111111"></div>
+        <div style="height: 34px; border: 2px solid #111111; border-radius: 8px; background: #FF9ECF"></div>
+        <div style="height: 34px; border: 2px solid #111111; border-radius: 8px; background: #33C27F"></div>
+      </div>
+      <div style="position: absolute; left: 14px; right: 14px; bottom: 14px">
+        <div style="font-size: 34px; font-weight: 900; letter-spacing: -0.04em; text-transform: uppercase; line-height: 1">Cor</div>
+        <div style="font-family: 'Space Mono', monospace; font-size: 12px; font-weight: 700; margin-top: 6px">RECORDE 8.7</div>
+      </div>
+    </a>
+
+    <a href="B-Tempo.dc.html" style="display: block; height: 236px; box-sizing: border-box; border: 2.5px solid #111111; border-radius: 18px; box-shadow: 5px 5px 0 #111111; background: {{accent2}}; color: #FFFFFF; text-decoration: none; position: relative; overflow: hidden; padding: 14px">
+      <div style="width: 84px; height: 84px; border-radius: 42px; border: 2.5px solid #FFFFFF; position: relative; box-sizing: border-box">
+        <div style="position: absolute; left: 38px; top: 10px; width: 3px; height: 30px; background: #FFFFFF; border-radius: 2px"></div>
+        <div style="position: absolute; left: 38px; top: 37px; width: 24px; height: 3px; background: #FFD23F; border-radius: 2px; transform: rotate(28deg); transform-origin: 0 50%"></div>
+        <div style="position: absolute; left: 33px; top: 33px; width: 12px; height: 12px; border-radius: 6px; background: #FFFFFF"></div>
+      </div>
+      <div style="position: absolute; left: 14px; right: 14px; bottom: 14px">
+        <div style="font-size: 34px; font-weight: 900; letter-spacing: -0.04em; text-transform: uppercase; line-height: 1">Tempo</div>
+        <div style="font-family: 'Space Mono', monospace; font-size: 12px; font-weight: 700; margin-top: 6px">RECORDE 9.1</div>
+      </div>
+    </a>
+
+    <div style="grid-column: span 2; height: 64px; border: 2.5px dashed #111111; border-radius: 18px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-family: 'Space Mono', monospace; font-size: 13px; font-weight: 700; background: repeating-linear-gradient(-45deg, transparent 0 10px, rgba(17,17,17,0.06) 10px 20px)">+ MAIS JOGOS EM BREVE</div>
+  </div>
+
+  <div style="position: absolute; left: 16px; right: 16px; bottom: 20px; height: 70px; background: #FFFFFF; border: 2.5px solid #111111; border-radius: 18px; box-shadow: 4px 4px 0 #111111; box-sizing: border-box; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; padding: 6px">
+    <button style="border: 0; border-radius: 12px; background: #111111; color: #FFFFFF; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 11px; font-weight: 900; text-transform: uppercase">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg>
+      Jogos
+    </button>
+    <button style="border: 0; border-radius: 12px; background: transparent; color: #111111; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 11px; font-weight: 900; text-transform: uppercase">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5"></path><path d="M12 7v5l3 2"></path></svg>
+      Histórico
+    </button>
+    <button style="border: 0; border-radius: 12px; background: transparent; color: #111111; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 11px; font-weight: 900; text-transform: uppercase">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="4"></circle><path d="M2 21a7 7 0 0 1 14 0"></path><path d="M16 4a4 4 0 0 1 0 8"></path><path d="M22 21a7 7 0 0 0-4-6.3"></path></svg>
+      Amigos
+    </button>
+    <button style="border: 0; border-radius: 12px; background: transparent; color: #111111; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 11px; font-weight: 900; text-transform: uppercase">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>
+      Perfil
+    </button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#FF6A2B","options":["#FF6A2B","#FF9ECF","#33C27F","#FFD23F"]},"accent2":{"editor":"color","default":"#2F5BFF","options":["#2F5BFF","#7A3CFF","#111111","#0E8A5F"]},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#FF6A2B', accent2: this.props.accent2 ?? '#2F5BFF' };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,351 @@
+<title>NoCap Cor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,500;0,700;0,900;1,900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: uma coluna de celular, telas trocadas no mesmo palco; pop brutal = borda grossa + sombra dura que o botão "afunda" ao tocar */
+:root{
+  --paper:#F4F4EF; --ink:#111111; --orange:#FF6A2B; --blue:#2F5BFF; --yellow:#FFD23F; --white:#FFFFFF; --muted:#4A4A44;
+  --display:'Archivo', 'Arial Black', system-ui, sans-serif;
+  --mono:'Space Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  --b:2.5px solid var(--ink);
+  color-scheme: light;
+}
+html,body{height:100%}
+body{background:var(--paper);color:var(--ink);font-family:var(--display);padding-inline:16px;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+.app{max-width:420px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;padding-block:16px 24px;box-sizing:border-box;position:relative}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:48px}
+.logo{font-weight:900;font-style:italic;font-size:26px;letter-spacing:-.05em;text-transform:uppercase}
+.logo span{color:var(--orange)}
+.chip{height:44px;min-width:44px;padding:0 12px;border:var(--b);border-radius:12px;background:var(--white);box-shadow:3px 3px 0 var(--ink);display:flex;align-items:center;justify-content:center;gap:6px;font:700 14px var(--mono);box-sizing:border-box;color:var(--ink)}
+button.chip{cursor:pointer}
+.chip.y{background:var(--yellow)}
+.screen{flex:1;display:flex;flex-direction:column;gap:18px;padding-top:18px;animation:enter .32s cubic-bezier(.2,.9,.3,1.2) both}
+@keyframes enter{from{transform:translateX(40px);opacity:0}to{transform:none;opacity:1}}
+h1{margin:0;font-weight:900;font-size:clamp(56px,18vw,84px);line-height:.88;letter-spacing:-.05em;text-transform:uppercase;text-wrap:balance}
+.lead{margin:0;font:400 15px/1.5 var(--mono);color:var(--muted);max-width:34ch}
+.btn{appearance:none;border:var(--b);border-radius:16px;background:var(--ink);color:var(--white);height:62px;width:100%;font:900 19px var(--display);text-transform:uppercase;letter-spacing:.01em;box-shadow:5px 5px 0 var(--orange);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:transform .07s ease-out,box-shadow .07s ease-out;touch-action:manipulation}
+.btn.alt{background:var(--orange);color:var(--ink);box-shadow:5px 5px 0 var(--ink)}
+.btn:active,.btn.pressed{transform:translate(5px,5px);box-shadow:0 0 0 var(--ink)}
+.btn:focus-visible,.chip:focus-visible,input:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
+.stack{margin-top:auto;display:flex;flex-direction:column;gap:14px}
+.rules{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.rule{border:var(--b);border-radius:14px;background:var(--white);padding:10px;font:700 12px/1.35 var(--mono)}
+.rule b{display:block;font:900 26px var(--display);letter-spacing:-.03em}
+.deco{display:flex;gap:8px;margin-top:6px}
+.deco i{flex:1;height:84px;border:var(--b);border-radius:14px;box-shadow:4px 4px 0 var(--ink);animation:bob 2.4s ease-in-out infinite}
+.deco i:nth-child(2){animation-delay:-.6s}.deco i:nth-child(3){animation-delay:-1.2s}.deco i:nth-child(4){animation-delay:-1.8s}
+@keyframes bob{50%{transform:translateY(-8px) rotate(-3deg)}}
+
+/* memorizar */
+.card-wrap{perspective:900px;flex:1;display:flex;min-height:320px}
+.card{flex:1;border:var(--b);border-radius:24px;box-shadow:7px 7px 0 var(--ink);position:relative;animation:flip .42s cubic-bezier(.2,.8,.3,1.25) both;transform-origin:50% 50%}
+@keyframes flip{from{transform:rotateY(95deg) scale(.9)}to{transform:none}}
+.tag{position:absolute;top:14px;left:14px;height:32px;padding:0 10px;border:2px solid var(--ink);border-radius:8px;background:var(--white);font:900 13px var(--display);display:flex;align-items:center}
+.bar{height:16px;border:var(--b);border-radius:9px;background:var(--white);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ink);transform-origin:left;transform:scaleX(1)}
+.hint{font:700 12px var(--mono);text-align:center}
+
+/* recriar */
+.preview{flex:1;min-height:220px;border:var(--b);border-radius:24px;box-shadow:7px 7px 0 var(--ink);position:relative;transition:background-color .05s}
+.sliders{display:flex;flex-direction:column;gap:14px}
+.sl label{display:flex;justify-content:space-between;font:700 12px var(--mono);margin-bottom:6px}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:28px;border:var(--b);border-radius:10px;background:var(--track);margin:0;box-sizing:border-box;touch-action:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:30px;height:40px;border:var(--b);border-radius:9px;background:var(--white);box-shadow:3px 3px 0 var(--ink);cursor:grab}
+input[type=range]::-moz-range-thumb{width:26px;height:36px;border:var(--b);border-radius:9px;background:var(--white);box-shadow:3px 3px 0 var(--ink);cursor:grab}
+input[type=range]:active::-webkit-slider-thumb{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
+
+/* resultado */
+.duo{position:relative;height:300px;flex:none}
+.sw{position:absolute;top:0;width:54%;height:262px;border:var(--b);border-radius:20px;box-shadow:5px 5px 0 var(--ink);box-sizing:border-box}
+.sw.a{left:0;transform:rotate(-4deg);animation:inL .4s cubic-bezier(.2,.9,.3,1.3) both}
+.sw.b{right:0;top:26px;transform:rotate(3deg);animation:inR .4s .06s cubic-bezier(.2,.9,.3,1.3) both}
+.sw.b .tag{left:auto;right:12px;background:var(--orange)}
+.sw small{position:absolute;left:12px;bottom:10px;font:700 12px var(--mono);background:var(--white);border:2px solid var(--ink);border-radius:6px;padding:2px 6px}
+@keyframes inL{from{transform:translateX(-120%) rotate(-20deg)}to{transform:rotate(-4deg)}}
+@keyframes inR{from{transform:translateX(120%) rotate(20deg)}to{transform:rotate(3deg)}}
+.stamp{position:absolute;left:50%;top:190px;margin-left:-58px;width:116px;height:116px;border-radius:58px;border:var(--b);background:var(--yellow);box-shadow:4px 4px 0 var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;box-sizing:border-box;transform:rotate(-8deg);z-index:2}
+.stamp b{font:900 44px/1 var(--display);letter-spacing:-.05em;font-variant-numeric:tabular-nums}
+.stamp span{font:700 11px var(--mono);text-transform:uppercase}
+.stamp.hit{animation:stamp .5s cubic-bezier(.3,1.6,.5,1) both}
+@keyframes stamp{0%{transform:scale(2.6) rotate(-40deg);opacity:0}55%{transform:scale(.9) rotate(-5deg);opacity:1}75%{transform:scale(1.05) rotate(-10deg)}100%{transform:scale(1) rotate(-8deg)}}
+.shake{animation:shake .28s linear}
+@keyframes shake{20%{transform:translate(-5px,3px)}40%{transform:translate(4px,-3px)}60%{transform:translate(-3px,2px)}80%{transform:translate(2px,-1px)}}
+.diffs{display:flex;flex-direction:column;gap:10px}
+.diff{display:grid;grid-template-columns:68px 1fr 52px;align-items:center;gap:10px;font:700 12px var(--mono)}
+.diff .t{height:14px;border:2px solid var(--ink);border-radius:7px;background:var(--white);position:relative}
+.diff .t i{position:absolute;top:-6px;width:4px;height:22px;margin-left:-2px}
+.diff .v{text-align:right;font-variant-numeric:tabular-nums}
+.verdict{font:900 26px var(--display);text-transform:uppercase;letter-spacing:-.03em;margin:0}
+
+/* final */
+.total{border:var(--b);border-radius:22px;background:var(--blue);color:var(--white);box-shadow:6px 6px 0 var(--ink);padding:18px;display:flex;justify-content:space-between;align-items:flex-end}
+.total b{font:900 72px/.9 var(--display);letter-spacing:-.05em;font-variant-numeric:tabular-nums}
+.rows{display:flex;flex-direction:column;gap:8px}
+.row{display:grid;grid-template-columns:24px 40px 40px 1fr 44px;gap:8px;align-items:center;height:50px;padding:0 10px;border:var(--b);border-radius:12px;background:var(--white);font:900 15px var(--display);animation:enter .3s both}
+.row i{height:30px;border:2px solid var(--ink);border-radius:7px}
+.row .s{text-align:right;font-variant-numeric:tabular-nums}
+.row .m{font:700 11px var(--mono);color:var(--muted)}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+</style>
+
+<div class="app">
+  <div class="top">
+    <div class="logo">no cap<span>!</span></div>
+    <div style="display:flex;gap:10px">
+      <div class="chip y" id="roundChip" hidden>1/5</div>
+      <button class="chip" id="mute" aria-label="Desligar som" aria-pressed="false">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"></path><path id="wave" d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"></path></svg>
+      </button>
+    </div>
+  </div>
+
+  <main id="stage" style="flex:1;display:flex;flex-direction:column"></main>
+</div>
+
+<template id="t-start">
+  <section class="screen">
+    <h1>Cor</h1>
+    <p class="lead">Uma cor aparece por 3 segundos. Depois some. Recrie de memória nos controles e veja o quanto você chegou perto.</p>
+    <div class="deco"><i style="background:#FF6A2B"></i><i style="background:#2F5BFF"></i><i style="background:#FFD23F"></i><i style="background:#33C27F"></i></div>
+    <div class="rules">
+      <div class="rule"><b>5</b>rodadas</div>
+      <div class="rule"><b>3s</b>pra decorar</div>
+      <div class="rule"><b>50</b>pontos max</div>
+    </div>
+    <div class="stack">
+      <button class="btn" data-act="start">Jogar
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+      </button>
+    </div>
+  </section>
+</template>
+
+<template id="t-show">
+  <section class="screen">
+    <div class="card-wrap"><div class="card" id="showCard"><div class="tag">DECORE</div></div></div>
+    <div class="bar"><i id="timeBar"></i></div>
+    <div class="hint">A COR SOME QUANDO A BARRA ACABAR</div>
+  </section>
+</template>
+
+<template id="t-pick">
+  <section class="screen">
+    <div class="preview" id="preview"><div class="tag">SUA COR</div></div>
+    <div class="sliders">
+      <div class="sl"><label for="h"><span>MATIZ</span><span id="hv">0</span></label><input type="range" id="h" min="0" max="360" value="180"></div>
+      <div class="sl"><label for="s"><span>SATURAÇÃO</span><span id="sv">0</span></label><input type="range" id="s" min="0" max="100" value="50"></div>
+      <div class="sl"><label for="b"><span>BRILHO</span><span id="bv">0</span></label><input type="range" id="b" min="0" max="100" value="70"></div>
+    </div>
+    <button class="btn alt" data-act="lock">Cravar</button>
+  </section>
+</template>
+
+<template id="t-result">
+  <section class="screen" id="resultScreen">
+    <div class="duo">
+      <div class="sw a" id="swA"><div class="tag">ALVO</div><small id="hexA"></small></div>
+      <div class="sw b" id="swB"><div class="tag">VOCÊ</div><small id="hexB"></small></div>
+      <div class="stamp" id="stamp"><b id="scoreNum">0.0</b><span id="stampWord">...</span></div>
+    </div>
+    <p class="verdict" id="verdict"></p>
+    <div class="diffs" id="diffs"></div>
+    <div class="stack"><button class="btn" data-act="next" id="nextBtn">Próxima</button></div>
+  </section>
+</template>
+
+<template id="t-final">
+  <section class="screen">
+    <div class="total"><div><div style="font:700 12px var(--mono)">TOTAL</div><b id="totalNum">0</b></div><div style="font:900 22px var(--display)">/ 50</div></div>
+    <div class="rows" id="rows"></div>
+    <div class="stack"><button class="btn alt" data-act="start">Revanche</button></div>
+  </section>
+</template>
+
+<script>
+(() => {
+  // ---------- cor ----------
+  const hsb2rgb = (h, s, v) => { s /= 100; v /= 100; const f = n => { const k = (n + h / 60) % 6; return v - v * s * Math.max(0, Math.min(k, 4 - k, 1)); }; return [f(5), f(3), f(1)].map(x => Math.round(x * 255)); };
+  const hex = rgb => '#' + rgb.map(x => x.toString(16).padStart(2, '0')).join('').toUpperCase();
+  const rgb2lab = ([r, g, b]) => {
+    const lin = c => { c /= 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+    const R = lin(r), G = lin(g), B = lin(b);
+    const X = (0.4124 * R + 0.3576 * G + 0.1805 * B) / 0.95047, Y = 0.2126 * R + 0.7152 * G + 0.0722 * B, Z = (0.0193 * R + 0.1192 * G + 0.9505 * B) / 1.08883;
+    const f = t => t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116;
+    return [116 * f(Y) - 16, 500 * (f(X) - f(Y)), 200 * (f(Y) - f(Z))];
+  };
+  const rad = d => d * Math.PI / 180;
+  const de2000 = ([L1, a1, b1], [L2, a2, b2]) => {
+    const C1 = Math.hypot(a1, b1), C2 = Math.hypot(a2, b2), Cb = (C1 + C2) / 2;
+    const G = 0.5 * (1 - Math.sqrt(Cb ** 7 / (Cb ** 7 + 25 ** 7)));
+    const a1p = a1 * (1 + G), a2p = a2 * (1 + G);
+    const C1p = Math.hypot(a1p, b1), C2p = Math.hypot(a2p, b2);
+    const hp = (b, a) => { if (a === 0 && b === 0) return 0; const x = Math.atan2(b, a) * 180 / Math.PI; return x < 0 ? x + 360 : x; };
+    const h1 = hp(b1, a1p), h2 = hp(b2, a2p);
+    const dL = L2 - L1, dC = C2p - C1p;
+    let dh = 0; if (C1p * C2p !== 0) { dh = h2 - h1; if (dh > 180) dh -= 360; else if (dh < -180) dh += 360; }
+    const dH = 2 * Math.sqrt(C1p * C2p) * Math.sin(rad(dh / 2));
+    const Lb = (L1 + L2) / 2, Cbp = (C1p + C2p) / 2;
+    let hb; if (C1p * C2p === 0) hb = h1 + h2; else if (Math.abs(h1 - h2) <= 180) hb = (h1 + h2) / 2; else hb = (h1 + h2 + (h1 + h2 < 360 ? 360 : -360)) / 2;
+    const T = 1 - 0.17 * Math.cos(rad(hb - 30)) + 0.24 * Math.cos(rad(2 * hb)) + 0.32 * Math.cos(rad(3 * hb + 6)) - 0.20 * Math.cos(rad(4 * hb - 63));
+    const dTh = 30 * Math.exp(-(((hb - 275) / 25) ** 2));
+    const RC = 2 * Math.sqrt(Cbp ** 7 / (Cbp ** 7 + 25 ** 7));
+    const SL = 1 + 0.015 * (Lb - 50) ** 2 / Math.sqrt(20 + (Lb - 50) ** 2), SC = 1 + 0.045 * Cbp, SH = 1 + 0.015 * Cbp * T;
+    const RT = -Math.sin(rad(2 * dTh)) * RC;
+    return Math.sqrt((dL / SL) ** 2 + (dC / SC) ** 2 + (dH / SH) ** 2 + RT * (dC / SC) * (dH / SH));
+  };
+  const scoreOf = dE => Math.max(0, Math.min(10, Math.round((10 - dE * 0.5) * 10) / 10));
+
+  // ---------- som (Web Audio, sem arquivos) ----------
+  let ctx = null, master = null, noiseBuf = null, muted = false;
+  try { muted = localStorage.getItem('nocap-mute') === '1'; } catch (e) {}
+  const audio = () => {
+    if (!ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null;
+      ctx = new AC(); master = ctx.createGain(); master.gain.value = muted ? 0 : 0.9; master.connect(ctx.destination);
+      noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 0.5, ctx.sampleRate);
+      const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    if (ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  };
+  const env = (g, t, a, d, peak) => { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + a + d); };
+  const tone = (type, f0, f1, dur, peak, delay = 0) => {
+    const c = audio(); if (!c || muted) return; const t = c.currentTime + delay;
+    const o = c.createOscillator(), g = c.createGain(); o.type = type; o.frequency.setValueAtTime(f0, t);
+    if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    env(g, t, 0.004, dur, peak); o.connect(g).connect(master); o.start(t); o.stop(t + dur + 0.05);
+  };
+  const noise = (filterType, f0, f1, q, dur, peak, delay = 0) => {
+    const c = audio(); if (!c || muted) return; const t = c.currentTime + delay;
+    const src = c.createBufferSource(), fl = c.createBiquadFilter(), g = c.createGain();
+    src.buffer = noiseBuf; fl.type = filterType; fl.Q.value = q; fl.frequency.setValueAtTime(f0, t);
+    if (f1 !== f0) fl.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    env(g, t, 0.003, dur, peak); src.connect(fl).connect(g).connect(master); src.start(t); src.stop(t + dur + 0.05);
+  };
+  const sfx = {
+    clack() { noise('bandpass', 2600, 2600, 1.2, 0.035, 0.5); tone('square', 190, 120, 0.03, 0.08); },
+    flip() { noise('bandpass', 500, 3500, 0.8, 0.28, 0.22); },
+    tick(i) { tone('triangle', 520 + i * 70, 520 + i * 70, 0.035, 0.14); },
+    slide() { tone('sine', 1100, 1100, 0.012, 0.05); },
+    thunk() { tone('sine', 170, 42, 0.22, 0.9); noise('lowpass', 900, 300, 0.7, 0.07, 0.5); },
+    win() { [523, 659, 784, 1047].forEach((f, i) => tone('triangle', f, f, 0.14, 0.22, 0.09 * i)); },
+    boing() { tone('sine', 420, 140, 0.32, 0.35); tone('sine', 300, 110, 0.3, 0.12, 0.05); },
+    vanish() { tone('sine', 880, 330, 0.16, 0.18); }
+  };
+  const buzz = ms => { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} };
+
+  // ---------- estado ----------
+  const ROUNDS = 5, SHOW_MS = 3000;
+  let round = 0, results = [], target = null, guess = null;
+  const stage = document.getElementById('stage'), roundChip = document.getElementById('roundChip');
+  const mount = id => { stage.replaceChildren(document.getElementById(id).content.cloneNode(true)); return stage; };
+  const $ = id => document.getElementById(id);
+  const rand = (a, b) => Math.round(a + Math.random() * (b - a));
+
+  const muteBtn = $('mute');
+  const paintMute = () => { muteBtn.setAttribute('aria-pressed', String(muted)); muteBtn.setAttribute('aria-label', muted ? 'Ligar som' : 'Desligar som'); $('wave').style.opacity = muted ? 0.15 : 1; };
+  paintMute();
+  muteBtn.addEventListener('click', () => {
+    muted = !muted; try { localStorage.setItem('nocap-mute', muted ? '1' : '0'); } catch (e) {}
+    if (master) master.gain.value = muted ? 0 : 0.9; paintMute(); sfx.clack();
+  });
+
+  document.addEventListener('pointerdown', e => { if (e.target.closest('.btn')) { sfx.clack(); buzz(8); } });
+  stage.addEventListener('click', e => {
+    const b = e.target.closest('[data-act]'); if (!b) return;
+    ({ start: startGame, lock: lockIn, next: nextRound })[b.dataset.act]();
+  });
+
+  function startGame() { round = 0; results = []; roundChip.hidden = false; showColor(); }
+
+  function showColor() {
+    round++; roundChip.textContent = round + '/' + ROUNDS;
+    target = { h: rand(0, 359), s: rand(35, 95), b: rand(40, 95) };
+    mount('t-show');
+    $('showCard').style.background = hex(hsb2rgb(target.h, target.s, target.b));
+    sfx.flip();
+    const bar = $('timeBar'), t0 = performance.now();
+    const step = now => {
+      const p = Math.min(1, (now - t0) / SHOW_MS); bar.style.transform = 'scaleX(' + (1 - p) + ')';
+      if (p < 1) requestAnimationFrame(step); else { sfx.vanish(); pick(); }
+    };
+    requestAnimationFrame(step);
+  }
+
+  function pick() {
+    mount('t-pick');
+    guess = { h: rand(0, 359), s: 50, b: 70 };
+    const H = $('h'), S = $('s'), B = $('b');
+    H.value = guess.h; S.value = guess.s; B.value = guess.b;
+    let last = {};
+    const paint = () => {
+      guess = { h: +H.value, s: +S.value, b: +B.value };
+      $('preview').style.background = hex(hsb2rgb(guess.h, guess.s, guess.b));
+      $('hv').textContent = guess.h + '°'; $('sv').textContent = guess.s; $('bv').textContent = guess.b;
+      H.style.setProperty('--track', 'linear-gradient(90deg,' + [0, 60, 120, 180, 240, 300, 360].map(h => hex(hsb2rgb(h, guess.s, guess.b))).join(',') + ')');
+      S.style.setProperty('--track', 'linear-gradient(90deg,' + hex(hsb2rgb(guess.h, 0, guess.b)) + ',' + hex(hsb2rgb(guess.h, 100, guess.b)) + ')');
+      B.style.setProperty('--track', 'linear-gradient(90deg,#000,' + hex(hsb2rgb(guess.h, guess.s, 100)) + ')');
+    };
+    [H, S, B].forEach(el => el.addEventListener('input', () => {
+      const bucket = Math.floor(+el.value / (el === H ? 12 : 4));
+      if (last[el.id] !== bucket) { last[el.id] = bucket; sfx.slide(); }
+      paint();
+    }));
+    paint();
+  }
+
+  function lockIn() {
+    const tRgb = hsb2rgb(target.h, target.s, target.b), gRgb = hsb2rgb(guess.h, guess.s, guess.b);
+    const dE = de2000(rgb2lab(tRgb), rgb2lab(gRgb)), score = scoreOf(dE);
+    results.push({ target: { ...target }, guess: { ...guess }, dE, score });
+    mount('t-result');
+    $('swA').style.background = hex(tRgb); $('swB').style.background = hex(gRgb);
+    $('hexA').textContent = hex(tRgb); $('hexB').textContent = hex(gRgb);
+    $('nextBtn').textContent = round < ROUNDS ? 'Próxima' : 'Ver resultado';
+    let hd = guess.h - target.h; if (hd > 180) hd -= 360; if (hd < -180) hd += 360;
+    const sign = n => (n > 0 ? '+' : n < 0 ? '−' : '±') + Math.abs(n);
+    $('diffs').innerHTML = [
+      ['MATIZ', target.h / 360, guess.h / 360, sign(hd) + '°'],
+      ['SATUR.', target.s / 100, guess.s / 100, sign(guess.s - target.s)],
+      ['BRILHO', target.b / 100, guess.b / 100, sign(guess.b - target.b)]
+    ].map(([n, a, b, v]) => '<div class="diff"><span>' + n + '</span><div class="t"><i style="left:' + (a * 100) + '%;background:var(--ink)"></i><i style="left:' + (b * 100) + '%;background:var(--orange)"></i></div><span class="v">' + v + '</span></div>').join('');
+
+    // contagem com tiques subindo, depois o carimbo
+    const num = $('scoreNum'), stamp = $('stamp'), word = $('stampWord'), verdict = $('verdict');
+    stamp.style.visibility = 'hidden';
+    const dur = 650 + score * 40, t0 = performance.now() + 380; let lastTick = -1;
+    const step = now => {
+      const p = Math.max(0, Math.min(1, (now - t0) / dur)), e = 1 - (1 - p) ** 3, v = score * e;
+      if (p > 0) { stamp.style.visibility = 'visible'; num.textContent = v.toFixed(1); }
+      const tk = Math.floor(v); if (p > 0 && tk !== lastTick) { lastTick = tk; sfx.tick(tk); }
+      if (p < 1) return requestAnimationFrame(step);
+      num.textContent = score.toFixed(1);
+      word.textContent = score >= 9.5 ? 'cravou' : score >= 8 ? 'quase!' : score >= 5 ? 'meh' : 'errou';
+      verdict.textContent = score >= 9.5 ? 'No cap. Perfeito.' : score >= 8 ? 'Quase lá.' : score >= 5 ? 'Passou longe-ish.' : 'Nem perto.';
+      stamp.classList.remove('hit'); void stamp.offsetWidth; stamp.classList.add('hit');
+      setTimeout(() => { sfx.thunk(); buzz(30); const s = $('resultScreen'); if (s) { s.classList.remove('shake'); void s.offsetWidth; s.classList.add('shake'); } }, 260);
+      setTimeout(() => { if (score >= 9.5) sfx.win(); else if (score < 5) sfx.boing(); }, 420);
+    };
+    requestAnimationFrame(step);
+  }
+
+  function nextRound() { round < ROUNDS ? showColor() : finish(); }
+
+  function finish() {
+    roundChip.hidden = true;
+    mount('t-final');
+    const total = results.reduce((a, r) => a + r.score, 0);
+    $('rows').innerHTML = results.map((r, i) =>
+      '<div class="row" style="animation-delay:' + (i * 0.05) + 's"><span>' + (i + 1) + '</span><i style="background:' + hex(hsb2rgb(r.target.h, r.target.s, r.target.b)) + '"></i><i style="background:' + hex(hsb2rgb(r.guess.h, r.guess.s, r.guess.b)) + '"></i><span class="m">ΔE ' + r.dE.toFixed(1) + '</span><span class="s">' + r.score.toFixed(1) + '</span></div>').join('');
+    const el = $('totalNum'), t0 = performance.now(); let lt = -1;
+    const step = now => {
+      const p = Math.min(1, (now - t0) / 900), v = total * (1 - (1 - p) ** 3);
+      el.textContent = v.toFixed(1); const k = Math.floor(v / 5); if (k !== lt) { lt = k; sfx.tick(k); }
+      if (p < 1) requestAnimationFrame(step); else { sfx.thunk(); if (total >= 40) sfx.win(); buzz(30); }
+    };
+    requestAnimationFrame(step);
+  }
+
+  mount('t-start');
+})();
+</script>

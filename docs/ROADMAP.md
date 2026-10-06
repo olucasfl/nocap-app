@@ -1,0 +1,45 @@
+# Roadmap: passo a passo até o projeto ficar pronto
+
+Marque `[x]` ao concluir. Cada passo termina com commit (Conventional Commits) e push. Toda feature nova
+começa com uma spec em `specs/`. Decisões em aberto: `docs/PROJECT-BRIEF.md` seção 6.
+
+## Etapa 0: base do projeto ✅
+
+- [x] Monorepo pnpm + Turborepo, TS strict, ESLint, Prettier
+- [x] `apps/web` (React 19, Vite, TanStack Router/Query, Zustand, PWA), `apps/api` (NestJS, Drizzle), `packages/games`
+- [x] `.env.example`, `.gitignore`, docs, `.claude/` (rules, commands, skills), specs
+- [x] `pnpm build` e `pnpm test` passando
+
+## Etapa 1: jogo da Cor solo + PWA
+
+- [ ] 0. Trocar a senha do Supabase e preencher `.env`
+- [ ] 1. **`feat(games): color game logic`**: `hsbToRgb`, `rgbToLab`, `deltaE2000`, `score`, `generateRound`, presets `classic` (3s) e `flash` (0.4s). Testes: 3 pares de Sharma, determinismo da seed, nota 0 a 10. Spec: `specs/001-color-game.md`
+- [ ] 2. **`feat(api): matches and daily`**: `GET /health` (feito), `GET /games/color/daily`, `POST /matches` (recalcula nota pela seed), `GET /players/:guestId/matches` (keyset); `db:generate` + `db:migrate` no Supabase
+- [ ] 3. **`feat(web): color game`**: Hub, início, memorizar, recriar (sliders HSB), resultado (contagem, carimbo, tremor), final, `sfx.ts`, `guestId`
+- [ ] 4. **`feat(web): pwa`**: ícones 192/512/maskable (`@vite-pwa/assets-generator`), precache, metas iOS, prompt de atualização, fila offline (IndexedDB)
+- [ ] 5. **`feat(web): history`**: aba Histórico ligada à API
+- [ ] 6. Critério de pronto: partida completa salva no Supabase com nota recalculada; app instala e o solo abre offline
+
+## Etapa 2: contas e ranking
+
+- [ ] Decidir auth (Better Auth vs Supabase Auth), login/registro, migração convidado → conta
+- [ ] Perfil, recordes, Daily com sequência, ranking global por jogo/modo (Redis)
+
+## Etapa 3: amigos e salas
+
+- [ ] Amigos (@username, solicitações, online agora, convites)
+- [ ] Salas Colyseus: código de 4 letras, lobby, regras, revelação lado a lado, revanche, reconexão
+- [ ] Ranking entre amigos, confronto direto. Spec: `specs/004-rooms-multiplayer.md`
+
+## Etapa 4: jogo do Tempo
+
+- [ ] Clássico, Sequência, Sem estourar em solo, sala e daily. Spec: `specs/002-time-game.md`
+- [ ] Decidir a curva da nota (brief #4) e anti-trapaça (#6) antes de codar
+
+## Etapa 5: modos extras e conquistas
+
+- [ ] Cor: Contagem regressiva, Interferência, Paleta, Às cegas; conquistas; novos jogos
+
+## Etapa 6: produção
+
+- [ ] Cloudflare Pages (web), Fly.io (api + Colyseus), Upstash (Redis), domínio, monitoramento

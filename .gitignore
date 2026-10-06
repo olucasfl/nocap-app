@@ -1,0 +1,18 @@
+node_modules/
+dist/
+.turbo/
+coverage/
+*.tsbuildinfo
+
+# Segredos: nunca commitar. Só o .env.example vai para o git.
+.env
+.env.*
+!.env.example
+
+# Local
+.DS_Store
+Thumbs.db
+*.log
+.vite/
+apps/web/dev-dist/
+.claude/settings.local.json

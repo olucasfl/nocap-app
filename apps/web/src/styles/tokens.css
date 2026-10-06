@@ -1,0 +1,19 @@
+/* Design tokens do Pop Brutal. Toda tela usa estas variáveis, nunca cores soltas. */
+:root {
+  --paper: #f4f4ef;
+  --ink: #111111;
+  --orange: #ff6a2b; /* accent */
+  --blue: #2f5bff; /* accent 2 */
+  --yellow: #ffd23f; /* selos e destaques */
+  --white: #ffffff;
+
+  --border: 2.5px solid var(--ink);
+  --radius-sm: 12px;
+  --radius-lg: 20px;
+  --shadow: 5px 5px 0 var(--ink); /* sombra dura, sem blur */
+
+  --font-display: 'Archivo', system-ui, sans-serif;
+  --font-mono: 'Space Mono', ui-monospace, monospace;
+
+  --col-max: 440px;
+}
