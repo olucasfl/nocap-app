@@ -103,3 +103,7 @@
   color: var(--blue);
   font-weight: 700;
 }
+
+.rk-scopes {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}

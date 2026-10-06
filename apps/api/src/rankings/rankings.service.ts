@@ -1,20 +1,33 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { periodStart } from '@nocap/games';
+import { FriendsService } from '../friends/friends.service';
 import type { RankingQuery } from './ranking.schema';
 import { RankingsRepository } from './rankings.repository';
 
 @Injectable()
 export class RankingsService {
-  constructor(private readonly repo: RankingsRepository) {}
+  constructor(
+    private readonly repo: RankingsRepository,
+    private readonly friends: FriendsService,
+  ) {}
 
   /** Top N + a posição de quem pediu (se logado e fora do top). Só `@usuario`, nunca o nome real. */
   async color(query: RankingQuery, myUserId: string | null) {
-    const rows = await this.repo.leaderboard({
+    if (query.scope === 'friends' && !myUserId) {
+      throw new UnauthorizedException('Entre na sua conta para ver o ranking dos amigos');
+    }
+    const all = await this.repo.leaderboard({
       game: 'color',
       mode: query.board === 'daily' ? 'classic' : query.board,
       dailyOnly: query.board === 'daily',
       since: periodStart(query.period),
     });
+    // Entre amigos, a posição é refeita só com o círculo (você + amigos aceitos).
+    const circle =
+      query.scope === 'friends' && myUserId ? new Set(await this.friends.circleOf(myUserId)) : null;
+    const rows = circle
+      ? all.filter((r) => circle.has(r.userId)).map((r, i) => ({ ...r, rank: i + 1 }))
+      : all;
     const pick = (r: (typeof rows)[number]) => ({
       rank: r.rank,
       username: r.username,
@@ -24,6 +37,7 @@ export class RankingsService {
     const me = myUserId ? rows.find((r) => r.userId === myUserId) : undefined;
     return {
       board: query.board,
+      scope: query.scope,
       period: query.period,
       total: rows.length,
       entries: rows.slice(0, query.limit).map((r) => ({ ...pick(r), isMe: r.userId === myUserId })),

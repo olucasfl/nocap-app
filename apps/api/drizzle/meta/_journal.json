@@ -15,6 +15,13 @@
       "when": 1791328300471,
       "tag": "0001_regular_sheva_callister",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791330065590,
+      "tag": "0002_sad_eternity",
+      "breakpoints": true
     }
   ]
 }

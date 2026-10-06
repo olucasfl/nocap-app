@@ -2,6 +2,7 @@ import { apiClient } from './api-client';
 
 export type Board = 'classic' | 'flash' | 'quick' | 'daily';
 export type Period = 'day' | 'week' | 'all';
+export type Scope = 'all' | 'friends';
 
 export interface RankingEntry {
   rank: number;
@@ -37,6 +38,13 @@ export const PERIODS: { id: Period; label: string }[] = [
 /** Máximo de pontos da partida (10 por rodada). */
 export const BOARD_MAX: Record<Board, number> = { classic: 50, flash: 50, quick: 10, daily: 50 };
 
-export function fetchRanking(board: Board, period: Period) {
-  return apiClient.get<Ranking>(`/rankings/color?board=${board}&period=${period}&limit=50`);
+export const SCOPES: { id: Scope; label: string }[] = [
+  { id: 'all', label: 'Todos' },
+  { id: 'friends', label: 'Amigos' },
+];
+
+export function fetchRanking(board: Board, period: Period, scope: Scope = 'all') {
+  return apiClient.get<Ranking>(
+    `/rankings/color?board=${board}&period=${period}&scope=${scope}&limit=50`,
+  );
 }
