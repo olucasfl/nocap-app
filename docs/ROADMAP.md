@@ -15,7 +15,7 @@ começa com uma spec em `specs/`. Decisões em aberto: `docs/PROJECT-BRIEF.md` s
 - [ ] 0. Trocar a senha do Supabase e preencher `.env`
 - [x] 1. **`feat(games): color game logic`**: `hsbToRgb`, `rgbToLab`, `deltaE2000`, `score`, `generateRound`, presets `classic` (3s) e `flash` (0.4s). Testes: 3 pares de Sharma, determinismo da seed, nota 0 a 10. Spec: `specs/001-color-game.md`
 - [x] 2. **`feat(api): matches and daily`**: `GET /health` (feito), `GET /games/color/daily`, `POST /matches` (recalcula nota pela seed), `GET /players/:guestId/matches` (keyset); `db:generate` + `db:migrate` no Supabase
-- [ ] 3. **`feat(web): color game`**: Hub, início, memorizar, recriar (sliders HSB), resultado (contagem, carimbo, tremor), final, `sfx.ts`, `guestId`
+- [x] 3. **`feat(web): color game`**: Hub, início, memorizar, recriar (sliders HSB), resultado (contagem, carimbo, tremor), final, `sfx.ts`, `guestId`
 - [ ] 4. **`feat(web): pwa`**: ícones 192/512/maskable (`@vite-pwa/assets-generator`), precache, metas iOS, prompt de atualização, fila offline (IndexedDB)
 - [ ] 5. **`feat(web): history`**: aba Histórico ligada à API
 - [ ] 6. Critério de pronto: partida completa salva no Supabase com nota recalculada; app instala e o solo abre offline

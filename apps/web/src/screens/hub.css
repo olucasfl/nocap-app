@@ -1,0 +1,176 @@
+/* Hub. Referência: docs/reference/design-hub.html */
+.hub-logo {
+  font-size: 34px;
+}
+.hub-avatar {
+  background: var(--blue);
+  color: var(--white);
+}
+.hub-title {
+  margin-top: 18px;
+  font-size: 44px;
+  line-height: 0.95;
+  letter-spacing: -0.045em;
+}
+
+.hub-daily {
+  margin-top: 20px;
+  transform: rotate(-1.5deg);
+  background: var(--yellow);
+  border: var(--border);
+  border-radius: 14px;
+  box-shadow: 4px 4px 0 var(--ink);
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.hub-daily-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.hub-daily-text {
+  font-size: 17px;
+  font-weight: 900;
+  margin-top: 2px;
+}
+.hub-daily-go {
+  height: 44px;
+  padding: 0 14px;
+  border-radius: 10px;
+  background: var(--ink);
+  color: var(--yellow);
+  display: flex;
+  align-items: center;
+  font-weight: 900;
+  font-size: 14px;
+  text-decoration: none;
+  flex: none;
+}
+
+.hub-grid {
+  margin-top: 22px;
+  /* espaço para a barra de navegação fixa */
+  margin-bottom: 110px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.hub-card {
+  display: block;
+  height: 236px;
+  border: var(--border);
+  border-radius: 18px;
+  box-shadow: 5px 5px 0 var(--ink);
+  color: var(--ink);
+  text-decoration: none;
+  position: relative;
+  overflow: hidden;
+  padding: 14px;
+  transition:
+    transform 0.07s ease-out,
+    box-shadow 0.07s ease-out;
+}
+a.hub-card:active {
+  transform: translate(5px, 5px);
+  box-shadow: 0 0 0 var(--ink);
+}
+.hub-card-color {
+  background: var(--orange);
+}
+.hub-card-time {
+  background: var(--blue);
+  color: var(--white);
+  opacity: 0.85;
+}
+.hub-card-foot {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 14px;
+}
+.hub-card-name {
+  font-size: 34px;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+.hub-card-meta {
+  font-size: 12px;
+  font-weight: 700;
+  margin-top: 6px;
+}
+
+.hub-swatches {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+.hub-swatches i {
+  height: 34px;
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+}
+
+.hub-clock {
+  width: 84px;
+  height: 84px;
+  border-radius: 42px;
+  border: 2.5px solid var(--white);
+  position: relative;
+}
+.hub-clock i {
+  position: absolute;
+  display: block;
+}
+.hub-clock-hand {
+  left: 38px;
+  top: 10px;
+  width: 3px;
+  height: 30px;
+  background: var(--white);
+  border-radius: 2px;
+}
+.hub-clock-hand2 {
+  left: 38px;
+  top: 37px;
+  width: 24px;
+  height: 3px;
+  background: var(--yellow);
+  border-radius: 2px;
+  transform: rotate(28deg);
+  transform-origin: 0 50%;
+}
+.hub-clock-dot {
+  left: 33px;
+  top: 33px;
+  width: 12px;
+  height: 12px;
+  border-radius: 6px;
+  background: var(--white);
+}
+
+.hub-more {
+  grid-column: span 2;
+  height: 64px;
+  border: 2.5px dashed var(--ink);
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* abas ainda sem tela */
+.soon {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 110px;
+}

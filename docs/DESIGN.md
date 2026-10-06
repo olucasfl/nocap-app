@@ -11,7 +11,7 @@ Direção visual aprovada do NoCap. Os tokens vivem em `apps/web/src/styles/toke
 | `docs/reference/design-cor-resultado.html`   | Resultado da rodada da Cor                                                                                                |
 | `docs/reference/design-tempo-resultado.html` | Resultado do Tempo (linha do tempo)                                                                                       |
 
-Os `design-*.html` usam placeholders `{{accent}}` = `#FF6A2B` e `{{accent2}}` = `#2F5BFF`; se aparecerem
+Atenção: os `design-*.html` dependem de um `support.js` (runtime "x-dc") que **não veio junto** na pasta; abertos direto no navegador eles não renderizam. Para ver as telas, use o `prototipo-cor.html` (autônomo) ou o app rodando (`pnpm dev`); o código das telas desses arquivos serve de referência de layout. Eles usam placeholders `{{accent}}` = `#FF6A2B` e `{{accent2}}` = `#2F5BFF`; se aparecerem
 literais ao abrir, é isso.
 
 ## Tokens

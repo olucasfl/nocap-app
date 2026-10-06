@@ -3,9 +3,11 @@ import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider } from '@tanstack/react-router';
 import { router } from '@/router';
+import { installGlobalSounds } from '@/lib/sfx';
 import '@/styles/tokens.css';
 import '@/styles/global.css';
 
+installGlobalSounds();
 const queryClient = new QueryClient();
 
 createRoot(document.getElementById('root')!).render(

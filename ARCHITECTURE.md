@@ -83,6 +83,16 @@ vêm do `.env` da raiz, carregado em `main.ts`.
 - Sem `DATABASE_URL` a API sobe; rotas com banco respondem 503.
 - Pendente: aplicar a retenção (detalhe só nas últimas 200 partidas por jogo) e limitar 1 Daily por jogador por dia (com o ranking, Etapa 2).
 
-## 9. Estado atual
+## 9. Web: jogo da Cor
 
-Etapa 1, passos 1 e 2 concluídos (lógica da Cor e API). Próximo: UI da Cor, ver `docs/ROADMAP.md`.
+- Rotas: `/` (Hub), `/historico`, `/amigos`, `/perfil` (as três ainda "em breve") dentro de um layout com `BottomNav`; `/cor?modo=classic|flash|daily` em tela cheia, carregada sob demanda (`lazyRouteComponent`).
+- `games/color/ColorGame.tsx` guarda o estado (fase, partida, resultados); cada fase é uma tela em `games/color/screens/`. Os alvos vêm de `generateColorRound(seed, ...)` do `@nocap/games`, igual ao servidor.
+- Daily: a seed (`dailySeed`) é calculada no aparelho, então funciona offline. Solo: seed aleatória por partida.
+- Ao fim, `submitMatch` manda só as respostas + `matchId` (idempotente). Falha de rede mostra "partida não salva"; a fila offline é o passo 4.
+- `lib/sfx.ts` (Web Audio, mudo salvo no aparelho), `lib/guest.ts` (`guestId`), `lib/records.ts` (recorde local), `lib/api-client.ts` (única porta para a API).
+- A barra de tempo da memorização e as contagens usam `requestAnimationFrame` (não CSS), para o tempo valer mesmo com `prefers-reduced-motion`. Com a aba em segundo plano o navegador pausa o rAF, e a rodada espera.
+- JS inicial ~124 KB gzip; o jogo da Cor é um chunk à parte (~4 KB).
+
+## 10. Estado atual
+
+Etapa 1, passos 1 a 3 concluídos (lógica, API e UI da Cor). Próximo: PWA (passo 4), ver `docs/ROADMAP.md`.

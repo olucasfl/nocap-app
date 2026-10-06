@@ -6,7 +6,7 @@ Leia este arquivo primeiro. Ele diz onde o projeto parou e como voltar a trabalh
 
 - **Esqueleto montado e validado** (`pnpm build` e `pnpm test` passam): monorepo, web (React + Vite + PWA),
   api (NestJS + Drizzle), `packages/games` (contrato + RNG com testes), docs e automações do Claude.
-- **Lógica da Cor pronta** (`packages/games/src/color`) e **API pronta** (`/games/color/daily`, `POST /matches`, `GET /players/:guestId/matches`), validada contra o Supabase real. Próximo: Etapa 1, passo 3 (UI da Cor no web).
+- **Cor jogável** de ponta a ponta: lógica (`packages/games/src/color`), API e telas (Hub, início com Clássico/Flash/Daily, memorizar, recriar, resultado com carimbo, final, sons). A partida salva no Supabase e a nota é recalculada no servidor. Próximo: Etapa 1, passo 4 (PWA: ícones, offline e fila de envio).
 - **Banco:** migration `0000` aplicada no Supabase (4 tabelas). Em outro PC basta preencher o `.env`; não rode a migration de novo (`pnpm db:migrate` é idempotente, mas confira antes).
 - Repositório: `https://github.com/olucasfl/nocap-app` (branch `main`). Deve estar **privado**.
 
@@ -43,8 +43,7 @@ O `.env` **não vai para o git**. Leve a senha do Supabase por um gerenciador de
 
 ## Como ver o design no outro PC
 
-Abra `docs/reference/prototipo-cor.html` no navegador (duplo clique): é o jogo da Cor jogável, a fonte da
-verdade de fluxo, animação e sons. As outras três (`design-*.html`) são as telas do Hub e dos resultados.
+Rode `pnpm dev` e abra http://localhost:5173 (o app já tem Hub e o jogo da Cor), ou abra `docs/reference/prototipo-cor.html` com duplo clique (jogo autônomo, fonte da verdade de fluxo, animação e sons). As `design-*.html` precisam de um `support.js` que não está na pasta e não renderizam sozinhas; servem só como referência de layout.
 Detalhes em `docs/DESIGN.md`.
 
 ## Como retomar com o Claude Code

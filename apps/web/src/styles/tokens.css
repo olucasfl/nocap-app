@@ -6,14 +6,18 @@
   --blue: #2f5bff; /* accent 2 */
   --yellow: #ffd23f; /* selos e destaques */
   --white: #ffffff;
+  --muted: #4a4a44;
+  --green: #33c27f; /* só em amostras de cor decorativas */
+  --pink: #ff9ecf; /* idem */
 
   --border: 2.5px solid var(--ink);
   --radius-sm: 12px;
   --radius-lg: 20px;
   --shadow: 5px 5px 0 var(--ink); /* sombra dura, sem blur */
 
-  --font-display: 'Archivo', system-ui, sans-serif;
-  --font-mono: 'Space Mono', ui-monospace, monospace;
+  --font-display: 'Archivo', 'Arial Black', system-ui, sans-serif;
+  --font-mono: 'Space Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
 
   --col-max: 440px;
+  color-scheme: light;
 }
