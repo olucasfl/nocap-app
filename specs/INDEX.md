@@ -9,6 +9,7 @@
 | 004 | [Salas multiplayer](004-rooms-multiplayer.md) | 3     | rascunho                          |
 | 005 | [Modo noturno](005-modo-noturno.md)           | 1b    | concluída                         |
 | 006 | [Jogo rápido (1 rodada)](006-jogo-rapido.md)  | 1b    | Cor concluída; Tempo na Etapa 4   |
-| 007 | [Contas (cadastro e login)](007-contas.md)    | 2     | em andamento                      |
+| 007 | [Contas (cadastro e login)](007-contas.md)    | 2     | concluída (falta e-mail e Google) |
+| 008 | [Ranking](008-ranking.md)                     | 2     | concluída                         |
 
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.
