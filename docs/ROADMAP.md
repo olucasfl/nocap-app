@@ -20,6 +20,16 @@ começa com uma spec em `specs/`. Decisões em aberto: `docs/PROJECT-BRIEF.md` s
 - [ ] 5. **`feat(web): history`**: aba Histórico ligada à API
 - [ ] 6. Critério de pronto: partida completa salva no Supabase com nota recalculada; app instala e o solo abre offline
 
+## Etapa 1b: ajustes pedidos após o primeiro teste (PENDENTE, nada implementado)
+
+Feedback do Lucas ao jogar a Cor. Cada item tem spec; a ordem sugerida é a da lista (a nota primeiro, porque é pequena e muda o ranking).
+
+- [ ] **Nota da Cor mais generosa e mais fina:** hoje "longe, mas não tanto" dá 0 e "bem perto" dá 7 a 8. Meta: ~3 em ΔE 20, ~9 em ΔE 3 a 4. Candidata e tabela em `specs/001-color-game.md` (fecha brief #3)
+- [ ] **Jogo rápido (1 rodada)** na Cor e no Tempo: preset `quick`, ranking próprio. `specs/006-jogo-rapido.md`
+- [ ] **Modo noturno** no app inteiro (Automático/Claro/Escuro), com design escuro antes de codar. `specs/005-modo-noturno.md` (fecha brief #12)
+
+Podem rodar antes ou depois do passo 4 (PWA); o modo noturno toca o manifesto/`theme-color`, então convém fazer junto ou logo depois dele.
+
 ## Etapa 2: contas e ranking
 
 - [ ] Decidir auth (Better Auth vs Supabase Auth), login/registro, migração convidado → conta

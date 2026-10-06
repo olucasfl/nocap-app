@@ -26,6 +26,18 @@ Referência: `docs/reference/design-tempo-resultado.html`.
 - [ ] Servidor recalcula a nota a partir dos ms.
 - [ ] Checagens de plausibilidade para ranking (brief #6).
 
+## Pendente: jogo rápido (pedido do Lucas)
+
+O Tempo também terá o modo **Rápido**, de 1 rodada (preset `quick`, ranking próprio, nota máxima 10). Detalhes em [006-jogo-rapido.md](006-jogo-rapido.md).
+
+## Pendente: nota generosa
+
+Feedback sobre a Cor: a nota estava dura demais (0 para "longe, mas não tanto"; 7 a 8 para "bem perto"). Ao definir a curva do Tempo (brief #4), seguir a mesma filosofia: cauda longa embaixo (erro grande ainda rende uma "pontuaçãozinha") e topo largo (erro pequeno rende ~9). Ver a tabela de metas em [001-color-game.md](001-color-game.md).
+
+## Pendente: modo noturno
+
+A tela do Tempo (alvo, contagem neutra e resultado) deve nascer já nos dois temas. Ver [005-modo-noturno.md](005-modo-noturno.md).
+
 ## Decisões em aberto
 
 Brief #4 (curva), #6 (anti-trapaça).

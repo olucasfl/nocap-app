@@ -23,6 +23,14 @@ pnpm dev                     # web em :5173, api em :3333 (GET /health)
 
 O `.env` **não vai para o git**. Leve a senha do Supabase por um gerenciador de senhas, nunca por chat.
 
+## Pendências pedidas (só escritas, nada codado)
+
+Ver `docs/ROADMAP.md` > Etapa 1b e as specs 001, 005 e 006:
+
+1. **Nota da Cor mais generosa** (zero cedo demais; "bem perto" deveria dar ~9).
+2. **Jogo rápido de 1 rodada**, na Cor e no Tempo.
+3. **Modo noturno** no app inteiro.
+
 ## Antes de tudo (pendências de segurança)
 
 - [ ] **Trocar a senha do banco no Supabase** (ela vazou em chat) e colocar a nova só no `.env`.

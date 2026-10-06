@@ -245,6 +245,12 @@ head_to_head(player_a, player_b, game, wins_a int, wins_b int, last_played_at)
 
 ---
 
+### Pedidos novos (após o primeiro teste da Cor), ainda pendentes de implementação
+
+- **Modo noturno** é requisito (fecha a decisão #12): `specs/005-modo-noturno.md`.
+- **Nota da Cor** será recalibrada para ser mais generosa (fecha a #3 quando validada): `specs/001-color-game.md`.
+- **Jogo rápido** de 1 rodada em Cor e Tempo, com ranking próprio: `specs/006-jogo-rapido.md`.
+
 ## 6. Decisões em aberto ❓
 
 | #   | Decisão                                                              | Opções e notas                                                                        |
@@ -260,7 +266,7 @@ head_to_head(player_a, player_b, game, wins_a int, wins_b int, last_played_at)
 | 9   | Quais modos têm **Daily**                                            | Sugestão: só Clássico                                                                 |
 | 10  | **Retenção de 200 partidas por jogo**                                | Confirmar o número                                                                    |
 | 11  | **Avatar**                                                           | Upload de foto, avatares gerados ou iniciais                                          |
-| 12  | **Modo escuro** do Pop Brutal                                        | Hoje só existe o tema claro                                                           |
+| 12  | ~~Modo escuro~~ do Pop Brutal                                        | **Decidido: sim, é requisito.** Falta o design escuro (spec 005)                      |
 | 13  | **Notificações push** para convites                                  | Web Push no PWA; o iOS exige o app instalado                                          |
 | 14  | **Domínio e marca**                                                  | Checar disponibilidade de "NoCap" em domínio e lojas                                  |
 | 15  | **Hospedagem**                                                       | Confirmar Cloudflare Pages + Fly.io + Upstash ou alternativa                          |
