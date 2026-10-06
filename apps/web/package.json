@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
+    "generate-pwa-assets": "pwa-assets-generator",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests"
   },
@@ -16,11 +17,13 @@
     "@tanstack/react-router": "^1.95.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "workbox-window": "^7.4.1",
     "zustand": "^5.0.2"
   },
   "devDependencies": {
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
+    "@vite-pwa/assets-generator": "^2.0.0",
     "@vitejs/plugin-react": "^4.3.4",
     "typescript": "^5.7.2",
     "vite": "^6.0.7",

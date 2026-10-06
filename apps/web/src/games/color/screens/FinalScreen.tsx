@@ -3,15 +3,16 @@ import { Link } from '@tanstack/react-router';
 import { buzz, sfx } from '@/lib/sfx';
 import { saveBest } from '@/lib/records';
 import { toHex } from '../hex';
-import { submitMatch } from '../submit';
+import { submitOrQueue } from '../submit';
 import type { RoundResult, Run } from '../types';
 
-type SaveState = 'saving' | 'saved' | 'error';
+type SaveState = 'saving' | 'saved' | 'queued' | 'error';
 
 const SAVE_TEXT: Record<SaveState, string> = {
   saving: 'SALVANDO...',
   saved: 'SALVO NO HISTÓRICO',
-  error: 'SEM CONEXÃO: PARTIDA NÃO SALVA',
+  queued: 'SEM CONEXÃO: ENVIO QUANDO VOLTAR',
+  error: 'NÃO FOI POSSÍVEL SALVAR A PARTIDA',
 };
 
 interface Props {
@@ -32,14 +33,14 @@ export function FinalScreen({ run, results, onRematch }: Props) {
   // O servidor recalcula as notas pela seed; o matchId deixa o reenvio idempotente.
   useEffect(() => {
     let alive = true;
-    submitMatch({
+    submitOrQueue({
       matchId: run.matchId,
       mode: run.preset,
       kind: run.kind,
       seed: run.seed,
       answers: results.map((r) => r.guess),
     })
-      .then(() => alive && setSave('saved'))
+      .then((r) => alive && setSave(r === 'sent' ? 'saved' : r === 'queued' ? 'queued' : 'error'))
       .catch(() => alive && setSave('error'));
     return () => {
       alive = false;
