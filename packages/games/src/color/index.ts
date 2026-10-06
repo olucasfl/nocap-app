@@ -18,6 +18,8 @@ export type ColorAnswer = Hsb;
 export const colorPresets: Record<string, ColorSettings> = {
   classic: { rounds: 5, showMs: 3000 },
   flash: { rounds: 5, showMs: 400 },
+  /** Jogo rápido: 1 rodada, ranking próprio (modo `quick`). */
+  quick: { rounds: 1, showMs: 3000 },
 };
 
 export function generateColorRound(seed: string, _settings: ColorSettings, index: number): Hsb {

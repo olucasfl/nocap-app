@@ -28,7 +28,7 @@ O `.env` **não vai para o git**. Leve a senha do Supabase por um gerenciador de
 Ver `docs/ROADMAP.md` > Etapa 1b e as specs 001, 005 e 006:
 
 1. ~~Nota da Cor mais generosa~~ (feito, curva v2; falta validar os parâmetros jogando).
-2. **Jogo rápido de 1 rodada**, na Cor e no Tempo.
+2. ~~Jogo rápido de 1 rodada~~ (Cor feito; Tempo na Etapa 4).
 3. **Modo noturno** no app inteiro.
 
 ## Antes de tudo (pendências de segurança)

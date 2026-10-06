@@ -36,6 +36,12 @@ describe('hsbToRgb', () => {
   });
 });
 
+describe('presets', () => {
+  it('o rápido tem 1 rodada e o tempo do Clássico', () => {
+    expect(colorPresets.quick).toEqual({ rounds: 1, showMs: colorPresets.classic!.showMs });
+  });
+});
+
 describe('score', () => {
   it('cor idêntica vale 10', () => {
     expect(scoreColor({ h: 200, s: 60, b: 70 }, { h: 200, s: 60, b: 70 })).toBe(10);

@@ -42,7 +42,7 @@ const profileRoute = createRoute({
   component: () => <Soon title="Perfil" />,
 });
 
-const MODES: Mode[] = ['classic', 'flash', 'daily'];
+const MODES: Mode[] = ['classic', 'flash', 'quick', 'daily'];
 
 const colorRoute = createRoute({
   getParentRoute: () => rootRoute,
