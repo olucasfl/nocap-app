@@ -36,7 +36,8 @@ export function createAuth(db: Db) {
       username({
         minUsernameLength: USERNAME_MIN,
         maxUsernameLength: USERNAME_MAX,
-        usernameValidator: (value) => USERNAME_RE.test(value),
+        // O plugin normaliza para minúsculas; validar a forma já normalizada (Lucas_01 = lucas_01).
+        usernameValidator: (value) => USERNAME_RE.test(value.toLowerCase()),
       }),
     ],
     rateLimit: { enabled: true, window: 60, max: 60 },

@@ -1,6 +1,6 @@
 # 007: Contas (cadastro e login)
 
-> **Status: em andamento (Etapa 2).** Decisão #2 do brief: **Better Auth**, e-mail + senha. Google fica para depois.
+> **Status: implementada e verificada contra o Supabase (2026-10-06); falta definir e-mail (verificação/recuperação) e Google.** Decisão #2 do brief: **Better Auth**, e-mail + senha. Google fica para depois.
 
 ## Objetivo
 
@@ -34,15 +34,21 @@ Migration **aditiva**: `auth_user`, `auth_session`, `auth_account`, `auth_verifi
 
 ## Critérios de aceite
 
-- [ ] Criar conta com os 5 campos; senhas diferentes bloqueiam no app; usuário ou e-mail repetido dá erro claro.
-- [ ] Entrar com usuário e com e-mail funciona; senha errada dá erro claro.
-- [ ] Depois de entrar, o histórico do aparelho aparece na conta; num segundo aparelho o login traz o mesmo histórico.
-- [ ] Sair volta ao modo convidado.
-- [ ] Sessão sobrevive a fechar e reabrir o app.
+- [x] Criar conta com os 5 campos; senhas diferentes bloqueiam no app; usuário ou e-mail repetido dá erro claro.
+- [x] Entrar com usuário e com e-mail funciona; senha errada dá erro claro.
+- [x] Depois de entrar, o histórico do aparelho aparece na conta; num segundo aparelho o login traz o mesmo histórico.
+- [x] Sair volta ao modo convidado.
+- [x] Sessão sobrevive a fechar e reabrir o app.
 
 ## Fora de escopo
 
 Google, verificação de e-mail, recuperar senha, foto/avatar (brief #11), amigos (Etapa 3).
+
+## Como ficou
+
+- `apps/api/src/auth/` (instância do Better Auth, guard, módulo) e rotas `players/claim` e `me/matches` em `matches/`. O proteção CSRF do Better Auth exige o header `Origin` (o navegador manda; clientes sem origem recebem 403).
+- **Variável nova no `.env` (obrigatória em produção):** `BETTER_AUTH_SECRET` (gere com `openssl rand -base64 32`); `API_URL` (URL pública da API) e `WEB_ORIGIN` já existente.
+- Migration `0001` aplicada no Supabase em 2026-10-06 (aditiva).
 
 ## Decisões em aberto
 
