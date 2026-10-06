@@ -9,6 +9,9 @@ import { BottomNav } from '@/components/BottomNav';
 import type { Mode } from '@/games/color/types';
 import { History } from '@/screens/History';
 import { Hub } from '@/screens/Hub';
+import { Login } from '@/screens/Login';
+import { Profile } from '@/screens/Profile';
+import { Register } from '@/screens/Register';
 import { Soon } from '@/screens/Soon';
 
 const rootRoute = createRootRoute({ component: Outlet });
@@ -39,7 +42,18 @@ const friendsRoute = createRoute({
 const profileRoute = createRoute({
   getParentRoute: () => tabsRoute,
   path: '/perfil',
-  component: () => <Soon title="Perfil" />,
+  component: Profile,
+});
+
+const loginRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/entrar',
+  component: Login,
+});
+const registerRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/criar-conta',
+  component: Register,
 });
 
 const MODES: Mode[] = ['classic', 'flash', 'quick', 'daily'];
@@ -58,6 +72,8 @@ const colorRoute = createRoute({
 const routeTree = rootRoute.addChildren([
   tabsRoute.addChildren([hubRoute, historyRoute, friendsRoute, profileRoute]),
   colorRoute,
+  loginRoute,
+  registerRoute,
 ]);
 
 export const router = createRouter({ routeTree });

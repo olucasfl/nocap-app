@@ -26,3 +26,6 @@ export const historyQuerySchema = z.object({
 export type HistoryQuery = z.infer<typeof historyQuerySchema>;
 
 export const guestIdSchema = z.string().uuid();
+
+export const claimSchema = z.object({ guestId: guestIdSchema });
+export type ClaimInput = z.infer<typeof claimSchema>;

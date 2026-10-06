@@ -1,5 +1,17 @@
 const BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:3333';
 
+export const apiBase = BASE;
+
+/** Token da sessão (plugin bearer do Better Auth); sem conta, a requisição segue anônima. */
+function authHeader(): Record<string, string> {
+  try {
+    const token = localStorage.getItem('nocap-token');
+    return token ? { authorization: `Bearer ${token}` } : {};
+  } catch {
+    return {};
+  }
+}
+
 export class ApiError extends Error {
   constructor(
     readonly status: number,
@@ -12,7 +24,7 @@ export class ApiError extends Error {
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     ...init,
-    headers: { 'content-type': 'application/json', ...init?.headers },
+    headers: { 'content-type': 'application/json', ...authHeader(), ...init?.headers },
   });
   if (!res.ok) {
     const body = (await res.json().catch(() => null)) as { message?: string } | null;

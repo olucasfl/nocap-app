@@ -6,11 +6,13 @@ import { router } from '@/router';
 import { UpdatePrompt } from '@/components/UpdatePrompt';
 import { flushQueuedMatches } from '@/games/color/submit';
 import { installGlobalSounds } from '@/lib/sfx';
+import { restoreSession } from '@/lib/auth';
 import { installTheme } from '@/lib/theme';
 import '@/styles/tokens.css';
 import '@/styles/global.css';
 
 installTheme();
+void restoreSession();
 installGlobalSounds();
 const queryClient = new QueryClient();
 

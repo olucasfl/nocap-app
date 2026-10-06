@@ -44,6 +44,18 @@ export class MatchesService {
   }
 
   history(guestId: string, query: HistoryQuery) {
-    return this.repo.history(guestId, query.limit, query.cursor);
+    return this.repo.history([guestId], query.limit, query.cursor);
+  }
+
+  /** Histórico da conta: todos os aparelhos vinculados a ela. */
+  async historyOf(userId: string, query: HistoryQuery) {
+    return this.repo.history(await this.repo.playerIdsOf(userId), query.limit, query.cursor);
+  }
+
+  async claim(userId: string, guestId: string) {
+    if ((await this.repo.claim(userId, guestId)) === 'conflict') {
+      throw new ConflictException('Este aparelho já pertence a outra conta');
+    }
+    return { claimed: true };
   }
 }

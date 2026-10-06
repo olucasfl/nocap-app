@@ -11,11 +11,66 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 
+// Tabelas do Better Auth (nomes dos campos são os que o adaptador do Drizzle espera).
+export const authUser = pgTable('auth_user', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(),
+  email: text('email').notNull().unique(),
+  emailVerified: boolean('email_verified').notNull().default(false),
+  image: text('image'),
+  username: text('username').unique(),
+  displayUsername: text('display_username'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const authSession = pgTable('auth_session', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  token: text('token').notNull().unique(),
+  ipAddress: text('ip_address'),
+  userAgent: text('user_agent'),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => authUser.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const authAccount = pgTable('auth_account', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  accountId: text('account_id').notNull(),
+  providerId: text('provider_id').notNull(),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => authUser.id, { onDelete: 'cascade' }),
+  accessToken: text('access_token'),
+  refreshToken: text('refresh_token'),
+  idToken: text('id_token'),
+  accessTokenExpiresAt: timestamp('access_token_expires_at', { withTimezone: true }),
+  refreshTokenExpiresAt: timestamp('refresh_token_expires_at', { withTimezone: true }),
+  scope: text('scope'),
+  password: text('password'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const authVerification = pgTable('auth_verification', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  identifier: text('identifier').notNull(),
+  value: text('value').notNull(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
 /** Convidado por enquanto (UUID gerado no aparelho); vira conta na Etapa 2. */
 export const players = pgTable('players', {
   id: uuid('id').primaryKey(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   nickname: text('nickname'),
+  /** Conta dona deste aparelho. Nula enquanto for só convidado. */
+  userId: uuid('user_id').references(() => authUser.id, { onDelete: 'set null' }),
 });
 
 /** Não guardamos o alvo: ele é regenerado pela seed. */

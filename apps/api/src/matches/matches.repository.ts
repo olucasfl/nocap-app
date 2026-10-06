@@ -1,5 +1,5 @@
 import { Inject, Injectable, ServiceUnavailableException } from '@nestjs/common';
-import { and, desc, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull, or, sql } from 'drizzle-orm';
 import type { Db } from '../db/client';
 import { DB } from '../db/db.module';
 import { matchPlayers, matches, players, userGameStats } from '../db/schema';
@@ -108,8 +108,9 @@ export class MatchesRepository {
     });
   }
 
-  /** Histórico do jogador, mais recente primeiro, paginado por keyset (played_at, match_id). */
-  async history(guestId: string, limit: number, cursor?: string) {
+  /** Histórico de um ou mais aparelhos (conta), mais recente primeiro, paginado por keyset (played_at, match_id). */
+  async history(playerIds: string[], limit: number, cursor?: string) {
+    if (playerIds.length === 0) return { items: [] as HistoryItem[], nextCursor: null };
     const after = cursor ? decodeCursor(cursor) : null;
 
     const rows = await this.db
@@ -128,7 +129,7 @@ export class MatchesRepository {
       .innerJoin(matches, eq(matches.id, matchPlayers.matchId))
       .where(
         and(
-          eq(matchPlayers.playerId, guestId),
+          inArray(matchPlayers.playerId, playerIds),
           after
             ? sql`(${matchPlayers.playedAt}, ${matchPlayers.matchId}) < (${after.playedAt}::timestamptz, ${after.matchId}::uuid)`
             : undefined,
@@ -146,5 +147,28 @@ export class MatchesRepository {
         : null;
 
     return { items, nextCursor };
+  }
+
+  /** Aparelhos (convidados) vinculados a uma conta. */
+  async playerIdsOf(userId: string): Promise<string[]> {
+    const rows = await this.db
+      .select({ id: players.id })
+      .from(players)
+      .where(eq(players.userId, userId));
+    return rows.map((r) => r.id);
+  }
+
+  /**
+   * Vincula o convidado do aparelho à conta, sem copiar nem apagar nada: o histórico passa a
+   * pertencer à conta. `'conflict'` se o aparelho já é de outra conta.
+   */
+  async claim(userId: string, guestId: string): Promise<'ok' | 'conflict'> {
+    await this.db.insert(players).values({ id: guestId, userId }).onConflictDoNothing();
+    const rows = await this.db
+      .update(players)
+      .set({ userId })
+      .where(and(eq(players.id, guestId), or(isNull(players.userId), eq(players.userId, userId))))
+      .returning({ id: players.id });
+    return rows.length > 0 ? 'ok' : 'conflict';
   }
 }
