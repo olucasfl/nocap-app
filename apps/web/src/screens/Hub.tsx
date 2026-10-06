@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import { dailyDate } from '@nocap/games';
 import { MuteButton } from '@/components/MuteButton';
+import { ThemeButton } from '@/components/ThemeButton';
 import { User } from '@/components/icons';
 import { getBest } from '@/lib/records';
 import './hub.css';
@@ -25,6 +26,7 @@ export function Hub() {
           no cap<span>!</span>
         </div>
         <div className="top-actions">
+          <ThemeButton />
           <MuteButton />
           <div className="chip hub-avatar" aria-label="Convidado">
             <User />

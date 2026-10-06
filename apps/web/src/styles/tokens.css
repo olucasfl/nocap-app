@@ -18,6 +18,31 @@
   --font-display: 'Archivo', 'Arial Black', system-ui, sans-serif;
   --font-mono: 'Space Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
 
+  /* Texto sobre accent: fixo nos dois temas (accent não muda). */
+  --on-accent: #111111;
+  --on-blue: #ffffff;
+
   --col-max: 440px;
   color-scheme: light;
+}
+
+/* Tema escuro. Papel, tinta, superfície e sombra mudam; accents e cores dos jogos, não.
+   Borda e sombra dura viram tinta clara (sombra preta sumiria no fundo escuro).
+   Escolha manual: data-theme. Automático (sem data-theme): segue o sistema. As duas
+   listas abaixo precisam ficar iguais. */
+:root[data-theme='dark'] {
+  --paper: #14140f;
+  --ink: #f4f4ef;
+  --white: #23231c; /* superfície: cartas, chips, linhas */
+  --muted: #b3b3a8;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --paper: #14140f;
+    --ink: #f4f4ef;
+    --white: #23231c;
+    --muted: #b3b3a8;
+    color-scheme: dark;
+  }
 }

@@ -73,3 +73,26 @@ export const Speaker = ({
     <path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14" style={{ opacity: off ? 0.15 : 1 }} />
   </Svg>
 );
+
+/** Sol (claro), lua (escuro) e meio a meio (automático). */
+export const ThemeIcon = ({
+  mode,
+  size = 18,
+  stroke = 2.4,
+}: IconProps & { mode: 'auto' | 'light' | 'dark' }) => (
+  <Svg size={size} stroke={stroke}>
+    {mode === 'light' && (
+      <>
+        <circle cx="12" cy="12" r="4" />
+        <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+      </>
+    )}
+    {mode === 'dark' && <path d="M21 13A9 9 0 1 1 11 3a7 7 0 0 0 10 10z" />}
+    {mode === 'auto' && (
+      <>
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" />
+      </>
+    )}
+  </Svg>
+);

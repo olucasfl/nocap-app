@@ -1,6 +1,6 @@
 # 005: Modo noturno
 
-> **Status: pendente.** Pedido do Lucas após o primeiro teste do jogo da Cor ("o app precisa ter modo noturno"). Fecha a decisão #12 do brief. Nada implementado ainda.
+> **Status: implementado (2026-10-06), sem telas de referência escuras (decisão do Lucas).** Pedido do Lucas após o primeiro teste do jogo da Cor ("o app precisa ter modo noturno"). Fecha a decisão #12 do brief. Nada implementado ainda.
 
 ## Objetivo
 
@@ -32,16 +32,23 @@ Chip de tema (ícone sol/lua, cicla Automático → Claro → Escuro) no topo do
 
 ## Critérios de aceite
 
-- [ ] Com o sistema em escuro e a escolha em Automático, o app abre escuro, sem flash claro.
-- [ ] A escolha manual persiste após fechar e reabrir o app e vale em todas as rotas.
-- [ ] Todas as telas existentes (Hub, abas, início, memorizar, recriar, resultado, final) são legíveis nos dois temas: contraste de texto ≥ 4.5:1, borda e sombra visíveis.
-- [ ] As cores mostradas nos jogos (alvo e resposta) são idênticas nos dois temas.
+- [x] Com o sistema em escuro e a escolha em Automático, o app abre escuro, sem flash claro.
+- [x] A escolha manual persiste após fechar e reabrir o app e vale em todas as rotas.
+- [x] Todas as telas existentes (Hub, abas, início, memorizar, recriar, resultado, final) são legíveis nos dois temas: contraste de texto ≥ 4.5:1, borda e sombra visíveis.
+- [x] As cores mostradas nos jogos (alvo e resposta) são idênticas nos dois temas.
 - [ ] `theme-color` e o manifesto da PWA seguem o tema.
-- [ ] Nenhum valor de cor literal novo fora de `tokens.css`.
+- [x] Nenhum valor de cor literal novo fora de `tokens.css`.
 
 ## Fora de escopo
 
 Temas além de claro/escuro, troca automática por horário, personalização de accent.
+
+## Como ficou
+
+- Tokens em `tokens.css`: `--paper`, `--ink`, `--white` (superfície) e `--muted` são remapeados no escuro; `--on-accent` e `--on-blue` são fixos. Borda e sombra dura viram tinta clara (sombra preta sumiria no fundo `#14140F`).
+- Automático = sem `data-theme` (o CSS segue `prefers-color-scheme`); Claro/Escuro = `data-theme` no `<html>`, aplicado por script inline antes da primeira pintura.
+- `lib/theme.ts` (escolha salva em `nocap-theme`, `theme-color` lido do token `--paper`) e `ThemeButton` no topo do Hub.
+- Fica pendente: o `background_color` do manifesto continua o claro (tela de abertura da PWA). Aceito por ora; gerar dois manifestos só se incomodar.
 
 ## Decisões em aberto
 

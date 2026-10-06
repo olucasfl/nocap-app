@@ -27,7 +27,7 @@
   border: var(--border);
   border-radius: 10px;
   background: var(--ink);
-  color: var(--white);
+  color: var(--paper);
   padding: 8px 10px;
   font: 700 12px var(--font-mono);
   cursor: pointer;

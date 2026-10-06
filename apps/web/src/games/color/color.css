@@ -336,7 +336,7 @@
   border: var(--border);
   border-radius: 22px;
   background: var(--blue);
-  color: var(--white);
+  color: var(--on-blue);
   box-shadow: 6px 6px 0 var(--ink);
   padding: 18px;
   display: flex;

@@ -4,7 +4,7 @@
 }
 .hub-avatar {
   background: var(--blue);
-  color: var(--white);
+  color: var(--on-blue);
 }
 .hub-title {
   margin-top: 18px;
@@ -40,7 +40,7 @@
   height: 44px;
   padding: 0 14px;
   border-radius: 10px;
-  background: var(--ink);
+  background: var(--on-accent);
   color: var(--yellow);
   display: flex;
   align-items: center;
@@ -82,7 +82,7 @@ a.hub-card:active {
 }
 .hub-card-time {
   background: var(--blue);
-  color: var(--white);
+  color: var(--on-blue);
   opacity: 0.85;
 }
 .hub-card-foot {

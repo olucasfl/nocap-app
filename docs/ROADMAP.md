@@ -26,7 +26,7 @@ Feedback do Lucas ao jogar a Cor. Cada item tem spec; a ordem sugerida é a da l
 
 - [x] **Nota da Cor mais generosa e mais fina (curva v2 implementada; falta validar 12 e 1,6 jogando):** hoje "longe, mas não tanto" dá 0 e "bem perto" dá 7 a 8. Meta: ~3 em ΔE 20, ~9 em ΔE 3 a 4. Candidata e tabela em `specs/001-color-game.md` (fecha brief #3)
 - [x] **Jogo rápido (1 rodada)** na Cor (feito; o Tempo ganha o `quick` na Etapa 4) e no Tempo: preset `quick`, ranking próprio. `specs/006-jogo-rapido.md`
-- [ ] **Modo noturno** no app inteiro (Automático/Claro/Escuro), com design escuro antes de codar. `specs/005-modo-noturno.md` (fecha brief #12)
+- [x] **Modo noturno** no app inteiro (Automático/Claro/Escuro), implementado direto por decisão do Lucas (sem telas de referência escuras). `specs/005-modo-noturno.md` (fecha brief #12)
 
 Podem rodar antes ou depois do passo 4 (PWA); o modo noturno toca o manifesto/`theme-color`, então convém fazer junto ou logo depois dele.
 
