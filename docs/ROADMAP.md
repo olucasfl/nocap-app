@@ -34,7 +34,7 @@ Podem rodar antes ou depois do passo 4 (PWA); o modo noturno toca o manifesto/`t
 
 - [x] Auth: Better Auth escolhido; cadastro (usuário, nome, e-mail, senha 2x), login por usuário ou e-mail, convidado → conta (spec 007). Falta: Google e e-mail (verificação/recuperação)
 - [x] Recordes por modo e Daily com sequência (Perfil e card do Daily no Hub), conta soma os aparelhos vinculados
-- [ ] Ranking global por jogo/modo (Redis)
+- [x] Ranking global por jogo/modo e período, em Postgres (spec 008); Redis só se o volume pedir
 
 ## Etapa 3: amigos e salas
 

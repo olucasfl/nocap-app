@@ -91,6 +91,9 @@ export function Hub() {
           </div>
         </div>
 
+        <Link to="/ranking" className="hub-rank">
+          VER RANKING
+        </Link>
         <div className="hub-more mono">+ MAIS JOGOS EM BREVE</div>
       </div>
     </main>

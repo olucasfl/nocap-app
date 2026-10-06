@@ -180,3 +180,23 @@ a.hub-card:active {
   font-size: 11px;
   font-weight: 700;
 }
+
+.hub-rank {
+  grid-column: 1 / -1;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--white);
+  color: var(--ink);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 4px 4px 0 var(--ink);
+  font: 900 15px var(--font-display);
+  text-decoration: none;
+  letter-spacing: 0.02em;
+}
+.hub-rank:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 3px;
+}

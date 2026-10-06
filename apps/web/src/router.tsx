@@ -11,6 +11,7 @@ import { History } from '@/screens/History';
 import { Hub } from '@/screens/Hub';
 import { Login } from '@/screens/Login';
 import { Profile } from '@/screens/Profile';
+import { Ranking } from '@/screens/Ranking';
 import { Register } from '@/screens/Register';
 import { Soon } from '@/screens/Soon';
 
@@ -56,6 +57,12 @@ const registerRoute = createRoute({
   component: Register,
 });
 
+const rankingRoute = createRoute({
+  getParentRoute: () => tabsRoute,
+  path: '/ranking',
+  component: Ranking,
+});
+
 const MODES: Mode[] = ['classic', 'flash', 'quick', 'daily'];
 
 const colorRoute = createRoute({
@@ -70,7 +77,7 @@ const colorRoute = createRoute({
 });
 
 const routeTree = rootRoute.addChildren([
-  tabsRoute.addChildren([hubRoute, historyRoute, friendsRoute, profileRoute]),
+  tabsRoute.addChildren([hubRoute, historyRoute, friendsRoute, profileRoute, rankingRoute]),
   colorRoute,
   loginRoute,
   registerRoute,
