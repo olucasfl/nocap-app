@@ -74,6 +74,15 @@ Um módulo Nest por domínio, registrado em `app.module.ts`. Validação com zod
 `consistent-type-imports` fica **desligada de propósito** (quebraria `emitDecoratorMetadata`). Variáveis
 vêm do `.env` da raiz, carregado em `main.ts`.
 
-## 8. Estado atual
+## 8. API de partidas
 
-Etapa 0 concluída (esqueleto). Próximo: Etapa 1, ver `docs/ROADMAP.md`.
+- `GET /games/color/daily` → `{ seed, preset }` (seed do dia em America/Sao_Paulo).
+- `POST /matches` → recebe só as respostas (+ `matchId` opcional para reenvio idempotente da fila offline); regenera as rodadas pela seed, recalcula a nota, grava partida, jogador e agregados numa transação. Daily exige a seed de hoje e o modo `classic`. Responde `{ matchId, rounds:[{score}], total }`.
+- `GET /players/:guestId/matches?limit&cursor` → histórico por keyset `(played_at, match_id)`, cursor opaco.
+- **Unidade:** `total_score`, `score_sum` e `best` são guardados em **décimos** (500 = 50.0).
+- Sem `DATABASE_URL` a API sobe; rotas com banco respondem 503.
+- Pendente: aplicar a retenção (detalhe só nas últimas 200 partidas por jogo) e limitar 1 Daily por jogador por dia (com o ranking, Etapa 2).
+
+## 9. Estado atual
+
+Etapa 1, passos 1 e 2 concluídos (lógica da Cor e API). Próximo: UI da Cor, ver `docs/ROADMAP.md`.
