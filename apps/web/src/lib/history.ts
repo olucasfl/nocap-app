@@ -7,6 +7,7 @@ import {
   type Hsb,
 } from '@nocap/games';
 import { apiClient } from './api-client';
+import { getToken } from './auth';
 import { getGuestId } from './guest';
 
 export interface HistoryItem {
@@ -30,7 +31,9 @@ export interface HistoryPage {
 export function fetchHistory(cursor?: string) {
   const qs = new URLSearchParams({ limit: '20' });
   if (cursor) qs.set('cursor', cursor);
-  return apiClient.get<HistoryPage>(`/players/${getGuestId()}/matches?${qs}`);
+  // Com conta: histórico de todos os aparelhos vinculados. Sem conta: só deste aparelho.
+  const path = getToken() ? '/me/matches' : `/players/${getGuestId()}/matches`;
+  return apiClient.get<HistoryPage>(`${path}?${qs}`);
 }
 
 export interface HistoryRound {
@@ -53,7 +56,7 @@ export function colorRounds(item: HistoryItem): HistoryRound[] | null {
   });
 }
 
-const MODE_NAME: Record<string, string> = { classic: 'Clássico', flash: 'Flash' };
+const MODE_NAME: Record<string, string> = { classic: 'Clássico', flash: 'Flash', quick: 'Rápido' };
 const KIND_NAME: Record<string, string> = { solo: 'Solo', daily: 'Daily', room: 'Sala' };
 
 export const modeLabel = (mode: string) => MODE_NAME[mode] ?? mode;

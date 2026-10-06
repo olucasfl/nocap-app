@@ -1,5 +1,5 @@
 import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
-import { colorGame, dailySeed } from '@nocap/games';
+import { colorGame, dailyDate, dailySeed, dailyStreak } from '@nocap/games';
 import { randomUUID } from 'node:crypto';
 import { scoreMatch } from './match-scoring';
 import type { CreateMatchInput, HistoryQuery } from './match.schema';
@@ -44,6 +44,42 @@ export class MatchesService {
   }
 
   history(guestId: string, query: HistoryQuery) {
-    return this.repo.history(guestId, query.limit, query.cursor);
+    return this.repo.history([guestId], query.limit, query.cursor);
+  }
+
+  /** Histórico da conta: todos os aparelhos vinculados a ela. */
+  async historyOf(userId: string, query: HistoryQuery) {
+    return this.repo.history(await this.repo.playerIdsOf(userId), query.limit, query.cursor);
+  }
+
+  async claim(userId: string, guestId: string) {
+    if ((await this.repo.claim(userId, guestId)) === 'conflict') {
+      throw new ConflictException('Este aparelho já pertence a outra conta');
+    }
+    return { claimed: true };
+  }
+
+  /** Recordes e sequência do Daily de um conjunto de aparelhos. */
+  private async statsOf(playerIds: string[]) {
+    const [modes, plays] = await Promise.all([
+      this.repo.modeStats(playerIds),
+      this.repo.dailyPlays(playerIds),
+    ]);
+    const streak = dailyStreak(
+      plays.map((d) => dailyDate(d)),
+      dailyDate(),
+    );
+    return {
+      modes,
+      daily: { ...streak, playedToday: plays.some((d) => dailyDate(d) === dailyDate()) },
+    };
+  }
+
+  stats(guestId: string) {
+    return this.statsOf([guestId]);
+  }
+
+  async statsOfUser(userId: string) {
+    return this.statsOf(await this.repo.playerIdsOf(userId));
   }
 }

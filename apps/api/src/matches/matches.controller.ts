@@ -1,9 +1,22 @@
-import { Body, Controller, Get, HttpCode, Param, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
+import { AuthGuard, type AuthedRequest } from '../auth/auth.guard';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import {
+  claimSchema,
   createMatchSchema,
   guestIdSchema,
   historyQuerySchema,
+  type ClaimInput,
   type CreateMatchInput,
   type HistoryQuery,
 } from './match.schema';
@@ -25,5 +38,32 @@ export class MatchesController {
     @Query(new ZodValidationPipe(historyQuerySchema)) query: HistoryQuery,
   ) {
     return this.matches.history(guestId, query);
+  }
+
+  @Get('players/:guestId/stats')
+  stats(@Param('guestId', new ZodValidationPipe(guestIdSchema)) guestId: string) {
+    return this.matches.stats(guestId);
+  }
+
+  @Get('me/stats')
+  @UseGuards(AuthGuard)
+  myStats(@Req() req: AuthedRequest) {
+    return this.matches.statsOfUser(req.user.id);
+  }
+
+  @Get('me/matches')
+  @UseGuards(AuthGuard)
+  myHistory(
+    @Req() req: AuthedRequest,
+    @Query(new ZodValidationPipe(historyQuerySchema)) query: HistoryQuery,
+  ) {
+    return this.matches.historyOf(req.user.id, query);
+  }
+
+  @Post('players/claim')
+  @HttpCode(200)
+  @UseGuards(AuthGuard)
+  claim(@Req() req: AuthedRequest, @Body(new ZodValidationPipe(claimSchema)) body: ClaimInput) {
+    return this.matches.claim(req.user.id, body.guestId);
   }
 }

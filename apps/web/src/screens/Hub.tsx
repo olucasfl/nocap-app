@@ -3,7 +3,9 @@ import { dailyDate } from '@nocap/games';
 import { MuteButton } from '@/components/MuteButton';
 import { ThemeButton } from '@/components/ThemeButton';
 import { User } from '@/components/icons';
+import { useQuery } from '@tanstack/react-query';
 import { getBest } from '@/lib/records';
+import { fetchStats, streakLabel } from '@/lib/stats';
 import './hub.css';
 
 const SWATCHES = [
@@ -18,6 +20,9 @@ const SWATCHES = [
 export function Hub() {
   const [, mm, dd] = dailyDate().split('-');
   const best = getBest('color');
+  // Sem API ou sem partidas: o card segue sem a sequência.
+  const stats = useQuery({ queryKey: ['stats'], queryFn: fetchStats, retry: false });
+  const streak = stats.data?.daily;
 
   return (
     <main className="hub">
@@ -45,7 +50,14 @@ export function Hub() {
           <div className="mono hub-daily-label">
             DAILY · {dd}/{mm}
           </div>
-          <div className="hub-daily-text">A Cor de hoje te espera</div>
+          <div className="hub-daily-text">
+            {streak?.playedToday ? 'Daily de hoje feito' : 'A Cor de hoje te espera'}
+          </div>
+          {streak && streak.current > 0 && (
+            <div className="mono hub-daily-streak">
+              SEQUÊNCIA {streakLabel(streak.current).toUpperCase()}
+            </div>
+          )}
         </div>
         <Link to="/cor" search={{ modo: 'daily' }} className="hub-daily-go">
           JOGAR

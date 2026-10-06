@@ -32,8 +32,9 @@ Podem rodar antes ou depois do passo 4 (PWA); o modo noturno toca o manifesto/`t
 
 ## Etapa 2: contas e ranking
 
-- [ ] Decidir auth (Better Auth vs Supabase Auth), login/registro, migração convidado → conta
-- [ ] Perfil, recordes, Daily com sequência, ranking global por jogo/modo (Redis)
+- [x] Auth: Better Auth escolhido; cadastro (usuário, nome, e-mail, senha 2x), login por usuário ou e-mail, convidado → conta (spec 007). Falta: Google e e-mail (verificação/recuperação)
+- [x] Recordes por modo e Daily com sequência (Perfil e card do Daily no Hub), conta soma os aparelhos vinculados
+- [ ] Ranking global por jogo/modo (Redis)
 
 ## Etapa 3: amigos e salas
 

@@ -16,6 +16,7 @@
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.0.1",
     "@nocap/games": "workspace:*",
+    "better-auth": "^1.7.7",
     "dotenv": "^16.4.7",
     "drizzle-orm": "^0.38.3",
     "postgres": "^3.4.5",
