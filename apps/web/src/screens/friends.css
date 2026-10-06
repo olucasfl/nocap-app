@@ -1,0 +1,97 @@
+/* Amigos. Sem animação: só listas e botões. */
+.fr {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 110px;
+}
+.fr h1 {
+  margin-top: 18px;
+}
+.fr-cta {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: auto;
+}
+.fr-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.fr-title {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.fr-search {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.fr-go {
+  height: 48px;
+  font-size: 15px;
+}
+.fr-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.fr-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--white);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 3px 3px 0 var(--ink);
+  padding: 10px 12px;
+}
+.fr-name {
+  font: 900 16px var(--font-display);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.fr-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.fr-btn {
+  appearance: none;
+  min-height: 40px;
+  padding: 0 12px;
+  border: var(--border);
+  border-radius: 10px;
+  background: var(--orange);
+  color: var(--on-accent);
+  font: 900 13px var(--font-display);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.fr-btn.ghost {
+  background: var(--white);
+  color: var(--ink);
+}
+.fr-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.fr-btn:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 2px;
+}
+.fr-state {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+}

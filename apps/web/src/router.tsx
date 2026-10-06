@@ -8,12 +8,12 @@ import {
 import { BottomNav } from '@/components/BottomNav';
 import type { Mode } from '@/games/color/types';
 import { History } from '@/screens/History';
+import { Friends } from '@/screens/Friends';
 import { Hub } from '@/screens/Hub';
 import { Login } from '@/screens/Login';
 import { Profile } from '@/screens/Profile';
 import { Ranking } from '@/screens/Ranking';
 import { Register } from '@/screens/Register';
-import { Soon } from '@/screens/Soon';
 
 const rootRoute = createRootRoute({ component: Outlet });
 
@@ -38,7 +38,7 @@ const historyRoute = createRoute({
 const friendsRoute = createRoute({
   getParentRoute: () => tabsRoute,
   path: '/amigos',
-  component: () => <Soon title="Amigos" />,
+  component: Friends,
 });
 const profileRoute = createRoute({
   getParentRoute: () => tabsRoute,

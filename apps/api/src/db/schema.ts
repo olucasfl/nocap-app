@@ -6,6 +6,7 @@ import {
   pgTable,
   primaryKey,
   smallint,
+  unique,
   text,
   timestamp,
   uuid,
@@ -119,4 +120,25 @@ export const userGameStats = pgTable(
     best: smallint('best').notNull().default(0),
   },
   (t) => [primaryKey({ columns: [t.playerId, t.game, t.mode] })],
+);
+
+/** Pedido de amizade. `pending` até a outra pessoa aceitar; recusar e remover apagam a linha. */
+export const friendships = pgTable(
+  'friendships',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    requesterId: uuid('requester_id')
+      .notNull()
+      .references(() => authUser.id, { onDelete: 'cascade' }),
+    addresseeId: uuid('addressee_id')
+      .notNull()
+      .references(() => authUser.id, { onDelete: 'cascade' }),
+    status: text('status').notNull().default('pending'), // pending | accepted
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    respondedAt: timestamp('responded_at', { withTimezone: true }),
+  },
+  (t) => [
+    unique('friendships_pair_unique').on(t.requesterId, t.addresseeId),
+    index('friendships_addressee_idx').on(t.addresseeId, t.status),
+  ],
 );

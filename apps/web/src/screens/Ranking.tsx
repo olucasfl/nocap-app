@@ -5,9 +5,11 @@ import {
   BOARDS,
   BOARD_MAX,
   PERIODS,
+  SCOPES,
   fetchRanking,
   type Board,
   type Period,
+  type Scope,
   type RankingEntry,
 } from '@/lib/ranking';
 import { useAuth } from '@/lib/auth';
@@ -29,11 +31,12 @@ function Row({ entry, max }: { entry: RankingEntry; max: number }) {
 export function Ranking() {
   const [board, setBoard] = useState<Board>('classic');
   const [period, setPeriod] = useState<Period>('week');
+  const [scope, setScope] = useState<Scope>('all');
   const user = useAuth((s) => s.user);
   // O token (se houver) vai junto: assim a resposta traz a sua posição.
   const q = useQuery({
-    queryKey: ['ranking', board, period, user?.id ?? null],
-    queryFn: () => fetchRanking(board, period),
+    queryKey: ['ranking', board, period, scope, user?.id ?? null],
+    queryFn: () => fetchRanking(board, period, scope),
   });
 
   const max = BOARD_MAX[board];
@@ -43,6 +46,21 @@ export function Ranking() {
   return (
     <main className="rk">
       <h1>Ranking</h1>
+      {user && (
+        <div className="rk-seg rk-scopes" role="radiogroup" aria-label="Quem aparece">
+          {SCOPES.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              role="radio"
+              aria-checked={scope === s.id}
+              onClick={() => setScope(s.id)}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="rk-seg" role="radiogroup" aria-label="Modo">
         {BOARDS.map((b) => (
           <button
@@ -80,7 +98,11 @@ export function Ranking() {
         </div>
       )}
       {q.isSuccess && listed.length === 0 && (
-        <p className="lead">Ninguém jogou isso ainda neste período. Seja a primeira pessoa.</p>
+        <p className="lead">
+          {scope === 'friends'
+            ? 'Nem você nem seus amigos jogaram isso neste período.'
+            : 'Ninguém jogou isso ainda neste período. Seja a primeira pessoa.'}
+        </p>
       )}
       {listed.length > 0 && (
         <ol className="rk-list">

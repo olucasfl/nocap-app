@@ -13,3 +13,4 @@
 | 008 | [Ranking](008-ranking.md)                     | 2     | concluída                         |
 
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.
+| 009 | [Amigos](009-amigos.md) | 3 | concluída (falta online agora e convites) |

@@ -38,7 +38,7 @@ Podem rodar antes ou depois do passo 4 (PWA); o modo noturno toca o manifesto/`t
 
 ## Etapa 3: amigos e salas
 
-- [ ] Amigos (@username, solicitações, online agora, convites)
+- [x] Amigos (@username, pedidos com aceite, lista, ranking entre amigos; spec 009). Faltam: online agora, convites para sala (vêm com as salas)
 - [ ] Salas Colyseus: código de 4 letras, lobby, regras, revelação lado a lado, revanche, reconexão
 - [ ] Ranking entre amigos, confronto direto. Spec: `specs/004-rooms-multiplayer.md`
 

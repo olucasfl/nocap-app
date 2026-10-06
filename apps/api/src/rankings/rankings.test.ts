@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { rankingQuerySchema } from './ranking.schema';
 import type { RankingRow, RankingsRepository } from './rankings.repository';
+import type { FriendsService } from '../friends/friends.service';
 import { RankingsService } from './rankings.service';
 
 const row = (rank: number, userId = `u${rank}`): RankingRow => ({
@@ -11,9 +12,10 @@ const row = (rank: number, userId = `u${rank}`): RankingRow => ({
   rank,
 });
 
-function setup(rows: RankingRow[]) {
+function setup(rows: RankingRow[], circle: string[] = []) {
   const leaderboard = vi.fn().mockResolvedValue(rows);
-  const service = new RankingsService({ leaderboard } as unknown as RankingsRepository);
+  const friends = { circleOf: vi.fn().mockResolvedValue(circle) } as unknown as FriendsService;
+  const service = new RankingsService({ leaderboard } as unknown as RankingsRepository, friends);
   return { service, leaderboard };
 }
 
@@ -63,5 +65,26 @@ describe('RankingsService.color', () => {
     expect(leaderboard).toHaveBeenCalledWith(
       expect.objectContaining({ mode: 'quick', dailyOnly: false, since: null }),
     );
+  });
+});
+
+describe('ranking entre amigos', () => {
+  const rows = Array.from({ length: 5 }, (_, i) => row(i + 1));
+
+  it('mostra só você e seus amigos, com a posição refeita', async () => {
+    const { service } = setup(rows, ['u2', 'u5']);
+    const res = await service.color(rankingQuerySchema.parse({ scope: 'friends' }), 'u5');
+    expect(res.entries.map((e) => [e.username, e.rank])).toEqual([
+      ['jogador2', 1],
+      ['jogador5', 2],
+    ]);
+    expect(res.me).toMatchObject({ rank: 2 });
+  });
+
+  it('exige login', async () => {
+    const { service } = setup(rows);
+    await expect(
+      service.color(rankingQuerySchema.parse({ scope: 'friends' }), null),
+    ).rejects.toThrow('Entre na sua conta');
   });
 });
