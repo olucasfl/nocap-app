@@ -35,6 +35,7 @@ describe('colorRounds', () => {
 describe('rótulos', () => {
   it('traduz modo e tipo e mantém o que não conhece', () => {
     expect(modeLabel('flash')).toBe('Flash');
+    expect(modeLabel('quick')).toBe('Rápido');
     expect(kindLabel('daily')).toBe('Daily');
     expect(modeLabel('x')).toBe('x');
   });

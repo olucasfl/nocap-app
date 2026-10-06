@@ -56,7 +56,7 @@ export function colorRounds(item: HistoryItem): HistoryRound[] | null {
   });
 }
 
-const MODE_NAME: Record<string, string> = { classic: 'Clássico', flash: 'Flash' };
+const MODE_NAME: Record<string, string> = { classic: 'Clássico', flash: 'Flash', quick: 'Rápido' };
 const KIND_NAME: Record<string, string> = { solo: 'Solo', daily: 'Daily', room: 'Sala' };
 
 export const modeLabel = (mode: string) => MODE_NAME[mode] ?? mode;

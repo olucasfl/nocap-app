@@ -40,6 +40,17 @@ export class MatchesController {
     return this.matches.history(guestId, query);
   }
 
+  @Get('players/:guestId/stats')
+  stats(@Param('guestId', new ZodValidationPipe(guestIdSchema)) guestId: string) {
+    return this.matches.stats(guestId);
+  }
+
+  @Get('me/stats')
+  @UseGuards(AuthGuard)
+  myStats(@Req() req: AuthedRequest) {
+    return this.matches.statsOfUser(req.user.id);
+  }
+
   @Get('me/matches')
   @UseGuards(AuthGuard)
   myHistory(

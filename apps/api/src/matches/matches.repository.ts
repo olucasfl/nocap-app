@@ -171,4 +171,38 @@ export class MatchesRepository {
       .returning({ id: players.id });
     return rows.length > 0 ? 'ok' : 'conflict';
   }
+
+  /** Recordes por jogo e modo, somando os aparelhos da conta (décimos: 500 = 50.0). */
+  async modeStats(playerIds: string[]) {
+    if (playerIds.length === 0) return [];
+    const rows = await this.db
+      .select({
+        game: userGameStats.game,
+        mode: userGameStats.mode,
+        matches: sql<number>`sum(${userGameStats.matches})::int`,
+        scoreSum: sql<number>`sum(${userGameStats.scoreSum})::int`,
+        best: sql<number>`max(${userGameStats.best})::int`,
+      })
+      .from(userGameStats)
+      .where(inArray(userGameStats.playerId, playerIds))
+      .groupBy(userGameStats.game, userGameStats.mode);
+    return rows.map((r) => ({
+      game: r.game,
+      mode: r.mode,
+      matches: r.matches,
+      best: r.best,
+      average: r.matches > 0 ? r.scoreSum / r.matches : 0,
+    }));
+  }
+
+  /** Instantes dos Dailies jogados (para a sequência). */
+  async dailyPlays(playerIds: string[]): Promise<Date[]> {
+    if (playerIds.length === 0) return [];
+    const rows = await this.db
+      .select({ playedAt: matchPlayers.playedAt })
+      .from(matchPlayers)
+      .innerJoin(matches, eq(matches.id, matchPlayers.matchId))
+      .where(and(inArray(matchPlayers.playerId, playerIds), eq(matches.kind, 'daily')));
+    return rows.map((r) => r.playedAt);
+  }
 }
