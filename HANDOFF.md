@@ -6,7 +6,7 @@ Leia este arquivo primeiro. Ele diz onde o projeto parou e como voltar a trabalh
 
 - **Esqueleto montado e validado** (`pnpm build` e `pnpm test` passam): monorepo, web (React + Vite + PWA),
   api (NestJS + Drizzle), `packages/games` (contrato + RNG com testes), docs e automações do Claude.
-- **Nenhuma regra de jogo implementada ainda.** O próximo passo é a Etapa 1, passo 2 (jogo da Cor).
+- **Lógica da Cor pronta** (`packages/games/src/color`, 15 testes). Próximo: Etapa 1, passo 2 (API: matches e daily).
 - **Banco não configurado**: nenhuma migration foi gerada nem aplicada.
 - Repositório: `https://github.com/olucasfl/nocap-app` (branch `main`). Deve estar **privado**.
 
