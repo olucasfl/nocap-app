@@ -16,7 +16,7 @@ Tudo está em `main` e publicado (API no Render, web na Vercel, banco no Supabas
 **Em andamento: o Intruso** (`specs/011-impostor.md`). Variante da Cor só para sala (3 a 12 pessoas, 1 a 3 intrusos): a turma vê a cor, os intrusos recebem só uma dica, todos recriam e votam (intrusos também votam; voto aberto ou anônimo, escolhido no lobby). Com 3 pessoas pode ter até 2 intrusos; sempre sobra pelo menos 1 normal.
 
 - Feito: regras puras e testes em `packages/games/src/impostor`; motor e sala em `apps/api/src/rooms/impostor` (estado por pessoa: a seed nunca sai, a cor só vai para a tripulação, a dica só para o intruso); telas em `apps/web/src/screens/room/ImpostorPlay.tsx` e `Lobby.tsx`; o modo aparece na lista da Cor e leva a "Criar sala".
-- **Paleta pronta** (07/10/2026): 116 cores e 1044 dicas em `palette-1..4.ts`, teste das 1000 dicas ativo. Limite da sala ampliado para 3 a 12 pessoas.
+- **Paleta pronta** (07/10/2026): **313 cores com 5 dicas boas cada** (1565 dicas) em `palette-1..6.ts`, validadas por testes (sem termo técnico, nome combina com a cor, sem contradição) e conferidas visualmente (`docs/reference/paleta-intruso.html`). Limite da sala: 3 a 12 pessoas.
 - **Falta:** (1) **testar com 3 contas de verdade** (criar sala, lobby, decorar, recriar, votar, revelar, pódio): nunca foi jogado ao vivo; (2) o Intruso não salva no histórico nem tem estatísticas (decisão da spec, pode virar etapa futura).
 
 **Banco:** os dados de jogos foram zerados em 07/10/2026 (partidas, pontos e recordes); a conta do Lucas foi mantida. Schema e migrations intactos.

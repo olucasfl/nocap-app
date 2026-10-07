@@ -19,8 +19,8 @@ amostras e **votam** em quem acham que é intruso. Intrusos também votam.
   engraçado; 4 a 12 pessoas: até 3). Se o host pedir mais do que a sala suporta, vale o máximo.
 - **Papéis:** sorteados a cada rodada (seed da rodada + posição), então quem é intruso muda.
   Cada intruso só sabe o próprio papel (intrusos não se conhecem). Todos sabem quantos são.
-- **Cor e dica:** vêm de uma paleta de cores nomeadas, cada uma com várias dicas (mais de 1000
-  no total, com humor). A dica sempre descreve a cor real da rodada.
+- **Cor e dica:** vêm de uma paleta de mais de 300 cores nomeadas, cada uma com 5 dicas (mais de
+  1500 no total, algumas com humor). A dica sempre descreve a cor real da rodada.
 - **O que cada um vê:** tripulação vê a cor durante o tempo de decorar e depois ela some;
   intruso vê a dica durante a rodada toda (decorar, recriar e votar).
 - **Fases:** `show` (decorar) → `pick` (recriar) → `vote` (votar) → `reveal` → próxima rodada…
@@ -52,6 +52,24 @@ vai para os intrusos; os papéis só aparecem na revelação.
 
 ## Dicas
 
-Paleta pronta (116 cores, 1044 dicas, `palette-1..4.ts`) em `apps/api/src/rooms/impostor/` (conteúdo só do servidor, para o app não carregar as
-mais de mil frases). Cada cor tem nome, HSB e dicas; as dicas precisam ser úteis (objeto,
-comparação, temperatura) e podem ter piada.
+Paleta pronta: **313 cores, 5 dicas cada (1565 dicas)**, em `apps/api/src/rooms/impostor/palette-1..6.ts`
+(conteúdo só do servidor, para o app não carregar as frases). Famílias: quentes (1), verdes (2),
+roxos e rosas (3), neutros e pastéis (4), azuis (5), terras, doces e flores (6). Cores novas
+entram com `colorHex('Nome', '#RRGGBB', [5 dicas])`: o jogo converte o hexadecimal em HSB, então o
+nome e a cor ficam amarrados a um valor real.
+
+**Como é uma boa dica.** O intruso só tem a dica para recriar a cor, então ela precisa dar
+noção real dela, em palavras que qualquer pessoa entende:
+
+- Diga a **família da cor** (verde, azul, rosa...) e se é **clara ou escura, viva ou apagada**.
+  Nada de termos técnicos ("brilho", "saturação", "matiz"): o intruso não sabe o que são.
+- Cite um **objeto que todo mundo conhece** e que tem aquela cor (fruta, comida, bandeira, flor).
+- Compare com **outra cor da paleta** ("mais escuro que X") quando ajudar.
+- Humor é bem-vindo, mas só se a dica continuar útil. Dica que só faz graça não vale.
+- Cinco dicas por cor, todas diferentes entre si, de 25 a 140 caracteres.
+
+**O que os testes barram** (`palette.test.ts`): quantidade diferente de 5 dicas, menos de 300 ou
+mais de 400 cores, nome ou cor repetidos, dica repetida, termo técnico, nome que não combina com
+a cor ("Verde" fora do verde) e contradições óbvias (dizer "escuro" de cor clara, "pastel" de cor
+forte, "neon" de cor apagada...). A folha visual `docs/reference/paleta-intruso.html` mostra cada
+cor ao lado das 5 dicas (é um retrato do momento; regenere se a paleta mudar).

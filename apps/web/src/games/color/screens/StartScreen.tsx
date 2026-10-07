@@ -136,7 +136,7 @@ export function StartScreen({ initialTab = 'modes', initialBoard, onMode, onStar
                       <b>1-3</b>intrusos
                     </div>
                     <div className="cg-rule">
-                      <b>1000+</b>dicas
+                      <b>300+</b>cores
                     </div>
                   </>
                 ) : open === 'survival' ? (

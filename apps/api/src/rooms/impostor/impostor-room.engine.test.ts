@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { RoomError, SHOW_GRACE_MS } from '../color-room.engine';
 import { DEFAULT_IMPOSTOR_SETTINGS, ImpostorRoomEngine } from './impostor-room.engine';
-import { HINT_COUNT, PALETTE, paletteRound } from './palette';
+import { paletteRound } from './palette';
 
 type View = ReturnType<ImpostorRoomEngine['snapshot']>;
 const imp = (v: View) =>
@@ -219,43 +219,5 @@ describe('votação', () => {
     expect(rows).toHaveLength(3);
     expect(rows[0]!.totalTenths).toBeGreaterThanOrEqual(rows[2]!.totalTenths);
     expect(paletteRound('seed-i', 0).name).not.toBe(paletteRound('seed-i', 1).name);
-  });
-});
-
-describe('paleta de dicas', () => {
-  it('tem mais de 1000 dicas', () => {
-    expect(HINT_COUNT).toBeGreaterThanOrEqual(1000);
-  });
-
-  it('cada cor tem HSB válido e nome único', () => {
-    const names = new Set<string>();
-    for (const c of PALETTE) {
-      expect(c.hints.length).toBeGreaterThanOrEqual(5);
-      expect(c.hsb.h).toBeGreaterThanOrEqual(0);
-      expect(c.hsb.h).toBeLessThanOrEqual(360);
-      expect(c.hsb.s).toBeGreaterThanOrEqual(0);
-      expect(c.hsb.s).toBeLessThanOrEqual(100);
-      expect(c.hsb.b).toBeGreaterThanOrEqual(0);
-      expect(c.hsb.b).toBeLessThanOrEqual(100);
-      expect(names.has(c.name)).toBe(false);
-      names.add(c.name);
-    }
-  });
-
-  it('nenhuma dica se repete e nenhuma é vazia', () => {
-    const seen = new Set<string>();
-    for (const c of PALETTE) {
-      for (const h of c.hints) {
-        expect(h.trim().length).toBeGreaterThan(15);
-        expect(seen.has(h)).toBe(false);
-        seen.add(h);
-      }
-    }
-  });
-
-  it('a rodada é determinística e as rodadas da partida têm cores diferentes', () => {
-    expect(paletteRound('x', 2)).toEqual(paletteRound('x', 2));
-    const names = new Set([0, 1, 2, 3, 4].map((i) => paletteRound('x', i).name));
-    expect(names.size).toBe(5);
   });
 });

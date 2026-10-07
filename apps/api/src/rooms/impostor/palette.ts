@@ -4,18 +4,24 @@ import { PALETTE_1 } from './palette-1';
 import { PALETTE_2 } from './palette-2';
 import { PALETTE_3 } from './palette-3';
 import { PALETTE_4 } from './palette-4';
+import { PALETTE_5 } from './palette-5';
+import { PALETTE_6 } from './palette-6';
 
-export { color, type PaletteColor } from './palette-types';
+export { color, colorHex, HINTS_PER_COLOR, type PaletteColor } from './palette-types';
 
 /**
- * A paleta inteira do Intruso (mais de 1000 dicas, spec 011): quentes, frios, roxos e rosas,
- * neutros e pastéis. Cada arquivo novo entra aqui.
+ * A paleta inteira do Intruso (spec 011): mais de 300 cores nomeadas, cada uma com 5 dicas que
+ * dão noção real dela. Cada arquivo é uma família: quentes, verdes, roxos e rosas, neutros, azuis,
+ * e terras/comidas/flores. Cor nova entra num deles; dicas novas seguem as regras de
+ * `palette.test`.
  */
 export const PALETTE: readonly PaletteColor[] = [
   ...PALETTE_1,
   ...PALETTE_2,
   ...PALETTE_3,
   ...PALETTE_4,
+  ...PALETTE_5,
+  ...PALETTE_6,
 ];
 
 export const HINT_COUNT = PALETTE.reduce((sum, c) => sum + c.hints.length, 0);
