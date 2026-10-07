@@ -248,6 +248,29 @@ export const sfx = {
   refresh() {
     noise('bandpass', 500, 3000, 0.9, 0.3, 0.22);
   },
+  /** CRAVOU (nota 10): fanfarra cheia com brilho e batida */
+  perfect() {
+    tone('sine', 110, 55, 0.25, 0.5);
+    [523, 659, 784, 1047, 1319, 1568].forEach((f, i) =>
+      tone('triangle', f, f, 0.18, 0.24, 0.07 * i),
+    );
+    [2093, 2637, 3136].forEach((f, i) => tone('sine', f, f, 0.22, 0.1, 0.45 + 0.07 * i));
+  },
+  /** nota 5 a 6: encolher de ombros */
+  meh() {
+    tone('triangle', 330, 294, 0.16, 0.18);
+    tone('triangle', 262, 247, 0.24, 0.16, 0.14);
+  },
+  /** nota 1 a 3: apito caindo e baque */
+  awful() {
+    tone('sine', 900, 160, 0.5, 0.26);
+    tone('sine', 90, 45, 0.25, 0.5, 0.45);
+  },
+  /** nota 0: trombone triste */
+  zero() {
+    [233, 220, 208, 196].forEach((f, i) => tone('sawtooth', f, f * 0.97, 0.3, 0.14, 0.28 * i));
+    noise('lowpass', 500, 120, 0.7, 0.3, 0.12, 1.1);
+  },
   /** novo recorde: fanfarra subindo com brilho no fim */
   record() {
     [523, 659, 784, 1047, 1319].forEach((f, i) => tone('triangle', f, f, 0.16, 0.24, 0.09 * i));

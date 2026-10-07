@@ -262,3 +262,30 @@ describe('reconexão e saída', () => {
     expect(() => room.start('ana')).toThrow(RoomError);
   });
 });
+
+describe('modos da sala da Cor', () => {
+  it('Flash pisca por 0,4 s e voltar ao clássico restaura o tempo de decorar', () => {
+    const { room } = setup();
+    room.join('ana', 'ana');
+    room.configure('ana', { mode: 'flash' });
+    expect(room.currentSettings).toMatchObject({ showMs: 400 });
+    expect(room.snapshot().mode).toBe('flash');
+    room.configure('ana', { mode: 'classic' });
+    expect(room.currentSettings).toMatchObject({ showMs: DEFAULT_SETTINGS.showMs });
+  });
+
+  it('Às cegas é um modo válido; modo desconhecido é recusado', () => {
+    const { room } = setup();
+    room.join('ana', 'ana');
+    room.configure('ana', { mode: 'blind' });
+    expect(room.snapshot().mode).toBe('blind');
+    expect(() => room.configure('ana', { mode: 'survival' })).toThrow(RoomError);
+  });
+
+  it('só o host muda o modo', () => {
+    const { room } = setup();
+    room.join('ana', 'ana');
+    room.join('bia', 'bia');
+    expect(() => room.configure('bia', { mode: 'flash' })).toThrow(RoomError);
+  });
+});

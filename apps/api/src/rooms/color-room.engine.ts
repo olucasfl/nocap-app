@@ -18,8 +18,8 @@ export type TimeRoomSettings = TimeSettings;
 
 export const DEFAULT_TIME_SETTINGS: TimeRoomSettings = {
   rounds: 3,
-  minMs: 3000,
-  maxMs: 18_000,
+  minMs: 1000,
+  maxMs: 22_000,
   noOvershoot: false,
   mix: 'alternate',
 };
@@ -80,6 +80,10 @@ export class ColorRoomEngine {
   protected members = new Map<string, Member>();
   protected hostId: string | null = null;
   protected settings: AnySettings = { ...DEFAULT_SETTINGS };
+  /** Modo da sala (Cor: classic, flash, blind; Tempo: classic, strict, sequence). */
+  protected mode = 'classic';
+  /** Modos que o host pode escolher nesta sala. */
+  protected readonly modes: readonly string[] = ['classic', 'flash', 'blind'];
 
   protected phase: Phase = 'lobby';
   protected seed = '';
@@ -173,7 +177,7 @@ export class ColorRoomEngine {
   }
 
   /** Regras aceitas para esta sala; o Tempo tem outras. */
-  protected validSettings(merged: Record<string, unknown>): boolean {
+  protected validSettings(merged: Record<string, unknown>, _mode: string): boolean {
     const m = merged as unknown as RoomSettings;
     return (
       Number.isInteger(m.rounds) &&
@@ -188,12 +192,29 @@ export class ColorRoomEngine {
     );
   }
 
-  configure(id: string, next: Partial<RoomSettings> | Partial<TimeRoomSettings>) {
+  /** As regras que um modo impõe (a Cor: o Flash pisca por 0,4 s). */
+  protected settingsForMode(mode: string, current: AnySettings): AnySettings {
+    const c = current as RoomSettings;
+    if (mode === 'flash') return { ...c, showMs: 400 };
+    return c.showMs === 400 ? { ...c, showMs: DEFAULT_SETTINGS.showMs } : c;
+  }
+
+  configure(
+    id: string,
+    next: (Partial<RoomSettings> | Partial<TimeRoomSettings>) & { mode?: string },
+  ) {
     this.requireHost(id);
     this.requirePhase('lobby');
-    const merged = { ...this.settings, ...next } as AnySettings;
-    const ok = this.validSettings(merged as unknown as Record<string, unknown>);
+    const { mode, ...rest } = next;
+    let base = this.settings;
+    if (mode !== undefined) {
+      if (!this.modes.includes(mode)) throw new RoomError('Modo inválido');
+      base = this.settingsForMode(mode, base);
+    }
+    const merged = { ...base, ...rest } as AnySettings;
+    const ok = this.validSettings(merged as unknown as Record<string, unknown>, mode ?? this.mode);
     if (!ok) throw new RoomError('Regras inválidas');
+    if (mode !== undefined) this.mode = mode;
     this.settings = merged;
     // Regra nova: todo mundo confirma de novo.
     for (const m of this.members.values()) m.ready = false;
@@ -383,6 +404,7 @@ export class ColorRoomEngine {
     return {
       code: this.code,
       game: this.game,
+      mode: this.mode,
       phase: this.phase,
       hostId: this.hostId,
       settings: this.settings,

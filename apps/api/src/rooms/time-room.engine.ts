@@ -1,8 +1,9 @@
-import { generateTimeRound, scoreTime, type TimeSettings } from '@nocap/games';
+import { generateTimeRound, scoreTime, timePresets, type TimeSettings } from '@nocap/games';
 import {
   ColorRoomEngine,
   DEFAULT_TIME_SETTINGS,
   RoomError,
+  type AnySettings,
   type TimeRoomSettings,
 } from './color-room.engine';
 
@@ -17,6 +18,7 @@ export const PLAY_EXTRA_MS = 8000;
 export class TimeRoomEngine extends ColorRoomEngine {
   override readonly game = 'time' as const;
   protected override readonly answerPhase = 'play' as const;
+  protected override readonly modes: readonly string[] = ['classic', 'strict', 'sequence'];
   /** Quando cada pessoa apertou COMEÇAR na rodada atual. */
   private startedAt = new Map<string, number>();
 
@@ -29,18 +31,24 @@ export class TimeRoomEngine extends ColorRoomEngine {
     return this.settings as TimeRoomSettings;
   }
 
-  protected override validSettings(merged: Record<string, unknown>): boolean {
+  protected override validSettings(merged: Record<string, unknown>, mode: string): boolean {
     const m = merged as unknown as TimeRoomSettings;
+    const preset = timePresets[mode]!;
     return (
       Number.isInteger(m.rounds) &&
       m.rounds >= 1 &&
       m.rounds <= 10 &&
-      typeof m.noOvershoot === 'boolean' &&
-      // A faixa e a cadência são as do jogo: o host só escolhe rodadas e "sem estourar".
-      m.minMs === DEFAULT_TIME_SETTINGS.minMs &&
-      m.maxMs === DEFAULT_TIME_SETTINGS.maxMs &&
-      m.mix === DEFAULT_TIME_SETTINGS.mix
+      // Faixa, cadência e "sem estourar" são as do modo escolhido: o host só ajusta as rodadas.
+      m.noOvershoot === preset.noOvershoot &&
+      m.minMs === preset.minMs &&
+      m.maxMs === preset.maxMs &&
+      m.mix === preset.mix
     );
+  }
+
+  /** Cada modo do Tempo traz o seu preset (rodadas, faixa de alvos, "sem estourar"). */
+  protected override settingsForMode(mode: string): AnySettings {
+    return { ...timePresets[mode]! };
   }
 
   protected override beginRound() {

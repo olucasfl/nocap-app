@@ -11,6 +11,7 @@ import {
   type Hsb,
 } from '@nocap/games';
 import { apiClient } from './api-client';
+import { gradeOf } from './grade';
 
 export interface HistoryItem {
   matchId: string;
@@ -144,9 +145,15 @@ export function classifyMatch(
     if (n >= 5) return { label: 'MEH', tone: 'mid' };
     return { label: 'CEDO DEMAIS', tone: 'low' };
   }
-  const ratio = item.totalScore / 10 / matchMax(item);
-  if (ratio >= 0.95) return { label: 'CRAVOU', tone: 'top' };
-  if (ratio >= 0.8) return { label: 'QUASE', tone: 'good' };
-  if (ratio >= 0.5) return { label: 'MEH', tone: 'mid' };
-  return { label: 'ERROU', tone: 'low' };
+  // A faixa da partida é a da nota média por rodada (0 a 10): CRAVOU só com tudo perfeito.
+  const grade = gradeOf((item.totalScore / 10 / matchMax(item)) * 10);
+  const tone: Tone =
+    grade.id === 'perfect' || grade.id === 'near'
+      ? 'top'
+      : grade.id === 'great' || grade.id === 'good'
+        ? 'good'
+        : grade.id === 'pass' || grade.id === 'meh'
+          ? 'mid'
+          : 'low';
+  return { label: grade.word.toUpperCase(), tone };
 }

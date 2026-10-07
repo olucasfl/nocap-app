@@ -17,8 +17,8 @@ interface Props {
   onBegin: () => void;
   /** Toque em PARAR, com o instante exato (`performance.now()`). */
   onStop: (now: number) => void;
-  /** Linha curta acima do alvo (ex.: a nota da rodada anterior na Sequência). */
-  note?: string;
+  /** Etapa da partida, no topo da tela (ex.: "2/5"). */
+  step?: string;
   /** Sobrevivência: rodada, vidas e a nota mínima ficam à vista (parados) o tempo todo. */
   survival?: SurvivalInfo;
 }
@@ -39,7 +39,7 @@ export function RoundScreen({
   counting,
   onBegin,
   onStop,
-  note,
+  step,
   survival,
 }: Props) {
   useEffect(() => {
@@ -61,6 +61,11 @@ export function RoundScreen({
       className={`tm-stage ${counting ? 'live' : 'armed'}`}
       aria-label={counting ? 'Valendo' : 'Preparado para começar'}
     >
+      {step && (
+        <div className="chip y tm-step" aria-label={`Etapa ${step}`}>
+          {step}
+        </div>
+      )}
       {counting && (
         <div className="tm-pill tm-pill-top" role="status">
           <i aria-hidden="true" />
@@ -79,7 +84,6 @@ export function RoundScreen({
         </div>
       )}
       <div className="mono tm-stage-label">{counting ? 'ALVO' : 'TEMPO ALVO'}</div>
-      {note && <div className="mono tm-stage-note">{note}</div>}
       <div className="tm-stage-target">{formatSeconds(target)}</div>
       <p className="tm-stage-text">
         {counting

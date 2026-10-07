@@ -159,26 +159,14 @@
 }
 .tm-verdict {
   min-height: 140px;
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
 }
 .tm-stamp.pop {
   animation: tm-pop 0.5s cubic-bezier(0.2, 1.6, 0.4, 1) both;
-}
-.tm-stamp.top {
-  background: var(--yellow);
-}
-.tm-stamp.near {
-  background: var(--green);
-  color: var(--on-accent);
-}
-.tm-stamp.mid {
-  background: var(--white);
-  color: var(--ink);
-}
-.tm-stamp.low {
-  background: var(--orange);
-  color: var(--on-accent);
 }
 @keyframes tm-pop {
   from {
@@ -190,7 +178,9 @@
     opacity: 1;
   }
 }
-.tm-result.done.low .tm-you {
+.tm-result.done.g-bad .tm-you,
+.tm-result.done.g-awful .tm-you,
+.tm-result.done.g-zero .tm-you {
   animation: tm-shake 0.4s ease-out;
 }
 @keyframes tm-shake {
@@ -210,7 +200,9 @@
 @media (prefers-reduced-motion: reduce) {
   .tm-slam,
   .tm-stamp.pop,
-  .tm-result.done.low .tm-you {
+  .tm-result.done.g-bad .tm-you,
+  .tm-result.done.g-awful .tm-you,
+  .tm-result.done.g-zero .tm-you {
     animation: none;
   }
 }
@@ -314,4 +306,11 @@
   border: var(--border);
   border-radius: var(--radius-sm);
   font: 700 13px/1.45 var(--font-mono);
+}
+
+/* Etapa (2/5) no topo da tela do tempo, à esquerda; o "VALENDO" fica no centro. */
+.tm-step {
+  position: absolute;
+  top: calc(18px + env(safe-area-inset-top));
+  left: 16px;
 }

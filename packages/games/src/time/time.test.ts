@@ -43,6 +43,24 @@ describe('alvos', () => {
     }
   });
 
+  it('os modos comuns cobrem de 1 s a 22 s; a Sequência continua de 2 a 6 s', () => {
+    const all: number[] = [];
+    for (let i = 0; i < 400; i++) {
+      for (let n = 0; n < 3; n++) all.push(generateTimeRound(`r-${i}`, classic, n));
+    }
+    expect(Math.min(...all)).toBeLessThan(2000);
+    expect(Math.max(...all)).toBeGreaterThan(20_000);
+    expect(Math.min(...all)).toBeGreaterThanOrEqual(1000);
+    expect(Math.max(...all)).toBeLessThanOrEqual(22_000);
+    for (let i = 0; i < 200; i++) {
+      for (let n = 0; n < 5; n++) {
+        const t = generateTimeRound(`q-${i}`, timePresets.sequence!, n);
+        expect(t).toBeGreaterThanOrEqual(2000);
+        expect(t).toBeLessThanOrEqual(6000);
+      }
+    }
+  });
+
   it('as faixas respeitam os limites e saem em múltiplos de 100 ms', () => {
     for (let i = 0; i < 300; i++) {
       const short = generateTimeRound(`x-${i}`, classic, 0);

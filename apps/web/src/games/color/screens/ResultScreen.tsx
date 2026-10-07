@@ -1,17 +1,9 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { GradeFx } from '@/components/GradeFx';
+import { gradeLine, gradeOf, playGrade } from '@/lib/grade';
 import { buzz, sfx } from '@/lib/sfx';
 import { toHex } from '../hex';
 import type { RoundResult } from '../types';
-
-const word = (s: number) => (s >= 9.5 ? 'cravou' : s >= 8 ? 'quase!' : s >= 5 ? 'meh' : 'errou');
-const verdict = (s: number) =>
-  s >= 9.5
-    ? 'No cap. Perfeito.'
-    : s >= 8
-      ? 'Quase lá.'
-      : s >= 5
-        ? 'Passou longe-ish.'
-        : 'Nem perto.';
 
 const sign = (n: number) => (n > 0 ? '+' : n < 0 ? '−' : '±') + Math.abs(n);
 
@@ -27,6 +19,9 @@ interface Props {
 
 export function ResultScreen({ result, isLast, onNext, footer, extra }: Props) {
   const { target, guess, score } = result;
+  const grade = gradeOf(score);
+  // Uma frase por resultado (sorteada uma vez, não a cada renderização).
+  const [line] = useState(() => gradeLine(grade.id, 'color'));
   const num = useRef<HTMLElement>(null);
   const [started, setStarted] = useState(false);
   const [done, setDone] = useState(false);
@@ -50,10 +45,7 @@ export function ResultScreen({ result, isLast, onNext, footer, extra }: Props) {
           buzz(30);
           setShake(true);
         }, 260),
-        window.setTimeout(() => {
-          if (score >= 9.5) sfx.win();
-          else if (score < 5) sfx.boing();
-        }, 420),
+        window.setTimeout(() => playGrade(grade.id), 420),
       );
     };
 
@@ -91,6 +83,7 @@ export function ResultScreen({ result, isLast, onNext, footer, extra }: Props) {
 
   return (
     <section className={`screen${shake ? ' cg-shake' : ''}`}>
+      {done && <GradeFx id={grade.id} />}
       <div className="cg-duo">
         <div className="cg-sw a" style={{ background: toHex(target) }}>
           <div className="tag">ALVO</div>
@@ -101,15 +94,15 @@ export function ResultScreen({ result, isLast, onNext, footer, extra }: Props) {
           <small>{toHex(guess)}</small>
         </div>
         <div
-          className={`cg-stamp${done ? ' hit' : ''}`}
+          className={`cg-stamp${done ? ` hit g-${grade.id}` : ''}`}
           style={{ visibility: started ? 'visible' : 'hidden' }}
         >
           <b ref={num}>0.0</b>
-          <span>{done ? word(score) : '...'}</span>
+          <span>{done ? grade.word : '...'}</span>
         </div>
       </div>
       <p className="cg-verdict" aria-live="polite">
-        {done ? verdict(score) : ''}
+        {done ? line : ''}
       </p>
       <div className="cg-diffs">
         {diffs.map((d) => (

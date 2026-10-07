@@ -93,7 +93,11 @@ export function Play({ snapshot }: { snapshot: RoomSnapshot }) {
         (mine?.locked ? (
           <Waiting snapshot={snapshot} />
         ) : (
-          <PickScreen key={`pick-${round.index}`} onLock={(guess) => sendRoom('lock', guess)} />
+          <PickScreen
+            key={`pick-${round.index}`}
+            blind={snapshot.mode === 'blind'}
+            onLock={(guess) => sendRoom('lock', guess)}
+          />
         ))}
       {snapshot.phase === 'reveal' && <Reveal key={`reveal-${round.index}`} snapshot={snapshot} />}
     </>

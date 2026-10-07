@@ -42,6 +42,8 @@ export interface FinalRow {
 export interface RoomSnapshot {
   code: string;
   game: RoomGame;
+  /** Modo da sala (Cor: classic, flash, blind; Tempo: classic, strict, sequence). */
+  mode: string;
   phase: Phase;
   hostId: string | null;
   settings: RoomSettings;

@@ -223,3 +223,9 @@
   grid-area: time;
   font-size: 11px;
 }
+
+.rm-mode-note {
+  margin: -4px 0 4px;
+  font-size: 11px;
+  color: var(--muted);
+}

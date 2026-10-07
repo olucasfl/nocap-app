@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from '@tanstack/react-router';
-import { buzz, sfx } from '@/lib/sfx';
+import { sfx } from '@/lib/sfx';
 import { NewRecord } from '@/components/NewRecord';
 import { saveBest } from '@/lib/records';
 import { formatBest, isNewRecord } from '@/lib/stats';
-import { formatDiff, formatSeconds, verdictWord } from '../format';
+import { GradeFx } from '@/components/GradeFx';
+import { gradeLine, gradeOf, playGrade } from '@/lib/grade';
+import { formatDiff, formatSeconds } from '../format';
 import type { RoundResult, Run } from '../types';
 import { SAVE_TEXT, useSaveTime } from '../useSaveTime';
 
@@ -85,15 +87,13 @@ export function ResultScreen({ result, run, isLast, onNext, onAgain, previousBes
   // Pista: vai até o maior entre alvo e resposta, com folga, para os dois caberem.
   const span = Math.max(target, answer) * 1.12;
   const targetPct = (target / span) * 100;
-  const tone = score >= 9.5 ? 'top' : score >= 8 ? 'near' : score >= 5 ? 'mid' : 'low';
+  const grade = gradeOf(score);
+  const [line] = useState(() => gradeLine(grade.id, 'time'));
 
   useEffect(() => {
     const finish = () => {
       setDone(true);
-      if (score >= 9.5) sfx.win();
-      else if (score >= 8) sfx.near();
-      else if (score < 5) sfx.boing();
-      buzz(score >= 8 ? 40 : 25);
+      playGrade(grade.id);
     };
 
     sfx.thunk();
@@ -132,7 +132,8 @@ export function ResultScreen({ result, run, isLast, onNext, onAgain, previousBes
   }, []);
 
   return (
-    <section className={`screen tm-result${done ? ` done ${tone}` : ''}`}>
+    <section className={`screen tm-result${done ? ` done g-${grade.id}` : ''}`}>
+      {done && <GradeFx id={grade.id} />}
       <div className="tm-slam">
         <div className="mono tm-label">ALVO</div>
         <b>{formatSeconds(target)}</b>
@@ -158,10 +159,13 @@ export function ResultScreen({ result, run, isLast, onNext, onAgain, previousBes
 
       <div className="tm-verdict" role="status" aria-live="polite">
         {done && (
-          <div className={`tm-stamp pop ${tone}`}>
-            <b>{score.toFixed(1)}</b>
-            <span>{verdictWord(score)}</span>
-          </div>
+          <>
+            <div className={`tm-stamp pop g-${grade.id}`}>
+              <b>{score.toFixed(1)}</b>
+              <span>{grade.word}</span>
+            </div>
+            <p className="gr-line">{line}</p>
+          </>
         )}
       </div>
 

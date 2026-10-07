@@ -205,9 +205,9 @@ export function TimeGame({
           onBegin={begin}
           onStop={stop}
           survival={survivalInfo}
-          note={
-            run.preset === 'sequence' && last
-              ? `ANTERIOR ${last.score.toFixed(1)} · ${index + 1}/${run.settings.rounds}`
+          step={
+            run.settings.rounds > 1 && !run.settings.survival
+              ? `${index + 1}/${run.settings.rounds}`
               : undefined
           }
         />

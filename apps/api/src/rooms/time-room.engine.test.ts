@@ -55,13 +55,36 @@ describe('TimeRoomEngine', () => {
     expect(bia).toMatchObject({ answer: null, score: 0 });
   });
 
-  it('só aceita as regras do Tempo: rodadas e "sem estourar"', () => {
+  it('cada modo traz o seu preset; o host ajusta só as rodadas', () => {
     const room = new TimeRoomEngine({ code: 'ABCD', now: () => 0, newSeed: () => 's' });
     room.join('ana', 'ana');
-    room.configure('ana', { noOvershoot: true, rounds: 5 });
-    expect(room.currentSettings).toMatchObject({ noOvershoot: true, rounds: 5 });
+    room.configure('ana', { mode: 'strict' });
+    expect(room.currentSettings).toMatchObject({ noOvershoot: true, rounds: 3 });
+    room.configure('ana', { mode: 'sequence' });
+    expect(room.currentSettings).toMatchObject({
+      noOvershoot: false,
+      rounds: 5,
+      minMs: 2000,
+      maxMs: 6000,
+    });
+    room.configure('ana', { rounds: 7 });
+    expect(room.currentSettings).toMatchObject({ rounds: 7 });
+    expect(room.snapshot().mode).toBe('sequence');
     expect(() => room.configure('ana', { rounds: 11 })).toThrow(RoomError);
     expect(() => room.configure('ana', { minMs: 1000 })).toThrow(RoomError);
+    expect(() => room.configure('ana', { mode: 'survival' })).toThrow(RoomError);
+  });
+
+  it('na Sequência os alvos são curtos (2 a 6 s)', () => {
+    const room = new TimeRoomEngine({ code: 'ABCD', now: () => 0, newSeed: () => 'seq' });
+    room.join('ana', 'ana');
+    room.join('bia', 'bia');
+    room.configure('ana', { mode: 'sequence' });
+    for (let i = 0; i < 5; i++) {
+      const t = generateTimeRound('seq', room.currentSettings as typeof DEFAULT_TIME_SETTINGS, i);
+      expect(t).toBeGreaterThanOrEqual(2000);
+      expect(t).toBeLessThanOrEqual(6000);
+    }
   });
 
   it('chega ao pódio ao fim das rodadas, ordenado pela soma', () => {

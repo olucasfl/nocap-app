@@ -21,8 +21,8 @@ export const timeSettingsSchema = z.object({
 export type TimeSettings = z.infer<typeof timeSettingsSchema>;
 
 /** Alvos curtos (abaixo de 10 s) e longos (acima de 10 s) dos modos com `mix`. */
-export const SHORT_TARGET_MS = { min: 3000, max: 9900 } as const;
-export const LONG_TARGET_MS = { min: 10_100, max: 18_000 } as const;
+export const SHORT_TARGET_MS = { min: 1000, max: 9900 } as const;
+export const LONG_TARGET_MS = { min: 10_100, max: 22_000 } as const;
 /** No `mostly-low`, a chance de uma rodada sair longa (1 em 4). */
 export const LONG_CHANCE = 0.25;
 
@@ -33,18 +33,18 @@ export type TimeAnswer = number;
 
 export const timePresets: Record<string, TimeSettings> = {
   /** 3 rodadas, curto-longo-curto: prioriza alvos abaixo de 10 s sem deixar de variar. */
-  classic: { rounds: 3, minMs: 3000, maxMs: 18_000, noOvershoot: false, mix: 'alternate' },
+  classic: { rounds: 3, minMs: 1000, maxMs: 22_000, noOvershoot: false, mix: 'alternate' },
   /** Jogo rápido: 1 rodada, quase sempre curta. Ranking próprio. */
-  quick: { rounds: 1, minMs: 3000, maxMs: 18_000, noOvershoot: false, mix: 'mostly-low' },
+  quick: { rounds: 1, minMs: 1000, maxMs: 22_000, noOvershoot: false, mix: 'mostly-low' },
   /** Sem estourar: passou do alvo vale zero. Mesma cadência do clássico. */
-  strict: { rounds: 3, minMs: 3000, maxMs: 18_000, noOvershoot: true, mix: 'alternate' },
+  strict: { rounds: 3, minMs: 1000, maxMs: 22_000, noOvershoot: true, mix: 'alternate' },
   /** Sequência: 5 alvos curtos (2 a 6 s) um atrás do outro, sem pausa. */
   sequence: { rounds: 5, minMs: 2000, maxMs: 6000, noOvershoot: false, mix: 'uniform' },
   /** Sobrevivência: joga até perder as 3 vidas; alvos quase sempre curtos. */
   survival: {
     rounds: SURVIVAL_MAX_ROUNDS,
-    minMs: 3000,
-    maxMs: 18_000,
+    minMs: 1000,
+    maxMs: 22_000,
     noOvershoot: false,
     mix: 'mostly-low',
     survival: true,

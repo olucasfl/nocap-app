@@ -143,12 +143,15 @@ describe('classificação da partida', () => {
   });
 
   it('sozinho vale a faixa da nota sobre o máximo do modo', () => {
-    expect(classifyMatch(solo(480)).label).toBe('CRAVOU'); // 48/50
-    expect(classifyMatch(solo(420)).label).toBe('QUASE'); // 42/50
-    expect(classifyMatch(solo(300)).label).toBe('MEH'); // 30/50
-    expect(classifyMatch(solo(100)).label).toBe('ERROU'); // 10/50
-    // o mesmo valor pesa diferente no rápido (máximo 10): 9,5/10 cravou
-    expect(classifyMatch(solo(95, 'quick')).label).toBe('CRAVOU');
+    expect(classifyMatch(solo(500)).label).toBe('CRAVOU'); // 50/50: só o perfeito crava
+    expect(classifyMatch(solo(480)).label).toBe('QUASE PERFEITO'); // média 9,6 não é cravou
+    expect(classifyMatch(solo(420)).label).toBe('MANDOU BEM'); // média 8,4
+    expect(classifyMatch(solo(300)).label).toBe('PASSA NA RAÇA'); // média 6,0
+    expect(classifyMatch(solo(250)).label).toBe('MEH'); // média 5,0
+    expect(classifyMatch(solo(100)).label).toBe('QUE ISSO?'); // média 2,0
+    // o mesmo valor pesa diferente no rápido (máximo 10): 9,5/10 é quase, 10/10 cravou
+    expect(classifyMatch(solo(95, 'quick')).label).toBe('QUASE PERFEITO');
+    expect(classifyMatch(solo(100, 'quick')).label).toBe('CRAVOU');
   });
 });
 

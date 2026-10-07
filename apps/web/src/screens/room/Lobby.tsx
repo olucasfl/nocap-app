@@ -8,9 +8,23 @@ const ROUNDS = [1, 3, 5, 7, 10];
 const SHOW = [400, 1000, 3000, 5000];
 const PICK = [15_000, 30_000, 60_000];
 
+/** Modos de cada jogo na sala, com uma linha que explica cada um. */
+const MODES: Record<'color' | 'time', { id: string; label: string; note: string }[]> = {
+  color: [
+    { id: 'classic', label: 'Clássico', note: 'A cor aparece e some. Recrie de memória.' },
+    { id: 'flash', label: 'Flash', note: 'A cor pisca por 0,4 s: confie no olho.' },
+    { id: 'blind', label: 'Às cegas', note: 'Ninguém vê a cor que monta. Só a revelação mostra.' },
+  ],
+  time: [
+    { id: 'classic', label: 'Clássico', note: 'Alvos de 1 a 22 s, alternando curtos e longos.' },
+    { id: 'strict', label: 'Sem estourar', note: 'Passou do alvo, a rodada vale zero.' },
+    { id: 'sequence', label: 'Sequência', note: 'Alvos curtos (2 a 6 s), um atrás do outro.' },
+  ],
+};
+
 const seconds = (ms: number) => `${ms / 1000}s`.replace('.', ',');
 
-function Options({
+function Options<T extends string | number>({
   label,
   values,
   current,
@@ -19,10 +33,10 @@ function Options({
   disabled,
 }: {
   label: string;
-  values: number[];
-  current: number;
-  format: (v: number) => string;
-  onPick: (v: number) => void;
+  values: T[];
+  current: T;
+  format: (v: T) => string;
+  onPick: (v: T) => void;
   disabled: boolean;
 }) {
   return (
@@ -103,7 +117,8 @@ export function Lobby({ snapshot }: { snapshot: RoomSnapshot }) {
     }
   };
 
-  const configure = (patch: Partial<RoomSnapshot['settings']>) => sendRoom('configure', patch);
+  const configure = (patch: Partial<RoomSnapshot['settings']> | { mode: string }) =>
+    sendRoom('configure', patch);
 
   return (
     <section className="screen rm">
@@ -155,6 +170,17 @@ export function Lobby({ snapshot }: { snapshot: RoomSnapshot }) {
       <div className="rm-rules">
         <div className="mono rm-label">REGRAS{isHost ? '' : ' (DEFINIDAS PELO HOST)'}</div>
         <Options
+          label="MODO"
+          values={MODES[snapshot.game].map((m) => m.id)}
+          current={snapshot.mode}
+          format={(id) => MODES[snapshot.game].find((m) => m.id === id)?.label ?? id}
+          disabled={!isHost}
+          onPick={(v) => configure({ mode: v })}
+        />
+        <p className="mono rm-mode-note">
+          {MODES[snapshot.game].find((m) => m.id === snapshot.mode)?.note}
+        </p>
+        <Options
           label="RODADAS"
           values={ROUNDS}
           current={snapshot.settings.rounds}
@@ -162,25 +188,18 @@ export function Lobby({ snapshot }: { snapshot: RoomSnapshot }) {
           disabled={!isHost}
           onPick={(v) => configure({ rounds: v })}
         />
-        {snapshot.game === 'time' ? (
-          <Options
-            label="PASSOU DO ALVO"
-            values={[0, 1]}
-            current={snapshot.settings.noOvershoot ? 1 : 0}
-            format={(v) => (v === 1 ? 'Vale zero' : 'Tem nota')}
-            disabled={!isHost}
-            onPick={(v) => configure({ noOvershoot: v === 1 })}
-          />
-        ) : (
+        {snapshot.game === 'color' && (
           <>
-            <Options
-              label="TEMPO PARA DECORAR"
-              values={SHOW}
-              current={snapshot.settings.showMs}
-              format={seconds}
-              disabled={!isHost}
-              onPick={(v) => configure({ showMs: v })}
-            />
+            {snapshot.mode !== 'flash' && (
+              <Options
+                label="TEMPO PARA DECORAR"
+                values={SHOW}
+                current={snapshot.settings.showMs}
+                format={seconds}
+                disabled={!isHost}
+                onPick={(v) => configure({ showMs: v })}
+              />
+            )}
             <Options
               label="TEMPO PARA RECRIAR"
               values={PICK}
