@@ -1,7 +1,15 @@
 import { z } from 'zod';
 
 /** `daily` é o preset clássico só das partidas do Daily; os demais são presets solo. */
-export const RANKING_BOARDS = ['classic', 'flash', 'quick', 'daily'] as const;
+export const RANKING_BOARDS = ['classic', 'flash', 'quick', 'strict', 'daily'] as const;
+export const RANKING_GAMES = ['color', 'time'] as const;
+export type RankingGame = (typeof RANKING_GAMES)[number];
+
+/** Quadros que cada jogo tem (Flash é da Cor; "Sem estourar" é do Tempo). */
+export const BOARDS_OF: Record<RankingGame, readonly string[]> = {
+  color: ['classic', 'flash', 'quick', 'daily'],
+  time: ['classic', 'quick', 'strict', 'daily'],
+};
 
 export const rankingQuerySchema = z.object({
   board: z.enum(RANKING_BOARDS).default('classic'),

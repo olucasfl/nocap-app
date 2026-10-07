@@ -88,3 +88,31 @@ describe('ranking entre amigos', () => {
     ).rejects.toThrow('Entre na sua conta');
   });
 });
+
+describe('ranking por jogo', () => {
+  it('o Tempo usa o jogo e o modo certos, e "sem estourar" é um quadro próprio', async () => {
+    const { service, leaderboard } = setup([]);
+    await service.board('time', rankingQuerySchema.parse({ board: 'strict', period: 'all' }), null);
+    expect(leaderboard).toHaveBeenCalledWith(
+      expect.objectContaining({ game: 'time', mode: 'strict', dailyOnly: false }),
+    );
+  });
+
+  it('o Daily do Tempo usa o clássico só com partidas de Daily', async () => {
+    const { service, leaderboard } = setup([]);
+    await service.board('time', rankingQuerySchema.parse({ board: 'daily', period: 'day' }), null);
+    expect(leaderboard).toHaveBeenCalledWith(
+      expect.objectContaining({ game: 'time', mode: 'classic', dailyOnly: true }),
+    );
+  });
+
+  it('recusa quadro que o jogo não tem (Flash no Tempo, "sem estourar" na Cor)', async () => {
+    const { service } = setup([]);
+    await expect(
+      service.board('time', rankingQuerySchema.parse({ board: 'flash' }), null),
+    ).rejects.toThrow('não existe');
+    await expect(
+      service.board('color', rankingQuerySchema.parse({ board: 'strict' }), null),
+    ).rejects.toThrow('não existe');
+  });
+});
