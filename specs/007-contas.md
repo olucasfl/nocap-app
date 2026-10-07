@@ -54,3 +54,26 @@ Google, verificação de e-mail, recuperar senha, foto/avatar (brief #11), amigo
 
 - Verificação de e-mail e recuperação de senha: exigem provedor de e-mail (Resend, etc.).
 - Entrar com Google (o brief previa e-mail + Google).
+
+## Pendente: editar nome (pedido do Lucas em 07/10/2026)
+
+> **Status: pendente, só escrito.** Pedido: "uma opção de editar nome", para fazer no futuro.
+
+Hoje o cadastro tem dois campos: **@usuário** (único, aparece em ranking, amigos, salas e histórico) e **Nome**. Falta uma forma de mudar depois de criada a conta, no Perfil.
+
+**Proposta:** botão "Editar" no Perfil, com confirmação e validação igual à do cadastro.
+
+- **Nome** (de exibição): livre para trocar a qualquer hora.
+- **@usuário**: mais delicado, porque amigos, ranking e histórico apontam para ele. Se for permitido, precisa de unicidade, intervalo mínimo entre trocas e propagação para tudo que o referencia.
+
+**Perguntas abertas para o Lucas**
+
+- "Editar nome" é o **Nome** de exibição, o **@usuário**, ou os dois?
+- Se o @usuário puder mudar: qual o intervalo mínimo entre trocas (ex.: 30 dias)? O @antigo fica reservado por um tempo?
+- Os amigos são avisados da troca?
+
+**Critérios de aceite (pendentes)**
+
+- [ ] O Perfil permite editar o nome, com as mesmas regras de tamanho e caracteres do cadastro.
+- [ ] Salvar pede confirmação e o novo nome aparece em ranking, amigos, salas e histórico.
+- [ ] (Se @usuário) nome já em uso é recusado com mensagem clara.

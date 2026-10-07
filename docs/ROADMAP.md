@@ -69,6 +69,8 @@ Ainda sem prioridade definida contra as salas do Ecooo. Cada item tem a sua spec
 - [ ] **Rever os modos do Já Deu? em sala:** a Sequência não faz sentido online (virou só uma rodada normal com alvo curto); melhorar o **Sem estourar** online e offline. **Há perguntas para o Lucas responder antes de implementar:** `specs/002-time-game.md` (seção "Pendente")
 - [ ] **Histórico de sala com quem jogou e como ficou** (todos os jogadores, colocação e nota de cada um): `specs/003-history.md` (seção "Pendente")
 
+- [ ] **Editar nome** no Perfil (Nome e/ou @usuário; há perguntas abertas): `specs/007-contas.md` (seção "Pendente")
+
 ## Etapa 6: produção
 
 - [ ] Cloudflare Pages (web), Fly.io (api + Colyseus), Upstash (Redis), domínio, monitoramento
