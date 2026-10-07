@@ -26,6 +26,17 @@ export interface HistoryItem {
   answers: number[] | null;
 }
 
+export interface RoomPlayer {
+  username: string | null;
+  placement: number | null;
+  totalScore: number;
+  isMe: boolean;
+}
+
+/** Quem jogou uma partida de sala em que estive, em ordem de colocação. */
+export const fetchRoomPlayers = (matchId: string) =>
+  apiClient.get<{ players: RoomPlayer[] }>(`/me/matches/${matchId}/room`);
+
 export interface HistoryPage {
   items: HistoryItem[];
   nextCursor: string | null;

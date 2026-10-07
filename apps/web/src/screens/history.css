@@ -261,3 +261,39 @@
   letter-spacing: 0.08em;
   color: var(--blue);
 }
+
+/* Sala: quem jogou e como ficou */
+.hist-players {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.hist-player {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  background: var(--white);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+}
+.hist-player.me {
+  background: var(--yellow);
+  color: var(--on-accent);
+}
+.hist-player-pos {
+  font-weight: 700;
+  min-width: 2.2ch;
+}
+.hist-player-name {
+  flex: 1;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hist-player-score {
+  font-weight: 700;
+}

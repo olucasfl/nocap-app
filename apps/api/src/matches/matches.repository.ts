@@ -2,7 +2,7 @@ import { Inject, Injectable, ServiceUnavailableException } from '@nestjs/common'
 import { and, desc, eq, inArray, isNull, or, sql, gte } from 'drizzle-orm';
 import type { Db } from '../db/client';
 import { DB } from '../db/db.module';
-import { matchPlayers, matches, players, userGameStats, userVisits } from '../db/schema';
+import { authUser, matchPlayers, matches, players, userGameStats, userVisits } from '../db/schema';
 import { randomUUID } from 'node:crypto';
 import { decodeCursor, encodeCursor } from './cursor';
 import type { ScoredMatch } from './match-scoring';
@@ -160,6 +160,45 @@ export class MatchesRepository {
         : null;
 
     return { items, nextCursor };
+  }
+
+  /**
+   * Quem jogou uma partida de sala, em ordem de colocação. Só devolve se uma das contas pedidas
+   * esteve na partida, e só expõe o @usuário (nunca nome real nem e-mail).
+   */
+  async roomPlayers(matchId: string, playerIds: string[]) {
+    if (playerIds.length === 0) return null;
+    const rows = await this.db
+      .select({
+        playerId: matchPlayers.playerId,
+        username: authUser.username,
+        placement: matchPlayers.placement,
+        totalScore: matchPlayers.totalScore,
+        answers: matchPlayers.answers,
+        kind: matches.kind,
+        game: matches.game,
+        seed: matches.seed,
+      })
+      .from(matchPlayers)
+      .innerJoin(matches, eq(matches.id, matchPlayers.matchId))
+      .innerJoin(players, eq(players.id, matchPlayers.playerId))
+      .leftJoin(authUser, eq(authUser.id, players.userId))
+      .where(eq(matchPlayers.matchId, matchId))
+      .orderBy(matchPlayers.placement, desc(matchPlayers.totalScore));
+    const first = rows[0];
+    if (!first || first.kind !== 'room') return null;
+    if (!rows.some((r) => playerIds.includes(r.playerId))) return null;
+    return {
+      game: first.game,
+      seed: first.seed,
+      players: rows.map((r) => ({
+        username: r.username,
+        placement: r.placement,
+        totalScore: r.totalScore,
+        answers: r.answers,
+        isMe: playerIds.includes(r.playerId),
+      })),
+    };
   }
 
   /** Aparelhos (convidados) vinculados a uma conta. */

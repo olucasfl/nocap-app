@@ -1,4 +1,9 @@
-import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   colorGame,
   dailyDate,
@@ -147,6 +152,13 @@ export class MatchesService {
       kind: query.kind,
       since: periodStart(query.period),
     });
+  }
+
+  /** Participantes de uma partida de sala em que a conta jogou. */
+  async roomOf(userId: string, matchId: string) {
+    const found = await this.repo.roomPlayers(matchId, await this.repo.playerIdsOf(userId));
+    if (!found) throw new NotFoundException('Partida de sala não encontrada');
+    return found;
   }
 
   async claim(userId: string, guestId: string) {

@@ -2,7 +2,7 @@ import { LoadFailed } from '@/components/LoadFailed';
 import { Loader } from '@/components/Loader';
 import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { GameArt, GAME_LABEL } from '@/components/GameArt';
 import { FilterChips } from '@/components/FilterChips';
 import { Choice } from '@/components/RankingList';
@@ -13,6 +13,7 @@ import {
   classifyMatch,
   colorRounds,
   fetchHistory,
+  fetchRoomPlayers,
   formatPlayedAt,
   kindLabel,
   scoreParts,
@@ -128,6 +129,31 @@ function Expired() {
   return <p className="mono hist-note">DETALHE EXPIRADO: SÓ O RESUMO FICA GUARDADO.</p>;
 }
 
+/** Partida de sala: todos os jogadores, com a colocação e a nota de cada um. */
+function RoomPlayers({ item }: { item: HistoryItem }) {
+  const q = useQuery({
+    queryKey: ['room-players', item.matchId],
+    queryFn: () => fetchRoomPlayers(item.matchId),
+    staleTime: Infinity,
+  });
+  if (q.isPending) return <Loader inline />;
+  if (q.isError) return <p className="mono hist-note">NÃO DEU PARA CARREGAR QUEM JOGOU.</p>;
+  const eco = item.game === 'eco';
+  return (
+    <ol className="hist-players" aria-label="Quem jogou">
+      {q.data.players.map((p, i) => (
+        <li key={i} className={`hist-player${p.isMe ? ' me' : ''}`}>
+          <span className="mono hist-player-pos">{p.placement ?? '-'}º</span>
+          <span className="hist-player-name">{p.username ? `@${p.username}` : 'Ex-jogador'}</span>
+          <span className="mono hist-player-score">
+            {eco ? `${Math.round(p.totalScore / 10)} passos` : (p.totalScore / 10).toFixed(1)}
+          </span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 function MatchRow({ item }: { item: HistoryItem }) {
   const [open, setOpen] = useState(false);
   const cls = classifyMatch(item);
@@ -153,6 +179,7 @@ function MatchRow({ item }: { item: HistoryItem }) {
           <small className="mono">{scoreParts(item).unit}</small>
         </span>
       </button>
+      {open && item.kind === 'room' && <RoomPlayers item={item} />}
       {open &&
         (item.game === 'time' ? (
           <TimeDetail item={item} />

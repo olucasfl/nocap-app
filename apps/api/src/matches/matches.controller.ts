@@ -4,6 +4,7 @@ import {
   Get,
   HttpCode,
   Param,
+  ParseUUIDPipe,
   Post,
   Query,
   Req,
@@ -73,6 +74,12 @@ export class MatchesController {
     @Query(new ZodValidationPipe(historyQuerySchema)) query: HistoryQuery,
   ) {
     return this.matches.historyOf(req.user.id, query);
+  }
+
+  @Get('me/matches/:matchId/room')
+  @UseGuards(AuthGuard)
+  roomMatch(@Req() req: AuthedRequest, @Param('matchId', ParseUUIDPipe) matchId: string) {
+    return this.matches.roomOf(req.user.id, matchId);
   }
 
   @Post('players/claim')
