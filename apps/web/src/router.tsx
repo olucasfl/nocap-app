@@ -38,7 +38,7 @@ const tabsRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: 'tabs',
   component: () => (
-    <div className="app">
+    <div className="app tabs-app">
       <PullToRefresh />
       <Outlet />
       <BottomNav />

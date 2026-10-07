@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { InstallApp } from '@/components/InstallApp';
 import { Choice } from '@/components/RankingList';
 import { Records } from '@/components/Records';
 import { logout, useAuth } from '@/lib/auth';
@@ -91,6 +92,7 @@ export function Profile() {
             </div>
           </section>
           <VisitStreak />
+          <InstallApp />
           <div className="pf-actions">
             <button
               type="button"

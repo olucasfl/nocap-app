@@ -88,7 +88,7 @@ function noise(
   src.stop(t + dur + 0.05);
 }
 
-export const sfx = {
+const rawSfx = {
   /** toque em botão */
   clack() {
     noise('bandpass', 2600, 2600, 1.2, 0.035, 0.5);
@@ -290,7 +290,38 @@ export const sfx = {
   },
 };
 
-export type SfxName = keyof typeof sfx;
+/** Sons feitos para repetir rápido (contagem, sliders): nunca entram na trava anti-duplicata. */
+const REPEATABLE = new Set<string>(['tick', 'climb', 'slide', 'clack']);
+/** Janela em que o mesmo som não toca duas vezes (um toque que dispara duas vezes soava "dobrado"). */
+const DUPLICATE_WINDOW_MS = 140;
+const lastPlayed = new Map<string, number>();
+
+/** `false` se o mesmo som acabou de tocar (duplicata no mesmo toque). Exportado para teste. */
+export function shouldPlay(
+  name: string,
+  now: number,
+  state: Map<string, number> = lastPlayed,
+): boolean {
+  if (REPEATABLE.has(name)) return true;
+  const prev = state.get(name);
+  if (prev !== undefined && now - prev < DUPLICATE_WINDOW_MS) return false;
+  state.set(name, now);
+  return true;
+}
+
+type RawSfx = typeof rawSfx;
+export type SfxName = keyof RawSfx;
+
+/** Os sons do app: os mesmos de `rawSfx`, com a trava de duplicata. */
+export const sfx = Object.fromEntries(
+  Object.entries(rawSfx).map(([name, fn]) => [
+    name,
+    (...args: never[]) => {
+      if (!shouldPlay(name, performance.now())) return;
+      return (fn as (...a: never[]) => void)(...args);
+    },
+  ]),
+) as RawSfx;
 
 /** Vibração só onde existe (Android; iOS não suporta). */
 export function buzz(ms: number) {
@@ -329,10 +360,15 @@ export function useMuted(): boolean {
  * o "clack". Nada toca durante a contagem do Tempo (tela "valendo").
  */
 export function installGlobalSounds() {
+  let lastDown = 0;
   document.addEventListener(
     'pointerdown',
     (e) => {
       audio();
+      // Um toque só pode gerar um som: ignora um segundo pointerdown colado no primeiro.
+      const now = performance.now();
+      if (now - lastDown < 80) return;
+      lastDown = now;
       if (!(e.target instanceof Element)) return;
       if (document.querySelector('.tm-stage.live')) return;
       const el = e.target.closest<HTMLElement>('[data-sfx]');

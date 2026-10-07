@@ -42,6 +42,9 @@ export default defineConfig(({ mode }) => {
           short_name: 'NoCap',
           description: 'Jogos para jogar com amigos.',
           display: 'standalone',
+          // Em computador e tablet o app abre em janela própria; vale qualquer orientação.
+          display_override: ['standalone', 'minimal-ui'],
+          orientation: 'any',
           theme_color: '#F4F4EF',
           background_color: '#F4F4EF',
           lang: 'pt-BR',

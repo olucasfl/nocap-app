@@ -1,0 +1,249 @@
+/*
+ * Telas grandes. O app nasceu no celular (coluna de 440px e barra de navegação embaixo); aqui ele
+ * ganha o layout próprio de cada tamanho:
+ *   - tablet  (>= 768px): menu lateral estreito (ícone + nome), conteúdo em coluna mais larga;
+ *   - desktop (>= 1100px): menu lateral completo com logo e botão de instalar, cartões em grade.
+ * Importado por último: só sobrescreve o que muda. Celular (< 768px) não é afetado.
+ */
+
+/* Elementos que só existem no menu lateral */
+.rail-logo,
+.rail-foot {
+  display: none;
+}
+
+/* ---------- TABLET ---------- */
+@media (min-width: 768px) {
+  :root {
+    --col-max: 640px; /* telas de jogo (fora do menu): uma coluna confortável */
+    --rail: 104px;
+  }
+
+  /* Jogo e telas soltas (login, sala...) centralizados com mais respiro */
+  .app {
+    padding-left: 32px;
+    padding-right: 32px;
+  }
+
+  /* --- telas com menu: o menu vira uma barra lateral fixa --- */
+  .tabs-app {
+    max-width: none;
+    margin: 0;
+    padding-left: calc(var(--rail) + 48px);
+    padding-right: 32px;
+    padding-bottom: 32px;
+  }
+  .tabs-app > main {
+    width: 100%;
+    max-width: 760px;
+    margin-inline: auto;
+    padding-bottom: 24px;
+  }
+  .tabs-app > main.hub {
+    max-width: 960px;
+  }
+
+  .bottom-nav {
+    left: 16px;
+    top: 16px;
+    bottom: 16px;
+    transform: none;
+    width: var(--rail);
+    height: auto;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto repeat(4, 84px) 1fr auto;
+    align-content: start;
+    padding: 10px;
+    border-radius: 22px;
+  }
+  .rail-logo {
+    display: block;
+    padding: 6px 0 14px;
+    text-align: center;
+    font: italic 900 17px/1 var(--font-display);
+    letter-spacing: -0.05em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--ink);
+  }
+  .rail-logo span {
+    color: var(--orange);
+  }
+  .rail-foot {
+    display: block;
+    grid-row: 7;
+  }
+  .tab {
+    font-size: 11px;
+  }
+
+  /* Hub: o logo já está no menu lateral */
+  .hub-logo {
+    visibility: hidden;
+  }
+  .hub-card {
+    height: 280px;
+  }
+  .hub-grid {
+    margin-bottom: 0;
+    gap: 20px;
+  }
+  .hub-title {
+    font-size: 64px;
+  }
+
+  /* Listas e telas internas */
+  .rc {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+  body .mp {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  body .dp-grid {
+    gap: 12px;
+  }
+
+  /* Ficha de modo e confirmações: janela no centro em vez de gaveta embaixo */
+  body .ms-backdrop {
+    align-items: center;
+    padding: 24px;
+  }
+  body .ms {
+    max-width: 560px;
+    border: var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    padding-bottom: 18px;
+  }
+
+  /* Faixas fixas (offline / versão nova) alinhadas ao conteúdo, ao lado do menu */
+  .ns,
+  .update-prompt {
+    max-width: 560px;
+  }
+}
+
+/* ---------- DESKTOP ---------- */
+@media (min-width: 1100px) {
+  :root {
+    --col-max: 720px;
+    --rail: 244px;
+  }
+
+  body {
+    background-image: radial-gradient(
+      color-mix(in srgb, var(--ink) 14%, transparent) 1.2px,
+      transparent 1.2px
+    );
+    background-size: 26px 26px;
+  }
+
+  .tabs-app {
+    padding-left: calc(var(--rail) + 64px);
+    padding-right: 64px;
+  }
+  .tabs-app > main {
+    max-width: 820px;
+  }
+  .tabs-app > main.hub {
+    max-width: 1080px;
+  }
+
+  /* Menu lateral completo */
+  .bottom-nav {
+    left: 24px;
+    top: 24px;
+    bottom: 24px;
+    padding: 16px;
+    grid-template-rows: auto repeat(4, 58px) 1fr auto;
+    gap: 8px;
+  }
+  .rail-logo {
+    padding: 8px 8px 22px;
+    text-align: left;
+    font-size: 34px;
+  }
+  .tab {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 14px;
+    padding: 0 18px;
+    font-size: 15px;
+  }
+
+  .hub-card {
+    height: 340px;
+    padding: 20px;
+  }
+  .hub-card-name {
+    font-size: 44px;
+  }
+  .hub-title {
+    font-size: 80px;
+  }
+  body .mp {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  /* Recriar a cor: prévia grande de um lado, controles do outro */
+  .screen:has(> .cg-sliders) {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    column-gap: 36px;
+    align-content: start;
+  }
+  .screen:has(> .cg-sliders) > .cg-preview {
+    grid-column: 1;
+    grid-row: 1 / span 3;
+    min-height: 420px;
+  }
+  .screen:has(> .cg-sliders) > .cg-sliders,
+  .screen:has(> .cg-sliders) > .btn {
+    grid-column: 2;
+  }
+
+  body .tm-stage-target {
+    font-size: 150px;
+  }
+}
+
+/* ---------- Ponteiro (mouse): hover e cursor ---------- */
+@media (hover: hover) and (pointer: fine) {
+  .btn:not(:disabled):not(:active):hover,
+  .mp-card:not(:active):hover,
+  a.hub-card:not(:active):hover,
+  .hist-row:not(:active):hover,
+  .tab:not(.on):not(:active):hover,
+  .bb:not(:active):hover,
+  button.chip:not(:active):hover,
+  .fr-btn:not(:active):hover,
+  .fc-row button:not(:active):hover,
+  .rp-modes button:not(:active):hover,
+  .rp-seg button:not(:active):hover,
+  .gt button:not(:active):hover,
+  .hist-filter-toggle:not(:active):hover {
+    transform: translateY(-2px);
+    filter: brightness(1.05);
+  }
+  .tab:not(.on):hover {
+    background: color-mix(in srgb, var(--ink) 8%, transparent);
+  }
+  .btn,
+  .mp-card,
+  .hub-card,
+  .tab,
+  .bb,
+  button.chip,
+  .hist-row {
+    cursor: pointer;
+  }
+}
+
+/* Tela muito baixa (celular deitado, janela pequena): menu lateral rola em vez de cortar */
+@media (min-width: 768px) and (max-height: 520px) {
+  .bottom-nav {
+    overflow-y: auto;
+  }
+}
