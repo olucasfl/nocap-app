@@ -399,3 +399,43 @@
   background: var(--green);
   color: var(--on-accent);
 }
+
+/* Aba Convidar */
+.lb-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.lb-block > .btn {
+  width: 100%;
+}
+.lb-shortcuts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.lb-shortcuts .fr-btn {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+.lb-codebig {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--white);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+}
+.lb-codebig b {
+  font: 900 36px/1 var(--font-display);
+  letter-spacing: 0.12em;
+}
+.lb-codebig span {
+  font-size: 11px;
+  font-weight: 700;
+}

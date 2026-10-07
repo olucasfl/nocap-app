@@ -3,7 +3,7 @@ import { Crown, Lock } from '@/components/icons';
 import type { RoomSnapshot } from '@/lib/rooms';
 import { useRoom } from '@/lib/rooms';
 import { ChatPanel } from '@/components/Chat';
-import { GAME_OF, rulesSummary } from './rules';
+import { rulesSummary } from './rules';
 import './lobby.css';
 
 export type LobbyTab = 'members' | 'rules' | 'invite' | 'chat';
@@ -25,27 +25,6 @@ function Head({
   role: 'leader' | 'member';
   leaderName?: string;
 }) {
-  const [copied, setCopied] = useState(false);
-  const link = `${location.origin}/sala/${snapshot.code}`;
-
-  const share = async () => {
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: 'NoCap',
-          text: `Entra na minha sala ${GAME_OF[snapshot.game]}: ${snapshot.code}`,
-          url: link,
-        });
-      } else {
-        await navigator.clipboard.writeText(link);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      }
-    } catch {
-      /* cancelou o compartilhamento */
-    }
-  };
-
   return (
     <>
       <div className="lb-code">
@@ -54,9 +33,6 @@ function Head({
           <b>{snapshot.code}</b>
           <div className="mono lb-summary">{rulesSummary(snapshot)}</div>
         </div>
-        <button type="button" className="fr-btn ghost" data-sfx="send" onClick={() => void share()}>
-          {copied ? 'Link copiado' : 'Convidar'}
-        </button>
       </div>
 
       <div className={`lb-role ${role}`}>

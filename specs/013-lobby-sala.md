@@ -51,7 +51,7 @@ Comportamento do servidor, mensagens da sala (`configure`, `kick`, `ready`, `sta
 
 ## Pendente: aba Convidar nova (pedido do Lucas em 07/10/2026)
 
-> **Status: pendente, só escrito.** Pedido: "tirar o botão Convidar de cima e deixar apenas o Convidar que fica junto com Membros e Regras; adicionar convidar mandando o link direto escolhendo o app, com algo mais explícito na aba Convidar; essa aba mais intuitiva, organizada e boa de usar."
+> **Status: implementado (falta testar ao vivo); QR code, convidar não-amigo e quem pode convidar seguem em aberto.** Pedido: "tirar o botão Convidar de cima e deixar apenas o Convidar que fica junto com Membros e Regras; adicionar convidar mandando o link direto escolhendo o app, com algo mais explícito na aba Convidar; essa aba mais intuitiva, organizada e boa de usar."
 
 **O que muda**
 
@@ -72,12 +72,12 @@ Comportamento do servidor, mensagens da sala (`configure`, `kick`, `ready`, `sta
 
 **Critérios de aceite (pendentes)**
 
-- [ ] O botão "Convidar" do topo não existe mais; só a aba Convidar.
-- [ ] A aba tem um botão explícito que abre a folha de compartilhar do aparelho com o texto e o link prontos.
-- [ ] Há atalhos diretos (WhatsApp, Telegram, copiar link, copiar código) e cada um mostra o resultado da ação.
-- [ ] Onde não há folha de compartilhar, o botão copia o link e diz isso na tela.
-- [ ] A lista de amigos mostra o estado de cada um e tem busca quando passa de uns 8 amigos.
-- [ ] O texto da mensagem usa o nome certo do jogo.
+- [x] O botão "Convidar" do topo não existe mais; só a aba Convidar.
+- [x] A aba tem um botão explícito que abre a folha de compartilhar do aparelho com o texto e o link prontos.
+- [x] Há atalhos diretos (WhatsApp, Telegram, copiar link, copiar código) e cada um mostra o resultado da ação.
+- [x] Onde não há folha de compartilhar, o botão copia o link e diz isso na tela.
+- [x] A lista de amigos mostra o estado de cada um e tem busca quando passa de uns 8 amigos.
+- [x] O texto da mensagem usa o nome certo do jogo.
 
 ## Fora de escopo
 

@@ -24,7 +24,7 @@ export function HostLobby({ snapshot, me }: { snapshot: RoomSnapshot; me: string
     <LobbyShell
       snapshot={snapshot}
       role="leader"
-      initialTab="rules"
+      initialTab={snapshot.members.length < 2 ? 'invite' : 'rules'}
       panels={{
         members: <MembersPanel snapshot={snapshot} me={me} canKick />,
         rules: <RulesEditor snapshot={snapshot} />,
