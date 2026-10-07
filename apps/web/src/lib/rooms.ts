@@ -73,6 +73,10 @@ export interface EcoRoomState {
   tapDeadline: number | null;
   /** Siga o Líder: quem cria a rodada, as regras e se o tempo dele acabou. */
   leader?: string | null;
+  /** Corrida por vez: de quem é a vez, a fila e o tempo do aviso "VEZ DE ...". */
+  turn?: string | null;
+  queue?: string[];
+  announceMs?: number;
   rules?: LeaderRule[];
   timedOut?: boolean;
 }

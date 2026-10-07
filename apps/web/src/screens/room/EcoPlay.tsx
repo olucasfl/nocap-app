@@ -11,7 +11,7 @@ import { EcoLeaderCreate } from './EcoLeaderCreate';
 /** Quanto do ritmo de cada passo o botão fica aceso (igual ao modo solo). */
 const LIT_SHARE = 0.64;
 
-type Status = 'observe' | 'input' | 'waiting' | 'out' | 'wrong' | 'leader';
+type Status = 'observe' | 'input' | 'waiting' | 'out' | 'wrong' | 'leader' | 'wait';
 
 const LABEL: Record<Status, string> = {
   observe: 'OBSERVE',
@@ -20,7 +20,26 @@ const LABEL: Record<Status, string> = {
   out: 'VOCÊ CAIU',
   wrong: 'ERROU',
   leader: 'VOCÊ CRIOU',
+  wait: 'AGUARDE SUA VEZ',
 };
+
+/** Corrida por vez: como foi a vez e de quem é a próxima. */
+function turnResult(snapshot: RoomSnapshot, name: (id: string) => string): string {
+  const eco = snapshot.eco!;
+  const who = eco.turn!;
+  const passed = eco.alive.includes(who);
+  const next = (eco.queue ?? []).find((id) => id !== who);
+  return [
+    passed ? `@${name(who)} acertou.` : `@${name(who)} errou e saiu.`,
+    eco.alive.length <= 1
+      ? ''
+      : next
+        ? `Próxima vez: @${name(next)}.`
+        : '',
+  ]
+    .join(' ')
+    .trim();
+}
 
 function Reveal({ snapshot }: { snapshot: RoomSnapshot }) {
   const me = useAuth((s) => s.user?.id);
@@ -32,7 +51,9 @@ function Reveal({ snapshot }: { snapshot: RoomSnapshot }) {
     <section className="screen rm">
       <h1>Rodada {eco.round}</h1>
       <p className="lead">
-        {eco.leader
+        {eco.turn
+          ? `${turnResult(snapshot, name)}`
+          : eco.leader
           ? `@${name(eco.leader)} criou a sequência.`
           : eco.alive.length === 1
             ? `Sobrou @${name(eco.alive[0]!)}.`
@@ -85,6 +106,8 @@ export function EcoRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
   const [done, setDone] = useState(0);
   const timers = useRef<number[]>([]);
   const wrongRef = useRef(false);
+  /** "VEZ DE FULANO" na tela de todos antes da sequência tocar. */
+  const [announce, setAnnounce] = useState(false);
 
   // Cada rodada toca a sequência uma vez, a partir do instante em que o aviso chega.
   const sequence = eco.sequence;
@@ -93,9 +116,14 @@ export function EcoRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
     setBad(null);
     wrongRef.current = false;
     if (snapshot.phase !== 'show' || !sequence) return;
+    const wait = eco.announceMs ?? 0;
+    if (wait > 0) {
+      setAnnounce(true);
+      timers.current.push(window.setTimeout(() => setAnnounce(false), wait));
+    }
     const on = Math.round(eco.stepMs * LIT_SHARE);
     sequence.forEach((pad, k) => {
-      const at = ECO_PAUSE_MS + k * eco.stepMs;
+      const at = wait + ECO_PAUSE_MS + k * eco.stepMs;
       timers.current.push(
         window.setTimeout(() => {
           setLit(pad);
@@ -108,6 +136,7 @@ export function EcoRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
       timers.current.forEach(clearTimeout);
       timers.current = [];
       setLit(null);
+      setAnnounce(false);
     };
     // Uma vez por rodada (o `round` muda a cada rodada nova).
   }, [eco.round, snapshot.phase === 'show']);
@@ -151,13 +180,16 @@ export function EcoRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
   if (snapshot.phase === 'create') return <EcoLeaderCreate snapshot={snapshot} />;
   if (snapshot.phase === 'reveal') return <Reveal key={`r-${eco.round}`} snapshot={snapshot} />;
 
+  const nameOf = (id?: string | null) => snapshot.members.find((m) => m.id === id)?.username ?? '?';
   const status: Status =
     snapshot.phase === 'show'
       ? 'observe'
       : eco.leader === me
         ? 'leader'
         : !playing
-          ? 'out'
+          ? eco.turn && eco.alive.includes(me ?? '')
+            ? 'wait'
+            : 'out'
           : wrongRef.current
             ? 'wrong'
             : mine?.locked
@@ -166,6 +198,8 @@ export function EcoRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
   const sub =
     status === 'leader'
       ? 'OS OUTROS ESTÃO REPETINDO'
+      : status === 'wait'
+        ? `VEZ DE @${nameOf(eco.turn)} · FILA: ${(eco.queue ?? []).map((id) => '@' + nameOf(id)).join(' > ')}`
       : status === 'out'
         ? `PLATEIA · ${eco.alive.length} NA DISPUTA`
         : status === 'observe'
@@ -194,6 +228,18 @@ export function EcoRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
           />
         )}
       </div>
+      {eco.turn && (
+        <div className={`eco-turn${announce ? ' big' : ''}`} aria-live="assertive">
+          {eco.turn === me ? 'É A SUA VEZ' : `VEZ DE @${nameOf(eco.turn)}`}
+          {announce && (
+            <small className="mono">
+              {eco.turn === me
+                ? 'A SEQUÊNCIA VAI TOCAR; DEPOIS REPITA TUDO'
+                : 'TODO MUNDO JOGA A MESMA SEQUÊNCIA, UM DE CADA VEZ'}
+            </small>
+          )}
+        </div>
+      )}
       <EcoBoard
         pads={eco.pads}
         lit={lit}

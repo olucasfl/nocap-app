@@ -58,15 +58,15 @@ export const MODES: Record<RoomGame, { id: string; label: string; note: string }
     {
       id: 'classic',
       label: 'Clássico',
-      note: 'A sequência cresce um passo por rodada. Quem erra ou demora 8 s sai.',
+      note: 'Todo mundo joga a MESMA sequência, um de cada vez, em fila. Na sua vez você repete tudo e a sequência ganha um passo para o próximo. Errou ou demorou 8 s: sai.',
     },
-    { id: 'escalada', label: 'Escalada', note: 'A cada 3 rodadas entra um botão novo, até 9.' },
+    { id: 'escalada', label: 'Escalada', note: 'Mesma regra do Clássico (um de cada vez, em fila), mas a cada 3 vezes entra um botão novo, até 9.' },
     {
       id: 'velocidade',
       label: 'Velocidade',
-      note: 'A sequência acelera a cada rodada. Vai até 30 passos.',
+      note: 'Mesma regra do Clássico (um de cada vez, em fila), mas a sequência acelera a cada vez. Vai até 30 passos.',
     },
-    { id: 'reverso', label: 'Reverso', note: 'Repita de trás para frente.' },
+    { id: 'reverso', label: 'Reverso', note: 'Mesma regra do Clássico (um de cada vez, em fila), mas você repete de trás para frente.' },
     {
       id: 'leader',
       label: 'Siga o Líder',
@@ -109,7 +109,7 @@ export function rulesSummary(s: RoomSnapshot): string {
     GAME_NAME[s.game],
     mode === GAME_NAME[s.game] ? undefined : mode,
     s.game === 'eco' && s.mode !== 'leader'
-      ? 'Corrida'
+      ? 'Por vez'
       : `${rounds} ${rounds === 1 ? 'rodada' : 'rodadas'}`,
   ]
     .filter(Boolean)

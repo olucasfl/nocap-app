@@ -21,7 +21,7 @@ const RULES: Record<GameId, string[]> = {
     'De 2 a 12 pessoas. O servidor mede o tempo de cada um.',
   ],
   eco: [
-    'Corrida: todos veem a mesma sequência ao mesmo tempo e repetem; quem erra ou demora vira plateia, e vence quem sobrar.',
+    'Clássico, Escalada, Velocidade e Reverso: todo mundo joga a MESMA sequência, um de cada vez, em fila. Na sua vez você repete tudo e a sequência ganha um passo para o próximo. Errou, sai; vence quem sobrar.',
     'Siga o Líder: um cria a sequência dentro de regras, os outros repetem, e a cada rodada o criador muda.',
     'Dentro da sala o host escolhe o modo (Clássico, Escalada, Velocidade, Reverso ou Siga o Líder).',
     'De 2 a 12 pessoas.',
