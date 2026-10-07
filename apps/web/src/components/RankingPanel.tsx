@@ -148,9 +148,9 @@ export function RankingPanel({
         </div>
       )}
 
-      <div className="rp-row2">
-        <div className="rp-filter rp-period">
-          <div className="mono rp-label">PERÍODO</div>
+      {hideModes ? (
+        /* Daily: dois controles emendados, sem rótulos soltos nem texto de apoio. */
+        <div className="rp-daily-ctl">
           <div className="rp-seg" role="radiogroup" aria-label="Período">
             {PERIODS.map((p) => (
               <button
@@ -165,36 +165,78 @@ export function RankingPanel({
               </button>
             ))}
           </div>
+          {user && (
+            <div className="rp-seg" role="radiogroup" aria-label="Quem aparece">
+              {[
+                { id: false, label: 'Todos' },
+                { id: true, label: 'Amigos' },
+              ].map((o) => (
+                <button
+                  key={o.label}
+                  type="button"
+                  role="radio"
+                  data-sfx="select"
+                  aria-checked={friendsOnly === o.id}
+                  onClick={() => setFriendsOnly(o.id)}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          )}
+          {dailySum && <p className="mono rp-note">SOMA DOS DAILYS DO PERÍODO</p>}
         </div>
-        {user && (
-          <div className="rp-filter">
-            <div className="mono rp-label">SÓ AMIGOS</div>
-            <button
-              type="button"
-              role="switch"
-              data-sfx="toggle"
-              aria-checked={friendsOnly}
-              aria-label="Mostrar só amigos"
-              className="rp-switch"
-              onClick={() => setFriendsOnly((v) => !v)}
-            >
-              <i />
-            </button>
+      ) : (
+        <>
+          <div className="rp-row2">
+            <div className="rp-filter rp-period">
+              <div className="mono rp-label">PERÍODO</div>
+              <div className="rp-seg" role="radiogroup" aria-label="Período">
+                {PERIODS.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    role="radio"
+                    data-sfx="select"
+                    aria-checked={period === p.id}
+                    onClick={() => setPeriod(p.id)}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {user && (
+              <div className="rp-filter">
+                <div className="mono rp-label">SÓ AMIGOS</div>
+                <button
+                  type="button"
+                  role="switch"
+                  data-sfx="toggle"
+                  aria-checked={friendsOnly}
+                  aria-label="Mostrar só amigos"
+                  className="rp-switch"
+                  onClick={() => setFriendsOnly((v) => !v)}
+                >
+                  <i />
+                </button>
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      <p className="mono rp-note">
-        {isDaily
-          ? dailySum
-            ? 'SOMA DOS DAILYS DO PERÍODO (UM POR DIA)'
-            : 'NOTA DO DAILY DE HOJE'
-          : period === 'day'
-            ? 'MELHOR PARTIDA DE HOJE'
-            : period === 'week'
-              ? 'MELHOR PARTIDA DA SEMANA'
-              : 'MELHOR PARTIDA DE TODAS'}
-      </p>
+          <p className="mono rp-note">
+            {isDaily
+              ? dailySum
+                ? 'SOMA DOS DAILYS DO PERÍODO (UM POR DIA)'
+                : 'NOTA DO DAILY DE HOJE'
+              : period === 'day'
+                ? 'MELHOR PARTIDA DE HOJE'
+                : period === 'week'
+                  ? 'MELHOR PARTIDA DA SEMANA'
+                  : 'MELHOR PARTIDA DE TODAS'}
+          </p>
+        </>
+      )}
 
       {query.isPending && query.fetchStatus !== 'paused' && <Loader inline />}
       {(query.isError || (query.isPending && query.fetchStatus === 'paused')) && (

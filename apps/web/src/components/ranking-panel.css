@@ -265,3 +265,10 @@
   color: var(--blue);
   font-weight: 700;
 }
+
+/* Daily: período e "quem aparece" lado a lado, sem rótulos */
+.rp-daily-ctl {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
