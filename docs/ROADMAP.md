@@ -70,7 +70,7 @@ Ainda sem prioridade definida contra as salas do Ecooo. Cada item tem a sua spec
 - [x] **Modos do Já Deu? em sala (Sequência sincronizada feita; Sem estourar e modos novos ficam como estão):** a Sequência não faz sentido online (virou só uma rodada normal com alvo curto); melhorar o **Sem estourar** online e offline. **Há perguntas para o Lucas responder antes de implementar:** `specs/002-time-game.md` (seção "Pendente")
 - [x] **Histórico de sala de todos os jogos, só com quem jogou e a colocação** (feito; falta testar ao vivo)
 
-- [x] **Editar nome** no Perfil (feito só o Nome; @usuário fixo, troca do @ em aberto): `specs/007-contas.md` (seção "Pendente")
+- [x] **Editar nome e trocar @usuário** no Perfil (15 dias de intervalo e de reserva; migration 0004 gerada, falta rodar `pnpm db:migrate`)
 - [ ] **Aba separada de Rankings** (tirar o ranking de dentro de cada jogo e criar uma aba própria, mais intuitiva): `specs/015-aba-rankings.md`
 
 ## Etapa 6: produção

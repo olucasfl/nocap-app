@@ -9,7 +9,15 @@ import { Records } from '@/components/Records';
 import { Field } from '@/components/Field';
 import { Pencil } from '@/components/icons';
 import { NAME_MAX } from '@/lib/account-form';
-import { logout, updateName, useAuth } from '@/lib/auth';
+import { RuleList } from '@/components/RuleList';
+import { ApiError } from '@/lib/api-client';
+import {
+  USERNAME_COOLDOWN_DAYS,
+  normalizeUsername,
+  usernameProblem,
+  usernameRules,
+} from '@/lib/account-form';
+import { changeUsername, fetchUsernameStatus, logout, updateName, useAuth } from '@/lib/auth';
 import { fetchStats, streakLabel } from '@/lib/stats';
 import './profile.css';
 
@@ -19,27 +27,69 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'records', label: 'Recordes' },
 ];
 
-function NameEditor({ name, onDone }: { name: string; onDone: () => void }) {
+function NameEditor({
+  name,
+  username,
+  onDone,
+}: {
+  name: string;
+  username: string;
+  onDone: () => void;
+}) {
   const [text, setText] = useState(name);
+  const [handle, setHandle] = useState(username);
   const [error, setError] = useState('');
+  const [handleError, setHandleError] = useState('');
   const [saving, setSaving] = useState(false);
-  const save = async () => {
+  const [confirming, setConfirming] = useState(false);
+  const status = useQuery({ queryKey: ['username-status'], queryFn: fetchUsernameStatus });
+  const nextAt = status.data?.nextChangeAt ? new Date(status.data.nextChangeAt) : null;
+  const locked = !!nextAt && nextAt > new Date();
+  const wantsHandle = normalizeUsername(handle) !== username;
+
+  const message = (e: unknown) =>
+    e instanceof ApiError || e instanceof Error ? e.message : 'Não foi possível salvar.';
+
+  const save = async (withHandle: boolean) => {
     setSaving(true);
     setError('');
+    setHandleError('');
     try {
-      await updateName(text);
-      onDone();
+      if (text.trim() !== name) await updateName(text);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Não foi possível salvar.');
+      setError(message(e));
       setSaving(false);
+      return;
     }
+    if (withHandle) {
+      try {
+        await changeUsername(normalizeUsername(handle));
+        void status.refetch();
+      } catch (e) {
+        setHandleError(message(e));
+        setSaving(false);
+        return;
+      }
+    }
+    onDone();
   };
+
+  const submit = () => {
+    if (wantsHandle) {
+      const problem = usernameProblem(handle);
+      if (problem) return setHandleError(problem);
+      setHandleError('');
+      return setConfirming(true);
+    }
+    void save(false);
+  };
+
   return (
     <form
       className="pf-edit"
       onSubmit={(e) => {
         e.preventDefault();
-        void save();
+        submit();
       }}
     >
       <Field
@@ -47,10 +97,27 @@ function NameEditor({ name, onDone }: { name: string; onDone: () => void }) {
         value={text}
         onChange={(e) => setText(e.target.value)}
         error={error || undefined}
-        hint="O @usuário não muda."
+        hint="Aparece no seu perfil. Pode trocar quando quiser."
         maxLength={NAME_MAX}
         autoFocus
       />
+      <Field
+        label="@usuário"
+        value={handle}
+        onChange={(e) => setHandle(e.target.value)}
+        error={handleError || undefined}
+        hint={
+          locked
+            ? `Você trocou de @ há pouco. Poderá trocar de novo em ${nextAt!.toLocaleDateString('pt-BR')}.`
+            : `Pode trocar a cada ${USERNAME_COOLDOWN_DAYS} dias. O @ antigo fica reservado a você por ${USERNAME_COOLDOWN_DAYS} dias e depois qualquer pessoa pode usá-lo.`
+        }
+        disabled={locked}
+        autoCapitalize="none"
+        autoCorrect="off"
+      />
+      {wantsHandle && !locked && (
+        <RuleList title="O @USUÁRIO PRECISA TER" rules={usernameRules(handle)} />
+      )}
       <div className="pf-actions">
         <button type="submit" className="btn alt" data-sfx="success" disabled={saving}>
           {saving ? 'Salvando...' : 'Salvar'}
@@ -59,6 +126,18 @@ function NameEditor({ name, onDone }: { name: string; onDone: () => void }) {
           Cancelar
         </button>
       </div>
+      <ConfirmDialog
+        open={confirming}
+        title="Trocar o seu @?"
+        text={`Seu @ passa de @${username} para @${normalizeUsername(handle)}. Você só poderá trocar de novo daqui a ${USERNAME_COOLDOWN_DAYS} dias. O @${username} fica reservado a você por ${USERNAME_COOLDOWN_DAYS} dias e depois qualquer pessoa pode pegá-lo. Seus amigos não serão avisados.`}
+        confirmLabel="Trocar @"
+        confirmSfx="success"
+        onConfirm={() => {
+          setConfirming(false);
+          void save(true);
+        }}
+        onCancel={() => setConfirming(false)}
+      />
     </form>
   );
 }
@@ -150,7 +229,13 @@ export function Profile() {
               </button>
             )}
           </section>
-          {editing && <NameEditor name={user.name} onDone={() => setEditing(false)} />}
+          {editing && (
+            <NameEditor
+              name={user.name}
+              username={user.username ?? ''}
+              onDone={() => setEditing(false)}
+            />
+          )}
           <VisitStreak />
           <InstallApp />
           <div className="pf-actions">

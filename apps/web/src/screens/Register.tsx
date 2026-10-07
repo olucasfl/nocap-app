@@ -3,8 +3,11 @@ import { Link, useNavigate } from '@tanstack/react-router';
 import { BackButton } from '@/components/BackButton';
 import { sfx } from '@/lib/sfx';
 import { Field } from '@/components/Field';
+import { RuleList } from '@/components/RuleList';
 import {
   USERNAME_MAX,
+  passwordRules,
+  usernameRules,
   validateRegister,
   type RegisterErrors,
   type RegisterForm,
@@ -54,7 +57,7 @@ export function Register() {
         <h1>Criar conta</h1>
         <Field
           label="Nome de usuário"
-          hint="É como seus amigos vão te achar: @usuario"
+          hint="É como seus amigos vão te achar. Maiúsculas viram minúsculas."
           value={form.username}
           onChange={set('username')}
           error={errors.username}
@@ -63,6 +66,9 @@ export function Register() {
           autoCapitalize="none"
           autoCorrect="off"
         />
+        {form.username && (
+          <RuleList title="O @USUÁRIO PRECISA TER" rules={usernameRules(form.username)} />
+        )}
         <Field
           label="Nome"
           value={form.name}
@@ -88,6 +94,9 @@ export function Register() {
           error={errors.password}
           autoComplete="new-password"
         />
+        {form.password && (
+          <RuleList title="A SENHA PRECISA TER" rules={passwordRules(form.password)} />
+        )}
         <Field
           label="Repita a senha"
           type="password"

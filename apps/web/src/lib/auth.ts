@@ -70,6 +70,7 @@ export function errorMessage(status: number, code?: string): string {
   if (status === 429) return 'Muitas tentativas. Espere um minuto e tente de novo.';
   const c = code ?? '';
   if (c.startsWith('USERNAME_IS_ALREADY_TAKEN')) return 'Esse nome de usuário já está em uso';
+  if (c === 'USERNAME_RESERVED') return 'Esse @ foi liberado há pouco e está reservado por 15 dias';
   if (c.startsWith('USER_ALREADY_EXISTS')) return 'Já existe uma conta com esse e-mail';
   if (c === 'INVALID_USERNAME_OR_PASSWORD' || c === 'INVALID_EMAIL_OR_PASSWORD') {
     return 'Usuário/e-mail ou senha incorretos';
@@ -145,6 +146,24 @@ export async function register(form: RegisterForm) {
     }),
   });
   await finishSignIn(res, data);
+}
+
+/** @ atual e quando dá para trocar de novo (`null` = já pode). */
+export const fetchUsernameStatus = () =>
+  apiClient.get<{ username: string; nextChangeAt: string | null }>('/me/username');
+
+/** Troca o @usuário (15 dias entre trocas; o antigo fica reservado a você por 15 dias). */
+export async function changeUsername(username: string) {
+  const res = await apiClient.post<{ username: string; nextChangeAt: string }>('/me/username', {
+    username,
+  });
+  const user = useAuth.getState().user;
+  if (user) {
+    const next = { ...user, username: res.username };
+    cacheUser(next);
+    useAuth.setState({ user: next });
+  }
+  return res;
 }
 
 /** Troca o nome de exibição (o @usuário não muda). Valida igual ao cadastro. */

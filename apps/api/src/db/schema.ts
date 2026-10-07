@@ -21,8 +21,19 @@ export const authUser = pgTable('auth_user', {
   image: text('image'),
   username: text('username').unique(),
   displayUsername: text('display_username'),
+  /** Última troca de @usuário (intervalo mínimo de 15 dias entre trocas). */
+  usernameChangedAt: timestamp('username_changed_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+/** @usuário largado numa troca: fica reservado ao antigo dono por 15 dias, para ninguém se passar por ele. */
+export const reservedUsernames = pgTable('reserved_usernames', {
+  username: text('username').primaryKey(),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => authUser.id, { onDelete: 'cascade' }),
+  until: timestamp('until', { withTimezone: true }).notNull(),
 });
 
 export const authSession = pgTable('auth_session', {

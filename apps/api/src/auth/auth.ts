@@ -1,8 +1,16 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
+import { APIError } from 'better-auth/api';
 import { bearer, username } from 'better-auth/plugins';
+import { and, eq, gt } from 'drizzle-orm';
 import type { Db } from '../db/client';
-import { authAccount, authSession, authUser, authVerification } from '../db/schema';
+import {
+  authAccount,
+  authSession,
+  authUser,
+  authVerification,
+  reservedUsernames,
+} from '../db/schema';
 
 export const USERNAME_MIN = 3;
 export const USERNAME_MAX = 20;
@@ -27,6 +35,33 @@ export function createAuth(db: Db) {
         verification: authVerification,
       },
     }),
+    // Cadastro novo não pode pegar um @ que alguém largou há menos de 15 dias.
+    databaseHooks: {
+      user: {
+        create: {
+          before: async (user) => {
+            const wanted = String((user as { username?: string }).username ?? '').toLowerCase();
+            if (!wanted) return;
+            const held = await db
+              .select({ username: reservedUsernames.username })
+              .from(reservedUsernames)
+              .where(
+                and(
+                  eq(reservedUsernames.username, wanted),
+                  gt(reservedUsernames.until, new Date()),
+                ),
+              )
+              .limit(1);
+            if (held[0]) {
+              throw new APIError('BAD_REQUEST', {
+                message: 'Esse @ foi liberado há pouco e está reservado',
+                code: 'USERNAME_RESERVED',
+              });
+            }
+          },
+        },
+      },
+    },
     // Ids em uuid, como `players.id`.
     advanced: {
       database: { generateId: 'uuid' },

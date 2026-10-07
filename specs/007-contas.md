@@ -77,3 +77,11 @@ Hoje o cadastro tem dois campos: **@usuário** (único, aparece em ranking, amig
 - [ ] O Perfil permite editar o nome, com as mesmas regras de tamanho e caracteres do cadastro.
 - [ ] Salvar pede confirmação e o novo nome aparece em ranking, amigos, salas e histórico.
 - [ ] (Se @usuário) nome já em uso é recusado com mensagem clara.
+
+## Trocar o @usuário (decisão do Lucas, 07/10/2026): implementado
+
+- **15 dias de intervalo** entre trocas e **15 dias de reserva** do @ antigo (só o antigo dono pode voltar a ele nesse prazo; depois qualquer pessoa pode pegar). Reserva vale também para cadastros novos.
+- **Confirmação clara** antes de trocar (diz o novo @, o prazo, a reserva do antigo e que os amigos não são avisados). **Ninguém é avisado** da troca.
+- Mesmas validações do cadastro (3 a 20, minúsculas sem acento, números e `_`), agora com **mensagem exata** do que está errado e uma **lista de regras com OK/X** enquanto a pessoa digita (cadastro, perfil; a senha também).
+- Onde: lápis no cartão do Perfil abre o editor com Nome e @usuário. API: `GET/POST /me/username` (`apps/api/src/account`). Amigos, ranking e histórico apontam para o id da conta, então mostram o @ novo sozinhos.
+- **Migration `0004` gerada, ainda NÃO aplicada no Supabase** (adiciona `auth_user.username_changed_at` e a tabela `reserved_usernames`; nada destrutivo). Rodar `pnpm db:migrate` antes de testar a troca.
