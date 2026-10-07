@@ -123,7 +123,9 @@ async function finishSignIn(res: Response, data: AuthResponse | null) {
   cacheUser(data.user);
   useAuth.setState({ user: data.user, status: 'ready' });
   sfx.success();
-  await claimGuest();
+  // Em segundo plano: vincular o aparelho é uma chamada extra à API (pode demorar com o servidor
+  // frio) e a tela não pode ficar parada nela depois de o som de "entrou" já ter tocado.
+  void claimGuest();
   void markVisit();
 }
 
