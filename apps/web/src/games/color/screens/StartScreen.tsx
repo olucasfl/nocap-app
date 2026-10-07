@@ -57,8 +57,7 @@ export function StartScreen({ initialTab = 'modes', initialBoard, onMode, onStar
   /** Modo cuja ficha está aberta (null = só a lista de modos). */
   const [open, setOpen] = useState<Mode | null>(null);
   const close = useCallback(() => setOpen(null), []);
-  const preset =
-    open === 'daily' ? colorDailySettings : colorPresets[open ?? 'classic']!;
+  const preset = open === 'daily' ? colorDailySettings : colorPresets[open ?? 'classic']!;
 
   /** O Daily tem tela própria (resultado do dia e parte social), fora da ficha dos outros modos. */
   const [dailyView, setDailyView] = useState(false);
@@ -74,6 +73,14 @@ export function StartScreen({ initialTab = 'modes', initialBoard, onMode, onStar
       <DailyScreen
         game="color"
         onPlay={() => onStart('daily')}
+        intro={{
+          rules: [
+            { value: String(colorDailySettings.rounds), label: 'rodadas' },
+            { value: `${colorDailySettings.showMs / 1000}s`, label: 'para decorar' },
+            { value: '1', label: 'chance por dia' },
+          ],
+          text: 'Uma cor aparece e some. Recrie de memória nos controles. As cores são as mesmas para todo mundo, e sua nota soma no ranking do dia.',
+        }}
         onBack={() => setDailyView(false)}
       />
     );

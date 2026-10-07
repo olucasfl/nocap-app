@@ -1,3 +1,4 @@
+import { useState, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { dailyDate } from '@nocap/games';
 import { useAuth } from '@/lib/auth';
@@ -21,13 +22,20 @@ export function DailyScreen({
   error,
   onPlay,
   onBack,
+  intro,
 }: {
   game: GameId;
   busy?: boolean;
   error?: string;
   onPlay: () => void;
   onBack: () => void;
+  /**
+   * Introdução antes da partida (regras do dia). Sem ela, "Jogar o Daily" começa direto: o Tempo
+   * já tem a própria tela de instruções.
+   */
+  intro?: { rules: { value: string; label: string }[]; text: ReactNode };
 }) {
+  const [showIntro, setShowIntro] = useState(false);
   const user = useAuth((s) => s.user);
   const online = useOnline();
   const stats = useQuery({ queryKey: ['stats'], queryFn: fetchStats, enabled: !!user });
@@ -62,10 +70,25 @@ export function DailyScreen({
         </section>
       ) : (
         <section className="ds-play">
-          <p className="ds-text">
-            Uma partida por dia, com {game === 'color' ? 'as mesmas cores' : 'os mesmos alvos'} para
-            todo mundo. Sua nota entra no ranking do dia.
-          </p>
+          {intro && showIntro ? (
+            <>
+              <div className="mono ds-done-tag">COMO FUNCIONA</div>
+              <div className="ds-rules">
+                {intro.rules.map((r) => (
+                  <div className="ds-rule" key={r.label}>
+                    <b>{r.value}</b>
+                    {r.label}
+                  </div>
+                ))}
+              </div>
+              <p className="ds-text">{intro.text}</p>
+            </>
+          ) : (
+            <p className="ds-text">
+              Uma partida por dia, com {game === 'color' ? 'as mesmas cores' : 'os mesmos alvos'}{' '}
+              para todo mundo. Sua nota entra no ranking do dia.
+            </p>
+          )}
           {error && (
             <p className="acc-failure mono" role="alert">
               {error}
@@ -80,9 +103,9 @@ export function DailyScreen({
                 className="btn alt"
                 data-sfx="start"
                 disabled={busy}
-                onClick={onPlay}
+                onClick={intro && !showIntro ? () => setShowIntro(true) : onPlay}
               >
-                {busy ? 'Preparando...' : 'Jogar o Daily'} <ArrowRight />
+                {busy ? 'Preparando...' : showIntro ? 'Começar' : 'Jogar o Daily'} <ArrowRight />
               </button>
             </PlayGate>
           )}
