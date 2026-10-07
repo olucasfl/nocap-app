@@ -2,13 +2,34 @@
 
 Leia este arquivo primeiro. Ele diz onde o projeto parou e como voltar a trabalhar em 10 minutos.
 
-## Estado atual
+## Estado atual (atualizado em 07/10/2026)
 
-- **Esqueleto montado e validado** (`pnpm build` e `pnpm test` passam): monorepo, web (React + Vite + PWA),
-  api (NestJS + Drizzle), `packages/games` (contrato + RNG com testes), docs e automações do Claude.
-- **Cor jogável** de ponta a ponta: lógica (`packages/games/src/color`), API e telas (Hub, início com Clássico/Flash/Daily, memorizar, recriar, resultado com carimbo, final, sons). A partida salva no Supabase e a nota é recalculada no servidor. PWA feito (ícones, precache, prompt de atualização, fila offline em IndexedDB); falta só testar offline num Chrome real. Histórico feito (lista paginada + detalhe). Próximo: passo 6 (critério de pronto: validar tudo no banco real e offline). Nota da Cor já na curva v2.
-- **Banco:** migration `0000` aplicada no Supabase (4 tabelas). Em outro PC basta preencher o `.env`; não rode a migration de novo (`pnpm db:migrate` é idempotente, mas confira antes).
-- Repositório: `https://github.com/olucasfl/nocap-app` (branch `main`). Deve estar **privado**.
+Tudo está em `main` e publicado (API no Render, web na Vercel, banco no Supabase). O Lucas escreve em português, muitas vezes em caixa alta; responda em português e trabalhe direto na `main` (commit só quando ele pedir; mensagem em inglês, Conventional Commits, com `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>`).
+
+**Pronto e no ar** (detalhes em `specs/010-daily-rankings-profile.md`, que é atualizada a cada mudança):
+
+- **Cor:** Clássico e Flash (3 rodadas), Rápido (1), Às cegas (5), Sobrevivência (3 vidas, nota mínima de 6 a 9, até 30 rodadas) e Daily (5 rodadas, tela própria com abas).
+- **Tempo:** Clássico e Sem estourar (3), Rápido (1), Sequência (5 alvos), Sobrevivência (mesma regra da Cor) e Daily. Alvos de 1 a 18 s com centésimos e espaçados entre si. Nada de cronômetro, número ou som rítmico durante a contagem.
+- **Contas obrigatórias para jogar**, histórico com filtros e paginação, perfil com recordes, amigos e perfil de amigo, rankings por jogo, salas (host, pronto, convites, revanche por votação) para Cor e Tempo.
+- **App:** PWA com splash animada, offline (continua logado, avisos, pull to refresh), layouts de tablet e desktop, sons por toque real, vidas em corações, animações de nota, aviso de **atualização obrigatória** (tela cheia até tocar em Atualizar).
+
+**Em andamento: o Intruso** (`specs/011-impostor.md`). Variante da Cor só para sala (3 a 8 pessoas): a turma vê a cor, os intrusos recebem só uma dica, todos recriam e votam (intrusos também votam; voto aberto ou anônimo, escolhido no lobby). Com 3 pessoas pode ter até 2 intrusos; sempre sobra pelo menos 1 normal.
+
+- Feito: regras puras e testes em `packages/games/src/impostor`; motor e sala em `apps/api/src/rooms/impostor` (estado por pessoa: a seed nunca sai, a cor só vai para a tripulação, a dica só para o intruso); telas em `apps/web/src/screens/room/ImpostorPlay.tsx` e `Lobby.tsx`; o modo aparece na lista da Cor e leva a "Criar sala".
+- **Falta:** (1) escrever o resto da paleta de dicas: hoje só `apps/api/src/rooms/impostor/palette-1.ts` (36 cores quentes, 324 dicas); a meta é mais de 1000. Faltam verdes/azuis, roxos/rosas e neutros/escuros/pastéis em `palette-2..4.ts` no mesmo formato (`color('Nome', h, s, b, [9 dicas])`) e importar em `palette.ts`; (2) trocar o `it.skip` de "tem mais de 1000 dicas" por `it` em `impostor-room.engine.test.ts`; (3) **testar com 3 contas de verdade** (criar sala, lobby, decorar, recriar, votar, revelar, pódio): nunca foi jogado ao vivo; (4) o Intruso não salva no histórico nem tem estatísticas (decisão da spec, pode virar etapa futura).
+
+**Banco:** os dados de jogos foram zerados em 07/10/2026 (partidas, pontos e recordes); a conta do Lucas foi mantida. Schema e migrations intactos.
+
+**Ideias que o Lucas aprovou ou pediu para pensar** (ainda sem spec): jogos sociais como Sincro (todos contam o mesmo tempo em silêncio), Blefe de Nota, Sabotador, Telefone Sem Fio, Caça-Cor, Dicionário de Cores; e jogos de sentidos (Tom, Eco de Ritmo, Sombra). Ver a conversa de 07/10 ou peça novas ideias.
+
+## Armadilhas conhecidas (poupam tempo)
+
+- Nesta máquina (Windows) o `pnpm` não estava no PATH do bash e o Turbo não o achava: rode `npx tsc --noEmit` e `npx vitest run` dentro de cada pacote (`packages/games`, `apps/api`, `apps/web`). **Depois de mudar `packages/games`, rode `npx tsup src/index.ts --format esm,cjs --dts --clean` lá**, senão api e web não veem o código novo.
+- Arquivos do repo têm CRLF: edições por script devem normalizar `
+`. Heredocs longos no bash do Windows falharam; use a ferramenta de escrita de arquivos.
+- O Vite pode guardar uma versão vazia de um arquivo que foi regravado: se a tela ficar em branco com "does not provide an export", mexa no arquivo (ou reinicie o `vite`).
+- A API real tentava conectar no Supabase (às vezes dá ETIMEDOUT). Para testar telas sem banco, havia um servidor falso na porta 3333; mate a API real antes.
+- `requestAnimationFrame` para quando a aba está oculta: as telas de resultado têm timeout de segurança por causa disso.
 
 ## Ritual de setup no computador novo
 
@@ -23,17 +44,9 @@ pnpm dev                     # web em :5173, api em :3333 (GET /health)
 
 O `.env` **não vai para o git**. Leve a senha do Supabase por um gerenciador de senhas, nunca por chat.
 
-## Pendências pedidas (só escritas, nada codado)
-
-Ver `docs/ROADMAP.md` > Etapa 1b e as specs 001, 005 e 006:
-
-1. ~~Nota da Cor mais generosa~~ (feito, curva v2; falta validar os parâmetros jogando).
-2. ~~Jogo rápido de 1 rodada~~ (Cor feito; Tempo na Etapa 4).
-3. ~~Modo noturno~~ (feito; a tela de abertura da PWA ainda abre clara).
-
 ## Antes de tudo (pendências de segurança)
 
-- [ ] **Trocar a senha do banco no Supabase** (ela vazou em chat) e colocar a nova só no `.env`.
+- [ ] **Trocar a senha do banco no Supabase** e o `BETTER_AUTH_SECRET` (apareceram em capturas de tela) e colocar os novos só no `.env` e nas variáveis do Render.
 - [ ] Confirmar que o repositório no GitHub está privado.
 
 ## Onde está cada contexto
