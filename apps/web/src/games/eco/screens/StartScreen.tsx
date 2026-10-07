@@ -28,9 +28,9 @@ const MODES: { id: Mode; label: string; desc: string }[] = [
 const LEAD: Record<Mode, string> = {
   classic:
     'Os botões se acendem numa ordem, cada um com o seu som. Repita a sequência. A cada acerto ela ganha mais um passo. Errou, acabou.',
-  escalada: `Igual ao Clássico, mas a cada 5 rodadas entra um botão novo, até ${ECO_MAX_PADS}. A sequência fica mais difícil de guardar.`,
+  escalada: `Igual ao Clássico, mas a cada 3 rodadas entra um botão novo, até ${ECO_MAX_PADS}. A sequência fica mais difícil de guardar.`,
   velocidade:
-    'A sequência toca cada vez mais rápido: começa devagar e acelera a cada rodada, até um ritmo quase de maluco.',
+    'A sequência toca cada vez mais rápido: começa em 650 ms por passo e, a cada rodada, acelera até 160 ms. Difícil, mas dá.',
   reverso:
     'Você vê a sequência na ordem e repete de trás para frente. O último botão que acendeu é o primeiro que você toca.',
   daily:
@@ -89,7 +89,7 @@ export function StartScreen({
     <section className="screen">
       <PullToRefresh />
       <BackButton to="/" label="Jogos" />
-      <h1>Eco</h1>
+      <h1>Ecooo</h1>
       <GameTabs game="eco" tab={tab} onTab={setTab} />
       {tab === 'modes' && (
         <>

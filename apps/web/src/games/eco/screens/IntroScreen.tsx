@@ -15,9 +15,9 @@ function extra(run: Run): string {
     return 'A sequência é a mesma para todo mundo e só vale uma vez por dia.';
   switch (run.preset) {
     case 'escalada':
-      return 'A cada 5 rodadas entra um botão novo. Fique de olho nos símbolos.';
+      return 'A cada 3 rodadas entra um botão novo, até 9. Depois a sequência segue só com os 9. Fique de olho nos símbolos.';
     case 'velocidade':
-      return 'A sequência vai acelerando a cada rodada.';
+      return 'A sequência acelera rápido: na rodada 14 cada botão acende por um instante só.';
     case 'reverso':
       return 'Repita de trás para frente: o último botão que acendeu é o primeiro que você toca.';
     default:

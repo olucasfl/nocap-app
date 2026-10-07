@@ -47,7 +47,7 @@ export function EcoBoard({ pads, lit, bad = null, fresh = null, interactive, onT
     <div
       className={`eco-board${lit !== null ? ' dim' : ''}`}
       role="group"
-      aria-label="Botões do Eco"
+      aria-label="Botões do Ecooo"
     >
       {PADS.slice(0, pads).map((p, i) => (
         <button

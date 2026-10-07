@@ -10,7 +10,7 @@ export const ECO_MAX_PADS = 9;
 /** Teto de passos: quem completa o 40º vence ("Eco perfeito"). */
 export const ECO_MAX_STEPS = 40;
 /** Ficar este tempo sem tocar encerra a partida. */
-export const ECO_TAP_TIMEOUT_MS = 4000;
+export const ECO_TAP_TIMEOUT_MS = 8000;
 /** Pausa ("OBSERVE") antes de cada reprodução. */
 export const ECO_PAUSE_MS = 600;
 /** Menos que isto por toque nenhuma pessoa consegue (quem toca rápido numa sequência longa chega perto): limite inferior do plausível. */
@@ -53,10 +53,14 @@ const BASE: EcoSettings = {
 /** Modos padrão (os únicos que contam para ranking). O Daily é o Clássico com a seed do dia. */
 export const ecoPresets: Record<EcoMode, EcoSettings> = {
   classic: { ...BASE },
-  /** Começa com 4 botões e ganha mais um a cada 5 rodadas, até 9 (na rodada 26). */
-  escalada: { ...BASE, growEvery: 5, maxPads: ECO_MAX_PADS },
-  /** O ritmo começa em 800 ms e encurta 25 ms por rodada, até 250 ms (rodada 23). */
-  velocidade: { ...BASE, stepMs: 800, speedUpMs: 25, minStepMs: 250 },
+  /** Começa com 4 botões e ganha mais um a cada 3 rodadas, até 9 (na rodada 16); depois segue só com 9. */
+  escalada: { ...BASE, growEvery: 3, maxPads: ECO_MAX_PADS },
+  /**
+   * Difícil, mas possível: o ritmo começa em 650 ms por passo, encurta 40 ms a cada rodada e chega
+   * a 160 ms (botão aceso por ~100 ms) na rodada 14. A dificuldade vem de lembrar a sequência
+   * enquanto ela passa depressa; não há tempo limite para tocar além dos 8 s parado.
+   */
+  velocidade: { ...BASE, stepMs: 650, speedUpMs: 40, minStepMs: 160 },
   /** Você vê na ordem e repete de trás para frente; começa com 2 passos. */
   reverso: { ...BASE, startLength: 2, reverse: true },
 };

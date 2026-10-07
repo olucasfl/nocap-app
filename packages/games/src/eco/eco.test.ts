@@ -64,20 +64,17 @@ describe('modos', () => {
     expect(stepMsAt(classic, 40)).toBe(700);
   });
 
-  it('Escalada ganha um botão a cada 5 rodadas e para em 9 (rodada 26)', () => {
+  it('Escalada ganha um botão a cada 3 rodadas, para em 9 (rodada 16) e segue só com 9', () => {
     const s = ecoPresets.escalada;
-    expect([1, 5, 6, 10, 11, 25, 26, 40].map((r) => padsAt(s, r))).toEqual([
-      4, 4, 5, 5, 6, 8, 9, 9,
-    ]);
+    expect([1, 3, 4, 6, 7, 15, 16, 40].map((r) => padsAt(s, r))).toEqual([4, 4, 5, 5, 6, 8, 9, 9]);
     expect(padsAt(s, 100)).toBe(ECO_MAX_PADS);
   });
 
-  it('Velocidade começa em 800 ms, cai 25 ms por rodada e para em 250 (rodada 23)', () => {
+  it('Velocidade começa em 650 ms, cai 40 ms por rodada e para em 160 (rodada 14)', () => {
     const s = ecoPresets.velocidade;
-    expect(stepMsAt(s, 1)).toBe(800);
-    expect(stepMsAt(s, 2)).toBe(775);
-    expect(stepMsAt(s, 23)).toBe(250);
-    expect(stepMsAt(s, 40)).toBe(250);
+    expect([1, 2, 5, 10, 13, 14, 40].map((r) => stepMsAt(s, r))).toEqual([
+      650, 610, 490, 290, 170, 160, 160,
+    ]);
   });
 
   it('Reverso espera a sequência de trás para frente', () => {

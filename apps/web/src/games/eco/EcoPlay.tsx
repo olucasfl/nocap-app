@@ -9,6 +9,7 @@ import {
   sequenceFor,
   stepMsAt,
 } from '@nocap/games';
+import { Countdown } from '@/components/Countdown';
 import { buzz, sfx } from '@/lib/sfx';
 import { EcoBoard } from './EcoBoard';
 import type { EndReason, Run } from './types';
@@ -48,6 +49,8 @@ export function EcoPlay({ run, onEnd, onRound }: Props) {
   const [lit, setLit] = useState<number | null>(null);
   const [done, setDone] = useState(0);
   const [bad, setBad] = useState<number | null>(null);
+  /** Quando acaba o tempo parado (renova a cada toque); `null` fora da sua vez. */
+  const [deadline, setDeadline] = useState<number | null>(null);
 
   const taps = useRef<number[]>([]);
   const pos = useRef(0);
@@ -80,8 +83,10 @@ export function EcoPlay({ run, onEnd, onRound }: Props) {
   };
   const armIdle = () => {
     clearTimeout(idle.current);
+    setDeadline(Date.now() + ECO_TAP_TIMEOUT_MS);
     idle.current = window.setTimeout(() => {
       if (statusRef.current !== 'input') return;
+      setDeadline(null);
       setSt('timeout');
       sfx.ecoWrong();
       later(() => finish('timeout'), 900);
@@ -96,6 +101,7 @@ export function EcoPlay({ run, onEnd, onRound }: Props) {
     pos.current = 0;
     expected.current = expectedTaps(run.seed, s, r);
     setSt('observe');
+    setDeadline(null);
     cb.current.onRound(r);
 
     const seq = sequenceFor(run.seed, s, r);
@@ -121,6 +127,7 @@ export function EcoPlay({ run, onEnd, onRound }: Props) {
   const tap = (pad: number) => {
     if (statusRef.current !== 'input' || ended.current) return;
     clearTimeout(idle.current);
+    setDeadline(null);
     taps.current.push(pad);
     const want = expected.current[pos.current]!;
 
@@ -196,6 +203,19 @@ export function EcoPlay({ run, onEnd, onRound }: Props) {
           {LABEL[status]}
         </div>
         <div className="mono eco-sub">{sub}</div>
+      </div>
+      {/* Parado por muito tempo a partida acaba: o contador mostra quanto falta (renova a cada toque). */}
+      <div className="eco-timer">
+        {status === 'input' && deadline !== null && (
+          <Countdown
+            key={deadline}
+            endsAt={deadline}
+            totalMs={ECO_TAP_TIMEOUT_MS}
+            warnMs={3000}
+            beep
+            label="PARA TOCAR"
+          />
+        )}
       </div>
       <EcoBoard
         pads={pads}

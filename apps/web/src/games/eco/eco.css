@@ -100,6 +100,10 @@
   text-align: right;
 }
 
+/* Reserva o lugar do contador para o tabuleiro não pular quando ele aparece. */
+.eco-timer {
+  min-height: 76px;
+}
 .eco-board {
   flex: 1;
   min-height: 320px;
