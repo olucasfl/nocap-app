@@ -461,3 +461,16 @@
 .lb-row {
   flex-wrap: wrap;
 }
+
+/* Notas embaixo de cada regra: afastadas da sombra dos botões, com quebra de linha segura */
+.lb-rules .rm-mode-note {
+  margin: 12px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.lb-rules .rm-opt {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
