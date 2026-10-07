@@ -364,6 +364,11 @@
   border-radius: 12px;
   background: var(--white);
   font: 900 15px var(--font-display);
+}
+.cg-row.pending {
+  visibility: hidden;
+}
+.cg-row.in {
   animation: enter 0.3s both;
 }
 .cg-row i {

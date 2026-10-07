@@ -29,8 +29,8 @@ export interface ScoredMatch {
  * Sobrevivência: a nota guardada é quantas rodadas a pessoa jogou (em décimos, 7 rodadas = 70).
  * Só vale uma partida completa: as vidas acabaram na última resposta (ou chegou ao limite).
  */
-function survivalTenths(scores: number[]): number {
-  const state = evaluateSurvival(scores);
+function survivalTenths(game: 'color' | 'time', scores: number[]): number {
+  const state = evaluateSurvival(game, scores);
   if (state.ended === null || state.played !== scores.length) {
     throw new BadRequestException('A sobrevivência enviada não terminou (ou tem rodadas a mais)');
   }
@@ -61,7 +61,10 @@ export function scoreMatch(input: Pick<ColorMatchInput, 'mode' | 'seed' | 'answe
   });
 
   const totalTenths = settings.survival
-    ? survivalTenths(rounds.map((r) => r.score))
+    ? survivalTenths(
+        'color',
+        rounds.map((r) => r.score),
+      )
     : rounds.reduce((sum, r) => sum + Math.round(r.score * 10), 0);
   return {
     rounds,
@@ -104,7 +107,10 @@ export function scoreTimeMatch(
   }
 
   const totalTenths = settings.survival
-    ? survivalTenths(rounds.map((r) => r.score))
+    ? survivalTenths(
+        'time',
+        rounds.map((r) => r.score),
+      )
     : rounds.reduce((sum, r) => sum + Math.round(r.score * 10), 0);
   return {
     rounds,

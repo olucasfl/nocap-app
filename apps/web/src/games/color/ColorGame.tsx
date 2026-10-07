@@ -8,6 +8,7 @@ import {
   generateColorRound,
   generateColorStart,
   scoreFromDeltaE,
+  SURVIVAL_MAX_ROUNDS,
   survivalMinScore,
   survivalShowMs,
   type Hsb,
@@ -54,6 +55,11 @@ export function ColorGame({
   initialBoard?: Board;
 }) {
   const [mode, setMode] = useState<Mode>(initialMode);
+  /** Aba e quadro com que o menu abre: vêm da rota e mudam ao sair de uma partida ("Ver ranking"). */
+  const [menu, setMenu] = useState<{ tab?: GameTab; board?: Board }>({
+    tab: initialTab,
+    board: initialBoard,
+  });
   const [phase, setPhase] = useState<Phase>('start');
   const [run, setRun] = useState<Run | null>(null);
   const [index, setIndex] = useState(0);
@@ -84,7 +90,12 @@ export function ColorGame({
   const survival = !!run?.settings.survival;
   const blind = !!run?.settings.blind;
   // Sobrevivência: o estado (vidas, fim) vem sempre das notas já jogadas.
-  const sv = survival ? evaluateSurvival(results.map((r) => r.score)) : null;
+  const sv = survival
+    ? evaluateSurvival(
+        'color',
+        results.map((r) => r.score),
+      )
+    : null;
 
   const lock = useCallback(
     (guess: Hsb) => {
@@ -113,6 +124,12 @@ export function ColorGame({
     }
   };
 
+  /** Do fim da partida de volta ao menu do jogo, já na aba (e no quadro do ranking) pedidos. */
+  const goMenu = (tab: GameTab, board?: Board) => {
+    setMenu({ tab, board });
+    setPhase('start');
+  };
+
   const playing = phase === 'show' || phase === 'pick' || phase === 'result';
   const last = results[results.length - 1];
   const lives = sv?.lives ?? 0;
@@ -136,7 +153,7 @@ export function ColorGame({
       {survival && playing && (
         <SurvivalBar
           lives={lives}
-          minScore={survivalMinScore(index)}
+          minScore={survivalMinScore('color', index)}
           round={index + 1}
           lost={phase === 'result' && !(sv?.passed[index] ?? true)}
         />
@@ -145,8 +162,8 @@ export function ColorGame({
       {phase === 'start' && (
         <StartScreen
           mode={mode}
-          initialTab={initialTab}
-          initialBoard={initialBoard}
+          initialTab={menu.tab}
+          initialBoard={menu.board}
           onMode={setMode}
           onStart={start}
         />
@@ -178,7 +195,7 @@ export function ColorGame({
               <SurvivalVerdict
                 passed={sv.passed[index] ?? false}
                 lives={sv.lives}
-                minScore={survivalMinScore(index)}
+                minScore={survivalMinScore('color', index)}
                 over={sv.ended !== null}
               />
             )
@@ -187,6 +204,7 @@ export function ColorGame({
             run.mode === 'quick' ? (
               <QuickActions
                 run={run}
+                onMenu={goMenu}
                 result={last}
                 previousBest={prevBest}
                 onAgain={() => start('quick')}
@@ -198,6 +216,7 @@ export function ColorGame({
       {phase === 'final' && run && survival && sv && (
         <SurvivalFinalColor
           run={run}
+          onMenu={goMenu}
           results={results}
           previousBest={prevBest}
           onRematch={() => start('survival')}
@@ -206,6 +225,7 @@ export function ColorGame({
       {phase === 'final' && run && !survival && (
         <FinalScreen
           run={run}
+          onMenu={goMenu}
           previousBest={prevBest}
           results={results}
           // Revanche depois do Daily vira partida solo clássica (o Daily é uma seed só).
@@ -221,18 +241,22 @@ function SurvivalFinalColor({
   run,
   results,
   previousBest,
+  onMenu,
   onRematch,
 }: {
   run: Run;
   results: RoundResult[];
   previousBest?: number;
+  onMenu: (tab: GameTab, board?: Board) => void;
   onRematch: () => void;
 }) {
   const save = useSaveMatch(run, results);
-  const state = evaluateSurvival(results.map((r) => r.score));
+  const state = evaluateSurvival(
+    'color',
+    results.map((r) => r.score),
+  );
   return (
     <SurvivalFinal
-      played={state.played}
       completed={state.ended === 'cap'}
       rows={results.map((r, i) => ({
         detail: `ΔE ${r.deltaE.toFixed(1)}`,
@@ -240,7 +264,8 @@ function SurvivalFinalColor({
         passed: state.passed[i] ?? false,
       }))}
       saveText={SAVE_TEXT[save]}
-      game="cor"
+      limit={SURVIVAL_MAX_ROUNDS.color}
+      onMenu={onMenu}
       record={
         isNewRecord(previousBest, state.played * 10)
           ? {

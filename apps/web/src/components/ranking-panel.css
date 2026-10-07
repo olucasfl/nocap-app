@@ -22,19 +22,15 @@
 /* Modo: abas em pílula, rolam de lado se faltar espaço. O Daily fica separado e amarelo. */
 .rp-modes {
   display: flex;
+  flex-wrap: wrap;
   align-items: stretch;
-  gap: 6px;
-  overflow-x: auto;
+  gap: 8px;
   padding: 2px 4px 6px 2px;
-  scrollbar-width: none;
-}
-.rp-modes::-webkit-scrollbar {
-  display: none;
 }
 .rp-modes button {
-  flex: none;
-  height: 40px;
-  padding: 0 12px;
+  flex: 0 0 auto;
+  height: 38px;
+  padding: 0 14px;
   border: var(--border);
   border-radius: 999px;
   background: var(--white);
@@ -57,11 +53,7 @@
   color: var(--yellow);
 }
 .rp-divider {
-  flex: none;
-  width: 3px;
-  margin: 6px 0;
-  background: var(--ink);
-  border-radius: 2px;
+  display: none;
 }
 
 .rp-row2 {

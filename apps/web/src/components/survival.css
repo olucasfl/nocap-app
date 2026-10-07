@@ -270,3 +270,26 @@
     display: none;
   }
 }
+
+/* Rodadas reveladas uma a uma. */
+.sv-rows li.pending {
+  visibility: hidden;
+}
+.sv-rows li.in {
+  animation: sv-row-in 0.28s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+@keyframes sv-row-in {
+  from {
+    transform: translateY(12px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sv-rows li.in {
+    animation: none;
+  }
+}

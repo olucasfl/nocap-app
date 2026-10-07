@@ -1,11 +1,16 @@
 import { useEffect } from 'react';
 import { Link } from '@tanstack/react-router';
-import { buzz, sfx } from '@/lib/sfx';
+import { gradeOf, playGrade } from '@/lib/grade';
+import { sfx } from '@/lib/sfx';
+import { useReveal } from '@/lib/useReveal';
+import { EndActions } from '@/components/EndActions';
+import type { GameTab } from '@/components/GameTabs';
 import { NewRecord } from '@/components/NewRecord';
+import type { Board } from '@/lib/ranking';
 import { saveBest } from '@/lib/records';
 import { formatBest, isNewRecord } from '@/lib/stats';
-import { formatDiff, formatSeconds } from '../format';
 import type { RoundResult, Run } from '../types';
+import { TimeRoundsTable } from './TimeRoundsTable';
 import { SAVE_TEXT, useSaveTime } from '../useSaveTime';
 
 interface Props {
@@ -13,10 +18,11 @@ interface Props {
   results: RoundResult[];
   /** Recorde do modo antes desta partida (décimos); `undefined` = sem estatísticas. */
   previousBest?: number;
+  onMenu: (tab: GameTab, board?: Board) => void;
   onRematch: () => void;
 }
 
-export function FinalScreen({ run, results, previousBest, onRematch }: Props) {
+export function FinalScreen({ run, results, previousBest, onMenu, onRematch }: Props) {
   const total = Math.round(results.reduce((a, r) => a + r.score * 10, 0)) / 10;
   const save = useSaveTime(run, results);
 
@@ -24,39 +30,29 @@ export function FinalScreen({ run, results, previousBest, onRematch }: Props) {
     saveBest('time', total);
   }, [total]);
 
+  // Nota por nota: cada rodada aparece com o seu tique; o total sobe junto e, no fim, vem o som da faixa.
+  const { shown, done } = useReveal(results.length, (i) => sfx.tick(Math.round(results[i]!.score)));
+  const running = Math.round(results.slice(0, shown).reduce((a, r) => a + r.score * 10, 0)) / 10;
   useEffect(() => {
-    sfx.thunk();
-    if (total >= 40) sfx.win();
-    buzz(30);
-  }, [total]);
+    if (done) playGrade(gradeOf(total / results.length).id);
+  }, [done, total, results.length]);
 
   return (
     <section className="screen">
-      {run.kind !== 'daily' && isNewRecord(previousBest, Math.round(total * 10)) && (
+      <div className="tm-total">
+        <div>
+          <div className="mono tm-label">TOTAL</div>
+          <b>{running.toFixed(1)}</b>
+        </div>
+        <div className="tm-total-max">/ {results.length * 10}</div>
+      </div>
+      <TimeRoundsTable rows={results} shown={shown} />
+      {done && run.kind !== 'daily' && isNewRecord(previousBest, Math.round(total * 10)) && (
         <NewRecord
           now={formatBest('time', run.preset, Math.round(total * 10))}
           before={formatBest('time', run.preset, previousBest!)}
         />
       )}
-      <div className="tm-total">
-        <div>
-          <div className="mono tm-label">TOTAL</div>
-          <b>{total.toFixed(1)}</b>
-        </div>
-        <div className="tm-total-max">/ {results.length * 10}</div>
-      </div>
-      <div className="tm-rows">
-        {results.map((r, i) => (
-          <div className="tm-row" key={i}>
-            <span>{i + 1}</span>
-            <span className="mono tm-row-times">
-              {formatSeconds(r.target)} → {formatSeconds(r.answer)}
-            </span>
-            <span className="mono tm-row-diff">{formatDiff(r.answer - r.target)}</span>
-            <span className="tm-row-score">{r.score.toFixed(1)}</span>
-          </div>
-        ))}
-      </div>
       <p className="tm-save" role="status">
         {SAVE_TEXT[save]}
       </p>
@@ -64,12 +60,7 @@ export function FinalScreen({ run, results, previousBest, onRematch }: Props) {
         <button type="button" className="btn alt" onClick={onRematch}>
           Revanche
         </button>
-        <Link to="/tempo" search={{ aba: 'ranking' }} className="btn ghost">
-          Ver ranking
-        </Link>
-        <Link to="/tempo" className="btn ghost">
-          Modos do jogo
-        </Link>
+        <EndActions board={run.kind === 'daily' ? 'daily' : run.preset} onMenu={onMenu} />
         <Link to="/" className="btn ghost">
           Voltar aos jogos
         </Link>

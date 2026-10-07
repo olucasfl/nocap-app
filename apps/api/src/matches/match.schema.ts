@@ -19,7 +19,7 @@ const base = {
 const colorMatchSchema = z.object({
   ...base,
   game: z.literal('color'),
-  answers: z.array(answerSchema).min(1).max(20),
+  answers: z.array(answerSchema).min(1).max(30),
 });
 
 const timeMatchSchema = z.object({

@@ -107,7 +107,7 @@ export function StartScreen({
                       <b>6</b>nota mínima
                     </div>
                     <div className="tm-rule">
-                      <b>{SURVIVAL_MAX_ROUNDS}</b>rodadas máx.
+                      <b>{SURVIVAL_MAX_ROUNDS.time}</b>rodadas máx.
                     </div>
                   </>
                 ) : (

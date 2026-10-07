@@ -7,7 +7,7 @@ import { deltaE2000, hsbToRgb, rgbToLab, type Hsb } from './convert';
 export * from './convert';
 
 export const colorSettingsSchema = z.object({
-  rounds: z.number().int().min(1).max(20),
+  rounds: z.number().int().min(1).max(30),
   showMs: z.number().int().min(100).max(10000),
   /** Sobrevivência: 3 vidas, nota mínima crescente; `rounds` é só o limite. */
   survival: z.boolean().optional(),
@@ -28,7 +28,7 @@ export const colorPresets: Record<string, ColorSettings> = {
   /** Às cegas: 5 rodadas sem ver a cor que está montando; as notas só aparecem no fim. */
   blind: { rounds: 5, showMs: 3000, blind: true },
   /** Sobrevivência: joga até perder as 3 vidas (o tempo de decorar cai a cada rodada). */
-  survival: { rounds: SURVIVAL_MAX_ROUNDS, showMs: 3000, survival: true },
+  survival: { rounds: SURVIVAL_MAX_ROUNDS.color, showMs: 3000, survival: true },
 };
 
 export function generateColorRound(seed: string, _settings: ColorSettings, index: number): Hsb {

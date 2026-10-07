@@ -80,3 +80,17 @@ describe('Tempo: Sequência e Sobrevivência', () => {
     ).toThrow(BadRequestException);
   });
 });
+
+describe('Cor: Sobrevivência com nota mínima crescente', () => {
+  it('aceita uma partida longa (até 30 rodadas) e exige 7 na rodada 5', () => {
+    const perfect = (i: number) => colorGame.generateRound(SEED, colorGame.presets.survival!, i);
+    const run = [0, 1, 2, 3].map(perfect);
+    // Rodada 5 (índice 4) com a cor errada: perde uma vida (mínimo 7), e mais duas falham no fim.
+    const answers = [...run, colorBad, colorBad, colorBad];
+    const scored = scoreMatch({ mode: 'survival', seed: SEED, answers });
+    expect(scored.totalTenths).toBe(70);
+    // Perfeito nas 30 rodadas: completou, e guarda 30 rodadas (x10).
+    const all = Array.from({ length: 30 }, (_, i) => perfect(i));
+    expect(scoreMatch({ mode: 'survival', seed: SEED, answers: all }).totalTenths).toBe(300);
+  });
+});

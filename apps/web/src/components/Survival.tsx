@@ -1,8 +1,12 @@
-import { useEffect, type CSSProperties } from 'react';
+import { useEffect, type CSSProperties, type ReactNode } from 'react';
 import { Link } from '@tanstack/react-router';
 import { buzz, sfx } from '@/lib/sfx';
+import type { Board } from '@/lib/ranking';
+import { EndActions } from './EndActions';
+import type { GameTab } from './GameTabs';
+import { useReveal } from '@/lib/useReveal';
 import { NewRecord } from './NewRecord';
-import { SURVIVAL_LIVES, SURVIVAL_MAX_ROUNDS } from '@nocap/games';
+import { SURVIVAL_LIVES } from '@nocap/games';
 import './survival.css';
 
 /** Vidas (quadrados cheios/vazios) e a nota mínima da rodada, no topo durante a Sobrevivência. */
@@ -84,47 +88,59 @@ export interface SurvivalRow {
 
 /** Resultado da Sobrevivência: quantas rodadas a pessoa jogou e como foi cada uma. */
 export function SurvivalFinal({
-  played,
   completed,
+  limit,
   rows,
+  table,
   saveText,
-  game,
   record,
+  onMenu,
   onRematch,
 }: {
-  played: number;
   completed: boolean;
+  /** Limite de rodadas do modo (quem chega até aqui ganha). */
+  limit: number;
   rows: SurvivalRow[];
+  /** Substitui a lista padrão de rodadas (o Tempo usa a tabela de colunas). */
+  table?: (shown: number) => ReactNode;
   saveText: string;
-  game: 'cor' | 'tempo';
+  /** Volta ao menu do jogo (ranking do modo ou lista de modos). */
+  onMenu: (tab: GameTab, board?: Board) => void;
   /** Bateu o recorde do modo: mostra o aviso animado. */
   record?: { now: string; before: string } | null;
   onRematch: () => void;
 }) {
+  // Rodada por rodada: o número de rodadas sobe junto com as linhas que aparecem.
+  const { shown, done } = useReveal(rows.length, (i) =>
+    rows[i]!.passed ? sfx.coin() : sfx.lifeLost(),
+  );
   useEffect(() => {
+    if (!done) return;
     if (completed) sfx.win();
     else sfx.gameOver();
     buzz(40);
-  }, [completed]);
+  }, [done, completed]);
   return (
     <section className="screen">
-      {record && <NewRecord now={record.now} before={record.before} />}
       <div className="sv-total">
         <div className="mono">{completed ? 'COMPLETOU!' : 'VOCÊ JOGOU'}</div>
-        <b>{played}</b>
-        <div className="mono">{played === 1 ? 'RODADA' : 'RODADAS'}</div>
-        {completed && <small className="mono">LIMITE DE {SURVIVAL_MAX_ROUNDS} RODADAS</small>}
+        <b>{shown}</b>
+        <div className="mono">{shown === 1 ? 'RODADA' : 'RODADAS'}</div>
+        {done && completed && <small className="mono">LIMITE DE {limit} RODADAS</small>}
       </div>
-      <ul className="sv-rows">
-        {rows.map((r, i) => (
-          <li key={i} className={r.passed ? 'ok' : 'bad'}>
-            <span className="mono">{i + 1}</span>
-            <span className="mono sv-detail">{r.detail}</span>
-            <b>{r.score.toFixed(1)}</b>
-            <span className="mono sv-tag">{r.passed ? 'PASSOU' : 'VIDA'}</span>
-          </li>
-        ))}
-      </ul>
+      {table?.(shown) ?? (
+        <ul className="sv-rows">
+          {rows.map((r, i) => (
+            <li key={i} className={`${r.passed ? 'ok' : 'bad'}${i < shown ? ' in' : ' pending'}`}>
+              <span className="mono">{i + 1}</span>
+              <span className="mono sv-detail">{r.detail}</span>
+              <b>{r.score.toFixed(1)}</b>
+              <span className="mono sv-tag">{r.passed ? 'PASSOU' : 'VIDA'}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {done && record && <NewRecord now={record.now} before={record.before} />}
       <p className="sv-save mono" role="status">
         {saveText}
       </p>
@@ -132,12 +148,7 @@ export function SurvivalFinal({
         <button type="button" className="btn alt" onClick={onRematch}>
           Jogar de novo
         </button>
-        <Link to={`/${game}`} search={{ aba: 'ranking', quadro: 'survival' }} className="btn ghost">
-          Ver ranking
-        </Link>
-        <Link to={`/${game}`} className="btn ghost">
-          Modos do jogo
-        </Link>
+        <EndActions board="survival" onMenu={onMenu} />
         <Link to="/" className="btn ghost">
           Voltar aos jogos
         </Link>

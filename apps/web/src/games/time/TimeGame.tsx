@@ -4,6 +4,7 @@ import {
   evaluateSurvival,
   generateTimeRound,
   scoreTime,
+  SURVIVAL_MAX_ROUNDS,
   survivalMinScore,
   timePresets,
 } from '@nocap/games';
@@ -18,6 +19,7 @@ import { isNetworkError } from '@/lib/network';
 import { MIN_TAP_GAP_MS, formatSeconds } from './format';
 import { FinalScreen } from './screens/FinalScreen';
 import { IntroScreen } from './screens/IntroScreen';
+import { TimeRoundsTable } from './screens/TimeRoundsTable';
 import { SAVE_TEXT, useSaveTime } from './useSaveTime';
 import { ResultScreen } from './screens/ResultScreen';
 import { StartScreen } from './screens/StartScreen';
@@ -68,6 +70,11 @@ export function TimeGame({
   initialBoard?: Board;
 }) {
   const [mode, setMode] = useState<Mode>(initialMode);
+  /** Aba e quadro com que o menu abre: vêm da rota e mudam ao sair de uma partida ("Ver ranking"). */
+  const [menu, setMenu] = useState<{ tab?: GameTab; board?: Board }>({
+    tab: initialTab,
+    board: initialBoard,
+  });
   const [phase, setPhase] = useState<Phase>('start');
   const [run, setRun] = useState<Run | null>(null);
   const [index, setIndex] = useState(0);
@@ -138,7 +145,12 @@ export function TimeGame({
   );
 
   const survival = !!run?.settings.survival;
-  const sv = survival ? evaluateSurvival(results.map((r) => r.score)) : null;
+  const sv = survival
+    ? evaluateSurvival(
+        'time',
+        results.map((r) => r.score),
+      )
+    : null;
 
   const next = () => {
     if (survival ? sv?.ended === null : run && index + 1 < run.settings.rounds) {
@@ -150,9 +162,15 @@ export function TimeGame({
   };
 
   const counting = phase === 'counting';
+  /** Do fim da partida de volta ao menu do jogo, já na aba (e no quadro do ranking) pedidos. */
+  const goMenu = (tab: GameTab, board?: Board) => {
+    setMenu({ tab, board });
+    setPhase('start');
+  };
+
   const playing = phase === 'target' || counting || phase === 'result';
   const survivalInfo = survival
-    ? { round: index + 1, lives: sv?.lives ?? 3, minScore: survivalMinScore(index) }
+    ? { round: index + 1, lives: sv?.lives ?? 3, minScore: survivalMinScore('time', index) }
     : undefined;
   const last = results[results.length - 1];
 
@@ -178,7 +196,7 @@ export function TimeGame({
       {survival && phase === 'result' && (
         <SurvivalBar
           lives={sv?.lives ?? 3}
-          minScore={survivalMinScore(index)}
+          minScore={survivalMinScore('time', index)}
           round={index + 1}
           lost={sv ? !(sv.passed[index] ?? true) : false}
         />
@@ -189,8 +207,8 @@ export function TimeGame({
           mode={mode}
           busy={busy}
           error={error}
-          initialTab={initialTab}
-          initialBoard={initialBoard}
+          initialTab={menu.tab}
+          initialBoard={menu.board}
           onMode={setMode}
           onStart={(m) => void start(m)}
         />
@@ -217,6 +235,7 @@ export function TimeGame({
           key={index}
           result={last}
           run={run}
+          onMenu={goMenu}
           isLast={survival ? sv?.ended !== null : index + 1 >= run.settings.rounds}
           onNext={next}
           extra={
@@ -224,7 +243,7 @@ export function TimeGame({
               <SurvivalVerdict
                 passed={sv.passed[index] ?? false}
                 lives={sv.lives}
-                minScore={survivalMinScore(index)}
+                minScore={survivalMinScore('time', index)}
                 over={sv.ended !== null}
               />
             )
@@ -236,6 +255,7 @@ export function TimeGame({
       {phase === 'final' && run && survival && (
         <SurvivalFinalTime
           run={run}
+          onMenu={goMenu}
           results={results}
           previousBest={prevBest}
           onRematch={() => void start('survival')}
@@ -244,6 +264,7 @@ export function TimeGame({
       {phase === 'final' && run && !survival && (
         <FinalScreen
           run={run}
+          onMenu={goMenu}
           previousBest={prevBest}
           results={results}
           onRematch={() => void start(run.mode === 'daily' ? 'classic' : run.mode)}
@@ -258,26 +279,32 @@ function SurvivalFinalTime({
   run,
   results,
   previousBest,
+  onMenu,
   onRematch,
 }: {
   run: Run;
   results: RoundResult[];
   previousBest?: number;
+  onMenu: (tab: GameTab, board?: Board) => void;
   onRematch: () => void;
 }) {
   const save = useSaveTime(run, results);
-  const state = evaluateSurvival(results.map((r) => r.score));
+  const state = evaluateSurvival(
+    'time',
+    results.map((r) => r.score),
+  );
   return (
     <SurvivalFinal
-      played={state.played}
       completed={state.ended === 'cap'}
       rows={results.map((r, i) => ({
         detail: `${formatSeconds(r.target)} → ${formatSeconds(r.answer)}`,
         score: r.score,
         passed: state.passed[i] ?? false,
       }))}
+      table={(shown) => <TimeRoundsTable rows={results} passed={state.passed} shown={shown} />}
       saveText={SAVE_TEXT[save]}
-      game="tempo"
+      limit={SURVIVAL_MAX_ROUNDS.time}
+      onMenu={onMenu}
       record={
         isNewRecord(previousBest, state.played * 10)
           ? {

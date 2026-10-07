@@ -42,7 +42,7 @@ export const timePresets: Record<string, TimeSettings> = {
   sequence: { rounds: 5, minMs: 2000, maxMs: 6000, noOvershoot: false, mix: 'uniform' },
   /** Sobrevivência: joga até perder as 3 vidas; alvos quase sempre curtos. */
   survival: {
-    rounds: SURVIVAL_MAX_ROUNDS,
+    rounds: SURVIVAL_MAX_ROUNDS.time,
     minMs: 1000,
     maxMs: 22_000,
     noOvershoot: false,
