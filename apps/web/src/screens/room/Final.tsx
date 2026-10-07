@@ -1,5 +1,7 @@
 import { useAuth } from '@/lib/auth';
-import { leaveRoom, sendRoom, useRoom, type RoomSnapshot } from '@/lib/rooms';
+import { useState } from 'react';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { closeRoom, leaveRoom, sendRoom, useRoom, type RoomSnapshot } from '@/lib/rooms';
 
 /**
  * Pódio da sala e votação da revanche. Todo mundo vota em "jogar de novo" ou sai; quando todos
@@ -9,6 +11,7 @@ import { leaveRoom, sendRoom, useRoom, type RoomSnapshot } from '@/lib/rooms';
 export function Final({ snapshot }: { snapshot: RoomSnapshot }) {
   const me = useAuth((s) => s.user?.id);
   const message = useRoom((s) => s.message);
+  const [closing, setClosing] = useState(false);
   const impostor =
     snapshot.game === 'impostor' || (snapshot.game === 'eco' && snapshot.mode === 'leader');
   const eco = snapshot.game === 'eco';
@@ -81,6 +84,28 @@ export function Final({ snapshot }: { snapshot: RoomSnapshot }) {
         <button type="button" className="btn ghost" data-sfx="back" onClick={leaveRoom}>
           Sair da sala
         </button>
+        {mine?.isHost && (
+          <button
+            type="button"
+            className="btn ghost"
+            data-sfx="remove"
+            onClick={() => setClosing(true)}
+          >
+            Encerrar sala
+          </button>
+        )}
+        <ConfirmDialog
+          open={closing}
+          title="Encerrar a sala?"
+          text="Todo mundo que está na sala será removido e a sala deixa de existir."
+          confirmLabel="Encerrar"
+          confirmSfx="remove"
+          onConfirm={() => {
+            setClosing(false);
+            closeRoom();
+          }}
+          onCancel={() => setClosing(false)}
+        />
       </div>
     </section>
   );

@@ -201,6 +201,7 @@ function attach(r: Room) {
     })),
   );
   r.onMessage('chatHistory', (list: ChatMessage[]) => set({ chat: list, unread: 0 }));
+  r.onMessage('closed', () => finish('A sala foi encerrada pelo líder.'));
   r.onMessage('error', (m: string) => set({ message: m }));
   r.onMessage('invited', (m: { username: string }) =>
     set({ invited: [...new Set([...useRoom.getState().invited, m.username])], message: '' }),
@@ -289,6 +290,11 @@ export function leaveRoom() {
 /** Convida um amigo para a sala em que estou (só no lobby). */
 export function inviteFriend(username: string) {
   sendRoom('invite', { username });
+}
+
+/** Líder: encerra a sala e tira todo mundo dela. */
+export function closeRoom() {
+  sendRoom('close');
 }
 
 export function sendChat(text: string) {

@@ -94,6 +94,14 @@ export class ColorRoom extends Room {
       this.act(c, (id) => this.engine.voteRematch(id, !!m?.again)),
     );
     this.onMessage('invite', (c, m: { username?: string }) => void this.invite(c, m?.username));
+    // Só o líder encerra: todo mundo é avisado e sai, e a sala deixa de existir.
+    this.onMessage('close', (c) => {
+      const id = (c.userData as AuthData | undefined)?.id;
+      if (!id) return;
+      if (!this.engine.isHost(id)) return c.send('error', 'Só o líder pode encerrar a sala');
+      this.broadcast('closed');
+      void this.disconnect();
+    });
     this.onMessage('chat', (c, m: { text?: unknown }) => {
       const id = (c.userData as AuthData | undefined)?.id;
       if (!id) return;

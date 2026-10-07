@@ -1,4 +1,6 @@
-import { leaveRoom, sendRoom, type RoomSnapshot } from '@/lib/rooms';
+import { useState } from 'react';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { closeRoom, leaveRoom, sendRoom, type RoomSnapshot } from '@/lib/rooms';
 import { InvitePanel } from './InvitePanel';
 import { LobbyShell } from './LobbyShell';
 import { MembersPanel } from './MembersPanel';
@@ -10,6 +12,7 @@ import { MIN_PLAYERS } from './rules';
  * que é a primeira coisa que o líder precisa acertar.
  */
 export function HostLobby({ snapshot, me }: { snapshot: RoomSnapshot; me: string | undefined }) {
+  const [closing, setClosing] = useState(false);
   const others = snapshot.members.filter((m) => m.connected && !m.isHost);
   const connected = snapshot.members.filter((m) => m.connected).length;
   const needed = MIN_PLAYERS[snapshot.game];
@@ -47,6 +50,26 @@ export function HostLobby({ snapshot, me }: { snapshot: RoomSnapshot; me: string
           <button type="button" className="btn ghost" data-sfx="back" onClick={leaveRoom}>
             Sair da sala
           </button>
+          <button
+            type="button"
+            className="btn ghost"
+            data-sfx="remove"
+            onClick={() => setClosing(true)}
+          >
+            Encerrar sala
+          </button>
+          <ConfirmDialog
+            open={closing}
+            title="Encerrar a sala?"
+            text="Todo mundo que está na sala será removido e a sala deixa de existir. Para jogar de novo, é preciso criar outra."
+            confirmLabel="Encerrar"
+            confirmSfx="remove"
+            onConfirm={() => {
+              setClosing(false);
+              closeRoom();
+            }}
+            onCancel={() => setClosing(false)}
+          />
         </>
       }
     />
