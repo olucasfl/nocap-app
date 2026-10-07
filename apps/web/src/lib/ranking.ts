@@ -59,13 +59,15 @@ export const PERIODS: { id: Period; label: string }[] = [
   { id: 'all', label: 'Sempre' },
 ];
 
-/** Máximo de pontos de uma partida no quadro (10 por rodada: a Cor tem 5 rodadas, o Tempo 3). */
+/** Máximo de pontos de uma partida no quadro (10 por rodada; o Daily da Cor tem 5 rodadas). */
 export function boardMax(game: Game, board: Board): number {
   // Sobrevivência não tem máximo: vale pelas rodadas jogadas.
   if (board === 'survival') return 0;
   if (board === 'quick') return 10;
   if (board === 'sequence') return 50;
-  return game === 'time' ? 30 : 50;
+  if (board === 'daily') return game === 'time' ? 30 : 50;
+  if (board === 'blind') return 50;
+  return 30;
 }
 
 export const SCOPES: { id: Scope; label: string }[] = [

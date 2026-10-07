@@ -34,9 +34,9 @@ export const fetchStats = () => apiClient.get<Stats>('/me/stats');
 export const recordVisit = () =>
   apiClient.post<{ current: number; best: number; visitedToday: boolean }>('/me/visit', {});
 
-/** Máximo de pontos de uma partida: 10 por rodada. A Cor tem 5 rodadas; o Tempo, 3. */
+/** Máximo de pontos de uma partida: 10 por rodada. Cor e Tempo têm 3 rodadas (o Daily da Cor tem 5). */
 const MODE_MAX_BY_GAME: Record<GameId, Record<string, number>> = {
-  color: { classic: 50, flash: 50, quick: 10, blind: 50, survival: 0 },
+  color: { classic: 30, flash: 30, quick: 10, blind: 50, survival: 0 },
   time: { classic: 30, quick: 10, strict: 30, sequence: 50, survival: 0 },
 };
 
@@ -47,8 +47,8 @@ export function modeMax(game: string, mode: string): number | undefined {
   return MODE_MAX_BY_GAME[game as GameId]?.[mode];
 }
 
-/** Máximo do Daily de um jogo (usa o clássico). */
-export const dailyMax = (game: string) => modeMax(game, 'classic') ?? 50;
+/** Máximo do Daily de um jogo: 5 rodadas na Cor, 3 no Tempo. */
+export const dailyMax = (game: string) => (game === 'color' ? 50 : 30);
 
 const ORDER = ['classic', 'flash', 'quick', 'strict', 'blind', 'sequence', 'survival'];
 

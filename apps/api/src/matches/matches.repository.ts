@@ -86,6 +86,9 @@ export class MatchesRepository {
         playedAt,
       });
 
+      // O Daily (5 rodadas na Cor) tem ranking próprio e não mexe nos recordes do Clássico.
+      if (input.kind === 'daily') return { duplicate: false };
+
       await tx
         .insert(userGameStats)
         .values({

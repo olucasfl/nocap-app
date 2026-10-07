@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { SURVIVAL_MAX_ROUNDS, colorPresets } from '@nocap/games';
+import { SURVIVAL_MAX_ROUNDS, colorDailySettings, colorPresets } from '@nocap/games';
 import { BackButton } from '@/components/BackButton';
 import { DailyScreen } from '@/components/DailyScreen';
 import { FriendsPanel } from '@/components/FriendsPanel';
@@ -18,8 +18,8 @@ import type { Mode } from '../types';
 
 /** Modos de partida solo. O Daily é um cartão à parte, dentro do jogo. */
 const MODES: { id: Mode; label: string; desc: string }[] = [
-  { id: 'classic', label: 'Clássico', desc: '5 RODADAS · 3 S' },
-  { id: 'flash', label: 'Flash', desc: '5 RODADAS · 0,4 S' },
+  { id: 'classic', label: 'Clássico', desc: '3 RODADAS · 3 S' },
+  { id: 'flash', label: 'Flash', desc: '3 RODADAS · 0,4 S' },
   { id: 'quick', label: 'Rápido', desc: '1 RODADA' },
   { id: 'blind', label: 'Às cegas', desc: 'SEM PRÉVIA' },
   { id: 'survival', label: 'Sobrevivência', desc: '3 VIDAS' },
@@ -57,7 +57,8 @@ export function StartScreen({ initialTab = 'modes', initialBoard, onMode, onStar
   /** Modo cuja ficha está aberta (null = só a lista de modos). */
   const [open, setOpen] = useState<Mode | null>(null);
   const close = useCallback(() => setOpen(null), []);
-  const preset = colorPresets[(open ?? 'classic') === 'daily' ? 'classic' : (open ?? 'classic')]!;
+  const preset =
+    open === 'daily' ? colorDailySettings : colorPresets[open ?? 'classic']!;
 
   /** O Daily tem tela própria (resultado do dia e parte social), fora da ficha dos outros modos. */
   const [dailyView, setDailyView] = useState(false);

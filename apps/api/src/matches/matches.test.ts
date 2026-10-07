@@ -16,8 +16,8 @@ const PLAYER = 'player-of-user';
 const createAs = (service: MatchesService, input: unknown) => service.create(input as never, USER);
 
 /** Respostas perfeitas: a própria cor-alvo regenerada pela seed. */
-const perfectAnswers = (seed: string) =>
-  Array.from({ length: settings.rounds }, (_, i) => colorGame.generateRound(seed, settings, i));
+const perfectAnswers = (seed: string, rounds = settings.rounds) =>
+  Array.from({ length: rounds }, (_, i) => colorGame.generateRound(seed, settings, i));
 
 const fakeRepo = (
   result: { duplicate: boolean } | 'conflict' = { duplicate: false },
@@ -41,17 +41,17 @@ const fakeRepo = (
 };
 
 describe('scoreMatch', () => {
-  it('recalcula a nota pela seed: respostas perfeitas dão 50', () => {
+  it('recalcula a nota pela seed: respostas perfeitas dão 30', () => {
     const scored = scoreMatch({ mode: 'classic', seed: 's1', answers: perfectAnswers('s1') });
-    expect(scored.total).toBe(50);
-    expect(scored.totalTenths).toBe(500);
+    expect(scored.total).toBe(30);
+    expect(scored.totalTenths).toBe(300);
     expect(scored.rounds.every((r) => r.score === 10)).toBe(true);
   });
 
   it('respostas ruins valem menos que perfeitas', () => {
-    const bad = Array.from({ length: 5 }, () => ({ h: 0, s: 0, b: 0 }));
+    const bad = Array.from({ length: 3 }, () => ({ h: 0, s: 0, b: 0 }));
     const scored = scoreMatch({ mode: 'classic', seed: 's1', answers: bad });
-    expect(scored.total).toBeLessThan(50);
+    expect(scored.total).toBeLessThan(30);
     expect(scored.total).toBeGreaterThanOrEqual(0);
   });
 
@@ -66,7 +66,7 @@ describe('scoreMatch', () => {
       BadRequestException,
     );
     expect(() =>
-      scoreMatch({ mode: 'classic', seed: 's', answers: perfectAnswers('s').slice(0, 3) }),
+      scoreMatch({ mode: 'classic', seed: 's', answers: perfectAnswers('s').slice(0, 2) }),
     ).toThrow(BadRequestException);
   });
 });
@@ -138,12 +138,12 @@ describe('MatchesService.create', () => {
   it('salva com a nota recalculada e marca preset como ranked', async () => {
     const { repo, save } = fakeRepo();
     const res = await createAs(new MatchesService(repo), body());
-    expect(res.total).toBe(50);
-    expect(res.rounds).toHaveLength(5);
+    expect(res.total).toBe(30);
+    expect(res.rounds).toHaveLength(3);
     expect(save).toHaveBeenCalledWith(
       expect.objectContaining({
         ranked: true,
-        scored: expect.objectContaining({ totalTenths: 500 }),
+        scored: expect.objectContaining({ totalTenths: 300 }),
       }),
     );
   });
@@ -170,14 +170,14 @@ describe('MatchesService.create', () => {
     await expect(
       createAs(
         service,
-        body({ kind: 'daily', seed: today, mode: 'flash', answers: perfectAnswers(today) }),
+        body({ kind: 'daily', seed: today, mode: 'flash', answers: perfectAnswers(today, 5) }),
       ),
     ).rejects.toThrow(BadRequestException);
     expect(save).not.toHaveBeenCalled();
 
     const ok = await createAs(
       service,
-      body({ kind: 'daily', seed: today, answers: perfectAnswers(today) }),
+      body({ kind: 'daily', seed: today, answers: perfectAnswers(today, 5) }),
     );
     expect(ok.total).toBe(50);
   });
@@ -195,7 +195,7 @@ describe('Daily: uma partida por dia', () => {
   });
   const today = dailySeed('color');
   const daily = (over: Record<string, unknown> = {}) =>
-    body({ kind: 'daily', seed: today, answers: perfectAnswers(today), ...over });
+    body({ kind: 'daily', seed: today, answers: perfectAnswers(today, 5), ...over });
 
   it('quem já jogou o Daily de hoje não joga de novo (409) e nada é salvo', async () => {
     const { repo, save } = fakeRepo({ duplicate: false }, true);

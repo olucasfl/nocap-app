@@ -12,7 +12,7 @@ import {
 const stats: Stats = {
   modes: [
     { game: 'color', mode: 'quick', matches: 2, best: 85, average: 70 },
-    { game: 'color', mode: 'classic', matches: 4, best: 400, average: 300 },
+    { game: 'color', mode: 'classic', matches: 4, best: 250, average: 200 },
     { game: 'time', mode: 'classic', matches: 1, best: 100, average: 100 },
     { game: 'time', mode: 'strict', matches: 2, best: 250, average: 200 },
     { game: 'color', mode: 'zzz', matches: 1, best: 10, average: 10 },
@@ -31,7 +31,7 @@ describe('stats', () => {
   });
 
   it('o máximo de pontos depende do jogo: Cor 5 rodadas (50), Tempo 3 rodadas (30)', () => {
-    expect(modeMax('color', 'classic')).toBe(50);
+    expect(modeMax('color', 'classic')).toBe(30);
     expect(modeMax('time', 'classic')).toBe(30);
     expect(modeMax('time', 'strict')).toBe(30);
     expect(modeMax('color', 'quick')).toBe(10);
@@ -49,7 +49,7 @@ describe('stats', () => {
 
 describe('recordes por modo', () => {
   it('texto do recorde do modo, na ficha', () => {
-    expect(recordText(stats, 'color', 'classic')).toBe('Seu recorde aqui é de 40.0/50');
+    expect(recordText(stats, 'color', 'classic')).toBe('Seu recorde aqui é de 25.0/30');
     expect(recordText(stats, 'color', 'blind')).toBe('Você ainda não tem recorde neste modo');
     expect(recordText(undefined, 'color', 'classic')).toBeNull();
   });

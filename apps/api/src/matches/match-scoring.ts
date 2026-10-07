@@ -2,6 +2,7 @@ import { BadRequestException } from '@nestjs/common';
 import {
   COLOR_SCORE_VERSION,
   TIME_SCORE_VERSION,
+  colorDailySettings,
   colorGame,
   colorDeltaE,
   encodeAnswer,
@@ -43,8 +44,10 @@ export const ELAPSED_SLACK_MS = 1500;
 /**
  * Regenera as rodadas pela seed e recalcula as notas. Nunca confia em nota vinda do cliente.
  */
-export function scoreMatch(input: Pick<ColorMatchInput, 'mode' | 'seed' | 'answers'>): ScoredMatch {
-  const settings = colorGame.presets[input.mode];
+export function scoreMatch(
+  input: Pick<ColorMatchInput, 'mode' | 'seed' | 'answers'> & { kind?: 'solo' | 'daily' },
+): ScoredMatch {
+  const settings = input.kind === 'daily' ? colorDailySettings : colorGame.presets[input.mode];
   if (!settings) {
     throw new BadRequestException(`Modo desconhecido: ${input.mode}`);
   }

@@ -21,8 +21,8 @@ export type ColorRound = Hsb;
 export type ColorAnswer = Hsb;
 
 export const colorPresets: Record<string, ColorSettings> = {
-  classic: { rounds: 5, showMs: 3000 },
-  flash: { rounds: 5, showMs: 400 },
+  classic: { rounds: 3, showMs: 3000 },
+  flash: { rounds: 3, showMs: 400 },
   /** Jogo rápido: 1 rodada, ranking próprio (modo `quick`). */
   quick: { rounds: 1, showMs: 3000 },
   /** Às cegas: 5 rodadas sem ver a cor que está montando; as notas só aparecem no fim. */
@@ -30,6 +30,12 @@ export const colorPresets: Record<string, ColorSettings> = {
   /** Sobrevivência: joga até perder as 3 vidas (o tempo de decorar cai a cada rodada). */
   survival: { rounds: SURVIVAL_MAX_ROUNDS.color, showMs: 3000, survival: true },
 };
+
+/**
+ * Daily da Cor: 5 rodadas com o jogo do Clássico (3 s para decorar). Não é um preset de modo (não
+ * entra em `colorPresets`): a partida é guardada como `classic` + `kind: 'daily'`.
+ */
+export const colorDailySettings: ColorSettings = { rounds: 5, showMs: 3000 };
 
 export function generateColorRound(seed: string, _settings: ColorSettings, index: number): Hsb {
   const rng = createRng(`${seed}:${index}`);

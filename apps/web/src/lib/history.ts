@@ -101,7 +101,8 @@ export function matchMax(item: Pick<HistoryItem, 'game' | 'mode' | 'answers'>): 
     item.game === 'time'
       ? (item.answers ? presetFor(item.mode, item.answers.length) : timePresets[item.mode])?.rounds
       : item.game === 'color'
-        ? colorPresets[item.mode]?.rounds
+        ? // O Daily da Cor tem 5 rodadas, o Clássico 3: vale o número de respostas guardadas.
+          (item.answers?.length ?? colorPresets[item.mode]?.rounds)
         : undefined;
   return (rounds ?? item.answers?.length ?? 5) * 10;
 }

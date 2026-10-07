@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   START_MIN_DELTA_E,
+  colorDailySettings,
   colorDeltaE,
   colorGame,
   colorPresets,
@@ -120,8 +121,9 @@ describe('colorGame', () => {
     for (const p of Object.values(colorGame.presets)) {
       expect(colorGame.settingsSchema.safeParse(p).success).toBe(true);
     }
-    expect(colorGame.presets.classic).toEqual({ rounds: 5, showMs: 3000 });
-    expect(colorGame.presets.flash).toEqual({ rounds: 5, showMs: 400 });
+    expect(colorGame.presets.classic).toEqual({ rounds: 3, showMs: 3000 });
+    expect(colorGame.presets.flash).toEqual({ rounds: 3, showMs: 400 });
+    expect(colorDailySettings.rounds).toBe(5);
     expect(colorGame.meta.ranking).toBe('score');
   });
 });

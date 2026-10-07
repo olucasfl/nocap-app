@@ -93,10 +93,10 @@ describe('Tempo no histórico', () => {
 });
 
 describe('máximo de pontos da partida', () => {
-  it('rápido vale 10; Cor clássica 50, Tempo 30 (partidas antigas de 5 rodadas, 50); sala usa as respostas guardadas', () => {
+  it('rápido vale 10; Cor clássica 30, Tempo 30 (partidas antigas de 5 rodadas, 50); sala usa as respostas guardadas', () => {
     expect(matchMax({ game: 'color', mode: 'quick', answers: null })).toBe(10);
     expect(matchMax({ game: 'time', mode: 'quick', answers: null })).toBe(10);
-    expect(matchMax({ game: 'color', mode: 'classic', answers: null })).toBe(50);
+    expect(matchMax({ game: 'color', mode: 'classic', answers: null })).toBe(30);
     expect(matchMax({ game: 'time', mode: 'strict', answers: null })).toBe(30);
     expect(matchMax({ game: 'time', mode: 'strict', answers: [1, 2, 3, 4, 5] })).toBe(50);
     expect(matchMax({ game: 'color', mode: 'room', answers: [1, 2, 3] })).toBe(30);
@@ -145,12 +145,12 @@ describe('classificação da partida', () => {
   });
 
   it('sozinho vale a faixa da nota sobre o máximo do modo', () => {
-    expect(classifyMatch(solo(500)).label).toBe('CRAVOU'); // 50/50: só o perfeito crava
-    expect(classifyMatch(solo(480)).label).toBe('QUASE PERFEITO'); // média 9,6 não é cravou
-    expect(classifyMatch(solo(420)).label).toBe('MANDOU BEM'); // média 8,4
-    expect(classifyMatch(solo(300)).label).toBe('PASSA NA RAÇA'); // média 6,0
-    expect(classifyMatch(solo(250)).label).toBe('MEH'); // média 5,0
-    expect(classifyMatch(solo(100)).label).toBe('QUE ISSO?'); // média 2,0
+    expect(classifyMatch(solo(300)).label).toBe('CRAVOU'); // 30/30: só o perfeito crava
+    expect(classifyMatch(solo(288)).label).toBe('QUASE PERFEITO'); // média 9,6 não é cravou
+    expect(classifyMatch(solo(252)).label).toBe('MANDOU BEM'); // média 8,4
+    expect(classifyMatch(solo(180)).label).toBe('PASSA NA RAÇA'); // média 6,0
+    expect(classifyMatch(solo(150)).label).toBe('MEH'); // média 5,0
+    expect(classifyMatch(solo(60)).label).toBe('QUE ISSO?'); // média 2,0
     // o mesmo valor pesa diferente no rápido (máximo 10): 9,5/10 é quase, 10/10 cravou
     expect(classifyMatch(solo(95, 'quick')).label).toBe('QUASE PERFEITO');
     expect(classifyMatch(solo(100, 'quick')).label).toBe('CRAVOU');

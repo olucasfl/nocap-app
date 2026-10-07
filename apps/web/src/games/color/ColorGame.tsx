@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import {
   colorDeltaE,
+  colorDailySettings,
   colorPresets,
   dailySeed,
   evaluateSurvival,
@@ -41,7 +42,7 @@ function newRun(mode: Mode): Run {
     preset,
     // Daily: seed do dia (calculada no aparelho, funciona offline). Solo: seed aleatória.
     seed: mode === 'daily' ? dailySeed('color') : crypto.randomUUID().slice(0, 12),
-    settings: colorPresets[preset]!,
+    settings: mode === 'daily' ? colorDailySettings : colorPresets[preset]!,
   };
 }
 
