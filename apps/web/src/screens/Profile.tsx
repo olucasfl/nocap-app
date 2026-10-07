@@ -7,6 +7,7 @@ import { InstallApp } from '@/components/InstallApp';
 import { Choice } from '@/components/RankingList';
 import { Records } from '@/components/Records';
 import { Field } from '@/components/Field';
+import { Pencil } from '@/components/icons';
 import { NAME_MAX } from '@/lib/account-form';
 import { logout, updateName, useAuth } from '@/lib/auth';
 import { fetchStats, streakLabel } from '@/lib/stats';
@@ -137,19 +138,19 @@ export function Profile() {
               {user.username && <div className="pf-user">@{user.username}</div>}
               <div className="mono pf-email">{user.email}</div>
             </div>
+            {!editing && (
+              <button
+                type="button"
+                className="pf-pencil"
+                data-sfx="select"
+                aria-label="Editar nome"
+                onClick={() => setEditing(true)}
+              >
+                <Pencil size={20} />
+              </button>
+            )}
           </section>
-          {editing ? (
-            <NameEditor name={user.name} onDone={() => setEditing(false)} />
-          ) : (
-            <button
-              type="button"
-              className="btn ghost"
-              data-sfx="select"
-              onClick={() => setEditing(true)}
-            >
-              Editar nome
-            </button>
-          )}
+          {editing && <NameEditor name={user.name} onDone={() => setEditing(false)} />}
           <VisitStreak />
           <InstallApp />
           <div className="pf-actions">

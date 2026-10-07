@@ -60,13 +60,21 @@ export const MODES: Record<RoomGame, { id: string; label: string; note: string }
       label: 'Clássico',
       note: 'Todo mundo joga a MESMA sequência, um de cada vez, em fila. Na sua vez você repete tudo e a sequência ganha um passo para o próximo. Errou ou demorou 8 s: sai.',
     },
-    { id: 'escalada', label: 'Escalada', note: 'Mesma regra do Clássico (um de cada vez, em fila), mas a cada 3 vezes entra um botão novo, até 9.' },
+    {
+      id: 'escalada',
+      label: 'Escalada',
+      note: 'Mesma regra do Clássico (um de cada vez, em fila), mas a cada 3 vezes entra um botão novo, até 9.',
+    },
     {
       id: 'velocidade',
       label: 'Velocidade',
       note: 'Mesma regra do Clássico (um de cada vez, em fila), mas a sequência acelera a cada vez. Vai até 30 passos.',
     },
-    { id: 'reverso', label: 'Reverso', note: 'Mesma regra do Clássico (um de cada vez, em fila), mas você repete de trás para frente.' },
+    {
+      id: 'reverso',
+      label: 'Reverso',
+      note: 'Mesma regra do Clássico (um de cada vez, em fila), mas você repete de trás para frente.',
+    },
     {
       id: 'leader',
       label: 'Siga o Líder',

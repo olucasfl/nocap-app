@@ -141,3 +141,9 @@ export const Message = (p: IconProps) => (
     <path d="M4 5h16v11H9l-5 4z" />
   </Svg>
 );
+
+export const Pencil = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M4 20l1-4L16 5l3 3L8 19zM14 7l3 3" />
+  </Svg>
+);

@@ -31,11 +31,7 @@ function turnResult(snapshot: RoomSnapshot, name: (id: string) => string): strin
   const next = (eco.queue ?? []).find((id) => id !== who);
   return [
     passed ? `@${name(who)} acertou.` : `@${name(who)} errou e saiu.`,
-    eco.alive.length <= 1
-      ? ''
-      : next
-        ? `Próxima vez: @${name(next)}.`
-        : '',
+    eco.alive.length <= 1 ? '' : next ? `Próxima vez: @${name(next)}.` : '',
   ]
     .join(' ')
     .trim();
@@ -54,12 +50,12 @@ function Reveal({ snapshot }: { snapshot: RoomSnapshot }) {
         {eco.turn
           ? `${turnResult(snapshot, name)}`
           : eco.leader
-          ? `@${name(eco.leader)} criou a sequência.`
-          : eco.alive.length === 1
-            ? `Sobrou @${name(eco.alive[0]!)}.`
-            : eco.alive.length === 0
-              ? 'Todo mundo caiu junto.'
-              : `${eco.alive.length} seguem na disputa.`}
+            ? `@${name(eco.leader)} criou a sequência.`
+            : eco.alive.length === 1
+              ? `Sobrou @${name(eco.alive[0]!)}.`
+              : eco.alive.length === 0
+                ? 'Todo mundo caiu junto.'
+                : `${eco.alive.length} seguem na disputa.`}
       </p>
       <ul className="rm-results">
         {played.map((r) => {
@@ -200,13 +196,13 @@ export function EcoRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
       ? 'OS OUTROS ESTÃO REPETINDO'
       : status === 'wait'
         ? `VEZ DE @${nameOf(eco.turn)} · FILA: ${(eco.queue ?? []).map((id) => '@' + nameOf(id)).join(' > ')}`
-      : status === 'out'
-        ? `PLATEIA · ${eco.alive.length} NA DISPUTA`
-        : status === 'observe'
-          ? `${eco.length} ${eco.length === 1 ? 'PASSO' : 'PASSOS'} · ${eco.alive.length} NA DISPUTA`
-          : eco.reverse
-            ? `DE TRÁS PARA FRENTE · ${done}/${eco.length}`
-            : `${done}/${eco.length}`;
+        : status === 'out'
+          ? `PLATEIA · ${eco.alive.length} NA DISPUTA`
+          : status === 'observe'
+            ? `${eco.length} ${eco.length === 1 ? 'PASSO' : 'PASSOS'} · ${eco.alive.length} NA DISPUTA`
+            : eco.reverse
+              ? `DE TRÁS PARA FRENTE · ${done}/${eco.length}`
+              : `${done}/${eco.length}`;
 
   return (
     <section className="screen eco-play">

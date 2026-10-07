@@ -76,3 +76,28 @@
   gap: 12px;
   margin-top: auto;
 }
+
+/* Lápis para editar o nome, dentro do cartão do perfil */
+.pf-card {
+  position: relative;
+}
+.pf-pencil {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  color: var(--ink);
+  background: var(--white);
+  border: var(--border);
+  border-radius: 12px;
+  box-shadow: 2px 2px 0 var(--ink);
+  cursor: pointer;
+}
+.pf-pencil:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 var(--ink);
+}
