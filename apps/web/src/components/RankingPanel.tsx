@@ -82,9 +82,12 @@ function Podium({
 export function RankingPanel({
   game,
   initialBoard = 'classic',
+  hideModes = false,
 }: {
   game: Game;
   initialBoard?: Board;
+  /** Esconde a escolha de modo (a tela do Daily já fixa o quadro). */
+  hideModes?: boolean;
 }) {
   const user = useAuth((s) => s.user);
   const [board, setBoard] = useState<Board>(initialBoard);
@@ -114,34 +117,36 @@ export function RankingPanel({
 
   return (
     <div className={`rp ${game}`}>
-      <div className="rp-filter">
-        <div className="mono rp-label">MODO</div>
-        <div className="rp-modes" role="tablist" aria-label="Modo do ranking">
-          {boardsOf(game).map((b) => (
+      {!hideModes && (
+        <div className="rp-filter">
+          <div className="mono rp-label">MODO</div>
+          <div className="rp-modes" role="tablist" aria-label="Modo do ranking">
+            {boardsOf(game).map((b) => (
+              <button
+                key={b.id}
+                type="button"
+                role="tab"
+                data-sfx="select"
+                aria-selected={board === b.id}
+                onClick={() => switchBoard(b.id)}
+              >
+                {b.label}
+              </button>
+            ))}
+            <span className="rp-divider" aria-hidden="true" />
             <button
-              key={b.id}
               type="button"
               role="tab"
               data-sfx="select"
-              aria-selected={board === b.id}
-              onClick={() => switchBoard(b.id)}
+              className="rp-daily-tab"
+              aria-selected={isDaily}
+              onClick={() => switchBoard('daily')}
             >
-              {b.label}
+              Daily
             </button>
-          ))}
-          <span className="rp-divider" aria-hidden="true" />
-          <button
-            type="button"
-            role="tab"
-            data-sfx="select"
-            className="rp-daily-tab"
-            aria-selected={isDaily}
-            onClick={() => switchBoard('daily')}
-          >
-            Daily
-          </button>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="rp-row2">
         <div className="rp-filter rp-period">

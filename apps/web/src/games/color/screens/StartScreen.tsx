@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { SURVIVAL_MAX_ROUNDS, colorPresets } from '@nocap/games';
 import { BackButton } from '@/components/BackButton';
-import { DailyCard } from '@/components/DailyCard';
+import { DailyScreen } from '@/components/DailyScreen';
 import { FriendsPanel } from '@/components/FriendsPanel';
 import { ModePicker } from '@/components/ModePicker';
 import { ModeSheet } from '@/components/ModeSheet';
@@ -34,7 +34,7 @@ const LEAD: Record<Mode, string> = {
   blind:
     'Você não vê a cor que está montando, só os controles. As notas só aparecem no fim. Confie na memória.',
   survival:
-    'Você tem 3 vidas. A nota mínima começa em 6 e sobe: 7 na rodada 5, 8 na 10, 9 na 15 e 10 da 20 em diante. O tempo para decorar cai a cada cor. Errou, perde uma vida. Passou pelas 30 rodadas, você ganha.',
+    'Você tem 3 vidas. A nota mínima começa em 6 e vai subindo: 7 na rodada 6, 7,5 na 11, 8 na 16, 8,5 na 21 e 9 na 26. O tempo para decorar cai devagar. Errou, perde uma vida. Passou pelas 30 rodadas, você ganha.',
   daily: 'A cor de hoje é a mesma para todo mundo. Mesmas 5 cores, uma única chance por dia.',
 };
 
@@ -53,16 +53,30 @@ export function StartScreen({ initialTab = 'modes', initialBoard, onMode, onStar
   const stats = useQuery({ queryKey: ['stats'], queryFn: fetchStats, enabled: !!user });
   const daily = stats.data?.daily.color;
   const [tab, setTab] = useState<GameTab>(initialTab);
-  const [board, setBoard] = useState<Board | undefined>(initialBoard);
+  const board = initialBoard;
   /** Modo cuja ficha está aberta (null = só a lista de modos). */
   const [open, setOpen] = useState<Mode | null>(null);
   const close = useCallback(() => setOpen(null), []);
   const preset = colorPresets[(open ?? 'classic') === 'daily' ? 'classic' : (open ?? 'classic')]!;
 
+  /** O Daily tem tela própria (resultado do dia e parte social), fora da ficha dos outros modos. */
+  const [dailyView, setDailyView] = useState(false);
+
   const openMode = (id: string) => {
     onMode(id as Mode);
-    setOpen(id as Mode);
+    if (id === 'daily') setDailyView(true);
+    else setOpen(id as Mode);
   };
+
+  if (dailyView) {
+    return (
+      <DailyScreen
+        game="color"
+        onPlay={() => onStart('daily')}
+        onBack={() => setDailyView(false)}
+      />
+    );
+  }
 
   return (
     <section className="screen">
@@ -97,7 +111,7 @@ export function StartScreen({ initialTab = 'modes', initialBoard, onMode, onStar
                       <b>3</b>vidas
                     </div>
                     <div className="cg-rule">
-                      <b>6→10</b>nota mínima
+                      <b>6→9</b>nota mínima
                     </div>
                     <div className="cg-rule">
                       <b>{SURVIVAL_MAX_ROUNDS.color}</b>rodadas máx.
@@ -119,31 +133,17 @@ export function StartScreen({ initialTab = 'modes', initialBoard, onMode, onStar
                 )
               }
             >
-              {open === 'daily' ? (
-                <DailyCard
-                  game="color"
-                  info={daily}
+              <PlayGate>
+                <button
+                  type="button"
+                  className="btn"
+                  data-sfx="start"
 
-                  onPlay={() => onStart('daily')}
-                  onRanking={() => {
-                    setBoard('daily');
-                    setTab('ranking');
-                    close();
-                  }}
-                />
-              ) : (
-                <PlayGate>
-                  <button
-                    type="button"
-                    className="btn"
-                    data-sfx="start"
-
-                    onClick={() => onStart(open)}
-                  >
-                    Jogar <ArrowRight />
-                  </button>
-                </PlayGate>
-              )}
+                  onClick={() => onStart(open)}
+                >
+                  Jogar <ArrowRight />
+                </button>
+              </PlayGate>
             </ModeSheet>
           )}
         </>

@@ -1,0 +1,51 @@
+.ds-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.ds-kicker {
+  align-self: flex-start;
+  display: inline-block;
+  padding: 4px 10px;
+  border: var(--border);
+  border-radius: 999px;
+  background: var(--yellow);
+  color: var(--on-accent);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+.ds-title {
+  margin: 6px 0 0;
+  font-size: 44px;
+}
+.ds-play,
+.ds-done {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: var(--yellow);
+  color: var(--on-accent);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+.ds-done-tag {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+.ds-score {
+  font: 900 56px/1 var(--font-display);
+  letter-spacing: -0.04em;
+}
+.ds-score small {
+  font-size: 14px;
+  font-weight: 700;
+  margin-left: 4px;
+}
+.ds-text {
+  margin: 0;
+  font: 400 13px/1.45 var(--font-mono);
+}

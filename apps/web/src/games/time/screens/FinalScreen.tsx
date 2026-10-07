@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router';
 import { gradeOf, playGrade } from '@/lib/grade';
 import { sfx } from '@/lib/sfx';
 import { useReveal } from '@/lib/useReveal';
+import { DailyPanel } from '@/components/DailyPanel';
 import { EndActions } from '@/components/EndActions';
 import type { GameTab } from '@/components/GameTabs';
 import { NewRecord } from '@/components/NewRecord';
@@ -56,6 +57,7 @@ export function FinalScreen({ run, results, previousBest, onMenu, onRematch }: P
       <p className="tm-save" role="status">
         {SAVE_TEXT[save]}
       </p>
+      {done && run.kind === 'daily' && <DailyPanel game="time" />}
       <div className="stack">
         <button type="button" className="btn alt" onClick={onRematch}>
           Revanche

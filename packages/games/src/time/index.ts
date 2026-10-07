@@ -23,8 +23,15 @@ export type TimeSettings = z.infer<typeof timeSettingsSchema>;
 /** Alvos curtos (abaixo de 10 s) e longos (acima de 10 s) dos modos com `mix`. */
 export const SHORT_TARGET_MS = { min: 1000, max: 9900 } as const;
 export const LONG_TARGET_MS = { min: 10_100, max: 22_000 } as const;
-/** No `mostly-low`, a chance de uma rodada sair longa (1 em 4). */
-export const LONG_CHANCE = 0.25;
+/** No `mostly-low`, a chance de uma rodada sair longa (cerca de 1 em 7). */
+export const LONG_CHANCE = 0.15;
+
+/**
+ * Dentro de cada faixa os alvos não são uniformes: `u^k` empurra o sorteio para o começo da faixa,
+ * então saem mais tempos baixos (curtos: mediana ~3,8 s, média ~4,3 s; longos: média ~15 s).
+ */
+const SHORT_SKEW = 1.7;
+const LONG_SKEW = 1.4;
 
 /** O alvo da rodada, em ms. Sempre regenerado pela seed (não é guardado no banco). */
 export type TimeRound = number;
@@ -98,7 +105,9 @@ export function generateTimeRound(seed: string, settings: TimeSettings, index: n
   if (mix !== 'uniform') {
     const long = mix === 'alternate' ? index % 2 === 1 : rng() < LONG_CHANCE;
     const band = long ? LONG_TARGET_MS : SHORT_TARGET_MS;
-    return randInt(rng, band.min / 100, band.max / 100) * 100;
+    const steps = (band.max - band.min) / 100 + 1;
+    const pick = Math.min(steps - 1, Math.floor(steps * rng() ** (long ? LONG_SKEW : SHORT_SKEW)));
+    return band.min + pick * 100;
   }
   const lo = Math.ceil(settings.minMs / 100);
   const hi = Math.max(lo, Math.floor(settings.maxMs / 100));

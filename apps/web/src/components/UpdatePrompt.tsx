@@ -3,32 +3,27 @@ import './update-prompt.css';
 
 /** Avisa quando há versão nova e deixa o jogador escolher o momento de atualizar (nunca no meio da partida). */
 export function UpdatePrompt() {
+  // O aviso "pronto para jogar offline" do primeiro acesso foi retirado: só avisamos de versão nova.
   const {
     needRefresh: [needRefresh, setNeedRefresh],
-    offlineReady: [offlineReady, setOfflineReady],
     updateServiceWorker,
   } = useRegisterSW();
 
-  if (!needRefresh && !offlineReady) return null;
+  if (!needRefresh) return null;
 
-  const close = () => {
-    setNeedRefresh(false);
-    setOfflineReady(false);
-  };
+  const close = () => setNeedRefresh(false);
 
   return (
     <div className="update-prompt" role="status">
-      <span>{needRefresh ? 'VERSÃO NOVA DISPONÍVEL' : 'PRONTO PARA JOGAR OFFLINE'}</span>
+      <span>VERSÃO NOVA DISPONÍVEL</span>
       <div className="update-prompt-actions">
-        {needRefresh && (
-          <button
-            type="button"
-            className="update-prompt-btn"
-            onClick={() => updateServiceWorker(true)}
-          >
-            ATUALIZAR
-          </button>
-        )}
+        <button
+          type="button"
+          className="update-prompt-btn"
+          onClick={() => updateServiceWorker(true)}
+        >
+          ATUALIZAR
+        </button>
         <button type="button" className="update-prompt-btn ghost" onClick={close}>
           FECHAR
         </button>

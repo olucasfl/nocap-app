@@ -61,6 +61,20 @@ describe('alvos', () => {
     }
   });
 
+  it('saem bastante tempos baixos: perto da metade dos alvos do clássico é de até 6 s', () => {
+    let low = 0;
+    let n = 0;
+    for (let i = 0; i < 1500; i++) {
+      for (let r = 0; r < 3; r++) {
+        n += 1;
+        if (generateTimeRound(`low-${i}`, classic, r) <= 6000) low += 1;
+      }
+    }
+    expect(low / n).toBeGreaterThan(0.42);
+    // ... e os longos ainda aparecem (a rodada 2 é sempre longa no clássico).
+    expect(generateTimeRound('long-check', classic, 1)).toBeGreaterThan(10_000);
+  });
+
   it('as faixas respeitam os limites e saem em múltiplos de 100 ms', () => {
     for (let i = 0; i < 300; i++) {
       const short = generateTimeRound(`x-${i}`, classic, 0);
@@ -79,8 +93,8 @@ describe('alvos', () => {
     let long = 0;
     const n = 2000;
     for (let i = 0; i < n; i++) if (generateTimeRound(`q-${i}`, quick, 0) > 10_000) long++;
-    expect(long / n).toBeGreaterThan(0.18);
-    expect(long / n).toBeLessThan(0.32);
+    expect(long / n).toBeGreaterThan(0.09);
+    expect(long / n).toBeLessThan(0.22);
   });
 
   it('salas com faixa própria (sem mix) continuam uniformes e dentro da faixa', () => {

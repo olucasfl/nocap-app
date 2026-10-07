@@ -3,8 +3,9 @@
  * quantas rodadas a pessoa jogou. Lógica pura, usada pelo app (para jogar) e pelo servidor (para
  * conferir que a partida enviada é uma sobrevivência completa).
  *
- * - Cor: a nota mínima sobe com o avanço (6, 7 na rodada 5, 8 na 10, 9 na 15 e 10 da 20 em
- *   diante) e quem passa por todas as 30 rodadas ganha.
+ * - Cor: a nota mínima sobe de 6 até 9 de cinco em cinco rodadas (6, 7, 7,5, 8, 8,5 e 9) e quem
+ *   passa por todas as 30 rodadas ganha. Chega a 9 porque 10 exige acertar a cor quase exata,
+ *   o que os controles HSB não permitem de forma consistente.
  * - Tempo: nota mínima fixa 6, até 20 rodadas.
  */
 
@@ -17,16 +18,17 @@ export const SURVIVAL_MAX_ROUNDS: Record<SurvivalGame, number> = { color: 30, ti
 /** Nota mínima para não perder vida na rodada `index` (0 = primeira). */
 export function survivalMinScore(game: SurvivalGame, index: number): number {
   if (game === 'time') return 6;
-  if (index < 4) return 6; // rodadas 1–4
-  if (index < 9) return 7; // 5–9
-  if (index < 14) return 8; // 10–14
-  if (index < 19) return 9; // 15–19
-  return 10; // 20 em diante: só o perfeito
+  if (index < 5) return 6; // rodadas 1–5
+  if (index < 10) return 7; // 6–10
+  if (index < 15) return 7.5; // 11–15
+  if (index < 20) return 8; // 16–20
+  if (index < 25) return 8.5; // 21–25
+  return 9; // 26–30
 }
 
-/** Na Cor, o tempo para decorar cai a cada rodada: de 3 s até 0,8 s. */
+/** Na Cor, o tempo para decorar cai devagar a cada rodada: de 3 s até 1 s (na rodada 21). */
 export function survivalShowMs(index: number): number {
-  return Math.max(800, 3000 - index * 150);
+  return Math.max(1000, 3000 - index * 100);
 }
 
 export interface SurvivalState {
