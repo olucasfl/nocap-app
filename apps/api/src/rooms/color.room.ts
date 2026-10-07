@@ -3,6 +3,8 @@ import { Room, ServerError, matchMaker, type Client } from 'colyseus';
 import type { Auth } from '../auth/auth';
 import { ColorRoomEngine, MAX_PLAYERS, RoomError } from './color-room.engine';
 import { TimeRoomEngine } from './time-room.engine';
+import { ImpostorRoomEngine } from './impostor/impostor-room.engine';
+import { IMPOSTOR_MAX_PLAYERS } from '@nocap/games';
 import type { InvitesService } from './invites.service';
 import type { RoomsRepository } from './rooms.repository';
 
@@ -208,8 +210,11 @@ export class ColorRoom extends Room {
   private publish() {
     // A fase vai nos metadados da sala: é como o serviço de convites sabe se ela ainda está no lobby.
     void this.setMetadata({ phase: this.engine.currentPhase });
-    this.broadcast('snapshot', this.engine.snapshot());
-    if (this.engine.currentPhase === 'final' && !this.saved) {
+    // Cada pessoa recebe o próprio estado: no Intruso, papel, cor e dica são secretos.
+    for (const client of this.clients) {
+      client.send('snapshot', this.engine.snapshot((client.userData as AuthData | undefined)?.id));
+    }
+    if (this.engine.currentPhase === 'final' && !this.saved && this.engine.persistable) {
       this.saved = true;
       void this.saveResult();
     }
@@ -220,7 +225,7 @@ export class ColorRoom extends Room {
   private async saveResult() {
     try {
       await roomDeps.repo?.saveRoomMatch({
-        game: this.engine.game,
+        game: this.engine.game as 'color' | 'time',
         seed: this.engine.currentSeed,
         settings: this.engine.currentSettings,
         rows: this.engine.finalRows(),
@@ -241,5 +246,22 @@ export class TimeRoom extends ColorRoom {
     const engine = () => this.engine as TimeRoomEngine;
     this.onMessage('begin', (c) => this.act(c, (id) => engine().begin(id)));
     this.onMessage('stop', (c) => this.act(c, (id) => engine().stop(id)));
+  }
+}
+
+/** Sala do Intruso: a Cor com papéis secretos e votação (de 3 a 8 pessoas). */
+export class ImpostorRoom extends ColorRoom {
+  override maxClients = IMPOSTOR_MAX_PLAYERS;
+
+  protected override makeEngine(opts: ConstructorParameters<typeof ColorRoomEngine>[0]) {
+    return new ImpostorRoomEngine(opts);
+  }
+
+  protected override registerGameMessages() {
+    const engine = () => this.engine as ImpostorRoomEngine;
+    this.onMessage('lock', (c, m) => this.act(c, (id) => engine().lock(id, m)));
+    this.onMessage('suspect', (c, m: { id?: string | null }) =>
+      this.act(c, (id) => engine().vote(id, m?.id ? String(m.id) : null)),
+    );
   }
 }

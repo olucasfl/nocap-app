@@ -24,10 +24,21 @@ export const DEFAULT_TIME_SETTINGS: TimeRoomSettings = {
   mix: 'alternate',
 };
 
-export type AnySettings = RoomSettings | TimeRoomSettings;
+/** O Intruso: a Cor mais votação. `impostors` é o pedido do host (a sala limita pelo tamanho). */
+export interface ImpostorRoomSettings extends RoomSettings {
+  voteMs: number;
+  impostors: number;
+  /** Voto anônimo: a revelação mostra só quantos votos cada um recebeu. */
+  anonymous: boolean;
+}
 
-/** `play` é a fase de resposta do Tempo (cada um começa e para o seu relógio). */
-export type Phase = 'lobby' | 'show' | 'pick' | 'play' | 'reveal' | 'final';
+export type AnySettings = RoomSettings | TimeRoomSettings | ImpostorRoomSettings;
+
+/**
+ * `play` é a fase de resposta do Tempo (cada um começa e para o seu relógio); `vote` é a votação
+ * do Intruso.
+ */
+export type Phase = 'lobby' | 'show' | 'pick' | 'play' | 'vote' | 'reveal' | 'final';
 
 export class RoomError extends Error {}
 
@@ -73,7 +84,11 @@ export class ColorRoomEngine {
   protected readonly newSeed: () => string;
   protected readonly maxPlayers: number;
   /** Qual jogo esta sala joga; o `TimeRoomEngine` troca. */
-  readonly game: 'color' | 'time' = 'color';
+  readonly game: 'color' | 'time' | 'impostor' = 'color';
+  /** Menos gente que isto não joga (o Intruso precisa de 3 para votar). */
+  protected readonly minPlayers: number = MIN_PLAYERS;
+  /** Salvar o pódio como partida de sala (o Intruso não salva). */
+  readonly persistable: boolean = true;
   /** Fase em que as pessoas respondem (a Cor trava um HSB; o Tempo, um relógio). */
   protected readonly answerPhase: Phase = 'pick';
 
@@ -142,7 +157,9 @@ export class ColorRoomEngine {
     this.maybeAdvanceFromPick();
     this.checkRematch();
     // Sozinho no meio de uma partida não há o que disputar: volta ao lobby.
-    if (this.phase !== 'lobby' && this.phase !== 'final' && this.members.size < 2) this.reset();
+    if (this.phase !== 'lobby' && this.phase !== 'final' && this.members.size < this.minPlayers) {
+      this.reset();
+    }
   }
 
   /** O host é sempre alguém conectado; sem ninguém conectado, ninguém. */
@@ -209,7 +226,9 @@ export class ColorRoomEngine {
 
   configure(
     id: string,
-    next: (Partial<RoomSettings> | Partial<TimeRoomSettings>) & { mode?: string },
+    next: (Partial<RoomSettings> | Partial<TimeRoomSettings> | Partial<ImpostorRoomSettings>) & {
+      mode?: string;
+    },
   ) {
     this.requireHost(id);
     this.requirePhase('lobby');
@@ -242,8 +261,8 @@ export class ColorRoomEngine {
     this.requireHost(id);
     this.requirePhase('lobby');
     const connected = [...this.members.values()].filter((m) => m.connected);
-    if (connected.length < MIN_PLAYERS) {
-      throw new RoomError(`São precisas ${MIN_PLAYERS} pessoas para começar`);
+    if (connected.length < this.minPlayers) {
+      throw new RoomError(`São precisas ${this.minPlayers} pessoas para começar`);
     }
     if (connected.some((m) => m.id !== this.hostId && !m.ready && !this.committed.has(m.id))) {
       throw new RoomError('Falta gente marcar "pronto"');
@@ -372,7 +391,7 @@ export class ColorRoomEngine {
 
   // ---- resultado ----
 
-  private totals() {
+  protected totals() {
     return [...this.members.values()].map((m) => {
       const totalTenths = this.rounds.reduce(
         (sum, r) => sum + Math.round((r[m.id]?.score ?? 0) * 10),
@@ -417,8 +436,8 @@ export class ColorRoomEngine {
   // ---- o que cada cliente enxerga ----
 
   /** Estado enviado aos clientes. Respostas dos outros só aparecem na revelação e no pódio. */
-  snapshot() {
-    const revealed = this.phase === 'reveal' || this.phase === 'final';
+  snapshot(viewerId?: string) {
+    const revealed = this.resultsVisible();
     const round = this.rounds[this.roundIndex] ?? {};
     const members = [...this.members.values()]
       .sort((a, b) => a.joinedAt - b.joinedAt)
@@ -449,7 +468,7 @@ export class ColorRoomEngine {
           : {
               index: this.roundIndex,
               total: this.settings.rounds,
-              seed: this.seed,
+              seed: this.publicSeed(),
               endsAt: this.phaseEndsAt,
               results: revealed
                 ? members.map((m) => ({
@@ -461,6 +480,22 @@ export class ColorRoomEngine {
             },
       final:
         this.phase === 'final' ? this.finalRows().map(({ answers: _answers, ...r }) => r) : null,
+      ...this.extraSnapshot(viewerId),
     };
+  }
+
+  /** Quando as respostas de todos aparecem (o Intruso mostra já na votação). */
+  protected resultsVisible(): boolean {
+    return this.phase === 'reveal' || this.phase === 'final';
+  }
+
+  /** A seed que vai aos clientes (o Intruso não manda: ela entregaria a cor). */
+  protected publicSeed(): string {
+    return this.seed;
+  }
+
+  /** Campos extras do estado, por pessoa (o Intruso manda papel, dica e votos aqui). */
+  protected extraSnapshot(_viewerId?: string): Record<string, unknown> {
+    return {};
   }
 }
