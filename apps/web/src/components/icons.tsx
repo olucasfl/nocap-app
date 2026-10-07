@@ -113,3 +113,25 @@ export const ThemeIcon = ({
     {mode === 'dark' && <path d="M21 13A9 9 0 1 1 11 3a7 7 0 0 0 10 10z" />}
   </Svg>
 );
+
+/** Coroa: quem é o líder da sala. */
+export const Crown = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z" />
+    <path d="M5 21h14" />
+  </Svg>
+);
+
+/** Cadeado: só o líder pode mexer. */
+export const Lock = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="4" y="11" width="16" height="10" rx="2" />
+    <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+  </Svg>
+);
+
+export const Check = (p: IconProps) => (
+  <Svg {...p} stroke={p.stroke ?? 3}>
+    <path d="M5 12.5l4.5 4.5L19 7.5" />
+  </Svg>
+);
