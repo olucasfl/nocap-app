@@ -1,18 +1,14 @@
 import { createRng, type Hsb } from '@nocap/games';
 import type { PaletteColor } from './palette-types';
 import { PALETTE_1 } from './palette-1';
-import { PALETTE_2 } from './palette-2';
-import { PALETTE_3 } from './palette-3';
-import { PALETTE_4 } from './palette-4';
 
 export { color, type PaletteColor } from './palette-types';
 
-export const PALETTE: readonly PaletteColor[] = [
-  ...PALETTE_1,
-  ...PALETTE_2,
-  ...PALETTE_3,
-  ...PALETTE_4,
-];
+/**
+ * Falta escrever o resto da paleta (verdes, azuis, roxos, rosas, neutros) para chegar às mais de
+ * 1000 dicas da spec 011. Cada arquivo novo entra aqui.
+ */
+export const PALETTE: readonly PaletteColor[] = [...PALETTE_1];
 
 export const HINT_COUNT = PALETTE.reduce((sum, c) => sum + c.hints.length, 0);
 
