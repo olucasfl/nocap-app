@@ -90,7 +90,7 @@ export function Lobby({ snapshot }: { snapshot: RoomSnapshot }) {
       if (navigator.share) {
         await navigator.share({
           title: 'NoCap',
-          text: `Entra na minha sala da Cor: ${snapshot.code}`,
+          text: `Entra na minha sala ${snapshot.game === 'time' ? 'do Tempo' : 'da Cor'}: ${snapshot.code}`,
           url: link,
         });
       } else {
@@ -162,22 +162,35 @@ export function Lobby({ snapshot }: { snapshot: RoomSnapshot }) {
           disabled={!isHost}
           onPick={(v) => configure({ rounds: v })}
         />
-        <Options
-          label="TEMPO PARA DECORAR"
-          values={SHOW}
-          current={snapshot.settings.showMs}
-          format={seconds}
-          disabled={!isHost}
-          onPick={(v) => configure({ showMs: v })}
-        />
-        <Options
-          label="TEMPO PARA RECRIAR"
-          values={PICK}
-          current={snapshot.settings.pickMs}
-          format={seconds}
-          disabled={!isHost}
-          onPick={(v) => configure({ pickMs: v })}
-        />
+        {snapshot.game === 'time' ? (
+          <Options
+            label="PASSOU DO ALVO"
+            values={[0, 1]}
+            current={snapshot.settings.noOvershoot ? 1 : 0}
+            format={(v) => (v === 1 ? 'Vale zero' : 'Tem nota')}
+            disabled={!isHost}
+            onPick={(v) => configure({ noOvershoot: v === 1 })}
+          />
+        ) : (
+          <>
+            <Options
+              label="TEMPO PARA DECORAR"
+              values={SHOW}
+              current={snapshot.settings.showMs}
+              format={seconds}
+              disabled={!isHost}
+              onPick={(v) => configure({ showMs: v })}
+            />
+            <Options
+              label="TEMPO PARA RECRIAR"
+              values={PICK}
+              current={snapshot.settings.pickMs}
+              format={seconds}
+              disabled={!isHost}
+              onPick={(v) => configure({ pickMs: v })}
+            />
+          </>
+        )}
       </div>
 
       {message && (

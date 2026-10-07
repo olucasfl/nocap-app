@@ -14,3 +14,4 @@
 
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.
 | 009 | [Amigos](009-amigos.md) | 3 | concluída (falta online agora e convites) |
+| 010 | [Daily, rankings por jogo e perfil](010-daily-rankings-profile.md) | 3 | concluída |

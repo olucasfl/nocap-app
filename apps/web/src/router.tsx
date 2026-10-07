@@ -13,8 +13,9 @@ import { History } from '@/screens/History';
 import { Friends } from '@/screens/Friends';
 import { Hub } from '@/screens/Hub';
 import { Login } from '@/screens/Login';
+import { Daily } from '@/screens/Daily';
+import { ColorRankingPage, TimeRankingPage } from '@/screens/GameRanking';
 import { Profile } from '@/screens/Profile';
-import { Ranking } from '@/screens/Ranking';
 import { Register } from '@/screens/Register';
 
 const rootRoute = createRootRoute({
@@ -66,16 +67,24 @@ const registerRoute = createRoute({
   component: Register,
 });
 
-const rankingRoute = createRoute({
+const dailyRoute = createRoute({ getParentRoute: () => tabsRoute, path: '/daily', component: Daily });
+const colorRankingRoute = createRoute({
   getParentRoute: () => tabsRoute,
-  path: '/ranking',
-  component: Ranking,
+  path: '/cor/ranking',
+  component: ColorRankingPage,
+});
+const timeRankingRoute = createRoute({
+  getParentRoute: () => tabsRoute,
+  path: '/tempo/ranking',
+  component: TimeRankingPage,
 });
 
 const roomRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/sala',
-  component: lazyRouteComponent(() => import('@/screens/Room'), 'RoomPage'),
+  validateSearch: (search: Record<string, unknown>): { jogo?: 'color' | 'time' } =>
+    search.jogo === 'color' || search.jogo === 'time' ? { jogo: search.jogo } : {},
+  component: lazyRouteComponent(() => import('@/screens/Room'), 'RoomEntryPage'),
 });
 const roomCodeRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -108,7 +117,15 @@ const timeRoute = createRoute({
 });
 
 const routeTree = rootRoute.addChildren([
-  tabsRoute.addChildren([hubRoute, historyRoute, friendsRoute, profileRoute, rankingRoute]),
+  tabsRoute.addChildren([
+    hubRoute,
+    historyRoute,
+    friendsRoute,
+    profileRoute,
+    dailyRoute,
+    colorRankingRoute,
+    timeRankingRoute,
+  ]),
   colorRoute,
   timeRoute,
   loginRoute,

@@ -4,14 +4,13 @@ import {
   decodeAnswer,
   generateColorRound,
   generateTimeRound,
+  presetFor,
   scoreFromDeltaE,
   scoreTime,
   timePresets,
   type Hsb,
 } from '@nocap/games';
 import { apiClient } from './api-client';
-import { getToken } from './auth';
-import { getGuestId } from './guest';
 
 export interface HistoryItem {
   matchId: string;
@@ -31,12 +30,11 @@ export interface HistoryPage {
   nextCursor: string | null;
 }
 
-export function fetchHistory(cursor?: string) {
-  const qs = new URLSearchParams({ limit: '20' });
+/** Histórico da conta (todos os aparelhos), separado por jogo. */
+export function fetchHistory(game: 'color' | 'time', cursor?: string) {
+  const qs = new URLSearchParams({ limit: '20', game });
   if (cursor) qs.set('cursor', cursor);
-  // Com conta: histórico de todos os aparelhos vinculados. Sem conta: só deste aparelho.
-  const path = getToken() ? '/me/matches' : `/players/${getGuestId()}/matches`;
-  return apiClient.get<HistoryPage>(`${path}?${qs}`);
+  return apiClient.get<HistoryPage>(`/me/matches?${qs}`);
 }
 
 export interface HistoryRound {
@@ -67,7 +65,8 @@ export interface TimeHistoryRound {
 
 /** Rodadas de uma partida do Tempo: o alvo é regenerado pela seed e a nota recalculada. */
 export function timeRounds(item: HistoryItem): TimeHistoryRound[] | null {
-  const settings = timePresets[item.mode];
+  // Partidas antigas (5 rodadas) têm outro preset: escolhe pelo número de respostas guardadas.
+  const settings = item.answers ? presetFor(item.mode, item.answers.length) : undefined;
   if (!item.answers || !settings) return null;
   return item.answers.map((answer, index) => {
     const target = generateTimeRound(item.seed, settings, index);
@@ -79,7 +78,7 @@ export function timeRounds(item: HistoryItem): TimeHistoryRound[] | null {
 export function matchMax(item: Pick<HistoryItem, 'game' | 'mode' | 'answers'>): number {
   const rounds =
     item.game === 'time'
-      ? timePresets[item.mode]?.rounds
+      ? (item.answers ? presetFor(item.mode, item.answers.length) : timePresets[item.mode])?.rounds
       : item.game === 'color'
         ? colorPresets[item.mode]?.rounds
         : undefined;
@@ -111,4 +110,23 @@ export function formatPlayedAt(iso: string): string {
   }).formatToParts(new Date(iso));
   const get = (type: string) => parts.find((p) => p.type === type)?.value ?? '';
   return `${get('day')}/${get('month')} ${get('hour')}:${get('minute')}`;
+}
+
+export type Tone = 'top' | 'good' | 'mid' | 'low';
+
+/**
+ * Classificação da partida: em sala, a colocação ("1º lugar"); jogando sozinho, a faixa da nota
+ * (CRAVOU, QUASE, MEH, ERROU) em relação ao máximo de pontos.
+ */
+export function classifyMatch(
+  item: Pick<HistoryItem, 'game' | 'mode' | 'answers' | 'placement' | 'totalScore'>,
+): { label: string; tone: Tone } {
+  if (item.placement !== null) {
+    return { label: `${item.placement}º lugar`, tone: item.placement === 1 ? 'top' : 'mid' };
+  }
+  const ratio = item.totalScore / 10 / matchMax(item);
+  if (ratio >= 0.95) return { label: 'CRAVOU', tone: 'top' };
+  if (ratio >= 0.8) return { label: 'QUASE', tone: 'good' };
+  if (ratio >= 0.5) return { label: 'MEH', tone: 'mid' };
+  return { label: 'ERROU', tone: 'low' };
 }

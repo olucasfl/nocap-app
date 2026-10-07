@@ -5,7 +5,7 @@ import { eq } from 'drizzle-orm';
 import type { Db } from '../db/client';
 import { DB } from '../db/db.module';
 import { matchPlayers, matches, players } from '../db/schema';
-import type { FinalRow, RoomSettings } from './color-room.engine';
+import type { AnySettings, FinalRow } from './color-room.engine';
 
 /** Rodada sem resposta no banco (a coluna é um array de inteiros). */
 export const NO_ANSWER = -1;
@@ -23,13 +23,13 @@ export class RoomsRepository {
    * Grava a partida de sala: uma `matches` (kind `room`, nunca ranked) e uma `match_players`
    * por pessoa, ligada ao aparelho (player) da conta; cria um se a conta ainda não tem.
    */
-  async saveRoomMatch(input: { seed: string; settings: RoomSettings; rows: FinalRow[] }) {
+  async saveRoomMatch(input: { game: 'color' | 'time'; seed: string; settings: AnySettings; rows: FinalRow[] }) {
     const matchId = randomUUID();
     const playedAt = new Date();
     await this.db.transaction(async (tx) => {
       await tx.insert(matches).values({
         id: matchId,
-        game: 'color',
+        game: input.game,
         mode: 'room',
         kind: 'room',
         seed: input.seed,
@@ -51,7 +51,10 @@ export class RoomsRepository {
         await tx.insert(matchPlayers).values({
           matchId,
           playerId,
-          answers: row.answers.map((a) => (a ? encodeAnswer(a) : NO_ANSWER)),
+          // Cor guarda o HSB codificado; Tempo guarda os ms.
+          answers: row.answers.map((a) =>
+            a === null ? NO_ANSWER : typeof a === 'number' ? a : encodeAnswer(a),
+          ),
           totalScore: row.totalTenths,
           placement: row.placement,
           playedAt,

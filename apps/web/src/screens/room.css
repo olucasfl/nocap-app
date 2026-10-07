@@ -194,3 +194,32 @@
   font-weight: 700;
   margin-left: 2px;
 }
+
+/* Revelação do Tempo: o alvo em número grande e, por pessoa, o tempo e a diferença. */
+.rm-target.time {
+  height: auto;
+  padding: 18px;
+  background: var(--blue);
+  color: var(--on-blue);
+}
+.rm-target.time b {
+  display: block;
+  margin-top: 4px;
+  font: 900 56px/1 var(--font-display);
+  letter-spacing: -0.04em;
+}
+.rm-result.t {
+  grid-template-columns: 1fr auto;
+  grid-template-areas: 'name score' 'time score';
+  gap: 2px 10px;
+}
+.rm-result.t .rm-result-name {
+  grid-area: name;
+}
+.rm-result.t .rm-result-score {
+  grid-area: score;
+}
+.rm-result.t .rm-time {
+  grid-area: time;
+  font-size: 11px;
+}

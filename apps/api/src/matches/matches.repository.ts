@@ -110,7 +110,7 @@ export class MatchesRepository {
   }
 
   /** Histórico de um ou mais aparelhos (conta), mais recente primeiro, paginado por keyset (played_at, match_id). */
-  async history(playerIds: string[], limit: number, cursor?: string) {
+  async history(playerIds: string[], limit: number, cursor?: string, game?: string) {
     if (playerIds.length === 0) return { items: [] as HistoryItem[], nextCursor: null };
     const after = cursor ? decodeCursor(cursor) : null;
 
@@ -131,6 +131,7 @@ export class MatchesRepository {
       .where(
         and(
           inArray(matchPlayers.playerId, playerIds),
+          game ? eq(matches.game, game) : undefined,
           after
             ? sql`(${matchPlayers.playedAt}, ${matchPlayers.matchId}) < (${after.playedAt}::timestamptz, ${after.matchId}::uuid)`
             : undefined,

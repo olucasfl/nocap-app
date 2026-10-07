@@ -1,16 +1,20 @@
 import type { Room } from 'colyseus.js';
-import type { Hsb } from '@nocap/games';
+import type { Hsb, TimeSettings } from '@nocap/games';
 import { create } from 'zustand';
 import { apiBase } from './api-client';
 import { getToken } from './auth';
 
-export type Phase = 'lobby' | 'show' | 'pick' | 'reveal' | 'final';
+export type RoomGame = 'color' | 'time';
+export type Phase = 'lobby' | 'show' | 'pick' | 'play' | 'reveal' | 'final';
 
-export interface RoomSettings {
+export interface ColorRoomSettings {
   rounds: number;
   showMs: number;
   pickMs: number;
 }
+export type TimeRoomSettings = TimeSettings;
+/** As regras dependem do jogo da sala (`snapshot.game`). */
+export type RoomSettings = ColorRoomSettings & TimeRoomSettings;
 
 export interface RoomMember {
   id: string;
@@ -23,7 +27,8 @@ export interface RoomMember {
 
 export interface RoundResult {
   id: string;
-  answer: Hsb | null;
+  /** Cor: o HSB. Tempo: a duração em ms. */
+  answer: Hsb | number | null;
   score: number;
 }
 
@@ -36,6 +41,7 @@ export interface FinalRow {
 
 export interface RoomSnapshot {
   code: string;
+  game: RoomGame;
   phase: Phase;
   hostId: string | null;
   settings: RoomSettings;
@@ -166,10 +172,10 @@ export function resumeRoom(): Promise<boolean> {
   return resuming;
 }
 
-export async function createRoom() {
+export async function createRoom(game: RoomGame = 'color') {
   set({ status: 'connecting', message: '', snapshot: null });
   try {
-    attach(await (await client()).create('color', { token: getToken() }));
+    attach(await (await client()).create(game, { token: getToken() }));
   } catch (e) {
     set({ status: 'idle' });
     throw new Error(joinErrorMessage(e));

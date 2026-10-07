@@ -1,23 +1,52 @@
-import { Link } from '@tanstack/react-router';
-import { useQueryClient } from '@tanstack/react-query';
-import { StatsPanel } from '@/components/StatsPanel';
+import { useState } from 'react';
+import { Link, useNavigate } from '@tanstack/react-router';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { Choice } from '@/components/RankingList';
+import { Records } from '@/components/Records';
 import { logout, useAuth } from '@/lib/auth';
-import './account.css';
+import { fetchStats, streakLabel } from '@/lib/stats';
+import './profile.css';
+
+type Tab = 'profile' | 'records';
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'profile', label: 'Perfil' },
+  { id: 'records', label: 'Recordes' },
+];
+
+function VisitStreak() {
+  const q = useQuery({ queryKey: ['stats'], queryFn: fetchStats });
+  const visit = q.data?.visit;
+  return (
+    <section className="pf-streak" aria-label="Dias seguidos no NoCap">
+      <div className="mono pf-streak-label">DIAS SEGUIDOS NO NOCAP</div>
+      <div className="pf-streak-value">{visit ? streakLabel(visit.current) : '...'}</div>
+      <div className="mono pf-streak-sub">
+        {visit ? `MELHOR SEQUÊNCIA ${streakLabel(visit.best).toUpperCase()}` : 'CARREGANDO'}
+      </div>
+    </section>
+  );
+}
 
 export function Profile() {
-  const { user, status } = useAuth();
+  const user = useAuth((s) => s.user);
+  const status = useAuth((s) => s.status);
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [tab, setTab] = useState<Tab>('profile');
+  const [confirming, setConfirming] = useState(false);
 
   const signOut = async () => {
     await logout();
-    // O histórico muda de "conta" para "só este aparelho".
-    await queryClient.invalidateQueries({ queryKey: ['history'] });
-    await queryClient.invalidateQueries({ queryKey: ['stats'] });
+    queryClient.removeQueries({ queryKey: ['history'] });
+    queryClient.removeQueries({ queryKey: ['stats'] });
+    setConfirming(false);
+    await navigate({ to: '/' });
   };
 
   if (status === 'loading') {
     return (
-      <main className="acc-profile">
+      <main className="pf">
         <h1>Perfil</h1>
         <p className="lead">Carregando...</p>
       </main>
@@ -26,14 +55,13 @@ export function Profile() {
 
   if (!user) {
     return (
-      <main className="acc-profile">
+      <main className="pf">
         <h1>Perfil</h1>
         <p className="lead">
-          Você está jogando como convidado. Crie uma conta para ter um @usuario, achar amigos e
-          levar seu histórico para qualquer aparelho.
+          Convidado só olha o app. Crie uma conta para jogar, guardar seu histórico e entrar nos
+          rankings.
         </p>
-        <StatsPanel />
-        <div className="acc-actions">
+        <div className="pf-actions">
           <Link to="/criar-conta" className="btn alt">
             Criar conta
           </Link>
@@ -46,19 +74,39 @@ export function Profile() {
   }
 
   return (
-    <main className="acc-profile">
+    <main className="pf">
       <h1>Perfil</h1>
-      <section className="acc-card" aria-label="Sua conta">
-        <div className="acc-name">{user.name}</div>
-        {user.username && <div className="mono acc-user">@{user.username}</div>}
-        <div className="mono acc-email">{user.email}</div>
-      </section>
-      <StatsPanel />
-      <div className="acc-actions">
-        <button type="button" className="btn ghost" onClick={() => void signOut()}>
-          Sair
-        </button>
-      </div>
+      <Choice label="Seção" value={tab} options={TABS} onChange={setTab} />
+      {tab === 'profile' ? (
+        <>
+          <section className="pf-card">
+            <div className="pf-avatar" aria-hidden="true">
+              {user.name.trim().charAt(0).toUpperCase() || '?'}
+            </div>
+            <div className="pf-id">
+              <div className="pf-name">{user.name}</div>
+              {user.username && <div className="pf-user">@{user.username}</div>}
+              <div className="mono pf-email">{user.email}</div>
+            </div>
+          </section>
+          <VisitStreak />
+          <div className="pf-actions">
+            <button type="button" className="btn ghost" onClick={() => setConfirming(true)}>
+              Sair
+            </button>
+          </div>
+        </>
+      ) : (
+        <Records />
+      )}
+      <ConfirmDialog
+        open={confirming}
+        title="Sair da conta?"
+        text="Você precisará entrar de novo para jogar. Seu histórico e seus recordes ficam guardados."
+        confirmLabel="Sair"
+        onConfirm={() => void signOut()}
+        onCancel={() => setConfirming(false)}
+      />
     </main>
   );
 }

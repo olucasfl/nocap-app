@@ -2,6 +2,7 @@ import { randomInt, randomUUID } from 'node:crypto';
 import { Room, ServerError, matchMaker, type Client } from 'colyseus';
 import type { Auth } from '../auth/auth';
 import { ColorRoomEngine, MAX_PLAYERS, RoomError } from './color-room.engine';
+import { TimeRoomEngine } from './time-room.engine';
 import type { InvitesService } from './invites.service';
 import type { RoomsRepository } from './rooms.repository';
 
@@ -47,7 +48,7 @@ async function uniqueCode(): Promise<string> {
  */
 export class ColorRoom extends Room {
   maxClients = MAX_PLAYERS;
-  private engine!: ColorRoomEngine;
+  protected engine!: ColorRoomEngine;
   private saved = false;
   /** Quem o servidor mandou sair (expulsão) ou trocou de aparelho: não pode reconectar. */
   private dismissed = new Map<string, 'kick' | 'replace'>();
@@ -55,7 +56,7 @@ export class ColorRoom extends Room {
   async onCreate() {
     const code = await uniqueCode();
     this.roomId = code;
-    this.engine = new ColorRoomEngine({
+    this.engine = this.makeEngine({
       code,
       now: () => Date.now(),
       newSeed: () => randomUUID().slice(0, 12),
@@ -76,7 +77,7 @@ export class ColorRoom extends Room {
       }),
     );
     this.onMessage('start', (c) => this.act(c, (id) => this.engine.start(id)));
-    this.onMessage('lock', (c, m) => this.act(c, (id) => this.engine.lock(id, m)));
+    this.registerGameMessages();
     this.onMessage('next', (c) => this.act(c, (id) => this.engine.next(id)));
     this.onMessage('rematch', (c) => this.act(c, (id) => this.engine.rematch(id)));
     this.onMessage('invite', (c, m: { username?: string }) => void this.invite(c, m?.username));
@@ -84,6 +85,15 @@ export class ColorRoom extends Room {
     this.setSimulationInterval(() => {
       if (this.engine.tick()) this.publish();
     }, TICK_MS);
+  }
+
+  protected makeEngine(opts: ConstructorParameters<typeof ColorRoomEngine>[0]): ColorRoomEngine {
+    return new ColorRoomEngine(opts);
+  }
+
+  /** Mensagens próprias do jogo (a Cor trava uma cor; o Tempo começa e para). */
+  protected registerGameMessages() {
+    this.onMessage('lock', (c, m) => this.act(c, (id) => this.engine.lock(id, m)));
   }
 
   /** Token da sessão (o mesmo do app) → conta. Sala exige conta: convidado não entra. */
@@ -166,7 +176,7 @@ export class ColorRoom extends Room {
   }
 
   /** Roda uma ação de regra e devolve o erro (em pt-BR) só a quem pediu. */
-  private act(client: Client, run: (userId: string) => void) {
+  protected act(client: Client, run: (userId: string) => void) {
     const id = (client.userData as AuthData | undefined)?.id;
     if (!id) return;
     try {
@@ -208,6 +218,7 @@ export class ColorRoom extends Room {
   private async saveResult() {
     try {
       await roomDeps.repo?.saveRoomMatch({
+        game: this.engine.game,
         seed: this.engine.currentSeed,
         settings: this.engine.currentSettings,
         rows: this.engine.finalRows(),
@@ -215,5 +226,18 @@ export class ColorRoom extends Room {
     } catch (e) {
       console.error('falha ao salvar a partida da sala', e);
     }
+  }
+}
+
+/** Sala do Tempo: mesma estrutura, outra rodada (cada pessoa começa e para o seu relógio). */
+export class TimeRoom extends ColorRoom {
+  protected override makeEngine(opts: ConstructorParameters<typeof ColorRoomEngine>[0]) {
+    return new TimeRoomEngine(opts);
+  }
+
+  protected override registerGameMessages() {
+    const engine = () => this.engine as TimeRoomEngine;
+    this.onMessage('begin', (c) => this.act(c, (id) => engine().begin(id)));
+    this.onMessage('stop', (c) => this.act(c, (id) => engine().stop(id)));
   }
 }

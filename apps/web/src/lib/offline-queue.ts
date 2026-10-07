@@ -9,7 +9,10 @@ export interface QueueStore<T> {
 
 /** Erro que vale tentar de novo depois: sem rede, timeout, 429 ou 5xx. */
 export function isRetryable(err: unknown): boolean {
-  if (err instanceof ApiError) return err.status >= 500 || err.status === 408 || err.status === 429;
+  // 401: a sessão expirou; a partida espera na fila até a pessoa entrar de novo.
+  if (err instanceof ApiError) {
+    return err.status >= 500 || err.status === 408 || err.status === 429 || err.status === 401;
+  }
   return true;
 }
 

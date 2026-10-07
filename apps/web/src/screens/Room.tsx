@@ -3,7 +3,15 @@ import { Link, getRouteApi, useNavigate } from '@tanstack/react-router';
 import { Field } from '@/components/Field';
 import { MuteButton } from '@/components/MuteButton';
 import { useAuth } from '@/lib/auth';
-import { CODE_RE, createRoom, joinRoom, leaveRoom, resumeRoom, useRoom } from '@/lib/rooms';
+import {
+  CODE_RE,
+  createRoom,
+  joinRoom,
+  leaveRoom,
+  resumeRoom,
+  useRoom,
+  type RoomGame,
+} from '@/lib/rooms';
 import { Final } from './room/Final';
 import { Lobby } from './room/Lobby';
 import { Play } from './room/Play';
@@ -34,7 +42,17 @@ function Header({ leave, round }: { leave?: boolean; round?: string }) {
   );
 }
 
-function Entry({ initialCode, initialError }: { initialCode?: string; initialError?: string }) {
+const GAME_NAME: Record<RoomGame, string> = { color: 'Cor', time: 'Tempo' };
+
+function Entry({
+  initialCode,
+  initialError,
+  game,
+}: {
+  initialCode?: string;
+  initialError?: string;
+  game: RoomGame;
+}) {
   const navigate = useNavigate();
   const [code, setCode] = useState(initialCode ?? '');
   const [error, setError] = useState(initialError ?? '');
@@ -64,7 +82,11 @@ function Entry({ initialCode, initialError }: { initialCode?: string; initialErr
   return (
     <section className="screen rm">
       <h1>Sala</h1>
-      <p className="lead">Jogue a Cor com amigos, todo mundo na mesma rodada ao mesmo tempo.</p>
+      <p className="lead">
+        {game === 'time'
+          ? 'Jogue o Tempo com amigos: o mesmo alvo para todos, cada um conta de cabeça.'
+          : 'Jogue a Cor com amigos, todo mundo na mesma rodada ao mesmo tempo.'}
+      </p>
       {(error || message) && (
         <p className="acc-failure mono" role="alert">
           {error || message}
@@ -74,9 +96,9 @@ function Entry({ initialCode, initialError }: { initialCode?: string; initialErr
         type="button"
         className="btn alt"
         disabled={busy}
-        onClick={() => void run(createRoom)}
+        onClick={() => void run(() => createRoom(game))}
       >
-        {busy ? 'Criando...' : 'Criar sala'}
+        {busy ? 'Criando...' : `Criar sala de ${GAME_NAME[game]}`}
       </button>
       <form className="rm-join" onSubmit={join} noValidate>
         <Field
@@ -98,7 +120,7 @@ function Entry({ initialCode, initialError }: { initialCode?: string; initialErr
 }
 
 /** `/sala` e `/sala/ABCD`: entra pelo código do link, ou mostra a sala em que você já está. */
-export function RoomPage({ code }: { code?: string }) {
+export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomGame }) {
   const { user, status: authStatus } = useAuth();
   const { status, snapshot } = useRoom();
   const [resuming, setResuming] = useState(true);
@@ -171,15 +193,23 @@ export function RoomPage({ code }: { code?: string }) {
       )}
       {!snapshot && status === 'connecting' && <p className="lead rm-wait">Entrando na sala...</p>}
       {!snapshot && status !== 'connecting' && (
-        <Entry initialCode={code} initialError={joinError} />
+        <Entry initialCode={code} initialError={joinError} game={game} />
       )}
       {snapshot?.phase === 'lobby' && <Lobby snapshot={snapshot} />}
-      {snapshot && ['show', 'pick', 'reveal'].includes(snapshot.phase) && (
+      {snapshot && ['show', 'pick', 'play', 'reveal'].includes(snapshot.phase) && (
         <Play snapshot={snapshot} />
       )}
       {snapshot?.phase === 'final' && <Final snapshot={snapshot} />}
     </div>
   );
+}
+
+const searchRoute = getRouteApi('/sala');
+
+/** `/sala?jogo=time`: a entrada já sabe de qual jogo é a sala a criar. */
+export function RoomEntryPage() {
+  const { jogo } = searchRoute.useSearch();
+  return <RoomPage game={jogo} />;
 }
 
 const codeRoute = getRouteApi('/sala/$code');

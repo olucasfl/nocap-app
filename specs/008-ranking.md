@@ -1,6 +1,7 @@
 # 008: Ranking
 
 > **Status: implementado e verificado (2026-10-06), em Postgres.** Redis fica para quando o volume pedir.
+> Atualização: o ranking passou a ser por jogo (`/cor/ranking`, `/tempo/ranking`, `/daily`); ver [010](010-daily-rankings-profile.md).
 
 ## Objetivo
 

@@ -102,6 +102,8 @@ describe('historyQuerySchema', () => {
   it('usa limit 20 por padrão e limita a 50', () => {
     expect(historyQuerySchema.parse({}).limit).toBe(20);
     expect(historyQuerySchema.safeParse({ limit: '100' }).success).toBe(false);
+    expect(historyQuerySchema.parse({ game: 'time' }).game).toBe('time');
+    expect(historyQuerySchema.safeParse({ game: 'xadrez' }).success).toBe(false);
   });
 });
 

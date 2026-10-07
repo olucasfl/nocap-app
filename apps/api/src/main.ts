@@ -9,7 +9,7 @@ import { Server } from 'colyseus';
 import { AppModule } from './app.module';
 import { AUTH } from './auth/auth.constants';
 import type { Auth } from './auth/auth';
-import { ColorRoom, roomDeps } from './rooms/color.room';
+import { ColorRoom, TimeRoom, roomDeps } from './rooms/color.room';
 import { InvitesService } from './rooms/invites.service';
 import { RoomsRepository } from './rooms/rooms.repository';
 
@@ -39,6 +39,7 @@ async function bootstrap() {
     transport: new WebSocketTransport({ server: app.getHttpServer() }),
   });
   rooms.define('color', ColorRoom);
+  rooms.define('time', TimeRoom);
   const port = Number(process.env.PORT ?? 3333);
   await app.listen(port);
   console.log(`api no ar em http://localhost:${port}`);
