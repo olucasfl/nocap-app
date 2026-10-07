@@ -85,7 +85,8 @@ function Reveal({ snapshot }: { snapshot: RoomSnapshot }) {
 
 /** Memorizar, recriar e revelação. O servidor manda em todas as fases; aqui só se mostra. */
 export function Play({ snapshot }: { snapshot: RoomSnapshot }) {
-  if (snapshot.game === 'eco') return <EcoRoomPlay snapshot={snapshot} />;
+  if (snapshot.game === 'eco' || snapshot.game === 'ecoleader')
+    return <EcoRoomPlay snapshot={snapshot} />;
   if (snapshot.game === 'time') return <TimePlay snapshot={snapshot} />;
   if (snapshot.game === 'impostor') return <ImpostorPlay snapshot={snapshot} />;
   const me = useAuth((s) => s.user?.id);

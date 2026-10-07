@@ -19,7 +19,7 @@ Tudo está em `main` e publicado (API no Render, web na Vercel, banco no Supabas
 - **Paleta pronta** (07/10/2026): **313 cores com 5 dicas boas cada** (1565 dicas) em `palette-1..6.ts`, validadas por testes (sem termo técnico, nome combina com a cor, sem contradição) e conferidas visualmente (`docs/reference/paleta-intruso.html`). Limite da sala: 3 a 12 pessoas.
 - **Falta:** (1) **testar com 3 contas de verdade** (criar sala, lobby, decorar, recriar, votar, revelar, pódio): nunca foi jogado ao vivo; (2) o Intruso não salva no histórico nem tem estatísticas (decisão da spec, pode virar etapa futura).
 
-**Eco** (`specs/012-eco.md`): repetir sequências de botões (estilo Genius). **Solo pronto** (Clássico, Escalada, Velocidade, Reverso e Daily, com ranking, recordes, histórico e perfil; 310 testes passando). **Sala Corrida pronta (falta jogar ao vivo)**. Falta o Siga o Líder (Etapa 5 da spec) e calibrar as faixas de nota.
+**Eco** (`specs/012-eco.md`): repetir sequências de botões (estilo Genius). **Solo pronto** (Clássico, Escalada, Velocidade, Reverso e Daily, com ranking, recordes, histórico e perfil; 310 testes passando). **Salas Corrida e Siga o Líder prontas (faltam jogar ao vivo e calibrar o 0,7 do líder e as faixas de nota)**. São duas salas separadas (`eco` e `ecoleader`), escolhidas ao criar a sala; o spec previa escolher o formato no lobby.
 
 **Nomes na tela:** Cor = **Mesmíssima** (o 10 mostra "mesmíssima" no lugar de "cravou"), Tempo = **Já Deu?**, Eco = **Ecooo**. Ids, rotas e código não mudaram (`color`, `time`, `eco`).
 

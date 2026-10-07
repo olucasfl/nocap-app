@@ -57,7 +57,7 @@ Podem rodar antes ou depois do passo 4 (PWA); o modo noturno toca o manifesto/`t
 
 - [x] **Ecooo solo** (Clássico, Escalada, Velocidade, Reverso, Daily): spec `specs/012-eco.md`
 - [x] **Ecooo em sala, Corrida** (motor `eco-room.engine.ts`, testes; falta jogar ao vivo)
-- [ ] **Ecooo em sala, Siga o Líder** (Etapa 5 da spec 012)
+- [x] **Ecooo em sala, Siga o Líder** (`eco-leader-room.engine.ts`, `leader.ts`, testes; falta jogar ao vivo e calibrar)
 - [ ] **Jogar o Ecooo ao vivo e calibrar** (Velocidade, faixas de nota, coeficiente do líder)
 - [ ] **Próximo jogo novo: Tribunal do Absurdo** (logo depois de terminar o Ecooo). Depois, Intervalo (na fila). Ponte e Regras Vivas ficam em **standby**. Descrição de cada um em `docs/JOGOS-FUTUROS.md`
 

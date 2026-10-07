@@ -251,3 +251,47 @@
   font: 700 11px var(--font-mono);
   color: var(--muted);
 }
+
+/* Siga o Líder: regras da rodada e a sequência que o criador monta */
+.eco-rules {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.eco-rules li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 700;
+  background: var(--white);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+}
+.eco-rules li span {
+  min-width: 26px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.eco-rules li.ok {
+  background: var(--green);
+  color: var(--on-accent);
+}
+.eco-rules li.ok span {
+  color: var(--on-accent);
+}
+.eco-created {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-height: 38px;
+}
+.eco-created-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}

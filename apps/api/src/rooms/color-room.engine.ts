@@ -44,7 +44,7 @@ export type AnySettings = RoomSettings | TimeRoomSettings | ImpostorRoomSettings
  * `play` é a fase de resposta do Tempo (cada um começa e para o seu relógio); `vote` é a votação
  * do Intruso.
  */
-export type Phase = 'lobby' | 'show' | 'pick' | 'play' | 'vote' | 'reveal' | 'final';
+export type Phase = 'lobby' | 'create' | 'show' | 'pick' | 'play' | 'vote' | 'reveal' | 'final';
 
 export class RoomError extends Error {}
 
@@ -90,7 +90,7 @@ export class ColorRoomEngine {
   protected readonly newSeed: () => string;
   protected readonly maxPlayers: number;
   /** Qual jogo esta sala joga; o `TimeRoomEngine` troca. */
-  readonly game: 'color' | 'time' | 'impostor' | 'eco' = 'color';
+  readonly game: 'color' | 'time' | 'impostor' | 'eco' | 'ecoleader' = 'color';
   /** Menos gente que isto não joga (o Intruso precisa de 3 para votar). */
   protected readonly minPlayers: number = MIN_PLAYERS;
   /** Salvar o pódio como partida de sala (o Intruso não salva). */

@@ -53,9 +53,12 @@ const GAME_NAME: Record<RoomGame, string> = {
   time: 'Já Deu?',
   impostor: 'Intruso',
   eco: 'Ecooo',
+  ecoleader: 'Siga o Líder',
 };
 
 const ENTRY_LEAD: Record<RoomGame, string> = {
+  ecoleader:
+    'Siga o Líder: a cada rodada um cria uma sequência dentro das regras e os outros repetem. O criador muda a cada rodada.',
   eco: 'Jogue a Corrida do Ecooo com amigos: todo mundo repete a mesma sequência, e quem errar sai.',
   color: 'Jogue Mesmíssima com amigos, todo mundo na mesma rodada ao mesmo tempo.',
   time: 'Jogue Já Deu? com amigos: o mesmo alvo para todos, cada um conta de cabeça.',
@@ -101,7 +104,7 @@ function Entry({
   return (
     <section className="screen rm">
       <BackButton
-        to={game === 'time' ? '/tempo' : game === 'eco' ? '/eco' : '/cor'}
+        to={game === 'time' ? '/tempo' : game === 'eco' || game === 'ecoleader' ? '/eco' : '/cor'}
         label="Voltar ao jogo"
       />
       <h1>Sala</h1>
@@ -237,9 +240,10 @@ export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomG
         <Entry initialCode={code} initialError={joinError} game={game} />
       )}
       {snapshot?.phase === 'lobby' && <Lobby snapshot={snapshot} />}
-      {snapshot && ['show', 'pick', 'play', 'vote', 'reveal'].includes(snapshot.phase) && (
-        <Play snapshot={snapshot} />
-      )}
+      {snapshot &&
+        ['create', 'show', 'pick', 'play', 'vote', 'reveal'].includes(snapshot.phase) && (
+          <Play snapshot={snapshot} />
+        )}
       {snapshot?.phase === 'final' && <Final snapshot={snapshot} />}
       {snapshot && snapshot.phase !== 'lobby' && <ChatDock snapshot={snapshot} />}
     </div>

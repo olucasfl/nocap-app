@@ -1,11 +1,11 @@
 import type { Room } from 'colyseus.js';
-import type { Hsb, TimeSettings } from '@nocap/games';
+import type { Hsb, LeaderRule, TimeSettings } from '@nocap/games';
 import { create } from 'zustand';
 import { apiBase } from './api-client';
 import { getToken, useAuth } from './auth';
 
-export type RoomGame = 'color' | 'time' | 'impostor' | 'eco';
-export type Phase = 'lobby' | 'show' | 'pick' | 'play' | 'vote' | 'reveal' | 'final';
+export type RoomGame = 'color' | 'time' | 'impostor' | 'eco' | 'ecoleader';
+export type Phase = 'lobby' | 'create' | 'show' | 'pick' | 'play' | 'vote' | 'reveal' | 'final';
 
 export interface ColorRoomSettings {
   rounds: number;
@@ -71,6 +71,10 @@ export interface EcoRoomState {
   progress: number;
   /** Quando eu perco por ficar parado; null fora da minha vez. */
   tapDeadline: number | null;
+  /** Siga o Líder: quem cria a rodada, as regras e se o tempo dele acabou. */
+  leader?: string | null;
+  rules?: LeaderRule[];
+  timedOut?: boolean;
 }
 
 export interface RoomSnapshot {

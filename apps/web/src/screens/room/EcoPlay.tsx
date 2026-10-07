@@ -1,16 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
-import { ECO_PAUSE_MS, ECO_TAP_TIMEOUT_MS, ecoPresets, type EcoMode } from '@nocap/games';
+import { ECO_PAUSE_MS, ECO_TAP_TIMEOUT_MS } from '@nocap/games';
 import { Countdown } from '@/components/Countdown';
 import { EcoBoard } from '@/games/eco/EcoBoard';
 import '@/games/eco/eco.css';
 import { useAuth } from '@/lib/auth';
 import { sendRoom, type RoomSnapshot } from '@/lib/rooms';
 import { buzz, sfx } from '@/lib/sfx';
+import { EcoLeaderCreate } from './EcoLeaderCreate';
 
 /** Quanto do ritmo de cada passo o botão fica aceso (igual ao modo solo). */
 const LIT_SHARE = 0.64;
 
-type Status = 'observe' | 'input' | 'waiting' | 'out' | 'wrong';
+type Status = 'observe' | 'input' | 'waiting' | 'out' | 'wrong' | 'leader';
 
 const LABEL: Record<Status, string> = {
   observe: 'OBSERVE',
@@ -18,6 +19,7 @@ const LABEL: Record<Status, string> = {
   waiting: 'ISSO! ESPERE',
   out: 'VOCÊ CAIU',
   wrong: 'ERROU',
+  leader: 'VOCÊ CRIOU',
 };
 
 function Reveal({ snapshot }: { snapshot: RoomSnapshot }) {
@@ -25,27 +27,40 @@ function Reveal({ snapshot }: { snapshot: RoomSnapshot }) {
   const eco = snapshot.eco!;
   const results = snapshot.round?.results ?? [];
   const name = (id: string) => snapshot.members.find((m) => m.id === id)?.username ?? '?';
-  const played = results.filter((r) => eco.participants.includes(r.id));
+  const played = results.filter((r) => eco.participants.includes(r.id) || r.id === eco.leader);
   return (
     <section className="screen rm">
       <h1>Rodada {eco.round}</h1>
       <p className="lead">
-        {eco.alive.length === 1
-          ? `Sobrou @${name(eco.alive[0]!)}.`
-          : eco.alive.length === 0
-            ? 'Todo mundo caiu junto.'
-            : `${eco.alive.length} seguem na disputa.`}
+        {eco.leader
+          ? `@${name(eco.leader)} criou a sequência.`
+          : eco.alive.length === 1
+            ? `Sobrou @${name(eco.alive[0]!)}.`
+            : eco.alive.length === 0
+              ? 'Todo mundo caiu junto.'
+              : `${eco.alive.length} seguem na disputa.`}
       </p>
       <ul className="rm-results">
         {played.map((r) => {
-          const passed = r.score === 1;
+          const isLeader = r.id === eco.leader;
+          const passed = isLeader || (eco.leader ? Number(r.answer) >= eco.length : r.score === 1);
           return (
             <li key={r.id} className={`rm-result${r.id === me ? ' me' : ''}`}>
               <span className="mono rm-time">
-                {passed ? 'PASSOU' : `CAIU NO ${Number(r.answer ?? 0) + 1}º TOQUE`}
+                {isLeader
+                  ? eco.timedOut
+                    ? 'CRIOU (SEM TEMPO)'
+                    : 'CRIOU'
+                  : eco.leader
+                    ? `${r.answer}/${eco.length}`
+                    : passed
+                      ? 'PASSOU'
+                      : `CAIU NO ${Number(r.answer ?? 0) + 1}º TOQUE`}
               </span>
               <span className="rm-result-name">@{name(r.id)}</span>
-              <span className="rm-result-score">{passed ? eco.length : '-'}</span>
+              <span className="rm-result-score">
+                {eco.leader ? r.score.toFixed(1) : passed ? eco.length : '-'}
+              </span>
             </li>
           );
         })}
@@ -63,7 +78,6 @@ function Reveal({ snapshot }: { snapshot: RoomSnapshot }) {
 export function EcoRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
   const me = useAuth((s) => s.user?.id);
   const eco = snapshot.eco!;
-  const preset = ecoPresets[snapshot.mode as EcoMode];
   const mine = snapshot.members.find((m) => m.id === me);
   const playing = !!me && eco.participants.includes(me) && eco.alive.includes(me);
   const [lit, setLit] = useState<number | null>(null);
@@ -101,7 +115,7 @@ export function EcoRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
   const tap = (pad: number) => {
     if (snapshot.phase !== 'play' || !playing || wrongRef.current || mine?.locked) return;
     const seq = sequence ?? [];
-    const want = (preset.reverse ? [...seq].reverse() : seq)[done];
+    const want = (eco.reverse ? [...seq].reverse() : seq)[done];
     sendRoom('tap', { pad });
     setLit(pad);
     if (pad !== want) {
@@ -134,26 +148,31 @@ export function EcoRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [eco.pads]);
 
+  if (snapshot.phase === 'create') return <EcoLeaderCreate snapshot={snapshot} />;
   if (snapshot.phase === 'reveal') return <Reveal key={`r-${eco.round}`} snapshot={snapshot} />;
 
   const status: Status =
     snapshot.phase === 'show'
       ? 'observe'
-      : !playing
-        ? 'out'
-        : wrongRef.current
-          ? 'wrong'
-          : mine?.locked
-            ? 'waiting'
-            : 'input';
+      : eco.leader === me
+        ? 'leader'
+        : !playing
+          ? 'out'
+          : wrongRef.current
+            ? 'wrong'
+            : mine?.locked
+              ? 'waiting'
+              : 'input';
   const sub =
-    status === 'out'
-      ? `PLATEIA · ${eco.alive.length} NA DISPUTA`
-      : status === 'observe'
-        ? `${eco.length} ${eco.length === 1 ? 'PASSO' : 'PASSOS'} · ${eco.alive.length} NA DISPUTA`
-        : preset.reverse
-          ? `DE TRÁS PARA FRENTE · ${done}/${eco.length}`
-          : `${done}/${eco.length}`;
+    status === 'leader'
+      ? 'OS OUTROS ESTÃO REPETINDO'
+      : status === 'out'
+        ? `PLATEIA · ${eco.alive.length} NA DISPUTA`
+        : status === 'observe'
+          ? `${eco.length} ${eco.length === 1 ? 'PASSO' : 'PASSOS'} · ${eco.alive.length} NA DISPUTA`
+          : eco.reverse
+            ? `DE TRÁS PARA FRENTE · ${done}/${eco.length}`
+            : `${done}/${eco.length}`;
 
   return (
     <section className="screen eco-play">

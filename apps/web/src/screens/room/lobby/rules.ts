@@ -24,18 +24,26 @@ const ROUNDS = [1, 3, 5, 7, 10];
 const SHOW = [400, 1000, 3000, 5000];
 const PICK = [15_000, 30_000, 60_000];
 const IMP_ROUNDS = [1, 3, 5];
+const LEADER_ROUNDS = [4, 6, 8, 10, 12];
 const IMP_PICK = [30_000, 45_000, 60_000];
 const IMP_VOTE = [20_000, 30_000, 60_000];
 const IMP_COUNT = [1, 2, 3];
 
 /** Quantas pessoas cada jogo precisa para começar. */
-export const MIN_PLAYERS: Record<RoomGame, number> = { color: 2, time: 2, impostor: 3, eco: 2 };
+export const MIN_PLAYERS: Record<RoomGame, number> = {
+  color: 2,
+  time: 2,
+  impostor: 3,
+  eco: 2,
+  ecoleader: 2,
+};
 
 export const GAME_NAME: Record<RoomGame, string> = {
   color: 'Mesmíssima',
   time: 'Já Deu?',
   impostor: 'Intruso',
   eco: 'Ecooo',
+  ecoleader: 'Siga o Líder',
 };
 
 /** "Entra na minha sala ___": com a preposição certa para o convite. */
@@ -44,10 +52,18 @@ export const GAME_OF: Record<RoomGame, string> = {
   time: 'de Já Deu?',
   impostor: 'do Intruso',
   eco: 'do Ecooo',
+  ecoleader: 'do Siga o Líder',
 };
 
 /** Modos de cada jogo na sala, com uma linha que explica cada um. */
 export const MODES: Record<RoomGame, { id: string; label: string; note: string }[]> = {
+  ecoleader: [
+    {
+      id: 'leader',
+      label: 'Siga o Líder',
+      note: 'Um cria a sequência dentro das regras da rodada e os outros repetem. O criador muda a cada rodada.',
+    },
+  ],
   eco: [
     {
       id: 'classic',
@@ -103,7 +119,7 @@ export function rulesFor(s: RoomSnapshot): RuleDef[] {
   const out: RuleDef[] = [];
   const cfg = s.settings;
 
-  if (s.game !== 'impostor') {
+  if (s.game !== 'impostor' && s.game !== 'ecoleader') {
     out.push({
       id: 'mode',
       label: 'MODO',
@@ -119,7 +135,7 @@ export function rulesFor(s: RoomSnapshot): RuleDef[] {
     out.push({
       id: 'rounds',
       label: 'RODADAS',
-      values: s.game === 'impostor' ? IMP_ROUNDS : ROUNDS,
+      values: s.game === 'impostor' ? IMP_ROUNDS : s.game === 'ecoleader' ? LEADER_ROUNDS : ROUNDS,
       current: cfg.rounds,
       format: String,
       patch: (v) => ({ rounds: v }),

@@ -5,6 +5,7 @@ import { ColorRoomEngine, MAX_PLAYERS, RoomError } from './color-room.engine';
 import { TimeRoomEngine } from './time-room.engine';
 import { ImpostorRoomEngine } from './impostor/impostor-room.engine';
 import { EcoRoomEngine } from './eco-room.engine';
+import { EcoLeaderRoomEngine } from './eco-leader-room.engine';
 import { IMPOSTOR_MAX_PLAYERS } from '@nocap/games';
 import type { InvitesService } from './invites.service';
 import type { RoomsRepository } from './rooms.repository';
@@ -290,6 +291,23 @@ export class EcoRoom extends ColorRoom {
 
   protected override registerGameMessages() {
     const engine = () => this.engine as EcoRoomEngine;
+    this.onMessage('tap', (c, m: { pad?: number }) =>
+      this.act(c, (id) => engine().tap(id, Number(m?.pad))),
+    );
+  }
+}
+
+/** Sala do Ecooo (Siga o Líder): um cria a sequência, os outros repetem; o criador muda a cada rodada. */
+export class EcoLeaderRoom extends ColorRoom {
+  protected override makeEngine(opts: ConstructorParameters<typeof ColorRoomEngine>[0]) {
+    return new EcoLeaderRoomEngine(opts);
+  }
+
+  protected override registerGameMessages() {
+    const engine = () => this.engine as EcoLeaderRoomEngine;
+    this.onMessage('submit', (c, m: { sequence?: unknown }) =>
+      this.act(c, (id) => engine().submit(id, m?.sequence)),
+    );
     this.onMessage('tap', (c, m: { pad?: number }) =>
       this.act(c, (id) => engine().tap(id, Number(m?.pad))),
     );
