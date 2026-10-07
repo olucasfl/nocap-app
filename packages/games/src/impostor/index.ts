@@ -3,7 +3,7 @@ import { createRng } from '../core/rng';
 /** Regras puras do Intruso (variante da Cor só para sala). Ver specs/011-impostor.md. */
 
 export const IMPOSTOR_MIN_PLAYERS = 3;
-export const IMPOSTOR_MAX_PLAYERS = 8;
+export const IMPOSTOR_MAX_PLAYERS = 12;
 export const IMPOSTOR_MAX_COUNT = 3;
 
 /**

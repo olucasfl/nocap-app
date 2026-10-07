@@ -13,10 +13,11 @@ Tudo está em `main` e publicado (API no Render, web na Vercel, banco no Supabas
 - **Contas obrigatórias para jogar**, histórico com filtros e paginação, perfil com recordes, amigos e perfil de amigo, rankings por jogo, salas (host, pronto, convites, revanche por votação) para Cor e Tempo.
 - **App:** PWA com splash animada, offline (continua logado, avisos, pull to refresh), layouts de tablet e desktop, sons por toque real, vidas em corações, animações de nota, aviso de **atualização obrigatória** (tela cheia até tocar em Atualizar).
 
-**Em andamento: o Intruso** (`specs/011-impostor.md`). Variante da Cor só para sala (3 a 8 pessoas): a turma vê a cor, os intrusos recebem só uma dica, todos recriam e votam (intrusos também votam; voto aberto ou anônimo, escolhido no lobby). Com 3 pessoas pode ter até 2 intrusos; sempre sobra pelo menos 1 normal.
+**Em andamento: o Intruso** (`specs/011-impostor.md`). Variante da Cor só para sala (3 a 12 pessoas, 1 a 3 intrusos): a turma vê a cor, os intrusos recebem só uma dica, todos recriam e votam (intrusos também votam; voto aberto ou anônimo, escolhido no lobby). Com 3 pessoas pode ter até 2 intrusos; sempre sobra pelo menos 1 normal.
 
 - Feito: regras puras e testes em `packages/games/src/impostor`; motor e sala em `apps/api/src/rooms/impostor` (estado por pessoa: a seed nunca sai, a cor só vai para a tripulação, a dica só para o intruso); telas em `apps/web/src/screens/room/ImpostorPlay.tsx` e `Lobby.tsx`; o modo aparece na lista da Cor e leva a "Criar sala".
-- **Falta:** (1) escrever o resto da paleta de dicas: hoje só `apps/api/src/rooms/impostor/palette-1.ts` (36 cores quentes, 324 dicas); a meta é mais de 1000. Faltam verdes/azuis, roxos/rosas e neutros/escuros/pastéis em `palette-2..4.ts` no mesmo formato (`color('Nome', h, s, b, [9 dicas])`) e importar em `palette.ts`; (2) trocar o `it.skip` de "tem mais de 1000 dicas" por `it` em `impostor-room.engine.test.ts`; (3) **testar com 3 contas de verdade** (criar sala, lobby, decorar, recriar, votar, revelar, pódio): nunca foi jogado ao vivo; (4) o Intruso não salva no histórico nem tem estatísticas (decisão da spec, pode virar etapa futura).
+- **Paleta pronta** (07/10/2026): 116 cores e 1044 dicas em `palette-1..4.ts`, teste das 1000 dicas ativo. Limite da sala ampliado para 3 a 12 pessoas.
+- **Falta:** (1) **testar com 3 contas de verdade** (criar sala, lobby, decorar, recriar, votar, revelar, pódio): nunca foi jogado ao vivo; (2) o Intruso não salva no histórico nem tem estatísticas (decisão da spec, pode virar etapa futura).
 
 **Banco:** os dados de jogos foram zerados em 07/10/2026 (partidas, pontos e recordes); a conta do Lucas foi mantida. Schema e migrations intactos.
 

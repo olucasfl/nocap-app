@@ -54,6 +54,22 @@ describe('lobby do Intruso', () => {
     expect(imp(snapOf(room, 'a')).count).toBe(3);
   });
 
+  it('aguenta 12 pessoas e recusa a 13ª: com 3 intrusos sobram 9 normais', () => {
+    const ids = Array.from({ length: 12 }, (_, i) => `p${i}`);
+    const { room, players } = setup(ids, 3);
+    expect(() => room.join('p12', 'p12')).toThrow('cheia');
+    room.start('p0');
+    const roles = players.map((p) => imp(snapOf(room, p)).role);
+    expect(roles.filter((r) => r === 'impostor')).toHaveLength(3);
+    expect(roles.filter((r) => r === 'crew')).toHaveLength(9);
+    // Só quem é intruso recebe a dica; ninguém além da tripulação vê a cor.
+    for (const p of players) {
+      const v = imp(snapOf(room, p));
+      expect(v.hint !== null).toBe(v.role === 'impostor');
+      expect(v.color !== null).toBe(v.role === 'crew');
+    }
+  });
+
   it('regras inválidas são recusadas', () => {
     const { room } = setup();
     expect(() => room.configure('ana', { impostors: 4 })).toThrow(RoomError);
@@ -207,8 +223,7 @@ describe('votação', () => {
 });
 
 describe('paleta de dicas', () => {
-  // Reativar (trocar por `it`) quando a paleta chegar a 1000 dicas.
-  it.skip('tem mais de 1000 dicas', () => {
+  it('tem mais de 1000 dicas', () => {
     expect(HINT_COUNT).toBeGreaterThanOrEqual(1000);
   });
 

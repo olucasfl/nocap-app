@@ -249,7 +249,7 @@ export class TimeRoom extends ColorRoom {
   }
 }
 
-/** Sala do Intruso: a Cor com papéis secretos e votação (de 3 a 8 pessoas). */
+/** Sala do Intruso: a Cor com papéis secretos e votação (de 3 a 12 pessoas). */
 export class ImpostorRoom extends ColorRoom {
   override maxClients = IMPOSTOR_MAX_PLAYERS;
 

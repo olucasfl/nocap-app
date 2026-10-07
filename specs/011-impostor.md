@@ -13,10 +13,10 @@ amostras e **votam** em quem acham que é intruso. Intrusos também votam.
 
 ## Regras
 
-- **Jogadores:** de 3 a 8. O mínimo é 3, para ter pelo menos 1 intruso e 1 pessoa normal votando.
+- **Jogadores:** de 3 a 12 (limite ampliado de 8 para 12 a pedido do Lucas, em 07/10/2026). O mínimo é 3, para ter pelo menos 1 intruso e 1 pessoa normal votando.
 - **Intrusos:** o host escolhe 1, 2 ou 3. O número efetivo se adapta à sala: sempre sobra pelo
   menos uma pessoa normal. `máx = min(3, n - 1)` (3 pessoas: até 2 intrusos contra 1, que fica
-  engraçado; 4 ou mais: até 3). Se o host pedir mais do que a sala suporta, vale o máximo.
+  engraçado; 4 a 12 pessoas: até 3). Se o host pedir mais do que a sala suporta, vale o máximo.
 - **Papéis:** sorteados a cada rodada (seed da rodada + posição), então quem é intruso muda.
   Cada intruso só sabe o próprio papel (intrusos não se conhecem). Todos sabem quantos são.
 - **Cor e dica:** vêm de uma paleta de cores nomeadas, cada uma com várias dicas (mais de 1000
@@ -52,6 +52,6 @@ vai para os intrusos; os papéis só aparecem na revelação.
 
 ## Dicas
 
-Paleta em `apps/api/src/rooms/impostor/` (conteúdo só do servidor, para o app não carregar as
+Paleta pronta (116 cores, 1044 dicas, `palette-1..4.ts`) em `apps/api/src/rooms/impostor/` (conteúdo só do servidor, para o app não carregar as
 mais de mil frases). Cada cor tem nome, HSB e dicas; as dicas precisam ser úteis (objeto,
 comparação, temperatura) e podem ter piada.

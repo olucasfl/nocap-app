@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  IMPOSTOR_MAX_PLAYERS,
+  IMPOSTOR_MIN_PLAYERS,
   assignImpostors,
   effectiveImpostors,
   impostorLimit,
@@ -7,9 +9,21 @@ import {
   tallyVotes,
 } from './index';
 
+describe('tamanho da sala', () => {
+  it('de 3 a 12 pessoas', () => {
+    expect(IMPOSTOR_MIN_PLAYERS).toBe(3);
+    expect(IMPOSTOR_MAX_PLAYERS).toBe(12);
+  });
+});
+
 describe('limite de intrusos', () => {
   it('até 3, mas sempre sobra uma pessoa normal (3 pessoas: até 2 intrusos)', () => {
     expect([3, 4, 5, 6, 7, 8].map(impostorLimit)).toEqual([2, 3, 3, 3, 3, 3]);
+  });
+  it('sala cheia (12 pessoas) também aguenta no máximo 3 intrusos', () => {
+    expect([9, 10, 11, 12].map(impostorLimit)).toEqual([3, 3, 3, 3]);
+    expect(effectiveImpostors(3, 12)).toBe(3);
+    expect(effectiveImpostors(1, 12)).toBe(1);
   });
   it('o pedido do host se adapta ao tamanho da sala', () => {
     expect(effectiveImpostors(3, 3)).toBe(2);

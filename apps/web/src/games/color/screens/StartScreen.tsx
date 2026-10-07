@@ -130,7 +130,7 @@ export function StartScreen({ initialTab = 'modes', initialBoard, onMode, onStar
                 open === 'impostor' ? (
                   <>
                     <div className="cg-rule">
-                      <b>3-8</b>pessoas
+                      <b>3-12</b>pessoas
                     </div>
                     <div className="cg-rule">
                       <b>1-3</b>intrusos
