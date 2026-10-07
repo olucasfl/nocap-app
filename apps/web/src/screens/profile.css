@@ -1,0 +1,78 @@
+.pf {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 18px 16px 110px;
+}
+.pf h1 {
+  margin: 0;
+}
+.pf-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  background: var(--white);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+.pf-avatar {
+  flex: none;
+  width: 64px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+  background: var(--yellow);
+  color: var(--on-accent);
+  border: var(--border);
+  border-radius: var(--radius-md, 12px);
+  font: 900 34px var(--font-display);
+}
+.pf-id {
+  min-width: 0;
+}
+.pf-name {
+  font: 900 24px/1.1 var(--font-display);
+  letter-spacing: -0.03em;
+  overflow-wrap: anywhere;
+}
+.pf-user {
+  font-weight: 700;
+  color: var(--blue);
+}
+.pf-email {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.pf-streak {
+  padding: 16px;
+  background: var(--orange);
+  color: var(--on-accent);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+.pf-streak-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+.pf-streak-value {
+  margin: 4px 0;
+  font: 900 44px/1 var(--font-display);
+  letter-spacing: -0.04em;
+}
+.pf-streak-sub {
+  font-size: 11px;
+  font-weight: 700;
+}
+.pf-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: auto;
+}

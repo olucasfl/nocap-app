@@ -8,6 +8,9 @@ import {
 import type { FriendRelation, FriendshipRow, UserRef } from './friends.repository';
 import { FriendsRepository } from './friends.repository';
 
+/** Pedidos de amizade enviados e ainda sem resposta (anti-spam). */
+export const MAX_PENDING_OUT = 50;
+
 export type RelationState = 'none' | 'friends' | 'outgoing' | 'incoming';
 
 /** Só @usuário sai daqui: nome real, e-mail e ids de usuário ficam no servidor. */
@@ -64,6 +67,9 @@ export class FriendsService {
     if (other.id === me) throw new BadRequestException('Você não pode adicionar você mesmo');
 
     const existing = await this.repo.findBetween(me, other.id);
+    if (!existing && (await this.repo.countOutgoingPending(me)) >= MAX_PENDING_OUT) {
+      throw new BadRequestException('Você tem pedidos demais esperando resposta. Cancele alguns.');
+    }
     if (existing) {
       if (existing.status === 'accepted') throw new ConflictException('Vocês já são amigos');
       if (existing.requesterId === me) throw new ConflictException('Pedido já enviado');

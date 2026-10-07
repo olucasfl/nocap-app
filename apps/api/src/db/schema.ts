@@ -142,3 +142,15 @@ export const friendships = pgTable(
     index('friendships_addressee_idx').on(t.addresseeId, t.status),
   ],
 );
+
+/** Um dia (YYYY-MM-DD, fuso de São Paulo) em que a conta abriu o app: base da sequência de dias seguidos. */
+export const userVisits = pgTable(
+  'user_visits',
+  {
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => authUser.id, { onDelete: 'cascade' }),
+    day: text('day').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.day] })],
+);

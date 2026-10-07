@@ -10,6 +10,8 @@ export interface RankingEntry {
   username: string;
   /** Décimos (500 = 50.0). */
   score: number;
+  /** Dias jogados no período (só no Daily, onde a nota é a soma dos dias). */
+  days?: number;
   playedAt: string;
   isMe?: boolean;
 }
@@ -37,13 +39,15 @@ const ALL_BOARDS: { id: Board; label: string }[] = [
   { id: 'daily', label: 'Daily' },
 ];
 
-/** Quadros que cada jogo tem (Flash é da Cor; "Sem estourar" é do Tempo). */
+/** Quadros de cada jogo. O Daily tem ranking próprio (tela do Daily), fora dos modos normais. */
 const BOARD_IDS: Record<Game, Board[]> = {
-  color: ['classic', 'flash', 'quick', 'daily'],
-  time: ['classic', 'quick', 'strict', 'daily'],
+  color: ['classic', 'flash', 'quick'],
+  time: ['classic', 'quick', 'strict'],
 };
 
 export const boardsOf = (game: Game) => ALL_BOARDS.filter((b) => BOARD_IDS[game].includes(b.id));
+
+export const GAME_NAME: Record<Game, string> = { color: 'Cor', time: 'Tempo' };
 
 export const PERIODS: { id: Period; label: string }[] = [
   { id: 'day', label: 'Hoje' },
@@ -51,14 +55,11 @@ export const PERIODS: { id: Period; label: string }[] = [
   { id: 'all', label: 'Sempre' },
 ];
 
-/** Máximo de pontos da partida (10 por rodada). */
-export const BOARD_MAX: Record<Board, number> = {
-  classic: 50,
-  flash: 50,
-  quick: 10,
-  strict: 50,
-  daily: 50,
-};
+/** Máximo de pontos de uma partida no quadro (10 por rodada: a Cor tem 5 rodadas, o Tempo 3). */
+export function boardMax(game: Game, board: Board): number {
+  if (board === 'quick') return 10;
+  return game === 'time' ? 30 : 50;
+}
 
 export const SCOPES: { id: Scope; label: string }[] = [
   { id: 'all', label: 'Todos' },

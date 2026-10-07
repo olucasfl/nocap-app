@@ -133,4 +133,13 @@ export class FriendsRepository {
       );
     return rows.map((r) => (r.requesterId === me ? r.addresseeId : r.requesterId));
   }
+
+  /** Pedidos que `me` enviou e ainda esperam resposta. */
+  async countOutgoingPending(me: string): Promise<number> {
+    const rows = await this.db
+      .select({ id: friendships.id })
+      .from(friendships)
+      .where(and(eq(friendships.requesterId, me), eq(friendships.status, 'pending')));
+    return rows.length;
+  }
 }

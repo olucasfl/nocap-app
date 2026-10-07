@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { escapeLike, type FriendshipRow, type FriendsRepository } from './friends.repository';
-import { FriendsService } from './friends.service';
+import { FriendsService, MAX_PENDING_OUT } from './friends.service';
 
 const users = [
   { id: 'u-ana', username: 'ana' },
@@ -10,8 +10,13 @@ const users = [
 ];
 
 /** Repositório em memória com a mesma semântica do de Postgres. */
-function fakeRepo() {
-  let rows: FriendshipRow[] = [];
+function fakeRepo(seed: { outgoing?: number } = {}) {
+  let rows: FriendshipRow[] = Array.from({ length: seed.outgoing ?? 0 }, (_, i) => ({
+    id: `seed${i}`,
+    requesterId: 'u-ana',
+    addresseeId: `u-ghost-${i}`,
+    status: 'pending',
+  }));
   let n = 0;
   const between = (a: string, b: string) =>
     rows.find(
@@ -47,6 +52,8 @@ function fakeRepo() {
           ...r,
           otherUsername: nameOf(r.requesterId === me ? r.addresseeId : r.requesterId),
         })),
+    countOutgoingPending: async (me: string) =>
+      rows.filter((r) => r.requesterId === me && r.status === 'pending').length,
     friendIds: async (me: string) =>
       rows
         .filter((r) => r.status === 'accepted' && (r.requesterId === me || r.addresseeId === me))
@@ -127,6 +134,18 @@ describe('FriendsService', () => {
     expect(await s.circleOf(ANA)).toEqual([ANA]);
     await s.accept(BIA, 'ana');
     expect(await s.circleOf(ANA)).toEqual([ANA, BIA]);
+  });
+});
+
+describe('limite de pedidos pendentes', () => {
+  it('quem enviou pedidos demais sem resposta não consegue mandar outro', async () => {
+    const s = fakeRepo({ outgoing: MAX_PENDING_OUT });
+    await expect(s.request(ANA, 'bia')).rejects.toThrow('pedidos demais');
+  });
+
+  it('abaixo do limite o pedido sai normalmente', async () => {
+    const s = fakeRepo({ outgoing: MAX_PENDING_OUT - 1 });
+    await expect(s.request(ANA, 'bia')).resolves.toEqual({ state: 'outgoing' });
   });
 });
 

@@ -1,0 +1,99 @@
+/* Daily (jogo especial) */
+.dl {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 110px;
+}
+.dl header {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.dl-kicker {
+  align-self: flex-start;
+  padding: 5px 10px;
+  border: var(--border);
+  border-radius: 999px;
+  background: var(--yellow);
+  color: var(--on-accent);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+.dl-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.dl-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--white);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+.dl-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.dl-name {
+  font: 900 22px var(--font-display);
+  letter-spacing: -0.03em;
+}
+.dl-status {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.dl-status.done {
+  color: var(--ink);
+}
+.dl-streak {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--blue);
+}
+.dl-go {
+  height: 44px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  border: var(--border);
+  border-radius: 12px;
+  background: var(--on-accent);
+  color: var(--yellow);
+  font: 900 14px var(--font-display);
+  text-decoration: none;
+}
+.dl-go:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 3px;
+}
+.dl-rank {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.dl-h2 {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.dl-note {
+  margin: 0;
+  font-size: 10px;
+  color: var(--muted);
+}

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { apiBase, apiClient } from './api-client';
 import { isEmail, normalizeUsername, type RegisterForm } from './account-form';
 import { getGuestId } from './guest';
+import { recordVisit } from './stats';
 
 const TOKEN_KEY = 'nocap-token';
 
@@ -97,6 +98,12 @@ async function finishSignIn(res: Response, data: AuthResponse | null) {
   setToken(token);
   useAuth.setState({ user: data.user, status: 'ready' });
   await claimGuest();
+  void markVisit();
+}
+
+/** Conta que o app foi aberto hoje (sequência de dias seguidos). Falha em silêncio. */
+export function markVisit() {
+  return recordVisit().catch(() => undefined);
 }
 
 export async function register(form: RegisterForm) {
@@ -144,6 +151,7 @@ export async function restoreSession() {
     const user = (data as { user?: AuthUser } | null)?.user ?? null;
     if (!user) setToken(null);
     useAuth.setState({ user, status: 'ready' });
+    if (user) void markVisit();
   } catch {
     // Sem rede não derruba a sessão: o token fica e o usuário aparece quando voltar.
     useAuth.setState({ status: 'ready' });

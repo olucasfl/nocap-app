@@ -1,4 +1,4 @@
-import { colorGame, type ColorSettings, type Hsb } from '@nocap/games';
+import { colorGame, type ColorSettings, type Hsb, type TimeSettings } from '@nocap/games';
 
 export const MIN_PLAYERS = 2;
 export const MAX_PLAYERS = 12;
@@ -13,7 +13,21 @@ export interface RoomSettings extends ColorSettings {
 
 export const DEFAULT_SETTINGS: RoomSettings = { rounds: 5, showMs: 3000, pickMs: 30_000 };
 
-export type Phase = 'lobby' | 'show' | 'pick' | 'reveal' | 'final';
+/** Regras do Tempo na sala: a mesma faixa do clássico, o host escolhe rodadas e "sem estourar". */
+export type TimeRoomSettings = TimeSettings;
+
+export const DEFAULT_TIME_SETTINGS: TimeRoomSettings = {
+  rounds: 3,
+  minMs: 3000,
+  maxMs: 18_000,
+  noOvershoot: false,
+  mix: 'alternate',
+};
+
+export type AnySettings = RoomSettings | TimeRoomSettings;
+
+/** `play` é a fase de resposta do Tempo (cada um começa e para o seu relógio). */
+export type Phase = 'lobby' | 'show' | 'pick' | 'play' | 'reveal' | 'final';
 
 export class RoomError extends Error {}
 
@@ -26,7 +40,8 @@ interface Member {
 }
 
 interface RoundAnswer {
-  answer: Hsb;
+  /** Cor: o HSB travado. Tempo: a duração em ms medida pelo servidor. */
+  answer: Hsb | number;
   /** 0 a 10, 1 casa. */
   score: number;
 }
@@ -45,7 +60,7 @@ export interface FinalRow {
   totalTenths: number;
   placement: number;
   /** Respostas por rodada (null = não respondeu). */
-  answers: (Hsb | null)[];
+  answers: (Hsb | number | null)[];
 }
 
 /**
@@ -54,21 +69,25 @@ export interface FinalRow {
  */
 export class ColorRoomEngine {
   readonly code: string;
-  private readonly now: () => number;
-  private readonly newSeed: () => string;
-  private readonly maxPlayers: number;
+  protected readonly now: () => number;
+  protected readonly newSeed: () => string;
+  protected readonly maxPlayers: number;
+  /** Qual jogo esta sala joga; o `TimeRoomEngine` troca. */
+  readonly game: 'color' | 'time' = 'color';
+  /** Fase em que as pessoas respondem (a Cor trava um HSB; o Tempo, um relógio). */
+  protected readonly answerPhase: Phase = 'pick';
 
-  private members = new Map<string, Member>();
-  private hostId: string | null = null;
-  private settings: RoomSettings = { ...DEFAULT_SETTINGS };
+  protected members = new Map<string, Member>();
+  protected hostId: string | null = null;
+  protected settings: AnySettings = { ...DEFAULT_SETTINGS };
 
-  private phase: Phase = 'lobby';
-  private seed = '';
-  private roundIndex = 0;
-  private phaseEndsAt: number | null = null;
+  protected phase: Phase = 'lobby';
+  protected seed = '';
+  protected roundIndex = 0;
+  protected phaseEndsAt: number | null = null;
   /** `rounds[i][memberId]` */
-  private rounds: Record<string, RoundAnswer>[] = [];
-  private locked = new Set<string>();
+  protected rounds: Record<string, RoundAnswer>[] = [];
+  protected locked = new Set<string>();
 
   constructor(opts: EngineOptions) {
     this.code = opts.code;
@@ -138,11 +157,11 @@ export class ColorRoomEngine {
 
   // ---- lobby ----
 
-  private requireHost(id: string) {
+  protected requireHost(id: string) {
     if (id !== this.hostId) throw new RoomError('Só quem criou a sala pode fazer isso');
   }
 
-  private requirePhase(...phases: Phase[]) {
+  protected requirePhase(...phases: Phase[]) {
     if (!phases.includes(this.phase)) throw new RoomError('Agora não dá para fazer isso');
   }
 
@@ -153,20 +172,27 @@ export class ColorRoomEngine {
     m.ready = ready;
   }
 
-  configure(id: string, next: Partial<RoomSettings>) {
+  /** Regras aceitas para esta sala; o Tempo tem outras. */
+  protected validSettings(merged: Record<string, unknown>): boolean {
+    const m = merged as unknown as RoomSettings;
+    return (
+      Number.isInteger(m.rounds) &&
+      m.rounds >= 1 &&
+      m.rounds <= 10 &&
+      Number.isInteger(m.showMs) &&
+      m.showMs >= 100 &&
+      m.showMs <= 10_000 &&
+      Number.isInteger(m.pickMs) &&
+      m.pickMs >= 10_000 &&
+      m.pickMs <= 60_000
+    );
+  }
+
+  configure(id: string, next: Partial<RoomSettings> | Partial<TimeRoomSettings>) {
     this.requireHost(id);
     this.requirePhase('lobby');
-    const merged = { ...this.settings, ...next };
-    const ok =
-      Number.isInteger(merged.rounds) &&
-      merged.rounds >= 1 &&
-      merged.rounds <= 10 &&
-      Number.isInteger(merged.showMs) &&
-      merged.showMs >= 100 &&
-      merged.showMs <= 10_000 &&
-      Number.isInteger(merged.pickMs) &&
-      merged.pickMs >= 10_000 &&
-      merged.pickMs <= 60_000;
+    const merged = { ...this.settings, ...next } as AnySettings;
+    const ok = this.validSettings(merged as unknown as Record<string, unknown>);
     if (!ok) throw new RoomError('Regras inválidas');
     this.settings = merged;
     // Regra nova: todo mundo confirma de novo.
@@ -201,12 +227,12 @@ export class ColorRoomEngine {
 
   // ---- partida ----
 
-  private beginRound() {
+  protected beginRound() {
     this.roundIndex += 1;
     this.rounds[this.roundIndex] = {};
     this.locked = new Set();
     this.phase = 'show';
-    this.phaseEndsAt = this.now() + this.settings.showMs + SHOW_GRACE_MS;
+    this.phaseEndsAt = this.now() + (this.settings as RoomSettings).showMs + SHOW_GRACE_MS;
   }
 
   lock(id: string, answer: Hsb) {
@@ -224,10 +250,11 @@ export class ColorRoomEngine {
       answer.b >= 0 &&
       answer.b <= 100;
     if (!valid) throw new RoomError('Resposta inválida');
-    const target = colorGame.generateRound(this.seed, this.settings, this.roundIndex);
+    const colorSettings = this.settings as RoomSettings;
+    const target = colorGame.generateRound(this.seed, colorSettings, this.roundIndex);
     this.rounds[this.roundIndex]![id] = {
       answer,
-      score: colorGame.score(target, answer, this.settings),
+      score: colorGame.score(target, answer, colorSettings),
     };
     this.locked.add(id);
     this.maybeAdvanceFromPick();
@@ -246,7 +273,7 @@ export class ColorRoomEngine {
     this.reset();
   }
 
-  private reset() {
+  protected reset() {
     this.phase = 'lobby';
     this.phaseEndsAt = null;
     this.rounds = [];
@@ -255,19 +282,19 @@ export class ColorRoomEngine {
     for (const m of this.members.values()) m.ready = false;
   }
 
-  private maybeAdvanceFromPick() {
-    if (this.phase !== 'pick') return;
+  protected maybeAdvanceFromPick() {
+    if (this.phase !== this.answerPhase) return;
     const waiting = [...this.members.values()].filter((m) => m.connected && !this.locked.has(m.id));
     if (waiting.length === 0) this.toReveal();
   }
 
-  private toReveal() {
+  protected toReveal() {
     // Quem não respondeu fica com 0 na rodada.
     this.phase = 'reveal';
     this.phaseEndsAt = this.now() + REVEAL_MS;
   }
 
-  private finishReveal() {
+  protected finishReveal() {
     if (this.roundIndex + 1 >= this.settings.rounds) {
       this.phase = 'final';
       this.phaseEndsAt = null;
@@ -281,9 +308,9 @@ export class ColorRoomEngine {
     if (this.phaseEndsAt === null || this.now() < this.phaseEndsAt) return false;
     if (this.phase === 'show') {
       this.phase = 'pick';
-      this.phaseEndsAt = this.now() + this.settings.pickMs;
+      this.phaseEndsAt = this.now() + (this.settings as RoomSettings).pickMs;
       this.maybeAdvanceFromPick();
-    } else if (this.phase === 'pick') {
+    } else if (this.phase === this.answerPhase) {
       this.toReveal();
     } else if (this.phase === 'reveal') {
       this.finishReveal();
@@ -329,7 +356,7 @@ export class ColorRoomEngine {
     return this.phase;
   }
 
-  get currentSettings(): RoomSettings {
+  get currentSettings(): AnySettings {
     return { ...this.settings };
   }
 
@@ -355,6 +382,7 @@ export class ColorRoomEngine {
       }));
     return {
       code: this.code,
+      game: this.game,
       phase: this.phase,
       hostId: this.hostId,
       settings: this.settings,

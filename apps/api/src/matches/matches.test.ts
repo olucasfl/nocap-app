@@ -9,14 +9,35 @@ import type { MatchesRepository } from './matches.repository';
 
 const settings = colorGame.presets.classic!;
 const GUEST = '11111111-1111-4111-8111-111111111111';
+const USER = '99999999-9999-4999-8999-999999999999';
+const PLAYER = 'player-of-user';
+
+/** Toda partida é de uma conta: o serviço recebe o id dela. */
+const createAs = (service: MatchesService, input: unknown) => service.create(input as never, USER);
 
 /** Respostas perfeitas: a própria cor-alvo regenerada pela seed. */
 const perfectAnswers = (seed: string) =>
   Array.from({ length: settings.rounds }, (_, i) => colorGame.generateRound(seed, settings, i));
 
-const fakeRepo = (result: { duplicate: boolean } | 'conflict' = { duplicate: false }) => {
+const fakeRepo = (
+  result: { duplicate: boolean } | 'conflict' = { duplicate: false },
+  dailyAlreadyPlayed = false,
+) => {
   const save = vi.fn().mockResolvedValue(result);
-  return { repo: { save, history: vi.fn() } as unknown as MatchesRepository, save };
+  const dailyPlayed = vi.fn().mockResolvedValue(dailyAlreadyPlayed);
+  const playerOfUser = vi.fn().mockResolvedValue(PLAYER);
+  const playerIdsOf = vi.fn().mockResolvedValue([PLAYER]);
+  return {
+    repo: {
+      save,
+      history: vi.fn(),
+      dailyPlayed,
+      playerOfUser,
+      playerIdsOf,
+    } as unknown as MatchesRepository,
+    save,
+    dailyPlayed,
+  };
 };
 
 describe('scoreMatch', () => {
@@ -81,6 +102,8 @@ describe('historyQuerySchema', () => {
   it('usa limit 20 por padrão e limita a 50', () => {
     expect(historyQuerySchema.parse({}).limit).toBe(20);
     expect(historyQuerySchema.safeParse({ limit: '100' }).success).toBe(false);
+    expect(historyQuerySchema.parse({ game: 'time' }).game).toBe('time');
+    expect(historyQuerySchema.safeParse({ game: 'xadrez' }).success).toBe(false);
   });
 });
 
@@ -108,7 +131,7 @@ describe('MatchesService.create', () => {
 
   it('salva com a nota recalculada e marca preset como ranked', async () => {
     const { repo, save } = fakeRepo();
-    const res = await new MatchesService(repo).create(body());
+    const res = await createAs(new MatchesService(repo), body());
     expect(res.total).toBe(50);
     expect(res.rounds).toHaveLength(5);
     expect(save).toHaveBeenCalledWith(
@@ -122,33 +145,69 @@ describe('MatchesService.create', () => {
   it('reenvio com o mesmo matchId devolve o mesmo id', async () => {
     const { repo } = fakeRepo({ duplicate: true });
     const matchId = '33333333-3333-4333-8333-333333333333';
-    const res = await new MatchesService(repo).create(body({ matchId }));
+    const res = await createAs(new MatchesService(repo), body({ matchId }));
     expect(res.matchId).toBe(matchId);
   });
 
   it('matchId de outro jogador vira 409', async () => {
     const { repo } = fakeRepo('conflict');
-    await expect(new MatchesService(repo).create(body())).rejects.toThrow(ConflictException);
+    await expect(createAs(new MatchesService(repo), body())).rejects.toThrow(ConflictException);
   });
 
   it('Daily exige a seed de hoje e o modo classic', async () => {
     const { repo, save } = fakeRepo();
     const service = new MatchesService(repo);
-    await expect(service.create(body({ kind: 'daily', seed: 'color:2000-01-01' }))).rejects.toThrow(
-      BadRequestException,
-    );
+    await expect(
+      createAs(service, body({ kind: 'daily', seed: 'color:2000-01-01' })),
+    ).rejects.toThrow(BadRequestException);
     const today = dailySeed('color');
     await expect(
-      service.create(
+      createAs(
+        service,
         body({ kind: 'daily', seed: today, mode: 'flash', answers: perfectAnswers(today) }),
       ),
     ).rejects.toThrow(BadRequestException);
     expect(save).not.toHaveBeenCalled();
 
-    const ok = await service.create(
+    const ok = await createAs(
+      service,
       body({ kind: 'daily', seed: today, answers: perfectAnswers(today) }),
     );
     expect(ok.total).toBe(50);
+  });
+});
+
+describe('Daily: uma partida por dia', () => {
+  const body = (over = {}) => ({
+    game: 'color' as const,
+    mode: 'classic',
+    kind: 'solo' as const,
+    seed: 'seed-x',
+    guestId: GUEST,
+    answers: perfectAnswers('seed-x'),
+    ...over,
+  });
+  const today = dailySeed('color');
+  const daily = (over: Record<string, unknown> = {}) =>
+    body({ kind: 'daily', seed: today, answers: perfectAnswers(today), ...over });
+
+  it('quem já jogou o Daily de hoje não joga de novo (409) e nada é salvo', async () => {
+    const { repo, save } = fakeRepo({ duplicate: false }, true);
+    await expect(createAs(new MatchesService(repo), daily())).rejects.toThrow(ConflictException);
+    expect(save).not.toHaveBeenCalled();
+  });
+
+  it('confere pelas contas e aparelhos da pessoa, só neste jogo, e libera o reenvio do mesmo matchId', async () => {
+    const { repo, dailyPlayed } = fakeRepo();
+    const matchId = '22222222-2222-4222-8222-222222222222';
+    await createAs(new MatchesService(repo), daily({ matchId }));
+    expect(dailyPlayed).toHaveBeenCalledWith('color', [PLAYER], expect.any(Date), matchId);
+  });
+
+  it('partida solo não é limitada por dia', async () => {
+    const { repo, dailyPlayed } = fakeRepo({ duplicate: false }, true);
+    await createAs(new MatchesService(repo), body());
+    expect(dailyPlayed).not.toHaveBeenCalled();
   });
 });
 

@@ -28,13 +28,13 @@ interface Props {
   onLock: (guess: Hsb) => void;
 }
 
+/** Branco em HSB: com saturação 0 o matiz não aparece. */
+export const WHITE: Hsb = { h: 0, s: 0, b: 100 };
+
 export function PickScreen({ onLock }: Props) {
-  // Ponto de partida neutro; só o matiz varia para não induzir a resposta.
-  const [guess, setGuess] = useState<Hsb>(() => ({
-    h: Math.floor(Math.random() * 360),
-    s: 50,
-    b: 70,
-  }));
+  // Sempre começa em branco (saturação no mínimo, brilho no máximo, matiz no começo da barra):
+  // o ponto de partida é igual para todo mundo e não induz a resposta.
+  const [guess, setGuess] = useState<Hsb>(WHITE);
   const lastBucket = useRef<Partial<Record<Channel, number>>>({});
   const latest = useRef(guess);
   latest.current = guess;

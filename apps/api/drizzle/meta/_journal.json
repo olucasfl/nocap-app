@@ -22,6 +22,13 @@
       "when": 1791330065590,
       "tag": "0002_sad_eternity",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791336984227,
+      "tag": "0003_bizarre_ego",
+      "breakpoints": true
     }
   ]
 }

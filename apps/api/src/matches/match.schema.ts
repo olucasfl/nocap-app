@@ -12,7 +12,8 @@ const base = {
   mode: z.string().min(1).max(32),
   kind: z.enum(['solo', 'daily']),
   seed: z.string().min(1).max(64),
-  guestId: z.string().uuid(),
+  /** Legado (aparelho): ignorado. Quem joga é a conta da sessão. */
+  guestId: z.string().uuid().optional(),
 };
 
 const colorMatchSchema = z.object({
@@ -39,6 +40,8 @@ export type TimeMatchInput = z.infer<typeof timeMatchSchema>;
 export const historyQuerySchema = z.object({
   cursor: z.string().max(200).optional(),
   limit: z.coerce.number().int().min(1).max(50).default(20),
+  /** Só as partidas de um jogo (o histórico do app é separado por jogo). */
+  game: z.enum(['color', 'time']).optional(),
 });
 export type HistoryQuery = z.infer<typeof historyQuerySchema>;
 

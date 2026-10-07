@@ -36,6 +36,8 @@ Podem rodar antes ou depois do passo 4 (PWA); o modo noturno toca o manifesto/`t
 - [x] Recordes por modo e Daily com sequência (Perfil e card do Daily no Hub), conta soma os aparelhos vinculados
 - [x] Ranking global por jogo/modo e período, em Postgres (spec 008); Redis só se o volume pedir
 
+- [x] Daily por jogo (1 Cor + 1 Tempo/dia), rankings por jogo, conta obrigatória para jogar, perfil com Recordes e dias seguidos, salas da Cor e do Tempo (spec 010)
+
 ## Etapa 3: amigos e salas
 
 - [x] Amigos (@username, pedidos com aceite, lista, ranking entre amigos; spec 009). Faltam: online agora, convites para sala (vêm com as salas)

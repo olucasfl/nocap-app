@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { z } from 'zod';
 import { AuthGuard, type AuthedRequest } from '../auth/auth.guard';
+import { RateLimit, RateLimitGuard } from '../common/rate-limit';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { FriendsService } from './friends.service';
 
@@ -20,11 +21,12 @@ const requestSchema = z.object({ username: z.string().trim().min(1).max(30) });
 const usernameParam = z.string().trim().min(1).max(30);
 
 @Controller()
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard, RateLimitGuard)
 export class FriendsController {
   constructor(private readonly friends: FriendsService) {}
 
   @Get('users/search')
+  @RateLimit({ limit: 30, windowMs: 60_000 })
   search(
     @Req() req: AuthedRequest,
     @Query(new ZodValidationPipe(searchSchema)) query: z.infer<typeof searchSchema>,
@@ -39,6 +41,7 @@ export class FriendsController {
 
   @Post('friends/requests')
   @HttpCode(200)
+  @RateLimit({ limit: 20, windowMs: 60_000 })
   request(
     @Req() req: AuthedRequest,
     @Body(new ZodValidationPipe(requestSchema)) body: z.infer<typeof requestSchema>,

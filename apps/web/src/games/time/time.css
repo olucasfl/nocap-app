@@ -69,8 +69,8 @@
 }
 
 /*
- * Contagem: nada se mexe. Sem animação, sem transição, sem número, sem som. A página inteira
- * é a área de toque e o texto nunca muda.
+ * Contagem: nada se mexe. Sem animação, sem transição, sem número que mude, sem som. A mudança
+ * de "pronto" para "valendo" é instantânea e depois a tela fica parada até o toque em PARAR.
  */
 .tm-silent *,
 .tm-silent *::before,
@@ -78,19 +78,55 @@
   animation: none !important;
   transition: none !important;
 }
+.tm-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 34px;
+}
+.tm-idle {
+  color: var(--muted);
+}
+/* Aviso fixo de que a rodada está valendo: ponto PARADO (piscar viraria metrônomo). */
+.tm-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 14px;
+  border: var(--border);
+  border-radius: 999px;
+  background: var(--on-accent);
+  color: var(--white);
+  font: 900 14px var(--font-display);
+  letter-spacing: 0.08em;
+}
+.tm-pill i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--orange);
+  border: 2px solid var(--white);
+}
+.tm-round.live .tm-target-time {
+  background: var(--orange);
+}
+/* Parar: o botão ocupa o resto da tela, fácil de acertar sem olhar. */
+.tm-round.live .stack {
+  flex: 1;
+}
 .tm-stop {
   appearance: none;
   flex: 1;
-  margin: 18px 0 0;
+  min-height: 180px;
   border: var(--border);
   border-radius: var(--radius-lg);
-  background: var(--white);
-  color: var(--ink);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
+  background: var(--on-accent);
+  color: var(--white);
+  box-shadow: 6px 6px 0 var(--orange);
+  font: 900 56px var(--font-display);
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
   cursor: pointer;
   touch-action: manipulation;
   user-select: none;
@@ -99,15 +135,6 @@
 .tm-stop:focus-visible {
   outline: 3px solid var(--blue);
   outline-offset: 3px;
-}
-.tm-stop-text {
-  font: 900 28px var(--font-display);
-  letter-spacing: -0.03em;
-  text-transform: uppercase;
-}
-.tm-stop-hint {
-  font: 400 13px var(--font-mono);
-  color: var(--muted);
 }
 
 /* resultado */
@@ -218,4 +245,23 @@
   font: 900 20px var(--font-display);
   min-width: 36px;
   text-align: right;
+}
+
+.tm-daily-tag {
+  display: inline-block;
+  align-self: flex-start;
+  padding: 6px 10px;
+  border: var(--border);
+  border-radius: 999px;
+  background: var(--yellow);
+  color: var(--on-accent);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+.tm-streak {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
 }

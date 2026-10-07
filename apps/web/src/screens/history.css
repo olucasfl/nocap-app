@@ -139,3 +139,45 @@
   font-size: 13px;
   font-weight: 700;
 }
+
+.hist-guest {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.hist-game {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.hist-game-name {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+/* Classificação da partida: colocação na sala ou faixa da nota */
+.hist-class {
+  align-self: flex-start;
+  padding: 1px 6px;
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--white);
+  color: var(--ink);
+}
+.hist-class.top {
+  background: var(--yellow);
+  color: var(--on-accent);
+}
+.hist-class.good {
+  background: var(--green);
+  color: var(--on-accent);
+}
+.hist-class.mid {
+  background: var(--white);
+}
+.hist-class.low {
+  background: var(--orange);
+  color: var(--on-accent);
+}

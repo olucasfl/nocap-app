@@ -1,10 +1,11 @@
-import { generateColorRound } from '@nocap/games';
+import { generateColorRound, type Hsb } from '@nocap/games';
 import { useAuth } from '@/lib/auth';
 import { sendRoom, type RoomSnapshot } from '@/lib/rooms';
 import { toHex } from '@/games/color/hex';
 import { PickScreen } from '@/games/color/screens/PickScreen';
 import { ShowScreen } from '@/games/color/screens/ShowScreen';
 import '@/games/color/color.css';
+import { TimePlay } from './TimePlay';
 
 function Waiting({ snapshot }: { snapshot: RoomSnapshot }) {
   const connected = snapshot.members.filter((m) => m.connected);
@@ -37,6 +38,7 @@ function Reveal({ snapshot }: { snapshot: RoomSnapshot }) {
   const target = generateColorRound(round.seed, snapshot.settings, round.index);
   const results = [...(round.results ?? [])].sort((a, b) => b.score - a.score);
   const name = (id: string) => snapshot.members.find((m) => m.id === id)?.username ?? '?';
+  const colorOf = (a: unknown) => (a && typeof a === 'object' ? toHex(a as Hsb) : undefined);
 
   return (
     <section className="screen rm">
@@ -49,8 +51,8 @@ function Reveal({ snapshot }: { snapshot: RoomSnapshot }) {
           <li key={r.id} className={`rm-result${r.id === me ? ' me' : ''}`}>
             <span
               className="rm-swatch"
-              style={r.answer ? { background: toHex(r.answer) } : undefined}
-              aria-label={r.answer ? toHex(r.answer) : 'Sem resposta'}
+              style={colorOf(r.answer) ? { background: colorOf(r.answer) } : undefined}
+              aria-label={colorOf(r.answer) ?? 'Sem resposta'}
             />
             <span className="rm-result-name">@{name(r.id)}</span>
             <span className="rm-result-score">{r.score.toFixed(1)}</span>
@@ -72,6 +74,7 @@ function Reveal({ snapshot }: { snapshot: RoomSnapshot }) {
 
 /** Memorizar, recriar e revelação. O servidor manda em todas as fases; aqui só se mostra. */
 export function Play({ snapshot }: { snapshot: RoomSnapshot }) {
+  if (snapshot.game === 'time') return <TimePlay snapshot={snapshot} />;
   const me = useAuth((s) => s.user?.id);
   const round = snapshot.round!;
   const mine = snapshot.members.find((m) => m.id === me);

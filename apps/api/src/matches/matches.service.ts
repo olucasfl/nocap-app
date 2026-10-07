@@ -1,5 +1,12 @@
 import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
-import { colorGame, dailyDate, dailySeed, dailyStreak, timePresets } from '@nocap/games';
+import {
+  colorGame,
+  dailyDate,
+  dailySeed,
+  dailyStreak,
+  periodStart,
+  timePresets,
+} from '@nocap/games';
 import { randomUUID } from 'node:crypto';
 import { scoreMatch, scoreTimeMatch, type ScoredMatch } from './match-scoring';
 import type {
@@ -11,19 +18,40 @@ import type {
 import { verifyTimeSession } from './time-session';
 import { MatchesRepository } from './matches.repository';
 
+/** Quem joga: a conta da sessão e o jogador (aparelho) onde a partida fica guardada. */
+interface Who {
+  userId: string;
+  playerId: string;
+}
+
 @Injectable()
 export class MatchesService {
   constructor(private readonly repo: MatchesRepository) {}
 
-  async create(input: CreateMatchInput) {
-    return input.game === 'time' ? this.createTime(input) : this.createColor(input);
+  /** A partida é da conta da sessão: sem conta não se joga. */
+  async create(input: CreateMatchInput, userId: string) {
+    const playerId = await this.repo.playerOfUser(userId);
+    const who = { userId, playerId };
+    return input.game === 'time' ? this.createTime(input, who) : this.createColor(input, who);
   }
 
-  private async persist(input: CreateMatchInput, scored: ScoredMatch, ranked: boolean) {
+  /**
+   * O Daily é uma partida só por dia, por jogo e por conta (vale para todos os aparelhos dela).
+   * Reenviar a mesma partida (fila offline) continua valendo.
+   */
+  private async assertDailyAvailable(game: string, userId: string, matchId?: string) {
+    const ids = await this.repo.playerIdsOf(userId);
+    const since = periodStart('day')!;
+    if (await this.repo.dailyPlayed(game, ids, since, matchId)) {
+      throw new ConflictException('Você já jogou o Daily de hoje neste jogo');
+    }
+  }
+
+  private async persist(input: CreateMatchInput, who: Who, scored: ScoredMatch, ranked: boolean) {
     const matchId = input.matchId ?? randomUUID();
     const saved = await this.repo.save({
       matchId,
-      guestId: input.guestId,
+      guestId: who.playerId,
       game: input.game,
       mode: input.mode,
       kind: input.kind,
@@ -43,7 +71,7 @@ export class MatchesService {
    * Tempo: a nota sai dos ms medidos no aparelho. A sessão assinada pelo servidor prova quando a
    * partida começou, então tempos que somam mais do que o relógio do servidor viu são recusados.
    */
-  private async createTime(input: TimeMatchInput) {
+  private async createTime(input: TimeMatchInput, who: Who) {
     if (input.kind === 'daily') {
       if (input.seed !== dailySeed('time')) {
         throw new BadRequestException('Seed do Daily não é a de hoje');
@@ -52,6 +80,7 @@ export class MatchesService {
         throw new BadRequestException('O Daily só existe no modo classic');
       }
     }
+    if (input.kind === 'daily') await this.assertDailyAvailable('time', who.userId, input.matchId);
     const session = verifyTimeSession(input.session);
     if (!session || session.seed !== input.seed) {
       throw new BadRequestException('Sessão da partida inválida ou expirada');
@@ -61,10 +90,10 @@ export class MatchesService {
       throw new ConflictException('Essa sessão já foi usada');
     }
     const scored = scoreTimeMatch({ ...input, elapsedMs: Date.now() - session.issuedAt });
-    return this.persist(input, scored, input.mode in timePresets);
+    return this.persist(input, who, scored, input.mode in timePresets);
   }
 
-  private async createColor(input: ColorMatchInput) {
+  private async createColor(input: ColorMatchInput, who: Who) {
     // Daily vale para o mundo todo: seed e modo são os do dia, não escolha do cliente.
     if (input.kind === 'daily') {
       if (input.seed !== dailySeed('color')) {
@@ -73,20 +102,22 @@ export class MatchesService {
       if (input.mode !== 'classic') {
         throw new BadRequestException('O Daily só existe no modo classic');
       }
+      await this.assertDailyAvailable('color', who.userId, input.matchId);
     }
 
     const scored = scoreMatch(input);
     // Só os modos padrão (presets) contam para ranking; salas personalizadas nunca.
-    return this.persist(input, scored, input.mode in colorGame.presets);
-  }
-
-  history(guestId: string, query: HistoryQuery) {
-    return this.repo.history([guestId], query.limit, query.cursor);
+    return this.persist(input, who, scored, input.mode in colorGame.presets);
   }
 
   /** Histórico da conta: todos os aparelhos vinculados a ela. */
   async historyOf(userId: string, query: HistoryQuery) {
-    return this.repo.history(await this.repo.playerIdsOf(userId), query.limit, query.cursor);
+    return this.repo.history(
+      await this.repo.playerIdsOf(userId),
+      query.limit,
+      query.cursor,
+      query.game,
+    );
   }
 
   async claim(userId: string, guestId: string) {
@@ -96,27 +127,41 @@ export class MatchesService {
     return { claimed: true };
   }
 
-  /** Recordes e sequência do Daily de um conjunto de aparelhos. */
-  private async statsOf(playerIds: string[]) {
-    const [modes, plays] = await Promise.all([
-      this.repo.modeStats(playerIds),
-      this.repo.dailyPlays(playerIds),
+  /**
+   * Recordes por modo, o Daily de cada jogo (sequência própria e nota de hoje) e a sequência de
+   * dias seguidos entrando no app.
+   */
+  async statsOfUser(userId: string) {
+    const ids = await this.repo.playerIdsOf(userId);
+    const [modes, plays, today, visits] = await Promise.all([
+      this.repo.modeStats(ids),
+      this.repo.dailyPlays(ids),
+      this.repo.dailyToday(ids, periodStart('day')!),
+      this.repo.visitDays(userId),
     ]);
-    const streak = dailyStreak(
-      plays.map((d) => dailyDate(d)),
-      dailyDate(),
-    );
+    const todayStr = dailyDate();
+    const daily: Record<
+      string,
+      { current: number; best: number; playedToday: boolean; totalScore: number | null }
+    > = {};
+    for (const game of ['color', 'time']) {
+      const days = plays.filter((p) => p.game === game).map((p) => dailyDate(p.playedAt));
+      const streak = dailyStreak(days, todayStr);
+      const score = today.find((t) => t.game === game)?.totalScore ?? null;
+      daily[game] = { ...streak, playedToday: days.includes(todayStr), totalScore: score };
+    }
     return {
       modes,
-      daily: { ...streak, playedToday: plays.some((d) => dailyDate(d) === dailyDate()) },
+      daily,
+      visit: { ...dailyStreak(visits, todayStr), visitedToday: visits.includes(todayStr) },
     };
   }
 
-  stats(guestId: string) {
-    return this.statsOf([guestId]);
-  }
-
-  async statsOfUser(userId: string) {
-    return this.statsOf(await this.repo.playerIdsOf(userId));
+  /** O app foi aberto hoje: grava o dia e devolve a sequência atualizada. */
+  async visit(userId: string) {
+    const day = dailyDate();
+    await this.repo.recordVisit(userId, day);
+    const streak = dailyStreak(await this.repo.visitDays(userId), day);
+    return { ...streak, visitedToday: true };
   }
 }

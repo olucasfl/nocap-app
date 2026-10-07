@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
+  LONG_TARGET_MS,
+  SHORT_TARGET_MS,
   generateTimeRound,
   isPlausibleAnswer,
+  legacyTimePresets,
+  presetFor,
   relativeError,
   scoreFromError,
   scoreTime,
@@ -14,28 +18,83 @@ const strict = timePresets.strict!;
 
 describe('alvos', () => {
   it('mesma seed, mesmos alvos; seeds diferentes mudam', () => {
-    const a = Array.from({ length: 5 }, (_, i) => generateTimeRound('s1', classic, i));
-    const b = Array.from({ length: 5 }, (_, i) => generateTimeRound('s1', classic, i));
-    const c = Array.from({ length: 5 }, (_, i) => generateTimeRound('s2', classic, i));
+    const a = Array.from({ length: 3 }, (_, i) => generateTimeRound('s1', classic, i));
+    const b = Array.from({ length: 3 }, (_, i) => generateTimeRound('s1', classic, i));
+    const c = Array.from({ length: 3 }, (_, i) => generateTimeRound('s2', classic, i));
     expect(a).toEqual(b);
     expect(a).not.toEqual(c);
   });
 
-  it('ficam na faixa, em múltiplos de 100 ms', () => {
-    for (let i = 0; i < 200; i++) {
-      const t = generateTimeRound(`seed-${i}`, classic, i % 5);
-      expect(t).toBeGreaterThanOrEqual(classic.minMs);
-      expect(t).toBeLessThanOrEqual(classic.maxMs);
-      expect(t % 100).toBe(0);
+  it('o clássico tem 3 rodadas alternando curto (< 10 s), longo (> 10 s) e curto', () => {
+    expect(classic.rounds).toBe(3);
+    for (let i = 0; i < 300; i++) {
+      const [r1, r2, r3] = [0, 1, 2].map((n) => generateTimeRound(`seed-${i}`, classic, n));
+      expect(r1).toBeLessThan(10_000);
+      expect(r2).toBeGreaterThan(10_000);
+      expect(r3).toBeLessThan(10_000);
     }
   });
 
-  it('respeita a faixa de outras salas (curtos 1–5 s)', () => {
-    const short = { ...classic, minMs: 1000, maxMs: 5000 };
+  it('"sem estourar" tem a mesma cadência do clássico', () => {
+    expect(strict.rounds).toBe(3);
     for (let i = 0; i < 100; i++) {
-      const t = generateTimeRound(`x-${i}`, short, 0);
+      const t = [0, 1, 2].map((n) => generateTimeRound(`s-${i}`, strict, n));
+      expect([t[0]! < 10_000, t[1]! > 10_000, t[2]! < 10_000]).toEqual([true, true, true]);
+    }
+  });
+
+  it('as faixas respeitam os limites e saem em múltiplos de 100 ms', () => {
+    for (let i = 0; i < 300; i++) {
+      const short = generateTimeRound(`x-${i}`, classic, 0);
+      const long = generateTimeRound(`x-${i}`, classic, 1);
+      expect(short).toBeGreaterThanOrEqual(SHORT_TARGET_MS.min);
+      expect(short).toBeLessThanOrEqual(SHORT_TARGET_MS.max);
+      expect(long).toBeGreaterThanOrEqual(LONG_TARGET_MS.min);
+      expect(long).toBeLessThanOrEqual(LONG_TARGET_MS.max);
+      expect(short % 100).toBe(0);
+      expect(long % 100).toBe(0);
+    }
+  });
+
+  it('o rápido é curto na maior parte das vezes e longo só de vez em quando', () => {
+    const quick = timePresets.quick!;
+    let long = 0;
+    const n = 2000;
+    for (let i = 0; i < n; i++) if (generateTimeRound(`q-${i}`, quick, 0) > 10_000) long++;
+    expect(long / n).toBeGreaterThan(0.18);
+    expect(long / n).toBeLessThan(0.32);
+  });
+
+  it('salas com faixa própria (sem mix) continuam uniformes e dentro da faixa', () => {
+    const room = {
+      rounds: 3,
+      minMs: 1000,
+      maxMs: 5000,
+      noOvershoot: false,
+      mix: 'uniform' as const,
+    };
+    for (let i = 0; i < 100; i++) {
+      const t = generateTimeRound(`r-${i}`, room, 0);
       expect(t).toBeGreaterThanOrEqual(1000);
       expect(t).toBeLessThanOrEqual(5000);
+    }
+  });
+});
+
+describe('partidas antigas (5 rodadas, 5 a 15 s)', () => {
+  it('o histórico escolhe o preset pelo número de respostas guardadas', () => {
+    expect(presetFor('classic', 3)).toBe(timePresets.classic);
+    expect(presetFor('classic', 5)).toBe(legacyTimePresets.classic);
+    expect(presetFor('strict', 5)).toBe(legacyTimePresets.strict);
+    expect(presetFor('quick', 1)).toBe(timePresets.quick);
+  });
+
+  it('os alvos antigos continuam os mesmos de antes (uniformes de 5 a 15 s)', () => {
+    const old = legacyTimePresets.classic!;
+    for (let i = 0; i < 100; i++) {
+      const t = generateTimeRound(`old-${i}`, old, i % 5);
+      expect(t).toBeGreaterThanOrEqual(5000);
+      expect(t).toBeLessThanOrEqual(15_000);
     }
   });
 });
