@@ -5,6 +5,8 @@ import { getGuestId } from './guest';
 import { recordVisit } from './stats';
 
 const TOKEN_KEY = 'nocap-token';
+/** Último usuário confirmado pelo servidor: é ele que aparece offline, para a conta não "sair" sem rede. */
+const USER_KEY = 'nocap-user';
 
 export interface AuthUser {
   id: string;
@@ -36,9 +38,30 @@ function setToken(token: string | null) {
   }
 }
 
+function cachedUser(): AuthUser | null {
+  try {
+    const raw = localStorage.getItem(USER_KEY);
+    return raw && getToken() ? (JSON.parse(raw) as AuthUser) : null;
+  } catch {
+    return null;
+  }
+}
+
+function cacheUser(user: AuthUser | null) {
+  try {
+    if (user) localStorage.setItem(USER_KEY, JSON.stringify(user));
+    else localStorage.removeItem(USER_KEY);
+  } catch {
+    /* sem storage: só não fica salvo para o modo offline */
+  }
+}
+
+const initialUser = cachedUser();
+
 export const useAuth = create<AuthState>(() => ({
-  user: null,
-  status: getToken() ? 'loading' : 'ready',
+  user: initialUser,
+  // Com usuário em cache o app já abre logado (a conferência acontece em segundo plano).
+  status: getToken() && !initialUser ? 'loading' : 'ready',
 }));
 
 /** Mensagem em pt-BR para o código de erro do Better Auth. */
@@ -96,6 +119,7 @@ async function finishSignIn(res: Response, data: AuthResponse | null) {
   const token = res.headers.get('set-auth-token') ?? data?.token;
   if (!token || !data?.user) throw new Error(errorMessage(500));
   setToken(token);
+  cacheUser(data.user);
   useAuth.setState({ user: data.user, status: 'ready' });
   await claimGuest();
   void markVisit();
@@ -140,20 +164,28 @@ export async function logout() {
     /* sem rede: sai do aparelho do mesmo jeito */
   }
   setToken(null);
+  cacheUser(null);
   useAuth.setState({ user: null, status: 'ready' });
 }
 
 /** Chamar na abertura do app: confere o token salvo e carrega o usuário. */
 export async function restoreSession() {
   if (!getToken()) return useAuth.setState({ user: null, status: 'ready' });
+  let res: Response;
   try {
-    const { data } = await authRequest('/get-session');
-    const user = (data as { user?: AuthUser } | null)?.user ?? null;
-    if (!user) setToken(null);
-    useAuth.setState({ user, status: 'ready' });
-    if (user) void markVisit();
+    res = await fetch(`${apiBase}/api/auth/get-session`, {
+      headers: { authorization: `Bearer ${getToken()}` },
+    });
   } catch {
-    // Sem rede não derruba a sessão: o token fica e o usuário aparece quando voltar.
-    useAuth.setState({ status: 'ready' });
+    // Sem rede não derruba a sessão: segue com o usuário guardado até a conexão voltar.
+    return useAuth.setState({ status: 'ready' });
   }
+  // Erro do servidor (5xx) também não desloga: só uma resposta "sem sessão" desloga.
+  if (!res.ok) return useAuth.setState({ status: 'ready' });
+  const data = (await res.json().catch(() => null)) as { user?: AuthUser } | null;
+  const user = data?.user ?? null;
+  if (!user) setToken(null);
+  cacheUser(user);
+  useAuth.setState({ user, status: 'ready' });
+  if (user) void markVisit();
 }

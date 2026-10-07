@@ -1,6 +1,7 @@
 import { dailyDate } from '@nocap/games';
 import { PlayGate } from '@/components/PlayGate';
 import { useAuth } from '@/lib/auth';
+import { useOnline } from '@/lib/network';
 import { dailyMax, streakLabel, type DailyInfo, type GameId } from '@/lib/stats';
 import { ArrowRight } from './icons';
 import './daily-card.css';
@@ -23,6 +24,7 @@ export function DailyCard({
   onRanking: () => void;
 }) {
   const user = useAuth((s) => s.user);
+  const online = useOnline();
   const [, mm, dd] = dailyDate().split('-');
   const done = !!info?.playedToday;
   return (
@@ -48,6 +50,11 @@ export function DailyCard({
             Ver ranking do Daily
           </button>
         </>
+      ) : !online ? (
+        <p className="dc-text">
+          Você está sem internet. O Daily só vale online, para a nota entrar no ranking: volte
+          quando a conexão voltar.
+        </p>
       ) : (
         <>
           <p className="dc-text">

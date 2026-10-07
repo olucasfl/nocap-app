@@ -1,3 +1,4 @@
+import { LoadFailed } from './LoadFailed';
 import { Loader } from './Loader';
 import { useQuery } from '@tanstack/react-query';
 import { modeLabel } from '@/lib/history';
@@ -70,8 +71,9 @@ function RecordsView({ stats }: { stats: Stats }) {
 
 function MyRecords() {
   const q = useQuery({ queryKey: ['stats'], queryFn: fetchStats });
-  if (q.isPending) return <Loader inline label="Carregando recordes" />;
-  if (q.isError) return <p className="lead">Não deu para carregar os recordes agora.</p>;
+  if (q.isPending && q.fetchStatus !== 'paused')
+    return <Loader inline label="Carregando recordes" />;
+  if (!q.data) return <LoadFailed what="seus recordes" onRetry={() => void q.refetch()} />;
   return (
     <div className="rc">
       {GAMES.map((g) => (

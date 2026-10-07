@@ -1,0 +1,37 @@
+.ptr {
+  position: fixed;
+  top: env(safe-area-inset-top);
+  left: 50%;
+  margin-left: -26px;
+  z-index: 70;
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border: var(--border);
+  border-radius: 50%;
+  background: var(--white);
+  color: var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+  pointer-events: none;
+}
+.ptr.ready {
+  background: var(--yellow);
+  color: var(--on-accent);
+}
+.ptr span {
+  display: grid;
+}
+.ptr.spin span {
+  animation: ptr-spin 0.7s linear infinite;
+}
+@keyframes ptr-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ptr.spin span {
+    animation: none;
+  }
+}

@@ -36,6 +36,23 @@ export const ArrowLeft = (p: IconProps) => (
   </Svg>
 );
 
+export const Refresh = (p: IconProps) => (
+  <Svg {...p} stroke={p.stroke ?? 2.6}>
+    <path d="M20 12a8 8 0 1 1-2.6-5.9" />
+    <path d="M20 4v5h-5" />
+  </Svg>
+);
+
+export const WifiOff = (p: IconProps) => (
+  <Svg {...p} stroke={p.stroke ?? 2.4}>
+    <path d="M3 3l18 18" />
+    <path d="M8.5 16.4a5 5 0 0 1 7 0" />
+    <path d="M5 12.9a10 10 0 0 1 3.4-2.1M10.7 8.1A10 10 0 0 1 19 12.9" />
+    <path d="M2 8.8a15 15 0 0 1 4-2.6M9.6 5.1A15 15 0 0 1 22 8.8" />
+    <circle cx="12" cy="20" r="1" fill="currentColor" />
+  </Svg>
+);
+
 export const Grid = (p: IconProps) => (
   <Svg {...p}>
     <rect x="3" y="3" width="7" height="7" rx="1.5" />

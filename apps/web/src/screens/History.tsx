@@ -1,3 +1,4 @@
+import { LoadFailed } from '@/components/LoadFailed';
 import { Loader } from '@/components/Loader';
 import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
@@ -162,14 +163,9 @@ export function History() {
         <GameArt game={game} size="sm" />
         <div className="mono hist-game-name">PARTIDAS DE {GAME_LABEL[game].toUpperCase()}</div>
       </div>
-      {q.isPending && <Loader inline />}
-      {q.isError && (
-        <div className="hist-state">
-          <p className="lead">Não deu para carregar o histórico. Confira a conexão.</p>
-          <button type="button" className="btn ghost" onClick={() => void q.refetch()}>
-            Tentar de novo
-          </button>
-        </div>
+      {q.isPending && q.fetchStatus !== 'paused' && <Loader inline />}
+      {(q.isError || (q.isPending && q.fetchStatus === 'paused')) && (
+        <LoadFailed what="o histórico" onRetry={() => void q.refetch()} />
       )}
       {q.isSuccess && items.length === 0 && (
         <p className="lead">

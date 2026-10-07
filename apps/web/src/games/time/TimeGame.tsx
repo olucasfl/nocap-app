@@ -5,6 +5,7 @@ import type { GameTab } from '@/components/GameTabs';
 import { MuteButton } from '@/components/MuteButton';
 import type { Board } from '@/lib/ranking';
 import { apiClient } from '@/lib/api-client';
+import { isNetworkError } from '@/lib/network';
 import { MIN_TAP_GAP_MS } from './format';
 import { FinalScreen } from './screens/FinalScreen';
 import { ResultScreen } from './screens/ResultScreen';
@@ -25,7 +26,16 @@ interface SessionResponse {
 async function newRun(mode: Mode): Promise<Run> {
   const kind = mode === 'daily' ? 'daily' : 'solo';
   const preset = mode === 'daily' ? 'classic' : mode;
-  const { seed, session } = await apiClient.post<SessionResponse>('/games/time/session', { kind });
+  let seed: string;
+  let session: string;
+  try {
+    ({ seed, session } = await apiClient.post<SessionResponse>('/games/time/session', { kind }));
+  } catch (e) {
+    // Sem internet dá para jogar o Tempo solo, mas sem sessão do servidor a partida não é salva.
+    if (kind === 'daily' || !isNetworkError(e)) throw e;
+    seed = crypto.randomUUID().slice(0, 12);
+    session = '';
+  }
   return {
     matchId: crypto.randomUUID(),
     mode,
@@ -65,7 +75,11 @@ export function TimeGame({
       setResults([]);
       setPhase('target');
     } catch {
-      setError('O Tempo precisa de conexão para começar uma partida.');
+      setError(
+        m === 'daily'
+          ? 'O Daily precisa de internet.'
+          : 'Não deu para começar a partida agora. Tente de novo.',
+      );
       setPhase('start');
     } finally {
       setBusy(false);

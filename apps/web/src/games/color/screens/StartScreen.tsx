@@ -8,6 +8,7 @@ import { ModePicker } from '@/components/ModePicker';
 import { GameTabs, type GameTab } from '@/components/GameTabs';
 import { ArrowRight } from '@/components/icons';
 import { PlayGate } from '@/components/PlayGate';
+import { PullToRefresh } from '@/components/PullToRefresh';
 import { RankingPanel } from '@/components/RankingPanel';
 import { useAuth } from '@/lib/auth';
 import type { Board } from '@/lib/ranking';
@@ -51,6 +52,7 @@ export function StartScreen({ mode, initialTab = 'modes', initialBoard, onMode, 
 
   return (
     <section className="screen">
+      <PullToRefresh />
       <BackButton to="/" label="Jogos" />
       <h1>Cor</h1>
       <GameTabs game="color" tab={tab} onTab={setTab} />

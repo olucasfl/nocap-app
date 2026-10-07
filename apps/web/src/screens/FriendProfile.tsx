@@ -1,6 +1,7 @@
 import { Link, getRouteApi } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { BackButton } from '@/components/BackButton';
+import { LoadFailed } from '@/components/LoadFailed';
 import { Loader } from '@/components/Loader';
 import { Records } from '@/components/Records';
 import { fetchFriendProfile } from '@/lib/friends';
@@ -21,7 +22,10 @@ export function FriendProfile() {
   return (
     <main className="pf">
       <BackButton to="/amigos" label="Amigos" />
-      {q.isPending && <Loader label="Carregando perfil" />}
+      {q.isPending && q.fetchStatus !== 'paused' && <Loader label="Carregando perfil" />}
+      {q.isPending && q.fetchStatus === 'paused' && (
+        <LoadFailed what="o perfil" onRetry={() => void q.refetch()} />
+      )}
       {q.isError && (
         <>
           <h1>@{username}</h1>

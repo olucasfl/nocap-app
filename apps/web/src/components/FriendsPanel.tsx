@@ -1,6 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { Field } from '@/components/Field';
+import { LoadFailed } from '@/components/LoadFailed';
+import { useOnline } from '@/lib/network';
 import { PlayGate } from '@/components/PlayGate';
 import { GAME_LABEL } from '@/components/GameArt';
 import { CODE_RE } from '@/lib/rooms';
@@ -22,6 +24,7 @@ const RULES: Record<GameId, string[]> = {
 
 /** Jogar com amigos: criar sala deste jogo ou entrar pelo código. A sala em si abre em /sala. */
 export function FriendsPanel({ game }: { game: GameId }) {
+  const online = useOnline();
   const navigate = useNavigate();
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
@@ -32,6 +35,15 @@ export function FriendsPanel({ game }: { game: GameId }) {
     if (!CODE_RE.test(c)) return setError('O código tem 4 letras.');
     void navigate({ to: '/sala/$code', params: { code: c } });
   };
+
+  if (!online) {
+    return (
+      <LoadFailed
+        what="as salas"
+        offlineText="Sem internet não dá para jogar com amigos: a sala precisa de conexão. Você ainda pode jogar sozinho nos Modos de partida."
+      />
+    );
+  }
 
   return (
     <div className="fp">

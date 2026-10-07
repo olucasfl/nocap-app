@@ -10,6 +10,11 @@ export function useSaveTime(run: Run, results: RoundResult[]): SaveState {
   const [save, setSave] = useState<SaveState>('saving');
 
   useEffect(() => {
+    // Partida jogada offline (sem sessão do servidor): não há o que salvar.
+    if (!run.session) {
+      setSave('offline');
+      return;
+    }
     let alive = true;
     submitOrQueue({
       game: 'time',

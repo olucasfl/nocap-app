@@ -7,7 +7,10 @@ import {
 } from '@tanstack/react-router';
 import { BottomNav } from '@/components/BottomNav';
 import type { GameTab } from '@/components/GameTabs';
+import { LoadFailed } from '@/components/LoadFailed';
 import { PageLoader } from '@/components/Loader';
+import { NetworkStatus } from '@/components/NetworkStatus';
+import { PullToRefresh } from '@/components/PullToRefresh';
 import type { Board } from '@/lib/ranking';
 import { InviteBanner } from '@/components/InviteBanner';
 import type { Mode } from '@/games/color/types';
@@ -23,6 +26,7 @@ import { Register } from '@/screens/Register';
 const rootRoute = createRootRoute({
   component: () => (
     <>
+      <NetworkStatus />
       <Outlet />
       <InviteBanner />
     </>
@@ -35,6 +39,7 @@ const tabsRoute = createRoute({
   id: 'tabs',
   component: () => (
     <div className="app">
+      <PullToRefresh />
       <Outlet />
       <BottomNav />
     </div>
@@ -141,6 +146,14 @@ export const router = createRouter({
   // Telas carregadas sob demanda (jogos, sala) mostram o carregador do NoCap enquanto chegam.
   defaultPendingComponent: () => <PageLoader />,
   defaultPendingMs: 150,
+  // Tela que não carregou (ex.: o código dela não veio por falta de internet).
+  defaultErrorComponent: ({ reset }) => (
+    <div className="app">
+      <main className="screen">
+        <LoadFailed what="esta página" onRetry={() => (reset(), window.location.reload())} />
+      </main>
+    </div>
+  ),
 });
 
 declare module '@tanstack/react-router' {

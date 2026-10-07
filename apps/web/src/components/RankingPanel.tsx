@@ -1,3 +1,4 @@
+import { LoadFailed } from './LoadFailed';
 import { Loader } from './Loader';
 import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
@@ -164,14 +165,13 @@ export function RankingPanel({
               : 'MELHOR PARTIDA DE TODAS'}
       </p>
 
-      {query.isPending && <Loader inline />}
-      {query.isError && (
-        <div className="rp-state">
-          <p className="lead">Não deu para carregar o ranking. Confira a conexão.</p>
-          <button type="button" className="btn ghost" onClick={() => void query.refetch()}>
-            Tentar de novo
-          </button>
-        </div>
+      {query.isPending && query.fetchStatus !== 'paused' && <Loader inline />}
+      {(query.isError || (query.isPending && query.fetchStatus === 'paused')) && (
+        <LoadFailed
+          what="o ranking"
+          onRetry={() => void query.refetch()}
+          offlineText="O ranking só carrega online. Você ainda pode jogar nos Modos de partida."
+        />
       )}
       {query.isSuccess && entries.length === 0 && (
         <p className="lead">

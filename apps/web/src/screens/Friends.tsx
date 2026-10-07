@@ -1,3 +1,4 @@
+import { LoadFailed } from '@/components/LoadFailed';
 import { Loader } from '@/components/Loader';
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { Link } from '@tanstack/react-router';
@@ -199,8 +200,14 @@ export function Friends() {
           {error}
         </p>
       )}
-      {list.isPending && <Loader inline />}
-      {list.isError && <p className="lead">Não deu para carregar seus amigos agora.</p>}
+      {list.isPending && list.fetchStatus !== 'paused' && <Loader inline />}
+      {(list.isError || (list.isPending && list.fetchStatus === 'paused')) && (
+        <LoadFailed
+          what="seus amigos"
+          onRetry={() => void list.refetch()}
+          offlineText="Sem internet também não dá para jogar com amigos."
+        />
+      )}
 
       {data && data.incoming.length > 0 && (
         <section className="fr-section" aria-label="Pedidos recebidos">

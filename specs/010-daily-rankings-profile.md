@@ -22,3 +22,4 @@ Cada jogo é dono do seu ranking, da sua sala e do seu Daily; só quem tem conta
 ## Fora do escopo
 
 Sala com ranking, Redis, e-mail/Google (ver ROADMAP).
+- **Offline:** a conta continua logada sem rede (usuário em cache; só uma resposta "sem sessão" do servidor desloga). Faixa "Você está offline" / "Conexão restabelecida"; Cor guarda partidas e envia ao voltar; Tempo offline joga sem salvar; Daily, salas, ranking, amigos e histórico avisam que precisam de internet (`LoadFailed`). Puxar para recarregar nas telas de menu. Página que não carrega mostra o erro com "tentar de novo".

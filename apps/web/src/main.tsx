@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider } from '@tanstack/react-router';
+import { ApiError } from '@/lib/api-client';
 import { router } from '@/router';
 import { UpdatePrompt } from '@/components/UpdatePrompt';
 import { flushQueuedMatches } from '@/games/color/submit';
@@ -14,7 +15,16 @@ import '@/styles/global.css';
 installTheme();
 void restoreSession();
 installGlobalSounds();
-const queryClient = new QueryClient();
+// Sem rede a consulta falha logo (em vez de ficar esperando) e cada tela mostra o aviso próprio.
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      networkMode: 'always',
+      retry: (count, error) => !(error instanceof ApiError) && count < 1,
+      refetchOnReconnect: true,
+    },
+  },
+});
 
 // Partidas guardadas sem conexão saem ao abrir o app e sempre que a rede voltar.
 void flushQueuedMatches().catch(() => undefined);

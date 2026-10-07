@@ -34,6 +34,8 @@
   border: var(--border);
   border-radius: 10px;
   background: var(--paper);
+  /* Sempre tinta sobre papel: o ícone nunca herda o branco do cartão selecionado (azul do Tempo). */
+  color: var(--ink);
 }
 .mp-art svg {
   width: 100%;

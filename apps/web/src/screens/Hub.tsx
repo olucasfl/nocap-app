@@ -2,7 +2,6 @@ import { Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { MuteButton } from '@/components/MuteButton';
 import { ThemeButton } from '@/components/ThemeButton';
-import { User } from '@/components/icons';
 import { useAuth } from '@/lib/auth';
 import { modeLabel } from '@/lib/history';
 import { dailyMax, fetchStats, gameModes, modeMax, type GameId, type Stats } from '@/lib/stats';
@@ -59,13 +58,6 @@ export function Hub() {
         <div className="top-actions">
           <ThemeButton />
           <MuteButton />
-          <Link
-            to="/perfil"
-            className="chip hub-avatar"
-            aria-label={user ? `Perfil de ${user.name}` : 'Entrar'}
-          >
-            <User />
-          </Link>
         </div>
       </header>
 

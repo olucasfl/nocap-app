@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react';
 import { submitOrQueue } from './submit';
 import type { RoundResult, Run } from './types';
 
-export type SaveState = 'saving' | 'saved' | 'queued' | 'error';
+export type SaveState = 'saving' | 'saved' | 'queued' | 'offline' | 'error';
 
 export const SAVE_TEXT: Record<SaveState, string> = {
   saving: 'SALVANDO...',
   saved: 'SALVO NO HISTÓRICO',
   queued: 'SEM CONEXÃO: ENVIO QUANDO VOLTAR',
+  offline: 'OFFLINE: ESTA PARTIDA NÃO FOI SALVA',
   error: 'NÃO FOI POSSÍVEL SALVAR A PARTIDA',
 };
 

@@ -4,7 +4,9 @@ import { Link, getRouteApi, useNavigate } from '@tanstack/react-router';
 import { BackButton } from '@/components/BackButton';
 import { Field } from '@/components/Field';
 import { MuteButton } from '@/components/MuteButton';
+import { LoadFailed } from '@/components/LoadFailed';
 import { useAuth } from '@/lib/auth';
+import { useOnline } from '@/lib/network';
 import {
   CODE_RE,
   createRoom,
@@ -124,6 +126,7 @@ function Entry({
 
 /** `/sala` e `/sala/ABCD`: entra pelo código do link, ou mostra a sala em que você já está. */
 export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomGame }) {
+  const online = useOnline();
   const { user, status: authStatus } = useAuth();
   const { status, snapshot } = useRoom();
   const [resuming, setResuming] = useState(true);
@@ -153,6 +156,23 @@ export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomG
       <div className="app">
         <Header />
         <Loader />
+      </div>
+    );
+  }
+
+  if (!online && !snapshot) {
+    return (
+      <div className="app">
+        <Header />
+        <section className="screen rm">
+          <LoadFailed
+            what="a sala"
+            offlineText="Sem internet não dá para jogar com amigos. Volte quando a conexão voltar."
+          />
+          <Link to="/" className="btn ghost">
+            Voltar aos jogos
+          </Link>
+        </section>
       </div>
     );
   }
