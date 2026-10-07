@@ -59,9 +59,12 @@ export function FinalScreen({ run, results, previousBest, onMenu, onRematch }: P
       </p>
       {done && run.kind === 'daily' && <DailyPanel game="time" />}
       <div className="stack">
-        <button type="button" className="btn alt" onClick={onRematch}>
-          Revanche
-        </button>
+        {/* O Daily é uma tentativa por dia: sem revanche. */}
+        {run.kind !== 'daily' && (
+          <button type="button" className="btn alt" onClick={onRematch}>
+            Revanche
+          </button>
+        )}
         <EndActions board={run.kind === 'daily' ? 'daily' : run.preset} onMenu={onMenu} />
         <Link to="/" className="btn ghost">
           Voltar aos jogos
