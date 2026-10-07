@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { Countdown } from '@/components/Countdown';
 import { sfx } from '@/lib/sfx';
 
 interface Props {
@@ -13,6 +14,8 @@ interface Props {
  */
 export function ShowScreen({ color, ms, onDone }: Props) {
   const bar = useRef<HTMLElement>(null);
+  /** Quando a cor some, para o número de segundos que faltam. */
+  const [endsAt] = useState(() => Date.now() + ms);
   const done = useRef(onDone);
   done.current = onDone;
 
@@ -49,6 +52,17 @@ export function ShowScreen({ color, ms, onDone }: Props) {
           <div className="tag">DECORE</div>
         </div>
       </div>
+      {/* No Flash (menos de 1 s) um número não faz sentido: só a barra. */}
+      {ms >= 1000 && (
+        <Countdown
+          endsAt={endsAt}
+          totalMs={ms}
+          warnMs={1000}
+          decimals={ms < 10_000}
+          compact
+          label="A COR SOME EM"
+        />
+      )}
       <div className="cg-bar">
         <i ref={bar} />
       </div>

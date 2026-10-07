@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { Countdown } from '@/components/Countdown';
 import type { Hsb } from '@nocap/games';
 import { sfx } from '@/lib/sfx';
 import { toHex } from '../hex';
@@ -32,9 +33,11 @@ interface Props {
   start: Hsb;
   /** Aviso no topo (o Intruso mostra o papel e a dica aqui). */
   banner?: ReactNode;
+  /** Sala: quando o tempo de recriar acaba (relógio do servidor) e quanto ele dura. */
+  deadline?: { endsAt: number; totalMs: number } | null;
 }
 
-export function PickScreen({ onLock, blind = false, start, banner }: Props) {
+export function PickScreen({ onLock, blind = false, start, banner, deadline }: Props) {
   const [guess, setGuess] = useState<Hsb>(start);
   const lastBucket = useRef<Partial<Record<Channel, number>>>({});
   const latest = useRef(guess);
@@ -63,6 +66,15 @@ export function PickScreen({ onLock, blind = false, start, banner }: Props) {
   return (
     <section className="screen">
       {banner}
+      {deadline && (
+        <Countdown
+          endsAt={deadline.endsAt}
+          totalMs={deadline.totalMs}
+          warnMs={5000}
+          beep
+          label="PARA CRAVAR"
+        />
+      )}
       {blind ? (
         <div className="cg-preview cg-blind" aria-label="Às cegas: a prévia está escondida">
           <div className="tag">ÀS CEGAS</div>

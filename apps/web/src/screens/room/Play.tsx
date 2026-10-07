@@ -5,6 +5,7 @@ import { toHex } from '@/games/color/hex';
 import { PickScreen } from '@/games/color/screens/PickScreen';
 import { ShowScreen } from '@/games/color/screens/ShowScreen';
 import '@/games/color/color.css';
+import { Countdown } from '@/components/Countdown';
 import { ImpostorPlay } from './ImpostorPlay';
 import { TimePlay } from './TimePlay';
 
@@ -17,6 +18,14 @@ function Waiting({ snapshot }: { snapshot: RoomSnapshot }) {
       <p className="lead">
         Esperando os outros: {done} de {connected.length}.
       </p>
+      {snapshot.round?.endsAt && (
+        <Countdown
+          endsAt={snapshot.round.endsAt}
+          totalMs={snapshot.settings.pickMs}
+          warnMs={5000}
+          label="PARA ACABAR"
+        />
+      )}
       <ul className="fr-list">
         {snapshot.members.map((m) => (
           <li key={m.id} className="fr-row">
@@ -104,6 +113,9 @@ export function Play({ snapshot }: { snapshot: RoomSnapshot }) {
               round.index,
             )}
             onLock={(guess) => sendRoom('lock', guess)}
+            deadline={
+              round.endsAt ? { endsAt: round.endsAt, totalMs: snapshot.settings.pickMs } : null
+            }
           />
         ))}
       {snapshot.phase === 'reveal' && <Reveal key={`reveal-${round.index}`} snapshot={snapshot} />}

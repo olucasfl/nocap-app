@@ -1,4 +1,5 @@
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useState, type CSSProperties } from 'react';
+import { Countdown } from '@/components/Countdown';
 import type { Hsb } from '@nocap/games';
 import { useAuth } from '@/lib/auth';
 import { sendRoom, type ImpostorState, type RoomSnapshot } from '@/lib/rooms';
@@ -9,21 +10,6 @@ import '@/games/color/color.css';
 import './impostor.css';
 
 const NO_STATE: ImpostorState = { count: 1 };
-
-/** Segundos que faltam até `endsAt` (relógio do servidor), atualizado duas vezes por segundo. */
-function useSecondsLeft(endsAt: number | null | undefined) {
-  const [left, setLeft] = useState(() =>
-    endsAt ? Math.max(0, Math.ceil((endsAt - Date.now()) / 1000)) : 0,
-  );
-  useEffect(() => {
-    if (!endsAt) return;
-    const tick = () => setLeft(Math.max(0, Math.ceil((endsAt - Date.now()) / 1000)));
-    tick();
-    const id = window.setInterval(tick, 500);
-    return () => window.clearInterval(id);
-  }, [endsAt]);
-  return left;
-}
 
 function RoleBadge({ role, count }: { role: ImpostorState['role']; count: number }) {
   if (!role) return null;
@@ -51,10 +37,19 @@ function Hint({ text, label = 'DICA' }: { text: string; label?: string }) {
 
 /** Intruso na fase de decorar: no lugar da cor, a dica, com a mesma barra de tempo. */
 function HintShow({ hint, ms }: { hint: string; ms: number }) {
+  const [endsAt] = useState(() => Date.now() + ms);
   return (
     <section className="screen rm">
       <RoleBadge role="impostor" count={0} />
       <Hint text={hint} />
+      <Countdown
+        endsAt={endsAt}
+        totalMs={ms}
+        warnMs={1000}
+        decimals
+        compact
+        label="A DICA SOME EM"
+      />
       <div className="cg-bar" aria-hidden="true">
         <i className="ip-bar" style={{ animationDuration: `${ms}ms` } as CSSProperties} />
       </div>
@@ -74,6 +69,14 @@ function Waiting({ snapshot, imp }: { snapshot: RoomSnapshot; imp: ImpostorState
       <p className="lead">
         Esperando os outros: {done} de {connected.length}.
       </p>
+      {snapshot.round?.endsAt && (
+        <Countdown
+          endsAt={snapshot.round.endsAt}
+          totalMs={snapshot.settings.pickMs}
+          warnMs={5000}
+          label="PARA ACABAR"
+        />
+      )}
       <ul className="fr-list">
         {snapshot.members.map((m) => (
           <li key={m.id} className="fr-row">
@@ -95,7 +98,6 @@ function swatchOf(answer: unknown) {
 function Vote({ snapshot, imp }: { snapshot: RoomSnapshot; imp: ImpostorState }) {
   const me = useAuth((s) => s.user?.id);
   const round = snapshot.round!;
-  const left = useSecondsLeft(round.endsAt);
   const results = new Map((round.results ?? []).map((r) => [r.id, r]));
   const voted = new Set(imp.voted ?? []);
   const mine = imp.myVote ?? null;
@@ -109,8 +111,17 @@ function Vote({ snapshot, imp }: { snapshot: RoomSnapshot; imp: ImpostorState })
       <h1>Quem é o intruso?</h1>
       <p className="lead">
         {imp.count === 1 ? 'Tem 1 intruso' : `Tem ${imp.count} intrusos`} entre vocês. Compare as
-        cores e vote. Intrusos também votam. {left > 0 && <span className="mono">({left}s)</span>}
+        cores e vote. Intrusos também votam.
       </p>
+      {round.endsAt && (
+        <Countdown
+          endsAt={round.endsAt}
+          totalMs={snapshot.settings.voteMs}
+          warnMs={5000}
+          beep
+          label="PARA VOTAR"
+        />
+      )}
       <ul className="rm-results">
         {players.map((m) => {
           const r = results.get(m.id);
@@ -282,6 +293,9 @@ export function ImpostorPlay({ snapshot }: { snapshot: RoomSnapshot }) {
               key={`pick-${round.index}`}
               start={imp.start}
               onLock={(guess) => sendRoom('lock', guess)}
+              deadline={
+                round.endsAt ? { endsAt: round.endsAt, totalMs: snapshot.settings.pickMs } : null
+              }
               banner={
                 <>
                   <RoleBadge role={imp.role} count={imp.count} />

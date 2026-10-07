@@ -1,0 +1,74 @@
+/* Contador de tempo à vista. Só transform e opacity animam. */
+.ctd {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  background: var(--white);
+  color: var(--ink);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+.ctd-num {
+  min-width: 2.2ch;
+  font: 900 44px/1 var(--font-display);
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+.ctd-num small {
+  margin-left: 2px;
+  font-size: 16px;
+  letter-spacing: 0;
+}
+.ctd-bar {
+  flex: 1;
+  height: 16px;
+  border: var(--border);
+  border-radius: 9px;
+  background: var(--paper);
+  overflow: hidden;
+}
+.ctd-bar i {
+  display: block;
+  height: 100%;
+  background: var(--ink);
+  transform-origin: left;
+}
+.ctd-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.ctd.compact {
+  justify-content: center;
+}
+
+/* Últimos segundos: laranja e pulsando. */
+.ctd.warn {
+  background: var(--orange);
+  color: var(--on-accent);
+}
+.ctd.warn .ctd-bar {
+  background: var(--white);
+}
+.ctd.warn .ctd-bar i {
+  background: var(--on-accent);
+}
+.ctd.warn .ctd-num {
+  display: inline-block;
+  animation: ctd-pulse 0.5s ease-in-out infinite alternate;
+}
+@keyframes ctd-pulse {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.18);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ctd.warn .ctd-num {
+    animation: none;
+  }
+}
