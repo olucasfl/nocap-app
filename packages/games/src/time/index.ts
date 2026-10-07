@@ -17,12 +17,17 @@ export const timeSettingsSchema = z.object({
   mix: z.enum(['uniform', 'alternate', 'mostly-low']),
   /** Sobrevivência: 3 vidas, nota mínima crescente; `rounds` é só o limite. */
   survival: z.boolean().optional(),
+  /**
+   * Alvos "quebrados" (2,89 s, 5,78 s: passo de 10 ms) e rodadas de uma mesma partida afastadas
+   * entre si. Sem isto vale o jeito antigo (passo de 100 ms), que as partidas antigas usam.
+   */
+  fine: z.boolean().optional(),
 });
 export type TimeSettings = z.infer<typeof timeSettingsSchema>;
 
 /** Alvos curtos (abaixo de 10 s) e longos (acima de 10 s) dos modos com `mix`. */
 export const SHORT_TARGET_MS = { min: 1000, max: 9900 } as const;
-export const LONG_TARGET_MS = { min: 10_100, max: 22_000 } as const;
+export const LONG_TARGET_MS = { min: 10_100, max: 18_000 } as const;
 /** No `mostly-low`, a chance de uma rodada sair longa (cerca de 1 em 7). */
 export const LONG_CHANCE = 0.15;
 
@@ -40,20 +45,42 @@ export type TimeAnswer = number;
 
 export const timePresets: Record<string, TimeSettings> = {
   /** 3 rodadas, curto-longo-curto: prioriza alvos abaixo de 10 s sem deixar de variar. */
-  classic: { rounds: 3, minMs: 1000, maxMs: 22_000, noOvershoot: false, mix: 'alternate' },
+  classic: {
+    rounds: 3,
+    minMs: 1000,
+    maxMs: 18_000,
+    noOvershoot: false,
+    mix: 'alternate',
+    fine: true,
+  },
   /** Jogo rápido: 1 rodada, quase sempre curta. Ranking próprio. */
-  quick: { rounds: 1, minMs: 1000, maxMs: 22_000, noOvershoot: false, mix: 'mostly-low' },
+  quick: {
+    rounds: 1,
+    minMs: 1000,
+    maxMs: 18_000,
+    noOvershoot: false,
+    mix: 'mostly-low',
+    fine: true,
+  },
   /** Sem estourar: passou do alvo vale zero. Mesma cadência do clássico. */
-  strict: { rounds: 3, minMs: 1000, maxMs: 22_000, noOvershoot: true, mix: 'alternate' },
+  strict: {
+    rounds: 3,
+    minMs: 1000,
+    maxMs: 18_000,
+    noOvershoot: true,
+    mix: 'alternate',
+    fine: true,
+  },
   /** Sequência: 5 alvos curtos (2 a 6 s) um atrás do outro, sem pausa. */
-  sequence: { rounds: 5, minMs: 2000, maxMs: 6000, noOvershoot: false, mix: 'uniform' },
+  sequence: { rounds: 5, minMs: 2000, maxMs: 6000, noOvershoot: false, mix: 'uniform', fine: true },
   /** Sobrevivência: joga até perder as 3 vidas; alvos quase sempre curtos. */
   survival: {
     rounds: SURVIVAL_MAX_ROUNDS.time,
     minMs: 1000,
-    maxMs: 22_000,
+    maxMs: 18_000,
     noOvershoot: false,
     mix: 'mostly-low',
+    fine: true,
     survival: true,
   },
 };
@@ -99,19 +126,69 @@ export function relativeError(target: number, answer: number): number {
   return Math.abs(answer - target) / target;
 }
 
-export function generateTimeRound(seed: string, settings: TimeSettings, index: number): TimeRound {
-  const rng = createRng(`${seed}:${index}`);
+/** Mínimo de diferença entre os alvos de uma mesma partida (modo `fine`). */
+const MIN_GAP_MS = 400;
+
+/** Um sorteio de alvo, no passo do modo (10 ms nos modos novos, 100 ms nos antigos). */
+function pickTarget(rng: () => number, settings: TimeSettings, index: number): TimeRound {
+  const step = settings.fine ? 10 : 100;
   const mix = settings.mix ?? 'uniform';
   if (mix !== 'uniform') {
     const long = mix === 'alternate' ? index % 2 === 1 : rng() < LONG_CHANCE;
     const band = long ? LONG_TARGET_MS : SHORT_TARGET_MS;
-    const steps = (band.max - band.min) / 100 + 1;
+    const steps = (band.max - band.min) / step + 1;
     const pick = Math.min(steps - 1, Math.floor(steps * rng() ** (long ? LONG_SKEW : SHORT_SKEW)));
-    return band.min + pick * 100;
+    return band.min + pick * step;
   }
-  const lo = Math.ceil(settings.minMs / 100);
-  const hi = Math.max(lo, Math.floor(settings.maxMs / 100));
-  return randInt(rng, lo, hi) * 100;
+  const lo = Math.ceil(settings.minMs / step);
+  const hi = Math.max(lo, Math.floor(settings.maxMs / step));
+  return randInt(rng, lo, hi) * step;
+}
+
+/**
+ * O alvo da rodada `index`. Nos modos `fine` os alvos têm centésimos (2,89 s) e nenhuma rodada
+ * repete (ou fica a menos de 0,4 s de) um alvo anterior da mesma partida, então a Sequência não
+ * vira "3,5, 4,5, 3,5". Determinístico pela seed (servidor e app calculam igual).
+ */
+export function generateTimeRound(seed: string, settings: TimeSettings, index: number): TimeRound {
+  if (!settings.fine) return pickTarget(createRng(`${seed}:${index}`), settings, index);
+  const previous: number[] = [];
+  let value = 0;
+  for (let i = 0; i <= index; i++) {
+    const rng = createRng(`${seed}:${i}`);
+    value = pickTarget(rng, settings, i);
+    const clash = (v: number) => previous.some((p) => Math.abs(p - v) < MIN_GAP_MS);
+    for (let tries = 0; tries < 12 && clash(value); tries++) value = pickTarget(rng, settings, i);
+    if (clash(value)) value = farthestFree(rng, settings, value, previous);
+    previous.push(value);
+  }
+  return value;
+}
+
+/**
+ * Plano B quando os sorteios caem perto de alvos já usados (faixa estreita, como a Sequência):
+ * sorteia entre TODOS os valores da faixa que respeitam o espaço mínimo; se não sobrar nenhum,
+ * fica o que mais se afasta dos outros.
+ */
+function farthestFree(
+  rng: () => number,
+  settings: TimeSettings,
+  near: number,
+  previous: number[],
+): number {
+  const step = 10;
+  const band =
+    settings.mix === 'uniform'
+      ? { min: settings.minMs, max: settings.maxMs }
+      : near > SHORT_TARGET_MS.max
+        ? LONG_TARGET_MS
+        : SHORT_TARGET_MS;
+  const gap = (v: number) => Math.min(...previous.map((p) => Math.abs(p - v)));
+  const all: number[] = [];
+  for (let v = band.min; v <= band.max; v += step) all.push(v);
+  const free = all.filter((v) => gap(v) >= MIN_GAP_MS);
+  if (free.length > 0) return free[Math.floor(rng() * free.length)]!;
+  return all.reduce((best, v) => (gap(v) > gap(best) ? v : best), near);
 }
 
 export function scoreTime(target: TimeRound, answer: TimeAnswer, settings: TimeSettings): number {

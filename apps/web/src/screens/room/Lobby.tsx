@@ -16,7 +16,7 @@ const MODES: Record<'color' | 'time', { id: string; label: string; note: string 
     { id: 'blind', label: 'Às cegas', note: 'Ninguém vê a cor que monta. Só a revelação mostra.' },
   ],
   time: [
-    { id: 'classic', label: 'Clássico', note: 'Alvos de 1 a 22 s, alternando curtos e longos.' },
+    { id: 'classic', label: 'Clássico', note: 'Alvos de 1 a 18 s, alternando curtos e longos.' },
     { id: 'strict', label: 'Sem estourar', note: 'Passou do alvo, a rodada vale zero.' },
     { id: 'sequence', label: 'Sequência', note: 'Alvos curtos (2 a 6 s), um atrás do outro.' },
   ],

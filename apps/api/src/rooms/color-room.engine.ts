@@ -19,7 +19,7 @@ export type TimeRoomSettings = TimeSettings;
 export const DEFAULT_TIME_SETTINGS: TimeRoomSettings = {
   rounds: 3,
   minMs: 1000,
-  maxMs: 22_000,
+  maxMs: 18_000,
   noOvershoot: false,
   mix: 'alternate',
 };

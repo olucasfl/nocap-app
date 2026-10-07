@@ -43,15 +43,15 @@ describe('alvos', () => {
     }
   });
 
-  it('os modos comuns cobrem de 1 s a 22 s; a Sequência continua de 2 a 6 s', () => {
+  it('os modos comuns cobrem de 1 s a 18 s; a Sequência continua de 2 a 6 s', () => {
     const all: number[] = [];
     for (let i = 0; i < 400; i++) {
       for (let n = 0; n < 3; n++) all.push(generateTimeRound(`r-${i}`, classic, n));
     }
     expect(Math.min(...all)).toBeLessThan(2000);
-    expect(Math.max(...all)).toBeGreaterThan(20_000);
+    expect(Math.max(...all)).toBeGreaterThan(16_000);
     expect(Math.min(...all)).toBeGreaterThanOrEqual(1000);
-    expect(Math.max(...all)).toBeLessThanOrEqual(22_000);
+    expect(Math.max(...all)).toBeLessThanOrEqual(18_000);
     for (let i = 0; i < 200; i++) {
       for (let n = 0; n < 5; n++) {
         const t = generateTimeRound(`q-${i}`, timePresets.sequence!, n);
@@ -75,7 +75,7 @@ describe('alvos', () => {
     expect(generateTimeRound('long-check', classic, 1)).toBeGreaterThan(10_000);
   });
 
-  it('as faixas respeitam os limites e saem em múltiplos de 100 ms', () => {
+  it('as faixas respeitam os limites e saem em múltiplos de 10 ms', () => {
     for (let i = 0; i < 300; i++) {
       const short = generateTimeRound(`x-${i}`, classic, 0);
       const long = generateTimeRound(`x-${i}`, classic, 1);
@@ -83,8 +83,8 @@ describe('alvos', () => {
       expect(short).toBeLessThanOrEqual(SHORT_TARGET_MS.max);
       expect(long).toBeGreaterThanOrEqual(LONG_TARGET_MS.min);
       expect(long).toBeLessThanOrEqual(LONG_TARGET_MS.max);
-      expect(short % 100).toBe(0);
-      expect(long % 100).toBe(0);
+      expect(short % 10).toBe(0);
+      expect(long % 10).toBe(0);
     }
   });
 
@@ -205,5 +205,45 @@ describe('presets e definição', () => {
     for (const settings of Object.values(timePresets)) {
       expect(timeGame.settingsSchema.safeParse(settings).success).toBe(true);
     }
+  });
+});
+
+describe('variedade dos alvos', () => {
+  it('têm centésimos (2,89 s, 5,78 s), não só meios segundos', () => {
+    const seq = timePresets.sequence!;
+    let broken = 0;
+    let n = 0;
+    for (let i = 0; i < 300; i++) {
+      for (let r = 0; r < 5; r++) {
+        n += 1;
+        if (generateTimeRound(`v-${i}`, seq, r) % 100 !== 0) broken += 1;
+      }
+    }
+    expect(broken / n).toBeGreaterThan(0.85);
+  });
+
+  it('na mesma partida nenhum alvo repete nem chega perto de outro (>= 0,4 s)', () => {
+    const seq = timePresets.sequence!;
+    for (let i = 0; i < 300; i++) {
+      const t = [0, 1, 2, 3, 4].map((r) => generateTimeRound(`g-${i}`, seq, r));
+      for (let a = 0; a < t.length; a++) {
+        for (let b = a + 1; b < t.length; b++) {
+          expect(Math.abs(t[a]! - t[b]!)).toBeGreaterThanOrEqual(400);
+        }
+      }
+    }
+  });
+
+  it('há muitos valores diferentes (antes eram só ~40 na Sequência)', () => {
+    const seen = new Set<number>();
+    for (let i = 0; i < 300; i++) {
+      for (let r = 0; r < 5; r++) seen.add(generateTimeRound(`d-${i}`, timePresets.sequence!, r));
+    }
+    expect(seen.size).toBeGreaterThan(300);
+  });
+
+  it('a rodada N não muda quando se pede de novo (determinística)', () => {
+    const seq = timePresets.sequence!;
+    expect(generateTimeRound('same', seq, 3)).toBe(generateTimeRound('same', seq, 3));
   });
 });
