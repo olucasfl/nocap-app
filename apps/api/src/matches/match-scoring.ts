@@ -21,7 +21,7 @@ export interface ScoredMatch {
   totalTenths: number;
   /** Respostas no formato do banco (Cor: h*10000 + s*100 + b; Tempo: ms). */
   encodedAnswers: number[];
-  settings: Record<string, number | boolean>;
+  settings: Record<string, number | boolean | string>;
 }
 
 /** Folga entre o relógio do servidor e a soma dos tempos (rede, arredondamento). */

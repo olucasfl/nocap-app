@@ -18,7 +18,7 @@ const exact = (seed: string, rounds = classic.rounds) =>
 const sum = (a: number[]) => a.reduce((x, y) => x + y, 0);
 
 describe('scoreTimeMatch', () => {
-  it('respostas exatas valem 50 e a nota é recalculada no servidor', () => {
+  it('respostas exatas valem 30 (3 rodadas) e a nota é recalculada no servidor', () => {
     const answers = exact('s1');
     const scored = scoreTimeMatch({
       mode: 'classic',
@@ -26,12 +26,12 @@ describe('scoreTimeMatch', () => {
       answers,
       elapsedMs: sum(answers),
     });
-    expect(scored.total).toBe(50);
+    expect(scored.total).toBe(30);
     expect(scored.encodedAnswers).toEqual(answers);
-    expect(scored.settings).toMatchObject({ rounds: 5, scoreVersion: 1 });
+    expect(scored.settings).toMatchObject({ rounds: 3, mix: 'alternate', scoreVersion: 1 });
   });
 
-  it('errar vale menos e fica em [0, 50]', () => {
+  it('errar vale menos e fica em [0, 30]', () => {
     const answers = exact('s1').map((t) => Math.round(t * 1.2));
     const scored = scoreTimeMatch({
       mode: 'classic',
@@ -160,7 +160,7 @@ describe('MatchesService (Tempo)', () => {
     const { service, save } = setup();
     const input = play('seed-a', sum(exact('seed-a')) + 2000);
     const res = await createAs(service, input);
-    expect(res.total).toBe(50);
+    expect(res.total).toBe(30);
     expect(save).toHaveBeenCalledWith(expect.objectContaining({ game: 'time', ranked: true }));
   });
 
