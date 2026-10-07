@@ -7,8 +7,7 @@ import { MIN_TAP_GAP_MS } from './format';
 import { FinalScreen } from './screens/FinalScreen';
 import { ResultScreen } from './screens/ResultScreen';
 import { StartScreen } from './screens/StartScreen';
-import { StopScreen } from './screens/StopScreen';
-import { TargetScreen } from './screens/TargetScreen';
+import { RoundScreen } from './screens/RoundScreen';
 import type { Mode, RoundResult, Run } from './types';
 import './time.css';
 
@@ -122,15 +121,16 @@ export function TimeGame({ initialMode = 'classic' }: { initialMode?: Mode }) {
           onStart={() => void start(mode)}
         />
       )}
-      {phase === 'target' && target !== null && run && (
-        <TargetScreen
+      {(phase === 'target' || counting) && target !== null && run && (
+        <RoundScreen
           key={index}
           target={target}
           noOvershoot={run.settings.noOvershoot}
+          counting={counting}
           onBegin={begin}
+          onStop={stop}
         />
       )}
-      {counting && <StopScreen onStop={stop} />}
       {phase === 'result' && run && last && (
         <ResultScreen
           key={index}
