@@ -38,10 +38,11 @@ function hideSplash() {
   const el = document.getElementById('splash');
   if (!el) return;
   const shown = (window as unknown as { __splashAt?: number }).__splashAt ?? Date.now();
-  const wait = Math.max(0, 1200 - (Date.now() - shown));
+  // A animação do splash dura ~2,3 s: ela toca inteira, no mínimo, antes de sair.
+  const wait = Math.max(0, 2300 - (Date.now() - shown));
   setTimeout(() => {
     el.classList.add('out');
-    setTimeout(() => el.remove(), 300);
+    setTimeout(() => el.remove(), 400);
   }, wait);
 }
 

@@ -354,37 +354,73 @@ export function useMuted(): boolean {
   );
 }
 
+/** Quanto o dedo pode andar (px) e quanto pode demorar (ms) para ainda contar como um toque. */
+const TAP_MAX_MOVE = 10;
+const TAP_MAX_MS = 600;
+
+/**
+ * Um toque de verdade: o dedo quase não andou e soltou logo. Rolar a tela (dedo anda) ou segurar
+ * muito tempo não é toque, então não faz som. Exportado para teste.
+ */
+export function isTap(
+  down: { x: number; y: number; t: number },
+  up: { x: number; y: number; t: number },
+): boolean {
+  return Math.hypot(up.x - down.x, up.y - down.y) <= TAP_MAX_MOVE && up.t - down.t <= TAP_MAX_MS;
+}
+
+/** O som (ou clack) do elemento tocado; `null` se ele não tem som. */
+function soundFor(target: EventTarget | null): { play: () => void } | null {
+  if (!(target instanceof Element)) return null;
+  const el = target.closest<HTMLElement>('[data-sfx]');
+  if (el && !(el as HTMLButtonElement).disabled) {
+    let name = el.dataset.sfx as string;
+    if (name === 'toggle')
+      name = el.getAttribute('aria-checked') === 'true' ? 'toggleOff' : 'toggleOn';
+    const fn = sfx[name as SfxName] as (() => void) | undefined;
+    return typeof fn === 'function' ? { play: () => fn() } : null;
+  }
+  if (target.closest('.btn')) return { play: () => sfx.clack() };
+  return null;
+}
+
 /**
  * Desbloqueia o áudio no primeiro toque e dá som aos botões. Um elemento com `data-sfx="nome"`
  * toca esse som (`data-sfx` de chave: o som depende de `aria-checked`); sem isso, todo `.btn` dá
- * o "clack". Nada toca durante a contagem do Tempo (tela "valendo").
+ * o "clack". O som sai quando o toque termina (soltar o dedo sem ter rolado), nunca ao encostar:
+ * assim rolar a lista não faz barulho de clique. Nada toca durante a contagem do Tempo.
  */
 export function installGlobalSounds() {
-  let lastDown = 0;
+  let down: { x: number; y: number; t: number; id: number } | null = null;
+  let lastPlay = 0;
+
   document.addEventListener(
     'pointerdown',
     (e) => {
-      audio();
-      // Um toque só pode gerar um som: ignora um segundo pointerdown colado no primeiro.
+      audio(); // o navegador só libera o áudio depois de um gesto da pessoa
+      down = { x: e.clientX, y: e.clientY, t: performance.now(), id: e.pointerId };
+    },
+    { passive: true },
+  );
+  // Rolar a tela cancela o ponteiro: descarta o toque.
+  document.addEventListener('pointercancel', () => (down = null), { passive: true });
+
+  document.addEventListener(
+    'pointerup',
+    (e) => {
+      const start = down;
+      down = null;
+      if (!start || start.id !== e.pointerId) return;
       const now = performance.now();
-      if (now - lastDown < 80) return;
-      lastDown = now;
-      if (!(e.target instanceof Element)) return;
+      if (!isTap(start, { x: e.clientX, y: e.clientY, t: now })) return;
       if (document.querySelector('.tm-stage.live')) return;
-      const el = e.target.closest<HTMLElement>('[data-sfx]');
-      if (el && !(el as HTMLButtonElement).disabled) {
-        let name = el.dataset.sfx as string;
-        if (name === 'toggle')
-          name = el.getAttribute('aria-checked') === 'true' ? 'toggleOff' : 'toggleOn';
-        const play = sfx[name as SfxName] as (() => void) | undefined;
-        if (typeof play === 'function') play();
-        buzz(8);
-        return;
-      }
-      if (e.target.closest('.btn')) {
-        sfx.clack();
-        buzz(8);
-      }
+      // Um toque só pode gerar um som: ignora um segundo evento colado no primeiro.
+      if (now - lastPlay < 80) return;
+      const sound = soundFor(e.target);
+      if (!sound) return;
+      lastPlay = now;
+      sound.play();
+      buzz(8);
     },
     { passive: true },
   );

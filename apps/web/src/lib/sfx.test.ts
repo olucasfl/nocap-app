@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { sfx, shouldPlay } from './sfx';
+import { isTap, sfx, shouldPlay } from './sfx';
 
 function files(dir: string): string[] {
   return readdirSync(dir).flatMap((f) => {
@@ -46,5 +46,22 @@ describe('trava de som duplicado', () => {
     expect(shouldPlay('tick', 10, state)).toBe(true);
     expect(shouldPlay('tick', 20, state)).toBe(true);
     expect(shouldPlay('slide', 30, state)).toBe(true);
+  });
+});
+
+describe('toque x rolagem', () => {
+  const at = (x: number, y: number, t: number) => ({ x, y, t });
+
+  it('um toque parado e curto faz som', () => {
+    expect(isTap(at(100, 200, 0), at(102, 201, 90))).toBe(true);
+  });
+
+  it('rolar a tela (o dedo anda) não é toque: sem som', () => {
+    expect(isTap(at(100, 200, 0), at(100, 260, 120))).toBe(false);
+    expect(isTap(at(100, 200, 0), at(140, 205, 80))).toBe(false);
+  });
+
+  it('segurar muito tempo também não é toque', () => {
+    expect(isTap(at(100, 200, 0), at(100, 200, 900))).toBe(false);
   });
 });
