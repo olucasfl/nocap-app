@@ -1,7 +1,15 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchFriends } from '@/lib/friends';
-import { inviteFriend, leaveRoom, sendRoom, useRoom, type RoomSnapshot } from '@/lib/rooms';
+import { impostorLimit } from '@nocap/games';
+import {
+  inviteFriend,
+  leaveRoom,
+  sendRoom,
+  useRoom,
+  type RoomGame,
+  type RoomSnapshot,
+} from '@/lib/rooms';
 import { useAuth } from '@/lib/auth';
 
 const ROUNDS = [1, 3, 5, 7, 10];
@@ -9,7 +17,14 @@ const SHOW = [400, 1000, 3000, 5000];
 const PICK = [15_000, 30_000, 60_000];
 
 /** Modos de cada jogo na sala, com uma linha que explica cada um. */
-const MODES: Record<'color' | 'time', { id: string; label: string; note: string }[]> = {
+const MODES: Record<RoomGame, { id: string; label: string; note: string }[]> = {
+  impostor: [
+    {
+      id: 'impostor',
+      label: 'Intruso',
+      note: 'Alguns não veem a cor: só uma dica. Todo mundo recria e vota em quem desconfia.',
+    },
+  ],
   color: [
     { id: 'classic', label: 'Clássico', note: 'A cor aparece e some. Recrie de memória.' },
     { id: 'flash', label: 'Flash', note: 'A cor pisca por 0,4 s: confie no olho.' },
@@ -23,6 +38,13 @@ const MODES: Record<'color' | 'time', { id: string; label: string; note: string 
 };
 
 const seconds = (ms: number) => `${ms / 1000}s`.replace('.', ',');
+
+const IMP_ROUNDS = [1, 3, 5];
+const IMP_PICK = [30_000, 45_000, 60_000];
+const IMP_VOTE = [20_000, 30_000, 60_000];
+const IMP_COUNT = [1, 2, 3];
+/** Quantas pessoas cada jogo precisa para começar. */
+const MIN_PLAYERS: Record<RoomGame, number> = { color: 2, time: 2, impostor: 3 };
 
 function Options<T extends string | number>({
   label,
@@ -95,8 +117,10 @@ export function Lobby({ snapshot }: { snapshot: RoomSnapshot }) {
   const isHost = snapshot.hostId === me;
   const mine = snapshot.members.find((m) => m.id === me);
   const others = snapshot.members.filter((m) => m.connected && m.id !== snapshot.hostId);
+  const minPlayers = MIN_PLAYERS[snapshot.game];
   const canStart =
-    snapshot.members.filter((m) => m.connected).length >= 2 && others.every((m) => m.ready);
+    snapshot.members.filter((m) => m.connected).length >= minPlayers &&
+    others.every((m) => m.ready);
   const link = `${location.origin}/sala/${snapshot.code}`;
 
   const share = async () => {
@@ -104,7 +128,13 @@ export function Lobby({ snapshot }: { snapshot: RoomSnapshot }) {
       if (navigator.share) {
         await navigator.share({
           title: 'NoCap',
-          text: `Entra na minha sala ${snapshot.game === 'time' ? 'do Tempo' : 'da Cor'}: ${snapshot.code}`,
+          text: `Entra na minha sala ${
+            snapshot.game === 'time'
+              ? 'do Tempo'
+              : snapshot.game === 'impostor'
+                ? 'do Intruso'
+                : 'da Cor'
+          }: ${snapshot.code}`,
           url: link,
         });
       } else {
@@ -169,25 +199,82 @@ export function Lobby({ snapshot }: { snapshot: RoomSnapshot }) {
 
       <div className="rm-rules">
         <div className="mono rm-label">REGRAS{isHost ? '' : ' (DEFINIDAS PELO HOST)'}</div>
-        <Options
-          label="MODO"
-          values={MODES[snapshot.game].map((m) => m.id)}
-          current={snapshot.mode}
-          format={(id) => MODES[snapshot.game].find((m) => m.id === id)?.label ?? id}
-          disabled={!isHost}
-          onPick={(v) => configure({ mode: v })}
-        />
+        {snapshot.game !== 'impostor' && (
+          <Options
+            label="MODO"
+            values={MODES[snapshot.game].map((m) => m.id)}
+            current={snapshot.mode}
+            format={(id) => MODES[snapshot.game].find((m) => m.id === id)?.label ?? id}
+            disabled={!isHost}
+            onPick={(v) => configure({ mode: v })}
+          />
+        )}
         <p className="mono rm-mode-note">
           {MODES[snapshot.game].find((m) => m.id === snapshot.mode)?.note}
         </p>
         <Options
           label="RODADAS"
-          values={ROUNDS}
+          values={snapshot.game === 'impostor' ? IMP_ROUNDS : ROUNDS}
           current={snapshot.settings.rounds}
           format={String}
           disabled={!isHost}
           onPick={(v) => configure({ rounds: v })}
         />
+        {snapshot.game === 'impostor' && (
+          <>
+            <Options
+              label="INTRUSOS"
+              values={IMP_COUNT}
+              current={snapshot.settings.impostors}
+              format={String}
+              disabled={!isHost}
+              onPick={(v) => configure({ impostors: v })}
+            />
+            <p className="mono rm-mode-note">
+              Com {Math.max(snapshot.members.length, 3)} pessoas: até{' '}
+              {impostorLimit(Math.max(snapshot.members.length, 3))}{' '}
+              {impostorLimit(Math.max(snapshot.members.length, 3)) === 1 ? 'intruso' : 'intrusos'}.
+              O número se ajusta a quem estiver na sala.
+            </p>
+            <Options
+              label="VOTO"
+              values={['open', 'anon']}
+              current={snapshot.settings.anonymous ? 'anon' : 'open'}
+              format={(v) => (v === 'anon' ? 'Anônimo' : 'Aberto')}
+              disabled={!isHost}
+              onPick={(v) => configure({ anonymous: v === 'anon' })}
+            />
+            <p className="mono rm-mode-note">
+              {snapshot.settings.anonymous
+                ? 'Ninguém vê em quem cada um votou, só quantos votos cada um recebeu.'
+                : 'No fim, todo mundo vê o voto de cada pessoa.'}
+            </p>
+            <Options
+              label="TEMPO PARA DECORAR"
+              values={SHOW.filter((v) => v >= 1000)}
+              current={snapshot.settings.showMs}
+              format={seconds}
+              disabled={!isHost}
+              onPick={(v) => configure({ showMs: v })}
+            />
+            <Options
+              label="TEMPO PARA RECRIAR"
+              values={IMP_PICK}
+              current={snapshot.settings.pickMs}
+              format={seconds}
+              disabled={!isHost}
+              onPick={(v) => configure({ pickMs: v })}
+            />
+            <Options
+              label="TEMPO PARA VOTAR"
+              values={IMP_VOTE}
+              current={snapshot.settings.voteMs}
+              format={seconds}
+              disabled={!isHost}
+              onPick={(v) => configure({ voteMs: v })}
+            />
+          </>
+        )}
         {snapshot.game === 'color' && (
           <>
             {snapshot.mode !== 'flash' && (
@@ -243,7 +330,7 @@ export function Lobby({ snapshot }: { snapshot: RoomSnapshot }) {
           </button>
         )}
         {isHost && !canStart && (
-          <p className="mono rm-hint">Precisa de 2 pessoas, todas marcando "pronto".</p>
+          <p className="mono rm-hint">Precisa de {minPlayers} pessoas, todas marcando "pronto".</p>
         )}
         {isHost && canStart && others.length > 0 && others.every((m) => m.committed) && (
           <p className="mono rm-hint">

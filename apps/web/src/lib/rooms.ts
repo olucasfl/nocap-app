@@ -4,8 +4,8 @@ import { create } from 'zustand';
 import { apiBase } from './api-client';
 import { getToken } from './auth';
 
-export type RoomGame = 'color' | 'time';
-export type Phase = 'lobby' | 'show' | 'pick' | 'play' | 'reveal' | 'final';
+export type RoomGame = 'color' | 'time' | 'impostor';
+export type Phase = 'lobby' | 'show' | 'pick' | 'play' | 'vote' | 'reveal' | 'final';
 
 export interface ColorRoomSettings {
   rounds: number;
@@ -13,8 +13,14 @@ export interface ColorRoomSettings {
   pickMs: number;
 }
 export type TimeRoomSettings = TimeSettings;
+/** Intruso: tempo de votar, quantos intrusos o host pediu e se o voto é anônimo. */
+export interface ImpostorRoomSettings {
+  voteMs: number;
+  impostors: number;
+  anonymous: boolean;
+}
 /** As regras dependem do jogo da sala (`snapshot.game`). */
-export type RoomSettings = ColorRoomSettings & TimeRoomSettings;
+export type RoomSettings = ColorRoomSettings & TimeRoomSettings & ImpostorRoomSettings;
 
 export interface RoomMember {
   id: string;
@@ -61,6 +67,35 @@ export interface RoomSnapshot {
     results: RoundResult[] | null;
   } | null;
   final: FinalRow[] | null;
+  impostor?: ImpostorState;
+}
+
+/** Estado do Intruso, por pessoa: cor, dica e papéis só chegam a quem pode vê-los. */
+export interface ImpostorState {
+  /** Quantos intrusos há (no lobby: quantos haveria com a sala de agora). */
+  count: number;
+  anonymous?: boolean;
+  participants?: string[];
+  /** Seu papel na rodada; `null` fora dela. */
+  role?: 'crew' | 'impostor' | null;
+  /** A cor: só para a tripulação ao decorar, e para todos na revelação. */
+  color?: Hsb | null;
+  /** A dica: só para os intrusos, e para todos na revelação. */
+  hint?: string | null;
+  colorName?: string | null;
+  /** Cor em que os controles começam (a mesma para todos). */
+  start?: Hsb;
+  /** Quem já votou (sem dizer em quem). */
+  voted?: string[];
+  myVote?: string | null;
+  reveal?: {
+    impostors: string[];
+    caught: string[];
+    counts: Record<string, number>;
+    points: Record<string, number>;
+    /** `null` quando o voto é anônimo. */
+    votes: { voter: string; target: string }[] | null;
+  } | null;
 }
 
 export type RoomStatus = 'idle' | 'connecting' | 'connected' | 'reconnecting' | 'closed';

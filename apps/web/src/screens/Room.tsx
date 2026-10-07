@@ -47,7 +47,14 @@ function Header({ leave, round }: { leave?: boolean; round?: string }) {
   );
 }
 
-const GAME_NAME: Record<RoomGame, string> = { color: 'Cor', time: 'Tempo' };
+const GAME_NAME: Record<RoomGame, string> = { color: 'Cor', time: 'Tempo', impostor: 'Intruso' };
+
+const ENTRY_LEAD: Record<RoomGame, string> = {
+  color: 'Jogue a Cor com amigos, todo mundo na mesma rodada ao mesmo tempo.',
+  time: 'Jogue o Tempo com amigos: o mesmo alvo para todos, cada um conta de cabeça.',
+  impostor:
+    'O Intruso precisa de uma sala com no mínimo 3 pessoas: alguns não veem a cor, só uma dica, e todo mundo vota em quem desconfia.',
+};
 
 function Entry({
   initialCode,
@@ -88,11 +95,7 @@ function Entry({
     <section className="screen rm">
       <BackButton to={game === 'time' ? '/tempo' : '/cor'} label="Voltar ao jogo" />
       <h1>Sala</h1>
-      <p className="lead">
-        {game === 'time'
-          ? 'Jogue o Tempo com amigos: o mesmo alvo para todos, cada um conta de cabeça.'
-          : 'Jogue a Cor com amigos, todo mundo na mesma rodada ao mesmo tempo.'}
-      </p>
+      <p className="lead">{ENTRY_LEAD[game]}</p>
       {(error || message) && (
         <p className="acc-failure mono" role="alert">
           {error || message}
@@ -224,7 +227,7 @@ export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomG
         <Entry initialCode={code} initialError={joinError} game={game} />
       )}
       {snapshot?.phase === 'lobby' && <Lobby snapshot={snapshot} />}
-      {snapshot && ['show', 'pick', 'play', 'reveal'].includes(snapshot.phase) && (
+      {snapshot && ['show', 'pick', 'play', 'vote', 'reveal'].includes(snapshot.phase) && (
         <Play snapshot={snapshot} />
       )}
       {snapshot?.phase === 'final' && <Final snapshot={snapshot} />}

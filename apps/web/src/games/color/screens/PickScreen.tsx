@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import type { Hsb } from '@nocap/games';
 import { sfx } from '@/lib/sfx';
 import { toHex } from '../hex';
@@ -30,9 +30,11 @@ interface Props {
   blind?: boolean;
   /** Cor em que os controles começam (nunca perto do alvo; ver `generateColorStart`). */
   start: Hsb;
+  /** Aviso no topo (o Intruso mostra o papel e a dica aqui). */
+  banner?: ReactNode;
 }
 
-export function PickScreen({ onLock, blind = false, start }: Props) {
+export function PickScreen({ onLock, blind = false, start, banner }: Props) {
   const [guess, setGuess] = useState<Hsb>(start);
   const lastBucket = useRef<Partial<Record<Channel, number>>>({});
   const latest = useRef(guess);
@@ -60,6 +62,7 @@ export function PickScreen({ onLock, blind = false, start }: Props) {
 
   return (
     <section className="screen">
+      {banner}
       {blind ? (
         <div className="cg-preview cg-blind" aria-label="Às cegas: a prévia está escondida">
           <div className="tag">ÀS CEGAS</div>

@@ -9,6 +9,7 @@ import { leaveRoom, sendRoom, useRoom, type RoomSnapshot } from '@/lib/rooms';
 export function Final({ snapshot }: { snapshot: RoomSnapshot }) {
   const me = useAuth((s) => s.user?.id);
   const message = useRoom((s) => s.message);
+  const impostor = snapshot.game === 'impostor';
   const max = snapshot.settings.rounds * 10;
   const mine = snapshot.members.find((m) => m.id === me);
   const voted = !!mine?.rematch;
@@ -28,7 +29,7 @@ export function Final({ snapshot }: { snapshot: RoomSnapshot }) {
             <span className="rm-result-name">@{r.username}</span>
             <span className="rm-result-score">
               {(r.totalTenths / 10).toFixed(1)}
-              <small className="mono">/{max}</small>
+              <small className="mono">{impostor ? ' pts' : `/${max}`}</small>
             </span>
           </li>
         ))}

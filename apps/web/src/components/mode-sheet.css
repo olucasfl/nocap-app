@@ -122,3 +122,9 @@
   font-weight: 700;
   letter-spacing: 0.04em;
 }
+
+.ms-note {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+}

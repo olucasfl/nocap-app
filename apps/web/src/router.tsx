@@ -82,8 +82,10 @@ const registerRoute = createRoute({
 const roomRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/sala',
-  validateSearch: (search: Record<string, unknown>): { jogo?: 'color' | 'time' } =>
-    search.jogo === 'color' || search.jogo === 'time' ? { jogo: search.jogo } : {},
+  validateSearch: (search: Record<string, unknown>): { jogo?: 'color' | 'time' | 'impostor' } =>
+    search.jogo === 'color' || search.jogo === 'time' || search.jogo === 'impostor'
+      ? { jogo: search.jogo }
+      : {},
   component: lazyRouteComponent(() => import('@/screens/Room'), 'RoomEntryPage'),
 });
 const roomCodeRoute = createRoute({

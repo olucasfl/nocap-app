@@ -5,6 +5,7 @@ import { toHex } from '@/games/color/hex';
 import { PickScreen } from '@/games/color/screens/PickScreen';
 import { ShowScreen } from '@/games/color/screens/ShowScreen';
 import '@/games/color/color.css';
+import { ImpostorPlay } from './ImpostorPlay';
 import { TimePlay } from './TimePlay';
 
 function Waiting({ snapshot }: { snapshot: RoomSnapshot }) {
@@ -75,6 +76,7 @@ function Reveal({ snapshot }: { snapshot: RoomSnapshot }) {
 /** Memorizar, recriar e revelação. O servidor manda em todas as fases; aqui só se mostra. */
 export function Play({ snapshot }: { snapshot: RoomSnapshot }) {
   if (snapshot.game === 'time') return <TimePlay snapshot={snapshot} />;
+  if (snapshot.game === 'impostor') return <ImpostorPlay snapshot={snapshot} />;
   const me = useAuth((s) => s.user?.id);
   const round = snapshot.round!;
   const mine = snapshot.members.find((m) => m.id === me);

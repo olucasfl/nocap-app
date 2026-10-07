@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { SURVIVAL_MAX_ROUNDS, colorDailySettings, colorPresets } from '@nocap/games';
 import { BackButton } from '@/components/BackButton';
@@ -17,16 +18,22 @@ import { dailyMax, fetchStats, recordText } from '@/lib/stats';
 import type { Mode } from '../types';
 
 /** Modos de partida solo. O Daily é um cartão à parte, dentro do jogo. */
-const MODES: { id: Mode; label: string; desc: string }[] = [
+/** O Intruso só existe em sala: aparece na lista como os outros, mas a ficha leva a criar uma sala. */
+type ModeId = Mode | 'impostor';
+
+const MODES: { id: ModeId; label: string; desc: string }[] = [
   { id: 'classic', label: 'Clássico', desc: '3 RODADAS · 3 S' },
   { id: 'flash', label: 'Flash', desc: '3 RODADAS · 0,4 S' },
   { id: 'quick', label: 'Rápido', desc: '1 RODADA' },
   { id: 'blind', label: 'Às cegas', desc: 'SEM PRÉVIA' },
   { id: 'survival', label: 'Sobrevivência', desc: '3 VIDAS' },
+  { id: 'impostor', label: 'Intruso', desc: 'SÓ COM AMIGOS' },
   { id: 'daily', label: 'Daily', desc: '1 POR DIA · RANKING' },
 ];
 
-const LEAD: Record<Mode, string> = {
+const LEAD: Record<ModeId, string> = {
+  impostor:
+    'A turma recria a mesma cor, mas alguns são intrusos: não veem a cor, só uma dica. Depois todo mundo vota em quem acha que é o intruso.',
   classic:
     'Uma cor aparece por 3 segundos. Depois some. Recrie de memória nos controles e veja o quanto você chegou perto.',
   flash: 'A cor pisca por menos de meio segundo. Sem tempo pra pensar: confie no olho.',
@@ -55,17 +62,20 @@ export function StartScreen({ initialTab = 'modes', initialBoard, onMode, onStar
   const [tab, setTab] = useState<GameTab>(initialTab);
   const board = initialBoard;
   /** Modo cuja ficha está aberta (null = só a lista de modos). */
-  const [open, setOpen] = useState<Mode | null>(null);
+  const [open, setOpen] = useState<ModeId | null>(null);
   const close = useCallback(() => setOpen(null), []);
-  const preset = open === 'daily' ? colorDailySettings : colorPresets[open ?? 'classic']!;
+  const preset =
+    open === 'daily'
+      ? colorDailySettings
+      : colorPresets[open && open !== 'impostor' ? open : 'classic']!;
 
   /** O Daily tem tela própria (resultado do dia e parte social), fora da ficha dos outros modos. */
   const [dailyView, setDailyView] = useState(false);
 
   const openMode = (id: string) => {
-    onMode(id as Mode);
+    if (id !== 'impostor') onMode(id as Mode);
     if (id === 'daily') setDailyView(true);
-    else setOpen(id as Mode);
+    else setOpen(id as ModeId);
   };
 
   if (dailyView) {
@@ -110,10 +120,26 @@ export function StartScreen({ initialTab = 'modes', initialBoard, onMode, onStar
               modeId={open}
               title={MODES.find((m) => m.id === open)?.label ?? ''}
               lead={LEAD[open]}
-              record={open === 'daily' ? null : recordText(stats.data, 'color', open)}
+              record={
+                open === 'daily' || open === 'impostor'
+                  ? null
+                  : recordText(stats.data, 'color', open)
+              }
               onClose={close}
               rules={
-                open === 'survival' ? (
+                open === 'impostor' ? (
+                  <>
+                    <div className="cg-rule">
+                      <b>3-8</b>pessoas
+                    </div>
+                    <div className="cg-rule">
+                      <b>1-3</b>intrusos
+                    </div>
+                    <div className="cg-rule">
+                      <b>1000+</b>dicas
+                    </div>
+                  </>
+                ) : open === 'survival' ? (
                   <>
                     <div className="cg-rule">
                       <b>3</b>vidas
@@ -141,17 +167,33 @@ export function StartScreen({ initialTab = 'modes', initialBoard, onMode, onStar
                 )
               }
             >
-              <PlayGate>
-                <button
-                  type="button"
-                  className="btn"
-                  data-sfx="start"
-
-                  onClick={() => onStart(open)}
-                >
-                  Jogar <ArrowRight />
-                </button>
-              </PlayGate>
+              {open === 'impostor' ? (
+                <>
+                  <p className="mono ms-note">
+                    Esse modo só funciona em sala, com no mínimo 3 pessoas. Quer criar uma sala
+                    agora?
+                  </p>
+                  <Link
+                    to="/sala"
+                    search={{ jogo: 'impostor' }}
+                    className="btn alt"
+                    data-sfx="start"
+                  >
+                    Criar sala <ArrowRight />
+                  </Link>
+                </>
+              ) : (
+                <PlayGate>
+                  <button
+                    type="button"
+                    className="btn"
+                    data-sfx="start"
+                    onClick={() => onStart(open)}
+                  >
+                    Jogar <ArrowRight />
+                  </button>
+                </PlayGate>
+              )}
             </ModeSheet>
           )}
         </>

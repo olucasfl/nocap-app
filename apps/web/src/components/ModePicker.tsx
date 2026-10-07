@@ -30,6 +30,14 @@ export function modeArt(id: string): ReactNode {
           />
         </svg>
       );
+    case 'impostor':
+      return (
+        <svg viewBox="0 0 32 32" aria-hidden="true">
+          <path d="M6 14c0-6 4-10 10-10s10 4 10 10v11l-4-3-3 3-3-3-3 3-3-3-4 3z" {...p} />
+          <circle cx="12" cy="14" r="2.2" fill="currentColor" stroke="none" />
+          <circle cx="20" cy="14" r="2.2" fill="currentColor" stroke="none" />
+        </svg>
+      );
     case 'blind':
       return (
         <svg viewBox="0 0 32 32" aria-hidden="true">
