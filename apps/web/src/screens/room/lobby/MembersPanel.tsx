@@ -1,7 +1,88 @@
 import { useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { acceptRequest, fetchFriends, sendRequest, type RelationState } from '@/lib/friends';
 import { Crown } from '@/components/icons';
 import { sendRoom, type RoomMember, type RoomSnapshot } from '@/lib/rooms';
 import { MIN_PLAYERS } from './rules';
+
+/** Como eu me relaciono com quem está na sala: amigo, pedido enviado/recebido ou ninguém. */
+function useRelation(username: string, isMe: boolean): RelationState | 'me' {
+  const list = useQuery({ queryKey: ['friends'], queryFn: fetchFriends });
+  if (isMe) return 'me';
+  const d = list.data;
+  if (d?.friends.some((f) => f.username === username)) return 'friends';
+  if (d?.incoming.some((f) => f.username === username)) return 'incoming';
+  if (d?.outgoing.some((f) => f.username === username)) return 'outgoing';
+  return 'none';
+}
+
+/** Pedir amizade (ou aceitar) a quem está na sala e ainda não é amigo. */
+function FriendAction({ username, relation }: { username: string; relation: RelationState }) {
+  const queryClient = useQueryClient();
+  const act = useMutation({
+    mutationFn: () => (relation === 'incoming' ? acceptRequest(username) : sendRequest(username)),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['friends'] });
+      void queryClient.invalidateQueries({ queryKey: ['ranking'] });
+    },
+  });
+  if (relation === 'friends') return <span className="mono lb-pill friend">AMIGO</span>;
+  if (relation === 'outgoing') return <span className="mono lb-pill">PEDIDO ENVIADO</span>;
+  return (
+    <button
+      type="button"
+      className="fr-btn"
+      data-sfx={relation === 'incoming' ? 'success' : 'send'}
+      disabled={act.isPending}
+      onClick={() => act.mutate()}
+    >
+      {act.isPending
+        ? 'Enviando...'
+        : relation === 'incoming'
+          ? 'Aceitar amizade'
+          : 'Pedir amizade'}
+    </button>
+  );
+}
+
+function Person({
+  m,
+  me,
+  children,
+}: {
+  m: RoomMember;
+  me: string | undefined;
+  children?: React.ReactNode;
+}) {
+  const relation = useRelation(m.username, m.id === me);
+  return (
+    <>
+      <span
+        className={`lb-avatar${relation === 'friends' ? ' friend' : relation === 'me' ? '' : ' stranger'}`}
+      >
+        {m.username.slice(0, 1).toUpperCase()}
+      </span>
+      <span className="lb-who">
+        <b>
+          @{m.username}
+          {m.id === me && <span className="mono rm-badge you">VOCÊ</span>}
+        </b>
+        {relation !== 'me' && relation !== 'friends' && (
+          <small className="mono">Ainda não é seu amigo</small>
+        )}
+      </span>
+      <span className="lb-side">
+        {children}
+        {relation !== 'me' && <FriendAction username={m.username} relation={relation} />}
+      </span>
+    </>
+  );
+}
+
+function LeaderFriend({ username, isMe }: { username: string; isMe: boolean }) {
+  const relation = useRelation(username, isMe);
+  return relation === 'me' ? null : <FriendAction username={username} relation={relation} />;
+}
 
 function Status({ m }: { m: RoomMember }) {
   if (!m.connected) return <span className="mono lb-pill off">SEM CONEXÃO</span>;
@@ -71,6 +152,7 @@ export function MembersPanel({
               </b>
               <small className="mono">Define as regras e começa a partida</small>
             </span>
+            <LeaderFriend username={leader.username} isMe={leader.id === me} />
             <span className={`mono lb-pill${leader.connected ? ' on' : ' off'}`}>
               {leader.connected ? 'NA SALA' : 'SEM CONEXÃO'}
             </span>
@@ -102,17 +184,10 @@ export function MembersPanel({
         <ul className="lb-list">
           {players.map((m) => (
             <li key={m.id} className={`lb-row${m.id === me ? ' me' : ''}`}>
-              <span className="lb-avatar">{m.username.slice(0, 1).toUpperCase()}</span>
-              <span className="lb-who">
-                <b>
-                  @{m.username}
-                  {m.id === me && <span className="mono rm-badge you">VOCÊ</span>}
-                </b>
-              </span>
-              <span className="lb-side">
+              <Person m={m} me={me}>
                 <Status m={m} />
                 {canKick && <Kick m={m} />}
-              </span>
+              </Person>
             </li>
           ))}
           {connected < needed && (

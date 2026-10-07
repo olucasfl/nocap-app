@@ -443,3 +443,21 @@
 .lb {
   padding-bottom: 76px;
 }
+
+/* Amigo x quem ainda não é amigo */
+.lb-avatar.friend {
+  background: var(--green);
+  color: var(--on-accent);
+}
+.lb-avatar.stranger {
+  background: var(--white);
+  color: var(--ink);
+  border-style: dashed;
+}
+.lb-pill.friend {
+  background: var(--green);
+  color: var(--on-accent);
+}
+.lb-row {
+  flex-wrap: wrap;
+}

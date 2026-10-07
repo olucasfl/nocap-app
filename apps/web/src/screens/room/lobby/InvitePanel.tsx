@@ -15,6 +15,7 @@ export function InvitePanel({ snapshot }: { snapshot: RoomSnapshot }) {
   const friends = useQuery({ queryKey: ['friends'], queryFn: fetchFriends });
   const [done, setDone] = useState<Done>(null);
   const [filter, setFilter] = useState('');
+  const [handle, setHandle] = useState('');
   const link = `${location.origin}/sala/${snapshot.code}`;
   const message = `Entra na minha sala ${GAME_OF[snapshot.game]}: ${snapshot.code} ${link}`;
   const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
@@ -76,6 +77,36 @@ export function InvitePanel({ snapshot }: { snapshot: RoomSnapshot }) {
           {canShare
             ? 'Quem entra precisa ter uma conta no NoCap.'
             : 'Este aparelho não abre a lista de apps: o botão de cima copia a mensagem pronta.'}
+        </p>
+      </section>
+
+      <section className="lb-block" aria-label="Convidar pelo @usuário">
+        <div className="mono rm-label">CONVIDAR PELO @USUÁRIO</div>
+        <form
+          className="ch-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const who = handle.trim().replace(/^@/, '').toLowerCase();
+            if (!who) return;
+            inviteFriend(who);
+            setHandle('');
+          }}
+        >
+          <input
+            className="ch-input"
+            value={handle}
+            onChange={(e) => setHandle(e.target.value)}
+            placeholder="@usuário (não precisa ser amigo)"
+            aria-label="@usuário para convidar"
+            autoCapitalize="none"
+            autoCorrect="off"
+          />
+          <button type="submit" className="ch-send" data-sfx="send" disabled={!handle.trim()}>
+            Convidar
+          </button>
+        </form>
+        <p className="mono rm-mode-note">
+          A pessoa recebe o convite no app. Quando entrar, você pode pedir amizade pela aba Membros.
         </p>
       </section>
 

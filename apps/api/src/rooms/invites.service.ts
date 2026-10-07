@@ -4,19 +4,20 @@ import { limiter } from '../common/rate-limit';
 import { FriendsService } from '../friends/friends.service';
 import { InvitesStore } from './invites.store';
 
-/** Convites para sala: só entre amigos, e só enquanto a sala está no lobby e tem vaga. */
+/** Convites para sala: para qualquer pessoa com conta, e só enquanto a sala está no lobby e tem vaga. */
 @Injectable()
 export class InvitesService {
   readonly store = new InvitesStore();
 
   constructor(private readonly friends: FriendsService) {}
 
-  /** Chamado pela sala. Quem não é amigo (ou não existe) recebe o erro de volta. */
+  /** Chamado pela sala. Quem não existe (ou é você mesmo) recebe o erro de volta. */
   async send(from: { id: string; username: string }, toUsername: string, code: string) {
     if (!limiter.hit(`invite|${from.id}`, 20, 60_000).ok) {
       throw new Error('Convites demais em pouco tempo. Espere um instante.');
     }
-    const to = await this.friends.friendByUsername(from.id, toUsername);
+    const to = await this.friends.userByUsername(toUsername);
+    if (to.id === from.id) throw new Error('Você já está na sala');
     this.store.add({
       toUserId: to.id,
       fromUserId: from.id,

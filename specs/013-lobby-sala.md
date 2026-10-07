@@ -82,3 +82,8 @@ Comportamento do servidor, mensagens da sala (`configure`, `kick`, `ready`, `sta
 ## Fora de escopo
 
 Passar a liderança para outra pessoa pelo botão, e as telas de jogo (Play, Final), que seguem como estavam. O **chat da sala** tem spec própria: [014-chat-sala.md](014-chat-sala.md), e a aba Chat entra ao lado de Membros, Regras e Convidar.
+
+## Convidar quem não é amigo e pedir amizade na sala (pedido do Lucas, 07/10/2026)
+
+- Na aba Convidar há "Convidar pelo @usuário": qualquer pessoa com conta pode ser convidada (o convite chega pelo aviso do app). Limite de 20 convites por minuto.
+- Na aba Membros cada pessoa aparece com arte própria: **amigo** (avatar verde e selo AMIGO) e **quem não é amigo** (avatar tracejado, "Ainda não é seu amigo" e o botão "Pedir amizade"). Pedido enviado vira "PEDIDO ENVIADO"; pedido recebido vira "Aceitar amizade".

@@ -122,6 +122,11 @@ export class FriendsService {
     return other;
   }
 
+  /** Qualquer pessoa com esse @usuário (convite para sala não exige amizade). */
+  async userByUsername(username: string): Promise<UserRef> {
+    return this.userOrFail(username.trim().toLowerCase().replace(/^@/, ''));
+  }
+
   /** Ids da pessoa e dos amigos aceitos (para o ranking entre amigos). */
   async circleOf(me: string): Promise<string[]> {
     return [me, ...(await this.repo.friendIds(me))];
