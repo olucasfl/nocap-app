@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { dailyMax, gameModes, modeMax, streakLabel, type Stats } from './stats';
+import {
+  dailyMax,
+  gameModes,
+  isNewRecord,
+  modeMax,
+  recordText,
+  streakLabel,
+  type Stats,
+} from './stats';
 
 const stats: Stats = {
   modes: [
@@ -36,5 +44,28 @@ describe('stats', () => {
   it('escreve a sequência no singular e no plural', () => {
     expect(streakLabel(1)).toBe('1 dia');
     expect(streakLabel(5)).toBe('5 dias');
+  });
+});
+
+describe('recordes por modo', () => {
+  it('texto do recorde do modo, na ficha', () => {
+    expect(recordText(stats, 'color', 'classic')).toBe('Seu recorde aqui é de 40.0/50');
+    expect(recordText(stats, 'color', 'blind')).toBe('Você ainda não tem recorde neste modo');
+    expect(recordText(undefined, 'color', 'classic')).toBeNull();
+  });
+
+  it('Sobrevivência mostra rodadas, não pontos', () => {
+    const sv: Stats = {
+      ...stats,
+      modes: [{ game: 'time', mode: 'survival', matches: 1, best: 70, average: 70 }],
+    };
+    expect(recordText(sv, 'time', 'survival')).toBe('Seu recorde aqui é de 7 rodadas');
+  });
+
+  it('só bate recorde quem já tinha um e passou dele', () => {
+    expect(isNewRecord(400, 410)).toBe(true);
+    expect(isNewRecord(400, 400)).toBe(false);
+    expect(isNewRecord(0, 300)).toBe(false);
+    expect(isNewRecord(undefined, 300)).toBe(false);
   });
 });

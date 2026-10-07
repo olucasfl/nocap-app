@@ -1,6 +1,7 @@
 import { useEffect, type CSSProperties } from 'react';
 import { Link } from '@tanstack/react-router';
 import { buzz, sfx } from '@/lib/sfx';
+import { NewRecord } from './NewRecord';
 import { SURVIVAL_LIVES, SURVIVAL_MAX_ROUNDS } from '@nocap/games';
 import './survival.css';
 
@@ -88,6 +89,7 @@ export function SurvivalFinal({
   rows,
   saveText,
   game,
+  record,
   onRematch,
 }: {
   played: number;
@@ -95,6 +97,8 @@ export function SurvivalFinal({
   rows: SurvivalRow[];
   saveText: string;
   game: 'cor' | 'tempo';
+  /** Bateu o recorde do modo: mostra o aviso animado. */
+  record?: { now: string; before: string } | null;
   onRematch: () => void;
 }) {
   useEffect(() => {
@@ -104,6 +108,7 @@ export function SurvivalFinal({
   }, [completed]);
   return (
     <section className="screen">
+      {record && <NewRecord now={record.now} before={record.before} />}
       <div className="sv-total">
         <div className="mono">{completed ? 'COMPLETOU!' : 'VOCÊ JOGOU'}</div>
         <b>{played}</b>

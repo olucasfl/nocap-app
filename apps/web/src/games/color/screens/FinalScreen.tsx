@@ -1,7 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { Link } from '@tanstack/react-router';
 import { buzz, sfx } from '@/lib/sfx';
+import { NewRecord } from '@/components/NewRecord';
 import { saveBest } from '@/lib/records';
+import { formatBest, isNewRecord } from '@/lib/stats';
 import { toHex } from '../hex';
 import type { RoundResult, Run } from '../types';
 import { SAVE_TEXT, useSaveMatch } from '../useSaveMatch';
@@ -9,11 +11,14 @@ import { SAVE_TEXT, useSaveMatch } from '../useSaveMatch';
 interface Props {
   run: Run;
   results: RoundResult[];
+  /** Recorde do modo antes desta partida (décimos); `undefined` = sem estatísticas. */
+  previousBest?: number;
   onRematch: () => void;
 }
 
-export function FinalScreen({ run, results, onRematch }: Props) {
+export function FinalScreen({ run, results, previousBest, onRematch }: Props) {
   const total = Math.round(results.reduce((a, r) => a + r.score * 10, 0)) / 10;
+  const totalTenths = Math.round(total * 10);
   const num = useRef<HTMLElement>(null);
   const save = useSaveMatch(run, results);
 
@@ -49,6 +54,12 @@ export function FinalScreen({ run, results, onRematch }: Props) {
 
   return (
     <section className="screen">
+      {run.kind !== 'daily' && isNewRecord(previousBest, totalTenths) && (
+        <NewRecord
+          now={formatBest('color', run.preset, totalTenths)}
+          before={formatBest('color', run.preset, previousBest!)}
+        />
+      )}
       <div className="cg-total">
         <div>
           <div className="mono" style={{ fontWeight: 700, fontSize: 12 }}>

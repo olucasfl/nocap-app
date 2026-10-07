@@ -8,7 +8,9 @@ import {
   timePresets,
 } from '@nocap/games';
 import type { GameTab } from '@/components/GameTabs';
+import { useQueryClient } from '@tanstack/react-query';
 import { MuteButton } from '@/components/MuteButton';
+import { bestTenths, formatBest, isNewRecord, type Stats } from '@/lib/stats';
 import { SurvivalBar, SurvivalFinal, SurvivalVerdict } from '@/components/Survival';
 import type { Board } from '@/lib/ranking';
 import { apiClient } from '@/lib/api-client';
@@ -75,7 +77,11 @@ export function TimeGame({
   /** Instante do toque que iniciou a contagem (ref: nunca causa renderização durante a contagem). */
   const t0 = useRef(0);
 
-  const start = useCallback(async (m: Mode) => {
+  const queryClient = useQueryClient();
+  /** Recorde do modo ANTES da partida (décimos); `undefined` = sem estatísticas (convidado/offline). */
+  const [prevBest, setPrevBest] = useState<number | undefined>();
+
+  const launch = useCallback(async (m: Mode) => {
     setBusy(true);
     setError('');
     try {
@@ -94,6 +100,15 @@ export function TimeGame({
       setBusy(false);
     }
   }, []);
+
+  const start = useCallback(
+    async (m: Mode) => {
+      const cached = queryClient.getQueryData<Stats>(['stats']);
+      setPrevBest(m === 'daily' || !cached ? undefined : bestTenths(cached, 'time', m));
+      await launch(m);
+    },
+    [queryClient, launch],
+  );
 
   const target = run ? generateTimeRound(run.seed, run.settings, index) : null;
 
@@ -214,15 +229,22 @@ export function TimeGame({
               />
             )
           }
+          previousBest={prevBest}
           onAgain={() => void start('quick')}
         />
       )}
       {phase === 'final' && run && survival && (
-        <SurvivalFinalTime run={run} results={results} onRematch={() => void start('survival')} />
+        <SurvivalFinalTime
+          run={run}
+          results={results}
+          previousBest={prevBest}
+          onRematch={() => void start('survival')}
+        />
       )}
       {phase === 'final' && run && !survival && (
         <FinalScreen
           run={run}
+          previousBest={prevBest}
           results={results}
           onRematch={() => void start(run.mode === 'daily' ? 'classic' : run.mode)}
         />
@@ -235,10 +257,12 @@ export function TimeGame({
 function SurvivalFinalTime({
   run,
   results,
+  previousBest,
   onRematch,
 }: {
   run: Run;
   results: RoundResult[];
+  previousBest?: number;
   onRematch: () => void;
 }) {
   const save = useSaveTime(run, results);
@@ -254,6 +278,14 @@ function SurvivalFinalTime({
       }))}
       saveText={SAVE_TEXT[save]}
       game="tempo"
+      record={
+        isNewRecord(previousBest, state.played * 10)
+          ? {
+              now: formatBest('time', 'survival', state.played * 10),
+              before: formatBest('time', 'survival', previousBest!),
+            }
+          : null
+      }
       onRematch={onRematch}
     />
   );

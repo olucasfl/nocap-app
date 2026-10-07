@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from '@tanstack/react-router';
 import { buzz, sfx } from '@/lib/sfx';
+import { NewRecord } from '@/components/NewRecord';
 import { saveBest } from '@/lib/records';
+import { formatBest, isNewRecord } from '@/lib/stats';
 import { formatDiff, formatSeconds, verdictWord } from '../format';
 import type { RoundResult, Run } from '../types';
 import { SAVE_TEXT, useSaveTime } from '../useSaveTime';
@@ -12,6 +14,8 @@ interface Props {
   isLast: boolean;
   onNext: () => void;
   onAgain: () => void;
+  /** Recorde do Rápido antes desta partida (décimos). */
+  previousBest?: number;
   /** Sobrevivência: aviso de passou/perdeu vida, antes do botão. */
   extra?: ReactNode;
 }
@@ -20,18 +24,27 @@ interface Props {
 function QuickFooter({
   run,
   result,
+  previousBest,
   onAgain,
 }: {
   run: Run;
   result: RoundResult;
+  previousBest?: number;
   onAgain: () => void;
 }) {
   const save = useSaveTime(run, [result]);
   useEffect(() => {
     saveBest('time-quick', result.score);
   }, [result.score]);
+  const now = Math.round(result.score * 10);
   return (
     <>
+      {isNewRecord(previousBest, now) && (
+        <NewRecord
+          now={formatBest('time', 'quick', now)}
+          before={formatBest('time', 'quick', previousBest!)}
+        />
+      )}
       <p className="tm-save" role="status">
         {SAVE_TEXT[save]}
       </p>
@@ -59,7 +72,7 @@ const climbMs = (answer: number) => Math.min(2600, Math.max(1200, answer * 0.3))
  * ficou e, no fim, o veredito chega com o som dele (cravou/perto: notas subindo; errou feio:
  * boing). Tudo isso só aqui, depois da contagem. Movimento reduzido mostra direto o final.
  */
-export function ResultScreen({ result, run, isLast, onNext, onAgain, extra }: Props) {
+export function ResultScreen({ result, run, isLast, onNext, onAgain, previousBest, extra }: Props) {
   const { target, answer, score } = result;
   const diff = answer - target;
   const overshot = run.settings.noOvershoot && answer > target;
@@ -155,7 +168,7 @@ export function ResultScreen({ result, run, isLast, onNext, onAgain, extra }: Pr
       {done && extra}
       {done &&
         (run.mode === 'quick' ? (
-          <QuickFooter run={run} result={result} onAgain={onAgain} />
+          <QuickFooter run={run} result={result} previousBest={previousBest} onAgain={onAgain} />
         ) : (
           <div className="stack">
             <button type="button" className="btn" onClick={onNext}>

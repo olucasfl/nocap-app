@@ -14,6 +14,7 @@ export function ModeSheet({
   title,
   lead,
   rules,
+  record,
   onClose,
   children,
 }: {
@@ -22,6 +23,8 @@ export function ModeSheet({
   title: string;
   lead: string;
   rules: ReactNode;
+  /** Frase do recorde do jogador neste modo (ex.: "Seu recorde aqui é de 38.5/50"). */
+  record?: string | null;
   onClose: () => void;
   /** Área de ação (botão Jogar, avisos, Daily). */
   children: ReactNode;
@@ -55,6 +58,7 @@ export function ModeSheet({
           <h2 className="ms-title">{title}</h2>
         </header>
         <p className="ms-lead">{lead}</p>
+        {record && <p className="mono ms-record">{record}</p>}
         <div className="ms-rules">{rules}</div>
         <div className="ms-actions">
           {children}

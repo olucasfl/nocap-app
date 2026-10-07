@@ -1,7 +1,9 @@
 import { useEffect } from 'react';
 import { Link } from '@tanstack/react-router';
 import { buzz, sfx } from '@/lib/sfx';
+import { NewRecord } from '@/components/NewRecord';
 import { saveBest } from '@/lib/records';
+import { formatBest, isNewRecord } from '@/lib/stats';
 import { formatDiff, formatSeconds } from '../format';
 import type { RoundResult, Run } from '../types';
 import { SAVE_TEXT, useSaveTime } from '../useSaveTime';
@@ -9,10 +11,12 @@ import { SAVE_TEXT, useSaveTime } from '../useSaveTime';
 interface Props {
   run: Run;
   results: RoundResult[];
+  /** Recorde do modo antes desta partida (décimos); `undefined` = sem estatísticas. */
+  previousBest?: number;
   onRematch: () => void;
 }
 
-export function FinalScreen({ run, results, onRematch }: Props) {
+export function FinalScreen({ run, results, previousBest, onRematch }: Props) {
   const total = Math.round(results.reduce((a, r) => a + r.score * 10, 0)) / 10;
   const save = useSaveTime(run, results);
 
@@ -28,6 +32,12 @@ export function FinalScreen({ run, results, onRematch }: Props) {
 
   return (
     <section className="screen">
+      {run.kind !== 'daily' && isNewRecord(previousBest, Math.round(total * 10)) && (
+        <NewRecord
+          now={formatBest('time', run.preset, Math.round(total * 10))}
+          before={formatBest('time', run.preset, previousBest!)}
+        />
+      )}
       <div className="tm-total">
         <div>
           <div className="mono tm-label">TOTAL</div>

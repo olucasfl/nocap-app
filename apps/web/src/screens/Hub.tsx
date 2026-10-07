@@ -3,8 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { MuteButton } from '@/components/MuteButton';
 import { ThemeButton } from '@/components/ThemeButton';
 import { useAuth } from '@/lib/auth';
-import { modeLabel } from '@/lib/history';
-import { dailyMax, fetchStats, gameModes, modeMax, type GameId, type Stats } from '@/lib/stats';
+import { bestTenths, dailyMax, fetchStats, formatBest, type GameId, type Stats } from '@/lib/stats';
 import './hub.css';
 
 const SWATCHES = [
@@ -16,18 +15,12 @@ const SWATCHES = [
   'var(--green)',
 ];
 
-/** Recorde do jogo: a melhor nota em relação ao máximo do modo, de qualquer modo (inclui o rápido). */
+/** Recorde do modo Clássico do jogo (os outros modos mostram o recorde na ficha de cada um). */
 function bestLabel(stats: Stats | undefined, game: GameId): string {
   if (!stats) return 'ENTRE PARA JOGAR';
-  let top: { mode: string; best: number; max: number } | null = null;
-  for (const m of gameModes(stats, game)) {
-    const max = modeMax(game, m.mode);
-    if (!max || m.best <= 0) continue;
-    if (!top || m.best / 10 / max > top.best / 10 / top.max)
-      top = { mode: m.mode, best: m.best, max };
-  }
-  if (!top) return 'SEM RECORDE AINDA';
-  return `RECORDE ${(top.best / 10).toFixed(1)}/${top.max} · ${modeLabel(top.mode).toUpperCase()}`;
+  const best = bestTenths(stats, game, 'classic');
+  if (best <= 0) return 'SEM RECORDE NO CLÁSSICO';
+  return `RECORDE CLÁSSICO ${formatBest(game, 'classic', best)}`;
 }
 
 /** Situação do Daily do jogo hoje, em palavras: jogado (com a nota) ou ainda disponível. */

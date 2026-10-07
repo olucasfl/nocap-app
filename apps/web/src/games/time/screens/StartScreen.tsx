@@ -13,7 +13,7 @@ import { PullToRefresh } from '@/components/PullToRefresh';
 import { RankingPanel } from '@/components/RankingPanel';
 import { useAuth } from '@/lib/auth';
 import type { Board } from '@/lib/ranking';
-import { dailyMax, fetchStats } from '@/lib/stats';
+import { dailyMax, fetchStats, recordText } from '@/lib/stats';
 import type { Mode } from '../types';
 
 /** Modos de partida solo. O Daily é um cartão à parte, dentro do jogo. */
@@ -95,6 +95,7 @@ export function StartScreen({
               modeId={open}
               title={MODES.find((m) => m.id === open)?.label ?? ''}
               lead={LEAD[open]}
+              record={open === 'daily' ? null : recordText(stats.data, 'time', open)}
               onClose={close}
               rules={
                 open === 'survival' ? (

@@ -11,7 +11,9 @@ import {
   survivalShowMs,
   type Hsb,
 } from '@nocap/games';
+import { useQueryClient } from '@tanstack/react-query';
 import { MuteButton } from '@/components/MuteButton';
+import { bestTenths, formatBest, isNewRecord, type Stats } from '@/lib/stats';
 import { SurvivalBar, SurvivalFinal, SurvivalVerdict } from '@/components/Survival';
 import { toHex } from './hex';
 import { FinalScreen } from './screens/FinalScreen';
@@ -56,12 +58,25 @@ export function ColorGame({
   const [index, setIndex] = useState(0);
   const [results, setResults] = useState<RoundResult[]>([]);
 
-  const start = useCallback((m: Mode) => {
+  const queryClient = useQueryClient();
+  /** Recorde do modo ANTES da partida (décimos); `undefined` = sem estatísticas (convidado/offline). */
+  const [prevBest, setPrevBest] = useState<number | undefined>();
+
+  const begin = useCallback((m: Mode) => {
     setRun(newRun(m));
     setIndex(0);
     setResults([]);
     setPhase('show');
   }, []);
+
+  const start = useCallback(
+    (m: Mode) => {
+      const cached = queryClient.getQueryData<Stats>(['stats']);
+      setPrevBest(m === 'daily' || !cached ? undefined : bestTenths(cached, 'color', m));
+      begin(m);
+    },
+    [queryClient, begin],
+  );
 
   const target: Hsb | null = run ? generateColorRound(run.seed, run.settings, index) : null;
 
@@ -162,17 +177,28 @@ export function ColorGame({
           }
           footer={
             run.mode === 'quick' ? (
-              <QuickActions run={run} result={last} onAgain={() => start('quick')} />
+              <QuickActions
+                run={run}
+                result={last}
+                previousBest={prevBest}
+                onAgain={() => start('quick')}
+              />
             ) : undefined
           }
         />
       )}
       {phase === 'final' && run && survival && sv && (
-        <SurvivalFinalColor run={run} results={results} onRematch={() => start('survival')} />
+        <SurvivalFinalColor
+          run={run}
+          results={results}
+          previousBest={prevBest}
+          onRematch={() => start('survival')}
+        />
       )}
       {phase === 'final' && run && !survival && (
         <FinalScreen
           run={run}
+          previousBest={prevBest}
           results={results}
           // Revanche depois do Daily vira partida solo clássica (o Daily é uma seed só).
           onRematch={() => start(run.mode === 'daily' ? 'classic' : run.mode)}
@@ -186,10 +212,12 @@ export function ColorGame({
 function SurvivalFinalColor({
   run,
   results,
+  previousBest,
   onRematch,
 }: {
   run: Run;
   results: RoundResult[];
+  previousBest?: number;
   onRematch: () => void;
 }) {
   const save = useSaveMatch(run, results);
@@ -205,6 +233,14 @@ function SurvivalFinalColor({
       }))}
       saveText={SAVE_TEXT[save]}
       game="cor"
+      record={
+        isNewRecord(previousBest, state.played * 10)
+          ? {
+              now: formatBest('color', 'survival', state.played * 10),
+              before: formatBest('color', 'survival', previousBest!),
+            }
+          : null
+      }
       onRematch={onRematch}
     />
   );

@@ -110,3 +110,15 @@
     animation: none;
   }
 }
+
+.ms-record {
+  margin: 0;
+  padding: 8px 12px;
+  align-self: flex-start;
+  background: var(--white);
+  border: var(--border);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}

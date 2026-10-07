@@ -62,3 +62,28 @@ export function gameModes(stats: Stats, game: string): ModeStats[] {
 export function streakLabel(days: number): string {
   return days === 1 ? '1 dia' : `${days} dias`;
 }
+
+/** Melhor nota do modo, em décimos (0 = nunca jogou). */
+export function bestTenths(stats: Stats | undefined, game: string, mode: string): number {
+  return stats?.modes.find((m) => m.game === game && m.mode === mode)?.best ?? 0;
+}
+
+/** O recorde só vale quando já havia um (o primeiro jogo cria o recorde, não o bate). */
+export function isNewRecord(previous: number | undefined, now: number): boolean {
+  return previous !== undefined && previous > 0 && now > previous;
+}
+
+/** "3.5/50" ou, na Sobrevivência, "7 rodadas": o valor de uma nota de modo, para mostrar. */
+export function formatBest(game: string, mode: string, tenths: number): string {
+  if (isSurvival(mode))
+    return `${Math.round(tenths / 10)} ${Math.round(tenths / 10) === 1 ? 'rodada' : 'rodadas'}`;
+  return `${(tenths / 10).toFixed(1)}/${modeMax(game, mode) ?? ''}`;
+}
+
+/** Frase do recorde de um modo, na ficha dele. `null` para convidado (sem estatísticas). */
+export function recordText(stats: Stats | undefined, game: string, mode: string): string | null {
+  if (!stats) return null;
+  const best = bestTenths(stats, game, mode);
+  if (best <= 0) return 'Você ainda não tem recorde neste modo';
+  return `Seu recorde aqui é de ${formatBest(game, mode, best)}`;
+}

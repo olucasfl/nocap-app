@@ -248,6 +248,11 @@ export const sfx = {
   refresh() {
     noise('bandpass', 500, 3000, 0.9, 0.3, 0.22);
   },
+  /** novo recorde: fanfarra subindo com brilho no fim */
+  record() {
+    [523, 659, 784, 1047, 1319].forEach((f, i) => tone('triangle', f, f, 0.16, 0.24, 0.09 * i));
+    [2093, 2637].forEach((f, i) => tone('sine', f, f, 0.2, 0.1, 0.5 + 0.08 * i));
+  },
   /** Sobrevivência: passou na rodada (moeda), perdeu uma vida, fim de jogo */
   coin() {
     tone('square', 988, 988, 0.06, 0.12);

@@ -1,25 +1,36 @@
 import { useEffect } from 'react';
 import { Link } from '@tanstack/react-router';
+import { NewRecord } from '@/components/NewRecord';
 import { saveBest } from '@/lib/records';
+import { formatBest, isNewRecord } from '@/lib/stats';
 import type { RoundResult, Run } from '../types';
 import { SAVE_TEXT, useSaveMatch } from '../useSaveMatch';
 
 interface Props {
   run: Run;
   result: RoundResult;
+  /** Recorde do Rápido antes desta partida (décimos). */
+  previousBest?: number;
   onAgain: () => void;
 }
 
 /** Fim do jogo rápido: salva a partida e oferece outra rodada. Recorde próprio (nunca mistura com o Clássico). */
-export function QuickActions({ run, result, onAgain }: Props) {
+export function QuickActions({ run, result, previousBest, onAgain }: Props) {
   const save = useSaveMatch(run, [result]);
 
   useEffect(() => {
     saveBest('color-quick', result.score);
   }, [result.score]);
 
+  const now = Math.round(result.score * 10);
   return (
     <>
+      {isNewRecord(previousBest, now) && (
+        <NewRecord
+          now={formatBest('color', 'quick', now)}
+          before={formatBest('color', 'quick', previousBest!)}
+        />
+      )}
       <p className="cg-save" role="status">
         {SAVE_TEXT[save]}
       </p>
