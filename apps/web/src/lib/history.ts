@@ -11,7 +11,7 @@ import {
   type Hsb,
 } from '@nocap/games';
 import { apiClient } from './api-client';
-import { gradeOf } from './grade';
+import { gradeOf, gradeWord } from './grade';
 
 export interface HistoryItem {
   matchId: string;
@@ -131,7 +131,7 @@ const MODE_NAME: Record<string, string> = {
   velocidade: 'Velocidade',
   reverso: 'Reverso',
 };
-const GAME_NAME: Record<string, string> = { color: 'Cor', time: 'Tempo', eco: 'Eco' };
+const GAME_NAME: Record<string, string> = { color: 'Mesmíssima', time: 'Já Deu?', eco: 'Ecooo' };
 const KIND_NAME: Record<string, string> = { solo: 'Solo', daily: 'Daily', room: 'Sala' };
 
 export const gameLabel = (game: string) => GAME_NAME[game] ?? game;
@@ -188,5 +188,5 @@ export function classifyMatch(
         : grade.id === 'pass' || grade.id === 'meh'
           ? 'mid'
           : 'low';
-  return { label: grade.word.toUpperCase(), tone };
+  return { label: gradeWord(grade, item.game).toUpperCase(), tone };
 }

@@ -54,4 +54,8 @@ export function GameArt({ game, size = 'md' }: { game: GameId; size?: 'sm' | 'md
   );
 }
 
-export const GAME_LABEL: Record<GameId, string> = { color: 'Cor', time: 'Tempo', eco: 'Eco' };
+export const GAME_LABEL: Record<GameId, string> = {
+  color: 'Mesmíssima',
+  time: 'Já Deu?',
+  eco: 'Ecooo',
+};

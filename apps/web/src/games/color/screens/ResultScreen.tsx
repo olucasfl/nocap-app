@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { GradeFx } from '@/components/GradeFx';
-import { gradeLine, gradeOf, playGrade } from '@/lib/grade';
+import { gradeLine, gradeOf, gradeWord, playGrade } from '@/lib/grade';
 import { buzz, sfx } from '@/lib/sfx';
 import { toHex } from '../hex';
 import type { RoundResult } from '../types';
@@ -104,7 +104,7 @@ export function ResultScreen({ result, isLast, onNext, footer, extra }: Props) {
           style={{ visibility: started ? 'visible' : 'hidden' }}
         >
           <b ref={num}>0.0</b>
-          <span>{done ? grade.word : '...'}</span>
+          <span>{done ? gradeWord(grade, 'color') : '...'}</span>
         </div>
       </div>
       <p className="cg-verdict" aria-live="polite">

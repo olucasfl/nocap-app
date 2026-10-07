@@ -32,15 +32,15 @@ const IMP_COUNT = [1, 2, 3];
 export const MIN_PLAYERS: Record<RoomGame, number> = { color: 2, time: 2, impostor: 3 };
 
 export const GAME_NAME: Record<RoomGame, string> = {
-  color: 'Cor',
-  time: 'Tempo',
+  color: 'Mesmíssima',
+  time: 'Já Deu?',
   impostor: 'Intruso',
 };
 
 /** "Entra na minha sala ___": com a preposição certa para o convite. */
 export const GAME_OF: Record<RoomGame, string> = {
-  color: 'da Cor',
-  time: 'do Tempo',
+  color: 'da Mesmíssima',
+  time: 'de Já Deu?',
   impostor: 'do Intruso',
 };
 

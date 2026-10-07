@@ -64,9 +64,9 @@ const PERIOD_FILTERS: { id: 'all' | 'day' | 'week'; label: string }[] = [
 ];
 
 const GAMES: { id: GameId; label: string }[] = [
-  { id: 'color', label: 'Cor' },
-  { id: 'time', label: 'Tempo' },
-  { id: 'eco', label: 'Eco' },
+  { id: 'color', label: 'Mesmíssima' },
+  { id: 'time', label: 'Já Deu?' },
+  { id: 'eco', label: 'Ecooo' },
 ];
 
 function ColorDetail({ item }: { item: HistoryItem }) {

@@ -91,7 +91,7 @@ export function StartScreen({
     <section className="screen">
       <PullToRefresh />
       <BackButton to="/" label="Jogos" />
-      <h1>Tempo</h1>
+      <h1>Já Deu?</h1>
       <GameTabs game="time" tab={tab} onTab={setTab} />
       {tab === 'modes' && (
         <>

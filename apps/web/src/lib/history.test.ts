@@ -86,8 +86,8 @@ describe('Tempo no histórico', () => {
   });
 
   it('rótulos do jogo e do modo "sem estourar"', () => {
-    expect(gameLabel('time')).toBe('Tempo');
-    expect(gameLabel('color')).toBe('Cor');
+    expect(gameLabel('time')).toBe('Já Deu?');
+    expect(gameLabel('color')).toBe('Mesmíssima');
     expect(modeLabel('strict')).toBe('Sem estourar');
   });
 });
@@ -145,7 +145,7 @@ describe('classificação da partida', () => {
   });
 
   it('sozinho vale a faixa da nota sobre o máximo do modo', () => {
-    expect(classifyMatch(solo(300)).label).toBe('CRAVOU'); // 30/30: só o perfeito crava
+    expect(classifyMatch(solo(300)).label).toBe('MESMÍSSIMA'); // 30/30: só o perfeito acerta em cheio (na Cor vira MESMÍSSIMA)
     expect(classifyMatch(solo(288)).label).toBe('QUASE PERFEITO'); // média 9,6 não é cravou
     expect(classifyMatch(solo(252)).label).toBe('MANDOU BEM'); // média 8,4
     expect(classifyMatch(solo(180)).label).toBe('PASSA NA RAÇA'); // média 6,0
@@ -153,7 +153,7 @@ describe('classificação da partida', () => {
     expect(classifyMatch(solo(60)).label).toBe('QUE ISSO?'); // média 2,0
     // o mesmo valor pesa diferente no rápido (máximo 10): 9,5/10 é quase, 10/10 cravou
     expect(classifyMatch(solo(95, 'quick')).label).toBe('QUASE PERFEITO');
-    expect(classifyMatch(solo(100, 'quick')).label).toBe('CRAVOU');
+    expect(classifyMatch(solo(100, 'quick')).label).toBe('MESMÍSSIMA');
   });
 });
 

@@ -46,9 +46,9 @@ export function FriendsPanel({ game }: { game: GameId }) {
     return (
       <div className="fp">
         <section className="fp-card">
-          <h2 className="fp-h">Salas do Eco em breve</h2>
+          <h2 className="fp-h">Salas do Ecooo em breve</h2>
           <p className="fp-text">
-            Por enquanto o Eco é só solo. As salas com amigos chegam numa próxima versão.
+            Por enquanto o Ecooo é só solo. As salas com amigos chegam numa próxima versão.
           </p>
         </section>
         <section className="fp-rules" aria-label="Como vai funcionar">

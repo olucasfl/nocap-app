@@ -100,7 +100,7 @@ export function StartScreen({ initialTab = 'modes', initialBoard, onMode, onStar
     <section className="screen">
       <PullToRefresh />
       <BackButton to="/" label="Jogos" />
-      <h1>Cor</h1>
+      <h1 className="title-long">Mesmíssima</h1>
       <GameTabs game="color" tab={tab} onTab={setTab} />
       {tab === 'modes' && (
         <>

@@ -10,7 +10,7 @@ const invite = (id: string, from = 'ana'): RoomInvite => ({
 
 describe('convites', () => {
   it('o aviso diz quem chamou e para qual jogo', () => {
-    expect(inviteText(invite('1', 'ana'))).toBe('@ana te chamou para uma sala da Cor');
+    expect(inviteText(invite('1', 'ana'))).toBe('@ana te chamou para uma sala');
   });
 
   it('mostra o primeiro (mais novo) que não foi dispensado', () => {

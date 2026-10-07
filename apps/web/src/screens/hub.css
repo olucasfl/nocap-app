@@ -112,6 +112,15 @@ a.hub-card:active {
   text-transform: uppercase;
   line-height: 1;
 }
+/* Nomes compridos (Mesmíssima) não cabem em 34px no cartão de duas colunas. */
+.hub-card-name.mid {
+  font-size: 28px;
+  letter-spacing: -0.05em;
+}
+.hub-card-name.long {
+  font-size: 21px;
+  letter-spacing: -0.05em;
+}
 .hub-card-meta {
   font-size: 12px;
   font-weight: 700;

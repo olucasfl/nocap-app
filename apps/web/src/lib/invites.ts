@@ -17,7 +17,7 @@ export const declineInvite = (id: string) =>
 
 /** Texto do aviso: diz quem chamou e para qual jogo. */
 export function inviteText(invite: RoomInvite): string {
-  return `@${invite.from.username} te chamou para uma sala da Cor`;
+  return `@${invite.from.username} te chamou para uma sala`;
 }
 
 /** Só o convite mais novo vira aviso; os outros esperam a vez (fila). */

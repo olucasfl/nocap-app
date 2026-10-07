@@ -74,7 +74,7 @@ export function Hub() {
             ))}
           </div>
           <div className="hub-card-foot">
-            <div className="hub-card-name">Cor</div>
+            <div className="hub-card-name long">Mesmíssima</div>
             <div className="mono hub-card-meta">{bestLabel(data, 'color')}</div>
             <div className="mono hub-card-meta">{dailyStatus(data, 'color')}</div>
           </div>
@@ -87,7 +87,7 @@ export function Hub() {
             <i className="hub-clock-dot" />
           </div>
           <div className="hub-card-foot">
-            <div className="hub-card-name">Tempo</div>
+            <div className="hub-card-name mid">Já Deu?</div>
             <div className="mono hub-card-meta">{bestLabel(data, 'time')}</div>
             <div className="mono hub-card-meta">{dailyStatus(data, 'time')}</div>
           </div>
@@ -101,7 +101,7 @@ export function Hub() {
             <i style={{ background: 'var(--eco-purple)' }} />
           </div>
           <div className="hub-card-foot">
-            <div className="hub-card-name">Eco</div>
+            <div className="hub-card-name">Ecooo</div>
             <div className="mono hub-card-meta">{bestLabel(data, 'eco')}</div>
             <div className="mono hub-card-meta">{dailyStatus(data, 'eco')}</div>
           </div>

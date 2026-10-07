@@ -28,6 +28,11 @@ export const GRADES: Grade[] = [
   { id: 'zero', word: 'zerou', min: 0 },
 ];
 
+/** A palavra do carimbo no jogo: na Mesmíssima (Cor) o acerto em cheio é "mesmíssima", não "cravou". */
+export function gradeWord(grade: Grade, game: string): string {
+  return grade.id === 'perfect' && game === 'color' ? 'mesmíssima' : grade.word;
+}
+
 export function gradeOf(score: number): Grade {
   // A nota já vem com 1 casa; o arredondamento evita 9,9999 virar "quase" por erro de ponto flutuante.
   const s = Math.round(score * 10) / 10;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { GRADES, allLines, gradeLine, gradeOf } from './grade';
+import { GRADES, allLines, gradeLine, gradeOf, gradeWord } from './grade';
 
 describe('faixas da nota', () => {
   it('CRAVOU é só o 10: 9,9 e 9,6 não cravam', () => {
@@ -41,5 +41,16 @@ describe('faixas da nota', () => {
       expect(allLines(g.id)).toContain(gradeLine(g.id, 'time', () => 0.5));
       expect(allLines(g.id)).toContain(gradeLine(g.id, 'color', () => 0.99));
     }
+  });
+});
+
+describe('gradeWord', () => {
+  it('na Mesmíssima (Cor) o acerto em cheio é "mesmíssima"; nos outros jogos segue "cravou"', () => {
+    const perfect = gradeOf(10);
+    expect(gradeWord(perfect, 'color')).toBe('mesmíssima');
+    expect(gradeWord(perfect, 'time')).toBe('cravou');
+    expect(gradeWord(perfect, 'eco')).toBe('cravou');
+    // só o 10 muda: as outras faixas mantêm a palavra
+    expect(gradeWord(gradeOf(9.6), 'color')).toBe(gradeOf(9.6).word);
   });
 });

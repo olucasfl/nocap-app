@@ -47,11 +47,15 @@ function Header({ leave, round }: { leave?: boolean; round?: string }) {
   );
 }
 
-const GAME_NAME: Record<RoomGame, string> = { color: 'Cor', time: 'Tempo', impostor: 'Intruso' };
+const GAME_NAME: Record<RoomGame, string> = {
+  color: 'Mesmíssima',
+  time: 'Já Deu?',
+  impostor: 'Intruso',
+};
 
 const ENTRY_LEAD: Record<RoomGame, string> = {
-  color: 'Jogue a Cor com amigos, todo mundo na mesma rodada ao mesmo tempo.',
-  time: 'Jogue o Tempo com amigos: o mesmo alvo para todos, cada um conta de cabeça.',
+  color: 'Jogue Mesmíssima com amigos, todo mundo na mesma rodada ao mesmo tempo.',
+  time: 'Jogue Já Deu? com amigos: o mesmo alvo para todos, cada um conta de cabeça.',
   impostor:
     'O Intruso precisa de uma sala com no mínimo 3 pessoas: alguns não veem a cor, só uma dica, e todo mundo vota em quem desconfia.',
 };

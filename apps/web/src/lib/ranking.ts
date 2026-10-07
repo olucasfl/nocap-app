@@ -38,9 +38,9 @@ export interface Ranking {
 }
 
 export const GAMES: { id: Game; label: string }[] = [
-  { id: 'color', label: 'Cor' },
-  { id: 'time', label: 'Tempo' },
-  { id: 'eco', label: 'Eco' },
+  { id: 'color', label: 'Mesmíssima' },
+  { id: 'time', label: 'Já Deu?' },
+  { id: 'eco', label: 'Ecooo' },
 ];
 
 const ALL_BOARDS: { id: Board; label: string }[] = [
@@ -66,7 +66,11 @@ const BOARD_IDS: Record<Game, Board[]> = {
 
 export const boardsOf = (game: Game) => ALL_BOARDS.filter((b) => BOARD_IDS[game].includes(b.id));
 
-export const GAME_NAME: Record<Game, string> = { color: 'Cor', time: 'Tempo', eco: 'Eco' };
+export const GAME_NAME: Record<Game, string> = {
+  color: 'Mesmíssima',
+  time: 'Já Deu?',
+  eco: 'Ecooo',
+};
 
 export const PERIODS: { id: Period; label: string }[] = [
   { id: 'day', label: 'Hoje' },
