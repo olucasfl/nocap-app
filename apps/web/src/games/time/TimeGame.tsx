@@ -15,6 +15,7 @@ import { apiClient } from '@/lib/api-client';
 import { isNetworkError } from '@/lib/network';
 import { MIN_TAP_GAP_MS, formatSeconds } from './format';
 import { FinalScreen } from './screens/FinalScreen';
+import { IntroScreen } from './screens/IntroScreen';
 import { SAVE_TEXT, useSaveTime } from './useSaveTime';
 import { ResultScreen } from './screens/ResultScreen';
 import { StartScreen } from './screens/StartScreen';
@@ -23,7 +24,7 @@ import type { Mode, RoundResult, Run } from './types';
 import './time.css';
 import './result.css';
 
-type Phase = 'start' | 'target' | 'counting' | 'result' | 'final';
+type Phase = 'start' | 'intro' | 'target' | 'counting' | 'result' | 'final';
 
 interface SessionResponse {
   seed: string;
@@ -81,7 +82,7 @@ export function TimeGame({
       setRun(await newRun(m));
       setIndex(0);
       setResults([]);
-      setPhase('target');
+      setPhase('intro');
     } catch {
       setError(
         m === 'daily'
@@ -135,6 +136,9 @@ export function TimeGame({
 
   const counting = phase === 'counting';
   const playing = phase === 'target' || counting || phase === 'result';
+  const survivalInfo = survival
+    ? { round: index + 1, lives: sv?.lives ?? 3, minScore: survivalMinScore(index) }
+    : undefined;
   const last = results[results.length - 1];
 
   return (
@@ -156,8 +160,13 @@ export function TimeGame({
         )}
       </header>
 
-      {survival && !counting && (phase === 'target' || phase === 'result') && (
-        <SurvivalBar lives={sv?.lives ?? 3} minScore={survivalMinScore(index)} round={index + 1} />
+      {survival && phase === 'result' && (
+        <SurvivalBar
+          lives={sv?.lives ?? 3}
+          minScore={survivalMinScore(index)}
+          round={index + 1}
+          lost={sv ? !(sv.passed[index] ?? true) : false}
+        />
       )}
 
       {phase === 'start' && (
@@ -171,6 +180,7 @@ export function TimeGame({
           onStart={(m) => void start(m)}
         />
       )}
+      {phase === 'intro' && run && <IntroScreen run={run} onBegin={() => setPhase('target')} />}
       {(phase === 'target' || counting) && target !== null && run && (
         <RoundScreen
           key={index}
@@ -179,7 +189,7 @@ export function TimeGame({
           counting={counting}
           onBegin={begin}
           onStop={stop}
-          skipIntro={run.preset === 'sequence'}
+          survival={survivalInfo}
           note={
             run.preset === 'sequence' && last
               ? `ANTERIOR ${last.score.toFixed(1)} · ${index + 1}/${run.settings.rounds}`

@@ -221,3 +221,97 @@
   letter-spacing: 0.08em;
   color: var(--orange);
 }
+
+/* ---- botão único: o mesmo botão redondo, só muda o visual ao iniciar ---- */
+.tm-stage {
+  position: fixed;
+}
+.tm-pill-top {
+  position: absolute;
+  top: calc(18px + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+}
+.tm-stage-sv {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.tm-stage-lives {
+  display: inline-flex;
+  gap: 5px;
+}
+.tm-stage-lives i {
+  width: 16px;
+  height: 16px;
+  border: 2.5px solid currentColor;
+  border-radius: 5px;
+}
+.tm-stage-lives i.on {
+  background: currentColor;
+}
+/* Texto reservado em duas linhas, para o botão não mudar de lugar entre os estados. */
+.tm-stage-text {
+  min-height: 4.5em;
+}
+.tm-go span {
+  display: block;
+}
+/* Valendo: o mesmo botão, agora escuro com anel claro (sem transição: a troca é imediata). */
+.tm-go.on {
+  background: var(--on-accent);
+  color: var(--white);
+  border-color: var(--on-accent);
+  box-shadow:
+    0 0 0 8px var(--orange),
+    0 0 0 11px var(--on-accent);
+}
+.tm-stage.live .tm-go:active,
+.tm-stage.armed .tm-go:active {
+  transform: none;
+}
+
+/* ---- instruções antes da primeira rodada ---- */
+.tm-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.tm-steps li {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--white);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 3px 3px 0 var(--ink);
+  font: 400 13px/1.45 var(--font-mono);
+}
+.tm-steps b {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  background: var(--blue);
+  color: var(--on-blue);
+  border: var(--border);
+  border-radius: 10px;
+  font: 900 18px var(--font-display);
+}
+.tm-intro-extra {
+  margin: 0;
+  padding: 12px;
+  background: var(--yellow);
+  color: var(--on-accent);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  font: 700 13px/1.45 var(--font-mono);
+}

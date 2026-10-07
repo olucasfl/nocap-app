@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, type CSSProperties } from 'react';
 import { Link } from '@tanstack/react-router';
 import { buzz, sfx } from '@/lib/sfx';
 import { SURVIVAL_LIVES, SURVIVAL_MAX_ROUNDS } from '@nocap/games';
@@ -9,10 +9,13 @@ export function SurvivalBar({
   lives,
   minScore,
   round,
+  lost = false,
 }: {
   lives: number;
   minScore: number;
   round: number;
+  /** Acabou de perder uma vida: o quadrado que sumiu anima ao se apagar. */
+  lost?: boolean;
 }) {
   return (
     <div
@@ -22,7 +25,7 @@ export function SurvivalBar({
     >
       <div className="sv-lives" aria-hidden="true">
         {Array.from({ length: SURVIVAL_LIVES }, (_, i) => (
-          <i key={i} className={i < lives ? 'on' : ''} />
+          <i key={i} className={i < lives ? 'on' : lost && i === lives ? 'drop' : ''} />
         ))}
       </div>
       <span className="mono sv-round">RODADA {round}</span>
@@ -48,13 +51,26 @@ export function SurvivalVerdict({
     else sfx.lifeLost();
   }, [passed]);
   return (
-    <p className={`sv-verdict ${passed ? 'ok' : 'bad'}`} role="status">
-      {passed
-        ? `Passou (mínimo ${minScore}).`
-        : over
-          ? `Abaixo de ${minScore}: acabaram as vidas.`
-          : `Abaixo de ${minScore}: perdeu uma vida. Restam ${lives}.`}
-    </p>
+    <>
+      {/* Clarão de tela inteira, só opacidade: verde passou, laranja perdeu vida. */}
+      <div className={`sv-flash ${passed ? 'ok' : 'bad'}`} aria-hidden="true" />
+      <p className={`sv-verdict ${passed ? 'ok' : 'bad'}`} role="status">
+        {passed ? (
+          <span className="sv-burst" aria-hidden="true">
+            {Array.from({ length: 8 }, (_, i) => (
+              <i key={i} style={{ '--a': `${i * 45}deg` } as CSSProperties} />
+            ))}
+          </span>
+        ) : (
+          <span className="sv-crack" aria-hidden="true" />
+        )}
+        {passed
+          ? `Passou! Nota mínima ${minScore}.`
+          : over
+            ? `Abaixo de ${minScore}: acabaram as vidas.`
+            : `Abaixo de ${minScore}: perdeu uma vida. Restam ${lives}.`}
+      </p>
+    </>
   );
 }
 

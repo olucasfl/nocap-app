@@ -118,3 +118,155 @@
   font-weight: 700;
   color: var(--muted);
 }
+
+/* ---- animações (só transform e opacity) ---- */
+.sv-lives i {
+  position: relative;
+}
+.sv-lives i.drop::after {
+  content: '';
+  position: absolute;
+  inset: -2.5px;
+  border-radius: 5px;
+  background: var(--orange);
+  animation: sv-drop 0.9s ease-out both;
+}
+@keyframes sv-drop {
+  0% {
+    transform: scale(1.7) rotate(0deg);
+    opacity: 1;
+  }
+  35% {
+    transform: scale(1.3) rotate(-18deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.2) rotate(40deg);
+    opacity: 0;
+  }
+}
+.sv-verdict {
+  position: relative;
+  overflow: visible;
+}
+.sv-verdict.ok {
+  animation: sv-pop 0.5s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+.sv-verdict.bad {
+  animation: sv-shake 0.55s ease-out both;
+}
+@keyframes sv-pop {
+  from {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes sv-shake {
+  0% {
+    transform: translateX(0);
+  }
+  15% {
+    transform: translateX(-12px) rotate(-1.5deg);
+  }
+  35% {
+    transform: translateX(10px) rotate(1deg);
+  }
+  55% {
+    transform: translateX(-7px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
+  100% {
+    transform: none;
+  }
+}
+/* Explosão de quadradinhos saindo do aviso de "passou". */
+.sv-burst {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.sv-burst i {
+  position: absolute;
+  left: -6px;
+  top: -6px;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--ink);
+  border-radius: 3px;
+  background: var(--yellow);
+  animation: sv-fly 0.8s ease-out both;
+}
+.sv-burst i:nth-child(odd) {
+  background: var(--white);
+}
+@keyframes sv-fly {
+  from {
+    transform: rotate(var(--a)) translateX(0) scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: rotate(var(--a)) translateX(120px) scale(0.4);
+    opacity: 0;
+  }
+}
+/* Rachadura: faixa que cruza o aviso de "perdeu vida" e some. */
+.sv-crack {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(115deg, transparent 0 10px, rgb(0 0 0 / 0.18) 10px 12px);
+  animation: sv-fade 0.9s ease-out both;
+}
+@keyframes sv-fade {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+.sv-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  pointer-events: none;
+  animation: sv-flash 0.6s ease-out both;
+}
+.sv-flash.ok {
+  background: var(--green);
+}
+.sv-flash.bad {
+  background: var(--orange);
+}
+@keyframes sv-flash {
+  from {
+    opacity: 0.55;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sv-lives i.drop::after,
+  .sv-verdict.ok,
+  .sv-verdict.bad,
+  .sv-burst i,
+  .sv-crack,
+  .sv-flash {
+    animation: none;
+  }
+  .sv-flash,
+  .sv-burst,
+  .sv-crack {
+    display: none;
+  }
+}

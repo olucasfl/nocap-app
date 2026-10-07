@@ -8,8 +8,8 @@ import {
 } from './survival';
 
 describe('survival', () => {
-  it('a nota mínima sobe com as rodadas (5, 6, 7)', () => {
-    expect([0, 2, 3, 7, 8, 15].map(survivalMinScore)).toEqual([5, 5, 6, 6, 7, 7]);
+  it('a nota mínima é sempre 6', () => {
+    expect([0, 2, 3, 7, 8, 15].map(survivalMinScore)).toEqual([6, 6, 6, 6, 6, 6]);
   });
 
   it('o tempo de decorar cai até 0,8 s', () => {
@@ -37,8 +37,8 @@ describe('survival', () => {
     expect(s).toMatchObject({ played: SURVIVAL_MAX_ROUNDS, ended: 'cap' });
   });
 
-  it('a mínima da rodada vale: 6 passa na rodada 4, mas 5,9 não', () => {
-    expect(evaluateSurvival([9, 9, 9, 6]).passed[3]).toBe(true);
-    expect(evaluateSurvival([9, 9, 9, 5.9]).passed[3]).toBe(false);
+  it('a mínima vale desde a primeira rodada: 6 passa, 5,9 não', () => {
+    expect(evaluateSurvival([6]).passed[0]).toBe(true);
+    expect(evaluateSurvival([5.9]).passed[0]).toBe(false);
   });
 });

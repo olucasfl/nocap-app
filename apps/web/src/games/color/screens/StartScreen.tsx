@@ -34,7 +34,7 @@ const LEAD: Record<Mode, string> = {
   blind:
     'Você não vê a cor que está montando, só os controles. As notas só aparecem no fim. Confie na memória.',
   survival:
-    'Você tem 3 vidas. Cada rodada exige uma nota mínima (5, depois 6, depois 7) e o tempo para decorar cai a cada cor. Errou, perde uma vida. Vale quantas rodadas você aguenta.',
+    'Você tem 3 vidas. Cada rodada exige nota mínima 6 e o tempo para decorar cai a cada cor. Errou, perde uma vida. Vale quantas rodadas você aguenta.',
   daily: 'A cor de hoje é a mesma para todo mundo. Mesmas 5 cores, uma única chance por dia.',
 };
 
@@ -96,7 +96,7 @@ export function StartScreen({ initialTab = 'modes', initialBoard, onMode, onStar
                       <b>3</b>vidas
                     </div>
                     <div className="cg-rule">
-                      <b>5→7</b>nota mínima
+                      <b>6</b>nota mínima
                     </div>
                     <div className="cg-rule">
                       <b>{SURVIVAL_MAX_ROUNDS}</b>rodadas máx.

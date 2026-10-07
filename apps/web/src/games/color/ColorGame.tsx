@@ -118,7 +118,12 @@ export function ColorGame({
       </header>
 
       {survival && playing && (
-        <SurvivalBar lives={lives} minScore={survivalMinScore(index)} round={index + 1} />
+        <SurvivalBar
+          lives={lives}
+          minScore={survivalMinScore(index)}
+          round={index + 1}
+          lost={phase === 'result' && !(sv?.passed[index] ?? true)}
+        />
       )}
 
       {phase === 'start' && (

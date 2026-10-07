@@ -1,6 +1,6 @@
 /**
- * Regras do modo Sobrevivência (Cor e Tempo): 3 vidas, uma nota mínima por rodada que sobe com o
- * avanço, e o resultado é quantas rodadas a pessoa jogou. Lógica pura, usada pelo app (para
+ * Regras do modo Sobrevivência (Cor e Tempo): 3 vidas, nota mínima fixa por rodada, e o
+ * resultado é quantas rodadas a pessoa jogou. Lógica pura, usada pelo app (para
  * jogar) e pelo servidor (para conferir que a partida enviada é uma sobrevivência completa).
  */
 
@@ -8,11 +8,12 @@ export const SURVIVAL_LIVES = 3;
 /** Limite de rodadas; quem chega aqui "completou" (e é o máximo que o servidor aceita). */
 export const SURVIVAL_MAX_ROUNDS = 20;
 
-/** Nota mínima para não perder vida: 5 nas rodadas 1–3, 6 nas 4–8 e 7 da 9ª em diante. */
-export function survivalMinScore(index: number): number {
-  if (index < 3) return 5;
-  if (index < 8) return 6;
-  return 7;
+/** Nota mínima para não perder vida: 6 em todas as rodadas. */
+export const SURVIVAL_MIN_SCORE = 6;
+
+/** Mantida como função (e com o índice) para o app e o servidor lerem a regra do mesmo lugar. */
+export function survivalMinScore(_index: number): number {
+  return SURVIVAL_MIN_SCORE;
 }
 
 /** Na Cor, o tempo para decorar cai a cada rodada: de 3 s até 0,8 s. */

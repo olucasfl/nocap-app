@@ -34,7 +34,7 @@ const LEAD: Record<Mode, string> = {
   sequence:
     'Cinco alvos curtos (de 2 a 6 s), um atrás do outro, sem pausa. Acertou ou não, o próximo já vem. As notas aparecem no final.',
   survival:
-    'Você tem 3 vidas. Cada alvo exige uma nota mínima (5, depois 6, depois 7). Errou, perde uma vida. Vale quantas rodadas você aguenta.',
+    'Você tem 3 vidas. Cada alvo exige nota mínima 6. Errou, perde uma vida. Vale quantas rodadas você aguenta.',
   daily: 'Os alvos de hoje são os mesmos para todo mundo. Três rodadas, uma única chance por dia.',
 };
 
@@ -103,7 +103,7 @@ export function StartScreen({
                       <b>3</b>vidas
                     </div>
                     <div className="tm-rule">
-                      <b>5→7</b>nota mínima
+                      <b>6</b>nota mínima
                     </div>
                     <div className="tm-rule">
                       <b>{SURVIVAL_MAX_ROUNDS}</b>rodadas máx.
