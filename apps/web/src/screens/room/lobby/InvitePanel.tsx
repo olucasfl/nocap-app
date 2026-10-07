@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { fetchFriends } from '@/lib/friends';
+import { MIN_SEARCH, fetchFriends, searchUsers } from '@/lib/friends';
 import { inviteFriend, useRoom, type RoomSnapshot } from '@/lib/rooms';
 import { GAME_OF } from './rules';
 
@@ -16,6 +16,13 @@ export function InvitePanel({ snapshot }: { snapshot: RoomSnapshot }) {
   const [done, setDone] = useState<Done>(null);
   const [filter, setFilter] = useState('');
   const [handle, setHandle] = useState('');
+  /** Termo pesquisado (só pesquisa ao enviar, não a cada letra). */
+  const [term, setTerm] = useState('');
+  const found = useQuery({
+    queryKey: ['user-search', term],
+    queryFn: () => searchUsers(term),
+    enabled: term.length >= MIN_SEARCH,
+  });
   const link = `${location.origin}/sala/${snapshot.code}`;
   const message = `Entra na minha sala ${GAME_OF[snapshot.game]}: ${snapshot.code} ${link}`;
   const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
@@ -24,6 +31,9 @@ export function InvitePanel({ snapshot }: { snapshot: RoomSnapshot }) {
   const list = all
     .filter((f) => !inRoom.has(f.username))
     .filter((f) => f.username.includes(filter.trim().toLowerCase().replace(/^@/, '')));
+
+  // Quem já está na sala não precisa de convite.
+  const results = (found.data ?? []).filter((u) => !inRoom.has(u.username));
 
   const flash = (what: Done) => {
     setDone(what);
@@ -80,33 +90,65 @@ export function InvitePanel({ snapshot }: { snapshot: RoomSnapshot }) {
         </p>
       </section>
 
-      <section className="lb-block" aria-label="Convidar pelo @usuário">
-        <div className="mono rm-label">CONVIDAR PELO @USUÁRIO</div>
+      <section className="lb-block" aria-label="Procurar pessoa">
+        <div className="mono rm-label">PROCURAR PESSOA (NÃO PRECISA SER AMIGO)</div>
         <form
           className="ch-form"
           onSubmit={(e) => {
             e.preventDefault();
-            const who = handle.trim().replace(/^@/, '').toLowerCase();
-            if (!who) return;
-            inviteFriend(who);
-            setHandle('');
+            setTerm(handle.trim().replace(/^@/, '').toLowerCase());
           }}
         >
           <input
             className="ch-input"
             value={handle}
             onChange={(e) => setHandle(e.target.value)}
-            placeholder="@usuário (não precisa ser amigo)"
-            aria-label="@usuário para convidar"
+            placeholder={`@usuário (ao menos ${MIN_SEARCH} letras)`}
+            aria-label="Procurar pelo @usuário"
             autoCapitalize="none"
             autoCorrect="off"
           />
-          <button type="submit" className="ch-send" data-sfx="send" disabled={!handle.trim()}>
-            Convidar
+          <button
+            type="submit"
+            className="ch-send"
+            data-sfx="send"
+            disabled={handle.trim().replace(/^@/, '').length < MIN_SEARCH}
+          >
+            Pesquisar
           </button>
         </form>
+        {found.isFetching && <p className="mono lb-hint">Procurando...</p>}
+        {found.isError && <p className="mono lb-hint">Não deu para pesquisar. Tente de novo.</p>}
+        {found.isSuccess && results.length === 0 && (
+          <p className="mono lb-hint">Ninguém com esse começo de @usuário.</p>
+        )}
+        {results.length > 0 && (
+          <ul className="fr-list">
+            {results.map((u) => (
+              <li key={u.username} className="fr-row">
+                <span className="fr-name">
+                  @{u.username}
+                  {u.state === 'friends' && <span className="mono rm-badge">AMIGO</span>}
+                </span>
+                {invited.includes(u.username) ? (
+                  <span className="mono fr-state">CONVITE ENVIADO</span>
+                ) : (
+                  <button
+                    type="button"
+                    className="fr-btn"
+                    data-sfx="send"
+                    onClick={() => inviteFriend(u.username)}
+                  >
+                    Convidar
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
         <p className="mono rm-mode-note">
-          A pessoa recebe o convite no app. Quando entrar, você pode pedir amizade pela aba Membros.
+          Ache a pessoa e toque em Convidar. Quando ela entrar, você pode pedir amizade pela aba
+          Membros.
         </p>
       </section>
 
