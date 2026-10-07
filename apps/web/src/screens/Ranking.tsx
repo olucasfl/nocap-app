@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import {
-  BOARDS,
+  GAMES,
+  boardsOf,
   BOARD_MAX,
   PERIODS,
   SCOPES,
   fetchRanking,
   type Board,
+  type Game,
   type Period,
   type Scope,
   type RankingEntry,
@@ -29,14 +31,15 @@ function Row({ entry, max }: { entry: RankingEntry; max: number }) {
 }
 
 export function Ranking() {
+  const [game, setGame] = useState<Game>('color');
   const [board, setBoard] = useState<Board>('classic');
   const [period, setPeriod] = useState<Period>('week');
   const [scope, setScope] = useState<Scope>('all');
   const user = useAuth((s) => s.user);
   // O token (se houver) vai junto: assim a resposta traz a sua posição.
   const q = useQuery({
-    queryKey: ['ranking', board, period, scope, user?.id ?? null],
-    queryFn: () => fetchRanking(board, period, scope),
+    queryKey: ['ranking', game, board, period, scope, user?.id ?? null],
+    queryFn: () => fetchRanking(game, board, period, scope),
   });
 
   const max = BOARD_MAX[board];
@@ -46,6 +49,23 @@ export function Ranking() {
   return (
     <main className="rk">
       <h1>Ranking</h1>
+      <div className="rk-seg rk-scopes" role="radiogroup" aria-label="Jogo">
+        {GAMES.map((g) => (
+          <button
+            key={g.id}
+            type="button"
+            role="radio"
+            aria-checked={game === g.id}
+            onClick={() => {
+              setGame(g.id);
+              // Cada jogo tem seus quadros: volta ao Clássico, que existe nos dois.
+              setBoard('classic');
+            }}
+          >
+            {g.label}
+          </button>
+        ))}
+      </div>
       {user && (
         <div className="rk-seg rk-scopes" role="radiogroup" aria-label="Quem aparece">
           {SCOPES.map((s) => (
@@ -62,7 +82,7 @@ export function Ranking() {
         </div>
       )}
       <div className="rk-seg" role="radiogroup" aria-label="Modo">
-        {BOARDS.map((b) => (
+        {boardsOf(game).map((b) => (
           <button
             key={b.id}
             type="button"

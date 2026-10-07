@@ -205,4 +205,14 @@ export class MatchesRepository {
       .where(and(inArray(matchPlayers.playerId, playerIds), eq(matches.kind, 'daily')));
     return rows.map((r) => r.playedAt);
   }
+
+  /** Já existe partida solo desse jogo com essa seed (de outro matchId)? Impede reusar uma sessão. */
+  async seedUsed(game: string, seed: string, exceptMatchId?: string): Promise<boolean> {
+    const rows = await this.db
+      .select({ id: matches.id })
+      .from(matches)
+      .where(and(eq(matches.game, game), eq(matches.seed, seed), eq(matches.kind, 'solo')))
+      .limit(2);
+    return rows.some((r) => r.id !== exceptMatchId);
+  }
 }

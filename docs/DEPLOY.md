@@ -15,7 +15,7 @@ Plano escolhido pelo Lucas (2026-10-06). O Fly.io deixou de ter plano grátis pa
 - Node 22 (ver `.nvmrc`). Porta: o Render define `PORT`, a API já lê.
 - Variáveis (nunca no git):
   - `DATABASE_URL` (transaction pooler do Supabase, 6543)
-  - `BETTER_AUTH_SECRET` (obrigatória em produção)
+  - `BETTER_AUTH_SECRET` (obrigatória em produção; assina o login **e** as sessões do Tempo: trocar invalida partidas do Tempo em andamento)
   - `API_URL` = URL pública da própria API
   - `WEB_ORIGIN` = URL da Vercel (uma só; previews da Vercel não passam no CORS)
 - **Uma instância só.** As salas moram na memória do processo.

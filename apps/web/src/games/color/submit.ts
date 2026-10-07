@@ -3,13 +3,27 @@ import { getGuestId } from '@/lib/guest';
 import { apiClient } from '@/lib/api-client';
 import { createOfflineQueue, indexedDbStore } from '@/lib/offline-queue';
 
-export interface SubmitPayload {
+interface BasePayload {
   matchId: string;
   mode: string;
   kind: 'solo' | 'daily';
   seed: string;
+}
+
+/** Partida da Cor (`game` ausente = Cor, formato de antes dos dois jogos). */
+export interface ColorPayload extends BasePayload {
+  game?: 'color';
   answers: Hsb[];
 }
+
+/** Partida do Tempo: ms por rodada e a sessão assinada pelo servidor. */
+export interface TimePayload extends BasePayload {
+  game: 'time';
+  answers: number[];
+  session: string;
+}
+
+export type SubmitPayload = ColorPayload | TimePayload;
 
 interface SubmitResponse {
   matchId: string;
@@ -23,8 +37,8 @@ interface SubmitResponse {
  */
 function submitMatch(payload: SubmitPayload) {
   return apiClient.post<SubmitResponse>('/matches', {
-    ...payload,
     game: 'color',
+    ...payload,
     guestId: getGuestId(),
   });
 }

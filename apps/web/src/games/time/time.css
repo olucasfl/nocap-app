@@ -1,0 +1,221 @@
+/* Jogo do Tempo. Telas de referência: docs/reference/design-tempo-resultado.html */
+.tm-seg {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.tm-seg button {
+  height: 44px;
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  color: var(--ink);
+  font: 900 13px var(--font-display);
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 3px 3px 0 var(--ink);
+  transition:
+    transform 0.07s ease-out,
+    box-shadow 0.07s ease-out;
+}
+.tm-seg button[aria-checked='true'] {
+  background: var(--yellow);
+  color: var(--on-accent);
+}
+.tm-seg button:active {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 var(--ink);
+}
+.tm-seg button:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 3px;
+}
+
+.tm-rules {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.tm-rule {
+  background: var(--white);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  font: 700 11px var(--font-mono);
+}
+.tm-rule b {
+  display: block;
+  font: 900 24px var(--font-display);
+  letter-spacing: -0.04em;
+}
+
+.tm-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+/* alvo */
+.tm-target-time {
+  font: 900 clamp(64px, 22vw, 104px) / 0.95 var(--font-display);
+  letter-spacing: -0.05em;
+  background: var(--yellow);
+  color: var(--on-accent);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 22px 18px;
+  text-align: center;
+}
+
+/*
+ * Contagem: nada se mexe. Sem animação, sem transição, sem número, sem som. A página inteira
+ * é a área de toque e o texto nunca muda.
+ */
+.tm-silent *,
+.tm-silent *::before,
+.tm-silent *::after {
+  animation: none !important;
+  transition: none !important;
+}
+.tm-stop {
+  appearance: none;
+  flex: 1;
+  margin: 18px 0 0;
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--white);
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.tm-stop:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 3px;
+}
+.tm-stop-text {
+  font: 900 28px var(--font-display);
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+}
+.tm-stop-hint {
+  font: 400 13px var(--font-mono);
+  color: var(--muted);
+}
+
+/* resultado */
+.tm-duo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.tm-time {
+  background: var(--white);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 4px 4px 0 var(--ink);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.tm-time b {
+  font: 900 30px var(--font-display);
+  letter-spacing: -0.04em;
+}
+.tm-time.you {
+  background: var(--orange);
+  color: var(--on-accent);
+}
+.tm-time.you.over {
+  background: var(--yellow);
+}
+.tm-diff {
+  font-weight: 700;
+  font-size: 15px;
+}
+.tm-stamp {
+  align-self: center;
+  width: 124px;
+  height: 124px;
+  border-radius: 62px;
+  border: var(--border);
+  background: var(--yellow);
+  color: var(--on-accent);
+  box-shadow: 4px 4px 0 var(--ink);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transform: rotate(-8deg);
+}
+.tm-stamp b {
+  font: 900 40px/1 var(--font-display);
+  letter-spacing: -0.04em;
+}
+.tm-stamp span {
+  font: 700 11px var(--font-mono);
+  text-transform: uppercase;
+}
+.tm-save {
+  margin: 0;
+  text-align: center;
+  font: 700 11px var(--font-mono);
+  color: var(--muted);
+}
+
+/* final */
+.tm-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  background: var(--blue);
+  color: var(--on-blue);
+  border: var(--border);
+  border-radius: 22px;
+  box-shadow: 6px 6px 0 var(--ink);
+  padding: 18px;
+}
+.tm-total b {
+  font: 900 64px/1 var(--font-display);
+  letter-spacing: -0.05em;
+}
+.tm-total-max {
+  font: 900 22px var(--font-display);
+}
+.tm-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.tm-row {
+  display: grid;
+  grid-template-columns: 18px 1fr auto auto;
+  align-items: center;
+  gap: 8px;
+  background: var(--white);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 3px 3px 0 var(--ink);
+  padding: 8px 10px;
+  font: 700 13px var(--font-display);
+}
+.tm-row-times {
+  font-size: 12px;
+}
+.tm-row-diff {
+  font-size: 11px;
+  color: var(--muted);
+}
+.tm-row-score {
+  font: 900 20px var(--font-display);
+  min-width: 36px;
+  text-align: right;
+}

@@ -1,30 +1,36 @@
 import { BadRequestException } from '@nestjs/common';
 import {
   COLOR_SCORE_VERSION,
+  TIME_SCORE_VERSION,
   colorGame,
   colorDeltaE,
   encodeAnswer,
+  generateTimeRound,
+  isPlausibleAnswer,
   scoreFromDeltaE,
+  scoreTime,
+  timePresets,
 } from '@nocap/games';
-import type { CreateMatchInput } from './match.schema';
+import type { ColorMatchInput, TimeMatchInput } from './match.schema';
 
 export interface ScoredMatch {
-  rounds: { score: number; deltaE: number }[];
-  /** Soma das notas, com 1 casa (0 a 50 na Cor). */
+  rounds: { score: number; deltaE?: number }[];
+  /** Soma das notas, com 1 casa (0 a 50 em 5 rodadas). */
   total: number;
   /** Mesma soma em décimos (inteiro), formato de armazenamento. */
   totalTenths: number;
-  /** Respostas no formato do banco (h*10000 + s*100 + b). */
+  /** Respostas no formato do banco (Cor: h*10000 + s*100 + b; Tempo: ms). */
   encodedAnswers: number[];
-  settings: { rounds: number; showMs: number; scoreVersion: number };
+  settings: Record<string, number | boolean>;
 }
+
+/** Folga entre o relógio do servidor e a soma dos tempos (rede, arredondamento). */
+export const ELAPSED_SLACK_MS = 1500;
 
 /**
  * Regenera as rodadas pela seed e recalcula as notas. Nunca confia em nota vinda do cliente.
  */
-export function scoreMatch(
-  input: Pick<CreateMatchInput, 'mode' | 'seed' | 'answers'>,
-): ScoredMatch {
+export function scoreMatch(input: Pick<ColorMatchInput, 'mode' | 'seed' | 'answers'>): ScoredMatch {
   const settings = colorGame.presets[input.mode];
   if (!settings) {
     throw new BadRequestException(`Modo desconhecido: ${input.mode}`);
@@ -48,5 +54,46 @@ export function scoreMatch(
     totalTenths,
     encodedAnswers: input.answers.map(encodeAnswer),
     settings: { ...settings, scoreVersion: COLOR_SCORE_VERSION },
+  };
+}
+
+/**
+ * Nota do Tempo a partir dos ms medidos no aparelho. Recusa o que não é plausível (brief #6):
+ * duração fora do razoável para o alvo, ou respostas que somam mais do que o tempo que o
+ * servidor viu passar desde o início da sessão.
+ */
+export function scoreTimeMatch(
+  input: Pick<TimeMatchInput, 'mode' | 'seed' | 'answers'> & { elapsedMs: number },
+): ScoredMatch {
+  const settings = timePresets[input.mode];
+  if (!settings) {
+    throw new BadRequestException(`Modo desconhecido: ${input.mode}`);
+  }
+  if (input.answers.length !== settings.rounds) {
+    throw new BadRequestException(
+      `O modo ${input.mode} tem ${settings.rounds} rodadas, mas vieram ${input.answers.length} respostas`,
+    );
+  }
+
+  const rounds = input.answers.map((answer, index) => {
+    const target = generateTimeRound(input.seed, settings, index);
+    if (!isPlausibleAnswer(target, answer)) {
+      throw new BadRequestException('Tempo da rodada fora do plausível');
+    }
+    return { score: scoreTime(target, answer, settings) };
+  });
+
+  const counted = input.answers.reduce((a, b) => a + b, 0);
+  if (counted > input.elapsedMs + ELAPSED_SLACK_MS) {
+    throw new BadRequestException('Os tempos somam mais do que o tempo da partida');
+  }
+
+  const totalTenths = rounds.reduce((sum, r) => sum + Math.round(r.score * 10), 0);
+  return {
+    rounds,
+    total: totalTenths / 10,
+    totalTenths,
+    encodedAnswers: [...input.answers],
+    settings: { ...settings, scoreVersion: TIME_SCORE_VERSION },
   };
 }

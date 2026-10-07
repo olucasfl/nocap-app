@@ -8,6 +8,7 @@ import {
 import { BottomNav } from '@/components/BottomNav';
 import { InviteBanner } from '@/components/InviteBanner';
 import type { Mode } from '@/games/color/types';
+import type { Mode as TimeMode } from '@/games/time/types';
 import { History } from '@/screens/History';
 import { Friends } from '@/screens/Friends';
 import { Hub } from '@/screens/Hub';
@@ -83,6 +84,7 @@ const roomCodeRoute = createRoute({
 });
 
 const MODES: Mode[] = ['classic', 'flash', 'quick', 'daily'];
+const TIME_MODES: TimeMode[] = ['classic', 'quick', 'strict', 'daily'];
 
 const colorRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -95,9 +97,20 @@ const colorRoute = createRoute({
   component: lazyRouteComponent(() => import('@/games/color/ColorPage'), 'ColorPage'),
 });
 
+const timeRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/tempo',
+  validateSearch: (search: Record<string, unknown>): { modo?: TimeMode } => {
+    const modo = TIME_MODES.find((m) => m === search.modo);
+    return modo ? { modo } : {};
+  },
+  component: lazyRouteComponent(() => import('@/games/time/TimePage'), 'TimePage'),
+});
+
 const routeTree = rootRoute.addChildren([
   tabsRoute.addChildren([hubRoute, historyRoute, friendsRoute, profileRoute, rankingRoute]),
   colorRoute,
+  timeRoute,
   loginRoute,
   registerRoute,
   roomRoute,

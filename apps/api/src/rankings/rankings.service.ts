@@ -1,7 +1,7 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { periodStart } from '@nocap/games';
 import { FriendsService } from '../friends/friends.service';
-import type { RankingQuery } from './ranking.schema';
+import { BOARDS_OF, type RankingGame, type RankingQuery } from './ranking.schema';
 import { RankingsRepository } from './rankings.repository';
 
 @Injectable()
@@ -11,13 +11,21 @@ export class RankingsService {
     private readonly friends: FriendsService,
   ) {}
 
+  /** Atalho antigo: o ranking da Cor. */
+  color(query: RankingQuery, myUserId: string | null) {
+    return this.board('color', query, myUserId);
+  }
+
   /** Top N + a posição de quem pediu (se logado e fora do top). Só `@usuario`, nunca o nome real. */
-  async color(query: RankingQuery, myUserId: string | null) {
+  async board(game: RankingGame, query: RankingQuery, myUserId: string | null) {
+    if (!BOARDS_OF[game].includes(query.board)) {
+      throw new BadRequestException(`O quadro ${query.board} não existe no jogo ${game}`);
+    }
     if (query.scope === 'friends' && !myUserId) {
       throw new UnauthorizedException('Entre na sua conta para ver o ranking dos amigos');
     }
     const all = await this.repo.leaderboard({
-      game: 'color',
+      game,
       mode: query.board === 'daily' ? 'classic' : query.board,
       dailyOnly: query.board === 'daily',
       since: periodStart(query.period),
@@ -36,6 +44,7 @@ export class RankingsService {
     });
     const me = myUserId ? rows.find((r) => r.userId === myUserId) : undefined;
     return {
+      game,
       board: query.board,
       scope: query.scope,
       period: query.period,

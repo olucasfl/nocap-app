@@ -20,6 +20,7 @@ const SWATCHES = [
 export function Hub() {
   const [, mm, dd] = dailyDate().split('-');
   const best = getBest('color');
+  const bestTime = getBest('time');
   // Sem API ou sem partidas: o card segue sem a sequência.
   const stats = useQuery({ queryKey: ['stats'], queryFn: fetchStats, retry: false });
   const streak = stats.data?.daily;
@@ -79,7 +80,7 @@ export function Hub() {
           </div>
         </Link>
 
-        <div className="hub-card hub-card-time" aria-disabled="true">
+        <Link to="/tempo" className="hub-card hub-card-time">
           <div className="hub-clock" aria-hidden="true">
             <i className="hub-clock-hand" />
             <i className="hub-clock-hand2" />
@@ -87,9 +88,11 @@ export function Hub() {
           </div>
           <div className="hub-card-foot">
             <div className="hub-card-name">Tempo</div>
-            <div className="mono hub-card-meta">EM BREVE</div>
+            <div className="mono hub-card-meta">
+              {bestTime === null ? 'SEM RECORDE AINDA' : `RECORDE ${bestTime.toFixed(1)}/50`}
+            </div>
           </div>
-        </div>
+        </Link>
 
         <Link to="/sala" className="hub-rank">
           JOGAR EM SALA COM AMIGOS

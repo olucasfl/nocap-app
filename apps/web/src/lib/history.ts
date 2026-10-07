@@ -3,7 +3,10 @@ import {
   colorPresets,
   decodeAnswer,
   generateColorRound,
+  generateTimeRound,
   scoreFromDeltaE,
+  scoreTime,
+  timePresets,
   type Hsb,
 } from '@nocap/games';
 import { apiClient } from './api-client';
@@ -56,9 +59,43 @@ export function colorRounds(item: HistoryItem): HistoryRound[] | null {
   });
 }
 
-const MODE_NAME: Record<string, string> = { classic: 'Clássico', flash: 'Flash', quick: 'Rápido' };
+export interface TimeHistoryRound {
+  target: number;
+  answer: number;
+  score: number;
+}
+
+/** Rodadas de uma partida do Tempo: o alvo é regenerado pela seed e a nota recalculada. */
+export function timeRounds(item: HistoryItem): TimeHistoryRound[] | null {
+  const settings = timePresets[item.mode];
+  if (!item.answers || !settings) return null;
+  return item.answers.map((answer, index) => {
+    const target = generateTimeRound(item.seed, settings, index);
+    return { target, answer, score: scoreTime(target, answer, settings) };
+  });
+}
+
+/** Máximo de pontos da partida (10 por rodada); sala usa o número de respostas guardadas. */
+export function matchMax(item: Pick<HistoryItem, 'game' | 'mode' | 'answers'>): number {
+  const rounds =
+    item.game === 'time'
+      ? timePresets[item.mode]?.rounds
+      : item.game === 'color'
+        ? colorPresets[item.mode]?.rounds
+        : undefined;
+  return (rounds ?? item.answers?.length ?? 5) * 10;
+}
+
+const MODE_NAME: Record<string, string> = {
+  classic: 'Clássico',
+  flash: 'Flash',
+  quick: 'Rápido',
+  strict: 'Sem estourar',
+};
+const GAME_NAME: Record<string, string> = { color: 'Cor', time: 'Tempo' };
 const KIND_NAME: Record<string, string> = { solo: 'Solo', daily: 'Daily', room: 'Sala' };
 
+export const gameLabel = (game: string) => GAME_NAME[game] ?? game;
 export const modeLabel = (mode: string) => MODE_NAME[mode] ?? mode;
 export const kindLabel = (kind: string) => KIND_NAME[kind] ?? kind;
 

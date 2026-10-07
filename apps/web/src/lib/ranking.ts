@@ -1,6 +1,7 @@
 import { apiClient } from './api-client';
 
-export type Board = 'classic' | 'flash' | 'quick' | 'daily';
+export type Game = 'color' | 'time';
+export type Board = 'classic' | 'flash' | 'quick' | 'strict' | 'daily';
 export type Period = 'day' | 'week' | 'all';
 export type Scope = 'all' | 'friends';
 
@@ -14,6 +15,7 @@ export interface RankingEntry {
 }
 
 export interface Ranking {
+  game: Game;
   board: Board;
   period: Period;
   total: number;
@@ -22,12 +24,26 @@ export interface Ranking {
   me: RankingEntry | null;
 }
 
-export const BOARDS: { id: Board; label: string }[] = [
+export const GAMES: { id: Game; label: string }[] = [
+  { id: 'color', label: 'Cor' },
+  { id: 'time', label: 'Tempo' },
+];
+
+const ALL_BOARDS: { id: Board; label: string }[] = [
   { id: 'classic', label: 'Clássico' },
   { id: 'flash', label: 'Flash' },
   { id: 'quick', label: 'Rápido' },
+  { id: 'strict', label: 'Sem estourar' },
   { id: 'daily', label: 'Daily' },
 ];
+
+/** Quadros que cada jogo tem (Flash é da Cor; "Sem estourar" é do Tempo). */
+const BOARD_IDS: Record<Game, Board[]> = {
+  color: ['classic', 'flash', 'quick', 'daily'],
+  time: ['classic', 'quick', 'strict', 'daily'],
+};
+
+export const boardsOf = (game: Game) => ALL_BOARDS.filter((b) => BOARD_IDS[game].includes(b.id));
 
 export const PERIODS: { id: Period; label: string }[] = [
   { id: 'day', label: 'Hoje' },
@@ -36,15 +52,21 @@ export const PERIODS: { id: Period; label: string }[] = [
 ];
 
 /** Máximo de pontos da partida (10 por rodada). */
-export const BOARD_MAX: Record<Board, number> = { classic: 50, flash: 50, quick: 10, daily: 50 };
+export const BOARD_MAX: Record<Board, number> = {
+  classic: 50,
+  flash: 50,
+  quick: 10,
+  strict: 50,
+  daily: 50,
+};
 
 export const SCOPES: { id: Scope; label: string }[] = [
   { id: 'all', label: 'Todos' },
   { id: 'friends', label: 'Amigos' },
 ];
 
-export function fetchRanking(board: Board, period: Period, scope: Scope = 'all') {
+export function fetchRanking(game: Game, board: Board, period: Period, scope: Scope = 'all') {
   return apiClient.get<Ranking>(
-    `/rankings/color?board=${board}&period=${period}&scope=${scope}&limit=50`,
+    `/rankings/${game}?board=${board}&period=${period}&scope=${scope}&limit=50`,
   );
 }

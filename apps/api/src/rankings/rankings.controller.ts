@@ -1,11 +1,17 @@
-import { Controller, Get, Headers, Query } from '@nestjs/common';
+import { Controller, Get, Headers, Param, Query } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
 import { fromNodeHeaders } from 'better-auth/node';
 import type { IncomingHttpHeaders } from 'node:http';
 import type { Auth } from '../auth/auth';
 import { AUTH } from '../auth/auth.constants';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
-import { rankingQuerySchema, type RankingQuery } from './ranking.schema';
+import { z } from 'zod';
+import {
+  RANKING_GAMES,
+  rankingQuerySchema,
+  type RankingGame,
+  type RankingQuery,
+} from './ranking.schema';
 import { RankingsService } from './rankings.service';
 
 @Controller('rankings')
@@ -16,14 +22,15 @@ export class RankingsController {
   ) {}
 
   /** Público; se vier um token válido, devolve também a posição de quem pediu. */
-  @Get('color')
-  async color(
+  @Get(':game')
+  async board(
+    @Param('game', new ZodValidationPipe(z.enum(RANKING_GAMES))) game: RankingGame,
     @Query(new ZodValidationPipe(rankingQuerySchema)) query: RankingQuery,
     @Headers() headers: IncomingHttpHeaders,
   ) {
     const session = await this.auth?.api
       .getSession({ headers: fromNodeHeaders(headers) })
       .catch(() => null);
-    return this.rankings.color(query, session?.user.id ?? null);
+    return this.rankings.board(game, query, session?.user.id ?? null);
   }
 }

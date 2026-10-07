@@ -24,16 +24,18 @@ export function fetchStats() {
 }
 
 /** Máximo de pontos de uma partida do modo (10 por rodada). */
-export const MODE_MAX: Record<string, number> = { classic: 50, flash: 50, quick: 10 };
+export const MODE_MAX: Record<string, number> = { classic: 50, flash: 50, quick: 10, strict: 50 };
 
-const ORDER = ['classic', 'flash', 'quick'];
+const ORDER = ['classic', 'flash', 'quick', 'strict'];
 
-/** Só os modos da Cor, na ordem da tela de início. */
-export function colorModes(stats: Stats): ModeStats[] {
+/** Só os modos conhecidos de um jogo, na ordem da tela de início. */
+export function gameModes(stats: Stats, game: string): ModeStats[] {
   return stats.modes
-    .filter((m) => m.game === 'color' && m.mode in MODE_MAX)
+    .filter((m) => m.game === game && m.mode in MODE_MAX)
     .sort((a, b) => ORDER.indexOf(a.mode) - ORDER.indexOf(b.mode));
 }
+
+export const colorModes = (stats: Stats) => gameModes(stats, 'color');
 
 export function streakLabel(days: number): string {
   return days === 1 ? '1 dia' : `${days} dias`;
