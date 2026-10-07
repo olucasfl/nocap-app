@@ -93,7 +93,11 @@ export const MODES: Record<RoomGame, { id: string; label: string; note: string }
   time: [
     { id: 'classic', label: 'Clássico', note: 'Alvos de 1 a 18 s, alternando curtos e longos.' },
     { id: 'strict', label: 'Sem estourar', note: 'Passou do alvo, a rodada vale zero.' },
-    { id: 'sequence', label: 'Sequência', note: 'Alvos curtos (2 a 6 s), um atrás do outro.' },
+    {
+      id: 'sequence',
+      label: 'Sequência',
+      note: 'Alvos curtos (2 a 6 s), um atrás do outro e sem pausa: o próximo aparece para todos assim que todos pararem. O resultado vem só no fim.',
+    },
   ],
 };
 

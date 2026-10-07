@@ -87,6 +87,28 @@ describe('TimeRoomEngine', () => {
     }
   });
 
+  it('na Sequência o próximo alvo vem direto, sem revelação no meio; a última mostra o resultado', () => {
+    let t = 1_000;
+    const room = new TimeRoomEngine({ code: 'ABCD', now: () => t, newSeed: () => 'seq' });
+    room.join('ana', 'ana');
+    room.join('bia', 'bia');
+    room.configure('ana', { mode: 'sequence', rounds: 2 });
+    room.setReady('bia', true);
+    room.start('ana');
+    const stopBoth = () => {
+      for (const id of ['ana', 'bia']) {
+        room.begin(id);
+        t += 2000;
+        room.stop(id);
+      }
+    };
+    stopBoth();
+    expect(room.currentPhase).toBe('play');
+    expect(room.snapshot().round!.index).toBe(1);
+    stopBoth();
+    expect(room.currentPhase).toBe('reveal');
+  });
+
   it('chega ao pódio ao fim das rodadas, ordenado pela soma', () => {
     const { room, clock } = started(1);
     room.begin('ana');

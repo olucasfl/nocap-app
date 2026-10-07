@@ -64,7 +64,7 @@ A tela do Tempo (alvo, contagem neutra e resultado) deve nascer já nos dois tem
 
 ## Pendente: rever os modos do Já Deu? (pedido do Lucas em 07/10/2026)
 
-> **Status: pendente, só escrito.** O jogo agora se chama **Já Deu?** na tela (o id e a rota continuam `time` e `/tempo`). Pedido: "rever os modos do jogo na parte online com sala: o modo Sequência não faz muito sentido, não está funcionando como deveria (perguntar para saber como vai ficar), e o modo Sem estourar quero melhorar também, no online e no offline."
+> **Status: Sequência em sala decidida e implementada como SINCRONIZADA (sem revelação entre as rodadas; resultado só na última). Sem estourar: fica como está (passou do alvo, a rodada vale zero) e nenhum modo novo por enquanto, decisão do Lucas.** O jogo agora se chama **Já Deu?** na tela (o id e a rota continuam `time` e `/tempo`). Pedido: "rever os modos do jogo na parte online com sala: o modo Sequência não faz muito sentido, não está funcionando como deveria (perguntar para saber como vai ficar), e o modo Sem estourar quero melhorar também, no online e no offline."
 
 ### Sequência em sala: por que não faz sentido hoje
 

@@ -66,6 +66,15 @@ export class TimeRoomEngine extends ColorRoomEngine {
     this.phaseEndsAt = this.now() + target * 3 + PLAY_EXTRA_MS;
   }
 
+  /**
+   * Sequência sincronizada: assim que todos param, o próximo alvo aparece para todos no mesmo
+   * instante, sem tela de revelação no meio. Só a última rodada mostra o resultado.
+   */
+  protected override toReveal() {
+    super.toReveal();
+    if (this.mode === 'sequence' && this.roundIndex + 1 < this.settings.rounds) this.finishReveal();
+  }
+
   protected override reset() {
     super.reset();
     this.startedAt = new Map();
