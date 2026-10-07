@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Field } from '@/components/Field';
 import { ApiError } from '@/lib/api-client';
 import { useAuth } from '@/lib/auth';
+import { inviteFriend, useRoom } from '@/lib/rooms';
 import {
   MIN_SEARCH,
   acceptRequest,
@@ -114,6 +115,9 @@ export function Friends() {
   const { user, status } = useAuth();
   const queryClient = useQueryClient();
   const list = useQuery({ queryKey: ['friends'], queryFn: fetchFriends, enabled: !!user });
+  // Se estou num lobby, cada amigo ganha o botão de chamar para a sala.
+  const lobby = useRoom((s) => (s.snapshot?.phase === 'lobby' ? s.snapshot : null));
+  const invited = useRoom((s) => s.invited);
   const [error, setError] = useState('');
 
   const refresh = () => {
@@ -164,6 +168,11 @@ export function Friends() {
   return (
     <main className="fr">
       <h1>Amigos</h1>
+      {lobby && (
+        <p className="mono fr-state">
+          VOCÊ ESTÁ NA SALA {lobby.code}: TOQUE EM "CHAMAR" PARA CONVIDAR.
+        </p>
+      )}
       <Search onChanged={refresh} />
       {error && (
         <p className="acc-failure mono" role="alert">
@@ -227,6 +236,19 @@ export function Friends() {
             <ul className="fr-list">
               {data.friends.map((p) => (
                 <Person key={p.username} username={p.username}>
+                  {lobby &&
+                    !lobby.members.some((m) => m.username === p.username) &&
+                    (invited.includes(p.username) ? (
+                      <span className="mono fr-state">CONVITE ENVIADO</span>
+                    ) : (
+                      <button
+                        type="button"
+                        className="fr-btn"
+                        onClick={() => inviteFriend(p.username)}
+                      >
+                        Chamar
+                      </button>
+                    ))}
                   <button
                     type="button"
                     className="fr-btn ghost"

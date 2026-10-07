@@ -56,6 +56,8 @@ export type RoomStatus = 'idle' | 'connecting' | 'connected' | 'reconnecting' | 
 interface RoomState {
   status: RoomStatus;
   snapshot: RoomSnapshot | null;
+  /** @usuários que já convidei para esta sala (some o botão e mostra "Convite enviado"). */
+  invited: string[];
   /** Último erro de regra (ex.: "Falta gente marcar pronto") ou motivo de ter saído. */
   message: string;
 }
@@ -63,6 +65,7 @@ interface RoomState {
 export const useRoom = create<RoomState>(() => ({
   status: 'idle',
   snapshot: null,
+  invited: [],
   message: '',
 }));
 
@@ -101,6 +104,9 @@ function attach(r: Room) {
 
   r.onMessage('snapshot', (s: RoomSnapshot) => set({ snapshot: s, status: 'connected' }));
   r.onMessage('error', (m: string) => set({ message: m }));
+  r.onMessage('invited', (m: { username: string }) =>
+    set({ invited: [...new Set([...useRoom.getState().invited, m.username])], message: '' }),
+  );
   r.onLeave((code) => {
     if (room !== r) return;
     // 4000: saí por conta própria; 4001: fui expulso; 4002: entrei por outro aparelho.
@@ -114,7 +120,7 @@ function attach(r: Room) {
 function finish(message: string) {
   room = null;
   remember(null);
-  set({ status: 'closed', snapshot: null, message });
+  set({ status: 'closed', snapshot: null, invited: [], message });
 }
 
 /**
@@ -180,6 +186,11 @@ export function leaveRoom() {
   const r = room;
   finish('');
   void r?.leave(true);
+}
+
+/** Convida um amigo para a sala em que estou (só no lobby). */
+export function inviteFriend(username: string) {
+  sendRoom('invite', { username });
 }
 
 export function sendRoom(type: string, payload?: unknown) {

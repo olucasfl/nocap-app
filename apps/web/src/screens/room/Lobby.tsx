@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { leaveRoom, sendRoom, useRoom, type RoomSnapshot } from '@/lib/rooms';
+import { useQuery } from '@tanstack/react-query';
+import { fetchFriends } from '@/lib/friends';
+import { inviteFriend, leaveRoom, sendRoom, useRoom, type RoomSnapshot } from '@/lib/rooms';
 import { useAuth } from '@/lib/auth';
 
 const ROUNDS = [1, 3, 5, 7, 10];
@@ -40,6 +42,34 @@ function Options({
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+/** Amigos que ainda não estão na sala, com botão de chamar. */
+function InviteFriends({ snapshot }: { snapshot: RoomSnapshot }) {
+  const invited = useRoom((s) => s.invited);
+  const friends = useQuery({ queryKey: ['friends'], queryFn: fetchFriends });
+  const inRoom = new Set(snapshot.members.map((m) => m.username));
+  const list = (friends.data?.friends ?? []).filter((f) => !inRoom.has(f.username));
+  if (list.length === 0) return null;
+  return (
+    <div>
+      <div className="mono rm-label">CHAMAR AMIGOS</div>
+      <ul className="fr-list">
+        {list.map((f) => (
+          <li key={f.username} className="fr-row">
+            <span className="fr-name">@{f.username}</span>
+            {invited.includes(f.username) ? (
+              <span className="mono fr-state">CONVITE ENVIADO</span>
+            ) : (
+              <button type="button" className="fr-btn" onClick={() => inviteFriend(f.username)}>
+                Convidar
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -119,6 +149,8 @@ export function Lobby({ snapshot }: { snapshot: RoomSnapshot }) {
           ))}
         </ul>
       </div>
+
+      <InviteFriends snapshot={snapshot} />
 
       <div className="rm-rules">
         <div className="mono rm-label">REGRAS{isHost ? '' : ' (DEFINIDAS PELO HOST)'}</div>

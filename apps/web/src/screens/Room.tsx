@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, getRouteApi, useNavigate } from '@tanstack/react-router';
 import { Field } from '@/components/Field';
 import { MuteButton } from '@/components/MuteButton';
@@ -34,10 +34,10 @@ function Header({ leave, round }: { leave?: boolean; round?: string }) {
   );
 }
 
-function Entry({ initialCode }: { initialCode?: string }) {
+function Entry({ initialCode, initialError }: { initialCode?: string; initialError?: string }) {
   const navigate = useNavigate();
   const [code, setCode] = useState(initialCode ?? '');
-  const [error, setError] = useState('');
+  const [error, setError] = useState(initialError ?? '');
   const [busy, setBusy] = useState(false);
   const message = useRoom((s) => s.message);
 
@@ -102,6 +102,7 @@ export function RoomPage({ code }: { code?: string }) {
   const { user, status: authStatus } = useAuth();
   const { status, snapshot } = useRoom();
   const [resuming, setResuming] = useState(true);
+  const autoJoined = useRef(false);
 
   useEffect(() => {
     let alive = true;
@@ -110,6 +111,17 @@ export function RoomPage({ code }: { code?: string }) {
       alive = false;
     };
   }, []);
+
+  // Link ou convite (/sala/ABCD): entra direto, sem digitar o código. Uma tentativa só.
+  const [joinError, setJoinError] = useState('');
+  useEffect(() => {
+    if (!code || !user || resuming || snapshot || autoJoined.current) return;
+    if (status === 'connecting' || status === 'reconnecting') return;
+    autoJoined.current = true;
+    joinRoom(code).catch((e: unknown) =>
+      setJoinError(e instanceof Error ? e.message : 'Não foi possível entrar.'),
+    );
+  }, [code, user, resuming, snapshot, status]);
 
   if (authStatus === 'loading' || resuming) {
     return (
@@ -157,7 +169,10 @@ export function RoomPage({ code }: { code?: string }) {
           RECONECTANDO À SALA...
         </p>
       )}
-      {!snapshot && <Entry initialCode={code} />}
+      {!snapshot && status === 'connecting' && <p className="lead rm-wait">Entrando na sala...</p>}
+      {!snapshot && status !== 'connecting' && (
+        <Entry initialCode={code} initialError={joinError} />
+      )}
       {snapshot?.phase === 'lobby' && <Lobby snapshot={snapshot} />}
       {snapshot && ['show', 'pick', 'reveal'].includes(snapshot.phase) && (
         <Play snapshot={snapshot} />

@@ -2,6 +2,7 @@ import { randomInt, randomUUID } from 'node:crypto';
 import { Room, ServerError, matchMaker, type Client } from 'colyseus';
 import type { Auth } from '../auth/auth';
 import { ColorRoomEngine, MAX_PLAYERS, RoomError } from './color-room.engine';
+import type { InvitesService } from './invites.service';
 import type { RoomsRepository } from './rooms.repository';
 
 /** Sem I, O, 0 e 1: letras que se confundem ao ditar o código. */
@@ -11,9 +12,14 @@ const TICK_MS = 250;
 const RECONNECT_SECONDS = 60;
 
 /** Dependências que o Nest injeta na inicialização (o Colyseus instancia a sala sozinho). */
-export const roomDeps: { auth: Auth | null; repo: RoomsRepository | null } = {
+export const roomDeps: {
+  auth: Auth | null;
+  repo: RoomsRepository | null;
+  invites: InvitesService | null;
+} = {
   auth: null,
   repo: null,
+  invites: null,
 };
 
 interface AuthData {
@@ -70,6 +76,7 @@ export class ColorRoom extends Room {
     this.onMessage('lock', (c, m) => this.act(c, (id) => this.engine.lock(id, m)));
     this.onMessage('next', (c) => this.act(c, (id) => this.engine.next(id)));
     this.onMessage('rematch', (c) => this.act(c, (id) => this.engine.rematch(id)));
+    this.onMessage('invite', (c, m: { username?: string }) => void this.invite(c, m?.username));
 
     this.setSimulationInterval(() => {
       if (this.engine.tick()) this.publish();
@@ -103,6 +110,7 @@ export class ColorRoom extends Room {
       throw new ServerError(409, e instanceof RoomError ? e.message : 'Não foi possível entrar');
     }
     client.userData = { id: auth.id, username: auth.username };
+    roomDeps.invites?.consume(auth.id, this.roomId);
     this.publish();
   }
 
@@ -150,7 +158,24 @@ export class ColorRoom extends Room {
     }
   }
 
+  /** Convida um amigo para esta sala. Só no lobby, e só quem já está na sala. */
+  private async invite(client: Client, username?: string) {
+    const me = client.userData as AuthData | undefined;
+    try {
+      if (!me || !roomDeps.invites) return;
+      if (this.engine.currentPhase !== 'lobby') {
+        throw new RoomError('Só dá para convidar no lobby');
+      }
+      const sent = await roomDeps.invites.send(me, String(username ?? ''), this.roomId);
+      client.send('invited', { username: sent.username });
+    } catch (e) {
+      client.send('error', e instanceof Error ? e.message : 'Não foi possível convidar');
+    }
+  }
+
   private publish() {
+    // A fase vai nos metadados da sala: é como o serviço de convites sabe se ela ainda está no lobby.
+    void this.setMetadata({ phase: this.engine.currentPhase });
     this.broadcast('snapshot', this.engine.snapshot());
     if (this.engine.currentPhase === 'final' && !this.saved) {
       this.saved = true;

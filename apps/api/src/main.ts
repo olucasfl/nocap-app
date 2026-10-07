@@ -10,6 +10,7 @@ import { AppModule } from './app.module';
 import { AUTH } from './auth/auth.constants';
 import type { Auth } from './auth/auth';
 import { ColorRoom, roomDeps } from './rooms/color.room';
+import { InvitesService } from './rooms/invites.service';
 import { RoomsRepository } from './rooms/rooms.repository';
 
 // O .env fica na raiz do monorepo.
@@ -31,6 +32,7 @@ async function bootstrap() {
   await app.init();
   roomDeps.auth = auth;
   roomDeps.repo = app.get(RoomsRepository);
+  roomDeps.invites = app.get(InvitesService);
   const rooms = new Server({
     transport: new WebSocketTransport({ server: app.getHttpServer() }),
   });

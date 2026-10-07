@@ -1,0 +1,45 @@
+.invite {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  top: calc(12px + env(safe-area-inset-top));
+  max-width: calc(var(--col-max) - 24px);
+  margin: 0 auto;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--orange);
+  color: var(--on-accent);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+}
+.invite-text {
+  font: 900 15px var(--font-display);
+}
+.invite-actions {
+  display: flex;
+  gap: 8px;
+}
+.invite-btn {
+  appearance: none;
+  flex: 1;
+  min-height: 42px;
+  border: var(--border);
+  border-radius: 10px;
+  background: var(--on-accent);
+  color: var(--white);
+  font: 900 13px var(--font-display);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.invite-btn.ghost {
+  background: var(--white);
+  color: var(--ink);
+}
+.invite-btn:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 2px;
+}

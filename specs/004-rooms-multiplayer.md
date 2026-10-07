@@ -1,6 +1,6 @@
 # 004: Salas multiplayer
 
-> **Status: Cor implementada e verificada (2026-10-06).** Faltam o convite pela aba Amigos (notificação) e salas de outros jogos.
+> **Status: Cor implementada e verificada (2026-10-06), com convite para amigos.** Faltam salas de outros jogos e notificação push (brief #13).
 
 ## Objetivo
 
@@ -39,6 +39,15 @@ Jogar com amigos em salas presas a um jogo, em tempo real (Colyseus, um tipo de 
 - **Limitação:** as salas ficam na memória; reiniciar o servidor derruba todas (ver `docs/DEPLOY.md`).
 - **Cor:** a seed da sala é sorteada pelo servidor, mas os alvos saem dela no app (mesma limitação de anti-trapaça da spec 008).
 
+## Convites (feito)
+
+- **Quem convida:** qualquer pessoa na sala, só no lobby, e só **amigos** (spec 009). O botão aparece no próprio lobby ("Chamar amigos") e na aba Amigos ("Chamar", quando você está num lobby).
+- **Quem recebe:** um aviso em qualquer tela do app ("@ana te chamou para uma sala da Cor", com Entrar e Recusar). Entrar leva a `/sala/CODIGO` e já entra na sala.
+- **Como chega:** o app consulta `GET /me/invites` a cada 5 s com a pessoa logada (não há push), então o aviso pode atrasar até 5 s. Com o app fechado, nada chega.
+- **Quando some:** ao entrar na sala, ao recusar, quando a sala começa a partida, lota, fecha ou passam 15 minutos. Convite repetido da mesma pessoa para a mesma sala vira um só; no máximo 20 pendentes por pessoa.
+- **Onde vive:** em memória no servidor (como as salas). Reiniciar o servidor apaga os convites.
+- API: `GET /me/invites`, `POST /me/invites/:id/decline`; o envio é a mensagem `invite` da sala.
+
 ## Decisões em aberto
 
-Brief #1 (presencial vs remoto: chat/voz), #7, #13 (push).
+Brief #1 (presencial vs remoto: chat/voz), #13 (push: com o app fechado o convite não chega).

@@ -6,6 +6,7 @@ import {
   Outlet,
 } from '@tanstack/react-router';
 import { BottomNav } from '@/components/BottomNav';
+import { InviteBanner } from '@/components/InviteBanner';
 import type { Mode } from '@/games/color/types';
 import { History } from '@/screens/History';
 import { Friends } from '@/screens/Friends';
@@ -15,7 +16,14 @@ import { Profile } from '@/screens/Profile';
 import { Ranking } from '@/screens/Ranking';
 import { Register } from '@/screens/Register';
 
-const rootRoute = createRootRoute({ component: Outlet });
+const rootRoute = createRootRoute({
+  component: () => (
+    <>
+      <Outlet />
+      <InviteBanner />
+    </>
+  ),
+});
 
 // Telas com a barra de navegação inferior. O jogo fica fora dela (tela cheia).
 const tabsRoute = createRoute({
