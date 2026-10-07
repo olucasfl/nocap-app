@@ -92,7 +92,12 @@ function Search({ onChanged }: { onChanged: () => void }) {
           autoCorrect="off"
           hint={`Digite ao menos ${MIN_SEARCH} letras`}
         />
-        <button type="submit" className="btn alt fr-go" disabled={text.trim().length < MIN_SEARCH}>
+        <button
+          type="submit"
+          className="btn alt fr-go"
+          data-sfx="send"
+          disabled={text.trim().length < MIN_SEARCH}
+        >
           Buscar
         </button>
       </form>
@@ -115,6 +120,7 @@ function Search({ onChanged }: { onChanged: () => void }) {
                   <button
                     type="button"
                     className="fr-btn"
+                    data-sfx={u.state === 'incoming' ? 'success' : 'send'}
                     disabled={act.isPending}
                     onClick={() => act.mutate(u)}
                   >
@@ -218,6 +224,7 @@ export function Friends() {
                 <button
                   type="button"
                   className="fr-btn"
+                  data-sfx="success"
                   onClick={() => mutate.mutate(() => acceptRequest(p.username))}
                 >
                   Aceitar
@@ -225,6 +232,7 @@ export function Friends() {
                 <button
                   type="button"
                   className="fr-btn ghost"
+                  data-sfx="cancel"
                   onClick={() => mutate.mutate(() => declineRequest(p.username))}
                 >
                   Recusar
@@ -244,6 +252,7 @@ export function Friends() {
                 <button
                   type="button"
                   className="fr-btn ghost"
+                  data-sfx="remove"
                   onClick={() => mutate.mutate(() => removeFriend(p.username))}
                 >
                   Cancelar
@@ -271,6 +280,7 @@ export function Friends() {
                       <button
                         type="button"
                         className="fr-btn"
+                        data-sfx="send"
                         onClick={() => inviteFriend(p.username)}
                       >
                         Chamar
@@ -279,6 +289,7 @@ export function Friends() {
                   <button
                     type="button"
                     className="fr-btn ghost"
+                    data-sfx="remove"
                     onClick={() => mutate.mutate(() => removeFriend(p.username))}
                   >
                     Remover

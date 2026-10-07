@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { restoreSession } from '@/lib/auth';
+import { sfx } from '@/lib/sfx';
 import { useOnline } from '@/lib/network';
 import { WifiOff } from './icons';
 import './network.css';
@@ -25,11 +26,13 @@ export function NetworkStatus() {
     if (!online) {
       wasOffline.current = true;
       setBack(false);
+      sfx.offline();
       return;
     }
     if (!wasOffline.current) return;
     wasOffline.current = false;
     setBack(true);
+    sfx.online();
     void restoreSession();
     const t = window.setTimeout(() => setBack(false), 3500);
     return () => window.clearTimeout(t);

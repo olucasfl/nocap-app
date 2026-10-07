@@ -9,7 +9,7 @@ export interface ModeOption {
 }
 
 /** Arte de cada modo (só formas, sem emoji). O Daily tem a sua: um calendário com estrela. */
-function art(id: string): ReactNode {
+export function modeArt(id: string): ReactNode {
   const p = {
     fill: 'none',
     stroke: 'currentColor',
@@ -85,34 +85,57 @@ function art(id: string): ReactNode {
   }
 }
 
-/** Modos do jogo como cartões, o Daily junto dos outros (com arte e cor próprias). */
+/**
+ * Todos os modos do jogo como cartões. O Daily fica em cima, num retângulo de duas colunas, com
+ * arte própria; tocar em um modo abre a ficha dele (`ModeSheet`), com o botão de jogar.
+ */
 export function ModePicker({
   game,
   modes,
-  value,
-  onChange,
+  onOpen,
+  dailyNote,
 }: {
   game: GameId;
   modes: ModeOption[];
-  value: string;
-  onChange: (id: string) => void;
+  onOpen: (id: string) => void;
+  /** Situação do Daily de hoje ("FEITO · 21.4/30" ou "DISPONÍVEL"). */
+  dailyNote?: string;
 }) {
+  const daily = modes.find((m) => m.id === 'daily');
   return (
-    <div className={`mp ${game}`} role="radiogroup" aria-label="Modo de jogo">
-      {modes.map((m) => (
+    <div className={`mp ${game}`}>
+      {daily && (
         <button
-          key={m.id}
           type="button"
-          role="radio"
-          aria-checked={value === m.id}
-          className={`mp-card${m.id === 'daily' ? ' daily' : ''}`}
-          onClick={() => onChange(m.id)}
+          className="mp-card daily wide"
+          aria-haspopup="dialog"
+          data-sfx="select"
+          onClick={() => onOpen(daily.id)}
         >
-          <span className="mp-art">{art(m.id)}</span>
-          <span className="mp-name">{m.label}</span>
-          <span className="mono mp-desc">{m.desc}</span>
+          <span className="mp-art wide">{modeArt('daily')}</span>
+          <span className="mp-wide-text">
+            <span className="mp-name">{daily.label}</span>
+            <span className="mono mp-desc">{daily.desc}</span>
+            {dailyNote && <span className="mono mp-note">{dailyNote}</span>}
+          </span>
         </button>
-      ))}
+      )}
+      {modes
+        .filter((m) => m.id !== 'daily')
+        .map((m) => (
+          <button
+            key={m.id}
+            type="button"
+            className="mp-card"
+            aria-haspopup="dialog"
+            data-sfx="select"
+            onClick={() => onOpen(m.id)}
+          >
+            <span className="mp-art">{modeArt(m.id)}</span>
+            <span className="mp-name">{m.label}</span>
+            <span className="mono mp-desc">{m.desc}</span>
+          </button>
+        ))}
     </div>
   );
 }

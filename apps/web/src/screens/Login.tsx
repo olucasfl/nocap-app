@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { BackButton } from '@/components/BackButton';
+import { sfx } from '@/lib/sfx';
 import { Field } from '@/components/Field';
 import { validateLogin } from '@/lib/account-form';
 import { login } from '@/lib/auth';
@@ -25,6 +26,7 @@ export function Login() {
       await login(identifier, password);
       await navigate({ to: '/perfil' });
     } catch (err) {
+      sfx.error();
       setFailure(err instanceof Error ? err.message : 'Não foi possível entrar.');
     } finally {
       setBusy(false);

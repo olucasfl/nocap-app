@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/auth';
+import { sfx } from '@/lib/sfx';
 import {
   INVITES_POLL_MS,
   declineInvite,
@@ -41,6 +42,10 @@ export function InviteBanner() {
 
   const current: RoomInvite | null =
     user && !inRoom ? nextInvite(invites.data ?? [], dismissed) : null;
+  const currentId = current?.id;
+  useEffect(() => {
+    if (currentId) sfx.notify();
+  }, [currentId]);
   if (!current) return null;
 
   const accept = () => {
@@ -56,10 +61,10 @@ export function InviteBanner() {
     <div className="invite" role="alert">
       <span className="invite-text">{inviteText(current)}</span>
       <div className="invite-actions">
-        <button type="button" className="invite-btn" onClick={accept}>
+        <button type="button" className="invite-btn" data-sfx="roomJoin" onClick={accept}>
           Entrar
         </button>
-        <button type="button" className="invite-btn ghost" onClick={refuse}>
+        <button type="button" className="invite-btn ghost" data-sfx="cancel" onClick={refuse}>
           Recusar
         </button>
       </div>

@@ -32,6 +32,7 @@ export function Choice<T extends string>({
           key={o.id}
           type="button"
           role="radio"
+          data-sfx="select"
           aria-checked={value === o.id}
           onClick={() => onChange(o.id)}
         >

@@ -68,7 +68,7 @@ export function Hub() {
       </h1>
 
       <div className="hub-grid">
-        <Link to="/cor" className="hub-card hub-card-color">
+        <Link to="/cor" className="hub-card hub-card-color" data-sfx="start">
           <div className="hub-swatches" aria-hidden="true">
             {SWATCHES.map((c) => (
               <i key={c} style={{ background: c }} />
@@ -81,7 +81,7 @@ export function Hub() {
           </div>
         </Link>
 
-        <Link to="/tempo" className="hub-card hub-card-time">
+        <Link to="/tempo" className="hub-card hub-card-time" data-sfx="start">
           <div className="hub-clock" aria-hidden="true">
             <i className="hub-clock-hand" />
             <i className="hub-clock-hand2" />

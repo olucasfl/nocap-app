@@ -122,6 +122,7 @@ export function RankingPanel({
               key={b.id}
               type="button"
               role="tab"
+              data-sfx="select"
               aria-selected={board === b.id}
               onClick={() => switchBoard(b.id)}
             >
@@ -132,6 +133,7 @@ export function RankingPanel({
           <button
             type="button"
             role="tab"
+            data-sfx="select"
             className="rp-daily-tab"
             aria-selected={isDaily}
             onClick={() => switchBoard('daily')}
@@ -150,6 +152,7 @@ export function RankingPanel({
                 key={p.id}
                 type="button"
                 role="radio"
+                data-sfx="select"
                 aria-checked={period === p.id}
                 onClick={() => setPeriod(p.id)}
               >
@@ -164,6 +167,7 @@ export function RankingPanel({
             <button
               type="button"
               role="switch"
+              data-sfx="toggle"
               aria-checked={friendsOnly}
               aria-label="Mostrar só amigos"
               className="rp-switch"

@@ -56,6 +56,7 @@ export function FriendsPanel({ game }: { game: GameId }) {
           <button
             type="button"
             className="btn alt"
+            data-sfx="start"
             onClick={() => void navigate({ to: '/sala', search: { jogo: game } })}
           >
             Criar sala
@@ -78,7 +79,7 @@ export function FriendsPanel({ game }: { game: GameId }) {
               hint="4 letras, como ABCD"
               error={error || undefined}
             />
-            <button type="submit" className="btn ghost">
+            <button type="submit" className="btn ghost" data-sfx="roomJoin">
               Entrar
             </button>
           </form>

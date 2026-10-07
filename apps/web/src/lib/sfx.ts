@@ -132,7 +132,137 @@ export const sfx = {
   vanish() {
     tone('sine', 880, 330, 0.16, 0.18);
   },
+
+  // ---- sons de interface: cada ação do app tem o seu (nunca tocam durante a contagem do Tempo) ----
+
+  /** aba Jogos: duas notas subindo */
+  navGames() {
+    tone('triangle', 523, 523, 0.07, 0.2);
+    tone('triangle', 784, 784, 0.1, 0.2, 0.06);
+  },
+  /** aba Histórico: folhear de página */
+  navHistory() {
+    noise('bandpass', 1200, 3200, 0.9, 0.12, 0.25);
+    tone('sine', 330, 330, 0.05, 0.1, 0.09);
+  },
+  /** aba Amigos: dois "pops" de gente chegando */
+  navFriends() {
+    tone('sine', 520, 680, 0.06, 0.22);
+    tone('sine', 700, 900, 0.06, 0.22, 0.08);
+  },
+  /** aba Perfil: sino suave */
+  navProfile() {
+    tone('sine', 660, 650, 0.28, 0.2);
+    tone('sine', 1320, 1300, 0.18, 0.06);
+  },
+  /** voltar: descida curta */
+  back() {
+    tone('sine', 700, 430, 0.1, 0.2);
+  },
+  /** trocar de aba dentro de uma tela: estalo deslizando */
+  tab() {
+    noise('bandpass', 1800, 2600, 1.4, 0.05, 0.3);
+    tone('square', 900, 1250, 0.05, 0.07);
+  },
+  /** escolher uma opção (modo, filtro, período) */
+  select() {
+    tone('sine', 480, 760, 0.06, 0.24);
+  },
+  /** chave ligada / desligada */
+  toggleOn() {
+    tone('triangle', 560, 560, 0.05, 0.2);
+    tone('triangle', 840, 840, 0.08, 0.2, 0.05);
+  },
+  toggleOff() {
+    tone('triangle', 840, 840, 0.05, 0.18);
+    tone('triangle', 520, 520, 0.08, 0.18, 0.05);
+  },
+  /** tema claro: brilho; escuro: sussurro grave */
+  themeLight() {
+    [1200, 1600, 2000].forEach((f, i) => tone('sine', f, f, 0.07, 0.12, 0.04 * i));
+  },
+  themeDark() {
+    tone('sine', 320, 190, 0.28, 0.25);
+    noise('lowpass', 500, 200, 0.7, 0.2, 0.08);
+  },
+  /** ação que merece atenção (abrir "Sair?") */
+  warn() {
+    tone('square', 220, 220, 0.07, 0.1);
+    tone('square', 220, 220, 0.07, 0.1, 0.11);
+  },
+  /** despedida: três notas descendo (sair da conta) */
+  bye() {
+    [660, 523, 392].forEach((f, i) => tone('triangle', f, f, 0.14, 0.2, 0.11 * i));
+  },
+  /** cancelar / recusar */
+  cancel() {
+    tone('sine', 400, 300, 0.08, 0.16);
+  },
+  /** deu certo (entrar, aceitar amigo) */
+  success() {
+    [523, 659, 784].forEach((f, i) => tone('triangle', f, f, 0.1, 0.22, 0.07 * i));
+  },
+  /** deu errado */
+  error() {
+    tone('square', 160, 120, 0.12, 0.14);
+    tone('square', 130, 100, 0.14, 0.14, 0.14);
+  },
+  /** chegou um convite ou aviso: sino */
+  notify() {
+    tone('sine', 880, 870, 0.3, 0.22);
+    tone('sine', 1320, 1300, 0.34, 0.14, 0.12);
+  },
+  /** enviou (pedido de amizade, convite): whoosh */
+  send() {
+    noise('bandpass', 700, 3800, 0.9, 0.16, 0.26);
+  },
+  /** removeu (amigo) */
+  remove() {
+    tone('sine', 380, 160, 0.16, 0.22);
+  },
+  /** entrar num jogo ou começar uma partida: decolagem */
+  start() {
+    noise('bandpass', 400, 4000, 0.8, 0.22, 0.22);
+    tone('triangle', 330, 660, 0.18, 0.16);
+  },
+  /** entrou na sala: campainha de porta */
+  roomJoin() {
+    tone('sine', 740, 740, 0.14, 0.22);
+    tone('sine', 587, 587, 0.22, 0.22, 0.14);
+  },
+  /** passar de página no histórico */
+  page() {
+    noise('bandpass', 900, 2600, 1, 0.07, 0.22);
+  },
+  /** voltou a conexão / caiu a conexão */
+  online() {
+    [440, 660, 880].forEach((f, i) => tone('sine', f, f, 0.08, 0.2, 0.06 * i));
+  },
+  offline() {
+    [660, 440, 300].forEach((f, i) => tone('sine', f, f, 0.1, 0.2, 0.08 * i));
+  },
+  /** puxar para recarregar: ponto de soltar / recarregando */
+  pullReady() {
+    tone('triangle', 900, 900, 0.04, 0.16);
+  },
+  refresh() {
+    noise('bandpass', 500, 3000, 0.9, 0.3, 0.22);
+  },
+  /** Sobrevivência: passou na rodada (moeda), perdeu uma vida, fim de jogo */
+  coin() {
+    tone('square', 988, 988, 0.06, 0.12);
+    tone('square', 1319, 1319, 0.2, 0.12, 0.07);
+  },
+  lifeLost() {
+    tone('sine', 300, 90, 0.35, 0.4);
+    noise('lowpass', 800, 150, 0.7, 0.2, 0.2);
+  },
+  gameOver() {
+    [392, 330, 262, 196].forEach((f, i) => tone('triangle', f, f * 0.98, 0.18, 0.22, 0.14 * i));
+  },
 };
+
+export type SfxName = keyof typeof sfx;
 
 /** Vibração só onde existe (Android; iOS não suporta). */
 export function buzz(ms: number) {
@@ -165,13 +295,29 @@ export function useMuted(): boolean {
   );
 }
 
-/** Desbloqueia o áudio no primeiro toque e dá o "clack" em todo `.btn`. */
+/**
+ * Desbloqueia o áudio no primeiro toque e dá som aos botões. Um elemento com `data-sfx="nome"`
+ * toca esse som (`data-sfx` de chave: o som depende de `aria-checked`); sem isso, todo `.btn` dá
+ * o "clack". Nada toca durante a contagem do Tempo (tela "valendo").
+ */
 export function installGlobalSounds() {
   document.addEventListener(
     'pointerdown',
     (e) => {
       audio();
-      if (e.target instanceof Element && e.target.closest('.btn')) {
+      if (!(e.target instanceof Element)) return;
+      if (document.querySelector('.tm-stage.live')) return;
+      const el = e.target.closest<HTMLElement>('[data-sfx]');
+      if (el && !(el as HTMLButtonElement).disabled) {
+        let name = el.dataset.sfx as string;
+        if (name === 'toggle')
+          name = el.getAttribute('aria-checked') === 'true' ? 'toggleOff' : 'toggleOn';
+        const play = sfx[name as SfxName] as (() => void) | undefined;
+        if (typeof play === 'function') play();
+        buzz(8);
+        return;
+      }
+      if (e.target.closest('.btn')) {
         sfx.clack();
         buzz(8);
       }

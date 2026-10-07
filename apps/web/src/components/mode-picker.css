@@ -74,3 +74,46 @@
   outline: 3px solid var(--blue);
   outline-offset: 3px;
 }
+
+/* Daily: retângulo de duas colunas, no topo, com arte maior. */
+.mp-card.wide {
+  grid-column: 1 / -1;
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  background: var(--yellow);
+  color: var(--on-accent);
+  box-shadow: 5px 5px 0 var(--ink);
+}
+.mp-art.wide {
+  width: 76px;
+  height: 76px;
+  padding: 10px;
+  flex-shrink: 0;
+  background: var(--on-accent);
+  color: var(--yellow);
+}
+.mp-wide-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.mp-card.wide .mp-name {
+  font-size: 28px;
+  letter-spacing: -0.03em;
+}
+.mp-card.wide .mp-desc {
+  color: inherit;
+}
+.mp-note {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  align-self: flex-start;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--white);
+  color: var(--ink);
+}

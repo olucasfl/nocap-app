@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { SURVIVAL_MAX_ROUNDS, timePresets } from '@nocap/games';
 import { BackButton } from '@/components/BackButton';
 import { DailyCard } from '@/components/DailyCard';
 import { FriendsPanel } from '@/components/FriendsPanel';
 import { ModePicker } from '@/components/ModePicker';
+import { ModeSheet } from '@/components/ModeSheet';
 import { GameTabs, type GameTab } from '@/components/GameTabs';
 import { ArrowRight } from '@/components/icons';
 import { PlayGate } from '@/components/PlayGate';
@@ -12,7 +13,7 @@ import { PullToRefresh } from '@/components/PullToRefresh';
 import { RankingPanel } from '@/components/RankingPanel';
 import { useAuth } from '@/lib/auth';
 import type { Board } from '@/lib/ranking';
-import { fetchStats } from '@/lib/stats';
+import { dailyMax, fetchStats } from '@/lib/stats';
 import type { Mode } from '../types';
 
 /** Modos de partida solo. O Daily é um cartão à parte, dentro do jogo. */
@@ -48,21 +49,27 @@ interface Props {
 }
 
 export function StartScreen({
-  mode,
-  busy,
-  error,
   initialTab = 'modes',
   initialBoard,
   onMode,
   onStart,
+  busy,
+  error,
 }: Props) {
   const user = useAuth((s) => s.user);
   const stats = useQuery({ queryKey: ['stats'], queryFn: fetchStats, enabled: !!user });
   const daily = stats.data?.daily.time;
   const [tab, setTab] = useState<GameTab>(initialTab);
   const [board, setBoard] = useState<Board | undefined>(initialBoard);
-  const shown = mode;
-  const preset = timePresets[shown === 'daily' ? 'classic' : shown]!;
+  /** Modo cuja ficha está aberta (null = só a lista de modos). */
+  const [open, setOpen] = useState<Mode | null>(null);
+  const close = useCallback(() => setOpen(null), []);
+  const preset = timePresets[(open ?? 'classic') === 'daily' ? 'classic' : (open ?? 'classic')]!;
+
+  const openMode = (id: string) => {
+    onMode(id as Mode);
+    setOpen(id as Mode);
+  };
 
   return (
     <section className="screen">
@@ -75,69 +82,83 @@ export function StartScreen({
           <ModePicker
             game="time"
             modes={MODES}
-            value={mode}
-            onChange={(id) => onMode(id as Mode)}
+            onOpen={openMode}
+            dailyNote={
+              daily?.playedToday
+                ? `FEITO · ${((daily.totalScore ?? 0) / 10).toFixed(1)}/${dailyMax('time')}`
+                : 'DISPONÍVEL HOJE'
+            }
           />
-          <p className="lead">{LEAD[shown]}</p>
-          {shown === 'survival' ? (
-            <div className="tm-rules">
-              <div className="tm-rule">
-                <b>3</b>vidas
-              </div>
-              <div className="tm-rule">
-                <b>5→7</b>nota mínima
-              </div>
-              <div className="tm-rule">
-                <b>{SURVIVAL_MAX_ROUNDS}</b>rodadas máx.
-              </div>
-            </div>
-          ) : (
-            <div className="tm-rules">
-              <div className="tm-rule">
-                <b>{preset.rounds}</b>
-                {preset.rounds === 1 ? 'rodada' : 'rodadas'}
-              </div>
-              <div className="tm-rule">
-                <b>
-                  {preset.minMs / 1000}–{preset.maxMs / 1000}s
-                </b>
-                alvos
-              </div>
-              <div className="tm-rule">
-                <b>{preset.rounds * 10}</b>pontos max
-              </div>
-            </div>
-          )}
-          {error && (
-            <p className="acc-failure mono" role="alert">
-              {error}
-            </p>
-          )}
-          {shown !== 'daily' && (
-            <div className="stack">
-              <PlayGate>
-                <button
-                  type="button"
-                  className="btn"
-                  disabled={busy}
-                  onClick={() => onStart(shown)}
-                >
-                  {busy ? 'Preparando...' : 'Jogar'} <ArrowRight />
-                </button>
-              </PlayGate>
-            </div>
-          )}
-          {shown === 'daily' && (
-            <DailyCard
+          {open && (
+            <ModeSheet
               game="time"
-              info={daily}
-              busy={busy}
-              onPlay={() => onStart('daily')}
-              onRanking={() => {
-                setBoard('daily');
-                setTab('ranking');
-              }}
-            />
+              modeId={open}
+              title={MODES.find((m) => m.id === open)?.label ?? ''}
+              lead={LEAD[open]}
+              onClose={close}
+              rules={
+                open === 'survival' ? (
+                  <>
+                    <div className="tm-rule">
+                      <b>3</b>vidas
+                    </div>
+                    <div className="tm-rule">
+                      <b>5→7</b>nota mínima
+                    </div>
+                    <div className="tm-rule">
+                      <b>{SURVIVAL_MAX_ROUNDS}</b>rodadas máx.
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="tm-rule">
+                      <b>{preset.rounds}</b>
+                      {preset.rounds === 1 ? 'rodada' : 'rodadas'}
+                    </div>
+                    <div className="tm-rule">
+                      <b>
+                        {preset.minMs / 1000}–{preset.maxMs / 1000}s
+                      </b>
+                      alvos
+                    </div>
+                    <div className="tm-rule">
+                      <b>{preset.rounds * 10}</b>pontos max
+                    </div>
+                  </>
+                )
+              }
+            >
+              {error && (
+                <p className="acc-failure mono" role="alert">
+                  {error}
+                </p>
+              )}
+              {open === 'daily' ? (
+                <DailyCard
+                  game="time"
+                  info={daily}
+                  busy={busy}
+                  onPlay={() => onStart('daily')}
+                  onRanking={() => {
+                    setBoard('daily');
+                    setTab('ranking');
+                    close();
+                  }}
+                />
+              ) : (
+                <PlayGate>
+                  <button
+                    type="button"
+                    className="btn"
+                    data-sfx="start"
+                    disabled={busy}
+                    onClick={() => onStart(open)}
+                  >
+                    {busy ? 'Preparando...' : 'Jogar'} <ArrowRight />
+                  </button>
+                </PlayGate>
+              )}
+            </ModeSheet>
           )}
         </>
       )}

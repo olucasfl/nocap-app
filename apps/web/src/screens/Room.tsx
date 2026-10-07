@@ -6,6 +6,7 @@ import { Field } from '@/components/Field';
 import { MuteButton } from '@/components/MuteButton';
 import { LoadFailed } from '@/components/LoadFailed';
 import { useAuth } from '@/lib/auth';
+import { sfx } from '@/lib/sfx';
 import { useOnline } from '@/lib/network';
 import {
   CODE_RE,
@@ -131,6 +132,10 @@ export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomG
   const { status, snapshot } = useRoom();
   const [resuming, setResuming] = useState(true);
   const autoJoined = useRef(false);
+  const inRoom = !!snapshot;
+  useEffect(() => {
+    if (inRoom) sfx.roomJoin();
+  }, [inRoom]);
 
   useEffect(() => {
     let alive = true;

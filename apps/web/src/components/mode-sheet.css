@@ -1,0 +1,112 @@
+.ms-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgb(0 0 0 / 0.55);
+  animation: ms-fade 0.18s ease-out both;
+}
+.ms {
+  width: min(100%, var(--col-max, 440px));
+  max-height: 88vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
+  background: var(--paper);
+  color: var(--ink);
+  border: var(--border);
+  border-bottom: 0;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  box-shadow: 0 -6px 0 var(--ink);
+  animation: ms-up 0.24s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+.ms.color {
+  --accent: var(--orange);
+  --on: var(--on-accent);
+}
+.ms.time {
+  --accent: var(--blue);
+  --on: var(--on-blue);
+}
+.ms-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  background: var(--accent);
+  color: var(--on);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+.ms.daily .ms-head {
+  background: var(--yellow);
+  color: var(--on-accent);
+}
+.ms-art {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  padding: 9px;
+  flex-shrink: 0;
+  background: var(--paper);
+  color: var(--ink);
+  border: var(--border);
+  border-radius: 12px;
+}
+.ms-art svg {
+  width: 100%;
+  height: 100%;
+}
+.ms-title {
+  margin: 0;
+  min-width: 0;
+  font: 900 clamp(22px, 7vw, 30px) / 1.05 var(--font-display);
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+.ms-lead {
+  margin: 0;
+  font: 400 14px/1.5 var(--font-mono);
+}
+.ms-rules {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.ms-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 4px;
+}
+@keyframes ms-up {
+  from {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes ms-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ms,
+  .ms-backdrop {
+    animation: none;
+  }
+}

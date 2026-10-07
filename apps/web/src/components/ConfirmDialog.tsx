@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { sfx } from '@/lib/sfx';
 import './confirm-dialog.css';
 
 interface Props {
@@ -6,6 +7,8 @@ interface Props {
   title: string;
   text: string;
   confirmLabel: string;
+  /** Som do botão de confirmar (padrão: sucesso). */
+  confirmSfx?: string;
   cancelLabel?: string;
   onConfirm: () => void;
   onCancel: () => void;
@@ -17,6 +20,7 @@ export function ConfirmDialog({
   title,
   text,
   confirmLabel,
+  confirmSfx = 'success',
   cancelLabel = 'Cancelar',
   onConfirm,
   onCancel,
@@ -26,6 +30,7 @@ export function ConfirmDialog({
   useEffect(() => {
     if (!open) return;
     // O foco começa no "Cancelar": o caminho seguro.
+    sfx.warn();
     cancel.current?.focus();
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onCancel();
     document.addEventListener('keydown', onKey);
@@ -50,10 +55,16 @@ export function ConfirmDialog({
           {text}
         </p>
         <div className="cd-actions">
-          <button ref={cancel} type="button" className="btn ghost" onClick={onCancel}>
+          <button
+            ref={cancel}
+            type="button"
+            className="btn ghost"
+            data-sfx="cancel"
+            onClick={onCancel}
+          >
             {cancelLabel}
           </button>
-          <button type="button" className="btn alt" onClick={onConfirm}>
+          <button type="button" className="btn alt" data-sfx={confirmSfx} onClick={onConfirm}>
             {confirmLabel}
           </button>
         </div>

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { buzz, sfx } from '@/lib/sfx';
 import { Refresh } from './icons';
 import './pull-to-refresh.css';
 
@@ -32,7 +33,12 @@ export function PullToRefresh() {
         return;
       }
       // Resistência: quanto mais puxa, mais pesado.
+      const before = current.current;
       current.current = Math.min(MAX_PULL, dy * 0.5);
+      if (before < THRESHOLD && current.current >= THRESHOLD) {
+        sfx.pullReady();
+        buzz(12);
+      }
       setPull(current.current);
       if (e.cancelable) e.preventDefault();
     };
@@ -40,6 +46,7 @@ export function PullToRefresh() {
       if (start.current === null) return;
       start.current = null;
       if (current.current >= THRESHOLD) {
+        sfx.refresh();
         setRefreshing(true);
         setPull(THRESHOLD * 0.8);
         // Dá tempo de ver o ícone girar antes de recarregar.

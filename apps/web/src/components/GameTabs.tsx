@@ -26,6 +26,7 @@ export function GameTabs({
           key={t.id}
           type="button"
           role="tab"
+          data-sfx="tab"
           aria-selected={tab === t.id}
           onClick={() => onTab(t.id)}
         >

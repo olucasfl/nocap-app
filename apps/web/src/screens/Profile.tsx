@@ -92,7 +92,12 @@ export function Profile() {
           </section>
           <VisitStreak />
           <div className="pf-actions">
-            <button type="button" className="btn ghost" onClick={() => setConfirming(true)}>
+            <button
+              type="button"
+              className="btn ghost"
+              data-sfx="select"
+              onClick={() => setConfirming(true)}
+            >
               Sair
             </button>
           </div>
@@ -105,6 +110,7 @@ export function Profile() {
         title="Sair da conta?"
         text="Você precisará entrar de novo para jogar. Seu histórico e seus recordes ficam guardados."
         confirmLabel="Sair"
+        confirmSfx="bye"
         onConfirm={() => void signOut()}
         onCancel={() => setConfirming(false)}
       />

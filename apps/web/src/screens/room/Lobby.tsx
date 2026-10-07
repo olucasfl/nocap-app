@@ -110,7 +110,7 @@ export function Lobby({ snapshot }: { snapshot: RoomSnapshot }) {
       <div className="rm-code">
         <div className="mono rm-label">CÓDIGO DA SALA</div>
         <b>{snapshot.code}</b>
-        <button type="button" className="fr-btn ghost" onClick={() => void share()}>
+        <button type="button" className="fr-btn ghost" data-sfx="send" onClick={() => void share()}>
           {copied ? 'Link copiado' : 'Convidar'}
         </button>
       </div>
@@ -204,6 +204,7 @@ export function Lobby({ snapshot }: { snapshot: RoomSnapshot }) {
           <button
             type="button"
             className="btn alt"
+            data-sfx="start"
             disabled={!canStart}
             onClick={() => sendRoom('start')}
           >
@@ -213,6 +214,8 @@ export function Lobby({ snapshot }: { snapshot: RoomSnapshot }) {
           <button
             type="button"
             className={mine?.ready ? 'btn ghost' : 'btn alt'}
+            data-sfx="toggle"
+            aria-checked={!!mine?.ready}
             onClick={() => sendRoom('ready', { ready: !mine?.ready })}
           >
             {mine?.ready ? 'Não estou pronto' : 'Estou pronto'}
@@ -221,7 +224,7 @@ export function Lobby({ snapshot }: { snapshot: RoomSnapshot }) {
         {isHost && !canStart && (
           <p className="mono rm-hint">Precisa de 2 pessoas, todas marcando "pronto".</p>
         )}
-        <button type="button" className="btn ghost" onClick={leaveRoom}>
+        <button type="button" className="btn ghost" data-sfx="back" onClick={leaveRoom}>
           Sair da sala
         </button>
       </div>

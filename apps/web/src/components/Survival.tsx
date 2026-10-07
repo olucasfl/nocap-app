@@ -1,4 +1,6 @@
+import { useEffect } from 'react';
 import { Link } from '@tanstack/react-router';
+import { buzz, sfx } from '@/lib/sfx';
 import { SURVIVAL_LIVES, SURVIVAL_MAX_ROUNDS } from '@nocap/games';
 import './survival.css';
 
@@ -41,6 +43,10 @@ export function SurvivalVerdict({
   minScore: number;
   over: boolean;
 }) {
+  useEffect(() => {
+    if (passed) sfx.coin();
+    else sfx.lifeLost();
+  }, [passed]);
   return (
     <p className={`sv-verdict ${passed ? 'ok' : 'bad'}`} role="status">
       {passed
@@ -75,6 +81,11 @@ export function SurvivalFinal({
   game: 'cor' | 'tempo';
   onRematch: () => void;
 }) {
+  useEffect(() => {
+    if (completed) sfx.win();
+    else sfx.gameOver();
+    buzz(40);
+  }, [completed]);
   return (
     <section className="screen">
       <div className="sv-total">

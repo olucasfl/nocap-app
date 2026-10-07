@@ -84,6 +84,7 @@ function MatchRow({ item }: { item: HistoryItem }) {
       <button
         type="button"
         className="hist-row"
+        data-sfx="select"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
       >
@@ -184,6 +185,7 @@ export function History() {
           <button
             type="button"
             className="btn ghost"
+            data-sfx="page"
             disabled={page === 0}
             onClick={() => setPage((p) => p - 1)}
           >
@@ -193,6 +195,7 @@ export function History() {
           <button
             type="button"
             className="btn ghost"
+            data-sfx="page"
             disabled={!hasNext || q.isFetchingNextPage}
             onClick={() => void goNext()}
           >

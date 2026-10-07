@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { BackButton } from '@/components/BackButton';
+import { sfx } from '@/lib/sfx';
 import { Field } from '@/components/Field';
 import {
   USERNAME_MAX,
@@ -34,6 +35,7 @@ export function Register() {
       await register(form);
       await navigate({ to: '/perfil' });
     } catch (err) {
+      sfx.error();
       setFailure(err instanceof Error ? err.message : 'Não foi possível criar a conta.');
     } finally {
       setBusy(false);

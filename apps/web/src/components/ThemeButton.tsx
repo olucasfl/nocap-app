@@ -12,6 +12,7 @@ export function ThemeButton() {
     <button
       type="button"
       className="chip"
+      data-sfx={pref === 'light' ? 'themeDark' : 'themeLight'}
       aria-label={`Tema: ${LABEL[pref]}. Trocar para ${LABEL[nextTheme(pref)]}`}
       onClick={() => setTheme(nextTheme(pref))}
     >

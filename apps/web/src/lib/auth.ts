@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { apiBase, apiClient } from './api-client';
 import { isEmail, normalizeUsername, type RegisterForm } from './account-form';
 import { getGuestId } from './guest';
+import { sfx } from './sfx';
 import { recordVisit } from './stats';
 
 const TOKEN_KEY = 'nocap-token';
@@ -121,6 +122,7 @@ async function finishSignIn(res: Response, data: AuthResponse | null) {
   setToken(token);
   cacheUser(data.user);
   useAuth.setState({ user: data.user, status: 'ready' });
+  sfx.success();
   await claimGuest();
   void markVisit();
 }

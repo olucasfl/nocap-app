@@ -62,7 +62,13 @@ export function DailyCard({
             todo mundo. Tem ranking próprio.
           </p>
           <PlayGate what="jogar o Daily">
-            <button type="button" className="btn alt" disabled={busy} onClick={onPlay}>
+            <button
+              type="button"
+              className="btn alt"
+              data-sfx="start"
+              disabled={busy}
+              onClick={onPlay}
+            >
               {busy ? 'Preparando...' : 'Jogar o Daily'} <ArrowRight />
             </button>
           </PlayGate>
