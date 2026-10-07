@@ -4,7 +4,7 @@ import { SURVIVAL_MAX_ROUNDS } from '../core/survival';
 import type { GameDefinition } from '../core/types';
 
 export const timeSettingsSchema = z.object({
-  rounds: z.number().int().min(1).max(20),
+  rounds: z.number().int().min(1).max(30),
   /** Faixa do alvo, em ms (múltiplos de 100). Médios 5–15 s; curtos 1–5 s; longos 15–30 s. */
   minMs: z.number().int().min(1000).max(30_000),
   maxMs: z.number().int().min(1000).max(30_000),

@@ -8,19 +8,17 @@ import {
 } from './survival';
 
 describe('survival', () => {
-  it('Cor: a nota mínima sobe de 6 até 9, de cinco em cinco rodadas', () => {
-    const at = (round: number) => survivalMinScore('color', round - 1);
-    expect([1, 5, 6, 10, 11, 15, 16, 20, 21, 25, 26, 30].map(at)).toEqual([
-      6, 6, 7, 7, 7.5, 7.5, 8, 8, 8.5, 8.5, 9, 9,
-    ]);
+  it('Cor e Tempo: a nota mínima sobe de 6 até 9, de cinco em cinco rodadas', () => {
+    for (const game of ['color', 'time'] as const) {
+      const at = (round: number) => survivalMinScore(game, round - 1);
+      expect([1, 5, 6, 10, 11, 15, 16, 20, 21, 25, 26, 30].map(at)).toEqual([
+        6, 6, 7, 7, 7.5, 7.5, 8, 8, 8.5, 8.5, 9, 9,
+      ]);
+    }
   });
 
-  it('Tempo: nota mínima fixa em 6', () => {
-    expect([0, 4, 9, 15].map((i) => survivalMinScore('time', i))).toEqual([6, 6, 6, 6]);
-  });
-
-  it('o limite é 30 rodadas na Cor e 20 no Tempo', () => {
-    expect(SURVIVAL_MAX_ROUNDS).toEqual({ color: 30, time: 20 });
+  it('o limite é 30 rodadas nos dois jogos', () => {
+    expect(SURVIVAL_MAX_ROUNDS).toEqual({ color: 30, time: 30 });
   });
 
   it('o tempo de decorar cai devagar até 1 s', () => {
@@ -60,8 +58,8 @@ describe('survival', () => {
     expect(s).toMatchObject({ played: 30, lives: 2, ended: 'cap' });
   });
 
-  it('Tempo: chegar ao limite de 20 rodadas completa a partida', () => {
-    const s = evaluateSurvival('time', Array(25).fill(10));
-    expect(s).toMatchObject({ played: 20, ended: 'cap' });
+  it('Tempo: chegar ao limite de 30 rodadas completa a partida', () => {
+    const s = evaluateSurvival('time', Array(35).fill(10));
+    expect(s).toMatchObject({ played: 30, ended: 'cap' });
   });
 });

@@ -26,7 +26,7 @@ const timeMatchSchema = z.object({
   ...base,
   game: z.literal('time'),
   /** Duração medida no aparelho, em ms, uma por rodada. */
-  answers: z.array(z.number().int().min(0).max(600_000)).min(1).max(20),
+  answers: z.array(z.number().int().min(0).max(600_000)).min(1).max(30),
   /** Sessão assinada pelo servidor (`POST /games/time/session`). */
   session: z.string().min(10).max(600),
 });

@@ -22,7 +22,7 @@ function extra(run: Run): string {
     case 'sequence':
       return `São ${rounds} alvos curtos seguidos, sem pausa. As notas aparecem no fim.`;
     case 'survival':
-      return `Você tem ${SURVIVAL_LIVES} vidas. Nota abaixo de ${survivalMinScore('time', 0)} perde uma vida. Vale quantas rodadas você aguenta.`;
+      return `Você tem ${SURVIVAL_LIVES} vidas. Nota abaixo de ${survivalMinScore('time', 0)} perde uma vida, e a nota mínima vai subindo a cada 5 rodadas. Vale quantas rodadas você aguenta.`;
     default:
       return run.mode === 'daily'
         ? `São ${rounds} rodadas, iguais para todo mundo, e só vale uma vez por dia.`

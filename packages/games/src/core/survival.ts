@@ -3,21 +3,19 @@
  * quantas rodadas a pessoa jogou. Lógica pura, usada pelo app (para jogar) e pelo servidor (para
  * conferir que a partida enviada é uma sobrevivência completa).
  *
- * - Cor: a nota mínima sobe de 6 até 9 de cinco em cinco rodadas (6, 7, 7,5, 8, 8,5 e 9) e quem
- *   passa por todas as 30 rodadas ganha. Chega a 9 porque 10 exige acertar a cor quase exata,
- *   o que os controles HSB não permitem de forma consistente.
- * - Tempo: nota mínima fixa 6, até 20 rodadas.
+ * - A nota mínima sobe de 6 até 9 de cinco em cinco rodadas (6, 7, 7,5, 8, 8,5 e 9) e quem passa
+ *   por todas as 30 rodadas ganha, nos dois jogos. Chega a 9 porque 10 exige acertar quase exato
+ *   (a cor, ou o tempo na centésima), o que não dá para cobrar de forma consistente.
  */
 
 export type SurvivalGame = 'color' | 'time';
 
 export const SURVIVAL_LIVES = 3;
 /** Limite de rodadas; quem chega aqui "completou" (e é o máximo que o servidor aceita). */
-export const SURVIVAL_MAX_ROUNDS: Record<SurvivalGame, number> = { color: 30, time: 20 };
+export const SURVIVAL_MAX_ROUNDS: Record<SurvivalGame, number> = { color: 30, time: 30 };
 
 /** Nota mínima para não perder vida na rodada `index` (0 = primeira). */
-export function survivalMinScore(game: SurvivalGame, index: number): number {
-  if (game === 'time') return 6;
+export function survivalMinScore(_game: SurvivalGame, index: number): number {
   if (index < 5) return 6; // rodadas 1–5
   if (index < 10) return 7; // 6–10
   if (index < 15) return 7.5; // 11–15
