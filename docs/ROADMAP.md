@@ -71,6 +71,7 @@ Ainda sem prioridade definida contra as salas do Ecooo. Cada item tem a sua spec
 - [x] **Histórico de sala de todos os jogos, só com quem jogou e a colocação** (feito; falta testar ao vivo)
 
 - [x] **Editar nome** no Perfil (feito só o Nome; @usuário fixo, troca do @ em aberto): `specs/007-contas.md` (seção "Pendente")
+- [ ] **Aba separada de Rankings** (tirar o ranking de dentro de cada jogo e criar uma aba própria, mais intuitiva): `specs/015-aba-rankings.md`
 
 ## Etapa 6: produção
 
