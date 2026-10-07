@@ -57,7 +57,7 @@ Google, verificação de e-mail, recuperar senha, foto/avatar (brief #11), amigo
 
 ## Pendente: editar nome (pedido do Lucas em 07/10/2026)
 
-> **Status: pendente, só escrito.** Pedido: "uma opção de editar nome", para fazer no futuro.
+> **Status: implementado só para o Nome de exibição (o @usuário continua fixo; troca de @ fica em aberto).** Pedido: "uma opção de editar nome", para fazer no futuro.
 
 Hoje o cadastro tem dois campos: **@usuário** (único, aparece em ranking, amigos, salas e histórico) e **Nome**. Falta uma forma de mudar depois de criada a conta, no Perfil.
 

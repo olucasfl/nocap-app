@@ -6,7 +6,9 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { InstallApp } from '@/components/InstallApp';
 import { Choice } from '@/components/RankingList';
 import { Records } from '@/components/Records';
-import { logout, useAuth } from '@/lib/auth';
+import { Field } from '@/components/Field';
+import { NAME_MAX } from '@/lib/account-form';
+import { logout, updateName, useAuth } from '@/lib/auth';
 import { fetchStats, streakLabel } from '@/lib/stats';
 import './profile.css';
 
@@ -15,6 +17,50 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'profile', label: 'Perfil' },
   { id: 'records', label: 'Recordes' },
 ];
+
+function NameEditor({ name, onDone }: { name: string; onDone: () => void }) {
+  const [text, setText] = useState(name);
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
+  const save = async () => {
+    setSaving(true);
+    setError('');
+    try {
+      await updateName(text);
+      onDone();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Não foi possível salvar.');
+      setSaving(false);
+    }
+  };
+  return (
+    <form
+      className="pf-edit"
+      onSubmit={(e) => {
+        e.preventDefault();
+        void save();
+      }}
+    >
+      <Field
+        label="Nome"
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        error={error || undefined}
+        hint="O @usuário não muda."
+        maxLength={NAME_MAX}
+        autoFocus
+      />
+      <div className="pf-actions">
+        <button type="submit" className="btn alt" data-sfx="success" disabled={saving}>
+          {saving ? 'Salvando...' : 'Salvar'}
+        </button>
+        <button type="button" className="btn ghost" data-sfx="cancel" onClick={onDone}>
+          Cancelar
+        </button>
+      </div>
+    </form>
+  );
+}
 
 function VisitStreak() {
   const q = useQuery({ queryKey: ['stats'], queryFn: fetchStats });
@@ -37,6 +83,7 @@ export function Profile() {
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<Tab>('profile');
   const [confirming, setConfirming] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   const signOut = async () => {
     await logout();
@@ -91,6 +138,18 @@ export function Profile() {
               <div className="mono pf-email">{user.email}</div>
             </div>
           </section>
+          {editing ? (
+            <NameEditor name={user.name} onDone={() => setEditing(false)} />
+          ) : (
+            <button
+              type="button"
+              className="btn ghost"
+              data-sfx="select"
+              onClick={() => setEditing(true)}
+            >
+              Editar nome
+            </button>
+          )}
           <VisitStreak />
           <InstallApp />
           <div className="pf-actions">

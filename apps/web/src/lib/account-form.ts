@@ -23,15 +23,20 @@ export const normalizeUsername = (v: string) => v.trim().toLowerCase();
 /** No login, quem digita "@" está usando o e-mail; senão é o nome de usuário. */
 export const isEmail = (v: string) => v.includes('@');
 
+export function validateName(name: string): string | undefined {
+  const n = name.trim();
+  return n.length < NAME_MIN || n.length > NAME_MAX
+    ? `Escreva seu nome (${NAME_MIN} a ${NAME_MAX} letras)`
+    : undefined;
+}
+
 export function validateRegister(f: RegisterForm): RegisterErrors {
   const e: RegisterErrors = {};
   if (!USERNAME_RE.test(normalizeUsername(f.username))) {
     e.username = `Use ${USERNAME_MIN} a ${USERNAME_MAX} letras minúsculas, números ou _`;
   }
-  const name = f.name.trim();
-  if (name.length < NAME_MIN || name.length > NAME_MAX) {
-    e.name = `Escreva seu nome (${NAME_MIN} a ${NAME_MAX} letras)`;
-  }
+  const nameError = validateName(f.name);
+  if (nameError) e.name = nameError;
   if (!EMAIL_RE.test(f.email.trim())) e.email = 'E-mail inválido';
   if (f.password.length < PASSWORD_MIN) {
     e.password = `A senha precisa de ${PASSWORD_MIN} ou mais caracteres`;

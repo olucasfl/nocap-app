@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { apiBase, apiClient } from './api-client';
-import { isEmail, normalizeUsername, type RegisterForm } from './account-form';
+import { isEmail, normalizeUsername, validateName, type RegisterForm } from './account-form';
 import { getGuestId } from './guest';
 import { sfx } from './sfx';
 import { recordVisit } from './stats';
@@ -145,6 +145,19 @@ export async function register(form: RegisterForm) {
     }),
   });
   await finishSignIn(res, data);
+}
+
+/** Troca o nome de exibição (o @usuário não muda). Valida igual ao cadastro. */
+export async function updateName(name: string) {
+  const clean = name.trim();
+  const error = validateName(clean);
+  if (error) throw new Error(error);
+  await authRequest('/update-user', { method: 'POST', body: JSON.stringify({ name: clean }) });
+  const user = useAuth.getState().user;
+  if (!user) return;
+  const next = { ...user, name: clean };
+  cacheUser(next);
+  useAuth.setState({ user: next });
 }
 
 export async function login(identifier: string, password: string) {
