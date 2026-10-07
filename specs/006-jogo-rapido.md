@@ -1,6 +1,6 @@
 # 006: Jogo rápido (1 rodada)
 
-> **Status: Cor implementada (preset `quick`, 3 s, sem Daily, sem atalho no Hub); Tempo fica para a Etapa 4.** Pedido do Lucas após o primeiro teste: "tem que ter uma opção de jogar somente 1 rodada, tipo o jogo rápido; o jogo do Tempo teria isso também". Nada implementado ainda.
+> **Status: Cor e Tempo implementados (preset `quick`, sem Daily, sem atalho no Hub).** Pedido do Lucas após o primeiro teste: "tem que ter uma opção de jogar somente 1 rodada, tipo o jogo rápido; o jogo do Tempo teria isso também". Nada implementado ainda.
 
 ## Objetivo
 
@@ -35,7 +35,7 @@ Cada jogo oferece uma partida de **uma rodada só**, para jogar em 30 segundos s
 - [x] A partida é salva com `mode = quick` e nota recalculada no servidor, valendo no máximo 10.
 - [x] O recorde e o ranking do Rápido não se misturam com os do Clássico.
 - [x] "Outra rodada" inicia nova partida rápida com seed nova.
-- [ ] O mesmo vale para o Tempo quando ele existir (spec 002).
+- [x] O mesmo vale para o Tempo (spec 002).
 
 ## Fora de escopo
 

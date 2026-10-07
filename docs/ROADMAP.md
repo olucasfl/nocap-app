@@ -44,8 +44,8 @@ Podem rodar antes ou depois do passo 4 (PWA); o modo noturno toca o manifesto/`t
 
 ## Etapa 4: jogo do Tempo
 
-- [ ] Clássico, Sequência, Sem estourar em solo, sala e daily. Spec: `specs/002-time-game.md`
-- [ ] Decidir a curva da nota (brief #4) e anti-trapaça (#6) antes de codar
+- [x] Tempo solo: Clássico, Rápido, Sem estourar e Daily (spec 002). Faltam: Sequência e salas do Tempo
+- [x] Curva da nota (#4) e anti-trapaça (#6): propostas implementadas, **falta o Lucas validar**
 
 ## Etapa 5: modos extras e conquistas
 

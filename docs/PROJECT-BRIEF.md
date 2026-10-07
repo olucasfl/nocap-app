@@ -258,9 +258,9 @@ head_to_head(player_a, player_b, game, wins_a int, wins_b int, last_played_at)
 | 1   | Jogam mais **presencialmente ou remoto**?                            | Muda a necessidade de chat e voz (WebRTC/LiveKit) e de um "modo TV"                   |
 | 2   | **Auth**                                                             | Better Auth (planejado) vs Supabase Auth (já que o banco é Supabase); e-mail + Google |
 | 3   | **Calibrar a curva da nota da Cor**                                  | curva v2 `10/(1+(ΔE/12)^1.6)` implementada; validar 12 e 1,6 com jogadores reais                                |
-| 4   | **Curva da nota do Tempo**                                           | Erro relativo → 0–10; definir a função exata (ex.: `10·max(0, 1 − 2·                  | erro | /alvo)` ou exponencial) |
+| 4   | **Curva da nota do Tempo**                                           | PROPOSTA implementada: `10/(1+(e/0.15)^1.6)` (erro relativo); falta o Lucas validar jogando |
 | 5   | **Tempo de exibição do Clássico da Cor**                             | 3s (protótipo aprovado) vs 5s (planejamento inicial). Hoje vale **3s**                |
-| 6   | **Anti-trapaça do Tempo**                                            | A medição é no cliente; definir checagens de plausibilidade para o ranking            |
+| 6   | **Anti-trapaça do Tempo**                                            | PROPOSTA implementada: sessão assinada, soma dos tempos <= relógio do servidor, uso único, 200 ms a 3x o alvo; falta o Lucas validar |
 | 7   | **Limite de jogadores por sala**                                     | Sugestão: 2–8                                                                         |
 | 8   | Quais **modos da Cor** entram no lançamento além de Clássico e Flash | —                                                                                     |
 | 9   | Quais modos têm **Daily**                                            | Sugestão: só Clássico                                                                 |

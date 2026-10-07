@@ -1,9 +1,13 @@
 import { useState } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { toHex } from '@/games/color/hex';
+import { formatDiff, formatSeconds } from '@/games/time/format';
 import {
   colorRounds,
   fetchHistory,
+  gameLabel,
+  matchMax,
+  timeRounds,
   formatPlayedAt,
   kindLabel,
   modeLabel,
@@ -11,7 +15,29 @@ import {
 } from '@/lib/history';
 import './history.css';
 
+function TimeDetail({ item }: { item: HistoryItem }) {
+  const rounds = timeRounds(item);
+  if (!rounds) {
+    return <p className="mono hist-note">DETALHE EXPIRADO: SÓ O RESUMO FICA GUARDADO.</p>;
+  }
+  return (
+    <ol className="hist-rounds">
+      {rounds.map((r, i) => (
+        <li key={i} className="hist-round">
+          <span className="mono hist-round-n">{i + 1}</span>
+          <span className="mono hist-time">
+            {formatSeconds(r.target)} → {formatSeconds(r.answer)}
+          </span>
+          <span className="mono hist-vs">{formatDiff(r.answer - r.target)}</span>
+          <span className="mono hist-round-score">{r.score.toFixed(1)}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 function MatchDetail({ item }: { item: HistoryItem }) {
+  if (item.game === 'time') return <TimeDetail item={item} />;
   const rounds = colorRounds(item);
   if (!rounds) {
     return <p className="mono hist-note">DETALHE EXPIRADO: SÓ O RESUMO FICA GUARDADO.</p>;
@@ -51,14 +77,14 @@ function MatchRow({ item }: { item: HistoryItem }) {
       >
         <span className="hist-row-main">
           <span className="hist-row-title">
-            Cor · {modeLabel(item.mode)}
+            {gameLabel(item.game)} · {modeLabel(item.mode)}
             <span className="mono hist-badge">{kindLabel(item.kind).toUpperCase()}</span>
           </span>
           <span className="mono hist-row-date">{formatPlayedAt(item.playedAt)}</span>
         </span>
         <span className="hist-row-score">
           {(item.totalScore / 10).toFixed(1)}
-          <small className="mono">/50</small>
+          <small className="mono">/{matchMax(item)}</small>
         </span>
       </button>
       {open && <MatchDetail item={item} />}

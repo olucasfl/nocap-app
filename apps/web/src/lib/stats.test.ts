@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { colorModes, streakLabel, type Stats } from './stats';
+import { colorModes, gameModes, streakLabel, type Stats } from './stats';
 
 const stats: Stats = {
   modes: [
@@ -14,6 +14,18 @@ const stats: Stats = {
 describe('stats', () => {
   it('filtra só os modos da Cor conhecidos e ordena como na tela de início', () => {
     expect(colorModes(stats).map((m) => m.mode)).toEqual(['classic', 'quick']);
+  });
+
+  it('separa os jogos e inclui "sem estourar" do Tempo', () => {
+    const withStrict: Stats = {
+      ...stats,
+      modes: [
+        ...stats.modes,
+        { game: 'time', mode: 'strict', matches: 2, best: 400, average: 300 },
+      ],
+    };
+    expect(gameModes(withStrict, 'time').map((m) => m.mode)).toEqual(['classic', 'strict']);
+    expect(gameModes(withStrict, 'color').map((m) => m.mode)).toEqual(['classic', 'quick']);
   });
 
   it('escreve a sequência no singular e no plural', () => {

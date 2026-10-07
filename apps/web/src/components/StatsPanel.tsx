@@ -1,28 +1,18 @@
 import { useQuery } from '@tanstack/react-query';
 import { modeLabel } from '@/lib/history';
-import { colorModes, fetchStats, MODE_MAX, streakLabel } from '@/lib/stats';
+import { fetchStats, gameModes, MODE_MAX, streakLabel, type Stats } from '@/lib/stats';
 import './stats-panel.css';
 
-/** Recordes por modo e sequência do Daily (conta: todos os aparelhos; convidado: este). */
-export function StatsPanel() {
-  const q = useQuery({ queryKey: ['stats'], queryFn: fetchStats });
+const GAMES = [
+  { id: 'color', label: 'COR' },
+  { id: 'time', label: 'TEMPO' },
+] as const;
 
-  if (q.isPending) return <p className="lead">Carregando recordes...</p>;
-  if (q.isError) return <p className="lead">Não deu para carregar os recordes agora.</p>;
-
-  const modes = colorModes(q.data);
-  const { daily } = q.data;
-
+function Records({ stats, game, label }: { stats: Stats; game: string; label: string }) {
+  const modes = gameModes(stats, game);
   return (
-    <section className="stats" aria-label="Recordes">
-      <div className="stats-streak">
-        <div className="mono stats-label">SEQUÊNCIA DO DAILY</div>
-        <div className="stats-streak-row">
-          <b>{streakLabel(daily.current)}</b>
-          <span className="mono">MELHOR {streakLabel(daily.best)}</span>
-        </div>
-      </div>
-      <h2 className="mono stats-label">RECORDES · COR</h2>
+    <>
+      <h2 className="mono stats-label">RECORDES · {label}</h2>
       {modes.length === 0 ? (
         <p className="lead">Jogue uma partida para ver seus recordes.</p>
       ) : (
@@ -42,6 +32,31 @@ export function StatsPanel() {
           ))}
         </ul>
       )}
+    </>
+  );
+}
+
+/** Recordes por jogo e modo e sequência do Daily (conta: todos os aparelhos; convidado: este). */
+export function StatsPanel() {
+  const q = useQuery({ queryKey: ['stats'], queryFn: fetchStats });
+
+  if (q.isPending) return <p className="lead">Carregando recordes...</p>;
+  if (q.isError) return <p className="lead">Não deu para carregar os recordes agora.</p>;
+
+  const { daily } = q.data;
+
+  return (
+    <section className="stats" aria-label="Recordes">
+      <div className="stats-streak">
+        <div className="mono stats-label">SEQUÊNCIA DO DAILY</div>
+        <div className="stats-streak-row">
+          <b>{streakLabel(daily.current)}</b>
+          <span className="mono">MELHOR {streakLabel(daily.best)}</span>
+        </div>
+      </div>
+      {GAMES.map((g) => (
+        <Records key={g.id} stats={q.data} game={g.id} label={g.label} />
+      ))}
     </section>
   );
 }
