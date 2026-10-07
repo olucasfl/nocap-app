@@ -3,6 +3,7 @@ import { Loader } from '@/components/Loader';
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { Link } from '@tanstack/react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Field } from '@/components/Field';
 import { ApiError } from '@/lib/api-client';
 import { useAuth } from '@/lib/auth';
@@ -144,6 +145,8 @@ function Search({ onChanged }: { onChanged: () => void }) {
 }
 
 export function Friends() {
+  /** Amigo que a pessoa tocou em "Remover": a remoção só acontece depois de confirmar. */
+  const [removing, setRemoving] = useState<string | null>(null);
   const { user, status } = useAuth();
   const queryClient = useQueryClient();
   const list = useQuery({ queryKey: ['friends'], queryFn: fetchFriends, enabled: !!user });
@@ -322,12 +325,7 @@ export function Friends() {
                     data-sfx="remove"
                     disabled={lock}
                     aria-busy={busyId === `remove:${p.username}`}
-                    onClick={() =>
-                      mutate.mutate({
-                        id: `remove:${p.username}`,
-                        run: () => removeFriend(p.username),
-                      })
-                    }
+                    onClick={() => setRemoving(p.username)}
                   >
                     {busyId === `remove:${p.username}` ? 'Removendo...' : 'Remover'}
                   </button>
@@ -337,6 +335,19 @@ export function Friends() {
           )}
         </section>
       )}
+      <ConfirmDialog
+        open={removing !== null}
+        title="Remover amigo?"
+        text={`@${removing ?? ''} sai da sua lista de amigos e vocês deixam de aparecer no ranking um do outro. Para voltar, é preciso pedir amizade de novo.`}
+        confirmLabel="Remover"
+        confirmSfx="remove"
+        onConfirm={() => {
+          const who = removing;
+          setRemoving(null);
+          if (who) mutate.mutate({ id: `remove:${who}`, run: () => removeFriend(who) });
+        }}
+        onCancel={() => setRemoving(null)}
+      />
     </main>
   );
 }
