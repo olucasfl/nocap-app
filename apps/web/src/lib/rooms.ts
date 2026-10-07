@@ -4,7 +4,7 @@ import { create } from 'zustand';
 import { apiBase } from './api-client';
 import { getToken, useAuth } from './auth';
 
-export type RoomGame = 'color' | 'time' | 'impostor';
+export type RoomGame = 'color' | 'time' | 'impostor' | 'eco';
 export type Phase = 'lobby' | 'show' | 'pick' | 'play' | 'vote' | 'reveal' | 'final';
 
 export interface ColorRoomSettings {
@@ -57,6 +57,22 @@ export interface ChatMessage {
   at: number;
 }
 
+/** Corrida do Ecooo: a sequência e quem ainda está na disputa. */
+export interface EcoRoomState {
+  round: number;
+  length: number;
+  pads: number;
+  stepMs: number;
+  reverse: boolean;
+  /** A sequência da rodada (some no lobby e no pódio). */
+  sequence: number[] | null;
+  participants: string[];
+  alive: string[];
+  progress: number;
+  /** Quando eu perco por ficar parado; null fora da minha vez. */
+  tapDeadline: number | null;
+}
+
 export interface RoomSnapshot {
   code: string;
   game: RoomGame;
@@ -78,6 +94,7 @@ export interface RoomSnapshot {
   /** Chat da sala: aberto agora? e quem o líder silenciou. */
   chat: { open: boolean; muted: string[] };
   impostor?: ImpostorState;
+  eco?: EcoRoomState;
 }
 
 /** Estado do Intruso, por pessoa: cor, dica e papéis só chegam a quem pode vê-los. */

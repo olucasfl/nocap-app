@@ -21,9 +21,9 @@ const RULES: Record<GameId, string[]> = {
     'De 2 a 12 pessoas. O servidor mede o tempo de cada um.',
   ],
   eco: [
-    'Corrida: todos veem a mesma sequência ao mesmo tempo; quem erra sai, e vence quem sobrar.',
-    'Siga o Líder: um cria a sequência, os outros repetem, e a cada rodada o líder muda.',
-    'De 2 a 12 pessoas.',
+    'Corrida: todos veem a mesma sequência ao mesmo tempo e repetem; quem erra ou demora vira plateia, e vence quem sobrar.',
+    'O host escolhe o modo: Clássico, Escalada, Velocidade ou Reverso.',
+    'De 2 a 12 pessoas. (O Siga o Líder chega depois.)',
   ],
 };
 
@@ -40,28 +40,6 @@ export function FriendsPanel({ game }: { game: GameId }) {
     if (!CODE_RE.test(c)) return setError('O código tem 4 letras.');
     void navigate({ to: '/sala/$code', params: { code: c } });
   };
-
-  // As salas do Eco ainda não existem (Corrida e Siga o Líder vêm depois do solo).
-  if (game === 'eco') {
-    return (
-      <div className="fp">
-        <section className="fp-card">
-          <h2 className="fp-h">Salas do Ecooo em breve</h2>
-          <p className="fp-text">
-            Por enquanto o Ecooo é só solo. As salas com amigos chegam numa próxima versão.
-          </p>
-        </section>
-        <section className="fp-rules" aria-label="Como vai funcionar">
-          <div className="mono fp-rules-title">COMO VAI FUNCIONAR</div>
-          <ul>
-            {RULES.eco.map((r) => (
-              <li key={r}>{r}</li>
-            ))}
-          </ul>
-        </section>
-      </div>
-    );
-  }
 
   if (!online) {
     return (

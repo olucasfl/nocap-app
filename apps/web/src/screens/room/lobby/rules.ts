@@ -29,12 +29,13 @@ const IMP_VOTE = [20_000, 30_000, 60_000];
 const IMP_COUNT = [1, 2, 3];
 
 /** Quantas pessoas cada jogo precisa para começar. */
-export const MIN_PLAYERS: Record<RoomGame, number> = { color: 2, time: 2, impostor: 3 };
+export const MIN_PLAYERS: Record<RoomGame, number> = { color: 2, time: 2, impostor: 3, eco: 2 };
 
 export const GAME_NAME: Record<RoomGame, string> = {
   color: 'Mesmíssima',
   time: 'Já Deu?',
   impostor: 'Intruso',
+  eco: 'Ecooo',
 };
 
 /** "Entra na minha sala ___": com a preposição certa para o convite. */
@@ -42,10 +43,25 @@ export const GAME_OF: Record<RoomGame, string> = {
   color: 'da Mesmíssima',
   time: 'de Já Deu?',
   impostor: 'do Intruso',
+  eco: 'do Ecooo',
 };
 
 /** Modos de cada jogo na sala, com uma linha que explica cada um. */
 export const MODES: Record<RoomGame, { id: string; label: string; note: string }[]> = {
+  eco: [
+    {
+      id: 'classic',
+      label: 'Clássico',
+      note: 'A sequência cresce um passo por rodada. Quem erra ou demora 8 s sai.',
+    },
+    { id: 'escalada', label: 'Escalada', note: 'A cada 3 rodadas entra um botão novo, até 9.' },
+    {
+      id: 'velocidade',
+      label: 'Velocidade',
+      note: 'A sequência acelera a cada rodada. Vai até 30 passos.',
+    },
+    { id: 'reverso', label: 'Reverso', note: 'Repita de trás para frente.' },
+  ],
   impostor: [
     {
       id: 'impostor',
@@ -77,7 +93,7 @@ export function rulesSummary(s: RoomSnapshot): string {
   return [
     GAME_NAME[s.game],
     mode === GAME_NAME[s.game] ? undefined : mode,
-    `${rounds} ${rounds === 1 ? 'rodada' : 'rodadas'}`,
+    s.game === 'eco' ? 'Corrida' : `${rounds} ${rounds === 1 ? 'rodada' : 'rodadas'}`,
   ]
     .filter(Boolean)
     .join(' · ');
@@ -98,14 +114,16 @@ export function rulesFor(s: RoomSnapshot): RuleDef[] {
     });
   }
 
-  out.push({
-    id: 'rounds',
-    label: 'RODADAS',
-    values: s.game === 'impostor' ? IMP_ROUNDS : ROUNDS,
-    current: cfg.rounds,
-    format: String,
-    patch: (v) => ({ rounds: v }),
-  });
+  // Corrida do Ecooo: as rodadas vêm do modo (a partida acaba quando sobra um).
+  if (s.game !== 'eco')
+    out.push({
+      id: 'rounds',
+      label: 'RODADAS',
+      values: s.game === 'impostor' ? IMP_ROUNDS : ROUNDS,
+      current: cfg.rounds,
+      format: String,
+      patch: (v) => ({ rounds: v }),
+    });
 
   if (s.game === 'impostor') {
     const players = Math.max(s.members.length, 3);

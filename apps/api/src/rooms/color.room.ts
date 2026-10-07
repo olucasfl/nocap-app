@@ -4,6 +4,7 @@ import type { Auth } from '../auth/auth';
 import { ColorRoomEngine, MAX_PLAYERS, RoomError } from './color-room.engine';
 import { TimeRoomEngine } from './time-room.engine';
 import { ImpostorRoomEngine } from './impostor/impostor-room.engine';
+import { EcoRoomEngine } from './eco-room.engine';
 import { IMPOSTOR_MAX_PLAYERS } from '@nocap/games';
 import type { InvitesService } from './invites.service';
 import type { RoomsRepository } from './rooms.repository';
@@ -240,7 +241,7 @@ export class ColorRoom extends Room {
   private async saveResult() {
     try {
       await roomDeps.repo?.saveRoomMatch({
-        game: this.engine.game as 'color' | 'time',
+        game: this.engine.game as 'color' | 'time' | 'eco',
         seed: this.engine.currentSeed,
         settings: this.engine.currentSettings,
         rows: this.engine.finalRows(),
@@ -277,6 +278,20 @@ export class ImpostorRoom extends ColorRoom {
     this.onMessage('lock', (c, m) => this.act(c, (id) => engine().lock(id, m)));
     this.onMessage('suspect', (c, m: { id?: string | null }) =>
       this.act(c, (id) => engine().vote(id, m?.id ? String(m.id) : null)),
+    );
+  }
+}
+
+/** Sala do Ecooo (Corrida): todos veem a mesma sequência e repetem; quem erra vira plateia. */
+export class EcoRoom extends ColorRoom {
+  protected override makeEngine(opts: ConstructorParameters<typeof ColorRoomEngine>[0]) {
+    return new EcoRoomEngine(opts);
+  }
+
+  protected override registerGameMessages() {
+    const engine = () => this.engine as EcoRoomEngine;
+    this.onMessage('tap', (c, m: { pad?: number }) =>
+      this.act(c, (id) => engine().tap(id, Number(m?.pad))),
     );
   }
 }

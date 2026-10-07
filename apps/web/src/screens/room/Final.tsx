@@ -10,6 +10,7 @@ export function Final({ snapshot }: { snapshot: RoomSnapshot }) {
   const me = useAuth((s) => s.user?.id);
   const message = useRoom((s) => s.message);
   const impostor = snapshot.game === 'impostor';
+  const eco = snapshot.game === 'eco';
   const max = snapshot.settings.rounds * 10;
   const mine = snapshot.members.find((m) => m.id === me);
   const voted = !!mine?.rematch;
@@ -28,8 +29,8 @@ export function Final({ snapshot }: { snapshot: RoomSnapshot }) {
             <span className="mono rm-pos">{r.placement}º</span>
             <span className="rm-result-name">@{r.username}</span>
             <span className="rm-result-score">
-              {(r.totalTenths / 10).toFixed(1)}
-              <small className="mono">{impostor ? ' pts' : `/${max}`}</small>
+              {eco ? Math.round(r.totalTenths / 10) : (r.totalTenths / 10).toFixed(1)}
+              <small className="mono">{eco ? ' passos' : impostor ? ' pts' : `/${max}`}</small>
             </span>
           </li>
         ))}

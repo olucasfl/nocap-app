@@ -8,6 +8,7 @@ import '@/games/color/color.css';
 import { Countdown } from '@/components/Countdown';
 import { ImpostorPlay } from './ImpostorPlay';
 import { TimePlay } from './TimePlay';
+import { EcoRoomPlay } from './EcoPlay';
 
 function Waiting({ snapshot }: { snapshot: RoomSnapshot }) {
   const connected = snapshot.members.filter((m) => m.connected);
@@ -84,6 +85,7 @@ function Reveal({ snapshot }: { snapshot: RoomSnapshot }) {
 
 /** Memorizar, recriar e revelação. O servidor manda em todas as fases; aqui só se mostra. */
 export function Play({ snapshot }: { snapshot: RoomSnapshot }) {
+  if (snapshot.game === 'eco') return <EcoRoomPlay snapshot={snapshot} />;
   if (snapshot.game === 'time') return <TimePlay snapshot={snapshot} />;
   if (snapshot.game === 'impostor') return <ImpostorPlay snapshot={snapshot} />;
   const me = useAuth((s) => s.user?.id);

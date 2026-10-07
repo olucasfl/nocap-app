@@ -24,7 +24,7 @@ export class RoomsRepository {
    * por pessoa, ligada ao aparelho (player) da conta; cria um se a conta ainda não tem.
    */
   async saveRoomMatch(input: {
-    game: 'color' | 'time';
+    game: 'color' | 'time' | 'eco';
     seed: string;
     settings: AnySettings;
     rows: FinalRow[];
