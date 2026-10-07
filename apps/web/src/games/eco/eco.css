@@ -1,0 +1,249 @@
+/* Jogo do Eco (spec 012). Só tokens; animações só em transform e opacity. */
+
+.eco-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+/* fichas de modo */
+.eco-rule {
+  background: var(--white);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  font: 700 11px var(--font-mono);
+}
+.eco-rule b {
+  display: block;
+  font: 900 22px var(--font-display);
+  letter-spacing: -0.04em;
+}
+
+/* instruções */
+.eco-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.eco-steps li {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--white);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 3px 3px 0 var(--ink);
+  font: 400 13px/1.45 var(--font-mono);
+}
+.eco-steps b {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  background: var(--green);
+  color: var(--on-accent);
+  border: var(--border);
+  border-radius: 10px;
+  font: 900 18px var(--font-display);
+}
+.eco-intro-extra {
+  margin: 0;
+  padding: 12px;
+  background: var(--yellow);
+  color: var(--on-accent);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  font: 700 13px/1.45 var(--font-mono);
+}
+
+/* partida */
+.eco-play {
+  gap: 14px;
+}
+.eco-hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.eco-status {
+  padding: 6px 14px;
+  background: var(--white);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 3px 3px 0 var(--ink);
+  font: 900 24px/1 var(--font-display);
+  letter-spacing: -0.02em;
+}
+.eco-status.input {
+  background: var(--yellow);
+  color: var(--on-accent);
+}
+.eco-status.right {
+  background: var(--green);
+  color: var(--on-accent);
+}
+.eco-status.wrong,
+.eco-status.timeout {
+  background: var(--orange);
+  color: var(--on-accent);
+}
+.eco-sub {
+  font-size: 12px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.eco-board {
+  flex: 1;
+  min-height: 320px;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
+  gap: 12px;
+}
+.eco-pad {
+  grid-column: span var(--span, 3);
+  appearance: none;
+  display: grid;
+  place-items: center;
+  min-height: 84px;
+  padding: 0;
+  border: var(--border);
+  border-radius: 20px;
+  box-shadow: 5px 5px 0 var(--ink);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  transition:
+    transform 0.08s ease-out,
+    opacity 0.08s ease-out;
+}
+.eco-pad:disabled {
+  cursor: default;
+}
+.eco-pad:focus-visible {
+  outline: 4px solid var(--ink);
+  outline-offset: 3px;
+}
+/* Algo aceso: o botão aceso fica forte e os outros apagam. */
+.eco-board.dim .eco-pad:not(.lit) {
+  opacity: 0.32;
+}
+.eco-pad.lit {
+  transform: translate(3px, 3px) scale(1.04);
+  box-shadow: 2px 2px 0 var(--ink);
+}
+.eco-pad.bad {
+  outline: 4px solid var(--ink);
+  outline-offset: 3px;
+  animation: eco-shake 0.3s linear;
+}
+.eco-pad.fresh {
+  animation: eco-pop 0.45s cubic-bezier(0.2, 1.5, 0.4, 1) both;
+}
+@keyframes eco-pop {
+  from {
+    transform: scale(0.3) rotate(-14deg);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes eco-shake {
+  25% {
+    transform: translateX(-6px);
+  }
+  50% {
+    transform: translateX(6px);
+  }
+  75% {
+    transform: translateX(-3px);
+  }
+}
+
+.eco-dots {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  min-height: 12px;
+}
+.eco-dots i {
+  width: 11px;
+  height: 11px;
+  border: 2px solid var(--ink);
+  border-radius: 4px;
+}
+.eco-dots i.on {
+  background: var(--ink);
+}
+
+/* fim da partida */
+.eco-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  background: var(--green);
+  color: var(--on-accent);
+  border: var(--border);
+  border-radius: 22px;
+  box-shadow: 6px 6px 0 var(--ink);
+  padding: 18px;
+}
+.eco-total b {
+  display: block;
+  font: 900 76px/0.95 var(--font-display);
+  letter-spacing: -0.05em;
+  font-variant-numeric: tabular-nums;
+}
+.eco-total-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.eco-word {
+  font: 900 20px var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  text-align: right;
+}
+.eco-end {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.eco-miss {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.eco-chip {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: var(--border);
+  border-radius: 9px;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+.eco-save {
+  margin: 0;
+  text-align: center;
+  font: 700 11px var(--font-mono);
+  color: var(--muted);
+}

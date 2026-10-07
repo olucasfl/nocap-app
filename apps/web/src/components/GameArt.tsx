@@ -11,6 +11,9 @@ const SWATCHES = [
   'var(--green)',
 ];
 
+/** Os quatro botões do Eco. */
+const ECO_PADS = ['var(--orange)', 'var(--blue)', 'var(--yellow)', 'var(--green)'];
+
 /**
  * Arte própria de cada jogo, usada no Hub, no Daily e no Perfil: a Cor é uma grade de amostras
  * sobre laranja; o Tempo é um relógio parado sobre azul. Só formas e tokens, sem emoji.
@@ -20,6 +23,15 @@ export function GameArt({ game, size = 'md' }: { game: GameId; size?: 'sm' | 'md
     return (
       <div className={`ga ga-color ${size}`} aria-hidden="true">
         {SWATCHES.map((c) => (
+          <i key={c} style={{ background: c }} />
+        ))}
+      </div>
+    );
+  }
+  if (game === 'eco') {
+    return (
+      <div className={`ga ga-eco ${size}`} aria-hidden="true">
+        {ECO_PADS.map((c) => (
           <i key={c} style={{ background: c }} />
         ))}
       </div>
@@ -42,4 +54,4 @@ export function GameArt({ game, size = 'md' }: { game: GameId; size?: 'sm' | 'md
   );
 }
 
-export const GAME_LABEL: Record<GameId, string> = { color: 'Cor', time: 'Tempo' };
+export const GAME_LABEL: Record<GameId, string> = { color: 'Cor', time: 'Tempo', eco: 'Eco' };

@@ -20,6 +20,7 @@ const stats: Stats = {
   daily: {
     color: { current: 0, best: 0, playedToday: false, totalScore: null },
     time: { current: 0, best: 0, playedToday: false, totalScore: null },
+    eco: { current: 0, best: 0, playedToday: false, totalScore: null },
   },
   visit: { current: 0, best: 0, visitedToday: false },
 };

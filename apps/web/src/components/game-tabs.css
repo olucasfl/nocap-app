@@ -31,6 +31,10 @@
   background: var(--blue);
   color: var(--on-blue);
 }
+.gt.eco button[aria-selected='true'] {
+  background: var(--green);
+  color: var(--on-accent);
+}
 .gt button:focus-visible {
   outline: 3px solid var(--blue);
   outline-offset: -6px;

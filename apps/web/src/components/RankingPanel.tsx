@@ -14,25 +14,25 @@ import {
   type Period,
   type RankingEntry,
 } from '@/lib/ranking';
-import { dailyMax, streakLabel } from '@/lib/stats';
+import { countUnit, dailyMax, streakLabel } from '@/lib/stats';
 import './ranking-panel.css';
 
 function Score({
   entry,
   max,
   showDays,
-  rounds = false,
+  unit = null,
 }: {
   entry: RankingEntry;
   max: number;
   showDays: boolean;
-  /** Sobrevivência: a nota é o número de rodadas jogadas. */
-  rounds?: boolean;
+  /** Sobrevivência (rodadas) e Eco (passos): a nota é uma contagem. */
+  unit?: 'rodadas' | 'passos' | null;
 }) {
   return (
     <>
-      {rounds ? Math.round(entry.score / 10) : (entry.score / 10).toFixed(1)}
-      {rounds && <small className="mono">rodadas</small>}
+      {unit ? Math.round(entry.score / 10) : (entry.score / 10).toFixed(1)}
+      {unit && <small className="mono">{unit}</small>}
       {max > 0 && <small className="mono">/{max}</small>}
       {showDays && entry.days !== undefined && (
         <small className="mono rp-days">{streakLabel(entry.days).toUpperCase()}</small>
@@ -45,12 +45,12 @@ function Podium({
   top,
   max,
   showDays,
-  rounds,
+  unit,
 }: {
   top: RankingEntry[];
   max: number;
   showDays: boolean;
-  rounds: boolean;
+  unit: 'rodadas' | 'passos' | null;
 }) {
   // Ordem visual: 2º, 1º, 3º (o campeão no meio e mais alto).
   const order = [top[1], top[0], top[2]];
@@ -61,7 +61,7 @@ function Podium({
           <li key={e.username} className={`rp-pod p${e.rank}${e.isMe ? ' me' : ''}`}>
             <span className="rp-pod-name">@{e.username}</span>
             <span className="rp-pod-score">
-              <Score entry={e} max={max} showDays={showDays} rounds={rounds} />
+              <Score entry={e} max={max} showDays={showDays} unit={unit} />
             </span>
             <span className="rp-pod-step">
               <b>{e.rank}</b>
@@ -258,7 +258,7 @@ export function RankingPanel({
           top={entries.slice(0, 3)}
           max={max}
           showDays={dailySum}
-          rounds={board === 'survival'}
+          unit={countUnit(game, board)}
         />
       )}
       {rest.length > 0 && (
@@ -268,7 +268,7 @@ export function RankingPanel({
               <span className="mono rp-pos">{e.rank}</span>
               <span className="rp-name">@{e.username}</span>
               <span className="rp-score">
-                <Score entry={e} max={max} showDays={dailySum} rounds={board === 'survival'} />
+                <Score entry={e} max={max} showDays={dailySum} unit={countUnit(game, board)} />
               </span>
             </li>
           ))}
@@ -286,7 +286,7 @@ export function RankingPanel({
                   entry={meOutside}
                   max={max}
                   showDays={dailySum}
-                  rounds={board === 'survival'}
+                  unit={countUnit(game, board)}
                 />
               </span>
             </li>

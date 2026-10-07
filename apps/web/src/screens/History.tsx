@@ -42,6 +42,12 @@ const MODE_FILTERS: Record<GameId, { id: string; label: string }[]> = {
     { id: 'sequence', label: 'Sequência' },
     { id: 'survival', label: 'Sobrevivência' },
   ],
+  eco: [
+    { id: 'classic', label: 'Clássico' },
+    { id: 'escalada', label: 'Escalada' },
+    { id: 'velocidade', label: 'Velocidade' },
+    { id: 'reverso', label: 'Reverso' },
+  ],
 };
 
 const KIND_FILTERS: { id: 'all' | 'solo' | 'daily' | 'room'; label: string }[] = [
@@ -60,6 +66,7 @@ const PERIOD_FILTERS: { id: 'all' | 'day' | 'week'; label: string }[] = [
 const GAMES: { id: GameId; label: string }[] = [
   { id: 'color', label: 'Cor' },
   { id: 'time', label: 'Tempo' },
+  { id: 'eco', label: 'Eco' },
 ];
 
 function ColorDetail({ item }: { item: HistoryItem }) {
@@ -107,6 +114,16 @@ function TimeDetail({ item }: { item: HistoryItem }) {
   );
 }
 
+/** Eco: o que sobra guardado é a lista de toques; o resumo diz até onde a pessoa chegou. */
+function EcoDetail({ item }: { item: HistoryItem }) {
+  if (!item.answers) return <Expired />;
+  return (
+    <p className="mono hist-note">
+      {Math.round(item.totalScore / 10)} PASSOS · {item.answers.length} TOQUES
+    </p>
+  );
+}
+
 function Expired() {
   return <p className="mono hist-note">DETALHE EXPIRADO: SÓ O RESUMO FICA GUARDADO.</p>;
 }
@@ -136,7 +153,14 @@ function MatchRow({ item }: { item: HistoryItem }) {
           <small className="mono">{scoreParts(item).unit}</small>
         </span>
       </button>
-      {open && (item.game === 'time' ? <TimeDetail item={item} /> : <ColorDetail item={item} />)}
+      {open &&
+        (item.game === 'time' ? (
+          <TimeDetail item={item} />
+        ) : item.game === 'eco' ? (
+          <EcoDetail item={item} />
+        ) : (
+          <ColorDetail item={item} />
+        ))}
     </li>
   );
 }

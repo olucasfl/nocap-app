@@ -9,7 +9,7 @@ import { RankingPanel } from './RankingPanel';
 import { TabBar } from './TabBar';
 import './daily-panel.css';
 
-const tenths = (n: number) => (n / 10).toFixed(1);
+const tenthsOf = (n: number) => (n / 10).toFixed(1);
 
 type Tab = 'summary' | 'ranking' | 'friends' | 'rules';
 const TABS: { id: Tab; label: string }[] = [
@@ -27,6 +27,9 @@ const TABS: { id: Tab; label: string }[] = [
 export function DailyPanel({ game, initialTab = 'summary' }: { game: Game; initialTab?: Tab }) {
   const user = useAuth((s) => s.user);
   const [tab, setTab] = useState<Tab>(initialTab);
+  /** Eco: a nota é o número de passos (inteiro, sem máximo); nos outros jogos é em pontos. */
+  const eco = game === 'eco';
+  const tenths = (n: number) => (eco && Number.isInteger(n / 10) ? String(n / 10) : tenthsOf(n));
   const all = useQuery({
     queryKey: ['ranking', game, 'daily', 'day', 'all', user?.id ?? null],
     queryFn: () => fetchRanking(game, 'daily', 'day', 'all'),
@@ -85,7 +88,7 @@ export function DailyPanel({ game, initialTab = 'summary' }: { game: Game; initi
                   <div className="dp-me-body">
                     <div className="dp-me-score">
                       {tenths(me.score)}
-                      <small className="mono">/{max}</small>
+                      <small className="mono">{eco ? ' passos' : `/${max}`}</small>
                     </div>
                     {avg !== undefined && (
                       <div className="mono dp-me-line">
@@ -138,7 +141,8 @@ export function DailyPanel({ game, initialTab = 'summary' }: { game: Game; initi
                       <li key={e.username}>
                         <span className="dp-fname">@{e.username}</span>
                         <span className="mono dp-fscore">
-                          {tenths(e.score)}/{max}
+                          {tenths(e.score)}
+                          {eco ? ' passos' : `/${max}`}
                         </span>
                         <span className={`mono dp-fvs ${me && e.score > me.score ? 'up' : 'down'}`}>
                           {!me
@@ -176,8 +180,12 @@ export function DailyPanel({ game, initialTab = 'summary' }: { game: Game; initi
         <ul className="dp-rules">
           <li>Uma partida por dia, por jogo, valendo em qualquer aparelho.</li>
           <li>
-            {game === 'color' ? 'As mesmas cores' : 'Os mesmos alvos'} para todo mundo, e o dia vira
-            à meia-noite (horário de São Paulo).
+            {game === 'color'
+              ? 'As mesmas cores'
+              : game === 'eco'
+                ? 'A mesma sequência'
+                : 'Os mesmos alvos'}{' '}
+            para todo mundo, e o dia vira à meia-noite (horário de São Paulo).
           </li>
           <li>Só vale online: a nota entra no ranking do dia.</li>
           <li>Na semana e em "sempre", o ranking soma os dailys jogados.</li>

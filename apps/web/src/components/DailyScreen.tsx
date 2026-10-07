@@ -60,8 +60,10 @@ export function DailyScreen({
         <section className="ds-done" aria-label="Você já jogou o Daily de hoje">
           <div className="mono ds-done-tag">VOCÊ JÁ JOGOU HOJE</div>
           <div className="ds-score">
-            {((info.totalScore ?? 0) / 10).toFixed(1)}
-            <small className="mono">/{dailyMax(game)}</small>
+            {game === 'eco'
+              ? Math.round((info.totalScore ?? 0) / 10)
+              : ((info.totalScore ?? 0) / 10).toFixed(1)}
+            <small className="mono">{game === 'eco' ? ' passos' : `/${dailyMax(game)}`}</small>
           </div>
           <p className="ds-text">
             Volte amanhã para manter a sequência
@@ -85,7 +87,12 @@ export function DailyScreen({
             </>
           ) : (
             <p className="ds-text">
-              Uma partida por dia, com {game === 'color' ? 'as mesmas cores' : 'os mesmos alvos'}{' '}
+              Uma partida por dia, com{' '}
+              {game === 'color'
+                ? 'as mesmas cores'
+                : game === 'eco'
+                  ? 'a mesma sequência'
+                  : 'os mesmos alvos'}{' '}
               para todo mundo. Sua nota entra no ranking do dia.
             </p>
           )}

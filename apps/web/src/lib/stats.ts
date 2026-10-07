@@ -1,6 +1,6 @@
 import { apiClient } from './api-client';
 
-export type GameId = 'color' | 'time';
+export type GameId = 'color' | 'time' | 'eco';
 
 export interface ModeStats {
   game: string;
@@ -38,6 +38,8 @@ export const recordVisit = () =>
 const MODE_MAX_BY_GAME: Record<GameId, Record<string, number>> = {
   color: { classic: 30, flash: 30, quick: 10, blind: 50, survival: 0 },
   time: { classic: 30, quick: 10, strict: 30, sequence: 50, survival: 0 },
+  // Eco: a nota é o número de passos, sem máximo de pontos.
+  eco: { classic: 0, escalada: 0, velocidade: 0, reverso: 0 },
 };
 
 /** Sobrevivência: a nota é o número de rodadas jogadas (não tem máximo). */
@@ -48,9 +50,41 @@ export function modeMax(game: string, mode: string): number | undefined {
 }
 
 /** Máximo do Daily de um jogo: 5 rodadas na Cor, 3 no Tempo. */
-export const dailyMax = (game: string) => (game === 'color' ? 50 : 30);
+export const dailyMax = (game: string) => (game === 'color' ? 50 : game === 'eco' ? 0 : 30);
 
-const ORDER = ['classic', 'flash', 'quick', 'strict', 'blind', 'sequence', 'survival'];
+/**
+ * Jogos e modos cuja nota é uma contagem, não pontos de 0 a 10 por rodada: a Sobrevivência conta
+ * rodadas e o Eco conta passos. `null` quando a nota é em pontos.
+ */
+export const countUnit = (game: string, mode?: string): 'rodadas' | 'passos' | null =>
+  game === 'eco' ? 'passos' : mode === 'survival' ? 'rodadas' : null;
+
+/** "7 rodadas", "12 passos" (e o singular com 1). `tenths` é a nota guardada (7 = 70). */
+export function formatCount(tenths: number, unit: 'rodadas' | 'passos'): string {
+  const n = Math.round(tenths / 10);
+  const one = unit === 'rodadas' ? 'rodada' : 'passo';
+  return `${n} ${n === 1 ? one : unit}`;
+}
+
+/** A nota do Daily de hoje para mostrar: "21.4/30" ou, no Eco, "12 passos". */
+export function dailyScoreText(game: string, tenths: number): string {
+  return game === 'eco'
+    ? formatCount(tenths, 'passos')
+    : `${(tenths / 10).toFixed(1)}/${dailyMax(game)}`;
+}
+
+const ORDER = [
+  'classic',
+  'flash',
+  'quick',
+  'strict',
+  'blind',
+  'sequence',
+  'survival',
+  'escalada',
+  'velocidade',
+  'reverso',
+];
 
 /** Só os modos conhecidos de um jogo, na ordem da tela de início. */
 export function gameModes(stats: Stats, game: string): ModeStats[] {
@@ -75,8 +109,8 @@ export function isNewRecord(previous: number | undefined, now: number): boolean 
 
 /** "3.5/50" ou, na Sobrevivência, "7 rodadas": o valor de uma nota de modo, para mostrar. */
 export function formatBest(game: string, mode: string, tenths: number): string {
-  if (isSurvival(mode))
-    return `${Math.round(tenths / 10)} ${Math.round(tenths / 10) === 1 ? 'rodada' : 'rodadas'}`;
+  const unit = countUnit(game, mode);
+  if (unit) return formatCount(tenths, unit);
   return `${(tenths / 10).toFixed(1)}/${modeMax(game, mode) ?? ''}`;
 }
 

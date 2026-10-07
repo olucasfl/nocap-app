@@ -1,6 +1,6 @@
 import type { z } from 'zod';
 
-export type GameId = 'color' | 'time';
+export type GameId = 'color' | 'time' | 'eco';
 
 export interface GameMeta {
   minPlayers: number;

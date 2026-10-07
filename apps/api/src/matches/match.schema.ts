@@ -31,17 +31,31 @@ const timeMatchSchema = z.object({
   session: z.string().min(10).max(600),
 });
 
+const ecoMatchSchema = z.object({
+  ...base,
+  game: z.literal('eco'),
+  /** Os botões tocados, em ordem (0 a 8). O servidor repassa contra a sequência da seed. */
+  taps: z.array(z.number().int().min(0).max(8)).max(1000),
+  /** Sessão assinada pelo servidor (`POST /games/eco/session`). */
+  session: z.string().min(10).max(600),
+});
+
 /** O cliente manda só as respostas. Nota e alvo são ignorados/recalculados no servidor. */
-export const createMatchSchema = z.discriminatedUnion('game', [colorMatchSchema, timeMatchSchema]);
+export const createMatchSchema = z.discriminatedUnion('game', [
+  colorMatchSchema,
+  timeMatchSchema,
+  ecoMatchSchema,
+]);
 export type CreateMatchInput = z.infer<typeof createMatchSchema>;
 export type ColorMatchInput = z.infer<typeof colorMatchSchema>;
 export type TimeMatchInput = z.infer<typeof timeMatchSchema>;
+export type EcoMatchInput = z.infer<typeof ecoMatchSchema>;
 
 export const historyQuerySchema = z.object({
   cursor: z.string().max(200).optional(),
   limit: z.coerce.number().int().min(1).max(50).default(20),
   /** Só as partidas de um jogo (o histórico do app é separado por jogo). */
-  game: z.enum(['color', 'time']).optional(),
+  game: z.enum(['color', 'time', 'eco']).optional(),
   /** Filtros do histórico: modo (classic, flash...), tipo (solo, daily, sala) e período. */
   mode: z.string().min(1).max(32).optional(),
   kind: z.enum(['solo', 'daily', 'room']).optional(),
@@ -56,3 +70,5 @@ export type ClaimInput = z.infer<typeof claimSchema>;
 
 export const timeSessionSchema = z.object({ kind: z.enum(['solo', 'daily']).default('solo') });
 export type TimeSessionInput = z.infer<typeof timeSessionSchema>;
+/** A sessão do Eco tem o mesmo formato da do Tempo. */
+export const ecoSessionSchema = timeSessionSchema;

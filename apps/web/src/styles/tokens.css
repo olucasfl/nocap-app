@@ -9,6 +9,11 @@
   --muted: #4a4a44;
   --green: #33c27f; /* só em amostras de cor decorativas */
   --pink: #ff9ecf; /* idem */
+  /* Botões 6 a 9 do Eco: cores de jogo, iguais nos dois temas. */
+  --eco-purple: #7a3cff;
+  --eco-cyan: #25c7e8;
+  --eco-red: #e5303a;
+  --eco-graphite: #3a3a36;
 
   --border: 2.5px solid var(--ink);
   --radius-sm: 12px;

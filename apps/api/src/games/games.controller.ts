@@ -4,7 +4,11 @@ import { RateLimit, RateLimitGuard } from '../common/rate-limit';
 import { dailySeed } from '@nocap/games';
 import { randomUUID } from 'node:crypto';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
-import { timeSessionSchema, type TimeSessionInput } from '../matches/match.schema';
+import {
+  ecoSessionSchema,
+  timeSessionSchema,
+  type TimeSessionInput,
+} from '../matches/match.schema';
 import { issueTimeSession } from '../matches/time-session';
 
 @Controller('games')
@@ -25,6 +29,16 @@ export class GamesController {
   @RateLimit({ limit: 30, windowMs: 60_000 })
   timeSession(@Body(new ZodValidationPipe(timeSessionSchema)) body: TimeSessionInput) {
     const seed = body.kind === 'daily' ? dailySeed('time') : randomUUID().slice(0, 12);
+    return { seed, session: issueTimeSession(seed) };
+  }
+
+  /** Começa uma partida do Eco: seed (Daily: a do dia) e sessão assinada, como no Tempo. */
+  @Post('eco/session')
+  @HttpCode(200)
+  @UseGuards(AuthGuard, RateLimitGuard)
+  @RateLimit({ limit: 30, windowMs: 60_000 })
+  ecoSession(@Body(new ZodValidationPipe(ecoSessionSchema)) body: TimeSessionInput) {
+    const seed = body.kind === 'daily' ? dailySeed('eco') : randomUUID().slice(0, 12);
     return { seed, session: issueTimeSession(seed) };
   }
 }

@@ -23,7 +23,14 @@ export interface TimePayload extends BasePayload {
   session: string;
 }
 
-export type SubmitPayload = ColorPayload | TimePayload;
+/** Partida do Eco: os botões tocados e a sessão assinada pelo servidor. */
+export interface EcoPayload extends BasePayload {
+  game: 'eco';
+  taps: number[];
+  session: string;
+}
+
+export type SubmitPayload = ColorPayload | TimePayload | EcoPayload;
 
 interface SubmitResponse {
   matchId: string;

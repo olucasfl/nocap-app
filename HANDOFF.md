@@ -19,6 +19,10 @@ Tudo está em `main` e publicado (API no Render, web na Vercel, banco no Supabas
 - **Paleta pronta** (07/10/2026): **313 cores com 5 dicas boas cada** (1565 dicas) em `palette-1..6.ts`, validadas por testes (sem termo técnico, nome combina com a cor, sem contradição) e conferidas visualmente (`docs/reference/paleta-intruso.html`). Limite da sala: 3 a 12 pessoas.
 - **Falta:** (1) **testar com 3 contas de verdade** (criar sala, lobby, decorar, recriar, votar, revelar, pódio): nunca foi jogado ao vivo; (2) o Intruso não salva no histórico nem tem estatísticas (decisão da spec, pode virar etapa futura).
 
+**Eco** (`specs/012-eco.md`): repetir sequências de botões (estilo Genius). **Solo pronto** (Clássico, Escalada, Velocidade, Reverso e Daily, com ranking, recordes, histórico e perfil; 310 testes passando). **Faltam as salas**: Corrida e Siga o Líder (Etapas 4 e 5 da spec), e jogar ao vivo para calibrar as faixas de nota. A aba "Jogar com amigos" do Eco mostra "em breve".
+
+**Lobby novo da sala** (`specs/013-lobby-sala.md`): uma tela para o líder e outra para os membros, com abas Membros, Regras e Convidar; só o líder altera as regras (o membro só lê). Falta jogar ao vivo com contas reais.
+
 **Banco:** os dados de jogos foram zerados em 07/10/2026 (partidas, pontos e recordes); a conta do Lucas foi mantida. Schema e migrations intactos.
 
 **Ideias que o Lucas aprovou ou pediu para pensar** (ainda sem spec): jogos sociais como Sincro (todos contam o mesmo tempo em silêncio), Blefe de Nota, Sabotador, Telefone Sem Fio, Caça-Cor, Dicionário de Cores; e jogos de sentidos (Tom, Eco de Ritmo, Sombra). Ver a conversa de 07/10 ou peça novas ideias.

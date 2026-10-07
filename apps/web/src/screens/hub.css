@@ -84,6 +84,21 @@ a.hub-card:active {
   background: var(--blue);
   color: var(--on-blue);
 }
+.hub-card-eco {
+  background: var(--green);
+  color: var(--on-accent);
+}
+.hub-pads {
+  width: 96px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+.hub-pads i {
+  height: 40px;
+  border: 2px solid var(--ink);
+  border-radius: 9px;
+}
 .hub-card-foot {
   position: absolute;
   left: 14px;
@@ -206,8 +221,11 @@ a.hub-daily {
 .hub-card-time {
   animation-delay: 0.38s;
 }
-.hub-more {
+.hub-card-eco {
   animation-delay: 0.46s;
+}
+.hub-more {
+  animation-delay: 0.54s;
 }
 @keyframes hub-in {
   from {

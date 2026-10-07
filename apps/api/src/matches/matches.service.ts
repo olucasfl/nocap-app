@@ -4,14 +4,16 @@ import {
   dailyDate,
   dailySeed,
   dailyStreak,
+  ecoPresets,
   periodStart,
   timePresets,
 } from '@nocap/games';
 import { randomUUID } from 'node:crypto';
-import { scoreMatch, scoreTimeMatch, type ScoredMatch } from './match-scoring';
+import { scoreEcoMatch, scoreMatch, scoreTimeMatch, type ScoredMatch } from './match-scoring';
 import type {
   ColorMatchInput,
   CreateMatchInput,
+  EcoMatchInput,
   HistoryQuery,
   TimeMatchInput,
 } from './match.schema';
@@ -32,7 +34,9 @@ export class MatchesService {
   async create(input: CreateMatchInput, userId: string) {
     const playerId = await this.repo.playerOfUser(userId);
     const who = { userId, playerId };
-    return input.game === 'time' ? this.createTime(input, who) : this.createColor(input, who);
+    if (input.game === 'time') return this.createTime(input, who);
+    if (input.game === 'eco') return this.createEco(input, who);
+    return this.createColor(input, who);
   }
 
   /**
@@ -93,6 +97,31 @@ export class MatchesService {
     return this.persist(input, who, scored, input.mode in timePresets);
   }
 
+  /**
+   * Eco: a pontuação sai dos toques repassados contra a sequência da seed. A sessão assinada prova
+   * quando a partida começou (para o tempo mínimo) e deixa a seed valer uma vez só no solo.
+   */
+  private async createEco(input: EcoMatchInput, who: Who) {
+    if (input.kind === 'daily') {
+      if (input.seed !== dailySeed('eco')) {
+        throw new BadRequestException('Seed do Daily não é a de hoje');
+      }
+      if (input.mode !== 'classic') {
+        throw new BadRequestException('O Daily só existe no modo classic');
+      }
+      await this.assertDailyAvailable('eco', who.userId, input.matchId);
+    }
+    const session = verifyTimeSession(input.session);
+    if (!session || session.seed !== input.seed) {
+      throw new BadRequestException('Sessão da partida inválida ou expirada');
+    }
+    if (input.kind === 'solo' && (await this.repo.seedUsed('eco', input.seed, input.matchId))) {
+      throw new ConflictException('Essa sessão já foi usada');
+    }
+    const scored = scoreEcoMatch({ ...input, elapsedMs: Date.now() - session.issuedAt });
+    return this.persist(input, who, scored, input.mode in ecoPresets);
+  }
+
   private async createColor(input: ColorMatchInput, who: Who) {
     // Daily vale para o mundo todo: seed e modo são os do dia, não escolha do cliente.
     if (input.kind === 'daily') {
@@ -144,7 +173,7 @@ export class MatchesService {
       string,
       { current: number; best: number; playedToday: boolean; totalScore: number | null }
     > = {};
-    for (const game of ['color', 'time']) {
+    for (const game of ['color', 'time', 'eco']) {
       const days = plays.filter((p) => p.game === game).map((p) => dailyDate(p.playedAt));
       const streak = dailyStreak(days, todayStr);
       const score = today.find((t) => t.game === game)?.totalScore ?? null;

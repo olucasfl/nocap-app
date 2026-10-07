@@ -288,10 +288,29 @@ const rawSfx = {
   gameOver() {
     [392, 330, 262, 196].forEach((f, i) => tone('triangle', f, f * 0.98, 0.18, 0.22, 0.14 * i));
   },
+  /**
+   * Eco: o tom de cada botão (escala pentatônica, do 1 ao 9) e dois avisos. `ms` é quanto o botão
+   * fica aceso na reprodução, para o som acompanhar o ritmo do modo.
+   */
+  ecoPad(pad: number, ms = 280) {
+    const freq = [262, 294, 330, 392, 440, 523, 587, 659, 784][pad] ?? 262;
+    tone('triangle', freq, freq, Math.max(0.12, ms / 1000), 0.34);
+    tone('sine', freq * 2, freq * 2, 0.08, 0.06);
+  },
+  /** Eco: errou o botão (baque seco com um tom descendo). */
+  ecoWrong() {
+    tone('sawtooth', 180, 90, 0.35, 0.22);
+    noise('lowpass', 700, 150, 0.7, 0.18, 0.2);
+  },
+  /** Eco: fechou a rodada inteira. */
+  ecoRound() {
+    tone('triangle', 784, 784, 0.07, 0.14);
+    tone('triangle', 1047, 1047, 0.14, 0.14, 0.07);
+  },
 };
 
 /** Sons feitos para repetir rápido (contagem, sliders): nunca entram na trava anti-duplicata. */
-const REPEATABLE = new Set<string>(['tick', 'climb', 'slide', 'clack']);
+const REPEATABLE = new Set<string>(['tick', 'climb', 'slide', 'clack', 'ecoPad']);
 /** Janela em que o mesmo som não toca duas vezes (um toque que dispara duas vezes soava "dobrado"). */
 const DUPLICATE_WINDOW_MS = 140;
 const lastPlayed = new Map<string, number>();

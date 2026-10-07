@@ -47,7 +47,7 @@ export const activeFilters = (f: HistoryFilters) =>
   (f.mode ? 1 : 0) + (f.kind ? 1 : 0) + (f.period !== 'all' ? 1 : 0);
 
 export function fetchHistory(
-  game: 'color' | 'time',
+  game: 'color' | 'time' | 'eco',
   cursor?: string,
   filters: HistoryFilters = NO_FILTERS,
 ) {
@@ -112,6 +112,8 @@ export function scoreParts(item: Pick<HistoryItem, 'game' | 'mode' | 'answers' |
   main: string;
   unit: string;
 } {
+  if (item.game === 'eco')
+    return { main: String(Math.round(item.totalScore / 10)), unit: ' passos' };
   if (item.mode === 'survival')
     return { main: String(Math.round(item.totalScore / 10)), unit: ' rodadas' };
   return { main: (item.totalScore / 10).toFixed(1), unit: `/${matchMax(item)}` };
@@ -125,8 +127,11 @@ const MODE_NAME: Record<string, string> = {
   blind: 'Às cegas',
   sequence: 'Sequência',
   survival: 'Sobrevivência',
+  escalada: 'Escalada',
+  velocidade: 'Velocidade',
+  reverso: 'Reverso',
 };
-const GAME_NAME: Record<string, string> = { color: 'Cor', time: 'Tempo' };
+const GAME_NAME: Record<string, string> = { color: 'Cor', time: 'Tempo', eco: 'Eco' };
 const KIND_NAME: Record<string, string> = { solo: 'Solo', daily: 'Daily', room: 'Sala' };
 
 export const gameLabel = (game: string) => GAME_NAME[game] ?? game;
@@ -158,6 +163,13 @@ export function classifyMatch(
 ): { label: string; tone: Tone } {
   if (item.placement !== null) {
     return { label: `${item.placement}º lugar`, tone: item.placement === 1 ? 'top' : 'mid' };
+  }
+  if (item.game === 'eco') {
+    const n = Math.round(item.totalScore / 10);
+    if (n >= 30) return { label: 'LENDÁRIO', tone: 'top' };
+    if (n >= 16) return { label: 'FORTE', tone: 'good' };
+    if (n >= 8) return { label: 'MEH', tone: 'mid' };
+    return { label: 'CEDO DEMAIS', tone: 'low' };
   }
   if (item.mode === 'survival') {
     const n = Math.round(item.totalScore / 10);

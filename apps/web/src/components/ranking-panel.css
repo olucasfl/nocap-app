@@ -11,6 +11,10 @@
   --accent: var(--blue);
   --on: var(--on-blue);
 }
+.rp.eco {
+  --accent: var(--green);
+  --on: var(--on-accent);
+}
 .rp-label {
   margin-bottom: 6px;
   font-size: 10px;

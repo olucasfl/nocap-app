@@ -5,7 +5,7 @@ import { modeLabel } from '@/lib/history';
 import {
   fetchStats,
   gameModes,
-  isSurvival,
+  countUnit,
   modeMax,
   streakLabel,
   type GameId,
@@ -14,7 +14,7 @@ import {
 import { GAME_LABEL, GameArt } from './GameArt';
 import './records.css';
 
-const GAMES: GameId[] = ['color', 'time'];
+const GAMES: GameId[] = ['color', 'time', 'eco'];
 
 function GameRecords({ stats, game }: { stats: Stats; game: GameId }) {
   const modes = gameModes(stats, game);
@@ -40,12 +40,14 @@ function GameRecords({ stats, game }: { stats: Stats; game: GameId }) {
               <span className="rc-mode-name">{modeLabel(m.mode)}</span>
               <span className="mono rc-mode-sub">
                 {m.matches} {m.matches === 1 ? 'PARTIDA' : 'PARTIDAS'} · MÉDIA{' '}
-                {isSurvival(m.mode) ? Math.round(m.average / 10) : (m.average / 10).toFixed(1)}
+                {countUnit(game, m.mode) ? Math.round(m.average / 10) : (m.average / 10).toFixed(1)}
               </span>
               <span className="rc-best">
-                {isSurvival(m.mode) ? Math.round(m.best / 10) : (m.best / 10).toFixed(1)}
+                {countUnit(game, m.mode) ? Math.round(m.best / 10) : (m.best / 10).toFixed(1)}
                 <small className="mono">
-                  {isSurvival(m.mode) ? ' rodadas' : `/${modeMax(game, m.mode)}`}
+                  {countUnit(game, m.mode)
+                    ? ` ${countUnit(game, m.mode)}`
+                    : `/${modeMax(game, m.mode)}`}
                 </small>
               </span>
             </li>

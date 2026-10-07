@@ -1,8 +1,18 @@
 import { apiClient } from './api-client';
 
-export type Game = 'color' | 'time';
+export type Game = 'color' | 'time' | 'eco';
 export type Board =
-  'classic' | 'flash' | 'quick' | 'strict' | 'blind' | 'sequence' | 'survival' | 'daily';
+  | 'classic'
+  | 'flash'
+  | 'quick'
+  | 'strict'
+  | 'blind'
+  | 'sequence'
+  | 'survival'
+  | 'escalada'
+  | 'velocidade'
+  | 'reverso'
+  | 'daily';
 export type Period = 'day' | 'week' | 'all';
 export type Scope = 'all' | 'friends';
 
@@ -30,6 +40,7 @@ export interface Ranking {
 export const GAMES: { id: Game; label: string }[] = [
   { id: 'color', label: 'Cor' },
   { id: 'time', label: 'Tempo' },
+  { id: 'eco', label: 'Eco' },
 ];
 
 const ALL_BOARDS: { id: Board; label: string }[] = [
@@ -40,6 +51,9 @@ const ALL_BOARDS: { id: Board; label: string }[] = [
   { id: 'blind', label: 'Às cegas' },
   { id: 'sequence', label: 'Sequência' },
   { id: 'survival', label: 'Sobrevivência' },
+  { id: 'escalada', label: 'Escalada' },
+  { id: 'velocidade', label: 'Velocidade' },
+  { id: 'reverso', label: 'Reverso' },
   { id: 'daily', label: 'Daily' },
 ];
 
@@ -47,11 +61,12 @@ const ALL_BOARDS: { id: Board; label: string }[] = [
 const BOARD_IDS: Record<Game, Board[]> = {
   color: ['classic', 'flash', 'quick', 'blind', 'survival'],
   time: ['classic', 'quick', 'strict', 'sequence', 'survival'],
+  eco: ['classic', 'escalada', 'velocidade', 'reverso'],
 };
 
 export const boardsOf = (game: Game) => ALL_BOARDS.filter((b) => BOARD_IDS[game].includes(b.id));
 
-export const GAME_NAME: Record<Game, string> = { color: 'Cor', time: 'Tempo' };
+export const GAME_NAME: Record<Game, string> = { color: 'Cor', time: 'Tempo', eco: 'Eco' };
 
 export const PERIODS: { id: Period; label: string }[] = [
   { id: 'day', label: 'Hoje' },
@@ -61,8 +76,8 @@ export const PERIODS: { id: Period; label: string }[] = [
 
 /** Máximo de pontos de uma partida no quadro (10 por rodada; o Daily da Cor tem 5 rodadas). */
 export function boardMax(game: Game, board: Board): number {
-  // Sobrevivência não tem máximo: vale pelas rodadas jogadas.
-  if (board === 'survival') return 0;
+  // Sobrevivência (rodadas) e Eco (passos) não têm máximo de pontos.
+  if (board === 'survival' || game === 'eco') return 0;
   if (board === 'quick') return 10;
   if (board === 'sequence') return 50;
   if (board === 'daily') return game === 'time' ? 30 : 50;

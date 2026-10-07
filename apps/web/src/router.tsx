@@ -15,6 +15,7 @@ import type { Board } from '@/lib/ranking';
 import { InviteBanner } from '@/components/InviteBanner';
 import type { Mode } from '@/games/color/types';
 import type { Mode as TimeMode } from '@/games/time/types';
+import type { Mode as EcoMode } from '@/games/eco/types';
 import { History } from '@/screens/History';
 import { Friends } from '@/screens/Friends';
 import { FriendProfile } from '@/screens/FriendProfile';
@@ -101,7 +102,19 @@ interface GameSearch<M> {
   quadro?: Board;
 }
 const TABS: GameTab[] = ['modes', 'friends', 'ranking'];
-const BOARDS: Board[] = ['classic', 'flash', 'quick', 'strict', 'daily'];
+const BOARDS: Board[] = [
+  'classic',
+  'flash',
+  'quick',
+  'strict',
+  'blind',
+  'sequence',
+  'survival',
+  'escalada',
+  'velocidade',
+  'reverso',
+  'daily',
+];
 
 function gameSearch<M extends string>(search: Record<string, unknown>, modes: M[]): GameSearch<M> {
   const out: GameSearch<M> = {};
@@ -125,6 +138,16 @@ const colorRoute = createRoute({
   component: lazyRouteComponent(() => import('@/games/color/ColorPage'), 'ColorPage'),
 });
 
+const ECO_MODES: EcoMode[] = ['classic', 'escalada', 'velocidade', 'reverso', 'daily'];
+
+const ecoRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/eco',
+  validateSearch: (search: Record<string, unknown>): GameSearch<EcoMode> =>
+    gameSearch(search, ECO_MODES),
+  component: lazyRouteComponent(() => import('@/games/eco/EcoPage'), 'EcoPage'),
+});
+
 const timeRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/tempo',
@@ -137,6 +160,7 @@ const routeTree = rootRoute.addChildren([
   tabsRoute.addChildren([hubRoute, historyRoute, friendsRoute, friendProfileRoute, profileRoute]),
   colorRoute,
   timeRoute,
+  ecoRoute,
   loginRoute,
   registerRoute,
   roomRoute,

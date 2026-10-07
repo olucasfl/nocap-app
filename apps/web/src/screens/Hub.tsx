@@ -4,7 +4,14 @@ import { AnimatedText } from '@/components/AnimatedText';
 import { MuteButton } from '@/components/MuteButton';
 import { ThemeButton } from '@/components/ThemeButton';
 import { useAuth } from '@/lib/auth';
-import { bestTenths, dailyMax, fetchStats, formatBest, type GameId, type Stats } from '@/lib/stats';
+import {
+  bestTenths,
+  dailyScoreText,
+  fetchStats,
+  formatBest,
+  type GameId,
+  type Stats,
+} from '@/lib/stats';
 import './hub.css';
 
 const SWATCHES = [
@@ -29,7 +36,7 @@ function dailyStatus(stats: Stats | undefined, game: GameId): string {
   const info = stats?.daily[game];
   if (!info) return 'DAILY DISPONÍVEL';
   return info.playedToday
-    ? `DAILY FEITO · ${((info.totalScore ?? 0) / 10).toFixed(1)}/${dailyMax(game)}`
+    ? `DAILY FEITO · ${dailyScoreText(game, info.totalScore ?? 0)}`
     : 'DAILY DISPONÍVEL';
 }
 
@@ -83,6 +90,20 @@ export function Hub() {
             <div className="hub-card-name">Tempo</div>
             <div className="mono hub-card-meta">{bestLabel(data, 'time')}</div>
             <div className="mono hub-card-meta">{dailyStatus(data, 'time')}</div>
+          </div>
+        </Link>
+
+        <Link to="/eco" className="hub-card hub-card-eco" data-sfx="start">
+          <div className="hub-pads" aria-hidden="true">
+            <i style={{ background: 'var(--orange)' }} />
+            <i style={{ background: 'var(--blue)' }} />
+            <i style={{ background: 'var(--yellow)' }} />
+            <i style={{ background: 'var(--eco-purple)' }} />
+          </div>
+          <div className="hub-card-foot">
+            <div className="hub-card-name">Eco</div>
+            <div className="mono hub-card-meta">{bestLabel(data, 'eco')}</div>
+            <div className="mono hub-card-meta">{dailyStatus(data, 'eco')}</div>
           </div>
         </Link>
 

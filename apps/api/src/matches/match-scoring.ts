@@ -1,19 +1,24 @@
 import { BadRequestException } from '@nestjs/common';
 import {
+  ECO_SCORE_VERSION,
   COLOR_SCORE_VERSION,
   TIME_SCORE_VERSION,
   colorDailySettings,
   colorGame,
   colorDeltaE,
+  ecoPresets,
+  ecoTenths,
   encodeAnswer,
+  evaluateRun,
   evaluateSurvival,
   generateTimeRound,
   isPlausibleAnswer,
+  minDurationMs,
   scoreFromDeltaE,
   scoreTime,
   timePresets,
 } from '@nocap/games';
-import type { ColorMatchInput, TimeMatchInput } from './match.schema';
+import type { ColorMatchInput, EcoMatchInput, TimeMatchInput } from './match.schema';
 
 export interface ScoredMatch {
   rounds: { score: number; deltaE?: number }[];
@@ -121,5 +126,40 @@ export function scoreTimeMatch(
     totalTenths,
     encodedAnswers: [...input.answers],
     settings: { ...settings, scoreVersion: TIME_SCORE_VERSION },
+  };
+}
+
+/**
+ * Eco: o servidor repassa os toques contra a sequência da seed e conta os passos. Recusa o que não
+ * é plausível: toques depois do fim da partida, ou uma partida mais rápida do que o mínimo que a
+ * reprodução e o tempo de tocar permitem (a sessão assinada diz quando ela começou).
+ */
+export function scoreEcoMatch(
+  input: Pick<EcoMatchInput, 'mode' | 'seed' | 'taps'> & { elapsedMs: number },
+): ScoredMatch {
+  const settings = (ecoPresets as Record<string, (typeof ecoPresets)['classic']>)[input.mode];
+  if (!settings) {
+    throw new BadRequestException(`Modo desconhecido: ${input.mode}`);
+  }
+  const maxPad = settings.maxPads - 1;
+  if (input.taps.some((t) => t > maxPad)) {
+    throw new BadRequestException('Botão inexistente neste modo');
+  }
+
+  const run = evaluateRun(input.seed, settings, input.taps);
+  if (run.usedTaps !== input.taps.length) {
+    throw new BadRequestException('Há toques depois do fim da partida');
+  }
+  if (input.elapsedMs + ELAPSED_SLACK_MS < minDurationMs(settings, run)) {
+    throw new BadRequestException('A partida foi rápida demais para ser verdade');
+  }
+
+  const totalTenths = ecoTenths(run);
+  return {
+    rounds: [],
+    total: totalTenths / 10,
+    totalTenths,
+    encodedAnswers: [...input.taps],
+    settings: { ...settings, scoreVersion: ECO_SCORE_VERSION },
   };
 }

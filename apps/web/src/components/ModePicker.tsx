@@ -61,6 +61,27 @@ export function modeArt(id: string): ReactNode {
           <path d="M22 6l6 10-6 10" {...p} />
         </svg>
       );
+    case 'escalada':
+      return (
+        <svg viewBox="0 0 32 32" aria-hidden="true">
+          <rect x="4" y="19" width="7" height="9" rx="1.5" {...p} />
+          <rect x="12.5" y="13" width="7" height="15" rx="1.5" {...p} />
+          <rect x="21" y="6" width="7" height="22" rx="1.5" fill="currentColor" stroke="none" />
+        </svg>
+      );
+    case 'velocidade':
+      return (
+        <svg viewBox="0 0 32 32" aria-hidden="true">
+          <path d="M5 11h12M3 17h16M7 23h12" {...p} />
+          <path d="M19 6l9 10-9 10" {...p} />
+        </svg>
+      );
+    case 'reverso':
+      return (
+        <svg viewBox="0 0 32 32" aria-hidden="true">
+          <path d="M27 16H6M12 9l-7 7 7 7" {...p} />
+        </svg>
+      );
     case 'flash':
       return (
         <svg viewBox="0 0 32 32" aria-hidden="true">

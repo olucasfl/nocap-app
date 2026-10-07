@@ -26,6 +26,10 @@
   background: var(--blue);
   color: var(--on-blue);
 }
+.rc-card.eco .rc-head {
+  background: var(--green);
+  color: var(--on-accent);
+}
 .rc-name {
   margin: 0;
   font: 900 30px/1 var(--font-display);

@@ -9,15 +9,19 @@ export const RANKING_BOARDS = [
   'blind',
   'sequence',
   'survival',
+  'escalada',
+  'velocidade',
+  'reverso',
   'daily',
 ] as const;
-export const RANKING_GAMES = ['color', 'time'] as const;
+export const RANKING_GAMES = ['color', 'time', 'eco'] as const;
 export type RankingGame = (typeof RANKING_GAMES)[number];
 
 /** Quadros que cada jogo tem (Flash é da Cor; "Sem estourar" é do Tempo). */
 export const BOARDS_OF: Record<RankingGame, readonly string[]> = {
   color: ['classic', 'flash', 'quick', 'blind', 'survival', 'daily'],
   time: ['classic', 'quick', 'strict', 'sequence', 'survival', 'daily'],
+  eco: ['classic', 'escalada', 'velocidade', 'reverso', 'daily'],
 };
 
 export const rankingQuerySchema = z.object({
