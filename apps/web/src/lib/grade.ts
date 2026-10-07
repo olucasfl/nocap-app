@@ -23,7 +23,7 @@ export const GRADES: Grade[] = [
   { id: 'good', word: 'dá pro gasto', min: 7 },
   { id: 'pass', word: 'passa na raça', min: 6 },
   { id: 'meh', word: 'meh', min: 5 },
-  { id: 'bad', word: 'foi uma escolha', min: 3 },
+  { id: 'bad', word: 'foi na fé', min: 3 },
   { id: 'awful', word: 'que isso?', min: 1 },
   { id: 'zero', word: 'zerou', min: 0 },
 ];
@@ -85,7 +85,7 @@ const LINES: Record<GradeId, Lines> = {
   },
   bad: {
     any: [
-      'Foi uma escolha. Não foi uma boa.',
+      'Foi na fé, né? Respeito a coragem.',
       'Hm. Você estava olhando pra tela?',
       'Chutou? Seja sincero.',
     ],

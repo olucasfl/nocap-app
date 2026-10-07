@@ -6,6 +6,7 @@ import {
   dailySeed,
   evaluateSurvival,
   generateColorRound,
+  generateColorStart,
   scoreFromDeltaE,
   survivalMinScore,
   survivalShowMs,
@@ -158,7 +159,14 @@ export function ColorGame({
           onDone={() => setPhase('pick')}
         />
       )}
-      {phase === 'pick' && <PickScreen key={index} onLock={lock} blind={blind} />}
+      {phase === 'pick' && run && target && (
+        <PickScreen
+          key={index}
+          onLock={lock}
+          blind={blind}
+          start={generateColorStart(run.seed, target, index)}
+        />
+      )}
       {phase === 'result' && run && last && (
         <ResultScreen
           key={index}

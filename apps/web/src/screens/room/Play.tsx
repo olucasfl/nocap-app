@@ -1,4 +1,4 @@
-import { generateColorRound, type Hsb } from '@nocap/games';
+import { generateColorRound, generateColorStart, type Hsb } from '@nocap/games';
 import { useAuth } from '@/lib/auth';
 import { sendRoom, type RoomSnapshot } from '@/lib/rooms';
 import { toHex } from '@/games/color/hex';
@@ -96,6 +96,11 @@ export function Play({ snapshot }: { snapshot: RoomSnapshot }) {
           <PickScreen
             key={`pick-${round.index}`}
             blind={snapshot.mode === 'blind'}
+            start={generateColorStart(
+              round.seed,
+              generateColorRound(round.seed, snapshot.settings, round.index),
+              round.index,
+            )}
             onLock={(guess) => sendRoom('lock', guess)}
           />
         ))}

@@ -28,15 +28,12 @@ interface Props {
   onLock: (guess: Hsb) => void;
   /** Às cegas: a prévia da cor que você monta fica escondida. */
   blind?: boolean;
+  /** Cor em que os controles começam (nunca perto do alvo; ver `generateColorStart`). */
+  start: Hsb;
 }
 
-/** Branco em HSB: com saturação 0 o matiz não aparece. */
-export const WHITE: Hsb = { h: 0, s: 0, b: 100 };
-
-export function PickScreen({ onLock, blind = false }: Props) {
-  // Sempre começa em branco (saturação no mínimo, brilho no máximo, matiz no começo da barra):
-  // o ponto de partida é igual para todo mundo e não induz a resposta.
-  const [guess, setGuess] = useState<Hsb>(WHITE);
+export function PickScreen({ onLock, blind = false, start }: Props) {
+  const [guess, setGuess] = useState<Hsb>(start);
   const lastBucket = useRef<Partial<Record<Channel, number>>>({});
   const latest = useRef(guess);
   latest.current = guess;

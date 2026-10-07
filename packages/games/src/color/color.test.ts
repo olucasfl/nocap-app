@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
+  START_MIN_DELTA_E,
+  colorDeltaE,
   colorGame,
   colorPresets,
   decodeAnswer,
   deltaE2000,
   encodeAnswer,
   generateColorRound,
+  generateColorStart,
   hsbToRgb,
   scoreColor,
   scoreFromDeltaE,
@@ -60,12 +63,12 @@ describe('score', () => {
 
   it.each([
     [2, 9.5, 10],
-    [3.5, 8.8, 9.3],
-    [6, 7, 8],
-    [10, 5.2, 6],
-    [20, 2.8, 3.4],
-    [35, 1, 2],
-    [60, 0.3, 1],
+    [3.5, 9.2, 9.6],
+    [6, 8.4, 9],
+    [10, 7.3, 7.9],
+    [20, 5, 5.8],
+    [35, 3, 3.6],
+    [60, 1.5, 2.1],
   ])('ΔE %d rende entre %d e %d', (dE, min, max) => {
     const s = scoreFromDeltaE(dE);
     expect(s).toBeGreaterThanOrEqual(min);
@@ -120,5 +123,24 @@ describe('colorGame', () => {
     expect(colorGame.presets.classic).toEqual({ rounds: 5, showMs: 3000 });
     expect(colorGame.presets.flash).toEqual({ rounds: 5, showMs: 400 });
     expect(colorGame.meta.ranking).toBe('score');
+  });
+});
+
+describe('generateColorStart', () => {
+  it('é determinística e nunca fica perto do alvo (ΔE >= 30)', () => {
+    const s = colorPresets.classic!;
+    for (let i = 0; i < 400; i++) {
+      const target = generateColorRound(`st-${i}`, s, 0);
+      const a = generateColorStart(`st-${i}`, target, 0);
+      expect(generateColorStart(`st-${i}`, target, 0)).toEqual(a);
+      expect(colorDeltaE(target, a)).toBeGreaterThanOrEqual(START_MIN_DELTA_E);
+    }
+  });
+
+  it('não é branco: tem cor e brilho médio', () => {
+    const target = { h: 10, s: 80, b: 80 };
+    const c = generateColorStart('x', target, 0);
+    expect(c.s).toBeGreaterThanOrEqual(40);
+    expect(c.b).toBeLessThanOrEqual(85);
   });
 });

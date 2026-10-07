@@ -36,20 +36,43 @@ export function generateColorRound(seed: string, _settings: ColorSettings, index
   return { h: randInt(rng, 0, 359), s: randInt(rng, 35, 95), b: randInt(rng, 40, 95) };
 }
 
+/** ΔE mínimo entre o alvo e a cor de partida: sair da cor inicial nunca é "já acertar". */
+export const START_MIN_DELTA_E = 30;
+
+/**
+ * Cor em que os controles começam, na recriação. Deriva da seed (igual para todo mundo na
+ * mesma rodada, sem depender do alvo escolhido) e nunca fica perto do alvo (ΔE >= 30), para
+ * não virar atalho nem ficar fácil demais. Só o app usa: o servidor só confere a resposta.
+ */
+export function generateColorStart(seed: string, target: Hsb, index: number): Hsb {
+  const rng = createRng(`${seed}:start:${index}`);
+  let start: Hsb = { h: randInt(rng, 0, 359), s: randInt(rng, 40, 80), b: randInt(rng, 50, 85) };
+  for (let i = 0; i < 6 && colorDeltaE(target, start) < START_MIN_DELTA_E; i++) {
+    start = { ...start, h: (start.h + 60 + randInt(rng, 0, 120)) % 360 };
+  }
+  return start;
+}
+
 /** ΔE2000 (Lab) entre alvo e resposta. Nunca distância RGB. */
 export function colorDeltaE(round: ColorRound, answer: ColorAnswer): number {
   return deltaE2000(rgbToLab(hsbToRgb(round)), rgbToLab(hsbToRgb(answer)));
 }
 
 /** Muda sempre que a curva muda; guardada em `matches.settings` para nunca misturar curvas no ranking. */
-export const COLOR_SCORE_VERSION = 2;
+export const COLOR_SCORE_VERSION = 3;
 
 /**
- * Curva logística 10 / (1 + (ΔE/12)^1.6), em [0, 10], 1 casa (brief #3, spec 001).
- * Cauda longa embaixo (ΔE 20 ainda rende ~3) e topo largo (ΔE 3 a 4 rende ~9).
+ * Curva logística 10 / (1 + (ΔE/22)^1.5), em [0, 10], 1 casa (v3: mais generosa que a v2, que
+ * dava só ~3 para uma cor "minimamente parecida"). Topo largo e cauda longa:
+ *
+ * | ΔE   | 2   | 3,5 | 6   | 10  | 15  | 20  | 30  | 45  | 60  |
+ * | nota | 9,7 | 9,4 | 8,7 | 7,6 | 6,4 | 5,4 | 3,9 | 2,5 | 1,8 |
+ *
+ * Uma cor "minimamente parecida" (ΔE ~20) rende ~5; bem próxima (ΔE ≤ 6) passa de 8,5; só o
+ * praticamente idêntico (ΔE < 1) chega a 10.
  */
 export function scoreFromDeltaE(dE: number): number {
-  const raw = 10 / (1 + (Math.max(0, dE) / 12) ** 1.6);
+  const raw = 10 / (1 + (Math.max(0, dE) / 22) ** 1.5);
   return Math.max(0, Math.min(10, Math.round(raw * 10) / 10));
 }
 

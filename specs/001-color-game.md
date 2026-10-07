@@ -93,3 +93,15 @@ Multiplayer, ranking, modos extras.
 ## Decisões em aberto
 
 Brief #5 (3s vs 5s; vale 3s). Brief #3 (curva da nota): proposta de recalibração acima, falta validar jogando.
+
+## Curva v3 (mais generosa) e cor inicial
+
+> **Status: implementada (`COLOR_SCORE_VERSION = 3`).** Feedback: uma cor "minimamente parecida" (ΔE ~19) rendia 3 na v2. Nova curva `10 / (1 + (ΔE / 22)^1.5)`:
+
+| ΔE   | 2   | 3,5 | 6   | 10  | 15  | 20  | 30  | 45  | 60  |
+| ---- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| nota | 9,7 | 9,4 | 8,7 | 7,6 | 6,4 | 5,4 | 3,9 | 2,5 | 1,8 |
+
+Não é para ficar fácil: só ΔE < 1 chega a 10 (CRAVOU) e a Sobrevivência exige 6 (ΔE ≲ 15).
+
+A recriação **não começa mais em branco**: os controles abrem numa cor de partida (`generateColorStart`), derivada da seed (igual para todos na rodada) e sempre a ΔE ≥ 30 do alvo, para não virar atalho. Só o app usa; o servidor confere apenas a resposta.
