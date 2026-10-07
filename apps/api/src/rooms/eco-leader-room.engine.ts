@@ -27,11 +27,10 @@ const REVEAL_MS = 8000;
 /**
  * Ecooo, Siga o Líder (spec 012): em cada rodada um jogador (o "criador") monta uma sequência
  * dentro das regras da rodada; o servidor valida, toca para todos ao mesmo tempo e os outros
- * repetem. A sequência só chega aos seguidores na reprodução. Não salva no histórico.
+ * repetem. A sequência só chega aos seguidores na reprodução. O histórico guarda só quem jogou e a colocação.
  */
 export class EcoLeaderRoomEngine extends ColorRoomEngine {
   override readonly game = 'ecoleader' as const;
-  override readonly persistable = false;
   protected override readonly answerPhase = 'play' as const;
   protected override readonly modes: readonly string[] = ['leader'];
 

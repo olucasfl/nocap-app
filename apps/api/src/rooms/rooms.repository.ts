@@ -25,6 +25,8 @@ export class RoomsRepository {
    */
   async saveRoomMatch(input: {
     game: 'color' | 'time' | 'eco';
+    /** Modo guardado (o padrão é `room`; Intruso e Siga o Líder têm o seu). */
+    mode?: string;
     seed: string;
     settings: AnySettings;
     rows: FinalRow[];
@@ -35,7 +37,7 @@ export class RoomsRepository {
       await tx.insert(matches).values({
         id: matchId,
         game: input.game,
-        mode: 'room',
+        mode: input.mode ?? 'room',
         kind: 'room',
         seed: input.seed,
         settings: input.settings,

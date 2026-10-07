@@ -51,7 +51,6 @@ interface ImpostorRound {
  */
 export class ImpostorRoomEngine extends ColorRoomEngine {
   override readonly game = 'impostor' as const;
-  override readonly persistable = false;
   protected override readonly minPlayers = IMPOSTOR_MIN_PLAYERS;
   protected override readonly modes: readonly string[] = ['impostor'];
 
@@ -170,7 +169,8 @@ export class ImpostorRoomEngine extends ColorRoomEngine {
       delete round.votes[id];
     } else {
       if (target === id) throw new RoomError('Você não pode votar em si mesmo');
-      if (!round.participants.includes(target)) throw new RoomError('Essa pessoa não está na rodada');
+      if (!round.participants.includes(target))
+        throw new RoomError('Essa pessoa não está na rodada');
       round.votes[id] = target;
     }
     round.voted.add(id);
@@ -238,10 +238,7 @@ export class ImpostorRoomEngine extends ColorRoomEngine {
   protected override totals() {
     return [...this.members.values()].map((m) => ({
       member: m,
-      totalTenths: this.info.reduce(
-        (sum, r) => sum + Math.round((r.points?.[m.id] ?? 0) * 10),
-        0,
-      ),
+      totalTenths: this.info.reduce((sum, r) => sum + Math.round((r.points?.[m.id] ?? 0) * 10), 0),
     }));
   }
 

@@ -28,7 +28,7 @@ Etapa 1: lista paginada ("Carregar mais") e detalhe rodada a rodada da Cor. Filt
 
 ## Pendente: partida de sala mostra quem jogou e como ficou (pedido do Lucas em 07/10/2026)
 
-> **Status: parcial (falta testar ao vivo).** Feito: ao abrir uma partida de sala aparecem todos os jogadores com colocação e nota (`GET /me/matches/:id/room`, só @usuário, só quem participou). Falta: rodadas de todos, resumo no cartão da lista, filtro por amigo e guardar Intruso/Siga o Líder. Pedido: "no histórico, quando tem uma partida com amigos em uma sala, essa partida deve mostrar quem jogou e como ficou."
+> **Decisão final do Lucas: histórico de sala de TODOS os jogos (inclusive Intruso e Siga o Líder), mostrando só quem jogou e a colocação, sem notas nem rodadas.** Intruso entra na aba da Mesmíssima (modo `impostor`) e Siga o Líder na do Ecooo (modo `leader`). **Status: implementado (falta testar ao vivo).** Feito: ao abrir uma partida de sala aparecem todos os jogadores com colocação e nota (`GET /me/matches/:id/room`, só @usuário, só quem participou). Falta: rodadas de todos, resumo no cartão da lista, filtro por amigo e guardar Intruso/Siga o Líder. Pedido: "no histórico, quando tem uma partida com amigos em uma sala, essa partida deve mostrar quem jogou e como ficou."
 
 **Hoje:** uma partida de sala já é guardada (`kind = room`, nunca no ranking, uma linha em `match_players` por jogador, com `placement` e a nota). No histórico ela aparece só como a **minha** linha ("2º lugar", minha nota). Não mostra os outros jogadores nem as notas deles, embora os dados estejam no banco.
 

@@ -138,16 +138,12 @@ function RoomPlayers({ item }: { item: HistoryItem }) {
   });
   if (q.isPending) return <Loader inline />;
   if (q.isError) return <p className="mono hist-note">NÃO DEU PARA CARREGAR QUEM JOGOU.</p>;
-  const eco = item.game === 'eco';
   return (
     <ol className="hist-players" aria-label="Quem jogou">
       {q.data.players.map((p, i) => (
         <li key={i} className={`hist-player${p.isMe ? ' me' : ''}`}>
           <span className="mono hist-player-pos">{p.placement ?? '-'}º</span>
           <span className="hist-player-name">{p.username ? `@${p.username}` : 'Ex-jogador'}</span>
-          <span className="mono hist-player-score">
-            {eco ? `${Math.round(p.totalScore / 10)} passos` : (p.totalScore / 10).toFixed(1)}
-          </span>
         </li>
       ))}
     </ol>
@@ -181,6 +177,7 @@ function MatchRow({ item }: { item: HistoryItem }) {
       </button>
       {open && item.kind === 'room' && <RoomPlayers item={item} />}
       {open &&
+        item.kind !== 'room' &&
         (item.game === 'time' ? (
           <TimeDetail item={item} />
         ) : item.game === 'eco' ? (

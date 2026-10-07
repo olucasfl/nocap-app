@@ -241,8 +241,11 @@ export class ColorRoom extends Room {
   /** Resultado salvo como partida de sala (sem ranking). Falha não derruba a sala. */
   private async saveResult() {
     try {
+      // O Intruso é a Cor e o Siga o Líder é o Ecooo: entram nas abas desses jogos do histórico.
+      const game = this.engine.game;
       await roomDeps.repo?.saveRoomMatch({
-        game: this.engine.game as 'color' | 'time' | 'eco',
+        game: game === 'impostor' ? 'color' : game === 'ecoleader' ? 'eco' : game,
+        mode: game === 'impostor' ? 'impostor' : game === 'ecoleader' ? 'leader' : undefined,
         seed: this.engine.currentSeed,
         settings: this.engine.currentSettings,
         rows: this.engine.finalRows(),

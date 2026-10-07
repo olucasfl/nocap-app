@@ -123,6 +123,8 @@ export function scoreParts(item: Pick<HistoryItem, 'game' | 'mode' | 'answers' |
   main: string;
   unit: string;
 } {
+  if (item.mode === 'impostor' || item.mode === 'leader')
+    return { main: (item.totalScore / 10).toFixed(1), unit: ' pts' };
   if (item.game === 'eco')
     return { main: String(Math.round(item.totalScore / 10)), unit: ' passos' };
   if (item.mode === 'survival')
@@ -141,6 +143,9 @@ const MODE_NAME: Record<string, string> = {
   escalada: 'Escalada',
   velocidade: 'Velocidade',
   reverso: 'Reverso',
+  impostor: 'Intruso',
+  leader: 'Siga o Líder',
+  room: 'Sala',
 };
 const GAME_NAME: Record<string, string> = { color: 'Mesmíssima', time: 'Já Deu?', eco: 'Ecooo' };
 const KIND_NAME: Record<string, string> = { solo: 'Solo', daily: 'Daily', room: 'Sala' };

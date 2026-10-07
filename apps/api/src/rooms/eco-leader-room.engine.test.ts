@@ -126,7 +126,7 @@ describe('EcoLeaderRoomEngine (Siga o Líder)', () => {
     }
     expect(room.currentPhase).toBe('final');
     expect(leaders.slice(0, 3).sort()).toEqual(['ana', 'bia', 'cris']);
-    expect(room.persistable).toBe(false);
+    expect(room.persistable).toBe(true);
     expect(room.finalRows()).toHaveLength(3);
   });
 });
