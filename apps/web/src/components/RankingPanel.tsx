@@ -180,9 +180,7 @@ export function RankingPanel({
             : 'Ninguém jogou esse modo neste período. Seja a primeira pessoa.'}
         </p>
       )}
-      {entries.length > 0 && (
-        <Podium top={entries.slice(0, 3)} max={max} showDays={dailySum} />
-      )}
+      {entries.length > 0 && <Podium top={entries.slice(0, 3)} max={max} showDays={dailySum} />}
       {rest.length > 0 && (
         <ol className="rp-list" start={4}>
           {rest.map((e) => (

@@ -14,6 +14,7 @@ import type { Mode } from '@/games/color/types';
 import type { Mode as TimeMode } from '@/games/time/types';
 import { History } from '@/screens/History';
 import { Friends } from '@/screens/Friends';
+import { FriendProfile } from '@/screens/FriendProfile';
 import { Hub } from '@/screens/Hub';
 import { Login } from '@/screens/Login';
 import { Profile } from '@/screens/Profile';
@@ -51,6 +52,11 @@ const friendsRoute = createRoute({
   path: '/amigos',
   component: Friends,
 });
+const friendProfileRoute = createRoute({
+  getParentRoute: () => tabsRoute,
+  path: '/amigos/$username',
+  component: FriendProfile,
+});
 const profileRoute = createRoute({
   getParentRoute: () => tabsRoute,
   path: '/perfil',
@@ -67,7 +73,6 @@ const registerRoute = createRoute({
   path: '/criar-conta',
   component: Register,
 });
-
 
 const roomRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -108,8 +113,7 @@ const TIME_MODES: TimeMode[] = ['classic', 'quick', 'strict', 'daily'];
 const colorRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/cor',
-  validateSearch: (search: Record<string, unknown>): GameSearch<Mode> =>
-    gameSearch(search, MODES),
+  validateSearch: (search: Record<string, unknown>): GameSearch<Mode> => gameSearch(search, MODES),
   // Cada jogo é carregado sob demanda (meta: JS inicial leve).
   component: lazyRouteComponent(() => import('@/games/color/ColorPage'), 'ColorPage'),
 });
@@ -123,12 +127,7 @@ const timeRoute = createRoute({
 });
 
 const routeTree = rootRoute.addChildren([
-  tabsRoute.addChildren([
-    hubRoute,
-    historyRoute,
-    friendsRoute,
-    profileRoute,
-  ]),
+  tabsRoute.addChildren([hubRoute, historyRoute, friendsRoute, friendProfileRoute, profileRoute]),
   colorRoute,
   timeRoute,
   loginRoute,

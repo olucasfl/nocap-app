@@ -16,6 +16,63 @@
       }
       document.documentElement.setAttribute('data-theme', t);
     </script>
+    <style>
+      /* Splash: só no app instalado (PWA). Cores literais porque o CSS do app ainda não chegou. */
+      #splash {
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 22px;
+        background: #f4f4ef;
+        color: #111;
+        transition: opacity 0.25s ease-out;
+      }
+      [data-theme='dark'] #splash {
+        background: #14140f;
+        color: #f4f4ef;
+      }
+      #splash.out {
+        opacity: 0;
+        pointer-events: none;
+      }
+      #splash b {
+        font: italic 900 56px/1 'Archivo', 'Arial Black', system-ui, sans-serif;
+        letter-spacing: -0.04em;
+        text-transform: uppercase;
+      }
+      #splash b span {
+        color: #ff6a2b;
+      }
+      #splash .sp-dots {
+        display: flex;
+        gap: 10px;
+        height: 40px;
+        align-items: flex-end;
+      }
+      #splash .sp-dots i {
+        width: 22px;
+        height: 22px;
+        border: 3px solid currentColor;
+        border-radius: 6px;
+        animation: sp-hop 0.9s ease-in-out infinite;
+      }
+      #splash .sp-dots i:nth-child(1) { background: #ff6a2b; }
+      #splash .sp-dots i:nth-child(2) { background: #2f5bff; animation-delay: 0.12s; }
+      #splash .sp-dots i:nth-child(3) { background: #ffd23f; animation-delay: 0.24s; }
+      #splash .sp-dots i:nth-child(4) { background: #33c27f; animation-delay: 0.36s; }
+      @keyframes sp-hop {
+        0%, 60%, 100% { transform: translateY(0) rotate(0deg); }
+        30% { transform: translateY(-16px) rotate(12deg); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #splash .sp-dots i { animation: none; }
+        #splash { transition: none; }
+      }
+    </style>
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="NoCap" />
@@ -49,6 +106,24 @@
     />
   </head>
   <body>
+    <script>
+      // Splash só no PWA instalado (janela própria, sem barra do navegador). `?splash` força, para testar.
+      (function () {
+        var standalone =
+          window.matchMedia('(display-mode: standalone)').matches ||
+          window.navigator.standalone === true ||
+          location.search.indexOf('splash') !== -1;
+        if (!standalone) return;
+        var el = document.createElement('div');
+        el.id = 'splash';
+        el.setAttribute('role', 'status');
+        el.setAttribute('aria-label', 'Carregando o NoCap');
+        el.innerHTML =
+          '<b>no cap<span>!</span></b><div class="sp-dots" aria-hidden="true"><i></i><i></i><i></i><i></i></div>';
+        document.body.insertBefore(el, document.body.firstChild);
+        window.__splashAt = Date.now();
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

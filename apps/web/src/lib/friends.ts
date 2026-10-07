@@ -1,4 +1,5 @@
 import { apiClient } from './api-client';
+import type { Stats } from './stats';
 
 export type RelationState = 'none' | 'friends' | 'outgoing' | 'incoming';
 
@@ -17,6 +18,14 @@ export interface SearchResult extends FriendUser {
 }
 
 export const MIN_SEARCH = 2;
+
+export interface FriendProfile {
+  username: string;
+  stats: Stats;
+}
+
+export const fetchFriendProfile = (username: string) =>
+  apiClient.get<FriendProfile>(`/friends/${encodeURIComponent(username)}/profile`);
 
 export const fetchFriends = () => apiClient.get<FriendsList>('/friends');
 

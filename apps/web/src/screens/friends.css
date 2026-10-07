@@ -95,3 +95,43 @@
   font-weight: 700;
   color: var(--muted);
 }
+
+.fr-who {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  grid-template-areas: 'av name' 'av see';
+  column-gap: 10px;
+  align-items: center;
+  color: var(--ink);
+  text-decoration: none;
+}
+.fr-who:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 3px;
+}
+.fr-avatar {
+  grid-area: av;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: var(--border);
+  border-radius: 10px;
+  background: var(--yellow);
+  color: var(--on-accent);
+  font: 900 20px var(--font-display);
+}
+.fr-who .fr-name {
+  grid-area: name;
+}
+.fr-see {
+  grid-area: see;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--blue);
+}
+.fr-row:has(.fr-who) {
+  flex-wrap: wrap;
+}

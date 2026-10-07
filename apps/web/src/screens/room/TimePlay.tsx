@@ -5,6 +5,7 @@ import { sendRoom, type RoomSnapshot } from '@/lib/rooms';
 import { formatDiff, formatSeconds } from '@/games/time/format';
 import { RoundScreen } from '@/games/time/screens/RoundScreen';
 import '@/games/time/time.css';
+import '@/games/time/result.css';
 
 function Waiting({ snapshot }: { snapshot: RoomSnapshot }) {
   const connected = snapshot.members.filter((m) => m.connected);

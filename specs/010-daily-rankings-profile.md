@@ -14,7 +14,8 @@ Cada jogo é dono do seu ranking, da sua sala e do seu Daily; só quem tem conta
 - **Histórico** separado por jogo; cada partida mostra a classificação (colocação na sala, ou CRAVOU/QUASE/MEH/ERROU pela nota).
 - **Conta obrigatória para jogar:** convidado navega mas não joga (`PlayGate` na tela, 401 na API). Limites: 30 partidas/min por conta, 300 req/min por IP, 20 visitas/min, pedidos de amizade e convites limitados, uma sala por conta, `trust proxy` no Render.
 - **Perfil:** abas Perfil e Recordes (um cartão por jogo, com arte própria, modos e a sequência do Daily daquele jogo). O Perfil mostra os **dias seguidos entrando no NoCap** (`user_visits`, migration 0003). Sair pede confirmação.
-- **Tempo, 3 toques:** COMEÇAR (prepara), "Clique para começar a contar" (dispara o relógio) e PARAR.
+- **Tempo:** COMEÇAR leva a uma tela de preparo imersiva (tinta, alvo grande, botão redondo INICIAR); ao iniciar a tela vira laranja de uma vez (VALENDO, sem som/animação) e qualquer toque para. O resultado é visual: o alvo cai, o tempo do jogador sobe numa pista com tiques, a marca do alvo mostra a distância e o veredito toca som próprio (cravou/perto/errou).
+- **Modos com Daily junto** (cartões com arte própria), histórico paginado (Anterior/Próxima), perfil de amigo (`GET /friends/:username/profile`, só amigos; só @usuário e recordes), splash só no PWA instalado.
 - **Tema:** só Claro e Escuro. **Navegação:** botões Voltar nas telas internas e carregador do NoCap (`Loader`).
 - **Tempo clássico:** 3 rodadas alternando alvo curto (< 10 s) e longo (> 10 s). Rápido: 1 rodada, quase sempre curta. Partidas antigas de 5 rodadas continuam legíveis (`presetFor`).
 

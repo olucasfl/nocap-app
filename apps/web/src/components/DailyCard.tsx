@@ -28,9 +28,13 @@ export function DailyCard({
   return (
     <section className="dc" aria-label="Daily de hoje">
       <div className="dc-head">
-        <span className="mono dc-tag">DAILY · {dd}/{mm}</span>
+        <span className="mono dc-tag">
+          DAILY · {dd}/{mm}
+        </span>
         {user && info && (
-          <span className="mono dc-streak">SEQUÊNCIA {streakLabel(info.current).toUpperCase()}</span>
+          <span className="mono dc-streak">
+            SEQUÊNCIA {streakLabel(info.current).toUpperCase()}
+          </span>
         )}
       </div>
       {done && info ? (

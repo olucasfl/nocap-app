@@ -23,7 +23,12 @@ export class RoomsRepository {
    * Grava a partida de sala: uma `matches` (kind `room`, nunca ranked) e uma `match_players`
    * por pessoa, ligada ao aparelho (player) da conta; cria um se a conta ainda não tem.
    */
-  async saveRoomMatch(input: { game: 'color' | 'time'; seed: string; settings: AnySettings; rows: FinalRow[] }) {
+  async saveRoomMatch(input: {
+    game: 'color' | 'time';
+    seed: string;
+    settings: AnySettings;
+    rows: FinalRow[];
+  }) {
     const matchId = randomUUID();
     const playedAt = new Date();
     await this.db.transaction(async (tx) => {

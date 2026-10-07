@@ -4,6 +4,7 @@ import { colorPresets } from '@nocap/games';
 import { BackButton } from '@/components/BackButton';
 import { DailyCard } from '@/components/DailyCard';
 import { FriendsPanel } from '@/components/FriendsPanel';
+import { ModePicker } from '@/components/ModePicker';
 import { GameTabs, type GameTab } from '@/components/GameTabs';
 import { ArrowRight } from '@/components/icons';
 import { PlayGate } from '@/components/PlayGate';
@@ -14,17 +15,19 @@ import { fetchStats } from '@/lib/stats';
 import type { Mode } from '../types';
 
 /** Modos de partida solo. O Daily é um cartão à parte, dentro do jogo. */
-const MODES: { id: Exclude<Mode, 'daily'>; label: string }[] = [
-  { id: 'classic', label: 'Clássico' },
-  { id: 'flash', label: 'Flash' },
-  { id: 'quick', label: 'Rápido' },
+const MODES: { id: Mode; label: string; desc: string }[] = [
+  { id: 'classic', label: 'Clássico', desc: '5 RODADAS · 3 S' },
+  { id: 'flash', label: 'Flash', desc: '5 RODADAS · 0,4 S' },
+  { id: 'quick', label: 'Rápido', desc: '1 RODADA' },
+  { id: 'daily', label: 'Daily', desc: '1 POR DIA · RANKING' },
 ];
 
-const LEAD: Record<Exclude<Mode, 'daily'>, string> = {
+const LEAD: Record<Mode, string> = {
   classic:
     'Uma cor aparece por 3 segundos. Depois some. Recrie de memória nos controles e veja o quanto você chegou perto.',
   flash: 'A cor pisca por menos de meio segundo. Sem tempo pra pensar: confie no olho.',
   quick: 'Só uma rodada, com 3 segundos pra decorar. Ideal pra jogar em 30 segundos.',
+  daily: 'A cor de hoje é a mesma para todo mundo. Mesmas 5 cores, uma única chance por dia.',
 };
 
 const seconds = (ms: number) => `${ms / 1000}s`.replace('.', ',');
@@ -43,8 +46,8 @@ export function StartScreen({ mode, initialTab = 'modes', initialBoard, onMode, 
   const daily = stats.data?.daily.color;
   const [tab, setTab] = useState<GameTab>(initialTab);
   const [board, setBoard] = useState<Board | undefined>(initialBoard);
-  const shown = mode === 'daily' ? 'classic' : mode;
-  const preset = colorPresets[shown]!;
+  const shown = mode;
+  const preset = colorPresets[shown === 'daily' ? 'classic' : shown]!;
 
   return (
     <section className="screen">
@@ -53,19 +56,12 @@ export function StartScreen({ mode, initialTab = 'modes', initialBoard, onMode, 
       <GameTabs game="color" tab={tab} onTab={setTab} />
       {tab === 'modes' && (
         <>
-          <div className="cg-seg" role="radiogroup" aria-label="Modo de jogo">
-            {MODES.map((m) => (
-              <button
-                key={m.id}
-                type="button"
-                role="radio"
-                aria-checked={shown === m.id}
-                onClick={() => onMode(m.id)}
-              >
-                {m.label}
-              </button>
-            ))}
-          </div>
+          <ModePicker
+            game="color"
+            modes={MODES}
+            value={mode}
+            onChange={(id) => onMode(id as Mode)}
+          />
           <p className="lead">{LEAD[shown]}</p>
           <div className="cg-rules">
             <div className="cg-rule">
@@ -79,22 +75,26 @@ export function StartScreen({ mode, initialTab = 'modes', initialBoard, onMode, 
               <b>{preset.rounds * 10}</b>pontos max
             </div>
           </div>
-          <div className="stack">
-            <PlayGate>
-              <button type="button" className="btn" onClick={() => onStart(shown)}>
-                Jogar <ArrowRight />
-              </button>
-            </PlayGate>
-          </div>
-          <DailyCard
-            game="color"
-            info={daily}
-            onPlay={() => onStart('daily')}
-            onRanking={() => {
-              setBoard('daily');
-              setTab('ranking');
-            }}
-          />
+          {shown !== 'daily' && (
+            <div className="stack">
+              <PlayGate>
+                <button type="button" className="btn" onClick={() => onStart(shown)}>
+                  Jogar <ArrowRight />
+                </button>
+              </PlayGate>
+            </div>
+          )}
+          {shown === 'daily' && (
+            <DailyCard
+              game="color"
+              info={daily}
+              onPlay={() => onStart('daily')}
+              onRanking={() => {
+                setBoard('daily');
+                setTab('ranking');
+              }}
+            />
+          )}
         </>
       )}
       {tab === 'friends' && <FriendsPanel game="color" />}

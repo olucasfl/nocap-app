@@ -38,7 +38,9 @@ export function FriendsPanel({ game }: { game: GameId }) {
       <PlayGate what="jogar em sala">
         <section className="fp-card">
           <h2 className="fp-h">Criar sala de {GAME_LABEL[game]}</h2>
-          <p className="fp-text">Você vira o host, define as regras e chama os amigos pelo código ou convite.</p>
+          <p className="fp-text">
+            Você vira o host, define as regras e chama os amigos pelo código ou convite.
+          </p>
           <button
             type="button"
             className="btn alt"

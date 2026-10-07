@@ -23,10 +23,29 @@ import './friends.css';
 
 const message = (e: unknown) => (e instanceof ApiError ? e.message : 'Sem conexão. Tente de novo.');
 
-function Person({ username, children }: { username: string; children?: ReactNode }) {
+function Person({
+  username,
+  link = false,
+  children,
+}: {
+  username: string;
+  /** Amigo aceito: o nome abre o perfil dele. */
+  link?: boolean;
+  children?: ReactNode;
+}) {
   return (
     <li className="fr-row">
-      <span className="fr-name">@{username}</span>
+      {link ? (
+        <Link to="/amigos/$username" params={{ username }} className="fr-who">
+          <span className="fr-avatar" aria-hidden="true">
+            {username.charAt(0).toUpperCase()}
+          </span>
+          <span className="fr-name">@{username}</span>
+          <span className="mono fr-see">VER PERFIL</span>
+        </Link>
+      ) : (
+        <span className="fr-name">@{username}</span>
+      )}
       <span className="fr-actions">{children}</span>
     </li>
   );
@@ -236,7 +255,7 @@ export function Friends() {
           ) : (
             <ul className="fr-list">
               {data.friends.map((p) => (
-                <Person key={p.username} username={p.username}>
+                <Person key={p.username} username={p.username} link>
                   {lobby &&
                     !lobby.members.some((m) => m.username === p.username) &&
                     (invited.includes(p.username) ? (

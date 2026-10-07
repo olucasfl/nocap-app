@@ -1,4 +1,15 @@
-import { Body, Controller, Get, HttpCode, Post, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
+import { FriendsService } from '../friends/friends.service';
 import { AuthGuard, type AuthedRequest } from '../auth/auth.guard';
 import { RateLimit, RateLimitGuard } from '../common/rate-limit';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
@@ -14,7 +25,19 @@ import { MatchesService } from './matches.service';
 
 @Controller()
 export class MatchesController {
-  constructor(private readonly matches: MatchesService) {}
+  constructor(
+    private readonly matches: MatchesService,
+    private readonly friends: FriendsService,
+  ) {}
+
+  /** Perfil de um amigo: só @usuário e recordes (nunca nome real nem e-mail). Só amigos veem. */
+  @Get('friends/:username/profile')
+  @UseGuards(AuthGuard, RateLimitGuard)
+  @RateLimit({ limit: 60, windowMs: 60_000 })
+  async friendProfile(@Req() req: AuthedRequest, @Param('username') username: string) {
+    const friend = await this.friends.friendByUsername(req.user.id, username.trim().toLowerCase());
+    return { username: friend.username, stats: await this.matches.statsOfUser(friend.id) };
+  }
 
   /** Só com conta: o convidado pode ver o app, mas não joga. */
   @Post('matches')

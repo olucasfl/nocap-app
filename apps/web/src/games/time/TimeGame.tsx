@@ -12,6 +12,7 @@ import { StartScreen } from './screens/StartScreen';
 import { RoundScreen } from './screens/RoundScreen';
 import type { Mode, RoundResult, Run } from './types';
 import './time.css';
+import './result.css';
 
 type Phase = 'start' | 'target' | 'counting' | 'result' | 'final';
 

@@ -4,6 +4,7 @@ import { MuteButton } from '@/components/MuteButton';
 import { ThemeButton } from '@/components/ThemeButton';
 import { User } from '@/components/icons';
 import { useAuth } from '@/lib/auth';
+import { modeLabel } from '@/lib/history';
 import { dailyMax, fetchStats, gameModes, modeMax, type GameId, type Stats } from '@/lib/stats';
 import './hub.css';
 
@@ -16,25 +17,37 @@ const SWATCHES = [
   'var(--green)',
 ];
 
-/** Melhor nota entre os modos de 5/3 rodadas do jogo (não mistura com o rápido de 10 pontos). */
+/** Recorde do jogo: a melhor nota em relação ao máximo do modo, de qualquer modo (inclui o rápido). */
 function bestLabel(stats: Stats | undefined, game: GameId): string {
   if (!stats) return 'ENTRE PARA JOGAR';
-  const best = gameModes(stats, game)
-    .filter((m) => m.mode !== 'quick')
-    .reduce((acc, m) => Math.max(acc, m.best), 0);
-  if (best === 0) return 'SEM RECORDE AINDA';
-  return `RECORDE ${(best / 10).toFixed(1)}/${modeMax(game, 'classic')}`;
+  let top: { mode: string; best: number; max: number } | null = null;
+  for (const m of gameModes(stats, game)) {
+    const max = modeMax(game, m.mode);
+    if (!max || m.best <= 0) continue;
+    if (!top || m.best / 10 / max > top.best / 10 / top.max)
+      top = { mode: m.mode, best: m.best, max };
+  }
+  if (!top) return 'SEM RECORDE AINDA';
+  return `RECORDE ${(top.best / 10).toFixed(1)}/${top.max} · ${modeLabel(top.mode).toUpperCase()}`;
 }
 
+/** Situação do Daily do jogo hoje, em palavras: jogado (com a nota) ou ainda disponível. */
 function dailyStatus(stats: Stats | undefined, game: GameId): string {
   const info = stats?.daily[game];
-  if (!info) return '—';
-  return info.playedToday ? `${((info.totalScore ?? 0) / 10).toFixed(1)}/${dailyMax(game)}` : 'FALTA';
+  if (!info) return 'DAILY DISPONÍVEL';
+  return info.playedToday
+    ? `DAILY FEITO · ${((info.totalScore ?? 0) / 10).toFixed(1)}/${dailyMax(game)}`
+    : 'DAILY DISPONÍVEL';
 }
 
 export function Hub() {
   const user = useAuth((s) => s.user);
-  const stats = useQuery({ queryKey: ['stats'], queryFn: fetchStats, enabled: !!user, retry: false });
+  const stats = useQuery({
+    queryKey: ['stats'],
+    queryFn: fetchStats,
+    enabled: !!user,
+    retry: false,
+  });
   const data = user ? stats.data : undefined;
 
   return (
@@ -72,7 +85,7 @@ export function Hub() {
           <div className="hub-card-foot">
             <div className="hub-card-name">Cor</div>
             <div className="mono hub-card-meta">{bestLabel(data, 'color')}</div>
-            <div className="mono hub-card-meta">DAILY {dailyStatus(data, 'color')}</div>
+            <div className="mono hub-card-meta">{dailyStatus(data, 'color')}</div>
           </div>
         </Link>
 
@@ -85,7 +98,7 @@ export function Hub() {
           <div className="hub-card-foot">
             <div className="hub-card-name">Tempo</div>
             <div className="mono hub-card-meta">{bestLabel(data, 'time')}</div>
-            <div className="mono hub-card-meta">DAILY {dailyStatus(data, 'time')}</div>
+            <div className="mono hub-card-meta">{dailyStatus(data, 'time')}</div>
           </div>
         </Link>
 

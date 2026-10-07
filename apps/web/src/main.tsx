@@ -20,6 +20,18 @@ const queryClient = new QueryClient();
 void flushQueuedMatches().catch(() => undefined);
 window.addEventListener('online', () => void flushQueuedMatches().catch(() => undefined));
 
+/** Some o splash do PWA (se houver) depois de um mínimo de tempo, para não piscar. */
+function hideSplash() {
+  const el = document.getElementById('splash');
+  if (!el) return;
+  const shown = (window as unknown as { __splashAt?: number }).__splashAt ?? Date.now();
+  const wait = Math.max(0, 1200 - (Date.now() - shown));
+  setTimeout(() => {
+    el.classList.add('out');
+    setTimeout(() => el.remove(), 300);
+  }, wait);
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
@@ -28,3 +40,5 @@ createRoot(document.getElementById('root')!).render(
     </QueryClientProvider>
   </StrictMode>,
 );
+
+requestAnimationFrame(hideSplash);

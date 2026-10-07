@@ -34,9 +34,17 @@ function ColorDetail({ item }: { item: HistoryItem }) {
       {rounds.map((r, i) => (
         <li key={i} className="hist-round">
           <span className="mono hist-round-n">{i + 1}</span>
-          <span className="hist-swatch" style={{ background: toHex(r.target) }} title={toHex(r.target)} />
+          <span
+            className="hist-swatch"
+            style={{ background: toHex(r.target) }}
+            title={toHex(r.target)}
+          />
           <span className="mono hist-vs">×</span>
-          <span className="hist-swatch" style={{ background: toHex(r.guess) }} title={toHex(r.guess)} />
+          <span
+            className="hist-swatch"
+            style={{ background: toHex(r.guess) }}
+            title={toHex(r.guess)}
+          />
           <span className="mono hist-round-score">{r.score.toFixed(1)}</span>
         </li>
       ))}
@@ -101,6 +109,8 @@ export function History() {
   const user = useAuth((s) => s.user);
   const status = useAuth((s) => s.status);
   const [game, setGame] = useState<GameId>('color');
+  /** Página mostrada (0 = a mais recente). As já vistas ficam em cache; a próxima vem do servidor. */
+  const [page, setPage] = useState(0);
 
   const q = useInfiniteQuery({
     queryKey: ['history', game],
@@ -110,7 +120,12 @@ export function History() {
     enabled: !!user,
   });
 
-  const items = q.data?.pages.flatMap((p) => p.items) ?? [];
+  const items = q.data?.pages[page]?.items ?? [];
+  const hasNext = page + 1 < (q.data?.pages.length ?? 0) || !!q.hasNextPage;
+  const goNext = async () => {
+    if (page + 1 >= (q.data?.pages.length ?? 0)) await q.fetchNextPage();
+    setPage((p) => p + 1);
+  };
 
   if (status !== 'loading' && !user) {
     return (
@@ -134,7 +149,15 @@ export function History() {
   return (
     <main className="hist">
       <h1>Histórico</h1>
-      <Choice label="Jogo" value={game} options={GAMES} onChange={setGame} />
+      <Choice
+        label="Jogo"
+        value={game}
+        options={GAMES}
+        onChange={(g) => {
+          setGame(g);
+          setPage(0);
+        }}
+      />
       <div className="hist-game">
         <GameArt game={game} size="sm" />
         <div className="mono hist-game-name">PARTIDAS DE {GAME_LABEL[game].toUpperCase()}</div>
@@ -160,15 +183,26 @@ export function History() {
           ))}
         </ul>
       )}
-      {q.hasNextPage && (
-        <button
-          type="button"
-          className="btn ghost hist-more"
-          disabled={q.isFetchingNextPage}
-          onClick={() => void q.fetchNextPage()}
-        >
-          {q.isFetchingNextPage ? 'Carregando...' : 'Carregar mais'}
-        </button>
+      {(page > 0 || hasNext) && (
+        <nav className="hist-pager" aria-label="Páginas do histórico">
+          <button
+            type="button"
+            className="btn ghost"
+            disabled={page === 0}
+            onClick={() => setPage((p) => p - 1)}
+          >
+            Anterior
+          </button>
+          <span className="mono hist-page">PÁGINA {page + 1}</span>
+          <button
+            type="button"
+            className="btn ghost"
+            disabled={!hasNext || q.isFetchingNextPage}
+            onClick={() => void goNext()}
+          >
+            {q.isFetchingNextPage ? 'Carregando...' : 'Próxima'}
+          </button>
+        </nav>
       )}
     </main>
   );

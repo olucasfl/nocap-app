@@ -115,6 +115,14 @@ export const sfx = {
   win() {
     [523, 659, 784, 1047].forEach((f, i) => tone('triangle', f, f, 0.14, 0.22, 0.09 * i));
   },
+  /** nota entre 8 e 9,5: chegou perto (duas notas subindo, mais suaves que o `win`) */
+  near() {
+    [440, 587].forEach((f, i) => tone('triangle', f, f * 1.01, 0.16, 0.2, 0.1 * i));
+  },
+  /** o tempo do jogador sobe até a marca (um tique por passo, só no resultado) */
+  climb(step: number) {
+    tone('triangle', 300 + step * 45, 300 + step * 45, 0.04, 0.1);
+  },
   /** nota < 5 */
   boing() {
     tone('sine', 420, 140, 0.32, 0.35);

@@ -53,7 +53,22 @@ function GameRecords({ stats, game }: { stats: Stats; game: GameId }) {
 }
 
 /** Aba de recordes: um cartão por jogo, com a arte do jogo, os modos e o Daily dele. */
-export function Records() {
+export function Records({ stats }: { stats?: Stats }) {
+  if (stats) return <RecordsView stats={stats} />;
+  return <MyRecords />;
+}
+
+function RecordsView({ stats }: { stats: Stats }) {
+  return (
+    <div className="rc">
+      {GAMES.map((g) => (
+        <GameRecords key={g} stats={stats} game={g} />
+      ))}
+    </div>
+  );
+}
+
+function MyRecords() {
   const q = useQuery({ queryKey: ['stats'], queryFn: fetchStats });
   if (q.isPending) return <Loader inline label="Carregando recordes" />;
   if (q.isError) return <p className="lead">Não deu para carregar os recordes agora.</p>;

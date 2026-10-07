@@ -1,0 +1,216 @@
+/* ---- rodada imersiva: preparo e valendo ---- */
+.tm-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 24px 20px calc(24px + env(safe-area-inset-bottom));
+  text-align: center;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+.tm-stage.armed {
+  background: var(--ink);
+  color: var(--paper);
+}
+/* Valendo: o laranja chega de uma vez (sem transição) e fica parado até o toque. */
+.tm-stage.live {
+  background: var(--orange);
+  color: var(--on-accent);
+  cursor: pointer;
+}
+.tm-stage-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+.tm-stage-target {
+  font: 900 clamp(72px, 26vw, 120px) / 0.95 var(--font-display);
+  letter-spacing: -0.05em;
+}
+.tm-stage-text {
+  margin: 0;
+  max-width: 300px;
+  font: 400 14px/1.5 var(--font-mono);
+  opacity: 0.85;
+}
+.tm-stage-hint {
+  margin-top: 8px;
+  font: 900 16px var(--font-display);
+  letter-spacing: 0.06em;
+}
+.tm-stage-warn {
+  font-size: 11px;
+  font-weight: 700;
+}
+.tm-stage.live .tm-pill {
+  background: var(--on-accent);
+  color: var(--white);
+}
+/* Botão redondo de iniciar: grande, no polegar, com anel. */
+.tm-go {
+  appearance: none;
+  width: 172px;
+  height: 172px;
+  margin-top: 12px;
+  border: 4px solid var(--paper);
+  border-radius: 50%;
+  background: var(--orange);
+  color: var(--on-accent);
+  box-shadow:
+    0 0 0 8px var(--ink),
+    0 0 0 11px var(--orange);
+  font: 900 26px var(--font-display);
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.tm-go:active {
+  transform: scale(0.96);
+}
+.tm-go:focus-visible {
+  outline: 4px solid var(--blue);
+  outline-offset: 14px;
+}
+
+/* ---- resultado visual ---- */
+.tm-result {
+  gap: 18px;
+}
+.tm-slam {
+  background: var(--yellow);
+  color: var(--on-accent);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 18px;
+  text-align: center;
+  animation: tm-slam 0.45s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+.tm-slam b {
+  display: block;
+  font: 900 clamp(48px, 18vw, 76px) / 1 var(--font-display);
+  letter-spacing: -0.05em;
+}
+@keyframes tm-slam {
+  from {
+    transform: translateY(-40px) scale(1.15);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+/* Pista: a barra cresce (scaleX) até o tempo do jogador; a marca é o alvo. */
+.tm-track {
+  position: relative;
+  height: 44px;
+  margin-top: 14px;
+  border: var(--border);
+  border-radius: 999px;
+  background: var(--white);
+}
+.tm-fill {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: var(--blue);
+  transform-origin: left center;
+  transform: scaleX(0);
+}
+.tm-fill.over {
+  background: var(--orange);
+}
+.tm-mark {
+  position: absolute;
+  top: -10px;
+  bottom: -10px;
+  width: 4px;
+  margin-left: -2px;
+  background: var(--ink);
+  border-radius: 2px;
+}
+.tm-mark span {
+  position: absolute;
+  top: -16px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  font-weight: 700;
+}
+.tm-you {
+  text-align: center;
+}
+.tm-you b {
+  display: block;
+  font: 900 clamp(56px, 22vw, 92px) / 1 var(--font-display);
+  letter-spacing: -0.05em;
+  font-variant-numeric: tabular-nums;
+}
+.tm-you.over b {
+  color: var(--orange);
+}
+.tm-verdict {
+  min-height: 140px;
+  display: grid;
+  place-items: center;
+}
+.tm-stamp.pop {
+  animation: tm-pop 0.5s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+.tm-stamp.top {
+  background: var(--yellow);
+}
+.tm-stamp.near {
+  background: var(--green);
+  color: var(--on-accent);
+}
+.tm-stamp.mid {
+  background: var(--white);
+  color: var(--ink);
+}
+.tm-stamp.low {
+  background: var(--orange);
+  color: var(--on-accent);
+}
+@keyframes tm-pop {
+  from {
+    transform: rotate(-30deg) scale(2.2);
+    opacity: 0;
+  }
+  to {
+    transform: rotate(-8deg) scale(1);
+    opacity: 1;
+  }
+}
+.tm-result.done.low .tm-you {
+  animation: tm-shake 0.4s ease-out;
+}
+@keyframes tm-shake {
+  20% {
+    transform: translateX(-8px);
+  }
+  40% {
+    transform: translateX(8px);
+  }
+  60% {
+    transform: translateX(-5px);
+  }
+  80% {
+    transform: translateX(3px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tm-slam,
+  .tm-stamp.pop,
+  .tm-result.done.low .tm-you {
+    animation: none;
+  }
+}
