@@ -28,7 +28,12 @@ export function createAuth(db: Db) {
       },
     }),
     // Ids em uuid, como `players.id`.
-    advanced: { database: { generateId: 'uuid' } },
+    advanced: {
+      database: { generateId: 'uuid' },
+      // Atrás do proxy do Render o IP do cliente vem em X-Forwarded-For. Sem isto, todo mundo
+      // dividiria o mesmo limite de tentativas de login.
+      ipAddress: { ipAddressHeaders: ['x-forwarded-for'] },
+    },
     emailAndPassword: { enabled: true, minPasswordLength: PASSWORD_MIN, autoSignIn: true },
     // Web e API ficam em origens diferentes: o token vai em `Authorization`, não em cookie.
     plugins: [

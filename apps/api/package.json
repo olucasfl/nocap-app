@@ -12,11 +12,14 @@
     "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {
+    "@colyseus/core": "0.16.24",
+    "@colyseus/ws-transport": "^0.16.5",
     "@nestjs/common": "^11.0.1",
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.0.1",
     "@nocap/games": "workspace:*",
     "better-auth": "^1.7.7",
+    "colyseus": "^0.16.5",
     "dotenv": "^16.4.7",
     "drizzle-orm": "^0.38.3",
     "postgres": "^3.4.5",

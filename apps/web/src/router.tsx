@@ -6,6 +6,7 @@ import {
   Outlet,
 } from '@tanstack/react-router';
 import { BottomNav } from '@/components/BottomNav';
+import { InviteBanner } from '@/components/InviteBanner';
 import type { Mode } from '@/games/color/types';
 import { History } from '@/screens/History';
 import { Friends } from '@/screens/Friends';
@@ -15,7 +16,14 @@ import { Profile } from '@/screens/Profile';
 import { Ranking } from '@/screens/Ranking';
 import { Register } from '@/screens/Register';
 
-const rootRoute = createRootRoute({ component: Outlet });
+const rootRoute = createRootRoute({
+  component: () => (
+    <>
+      <Outlet />
+      <InviteBanner />
+    </>
+  ),
+});
 
 // Telas com a barra de navegação inferior. O jogo fica fora dela (tela cheia).
 const tabsRoute = createRoute({
@@ -63,6 +71,17 @@ const rankingRoute = createRoute({
   component: Ranking,
 });
 
+const roomRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/sala',
+  component: lazyRouteComponent(() => import('@/screens/Room'), 'RoomPage'),
+});
+const roomCodeRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/sala/$code',
+  component: lazyRouteComponent(() => import('@/screens/Room'), 'RoomCodePage'),
+});
+
 const MODES: Mode[] = ['classic', 'flash', 'quick', 'daily'];
 
 const colorRoute = createRoute({
@@ -81,6 +100,8 @@ const routeTree = rootRoute.addChildren([
   colorRoute,
   loginRoute,
   registerRoute,
+  roomRoute,
+  roomCodeRoute,
 ]);
 
 export const router = createRouter({ routeTree });

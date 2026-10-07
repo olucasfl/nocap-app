@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -103,6 +104,16 @@ export class FriendsService {
     if (!row || !canRemove) throw new NotFoundException('Vocês não são amigos');
     await this.repo.remove(row.id);
     return { state: 'none' as const };
+  }
+
+  /** A pessoa com esse @usuário, só se for amiga de `me` (convite para sala). */
+  async friendByUsername(me: string, username: string): Promise<UserRef> {
+    const other = await this.userOrFail(username);
+    const row = await this.repo.findBetween(me, other.id);
+    if (!row || row.status !== 'accepted') {
+      throw new ForbiddenException('Só dá para convidar amigos');
+    }
+    return other;
   }
 
   /** Ids da pessoa e dos amigos aceitos (para o ranking entre amigos). */
