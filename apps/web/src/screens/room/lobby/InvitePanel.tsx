@@ -9,10 +9,7 @@ const SEARCH_FROM = 8;
 
 type Done = 'share' | 'link' | 'code' | null;
 
-/**
- * Central de chamar gente, em blocos do mais usado para o menos: enviar o link escolhendo o
- * app, atalhos diretos, amigos do NoCap e quem pode entrar.
- */
+/** Convidar: enviar o link, copiar o link ou o código e, embaixo, chamar amigos do NoCap. */
 export function InvitePanel({ snapshot }: { snapshot: RoomSnapshot }) {
   const invited = useRoom((s) => s.invited);
   const friends = useQuery({ queryKey: ['friends'], queryFn: fetchFriends });
@@ -26,7 +23,6 @@ export function InvitePanel({ snapshot }: { snapshot: RoomSnapshot }) {
   const list = all
     .filter((f) => !inRoom.has(f.username))
     .filter((f) => f.username.includes(filter.trim().toLowerCase().replace(/^@/, '')));
-  const free = snapshot.maxPlayers - snapshot.members.length;
 
   const flash = (what: Done) => {
     setDone(what);
@@ -51,52 +47,14 @@ export function InvitePanel({ snapshot }: { snapshot: RoomSnapshot }) {
     }
   };
 
-  const text = encodeURIComponent(message);
-
   return (
     <div className="lb-invite">
-      <section className="lb-block" aria-label="Enviar o link">
-        <div className="mono rm-label">ENVIAR O LINK</div>
+      <section className="lb-block" aria-label="Convidar">
+        <div className="mono rm-label">CONVIDAR</div>
         <button type="button" className="btn alt" data-sfx="send" onClick={() => void share()}>
-          {done === 'share' ? 'Link copiado' : 'Enviar o link por...'}
+          {done === 'share' ? 'Mensagem copiada' : 'Enviar o link por...'}
         </button>
-        <p className="mono rm-mode-note">
-          {canShare
-            ? 'Abre a lista de apps do seu aparelho: WhatsApp, Telegram, mensagens...'
-            : 'Este aparelho não abre a lista de apps, então o botão copia a mensagem pronta.'}
-        </p>
-      </section>
-
-      <section className="lb-block" aria-label="Atalhos">
-        <div className="mono rm-label">ATALHOS</div>
         <div className="lb-shortcuts">
-          <a
-            className="fr-btn"
-            data-sfx="send"
-            href={`https://wa.me/?text=${text}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            WhatsApp
-          </a>
-          <a
-            className="fr-btn"
-            data-sfx="send"
-            href={`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(
-              `Entra na minha sala ${GAME_OF[snapshot.game]}: ${snapshot.code}`,
-            )}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Telegram
-          </a>
-          <a
-            className="fr-btn"
-            data-sfx="send"
-            href={`mailto:?subject=${encodeURIComponent('Sala no NoCap')}&body=${text}`}
-          >
-            E-mail
-          </a>
           <button
             type="button"
             className="fr-btn ghost"
@@ -114,13 +72,18 @@ export function InvitePanel({ snapshot }: { snapshot: RoomSnapshot }) {
             {done === 'code' ? 'Código copiado' : 'Copiar código'}
           </button>
         </div>
+        <p className="mono rm-mode-note">
+          {canShare
+            ? 'Quem entra precisa ter uma conta no NoCap.'
+            : 'Este aparelho não abre a lista de apps: o botão de cima copia a mensagem pronta.'}
+        </p>
       </section>
 
       <section className="lb-block" aria-label="Chamar amigos">
         <div className="mono rm-label">CHAMAR AMIGOS DO NOCAP</div>
         {all.length >= SEARCH_FROM && (
           <input
-            className="field-input"
+            className="ch-input"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             placeholder="Buscar pelo @usuário"
@@ -134,7 +97,7 @@ export function InvitePanel({ snapshot }: { snapshot: RoomSnapshot }) {
         ) : list.length === 0 ? (
           <p className="mono lb-hint">
             {all.length === 0
-              ? 'Você ainda não tem amigos no NoCap. Use o link ou o código acima.'
+              ? 'Você ainda não tem amigos no NoCap. Use o link ou o código.'
               : filter
                 ? 'Ninguém com esse @usuário.'
                 : 'Todos os seus amigos já estão na sala.'}
@@ -160,18 +123,6 @@ export function InvitePanel({ snapshot }: { snapshot: RoomSnapshot }) {
             ))}
           </ul>
         )}
-      </section>
-
-      <section className="lb-block" aria-label="Quem pode entrar">
-        <div className="mono rm-label">QUEM PODE ENTRAR</div>
-        <div className="lb-codebig">
-          <b>{snapshot.code}</b>
-          <span className="mono">
-            {snapshot.members.length}/{snapshot.maxPlayers} NA SALA
-            {free > 0 ? ` · ${free} ${free === 1 ? 'VAGA' : 'VAGAS'}` : ' · CHEIA'}
-          </span>
-        </div>
-        <p className="mono rm-mode-note">Quem entra precisa ter uma conta no NoCap.</p>
       </section>
     </div>
   );

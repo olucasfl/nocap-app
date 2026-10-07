@@ -1,6 +1,6 @@
 # 014 · Chat nas salas com amigos
 
-Status: **implementado (aba Chat no lobby + gaveta na partida; falta testar ao vivo)**. Pedido do Lucas em 07/10/2026. Decisões adotadas: sem reações rápidas, sem denunciar nem filtro de palavrões, sem mensagens de sistema, sem som próprio (só contador); Intruso abre o chat no lobby, votação, revelação e pódio; Já Deu? fecha na contagem.
+Status: **implementado (botão flutuante de chat em todas as telas da sala, com contador de novas; gaveta com a conversa; sem aba no lobby; falta testar ao vivo)**. Pedido do Lucas em 07/10/2026. Decisões adotadas: sem reações rápidas, sem denunciar nem filtro de palavrões, sem mensagens de sistema, sem som próprio (só contador); Intruso abre o chat no lobby, votação, revelação e pódio; Já Deu? fecha na contagem.
 
 ## O que é
 

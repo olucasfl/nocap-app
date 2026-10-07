@@ -245,7 +245,7 @@ export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomG
           <Play snapshot={snapshot} />
         )}
       {snapshot?.phase === 'final' && <Final snapshot={snapshot} />}
-      {snapshot && snapshot.phase !== 'lobby' && <ChatDock snapshot={snapshot} />}
+      {snapshot && <ChatDock snapshot={snapshot} />}
     </div>
   );
 }

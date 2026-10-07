@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { Message } from '@/components/icons';
 import { useAuth } from '@/lib/auth';
 import { markChatRead, muteMember, sendChat, useRoom, type RoomSnapshot } from '@/lib/rooms';
 import './chat.css';
@@ -104,7 +105,7 @@ export function ChatPanel({ snapshot }: { snapshot: RoomSnapshot }) {
       )}
       <form className="ch-form" onSubmit={submit}>
         <input
-          className="field-input"
+          className="ch-input"
           value={text}
           maxLength={MAX}
           onChange={(e) => setText(e.target.value)}
@@ -123,7 +124,7 @@ export function ChatPanel({ snapshot }: { snapshot: RoomSnapshot }) {
         {text.length > MAX - 40 && <span className="ch-count mono">{MAX - text.length}</span>}
         <button
           type="submit"
-          className="btn alt"
+          className="ch-send"
           data-sfx="send"
           disabled={!open || silenced || !text.trim()}
         >
@@ -159,7 +160,8 @@ export function ChatDock({ snapshot }: { snapshot: RoomSnapshot }) {
         aria-label={unread ? `Chat, ${unread} novas` : 'Chat'}
         onClick={() => setOpen(true)}
       >
-        Chat{unread > 0 && <b className="mono">{unread > 9 ? '9+' : unread}</b>}
+        <Message size={22} />
+        {unread > 0 && <b className="mono">{unread > 9 ? '9+' : unread}</b>}
       </button>
       {open && (
         <div className="ch-backdrop" onClick={() => setOpen(false)}>
@@ -173,7 +175,7 @@ export function ChatDock({ snapshot }: { snapshot: RoomSnapshot }) {
               <h2 className="mono">CHAT</h2>
               <button
                 type="button"
-                className="fr-btn ghost"
+                className="ch-close"
                 data-sfx="back"
                 onClick={() => setOpen(false)}
               >

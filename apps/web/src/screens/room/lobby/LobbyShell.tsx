@@ -2,18 +2,39 @@ import { useId, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { Crown, Lock } from '@/components/icons';
 import type { RoomSnapshot } from '@/lib/rooms';
 import { useRoom } from '@/lib/rooms';
-import { ChatPanel } from '@/components/Chat';
-import { rulesSummary } from './rules';
+import { MIN_PLAYERS, rulesSummary } from './rules';
 import './lobby.css';
 
-export type LobbyTab = 'members' | 'rules' | 'invite' | 'chat';
+export type LobbyTab = 'members' | 'rules' | 'invite';
 
 const TABS: { id: LobbyTab; label: string }[] = [
   { id: 'members', label: 'Membros' },
   { id: 'rules', label: 'Regras' },
   { id: 'invite', label: 'Convidar' },
-  { id: 'chat', label: 'Chat' },
 ];
+
+/** Vagas e o que falta para começar: fica no topo, em todas as abas. */
+function Status({ snapshot }: { snapshot: RoomSnapshot }) {
+  const free = snapshot.maxPlayers - snapshot.members.length;
+  const connected = snapshot.members.filter((m) => m.connected);
+  const needed = MIN_PLAYERS[snapshot.game];
+  const waiting = connected.filter((m) => !m.isHost && !m.ready && !m.committed).length;
+  const missing =
+    connected.length < needed
+      ? `FALTAM ${needed - connected.length} PESSOA${needed - connected.length > 1 ? 'S' : ''}`
+      : waiting > 0
+        ? `FALTAM ${waiting} MARCAR PRONTO`
+        : 'TUDO PRONTO PARA COMEÇAR';
+  return (
+    <div className="lb-stat mono">
+      <b>
+        {snapshot.members.length}/{snapshot.maxPlayers} NA SALA
+      </b>
+      <span>{free > 0 ? `${free} ${free === 1 ? 'VAGA' : 'VAGAS'}` : 'SALA CHEIA'}</span>
+      <span className={missing.startsWith('TUDO') ? 'ok' : ''}>{missing}</span>
+    </div>
+  );
+}
 
 /** O cabeçalho da sala: código, convite e quem manda aqui. */
 function Head({
@@ -33,6 +54,7 @@ function Head({
           <b>{snapshot.code}</b>
           <div className="mono lb-summary">{rulesSummary(snapshot)}</div>
         </div>
+        <Status snapshot={snapshot} />
       </div>
 
       <div className={`lb-role ${role}`}>
@@ -66,11 +88,10 @@ export function LobbyShell({
   role: 'leader' | 'member';
   leaderName?: string;
   initialTab: LobbyTab;
-  panels: Record<Exclude<LobbyTab, 'chat'>, ReactNode>;
+  panels: Record<LobbyTab, ReactNode>;
   footer: ReactNode;
 }) {
   const message = useRoom((s) => s.message);
-  const unread = useRoom((s) => s.unread);
   const [tab, setTab] = useState<LobbyTab>(initialTab);
   const uid = useId();
 
@@ -106,9 +127,6 @@ export function LobbyShell({
             onClick={() => setTab(t.id)}
           >
             {t.label}
-            {t.id === 'chat' && unread > 0 && tab !== 'chat' && (
-              <small>{unread > 9 ? '9+' : unread}</small>
-            )}
             {t.id === 'members' && (
               <small>
                 {snapshot.members.length}/{snapshot.maxPlayers}
@@ -124,7 +142,7 @@ export function LobbyShell({
         aria-labelledby={`${uid}-tab-${tab}`}
         className="lb-panel"
       >
-        {tab === 'chat' ? <ChatPanel snapshot={snapshot} /> : panels[tab]}
+        {panels[tab]}
       </div>
 
       {message && (

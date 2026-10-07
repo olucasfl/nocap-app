@@ -135,3 +135,9 @@ export const Check = (p: IconProps) => (
     <path d="M5 12.5l4.5 4.5L19 7.5" />
   </Svg>
 );
+
+export const Message = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M4 5h16v11H9l-5 4z" />
+  </Svg>
+);

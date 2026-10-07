@@ -4,12 +4,14 @@
   flex-direction: column;
   gap: 10px;
   min-height: 0;
+  flex: 1;
 }
 .ch-list {
   list-style: none;
   margin: 0;
   padding: 10px;
-  height: 280px;
+  flex: 1;
+  min-height: 160px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -30,12 +32,16 @@
   border: var(--border);
   border-radius: var(--radius-sm);
   background: var(--paper);
+  color: var(--ink);
   overflow-wrap: anywhere;
 }
 .ch-msg.me {
   align-self: flex-end;
   background: var(--yellow);
   color: var(--on-accent);
+}
+.ch-msg:not(.head) {
+  margin-top: -4px;
 }
 .ch-msg p {
   margin: 2px 0 0;
@@ -62,38 +68,98 @@
   text-decoration: underline;
   cursor: pointer;
 }
+.ch-new {
+  align-self: center;
+  margin-top: -6px;
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--on-accent);
+  background: var(--orange);
+  border: var(--border);
+  border-radius: 999px;
+  box-shadow: 2px 2px 0 var(--ink);
+  cursor: pointer;
+}
+
+/* Campo de texto e Enviar, lado a lado */
 .ch-form {
   display: flex;
+  align-items: stretch;
   gap: 8px;
 }
-.ch-form .field-input {
-  flex: 1;
+.ch-input {
+  flex: 1 1 auto;
   min-width: 0;
+  height: 48px;
+  padding: 0 14px;
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  color: var(--ink);
+  font: 500 16px var(--font-display);
 }
+.ch-input:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 2px;
+}
+.ch-input:disabled {
+  opacity: 0.6;
+}
+.ch-send {
+  flex: none;
+  height: 48px;
+  padding: 0 18px;
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--orange);
+  color: var(--on-accent);
+  font: 900 14px var(--font-display);
+  text-transform: uppercase;
+  box-shadow: 3px 3px 0 var(--ink);
+  cursor: pointer;
+}
+.ch-send:disabled {
+  opacity: 0.5;
+  box-shadow: none;
+  cursor: default;
+}
+.ch-count {
+  align-self: center;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* Botão do chat: sempre à mão, no canto; mostra o número de mensagens novas. */
 .ch-fab {
   position: fixed;
   right: 16px;
-  bottom: 84px;
+  bottom: 16px;
   z-index: 20;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 14px;
-  font: 800 13px/1 var(--font-display);
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  padding: 0;
   color: var(--on-accent);
   background: var(--yellow);
   border: var(--border);
-  border-radius: var(--radius-sm);
+  border-radius: 50%;
   box-shadow: 3px 3px 0 var(--ink);
   cursor: pointer;
 }
 .ch-fab b {
-  min-width: 18px;
-  padding: 2px 5px;
-  font-size: 11px;
-  color: var(--white);
-  background: var(--red, #e5342b);
-  border-radius: 9px;
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  min-width: 22px;
+  padding: 3px 5px;
+  font-size: 12px;
+  line-height: 1;
+  color: #fff;
+  background: #e5342b;
+  border: 2px solid var(--ink);
+  border-radius: 11px;
 }
 .ch-backdrop {
   position: fixed;
@@ -101,14 +167,19 @@
   z-index: 30;
   display: flex;
   align-items: flex-end;
+  justify-content: center;
   background: rgb(0 0 0 / 0.45);
 }
 .ch-drawer {
   width: 100%;
-  max-height: 60vh;
-  padding: 14px 16px 18px;
+  max-width: 520px;
+  height: min(70vh, 560px);
+  padding: 14px 16px 16px;
   background: var(--paper);
-  border-top: var(--border);
+  color: var(--ink);
+  border: var(--border);
+  border-bottom: 0;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -123,29 +194,14 @@
   font-size: 12px;
   letter-spacing: 0.08em;
 }
-.ch-drawer .ch-list {
-  height: auto;
-  flex: 1;
-  min-height: 140px;
-}
-.ch-msg:not(.head) {
-  margin-top: -4px;
-}
-.ch-new {
-  align-self: center;
-  margin-top: -6px;
-  padding: 6px 12px;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--on-accent);
-  background: var(--orange);
+.ch-close {
+  height: 36px;
+  padding: 0 14px;
   border: var(--border);
-  border-radius: 999px;
-  box-shadow: 2px 2px 0 var(--ink);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  color: var(--ink);
+  font: 800 13px var(--font-display);
+  text-transform: uppercase;
   cursor: pointer;
-}
-.ch-count {
-  align-self: center;
-  font-size: 11px;
-  color: var(--muted);
 }

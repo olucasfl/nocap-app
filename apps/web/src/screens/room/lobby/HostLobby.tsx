@@ -1,4 +1,3 @@
-import { Check } from '@/components/icons';
 import { leaveRoom, sendRoom, type RoomSnapshot } from '@/lib/rooms';
 import { InvitePanel } from './InvitePanel';
 import { LobbyShell } from './LobbyShell';
@@ -14,7 +13,6 @@ export function HostLobby({ snapshot, me }: { snapshot: RoomSnapshot; me: string
   const others = snapshot.members.filter((m) => m.connected && !m.isHost);
   const connected = snapshot.members.filter((m) => m.connected).length;
   const needed = MIN_PLAYERS[snapshot.game];
-  const readyCount = others.filter((m) => m.ready).length;
   const enough = connected >= needed;
   const allReady = others.every((m) => m.ready);
   const canStart = enough && allReady;
@@ -32,26 +30,6 @@ export function HostLobby({ snapshot, me }: { snapshot: RoomSnapshot; me: string
       }}
       footer={
         <>
-          <ul className="lb-check" aria-label="Para começar">
-            <li className={enough ? 'ok' : ''}>
-              <Check size={16} />
-              <span>
-                Pelo menos {needed} pessoas{' '}
-                <b className="mono">
-                  {Math.min(connected, needed)}/{needed}
-                </b>
-              </span>
-            </li>
-            <li className={allReady && others.length > 0 ? 'ok' : ''}>
-              <Check size={16} />
-              <span>
-                Todo mundo pronto{' '}
-                <b className="mono">
-                  {readyCount}/{others.length}
-                </b>
-              </span>
-            </li>
-          </ul>
           <button
             type="button"
             className="btn alt"
