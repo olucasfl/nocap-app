@@ -27,6 +27,8 @@ Tudo está em `main` e publicado (API no Render, web na Vercel, banco no Supabas
 
 **Banco:** os dados de jogos foram zerados em 07/10/2026 (partidas, pontos e recordes); a conta do Lucas foi mantida. Schema e migrations intactos.
 
+**Pedidos pendentes de 07/10 (só escritos, nada implementado):** chat nas salas (spec 014), aba Convidar nova no lobby (spec 013), rever os modos Sequência e Sem estourar do Já Deu? (spec 002, com perguntas ao Lucas) e histórico de sala mostrando quem jogou e como ficou (spec 003). Lista em `docs/ROADMAP.md`, Etapa 5c.
+
 **Próximos passos e jogos futuros:** tudo em `docs/JOGOS-FUTUROS.md`. Ordem do Lucas: terminar o Ecooo (salas Corrida e Siga o Líder, calibrar), depois **Tribunal do Absurdo**, depois Intervalo; **Ponte e Regras Vivas em standby**. O arquivo descreve cada jogo. Ideias mais antigas (Sincro, Blefe de Nota, Sabotador, Telefone Sem Fio, Caça-Cor, Dicionário de Cores; Tom, Eco de Ritmo, Sombra) seguem no brief e sem spec.
 
 ## Armadilhas conhecidas (poupam tempo)

@@ -62,6 +62,35 @@ A tela do Tempo (alvo, contagem neutra e resultado) deve nascer já nos dois tem
 - **Sem conexão:** o Tempo precisa de internet para **começar** (a sessão vem do servidor). A Cor continua jogável offline.
 - Histórico, recordes e ranking cobrem os dois jogos (`/rankings/:game`). O Daily conta para a mesma sequência do Daily da Cor.
 
+## Pendente: rever os modos do Já Deu? (pedido do Lucas em 07/10/2026)
+
+> **Status: pendente, só escrito.** O jogo agora se chama **Já Deu?** na tela (o id e a rota continuam `time` e `/tempo`). Pedido: "rever os modos do jogo na parte online com sala: o modo Sequência não faz muito sentido, não está funcionando como deveria (perguntar para saber como vai ficar), e o modo Sem estourar quero melhorar também, no online e no offline."
+
+### Sequência em sala: por que não faz sentido hoje
+
+No solo, a Sequência são 5 alvos curtos (2 a 6 s) **um atrás do outro, sem pausa**, e as notas só aparecem no final. Na sala ela é só uma partida normal com alvos curtos: o servidor trata cada rodada como no Clássico (começa, para, **revelação entre as rodadas**, próxima). Ou seja, perde o que a faz ser Sequência (o ritmo contínuo e o suspense até o fim) e só muda o tamanho do alvo (`TimeRoomEngine`, modo `sequence` só troca o preset).
+
+**Como poderia ficar (pergunta aberta para o Lucas decidir):**
+
+1. **Corrida contínua:** todos recebem os 5 alvos na mesma ordem, jogam sem pausa e cada um no seu ritmo; a revelação com a linha do tempo de todos vem **só no fim**, como no solo.
+2. **Sincronizada:** o alvo seguinte aparece para todos no mesmo instante (o líder ou o servidor dá o sinal), e a próxima rodada começa assim que todos pararem, sem tela de revelação no meio.
+3. **Tirar da sala:** a Sequência fica só no solo, e a sala do Já Deu? tem Clássico e Sem estourar (e outros modos novos que fizerem sentido).
+
+### Sem estourar: melhorar (online e offline)
+
+Hoje: passou do alvo, a rodada vale zero; antes do alvo vale a nota normal. O que **não** está definido é o que o Lucas acha ruim; precisa dele para decidir. Pontos para a conversa:
+
+- **O que incomoda hoje?** Zerar de uma vez, não dar para ver o limite, ou o modo ser parecido demais com o Clássico?
+- **Ideias possíveis:** (a) a nota cair aos poucos depois do alvo em vez de zerar de uma vez; (b) uma "margem de perdão" curtinha (por exemplo 50 ms) antes de zerar; (c) mostrar com mais drama o estouro no resultado (animação e som próprios, sem mexer na contagem silenciosa); (d) pontos extras por parar **perto e antes** do alvo; (e) um modo "tudo ou nada" (uma rodada só, ou vidas).
+- **Regra que não muda:** durante a contagem continua sem relógio, número, barra, som nem animação rítmica.
+- O servidor mede na sala; no solo a medição é no aparelho com sessão assinada. A mudança precisa valer nos dois (e nas partidas antigas guardadas, que seguem a regra antiga: `scoreVersion`).
+
+### Perguntas para o Lucas (responder antes de implementar)
+
+1. Para a Sequência em sala, qual opção: corrida contínua, sincronizada ou tirar da sala?
+2. O que mais incomoda no Sem estourar hoje, e quais das ideias acima fazem sentido?
+3. Quer outros modos novos para a sala do Já Deu? (por exemplo todos contando ao mesmo tempo e revelando juntos, o "Sincro" das ideias antigas)?
+
 ## Decisões em aberto
 
 - **Brief #4 (curva) e #6 (anti-trapaça): propostas acima, falta o Lucas validar jogando.**
