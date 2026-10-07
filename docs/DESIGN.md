@@ -51,3 +51,7 @@ aparelho; áudio desbloqueado no primeiro toque; `navigator.audioSession.type = 
 
 Lobby da sala, configuração de regras, Cor jogando (desktop), Tempo jogando, Histórico, Amigos, Perfil,
 Ranking. Desenhar no Pop Brutal antes de implementar cada uma.
+
+## Marca (logo e ícones)
+
+O "!" itálico em adesivo sobre laranja (ícone) e o logotipo "NO CAP!" com o "!" laranja. Arquivos, usos por dispositivo (navegador, iPhone, Android, Safari, compartilhamento), regras e como regenerar: `apps/web/brand/README.md`.
