@@ -53,6 +53,7 @@ async function uniqueCode(): Promise<string> {
 export class ColorRoom extends Room {
   maxClients = MAX_PLAYERS;
   protected engine!: ColorRoomEngine;
+  protected engineOpts!: ConstructorParameters<typeof ColorRoomEngine>[0];
   private saved = false;
   /** Quem o servidor mandou sair (expulsão) ou trocou de aparelho: não pode reconectar. */
   private dismissed = new Map<string, 'kick' | 'replace'>();
@@ -60,16 +61,22 @@ export class ColorRoom extends Room {
   async onCreate() {
     const code = await uniqueCode();
     this.roomId = code;
-    this.engine = this.makeEngine({
+    this.engineOpts = {
       code,
       now: () => Date.now(),
       newSeed: () => randomUUID().slice(0, 12),
-    });
+    };
+    this.engine = this.makeEngine(this.engineOpts);
 
     this.onMessage('ready', (c, m: { ready?: boolean }) =>
       this.act(c, (id) => this.engine.setReady(id, !!m?.ready)),
     );
-    this.onMessage('configure', (c, m) => this.act(c, (id) => this.engine.configure(id, m ?? {})));
+    this.onMessage('configure', (c, m) =>
+      this.act(c, (id) => {
+        this.beforeConfigure(id, m);
+        this.engine.configure(id, m ?? {});
+      }),
+    );
     this.onMessage('kick', (c, m: { id?: string }) =>
       this.act(c, (id) => {
         const target = this.engine.kick(id, String(m?.id ?? ''));
@@ -109,6 +116,9 @@ export class ColorRoom extends Room {
   protected makeEngine(opts: ConstructorParameters<typeof ColorRoomEngine>[0]): ColorRoomEngine {
     return new ColorRoomEngine(opts);
   }
+
+  /** Gancho antes de mudar as regras (o Ecooo troca de formato aqui). */
+  protected beforeConfigure(_id: string, _m: { mode?: unknown } | undefined) {}
 
   /** Mensagens próprias do jogo (a Cor trava uma cor; o Tempo começa e para). */
   protected registerGameMessages() {
@@ -241,11 +251,11 @@ export class ColorRoom extends Room {
   /** Resultado salvo como partida de sala (sem ranking). Falha não derruba a sala. */
   private async saveResult() {
     try {
-      // O Intruso é a Cor e o Siga o Líder é o Ecooo: entram nas abas desses jogos do histórico.
+      // O Intruso é a Cor: entra na aba da Mesmíssima do histórico, com o modo dele.
       const game = this.engine.game;
       await roomDeps.repo?.saveRoomMatch({
-        game: game === 'impostor' ? 'color' : game === 'ecoleader' ? 'eco' : game,
-        mode: game === 'impostor' ? 'impostor' : game === 'ecoleader' ? 'leader' : undefined,
+        game: game === 'impostor' ? 'color' : game,
+        mode: this.engine.historyMode,
         seed: this.engine.currentSeed,
         settings: this.engine.currentSettings,
         rows: this.engine.finalRows(),
@@ -286,33 +296,38 @@ export class ImpostorRoom extends ColorRoom {
   }
 }
 
-/** Sala do Ecooo (Corrida): todos veem a mesma sequência e repetem; quem erra vira plateia. */
+/**
+ * Sala do Ecooo. O host escolhe o formato no lobby: a Corrida (quatro modos) ou o Siga o Líder.
+ * Cada formato é um motor; ao trocar, a sala leva as pessoas, o líder e o chat para o novo.
+ */
 export class EcoRoom extends ColorRoom {
   protected override makeEngine(opts: ConstructorParameters<typeof ColorRoomEngine>[0]) {
     return new EcoRoomEngine(opts);
   }
 
+  protected override beforeConfigure(id: string, m: { mode?: unknown } | undefined) {
+    if (typeof m?.mode !== 'string') return;
+    const wantLeader = m.mode === 'leader';
+    if (wantLeader === this.engine instanceof EcoLeaderRoomEngine) return;
+    // Quem não é o líder ou fora do lobby: deixa o `configure` recusar com a mensagem certa.
+    if (!this.engine.isHost(id) || this.engine.currentPhase !== 'lobby') return;
+    const next = wantLeader
+      ? new EcoLeaderRoomEngine(this.engineOpts)
+      : new EcoRoomEngine(this.engineOpts);
+    next.adoptFrom(this.engine);
+    this.engine = next;
+  }
+
   protected override registerGameMessages() {
-    const engine = () => this.engine as EcoRoomEngine;
     this.onMessage('tap', (c, m: { pad?: number }) =>
-      this.act(c, (id) => engine().tap(id, Number(m?.pad))),
+      this.act(c, (id) =>
+        (this.engine as EcoRoomEngine | EcoLeaderRoomEngine).tap(id, Number(m?.pad)),
+      ),
     );
-  }
-}
-
-/** Sala do Ecooo (Siga o Líder): um cria a sequência, os outros repetem; o criador muda a cada rodada. */
-export class EcoLeaderRoom extends ColorRoom {
-  protected override makeEngine(opts: ConstructorParameters<typeof ColorRoomEngine>[0]) {
-    return new EcoLeaderRoomEngine(opts);
-  }
-
-  protected override registerGameMessages() {
-    const engine = () => this.engine as EcoLeaderRoomEngine;
     this.onMessage('submit', (c, m: { sequence?: unknown }) =>
-      this.act(c, (id) => engine().submit(id, m?.sequence)),
-    );
-    this.onMessage('tap', (c, m: { pad?: number }) =>
-      this.act(c, (id) => engine().tap(id, Number(m?.pad))),
+      this.act(c, (id) => {
+        if (this.engine instanceof EcoLeaderRoomEngine) this.engine.submit(id, m?.sequence);
+      }),
     );
   }
 }

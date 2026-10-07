@@ -35,7 +35,6 @@ export const MIN_PLAYERS: Record<RoomGame, number> = {
   time: 2,
   impostor: 3,
   eco: 2,
-  ecoleader: 2,
 };
 
 export const GAME_NAME: Record<RoomGame, string> = {
@@ -43,7 +42,6 @@ export const GAME_NAME: Record<RoomGame, string> = {
   time: 'Já Deu?',
   impostor: 'Intruso',
   eco: 'Ecooo',
-  ecoleader: 'Siga o Líder',
 };
 
 /** "Entra na minha sala ___": com a preposição certa para o convite. */
@@ -52,18 +50,10 @@ export const GAME_OF: Record<RoomGame, string> = {
   time: 'de Já Deu?',
   impostor: 'do Intruso',
   eco: 'do Ecooo',
-  ecoleader: 'do Siga o Líder',
 };
 
 /** Modos de cada jogo na sala, com uma linha que explica cada um. */
 export const MODES: Record<RoomGame, { id: string; label: string; note: string }[]> = {
-  ecoleader: [
-    {
-      id: 'leader',
-      label: 'Siga o Líder',
-      note: 'Um cria a sequência dentro das regras da rodada e os outros repetem. O criador muda a cada rodada.',
-    },
-  ],
   eco: [
     {
       id: 'classic',
@@ -77,6 +67,11 @@ export const MODES: Record<RoomGame, { id: string; label: string; note: string }
       note: 'A sequência acelera a cada rodada. Vai até 30 passos.',
     },
     { id: 'reverso', label: 'Reverso', note: 'Repita de trás para frente.' },
+    {
+      id: 'leader',
+      label: 'Siga o Líder',
+      note: 'Um cria a sequência dentro das regras da rodada e os outros repetem. O criador muda a cada rodada.',
+    },
   ],
   impostor: [
     {
@@ -113,7 +108,9 @@ export function rulesSummary(s: RoomSnapshot): string {
   return [
     GAME_NAME[s.game],
     mode === GAME_NAME[s.game] ? undefined : mode,
-    s.game === 'eco' ? 'Corrida' : `${rounds} ${rounds === 1 ? 'rodada' : 'rodadas'}`,
+    s.game === 'eco' && s.mode !== 'leader'
+      ? 'Corrida'
+      : `${rounds} ${rounds === 1 ? 'rodada' : 'rodadas'}`,
   ]
     .filter(Boolean)
     .join(' · ');
@@ -123,7 +120,7 @@ export function rulesFor(s: RoomSnapshot): RuleDef[] {
   const out: RuleDef[] = [];
   const cfg = s.settings;
 
-  if (s.game !== 'impostor' && s.game !== 'ecoleader') {
+  if (s.game !== 'impostor') {
     out.push({
       id: 'mode',
       label: 'MODO',
@@ -135,11 +132,11 @@ export function rulesFor(s: RoomSnapshot): RuleDef[] {
   }
 
   // Corrida do Ecooo: as rodadas vêm do modo (a partida acaba quando sobra um).
-  if (s.game !== 'eco')
+  if (s.game !== 'eco' || s.mode === 'leader')
     out.push({
       id: 'rounds',
       label: 'RODADAS',
-      values: s.game === 'impostor' ? IMP_ROUNDS : s.game === 'ecoleader' ? LEADER_ROUNDS : ROUNDS,
+      values: s.game === 'impostor' ? IMP_ROUNDS : s.game === 'eco' ? LEADER_ROUNDS : ROUNDS,
       current: cfg.rounds,
       format: String,
       patch: (v) => ({ rounds: v }),

@@ -130,3 +130,23 @@ describe('EcoLeaderRoomEngine (Siga o Líder)', () => {
     expect(room.finalRows()).toHaveLength(3);
   });
 });
+
+describe('troca de formato no lobby do Ecooo', () => {
+  it('leva as pessoas, o líder e o chat para o outro motor e zera o "pronto"', async () => {
+    const { EcoRoomEngine } = await import('./eco-room.engine');
+    const opts = { code: 'ABCD', now: () => 1_000, newSeed: () => 's' };
+    const corrida = new EcoRoomEngine(opts);
+    corrida.join('ana', 'ana');
+    corrida.join('bia', 'bia');
+    corrida.setReady('bia', true);
+    corrida.sendChat('ana', 'oi');
+    const leader = new EcoLeaderRoomEngine(opts);
+    leader.adoptFrom(corrida);
+    expect(leader.isHost('ana')).toBe(true);
+    expect(leader.snapshot().members.map((m) => m.id)).toEqual(['ana', 'bia']);
+    expect(leader.snapshot().members.every((m) => !m.ready)).toBe(true);
+    expect(leader.chat.history()).toHaveLength(1);
+    expect(leader.snapshot().game).toBe('eco');
+    expect(leader.snapshot().mode).toBe('leader');
+  });
+});

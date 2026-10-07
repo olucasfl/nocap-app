@@ -90,7 +90,7 @@ export class ColorRoomEngine {
   protected readonly newSeed: () => string;
   protected readonly maxPlayers: number;
   /** Qual jogo esta sala joga; o `TimeRoomEngine` troca. */
-  readonly game: 'color' | 'time' | 'impostor' | 'eco' | 'ecoleader' = 'color';
+  readonly game: 'color' | 'time' | 'impostor' | 'eco' = 'color';
   /** Menos gente que isto não joga (o Intruso precisa de 3 para votar). */
   protected readonly minPlayers: number = MIN_PLAYERS;
   /** Salvar o pódio como partida de sala (o Intruso não salva). */
@@ -119,7 +119,7 @@ export class ColorRoomEngine {
   protected committed = new Set<string>();
 
   /** Conversa da sala (spec 014): só em memória. */
-  readonly chat: RoomChat;
+  chat: RoomChat;
 
   constructor(opts: EngineOptions) {
     this.code = opts.code;
@@ -181,6 +181,26 @@ export class ColorRoomEngine {
       .filter((m) => m.connected)
       .sort((a, b) => a.joinedAt - b.joinedAt)[0];
     this.hostId = next?.id ?? null;
+  }
+
+  /** Modo guardado no histórico quando não é `room` (Intruso e Siga o Líder têm o seu). */
+  get historyMode(): string | undefined {
+    return undefined;
+  }
+
+  isHost(id: string) {
+    return id === this.hostId;
+  }
+
+  /**
+   * Troca de motor no lobby (Ecooo: Corrida ↔ Siga o Líder): leva as pessoas, o líder e o chat.
+   * Todo mundo volta a "não pronto", porque as regras mudaram.
+   */
+  adoptFrom(other: ColorRoomEngine) {
+    this.members = other.members;
+    this.hostId = other.hostId;
+    this.chat = other.chat;
+    for (const m of this.members.values()) m.ready = false;
   }
 
   get isEmpty() {

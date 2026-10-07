@@ -9,7 +9,8 @@ import { leaveRoom, sendRoom, useRoom, type RoomSnapshot } from '@/lib/rooms';
 export function Final({ snapshot }: { snapshot: RoomSnapshot }) {
   const me = useAuth((s) => s.user?.id);
   const message = useRoom((s) => s.message);
-  const impostor = snapshot.game === 'impostor' || snapshot.game === 'ecoleader';
+  const impostor =
+    snapshot.game === 'impostor' || (snapshot.game === 'eco' && snapshot.mode === 'leader');
   const eco = snapshot.game === 'eco';
   const max = snapshot.settings.rounds * 10;
   const mine = snapshot.members.find((m) => m.id === me);

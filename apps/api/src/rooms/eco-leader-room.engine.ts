@@ -30,7 +30,7 @@ const REVEAL_MS = 8000;
  * repetem. A sequência só chega aos seguidores na reprodução. O histórico guarda só quem jogou e a colocação.
  */
 export class EcoLeaderRoomEngine extends ColorRoomEngine {
-  override readonly game = 'ecoleader' as const;
+  override readonly game = 'eco' as const;
   protected override readonly answerPhase = 'play' as const;
   protected override readonly modes: readonly string[] = ['leader'];
 
@@ -47,6 +47,10 @@ export class EcoLeaderRoomEngine extends ColorRoomEngine {
     super(opts);
     this.mode = 'leader';
     this.settings = { rounds: 6 };
+  }
+
+  override get historyMode() {
+    return 'leader';
   }
 
   private get round(): number {

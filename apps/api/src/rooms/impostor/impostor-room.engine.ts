@@ -51,6 +51,10 @@ interface ImpostorRound {
  */
 export class ImpostorRoomEngine extends ColorRoomEngine {
   override readonly game = 'impostor' as const;
+  override get historyMode() {
+    return 'impostor';
+  }
+
   protected override readonly minPlayers = IMPOSTOR_MIN_PLAYERS;
   protected override readonly modes: readonly string[] = ['impostor'];
 

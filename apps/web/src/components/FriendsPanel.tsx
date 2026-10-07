@@ -23,7 +23,8 @@ const RULES: Record<GameId, string[]> = {
   eco: [
     'Corrida: todos veem a mesma sequência ao mesmo tempo e repetem; quem erra ou demora vira plateia, e vence quem sobrar.',
     'Siga o Líder: um cria a sequência dentro de regras, os outros repetem, e a cada rodada o criador muda.',
-    'De 2 a 12 pessoas. O host escolhe o modo da Corrida (Clássico, Escalada, Velocidade ou Reverso).',
+    'Dentro da sala o host escolhe o modo (Clássico, Escalada, Velocidade, Reverso ou Siga o Líder).',
+    'De 2 a 12 pessoas.',
   ],
 };
 
@@ -64,18 +65,8 @@ export function FriendsPanel({ game }: { game: GameId }) {
             data-sfx="start"
             onClick={() => void navigate({ to: '/sala', search: { jogo: game } })}
           >
-            {game === 'eco' ? 'Criar sala (Corrida)' : 'Criar sala'}
+            Criar sala
           </button>
-          {game === 'eco' && (
-            <button
-              type="button"
-              className="btn ghost"
-              data-sfx="start"
-              onClick={() => void navigate({ to: '/sala', search: { jogo: 'ecoleader' } })}
-            >
-              Criar sala (Siga o Líder)
-            </button>
-          )}
         </section>
         <section className="fp-card">
           <h2 className="fp-h">Entrar com código</h2>

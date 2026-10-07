@@ -4,7 +4,7 @@ import { create } from 'zustand';
 import { apiBase } from './api-client';
 import { getToken, useAuth } from './auth';
 
-export type RoomGame = 'color' | 'time' | 'impostor' | 'eco' | 'ecoleader';
+export type RoomGame = 'color' | 'time' | 'impostor' | 'eco';
 export type Phase = 'lobby' | 'create' | 'show' | 'pick' | 'play' | 'vote' | 'reveal' | 'final';
 
 export interface ColorRoomSettings {

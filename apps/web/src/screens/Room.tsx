@@ -53,13 +53,10 @@ const GAME_NAME: Record<RoomGame, string> = {
   time: 'Já Deu?',
   impostor: 'Intruso',
   eco: 'Ecooo',
-  ecoleader: 'Siga o Líder',
 };
 
 const ENTRY_LEAD: Record<RoomGame, string> = {
-  ecoleader:
-    'Siga o Líder: a cada rodada um cria uma sequência dentro das regras e os outros repetem. O criador muda a cada rodada.',
-  eco: 'Jogue a Corrida do Ecooo com amigos: todo mundo repete a mesma sequência, e quem errar sai.',
+  eco: 'Jogue o Ecooo com amigos: Corrida (todo mundo repete a mesma sequência e quem errar sai) ou Siga o Líder (um cria, os outros repetem). Você escolhe dentro da sala.',
   color: 'Jogue Mesmíssima com amigos, todo mundo na mesma rodada ao mesmo tempo.',
   time: 'Jogue Já Deu? com amigos: o mesmo alvo para todos, cada um conta de cabeça.',
   impostor:
@@ -104,7 +101,7 @@ function Entry({
   return (
     <section className="screen rm">
       <BackButton
-        to={game === 'time' ? '/tempo' : game === 'eco' || game === 'ecoleader' ? '/eco' : '/cor'}
+        to={game === 'time' ? '/tempo' : game === 'eco' ? '/eco' : '/cor'}
         label="Voltar ao jogo"
       />
       <h1>Sala</h1>
