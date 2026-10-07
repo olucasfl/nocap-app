@@ -122,9 +122,14 @@ function Search({ onChanged }: { onChanged: () => void }) {
                     className="fr-btn"
                     data-sfx={u.state === 'incoming' ? 'success' : 'send'}
                     disabled={act.isPending}
+                    aria-busy={act.isPending && act.variables?.username === u.username}
                     onClick={() => act.mutate(u)}
                   >
-                    {label}
+                    {act.isPending && act.variables?.username === u.username
+                      ? u.state === 'incoming'
+                        ? 'Aceitando...'
+                        : 'Enviando...'
+                      : label}
                   </button>
                 ) : (
                   <span className="mono fr-state">{stateLabel(u.state)}</span>
@@ -148,19 +153,23 @@ export function Friends() {
   const [error, setError] = useState('');
 
   const refresh = () => {
-    void queryClient.invalidateQueries({ queryKey: ['friends'] });
     // Amigos novos mudam o recorte "Amigos" do ranking.
     void queryClient.invalidateQueries({ queryKey: ['ranking'] });
+    return queryClient.invalidateQueries({ queryKey: ['friends'] });
   };
 
+  // `id` diz qual botão foi tocado (ex.: "accept:ana"): só ele mostra o carregamento, e enquanto
+  // a ação não termina (e a lista não recarrega) os outros ficam travados.
   const mutate = useMutation({
-    mutationFn: (run: () => Promise<unknown>) => run(),
-    onSuccess: () => {
+    mutationFn: ({ run }: { id: string; run: () => Promise<unknown> }) => run(),
+    onSuccess: async () => {
       setError('');
-      refresh();
+      await refresh();
     },
     onError: (e) => setError(message(e)),
   });
+  const busyId = mutate.isPending ? mutate.variables?.id : undefined;
+  const lock = mutate.isPending;
 
   if (status === 'loading') {
     return (
@@ -225,17 +234,31 @@ export function Friends() {
                   type="button"
                   className="fr-btn"
                   data-sfx="success"
-                  onClick={() => mutate.mutate(() => acceptRequest(p.username))}
+                  disabled={lock}
+                  aria-busy={busyId === `accept:${p.username}`}
+                  onClick={() =>
+                    mutate.mutate({
+                      id: `accept:${p.username}`,
+                      run: () => acceptRequest(p.username),
+                    })
+                  }
                 >
-                  Aceitar
+                  {busyId === `accept:${p.username}` ? 'Aceitando...' : 'Aceitar'}
                 </button>
                 <button
                   type="button"
                   className="fr-btn ghost"
                   data-sfx="cancel"
-                  onClick={() => mutate.mutate(() => declineRequest(p.username))}
+                  disabled={lock}
+                  aria-busy={busyId === `decline:${p.username}`}
+                  onClick={() =>
+                    mutate.mutate({
+                      id: `decline:${p.username}`,
+                      run: () => declineRequest(p.username),
+                    })
+                  }
                 >
-                  Recusar
+                  {busyId === `decline:${p.username}` ? 'Recusando...' : 'Recusar'}
                 </button>
               </Person>
             ))}
@@ -253,9 +276,16 @@ export function Friends() {
                   type="button"
                   className="fr-btn ghost"
                   data-sfx="remove"
-                  onClick={() => mutate.mutate(() => removeFriend(p.username))}
+                  disabled={lock}
+                  aria-busy={busyId === `cancel:${p.username}`}
+                  onClick={() =>
+                    mutate.mutate({
+                      id: `cancel:${p.username}`,
+                      run: () => removeFriend(p.username),
+                    })
+                  }
                 >
-                  Cancelar
+                  {busyId === `cancel:${p.username}` ? 'Cancelando...' : 'Cancelar'}
                 </button>
               </Person>
             ))}
@@ -290,9 +320,16 @@ export function Friends() {
                     type="button"
                     className="fr-btn ghost"
                     data-sfx="remove"
-                    onClick={() => mutate.mutate(() => removeFriend(p.username))}
+                    disabled={lock}
+                    aria-busy={busyId === `remove:${p.username}`}
+                    onClick={() =>
+                      mutate.mutate({
+                        id: `remove:${p.username}`,
+                        run: () => removeFriend(p.username),
+                      })
+                    }
                   >
-                    Remover
+                    {busyId === `remove:${p.username}` ? 'Removendo...' : 'Remover'}
                   </button>
                 </Person>
               ))}

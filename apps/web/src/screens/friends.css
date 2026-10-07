@@ -86,6 +86,27 @@
   opacity: 0.6;
   cursor: default;
 }
+/* Ação em andamento: o botão tocado mostra um giro e fica firme (não apagado como os travados). */
+.fr-btn[aria-busy='true'] {
+  opacity: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.fr-btn[aria-busy='true']::before {
+  content: '';
+  width: 12px;
+  height: 12px;
+  border: 2.5px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: fr-spin 0.7s linear infinite;
+}
+@keyframes fr-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 .fr-btn:focus-visible {
   outline: 3px solid var(--blue);
   outline-offset: 2px;
