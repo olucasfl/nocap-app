@@ -91,6 +91,9 @@ export function Hub() {
           </div>
         </div>
 
+        <Link to="/sala" className="hub-rank">
+          JOGAR EM SALA COM AMIGOS
+        </Link>
         <Link to="/ranking" className="hub-rank">
           VER RANKING
         </Link>

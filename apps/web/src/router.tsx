@@ -63,6 +63,17 @@ const rankingRoute = createRoute({
   component: Ranking,
 });
 
+const roomRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/sala',
+  component: lazyRouteComponent(() => import('@/screens/Room'), 'RoomPage'),
+});
+const roomCodeRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/sala/$code',
+  component: lazyRouteComponent(() => import('@/screens/Room'), 'RoomCodePage'),
+});
+
 const MODES: Mode[] = ['classic', 'flash', 'quick', 'daily'];
 
 const colorRoute = createRoute({
@@ -81,6 +92,8 @@ const routeTree = rootRoute.addChildren([
   colorRoute,
   loginRoute,
   registerRoute,
+  roomRoute,
+  roomCodeRoute,
 ]);
 
 export const router = createRouter({ routeTree });

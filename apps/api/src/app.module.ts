@@ -6,10 +6,11 @@ import { HealthController } from './health/health.controller';
 import { FriendsModule } from './friends/friends.module';
 import { MatchesModule } from './matches/matches.module';
 import { RankingsModule } from './rankings/rankings.module';
+import { RoomsModule } from './rooms/rooms.module';
 
 // Um módulo por domínio entra aqui.
 @Module({
-  imports: [DbModule, AuthModule, MatchesModule, FriendsModule, RankingsModule],
+  imports: [DbModule, AuthModule, MatchesModule, FriendsModule, RankingsModule, RoomsModule],
   controllers: [HealthController, GamesController],
 })
 export class AppModule {}

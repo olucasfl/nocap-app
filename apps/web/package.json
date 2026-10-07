@@ -15,6 +15,7 @@
     "@nocap/games": "workspace:*",
     "@tanstack/react-query": "^5.62.11",
     "@tanstack/react-router": "^1.95.1",
+    "colyseus.js": "^0.16.22",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "workbox-window": "^7.4.1",
