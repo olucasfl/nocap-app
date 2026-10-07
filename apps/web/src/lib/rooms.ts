@@ -142,6 +142,8 @@ interface RoomState {
   invited: string[];
   /** Último erro de regra (ex.: "Falta gente marcar pronto") ou motivo de ter saído. */
   message: string;
+  /** De qual jogo era a última sala: ao sair, a pessoa volta para a página dele. */
+  lastGame: RoomGame | null;
   chat: ChatMessage[];
   /** Mensagens de outras pessoas que ainda não vi (chat fechado). */
   unread: number;
@@ -152,6 +154,7 @@ export const useRoom = create<RoomState>(() => ({
   snapshot: null,
   invited: [],
   message: '',
+  lastGame: null,
   chat: [],
   unread: 0,
 }));
@@ -193,7 +196,9 @@ function attach(r: Room) {
   remember(r.reconnectionToken);
   set({ status: 'connected', message: '' });
 
-  r.onMessage('snapshot', (s: RoomSnapshot) => set({ snapshot: s, status: 'connected' }));
+  r.onMessage('snapshot', (s: RoomSnapshot) =>
+    set({ snapshot: s, status: 'connected', lastGame: s.game }),
+  );
   r.onMessage('chat', (m: ChatMessage) =>
     useRoom.setState((s) => ({
       chat: [...s.chat, m].slice(-50),
@@ -262,7 +267,7 @@ export function resumeRoom(): Promise<boolean> {
 }
 
 export async function createRoom(game: RoomGame = 'color') {
-  set({ status: 'connecting', message: '', snapshot: null });
+  set({ status: 'connecting', message: '', snapshot: null, lastGame: null });
   try {
     attach(await (await client()).create(game, { token: getToken() }));
   } catch (e) {
@@ -272,13 +277,17 @@ export async function createRoom(game: RoomGame = 'color') {
 }
 
 export async function joinRoom(code: string) {
-  set({ status: 'connecting', message: '', snapshot: null });
+  set({ status: 'connecting', message: '', snapshot: null, lastGame: null });
   try {
     attach(await (await client()).joinById(code.trim().toUpperCase(), { token: getToken() }));
   } catch (e) {
     set({ status: 'idle' });
     throw new Error(joinErrorMessage(e));
   }
+}
+
+export function clearLastGame() {
+  useRoom.setState({ lastGame: null });
 }
 
 export function leaveRoom() {

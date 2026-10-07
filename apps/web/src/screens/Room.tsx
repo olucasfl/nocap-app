@@ -10,6 +10,7 @@ import { sfx } from '@/lib/sfx';
 import { useOnline } from '@/lib/network';
 import {
   CODE_RE,
+  clearLastGame,
   createRoom,
   joinRoom,
   leaveRoom,
@@ -47,6 +48,9 @@ function Header({ leave, round }: { leave?: boolean; round?: string }) {
     </header>
   );
 }
+
+/** A página de cada jogo (o Intruso é jogado a partir da Mesmíssima). */
+const GAME_PAGE = { color: '/cor', time: '/tempo', impostor: '/cor', eco: '/eco' } as const;
 
 const GAME_NAME: Record<RoomGame, string> = {
   color: 'Mesmíssima',
@@ -142,10 +146,20 @@ function Entry({
 export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomGame }) {
   const online = useOnline();
   const { user, status: authStatus } = useAuth();
-  const { status, snapshot } = useRoom();
+  const { status, snapshot, lastGame, message } = useRoom();
+  const navigate = useNavigate();
   const [resuming, setResuming] = useState(true);
   const autoJoined = useRef(false);
   const inRoom = !!snapshot;
+
+  // Saiu da sala (por conta própria): volta para a página do jogo dela, na aba de amigos.
+  // Se houve um aviso (expulso, sala encerrada), fica na entrada para a pessoa ler.
+  useEffect(() => {
+    if (snapshot || code || !lastGame || message) return;
+    if (status !== 'closed' && status !== 'idle') return;
+    clearLastGame();
+    void navigate({ to: GAME_PAGE[lastGame], search: { aba: 'friends' } });
+  }, [snapshot, code, lastGame, message, status, navigate]);
   useEffect(() => {
     if (inRoom) sfx.roomJoin();
   }, [inRoom]);
@@ -234,7 +248,7 @@ export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomG
       )}
       {!snapshot && status === 'connecting' && <Loader label="Entrando na sala" />}
       {!snapshot && status !== 'connecting' && (
-        <Entry initialCode={code} initialError={joinError} game={game} />
+        <Entry initialCode={code} initialError={joinError} game={lastGame ?? game} />
       )}
       {snapshot?.phase === 'lobby' && <Lobby snapshot={snapshot} />}
       {snapshot &&
