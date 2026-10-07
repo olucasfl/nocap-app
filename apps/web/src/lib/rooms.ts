@@ -1,4 +1,4 @@
-import { Client, Room } from 'colyseus.js';
+import type { Room } from 'colyseus.js';
 import type { Hsb } from '@nocap/games';
 import { create } from 'zustand';
 import { apiBase } from './api-client';
@@ -71,7 +71,11 @@ export const useRoom = create<RoomState>(() => ({
 
 const TOKEN_KEY = 'nocap-room-token';
 const wsUrl = () => apiBase.replace(/^http/, 'ws');
-const client = () => new Client(wsUrl());
+/** O cliente Colyseus é pesado: só carrega quando alguém entra numa sala (o aviso de convite não precisa dele). */
+async function client() {
+  const { Client } = await import('colyseus.js');
+  return new Client(wsUrl());
+}
 
 let room: Room | null = null;
 
@@ -134,7 +138,7 @@ async function reconnect(tries = 30) {
   for (let i = 0; i < tries; i++) {
     if (room) return; // outra tentativa já conectou
     try {
-      attach(await client().reconnect(token));
+      attach(await (await client()).reconnect(token));
       return;
     } catch {
       await new Promise((r) => setTimeout(r, 2000));
@@ -165,7 +169,7 @@ export function resumeRoom(): Promise<boolean> {
 export async function createRoom() {
   set({ status: 'connecting', message: '', snapshot: null });
   try {
-    attach(await client().create('color', { token: getToken() }));
+    attach(await (await client()).create('color', { token: getToken() }));
   } catch (e) {
     set({ status: 'idle' });
     throw new Error(joinErrorMessage(e));
@@ -175,7 +179,7 @@ export async function createRoom() {
 export async function joinRoom(code: string) {
   set({ status: 'connecting', message: '', snapshot: null });
   try {
-    attach(await client().joinById(code.trim().toUpperCase(), { token: getToken() }));
+    attach(await (await client()).joinById(code.trim().toUpperCase(), { token: getToken() }));
   } catch (e) {
     set({ status: 'idle' });
     throw new Error(joinErrorMessage(e));

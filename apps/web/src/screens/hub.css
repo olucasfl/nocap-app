@@ -83,7 +83,6 @@ a.hub-card:active {
 .hub-card-time {
   background: var(--blue);
   color: var(--on-blue);
-  opacity: 0.85;
 }
 .hub-card-foot {
   position: absolute;
