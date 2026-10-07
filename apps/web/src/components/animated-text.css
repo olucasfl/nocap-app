@@ -1,0 +1,38 @@
+.at-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+.at-line {
+  display: block;
+}
+.at-word {
+  display: inline-block;
+  white-space: nowrap;
+}
+.at-space {
+  display: inline-block;
+  width: 0.26em;
+}
+.at-ch {
+  display: inline-block;
+  transform-origin: 50% 100%;
+  animation: at-in 0.65s cubic-bezier(0.2, 1.5, 0.4, 1) var(--d) both;
+}
+@keyframes at-in {
+  from {
+    transform: translateY(0.9em) rotate(10deg) scale(0.6);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .at-ch {
+    animation: none;
+  }
+}

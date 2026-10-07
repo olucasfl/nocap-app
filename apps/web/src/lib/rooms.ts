@@ -23,6 +23,10 @@ export interface RoomMember {
   ready: boolean;
   isHost: boolean;
   locked: boolean;
+  /** Votou em jogar de novo (pódio). */
+  rematch: boolean;
+  /** Topou a revanche: o lobby só espera o líder começar. */
+  committed: boolean;
 }
 
 export interface RoundResult {

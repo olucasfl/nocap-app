@@ -79,7 +79,9 @@ export class ColorRoom extends Room {
     this.onMessage('start', (c) => this.act(c, (id) => this.engine.start(id)));
     this.registerGameMessages();
     this.onMessage('next', (c) => this.act(c, (id) => this.engine.next(id)));
-    this.onMessage('rematch', (c) => this.act(c, (id) => this.engine.rematch(id)));
+    this.onMessage('vote', (c, m: { again?: boolean }) =>
+      this.act(c, (id) => this.engine.voteRematch(id, !!m?.again)),
+    );
     this.onMessage('invite', (c, m: { username?: string }) => void this.invite(c, m?.username));
 
     this.setSimulationInterval(() => {

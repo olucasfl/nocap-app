@@ -92,6 +92,10 @@ export class ColorRoomEngine {
   /** `rounds[i][memberId]` */
   protected rounds: Record<string, RoundAnswer>[] = [];
   protected locked = new Set<string>();
+  /** No pódio: quem votou "jogar de novo". Quem não quer sai da sala. */
+  protected rematchVotes = new Set<string>();
+  /** Quem topou a revanche: entra no lobby já "pronto" (sem apertar de novo, mesmo que o host mude as regras). */
+  protected committed = new Set<string>();
 
   constructor(opts: EngineOptions) {
     this.code = opts.code;
@@ -125,14 +129,18 @@ export class ColorRoomEngine {
     m.ready = false;
     this.ensureHost();
     this.maybeAdvanceFromPick();
+    this.checkRematch();
   }
 
   /** Saiu de vez (ou foi expulso, ou a reconexão expirou). */
   leave(id: string) {
     this.members.delete(id);
     this.locked.delete(id);
+    this.rematchVotes.delete(id);
+    this.committed.delete(id);
     this.ensureHost();
     this.maybeAdvanceFromPick();
+    this.checkRematch();
     // Sozinho no meio de uma partida não há o que disputar: volta ao lobby.
     if (this.phase !== 'lobby' && this.phase !== 'final' && this.members.size < 2) this.reset();
   }
@@ -237,9 +245,11 @@ export class ColorRoomEngine {
     if (connected.length < MIN_PLAYERS) {
       throw new RoomError(`São precisas ${MIN_PLAYERS} pessoas para começar`);
     }
-    if (connected.some((m) => m.id !== this.hostId && !m.ready)) {
+    if (connected.some((m) => m.id !== this.hostId && !m.ready && !this.committed.has(m.id))) {
       throw new RoomError('Falta gente marcar "pronto"');
     }
+    this.committed.clear();
+    this.rematchVotes.clear();
     this.seed = this.newSeed();
     this.rounds = [];
     this.roundIndex = -1;
@@ -288,10 +298,27 @@ export class ColorRoomEngine {
     this.finishReveal();
   }
 
-  rematch(id: string) {
-    this.requireHost(id);
+  /**
+   * Pódio: cada pessoa vota se quer jogar de novo (`again`) ou tira o voto. Quando todo mundo que
+   * está na sala votou, volta ao lobby com as regras de antes e o host pode começar. Quem não
+   * quer jogar de novo sai da sala (e deixa de contar).
+   */
+  voteRematch(id: string, again: boolean) {
     this.requirePhase('final');
+    if (!this.members.has(id)) throw new RoomError('Você não está na sala');
+    if (again) this.rematchVotes.add(id);
+    else this.rematchVotes.delete(id);
+    this.checkRematch();
+  }
+
+  /** Todos os conectados votaram em jogar de novo? Então abre o lobby da revanche. */
+  protected checkRematch() {
+    if (this.phase !== 'final') return;
+    const connected = [...this.members.values()].filter((m) => m.connected);
+    if (connected.length === 0 || !connected.every((m) => this.rematchVotes.has(m.id))) return;
+    const voters = new Set(connected.map((m) => m.id));
     this.reset();
+    this.committed = voters;
   }
 
   protected reset() {
@@ -300,6 +327,8 @@ export class ColorRoomEngine {
     this.rounds = [];
     this.locked = new Set();
     this.roundIndex = 0;
+    this.rematchVotes.clear();
+    this.committed.clear();
     for (const m of this.members.values()) m.ready = false;
   }
 
@@ -397,7 +426,11 @@ export class ColorRoomEngine {
         id: m.id,
         username: m.username,
         connected: m.connected,
-        ready: m.ready,
+        ready: m.ready || this.committed.has(m.id),
+        /** Votou em jogar de novo (pódio). */
+        rematch: this.rematchVotes.has(m.id),
+        /** Topou a revanche: o lobby aguarda só o host começar. */
+        committed: this.committed.has(m.id),
         isHost: m.id === this.hostId,
         locked: this.locked.has(m.id),
       }));

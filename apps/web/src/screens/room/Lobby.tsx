@@ -229,6 +229,8 @@ export function Lobby({ snapshot }: { snapshot: RoomSnapshot }) {
           >
             Começar
           </button>
+        ) : mine?.committed ? (
+          <p className="mono rm-hint">Você topou jogar de novo. Aguardando o líder iniciar...</p>
         ) : (
           <button
             type="button"
@@ -242,6 +244,11 @@ export function Lobby({ snapshot }: { snapshot: RoomSnapshot }) {
         )}
         {isHost && !canStart && (
           <p className="mono rm-hint">Precisa de 2 pessoas, todas marcando "pronto".</p>
+        )}
+        {isHost && canStart && others.length > 0 && others.every((m) => m.committed) && (
+          <p className="mono rm-hint">
+            Todo mundo topou jogar de novo. Ajuste as regras, se quiser, e comece.
+          </p>
         )}
         <button type="button" className="btn ghost" data-sfx="back" onClick={leaveRoom}>
           Sair da sala

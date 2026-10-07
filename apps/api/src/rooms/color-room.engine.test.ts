@@ -209,8 +209,7 @@ describe('partida', () => {
     expect(rows[2]!.placement).toBe(rows[1]!.totalTenths === rows[2]!.totalTenths ? 2 : 3);
   });
 
-  it('revanche volta ao lobby, sem "pronto" e sem placar, na mesma sala', () => {
-    const c = started();
+  const toFinal = (c: ReturnType<typeof started>) => {
     for (let i = 0; i < c.room.currentSettings.rounds; i++) {
       toPick(c);
       c.room.lock('ana', perfect('seed-x', i));
@@ -218,14 +217,66 @@ describe('partida', () => {
       c.room.next('ana');
     }
     expect(c.room.currentPhase).toBe('final');
-    expect(() => c.room.rematch('bia')).toThrow('Só quem criou');
-    c.room.rematch('ana');
+  };
+
+  it('revanche: só volta ao lobby quando todo mundo vota em jogar de novo', () => {
+    const c = started();
+    toFinal(c);
+    c.room.voteRematch('bia', true);
+    expect(c.room.currentPhase).toBe('final'); // falta a ana
+    expect(c.room.snapshot().members.find((m) => m.id === 'bia')!.rematch).toBe(true);
+    c.room.voteRematch('ana', true);
     const snap = c.room.snapshot();
     expect(snap.phase).toBe('lobby');
     expect(snap.round).toBeNull();
     expect(snap.final).toBeNull();
+    // Quem topou já entra pronto: o host pode começar sem ninguém apertar "pronto".
+    expect(snap.members.every((m) => m.committed && m.ready)).toBe(true);
+    c.room.start('ana');
+    expect(c.room.currentPhase).toBe('show');
+  });
+
+  it('o voto pode ser retirado antes de todos votarem', () => {
+    const c = started();
+    toFinal(c);
+    c.room.voteRematch('bia', true);
+    c.room.voteRematch('bia', false);
+    c.room.voteRematch('ana', true);
+    expect(c.room.currentPhase).toBe('final');
+  });
+
+  it('quem sai no pódio deixa de contar: os que ficam e votaram abrem a revanche', () => {
+    const c = started(['ana', 'bia', 'caio']);
+    for (let i = 0; i < c.room.currentSettings.rounds; i++) {
+      toPick(c);
+      for (const p of ['ana', 'bia', 'caio']) c.room.lock(p, perfect('seed-x', i));
+      c.room.next('ana');
+    }
+    c.room.voteRematch('ana', true);
+    c.room.voteRematch('bia', true);
+    expect(c.room.currentPhase).toBe('final'); // o caio ainda não votou
+    c.room.leave('caio'); // não quer jogar de novo e sai
+    const snap = c.room.snapshot();
+    expect(snap.phase).toBe('lobby');
     expect(snap.members.map((m) => m.id)).toEqual(['ana', 'bia']);
-    expect(snap.members.every((m) => !m.ready)).toBe(true);
+  });
+
+  it('o host muda as regras na revanche e quem topou continua pronto', () => {
+    const c = started();
+    toFinal(c);
+    c.room.voteRematch('ana', true);
+    c.room.voteRematch('bia', true);
+    c.room.configure('ana', { rounds: 3 });
+    const snap = c.room.snapshot();
+    expect(snap.settings.rounds).toBe(3);
+    expect(snap.members.every((m) => m.ready)).toBe(true);
+    c.room.start('ana');
+    expect(c.room.currentPhase).toBe('show');
+  });
+
+  it('só dá para votar no pódio', () => {
+    const c = started();
+    expect(() => c.room.voteRematch('bia', true)).toThrow(RoomError);
   });
 });
 
