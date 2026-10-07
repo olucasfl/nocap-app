@@ -27,7 +27,7 @@ Tudo está em `main` e publicado (API no Render, web na Vercel, banco no Supabas
 
 **Banco:** os dados de jogos foram zerados em 07/10/2026 (partidas, pontos e recordes); a conta do Lucas foi mantida. Schema e migrations intactos.
 
-**Ideias que o Lucas aprovou ou pediu para pensar** (ainda sem spec): jogos sociais como Sincro (todos contam o mesmo tempo em silêncio), Blefe de Nota, Sabotador, Telefone Sem Fio, Caça-Cor, Dicionário de Cores; e jogos de sentidos (Tom, Eco de Ritmo, Sombra). Ver a conversa de 07/10 ou peça novas ideias.
+**Próximos passos e jogos futuros:** tudo em `docs/JOGOS-FUTUROS.md`. Ordem do Lucas: terminar o Ecooo (salas Corrida e Siga o Líder, calibrar), depois **Tribunal do Absurdo**, depois Intervalo; **Ponte e Regras Vivas em standby**. O arquivo descreve cada jogo. Ideias mais antigas (Sincro, Blefe de Nota, Sabotador, Telefone Sem Fio, Caça-Cor, Dicionário de Cores; Tom, Eco de Ritmo, Sombra) seguem no brief e sem spec.
 
 ## Armadilhas conhecidas (poupam tempo)
 

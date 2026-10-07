@@ -240,6 +240,8 @@ head_to_head(player_a, player_b, game, wins_a int, wins_b int, last_played_at)
 
 ### Ideias de jogos futuros (não aprovadas, só backlog)
 
+> Os jogos que o Lucas quer fazer e os próximos passos do Ecooo estão em `docs/JOGOS-FUTUROS.md`.
+
 - **Social:** Impostor (palavra secreta), Rabisco (desenhar e adivinhar), Quem é mais provável, Duas verdades e uma mentira, Respostas falsas, Sintonia (escala com dica, cooperativo), Leilão às cegas.
 - **Percepção:** Ímpar (achar o quadrado diferente), Mistura (cor resultante), Onde estava? (memória espacial), Quantos? (estimativa), Trajetória, Proporção, Rabisco de memória, Metrônomo fantasma, Degradê.
 
@@ -253,23 +255,23 @@ head_to_head(player_a, player_b, game, wins_a int, wins_b int, last_played_at)
 
 ## 6. Decisões em aberto ❓
 
-| #   | Decisão                                                              | Opções e notas                                                                        |
-| --- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| 1   | Jogam mais **presencialmente ou remoto**?                            | Muda a necessidade de chat e voz (WebRTC/LiveKit) e de um "modo TV"                   |
-| 2   | **Auth**                                                             | Better Auth (planejado) vs Supabase Auth (já que o banco é Supabase); e-mail + Google |
-| 3   | **Calibrar a curva da nota da Cor**                                  | curva v2 `10/(1+(ΔE/12)^1.6)` implementada; validar 12 e 1,6 com jogadores reais                                |
-| 4   | **Curva da nota do Tempo**                                           | PROPOSTA implementada: `10/(1+(e/0.15)^1.6)` (erro relativo); falta o Lucas validar jogando |
-| 5   | **Tempo de exibição do Clássico da Cor**                             | 3s (protótipo aprovado) vs 5s (planejamento inicial). Hoje vale **3s**                |
+| #   | Decisão                                                              | Opções e notas                                                                                                                       |
+| --- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | Jogam mais **presencialmente ou remoto**?                            | Muda a necessidade de chat e voz (WebRTC/LiveKit) e de um "modo TV"                                                                  |
+| 2   | **Auth**                                                             | Better Auth (planejado) vs Supabase Auth (já que o banco é Supabase); e-mail + Google                                                |
+| 3   | **Calibrar a curva da nota da Cor**                                  | curva v2 `10/(1+(ΔE/12)^1.6)` implementada; validar 12 e 1,6 com jogadores reais                                                     |
+| 4   | **Curva da nota do Tempo**                                           | PROPOSTA implementada: `10/(1+(e/0.15)^1.6)` (erro relativo); falta o Lucas validar jogando                                          |
+| 5   | **Tempo de exibição do Clássico da Cor**                             | 3s (protótipo aprovado) vs 5s (planejamento inicial). Hoje vale **3s**                                                               |
 | 6   | **Anti-trapaça do Tempo**                                            | PROPOSTA implementada: sessão assinada, soma dos tempos <= relógio do servidor, uso único, 200 ms a 3x o alvo; falta o Lucas validar |
-| 7   | **Limite de jogadores por sala**                                     | Sugestão: 2–8                                                                         |
-| 8   | Quais **modos da Cor** entram no lançamento além de Clássico e Flash | —                                                                                     |
-| 9   | Quais modos têm **Daily**                                            | Sugestão: só Clássico                                                                 |
-| 10  | **Retenção de 200 partidas por jogo**                                | Confirmar o número                                                                    |
-| 11  | **Avatar**                                                           | Upload de foto, avatares gerados ou iniciais                                          |
-| 12  | ~~Modo escuro~~ do Pop Brutal                                        | **Decidido: sim, é requisito.** Falta o design escuro (spec 005)                      |
-| 13  | **Notificações push** para convites                                  | Web Push no PWA; o iOS exige o app instalado                                          |
-| 14  | **Domínio e marca**                                                  | Checar disponibilidade de "NoCap" em domínio e lojas                                  |
-| 15  | **Hospedagem**                                                       | Confirmar Cloudflare Pages + Fly.io + Upstash ou alternativa                          |
+| 7   | **Limite de jogadores por sala**                                     | Sugestão: 2–8                                                                                                                        |
+| 8   | Quais **modos da Cor** entram no lançamento além de Clássico e Flash | —                                                                                                                                    |
+| 9   | Quais modos têm **Daily**                                            | Sugestão: só Clássico                                                                                                                |
+| 10  | **Retenção de 200 partidas por jogo**                                | Confirmar o número                                                                                                                   |
+| 11  | **Avatar**                                                           | Upload de foto, avatares gerados ou iniciais                                                                                         |
+| 12  | ~~Modo escuro~~ do Pop Brutal                                        | **Decidido: sim, é requisito.** Falta o design escuro (spec 005)                                                                     |
+| 13  | **Notificações push** para convites                                  | Web Push no PWA; o iOS exige o app instalado                                                                                         |
+| 14  | **Domínio e marca**                                                  | Checar disponibilidade de "NoCap" em domínio e lojas                                                                                 |
+| 15  | **Hospedagem**                                                       | Confirmar Cloudflare Pages + Fly.io + Upstash ou alternativa                                                                         |
 
 ---
 
