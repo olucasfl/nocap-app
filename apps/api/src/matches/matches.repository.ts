@@ -2,7 +2,8 @@ import { Inject, Injectable, ServiceUnavailableException } from '@nestjs/common'
 import { and, desc, eq, inArray, isNull, or, sql } from 'drizzle-orm';
 import type { Db } from '../db/client';
 import { DB } from '../db/db.module';
-import { matchPlayers, matches, players, userGameStats } from '../db/schema';
+import { matchPlayers, matches, players, userGameStats, userVisits } from '../db/schema';
+import { randomUUID } from 'node:crypto';
 import { decodeCursor, encodeCursor } from './cursor';
 import type { ScoredMatch } from './match-scoring';
 
@@ -195,15 +196,14 @@ export class MatchesRepository {
     }));
   }
 
-  /** Instantes dos Dailies jogados (para a sequência). */
-  async dailyPlays(playerIds: string[]): Promise<Date[]> {
+  /** Dailies jogados (jogo e instante), para a sequência de cada jogo. */
+  async dailyPlays(playerIds: string[]): Promise<{ game: string; playedAt: Date }[]> {
     if (playerIds.length === 0) return [];
-    const rows = await this.db
-      .select({ playedAt: matchPlayers.playedAt })
+    return this.db
+      .select({ game: matches.game, playedAt: matchPlayers.playedAt })
       .from(matchPlayers)
       .innerJoin(matches, eq(matches.id, matchPlayers.matchId))
       .where(and(inArray(matchPlayers.playerId, playerIds), eq(matches.kind, 'daily')));
-    return rows.map((r) => r.playedAt);
   }
 
   /** Já existe partida solo desse jogo com essa seed (de outro matchId)? Impede reusar uma sessão. */
@@ -214,5 +214,76 @@ export class MatchesRepository {
       .where(and(eq(matches.game, game), eq(matches.seed, seed), eq(matches.kind, 'solo')))
       .limit(2);
     return rows.some((r) => r.id !== exceptMatchId);
+  }
+
+  /** O jogador da conta (cria o primeiro se ainda não houver). As partidas dela ficam nele. */
+  async playerOfUser(userId: string): Promise<string> {
+    const rows = await this.db
+      .select({ id: players.id })
+      .from(players)
+      .where(eq(players.userId, userId))
+      .orderBy(players.createdAt)
+      .limit(1);
+    if (rows[0]) return rows[0].id;
+    const id = randomUUID();
+    await this.db.insert(players).values({ id, userId });
+    return id;
+  }
+
+  /** Registra que a conta abriu o app neste dia. Repetir no mesmo dia não muda nada. */
+  async recordVisit(userId: string, day: string) {
+    await this.db.insert(userVisits).values({ userId, day }).onConflictDoNothing();
+  }
+
+  async visitDays(userId: string): Promise<string[]> {
+    const rows = await this.db
+      .select({ day: userVisits.day })
+      .from(userVisits)
+      .where(eq(userVisits.userId, userId));
+    return rows.map((r) => r.day);
+  }
+
+  /** Já jogou o Daily deste jogo desde `since` (início do dia)? `exceptMatchId` libera o reenvio. */
+  async dailyPlayed(
+    game: string,
+    playerIds: string[],
+    since: Date,
+    exceptMatchId?: string,
+  ): Promise<boolean> {
+    if (playerIds.length === 0) return false;
+    const rows = await this.db
+      .select({ matchId: matchPlayers.matchId })
+      .from(matchPlayers)
+      .innerJoin(matches, eq(matches.id, matchPlayers.matchId))
+      .where(
+        and(
+          inArray(matchPlayers.playerId, playerIds),
+          eq(matches.game, game),
+          eq(matches.kind, 'daily'),
+          sql`${matchPlayers.playedAt} >= ${since.toISOString()}::timestamptz`,
+        ),
+      )
+      .limit(5);
+    return rows.some((r) => r.matchId !== exceptMatchId);
+  }
+
+  /** O Daily de hoje de cada jogo (nota em décimos), para mostrar "já jogou" na tela. */
+  async dailyToday(
+    playerIds: string[],
+    since: Date,
+  ): Promise<{ game: string; totalScore: number }[]> {
+    if (playerIds.length === 0) return [];
+    return this.db
+      .select({ game: matches.game, totalScore: matchPlayers.totalScore })
+      .from(matchPlayers)
+      .innerJoin(matches, eq(matches.id, matchPlayers.matchId))
+      .where(
+        and(
+          inArray(matchPlayers.playerId, playerIds),
+          eq(matches.kind, 'daily'),
+          sql`${matchPlayers.playedAt} >= ${since.toISOString()}::timestamptz`,
+        ),
+      )
+      .orderBy(matchPlayers.playedAt);
   }
 }

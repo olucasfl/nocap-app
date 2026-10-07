@@ -5,6 +5,7 @@ import type { FriendsService } from '../friends/friends.service';
 import { RankingsService } from './rankings.service';
 
 const row = (rank: number, userId = `u${rank}`): RankingRow => ({
+  days: 1,
   userId,
   username: `jogador${rank}`,
   score: 500 - rank,

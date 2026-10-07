@@ -10,11 +10,11 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard, type AuthedRequest } from '../auth/auth.guard';
+import { RateLimit, RateLimitGuard } from '../common/rate-limit';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import {
   claimSchema,
   createMatchSchema,
-  guestIdSchema,
   historyQuerySchema,
   type ClaimInput,
   type CreateMatchInput,
@@ -26,23 +26,25 @@ import { MatchesService } from './matches.service';
 export class MatchesController {
   constructor(private readonly matches: MatchesService) {}
 
+  /** Só com conta: o convidado pode ver o app, mas não joga. */
   @Post('matches')
   @HttpCode(201)
-  create(@Body(new ZodValidationPipe(createMatchSchema)) body: CreateMatchInput) {
-    return this.matches.create(body);
-  }
-
-  @Get('players/:guestId/matches')
-  history(
-    @Param('guestId', new ZodValidationPipe(guestIdSchema)) guestId: string,
-    @Query(new ZodValidationPipe(historyQuerySchema)) query: HistoryQuery,
+  @UseGuards(AuthGuard, RateLimitGuard)
+  @RateLimit({ limit: 30, windowMs: 60_000 })
+  create(
+    @Req() req: AuthedRequest,
+    @Body(new ZodValidationPipe(createMatchSchema)) body: CreateMatchInput,
   ) {
-    return this.matches.history(guestId, query);
+    return this.matches.create(body, req.user.id);
   }
 
-  @Get('players/:guestId/stats')
-  stats(@Param('guestId', new ZodValidationPipe(guestIdSchema)) guestId: string) {
-    return this.matches.stats(guestId);
+  /** O app foi aberto hoje (sequência de dias seguidos no NoCap). */
+  @Post('me/visit')
+  @HttpCode(200)
+  @UseGuards(AuthGuard, RateLimitGuard)
+  @RateLimit({ limit: 20, windowMs: 60_000 })
+  visit(@Req() req: AuthedRequest) {
+    return this.matches.visit(req.user.id);
   }
 
   @Get('me/stats')

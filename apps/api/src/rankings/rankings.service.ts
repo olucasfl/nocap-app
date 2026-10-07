@@ -36,10 +36,13 @@ export class RankingsService {
     const rows = circle
       ? all.filter((r) => circle.has(r.userId)).map((r, i) => ({ ...r, rank: i + 1 }))
       : all;
+    const daily = query.board === 'daily';
     const pick = (r: (typeof rows)[number]) => ({
       rank: r.rank,
       username: r.username,
       score: r.score,
+      // Só o Daily soma dias; nos outros quadros a nota é de uma partida.
+      ...(daily ? { days: r.days } : {}),
       playedAt: r.playedAt,
     });
     const me = myUserId ? rows.find((r) => r.userId === myUserId) : undefined;

@@ -1,4 +1,6 @@
-import { Body, Controller, Get, HttpCode, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Post, UseGuards } from '@nestjs/common';
+import { AuthGuard } from '../auth/auth.guard';
+import { RateLimit, RateLimitGuard } from '../common/rate-limit';
 import { dailySeed } from '@nocap/games';
 import { randomUUID } from 'node:crypto';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
@@ -19,6 +21,8 @@ export class GamesController {
    */
   @Post('time/session')
   @HttpCode(200)
+  @UseGuards(AuthGuard, RateLimitGuard)
+  @RateLimit({ limit: 30, windowMs: 60_000 })
   timeSession(@Body(new ZodValidationPipe(timeSessionSchema)) body: TimeSessionInput) {
     const seed = body.kind === 'daily' ? dailySeed('time') : randomUUID().slice(0, 12);
     return { seed, session: issueTimeSession(seed) };

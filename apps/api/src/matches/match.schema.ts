@@ -12,7 +12,8 @@ const base = {
   mode: z.string().min(1).max(32),
   kind: z.enum(['solo', 'daily']),
   seed: z.string().min(1).max(64),
-  guestId: z.string().uuid(),
+  /** Legado (aparelho): ignorado. Quem joga é a conta da sessão. */
+  guestId: z.string().uuid().optional(),
 };
 
 const colorMatchSchema = z.object({

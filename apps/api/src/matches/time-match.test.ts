@@ -8,6 +8,8 @@ import { MatchesService } from './matches.service';
 import { issueTimeSession } from './time-session';
 
 const GUEST = '11111111-1111-4111-8111-111111111111';
+const USER = '99999999-9999-4999-8999-999999999999';
+const createAs = (service: MatchesService, input: unknown) => service.create(input as never, USER);
 const classic = timePresets.classic!;
 
 /** Respostas exatas: o tempo do próprio alvo. */
@@ -127,7 +129,13 @@ describe('MatchesService (Tempo)', () => {
   const setup = (seedUsed = false) => {
     const save = vi.fn().mockResolvedValue({ duplicate: false });
     const seedUsedFn = vi.fn().mockResolvedValue(seedUsed);
-    const repo = { save, seedUsed: seedUsedFn } as unknown as MatchesRepository;
+    const repo = {
+      save,
+      seedUsed: seedUsedFn,
+      playerOfUser: vi.fn().mockResolvedValue('player-of-user'),
+      playerIdsOf: vi.fn().mockResolvedValue(['player-of-user']),
+      dailyPlayed: vi.fn().mockResolvedValue(false),
+    } as unknown as MatchesRepository;
     return { service: new MatchesService(repo), save, seedUsed: seedUsedFn };
   };
 
@@ -151,7 +159,7 @@ describe('MatchesService (Tempo)', () => {
   it('salva uma partida plausível como ranked, com nota recalculada', async () => {
     const { service, save } = setup();
     const input = play('seed-a', sum(exact('seed-a')) + 2000);
-    const res = await service.create(input);
+    const res = await createAs(service, input);
     expect(res.total).toBe(50);
     expect(save).toHaveBeenCalledWith(expect.objectContaining({ game: 'time', ranked: true }));
   });
@@ -160,22 +168,22 @@ describe('MatchesService (Tempo)', () => {
     const { service } = setup();
     const a = play('seed-a', 60_000);
     await expect(
-      service.create({ ...a, session: issueTimeSession('outra', Date.now() - 60_000) }),
+      createAs(service, { ...a, session: issueTimeSession('outra', Date.now() - 60_000) }),
     ).rejects.toThrow('Sessão');
-    await expect(service.create({ ...a, session: 'lixo.lixo' })).rejects.toThrow('Sessão');
+    await expect(createAs(service, { ...a, session: 'lixo.lixo' })).rejects.toThrow('Sessão');
   });
 
   it('recusa respostas que não cabem no tempo decorrido', async () => {
     const { service, save } = setup();
     const input = play('seed-a', 5000);
-    await expect(service.create(input)).rejects.toThrow('mais do que o tempo da partida');
+    await expect(createAs(service, input)).rejects.toThrow('mais do que o tempo da partida');
     expect(save).not.toHaveBeenCalled();
   });
 
   it('uma sessão solo não pode ser usada de novo', async () => {
     const { service } = setup(true);
     const input = play('seed-a', 10 * 60_000);
-    await expect(service.create(input)).rejects.toThrow(ConflictException);
+    await expect(createAs(service, input)).rejects.toThrow(ConflictException);
   });
 
   it('Daily exige a seed e o modo do dia', async () => {
@@ -183,9 +191,9 @@ describe('MatchesService (Tempo)', () => {
     const seed = dailySeed('time');
     const ok = play(seed, 10 * 60_000, { kind: 'daily' });
     // o relógio falso muda o "dia": usa a seed do dia congelado
-    await expect(service.create({ ...ok, seed: 'time:1999-01-01' })).rejects.toThrow(
+    await expect(createAs(service, { ...ok, seed: 'time:1999-01-01' })).rejects.toThrow(
       'Seed do Daily',
     );
-    await expect(service.create({ ...ok, mode: 'quick' })).rejects.toThrow();
+    await expect(createAs(service, { ...ok, mode: 'quick' })).rejects.toThrow();
   });
 });

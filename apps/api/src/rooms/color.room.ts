@@ -16,10 +16,13 @@ export const roomDeps: {
   auth: Auth | null;
   repo: RoomsRepository | null;
   invites: InvitesService | null;
+  /** Em que sala cada conta está (uma por vez). Em memória, como as salas. */
+  activeRooms: Map<string, string>;
 } = {
   auth: null,
   repo: null,
   invites: null,
+  activeRooms: new Map(),
 };
 
 interface AuthData {
@@ -93,6 +96,11 @@ export class ColorRoom extends Room {
       .catch(() => null);
     const user = session?.user as { id: string; username?: string | null } | undefined;
     if (!user?.username) throw new ServerError(401, 'Sessão inválida. Entre de novo.');
+    // Uma sala por vez: evita uma pessoa abrir salas em série (reconectar na mesma sala vale).
+    const current = roomDeps.activeRooms.get(user.id);
+    if (current && current !== this.roomId) {
+      throw new ServerError(409, 'Você já está em outra sala. Saia dela primeiro.');
+    }
     return { id: user.id, username: user.username };
   }
 
@@ -110,6 +118,7 @@ export class ColorRoom extends Room {
       throw new ServerError(409, e instanceof RoomError ? e.message : 'Não foi possível entrar');
     }
     client.userData = { id: auth.id, username: auth.username };
+    roomDeps.activeRooms.set(auth.id, this.roomId);
     roomDeps.invites?.consume(auth.id, this.roomId);
     this.publish();
   }
@@ -123,6 +132,7 @@ export class ColorRoom extends Room {
     if (why === 'replace') return;
     if (consented || why === 'kick') {
       this.engine.leave(user.id);
+      this.forget(user.id);
       return this.afterLeave();
     }
     this.engine.disconnect(user.id);
@@ -132,8 +142,14 @@ export class ColorRoom extends Room {
       this.engine.join(user.id, user.username);
     } catch {
       this.engine.leave(user.id);
+      this.forget(user.id);
     }
     this.afterLeave();
+  }
+
+  /** A pessoa saiu de vez: pode entrar em outra sala. */
+  private forget(userId: string) {
+    if (roomDeps.activeRooms.get(userId) === this.roomId) roomDeps.activeRooms.delete(userId);
   }
 
   private afterLeave() {
@@ -142,6 +158,10 @@ export class ColorRoom extends Room {
   }
 
   onDispose() {
+    // Sala encerrada: ninguém mais está nela.
+    for (const [userId, roomId] of roomDeps.activeRooms) {
+      if (roomId === this.roomId) roomDeps.activeRooms.delete(userId);
+    }
     // nada a limpar: o estado só existe em memória
   }
 

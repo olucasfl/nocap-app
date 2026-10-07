@@ -19,6 +19,8 @@ config({ path: resolve(__dirname, '../../../.env') });
 async function bootstrap() {
   // O Better Auth lê o corpo da requisição sozinho: o JSON do Nest entra depois da rota dele.
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { bodyParser: false });
+  // Atrás do proxy do Render: o IP do cliente vem em X-Forwarded-For (limites por IP dependem disto).
+  app.set('trust proxy', 1);
   app.enableCors({
     origin: process.env.WEB_ORIGIN ?? 'http://localhost:5173',
     allowedHeaders: ['content-type', 'authorization'],
