@@ -30,6 +30,29 @@ function art(id: string): ReactNode {
           />
         </svg>
       );
+    case 'blind':
+      return (
+        <svg viewBox="0 0 32 32" aria-hidden="true">
+          <path d="M3 16s5-8 13-8 13 8 13 8-5 8-13 8S3 16 3 16z" {...p} />
+          <path d="M5 27L27 5" {...p} />
+        </svg>
+      );
+    case 'survival':
+      return (
+        <svg viewBox="0 0 32 32" aria-hidden="true">
+          <rect x="4" y="12" width="7" height="7" rx="1.5" fill="currentColor" stroke="none" />
+          <rect x="12.5" y="12" width="7" height="7" rx="1.5" fill="currentColor" stroke="none" />
+          <rect x="21" y="12" width="7" height="7" rx="1.5" {...p} />
+          <path d="M4 25h24" {...p} />
+        </svg>
+      );
+    case 'sequence':
+      return (
+        <svg viewBox="0 0 32 32" aria-hidden="true">
+          <path d="M4 9h6M4 16h12M4 23h18" {...p} />
+          <path d="M22 6l6 10-6 10" {...p} />
+        </svg>
+      );
     case 'flash':
       return (
         <svg viewBox="0 0 32 32" aria-hidden="true">

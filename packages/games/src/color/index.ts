@@ -1,13 +1,18 @@
 import { z } from 'zod';
 import { createRng, randInt } from '../core/rng';
+import { SURVIVAL_MAX_ROUNDS } from '../core/survival';
 import type { GameDefinition } from '../core/types';
 import { deltaE2000, hsbToRgb, rgbToLab, type Hsb } from './convert';
 
 export * from './convert';
 
 export const colorSettingsSchema = z.object({
-  rounds: z.number().int().min(1).max(10),
+  rounds: z.number().int().min(1).max(20),
   showMs: z.number().int().min(100).max(10000),
+  /** Sobrevivência: 3 vidas, nota mínima crescente; `rounds` é só o limite. */
+  survival: z.boolean().optional(),
+  /** Às cegas: a recriação não mostra a prévia da cor nem a nota até o fim. */
+  blind: z.boolean().optional(),
 });
 export type ColorSettings = z.infer<typeof colorSettingsSchema>;
 
@@ -20,6 +25,10 @@ export const colorPresets: Record<string, ColorSettings> = {
   flash: { rounds: 5, showMs: 400 },
   /** Jogo rápido: 1 rodada, ranking próprio (modo `quick`). */
   quick: { rounds: 1, showMs: 3000 },
+  /** Às cegas: 5 rodadas sem ver a cor que está montando; as notas só aparecem no fim. */
+  blind: { rounds: 5, showMs: 3000, blind: true },
+  /** Sobrevivência: joga até perder as 3 vidas (o tempo de decorar cai a cada rodada). */
+  survival: { rounds: SURVIVAL_MAX_ROUNDS, showMs: 3000, survival: true },
 };
 
 export function generateColorRound(seed: string, _settings: ColorSettings, index: number): Hsb {

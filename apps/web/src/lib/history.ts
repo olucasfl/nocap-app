@@ -85,11 +85,24 @@ export function matchMax(item: Pick<HistoryItem, 'game' | 'mode' | 'answers'>): 
   return (rounds ?? item.answers?.length ?? 5) * 10;
 }
 
+/** Nota para mostrar: pontos/máximo, ou "N rodadas" na Sobrevivência. */
+export function scoreParts(item: Pick<HistoryItem, 'game' | 'mode' | 'answers' | 'totalScore'>): {
+  main: string;
+  unit: string;
+} {
+  if (item.mode === 'survival')
+    return { main: String(Math.round(item.totalScore / 10)), unit: ' rodadas' };
+  return { main: (item.totalScore / 10).toFixed(1), unit: `/${matchMax(item)}` };
+}
+
 const MODE_NAME: Record<string, string> = {
   classic: 'Clássico',
   flash: 'Flash',
   quick: 'Rápido',
   strict: 'Sem estourar',
+  blind: 'Às cegas',
+  sequence: 'Sequência',
+  survival: 'Sobrevivência',
 };
 const GAME_NAME: Record<string, string> = { color: 'Cor', time: 'Tempo' };
 const KIND_NAME: Record<string, string> = { solo: 'Solo', daily: 'Daily', room: 'Sala' };
@@ -123,6 +136,13 @@ export function classifyMatch(
 ): { label: string; tone: Tone } {
   if (item.placement !== null) {
     return { label: `${item.placement}º lugar`, tone: item.placement === 1 ? 'top' : 'mid' };
+  }
+  if (item.mode === 'survival') {
+    const n = Math.round(item.totalScore / 10);
+    if (n >= 15) return { label: 'LENDÁRIO', tone: 'top' };
+    if (n >= 9) return { label: 'FORTE', tone: 'good' };
+    if (n >= 5) return { label: 'MEH', tone: 'mid' };
+    return { label: 'CEDO DEMAIS', tone: 'low' };
   }
   const ratio = item.totalScore / 10 / matchMax(item);
   if (ratio >= 0.95) return { label: 'CRAVOU', tone: 'top' };

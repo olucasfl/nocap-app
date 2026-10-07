@@ -1,6 +1,6 @@
 import type { TimeSettings } from '@nocap/games';
 
-export type Mode = 'classic' | 'quick' | 'strict' | 'daily';
+export type Mode = 'classic' | 'quick' | 'strict' | 'sequence' | 'survival' | 'daily';
 
 export interface RoundResult {
   /** Alvo da rodada, em ms. */
@@ -17,7 +17,7 @@ export interface Run {
   mode: Mode;
   kind: 'solo' | 'daily';
   /** Nome do preset usado no servidor (o Daily é sempre `classic`). */
-  preset: 'classic' | 'quick' | 'strict';
+  preset: 'classic' | 'quick' | 'strict' | 'sequence' | 'survival';
   seed: string;
   /** Sessão assinada pelo servidor: prova de quando a partida começou. */
   session: string;

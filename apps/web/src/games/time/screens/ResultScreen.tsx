@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from '@tanstack/react-router';
 import { buzz, sfx } from '@/lib/sfx';
 import { saveBest } from '@/lib/records';
@@ -12,6 +12,8 @@ interface Props {
   isLast: boolean;
   onNext: () => void;
   onAgain: () => void;
+  /** Sobrevivência: aviso de passou/perdeu vida, antes do botão. */
+  extra?: ReactNode;
 }
 
 /** Fim do jogo rápido: salva a partida e oferece outra rodada. Recorde próprio. */
@@ -57,7 +59,7 @@ const climbMs = (answer: number) => Math.min(2600, Math.max(1200, answer * 0.3))
  * ficou e, no fim, o veredito chega com o som dele (cravou/perto: notas subindo; errou feio:
  * boing). Tudo isso só aqui, depois da contagem. Movimento reduzido mostra direto o final.
  */
-export function ResultScreen({ result, run, isLast, onNext, onAgain }: Props) {
+export function ResultScreen({ result, run, isLast, onNext, onAgain, extra }: Props) {
   const { target, answer, score } = result;
   const diff = answer - target;
   const overshot = run.settings.noOvershoot && answer > target;
@@ -150,6 +152,7 @@ export function ResultScreen({ result, run, isLast, onNext, onAgain }: Props) {
         )}
       </div>
 
+      {done && extra}
       {done &&
         (run.mode === 'quick' ? (
           <QuickFooter run={run} result={result} onAgain={onAgain} />

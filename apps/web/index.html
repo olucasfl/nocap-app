@@ -40,7 +40,11 @@
         pointer-events: none;
       }
       #splash b {
-        font: italic 900 56px/1 'Archivo', 'Arial Black', system-ui, sans-serif;
+        font:
+          italic 900 56px/1 'Archivo',
+          'Arial Black',
+          system-ui,
+          sans-serif;
         letter-spacing: -0.04em;
         text-transform: uppercase;
       }
@@ -60,24 +64,48 @@
         border-radius: 6px;
         animation: sp-hop 0.9s ease-in-out infinite;
       }
-      #splash .sp-dots i:nth-child(1) { background: #ff6a2b; }
-      #splash .sp-dots i:nth-child(2) { background: #2f5bff; animation-delay: 0.12s; }
-      #splash .sp-dots i:nth-child(3) { background: #ffd23f; animation-delay: 0.24s; }
-      #splash .sp-dots i:nth-child(4) { background: #33c27f; animation-delay: 0.36s; }
+      #splash .sp-dots i:nth-child(1) {
+        background: #ff6a2b;
+      }
+      #splash .sp-dots i:nth-child(2) {
+        background: #2f5bff;
+        animation-delay: 0.12s;
+      }
+      #splash .sp-dots i:nth-child(3) {
+        background: #ffd23f;
+        animation-delay: 0.24s;
+      }
+      #splash .sp-dots i:nth-child(4) {
+        background: #33c27f;
+        animation-delay: 0.36s;
+      }
       @keyframes sp-hop {
-        0%, 60%, 100% { transform: translateY(0) rotate(0deg); }
-        30% { transform: translateY(-16px) rotate(12deg); }
+        0%,
+        60%,
+        100% {
+          transform: translateY(0) rotate(0deg);
+        }
+        30% {
+          transform: translateY(-16px) rotate(12deg);
+        }
       }
       @media (prefers-reduced-motion: reduce) {
-        #splash .sp-dots i { animation: none; }
-        #splash { transition: none; }
+        #splash .sp-dots i {
+          animation: none;
+        }
+        #splash {
+          transition: none;
+        }
       }
     </style>
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="NoCap" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="description" content="Jogos para jogar com amigos: Cor, Tempo e salas em tempo real." />
+    <meta
+      name="description"
+      content="Jogos para jogar com amigos: Cor, Tempo e salas em tempo real."
+    />
     <meta name="application-name" content="NoCap" />
     <!-- Ícones da marca (brand/README.md): navegador, iPhone, Safari fixado e Windows -->
     <link rel="icon" href="/favicon.ico" sizes="48x48" />

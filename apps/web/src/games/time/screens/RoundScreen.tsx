@@ -11,6 +11,10 @@ interface Props {
   onBegin: () => void;
   /** Toque em PARAR, com o instante exato (`performance.now()`). */
   onStop: (now: number) => void;
+  /** Sequência: pula a tela de alvo e já abre o preparo (a partida corre sem pausa). */
+  skipIntro?: boolean;
+  /** Linha curta no preparo (ex.: a nota da rodada anterior na Sequência). */
+  note?: string;
 }
 
 const keyTap = (run: () => void) => (e: React.KeyboardEvent) => {
@@ -30,8 +34,16 @@ const keyTap = (run: () => void) => (e: React.KeyboardEvent) => {
  * rítmica na contagem). O alvo é fixo e não revela o tempo que passou. O som e a animação ficam
  * para a tela de resultado.
  */
-export function RoundScreen({ target, noOvershoot, counting, onBegin, onStop }: Props) {
-  const [armed, setArmed] = useState(false);
+export function RoundScreen({
+  target,
+  noOvershoot,
+  counting,
+  onBegin,
+  onStop,
+  skipIntro = false,
+  note,
+}: Props) {
+  const [armed, setArmed] = useState(skipIntro);
 
   useEffect(() => {
     // Só ao mostrar o alvo (antes de valer).
@@ -64,6 +76,7 @@ export function RoundScreen({ target, noOvershoot, counting, onBegin, onStop }: 
     return (
       <section className="tm-stage armed" aria-label="Preparado para começar">
         <div className="mono tm-stage-label">PREPARE-SE</div>
+        {note && <div className="mono tm-stage-note">{note}</div>}
         <div className="tm-stage-target">{formatSeconds(target)}</div>
         <p className="tm-stage-text">
           Respire. Quando estiver pronto, toque no botão: o tempo começa no mesmo instante. Toque de

@@ -36,9 +36,12 @@ export const recordVisit = () =>
 
 /** Máximo de pontos de uma partida: 10 por rodada. A Cor tem 5 rodadas; o Tempo, 3. */
 const MODE_MAX_BY_GAME: Record<GameId, Record<string, number>> = {
-  color: { classic: 50, flash: 50, quick: 10 },
-  time: { classic: 30, quick: 10, strict: 30 },
+  color: { classic: 50, flash: 50, quick: 10, blind: 50, survival: 0 },
+  time: { classic: 30, quick: 10, strict: 30, sequence: 50, survival: 0 },
 };
+
+/** Sobrevivência: a nota é o número de rodadas jogadas (não tem máximo). */
+export const isSurvival = (mode: string) => mode === 'survival';
 
 export function modeMax(game: string, mode: string): number | undefined {
   return MODE_MAX_BY_GAME[game as GameId]?.[mode];
@@ -47,7 +50,7 @@ export function modeMax(game: string, mode: string): number | undefined {
 /** Máximo do Daily de um jogo (usa o clássico). */
 export const dailyMax = (game: string) => modeMax(game, 'classic') ?? 50;
 
-const ORDER = ['classic', 'flash', 'quick', 'strict'];
+const ORDER = ['classic', 'flash', 'quick', 'strict', 'blind', 'sequence', 'survival'];
 
 /** Só os modos conhecidos de um jogo, na ordem da tela de início. */
 export function gameModes(stats: Stats, game: string): ModeStats[] {

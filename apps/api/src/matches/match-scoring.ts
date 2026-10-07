@@ -5,6 +5,7 @@ import {
   colorGame,
   colorDeltaE,
   encodeAnswer,
+  evaluateSurvival,
   generateTimeRound,
   isPlausibleAnswer,
   scoreFromDeltaE,
@@ -24,6 +25,18 @@ export interface ScoredMatch {
   settings: Record<string, number | boolean | string>;
 }
 
+/**
+ * Sobrevivência: a nota guardada é quantas rodadas a pessoa jogou (em décimos, 7 rodadas = 70).
+ * Só vale uma partida completa: as vidas acabaram na última resposta (ou chegou ao limite).
+ */
+function survivalTenths(scores: number[]): number {
+  const state = evaluateSurvival(scores);
+  if (state.ended === null || state.played !== scores.length) {
+    throw new BadRequestException('A sobrevivência enviada não terminou (ou tem rodadas a mais)');
+  }
+  return state.played * 10;
+}
+
 /** Folga entre o relógio do servidor e a soma dos tempos (rede, arredondamento). */
 export const ELAPSED_SLACK_MS = 1500;
 
@@ -35,7 +48,7 @@ export function scoreMatch(input: Pick<ColorMatchInput, 'mode' | 'seed' | 'answe
   if (!settings) {
     throw new BadRequestException(`Modo desconhecido: ${input.mode}`);
   }
-  if (input.answers.length !== settings.rounds) {
+  if (!settings.survival && input.answers.length !== settings.rounds) {
     throw new BadRequestException(
       `O modo ${input.mode} tem ${settings.rounds} rodadas, mas vieram ${input.answers.length} respostas`,
     );
@@ -47,7 +60,9 @@ export function scoreMatch(input: Pick<ColorMatchInput, 'mode' | 'seed' | 'answe
     return { score: scoreFromDeltaE(deltaE), deltaE };
   });
 
-  const totalTenths = rounds.reduce((sum, r) => sum + Math.round(r.score * 10), 0);
+  const totalTenths = settings.survival
+    ? survivalTenths(rounds.map((r) => r.score))
+    : rounds.reduce((sum, r) => sum + Math.round(r.score * 10), 0);
   return {
     rounds,
     total: totalTenths / 10,
@@ -69,7 +84,7 @@ export function scoreTimeMatch(
   if (!settings) {
     throw new BadRequestException(`Modo desconhecido: ${input.mode}`);
   }
-  if (input.answers.length !== settings.rounds) {
+  if (!settings.survival && input.answers.length !== settings.rounds) {
     throw new BadRequestException(
       `O modo ${input.mode} tem ${settings.rounds} rodadas, mas vieram ${input.answers.length} respostas`,
     );
@@ -88,7 +103,9 @@ export function scoreTimeMatch(
     throw new BadRequestException('Os tempos somam mais do que o tempo da partida');
   }
 
-  const totalTenths = rounds.reduce((sum, r) => sum + Math.round(r.score * 10), 0);
+  const totalTenths = settings.survival
+    ? survivalTenths(rounds.map((r) => r.score))
+    : rounds.reduce((sum, r) => sum + Math.round(r.score * 10), 0);
   return {
     rounds,
     total: totalTenths / 10,

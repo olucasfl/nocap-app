@@ -1,9 +1,10 @@
 import { z } from 'zod';
 import { createRng, randInt } from '../core/rng';
+import { SURVIVAL_MAX_ROUNDS } from '../core/survival';
 import type { GameDefinition } from '../core/types';
 
 export const timeSettingsSchema = z.object({
-  rounds: z.number().int().min(1).max(10),
+  rounds: z.number().int().min(1).max(20),
   /** Faixa do alvo, em ms (múltiplos de 100). Médios 5–15 s; curtos 1–5 s; longos 15–30 s. */
   minMs: z.number().int().min(1000).max(30_000),
   maxMs: z.number().int().min(1000).max(30_000),
@@ -14,6 +15,8 @@ export const timeSettingsSchema = z.object({
    * curto...) ou `mostly-low` (quase sempre curto, de vez em quando longo).
    */
   mix: z.enum(['uniform', 'alternate', 'mostly-low']),
+  /** Sobrevivência: 3 vidas, nota mínima crescente; `rounds` é só o limite. */
+  survival: z.boolean().optional(),
 });
 export type TimeSettings = z.infer<typeof timeSettingsSchema>;
 
@@ -35,6 +38,17 @@ export const timePresets: Record<string, TimeSettings> = {
   quick: { rounds: 1, minMs: 3000, maxMs: 18_000, noOvershoot: false, mix: 'mostly-low' },
   /** Sem estourar: passou do alvo vale zero. Mesma cadência do clássico. */
   strict: { rounds: 3, minMs: 3000, maxMs: 18_000, noOvershoot: true, mix: 'alternate' },
+  /** Sequência: 5 alvos curtos (2 a 6 s) um atrás do outro, sem pausa. */
+  sequence: { rounds: 5, minMs: 2000, maxMs: 6000, noOvershoot: false, mix: 'uniform' },
+  /** Sobrevivência: joga até perder as 3 vidas; alvos quase sempre curtos. */
+  survival: {
+    rounds: SURVIVAL_MAX_ROUNDS,
+    minMs: 3000,
+    maxMs: 18_000,
+    noOvershoot: false,
+    mix: 'mostly-low',
+    survival: true,
+  },
 };
 
 /**
@@ -50,6 +64,8 @@ export const legacyTimePresets: Record<string, TimeSettings> = {
 /** O preset com que uma partida foi jogada, pelo número de respostas guardadas. */
 export function presetFor(mode: string, answerCount: number): TimeSettings | undefined {
   const current = timePresets[mode];
+  // Sobrevivência tem número variável de rodadas: vale sempre o preset atual.
+  if (current?.survival) return current;
   if (current && current.rounds === answerCount) return current;
   const legacy = legacyTimePresets[mode];
   return legacy && legacy.rounds === answerCount ? legacy : current;

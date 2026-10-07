@@ -17,10 +17,22 @@ import {
 import { dailyMax, streakLabel } from '@/lib/stats';
 import './ranking-panel.css';
 
-function Score({ entry, max, showDays }: { entry: RankingEntry; max: number; showDays: boolean }) {
+function Score({
+  entry,
+  max,
+  showDays,
+  rounds = false,
+}: {
+  entry: RankingEntry;
+  max: number;
+  showDays: boolean;
+  /** Sobrevivência: a nota é o número de rodadas jogadas. */
+  rounds?: boolean;
+}) {
   return (
     <>
-      {(entry.score / 10).toFixed(1)}
+      {rounds ? Math.round(entry.score / 10) : (entry.score / 10).toFixed(1)}
+      {rounds && <small className="mono">rodadas</small>}
       {max > 0 && <small className="mono">/{max}</small>}
       {showDays && entry.days !== undefined && (
         <small className="mono rp-days">{streakLabel(entry.days).toUpperCase()}</small>
@@ -29,7 +41,17 @@ function Score({ entry, max, showDays }: { entry: RankingEntry; max: number; sho
   );
 }
 
-function Podium({ top, max, showDays }: { top: RankingEntry[]; max: number; showDays: boolean }) {
+function Podium({
+  top,
+  max,
+  showDays,
+  rounds,
+}: {
+  top: RankingEntry[];
+  max: number;
+  showDays: boolean;
+  rounds: boolean;
+}) {
   // Ordem visual: 2º, 1º, 3º (o campeão no meio e mais alto).
   const order = [top[1], top[0], top[2]];
   return (
@@ -39,7 +61,7 @@ function Podium({ top, max, showDays }: { top: RankingEntry[]; max: number; show
           <li key={e.username} className={`rp-pod p${e.rank}${e.isMe ? ' me' : ''}`}>
             <span className="rp-pod-name">@{e.username}</span>
             <span className="rp-pod-score">
-              <Score entry={e} max={max} showDays={showDays} />
+              <Score entry={e} max={max} showDays={showDays} rounds={rounds} />
             </span>
             <span className="rp-pod-step">
               <b>{e.rank}</b>
@@ -180,7 +202,14 @@ export function RankingPanel({
             : 'Ninguém jogou esse modo neste período. Seja a primeira pessoa.'}
         </p>
       )}
-      {entries.length > 0 && <Podium top={entries.slice(0, 3)} max={max} showDays={dailySum} />}
+      {entries.length > 0 && (
+        <Podium
+          top={entries.slice(0, 3)}
+          max={max}
+          showDays={dailySum}
+          rounds={board === 'survival'}
+        />
+      )}
       {rest.length > 0 && (
         <ol className="rp-list" start={4}>
           {rest.map((e) => (
@@ -188,7 +217,7 @@ export function RankingPanel({
               <span className="mono rp-pos">{e.rank}</span>
               <span className="rp-name">@{e.username}</span>
               <span className="rp-score">
-                <Score entry={e} max={max} showDays={dailySum} />
+                <Score entry={e} max={max} showDays={dailySum} rounds={board === 'survival'} />
               </span>
             </li>
           ))}
@@ -202,7 +231,12 @@ export function RankingPanel({
               <span className="mono rp-pos">{meOutside.rank}</span>
               <span className="rp-name">@{meOutside.username}</span>
               <span className="rp-score">
-                <Score entry={meOutside} max={max} showDays={dailySum} />
+                <Score
+                  entry={meOutside}
+                  max={max}
+                  showDays={dailySum}
+                  rounds={board === 'survival'}
+                />
               </span>
             </li>
           </ol>

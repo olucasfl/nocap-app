@@ -14,7 +14,7 @@ import {
   fetchHistory,
   formatPlayedAt,
   kindLabel,
-  matchMax,
+  scoreParts,
   modeLabel,
   timeRounds,
   type HistoryItem,
@@ -96,8 +96,8 @@ function MatchRow({ item }: { item: HistoryItem }) {
           <span className={`mono hist-class ${cls.tone}`}>{cls.label}</span>
         </span>
         <span className="hist-row-score">
-          {(item.totalScore / 10).toFixed(1)}
-          <small className="mono">/{matchMax(item)}</small>
+          {scoreParts(item).main}
+          <small className="mono">{scoreParts(item).unit}</small>
         </span>
       </button>
       {open && (item.game === 'time' ? <TimeDetail item={item} /> : <ColorDetail item={item} />)}

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { colorPresets } from '@nocap/games';
+import { SURVIVAL_MAX_ROUNDS, colorPresets } from '@nocap/games';
 import { BackButton } from '@/components/BackButton';
 import { DailyCard } from '@/components/DailyCard';
 import { FriendsPanel } from '@/components/FriendsPanel';
@@ -20,6 +20,8 @@ const MODES: { id: Mode; label: string; desc: string }[] = [
   { id: 'classic', label: 'Clássico', desc: '5 RODADAS · 3 S' },
   { id: 'flash', label: 'Flash', desc: '5 RODADAS · 0,4 S' },
   { id: 'quick', label: 'Rápido', desc: '1 RODADA' },
+  { id: 'blind', label: 'Às cegas', desc: 'SEM PRÉVIA' },
+  { id: 'survival', label: 'Sobrevivência', desc: '3 VIDAS' },
   { id: 'daily', label: 'Daily', desc: '1 POR DIA · RANKING' },
 ];
 
@@ -28,6 +30,10 @@ const LEAD: Record<Mode, string> = {
     'Uma cor aparece por 3 segundos. Depois some. Recrie de memória nos controles e veja o quanto você chegou perto.',
   flash: 'A cor pisca por menos de meio segundo. Sem tempo pra pensar: confie no olho.',
   quick: 'Só uma rodada, com 3 segundos pra decorar. Ideal pra jogar em 30 segundos.',
+  blind:
+    'Você não vê a cor que está montando, só os controles. As notas só aparecem no fim. Confie na memória.',
+  survival:
+    'Você tem 3 vidas. Cada rodada exige uma nota mínima (5, depois 6, depois 7) e o tempo para decorar cai a cada cor. Errou, perde uma vida. Vale quantas rodadas você aguenta.',
   daily: 'A cor de hoje é a mesma para todo mundo. Mesmas 5 cores, uma única chance por dia.',
 };
 
@@ -65,18 +71,32 @@ export function StartScreen({ mode, initialTab = 'modes', initialBoard, onMode, 
             onChange={(id) => onMode(id as Mode)}
           />
           <p className="lead">{LEAD[shown]}</p>
-          <div className="cg-rules">
-            <div className="cg-rule">
-              <b>{preset.rounds}</b>
-              {preset.rounds === 1 ? 'rodada' : 'rodadas'}
+          {shown === 'survival' ? (
+            <div className="cg-rules">
+              <div className="cg-rule">
+                <b>3</b>vidas
+              </div>
+              <div className="cg-rule">
+                <b>5→7</b>nota mínima
+              </div>
+              <div className="cg-rule">
+                <b>{SURVIVAL_MAX_ROUNDS}</b>rodadas máx.
+              </div>
             </div>
-            <div className="cg-rule">
-              <b>{seconds(preset.showMs)}</b>pra decorar
+          ) : (
+            <div className="cg-rules">
+              <div className="cg-rule">
+                <b>{preset.rounds}</b>
+                {preset.rounds === 1 ? 'rodada' : 'rodadas'}
+              </div>
+              <div className="cg-rule">
+                <b>{seconds(preset.showMs)}</b>pra decorar
+              </div>
+              <div className="cg-rule">
+                <b>{preset.rounds * 10}</b>pontos max
+              </div>
             </div>
-            <div className="cg-rule">
-              <b>{preset.rounds * 10}</b>pontos max
-            </div>
-          </div>
+          )}
           {shown !== 'daily' && (
             <div className="stack">
               <PlayGate>

@@ -112,8 +112,8 @@ function gameSearch<M extends string>(search: Record<string, unknown>, modes: M[
   return out;
 }
 
-const MODES: Mode[] = ['classic', 'flash', 'quick', 'daily'];
-const TIME_MODES: TimeMode[] = ['classic', 'quick', 'strict', 'daily'];
+const MODES: Mode[] = ['classic', 'flash', 'quick', 'blind', 'survival', 'daily'];
+const TIME_MODES: TimeMode[] = ['classic', 'quick', 'strict', 'sequence', 'survival', 'daily'];
 
 const colorRoute = createRoute({
   getParentRoute: () => rootRoute,

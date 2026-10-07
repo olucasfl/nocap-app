@@ -4,11 +4,15 @@ import {
   colorDeltaE,
   colorPresets,
   dailySeed,
+  evaluateSurvival,
   generateColorRound,
   scoreFromDeltaE,
+  survivalMinScore,
+  survivalShowMs,
   type Hsb,
 } from '@nocap/games';
 import { MuteButton } from '@/components/MuteButton';
+import { SurvivalBar, SurvivalFinal, SurvivalVerdict } from '@/components/Survival';
 import { toHex } from './hex';
 import { FinalScreen } from './screens/FinalScreen';
 import { QuickActions } from './screens/QuickActions';
@@ -18,6 +22,7 @@ import { ShowScreen } from './screens/ShowScreen';
 import type { GameTab } from '@/components/GameTabs';
 import type { Board } from '@/lib/ranking';
 import { StartScreen } from './screens/StartScreen';
+import { SAVE_TEXT, useSaveMatch } from './useSaveMatch';
 import type { Mode, RoundResult, Run } from './types';
 import './color.css';
 
@@ -60,18 +65,31 @@ export function ColorGame({
 
   const target: Hsb | null = run ? generateColorRound(run.seed, run.settings, index) : null;
 
+  const survival = !!run?.settings.survival;
+  const blind = !!run?.settings.blind;
+  // Sobrevivência: o estado (vidas, fim) vem sempre das notas já jogadas.
+  const sv = survival ? evaluateSurvival(results.map((r) => r.score)) : null;
+
   const lock = useCallback(
     (guess: Hsb) => {
-      if (!target) return;
+      if (!target || !run) return;
       const deltaE = colorDeltaE(target, guess);
       setResults((r) => [...r, { target, guess, deltaE, score: scoreFromDeltaE(deltaE) }]);
+      if (run.settings.blind) {
+        // Às cegas: nada de nota entre as rodadas; tudo aparece no final.
+        if (index + 1 < run.settings.rounds) {
+          setIndex(index + 1);
+          setPhase('show');
+        } else setPhase('final');
+        return;
+      }
       setPhase('result');
     },
-    [target],
+    [target, run, index],
   );
 
   const next = () => {
-    if (run && index + 1 < run.settings.rounds) {
+    if (survival ? sv?.ended === null : run && index + 1 < run.settings.rounds) {
       setIndex(index + 1);
       setPhase('show');
     } else {
@@ -81,6 +99,7 @@ export function ColorGame({
 
   const playing = phase === 'show' || phase === 'pick' || phase === 'result';
   const last = results[results.length - 1];
+  const lives = sv?.lives ?? 0;
 
   return (
     <div className="app">
@@ -91,12 +110,16 @@ export function ColorGame({
         <div className="top-actions">
           {playing && run && (
             <div className="chip y" aria-label="Rodada">
-              {index + 1}/{run.settings.rounds}
+              {survival ? `R${index + 1}` : `${index + 1}/${run.settings.rounds}`}
             </div>
           )}
           <MuteButton />
         </div>
       </header>
+
+      {survival && playing && (
+        <SurvivalBar lives={lives} minScore={survivalMinScore(index)} round={index + 1} />
+      )}
 
       {phase === 'start' && (
         <StartScreen
@@ -111,17 +134,27 @@ export function ColorGame({
         <ShowScreen
           key={index}
           color={toHex(target)}
-          ms={run.settings.showMs}
+          ms={survival ? survivalShowMs(index) : run.settings.showMs}
           onDone={() => setPhase('pick')}
         />
       )}
-      {phase === 'pick' && <PickScreen key={index} onLock={lock} />}
+      {phase === 'pick' && <PickScreen key={index} onLock={lock} blind={blind} />}
       {phase === 'result' && run && last && (
         <ResultScreen
           key={index}
           result={last}
-          isLast={index + 1 >= run.settings.rounds}
+          isLast={survival ? sv?.ended !== null : index + 1 >= run.settings.rounds}
           onNext={next}
+          extra={
+            sv && (
+              <SurvivalVerdict
+                passed={sv.passed[index] ?? false}
+                lives={sv.lives}
+                minScore={survivalMinScore(index)}
+                over={sv.ended !== null}
+              />
+            )
+          }
           footer={
             run.mode === 'quick' ? (
               <QuickActions run={run} result={last} onAgain={() => start('quick')} />
@@ -129,7 +162,10 @@ export function ColorGame({
           }
         />
       )}
-      {phase === 'final' && run && (
+      {phase === 'final' && run && survival && sv && (
+        <SurvivalFinalColor run={run} results={results} onRematch={() => start('survival')} />
+      )}
+      {phase === 'final' && run && !survival && (
         <FinalScreen
           run={run}
           results={results}
@@ -138,5 +174,33 @@ export function ColorGame({
         />
       )}
     </div>
+  );
+}
+
+/** Sobrevivência: salva a partida (rodadas jogadas) e mostra o resumo. */
+function SurvivalFinalColor({
+  run,
+  results,
+  onRematch,
+}: {
+  run: Run;
+  results: RoundResult[];
+  onRematch: () => void;
+}) {
+  const save = useSaveMatch(run, results);
+  const state = evaluateSurvival(results.map((r) => r.score));
+  return (
+    <SurvivalFinal
+      played={state.played}
+      completed={state.ended === 'cap'}
+      rows={results.map((r, i) => ({
+        detail: `ΔE ${r.deltaE.toFixed(1)}`,
+        score: r.score,
+        passed: state.passed[i] ?? false,
+      }))}
+      saveText={SAVE_TEXT[save]}
+      game="cor"
+      onRematch={onRematch}
+    />
   );
 }

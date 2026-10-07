@@ -1,6 +1,6 @@
 import type { ColorSettings, Hsb } from '@nocap/games';
 
-export type Mode = 'classic' | 'flash' | 'quick' | 'daily';
+export type Mode = 'classic' | 'flash' | 'quick' | 'blind' | 'survival' | 'daily';
 
 export interface RoundResult {
   target: Hsb;
@@ -15,7 +15,7 @@ export interface Run {
   mode: Mode;
   kind: 'solo' | 'daily';
   /** Nome do preset usado no servidor (o Daily é sempre `classic`). */
-  preset: 'classic' | 'flash' | 'quick';
+  preset: 'classic' | 'flash' | 'quick' | 'blind' | 'survival';
   seed: string;
   settings: ColorSettings;
 }

@@ -14,6 +14,7 @@ import {
   kindLabel,
   matchMax,
   modeLabel,
+  scoreParts,
   timeRounds,
   type HistoryItem,
 } from './history';
@@ -148,5 +149,26 @@ describe('classificação da partida', () => {
     expect(classifyMatch(solo(100)).label).toBe('ERROU'); // 10/50
     // o mesmo valor pesa diferente no rápido (máximo 10): 9,5/10 cravou
     expect(classifyMatch(solo(95, 'quick')).label).toBe('CRAVOU');
+  });
+});
+
+describe('Sobrevivência no histórico', () => {
+  const item = (rounds: number) => ({
+    game: 'color',
+    mode: 'survival',
+    answers: Array(rounds).fill(1),
+    placement: null,
+    totalScore: rounds * 10,
+  });
+
+  it('mostra as rodadas jogadas em vez de pontos', () => {
+    expect(scoreParts(item(7))).toEqual({ main: '7', unit: ' rodadas' });
+  });
+
+  it('classifica pelo número de rodadas', () => {
+    expect(classifyMatch(item(3)).label).toBe('CEDO DEMAIS');
+    expect(classifyMatch(item(6)).label).toBe('MEH');
+    expect(classifyMatch(item(10)).label).toBe('FORTE');
+    expect(classifyMatch(item(16)).label).toBe('LENDÁRIO');
   });
 });

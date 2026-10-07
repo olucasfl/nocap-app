@@ -74,12 +74,8 @@
           "name": "match_players_match_id_matches_id_fk",
           "tableFrom": "match_players",
           "tableTo": "matches",
-          "columnsFrom": [
-            "match_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["match_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -87,12 +83,8 @@
           "name": "match_players_player_id_players_id_fk",
           "tableFrom": "match_players",
           "tableTo": "players",
-          "columnsFrom": [
-            "player_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["player_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -100,10 +92,7 @@
       "compositePrimaryKeys": {
         "match_players_match_id_player_id_pk": {
           "name": "match_players_match_id_player_id_pk",
-          "columns": [
-            "match_id",
-            "player_id"
-          ]
+          "columns": ["match_id", "player_id"]
         }
       },
       "uniqueConstraints": {},
@@ -257,12 +246,8 @@
           "name": "user_game_stats_player_id_players_id_fk",
           "tableFrom": "user_game_stats",
           "tableTo": "players",
-          "columnsFrom": [
-            "player_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["player_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -270,11 +255,7 @@
       "compositePrimaryKeys": {
         "user_game_stats_player_id_game_mode_pk": {
           "name": "user_game_stats_player_id_game_mode_pk",
-          "columns": [
-            "player_id",
-            "game",
-            "mode"
-          ]
+          "columns": ["player_id", "game", "mode"]
         }
       },
       "uniqueConstraints": {},

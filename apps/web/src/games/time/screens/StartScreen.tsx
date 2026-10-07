@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { timePresets } from '@nocap/games';
+import { SURVIVAL_MAX_ROUNDS, timePresets } from '@nocap/games';
 import { BackButton } from '@/components/BackButton';
 import { DailyCard } from '@/components/DailyCard';
 import { FriendsPanel } from '@/components/FriendsPanel';
@@ -20,6 +20,8 @@ const MODES: { id: Mode; label: string; desc: string }[] = [
   { id: 'classic', label: 'Clássico', desc: '3 RODADAS' },
   { id: 'quick', label: 'Rápido', desc: '1 RODADA' },
   { id: 'strict', label: 'Sem estourar', desc: 'PASSOU, ZERO' },
+  { id: 'sequence', label: 'Sequência', desc: '5 ALVOS SEGUIDOS' },
+  { id: 'survival', label: 'Sobrevivência', desc: '3 VIDAS' },
   { id: 'daily', label: 'Daily', desc: '1 POR DIA · RANKING' },
 ];
 
@@ -28,6 +30,10 @@ const LEAD: Record<Mode, string> = {
     'Você vê um tempo alvo. Toque em COMEÇAR, depois em COMEÇAR A CONTAR, conte de cabeça e toque de novo para parar. Alternamos alvos curtos (menos de 10 s) e longos.',
   quick: 'Uma rodada só, quase sempre curta. Conte o tempo de cabeça e veja o quanto chegou perto.',
   strict: 'Passou do alvo, a rodada vale zero. Melhor parar um pouco antes do que estourar.',
+  sequence:
+    'Cinco alvos curtos (de 2 a 6 s), um atrás do outro, sem pausa. Acertou ou não, o próximo já vem. As notas aparecem no final.',
+  survival:
+    'Você tem 3 vidas. Cada alvo exige uma nota mínima (5, depois 6, depois 7). Errou, perde uma vida. Vale quantas rodadas você aguenta.',
   daily: 'Os alvos de hoje são os mesmos para todo mundo. Três rodadas, uma única chance por dia.',
 };
 
@@ -73,21 +79,35 @@ export function StartScreen({
             onChange={(id) => onMode(id as Mode)}
           />
           <p className="lead">{LEAD[shown]}</p>
-          <div className="tm-rules">
-            <div className="tm-rule">
-              <b>{preset.rounds}</b>
-              {preset.rounds === 1 ? 'rodada' : 'rodadas'}
+          {shown === 'survival' ? (
+            <div className="tm-rules">
+              <div className="tm-rule">
+                <b>3</b>vidas
+              </div>
+              <div className="tm-rule">
+                <b>5→7</b>nota mínima
+              </div>
+              <div className="tm-rule">
+                <b>{SURVIVAL_MAX_ROUNDS}</b>rodadas máx.
+              </div>
             </div>
-            <div className="tm-rule">
-              <b>
-                {preset.minMs / 1000}–{preset.maxMs / 1000}s
-              </b>
-              alvos
+          ) : (
+            <div className="tm-rules">
+              <div className="tm-rule">
+                <b>{preset.rounds}</b>
+                {preset.rounds === 1 ? 'rodada' : 'rodadas'}
+              </div>
+              <div className="tm-rule">
+                <b>
+                  {preset.minMs / 1000}–{preset.maxMs / 1000}s
+                </b>
+                alvos
+              </div>
+              <div className="tm-rule">
+                <b>{preset.rounds * 10}</b>pontos max
+              </div>
             </div>
-            <div className="tm-rule">
-              <b>{preset.rounds * 10}</b>pontos max
-            </div>
-          </div>
+          )}
           {error && (
             <p className="acc-failure mono" role="alert">
               {error}

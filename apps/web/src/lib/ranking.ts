@@ -1,7 +1,8 @@
 import { apiClient } from './api-client';
 
 export type Game = 'color' | 'time';
-export type Board = 'classic' | 'flash' | 'quick' | 'strict' | 'daily';
+export type Board =
+  'classic' | 'flash' | 'quick' | 'strict' | 'blind' | 'sequence' | 'survival' | 'daily';
 export type Period = 'day' | 'week' | 'all';
 export type Scope = 'all' | 'friends';
 
@@ -36,13 +37,16 @@ const ALL_BOARDS: { id: Board; label: string }[] = [
   { id: 'flash', label: 'Flash' },
   { id: 'quick', label: 'Rápido' },
   { id: 'strict', label: 'Sem estourar' },
+  { id: 'blind', label: 'Às cegas' },
+  { id: 'sequence', label: 'Sequência' },
+  { id: 'survival', label: 'Sobrevivência' },
   { id: 'daily', label: 'Daily' },
 ];
 
 /** Quadros de cada jogo. O Daily tem ranking próprio (tela do Daily), fora dos modos normais. */
 const BOARD_IDS: Record<Game, Board[]> = {
-  color: ['classic', 'flash', 'quick'],
-  time: ['classic', 'quick', 'strict'],
+  color: ['classic', 'flash', 'quick', 'blind', 'survival'],
+  time: ['classic', 'quick', 'strict', 'sequence', 'survival'],
 };
 
 export const boardsOf = (game: Game) => ALL_BOARDS.filter((b) => BOARD_IDS[game].includes(b.id));
@@ -57,7 +61,10 @@ export const PERIODS: { id: Period; label: string }[] = [
 
 /** Máximo de pontos de uma partida no quadro (10 por rodada: a Cor tem 5 rodadas, o Tempo 3). */
 export function boardMax(game: Game, board: Board): number {
+  // Sobrevivência não tem máximo: vale pelas rodadas jogadas.
+  if (board === 'survival') return 0;
   if (board === 'quick') return 10;
+  if (board === 'sequence') return 50;
   return game === 'time' ? 30 : 50;
 }
 

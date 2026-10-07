@@ -403,3 +403,9 @@
   font-weight: 700;
   color: var(--muted);
 }
+
+/* Às cegas: a prévia vira um bloco listrado, sem mostrar a cor que está sendo montada. */
+.cg-blind {
+  background: repeating-linear-gradient(135deg, var(--paper) 0 14px, var(--white) 14px 28px);
+  color: var(--ink);
+}

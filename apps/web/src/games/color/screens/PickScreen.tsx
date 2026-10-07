@@ -26,12 +26,14 @@ function track(id: Channel, g: Hsb): string {
 
 interface Props {
   onLock: (guess: Hsb) => void;
+  /** Às cegas: a prévia da cor que você monta fica escondida. */
+  blind?: boolean;
 }
 
 /** Branco em HSB: com saturação 0 o matiz não aparece. */
 export const WHITE: Hsb = { h: 0, s: 0, b: 100 };
 
-export function PickScreen({ onLock }: Props) {
+export function PickScreen({ onLock, blind = false }: Props) {
   // Sempre começa em branco (saturação no mínimo, brilho no máximo, matiz no começo da barra):
   // o ponto de partida é igual para todo mundo e não induz a resposta.
   const [guess, setGuess] = useState<Hsb>(WHITE);
@@ -61,9 +63,15 @@ export function PickScreen({ onLock }: Props) {
 
   return (
     <section className="screen">
-      <div className="cg-preview" style={{ background: toHex(guess) }}>
-        <div className="tag">SUA COR</div>
-      </div>
+      {blind ? (
+        <div className="cg-preview cg-blind" aria-label="Às cegas: a prévia está escondida">
+          <div className="tag">ÀS CEGAS</div>
+        </div>
+      ) : (
+        <div className="cg-preview" style={{ background: toHex(guess) }}>
+          <div className="tag">SUA COR</div>
+        </div>
+      )}
       <div className="cg-sliders">
         {CHANNELS.map(({ id, label, max, tickEvery }) => (
           <div className="cg-sl" key={id}>

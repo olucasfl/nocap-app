@@ -21,9 +21,11 @@ interface Props {
   onNext: () => void;
   /** Substitui o botão padrão (o jogo rápido termina aqui, sem tela de total). */
   footer?: ReactNode;
+  /** Sobrevivência: aviso de passou/perdeu vida, entre o resultado e o botão. */
+  extra?: ReactNode;
 }
 
-export function ResultScreen({ result, isLast, onNext, footer }: Props) {
+export function ResultScreen({ result, isLast, onNext, footer, extra }: Props) {
   const { target, guess, score } = result;
   const num = useRef<HTMLElement>(null);
   const [started, setStarted] = useState(false);
@@ -121,6 +123,7 @@ export function ResultScreen({ result, isLast, onNext, footer }: Props) {
           </div>
         ))}
       </div>
+      {done && extra}
       {footer ?? (
         <div className="stack">
           <button type="button" className="btn" onClick={onNext}>

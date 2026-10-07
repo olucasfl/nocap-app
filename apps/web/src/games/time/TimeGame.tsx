@@ -1,13 +1,21 @@
 import { useCallback, useRef, useState } from 'react';
 import { Link } from '@tanstack/react-router';
-import { generateTimeRound, scoreTime, timePresets } from '@nocap/games';
+import {
+  evaluateSurvival,
+  generateTimeRound,
+  scoreTime,
+  survivalMinScore,
+  timePresets,
+} from '@nocap/games';
 import type { GameTab } from '@/components/GameTabs';
 import { MuteButton } from '@/components/MuteButton';
+import { SurvivalBar, SurvivalFinal, SurvivalVerdict } from '@/components/Survival';
 import type { Board } from '@/lib/ranking';
 import { apiClient } from '@/lib/api-client';
 import { isNetworkError } from '@/lib/network';
-import { MIN_TAP_GAP_MS } from './format';
+import { MIN_TAP_GAP_MS, formatSeconds } from './format';
 import { FinalScreen } from './screens/FinalScreen';
+import { SAVE_TEXT, useSaveTime } from './useSaveTime';
 import { ResultScreen } from './screens/ResultScreen';
 import { StartScreen } from './screens/StartScreen';
 import { RoundScreen } from './screens/RoundScreen';
@@ -100,13 +108,24 @@ export function TimeGame({
       if (now - t0.current < MIN_TAP_GAP_MS) return;
       const answer = Math.round(now - t0.current);
       setResults((r) => [...r, { target, answer, score: scoreTime(target, answer, run.settings) }]);
+      if (run.preset === 'sequence') {
+        // Sequência: sem tela de resultado entre alvos; o próximo já aparece (e o fim mostra tudo).
+        if (index + 1 < run.settings.rounds) {
+          setIndex(index + 1);
+          setPhase('target');
+        } else setPhase('final');
+        return;
+      }
       setPhase('result');
     },
-    [run, target],
+    [run, target, index],
   );
 
+  const survival = !!run?.settings.survival;
+  const sv = survival ? evaluateSurvival(results.map((r) => r.score)) : null;
+
   const next = () => {
-    if (run && index + 1 < run.settings.rounds) {
+    if (survival ? sv?.ended === null : run && index + 1 < run.settings.rounds) {
       setIndex(index + 1);
       setPhase('target');
     } else {
@@ -129,13 +148,17 @@ export function TimeGame({
           <div className="top-actions">
             {playing && run && (
               <div className="chip y" aria-label="Rodada">
-                {index + 1}/{run.settings.rounds}
+                {survival ? `R${index + 1}` : `${index + 1}/${run.settings.rounds}`}
               </div>
             )}
             <MuteButton />
           </div>
         )}
       </header>
+
+      {survival && !counting && (phase === 'target' || phase === 'result') && (
+        <SurvivalBar lives={sv?.lives ?? 3} minScore={survivalMinScore(index)} round={index + 1} />
+      )}
 
       {phase === 'start' && (
         <StartScreen
@@ -156,6 +179,12 @@ export function TimeGame({
           counting={counting}
           onBegin={begin}
           onStop={stop}
+          skipIntro={run.preset === 'sequence'}
+          note={
+            run.preset === 'sequence' && last
+              ? `ANTERIOR ${last.score.toFixed(1)} · ${index + 1}/${run.settings.rounds}`
+              : undefined
+          }
         />
       )}
       {phase === 'result' && run && last && (
@@ -163,12 +192,25 @@ export function TimeGame({
           key={index}
           result={last}
           run={run}
-          isLast={index + 1 >= run.settings.rounds}
+          isLast={survival ? sv?.ended !== null : index + 1 >= run.settings.rounds}
           onNext={next}
+          extra={
+            sv && (
+              <SurvivalVerdict
+                passed={sv.passed[index] ?? false}
+                lives={sv.lives}
+                minScore={survivalMinScore(index)}
+                over={sv.ended !== null}
+              />
+            )
+          }
           onAgain={() => void start('quick')}
         />
       )}
-      {phase === 'final' && run && (
+      {phase === 'final' && run && survival && (
+        <SurvivalFinalTime run={run} results={results} onRematch={() => void start('survival')} />
+      )}
+      {phase === 'final' && run && !survival && (
         <FinalScreen
           run={run}
           results={results}
@@ -176,5 +218,33 @@ export function TimeGame({
         />
       )}
     </div>
+  );
+}
+
+/** Sobrevivência: salva a partida (rodadas jogadas; offline não salva) e mostra o resumo. */
+function SurvivalFinalTime({
+  run,
+  results,
+  onRematch,
+}: {
+  run: Run;
+  results: RoundResult[];
+  onRematch: () => void;
+}) {
+  const save = useSaveTime(run, results);
+  const state = evaluateSurvival(results.map((r) => r.score));
+  return (
+    <SurvivalFinal
+      played={state.played}
+      completed={state.ended === 'cap'}
+      rows={results.map((r, i) => ({
+        detail: `${formatSeconds(r.target)} → ${formatSeconds(r.answer)}`,
+        score: r.score,
+        passed: state.passed[i] ?? false,
+      }))}
+      saveText={SAVE_TEXT[save]}
+      game="tempo"
+      onRematch={onRematch}
+    />
   );
 }

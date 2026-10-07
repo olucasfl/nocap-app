@@ -2,7 +2,15 @@ import { LoadFailed } from './LoadFailed';
 import { Loader } from './Loader';
 import { useQuery } from '@tanstack/react-query';
 import { modeLabel } from '@/lib/history';
-import { fetchStats, gameModes, modeMax, streakLabel, type GameId, type Stats } from '@/lib/stats';
+import {
+  fetchStats,
+  gameModes,
+  isSurvival,
+  modeMax,
+  streakLabel,
+  type GameId,
+  type Stats,
+} from '@/lib/stats';
 import { GAME_LABEL, GameArt } from './GameArt';
 import './records.css';
 
@@ -32,11 +40,13 @@ function GameRecords({ stats, game }: { stats: Stats; game: GameId }) {
               <span className="rc-mode-name">{modeLabel(m.mode)}</span>
               <span className="mono rc-mode-sub">
                 {m.matches} {m.matches === 1 ? 'PARTIDA' : 'PARTIDAS'} · MÉDIA{' '}
-                {(m.average / 10).toFixed(1)}
+                {isSurvival(m.mode) ? Math.round(m.average / 10) : (m.average / 10).toFixed(1)}
               </span>
               <span className="rc-best">
-                {(m.best / 10).toFixed(1)}
-                <small className="mono">/{modeMax(game, m.mode)}</small>
+                {isSurvival(m.mode) ? Math.round(m.best / 10) : (m.best / 10).toFixed(1)}
+                <small className="mono">
+                  {isSurvival(m.mode) ? ' rodadas' : `/${modeMax(game, m.mode)}`}
+                </small>
               </span>
             </li>
           ))}
