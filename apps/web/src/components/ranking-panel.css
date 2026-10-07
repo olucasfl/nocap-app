@@ -1,0 +1,275 @@
+.rp {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.rp.color {
+  --accent: var(--orange);
+  --on: var(--on-accent);
+}
+.rp.time {
+  --accent: var(--blue);
+  --on: var(--on-blue);
+}
+.rp-label {
+  margin-bottom: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+/* Modo: abas em pílula, rolam de lado se faltar espaço. O Daily fica separado e amarelo. */
+.rp-modes {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 2px 4px 6px 2px;
+  scrollbar-width: none;
+}
+.rp-modes::-webkit-scrollbar {
+  display: none;
+}
+.rp-modes button {
+  flex: none;
+  height: 40px;
+  padding: 0 12px;
+  border: var(--border);
+  border-radius: 999px;
+  background: var(--white);
+  color: var(--ink);
+  font: 900 12px var(--font-display);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.rp-modes button[aria-selected='true'] {
+  background: var(--accent);
+  color: var(--on);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.rp-modes .rp-daily-tab {
+  background: var(--yellow);
+  color: var(--on-accent);
+}
+.rp-modes .rp-daily-tab[aria-selected='true'] {
+  background: var(--ink);
+  color: var(--yellow);
+}
+.rp-divider {
+  flex: none;
+  width: 3px;
+  margin: 6px 0;
+  background: var(--ink);
+  border-radius: 2px;
+}
+
+.rp-row2 {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+.rp-period {
+  flex: 1;
+  min-width: 0;
+}
+/* Período: um controle só, com divisórias; a escolha fica em tinta. */
+.rp-seg {
+  display: flex;
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--white);
+}
+.rp-seg button {
+  flex: 1;
+  height: 38px;
+  border: 0;
+  border-right: 2px solid var(--ink);
+  background: transparent;
+  color: var(--ink);
+  font: 700 12px var(--font-mono);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.rp-seg button:last-child {
+  border-right: 0;
+}
+.rp-seg button[aria-checked='true'] {
+  background: var(--ink);
+  color: var(--paper);
+}
+/* Só amigos: chave liga/desliga. */
+.rp-switch {
+  position: relative;
+  width: 64px;
+  height: 38px;
+  border: var(--border);
+  border-radius: 999px;
+  background: var(--white);
+  cursor: pointer;
+}
+.rp-switch i {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--ink);
+  transition: transform 0.12s ease-out;
+}
+.rp-switch[aria-checked='true'] {
+  background: var(--accent);
+}
+.rp-switch[aria-checked='true'] i {
+  transform: translateX(26px);
+  background: var(--white);
+  outline: 2px solid var(--ink);
+}
+.rp button:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rp-switch i {
+    transition: none;
+  }
+}
+
+.rp-note {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.rp-state {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Pódio */
+.rp-podium {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: 8px;
+}
+.rp-pod {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  text-align: center;
+}
+.rp-pod-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 900 13px var(--font-display);
+}
+.rp-pod-score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font: 900 20px var(--font-display);
+  letter-spacing: -0.04em;
+}
+.rp-pod-score small {
+  font-size: 10px;
+  font-weight: 700;
+}
+.rp-days {
+  color: var(--muted);
+}
+.rp-pod-step {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 6px;
+  border: var(--border);
+  border-bottom: 0;
+  border-radius: 12px 12px 0 0;
+  background: var(--white);
+}
+.rp-pod-step b {
+  font: 900 28px/1 var(--font-display);
+}
+.rp-pod.p1 .rp-pod-step {
+  height: 96px;
+  background: var(--yellow);
+  color: var(--on-accent);
+}
+.rp-pod.p2 .rp-pod-step {
+  height: 70px;
+}
+.rp-pod.p3 .rp-pod-step {
+  height: 52px;
+}
+.rp-pod.me .rp-pod-step {
+  background: var(--accent);
+  color: var(--on);
+}
+.rp-pod.me .rp-pod-name {
+  text-decoration: underline;
+  text-decoration-thickness: 3px;
+}
+
+/* Lista do 4º em diante */
+.rp-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.rp-item {
+  display: grid;
+  grid-template-columns: 34px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--white);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.rp-item.me {
+  background: var(--accent);
+  color: var(--on);
+}
+.rp-pos {
+  font-weight: 700;
+  font-size: 14px;
+}
+.rp-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 900 16px var(--font-display);
+}
+.rp-score {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font: 900 22px var(--font-display);
+  letter-spacing: -0.04em;
+}
+.rp-score small {
+  font-size: 11px;
+  font-weight: 700;
+}
+.rp-link {
+  color: var(--blue);
+  font-weight: 700;
+}

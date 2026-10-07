@@ -6,11 +6,15 @@
     <meta name="theme-color" content="#F4F4EF" />
     <script>
       // Aplica a escolha de tema antes da primeira pintura (sem flash claro no escuro).
-      // Automático = sem data-theme: o CSS segue o sistema.
+      // Só Claro ou Escuro: sem escolha salva, começa pelo tema do sistema.
+      var t = null;
       try {
-        var t = localStorage.getItem('nocap-theme');
-        if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+        t = localStorage.getItem('nocap-theme');
       } catch (e) {}
+      if (t !== 'light' && t !== 'dark') {
+        t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+      document.documentElement.setAttribute('data-theme', t);
     </script>
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />

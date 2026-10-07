@@ -1,3 +1,4 @@
+import { Loader } from '@/components/Loader';
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { Link } from '@tanstack/react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -139,7 +140,7 @@ export function Friends() {
     return (
       <main className="fr">
         <h1>Amigos</h1>
-        <p className="lead">Carregando...</p>
+        <Loader inline />
       </main>
     );
   }
@@ -179,7 +180,7 @@ export function Friends() {
           {error}
         </p>
       )}
-      {list.isPending && <p className="lead">Carregando...</p>}
+      {list.isPending && <Loader inline />}
       {list.isError && <p className="lead">Não deu para carregar seus amigos agora.</p>}
 
       {data && data.incoming.length > 0 && (

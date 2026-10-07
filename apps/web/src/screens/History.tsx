@@ -1,3 +1,4 @@
+import { Loader } from '@/components/Loader';
 import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { useInfiniteQuery } from '@tanstack/react-query';
@@ -138,7 +139,7 @@ export function History() {
         <GameArt game={game} size="sm" />
         <div className="mono hist-game-name">PARTIDAS DE {GAME_LABEL[game].toUpperCase()}</div>
       </div>
-      {q.isPending && <p className="lead">Carregando...</p>}
+      {q.isPending && <Loader inline />}
       {q.isError && (
         <div className="hist-state">
           <p className="lead">Não deu para carregar o histórico. Confira a conexão.</p>

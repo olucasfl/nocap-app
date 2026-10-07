@@ -1,3 +1,4 @@
+import { Loader } from './Loader';
 import { useQuery } from '@tanstack/react-query';
 import { modeLabel } from '@/lib/history';
 import { fetchStats, gameModes, modeMax, streakLabel, type GameId, type Stats } from '@/lib/stats';
@@ -54,7 +55,7 @@ function GameRecords({ stats, game }: { stats: Stats; game: GameId }) {
 /** Aba de recordes: um cartão por jogo, com a arte do jogo, os modos e o Daily dele. */
 export function Records() {
   const q = useQuery({ queryKey: ['stats'], queryFn: fetchStats });
-  if (q.isPending) return <p className="lead">Carregando recordes...</p>;
+  if (q.isPending) return <Loader inline label="Carregando recordes" />;
   if (q.isError) return <p className="lead">Não deu para carregar os recordes agora.</p>;
   return (
     <div className="rc">

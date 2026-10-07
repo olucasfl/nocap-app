@@ -1,0 +1,24 @@
+.bb {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 14px 0 10px;
+  border: var(--border);
+  border-radius: 999px;
+  background: var(--white);
+  color: var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+  font: 900 13px var(--font-display);
+  text-transform: uppercase;
+  text-decoration: none;
+}
+.bb:active {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 var(--ink);
+}
+.bb:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 3px;
+}

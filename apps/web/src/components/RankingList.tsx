@@ -1,3 +1,4 @@
+import { Loader } from './Loader';
 import type { ReactNode } from 'react';
 import { Link } from '@tanstack/react-router';
 import type { UseQueryResult } from '@tanstack/react-query';
@@ -84,7 +85,7 @@ export function RankingList({
 
   return (
     <>
-      {query.isPending && <p className="lead">Carregando...</p>}
+      {query.isPending && <Loader inline />}
       {query.isError && (
         <div className="rk-state">
           <p className="lead">Não deu para carregar o ranking. Confira a conexão.</p>

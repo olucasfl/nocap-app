@@ -1,3 +1,4 @@
+import { Loader } from '@/components/Loader';
 import { useState } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -48,7 +49,7 @@ export function Profile() {
     return (
       <main className="pf">
         <h1>Perfil</h1>
-        <p className="lead">Carregando...</p>
+        <Loader inline />
       </main>
     );
   }

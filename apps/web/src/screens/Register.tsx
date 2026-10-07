@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
+import { BackButton } from '@/components/BackButton';
 import { Field } from '@/components/Field';
 import {
   USERNAME_MAX,
@@ -47,6 +48,7 @@ export function Register() {
         </Link>
       </header>
       <form className="screen acc" onSubmit={submit} noValidate>
+        <BackButton to="/" label="Voltar" />
         <h1>Criar conta</h1>
         <Field
           label="Nome de usuário"

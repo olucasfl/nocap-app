@@ -8,7 +8,7 @@ O app inteiro (Hub, jogos, abas, PWA) funciona em tema claro e escuro, sem perde
 
 ## Regras
 
-- Três opções: **Automático** (segue o sistema, padrão), **Claro** e **Escuro**. A escolha fica salva no aparelho.
+- Duas opções: **Claro** e **Escuro** (sem Automático, por decisão do Lucas). Na primeira vez começa pelo tema do sistema; depois vale a escolha salva no aparelho.
 - O tema vale para todas as telas e jogos, atuais e futuros. Nenhuma tela usa cor solta: tudo passa pelos tokens de `apps/web/src/styles/tokens.css`.
 - O tema é aplicado **antes da primeira pintura** (script inline no `index.html` que lê a escolha e põe `data-theme` no `<html>`), para não piscar branco ao abrir no escuro.
 - As cores de destaque (laranja, azul, amarelo) e as **cores dos jogos** (alvo e resposta da Cor) **não mudam** entre temas. O que muda é papel, tinta, superfícies e sombras.
@@ -28,7 +28,7 @@ O Pop Brutal depende de **borda grossa em tinta** e **sombra dura sem blur**. No
 
 ## Telas e fluxo
 
-Chip de tema (ícone sol/lua, cicla Automático → Claro → Escuro) no topo do Hub. Sem tela nova.
+Chip de tema (ícone sol/lua, alterna Claro ↔ Escuro) no topo do Hub. Sem tela nova.
 
 ## Critérios de aceite
 

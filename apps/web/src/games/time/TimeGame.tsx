@@ -1,7 +1,9 @@
 import { useCallback, useRef, useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { generateTimeRound, scoreTime, timePresets } from '@nocap/games';
+import type { GameTab } from '@/components/GameTabs';
 import { MuteButton } from '@/components/MuteButton';
+import type { Board } from '@/lib/ranking';
 import { apiClient } from '@/lib/api-client';
 import { MIN_TAP_GAP_MS } from './format';
 import { FinalScreen } from './screens/FinalScreen';
@@ -34,7 +36,15 @@ async function newRun(mode: Mode): Promise<Run> {
   };
 }
 
-export function TimeGame({ initialMode = 'classic' }: { initialMode?: Mode }) {
+export function TimeGame({
+  initialMode = 'classic',
+  initialTab,
+  initialBoard,
+}: {
+  initialMode?: Mode;
+  initialTab?: GameTab;
+  initialBoard?: Board;
+}) {
   const [mode, setMode] = useState<Mode>(initialMode);
   const [phase, setPhase] = useState<Phase>('start');
   const [run, setRun] = useState<Run | null>(null);
@@ -117,8 +127,10 @@ export function TimeGame({ initialMode = 'classic' }: { initialMode?: Mode }) {
           mode={mode}
           busy={busy}
           error={error}
+          initialTab={initialTab}
+          initialBoard={initialBoard}
           onMode={setMode}
-          onStart={() => void start(mode)}
+          onStart={(m) => void start(m)}
         />
       )}
       {(phase === 'target' || counting) && target !== null && run && (

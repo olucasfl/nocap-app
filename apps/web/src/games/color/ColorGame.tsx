@@ -15,6 +15,8 @@ import { QuickActions } from './screens/QuickActions';
 import { PickScreen } from './screens/PickScreen';
 import { ResultScreen } from './screens/ResultScreen';
 import { ShowScreen } from './screens/ShowScreen';
+import type { GameTab } from '@/components/GameTabs';
+import type { Board } from '@/lib/ranking';
 import { StartScreen } from './screens/StartScreen';
 import type { Mode, RoundResult, Run } from './types';
 import './color.css';
@@ -34,7 +36,15 @@ function newRun(mode: Mode): Run {
   };
 }
 
-export function ColorGame({ initialMode = 'classic' }: { initialMode?: Mode }) {
+export function ColorGame({
+  initialMode = 'classic',
+  initialTab,
+  initialBoard,
+}: {
+  initialMode?: Mode;
+  initialTab?: GameTab;
+  initialBoard?: Board;
+}) {
   const [mode, setMode] = useState<Mode>(initialMode);
   const [phase, setPhase] = useState<Phase>('start');
   const [run, setRun] = useState<Run | null>(null);
@@ -89,7 +99,13 @@ export function ColorGame({ initialMode = 'classic' }: { initialMode?: Mode }) {
       </header>
 
       {phase === 'start' && (
-        <StartScreen mode={mode} onMode={setMode} onStart={() => start(mode)} />
+        <StartScreen
+          mode={mode}
+          initialTab={initialTab}
+          initialBoard={initialBoard}
+          onMode={setMode}
+          onStart={start}
+        />
       )}
       {phase === 'show' && run && target && (
         <ShowScreen

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { sfx } from '@/lib/sfx';
 import { formatSeconds } from '../format';
 
@@ -14,7 +14,8 @@ interface Props {
 }
 
 /**
- * A rodada do Tempo numa tela só: o alvo fica à vista e o botão COMEÇAR vira PARAR.
+ * A rodada do Tempo, em três toques: COMEÇAR (prepara), COMEÇAR A CONTAR (dispara o relógio) e
+ * PARAR. O alvo fica à vista o tempo todo.
  *
  * Valendo, a tela mostra um aviso FIXO ("VALENDO", com ponto parado) e muda de cor. Nada pisca,
  * nada anda e nenhum número muda (RULES.md: sem cronômetro, número correndo, barra, animação
@@ -22,6 +23,9 @@ interface Props {
  * O botão PARAR não usa `.btn` (que toca o "clack" global) e nada vibra.
  */
 export function RoundScreen({ target, noOvershoot, counting, onBegin, onStop }: Props) {
+  // Preparado: o próximo toque dispara o relógio. Estado local; some quando a contagem começa.
+  const [armed, setArmed] = useState(false);
+
   useEffect(() => {
     // Só ao mostrar o alvo (antes de valer).
     sfx.flip();
@@ -37,7 +41,7 @@ export function RoundScreen({ target, noOvershoot, counting, onBegin, onStop }: 
             VALENDO
           </div>
         ) : (
-          <div className="mono tm-label tm-idle">PRONTO</div>
+          <div className="mono tm-label tm-idle">{armed ? 'PREPARADO' : 'PRONTO'}</div>
         )}
       </div>
       <div className="tm-target-time" aria-label={`Alvo: ${formatSeconds(target)}`}>
@@ -46,7 +50,9 @@ export function RoundScreen({ target, noOvershoot, counting, onBegin, onStop }: 
       <p className="lead">
         {counting
           ? 'Conte de cabeça e toque em PARAR quando achar que chegou no alvo.'
-          : 'Toque em COMEÇAR, conte de cabeça e toque em PARAR quando achar que chegou no alvo.'}
+          : armed
+            ? 'Quando você tocar no botão grande, o tempo começa a valer. Toque de novo para parar.'
+            : 'Toque em COMEÇAR para se preparar. Depois é só tocar para começar a contar e tocar de novo para parar.'}
         {noOvershoot && ' Passou do alvo, vale zero.'}
       </p>
       <div className="stack">
@@ -64,10 +70,10 @@ export function RoundScreen({ target, noOvershoot, counting, onBegin, onStop }: 
           >
             Parar
           </button>
-        ) : (
+        ) : armed ? (
           <button
             type="button"
-            className="btn alt"
+            className="tm-arm"
             onPointerDown={onBegin}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
@@ -76,6 +82,10 @@ export function RoundScreen({ target, noOvershoot, counting, onBegin, onStop }: 
               }
             }}
           >
+            Clique para começar a contar
+          </button>
+        ) : (
+          <button type="button" className="btn alt" onClick={() => setArmed(true)}>
             Começar
           </button>
         )}

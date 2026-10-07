@@ -132,6 +132,25 @@
   user-select: none;
   -webkit-user-select: none;
 }
+.tm-arm {
+  appearance: none;
+  flex: 1;
+  min-height: 180px;
+  padding: 0 16px;
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--orange);
+  color: var(--on-accent);
+  box-shadow: 6px 6px 0 var(--ink);
+  font: 900 34px/1.05 var(--font-display);
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.tm-arm:focus-visible,
 .tm-stop:focus-visible {
   outline: 3px solid var(--blue);
   outline-offset: 3px;

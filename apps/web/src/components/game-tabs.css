@@ -1,0 +1,37 @@
+/* Abas do jogo: uma barra só, com a aba ativa na cor do jogo. */
+.gt {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  box-shadow: 4px 4px 0 var(--ink);
+  overflow: hidden;
+}
+.gt button {
+  min-height: 52px;
+  padding: 6px 8px;
+  border: 0;
+  border-right: 3px solid var(--ink);
+  background: transparent;
+  color: var(--ink);
+  font: 900 12px/1.1 var(--font-display);
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.gt button:last-child {
+  border-right: 0;
+}
+.gt.color button[aria-selected='true'] {
+  background: var(--orange);
+  color: var(--on-accent);
+}
+.gt.time button[aria-selected='true'] {
+  background: var(--blue);
+  color: var(--on-blue);
+}
+.gt button:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: -6px;
+}

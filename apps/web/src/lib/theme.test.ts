@@ -1,24 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { nextTheme, parseTheme, resolveTheme } from './theme';
+import { nextTheme, parseTheme } from './theme';
 
 describe('tema', () => {
-  it('cicla Automático → Claro → Escuro → Automático', () => {
-    expect(nextTheme('auto')).toBe('light');
+  it('alterna entre Claro e Escuro', () => {
     expect(nextTheme('light')).toBe('dark');
-    expect(nextTheme('dark')).toBe('auto');
+    expect(nextTheme('dark')).toBe('light');
   });
 
-  it('valor salvo inválido ou ausente vira Automático', () => {
-    expect(parseTheme(null)).toBe('auto');
-    expect(parseTheme('roxo')).toBe('auto');
-    expect(parseTheme('dark')).toBe('dark');
-    expect(parseTheme('light')).toBe('light');
-  });
-
-  it('a escolha manual vence o sistema; no Automático vale o sistema', () => {
-    expect(resolveTheme('auto', true)).toBe('dark');
-    expect(resolveTheme('auto', false)).toBe('light');
-    expect(resolveTheme('light', true)).toBe('light');
-    expect(resolveTheme('dark', false)).toBe('dark');
+  it('valor salvo vale; sem valor (ou inválido) começa pelo tema do sistema', () => {
+    expect(parseTheme('dark', false)).toBe('dark');
+    expect(parseTheme('light', true)).toBe('light');
+    expect(parseTheme(null, true)).toBe('dark');
+    expect(parseTheme('roxo', false)).toBe('light');
   });
 });

@@ -54,6 +54,12 @@ export function FinalScreen({ run, results, onRematch }: Props) {
         <button type="button" className="btn alt" onClick={onRematch}>
           Revanche
         </button>
+        <Link to="/tempo" search={{ aba: 'ranking' }} className="btn ghost">
+          Ver ranking
+        </Link>
+        <Link to="/tempo" className="btn ghost">
+          Modos do jogo
+        </Link>
         <Link to="/" className="btn ghost">
           Voltar aos jogos
         </Link>

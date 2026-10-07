@@ -1,3 +1,4 @@
+import { Loader } from './Loader';
 import type { ReactNode } from 'react';
 import { Link } from '@tanstack/react-router';
 import { useAuth } from '@/lib/auth';
@@ -10,7 +11,7 @@ import './game-ui.css';
  */
 export function PlayGate({ children, what = 'jogar' }: { children: ReactNode; what?: string }) {
   const { user, status } = useAuth();
-  if (status === 'loading') return <p className="lead">Carregando...</p>;
+  if (status === 'loading') return <Loader inline />;
   if (user) return <>{children}</>;
   return (
     <section className="pg" aria-label={`Entre para ${what}`}>

@@ -2,7 +2,6 @@ import { nextTheme, setTheme, useTheme, type ThemePref } from '@/lib/theme';
 import { ThemeIcon } from './icons';
 
 const LABEL: Record<ThemePref, string> = {
-  auto: 'automático',
   light: 'claro',
   dark: 'escuro',
 };

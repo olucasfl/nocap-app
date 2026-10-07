@@ -1,5 +1,7 @@
+import { Loader } from '@/components/Loader';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, getRouteApi, useNavigate } from '@tanstack/react-router';
+import { BackButton } from '@/components/BackButton';
 import { Field } from '@/components/Field';
 import { MuteButton } from '@/components/MuteButton';
 import { useAuth } from '@/lib/auth';
@@ -81,6 +83,7 @@ function Entry({
 
   return (
     <section className="screen rm">
+      <BackButton to={game === 'time' ? '/tempo' : '/cor'} label="Voltar ao jogo" />
       <h1>Sala</h1>
       <p className="lead">
         {game === 'time'
@@ -149,7 +152,7 @@ export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomG
     return (
       <div className="app">
         <Header />
-        <p className="lead rm-wait">Carregando...</p>
+        <Loader />
       </div>
     );
   }
@@ -191,7 +194,7 @@ export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomG
           RECONECTANDO À SALA...
         </p>
       )}
-      {!snapshot && status === 'connecting' && <p className="lead rm-wait">Entrando na sala...</p>}
+      {!snapshot && status === 'connecting' && <Loader label="Entrando na sala" />}
       {!snapshot && status !== 'connecting' && (
         <Entry initialCode={code} initialError={joinError} game={game} />
       )}

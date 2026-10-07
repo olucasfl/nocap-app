@@ -1,6 +1,5 @@
 import { Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import { dailyDate } from '@nocap/games';
 import { MuteButton } from '@/components/MuteButton';
 import { ThemeButton } from '@/components/ThemeButton';
 import { User } from '@/components/icons';
@@ -35,7 +34,6 @@ function dailyStatus(stats: Stats | undefined, game: GameId): string {
 
 export function Hub() {
   const user = useAuth((s) => s.user);
-  const [, mm, dd] = dailyDate().split('-');
   const stats = useQuery({ queryKey: ['stats'], queryFn: fetchStats, enabled: !!user, retry: false });
   const data = user ? stats.data : undefined;
 
@@ -64,19 +62,6 @@ export function Hub() {
         ser hoje?
       </h1>
 
-      <Link to="/daily" className="hub-daily">
-        <div>
-          <div className="mono hub-daily-label">
-            DAILY · {dd}/{mm}
-          </div>
-          <div className="hub-daily-text">Uma Cor e um Tempo por dia</div>
-          <div className="mono hub-daily-streak">
-            {user ? `COR ${dailyStatus(data, 'color')} · TEMPO ${dailyStatus(data, 'time')}` : 'ENTRE PARA JOGAR'}
-          </div>
-        </div>
-        <span className="hub-daily-go">ABRIR</span>
-      </Link>
-
       <div className="hub-grid">
         <Link to="/cor" className="hub-card hub-card-color">
           <div className="hub-swatches" aria-hidden="true">
@@ -87,6 +72,7 @@ export function Hub() {
           <div className="hub-card-foot">
             <div className="hub-card-name">Cor</div>
             <div className="mono hub-card-meta">{bestLabel(data, 'color')}</div>
+            <div className="mono hub-card-meta">DAILY {dailyStatus(data, 'color')}</div>
           </div>
         </Link>
 
@@ -99,6 +85,7 @@ export function Hub() {
           <div className="hub-card-foot">
             <div className="hub-card-name">Tempo</div>
             <div className="mono hub-card-meta">{bestLabel(data, 'time')}</div>
+            <div className="mono hub-card-meta">DAILY {dailyStatus(data, 'time')}</div>
           </div>
         </Link>
 

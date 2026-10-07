@@ -30,6 +30,12 @@ export const ArrowRight = (p: IconProps) => (
   </Svg>
 );
 
+export const ArrowLeft = (p: IconProps) => (
+  <Svg {...p} stroke={p.stroke ?? 2.8}>
+    <path d="M19 12H5M11 6l-6 6 6 6" />
+  </Svg>
+);
+
 export const Grid = (p: IconProps) => (
   <Svg {...p}>
     <rect x="3" y="3" width="7" height="7" rx="1.5" />
@@ -74,12 +80,12 @@ export const Speaker = ({
   </Svg>
 );
 
-/** Sol (claro), lua (escuro) e meio a meio (automático). */
+/** Sol (claro) e lua (escuro). */
 export const ThemeIcon = ({
   mode,
   size = 18,
   stroke = 2.4,
-}: IconProps & { mode: 'auto' | 'light' | 'dark' }) => (
+}: IconProps & { mode: 'light' | 'dark' }) => (
   <Svg size={size} stroke={stroke}>
     {mode === 'light' && (
       <>
@@ -88,11 +94,5 @@ export const ThemeIcon = ({
       </>
     )}
     {mode === 'dark' && <path d="M21 13A9 9 0 1 1 11 3a7 7 0 0 0 10 10z" />}
-    {mode === 'auto' && (
-      <>
-        <circle cx="12" cy="12" r="9" />
-        <path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" />
-      </>
-    )}
   </Svg>
 );

@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
+import { BackButton } from '@/components/BackButton';
 import { Field } from '@/components/Field';
 import { validateLogin } from '@/lib/account-form';
 import { login } from '@/lib/auth';
@@ -38,6 +39,7 @@ export function Login() {
         </Link>
       </header>
       <form className="screen acc" onSubmit={submit} noValidate>
+        <BackButton to="/" label="Voltar" />
         <h1>Entrar</h1>
         <Field
           label="Usuário ou e-mail"

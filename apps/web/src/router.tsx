@@ -6,6 +6,9 @@ import {
   Outlet,
 } from '@tanstack/react-router';
 import { BottomNav } from '@/components/BottomNav';
+import type { GameTab } from '@/components/GameTabs';
+import { PageLoader } from '@/components/Loader';
+import type { Board } from '@/lib/ranking';
 import { InviteBanner } from '@/components/InviteBanner';
 import type { Mode } from '@/games/color/types';
 import type { Mode as TimeMode } from '@/games/time/types';
@@ -13,8 +16,6 @@ import { History } from '@/screens/History';
 import { Friends } from '@/screens/Friends';
 import { Hub } from '@/screens/Hub';
 import { Login } from '@/screens/Login';
-import { Daily } from '@/screens/Daily';
-import { ColorRankingPage, TimeRankingPage } from '@/screens/GameRanking';
 import { Profile } from '@/screens/Profile';
 import { Register } from '@/screens/Register';
 
@@ -67,17 +68,6 @@ const registerRoute = createRoute({
   component: Register,
 });
 
-const dailyRoute = createRoute({ getParentRoute: () => tabsRoute, path: '/daily', component: Daily });
-const colorRankingRoute = createRoute({
-  getParentRoute: () => tabsRoute,
-  path: '/cor/ranking',
-  component: ColorRankingPage,
-});
-const timeRankingRoute = createRoute({
-  getParentRoute: () => tabsRoute,
-  path: '/tempo/ranking',
-  component: TimeRankingPage,
-});
 
 const roomRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -92,16 +82,34 @@ const roomCodeRoute = createRoute({
   component: lazyRouteComponent(() => import('@/screens/Room'), 'RoomCodePage'),
 });
 
+/** `/cor?aba=ranking&quadro=daily`: abre o jogo direto numa aba (e num quadro do ranking). */
+interface GameSearch<M> {
+  modo?: M;
+  aba?: GameTab;
+  quadro?: Board;
+}
+const TABS: GameTab[] = ['modes', 'friends', 'ranking'];
+const BOARDS: Board[] = ['classic', 'flash', 'quick', 'strict', 'daily'];
+
+function gameSearch<M extends string>(search: Record<string, unknown>, modes: M[]): GameSearch<M> {
+  const out: GameSearch<M> = {};
+  const modo = modes.find((m) => m === search.modo);
+  const aba = TABS.find((t) => t === search.aba);
+  const quadro = BOARDS.find((b) => b === search.quadro);
+  if (modo) out.modo = modo;
+  if (aba) out.aba = aba;
+  if (quadro) out.quadro = quadro;
+  return out;
+}
+
 const MODES: Mode[] = ['classic', 'flash', 'quick', 'daily'];
 const TIME_MODES: TimeMode[] = ['classic', 'quick', 'strict', 'daily'];
 
 const colorRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/cor',
-  validateSearch: (search: Record<string, unknown>): { modo?: Mode } => {
-    const modo = MODES.find((m) => m === search.modo);
-    return modo ? { modo } : {};
-  },
+  validateSearch: (search: Record<string, unknown>): GameSearch<Mode> =>
+    gameSearch(search, MODES),
   // Cada jogo é carregado sob demanda (meta: JS inicial leve).
   component: lazyRouteComponent(() => import('@/games/color/ColorPage'), 'ColorPage'),
 });
@@ -109,10 +117,8 @@ const colorRoute = createRoute({
 const timeRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/tempo',
-  validateSearch: (search: Record<string, unknown>): { modo?: TimeMode } => {
-    const modo = TIME_MODES.find((m) => m === search.modo);
-    return modo ? { modo } : {};
-  },
+  validateSearch: (search: Record<string, unknown>): GameSearch<TimeMode> =>
+    gameSearch(search, TIME_MODES),
   component: lazyRouteComponent(() => import('@/games/time/TimePage'), 'TimePage'),
 });
 
@@ -122,9 +128,6 @@ const routeTree = rootRoute.addChildren([
     historyRoute,
     friendsRoute,
     profileRoute,
-    dailyRoute,
-    colorRankingRoute,
-    timeRankingRoute,
   ]),
   colorRoute,
   timeRoute,
@@ -134,7 +137,12 @@ const routeTree = rootRoute.addChildren([
   roomCodeRoute,
 ]);
 
-export const router = createRouter({ routeTree });
+export const router = createRouter({
+  routeTree,
+  // Telas carregadas sob demanda (jogos, sala) mostram o carregador do NoCap enquanto chegam.
+  defaultPendingComponent: () => <PageLoader />,
+  defaultPendingMs: 150,
+});
 
 declare module '@tanstack/react-router' {
   interface Register {

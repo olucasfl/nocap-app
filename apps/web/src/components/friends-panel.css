@@ -1,0 +1,46 @@
+.fp {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.fp-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: var(--white);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+.fp-h {
+  margin: 0;
+  font: 900 20px var(--font-display);
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+.fp-text {
+  margin: 0;
+  font: 400 13px/1.5 var(--font-mono);
+  color: var(--muted);
+}
+.fp-join {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.fp-rules {
+  padding: 4px 2px;
+}
+.fp-rules-title,
+.fp-note {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.fp-rules ul {
+  margin: 8px 0;
+  padding-left: 18px;
+  font: 400 13px/1.55 var(--font-mono);
+}
