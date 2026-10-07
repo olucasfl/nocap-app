@@ -7,7 +7,7 @@ Plano escolhido pelo Lucas (2026-10-06). O Fly.io deixou de ter plano grátis pa
 - Projeto apontando para `apps/web` (root directory), framework Vite.
 - Build: `pnpm --filter @nocap/web build` (o `turbo` já compila `packages/games` antes). Saída: `apps/web/dist`.
 - `apps/web/vercel.json` reescreve todas as rotas para `index.html` (o app é SPA: `/amigos`, `/sala/ABCD`...).
-- Variável: `VITE_API_URL` = URL pública da API no Render (ex.: `https://nocap-api.onrender.com`). O cliente das salas troca `https` por `wss` sozinho.
+- Variáveis: `VITE_SITE_URL` = URL pública do site (ex.: `https://nocap.vercel.app`, para a prévia do link ao compartilhar) e `VITE_API_URL` = URL pública da API no Render (ex.: `https://nocap-api.onrender.com`). O cliente das salas troca `https` por `wss` sozinho.
 
 ## API (Render, Web Service)
 
