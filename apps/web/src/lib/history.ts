@@ -32,8 +32,28 @@ export interface HistoryPage {
 }
 
 /** Histórico da conta (todos os aparelhos), separado por jogo. */
-export function fetchHistory(game: 'color' | 'time', cursor?: string) {
-  const qs = new URLSearchParams({ limit: '20', game });
+export interface HistoryFilters {
+  /** Modo (classic, flash, quick...); `undefined` = todos. */
+  mode?: string;
+  /** Tipo de partida; `undefined` = todos. */
+  kind?: 'solo' | 'daily' | 'room';
+  period: 'all' | 'day' | 'week';
+}
+
+export const NO_FILTERS: HistoryFilters = { period: 'all' };
+
+/** Quantos filtros estão ligados (para o contador e o botão de limpar). */
+export const activeFilters = (f: HistoryFilters) =>
+  (f.mode ? 1 : 0) + (f.kind ? 1 : 0) + (f.period !== 'all' ? 1 : 0);
+
+export function fetchHistory(
+  game: 'color' | 'time',
+  cursor?: string,
+  filters: HistoryFilters = NO_FILTERS,
+) {
+  const qs = new URLSearchParams({ limit: '20', game, period: filters.period });
+  if (filters.mode) qs.set('mode', filters.mode);
+  if (filters.kind) qs.set('kind', filters.kind);
   if (cursor) qs.set('cursor', cursor);
   return apiClient.get<HistoryPage>(`/me/matches?${qs}`);
 }

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { GameArt, GAME_LABEL } from '@/components/GameArt';
+import { FilterChips } from '@/components/FilterChips';
 import { Choice } from '@/components/RankingList';
 import { toHex } from '@/games/color/hex';
 import { formatDiff, formatSeconds } from '@/games/time/format';
@@ -17,10 +18,44 @@ import {
   scoreParts,
   modeLabel,
   timeRounds,
+  NO_FILTERS,
+  activeFilters,
+  type HistoryFilters,
   type HistoryItem,
 } from '@/lib/history';
 import type { GameId } from '@/lib/stats';
 import './history.css';
+
+/** Modos de cada jogo para filtrar (as salas entram pelo filtro de tipo). */
+const MODE_FILTERS: Record<GameId, { id: string; label: string }[]> = {
+  color: [
+    { id: 'classic', label: 'Clássico' },
+    { id: 'flash', label: 'Flash' },
+    { id: 'quick', label: 'Rápido' },
+    { id: 'blind', label: 'Às cegas' },
+    { id: 'survival', label: 'Sobrevivência' },
+  ],
+  time: [
+    { id: 'classic', label: 'Clássico' },
+    { id: 'quick', label: 'Rápido' },
+    { id: 'strict', label: 'Sem estourar' },
+    { id: 'sequence', label: 'Sequência' },
+    { id: 'survival', label: 'Sobrevivência' },
+  ],
+};
+
+const KIND_FILTERS: { id: 'all' | 'solo' | 'daily' | 'room'; label: string }[] = [
+  { id: 'all', label: 'Todos' },
+  { id: 'solo', label: 'Solo' },
+  { id: 'daily', label: 'Daily' },
+  { id: 'room', label: 'Sala' },
+];
+
+const PERIOD_FILTERS: { id: 'all' | 'day' | 'week'; label: string }[] = [
+  { id: 'all', label: 'Tudo' },
+  { id: 'day', label: 'Hoje' },
+  { id: 'week', label: 'Semana' },
+];
 
 const GAMES: { id: GameId; label: string }[] = [
   { id: 'color', label: 'Cor' },
@@ -113,10 +148,23 @@ export function History() {
   const [game, setGame] = useState<GameId>('color');
   /** Página mostrada (0 = a mais recente). As já vistas ficam em cache; a próxima vem do servidor. */
   const [page, setPage] = useState(0);
+  const [filters, setFilters] = useState<HistoryFilters>(NO_FILTERS);
+  const [showFilters, setShowFilters] = useState(false);
+  const active = activeFilters(filters);
+
+  /** Muda um filtro e volta para a primeira página (o resultado é outro). */
+  const setFilter = (patch: Partial<HistoryFilters>) => {
+    setFilters((f) => ({ ...f, ...patch }));
+    setPage(0);
+  };
+  const clearFilters = () => {
+    setFilters(NO_FILTERS);
+    setPage(0);
+  };
 
   const q = useInfiniteQuery({
-    queryKey: ['history', game],
-    queryFn: ({ pageParam }) => fetchHistory(game, pageParam),
+    queryKey: ['history', game, filters],
+    queryFn: ({ pageParam }) => fetchHistory(game, pageParam, filters),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (last) => last.nextCursor ?? undefined,
     enabled: !!user,
@@ -158,8 +206,63 @@ export function History() {
         onChange={(g) => {
           setGame(g);
           setPage(0);
+          // Os modos mudam de um jogo para o outro: o filtro de modo não vale mais.
+          setFilters((f) => ({ ...f, mode: undefined }));
         }}
       />
+
+      <div className="hist-filter">
+        <button
+          type="button"
+          className="hist-filter-toggle"
+          aria-expanded={showFilters}
+          data-sfx="select"
+          onClick={() => setShowFilters((v) => !v)}
+        >
+          <span>Filtrar</span>
+          {active > 0 && <b className="hist-filter-count">{active}</b>}
+          <span className="mono hist-filter-hint">{showFilters ? 'FECHAR' : 'ABRIR'}</span>
+        </button>
+        {active > 0 && (
+          <button type="button" className="hist-filter-clear mono" onClick={clearFilters}>
+            LIMPAR
+          </button>
+        )}
+      </div>
+      {showFilters && (
+        <div className="hist-filters">
+          <FilterChips
+            label="MODO"
+            value={filters.mode ?? 'all'}
+            options={[{ id: 'all', label: 'Todos' }, ...MODE_FILTERS[game]]}
+            onChange={(v) => setFilter({ mode: v === 'all' ? undefined : v })}
+          />
+          <FilterChips
+            label="TIPO"
+            value={filters.kind ?? 'all'}
+            options={KIND_FILTERS}
+            onChange={(v) => setFilter({ kind: v === 'all' ? undefined : v })}
+          />
+          <FilterChips
+            label="PERÍODO"
+            value={filters.period}
+            options={PERIOD_FILTERS}
+            onChange={(v) => setFilter({ period: v })}
+          />
+        </div>
+      )}
+      {active > 0 && !showFilters && (
+        <p className="mono hist-filter-summary">
+          {[
+            filters.mode && modeLabel(filters.mode),
+            filters.kind && kindLabel(filters.kind),
+            filters.period !== 'all' && PERIOD_FILTERS.find((p) => p.id === filters.period)?.label,
+          ]
+            .filter(Boolean)
+            .join(' · ')
+            .toUpperCase()}
+        </p>
+      )}
       <div className="hist-game">
         <GameArt game={game} size="sm" />
         <div className="mono hist-game-name">PARTIDAS DE {GAME_LABEL[game].toUpperCase()}</div>
@@ -168,7 +271,15 @@ export function History() {
       {(q.isError || (q.isPending && q.fetchStatus === 'paused')) && (
         <LoadFailed what="o histórico" onRetry={() => void q.refetch()} />
       )}
-      {q.isSuccess && items.length === 0 && (
+      {q.isSuccess && items.length === 0 && active > 0 && (
+        <div className="hist-state">
+          <p className="lead">Nenhuma partida de {GAME_LABEL[game]} com esses filtros.</p>
+          <button type="button" className="btn ghost" onClick={clearFilters}>
+            Limpar filtros
+          </button>
+        </div>
+      )}
+      {q.isSuccess && items.length === 0 && active === 0 && (
         <p className="lead">
           Nenhuma partida de {GAME_LABEL[game]} ainda. Jogue uma e ela aparece aqui.
         </p>

@@ -1,0 +1,32 @@
+.fc-label {
+  margin-bottom: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+.fc-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.fc-row button {
+  height: 36px;
+  padding: 0 14px;
+  border: var(--border);
+  border-radius: 999px;
+  background: var(--white);
+  color: var(--ink);
+  font: 900 12px var(--font-display);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.fc-row button[aria-checked='true'] {
+  background: var(--ink);
+  color: var(--paper);
+  box-shadow: 3px 3px 0 var(--orange);
+}
+.fc-row button:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 2px;
+}

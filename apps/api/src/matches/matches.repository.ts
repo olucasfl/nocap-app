@@ -1,5 +1,5 @@
 import { Inject, Injectable, ServiceUnavailableException } from '@nestjs/common';
-import { and, desc, eq, inArray, isNull, or, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull, or, sql, gte } from 'drizzle-orm';
 import type { Db } from '../db/client';
 import { DB } from '../db/db.module';
 import { matchPlayers, matches, players, userGameStats, userVisits } from '../db/schema';
@@ -110,7 +110,12 @@ export class MatchesRepository {
   }
 
   /** Histórico de um ou mais aparelhos (conta), mais recente primeiro, paginado por keyset (played_at, match_id). */
-  async history(playerIds: string[], limit: number, cursor?: string, game?: string) {
+  async history(
+    playerIds: string[],
+    limit: number,
+    cursor?: string,
+    filters: { game?: string; mode?: string; kind?: string; since?: Date | null } = {},
+  ) {
     if (playerIds.length === 0) return { items: [] as HistoryItem[], nextCursor: null };
     const after = cursor ? decodeCursor(cursor) : null;
 
@@ -131,7 +136,10 @@ export class MatchesRepository {
       .where(
         and(
           inArray(matchPlayers.playerId, playerIds),
-          game ? eq(matches.game, game) : undefined,
+          filters.game ? eq(matches.game, filters.game) : undefined,
+          filters.mode ? eq(matches.mode, filters.mode) : undefined,
+          filters.kind ? eq(matches.kind, filters.kind) : undefined,
+          filters.since ? gte(matchPlayers.playedAt, filters.since) : undefined,
           after
             ? sql`(${matchPlayers.playedAt}, ${matchPlayers.matchId}) < (${after.playedAt}::timestamptz, ${after.matchId}::uuid)`
             : undefined,

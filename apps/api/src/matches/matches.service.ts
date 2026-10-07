@@ -112,12 +112,12 @@ export class MatchesService {
 
   /** Histórico da conta: todos os aparelhos vinculados a ela. */
   async historyOf(userId: string, query: HistoryQuery) {
-    return this.repo.history(
-      await this.repo.playerIdsOf(userId),
-      query.limit,
-      query.cursor,
-      query.game,
-    );
+    return this.repo.history(await this.repo.playerIdsOf(userId), query.limit, query.cursor, {
+      game: query.game,
+      mode: query.mode,
+      kind: query.kind,
+      since: periodStart(query.period),
+    });
   }
 
   async claim(userId: string, guestId: string) {

@@ -104,6 +104,12 @@ describe('historyQuerySchema', () => {
     expect(historyQuerySchema.safeParse({ limit: '100' }).success).toBe(false);
     expect(historyQuerySchema.parse({ game: 'time' }).game).toBe('time');
     expect(historyQuerySchema.safeParse({ game: 'xadrez' }).success).toBe(false);
+    // Filtros: modo, tipo e período (padrão: tudo).
+    const f = historyQuerySchema.parse({ mode: 'survival', kind: 'daily', period: 'week' });
+    expect(f).toMatchObject({ mode: 'survival', kind: 'daily', period: 'week' });
+    expect(historyQuerySchema.parse({}).period).toBe('all');
+    expect(historyQuerySchema.safeParse({ kind: 'torneio' }).success).toBe(false);
+    expect(historyQuerySchema.safeParse({ period: 'ano' }).success).toBe(false);
   });
 });
 

@@ -14,6 +14,8 @@ import {
   kindLabel,
   matchMax,
   modeLabel,
+  NO_FILTERS,
+  activeFilters,
   scoreParts,
   timeRounds,
   type HistoryItem,
@@ -173,5 +175,13 @@ describe('Sobrevivência no histórico', () => {
     expect(classifyMatch(item(6)).label).toBe('MEH');
     expect(classifyMatch(item(10)).label).toBe('FORTE');
     expect(classifyMatch(item(16)).label).toBe('LENDÁRIO');
+  });
+});
+
+describe('filtros do histórico', () => {
+  it('conta os filtros ligados', () => {
+    expect(activeFilters(NO_FILTERS)).toBe(0);
+    expect(activeFilters({ period: 'week' })).toBe(1);
+    expect(activeFilters({ mode: 'blind', kind: 'solo', period: 'day' })).toBe(3);
   });
 });
