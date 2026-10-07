@@ -85,6 +85,19 @@ export class ColorRoom extends Room {
       this.act(c, (id) => this.engine.voteRematch(id, !!m?.again)),
     );
     this.onMessage('invite', (c, m: { username?: string }) => void this.invite(c, m?.username));
+    this.onMessage('chat', (c, m: { text?: unknown }) => {
+      const id = (c.userData as AuthData | undefined)?.id;
+      if (!id) return;
+      try {
+        this.broadcast('chat', this.engine.sendChat(id, typeof m?.text === 'string' ? m.text : ''));
+      } catch (e) {
+        if (e instanceof RoomError) c.send('error', e.message);
+        else throw e;
+      }
+    });
+    this.onMessage('mute', (c, m: { id?: string }) =>
+      this.act(c, (id) => void this.engine.muteMember(id, String(m?.id ?? ''))),
+    );
 
     this.setSimulationInterval(() => {
       if (this.engine.tick()) this.publish();
@@ -135,6 +148,7 @@ export class ColorRoom extends Room {
     roomDeps.activeRooms.set(auth.id, this.roomId);
     roomDeps.invites?.consume(auth.id, this.roomId);
     this.publish();
+    client.send('chatHistory', this.engine.chat.history());
   }
 
   async onLeave(client: Client, consented: boolean) {
@@ -152,8 +166,9 @@ export class ColorRoom extends Room {
     this.engine.disconnect(user.id);
     this.publish();
     try {
-      await this.allowReconnection(client, RECONNECT_SECONDS);
+      const back = await this.allowReconnection(client, RECONNECT_SECONDS);
       this.engine.join(user.id, user.username);
+      back.send('chatHistory', this.engine.chat.history());
     } catch {
       this.engine.leave(user.id);
       this.forget(user.id);

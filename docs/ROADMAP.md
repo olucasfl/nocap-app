@@ -64,7 +64,7 @@ Podem rodar antes ou depois do passo 4 (PWA); o modo noturno toca o manifesto/`t
 
 Ainda sem prioridade definida contra as salas do Ecooo. Cada item tem a sua spec:
 
-- [ ] **Chat nas salas com amigos** (todos os jogos de sala; no Já Deu? nunca durante a contagem; no Intruso só na votação): `specs/014-chat-sala.md`
+- [x] **Chat nas salas com amigos** (feito, falta testar ao vivo) (todos os jogos de sala; no Já Deu? nunca durante a contagem; no Intruso só na votação): `specs/014-chat-sala.md`
 - [ ] **Aba Convidar nova no lobby:** sai o botão Convidar do topo; a aba ganha o botão explícito de enviar o link escolhendo o app, atalhos diretos e a lista de amigos organizada: `specs/013-lobby-sala.md` (seção "Pendente")
 - [ ] **Rever os modos do Já Deu? em sala:** a Sequência não faz sentido online (virou só uma rodada normal com alvo curto); melhorar o **Sem estourar** online e offline. **Há perguntas para o Lucas responder antes de implementar:** `specs/002-time-game.md` (seção "Pendente")
 - [ ] **Histórico de sala com quem jogou e como ficou** (todos os jogadores, colocação e nota de cada um): `specs/003-history.md` (seção "Pendente")

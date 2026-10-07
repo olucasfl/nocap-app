@@ -1,4 +1,5 @@
 import { colorGame, type ColorSettings, type Hsb, type TimeSettings } from '@nocap/games';
+import { RoomChat, type ChatMessage } from './chat';
 
 export const MIN_PLAYERS = 2;
 export const MAX_PLAYERS = 12;
@@ -112,9 +113,13 @@ export class ColorRoomEngine {
   /** Quem topou a revanche: entra no lobby já "pronto" (sem apertar de novo, mesmo que o host mude as regras). */
   protected committed = new Set<string>();
 
+  /** Conversa da sala (spec 014): só em memória. */
+  readonly chat: RoomChat;
+
   constructor(opts: EngineOptions) {
     this.code = opts.code;
     this.now = opts.now;
+    this.chat = new RoomChat(opts.now);
     this.newSeed = opts.newSeed;
     this.maxPlayers = opts.maxPlayers ?? MAX_PLAYERS;
   }
@@ -153,6 +158,7 @@ export class ColorRoomEngine {
     this.locked.delete(id);
     this.rematchVotes.delete(id);
     this.committed.delete(id);
+    this.chat.forget(id);
     this.ensureHost();
     this.maybeAdvanceFromPick();
     this.checkRematch();
@@ -245,6 +251,26 @@ export class ColorRoomEngine {
     this.settings = merged;
     // Regra nova: todo mundo confirma de novo.
     for (const m of this.members.values()) m.ready = false;
+  }
+
+  /** Em que fases o chat está aberto (o Já Deu? fecha na contagem; o Intruso, fora da votação). */
+  protected chatOpen(): boolean {
+    return true;
+  }
+
+  sendChat(id: string, text: string): ChatMessage {
+    const m = this.members.get(id);
+    if (!m) throw new RoomError('Você não está na sala');
+    if (!this.chatOpen()) throw new RoomError('O chat está fechado agora');
+    return this.chat.send(id, m.username, text);
+  }
+
+  /** O líder silencia (ou libera) um membro no chat. */
+  muteMember(id: string, targetId: string): boolean {
+    this.requireHost(id);
+    if (targetId === id) throw new RoomError('Você não pode se silenciar');
+    if (!this.members.has(targetId)) throw new RoomError('Essa pessoa não está na sala');
+    return this.chat.toggleMute(targetId);
   }
 
   kick(id: string, targetId: string): string {
@@ -480,6 +506,7 @@ export class ColorRoomEngine {
             },
       final:
         this.phase === 'final' ? this.finalRows().map(({ answers: _answers, ...r }) => r) : null,
+      chat: { open: this.chatOpen(), muted: this.chat.mutedList() },
       ...this.extraSnapshot(viewerId),
     };
   }

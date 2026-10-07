@@ -2,15 +2,17 @@ import { useId, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { Crown, Lock } from '@/components/icons';
 import type { RoomSnapshot } from '@/lib/rooms';
 import { useRoom } from '@/lib/rooms';
+import { ChatPanel } from '@/components/Chat';
 import { GAME_OF, rulesSummary } from './rules';
 import './lobby.css';
 
-export type LobbyTab = 'members' | 'rules' | 'invite';
+export type LobbyTab = 'members' | 'rules' | 'invite' | 'chat';
 
 const TABS: { id: LobbyTab; label: string }[] = [
   { id: 'members', label: 'Membros' },
   { id: 'rules', label: 'Regras' },
   { id: 'invite', label: 'Convidar' },
+  { id: 'chat', label: 'Chat' },
 ];
 
 /** O cabeçalho da sala: código, convite e quem manda aqui. */
@@ -88,10 +90,11 @@ export function LobbyShell({
   role: 'leader' | 'member';
   leaderName?: string;
   initialTab: LobbyTab;
-  panels: Record<LobbyTab, ReactNode>;
+  panels: Record<Exclude<LobbyTab, 'chat'>, ReactNode>;
   footer: ReactNode;
 }) {
   const message = useRoom((s) => s.message);
+  const unread = useRoom((s) => s.unread);
   const [tab, setTab] = useState<LobbyTab>(initialTab);
   const uid = useId();
 
@@ -127,6 +130,9 @@ export function LobbyShell({
             onClick={() => setTab(t.id)}
           >
             {t.label}
+            {t.id === 'chat' && unread > 0 && tab !== 'chat' && (
+              <small>{unread > 9 ? '9+' : unread}</small>
+            )}
             {t.id === 'members' && (
               <small>
                 {snapshot.members.length}/{snapshot.maxPlayers}
@@ -142,7 +148,7 @@ export function LobbyShell({
         aria-labelledby={`${uid}-tab-${tab}`}
         className="lb-panel"
       >
-        {panels[tab]}
+        {tab === 'chat' ? <ChatPanel snapshot={snapshot} /> : panels[tab]}
       </div>
 
       {message && (

@@ -17,6 +17,7 @@ import {
   useRoom,
   type RoomGame,
 } from '@/lib/rooms';
+import { ChatDock } from '@/components/Chat';
 import { Final } from './room/Final';
 import { Lobby } from './room/Lobby';
 import { Play } from './room/Play';
@@ -235,6 +236,7 @@ export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomG
         <Play snapshot={snapshot} />
       )}
       {snapshot?.phase === 'final' && <Final snapshot={snapshot} />}
+      {snapshot && snapshot.phase !== 'lobby' && <ChatDock snapshot={snapshot} />}
     </div>
   );
 }

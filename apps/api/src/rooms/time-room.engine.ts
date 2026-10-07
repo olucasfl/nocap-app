@@ -31,6 +31,11 @@ export class TimeRoomEngine extends ColorRoomEngine {
     return this.settings as TimeRoomSettings;
   }
 
+  /** Durante a contagem nada de chat: nem mensagem, nem som (regra do jogo do Tempo). */
+  protected override chatOpen() {
+    return this.phase !== 'play';
+  }
+
   protected override validSettings(merged: Record<string, unknown>, mode: string): boolean {
     const m = merged as unknown as TimeRoomSettings;
     const preset = timePresets[mode]!;

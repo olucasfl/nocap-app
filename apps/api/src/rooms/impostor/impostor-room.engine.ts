@@ -67,6 +67,11 @@ export class ImpostorRoomEngine extends ColorRoomEngine {
     return this.settings as ImpostorRoomSettings;
   }
 
+  /** Dedução: o chat só abre fora das rodadas, para a conversa não entregar a cor nem a dica. */
+  protected override chatOpen() {
+    return ['lobby', 'vote', 'reveal', 'final'].includes(this.phase);
+  }
+
   protected override validSettings(merged: Record<string, unknown>): boolean {
     const m = merged as unknown as ImpostorRoomSettings;
     return (

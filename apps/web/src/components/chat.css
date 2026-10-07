@@ -1,0 +1,151 @@
+/* Chat da sala. Só transform e opacity animam. */
+.ch {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+.ch-list {
+  list-style: none;
+  margin: 0;
+  padding: 10px;
+  height: 280px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--white);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+}
+.ch-empty {
+  margin: auto;
+  font-size: 11px;
+  color: var(--muted);
+}
+.ch-msg {
+  max-width: 85%;
+  align-self: flex-start;
+  padding: 6px 10px;
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--paper);
+  overflow-wrap: anywhere;
+}
+.ch-msg.me {
+  align-self: flex-end;
+  background: var(--yellow);
+  color: var(--on-accent);
+}
+.ch-msg p {
+  margin: 2px 0 0;
+  font-size: 14px;
+}
+.ch-meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+.ch-meta span {
+  opacity: 0.7;
+}
+.ch-mute {
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.ch-form {
+  display: flex;
+  gap: 8px;
+}
+.ch-form .field-input {
+  flex: 1;
+  min-width: 0;
+}
+.ch-fab {
+  position: fixed;
+  right: 16px;
+  bottom: 84px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  font: 800 13px/1 var(--font-display);
+  color: var(--on-accent);
+  background: var(--yellow);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 3px 3px 0 var(--ink);
+  cursor: pointer;
+}
+.ch-fab b {
+  min-width: 18px;
+  padding: 2px 5px;
+  font-size: 11px;
+  color: var(--white);
+  background: var(--red, #e5342b);
+  border-radius: 9px;
+}
+.ch-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: flex-end;
+  background: rgb(0 0 0 / 0.45);
+}
+.ch-drawer {
+  width: 100%;
+  max-height: 60vh;
+  padding: 14px 16px 18px;
+  background: var(--paper);
+  border-top: var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ch-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ch-head h2 {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+.ch-drawer .ch-list {
+  height: auto;
+  flex: 1;
+  min-height: 140px;
+}
+.ch-msg:not(.head) {
+  margin-top: -4px;
+}
+.ch-new {
+  align-self: center;
+  margin-top: -6px;
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--on-accent);
+  background: var(--orange);
+  border: var(--border);
+  border-radius: 999px;
+  box-shadow: 2px 2px 0 var(--ink);
+  cursor: pointer;
+}
+.ch-count {
+  align-self: center;
+  font-size: 11px;
+  color: var(--muted);
+}

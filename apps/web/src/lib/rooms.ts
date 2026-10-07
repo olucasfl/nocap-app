@@ -2,7 +2,7 @@ import type { Room } from 'colyseus.js';
 import type { Hsb, TimeSettings } from '@nocap/games';
 import { create } from 'zustand';
 import { apiBase } from './api-client';
-import { getToken } from './auth';
+import { getToken, useAuth } from './auth';
 
 export type RoomGame = 'color' | 'time' | 'impostor';
 export type Phase = 'lobby' | 'show' | 'pick' | 'play' | 'vote' | 'reveal' | 'final';
@@ -49,6 +49,14 @@ export interface FinalRow {
   placement: number;
 }
 
+export interface ChatMessage {
+  id: number;
+  userId: string;
+  username: string;
+  text: string;
+  at: number;
+}
+
 export interface RoomSnapshot {
   code: string;
   game: RoomGame;
@@ -67,6 +75,8 @@ export interface RoomSnapshot {
     results: RoundResult[] | null;
   } | null;
   final: FinalRow[] | null;
+  /** Chat da sala: aberto agora? e quem o líder silenciou. */
+  chat: { open: boolean; muted: string[] };
   impostor?: ImpostorState;
 }
 
@@ -107,6 +117,9 @@ interface RoomState {
   invited: string[];
   /** Último erro de regra (ex.: "Falta gente marcar pronto") ou motivo de ter saído. */
   message: string;
+  chat: ChatMessage[];
+  /** Mensagens de outras pessoas que ainda não vi (chat fechado). */
+  unread: number;
 }
 
 export const useRoom = create<RoomState>(() => ({
@@ -114,6 +127,8 @@ export const useRoom = create<RoomState>(() => ({
   snapshot: null,
   invited: [],
   message: '',
+  chat: [],
+  unread: 0,
 }));
 
 const TOKEN_KEY = 'nocap-room-token';
@@ -154,6 +169,13 @@ function attach(r: Room) {
   set({ status: 'connected', message: '' });
 
   r.onMessage('snapshot', (s: RoomSnapshot) => set({ snapshot: s, status: 'connected' }));
+  r.onMessage('chat', (m: ChatMessage) =>
+    useRoom.setState((s) => ({
+      chat: [...s.chat, m].slice(-50),
+      unread: s.unread + (m.userId === useAuth.getState().user?.id ? 0 : 1),
+    })),
+  );
+  r.onMessage('chatHistory', (list: ChatMessage[]) => set({ chat: list, unread: 0 }));
   r.onMessage('error', (m: string) => set({ message: m }));
   r.onMessage('invited', (m: { username: string }) =>
     set({ invited: [...new Set([...useRoom.getState().invited, m.username])], message: '' }),
@@ -171,7 +193,7 @@ function attach(r: Room) {
 function finish(message: string) {
   room = null;
   remember(null);
-  set({ status: 'closed', snapshot: null, invited: [], message });
+  set({ status: 'closed', snapshot: null, invited: [], message, chat: [], unread: 0 });
 }
 
 /**
@@ -242,6 +264,19 @@ export function leaveRoom() {
 /** Convida um amigo para a sala em que estou (só no lobby). */
 export function inviteFriend(username: string) {
   sendRoom('invite', { username });
+}
+
+export function sendChat(text: string) {
+  sendRoom('chat', { text });
+}
+
+/** Líder: silencia ou libera alguém no chat. */
+export function muteMember(id: string) {
+  sendRoom('mute', { id });
+}
+
+export function markChatRead() {
+  if (useRoom.getState().unread) set({ unread: 0 });
 }
 
 export function sendRoom(type: string, payload?: unknown) {

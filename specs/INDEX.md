@@ -16,6 +16,6 @@
 | 011 | [O Intruso](011-impostor.md)                                       | 3     | implementada; falta jogar ao vivo com 3 contas              |
 | 012 | [Eco (repita a sequência)](012-eco.md)                             | 3     | solo implementado; faltam as salas (Corrida e Siga o Líder) |
 | 013 | [Lobby da sala (líder e membro)](013-lobby-sala.md)                | 3     | implementada; falta jogar ao vivo                           |
-| 014 | [Chat nas salas](014-chat-sala.md)                                 | 3     | pendente (só escrito)                                       |
+| 014 | [Chat nas salas](014-chat-sala.md)                                 | 3     | implementada; falta testar ao vivo                          |
 
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.
