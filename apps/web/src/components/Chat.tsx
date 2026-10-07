@@ -155,12 +155,13 @@ export function ChatDock({ snapshot }: { snapshot: RoomSnapshot }) {
     <>
       <button
         type="button"
-        className="ch-fab"
+        className={`ch-fab${unread > 0 ? ' new' : ''}`}
         data-sfx="select"
         aria-label={unread ? `Chat, ${unread} novas` : 'Chat'}
         onClick={() => setOpen(true)}
       >
         <Message size={22} />
+        Chat
         {unread > 0 && <b className="mono">{unread > 9 ? '9+' : unread}</b>}
       </button>
       {open && (

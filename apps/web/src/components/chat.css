@@ -130,36 +130,56 @@
   color: var(--muted);
 }
 
-/* Botão do chat: sempre à mão, no canto; mostra o número de mensagens novas. */
+/* Botão do chat: sempre à mão, junto da coluna do app; mostra o número de mensagens novas. */
 .ch-fab {
   position: fixed;
-  right: 16px;
+  right: max(16px, calc(50% - 330px));
   bottom: 16px;
   z-index: 20;
-  display: grid;
-  place-items: center;
-  width: 54px;
-  height: 54px;
-  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 52px;
+  padding: 0 20px 0 16px;
   color: var(--on-accent);
   background: var(--yellow);
   border: var(--border);
-  border-radius: 50%;
-  box-shadow: 3px 3px 0 var(--ink);
+  border-radius: 26px;
+  box-shadow: 4px 4px 0 var(--ink);
+  font: 900 16px var(--font-display);
+  text-transform: uppercase;
   cursor: pointer;
 }
+.ch-fab:active {
+  transform: translate(3px, 3px);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+.ch-fab.new {
+  background: var(--orange);
+  animation: ch-pulse 1.2s ease-in-out infinite alternate;
+}
 .ch-fab b {
-  position: absolute;
-  top: -8px;
-  right: -8px;
-  min-width: 22px;
-  padding: 3px 5px;
-  font-size: 12px;
+  min-width: 24px;
+  padding: 4px 7px;
+  font-size: 13px;
   line-height: 1;
   color: #fff;
   background: #e5342b;
   border: 2px solid var(--ink);
-  border-radius: 11px;
+  border-radius: 12px;
+}
+@keyframes ch-pulse {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.06);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-fab.new {
+    animation: none;
+  }
 }
 .ch-backdrop {
   position: fixed;
