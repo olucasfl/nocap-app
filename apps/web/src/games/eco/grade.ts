@@ -14,6 +14,8 @@ const BANDS: [steps: number, score: number][] = [
   [2, 1],
 ];
 
-export function ecoGradeScore(steps: number): number {
-  return BANDS.find(([min]) => steps >= min)?.[1] ?? 0;
+/** Completar o teto do modo (40 passos; 30 na Velocidade) é o único 10: CRAVOU. */
+export function ecoGradeScore(steps: number, maxSteps = 40): number {
+  if (steps >= maxSteps) return 10;
+  return Math.min(9, BANDS.find(([min]) => steps >= min)?.[1] ?? 0);
 }

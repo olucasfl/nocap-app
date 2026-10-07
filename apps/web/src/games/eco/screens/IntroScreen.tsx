@@ -17,7 +17,7 @@ function extra(run: Run): string {
     case 'escalada':
       return 'A cada 3 rodadas entra um botão novo, até 9. Depois a sequência segue só com os 9. Fique de olho nos símbolos.';
     case 'velocidade':
-      return 'A sequência acelera rápido: na rodada 14 cada botão acende por um instante só.';
+      return 'A sequência acelera a cada rodada: na rodada 20 cada botão acende por um instante só. Vale até 30 passos.';
     case 'reverso':
       return 'Repita de trás para frente: o último botão que acendeu é o primeiro que você toca.';
     default:

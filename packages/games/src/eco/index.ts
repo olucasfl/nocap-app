@@ -56,11 +56,11 @@ export const ecoPresets: Record<EcoMode, EcoSettings> = {
   /** Começa com 4 botões e ganha mais um a cada 3 rodadas, até 9 (na rodada 16); depois segue só com 9. */
   escalada: { ...BASE, growEvery: 3, maxPads: ECO_MAX_PADS },
   /**
-   * Difícil, mas possível: o ritmo começa em 650 ms por passo, encurta 40 ms a cada rodada e chega
-   * a 160 ms (botão aceso por ~100 ms) na rodada 14. A dificuldade vem de lembrar a sequência
-   * enquanto ela passa depressa; não há tempo limite para tocar além dos 8 s parado.
+   * Difícil, mas possível: o ritmo começa em 700 ms por passo, encurta 28 ms a cada rodada e chega
+   * a 170 ms (botão aceso por ~110 ms) na rodada 20, onde fica. A rodada 20 é tão difícil quanto
+   * era a 13 na primeira versão. O modo vai até 30 passos (o teto dos outros é 40).
    */
-  velocidade: { ...BASE, stepMs: 650, speedUpMs: 40, minStepMs: 160 },
+  velocidade: { ...BASE, stepMs: 700, speedUpMs: 28, minStepMs: 170, maxSteps: 30 },
   /** Você vê na ordem e repete de trás para frente; começa com 2 passos. */
   reverso: { ...BASE, startLength: 2, reverse: true },
 };

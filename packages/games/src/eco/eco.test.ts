@@ -70,10 +70,10 @@ describe('modos', () => {
     expect(padsAt(s, 100)).toBe(ECO_MAX_PADS);
   });
 
-  it('Velocidade começa em 650 ms, cai 40 ms por rodada e para em 160 (rodada 14)', () => {
+  it('Velocidade começa em 700 ms, cai 28 ms por rodada e para em 170 (rodada 20)', () => {
     const s = ecoPresets.velocidade;
-    expect([1, 2, 5, 10, 13, 14, 40].map((r) => stepMsAt(s, r))).toEqual([
-      650, 610, 490, 290, 170, 160, 160,
+    expect([1, 2, 10, 13, 19, 20, 30].map((r) => stepMsAt(s, r))).toEqual([
+      700, 672, 448, 364, 196, 170, 170,
     ]);
   });
 
@@ -84,9 +84,9 @@ describe('modos', () => {
     expect(expectedTaps('r', classic, 4)).toEqual(sequenceFor('r', classic, 4));
   });
 
-  it('o teto é de 40 passos em todos os modos', () => {
-    for (const s of Object.values(ecoPresets)) {
-      expect(lengthAt(s, maxRounds(s))).toBe(ECO_MAX_STEPS);
+  it('o teto é de 40 passos, menos na Velocidade, que vai até 30', () => {
+    for (const [name, s] of Object.entries(ecoPresets)) {
+      expect(lengthAt(s, maxRounds(s)), name).toBe(name === 'velocidade' ? 30 : ECO_MAX_STEPS);
     }
   });
 });
@@ -142,7 +142,7 @@ describe('evaluateRun', () => {
       const taps = perfect('top', s, maxRounds(s));
       const r = evaluateRun('top', s, taps);
       expect(r.ended, name).toBe('perfect');
-      expect(r.steps, name).toBe(ECO_MAX_STEPS);
+      expect(r.steps, name).toBe(s.maxSteps);
       expect(r.usedTaps, name).toBe(taps.length);
     }
   });

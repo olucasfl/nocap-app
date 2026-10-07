@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { Link } from '@tanstack/react-router';
-import { ECO_MAX_STEPS, evaluateRun, expectedTaps, lengthAt } from '@nocap/games';
+import { evaluateRun, expectedTaps, lengthAt } from '@nocap/games';
 import { DailyPanel } from '@/components/DailyPanel';
 import { EndActions } from '@/components/EndActions';
 import type { GameTab } from '@/components/GameTabs';
@@ -35,7 +35,7 @@ export function FinalScreen({ run, taps, reason, previousBest, onMenu, onRematch
   // O mesmo cálculo do servidor: passos da maior sequência repetida.
   const result = useMemo(() => evaluateRun(run.seed, run.settings, taps), [run, taps]);
   const steps = result.steps;
-  const grade = gradeOf(ecoGradeScore(steps));
+  const grade = gradeOf(ecoGradeScore(steps, run.settings.maxSteps));
   const save = useSaveEco(run, taps);
 
   // Onde errou: o botão certo e o que foi tocado.
@@ -67,7 +67,7 @@ export function FinalScreen({ run, taps, reason, previousBest, onMenu, onRematch
         </div>
         <div className="eco-total-side">
           <span className="eco-word">{grade.word}</span>
-          <span className="mono">/ {ECO_MAX_STEPS}</span>
+          <span className="mono">/ {run.settings.maxSteps}</span>
         </div>
       </div>
 

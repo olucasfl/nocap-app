@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ECO_MAX_PADS, ECO_MAX_STEPS, ecoPresets } from '@nocap/games';
+import { ECO_MAX_PADS, ecoPresets } from '@nocap/games';
 import { BackButton } from '@/components/BackButton';
 import { DailyScreen } from '@/components/DailyScreen';
 import { FriendsPanel } from '@/components/FriendsPanel';
@@ -30,7 +30,7 @@ const LEAD: Record<Mode, string> = {
     'Os botões se acendem numa ordem, cada um com o seu som. Repita a sequência. A cada acerto ela ganha mais um passo. Errou, acabou.',
   escalada: `Igual ao Clássico, mas a cada 3 rodadas entra um botão novo, até ${ECO_MAX_PADS}. A sequência fica mais difícil de guardar.`,
   velocidade:
-    'A sequência toca cada vez mais rápido: começa em 650 ms por passo e, a cada rodada, acelera até 160 ms. Difícil, mas dá.',
+    'A sequência toca cada vez mais rápido: começa em 700 ms por passo e, a cada rodada, acelera até 170 ms na rodada 20. Vai até 30 passos. Difícil, mas dá.',
   reverso:
     'Você vê a sequência na ordem e repete de trás para frente. O último botão que acendeu é o primeiro que você toca.',
   daily:
@@ -134,7 +134,7 @@ export function StartScreen({
                         : 'passos no início'}
                   </div>
                   <div className="eco-rule">
-                    <b>{ECO_MAX_STEPS}</b>passos máx.
+                    <b>{preset.maxSteps}</b>passos máx.
                   </div>
                 </>
               }
