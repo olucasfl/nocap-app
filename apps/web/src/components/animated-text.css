@@ -19,7 +19,7 @@
 .at-ch {
   display: inline-block;
   transform-origin: 50% 100%;
-  animation: at-in 0.65s cubic-bezier(0.2, 1.5, 0.4, 1) var(--d) both;
+  animation: at-in 0.4s cubic-bezier(0.2, 1.5, 0.4, 1) var(--d) both;
 }
 @keyframes at-in {
   from {

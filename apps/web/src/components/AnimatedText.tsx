@@ -8,8 +8,8 @@ import './animated-text.css';
  */
 export function AnimatedText({
   lines,
-  startMs = 150,
-  stepMs = 45,
+  startMs = 40,
+  stepMs = 22,
 }: {
   lines: string[];
   startMs?: number;
