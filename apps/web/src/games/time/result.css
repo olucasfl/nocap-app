@@ -231,24 +231,25 @@
 }
 .tm-stage-sv {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
 }
-.tm-stage-lives {
-  display: inline-flex;
-  gap: 5px;
+/* As vidas ficam num selo claro, legível sobre o cenário escuro. */
+.tm-stage-livespill {
+  padding: 6px 14px;
+  background: var(--white);
+  color: var(--ink);
+  border: var(--border);
+  border-radius: 999px;
+  box-shadow: 3px 3px 0 var(--ink);
 }
-.tm-stage-lives i {
-  width: 16px;
-  height: 16px;
-  border: 2.5px solid currentColor;
-  border-radius: 5px;
-}
-.tm-stage-lives i.on {
-  background: currentColor;
+.tm-stage-svline {
+  display: flex;
+  gap: 16px;
 }
 /* Texto reservado em duas linhas, para o botão não mudar de lugar entre os estados. */
 .tm-stage-text {

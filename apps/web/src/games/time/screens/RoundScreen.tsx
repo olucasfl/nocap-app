@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { Lives } from '@/components/Survival';
 import { buzz, sfx } from '@/lib/sfx';
 import { formatSeconds } from '../format';
 
@@ -74,13 +75,13 @@ export function RoundScreen({
       )}
       {survival && (
         <div className="tm-stage-sv">
-          <span className="mono">RODADA {survival.round}</span>
-          <span className="tm-stage-lives" aria-label={`${survival.lives} vidas`}>
-            {[0, 1, 2].map((i) => (
-              <i key={i} className={i < survival.lives ? 'on' : ''} />
-            ))}
+          <span className="tm-stage-livespill">
+            <Lives lives={survival.lives} />
           </span>
-          <span className="mono">NOTA MÍNIMA {survival.minScore}</span>
+          <span className="tm-stage-svline">
+            <span className="mono">RODADA {survival.round}</span>
+            <span className="mono">NOTA MÍNIMA {survival.minScore}</span>
+          </span>
         </div>
       )}
       <div className="mono tm-stage-label">{counting ? 'ALVO' : 'TEMPO ALVO'}</div>

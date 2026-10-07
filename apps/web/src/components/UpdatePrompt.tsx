@@ -1,31 +1,54 @@
+import { useState } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import './update-prompt.css';
 
-/** Avisa quando há versão nova e deixa o jogador escolher o momento de atualizar (nunca no meio da partida). */
+/** De quanto em quanto tempo o app procura versão nova enquanto está aberto. */
+const CHECK_EVERY_MS = 60_000;
+
+/**
+ * Versão nova: a tela fica travada por cima do app até a pessoa tocar em ATUALIZAR. Jogar com a
+ * versão velha misturava regras (notas, modos) com as do servidor, então não há como fechar o
+ * aviso. Também procura versão nova a cada minuto e ao voltar para o app.
+ */
 export function UpdatePrompt() {
-  // O aviso "pronto para jogar offline" do primeiro acesso foi retirado: só avisamos de versão nova.
   const {
-    needRefresh: [needRefresh, setNeedRefresh],
+    needRefresh: [needRefresh],
     updateServiceWorker,
-  } = useRegisterSW();
+  } = useRegisterSW({
+    onRegisteredSW(_url, registration) {
+      if (!registration) return;
+      const check = () => {
+        if (navigator.onLine) void registration.update().catch(() => undefined);
+      };
+      window.setInterval(check, CHECK_EVERY_MS);
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') check();
+      });
+    },
+  });
+  const [updating, setUpdating] = useState(false);
 
   if (!needRefresh) return null;
 
-  const close = () => setNeedRefresh(false);
-
   return (
-    <div className="update-prompt" role="status">
-      <span>VERSÃO NOVA DISPONÍVEL</span>
-      <div className="update-prompt-actions">
+    <div className="update-gate" role="alertdialog" aria-modal="true" aria-labelledby="up-title">
+      <div className="update-card">
+        <div className="mono update-tag">VERSÃO NOVA</div>
+        <h2 id="up-title">Atualize para continuar</h2>
+        <p className="mono">
+          Saiu uma versão nova do NoCap. Toque em atualizar para voltar a jogar.
+        </p>
         <button
           type="button"
-          className="update-prompt-btn"
-          onClick={() => updateServiceWorker(true)}
+          className="btn alt"
+          data-sfx="start"
+          disabled={updating}
+          onClick={() => {
+            setUpdating(true);
+            void updateServiceWorker(true);
+          }}
         >
-          ATUALIZAR
-        </button>
-        <button type="button" className="update-prompt-btn ghost" onClick={close}>
-          FECHAR
+          {updating ? 'Atualizando...' : 'Atualizar'}
         </button>
       </div>
     </div>

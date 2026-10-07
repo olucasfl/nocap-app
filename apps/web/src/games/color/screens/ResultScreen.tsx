@@ -36,7 +36,10 @@ export function ResultScreen({ result, isLast, onNext, footer, extra }: Props) {
     let raf = 0;
     let lastTick = -1;
 
+    let finished = false;
     const finish = () => {
+      if (finished) return;
+      finished = true;
       if (num.current) num.current.textContent = score.toFixed(1);
       setDone(true);
       timers.push(
@@ -65,8 +68,11 @@ export function ResultScreen({ result, isLast, onNext, footer, extra }: Props) {
       else finish();
     };
     raf = requestAnimationFrame(step);
+    // Rede de segurança: se os quadros de animação pararem (aba em segundo plano), termina assim mesmo.
+    const failsafe = window.setTimeout(finish, (reduce ? 0 : 380) + dur + 500);
 
     return () => {
+      window.clearTimeout(failsafe);
       cancelAnimationFrame(raf);
       timers.forEach(clearTimeout);
     };

@@ -1,42 +1,45 @@
-.update-prompt {
+/* Trava a tela inteira (acima de tudo, inclusive do jogo do Tempo) até atualizar. */
+.update-gate {
   position: fixed;
-  left: 12px;
-  right: 12px;
-  bottom: calc(12px + env(safe-area-inset-bottom));
-  max-width: calc(var(--col-max) - 24px);
-  margin: 0 auto;
-  z-index: 50;
+  inset: 0;
+  z-index: 1000;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 12px 14px;
-  background: var(--yellow);
-  color: var(--ink);
-  border: var(--border);
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow);
-  font: 700 12px var(--font-mono);
+  justify-content: center;
+  padding: 24px;
+  background: rgba(10, 10, 10, 0.78);
+  overscroll-behavior: contain;
+  touch-action: none;
 }
-.update-prompt-actions {
+.update-card {
+  width: 100%;
+  max-width: 380px;
   display: flex;
-  gap: 8px;
-}
-.update-prompt-btn {
-  appearance: none;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px;
+  background: var(--yellow);
+  color: var(--on-accent);
   border: var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+.update-tag {
+  align-self: flex-start;
+  padding: 4px 10px;
   background: var(--ink);
   color: var(--paper);
-  padding: 8px 10px;
-  font: 700 12px var(--font-mono);
-  cursor: pointer;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
 }
-.update-prompt-btn.ghost {
-  background: var(--white);
-  color: var(--ink);
+.update-card h2 {
+  margin: 0;
+  font: 900 30px/1 var(--font-display);
+  letter-spacing: -0.03em;
 }
-.update-prompt-btn:focus-visible {
-  outline: 3px solid var(--blue);
-  outline-offset: 2px;
+.update-card p {
+  margin: 0;
+  font: 400 13px/1.45 var(--font-mono);
 }

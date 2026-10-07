@@ -129,7 +129,8 @@ export function TimeGame({
       if (!run || target === null) return;
       // Um segundo toque colado no primeiro (duplo toque) não encerra a rodada.
       if (now - t0.current < MIN_TAP_GAP_MS) return;
-      const answer = Math.round(now - t0.current);
+      // O servidor recusa a partida se uma rodada passar de 3x o alvo: o limite vale aqui também.
+      const answer = Math.min(Math.round(now - t0.current), target * 3);
       setResults((r) => [...r, { target, answer, score: scoreTime(target, answer, run.settings) }]);
       if (run.preset === 'sequence') {
         // Sequência: sem tela de resultado entre alvos; o próximo já aparece (e o fim mostra tudo).

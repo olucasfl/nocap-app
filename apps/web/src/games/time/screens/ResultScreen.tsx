@@ -107,9 +107,17 @@ export function ResultScreen({
   const [line] = useState(() => gradeLine(grade.id, 'time'));
 
   useEffect(() => {
+    let finished = false;
     const finish = () => {
+      if (finished) return;
+      finished = true;
+      setShown(answer);
       setDone(true);
-      playGrade(grade.id);
+      try {
+        playGrade(grade.id);
+      } catch {
+        // Som falhando (áudio bloqueado) nunca pode impedir de seguir o jogo.
+      }
     };
 
     sfx.thunk();
@@ -120,6 +128,9 @@ export function ResultScreen({
     let raf = 0;
     let lastStep = -1;
     const duration = climbMs(answer);
+    // Rede de segurança: se o navegador pausar os quadros de animação (aba em segundo plano,
+    // economia de bateria), o resultado termina mesmo assim e o botão aparece.
+    const failsafe = window.setTimeout(finish, REVEAL_DELAY_MS + duration + 600);
     const timer = window.setTimeout(() => {
       const t0 = performance.now();
       const frame = (now: number) => {
@@ -142,6 +153,7 @@ export function ResultScreen({
 
     return () => {
       window.clearTimeout(timer);
+      window.clearTimeout(failsafe);
       cancelAnimationFrame(raf);
     };
     // Roda uma vez por resultado (a tela é remontada a cada rodada, `key={index}`).

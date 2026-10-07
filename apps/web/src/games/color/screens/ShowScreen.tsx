@@ -20,18 +20,26 @@ export function ShowScreen({ color, ms, onDone }: Props) {
     sfx.flip();
     const t0 = performance.now();
     let raf = 0;
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      sfx.vanish();
+      done.current();
+    };
     const step = (now: number) => {
       const p = Math.min(1, (now - t0) / ms);
       if (bar.current) bar.current.style.transform = `scaleX(${1 - p})`;
-      if (p < 1) {
-        raf = requestAnimationFrame(step);
-      } else {
-        sfx.vanish();
-        done.current();
-      }
+      if (p < 1) raf = requestAnimationFrame(step);
+      else finish();
     };
     raf = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(raf);
+    // Se os quadros de animação pararem (aba em segundo plano), a cor some no tempo certo mesmo assim.
+    const failsafe = window.setTimeout(finish, ms + 300);
+    return () => {
+      window.clearTimeout(failsafe);
+      cancelAnimationFrame(raf);
+    };
   }, [ms]);
 
   return (

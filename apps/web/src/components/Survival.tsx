@@ -9,7 +9,41 @@ import { NewRecord } from './NewRecord';
 import { SURVIVAL_LIVES } from '@nocap/games';
 import './survival.css';
 
-/** Vidas (quadrados cheios/vazios) e a nota mínima da rodada, no topo durante a Sobrevivência. */
+const HEART =
+  'M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z';
+
+/**
+ * As vidas: um coração cheio para cada vida que sobrou e um contorno apagado para cada uma que se
+ * foi. Quando acabou de perder uma, o coração enche, estoura e some. Só transform/opacity; parado
+ * (sem batida) para valer também durante a contagem do Tempo.
+ */
+export function Lives({ lives, lost = false }: { lives: number; lost?: boolean }) {
+  return (
+    <div className="sv-lives-box" role="img" aria-label={`${lives} de ${SURVIVAL_LIVES} vidas`}>
+      <span className="mono sv-lives-tag">VIDAS</span>
+      <span className="sv-hearts" aria-hidden="true">
+        {Array.from({ length: SURVIVAL_LIVES }, (_, i) => {
+          const state = i < lives ? 'on' : lost && i === lives ? 'drop' : 'off';
+          return (
+            <span key={i} className={`sv-heart ${state}`}>
+              <svg viewBox="0 0 24 24" className="sv-heart-base">
+                <path d={HEART} />
+              </svg>
+              <svg viewBox="0 0 24 24" className="sv-heart-fill">
+                <path d={HEART} />
+              </svg>
+            </span>
+          );
+        })}
+      </span>
+      <span className="mono sv-lives-n">
+        {lives}/{SURVIVAL_LIVES}
+      </span>
+    </div>
+  );
+}
+
+/** As vidas e a nota mínima da rodada, no topo durante a Sobrevivência. */
 export function SurvivalBar({
   lives,
   minScore,
@@ -28,13 +62,11 @@ export function SurvivalBar({
       role="status"
       aria-label={`Rodada ${round}, ${lives} vidas, nota mínima ${minScore}`}
     >
-      <div className="sv-lives" aria-hidden="true">
-        {Array.from({ length: SURVIVAL_LIVES }, (_, i) => (
-          <i key={i} className={i < lives ? 'on' : lost && i === lives ? 'drop' : ''} />
-        ))}
+      <Lives lives={lives} lost={lost} />
+      <div className="sv-info">
+        <span className="mono sv-round">RODADA {round}</span>
+        <span className="mono sv-min">NOTA MÍNIMA {minScore}</span>
       </div>
-      <span className="mono sv-round">RODADA {round}</span>
-      <span className="mono sv-min">NOTA MÍNIMA {minScore}</span>
     </div>
   );
 }
