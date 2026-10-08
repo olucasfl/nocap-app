@@ -8,8 +8,18 @@ import { BIG_WEIGHT, MICRO_MAX } from './micro';
  */
 
 export type ShapeKind =
-  'circle' | 'triangle' | 'square' | 'rect' | 'diamond' | 'star' | 'hexagon' | 'cross';
-export type ShapeColor = 'orange' | 'blue' | 'yellow' | 'green' | 'purple' | 'cyan';
+  | 'circle'
+  | 'triangle'
+  | 'square'
+  | 'rect'
+  | 'diamond'
+  | 'star'
+  | 'hexagon'
+  | 'cross'
+  | 'pentagon'
+  | 'heart';
+/** Só cores bem diferentes entre si (sem ciano, que se confunde com o azul). */
+export type ShapeColor = 'orange' | 'blue' | 'yellow' | 'green' | 'purple';
 
 export const SHAPE_KINDS: readonly ShapeKind[] = [
   'circle',
@@ -20,15 +30,10 @@ export const SHAPE_KINDS: readonly ShapeKind[] = [
   'star',
   'hexagon',
   'cross',
+  'pentagon',
+  'heart',
 ];
-export const SHAPE_COLORS: readonly ShapeColor[] = [
-  'orange',
-  'blue',
-  'yellow',
-  'green',
-  'purple',
-  'cyan',
-];
+export const SHAPE_COLORS: readonly ShapeColor[] = ['orange', 'blue', 'yellow', 'green', 'purple'];
 
 export const SHAPE_NAME: Record<ShapeKind, string> = {
   circle: 'círculos',
@@ -39,20 +44,22 @@ export const SHAPE_NAME: Record<ShapeKind, string> = {
   star: 'estrelas',
   hexagon: 'hexágonos',
   cross: 'cruzes',
+  pentagon: 'pentágonos',
+  heart: 'corações',
 };
 /** O nome da cor no plural feminino, para "peças ...". */
 export const COLOR_LABEL: Record<ShapeColor, string> = {
-  orange: 'laranja',
+  orange: 'laranjas',
   blue: 'azuis',
   yellow: 'amarelas',
   green: 'verdes',
   purple: 'roxas',
-  cyan: 'ciano',
 };
 
+/** Uma regra pode juntar várias formas e/ou várias cores ("quadrados e triângulos"). */
 export interface Matcher {
-  shape?: ShapeKind;
-  color?: ShapeColor;
+  shapes?: ShapeKind[];
+  colors?: ShapeColor[];
 }
 
 export interface ShapeItem {
@@ -72,19 +79,44 @@ export interface ShapesRound {
   durationMs: number;
 }
 
-export const SHAPES_ITEMS = 72;
-export const SHAPES_STEP_MS = 450;
+export const SHAPES_ITEMS = 56;
+export const SHAPES_STEP_MS = 500;
 export const SHAPES_LIFE_MS = 2800;
 export const SHAPES_DURATION_MS = SHAPES_ITEMS * SHAPES_STEP_MS;
-/** Certo +60; proibido -120 (para não valer clicar em tudo); as outras peças não valem nada. */
-export const POINTS_GOOD = 60;
-export const POINTS_BAD = -120;
+/**
+ * Peça certa: +200 se o clique vem logo que ela surge, +150 um pouco depois, +100 se demorou.
+ * Peça proibida: -200 (para não compensar clicar em tudo). As outras não valem nada.
+ */
+export const POINTS_GOOD = 200;
+export const POINTS_GOOD_MID = 150;
+export const POINTS_GOOD_SLOW = 100;
+export const POINTS_BAD = -200;
 export const POINTS_NEUTRAL = 0;
+export const GOOD_FAST_MS = 800;
+export const GOOD_MID_MS = 1600;
+/** Quantas peças certas e proibidas vêm numa partida (a mesma proporção para todos). */
+const PLAN_GOOD = 12;
+const PLAN_BAD = 16;
+
+/** Pontos de um clique segundo o tipo da peça e a demora (ms) desde que ela apareceu. */
+export function shapePointsFor(cls: ShapeItem['cls'], reactionMs: number): number {
+  if (cls === 'bad') return POINTS_BAD;
+  if (cls === 'neutral') return POINTS_NEUTRAL;
+  if (reactionMs <= GOOD_FAST_MS) return POINTS_GOOD;
+  return reactionMs <= GOOD_MID_MS ? POINTS_GOOD_MID : POINTS_GOOD_SLOW;
+}
 /** Folga de rede: o clique pode chegar um pouco depois de a peça sumir. */
 export const SHAPES_GRACE_MS = 500;
 
-const matches = (m: Matcher, kind: ShapeKind, color: ShapeColor) =>
-  (!m.shape || m.shape === kind) && (!m.color || m.color === color) && (!!m.shape || !!m.color);
+const matches = (m: Matcher, kind: ShapeKind, color: ShapeColor) => {
+  const hasShapes = !!m.shapes?.length;
+  const hasColors = !!m.colors?.length;
+  return (
+    (hasShapes || hasColors) &&
+    (!hasShapes || m.shapes!.includes(kind)) &&
+    (!hasColors || m.colors!.includes(color))
+  );
+};
 
 export const classify = (
   round: Pick<ShapesRound, 'click' | 'avoid'>,
@@ -96,31 +128,66 @@ export const classify = (
   return matches(round.click, kind, color) ? 'good' : 'neutral';
 };
 
+/** `n` valores distintos sorteados da lista, fora os de `except`. */
+function pickSome<T>(
+  rng: () => number,
+  list: readonly T[],
+  n: number,
+  except: readonly T[] = [],
+): T[] {
+  const pool = list.filter((x) => !except.includes(x));
+  const out: T[] = [];
+  while (out.length < n && pool.length > 0) {
+    out.push(pool.splice(randInt(rng, 0, pool.length - 1), 1)[0]!);
+  }
+  return out;
+}
+
+/**
+ * Sorteia o par de regras (clique / evite). Os modelos misturam formas e cores, com uma ou duas
+ * opções cada: "clique em quadrados e triângulos, não em verde", "não clique em círculos e
+ * triângulos, clique em azul", e assim por diante.
+ */
+function drawRules(rng: () => number): { click: Matcher; avoid: Matcher } {
+  const some = (n: number) => (rng() < 0.5 ? 1 : n);
+  const r = rng();
+  if (r < 0.3) {
+    // Formas certas, uma cor proibida.
+    return {
+      click: { shapes: pickSome(rng, SHAPE_KINDS, some(2)) },
+      avoid: { colors: pickSome(rng, SHAPE_COLORS, 1) },
+    };
+  }
+  if (r < 0.55) {
+    // Cor certa, formas proibidas.
+    return {
+      click: { colors: pickSome(rng, SHAPE_COLORS, 1) },
+      avoid: { shapes: pickSome(rng, SHAPE_KINDS, some(2)) },
+    };
+  }
+  if (r < 0.8) {
+    // Só formas: umas certas, outras proibidas.
+    const click = pickSome(rng, SHAPE_KINDS, some(2));
+    return {
+      click: { shapes: click },
+      avoid: { shapes: pickSome(rng, SHAPE_KINDS, some(2), click) },
+    };
+  }
+  // Só cores: uma ou duas certas, outra proibida.
+  const click = pickSome(rng, SHAPE_COLORS, some(2));
+  return { click: { colors: click }, avoid: { colors: pickSome(rng, SHAPE_COLORS, 1, click) } };
+}
+
 export function shapesRound(seed: string): ShapesRound {
   const rng = createRng(`${seed}:shapes`);
-  const byShape = rng() < 0.5;
-  const click: Matcher = byShape
-    ? { shape: SHAPE_KINDS[randInt(rng, 0, SHAPE_KINDS.length - 1)]! }
-    : { color: SHAPE_COLORS[randInt(rng, 0, SHAPE_COLORS.length - 1)]! };
-  // Evitar usa o outro atributo (ou o mesmo atributo com outro valor), nunca igual ao clicar.
-  const avoid: Matcher = {};
-  if (rng() < 0.7) {
-    if (byShape) avoid.color = SHAPE_COLORS[randInt(rng, 0, SHAPE_COLORS.length - 1)]!;
-    else avoid.shape = SHAPE_KINDS[randInt(rng, 0, SHAPE_KINDS.length - 1)]!;
-  } else if (byShape) {
-    const others = SHAPE_KINDS.filter((k) => k !== click.shape);
-    avoid.shape = others[randInt(rng, 0, others.length - 1)]!;
-  } else {
-    const others = SHAPE_COLORS.filter((c) => c !== click.color);
-    avoid.color = others[randInt(rng, 0, others.length - 1)]!;
-  }
+  const { click, avoid } = drawRules(rng);
 
-  // Proporção exata (33 certas, 21 proibidas, 18 inofensivas) em ordem embaralhada: toda partida
-  // tem o mesmo "preço" para quem clica em tudo (saldo negativo).
+  // Proporção exata de certas, proibidas e inofensivas em ordem embaralhada: toda partida tem o
+  // mesmo "preço" para quem clica em tudo (saldo negativo).
   const plan: ShapeItem['cls'][] = [
-    ...Array<ShapeItem['cls']>(33).fill('good'),
-    ...Array<ShapeItem['cls']>(21).fill('bad'),
-    ...Array<ShapeItem['cls']>(SHAPES_ITEMS - 54).fill('neutral'),
+    ...Array<ShapeItem['cls']>(PLAN_GOOD).fill('good'),
+    ...Array<ShapeItem['cls']>(PLAN_BAD).fill('bad'),
+    ...Array<ShapeItem['cls']>(SHAPES_ITEMS - PLAN_GOOD - PLAN_BAD).fill('neutral'),
   ];
   for (let i = plan.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1));
@@ -148,22 +215,28 @@ export function shapesRound(seed: string): ShapesRound {
   return { click, avoid, items, durationMs: SHAPES_DURATION_MS };
 }
 
+const joinE = (xs: string[]) =>
+  xs.length > 1 ? `${xs.slice(0, -1).join(', ')} e ${xs[xs.length - 1]}` : (xs[0] ?? '');
+
 /** A regra em português, para o comando e o tutorial. */
 export function matcherLabel(m: Matcher): string {
-  if (m.shape && m.color) return `${SHAPE_NAME[m.shape]} ${COLOR_LABEL[m.color]}`;
-  if (m.shape) return SHAPE_NAME[m.shape];
-  return `peças ${COLOR_LABEL[m.color!]}`;
+  const shapes = joinE((m.shapes ?? []).map((k) => SHAPE_NAME[k]));
+  const colors = joinE((m.colors ?? []).map((c) => COLOR_LABEL[c]));
+  if (shapes && colors) return `${shapes} (${colors})`;
+  if (shapes) return shapes;
+  return `peças ${colors}`;
 }
 
 /**
- * Pontos de um clique: certo +100, proibido -200, outra peça 0. O servidor chama com o tempo (ms
- * desde o começo) em que o clique chegou; fora da janela da peça não vale.
+ * Pontos de um clique: certo +200/+150/+100 (conforme a rapidez), proibido -200, outra peça 0. O
+ * servidor chama com o tempo (ms desde o começo) em que o clique chegou; fora da janela da peça
+ * não vale.
  */
 export function shapeClickPoints(round: ShapesRound, id: number, atMs: number): number | null {
   const item = round.items[id];
   if (!item) return null;
   if (atMs < item.at || atMs > item.at + item.life + SHAPES_GRACE_MS) return null;
-  return item.cls === 'good' ? POINTS_GOOD : item.cls === 'bad' ? POINTS_BAD : POINTS_NEUTRAL;
+  return shapePointsFor(item.cls, atMs - item.at);
 }
 
 /** O máximo possível (todas as peças certas, na hora): vale o peso do minijogo grande. */

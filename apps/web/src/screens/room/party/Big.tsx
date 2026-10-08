@@ -1,12 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  POINTS_BAD,
-  POINTS_GOOD,
-  POINTS_NEUTRAL,
-  SHAPES_R,
-  SHAPES_W,
-  ShapesSim,
-} from '@nocap/games';
+import { SHAPES_R, SHAPES_W, ShapesSim, shapePointsFor } from '@nocap/games';
 import { Countdown } from '@/components/Countdown';
 import {
   sendRoom,
@@ -33,7 +26,6 @@ const COLOR_VAR: Record<Color, string> = {
   yellow: 'var(--yellow)',
   green: 'var(--green)',
   purple: 'var(--eco-purple)',
-  cyan: 'var(--eco-cyan)',
 };
 /** Cada cor tem também um padrão e uma letra: a regra nunca depende só de enxergar a cor. */
 const COLOR_LETTER: Record<Color, string> = {
@@ -42,9 +34,7 @@ const COLOR_LETTER: Record<Color, string> = {
   yellow: 'M',
   green: 'V',
   purple: 'R',
-  cyan: 'C',
 };
-const POINTS = { good: POINTS_GOOD, bad: POINTS_BAD, neutral: POINTS_NEUTRAL } as const;
 
 /** Desenho de cada forma numa caixa de 100 x 100. */
 function Shape({ kind }: { kind: Kind }) {
@@ -64,6 +54,12 @@ function Shape({ kind }: { kind: Kind }) {
       return <polygon points="50,6 61,38 95,38 67,58 78,92 50,71 22,92 33,58 5,38 39,38" />;
     case 'hexagon':
       return <polygon points="27,10 73,10 96,50 73,90 27,90 4,50" />;
+    case 'pentagon':
+      return <polygon points="50,6 94,38 77,92 23,92 6,38" />;
+    case 'heart':
+      return (
+        <path d="M50,92 C8,62 4,34 22,19 C35,9 46,15 50,28 C54,15 65,9 78,19 C96,34 92,62 50,92 Z" />
+      );
     case 'cross':
       return (
         <polygon points="36,6 64,6 64,36 94,36 94,64 64,64 64,94 36,94 36,64 6,64 6,36 36,36" />
@@ -97,10 +93,6 @@ function Patterns() {
           {base('purple')}
           <path d="M-2,8 l4,4 M0,0 l10,10 M8,-2 l4,4" style={line} />
         </pattern>
-        <pattern id="pt-cyan" width="10" height="10" patternUnits="userSpaceOnUse">
-          {base('cyan')}
-          <path d="M0,3 h10 M0,8 h10" style={line} />
-        </pattern>
       </defs>
     </svg>
   );
@@ -121,6 +113,9 @@ export function BigShapes({ p }: Props) {
   const [width, setWidth] = useState(600);
   const [flash, setFlash] = useState<{ id: number; cls: PartyShapeItem['cls'] } | null>(null);
   const [score, setScore] = useState(0);
+  // Os "+200" / "-200" que sobem de cada peça clicada.
+  const [pops, setPops] = useState<{ key: number; x: number; y: number; pts: number }[]>([]);
+  const popKey = useRef(0);
 
   // Um quadro por vez: avança a simulação até o instante do servidor e redesenha.
   useEffect(() => {
@@ -135,12 +130,16 @@ export function BigShapes({ p }: Props) {
     return () => cancelAnimationFrame(raf);
   }, [sim, times.showAt]);
 
-  const click = (item: PartyShapeItem) => {
+  const click = (item: PartyShapeItem, at: { x: number; y: number }) => {
     if (clicked.current.has(item.id)) return;
     clicked.current.add(item.id);
     sendRoom('sclick', { id: item.id });
     // O servidor decide; aqui só se mostra na hora o que a pessoa acabou de fazer.
-    setScore((s) => s + POINTS[item.cls]);
+    const pts = shapePointsFor(item.cls, serverNow() - times.showAt - item.at);
+    setScore((s) => s + pts);
+    const key = (popKey.current += 1);
+    setPops((list) => [...list, { key, x: at.x, y: at.y, pts }]);
+    window.setTimeout(() => setPops((list) => list.filter((q) => q.key !== key)), 1000);
     setFlash({ id: item.id, cls: item.cls });
     if (item.cls === 'good') sfx.ecoPad(item.id % 4, 90);
     else if (item.cls === 'bad') {
@@ -165,7 +164,7 @@ export function BigShapes({ p }: Props) {
           beep
           compact
         />
-        <b>{score} PTS</b>
+        <b className={`pshape-total${score < 0 ? ' neg' : ''}`}>{score} PTS</b>
       </div>
       <Patterns />
       <div ref={area} className={`pshape-area${flash?.cls === 'bad' ? ' red' : ''}`}>
@@ -187,7 +186,7 @@ export function BigShapes({ p }: Props) {
                 aria-label={`${item.kind} ${item.color}`}
                 onPointerDown={(e) => {
                   e.preventDefault();
-                  click(item);
+                  click(item, { x: piece.x, y: piece.y });
                 }}
               >
                 <svg viewBox="0 0 100 100" width="100%" height="100%" aria-hidden="true">
@@ -220,9 +219,30 @@ export function BigShapes({ p }: Props) {
               </button>
             );
           })}
+        {pops.map((q) => (
+          <span
+            key={q.key}
+            className={`pshape-pop ${
+              q.pts >= 200
+                ? 'top'
+                : q.pts >= 150
+                  ? 'mid'
+                  : q.pts > 0
+                    ? 'low'
+                    : q.pts < 0
+                      ? 'bad'
+                      : 'zero'
+            }`}
+            style={{ left: `${(q.x / SHAPES_W) * 100}%`, top: `${q.y * u}px` }}
+            aria-hidden="true"
+          >
+            {q.pts > 0 ? `+${q.pts}` : q.pts < 0 ? `−${-q.pts}` : '0'}
+          </span>
+        ))}
       </div>
       <p className="mono rm-hint">
-        L laranja · A azul · M amarela · V verde · R roxa · C ciano. As peças batem umas nas outras.
+        L laranja · A azul · M amarela · V verde · R roxa. Quanto mais rápido o clique certo, mais
+        pontos.
       </p>
     </>
   );

@@ -9,7 +9,15 @@ import {
   noteToPoints,
   timeChallenge,
 } from './micro';
-import { POINTS_BAD, POINTS_GOOD, SHAPES_DURATION_MS, matcherLabel, shapesRound } from './shapes';
+import {
+  POINTS_BAD,
+  POINTS_GOOD,
+  POINTS_GOOD_MID,
+  POINTS_GOOD_SLOW,
+  SHAPES_DURATION_MS,
+  matcherLabel,
+  shapesRound,
+} from './shapes';
 import { X1_LEAD_TO_WIN, X1_MAX_ROUNDS } from './x1';
 
 export * from './micro';
@@ -163,7 +171,7 @@ export function commandText(slot: Slot): string {
   if (slot.kind === 'big') {
     if (slot.game === 'x1') return 'Clique no botão verde antes do adversário';
     const r = shapesRound(slot.seed);
-    return `Clique em ${matcherLabel(r.click)}. Evite ${matcherLabel(r.avoid)}`;
+    return `Clique em ${matcherLabel(r.click)}. NÃO clique em ${matcherLabel(r.avoid)}`;
   }
   const v = slot.variant;
   switch (slot.game) {
@@ -232,7 +240,7 @@ export function bigInfo(slot: BigSlot): { title: string; lines: string[] } {
     title: 'CAÇA-FORMAS CAÓTICO',
     lines: [
       `Peças andam, batem umas nas outras e somem por ${Math.round(SHAPES_DURATION_MS / 1000)} segundos.`,
-      `CLIQUE em ${matcherLabel(r.click)} (+${POINTS_GOOD}).`,
+      `CLIQUE em ${matcherLabel(r.click)} (+${POINTS_GOOD}, +${POINTS_GOOD_MID} ou +${POINTS_GOOD_SLOW}: quanto mais rápido, mais pontos).`,
       `EVITE ${matcherLabel(r.avoid)} (${POINTS_BAD}).`,
       'Qualquer outra peça não vale nada. Cada cor tem uma letra e um padrão: leia a regra com calma.',
     ],

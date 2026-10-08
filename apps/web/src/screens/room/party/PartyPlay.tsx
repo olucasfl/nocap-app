@@ -57,6 +57,16 @@ function Ranking({ snapshot, p }: { snapshot: RoomSnapshot; p: PartySnapshot }) 
           <span className="mono">ALVO {toHex(p.reveal.target)}</span>
         </div>
       )}
+      {p.typingReveal && (
+        <div className="preveal ptype" aria-label="O texto certo">
+          <span className="mono">
+            {p.typingReveal.expected === null
+              ? 'ERA A MÃO BOBA: O CERTO ERA NÃO DIGITAR NADA'
+              : `${p.typingReveal.kind === 'frase' ? 'FRASE' : 'PALAVRA'}: ${p.typingReveal.word.toUpperCase()}`}
+          </span>
+          {p.typingReveal.expected !== null && <b>CERTO: {p.typingReveal.expected || '—'}</b>}
+        </div>
+      )}
       {p.timeReveal && (
         <div className="preveal ptime" aria-label="O tempo certo">
           <span className="mono">
@@ -90,6 +100,13 @@ function Ranking({ snapshot, p }: { snapshot: RoomSnapshot; p: PartySnapshot }) 
                 />
               )}
               <span className="prank-name">@{nameOf(snapshot, id)}</span>
+              {p.typingReveal && (
+                <span className="mono prank-typed">
+                  {p.typingReveal.answers[id] === undefined
+                    ? '—'
+                    : p.typingReveal.answers[id] || '(vazio)'}
+                </span>
+              )}
               {p.timeReveal && (
                 <span className="mono prank-time">
                   {p.timeReveal.answers[id] === undefined ? '—' : seconds(p.timeReveal.answers[id])}

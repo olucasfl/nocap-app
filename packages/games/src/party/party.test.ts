@@ -6,6 +6,10 @@ import {
   PARTY_MICRO_PER_ROUND,
   POINTS_BAD,
   POINTS_GOOD,
+  POINTS_GOOD_MID,
+  POINTS_GOOD_SLOW,
+  shapePointsFor,
+  matcherLabel,
   POINTS_NEUTRAL,
   SHAPES_H,
   SHAPES_R,
@@ -315,24 +319,27 @@ describe('Caça-Formas', () => {
   });
 
   it('tem muitas formas e cores, e as peças inofensivas não custam nada', () => {
-    expect(SHAPE_KINDS.length).toBeGreaterThanOrEqual(8);
-    expect(SHAPE_COLORS.length).toBeGreaterThanOrEqual(6);
+    expect(SHAPE_KINDS.length).toBeGreaterThanOrEqual(10);
+    expect(SHAPE_KINDS).toEqual(expect.arrayContaining(['star', 'pentagon', 'heart']));
+    // Sem ciano: ele se confunde com o azul.
+    expect(SHAPE_COLORS as readonly string[]).not.toContain('cyan');
+    expect(SHAPE_COLORS.length).toBe(5);
     expect(POINTS_NEUTRAL).toBe(0);
     const kinds = new Set<string>();
     for (let i = 0; i < 30; i++) shapesRound(`v${i}`).items.forEach((x) => kinds.add(x.kind));
-    expect(kinds.size).toBeGreaterThanOrEqual(7);
+    expect(kinds.size).toBeGreaterThanOrEqual(9);
   });
 
   it('as boas, as proibidas e as inofensivas aparecem; quem bate nas duas regras é proibida', () => {
     for (let i = 0; i < 40; i++) {
       const r = shapesRound(`f${i}`);
       const count = (c: string) => r.items.filter((x) => x.cls === c).length;
-      expect(count('good')).toBe(33);
-      expect(count('bad')).toBe(21);
+      expect(count('good')).toBe(12);
+      expect(count('bad')).toBe(16);
       for (const it of r.items) expect(classify(r, it.kind, it.color)).toBe(it.cls);
     }
     const r = shapesRound('f1');
-    const both = { click: { shape: 'circle' as const }, avoid: { color: 'green' as const } };
+    const both = { click: { shapes: ['circle' as const] }, avoid: { colors: ['green' as const] } };
     expect(classify({ ...r, ...both }, 'circle', 'green')).toBe('bad');
   });
 
@@ -342,11 +349,43 @@ describe('Caça-Formas', () => {
     const bad = r.items.find((x) => x.cls === 'bad')!;
     const neutral = r.items.find((x) => x.cls === 'neutral')!;
     expect(shapeClickPoints(r, good.id, good.at + 200)).toBe(POINTS_GOOD);
+    expect(shapeClickPoints(r, good.id, good.at + 1200)).toBe(POINTS_GOOD_MID);
+    expect(shapeClickPoints(r, good.id, good.at + 2200)).toBe(POINTS_GOOD_SLOW);
     expect(shapeClickPoints(r, bad.id, bad.at + 200)).toBe(POINTS_BAD);
     expect(shapeClickPoints(r, neutral.id, neutral.at + 200)).toBe(0);
     expect(shapeClickPoints(r, good.id, good.at - 50)).toBeNull();
     expect(shapeClickPoints(r, good.id, good.at + good.life + 5000)).toBeNull();
     expect(shapeClickPoints(r, 9999, 0)).toBeNull();
+  });
+
+  it('os pontos são +200, +150 e +100 pela rapidez, e -200 na proibida', () => {
+    expect([POINTS_GOOD, POINTS_GOOD_MID, POINTS_GOOD_SLOW, POINTS_BAD]).toEqual([
+      200, 150, 100, -200,
+    ]);
+    expect(shapePointsFor('good', 0)).toBe(200);
+    expect(shapePointsFor('good', 1000)).toBe(150);
+    expect(shapePointsFor('good', 2500)).toBe(100);
+    expect(shapePointsFor('bad', 10)).toBe(-200);
+    expect(shapePointsFor('neutral', 10)).toBe(0);
+  });
+
+  it('as regras juntam formas e cores, com uma ou duas opções, e aparecem no comando', () => {
+    let duasFormas = 0;
+    let umaCor = 0;
+    for (let i = 0; i < 200; i++) {
+      const r = shapesRound(`reg${i}`);
+      for (const m of [r.click, r.avoid]) {
+        expect((m.shapes?.length ?? 0) + (m.colors?.length ?? 0)).toBeGreaterThanOrEqual(1);
+      }
+      if ((r.click.shapes?.length ?? 0) === 2) duasFormas++;
+      if (r.avoid.colors?.length === 1) umaCor++;
+      const cmd = commandText({ kind: 'big', game: 'shapes', seed: `reg${i}`, round: 1 });
+      expect(cmd).toMatch(/^Clique em .+\. NÃO clique em .+/);
+    }
+    expect(duasFormas).toBeGreaterThan(10);
+    expect(umaCor).toBeGreaterThan(10);
+    expect(matcherLabel({ shapes: ['square', 'triangle'] })).toBe('quadrados e triângulos');
+    expect(matcherLabel({ colors: ['green'] })).toBe('peças verdes');
   });
 
   it('clicar em tudo não compensa: o saldo de quem clica em todas as peças é negativo', () => {

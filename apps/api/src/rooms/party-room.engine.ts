@@ -47,7 +47,8 @@ import {
 export const INTRO_MS = 3500;
 export const MICRO_LEAD_MS = 1200;
 export const SHOW_GRACE_MS = 600;
-export const RANKING_MS = 4000;
+/** Tempo da tela de pontos depois de cada desafio (dá para ler placar, tempos e palavras). */
+export const RANKING_MS = 9000;
 /** Tutorial do minijogo grande: começa quando todos estão prontos ou após este tempo. */
 // Só começa quando todos dão OK; este prazo longo é só para quem sumiu não travar a sala.
 export const TUTORIAL_MS = 60_000;
@@ -104,6 +105,8 @@ export class PartyRoomEngine extends ColorRoomEngine {
   private colorAnswers = new Map<string, Hsb>();
   /** Já Deu?: quanto tempo cada um mediu entre COMEÇAR e PARAR (aparece no placar). */
   private timeResults = new Map<string, number>();
+  /** Digitação: o que cada um enviou (aparece no placar junto do texto certo). */
+  private typedAnswers = new Map<string, string>();
   private ready = new Set<string>();
   private times = { showAt: 0, pickAt: 0, endsAt: 0 };
 
@@ -185,6 +188,7 @@ export class PartyRoomEngine extends ColorRoomEngine {
     this.typed = new Set();
     this.colorAnswers = new Map();
     this.timeResults = new Map();
+    this.typedAnswers = new Map();
     if (slot.kind === 'micro') {
       const timing = microTiming(slot);
       const showAt = t + MICRO_LEAD_MS;
@@ -377,6 +381,7 @@ export class PartyRoomEngine extends ColorRoomEngine {
       return;
     }
     if (!submit) return;
+    this.typedAnswers.set(id, clean);
     this.answered(id, typingPoints(slot, clean, touched, this.now() - this.times.pickAt));
   }
 
@@ -666,6 +671,16 @@ export class PartyRoomEngine extends ColorRoomEngine {
               ? {
                   target: generateColorRound(slot.seed, { rounds: 1, showMs: 3000 }, 0),
                   answers: Object.fromEntries(this.colorAnswers),
+                }
+              : null,
+          // Digitação: o texto mostrado, o que era para digitar e o que cada um enviou.
+          typingReveal:
+            slot.kind === 'micro' && slot.game === 'typing'
+              ? {
+                  word: typingChallenge(slot).word,
+                  expected: typingChallenge(slot).expected,
+                  kind: typingChallenge(slot).kind,
+                  answers: Object.fromEntries(this.typedAnswers),
                 }
               : null,
           // Já Deu?: o tempo que era para contar, o alvo mostrado e o que cada um mediu.

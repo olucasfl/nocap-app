@@ -104,8 +104,18 @@ export interface EcoRoomState {
 
 export interface PartyShapeItem {
   id: number;
-  kind: 'circle' | 'triangle' | 'square' | 'rect' | 'diamond' | 'star' | 'hexagon' | 'cross';
-  color: 'orange' | 'blue' | 'yellow' | 'green' | 'purple' | 'cyan';
+  kind:
+    | 'circle'
+    | 'triangle'
+    | 'square'
+    | 'rect'
+    | 'diamond'
+    | 'star'
+    | 'hexagon'
+    | 'cross'
+    | 'pentagon'
+    | 'heart';
+  color: 'orange' | 'blue' | 'yellow' | 'green' | 'purple';
   at: number;
   life: number;
   cls: 'good' | 'bad' | 'neutral';
@@ -177,6 +187,13 @@ export interface PartySnapshot {
   delta?: Record<string, number>;
   /** Mesmíssima: a cor alvo e a que cada um travou (aparece no placar). */
   reveal?: { target: Hsb; answers: Record<string, Hsb> } | null;
+  /** Digitação: texto mostrado, o que era para digitar (null na Mão Boba) e o que cada um enviou. */
+  typingReveal?: {
+    word: string;
+    expected: string | null;
+    kind: 'palavra' | 'frase';
+    answers: Record<string, string>;
+  } | null;
   /** Já Deu?: tempo certo, alvo mostrado e o tempo medido de cada um (em ms). */
   timeReveal?: { expectedMs: number; targetMs: number; answers: Record<string, number> } | null;
   autoStartAt?: number | null;

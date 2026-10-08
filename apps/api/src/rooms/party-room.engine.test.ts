@@ -31,16 +31,28 @@ type Snap = {
     game?: string;
     command?: string;
     delta?: Record<string, number>;
+    typingReveal?: {
+      word: string;
+      expected: string | null;
+      answers: Record<string, string>;
+    } | null;
     times: { showAt: number; pickAt: number; endsAt: number };
     challenge: { target: Hsb };
     x1?: {
       state: string;
       lead: number;
+      mine: number;
+      theirs: number;
       round: number;
       result: string | null;
       goAt: number | null;
       opponent: string;
-      last: { mine: number | null; theirs: number | null; won: boolean | null } | null;
+      last: {
+        mine: number | null;
+        theirs: number | null;
+        won: boolean | null;
+        delta: number;
+      } | null;
     } | null;
   };
 };
@@ -303,6 +315,11 @@ describe('PartyRoomEngine: micro-desafios', () => {
     c.room.typing('bia', 'errado', false, true);
     expect(snap(c.room).party.delta!.ana).toBeGreaterThanOrEqual(400);
     expect(snap(c.room).party.delta!.bia).toBe(0);
+    // Na tela de pontos aparecem o texto certo e o que cada um enviou.
+    const reveal = snap(c.room).party.typingReveal!;
+    expect(reveal.word).toBe(ch.word);
+    expect(reveal.expected).toBe(ch.expected);
+    expect(reveal.answers).toEqual({ ana: ch.expected, bia: 'errado' });
   });
 
   it('Digitação Mão Boba: mexer ou enviar tira 500; ficar quieto vale 1000 no fim do tempo', () => {
@@ -366,7 +383,7 @@ describe('PartyRoomEngine: Caça-Formas', () => {
     return { c, round: shapesRound((c.plan[5] as BigSlot).seed) };
   }
 
-  it('clique certo +100, proibido -150, neutro -50; só conta uma vez e dentro da janela da peça', () => {
+  it('clique certo +200/+150/+100, proibido -200, neutro 0; só conta uma vez e dentro da janela da peça', () => {
     const { c, round } = inShapes();
     const showAt = snap(c.room).party.times.showAt;
     const good = round.items.find((x) => x.cls === 'good')!;
@@ -386,7 +403,8 @@ describe('PartyRoomEngine: Caça-Formas', () => {
     c.room.shapeClick('ana', neutral.id);
     run(c, 40_000);
     // Os 3 cliques acima: certo, proibido e inofensivo, cada um uma vez.
-    expect(POINTS_GOOD + POINTS_BAD + POINTS_NEUTRAL).toBeLessThan(0);
+    expect(POINTS_BAD).toBeLessThan(0);
+    expect(POINTS_NEUTRAL).toBe(0);
     expect(c.room.currentPhase).toBe('final');
     const ana = c.room.finalRows().find((r) => r.userId === 'ana')!;
     const micros = c.plan.slice(0, 5).length; // só para o linter não reclamar do plano
