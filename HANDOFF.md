@@ -33,6 +33,16 @@ Tudo está em `main` e publicado (API no Render, web na Vercel, banco no Supabas
 
 **Próximos passos e jogos futuros:** tudo em `docs/JOGOS-FUTUROS.md`. Ordem do Lucas: terminar o Ecooo (salas Corrida e Siga o Líder, calibrar), depois **Tribunal do Absurdo**, depois Intervalo; **Ponte e Regras Vivas em standby**. O arquivo descreve cada jogo. Ideias mais antigas (Sincro, Blefe de Nota, Sabotador, Telefone Sem Fio, Caça-Cor, Dicionário de Cores; Tom, Eco de Ritmo, Sombra) seguem no brief e sem spec.
 
+**Atualização de 08/10/2026** (validação geral e pedidos novos; detalhes nas specs 011 a 015):
+
+- Intruso (011), Ecooo (012: Corrida e Siga o Líder), lobby líder/membro (013), chat (014) e **aba Ranking própria** (015) estão implementados. A paleta do Intruso tem 313 cores com 5 dicas cada.
+- **Siga o Líder reformulado:** sem tela de resultado entre rodadas; aparece "O LÍDER É @fulano" e o próximo cria; a soma de acertos só aparece no pódio; regras do líder em lista de tarefas com progresso; na Escalada e no Siga o Líder os botões ficam em posição fixa (grade 3x3 com lugares vazios tracejados).
+- **Ranking:** página `/ranking` (jogo, modo incluindo Daily, período, todos/amigos, minha posição fixa, "faltam X para passar @fulano"). Saiu a aba Ranking de dentro dos jogos; o Daily mantém o ranking só dele na tela do Daily.
+- **Perfil:** os recordes agora são um jogo por vez, com um bloco por modo (toque para ver média e partidas).
+- **Bugs achados na validação (corrigidos):** a tela de resultado do Já Deu? cobria o botão "Próxima" quando a nota era zero (classe `g-zero` aplicada na tela inteira); o botão "Siga o Líder" e os modos do Ecooo estouravam a tela no celular; selo "NA SALA" cortado; linhas do resultado do Ecooo cortadas; título do voto estourando; um teste do Eco só passava no dia em que foi escrito (data fixa).
+- **Ainda não validado ao vivo:** nenhuma sala foi jogada com contas reais (as telas foram conferidas injetando estados falsos no app em 375, 820 e 1280 px). Falta jogar Intruso, Ecooo, chat e convites por @ com 3 contas; e jogar o Ranking com dados reais.
+- Cuidado com CSS: `ranking.css` (legado, carregado por `RankingList`) usa as classes `.rk-*`; a página nova usa `.rks-*`. Não reutilize `.rk-`.
+
 ## Armadilhas conhecidas (poupam tempo)
 
 - Nesta máquina (Windows) o `pnpm` não estava no PATH do bash e o Turbo não o achava: rode `npx tsc --noEmit` e `npx vitest run` dentro de cada pacote (`packages/games`, `apps/api`, `apps/web`). **Depois de mudar `packages/games`, rode `npx tsup src/index.ts --format esm,cjs --dts --clean` lá**, senão api e web não veem o código novo.
