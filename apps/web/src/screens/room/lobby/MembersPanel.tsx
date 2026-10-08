@@ -152,9 +152,11 @@ export function MembersPanel({
               </b>
               <small className="mono">Define as regras e começa a partida</small>
             </span>
-            <LeaderFriend username={leader.username} isMe={leader.id === me} />
-            <span className={`mono lb-pill${leader.connected ? ' on' : ' off'}`}>
-              {leader.connected ? 'NA SALA' : 'SEM CONEXÃO'}
+            <span className="lb-side">
+              <LeaderFriend username={leader.username} isMe={leader.id === me} />
+              <span className={`mono lb-pill${leader.connected ? ' on' : ' off'}`}>
+                {leader.connected ? 'NA SALA' : 'SEM CONEXÃO'}
+              </span>
             </span>
           </div>
         </div>

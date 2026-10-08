@@ -142,3 +142,9 @@
     animation: none;
   }
 }
+
+/* Títulos longos cabem em telas estreitas. */
+.ip-title {
+  font-size: clamp(26px, 9vw, 40px);
+  overflow-wrap: anywhere;
+}

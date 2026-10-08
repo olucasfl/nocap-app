@@ -62,7 +62,7 @@ function Reveal({ snapshot }: { snapshot: RoomSnapshot }) {
           const isLeader = r.id === eco.leader;
           const passed = isLeader || (eco.leader ? Number(r.answer) >= eco.length : r.score === 1);
           return (
-            <li key={r.id} className={`rm-result${r.id === me ? ' me' : ''}`}>
+            <li key={r.id} className={`rm-result t${r.id === me ? ' me' : ''}`}>
               <span className="mono rm-time">
                 {isLeader
                   ? eco.timedOut

@@ -93,10 +93,13 @@
 }
 .rm-seg {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 .rm-seg button {
-  flex: 1;
+  /* Quebra de linha quando há muitas opções (Ecooo tem cinco modos): nunca estoura a tela. */
+  flex: 1 1 0;
+  min-width: 96px;
   height: 42px;
   border: var(--border);
   border-radius: var(--radius-sm);

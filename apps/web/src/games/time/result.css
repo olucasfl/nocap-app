@@ -183,9 +183,9 @@
     opacity: 1;
   }
 }
-.tm-result.done.g-bad .tm-you,
-.tm-result.done.g-awful .tm-you,
-.tm-result.done.g-zero .tm-you {
+.tm-result.done.gr-bad .tm-you,
+.tm-result.done.gr-awful .tm-you,
+.tm-result.done.gr-zero .tm-you {
   animation: tm-shake 0.4s ease-out;
 }
 @keyframes tm-shake {
@@ -205,9 +205,9 @@
 @media (prefers-reduced-motion: reduce) {
   .tm-slam,
   .tm-stamp.pop,
-  .tm-result.done.g-bad .tm-you,
-  .tm-result.done.g-awful .tm-you,
-  .tm-result.done.g-zero .tm-you {
+  .tm-result.done.gr-bad .tm-you,
+  .tm-result.done.gr-awful .tm-you,
+  .tm-result.done.gr-zero .tm-you {
     animation: none;
   }
 }

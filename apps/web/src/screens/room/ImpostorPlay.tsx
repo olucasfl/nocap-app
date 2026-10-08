@@ -108,7 +108,7 @@ function Vote({ snapshot, imp }: { snapshot: RoomSnapshot; imp: ImpostorState })
     <section className="screen rm">
       <RoleBadge role={imp.role} count={imp.count} />
       {imp.hint && <Hint text={imp.hint} />}
-      <h1>Quem é o intruso?</h1>
+      <h1 className="ip-title">Quem é o intruso?</h1>
       <p className="lead">
         {imp.count === 1 ? 'Tem 1 intruso' : `Tem ${imp.count} intrusos`} entre vocês. Compare as
         cores e vote. Intrusos também votam.

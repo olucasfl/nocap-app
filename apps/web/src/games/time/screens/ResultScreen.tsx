@@ -160,7 +160,7 @@ export function ResultScreen({
   }, []);
 
   return (
-    <section className={`screen tm-result${done ? ` done g-${grade.id}` : ''}`}>
+    <section className={`screen tm-result${done ? ` done gr-${grade.id}` : ''}`}>
       {done && <GradeFx id={grade.id} />}
       <div className="tm-slam">
         <div className="mono tm-label">ALVO</div>

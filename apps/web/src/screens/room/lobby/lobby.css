@@ -215,6 +215,7 @@
   font-size: 12px;
 }
 .lb-pill {
+  flex-shrink: 0;
   white-space: nowrap;
   padding: 1px 7px;
   border: 2px solid var(--ink);
