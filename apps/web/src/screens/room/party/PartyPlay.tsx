@@ -1,13 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
-import { TAP_MIN_GAP_MS } from '@nocap/games';
 import { Countdown } from '@/components/Countdown';
-import { toHex } from '@/games/color/hex';
-import { PickScreen } from '@/games/color/screens/PickScreen';
-import { ShowScreen } from '@/games/color/screens/ShowScreen';
-import '@/games/color/color.css';
 import { useAuth } from '@/lib/auth';
-import { sendRoom, serverNow, toLocal, type PartySnapshot, type RoomSnapshot } from '@/lib/rooms';
-import { buzz, sfx } from '@/lib/sfx';
+import { sendRoom, toLocal, type PartySnapshot, type RoomSnapshot } from '@/lib/rooms';
+import { BigShapes, BigX1 } from './Big';
+import { MicroColor, MicroEco, MicroTime, MicroTyping } from './Micro';
 import { Stage } from './Stage';
 import './party.css';
 
@@ -29,15 +24,6 @@ function Hud({ p }: { p: PartySnapshot }) {
   );
 }
 
-function CommandBar({ text }: { text: string }) {
-  return (
-    <div className="pcmd" role="status">
-      <span className="mono">COMANDO</span>
-      <b>{text}</b>
-    </div>
-  );
-}
-
 function Intro({ p }: { p: PartySnapshot }) {
   return (
     <div className="pbig">
@@ -49,66 +35,6 @@ function Intro({ p }: { p: PartySnapshot }) {
         <p className="mono">LEIA O COMANDO COM ATENÇÃO. NEM TUDO É O QUE PARECE.</p>
       </div>
     </div>
-  );
-}
-
-/** Mesmíssima: preparar, ver o alvo, recriar a cor e travar. Os tempos vêm do relógio do servidor. */
-function MicroColor({ snapshot, p }: { snapshot: RoomSnapshot; p: PartySnapshot }) {
-  const times = p.times!;
-  const challenge = p.challenge!;
-  const [now, setNow] = useState(serverNow());
-  useEffect(() => {
-    const id = window.setInterval(() => setNow(serverNow()), 100);
-    return () => window.clearInterval(id);
-  }, []);
-  const command = p.command ?? '';
-  const connected = snapshot.members.filter((m) => m.connected).length;
-
-  if (now < times.showAt) {
-    return (
-      <>
-        <CommandBar text={command} />
-        <div className="pbig">
-          <b>PREPARE</b>
-        </div>
-      </>
-    );
-  }
-  if (now < times.pickAt) {
-    return (
-      <>
-        <CommandBar text={command} />
-        <ShowScreen
-          color={toHex(challenge.target)}
-          ms={challenge.showMs}
-          onDone={() => undefined}
-        />
-      </>
-    );
-  }
-  if (p.mine) {
-    return (
-      <>
-        <CommandBar text={command} />
-        <div className="pbig">
-          <div>
-            <b>TRAVADO</b>
-            <p className="mono">
-              ESPERANDO OS OUTROS: {p.submitted?.length ?? 0} DE {connected}
-            </p>
-          </div>
-        </div>
-      </>
-    );
-  }
-  return (
-    <PickScreen
-      blind={challenge.blind}
-      start={challenge.start}
-      banner={<CommandBar text={command} />}
-      onLock={(guess) => sendRoom('submit', { color: guess })}
-      deadline={{ endsAt: toLocal(times.endsAt), totalMs: times.endsAt - times.pickAt }}
-    />
   );
 }
 
@@ -161,11 +87,15 @@ function Tutorial({ snapshot, p }: { snapshot: RoomSnapshot; p: PartySnapshot })
     <>
       <div className="pbig">
         <div>
-          <h1>TOQUE TOQUE</h1>
+          <h1>{p.info?.title ?? 'MINIJOGO GRANDE'}</h1>
           <p className="mono">MINIJOGO GRANDE · VALE O DOBRO</p>
         </div>
       </div>
-      <CommandBar text={`${p.command ?? ''}. Você tem 10 segundos.`} />
+      <ul className="ptut">
+        {(p.info?.lines ?? []).map((line) => (
+          <li key={line}>{line}</li>
+        ))}
+      </ul>
       <p className="mono rm-hint">
         Prontos: {p.ready?.length ?? 0} de {connected.length}. Começa quando todos estiverem prontos
         ou quando o tempo abaixo acabar.
@@ -203,55 +133,6 @@ function Tutorial({ snapshot, p }: { snapshot: RoomSnapshot; p: PartySnapshot })
   );
 }
 
-/** Toque Toque: cada toque conta, e o servidor confere o ritmo. */
-function BigTap({ p }: { p: PartySnapshot }) {
-  const times = p.times!;
-  const [now, setNow] = useState(serverNow());
-  const [count, setCount] = useState(0);
-  const last = useRef(0);
-  useEffect(() => {
-    const id = window.setInterval(() => setNow(serverNow()), 100);
-    return () => window.clearInterval(id);
-  }, []);
-  const live = now >= times.showAt && now <= times.endsAt;
-
-  const tap = () => {
-    const t = Date.now();
-    if (!live || t - last.current < TAP_MIN_GAP_MS) return;
-    last.current = t;
-    setCount((c) => c + 1);
-    sendRoom('tap');
-    sfx.ecoPad(count % 4, 80);
-    buzz(6);
-  };
-
-  return (
-    <>
-      <CommandBar text={p.command ?? ''} />
-      {now >= times.showAt && (
-        <Countdown
-          endsAt={toLocal(times.endsAt)}
-          totalMs={times.endsAt - times.showAt}
-          warnMs={3000}
-          decimals
-          label="PARA TERMINAR"
-        />
-      )}
-      <div className="ptap-count" aria-live="off">
-        {count}
-      </div>
-      <button
-        type="button"
-        className="ptap"
-        disabled={!live}
-        onPointerDown={(e) => (e.preventDefault(), tap())}
-      >
-        {now < times.showAt ? 'PREPARE' : live ? 'TOQUE!' : 'FIM'}
-      </button>
-    </>
-  );
-}
-
 /** O NoCap! na sala: escolhe a tela pela fase e deixa o palco cuidar das transições. */
 export function PartyPlay({ snapshot }: { snapshot: RoomSnapshot }) {
   const p = snapshot.party;
@@ -263,7 +144,16 @@ export function PartyPlay({ snapshot }: { snapshot: RoomSnapshot }) {
       screen = <Intro p={p} />;
       break;
     case 'micro':
-      screen = <MicroColor snapshot={snapshot} p={p} />;
+      screen =
+        p.game === 'time' ? (
+          <MicroTime snapshot={snapshot} p={p} />
+        ) : p.game === 'eco' ? (
+          <MicroEco snapshot={snapshot} p={p} />
+        ) : p.game === 'typing' ? (
+          <MicroTyping snapshot={snapshot} p={p} />
+        ) : (
+          <MicroColor snapshot={snapshot} p={p} />
+        );
       break;
     case 'ranking':
       screen = <Ranking snapshot={snapshot} p={p} />;
@@ -272,7 +162,12 @@ export function PartyPlay({ snapshot }: { snapshot: RoomSnapshot }) {
       screen = <Tutorial snapshot={snapshot} p={p} />;
       break;
     case 'big':
-      screen = <BigTap p={p} />;
+      screen =
+        p.game === 'x1' ? (
+          <BigX1 snapshot={snapshot} p={p} />
+        ) : (
+          <BigShapes snapshot={snapshot} p={p} />
+        );
       break;
     default:
       screen = null;

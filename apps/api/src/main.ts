@@ -9,7 +9,14 @@ import { Server } from 'colyseus';
 import { AppModule } from './app.module';
 import { AUTH } from './auth/auth.constants';
 import type { Auth } from './auth/auth';
-import { ColorRoom, EcoRoom, ImpostorRoom, PartyRoom, TimeRoom, roomDeps } from './rooms/color.room';
+import {
+  ColorRoom,
+  EcoRoom,
+  ImpostorRoom,
+  PartyRoom,
+  TimeRoom,
+  roomDeps,
+} from './rooms/color.room';
 import { InvitesService } from './rooms/invites.service';
 import { RoomsRepository } from './rooms/rooms.repository';
 

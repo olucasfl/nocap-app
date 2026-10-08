@@ -102,6 +102,57 @@ export interface EcoRoomState {
   hits?: Record<string, number>;
 }
 
+export interface PartyShapeItem {
+  id: number;
+  kind: 'circle' | 'triangle' | 'square' | 'rect';
+  color: 'orange' | 'blue' | 'yellow' | 'green';
+  x: number;
+  y: number;
+  at: number;
+  life: number;
+  cls: 'good' | 'bad' | 'neutral';
+}
+
+export interface PartyX1View {
+  opponent: string;
+  /** Placar líquido do meu ponto de vista (+2 = estou 2 na frente). */
+  lead: number;
+  round: number;
+  state: 'wait' | 'go' | 'between' | 'done';
+  shot: { x: number; y: number } | null;
+  goAt: number | null;
+  last: {
+    mine: number | null;
+    theirs: number | null;
+    won: boolean | null;
+    early: 'me' | 'them' | null;
+  } | null;
+  result: 'win' | 'tie' | 'loss' | null;
+  duels: number;
+  finished: number;
+}
+
+/** O que o aparelho precisa para mostrar o desafio (cada jogo usa os seus campos). */
+export interface PartyChallenge {
+  // Mesmíssima
+  target?: Hsb;
+  start?: Hsb;
+  showMs?: number;
+  blind?: boolean;
+  // Já Deu?
+  targetMs?: number;
+  showClock?: boolean;
+  hideAfterMs?: number | null;
+  factor?: number;
+  // Ecooo
+  sequence?: number[];
+  pads?: number;
+  stepMs?: number;
+  length?: number;
+  // Digitação
+  word?: string;
+}
+
 export interface PartySnapshot {
   totals: Record<string, number>;
   round: number;
@@ -109,22 +160,21 @@ export interface PartySnapshot {
   index: number;
   count: number;
   kind?: 'micro' | 'big';
-  game?: 'color';
-  variant?: 'standard' | 'inverted' | 'blind';
+  game?: 'color' | 'time' | 'eco' | 'typing' | 'shapes' | 'x1';
+  variant?: string;
   position?: number;
   command?: string;
+  info?: { title: string; lines: string[] };
   times?: { showAt: number; pickAt: number; endsAt: number };
-  challenge?: {
-    target: Hsb;
-    start: Hsb;
-    showMs: number;
-    blind: boolean;
-  };
+  challenge?: PartyChallenge;
   submitted?: string[];
   ready?: string[];
   mine?: boolean;
+  started?: boolean;
   delta?: Record<string, number>;
   autoStartAt?: number | null;
+  shapes?: { items: PartyShapeItem[] } | null;
+  x1?: PartyX1View | null;
 }
 
 export interface RoomSnapshot {
@@ -216,6 +266,7 @@ async function client() {
 
 let room: Room | null = null;
 let offsets: number[] = [];
+let lastRtt = 0;
 
 export function serverNow(): number {
   const median =
@@ -258,18 +309,22 @@ function attach(r: Room) {
   );
   r.onMessage('pong', (m: { t0?: number; ts?: number }) => {
     if (typeof m?.t0 === 'number' && typeof m?.ts === 'number') {
+      lastRtt = Math.max(0, Date.now() - m.t0);
       const offset = m.ts - (m.t0 + Date.now()) / 2;
       offsets = [...offsets, offset].slice(-5);
     }
   });
   offsets = [];
-  r.send('ping', { t0: Date.now() });
+  lastRtt = 0;
+  r.send('ping', { t0: Date.now(), rtt: lastRtt });
+  // Logo depois, de novo: o primeiro já leva o tempo de ida e volta que o servidor usa na Arena.
+  setTimeout(() => room === r && r.send('ping', { t0: Date.now(), rtt: lastRtt }), 1500);
   const pingInterval = setInterval(() => {
     if (room !== r) {
       clearInterval(pingInterval);
       return;
     }
-    r.send('ping', { t0: Date.now() });
+    r.send('ping', { t0: Date.now(), rtt: lastRtt });
   }, 20_000);
 
   r.onMessage('chat', (m: ChatMessage) =>

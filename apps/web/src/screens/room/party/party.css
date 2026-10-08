@@ -197,3 +197,161 @@
   text-align: center;
   font: 900 40px var(--font-display);
 }
+
+/* Relógio do Já Deu? (Tempo Falso e Cego) */
+.pclock {
+  display: grid;
+  place-items: center;
+  gap: 6px;
+  padding: 22px;
+  background: var(--ink);
+  color: var(--paper);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+}
+.pclock b {
+  font: 900 64px/1 var(--font-display);
+  font-variant-numeric: tabular-nums;
+}
+.pcount {
+  text-align: center;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+/* Digitação Ligeira */
+.pword {
+  padding: 22px 12px;
+  text-align: center;
+  font: 900 44px/1.1 var(--font-display);
+  letter-spacing: 0.02em;
+  background: var(--white);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  overflow-wrap: anywhere;
+}
+
+/* Tutorial do grande */
+.ptut {
+  margin: 0;
+  padding: 0 0 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+/* Caça-Formas */
+.pshape-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.pshape-bar > :first-child {
+  flex: 1;
+}
+.pshape-area {
+  position: relative;
+  flex: 1;
+  min-height: 360px;
+  overflow: hidden;
+  background: var(--white);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  touch-action: manipulation;
+}
+.pshape-area.red {
+  outline: 6px solid #e5342b;
+  outline-offset: -6px;
+}
+.pshape {
+  appearance: none;
+  position: absolute;
+  width: 64px;
+  height: 64px;
+  margin: -32px 0 0 -32px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  color: var(--ink);
+  background-color: var(--c);
+  border: var(--border);
+  cursor: pointer;
+  animation: p-pop 0.18s ease-out both;
+}
+.pshape.circle {
+  border-radius: 50%;
+}
+.pshape.triangle {
+  clip-path: polygon(50% 4%, 96% 94%, 4% 94%);
+  border: 0;
+}
+.pshape.square {
+  border-radius: 6px;
+}
+.pshape.rect {
+  width: 78px;
+  border-radius: 6px;
+  margin-left: -39px;
+}
+/* Padrões: cada cor tem o seu, para a regra não depender só de enxergar a cor. */
+.pshape.blue {
+  background-image: radial-gradient(rgb(255 255 255 / 0.55) 22%, transparent 24%);
+  background-size: 12px 12px;
+  color: #fff;
+}
+.pshape.yellow {
+  background-image: repeating-linear-gradient(45deg, rgb(0 0 0 / 0.22) 0 6px, transparent 6px 12px);
+}
+.pshape.green {
+  background-image:
+    repeating-linear-gradient(0deg, rgb(0 0 0 / 0.25) 0 3px, transparent 3px 10px),
+    repeating-linear-gradient(90deg, rgb(0 0 0 / 0.25) 0 3px, transparent 3px 10px);
+}
+@keyframes p-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pshape {
+    animation: none;
+  }
+}
+
+/* Arena X1 */
+.px1-area {
+  position: relative;
+  flex: 1;
+  min-height: 360px;
+  display: grid;
+  background: var(--paper);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  touch-action: manipulation;
+}
+.px1-area.go {
+  background: var(--white);
+}
+.px1-go {
+  appearance: none;
+  position: absolute;
+  width: 96px;
+  height: 96px;
+  margin: -48px 0 0 -48px;
+  font: 900 24px var(--font-display);
+  color: var(--on-accent);
+  background: var(--green);
+  border: var(--border);
+  border-radius: 50%;
+  box-shadow: 4px 4px 0 var(--ink);
+  cursor: pointer;
+}

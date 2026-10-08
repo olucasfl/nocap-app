@@ -104,9 +104,11 @@ export class ColorRoom extends Room {
       void this.disconnect();
     });
     // Sincronia de relógio: o aparelho mede o desvio para o relógio do servidor.
-    this.onMessage('ping', (c, m: { t0?: number }) =>
-      c.send('pong', { t0: m?.t0, ts: Date.now() }),
-    );
+    this.onMessage('ping', (c, m: { t0?: number; rtt?: number }) => {
+      const id = (c.userData as AuthData | undefined)?.id;
+      if (id && typeof m?.rtt === 'number') this.onLatency(id, m.rtt);
+      c.send('pong', { t0: m?.t0, ts: Date.now() });
+    });
     this.onMessage('chat', (c, m: { text?: unknown }) => {
       const id = (c.userData as AuthData | undefined)?.id;
       if (!id) return;
@@ -123,12 +125,18 @@ export class ColorRoom extends Room {
 
     this.setSimulationInterval(() => {
       if (this.engine.tick()) this.publish();
-    }, TICK_MS);
+    }, this.tickMs);
   }
 
   protected makeEngine(opts: ConstructorParameters<typeof ColorRoomEngine>[0]): ColorRoomEngine {
     return new ColorRoomEngine(opts);
   }
+
+  /** De quanto em quanto tempo a sala avança por relógio (a Arena X1 pede mais fino). */
+  protected tickMs = TICK_MS;
+
+  /** O aparelho informou o tempo de ida e volta (usado só onde latência importa). */
+  protected onLatency(_id: string, _rtt: number) {}
 
   /** Gancho antes de mudar as regras (o Ecooo troca de formato aqui). */
   protected beforeConfigure(_id: string, _m: { mode?: unknown } | undefined) {}
@@ -347,6 +355,13 @@ export class EcoRoom extends ColorRoom {
 
 /** Sala do NoCap!: micro-desafios e minijogos grandes, todos jogando ao mesmo tempo (spec 016). */
 export class PartyRoom extends ColorRoom {
+  /** Fino o bastante para o botão da Arena X1 aparecer na hora marcada. */
+  protected override tickMs = 50;
+
+  protected override onLatency(id: string, rtt: number) {
+    (this.engine as PartyRoomEngine).setLatency(id, rtt);
+  }
+
   protected override makeEngine(opts: ConstructorParameters<typeof ColorRoomEngine>[0]) {
     return new PartyRoomEngine(opts);
   }
@@ -356,7 +371,20 @@ export class PartyRoom extends ColorRoom {
     this.onMessage('submit', (c, m: { color?: { h: number; s: number; b: number } }) =>
       this.act(c, (id) => engine().submitColor(id, m?.color as never)),
     );
-    this.onMessage('tap', (c) => this.act(c, (id) => engine().tap(id)));
+    this.onMessage('tbegin', (c) => this.act(c, (id) => engine().timeBegin(id)));
+    this.onMessage('tstop', (c) => this.act(c, (id) => engine().timeStop(id)));
+    this.onMessage('etap', (c, m: { pad?: number }) =>
+      this.act(c, (id) => engine().ecoTap(id, Number(m?.pad))),
+    );
+    this.onMessage('type', (c, m: { text?: string; touched?: boolean; submit?: boolean }) =>
+      this.act(c, (id) => engine().typing(id, String(m?.text ?? ''), !!m?.touched, !!m?.submit)),
+    );
+    // Clique de forma: sem aviso a todos (muitos por segundo e nada muda na tela de ninguém).
+    this.onMessage('sclick', (c, m: { id?: number }) => {
+      const uid = (c.userData as { id?: string } | undefined)?.id;
+      if (uid) engine().shapeClick(uid, Number(m?.id));
+    });
+    this.onMessage('xclick', (c) => this.act(c, (id) => engine().xClick(id)));
     this.onMessage('tready', (c) => this.act(c, (id) => engine().tutorialReady(id)));
     this.onMessage('begin', (c) => this.act(c, (id) => engine().begin(id)));
   }
