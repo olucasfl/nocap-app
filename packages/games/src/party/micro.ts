@@ -1,7 +1,7 @@
 import { createRng, randInt } from '../core/rng';
 import { ecoPresets, sequenceFor } from '../eco';
 import { generateTimeRound, scoreTime, type TimeSettings } from '../time';
-import { WORDS } from './words';
+import { PHRASES, WORDS } from './words';
 
 /** Pontos máximos de um micro-desafio; o minijogo grande vale `BIG_WEIGHT` vezes isto. */
 export const MICRO_MAX = 1000;
@@ -145,55 +145,68 @@ export function ecoPoints(ref: MicroRef, taps: readonly number[]): number {
 
 // ---- Digitação Ligeira ----
 
-export const TYPING_PICK_MS = 8000;
 export const TYPING_TRAP_MS = 6000;
 
-const strip = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '');
+const strip = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+const clean = (s: string) => s.replace(/\s+/g, ' ').trim();
 
 export interface TypingChallenge {
+  /** A palavra ou a frase mostrada. */
   word: string;
   /** O que precisa ser digitado; `null` na Mão Boba (não digitar nada). */
   expected: string | null;
 }
 
+/** Regras que só funcionam com palavra solta (com frase ficariam longas ou confusas). */
+const WORD_ONLY = new Set(['reverse', 'count', 'ends', 'twice']);
+
 export function typingChallenge(ref: MicroRef): TypingChallenge {
   const rng = createRng(`${ref.seed}:word`);
-  let word = WORDS[randInt(rng, 0, WORDS.length - 1)]!;
-  // "Sem acentos" só faz sentido com palavra acentuada.
-  if (ref.variant === 'noaccents') {
-    const accented = WORDS.filter((w) => w !== strip(w));
-    word = accented[randInt(rng, 0, accented.length - 1)]!;
-  }
+  // Cerca de 4 em cada 10 textos são frases (quando a regra deixa).
+  const usePhrase = !WORD_ONLY.has(ref.variant) && rng() < 0.4;
+  let list: readonly string[] = usePhrase ? PHRASES : WORDS;
+  // A regra só faz sentido se o texto tiver o que ela mexe: "sem A" precisa de A; "sem acentos"
+  // precisa de acento.
+  if (ref.variant === 'noaccents') list = list.filter((t) => t !== strip(t));
+  if (ref.variant === 'noa') list = list.filter((t) => strip(t.toLowerCase()).includes('a'));
+  const word = list[randInt(rng, 0, list.length - 1)]!;
   const lower = word.toLowerCase();
+  const plain = strip(lower);
   switch (ref.variant) {
     case 'maohoba':
       return { word, expected: null };
     case 'reverse':
-      return { word, expected: [...strip(lower)].reverse().join('') };
+      return { word, expected: [...plain].reverse().join('') };
     case 'novowels':
-      return { word, expected: strip(lower).replace(/[aeiou]/g, '') };
+      return { word, expected: clean(plain.replace(/[aeiou]/g, '')) };
     case 'noaccents':
-      return { word, expected: strip(lower) };
+      return { word, expected: plain };
     case 'noa':
-      return { word, expected: strip(lower).replace(/a/g, '') };
+      return { word, expected: clean(plain.replace(/a/g, '')) };
     case 'count':
-      return { word, expected: String(strip(lower).length) };
-    case 'ends': {
-      const w = strip(lower);
-      return { word, expected: w[0]! + w[w.length - 1]! };
-    }
+      return { word, expected: String(plain.length) };
+    case 'ends':
+      return { word, expected: plain[0]! + plain[plain.length - 1]! };
     case 'twice':
-      return { word, expected: strip(lower) + strip(lower) };
+      return { word, expected: plain + plain };
     default:
-      return { word, expected: strip(lower) };
+      return { word, expected: plain };
   }
 }
 
-/** Compara sem maiúsculas e sem espaços nas pontas; só "sem acentos" exige não ter acento. */
+/** Quanto tempo a pessoa tem: 8 s numa palavra e até 17 s numa frase; a Mão Boba é curta. */
+export function typingPickMs(ref: MicroRef): number {
+  if (ref.variant === 'maohoba') return TYPING_TRAP_MS;
+  const c = typingChallenge(ref);
+  const len = Math.max(c.word.length, c.expected?.length ?? 0);
+  return Math.min(17_000, Math.max(8000, 4500 + 480 * len));
+}
+
+/** Compara sem maiúsculas, sem espaços sobrando; só "sem acentos" exige não ter acento. */
 export function typingMatches(ref: MicroRef, text: string): boolean {
   const c = typingChallenge(ref);
   if (c.expected === null) return false;
-  const typed = text.trim().toLowerCase();
+  const typed = clean(text.toLowerCase());
   return ref.variant === 'noaccents' ? typed === c.expected : strip(typed) === c.expected;
 }
 
@@ -208,8 +221,8 @@ export function typingPoints(
   elapsedMs: number,
 ): number {
   if (ref.variant === 'maohoba') return text.trim() || touched ? -500 : MICRO_MAX;
-  // Nas regras de troll, errar custa 300; na palavra exata, só deixa de pontuar.
+  // Nas regras de troll, errar custa 300; no texto exato, só deixa de pontuar.
   if (!typingMatches(ref, text)) return ref.variant === 'standard' ? 0 : -300;
-  const speed = Math.max(0, 1 - elapsedMs / TYPING_PICK_MS);
+  const speed = Math.max(0, 1 - elapsedMs / typingPickMs(ref));
   return 400 + Math.round(600 * speed);
 }

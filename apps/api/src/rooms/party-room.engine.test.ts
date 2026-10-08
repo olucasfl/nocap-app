@@ -4,7 +4,6 @@ import {
   POINTS_NEUTRAL,
   buildPlan,
   colorPoints,
-  colorScoreTarget,
   ecoChallenge,
   ecoPoints,
   scoreColor,
@@ -112,7 +111,7 @@ function playPerfect(c: Ctx, slot: MicroSlot): number {
         runUntil(c, 'ranking');
         return 1000;
       }
-      const target = colorScoreTarget(slot.variant, snap(room).party.challenge.target);
+      const target = snap(room).party.challenge.target;
       for (const id of ids) room.submitColor(id, target);
       return colorPoints(slot.variant, 10);
     }
@@ -336,16 +335,6 @@ describe('PartyRoomEngine: micro-desafios', () => {
     runUntil(c, 'ranking');
     expect(snap(c.room).party.delta!.ana).toBe(-500);
     expect(snap(c.room).party.delta!.bia).toBe(1000);
-  });
-
-  it('Cor Oposta: pontua pela cor do outro lado do círculo, não pela mostrada', () => {
-    const { c, slot } = firstOf('color', 'complementary');
-    toPick(c);
-    const shown = snap(c.room).party.challenge.target;
-    c.room.submitColor('ana', colorScoreTarget(slot.variant, shown));
-    c.room.submitColor('bia', shown);
-    expect(snap(c.room).party.delta!.ana).toBe(1000);
-    expect(snap(c.room).party.delta!.bia).toBe(0);
   });
 
   it('quem não responde até o fim do tempo fica com 0 e o desafio avança sozinho', () => {

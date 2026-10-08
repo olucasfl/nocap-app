@@ -14,9 +14,9 @@ import {
   SHAPE_KINDS,
   ShapesSim,
   VARIANTS,
-  colorScoreTarget,
   SHAPES_DURATION_MS,
-  TYPING_PICK_MS,
+  PHRASES,
+  typingPickMs,
   WORDS,
   X1_MAX_ROUNDS,
   bigInfo,
@@ -201,9 +201,14 @@ describe('Digitação Ligeira', () => {
   it('palavra exata vale 400 a 1000 conforme a rapidez; errada vale 0', () => {
     const c = typingChallenge(ref('standard'));
     expect(typingPoints(ref('standard'), c.expected!, false, 0)).toBe(1000);
-    expect(typingPoints(ref('standard'), c.expected!.toUpperCase(), false, TYPING_PICK_MS)).toBe(
-      400,
-    );
+    expect(
+      typingPoints(
+        ref('standard'),
+        c.expected!.toUpperCase(),
+        false,
+        typingPickMs(ref('standard')),
+      ),
+    ).toBe(400);
     expect(typingPoints(ref('standard'), 'errado', false, 100)).toBe(0);
   });
 
@@ -429,12 +434,6 @@ describe('Ecooo: tocar ao acaso não pontua', () => {
 });
 
 describe('regras de troll e negativas', () => {
-  it('Cor Oposta: a nota é contra o matiz + 180°', () => {
-    const t = { h: 40, s: 60, b: 70 };
-    expect(colorScoreTarget('complementary', t)).toEqual({ h: 220, s: 60, b: 70 });
-    expect(colorScoreTarget('standard', t)).toEqual(t);
-  });
-
   it('Já Deu? Sem Estourar: passar do alvo (com 150 ms de folga) tira 400', () => {
     const ref = { seed: 'noover-1', variant: 'noover' };
     const c = timeChallenge(ref);
@@ -483,5 +482,56 @@ describe('regras de troll e negativas', () => {
       }
     }
     expect(cmds.size).toBeGreaterThanOrEqual(20);
+  });
+});
+
+describe('Digitação: frases e regras que fazem sentido', () => {
+  it('"sem a letra A" só sorteia texto que tem A, e "sem acentos" só texto com acento', () => {
+    for (let i = 0; i < 400; i++) {
+      const noa = typingChallenge({ seed: `na-${i}`, variant: 'noa' });
+      expect(noa.word.normalize('NFD').toLowerCase()).toMatch(/a/);
+      expect(noa.expected).not.toMatch(/a/);
+      expect(noa.expected!.length).toBeGreaterThan(0);
+      const acc = typingChallenge({ seed: `ac-${i}`, variant: 'noaccents' });
+      expect(acc.word).not.toBe(acc.expected);
+    }
+  });
+
+  it('o banco tem frases curtas, e frases aparecem nas regras que as aceitam', () => {
+    expect(PHRASES.length).toBeGreaterThanOrEqual(30);
+    expect(PHRASES.every((p) => p.length >= 8 && p.length <= 32)).toBe(true);
+    expect(new Set(PHRASES).size).toBe(PHRASES.length);
+    let phrases = 0;
+    for (let i = 0; i < 300; i++) {
+      if (typingChallenge({ seed: `fr-${i}`, variant: 'standard' }).word.includes(' ')) phrases++;
+    }
+    expect(phrases).toBeGreaterThan(60);
+    expect(phrases).toBeLessThan(180);
+    // Contar, de trás para frente, pontas e dobrar são só com palavra solta.
+    for (const v of ['reverse', 'count', 'ends', 'twice']) {
+      for (let i = 0; i < 100; i++) {
+        expect(typingChallenge({ seed: `wo-${i}`, variant: v }).word).not.toContain(' ');
+      }
+    }
+  });
+
+  it('frase exata vale; espaços sobrando e maiúsculas não atrapalham; mais tempo para frases', () => {
+    let seed = '';
+    for (let i = 0; i < 300 && !seed; i++) {
+      if (typingChallenge({ seed: `p-${i}`, variant: 'standard' }).word.includes(' '))
+        seed = `p-${i}`;
+    }
+    const ref = { seed, variant: 'standard' };
+    const c = typingChallenge(ref);
+    expect(typingPoints(ref, c.expected!.toUpperCase(), false, 0)).toBe(1000);
+    expect(typingPoints(ref, '  ' + c.expected!.replace(/ /g, '   ') + ' ', false, 0)).toBe(1000);
+    expect(typingPickMs(ref)).toBeGreaterThan(
+      typingPickMs({ seed: 'palavra', variant: 'novowels' }) - 1,
+    );
+    expect(typingPickMs(ref)).toBeLessThanOrEqual(17_000);
+  });
+
+  it('a Mão Boba continua curta', () => {
+    expect(typingPickMs({ seed: 'x', variant: 'maohoba' })).toBe(6000);
   });
 });

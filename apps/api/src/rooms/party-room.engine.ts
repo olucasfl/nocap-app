@@ -8,7 +8,6 @@ import {
   bigInfo,
   buildPlan,
   colorPoints,
-  colorScoreTarget,
   commandText,
   ecoChallenge,
   ecoPoints,
@@ -320,10 +319,7 @@ export class PartyRoomEngine extends ColorRoomEngine {
     this.colorAnswers.set(id, answer);
     // Trave a cor que NÃO devia: perde 500 (a regra pedia para esperar).
     if (slot.variant === 'wait') return this.answered(id, -500);
-    const target = colorScoreTarget(
-      slot.variant,
-      generateColorRound(slot.seed, { rounds: 1, showMs: 3000 }, 0),
-    );
+    const target = generateColorRound(slot.seed, { rounds: 1, showMs: 3000 }, 0);
     this.answered(id, colorPoints(slot.variant, scoreColor(target, answer)));
   }
 
@@ -654,10 +650,7 @@ export class PartyRoomEngine extends ColorRoomEngine {
           reveal:
             slot.kind === 'micro' && slot.game === 'color'
               ? {
-                  target: colorScoreTarget(
-                    slot.variant,
-                    generateColorRound(slot.seed, { rounds: 1, showMs: 3000 }, 0),
-                  ),
+                  target: generateColorRound(slot.seed, { rounds: 1, showMs: 3000 }, 0),
                   answers: Object.fromEntries(this.colorAnswers),
                 }
               : null,

@@ -3,8 +3,7 @@ import { ECO_PAUSE_MS } from '../eco';
 import {
   ECO_MICRO_STEP_MS,
   PAD_NAMES,
-  TYPING_PICK_MS,
-  TYPING_TRAP_MS,
+  typingPickMs,
   ecoChallenge,
   noteToPoints,
   timeChallenge,
@@ -57,10 +56,9 @@ export type Slot = MicroSlot | BigSlot;
 /** Sorteio de variante: ~80% normal e ~20% de pegadinhas (spec 016, seção 3). */
 export const VARIANTS: Record<MicroGame, { id: string; weight: number }[]> = {
   color: [
-    { id: 'standard', weight: 55 },
+    { id: 'standard', weight: 66 },
     { id: 'inverted', weight: 12 },
-    { id: 'blind', weight: 10 },
-    { id: 'complementary', weight: 13 },
+    { id: 'blind', weight: 12 },
     { id: 'wait', weight: 10 },
   ],
   time: [
@@ -169,8 +167,6 @@ export function commandText(slot: Slot): string {
   const v = slot.variant;
   switch (slot.game) {
     case 'color':
-      if (v === 'complementary')
-        return 'Reproduza a cor OPOSTA (do outro lado do círculo de cores)';
       if (v === 'wait') return 'NÃO TRAVE A COR. Espere o tempo acabar';
       return v === 'inverted'
         ? 'Deixe a cor o mais DIFERENTE possível'
@@ -277,7 +273,7 @@ export function microTiming(slot: MicroSlot): MicroTiming {
     case 'typing':
       return {
         showMs: 1500,
-        pickMs: slot.variant === 'maohoba' ? TYPING_TRAP_MS : TYPING_PICK_MS,
+        pickMs: typingPickMs(slot),
       };
   }
 }
@@ -294,12 +290,4 @@ export function colorPoints(variant: string, note: number): number {
     return noteToPoints(10 - note) - penalty;
   }
   return noteToPoints(note);
-}
-
-/** A cor contra a qual se dá a nota: na Oposta é a do outro lado do círculo de cores. */
-export function colorScoreTarget(
-  variant: string,
-  target: { h: number; s: number; b: number },
-): { h: number; s: number; b: number } {
-  return variant === 'complementary' ? { ...target, h: (target.h + 180) % 360 } : target;
 }

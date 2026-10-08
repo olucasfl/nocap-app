@@ -304,7 +304,8 @@ a.hub-daily {
   }
 }
 
-.hub-card-party {
+/* Dois seletores: precisa vencer `.hub-card { height }` dos estilos de tela grande (responsive.css). */
+.hub-card.hub-card-party {
   grid-column: 1 / -1;
   height: auto;
   min-height: 248px;
@@ -362,7 +363,7 @@ a.hub-daily {
   justify-self: end;
 }
 @media (max-width: 360px) {
-  .hub-card-party {
+  .hub-card.hub-card-party {
     grid-template-columns: 1fr;
   }
   .party-art {
@@ -404,5 +405,12 @@ a.hub-daily {
 @media (prefers-reduced-motion: reduce) {
   .hub-card-party:hover .hub-cta svg {
     transform: none;
+  }
+}
+
+@media (min-width: 900px) {
+  .hub-card.hub-card-party {
+    min-height: 300px;
+    padding: 22px 26px;
   }
 }

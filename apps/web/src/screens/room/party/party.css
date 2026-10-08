@@ -358,3 +358,9 @@
 .prank li:has(.prank-swatch) {
   grid-template-columns: 28px 40px 1fr auto;
 }
+
+/* Frases: letra menor para caber em duas linhas */
+.pword.long {
+  font-size: 28px;
+  line-height: 1.25;
+}

@@ -100,3 +100,44 @@ export const WORDS: readonly string[] = [
   'coruja',
   'borboleta',
 ];
+
+/**
+ * Frases curtas (até 30 caracteres) para digitar. Todas têm a letra "a" e várias têm acento, para
+ * as regras "sem a letra A" e "sem acentos" nunca ficarem vazias nem triviais.
+ */
+export const PHRASES: readonly string[] = [
+  'bom dia pessoal',
+  'pão com manteiga',
+  'vamos jogar de novo',
+  'o gato subiu no telhado',
+  'chuva de verão',
+  'café com leite',
+  'amanhã eu chego cedo',
+  'isso é muito legal',
+  'fim de semana na praia',
+  'o tempo não para',
+  'sorvete de chocolate',
+  'devagar e sempre',
+  'cada coisa em seu lugar',
+  'mais vale tarde do que nunca',
+  'água mole em pedra dura',
+  'um dia de cada vez',
+  'foguete não tem ré',
+  'tudo azul por aqui',
+  'ninguém é de ferro',
+  'rir é o melhor remédio',
+  'de grão em grão',
+  'quem ri por último',
+  'ela abriu a janela',
+  'o pássaro cantou cedo',
+  'a lua está linda hoje',
+  'preciso de uma pausa',
+  'que a sorte esteja com você',
+  'não vale correr na frente',
+  'agora é a minha vez',
+  'o jogo já vai começar',
+  'cuidado com a pegadinha',
+  'leia com muita atenção',
+  'acertei na última hora',
+  'todo mundo na mesma sala',
+];

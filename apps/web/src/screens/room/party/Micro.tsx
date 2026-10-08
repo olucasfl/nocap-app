@@ -229,7 +229,7 @@ export function MicroTyping({ snapshot, p }: Props) {
   return (
     <>
       <CommandBar text={p.command ?? ''} />
-      <div className="pword" aria-label="Palavra">
+      <div className={`pword${(ch.word ?? '').length > 14 ? ' long' : ''}`} aria-label="Texto">
         {ch.word}
       </div>
       {picking && (
