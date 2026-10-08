@@ -104,10 +104,8 @@ export interface EcoRoomState {
 
 export interface PartyShapeItem {
   id: number;
-  kind: 'circle' | 'triangle' | 'square' | 'rect';
-  color: 'orange' | 'blue' | 'yellow' | 'green';
-  x: number;
-  y: number;
+  kind: 'circle' | 'triangle' | 'square' | 'rect' | 'diamond' | 'star' | 'hexagon' | 'cross';
+  color: 'orange' | 'blue' | 'yellow' | 'green' | 'purple' | 'cyan';
   at: number;
   life: number;
   cls: 'good' | 'bad' | 'neutral';
@@ -172,8 +170,10 @@ export interface PartySnapshot {
   mine?: boolean;
   started?: boolean;
   delta?: Record<string, number>;
+  /** Mesmíssima: a cor alvo e a que cada um travou (aparece no placar). */
+  reveal?: { target: Hsb; answers: Record<string, Hsb> } | null;
   autoStartAt?: number | null;
-  shapes?: { items: PartyShapeItem[] } | null;
+  shapes?: { items: PartyShapeItem[]; simSeed: string } | null;
   x1?: PartyX1View | null;
 }
 

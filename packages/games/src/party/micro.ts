@@ -55,6 +55,8 @@ export interface TimeChallenge {
   hideAfterMs: number | null;
   /** Velocidade do relógio mostrado em relação ao real. */
   factor: number;
+  /** Sem Estourar: passar do alvo tira pontos. */
+  noOver: boolean;
 }
 
 export function timeChallenge(ref: MicroRef): TimeChallenge {
@@ -72,6 +74,7 @@ export function timeChallenge(ref: MicroRef): TimeChallenge {
     showClock: ref.variant !== 'standard',
     hideAfterMs: ref.variant === 'cego' ? 1000 : null,
     factor,
+    noOver: ref.variant === 'noover',
   };
 }
 
@@ -79,6 +82,8 @@ export function timeChallenge(ref: MicroRef): TimeChallenge {
 export function timePoints(ref: MicroRef, ms: number): number {
   const c = timeChallenge(ref);
   if (!Number.isInteger(ms) || ms < 200 || ms > c.expectedMs * 3) return 0;
+  // Sem Estourar: passou do alvo (com 150 ms de folga), perde 400.
+  if (c.noOver && ms > c.expectedMs + 150) return -400;
   return noteToPoints(scoreTime(c.expectedMs, ms, MICRO_TIME_SETTINGS));
 }
 
@@ -103,12 +108,18 @@ export function ecoChallenge(ref: MicroRef): EcoChallenge {
   const settings = { ...ecoPresets.classic, startLength: length };
   const sequence = sequenceFor(ref.seed, settings, 1);
   const forbidden = ref.variant === 'forbidden' ? sequence[randInt(rng, 0, length - 1)]! : null;
+  // Trocado: esquerda e direita trocam de lugar (laranja com azul, amarelo com verde).
+  const SWAP = [1, 0, 3, 2];
   const expected =
     ref.variant === 'reverse'
       ? [...sequence].reverse()
-      : forbidden !== null
-        ? sequence.filter((p) => p !== forbidden)
-        : sequence;
+      : ref.variant === 'oddonly'
+        ? sequence.filter((_, i) => i % 2 === 0)
+        : ref.variant === 'swap'
+          ? sequence.map((p) => SWAP[p]!)
+          : forbidden !== null
+            ? sequence.filter((p) => p !== forbidden)
+            : sequence;
   return {
     sequence,
     pads: 4,
@@ -119,17 +130,22 @@ export function ecoChallenge(ref: MicroRef): EcoChallenge {
   };
 }
 
-/** Proporcional aos acertos por posição (9 de 11 = ~818); tocar o botão proibido zera. */
+/**
+ * Proporcional aos acertos por posição, descontando o que se acerta só por sorte (com 4 botões,
+ * tocar ao acaso acerta 1 em cada 4): tocar qualquer coisa vale 0 e a sequência certa vale 1000.
+ * Tocar o botão proibido tira 300.
+ */
 export function ecoPoints(ref: MicroRef, taps: readonly number[]): number {
   const c = ecoChallenge(ref);
-  if (c.forbidden !== null && taps.includes(c.forbidden)) return 0;
+  if (c.forbidden !== null && taps.includes(c.forbidden)) return -300;
   const hits = c.expected.reduce((n, pad, i) => n + (taps[i] === pad ? 1 : 0), 0);
-  return Math.round((MICRO_MAX * hits) / c.expected.length);
+  const chance = c.expected.length / c.pads;
+  return Math.round((MICRO_MAX * Math.max(0, hits - chance)) / (c.expected.length - chance));
 }
 
 // ---- Digitação Ligeira ----
 
-export const TYPING_PICK_MS = 9000;
+export const TYPING_PICK_MS = 8000;
 export const TYPING_TRAP_MS = 6000;
 
 const strip = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '');
@@ -160,6 +176,14 @@ export function typingChallenge(ref: MicroRef): TypingChallenge {
       return { word, expected: strip(lower) };
     case 'noa':
       return { word, expected: strip(lower).replace(/a/g, '') };
+    case 'count':
+      return { word, expected: String(strip(lower).length) };
+    case 'ends': {
+      const w = strip(lower);
+      return { word, expected: w[0]! + w[w.length - 1]! };
+    }
+    case 'twice':
+      return { word, expected: strip(lower) + strip(lower) };
     default:
       return { word, expected: strip(lower) };
   }
@@ -184,7 +208,8 @@ export function typingPoints(
   elapsedMs: number,
 ): number {
   if (ref.variant === 'maohoba') return text.trim() || touched ? -500 : MICRO_MAX;
-  if (!typingMatches(ref, text)) return 0;
+  // Nas regras de troll, errar custa 300; na palavra exata, só deixa de pontuar.
+  if (!typingMatches(ref, text)) return ref.variant === 'standard' ? 0 : -300;
   const speed = Math.max(0, 1 - elapsedMs / TYPING_PICK_MS);
   return 400 + Math.round(600 * speed);
 }

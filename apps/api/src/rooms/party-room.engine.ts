@@ -8,11 +8,13 @@ import {
   bigInfo,
   buildPlan,
   colorPoints,
+  colorScoreTarget,
   commandText,
   ecoChallenge,
   ecoPoints,
   generateColorRound,
   generateColorStart,
+  hashSeed,
   microTiming,
   scoreColor,
   shapeClickPoints,
@@ -46,7 +48,8 @@ export const MICRO_LEAD_MS = 1200;
 export const SHOW_GRACE_MS = 600;
 export const RANKING_MS = 4000;
 /** Tutorial do minijogo grande: começa quando todos estão prontos ou após este tempo. */
-export const TUTORIAL_MS = 20_000;
+// Só começa quando todos dão OK; este prazo longo é só para quem sumiu não travar a sala.
+export const TUTORIAL_MS = 60_000;
 export const BIG_LEAD_MS = 1500;
 /** Teto do X1 (15 disparos de até ~6 s): depois disso os duelos abertos viram empate. */
 export const X1_CAP_MS = 100_000;
@@ -94,6 +97,8 @@ export class PartyRoomEngine extends ColorRoomEngine {
   /** Quem já respondeu o desafio atual. */
   private submitted = new Set<string>();
   private points = new Map<string, number>();
+  /** A cor que cada um travou na Mesmíssima (aparece no placar como feedback). */
+  private colorAnswers = new Map<string, Hsb>();
   private ready = new Set<string>();
   private times = { showAt: 0, pickAt: 0, endsAt: 0 };
 
@@ -173,6 +178,7 @@ export class PartyRoomEngine extends ColorRoomEngine {
     this.timeStarts = new Map();
     this.ecoTaps = new Map();
     this.typed = new Set();
+    this.colorAnswers = new Map();
     if (slot.kind === 'micro') {
       const timing = microTiming(slot);
       const showAt = t + MICRO_LEAD_MS;
@@ -311,15 +317,23 @@ export class PartyRoomEngine extends ColorRoomEngine {
       answer.b >= 0 &&
       answer.b <= 100;
     if (!valid) throw new RoomError('Resposta inválida');
-    const target = generateColorRound(slot.seed, { rounds: 1, showMs: 3000 }, 0);
+    this.colorAnswers.set(id, answer);
+    // Trave a cor que NÃO devia: perde 500 (a regra pedia para esperar).
+    if (slot.variant === 'wait') return this.answered(id, -500);
+    const target = colorScoreTarget(
+      slot.variant,
+      generateColorRound(slot.seed, { rounds: 1, showMs: 3000 }, 0),
+    );
     this.answered(id, colorPoints(slot.variant, scoreColor(target, answer)));
   }
 
   /** Já Deu?: COMEÇAR dispara o relógio de quem apertou (o servidor mede). */
   timeBegin(id: string) {
-    this.requireMicro(id, 'time');
+    const slot = this.requireMicro(id, 'time');
     if (this.submitted.has(id) || this.timeStarts.has(id)) return;
     if (this.now() < this.times.pickAt - 300) throw new RoomError('Espere o alvo sumir');
+    // Quieto: a regra era não apertar nada; apertou, perde 500.
+    if (slot.variant === 'quieto') return this.answered(id, -500);
     this.timeStarts.set(id, this.now());
   }
 
@@ -368,6 +382,12 @@ export class PartyRoomEngine extends ColorRoomEngine {
       if (this.points.has(id)) continue;
       if (slot.game === 'eco') {
         this.points.set(id, ecoPoints(slot, this.ecoTaps.get(id) ?? []));
+      } else if (
+        (slot.game === 'color' && slot.variant === 'wait') ||
+        (slot.game === 'time' && slot.variant === 'quieto')
+      ) {
+        // Ficou quieto como a regra pedia.
+        this.points.set(id, 1000);
       } else if (slot.game === 'typing' && slot.variant === 'maohoba') {
         this.points.set(id, typingPoints(slot, '', this.typed.has(id), 0));
       } else {
@@ -630,6 +650,17 @@ export class PartyRoomEngine extends ColorRoomEngine {
           kind: slot.kind,
           game: slot.game,
           delta: Object.fromEntries(this.lastDelta),
+          // Mesmíssima: a cor alvo e o que cada um colocou, como feedback.
+          reveal:
+            slot.kind === 'micro' && slot.game === 'color'
+              ? {
+                  target: colorScoreTarget(
+                    slot.variant,
+                    generateColorRound(slot.seed, { rounds: 1, showMs: 3000 }, 0),
+                  ),
+                  answers: Object.fromEntries(this.colorAnswers),
+                }
+              : null,
         },
       };
     }
@@ -661,7 +692,10 @@ export class PartyRoomEngine extends ColorRoomEngine {
         ready: [...this.ready],
         mine: viewerId ? this.ready.has(viewerId) : false,
         autoStartAt: this.phase === 'tutorial' ? this.phaseEndsAt : null,
-        shapes: this.phase === 'big' && this.shapes ? { items: this.shapes.items } : null,
+        shapes:
+          this.phase === 'big' && this.shapes
+            ? { items: this.shapes.items, simSeed: String(hashSeed(slot.seed)) }
+            : null,
         x1: this.phase === 'big' && slot.game === 'x1' ? this.x1View(viewerId) : null,
       },
     };

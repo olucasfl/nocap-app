@@ -1,6 +1,6 @@
-import { Countdown } from '@/components/Countdown';
+import { toHex } from '@/games/color/hex';
 import { useAuth } from '@/lib/auth';
-import { sendRoom, toLocal, type PartySnapshot, type RoomSnapshot } from '@/lib/rooms';
+import { sendRoom, type PartySnapshot, type RoomSnapshot } from '@/lib/rooms';
 import { BigShapes, BigX1 } from './Big';
 import { MicroColor, MicroEco, MicroTime, MicroTyping } from './Micro';
 import { Stage } from './Stage';
@@ -48,6 +48,12 @@ function Ranking({ snapshot, p }: { snapshot: RoomSnapshot; p: PartySnapshot }) 
   const max = Math.max(1, ...sorted.map(([, v]) => Math.abs(v)));
   return (
     <>
+      {p.reveal && (
+        <div className="preveal" aria-label="A cor alvo">
+          <i style={{ background: toHex(p.reveal.target) }} />
+          <span className="mono">ALVO {toHex(p.reveal.target)}</span>
+        </div>
+      )}
       <h2 className="mono" style={{ margin: 0 }}>
         PLACAR
       </h2>
@@ -62,6 +68,15 @@ function Ranking({ snapshot, p }: { snapshot: RoomSnapshot; p: PartySnapshot }) 
                 style={{ transform: `scaleX(${Math.max(0, total) / max})` }}
               />
               <span className="mono prank-pos">{pos}º</span>
+              {p.reveal && (
+                <i
+                  className="prank-swatch"
+                  style={{
+                    background: p.reveal.answers[id] ? toHex(p.reveal.answers[id]) : undefined,
+                  }}
+                  title={p.reveal.answers[id] ? toHex(p.reveal.answers[id]) : 'não travou'}
+                />
+              )}
               <span className="prank-name">@{nameOf(snapshot, id)}</span>
               <span className="mono prank-pts">
                 {total.toLocaleString('pt-BR')}
@@ -96,18 +111,18 @@ function Tutorial({ snapshot, p }: { snapshot: RoomSnapshot; p: PartySnapshot })
           <li key={line}>{line}</li>
         ))}
       </ul>
+      <ul className="pready" aria-label="Quem já está pronto">
+        {connected.map((m) => (
+          <li key={m.id} className={p.ready?.includes(m.id) ? 'on' : ''}>
+            <span>@{m.username}</span>
+            <span className="mono">{p.ready?.includes(m.id) ? 'PRONTO' : 'LENDO...'}</span>
+          </li>
+        ))}
+      </ul>
       <p className="mono rm-hint">
-        Prontos: {p.ready?.length ?? 0} de {connected.length}. Começa quando todos estiverem prontos
-        ou quando o tempo abaixo acabar.
+        Leia com calma. O minijogo começa sozinho assim que todos derem OK ({p.ready?.length ?? 0}{' '}
+        de {connected.length}).
       </p>
-      {p.autoStartAt && (
-        <Countdown
-          endsAt={toLocal(p.autoStartAt)}
-          totalMs={20_000}
-          warnMs={5000}
-          label="PARA COMEÇAR"
-        />
-      )}
       <div className="stack">
         <button
           type="button"

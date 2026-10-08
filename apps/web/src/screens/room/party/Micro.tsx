@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Countdown } from '@/components/Countdown';
 import { EcoBoard } from '@/games/eco/EcoBoard';
 import '@/games/eco/eco.css';
@@ -64,7 +64,10 @@ export function MicroColor({ snapshot, p }: Props) {
 
 const fmt = (ms: number) => (ms / 1000).toFixed(2).replace('.', ',');
 
-/** Já Deu?: ver o alvo, COMEÇAR e PARAR. O servidor mede; o relógio mostrado é só para a pegadinha. */
+/**
+ * Já Deu?: ver o alvo, COMEÇAR e PARAR. O servidor mede; o relógio mostrado é só para a pegadinha.
+ * Sem contagem regressiva: neste jogo ninguém vê o tempo correndo (o limite é silencioso).
+ */
 export function MicroTime({ snapshot, p }: Props) {
   const times = p.times!;
   const ch = p.challenge!;
@@ -140,12 +143,10 @@ export function MicroEco({ snapshot, p }: Props) {
   const now = useServerNow();
   const [lit, setLit] = useState<number | null>(null);
   const [done, setDone] = useState(0);
-  const played = useRef(false);
 
   // A reprodução começa no instante marcado pelo servidor (convertido para o relógio daqui).
+  const seqKey = (ch.sequence ?? []).join(',');
   useEffect(() => {
-    if (played.current) return;
-    played.current = true;
     const timers: number[] = [];
     const base = toLocal(times.showAt) + 600;
     const step = ch.stepMs ?? 600;
@@ -161,7 +162,8 @@ export function MicroEco({ snapshot, p }: Props) {
       );
     });
     return () => timers.forEach(clearTimeout);
-  }, [times.showAt, ch.sequence, ch.stepMs]);
+    // seqKey (e não a lista) mantém o efeito estável entre os avisos do servidor.
+  }, [times.showAt, seqKey, ch.stepMs]);
 
   const picking = now >= times.pickAt;
   if (picking && p.mine) return <Locked snapshot={snapshot} p={p} />;
@@ -190,8 +192,9 @@ export function MicroEco({ snapshot, p }: Props) {
         <Countdown
           endsAt={toLocal(times.endsAt)}
           totalMs={times.endsAt - times.pickAt}
-          warnMs={4000}
-          compact
+          warnMs={5000}
+          beep
+          label="PARA TERMINAR"
         />
       )}
     </>
@@ -233,8 +236,9 @@ export function MicroTyping({ snapshot, p }: Props) {
         <Countdown
           endsAt={toLocal(times.endsAt)}
           totalMs={times.endsAt - times.pickAt}
-          warnMs={3000}
-          compact
+          warnMs={4000}
+          beep
+          label="PARA ENVIAR"
         />
       )}
       <form

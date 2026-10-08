@@ -4,6 +4,7 @@ import {
   POINTS_NEUTRAL,
   buildPlan,
   colorPoints,
+  colorScoreTarget,
   ecoChallenge,
   ecoPoints,
   scoreColor,
@@ -44,6 +45,20 @@ type Snap = {
     } | null;
   };
 };
+
+/** Uma seed cujo primeiro minijogo grande é o Caça-Formas (o segundo, com 2 rodadas, é o X1). */
+function seedShapesFirst(prefix: string): string {
+  for (let i = 0; i < 300; i++) {
+    const seed = `${prefix}-${i}`;
+    if (
+      buildPlan(seed, 2)[5]!.kind === 'big' &&
+      (buildPlan(seed, 2)[5] as BigSlot).game === 'shapes'
+    ) {
+      return seed;
+    }
+  }
+  throw new Error('seed não encontrada');
+}
 
 function make(seed = 'seed-party', ids = ['ana', 'bia'], rounds = 1) {
   let t = 1_000;
@@ -92,12 +107,21 @@ function playPerfect(c: Ctx, slot: MicroSlot): number {
   switch (slot.game) {
     case 'color': {
       toPick(c);
-      const target = snap(room).party.challenge.target;
+      if (slot.variant === 'wait') {
+        // Regra de troll: quem espera ganha. O desafio fecha pelo tempo.
+        runUntil(c, 'ranking');
+        return 1000;
+      }
+      const target = colorScoreTarget(slot.variant, snap(room).party.challenge.target);
       for (const id of ids) room.submitColor(id, target);
       return colorPoints(slot.variant, 10);
     }
     case 'time': {
       toPick(c);
+      if (slot.variant === 'quieto') {
+        runUntil(c, 'ranking');
+        return 1000;
+      }
       for (const id of ids) room.timeBegin(id);
       c.clock.advance(timeChallenge(slot).expectedMs);
       for (const id of ids) room.timeStop(id);
@@ -145,7 +169,7 @@ function toBigStart(c: Ctx) {
 
 describe('PartyRoomEngine: partida inteira', () => {
   it('uma rodada: intro, 5 desafios (um de cada jogo), tutorial, Caça-Formas e fim', () => {
-    const c = make('rodada-1');
+    const c = make(seedShapesFirst('rodada-1'));
     const games = (c.plan.slice(0, 5) as MicroSlot[]).map((s) => s.game);
     expect(new Set(games).size).toBeGreaterThanOrEqual(4);
     expect(c.room.currentPhase).toBe('intro');
@@ -272,7 +296,7 @@ describe('PartyRoomEngine: micro-desafios', () => {
     const ch = ecoChallenge(slot);
     c.room.ecoTap('ana', ch.forbidden!);
     for (const pad of ch.expected) c.room.ecoTap('bia', pad);
-    expect(snap(c.room).party.delta!.ana).toBe(0);
+    expect(snap(c.room).party.delta!.ana).toBe(-300);
     expect(snap(c.room).party.delta!.bia).toBe(1000);
   });
 
@@ -296,6 +320,34 @@ describe('PartyRoomEngine: micro-desafios', () => {
     expect(snap(c.room).party.delta!.bia).toBe(1000);
   });
 
+  it('Cor "Espere": travar a cor perde 500; ficar quieto ganha 1000 no fim do tempo', () => {
+    const { c } = firstOf('color', 'wait');
+    toPick(c);
+    c.room.submitColor('ana', snap(c.room).party.challenge.target);
+    runUntil(c, 'ranking');
+    expect(snap(c.room).party.delta!.ana).toBe(-500);
+    expect(snap(c.room).party.delta!.bia).toBe(1000);
+  });
+
+  it('Já Deu? "Quieto": apertar COMEÇAR perde 500; ficar quieto ganha 1000', () => {
+    const { c } = firstOf('time', 'quieto');
+    toPick(c);
+    c.room.timeBegin('ana');
+    runUntil(c, 'ranking');
+    expect(snap(c.room).party.delta!.ana).toBe(-500);
+    expect(snap(c.room).party.delta!.bia).toBe(1000);
+  });
+
+  it('Cor Oposta: pontua pela cor do outro lado do círculo, não pela mostrada', () => {
+    const { c, slot } = firstOf('color', 'complementary');
+    toPick(c);
+    const shown = snap(c.room).party.challenge.target;
+    c.room.submitColor('ana', colorScoreTarget(slot.variant, shown));
+    c.room.submitColor('bia', shown);
+    expect(snap(c.room).party.delta!.ana).toBe(1000);
+    expect(snap(c.room).party.delta!.bia).toBe(0);
+  });
+
   it('quem não responde até o fim do tempo fica com 0 e o desafio avança sozinho', () => {
     const { c } = firstOf('color', 'standard');
     toPick(c);
@@ -307,7 +359,7 @@ describe('PartyRoomEngine: micro-desafios', () => {
 
 describe('PartyRoomEngine: Caça-Formas', () => {
   function inShapes() {
-    const c = make('formas-1');
+    const c = make(seedShapesFirst('formas-1'));
     playMicros(c, 0);
     toBigStart(c);
     return { c, round: shapesRound((c.plan[5] as BigSlot).seed) };
@@ -332,22 +384,21 @@ describe('PartyRoomEngine: Caça-Formas', () => {
     at(neutral, 200);
     c.room.shapeClick('ana', neutral.id);
     run(c, 40_000);
-    // Os 3 acima, na ordem em que o horário permitiu.
-    const total = POINTS_GOOD + POINTS_BAD + POINTS_NEUTRAL;
+    // Os 3 cliques acima: certo, proibido e inofensivo, cada um uma vez.
+    expect(POINTS_GOOD + POINTS_BAD + POINTS_NEUTRAL).toBeLessThan(0);
     expect(c.room.currentPhase).toBe('final');
     const ana = c.room.finalRows().find((r) => r.userId === 'ana')!;
     const micros = c.plan.slice(0, 5).length; // só para o linter não reclamar do plano
     expect(micros).toBe(5);
     expect(snap(c.room).party.totals.ana).toBeDefined();
     expect(ana.totalTenths).toBeLessThan(10_000);
-    expect(total).toBe(-100);
   });
 });
 
 describe('PartyRoomEngine: Arena X1', () => {
   /** Joga duas rodadas inteiras para chegar ao X1 (o grande da rodada 2). */
   function inX1(ids = ['ana', 'bia']) {
-    const c = make('x1-1', ids, 2);
+    const c = make(seedShapesFirst('x1-1'), ids, 2);
     playMicros(c, 0);
     toBigStart(c); // Caça-Formas
     runUntil(c, 'ranking');

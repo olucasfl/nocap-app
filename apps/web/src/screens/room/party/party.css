@@ -9,7 +9,7 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
-  animation: p-in 0.28s ease-out both;
+  animation: p-in 0.28s ease-out backwards;
 }
 .pstage-layer.out {
   pointer-events: none;
@@ -254,8 +254,8 @@
 }
 .pshape-area {
   position: relative;
-  flex: 1;
-  min-height: 360px;
+  width: 100%;
+  aspect-ratio: 4 / 3;
   overflow: hidden;
   background: var(--white);
   border: var(--border);
@@ -269,62 +269,13 @@
 .pshape {
   appearance: none;
   position: absolute;
-  width: 64px;
-  height: 64px;
-  margin: -32px 0 0 -32px;
+  left: 0;
+  top: 0;
   padding: 0;
-  display: grid;
-  place-items: center;
-  font-weight: 800;
-  color: var(--ink);
-  background-color: var(--c);
-  border: var(--border);
-  cursor: pointer;
-  animation: p-pop 0.18s ease-out both;
-}
-.pshape.circle {
-  border-radius: 50%;
-}
-.pshape.triangle {
-  clip-path: polygon(50% 4%, 96% 94%, 4% 94%);
+  background: none;
   border: 0;
-}
-.pshape.square {
-  border-radius: 6px;
-}
-.pshape.rect {
-  width: 78px;
-  border-radius: 6px;
-  margin-left: -39px;
-}
-/* Padrões: cada cor tem o seu, para a regra não depender só de enxergar a cor. */
-.pshape.blue {
-  background-image: radial-gradient(rgb(255 255 255 / 0.55) 22%, transparent 24%);
-  background-size: 12px 12px;
-  color: #fff;
-}
-.pshape.yellow {
-  background-image: repeating-linear-gradient(45deg, rgb(0 0 0 / 0.22) 0 6px, transparent 6px 12px);
-}
-.pshape.green {
-  background-image:
-    repeating-linear-gradient(0deg, rgb(0 0 0 / 0.25) 0 3px, transparent 3px 10px),
-    repeating-linear-gradient(90deg, rgb(0 0 0 / 0.25) 0 3px, transparent 3px 10px);
-}
-@keyframes p-pop {
-  from {
-    opacity: 0;
-    transform: scale(0.6);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .pshape {
-    animation: none;
-  }
+  cursor: pointer;
+  will-change: transform;
 }
 
 /* Arena X1 */
@@ -354,4 +305,56 @@
   border-radius: 50%;
   box-shadow: 4px 4px 0 var(--ink);
   cursor: pointer;
+}
+
+.pready {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pready li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 12px;
+  font-weight: 700;
+  background: var(--white);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+}
+.pready li.on {
+  background: var(--green);
+  color: var(--on-accent);
+}
+
+/* Placar da Mesmíssima: a cor alvo e a cor de cada um */
+.preveal {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.preveal i {
+  flex: 1;
+  height: 64px;
+  border: var(--border);
+  border-radius: var(--radius-sm);
+}
+.preveal span {
+  font-size: 12px;
+  font-weight: 700;
+}
+.prank-swatch {
+  position: relative;
+  display: block;
+  width: 36px;
+  height: 36px;
+  background: var(--paper);
+  border: var(--border);
+  border-radius: 8px;
+}
+.prank li:has(.prank-swatch) {
+  grid-template-columns: 28px 40px 1fr auto;
 }

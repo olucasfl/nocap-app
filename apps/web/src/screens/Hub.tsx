@@ -1,3 +1,5 @@
+import { ArrowRight } from '@/components/icons';
+import { PartyArt } from '@/components/PartyArt';
 import { Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { AnimatedText } from '@/components/AnimatedText';
@@ -67,6 +69,22 @@ export function Hub() {
       </h1>
 
       <div className="hub-grid">
+        <Link to="/nocap" className="hub-card hub-card-party" data-sfx="start">
+          <span className="hub-tag">PARA JOGAR COM AMIGOS</span>
+          <div className="hub-party-text">
+            <div className="hub-card-name party">NoCap!</div>
+            <p className="hub-party-lead">
+              O jogo que une tudo do app: cores, tempo, sequências, digitação e minijogos, todo
+              mundo disputando ao vivo na mesma sala.
+            </p>
+            <div className="mono hub-card-meta">2 A 12 PESSOAS · SÓ EM SALA</div>
+            <span className="hub-cta">
+              Jogar com amigos <ArrowRight size={20} />
+            </span>
+          </div>
+          <PartyArt />
+        </Link>
+
         <Link to="/cor" className="hub-card hub-card-color" data-sfx="start">
           <div className="hub-swatches" aria-hidden="true">
             {SWATCHES.map((c) => (
@@ -104,20 +122,6 @@ export function Hub() {
             <div className="hub-card-name">Ecooo</div>
             <div className="mono hub-card-meta">{bestLabel(data, 'eco')}</div>
             <div className="mono hub-card-meta">{dailyStatus(data, 'eco')}</div>
-          </div>
-        </Link>
-
-        <Link to="/nocap" className="hub-card hub-card-party" data-sfx="start">
-          <div className="hub-pads" aria-hidden="true">
-            <i style={{ background: 'var(--orange)' }} />
-            <i style={{ background: 'var(--yellow)' }} />
-            <i style={{ background: 'var(--green)' }} />
-            <i style={{ background: 'var(--ink)' }} />
-          </div>
-          <div className="hub-card-foot">
-            <div className="hub-card-name">NoCap!</div>
-            <div className="mono hub-card-meta">5 DESAFIOS + 1 GRANDE</div>
-            <div className="mono hub-card-meta">2 A 12 PESSOAS · SÓ EM SALA</div>
           </div>
         </Link>
 

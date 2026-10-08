@@ -128,3 +128,11 @@ A fase 0 previa telas de referência em `docs/reference/`. Para ganhar tempo, a 
 **Falta:** fase 3 (Já Deu?), 4 (Ecooo), 5 (Digitação), 6 (Caça-Formas), 7 (Arena X1), 8 (introdução animada completa, tutoriais ilustrados, sons, balanceamento e teste com 12 pessoas). Hoje os 5 rápidos de cada rodada são todos Mesmíssima (só há um desafio habilitado).
 
 **Para o Lucas validar na fatia:** o ritmo (tempos de preparar/ver/recriar), a leitura do comando, as transições do palco, o placar entre desafios e a pontuação (0 a 1000 por desafio; Invertido pode tirar pontos).
+
+## 13. Fases 3 a 8 implementadas e testadas ao vivo (08/10/2026)
+
+**Feito:** os 4 micro-desafios (Mesmíssima, Já Deu?, Ecooo, Digitação) com 3 a 9 variantes cada (pegadinhas e regras negativas em cerca de metade dos desafios), os 2 minijogos grandes (Caça-Formas com 8 formas, 6 cores com padrão e letra, peças que andam e batem sem se sobrepor; Arena X1 com duelos, Bot NoCap, largada falsa e compensação de latência), ordem do grande sorteada (nunca o mesmo duas vezes seguidas), tutorial que só começa quando todos dão OK, timers com bipe em todos os desafios (exceto o Já Deu?, que não tem timer por decisão do Lucas), cores de cada um no placar da Mesmíssima e o cartão premium no Hub (preto, tag "PARA JOGAR COM AMIGOS").
+
+**Testes:** núcleo (159), servidor (196) e jogada ao vivo com duas contas (Mesmíssima, Ecooo, Mão Boba, Já Deu?, Caça-Formas, pódio). Corrigidos no teste ao vivo: sequência do Ecooo que não aparecia (efeito instável), pontos por tocar ao acaso, animação de entrada que podia deixar a tela invisível.
+
+**Falta validar jogando:** a Arena X1 com duas pessoas de verdade (latência real), o ritmo dos novos desafios de troll e a calibração dos pontos. Sons próprios dos desafios (hoje só o bipe e os do Ecooo) e a introdução animada completa ficam como polimento futuro.
