@@ -108,7 +108,7 @@ Solo, Daily, ranking global, modo de times, mais de 2 minijogos grandes (a lista
 ## 11. Decisões do Lucas (08/10/2026)
 
 - **Nome do jogo: NoCap!** (id interno `party`, rota `/nocap`, cartão no Hub). Jogo novo, à parte, sem alterar os originais; as versões dos desafios são "adaptadas".
-- **Exceção da regra 3 (Já Deu? sem relógio):** vale dentro do NoCap!, nunca no Já Deu? original. *Aviso:* como o "Tempo Falso" não foi explicado, trato como "um relógio visível que anda X% mais rápido ou mais devagar que o real"; ajustar quando chegarmos à fase 3.
+- **Exceção da regra 3 (Já Deu? sem relógio):** vale dentro do NoCap!, nunca no Já Deu? original. _Aviso:_ como o "Tempo Falso" não foi explicado, trato como "um relógio visível que anda X% mais rápido ou mais devagar que o real"; ajustar quando chegarmos à fase 3.
 - **Sem ranking e sem solo** (só histórico de sala).
 - **X1:** a lógica é de **placar líquido**: ganhar uma disputa soma 1, perder tira 1; vence quem abrir **3 pontos de diferença** (ex.: +1, +1, -1, +1, +1 = 3). Teto de 15 disparos, depois empate. Pontos do duelo na partida: a definir na fase 7.
 - **Pontuação:** 0 a 1000 por micro-desafio (nota 10 = 1000, linear a partir da nota 5); o grande vale 2x; **pontuação pode ficar negativa** quando a regra do desafio tira pontos (pegadinhas, Invertido).
@@ -120,3 +120,11 @@ Solo, Daily, ranking global, modo de times, mais de 2 minijogos grandes (a lista
 ### Desvio do plano (registrado)
 
 A fase 0 previa telas de referência em `docs/reference/`. Para ganhar tempo, a fatia vertical segue direto os tokens Pop Brutal já existentes; as telas definitivas (palco, ranking, tutorial, revelação) serão ajustadas a partir do que o Lucas vir jogando, e as referências HTML entram quando o desenho estabilizar.
+
+## 12. Andamento (08/10/2026)
+
+**Fatia vertical pronta (fases 1 e 2, a validar jogando):** núcleo (`packages/games/src/party`), motor da sala (`PartyRoomEngine`, 8 testes), sala `party` registrada, sincronia de relógio (`serverNow`/`toLocal`), palco com transições (`screens/room/party/Stage.tsx`), telas (introdução, micro Mesmíssima com as 3 variantes, placar, tutorial do grande, Toque Toque provisório) e pódio, cartão no Hub, página `/nocap` e rótulo no histórico (modo `party`).
+
+**Falta:** fase 3 (Já Deu?), 4 (Ecooo), 5 (Digitação), 6 (Caça-Formas), 7 (Arena X1), 8 (introdução animada completa, tutoriais ilustrados, sons, balanceamento e teste com 12 pessoas). Hoje os 5 rápidos de cada rodada são todos Mesmíssima (só há um desafio habilitado).
+
+**Para o Lucas validar na fatia:** o ritmo (tempos de preparar/ver/recriar), a leitura do comando, as transições do palco, o placar entre desafios e a pontuação (0 a 1000 por desafio; Invertido pode tirar pontos).

@@ -107,6 +107,20 @@ export function Hub() {
           </div>
         </Link>
 
+        <Link to="/nocap" className="hub-card hub-card-party" data-sfx="start">
+          <div className="hub-pads" aria-hidden="true">
+            <i style={{ background: 'var(--orange)' }} />
+            <i style={{ background: 'var(--yellow)' }} />
+            <i style={{ background: 'var(--green)' }} />
+            <i style={{ background: 'var(--ink)' }} />
+          </div>
+          <div className="hub-card-foot">
+            <div className="hub-card-name">NoCap!</div>
+            <div className="mono hub-card-meta">5 DESAFIOS + 1 GRANDE</div>
+            <div className="mono hub-card-meta">2 A 12 PESSOAS · SÓ EM SALA</div>
+          </div>
+        </Link>
+
         <div className="hub-more mono">+ MAIS JOGOS EM BREVE</div>
       </div>
     </main>

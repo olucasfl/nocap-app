@@ -9,8 +9,6 @@ export function NocapPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [code, setCode] = useState('');
-  const [error] = useState('');
-  const [busy] = useState(false);
 
   const join = (e: FormEvent) => {
     e.preventDefault();
@@ -44,13 +42,8 @@ export function NocapPage() {
           <br />
           Jogue online com amigos em salas de 2 a 12 pessoas.
         </p>
-        {error && (
-          <p className="acc-failure mono" role="alert">
-            {error}
-          </p>
-        )}
         <div className="stack">
-          <button type="button" className="btn alt" disabled={busy} onClick={createRoom}>
+          <button type="button" className="btn alt" onClick={createRoom}>
             Criar sala
           </button>
         </div>
@@ -65,7 +58,7 @@ export function NocapPage() {
             autoComplete="off"
             hint="4 letras, como ABCD"
           />
-          <button type="submit" className="btn ghost" disabled={busy}>
+          <button type="submit" className="btn ghost">
             Entrar
           </button>
         </form>

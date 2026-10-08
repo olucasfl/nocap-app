@@ -123,6 +123,7 @@ export function scoreParts(item: Pick<HistoryItem, 'game' | 'mode' | 'answers' |
   main: string;
   unit: string;
 } {
+  if (item.mode === 'party') return { main: String(item.totalScore * 10), unit: ' pts' };
   if (item.mode === 'impostor' || item.mode === 'leader')
     return { main: (item.totalScore / 10).toFixed(1), unit: ' pts' };
   if (item.game === 'eco')
@@ -144,6 +145,7 @@ const MODE_NAME: Record<string, string> = {
   velocidade: 'Velocidade',
   reverso: 'Reverso',
   impostor: 'Intruso',
+  party: 'NoCap!',
   leader: 'Siga o Líder',
   room: 'Sala',
 };

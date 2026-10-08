@@ -303,3 +303,9 @@ a.hub-daily {
     animation: none;
   }
 }
+
+.hub-card-party {
+  background: var(--blue);
+  color: var(--on-blue);
+  animation-delay: 0.5s;
+}

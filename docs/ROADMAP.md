@@ -76,7 +76,7 @@ Ainda sem prioridade definida contra as salas do Ecooo. Cada item tem a sua spec
 
 ## Etapa 5d: Maratona (o jogo mais complexo)
 
-- [ ] **Planejamento e perguntas abertas:** `specs/016-maratona.md` (fases 0 a 8; fatia vertical primeiro)
+- [x] **Fatia vertical do NoCap! (fases 1 e 2)** pronta, falta validar jogando; fases 3 a 8 pendentes: `specs/016-maratona.md`
 
 ## Etapa 6: produção
 

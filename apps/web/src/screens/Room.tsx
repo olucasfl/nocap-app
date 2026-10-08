@@ -50,7 +50,13 @@ function Header({ leave, round }: { leave?: boolean; round?: string }) {
 }
 
 /** A página de cada jogo (o Intruso é jogado a partir da Mesmíssima). */
-const GAME_PAGE = { color: '/cor', time: '/tempo', impostor: '/cor', eco: '/eco', party: '/nocap' } as const;
+const GAME_PAGE = {
+  color: '/cor',
+  time: '/tempo',
+  impostor: '/cor',
+  eco: '/eco',
+  party: '/nocap',
+} as const;
 
 const GAME_NAME: Record<RoomGame, string> = {
   color: 'Mesmíssima',
@@ -66,7 +72,8 @@ const ENTRY_LEAD: Record<RoomGame, string> = {
   time: 'Jogue Já Deu? com amigos: o mesmo alvo para todos, cada um conta de cabeça.',
   impostor:
     'O Intruso precisa de uma sala com no mínimo 3 pessoas: alguns não veem a cor, só uma dica, e todo mundo vota em quem desconfia.',
-  party: 'Jogue NoCap! com amigos: micro-desafios rápidos e minijogos grandes, todos jogando ao mesmo tempo.',
+  party:
+    'Jogue NoCap! com amigos: micro-desafios rápidos e minijogos grandes, todos jogando ao mesmo tempo.',
 };
 
 function Entry({
@@ -107,7 +114,15 @@ function Entry({
   return (
     <section className="screen rm">
       <BackButton
-        to={game === 'time' ? '/tempo' : game === 'eco' ? '/eco' : game === 'party' ? '/nocap' : '/cor'}
+        to={
+          game === 'time'
+            ? '/tempo'
+            : game === 'eco'
+              ? '/eco'
+              : game === 'party'
+                ? '/nocap'
+                : '/cor'
+        }
         label="Voltar ao jogo"
       />
       <h1>Sala</h1>
@@ -238,7 +253,11 @@ export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomG
       <Header
         leave={!!snapshot}
         round={
-          snapshot && snapshot.game !== 'party' && snapshot?.round && snapshot.phase !== 'lobby' && snapshot.phase !== 'final'
+          snapshot &&
+          snapshot.game !== 'party' &&
+          snapshot?.round &&
+          snapshot.phase !== 'lobby' &&
+          snapshot.phase !== 'final'
             ? `${snapshot.round.index + 1}/${snapshot.round.total}`
             : undefined
         }
@@ -254,9 +273,19 @@ export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomG
       )}
       {snapshot?.phase === 'lobby' && <Lobby snapshot={snapshot} />}
       {snapshot &&
-        ['create', 'show', 'pick', 'play', 'vote', 'reveal'].includes(snapshot.phase) && (
-          <Play snapshot={snapshot} />
-        )}
+        [
+          'create',
+          'show',
+          'pick',
+          'play',
+          'vote',
+          'reveal',
+          'intro',
+          'micro',
+          'ranking',
+          'tutorial',
+          'big',
+        ].includes(snapshot.phase) && <Play snapshot={snapshot} />}
       {snapshot?.phase === 'final' && <Final snapshot={snapshot} />}
       {snapshot && <ChatDock snapshot={snapshot} />}
     </div>

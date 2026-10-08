@@ -15,6 +15,7 @@ export function Final({ snapshot }: { snapshot: RoomSnapshot }) {
   const impostor =
     snapshot.game === 'impostor' || (snapshot.game === 'eco' && snapshot.mode === 'leader');
   const eco = snapshot.game === 'eco';
+  const party = snapshot.game === 'party';
   /** Siga o Líder: no pódio entra a porcentagem (média das rodadas) e a soma de acertos; as notas de cada rodada não aparecem antes. */
   const hits = snapshot.eco?.hits;
   const max = snapshot.settings.rounds * 10;
@@ -35,19 +36,23 @@ export function Final({ snapshot }: { snapshot: RoomSnapshot }) {
             <span className="mono rm-pos">{r.placement}º</span>
             <span className="rm-result-name">@{r.username}</span>
             <span className="rm-result-score">
-              {hits
-                ? (r.totalTenths / 10).toFixed(1)
-                : eco
-                  ? Math.round(r.totalTenths / 10)
-                  : (r.totalTenths / 10).toFixed(1)}
-              <small className="mono">
-                {hits
-                  ? `% · ${hits[r.userId] ?? 0} ${(hits[r.userId] ?? 0) === 1 ? 'acerto' : 'acertos'}`
+              {party
+                ? (r.totalTenths * 10).toLocaleString('pt-BR')
+                : hits
+                  ? (r.totalTenths / 10).toFixed(1)
                   : eco
-                    ? ' passos'
-                    : impostor
-                      ? ' pts'
-                      : `/${max}`}
+                    ? Math.round(r.totalTenths / 10)
+                    : (r.totalTenths / 10).toFixed(1)}
+              <small className="mono">
+                {party
+                  ? ' pts'
+                  : hits
+                    ? `% · ${hits[r.userId] ?? 0} ${(hits[r.userId] ?? 0) === 1 ? 'acerto' : 'acertos'}`
+                    : eco
+                      ? ' passos'
+                      : impostor
+                        ? ' pts'
+                        : `/${max}`}
               </small>
             </span>
           </li>

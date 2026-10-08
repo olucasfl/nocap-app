@@ -36,7 +36,10 @@ export interface PartySettings {
   rounds: number;
 }
 /** As regras dependem do jogo da sala (`snapshot.game`). */
-export type RoomSettings = ColorRoomSettings & TimeRoomSettings & ImpostorRoomSettings & PartySettings;
+export type RoomSettings = ColorRoomSettings &
+  TimeRoomSettings &
+  ImpostorRoomSettings &
+  PartySettings;
 
 export interface RoomMember {
   id: string;
@@ -216,11 +219,12 @@ let offsets: number[] = [];
 
 export function serverNow(): number {
   const median =
-    offsets.length > 0
-      ? [...offsets].sort((a, b) => a - b)[Math.floor(offsets.length / 2)]!
-      : 0;
+    offsets.length > 0 ? [...offsets].sort((a, b) => a - b)[Math.floor(offsets.length / 2)]! : 0;
   return Date.now() + median;
 }
+
+/** Converte um instante do relógio do servidor para o relógio deste aparelho. */
+export const toLocal = (serverMs: number): number => serverMs - (serverNow() - Date.now());
 
 const set = (patch: Partial<RoomState>) => useRoom.setState(patch);
 
@@ -258,6 +262,7 @@ function attach(r: Room) {
       offsets = [...offsets, offset].slice(-5);
     }
   });
+  offsets = [];
   r.send('ping', { t0: Date.now() });
   const pingInterval = setInterval(() => {
     if (room !== r) {
