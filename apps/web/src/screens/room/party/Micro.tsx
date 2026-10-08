@@ -209,6 +209,7 @@ export function MicroTyping({ snapshot, p }: Props) {
   return (
     <>
       <CommandBar text={p.command ?? ''} />
+      <div className="pword-kind mono">{ch.kind === 'frase' ? 'FRASE →' : 'PALAVRA →'}</div>
       <div className={`pword${(ch.word ?? '').length > 14 ? ' long' : ''}`} aria-label="Texto">
         {ch.word}
       </div>

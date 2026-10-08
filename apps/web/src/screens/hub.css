@@ -414,3 +414,19 @@ a.hub-daily {
     padding: 22px 26px;
   }
 }
+
+/* Celular: o rodapé do cartão (nome + recordes) entra no fluxo em vez de ficar colado embaixo.
+   Em telas estreitas as linhas quebram e o título subia por cima das amostras de cor. */
+@media (max-width: 767px) {
+  .hub-card:not(.hub-card-party) {
+    height: auto;
+    min-height: 236px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 18px;
+  }
+  .hub-card:not(.hub-card-party) .hub-card-foot {
+    position: static;
+  }
+}

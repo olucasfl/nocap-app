@@ -3,6 +3,7 @@ import { ECO_PAUSE_MS } from '../eco';
 import {
   ECO_MICRO_STEP_MS,
   PAD_NAMES,
+  typingChallenge,
   typingPickMs,
   ecoChallenge,
   noteToPoints,
@@ -192,21 +193,24 @@ export function commandText(slot: Slot): string {
       }
       return 'Repita a sequência';
     }
-    case 'typing':
+    case 'typing': {
+      const t = typingChallenge(slot).kind;
+      const artigo = t === 'frase' ? 'a frase' : 'a palavra';
       return (
         (
           {
             maohoba: 'MANTENHA O CAMPO LIMPO',
-            reverse: 'Digite a palavra de trás para frente',
-            novowels: 'Digite a palavra sem vogais',
-            noaccents: 'Digite a palavra sem acentos',
-            noa: 'Digite a palavra sem a letra A',
-            count: 'Digite QUANTAS letras tem a palavra',
-            ends: 'Digite só a primeira e a última letra',
-            twice: 'Digite a palavra DUAS vezes, sem espaço',
+            reverse: `Digite ${artigo} de trás para frente`,
+            novowels: `Digite ${artigo} sem vogais (mantenha os espaços entre as palavras)`,
+            noaccents: `Digite ${artigo} sem acentos`,
+            noa: `Digite ${artigo} sem a letra A`,
+            count: `Digite QUANTAS letras tem ${artigo}`,
+            ends: `Digite só a primeira e a última letra d${artigo}`,
+            twice: `Digite ${artigo} DUAS vezes, sem espaço`,
           } as Record<string, string>
-        )[v] ?? 'Digite a palavra exata'
+        )[v] ?? `Digite ${artigo} exata`
       );
+    }
   }
 }
 

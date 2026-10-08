@@ -24,6 +24,8 @@ import {
   typingPoints,
   x1Lead,
   x1Outcome,
+  x1Score,
+  type X1Score,
   x1Pairs,
   x1Points,
   x1Shot,
@@ -64,8 +66,8 @@ interface Duel {
   /** `null` = Bot NoCap. */
   b: string | null;
   index: number;
-  /** Placar líquido do ponto de vista de `a`. */
-  lead: number;
+  /** Pontos de cada lado (nunca negativos). */
+  score: X1Score;
   round: number;
   state: 'wait' | 'go' | 'between' | 'done';
   goAt: number;
@@ -75,6 +77,8 @@ interface Duel {
   clicks: Partial<Record<Side, number>>;
   /** O que aconteceu no último disparo, para a tela mostrar o tempo de cada um. */
   last: { aMs: number | null; bMs: number | null; winner: Side | null; early: Side | null } | null;
+  /** Quanto cada lado mudou no último disparo (+1, -1 ou 0 quando já estava em zero). */
+  delta: Record<Side, number>;
   result: 'a' | 'b' | 'tie' | null;
 }
 
@@ -98,6 +102,8 @@ export class PartyRoomEngine extends ColorRoomEngine {
   private points = new Map<string, number>();
   /** A cor que cada um travou na Mesmíssima (aparece no placar como feedback). */
   private colorAnswers = new Map<string, Hsb>();
+  /** Já Deu?: quanto tempo cada um mediu entre COMEÇAR e PARAR (aparece no placar). */
+  private timeResults = new Map<string, number>();
   private ready = new Set<string>();
   private times = { showAt: 0, pickAt: 0, endsAt: 0 };
 
@@ -178,6 +184,7 @@ export class PartyRoomEngine extends ColorRoomEngine {
     this.ecoTaps = new Map();
     this.typed = new Set();
     this.colorAnswers = new Map();
+    this.timeResults = new Map();
     if (slot.kind === 'micro') {
       const timing = microTiming(slot);
       const showAt = t + MICRO_LEAD_MS;
@@ -213,7 +220,7 @@ export class PartyRoomEngine extends ColorRoomEngine {
           a: p.a,
           b: p.b,
           index: i,
-          lead: 0,
+          score: { a: 0, b: 0 },
           round: 0,
           state: 'wait' as const,
           goAt: showAt + shot.delayMs,
@@ -221,6 +228,7 @@ export class PartyRoomEngine extends ColorRoomEngine {
           shot,
           clicks: {},
           last: null,
+          delta: { a: 0, b: 0 },
           result: null,
         };
       });
@@ -337,7 +345,9 @@ export class PartyRoomEngine extends ColorRoomEngine {
     if (this.submitted.has(id)) return;
     const start = this.timeStarts.get(id);
     if (start === undefined) throw new RoomError('Comece a contagem antes de parar');
-    this.answered(id, timePoints(slot, Math.max(0, this.now() - start)));
+    const ms = Math.max(0, this.now() - start);
+    this.timeResults.set(id, ms);
+    this.answered(id, timePoints(slot, ms));
   }
 
   /** Ecooo: um toque. Sem aviso de certo ou errado; o servidor soma no fim. */
@@ -441,6 +451,9 @@ export class PartyRoomEngine extends ColorRoomEngine {
     }
     if (d.state !== 'go' || d.clicks[side] !== undefined) return;
     d.clicks[side] = t;
+    // Já resolve o disparo (contra o Bot ou com os dois cliques em mãos) sem esperar o próximo
+    // tick: a sala publica logo depois da ação, então o resultado chega na hora.
+    this.tickDuels(t);
   }
 
   private reactionMs(d: Duel, side: Side): number | null {
@@ -496,10 +509,12 @@ export class PartyRoomEngine extends ColorRoomEngine {
   ) {
     const slot = this.slot;
     d.last = { aMs, bMs, winner, early };
-    d.lead = x1Lead(d.lead, winner === null ? null : winner === 'a');
+    const before = d.score;
+    d.score = x1Score(before, winner);
+    d.delta = { a: d.score.a - before.a, b: d.score.b - before.b };
     d.round += 1;
     d.clicks = {};
-    const out = x1Outcome(d.lead, d.round);
+    const out = x1Outcome(x1Lead(d.score), d.round);
     if (out) {
       d.state = 'done';
       d.result = out;
@@ -604,12 +619,16 @@ export class PartyRoomEngine extends ColorRoomEngine {
           mine: me === 'a' ? d.last.aMs : d.last.bMs,
           theirs: me === 'a' ? d.last.bMs : d.last.aMs,
           won: d.last.winner === null ? null : d.last.winner === me,
+          delta: d.delta[me],
           early: d.last.early === null ? null : d.last.early === me ? 'me' : 'them',
         }
       : null;
     return {
       opponent: name,
-      lead: d.lead * sign || 0,
+      myName: this.members.get(viewerId)?.username ?? '',
+      mine: d.score[me],
+      theirs: d.score[me === 'a' ? 'b' : 'a'],
+      lead: x1Lead(d.score) * sign || 0,
       round: d.round,
       state: d.state,
       shot: d.state === 'go' ? { x: d.shot.x, y: d.shot.y } : null,
@@ -647,6 +666,15 @@ export class PartyRoomEngine extends ColorRoomEngine {
               ? {
                   target: generateColorRound(slot.seed, { rounds: 1, showMs: 3000 }, 0),
                   answers: Object.fromEntries(this.colorAnswers),
+                }
+              : null,
+          // Já Deu?: o tempo que era para contar, o alvo mostrado e o que cada um mediu.
+          timeReveal:
+            slot.kind === 'micro' && slot.game === 'time'
+              ? {
+                  expectedMs: timeChallenge(slot).expectedMs,
+                  targetMs: timeChallenge(slot).targetMs,
+                  answers: Object.fromEntries(this.timeResults),
                 }
               : null,
         },
@@ -714,8 +742,10 @@ export class PartyRoomEngine extends ColorRoomEngine {
           length: c.expected.length,
         };
       }
-      case 'typing':
-        return { word: typingChallenge(slot).word };
+      case 'typing': {
+        const t = typingChallenge(slot);
+        return { word: t.word, kind: t.kind };
+      }
     }
   }
 }

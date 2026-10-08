@@ -236,6 +236,8 @@ export function BigX1({ snapshot, p }: Props) {
   const x1 = p.x1;
   const now = useServerNow(80);
   const fired = useRef(0);
+  // O botão some no mesmo instante do clique, sem esperar a resposta do servidor.
+  const [hitShot, setHitShot] = useState(-1);
 
   if (!x1) {
     return <Big title="AGUARDE" sub="VOCÊ NÃO ENTROU EM NENHUM DUELO" />;
@@ -260,17 +262,29 @@ export function BigX1({ snapshot, p }: Props) {
     if (Date.now() - fired.current < 300) return;
     fired.current = Date.now();
     sendRoom('xclick');
+    if (x1.state === 'go') setHitShot(x1.round);
     buzz(10);
   };
 
   return (
     <>
       <CommandBar text={p.command ?? ''} />
-      <div className="mono phud">
-        <span>VOCÊ × {x1.opponent.toUpperCase()}</span>
-        <b>PLACAR {lead}</b>
-        <span>DISPARO {x1.round + 1}</span>
+      <div className="px1-score" aria-label="Placar do duelo">
+        <div className="px1-side me">
+          <span className="px1-name">{x1.myName.toUpperCase() || 'VOCÊ'}</span>
+          <b key={`m${x1.mine}`}>{x1.mine}</b>
+          <small className="mono">{x1.mine === 1 ? 'PONTO' : 'PONTOS'}</small>
+        </div>
+        <span className="px1-x">×</span>
+        <div className="px1-side">
+          <span className="px1-name">{x1.opponent.toUpperCase()}</span>
+          <b key={`t${x1.theirs}`}>{x1.theirs}</b>
+          <small className="mono">{x1.theirs === 1 ? 'PONTO' : 'PONTOS'}</small>
+        </div>
       </div>
+      <p className="mono px1-hint">
+        VENCE QUEM ABRIR 3 DE VANTAGEM ({lead}) · DISPARO {x1.round + 1}
+      </p>
       <div
         className={`px1-area ${x1.state}`}
         onPointerDown={(e) => {
@@ -285,26 +299,40 @@ export function BigX1({ snapshot, p }: Props) {
           />
         )}
         {x1.state === 'between' && x1.last && (
-          <Big
-            title={
-              x1.last.early === 'me'
-                ? 'LARGADA FALSA'
-                : x1.last.early === 'them'
-                  ? 'O ADVERSÁRIO SE ADIANTOU'
-                  : x1.last.won === null
-                    ? 'NINGUÉM CLICOU'
-                    : x1.last.won
-                      ? 'PONTO SEU'
-                      : 'PONTO DELE'
-            }
-            sub={
-              x1.last.early
-                ? undefined
-                : `VOCÊ (${ms(x1.last.mine)}) VS (${ms(x1.last.theirs)}) ADVERSÁRIO`
-            }
-          />
+          <>
+            {x1.last.won !== null ? (
+              <div
+                key={`d${x1.round}`}
+                className={`px1-delta ${x1.last.delta > 0 ? 'up' : x1.last.delta < 0 ? 'down' : 'zero'}`}
+                aria-live="polite"
+              >
+                {x1.last.delta > 0 ? '+1' : x1.last.delta < 0 ? '−1' : '0'}
+              </div>
+            ) : null}
+            <Big
+              title={
+                x1.last.early === 'me'
+                  ? 'LARGADA FALSA'
+                  : x1.last.early === 'them'
+                    ? 'O ADVERSÁRIO SE ADIANTOU'
+                    : x1.last.won === null
+                      ? 'NINGUÉM CLICOU'
+                      : x1.last.won
+                        ? 'PONTO SEU'
+                        : 'PONTO DELE'
+              }
+              sub={
+                x1.last.early
+                  ? undefined
+                  : `VOCÊ (${ms(x1.last.mine)}) VS (${ms(x1.last.theirs)}) ADVERSÁRIO`
+              }
+            />
+          </>
         )}
-        {x1.state === 'go' && x1.shot && (
+        {x1.state === 'go' && x1.shot && hitShot === x1.round && (
+          <Big title="CLICOU!" sub="CONFERINDO O RESULTADO" />
+        )}
+        {x1.state === 'go' && x1.shot && hitShot !== x1.round && (
           <button
             type="button"
             className="px1-go"

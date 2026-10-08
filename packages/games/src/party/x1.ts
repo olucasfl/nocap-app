@@ -3,7 +3,8 @@ import { BIG_WEIGHT, MICRO_MAX } from './micro';
 
 /**
  * Arena X1 (minijogo grande): duelos de reflexo. Em cada disparo surge um botão verde; quem clica
- * primeiro ganha 1 ponto e o outro perde 1. Vence o duelo quem abrir 3 pontos de diferença;
+ * primeiro ganha 1 ponto e o outro perde 1 (sem nunca passar de zero para baixo). Vence o duelo
+ * quem abrir 3 pontos de diferença;
  * se ninguém abrir em 15 disparos, é empate. Quem sobra num número ímpar enfrenta o Bot NoCap.
  */
 
@@ -41,9 +42,27 @@ export function x1Shot(seed: string, duel: number, round: number): X1Shot {
   };
 }
 
-/** Placar líquido: ganhar soma 1, perder tira 1 (do ponto de vista de quem está em `lead`). */
-export const x1Lead = (lead: number, won: boolean | null): number =>
-  won === null ? lead : lead + (won ? 1 : -1);
+export interface X1Score {
+  a: number;
+  b: number;
+}
+
+/**
+ * Aplica um disparo: quem ganhou soma 1; quem perdeu tira 1, mas o placar nunca fica negativo
+ * (com 0 e perdendo, continua 0). `winner` nulo = ninguém clicou, nada muda.
+ */
+export function x1Score(score: X1Score, winner: 'a' | 'b' | null): X1Score {
+  if (winner === null) return score;
+  const loser = winner === 'a' ? 'b' : 'a';
+  return {
+    ...score,
+    [winner]: score[winner] + 1,
+    [loser]: Math.max(0, score[loser] - 1),
+  } as X1Score;
+}
+
+/** Diferença a favor de `a` (é ela que decide o duelo). */
+export const x1Lead = (score: X1Score): number => score.a - score.b;
 
 /** O duelo acabou? `a` vence com +3, `b` com -3, e o teto de disparos é empate. */
 export function x1Outcome(lead: number, rounds: number): 'a' | 'b' | 'tie' | null {

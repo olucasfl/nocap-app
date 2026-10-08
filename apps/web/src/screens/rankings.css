@@ -169,3 +169,10 @@
     bottom: 16px;
   }
 }
+
+/* Celular: a barra de navegação é fixa no rodapé; sem esta folga ela cobre o fim da lista. */
+@media (max-width: 767px) {
+  .rks {
+    padding-bottom: calc(110px + env(safe-area-inset-bottom));
+  }
+}

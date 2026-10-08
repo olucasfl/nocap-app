@@ -38,6 +38,9 @@ function Intro({ p }: { p: PartySnapshot }) {
   );
 }
 
+/** 12345 ms vira "12,3s". */
+const seconds = (ms: number) => `${(ms / 1000).toFixed(1).replace('.', ',')}s`;
+
 /** Pontos de cada um depois do desafio: os 5 primeiros e a minha linha. */
 function Ranking({ snapshot, p }: { snapshot: RoomSnapshot; p: PartySnapshot }) {
   const me = useAuth((s) => s.user?.id);
@@ -52,6 +55,15 @@ function Ranking({ snapshot, p }: { snapshot: RoomSnapshot; p: PartySnapshot }) 
         <div className="preveal" aria-label="A cor alvo">
           <i style={{ background: toHex(p.reveal.target) }} />
           <span className="mono">ALVO {toHex(p.reveal.target)}</span>
+        </div>
+      )}
+      {p.timeReveal && (
+        <div className="preveal ptime" aria-label="O tempo certo">
+          <span className="mono">
+            TEMPO CERTO <b>{seconds(p.timeReveal.expectedMs)}</b>
+            {p.timeReveal.targetMs !== p.timeReveal.expectedMs &&
+              ` · ALVO MOSTRADO ${seconds(p.timeReveal.targetMs)}`}
+          </span>
         </div>
       )}
       <h2 className="mono" style={{ margin: 0 }}>
@@ -78,6 +90,11 @@ function Ranking({ snapshot, p }: { snapshot: RoomSnapshot; p: PartySnapshot }) 
                 />
               )}
               <span className="prank-name">@{nameOf(snapshot, id)}</span>
+              {p.timeReveal && (
+                <span className="mono prank-time">
+                  {p.timeReveal.answers[id] === undefined ? '—' : seconds(p.timeReveal.answers[id])}
+                </span>
+              )}
               <span className="mono prank-pts">
                 {total.toLocaleString('pt-BR')}
                 <small className={delta >= 0 ? 'up' : 'down'}>

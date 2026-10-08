@@ -36,6 +36,7 @@ import {
   typingChallenge,
   typingPoints,
   x1Lead,
+  x1Score,
   x1Outcome,
   x1Pairs,
   x1Points,
@@ -236,6 +237,38 @@ describe('Digitação Ligeira', () => {
     expect(typingPoints(ref('standard'), 'errado', false, 100)).toBe(0);
   });
 
+  it('espaço a mais ou a menos não zera quem acertou as letras', () => {
+    const r = ref('novowels', 'frase-1');
+    const c = typingChallenge(r);
+    expect(typingPoints(r, c.expected!.replace(/ /g, ''), false, 0)).toBe(1000);
+    expect(typingPoints(r, `  ${c.expected!.replace(/ /g, '  ')} `, false, 0)).toBe(1000);
+  });
+
+  it('acertar só parte vale pontos parciais; acertar quase nada, não', () => {
+    const r = ref('standard', 'parcial-1');
+    const e = typingChallenge(r).expected!.replace(/ /g, '');
+    const metade = e.slice(0, Math.ceil(e.length * 0.75)) + 'x'.repeat(Math.floor(e.length * 0.25));
+    const parcial = typingPoints(r, metade, false, 0);
+    expect(parcial).toBeGreaterThan(0);
+    expect(parcial).toBeLessThan(400);
+    expect(typingPoints(r, 'zzzzzzzzzz', false, 0)).toBe(0);
+    expect(typingPoints(ref('noa', 'parcial-1'), 'zzzzzzzzzz', false, 0)).toBe(-300);
+  });
+
+  it('o desafio diz se é palavra ou frase e o comando acompanha', () => {
+    const kinds = new Set<string>();
+    for (let i = 0; i < 40; i++) {
+      const r = ref('standard', `tipo-${i}`);
+      const c = typingChallenge(r);
+      kinds.add(c.kind);
+      expect(c.kind === 'frase').toBe(c.word.includes(' '));
+      expect(commandText({ kind: 'micro', game: 'typing', round: 1, position: 1, ...r })).toContain(
+        c.kind === 'frase' ? 'frase' : 'palavra',
+      );
+    }
+    expect(kinds).toEqual(new Set(['palavra', 'frase']));
+  });
+
   it('Mão Boba: digitar, enviar ou só mexer no campo tira 500; ficar quieto vale 1000', () => {
     expect(typingPoints(ref('maohoba'), '', false, 0)).toBe(1000);
     expect(typingPoints(ref('maohoba'), 'oi', false, 0)).toBe(-500);
@@ -388,15 +421,23 @@ describe('Caça-Formas: movimento', () => {
 });
 
 describe('Arena X1', () => {
-  it('placar líquido: ganhar soma 1, perder tira 1; vence quem abre 3', () => {
-    let lead = 0;
-    for (const won of [true, true, false, true, true]) lead = x1Lead(lead, won);
-    expect(lead).toBe(3);
+  it('ganhar soma 1, perder tira 1 sem nunca ficar negativo; vence quem abre 3', () => {
+    let score = { a: 0, b: 0 };
+    for (const w of ['b', 'b', 'a', 'a'] as const) {
+      score = x1Score(score, w);
+      expect(score.a).toBeGreaterThanOrEqual(0);
+      expect(score.b).toBeGreaterThanOrEqual(0);
+    }
+    expect(score).toEqual({ a: 2, b: 0 });
+    // Com zero e perdendo, fica zero.
+    expect(x1Score({ a: 0, b: 2 }, 'b')).toEqual({ a: 0, b: 3 });
+    expect(x1Score({ a: 0, b: 0 }, 'b')).toEqual({ a: 0, b: 1 });
+    expect(x1Score({ a: 1, b: 1 }, null)).toEqual({ a: 1, b: 1 });
+    expect(x1Lead({ a: 3, b: 0 })).toBe(3);
     expect(x1Outcome(3, 5)).toBe('a');
     expect(x1Outcome(-3, 5)).toBe('b');
     expect(x1Outcome(1, 5)).toBeNull();
     expect(x1Outcome(0, X1_MAX_ROUNDS)).toBe('tie');
-    expect(x1Lead(2, null)).toBe(2);
   });
 
   it('pontos: vitória 2000, empate 1000, derrota 0', () => {

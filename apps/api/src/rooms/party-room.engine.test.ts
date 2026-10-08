@@ -450,10 +450,11 @@ describe('PartyRoomEngine: Arena X1', () => {
     expect(snap(c.room, 'bia').party.x1!.lead).toBe(1);
   });
 
-  it('o placar é líquido: ganhei, perdi, ganhei, ganhei, ganhei = 3 de vantagem', () => {
+  it('ganhar soma 1, perder tira 1 (sem negativar); 3 de vantagem fecham o duelo', () => {
     const c = inX1();
     const wins = [true, false, true, true, true];
     const leads: number[] = [];
+    const shown: { mine: number; theirs: number; delta: number | undefined }[] = [];
     for (const mine of wins) {
       waitGo(c);
       const first = mine ? 'ana' : 'bia';
@@ -464,11 +465,20 @@ describe('PartyRoomEngine: Arena X1', () => {
       c.room.xClick(second);
       c.room.tick();
       const x1 = c.room.currentPhase === 'big' ? snap(c.room).party.x1 : null;
-      if (x1) leads.push(x1.lead);
+      if (x1) {
+        leads.push(x1.lead);
+        shown.push({ mine: x1.mine, theirs: x1.theirs, delta: x1.last?.delta });
+      }
       run(c, 100);
     }
-    // Depois do 4º disparo a vantagem era 2; o 5º fechou o duelo com 3.
-    expect(leads.slice(0, 4)).toEqual([1, 0, 1, 2]);
+    // Quem perde com 0 continua com 0: o placar de ninguém passa de zero para baixo.
+    expect(shown.slice(0, 4)).toEqual([
+      { mine: 1, theirs: 0, delta: 1 },
+      { mine: 0, theirs: 1, delta: -1 },
+      { mine: 1, theirs: 0, delta: 1 },
+      { mine: 2, theirs: 0, delta: 1 },
+    ]);
+    expect(leads.slice(0, 4)).toEqual([1, -1, 1, 2]);
     run(c, 300);
     expect(c.room.currentPhase).toBe('final');
     const rows = c.room.finalRows();

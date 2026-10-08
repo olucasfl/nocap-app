@@ -161,6 +161,8 @@ export interface TypingChallenge {
   word: string;
   /** O que precisa ser digitado; `null` na Mão Boba (não digitar nada). */
   expected: string | null;
+  /** Palavra solta ou frase: a tela e o comando avisam qual é. */
+  kind: 'palavra' | 'frase';
 }
 
 /** Regras que só funcionam com palavra solta (com frase ficariam longas ou confusas). */
@@ -176,27 +178,28 @@ export function typingChallenge(ref: MicroRef): TypingChallenge {
   if (ref.variant === 'noaccents') list = list.filter((t) => t !== strip(t));
   if (ref.variant === 'noa') list = list.filter((t) => strip(t.toLowerCase()).includes('a'));
   const word = list[randInt(rng, 0, list.length - 1)]!;
+  const kind = usePhrase ? 'frase' : 'palavra';
   const lower = word.toLowerCase();
   const plain = strip(lower);
   switch (ref.variant) {
     case 'maohoba':
-      return { word, expected: null };
+      return { word, kind, expected: null };
     case 'reverse':
-      return { word, expected: [...plain].reverse().join('') };
+      return { word, kind, expected: [...plain].reverse().join('') };
     case 'novowels':
-      return { word, expected: clean(plain.replace(/[aeiou]/g, '')) };
+      return { word, kind, expected: clean(plain.replace(/[aeiou]/g, '')) };
     case 'noaccents':
-      return { word, expected: plain };
+      return { word, kind, expected: plain };
     case 'noa':
-      return { word, expected: clean(plain.replace(/a/g, '')) };
+      return { word, kind, expected: clean(plain.replace(/a/g, '')) };
     case 'count':
-      return { word, expected: String(plain.length) };
+      return { word, kind, expected: String(plain.length) };
     case 'ends':
-      return { word, expected: plain[0]! + plain[plain.length - 1]! };
+      return { word, kind, expected: plain[0]! + plain[plain.length - 1]! };
     case 'twice':
-      return { word, expected: plain + plain };
+      return { word, kind, expected: plain + plain };
     default:
-      return { word, expected: plain };
+      return { word, kind, expected: plain };
   }
 }
 
@@ -208,16 +211,46 @@ export function typingPickMs(ref: MicroRef): number {
   return Math.min(17_000, Math.max(8000, 4500 + 480 * len));
 }
 
-/** Compara sem maiúsculas, sem espaços sobrando; só "sem acentos" exige não ter acento. */
-export function typingMatches(ref: MicroRef, text: string): boolean {
+/** Sem maiúsculas e sem espaços: errar um espaço não zera quem acertou as letras. */
+function normalizeTyped(ref: MicroRef, text: string): string {
+  const typed = text.toLowerCase();
+  return (ref.variant === 'noaccents' ? typed : strip(typed)).replace(/\s+/g, '');
+}
+
+/** Quão perto o texto ficou do esperado, de 0 a 1 (distância de edição sobre o maior tamanho). */
+function similarity(a: string, b: string): number {
+  if (a === b) return 1;
+  const len = Math.max(a.length, b.length);
+  if (len === 0) return 1;
+  let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i];
+    for (let j = 1; j <= b.length; j++) {
+      cur[j] = Math.min(
+        prev[j]! + 1,
+        cur[j - 1]! + 1,
+        prev[j - 1]! + (a[i - 1] === b[j - 1] ? 0 : 1),
+      );
+    }
+    prev = cur;
+  }
+  return 1 - prev[b.length]! / len;
+}
+
+function closeness(ref: MicroRef, text: string): number {
   const c = typingChallenge(ref);
-  if (c.expected === null) return false;
-  const typed = clean(text.toLowerCase());
-  return ref.variant === 'noaccents' ? typed === c.expected : strip(typed) === c.expected;
+  if (c.expected === null) return 0;
+  return similarity(normalizeTyped(ref, text), c.expected.replace(/\s+/g, ''));
+}
+
+/** Confere sem maiúsculas e sem se importar com espaços; só "sem acentos" exige não ter acento. */
+export function typingMatches(ref: MicroRef, text: string): boolean {
+  return closeness(ref, text) === 1;
 }
 
 /**
- * Correto vale 400 a 1000 conforme a rapidez; errado, 0. Mão Boba: digitar ou enviar qualquer
+ * Correto vale 400 a 1000 conforme a rapidez. Acertar mais da metade vale pontos parciais (até 399,
+ * proporcionais ao quanto ficou certo). Abaixo disso, errado: 0 (ou -300 nas regras de troll). Mão Boba: digitar ou enviar qualquer
  * coisa tira 500, e ficar quieto vale 1000.
  */
 export function typingPoints(
@@ -227,8 +260,14 @@ export function typingPoints(
   elapsedMs: number,
 ): number {
   if (ref.variant === 'maohoba') return text.trim() || touched ? -500 : MICRO_MAX;
-  // Nas regras de troll, errar custa 300; no texto exato, só deixa de pontuar.
-  if (!typingMatches(ref, text)) return ref.variant === 'standard' ? 0 : -300;
+  // "Sem acentos" com acento é quebrar a regra, não um erro pequeno de digitação.
+  if (ref.variant === 'noaccents' && text !== strip(text)) return -300;
+  const close = closeness(ref, text);
+  if (close < 1) {
+    if (close > 0.5) return Math.floor((399 * (close - 0.5)) / 0.5);
+    // Nas regras de troll, errar custa 300; no texto exato, só deixa de pontuar.
+    return ref.variant === 'standard' ? 0 : -300;
+  }
   const speed = Math.max(0, 1 - elapsedMs / typingPickMs(ref));
   return 400 + Math.round(600 * speed);
 }

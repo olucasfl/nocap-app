@@ -113,7 +113,11 @@ export interface PartyShapeItem {
 
 export interface PartyX1View {
   opponent: string;
-  /** Placar líquido do meu ponto de vista (+2 = estou 2 na frente). */
+  /** Meus pontos e os do adversário (nunca negativos). */
+  myName: string;
+  mine: number;
+  theirs: number;
+  /** Diferença do meu ponto de vista (+2 = estou 2 na frente). */
   lead: number;
   round: number;
   state: 'wait' | 'go' | 'between' | 'done';
@@ -123,6 +127,8 @@ export interface PartyX1View {
     mine: number | null;
     theirs: number | null;
     won: boolean | null;
+    /** Quanto MEU placar mudou no último disparo: +1, -1 ou 0 (já estava em zero). */
+    delta: number;
     early: 'me' | 'them' | null;
   } | null;
   result: 'win' | 'tie' | 'loss' | null;
@@ -146,6 +152,8 @@ export interface PartyChallenge {
   length?: number;
   // Digitação
   word?: string;
+  /** Palavra solta ou frase (a tela mostra qual é). */
+  kind?: 'palavra' | 'frase';
 }
 
 export interface PartySnapshot {
@@ -169,6 +177,8 @@ export interface PartySnapshot {
   delta?: Record<string, number>;
   /** Mesmíssima: a cor alvo e a que cada um travou (aparece no placar). */
   reveal?: { target: Hsb; answers: Record<string, Hsb> } | null;
+  /** Já Deu?: tempo certo, alvo mostrado e o tempo medido de cada um (em ms). */
+  timeReveal?: { expectedMs: number; targetMs: number; answers: Record<string, number> } | null;
   autoStartAt?: number | null;
   shapes?: { items: PartyShapeItem[]; simSeed: string } | null;
   x1?: PartyX1View | null;
