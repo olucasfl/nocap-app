@@ -65,22 +65,15 @@ export function MicroColor({ snapshot, p }: Props) {
 const fmt = (ms: number) => (ms / 1000).toFixed(2).replace('.', ',');
 
 /**
- * Já Deu?: ver o alvo, COMEÇAR e PARAR. O servidor mede; o relógio mostrado é só para a pegadinha.
- * Sem contagem regressiva: neste jogo ninguém vê o tempo correndo (o limite é silencioso).
+ * Já Deu?: igual ao jogo original. Aparece o alvo e a regra; a pessoa aperta COMEÇAR, conta de
+ * cabeça e aperta PARAR. Nenhum relógio nem número correndo, e a rodada espera todo mundo.
  */
 export function MicroTime({ snapshot, p }: Props) {
   const times = p.times!;
   const ch = p.challenge!;
   const now = useServerNow();
-  const [startedAt, setStartedAt] = useState<number | null>(null);
-  const [, tick] = useState(0);
-  const running = startedAt !== null || !!p.started;
-  // O relógio mostrado anda mais depressa ou devagar (Tempo Falso) e some depois de 1 s (Cego).
-  useEffect(() => {
-    if (startedAt === null || !ch.showClock) return;
-    const id = window.setInterval(() => tick((n) => n + 1), 60);
-    return () => window.clearInterval(id);
-  }, [startedAt, ch.showClock]);
+  const [started, setStarted] = useState(false);
+  const running = started || !!p.started;
 
   if (now < times.showAt) {
     return (
@@ -90,37 +83,24 @@ export function MicroTime({ snapshot, p }: Props) {
       </>
     );
   }
-  if (now < times.pickAt) {
-    return (
-      <>
-        <CommandBar text={p.command ?? ''} />
-        <Big title={fmt(ch.targetMs!)} sub="ESTE É O ALVO (EM SEGUNDOS)" />
-      </>
-    );
-  }
   if (p.mine) return <Locked snapshot={snapshot} p={p} />;
-
-  const real = startedAt === null ? 0 : Date.now() - startedAt;
-  const hidden = ch.hideAfterMs != null && real > ch.hideAfterMs;
+  const picking = now >= times.pickAt;
   return (
     <>
       <CommandBar text={p.command ?? ''} />
-      {ch.showClock ? (
-        <div className="pclock" aria-label="Relógio">
-          <span className="mono">ALVO {fmt(ch.targetMs!)}</span>
-          <b>{running && !hidden ? fmt(real * (ch.factor ?? 1)) : '- , - -'}</b>
-        </div>
-      ) : (
-        <Big title={fmt(ch.targetMs!)} sub={running ? 'CONTANDO...' : 'ALVO'} />
-      )}
+      <Big
+        title={fmt(ch.targetMs!)}
+        sub={running ? 'CONTANDO...' : 'ESTE É O ALVO (EM SEGUNDOS)'}
+      />
       <div className="stack">
         {!running ? (
           <button
             type="button"
             className="btn alt"
             data-sfx="start"
+            disabled={!picking}
             onClick={() => {
-              setStartedAt(Date.now());
+              setStarted(true);
               sendRoom('tbegin');
             }}
           >

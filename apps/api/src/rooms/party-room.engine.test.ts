@@ -117,10 +117,6 @@ function playPerfect(c: Ctx, slot: MicroSlot): number {
     }
     case 'time': {
       toPick(c);
-      if (slot.variant === 'quieto') {
-        runUntil(c, 'ranking');
-        return 1000;
-      }
       for (const id of ids) room.timeBegin(id);
       c.clock.advance(timeChallenge(slot).expectedMs);
       for (const id of ids) room.timeStop(id);
@@ -328,13 +324,29 @@ describe('PartyRoomEngine: micro-desafios', () => {
     expect(snap(c.room).party.delta!.bia).toBe(1000);
   });
 
-  it('Já Deu? "Quieto": apertar COMEÇAR perde 500; ficar quieto ganha 1000', () => {
-    const { c } = firstOf('time', 'quieto');
+  it('Já Deu? não acaba sozinho: espera quem demora e só encerra depois de 40 s sem jogar', () => {
+    const { c, slot } = firstOf('time', 'standard');
     toPick(c);
+    const expected = timeChallenge(slot).expectedMs;
     c.room.timeBegin('ana');
+    c.clock.advance(expected);
+    c.room.timeStop('ana');
+    // bia ainda não jogou: 30 s depois a rodada continua esperando.
+    run(c, 30_000);
+    expect(c.room.currentPhase).toBe('micro');
+    c.room.timeBegin('bia');
+    c.clock.advance(expected);
+    c.room.timeStop('bia');
+    expect(c.room.currentPhase).toBe('ranking');
+  });
+
+  it('Já Deu? sem ninguém jogar encerra em 40 s, com 0 para quem não jogou', () => {
+    const { c } = firstOf('time', 'standard');
+    toPick(c);
+    run(c, 39_000);
+    expect(c.room.currentPhase).toBe('micro');
     runUntil(c, 'ranking');
-    expect(snap(c.room).party.delta!.ana).toBe(-500);
-    expect(snap(c.room).party.delta!.bia).toBe(1000);
+    expect(snap(c.room).party.delta!.ana).toBe(0);
   });
 
   it('quem não responde até o fim do tempo fica com 0 e o desafio avança sozinho', () => {

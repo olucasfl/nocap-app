@@ -139,9 +139,6 @@ export interface PartyChallenge {
   blind?: boolean;
   // Já Deu?
   targetMs?: number;
-  showClock?: boolean;
-  hideAfterMs?: number | null;
-  factor?: number;
   // Ecooo
   sequence?: number[];
   pads?: number;

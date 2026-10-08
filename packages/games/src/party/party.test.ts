@@ -144,27 +144,51 @@ describe('Já Deu?', () => {
     expect(timePoints(ref('standard'), c.expectedMs * 4)).toBe(0);
   });
 
-  it('Tempo Falso: o tempo real esperado é o alvo dividido pela velocidade do relógio', () => {
+  it('Tempo Falso: a contagem de cabeça anda mais rápida ou mais devagar; vale o tempo real', () => {
     const c = timeChallenge(ref('falso'));
-    expect(c.factor).not.toBe(1);
-    expect(c.expectedMs).toBe(Math.round(c.targetMs / c.factor));
-    expect(c.showClock).toBe(true);
+    expect(c.expectedMs).not.toBe(c.targetMs);
+    const factor = c.fast ? 1 + c.pct / 100 : 1 - c.pct / 100;
+    expect(c.expectedMs).toBe(Math.round(c.targetMs / factor));
     expect(timePoints(ref('falso'), c.expectedMs)).toBe(1000);
   });
 
-  it('só o Padrão esconde o relógio; o Cego mostra 1 segundo', () => {
-    expect(timeChallenge(ref('standard')).showClock).toBe(false);
-    expect(timeChallenge(ref('cego')).hideAfterMs).toBe(1000);
+  it('Metade e Dobro: o esperado é a metade ou o dobro do alvo', () => {
+    const half = timeChallenge(ref('metade'));
+    expect(half.expectedMs).toBe(Math.round(half.targetMs / 2));
+    expect(timePoints(ref('metade'), half.expectedMs)).toBe(1000);
+    const twice = timeChallenge(ref('dobro'));
+    expect(twice.expectedMs).toBe(twice.targetMs * 2);
+    expect(timePoints(ref('dobro'), twice.expectedMs)).toBe(1000);
+  });
+
+  it('o desafio do Já Deu? não tem timer: espera todo mundo (até 40 s sem ninguém jogar)', () => {
+    const slot = {
+      kind: 'micro' as const,
+      game: 'time' as const,
+      variant: 'standard',
+      seed: 't',
+      round: 1,
+      position: 1,
+    };
+    expect(microTiming(slot).pickMs).toBe(40_000);
+    expect(commandText(slot)).not.toMatch(/relógio/i);
   });
 });
 
 describe('Ecooo', () => {
   const ref = (variant: string) => ({ seed: 'eco-1', variant });
 
-  it('sequência de 8 a 12 passos; proporcional aos acertos', () => {
+  it('sequência curta (4 a 8 passos); proporcional aos acertos', () => {
     const c = ecoChallenge(ref('standard'));
-    expect(c.sequence.length).toBeGreaterThanOrEqual(8);
-    expect(c.sequence.length).toBeLessThanOrEqual(12);
+    expect(c.sequence.length).toBeGreaterThanOrEqual(5);
+    expect(c.sequence.length).toBeLessThanOrEqual(7);
+    for (let i = 0; i < 200; i++) {
+      for (const v of ['standard', 'reverse', 'forbidden', 'oddonly', 'swap']) {
+        const n = ecoChallenge({ seed: `len-${i}`, variant: v }).sequence.length;
+        expect(n).toBeGreaterThanOrEqual(4);
+        expect(n).toBeLessThanOrEqual(8);
+      }
+    }
     expect(ecoPoints(ref('standard'), c.expected)).toBe(1000);
     const half = c.expected.map((p, i) => (i < c.expected.length / 2 ? p : (p + 1) % 4));
     expect(ecoPoints(ref('standard'), half)).toBeLessThan(700);

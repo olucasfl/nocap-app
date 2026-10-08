@@ -325,11 +325,9 @@ export class PartyRoomEngine extends ColorRoomEngine {
 
   /** Já Deu?: COMEÇAR dispara o relógio de quem apertou (o servidor mede). */
   timeBegin(id: string) {
-    const slot = this.requireMicro(id, 'time');
+    this.requireMicro(id, 'time');
     if (this.submitted.has(id) || this.timeStarts.has(id)) return;
     if (this.now() < this.times.pickAt - 300) throw new RoomError('Espere o alvo sumir');
-    // Quieto: a regra era não apertar nada; apertou, perde 500.
-    if (slot.variant === 'quieto') return this.answered(id, -500);
     this.timeStarts.set(id, this.now());
   }
 
@@ -378,10 +376,7 @@ export class PartyRoomEngine extends ColorRoomEngine {
       if (this.points.has(id)) continue;
       if (slot.game === 'eco') {
         this.points.set(id, ecoPoints(slot, this.ecoTaps.get(id) ?? []));
-      } else if (
-        (slot.game === 'color' && slot.variant === 'wait') ||
-        (slot.game === 'time' && slot.variant === 'quieto')
-      ) {
+      } else if (slot.game === 'color' && slot.variant === 'wait') {
         // Ficou quieto como a regra pedia.
         this.points.set(id, 1000);
       } else if (slot.game === 'typing' && slot.variant === 'maohoba') {
@@ -708,12 +703,7 @@ export class PartyRoomEngine extends ColorRoomEngine {
       }
       case 'time': {
         const c = timeChallenge(slot);
-        return {
-          targetMs: c.targetMs,
-          showClock: c.showClock,
-          hideAfterMs: c.hideAfterMs,
-          factor: c.factor,
-        };
+        return { targetMs: c.targetMs };
       }
       case 'eco': {
         const c = ecoChallenge(slot);

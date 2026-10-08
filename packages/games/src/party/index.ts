@@ -62,11 +62,11 @@ export const VARIANTS: Record<MicroGame, { id: string; weight: number }[]> = {
     { id: 'wait', weight: 10 },
   ],
   time: [
-    { id: 'standard', weight: 55 },
-    { id: 'falso', weight: 12 },
-    { id: 'cego', weight: 12 },
-    { id: 'noover', weight: 11 },
-    { id: 'quieto', weight: 10 },
+    { id: 'standard', weight: 50 },
+    { id: 'falso', weight: 14 },
+    { id: 'metade', weight: 12 },
+    { id: 'dobro', weight: 10 },
+    { id: 'noover', weight: 14 },
   ],
   eco: [
     { id: 'standard', weight: 55 },
@@ -174,13 +174,12 @@ export function commandText(slot: Slot): string {
     case 'time': {
       if (v === 'falso') {
         const c = timeChallenge(slot);
-        return `O relógio está ${c.pct}% mais ${c.fast ? 'rápido' : 'lento'}. Pare quando ele marcar o alvo`;
+        return `O tempo está ${c.pct}% mais ${c.fast ? 'rápido' : 'lento'}. Conte de cabeça nesse ritmo e pare quando chegar ao alvo`;
       }
+      if (v === 'metade') return 'Pare na METADE do tempo do alvo';
+      if (v === 'dobro') return 'Pare no DOBRO do tempo do alvo';
       if (v === 'noover') return 'Pare no tempo do alvo, mas SEM PASSAR: passou, perde pontos';
-      if (v === 'quieto') return 'NÃO APERTE NADA. Espere o tempo acabar';
-      return v === 'cego'
-        ? 'Pare no tempo exato do alvo. O relógio some depois de 1 segundo'
-        : 'Pare no tempo exato do alvo';
+      return 'Pare no tempo exato do alvo';
     }
     case 'eco': {
       if (v === 'reverse') return 'Faça a sequência de trás para frente';
@@ -253,21 +252,14 @@ export function microTiming(slot: MicroSlot): MicroTiming {
   switch (slot.game) {
     case 'color':
       return { showMs: colorShowMs(slot.variant), pickMs: slot.variant === 'wait' ? 8000 : 14_000 };
-    case 'time': {
-      const c = timeChallenge(slot);
-      return {
-        showMs: 3000,
-        pickMs:
-          slot.variant === 'quieto'
-            ? 7000
-            : Math.min(20_000, Math.round(c.expectedMs * 1.6) + 4000),
-      };
-    }
+    case 'time':
+      // Sem timer: espera todo mundo jogar. Só encerra se alguém sumir por 40 s.
+      return { showMs: 3000, pickMs: 40_000 };
     case 'eco': {
       const c = ecoChallenge(slot);
       return {
         showMs: ECO_PAUSE_MS + c.sequence.length * ECO_MICRO_STEP_MS,
-        pickMs: Math.min(18_000, c.expected.length * 900 + 4000),
+        pickMs: Math.min(18_000, c.expected.length * 1300 + 5000),
       };
     }
     case 'typing':

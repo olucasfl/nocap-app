@@ -42,40 +42,35 @@ export const MICRO_TIME_SETTINGS: TimeSettings = {
 };
 
 export interface TimeChallenge {
-  /** O alvo que aparece na tela (o relógio mostrado, no Tempo Falso). */
+  /** O alvo que aparece na tela. */
   targetMs: number;
-  /** Quanto tempo REAL a pessoa precisa contar para acertar. */
+  /** Quanto tempo REAL a pessoa precisa contar para acertar (muda no Tempo Falso, Metade e Dobro). */
   expectedMs: number;
-  /** Tempo Falso: o relógio anda X% mais rápido (`fast`) ou mais devagar. */
+  /** Tempo Falso: o tempo "anda" X% mais rápido (`fast`) ou mais devagar na contagem de cabeça. */
   pct: number;
   fast: boolean;
-  /** Relógio visível durante a contagem? (Tempo Falso e Cego; no Padrão não há relógio.) */
-  showClock: boolean;
-  /** Cego: o relógio some depois deste tempo. */
-  hideAfterMs: number | null;
-  /** Velocidade do relógio mostrado em relação ao real. */
-  factor: number;
   /** Sem Estourar: passar do alvo tira pontos. */
   noOver: boolean;
 }
 
+/**
+ * Já Deu? na Maratona é igual ao jogo original: aparece o alvo e a regra, a pessoa aperta COMEÇAR
+ * e conta de cabeça. Nunca há relógio nem número correndo. As regras só mudam o que se conta.
+ */
 export function timeChallenge(ref: MicroRef): TimeChallenge {
   const targetMs = generateTimeRound(ref.seed, MICRO_TIME_SETTINGS, 0);
   const rng = createRng(`${ref.seed}:falso`);
   const pct = rng() < 0.5 ? 15 : 20;
   const fast = rng() < 0.5;
-  const falso = ref.variant === 'falso';
-  const factor = falso ? (fast ? 1 + pct / 100 : 1 - pct / 100) : 1;
-  return {
-    targetMs,
-    expectedMs: Math.round(targetMs / factor),
-    pct,
-    fast,
-    showClock: ref.variant !== 'standard',
-    hideAfterMs: ref.variant === 'cego' ? 1000 : null,
-    factor,
-    noOver: ref.variant === 'noover',
-  };
+  const expectedMs =
+    ref.variant === 'falso'
+      ? Math.round(targetMs / (fast ? 1 + pct / 100 : 1 - pct / 100))
+      : ref.variant === 'metade'
+        ? Math.round(targetMs / 2)
+        : ref.variant === 'dobro'
+          ? targetMs * 2
+          : targetMs;
+  return { targetMs, expectedMs, pct, fast, noOver: ref.variant === 'noover' };
 }
 
 /** Respostas absurdas (toque duplo ou contagem de 3x o esperado) não pontuam. */
@@ -89,7 +84,16 @@ export function timePoints(ref: MicroRef, ms: number): number {
 
 // ---- Ecooo ----
 
-export const ECO_MICRO_STEP_MS = 600;
+export const ECO_MICRO_STEP_MS = 700;
+
+/** Quantos passos tem a sequência mostrada, por regra. */
+const ECO_LENGTHS: Record<string, [number, number]> = {
+  standard: [5, 7],
+  reverse: [4, 5],
+  forbidden: [6, 7],
+  oddonly: [6, 8],
+  swap: [4, 6],
+};
 
 export interface EcoChallenge {
   sequence: number[];
@@ -104,7 +108,9 @@ export interface EcoChallenge {
 
 export function ecoChallenge(ref: MicroRef): EcoChallenge {
   const rng = createRng(`${ref.seed}:eco`);
-  const length = randInt(rng, 8, 12);
+  // Curtas e jogáveis: o tamanho depende da regra (as que pedem mais atenção ficam menores).
+  const [min, max] = ECO_LENGTHS[ref.variant] ?? ECO_LENGTHS.standard!;
+  const length = randInt(rng, min, max);
   const settings = { ...ecoPresets.classic, startLength: length };
   const sequence = sequenceFor(ref.seed, settings, 1);
   const forbidden = ref.variant === 'forbidden' ? sequence[randInt(rng, 0, length - 1)]! : null;
