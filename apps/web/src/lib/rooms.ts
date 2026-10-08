@@ -4,8 +4,21 @@ import { create } from 'zustand';
 import { apiBase } from './api-client';
 import { getToken, useAuth } from './auth';
 
-export type RoomGame = 'color' | 'time' | 'impostor' | 'eco';
-export type Phase = 'lobby' | 'create' | 'show' | 'pick' | 'play' | 'vote' | 'reveal' | 'final';
+export type RoomGame = 'color' | 'time' | 'impostor' | 'eco' | 'party';
+export type Phase =
+  | 'lobby'
+  | 'intro'
+  | 'micro'
+  | 'ranking'
+  | 'tutorial'
+  | 'big'
+  | 'create'
+  | 'show'
+  | 'pick'
+  | 'play'
+  | 'vote'
+  | 'reveal'
+  | 'final';
 
 export interface ColorRoomSettings {
   rounds: number;
@@ -19,8 +32,11 @@ export interface ImpostorRoomSettings {
   impostors: number;
   anonymous: boolean;
 }
+export interface PartySettings {
+  rounds: number;
+}
 /** As regras dependem do jogo da sala (`snapshot.game`). */
-export type RoomSettings = ColorRoomSettings & TimeRoomSettings & ImpostorRoomSettings;
+export type RoomSettings = ColorRoomSettings & TimeRoomSettings & ImpostorRoomSettings & PartySettings;
 
 export interface RoomMember {
   id: string;
@@ -83,6 +99,31 @@ export interface EcoRoomState {
   hits?: Record<string, number>;
 }
 
+export interface PartySnapshot {
+  totals: Record<string, number>;
+  round: number;
+  rounds: number;
+  index: number;
+  count: number;
+  kind?: 'micro' | 'big';
+  game?: 'color';
+  variant?: 'standard' | 'inverted' | 'blind';
+  position?: number;
+  command?: string;
+  times?: { showAt: number; pickAt: number; endsAt: number };
+  challenge?: {
+    target: Hsb;
+    start: Hsb;
+    showMs: number;
+    blind: boolean;
+  };
+  submitted?: string[];
+  ready?: string[];
+  mine?: boolean;
+  delta?: Record<string, number>;
+  autoStartAt?: number | null;
+}
+
 export interface RoomSnapshot {
   code: string;
   game: RoomGame;
@@ -105,6 +146,7 @@ export interface RoomSnapshot {
   chat: { open: boolean; muted: string[] };
   impostor?: ImpostorState;
   eco?: EcoRoomState;
+  party?: PartySnapshot;
 }
 
 /** Estado do Intruso, por pessoa: cor, dica e papéis só chegam a quem pode vê-los. */
@@ -170,6 +212,15 @@ async function client() {
 }
 
 let room: Room | null = null;
+let offsets: number[] = [];
+
+export function serverNow(): number {
+  const median =
+    offsets.length > 0
+      ? [...offsets].sort((a, b) => a - b)[Math.floor(offsets.length / 2)]!
+      : 0;
+  return Date.now() + median;
+}
 
 const set = (patch: Partial<RoomState>) => useRoom.setState(patch);
 
@@ -201,6 +252,21 @@ function attach(r: Room) {
   r.onMessage('snapshot', (s: RoomSnapshot) =>
     set({ snapshot: s, status: 'connected', lastGame: s.game }),
   );
+  r.onMessage('pong', (m: { t0?: number; ts?: number }) => {
+    if (typeof m?.t0 === 'number' && typeof m?.ts === 'number') {
+      const offset = m.ts - (m.t0 + Date.now()) / 2;
+      offsets = [...offsets, offset].slice(-5);
+    }
+  });
+  r.send('ping', { t0: Date.now() });
+  const pingInterval = setInterval(() => {
+    if (room !== r) {
+      clearInterval(pingInterval);
+      return;
+    }
+    r.send('ping', { t0: Date.now() });
+  }, 20_000);
+
   r.onMessage('chat', (m: ChatMessage) =>
     useRoom.setState((s) => ({
       chat: [...s.chat, m].slice(-50),

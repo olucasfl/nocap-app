@@ -92,11 +92,12 @@ const roomRoute = createRoute({
   path: '/sala',
   validateSearch: (
     search: Record<string, unknown>,
-  ): { jogo?: 'color' | 'time' | 'impostor' | 'eco' } =>
+  ): { jogo?: 'color' | 'time' | 'impostor' | 'eco' | 'party' } =>
     search.jogo === 'color' ||
     search.jogo === 'time' ||
     search.jogo === 'impostor' ||
-    search.jogo === 'eco'
+    search.jogo === 'eco' ||
+    search.jogo === 'party'
       ? { jogo: search.jogo }
       : {},
   component: lazyRouteComponent(() => import('@/screens/Room'), 'RoomEntryPage'),
@@ -105,6 +106,12 @@ const roomCodeRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/sala/$code',
   component: lazyRouteComponent(() => import('@/screens/Room'), 'RoomCodePage'),
+});
+
+const nocapRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/nocap',
+  component: lazyRouteComponent(() => import('@/screens/NocapPage'), 'NocapPage'),
 });
 
 /** `/cor?aba=friends&modo=survival`: abre o jogo direto numa aba. O ranking tem a própria página (`/ranking`). */
@@ -164,6 +171,7 @@ const routeTree = rootRoute.addChildren([
   colorRoute,
   timeRoute,
   ecoRoute,
+  nocapRoute,
   loginRoute,
   registerRoute,
   roomRoute,

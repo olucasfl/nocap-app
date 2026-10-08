@@ -41,6 +41,7 @@ export const MIN_PLAYERS: Record<RoomGame, number> = {
   time: 2,
   impostor: 3,
   eco: 2,
+  party: 2,
 };
 
 export const GAME_NAME: Record<RoomGame, string> = {
@@ -48,6 +49,7 @@ export const GAME_NAME: Record<RoomGame, string> = {
   time: 'Já Deu?',
   impostor: 'Intruso',
   eco: 'Ecooo',
+  party: 'NoCap!',
 };
 
 /** "Entra na minha sala ___": com a preposição certa para o convite. */
@@ -56,6 +58,7 @@ export const GAME_OF: Record<RoomGame, string> = {
   time: 'de Já Deu?',
   impostor: 'do Intruso',
   eco: 'do Ecooo',
+  party: 'do NoCap!',
 };
 
 /** Modos de cada jogo na sala, com uma linha que explica cada um. */
@@ -92,6 +95,13 @@ export const MODES: Record<RoomGame, { id: string; label: string; note: string }
       id: 'impostor',
       label: 'Intruso',
       note: 'Alguns não veem a cor: só uma dica. Todo mundo recria e vota em quem desconfia.',
+    },
+  ],
+  party: [
+    {
+      id: 'party',
+      label: 'NoCap!',
+      note: 'Micro-desafios e minijogos grandes.',
     },
   ],
   color: [
@@ -134,7 +144,7 @@ export function rulesFor(s: RoomSnapshot): RuleDef[] {
   const out: RuleDef[] = [];
   const cfg = s.settings;
 
-  if (s.game !== 'impostor') {
+  if (s.game !== 'impostor' && s.game !== 'party') {
     out.push({
       id: 'mode',
       label: 'MODO',
@@ -151,11 +161,13 @@ export function rulesFor(s: RoomSnapshot): RuleDef[] {
       id: 'rounds',
       label: 'RODADAS',
       values:
-        s.game === 'impostor'
-          ? IMP_ROUNDS
-          : s.game === 'eco'
-            ? leaderRoundOptions(s.members.length, cfg.rounds)
-            : ROUNDS,
+        s.game === 'party'
+          ? [1, 2, 3, 5]
+          : s.game === 'impostor'
+            ? IMP_ROUNDS
+            : s.game === 'eco'
+              ? leaderRoundOptions(s.members.length, cfg.rounds)
+              : ROUNDS,
       current: cfg.rounds,
       format: String,
       patch: (v) => ({ rounds: v }),

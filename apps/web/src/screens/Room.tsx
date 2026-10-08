@@ -50,13 +50,14 @@ function Header({ leave, round }: { leave?: boolean; round?: string }) {
 }
 
 /** A página de cada jogo (o Intruso é jogado a partir da Mesmíssima). */
-const GAME_PAGE = { color: '/cor', time: '/tempo', impostor: '/cor', eco: '/eco' } as const;
+const GAME_PAGE = { color: '/cor', time: '/tempo', impostor: '/cor', eco: '/eco', party: '/nocap' } as const;
 
 const GAME_NAME: Record<RoomGame, string> = {
   color: 'Mesmíssima',
   time: 'Já Deu?',
   impostor: 'Intruso',
   eco: 'Ecooo',
+  party: 'NoCap!',
 };
 
 const ENTRY_LEAD: Record<RoomGame, string> = {
@@ -65,6 +66,7 @@ const ENTRY_LEAD: Record<RoomGame, string> = {
   time: 'Jogue Já Deu? com amigos: o mesmo alvo para todos, cada um conta de cabeça.',
   impostor:
     'O Intruso precisa de uma sala com no mínimo 3 pessoas: alguns não veem a cor, só uma dica, e todo mundo vota em quem desconfia.',
+  party: 'Jogue NoCap! com amigos: micro-desafios rápidos e minijogos grandes, todos jogando ao mesmo tempo.',
 };
 
 function Entry({
@@ -105,7 +107,7 @@ function Entry({
   return (
     <section className="screen rm">
       <BackButton
-        to={game === 'time' ? '/tempo' : game === 'eco' ? '/eco' : '/cor'}
+        to={game === 'time' ? '/tempo' : game === 'eco' ? '/eco' : game === 'party' ? '/nocap' : '/cor'}
         label="Voltar ao jogo"
       />
       <h1>Sala</h1>
@@ -236,7 +238,7 @@ export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomG
       <Header
         leave={!!snapshot}
         round={
-          snapshot?.round && snapshot.phase !== 'lobby' && snapshot.phase !== 'final'
+          snapshot && snapshot.game !== 'party' && snapshot?.round && snapshot.phase !== 'lobby' && snapshot.phase !== 'final'
             ? `${snapshot.round.index + 1}/${snapshot.round.total}`
             : undefined
         }
