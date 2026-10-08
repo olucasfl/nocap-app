@@ -24,7 +24,7 @@ type Snap = {
   round: { seed: string; results: { id: string; score: number }[] | null };
 };
 
-function started(ids = ['ana', 'bia', 'cris'], rounds = 4) {
+function started(ids = ['ana', 'bia', 'cris'], rounds = 3) {
   let t = 1_000;
   const clock = { advance: (ms: number) => (t += ms) };
   const room = new EcoLeaderRoomEngine({ code: 'ABCD', now: () => t, newSeed: () => SEED });
@@ -47,7 +47,7 @@ function createAndShow(
   const leader = snap(room).eco.leader;
   const seq = validLeaderSequence(SEED, round);
   room.submit(leader, seq);
-  clock.advance(600 + leaderTaps(round) * 700 + 1);
+  clock.advance(600 + leaderTaps(SEED, round) * 700 + 1);
   room.tick();
   return { leader, seq };
 }
@@ -100,7 +100,7 @@ describe('EcoLeaderRoomEngine (Siga o Líder)', () => {
   it('criador que estoura o tempo: o servidor monta uma sequência válida e toca para todos', () => {
     const { room, clock } = started();
     // O aviso "O LÍDER É ..." não conta no tempo de criar.
-    clock.advance(LEADER_ANNOUNCE_MS + leaderCreateMs(1) - 1);
+    clock.advance(LEADER_ANNOUNCE_MS + leaderCreateMs(3) - 1);
     expect(room.tick()).toBe(false);
     clock.advance(2);
     expect(room.tick()).toBe(true);
@@ -110,9 +110,9 @@ describe('EcoLeaderRoomEngine (Siga o Líder)', () => {
   });
 
   it('só no pódio aparece a soma de acertos; seguidor parado por 8 s conta os que acertou', () => {
-    const { room, clock } = started(['ana', 'bia', 'cris'], 4);
+    const { room, clock } = started(['ana', 'bia', 'cris'], 3);
     const expected: Record<string, number> = { ana: 0, bia: 0, cris: 0 };
-    for (let round = 1; round <= 4; round++) {
+    for (let round = 1; round <= 3; round++) {
       const { leader, seq } = createAndShow(room, clock, round);
       const followers = ['ana', 'bia', 'cris'].filter((x) => x !== leader);
       expect(snap(room).eco.hits).toBeUndefined();
@@ -134,9 +134,9 @@ describe('EcoLeaderRoomEngine (Siga o Líder)', () => {
   });
 
   it('o criador muda a cada rodada e a partida termina no total escolhido', () => {
-    const { room, clock } = started(['ana', 'bia', 'cris'], 4);
+    const { room, clock } = started(['ana', 'bia', 'cris'], 3);
     const leaders: string[] = [];
-    for (let round = 1; round <= 4; round++) {
+    for (let round = 1; round <= 3; round++) {
       const { leader, seq } = createAndShow(room, clock, round);
       leaders.push(leader);
       for (const id of ['ana', 'bia', 'cris'].filter((x) => x !== leader)) {
@@ -147,6 +147,33 @@ describe('EcoLeaderRoomEngine (Siga o Líder)', () => {
     expect(leaders.slice(0, 3).sort()).toEqual(['ana', 'bia', 'cris']);
     expect(room.persistable).toBe(true);
     expect(room.finalRows()).toHaveLength(3);
+  });
+});
+
+describe('nota final por porcentagem', () => {
+  it('é a média das rodadas jogadas: criar uma rodada fácil ou difícil não decide sozinho', () => {
+    const { room, clock } = started(['ana', 'bia', 'cris'], 3);
+    for (let round = 1; round <= 3; round++) {
+      const { leader, seq } = createAndShow(room, clock, round);
+      for (const id of ['ana', 'bia', 'cris'].filter((x) => x !== leader)) {
+        for (const p of seq) room.tap(id, p);
+      }
+    }
+    const rows = room.finalRows();
+    // Cada um seguiu 2 rodadas com nota 10 e criou 1 com nota 0: média 6,7%... (667 décimos)
+    expect(rows.every((r) => r.totalTenths === 667)).toBe(true);
+    expect(rows.every((r) => r.placement === 1)).toBe(true);
+  });
+
+  it('o início ajusta as rodadas para um múltiplo do número de jogadores', () => {
+    let t = 1_000;
+    const room = new EcoLeaderRoomEngine({ code: 'ABCD', now: () => t, newSeed: () => SEED });
+    ['ana', 'bia', 'cris'].forEach((id) => room.join(id, id));
+    room.configure('ana', { rounds: 4 });
+    ['bia', 'cris'].forEach((id) => room.setReady(id, true));
+    room.start('ana');
+    t += 1;
+    expect(room.currentSettings).toEqual({ rounds: 6 });
   });
 });
 

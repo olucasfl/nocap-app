@@ -511,3 +511,23 @@
 .eco-rules li {
   position: relative;
 }
+
+/* Reprodução nítida: o botão aceso brilha com anel e halo da própria cor; os outros quase somem. */
+.eco-board.dim .eco-pad:not(.lit) {
+  opacity: 0.16;
+  filter: grayscale(0.7) brightness(0.65);
+}
+.eco-pad.lit {
+  position: relative;
+  z-index: 1;
+  opacity: 1;
+  filter: brightness(1.2) saturate(1.35);
+  transform: scale(1.07);
+  box-shadow:
+    0 0 0 4px var(--paper),
+    0 0 0 8px var(--ink),
+    0 0 44px 14px var(--pad, transparent);
+}
+.eco-pad.lit svg {
+  transform: scale(1.4);
+}

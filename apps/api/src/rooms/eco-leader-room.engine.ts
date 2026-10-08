@@ -9,10 +9,8 @@ import {
   firstBrokenRule,
   followerScore,
   leaderCreateMs,
-  leaderPads,
-  leaderRules,
   leaderScore,
-  leaderTaps,
+  leaderSpec,
   ruleLabel,
   validLeaderSequence,
 } from '@nocap/games';
@@ -54,6 +52,10 @@ export class EcoLeaderRoomEngine extends ColorRoomEngine {
 
   override get historyMode() {
     return 'leader';
+  }
+
+  private get spec() {
+    return leaderSpec(this.seed, this.round);
   }
 
   private get round(): number {
@@ -104,7 +106,8 @@ export class EcoLeaderRoomEngine extends ColorRoomEngine {
     this.locked = new Set(this.leaderId ? [this.leaderId] : []);
     this.phase = 'create';
     // O aviso "O LÍDER É ..." não come o tempo de quem cria.
-    this.phaseEndsAt = this.now() + LEADER_ANNOUNCE_MS + leaderCreateMs(this.round);
+    this.phaseEndsAt =
+      this.now() + LEADER_ANNOUNCE_MS + leaderCreateMs(this.spec.taps, this.spec.rules.length - 1);
   }
 
   /** O criador envia a sequência; o servidor confere as regras e diz qual falhou. */
@@ -112,8 +115,8 @@ export class EcoLeaderRoomEngine extends ColorRoomEngine {
     this.requirePhase('create');
     if (id !== this.leaderId) throw new RoomError('Quem cria esta rodada é outra pessoa');
     const taps = Array.isArray(seq) ? (seq as number[]) : [];
-    const rules = leaderRules(this.seed, this.round);
-    const broken = firstBrokenRule(taps, rules, leaderPads(this.round));
+    const { rules, pads } = this.spec;
+    const broken = firstBrokenRule(taps, rules, pads);
     if (broken !== null) throw new RoomError(`Falta cumprir: ${ruleLabel(rules[broken]!)}`);
     this.sequence = taps;
     this.startShow();
@@ -121,7 +124,7 @@ export class EcoLeaderRoomEngine extends ColorRoomEngine {
 
   private startShow() {
     this.phase = 'show';
-    this.phaseEndsAt = this.now() + ECO_PAUSE_MS + leaderTaps(this.round) * LEADER_STEP_MS;
+    this.phaseEndsAt = this.now() + ECO_PAUSE_MS + this.spec.taps * LEADER_STEP_MS;
   }
 
   override tick(): boolean {
@@ -159,7 +162,7 @@ export class EcoLeaderRoomEngine extends ColorRoomEngine {
     if (this.phase !== 'play') return;
     if (!this.members.has(id)) throw new RoomError('Você não está na sala');
     if (!this.followers.includes(id) || this.locked.has(id) || !this.sequence) return;
-    if (!Number.isInteger(pad) || pad < 0 || pad >= leaderPads(this.round)) {
+    if (!Number.isInteger(pad) || pad < 0 || pad >= this.spec.pads) {
       throw new RoomError('Botão inválido');
     }
     const pos = this.progress.get(id) ?? 0;
@@ -174,7 +177,7 @@ export class EcoLeaderRoomEngine extends ColorRoomEngine {
   }
 
   protected override toReveal() {
-    const n = leaderTaps(this.round);
+    const n = this.spec.taps;
     const round = this.rounds[this.roundIndex]!;
     const scores: number[] = [];
     for (const id of this.followers) {
@@ -201,7 +204,25 @@ export class EcoLeaderRoomEngine extends ColorRoomEngine {
     super.leave(id);
   }
 
+  /**
+   * A nota final é a MÉDIA das notas de cada rodada em que a pessoa jogou (porcentagem de acerto de
+   * cada fase), e não a soma: assim quem lidera uma rodada fácil ou difícil não sai na frente nem
+   * atrás só pela ordem. Em décimos de ponto percentual (78,3% = 783).
+   */
+  protected override totals() {
+    return [...this.members.values()].map((m) => {
+      const played = this.rounds.map((r) => r[m.id]).filter((x) => !!x);
+      const avg = played.length > 0 ? played.reduce((s, x) => s + x!.score, 0) / played.length : 0;
+      return { member: m, totalTenths: Math.round(avg * 100) };
+    });
+  }
+
   override start(id: string) {
+    // Todo mundo cria o mesmo número de vezes: sobe as rodadas ao próximo múltiplo de jogadores.
+    const players = [...this.members.values()].filter((m) => m.connected).length;
+    const rounds = (this.settings as { rounds: number }).rounds;
+    const fair = Math.ceil(rounds / Math.max(2, players)) * Math.max(2, players);
+    if (fair !== rounds && fair <= LEADER_MAX_ROUNDS) this.settings = { rounds: fair };
     this.hits = new Map();
     super.start(id);
   }
@@ -230,13 +251,13 @@ export class EcoLeaderRoomEngine extends ColorRoomEngine {
     return {
       eco: {
         round: this.round,
-        length: leaderTaps(this.round),
-        pads: leaderPads(this.round),
+        length: this.spec.taps,
+        pads: this.spec.pads,
         stepMs: LEADER_STEP_MS,
         reverse: false,
         sequence: showing ? this.sequence : null,
         leader: this.leaderId,
-        rules: leaderRules(this.seed, this.round),
+        rules: this.spec.rules,
         timedOut: this.timedOut,
         announceMs: this.phase === 'create' ? LEADER_ANNOUNCE_MS : 0,
         participants: this.followers,

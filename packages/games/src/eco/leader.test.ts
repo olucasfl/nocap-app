@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   defaultLeaderRounds,
+  fairLeaderRounds,
   firstBrokenRule,
   followerScore,
   leaderCreateMs,
@@ -13,34 +14,66 @@ import {
 } from './leader';
 
 describe('Siga o Líder: dificuldade', () => {
-  it('toques e botões crescem como na spec', () => {
-    expect([1, 2, 3, 4, 9, 20].map(leaderTaps)).toEqual([4, 6, 8, 10, 20, 20]);
-    expect([1, 2, 3, 4, 5, 11, 12].map(leaderPads)).toEqual([4, 4, 5, 5, 6, 9, 9]);
+  it('as três primeiras rodadas crescem devagar: 3 sem regra, 4 com uma, 5 com duas', () => {
+    const shape = (r: number) => [leaderTaps('s', r), leaderRules('s', r).length - 1];
+    expect(shape(1)).toEqual([3, 0]);
+    expect(shape(2)).toEqual([4, 1]);
+    expect(shape(3)).toEqual([5, 2]);
   });
 
-  it('regras extras: 0 nas rodadas 1 e 2, 1 até a 6, 2 depois', () => {
-    const extras = (r: number) => leaderRules('s', r).length - 1;
-    expect([1, 2, 3, 6, 7, 12].map(extras)).toEqual([0, 0, 1, 1, 2, 2]);
+  it('nunca pede mais de 12 toques nem mais de 3 regras extras', () => {
+    for (let i = 0; i < 40; i++) {
+      for (let r = 1; r <= 20; r++) {
+        expect(leaderTaps(`s${i}`, r)).toBeLessThanOrEqual(12);
+        expect(leaderRules(`s${i}`, r).length - 1).toBeLessThanOrEqual(3);
+      }
+    }
   });
 
-  it('tempo para criar: 20 s + 3 s por toque, no máximo 60 s', () => {
-    expect(leaderCreateMs(1)).toBe(18_000);
-    expect(leaderCreateMs(12)).toBe(45_000);
+  it('da 4ª rodada em diante há variedade: curtas com regras, longas sem regra, e nunca o mesmo tipo seguido', () => {
+    const seen = new Set<string>();
+    for (let i = 0; i < 40; i++) {
+      for (let r = 4; r <= 12; r++) {
+        const taps = leaderTaps(`v${i}`, r);
+        const extras = leaderRules(`v${i}`, r).length - 1;
+        seen.add(extras === 0 ? 'longa-sem-regra' : taps <= 5 ? 'curta-com-regras' : 'media');
+      }
+    }
+    expect(seen.has('longa-sem-regra')).toBe(true);
+    expect(seen.has('curta-com-regras')).toBe(true);
+    expect(seen.has('media')).toBe(true);
+  });
+
+  it('botões: 4 nas três primeiras rodadas, mais um a cada 3, até 9', () => {
+    expect([1, 3, 4, 6, 7, 16, 20].map((r) => leaderPads('s', r))).toEqual([4, 4, 5, 5, 6, 9, 9]);
+  });
+
+  it('tempo para criar: 10 s + 2 s por toque + 3 s por regra extra, no máximo 45 s', () => {
+    expect(leaderCreateMs(3)).toBe(16_000);
+    expect(leaderCreateMs(5, 2)).toBe(26_000);
+    expect(leaderCreateMs(12, 4)).toBe(45_000);
   });
 
   it('rodadas padrão: o maior entre 6 e os jogadores, até 12', () => {
     expect([2, 6, 9, 20].map(defaultLeaderRounds)).toEqual([6, 6, 9, 12]);
   });
+
+  it('rodadas justas são múltiplos do número de jogadores, até 12', () => {
+    expect(fairLeaderRounds(3)).toEqual([3, 6, 9, 12]);
+    expect(fairLeaderRounds(4)).toEqual([4, 8, 12]);
+    expect(fairLeaderRounds(2)).toEqual([2, 4, 6, 8, 10, 12]);
+    expect(fairLeaderRounds(12)).toEqual([12]);
+  });
 });
 
 describe('Siga o Líder: regras', () => {
   it('toda combinação sorteada tem pelo menos uma sequência possível', () => {
-    for (let i = 0; i < 60; i++) {
-      for (let round = 1; round <= 12; round++) {
+    for (let i = 0; i < 150; i++) {
+      for (let round = 1; round <= 20; round++) {
         const seq = validLeaderSequence(`seed-${i}`, round);
         const rules = leaderRules(`seed-${i}`, round);
-        expect(firstBrokenRule(seq, rules, leaderPads(round))).toBeNull();
-        expect(seq).toHaveLength(leaderTaps(round));
+        expect(firstBrokenRule(seq, rules, leaderPads(`seed-${i}`, round))).toBeNull();
+        expect(seq).toHaveLength(leaderTaps(`seed-${i}`, round));
       }
     }
   });
@@ -67,7 +100,7 @@ describe('Siga o Líder: regras', () => {
 
   it('recusa botão que não existe na rodada', () => {
     const rules = leaderRules('s', 1);
-    expect(firstBrokenRule([0, 1, 2, 7], rules, 4)).toBe(0);
+    expect(firstBrokenRule([0, 1, 7], rules, 4)).toBe(0);
   });
 });
 

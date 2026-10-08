@@ -73,7 +73,10 @@ function CreateTimer({ snapshot }: { snapshot: RoomSnapshot }) {
   return (
     <Countdown
       endsAt={endsAt}
-      totalMs={leaderCreateMs(snapshot.eco!.round) + LEADER_ANNOUNCE_MS}
+      totalMs={
+        leaderCreateMs(snapshot.eco!.length, (snapshot.eco!.rules?.length ?? 1) - 1) +
+        LEADER_ANNOUNCE_MS
+      }
       warnMs={6000}
       beep
       label="PARA CRIAR"

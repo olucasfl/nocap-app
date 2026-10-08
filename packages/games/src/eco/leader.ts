@@ -5,7 +5,7 @@ import { createRng, randInt } from '../core/rng';
  * impõe, e os outros repetem. Lógica pura: o servidor valida o envio e calcula as notas.
  */
 
-export const LEADER_MIN_ROUNDS = 4;
+export const LEADER_MIN_ROUNDS = 2;
 export const LEADER_MAX_ROUNDS = 12;
 /** Ritmo da reprodução da sequência criada (igual ao Clássico). */
 export const LEADER_STEP_MS = 700;
@@ -22,19 +22,120 @@ export type LeaderRule =
   | { kind: 'useAtLeast'; pad: number; times: number }
   | { kind: 'avoid'; pad: number };
 
-/** Toques exigidos na rodada `r` (1, 2, 3...): 4, 6, 8, 10... até 20. */
-export const leaderTaps = (r: number): number => Math.min(20, 4 + 2 * (r - 1));
-/** Botões disponíveis: 4, 4, 5, 5, 6, 6... até 9. */
-export const leaderPads = (r: number): number => Math.min(9, 4 + Math.floor((r - 1) / 2));
-/** Regras extras além do total de toques: nenhuma nas rodadas 1 e 2, uma até a 6, duas depois. */
-export const leaderExtras = (r: number): number => (r <= 2 ? 0 : r <= 6 ? 1 : 2);
+export interface LeaderSpec {
+  taps: number;
+  pads: number;
+  /** A primeira regra é sempre o total de toques; as outras são as regras extras. */
+  rules: LeaderRule[];
+}
+
+type Profile = 'rules' | 'long' | 'tiny' | 'medium';
+const PROFILES: Profile[] = ['rules', 'long', 'tiny', 'medium'];
+
+/** Botões: 4 nas três primeiras rodadas e mais um a cada 3 rodadas, até 9. */
+const padsFor = (round: number): number => Math.min(9, 4 + Math.floor((round - 1) / 3));
+
+/** O "tipo" da rodada a partir da 4ª: nunca o mesmo duas vezes seguidas (dá diversidade). */
+function profileFor(seed: string, round: number): Profile {
+  let prev: Profile | null = null;
+  let current: Profile = 'rules';
+  for (let i = 4; i <= round; i++) {
+    const rng = createRng(`${seed}:leader-profile:${i}`);
+    const options = PROFILES.filter((x) => x !== prev);
+    current = options[Math.floor(rng() * options.length)]!;
+    prev = current;
+  }
+  return current;
+}
 
 /**
- * Tempo do líder para criar: 10 s + 2 s por toque exigido, no máximo 45 s. Curto de propósito: a
- * rodada anda e ninguém fica esperando parado.
+ * Tamanho e regras da rodada. As três primeiras são fixas e crescem devagar: 3 toques sem regra,
+ * 4 com uma regra, 5 com duas. Depois vem variedade que vai ficando mais difícil: curta com várias
+ * regras, longa sem regra nenhuma, minúscula com regras, média com poucas.
  */
-export const leaderCreateMs = (r: number): number =>
-  Math.min(45_000, 10_000 + 2000 * leaderTaps(r));
+function shapeFor(seed: string, round: number): { taps: number; pads: number; extras: number } {
+  const pads = padsFor(round);
+  if (round === 1) return { taps: 3, pads, extras: 0 };
+  if (round === 2) return { taps: 4, pads, extras: 1 };
+  if (round === 3) return { taps: 5, pads, extras: 2 };
+  const lv = round - 3;
+  switch (profileFor(seed, round)) {
+    case 'rules':
+      return {
+        taps: Math.min(8, 4 + Math.floor(lv / 3)),
+        pads,
+        extras: Math.min(3, 2 + Math.floor(lv / 4)),
+      };
+    case 'long':
+      return { taps: Math.min(12, 6 + Math.floor(lv / 2)), pads, extras: 0 };
+    case 'tiny':
+      return {
+        taps: Math.min(5, 3 + Math.floor(lv / 5)),
+        pads,
+        extras: Math.min(3, 2 + Math.floor(lv / 3)),
+      };
+    default:
+      return {
+        taps: Math.min(9, 5 + Math.floor(lv / 3)),
+        pads,
+        extras: Math.min(2, 1 + Math.floor(lv / 4)),
+      };
+  }
+}
+
+const specCache = new Map<string, LeaderSpec>();
+
+/** Tudo da rodada `round` (1, 2, 3...), sorteado pela seed. Só devolve combinações possíveis (testado). */
+export function leaderSpec(seed: string, round: number): LeaderSpec {
+  const key = `${seed}|${round}`;
+  const cached = specCache.get(key);
+  if (cached) return cached;
+  const { taps, pads, extras } = shapeFor(seed, round);
+  const rng = createRng(`${seed}:leader:${round}`);
+  const bag = ['minColors', 'noRepeat', 'sameEnds', 'useAtLeast', 'avoid'] as const;
+  const pool = [...bag].sort(() => rng() - 0.5).slice(0, extras);
+  const has = (k: (typeof bag)[number]) => pool.includes(k);
+  const rules: LeaderRule[] = [{ kind: 'count', n: taps }];
+
+  // As regras precisam caber juntas: "usar K cores" respeita o que sobra depois de proibir um
+  // botão e depois de exigir repetição (usar um botão 2 vezes ou começar e terminar igual).
+  let usePad: number | null = null;
+  if (has('useAtLeast')) usePad = randInt(rng, 0, pads - 1);
+  for (const kind of pool) {
+    if (kind === 'minColors') {
+      const maxK = Math.min(
+        5,
+        pads - (has('avoid') ? 1 : 0),
+        taps - (has('useAtLeast') || has('sameEnds') ? 1 : 0),
+      );
+      rules.push({ kind, k: randInt(rng, 2, Math.max(2, maxK)) });
+    } else if (kind === 'noRepeat' || kind === 'sameEnds') {
+      rules.push({ kind });
+    } else if (kind === 'useAtLeast') {
+      rules.push({ kind, pad: usePad!, times: 2 });
+    } else {
+      // Nunca proibir o botão que outra regra exige.
+      let pad = randInt(rng, 0, pads - 1);
+      if (pad === usePad) pad = (pad + 1) % pads;
+      rules.push({ kind, pad });
+    }
+  }
+  const spec = { taps, pads, rules };
+  specCache.set(key, spec);
+  return spec;
+}
+
+export const leaderTaps = (seed: string, round: number): number => leaderSpec(seed, round).taps;
+export const leaderPads = (seed: string, round: number): number => leaderSpec(seed, round).pads;
+export const leaderRules = (seed: string, round: number): LeaderRule[] =>
+  leaderSpec(seed, round).rules;
+
+/**
+ * Tempo do líder para criar: 10 s + 2 s por toque + 3 s por regra extra, no máximo 45 s. Curto de
+ * propósito: a rodada anda e ninguém fica esperando parado.
+ */
+export const leaderCreateMs = (taps: number, extraRules = 0): number =>
+  Math.min(45_000, 10_000 + 2000 * taps + 3000 * extraRules);
 
 /** Aviso "O LÍDER É @fulano" no começo de cada rodada. */
 export const LEADER_ANNOUNCE_MS = 1600;
@@ -43,51 +144,15 @@ export const LEADER_ANNOUNCE_MS = 1600;
 export const defaultLeaderRounds = (players: number): number =>
   Math.min(LEADER_MAX_ROUNDS, Math.max(6, players));
 
-/** As regras da rodada, sorteadas pela seed. Só devolve combinações possíveis (testado). */
-export function leaderRules(seed: string, round: number): LeaderRule[] {
-  const n = leaderTaps(round);
-  const pads = leaderPads(round);
-  const rules: LeaderRule[] = [{ kind: 'count', n }];
-  const rng = createRng(`${seed}:leader:${round}`);
-  const kinds = ['minColors', 'noRepeat', 'sameEnds', 'useAtLeast', 'avoid'] as const;
-  const bag = [...kinds];
-  let useAt: number | null = null;
-  let avoidPad: number | null = null;
-  for (let i = 0; i < leaderExtras(round); i++) {
-    const kind = bag.splice(randInt(rng, 0, bag.length - 1), 1)[0]!;
-    if (kind === 'minColors') {
-      rules.push({ kind, k: randInt(rng, 3, Math.min(pads - 1, 5)) });
-    } else if (kind === 'noRepeat' || kind === 'sameEnds') {
-      rules.push({ kind });
-    } else if (kind === 'useAtLeast') {
-      useAt = randInt(rng, 0, pads - 1);
-      rules.push({ kind, pad: useAt, times: 2 });
-    } else {
-      // Não pode proibir o botão que outra regra exige.
-      let pad = randInt(rng, 0, pads - 1);
-      if (pad === useAt) pad = (pad + 1) % pads;
-      avoidPad = pad;
-      rules.push({ kind, pad });
-    }
-  }
-  // Não pode proibir o botão que outra regra exige (a ordem de sorteio varia).
-  const use = rules.find((r) => r.kind === 'useAtLeast');
-  const avoid = rules.find((r) => r.kind === 'avoid');
-  if (
-    use &&
-    avoid &&
-    use.kind === 'useAtLeast' &&
-    avoid.kind === 'avoid' &&
-    use.pad === avoid.pad
-  ) {
-    avoid.pad = (avoid.pad + 1) % pads;
-    avoidPad = avoid.pad;
-  }
-  // Se proibiu um botão, "usar K cores" ainda precisa caber nos que sobram.
-  if (avoidPad !== null) {
-    for (const r of rules) if (r.kind === 'minColors') r.k = Math.min(r.k, pads - 1);
-  }
-  return rules;
+/**
+ * Rodadas que fazem cada pessoa criar o mesmo número de vezes: múltiplos do número de jogadores,
+ * até 12. Assim ninguém lidera mais que os outros.
+ */
+export function fairLeaderRounds(players: number): number[] {
+  const p = Math.max(2, players);
+  const out: number[] = [];
+  for (let r = p; r <= LEADER_MAX_ROUNDS; r += p) out.push(r);
+  return out.length > 0 ? out : [LEADER_MAX_ROUNDS];
 }
 
 /** A regra `rule` é cumprida por `seq`? (o total de toques é conferido em `count`). */
@@ -124,9 +189,7 @@ export function firstBrokenRule(
  * quando o tempo do líder acaba, e pelos testes para provar que as regras sorteadas são possíveis.
  */
 export function validLeaderSequence(seed: string, round: number): number[] {
-  const rules = leaderRules(seed, round);
-  const n = leaderTaps(round);
-  const pads = leaderPads(round);
+  const { rules, taps: n, pads } = leaderSpec(seed, round);
   const rng = createRng(seed + ':leader-fallback:' + round);
   const avoid = rules.find((r) => r.kind === 'avoid');
   const minColors = rules.find((r) => r.kind === 'minColors');
@@ -217,7 +280,10 @@ export function ruleProgress(
     case 'minColors':
       return { done: Math.min(new Set(seq).size, rule.k), total: rule.k };
     case 'useAtLeast':
-      return { done: Math.min(seq.filter((p) => p === rule.pad).length, rule.times), total: rule.times };
+      return {
+        done: Math.min(seq.filter((p) => p === rule.pad).length, rule.times),
+        total: rule.times,
+      };
     default:
       return null;
   }

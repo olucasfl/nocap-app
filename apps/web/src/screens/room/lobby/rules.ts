@@ -1,4 +1,4 @@
-import { impostorLimit } from '@nocap/games';
+import { fairLeaderRounds, impostorLimit } from '@nocap/games';
 import type { RoomGame, RoomSnapshot } from '@/lib/rooms';
 
 /**
@@ -24,12 +24,18 @@ const ROUNDS = [1, 3, 5, 7, 10];
 const SHOW = [400, 1000, 3000, 5000];
 const PICK = [15_000, 30_000, 60_000];
 const IMP_ROUNDS = [1, 3, 5];
-const LEADER_ROUNDS = [4, 6, 8, 10, 12];
+
 const IMP_PICK = [30_000, 45_000, 60_000];
 const IMP_VOTE = [20_000, 30_000, 60_000];
 const IMP_COUNT = [1, 2, 3];
 
 /** Quantas pessoas cada jogo precisa para começar. */
+/** Siga o Líder: rodadas que deixam cada pessoa criar o mesmo número de vezes (e a atual, se for outra). */
+function leaderRoundOptions(players: number, current: number): number[] {
+  const list = fairLeaderRounds(players);
+  return list.includes(current) ? list : [...list, current].sort((a, b) => a - b);
+}
+
 export const MIN_PLAYERS: Record<RoomGame, number> = {
   color: 2,
   time: 2,
@@ -144,7 +150,12 @@ export function rulesFor(s: RoomSnapshot): RuleDef[] {
     out.push({
       id: 'rounds',
       label: 'RODADAS',
-      values: s.game === 'impostor' ? IMP_ROUNDS : s.game === 'eco' ? LEADER_ROUNDS : ROUNDS,
+      values:
+        s.game === 'impostor'
+          ? IMP_ROUNDS
+          : s.game === 'eco'
+            ? leaderRoundOptions(s.members.length, cfg.rounds)
+            : ROUNDS,
       current: cfg.rounds,
       format: String,
       patch: (v) => ({ rounds: v }),

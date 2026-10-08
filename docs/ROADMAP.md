@@ -59,6 +59,7 @@ Podem rodar antes ou depois do passo 4 (PWA); o modo noturno toca o manifesto/`t
 - [x] **Ecooo em sala, Corrida** (motor `eco-room.engine.ts`, testes; falta jogar ao vivo)
 - [x] **Ecooo em sala, Siga o Líder** (`eco-leader-room.engine.ts`, `leader.ts`, testes; falta jogar ao vivo e calibrar)
 - [ ] **Jogar o Ecooo ao vivo e calibrar** (Velocidade, faixas de nota, coeficiente do líder)
+- [x] **Ecooo ajustes (08/10/2026):** botão aceso mais nítido; Siga o Líder rebalanceado (3 toques sem regra, depois 4 com 1 regra, 5 com 2, e variedade crescente; máximo de 12 toques); nota final por porcentagem (média das rodadas); rodadas em múltiplos do número de jogadores
 - [ ] **Próximo jogo novo: Tribunal do Absurdo** (logo depois de terminar o Ecooo). Depois, Intervalo (na fila). Ponte e Regras Vivas ficam em **standby**. Descrição de cada um em `docs/JOGOS-FUTUROS.md`
 
 ## Etapa 5c: pedidos do Lucas em 07/10/2026 (PENDENTES, só escritos)

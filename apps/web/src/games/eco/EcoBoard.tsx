@@ -70,7 +70,14 @@ export function EcoBoard({
         key={i}
         type="button"
         className={`eco-pad${lit === i ? ' lit' : ''}${bad === i ? ' bad' : ''}${fresh === i ? ' fresh' : ''}${banned === i ? ' banned' : ''}`}
-        style={{ '--span': span[i], background: p.color, color: p.ink } as CSSProperties}
+        style={
+          {
+            '--span': span[i],
+            '--pad': p.color,
+            background: p.color,
+            color: p.ink,
+          } as CSSProperties
+        }
         aria-label={`Botão ${i + 1}, ${p.name}`}
         disabled={!interactive || banned === i}
         onPointerDown={(e) => {
