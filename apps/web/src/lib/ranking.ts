@@ -94,6 +94,64 @@ export const SCOPES: { id: Scope; label: string }[] = [
   { id: 'friends', label: 'Amigos' },
 ];
 
+/** O que a página de Ranking guarda na URL, para links como `/ranking?jogo=eco&modo=classic`. */
+export interface RankingsSearch {
+  jogo?: Game;
+  modo?: Board;
+  periodo?: Period;
+  quem?: Scope;
+}
+
+const GAME_IDS: Game[] = ['color', 'time', 'eco'];
+const PERIOD_IDS: Period[] = ['day', 'week', 'all'];
+
+/** O período de abertura de cada quadro: o Daily abre em hoje, os outros na semana. */
+export const defaultPeriod = (board: Board): Period => (board === 'daily' ? 'day' : 'week');
+
+/** Quadros de um jogo para escolher, o Daily por último. */
+export const boardChoices = (game: Game): { id: Board; label: string }[] => [
+  ...boardsOf(game),
+  { id: 'daily', label: 'Daily' },
+];
+
+/** Aceita só valores que existem; o resto some (link velho ou digitado errado). */
+export function parseRankingsSearch(search: Record<string, unknown>): RankingsSearch {
+  const out: RankingsSearch = {};
+  const jogo = GAME_IDS.find((g) => g === search.jogo);
+  if (jogo) out.jogo = jogo;
+  if (jogo && boardChoices(jogo).some((b) => b.id === search.modo)) out.modo = search.modo as Board;
+  const periodo = PERIOD_IDS.find((p) => p === search.periodo);
+  if (periodo) out.periodo = periodo;
+  if (search.quem === 'friends') out.quem = 'friends';
+  return out;
+}
+
+/** O link para o ranking de um jogo (e modo), usado nos botões "Ver ranking". */
+export const rankingLink = (game: Game, board?: Board): RankingsSearch =>
+  board && boardChoices(game).some((b) => b.id === board)
+    ? { jogo: game, modo: board }
+    : { jogo: game };
+
+export interface Neighbors {
+  /** Quem está logo acima de mim e quantos décimos faltam para passar. */
+  above: { username: string; gap: number } | null;
+  /** Quem está logo abaixo e a vantagem em décimos. */
+  below: { username: string; gap: number } | null;
+}
+
+/** Vizinhos da minha posição na lista (só quando eu apareço nela). */
+export function neighborsOf(entries: RankingEntry[]): Neighbors {
+  const i = entries.findIndex((e) => e.isMe);
+  if (i === -1) return { above: null, below: null };
+  const me = entries[i]!;
+  const up = entries[i - 1];
+  const down = entries[i + 1];
+  return {
+    above: up ? { username: up.username, gap: up.score - me.score } : null,
+    below: down ? { username: down.username, gap: me.score - down.score } : null,
+  };
+}
+
 export function fetchRanking(game: Game, board: Board, period: Period, scope: Scope = 'all') {
   return apiClient.get<Ranking>(
     `/rankings/${game}?board=${board}&period=${period}&scope=${scope}&limit=50`,

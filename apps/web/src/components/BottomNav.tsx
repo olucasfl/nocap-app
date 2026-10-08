@@ -1,10 +1,11 @@
 import { Link } from '@tanstack/react-router';
 import { InstallApp } from './InstallApp';
-import { Friends, Grid, History, User } from './icons';
+import { Friends, Grid, History, Trophy, User } from './icons';
 import './bottom-nav.css';
 
 const tabs = [
   { to: '/', label: 'Jogos', Icon: Grid, sfx: 'navGames' },
+  { to: '/ranking', label: 'Ranking', Icon: Trophy, sfx: 'navFriends' },
   { to: '/historico', label: 'Histórico', Icon: History, sfx: 'navFriends' },
   { to: '/amigos', label: 'Amigos', Icon: Friends, sfx: 'navFriends' },
   { to: '/perfil', label: 'Perfil', Icon: User, sfx: 'navFriends' },

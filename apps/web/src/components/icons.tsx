@@ -24,6 +24,14 @@ function Svg({ size = 20, stroke = 2.2, children }: IconProps & { children: Reac
   );
 }
 
+export const Trophy = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M8 4h8v5a4 4 0 0 1-8 0V4z" />
+    <path d="M8 6H4v1a4 4 0 0 0 4 4M16 6h4v1a4 4 0 0 1-4 4" />
+    <path d="M12 13v4M8.5 20h7M10 17h4" />
+  </Svg>
+);
+
 export const ArrowRight = (p: IconProps) => (
   <Svg {...p} stroke={p.stroke ?? 2.8}>
     <path d="M5 12h14M13 6l6 6-6 6" />

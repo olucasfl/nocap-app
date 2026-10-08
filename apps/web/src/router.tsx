@@ -11,7 +11,7 @@ import { LoadFailed } from '@/components/LoadFailed';
 import { PageLoader } from '@/components/Loader';
 import { NetworkStatus } from '@/components/NetworkStatus';
 import { PullToRefresh } from '@/components/PullToRefresh';
-import type { Board } from '@/lib/ranking';
+import { parseRankingsSearch, type RankingsSearch } from '@/lib/ranking';
 import { InviteBanner } from '@/components/InviteBanner';
 import type { Mode } from '@/games/color/types';
 import type { Mode as TimeMode } from '@/games/time/types';
@@ -22,6 +22,7 @@ import { FriendProfile } from '@/screens/FriendProfile';
 import { Hub } from '@/screens/Hub';
 import { Login } from '@/screens/Login';
 import { Profile } from '@/screens/Profile';
+import { Rankings } from '@/screens/Rankings';
 import { Register } from '@/screens/Register';
 
 const rootRoute = createRootRoute({
@@ -63,6 +64,12 @@ const friendProfileRoute = createRoute({
   path: '/amigos/$username',
   component: FriendProfile,
 });
+const rankingsRoute = createRoute({
+  getParentRoute: () => tabsRoute,
+  path: '/ranking',
+  validateSearch: (search: Record<string, unknown>): RankingsSearch => parseRankingsSearch(search),
+  component: Rankings,
+});
 const profileRoute = createRoute({
   getParentRoute: () => tabsRoute,
   path: '/perfil',
@@ -100,35 +107,19 @@ const roomCodeRoute = createRoute({
   component: lazyRouteComponent(() => import('@/screens/Room'), 'RoomCodePage'),
 });
 
-/** `/cor?aba=ranking&quadro=daily`: abre o jogo direto numa aba (e num quadro do ranking). */
+/** `/cor?aba=friends&modo=survival`: abre o jogo direto numa aba. O ranking tem a própria página (`/ranking`). */
 interface GameSearch<M> {
   modo?: M;
   aba?: GameTab;
-  quadro?: Board;
 }
-const TABS: GameTab[] = ['modes', 'friends', 'ranking'];
-const BOARDS: Board[] = [
-  'classic',
-  'flash',
-  'quick',
-  'strict',
-  'blind',
-  'sequence',
-  'survival',
-  'escalada',
-  'velocidade',
-  'reverso',
-  'daily',
-];
+const TABS: GameTab[] = ['modes', 'friends'];
 
 function gameSearch<M extends string>(search: Record<string, unknown>, modes: M[]): GameSearch<M> {
   const out: GameSearch<M> = {};
   const modo = modes.find((m) => m === search.modo);
   const aba = TABS.find((t) => t === search.aba);
-  const quadro = BOARDS.find((b) => b === search.quadro);
   if (modo) out.modo = modo;
   if (aba) out.aba = aba;
-  if (quadro) out.quadro = quadro;
   return out;
 }
 
@@ -162,7 +153,14 @@ const timeRoute = createRoute({
 });
 
 const routeTree = rootRoute.addChildren([
-  tabsRoute.addChildren([hubRoute, historyRoute, friendsRoute, friendProfileRoute, profileRoute]),
+  tabsRoute.addChildren([
+    hubRoute,
+    rankingsRoute,
+    historyRoute,
+    friendsRoute,
+    friendProfileRoute,
+    profileRoute,
+  ]),
   colorRoute,
   timeRoute,
   ecoRoute,

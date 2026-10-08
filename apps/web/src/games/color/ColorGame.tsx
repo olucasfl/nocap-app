@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { Link } from '@tanstack/react-router';
+import { Link, useNavigate } from '@tanstack/react-router';
 import {
   colorDeltaE,
   colorDailySettings,
@@ -25,7 +25,7 @@ import { PickScreen } from './screens/PickScreen';
 import { ResultScreen } from './screens/ResultScreen';
 import { ShowScreen } from './screens/ShowScreen';
 import type { GameTab } from '@/components/GameTabs';
-import type { Board } from '@/lib/ranking';
+import { rankingLink, type Board } from '@/lib/ranking';
 import { StartScreen } from './screens/StartScreen';
 import { SAVE_TEXT, useSaveMatch } from './useSaveMatch';
 import type { Mode, RoundResult, Run } from './types';
@@ -49,17 +49,15 @@ function newRun(mode: Mode): Run {
 export function ColorGame({
   initialMode = 'classic',
   initialTab,
-  initialBoard,
 }: {
   initialMode?: Mode;
   initialTab?: GameTab;
-  initialBoard?: Board;
 }) {
   const [mode, setMode] = useState<Mode>(initialMode);
-  /** Aba e quadro com que o menu abre: vêm da rota e mudam ao sair de uma partida ("Ver ranking"). */
-  const [menu, setMenu] = useState<{ tab?: GameTab; board?: Board }>({
+  const navigate = useNavigate();
+  /** Aba com que o menu abre: vem da rota e muda ao sair de uma partida ("Modos do jogo"). */
+  const [menu, setMenu] = useState<{ tab?: GameTab }>({
     tab: initialTab,
-    board: initialBoard,
   });
   const [phase, setPhase] = useState<Phase>('start');
   const [run, setRun] = useState<Run | null>(null);
@@ -127,7 +125,12 @@ export function ColorGame({
 
   /** Do fim da partida de volta ao menu do jogo, já na aba (e no quadro do ranking) pedidos. */
   const goMenu = (tab: GameTab, board?: Board) => {
-    setMenu({ tab, board });
+    // O ranking tem página própria: abre já neste jogo e no modo jogado.
+    if (tab === 'ranking') {
+      void navigate({ to: '/ranking', search: rankingLink('color', board) });
+      return;
+    }
+    setMenu({ tab });
     setPhase('start');
   };
 
@@ -161,13 +164,7 @@ export function ColorGame({
       )}
 
       {phase === 'start' && (
-        <StartScreen
-          mode={mode}
-          initialTab={menu.tab}
-          initialBoard={menu.board}
-          onMode={setMode}
-          onStart={start}
-        />
+        <StartScreen mode={mode} initialTab={menu.tab} onMode={setMode} onStart={start} />
       )}
       {phase === 'show' && run && target && (
         <ShowScreen

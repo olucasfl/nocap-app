@@ -1,15 +1,17 @@
 import type { GameId } from '@/lib/stats';
 import './game-tabs.css';
 
+/** 'ranking' só existe como destino do botão "Ver ranking" (a página de Ranking é própria). */
 export type GameTab = 'modes' | 'friends' | 'ranking';
 
-const TABS: { id: GameTab; label: string }[] = [
+type Section = Exclude<GameTab, 'ranking'>;
+
+const TABS: { id: Section; label: string }[] = [
   { id: 'modes', label: 'Modos de partida' },
   { id: 'friends', label: 'Jogar com amigos' },
-  { id: 'ranking', label: 'Ranking' },
 ];
 
-/** As três seções de cada jogo: modos (inclui o Daily), amigos (salas) e ranking. */
+/** As duas seções de cada jogo: modos (inclui o Daily) e amigos (salas). O ranking tem página própria. */
 export function GameTabs({
   game,
   tab,

@@ -17,7 +17,7 @@ import {
 import { countUnit, dailyMax, streakLabel } from '@/lib/stats';
 import './ranking-panel.css';
 
-function Score({
+export function Score({
   entry,
   max,
   showDays,
@@ -41,7 +41,7 @@ function Score({
   );
 }
 
-function Podium({
+export function Podium({
   top,
   max,
   showDays,

@@ -1,0 +1,171 @@
+.rks {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-bottom: 8px;
+}
+.rks-head h1 {
+  margin: 0;
+}
+.rks-lead {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Jogo: três botões grandes com a arte de cada jogo. */
+.rks-games {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.rks-game {
+  appearance: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 2px;
+  background: var(--white);
+  color: var(--ink);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 3px 3px 0 var(--ink);
+  font: 900 12px var(--font-display);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.rks-game[aria-selected='true'] {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+.rks-game.color[aria-selected='true'] {
+  background: var(--orange);
+  color: var(--on-accent);
+}
+.rks-game.time[aria-selected='true'] {
+  background: var(--blue);
+  color: var(--on-blue);
+}
+.rks-game.eco[aria-selected='true'] {
+  background: var(--green);
+  color: var(--on-accent);
+}
+
+/* Modo: chips que quebram de linha (sem rolagem lateral); o Daily tem destaque. */
+.rks-modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.rks-modes button {
+  appearance: none;
+  padding: 8px 14px;
+  background: var(--white);
+  color: var(--ink);
+  border: var(--border);
+  border-radius: 999px;
+  font: 900 13px var(--font-display);
+  cursor: pointer;
+}
+.rks-modes button[aria-selected='true'] {
+  background: var(--ink);
+  color: var(--paper);
+}
+.rks-modes button.daily {
+  background: var(--yellow);
+  color: var(--on-accent);
+}
+.rks-modes button.daily[aria-selected='true'] {
+  background: var(--ink);
+  color: var(--yellow);
+}
+
+/* Filtros: dois controles curtos lado a lado (ou um embaixo do outro em tela estreita). */
+.rks-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.rks-seg {
+  display: flex;
+  flex: 1 1 200px;
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--white);
+}
+.rks-seg button {
+  appearance: none;
+  flex: 1;
+  height: 40px;
+  padding: 0 8px;
+  background: transparent;
+  color: var(--ink);
+  border: 0;
+  border-right: 2px solid var(--ink);
+  font: 900 13px var(--font-display);
+  cursor: pointer;
+}
+.rks-seg button:last-child {
+  border-right: 0;
+}
+.rks-seg button[aria-checked='true'] {
+  background: var(--yellow);
+  color: var(--on-accent);
+}
+.rks-game:focus-visible,
+.rks-modes button:focus-visible,
+.rks-seg button:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 2px;
+}
+.rks-note {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.rks-empty {
+  margin: 0;
+}
+
+/* Minha posição: cartão que fica colado acima da navegação enquanto a lista rola. */
+.rks-me {
+  position: sticky;
+  bottom: calc(96px + env(safe-area-inset-bottom));
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--yellow);
+  color: var(--on-accent);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+.rks-me-pos {
+  font: 900 34px/1 var(--font-display);
+  letter-spacing: -0.04em;
+}
+.rks-me-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.rks-me-body b {
+  font: 900 16px var(--font-display);
+}
+.rks-me-body .mono {
+  font-size: 10px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+@media (min-width: 768px) {
+  .rks-me {
+    bottom: 16px;
+  }
+}

@@ -10,9 +10,7 @@ import { GameTabs, type GameTab } from '@/components/GameTabs';
 import { ArrowRight } from '@/components/icons';
 import { PlayGate } from '@/components/PlayGate';
 import { PullToRefresh } from '@/components/PullToRefresh';
-import { RankingPanel } from '@/components/RankingPanel';
 import { useAuth } from '@/lib/auth';
-import type { Board } from '@/lib/ranking';
 import { dailyScoreText, fetchStats, recordText } from '@/lib/stats';
 import type { Mode } from '../types';
 
@@ -42,23 +40,15 @@ interface Props {
   busy: boolean;
   error: string;
   initialTab?: GameTab;
-  initialBoard?: Board;
   onMode: (m: Mode) => void;
   onStart: (m: Mode) => void;
 }
 
-export function StartScreen({
-  initialTab = 'modes',
-  initialBoard,
-  onMode,
-  onStart,
-  busy,
-  error,
-}: Props) {
+export function StartScreen({ initialTab = 'modes', onMode, onStart, busy, error }: Props) {
   const user = useAuth((s) => s.user);
   const stats = useQuery({ queryKey: ['stats'], queryFn: fetchStats, enabled: !!user });
   const daily = stats.data?.daily.eco;
-  const [tab, setTab] = useState<GameTab>(initialTab);
+  const [tab, setTab] = useState<GameTab>(initialTab === 'ranking' ? 'modes' : initialTab);
   /** Modo cuja ficha está aberta (null = só a lista de modos). */
   const [open, setOpen] = useState<Mode | null>(null);
   const close = useCallback(() => setOpen(null), []);
@@ -160,7 +150,6 @@ export function StartScreen({
         </>
       )}
       {tab === 'friends' && <FriendsPanel game="eco" />}
-      {tab === 'ranking' && <RankingPanel game="eco" initialBoard={initialBoard} />}
     </section>
   );
 }

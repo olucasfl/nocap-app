@@ -1,6 +1,6 @@
 # 015 · Aba separada de Rankings
 
-Status: **pendente (só escrito, nada implementado)**. Pedido do Lucas em 07/10/2026: "tirar os rankings de dentro de cada jogo e colocar uma aba separada para rankings, para visualizar de uma forma melhor e mais intuitiva".
+Status: **implementada em 08/10/2026 (falta jogar ao vivo com contas e amigos)**. Pedido do Lucas em 07/10/2026: "tirar os rankings de dentro de cada jogo e colocar uma aba separada para rankings, para visualizar de uma forma melhor e mais intuitiva".
 
 ## Situação de hoje
 
@@ -39,11 +39,21 @@ Sem mudança obrigatória: reaproveita `GET /rankings/:game?board=&scope=&period
 - Ranking geral somando todos os jogos (um "placar do NoCap")? Exigiria decidir como somar jogos com notas diferentes.
 - Conquistas e títulos (ex.: "1º da semana") entram aqui ou numa spec própria?
 
-## Critérios de aceite (pendentes)
+## Como ficou (08/10/2026)
 
-- [ ] Existe a aba Rankings na navegação, com seletor de jogo, modo, recorte e período.
-- [ ] As telas de cada jogo não têm mais a aba Ranking.
-- [ ] Pódio com os 3 primeiros, lista abaixo e minha posição sempre visível.
-- [ ] "Ver ranking" no fim da partida e no cartão do jogo abre a aba já no jogo e modo certos.
-- [ ] Salas personalizadas continuam fora do ranking.
-- [ ] Funciona offline com aviso, no claro e no escuro, e no celular e no computador.
+- Página `/ranking` na navegação inferior (5 abas: Jogos, Ranking, Histórico, Amigos, Perfil; no tablet e no computador entra no menu lateral).
+- Em cima, o **jogo** (três botões com a arte); depois os **modos** em chips que quebram de linha (sem rolagem lateral), com o **Daily** em destaque como um modo qualquer; depois dois controles curtos: **Hoje / Semana / Sempre** e **Todos / Amigos**. Abaixo, pódio dos 3 primeiros e lista do 4º em diante.
+- **Minha posição** fica num cartão colado acima da navegação, com "faltam X para passar @fulano" (usa os vizinhos da lista; no 1º lugar mostra "você está em primeiro").
+- Os filtros ficam na URL (`/ranking?jogo=eco&modo=escalada&periodo=all&quem=friends`); valores inválidos são ignorados. O botão **Ver ranking** do fim da partida abre a página já no jogo e no modo jogados.
+- Saiu a aba Ranking de dentro de cada jogo (ficam "Modos de partida" e "Jogar com amigos"). O **Daily** continua com o ranking dele (só o do Daily) na tela do Daily; a página de Ranking mostra todos os modos, inclusive o Daily.
+- Decisões das perguntas abertas: sem mini-ranking dentro dos jogos; a aba nova ocupa um quinto lugar na navegação; sem placar geral somando jogos (fica para outra spec); conquistas e títulos ficam para outra spec.
+- Sem mudança no servidor.
+
+## Critérios de aceite
+
+- [x] Existe a aba Rankings na navegação, com seletor de jogo, modo, recorte e período.
+- [x] As telas de cada jogo não têm mais a aba Ranking.
+- [x] Pódio com os 3 primeiros, lista abaixo e minha posição sempre visível.
+- [x] "Ver ranking" no fim da partida abre a página já no jogo e modo certos.
+- [x] Salas personalizadas continuam fora do ranking (nada mudou no servidor).
+- [ ] Testar ao vivo (offline com aviso, claro e escuro, celular e computador, com dados reais).

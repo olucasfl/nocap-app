@@ -1,12 +1,12 @@
 import { useCallback, useState } from 'react';
-import { Link } from '@tanstack/react-router';
+import { Link, useNavigate } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { ecoPresets, lengthAt } from '@nocap/games';
 import type { GameTab } from '@/components/GameTabs';
 import { MuteButton } from '@/components/MuteButton';
 import { apiClient } from '@/lib/api-client';
 import { isNetworkError } from '@/lib/network';
-import type { Board } from '@/lib/ranking';
+import { rankingLink, type Board } from '@/lib/ranking';
 import { bestTenths, type Stats } from '@/lib/stats';
 import { EcoPlay } from './EcoPlay';
 import { FinalScreen } from './screens/FinalScreen';
@@ -50,17 +50,15 @@ async function newRun(mode: Mode): Promise<Run> {
 export function EcoGame({
   initialMode = 'classic',
   initialTab,
-  initialBoard,
 }: {
   initialMode?: Mode;
   initialTab?: GameTab;
-  initialBoard?: Board;
 }) {
   const [mode, setMode] = useState<Mode>(initialMode);
-  /** Aba e quadro com que o menu abre: vêm da rota e mudam ao sair de uma partida ("Ver ranking"). */
-  const [menu, setMenu] = useState<{ tab?: GameTab; board?: Board }>({
+  const navigate = useNavigate();
+  /** Aba com que o menu abre: vem da rota e muda ao sair de uma partida ("Modos do jogo"). */
+  const [menu, setMenu] = useState<{ tab?: GameTab }>({
     tab: initialTab,
-    board: initialBoard,
   });
   const [phase, setPhase] = useState<Phase>('start');
   const [run, setRun] = useState<Run | null>(null);
@@ -100,7 +98,12 @@ export function EcoGame({
 
   /** Do fim da partida de volta ao menu do jogo, já na aba (e no quadro do ranking) pedidos. */
   const goMenu = (tab: GameTab, board?: Board) => {
-    setMenu({ tab, board });
+    // O ranking tem página própria: abre já neste jogo e no modo jogado.
+    if (tab === 'ranking') {
+      void navigate({ to: '/ranking', search: rankingLink('eco', board) });
+      return;
+    }
+    setMenu({ tab });
     setPhase('start');
   };
 
@@ -129,7 +132,6 @@ export function EcoGame({
           busy={busy}
           error={error}
           initialTab={menu.tab}
-          initialBoard={menu.board}
           onMode={setMode}
           onStart={(m) => void start(m)}
         />

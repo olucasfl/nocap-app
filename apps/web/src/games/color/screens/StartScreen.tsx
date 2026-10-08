@@ -11,9 +11,7 @@ import { GameTabs, type GameTab } from '@/components/GameTabs';
 import { ArrowRight } from '@/components/icons';
 import { PlayGate } from '@/components/PlayGate';
 import { PullToRefresh } from '@/components/PullToRefresh';
-import { RankingPanel } from '@/components/RankingPanel';
 import { useAuth } from '@/lib/auth';
-import type { Board } from '@/lib/ranking';
 import { dailyMax, fetchStats, recordText } from '@/lib/stats';
 import type { Mode } from '../types';
 
@@ -50,17 +48,15 @@ const seconds = (ms: number) => `${ms / 1000}s`.replace('.', ',');
 interface Props {
   mode: Mode;
   initialTab?: GameTab;
-  initialBoard?: Board;
   onMode: (m: Mode) => void;
   onStart: (m: Mode) => void;
 }
 
-export function StartScreen({ initialTab = 'modes', initialBoard, onMode, onStart }: Props) {
+export function StartScreen({ initialTab = 'modes', onMode, onStart }: Props) {
   const user = useAuth((s) => s.user);
   const stats = useQuery({ queryKey: ['stats'], queryFn: fetchStats, enabled: !!user });
   const daily = stats.data?.daily.color;
-  const [tab, setTab] = useState<GameTab>(initialTab);
-  const board = initialBoard;
+  const [tab, setTab] = useState<GameTab>(initialTab === 'ranking' ? 'modes' : initialTab);
   /** Modo cuja ficha está aberta (null = só a lista de modos). */
   const [open, setOpen] = useState<ModeId | null>(null);
   const close = useCallback(() => setOpen(null), []);
@@ -199,7 +195,6 @@ export function StartScreen({ initialTab = 'modes', initialBoard, onMode, onStar
         </>
       )}
       {tab === 'friends' && <FriendsPanel game="color" />}
-      {tab === 'ranking' && <RankingPanel game="color" initialBoard={board} />}
     </section>
   );
 }

@@ -51,7 +51,7 @@
     width: var(--rail);
     height: auto;
     grid-template-columns: 1fr;
-    grid-template-rows: auto repeat(4, 84px) 1fr auto;
+    grid-template-rows: auto repeat(5, 84px) 1fr auto;
     align-content: start;
     padding: 10px;
     border-radius: 22px;
@@ -157,7 +157,7 @@
     top: 24px;
     bottom: 24px;
     padding: 16px;
-    grid-template-rows: auto repeat(4, 58px) 1fr auto;
+    grid-template-rows: auto repeat(5, 58px) 1fr auto;
     gap: 8px;
   }
   .rail-logo {
