@@ -1,93 +1,159 @@
 .rc {
   display: flex;
   flex-direction: column;
-  gap: 18px;
-}
-/* Cada jogo tem o seu cartão: a faixa de cima segue a cor do jogo (Cor laranja, Tempo azul). */
-.rc-card {
-  background: var(--white);
-  border: var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow);
-  overflow: hidden;
-}
-.rc-head {
-  display: flex;
-  align-items: center;
   gap: 14px;
-  padding: 14px;
-  border-bottom: var(--border);
 }
-.rc-card.color .rc-head {
+
+/* Escolha do jogo: três botões, um por jogo, com a cor do jogo quando selecionado. */
+.rc-games {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.rc-game {
+  appearance: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 2px;
+  background: var(--white);
+  color: var(--ink);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 3px 3px 0 var(--ink);
+  font: 900 12px var(--font-display);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.rc-game.on.color {
   background: var(--orange);
   color: var(--on-accent);
 }
-.rc-card.time .rc-head {
+.rc-game.on.time {
   background: var(--blue);
   color: var(--on-blue);
 }
-.rc-card.eco .rc-head {
+.rc-game.on.eco {
   background: var(--green);
   color: var(--on-accent);
 }
-.rc-name {
-  margin: 0;
-  font: 900 30px/1 var(--font-display);
-  letter-spacing: -0.04em;
-  text-transform: uppercase;
+.rc-game.on {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--ink);
 }
-.rc-sub {
-  margin-top: 4px;
+.rc-game:focus-visible,
+.rc-tile-btn:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 2px;
+}
+
+.rc-total {
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.06em;
-}
-.rc-empty {
-  margin: 0;
-  padding: 14px;
-  font: 400 13px/1.5 var(--font-mono);
   color: var(--muted);
 }
-.rc-modes {
+
+/* Os modos do jogo escolhido: o recorde grande, nada além disso até tocar. */
+.rc-grid {
   list-style: none;
   margin: 0;
   padding: 0;
-}
-.rc-mode {
   display: grid;
-  grid-template-columns: 1fr auto;
-  grid-template-areas: 'name best' 'sub best';
-  column-gap: 12px;
-  align-items: center;
-  padding: 12px 14px;
-  border-bottom: 2px dashed var(--ink);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
 }
-.rc-mode-name {
-  grid-area: name;
-  font: 900 17px var(--font-display);
+.rc-tile {
+  background: var(--white);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 3px 3px 0 var(--ink);
+  overflow: hidden;
 }
-.rc-mode-sub {
-  grid-area: sub;
+.rc-tile-btn {
+  appearance: none;
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  background: transparent;
+  color: inherit;
+  border: 0;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.rc-tile-btn.static,
+.rc-tile-btn:disabled {
+  cursor: default;
+}
+.rc-tile-name {
   font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
   color: var(--muted);
 }
-.rc-best {
-  grid-area: best;
-  font: 900 30px var(--font-display);
+.rc-tile-best {
+  font: 900 34px/1.05 var(--font-display);
   letter-spacing: -0.04em;
 }
-.rc-best small {
+.rc-tile-best small {
   font-size: 12px;
   font-weight: 700;
   margin-left: 2px;
 }
-.rc-daily {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 10px 14px;
+.rc-tile-hint {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.rc-tile.empty {
+  background: var(--paper);
+  box-shadow: none;
+  border-style: dashed;
+}
+.rc-tile.empty .rc-tile-best {
+  color: var(--muted);
+}
+.rc-tile.open {
   background: var(--yellow);
   color: var(--on-accent);
-  font-size: 11px;
+}
+.rc-tile.open .rc-tile-name {
+  color: inherit;
+}
+.rc-tile-more {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin: 0;
+  padding: 8px 12px 10px;
+  border-top: 2px dashed var(--ink);
+  font-size: 10px;
   font-weight: 700;
+}
+.rc-tile-more dt {
+  opacity: 0.7;
+}
+.rc-tile-more dd {
+  margin: 0;
+  font: 900 18px var(--font-display);
+}
+.rc-tile.daily {
+  grid-column: 1 / -1;
+  background: var(--yellow);
+  color: var(--on-accent);
+}
+.rc-tile.daily .rc-tile-name,
+.rc-tile.daily .rc-tile-hint {
+  color: inherit;
+}
+.rc-daily-line {
+  font: 700 14px var(--font-mono);
+}
+.rc-daily-line b {
+  font: 900 26px var(--font-display);
+  letter-spacing: -0.03em;
 }

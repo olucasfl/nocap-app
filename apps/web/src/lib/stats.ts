@@ -93,6 +93,13 @@ export function gameModes(stats: Stats, game: string): ModeStats[] {
     .sort((a, b) => ORDER.indexOf(a.mode) - ORDER.indexOf(b.mode));
 }
 
+/** Todos os modos de um jogo (jogados ou não), na ordem da tela de início. */
+export function knownModes(game: string): string[] {
+  return Object.keys(MODE_MAX_BY_GAME[game as GameId] ?? {}).sort(
+    (x, y) => ORDER.indexOf(x) - ORDER.indexOf(y),
+  );
+}
+
 export function streakLabel(days: number): string {
   return days === 1 ? '1 dia' : `${days} dias`;
 }

@@ -1,14 +1,16 @@
+import { useState } from 'react';
 import { LoadFailed } from './LoadFailed';
 import { Loader } from './Loader';
 import { useQuery } from '@tanstack/react-query';
 import { modeLabel } from '@/lib/history';
 import {
   fetchStats,
-  gameModes,
+  knownModes,
   countUnit,
   modeMax,
   streakLabel,
   type GameId,
+  type ModeStats,
   type Stats,
 } from '@/lib/stats';
 import { GAME_LABEL, GameArt } from './GameArt';
@@ -16,69 +18,117 @@ import './records.css';
 
 const GAMES: GameId[] = ['color', 'time', 'eco'];
 
-function GameRecords({ stats, game }: { stats: Stats; game: GameId }) {
-  const modes = gameModes(stats, game);
-  const matches = modes.reduce((n, m) => n + m.matches, 0);
-  const daily = stats.daily[game];
+const fmt = (game: GameId, mode: string, tenths: number) =>
+  countUnit(game, mode) ? String(Math.round(tenths / 10)) : (tenths / 10).toFixed(1);
+
+/** Um modo: só o recorde à vista; tocar abre média e partidas. */
+function ModeTile({ game, mode, stat }: { game: GameId; mode: string; stat?: ModeStats }) {
+  const [open, setOpen] = useState(false);
+  const unit = countUnit(game, mode);
+  const played = !!stat && stat.matches > 0;
   return (
-    <section className={`rc-card ${game}`} aria-label={`Recordes de ${GAME_LABEL[game]}`}>
-      <header className="rc-head">
-        <GameArt game={game} />
-        <div>
-          <h3 className="rc-name">{GAME_LABEL[game]}</h3>
-          <div className="mono rc-sub">
-            {matches} {matches === 1 ? 'PARTIDA' : 'PARTIDAS'}
-          </div>
-        </div>
-      </header>
-      {modes.length === 0 ? (
-        <p className="rc-empty">Jogue uma partida de {GAME_LABEL[game]} para ver seus recordes.</p>
-      ) : (
-        <ul className="rc-modes">
-          {modes.map((m) => (
-            <li key={m.mode} className="rc-mode">
-              <span className="rc-mode-name">{modeLabel(m.mode)}</span>
-              <span className="mono rc-mode-sub">
-                {m.matches} {m.matches === 1 ? 'PARTIDA' : 'PARTIDAS'} · MÉDIA{' '}
-                {countUnit(game, m.mode) ? Math.round(m.average / 10) : (m.average / 10).toFixed(1)}
-              </span>
-              <span className="rc-best">
-                {countUnit(game, m.mode) ? Math.round(m.best / 10) : (m.best / 10).toFixed(1)}
-                <small className="mono">
-                  {countUnit(game, m.mode)
-                    ? ` ${countUnit(game, m.mode)}`
-                    : `/${modeMax(game, m.mode)}`}
-                </small>
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-      <div className="rc-daily">
-        <span className="mono">DAILY</span>
-        <span className="mono">
-          SEQUÊNCIA {streakLabel(daily.current).toUpperCase()} · MELHOR{' '}
-          {streakLabel(daily.best).toUpperCase()}
+    <li className={`rc-tile${played ? '' : ' empty'}${open ? ' open' : ''}`}>
+      <button
+        type="button"
+        className="rc-tile-btn"
+        aria-expanded={open}
+        disabled={!played}
+        data-sfx="select"
+        onClick={() => setOpen((o) => !o)}
+      >
+        <span className="mono rc-tile-name">{modeLabel(mode).toUpperCase()}</span>
+        <span className="rc-tile-best">
+          {played ? fmt(game, mode, stat!.best) : '-'}
+          {played && (
+            <small className="mono">{unit ? ` ${unit}` : `/${modeMax(game, mode)}`}</small>
+          )}
         </span>
-      </div>
-    </section>
+        {!played && <span className="mono rc-tile-hint">SEM PARTIDAS</span>}
+      </button>
+      {open && played && (
+        <dl className="mono rc-tile-more">
+          <div>
+            <dt>MÉDIA</dt>
+            <dd>{fmt(game, mode, stat!.average)}</dd>
+          </div>
+          <div>
+            <dt>PARTIDAS</dt>
+            <dd>{stat!.matches}</dd>
+          </div>
+        </dl>
+      )}
+    </li>
   );
 }
 
-/** Aba de recordes: um cartão por jogo, com a arte do jogo, os modos e o Daily dele. */
+/** Um jogo de cada vez: a pessoa escolhe em cima e vê só os modos dele. */
+function RecordsView({ stats }: { stats: Stats }) {
+  const matchesOf = (g: GameId) =>
+    stats.modes.filter((m) => m.game === g).reduce((n, m) => n + m.matches, 0);
+  const [game, setGame] = useState<GameId>(() => GAMES.find((g) => matchesOf(g) > 0) ?? 'color');
+  const daily = stats.daily[game];
+  const total = matchesOf(game);
+
+  return (
+    <div className="rc">
+      <div className="rc-games" role="tablist" aria-label="Jogo">
+        {GAMES.map((g) => (
+          <button
+            key={g}
+            type="button"
+            role="tab"
+            id={`rc-tab-${g}`}
+            aria-selected={game === g}
+            aria-controls="rc-panel"
+            className={`rc-game ${g}${game === g ? ' on' : ''}`}
+            data-sfx="select"
+            onClick={() => setGame(g)}
+          >
+            <GameArt game={g} size="sm" />
+            <span>{GAME_LABEL[g]}</span>
+          </button>
+        ))}
+      </div>
+
+      <section
+        id="rc-panel"
+        role="tabpanel"
+        aria-labelledby={`rc-tab-${game}`}
+        className={`rc-panel ${game}`}
+      >
+        <div className="mono rc-total">
+          {total} {total === 1 ? 'PARTIDA' : 'PARTIDAS'} EM {GAME_LABEL[game].toUpperCase()}
+        </div>
+        <ul className="rc-grid">
+          {knownModes(game).map((mode) => (
+            <ModeTile
+              key={`${game}-${mode}`}
+              game={game}
+              mode={mode}
+              stat={stats.modes.find((m) => m.game === game && m.mode === mode)}
+            />
+          ))}
+          <li className="rc-tile daily">
+            <div className="rc-tile-btn static">
+              <span className="mono rc-tile-name">DAILY</span>
+              <span className="rc-daily-line">
+                <b>{streakLabel(daily.current)}</b> seguidos
+              </span>
+              <span className="mono rc-tile-hint">
+                MELHOR SEQUÊNCIA {streakLabel(daily.best).toUpperCase()}
+              </span>
+            </div>
+          </li>
+        </ul>
+      </section>
+    </div>
+  );
+}
+
+/** Aba de recordes: escolha o jogo e veja o recorde de cada modo; toque num modo para ver os detalhes. */
 export function Records({ stats }: { stats?: Stats }) {
   if (stats) return <RecordsView stats={stats} />;
   return <MyRecords />;
-}
-
-function RecordsView({ stats }: { stats: Stats }) {
-  return (
-    <div className="rc">
-      {GAMES.map((g) => (
-        <GameRecords key={g} stats={stats} game={g} />
-      ))}
-    </div>
-  );
 }
 
 function MyRecords() {
@@ -86,11 +136,5 @@ function MyRecords() {
   if (q.isPending && q.fetchStatus !== 'paused')
     return <Loader inline label="Carregando recordes" />;
   if (!q.data) return <LoadFailed what="seus recordes" onRetry={() => void q.refetch()} />;
-  return (
-    <div className="rc">
-      {GAMES.map((g) => (
-        <GameRecords key={g} stats={q.data} game={g} />
-      ))}
-    </div>
-  );
+  return <RecordsView stats={q.data} />;
 }
