@@ -29,9 +29,15 @@ export const leaderPads = (r: number): number => Math.min(9, 4 + Math.floor((r -
 /** Regras extras além do total de toques: nenhuma nas rodadas 1 e 2, uma até a 6, duas depois. */
 export const leaderExtras = (r: number): number => (r <= 2 ? 0 : r <= 6 ? 1 : 2);
 
-/** Tempo do líder para criar: 20 s + 3 s por toque exigido, no máximo 60 s. */
+/**
+ * Tempo do líder para criar: 10 s + 2 s por toque exigido, no máximo 45 s. Curto de propósito: a
+ * rodada anda e ninguém fica esperando parado.
+ */
 export const leaderCreateMs = (r: number): number =>
-  Math.min(60_000, 20_000 + 3000 * leaderTaps(r));
+  Math.min(45_000, 10_000 + 2000 * leaderTaps(r));
+
+/** Aviso "O LÍDER É @fulano" no começo de cada rodada. */
+export const LEADER_ANNOUNCE_MS = 1600;
 
 /** Quantas rodadas por padrão: o maior entre 6 e o número de jogadores, até 12. */
 export const defaultLeaderRounds = (players: number): number =>
@@ -186,16 +192,33 @@ const COLOR_NAMES = [
 export function ruleLabel(rule: LeaderRule): string {
   switch (rule.kind) {
     case 'count':
-      return `Exatamente ${rule.n} toques`;
+      return `Faça exatamente ${rule.n} toques`;
     case 'minColors':
       return `Use pelo menos ${rule.k} cores diferentes`;
     case 'noRepeat':
-      return 'Nenhuma cor duas vezes seguidas';
+      return 'Nunca repita a mesma cor em seguida';
     case 'sameEnds':
       return 'Comece e termine na mesma cor';
     case 'useAtLeast':
       return `Use o ${COLOR_NAMES[rule.pad]} pelo menos ${rule.times} vezes`;
     case 'avoid':
       return `Não use o ${COLOR_NAMES[rule.pad]}`;
+  }
+}
+
+/** Quanto da regra já foi cumprido (para mostrar "2/4"); `null` nas regras de sim ou não. */
+export function ruleProgress(
+  rule: LeaderRule,
+  seq: readonly number[],
+): { done: number; total: number } | null {
+  switch (rule.kind) {
+    case 'count':
+      return { done: seq.length, total: rule.n };
+    case 'minColors':
+      return { done: Math.min(new Set(seq).size, rule.k), total: rule.k };
+    case 'useAtLeast':
+      return { done: Math.min(seq.filter((p) => p === rule.pad).length, rule.times), total: rule.times };
+    default:
+      return null;
   }
 }

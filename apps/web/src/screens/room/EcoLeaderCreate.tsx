@@ -1,5 +1,12 @@
-import { useState } from 'react';
-import { leaderCreateMs, ruleHolds, ruleLabel } from '@nocap/games';
+import { useEffect, useState } from 'react';
+import {
+  LEADER_ANNOUNCE_MS,
+  leaderCreateMs,
+  ruleHolds,
+  ruleLabel,
+  ruleProgress,
+  type LeaderRule,
+} from '@nocap/games';
 import { Countdown } from '@/components/Countdown';
 import { EcoBoard } from '@/games/eco/EcoBoard';
 import { PadChip } from '@/games/eco/pads';
@@ -8,20 +15,55 @@ import { useAuth } from '@/lib/auth';
 import { sendRoom, useRoom, type RoomSnapshot } from '@/lib/rooms';
 import { sfx } from '@/lib/sfx';
 
-/** As regras da rodada, riscadas conforme o criador as cumpre. */
-function RuleList({ snapshot, seq }: { snapshot: RoomSnapshot; seq?: number[] }) {
-  const rules = snapshot.eco!.rules ?? [];
+/** O pad a que uma regra se refere (cor que precisa usar ou que está proibida). */
+const padOf = (r: LeaderRule): number | null =>
+  r.kind === 'useAtLeast' || r.kind === 'avoid' ? r.pad : null;
+
+/** O botão proibido da rodada, se houver (aparece apagado no tabuleiro). */
+const bannedPad = (rules: LeaderRule[]): number | null => {
+  const r = rules.find((x) => x.kind === 'avoid');
+  return r && r.kind === 'avoid' ? r.pad : null;
+};
+
+/**
+ * As regras da rodada como lista de tarefas: cada uma com caixinha, o quanto já foi feito e, nas
+ * de cor, o botão em miniatura. Quem cria vê as caixinhas se marcarem sozinhas.
+ */
+function RuleList({ rules, seq, title }: { rules: LeaderRule[]; seq?: number[]; title: string }) {
+  const done = seq ? rules.filter((r) => ruleHolds(r, seq)).length : 0;
   return (
-    <ul className="eco-rules" aria-label="Regras da rodada">
-      {rules.map((r, i) => (
-        <li key={i} className={seq && ruleHolds(r, seq) ? 'ok' : ''}>
-          <span className="mono" aria-hidden="true">
-            {seq && ruleHolds(r, seq) ? 'OK' : '..'}
+    <section className="eco-rulecard" aria-label={title}>
+      <header>
+        <b>{title}</b>
+        {seq && (
+          <span className="mono">
+            {done}/{rules.length} FEITAS
           </span>
-          {ruleLabel(r)}
-        </li>
-      ))}
-    </ul>
+        )}
+      </header>
+      <ul className="eco-rules">
+        {rules.map((r, i) => {
+          const ok = !!seq && ruleHolds(r, seq);
+          const progress = seq ? ruleProgress(r, seq) : null;
+          const pad = padOf(r);
+          return (
+            <li key={i} className={ok ? 'ok' : ''}>
+              <span className="eco-check" aria-hidden="true" />
+              <span className="eco-rule-text">
+                {ruleLabel(r)}
+                {pad !== null && <PadChip pad={pad} />}
+              </span>
+              {progress && (
+                <span className="mono eco-rule-progress">
+                  {progress.done}/{progress.total}
+                </span>
+              )}
+              <span className="sr-only">{ok ? 'cumprida' : 'ainda não cumprida'}</span>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }
 
@@ -31,11 +73,29 @@ function CreateTimer({ snapshot }: { snapshot: RoomSnapshot }) {
   return (
     <Countdown
       endsAt={endsAt}
-      totalMs={leaderCreateMs(snapshot.eco!.round)}
-      warnMs={8000}
+      totalMs={leaderCreateMs(snapshot.eco!.round) + LEADER_ANNOUNCE_MS}
+      warnMs={6000}
       beep
       label="PARA CRIAR"
     />
+  );
+}
+
+/** "O LÍDER É @fulano": aparece grande no começo de cada rodada e some sozinho, já com o jogo andando. */
+function LeaderBanner({ name, me }: { name: string; me: boolean }) {
+  const [show, setShow] = useState(true);
+  useEffect(() => {
+    sfx.ecoRound();
+    const id = window.setTimeout(() => setShow(false), LEADER_ANNOUNCE_MS);
+    return () => window.clearTimeout(id);
+  }, []);
+  if (!show) return null;
+  return (
+    <div className="eco-leader-banner" role="status" aria-live="assertive">
+      <span className="mono">{me ? 'RODADA NOVA' : 'O LÍDER É'}</span>
+      <b>{me ? 'É VOCÊ!' : `@${name}`}</b>
+      {me && <small className="mono">Monte a sequência abaixo</small>}
+    </div>
   );
 }
 
@@ -45,31 +105,47 @@ function Creator({ snapshot }: { snapshot: RoomSnapshot }) {
   const error = useRoom((s) => s.message);
   const [seq, setSeq] = useState<number[]>([]);
   const [sent, setSent] = useState(false);
-  const valid = (eco.rules ?? []).every((r) => ruleHolds(r, seq));
+  const rules = eco.rules ?? [];
+  const banned = bannedPad(rules);
+  const missing = rules.filter((r) => !ruleHolds(r, seq)).length;
+  const valid = missing === 0;
 
   const add = (pad: number) => {
-    if (sent || seq.length >= eco.length) return;
+    if (sent || seq.length >= eco.length || pad === banned) return;
     sfx.ecoPad(pad, 160);
     setSeq([...seq, pad]);
   };
 
   return (
     <section className="screen eco-play">
-      <div className="eco-hud">
-        <div className="eco-status input">VOCÊ CRIA</div>
-        <div className="mono eco-sub">
-          {seq.length}/{eco.length} TOQUES
-        </div>
+      <LeaderBanner name="" me />
+      <div className="eco-role">
+        <b>VOCÊ É O LÍDER</b>
+        <span>Toque nos botões para montar uma sequência. Os outros vão ter que repetir.</span>
       </div>
       <div className="eco-timer">
         <CreateTimer snapshot={snapshot} />
       </div>
-      <RuleList snapshot={snapshot} seq={seq} />
-      <EcoBoard pads={eco.pads} lit={null} fresh={null} interactive={!sent} onTap={add} />
-      <div className="eco-created" aria-label="Sua sequência">
-        {seq.map((p, i) => (
-          <PadChip key={i} pad={p} />
-        ))}
+      <RuleList rules={rules} seq={seq} title="Cumpra estas regras" />
+      <EcoBoard
+        pads={eco.pads}
+        growing
+        banned={banned}
+        lit={null}
+        fresh={null}
+        interactive={!sent}
+        onTap={add}
+      />
+      <div className="eco-created-wrap">
+        <div className="mono eco-created-count">
+          SUA SEQUÊNCIA · {seq.length}/{eco.length} TOQUES
+        </div>
+        <div className="eco-created" aria-label="Sua sequência">
+          {seq.length === 0 && <span className="eco-created-empty">Toque nos botões...</span>}
+          {seq.map((p, i) => (
+            <PadChip key={i} pad={p} />
+          ))}
+        </div>
       </div>
       {error && (
         <p className="acc-failure mono" role="alert">
@@ -91,6 +167,11 @@ function Creator({ snapshot }: { snapshot: RoomSnapshot }) {
         >
           Enviar sequência
         </button>
+        <p className="mono eco-send-hint">
+          {valid
+            ? 'Tudo certo! Toque em enviar.'
+            : `Falta cumprir ${missing} ${missing === 1 ? 'regra' : 'regras'} para poder enviar.`}
+        </p>
         <div className="eco-created-actions">
           <button
             type="button"
@@ -116,28 +197,32 @@ function Creator({ snapshot }: { snapshot: RoomSnapshot }) {
   );
 }
 
-/** Os seguidores esperam: quem está criando e as regras da rodada. */
+/** Os seguidores esperam o líder enviar; quando ele envia, a sequência toca e eles repetem. */
 function Waiting({ snapshot }: { snapshot: RoomSnapshot }) {
   const eco = snapshot.eco!;
   const leader = snapshot.members.find((m) => m.id === eco.leader)?.username ?? '?';
   return (
     <section className="screen rm">
-      <h1>@{leader} está criando...</h1>
-      <p className="lead">
-        Rodada {eco.round}: {eco.length} toques, {eco.pads} botões. Quando ele enviar, a sequência
-        toca para todos e você repete.
-      </p>
+      <LeaderBanner name={leader} me={false} />
+      <div className="eco-role follower">
+        <b>O LÍDER É @{leader}</b>
+        <span>
+          Ele monta uma sequência de {eco.length} toques. Quando enviar, ela toca para todos e você
+          repete.
+        </span>
+      </div>
       <CreateTimer snapshot={snapshot} />
-      <RuleList snapshot={snapshot} />
+      <RuleList rules={eco.rules ?? []} title="Regras que ele precisa cumprir" />
     </section>
   );
 }
 
 export function EcoLeaderCreate({ snapshot }: { snapshot: RoomSnapshot }) {
   const me = useAuth((s) => s.user?.id);
-  return snapshot.eco!.leader === me ? (
-    <Creator key={snapshot.eco!.round} snapshot={snapshot} />
+  const eco = snapshot.eco!;
+  return eco.leader === me ? (
+    <Creator key={eco.round} snapshot={snapshot} />
   ) : (
-    <Waiting snapshot={snapshot} />
+    <Waiting key={eco.round} snapshot={snapshot} />
   );
 }

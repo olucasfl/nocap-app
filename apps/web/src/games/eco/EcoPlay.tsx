@@ -219,6 +219,7 @@ export function EcoPlay({ run, onEnd, onRound }: Props) {
       </div>
       <EcoBoard
         pads={pads}
+        growing={s.growEvery > 0 && s.maxPads > s.pads}
         lit={lit}
         bad={bad}
         fresh={status === 'observe' ? fresh : null}

@@ -238,6 +238,7 @@ export function EcoRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
       )}
       <EcoBoard
         pads={eco.pads}
+        growing={snapshot.mode === 'escalada' || snapshot.mode === 'leader'}
         lit={lit}
         bad={bad}
         fresh={null}

@@ -252,7 +252,52 @@
   color: var(--muted);
 }
 
-/* Siga o Líder: regras da rodada e a sequência que o criador monta */
+/* Siga o Líder: quem cria e quem espera, as regras como lista de tarefas */
+.eco-role {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 12px;
+  background: var(--yellow);
+  color: var(--on-accent);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+.eco-role b {
+  font: 900 19px/1.1 var(--font-display);
+  letter-spacing: -0.02em;
+}
+.eco-role span {
+  font: 400 12px/1.35 var(--font-mono);
+}
+.eco-role.follower {
+  background: var(--blue);
+  color: var(--on-blue);
+}
+.eco-rulecard {
+  background: var(--white);
+  color: var(--ink);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 4px 4px 0 var(--ink);
+  padding: 10px 12px 12px;
+}
+.eco-rulecard header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.eco-rulecard header b {
+  font: 900 15px var(--font-display);
+}
+.eco-rulecard header .mono {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+}
 .eco-rules {
   list-style: none;
   margin: 0;
@@ -264,25 +309,140 @@
 .eco-rules li {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
+  gap: 10px;
+  padding: 6px 8px;
   font-size: 13px;
   font-weight: 700;
-  background: var(--white);
-  border: var(--border);
+  line-height: 1.2;
+  background: var(--paper);
+  border: 2px solid var(--ink);
   border-radius: var(--radius-sm);
-}
-.eco-rules li span {
-  min-width: 26px;
-  font-size: 11px;
-  color: var(--muted);
 }
 .eco-rules li.ok {
   background: var(--green);
   color: var(--on-accent);
 }
-.eco-rules li.ok span {
-  color: var(--on-accent);
+.eco-check {
+  position: relative;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border: 3px solid var(--ink);
+  border-radius: 6px;
+  background: var(--white);
+}
+.eco-rules li.ok .eco-check {
+  background: var(--ink);
+}
+.eco-rules li.ok .eco-check::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 0;
+  width: 6px;
+  height: 11px;
+  border: solid var(--white);
+  border-width: 0 3px 3px 0;
+  transform: rotate(45deg);
+}
+.eco-rule-text {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.eco-rule-progress {
+  flex: none;
+  font-size: 12px;
+  font-weight: 700;
+}
+.eco-pad.banned {
+  opacity: 0.28;
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent 0 10px,
+    rgb(0 0 0 / 0.35) 10px 13px
+  ) !important;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+.eco-created-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.eco-created-count {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+.eco-created-empty {
+  align-self: center;
+  font: 400 12px var(--font-mono);
+  color: var(--muted);
+}
+.eco-send-hint {
+  margin: 0;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+/* "O LÍDER É @fulano": cobre a tela por um instante no começo de cada rodada. */
+.eco-leader-banner {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 24px;
+  text-align: center;
+  background: var(--ink);
+  color: var(--paper);
+  animation: eco-banner 1.6s ease-out both;
+  pointer-events: none;
+}
+.eco-leader-banner b {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font: 900 clamp(34px, 12vw, 64px) / 1 var(--font-display);
+  letter-spacing: -0.03em;
+  color: var(--yellow);
+}
+.eco-leader-banner span {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.eco-leader-banner small {
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+@keyframes eco-banner {
+  0% {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  12% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .eco-leader-banner {
+    animation: none;
+  }
 }
 .eco-created {
   display: flex;
@@ -322,4 +482,32 @@
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.04em;
+}
+
+/* Tabuleiro fixo (Escalada e Siga o Líder): três por fileira, cada botão no seu lugar. */
+.eco-board.stable {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.eco-board.stable .eco-pad {
+  grid-column: auto;
+  aspect-ratio: 1;
+  min-height: 0;
+}
+.eco-ghost {
+  border: 3px dashed var(--muted);
+  border-radius: 20px;
+  opacity: 0.35;
+}
+
+/* Texto só para leitor de tela. */
+.eco-rules .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.eco-rules li {
+  position: relative;
 }

@@ -1,6 +1,7 @@
 import {
   ECO_PAUSE_MS,
   ECO_TAP_TIMEOUT_MS,
+  LEADER_ANNOUNCE_MS,
   LEADER_MAX_ROUNDS,
   LEADER_MIN_ROUNDS,
   LEADER_STEP_MS,
@@ -22,12 +23,12 @@ import {
   type EngineOptions,
 } from './color-room.engine';
 
-const REVEAL_MS = 8000;
-
 /**
  * Ecooo, Siga o Líder (spec 012): em cada rodada um jogador (o "criador") monta uma sequência
  * dentro das regras da rodada; o servidor valida, toca para todos ao mesmo tempo e os outros
- * repetem. A sequência só chega aos seguidores na reprodução. O histórico guarda só quem jogou e a colocação.
+ * repetem. A sequência só chega aos seguidores na reprodução. A rodada anda sem tela de resultado:
+ * terminou, já vem "O LÍDER É @fulano" e o próximo cria. As notas e a soma de acertos só aparecem no
+ * pódio. O histórico guarda só quem jogou e a colocação.
  */
 export class EcoLeaderRoomEngine extends ColorRoomEngine {
   override readonly game = 'eco' as const;
@@ -42,6 +43,8 @@ export class EcoLeaderRoomEngine extends ColorRoomEngine {
   private lastTap = new Map<string, number>();
   private playStart = 0;
   private timedOut = false;
+  /** Toques certos de cada pessoa como seguidora, somados nas rodadas (só aparece no pódio). */
+  private hits = new Map<string, number>();
 
   constructor(opts: EngineOptions) {
     super(opts);
@@ -100,7 +103,8 @@ export class EcoLeaderRoomEngine extends ColorRoomEngine {
     this.lastTap = new Map();
     this.locked = new Set(this.leaderId ? [this.leaderId] : []);
     this.phase = 'create';
-    this.phaseEndsAt = this.now() + leaderCreateMs(this.round);
+    // O aviso "O LÍDER É ..." não come o tempo de quem cria.
+    this.phaseEndsAt = this.now() + LEADER_ANNOUNCE_MS + leaderCreateMs(this.round);
   }
 
   /** O criador envia a sequência; o servidor confere as regras e diz qual falhou. */
@@ -177,6 +181,7 @@ export class EcoLeaderRoomEngine extends ColorRoomEngine {
       const correct = this.progress.get(id) ?? 0;
       const score = followerScore(correct, n);
       round[id] = { answer: correct, score };
+      this.hits.set(id, (this.hits.get(id) ?? 0) + correct);
       if (this.members.get(id)?.connected) scores.push(score);
     }
     if (this.leaderId && this.members.has(this.leaderId)) {
@@ -185,8 +190,8 @@ export class EcoLeaderRoomEngine extends ColorRoomEngine {
         score: this.timedOut ? 0 : leaderScore(scores),
       };
     }
-    super.toReveal();
-    this.phaseEndsAt = this.now() + REVEAL_MS;
+    // Sem tela de resultado: já vem o próximo criador (ou o pódio, se foi a última rodada).
+    this.finishReveal();
   }
 
   override leave(id: string) {
@@ -196,8 +201,14 @@ export class EcoLeaderRoomEngine extends ColorRoomEngine {
     super.leave(id);
   }
 
+  override start(id: string) {
+    this.hits = new Map();
+    super.start(id);
+  }
+
   protected override reset() {
     super.reset();
+    this.hits = new Map();
     this.order = [];
     this.leaderId = null;
     this.sequence = null;
@@ -211,7 +222,9 @@ export class EcoLeaderRoomEngine extends ColorRoomEngine {
   }
 
   protected override extraSnapshot(viewerId?: string): Record<string, unknown> {
-    if (this.phase === 'lobby' || this.phase === 'final') return {};
+    if (this.phase === 'lobby') return {};
+    // No pódio só vão os acertos somados de cada pessoa.
+    if (this.phase === 'final') return { eco: { hits: Object.fromEntries(this.hits) } };
     const showing = this.phase === 'show' || this.phase === 'play' || this.phase === 'reveal';
     const running = this.phase === 'play' && !!viewerId && !this.locked.has(viewerId);
     return {
@@ -225,6 +238,7 @@ export class EcoLeaderRoomEngine extends ColorRoomEngine {
         leader: this.leaderId,
         rules: leaderRules(this.seed, this.round),
         timedOut: this.timedOut,
+        announceMs: this.phase === 'create' ? LEADER_ANNOUNCE_MS : 0,
         participants: this.followers,
         alive: this.followers,
         progress: viewerId ? (this.progress.get(viewerId) ?? 0) : 0,

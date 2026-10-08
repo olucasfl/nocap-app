@@ -15,6 +15,8 @@ export function Final({ snapshot }: { snapshot: RoomSnapshot }) {
   const impostor =
     snapshot.game === 'impostor' || (snapshot.game === 'eco' && snapshot.mode === 'leader');
   const eco = snapshot.game === 'eco';
+  /** Siga o Líder: no pódio entra a soma de acertos (as notas de cada rodada não aparecem antes). */
+  const hits = snapshot.eco?.hits;
   const max = snapshot.settings.rounds * 10;
   const mine = snapshot.members.find((m) => m.id === me);
   const voted = !!mine?.rematch;
@@ -33,8 +35,22 @@ export function Final({ snapshot }: { snapshot: RoomSnapshot }) {
             <span className="mono rm-pos">{r.placement}º</span>
             <span className="rm-result-name">@{r.username}</span>
             <span className="rm-result-score">
-              {eco ? Math.round(r.totalTenths / 10) : (r.totalTenths / 10).toFixed(1)}
-              <small className="mono">{eco ? ' passos' : impostor ? ' pts' : `/${max}`}</small>
+              {hits
+                ? (hits[r.userId] ?? 0)
+                : eco
+                  ? Math.round(r.totalTenths / 10)
+                  : (r.totalTenths / 10).toFixed(1)}
+              <small className="mono">
+                {hits
+                  ? (hits[r.userId] ?? 0) === 1
+                    ? ' acerto'
+                    : ' acertos'
+                  : eco
+                    ? ' passos'
+                    : impostor
+                      ? ' pts'
+                      : `/${max}`}
+              </small>
             </span>
           </li>
         ))}

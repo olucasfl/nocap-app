@@ -79,6 +79,8 @@ export interface EcoRoomState {
   announceMs?: number;
   rules?: LeaderRule[];
   timedOut?: boolean;
+  /** Pódio do Siga o Líder: soma de acertos de cada pessoa como seguidora. */
+  hits?: Record<string, number>;
 }
 
 export interface RoomSnapshot {

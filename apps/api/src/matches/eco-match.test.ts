@@ -174,6 +174,9 @@ describe('MatchesService (Eco)', () => {
 
   it('Daily exige a seed e o modo do dia', async () => {
     const { service } = setup();
+    // A data falsa vem antes da seed do dia: senão o teste só passa no dia em que foi escrito.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-10-07T12:00:00Z'));
     const ok = play(dailySeed('eco'), 10 * 60_000, { kind: 'daily' });
     await expect(createAs(service, { ...ok, seed: 'eco:1999-01-01' })).rejects.toThrow(
       'Seed do Daily',

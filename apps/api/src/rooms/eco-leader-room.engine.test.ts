@@ -1,4 +1,10 @@
-import { ECO_TAP_TIMEOUT_MS, leaderCreateMs, leaderTaps, validLeaderSequence } from '@nocap/games';
+import {
+  ECO_TAP_TIMEOUT_MS,
+  LEADER_ANNOUNCE_MS,
+  leaderCreateMs,
+  leaderTaps,
+  validLeaderSequence,
+} from '@nocap/games';
 import { describe, expect, it } from 'vitest';
 import { EcoLeaderRoomEngine } from './eco-leader-room.engine';
 
@@ -6,7 +12,15 @@ const SEED = 'seed-l';
 
 type Snap = {
   phase: string;
-  eco: { leader: string; sequence: number[] | null; participants: string[]; round: number };
+  eco: {
+    leader: string;
+    sequence: number[] | null;
+    participants: string[];
+    round: number;
+    announceMs?: number;
+    timedOut?: boolean;
+    hits?: Record<string, number>;
+  };
   round: { seed: string; results: { id: string; score: number }[] | null };
 };
 
@@ -69,47 +83,54 @@ describe('EcoLeaderRoomEngine (Siga o Líder)', () => {
     expect(room.currentPhase).toBe('play');
   });
 
-  it('seguidores completam, o servidor dá a nota e o criador pontua pelo erro dos outros', () => {
+  it('terminou a rodada, já vem o próximo criador: sem tela de resultado nem notas no meio', () => {
     const { room, clock } = started();
     const { leader, seq } = createAndShow(room, clock, 1);
-    const [a, b] = ['ana', 'bia', 'cris'].filter((id) => id !== leader) as [string, string];
-    for (const p of seq) room.tap(a, p);
-    for (const p of seq.slice(0, 2)) room.tap(b, p);
-    room.tap(b, (seq[2]! + 1) % 4);
-    expect(room.currentPhase).toBe('reveal');
-    const scores = Object.fromEntries(snap(room).round.results!.map((r) => [r.id, r.score]));
-    expect(scores[a]).toBe(10);
-    expect(scores[b]).toBe(5);
-    // média 7,5 → 0,7 × 2,5 = 1,75 → 1,8
-    expect(scores[leader]).toBeCloseTo(1.8, 1);
+    for (const id of ['ana', 'bia', 'cris'].filter((x) => x !== leader)) {
+      for (const p of seq) room.tap(id, p);
+    }
+    const s = snap(room);
+    expect(room.currentPhase).toBe('create');
+    expect(s.eco.round).toBe(2);
+    expect(s.eco.leader).not.toBe(leader);
+    expect(s.eco.announceMs).toBe(LEADER_ANNOUNCE_MS);
+    expect(s.round.results).toBeNull();
   });
 
-  it('criador que estoura o tempo ganha zero e o servidor monta uma sequência válida', () => {
+  it('criador que estoura o tempo: o servidor monta uma sequência válida e toca para todos', () => {
     const { room, clock } = started();
-    const leader = snap(room).eco.leader;
-    clock.advance(leaderCreateMs(1) + 1);
+    // O aviso "O LÍDER É ..." não conta no tempo de criar.
+    clock.advance(LEADER_ANNOUNCE_MS + leaderCreateMs(1) - 1);
+    expect(room.tick()).toBe(false);
+    clock.advance(2);
     expect(room.tick()).toBe(true);
     expect(room.currentPhase).toBe('show');
-    clock.advance(10_000);
-    room.tick();
-    for (const id of ['ana', 'bia', 'cris'].filter((x) => x !== leader)) {
-      for (const p of validLeaderSequence(SEED, 1)) room.tap(id, p);
-    }
-    const scores = Object.fromEntries(snap(room).round.results!.map((r) => [r.id, r.score]));
-    expect(scores[leader]).toBe(0);
+    expect(snap(room).eco.timedOut).toBe(true);
+    expect(snap(room, 'ana').eco.sequence).toEqual(validLeaderSequence(SEED, 1));
   });
 
-  it('seguidor parado por 8 s fecha a rodada com os acertos que tinha', () => {
-    const { room, clock } = started();
-    const { leader, seq } = createAndShow(room, clock, 1);
-    const [a, b] = ['ana', 'bia', 'cris'].filter((id) => id !== leader) as [string, string];
-    for (const p of seq) room.tap(a, p);
-    room.tap(b, seq[0]!);
-    clock.advance(ECO_TAP_TIMEOUT_MS + 1);
-    room.tick();
-    expect(room.currentPhase).toBe('reveal');
-    const bScore = snap(room).round.results!.find((r) => r.id === b)!.score;
-    expect(bScore).toBe(2.5);
+  it('só no pódio aparece a soma de acertos; seguidor parado por 8 s conta os que acertou', () => {
+    const { room, clock } = started(['ana', 'bia', 'cris'], 4);
+    const expected: Record<string, number> = { ana: 0, bia: 0, cris: 0 };
+    for (let round = 1; round <= 4; round++) {
+      const { leader, seq } = createAndShow(room, clock, round);
+      const followers = ['ana', 'bia', 'cris'].filter((x) => x !== leader);
+      expect(snap(room).eco.hits).toBeUndefined();
+      for (const p of seq) room.tap(followers[0]!, p);
+      expected[followers[0]!]! += seq.length;
+      if (round === 1) {
+        // O segundo seguidor acerta um toque e para.
+        room.tap(followers[1]!, seq[0]!);
+        expected[followers[1]!]! += 1;
+        clock.advance(ECO_TAP_TIMEOUT_MS + 1);
+        room.tick();
+      } else {
+        for (const p of seq) room.tap(followers[1]!, p);
+        expected[followers[1]!]! += seq.length;
+      }
+    }
+    expect(room.currentPhase).toBe('final');
+    expect(snap(room).eco.hits).toEqual(expected);
   });
 
   it('o criador muda a cada rodada e a partida termina no total escolhido', () => {
@@ -121,8 +142,6 @@ describe('EcoLeaderRoomEngine (Siga o Líder)', () => {
       for (const id of ['ana', 'bia', 'cris'].filter((x) => x !== leader)) {
         for (const p of seq) room.tap(id, p);
       }
-      clock.advance(9000);
-      room.tick();
     }
     expect(room.currentPhase).toBe('final');
     expect(leaders.slice(0, 3).sort()).toEqual(['ana', 'bia', 'cris']);

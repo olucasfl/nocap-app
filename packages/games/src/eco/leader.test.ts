@@ -24,8 +24,8 @@ describe('Siga o Líder: dificuldade', () => {
   });
 
   it('tempo para criar: 20 s + 3 s por toque, no máximo 60 s', () => {
-    expect(leaderCreateMs(1)).toBe(32_000);
-    expect(leaderCreateMs(12)).toBe(60_000);
+    expect(leaderCreateMs(1)).toBe(18_000);
+    expect(leaderCreateMs(12)).toBe(45_000);
   });
 
   it('rodadas padrão: o maior entre 6 e os jogadores, até 12', () => {
