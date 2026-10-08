@@ -104,3 +104,19 @@ Solo, Daily, ranking global, modo de times, mais de 2 minijogos grandes (a lista
 - [ ] As trocas de estado são suaves (só `transform`/`opacity`) e respeitam `prefers-reduced-motion`.
 - [ ] Pontuação final igual para todos os aparelhos; colocação gravada no histórico de sala.
 - [ ] Regras por cor também aparecem por nome e padrão; textos legíveis nos temas claro e escuro.
+
+## 11. Decisões do Lucas (08/10/2026)
+
+- **Nome do jogo: NoCap!** (id interno `party`, rota `/nocap`, cartão no Hub). Jogo novo, à parte, sem alterar os originais; as versões dos desafios são "adaptadas".
+- **Exceção da regra 3 (Já Deu? sem relógio):** vale dentro do NoCap!, nunca no Já Deu? original. *Aviso:* como o "Tempo Falso" não foi explicado, trato como "um relógio visível que anda X% mais rápido ou mais devagar que o real"; ajustar quando chegarmos à fase 3.
+- **Sem ranking e sem solo** (só histórico de sala).
+- **X1:** a lógica é de **placar líquido**: ganhar uma disputa soma 1, perder tira 1; vence quem abrir **3 pontos de diferença** (ex.: +1, +1, -1, +1, +1 = 3). Teto de 15 disparos, depois empate. Pontos do duelo na partida: a definir na fase 7.
+- **Pontuação:** 0 a 1000 por micro-desafio (nota 10 = 1000, linear a partir da nota 5); o grande vale 2x; **pontuação pode ficar negativa** quando a regra do desafio tira pontos (pegadinhas, Invertido).
+- **Botão Proibido (Ecooo):** a sequência inclui o botão proibido (a pessoa o pula ao repetir) e o botão acende ao tocar, sem indicar acerto.
+- **Cores como regra:** sempre com o nome da cor escrito e um padrão na peça.
+- **Prioridade:** o NoCap! passa na frente do Tribunal do Absurdo e do Intervalo. Começar pela **fatia vertical** (fases 0 a 2).
+- Ficaram valendo as recomendações das perguntas 5, 6, 9, 12, 13 e 14 (sorteio sem repetir seguido, comando legível, digitação no celular com campo sem autocorreção, tempo limite por desafio, início automático após 20 s no tutorial do grande, chat fechado durante os desafios).
+
+### Desvio do plano (registrado)
+
+A fase 0 previa telas de referência em `docs/reference/`. Para ganhar tempo, a fatia vertical segue direto os tokens Pop Brutal já existentes; as telas definitivas (palco, ranking, tutorial, revelação) serão ajustadas a partir do que o Lucas vir jogando, e as referências HTML entram quando o desenho estabilizar.

@@ -6,6 +6,7 @@ import { TimeRoomEngine } from './time-room.engine';
 import { ImpostorRoomEngine } from './impostor/impostor-room.engine';
 import { EcoRoomEngine } from './eco-room.engine';
 import { EcoLeaderRoomEngine } from './eco-leader-room.engine';
+import { PartyRoomEngine } from './party-room.engine';
 import { IMPOSTOR_MAX_PLAYERS } from '@nocap/games';
 import type { InvitesService } from './invites.service';
 import type { RoomsRepository } from './rooms.repository';
@@ -102,6 +103,10 @@ export class ColorRoom extends Room {
       this.broadcast('closed');
       void this.disconnect();
     });
+    // Sincronia de relógio: o aparelho mede o desvio para o relógio do servidor.
+    this.onMessage('ping', (c, m: { t0?: number }) =>
+      c.send('pong', { t0: m?.t0, ts: Date.now() }),
+    );
     this.onMessage('chat', (c, m: { text?: unknown }) => {
       const id = (c.userData as AuthData | undefined)?.id;
       if (!id) return;
@@ -262,7 +267,7 @@ export class ColorRoom extends Room {
       // O Intruso é a Cor: entra na aba da Mesmíssima do histórico, com o modo dele.
       const game = this.engine.game;
       await roomDeps.repo?.saveRoomMatch({
-        game: game === 'impostor' ? 'color' : game,
+        game: game === 'impostor' || game === 'party' ? 'color' : game,
         mode: this.engine.historyMode,
         seed: this.engine.currentSeed,
         settings: this.engine.currentSettings,
@@ -337,5 +342,22 @@ export class EcoRoom extends ColorRoom {
         if (this.engine instanceof EcoLeaderRoomEngine) this.engine.submit(id, m?.sequence);
       }),
     );
+  }
+}
+
+/** Sala do NoCap!: micro-desafios e minijogos grandes, todos jogando ao mesmo tempo (spec 016). */
+export class PartyRoom extends ColorRoom {
+  protected override makeEngine(opts: ConstructorParameters<typeof ColorRoomEngine>[0]) {
+    return new PartyRoomEngine(opts);
+  }
+
+  protected override registerGameMessages() {
+    const engine = () => this.engine as PartyRoomEngine;
+    this.onMessage('submit', (c, m: { color?: { h: number; s: number; b: number } }) =>
+      this.act(c, (id) => engine().submitColor(id, m?.color as never)),
+    );
+    this.onMessage('tap', (c) => this.act(c, (id) => engine().tap(id)));
+    this.onMessage('tready', (c) => this.act(c, (id) => engine().tutorialReady(id)));
+    this.onMessage('begin', (c) => this.act(c, (id) => engine().begin(id)));
   }
 }
