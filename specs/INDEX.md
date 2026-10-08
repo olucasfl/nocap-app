@@ -17,6 +17,7 @@
 | 012 | [Eco (repita a sequência)](012-eco.md)                             | 3     | solo, Corrida e Siga o Líder implementados; falta jogar ao vivo e calibrar |
 | 013 | [Lobby da sala (líder e membro)](013-lobby-sala.md)                | 3     | implementada; falta jogar ao vivo                                          |
 | 014 | [Chat nas salas](014-chat-sala.md)                                 | 3     | implementada; falta testar ao vivo                                         |
-| 015 | [Aba separada de Rankings](015-aba-rankings.md)                    | 5c    | implementada; falta jogar ao vivo                                                      |
+| 015 | [Aba separada de Rankings](015-aba-rankings.md)                    | 5c    | implementada; falta jogar ao vivo                                          |
+| 016 | [Maratona (jogo-festa, nome provisório)](016-maratona.md)          | 6     | em planejamento (perguntas abertas)                                        |
 
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.

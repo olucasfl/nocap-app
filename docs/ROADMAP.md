@@ -73,6 +73,10 @@ Ainda sem prioridade definida contra as salas do Ecooo. Cada item tem a sua spec
 - [x] **Editar nome e trocar @usuário** no Perfil (15 dias de intervalo e de reserva; migration 0004 gerada, falta rodar `pnpm db:migrate`)
 - [ ] **Aba separada de Rankings** (tirar o ranking de dentro de cada jogo e criar uma aba própria, mais intuitiva): `specs/015-aba-rankings.md`
 
+## Etapa 5d: Maratona (o jogo mais complexo)
+
+- [ ] **Planejamento e perguntas abertas:** `specs/016-maratona.md` (fases 0 a 8; fatia vertical primeiro)
+
 ## Etapa 6: produção
 
 - [ ] Cloudflare Pages (web), Fly.io (api + Colyseus), Upstash (Redis), domínio, monitoramento
