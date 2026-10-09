@@ -6,21 +6,13 @@ import { WifiOff } from './icons';
 import './network.css';
 
 /**
- * Faixa no topo: "Você está offline" enquanto não há rede e "Conexão restabelecida" por alguns
+ * Pílula no topo: "Sem conexão" enquanto não há rede e "De volta online" por alguns
  * segundos quando volta. Ao voltar, confere a sessão de novo (offline ela fica como estava).
  */
 export function NetworkStatus() {
   const online = useOnline();
   const [back, setBack] = useState(false);
   const wasOffline = useRef(!navigator.onLine);
-
-  // As telas abrem espaço para a faixa não cobrir o topo (botão Voltar, título).
-  useEffect(() => {
-    document.documentElement.dataset.net = online ? 'on' : 'off';
-    return () => {
-      delete document.documentElement.dataset.net;
-    };
-  }, [online]);
 
   useEffect(() => {
     if (!online) {
@@ -42,16 +34,11 @@ export function NetworkStatus() {
   return (
     <div className={`ns ${online ? 'on' : 'off'}`} role="status" aria-live="polite">
       {online ? (
-        <b>Conexão restabelecida</b>
+        <span>De volta online</span>
       ) : (
         <>
-          <WifiOff size={18} />
-          <span>
-            <b>Você está offline</b>
-            <small>
-              A Cor guarda suas partidas e envia quando a conexão voltar. O Tempo não salva offline.
-            </small>
-          </span>
+          <WifiOff size={14} />
+          <span>Sem conexão</span>
         </>
       )}
     </div>
