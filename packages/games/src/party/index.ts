@@ -207,7 +207,7 @@ export function commandText(slot: Slot): string {
       return (
         (
           {
-            maohoba: 'MANTENHA O CAMPO LIMPO',
+            maohoba: 'NÃO ESCREVA NADA. Não toque no campo e espere o tempo acabar',
             reverse: `Digite ${artigo} de trás para frente`,
             novowels: `Digite ${artigo} sem vogais (mantenha os espaços entre as palavras)`,
             noaccents: `Digite ${artigo} sem acentos`,
