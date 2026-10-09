@@ -451,7 +451,7 @@
 }
 .px1-delta.down {
   background: var(--orange);
-  color: var(--ink);
+  color: var(--on-accent);
 }
 .px1-delta.zero {
   background: var(--white);

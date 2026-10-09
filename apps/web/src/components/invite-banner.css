@@ -23,6 +23,7 @@
   display: flex;
   gap: 8px;
 }
+/* Fundo preto fixo nos dois temas: o texto precisa ser branco fixo (var(--white) escurece no tema escuro). */
 .invite-btn {
   appearance: none;
   flex: 1;
@@ -30,7 +31,7 @@
   border: var(--border);
   border-radius: 10px;
   background: var(--on-accent);
-  color: var(--white);
+  color: var(--on-blue);
   font: 900 13px var(--font-display);
   text-transform: uppercase;
   cursor: pointer;
