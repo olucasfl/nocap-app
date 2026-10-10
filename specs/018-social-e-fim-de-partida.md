@@ -14,7 +14,7 @@ reiniciar a API). Aplicar com `pnpm db:migrate`.
 - O app aberto e visível bate em `POST /me/ping` a cada 45 s e ao voltar para a aba. Online = batimento
   nos últimos 100 s (memória); a última visita é gravada em `user_presence` a cada 2 min.
 - `GET /friends` traz `online`, `lastSeenAt` e `lastPlayed` de cada amigo.
-- `GET /friends/:username/profile` traz também `recent` (20 partidas: jogo, modo, tipo, hora, nota,
+- `GET /friends/:username/profile` traz também `recent` (no máximo as 5 últimas partidas: jogo, modo, tipo, hora, nota,
   colocação; nunca seed nem respostas).
 
 ## Perfil de amigo

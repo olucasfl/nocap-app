@@ -18,6 +18,9 @@ import { formatPlayedAt, gameLabel, kindLabel, modeLabel } from '@/lib/history';
 import { countUnit, streakLabel, type Stats } from '@/lib/stats';
 import './profile.css';
 
+/** A atividade recente mostra no máximo as últimas 5 partidas. */
+const RECENT_MAX = 5;
+
 const route = getRouteApi('/tabs/amigos/$username');
 
 const scoreText = (m: Pick<RecentMatch, 'game' | 'mode' | 'totalScore'>) => {
@@ -43,7 +46,8 @@ function Details({ data: raw }: { data: FriendProfileData }) {
     online: raw.online ?? false,
     lastSeenAt: raw.lastSeenAt ?? null,
     lastPlayed: raw.lastPlayed ?? null,
-    recent: raw.recent ?? [],
+    // No máximo as 5 últimas (uma API antiga ainda manda mais).
+    recent: (raw.recent ?? []).slice(0, RECENT_MAX),
   };
   const { total, favorite } = playSummary(data.stats);
   return (

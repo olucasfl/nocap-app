@@ -40,7 +40,7 @@ export class MatchesController {
     const [stats, activity, recent] = await Promise.all([
       this.matches.statsOfUser(friend.id),
       this.friends.activityOf(friend.id),
-      this.matches.recentOf(friend.id, 20),
+      this.matches.recentOf(friend.id),
     ]);
     return { username: friend.username, stats, ...activity, recent };
   }

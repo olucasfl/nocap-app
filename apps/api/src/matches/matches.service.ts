@@ -38,6 +38,9 @@ interface Who {
   playerId: string;
 }
 
+/** Quantas partidas aparecem na atividade recente do perfil de um amigo (no máximo). */
+export const RECENT_MATCHES = 5;
+
 @Injectable()
 export class MatchesService {
   constructor(private readonly repo: MatchesRepository) {}
@@ -185,8 +188,12 @@ export class MatchesService {
    * As últimas partidas da conta, só o que um amigo pode ver: jogo, modo, tipo, quando, nota e
    * colocação (nunca a seed nem as respostas).
    */
-  async recentOf(userId: string, limit: number) {
-    const page = await this.repo.history(await this.repo.playerIdsOf(userId), limit);
+  async recentOf(userId: string, limit = RECENT_MATCHES) {
+    // Nunca mais que o teto, mesmo que alguém peça mais.
+    const page = await this.repo.history(
+      await this.repo.playerIdsOf(userId),
+      Math.min(limit, RECENT_MATCHES),
+    );
     return page.items.map((i) => ({
       game: i.game,
       mode: i.mode,

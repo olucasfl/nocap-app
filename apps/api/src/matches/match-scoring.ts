@@ -193,6 +193,12 @@ export function scoreBatidaMatch(
     totalTenths: run.tenths,
     // O histórico não guarda os toques (seriam milhares de números por partida).
     encodedAnswers: [],
-    settings: { mode: `batida-${input.song.id}`, scoreVersion: 1, perfect: run.perfect, good: run.good, missed: run.missed },
+    settings: {
+      mode: `batida-${input.song.id}`,
+      scoreVersion: 1,
+      perfect: run.perfect,
+      good: run.good,
+      missed: run.missed,
+    },
   };
 }
