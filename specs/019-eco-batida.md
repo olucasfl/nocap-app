@@ -1,6 +1,8 @@
 # 019 · Ecooo Batida (modo estilo Guitar Hero)
 
-Status: **rascunho** (10/10/2026). Ideia do Lucas, nada implementado. O Lucas vai ler e decidir as perguntas da seção "Decisões em aberto" antes de começar. Quando aprovada, a ordem de trabalho está em "Plano".
+Status: **rascunho, decisões do Lucas registradas** (10/10/2026). Nada implementado. Falta decidir só a **música** (seção "Música: o que dá para fazer de verdade").
+
+**Decidido pelo Lucas:** barra de energia; multiplicadores; Perfeito, Bom e Errou; errar soa errado; formas junto das cores. **Calibração de atraso:** só **oferecida de canto** (um botão "Ajustar atraso" nos ajustes do modo); nunca pergunta toda vez antes de jogar. Se a pessoa nunca calibrou, o jogo usa um atraso padrão e segue.
 
 ## O que é
 
@@ -8,7 +10,17 @@ Um modo novo dentro do **Ecooo**: 5 pistas de cor na parte de baixo da tela e no
 
 Diferença para o Ecooo de hoje: lá se **memoriza e repete** uma sequência; aqui se **reage no tempo certo** a uma música que está tocando. Mesma identidade (cores, formas e sons dos botões), outra habilidade.
 
-## Música
+## Música: o que dá para fazer de verdade
+
+**Dúvida do Lucas (10/10/2026): "acho que não dá certo música".** Faz sentido: música gerada por código não soa como uma música de verdade, e nenhuma versão aqui vai competir com Guitar Hero. Em ordem de ambição:
+
+- **A) Só sons (o mais seguro).** Cada pista tem uma nota e cada acerto toca a nota; por baixo, só um **batimento de bumbo e caixa** marcando o andamento. Não é música, é ritmo com notas. Ao acelerar, o batimento acelera. É a opção que menos arrisca soar estranha.
+- **B) Base simples em loop (meio-termo).** Além do batimento, um baixo e uma harmonia curtos em loop (estilo videogame antigo, "chiptune"), e as notas que a pessoa toca seguem os acordes. Soa como trilha de jogo de 8 bits, não como banda. Dá para ouvir num protótipo antes de decidir.
+- **C) Fases compostas à mão (depois).** Músicas curtas e originais feitas nota a nota. Soam bem, mas cada uma dá trabalho e vira conteúdo a produzir.
+
+Sugestão: **começar pela A**, deixando a B como um protótipo para escutar. Se não ficar bom, ficamos na A, que já funciona como jogo de ritmo.
+
+### Como era o plano original (referência)
 
 - **Nada de arquivo de áudio.** O app já sintetiza os sons do Ecooo pela Web Audio (`lib/sfx.ts`, `ecoPad`). Cada uma das 5 pistas vira uma **nota de uma escala pentatônica** (nunca desafina). Acertar toca a nota da pista, e por baixo entra uma **base automática** (bumbo, caixa e baixo) no andamento atual.
 - **A seed compõe a música** (progressão de acordes + padrões de melodia), então cada partida é diferente, e o **Daily é a música do dia** para todo mundo. Funciona offline.
@@ -36,7 +48,7 @@ Diferença para o Ecooo de hoje: lá se **memoriza e repete** uma sequência; aq
 - Pistas na parte de baixo, **botões grandes para os dois polegares**, a retrato. Forma junto da cor (acessibilidade).
 - Topo: pontos, combo/multiplicador e barra de energia.
 - Feedback imediato: o botão acende, aparece "Perfeito" ou "Bom", vibração curta (`buzz`) nos acertos.
-- Antes da primeira partida: **calibração de atraso** (toque no ritmo umas 8 vezes) e aviso de som.
+- **Calibração de atraso** (toque no ritmo umas 8 vezes): fica de canto, num botão "Ajustar atraso" nas opções do modo. Não aparece antes de cada partida. Sem calibrar, vale um atraso padrão. Aviso de som só na primeira vez.
 
 ## Técnico
 
