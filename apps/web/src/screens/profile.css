@@ -187,3 +187,10 @@
   font-weight: 700;
   color: var(--muted);
 }
+
+.pf-danger {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}

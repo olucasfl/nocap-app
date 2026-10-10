@@ -1,5 +1,7 @@
-import { Link, getRouteApi } from '@tanstack/react-router';
-import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { Link, getRouteApi, useNavigate } from '@tanstack/react-router';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { BackButton } from '@/components/BackButton';
 import { LoadFailed } from '@/components/LoadFailed';
 import { Loader } from '@/components/Loader';
@@ -7,6 +9,7 @@ import { Records } from '@/components/Records';
 import {
   ago,
   fetchFriendProfile,
+  removeFriend,
   presenceText,
   type FriendProfile as FriendProfileData,
   type RecentMatch,
@@ -110,7 +113,58 @@ function Details({ data: raw }: { data: FriendProfileData }) {
 
       <h2 className="mono fr-title">RECORDES</h2>
       <Records stats={data.stats} />
+      <RemoveFriend username={data.username} />
     </>
+  );
+}
+
+/** Desfazer a amizade: fica aqui no perfil (longe dos toques da lista) e pede confirmação. */
+function RemoveFriend({ username }: { username: string }) {
+  const [asking, setAsking] = useState(false);
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const remove = useMutation({
+    mutationFn: () => removeFriend(username),
+    onSuccess: async () => {
+      // Amigos novos ou removidos mudam o recorte "Amigos" do ranking.
+      void queryClient.invalidateQueries({ queryKey: ['ranking'] });
+      await queryClient.invalidateQueries({ queryKey: ['friends'] });
+      queryClient.removeQueries({ queryKey: ['friend-profile', username] });
+      await navigate({ to: '/amigos' });
+    },
+    onError: () => setError('Não deu para remover agora. Tente de novo.'),
+  });
+  return (
+    <section className="pf-danger" aria-label="Remover amigo">
+      {error && (
+        <p className="acc-failure mono" role="alert">
+          {error}
+        </p>
+      )}
+      <button
+        type="button"
+        className="btn ghost"
+        data-sfx="remove"
+        disabled={remove.isPending}
+        onClick={() => setAsking(true)}
+      >
+        {remove.isPending ? 'Removendo...' : `Remover @${username} dos amigos`}
+      </button>
+      <ConfirmDialog
+        open={asking}
+        title="Remover amigo?"
+        text={`@${username} sai da sua lista de amigos e vocês deixam de aparecer no ranking um do outro. Para voltar, é preciso pedir amizade de novo.`}
+        confirmLabel="Remover"
+        confirmSfx="remove"
+        onConfirm={() => {
+          setAsking(false);
+          setError('');
+          remove.mutate();
+        }}
+        onCancel={() => setAsking(false)}
+      />
+    </section>
   );
 }
 

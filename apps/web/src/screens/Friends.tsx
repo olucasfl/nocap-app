@@ -3,7 +3,6 @@ import { Loader } from '@/components/Loader';
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { Link } from '@tanstack/react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Field } from '@/components/Field';
 import { ApiError } from '@/lib/api-client';
 import { useAuth } from '@/lib/auth';
@@ -149,8 +148,6 @@ function Search({ onChanged }: { onChanged: () => void }) {
 }
 
 export function Friends() {
-  /** Amigo que a pessoa tocou em "Remover": a remoção só acontece depois de confirmar. */
-  const [removing, setRemoving] = useState<string | null>(null);
   const { user, status } = useAuth();
   const queryClient = useQueryClient();
   const list = useQuery({ queryKey: ['friends'], queryFn: fetchFriends, enabled: !!user });
@@ -372,68 +369,61 @@ export function Friends() {
               </div>
               <p className="mono fr-hint">
                 {shown.length === data.friends.length
-                  ? `${data.friends.length} ${data.friends.length === 1 ? 'AMIGO' : 'AMIGOS'} · TOQUE EM UM PARA VER O PERFIL`
+                  ? `${data.friends.length} ${data.friends.length === 1 ? 'AMIGO' : 'AMIGOS'} · TOQUE EM UM PARA ABRIR`
                   : `${shown.length} DE ${data.friends.length} AMIGOS`}
               </p>
               {shown.length === 0 && <p className="lead">Ninguém com esse @usuário.</p>}
-              <ul className="fr-friends">
-                {shown.map((p) => (
-                  <li key={p.username}>
-                    <Link
-                      to="/amigos/$username"
-                      params={{ username: p.username }}
-                      className="fr-friend"
-                      data-sfx="select"
+              {[
+                ['ONLINE', shown.filter((p) => p.online)],
+                ['OFFLINE', shown.filter((p) => !p.online)],
+              ].map(
+                ([label, group]) =>
+                  (group as typeof shown).length > 0 && (
+                    <section
+                      key={label as string}
+                      className="fr-group"
+                      aria-label={label as string}
                     >
-                      <span className="fr-avatar" aria-hidden="true">
-                        {p.username.charAt(0).toUpperCase()}
-                        <i className={`fr-dot${p.online ? ' on' : ''}`} />
-                      </span>
-                      <span className="fr-friend-body">
-                        <b className="fr-name">@{p.username}</b>
-                        <span className={`mono fr-presence${p.online ? ' on' : ''}`}>
-                          {presenceText(p)}
-                        </span>
-                        <span className="mono fr-last">
-                          {p.lastPlayed
-                            ? `Jogou ${gameLabel(p.lastPlayed.game)} ${ago(p.lastPlayed.playedAt)}`
-                            : 'Ainda não jogou'}
-                        </span>
-                      </span>
-                      <span className="fr-go-profile">
-                        Perfil <span aria-hidden="true">›</span>
-                      </span>
-                    </Link>
-                    <button
-                      type="button"
-                      className="fr-remove"
-                      data-sfx="remove"
-                      disabled={lock}
-                      aria-busy={busyId === `remove:${p.username}`}
-                      onClick={() => setRemoving(p.username)}
-                    >
-                      {busyId === `remove:${p.username}` ? 'Removendo...' : 'Remover amigo'}
-                    </button>
-                  </li>
-                ))}
-              </ul>
+                      <h3 className="mono fr-group-title">
+                        {label as string} · {(group as typeof shown).length}
+                      </h3>
+                      <ul className="fr-list2">
+                        {(group as typeof shown).map((p) => (
+                          <li key={p.username}>
+                            <Link
+                              to="/amigos/$username"
+                              params={{ username: p.username }}
+                              className="fr-row2"
+                              data-sfx="select"
+                            >
+                              <span className="fr-avatar sm" aria-hidden="true">
+                                {p.username.charAt(0).toUpperCase()}
+                                <i className={`fr-dot${p.online ? ' on' : ''}`} />
+                              </span>
+                              <span className="fr-row2-body">
+                                <b className="fr-name">@{p.username}</b>
+                                <span className={`mono fr-row2-sub${p.online ? ' on' : ''}`}>
+                                  {p.online
+                                    ? 'Online agora'
+                                    : presenceText(p).replace('Ainda não entrou', 'Nunca entrou')}
+                                  {p.lastPlayed &&
+                                    ` · ${gameLabel(p.lastPlayed.game)} ${ago(p.lastPlayed.playedAt)}`}
+                                </span>
+                              </span>
+                              <span className="fr-chev" aria-hidden="true">
+                                ›
+                              </span>
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  ),
+              )}
             </>
           )}
         </section>
       )}
-      <ConfirmDialog
-        open={removing !== null}
-        title="Remover amigo?"
-        text={`@${removing ?? ''} sai da sua lista de amigos e vocês deixam de aparecer no ranking um do outro. Para voltar, é preciso pedir amizade de novo.`}
-        confirmLabel="Remover"
-        confirmSfx="remove"
-        onConfirm={() => {
-          const who = removing;
-          setRemoving(null);
-          if (who) mutate.mutate({ id: `remove:${who}`, run: () => removeFriend(who) });
-        }}
-        onCancel={() => setRemoving(null)}
-      />
     </main>
   );
 }

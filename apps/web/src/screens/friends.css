@@ -313,7 +313,7 @@
   overflow-wrap: anywhere;
 }
 
-/* Lista de amigos: cada pessoa é uma linha-botão com "Perfil ›"; busca sempre à vista. */
+/* Pesquisa e lista de amigos: um cartão por grupo, linhas compactas com seta. */
 .fr-find {
   display: flex;
   gap: 8px;
@@ -321,7 +321,7 @@
 .fr-find-input {
   flex: 1;
   min-width: 0;
-  height: 48px;
+  height: 46px;
   padding: 0 14px;
   background: var(--white);
   color: var(--ink);
@@ -350,74 +350,99 @@
   letter-spacing: 0.06em;
   color: var(--muted);
 }
-.fr-friends {
+.fr-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.fr-group-title {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.fr-list2 {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.fr-friend {
-  display: grid;
-  grid-template-columns: 56px 1fr auto;
-  align-items: center;
-  gap: 12px;
-  padding: 12px;
   background: var(--white);
-  color: var(--ink);
-  text-decoration: none;
   border: var(--border);
   border-radius: var(--radius-sm);
-  box-shadow: 4px 4px 0 var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+  overflow: hidden;
 }
-.fr-friend:active {
-  transform: translate(3px, 3px);
-  box-shadow: 1px 1px 0 var(--ink);
+.fr-list2 li + li {
+  border-top: 2px solid var(--ink);
 }
-.fr-friend:focus-visible {
+.fr-row2 {
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 12px;
+  color: var(--ink);
+  text-decoration: none;
+}
+.fr-row2:active {
+  background: var(--softer, var(--paper));
+}
+.fr-row2:focus-visible {
   outline: 3px solid var(--blue);
-  outline-offset: 3px;
+  outline-offset: -3px;
 }
-.fr-friend .fr-avatar {
-  width: 56px;
-  height: 56px;
-  border-radius: 14px;
-  font-size: 28px;
+.fr-avatar.sm {
+  grid-area: auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  font-size: 22px;
 }
-.fr-friend-body {
+.fr-avatar.sm .fr-dot {
+  width: 14px;
+  height: 14px;
+  right: -4px;
+  bottom: -4px;
+}
+.fr-row2-body {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
   min-width: 0;
 }
-.fr-friend-body .fr-last {
-  text-align: left;
-}
-.fr-go-profile {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 40px;
-  padding: 0 12px;
-  background: var(--orange);
-  color: var(--on-accent);
-  border: var(--border);
-  border-radius: 10px;
-  font: 900 13px var(--font-display);
-  text-transform: uppercase;
-}
-.fr-friends li {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.fr-friends .fr-remove {
-  align-self: flex-end;
-}
-
-/* As linhas antigas (.fr-who) nomeiam áreas de grade; aqui a grade é outra. */
-.fr-friend .fr-avatar,
-.fr-friend .fr-name {
+.fr-row2-body .fr-name {
   grid-area: auto;
+  font-size: 16px;
+}
+.fr-row2-sub {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fr-row2-sub.on {
+  color: var(--green);
+}
+.fr-chev {
+  font: 900 26px/1 var(--font-display);
+  color: var(--muted);
+}
+@media (min-width: 700px) {
+  .fr-list2 {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .fr-list2 li + li {
+    border-top: 0;
+  }
+  .fr-list2 li {
+    border-top: 2px solid var(--ink);
+  }
+  .fr-list2 li:nth-child(-n + 2) {
+    border-top: 0;
+  }
+  .fr-list2 li:nth-child(odd) {
+    border-right: 2px solid var(--ink);
+  }
 }
