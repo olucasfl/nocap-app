@@ -12,6 +12,7 @@ type Done = 'share' | 'link' | 'code' | null;
 /** Convidar: enviar o link, copiar o link ou o código e, embaixo, chamar amigos do NoCap. */
 export function InvitePanel({ snapshot }: { snapshot: RoomSnapshot }) {
   const invited = useRoom((s) => s.invited);
+  const invitedEver = useRoom((s) => s.invitedEver);
   const friends = useQuery({ queryKey: ['friends'], queryFn: fetchFriends });
   const [done, setDone] = useState<Done>(null);
   const [filter, setFilter] = useState('');
@@ -139,7 +140,7 @@ export function InvitePanel({ snapshot }: { snapshot: RoomSnapshot }) {
                     data-sfx="send"
                     onClick={() => inviteFriend(u.username)}
                   >
-                    Convidar
+                    {invitedEver.includes(u.username) ? 'Convidar de novo' : 'Convidar'}
                   </button>
                 )}
               </li>
@@ -189,7 +190,7 @@ export function InvitePanel({ snapshot }: { snapshot: RoomSnapshot }) {
                     data-sfx="send"
                     onClick={() => inviteFriend(f.username)}
                   >
-                    Convidar
+                    {invitedEver.includes(f.username) ? 'Convidar de novo' : 'Convidar'}
                   </button>
                 )}
               </li>

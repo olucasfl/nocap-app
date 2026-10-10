@@ -44,3 +44,12 @@
   outline: 3px solid var(--blue);
   outline-offset: 2px;
 }
+.invite-more {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.invite-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}

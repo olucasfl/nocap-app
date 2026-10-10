@@ -1,7 +1,7 @@
 import type { Room } from 'colyseus.js';
 import type { Hsb, LeaderRule, TimeSettings } from '@nocap/games';
 import { create } from 'zustand';
-import { apiBase } from './api-client';
+import { ApiError, apiBase, apiClient } from './api-client';
 import { getToken, useAuth } from './auth';
 
 export type RoomGame = 'color' | 'time' | 'impostor' | 'eco' | 'party';
@@ -259,8 +259,10 @@ export type RoomStatus = 'idle' | 'connecting' | 'connected' | 'reconnecting' | 
 interface RoomState {
   status: RoomStatus;
   snapshot: RoomSnapshot | null;
-  /** @usuários que já convidei para esta sala (some o botão e mostra "Convite enviado"). */
+  /** @usuários que convidei há pouco (o botão fica "Enviado" por alguns segundos e volta). */
   invited: string[];
+  /** Quem já convidei alguma vez nesta sala (o botão vira "Convidar de novo"). */
+  invitedEver: string[];
   /** Último erro de regra (ex.: "Falta gente marcar pronto") ou motivo de ter saído. */
   message: string;
   /** De qual jogo era a última sala: ao sair, a pessoa volta para a página dele. */
@@ -274,12 +276,15 @@ export const useRoom = create<RoomState>(() => ({
   status: 'idle',
   snapshot: null,
   invited: [],
+  invitedEver: [],
   message: '',
   lastGame: null,
   chat: [],
   unread: 0,
 }));
 
+/** Quanto tempo o botão Convidar fica em "Enviado" antes de poder chamar a pessoa de novo. */
+export const INVITE_COOLDOWN_MS = 8_000;
 const TOKEN_KEY = 'nocap-room-token';
 const wsUrl = () => apiBase.replace(/^http/, 'ws');
 /** O cliente Colyseus é pesado: só carrega quando alguém entra numa sala (o aviso de convite não precisa dele). */
@@ -289,6 +294,11 @@ async function client() {
 }
 
 let room: Room | null = null;
+/**
+ * Muda a cada saída ou nova conexão. Uma reconexão que começou antes disso é de uma sala que a
+ * pessoa já deixou, e não pode puxá-la de volta quando finalmente conectar.
+ */
+let epoch = 0;
 let offsets: number[] = [];
 let lastRtt = 0;
 
@@ -302,6 +312,21 @@ export function serverNow(): number {
 export const toLocal = (serverMs: number): number => serverMs - (serverNow() - Date.now());
 
 const set = (patch: Partial<RoomState>) => useRoom.setState(patch);
+
+/** A conta já está em uma sala (outra que a pedida): só entra depois de sair dela. */
+export class RoomConflictError extends Error {
+  constructor(readonly code: string | null) {
+    super(code ? `Você já está na sala ${code}.` : 'Você já está em outra sala.');
+  }
+}
+
+/** Erro do servidor "Você já está na sala ABCD" vira `RoomConflictError` (com o código, se veio). */
+function asConflict(e: unknown): RoomConflictError | null {
+  if (e instanceof RoomConflictError) return e;
+  const message = e instanceof Error ? e.message : '';
+  if (!/já está (na sala|em outra sala)/i.test(message)) return null;
+  return new RoomConflictError(/sala ([A-Z]{4})/.exec(message)?.[1] ?? null);
+}
 
 /** Mensagem em pt-BR para erro de entrada (sala inexistente, cheia, sem login...). */
 export function joinErrorMessage(e: unknown): string {
@@ -360,9 +385,19 @@ function attach(r: Room) {
   r.onMessage('chatHistory', (list: ChatMessage[]) => set({ chat: list, unread: 0 }));
   r.onMessage('closed', () => finish('A sala foi encerrada pelo líder.'));
   r.onMessage('error', (m: string) => set({ message: m }));
-  r.onMessage('invited', (m: { username: string }) =>
-    set({ invited: [...new Set([...useRoom.getState().invited, m.username])], message: '' }),
-  );
+  r.onMessage('invited', (m: { username: string }) => {
+    const s = useRoom.getState();
+    set({
+      invited: [...new Set([...s.invited, m.username])],
+      invitedEver: [...new Set([...s.invitedEver, m.username])],
+      message: '',
+    });
+    // Convite enviado não trava o botão para sempre: dá para chamar a pessoa de novo.
+    setTimeout(() => {
+      if (room !== r) return;
+      set({ invited: useRoom.getState().invited.filter((u) => u !== m.username) });
+    }, INVITE_COOLDOWN_MS);
+  });
   r.onLeave((code) => {
     if (room !== r) return;
     // 4000: saí por conta própria; 4001: fui expulso; 4002: entrei por outro aparelho.
@@ -375,8 +410,17 @@ function attach(r: Room) {
 
 function finish(message: string) {
   room = null;
+  epoch++;
   remember(null);
-  set({ status: 'closed', snapshot: null, invited: [], message, chat: [], unread: 0 });
+  set({
+    status: 'closed',
+    snapshot: null,
+    invited: [],
+    invitedEver: [],
+    message,
+    chat: [],
+    unread: 0,
+  });
 }
 
 /**
@@ -386,17 +430,24 @@ function finish(message: string) {
 async function reconnect(tries = 30) {
   const token = sessionStorage.getItem(TOKEN_KEY);
   if (!token) return finish('A conexão com a sala caiu.');
+  const mine = epoch;
   set({ status: 'reconnecting' });
   for (let i = 0; i < tries; i++) {
-    if (room) return; // outra tentativa já conectou
+    if (room || epoch !== mine) return; // conectou por outro caminho, ou a pessoa já saiu
     try {
-      attach(await (await client()).reconnect(token));
+      const back = await (await client()).reconnect(token);
+      if (epoch !== mine) {
+        // Saiu enquanto a conexão se refazia: não fica na sala escondida.
+        void back.leave(true);
+        return;
+      }
+      attach(back);
       return;
     } catch {
       await new Promise((r) => setTimeout(r, 2000));
     }
   }
-  if (room) return;
+  if (room || epoch !== mine) return;
   finish(tries < 30 ? '' : 'Não deu para voltar para a sala.');
 }
 
@@ -418,34 +469,68 @@ export function resumeRoom(): Promise<boolean> {
   return resuming;
 }
 
-export async function createRoom(game: RoomGame = 'color') {
-  set({ status: 'connecting', message: '', snapshot: null, lastGame: null });
+/**
+ * Entrar ou criar com a conta já numa sala: só depois de sair dela. Quem está conectado aqui
+ * recebe o conflito direto; o resto o servidor responde (409) e `asConflict` traduz.
+ */
+function assertFree(code?: string) {
+  const live = useRoom.getState().snapshot?.code;
+  if (room && live && live !== code) throw new RoomConflictError(live);
+}
+
+async function connect(open: (c: Awaited<ReturnType<typeof client>>) => Promise<Room>) {
+  set({ status: 'connecting', message: '' });
   try {
-    attach(await (await client()).create(game, { token: getToken() }));
+    const r = await open(await client());
+    set({ snapshot: null, lastGame: null });
+    attach(r);
   } catch (e) {
-    set({ status: 'idle' });
+    // Falhou: se ainda há sala viva aqui, ela continua sendo a sala da pessoa.
+    set({ status: room ? 'connected' : 'idle' });
+    const conflict = asConflict(e);
+    if (conflict) throw conflict;
     throw new Error(joinErrorMessage(e));
   }
 }
 
+export async function createRoom(game: RoomGame = 'color') {
+  assertFree();
+  await connect((c) => c.create(game, { token: getToken() }));
+}
+
 export async function joinRoom(code: string) {
-  set({ status: 'connecting', message: '', snapshot: null, lastGame: null });
-  try {
-    attach(await (await client()).joinById(code.trim().toUpperCase(), { token: getToken() }));
-  } catch (e) {
-    set({ status: 'idle' });
-    throw new Error(joinErrorMessage(e));
-  }
+  const wanted = code.trim().toUpperCase();
+  if (room && useRoom.getState().snapshot?.code === wanted) return; // já estou nela
+  assertFree(wanted);
+  await connect((c) => c.joinById(wanted, { token: getToken() }));
 }
 
 export function clearLastGame() {
   useRoom.setState({ lastGame: null });
 }
 
-export function leaveRoom() {
+/** O servidor responde "saiu" mesmo que a conexão da sala já tenha caído. */
+export const leaveRoomOnServer = () =>
+  apiClient.post<{ left: boolean }>('/me/room/leave', {}).catch((e: unknown) => {
+    // Sem sessão não há o que desfazer lá; qualquer outro erro, quem chamou decide.
+    if (e instanceof ApiError && e.status === 401) return { left: false };
+    throw e;
+  });
+
+/**
+ * Sair da sala. A tela já fica livre na hora; por baixo, avisa a sala pela conexão e também o
+ * servidor pelo HTTP, que vale mesmo quando a conexão caiu (senão a conta ficaria "dentro" por
+ * até um minuto, sem ninguém dizer isso).
+ */
+export async function leaveRoom(): Promise<void> {
   const r = room;
   finish('');
-  void r?.leave(true);
+  const viaSocket = r
+    ? Promise.race([r.leave(true), new Promise((ok) => setTimeout(ok, 1500))]).catch(
+        () => undefined,
+      )
+    : Promise.resolve();
+  await Promise.all([viaSocket, leaveRoomOnServer().catch(() => undefined)]);
 }
 
 /** Convida um amigo para a sala em que estou (só no lobby). */

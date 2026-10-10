@@ -29,12 +29,15 @@ export class InvitesStore {
     return list;
   }
 
-  /** Mesma pessoa chamando para a mesma sala várias vezes vira um convite só (o mais novo). */
+  /**
+   * Mesma pessoa chamando para a mesma sala várias vezes vira um convite só, e ele mantém o `id`:
+   * quem recebe não vê aviso novo (nem ouve o som de novo) por um reenvio; só o prazo renova.
+   */
   add(input: Omit<Invite, 'id' | 'createdAt'>): Invite {
-    const list = this.fresh(input.toUserId).filter(
-      (i) => !(i.fromUserId === input.fromUserId && i.code === input.code),
-    );
-    const invite: Invite = { ...input, id: randomUUID(), createdAt: this.now() };
+    const all = this.fresh(input.toUserId);
+    const same = all.find((i) => i.fromUserId === input.fromUserId && i.code === input.code);
+    const list = all.filter((i) => i !== same);
+    const invite: Invite = { ...input, id: same?.id ?? randomUUID(), createdAt: this.now() };
     // Passou do limite: descarta os mais antigos (anti-spam contra quem recebe).
     this.byUser.set(input.toUserId, [...list, invite].slice(-MAX_PENDING_PER_USER));
     return invite;

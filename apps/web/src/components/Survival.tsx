@@ -5,7 +5,6 @@ import type { Board } from '@/lib/ranking';
 import { EndActions } from './EndActions';
 import type { GameTab } from './GameTabs';
 import { useReveal } from '@/lib/useReveal';
-import { NewRecord } from './NewRecord';
 import { SURVIVAL_LIVES } from '@nocap/games';
 import './survival.css';
 
@@ -125,7 +124,7 @@ export function SurvivalFinal({
   rows,
   table,
   saveText,
-  record,
+  summary,
   onMenu,
   onRematch,
 }: {
@@ -138,8 +137,8 @@ export function SurvivalFinal({
   saveText: string;
   /** Volta ao menu do jogo (ranking do modo ou lista de modos). */
   onMenu: (tab: GameTab, board?: Board) => void;
-  /** Bateu o recorde do modo: mostra o aviso animado. */
-  record?: { now: string; before: string } | null;
+  /** Nota contra o recorde e lugar no ranking (o `MatchSummary` do jogo). */
+  summary?: ReactNode;
   onRematch: () => void;
 }) {
   // Rodada por rodada: o número de rodadas sobe junto com as linhas que aparecem.
@@ -172,7 +171,7 @@ export function SurvivalFinal({
           ))}
         </ul>
       )}
-      {done && record && <NewRecord now={record.now} before={record.before} />}
+      {done && summary}
       <p className="sv-save mono" role="status">
         {saveText}
       </p>

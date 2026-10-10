@@ -11,7 +11,8 @@ import {
 import type { GameTab } from '@/components/GameTabs';
 import { useQueryClient } from '@tanstack/react-query';
 import { MuteButton } from '@/components/MuteButton';
-import { bestTenths, formatBest, isNewRecord, type Stats } from '@/lib/stats';
+import { bestTenths, type Stats } from '@/lib/stats';
+import { MatchSummary } from '@/components/MatchSummary';
 import { SurvivalBar, SurvivalFinal, SurvivalVerdict } from '@/components/Survival';
 import { rankingLink, type Board } from '@/lib/ranking';
 import { apiClient } from '@/lib/api-client';
@@ -308,13 +309,15 @@ function SurvivalFinalTime({
       saveText={SAVE_TEXT[save]}
       limit={SURVIVAL_MAX_ROUNDS.time}
       onMenu={onMenu}
-      record={
-        isNewRecord(previousBest, state.played * 10)
-          ? {
-              now: formatBest('time', 'survival', state.played * 10),
-              before: formatBest('time', 'survival', previousBest!),
-            }
-          : null
+      summary={
+        <MatchSummary
+          game="time"
+          mode="survival"
+          scoreTenths={state.played * 10}
+          previousBest={previousBest}
+          saved={save === 'saved'}
+          onRanking={() => onMenu('ranking', 'survival')}
+        />
       }
       onRematch={onRematch}
     />

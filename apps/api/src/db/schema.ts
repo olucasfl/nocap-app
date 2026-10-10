@@ -165,3 +165,14 @@ export const userVisits = pgTable(
   },
   (t) => [primaryKey({ columns: [t.userId, t.day] })],
 );
+
+/**
+ * Última vez que a conta esteve com o app aberto (batimento a cada ~45 s). Fica numa tabela à parte
+ * para não mexer na tabela do Better Auth. "Online" é calculado em memória; aqui só sobra o histórico.
+ */
+export const userPresence = pgTable('user_presence', {
+  userId: uuid('user_id')
+    .primaryKey()
+    .references(() => authUser.id, { onDelete: 'cascade' }),
+  lastSeenAt: timestamp('last_seen_at', { withTimezone: true }).notNull(),
+});

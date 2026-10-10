@@ -2,10 +2,9 @@ import { useEffect } from 'react';
 import { Link } from '@tanstack/react-router';
 import { EndActions } from '@/components/EndActions';
 import type { GameTab } from '@/components/GameTabs';
-import { NewRecord } from '@/components/NewRecord';
+import { MatchSummary } from '@/components/MatchSummary';
 import type { Board } from '@/lib/ranking';
 import { saveBest } from '@/lib/records';
-import { formatBest, isNewRecord } from '@/lib/stats';
 import type { RoundResult, Run } from '../types';
 import { SAVE_TEXT, useSaveMatch } from '../useSaveMatch';
 
@@ -29,12 +28,14 @@ export function QuickActions({ run, result, previousBest, onMenu, onAgain }: Pro
   const now = Math.round(result.score * 10);
   return (
     <>
-      {isNewRecord(previousBest, now) && (
-        <NewRecord
-          now={formatBest('color', 'quick', now)}
-          before={formatBest('color', 'quick', previousBest!)}
-        />
-      )}
+      <MatchSummary
+        game="color"
+        mode="quick"
+        scoreTenths={now}
+        previousBest={previousBest}
+        saved={save === 'saved'}
+        onRanking={() => onMenu('ranking', 'quick')}
+      />
       <p className="cg-save" role="status">
         {SAVE_TEXT[save]}
       </p>

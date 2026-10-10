@@ -6,10 +6,9 @@ import { useReveal } from '@/lib/useReveal';
 import { DailyPanel } from '@/components/DailyPanel';
 import { EndActions } from '@/components/EndActions';
 import type { GameTab } from '@/components/GameTabs';
-import { NewRecord } from '@/components/NewRecord';
+import { MatchSummary } from '@/components/MatchSummary';
 import type { Board } from '@/lib/ranking';
 import { saveBest } from '@/lib/records';
-import { formatBest, isNewRecord } from '@/lib/stats';
 import { toHex } from '../hex';
 import type { RoundResult, Run } from '../types';
 import { SAVE_TEXT, useSaveMatch } from '../useSaveMatch';
@@ -61,10 +60,14 @@ export function FinalScreen({ run, results, previousBest, onMenu, onRematch }: P
           </div>
         ))}
       </div>
-      {done && run.kind !== 'daily' && isNewRecord(previousBest, totalTenths) && (
-        <NewRecord
-          now={formatBest('color', run.preset, totalTenths)}
-          before={formatBest('color', run.preset, previousBest!)}
+      {done && run.kind !== 'daily' && (
+        <MatchSummary
+          game="color"
+          mode={run.preset}
+          scoreTenths={totalTenths}
+          previousBest={previousBest}
+          saved={save === 'saved'}
+          onRanking={() => onMenu('ranking', run.preset)}
         />
       )}
       <p className="cg-save" role="status">

@@ -1,0 +1,77 @@
+.rb {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--yellow);
+  color: var(--on-accent);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+.rb-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.rb-tag {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.rb-badge {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+}
+.rb-main {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+.rb-code {
+  font: 900 30px/1 var(--font-display);
+  letter-spacing: 0.04em;
+}
+.rb-info {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  overflow-wrap: anywhere;
+}
+.rb-actions {
+  display: flex;
+  gap: 8px;
+}
+.rb-btn {
+  appearance: none;
+  flex: 1;
+  min-height: 44px;
+  padding: 0 12px;
+  border: var(--border);
+  border-radius: 10px;
+  background: var(--on-accent);
+  color: var(--on-blue);
+  font: 900 13px var(--font-display);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.rb-btn.ghost {
+  flex: 0 0 auto;
+  background: var(--white);
+  color: var(--ink);
+}
+.rb-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.rb-btn:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 2px;
+}

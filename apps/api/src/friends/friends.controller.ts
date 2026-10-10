@@ -34,6 +34,15 @@ export class FriendsController {
     return this.friends.search(req.user.id, query.q);
   }
 
+  /** Batimento do app aberto: alimenta "online" e "visto por último" dos amigos. */
+  @Post('me/ping')
+  @HttpCode(200)
+  @RateLimit({ limit: 12, windowMs: 60_000 })
+  async ping(@Req() req: AuthedRequest) {
+    await this.friends.ping(req.user.id);
+    return { ok: true };
+  }
+
   @Get('friends')
   list(@Req() req: AuthedRequest) {
     return this.friends.list(req.user.id);

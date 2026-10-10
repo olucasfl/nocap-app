@@ -37,7 +37,12 @@ export class MatchesController {
   @RateLimit({ limit: 60, windowMs: 60_000 })
   async friendProfile(@Req() req: AuthedRequest, @Param('username') username: string) {
     const friend = await this.friends.friendByUsername(req.user.id, username.trim().toLowerCase());
-    return { username: friend.username, stats: await this.matches.statsOfUser(friend.id) };
+    const [stats, activity, recent] = await Promise.all([
+      this.matches.statsOfUser(friend.id),
+      this.friends.activityOf(friend.id),
+      this.matches.recentOf(friend.id, 20),
+    ]);
+    return { username: friend.username, stats, ...activity, recent };
   }
 
   /** Só com conta: o convidado pode ver o app, mas não joga. */

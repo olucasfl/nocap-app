@@ -1,0 +1,222 @@
+/* Fim da partida: nota x recorde e lugar no ranking. A cor segue o veredito. */
+.ms {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  background: var(--white);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+.ms-record {
+  background: var(--yellow);
+  color: var(--on-accent);
+}
+.ms-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+.ms-record .ms-label {
+  color: inherit;
+}
+.ms-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.ms-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--paper);
+  color: var(--ink);
+}
+.ms-cell b {
+  font: 900 34px/1 var(--font-display);
+  letter-spacing: -0.04em;
+}
+.ms-cell small {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.ms-cell.now {
+  background: var(--orange);
+  color: var(--on-accent);
+}
+.ms-cell.now .ms-label {
+  color: inherit;
+}
+.ms-record .ms-cell.now {
+  background: var(--ink);
+  color: var(--yellow);
+}
+
+/* Barra: o preenchimento é a nota desta partida; o risco é o recorde. */
+.ms-meter {
+  position: relative;
+  height: 18px;
+  border: var(--border);
+  border-radius: 999px;
+  background: var(--paper);
+  overflow: visible;
+}
+.ms-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--orange);
+  border-radius: 999px 0 0 999px;
+  transform-origin: left center;
+  animation: ms-grow 0.7s ease-out both;
+}
+.ms-record .ms-fill {
+  background: var(--ink);
+}
+.ms-mark {
+  position: absolute;
+  top: -6px;
+  bottom: -6px;
+  width: 4px;
+  margin-left: -2px;
+  background: var(--ink);
+  border-radius: 2px;
+}
+.ms-record .ms-mark {
+  background: var(--on-accent);
+}
+@keyframes ms-grow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+.ms-verdict {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+/* Lugar no ranking. */
+.ms-rank {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  background: var(--white);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+.ms-rank-head {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ms-seg {
+  display: flex;
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--paper);
+}
+.ms-seg button {
+  appearance: none;
+  flex: 1;
+  height: 38px;
+  background: transparent;
+  color: var(--ink);
+  border: 0;
+  border-right: 2px solid var(--ink);
+  font: 700 12px var(--font-mono);
+  cursor: pointer;
+}
+.ms-seg button:last-child {
+  border-right: 0;
+}
+.ms-seg button[aria-checked='true'] {
+  background: var(--blue);
+  color: var(--on-blue);
+  font-weight: 900;
+}
+.ms-seg button:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: -3px;
+}
+.ms-hint {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.ms-rank-main {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.ms-rank-pos {
+  min-width: 64px;
+  font: 900 44px/1 var(--font-display);
+  letter-spacing: -0.05em;
+  color: var(--blue);
+}
+.ms-rank-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ms-rank-text > b {
+  font: 900 16px var(--font-display);
+}
+.ms-rank-text .mono {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.ms-top {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ms-top li {
+  display: grid;
+  grid-template-columns: 32px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--paper);
+  border: var(--border);
+  border-radius: 10px;
+}
+.ms-top li.me {
+  background: var(--yellow);
+  color: var(--on-accent);
+}
+.ms-top-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 900 14px var(--font-display);
+}
+.ms-top b {
+  font: 900 16px var(--font-display);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ms-fill {
+    animation: none;
+  }
+}

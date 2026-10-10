@@ -16,7 +16,8 @@ import {
 } from '@nocap/games';
 import { useQueryClient } from '@tanstack/react-query';
 import { MuteButton } from '@/components/MuteButton';
-import { bestTenths, formatBest, isNewRecord, type Stats } from '@/lib/stats';
+import { bestTenths, type Stats } from '@/lib/stats';
+import { MatchSummary } from '@/components/MatchSummary';
 import { SurvivalBar, SurvivalFinal, SurvivalVerdict } from '@/components/Survival';
 import { toHex } from './hex';
 import { FinalScreen } from './screens/FinalScreen';
@@ -264,13 +265,15 @@ function SurvivalFinalColor({
       saveText={SAVE_TEXT[save]}
       limit={SURVIVAL_MAX_ROUNDS.color}
       onMenu={onMenu}
-      record={
-        isNewRecord(previousBest, state.played * 10)
-          ? {
-              now: formatBest('color', 'survival', state.played * 10),
-              before: formatBest('color', 'survival', previousBest!),
-            }
-          : null
+      summary={
+        <MatchSummary
+          game="color"
+          mode="survival"
+          scoreTenths={state.played * 10}
+          previousBest={previousBest}
+          saved={save === 'saved'}
+          onRanking={() => onMenu('ranking', 'survival')}
+        />
       }
       onRematch={onRematch}
     />

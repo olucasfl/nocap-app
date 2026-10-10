@@ -3,10 +3,9 @@ import { Link } from '@tanstack/react-router';
 import { sfx } from '@/lib/sfx';
 import { EndActions } from '@/components/EndActions';
 import type { GameTab } from '@/components/GameTabs';
-import { NewRecord } from '@/components/NewRecord';
+import { MatchSummary } from '@/components/MatchSummary';
 import type { Board } from '@/lib/ranking';
 import { saveBest } from '@/lib/records';
-import { formatBest, isNewRecord } from '@/lib/stats';
 import { GradeFx } from '@/components/GradeFx';
 import { gradeLine, gradeOf, playGrade } from '@/lib/grade';
 import { formatDiff, formatSeconds } from '../format';
@@ -47,12 +46,14 @@ function QuickFooter({
   const now = Math.round(result.score * 10);
   return (
     <>
-      {isNewRecord(previousBest, now) && (
-        <NewRecord
-          now={formatBest('time', 'quick', now)}
-          before={formatBest('time', 'quick', previousBest!)}
-        />
-      )}
+      <MatchSummary
+        game="time"
+        mode="quick"
+        scoreTenths={now}
+        previousBest={previousBest}
+        saved={save === 'saved'}
+        onRanking={() => onMenu('ranking', 'quick')}
+      />
       <p className="tm-save" role="status">
         {SAVE_TEXT[save]}
       </p>

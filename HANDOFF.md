@@ -25,6 +25,8 @@ Tudo está em `main` e publicado (API no Render, web na Vercel, banco no Supabas
 
 **Nomes na tela:** Cor = **Mesmíssima** (o 10 mostra "mesmíssima" no lugar de "cravou"), Tempo = **Já Deu?**, Eco = **Ecooo**. Ids, rotas e código não mudaram (`color`, `time`, `eco`).
 
+**Presença na sala e convites** (`specs/017-presenca-sala.md`, 10/10/2026): sair da sala agora vale no servidor (`POST /me/room/leave`, mesmo com a conexão caída), `GET /me/room` diz em que sala a conta está, o início tem o aviso "Você está na sala ... Voltar / Sair", criar sala é um toque só, estar em outra sala abre um diálogo (voltar ou sair), convites viram fila de um aviso por vez e o botão Convidar volta a funcionar. Teste com servidor Colyseus real em `apps/api/src/rooms/presence.integration.test.ts` (roda em threads: `vitest.config.ts`). Armadilha: nunca pôr `leave` no logo da sala; o logo só vai ao Início.
+
 **Lobby novo da sala** (`specs/013-lobby-sala.md`): uma tela para o líder e outra para os membros, com abas Membros, Regras e Convidar; só o líder altera as regras (o membro só lê). Falta jogar ao vivo com contas reais.
 
 **Banco:** os dados de jogos foram zerados em 07/10/2026 (partidas, pontos e recordes); a conta do Lucas foi mantida. Schema e migrations intactos.

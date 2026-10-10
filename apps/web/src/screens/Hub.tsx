@@ -4,6 +4,7 @@ import { Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { AnimatedText } from '@/components/AnimatedText';
 import { MuteButton } from '@/components/MuteButton';
+import { RoomBanner } from '@/components/RoomBanner';
 import { ThemeButton } from '@/components/ThemeButton';
 import { useAuth } from '@/lib/auth';
 import {
@@ -63,6 +64,8 @@ export function Hub() {
           <MuteButton />
         </div>
       </header>
+
+      <RoomBanner />
 
       <h1 className="hub-title">
         <AnimatedText lines={['O que vai', 'ser hoje?']} />

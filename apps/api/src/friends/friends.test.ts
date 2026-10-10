@@ -72,8 +72,8 @@ describe('FriendsService', () => {
     expect((await s.list(BIA)).incoming).toEqual([{ username: 'ana' }]);
     expect((await s.list(ANA)).outgoing).toEqual([{ username: 'bia' }]);
     await s.accept(BIA, 'ana');
-    expect((await s.list(ANA)).friends).toEqual([{ username: 'bia' }]);
-    expect((await s.list(BIA)).friends).toEqual([{ username: 'ana' }]);
+    expect((await s.list(ANA)).friends).toMatchObject([{ username: 'bia', online: false }]);
+    expect((await s.list(BIA)).friends).toMatchObject([{ username: 'ana' }]);
   });
 
   it('pedido cruzado vira amizade na hora', async () => {

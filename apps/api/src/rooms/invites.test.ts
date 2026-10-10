@@ -24,15 +24,33 @@ describe('InvitesStore', () => {
     expect(store.listFor('caio', open)).toHaveLength(0);
   });
 
-  it('convites repetidos da mesma pessoa para a mesma sala viram um só', () => {
+  it('convites repetidos da mesma pessoa para a mesma sala viram um só, com o mesmo id', () => {
     const { store, clock } = setup();
     const first = store.add(invite());
     clock.advance(10);
     const second = store.add(invite());
     const list = store.listFor('bia', open);
     expect(list).toHaveLength(1);
-    expect(list[0]!.id).toBe(second.id);
-    expect(list[0]!.id).not.toBe(first.id);
+    // Mesmo id: quem recebe não ganha aviso nem som novo por um reenvio.
+    expect(list[0]!.id).toBe(first.id);
+    expect(second.id).toBe(first.id);
+    expect(second.createdAt).toBeGreaterThan(first.createdAt);
+  });
+
+  it('reenviar renova o prazo do convite', () => {
+    const { store, clock } = setup();
+    store.add(invite());
+    clock.advance(INVITE_TTL_MS - 5);
+    store.add(invite());
+    clock.advance(10);
+    expect(store.listFor('bia', open)).toHaveLength(1);
+  });
+
+  it('depois de recusado, um convite novo da mesma pessoa é aviso novo', () => {
+    const { store } = setup();
+    const first = store.add(invite());
+    store.remove('bia', first.id);
+    expect(store.add(invite()).id).not.toBe(first.id);
   });
 
   it('pessoas ou salas diferentes são convites diferentes, os mais novos primeiro', () => {

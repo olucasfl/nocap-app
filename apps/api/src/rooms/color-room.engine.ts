@@ -228,6 +228,23 @@ export class ColorRoomEngine {
     return this.members.has(id);
   }
 
+  /** A conta está na sala e com conexão ativa (fora do período de espera por reconexão). */
+  isConnected(id: string) {
+    return this.members.get(id)?.connected === true;
+  }
+
+  get memberCount() {
+    return this.members.size;
+  }
+
+  get capacity() {
+    return this.maxPlayers;
+  }
+
+  get hostName(): string | null {
+    return (this.hostId && this.members.get(this.hostId)?.username) || null;
+  }
+
   // ---- lobby ----
 
   protected requireHost(id: string) {

@@ -14,8 +14,10 @@ import type { RoomsRepository } from './rooms.repository';
 /** Sem I, O, 0 e 1: letras que se confundem ao ditar o código. */
 const CODE_LETTERS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
 const TICK_MS = 250;
-/** Quanto tempo alguém com a tela bloqueada tem para voltar. */
+/** Quanto tempo alguém com a tela bloqueada tem para voltar no meio da partida. */
 const RECONNECT_SECONDS = 60;
+/** No lobby e no pódio a vaga não fica presa tanto tempo: voltar é só entrar pelo código. */
+const LOBBY_RECONNECT_SECONDS = 25;
 
 /** Dependências que o Nest injeta na inicialização (o Colyseus instancia a sala sozinho). */
 export const roomDeps: {
@@ -46,6 +48,40 @@ async function uniqueCode(): Promise<string> {
   throw new ServerError(503, 'Não foi possível gerar um código de sala');
 }
 
+/** A sala existe neste servidor e a conta ainda é membro dela? */
+function roomOf(roomId: string): ColorRoom | null {
+  try {
+    const room = matchMaker.getLocalRoomById(roomId);
+    return room instanceof ColorRoom ? room : null;
+  } catch {
+    return null;
+  }
+}
+const isMemberOf = (roomId: string, userId: string) => !!roomOf(roomId)?.hasMember(userId);
+
+export type MyRoomInfo = ReturnType<ColorRoom['describeFor']>;
+
+/** A sala em que a conta está agora, ou `null`. Registro que sobrou de sala acabada é limpo aqui. */
+export function myRoomInfo(userId: string): MyRoomInfo | null {
+  const roomId = roomDeps.activeRooms.get(userId);
+  if (!roomId) return null;
+  const room = roomOf(roomId);
+  if (!room?.hasMember(userId)) {
+    roomDeps.activeRooms.delete(userId);
+    return null;
+  }
+  return room.describeFor(userId);
+}
+
+/** Sai da sala atual pelo servidor (vale mesmo com a conexão caída). `true` se estava em alguma. */
+export function leaveMyRoom(userId: string): boolean {
+  const roomId = roomDeps.activeRooms.get(userId);
+  if (!roomId) return false;
+  const room = roomOf(roomId);
+  roomDeps.activeRooms.delete(userId);
+  return room ? room.evict(userId) : false;
+}
+
 /**
  * Sala da Cor. As regras vivem em `ColorRoomEngine`; aqui só há rede: autenticar, repassar
  * mensagens, mandar o estado a todos e cuidar de queda de conexão. Sala é sempre
@@ -56,8 +92,10 @@ export class ColorRoom extends Room {
   protected engine!: ColorRoomEngine;
   protected engineOpts!: ConstructorParameters<typeof ColorRoomEngine>[0];
   private saved = false;
-  /** Quem o servidor mandou sair (expulsão) ou trocou de aparelho: não pode reconectar. */
-  private dismissed = new Map<string, 'kick' | 'replace'>();
+  /** Quem o servidor mandou sair (expulsão, saída pelo app) ou trocou de aparelho: não reconecta. */
+  private dismissed = new Map<string, 'gone' | 'replace'>();
+  /** Reconexões em espera por conta. Cancelar libera a vaga na hora (saída, expulsão, nova conexão). */
+  private waiting = new Map<string, ReturnType<ColorRoom['allowReconnection']>>();
 
   async onCreate() {
     const code = await uniqueCode();
@@ -81,11 +119,8 @@ export class ColorRoom extends Room {
     this.onMessage('kick', (c, m: { id?: string }) =>
       this.act(c, (id) => {
         const target = this.engine.kick(id, String(m?.id ?? ''));
-        const gone = this.clients.find((x) => x.userData?.id === target);
-        if (gone) {
-          this.dismissed.set(gone.sessionId, 'kick');
-          gone.leave(4001);
-        }
+        // Também vale para quem está sem conexão: a reserva dele cai e ele não volta sozinho.
+        this.dropClient(target, 4001);
       }),
     );
     this.onMessage('start', (c) => this.act(c, (id) => this.engine.start(id)));
@@ -159,7 +194,11 @@ export class ColorRoom extends Room {
     // Uma sala por vez: evita uma pessoa abrir salas em série (reconectar na mesma sala vale).
     const current = roomDeps.activeRooms.get(user.id);
     if (current && current !== this.roomId) {
-      throw new ServerError(409, 'Você já está em outra sala. Saia dela primeiro.');
+      // O registro pode ter sobrado de uma sala que já acabou: só vale se a pessoa ainda está nela.
+      if (isMemberOf(current, user.id)) {
+        throw new ServerError(409, `Você já está na sala ${current}. Saia dela primeiro.`);
+      }
+      roomDeps.activeRooms.delete(user.id);
     }
     return { id: user.id, username: user.username };
   }
@@ -178,6 +217,9 @@ export class ColorRoom extends Room {
       throw new ServerError(409, e instanceof RoomError ? e.message : 'Não foi possível entrar');
     }
     client.userData = { id: auth.id, username: auth.username };
+    // Entrou de novo por uma conexão nova (link, código): a espera da conexão antiga não vale mais,
+    // senão ela expiraria depois e tiraria da sala quem está jogando.
+    this.cancelWaiting(auth.id);
     roomDeps.activeRooms.set(auth.id, this.roomId);
     roomDeps.invites?.consume(auth.id, this.roomId);
     this.publish();
@@ -191,22 +233,94 @@ export class ColorRoom extends Room {
     this.dismissed.delete(client.sessionId);
     // Trocou de aparelho: a pessoa continua na sala pelo aparelho novo.
     if (why === 'replace') return;
-    if (consented || why === 'kick') {
+    // Já foi tirada pelo servidor (`dropClient`): a vaga e o registro já foram liberados.
+    if (why === 'gone') return;
+    if (consented) {
       this.engine.leave(user.id);
+      this.cancelWaiting(user.id);
       this.forget(user.id);
       return this.afterLeave();
     }
     this.engine.disconnect(user.id);
     this.publish();
+    const wait = this.allowReconnection(client, this.graceSeconds());
+    this.waiting.set(user.id, wait);
     try {
-      const back = await this.allowReconnection(client, RECONNECT_SECONDS);
+      const back = await wait;
       this.engine.join(user.id, user.username);
       back.send('chatHistory', this.engine.chat.history());
     } catch {
-      this.engine.leave(user.id);
-      this.forget(user.id);
+      // Só expulsa se a espera ainda era esta e a pessoa não voltou por outra conexão.
+      const stale = this.waiting.get(user.id) === wait;
+      if (stale && !this.isLive(user.id)) {
+        this.engine.leave(user.id);
+        this.forget(user.id);
+      }
+    } finally {
+      if (this.waiting.get(user.id) === wait) this.waiting.delete(user.id);
     }
     this.afterLeave();
+  }
+
+  private graceSeconds() {
+    const phase = this.engine.currentPhase;
+    return phase === 'lobby' || phase === 'final' ? LOBBY_RECONNECT_SECONDS : RECONNECT_SECONDS;
+  }
+
+  private isLive(userId: string) {
+    return this.clients.some((c) => (c.userData as AuthData | undefined)?.id === userId);
+  }
+
+  private cancelWaiting(userId: string) {
+    const wait = this.waiting.get(userId);
+    if (!wait) return;
+    this.waiting.delete(userId);
+    wait.reject(false);
+  }
+
+  /** A conta está nesta sala (conectada ou esperando para reconectar). */
+  hasMember(userId: string) {
+    return this.engine.has(userId);
+  }
+
+  /** O que o app mostra em "Você está na sala ...". */
+  describeFor(userId: string) {
+    return {
+      code: this.roomId,
+      game: this.engine.game,
+      phase: this.engine.currentPhase,
+      members: this.engine.memberCount,
+      maxPlayers: this.engine.capacity,
+      host: this.engine.hostName,
+      connected: this.engine.isConnected(userId),
+    };
+  }
+
+  /** Desliga as conexões da conta e cancela a espera de reconexão (expulsão ou saída pelo app). */
+  private dropClient(userId: string | undefined, code: number) {
+    if (!userId) return;
+    this.cancelWaiting(userId);
+    this.forget(userId);
+    for (const c of this.clients) {
+      if ((c.userData as AuthData | undefined)?.id !== userId) continue;
+      this.dismissed.set(c.sessionId, 'gone');
+      c.leave(code);
+    }
+  }
+
+  /**
+   * Tira a conta da sala agora, mesmo que a conexão tenha caído (a tela de quem saiu já fechou e a
+   * conexão antiga ainda estaria "esperando voltar"). É o que o botão Sair garante pelo HTTP.
+   */
+  evict(userId: string): boolean {
+    if (!this.engine.has(userId)) {
+      this.forget(userId);
+      return false;
+    }
+    this.engine.leave(userId);
+    this.dropClient(userId, 4000);
+    this.afterLeave();
+    return true;
   }
 
   /** A pessoa saiu de vez: pode entrar em outra sala. */
@@ -248,7 +362,12 @@ export class ColorRoom extends Room {
       if (this.engine.currentPhase !== 'lobby') {
         throw new RoomError('Só dá para convidar no lobby');
       }
-      const sent = await roomDeps.invites.send(me, String(username ?? ''), this.roomId);
+      const sent = await roomDeps.invites.send(
+        me,
+        String(username ?? ''),
+        this.roomId,
+        (id) => this.engine.has(id),
+      );
       client.send('invited', { username: sent.username });
     } catch (e) {
       client.send('error', e instanceof Error ? e.message : 'Não foi possível convidar');

@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import type { FriendRelation, FriendshipRow, UserRef } from './friends.repository';
 import { FriendsRepository } from './friends.repository';
+import { PresenceService, type LastPlayed, type Presence } from './presence.service';
 
 /** Pedidos de amizade enviados e ainda sem resposta (anti-spam). */
 export const MAX_PENDING_OUT = 50;
@@ -20,7 +21,10 @@ export interface PublicUser {
 
 @Injectable()
 export class FriendsService {
-  constructor(private readonly repo: FriendsRepository) {}
+  constructor(
+    private readonly repo: FriendsRepository,
+    private readonly presence?: PresenceService,
+  ) {}
 
   private async userOrFail(username: string): Promise<UserRef> {
     const user = await this.repo.findUserByUsername(username.trim().toLowerCase());
@@ -54,11 +58,41 @@ export class FriendsService {
     const rows: FriendRelation[] = await this.repo.listFor(me);
     const pick = (f: (r: FriendRelation) => boolean) =>
       rows.filter(f).map((r) => ({ username: r.otherUsername }));
+    const friendRows = rows.filter((r) => r.status === 'accepted');
+    // Online, última visita e último jogo de cada amigo (sem isso a lista ainda funciona).
+    const ids = friendRows.map((r) => (r.requesterId === me ? r.addresseeId : r.requesterId));
+    const [seen, played] = this.presence
+      ? await Promise.all([this.presence.of(ids), this.presence.lastPlayed(ids)])
+      : [new Map<string, Presence>(), new Map<string, LastPlayed>()];
     return {
-      friends: pick((r) => r.status === 'accepted'),
+      friends: friendRows.map((r, i) => ({
+        username: r.otherUsername,
+        online: seen.get(ids[i]!)?.online ?? false,
+        lastSeenAt: seen.get(ids[i]!)?.lastSeenAt ?? null,
+        lastPlayed: played.get(ids[i]!) ?? null,
+      })),
       incoming: pick((r) => r.status === 'pending' && r.addresseeId === me),
       outgoing: pick((r) => r.status === 'pending' && r.requesterId === me),
     };
+  }
+
+  /** Online, última visita e última partida de uma pessoa (perfil de amigo). */
+  async activityOf(userId: string) {
+    if (!this.presence) return { online: false, lastSeenAt: null, lastPlayed: null };
+    const [seen, played] = await Promise.all([
+      this.presence.of([userId]),
+      this.presence.lastPlayed([userId]),
+    ]);
+    return {
+      online: seen.get(userId)?.online ?? false,
+      lastSeenAt: seen.get(userId)?.lastSeenAt ?? null,
+      lastPlayed: played.get(userId) ?? null,
+    };
+  }
+
+  /** A conta está com o app aberto (batimento). */
+  ping(userId: string) {
+    return this.presence?.touch(userId);
   }
 
   /** Se a outra pessoa já tinha pedido, o pedido cruzado vira amizade na hora. */

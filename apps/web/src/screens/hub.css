@@ -430,3 +430,8 @@ a.hub-daily {
     position: static;
   }
 }
+
+/* Aviso "Você está na sala": fica logo abaixo do topo, antes dos jogos. */
+.hub > .rb {
+  margin-top: 14px;
+}

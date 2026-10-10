@@ -13,6 +13,7 @@ import { NetworkStatus } from '@/components/NetworkStatus';
 import { PullToRefresh } from '@/components/PullToRefresh';
 import { parseRankingsSearch, type RankingsSearch } from '@/lib/ranking';
 import { InviteBanner } from '@/components/InviteBanner';
+import { PresenceBeat } from '@/components/PresenceBeat';
 import type { Mode } from '@/games/color/types';
 import type { Mode as TimeMode } from '@/games/time/types';
 import type { Mode as EcoMode } from '@/games/eco/types';
@@ -31,6 +32,7 @@ const rootRoute = createRootRoute({
       <NetworkStatus />
       <Outlet />
       <InviteBanner />
+      <PresenceBeat />
     </>
   ),
 });

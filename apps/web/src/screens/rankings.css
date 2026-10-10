@@ -1,8 +1,21 @@
+/* Ranking: a página inteira usa a cor do jogo escolhido (--accent). */
 .rks {
+  --accent: var(--orange);
+  --on: var(--on-accent);
+  --soft: color-mix(in srgb, var(--accent) 38%, var(--white));
+  --softer: color-mix(in srgb, var(--accent) 18%, var(--white));
   display: flex;
   flex-direction: column;
   gap: 14px;
   padding-bottom: 8px;
+}
+.rks.time {
+  --accent: var(--blue);
+  --on: var(--on-blue);
+}
+.rks.eco {
+  --accent: var(--green);
+  --on: var(--on-accent);
 }
 .rks-head h1 {
   margin: 0;
@@ -52,7 +65,28 @@
   color: var(--on-accent);
 }
 
-/* Modo: chips que quebram de linha (sem rolagem lateral); o Daily tem destaque. */
+/* Painel de filtros: borda e faixa de cima na cor do jogo. */
+.rks-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 12px 10px;
+  background: var(--white);
+  border: var(--border);
+  border-top: 8px solid var(--accent);
+  border-radius: var(--radius-lg);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.rks-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+/* Modo: chips (formato redondo). Escolhido = cor do jogo. O Daily tem borda tracejada e um selo. */
 .rks-modes {
   display: flex;
   flex-wrap: wrap;
@@ -61,7 +95,7 @@
 .rks-modes button {
   appearance: none;
   padding: 8px 14px;
-  background: var(--white);
+  background: var(--paper);
   color: var(--ink);
   border: var(--border);
   border-radius: 999px;
@@ -69,31 +103,42 @@
   cursor: pointer;
 }
 .rks-modes button[aria-selected='true'] {
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--accent);
+  color: var(--on);
+  box-shadow: 2px 2px 0 var(--ink);
 }
 .rks-modes button.daily {
-  background: var(--yellow);
-  color: var(--on-accent);
+  border-style: dashed;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
-.rks-modes button.daily[aria-selected='true'] {
-  background: var(--ink);
-  color: var(--yellow);
+.rks-modes button.daily::before {
+  content: '';
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--yellow);
+  border: 2px solid var(--ink);
 }
 
-/* Filtros: dois controles curtos lado a lado (ou um embaixo do outro em tela estreita). */
+/* Período: faixa emendada. Escolhido = tom claro da cor do jogo com sublinhado grosso. */
 .rks-filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  align-items: flex-end;
+  gap: 12px;
+}
+.rks-filters .rks-field:first-child {
+  flex: 1 1 200px;
+  min-width: 0;
 }
 .rks-seg {
   display: flex;
-  flex: 1 1 200px;
   border: var(--border);
   border-radius: var(--radius-sm);
   overflow: hidden;
-  background: var(--white);
+  background: var(--paper);
 }
 .rks-seg button {
   appearance: none;
@@ -104,50 +149,96 @@
   color: var(--ink);
   border: 0;
   border-right: 2px solid var(--ink);
-  font: 900 13px var(--font-display);
+  font: 700 13px var(--font-mono);
   cursor: pointer;
 }
 .rks-seg button:last-child {
   border-right: 0;
 }
 .rks-seg button[aria-checked='true'] {
-  background: var(--yellow);
-  color: var(--on-accent);
+  background: var(--soft);
+  color: var(--ink);
+  font-weight: 900;
+  box-shadow: inset 0 -5px 0 var(--accent);
+}
+
+/* Só amigos: chave liga/desliga (formato próprio, diferente dos chips e da faixa). */
+.rks-friends {
+  flex: 0 0 auto;
+}
+.rks-switch {
+  appearance: none;
+  position: relative;
+  width: 64px;
+  height: 40px;
+  padding: 0;
+  border: var(--border);
+  border-radius: 999px;
+  background: var(--paper);
+  cursor: pointer;
+}
+.rks-switch i {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--ink);
+  transition: transform 0.12s ease-out;
+}
+.rks-switch[aria-checked='true'] {
+  background: var(--accent);
+}
+.rks-switch[aria-checked='true'] i {
+  transform: translateX(24px);
+  background: var(--white);
+  outline: 2px solid var(--ink);
 }
 .rks-game:focus-visible,
 .rks-modes button:focus-visible,
-.rks-seg button:focus-visible {
-  outline: 3px solid var(--blue);
+.rks-seg button:focus-visible,
+.rks-switch:focus-visible,
+.rks-play:focus-visible {
+  outline: 3px solid var(--ink);
   outline-offset: 2px;
 }
 .rks-note {
   margin: 0;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.06em;
   color: var(--muted);
 }
 .rks-empty {
   margin: 0;
 }
 
-/* Minha posição: cartão que fica colado acima da navegação enquanto a lista rola. */
+/* Sua posição: logo acima do pódio, na cor do jogo (a do primeiro lugar ganha coroa de ouro). */
 .rks-me {
-  position: sticky;
-  bottom: calc(96px + env(safe-area-inset-bottom));
-  z-index: 5;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
-  background: var(--yellow);
-  color: var(--on-accent);
+  gap: 14px;
+  padding: 12px 14px;
+  background: var(--accent);
+  color: var(--on);
   border: var(--border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow);
 }
+.rks-me.first {
+  background: var(--yellow);
+  color: var(--on-accent);
+}
+.rks-me.out {
+  background: var(--white);
+  color: var(--ink);
+  border-style: dashed;
+  box-shadow: none;
+  justify-content: space-between;
+}
 .rks-me-pos {
-  font: 900 34px/1 var(--font-display);
+  min-width: 52px;
+  font: 900 40px/1 var(--font-display);
   letter-spacing: -0.04em;
 }
 .rks-me-body {
@@ -157,16 +248,206 @@
   min-width: 0;
 }
 .rks-me-body b {
-  font: 900 16px var(--font-display);
+  font: 900 17px var(--font-display);
 }
 .rks-me-body .mono {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   overflow-wrap: anywhere;
 }
-@media (min-width: 768px) {
-  .rks-me {
-    bottom: 16px;
+.rks-play {
+  flex-shrink: 0;
+  padding: 10px 16px;
+  background: var(--accent);
+  color: var(--on);
+  border: var(--border);
+  border-radius: 10px;
+  font: 900 14px var(--font-display);
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+/* Pódio: degraus em tons da cor do jogo; o campeão no meio, mais alto, com coroa. */
+.rks-podium {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: 8px;
+}
+.rks-pod {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  text-align: center;
+}
+.rks-pod.p1 > svg {
+  color: var(--ink);
+}
+.rks-pod-avatar {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  background: var(--white);
+  color: var(--ink);
+  border: var(--border);
+  border-radius: 50%;
+  font: 900 22px var(--font-display);
+}
+.rks-pod.p1 .rks-pod-avatar {
+  width: 58px;
+  height: 58px;
+  font-size: 28px;
+  background: var(--yellow);
+  color: var(--on-accent);
+}
+.rks-pod-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 900 13px var(--font-display);
+}
+.rks-you {
+  padding: 1px 6px;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+.rks-pod-score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font: 900 20px var(--font-display);
+  letter-spacing: -0.04em;
+}
+.rks-pod-score small {
+  font-size: 10px;
+  font-weight: 700;
+}
+.rks-pod-step {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 6px;
+  border: var(--border);
+  border-bottom: 0;
+  border-radius: 12px 12px 0 0;
+  background: var(--softer);
+}
+.rks-pod-step b {
+  font: 900 28px/1 var(--font-display);
+}
+.rks-pod.p1 .rks-pod-step {
+  height: 100px;
+  background: var(--accent);
+  color: var(--on);
+}
+.rks-pod.p2 .rks-pod-step {
+  height: 72px;
+  background: var(--soft);
+}
+.rks-pod.p3 .rks-pod-step {
+  height: 54px;
+}
+.rks-pod.me .rks-pod-avatar {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* Lista do 4º em diante. */
+.rks-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.rks-item {
+  display: grid;
+  grid-template-columns: 30px 38px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--white);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.rks-item.me {
+  background: var(--soft);
+}
+.rks-pos {
+  font: 900 16px var(--font-display);
+  text-align: center;
+}
+.rks-avatar {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  background: var(--softer);
+  border: var(--border);
+  border-radius: 10px;
+  font: 900 18px var(--font-display);
+}
+.rks-item.me .rks-avatar {
+  background: var(--accent);
+  color: var(--on);
+}
+.rks-who {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+.rks-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 900 15px var(--font-display);
+}
+.rks-bar {
+  display: block;
+  height: 6px;
+  background: var(--softer);
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.rks-bar i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+.rks-score {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font: 900 20px var(--font-display);
+  letter-spacing: -0.04em;
+}
+.rks-score small {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rks-switch i {
+    transition: none;
   }
 }
 

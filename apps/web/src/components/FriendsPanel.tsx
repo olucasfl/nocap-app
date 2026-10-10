@@ -1,11 +1,12 @@
 import { useState, type FormEvent } from 'react';
-import { useNavigate } from '@tanstack/react-router';
 import { Field } from '@/components/Field';
 import { LoadFailed } from '@/components/LoadFailed';
 import { useOnline } from '@/lib/network';
 import { PlayGate } from '@/components/PlayGate';
 import { GAME_LABEL } from '@/components/GameArt';
-import { CODE_RE } from '@/lib/rooms';
+import { RoomBanner } from '@/components/RoomBanner';
+import { RoomConflictDialog } from '@/components/RoomConflictDialog';
+import { useRoomEntry } from '@/lib/my-room';
 import type { GameId } from '@/lib/stats';
 import './friends-panel.css';
 
@@ -31,15 +32,12 @@ const RULES: Record<GameId, string[]> = {
 /** Jogar com amigos: criar sala deste jogo ou entrar pelo código. A sala em si abre em /sala. */
 export function FriendsPanel({ game }: { game: GameId }) {
   const online = useOnline();
-  const navigate = useNavigate();
+  const entry = useRoomEntry();
   const [code, setCode] = useState('');
-  const [error, setError] = useState('');
 
   const join = (e: FormEvent) => {
     e.preventDefault();
-    const c = code.trim().toUpperCase();
-    if (!CODE_RE.test(c)) return setError('O código tem 4 letras.');
-    void navigate({ to: '/sala/$code', params: { code: c } });
+    void entry.join(code);
   };
 
   if (!online) {
@@ -54,6 +52,7 @@ export function FriendsPanel({ game }: { game: GameId }) {
   return (
     <div className="fp">
       <PlayGate what="jogar em sala">
+        <RoomBanner />
         <section className="fp-card">
           <h2 className="fp-h">Criar sala de {GAME_LABEL[game]}</h2>
           <p className="fp-text">
@@ -63,9 +62,10 @@ export function FriendsPanel({ game }: { game: GameId }) {
             type="button"
             className="btn alt"
             data-sfx="start"
-            onClick={() => void navigate({ to: '/sala', search: { jogo: game } })}
+            disabled={entry.busy}
+            onClick={() => void entry.create(game)}
           >
-            Criar sala
+            {entry.busy ? 'Criando...' : 'Criar sala'}
           </button>
         </section>
         <section className="fp-card">
@@ -76,20 +76,27 @@ export function FriendsPanel({ game }: { game: GameId }) {
               value={code}
               onChange={(e) => {
                 setCode(e.target.value.toUpperCase());
-                setError('');
+                entry.clearError();
               }}
               maxLength={4}
               autoCapitalize="characters"
               autoCorrect="off"
               autoComplete="off"
               hint="4 letras, como ABCD"
-              error={error || undefined}
+              error={entry.error || undefined}
             />
-            <button type="submit" className="btn ghost" data-sfx="roomJoin">
+            <button type="submit" className="btn ghost" data-sfx="roomJoin" disabled={entry.busy}>
               Entrar
             </button>
           </form>
         </section>
+        <RoomConflictDialog
+          open={!!entry.conflict}
+          code={entry.conflict?.code ?? null}
+          onBack={entry.backToCurrent}
+          onLeave={() => void entry.leaveAndContinue()}
+          onCancel={entry.dismissConflict}
+        />
       </PlayGate>
       <section className="fp-rules" aria-label="Como funciona">
         <div className="mono fp-rules-title">COMO FUNCIONA</div>

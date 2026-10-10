@@ -154,6 +154,22 @@ export class MatchesService {
     });
   }
 
+  /**
+   * As últimas partidas da conta, só o que um amigo pode ver: jogo, modo, tipo, quando, nota e
+   * colocação (nunca a seed nem as respostas).
+   */
+  async recentOf(userId: string, limit: number) {
+    const page = await this.repo.history(await this.repo.playerIdsOf(userId), limit);
+    return page.items.map((i) => ({
+      game: i.game,
+      mode: i.mode,
+      kind: i.kind,
+      playedAt: i.playedAt,
+      totalScore: i.totalScore,
+      placement: i.placement,
+    }));
+  }
+
   /** Participantes de uma partida de sala em que a conta jogou. */
   async roomOf(userId: string, matchId: string) {
     const found = await this.repo.roomPlayers(matchId, await this.repo.playerIdsOf(userId));

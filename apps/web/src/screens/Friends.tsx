@@ -7,9 +7,11 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Field } from '@/components/Field';
 import { ApiError } from '@/lib/api-client';
 import { useAuth } from '@/lib/auth';
-import { inviteFriend, useRoom } from '@/lib/rooms';
+import { gameLabel } from '@/lib/history';
 import {
   MIN_SEARCH,
+  ago,
+  presenceText,
   acceptRequest,
   actionLabel,
   declineRequest,
@@ -22,6 +24,8 @@ import {
 } from '@/lib/friends';
 import './account.css';
 import './friends.css';
+
+type Tab = 'friends' | 'requests' | 'add';
 
 const message = (e: unknown) => (e instanceof ApiError ? e.message : 'Sem conexão. Tente de novo.');
 
@@ -150,10 +154,9 @@ export function Friends() {
   const { user, status } = useAuth();
   const queryClient = useQueryClient();
   const list = useQuery({ queryKey: ['friends'], queryFn: fetchFriends, enabled: !!user });
-  // Se estou num lobby, cada amigo ganha o botão de chamar para a sala.
-  const lobby = useRoom((s) => (s.snapshot?.phase === 'lobby' ? s.snapshot : null));
-  const invited = useRoom((s) => s.invited);
   const [error, setError] = useState('');
+  const [tab, setTab] = useState<Tab | null>(null);
+  const [filter, setFilter] = useState('');
 
   const refresh = () => {
     // Amigos novos mudam o recorte "Amigos" do ranking.
@@ -203,16 +206,47 @@ export function Friends() {
   }
 
   const data = list.data;
+  const pending = (data?.incoming.length ?? 0) + (data?.outgoing.length ?? 0);
+  // Quem não tem amigos ainda começa na busca; quem tem pedido esperando vê os pedidos primeiro.
+  const firstTab: Tab = !data
+    ? 'friends'
+    : data.incoming.length > 0
+      ? 'requests'
+      : data.friends.length === 0
+        ? 'add'
+        : 'friends';
+  const current = tab ?? firstTab;
+  const term = filter.trim().toLowerCase().replace(/^@/, '');
+  const shown = (data?.friends ?? []).filter((f) => f.username.includes(term));
+  const tabs: [Tab, string, number][] = [
+    ['friends', 'Amigos', data?.friends.length ?? 0],
+    ['requests', 'Pedidos', pending],
+    ['add', 'Adicionar', 0],
+  ];
 
   return (
     <main className="fr">
       <h1>Amigos</h1>
-      {lobby && (
-        <p className="mono fr-state">
-          VOCÊ ESTÁ NA SALA {lobby.code}: TOQUE EM "CHAMAR" PARA CONVIDAR.
-        </p>
-      )}
-      <Search onChanged={refresh} />
+      <div className="fr-tabs" role="tablist" aria-label="Seções de amigos">
+        {tabs.map(([id, label, n]) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            data-sfx="tab"
+            aria-selected={current === id}
+            className={current === id ? 'on' : ''}
+            onClick={() => setTab(id)}
+          >
+            {label}
+            {n > 0 && (
+              <small className={id === 'requests' && (data?.incoming.length ?? 0) > 0 ? 'hot' : ''}>
+                {n}
+              </small>
+            )}
+          </button>
+        ))}
+      </div>
       {error && (
         <p className="acc-failure mono" role="alert">
           {error}
@@ -227,111 +261,140 @@ export function Friends() {
         />
       )}
 
-      {data && data.incoming.length > 0 && (
-        <section className="fr-section" aria-label="Pedidos recebidos">
-          <h2 className="mono fr-title">PEDIDOS RECEBIDOS</h2>
-          <ul className="fr-list">
-            {data.incoming.map((p) => (
-              <Person key={p.username} username={p.username}>
-                <button
-                  type="button"
-                  className="fr-btn"
-                  data-sfx="success"
-                  disabled={lock}
-                  aria-busy={busyId === `accept:${p.username}`}
-                  onClick={() =>
-                    mutate.mutate({
-                      id: `accept:${p.username}`,
-                      run: () => acceptRequest(p.username),
-                    })
-                  }
-                >
-                  {busyId === `accept:${p.username}` ? 'Aceitando...' : 'Aceitar'}
-                </button>
-                <button
-                  type="button"
-                  className="fr-btn ghost"
-                  data-sfx="cancel"
-                  disabled={lock}
-                  aria-busy={busyId === `decline:${p.username}`}
-                  onClick={() =>
-                    mutate.mutate({
-                      id: `decline:${p.username}`,
-                      run: () => declineRequest(p.username),
-                    })
-                  }
-                >
-                  {busyId === `decline:${p.username}` ? 'Recusando...' : 'Recusar'}
-                </button>
-              </Person>
-            ))}
-          </ul>
-        </section>
+      {current === 'add' && <Search onChanged={refresh} />}
+
+      {current === 'requests' && data && (
+        <>
+          {pending === 0 && <p className="lead">Nenhum pedido por enquanto.</p>}
+          {data.incoming.length > 0 && (
+            <section className="fr-section" aria-label="Pedidos recebidos">
+              <h2 className="mono fr-title">QUEREM SER SEUS AMIGOS</h2>
+              <ul className="fr-list">
+                {data.incoming.map((p) => (
+                  <Person key={p.username} username={p.username}>
+                    <button
+                      type="button"
+                      className="fr-btn"
+                      data-sfx="success"
+                      disabled={lock}
+                      aria-busy={busyId === `accept:${p.username}`}
+                      onClick={() =>
+                        mutate.mutate({
+                          id: `accept:${p.username}`,
+                          run: () => acceptRequest(p.username),
+                        })
+                      }
+                    >
+                      {busyId === `accept:${p.username}` ? 'Aceitando...' : 'Aceitar'}
+                    </button>
+                    <button
+                      type="button"
+                      className="fr-btn ghost"
+                      data-sfx="cancel"
+                      disabled={lock}
+                      aria-busy={busyId === `decline:${p.username}`}
+                      onClick={() =>
+                        mutate.mutate({
+                          id: `decline:${p.username}`,
+                          run: () => declineRequest(p.username),
+                        })
+                      }
+                    >
+                      {busyId === `decline:${p.username}` ? 'Recusando...' : 'Recusar'}
+                    </button>
+                  </Person>
+                ))}
+              </ul>
+            </section>
+          )}
+          {data.outgoing.length > 0 && (
+            <section className="fr-section" aria-label="Pedidos enviados">
+              <h2 className="mono fr-title">AGUARDANDO RESPOSTA</h2>
+              <ul className="fr-list">
+                {data.outgoing.map((p) => (
+                  <Person key={p.username} username={p.username}>
+                    <button
+                      type="button"
+                      className="fr-btn ghost"
+                      data-sfx="remove"
+                      disabled={lock}
+                      aria-busy={busyId === `cancel:${p.username}`}
+                      onClick={() =>
+                        mutate.mutate({
+                          id: `cancel:${p.username}`,
+                          run: () => removeFriend(p.username),
+                        })
+                      }
+                    >
+                      {busyId === `cancel:${p.username}` ? 'Cancelando...' : 'Cancelar'}
+                    </button>
+                  </Person>
+                ))}
+              </ul>
+            </section>
+          )}
+        </>
       )}
 
-      {data && data.outgoing.length > 0 && (
-        <section className="fr-section" aria-label="Pedidos enviados">
-          <h2 className="mono fr-title">PEDIDOS ENVIADOS</h2>
-          <ul className="fr-list">
-            {data.outgoing.map((p) => (
-              <Person key={p.username} username={p.username}>
-                <button
-                  type="button"
-                  className="fr-btn ghost"
-                  data-sfx="remove"
-                  disabled={lock}
-                  aria-busy={busyId === `cancel:${p.username}`}
-                  onClick={() =>
-                    mutate.mutate({
-                      id: `cancel:${p.username}`,
-                      run: () => removeFriend(p.username),
-                    })
-                  }
-                >
-                  {busyId === `cancel:${p.username}` ? 'Cancelando...' : 'Cancelar'}
-                </button>
-              </Person>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {data && (
+      {current === 'friends' && data && (
         <section className="fr-section" aria-label="Seus amigos">
-          <h2 className="mono fr-title">SEUS AMIGOS · {data.friends.length}</h2>
           {data.friends.length === 0 ? (
-            <p className="lead">Você ainda não tem amigos. Busque pelo @usuário acima.</p>
+            <div className="fr-empty">
+              <p className="lead">Você ainda não tem amigos no NoCap.</p>
+              <button type="button" className="btn alt" onClick={() => setTab('add')}>
+                Procurar pessoas
+              </button>
+            </div>
           ) : (
-            <ul className="fr-list">
-              {data.friends.map((p) => (
-                <Person key={p.username} username={p.username} link>
-                  {lobby &&
-                    !lobby.members.some((m) => m.username === p.username) &&
-                    (invited.includes(p.username) ? (
-                      <span className="mono fr-state">CONVITE ENVIADO</span>
-                    ) : (
-                      <button
-                        type="button"
-                        className="fr-btn"
-                        data-sfx="send"
-                        onClick={() => inviteFriend(p.username)}
-                      >
-                        Chamar
-                      </button>
-                    ))}
-                  <button
-                    type="button"
-                    className="fr-btn ghost"
-                    data-sfx="remove"
-                    disabled={lock}
-                    aria-busy={busyId === `remove:${p.username}`}
-                    onClick={() => setRemoving(p.username)}
-                  >
-                    {busyId === `remove:${p.username}` ? 'Removendo...' : 'Remover'}
-                  </button>
-                </Person>
-              ))}
-            </ul>
+            <>
+              {data.friends.length >= 8 && (
+                <input
+                  className="ch-input"
+                  value={filter}
+                  onChange={(e) => setFilter(e.target.value)}
+                  placeholder="Filtrar pelo @usuário"
+                  aria-label="Filtrar amigos"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                />
+              )}
+              {shown.length === 0 && <p className="lead">Ninguém com esse @usuário.</p>}
+              <ul className="fr-grid">
+                {shown.map((p) => (
+                  <li key={p.username} className="fr-card">
+                    <Link
+                      to="/amigos/$username"
+                      params={{ username: p.username }}
+                      className="fr-card-who"
+                    >
+                      <span className="fr-avatar big" aria-hidden="true">
+                        {p.username.charAt(0).toUpperCase()}
+                        <i className={`fr-dot${p.online ? ' on' : ''}`} />
+                      </span>
+                      <span className="fr-name">@{p.username}</span>
+                      <span className={`mono fr-presence${p.online ? ' on' : ''}`}>
+                        {presenceText(p)}
+                      </span>
+                      <span className="mono fr-last">
+                        {p.lastPlayed
+                          ? `Jogou ${gameLabel(p.lastPlayed.game)} ${ago(p.lastPlayed.playedAt)}`
+                          : 'Ainda não jogou'}
+                      </span>
+                    </Link>
+                    <button
+                      type="button"
+                      className="fr-remove"
+                      data-sfx="remove"
+                      disabled={lock}
+                      aria-busy={busyId === `remove:${p.username}`}
+                      onClick={() => setRemoving(p.username)}
+                    >
+                      {busyId === `remove:${p.username}` ? 'Removendo...' : 'Remover'}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </>
           )}
         </section>
       )}

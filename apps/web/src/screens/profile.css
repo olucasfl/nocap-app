@@ -101,3 +101,89 @@
   transform: translate(2px, 2px);
   box-shadow: 0 0 0 var(--ink);
 }
+
+/* Perfil de amigo: presença, fatos rápidos e atividade recente. */
+.pf-avatar-live {
+  position: relative;
+}
+.pf-dot {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  width: 18px;
+  height: 18px;
+  border: var(--border);
+  border-radius: 50%;
+  background: var(--muted);
+}
+.pf-dot.on {
+  background: var(--green);
+}
+.pf-status {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.pf-status.on {
+  color: var(--green);
+}
+.pf-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.pf-fact {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  background: var(--white);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 3px 3px 0 var(--ink);
+  min-width: 0;
+}
+.pf-fact b {
+  font: 900 18px var(--font-display);
+  overflow-wrap: anywhere;
+}
+.pf-fact-label, .pf-fact small {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.pf-recent {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pf-recent-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--white);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+}
+.pf-recent-main, .pf-recent-side {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.pf-recent-side {
+  text-align: right;
+  flex-shrink: 0;
+}
+.pf-recent-row b {
+  font: 900 15px var(--font-display);
+}
+.pf-recent-row .mono {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+}

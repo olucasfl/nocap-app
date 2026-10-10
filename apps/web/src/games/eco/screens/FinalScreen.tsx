@@ -5,11 +5,10 @@ import { DailyPanel } from '@/components/DailyPanel';
 import { EndActions } from '@/components/EndActions';
 import type { GameTab } from '@/components/GameTabs';
 import { GradeFx } from '@/components/GradeFx';
-import { NewRecord } from '@/components/NewRecord';
+import { MatchSummary } from '@/components/MatchSummary';
 import { gradeOf, playGrade } from '@/lib/grade';
 import type { Board } from '@/lib/ranking';
 import { saveBest } from '@/lib/records';
-import { formatBest, isNewRecord } from '@/lib/stats';
 import { ecoGradeScore } from '../grade';
 import { PadChip } from '../pads';
 import type { EndReason, Run } from '../types';
@@ -80,10 +79,14 @@ export function FinalScreen({ run, taps, reason, previousBest, onMenu, onRematch
         )}
       </div>
 
-      {run.kind !== 'daily' && isNewRecord(previousBest, steps * 10) && (
-        <NewRecord
-          now={formatBest('eco', run.preset, steps * 10)}
-          before={formatBest('eco', run.preset, previousBest!)}
+      {run.kind !== 'daily' && (
+        <MatchSummary
+          game="eco"
+          mode={run.preset}
+          scoreTenths={steps * 10}
+          previousBest={previousBest}
+          saved={save === 'saved'}
+          onRanking={() => onMenu('ranking', run.preset)}
         />
       )}
       <p className="eco-save" role="status">

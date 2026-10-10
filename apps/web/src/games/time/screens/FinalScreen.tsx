@@ -6,10 +6,9 @@ import { useReveal } from '@/lib/useReveal';
 import { DailyPanel } from '@/components/DailyPanel';
 import { EndActions } from '@/components/EndActions';
 import type { GameTab } from '@/components/GameTabs';
-import { NewRecord } from '@/components/NewRecord';
+import { MatchSummary } from '@/components/MatchSummary';
 import type { Board } from '@/lib/ranking';
 import { saveBest } from '@/lib/records';
-import { formatBest, isNewRecord } from '@/lib/stats';
 import type { RoundResult, Run } from '../types';
 import { TimeRoundsTable } from './TimeRoundsTable';
 import { SAVE_TEXT, useSaveTime } from '../useSaveTime';
@@ -48,10 +47,14 @@ export function FinalScreen({ run, results, previousBest, onMenu, onRematch }: P
         <div className="tm-total-max">/ {results.length * 10}</div>
       </div>
       <TimeRoundsTable rows={results} shown={shown} />
-      {done && run.kind !== 'daily' && isNewRecord(previousBest, Math.round(total * 10)) && (
-        <NewRecord
-          now={formatBest('time', run.preset, Math.round(total * 10))}
-          before={formatBest('time', run.preset, previousBest!)}
+      {done && run.kind !== 'daily' && (
+        <MatchSummary
+          game="time"
+          mode={run.preset}
+          scoreTenths={Math.round(total * 10)}
+          previousBest={previousBest}
+          saved={save === 'saved'}
+          onRanking={() => onMenu('ranking', run.preset)}
         />
       )}
       <p className="tm-save" role="status">

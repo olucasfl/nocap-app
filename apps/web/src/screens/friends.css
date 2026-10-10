@@ -156,3 +156,159 @@
 .fr-row:has(.fr-who) {
   flex-wrap: wrap;
 }
+
+/* Abas: Amigos, Pedidos, Adicionar. */
+.fr-tabs {
+  display: flex;
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--white);
+}
+.fr-tabs button {
+  appearance: none;
+  flex: 1;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 6px;
+  background: transparent;
+  color: var(--ink);
+  border: 0;
+  border-right: 2px solid var(--ink);
+  font: 900 14px var(--font-display);
+  cursor: pointer;
+}
+.fr-tabs button:last-child {
+  border-right: 0;
+}
+.fr-tabs button.on {
+  background: var(--yellow);
+  color: var(--on-accent);
+}
+.fr-tabs small {
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--paper);
+  font: 700 11px var(--font-mono);
+}
+.fr-tabs small.hot {
+  background: var(--orange);
+  color: var(--on-accent);
+}
+.fr-tabs button:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: -3px;
+}
+
+/* Amigos em cartões: dois por linha no celular. */
+.fr-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+@media (min-width: 560px) {
+  .fr-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1000px) {
+  .fr-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+.fr-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  padding: 14px 10px 6px;
+  background: var(--white);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.fr-card-who {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  color: var(--ink);
+  text-decoration: none;
+}
+.fr-card-who .fr-name {
+  max-width: 100%;
+}
+.fr-card-who:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 3px;
+}
+.fr-avatar.big {
+  width: 56px;
+  height: 56px;
+  font-size: 28px;
+  border-radius: 14px;
+}
+.fr-remove {
+  appearance: none;
+  align-self: center;
+  min-height: 32px;
+  padding: 0 8px;
+  background: transparent;
+  border: 0;
+  color: var(--muted);
+  font: 700 11px var(--font-mono);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.fr-remove:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.fr-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Presença: bolinha no avatar, "online agora" / "visto há ..." e a última partida. */
+.fr-avatar {
+  position: relative;
+}
+.fr-dot {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  width: 16px;
+  height: 16px;
+  border: var(--border);
+  border-radius: 50%;
+  background: var(--muted);
+}
+.fr-dot.on {
+  background: var(--green);
+}
+.fr-presence {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.fr-presence.on {
+  color: var(--green);
+}
+.fr-last {
+  max-width: 100%;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+  text-align: center;
+  overflow-wrap: anywhere;
+}

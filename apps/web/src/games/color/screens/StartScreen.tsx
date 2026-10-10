@@ -1,5 +1,4 @@
 import { useCallback, useState } from 'react';
-import { Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { SURVIVAL_MAX_ROUNDS, colorDailySettings, colorPresets } from '@nocap/games';
 import { BackButton } from '@/components/BackButton';
@@ -11,6 +10,8 @@ import { GameTabs, type GameTab } from '@/components/GameTabs';
 import { ArrowRight } from '@/components/icons';
 import { PlayGate } from '@/components/PlayGate';
 import { PullToRefresh } from '@/components/PullToRefresh';
+import { RoomConflictDialog } from '@/components/RoomConflictDialog';
+import { useRoomEntry } from '@/lib/my-room';
 import { useAuth } from '@/lib/auth';
 import { dailyMax, fetchStats, recordText } from '@/lib/stats';
 import type { Mode } from '../types';
@@ -60,6 +61,7 @@ export function StartScreen({ initialTab = 'modes', onMode, onStart }: Props) {
   /** Modo cuja ficha está aberta (null = só a lista de modos). */
   const [open, setOpen] = useState<ModeId | null>(null);
   const close = useCallback(() => setOpen(null), []);
+  const entry = useRoomEntry();
   const preset =
     open === 'daily'
       ? colorDailySettings
@@ -169,14 +171,22 @@ export function StartScreen({ initialTab = 'modes', onMode, onStart }: Props) {
                     Esse modo só funciona em sala, com no mínimo 3 pessoas. Quer criar uma sala
                     agora?
                   </p>
-                  <Link
-                    to="/sala"
-                    search={{ jogo: 'impostor' }}
-                    className="btn alt"
-                    data-sfx="start"
-                  >
-                    Criar sala <ArrowRight />
-                  </Link>
+                  <PlayGate what="criar uma sala">
+                    <button
+                      type="button"
+                      className="btn alt"
+                      data-sfx="start"
+                      disabled={entry.busy}
+                      onClick={() => void entry.create('impostor')}
+                    >
+                      {entry.busy ? 'Criando...' : 'Criar sala'} <ArrowRight />
+                    </button>
+                    {entry.error && (
+                      <p className="mono ms-note" role="alert">
+                        {entry.error}
+                      </p>
+                    )}
+                  </PlayGate>
                 </>
               ) : (
                 <PlayGate>
@@ -195,6 +205,13 @@ export function StartScreen({ initialTab = 'modes', onMode, onStart }: Props) {
         </>
       )}
       {tab === 'friends' && <FriendsPanel game="color" />}
+      <RoomConflictDialog
+        open={!!entry.conflict}
+        code={entry.conflict?.code ?? null}
+        onBack={entry.backToCurrent}
+        onLeave={() => void entry.leaveAndContinue()}
+        onCancel={entry.dismissConflict}
+      />
     </section>
   );
 }

@@ -1,0 +1,113 @@
+/* Popups de edição do perfil (usam a moldura .cd do ConfirmDialog). */
+.cd.pe {
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+}
+.pe-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.pe-menu {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pe-menu button {
+  appearance: none;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  text-align: left;
+  background: var(--white);
+  color: var(--ink);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 3px 3px 0 var(--ink);
+  cursor: pointer;
+}
+.pe-menu button:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 2px;
+}
+.pe-menu .mono,
+.pe-menu small {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.pe-menu b {
+  font: 900 18px var(--font-display);
+  overflow-wrap: anywhere;
+}
+.pe-what {
+  padding: 12px 14px;
+  background: var(--yellow);
+  color: var(--on-accent);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+}
+.pe-what h3 {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.pe-what ul {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font: 400 13px/1.45 var(--font-mono);
+}
+.pe-warn {
+  margin: 0;
+  padding: 10px 12px;
+  background: var(--yellow);
+  color: var(--on-accent);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  font: 400 13px/1.45 var(--font-mono);
+}
+.pe-swap {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  gap: 2px 12px;
+  padding: 12px 14px;
+  background: var(--white);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+}
+.pe-swap .mono {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.pe-swap b {
+  font: 900 20px var(--font-display);
+  overflow-wrap: anywhere;
+}
+.pe-swap b.new {
+  color: var(--orange);
+}
+.pe-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font: 700 13px/1.4 var(--font-mono);
+  cursor: pointer;
+}
+.pe-check input {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  accent-color: var(--orange);
+}
