@@ -33,7 +33,15 @@ function playSummary(stats: Stats) {
   return { total, favorite: favorite && favorite[1] > 0 ? favorite[0] : null };
 }
 
-function Details({ data }: { data: FriendProfileData }) {
+function Details({ data: raw }: { data: FriendProfileData }) {
+  // Campos novos podem faltar (resposta de uma API ainda não atualizada): a tela não quebra.
+  const data: FriendProfileData = {
+    ...raw,
+    online: raw.online ?? false,
+    lastSeenAt: raw.lastSeenAt ?? null,
+    lastPlayed: raw.lastPlayed ?? null,
+    recent: raw.recent ?? [],
+  };
   const { total, favorite } = playSummary(data.stats);
   return (
     <>

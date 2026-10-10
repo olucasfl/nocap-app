@@ -4,7 +4,8 @@ import { ONLINE_MS, PresenceService } from './presence.service';
 function setup() {
   let t = 1_000_000;
   // Sem banco: só a memória (o caminho do banco é o mesmo, com a tabela user_presence).
-  const service = new PresenceService(null, () => t);
+  const service = new PresenceService(null);
+  service.now = () => t;
   return { service, advance: (ms: number) => (t += ms) };
 }
 

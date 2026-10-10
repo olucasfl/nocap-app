@@ -33,10 +33,10 @@ export class PresenceService {
   private seen = new Map<string, number>();
   private written = new Map<string, number>();
 
-  constructor(
-    @Inject(DB) private readonly db: Db | null,
-    private readonly now: () => number = () => Date.now(),
-  ) {}
+  /** Relógio: os testes trocam por um controlado (o Nest só injeta o banco). */
+  now: () => number = () => Date.now();
+
+  constructor(@Inject(DB) private readonly db: Db | null) {}
 
   /** A conta está com o app aberto agora. */
   async touch(userId: string): Promise<void> {

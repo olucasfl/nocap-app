@@ -347,38 +347,61 @@ export function Friends() {
             </div>
           ) : (
             <>
-              {data.friends.length >= 8 && (
+              <div className="fr-find">
                 <input
-                  className="ch-input"
+                  className="fr-find-input"
+                  type="search"
                   value={filter}
                   onChange={(e) => setFilter(e.target.value)}
-                  placeholder="Filtrar pelo @usuário"
-                  aria-label="Filtrar amigos"
+                  placeholder="Pesquisar nos seus amigos"
+                  aria-label="Pesquisar nos seus amigos"
                   autoCapitalize="none"
                   autoCorrect="off"
                 />
-              )}
+                {filter && (
+                  <button
+                    type="button"
+                    className="fr-find-clear"
+                    data-sfx="cancel"
+                    aria-label="Limpar a pesquisa"
+                    onClick={() => setFilter('')}
+                  >
+                    Limpar
+                  </button>
+                )}
+              </div>
+              <p className="mono fr-hint">
+                {shown.length === data.friends.length
+                  ? `${data.friends.length} ${data.friends.length === 1 ? 'AMIGO' : 'AMIGOS'} · TOQUE EM UM PARA VER O PERFIL`
+                  : `${shown.length} DE ${data.friends.length} AMIGOS`}
+              </p>
               {shown.length === 0 && <p className="lead">Ninguém com esse @usuário.</p>}
-              <ul className="fr-grid">
+              <ul className="fr-friends">
                 {shown.map((p) => (
-                  <li key={p.username} className="fr-card">
+                  <li key={p.username}>
                     <Link
                       to="/amigos/$username"
                       params={{ username: p.username }}
-                      className="fr-card-who"
+                      className="fr-friend"
+                      data-sfx="select"
                     >
-                      <span className="fr-avatar big" aria-hidden="true">
+                      <span className="fr-avatar" aria-hidden="true">
                         {p.username.charAt(0).toUpperCase()}
                         <i className={`fr-dot${p.online ? ' on' : ''}`} />
                       </span>
-                      <span className="fr-name">@{p.username}</span>
-                      <span className={`mono fr-presence${p.online ? ' on' : ''}`}>
-                        {presenceText(p)}
+                      <span className="fr-friend-body">
+                        <b className="fr-name">@{p.username}</b>
+                        <span className={`mono fr-presence${p.online ? ' on' : ''}`}>
+                          {presenceText(p)}
+                        </span>
+                        <span className="mono fr-last">
+                          {p.lastPlayed
+                            ? `Jogou ${gameLabel(p.lastPlayed.game)} ${ago(p.lastPlayed.playedAt)}`
+                            : 'Ainda não jogou'}
+                        </span>
                       </span>
-                      <span className="mono fr-last">
-                        {p.lastPlayed
-                          ? `Jogou ${gameLabel(p.lastPlayed.game)} ${ago(p.lastPlayed.playedAt)}`
-                          : 'Ainda não jogou'}
+                      <span className="fr-go-profile">
+                        Perfil <span aria-hidden="true">›</span>
                       </span>
                     </Link>
                     <button
@@ -389,7 +412,7 @@ export function Friends() {
                       aria-busy={busyId === `remove:${p.username}`}
                       onClick={() => setRemoving(p.username)}
                     >
-                      {busyId === `remove:${p.username}` ? 'Removendo...' : 'Remover'}
+                      {busyId === `remove:${p.username}` ? 'Removendo...' : 'Remover amigo'}
                     </button>
                   </li>
                 ))}

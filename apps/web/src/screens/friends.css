@@ -312,3 +312,112 @@
   text-align: center;
   overflow-wrap: anywhere;
 }
+
+/* Lista de amigos: cada pessoa é uma linha-botão com "Perfil ›"; busca sempre à vista. */
+.fr-find {
+  display: flex;
+  gap: 8px;
+}
+.fr-find-input {
+  flex: 1;
+  min-width: 0;
+  height: 48px;
+  padding: 0 14px;
+  background: var(--white);
+  color: var(--ink);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  font: 700 15px var(--font-mono);
+}
+.fr-find-input:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 2px;
+}
+.fr-find-clear {
+  appearance: none;
+  padding: 0 14px;
+  background: var(--white);
+  color: var(--ink);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  font: 900 13px var(--font-display);
+  cursor: pointer;
+}
+.fr-hint {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.fr-friends {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.fr-friend {
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--white);
+  color: var(--ink);
+  text-decoration: none;
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+.fr-friend:active {
+  transform: translate(3px, 3px);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+.fr-friend:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 3px;
+}
+.fr-friend .fr-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  font-size: 28px;
+}
+.fr-friend-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.fr-friend-body .fr-last {
+  text-align: left;
+}
+.fr-go-profile {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 12px;
+  background: var(--orange);
+  color: var(--on-accent);
+  border: var(--border);
+  border-radius: 10px;
+  font: 900 13px var(--font-display);
+  text-transform: uppercase;
+}
+.fr-friends li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.fr-friends .fr-remove {
+  align-self: flex-end;
+}
+
+/* As linhas antigas (.fr-who) nomeiam áreas de grade; aqui a grade é outra. */
+.fr-friend .fr-avatar,
+.fr-friend .fr-name {
+  grid-area: auto;
+}
