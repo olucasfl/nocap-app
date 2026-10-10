@@ -12,6 +12,9 @@ export const RANKING_BOARDS = [
   'escalada',
   'velocidade',
   'reverso',
+  'batida-passo',
+  'batida-mare',
+  'batida-frenesi',
   'daily',
 ] as const;
 export const RANKING_GAMES = ['color', 'time', 'eco'] as const;
@@ -21,7 +24,7 @@ export type RankingGame = (typeof RANKING_GAMES)[number];
 export const BOARDS_OF: Record<RankingGame, readonly string[]> = {
   color: ['classic', 'flash', 'quick', 'blind', 'survival', 'daily'],
   time: ['classic', 'quick', 'strict', 'sequence', 'survival', 'daily'],
-  eco: ['classic', 'escalada', 'velocidade', 'reverso', 'daily'],
+  eco: ['classic', 'escalada', 'velocidade', 'reverso', 'batida-passo', 'batida-mare', 'batida-frenesi', 'daily'],
 };
 
 export const rankingQuerySchema = z.object({

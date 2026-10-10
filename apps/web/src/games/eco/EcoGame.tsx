@@ -1,18 +1,21 @@
 import { useCallback, useState } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
-import { ecoPresets, lengthAt } from '@nocap/games';
+import { SONGS, batidaMode, ecoPresets, lengthAt, type BatidaTap, type SongId } from '@nocap/games';
 import type { GameTab } from '@/components/GameTabs';
 import { MuteButton } from '@/components/MuteButton';
 import { apiClient } from '@/lib/api-client';
 import { isNetworkError } from '@/lib/network';
 import { rankingLink, type Board } from '@/lib/ranking';
 import { bestTenths, type Stats } from '@/lib/stats';
+import { BatidaPlay } from './BatidaPlay';
 import { EcoPlay } from './EcoPlay';
+import { BatidaFinal } from './screens/BatidaFinal';
+import { BatidaIntro } from './screens/BatidaIntro';
 import { FinalScreen } from './screens/FinalScreen';
 import { IntroScreen } from './screens/IntroScreen';
 import { StartScreen } from './screens/StartScreen';
-import type { EndReason, Mode, Run } from './types';
+import type { BatidaRunInfo, EndReason, Mode, Run } from './types';
 import './eco.css';
 
 type Phase = 'start' | 'intro' | 'play' | 'final';
@@ -22,8 +25,25 @@ interface SessionResponse {
   session: string;
 }
 
+/** Batida: a seed e a sessão vêm do servidor; sem internet joga-se só como treino. */
+async function newBatida(): Promise<BatidaRunInfo> {
+  let seed: string;
+  let session: string;
+  try {
+    ({ seed, session } = await apiClient.post<SessionResponse>('/games/eco/session', {
+      kind: 'solo',
+    }));
+  } catch (e) {
+    if (!isNetworkError(e)) throw e;
+    seed = crypto.randomUUID().slice(0, 12);
+    session = '';
+  }
+  // A música é escolhida na abertura (`BatidaIntro`); até lá vale a mais calma.
+  return { matchId: crypto.randomUUID(), seed, session, song: 'passo' };
+}
+
 /** O servidor sorteia a seed (Daily: a do dia) e assina o instante de início. */
-async function newRun(mode: Mode): Promise<Run> {
+async function newRun(mode: Exclude<Mode, 'batida'>): Promise<Run> {
   const kind = mode === 'daily' ? 'daily' : 'solo';
   const preset = mode === 'daily' ? 'classic' : mode;
   let seed: string;
@@ -62,6 +82,8 @@ export function EcoGame({
   });
   const [phase, setPhase] = useState<Phase>('start');
   const [run, setRun] = useState<Run | null>(null);
+  /** Partida do Batida (modo de ritmo): no lugar de `run`, que é das sequências. */
+  const [batida, setBatida] = useState<{ info: BatidaRunInfo; taps?: BatidaTap[] } | null>(null);
   const [round, setRound] = useState(1);
   const [ending, setEnding] = useState<{ taps: number[]; reason: EndReason } | null>(null);
   const [error, setError] = useState('');
@@ -74,11 +96,19 @@ export function EcoGame({
   const start = useCallback(
     async (m: Mode) => {
       const cached = queryClient.getQueryData<Stats>(['stats']);
-      setPrevBest(m === 'daily' || !cached ? undefined : bestTenths(cached, 'eco', m));
+      setPrevBest(
+        m === 'daily' || m === 'batida' || !cached ? undefined : bestTenths(cached, 'eco', m),
+      );
       setBusy(true);
       setError('');
       try {
-        setRun(await newRun(m));
+        if (m === 'batida') {
+          setRun(null);
+          setBatida({ info: await newBatida() });
+        } else {
+          setBatida(null);
+          setRun(await newRun(m));
+        }
         setRound(1);
         setEnding(null);
         setPhase('intro');
@@ -136,8 +166,44 @@ export function EcoGame({
           onStart={(m) => void start(m)}
         />
       )}
+      {phase === 'intro' && batida && (
+        <BatidaIntro
+          onBegin={(song: SongId) => {
+            // O recorde que vale é o da música escolhida, antes desta partida.
+            const cached = queryClient.getQueryData<Stats>(['stats']);
+            setPrevBest(cached ? bestTenths(cached, 'eco', batidaMode(song)) : undefined);
+            setBatida({ info: { ...batida.info, song } });
+            setPhase('play');
+          }}
+        />
+      )}
       {phase === 'intro' && run && <IntroScreen run={run} onBegin={() => setPhase('play')} />}
-      {phase === 'play' && run && (
+      {phase === 'play' && batida && (
+        <BatidaPlay
+          key={batida.info.matchId}
+          seed={batida.info.seed}
+          song={SONGS[batida.info.song]}
+          onEnd={(taps) => {
+            setBatida({ ...batida, taps });
+            setPhase('final');
+          }}
+          onQuit={() => {
+            setBatida(null);
+            setMenu({ tab: 'modes' });
+            setPhase('start');
+          }}
+        />
+      )}
+      {phase === 'final' && batida?.taps && (
+        <BatidaFinal
+          run={batida.info}
+          taps={batida.taps}
+          previousBest={prevBest}
+          onMenu={goMenu}
+          onRematch={() => void start('batida')}
+        />
+      )}
+      {phase === 'play' && run && !batida && (
         <EcoPlay
           key={run.matchId}
           run={run}
@@ -148,7 +214,7 @@ export function EcoGame({
           }}
         />
       )}
-      {phase === 'final' && run && ending && (
+      {phase === 'final' && run && !batida && ending && (
         <FinalScreen
           run={run}
           taps={ending.taps}

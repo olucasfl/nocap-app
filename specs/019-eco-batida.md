@@ -1,8 +1,25 @@
-# 019 · Ecooo Batida (modo estilo Guitar Hero)
+# 019 · Eco Hero (modo de ritmo do Ecooo, estilo Guitar Hero)
 
-Status: **rascunho, decisões do Lucas registradas** (10/10/2026). Nada implementado. Falta decidir só a **música** (seção "Música: o que dá para fazer de verdade").
+Status: **solo implementado** (10/10/2026): três músicas, perspectiva, pausa, teclas, ranking por música e servidor recalculando a nota. **Falta:** jogar ao vivo e calibrar (janelas de acerto, andamentos, energia), Daily e sala. Nome na tela: **Eco Hero** (decisão do Lucas); id interno `batida`, modos `batida-passo`, `batida-mare` e `batida-frenesi`.
 
-**Decidido pelo Lucas:** barra de energia; multiplicadores; Perfeito, Bom e Errou; errar soa errado; formas junto das cores. **Calibração de atraso:** só **oferecida de canto** (um botão "Ajustar atraso" nos ajustes do modo); nunca pergunta toda vez antes de jogar. Se a pessoa nunca calibrou, o jogo usa um atraso padrão e segue.
+## O que foi decidido
+- Barra de energia; multiplicadores x1 a x4; Perfeito, Bom e Errou; errar soa errado; formas junto das cores.
+- **Calibração de atraso** só de canto (botão na abertura), nunca antes de cada partida.
+- **Música:** opção 1 do rascunho (sons e ritmo, nada de música conhecida), mas com ritmo de verdade: as notas se repetem em frases (A, A, B, A) e cada música tem seu groove, escala e progressão de acordes.
+- **Mais devagar** (pedido do Lucas depois do primeiro teste): o andamento máximo caiu de 176 para 100, 116 e 138 batidas por minuto, e a subida é bem mais lenta.
+- **Visual em perspectiva:** pista que converge ao horizonte, notas que vêm do fundo crescendo (só `transform` e `opacity`), feita em CSS/SVG. Não precisou de 3D de verdade.
+- **Três músicas para escolher** na abertura (a última escolha fica guardada).
+- **Pausa** (botão, Esc ou P, e sozinha ao sair da aba): congela o relógio do áudio; no menu da pausa ficam as **teclas do computador**, Voltar ao jogo e Sair; para voltar, **contagem 3, 2, 1**.
+- **Teclas configuráveis** (padrão 1 a 5): toque numa pista e aperte a tecla; tecla repetida troca com a outra pista; Esc, Tab, Enter, modificadoras e F1 a F12 não valem.
+
+## As três músicas
+| Música | Proposta | Andamento | Dificuldade | Groove |
+|---|---|---|---|---|
+| **Primeiro Passo** | Calma e doce, para aprender | 64 → 100 | começa só com semínimas nas 3 pistas do meio e chega a síncope | bumbo nos tempos 1 e 3 |
+| **Maré Alta** | Balanço com síncope | 78 → 116 | colcheias a síncope, sobe até densa | funk (bumbo deslocado, baixo sincopado), escala menor |
+| **Frenesi** | Pesada e sem descanso | 92 → 138 | já começa em síncope e chega ao quase tudo | bumbo em todos os tempos, baixo pulsando, escala de blues |
+
+Cada música é um quadro próprio no ranking (`Eco Hero: Primeiro Passo`, etc.), porque as notas não são comparáveis entre elas.
 
 ## O que é
 
@@ -36,7 +53,7 @@ Sugestão: **começar pela A**, deixando a B como um protótipo para escutar. Se
 - **Dificuldade sobe sozinha:** o andamento vai de ~80 a ~180 batidas por minuto, a densidade de notas cresce e, mais tarde, entram notas duplas (duas pistas ao mesmo tempo).
 - **Nota:** pontos acumulados (acerto × multiplicador). Ranking pela pontuação.
 
-## Modos
+## Modos (versão atual)
 
 1. **Infinito:** até a energia acabar. Vai para o ranking (quadro "Batida").
 2. **Daily:** a música do dia, uma tentativa, ranking do dia.

@@ -27,6 +27,8 @@ export interface TimePayload extends BasePayload {
 export interface EcoPayload extends BasePayload {
   game: 'eco';
   taps: number[];
+  /** Batida: pares [pista, instante em ms] de cada toque. */
+  beats?: [number, number][];
   session: string;
 }
 

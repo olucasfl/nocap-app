@@ -7,6 +7,10 @@ import {
   colorGame,
   colorDeltaE,
   ecoPresets,
+  evaluateBatida,
+  validateTaps,
+  BATIDA_MAX_RUN_MS,
+  type Song,
   ecoTenths,
   encodeAnswer,
   evaluateRun,
@@ -161,5 +165,34 @@ export function scoreEcoMatch(
     totalTenths,
     encodedAnswers: [...input.taps],
     settings: { ...settings, scoreVersion: ECO_SCORE_VERSION },
+  };
+}
+
+/**
+ * Batida: o servidor refaz a partida (acertos, combo, energia) a partir dos instantes dos toques e
+ * da música da seed. Recusa o que não é possível: pista ou instante inválido, rajada impossível,
+ * toques depois da energia zerar, ou uma partida mais longa do que o relógio do servidor viu.
+ */
+export function scoreBatidaMatch(
+  input: Pick<EcoMatchInput, 'seed' | 'beats'> & { song: Song; elapsedMs: number },
+): ScoredMatch {
+  const taps = (input.beats ?? []).map(([lane, t]) => ({ lane, t }));
+  const problem = validateTaps(taps);
+  if (problem) throw new BadRequestException(problem);
+  const run = evaluateBatida(input.seed, input.song, taps);
+  if (run.usedTaps !== taps.length) {
+    throw new BadRequestException('Há toques depois do fim da partida');
+  }
+  // A música só começa depois de a sessão ser pedida: a partida não pode ser mais longa que isso.
+  if (run.endedAtMs > BATIDA_MAX_RUN_MS || run.endedAtMs > input.elapsedMs + ELAPSED_SLACK_MS) {
+    throw new BadRequestException('A partida foi rápida demais para ser verdade');
+  }
+  return {
+    rounds: [],
+    total: run.tenths / 10,
+    totalTenths: run.tenths,
+    // O histórico não guarda os toques (seriam milhares de números por partida).
+    encodedAnswers: [],
+    settings: { mode: `batida-${input.song.id}`, scoreVersion: 1, perfect: run.perfect, good: run.good, missed: run.missed },
   };
 }

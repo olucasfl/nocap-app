@@ -20,6 +20,7 @@ const MODES: { id: Mode; label: string; desc: string }[] = [
   { id: 'escalada', label: 'Escalada', desc: 'MAIS BOTÕES' },
   { id: 'velocidade', label: 'Velocidade', desc: 'CADA VEZ MAIS RÁPIDO' },
   { id: 'reverso', label: 'Reverso', desc: 'DE TRÁS PARA FRENTE' },
+  { id: 'batida', label: 'Eco Hero', desc: 'RITMO · 3 MÚSICAS' },
   { id: 'daily', label: 'Daily', desc: '1 POR DIA · RANKING' },
 ];
 
@@ -31,6 +32,8 @@ const LEAD: Record<Mode, string> = {
     'A sequência toca cada vez mais rápido: começa em 700 ms por passo e, a cada rodada, acelera até 170 ms na rodada 20. Vai até 30 passos. Difícil, mas dá.',
   reverso:
     'Você vê a sequência na ordem e repete de trás para frente. O último botão que acendeu é o primeiro que você toca.',
+  batida:
+    'Três músicas para escolher. Cinco pistas, notas que vêm do fundo e você toca no botão certo na hora certa: cada acerto toca uma nota e, juntas, elas formam a música. Acertos seguidos sobem o multiplicador; erros gastam a energia.',
   daily:
     'A sequência de hoje é a mesma para todo mundo. Modo Clássico, uma única tentativa por dia.',
 };
@@ -52,7 +55,7 @@ export function StartScreen({ initialTab = 'modes', onMode, onStart, busy, error
   /** Modo cuja ficha está aberta (null = só a lista de modos). */
   const [open, setOpen] = useState<Mode | null>(null);
   const close = useCallback(() => setOpen(null), []);
-  const preset = ecoPresets[open && open !== 'daily' ? open : 'classic'];
+  const preset = ecoPresets[open && open !== 'daily' && open !== 'batida' ? open : 'classic'];
 
   /** O Daily tem tela própria (resultado do dia e parte social), fora da ficha dos outros modos. */
   const [dailyView, setDailyView] = useState(false);
@@ -99,34 +102,50 @@ export function StartScreen({ initialTab = 'modes', onMode, onStart, busy, error
               modeId={open}
               title={MODES.find((m) => m.id === open)?.label ?? ''}
               lead={LEAD[open]}
-              record={open === 'daily' ? null : recordText(stats.data, 'eco', open)}
+              record={
+                open === 'daily' || open === 'batida' ? null : recordText(stats.data, 'eco', open)
+              }
               onClose={close}
               rules={
-                <>
-                  <div className="eco-rule">
-                    <b>
-                      {preset.maxPads > preset.pads
-                        ? `${preset.pads}→${preset.maxPads}`
-                        : preset.pads}
-                    </b>
-                    botões
-                  </div>
-                  <div className="eco-rule">
-                    <b>
+                open === 'batida' ? (
+                  <>
+                    <div className="eco-rule">
+                      <b>5</b>pistas
+                    </div>
+                    <div className="eco-rule">
+                      <b>3</b>músicas
+                    </div>
+                    <div className="eco-rule">
+                      <b>x4</b>multiplicador máx.
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="eco-rule">
+                      <b>
+                        {preset.maxPads > preset.pads
+                          ? `${preset.pads}→${preset.maxPads}`
+                          : preset.pads}
+                      </b>
+                      botões
+                    </div>
+                    <div className="eco-rule">
+                      <b>
+                        {preset.speedUpMs > 0
+                          ? `${preset.stepMs}→${preset.minStepMs}`
+                          : preset.startLength}
+                      </b>
                       {preset.speedUpMs > 0
-                        ? `${preset.stepMs}→${preset.minStepMs}`
-                        : preset.startLength}
-                    </b>
-                    {preset.speedUpMs > 0
-                      ? 'ms por passo'
-                      : preset.startLength === 1
-                        ? 'passo no início'
-                        : 'passos no início'}
-                  </div>
-                  <div className="eco-rule">
-                    <b>{preset.maxSteps}</b>passos máx.
-                  </div>
-                </>
+                        ? 'ms por passo'
+                        : preset.startLength === 1
+                          ? 'passo no início'
+                          : 'passos no início'}
+                    </div>
+                    <div className="eco-rule">
+                      <b>{preset.maxSteps}</b>passos máx.
+                    </div>
+                  </>
+                )
               }
             >
               {error && (

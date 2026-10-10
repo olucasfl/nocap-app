@@ -54,7 +54,7 @@ export function meterPercents(
 export function verdictText(game: string, mode: string, c: Comparison): string {
   const unit = countUnit(game, mode);
   const gap = unit
-    ? `${Math.max(1, Math.round(c.diff / 10))} ${unit === 'rodadas' ? 'rodada(s)' : 'passo(s)'}`
+    ? `${Math.max(1, Math.round(c.diff / 10))} ${unit === 'rodadas' ? 'rodada(s)' : unit === 'passos' ? 'passo(s)' : 'ponto(s)'}`
     : `${(c.diff / 10).toFixed(1)} ponto${c.diff === 10 ? '' : 's'}`;
   switch (c.verdict) {
     case 'first':

@@ -11,10 +11,17 @@ import {
   dailyStreak,
   ecoPresets,
   periodStart,
+  songOfMode,
   timePresets,
 } from '@nocap/games';
 import { randomUUID } from 'node:crypto';
-import { scoreEcoMatch, scoreMatch, scoreTimeMatch, type ScoredMatch } from './match-scoring';
+import {
+  scoreBatidaMatch,
+  scoreEcoMatch,
+  scoreMatch,
+  scoreTimeMatch,
+  type ScoredMatch,
+} from './match-scoring';
 import type {
   ColorMatchInput,
   CreateMatchInput,
@@ -107,6 +114,7 @@ export class MatchesService {
    * quando a partida começou (para o tempo mínimo) e deixa a seed valer uma vez só no solo.
    */
   private async createEco(input: EcoMatchInput, who: Who) {
+    if (songOfMode(input.mode)) return this.createBatida(input, who);
     if (input.kind === 'daily') {
       if (input.seed !== dailySeed('eco')) {
         throw new BadRequestException('Seed do Daily não é a de hoje');
@@ -125,6 +133,25 @@ export class MatchesService {
     }
     const scored = scoreEcoMatch({ ...input, elapsedMs: Date.now() - session.issuedAt });
     return this.persist(input, who, scored, input.mode in ecoPresets);
+  }
+
+  /**
+   * Batida (modo de ritmo do Ecooo): a nota sai dos instantes dos toques contra a música da seed.
+   * Só solo por enquanto; a sessão assinada prova quando a partida começou e vale uma vez.
+   */
+  private async createBatida(input: EcoMatchInput, who: Who) {
+    const song = songOfMode(input.mode);
+    if (!song) throw new BadRequestException(`Música desconhecida: ${input.mode}`);
+    if (input.kind === 'daily') throw new BadRequestException('O Batida ainda não tem Daily');
+    const session = verifyTimeSession(input.session);
+    if (!session || session.seed !== input.seed) {
+      throw new BadRequestException('Sessão da partida inválida ou expirada');
+    }
+    if (await this.repo.seedUsed('eco', input.seed, input.matchId)) {
+      throw new ConflictException('Essa sessão já foi usada');
+    }
+    const scored = scoreBatidaMatch({ ...input, song, elapsedMs: Date.now() - session.issuedAt });
+    return this.persist(input, who, scored, true);
   }
 
   private async createColor(input: ColorMatchInput, who: Who) {

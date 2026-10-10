@@ -35,7 +35,9 @@ const ecoMatchSchema = z.object({
   ...base,
   game: z.literal('eco'),
   /** Os botões tocados, em ordem (0 a 8). O servidor repassa contra a sequência da seed. */
-  taps: z.array(z.number().int().min(0).max(8)).max(1000),
+  taps: z.array(z.number().int().min(0).max(8)).max(1000).default([]),
+  /** Batida: cada toque como [pista 0 a 4, instante em ms desde o início]. */
+  beats: z.array(z.tuple([z.number().int().min(0).max(4), z.number().int().min(0).max(1_200_000)])).max(6000).optional(),
   /** Sessão assinada pelo servidor (`POST /games/eco/session`). */
   session: z.string().min(10).max(600),
 });

@@ -531,3 +531,71 @@
 .eco-pad.lit svg {
   transform: scale(1.4);
 }
+
+/* Batida: ajuste de atraso (de canto) e quadro de números do fim da partida. */
+.bt-cal-link {
+  appearance: none;
+  align-self: center;
+  background: transparent;
+  border: 0;
+  padding: 8px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.bt-cal {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  background: var(--white);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+}
+.bt-cal p {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+}
+.bt-cal-row {
+  display: flex;
+  gap: 8px;
+}
+.bt-cal-row .btn {
+  flex: 1;
+}
+.bt-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+.bt-stats div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px;
+  background: var(--white);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+.bt-stats dt {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.bt-stats dd {
+  margin: 0;
+  font: 900 20px var(--font-display);
+}
+
+.bt-cal-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 16px;
+}

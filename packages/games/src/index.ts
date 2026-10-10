@@ -7,5 +7,6 @@ export * from './color';
 export * from './time';
 export * from './impostor';
 export * from './eco';
+export * from './eco/rhythm';
 
 export * from './party';

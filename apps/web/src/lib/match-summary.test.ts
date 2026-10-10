@@ -67,3 +67,25 @@ describe('barra de comparação', () => {
     expect(meterPercents('color', 'classic', 0, 0).now).toBe(0);
   });
 });
+
+describe('Batida (pontos)', () => {
+  it('mostra os pontos inteiros, com a unidade "pontos"', () => {
+    expect(scoreValue('eco', 'batida-mare', 11310)).toBe('1131');
+    expect(scoreUnit('eco', 'batida-mare')).toBe('pontos');
+  });
+
+  it('a frase fala em pontos e o Ecooo de sequência continua falando em passos', () => {
+    expect(verdictText('eco', 'batida-mare', compareToBest(5000, 4000))).toBe(
+      'Faltaram 100 ponto(s) para bater o seu recorde.',
+    );
+    expect(verdictText('eco', 'classic', compareToBest(100, 70))).toBe(
+      'Faltaram 3 passo(s) para bater o seu recorde.',
+    );
+  });
+
+  it('a barra não tem máximo, como nas outras contagens', () => {
+    const m = meterPercents('eco', 'batida-mare', 4000, 5000);
+    expect(m.best).toBeLessThan(100);
+    expect(m.now).toBeLessThan(m.best);
+  });
+});

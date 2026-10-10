@@ -14,7 +14,7 @@ import {
   type Period,
   type RankingEntry,
 } from '@/lib/ranking';
-import { countUnit, dailyMax, streakLabel } from '@/lib/stats';
+import { countUnit, dailyMax, streakLabel, type CountUnit } from '@/lib/stats';
 import './ranking-panel.css';
 
 export function Score({
@@ -27,7 +27,7 @@ export function Score({
   max: number;
   showDays: boolean;
   /** Sobrevivência (rodadas) e Eco (passos): a nota é uma contagem. */
-  unit?: 'rodadas' | 'passos' | null;
+  unit?: CountUnit | null;
 }) {
   return (
     <>
@@ -50,7 +50,7 @@ export function Podium({
   top: RankingEntry[];
   max: number;
   showDays: boolean;
-  unit: 'rodadas' | 'passos' | null;
+  unit: CountUnit | null;
 }) {
   // Ordem visual: 2º, 1º, 3º (o campeão no meio e mais alto).
   const order = [top[1], top[0], top[2]];

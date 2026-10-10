@@ -22,7 +22,7 @@ import {
   type RankingsSearch,
   type Scope,
 } from '@/lib/ranking';
-import { countUnit, dailyMax, streakLabel } from '@/lib/stats';
+import { countUnit, dailyMax, streakLabel, type CountUnit } from '@/lib/stats';
 import './rankings.css';
 
 const route = getRouteApi('/tabs/ranking');
@@ -34,7 +34,7 @@ const GAME_PATH = { color: '/cor', time: '/tempo', eco: '/eco' } as const;
 const gapText = (tenths: number, counts: boolean) =>
   counts ? String(Math.max(1, Math.round(tenths / 10))) : (tenths / 10).toFixed(1);
 
-type ScoreProps = { max: number; showDays: boolean; unit: 'rodadas' | 'passos' | null };
+type ScoreProps = { max: number; showDays: boolean; unit: CountUnit | null };
 
 /** Pódio colorido com a cor do jogo: o campeão no meio, mais alto e com coroa. */
 function Podium({ top, ...score }: { top: RankingEntry[] } & ScoreProps) {

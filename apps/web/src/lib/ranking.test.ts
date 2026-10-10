@@ -23,6 +23,9 @@ describe('página de ranking', () => {
       'escalada',
       'velocidade',
       'reverso',
+      'batida-passo',
+      'batida-mare',
+      'batida-frenesi',
       'daily',
     ]);
     expect(boardChoices('color').at(-1)?.id).toBe('daily');

@@ -39,7 +39,15 @@ const MODE_MAX_BY_GAME: Record<GameId, Record<string, number>> = {
   color: { classic: 30, flash: 30, quick: 10, blind: 50, survival: 0 },
   time: { classic: 30, quick: 10, strict: 30, sequence: 50, survival: 0 },
   // Eco: a nota é o número de passos, sem máximo de pontos.
-  eco: { classic: 0, escalada: 0, velocidade: 0, reverso: 0 },
+  eco: {
+    classic: 0,
+    escalada: 0,
+    velocidade: 0,
+    reverso: 0,
+    'batida-passo': 0,
+    'batida-mare': 0,
+    'batida-frenesi': 0,
+  },
 };
 
 /** Sobrevivência: a nota é o número de rodadas jogadas (não tem máximo). */
@@ -56,13 +64,22 @@ export const dailyMax = (game: string) => (game === 'color' ? 50 : game === 'eco
  * Jogos e modos cuja nota é uma contagem, não pontos de 0 a 10 por rodada: a Sobrevivência conta
  * rodadas e o Eco conta passos. `null` quando a nota é em pontos.
  */
-export const countUnit = (game: string, mode?: string): 'rodadas' | 'passos' | null =>
-  game === 'eco' ? 'passos' : mode === 'survival' ? 'rodadas' : null;
+export type CountUnit = 'rodadas' | 'passos' | 'pontos';
+
+/** O Eco Hero conta pontos (guardados em décimos, como os outros: 10 = 1 ponto). */
+export const countUnit = (game: string, mode?: string): CountUnit | null =>
+  game === 'eco'
+    ? mode?.startsWith('batida-')
+      ? 'pontos'
+      : 'passos'
+    : mode === 'survival'
+      ? 'rodadas'
+      : null;
 
 /** "7 rodadas", "12 passos" (e o singular com 1). `tenths` é a nota guardada (7 = 70). */
-export function formatCount(tenths: number, unit: 'rodadas' | 'passos'): string {
+export function formatCount(tenths: number, unit: CountUnit): string {
   const n = Math.round(tenths / 10);
-  const one = unit === 'rodadas' ? 'rodada' : 'passo';
+  const one = unit === 'rodadas' ? 'rodada' : unit === 'passos' ? 'passo' : 'ponto';
   return `${n} ${n === 1 ? one : unit}`;
 }
 
@@ -84,6 +101,9 @@ const ORDER = [
   'escalada',
   'velocidade',
   'reverso',
+  'batida-passo',
+  'batida-mare',
+  'batida-frenesi',
 ];
 
 /** Só os modos conhecidos de um jogo, na ordem da tela de início. */

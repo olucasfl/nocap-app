@@ -1,5 +1,13 @@
 /** Telas em que dá para interromper a pessoa sem atrapalhar nada que ela esteja fazendo. */
-const CALM_ROUTES = ['/', '/ranking', '/historico', '/amigos', '/perfil', '/entrar', '/criar-conta'];
+const CALM_ROUTES = [
+  '/',
+  '/ranking',
+  '/historico',
+  '/amigos',
+  '/perfil',
+  '/entrar',
+  '/criar-conta',
+];
 
 /**
  * O aviso de versão nova só aparece quando não vai atrapalhar: no início, no ranking, no

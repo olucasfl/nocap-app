@@ -1,0 +1,463 @@
+/* Ecooo Batida: cinco pistas, notas descendo e botões grandes para os dois polegares. */
+.bt {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.bt-defs {
+  position: absolute;
+}
+.bt-hud {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+}
+.bt-score,
+.bt-combo {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+}
+.bt-combo {
+  align-items: flex-end;
+}
+.bt-score .mono,
+.bt-combo .mono {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+.bt-score b,
+.bt-combo b {
+  font: 900 34px/1.1 var(--font-display);
+  letter-spacing: -0.04em;
+}
+.bt-mult {
+  min-width: 64px;
+  padding: 6px 12px;
+  text-align: center;
+  background: var(--white);
+  color: var(--ink);
+  border: var(--border);
+  border-radius: 999px;
+  box-shadow: 3px 3px 0 var(--ink);
+  font: 900 24px/1 var(--font-display);
+}
+.bt-mult.m2 {
+  background: var(--yellow);
+  color: var(--on-accent);
+}
+.bt-mult.m3 {
+  background: var(--orange);
+  color: var(--on-accent);
+}
+.bt-mult.m4 {
+  background: var(--ink);
+  color: var(--yellow);
+}
+.bt-energy {
+  height: 16px;
+  background: var(--white);
+  border: var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.bt-energy i {
+  display: block;
+  height: 100%;
+  background: var(--green);
+  transform-origin: left center;
+  transition: transform 0.12s linear;
+}
+.bt-energy i.low {
+  background: var(--orange);
+}
+
+/* O campo onde as notas descem. */
+.bt-field {
+  position: relative;
+  flex: 1;
+  min-height: 260px;
+  overflow: hidden;
+  background: var(--paper);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+}
+.bt-road {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  color: var(--ink);
+  pointer-events: none;
+}
+/* A linha de acerto: no mesmo ponto em que a nota chega ao tamanho cheio (90% da altura). */
+.bt-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(90% - 2px);
+  border-top: 4px solid var(--ink);
+  opacity: 0.7;
+}
+.bt-note {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 20%;
+  height: 46px;
+  padding: 0 6px;
+  transform-origin: center center;
+  will-change: transform, opacity;
+}
+.bt-note > span {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  border: var(--border);
+  border-radius: 14px;
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.bt-note svg {
+  width: 28px;
+  height: 28px;
+}
+.bt-count {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font: 900 120px/1 var(--font-display);
+  letter-spacing: -0.06em;
+  opacity: 0;
+  pointer-events: none;
+}
+.bt-judge {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 66%;
+  text-align: center;
+  font: 900 26px/1 var(--font-display);
+  letter-spacing: -0.02em;
+  opacity: 0;
+  pointer-events: none;
+}
+.bt-judge.on {
+  animation: bt-pop 0.5s ease-out both;
+}
+.bt-judge.perfect {
+  color: var(--orange);
+}
+.bt-judge.good {
+  color: var(--blue);
+}
+.bt-judge.miss {
+  color: var(--muted);
+}
+@keyframes bt-pop {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1.15);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-26px) scale(1);
+  }
+}
+.bt-over {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgb(0 0 0 / 0.55);
+  color: var(--white);
+  font: 900 34px var(--font-display);
+}
+
+/* Botões das pistas: grandes, na ordem das cores do Ecooo. */
+.bt-pads {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+/* A tecla (computador) aparece na quina de cada botão. */
+.bt-kbd {
+  position: absolute;
+  right: 6px;
+  bottom: 5px;
+  min-width: 22px;
+  padding: 1px 5px;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 6px;
+  font: 700 11px var(--font-mono);
+  text-align: center;
+}
+.bt-pad {
+  position: relative;
+  appearance: none;
+  display: grid;
+  place-items: center;
+  height: 96px;
+  padding: 0;
+  border: var(--border);
+  border-radius: 18px;
+  box-shadow: 4px 4px 0 var(--ink);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.bt-pad:disabled {
+  cursor: default;
+}
+.bt-pad:focus-visible {
+  outline: 4px solid var(--ink);
+  outline-offset: 3px;
+}
+.bt-pad.hit {
+  animation: bt-hit 0.18s ease-out;
+}
+.bt-pad.bad {
+  animation: bt-bad 0.3s linear;
+  outline: 4px solid var(--ink);
+  outline-offset: 2px;
+}
+@keyframes bt-hit {
+  from {
+    transform: translate(3px, 3px) scale(1.06);
+    box-shadow: 1px 1px 0 var(--ink);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes bt-bad {
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bt-judge.on,
+  .bt-pad.hit,
+  .bt-pad.bad {
+    animation: none;
+  }
+  .bt-energy i {
+    transition: none;
+  }
+}
+
+/* Botão de pausa no canto do placar. */
+.bt-pausebtn {
+  appearance: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  background: var(--white);
+  color: var(--ink);
+  border: var(--border);
+  border-radius: 12px;
+  box-shadow: 3px 3px 0 var(--ink);
+  cursor: pointer;
+}
+.bt-pausebtn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.bt-pausebtn:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 2px;
+}
+
+/* Pausa: tela cheia por cima da partida, com o menu e a contagem 3, 2, 1 para voltar. */
+.bt-pause {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgb(0 0 0 / 0.72);
+  overflow-y: auto;
+}
+.bt-pause-card {
+  width: min(100%, 420px);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+  background: var(--paper);
+  color: var(--ink);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+.bt-pause-card h2 {
+  margin: 0;
+  font: 900 34px/1 var(--font-display);
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+}
+.bt-pause-song,
+.bt-pause-hint {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.bt-pause-count {
+  font: 900 min(46vw, 220px) / 1 var(--font-display);
+  color: var(--white);
+  letter-spacing: -0.06em;
+  animation: bt-count 1s ease-out both;
+}
+@keyframes bt-count {
+  from {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+  25% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+}
+
+/* Configuração das teclas (computador): 5 botões coloridos com a tecla de cada pista. */
+.bt-keys {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: var(--white);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+}
+.bt-keys-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+.bt-keys-row {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+.bt-key {
+  appearance: none;
+  display: grid;
+  place-items: center;
+  height: 52px;
+  padding: 0;
+  border: var(--border);
+  border-radius: 12px;
+  box-shadow: 3px 3px 0 var(--ink);
+  cursor: pointer;
+}
+.bt-key b {
+  font: 900 18px var(--font-display);
+}
+.bt-key.on {
+  outline: 4px solid var(--ink);
+  outline-offset: 2px;
+  animation: bt-listen 0.9s ease-in-out infinite;
+}
+@keyframes bt-listen {
+  50% {
+    transform: scale(1.06);
+  }
+}
+.bt-key:focus-visible {
+  outline: 4px solid var(--ink);
+  outline-offset: 2px;
+}
+.bt-keys-hint {
+  margin: 0;
+  min-height: 1.4em;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* Escolha da música na abertura: três cartões. */
+.bt-songs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.bt-song {
+  appearance: none;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  text-align: left;
+  background: var(--white);
+  color: var(--ink);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 3px 3px 0 var(--ink);
+  cursor: pointer;
+}
+.bt-song[aria-checked='true'] {
+  background: var(--song, var(--orange));
+  color: var(--on-accent);
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+.bt-song:focus-visible {
+  outline: 4px solid var(--ink);
+  outline-offset: 3px;
+}
+.bt-song-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.bt-song-head b {
+  font: 900 20px var(--font-display);
+  letter-spacing: -0.02em;
+}
+.bt-song p {
+  margin: 0;
+  font: 400 13px/1.35 var(--font-mono);
+}
+.bt-song-meta {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bt-pause-count,
+  .bt-key.on {
+    animation: none;
+  }
+}
+
+/* No celular não há teclado: a letra da tecla some dos botões. */
+@media (pointer: coarse) {
+  .bt-kbd {
+    display: none;
+  }
+}

@@ -143,7 +143,7 @@ const colorRoute = createRoute({
   component: lazyRouteComponent(() => import('@/games/color/ColorPage'), 'ColorPage'),
 });
 
-const ECO_MODES: EcoMode[] = ['classic', 'escalada', 'velocidade', 'reverso', 'daily'];
+const ECO_MODES: EcoMode[] = ['classic', 'escalada', 'velocidade', 'reverso', 'batida', 'daily'];
 
 const ecoRoute = createRoute({
   getParentRoute: () => rootRoute,

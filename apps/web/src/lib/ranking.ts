@@ -12,6 +12,9 @@ export type Board =
   | 'escalada'
   | 'velocidade'
   | 'reverso'
+  | 'batida-passo'
+  | 'batida-mare'
+  | 'batida-frenesi'
   | 'daily';
 export type Period = 'day' | 'week' | 'all';
 export type Scope = 'all' | 'friends';
@@ -54,6 +57,9 @@ const ALL_BOARDS: { id: Board; label: string }[] = [
   { id: 'escalada', label: 'Escalada' },
   { id: 'velocidade', label: 'Velocidade' },
   { id: 'reverso', label: 'Reverso' },
+  { id: 'batida-passo', label: 'Eco Hero: Primeiro Passo' },
+  { id: 'batida-mare', label: 'Eco Hero: Maré Alta' },
+  { id: 'batida-frenesi', label: 'Eco Hero: Frenesi' },
   { id: 'daily', label: 'Daily' },
 ];
 
@@ -61,7 +67,15 @@ const ALL_BOARDS: { id: Board; label: string }[] = [
 const BOARD_IDS: Record<Game, Board[]> = {
   color: ['classic', 'flash', 'quick', 'blind', 'survival'],
   time: ['classic', 'quick', 'strict', 'sequence', 'survival'],
-  eco: ['classic', 'escalada', 'velocidade', 'reverso'],
+  eco: [
+    'classic',
+    'escalada',
+    'velocidade',
+    'reverso',
+    'batida-passo',
+    'batida-mare',
+    'batida-frenesi',
+  ],
 };
 
 export const boardsOf = (game: Game) => ALL_BOARDS.filter((b) => BOARD_IDS[game].includes(b.id));

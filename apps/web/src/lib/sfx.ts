@@ -21,7 +21,14 @@ function readMuted(): boolean {
   }
 }
 
+/** Com o áudio "preso" (jogo pausado) nenhum som novo começa nem destrava o contexto. */
+let held = false;
+export function holdAudio(on: boolean) {
+  held = on;
+}
+
 function audio(): AudioContext | null {
+  if (held) return null;
   if (!ctx) {
     const w = window as unknown as { webkitAudioContext?: typeof AudioContext };
     const AC = window.AudioContext ?? w.webkitAudioContext;
@@ -39,6 +46,16 @@ function audio(): AudioContext | null {
   }
   if (ctx.state === 'suspended') void ctx.resume();
   return ctx;
+}
+
+/**
+ * O contexto de áudio e a saída principal, para sons que precisam de relógio próprio (o ritmo do
+ * Ecooo agenda a música à frente pelo `currentTime`). `muted()` diz se está no mudo agora.
+ */
+export function audioKit() {
+  const c = audio();
+  if (!c || !master || !noiseBuf) return null;
+  return { ctx: c, out: master, noise: noiseBuf, muted: () => muted };
 }
 
 function env(g: GainNode, t: number, a: number, d: number, peak: number) {
