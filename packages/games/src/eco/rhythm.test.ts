@@ -4,7 +4,10 @@ import {
   BATIDA_MAX_TENTHS,
   BatidaSim,
   ENERGY_START,
+  BATIDA_MAX_HOLD_MS,
   GOOD_MS,
+  HOLD_END_SLACK_MS,
+  chanceAt,
   PERFECT_MS,
   SONGS,
   SONG_IDS,
@@ -40,7 +43,12 @@ function perfectTaps(seed: string, song: Song, bars: number, offset = 0): Batida
   const out: BatidaTap[] = [];
   for (let bar = 0; bar < bars; bar++) {
     for (const n of notesInBar(seed, song, bar)) {
-      out.push({ lane: n.lane, t: Math.round(n.t) + offset });
+      const down = Math.round(n.t) + offset;
+      out.push({
+        lane: n.lane,
+        t: down,
+        up: n.endT ? Math.round(n.endT) + offset + 10 : down + 40,
+      });
     }
   }
   return out.sort((a, b) => a.t - b.t);
@@ -55,14 +63,25 @@ describe('as três músicas', () => {
     for (const s of ALL) expect(s.tagline.length).toBeGreaterThan(20);
   });
 
-  it('ficam mais exigentes uma depois da outra e nenhuma passa de um ritmo tocável', () => {
+  it('ficam mais exigentes uma depois da outra', () => {
     const [a, b, c] = ALL as [Song, Song, Song];
     expect(a.startBpm).toBeLessThan(b.startBpm);
     expect(b.startBpm).toBeLessThan(c.startBpm);
-    expect(a.maxBpm).toBeLessThan(b.maxBpm);
-    expect(b.maxBpm).toBeLessThan(c.maxBpm);
+    // O andamento sobe mais depressa nas mais difíceis, mas em todas ele sobe sem parar.
+    expect(a.bpmPerBar).toBeLessThan(b.bpmPerBar);
+    expect(b.bpmPerBar).toBeLessThan(c.bpmPerBar);
     expect(a.levelStart).toBeLessThan(c.levelStart);
-    for (const s of ALL) expect(s.maxBpm).toBeLessThanOrEqual(140);
+  });
+
+  it('todas escalam sem parar: o andamento continua subindo por muitos minutos', () => {
+    for (const s of ALL) {
+      expect(bpmAt(s, 80)).toBeGreaterThan(bpmAt(s, 40));
+      expect(bpmAt(s, 40)).toBeGreaterThan(bpmAt(s, 20));
+      expect(s.maxBpm).toBeGreaterThanOrEqual(300);
+    }
+    // O fácil não fica parado em 100: ele só demora mais para chegar rápido.
+    expect(bpmAt(SONGS.passo, 100)).toBeGreaterThan(170);
+    expect(bpmAt(SONGS.passo, 10)).toBeLessThan(bpmAt(SONGS.mare, 10));
   });
 
   it('os ids e o modo guardado no servidor', () => {
@@ -84,11 +103,11 @@ describe('as três músicas', () => {
 });
 
 describe('andamento', () => {
-  it('começa no início da música, sobe a cada compasso e para no máximo dela', () => {
+  it('começa no início da música, sobe a cada compasso e só para num teto altíssimo', () => {
     for (const s of ALL) {
       expect(bpmAt(s, 0)).toBe(s.startBpm);
       expect(bpmAt(s, 10)).toBeGreaterThan(bpmAt(s, 1));
-      expect(bpmAt(s, 1000)).toBe(s.maxBpm);
+      expect(bpmAt(s, 10_000)).toBe(s.maxBpm);
     }
   });
 
@@ -166,13 +185,13 @@ describe('a música da seed', () => {
         prev = l;
       }
     }
-    expect(levelAt(SONGS.passo, 1000)).toBe(2);
+    expect(levelAt(SONGS.passo, 1000)).toBe(4);
     expect(levelAt(SONGS.frenesi, 1)).toBe(2);
   });
 
   it('no Primeiro Passo o início usa só as pistas do meio e depois abre', () => {
     const p = SONGS.passo;
-    const early = new Set(notesBetween(SEED, p, 0, barStart(p, 12)).map((n) => n.lane));
+    const early = new Set(notesBetween(SEED, p, 0, barStart(p, 14)).map((n) => n.lane));
     expect([...early].every((l) => l >= 1 && l <= 3)).toBe(true);
     const late = new Set(
       notesBetween(SEED, p, barStart(p, 30), barStart(p, 200)).map((n) => n.lane),
@@ -192,7 +211,7 @@ describe('a música da seed', () => {
   it('a frase repete o ritmo (A, A, B, A) para a música soar como tema', () => {
     for (const s of ALL) {
       const [b1, b2, , b4] = phraseNotes(SEED, s, 3);
-      const steps = (notes: BatidaNote[]) => notes.map((n) => n.step).join(',');
+      const steps = (notes: BatidaNote[]) => [...new Set(notes.map((n) => n.step))].join(',');
       expect(steps(b1!)).toBe(steps(b2!));
       expect(steps(b4!)).toBe(steps(b1!));
     }
@@ -202,7 +221,9 @@ describe('a música da seed', () => {
     for (const s of ALL) {
       for (let phrase = 0; phrase < 12; phrase++) {
         const bars = phraseNotes(SEED, s, phrase);
-        expect(bars[bars.length - 1]!.at(-1)!.lane).toBe(2);
+        const last = bars[bars.length - 1]!;
+        const lastStep = last.at(-1)!.step;
+        expect(last.filter((n) => n.step === lastStep).map((n) => n.lane)).toContain(2);
       }
     }
   });
@@ -277,6 +298,7 @@ describe('evaluateBatida', () => {
     const all = notesBetween(SEED, SONG, 0, barStart(SONG, 10)).map((n) => ({
       lane: n.lane,
       t: Math.round(n.t),
+      up: n.endT ? Math.round(n.endT) + 10 : Math.round(n.t) + 40,
     }));
     const sequence = evaluateBatida(SEED, SONG, all);
     const broken = evaluateBatida(
@@ -290,7 +312,10 @@ describe('evaluateBatida', () => {
   });
 
   it('tocar sem nota por perto custa energia e zera o combo', () => {
-    const run = evaluateBatida(SEED, SONG, [{ lane: 0, t: 100 }, ...perfectTaps(SEED, SONG, 20)]);
+    const run = evaluateBatida(SEED, SONG, [
+      { lane: 0, t: 100, up: 140 },
+      ...perfectTaps(SEED, SONG, 20),
+    ]);
     expect(run.stray).toBeGreaterThanOrEqual(1);
     expect(run.endedAtMs).toBeGreaterThan(barStart(SONG, 20));
   });
@@ -316,8 +341,8 @@ describe('evaluateBatida', () => {
     const note = notesBetween(SEED, SONG, 0, 30_000)[0]!;
     const t = Math.round(note.t);
     const run = evaluateBatida(SEED, SONG, [
-      { lane: note.lane, t },
-      { lane: note.lane, t: t + 60 },
+      { lane: note.lane, t, up: t + 20 },
+      { lane: note.lane, t: t + 60, up: t + 80 },
     ]);
     expect(run.perfect).toBe(1);
     expect(run.stray).toBe(1);
@@ -327,45 +352,70 @@ describe('evaluateBatida', () => {
     const taps = perfectTaps(SEED, SONG, 6);
     expect(evaluateBatida(SEED, SONG, taps).usedTaps).toBe(taps.length);
     const dead = evaluateBatida(SEED, SONG, []);
-    const late = evaluateBatida(SEED, SONG, [{ lane: 0, t: Math.round(dead.endedAtMs) + 5000 }]);
+    const late = evaluateBatida(SEED, SONG, [
+      { lane: 0, t: Math.round(dead.endedAtMs) + 5000, up: Math.round(dead.endedAtMs) + 5040 },
+    ]);
     expect(late.usedTaps).toBe(0);
   });
 });
 
 describe('validateTaps', () => {
-  it('aceita toques em ordem', () => {
+  it('aceita toques em ordem, cada um com o instante de soltar', () => {
     expect(
       validateTaps([
-        { lane: 0, t: 1000 },
-        { lane: 4, t: 1010 },
+        { lane: 0, t: 1000, up: 1050 },
+        { lane: 4, t: 1010, up: 1060 },
       ]),
     ).toBeNull();
     expect(validateTaps([])).toBeNull();
   });
 
   it('recusa pista inválida, instante quebrado e fora de ordem', () => {
-    expect(validateTaps([{ lane: 5, t: 10 }])).toMatch(/Pista/);
-    expect(validateTaps([{ lane: 0, t: 1.5 }])).toMatch(/Instante/);
-    expect(validateTaps([{ lane: 0, t: -1 }])).toMatch(/Instante/);
+    expect(validateTaps([{ lane: 5, t: 10, up: 50 }])).toMatch(/Pista/);
+    expect(validateTaps([{ lane: 0, t: 1.5, up: 50 }])).toMatch(/Instante/);
+    expect(validateTaps([{ lane: 0, t: -1, up: 50 }])).toMatch(/Instante/);
     expect(
       validateTaps([
-        { lane: 0, t: 500 },
-        { lane: 1, t: 400 },
+        { lane: 0, t: 500, up: 540 },
+        { lane: 1, t: 400, up: 440 },
       ]),
     ).toMatch(/ordem/);
+  });
+
+  it('soltar tem que vir depois de apertar, e não passar de 30 s', () => {
+    expect(validateTaps([{ lane: 0, t: 500, up: 500 }])).toMatch(/Soltou/);
+    expect(validateTaps([{ lane: 0, t: 500, up: 400 }])).toMatch(/Soltou/);
+    expect(validateTaps([{ lane: 0, t: 500, up: 500.5 }])).toMatch(/Soltou/);
+    expect(validateTaps([{ lane: 0, t: 500, up: 500 + BATIDA_MAX_HOLD_MS + 1 }])).toMatch(/Soltou/);
+    expect(validateTaps([{ lane: 0, t: 500, up: 500 + BATIDA_MAX_HOLD_MS }])).toBeNull();
   });
 
   it('recusa rajada impossível na mesma pista, mas aceita pistas diferentes juntas', () => {
     expect(
       validateTaps([
-        { lane: 2, t: 1000 },
-        { lane: 2, t: 1010 },
+        { lane: 2, t: 1000, up: 1005 },
+        { lane: 2, t: 1010, up: 1020 },
       ]),
     ).toMatch(/rápidos/);
     expect(
       validateTaps([
-        { lane: 2, t: 1000 },
-        { lane: 3, t: 1010 },
+        { lane: 2, t: 1000, up: 1020 },
+        { lane: 3, t: 1010, up: 1030 },
+      ]),
+    ).toBeNull();
+  });
+
+  it('não dá para apertar de novo uma pista que ainda está apertada', () => {
+    expect(
+      validateTaps([
+        { lane: 1, t: 1000, up: 2000 },
+        { lane: 1, t: 1500, up: 1600 },
+      ]),
+    ).toMatch(/sem soltar/);
+    expect(
+      validateTaps([
+        { lane: 1, t: 1000, up: 2000 },
+        { lane: 1, t: 2000, up: 2050 },
       ]),
     ).toBeNull();
   });
@@ -404,5 +454,196 @@ describe('BatidaSim (a partida ao vivo)', () => {
     expect(sim.currentCombo).toBeGreaterThan(8);
     expect(sim.currentMultiplier).toBeGreaterThanOrEqual(2);
     expect(sim.currentEnergy).toBeGreaterThan(ENERGY_START);
+  });
+});
+
+/** Notas de uma música por um bom trecho (de 1 até `bars`). */
+const allNotes = (song: Song, bars: number, seed = SEED) => {
+  const out: BatidaNote[] = [];
+  for (let b = 1; b < bars; b++) out.push(...notesInBar(seed, song, b));
+  return out;
+};
+const groups = (notes: BatidaNote[]) => {
+  const by = new Map<string, number>();
+  for (const n of notes) by.set(`${n.bar}:${n.step}`, (by.get(`${n.bar}:${n.step}`) ?? 0) + 1);
+  return [...by.values()];
+};
+
+describe('acordes (notas juntas)', () => {
+  it('no começo não há acorde, e depois aparecem de duas e, nas mais difíceis, de três', () => {
+    for (const s of ALL) {
+      expect(Math.max(...groups(allNotes(s, Math.max(2, s.doubles.from))))).toBe(1);
+    }
+    expect(Math.max(...groups(allNotes(SONGS.mare, 80)))).toBe(3);
+    expect(Math.max(...groups(allNotes(SONGS.frenesi, 60)))).toBe(3);
+    expect(Math.max(...groups(allNotes(SONGS.mare, 24)))).toBe(2);
+  });
+
+  it('nunca passa de 3 notas juntas, e todas em pistas diferentes', () => {
+    for (const s of ALL) {
+      const notes = allNotes(s, 300);
+      expect(Math.max(...groups(notes))).toBeLessThanOrEqual(3);
+      const keys = notes.map((n) => `${n.bar}:${n.step}:${n.lane}`);
+      expect(new Set(keys).size).toBe(keys.length);
+    }
+  });
+
+  it('o fácil usa menos acordes que os outros, e o Frenesi mais que todos', () => {
+    const share = (s: Song) => {
+      const g = groups(allNotes(s, 120));
+      return g.filter((x) => x > 1).length / g.length;
+    };
+    expect(share(SONGS.passo)).toBeLessThan(share(SONGS.mare));
+    expect(share(SONGS.mare)).toBeLessThan(share(SONGS.frenesi));
+  });
+
+  it('a chance sobe sem parar com os compassos, até o teto', () => {
+    const rule = { from: 10, base: 0.1, grow: 0.01 };
+    expect(chanceAt(rule, 9, 0.5)).toBe(0);
+    expect(chanceAt(rule, 10, 0.5)).toBeCloseTo(0.1, 5);
+    expect(chanceAt(rule, 20, 0.5)).toBeCloseTo(0.2, 5);
+    expect(chanceAt(rule, 5000, 0.5)).toBe(0.5);
+  });
+});
+
+describe('notas longas (segurar)', () => {
+  const holds = (song: Song, bars: number) =>
+    allNotes(song, bars).filter((n) => n.endT !== undefined);
+
+  it('aparecem depois do começo, em todas as músicas', () => {
+    for (const s of ALL) {
+      expect(holds(s, Math.max(2, s.holds.from)).length).toBe(0);
+      expect(holds(s, 120).length).toBeGreaterThan(5);
+    }
+  });
+
+  it('duram de 2 a 4 colcheias, dentro do mesmo compasso, e a pista fica livre até o fim', () => {
+    for (const s of ALL) {
+      const notes = allNotes(s, 200);
+      for (const h of holds(s, 200)) {
+        const steps = Math.round(((h.endT! - h.t) / barMs(s, h.bar)) * 8);
+        expect([2, 4]).toContain(steps);
+        expect(h.step + steps).toBeLessThanOrEqual(6);
+        const clash = notes.filter(
+          (n) =>
+            n !== h &&
+            n.bar === h.bar &&
+            n.lane === h.lane &&
+            n.step > h.step &&
+            n.step <= h.step + steps + 1,
+        );
+        expect(clash).toEqual([]);
+      }
+    }
+  });
+});
+
+describe('segurar na simulação', () => {
+  /** A primeira nota longa da música e a hora de apertar e de soltar. */
+  const firstHold = (song: Song) => {
+    const h = allNotes(song, 200).find((n) => n.endT !== undefined)!;
+    return h;
+  };
+
+  it('segurar até o fim vale pontos e conta como completa', () => {
+    const song = SONGS.frenesi;
+    const h = firstHold(song);
+    const sim = new BatidaSim(SEED, song);
+    // Acerta tudo até a nota longa, aperta nela e segura até depois do fim.
+    const before = allNotes(song, h.bar).filter((n) => n.t < h.t);
+    for (const n of before) {
+      sim.tap(n.lane, Math.round(n.t));
+      sim.release(n.lane, Math.round(n.t) + 30);
+    }
+    const base = sim.currentTenths;
+    sim.tap(h.lane, Math.round(h.t));
+    const afterHit = sim.currentTenths;
+    const events = sim.release(h.lane, Math.round(h.endT!) + 20);
+    expect(events.some((e) => e.kind === 'holdDone')).toBe(true);
+    expect(sim.run.holds).toBe(1);
+    expect(sim.run.holdsBroken).toBe(0);
+    expect(sim.currentTenths).toBeGreaterThan(afterHit);
+    expect(afterHit).toBeGreaterThan(base);
+    expect(sim.holdingNote(h.lane)).toBeUndefined();
+  });
+
+  it('soltar cedo quebra: zera o combo, gasta energia e não dá os pontos da nota longa', () => {
+    const song = SONGS.frenesi;
+    const h = firstHold(song);
+    const sim = new BatidaSim(SEED, song);
+    for (const n of allNotes(song, h.bar).filter((x) => x.t < h.t)) {
+      sim.tap(n.lane, Math.round(n.t));
+      sim.release(n.lane, Math.round(n.t) + 30);
+    }
+    sim.tap(h.lane, Math.round(h.t));
+    expect(sim.holdingNote(h.lane)).toBe(h);
+    const energy = sim.currentEnergy;
+    const combo = sim.currentCombo;
+    expect(combo).toBeGreaterThan(0);
+    const events = sim.release(h.lane, Math.round(h.t) + 40);
+    expect(events.some((e) => e.kind === 'holdBroken')).toBe(true);
+    expect(sim.currentCombo).toBe(0);
+    expect(sim.currentEnergy).toBeLessThan(energy);
+    expect(sim.run.holdsBroken).toBe(1);
+    expect(sim.run.holds).toBe(0);
+  });
+
+  it('segurar e nem soltar: a nota longa se completa sozinha quando o tempo chega ao fim', () => {
+    const song = SONGS.frenesi;
+    const h = firstHold(song);
+    const sim = new BatidaSim(SEED, song);
+    for (const n of allNotes(song, h.bar).filter((x) => x.t < h.t)) {
+      sim.tap(n.lane, Math.round(n.t));
+      sim.release(n.lane, Math.round(n.t) + 30);
+    }
+    sim.tap(h.lane, Math.round(h.t));
+    const events = sim.advance(h.endT! - HOLD_END_SLACK_MS + 1);
+    expect(events.some((e) => e.kind === 'holdDone')).toBe(true);
+  });
+
+  it('uma partida só de acertos perfeitos (apertando e soltando certo) não perde nenhuma nota longa', () => {
+    for (const s of ALL) {
+      const run = evaluateBatida(SEED, s, perfectTaps(SEED, s, 120));
+      expect(run.holds).toBeGreaterThan(0);
+      expect(run.holdsBroken).toBe(0);
+      expect(run.stray).toBe(0);
+    }
+  });
+
+  it('soltar cedo em todas as notas longas aparece no resultado', () => {
+    const song = SONGS.frenesi;
+    const taps = perfectTaps(SEED, song, 60).map((t) => {
+      const note = allNotes(song, 60).find((n) => Math.round(n.t) === t.t && n.lane === t.lane);
+      return note?.endT ? { ...t, up: t.t + 40 } : t;
+    });
+    const run = evaluateBatida(SEED, song, taps);
+    expect(run.holdsBroken).toBeGreaterThan(0);
+    expect(run.holds).toBe(0);
+  });
+
+  it('o acorde vale por nota: acertar as três juntas soma o combo de três', () => {
+    const song = SONGS.frenesi;
+    const note = allNotes(song, 80).find((n) =>
+      groups(allNotes(song, 80).filter((x) => x.bar === n.bar && x.step === n.step)).includes(3),
+    )!;
+    const chord = allNotes(song, 80).filter((n) => n.bar === note.bar && n.step === note.step);
+    expect(chord).toHaveLength(3);
+    const sim = new BatidaSim(SEED, song);
+    // Antes do acorde, acerta o caminho até lá, apertando e soltando em ordem de tempo.
+    const moments = allNotes(song, note.bar + 1)
+      .filter((x) => x.t < note.t)
+      .flatMap((n) => [
+        { down: true, n, at: Math.round(n.t) },
+        { down: false, n, at: n.endT ? Math.round(n.endT) + 10 : Math.round(n.t) + 30 },
+      ])
+      .filter((m) => m.at < note.t || m.down)
+      .sort((a, b) => a.at - b.at || Number(a.down) - Number(b.down));
+    for (const m of moments) {
+      if (m.down) sim.tap(m.n.lane, m.at);
+      else sim.release(m.n.lane, m.at);
+    }
+    const combo = sim.currentCombo;
+    for (const n of chord) sim.tap(n.lane, Math.round(n.t));
+    expect(sim.currentCombo).toBe(combo + 3);
   });
 });

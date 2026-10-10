@@ -9,6 +9,7 @@ import {
   barMs,
   barStart,
   notesBetween,
+  type BatidaNote,
   type BatidaRun,
   type BatidaTap,
   type SimEvent,
@@ -19,37 +20,22 @@ import { getBatidaKeys, keyLabel, laneOfKey } from '@/lib/batida-keys';
 import { getBatidaLatency } from '@/lib/batida-latency';
 import { buzz, holdAudio } from '@/lib/sfx';
 import { BatidaKeys } from './BatidaKeys';
+import { HIT, HORIZON, S_FAR, project } from './batida-view';
 import { PADS } from './pads';
 import './batida.css';
 
-/** Quanto antes de chegar à linha a nota aparece lá no fundo da pista (ms). */
+/** Quanto antes de chegar ao molde a nota aparece lá no fundo da pista (ms). */
 const TRAVEL_MS = 2300;
 const NOTE_H = 46;
+const SVG_NS = 'http://www.w3.org/2000/svg';
 
-/**
- * Perspectiva: a pista vai de um horizonte (alto, estreito) até a linha de acerto (perto, larga).
- * `K` é a força da perspectiva; `HORIZON` e `HIT` são a altura do horizonte e da linha, em fração
- * do campo. Tudo vira `transform` (posição e escala), nada de layout por quadro.
- */
-const K = 2.6;
-const HORIZON = 0.05;
-const HIT = 0.9;
-const S_FAR = 1 / (1 + K);
-
-/** Onde uma nota está na tela: `z` = 1 no fundo, 0 na linha de acerto, negativo depois dela. */
-export function project(z: number, lane: number, w: number, h: number) {
-  const s = 1 / (1 + K * Math.max(-0.2, z));
-  const u = (s - S_FAR) / (1 - S_FAR);
-  return {
-    scale: s,
-    x: w / 2 + (lane - (BATIDA_LANES - 1) / 2) * (w / BATIDA_LANES) * s,
-    y: h * (HORIZON + (HIT - HORIZON) * u),
-    /** Surge devagar no fundo e some depois de passar da linha. */
-    opacity: z > 0 ? Math.min(1, u / 0.14) : Math.max(0, 1 + z / 0.2),
-  };
-}
-
-const JUDGE_TEXT = { perfect: 'PERFEITO', good: 'BOM', miss: 'ERROU' } as const;
+const JUDGE_TEXT = {
+  perfect: 'PERFEITO',
+  good: 'BOM',
+  miss: 'ERROU',
+  held: 'SEGUROU!',
+  broke: 'SOLTOU CEDO',
+} as const;
 
 interface Hud {
   tenths: number;
@@ -64,7 +50,7 @@ type Pause = { kind: 'none' } | { kind: 'paused' } | { kind: 'count'; n: number 
 interface Props {
   seed: string;
   song: Song;
-  /** A partida acabou: os toques feitos e o resultado que o jogo contou. */
+  /** A partida acabou: os toques feitos (apertar e soltar) e o resultado que o jogo contou. */
   onEnd: (taps: BatidaTap[], run: BatidaRun) => void;
   /** Saiu pelo menu de pausa. */
   onQuit: () => void;
@@ -88,7 +74,7 @@ function SymbolDefs() {
 /** A pista em perspectiva: faixas coloridas que se juntam no horizonte. */
 function Road() {
   const top = (i: number) => 50 + (i - BATIDA_LANES / 2) * (100 / BATIDA_LANES) * S_FAR;
-  // Em 100% de altura a pista já passou da linha de acerto: continua a mesma reta.
+  // Em 100% de altura a pista já passou dos moldes: continua a mesma reta.
   const sBottom = S_FAR + ((1 - HORIZON) / (HIT - HORIZON)) * (1 - S_FAR);
   const bottom = (i: number) => 50 + (i - BATIDA_LANES / 2) * (100 / BATIDA_LANES) * sBottom;
   const horizon = HORIZON * 100;
@@ -99,7 +85,7 @@ function Road() {
           key={i}
           points={`${top(i)},${horizon} ${top(i + 1)},${horizon} ${bottom(i + 1)},100 ${bottom(i)},100`}
           fill={PADS[i]!.color}
-          opacity="0.22"
+          opacity="0.14"
         />
       ))}
       {Array.from({ length: BATIDA_LANES + 1 }, (_, i) => (
@@ -110,7 +96,7 @@ function Road() {
           x2={bottom(i)}
           y2="100"
           stroke="currentColor"
-          strokeOpacity="0.35"
+          strokeOpacity="0.3"
           strokeWidth="2"
           vectorEffect="non-scaling-stroke"
         />
@@ -119,11 +105,13 @@ function Road() {
   );
 }
 
+const keyOf = (n: BatidaNote) => `${n.bar}:${n.step}:${n.lane}`;
+
 /**
- * A partida do Eco Hero: cinco pistas em perspectiva, as notas vêm do fundo e a música toca por
- * baixo. O relógio de tudo é o do áudio (não `setTimeout`), e a conta de acertos é a mesma
- * `BatidaSim` que o servidor usa para refazer a partida. Pausar congela o relógio do áudio; para
- * voltar, 3, 2, 1.
+ * A partida do Eco Hero: cinco pistas em perspectiva, as notas vêm do fundo e encaixam nos moldes
+ * translúcidos de cada cor. Notas juntas (acordes) pedem dedos ao mesmo tempo; notas longas pedem
+ * segurar até o fim. O relógio de tudo é o do áudio, e a conta é a mesma `BatidaSim` que o
+ * servidor usa para refazer a partida. Pausar congela o relógio; para voltar, 3, 2, 1.
  */
 export function BatidaPlay({ seed, song, onEnd, onQuit }: Props) {
   const [hud, setHud] = useState<Hud>({ tenths: 0, combo: 0, mult: 1, energy: 70 });
@@ -131,12 +119,14 @@ export function BatidaPlay({ seed, song, onEnd, onQuit }: Props) {
   const [pause, setPause] = useState<Pause>({ kind: 'none' });
   const [keys, setKeys] = useState<string[]>(() => getBatidaKeys());
   const field = useRef<HTMLDivElement>(null);
+  const holdsSvg = useRef<SVGSVGElement>(null);
   const judgeEl = useRef<HTMLDivElement>(null);
   const countEl = useRef<HTMLDivElement>(null);
-  const padEls = useRef<(HTMLButtonElement | null)[]>([]);
-  /** O toque de cada botão e os controles da pausa chamam o que o laço da partida registra aqui. */
+  const slotEls = useRef<(HTMLButtonElement | null)[]>([]);
+  /** Os botões e os controles da pausa chamam o que o laço da partida registra aqui. */
   const ctl = useRef<{
     press: (lane: number) => void;
+    release: (lane: number) => void;
     pause: () => void;
     resume: () => void;
   } | null>(null);
@@ -149,18 +139,24 @@ export function BatidaPlay({ seed, song, onEnd, onQuit }: Props) {
     const sim = new BatidaSim(seed, song);
     const audio: BatidaAudio | null = createBatidaAudio(song);
     const taps: BatidaTap[] = [];
+    /** O toque que está apertado agora em cada pista (ainda sem soltar). */
+    const open = new Map<number, BatidaTap>();
     const lastTap = new Array<number>(BATIDA_LANES).fill(-Infinity);
     const nodes = new Map<string, HTMLElement>();
+    const bodies = new Map<string, SVGPolygonElement>();
     const latency = getBatidaLatency();
     let raf = 0;
     let finished = false;
     let paused = false;
     let countTimer = 0;
     let size = { w: field.current?.clientWidth ?? 360, h: field.current?.clientHeight ?? 400 };
-    const ro = new ResizeObserver(() => {
+    const fit = () => {
       size = { w: field.current?.clientWidth ?? size.w, h: field.current?.clientHeight ?? size.h };
-    });
+      holdsSvg.current?.setAttribute('viewBox', `0 0 ${size.w} ${size.h}`);
+    };
+    const ro = new ResizeObserver(fit);
     if (field.current) ro.observe(field.current);
+    fit();
 
     // Sem Web Audio o jogo ainda roda: um relógio simples faz as vezes do relógio da música.
     let fallbackBase = performance.now() + 250;
@@ -178,26 +174,39 @@ export function BatidaPlay({ seed, song, onEnd, onQuit }: Props) {
         energy: sim.currentEnergy,
       });
 
-    const say = (kind: 'perfect' | 'good' | 'miss') => {
+    const say = (kind: keyof typeof JUDGE_TEXT) => {
       const el = judgeEl.current;
       if (!el) return;
       el.className = 'bt-judge';
       void el.offsetWidth; // reinicia a animação
       el.textContent = JUDGE_TEXT[kind];
-      el.className = `bt-judge on ${kind}`;
+      const tone = kind === 'held' ? 'perfect' : kind === 'broke' ? 'miss' : kind;
+      el.className = `bt-judge on ${tone}`;
     };
 
     const flash = (lane: number, kind: 'hit' | 'bad') => {
-      const el = padEls.current[lane];
+      const el = slotEls.current[lane];
       if (!el) return;
       el.classList.remove('hit', 'bad');
       void el.offsetWidth;
       el.classList.add(kind);
     };
 
+    const drop = (note: BatidaNote) => {
+      const key = keyOf(note);
+      nodes.get(key)?.remove();
+      nodes.delete(key);
+      bodies.get(key)?.remove();
+      bodies.delete(key);
+    };
+
     const finish = () => {
       if (finished) return;
       finished = true;
+      // Dedos ainda na tela: o toque termina agora.
+      const t = Math.round(clock());
+      for (const tap of open.values()) tap.up = Math.max(tap.t + 1, t);
+      open.clear();
       audio?.over();
       buzz(120);
       setOver(true);
@@ -208,19 +217,32 @@ export function BatidaPlay({ seed, song, onEnd, onQuit }: Props) {
       for (const e of events) {
         if (e.kind === 'hit') {
           audio?.hit(e.note.lane, e.note.bar, e.judgement === 'perfect');
+          if (e.note.endT !== undefined) audio?.holdStart(e.note.lane, e.note.bar);
+          else drop(e.note);
           flash(e.note.lane, 'hit');
           say(e.judgement);
-          const key = `${e.note.bar}:${e.note.step}:${e.note.lane}`;
-          nodes.get(key)?.remove();
-          nodes.delete(key);
           if (e.judgement === 'perfect') buzz(10);
         } else if (e.kind === 'miss') {
           audio?.missed();
           say('miss');
-        } else {
+        } else if (e.kind === 'stray') {
           audio?.wrong();
           flash(e.lane, 'bad');
           say('miss');
+          buzz(25);
+        } else if (e.kind === 'holdDone') {
+          audio?.holdEnd(e.lane);
+          audio?.hit(e.note.lane, e.note.bar, true);
+          drop(e.note);
+          flash(e.lane, 'hit');
+          say('held');
+          buzz(15);
+        } else {
+          audio?.holdEnd(e.lane);
+          audio?.missed();
+          drop(e.note);
+          flash(e.lane, 'bad');
+          say('broke');
           buzz(25);
         }
       }
@@ -232,20 +254,34 @@ export function BatidaPlay({ seed, song, onEnd, onQuit }: Props) {
     };
 
     const press = (lane: number) => {
-      if (finished || paused) return;
+      if (finished || paused || open.has(lane)) return;
       const t = Math.round(clock());
       // Antes da primeira nota ainda é a contagem: toque aí não vale.
       if (t < barStart(song, LEAD_IN_BARS) - 400) return;
       // Um toque que dispara duas vezes não pode virar rajada impossível.
       if (t - lastTap[lane]! < BATIDA_MIN_TAP_GAP_MS) return;
       lastTap[lane] = t;
-      taps.push({ lane, t });
+      const tap: BatidaTap = { lane, t, up: t + 1 };
+      taps.push(tap);
+      open.set(lane, tap);
+      slotEls.current[lane]?.classList.add('down');
       handle(sim.tap(lane, t));
+    };
+
+    const releaseLane = (lane: number) => {
+      const tap = open.get(lane);
+      slotEls.current[lane]?.classList.remove('down');
+      if (!tap) return;
+      open.delete(lane);
+      tap.up = Math.max(tap.t + 1, Math.round(clock()));
+      if (!finished) handle(sim.release(lane, tap.up));
     };
 
     /** Congela o relógio do áudio e a música; o jogo para onde está. */
     const doPause = () => {
       if (finished || paused) return;
+      // Pausar com o dedo numa nota longa conta como soltar.
+      for (const lane of [...open.keys()]) releaseLane(lane);
       paused = true;
       window.clearTimeout(countTimer);
       fallbackPausedAt = performance.now();
@@ -275,7 +311,7 @@ export function BatidaPlay({ seed, song, onEnd, onQuit }: Props) {
       };
       countTimer = window.setTimeout(step, 1000);
     };
-    ctl.current = { press, pause: doPause, resume: doResume };
+    ctl.current = { press, release: releaseLane, pause: doPause, resume: doResume };
 
     const onKey = (e: KeyboardEvent) => {
       if (e.defaultPrevented || e.repeat) return;
@@ -292,7 +328,12 @@ export function BatidaPlay({ seed, song, onEnd, onQuit }: Props) {
         press(lane);
       }
     };
+    const onKeyUp = (e: KeyboardEvent) => {
+      const lane = laneOfKey(keysRef.current, e.key);
+      if (lane !== undefined) releaseLane(lane);
+    };
     window.addEventListener('keydown', onKey);
+    window.addEventListener('keyup', onKeyUp);
     // Saiu da aba ou do app: pausa sozinho, para não perder a partida sem ver.
     const onHide = () => document.visibilityState === 'hidden' && doPause();
     document.addEventListener('visibilitychange', onHide);
@@ -315,28 +356,73 @@ export function BatidaPlay({ seed, song, onEnd, onQuit }: Props) {
         }
       }
 
-      // Notas na tela: as que vêm do fundo e as que acabaram de passar da linha.
+      // Notas na tela: as que vêm do fundo, as que acabaram de passar e as longas ainda em curso.
       const want = new Set<string>();
       const { w, h } = size;
-      for (const n of notesBetween(seed, song, now - GOOD_MS - 250, now + TRAVEL_MS)) {
-        const key = `${n.bar}:${n.step}:${n.lane}`;
+      const visible: BatidaNote[] = [];
+      for (const n of notesBetween(seed, song, now - 4500, now + TRAVEL_MS)) {
+        const alive = n.endT !== undefined ? n.endT >= now - 250 : n.t >= now - GOOD_MS - 250;
+        if (alive) visible.push(n);
+      }
+      for (let lane = 0; lane < BATIDA_LANES; lane++) {
+        const held = sim.holdingNote(lane);
+        if (held && !visible.some((n) => keyOf(n) === keyOf(held))) visible.push(held);
+      }
+      const half = (w / BATIDA_LANES) * 0.36;
+      for (const n of visible) {
+        const key = keyOf(n);
         want.add(key);
+        const holding =
+          sim.holdingNote(n.lane)?.t === n.t && sim.holdingNote(n.lane)?.lane === n.lane;
         let el = nodes.get(key);
         if (!el) {
           el = document.createElement('div');
-          el.className = 'bt-note';
+          el.className = n.endT !== undefined ? 'bt-note long' : 'bt-note';
           el.innerHTML = `<span style="background:${PADS[n.lane]!.color};color:${PADS[n.lane]!.ink}"><svg viewBox="0 0 48 48" fill="currentColor" aria-hidden="true"><use href="#bt-sym-${n.lane}"/></svg></span>`;
           field.current?.appendChild(el);
           nodes.set(key, el);
         }
-        const p = project((n.t - now) / TRAVEL_MS, n.lane, w, h);
+        // Segurando, a cabeça da nota fica no molde enquanto a barra "queima" até acabar.
+        const z = (n.t - now) / TRAVEL_MS;
+        const p = project(holding ? Math.max(0, z) : z, n.lane, w, h);
         el.style.transform = `translate(${p.x - w / (2 * BATIDA_LANES)}px, ${p.y - NOTE_H / 2}px) scale(${p.scale})`;
         el.style.opacity = String(p.opacity);
+        el.classList.toggle('holding', holding);
+
+        if (n.endT !== undefined && holdsSvg.current) {
+          let body = bodies.get(key);
+          if (!body) {
+            body = document.createElementNS(SVG_NS, 'polygon');
+            body.setAttribute('fill', PADS[n.lane]!.color);
+            body.setAttribute('stroke', 'currentColor');
+            body.setAttribute('stroke-width', '2');
+            holdsSvg.current.appendChild(body);
+            bodies.set(key, body);
+          }
+          const head = project(holding ? Math.max(0, z) : z, n.lane, w, h);
+          const tail = project((n.endT - now) / TRAVEL_MS, n.lane, w, h);
+          const hs = half * head.scale;
+          const ts = half * tail.scale;
+          body.setAttribute(
+            'points',
+            `${tail.x - ts},${tail.y} ${tail.x + ts},${tail.y} ${head.x + hs},${head.y} ${head.x - hs},${head.y}`,
+          );
+          body.setAttribute(
+            'opacity',
+            String(holding ? 0.95 : 0.55 * Math.min(1, tail.opacity + 0.2)),
+          );
+        }
       }
       for (const [key, el] of nodes) {
         if (!want.has(key)) {
           el.remove();
           nodes.delete(key);
+        }
+      }
+      for (const [key, body] of bodies) {
+        if (!want.has(key)) {
+          body.remove();
+          bodies.delete(key);
         }
       }
     };
@@ -346,6 +432,7 @@ export function BatidaPlay({ seed, song, onEnd, onQuit }: Props) {
       cancelAnimationFrame(raf);
       window.clearTimeout(countTimer);
       window.removeEventListener('keydown', onKey);
+      window.removeEventListener('keyup', onKeyUp);
       document.removeEventListener('visibilitychange', onHide);
       window.removeEventListener('blur', doPause);
       ctl.current = null;
@@ -353,6 +440,7 @@ export function BatidaPlay({ seed, song, onEnd, onQuit }: Props) {
       ro.disconnect();
       audio?.stop();
       for (const el of nodes.values()) el.remove();
+      for (const el of bodies.values()) el.remove();
     };
   }, [seed, song]);
 
@@ -402,44 +490,51 @@ export function BatidaPlay({ seed, song, onEnd, onQuit }: Props) {
       </div>
       <div className="bt-field" ref={field}>
         <Road />
-        <div className="bt-line" aria-hidden="true" />
+        <svg ref={holdsSvg} className="bt-holds" aria-hidden="true" />
         <div className="bt-count" ref={countEl} aria-hidden="true" />
         <div className="bt-judge" ref={judgeEl} role="status" />
-        {over && <div className="bt-over">SEM ENERGIA</div>}
-      </div>
-      <div className="bt-pads" role="group" aria-label="Botões das cinco pistas">
-        {Array.from({ length: BATIDA_LANES }, (_, i) => {
-          const p = PADS[i]!;
-          return (
-            <button
-              key={i}
-              type="button"
-              ref={(el) => {
-                padEls.current[i] = el;
-              }}
-              className="bt-pad"
-              style={{ background: p.color, color: p.ink }}
-              aria-label={`Pista ${i + 1}, ${p.name}, tecla ${keyLabel(keys[i]!)}`}
-              disabled={over || paused}
-              onPointerDown={(e) => {
-                e.preventDefault();
-                ctl.current?.press(i);
-              }}
-              onAnimationEnd={(e) => e.currentTarget.classList.remove('hit', 'bad')}
-            >
-              <svg
-                viewBox="0 0 48 48"
-                width="40"
-                height="40"
-                fill="currentColor"
-                aria-hidden="true"
+        {/* Os moldes: cada cor, translúcida, no lugar onde a nota tem que encaixar. Tocar aqui é tocar na pista. */}
+        <div className="bt-slots" role="group" aria-label="Moldes das cinco pistas">
+          {Array.from({ length: BATIDA_LANES }, (_, i) => {
+            const p = PADS[i]!;
+            return (
+              <button
+                key={i}
+                type="button"
+                ref={(el) => {
+                  slotEls.current[i] = el;
+                }}
+                className="bt-slot"
+                style={{ left: `${i * 20}%`, ['--lane' as string]: p.color }}
+                aria-label={`Pista ${i + 1}, ${p.name}, tecla ${keyLabel(keys[i]!)}`}
+                disabled={over || paused}
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  e.currentTarget.setPointerCapture(e.pointerId);
+                  ctl.current?.press(i);
+                }}
+                onPointerUp={() => ctl.current?.release(i)}
+                onPointerCancel={() => ctl.current?.release(i)}
+                onLostPointerCapture={() => ctl.current?.release(i)}
+                onAnimationEnd={(e) => e.currentTarget.classList.remove('hit', 'bad')}
               >
-                {p.symbol}
-              </svg>
-              <kbd className="bt-kbd">{keyLabel(keys[i]!)}</kbd>
-            </button>
-          );
-        })}
+                <span className="bt-mold">
+                  <svg
+                    viewBox="0 0 48 48"
+                    width="28"
+                    height="28"
+                    fill="currentColor"
+                    aria-hidden="true"
+                  >
+                    {p.symbol}
+                  </svg>
+                </span>
+                <kbd className="bt-kbd">{keyLabel(keys[i]!)}</kbd>
+              </button>
+            );
+          })}
+        </div>
+        {over && <div className="bt-over">SEM ENERGIA</div>}
       </div>
 
       {paused && (

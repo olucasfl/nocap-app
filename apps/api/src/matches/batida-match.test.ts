@@ -9,13 +9,16 @@ import { issueTimeSession } from './time-session';
 
 const USER = '99999999-9999-4999-8999-999999999999';
 const SONG = SONGS.mare;
+/** [pista, apertou, soltou] */
+type Beat = [number, number, number];
 const createAs = (service: MatchesService, input: unknown) => service.create(input as never, USER);
 
 /** Toques perfeitos nas notas dos primeiros `bars` compassos, no formato [pista, instante]. */
-function perfectBeats(seed: string, bars: number): [number, number][] {
-  const out: [number, number][] = [];
+function perfectBeats(seed: string, bars: number): Beat[] {
+  const out: Beat[] = [];
   for (let bar = 0; bar < bars; bar++) {
-    for (const n of notesInBar(seed, SONG, bar)) out.push([n.lane, Math.round(n.t)]);
+    for (const n of notesInBar(seed, SONG, bar))
+      out.push([n.lane, Math.round(n.t), n.endT ? Math.round(n.endT) + 10 : Math.round(n.t) + 40]);
   }
   return out.sort((a, b) => a[1] - b[1]);
 }
@@ -27,12 +30,12 @@ describe('scoreBatidaMatch', () => {
     const expected = evaluateBatida(
       'b1',
       SONG,
-      beats.map(([lane, t]) => ({ lane, t })),
+      beats.map(([lane, t, up]) => ({ lane, t, up })),
     );
     expect(scored.totalTenths).toBe(expected.tenths);
     expect(scored.totalTenths).toBeGreaterThan(0);
     expect(scored.total).toBe(expected.tenths / 10);
-    expect(scored.settings).toMatchObject({ mode: 'batida-mare', scoreVersion: 1 });
+    expect(scored.settings).toMatchObject({ mode: 'batida-mare', scoreVersion: 2 });
   });
 
   it('sem toques é uma partida válida de zero pontos (a energia acaba sozinha)', () => {
@@ -41,19 +44,20 @@ describe('scoreBatidaMatch', () => {
   });
 
   it('recusa pista inválida, instante quebrado, fora de ordem e rajada impossível', () => {
-    const bad = (beats: [number, number][]) =>
+    const bad = (beats: Beat[]) =>
       expect(() => scoreBatidaMatch({ seed: 'b1', song: SONG, beats, elapsedMs: 9e9 })).toThrow(
         BadRequestException,
       );
-    bad([[5, 1000]]);
-    bad([[0, 1000.5]]);
+    bad([[5, 1000, 1040]]);
+    bad([[0, 1000.5, 1040]]);
+    bad([[0, 1000, 1000]]);
     bad([
-      [0, 2000],
-      [1, 1500],
+      [0, 2000, 2040],
+      [1, 1500, 1540],
     ]);
     bad([
-      [2, 3000],
-      [2, 3010],
+      [2, 3000, 3005],
+      [2, 3010, 3020],
     ]);
   });
 
@@ -61,7 +65,7 @@ describe('scoreBatidaMatch', () => {
     // Para de tocar cedo: a energia acaba sozinha, e um toque muito depois já não conta.
     const early = perfectBeats('b1', 4);
     const last = early[early.length - 1]![1];
-    const beats: [number, number][] = [...early, [0, last + 60_000]];
+    const beats: Beat[] = [...early.map((b) => b), [0, last + 60_000, last + 60_040]];
     expect(() => scoreBatidaMatch({ seed: 'b1', song: SONG, beats, elapsedMs: 9e9 })).toThrow(
       'depois do fim',
     );
@@ -72,7 +76,7 @@ describe('scoreBatidaMatch', () => {
     const end = evaluateBatida(
       'b1',
       SONG,
-      beats.map(([lane, t]) => ({ lane, t })),
+      beats.map(([lane, t, up]) => ({ lane, t, up })),
     ).endedAtMs;
     expect(() =>
       scoreBatidaMatch({ seed: 'b1', song: SONG, beats, elapsedMs: end - ELAPSED_SLACK_MS - 1 }),
@@ -89,9 +93,49 @@ describe('scoreBatidaMatch', () => {
     const client = evaluateBatida(
       'b2',
       SONG,
-      beats.map(([lane, t]) => ({ lane, t })),
+      beats.map(([lane, t, up]) => ({ lane, t, up })),
     );
     expect(server.totalTenths).toBe(client.tenths);
+  });
+});
+
+describe('scoreBatidaMatch: notas longas e acordes', () => {
+  it('segurar as notas longas até o fim soma pontos que soltar cedo não soma', () => {
+    const song = SONGS.frenesi;
+    const holdsHeld = perfectBeats('hold-seed', 40);
+    // (perfectBeats usa a mesma música "mare"; para o Frenesi monta os toques dele)
+    const beats: Beat[] = [];
+    for (let bar = 0; bar < 40; bar++) {
+      for (const n of notesInBar('hold-seed', song, bar)) {
+        beats.push([
+          n.lane,
+          Math.round(n.t),
+          n.endT ? Math.round(n.endT) + 10 : Math.round(n.t) + 40,
+        ]);
+      }
+    }
+    beats.sort((a, b) => a[1] - b[1]);
+    const held = scoreBatidaMatch({ seed: 'hold-seed', song, beats, elapsedMs: 9e9 });
+    const early = scoreBatidaMatch({
+      seed: 'hold-seed',
+      song,
+      beats: beats.map((b) => [b[0], b[1], b[2] > b[1] + 100 ? b[1] + 40 : b[2]] as Beat),
+      elapsedMs: 9e9,
+    });
+    expect(holdsHeld.length).toBeGreaterThan(0);
+    expect(held.settings).toMatchObject({ holds: expect.any(Number), scoreVersion: 2 });
+    expect(Number((held.settings as { holds: number }).holds)).toBeGreaterThan(0);
+    expect(held.totalTenths).toBeGreaterThan(early.totalTenths);
+  });
+
+  it('recusa apertar de novo uma pista que ainda está apertada', () => {
+    const beats: Beat[] = [
+      [1, 3000, 4000],
+      [1, 3500, 3600],
+    ];
+    expect(() => scoreBatidaMatch({ seed: 'b1', song: SONG, beats, elapsedMs: 9e9 })).toThrow(
+      'sem soltar',
+    );
   });
 });
 
@@ -102,8 +146,8 @@ describe('createMatchSchema (Batida)', () => {
     kind: 'solo',
     seed: 'abc',
     beats: [
-      [0, 1500],
-      [3, 1900],
+      [0, 1500, 1540],
+      [3, 1900, 1940],
     ],
     session: 'x'.repeat(40),
   };
@@ -126,7 +170,13 @@ describe('createMatchSchema (Batida)', () => {
   });
 
   it('não aceita pista fora de 0 a 4, instante negativo nem lista gigante', () => {
-    for (const beats of [[[5, 1000]], [[0, -1]], [[0, 1.5]], Array(6001).fill([0, 1])]) {
+    for (const beats of [
+      [[5, 1000, 1040]],
+      [[0, -1, 5]],
+      [[0, 1.5, 9]],
+      [[0, 100]],
+      Array(6001).fill([0, 1, 2]),
+    ]) {
       expect(createMatchSchema.safeParse({ ...base, beats }).success).toBe(false);
     }
   });
@@ -201,9 +251,14 @@ describe('MatchesService (Batida)', () => {
     for (const id of ['passo', 'mare', 'frenesi'] as const) {
       const { service, save } = setup();
       const seed = `seed-${id}`;
-      const beats = [] as [number, number][];
+      const beats = [] as Beat[];
       for (let bar = 0; bar < 10; bar++) {
-        for (const n of notesInBar(seed, SONGS[id], bar)) beats.push([n.lane, Math.round(n.t)]);
+        for (const n of notesInBar(seed, SONGS[id], bar))
+          beats.push([
+            n.lane,
+            Math.round(n.t),
+            n.endT ? Math.round(n.endT) + 10 : Math.round(n.t) + 40,
+          ]);
       }
       beats.sort((a, b) => a[1] - b[1]);
       await createAs(service, play(seed, 10 * 60_000, { mode: `batida-${id}`, beats }));

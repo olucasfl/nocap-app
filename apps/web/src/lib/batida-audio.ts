@@ -56,6 +56,9 @@ export interface BatidaAudio {
   wrong(): void;
   /** Uma nota passou sem toque. */
   missed(): void;
+  /** Nota longa: o som segue enquanto a pessoa segura (`holdEnd` solta). */
+  holdStart(lane: number, bar: number): void;
+  holdEnd(lane: number): void;
   /** Congela o relógio e o som (pausa). */
   pause(): void;
   /** Retoma exatamente de onde parou. */
@@ -80,6 +83,8 @@ export function createBatidaAudio(song: Song): BatidaAudio | null {
   /** A base de baixo, acorde e arpejo fica muda até este instante (depois de um erro). */
   let stumbleUntil = 0;
   let over = false;
+  /** Notas longas soando agora, por pista. */
+  const sustained = new Map<number, { osc: OscillatorNode; gain: GainNode }>();
 
   const at = (ms: number) => t0 + ms / 1000;
   const quiet = () => kit.muted();
@@ -237,7 +242,32 @@ export function createBatidaAudio(song: Song): BatidaAudio | null {
       tone('sine', 130, 70, when, 0.14, 0.22, 0.003);
       stumbleUntil = Math.max(stumbleUntil, when + 0.8);
     },
+    holdStart(lane, bar) {
+      if (quiet()) return;
+      const f = hz(C4, semitoneOf(song, lane, bar));
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = lead.type;
+      osc.frequency.value = f;
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(lead.peak * 0.45, ctx.currentTime + 0.03);
+      osc.connect(gain).connect(out);
+      osc.start();
+      sustained.get(lane)?.osc.stop();
+      sustained.set(lane, { osc, gain });
+    },
+    holdEnd(lane) {
+      const note = sustained.get(lane);
+      if (!note) return;
+      sustained.delete(lane);
+      const t = ctx.currentTime;
+      note.gain.gain.cancelScheduledValues(t);
+      note.gain.gain.setValueAtTime(Math.max(0.0001, note.gain.gain.value), t);
+      note.gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.08);
+      note.osc.stop(t + 0.1);
+    },
     pause() {
+      for (const lane of [...sustained.keys()]) this.holdEnd(lane);
       void ctx.suspend();
     },
     resume() {
@@ -246,6 +276,7 @@ export function createBatidaAudio(song: Song): BatidaAudio | null {
     over() {
       if (over) return;
       over = true;
+      for (const lane of [...sustained.keys()]) this.holdEnd(lane);
       window.clearInterval(timer);
       const when = ctx.currentTime;
       // A música "desliga": a nota desce e perde a força.
@@ -255,6 +286,7 @@ export function createBatidaAudio(song: Song): BatidaAudio | null {
     },
     stop() {
       over = true;
+      for (const lane of [...sustained.keys()]) this.holdEnd(lane);
       window.clearInterval(timer);
       // Saiu pausado: devolve o áudio ao app.
       void ctx.resume();

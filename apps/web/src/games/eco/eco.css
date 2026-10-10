@@ -568,8 +568,8 @@
 }
 .bt-stats {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
   margin: 0;
 }
 .bt-stats div {

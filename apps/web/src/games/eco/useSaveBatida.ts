@@ -27,7 +27,7 @@ export function useSaveBatida(run: BatidaRunInfo, taps: BatidaTap[]): SaveState 
       seed: run.seed,
       session: run.session,
       taps: [],
-      beats: taps.map((t) => [t.lane, t.t] as [number, number]),
+      beats: taps.map((t) => [t.lane, t.t, t.up] as [number, number, number]),
     })
       .then((r) => {
         if (r === 'sent') {

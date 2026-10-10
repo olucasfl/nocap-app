@@ -98,15 +98,6 @@
   color: var(--ink);
   pointer-events: none;
 }
-/* A linha de acerto: no mesmo ponto em que a nota chega ao tamanho cheio (90% da altura). */
-.bt-line {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: calc(90% - 2px);
-  border-top: 4px solid var(--ink);
-  opacity: 0.7;
-}
 .bt-note {
   position: absolute;
   left: 0;
@@ -144,7 +135,7 @@
   position: absolute;
   left: 0;
   right: 0;
-  top: 66%;
+  top: 58%;
   text-align: center;
   font: 900 26px/1 var(--font-display);
   letter-spacing: -0.02em;
@@ -183,57 +174,94 @@
   font: 900 34px var(--font-display);
 }
 
-/* Botões das pistas: grandes, na ordem das cores do Ecooo. */
-.bt-pads {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 8px;
+/* Barras compridas (notas de segurar) desenhadas por cima da pista, sob as notas. */
+.bt-holds {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  color: var(--ink);
+  pointer-events: none;
 }
-/* A tecla (computador) aparece na quina de cada botão. */
+.bt-note.long > span {
+  border-style: double;
+  border-width: 5px;
+}
+.bt-note.holding > span {
+  box-shadow: 0 0 0 5px var(--ink);
+}
+
+/*
+ * Os moldes: cada cor, meio transparente, no ponto onde a nota tem que encaixar (84% da altura).
+ * O botão inteiro é a área de toque: da altura do molde até o fim do campo, para o polegar achar.
+ */
+.bt-slots {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.bt-slot {
+  appearance: none;
+  position: absolute;
+  top: calc(84% - 40px);
+  bottom: 0;
+  width: 20%;
+  padding: 0 6px;
+  background: transparent;
+  border: 0;
+  color: var(--lane);
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.bt-slot:disabled {
+  cursor: default;
+}
+.bt-mold {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  top: 17px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--lane) 26%, transparent);
+  border: 3px dashed var(--lane);
+  border-radius: 14px;
+  opacity: 0.85;
+}
+.bt-mold svg {
+  opacity: 0.55;
+}
+.bt-slot.down .bt-mold {
+  background: color-mix(in srgb, var(--lane) 70%, transparent);
+  border-style: solid;
+  opacity: 1;
+}
+.bt-slot:focus-visible .bt-mold {
+  outline: 4px solid var(--ink);
+  outline-offset: 3px;
+}
+/* A tecla (computador) fica logo abaixo do molde. */
 .bt-kbd {
   position: absolute;
-  right: 6px;
-  bottom: 5px;
-  min-width: 22px;
-  padding: 1px 5px;
+  left: 50%;
+  top: 70px;
+  transform: translateX(-50%);
+  min-width: 24px;
+  padding: 1px 6px;
   background: var(--ink);
   color: var(--paper);
   border-radius: 6px;
   font: 700 11px var(--font-mono);
   text-align: center;
 }
-.bt-pad {
-  position: relative;
-  appearance: none;
-  display: grid;
-  place-items: center;
-  height: 96px;
-  padding: 0;
-  border: var(--border);
-  border-radius: 18px;
-  box-shadow: 4px 4px 0 var(--ink);
-  cursor: pointer;
-  touch-action: manipulation;
-}
-.bt-pad:disabled {
-  cursor: default;
-}
-.bt-pad:focus-visible {
-  outline: 4px solid var(--ink);
-  outline-offset: 3px;
-}
-.bt-pad.hit {
-  animation: bt-hit 0.18s ease-out;
-}
-.bt-pad.bad {
-  animation: bt-bad 0.3s linear;
-  outline: 4px solid var(--ink);
-  outline-offset: 2px;
-}
 @keyframes bt-hit {
   from {
-    transform: translate(3px, 3px) scale(1.06);
-    box-shadow: 1px 1px 0 var(--ink);
+    transform: scale(1.1);
+    filter: brightness(1.4);
   }
   to {
     transform: none;
@@ -250,8 +278,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .bt-judge.on,
-  .bt-pad.hit,
-  .bt-pad.bad {
+  .bt-slot.hit .bt-mold,
+  .bt-slot.bad .bt-mold {
     animation: none;
   }
   .bt-energy i {
@@ -460,4 +488,12 @@
   .bt-kbd {
     display: none;
   }
+}
+
+.bt-slot.hit .bt-mold {
+  animation: bt-hit 0.18s ease-out;
+}
+.bt-slot.bad .bt-mold {
+  animation: bt-bad 0.3s linear;
+  border-style: solid;
 }

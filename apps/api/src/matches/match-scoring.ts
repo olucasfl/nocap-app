@@ -169,14 +169,14 @@ export function scoreEcoMatch(
 }
 
 /**
- * Batida: o servidor refaz a partida (acertos, combo, energia) a partir dos instantes dos toques e
+ * Eco Hero: o servidor refaz a partida (acertos, notas longas, combo, energia) a partir dos instantes de apertar e soltar e
  * da música da seed. Recusa o que não é possível: pista ou instante inválido, rajada impossível,
  * toques depois da energia zerar, ou uma partida mais longa do que o relógio do servidor viu.
  */
 export function scoreBatidaMatch(
   input: Pick<EcoMatchInput, 'seed' | 'beats'> & { song: Song; elapsedMs: number },
 ): ScoredMatch {
-  const taps = (input.beats ?? []).map(([lane, t]) => ({ lane, t }));
+  const taps = (input.beats ?? []).map(([lane, t, up]) => ({ lane, t, up }));
   const problem = validateTaps(taps);
   if (problem) throw new BadRequestException(problem);
   const run = evaluateBatida(input.seed, input.song, taps);
@@ -195,10 +195,11 @@ export function scoreBatidaMatch(
     encodedAnswers: [],
     settings: {
       mode: `batida-${input.song.id}`,
-      scoreVersion: 1,
+      scoreVersion: 2,
       perfect: run.perfect,
       good: run.good,
       missed: run.missed,
+      holds: run.holds,
     },
   };
 }

@@ -27,6 +27,15 @@ export const ENERGY_MISS = -14;
 /** Tocar numa pista sem nota perto. */
 export const ENERGY_STRAY = -7;
 
+/** Nota longa: segurar até o fim vale como um Perfeito; soltar cedo gasta energia e zera o combo. */
+export const BATIDA_POINTS_HOLD = 10;
+export const ENERGY_HOLD = 3;
+export const ENERGY_HOLD_BREAK = -6;
+/** Segurar até este tanto antes do fim já vale como completo (ninguém solta no milissegundo exato). */
+export const HOLD_END_SLACK_MS = 100;
+/** Uma nota longa dura 2 ou 4 colcheias. */
+export const HOLD_LENGTHS: readonly number[] = [4, 2];
+
 /** Pontos em décimos (10 = 1 ponto): Perfeito vale 1, Bom vale 0,5, vezes o multiplicador. */
 export const BATIDA_POINTS_PERFECT = 10;
 export const BATIDA_POINTS_GOOD = 5;
@@ -39,8 +48,10 @@ export const COMBO_STEPS: readonly number[] = [0, 8, 16, 32];
 /** Duas notas na mesma pista com menos que isto entre toques nenhuma pessoa consegue. */
 export const BATIDA_MIN_TAP_GAP_MS = 45;
 /** Partida mais longa que isto o servidor recusa. */
-export const BATIDA_MAX_RUN_MS = 20 * 60_000;
+export const BATIDA_MAX_RUN_MS = 60 * 60_000;
 export const BATIDA_MAX_TAPS = 6000;
+/** Ninguém segura um dedo mais que isto numa nota só. */
+export const BATIDA_MAX_HOLD_MS = 30_000;
 
 /** As três músicas do Batida: cada uma tem andamento, harmonia, groove e dificuldade próprios. */
 export type SongId = 'passo' | 'mare' | 'frenesi';
@@ -67,46 +78,61 @@ export interface Song {
   groove: 'basic' | 'funk' | 'drive';
   /** Timbre da melodia que a pessoa toca. */
   lead: 'soft' | 'bright' | 'sharp';
+  /**
+   * Notas juntas e notas longas. A chance de cada uma começa em `base` no compasso `from` e sobe
+   * `grow` a cada compasso depois disso (sem parar, até o teto): a música nunca para de ficar mais
+   * difícil. Triplas só valem a partir de `tripleFrom`.
+   */
+  doubles: { from: number; base: number; grow: number };
+  triples: { from: number; base: number; grow: number };
+  holds: { from: number; base: number; grow: number };
 }
 
 export const SONGS: Record<SongId, Song> = {
   passo: {
     id: 'passo',
     name: 'Primeiro Passo',
-    tagline: 'Calma e doce. Para aprender o ritmo sem pressa.',
+    tagline: 'Calma e doce no começo, mas nunca para de acelerar. Poucas notas juntas.',
     startBpm: 64,
-    maxBpm: 100,
-    bpmPerBar: 1.1,
-    barsPerLevel: 12,
+    maxBpm: 360,
+    bpmPerBar: 1.2,
+    barsPerLevel: 14,
     levelStart: 0,
-    levelMax: 2,
+    levelMax: 4,
     progression: [0, 7, 9, 5],
     scale: [0, 2, 4, 7, 9],
     groove: 'basic',
     lead: 'soft',
+    doubles: { from: 14, base: 0.06, grow: 0.004 },
+    triples: { from: 70, base: 0.05, grow: 0.002 },
+    holds: { from: 8, base: 0.08, grow: 0.003 },
   },
   mare: {
     id: 'mare',
     name: 'Maré Alta',
-    tagline: 'Balanço com síncope. As notas vêm fora do tempo, como ondas.',
+    tagline: 'Balanço com síncope. Notas fora do tempo, acordes e notas longas, como ondas.',
     startBpm: 78,
-    maxBpm: 116,
-    bpmPerBar: 1.4,
+    maxBpm: 360,
+    bpmPerBar: 1.6,
     barsPerLevel: 10,
     levelStart: 1,
-    levelMax: 3,
+    levelMax: 4,
     progression: [0, 10, 8, 7],
     scale: [0, 3, 5, 7, 10],
     groove: 'funk',
     lead: 'bright',
+    doubles: { from: 6, base: 0.12, grow: 0.008 },
+    triples: { from: 36, base: 0.08, grow: 0.004 },
+    holds: { from: 6, base: 0.1, grow: 0.004 },
   },
   frenesi: {
     id: 'frenesi',
     name: 'Frenesi',
-    tagline: 'Pesada e sem descanso. Muitas notas, até você aguentar.',
+    tagline:
+      'Pesada e sem descanso. Muitas notas, acordes de três e notas longas, até você aguentar.',
     startBpm: 92,
-    maxBpm: 138,
-    bpmPerBar: 1.8,
+    maxBpm: 360,
+    bpmPerBar: 2,
     barsPerLevel: 8,
     levelStart: 2,
     levelMax: 4,
@@ -114,6 +140,9 @@ export const SONGS: Record<SongId, Song> = {
     scale: [0, 3, 5, 6, 7],
     groove: 'drive',
     lead: 'sharp',
+    doubles: { from: 3, base: 0.18, grow: 0.01 },
+    triples: { from: 24, base: 0.12, grow: 0.006 },
+    holds: { from: 8, base: 0.1, grow: 0.004 },
   },
 };
 
@@ -139,14 +168,18 @@ export interface BatidaNote {
   bar: number;
   step: number;
   lane: number;
-  /** Instante em que a nota chega na linha de acerto. */
+  /** Instante em que a nota chega ao molde (a hora de apertar). */
   t: number;
+  /** Nota longa: instante em que ela termina (a hora de soltar). Sem isto, é um toque. */
+  endT?: number;
 }
 
 export interface BatidaTap {
   lane: number;
-  /** Instante do toque, em ms desde o início. */
+  /** Instante em que apertou, em ms desde o início. */
   t: number;
+  /** Instante em que soltou (depois de `t`). Só importa nas notas longas. */
+  up: number;
 }
 
 // ---- andamento -------------------------------------------------------------
@@ -245,6 +278,66 @@ function laneRange(level: number): [number, number] {
 
 const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
 
+/** A chance de um enfeite no compasso `bar` (0 antes de `from`; depois sobe sem parar, até `cap`). */
+export function chanceAt(
+  rule: { from: number; base: number; grow: number },
+  bar: number,
+  cap: number,
+) {
+  if (bar < rule.from) return 0;
+  return Math.min(cap, rule.base + rule.grow * (bar - rule.from));
+}
+
+/**
+ * Põe acordes (2 ou 3 notas juntas) e notas longas nas notas de um compasso. As chances vêm da
+ * música e do compasso, então a dificuldade sobe sozinha. Uma nota longa só nasce onde a pista dela
+ * fica livre até o fim, e nada nasce em cima de outra nota.
+ */
+function embellish(
+  song: Song,
+  bar: number,
+  base: BatidaNote[],
+  rng: () => number,
+  lo: number,
+  hi: number,
+): BatidaNote[] {
+  const pTriple = hi - lo >= 2 ? chanceAt(song.triples, bar, 0.3) : 0;
+  const pDouble = chanceAt(song.doubles, bar, 0.5);
+  const pHold = chanceAt(song.holds, bar, 0.3);
+  const taken = new Set(base.map((n) => `${n.lane}:${n.step}`));
+  const out: BatidaNote[] = [];
+  for (const n of base) {
+    out.push(n);
+    const roll = rng();
+    const wantsHold = rng() < pHold;
+    const spare = rng();
+    if (roll < pTriple + pDouble) {
+      // 2 ou 3 notas no mesmo instante, em pistas livres.
+      const extra = roll < pTriple ? 2 : 1;
+      const free: number[] = [];
+      for (let lane = lo; lane <= hi; lane++) if (!taken.has(`${lane}:${n.step}`)) free.push(lane);
+      for (let k = 0; k < extra && free.length > 0; k++) {
+        const pick = free.splice(Math.floor((k === 0 ? spare : rng()) * free.length), 1)[0]!;
+        taken.add(`${pick}:${n.step}`);
+        out.push({ bar, step: n.step, lane: pick, t: n.t });
+      }
+    } else if (wantsHold) {
+      for (const len of spare < 0.5 ? HOLD_LENGTHS : [...HOLD_LENGTHS].reverse()) {
+        // Termina no máximo na colcheia 6 e deixa uma colcheia livre depois: dá tempo de soltar
+        // antes da próxima nota da mesma pista (que também pode ser a primeira do compasso seguinte).
+        if (n.step + len > STEPS_PER_BAR - 2) continue;
+        let free = true;
+        for (let k = 1; k <= len + 1; k++) if (taken.has(`${n.lane}:${n.step + k}`)) free = false;
+        if (!free) continue;
+        for (let k = 1; k <= len + 1; k++) taken.add(`${n.lane}:${n.step + k}`);
+        n.endT = timeOf(song, bar, n.step + len);
+        break;
+      }
+    }
+  }
+  return out.sort((x, y) => x.step - y.step || x.lane - y.lane);
+}
+
 const phraseCache = new Map<string, BatidaNote[][]>();
 
 /**
@@ -262,6 +355,7 @@ export function phraseNotes(seed: string, song: Song, phrase: number): BatidaNot
   const level = levelAt(song, firstBar);
   const [lo, hi] = laneRange(level);
   const rng = createRng(`${seed}:${song.id}:batida:${phrase}`);
+  const extras = createRng(`${seed}:${song.id}:enfeite:${phrase}`);
   const set = MOTIFS[level]!;
   const a = set[randInt(rng, 0, set.length - 1)]!;
   let b = set[randInt(rng, 0, set.length - 1)]!;
@@ -295,7 +389,7 @@ export function phraseNotes(seed: string, song: Song, phrase: number): BatidaNot
       notes.push({ bar, step, lane, t: timeOf(song, bar, step) });
       n++;
     });
-    bars.push(notes);
+    bars.push(embellish(song, bar, notes, extras, lo, hi));
   }
   phraseCache.set(key, bars);
   return bars;
@@ -355,6 +449,9 @@ export interface BatidaRun {
   /** Toques sem nota por perto. */
   stray: number;
   maxCombo: number;
+  /** Notas longas seguradas até o fim e soltas cedo. */
+  holds: number;
+  holdsBroken: number;
   /** Instante em que a energia acabou (a partida terminou). */
   endedAtMs: number;
   /** Compasso em que a partida terminou. */
@@ -363,19 +460,27 @@ export interface BatidaRun {
   usedTaps: number;
 }
 
-/** Verifica os toques: pistas válidas, instantes inteiros, em ordem, sem rajada impossível. */
+/**
+ * Verifica os toques: pistas válidas, instantes inteiros, em ordem, soltar depois de apertar, sem
+ * rajada impossível e sem apertar uma pista que ainda está apertada.
+ */
 export function validateTaps(taps: readonly BatidaTap[]): string | null {
   if (taps.length > BATIDA_MAX_TAPS) return 'Toques demais';
-  const lastByLane = new Array<number>(BATIDA_LANES).fill(-Infinity);
+  const lastDown = new Array<number>(BATIDA_LANES).fill(-Infinity);
+  const lastUp = new Array<number>(BATIDA_LANES).fill(-Infinity);
   let prev = 0;
   for (const tap of taps) {
     if (!Number.isInteger(tap.lane) || tap.lane < 0 || tap.lane >= BATIDA_LANES)
       return 'Pista inválida';
     if (!Number.isInteger(tap.t) || tap.t < 0 || tap.t > BATIDA_MAX_RUN_MS)
       return 'Instante inválido';
+    if (!Number.isInteger(tap.up) || tap.up <= tap.t || tap.up > tap.t + BATIDA_MAX_HOLD_MS)
+      return 'Soltou em instante inválido';
     if (tap.t < prev) return 'Toques fora de ordem';
-    if (tap.t - lastByLane[tap.lane]! < BATIDA_MIN_TAP_GAP_MS) return 'Toques rápidos demais';
-    lastByLane[tap.lane] = tap.t;
+    if (tap.t - lastDown[tap.lane]! < BATIDA_MIN_TAP_GAP_MS) return 'Toques rápidos demais';
+    if (tap.t < lastUp[tap.lane]!) return 'Apertou sem soltar';
+    lastDown[tap.lane] = tap.t;
+    lastUp[tap.lane] = tap.up;
     prev = tap.t;
   }
   return null;
@@ -385,7 +490,11 @@ export function validateTaps(taps: readonly BatidaTap[]): string | null {
 export type SimEvent =
   | { kind: 'hit'; judgement: 'perfect' | 'good'; note: BatidaNote; delta: number }
   | { kind: 'miss'; note: BatidaNote }
-  | { kind: 'stray'; lane: number; t: number };
+  | { kind: 'stray'; lane: number; t: number }
+  /** Segurou a nota longa até o fim. */
+  | { kind: 'holdDone'; lane: number; note: BatidaNote }
+  /** Soltou a nota longa antes da hora. */
+  | { kind: 'holdBroken'; lane: number; note: BatidaNote };
 
 interface Pending {
   note: BatidaNote;
@@ -403,7 +512,17 @@ export class BatidaSim {
   private score = 0;
   private queue: Pending[] = [];
   private nextBar = 0;
-  private counts = { perfect: 0, good: 0, missed: 0, stray: 0, maxCombo: 0 };
+  private counts = {
+    perfect: 0,
+    good: 0,
+    missed: 0,
+    stray: 0,
+    maxCombo: 0,
+    holds: 0,
+    holdsBroken: 0,
+  };
+  /** Notas longas que a pessoa está segurando agora, por pista. */
+  private holding = new Map<number, BatidaNote>();
   private end = { dead: false, atMs: 0, bar: 0 };
   private used = 0;
 
@@ -424,6 +543,10 @@ export class BatidaSim {
   get currentMultiplier(): number {
     return multiplierFor(this.combo);
   }
+  /** A nota longa que está sendo segurada na pista (para desenhar a barra queimando). */
+  holdingNote(lane: number): BatidaNote | undefined {
+    return this.holding.get(lane);
+  }
   get currentTenths(): number {
     return Math.min(BATIDA_MAX_TENTHS, this.score);
   }
@@ -437,6 +560,8 @@ export class BatidaSim {
       missed: this.counts.missed,
       stray: this.counts.stray,
       maxCombo: this.counts.maxCombo,
+      holds: this.counts.holds,
+      holdsBroken: this.counts.holdsBroken,
       endedAtMs: this.end.atMs,
       endedBar: this.end.bar,
       usedTaps: this.used,
@@ -477,12 +602,25 @@ export class BatidaSim {
       events.push({ kind: 'miss', note: head.note });
       this.lose(ENERGY_MISS, head.note.t + GOOD_MS, 'missed');
     }
+    // Segurou a nota longa até o fim (ou quase): vale como um acerto Perfeito.
+    if (!this.end.dead) {
+      for (const [lane, note] of this.holding) {
+        if (t < note.endT! - HOLD_END_SLACK_MS) continue;
+        this.holding.delete(lane);
+        this.counts.holds++;
+        this.score += BATIDA_POINTS_HOLD * multiplierFor(this.combo);
+        this.energy = Math.min(ENERGY_MAX, this.energy + ENERGY_HOLD);
+        events.push({ kind: 'holdDone', lane, note });
+      }
+    }
     return events;
   }
 
   /** Um toque na pista `lane` no instante `t` (os toques chegam em ordem de tempo). */
   tap(lane: number, t: number): SimEvent[] {
     const events = this.advance(t);
+    // Apertou de novo uma pista que ainda segurava: contou como soltar.
+    if (this.holding.has(lane)) events.push(...this.release(lane, t));
     // Toque depois de a energia acabar não conta: a partida já tinha terminado.
     if (this.end.dead) return events;
     this.used++;
@@ -512,6 +650,23 @@ export class BatidaSim {
     );
     this.counts[judgement]++;
     events.push({ kind: 'hit', judgement, note: target.note, delta });
+    // Nota longa: daqui em diante a pessoa tem que segurar até o fim.
+    if (target.note.endT !== undefined) this.holding.set(lane, target.note);
+    return events;
+  }
+
+  /** A pessoa soltou a pista `lane` no instante `t` (os toques e as soltadas chegam em ordem). */
+  release(lane: number, t: number): SimEvent[] {
+    const events = this.advance(t);
+    const note = this.holding.get(lane);
+    if (this.end.dead || !note) return events;
+    // Soltou antes da hora (o `advance` já teria completado se fosse a tempo).
+    this.holding.delete(lane);
+    this.counts.holdsBroken++;
+    this.combo = 0;
+    this.energy += ENERGY_HOLD_BREAK;
+    events.push({ kind: 'holdBroken', lane, note });
+    if (this.energy <= 0) this.finish(t);
     return events;
   }
 
@@ -532,11 +687,22 @@ export class BatidaSim {
  */
 export function evaluateBatida(seed: string, song: Song, taps: readonly BatidaTap[]): BatidaRun {
   const sim = new BatidaSim(seed, song);
-  for (const tap of taps) {
-    sim.tap(tap.lane, tap.t);
+  // Cada toque vira dois instantes (apertar e soltar), em ordem de tempo; soltar vem antes de
+  // apertar quando caem no mesmo milissegundo.
+  const moments = taps
+    .flatMap((tap) => [
+      { down: true, lane: tap.lane, at: tap.t },
+      { down: false, lane: tap.lane, at: Math.max(tap.up, tap.t + 1) },
+    ])
+    .sort((a, b) => a.at - b.at || Number(a.down) - Number(b.down));
+  let last = 0;
+  for (const m of moments) {
+    if (m.down) sim.tap(m.lane, m.at);
+    else sim.release(m.lane, m.at);
+    last = m.at;
     if (sim.dead) break;
   }
-  sim.runOut(taps.length > 0 ? taps[taps.length - 1]!.t : 0);
+  sim.runOut(last);
   return sim.run;
 }
 

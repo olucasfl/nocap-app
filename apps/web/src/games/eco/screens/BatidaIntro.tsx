@@ -177,8 +177,8 @@ export function BatidaIntro({ onBegin }: { onBegin: (song: SongId) => void }) {
         <li>
           <b>1</b>
           <span>
-            As notas vêm do fundo da pista. Toque no botão da pista quando a nota chegar na linha:
-            cada acerto toca uma nota e, juntas, elas formam a música.
+            As notas vêm do fundo da pista e encaixam nos moldes coloridos. Toque na pista quando a
+            nota chegar no molde: cada acerto toca uma nota e, juntas, elas formam a música.
           </span>
         </li>
         <li>
@@ -189,7 +189,10 @@ export function BatidaIntro({ onBegin }: { onBegin: (song: SongId) => void }) {
           </span>
         </li>
       </ol>
-      <p className="eco-intro-extra">Ligue o som. No computador, 1 a 5 tocam (dá para trocar).</p>
+      <p className="eco-intro-extra">
+        Com o tempo vêm notas juntas (use mais de um dedo, até 3) e barras compridas: aperte e
+        segure até o fim. Ligue o som. No computador, 1 a 5 tocam (dá para trocar).
+      </p>
       <div className="stack">
         <button type="button" className="btn" data-sfx="start" onClick={() => onBegin(song)}>
           Começar <ArrowRight />

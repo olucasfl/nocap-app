@@ -68,6 +68,10 @@ export function BatidaFinal({ run, taps, previousBest, onMenu, onRematch }: Prop
           <dd>{result.missed + result.stray}</dd>
         </div>
         <div>
+          <dt>SEGURADAS</dt>
+          <dd>{result.holds}</dd>
+        </div>
+        <div>
           <dt>DURAÇÃO</dt>
           <dd>{clock(played)}</dd>
         </div>
