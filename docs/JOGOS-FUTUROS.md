@@ -2,6 +2,10 @@
 
 Atualizado em 07/10/2026. Este arquivo guarda o que vem depois: primeiro o que falta do **Ecooo**, depois os jogos que o Lucas quer fazer (com a ordem que ele definiu), e por fim o que foi descartado e por quê. Nada aqui está implementado; cada jogo novo começa com uma spec em `specs/`.
 
+## Em andamento (10/10/2026)
+
+**Primeiro: o modo Batida do Ecooo** (estilo Guitar Hero), em `specs/019-eco-batida.md`. O Lucas vai ler a spec e responder às decisões em aberto antes de começar. Fica antes de tudo que está listado abaixo.
+
 ## Ordem decidida pelo Lucas
 
 1. **Terminar o Ecooo** (salas e calibragem, seção 1).
@@ -67,6 +71,19 @@ Salas com texto livre, votação entre jogadores, banco de conteúdo escrito e m
 O Lucas quer jogos simples, **muito intuitivos**, divertidos e que dê para jogar contra amigos, no mesmo molde da Mesmíssima e do Já Deu? (regra que se entende em segundos, mesma seed para todos, nota por rodada, Daily e ranking). O critério que ele deixou: **um mecanismo só com muitas variações de modo** (escalável), não uma mecânica nova para cada jogo. O Ecooo nasceu assim (Sequência estilo Genius com vários modos).
 
 Já fora da lista, por ele não ter achado escalável: Alvo (matemática), Círculo (desenho), Metade (dividir a área), Quantos? (contar pontos), Onde Fica? (geografia), Ordem (ordenar itens) e Anagrama. Ficam só como referência.
+
+### Jogos solo escolhidos para depois (10/10/2026)
+
+O Lucas pediu jogos **solo, bem diferentes dos que já existem, divertidos e sem conta de matemática, ângulo ou área**, que depois possam ganhar um modo com amigos. Pesquisa de tendências (jogos virais de TikTok e Instagram) e conversa levaram a estes. Nenhum começa antes do Batida.
+
+- **Sinal Vermelho** (gostou): segurar o dedo para correr até a linha de chegada enquanto um vigia vira de costas e de frente em tempos aleatórios; se te vê correndo, volta ao início. Dá para ir rápido (arriscado) ou devagar (seguro). Nota pelo tempo. Sem física, offline. **Com amigos:** corrida, todos com os mesmos viramentos do vigia (a seed decide quando o vigia vira).
+- **Torre Bamba** (gostou): peças de formatos absurdos caem do alto e a pessoa as encaixa numa torre que balança; se algo cai, acabou. **Com amigos:** mesma sequência de peças, vence a torre mais alta. Precisa de uma física simples de corpos rígidos (decidir se escreve à mão ou se pede para adicionar uma biblioteca, que é dependência fora da stack e precisa de aprovação).
+- **Aposta ou Passa / Banca** (gostou, "deixa pra depois"): começa com 10 coins; a primeira rodada é obrigatória; depois de cada acerto a pessoa escolhe **apostar tudo** ou **parar**; cada desafio tem multiplicador conforme a dificuldade (de 1,3x a 3,2x); 3 pulos trocam o desafio. A nota é o que foi guardado. Candidatos de desafio (3 a 6 s cada): na zona (bolinha numa barra), maior círculo, cor diferente (ΔE), mais pontos, conta rápida, alvo fugitivo, ao contrário (setas), cadeado, cor da tinta, qual sumiu, segura e solta, traço limpo. Sugestão para a primeira versão: os 8 primeiros e limite de 8 rodadas. Falta decidir quais desafios e se o pulo vale na primeira rodada.
+- **Raspadinha**: imagem coberta por gelo; cada raspada revela um pedaço e custa pontos; adivinhar entre 4 opções com o mínimo de raspadas. Pede um pacote de imagens (SVG).
+- **Fusão de Cores** (estilo Suika): soltar bolas numa caixa; duas iguais viram uma maior, de outra cor da paleta; acaba quando a caixa enche. Física de círculos.
+- **Empurra Tudo**: puxar e soltar peças como estilingue para derrubar as outras da plataforma, sem cair.
+
+Ideias já recusadas nesta rodada (o Lucas achou simples demais ou sem graça): Batuque, Ricochete, Colisão, Mistura, Área, Ponto, Ângulo, Tom, Tamanho, Contar, Metade, Corte Exato, Pavio, Estoura em Cadeia, Maior ou Menor, Rota do Caos, Anagrama Relâmpago.
 
 ## 4. Outras ideias propostas, sem decisão
 

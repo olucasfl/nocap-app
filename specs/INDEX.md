@@ -21,5 +21,6 @@
 | 016 | [NoCap! (jogo-festa)](016-maratona.md)                             | 6     | implementado; falta validar X1 ao vivo e calibrar                          |
 | 017 | [Presença na sala, entrar/sair e convites](017-presenca-sala.md)   | 3     | implementada; testada com servidor real e bots                             |
 | 018 | [Amigos, presença, perfil, ranking e fim de partida](018-social-e-fim-de-partida.md) | 3 | implementada; falta aplicar a migration 0005 |
+| 019 | [Ecooo Batida (estilo Guitar Hero)](019-eco-batida.md) | 6 | rascunho; aguardando decisões do Lucas |
 
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.
