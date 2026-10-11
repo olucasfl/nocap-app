@@ -549,14 +549,12 @@ const groups = (notes: BatidaNote[]) => {
 };
 
 describe('acordes (notas juntas)', () => {
-  it('o verso não tem acorde; o refrão engrossado tem acordes de duas notas', () => {
+  it('todas as músicas brincam desde o primeiro verso: notas juntas e notas longas', () => {
     for (const s of ALL) {
-      // As primeiras 8 notas de uma música (o primeiro verso) são todas sozinhas.
-      expect(Math.max(...groups(allNotes(s, 9)))).toBe(1);
+      const verse = notesBetween(SEED, s, 0, barStart(s, 9));
+      expect(Math.max(...groups(verse)), s.id).toBe(2);
+      expect(verse.some((n) => n.endT !== undefined), s.id).toBe(true);
     }
-    expect(Math.max(...groups(allNotes(SONGS.passo, 80)))).toBe(2);
-    expect(Math.max(...groups(allNotes(SONGS.mare, 80)))).toBe(2);
-    expect(Math.max(...groups(allNotes(SONGS.frenesi, 80)))).toBe(2);
   });
 
   it('nunca vêm juntas as duas pontas (pistas 1 e 5), em nenhum compasso de nenhuma música', () => {
@@ -582,9 +580,10 @@ describe('acordes (notas juntas)', () => {
   });
 
   it('o fácil usa menos acordes que os outros, e o Frenesi mais que todos', () => {
+    // Notas juntas por compasso: o fácil brinca pouco, o difícil o tempo todo.
     const share = (s: Song) => {
       const g = groups(allNotes(s, 120));
-      return g.filter((x) => x > 1).length / g.length;
+      return g.filter((x) => x > 1).length / 119;
     };
     expect(share(SONGS.passo)).toBeLessThan(share(SONGS.mare));
     expect(share(SONGS.mare)).toBeLessThan(share(SONGS.frenesi));
