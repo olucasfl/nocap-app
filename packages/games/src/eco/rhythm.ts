@@ -22,8 +22,14 @@ export const ENERGY_START = 70;
 export const ENERGY_PERFECT = 4;
 export const ENERGY_GOOD = 2;
 export const ENERGY_MISS = -14;
-/** Tocar numa pista sem nota perto. */
+/**
+ * Tocar numa pista sem nota perto é de graça (a pessoa só está apoiando o dedo ou sentindo a
+ * pista). Só quando vira rajada (`STRAY_BURST` toques soltos em `STRAY_WINDOW_MS`) é que custa
+ * energia e combo: é o que impede de socar as cinco pistas para acertar tudo.
+ */
 export const ENERGY_STRAY = -7;
+export const STRAY_WINDOW_MS = 1500;
+export const STRAY_BURST = 4;
 
 /** Nota longa: segurar até o fim vale como um Perfeito; soltar cedo gasta energia e zera o combo. */
 export const BATIDA_POINTS_HOLD = 10;
@@ -572,7 +578,8 @@ export function validateTaps(taps: readonly BatidaTap[]): string | null {
 export type SimEvent =
   | { kind: 'hit'; judgement: 'perfect' | 'good'; note: BatidaNote; delta: number }
   | { kind: 'miss'; note: BatidaNote }
-  | { kind: 'stray'; lane: number; t: number }
+  /** Toque sem nota por perto. `free` = de graça (não foi rajada): sem perda de nada. */
+  | { kind: 'stray'; lane: number; t: number; free: boolean }
   /** Segurou a nota longa até o fim. */
   | { kind: 'holdDone'; lane: number; note: BatidaNote }
   /** Soltou a nota longa antes da hora. */
@@ -607,6 +614,8 @@ export class BatidaSim {
   private holding = new Map<number, BatidaNote>();
   private end = { dead: false, atMs: 0, bar: 0 };
   private used = 0;
+  /** Instantes dos toques soltos recentes (para reconhecer a rajada). */
+  private strays: number[] = [];
   /** O instante mais tarde a que a partida já chegou (nunca anda para trás). */
   private reached = -Infinity;
 
@@ -727,8 +736,11 @@ export class BatidaSim {
       if (!target || Math.abs(q.note.t - t) < Math.abs(target.note.t - t)) target = q;
     }
     if (!target) {
-      events.push({ kind: 'stray', lane, t });
-      this.lose(ENERGY_STRAY, t, 'stray');
+      this.strays = this.strays.filter((x) => t - x <= STRAY_WINDOW_MS);
+      this.strays.push(t);
+      const burst = this.strays.length >= STRAY_BURST;
+      events.push({ kind: 'stray', lane, t, free: !burst });
+      if (burst) this.lose(ENERGY_STRAY, t, 'stray');
       return events;
     }
     target.done = true;

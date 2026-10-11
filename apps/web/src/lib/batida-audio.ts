@@ -98,7 +98,9 @@ export interface BatidaAudio {
   setLevel(level: number): void;
   /** Acertou: toca a nota da pista (Perfeito brilha mais). */
   hit(lane: number, bar: number, perfect: boolean): void;
-  /** Toque sem nota: soa errado e a base tropeça. */
+  /** Toque sem nota por perto: a nota da pista, baixinha (de graça, não é erro). */
+  soft(lane: number): void;
+  /** Rajada de toques soltos: soa errado e a base tropeça. */
   wrong(): void;
   /** Uma nota passou sem toque. */
   missed(): void;
@@ -336,6 +338,10 @@ export function createBatidaAudio(song: Song): BatidaAudio | null {
       );
       tone('sine', f * 2, f * 2, when, 0.12, perfect ? lead.shine : lead.shine * 0.4, 0.003);
       if (perfect) tone('sine', f * 3, f * 3, when, 0.09, 0.05, 0.003);
+    },
+    soft(lane) {
+      const f = hz(C4, song.tonic + semitoneOf(song, lane, 0));
+      tone(lead.type, f, f, ctx.currentTime, 0.1, lead.peak * 0.3, 0.004);
     },
     wrong() {
       const when = ctx.currentTime;

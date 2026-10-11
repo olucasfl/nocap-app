@@ -390,13 +390,26 @@ describe('evaluateBatida', () => {
     expect(sequence.tenths / sequence.perfect).toBeGreaterThan(broken.tenths / broken.perfect);
   });
 
-  it('tocar sem nota por perto custa energia e zera o combo', () => {
+  it('tocar sem nota por perto é de graça: não custa energia, combo nem pontos', () => {
+    const clean = evaluateBatida(SEED, SONG, perfectTaps(SEED, SONG, 20));
     const run = evaluateBatida(SEED, SONG, [
       { lane: 0, t: 100, up: 140 },
+      { lane: 4, t: 2_000, up: 2_040 },
       ...perfectTaps(SEED, SONG, 20),
     ]);
-    expect(run.stray).toBeGreaterThanOrEqual(1);
-    expect(run.endedAtMs).toBeGreaterThan(barStart(SONG, 20));
+    expect(run.stray).toBe(0);
+    expect(run.tenths).toBe(clean.tenths);
+    expect(run.maxCombo).toBe(clean.maxCombo);
+  });
+
+  it('socar as pistas em rajada custa energia e combo (senão daria para acertar tudo no chute)', () => {
+    const sim = new BatidaSim(SEED, SONG);
+    const start = 100;
+    const events = [0, 1, 2, 3, 4].map((i) => sim.tap(i, start + i * 100));
+    // Os primeiros toques soltos são de graça; a rajada começa a custar.
+    expect(events[0]!.every((x) => x.kind !== 'stray' || x.free)).toBe(true);
+    expect(sim.run.stray).toBeGreaterThan(0);
+    expect(sim.currentEnergy).toBeLessThan(ENERGY_START);
   });
 
   it('é determinística: os mesmos toques dão sempre o mesmo resultado', () => {
@@ -416,7 +429,7 @@ describe('evaluateBatida', () => {
     );
   });
 
-  it('cada toque vale uma nota só: bater duas vezes na mesma nota gasta energia', () => {
+  it('cada toque vale uma nota só: bater duas vezes na mesma nota não conta a segunda', () => {
     const note = notesBetween(SEED, SONG, 0, 30_000)[0]!;
     const t = Math.round(note.t);
     const run = evaluateBatida(SEED, SONG, [
@@ -424,7 +437,7 @@ describe('evaluateBatida', () => {
       { lane: note.lane, t: t + 60, up: t + 80 },
     ]);
     expect(run.perfect).toBe(1);
-    expect(run.stray).toBe(1);
+    expect(run.stray).toBe(0);
   });
 
   it('conta os toques até o fim; toque depois da energia zerada não conta', () => {

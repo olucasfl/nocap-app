@@ -30,6 +30,7 @@ Status: **solo implementado** (10/10/2026): três músicas, perspectiva, pausa, 
 - **Variedade desde o início (11/10/2026):** todas as músicas brincam já no primeiro verso, com notas juntas e notas longas, mas em doses diferentes: o fácil (Primeiro Passo) pouco e devagar, a média (Maré Alta) mais, a difícil (Frenesi) o tempo todo.
 - **NoCap! (sala party) não guarda resultado** em lugar nenhum (antes caía no histórico da Mesmíssima).
 - **Toque e servidor na mesma conta:** o toque nunca entra antes do que a partida já processou (`BatidaSim.earliest`), para o servidor refazer a mesma nota.
+- **Toque sem nota é de graça (11/10/2026):** o molde acende ao apertar (tecla ou dedo, até na contagem) e toca a nota baixinho, sem perder energia, combo nem pontos. Só rajada (4 toques soltos em 1,5 s) custa, para ninguém socar as cinco pistas.
 - **No máximo 2 notas juntas**, e nunca as duas pontas (pistas 1 e 5) juntas.
 - Continua valendo: nota longa sozinha (nenhuma outra nota enquanto se segura).
 

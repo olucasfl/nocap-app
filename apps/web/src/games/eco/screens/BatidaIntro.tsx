@@ -354,7 +354,8 @@ export function BatidaIntro({ onBegin }: { onBegin: (song: SongId) => void }) {
           <b>1</b>
           <span>
             As notas vêm do fundo da pista e encaixam nos moldes coloridos. Toque na pista quando a
-            nota chegar no molde: cada acerto toca uma nota e, juntas, elas formam a música.
+            nota chegar no molde: cada acerto toca uma nota e, juntas, elas formam a música. Tocar quando não há nota não
+            custa nada: o molde só acende para você sentir.
           </span>
         </li>
         <li>

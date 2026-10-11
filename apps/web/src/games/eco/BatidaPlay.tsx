@@ -297,10 +297,17 @@ export function BatidaPlay({ seed, song, onEnd, onQuit }: Props) {
           audio?.missed();
           say('miss');
         } else if (e.kind === 'stray') {
-          audio?.wrong();
-          flash(e.lane, 'bad');
-          say('miss');
-          buzz(25);
+          if (e.free) {
+            // Toque sem nota: só toca a nota baixinho. Não perde nada.
+            audio?.soft(e.lane);
+            buzz(8);
+          } else {
+            // Rajada de toques soltos: aí sim custa.
+            audio?.wrong();
+            flash(e.lane, 'bad');
+            say('miss');
+            buzz(25);
+          }
         } else if (e.kind === 'holdDone') {
           audio?.holdEnd(e.lane);
           audio?.hit(e.note.lane, e.note.bar, true);
@@ -325,7 +332,10 @@ export function BatidaPlay({ seed, song, onEnd, onQuit }: Props) {
     };
 
     const press = (lane: number, perf?: number) => {
-      if (finished || paused || open.has(lane)) return;
+      if (finished || paused) return;
+      // O molde acende na hora, haja nota ou não (também na contagem): é o "estou tocando aqui".
+      slotEls.current[lane]?.classList.add('down');
+      if (open.has(lane)) return;
       // Nunca antes do que a partida já processou: o servidor refaz só pelos toques e tem que ver
       // este toque na mesma hora em que o jogo viu.
       const t = Math.max(Math.round(stamped(perf)), sim.earliest());
@@ -337,7 +347,6 @@ export function BatidaPlay({ seed, song, onEnd, onQuit }: Props) {
       const tap: BatidaTap = { lane, t, up: t + 1 };
       taps.push(tap);
       open.set(lane, tap);
-      slotEls.current[lane]?.classList.add('down');
       handle(sim.tap(lane, t));
     };
 

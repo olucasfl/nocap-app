@@ -615,3 +615,11 @@
   letter-spacing: 0.06em;
   white-space: nowrap;
 }
+
+/* Apertado agora (tecla ou dedo): sempre bem visível, mesmo sem nota, e acima do acende-apaga da janela. */
+.bt-slot.down .bt-mold {
+  background: color-mix(in srgb, var(--lane) 80%, transparent);
+  border-style: solid;
+  opacity: 1;
+  transform: scale(0.94);
+}
