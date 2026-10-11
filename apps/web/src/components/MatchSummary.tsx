@@ -55,10 +55,10 @@ function RankingPeek({
   const unit = scoreUnit(game, mode);
 
   return (
-    <section className="ms-rank" aria-label="Seu lugar no ranking">
-      <div className="ms-rank-head">
-        <span className="mono ms-label">SEU LUGAR NO RANKING</span>
-        <div className="ms-seg" role="radiogroup" aria-label="Período">
+    <section className="sum-rank" aria-label="Seu lugar no ranking">
+      <div className="sum-rank-head">
+        <span className="mono sum-label">SEU LUGAR NO RANKING</span>
+        <div className="sum-seg" role="radiogroup" aria-label="Período">
           {PERIODS.map((p) => (
             <button
               key={p.id}
@@ -75,16 +75,16 @@ function RankingPeek({
       </div>
 
       {!saved || q.isPending ? (
-        <p className="mono ms-hint">
+        <p className="mono sum-hint">
           {saved ? 'Carregando o ranking...' : 'Salvando a partida...'}
         </p>
       ) : q.isError ? (
-        <p className="mono ms-hint">Não deu para carregar o ranking agora.</p>
+        <p className="mono sum-hint">Não deu para carregar o ranking agora.</p>
       ) : (
         <>
-          <div className="ms-rank-main">
-            <b className="ms-rank-pos">{me ? `${me.rank}º` : '-'}</b>
-            <span className="ms-rank-text">
+          <div className="sum-rank-main">
+            <b className="sum-rank-pos">{me ? `${me.rank}º` : '-'}</b>
+            <span className="sum-rank-text">
               {me ? (
                 <>
                   <b>
@@ -109,11 +109,11 @@ function RankingPeek({
             </span>
           </div>
           {top.length > 0 && (
-            <ol className="ms-top" aria-label="Três primeiros">
+            <ol className="sum-top" aria-label="Três primeiros">
               {top.map((e) => (
                 <li key={e.username} className={e.isMe ? 'me' : ''}>
                   <span className="mono">{e.rank}º</span>
-                  <span className="ms-top-name">@{e.username}</span>
+                  <span className="sum-top-name">@{e.username}</span>
                   <b>{scoreValue(game, mode, e.score)}</b>
                 </li>
               ))}
@@ -164,28 +164,28 @@ export function MatchSummary({
           before={formatBest(game, mode, previousBest!)}
         />
       )}
-      <section className={`ms ms-${c.verdict}`} aria-label="Sua nota e o seu recorde">
-        <div className="ms-pair">
-          <div className="ms-cell now">
-            <span className="mono ms-label">ESTA PARTIDA</span>
+      <section className={`sum sum-${c.verdict}`} aria-label="Sua nota e o seu recorde">
+        <div className="sum-pair">
+          <div className="sum-cell now">
+            <span className="mono sum-label">ESTA PARTIDA</span>
             <b>
               {scoreValue(game, mode, scoreTenths)}
               <small className="mono">{withSlash ? unit : ` ${unit}`}</small>
             </b>
           </div>
-          <div className="ms-cell best">
-            <span className="mono ms-label">SEU RECORDE</span>
+          <div className="sum-cell best">
+            <span className="mono sum-label">SEU RECORDE</span>
             <b>
               {scoreValue(game, mode, c.best)}
               <small className="mono">{withSlash ? unit : ` ${unit}`}</small>
             </b>
           </div>
         </div>
-        <div className="ms-meter" aria-hidden="true">
-          <i className="ms-fill" style={{ width: `${bars.now}%` }} />
-          <i className="ms-mark" style={{ left: `${bars.best}%` }} />
+        <div className="sum-meter" aria-hidden="true">
+          <i className="sum-fill" style={{ width: `${bars.now}%` }} />
+          <i className="sum-mark" style={{ left: `${bars.best}%` }} />
         </div>
-        <p className="mono ms-verdict" role="status">
+        <p className="mono sum-verdict" role="status">
           {verdictText(game, mode, c)}
         </p>
       </section>

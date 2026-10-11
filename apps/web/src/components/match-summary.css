@@ -1,5 +1,5 @@
 /* Fim da partida: nota x recorde e lugar no ranking. A cor segue o veredito. */
-.ms {
+.sum {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -9,26 +9,26 @@
   border-radius: var(--radius-lg);
   box-shadow: 4px 4px 0 var(--ink);
 }
-.ms-record {
+.sum-record {
   background: var(--yellow);
   color: var(--on-accent);
 }
-.ms-label {
+.sum-label {
   display: block;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.1em;
   color: var(--muted);
 }
-.ms-record .ms-label {
+.sum-record .sum-label {
   color: inherit;
 }
-.ms-pair {
+.sum-pair {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
-.ms-cell {
+.sum-cell {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -38,29 +38,29 @@
   background: var(--paper);
   color: var(--ink);
 }
-.ms-cell b {
+.sum-cell b {
   font: 900 34px/1 var(--font-display);
   letter-spacing: -0.04em;
 }
-.ms-cell small {
+.sum-cell small {
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0;
 }
-.ms-cell.now {
+.sum-cell.now {
   background: var(--orange);
   color: var(--on-accent);
 }
-.ms-cell.now .ms-label {
+.sum-cell.now .sum-label {
   color: inherit;
 }
-.ms-record .ms-cell.now {
+.sum-record .sum-cell.now {
   background: var(--ink);
-  color: var(--yellow);
+  color: var(--paper);
 }
 
 /* Barra: o preenchimento é a nota desta partida; o risco é o recorde. */
-.ms-meter {
+.sum-meter {
   position: relative;
   height: 18px;
   border: var(--border);
@@ -68,18 +68,18 @@
   background: var(--paper);
   overflow: visible;
 }
-.ms-fill {
+.sum-fill {
   position: absolute;
   inset: 0 auto 0 0;
   background: var(--orange);
   border-radius: 999px 0 0 999px;
   transform-origin: left center;
-  animation: ms-grow 0.7s ease-out both;
+  animation: sum-grow 0.7s ease-out both;
 }
-.ms-record .ms-fill {
+.sum-record .sum-fill {
   background: var(--ink);
 }
-.ms-mark {
+.sum-mark {
   position: absolute;
   top: -6px;
   bottom: -6px;
@@ -88,10 +88,10 @@
   background: var(--ink);
   border-radius: 2px;
 }
-.ms-record .ms-mark {
+.sum-record .sum-mark {
   background: var(--on-accent);
 }
-@keyframes ms-grow {
+@keyframes sum-grow {
   from {
     transform: scaleX(0);
   }
@@ -99,7 +99,7 @@
     transform: scaleX(1);
   }
 }
-.ms-verdict {
+.sum-verdict {
   margin: 0;
   font-size: 12px;
   font-weight: 700;
@@ -107,7 +107,7 @@
 }
 
 /* Lugar no ranking. */
-.ms-rank {
+.sum-rank {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -117,19 +117,19 @@
   border-radius: var(--radius-lg);
   box-shadow: 4px 4px 0 var(--ink);
 }
-.ms-rank-head {
+.sum-rank-head {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
-.ms-seg {
+.sum-seg {
   display: flex;
   border: var(--border);
   border-radius: var(--radius-sm);
   overflow: hidden;
   background: var(--paper);
 }
-.ms-seg button {
+.sum-seg button {
   appearance: none;
   flex: 1;
   height: 38px;
@@ -140,50 +140,50 @@
   font: 700 12px var(--font-mono);
   cursor: pointer;
 }
-.ms-seg button:last-child {
+.sum-seg button:last-child {
   border-right: 0;
 }
-.ms-seg button[aria-checked='true'] {
+.sum-seg button[aria-checked='true'] {
   background: var(--blue);
   color: var(--on-blue);
   font-weight: 900;
 }
-.ms-seg button:focus-visible {
+.sum-seg button:focus-visible {
   outline: 3px solid var(--ink);
   outline-offset: -3px;
 }
-.ms-hint {
+.sum-hint {
   margin: 0;
   font-size: 12px;
   font-weight: 700;
   color: var(--muted);
 }
-.ms-rank-main {
+.sum-rank-main {
   display: flex;
   align-items: center;
   gap: 14px;
 }
-.ms-rank-pos {
+.sum-rank-pos {
   min-width: 64px;
   font: 900 44px/1 var(--font-display);
   letter-spacing: -0.05em;
   color: var(--blue);
 }
-.ms-rank-text {
+.sum-rank-text {
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
 }
-.ms-rank-text > b {
+.sum-rank-text > b {
   font: 900 16px var(--font-display);
 }
-.ms-rank-text .mono {
+.sum-rank-text .mono {
   font-size: 11px;
   font-weight: 700;
   color: var(--muted);
 }
-.ms-top {
+.sum-top {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -191,7 +191,7 @@
   flex-direction: column;
   gap: 6px;
 }
-.ms-top li {
+.sum-top li {
   display: grid;
   grid-template-columns: 32px 1fr auto;
   align-items: center;
@@ -201,22 +201,22 @@
   border: var(--border);
   border-radius: 10px;
 }
-.ms-top li.me {
+.sum-top li.me {
   background: var(--yellow);
   color: var(--on-accent);
 }
-.ms-top-name {
+.sum-top-name {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font: 900 14px var(--font-display);
 }
-.ms-top b {
+.sum-top b {
   font: 900 16px var(--font-display);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ms-fill {
+  .sum-fill {
     animation: none;
   }
 }
