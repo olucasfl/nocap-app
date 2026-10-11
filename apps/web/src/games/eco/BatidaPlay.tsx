@@ -45,6 +45,32 @@ interface Hud {
   energy: number;
 }
 
+/** Ajuste fino do toque, no menu de pausa: vale ao voltar para a partida. */
+function Tune() {
+  const [ms, setMs] = useState(getBatidaLatency);
+  const step = (d: number) => {
+    const next = Math.max(-250, Math.min(250, ms + d));
+    setBatidaLatency(next);
+    setMs(next);
+  };
+  return (
+    <div className="bt-tune">
+      <span className="mono">AJUSTE DO TOQUE: {ms} MS</span>
+      <div className="bt-tune-row">
+        <button type="button" className="btn ghost" data-sfx="select" onClick={() => step(-10)}>
+          -10
+        </button>
+        <button type="button" className="btn ghost" data-sfx="select" onClick={() => step(10)}>
+          +10
+        </button>
+      </div>
+      <p className="mono bt-pause-hint">
+        Tocou no molde e deu TARDE? Aumente. Deu CEDO? Diminua.
+      </p>
+    </div>
+  );
+}
+
 /** A pausa: jogando, pausado (menu) ou voltando (3, 2, 1). */
 type Pause = { kind: 'none' } | { kind: 'paused' } | { kind: 'count'; n: number };
 
@@ -145,7 +171,7 @@ export function BatidaPlay({ seed, song, onEnd, onQuit }: Props) {
     const lastTap = new Array<number>(BATIDA_LANES).fill(-Infinity);
     const nodes = new Map<string, HTMLElement>();
     const bodies = new Map<string, SVGPolygonElement>();
-    const latency = getBatidaLatency();
+    let latency = getBatidaLatency();
     /** Quanto cada acerto errou o tempo (ms, negativo = cedo): vira o ajuste automático no fim. */
     const deltas: number[] = [];
     /** Notas já acertadas: não voltam para a tela quando ainda estão na janela de tempo. */
@@ -187,7 +213,7 @@ export function BatidaPlay({ seed, song, onEnd, onQuit }: Props) {
       const sorted = [...deltas].sort((a, b) => a - b);
       const median = sorted[Math.floor(sorted.length / 2)]!;
       // 90% do desvio de uma vez, para um dia ruim não desregular tudo.
-      if (Math.abs(median) >= 5) setBatidaLatency(latency + Math.round(median * 0.9));
+      if (Math.abs(median) >= 5) setBatidaLatency(getBatidaLatency() + Math.round(median * 0.9));
     };
 
     const showHud = () =>
@@ -334,6 +360,8 @@ export function BatidaPlay({ seed, song, onEnd, onQuit }: Props) {
           countTimer = window.setTimeout(step, 1000);
           return;
         }
+        // O ajuste fino do menu vale a partir daqui.
+        latency = getBatidaLatency();
         fallbackBase += performance.now() - fallbackPausedAt;
         holdAudio(false);
         audio?.resume();
@@ -595,6 +623,7 @@ export function BatidaPlay({ seed, song, onEnd, onQuit }: Props) {
               <h2>Pausado</h2>
               <p className="mono bt-pause-song">{song.name}</p>
               <BatidaKeys onChange={setKeys} />
+              <Tune />
               <div className="stack">
                 <button
                   type="button"

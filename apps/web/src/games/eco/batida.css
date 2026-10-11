@@ -506,3 +506,13 @@
 .bt-slot.sweet .bt-mold {
   background: color-mix(in srgb, var(--lane) 55%, transparent);
 }
+
+.bt-tune {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+}
+.bt-tune-row {
+  display: flex;
+  gap: 8px;
+}

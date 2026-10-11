@@ -75,7 +75,8 @@ function Calibration({ onClose }: { onClose: () => void }) {
   const finish = () => {
     const est = estimateLatency(devs.current);
     setResult(est);
-    if (est !== null) setBatidaLatency(est);
+    // Quem acompanha uma batida antecipa; na partida a nota é reação. Nunca adianta o julgamento.
+    if (est !== null) setBatidaLatency(Math.max(0, est));
     setState('done');
   };
 
