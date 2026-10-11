@@ -549,3 +549,19 @@
 .bt-setting-row .btn {
   flex: 1;
 }
+
+/*
+ * Nada do que desenha o jogo recebe toque: a nota por cima do molde (justamente na hora de
+ * acertar) engolia o clique e ele nunca chegava no botão da pista.
+ */
+.bt-note,
+.bt-note *,
+.bt-holds,
+.bt-holds *,
+.bt-road,
+.bt-count,
+.bt-judge,
+.bt-over,
+.bt-defs {
+  pointer-events: none;
+}
