@@ -27,7 +27,6 @@ import './batida.css';
 
 /** Quanto antes de chegar ao molde a nota aparece lá no fundo da pista (ms). */
 const TRAVEL_MS = 2300;
-const NOTE_H = 46;
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
 const JUDGE_TEXT = {
@@ -195,9 +194,17 @@ export function BatidaPlay({ seed, song, onEnd, onQuit }: Props) {
     let finished = false;
     let paused = false;
     let countTimer = 0;
-    let size = { w: field.current?.clientWidth ?? 360, h: field.current?.clientHeight ?? 400 };
+    // Notas e moldes são quadrados: o lado cabe na pista (no computador não esticam em retângulo).
+    const sideOf = (w: number) => Math.max(34, Math.min(56, w / BATIDA_LANES - 14));
+    let size = {
+      w: field.current?.clientWidth ?? 360,
+      h: field.current?.clientHeight ?? 400,
+      side: 52,
+    };
     const fit = () => {
-      size = { w: field.current?.clientWidth ?? size.w, h: field.current?.clientHeight ?? size.h };
+      const w = field.current?.clientWidth ?? size.w;
+      size = { w, h: field.current?.clientHeight ?? size.h, side: sideOf(w) };
+      field.current?.style.setProperty('--bt-side', `${size.side}px`);
       holdsSvg.current?.setAttribute('viewBox', `0 0 ${size.w} ${size.h}`);
     };
     const ro = new ResizeObserver(fit);
@@ -467,7 +474,7 @@ export function BatidaPlay({ seed, song, onEnd, onQuit }: Props) {
         cls.toggle('near', gap[lane]! <= GOOD_MS);
         cls.toggle('sweet', gap[lane]! <= PERFECT_MS);
       }
-      const half = (w / BATIDA_LANES) * 0.36;
+      const half = size.side * 0.4;
       for (const n of visible) {
         const key = keyOf(n);
         want.add(key);
@@ -484,7 +491,7 @@ export function BatidaPlay({ seed, song, onEnd, onQuit }: Props) {
         // Segurando, a cabeça da nota fica no molde enquanto a barra "queima" até acabar.
         const z = (n.t - now) / TRAVEL_MS;
         const p = project(holding ? Math.max(0, z) : z, n.lane, w, h);
-        el.style.transform = `translate(${p.x - w / (2 * BATIDA_LANES)}px, ${p.y - NOTE_H / 2}px) scale(${p.scale})`;
+        el.style.transform = `translate(${p.x - size.side / 2}px, ${p.y - size.side / 2}px) scale(${p.scale})`;
         el.style.opacity = String(p.opacity);
         el.classList.toggle('holding', holding);
 

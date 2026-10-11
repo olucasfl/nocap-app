@@ -102,9 +102,9 @@
   position: absolute;
   left: 0;
   top: 0;
-  width: 20%;
-  height: 46px;
-  padding: 0 6px;
+  width: var(--bt-side, 46px);
+  height: var(--bt-side, 46px);
+  padding: 0;
   transform-origin: center center;
   will-change: transform, opacity;
 }
@@ -221,10 +221,10 @@
 }
 .bt-mold {
   position: absolute;
-  left: 6px;
-  right: 6px;
-  top: 17px;
-  height: 46px;
+  left: calc(50% - var(--bt-side, 46px) / 2);
+  width: var(--bt-side, 46px);
+  top: calc(40px - var(--bt-side, 46px) / 2);
+  height: var(--bt-side, 46px);
   display: grid;
   place-items: center;
   background: color-mix(in srgb, var(--lane) 26%, transparent);
@@ -248,7 +248,7 @@
 .bt-kbd {
   position: absolute;
   left: 50%;
-  top: 70px;
+  top: calc(48px + var(--bt-side, 46px) / 2);
   transform: translateX(-50%);
   min-width: 24px;
   padding: 1px 6px;

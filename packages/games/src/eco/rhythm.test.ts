@@ -405,7 +405,7 @@ describe('evaluateBatida', () => {
   it('socar as pistas em rajada custa energia e combo (senão daria para acertar tudo no chute)', () => {
     const sim = new BatidaSim(SEED, SONG);
     const start = 100;
-    const events = [0, 1, 2, 3, 4].map((i) => sim.tap(i, start + i * 100));
+    const events = Array.from({ length: 10 }, (_, i) => sim.tap(i % 5, start + i * 100));
     // Os primeiros toques soltos são de graça; a rajada começa a custar.
     expect(events[0]!.every((x) => x.kind !== 'stray' || x.free)).toBe(true);
     expect(sim.run.stray).toBeGreaterThan(0);

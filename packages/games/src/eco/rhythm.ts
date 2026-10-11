@@ -28,8 +28,8 @@ export const ENERGY_MISS = -14;
  * energia e combo: é o que impede de socar as cinco pistas para acertar tudo.
  */
 export const ENERGY_STRAY = -7;
-export const STRAY_WINDOW_MS = 1500;
-export const STRAY_BURST = 4;
+export const STRAY_WINDOW_MS = 2000;
+export const STRAY_BURST = 8;
 
 /** Nota longa: segurar até o fim vale como um Perfeito; soltar cedo gasta energia e zera o combo. */
 export const BATIDA_POINTS_HOLD = 10;
