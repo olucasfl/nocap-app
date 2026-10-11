@@ -158,16 +158,6 @@ const SONG_COLOR: Record<SongId, string> = {
 const SONG_LEVEL: Record<SongId, string> = { passo: 'FÁCIL', mare: 'MÉDIA', frenesi: 'DIFÍCIL' };
 const SONG_KEY = 'nocap-batida-song';
 
-/** A última música escolhida (a primeira vez, a mais calma). */
-function lastSong(): SongId {
-  try {
-    const id = localStorage.getItem(SONG_KEY);
-    return isSongId(id) ? id : 'passo';
-  } catch {
-    return 'passo';
-  }
-}
-
 /** Ajuste do toque: o valor atual, os botões de -10/+10 e a calibração por batida. */
 function Tune() {
   const [ms, setMs] = useState(getBatidaLatency);
