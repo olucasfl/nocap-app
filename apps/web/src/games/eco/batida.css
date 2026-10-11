@@ -565,3 +565,37 @@
 .bt-defs {
   pointer-events: none;
 }
+
+/* Escolha da música: o Jogar fica colado embaixo. */
+.bt-cta {
+  position: sticky;
+  bottom: 0;
+  padding: 12px 0 4px;
+  background: var(--bg, var(--paper));
+}
+.bt-cta .btn:disabled {
+  opacity: 0.5;
+}
+.bt-ms {
+  font-size: 18px;
+  font-weight: 700;
+}
+.bt-slider {
+  display: grid;
+  grid-template-columns: 48px 1fr 48px;
+  align-items: center;
+  gap: 10px;
+}
+.bt-slider input[type='range'] {
+  width: 100%;
+  accent-color: var(--orange);
+  height: 32px;
+}
+.bt-slider-ends {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 58px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
