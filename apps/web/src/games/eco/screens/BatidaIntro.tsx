@@ -168,15 +168,56 @@ function lastSong(): SongId {
   }
 }
 
+/** Ajuste do toque: o valor atual, os botões de -10/+10 e a calibração por batida. */
+function Tune() {
+  const [ms, setMs] = useState(getBatidaLatency);
+  const [calibrating, setCalibrating] = useState(false);
+  const step = (d: number) => {
+    const next = Math.max(-250, Math.min(250, ms + d));
+    setBatidaLatency(next);
+    setMs(next);
+  };
+  return (
+    <div className="bt-setting">
+      <div className="bt-setting-head">
+        <b>Ajuste do toque</b>
+        <span className="mono">{ms} MS</span>
+      </div>
+      <p>Tocou no molde e deu TARDE? Aumente. Deu CEDO? Diminua. O jogo também se ajusta sozinho.</p>
+      <div className="bt-setting-row">
+        <button type="button" className="btn ghost" data-sfx="select" onClick={() => step(-10)}>
+          -10
+        </button>
+        <button type="button" className="btn ghost" data-sfx="select" onClick={() => step(10)}>
+          +10
+        </button>
+        <button
+          type="button"
+          className="btn ghost"
+          data-sfx="select"
+          onClick={() => setCalibrating((v) => !v)}
+        >
+          {calibrating ? 'Fechar' : 'Calibrar'}
+        </button>
+      </div>
+      {calibrating && (
+        <Calibration
+          onClose={() => {
+            setMs(getBatidaLatency());
+            setCalibrating(false);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
 /**
- * Abertura do Eco Hero: a pessoa escolhe uma das três músicas e começa. As teclas do computador
- * e o ajuste de atraso ficam de canto, sem atrapalhar quem só quer jogar.
+ * Abertura do Eco Hero em dois passos: primeiro só as três músicas; ao escolher uma, aparecem as
+ * regras e as configurações (teclas e ajuste do toque), bem à vista, e então o botão de começar.
  */
 export function BatidaIntro({ onBegin }: { onBegin: (song: SongId) => void }) {
-  const [song, setSong] = useState<SongId>(lastSong);
-  const [calibrating, setCalibrating] = useState(false);
-  const [showKeys, setShowKeys] = useState(false);
-  const latency = getBatidaLatency();
+  const [song, setSong] = useState<SongId | null>(null);
 
   const pick = (id: SongId) => {
     setSong(id);
@@ -187,37 +228,50 @@ export function BatidaIntro({ onBegin }: { onBegin: (song: SongId) => void }) {
     }
   };
 
+  if (!song) {
+    return (
+      <section className="screen eco-intro">
+        <div className="mono eco-label">ECO HERO</div>
+        <h1>Escolha a música</h1>
+        <ul className="bt-songs" aria-label="Músicas">
+          {SONG_IDS.map((id) => {
+            const s = SONGS[id];
+            return (
+              <li key={id}>
+                <button
+                  type="button"
+                  data-sfx="select"
+                  className="bt-song"
+                  style={{ '--song': SONG_COLOR[id] } as CSSProperties}
+                  onClick={() => pick(id)}
+                >
+                  <span className="bt-song-head">
+                    <b>{s.name}</b>
+                    <span className="mono bt-song-meta">{SONG_LEVEL[id]}</span>
+                  </span>
+                  <p>{s.tagline}</p>
+                  <span className="mono bt-song-meta">
+                    {s.startBpm}→{s.maxBpm} BATIDAS POR MINUTO
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+    );
+  }
+
+  const s = SONGS[song];
   return (
     <section className="screen eco-intro">
       <div className="mono eco-label">ECO HERO</div>
-      <h1>Escolha a música</h1>
-      <ul className="bt-songs" role="radiogroup" aria-label="Música">
-        {SONG_IDS.map((id) => {
-          const s = SONGS[id];
-          return (
-            <li key={id}>
-              <button
-                type="button"
-                role="radio"
-                data-sfx="select"
-                className="bt-song"
-                style={{ '--song': SONG_COLOR[id] } as CSSProperties}
-                aria-checked={song === id}
-                onClick={() => pick(id)}
-              >
-                <span className="bt-song-head">
-                  <b>{s.name}</b>
-                  <span className="mono bt-song-meta">{SONG_LEVEL[id]}</span>
-                </span>
-                <p>{s.tagline}</p>
-                <span className="mono bt-song-meta">
-                  {s.startBpm}→{s.maxBpm} BATIDAS POR MINUTO
-                </span>
-              </button>
-            </li>
-          );
-        })}
-      </ul>
+      <h1>{s.name}</h1>
+      <p className="mono bt-song-meta">
+        {SONG_LEVEL[song]} · {s.startBpm}→{s.maxBpm} BATIDAS POR MINUTO
+      </p>
+
+      <h2 className="bt-section">Como jogar</h2>
       <ol className="eco-steps">
         <li>
           <b>1</b>
@@ -233,37 +287,31 @@ export function BatidaIntro({ onBegin }: { onBegin: (song: SongId) => void }) {
             gasta a energia e a música tropeça. Zerou, acabou.
           </span>
         </li>
+        <li>
+          <b>3</b>
+          <span>
+            Com o tempo vêm notas juntas (use mais de um dedo, até 3) e barras compridas: aperte e
+            segure até o fim. Ligue o som.
+          </span>
+        </li>
       </ol>
-      <p className="eco-intro-extra">
-        Com o tempo vêm notas juntas (use mais de um dedo, até 3) e barras compridas: aperte e
-        segure até o fim. Ligue o som. No computador, 1 a 5 tocam (dá para trocar).
-      </p>
+
+      <h2 className="bt-section">Configurações</h2>
+      <div className="bt-setting">
+        <div className="bt-setting-head">
+          <b>Teclas do computador</b>
+        </div>
+        <BatidaKeys />
+      </div>
+      <Tune />
+
       <div className="stack">
         <button type="button" className="btn" data-sfx="start" onClick={() => onBegin(song)}>
           Começar <ArrowRight />
         </button>
-        {showKeys && <BatidaKeys />}
-        {calibrating && <Calibration onClose={() => setCalibrating(false)} />}
-        {!calibrating && (
-          <div className="bt-cal-links">
-            <button
-              type="button"
-              className="bt-cal-link mono"
-              data-sfx="select"
-              onClick={() => setShowKeys((v) => !v)}
-            >
-              {showKeys ? 'Esconder teclas' : 'Teclas do computador'}
-            </button>
-            <button
-              type="button"
-              className="bt-cal-link mono"
-              data-sfx="select"
-              onClick={() => setCalibrating(true)}
-            >
-              Ajustar atraso do toque{latency !== 0 ? ` (agora ${latency} ms)` : ''}
-            </button>
-          </div>
-        )}
+        <button type="button" className="btn ghost" data-sfx="back" onClick={() => setSong(null)}>
+          Trocar de música
+        </button>
       </div>
     </section>
   );
