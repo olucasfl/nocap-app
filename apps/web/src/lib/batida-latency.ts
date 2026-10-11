@@ -3,7 +3,8 @@
  * toque. É descontado de cada toque. Padrão 0; quem quiser ajusta de canto (não pergunta antes de
  * cada partida).
  */
-const KEY = 'nocap-batida-latency';
+// v2: o relógio mudou (agora mede o som que se ouve), então o ajuste antigo não vale mais.
+const KEY = 'nocap-batida-latency-v2';
 export const BATIDA_LATENCY_LIMIT_MS = 250;
 
 export function getBatidaLatency(): number {

@@ -48,6 +48,8 @@ export interface BatidaAudio {
   start(): void;
   /** Ms desde o início da partida, pelo relógio do áudio (a contagem é o compasso 0). */
   now(): number;
+  /** Ms da partida no horário `perf` (`performance.now()`/`event.timeStamp`) de um toque. */
+  at(perf: number): number;
   /** Nível da música (1 a 4), vindo do multiplicador. */
   setLevel(level: number): void;
   /** Acertou: toca a nota da pista (Perfeito brilha mais). */
@@ -87,6 +89,29 @@ export function createBatidaAudio(song: Song): BatidaAudio | null {
   const sustained = new Map<number, { osc: OscillatorNode; gain: GainNode }>();
 
   const at = (ms: number) => t0 + ms / 1000;
+  let lastHeard = -Infinity;
+
+  /**
+   * Ms da partida no instante que se ouve (e se vê) agora. `currentTime` anda aos saltos e adianta o
+   * som (o aparelho ainda leva um tempo para tocar); `getOutputTimestamp` diz qual ponto do áudio
+   * está saindo no alto-falante, e somar o relógio de alta precisão suaviza os saltos.
+   */
+  function heardNow(): number {
+    const raw = (ctx.currentTime - t0) * 1000;
+    let ms = raw;
+    if (ctx.state === 'running' && typeof ctx.getOutputTimestamp === 'function') {
+      const ts = ctx.getOutputTimestamp();
+      if (ts.contextTime !== undefined && ts.performanceTime !== undefined && ts.performanceTime > 0) {
+        const smooth = (ts.contextTime - t0) * 1000 + (performance.now() - ts.performanceTime);
+        // Só vale se for coerente (nunca mais de meio segundo atrás nem à frente do relógio simples).
+        if (smooth <= raw + 20 && smooth >= raw - 500) ms = smooth;
+      }
+    }
+    // Nunca volta no tempo (a tela e o julgamento dependem disso).
+    ms = Math.max(ms, lastHeard);
+    lastHeard = ms;
+    return ms;
+  }
   const quiet = () => kit.muted();
 
   function tone(
@@ -208,10 +233,17 @@ export function createBatidaAudio(song: Song): BatidaAudio | null {
       over = false;
       stumbleUntil = 0;
       level = 1;
+      lastHeard = -Infinity;
       tick();
       timer = window.setInterval(tick, TICK_MS);
     },
-    now: () => (ctx.currentTime - t0) * 1000,
+    now: heardNow,
+    at(perf) {
+      // O horário do toque vem do navegador (`event.timeStamp`), não de quando o código rodou.
+      const p = performance.now();
+      const stamp = perf > 0 && perf <= p + 5 && perf >= p - 400 ? perf : p;
+      return heardNow() + (stamp - p);
+    },
     setLevel(l) {
       level = Math.max(1, Math.min(4, l));
     },
@@ -271,6 +303,7 @@ export function createBatidaAudio(song: Song): BatidaAudio | null {
       void ctx.suspend();
     },
     resume() {
+      // Ao voltar o carimbo de saída pode estar velho: o relógio recomeça de onde parou.
       void ctx.resume();
     },
     over() {

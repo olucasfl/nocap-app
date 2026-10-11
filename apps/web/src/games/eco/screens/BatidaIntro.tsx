@@ -54,10 +54,15 @@ function Calibration({ onClose }: { onClose: () => void }) {
     setState('done');
   };
 
-  const tap = () => {
+  const tap = (stamp: number) => {
     const kit = audioKit();
     if (!kit || state !== 'running') return;
-    const now = kit.ctx.currentTime;
+    // O mesmo relógio da partida: o ponto do áudio que está saindo no alto-falante, no horário do toque.
+    const ts = kit.ctx.getOutputTimestamp?.();
+    const now =
+      ts && ts.contextTime !== undefined && ts.performanceTime
+        ? ts.contextTime + (stamp - ts.performanceTime) / 1000
+        : kit.ctx.currentTime;
     // O desvio é para a batida mais perto; as primeiras ficam de fora.
     let best = 0;
     for (let i = 0; i < beats.current.length; i++) {
@@ -80,7 +85,7 @@ function Calibration({ onClose }: { onClose: () => void }) {
       </p>
       <div className="bt-cal-row">
         {state === 'running' ? (
-          <button type="button" className="btn alt" onPointerDown={tap}>
+          <button type="button" className="btn alt" onPointerDown={(e) => tap(e.timeStamp)}>
             TOQUE
           </button>
         ) : (

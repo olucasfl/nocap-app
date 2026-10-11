@@ -6,6 +6,7 @@ import {
   ENERGY_MAX,
   GOOD_MS,
   LEAD_IN_BARS,
+  PERFECT_MS,
   barMs,
   barStart,
   notesBetween,
@@ -17,7 +18,7 @@ import {
 } from '@nocap/games';
 import { createBatidaAudio, type BatidaAudio } from '@/lib/batida-audio';
 import { getBatidaKeys, keyLabel, laneOfKey } from '@/lib/batida-keys';
-import { getBatidaLatency } from '@/lib/batida-latency';
+import { getBatidaLatency, setBatidaLatency } from '@/lib/batida-latency';
 import { buzz, holdAudio } from '@/lib/sfx';
 import { BatidaKeys } from './BatidaKeys';
 import { HIT, HORIZON, S_FAR, project } from './batida-view';
@@ -125,8 +126,8 @@ export function BatidaPlay({ seed, song, onEnd, onQuit }: Props) {
   const slotEls = useRef<(HTMLButtonElement | null)[]>([]);
   /** Os botões e os controles da pausa chamam o que o laço da partida registra aqui. */
   const ctl = useRef<{
-    press: (lane: number) => void;
-    release: (lane: number) => void;
+    press: (lane: number, perf?: number) => void;
+    release: (lane: number, perf?: number) => void;
     pause: () => void;
     resume: () => void;
   } | null>(null);
@@ -145,6 +146,11 @@ export function BatidaPlay({ seed, song, onEnd, onQuit }: Props) {
     const nodes = new Map<string, HTMLElement>();
     const bodies = new Map<string, SVGPolygonElement>();
     const latency = getBatidaLatency();
+    /** Quanto cada acerto errou o tempo (ms, negativo = cedo): vira o ajuste automático no fim. */
+    const deltas: number[] = [];
+    /** Notas já acertadas: não voltam para a tela quando ainda estão na janela de tempo. */
+    const gone = new Set<string>();
+    let learned = false;
     let raf = 0;
     let finished = false;
     let paused = false;
@@ -162,9 +168,27 @@ export function BatidaPlay({ seed, song, onEnd, onQuit }: Props) {
     let fallbackBase = performance.now() + 250;
     let fallbackPausedAt = 0;
     audio?.start();
-    const clock = () =>
-      (audio ? audio.now() : (paused ? fallbackPausedAt : performance.now()) - fallbackBase) -
-      latency;
+    /** Ms da partida como se vê e se ouve agora: é o que a tela desenha. */
+    const seen = () =>
+      audio ? audio.now() : (paused ? fallbackPausedAt : performance.now()) - fallbackBase;
+    /** O mesmo instante para julgar: desconta o atraso do toque (só o toque, a tela não anda). */
+    const clock = () => seen() - latency;
+    /** Instante do toque pelo carimbo do evento (não por quando o código rodou), já descontado. */
+    const stamped = (perf?: number) => {
+      if (perf === undefined) return clock();
+      return (audio ? audio.at(perf) : perf - fallbackBase) - latency;
+    };
+
+    /** O toque mediano dos acertos diz o quanto o aparelho atrasa: guarda para a próxima partida. */
+    const learn = () => {
+      if (learned) return;
+      learned = true;
+      if (deltas.length < 12) return;
+      const sorted = [...deltas].sort((a, b) => a - b);
+      const median = sorted[Math.floor(sorted.length / 2)]!;
+      // Só 80% do desvio de uma vez, para um dia ruim não desregular tudo.
+      if (Math.abs(median) >= 8) setBatidaLatency(latency + Math.round(median * 0.8));
+    };
 
     const showHud = () =>
       setHud({
@@ -174,12 +198,16 @@ export function BatidaPlay({ seed, song, onEnd, onQuit }: Props) {
         energy: sim.currentEnergy,
       });
 
-    const say = (kind: keyof typeof JUDGE_TEXT) => {
+    const say = (kind: keyof typeof JUDGE_TEXT, delta?: number) => {
       const el = judgeEl.current;
       if (!el) return;
       el.className = 'bt-judge';
       void el.offsetWidth; // reinicia a animação
-      el.textContent = JUDGE_TEXT[kind];
+      // Um Bom diz para que lado errou, para a pessoa se corrigir.
+      el.textContent =
+        kind === 'good' && delta !== undefined && Math.abs(delta) > PERFECT_MS
+          ? `${JUDGE_TEXT.good} · ${delta < 0 ? 'CEDO' : 'TARDE'}`
+          : JUDGE_TEXT[kind];
       const tone = kind === 'held' ? 'perfect' : kind === 'broke' ? 'miss' : kind;
       el.className = `bt-judge on ${tone}`;
     };
@@ -194,6 +222,7 @@ export function BatidaPlay({ seed, song, onEnd, onQuit }: Props) {
 
     const drop = (note: BatidaNote) => {
       const key = keyOf(note);
+      gone.add(key);
       nodes.get(key)?.remove();
       nodes.delete(key);
       bodies.get(key)?.remove();
@@ -203,6 +232,7 @@ export function BatidaPlay({ seed, song, onEnd, onQuit }: Props) {
     const finish = () => {
       if (finished) return;
       finished = true;
+      learn();
       // Dedos ainda na tela: o toque termina agora.
       const t = Math.round(clock());
       for (const tap of open.values()) tap.up = Math.max(tap.t + 1, t);
@@ -217,10 +247,11 @@ export function BatidaPlay({ seed, song, onEnd, onQuit }: Props) {
       for (const e of events) {
         if (e.kind === 'hit') {
           audio?.hit(e.note.lane, e.note.bar, e.judgement === 'perfect');
+          deltas.push(e.delta);
           if (e.note.endT !== undefined) audio?.holdStart(e.note.lane, e.note.bar);
           else drop(e.note);
           flash(e.note.lane, 'hit');
-          say(e.judgement);
+          say(e.judgement, e.delta);
           if (e.judgement === 'perfect') buzz(10);
         } else if (e.kind === 'miss') {
           audio?.missed();
@@ -253,9 +284,9 @@ export function BatidaPlay({ seed, song, onEnd, onQuit }: Props) {
       if (sim.dead) finish();
     };
 
-    const press = (lane: number) => {
+    const press = (lane: number, perf?: number) => {
       if (finished || paused || open.has(lane)) return;
-      const t = Math.round(clock());
+      const t = Math.round(stamped(perf));
       // Antes da primeira nota ainda é a contagem: toque aí não vale.
       if (t < barStart(song, LEAD_IN_BARS) - 400) return;
       // Um toque que dispara duas vezes não pode virar rajada impossível.
@@ -268,12 +299,12 @@ export function BatidaPlay({ seed, song, onEnd, onQuit }: Props) {
       handle(sim.tap(lane, t));
     };
 
-    const releaseLane = (lane: number) => {
+    const releaseLane = (lane: number, perf?: number) => {
       const tap = open.get(lane);
       slotEls.current[lane]?.classList.remove('down');
       if (!tap) return;
       open.delete(lane);
-      tap.up = Math.max(tap.t + 1, Math.round(clock()));
+      tap.up = Math.max(tap.t + 1, Math.round(stamped(perf)));
       if (!finished) handle(sim.release(lane, tap.up));
     };
 
@@ -325,12 +356,12 @@ export function BatidaPlay({ seed, song, onEnd, onQuit }: Props) {
       }
       if (lane !== undefined) {
         e.preventDefault();
-        press(lane);
+        press(lane, e.timeStamp);
       }
     };
     const onKeyUp = (e: KeyboardEvent) => {
       const lane = laneOfKey(keysRef.current, e.key);
-      if (lane !== undefined) releaseLane(lane);
+      if (lane !== undefined) releaseLane(lane, e.timeStamp);
     };
     window.addEventListener('keydown', onKey);
     window.addEventListener('keyup', onKeyUp);
@@ -341,8 +372,10 @@ export function BatidaPlay({ seed, song, onEnd, onQuit }: Props) {
 
     const frame = () => {
       raf = requestAnimationFrame(frame);
-      const now = clock();
-      if (!finished && !paused) handle(sim.advance(now));
+      // A tela anda no relógio que se ouve; o julgamento, no mesmo menos o atraso do toque.
+      const now = seen();
+      const judged = now - latency;
+      if (!finished && !paused) handle(sim.advance(judged));
 
       // Contagem inicial: 4, 3, 2, 1 nas batidas do compasso 0.
       const count = countEl.current;
@@ -361,12 +394,25 @@ export function BatidaPlay({ seed, song, onEnd, onQuit }: Props) {
       const { w, h } = size;
       const visible: BatidaNote[] = [];
       for (const n of notesBetween(seed, song, now - 4500, now + TRAVEL_MS)) {
+        if (gone.has(keyOf(n))) continue;
         const alive = n.endT !== undefined ? n.endT >= now - 250 : n.t >= now - GOOD_MS - 250;
         if (alive) visible.push(n);
       }
       for (let lane = 0; lane < BATIDA_LANES; lane++) {
         const held = sim.holdingNote(lane);
         if (held && !visible.some((n) => keyOf(n) === keyOf(held))) visible.push(held);
+      }
+      // Cada molde acende quando um toque agora seria Bom (aceso) ou Perfeito (cheio).
+      const gap = new Array<number>(BATIDA_LANES).fill(Infinity);
+      for (const n of visible) {
+        if (sim.holdingNote(n.lane)) continue;
+        gap[n.lane] = Math.min(gap[n.lane]!, Math.abs(n.t - judged));
+      }
+      for (let lane = 0; lane < BATIDA_LANES; lane++) {
+        const cls = slotEls.current[lane]?.classList;
+        if (!cls) continue;
+        cls.toggle('near', gap[lane]! <= GOOD_MS);
+        cls.toggle('sweet', gap[lane]! <= PERFECT_MS);
       }
       const half = (w / BATIDA_LANES) * 0.36;
       for (const n of visible) {
@@ -429,6 +475,7 @@ export function BatidaPlay({ seed, song, onEnd, onQuit }: Props) {
     raf = requestAnimationFrame(frame);
 
     return () => {
+      learn();
       cancelAnimationFrame(raf);
       window.clearTimeout(countTimer);
       window.removeEventListener('keydown', onKey);
@@ -511,9 +558,9 @@ export function BatidaPlay({ seed, song, onEnd, onQuit }: Props) {
                 onPointerDown={(e) => {
                   e.preventDefault();
                   e.currentTarget.setPointerCapture(e.pointerId);
-                  ctl.current?.press(i);
+                  ctl.current?.press(i, e.timeStamp);
                 }}
-                onPointerUp={() => ctl.current?.release(i)}
+                onPointerUp={(e) => ctl.current?.release(i, e.timeStamp)}
                 onPointerCancel={() => ctl.current?.release(i)}
                 onLostPointerCapture={() => ctl.current?.release(i)}
                 onAnimationEnd={(e) => e.currentTarget.classList.remove('hit', 'bad')}

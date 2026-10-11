@@ -497,3 +497,12 @@
   animation: bt-bad 0.3s linear;
   border-style: solid;
 }
+
+/* O molde acende quando um toque agora seria Bom (near) ou Perfeito (sweet). */
+.bt-slot.near .bt-mold {
+  opacity: 1;
+  border-style: solid;
+}
+.bt-slot.sweet .bt-mold {
+  background: color-mix(in srgb, var(--lane) 55%, transparent);
+}
