@@ -549,14 +549,14 @@ const groups = (notes: BatidaNote[]) => {
 };
 
 describe('acordes (notas juntas)', () => {
-  it('o verso não tem acorde; o refrão engrossado tem de duas e, no Frenesi, de três', () => {
+  it('o verso não tem acorde; o refrão engrossado tem acordes de duas notas', () => {
     for (const s of ALL) {
       // As primeiras 8 notas de uma música (o primeiro verso) são todas sozinhas.
       expect(Math.max(...groups(allNotes(s, 9)))).toBe(1);
     }
     expect(Math.max(...groups(allNotes(SONGS.passo, 80)))).toBe(2);
     expect(Math.max(...groups(allNotes(SONGS.mare, 80)))).toBe(2);
-    expect(Math.max(...groups(allNotes(SONGS.frenesi, 80)))).toBe(3);
+    expect(Math.max(...groups(allNotes(SONGS.frenesi, 80)))).toBe(2);
   });
 
   it('nunca vêm juntas as duas pontas (pistas 1 e 5), em nenhum compasso de nenhuma música', () => {
@@ -572,10 +572,10 @@ describe('acordes (notas juntas)', () => {
     }
   });
 
-  it('nunca passa de 3 notas juntas, e todas em pistas diferentes', () => {
+  it('nunca passa de 2 notas juntas, e todas em pistas diferentes', () => {
     for (const s of ALL) {
       const notes = allNotes(s, 300);
-      expect(Math.max(...groups(notes))).toBeLessThanOrEqual(3);
+      expect(Math.max(...groups(notes))).toBeLessThanOrEqual(2);
       const keys = notes.map((n) => `${n.bar}:${n.step}:${n.lane}`);
       expect(new Set(keys).size).toBe(keys.length);
     }
@@ -719,13 +719,13 @@ describe('segurar na simulação', () => {
     expect(run.holds).toBe(0);
   });
 
-  it('o acorde vale por nota: acertar as três juntas soma o combo de três', () => {
+  it('o acorde vale por nota: acertar as duas juntas soma o combo de duas', () => {
     const song = SONGS.frenesi;
     const note = allNotes(song, 80).find((n) =>
-      groups(allNotes(song, 80).filter((x) => x.bar === n.bar && x.step === n.step)).includes(3),
+      groups(allNotes(song, 80).filter((x) => x.bar === n.bar && x.step === n.step)).includes(2),
     )!;
     const chord = allNotes(song, 80).filter((n) => n.bar === note.bar && n.step === note.step);
-    expect(chord).toHaveLength(3);
+    expect(chord).toHaveLength(2);
     const sim = new BatidaSim(SEED, song);
     // Antes do acorde, acerta o caminho até lá, apertando e soltando em ordem de tempo.
     const moments = allNotes(song, note.bar + 1)
@@ -742,6 +742,6 @@ describe('segurar na simulação', () => {
     }
     const combo = sim.currentCombo;
     for (const n of chord) sim.tap(n.lane, Math.round(n.t));
-    expect(sim.currentCombo).toBe(combo + 3);
+    expect(sim.currentCombo).toBe(combo + 2);
   });
 });

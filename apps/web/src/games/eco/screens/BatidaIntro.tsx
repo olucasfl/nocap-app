@@ -374,7 +374,7 @@ export function BatidaIntro({ onBegin }: { onBegin: (song: SongId) => void }) {
         <li>
           <b>4</b>
           <span>
-            Com o tempo vêm notas juntas (use mais de um dedo, até 3) e barras compridas: aperte e
+            Com o tempo vêm notas juntas (use dois dedos) e barras compridas: aperte e
             segure até o fim. Ligue o som.
           </span>
         </li>

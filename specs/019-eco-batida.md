@@ -24,9 +24,10 @@ Status: **solo implementado** (10/10/2026): três músicas, perspectiva, pausa, 
 
 ## Músicas compostas (11/10/2026, pedido do Lucas: "notas aleatórias, quero ritmos de verdade")
 - **Nada de sorteio.** Cada música é escrita à mão em `packages/games/src/eco/rhythm.ts`: trechos (verso, refrão, ponte) com um compasso por texto (`3 . 3 . 4 . 5 .`, acorde `13`, nota longa `3-2`), um acorde por compasso e uma ordem (`arrangement`). A volta toda se repete, cada vez mais rápida (o andamento nunca para de subir). A seed não muda mais as notas.
-- **Refrão marcante:** toca três vezes por volta, e as voltas finais o engrossam (`refrao+`: segunda nota nos tempos fortes; `refrao++` no Frenesi: pares nos quatro tempos e acordes de três). O desenho é sempre o mesmo, então dá para decorar.
+- **Refrão marcante:** toca três vezes por volta, e as voltas finais o engrossam (`refrao+`: segunda nota nos tempos fortes; `refrao++` no Frenesi: pares nos quatro tempos). O desenho é sempre o mesmo, então dá para decorar.
 - **Melodia de verdade:** cada pista é sempre a mesma nota (pentatônica do tom da música); os acordes passam por baixo. Tons: Primeiro Passo em dó maior, Maré Alta em lá menor, Frenesi em mi (blues).
 - **Som de fundo diferente em cada uma:** Primeiro Passo (piano de acorde quebrado, sininhos, baixo longo), Maré Alta (baixo sincopado, piano elétrico nos contratempos, palhetada), Frenesi (baixo martelando, guitarra de acorde de força, riff agudo). O verso é mais leve; o refrão entra com prato, e todo trecho termina com uma virada de caixa.
+- **No máximo 2 notas juntas**, e nunca as duas pontas (pistas 1 e 5) juntas.
 - Continua valendo: nota longa sozinha (nenhuma outra nota enquanto se segura).
 
 ## As três músicas

@@ -97,7 +97,7 @@ export interface Song {
   sections: Readonly<Record<string, Section>>;
   /**
    * A ordem dos trechos. Um `+` no fim engrossa o trecho com uma segunda nota nos tempos fortes, e
-   * `++` com notas juntas ainda mais seguidas (e acordes de três): é o mesmo refrão, mais cheio.
+   * `++` com notas juntas ainda mais seguidas (sempre no máximo duas): é o mesmo refrão, mais cheio.
    */
   arrangement: readonly string[];
 }
@@ -196,7 +196,7 @@ export const SONGS: Record<SongId, Song> = {
   frenesi: {
     id: 'frenesi',
     name: 'Frenesi',
-    tagline: 'Pesada e sem descanso. Riff de colcheias, refrão com notas longas e acordes de três.',
+    tagline: 'Pesada e sem descanso. Riff de colcheias, refrão com notas longas e notas juntas.',
     startBpm: 92,
     maxBpm: 360,
     bpmPerBar: 2,
@@ -336,7 +336,7 @@ interface LapBar {
 }
 
 const HOLD_TOKEN = /^([1-5])-([2-4])$/;
-const NOTE_TOKEN = /^[1-5]{1,3}$/;
+const NOTE_TOKEN = /^[1-5]{1,2}$/;
 const CHORD_TOKEN = /^(\d+)(m?)$/;
 
 /** Lê o texto de um compasso (8 colcheias) e devolve as posições com nota. */
@@ -382,7 +382,7 @@ function companions(lane: number, taken: readonly number[], want: number): numbe
 /**
  * Engrossa um compasso para as voltas mais cheias do refrão: o mesmo desenho, com mais notas
  * juntas. Nível 1 põe uma segunda nota nos tempos fortes (colcheias 0 e 4); nível 2 põe nos quatro
- * tempos e faz acordes de três no primeiro. Nota longa nunca é engrossada.
+ * tempos. Nunca mais de duas notas juntas. Nota longa nunca é engrossada.
  */
 function thicken(beats: Beat[], level: number): Beat[] {
   if (level === 0) return beats;
@@ -390,7 +390,8 @@ function thicken(beats: Beat[], level: number): Beat[] {
     if (b.hold !== undefined || b.lanes.length !== 1) return b;
     const strong = level >= 2 ? b.step % 2 === 0 : b.step === 0 || b.step === 4;
     if (!strong) return b;
-    const extra = companions(b.lanes[0]!, b.lanes, level >= 2 && b.step === 0 ? 2 : 1);
+    // No máximo duas notas juntas: uma segunda e nunca uma terceira.
+    const extra = companions(b.lanes[0]!, b.lanes, 1);
     return { ...b, lanes: [...b.lanes, ...extra].sort((x, y) => x - y) };
   });
 }
