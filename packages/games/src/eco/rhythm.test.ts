@@ -559,6 +559,19 @@ describe('acordes (notas juntas)', () => {
     expect(Math.max(...groups(allNotes(SONGS.frenesi, 80)))).toBe(3);
   });
 
+  it('nunca vêm juntas as duas pontas (pistas 1 e 5), em nenhum compasso de nenhuma música', () => {
+    for (const s of ALL) {
+      const by = new Map<string, number[]>();
+      for (const n of allNotes(s, 4 * lapLength(s))) {
+        const k = `${n.bar}:${n.step}`;
+        by.set(k, [...(by.get(k) ?? []), n.lane]);
+      }
+      for (const lanes of by.values()) {
+        expect(lanes.includes(0) && lanes.includes(BATIDA_LANES - 1)).toBe(false);
+      }
+    }
+  });
+
   it('nunca passa de 3 notas juntas, e todas em pistas diferentes', () => {
     for (const s of ALL) {
       const notes = allNotes(s, 300);

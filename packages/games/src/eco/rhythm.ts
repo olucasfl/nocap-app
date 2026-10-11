@@ -351,6 +351,8 @@ export function parseBar(text: string): Beat[] {
     if (!NOTE_TOKEN.test(tok)) throw new Error(`Posição inválida "${tok}" em "${text}"`);
     const lanes = [...tok].map((c) => Number(c) - 1);
     if (new Set(lanes).size !== lanes.length) throw new Error(`Pista repetida em "${text}"`);
+    if (lanes.includes(0) && lanes.includes(BATIDA_LANES - 1))
+      throw new Error(`As pistas 1 e 5 não podem vir juntas: "${text}"`);
     beats.push({ step, lanes });
   });
   return beats;
@@ -368,6 +370,9 @@ function companions(lane: number, taken: readonly number[], want: number): numbe
   for (const d of [2, -2, 1, -1, 3, -3]) {
     const l = lane + d;
     if (l < 0 || l >= BATIDA_LANES || taken.includes(l) || out.includes(l)) continue;
+    // As duas pontas (pistas 1 e 5) nunca vêm juntas: não dá para alcançar com a mesma mão.
+    const group = [...taken, ...out, l];
+    if (group.includes(0) && group.includes(BATIDA_LANES - 1)) continue;
     out.push(l);
     if (out.length === want) break;
   }
