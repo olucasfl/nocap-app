@@ -367,6 +367,13 @@ export function BatidaIntro({ onBegin }: { onBegin: (song: SongId) => void }) {
         <li>
           <b>3</b>
           <span>
+            As notas não são sorteadas: cada música é composta, com versos e um refrão que volta
+            várias vezes, cada vez mais cheio e mais rápido. Aprenda o desenho do refrão.
+          </span>
+        </li>
+        <li>
+          <b>4</b>
+          <span>
             Com o tempo vêm notas juntas (use mais de um dedo, até 3) e barras compridas: aperte e
             segure até o fim. Ligue o som.
           </span>

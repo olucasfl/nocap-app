@@ -7,7 +7,6 @@ import {
   BATIDA_MAX_HOLD_MS,
   GOOD_MS,
   HOLD_END_SLACK_MS,
-  chanceAt,
   PERFECT_MS,
   SONGS,
   SONG_IDS,
@@ -19,12 +18,15 @@ import {
   evaluateBatida,
   isSongId,
   judge,
-  levelAt,
   multiplierFor,
   notesBetween,
   notesInBar,
-  phraseNotes,
+  chordAt,
+  lapLength,
+  parseBar,
+  parseChord,
   rootAt,
+  sectionAt,
   semitoneOf,
   songOfMode,
   timeOf,
@@ -70,7 +72,6 @@ describe('as três músicas', () => {
     // O andamento sobe mais depressa nas mais difíceis, mas em todas ele sobe sem parar.
     expect(a.bpmPerBar).toBeLessThan(b.bpmPerBar);
     expect(b.bpmPerBar).toBeLessThan(c.bpmPerBar);
-    expect(a.levelStart).toBeLessThan(c.levelStart);
   });
 
   it('todas escalam sem parar: o andamento continua subindo por muitos minutos', () => {
@@ -138,11 +139,47 @@ describe('andamento', () => {
   });
 });
 
-describe('a música da seed', () => {
-  it('é a mesma para a mesma seed e diferente para outra', () => {
+describe('a música composta', () => {
+  /** Em que compassos (de 1) de uma volta cada entrada da ordem toca. */
+  const ranges = (s: Song) => {
+    let from = 1;
+    return s.arrangement.map((entry) => {
+      const name = entry.replace(/\+/g, '');
+      const len = s.sections[name]!.bars.length;
+      const r = { entry, name, from, to: from + len };
+      from += len;
+      return r;
+    });
+  };
+  /** O desenho (compasso, colcheia, pista) de um trecho, para comparar voltas. */
+  const shape = (s: Song, from: number, to: number) =>
+    allNotes(s, to)
+      .filter((n) => n.bar >= from)
+      .map((n) => `${n.bar - from}:${n.step}:${n.lane}${n.endT ? 'h' : ''}`);
+
+  it('é fixa: a mesma para qualquer seed, e cada música tem a sua', () => {
     const a = JSON.stringify(notesBetween(SEED, SONG, 0, 60_000));
-    expect(JSON.stringify(notesBetween(SEED, SONG, 0, 60_000))).toBe(a);
-    expect(JSON.stringify(notesBetween('outra-seed', SONG, 0, 60_000))).not.toBe(a);
+    expect(JSON.stringify(notesBetween('outra-seed', SONG, 0, 60_000))).toBe(a);
+    expect(JSON.stringify(notesBetween(SEED, SONGS.passo, 0, 60_000))).not.toBe(a);
+  });
+
+  it('toda a escrita é válida: 8 posições, um acorde por compasso, notas longas que cabem', () => {
+    for (const s of ALL) {
+      for (const [name, section] of Object.entries(s.sections)) {
+        expect(section.chords.length, `${s.id}/${name}`).toBe(section.bars.length);
+        section.chords.forEach((c) => parseChord(c));
+        section.bars.forEach((text) => {
+          const tokens = text.split(/\s+/);
+          for (const b of parseBar(text)) {
+            if (b.hold === undefined) continue;
+            // Termina até a colcheia 6 e a pista (e todas as outras) fica livre até lá.
+            expect(b.step + b.hold, text).toBeLessThanOrEqual(6);
+            for (let k = 1; k <= b.hold; k++) expect(tokens[b.step + k], text).toBe('.');
+          }
+        });
+      }
+      expect(lapLength(s)).toBeGreaterThanOrEqual(36);
+    }
   });
 
   it('a contagem (compasso 0) não tem notas e a primeira nota vem depois dela', () => {
@@ -166,37 +203,81 @@ describe('a música da seed', () => {
     }
   });
 
-  it('todo compasso depois da contagem tem notas (a partida nunca "morre de silêncio")', () => {
+  it('nenhum compasso fica vazio (a partida nunca "morre de silêncio")', () => {
     for (const s of ALL) {
-      for (let bar = 1; bar < 200; bar++) {
-        expect(notesInBar(SEED, s, bar).length).toBeGreaterThanOrEqual(3);
+      for (let bar = 1; bar < 4 * lapLength(s); bar++) {
+        expect(notesInBar(SEED, s, bar).length).toBeGreaterThanOrEqual(2);
       }
     }
   });
 
-  it('a dificuldade sobe dentro de cada música, até o limite dela', () => {
+  it('a música dá a volta: a segunda volta repete a primeira, só mais rápida', () => {
     for (const s of ALL) {
-      expect(levelAt(s, 1)).toBe(s.levelStart);
-      expect(levelAt(s, 1000)).toBe(s.levelMax);
-      let prev = 0;
-      for (let bar = 1; bar < 200; bar++) {
-        const l = levelAt(s, bar);
-        expect(l).toBeGreaterThanOrEqual(prev);
-        prev = l;
-      }
+      const len = lapLength(s);
+      const first = notesInBar(SEED, s, 1 + 7).map((n) => `${n.step}:${n.lane}`);
+      const second = notesInBar(SEED, s, 1 + 7 + len).map((n) => `${n.step}:${n.lane}`);
+      expect(second).toEqual(first);
+      expect(bpmAt(s, 1 + len)).toBeGreaterThan(bpmAt(s, 1));
     }
-    expect(levelAt(SONGS.passo, 1000)).toBe(4);
-    expect(levelAt(SONGS.frenesi, 1)).toBe(2);
   });
 
-  it('no Primeiro Passo o início usa só as pistas do meio e depois abre', () => {
+  it('cada música tem um refrão que volta, igual, ao menos três vezes por volta', () => {
+    for (const s of ALL) {
+      const choruses = ranges(s).filter((r) => r.name === 'refrao');
+      expect(choruses.length).toBeGreaterThanOrEqual(3);
+      // As entradas engrossadas do mesmo nível repetem exatamente o mesmo desenho.
+      const thick = choruses.filter((r) => r.entry === 'refrao+');
+      expect(thick.length).toBeGreaterThanOrEqual(1);
+      const [plain] = choruses;
+      const plainShape = new Set(shape(s, plain!.from, plain!.to));
+      // O refrão engrossado contém o refrão original (as mesmas notas, mais notas juntas).
+      for (const r of choruses.slice(1)) {
+        const keys = new Set(
+          shape(s, r.from, r.to).map((x) => x.split(':').slice(0, 2).join(':')),
+        );
+        for (const p of plainShape) expect(keys.has(p.split(':').slice(0, 2).join(':'))).toBe(true);
+      }
+    }
+  });
+
+  it('o refrão é o mais marcante: acontece mais vezes e é mais cheio que o verso', () => {
+    for (const s of ALL) {
+      const density = (name: string) => {
+        const secs = ranges(s).filter((r) => r.name === name);
+        let n = 0;
+        let bars = 0;
+        for (const r of secs) {
+          n += allNotes(s, r.to).filter((x) => x.bar >= r.from).length;
+          bars += r.to - r.from;
+        }
+        return n / bars;
+      };
+      expect(density('refrao')).toBeGreaterThan(density('verso'));
+    }
+  });
+
+  it('o refrão e o verso de cada música usam melodias diferentes', () => {
+    for (const s of ALL) {
+      const lanes = (name: string) =>
+        s.sections[name]!.bars.map((b) => parseBar(b).map((x) => x.lanes.join('')).join(','));
+      expect(lanes('refrao')).not.toEqual(lanes('verso'));
+    }
+  });
+
+  it('as três músicas não compartilham a melodia, a harmonia nem o tom', () => {
+    const refrains = ALL.map((s) => s.sections.refrao!.bars.join('|'));
+    expect(new Set(refrains).size).toBe(3);
+    const chords = ALL.map((s) => s.sections.refrao!.chords.join(','));
+    expect(new Set(chords).size).toBe(3);
+    expect(new Set(ALL.map((s) => s.tonic)).size).toBe(3);
+  });
+
+  it('no Primeiro Passo o primeiro verso usa só as pistas do meio e o refrão abre', () => {
     const p = SONGS.passo;
-    const early = new Set(notesBetween(SEED, p, 0, barStart(p, 14)).map((n) => n.lane));
-    expect([...early].every((l) => l >= 1 && l <= 3)).toBe(true);
-    const late = new Set(
-      notesBetween(SEED, p, barStart(p, 30), barStart(p, 200)).map((n) => n.lane),
-    );
-    expect(late.size).toBe(BATIDA_LANES);
+    const verse = new Set(notesBetween(SEED, p, 0, barStart(p, 9)).map((n) => n.lane));
+    expect([...verse].every((l) => l >= 1 && l <= 3)).toBe(true);
+    const all = new Set(notesBetween(SEED, p, 0, barStart(p, 60)).map((n) => n.lane));
+    expect(all.size).toBe(BATIDA_LANES);
   });
 
   it('o Frenesi é mais denso que o Primeiro Passo, no mesmo trecho de compassos', () => {
@@ -208,50 +289,39 @@ describe('a música da seed', () => {
     expect(density(SONGS.frenesi, 1, 17)).toBeGreaterThan(density(SONGS.passo, 1, 17) + 1);
   });
 
-  it('a frase repete o ritmo (A, A, B, A) para a música soar como tema', () => {
-    for (const s of ALL) {
-      const [b1, b2, , b4] = phraseNotes(SEED, s, 3);
-      // Uma nota longa apaga as notas que cairiam debaixo dela; fora esses trechos o ritmo é o mesmo.
-      const covered = new Set<number>();
-      for (const b of [b1!, b2!, b4!]) {
-        for (const h of b.filter((n) => n.endT !== undefined)) {
-          const end = Math.round(((h.endT! - h.t) / barMs(s, h.bar)) * 8);
-          for (let k = 0; k <= end; k++) covered.add(h.step + k);
-        }
-      }
-      const steps = (notes: BatidaNote[]) =>
-        [...new Set(notes.map((n) => n.step))].filter((st) => !covered.has(st)).join(',');
-      expect(steps(b1!)).toBe(steps(b2!));
-      expect(steps(b4!)).toBe(steps(b1!));
-    }
-  });
-
-  it('cada frase termina na pista de repouso, a do meio', () => {
-    for (const s of ALL) {
-      for (let phrase = 0; phrase < 12; phrase++) {
-        const bars = phraseNotes(SEED, s, phrase);
-        const last = bars[bars.length - 1]!;
-        const lastStep = last.at(-1)!.step;
-        expect(last.filter((n) => n.step === lastStep).map((n) => n.lane)).toContain(2);
-      }
-    }
+  it('sectionAt diz o trecho, a entrada e a virada de cada compasso', () => {
+    const s = SONGS.passo;
+    expect(sectionAt(s, 0).name).toBe('contagem');
+    expect(sectionAt(s, 1)).toMatchObject({ name: 'verso', first: true, last: false });
+    expect(sectionAt(s, 8)).toMatchObject({ name: 'verso', first: false, last: true });
+    expect(sectionAt(s, 9)).toMatchObject({ name: 'refrao', first: true, thick: 0 });
+    expect(sectionAt(s, 1 + lapLength(s))).toMatchObject({ name: 'verso', first: true });
   });
 });
 
 describe('harmonia', () => {
-  it('o acorde muda a cada 2 compassos e a progressão volta ao início', () => {
+  it('cada compasso tem um acorde e o desenho de acordes dá a volta junto com a música', () => {
     for (const s of ALL) {
-      expect(rootAt(s, 1)).toBe(rootAt(s, 2));
-      const len = s.progression.length * 2;
-      expect(rootAt(s, 1)).toBe(rootAt(s, 1 + len));
+      const len = lapLength(s);
+      for (let bar = 1; bar < len; bar++) {
+        expect(chordAt(s, bar)).toEqual(chordAt(s, bar + len));
+        expect(rootAt(s, bar)).toBe(chordAt(s, bar).root);
+      }
     }
-    expect(rootAt(SONGS.passo, 3)).not.toBe(rootAt(SONGS.passo, 2));
   });
 
-  it('cada pista é um grau da escala da música sobre a raiz do acorde', () => {
+  it('as músicas usam acordes menores e maiores conforme o tom', () => {
+    expect(chordAt(SONGS.passo, 1).minor).toBe(false);
+    expect(chordAt(SONGS.mare, 1).minor).toBe(true);
+    expect(chordAt(SONGS.frenesi, 1).minor).toBe(true);
+    expect(new Set(ALL.map((s) => s.sections.refrao!.chords.join())).size).toBe(3);
+  });
+
+  it('cada pista é sempre a mesma nota da escala: a melodia não muda com o acorde', () => {
     for (const s of ALL) {
-      const base = rootAt(s, 1);
-      expect([0, 1, 2, 3, 4].map((l) => semitoneOf(s, l, 1) - base)).toEqual([...s.scale]);
+      for (const bar of [1, 5, 9, 20]) {
+        expect([0, 1, 2, 3, 4].map((l) => semitoneOf(s, l, bar))).toEqual([...s.scale]);
+      }
     }
   });
 });
@@ -479,13 +549,14 @@ const groups = (notes: BatidaNote[]) => {
 };
 
 describe('acordes (notas juntas)', () => {
-  it('no começo não há acorde, e depois aparecem de duas e, nas mais difíceis, de três', () => {
+  it('o verso não tem acorde; o refrão engrossado tem de duas e, no Frenesi, de três', () => {
     for (const s of ALL) {
-      expect(Math.max(...groups(allNotes(s, Math.max(2, s.doubles.from))))).toBe(1);
+      // As primeiras 8 notas de uma música (o primeiro verso) são todas sozinhas.
+      expect(Math.max(...groups(allNotes(s, 9)))).toBe(1);
     }
-    expect(Math.max(...groups(allNotes(SONGS.mare, 80)))).toBe(3);
-    expect(Math.max(...groups(allNotes(SONGS.frenesi, 60)))).toBe(3);
-    expect(Math.max(...groups(allNotes(SONGS.mare, 24)))).toBe(2);
+    expect(Math.max(...groups(allNotes(SONGS.passo, 80)))).toBe(2);
+    expect(Math.max(...groups(allNotes(SONGS.mare, 80)))).toBe(2);
+    expect(Math.max(...groups(allNotes(SONGS.frenesi, 80)))).toBe(3);
   });
 
   it('nunca passa de 3 notas juntas, e todas em pistas diferentes', () => {
@@ -505,24 +576,15 @@ describe('acordes (notas juntas)', () => {
     expect(share(SONGS.passo)).toBeLessThan(share(SONGS.mare));
     expect(share(SONGS.mare)).toBeLessThan(share(SONGS.frenesi));
   });
-
-  it('a chance sobe sem parar com os compassos, até o teto', () => {
-    const rule = { from: 10, base: 0.1, grow: 0.01 };
-    expect(chanceAt(rule, 9, 0.5)).toBe(0);
-    expect(chanceAt(rule, 10, 0.5)).toBeCloseTo(0.1, 5);
-    expect(chanceAt(rule, 20, 0.5)).toBeCloseTo(0.2, 5);
-    expect(chanceAt(rule, 5000, 0.5)).toBe(0.5);
-  });
 });
 
 describe('notas longas (segurar)', () => {
   const holds = (song: Song, bars: number) =>
     allNotes(song, bars).filter((n) => n.endT !== undefined);
 
-  it('aparecem depois do começo, em todas as músicas', () => {
+  it('aparecem em todas as músicas, e bem no refrão', () => {
     for (const s of ALL) {
-      expect(holds(s, Math.max(2, s.holds.from)).length).toBe(0);
-      expect(holds(s, 120).length).toBeGreaterThan(5);
+      expect(holds(s, 2 * lapLength(s)).length).toBeGreaterThan(5);
     }
   });
 
@@ -531,7 +593,7 @@ describe('notas longas (segurar)', () => {
       const notes = allNotes(s, 200);
       for (const h of holds(s, 200)) {
         const steps = Math.round(((h.endT! - h.t) / barMs(s, h.bar)) * 8);
-        expect([2, 4]).toContain(steps);
+        expect([2, 3, 4]).toContain(steps);
         expect(h.step + steps).toBeLessThanOrEqual(6);
         const clash = notes.filter(
           (n) =>

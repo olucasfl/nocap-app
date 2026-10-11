@@ -1,8 +1,6 @@
-import { createRng, randInt } from '../core/rng';
-
 /**
  * Ecooo Batida (spec 019): modo de ritmo, estilo Guitar Hero. Cinco pistas, notas que descem, e a
- * pessoa toca na hora certa. Lógica pura e determinística: a música (a "partitura") sai da seed, e
+ * pessoa toca na hora certa. Lógica pura e determinística: a música é composta e fixa (versos, refrão), e
  * o servidor refaz acertos, erros, combo e energia a partir dos instantes dos toques. O cliente
  * nunca diz "acertei".
  *
@@ -53,8 +51,27 @@ export const BATIDA_MAX_TAPS = 6000;
 /** Ninguém segura um dedo mais que isto numa nota só. */
 export const BATIDA_MAX_HOLD_MS = 30_000;
 
-/** As três músicas do Batida: cada uma tem andamento, harmonia, groove e dificuldade próprios. */
+/** As três músicas do Batida: cada uma é composta à mão, com tom, harmonia, ritmo e refrão próprios. */
 export type SongId = 'passo' | 'mare' | 'frenesi';
+
+/** Um acorde da harmonia: a raiz (semitons acima da tônica) e se é menor. */
+export interface Chord {
+  root: number;
+  minor: boolean;
+}
+
+/**
+ * Um trecho da música. `bars` tem um compasso por texto, com 8 colcheias separadas por espaço:
+ *  - `.` silêncio;
+ *  - `3` uma nota na pista 3 (de 1 a 5);
+ *  - `13` duas notas juntas (pistas 1 e 3);
+ *  - `3-2` nota longa na pista 3, que dura 2 colcheias (de 2 a 4).
+ * `chords` tem um acorde por compasso: `0` (raiz), `7` (cinco semitons acima...), `9m` (menor).
+ */
+export interface Section {
+  bars: readonly string[];
+  chords: readonly string[];
+}
 
 export interface Song {
   id: SongId;
@@ -65,84 +82,161 @@ export interface Song {
   maxBpm: number;
   /** Quanto o andamento sobe a cada compasso até o máximo. */
   bpmPerBar: number;
-  /** A cada quantos compassos a dificuldade sobe um nível. */
-  barsPerLevel: number;
-  /** Nível de dificuldade em que a música começa e até onde ela chega (0 a 4). */
-  levelStart: number;
-  levelMax: number;
-  /** Acordes (semitones acima da tônica), um a cada 2 compassos. */
-  progression: readonly number[];
-  /** As 5 notas da escala: a pista escolhe o grau, o acorde a raiz. */
+  /** O tom: semitons acima do dó. A tônica de tudo (melodia, acordes, baixo). */
+  tonic: number;
+  /**
+   * As 5 notas da melodia (semitons acima da tônica), da pista 1 à 5. Cada pista é sempre a mesma
+   * nota: o que a pessoa toca é a melodia de verdade, e os acordes passam por baixo.
+   */
   scale: readonly number[];
   /** Jeito da bateria e do baixo (o som escolhe os padrões). */
   groove: 'basic' | 'funk' | 'drive';
   /** Timbre da melodia que a pessoa toca. */
   lead: 'soft' | 'bright' | 'sharp';
+  /** Os trechos (verso, refrão, ponte) e a ordem em que tocam (a volta toda se repete). */
+  sections: Readonly<Record<string, Section>>;
   /**
-   * Notas juntas e notas longas. A chance de cada uma começa em `base` no compasso `from` e sobe
-   * `grow` a cada compasso depois disso (sem parar, até o teto): a música nunca para de ficar mais
-   * difícil. Triplas só valem a partir de `tripleFrom`.
+   * A ordem dos trechos. Um `+` no fim engrossa o trecho com uma segunda nota nos tempos fortes, e
+   * `++` com notas juntas ainda mais seguidas (e acordes de três): é o mesmo refrão, mais cheio.
    */
-  doubles: { from: number; base: number; grow: number };
-  triples: { from: number; base: number; grow: number };
-  holds: { from: number; base: number; grow: number };
+  arrangement: readonly string[];
 }
 
 export const SONGS: Record<SongId, Song> = {
   passo: {
     id: 'passo',
     name: 'Primeiro Passo',
-    tagline: 'Calma e doce no começo, mas nunca para de acelerar. Poucas notas juntas.',
+    tagline: 'Doce e simples. Aprenda o refrão, que volta mais cheio e mais rápido a cada volta.',
     startBpm: 64,
     maxBpm: 360,
     bpmPerBar: 1.2,
-    barsPerLevel: 14,
-    levelStart: 0,
-    levelMax: 4,
-    progression: [0, 7, 9, 5],
+    tonic: 0,
     scale: [0, 2, 4, 7, 9],
     groove: 'basic',
     lead: 'soft',
-    doubles: { from: 14, base: 0.06, grow: 0.004 },
-    triples: { from: 70, base: 0.05, grow: 0.002 },
-    holds: { from: 8, base: 0.08, grow: 0.003 },
+    sections: {
+      verso: {
+        chords: ['0', '0', '7', '7', '9m', '9m', '5', '5'],
+        bars: [
+          '3 . 3 . 4 . 3 .',
+          '2 . 3 . 2 . . .',
+          '3 . 3 . 4 . 3 .',
+          '4 . 3 . 2 . . .',
+          '3 . 3 . 4 . 4 .',
+          '3 . 2 . 3 . . .',
+          '4 . 3 . 2 . 3 .',
+          '2 . . . 3-2 . . .',
+        ],
+      },
+      refrao: {
+        chords: ['0', '0', '7', '7', '9m', '9m', '5', '5'],
+        bars: [
+          '3 . 3 . 4 . 5 .',
+          '4 . 3 . 2 . 3 .',
+          '3 . 3 . 4 . 5 .',
+          '5 . 4 . 3 . 2 .',
+          '3 . 3 4 5 . 5 .',
+          '4 . 3 . 5-2 . . .',
+          '5 . 4 . 3 . 2 .',
+          '3 . 2 . 1 . 1 .',
+        ],
+      },
+      ponte: {
+        chords: ['9m', '5', '0', '7'],
+        bars: ['1 . 2 . 3 . 4 .', '5 . 4 . 3 . 2 .', '3 . 3 . 4 . 4 .', '5 . . . 5-2 . . 4'],
+      },
+    },
+    arrangement: ['verso', 'refrao', 'verso', 'refrao', 'ponte', 'refrao+'],
   },
   mare: {
     id: 'mare',
     name: 'Maré Alta',
-    tagline: 'Balanço com síncope. Notas fora do tempo, acordes e notas longas, como ondas.',
+    tagline: 'Balanço com síncope. O refrão vem em ondas: aprenda o desenho e deixe a maré subir.',
     startBpm: 78,
     maxBpm: 360,
     bpmPerBar: 1.6,
-    barsPerLevel: 10,
-    levelStart: 1,
-    levelMax: 4,
-    progression: [0, 10, 8, 7],
+    tonic: 9,
     scale: [0, 3, 5, 7, 10],
     groove: 'funk',
     lead: 'bright',
-    doubles: { from: 6, base: 0.12, grow: 0.008 },
-    triples: { from: 36, base: 0.08, grow: 0.004 },
-    holds: { from: 6, base: 0.1, grow: 0.004 },
+    sections: {
+      verso: {
+        chords: ['0m', '0m', '10', '10', '8', '8', '10', '10'],
+        bars: [
+          '1 . . 1 . 3 . 2',
+          '1 . . 3 . 2 . .',
+          '3 . . 3 . 4 . 3',
+          '2 . . 3 . 2 . .',
+          '2 . . 2 . 4 . 3',
+          '2 . . 4-2 . . . 2',
+          '3 . . 3 . 4 . 5',
+          '4 . . 3 . 2 . 1',
+        ],
+      },
+      refrao: {
+        chords: ['0m', '10', '8', '10', '0m', '10', '8', '7'],
+        bars: [
+          '5 . 4 . . 3 4 .',
+          '5 . 4 . . 3 . 2',
+          '4 . 3 . . 2 3 .',
+          '4 . 3 . 2 . 1 .',
+          '5 . 4 . . 3 4 .',
+          '5 . 4 . . 3 . 2',
+          '4 . 3 . . 2 3 .',
+          '3 . 2 . 1-2 . . 2',
+        ],
+      },
+      ponte: {
+        chords: ['8', '8', '10', '10'],
+        bars: ['1 2 3 4 5 . 5 .', '5 4 3 2 1 . 1 .', '1 . 3 . 5 . 3 .', '5 . . . 5-2 . . 4'],
+      },
+    },
+    arrangement: ['verso', 'refrao', 'verso', 'refrao+', 'ponte', 'refrao+'],
   },
   frenesi: {
     id: 'frenesi',
     name: 'Frenesi',
-    tagline:
-      'Pesada e sem descanso. Muitas notas, acordes de três e notas longas, até você aguentar.',
+    tagline: 'Pesada e sem descanso. Riff de colcheias, refrão com notas longas e acordes de três.',
     startBpm: 92,
     maxBpm: 360,
     bpmPerBar: 2,
-    barsPerLevel: 8,
-    levelStart: 2,
-    levelMax: 4,
-    progression: [0, 5, 0, 7],
+    tonic: 4,
     scale: [0, 3, 5, 6, 7],
     groove: 'drive',
     lead: 'sharp',
-    doubles: { from: 3, base: 0.18, grow: 0.01 },
-    triples: { from: 24, base: 0.12, grow: 0.006 },
-    holds: { from: 8, base: 0.1, grow: 0.004 },
+    sections: {
+      verso: {
+        chords: ['0m', '0m', '0m', '0m', '8', '8', '10', '10'],
+        bars: [
+          '1 1 . 3 . 1 . 4',
+          '1 1 . 3 . 5 4 3',
+          '1 1 . 3 . 1 . 4',
+          '2 2 . 4 . 3 2 1',
+          '3 3 . 5 . 3 . 4',
+          '3 3 . 5 . 4 3 2',
+          '2 2 . 4 . 2 . 3',
+          '4 . 3 . 2 . 1 .',
+        ],
+      },
+      refrao: {
+        chords: ['0m', '0m', '8', '10', '0m', '0m', '8', '10'],
+        bars: [
+          '5 . 5 . 4-2 . . 3',
+          '4 . 4 . 3-2 . . 2',
+          '5 . 5 . 5-2 . . 4',
+          '5 4 3 2 1 . 2 .',
+          '5 . 5 . 4-2 . . 3',
+          '4 . 4 . 3-2 . . 2',
+          '3 3 4 4 5 5 . 5',
+          '5 4 3 2 1 . 1 .',
+        ],
+      },
+      ponte: {
+        chords: ['0m', '8', '10', '0m'],
+        bars: ['1-4 . . . . 5 . 4', '2-4 . . . . 4 . 5', '1 2 3 4 5 4 3 2', '5 . 5 . 5 . 5 5'],
+      },
+    },
+    arrangement: ['verso', 'refrao', 'verso', 'refrao+', 'ponte', 'refrao++'],
   },
 };
 
@@ -223,214 +317,157 @@ export function timeOf(song: Song, bar: number, step: number): number {
 
 // ---- música ----------------------------------------------------------------
 
-/**
- * Ritmos por nível de dificuldade: 8 colcheias por compasso, 1 = nota. Três por nível; cada frase
- * sorteia dois (A e B) e os alterna, então o ouvido reconhece o ritmo e a música "se forma".
- */
-const MOTIFS: readonly (readonly (readonly number[])[])[] = [
-  // 0: só semínimas, devagar para aprender
-  [
-    [1, 0, 1, 0, 1, 0, 1, 0],
-    [1, 0, 0, 0, 1, 0, 1, 0],
-    [1, 0, 1, 0, 0, 0, 1, 0],
-  ],
-  // 1: colcheias aparecendo
-  [
-    [1, 0, 1, 1, 1, 0, 1, 0],
-    [1, 1, 1, 0, 1, 0, 1, 0],
-    [1, 0, 1, 0, 1, 1, 1, 0],
-  ],
-  // 2: síncope
-  [
-    [1, 0, 0, 1, 1, 0, 1, 1],
-    [1, 1, 0, 1, 0, 1, 1, 0],
-    [1, 0, 1, 1, 0, 1, 1, 0],
-  ],
-  // 3: denso
-  [
-    [1, 1, 1, 0, 1, 1, 1, 0],
-    [1, 1, 0, 1, 1, 1, 0, 1],
-    [1, 0, 1, 1, 1, 1, 1, 0],
-  ],
-  // 4: quase tudo
-  [
-    [1, 1, 1, 1, 1, 0, 1, 1],
-    [1, 1, 1, 0, 1, 1, 1, 1],
-    [1, 1, 1, 1, 1, 1, 1, 0],
-  ],
-];
-
-/** Uma frase tem 4 compassos: A, A, B e A com final diferente (a "virada"). */
-export const BARS_PER_PHRASE = 4;
-
-/** Nível de dificuldade (0 a 4) do compasso `bar`: começa no da música e sobe até o limite dela. */
-export function levelAt(song: Song, bar: number): number {
-  const up = Math.floor(Math.max(0, bar - LEAD_IN_BARS) / song.barsPerLevel);
-  return Math.min(song.levelMax, Math.min(MOTIFS.length - 1, song.levelStart + up));
+/** Uma posição com nota: as pistas (1 a 3 juntas) e, se for nota longa, quantas colcheias dura. */
+interface Beat {
+  step: number;
+  lanes: number[];
+  hold?: number;
 }
 
-/** Pistas usadas em cada nível: começa só no meio (fácil de achar) e abre até as cinco. */
-function laneRange(level: number): [number, number] {
-  if (level === 0) return [1, 3];
-  if (level === 1) return [0, 3];
-  return [0, BATIDA_LANES - 1];
+interface LapBar {
+  /** Trecho a que o compasso pertence (verso, refrao, ponte), a posição nele e o tamanho dele. */
+  section: string;
+  index: number;
+  count: number;
+  /** Quantos `+` o trecho tem na ordem (0 = o original, 1 = engrossado, 2 = mais cheio). */
+  thick: number;
+  chord: Chord;
+  beats: Beat[];
 }
 
-const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
+const HOLD_TOKEN = /^([1-5])-([2-4])$/;
+const NOTE_TOKEN = /^[1-5]{1,3}$/;
+const CHORD_TOKEN = /^(\d+)(m?)$/;
 
-/** A chance de um enfeite no compasso `bar` (0 antes de `from`; depois sobe sem parar, até `cap`). */
-export function chanceAt(
-  rule: { from: number; base: number; grow: number },
-  bar: number,
-  cap: number,
-) {
-  if (bar < rule.from) return 0;
-  return Math.min(cap, rule.base + rule.grow * (bar - rule.from));
+/** Lê o texto de um compasso (8 colcheias) e devolve as posições com nota. */
+export function parseBar(text: string): Beat[] {
+  const tokens = text.trim().split(/\s+/);
+  if (tokens.length !== STEPS_PER_BAR) throw new Error(`Compasso sem 8 posições: "${text}"`);
+  const beats: Beat[] = [];
+  tokens.forEach((tok, step) => {
+    if (tok === '.') return;
+    const hold = HOLD_TOKEN.exec(tok);
+    if (hold) return void beats.push({ step, lanes: [Number(hold[1]) - 1], hold: Number(hold[2]) });
+    if (!NOTE_TOKEN.test(tok)) throw new Error(`Posição inválida "${tok}" em "${text}"`);
+    const lanes = [...tok].map((c) => Number(c) - 1);
+    if (new Set(lanes).size !== lanes.length) throw new Error(`Pista repetida em "${text}"`);
+    beats.push({ step, lanes });
+  });
+  return beats;
+}
+
+export function parseChord(text: string): Chord {
+  const m = CHORD_TOKEN.exec(text);
+  if (!m) throw new Error(`Acorde inválido "${text}"`);
+  return { root: Number(m[1]), minor: m[2] === 'm' };
+}
+
+/** Pistas vizinhas (em graus da escala) para formar acordes junto de uma nota. */
+function companions(lane: number, taken: readonly number[], want: number): number[] {
+  const out: number[] = [];
+  for (const d of [2, -2, 1, -1, 3, -3]) {
+    const l = lane + d;
+    if (l < 0 || l >= BATIDA_LANES || taken.includes(l) || out.includes(l)) continue;
+    out.push(l);
+    if (out.length === want) break;
+  }
+  return out;
 }
 
 /**
- * Põe acordes (2 ou 3 notas juntas) e notas longas nas notas de um compasso. As chances vêm da
- * música e do compasso, então a dificuldade sobe sozinha. Uma nota longa só nasce onde a pista dela
- * fica livre até o fim, e nada nasce em cima de outra nota.
+ * Engrossa um compasso para as voltas mais cheias do refrão: o mesmo desenho, com mais notas
+ * juntas. Nível 1 põe uma segunda nota nos tempos fortes (colcheias 0 e 4); nível 2 põe nos quatro
+ * tempos e faz acordes de três no primeiro. Nota longa nunca é engrossada.
  */
-function embellish(
-  song: Song,
-  bar: number,
-  base: BatidaNote[],
-  rng: () => number,
-  lo: number,
-  hi: number,
-): BatidaNote[] {
-  const pTriple = hi - lo >= 2 ? chanceAt(song.triples, bar, 0.3) : 0;
-  const pDouble = chanceAt(song.doubles, bar, 0.5);
-  const pHold = chanceAt(song.holds, bar, 0.3);
-  const taken = new Set(base.map((n) => `${n.lane}:${n.step}`));
+function thicken(beats: Beat[], level: number): Beat[] {
+  if (level === 0) return beats;
+  return beats.map((b) => {
+    if (b.hold !== undefined || b.lanes.length !== 1) return b;
+    const strong = level >= 2 ? b.step % 2 === 0 : b.step === 0 || b.step === 4;
+    if (!strong) return b;
+    const extra = companions(b.lanes[0]!, b.lanes, level >= 2 && b.step === 0 ? 2 : 1);
+    return { ...b, lanes: [...b.lanes, ...extra].sort((x, y) => x - y) };
+  });
+}
+
+const lapCache = new Map<SongId, LapBar[]>();
+
+/** Uma volta inteira da música: todos os compassos, na ordem em que tocam. */
+function lapOf(song: Song): LapBar[] {
+  let lap = lapCache.get(song.id);
+  if (lap) return lap;
+  lap = [];
+  for (const entry of song.arrangement) {
+    const name = entry.replace(/\+/g, '');
+    const thick = entry.length - name.length;
+    const section = song.sections[name];
+    if (!section) throw new Error(`Trecho "${name}" não existe em ${song.id}`);
+    if (section.bars.length !== section.chords.length)
+      throw new Error(`${song.id}/${name}: um acorde por compasso`);
+    section.bars.forEach((text, index) => {
+      lap!.push({
+        section: name,
+        index,
+        count: section.bars.length,
+        thick,
+        chord: parseChord(section.chords[index]!),
+        beats: thicken(parseBar(text), thick),
+      });
+    });
+  }
+  lapCache.set(song.id, lap);
+  return lap;
+}
+
+/** Quantos compassos tem uma volta da música (depois dela, tudo recomeça, cada vez mais rápido). */
+export function lapLength(song: Song): number {
+  return lapOf(song).length;
+}
+
+export interface SectionInfo {
+  name: string;
+  /** Primeiro e último compasso do trecho (o som marca a entrada e faz a virada). */
+  first: boolean;
+  last: boolean;
+  thick: number;
+}
+
+/** Em que trecho da música está o compasso `bar` (a contagem inicial vale como verso). */
+export function sectionAt(song: Song, bar: number): SectionInfo {
+  const lap = lapOf(song);
+  const b = lap[Math.max(0, bar - LEAD_IN_BARS) % lap.length]!;
+  return {
+    name: bar < LEAD_IN_BARS ? 'contagem' : b.section,
+    first: b.index === 0,
+    last: b.index === b.count - 1,
+    thick: b.thick,
+  };
+}
+
+const noteCache = new Map<string, BatidaNote[]>();
+
+/**
+ * As notas do compasso `bar` (a contagem, compasso 0, não tem notas). A música é composta e fixa:
+ * é sempre a mesma sequência, para dar para decorar o refrão. A `seed` só identifica a partida.
+ */
+export function notesInBar(_seed: string, song: Song, bar: number): BatidaNote[] {
+  if (bar < LEAD_IN_BARS) return [];
+  const key = `${song.id}:${bar}`;
+  const cached = noteCache.get(key);
+  if (cached) return cached;
+  if (noteCache.size > 800) noteCache.clear();
+  const lap = lapOf(song);
   const out: BatidaNote[] = [];
-  for (const n of base) {
-    out.push(n);
-    const roll = rng();
-    const wantsHold = rng() < pHold;
-    const spare = rng();
-    if (roll < pTriple + pDouble) {
-      // 2 ou 3 notas no mesmo instante, em pistas livres.
-      const extra = roll < pTriple ? 2 : 1;
-      const free: number[] = [];
-      for (let lane = lo; lane <= hi; lane++) if (!taken.has(`${lane}:${n.step}`)) free.push(lane);
-      for (let k = 0; k < extra && free.length > 0; k++) {
-        const pick = free.splice(Math.floor((k === 0 ? spare : rng()) * free.length), 1)[0]!;
-        taken.add(`${pick}:${n.step}`);
-        out.push({ bar, step: n.step, lane: pick, t: n.t });
-      }
-    } else if (wantsHold) {
-      for (const len of spare < 0.5 ? HOLD_LENGTHS : [...HOLD_LENGTHS].reverse()) {
-        // Termina no máximo na colcheia 6 e deixa uma colcheia livre depois: dá tempo de soltar
-        // antes da próxima nota da mesma pista (que também pode ser a primeira do compasso seguinte).
-        if (n.step + len > STEPS_PER_BAR - 2) continue;
-        let free = true;
-        for (let k = 1; k <= len + 1; k++) if (taken.has(`${n.lane}:${n.step + k}`)) free = false;
-        if (!free) continue;
-        for (let k = 1; k <= len + 1; k++) taken.add(`${n.lane}:${n.step + k}`);
-        n.endT = timeOf(song, bar, n.step + len);
-        break;
-      }
+  for (const beat of lap[(bar - LEAD_IN_BARS) % lap.length]!.beats) {
+    for (const lane of beat.lanes) {
+      const note: BatidaNote = { bar, step: beat.step, lane, t: timeOf(song, bar, beat.step) };
+      if (beat.hold !== undefined) note.endT = timeOf(song, bar, beat.step + beat.hold);
+      out.push(note);
     }
   }
   out.sort((x, y) => x.step - y.step || x.lane - y.lane);
-  return clearAroundHolds(song, bar, out);
-}
-
-/**
- * Enquanto uma nota longa está sendo segurada (da cabeça até o fim, inclusive), nenhuma outra nota
- * aparece em pista nenhuma: quem segura com um dedo não deveria ter que tocar outra com o mesmo
- * dedo, e a nota longa nunca vem junta de um acorde.
- */
-function clearAroundHolds(song: Song, bar: number, notes: BatidaNote[]): BatidaNote[] {
-  const dropped = new Set<BatidaNote>();
-  const lastStep = notes.reduce((m, n) => Math.max(m, n.step), 0);
-  for (const h of notes) {
-    if (h.endT === undefined || dropped.has(h)) continue;
-    // `endT` vem de `timeOf`; a colcheia final é a que tem esse instante.
-    let endStep = h.step;
-    while (endStep < STEPS_PER_BAR && timeOf(song, bar, endStep) < h.endT) endStep++;
-    const victims = notes.filter(
-      (n) => n !== h && !dropped.has(n) && n.step >= h.step && n.step <= endStep,
-    );
-    // Sem estragar o compasso: a nota final da frase fica, e sobram ao menos 3 notas. Se não der,
-    // a nota longa vira uma nota normal.
-    if (
-      notes.length - dropped.size - victims.length < 3 ||
-      victims.some((n) => n.step === lastStep)
-    ) {
-      delete h.endT;
-      continue;
-    }
-    for (const n of victims) dropped.add(n);
-  }
-  return notes.filter((n) => !dropped.has(n));
-}
-
-const phraseCache = new Map<string, BatidaNote[][]>();
-
-/**
- * As notas dos 4 compassos da frase `phrase` (0, 1, 2...), um array por compasso. A melodia é uma
- * célula curta de 4 pistas que se repete subindo e descendo, e cada frase termina na pista de
- * repouso: assim as notas soam como um tema, não como sorteio.
- */
-export function phraseNotes(seed: string, song: Song, phrase: number): BatidaNote[][] {
-  const key = `${seed}:${song.id}:${phrase}`;
-  const cached = phraseCache.get(key);
-  if (cached) return cached;
-  if (phraseCache.size > 400) phraseCache.clear();
-
-  const firstBar = LEAD_IN_BARS + phrase * BARS_PER_PHRASE;
-  const level = levelAt(song, firstBar);
-  const [lo, hi] = laneRange(level);
-  const rng = createRng(`${seed}:${song.id}:batida:${phrase}`);
-  const extras = createRng(`${seed}:${song.id}:enfeite:${phrase}`);
-  const set = MOTIFS[level]!;
-  const a = set[randInt(rng, 0, set.length - 1)]!;
-  let b = set[randInt(rng, 0, set.length - 1)]!;
-  if (b === a) b = set[(set.indexOf(a) + 1) % set.length]!;
-
-  // Célula melódica: caminha de 1 ou 2 pistas por vez dentro do alcance do nível.
-  let at = randInt(rng, lo, hi);
-  const cell: number[] = [];
-  for (let i = 0; i < 4; i++) {
-    cell.push(at);
-    const jump = (rng() < 0.5 ? -1 : 1) * randInt(rng, 1, 2);
-    at = clamp(at + jump, lo, hi);
-    if (at === cell[i]) at = clamp(at + (at === hi ? -1 : 1), lo, hi);
-  }
-  // Pista de repouso do fim da frase: a mais central do alcance.
-  const home = Math.round((lo + hi) / 2);
-
-  const patterns = [a, a, b, a];
-  const bars: BatidaNote[][] = [];
-  let n = 0;
-  const total = patterns.reduce((sum, p) => sum + p.reduce((x, y) => x + y, 0), 0);
-  for (let i = 0; i < BARS_PER_PHRASE; i++) {
-    const bar = firstBar + i;
-    const notes: BatidaNote[] = [];
-    patterns[i]!.forEach((on, step) => {
-      // A última colcheia do compasso final vira uma "virada": some se for repetir o ritmo.
-      if (!on) return;
-      const shift = Math.floor(n / 4) % 2 === 1 ? 1 : 0;
-      let lane = clamp(cell[n % 4]! + shift, lo, hi);
-      if (n === total - 1) lane = home;
-      notes.push({ bar, step, lane, t: timeOf(song, bar, step) });
-      n++;
-    });
-    bars.push(embellish(song, bar, notes, extras, lo, hi));
-  }
-  phraseCache.set(key, bars);
-  return bars;
-}
-
-/** As notas do compasso `bar` (a contagem, compasso 0, não tem notas). */
-export function notesInBar(seed: string, song: Song, bar: number): BatidaNote[] {
-  if (bar < LEAD_IN_BARS) return [];
-  const rel = bar - LEAD_IN_BARS;
-  return phraseNotes(seed, song, Math.floor(rel / BARS_PER_PHRASE))[rel % BARS_PER_PHRASE]!;
+  noteCache.set(key, out);
+  return out;
 }
 
 /** Todas as notas com `from <= t < to`, em ordem. */
@@ -444,15 +481,23 @@ export function notesBetween(seed: string, song: Song, from: number, to: number)
 
 // ---- harmonia (para o som) ------------------------------------------------
 
-/** Raiz do acorde que toca no compasso `bar`, em semitones (um acorde a cada 2 compassos). */
-export function rootAt(song: Song, bar: number): number {
-  const rel = Math.max(0, bar - LEAD_IN_BARS);
-  return song.progression[Math.floor(rel / 2) % song.progression.length]!;
+/** O acorde que toca no compasso `bar` (a raiz em semitons acima da tônica, e se é menor). */
+export function chordAt(song: Song, bar: number): Chord {
+  const lap = lapOf(song);
+  return lap[Math.max(0, bar - LEAD_IN_BARS) % lap.length]!.chord;
 }
 
-/** Semitones da nota da pista `lane` no compasso `bar` (a pista escolhe o grau, o acorde a raiz). */
-export function semitoneOf(song: Song, lane: number, bar: number): number {
-  return rootAt(song, bar) + song.scale[clamp(lane, 0, BATIDA_LANES - 1)]!;
+/** Raiz do acorde que toca no compasso `bar`, em semitons acima da tônica. */
+export function rootAt(song: Song, bar: number): number {
+  return chordAt(song, bar).root;
+}
+
+/**
+ * Semitons (acima da tônica) da nota da pista `lane`. Cada pista é sempre a mesma nota: o que a
+ * pessoa toca é a melodia de verdade e os acordes mudam por baixo.
+ */
+export function semitoneOf(song: Song, lane: number, _bar = 0): number {
+  return song.scale[Math.max(0, Math.min(BATIDA_LANES - 1, lane))]!;
 }
 
 // ---- pontuação -------------------------------------------------------------

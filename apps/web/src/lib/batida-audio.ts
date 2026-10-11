@@ -3,9 +3,11 @@ import {
   STEPS_PER_BAR,
   barMs,
   barStart,
-  rootAt,
+  chordAt,
+  sectionAt,
   semitoneOf,
   type Song,
+  type SongId,
 } from '@nocap/games';
 import { audioKit } from './sfx';
 
@@ -26,15 +28,57 @@ const C2 = 65.41;
 
 const hz = (base: number, semitones: number) => base * 2 ** (semitones / 12);
 
-/** Passos (colcheias 0 a 7) em que cada peça toca, por groove. */
+/** Passos (colcheias 0 a 7) em que a bateria toca, por groove. */
 const GROOVES = {
   // Bumbo nos tempos 1 e 3, caixa nos 2 e 4.
-  basic: { kick: [0, 4], snare: [2, 6], bass: [0, 4], hat: 'all' },
-  // Balanço: bumbo deslocado, baixo sincopado.
-  funk: { kick: [0, 3, 6], snare: [2, 6], bass: [0, 3, 5, 7], hat: 'all' },
-  // Pesado: bumbo em todos os tempos, baixo pulsando.
-  drive: { kick: [0, 2, 4, 6], snare: [2, 6], bass: [0, 1, 2, 3, 4, 5, 6, 7], hat: 'odd' },
+  basic: { kick: [0, 4], snare: [2, 6], hat: 'all' },
+  // Balanço: bumbo deslocado.
+  funk: { kick: [0, 3, 6], snare: [2, 6], hat: 'all' },
+  // Pesado: bumbo em todos os tempos.
+  drive: { kick: [0, 2, 4, 6], snare: [2, 6], hat: 'odd' },
 } as const;
+
+/** Um passo do baixo: [semitons acima da raiz, duração em colcheias, força, onda]. */
+type BassStep = readonly [number, number, number, OscillatorType];
+
+/**
+ * O acompanhamento de cada música: o baixo (um padrão por colcheia), a harmonia (instrumento e
+ * em quais colcheias toca) e o enfeite de cima. Nada se repete entre as três.
+ */
+const SOUNDS: Record<
+  SongId,
+  {
+    bass: Partial<Record<number, BassStep>>;
+    pad: { kind: 'piano' | 'epiano' | 'power'; steps: number[] };
+    spark: { kind: 'bell' | 'scratch' | 'chug'; steps: number[] };
+  }
+> = {
+  // Doce: baixo longo nos tempos, piano de acorde quebrado e sininhos.
+  passo: {
+    bass: { 0: [0, 3.4, 0.42, 'triangle'], 4: [0, 3.4, 0.4, 'triangle'] },
+    pad: { kind: 'piano', steps: [0, 2, 4, 6] },
+    spark: { kind: 'bell', steps: [3, 7] },
+  },
+  // Funk: baixo sincopado e saltitante, piano elétrico nos contratempos e "palhetada" de guitarra.
+  mare: {
+    bass: {
+      0: [0, 1.2, 0.46, 'triangle'],
+      3: [0, 0.8, 0.42, 'triangle'],
+      5: [7, 0.8, 0.4, 'triangle'],
+      7: [12, 0.7, 0.34, 'triangle'],
+    },
+    pad: { kind: 'epiano', steps: [3, 6] },
+    spark: { kind: 'scratch', steps: [1, 3, 5, 7] },
+  },
+  // Pesado: baixo martelando em colcheias, guitarra de acorde de força e riff agudo.
+  frenesi: {
+    bass: Object.fromEntries(
+      [0, 1, 2, 3, 4, 5, 6, 7].map((s) => [s, [s % 4 === 3 ? 12 : 0, 0.8, 0.26, 'sawtooth']]),
+    ) as Partial<Record<number, BassStep>>,
+    pad: { kind: 'power', steps: [0, 2, 4, 6] },
+    spark: { kind: 'chug', steps: [1, 3, 5, 7] },
+  },
+};
 
 /** Timbre da melodia por música: onda, força e quanto brilho (oitava acima) entra. */
 const LEADS = {
@@ -77,6 +121,7 @@ export function createBatidaAudio(song: Song): BatidaAudio | null {
   const { ctx, out, noise } = kit;
   const groove = GROOVES[song.groove];
   const lead = LEADS[song.lead];
+  const sound = SOUNDS[song.id];
   /** Instante (no relógio do áudio) em que a partida começa: um respiro depois do toque. */
   let t0 = 0;
   let timer = 0;
@@ -162,60 +207,90 @@ export function createBatidaAudio(song: Song): BatidaAudio | null {
   }
 
   const kick = (when: number, peak = 0.9) => tone('sine', 150, 42, when, 0.14, peak, 0.003);
-  const snare = (when: number) => {
-    hiss('bandpass', 1900, when, 0.11, 0.38);
-    tone('triangle', 210, 150, when, 0.07, 0.2, 0.002);
+  const snare = (when: number, peak = 1) => {
+    hiss('bandpass', 1900, when, 0.11, 0.38 * peak);
+    tone('triangle', 210, 150, when, 0.07, 0.2 * peak, 0.002);
   };
-  const hat = (when: number, peak: number) => hiss('highpass', 7200, when, 0.035, peak, 0.5);
+  const hat = (when: number, peak: number, open = false) =>
+    hiss('highpass', 7200, when, open ? 0.16 : 0.035, peak, 0.5);
+  const crash = (when: number) => hiss('highpass', 5200, when, 0.8, 0.22, 0.4);
+  /** Piano: o som e dois harmônicos que somem depressa, com um toque de martelo. */
+  const piano = (f: number, when: number, dur: number, peak: number) => {
+    tone('triangle', f, f, when, dur, peak, 0.004);
+    tone('sine', f * 2, f * 2, when, dur * 0.5, peak * 0.4, 0.003);
+    tone('sine', f * 3, f * 3, when, 0.12, peak * 0.15, 0.002);
+  };
+  /** Piano elétrico: macio e com um sininho no ataque (o jeito do funk). */
+  const epiano = (f: number, when: number, dur: number, peak: number) => {
+    tone('sine', f, f, when, dur, peak, 0.004);
+    tone('sine', f * 4, f * 4, when, 0.07, peak * 0.3, 0.002);
+  };
+  /** Guitarra pesada: dois dentes de serra (raiz e quinta) que morrem rápido. */
+  const power = (f: number, when: number, dur: number, peak: number) => {
+    tone('sawtooth', f, f, when, dur, peak, 0.004);
+    tone('sawtooth', f * 1.5, f * 1.5, when, dur, peak * 0.8, 0.004);
+    tone('sawtooth', f * 2, f * 2, when, dur, peak * 0.5, 0.004);
+  };
 
-  /** Agenda a base de um compasso inteiro (a música das colcheias). */
+  /** Agenda a base de um compasso inteiro: bateria, baixo, harmonia e a virada do trecho. */
   function scheduleBar(bar: number) {
     const len = barMs(song, bar);
     const base = barStart(song, bar);
     const countIn = bar < LEAD_IN_BARS;
     const stepS = len / STEPS_PER_BAR / 1000;
+    const sec = sectionAt(song, bar);
+    const chord = chordAt(song, bar);
+    const verse = sec.name === 'verso';
+    // O verso é mais leve; o refrão e a ponte entram com tudo.
+    const body = verse || countIn ? 0.75 : 1;
+    const third = chord.minor ? 3 : 4;
+    const tones = [0, third, 7];
+    const root = song.tonic + chord.root;
     for (let step = 0; step < STEPS_PER_BAR; step++) {
       const when = at(base + (step * len) / STEPS_PER_BAR);
       const stumbling = when < stumbleUntil;
-      // Nível 1 (sempre): bumbo, caixa e chimbal no jeito da música.
-      if ((groove.kick as readonly number[]).includes(step)) kick(when, stumbling ? 0.35 : 0.9);
-      if (!countIn && (groove.snare as readonly number[]).includes(step)) snare(when);
-      if (groove.hat === 'all') hat(when, step % 2 === 0 ? 0.2 : 0.1);
-      else if (step % 2 === 1) hat(when, 0.22);
+      const fill = sec.last && !countIn && step >= 5;
+      // Nível 1 (sempre): bateria no jeito da música, com virada no fim de cada trecho.
+      if ((groove.kick as readonly number[]).includes(step) && !(fill && step >= 6))
+        kick(when, stumbling ? 0.35 : 0.9 * body);
+      if (!countIn && ((groove.snare as readonly number[]).includes(step) || fill))
+        snare(when, fill ? 0.8 : body);
+      if (step === 0 && sec.first && !countIn && !verse) crash(when);
+      if (groove.hat === 'all') hat(when, (step % 2 === 0 ? 0.2 : 0.1) * body);
+      else if (step % 2 === 1) hat(when, 0.22 * body, !verse && step === 7);
       if (countIn || stumbling) continue;
-      const root = rootAt(song, bar);
-      // Nível 2: baixo no padrão da música.
-      if (level >= 2 && (groove.bass as readonly number[]).includes(step)) {
-        const dense = groove.bass.length > 4;
-        tone(
-          'triangle',
-          hz(C2, root),
-          hz(C2, root),
-          when,
-          stepS * (dense ? 0.9 : 1.7),
-          dense ? 0.3 : 0.42,
-          0.01,
-        );
+      // Nível 2: baixo no padrão da música (cada uma tem o seu).
+      if (level >= 2 && sound.bass[step] !== undefined) {
+        const [semi, hold, peak, type] = sound.bass[step]!;
+        const f = hz(C2, root + semi);
+        tone(type, f, f, when, stepS * hold, peak, 0.01);
       }
-      // Nível 3: acorde aberto no início de cada metade do compasso.
-      if (level >= 3 && (step === 0 || step === 4)) {
-        const dur = (len / 2 / 1000) * 0.95;
-        [0, 4, 7].forEach((interval) =>
-          tone(
-            'triangle',
-            hz(C4 / 2, root + interval),
-            hz(C4 / 2, root + interval),
-            when,
-            dur,
-            0.1,
-            0.03,
-          ),
-        );
+      // Nível 3: a harmonia, no instrumento e no ritmo da música.
+      if (level >= 3 && sound.pad.steps.includes(step)) {
+        const n = sound.pad.steps.indexOf(step);
+        if (sound.pad.kind === 'piano') {
+          // Acorde quebrado: sobe e desce pelas notas do acorde.
+          const semi = tones[[0, 1, 2, 1][n % 4]!]!;
+          piano(hz(C4 / 2, root + semi), when, stepS * 3.2, 0.2);
+        } else if (sound.pad.kind === 'epiano') {
+          for (const semi of tones) epiano(hz(C4, root + semi), when, stepS * 0.8, 0.075);
+        } else {
+          power(hz(C2 * 2, root), when, stepS * 1.4, 0.075);
+        }
       }
-      // Nível 4: arpejo brilhante subindo pela escala da música.
-      if (level >= 4 && step % 2 === 1) {
-        const note = song.scale[(step >> 1) % song.scale.length]!;
-        tone('sine', hz(C4 * 2, root + note), hz(C4 * 2, root + note), when, 0.12, 0.08, 0.004);
+      // Nível 4: o enfeite de cima.
+      if (level >= 4 && sound.spark.steps.includes(step)) {
+        if (sound.spark.kind === 'bell') {
+          const semi = tones[(step >> 1) % 3]!;
+          const f = hz(C4 * 2, root + semi);
+          tone('sine', f, f, when, 0.5, 0.09, 0.004);
+          tone('sine', f * 2, f * 2, when, 0.2, 0.03, 0.003);
+        } else if (sound.spark.kind === 'scratch') {
+          hiss('highpass', 4800, when, 0.04, 0.12, 0.8);
+          epiano(hz(C4 * 2, root + tones[2]!), when, stepS * 0.5, 0.05);
+        } else {
+          power(hz(C4, root), when, stepS * 0.6, 0.05);
+        }
       }
     }
   }
@@ -248,7 +323,7 @@ export function createBatidaAudio(song: Song): BatidaAudio | null {
       level = Math.max(1, Math.min(4, l));
     },
     hit(lane, bar, perfect) {
-      const f = hz(C4, semitoneOf(song, lane, bar));
+      const f = hz(C4, song.tonic + semitoneOf(song, lane, bar));
       const when = ctx.currentTime;
       tone(
         lead.type,
@@ -276,7 +351,7 @@ export function createBatidaAudio(song: Song): BatidaAudio | null {
     },
     holdStart(lane, bar) {
       if (quiet()) return;
-      const f = hz(C4, semitoneOf(song, lane, bar));
+      const f = hz(C4, song.tonic + semitoneOf(song, lane, bar));
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = lead.type;
