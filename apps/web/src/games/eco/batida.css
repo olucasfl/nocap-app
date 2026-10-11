@@ -599,3 +599,19 @@
   font-weight: 700;
   letter-spacing: 0.06em;
 }
+
+/* Etiqueta em cima da cabeça da nota longa. */
+.bt-hold-tag {
+  position: absolute;
+  left: 50%;
+  top: -17px;
+  transform: translateX(-50%);
+  padding: 1px 6px;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 6px;
+  font: 700 10px var(--font-mono);
+  font-style: normal;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}

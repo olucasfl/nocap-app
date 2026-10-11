@@ -211,7 +211,16 @@ describe('a música da seed', () => {
   it('a frase repete o ritmo (A, A, B, A) para a música soar como tema', () => {
     for (const s of ALL) {
       const [b1, b2, , b4] = phraseNotes(SEED, s, 3);
-      const steps = (notes: BatidaNote[]) => [...new Set(notes.map((n) => n.step))].join(',');
+      // Uma nota longa apaga as notas que cairiam debaixo dela; fora esses trechos o ritmo é o mesmo.
+      const covered = new Set<number>();
+      for (const b of [b1!, b2!, b4!]) {
+        for (const h of b.filter((n) => n.endT !== undefined)) {
+          const end = Math.round(((h.endT! - h.t) / barMs(s, h.bar)) * 8);
+          for (let k = 0; k <= end; k++) covered.add(h.step + k);
+        }
+      }
+      const steps = (notes: BatidaNote[]) =>
+        [...new Set(notes.map((n) => n.step))].filter((st) => !covered.has(st)).join(',');
       expect(steps(b1!)).toBe(steps(b2!));
       expect(steps(b4!)).toBe(steps(b1!));
     }
@@ -533,6 +542,20 @@ describe('notas longas (segurar)', () => {
             n.step <= h.step + steps + 1,
         );
         expect(clash).toEqual([]);
+      }
+    }
+  });
+});
+
+describe('nota longa sozinha', () => {
+  it('enquanto se segura, nenhuma outra nota (de pista nenhuma) aparece, nem junto na cabeça', () => {
+    for (const s of ALL) {
+      const notes = allNotes(s, 300);
+      const holds = notes.filter((n) => n.endT !== undefined);
+      expect(holds.length).toBeGreaterThan(5);
+      for (const h of holds) {
+        const inside = notes.filter((n) => n !== h && n.t >= h.t && n.t <= h.endT!);
+        expect(inside).toEqual([]);
       }
     }
   });

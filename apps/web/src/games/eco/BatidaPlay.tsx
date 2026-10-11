@@ -93,6 +93,20 @@ function SymbolDefs() {
             {p.symbol}
           </symbol>
         ))}
+        {/* Listras nas barras de segurar: a pessoa vê que aquilo é para manter apertado. */}
+        {PADS.slice(0, BATIDA_LANES).map((p, i) => (
+          <pattern
+            key={i}
+            id={`bt-hold-${i}`}
+            width="14"
+            height="14"
+            patternUnits="userSpaceOnUse"
+            patternTransform="rotate(45)"
+          >
+            <rect width="14" height="14" fill={p.color} />
+            <rect width="6" height="14" fill="#000" opacity="0.28" />
+          </pattern>
+        ))}
       </defs>
     </svg>
   );
@@ -452,7 +466,7 @@ export function BatidaPlay({ seed, song, onEnd, onQuit }: Props) {
         if (!el) {
           el = document.createElement('div');
           el.className = n.endT !== undefined ? 'bt-note long' : 'bt-note';
-          el.innerHTML = `<span style="background:${PADS[n.lane]!.color};color:${PADS[n.lane]!.ink}"><svg viewBox="0 0 48 48" fill="currentColor" aria-hidden="true"><use href="#bt-sym-${n.lane}"/></svg></span>`;
+          el.innerHTML = `<span style="background:${PADS[n.lane]!.color};color:${PADS[n.lane]!.ink}"><svg viewBox="0 0 48 48" fill="currentColor" aria-hidden="true"><use href="#bt-sym-${n.lane}"/></svg></span>${n.endT !== undefined ? '<em class="bt-hold-tag">SEGURE</em>' : ''}`;
           field.current?.appendChild(el);
           nodes.set(key, el);
         }
@@ -467,7 +481,7 @@ export function BatidaPlay({ seed, song, onEnd, onQuit }: Props) {
           let body = bodies.get(key);
           if (!body) {
             body = document.createElementNS(SVG_NS, 'polygon');
-            body.setAttribute('fill', PADS[n.lane]!.color);
+            body.setAttribute('fill', `url(#bt-hold-${n.lane})`);
             body.setAttribute('stroke', 'currentColor');
             body.setAttribute('stroke-width', '2');
             holdsSvg.current.appendChild(body);

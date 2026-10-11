@@ -335,7 +335,38 @@ function embellish(
       }
     }
   }
-  return out.sort((x, y) => x.step - y.step || x.lane - y.lane);
+  out.sort((x, y) => x.step - y.step || x.lane - y.lane);
+  return clearAroundHolds(song, bar, out);
+}
+
+/**
+ * Enquanto uma nota longa está sendo segurada (da cabeça até o fim, inclusive), nenhuma outra nota
+ * aparece em pista nenhuma: quem segura com um dedo não deveria ter que tocar outra com o mesmo
+ * dedo, e a nota longa nunca vem junta de um acorde.
+ */
+function clearAroundHolds(song: Song, bar: number, notes: BatidaNote[]): BatidaNote[] {
+  const dropped = new Set<BatidaNote>();
+  const lastStep = notes.reduce((m, n) => Math.max(m, n.step), 0);
+  for (const h of notes) {
+    if (h.endT === undefined || dropped.has(h)) continue;
+    // `endT` vem de `timeOf`; a colcheia final é a que tem esse instante.
+    let endStep = h.step;
+    while (endStep < STEPS_PER_BAR && timeOf(song, bar, endStep) < h.endT) endStep++;
+    const victims = notes.filter(
+      (n) => n !== h && !dropped.has(n) && n.step >= h.step && n.step <= endStep,
+    );
+    // Sem estragar o compasso: a nota final da frase fica, e sobram ao menos 3 notas. Se não der,
+    // a nota longa vira uma nota normal.
+    if (
+      notes.length - dropped.size - victims.length < 3 ||
+      victims.some((n) => n.step === lastStep)
+    ) {
+      delete h.endT;
+      continue;
+    }
+    for (const n of victims) dropped.add(n);
+  }
+  return notes.filter((n) => !dropped.has(n));
 }
 
 const phraseCache = new Map<string, BatidaNote[][]>();
