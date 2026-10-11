@@ -28,6 +28,8 @@ Status: **solo implementado** (10/10/2026): três músicas, perspectiva, pausa, 
 - **Melodia de verdade:** cada pista é sempre a mesma nota (pentatônica do tom da música); os acordes passam por baixo. Tons: Primeiro Passo em dó maior, Maré Alta em lá menor, Frenesi em mi (blues).
 - **Som de fundo diferente em cada uma:** Primeiro Passo (piano de acorde quebrado, sininhos, baixo longo), Maré Alta (baixo sincopado, piano elétrico nos contratempos, palhetada), Frenesi (baixo martelando, guitarra de acorde de força, riff agudo). O verso é mais leve; o refrão entra com prato, e todo trecho termina com uma virada de caixa.
 - **Variedade desde o início (11/10/2026):** todas as músicas brincam já no primeiro verso, com notas juntas e notas longas, mas em doses diferentes: o fácil (Primeiro Passo) pouco e devagar, a média (Maré Alta) mais, a difícil (Frenesi) o tempo todo.
+- **NoCap! (sala party) não guarda resultado** em lugar nenhum (antes caía no histórico da Mesmíssima).
+- **Toque e servidor na mesma conta:** o toque nunca entra antes do que a partida já processou (`BatidaSim.earliest`), para o servidor refazer a mesma nota.
 - **No máximo 2 notas juntas**, e nunca as duas pontas (pistas 1 e 5) juntas.
 - Continua valendo: nota longa sozinha (nenhuma outra nota enquanto se segura).
 

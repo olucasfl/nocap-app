@@ -326,7 +326,9 @@ export function BatidaPlay({ seed, song, onEnd, onQuit }: Props) {
 
     const press = (lane: number, perf?: number) => {
       if (finished || paused || open.has(lane)) return;
-      const t = Math.round(stamped(perf));
+      // Nunca antes do que a partida já processou: o servidor refaz só pelos toques e tem que ver
+      // este toque na mesma hora em que o jogo viu.
+      const t = Math.max(Math.round(stamped(perf)), sim.earliest());
       // Antes da primeira nota ainda é a contagem: toque aí não vale.
       if (t < barStart(song, LEAD_IN_BARS) - 400) return;
       // Um toque que dispara duas vezes não pode virar rajada impossível.
@@ -344,7 +346,7 @@ export function BatidaPlay({ seed, song, onEnd, onQuit }: Props) {
       slotEls.current[lane]?.classList.remove('down');
       if (!tap) return;
       open.delete(lane);
-      tap.up = Math.max(tap.t + 1, Math.round(stamped(perf)));
+      tap.up = Math.max(tap.t + 1, Math.round(stamped(perf)), sim.earliest());
       if (!finished) handle(sim.release(lane, tap.up));
     };
 

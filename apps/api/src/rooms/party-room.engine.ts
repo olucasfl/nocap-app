@@ -86,11 +86,13 @@ interface Duel {
 /**
  * NoCap! (spec 016): cada rodada tem 5 micro-desafios rápidos e 1 minijogo grande. O servidor
  * monta o plano pela seed, marca os tempos no relógio dele, confere cada resposta e soma os
- * pontos (que podem ficar negativos quando a regra do desafio tira pontos). Nada de ranking:
- * só o histórico de sala.
+ * pontos (que podem ficar negativos quando a regra do desafio tira pontos). Nada de ranking e
+ * nada de histórico: o resultado vale só dentro da sala.
  */
 export class PartyRoomEngine extends ColorRoomEngine {
   override readonly game = 'party' as const;
+  /** O NoCap! não guarda resultado em lugar nenhum: nem histórico, nem ranking. */
+  override readonly persistable = false;
   protected override readonly modes: readonly string[] = ['party'];
 
   private plan: Slot[] = [];

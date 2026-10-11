@@ -607,6 +607,8 @@ export class BatidaSim {
   private holding = new Map<number, BatidaNote>();
   private end = { dead: false, atMs: 0, bar: 0 };
   private used = 0;
+  /** O instante mais tarde a que a partida já chegou (nunca anda para trás). */
+  private reached = -Infinity;
 
   constructor(
     private readonly seed: string,
@@ -671,6 +673,7 @@ export class BatidaSim {
 
   /** Faz o tempo chegar a `t`: as notas cuja janela já fechou viram erros. */
   advance(t: number): SimEvent[] {
+    this.reached = Math.max(this.reached, t);
     const events: SimEvent[] = [];
     this.fill(t + GOOD_MS + 1);
     while (this.queue.length > 0 && !this.end.dead) {
@@ -696,6 +699,16 @@ export class BatidaSim {
       }
     }
     return events;
+  }
+
+  /**
+   * O primeiro instante inteiro em que um toque ainda conta como depois de tudo o que a partida já
+   * processou. O jogo usa isto para um toque cujo carimbo chegou atrasado (o quadro já tinha
+   * avançado o relógio): sem isso o servidor, que refaz só pelos toques, julgaria esse toque numa
+   * hora em que o jogo já tinha dado a nota como perdida, e as duas contas divergiriam.
+   */
+  earliest(): number {
+    return Number.isFinite(this.reached) ? Math.ceil(this.reached) : 0;
   }
 
   /** Um toque na pista `lane` no instante `t` (os toques chegam em ordem de tempo). */

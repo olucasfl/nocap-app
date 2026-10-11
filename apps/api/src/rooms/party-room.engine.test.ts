@@ -175,6 +175,11 @@ function toBigStart(c: Ctx) {
 }
 
 describe('PartyRoomEngine: partida inteira', () => {
+  it('o NoCap! não guarda resultado: nada vai para o histórico nem para o ranking', () => {
+    const room = new PartyRoomEngine({ code: 'ABCD', now: () => 1_000, newSeed: () => 'x' });
+    expect(room.persistable).toBe(false);
+  });
+
   it('uma rodada: intro, 5 desafios (um de cada jogo), tutorial, Caça-Formas e fim', () => {
     const c = make(seedShapesFirst('rodada-1'));
     const games = (c.plan.slice(0, 5) as MicroSlot[]).map((s) => s.game);

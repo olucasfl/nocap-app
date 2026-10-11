@@ -744,3 +744,67 @@ describe('segurar na simulação', () => {
     expect(sim.currentCombo).toBe(combo + 2);
   });
 });
+
+describe('cliente e servidor contam a mesma partida', () => {
+  /**
+   * Um jogador de verdade: o relógio avança a cada quadro e o toque chega ao código um pouco depois
+   * do carimbo dele. Com `clamp` o jogo usa `earliest()` (como o `BatidaPlay`); sem ele, o toque pode
+   * cair numa hora que o quadro anterior já tinha fechado.
+   */
+  function play(song: Song, clamp: boolean, lagMs: number, jitter: number) {
+    const sim = new BatidaSim(SEED, song);
+    const taps: BatidaTap[] = [];
+    const pending: { proc: number; lane: number; t: number; up: number }[] = [];
+    const seen = new Set<string>();
+    let seq = 0;
+    const rnd = () => {
+      seq = (seq * 1103515245 + 12345) & 0x7fffffff;
+      return seq / 0x7fffffff;
+    };
+    for (let f = 0; f < 70_000 && !sim.dead; f += 16.7) {
+      // O jogador decide tocar nas notas que chegam (com erro de tempo) e o toque é entregue com atraso.
+      for (const n of notesBetween(SEED, song, f + 100, f + 120)) {
+        const key = `${n.bar}:${n.step}:${n.lane}`;
+        if (seen.has(key) || n.endT !== undefined) continue;
+        seen.add(key);
+        const t = Math.round(n.t + (rnd() - 0.5) * 2 * jitter);
+        pending.push({ proc: t + rnd() * lagMs, lane: n.lane, t, up: t + 50 });
+      }
+      pending.sort((a, b) => a.proc - b.proc);
+      while (pending.length > 0 && pending[0]!.proc <= f) {
+        const p = pending.shift()!;
+        const t = clamp ? Math.max(p.t, sim.earliest()) : p.t;
+        if (taps.some((x) => x.lane === p.lane && x.up > t)) continue;
+        taps.push({ lane: p.lane, t, up: t + 50 });
+        sim.tap(p.lane, t);
+        sim.release(p.lane, t + 50);
+      }
+      sim.advance(f);
+    }
+    return { live: sim.run, server: evaluateBatida(SEED, song, taps), taps };
+  }
+
+  it('com o ajuste do relógio, o que o jogo contou é exatamente o que o servidor refaz', () => {
+    for (const s of ALL) {
+      for (const [lag, jitter] of [
+        [0, 30],
+        [25, 60],
+        [60, 100],
+      ] as const) {
+        const { live, server, taps } = play(s, true, lag, jitter);
+        expect(validateTaps(taps)).toBeNull();
+        expect(server.usedTaps).toBe(taps.length);
+        // O jogo parou de jogar no fim da simulação; o servidor deixa o resto passar. O que vale (nota,
+        // acertos, combo, toques perdidos por tocar fora) tem que ser igual.
+        const core = (r: typeof live) => ({
+          tenths: r.tenths,
+          perfect: r.perfect,
+          good: r.good,
+          stray: r.stray,
+          maxCombo: r.maxCombo,
+        });
+        expect({ id: s.id, lag, ...core(server) }).toEqual({ id: s.id, lag, ...core(live) });
+      }
+    }
+  });
+});
