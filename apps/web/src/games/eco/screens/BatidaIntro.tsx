@@ -1,4 +1,4 @@
-import { useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { SONGS, SONG_IDS, isSongId, type SongId } from '@nocap/games';
 import { ArrowRight } from '@/components/icons';
 import { estimateLatency, getBatidaLatency, setBatidaLatency } from '@/lib/batida-latency';
@@ -22,6 +22,31 @@ function Calibration({ onClose }: { onClose: () => void }) {
   const beats = useRef<number[]>([]);
   const devs = useRef<number[]>([]);
   const timer = useRef(0);
+  const flashEl = useRef<HTMLDivElement>(null);
+
+  // A batida também pisca na tela, no instante em que se ouve: assim o ajuste inclui o atraso da
+  // tela, que é o que a pessoa acompanha na partida (as notas), e não só o do som.
+  useEffect(() => {
+    if (state !== 'running') return;
+    let raf = 0;
+    const loop = () => {
+      raf = requestAnimationFrame(loop);
+      const kit = audioKit();
+      const el = flashEl.current;
+      if (!kit || !el) return;
+      const ts = kit.ctx.getOutputTimestamp?.();
+      const heard =
+        ts && ts.contextTime !== undefined && ts.performanceTime
+          ? ts.contextTime + (performance.now() - ts.performanceTime) / 1000
+          : kit.ctx.currentTime;
+      let near = Infinity;
+      for (const b of beats.current) near = Math.min(near, Math.abs(b - heard));
+      el.style.opacity = near < 0.07 ? '1' : '0.12';
+      el.style.transform = near < 0.07 ? 'scale(1)' : 'scale(0.7)';
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [state]);
 
   const begin = () => {
     const kit = audioKit();
@@ -76,13 +101,27 @@ function Calibration({ onClose }: { onClose: () => void }) {
     <div className="bt-cal" role="group" aria-label="Ajustar atraso do toque">
       <p className="mono">
         {state === 'idle' &&
-          'Ouça a batida e toque no botão junto com cada uma. Isso acerta o atraso do seu aparelho.'}
+          'Olhe a bolinha e ouça a batida: toque no botão junto com cada uma. Isso acerta o atraso do seu aparelho.'}
         {state === 'running' && 'Toque junto com a batida...'}
         {state === 'done' &&
           (result === null
             ? 'Poucos toques. Tente de novo.'
             : `Pronto: atraso de ${result} ms descontado.`)}
       </p>
+      {state === 'running' && (
+        <div
+          ref={flashEl}
+          aria-hidden="true"
+          style={{
+            width: 56,
+            height: 56,
+            margin: '8px auto',
+            borderRadius: '50%',
+            background: 'var(--ink)',
+            opacity: 0.12,
+          }}
+        />
+      )}
       <div className="bt-cal-row">
         {state === 'running' ? (
           <button type="button" className="btn alt" onPointerDown={(e) => tap(e.timeStamp)}>

@@ -183,11 +183,11 @@ export function BatidaPlay({ seed, song, onEnd, onQuit }: Props) {
     const learn = () => {
       if (learned) return;
       learned = true;
-      if (deltas.length < 12) return;
+      if (deltas.length < 8) return;
       const sorted = [...deltas].sort((a, b) => a - b);
       const median = sorted[Math.floor(sorted.length / 2)]!;
-      // Só 80% do desvio de uma vez, para um dia ruim não desregular tudo.
-      if (Math.abs(median) >= 8) setBatidaLatency(latency + Math.round(median * 0.8));
+      // 90% do desvio de uma vez, para um dia ruim não desregular tudo.
+      if (Math.abs(median) >= 5) setBatidaLatency(latency + Math.round(median * 0.9));
     };
 
     const showHud = () =>

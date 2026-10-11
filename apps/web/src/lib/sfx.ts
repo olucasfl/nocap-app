@@ -36,7 +36,7 @@ function audio(): AudioContext | null {
     // Som ambiente: não interrompe a música do aparelho (iOS).
     const session = (navigator as unknown as { audioSession?: { type: string } }).audioSession;
     if (session) session.type = 'ambient';
-    ctx = new AC();
+    ctx = new AC({ latencyHint: 'interactive' });
     master = ctx.createGain();
     master.gain.value = muted ? 0 : 0.9;
     master.connect(ctx.destination);
