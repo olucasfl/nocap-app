@@ -88,6 +88,31 @@ a.hub-card:active {
   background: var(--green);
   color: var(--on-accent);
 }
+.hub-card-sinal {
+  background: var(--eco-red);
+  color: var(--on-blue);
+}
+/* O semáforo do Sinal Vermelho: três lâmpadas, a vermelha acesa. */
+.hub-sinal {
+  display: grid;
+  gap: 6px;
+  width: 38px;
+  padding: 7px;
+  background: #1d1d2b;
+  border: 2.5px solid var(--ink);
+  border-radius: 12px;
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.hub-sinal-lamp {
+  width: 24px;
+  height: 24px;
+  background: #ff4b4b;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+}
+.hub-sinal-lamp.off {
+  background: #3a2a2a;
+}
 .hub-pads {
   width: 96px;
   display: grid;
@@ -233,8 +258,11 @@ a.hub-daily {
 .hub-card-eco {
   animation-delay: 0.46s;
 }
-.hub-more {
+.hub-card-sinal {
   animation-delay: 0.54s;
+}
+.hub-more {
+  animation-delay: 0.62s;
 }
 @keyframes hub-in {
   from {

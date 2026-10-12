@@ -1,0 +1,201 @@
+import { useState } from 'react';
+import { Link } from '@tanstack/react-router';
+import type { SinalInput, SinalMode, SinalResult } from '@nocap/games';
+import { BackButton } from '@/components/BackButton';
+import { MuteButton } from '@/components/MuteButton';
+import { NewRecord } from '@/components/NewRecord';
+import { ArrowRight } from '@/components/icons';
+import { SinalPlay } from './SinalPlay';
+import { getSinalBest, getSinalColor, setSinalBest, setSinalColor, SINAL_COLORS } from './storage';
+
+type Phase = 'menu' | 'play' | 'final';
+
+const MODES: { id: SinalMode; label: string; desc: string; lead: string }[] = [
+  {
+    id: 'classico',
+    label: 'Clássico',
+    desc: 'FASES · MAPAS · CHEFE',
+    lead: 'Quatro fases cada vez mais difíceis e, na quinta, o chefe do mapa. Passou, vem outro mapa. Quando fecha os três, volta ao primeiro e não para. O recorde é a distância total.',
+  },
+  {
+    id: 'infinito',
+    label: 'Infinito',
+    desc: 'NÃO ACABA · CADA VEZ PIOR',
+    lead: 'Um mapa só, sem linha de chegada. Os poderes são aleatórios e a escuridão não para de chegar. O recorde são os metros do ponto mais longe que você foi.',
+  },
+];
+
+const HOW = [
+  'O Vigia fica no topo da tela. De costas, você corre. Quando ele olha, fique parado: se mexer, acabou.',
+  'Antes de olhar ele dá um sinal (som e imagem) com ele ainda de costas. Às vezes é falso.',
+  'O anel no chão é um esconderijo: dentro dele você se mexe mesmo com o Vigia olhando. Mas ele quebra se você ficar demais.',
+  'A escuridão vem de trás. Ela nunca é mais rápida que você: só pega quem para demais.',
+];
+
+const seedOf = () => crypto.randomUUID().replace(/-/g, '').slice(0, 12);
+
+/** O Sinal Vermelho: menu (modo e cor do boneco), partida em tela cheia e fim. */
+export function SinalGame() {
+  const [phase, setPhase] = useState<Phase>('menu');
+  const [mode, setMode] = useState<SinalMode>('classico');
+  const [color, setColor] = useState(getSinalColor);
+  const [seed, setSeed] = useState(seedOf);
+  const [result, setResult] = useState<SinalResult | null>(null);
+  const [before, setBefore] = useState(0);
+  const [, setInputs] = useState<SinalInput[]>([]);
+
+  const begin = () => {
+    setBefore(getSinalBest(mode));
+    setSeed(seedOf());
+    setPhase('play');
+  };
+
+  if (phase === 'play') {
+    return (
+      <SinalPlay
+        key={seed}
+        mode={mode}
+        seed={seed}
+        color={color}
+        best={getSinalBest(mode)}
+        onEnd={(r, inp) => {
+          // O recorde guardado aqui é deste aparelho; o ranking de verdade vem do servidor.
+          setSinalBest(mode, r.meters);
+          setResult(r);
+          setInputs(inp);
+          setPhase('final');
+        }}
+        onQuit={() => setPhase('menu')}
+      />
+    );
+  }
+
+  return (
+    <div className="app">
+      <header className="top">
+        <Link to="/" className="logo" aria-label="Voltar aos jogos">
+          no cap<span>!</span>
+        </Link>
+        <div className="top-actions">
+          <MuteButton />
+        </div>
+      </header>
+
+      {phase === 'menu' && (
+        <section className="screen eco-intro">
+          <BackButton to="/" label="Voltar aos jogos" />
+          <div className="mono eco-label">SINAL VERMELHO</div>
+          <h1>Corra sem ser visto</h1>
+
+          <h2 className="sv-section">Modo</h2>
+          <ul className="sv-modes" role="radiogroup" aria-label="Modo">
+            {MODES.map((m) => (
+              <li key={m.id}>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={mode === m.id}
+                  className="sv-mode"
+                  data-sfx="select"
+                  onClick={() => setMode(m.id)}
+                >
+                  <span className="sv-mode-head">
+                    <b>{m.label}</b>
+                    <span className="mono sv-meta">{m.desc}</span>
+                  </span>
+                  <p>{m.lead}</p>
+                  <span className="mono sv-meta">
+                    SEU RECORDE: {getSinalBest(m.id) > 0 ? `${Math.floor(getSinalBest(m.id))} m` : '-'}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          <h2 className="sv-section">Seu boneco</h2>
+          <div className="sv-colors" role="radiogroup" aria-label="Cor do boneco">
+            {SINAL_COLORS.map((c) => (
+              <button
+                key={c.hex}
+                type="button"
+                role="radio"
+                aria-checked={color === c.hex}
+                aria-label={c.name}
+                title={c.name}
+                className="sv-color"
+                data-sfx="select"
+                style={{ background: c.hex }}
+                onClick={() => {
+                  setColor(c.hex);
+                  setSinalColor(c.hex);
+                }}
+              />
+            ))}
+          </div>
+
+          <h2 className="sv-section">Como jogar</h2>
+          <ol className="sv-howto">
+            {HOW.map((t, i) => (
+              <li key={i}>
+                <b>{i + 1}</b>
+                <span>{t}</span>
+              </li>
+            ))}
+          </ol>
+          <p className="mono sv-meta">
+            NO CELULAR, O ANALÓGICO FICA NO CANTO DIREITO. NO COMPUTADOR, W A S D OU AS SETAS.
+          </p>
+
+          <div className="stack">
+            <button type="button" className="btn" data-sfx="start" onClick={begin}>
+              Jogar <ArrowRight />
+            </button>
+          </div>
+        </section>
+      )}
+
+      {phase === 'final' && result && (
+        <section className="screen">
+          <div className="mono eco-label">SINAL VERMELHO · {mode === 'classico' ? 'CLÁSSICO' : 'INFINITO'}</div>
+          {Math.floor(result.meters) > Math.floor(before) && before > 0 && (
+            <NewRecord now={`${Math.floor(result.meters)} m`} before={`${Math.floor(before)} m`} />
+          )}
+          <div className="eco-total">
+            <div>
+              <div className="mono eco-label">{mode === 'classico' ? 'DISTÂNCIA TOTAL' : 'METROS'}</div>
+              <b>{Math.floor(result.meters)}</b>
+            </div>
+            <div className="eco-total-side">
+              <span className="eco-word">{result.ended === 'vigia' ? 'TE VIU' : 'ESCURIDÃO'}</span>
+              {mode === 'classico' && <span className="mono">{result.phases} FASES</span>}
+            </div>
+          </div>
+          <dl className="bt-stats mono">
+            <div>
+              <dt>SEU RECORDE</dt>
+              <dd>{Math.floor(Math.max(before, result.meters))} m</dd>
+            </div>
+            <div>
+              <dt>ANTES</dt>
+              <dd>{before > 0 ? `${Math.floor(before)} m` : '-'}</dd>
+            </div>
+          </dl>
+          <p className="mono sv-meta">
+            O RANKING ONLINE DO SINAL VERMELHO AINDA NÃO ESTÁ NO AR. O RECORDE FICA SÓ NESTE APARELHO.
+          </p>
+          <div className="stack">
+            <button type="button" className="btn alt" data-sfx="start" onClick={begin}>
+              Jogar de novo
+            </button>
+            <button type="button" className="btn ghost" data-sfx="back" onClick={() => setPhase('menu')}>
+              Trocar modo ou cor
+            </button>
+            <Link to="/" className="btn ghost">
+              Voltar aos jogos
+            </Link>
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}

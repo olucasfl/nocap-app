@@ -153,6 +153,12 @@ const ecoRoute = createRoute({
   component: lazyRouteComponent(() => import('@/games/eco/EcoPage'), 'EcoPage'),
 });
 
+const sinalRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/sinal',
+  component: lazyRouteComponent(() => import('@/games/sinal/SinalPage'), 'SinalPage'),
+});
+
 const timeRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/tempo',
@@ -173,6 +179,7 @@ const routeTree = rootRoute.addChildren([
   colorRoute,
   timeRoute,
   ecoRoute,
+  sinalRoute,
   nocapRoute,
   loginRoute,
   registerRoute,

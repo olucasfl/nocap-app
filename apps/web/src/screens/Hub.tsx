@@ -7,6 +7,7 @@ import { MuteButton } from '@/components/MuteButton';
 import { RoomBanner } from '@/components/RoomBanner';
 import { ThemeButton } from '@/components/ThemeButton';
 import { useAuth } from '@/lib/auth';
+import { getSinalBest } from '@/games/sinal/storage';
 import {
   bestTenths,
   dailyScoreText,
@@ -125,6 +126,23 @@ export function Hub() {
             <div className="hub-card-name">Ecooo</div>
             <div className="mono hub-card-meta">{bestLabel(data, 'eco')}</div>
             <div className="mono hub-card-meta">{dailyStatus(data, 'eco')}</div>
+          </div>
+        </Link>
+
+        <Link to="/sinal" className="hub-card hub-card-sinal" data-sfx="start">
+          <div className="hub-sinal" aria-hidden="true">
+            <i className="hub-sinal-lamp" />
+            <i className="hub-sinal-lamp off" />
+            <i className="hub-sinal-lamp off" />
+          </div>
+          <div className="hub-card-foot">
+            <div className="hub-card-name long">Sinal Vermelho</div>
+            <div className="mono hub-card-meta">CORRA SEM SER VISTO</div>
+            <div className="mono hub-card-meta">
+              {getSinalBest('infinito') > 0
+                ? `RECORDE ${Math.floor(getSinalBest('infinito'))} M`
+                : 'SEM RECORDE AINDA'}
+            </div>
           </div>
         </Link>
 
