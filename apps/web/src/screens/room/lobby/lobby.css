@@ -483,7 +483,28 @@
   gap: 8px;
   margin-top: 6px;
 }
+.lb-color-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.lb-color-cell small {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 9px;
+  color: var(--muted);
+}
+.lb-color-cell small.me {
+  color: var(--ink);
+  font-weight: 700;
+}
 .lb-color {
+  width: 100%;
+  font: 900 15px/1 var(--font-display);
   aspect-ratio: 1;
   min-height: 36px;
   border: 3px solid var(--ink);
@@ -497,6 +518,6 @@
   transform: translate(1px, 1px);
 }
 .lb-color.taken {
-  opacity: 0.3;
+  opacity: 0.45;
   cursor: not-allowed;
 }

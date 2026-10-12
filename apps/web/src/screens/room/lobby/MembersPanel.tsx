@@ -117,9 +117,16 @@ function Kick({ m }: { m: RoomMember }) {
   );
 }
 
+/** A cor é clara? (para escolher a cor da letra por cima dela) */
+function lightColor(hex: string): boolean {
+  const n = parseInt(hex.slice(1), 16);
+  const lum = 0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255);
+  return lum > 150;
+}
+
 /**
  * Sinal Vermelho: a cor do seu boneco. Cada cor é de uma pessoa só; as já escolhidas por outros
- * ficam apagadas, com o nome de quem as pegou.
+ * ficam apagadas, com a inicial e o @nome de quem as pegou embaixo.
  */
 function SinalColors({ snapshot, me }: { snapshot: RoomSnapshot; me: string | undefined }) {
   const colors = snapshot.sinal?.colors ?? {};
@@ -132,20 +139,25 @@ function SinalColors({ snapshot, me }: { snapshot: RoomSnapshot; me: string | un
         {SINAL_COLORS.map((c) => {
           const by = owner(c.hex);
           const mine = by === me;
+          const who = by ? (mine ? 'você' : `@${nameOf(by) ?? '?'}`) : '';
           return (
-            <button
-              key={c.hex}
-              type="button"
-              role="radio"
-              aria-checked={mine}
-              aria-label={`${c.name}${by && !mine ? ` (de @${nameOf(by)})` : ''}`}
-              title={by && !mine ? `Já é de @${nameOf(by)}` : c.name}
-              className={`lb-color${mine ? ' on' : ''}${by && !mine ? ' taken' : ''}`}
-              style={{ background: c.hex }}
-              disabled={!!by && !mine}
-              data-sfx="select"
-              onClick={() => sendRoom('color', { hex: c.hex })}
-            />
+            <div key={c.hex} className="lb-color-cell">
+              <button
+                type="button"
+                role="radio"
+                aria-checked={mine}
+                aria-label={`${c.name}${by ? ` (${mine ? 'sua' : `de ${who}`})` : ''}`}
+                title={by && !mine ? `Já é de ${who}` : c.name}
+                className={`lb-color${mine ? ' on' : ''}${by && !mine ? ' taken' : ''}`}
+                style={{ background: c.hex, color: lightColor(c.hex) ? '#111' : '#f4f4ef' }}
+                disabled={!!by && !mine}
+                data-sfx="select"
+                onClick={() => sendRoom('color', { hex: c.hex })}
+              >
+                {by ? (nameOf(by) ?? '?').slice(0, 1).toUpperCase() : ''}
+              </button>
+              <small className={`mono${mine ? ' me' : ''}`}>{who || c.name}</small>
+            </div>
           );
         })}
       </div>
