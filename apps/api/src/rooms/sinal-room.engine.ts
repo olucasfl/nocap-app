@@ -40,7 +40,25 @@ interface Racer {
   events: LoggedEvent[];
   /** Quando empurrou pela última vez (relógio da sala, ms). */
   pushedAt: number;
+  /** Quem o empurrou por último e quando (para creditar a queda no placar de mortes). */
+  pushedBy: { by: string; at: number } | null;
 }
+
+/** Uma linha do placar de mortes: quem caiu, por quê e (se foi empurrado há pouco) por quem. */
+export interface FeedEntry {
+  n: number;
+  /** Relógio da sala (ms) de quando caiu. */
+  at: number;
+  id: string;
+  reason: 'vigia' | 'escuridao';
+  by: string | null;
+  meters: number;
+}
+
+/** A queda vale como "empurrado por" se o empurrão foi até 2,5 s antes. */
+const PUSH_CREDIT_MS = 2500;
+const FEED_KEEP = 20;
+const FEED_SHOW = 6;
 
 /**
  * O Sinal Vermelho em sala (spec 020): todo mundo corre no MESMO mapa ao mesmo tempo, com o mesmo
@@ -67,6 +85,10 @@ export class SinalRoomEngine extends ColorRoomEngine {
   private finishAt: number | null = null;
   /** A frente da escuridão, uma só para a sala toda (m). */
   private dark = 0;
+  /** O placar de mortes da corrida. */
+  private feed: FeedEntry[] = [];
+  private feedSeq = 0;
+  private announced = new Set<string>();
 
   constructor(opts: EngineOptions) {
     super(opts);
@@ -133,9 +155,11 @@ export class SinalRoomEngine extends ColorRoomEngine {
       // a escuridão é uma só: quem manda nela é a sala (veja `stepAll`)
       sim.externalDark = true;
       this.dark = sim.darkFront;
-      this.racers.set(id, { sim, input: [0, 0], seq: 0, events: [], pushedAt: -Infinity });
+      this.racers.set(id, { sim, input: [0, 0], seq: 0, events: [], pushedAt: -Infinity, pushedBy: null });
     });
     this.finishAt = null;
+    this.feed = [];
+    this.announced.clear();
     this.acc = 0;
     this.sinceSend = 0;
     this.phase = 'show';
@@ -190,6 +214,7 @@ export class SinalRoomEngine extends ColorRoomEngine {
       dy = 0;
     }
     other.sim.shove(dx, dy, PUSH_POWER);
+    other.pushedBy = { by: id, at: this.now() };
     me.pushedAt = this.now();
     this.log(me, { kind: 'empurrou' });
     this.log(other, { kind: 'choque', size: 0.85 });
@@ -248,6 +273,7 @@ export class SinalRoomEngine extends ColorRoomEngine {
       const live = this.members.get(id)?.connected;
       const [ax, ay] = live ? r.input : [0, 0];
       for (const e of r.sim.step(ax, ay)) this.log(r, e);
+      if (r.sim.dead && !this.announced.has(id)) this.announceDeath(id, r);
     }
     // A névoa é UMA só, igual para todos. Anda no ritmo de quem está na frente (se ele para, ela acelera
     // para todos), nunca mais rápida que o boneco; quem fica para trás é pego primeiro.
@@ -256,6 +282,24 @@ export class SinalRoomEngine extends ColorRoomEngine {
     }
     if (lead) this.dark += darkSpeed(lead.sim.course, lead.sim.time, lead.sim.idleLevel) / 60;
     this.separate();
+  }
+
+  /** Quem acabou de cair entra no placar de mortes (com o crédito, se foi empurrado há pouco). */
+  private announceDeath(id: string, r: Racer) {
+    this.announced.add(id);
+    const reason = r.sim.result.ended;
+    if (reason !== 'vigia' && reason !== 'escuridao') return;
+    const credit = r.pushedBy && this.now() - r.pushedBy.at < PUSH_CREDIT_MS ? r.pushedBy.by : null;
+    this.feedSeq += 1;
+    this.feed.push({
+      n: this.feedSeq,
+      at: this.now(),
+      id,
+      reason,
+      by: credit,
+      meters: Math.floor(r.sim.result.meters),
+    });
+    if (this.feed.length > FEED_KEEP) this.feed.shift();
   }
 
   /** Os bonecos vivos não se sobrepõem (escondidos, sim: o esconderijo cabe mais de um). */
@@ -311,6 +355,8 @@ export class SinalRoomEngine extends ColorRoomEngine {
     this.racers.clear();
     this.watching.clear();
     this.finishAt = null;
+    this.feed = [];
+    this.announced.clear();
   }
 
   // ---- resultado ----
@@ -382,6 +428,8 @@ export class SinalRoomEngine extends ColorRoomEngine {
         events: racer ? racer.events : [],
         endsAt: this.phaseEndsAt,
         finishing: this.finishAt !== null,
+        /** O placar de mortes: as últimas quedas, da mais velha para a mais nova. */
+        feed: this.feed.slice(-FEED_SHOW),
         /** Como estou: caí? e por quê (para a animação de perder, que é só de quem perde). */
         mine: me ? { dead: me.sim.dead, reason: me.sim.result.ended } : null,
         /** O botão de empurrar: quem está ao alcance, e quando volta a poder usar. */

@@ -233,6 +233,10 @@ O Lucas achou o jogo linear e fácil. O que mudou:
 - **Empurrar tem animação.** Quem empurra vê ondas de choque amarelas e brancas e a palma da mão saindo na direção do outro, com um "PÁ!". Quem é empurrado já tinha o boneco esticado, a estrelinha de choque e o tranco na tela.
 - **Setas para quem saiu da tela.** Na sala, cada corredor fora da visão vira uma seta colorida na borda da tela (fora do painel e do analógico), apontando para ele, com a etiqueta `@nome +12 m` (à frente) ou `-8 m` (atrás).
 
+## Placar de mortes na sala (12/10/2026)
+- **Placar da corrida (canto de cima):** mostra só os 3 primeiros (1º, 2º, 3º) com os metros; se você está do 4º para trás, a sua linha aparece logo depois, separada, com a sua posição (por exemplo 7º).
+- **Quem caiu aparece na tela de todos**, embaixo à esquerda, por uns 7 s: `@ana foi visto pelo Vigia · 120 m` ou `@beto foi engolido pela escuridão · 86 m`. Se a queda veio até 2,5 s depois de um empurrão, o crédito vai para quem empurrou: `@beto foi empurrado por @ana e o Vigia viu · 86 m`. A linha de quem é você fica vermelha.
+
 ## Controles
 - **Celular:** o analógico (círculo e bolinha) fica **fixo embaixo, no centro da tela**, sempre visível, com uma área de toque generosa em volta. A bolinha acompanha o dedo e volta ao centro ao soltar.
 - **A câmera nunca deixa o analógico tapar o boneco.** A tela reserva uma **zona do analógico** (embaixo, no centro, com folga em volta) e a câmera mantém o boneco sempre **fora dela**: o boneco fica um pouco acima do meio da tela (cerca de 52% da altura, para ficar longe do Vigia) e a câmera também acompanha de lado quando ele vai para a direita. É uma regra do código da câmera (função pura, com teste: para qualquer posição do boneco no corredor, em retrato e em paisagem, ele nunca fica dentro da zona do analógico). Vale também para o Vigia, os esconderijos e o aviso, que ficam fora dessa zona ou são desenhados sem depender dela.

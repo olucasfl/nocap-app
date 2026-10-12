@@ -281,6 +281,9 @@ describe('SinalRoomEngine: o botão de empurrar', () => {
     expect(beto.dead).toBe(true);
     expect(beto.result.ended).toBe('vigia');
     expect(ana.dead).toBe(false);
+    // e entra no placar de mortes, com o crédito de quem empurrou
+    const feed = (engine.snapshot('ana') as unknown as { sinal: { feed: { id: string; reason: string; by: string | null }[] } }).sinal.feed;
+    expect(feed.at(-1)).toMatchObject({ id: 'beto', reason: 'vigia', by: 'ana' });
   });
 });
 
@@ -322,5 +325,38 @@ describe('SinalRoomEngine: a névoa é uma só', () => {
     advance(10_000);
     const dark = (engine as unknown as { dark: number }).dark;
     expect(dark / 10).toBeLessThan(4.2); // m/s médios
+  });
+});
+
+describe('SinalRoomEngine: o placar de mortes', () => {
+  const feedOf = (e: SinalRoomEngine) =>
+    (e.snapshot('ana') as unknown as { sinal: { feed: { n: number; id: string; reason: string; by: string | null; meters: number }[] } }).sinal.feed;
+
+  it('quem cai aparece uma vez só, com a causa e os metros', () => {
+    const { engine, advance } = race();
+    engine.move('ana', 0, 100);
+    let guard = 0;
+    while (!racersOf(engine).get('ana')!.sim.dead && guard++ < 60 * 40) advance(100);
+    advance(500);
+    const feed = feedOf(engine);
+    const mine = feed.filter((f) => f.id === 'ana');
+    expect(mine).toHaveLength(1);
+    expect(mine[0]!.reason).toBe('vigia');
+    expect(mine[0]!.by).toBeNull();
+    expect(mine[0]!.meters).toBeGreaterThan(0);
+  });
+
+  it('a queda pela escuridão aparece como tal, e uma nova partida zera o placar', () => {
+    const { engine, advance } = setup();
+    engine.setReady('beto', true);
+    engine.start('ana');
+    advance(SINAL_COUNTDOWN_MS + 20);
+    // sem se mexer, a névoa pega os dois (e ela anda no ritmo de quem está na frente)
+    let guard = 0;
+    while (engine.currentPhase === 'play' && guard++ < 60 * 120) advance(100);
+    const feed = feedOf(engine);
+    expect(feed.length).toBeGreaterThan(0);
+    expect(feed.every((f) => f.reason === 'escuridao' || f.reason === 'vigia')).toBe(true);
+    expect(new Set(feed.map((f) => f.id)).size).toBe(feed.length);
   });
 });

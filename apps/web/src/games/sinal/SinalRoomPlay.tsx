@@ -12,6 +12,8 @@ import './sinal.css';
 
 /** Para onde o desenho de quem corre "anda" até o ponto novo (15 quadros por segundo vindos do servidor). */
 const EASE = 18;
+/** Quanto tempo cada queda fica no placar de mortes. */
+const FEED_MS = 7000;
 
 const ease = (cur: number, target: number, dt: number) =>
   Math.abs(target - cur) > 6 ? target : cur + (target - cur) * Math.min(1, dt * EASE);
@@ -260,7 +262,11 @@ export function SinalRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
 
   const amDead = !!sinal?.players?.find((p) => p.id === me && p.dead);
   const alivePlayers = (sinal?.players ?? []).filter((p) => !p.dead);
-  const board = [...(sinal?.players ?? [])].sort((a, b) => b.meters - a.meters);
+  // Placar: os 3 primeiros e, se você está do 4º para trás, a sua posição logo depois (ex.: 1º, 2º, 3º ... 7º)
+  const ranked = [...(sinal?.players ?? [])].sort((a, b) => b.meters - a.meters);
+  const myIdx = ranked.findIndex((p) => p.id === me);
+  const board = ranked.slice(0, 3).map((p, i) => ({ p, rank: i + 1, gap: false }));
+  if (myIdx >= 3) board.push({ p: ranked[myIdx]!, rank: myIdx + 1, gap: myIdx > 3 });
   const countdown =
     snapshot.phase === 'show' && sinal?.endsAt
       ? Math.max(0, Math.ceil((toLocal(sinal.endsAt) - now) / 1000))
@@ -280,14 +286,38 @@ export function SinalRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
       <canvas ref={canvas} className="sv-canvas" />
 
       <ol className="svr-board mono" aria-label="Quem está na frente">
-        {board.slice(0, 6).map((p) => (
-          <li key={p.id} className={`${p.dead ? 'dead' : ''}${p.id === me ? ' me' : ''}`}>
+        {board.map(({ p, rank, gap }) => (
+          <li key={p.id} className={`${p.dead ? 'dead' : ''}${p.id === me ? ' me' : ''}${gap ? ' gap' : ''}`}>
+            <em>{rank}º</em>
             <i style={{ background: sinal?.colors[p.id] }} />
             <span>@{names[p.id]}</span>
             <b>{p.meters} m</b>
           </li>
         ))}
       </ol>
+
+      <ul className="svr-feed mono" aria-label="Quem caiu" aria-live="polite">
+        {(sinal?.feed ?? [])
+          .filter((f) => now - toLocal(f.at) < FEED_MS)
+          .map((f) => (
+            <li key={f.n} className={f.id === me ? 'me' : ''}>
+              <i style={{ background: sinal?.colors[f.id] }} />
+              <span>
+                <b>@{names[f.id] ?? '?'}</b>{' '}
+                {f.by ? `foi empurrado por @${names[f.by] ?? '?'} e ` : ''}
+                {f.reason === 'vigia'
+                  ? f.by
+                    ? 'o Vigia viu'
+                    : 'foi visto pelo Vigia'
+                  : f.by
+                    ? 'a escuridão pegou'
+                    : 'foi engolido pela escuridão'}
+                {' · '}
+                {f.meters} m
+              </span>
+            </li>
+          ))}
+      </ul>
 
       <button
         type="button"

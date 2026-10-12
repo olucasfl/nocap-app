@@ -570,3 +570,69 @@
     animation: none;
   }
 }
+
+/* O placar de mortes: embaixo à esquerda, as quedas mais novas por último */
+.svr-feed {
+  position: absolute;
+  left: 10px;
+  bottom: 14px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: min(58vw, 340px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  pointer-events: none;
+}
+.svr-feed li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 9px;
+  background: rgba(17, 17, 17, 0.88);
+  color: #f4f4ef;
+  border: 2px solid #f4f4ef;
+  border-radius: 10px;
+  font-size: 10.5px;
+  line-height: 1.25;
+  animation: svr-feed-in 0.22s ease-out;
+}
+.svr-feed li.me {
+  background: #e5303a;
+}
+.svr-feed i {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border: 2px solid #f4f4ef;
+  border-radius: 50%;
+}
+@keyframes svr-feed-in {
+  from {
+    transform: translateX(-14px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .svr-feed li {
+    animation: none;
+  }
+}
+
+/* Placar da corrida: posição de cada um; a sua aparece logo depois dos 3 primeiros quando você está atrás */
+.svr-board em {
+  min-width: 20px;
+  font-style: normal;
+  font-weight: 700;
+}
+.svr-board li.gap {
+  margin-top: 3px;
+  padding-top: 5px;
+  border-top: 2px dotted #111;
+}

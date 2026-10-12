@@ -124,6 +124,8 @@ export interface SinalRoomState {
   endsAt?: number | null;
   finishing?: boolean;
   mine?: { dead: boolean; reason: 'vigia' | 'escuridao' | null } | null;
+  /** O placar de mortes: as últimas quedas (da mais velha para a mais nova). */
+  feed?: { n: number; at: number; id: string; reason: 'vigia' | 'escuridao'; by: string | null; meters: number }[];
   /** Quem está ao alcance do empurrão (null = ninguém) e quando o botão volta (relógio do servidor). */
   push?: { target: string | null; readyAt: number; range: number } | null;
 }
