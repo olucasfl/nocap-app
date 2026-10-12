@@ -744,13 +744,12 @@ describe('os obstáculos: tamanhos, jeitos e o que fazem', () => {
 
   it('vão aparecendo tipos novos fase a fase', () => {
     const kinds = (n: number) => new Set(SEEDS.flatMap((s) => field(n, s).map((o) => o.kind)));
-    expect(kinds(1)).toEqual(new Set(['pequeno', 'medio']));
+    // já na fase 1 há objetos interativos (lama, esteira, mola)
+    expect(kinds(1)).toEqual(new Set(['pequeno', 'medio', 'lamacal', 'mola', 'esteira']));
     expect(kinds(2).has('grande')).toBe(true);
-    expect(kinds(3).has('deslizante')).toBe(true);
-    expect(kinds(4).has('esteira')).toBe(true);
-    expect(kinds(4).has('mola')).toBe(true);
-    expect(kinds(5).has('vaivem')).toBe(true);
-    expect(kinds(6).has('ima')).toBe(true);
+    expect(kinds(2).has('deslizante')).toBe(true);
+    expect(kinds(3).has('vaivem')).toBe(true);
+    expect(kinds(4).has('ima')).toBe(true);
     expect(kinds(10).size).toBe(9);
   });
 

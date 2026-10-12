@@ -206,13 +206,13 @@ export const isSolid = (k: ObstacleKind) => SOLID_KINDS.includes(k);
 const OBSTACLE_UNLOCK: { kind: ObstacleKind; level: number; weight: number }[] = [
   { kind: 'pequeno', level: 1, weight: 4 },
   { kind: 'medio', level: 1, weight: 4 },
+  { kind: 'lamacal', level: 1, weight: 2 },
+  { kind: 'mola', level: 1, weight: 1.4 },
+  { kind: 'esteira', level: 1, weight: 1.4 },
   { kind: 'grande', level: 2, weight: 2.5 },
-  { kind: 'lamacal', level: 2, weight: 2 },
-  { kind: 'deslizante', level: 3, weight: 2.5 },
-  { kind: 'esteira', level: 4, weight: 2 },
-  { kind: 'mola', level: 4, weight: 1.6 },
-  { kind: 'vaivem', level: 5, weight: 2.2 },
-  { kind: 'ima', level: 6, weight: 1.6 },
+  { kind: 'deslizante', level: 2, weight: 2.5 },
+  { kind: 'vaivem', level: 3, weight: 2.2 },
+  { kind: 'ima', level: 4, weight: 1.6 },
 ];
 
 export interface ObstacleDef {

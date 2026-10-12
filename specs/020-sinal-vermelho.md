@@ -171,9 +171,10 @@ O Lucas achou o jogo linear e fácil. O que mudou:
 - **Poderes liberados por fase** (além dos três do mapa): fase 3 rajada e cortina; fase 5 lama e invertido; fase 7 apagão e chuva. A partir da fase 6 podem vir **dois poderes seguidos**.
 - **Emboscada:** de vez em quando (20% a 45% dos ciclos com poder, mais nas fases altas) o Vigia vira **logo depois do poder**: o efeito acaba só 0,15 s antes do aviso. O aviso ainda toca (no mínimo 0,3 s), então dá para parar, mas a folga é curta.
 - **Obstáculos (nove tipos, liberados por fase):**
-  - sólidos, que se contorna: pequeno e médio (fase 1), grande (2), deslizante, que vai de um lado a outro (3), vaivém, que vem e vai (5);
-  - mola (4): joga o boneco para trás por 0,3 s;
-  - de chão, que agem em quem passa: lamaçal (2, anda a 45%), esteira (4, empurra de lado a 2 m/s), ímã (6, puxa para o centro a 1,6 m/s).
+  - sólidos, que se contorna: pequeno e médio (fase 1), grande e deslizante, que vai de um lado a outro (2), vaivém, que vem e vai (3);
+  - mola (1): joga o boneco para trás por 0,3 s;
+  - de chão, que agem em quem passa: lamaçal (1, anda a 45%), esteira (1, empurra de lado a 2 m/s), ímã (4, puxa para o centro a 1,6 m/s).
+  Já na fase 1 há objetos interativos (lama, esteira, mola).
   Cada mapa tem a sua arte para cada tipo (carrinho de mão e cogumelo na horta; carro, drone e trampolim na rua; pilar, escorpião e flor no deserto). Os grupos sempre deixam um vão por onde passar.
 - **Regra de equidade:** ser empurrado (esteira, ímã, mola ou obstáculo que se mexe) **com o dedo parado não faz o Vigia te ver**. Só conta como "mexer" o que a pessoa faz.
 - **Escuridão:** volta a engolir o mapa de longe (a borda sobe pela tela a partir de uns 40 m); perto, a posição na tela é a distância real.
