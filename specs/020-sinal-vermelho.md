@@ -228,6 +228,11 @@ O Lucas achou o jogo linear e fácil. O que mudou:
 - **Cada moita comprida tem o seu desenho**, três por mapa: horta (sebe de bagas, túnel de arbusto, milharal), rua (túnel de cano, fila de containers, toldo listrado) e deserto (túnel de pedras, cactos floridos, muro de ruína). O jeito de cada uma é sorteado pelo número dela, e o comprimento varia de verdade, de 5 a 14 m.
 - **O cartão "PARE! / VIROU!" saiu.** O vermelho da tela continua (cresce no aviso e fica forte quando ele vira), e o lugar do cartão agora é do **aviso dos efeitos** (nome e o que o poder faz).
 
+## Animações de perder e de empurrar, e setas dos outros (12/10/2026)
+- **Perder tem animação por causa.** Visto pelo Vigia: a tela vira vermelha, um holofote escuro fecha no boneco, que treme de susto e leva um "!" amarelo. Engolido pela escuridão: um buraco preto fecha em volta (com borda rasgada girando) e o boneco encolhe, gira e some. Dura 1,3 s, no solo e na sala (na sala, só para quem perdeu).
+- **Empurrar tem animação.** Quem empurra vê ondas de choque amarelas e brancas e a palma da mão saindo na direção do outro, com um "PÁ!". Quem é empurrado já tinha o boneco esticado, a estrelinha de choque e o tranco na tela.
+- **Setas para quem saiu da tela.** Na sala, cada corredor fora da visão vira uma seta colorida na borda da tela (fora do painel e do analógico), apontando para ele, com a etiqueta `@nome +12 m` (à frente) ou `-8 m` (atrás).
+
 ## Controles
 - **Celular:** o analógico (círculo e bolinha) fica **fixo embaixo, no centro da tela**, sempre visível, com uma área de toque generosa em volta. A bolinha acompanha o dedo e volta ao centro ao soltar.
 - **A câmera nunca deixa o analógico tapar o boneco.** A tela reserva uma **zona do analógico** (embaixo, no centro, com folga em volta) e a câmera mantém o boneco sempre **fora dela**: o boneco fica um pouco acima do meio da tela (cerca de 52% da altura, para ficar longe do Vigia) e a câmera também acompanha de lado quando ele vai para a direita. É uma regra do código da câmera (função pura, com teste: para qualquer posição do boneco no corredor, em retrato e em paisagem, ele nunca fica dentro da zona do analógico). Vale também para o Vigia, os esconderijos e o aviso, que ficam fora dessa zona ou são desenhados sem depender dela.

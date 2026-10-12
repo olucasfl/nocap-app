@@ -1,4 +1,4 @@
-import { HALF, PLAYER_R, type PowerKind, type SinalView } from '@nocap/games';
+import { HALF, PLAYER_R, type PowerKind, type SinalEnd, type SinalView } from '@nocap/games';
 import { V, joyCenter, screenX, type Layout } from './camera';
 import {
   INK,
@@ -95,6 +95,10 @@ export interface SceneInput {
   others?: { id: string; x: number; y: number; hidden: boolean; stunned?: boolean; color: string; name: string }[];
   /** Sala: quem está ao alcance do empurrão (ganha um anel pulsando). */
   pushTarget?: string | null;
+  /** A animação de quando o boneco perde (idade de 0 a 1): o Vigia viu, ou a escuridão engoliu. */
+  death?: { reason: SinalEnd; age: number } | null;
+  /** Sala: a animação do empurrão que você deu (idade de 0 a 1) e a direção dele na tela. */
+  pushFx?: { age: number; dx: number; dy: number } | null;
 }
 
 /** Desenha um quadro inteiro do Sinal Vermelho. */
@@ -205,11 +209,16 @@ export function drawScene(c: Ctx, s: SceneInput) {
     cover(c, map, 0, 0, false, s.t, cv.dur / cv.def.max, cv.def.fragile);
     c.restore();
   }
-  // os outros corredores da sala: escondidos aparecem fracos, e quem dá para empurrar ganha um anel
+  // os outros corredores da sala: escondidos aparecem fracos, e quem dá para empurrar ganha um anel.
+  // Quem está fora da tela vira uma seta na borda (desenhada depois, em pixels da tela).
+  const offscreen: { sx: number; sy: number; color: string; name: string; ahead: number }[] = [];
   for (const o of s.others ?? []) {
     const ox = vcx + o.x * V;
     const oy = vy(o.y);
-    if (oy < -60 || oy > vh + 60) continue;
+    if (oy < -60 || oy > vh + 60 || ox < -60 || ox > vw + 60) {
+      offscreen.push({ sx: ox * sc, sy: oy * sc, color: o.color, name: o.name, ahead: o.y - view.y });
+      continue;
+    }
     c.save();
     c.translate(ox, oy);
     c.scale(1.25, 1.25);
@@ -242,8 +251,16 @@ export function drawScene(c: Ctx, s: SceneInput) {
   const hx = vcx + view.x * V;
   if (!view.hidden) {
     c.save();
-    c.translate(hx, vpy);
+    const dth = s.death;
+    // perdeu para o Vigia: o boneco treme de susto; para a escuridão: encolhe, gira e some
+    c.translate(hx + (dth?.reason === 'vigia' ? Math.sin(s.t * 70) * 3.5 * (1 - dth.age) : 0), vpy);
     c.scale(1.25, 1.25);
+    if (dth?.reason === 'escuridao') {
+      const k = 1 - 0.55 * dth.age;
+      c.scale(k, k);
+      c.rotate(dth.age * 3.2);
+      c.globalAlpha = 1 - 0.85 * dth.age;
+    }
     if (view.knock > 0) {
       // levou uma pancada: estica na direção do empurrão
       const ang = Math.atan2(-view.knockDir.y, view.knockDir.x);
@@ -362,10 +379,13 @@ export function drawScene(c: Ctx, s: SceneInput) {
     if (p.kind === 'corvos') crows(c, w, h, s.t, -0.4, 0.5);
   }
 
+  if (s.death) deathFx(c, w, h, heroX, l.heroY, s.death, s.t);
   vignette(c, w, h, s.warn, s.t);
   if (view.vigia === 'olhando') lookFrame(c, w, h, s.t);
   stopAlert(c, w, h, s.t, view.vigia === 'olhando' ? 'look' : s.warn > 0.12 ? 'warn' : null, s.warn);
 
+  offscreenArrows(c, w, h, l, heroX, offscreen, s.t);
+  if (s.pushFx) pushBurst(c, heroX, l.heroY, s.pushFx);
   hud(c, s);
   powerBanner(c, w, avisos[0]?.kind ?? effects[0]?.kind ?? null, avisos.length > 0, s.t, Math.max(l.heroY - 140, 124));
   if (s.joy.show) stick(c, l, s.joy, s.inverted);
@@ -728,6 +748,146 @@ function mirrorHint(c: Ctx, w: number, h: number, t: number, k: number) {
   c.moveTo(w / 2, 0);
   c.lineTo(w / 2, h);
   c.stroke();
+  c.restore();
+}
+
+/** Preto ou claro por cima da cor do jogador (para o texto ficar legível). */
+const inkOn = (hex: string) => (['#3a3a36', '#7a3cff', '#2f5bff', '#8b5a2b', '#e5303a'].includes(hex) ? PAPER : INK);
+
+/**
+ * Setas nas bordas da tela apontando para os outros corredores que saíram da visão: a cor e o nome de
+ * cada um e quantos metros ele está à frente (+) ou atrás (-) de você.
+ */
+function offscreenArrows(
+  c: Ctx,
+  w: number,
+  h: number,
+  l: Layout,
+  hx: number,
+  list: { sx: number; sy: number; color: string; name: string; ahead: number }[],
+  t: number,
+) {
+  if (list.length === 0) return;
+  const top = 128;
+  const bottom = l.zone ? l.zone.y - 8 : h - 34;
+  const left = 30;
+  const right = w - 30;
+  const cx = hx;
+  const cy = l.heroY;
+  for (const o of list) {
+    let dx = o.sx - cx;
+    let dy = o.sy - cy;
+    const len = Math.hypot(dx, dy) || 1;
+    dx /= len;
+    dy /= len;
+    const tx = dx > 0 ? (right - cx) / dx : dx < 0 ? (left - cx) / dx : Infinity;
+    const ty = dy > 0 ? (bottom - cy) / dy : dy < 0 ? (top - cy) / dy : Infinity;
+    const tt = Math.min(tx, ty);
+    const px = cx + dx * tt;
+    const py = cy + dy * tt;
+    const pulse = 1 + 0.12 * Math.sin(t * 8);
+    c.save();
+    c.translate(px, py);
+    c.rotate(Math.atan2(dy, dx));
+    c.scale(pulse, pulse);
+    blob(c, poly([[18, 0], [-10, -13], [-3, 0], [-10, 13]]), o.color, 3, 2);
+    c.restore();
+    const m = Math.round(o.ahead);
+    const label = `@${o.name.slice(0, 9)} ${m >= 0 ? '+' : ''}${m} m`;
+    c.save();
+    c.font = "700 10px 'Space Mono', ui-monospace, monospace";
+    const lw = c.measureText(label).width + 14;
+    c.restore();
+    // a etiqueta fica um pouco para dentro da tela, junto da seta
+    const lx = clamp(px - dx * 40, lw / 2 + 6, w - lw / 2 - 6);
+    const ly = clamp(py - dy * 40, top + 6, bottom - 6);
+    blob(c, rect(lx - lw / 2, ly - 10, lw, 20, 10), o.color, 2, 2);
+    mono(c, label, lx, ly + 4, 10, inkOn(o.color), 'center');
+  }
+}
+
+/** O empurrão que você deu: ondas de choque e a palma da mão na direção do outro, com um "PÁ!". */
+function pushBurst(c: Ctx, hx: number, hy: number, fx: { age: number; dx: number; dy: number }) {
+  const a = fx.age;
+  if (a >= 1) return;
+  const ang = Math.atan2(fx.dy, fx.dx);
+  c.save();
+  c.translate(hx, hy);
+  for (let k = 0; k < 3; k++) {
+    c.globalAlpha = (1 - a) * (1 - k * 0.25);
+    c.lineWidth = 8 - k * 2;
+    c.strokeStyle = k % 2 ? '#ffffff' : YEL;
+    c.lineCap = 'round';
+    c.beginPath();
+    c.arc(0, 0, 28 + a * 76 + k * 17, ang - 0.8, ang + 0.8);
+    c.stroke();
+  }
+  c.globalAlpha = 1 - a * 0.6;
+  c.rotate(ang);
+  const px = 38 + a * 24;
+  blob(c, circle(px, 0, 14), YEL, 3, 0);
+  for (let i = -1; i <= 1; i++) blob(c, rect(px + 8, i * 7 - 3, 12, 6, 3), YEL, 2.2, 0);
+  c.restore();
+  const tx = hx + fx.dx * (86 + a * 40);
+  const ty = hy + fx.dy * (86 + a * 40);
+  c.save();
+  c.globalAlpha = 1 - a * 0.7;
+  disp(c, 'PÁ!', tx + 2, ty + 2, 26 + 12 * (1 - a), INK, 'center');
+  disp(c, 'PÁ!', tx, ty, 26 + 12 * (1 - a), YEL, 'center');
+  c.restore();
+}
+
+/**
+ * A animação de perder, por causa: o Vigia viu (tela vermelha, holofote que fecha no boneco, susto e
+ * "!") ou a escuridão engoliu (um olho preto que fecha, com bordas rasgadas, e o boneco some).
+ */
+function deathFx(c: Ctx, w: number, h: number, hx: number, hy: number, d: { reason: SinalEnd; age: number }, t: number) {
+  const a = clamp(d.age, 0, 1);
+  const e = a * a * (3 - 2 * a);
+  const big = Math.max(w, h) * 0.8;
+  c.save();
+  if (d.reason === 'vigia') {
+    c.fillStyle = `rgba(229,48,58,${0.55 * (1 - a)})`;
+    c.fillRect(0, 0, w, h);
+    const R = big + (70 - big) * e;
+    const g = c.createRadialGradient(hx, hy, R * 0.5, hx, hy, R);
+    g.addColorStop(0, 'rgba(0,0,0,0)');
+    g.addColorStop(1, `rgba(0,0,0,${0.82 * Math.min(1, a * 3)})`);
+    c.fillStyle = g;
+    c.fillRect(0, 0, w, h);
+    c.globalAlpha = 1 - a;
+    c.lineWidth = 5;
+    c.strokeStyle = YEL;
+    c.beginPath();
+    c.arc(hx, hy, 30 + a * 90, 0, 7);
+    c.stroke();
+    c.globalAlpha = 1;
+    const pop = Math.min(1, a * 4);
+    disp(c, '!', hx + 2, hy - 48 - 8 * Math.sin(t * 20) + 2, 58 * pop, INK, 'center');
+    disp(c, '!', hx, hy - 48 - 8 * Math.sin(t * 20), 58 * pop, YEL, 'center');
+  } else {
+    const R = Math.max(1, big * (1 - e));
+    c.fillStyle = '#000000';
+    c.beginPath();
+    c.rect(0, 0, w, h);
+    c.arc(hx, hy, R, 0, Math.PI * 2, true);
+    c.fill('evenodd');
+    // a borda rasgada do buraco, girando
+    c.setLineDash([26, 16]);
+    c.lineDashOffset = -t * 60;
+    c.lineWidth = 28;
+    c.strokeStyle = '#000000';
+    c.beginPath();
+    c.arc(hx, hy, R + 6, 0, Math.PI * 2);
+    c.stroke();
+    c.setLineDash([]);
+    c.globalAlpha = 0.7 * (1 - a);
+    c.lineWidth = 4;
+    c.strokeStyle = '#ff9ecf';
+    c.beginPath();
+    c.arc(hx, hy, R + 22, 0, Math.PI * 2);
+    c.stroke();
+  }
   c.restore();
 }
 

@@ -382,6 +382,8 @@ export class SinalRoomEngine extends ColorRoomEngine {
         events: racer ? racer.events : [],
         endsAt: this.phaseEndsAt,
         finishing: this.finishAt !== null,
+        /** Como estou: caí? e por quê (para a animação de perder, que é só de quem perde). */
+        mine: me ? { dead: me.sim.dead, reason: me.sim.result.ended } : null,
         /** O botão de empurrar: quem está ao alcance, e quando volta a poder usar. */
         push: me
           ? { target: near, readyAt: me.pushedAt + PUSH_COOLDOWN_MS, range: PUSH_RANGE }

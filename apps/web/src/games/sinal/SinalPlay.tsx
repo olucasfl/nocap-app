@@ -90,6 +90,8 @@ export function SinalPlay({ mode, seed, color, best, onEnd, onQuit }: Props) {
     let prevY = sim.y;
     let prevHidden = false;
     let jolt = 0;
+    let deathAt = 0;
+    let deathReason: SinalEnd | null = null;
     const notices: (Notice & { until: number })[] = [];
     const notice = (text: string, col: string, ms = 1800) =>
       notices.push({ text, color: col, until: performance.now() + ms });
@@ -123,6 +125,8 @@ export function SinalPlay({ mode, seed, color, best, onEnd, onQuit }: Props) {
           buzz(40);
         } else if (e.kind === 'fim') {
           finished = true;
+          deathAt = performance.now();
+          deathReason = e.reason;
           buzz(120);
           setOver({ reason: e.reason, meters: sim.result.meters });
           window.clearTimeout(endTimer);
@@ -240,6 +244,7 @@ export function SinalPlay({ mode, seed, color, best, onEnd, onQuit }: Props) {
         notices,
         inverted,
         jolt,
+        death: deathReason ? { reason: deathReason, age: clamp((now - deathAt) / 1300, 0, 1) } : null,
       });
     };
     raf = requestAnimationFrame(frame);

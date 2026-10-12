@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { SinalEvent, SinalView } from '@nocap/games';
+import type { SinalEnd, SinalEvent, SinalView } from '@nocap/games';
 import { useAuth } from '@/lib/auth';
 import { buzz, holdAudio } from '@/lib/sfx';
 import { createSinalAudio } from '@/lib/sinal-audio';
@@ -84,6 +84,9 @@ export function SinalRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
     let jolt = 0;
     let prevHidden = false;
     let pushLabel = '';
+    let death: { reason: SinalEnd; at: number } | null = null;
+    let pushFx: { at: number; dx: number; dy: number } | null = null;
+    let prevDead = false;
     let raf = 0;
     let last = performance.now();
 
@@ -125,6 +128,11 @@ export function SinalRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
         }
       }
 
+      // a animação de perder é de quem perde: dura um instante e some, e a tela passa a mostrar outro mapa
+      if (s.mine?.dead && !prevDead && s.mine.reason) death = { reason: s.mine.reason, at: t };
+      prevDead = !!s.mine?.dead;
+      if (death && t - death.at > 1500) death = null;
+
       // eventos novos do mapa que está na tela (som e tranco), sem repetir os velhos
       const target = s.target ?? null;
       const events = (s.events ?? []) as (SinalEvent & { n: number })[];
@@ -144,6 +152,17 @@ export function SinalRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
           jolt = Math.max(jolt, 0.55);
         } else if (e.kind === 'empurrou') {
           buzz(25);
+          // a direção do empurrão na tela: de você para quem estava ao alcance
+          const me = s.players?.find((p) => p.id === target);
+          const to = s.players?.find((p) => p.id === s.push?.target);
+          let dx = 0;
+          let dy = -1;
+          if (me && to) {
+            const len = Math.hypot(to.x - me.x, to.y - me.y) || 1;
+            dx = (to.x - me.x) / len;
+            dy = -(to.y - me.y) / len;
+          }
+          pushFx = { at: t, dx, dy };
         } else if (e.kind === 'fim') {
           buzz(120);
         }
@@ -223,6 +242,8 @@ export function SinalRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
         jolt,
         others,
         pushTarget: alive && push?.target ? push.target : null,
+        death: death ? { reason: death.reason, age: clamp((t - death.at) / 1300, 0, 1) } : null,
+        pushFx: pushFx && t - pushFx.at < 550 ? { age: (t - pushFx.at) / 550, dx: pushFx.dx, dy: pushFx.dy } : null,
       });
     };
     raf = requestAnimationFrame(frame);

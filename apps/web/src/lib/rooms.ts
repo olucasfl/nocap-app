@@ -123,6 +123,7 @@ export interface SinalRoomState {
   events?: (SinalEvent & { n: number })[];
   endsAt?: number | null;
   finishing?: boolean;
+  mine?: { dead: boolean; reason: 'vigia' | 'escuridao' | null } | null;
   /** Quem está ao alcance do empurrão (null = ninguém) e quando o botão volta (relógio do servidor). */
   push?: { target: string | null; readyAt: number; range: number } | null;
 }
