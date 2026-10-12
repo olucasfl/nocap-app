@@ -110,6 +110,9 @@ export interface SinalRoomPlayer {
   hidden: boolean;
   stunned?: boolean;
   dead: boolean;
+  /** Cruzou a linha de chegada da fase (e o lugar em que chegou). */
+  finished?: boolean;
+  place?: number | null;
   meters: number;
 }
 
@@ -123,9 +126,24 @@ export interface SinalRoomState {
   events?: (SinalEvent & { n: number })[];
   endsAt?: number | null;
   finishing?: boolean;
-  mine?: { dead: boolean; reason: 'vigia' | 'escuridao' | null } | null;
+  mine?: { dead: boolean; finished?: boolean; place?: number | null; reason: 'vigia' | 'escuridao' | null } | null;
   /** O placar de mortes: as últimas quedas (da mais velha para a mais nova). */
-  feed?: { n: number; at: number; id: string; reason: 'vigia' | 'escuridao'; by: string | null; meters: number }[];
+  feed?: {
+    n: number;
+    at: number;
+    id: string;
+    kind: 'morte' | 'chegada';
+    reason: 'vigia' | 'escuridao' | null;
+    by: string | null;
+    meters: number;
+    place: number | null;
+  }[];
+  /** O resumo da fase que acabou (no intervalo entre as fases e no pódio). */
+  summary?: {
+    n: number;
+    total: number;
+    rows: { id: string; tenths: number; finished: boolean; place: number; totalTenths: number }[];
+  } | null;
   /** Quem está ao alcance do empurrão (null = ninguém) e quando o botão volta (relógio do servidor). */
   push?: { target: string | null; readyAt: number; range: number } | null;
 }

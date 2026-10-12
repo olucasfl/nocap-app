@@ -4,12 +4,14 @@ import { RoomError } from './color-room.engine';
 import {
   SINAL_COUNTDOWN_MS,
   SINAL_FINISH_DELAY_MS,
+  SINAL_PHASE_BREAK_MS,
   SinalRoomEngine,
 } from './sinal-room.engine';
 
 interface Racer {
   sim: SinalSim;
   input: [number, number];
+  place: number | null;
 }
 const racersOf = (e: SinalRoomEngine) =>
   (e as unknown as { racers: Map<string, Racer> }).racers;
@@ -28,7 +30,8 @@ interface SinalSnap {
 const sinalOf = (e: SinalRoomEngine, viewer: string) =>
   (e.snapshot(viewer) as unknown as { sinal: SinalSnap }).sinal;
 
-function setup(names = ['ana', 'beto']) {
+/** `phases`: quantas fases o líder escolhe (a maioria dos testes usa só uma). */
+function setup(names = ['ana', 'beto'], phases = 1) {
   let clock = 1_000_000;
   const engine = new SinalRoomEngine({
     code: 'ABCD',
@@ -36,6 +39,7 @@ function setup(names = ['ana', 'beto']) {
     newSeed: () => 'seed-sinal',
   });
   names.forEach((n) => engine.join(n, n));
+  engine.configure(names[0]!, { rounds: phases });
   return {
     engine,
     advance: (ms: number) => {
@@ -50,8 +54,8 @@ function setup(names = ['ana', 'beto']) {
 }
 
 /** Todo mundo pronto, começa e passa da contagem: a corrida está valendo. */
-function race(names = ['ana', 'beto']) {
-  const ctx = setup(names);
+function race(names = ['ana', 'beto'], phases = 1) {
+  const ctx = setup(names, phases);
   for (const n of names.slice(1)) ctx.engine.setReady(n, true);
   ctx.engine.start(names[0]!);
   ctx.advance(SINAL_COUNTDOWN_MS + 20);
@@ -61,14 +65,16 @@ function race(names = ['ana', 'beto']) {
 }
 
 describe('SinalRoomEngine: lobby e cores', () => {
-  it('é o jogo sinal, só com o modo infinito, e cada pessoa nasce com uma cor diferente', () => {
+  it('é o jogo sinal, em fases (1 a 5), e cada pessoa nasce com uma cor diferente', () => {
     const { engine } = setup(['ana', 'beto', 'caio']);
     expect(engine.game).toBe('sinal');
     const colors = sinalOf(engine, 'ana').colors;
     expect(new Set(Object.values(colors)).size).toBe(3);
     for (const hex of Object.values(colors)) expect(SINAL_COLORS.some((c) => c.hex === hex)).toBe(true);
-    expect(() => engine.configure('ana', { mode: 'classico' })).toThrow(RoomError);
-    expect(() => engine.configure('ana', { mode: 'infinito' })).not.toThrow();
+    expect(() => engine.configure('ana', { mode: 'infinito' })).toThrow(RoomError);
+    expect(() => engine.configure('ana', { mode: 'classico' })).not.toThrow();
+    for (const rounds of [1, 2, 3, 4, 5]) expect(() => engine.configure('ana', { rounds })).not.toThrow();
+    for (const rounds of [0, 6, 2.5]) expect(() => engine.configure('ana', { rounds })).toThrow('inválidas');
   });
 
   it('escolher a cor: cada cor é de uma pessoa só, e só no lobby', () => {
@@ -358,5 +364,162 @@ describe('SinalRoomEngine: o placar de mortes', () => {
     expect(feed.length).toBeGreaterThan(0);
     expect(feed.every((f) => f.reason === 'escuridao' || f.reason === 'vigia')).toBe(true);
     expect(new Set(feed.map((f) => f.id)).size).toBe(feed.length);
+  });
+});
+
+/** Tira os obstáculos do caminho e a névoa da frente: aqui só importam a linha de chegada e as fases. */
+function calm(engine: SinalRoomEngine) {
+  (engine as unknown as { dark: number }).dark = -1e7;
+  for (const r of racersOf(engine).values()) {
+    (r.sim as unknown as { obstacles: { list: unknown[]; ensure: () => void } }).obstacles = {
+      list: [],
+      ensure: () => {},
+    };
+  }
+}
+
+interface FullSnap {
+  settings: { rounds: number };
+  sinal: {
+    target: string;
+    mine: { finished: boolean; place: number | null; dead: boolean };
+    feed: { kind: string; id: string; place: number | null }[];
+    push: { target: string | null } | null;
+    summary: {
+      n: number;
+      total: number;
+      rows: { id: string; place: number; finished: boolean; tenths: number; totalTenths: number }[];
+    } | null;
+  };
+}
+const fullOf = (e: SinalRoomEngine, viewer: string) => e.snapshot(viewer) as unknown as FullSnap;
+
+describe('SinalRoomEngine: fases e linha de chegada', () => {
+  const lenOf = (e: SinalRoomEngine, id = 'ana') => racersOf(e).get(id)!.sim.course.length;
+  const finish = (e: SinalRoomEngine, id: string, advance: (ms: number) => void) => {
+    const sim = racersOf(e).get(id)!.sim;
+    sim.y = lenOf(e, id) - 0.3;
+    e.move(id, 0, 100);
+    advance(400);
+    e.move(id, 0, 0);
+  };
+  const kill = (e: SinalRoomEngine, id: string, meters: number) => {
+    const sim = racersOf(e).get(id)!.sim as unknown as { dead: boolean; maxY: number };
+    sim.dead = true;
+    sim.maxY = meters;
+  };
+
+  it('o líder escolhe de 1 a 5 fases; o padrão são 3', () => {
+    const { engine } = setup();
+    engine.configure('ana', { rounds: 4 });
+    expect(fullOf(engine, 'ana').settings.rounds).toBe(4);
+    const fresh = new SinalRoomEngine({ code: 'ZZZZ', now: () => 1, newSeed: () => 's' });
+    fresh.join('x', 'x');
+    expect(fullOf(fresh, 'x').settings.rounds).toBe(3);
+  });
+
+  it('cruzar a linha de chegada: o boneco para ali, vira plateia e entra no placar com o lugar', () => {
+    const { engine, advance } = race(['ana', 'beto', 'caio'], 1);
+    calm(engine);
+    finish(engine, 'ana', advance);
+    const ana = racersOf(engine).get('ana')!.sim;
+    expect(ana.finished).toBe(true);
+    expect(ana.dead).toBe(false);
+    const s = fullOf(engine, 'ana').sinal;
+    expect(s.mine).toMatchObject({ finished: true, place: 1, dead: false });
+    expect(s.feed.at(-1)).toMatchObject({ kind: 'chegada', id: 'ana', place: 1 });
+    expect(s.push).toBeNull(); // quem chegou não empurra mais
+    expect(['beto', 'caio']).toContain(s.target); // assiste a quem ainda corre
+    finish(engine, 'beto', advance);
+    expect(racersOf(engine).get('beto')!.place).toBe(2);
+    // quem chegou não é alvo de empurrão
+    const caio = racersOf(engine).get('caio')!.sim;
+    caio.x = ana.x;
+    caio.y = ana.y - 0.5;
+    expect(fullOf(engine, 'caio').sinal.push!.target).toBeNull();
+  });
+
+  it('quem chegou e quem caiu podem trocar quem assistir, só entre quem ainda corre', () => {
+    const { engine, advance } = race(['ana', 'beto', 'caio', 'dani'], 1);
+    calm(engine);
+    finish(engine, 'ana', advance); // chegou
+    kill(engine, 'beto', 10); // caiu
+    advance(100);
+    for (const viewer of ['ana', 'beto']) {
+      engine.watch(viewer, 'dani');
+      expect(fullOf(engine, viewer).sinal.target).toBe('dani');
+      engine.watch(viewer, 'caio');
+      expect(fullOf(engine, viewer).sinal.target).toBe('caio');
+      // quem já chegou ou caiu não vale como alvo
+      engine.watch(viewer, 'ana');
+      engine.watch(viewer, 'beto');
+      expect(fullOf(engine, viewer).sinal.target).toBe('caio');
+    }
+  });
+
+  it('com 2 fases: a fase acaba quando todos chegaram ou caíram, mostra o resumo e a seguinte começa sozinha', () => {
+    const { engine, advance } = race(['ana', 'beto'], 2);
+    calm(engine);
+    const len1 = lenOf(engine);
+    finish(engine, 'ana', advance);
+    expect(engine.currentPhase).toBe('play'); // o beto ainda corre
+    kill(engine, 'beto', 20); // o beto cai a 20 m
+    advance(200);
+    advance(SINAL_FINISH_DELAY_MS + 200);
+    expect(engine.currentPhase).toBe('reveal');
+    const summary = fullOf(engine, 'ana').sinal.summary!;
+    expect(summary.n).toBe(1);
+    expect(summary.total).toBe(2);
+    expect(summary.rows[0]).toMatchObject({ id: 'ana', place: 1, finished: true });
+    expect(summary.rows[0]!.tenths).toBe(len1 * 10);
+    expect(summary.rows[1]).toMatchObject({ id: 'beto', finished: false, tenths: 200 });
+    // a próxima começa sozinha depois do resumo, com todo mundo largando de novo (inclusive quem caiu)
+    advance(SINAL_PHASE_BREAK_MS + 200);
+    expect(engine.currentPhase).toBe('show');
+    advance(SINAL_COUNTDOWN_MS + 200);
+    expect(engine.currentPhase).toBe('play');
+    const sims = [...racersOf(engine).values()].map((r) => r.sim);
+    expect(sims.every((x) => !x.dead && !x.finished && x.course.n === 2)).toBe(true);
+    expect(sims[0]!.course.length).toBeGreaterThan(len1);
+  });
+
+  it('o total é a soma dos metros de todas as fases, e o pódio ordena por ele', () => {
+    const { engine, advance } = race(['ana', 'beto'], 2);
+    calm(engine);
+    const len1 = lenOf(engine);
+    // fase 1: o beto chega e a ana cai a 30 m
+    finish(engine, 'beto', advance);
+    kill(engine, 'ana', 30);
+    advance(200);
+    advance(SINAL_FINISH_DELAY_MS + 200);
+    advance(SINAL_PHASE_BREAK_MS + SINAL_COUNTDOWN_MS + 300);
+    expect(engine.currentPhase).toBe('play');
+    calm(engine);
+    const len2 = lenOf(engine);
+    // fase 2: a ana chega e o beto cai a 10 m
+    finish(engine, 'ana', advance);
+    kill(engine, 'beto', 10);
+    advance(200);
+    advance(SINAL_FINISH_DELAY_MS + 200);
+    expect(engine.currentPhase).toBe('final');
+    const rows = engine.finalRows();
+    const ana = rows.find((r) => r.userId === 'ana')!;
+    const beto = rows.find((r) => r.userId === 'beto')!;
+    expect(ana.totalTenths).toBe(300 + len2 * 10);
+    expect(beto.totalTenths).toBe(len1 * 10 + 100);
+    expect(rows[0]!.userId).toBe(len1 * 10 + 100 > 300 + len2 * 10 ? 'beto' : 'ana');
+    expect(rows[0]!.placement).toBe(1);
+  });
+
+  it('o líder pode pular o resumo da fase', () => {
+    const { engine, advance } = race(['ana', 'beto'], 2);
+    calm(engine);
+    finish(engine, 'ana', advance);
+    finish(engine, 'beto', advance);
+    advance(SINAL_FINISH_DELAY_MS + 200);
+    expect(engine.currentPhase).toBe('reveal');
+    expect(() => engine.next('beto')).toThrow(RoomError);
+    engine.next('ana');
+    expect(engine.currentPhase).toBe('show');
   });
 });

@@ -159,6 +159,8 @@ export function createSinalAudio(): SinalAudio | null {
       } else if (e.kind === 'quebrou') {
         hiss('bandpass', 2400, 600, 0.22, 0.4);
         tone('square', 220, 90, 0.16, 0.2);
+      } else if (e.kind === 'chegou') {
+        [523, 659, 784, 1047, 1319].forEach((f, i) => tone('triangle', f, f, 0.2, 0.25, t + i * 0.08));
       } else if (e.kind === 'fase') {
         // Passou de fase no meio do aviso: o zumbido não tem mais quem o desligue, então corta aqui.
         stopHum();

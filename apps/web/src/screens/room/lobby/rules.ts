@@ -109,9 +109,9 @@ export const MODES: Record<RoomGame, { id: string; label: string; note: string }
   ],
   sinal: [
     {
-      id: 'infinito',
-      label: 'Infinito',
-      note: 'Todo mundo corre no mesmo mapa, com o mesmo Vigia e os mesmos poderes. Quem se mexe sob o olhar dele ou é pego pela escuridão sai e assiste. Vence quem chegar mais longe.',
+      id: 'classico',
+      label: 'Fases',
+      note: 'Corrida em fases com linha de chegada, no mesmo mapa para todos, com o mesmo Vigia e os mesmos poderes. Quem chega ou cai assiste a quem ainda corre. No fim vence quem somar mais metros.',
     },
   ],
   color: [
@@ -145,7 +145,7 @@ export function rulesSummary(s: RoomSnapshot): string {
     s.game === 'eco' && s.mode !== 'leader'
       ? 'Por vez'
       : s.game === 'sinal'
-        ? 'Corrida'
+        ? `${rounds} ${rounds === 1 ? 'fase' : 'fases'}`
         : `${rounds} ${rounds === 1 ? 'rodada' : 'rodadas'}`,
   ]
     .filter(Boolean)
@@ -168,12 +168,14 @@ export function rulesFor(s: RoomSnapshot): RuleDef[] {
   }
 
   // Corrida do Ecooo: as rodadas vêm do modo (a partida acaba quando sobra um).
-  if (s.game !== 'sinal' && (s.game !== 'eco' || s.mode === 'leader'))
+  if (s.game !== 'eco' || s.mode === 'leader')
     out.push({
       id: 'rounds',
-      label: 'RODADAS',
+      label: s.game === 'sinal' ? 'FASES' : 'RODADAS',
       values:
-        s.game === 'party'
+        s.game === 'sinal'
+          ? [1, 2, 3, 4, 5]
+          : s.game === 'party'
           ? [1, 2, 3, 5]
           : s.game === 'impostor'
             ? IMP_ROUNDS
@@ -181,8 +183,12 @@ export function rulesFor(s: RoomSnapshot): RuleDef[] {
               ? leaderRoundOptions(s.members.length, cfg.rounds)
               : ROUNDS,
       current: cfg.rounds,
-      format: String,
+      format: s.game === 'sinal' ? (v) => `${v} ${v === 1 ? 'fase' : 'fases'}` : String,
       patch: (v) => ({ rounds: v }),
+      note:
+        s.game === 'sinal'
+          ? 'Cada fase tem a sua linha de chegada e fica mais difícil. O total de metros de todas as fases decide quem vence.'
+          : undefined,
     });
 
   if (s.game === 'impostor') {

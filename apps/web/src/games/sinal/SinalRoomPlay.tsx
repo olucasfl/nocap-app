@@ -32,6 +32,7 @@ export function SinalRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
   const meRef = useRef(me);
   meRef.current = me;
   const [now, setNow] = useState(() => Date.now());
+  const [finishedAt, setFinishedAt] = useState(0);
   const [pushUi, setPushUi] = useState<{ show: boolean; leftMs: number }>({ show: false, leftMs: 0 });
   const pushRef = useRef<() => void>(() => undefined);
 
@@ -40,6 +41,12 @@ export function SinalRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
     () => Object.fromEntries(snapshot.members.map((m) => [m.id, m.username])),
     [snapshot.members],
   );
+
+  // quando eu cruzo a linha, o aviso "CHEGOU!" aparece um instante
+  const iFinished = !!snapshot.sinal?.mine?.finished;
+  useEffect(() => {
+    setFinishedAt(iFinished ? Date.now() : 0);
+  }, [iFinished]);
 
   // o relógio da tela: contagem e tempo de espera do botão de empurrar
   useEffect(() => {
@@ -115,7 +122,7 @@ export function SinalRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
       const view = s?.view as SinalView | null | undefined;
       if (!s || !view) return;
       const myId = meRef.current;
-      const alive = s.players?.find((p) => p.id === myId && !p.dead);
+      const alive = s.players?.find((p) => p.id === myId && !p.dead && !p.finished);
 
       // o analógico: só manda quando muda, e só quem ainda corre
       if (alive && snap.phase === 'play') {
@@ -167,6 +174,8 @@ export function SinalRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
           pushFx = { at: t, dx, dy };
         } else if (e.kind === 'fim') {
           buzz(120);
+        } else if (e.kind === 'chegou') {
+          buzz(60);
         }
       }
       jolt = Math.max(0, jolt - dt * 3.2);
@@ -180,7 +189,7 @@ export function SinalRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
       const drawn: SinalView = { ...view, x: mine.x, y: mine.y, darkY: shownDark };
 
       const others = (s.players ?? [])
-        .filter((p) => p.id !== target && !p.dead)
+        .filter((p) => p.id !== target && !p.dead && !p.finished)
         .map((p) => {
           const cur = shown.get(p.id) ?? { x: p.x, y: p.y };
           cur.x = ease(cur.x, p.x, dt);
@@ -260,10 +269,17 @@ export function SinalRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
     };
   }, []);
 
-  const amDead = !!sinal?.players?.find((p) => p.id === me && p.dead);
-  const alivePlayers = (sinal?.players ?? []).filter((p) => !p.dead);
+  const mineP = sinal?.players?.find((p) => p.id === me);
+  // quem caiu ou chegou assiste a quem ainda corre e pode trocar de pessoa
+  const amOut = !!mineP && (mineP.dead || !!mineP.finished);
+  const alivePlayers = (sinal?.players ?? []).filter((p) => !p.dead && !p.finished);
   // Placar: os 3 primeiros e, se você está do 4º para trás, a sua posição logo depois (ex.: 1º, 2º, 3º ... 7º)
-  const ranked = [...(sinal?.players ?? [])].sort((a, b) => b.meters - a.meters);
+  // (quem já chegou fica na frente, na ordem em que chegou)
+  const ranked = [...(sinal?.players ?? [])].sort((a, b) => {
+    if (!!a.finished !== !!b.finished) return a.finished ? -1 : 1;
+    if (a.finished && b.finished) return (a.place ?? 99) - (b.place ?? 99);
+    return b.meters - a.meters;
+  });
   const myIdx = ranked.findIndex((p) => p.id === me);
   const board = ranked.slice(0, 3).map((p, i) => ({ p, rank: i + 1, gap: false }));
   if (myIdx >= 3) board.push({ p: ranked[myIdx]!, rank: myIdx + 1, gap: myIdx > 3 });
@@ -271,6 +287,8 @@ export function SinalRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
     snapshot.phase === 'show' && sinal?.endsAt
       ? Math.max(0, Math.ceil((toLocal(sinal.endsAt) - now) / 1000))
       : 0;
+  // o aviso de chegada: some sozinho depois de uns 2,5 s
+  const finishedBanner = !!sinal?.mine?.finished && finishedAt > 0 && now - finishedAt < 2500;
   const waitLeft =
     pushUi.show && sinal?.push ? Math.max(0, toLocal(sinal.push.readyAt) - now) : 0;
 
@@ -291,7 +309,7 @@ export function SinalRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
             <em>{rank}º</em>
             <i style={{ background: sinal?.colors[p.id] }} />
             <span>@{names[p.id]}</span>
-            <b>{p.meters} m</b>
+            <b>{p.finished ? 'CHEGOU' : `${p.meters} m`}</b>
           </li>
         ))}
       </ol>
@@ -305,14 +323,16 @@ export function SinalRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
               <i style={{ background: sinal?.colors[f.id] }} />
               <span>
                 <b>@{names[f.id] ?? '?'}</b>{' '}
-                {f.by ? `foi empurrado por @${names[f.by] ?? '?'} e ` : ''}
-                {f.reason === 'vigia'
-                  ? f.by
-                    ? 'o Vigia viu'
-                    : 'foi visto pelo Vigia'
-                  : f.by
-                    ? 'a escuridão pegou'
-                    : 'foi engolido pela escuridão'}
+                {f.kind === 'chegada'
+                  ? `chegou na linha de chegada em ${f.place}º lugar`
+                  : (f.by ? `foi empurrado por @${names[f.by] ?? '?'} e ` : '') +
+                    (f.reason === 'vigia'
+                      ? f.by
+                        ? 'o Vigia viu'
+                        : 'foi visto pelo Vigia'
+                      : f.by
+                        ? 'a escuridão pegou'
+                        : 'foi engolido pela escuridão')}
                 {' · '}
                 {f.meters} m
               </span>
@@ -342,10 +362,18 @@ export function SinalRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
         </div>
       )}
 
-      {amDead && snapshot.phase === 'play' && (
+      {finishedBanner && (
+        <div className="sv-banner" aria-live="assertive">
+          <b>CHEGOU!</b>
+          <span>{sinal?.mine?.place}º LUGAR</span>
+        </div>
+      )}
+
+      {amOut && snapshot.phase === 'play' && (
         <div className="svr-spec">
           <span className="mono">
-            {sinal?.finishing ? 'ACABOU' : 'VOCÊ CAIU'} · ASSISTINDO @{names[sinal?.target ?? ''] ?? '...'}
+            {sinal?.finishing ? 'FASE ENCERRADA' : mineP?.finished ? 'VOCÊ CHEGOU' : 'VOCÊ CAIU'} · ASSISTINDO @
+            {names[sinal?.target ?? ''] ?? '...'}
           </span>
           {alivePlayers.length > 1 && (
             <span className="svr-spec-btns">

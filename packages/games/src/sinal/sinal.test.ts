@@ -1330,3 +1330,39 @@ describe('moitas compridas e prêmios de se esconder', () => {
     expect(sim.y - y0).toBeGreaterThan(MAX_SPEED * 0.5 * 1.15);
   });
 });
+
+describe('a sala joga fase por fase: parar na linha de chegada', () => {
+  it('com holdAtFinish, cruzar a linha termina a fase daquele boneco (sem passar para a próxima)', () => {
+    const sim = new SinalSim('fin', 'classico');
+    sim.holdAtFinish = true;
+    (sim as unknown as { darkY: number }).darkY = -1e7;
+    sim.externalDark = true;
+    // sem obstáculos no caminho: aqui só importa a linha de chegada
+    (sim as unknown as { obstacles: { list: unknown[]; ensure: () => void } }).obstacles = { list: [], ensure: () => {} };
+    const len = sim.course.length;
+    sim.y = len - 0.3;
+    let got: number | null = null;
+    for (let i = 0; i < 30 && !sim.finished; i++) {
+      for (const e of sim.step(0, 100)) if (e.kind === 'chegou') got = e.meters;
+    }
+    expect(sim.finished).toBe(true);
+    expect(sim.dead).toBe(false);
+    expect(got).toBe(len);
+    expect(sim.course.n).toBe(1);
+    // parado: não anda mais, não perde, o resultado é a fase inteira
+    const y0 = sim.y;
+    for (let i = 0; i < 60; i++) sim.step(0, 100);
+    expect(sim.y).toBe(y0);
+    expect(sim.dead).toBe(false);
+    expect(sim.result.meters).toBeCloseTo(len, 6);
+  });
+
+  it('a fase de partida vem do construtor: cada fase tem a sua pista', () => {
+    const a = new SinalSim('fin', 'classico', 1);
+    const b = new SinalSim('fin', 'classico', 4);
+    expect(a.course.n).toBe(1);
+    expect(b.course.n).toBe(4);
+    expect(b.course.length).toBeGreaterThan(a.course.length);
+    expect(b.course.darkStart).toBeLessThan(a.course.darkStart);
+  });
+});

@@ -21,8 +21,11 @@ import {
 
 /** Contagem antes de largar: dá tempo de todo mundo ver o mapa e as cores. */
 export const SINAL_COUNTDOWN_MS = 3500;
-/** Depois que a disputa se decide, a tela fica um instante antes do pódio. */
+/** Depois que a fase se decide (todos chegaram ou caíram), a tela fica um instante antes do resumo. */
 export const SINAL_FINISH_DELAY_MS = 2500;
+/** O resumo da fase, antes da próxima começar sozinha (o líder pode pular). */
+export const SINAL_PHASE_BREAK_MS = 8000;
+export const SINAL_MAX_PHASES = 5;
 const STEP_MS = 1000 / 60;
 /** A cada quantos passos (1/60 s) o estado vai aos aparelhos: 15 por segundo. */
 const PUBLISH_EVERY = 4;
@@ -42,42 +45,56 @@ interface Racer {
   pushedAt: number;
   /** Quem o empurrou por último e quando (para creditar a queda no placar de mortes). */
   pushedBy: { by: string; at: number } | null;
+  /** Ordem de chegada na linha (1 = primeiro); null enquanto não chegou. */
+  place: number | null;
 }
 
-/** Uma linha do placar de mortes: quem caiu, por quê e (se foi empurrado há pouco) por quem. */
+/** Uma linha do placar da corrida: quem caiu (e por quê) ou quem chegou na linha. */
 export interface FeedEntry {
   n: number;
-  /** Relógio da sala (ms) de quando caiu. */
+  /** Relógio da sala (ms) de quando aconteceu. */
   at: number;
   id: string;
-  reason: 'vigia' | 'escuridao';
+  kind: 'morte' | 'chegada';
+  reason: 'vigia' | 'escuridao' | null;
+  /** Quem empurrou (só nas quedas que vieram até 2,5 s depois de um empurrão). */
   by: string | null;
   meters: number;
+  /** Ordem de chegada (só nas chegadas). */
+  place: number | null;
+}
+
+/** O resumo de uma fase: cada pessoa, como terminou e o total até aqui (em décimos de metro). */
+export interface PhaseSummary {
+  n: number;
+  total: number;
+  rows: { id: string; tenths: number; finished: boolean; place: number; totalTenths: number }[];
 }
 
 /** A queda vale como "empurrado por" se o empurrão foi até 2,5 s antes. */
 const PUSH_CREDIT_MS = 2500;
 const FEED_KEEP = 20;
 const FEED_SHOW = 6;
+const SMALLINT_MAX = 32767;
 
 /**
- * O Sinal Vermelho em sala (spec 020): todo mundo corre no MESMO mapa ao mesmo tempo, com o mesmo
- * Vigia, os mesmos poderes e os mesmos obstáculos. Cada pessoa é uma `SinalSim` da mesma seed,
- * avançada em conjunto (passo fixo de 1/60 s), então o Vigia é um só para todos; a escuridão
- * também é uma só (quem fica para trás é pego primeiro). Os bonecos não se sobrepõem, e quem chega perto de
- * outro ganha um botão para empurrá-lo (e quem se mexe sob o olhar do Vigia perde, empurrado ou
- * não). Perdeu, vira plateia. Vence quem chegar mais longe, e a corrida só acaba quando todos caem:
- * quem ainda corre continua jogando.
+ * O Sinal Vermelho em sala (spec 020): uma corrida em FASES (de 1 a 5, o líder escolhe), cada uma
+ * com linha de chegada, no MESMO mapa ao mesmo tempo para todos, com o mesmo Vigia, os mesmos
+ * poderes e os mesmos obstáculos. Cada pessoa é uma `SinalSim` da mesma seed, avançada em
+ * conjunto (passo fixo de 1/60 s). A névoa é uma só para a sala. Quem cruza a linha ou cai vira
+ * plateia da fase (e escolhe quem assistir); a fase acaba quando todos chegaram ou caíram, e a
+ * seguinte começa sozinha. Quem chega soma a fase inteira; quem cai soma até onde foi. Vence quem
+ * somar mais metros no fim. Quem chega perto de outro ganha um botão para empurrá-lo.
  */
 export class SinalRoomEngine extends ColorRoomEngine {
   override readonly game = 'sinal' as const;
   protected override readonly answerPhase = 'play' as const;
-  protected override readonly modes: readonly string[] = ['infinito'];
+  protected override readonly modes: readonly string[] = ['classico'];
 
   private racers = new Map<string, Racer>();
   /** A cor de cada pessoa (fica entre uma partida e a revanche). */
   private colors = new Map<string, string>();
-  /** Quem a pessoa que caiu escolheu assistir. */
+  /** Quem cada espectador escolheu assistir. */
   private watching = new Map<string, string>();
   private lastStepAt = 0;
   private acc = 0;
@@ -85,23 +102,33 @@ export class SinalRoomEngine extends ColorRoomEngine {
   private finishAt: number | null = null;
   /** A frente da escuridão, uma só para a sala toda (m). */
   private dark = 0;
-  /** O placar de mortes da corrida. */
+  /** O placar da fase: quedas e chegadas. */
   private feed: FeedEntry[] = [];
   private feedSeq = 0;
   private announced = new Set<string>();
+  private arrivals = 0;
+  /** Metros (em décimos) de cada pessoa somando as fases já terminadas. */
+  private phaseTotals = new Map<string, number>();
+  private lastSummary: PhaseSummary | null = null;
 
   constructor(opts: EngineOptions) {
     super(opts);
-    this.mode = 'infinito';
-    this.settings = { rounds: 1 };
+    this.mode = 'classico';
+    this.settings = { rounds: 3 };
   }
 
-  protected override settingsForMode(): AnySettings {
-    return { rounds: 1 };
+  protected override settingsForMode(_mode: string, current: AnySettings): AnySettings {
+    return current;
   }
 
   protected override validSettings(merged: Record<string, unknown>, mode: string): boolean {
-    return mode === 'infinito' && merged.rounds === 1;
+    const r = merged.rounds;
+    return (
+      mode === 'classico' &&
+      Number.isInteger(r) &&
+      (r as number) >= 1 &&
+      (r as number) <= SINAL_MAX_PHASES
+    );
   }
 
   /** O Sinal Vermelho tem o chat só no lobby e no pódio: no meio da corrida ninguém digita. */
@@ -123,6 +150,7 @@ export class SinalRoomEngine extends ColorRoomEngine {
     this.colors.delete(id);
     this.racers.delete(id);
     this.watching.delete(id);
+    this.phaseTotals.delete(id);
     super.leave(id);
   }
 
@@ -139,27 +167,43 @@ export class SinalRoomEngine extends ColorRoomEngine {
     m.ready = false;
   }
 
-  // ---- a corrida ----
+  // ---- as fases ----
 
+  /** Começa a próxima fase: todo mundo (inclusive quem caiu antes) volta a largar. */
   protected override beginRound() {
-    this.roundIndex = 0;
-    this.rounds = [{}];
+    this.roundIndex += 1;
+    this.rounds[this.roundIndex] = {};
+    if (this.roundIndex === 0) {
+      this.phaseTotals.clear();
+      this.lastSummary = null;
+    }
     this.racers.clear();
     this.watching.clear();
+    this.feed = [];
+    this.announced.clear();
+    this.arrivals = 0;
+    const phase = this.roundIndex + 1;
     const ids = [...this.members.values()].sort((a, b) => a.joinedAt - b.joinedAt).map((m) => m.id);
     const edge = HALF - 1;
     ids.forEach((id, i) => {
-      const sim = new SinalSim(this.seed, 'infinito');
+      const sim = new SinalSim(this.seed, 'classico', phase);
       // Largam lado a lado, espalhados pelo corredor.
       sim.x = clamp((i - (ids.length - 1) / 2) * 1.3, -edge, edge);
-      // a escuridão é uma só: quem manda nela é a sala (veja `stepAll`)
+      // A linha de chegada para o boneco ali, e a escuridão é uma só: quem manda nelas é a sala.
+      sim.holdAtFinish = true;
       sim.externalDark = true;
       this.dark = sim.darkFront;
-      this.racers.set(id, { sim, input: [0, 0], seq: 0, events: [], pushedAt: -Infinity, pushedBy: null });
+      this.racers.set(id, {
+        sim,
+        input: [0, 0],
+        seq: 0,
+        events: [],
+        pushedAt: -Infinity,
+        pushedBy: null,
+        place: null,
+      });
     });
     this.finishAt = null;
-    this.feed = [];
-    this.announced.clear();
     this.acc = 0;
     this.sinceSend = 0;
     this.phase = 'show';
@@ -174,19 +218,24 @@ export class SinalRoomEngine extends ColorRoomEngine {
     r.input = [clamp(Math.round(x), -100, 100), clamp(Math.round(y), -100, 100)];
   }
 
-  /** Quem caiu escolhe quem assistir. */
+  /** Quem caiu ou chegou escolhe quem assistir (entre quem ainda corre). */
   watch(id: string, target: string) {
-    if (this.racers.has(target)) this.watching.set(id, target);
+    const r = this.racers.get(target);
+    if (r && this.running(r)) this.watching.set(id, target);
   }
 
-  /** O vizinho mais próximo ao alcance do empurrão (vivo, outro jogador), ou `null`. */
+  private running(r: Racer) {
+    return !r.sim.dead && !r.sim.finished;
+  }
+
+  /** O vizinho mais próximo ao alcance do empurrão (ainda correndo, outro jogador), ou `null`. */
   private pushTarget(id: string): string | null {
     const me = this.racers.get(id);
-    if (!me || me.sim.dead || this.phase !== 'play') return null;
+    if (!me || !this.running(me) || this.phase !== 'play') return null;
     let best: string | null = null;
     let bestD = PUSH_RANGE * PUSH_RANGE;
     for (const [other, r] of this.racers) {
-      if (other === id || r.sim.dead) continue;
+      if (other === id || !this.running(r)) continue;
       const d = (r.sim.x - me.sim.x) ** 2 + (r.sim.y - me.sim.y) ** 2;
       if (d <= bestD) {
         best = other;
@@ -198,7 +247,7 @@ export class SinalRoomEngine extends ColorRoomEngine {
 
   /**
    * O botão de empurrar: joga o vizinho mais próximo para longe (e, como toda pancada, isso conta
-   * como mexer: empurrar alguém quando o Vigia olha é tirá-lo da corrida). Tem pausa entre usos.
+   * como mexer e atordoa: empurrar alguém quando o Vigia olha é tirá-lo da corrida). Tem pausa entre usos.
    */
   push(id: string) {
     const me = this.racers.get(id);
@@ -239,6 +288,7 @@ export class SinalRoomEngine extends ColorRoomEngine {
       }
       return false;
     }
+    // o resumo da fase passa para a próxima (ou o pódio) pelo relógio da sala
     if (this.phase !== 'play') return super.tick();
 
     // Passos de 1/60 s, tantos quantos o relógio pede (com um teto para não travar a sala).
@@ -253,8 +303,7 @@ export class SinalRoomEngine extends ColorRoomEngine {
     }
     if (this.finishAt === null && this.decided()) this.finishAt = t + SINAL_FINISH_DELAY_MS;
     if (this.finishAt !== null && t >= this.finishAt) {
-      this.phase = 'final';
-      this.phaseEndsAt = null;
+      this.concludePhase();
       return true;
     }
     if (this.sinceSend >= PUBLISH_EVERY) {
@@ -267,24 +316,44 @@ export class SinalRoomEngine extends ColorRoomEngine {
   private stepAll() {
     let lead: Racer | null = null;
     for (const [id, r] of this.racers) {
-      if (r.sim.dead) continue;
+      if (!this.running(r)) continue;
       r.sim.setDarkY(this.dark);
       // Quem perdeu a conexão fica parado (a escuridão resolve).
       const live = this.members.get(id)?.connected;
       const [ax, ay] = live ? r.input : [0, 0];
       for (const e of r.sim.step(ax, ay)) this.log(r, e);
-      if (r.sim.dead && !this.announced.has(id)) this.announceDeath(id, r);
+      if (r.sim.finished && r.place === null) this.announceArrival(id, r);
+      else if (r.sim.dead && !this.announced.has(id)) this.announceDeath(id, r);
     }
     // A névoa é UMA só, igual para todos. Anda no ritmo de quem está na frente (se ele para, ela acelera
     // para todos), nunca mais rápida que o boneco; quem fica para trás é pego primeiro.
     for (const r of this.racers.values()) {
-      if (!r.sim.dead && (!lead || r.sim.y > lead.sim.y)) lead = r;
+      if (this.running(r) && (!lead || r.sim.y > lead.sim.y)) lead = r;
     }
     if (lead) this.dark += darkSpeed(lead.sim.course, lead.sim.time, lead.sim.idleLevel) / 60;
     this.separate();
   }
 
-  /** Quem acabou de cair entra no placar de mortes (com o crédito, se foi empurrado há pouco). */
+  /** Quem acabou de cruzar a linha entra no placar com a ordem de chegada. */
+  private announceArrival(id: string, r: Racer) {
+    this.arrivals += 1;
+    r.place = this.arrivals;
+    this.announced.add(id);
+    this.feedSeq += 1;
+    this.feed.push({
+      n: this.feedSeq,
+      at: this.now(),
+      id,
+      kind: 'chegada',
+      reason: null,
+      by: null,
+      meters: Math.floor(r.sim.course.length),
+      place: r.place,
+    });
+    if (this.feed.length > FEED_KEEP) this.feed.shift();
+  }
+
+  /** Quem acabou de cair entra no placar (com o crédito, se foi empurrado há pouco). */
   private announceDeath(id: string, r: Racer) {
     this.announced.add(id);
     const reason = r.sim.result.ended;
@@ -295,16 +364,18 @@ export class SinalRoomEngine extends ColorRoomEngine {
       n: this.feedSeq,
       at: this.now(),
       id,
+      kind: 'morte',
       reason,
       by: credit,
       meters: Math.floor(r.sim.result.meters),
+      place: null,
     });
     if (this.feed.length > FEED_KEEP) this.feed.shift();
   }
 
-  /** Os bonecos vivos não se sobrepõem (escondidos, sim: o esconderijo cabe mais de um). */
+  /** Os bonecos ainda correndo não se sobrepõem (escondidos, sim: o esconderijo cabe mais de um). */
   private separate() {
-    const list = [...this.racers.values()].filter((r) => !r.sim.dead && !r.sim.isHidden);
+    const list = [...this.racers.values()].filter((r) => this.running(r) && !r.sim.isHidden);
     const min = PLAYER_R * 2;
     const edge = HALF - PLAYER_R;
     for (let i = 0; i < list.length; i++) {
@@ -332,28 +403,66 @@ export class SinalRoomEngine extends ColorRoomEngine {
     }
   }
 
-  /**
-   * A corrida só acaba quando TODOS caíram: quem perdeu assiste, e quem ainda corre continua até
-   * cair também (a distância dele continua contando para o pódio).
-   */
+  /** A fase só acaba quando todos já chegaram ou caíram: quem ainda corre continua jogando. */
   private decided(): boolean {
-    return [...this.racers.values()].every((r) => r.sim.dead);
+    return [...this.racers.values()].every((r) => !this.running(r));
+  }
+
+  /** Soma a fase nos totais e vai para o resumo (ou, na última fase, para o pódio). */
+  private concludePhase() {
+    const phaseNo = this.roundIndex + 1;
+    const rows = [...this.racers].map(([id, r]) => ({
+      id,
+      tenths: r.sim.result.tenths,
+      finished: r.sim.finished,
+      arrival: r.place ?? Infinity,
+    }));
+    // chegou primeiro vem primeiro (na ordem em que cruzou); depois quem foi mais longe
+    rows.sort((a, b) => {
+      if (a.finished !== b.finished) return a.finished ? -1 : 1;
+      return a.finished ? a.arrival - b.arrival : b.tenths - a.tenths;
+    });
+    for (const r of rows) {
+      this.phaseTotals.set(r.id, Math.min(SMALLINT_MAX, (this.phaseTotals.get(r.id) ?? 0) + r.tenths));
+    }
+    this.lastSummary = {
+      n: phaseNo,
+      total: this.settings.rounds,
+      rows: rows.map((r, i) => ({
+        id: r.id,
+        tenths: r.tenths,
+        finished: r.finished,
+        place: i + 1,
+        totalTenths: this.phaseTotals.get(r.id) ?? 0,
+      })),
+    };
+    this.finishAt = null;
+    if (phaseNo >= this.settings.rounds) {
+      this.phase = 'final';
+      this.phaseEndsAt = null;
+    } else {
+      this.phase = 'reveal';
+      this.phaseEndsAt = this.now() + SINAL_PHASE_BREAK_MS;
+    }
   }
 
   // ---- fases que o Sinal Vermelho não usa ----
 
   protected override maybeAdvanceFromPick() {
-    // não há "todo mundo respondeu": a corrida só acaba por `decided`
+    // não há "todo mundo respondeu": a fase só acaba por `decided`
   }
 
-  override next() {
-    throw new RoomError('Agora não dá para fazer isso');
+  /** O resumo da fase terminou (ou o líder pulou): começa a próxima. */
+  protected override finishReveal() {
+    this.beginRound();
   }
 
   protected override reset() {
     super.reset();
     this.racers.clear();
     this.watching.clear();
+    this.phaseTotals.clear();
+    this.lastSummary = null;
     this.finishAt = null;
     this.feed = [];
     this.announced.clear();
@@ -361,10 +470,10 @@ export class SinalRoomEngine extends ColorRoomEngine {
 
   // ---- resultado ----
 
-  /** Quem foi mais longe vence (empate divide); a nota é a distância em décimos de metro. */
+  /** Vence quem somou mais metros em todas as fases (empate divide a colocação). */
   override finalRows(): FinalRow[] {
     const rows = [...this.members.values()]
-      .map((m) => ({ m, tenths: this.racers.get(m.id)?.sim.result.tenths ?? 0 }))
+      .map((m) => ({ m, tenths: this.phaseTotals.get(m.id) ?? 0 }))
       .sort((a, b) => b.tenths - a.tenths || a.m.joinedAt - b.m.joinedAt);
     let placement = 0;
     let prev: number | null = null;
@@ -388,15 +497,15 @@ export class SinalRoomEngine extends ColorRoomEngine {
     return '';
   }
 
-  /** De quem é o mapa que esta pessoa vê: o dela, ou (se caiu) o de quem ela escolheu ou do líder. */
+  /** De quem é o mapa que esta pessoa vê: o dela, ou (se caiu ou chegou) o de quem ela escolheu ou do líder. */
   private targetFor(viewerId?: string): string | null {
     if (!viewerId) return null;
     const mine = this.racers.get(viewerId);
-    if (mine && !mine.sim.dead) return viewerId;
+    if (mine && this.running(mine)) return viewerId;
     const pick = this.watching.get(viewerId);
-    if (pick && this.racers.get(pick) && !this.racers.get(pick)!.sim.dead) return pick;
+    if (pick && this.racers.get(pick) && this.running(this.racers.get(pick)!)) return pick;
     const leader = [...this.racers]
-      .filter(([, r]) => !r.sim.dead)
+      .filter(([, r]) => this.running(r))
       .sort((a, b) => b[1].sim.y - a[1].sim.y)[0];
     if (leader) return leader[0];
     return mine ? viewerId : ([...this.racers.keys()][0] ?? null);
@@ -404,7 +513,9 @@ export class SinalRoomEngine extends ColorRoomEngine {
 
   protected override extraSnapshot(viewerId?: string): Record<string, unknown> {
     const colors = Object.fromEntries(this.colors);
-    if (this.phase === 'lobby' || this.racers.size === 0) return { sinal: { colors } };
+    if (this.phase === 'lobby') return { sinal: { colors } };
+    const summary = this.phase === 'reveal' || this.phase === 'final' ? this.lastSummary : null;
+    if (this.racers.size === 0) return { sinal: { colors, summary } };
     const round2 = (n: number) => Math.round(n * 100) / 100;
     const players = [...this.racers].map(([id, r]) => ({
       id,
@@ -413,6 +524,8 @@ export class SinalRoomEngine extends ColorRoomEngine {
       hidden: r.sim.isHidden,
       stunned: r.sim.isStunned,
       dead: r.sim.dead,
+      finished: r.sim.finished,
+      place: r.place,
       meters: Math.floor(r.sim.result.meters),
     }));
     const target = this.targetFor(viewerId);
@@ -428,14 +541,23 @@ export class SinalRoomEngine extends ColorRoomEngine {
         events: racer ? racer.events : [],
         endsAt: this.phaseEndsAt,
         finishing: this.finishAt !== null,
-        /** O placar de mortes: as últimas quedas, da mais velha para a mais nova. */
-        feed: this.feed.slice(-FEED_SHOW),
-        /** Como estou: caí? e por quê (para a animação de perder, que é só de quem perde). */
-        mine: me ? { dead: me.sim.dead, reason: me.sim.result.ended } : null,
-        /** O botão de empurrar: quem está ao alcance, e quando volta a poder usar. */
-        push: me
-          ? { target: near, readyAt: me.pushedAt + PUSH_COOLDOWN_MS, range: PUSH_RANGE }
+        /** Como estou: caí? cheguei (em que lugar)? e por quê caí (para a animação, só de quem perde). */
+        mine: me
+          ? {
+              dead: me.sim.dead,
+              finished: me.sim.finished,
+              place: me.place,
+              reason: me.sim.result.ended,
+            }
           : null,
+        /** O placar da fase: as últimas quedas e chegadas, da mais velha para a mais nova. */
+        feed: this.feed.slice(-FEED_SHOW),
+        summary,
+        /** O botão de empurrar: quem está ao alcance, e quando volta a poder usar. */
+        push:
+          me && this.running(me)
+            ? { target: near, readyAt: me.pushedAt + PUSH_COOLDOWN_MS, range: PUSH_RANGE }
+            : null,
       },
     };
   }

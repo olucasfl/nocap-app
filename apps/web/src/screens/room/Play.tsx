@@ -1,3 +1,4 @@
+import { SinalPhase } from './SinalPhase';
 import { generateColorRound, generateColorStart, type Hsb } from '@nocap/games';
 import { useAuth } from '@/lib/auth';
 import { sendRoom, type RoomSnapshot } from '@/lib/rooms';
@@ -87,6 +88,7 @@ function Reveal({ snapshot }: { snapshot: RoomSnapshot }) {
 /** Memorizar, recriar e revelação. O servidor manda em todas as fases; aqui só se mostra. */
 export function Play({ snapshot }: { snapshot: RoomSnapshot }) {
   if (snapshot.game === 'party') return <PartyPlay snapshot={snapshot} />;
+  if (snapshot.game === 'sinal') return <SinalPhase snapshot={snapshot} />;
   if (snapshot.game === 'eco') return <EcoRoomPlay snapshot={snapshot} />;
   if (snapshot.game === 'time') return <TimePlay snapshot={snapshot} />;
   if (snapshot.game === 'impostor') return <ImpostorPlay snapshot={snapshot} />;

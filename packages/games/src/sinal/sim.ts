@@ -173,10 +173,21 @@ export class SinalSim {
   private end: SinalEnd | null = null;
   private endedTick = 0;
 
+  /**
+   * Sala: ao cruzar a linha de chegada a simulação para ali (`finished`) em vez de seguir para a
+   * próxima fase sozinha; quem manda nas fases é a sala.
+   */
+  holdAtFinish = false;
+  finished = false;
+  finishedTick = 0;
+
+  /** `phase` é a fase em que começa (a sala joga uma fase de cada vez, cada uma com a sua pista). */
   constructor(
     readonly seed: string,
     readonly mode: SinalMode,
+    phase = 1,
   ) {
+    this.n = phase;
     this.startCourse();
   }
 
@@ -343,7 +354,7 @@ export class SinalSim {
   /** Avança um passo (1/60 s) com o analógico em (ax, ay), inteiros de -100 a 100. */
   step(ax: number, ay: number): SinalEvent[] {
     const events: SinalEvent[] = [];
-    if (this.dead) return events;
+    if (this.dead || this.finished) return events;
     const t = this.courseTick * DT;
     const cycle = this.timeline.cycleAt(t);
 
@@ -648,6 +659,13 @@ export class SinalSim {
 
     // A linha de chegada vale antes de qualquer perda no mesmo instante (o Clássico).
     if (this.course.mode === 'classico' && this.y >= this.course.length) {
+      if (this.holdAtFinish) {
+        this.finished = true;
+        this.finishedTick = this.tick;
+        events.push({ kind: 'chegou', meters: this.course.length });
+        this.tick++;
+        return events;
+      }
       const old = this.course.map;
       this.sumDone += this.course.length;
       this.n++;

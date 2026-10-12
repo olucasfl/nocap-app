@@ -14,8 +14,8 @@ type RoomGameId = GameId;
 
 const RULES: Record<RoomGameId, string[]> = {
   sinal: [
-    'Todo mundo corre no MESMO mapa ao mesmo tempo, com o mesmo Vigia, os mesmos poderes e os mesmos obstáculos. Cada um tem uma cor.',
-    'Quem se mexe quando o Vigia olha (ou é empurrado!) ou é pego pela escuridão sai e fica assistindo. Vence quem chegar mais longe.',
+    'Corrida em fases (o líder escolhe de 1 a 5), cada uma com linha de chegada. Todo mundo corre no MESMO mapa ao mesmo tempo, com o mesmo Vigia, os mesmos poderes e a mesma névoa. Cada um tem uma cor.',
+    'Quem chega na linha, se mexe quando o Vigia olha (ou é empurrado!) ou é pego pela névoa fica assistindo a quem ainda corre, e pode trocar de pessoa. No fim vence quem somar mais metros em todas as fases.',
     'Chegou perto de alguém? Aparece o botão EMPURRAR: quem é empurrado conta como mexendo. Quem empurra não.',
     'De 2 a 12 pessoas.',
   ],

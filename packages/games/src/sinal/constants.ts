@@ -255,6 +255,8 @@ export type SinalEvent =
   | { kind: 'soluco' }
   /** Sala: você empurrou alguém (o botão de empurrar). */
   | { kind: 'empurrou' }
+  /** Sala: cruzou a linha de chegada da fase (`meters` é o comprimento dela). */
+  | { kind: 'chegou'; meters: number }
   /** Saiu do esconderijo descansado: um sprint curto. */
   | { kind: 'folego' }
   | { kind: 'fase'; n: number; map: SinalMapId; mapChanged: boolean }
