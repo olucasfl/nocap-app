@@ -51,7 +51,8 @@ export function classicoCourse(seed: string, n: number): Course {
     mode: 'classico',
     n,
     map: order[round % order.length]!,
-    length: Math.min(320, 100 + 20 * n),
+    // a primeira fase é curta (65 m) e cada uma acrescenta 15 m, até 320 m
+    length: Math.min(320, 50 + 15 * n),
     // a escuridão larga mais perto a cada fase
     darkStart: Math.max(22, 36 - 1.2 * (n - 1)),
   };

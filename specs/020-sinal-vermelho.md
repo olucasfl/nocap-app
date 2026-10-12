@@ -179,6 +179,11 @@ O Lucas achou o jogo linear e fácil. O que mudou:
 - **Regra de equidade:** ser empurrado (esteira, ímã, mola ou obstáculo que se mexe) **com o dedo parado não faz o Vigia te ver**. Só conta como "mexer" o que a pessoa faz.
 - **Escuridão:** volta a engolir o mapa de longe (a borda sobe pela tela a partir de uns 40 m); perto, a posição na tela é a distância real.
 
+## Telas e avisos para quem joga sem som (12/10/2026)
+- **Fase 1 mais curta:** 65 m (cada fase acrescenta 15 m, até 320 m).
+- **Vigia sempre colado no topo**, inclusive no celular: o painel de distância fica mais estreito (e a trilha de fase embaixo dele) para os dois caberem lado a lado.
+- **Alerta grande do olhar:** no aviso, placa de PARE piscando com "PARE! ELE VAI OLHAR" e a borda da tela pulsando em vermelho; quando ele olha, a tela fica avermelhada com "NÃO SE MEXA! ELE ESTÁ OLHANDO". O falso aviso é idêntico ao verdadeiro.
+
 ## Controles
 - **Celular:** o analógico (círculo e bolinha) fica **fixo embaixo, no centro da tela**, sempre visível, com uma área de toque generosa em volta. A bolinha acompanha o dedo e volta ao centro ao soltar.
 - **A câmera nunca deixa o analógico tapar o boneco.** A tela reserva uma **zona do analógico** (embaixo, no centro, com folga em volta) e a câmera mantém o boneco sempre **fora dela**: o boneco fica um pouco acima do meio da tela (cerca de 52% da altura, para ficar longe do Vigia) e a câmera também acompanha de lado quando ele vai para a direita. É uma regra do código da câmera (função pura, com teste: para qualquer posição do boneco no corredor, em retrato e em paisagem, ele nunca fica dentro da zona do analógico). Vale também para o Vigia, os esconderijos e o aviso, que ficam fora dessa zona ou são desenhados sem depender dela.

@@ -48,7 +48,8 @@ export function makeLayout(w: number, h: number, touch: boolean): Layout {
     ppm,
     heroY: Math.max(heroY, h * 0.22),
     zone,
-    vigiaScale: Math.max(0.42, Math.min(1.1, (h / 640) * 0.82)),
+    // no celular o Vigia também diminui com a largura, para caber no topo ao lado do painel
+    vigiaScale: Math.max(0.42, Math.min(1.1, (h / 640) * 0.82, (w / 360) * 0.8)),
   };
 }
 

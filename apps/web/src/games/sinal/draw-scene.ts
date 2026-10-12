@@ -192,10 +192,8 @@ export function drawScene(c: Ctx, s: SceneInput) {
   c.restore();
 
   // ---- a tela
-  // O Vigia fica logo abaixo do painel (em telas baixas, no topo, para não bater no boneco).
-  const classic = Number.isFinite(view.course.length);
-  // Em tela larga o Vigia fica colado no topo; em celular desce para não bater no painel.
-  const vTop = w >= 640 ? 6 : classic ? 124 : 84;
+  // O Vigia fica sempre colado no topo; o painel é estreito no celular para não bater nele.
+  const vTop = 6;
   vigia(c, map, s.face, s.warn, s.t, heroX, w / 2, vTop, l.vigiaScale);
   // A escuridão vai engolindo o mapa: de longe sobe aos poucos pela tela (compressão visual) e,
   // a menos de 8 m, mostra a distância de verdade até o boneco.
@@ -242,6 +240,7 @@ export function drawScene(c: Ctx, s: SceneInput) {
 
   vignette(c, w, h, s.warn, s.t);
   if (view.vigia === 'olhando') lookFrame(c, w, h, s.t);
+  stopAlert(c, w, h, s.t, view.vigia === 'olhando' ? 'look' : s.warn > 0.12 ? 'warn' : null, Math.max(l.heroY - 120, 150));
 
   hud(c, s);
   powerBanner(c, w, avisos[0]?.kind ?? effects[0]?.kind ?? null, avisos.length > 0, s.t, l.heroY + 70);
@@ -499,6 +498,55 @@ function vignette(c: Ctx, w: number, h: number, warn: number, t: number) {
   c.fillRect(0, 0, w, h);
 }
 
+/**
+ * O alerta grande para quem joga sem som: no aviso, placa de PARE piscando com "ELE VAI OLHAR" e a
+ * borda da tela pulsando; quando ele olha, tela avermelhada com "NÃO SE MEXA". O falso aviso é igual.
+ */
+function stopAlert(c: Ctx, w: number, h: number, t: number, state: 'warn' | 'look' | null, y: number) {
+  if (!state) return;
+  const look = state === 'look';
+  c.save();
+  if (look) {
+    c.fillStyle = 'rgba(229,48,58,0.2)';
+    c.fillRect(0, 0, w, h);
+  } else {
+    const pulse = 0.5 + 0.5 * Math.sin(t * 16);
+    c.globalAlpha = 0.45 + 0.5 * pulse;
+    c.lineWidth = 22;
+    c.strokeStyle = '#ff2d3a';
+    c.strokeRect(0, 0, w, h);
+    c.globalAlpha = 0.18 * pulse;
+    c.fillStyle = '#ff2d3a';
+    c.fillRect(0, 0, w, h);
+  }
+  c.globalAlpha = 1;
+  const pop = look ? 1 : 1 + 0.07 * Math.sin(t * 16);
+  const bw = Math.min(w - 40, 300);
+  c.translate(w / 2, y);
+  c.scale(pop, pop);
+  blob(c, rect(-bw / 2, -52, bw, 104, 18), look ? '#e5303a' : YEL, 4, 4);
+  // placa de PARE (ou olho aberto, quando ele já está olhando)
+  const R = 30;
+  const ox = -bw / 2 + 14 + R;
+  if (look) {
+    blob(c, ell(ox, 0, R, R * 0.66), '#ffffff', 3.5, 0);
+    blob(c, circle(ox, 0, R * 0.36), INK, 2, 0);
+    blob(c, circle(ox - 4, -4, 4), '#ffffff', 0.01, 0);
+  } else {
+    const pts: [number, number][] = [];
+    for (let i = 0; i < 8; i++) {
+      const an = (Math.PI / 4) * i + Math.PI / 8;
+      pts.push([ox + Math.cos(an) * R, Math.sin(an) * R]);
+    }
+    blob(c, poly(pts), '#e5303a', 4, 0);
+    mono(c, 'PARE', ox, 6, 14, '#ffffff', 'center');
+  }
+  const tx = ox + R + 12;
+  disp(c, look ? 'NÃO SE MEXA!' : 'PARE!', tx, look ? -4 : -2, look ? 22 : 30, look ? '#ffffff' : INK);
+  mono(c, look ? 'ELE ESTÁ OLHANDO' : 'ELE VAI OLHAR', tx, 26, 12, look ? '#ffffff' : INK);
+  c.restore();
+}
+
 /** Moldura vermelha enquanto o Vigia olha: não se mexa. */
 function lookFrame(c: Ctx, w: number, h: number, t: number) {
   c.save();
@@ -514,7 +562,9 @@ function hud(c: Ctx, s: SceneInput) {
   const { view, layout: l } = s;
   const classic = Number.isFinite(view.course.length);
   const meters = Math.floor(view.meters);
-  blob(c, rect(14, 12, 124, 56, 14), PAPER, 3, 3);
+  const narrow = l.w < 640;
+  const cw = narrow ? 108 : 124;
+  blob(c, rect(14, 12, cw, 56, 14), PAPER, 3, 3);
   mono(c, classic ? 'DISTÂNCIA TOTAL' : 'METROS', 24, 28, 9.5, '#4a4a44');
   disp(c, String(meters), 24, 58, 32, INK);
   const nw = c.measureText(String(meters)).width;
@@ -524,7 +574,7 @@ function hud(c: Ctx, s: SceneInput) {
   if (classic) {
     // A trilha fica só na faixa de fora da pista, embaixo da distância total.
     const side = l.w / 2 - HALF * l.ppm;
-    progressBar(c, s, 14, 76, Math.max(124, Math.min(side - 28, 240)));
+    progressBar(c, s, 14, 76, Math.max(cw, Math.min(side - 28, 240)));
     y = 128;
   }
   const chips: Notice[] = [];
@@ -569,7 +619,7 @@ function progressBar(c: Ctx, s: SceneInput, x: number, y: number, w: number) {
   blob(c, rect(x, y, w, 44, 12), PAPER, 2.5, 2);
   const left = Math.max(0, Math.ceil(len - view.y));
   mono(c, `FASE ${view.course.n}`, x + 10, y + 16, 10, INK);
-  mono(c, `faltam ${left} m`, x + w - 10, y + 16, 10, '#4a4a44', 'right');
+  mono(c, w < 130 ? `${left} m` : `faltam ${left} m`, x + w - 10, y + 16, 10, '#4a4a44', 'right');
   const tx = x + 12;
   const tw = w - 36;
   const ty = y + 28;

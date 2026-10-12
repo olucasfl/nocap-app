@@ -670,6 +670,8 @@ describe('os poderes mexem no boneco (quando ele está exposto)', () => {
               sim.y = c.y;
             }
           }
+          // se algo (um obstáculo ou a esteira) tirou o boneco do esconderijo, esta rodada não vale
+          const wasHidden = sim.view.hidden;
           for (const e of sim.step(0, 0)) {
             if (e.kind === 'poder-aviso') warned = true;
             if (warned && e.kind === 'poder-evitado') {
@@ -677,8 +679,9 @@ describe('os poderes mexem no boneco (quando ele está exposto)', () => {
               done = true;
             }
             if (warned && e.kind === 'poder') {
-              if (hide) hitHidden++;
-              else hitExposed++;
+              if (hide) {
+                if (wasHidden) hitHidden++;
+              } else hitExposed++;
               done = true;
             }
           }
