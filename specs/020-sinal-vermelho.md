@@ -54,6 +54,21 @@ Antes de olhar, o Vigia dá sinais discretos e que um jogador atento aprende a l
 ### Fim da partida
 Pausa disponível, que congela o relógio. Ao ser visto (ou alcançado pela escuridão) mostra "Te viu!" (ou o equivalente da escuridão), os metros, o recorde e o lugar no ranking (o mesmo `MatchSummary` dos outros jogos).
 
+## Câmera e tamanho do mapa (decisão de 12/10/2026)
+O Lucas achou a câmera **perto demais** e quer **mais campo de visão**, com **10 a 12 pessoas cabendo na tela** no online. **Um mapa só, maior, para todo mundo** (assim os metros do Solo e dos amigos significam a mesma coisa): o Solo já é o mapa grande, e só a **câmera** e a **largura do corredor** mudam com o número de jogadores.
+
+| | Solo | Com amigos (até 12) |
+|---|---|---|
+| Zoom da câmera | 0,68 (mostra bem mais mundo que antes) | 0,42 |
+| Largura do corredor | cerca de 10 m | cerca de 20 m |
+| Esconderijos | poucos, espaçados | vários por trecho (mais gente para esconder) |
+| Vigia na tela | 82% | 62% (mais ao longe) |
+
+- O boneco, o esconderijo e o cenário encolhem com o zoom; a interface (metros, pausa, analógico, Vigia, escuridão, vinheta) não.
+- A câmera continua mantendo o boneco em cerca de 40% da altura, fora da zona do analógico.
+- A câmera do online ajusta o zoom ao número de pessoas na sala (12 é o mínimo de zoom), e cada jogador ganha um anel colorido sob o boneco para saber quem é quem.
+- Valores são palpite a calibrar jogando. O protótipo mostra as duas câmeras (`design-sinal-vermelho.html`, botões SOLO e 12 AMIGOS).
+
 ## Controles
 - **Celular:** o analógico (círculo e bolinha) fica **fixo no canto inferior direito**, sempre visível, com uma área de toque generosa em volta. A bolinha acompanha o dedo e volta ao centro ao soltar.
 - **A câmera nunca deixa o analógico tapar o boneco.** A tela reserva uma **zona do analógico** (canto inferior direito, com folga em volta) e a câmera mantém o boneco sempre **fora dela**: o boneco fica na parte de cima da tela (cerca de 40% da altura) e a câmera também acompanha de lado quando ele vai para a direita. É uma regra do código da câmera (função pura, com teste: para qualquer posição do boneco no corredor, em retrato e em paisagem, ele nunca fica dentro da zona do analógico). Vale também para o Vigia, os esconderijos e o aviso, que ficam fora dessa zona ou são desenhados sem depender dela.
