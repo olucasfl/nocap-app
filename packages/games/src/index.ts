@@ -10,3 +10,4 @@ export * from './eco';
 export * from './eco/rhythm';
 
 export * from './party';
+export * from './sinal';
