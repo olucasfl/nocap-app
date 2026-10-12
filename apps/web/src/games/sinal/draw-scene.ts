@@ -387,7 +387,7 @@ export function drawScene(c: Ctx, s: SceneInput) {
   offscreenArrows(c, w, h, l, heroX, offscreen, s.t);
   if (s.pushFx) pushBurst(c, heroX, l.heroY, s.pushFx);
   hud(c, s);
-  powerBanner(c, w, avisos[0]?.kind ?? effects[0]?.kind ?? null, avisos.length > 0, s.t, Math.max(l.heroY - 140, 124));
+  powerBanner(c, w, avisos[0]?.kind ?? effects[0]?.kind ?? null, avisos.length > 0, s.t, Math.max(l.heroY - 130, 200));
   if (s.joy.show) stick(c, l, s.joy, s.inverted);
   else if (s.keysHint) keyHint(c, w, h);
   c.restore();

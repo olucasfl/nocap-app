@@ -299,6 +299,7 @@ export function SinalRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
       <ul className="svr-feed mono" aria-label="Quem caiu" aria-live="polite">
         {(sinal?.feed ?? [])
           .filter((f) => now - toLocal(f.at) < FEED_MS)
+          .slice(-3)
           .map((f) => (
             <li key={f.n} className={f.id === me ? 'me' : ''}>
               <i style={{ background: sinal?.colors[f.id] }} />

@@ -571,16 +571,19 @@
   }
 }
 
-/* O placar de mortes: embaixo à esquerda, as quedas mais novas por último */
+/* O placar de mortes: lá em cima, no centro, logo abaixo do Vigia (as 3 quedas mais novas, a mais nova por último) */
 .svr-feed {
   position: absolute;
-  left: 10px;
-  bottom: 14px;
+  left: 50%;
+  top: 116px;
   z-index: 3;
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 4px;
-  max-width: min(58vw, 340px);
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 92vw;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -611,11 +614,11 @@
 }
 @keyframes svr-feed-in {
   from {
-    transform: translateX(-14px);
+    transform: translateY(-10px);
     opacity: 0;
   }
   to {
-    transform: translateX(0);
+    transform: translateY(0);
     opacity: 1;
   }
 }

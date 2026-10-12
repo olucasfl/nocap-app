@@ -235,7 +235,7 @@ O Lucas achou o jogo linear e fácil. O que mudou:
 
 ## Placar de mortes na sala (12/10/2026)
 - **Placar da corrida (canto de cima):** mostra só os 3 primeiros (1º, 2º, 3º) com os metros; se você está do 4º para trás, a sua linha aparece logo depois, separada, com a sua posição (por exemplo 7º).
-- **Quem caiu aparece na tela de todos**, embaixo à esquerda, por uns 7 s: `@ana foi visto pelo Vigia · 120 m` ou `@beto foi engolido pela escuridão · 86 m`. Se a queda veio até 2,5 s depois de um empurrão, o crédito vai para quem empurrou: `@beto foi empurrado por @ana e o Vigia viu · 86 m`. A linha de quem é você fica vermelha.
+- **Quem caiu aparece na tela de todos**, lá em cima no centro (logo abaixo do Vigia; as 3 quedas mais novas), por uns 7 s: `@ana foi visto pelo Vigia · 120 m` ou `@beto foi engolido pela escuridão · 86 m`. Se a queda veio até 2,5 s depois de um empurrão, o crédito vai para quem empurrou: `@beto foi empurrado por @ana e o Vigia viu · 86 m`. A linha de quem é você fica vermelha.
 
 ## Controles
 - **Celular:** o analógico (círculo e bolinha) fica **fixo embaixo, no centro da tela**, sempre visível, com uma área de toque generosa em volta. A bolinha acompanha o dedo e volta ao centro ao soltar.
