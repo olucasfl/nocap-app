@@ -6,7 +6,9 @@ import './hub-art.css';
  * com movimento reduzido.
  */
 
-const INK = 'var(--ink)';
+/** A arte é a mesma nos dois temas: o fundo do cartão é uma cor viva, então o contorno é sempre tinta escura. */
+const INK = '#111111';
+const PAPER = '#f4f4ef';
 const stroke = { stroke: INK, strokeWidth: 3.5, strokeLinejoin: 'round' as const, strokeLinecap: 'round' as const };
 const hard = { fill: INK, opacity: 1 };
 
@@ -34,7 +36,7 @@ export function ColorArt() {
       </g>
       {/* conta-gotas */}
       <g transform="rotate(32 100 22)" className="ha-float c">
-        <rect x="95" y="2" width="10" height="26" rx="5" fill="var(--paper)" {...stroke} strokeWidth={3} />
+        <rect x="95" y="2" width="10" height="26" rx="5" fill={PAPER} {...stroke} strokeWidth={3} />
         <rect x="90" y="-4" width="20" height="9" rx="4.5" fill={INK} />
         <path d="M100 28v12" {...stroke} strokeWidth={3.5} />
       </g>
@@ -65,7 +67,7 @@ export function TimeArt() {
         <rect x="92" y="10" width="16" height="12" rx="4" fill="var(--yellow)" {...stroke} strokeWidth={3} />
       </g>
       <circle cx="105" cy="85" r="58" {...hard} />
-      <circle cx="100" cy="80" r="58" fill="var(--white)" {...stroke} strokeWidth={4.5} />
+      <circle cx="100" cy="80" r="58" fill={PAPER} {...stroke} strokeWidth={4.5} />
       <circle cx="100" cy="80" r="46" fill="none" stroke={INK} strokeWidth="2" opacity="0.25" />
       {ticks.map((i) => (
         <line
@@ -88,7 +90,7 @@ export function TimeArt() {
       </g>
       <circle cx="100" cy="80" r="7" fill={INK} />
       {/* riscos de velocidade */}
-      <g className="ha-lines" stroke="var(--on-blue)" strokeWidth="4" strokeLinecap="round">
+      <g className="ha-lines" stroke="#ffffff" strokeWidth="4" strokeLinecap="round">
         <path d="M10 56h20M4 74h26M12 92h18" />
       </g>
     </svg>
@@ -146,9 +148,9 @@ export function SinalArt() {
       {/* o boneco */}
       <g className="ha-run">
         <ellipse cx="102" cy="136" rx="13" ry="5" fill="rgba(0,0,0,.3)" />
-        <ellipse cx="94" cy="124" rx="4" ry="6" fill="var(--paper)" {...stroke} strokeWidth={2.5} />
-        <ellipse cx="110" cy="124" rx="4" ry="6" fill="var(--paper)" {...stroke} strokeWidth={2.5} />
-        <circle cx="102" cy="118" r="14" fill="var(--paper)" {...stroke} strokeWidth={3.5} />
+        <ellipse cx="94" cy="124" rx="4" ry="6" fill={PAPER} {...stroke} strokeWidth={2.5} />
+        <ellipse cx="110" cy="124" rx="4" ry="6" fill={PAPER} {...stroke} strokeWidth={2.5} />
+        <circle cx="102" cy="118" r="14" fill={PAPER} {...stroke} strokeWidth={3.5} />
         <path d="M102 114l3.5 5-3.5 4-3.5-4z" fill="#33c27f" stroke={INK} strokeWidth="2" strokeLinejoin="round" />
       </g>
     </svg>
