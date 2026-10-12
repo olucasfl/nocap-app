@@ -1,10 +1,10 @@
 import type { Room } from 'colyseus.js';
-import type { Hsb, LeaderRule, TimeSettings } from '@nocap/games';
+import type { Hsb, LeaderRule, SinalEvent, SinalView, TimeSettings } from '@nocap/games';
 import { create } from 'zustand';
 import { ApiError, apiBase, apiClient } from './api-client';
 import { getToken, useAuth } from './auth';
 
-export type RoomGame = 'color' | 'time' | 'impostor' | 'eco' | 'party';
+export type RoomGame = 'color' | 'time' | 'impostor' | 'eco' | 'party' | 'sinal';
 export type Phase =
   | 'lobby'
   | 'intro'
@@ -100,6 +100,30 @@ export interface EcoRoomState {
   timedOut?: boolean;
   /** Pódio do Siga o Líder: soma de acertos de cada pessoa como seguidora. */
   hits?: Record<string, number>;
+}
+
+/** Cada corredor do Sinal Vermelho na sala (posição, se está escondido e se já caiu). */
+export interface SinalRoomPlayer {
+  id: string;
+  x: number;
+  y: number;
+  hidden: boolean;
+  dead: boolean;
+  meters: number;
+}
+
+/** O Sinal Vermelho em sala: cores, corredores, o mapa de quem a tela segue e o botão de empurrar. */
+export interface SinalRoomState {
+  colors: Record<string, string>;
+  players?: SinalRoomPlayer[];
+  /** De quem é o mapa na tela (o seu, ou o de quem você assiste depois de cair). */
+  target?: string | null;
+  view?: SinalView | null;
+  events?: (SinalEvent & { n: number })[];
+  endsAt?: number | null;
+  finishing?: boolean;
+  /** Quem está ao alcance do empurrão (null = ninguém) e quando o botão volta (relógio do servidor). */
+  push?: { target: string | null; readyAt: number; range: number } | null;
 }
 
 export interface PartyShapeItem {
@@ -224,6 +248,7 @@ export interface RoomSnapshot {
   impostor?: ImpostorState;
   eco?: EcoRoomState;
   party?: PartySnapshot;
+  sinal?: SinalRoomState;
 }
 
 /** Estado do Intruso, por pessoa: cor, dica e papéis só chegam a quem pode vê-los. */
@@ -554,6 +579,11 @@ export function muteMember(id: string) {
 
 export function markChatRead() {
   if (useRoom.getState().unread) set({ unread: 0 });
+}
+
+/** Mensagem que não limpa o aviso da tela nem mexe no estado (o analógico, muitas vezes por segundo). */
+export function sendRoomQuiet(type: string, payload?: unknown) {
+  room?.send(type, payload);
 }
 
 export function sendRoom(type: string, payload?: unknown) {

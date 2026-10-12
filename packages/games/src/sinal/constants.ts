@@ -17,6 +17,22 @@ export function isSinalMode(m: unknown): m is SinalMode {
 /** O modo guardado no servidor: `sinal-infinito` e `sinal-classico`. */
 export const sinalMode = (m: SinalMode): string => `sinal-${m}`;
 
+/** As 12 cores do boneco no online: cada pessoa da sala tem uma, e ninguém repete. */
+export const SINAL_COLORS: readonly { name: string; hex: string }[] = [
+  { name: 'Laranja', hex: '#ff6a2b' },
+  { name: 'Azul', hex: '#2f5bff' },
+  { name: 'Amarelo', hex: '#ffd23f' },
+  { name: 'Verde', hex: '#33c27f' },
+  { name: 'Rosa', hex: '#ff9ecf' },
+  { name: 'Roxo', hex: '#7a3cff' },
+  { name: 'Ciano', hex: '#25c7e8' },
+  { name: 'Vermelho', hex: '#e5303a' },
+  { name: 'Branco', hex: '#f4f4ef' },
+  { name: 'Grafite', hex: '#3a3a36' },
+  { name: 'Marrom', hex: '#8b5a2b' },
+  { name: 'Lima', hex: '#b6e83a' },
+];
+
 export const TPS = 60;
 export const DT = 1 / TPS;
 
@@ -165,6 +181,10 @@ export const TURBINA_SPEED = 2.4; // turbina: empurra para a frente ou para trá
 export const BUMP_BASE = 3.0;
 export const BUMP_PER_R = 3.2;
 export const BUMP_TICKS = 15;
+/** Sala: o botão de empurrar aparece a esta distância (m) de outro jogador e dá este empurrão (m/s). */
+export const PUSH_RANGE = 1.9;
+export const PUSH_POWER = 7.5;
+export const PUSH_COOLDOWN_MS = 2200;
 export const MOVER_BUMP = 5.5; // quem se mexe bate mais forte
 export const SERRA_BUMP = 9;
 
@@ -216,6 +236,8 @@ export type SinalEvent =
   /** Bateu num obstáculo: `size` de 0 a 1 é a força da pancada. */
   | { kind: 'choque'; size: number }
   | { kind: 'soluco' }
+  /** Sala: você empurrou alguém (o botão de empurrar). */
+  | { kind: 'empurrou' }
   | { kind: 'fase'; n: number; map: SinalMapId; mapChanged: boolean }
   | { kind: 'fim'; reason: SinalEnd };
 

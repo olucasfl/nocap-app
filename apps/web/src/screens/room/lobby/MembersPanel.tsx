@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { acceptRequest, fetchFriends, sendRequest, type RelationState } from '@/lib/friends';
 import { Crown } from '@/components/icons';
 import { sendRoom, type RoomMember, type RoomSnapshot } from '@/lib/rooms';
+import { SINAL_COLORS } from '@nocap/games';
 import { MIN_PLAYERS } from './rules';
 
 /** Como eu me relaciono com quem está na sala: amigo, pedido enviado/recebido ou ninguém. */
@@ -117,6 +118,42 @@ function Kick({ m }: { m: RoomMember }) {
 }
 
 /**
+ * Sinal Vermelho: a cor do seu boneco. Cada cor é de uma pessoa só; as já escolhidas por outros
+ * ficam apagadas, com o nome de quem as pegou.
+ */
+function SinalColors({ snapshot, me }: { snapshot: RoomSnapshot; me: string | undefined }) {
+  const colors = snapshot.sinal?.colors ?? {};
+  const owner = (hex: string) => Object.entries(colors).find(([, h]) => h === hex)?.[0];
+  const nameOf = (id?: string) => snapshot.members.find((m) => m.id === id)?.username;
+  return (
+    <div>
+      <div className="mono rm-label">A COR DO SEU BONECO</div>
+      <div className="lb-colors" role="radiogroup" aria-label="Cor do boneco">
+        {SINAL_COLORS.map((c) => {
+          const by = owner(c.hex);
+          const mine = by === me;
+          return (
+            <button
+              key={c.hex}
+              type="button"
+              role="radio"
+              aria-checked={mine}
+              aria-label={`${c.name}${by && !mine ? ` (de @${nameOf(by)})` : ''}`}
+              title={by && !mine ? `Já é de @${nameOf(by)}` : c.name}
+              className={`lb-color${mine ? ' on' : ''}${by && !mine ? ' taken' : ''}`}
+              style={{ background: c.hex }}
+              disabled={!!by && !mine}
+              data-sfx="select"
+              onClick={() => sendRoom('color', { hex: c.hex })}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/**
  * Quem está na sala: o líder em destaque no topo e, abaixo, os jogadores com o estado de cada
  * um. Só o líder vê o botão de expulsar (`canKick`).
  */
@@ -138,6 +175,7 @@ export function MembersPanel({
 
   return (
     <div className="lb-members">
+      {snapshot.game === 'sinal' && <SinalColors snapshot={snapshot} me={me} />}
       {leader && (
         <div>
           <div className="mono rm-label">LÍDER</div>

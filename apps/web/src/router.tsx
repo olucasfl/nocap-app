@@ -94,12 +94,13 @@ const roomRoute = createRoute({
   path: '/sala',
   validateSearch: (
     search: Record<string, unknown>,
-  ): { jogo?: 'color' | 'time' | 'impostor' | 'eco' | 'party' } =>
+  ): { jogo?: 'color' | 'time' | 'impostor' | 'eco' | 'party' | 'sinal' } =>
     search.jogo === 'color' ||
     search.jogo === 'time' ||
     search.jogo === 'impostor' ||
     search.jogo === 'eco' ||
-    search.jogo === 'party'
+    search.jogo === 'party' ||
+    search.jogo === 'sinal'
       ? { jogo: search.jogo }
       : {},
   component: lazyRouteComponent(() => import('@/screens/Room'), 'RoomEntryPage'),
@@ -156,6 +157,8 @@ const ecoRoute = createRoute({
 const sinalRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/sinal',
+  validateSearch: (search: Record<string, unknown>): GameSearch<'infinito' | 'classico'> =>
+    gameSearch(search, ['infinito', 'classico']),
   component: lazyRouteComponent(() => import('@/games/sinal/SinalPage'), 'SinalPage'),
 });
 

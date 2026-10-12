@@ -90,6 +90,10 @@ export interface SceneInput {
   inverted: boolean;
   /** Tranco da tela (0 a 1): pancada, soluço. */
   jolt: number;
+  /** Sala: os outros corredores (vivos), com a cor e o nome de cada um. */
+  others?: { id: string; x: number; y: number; hidden: boolean; color: string; name: string }[];
+  /** Sala: quem está ao alcance do empurrão (ganha um anel pulsando). */
+  pushTarget?: string | null;
 }
 
 /** Desenha um quadro inteiro do Sinal Vermelho. */
@@ -193,6 +197,39 @@ export function drawScene(c: Ctx, s: SceneInput) {
     c.scale(1.25, 1.25);
     cover(c, map, 0, 0, false, s.t, cv.dur / cv.def.max, cv.def.fragile);
     c.restore();
+  }
+  // os outros corredores da sala: escondidos aparecem fracos, e quem dá para empurrar ganha um anel
+  for (const o of s.others ?? []) {
+    const ox = vcx + o.x * V;
+    const oy = vy(o.y);
+    if (oy < -60 || oy > vh + 60) continue;
+    c.save();
+    c.translate(ox, oy);
+    c.scale(1.25, 1.25);
+    if (o.hidden) {
+      c.globalAlpha = 0.5;
+      silhouette(c, 0, 0, o.color);
+    } else {
+      hero(c, map, 0, 0, s.t, true, 1, o.color);
+    }
+    c.restore();
+    if (s.pushTarget === o.id) {
+      c.save();
+      c.strokeStyle = YEL;
+      c.lineWidth = 5;
+      c.setLineDash([9, 7]);
+      c.lineDashOffset = -s.t * 30;
+      c.globalAlpha = 0.7 + 0.3 * Math.sin(s.t * 10);
+      c.beginPath();
+      c.arc(ox, oy, 30, 0, 7);
+      c.stroke();
+      c.restore();
+    }
+    const label = `@${o.name}`.slice(0, 14);
+    c.font = "700 11px 'Space Mono', ui-monospace, monospace";
+    const lw = c.measureText(label).width + 14;
+    blob(c, rect(ox - lw / 2, oy - 46, lw, 18, 9), o.color, 2, 2);
+    mono(c, label, ox, oy - 33, 11, o.color === '#3a3a36' || o.color === '#7a3cff' || o.color === '#2f5bff' ? PAPER : INK, 'center');
   }
   const hx = vcx + view.x * V;
   if (!view.hidden) {

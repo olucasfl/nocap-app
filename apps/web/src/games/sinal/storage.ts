@@ -1,20 +1,8 @@
 import type { SinalMode } from '@nocap/games';
 
 /** As 12 cores do boneco (a escolha fica guardada). Na sala, cada cor é de uma pessoa só. */
-export const SINAL_COLORS: readonly { name: string; hex: string }[] = [
-  { name: 'Laranja', hex: '#ff6a2b' },
-  { name: 'Azul', hex: '#2f5bff' },
-  { name: 'Amarelo', hex: '#ffd23f' },
-  { name: 'Verde', hex: '#33c27f' },
-  { name: 'Rosa', hex: '#ff9ecf' },
-  { name: 'Roxo', hex: '#7a3cff' },
-  { name: 'Ciano', hex: '#25c7e8' },
-  { name: 'Vermelho', hex: '#e5303a' },
-  { name: 'Branco', hex: '#f4f4ef' },
-  { name: 'Grafite', hex: '#3a3a36' },
-  { name: 'Marrom', hex: '#8b5a2b' },
-  { name: 'Lima', hex: '#b6e83a' },
-];
+export { SINAL_COLORS } from '@nocap/games';
+import { SINAL_COLORS } from '@nocap/games';
 
 const COLOR_KEY = 'nocap-sinal-color';
 const BEST_KEY = 'nocap-sinal-best';

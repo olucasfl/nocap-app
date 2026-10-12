@@ -10,10 +10,15 @@ import { useRoomEntry } from '@/lib/my-room';
 import type { GameId } from '@/lib/stats';
 import './friends-panel.css';
 
-/** Os jogos com sala (o Sinal Vermelho ainda não tem: a aba dele diz "em breve"). */
-type RoomGameId = Exclude<GameId, 'sinal'>;
+type RoomGameId = GameId;
 
 const RULES: Record<RoomGameId, string[]> = {
+  sinal: [
+    'Todo mundo corre no MESMO mapa ao mesmo tempo, com o mesmo Vigia, os mesmos poderes e os mesmos obstáculos. Cada um tem uma cor.',
+    'Quem se mexe quando o Vigia olha (ou é empurrado!) ou é pego pela escuridão sai e fica assistindo. Vence quem chegar mais longe.',
+    'Chegou perto de alguém? Aparece o botão EMPURRAR: quem é empurrado conta como mexendo. Quem empurra não.',
+    'De 2 a 12 pessoas.',
+  ],
   color: [
     'Todo mundo vê a mesma cor ao mesmo tempo e recria de memória.',
     'O host escolhe rodadas, tempo para decorar e tempo para recriar.',

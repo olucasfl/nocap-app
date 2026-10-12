@@ -37,6 +37,7 @@ function leaderRoundOptions(players: number, current: number): number[] {
 }
 
 export const MIN_PLAYERS: Record<RoomGame, number> = {
+  sinal: 2,
   color: 2,
   time: 2,
   impostor: 3,
@@ -45,6 +46,7 @@ export const MIN_PLAYERS: Record<RoomGame, number> = {
 };
 
 export const GAME_NAME: Record<RoomGame, string> = {
+  sinal: 'Sinal Vermelho',
   color: 'Mesmíssima',
   time: 'Já Deu?',
   impostor: 'Intruso',
@@ -59,6 +61,7 @@ export const GAME_OF: Record<RoomGame, string> = {
   impostor: 'do Intruso',
   eco: 'do Ecooo',
   party: 'do NoCap!',
+  sinal: 'do Sinal Vermelho',
 };
 
 /** Modos de cada jogo na sala, com uma linha que explica cada um. */
@@ -104,6 +107,13 @@ export const MODES: Record<RoomGame, { id: string; label: string; note: string }
       note: 'Micro-desafios e minijogos grandes.',
     },
   ],
+  sinal: [
+    {
+      id: 'infinito',
+      label: 'Infinito',
+      note: 'Todo mundo corre no mesmo mapa, com o mesmo Vigia e os mesmos poderes. Quem se mexe sob o olhar dele ou é pego pela escuridão sai e assiste. Vence quem chegar mais longe.',
+    },
+  ],
   color: [
     { id: 'classic', label: 'Clássico', note: 'A cor aparece e some. Recrie de memória.' },
     { id: 'flash', label: 'Flash', note: 'A cor pisca por 0,4 s: confie no olho.' },
@@ -134,7 +144,9 @@ export function rulesSummary(s: RoomSnapshot): string {
     mode === GAME_NAME[s.game] ? undefined : mode,
     s.game === 'eco' && s.mode !== 'leader'
       ? 'Por vez'
-      : `${rounds} ${rounds === 1 ? 'rodada' : 'rodadas'}`,
+      : s.game === 'sinal'
+        ? 'Corrida'
+        : `${rounds} ${rounds === 1 ? 'rodada' : 'rodadas'}`,
   ]
     .filter(Boolean)
     .join(' · ');
@@ -156,7 +168,7 @@ export function rulesFor(s: RoomSnapshot): RuleDef[] {
   }
 
   // Corrida do Ecooo: as rodadas vêm do modo (a partida acaba quando sobra um).
-  if (s.game !== 'eco' || s.mode === 'leader')
+  if (s.game !== 'sinal' && (s.game !== 'eco' || s.mode === 'leader'))
     out.push({
       id: 'rounds',
       label: 'RODADAS',

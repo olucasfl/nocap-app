@@ -196,6 +196,25 @@ export class SinalSim {
     this.marks = [];
   }
 
+  /**
+   * Sala: alguém te empurrou. Joga o boneco na direção `(dx, dy)` como uma pancada (e, como toda
+   * pancada, isso conta como mexer para o Vigia).
+   */
+  shove(dx: number, dy: number, power: number) {
+    const len = Math.sqrt(dx * dx + dy * dy);
+    if (len < 1e-6 || this.dead) return;
+    this.impX = (dx / len) * power;
+    this.impY = (dy / len) * power;
+    this.impTicks = BUMP_TICKS;
+    this.impTotal = BUMP_TICKS;
+    this.impDecay = true;
+  }
+
+  /** O boneco está dentro de um esconderijo agora? */
+  get isHidden(): boolean {
+    return this.hidden;
+  }
+
   /** O resultado até agora (e, depois do fim, o resultado final). */
   get result(): SinalResult {
     const here = Math.min(this.maxY, this.course.length);

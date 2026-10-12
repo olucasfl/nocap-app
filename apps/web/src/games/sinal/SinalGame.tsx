@@ -6,6 +6,7 @@ import { BackButton } from '@/components/BackButton';
 import { GameTabs, type GameTab } from '@/components/GameTabs';
 import { ModePicker } from '@/components/ModePicker';
 import { ModeSheet } from '@/components/ModeSheet';
+import { FriendsPanel } from '@/components/FriendsPanel';
 import { MuteButton } from '@/components/MuteButton';
 import { apiClient } from '@/lib/api-client';
 import { useAuth } from '@/lib/auth';
@@ -117,18 +118,7 @@ function SinalStart({ onStart, busy }: { onStart: (mode: SinalMode) => void; bus
           )}
         </>
       )}
-      {tab === 'friends' && (
-        <div className="fp-soon">
-          <div className="mono sv-meta">JOGAR COM AMIGOS</div>
-          <h2>Em breve</h2>
-          <p>
-            A corrida online vem depois: todo mundo no mesmo mapa ao mesmo tempo, cada um com a sua
-            cor e o nome em cima do boneco. Os bonecos não se atravessam e, ao encostar, o outro é
-            empurrado. Quem é visto mexendo ou pego pela escuridão sai da corrida e assiste.
-          </p>
-          <p className="mono sv-meta">POR ENQUANTO, SÓ O MODO SOLO.</p>
-        </div>
-      )}
+      {tab === 'friends' && <FriendsPanel game="sinal" />}
     </section>
   );
 }

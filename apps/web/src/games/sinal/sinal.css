@@ -416,3 +416,157 @@
 .svf-actions {
   margin-top: 4px;
 }
+
+/* ---- corrida em sala */
+.svr-board {
+  position: absolute;
+  top: 12px;
+  right: 64px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 0;
+  padding: 6px 8px;
+  list-style: none;
+  max-width: 44vw;
+  background: rgba(244, 244, 239, 0.92);
+  color: #111;
+  border: 2.5px solid #111;
+  border-radius: 12px;
+  font-size: 10px;
+  pointer-events: none;
+}
+.svr-board li {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.svr-board li.me {
+  font-weight: 700;
+}
+.svr-board li.dead {
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+.svr-board i {
+  width: 10px;
+  height: 10px;
+  flex: none;
+  border: 2px solid #111;
+  border-radius: 50%;
+}
+.svr-board span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.svr-board b {
+  margin-left: auto;
+  padding-left: 6px;
+}
+.svr-leave {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 3;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  background: #f4f4ef;
+  color: #111;
+  border: 2.5px solid #111;
+  border-radius: 12px;
+  box-shadow: 3px 3px 0 #111;
+  font-size: 9px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.svr-spec {
+  position: absolute;
+  left: 50%;
+  bottom: 24px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transform: translateX(-50%);
+  padding: 10px 14px;
+  background: #111;
+  color: #f4f4ef;
+  border: 3px solid #f4f4ef;
+  border-radius: 14px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+.svr-spec-btns {
+  display: flex;
+  gap: 6px;
+}
+.svr-spec-btns button {
+  width: 34px;
+  height: 34px;
+  background: #ffd23f;
+  color: #111;
+  border: 2.5px solid #f4f4ef;
+  border-radius: 10px;
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+}
+/* O botão de empurrar: grande, embaixo à direita (o analógico fica no centro). */
+.svr-push {
+  position: absolute;
+  right: 18px;
+  bottom: 54px;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 112px;
+  height: 112px;
+  padding: 0;
+  background: #ffd23f;
+  color: #111;
+  border: 4px solid #111;
+  border-radius: 50%;
+  box-shadow: 5px 5px 0 #111;
+  cursor: pointer;
+  touch-action: manipulation;
+  animation: svr-push-in 0.16s ease-out;
+}
+.svr-push b {
+  font: 900 14px/1.1 var(--font-display, Archivo, sans-serif);
+  letter-spacing: 0.02em;
+}
+.svr-push small {
+  font-size: 9px;
+  font-weight: 700;
+}
+.svr-push:active:not(:disabled) {
+  transform: translate(3px, 3px);
+  box-shadow: 2px 2px 0 #111;
+}
+.svr-push.wait {
+  background: #c9c9c0;
+  opacity: 0.8;
+  cursor: default;
+}
+@keyframes svr-push-in {
+  from {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .svr-push {
+    animation: none;
+  }
+}

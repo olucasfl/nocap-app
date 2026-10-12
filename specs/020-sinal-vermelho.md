@@ -205,6 +205,16 @@ O Lucas achou o jogo linear e fácil. O que mudou:
 - **Duram mais:** 5,0 s (poeira, faróis, cortina) e 5,5 s (apagão) no básico, e crescem com a fase (60% do aumento dos outros efeitos). Os outros efeitos ficam abaixo de 4 s.
 - **Bolhas de sabão** agora fazem o chão ficar **ensaboado: o boneco desliza sem controle** (mais escorregadio que o gelo dos patins), mantendo as bolhas na tela.
 
+## Jogar com amigos: a sala online (12/10/2026)
+- **Como funciona.** Sala como as dos outros jogos (código, convite, lobby, líder, chat no lobby e no pódio), de **2 a 12 pessoas**, modo **Infinito**. Todo mundo corre no **mesmo mapa ao mesmo tempo**, com o mesmo Vigia, os mesmos poderes e os mesmos obstáculos: no servidor, cada pessoa é uma simulação da mesma seed avançada em conjunto (passo de 1/60 s). A **escuridão é de cada um** (quem fica para trás a vê perto).
+- **Cor e nome.** Cada pessoa escolhe uma das 12 cores no lobby (nenhuma cor é de duas pessoas); o boneco aparece com a cor e o `@nome` em cima. Cada um vê a câmera do próprio boneco.
+- **Largada.** Contagem de 3,5 s com os bonecos lado a lado. Quem perde a conexão fica parado (a escuridão resolve).
+- **Perdeu, vira plateia.** Quem se mexe sob o olhar do Vigia ou é pego pela escuridão sai e **assiste** (por padrão o líder da corrida; pode trocar). A corrida acaba quando todos caem, ou quando sobra um que já passou a distância dos que caíram. **Vence quem chegar mais longe**; o pódio mostra os metros.
+- **Os bonecos não se atravessam.** Não há empurrão automático ao encostar.
+- **O botão EMPURRAR.** Quando alguém está **perto o bastante** (1,9 m), aparece um botão grande (tecla Espaço ou E no computador) e um anel amarelo no boneco que dá para empurrar. Apertar joga **o outro** para longe (como uma pancada de obstáculo grande), com pausa de 2,2 s entre usos. **Para o Vigia, o empurrão não conta como movimento de quem empurrou (que fica parado), mas conta como movimento de quem foi empurrado:** empurrar alguém quando o Vigia olha o tira da corrida.
+- **No histórico.** A partida de sala vai para o histórico (jogo Sinal Vermelho, tipo Sala), com a colocação de cada um, e **nunca entra no ranking**, como toda sala.
+- **Rede.** O aparelho manda só o analógico (quando muda) e o botão; o servidor manda o estado 15 vezes por segundo (a posição de todos e o mapa de quem você está vendo) e o aparelho suaviza o movimento. A seed nunca sai do servidor.
+
 ## Controles
 - **Celular:** o analógico (círculo e bolinha) fica **fixo embaixo, no centro da tela**, sempre visível, com uma área de toque generosa em volta. A bolinha acompanha o dedo e volta ao centro ao soltar.
 - **A câmera nunca deixa o analógico tapar o boneco.** A tela reserva uma **zona do analógico** (embaixo, no centro, com folga em volta) e a câmera mantém o boneco sempre **fora dela**: o boneco fica um pouco acima do meio da tela (cerca de 52% da altura, para ficar longe do Vigia) e a câmera também acompanha de lado quando ele vai para a direita. É uma regra do código da câmera (função pura, com teste: para qualquer posição do boneco no corredor, em retrato e em paisagem, ele nunca fica dentro da zona do analógico). Vale também para o Vigia, os esconderijos e o aviso, que ficam fora dessa zona ou são desenhados sem depender dela.

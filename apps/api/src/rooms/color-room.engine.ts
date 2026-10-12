@@ -103,7 +103,7 @@ export class ColorRoomEngine {
   protected readonly newSeed: () => string;
   protected readonly maxPlayers: number;
   /** Qual jogo esta sala joga; o `TimeRoomEngine` troca. */
-  readonly game: 'color' | 'time' | 'impostor' | 'eco' | 'party' = 'color';
+  readonly game: 'color' | 'time' | 'impostor' | 'eco' | 'party' | 'sinal' = 'color';
   /** Menos gente que isto não joga (o Intruso precisa de 3 para votar). */
   protected readonly minPlayers: number = MIN_PLAYERS;
   /** Salvar o pódio como partida de sala (o Intruso não salva). */

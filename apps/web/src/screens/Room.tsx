@@ -16,6 +16,7 @@ import { ChatDock } from '@/components/Chat';
 import { Final } from './room/Final';
 import { Lobby } from './room/Lobby';
 import { Play } from './room/Play';
+import { SinalRoomPlay } from '@/games/sinal/SinalRoomPlay';
 import './account.css';
 import './friends.css';
 import './room.css';
@@ -49,6 +50,7 @@ const GAME_PAGE = {
   impostor: '/cor',
   eco: '/eco',
   party: '/nocap',
+  sinal: '/sinal',
 } as const;
 
 const GAME_NAME: Record<RoomGame, string> = {
@@ -57,6 +59,7 @@ const GAME_NAME: Record<RoomGame, string> = {
   impostor: 'Intruso',
   eco: 'Ecooo',
   party: 'NoCap!',
+  sinal: 'Sinal Vermelho',
 };
 
 const ENTRY_LEAD: Record<RoomGame, string> = {
@@ -67,6 +70,8 @@ const ENTRY_LEAD: Record<RoomGame, string> = {
     'O Intruso precisa de uma sala com no mínimo 3 pessoas: alguns não veem a cor, só uma dica, e todo mundo vota em quem desconfia.',
   party:
     'Jogue NoCap! com amigos: micro-desafios rápidos e minijogos grandes, todos jogando ao mesmo tempo.',
+  sinal:
+    'Corra com os amigos no mesmo mapa, cada um com a sua cor. Quem se mexe quando o Vigia olha, ou é pego pela escuridão, sai. Dá para empurrar quem chega perto.',
 };
 
 function Entry({
@@ -96,7 +101,9 @@ function Entry({
               ? '/eco'
               : game === 'party'
                 ? '/nocap'
-                : '/cor'
+                : game === 'sinal'
+                  ? '/sinal'
+                  : '/cor'
         }
         label="Voltar ao jogo"
       />
@@ -226,12 +233,18 @@ export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomG
     );
   }
 
+  // A corrida do Sinal Vermelho ocupa a tela toda (sem cabeçalho nem navegação).
+  if (snapshot?.game === 'sinal' && (snapshot.phase === 'show' || snapshot.phase === 'play')) {
+    return <SinalRoomPlay snapshot={snapshot} />;
+  }
+
   return (
     <div className="app">
       <Header
         round={
           snapshot &&
           snapshot.game !== 'party' &&
+          snapshot.game !== 'sinal' &&
           snapshot?.round &&
           snapshot.phase !== 'lobby' &&
           snapshot.phase !== 'final'
