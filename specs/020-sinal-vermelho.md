@@ -70,7 +70,8 @@ O Lucas achou a câmera **perto demais** e quer **mais campo de visão**, com **
 - Valores são palpite a calibrar jogando. O protótipo mostra as duas câmeras (`design-sinal-vermelho.html`, botões SOLO e 12 AMIGOS).
 
 ## Seu boneco: cor e nome (12/10/2026)
-- **Antes de começar** (solo ou sala) há uma tela "Seu boneco" onde a pessoa **escolhe a cor** entre 12: laranja, azul, amarelo, verde, rosa, roxo, ciano, vermelho, branco, grafite, marrom e lima. O boneco do mapa (tomate, entregador ou raposa) usa essa cor no corpo. A escolha fica guardada.
+- **Decisão do Lucas: a cor e o nome só existem no online.** No solo (Clássico e Infinito) vale o **boneco padrão** do mapa (Tomate, Entregador, Raposa), sem escolher cor. O resto desta seção descreve o online.
+- **Antes de começar a sala** há uma tela "Seu boneco" onde a pessoa **escolhe a cor** entre 12: laranja, azul, amarelo, verde, rosa, roxo, ciano, vermelho, branco, grafite, marrom e lima. O boneco do mapa (tomate, entregador ou raposa) usa essa cor no corpo. A escolha fica guardada.
 - **Na sala, cada cor é única:** a cor que outra pessoa já pegou aparece apagada e não dá para escolher.
 - **O nome** (o `@usuario`) aparece **em cima de cada boneco**, numa etiqueta da cor dele, com tamanho fixo na tela (para ler mesmo com a câmera longe). O seu leva uma setinha amarela.
 

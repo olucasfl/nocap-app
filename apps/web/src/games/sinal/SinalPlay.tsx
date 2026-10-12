@@ -21,7 +21,8 @@ type Pause = { kind: 'none' } | { kind: 'paused' } | { kind: 'count'; n: number 
 interface Props {
   mode: SinalMode;
   seed: string;
-  color: string;
+  /** Cor do boneco (só no online). Sem ela, o boneco padrão do mapa. */
+  color?: string;
   /** O recorde do modo neste aparelho (m), para a linha no chão do Infinito. */
   best: number;
   onEnd: (result: SinalResult, inputs: SinalInput[]) => void;

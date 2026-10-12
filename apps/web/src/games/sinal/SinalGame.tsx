@@ -9,7 +9,7 @@ import { MuteButton } from '@/components/MuteButton';
 import { NewRecord } from '@/components/NewRecord';
 import { ArrowRight } from '@/components/icons';
 import { SinalPlay } from './SinalPlay';
-import { getSinalBest, getSinalColor, setSinalBest, setSinalColor, SINAL_COLORS } from './storage';
+import { getSinalBest, setSinalBest } from './storage';
 
 type Phase = 'menu' | 'play' | 'final';
 
@@ -49,16 +49,8 @@ const HOW = [
   'A escuridão vem de trás. Ela nunca é mais rápida que você: só pega quem para demais.',
 ];
 
-/** O menu do jogo: as abas, os modos como cartões e a ficha do modo (cor do boneco e Jogar). */
-function SinalStart({
-  color,
-  onColor,
-  onStart,
-}: {
-  color: string;
-  onColor: (hex: string) => void;
-  onStart: (mode: SinalMode) => void;
-}) {
+/** O menu do jogo: as abas, os modos como cartões e a ficha do modo (como jogar e Jogar). */
+function SinalStart({ onStart }: { onStart: (mode: SinalMode) => void }) {
   const [tab, setTab] = useState<GameTab>('modes');
   const [open, setOpen] = useState<SinalMode | null>(null);
   const close = useCallback(() => setOpen(null), []);
@@ -95,23 +87,6 @@ function SinalStart({
                   </li>
                 ))}
               </ol>
-              <div className="mono sv-meta">SEU BONECO</div>
-              <div className="sv-colors" role="radiogroup" aria-label="Cor do boneco">
-                {SINAL_COLORS.map((c) => (
-                  <button
-                    key={c.hex}
-                    type="button"
-                    role="radio"
-                    aria-checked={color === c.hex}
-                    aria-label={c.name}
-                    title={c.name}
-                    className="sv-color"
-                    data-sfx="select"
-                    style={{ background: c.hex }}
-                    onClick={() => onColor(c.hex)}
-                  />
-                ))}
-              </div>
               <p className="mono sv-meta">
                 NO CELULAR, O ANALÓGICO FICA EMBAIXO, NO CENTRO. NO COMPUTADOR, W A S D OU AS SETAS.
               </p>
@@ -144,7 +119,6 @@ const seedOf = () => crypto.randomUUID().replace(/-/g, '').slice(0, 12);
 export function SinalGame() {
   const [phase, setPhase] = useState<Phase>('menu');
   const [mode, setMode] = useState<SinalMode>('classico');
-  const [color, setColor] = useState(getSinalColor);
   const [seed, setSeed] = useState(seedOf);
   const [result, setResult] = useState<SinalResult | null>(null);
   const [before, setBefore] = useState(0);
@@ -163,7 +137,6 @@ export function SinalGame() {
         key={seed}
         mode={mode}
         seed={seed}
-        color={color}
         best={getSinalBest(mode)}
         onEnd={(r, inp) => {
           // O recorde guardado aqui é deste aparelho; o ranking de verdade vem do servidor.
@@ -189,14 +162,7 @@ export function SinalGame() {
       </header>
 
       {phase === 'menu' && (
-        <SinalStart
-          color={color}
-          onColor={(hex) => {
-            setColor(hex);
-            setSinalColor(hex);
-          }}
-          onStart={begin}
-        />
+        <SinalStart onStart={begin} />
       )}
 
       {phase === 'final' && result && (

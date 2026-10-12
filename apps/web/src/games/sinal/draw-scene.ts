@@ -3,6 +3,7 @@ import { V, joyCenter, screenX, screenY, type Layout } from './camera';
 import {
   INK,
   MAP_STYLE,
+  HERO_COLOR,
   ORG,
   PAPER,
   YEL,
@@ -53,7 +54,8 @@ export interface Notice {
 export interface SceneInput {
   layout: Layout;
   view: SinalView;
-  color: string;
+  /** A cor do boneco (só no online); sem ela vale o boneco padrão do mapa. */
+  color?: string;
   /** Segundos desde o começo (animação). */
   t: number;
   /** 0 = Vigia de costas, 1 = olhando (suavizado). */
@@ -84,6 +86,7 @@ export function drawScene(c: Ctx, s: SceneInput) {
   const avisos = s.view.powers.filter((p) => !p.evaded && p.phase === 'aviso');
   const has = (k: PowerKind) => effects.some((p) => p.kind === k);
   const heroX = screenX(l, view.x);
+  const heroColor = s.color ?? HERO_COLOR[map];
 
   c.save();
   c.clearRect(0, 0, w, h);
@@ -153,13 +156,13 @@ export function drawScene(c: Ctx, s: SceneInput) {
     c.save();
     c.translate(hx, vpy);
     c.scale(1.25, 1.25);
-    hero(c, map, 0, 0, s.t, s.walking, 1, s.color);
+    hero(c, map, 0, 0, s.t, s.walking, 1, heroColor);
     c.restore();
   } else {
     c.save();
     c.translate(hx, vpy);
     c.scale(1.25, 1.25);
-    silhouette(c, 0, 0, s.color);
+    silhouette(c, 0, 0, heroColor);
     c.restore();
     if (own) {
       c.save();
@@ -452,7 +455,7 @@ function progressBar(c: Ctx, s: SceneInput, x: number, y: number, w: number) {
   line(c, x + w - 12, y + 4, x + w - 12, y + 18, 2.4);
   blob(c, poly([[x + w - 12, y + 4], [x + w - 3, y + 8], [x + w - 12, y + 12]]), boss ? '#e5303a' : YEL, 1.6, 0);
   // boneco
-  blob(c, circle(tx + tw * p, y + 11, 6), s.color, 2, 0);
+  blob(c, circle(tx + tw * p, y + 11, 6), s.color ?? HERO_COLOR[view.course.map], 2, 0);
   const left = Math.max(0, Math.ceil(len - view.y));
   mono(c, `${boss ? 'CHEFE · ' : ''}FASE ${view.course.n}`, x + 6, y + 36, 9.5, PAPER);
   mono(c, `faltam ${left} m`, x + w - 4, y + 36, 9.5, PAPER, 'right');

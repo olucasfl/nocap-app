@@ -111,6 +111,13 @@ export function disp(
   c.fillText(text, x, y);
 }
 
+/** O boneco padrão de cada mapa (a cor própria só existe no online). */
+export const HERO_COLOR: Record<SinalMapId, string> = {
+  horta: '#e5303a',
+  neon: '#2f5bff',
+  deserto: '#ff9d4d',
+};
+
 /** Nome, cores e identidade de cada mapa. */
 export const MAP_STYLE: Record<
   SinalMapId,
