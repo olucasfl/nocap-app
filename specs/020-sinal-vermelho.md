@@ -12,7 +12,7 @@ Um jogo de correr, visto de cima, infinito. Lá no fundo da tela fica o **Vigia*
 - **Vigia fixo** no topo da tela, acompanhando a câmera (sempre no horizonte). Um só.
 - **Dois modos na primeira versão (decidido em 12/10/2026):** **Clássico** (rodadas de mapas com fases e chefe, sem fim) e **Infinito** (um mapa só, sem fim, cada vez mais difícil). Os dois são uma corrida só: **perdeu, acabou**. Os dois têm ranking. O **online** vem depois.
 - **Escuridão** que vem de trás: no começo quase não aparece, vai ficando perigosa no final da corrida ou se a pessoa **ficar muito tempo parada**. Precisa ser **animada e profissional**.
-- **Controles pelo aparelho, de forma intuitiva:** celular com analógico na tela (bola e bolinha), **fixo no lado direito** (decisão de 12/10/2026, no lugar de aparecer onde o dedo tocar); computador com W A S D (e setas). Sem opção de "dica mais fácil".
+- **Controles pelo aparelho, de forma intuitiva:** celular com analógico na tela (bola e bolinha), **fixo embaixo, no centro** (decisão de 12/10/2026: serve para canhoto e destro; antes era no canto direito); computador com W A S D (e setas). Sem opção de "dica mais fácil".
 - **Mapas:** 3, com cenários, bonecos e Vigias diferentes, mas **as mesmas regras e a mesma dinâmica**. O mapa é **sorteado quando a partida é puxada** (pela seed). **Só o modo muda o ranking, o mapa não:** um ranking por modo, igual para todos os mapas.
 - **Nota:** metros. Ranking por modo. Daily fica para depois (decidir mais adiante).
 
@@ -146,8 +146,8 @@ O chefe também faz falsos avisos mais seguidos.
 - **Teste de justiça:** na simulação, um jogador que reage ao aviso (para a tempo ou se esconde) **nunca perde por causa de um poder**.
 
 ## Controles
-- **Celular:** o analógico (círculo e bolinha) fica **fixo no canto inferior direito**, sempre visível, com uma área de toque generosa em volta. A bolinha acompanha o dedo e volta ao centro ao soltar.
-- **A câmera nunca deixa o analógico tapar o boneco.** A tela reserva uma **zona do analógico** (canto inferior direito, com folga em volta) e a câmera mantém o boneco sempre **fora dela**: o boneco fica na parte de cima da tela (cerca de 40% da altura) e a câmera também acompanha de lado quando ele vai para a direita. É uma regra do código da câmera (função pura, com teste: para qualquer posição do boneco no corredor, em retrato e em paisagem, ele nunca fica dentro da zona do analógico). Vale também para o Vigia, os esconderijos e o aviso, que ficam fora dessa zona ou são desenhados sem depender dela.
+- **Celular:** o analógico (círculo e bolinha) fica **fixo embaixo, no centro da tela**, sempre visível, com uma área de toque generosa em volta. A bolinha acompanha o dedo e volta ao centro ao soltar.
+- **A câmera nunca deixa o analógico tapar o boneco.** A tela reserva uma **zona do analógico** (embaixo, no centro, com folga em volta) e a câmera mantém o boneco sempre **fora dela**: o boneco fica na parte de cima da tela (cerca de 40% da altura) e a câmera também acompanha de lado quando ele vai para a direita. É uma regra do código da câmera (função pura, com teste: para qualquer posição do boneco no corredor, em retrato e em paisagem, ele nunca fica dentro da zona do analógico). Vale também para o Vigia, os esconderijos e o aviso, que ficam fora dessa zona ou são desenhados sem depender dela.
 - **Computador:** W A S D e setas, com a dica das teclas na tela na primeira vez.
 - Aparece o que combina com o aparelho; se o aparelho tiver os dois, valem os dois.
 
@@ -177,7 +177,7 @@ Protótipo navegável em `docs/reference/design-sinal-vermelho.html` (abrir por 
 - **Vigia** (visto de frente, preso ao topo, gira como um cartão): de costas, aviso, olhando. O aviso acontece **com ele ainda de costas**: a luz traseira do semáforo pisca cada vez mais rápido, a costura do espantalho brilha e o chapéu inclina, a runa do totem acende. Olhando: a pupila acompanha o boneco.
 - **Boneco** em três estados: parado, andando (passinhos alternados) e escondido (translúcido, com anel tracejado no esconderijo).
 - **Escuridão:** borda ondulada animada, brasas subindo na cor do mapa e olhos piscando lá dentro.
-- **Tela:** metros no canto superior esquerdo, pausa no direito, linha tracejada amarela de "seu recorde" no chão, vinheta vermelha pulsando no aviso e carimbo amarelo "TE VIU!" no fim, como o resto do app. Analógico fixo no canto direito; o protótipo mostra a zona reservada.
+- **Tela:** metros no canto superior esquerdo, pausa no direito, linha tracejada amarela de "seu recorde" no chão, vinheta vermelha pulsando no aviso e carimbo amarelo "TE VIU!" no fim, como o resto do app. Analógico fixo embaixo, no centro; o protótipo mostra a zona reservada.
 
 ## Plano (em ordem)
 1. Núcleo puro e testes (`packages/games`).

@@ -3,7 +3,7 @@ import { PLAYER_R } from '@nocap/games';
 /**
  * A câmera do Sinal Vermelho (spec 020). Segue o boneco para a frente e mostra bastante chão:
  * cerca de 18 m de largura e 32 m de altura. O boneco fica na parte de cima da tela e **nunca**
- * dentro da zona do analógico (canto inferior direito), para o dedo não tapar o personagem.
+ * dentro da zona do analógico (embaixo, no centro), para o dedo não tapar o personagem.
  */
 
 /** Pixels do desenho por metro, na escala em que a arte foi feita (o resto é só zoom). */
@@ -31,13 +31,13 @@ export interface Layout {
   vigiaScale: number;
 }
 
-const ZONE_W = 170;
+const ZONE_W = 200;
 const ZONE_H = 200;
 
 export function makeLayout(w: number, h: number, touch: boolean): Layout {
   const ppm = Math.min(w / VISIBLE_WIDTH_M, h / VISIBLE_HEIGHT_M);
   const zone: Rect | null = touch
-    ? { x: Math.max(0, w - ZONE_W), y: Math.max(0, h - ZONE_H), w: Math.min(w, ZONE_W), h: Math.min(h, ZONE_H) }
+    ? { x: Math.max(0, w / 2 - ZONE_W / 2), y: Math.max(0, h - ZONE_H), w: Math.min(w, ZONE_W), h: Math.min(h, ZONE_H) }
     : null;
   let heroY = h * 0.4;
   if (zone) heroY = Math.min(heroY, zone.y - 40 - PLAYER_R * ppm * 1.4);
@@ -61,7 +61,7 @@ export function circleHitsRect(cx: number, cy: number, r: number, rect: Rect): b
   return (cx - nx) ** 2 + (cy - ny) ** 2 < r * r;
 }
 
-/** O analógico fixo no canto inferior direito: centro e raio, em pixels da tela. */
+/** O analógico fixo no centro, embaixo (serve para canhoto e destro): centro e raio, em pixels da tela. */
 export function joyCenter(l: Layout): { x: number; y: number; r: number } {
-  return { x: l.w - 76, y: l.h - 96, r: 54 };
+  return { x: l.w / 2, y: l.h - 96, r: 54 };
 }

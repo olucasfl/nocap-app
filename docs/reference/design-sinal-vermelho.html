@@ -84,7 +84,7 @@ const COLORS = [
 const NAMES = ['voce', 'ana', 'bruno', 'carla', 'dudu', 'eva', 'fabio', 'gabi', 'hugo', 'iris', 'joao', 'kaua'];
 const PPM = 12;            // pixels por metro
 const PY = H * 0.4;        // altura do boneco na tela
-const ZONE = { x: W - 150, y: H - 190, w: 150, h: 190 }; // zona do analógico (reservada)
+const ZONE = { x: W / 2 - 100, y: H - 190, w: 200, h: 190 }; // zona do analógico (reservada)
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const ease = (t) => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
@@ -416,7 +416,7 @@ function hud(c, m, meters, record, warn, t) {
   c.fillStyle = INK; c.fillRect(W - 14 - hb + 12, 24, 5, 18); c.fillRect(W - 14 - hb + 22, 24, 5, 18);
 }
 function stick(c, dx, dy, show) {
-  const cx = W - 76, cy = H - 96, R = 54;
+  const cx = W / 2, cy = H - 96, R = 54;
   if (show) { c.save(); c.setLineDash([7, 6]); c.lineWidth = 2.5; c.strokeStyle = PAPER; c.strokeRect(ZONE.x, ZONE.y, ZONE.w, ZONE.h); c.restore(); mono(c, 'ZONA DO ANALÓGICO', ZONE.x + 6, ZONE.y + 14, 8.5, PAPER); }
   c.save(); c.globalAlpha = .96;
   blob(c, circle(cx, cy, R), 'rgba(244,244,239,.18)', 3, 0, 'transparent');

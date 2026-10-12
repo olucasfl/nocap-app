@@ -143,7 +143,7 @@ export function SinalGame() {
             ))}
           </ol>
           <p className="mono sv-meta">
-            NO CELULAR, O ANALÓGICO FICA NO CANTO DIREITO. NO COMPUTADOR, W A S D OU AS SETAS.
+            NO CELULAR, O ANALÓGICO FICA EMBAIXO, NO CENTRO. NO COMPUTADOR, W A S D OU AS SETAS.
           </p>
 
           <div className="stack">
