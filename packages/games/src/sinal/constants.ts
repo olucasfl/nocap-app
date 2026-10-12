@@ -61,11 +61,11 @@ export const DARK_CAP = MAX_SPEED * DARK_CAP_FRACTION;
 export const COVER_ZONE_R = 1.3;
 export const COVER_DURABILITY = 5.5;
 export const COVER_FRAGILE = 3.2;
-/** Moita comprida (6 a 12 m): dá para correr dentro dela com o Vigia olhando, mas ela gasta mais rápido. */
+/** Moita comprida (5 a 14 m): dá para correr dentro dela com o Vigia olhando, mas ela gasta mais rápido. */
 export const COVER_LONG_DURABILITY = 6.5;
 export const COVER_LONG_DRAIN = 1.6;
-export const COVER_LONG_MIN = 6;
-export const COVER_LONG_MAX = 12;
+export const COVER_LONG_MIN = 5;
+export const COVER_LONG_MAX = 14;
 /** Prêmios de se esconder: o atordoamento passa 3x mais rápido, a escuridão anda a 25% e, ao sair, vem o fôlego. */
 export const COVER_STUN_FACTOR = 3;
 export const COVER_DARK_FACTOR = 0.25;

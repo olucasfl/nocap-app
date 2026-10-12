@@ -224,6 +224,10 @@ O Lucas achou o jogo linear e fácil. O que mudou:
 - **Mais frequentes:** o espaço entre esconderijos caiu (16 a 28 m no começo), e conta a partir do fim da moita comprida. As moitas simples ficaram mais firmes (5,5 s; frágil 3,2 s).
 - **Prêmios de se esconder:** o atordoamento passa 3x mais rápido; a escuridão anda a 25% da velocidade (um respiro, não um abrigo para sempre: o esconderijo quebra); e ao sair depois de pelo menos 1 s escondido vem o **fôlego**: 1,4 s com 1,3x de velocidade ("FÔLEGO: MAIS RÁPIDO"). Os poderes continuam não pegando quem está escondido.
 
+## Moitas compridas com arte própria e sem o cartão de PARE (12/10/2026)
+- **Cada moita comprida tem o seu desenho**, três por mapa: horta (sebe de bagas, túnel de arbusto, milharal), rua (túnel de cano, fila de containers, toldo listrado) e deserto (túnel de pedras, cactos floridos, muro de ruína). O jeito de cada uma é sorteado pelo número dela, e o comprimento varia de verdade, de 5 a 14 m.
+- **O cartão "PARE! / VIROU!" saiu.** O vermelho da tela continua (cresce no aviso e fica forte quando ele vira), e o lugar do cartão agora é do **aviso dos efeitos** (nome e o que o poder faz).
+
 ## Controles
 - **Celular:** o analógico (círculo e bolinha) fica **fixo embaixo, no centro da tela**, sempre visível, com uma área de toque generosa em volta. A bolinha acompanha o dedo e volta ao centro ao soltar.
 - **A câmera nunca deixa o analógico tapar o boneco.** A tela reserva uma **zona do analógico** (embaixo, no centro, com folga em volta) e a câmera mantém o boneco sempre **fora dela**: o boneco fica um pouco acima do meio da tela (cerca de 52% da altura, para ficar longe do Vigia) e a câmera também acompanha de lado quando ele vai para a direita. É uma regra do código da câmera (função pura, com teste: para qualquer posição do boneco no corredor, em retrato e em paisagem, ele nunca fica dentro da zona do analógico). Vale também para o Vigia, os esconderijos e o aviso, que ficam fora dessa zona ou são desenhados sem depender dela.

@@ -196,7 +196,7 @@ export function drawScene(c: Ctx, s: SceneInput) {
     }
     if (cv.broken) continue;
     if (cv.def.len > 0) {
-      longCover(c, map, x, y, yTop, false, s.t, cv.dur / cv.def.max);
+      longCover(c, map, x, y, yTop, false, s.t, cv.dur / cv.def.max, cv.def.id);
       continue;
     }
     c.save();
@@ -271,7 +271,7 @@ export function drawScene(c: Ctx, s: SceneInput) {
     if (own && own.def.len > 0) {
       c.save();
       c.globalAlpha = 0.72;
-      longCover(c, map, vcx + own.def.x * V, vy(own.def.y), vy(own.def.y + own.def.len), true, s.t, own.dur / own.def.max);
+      longCover(c, map, vcx + own.def.x * V, vy(own.def.y), vy(own.def.y + own.def.len), true, s.t, own.dur / own.def.max, own.def.id);
       c.restore();
     } else if (own) {
       c.save();
@@ -364,10 +364,10 @@ export function drawScene(c: Ctx, s: SceneInput) {
 
   vignette(c, w, h, s.warn, s.t);
   if (view.vigia === 'olhando') lookFrame(c, w, h, s.t);
-  stopAlert(c, w, h, s.t, view.vigia === 'olhando' ? 'look' : s.warn > 0.12 ? 'warn' : null, Math.max(l.heroY - 120, 150), s.warn);
+  stopAlert(c, w, h, s.t, view.vigia === 'olhando' ? 'look' : s.warn > 0.12 ? 'warn' : null, s.warn);
 
   hud(c, s);
-  powerBanner(c, w, avisos[0]?.kind ?? effects[0]?.kind ?? null, avisos.length > 0, s.t, l.heroY + 70);
+  powerBanner(c, w, avisos[0]?.kind ?? effects[0]?.kind ?? null, avisos.length > 0, s.t, Math.max(l.heroY - 140, 124));
   if (s.joy.show) stick(c, l, s.joy, s.inverted);
   else if (s.keysHint) keyHint(c, w, h);
   c.restore();
@@ -789,10 +789,11 @@ function vignette(c: Ctx, w: number, h: number, warn: number, t: number) {
 }
 
 /**
- * O alerta grande para quem joga sem som: no aviso, placa de PARE piscando com "ELE VAI OLHAR" e a
- * borda da tela pulsando; quando ele olha, tela avermelhada com "NÃO SE MEXA". O falso aviso é igual.
+ * O alerta de quem joga sem som: no aviso a borda e a névoa vermelhas pulsam e crescem até ele virar;
+ * quando ele olha, a tela fica bem vermelha. O falso aviso é igual. (Sem cartão de texto: o lugar
+ * dele é do aviso dos efeitos.)
  */
-function stopAlert(c: Ctx, w: number, h: number, t: number, state: 'warn' | 'look' | null, y: number, warn: number) {
+function stopAlert(c: Ctx, w: number, h: number, t: number, state: 'warn' | 'look' | null, warn: number) {
   if (!state) return;
   const look = state === 'look';
   c.save();
@@ -815,31 +816,6 @@ function stopAlert(c: Ctx, w: number, h: number, t: number, state: 'warn' | 'loo
     c.fillStyle = '#ff2d3a';
     c.fillRect(0, 0, w, h);
   }
-  c.globalAlpha = 1;
-  const pop = look ? 1 : 1 + 0.07 * Math.sin(t * 16);
-  const bw = Math.min(w - 40, 300);
-  c.translate(w / 2, y);
-  c.scale(pop, pop);
-  blob(c, rect(-bw / 2, -52, bw, 104, 18), look ? '#e5303a' : YEL, 4, 4);
-  // placa de PARE (ou olho aberto, quando ele já está olhando)
-  const R = 30;
-  const ox = -bw / 2 + 14 + R;
-  if (look) {
-    blob(c, ell(ox, 0, R, R * 0.66), '#ffffff', 3.5, 0);
-    blob(c, circle(ox, 0, R * 0.36), INK, 2, 0);
-    blob(c, circle(ox - 4, -4, 4), '#ffffff', 0.01, 0);
-  } else {
-    const pts: [number, number][] = [];
-    for (let i = 0; i < 8; i++) {
-      const an = (Math.PI / 4) * i + Math.PI / 8;
-      pts.push([ox + Math.cos(an) * R, Math.sin(an) * R]);
-    }
-    blob(c, poly(pts), '#e5303a', 4, 0);
-    mono(c, 'PARE', ox, 6, 14, '#ffffff', 'center');
-  }
-  const tx = ox + R + 12;
-  disp(c, look ? 'VIROU!' : 'PARE!', tx, look ? 2 : -2, look ? 32 : 32, look ? '#ffffff' : INK);
-  mono(c, look ? 'NÃO SE MEXA' : 'ELE VAI VIRAR', tx, 26, 12.5, look ? '#ffffff' : INK);
   c.restore();
 }
 

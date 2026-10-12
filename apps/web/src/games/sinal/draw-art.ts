@@ -427,8 +427,10 @@ export function zoneRing(c: Ctx, x: number, y: number, active: boolean, t: numbe
 }
 
 /**
- * A moita comprida: uma fileira de moitas de `yBot` (começo) até `yTop` (fim), com a zona desenhada
- * como uma cápsula (pontilhada; verde com a pessoa dentro, laranja quando está acabando).
+ * A moita comprida: cada uma é um esconderijo próprio, de um de três jeitos por mapa (horta: sebe,
+ * túnel de arbusto e milharal; rua: túnel de cano, containers e toldo; deserto: túnel de pedras,
+ * cactos e muro de ruína), do comprimento que ela tem de verdade. A zona fica desenhada como uma
+ * cápsula pontilhada (verde com a pessoa dentro, laranja quando está acabando).
  */
 export function longCover(
   c: Ctx,
@@ -439,13 +441,15 @@ export function longCover(
   active: boolean,
   t: number,
   dur: number,
+  id = 0,
 ) {
   const R = 46;
+  const L = yBot - yTop;
   c.save();
   c.setLineDash([10, 8]);
   c.lineDashOffset = -t * (active ? 14 : 4);
   c.beginPath();
-  c.roundRect(x - R, yTop - R, R * 2, yBot - yTop + R * 2, R);
+  c.roundRect(x - R, yTop - R, R * 2, L + R * 2, R);
   c.lineWidth = 6;
   c.strokeStyle = INK;
   c.stroke();
@@ -453,14 +457,120 @@ export function longCover(
   c.strokeStyle = active ? (dur > 0.35 ? '#33c27f' : '#ff6a2b') : PAPER;
   c.stroke();
   c.restore();
-  const n = Math.max(2, Math.round((yBot - yTop) / 44) + 1);
-  for (let i = 0; i < n; i++) {
-    const py = yBot - (i * (yBot - yTop)) / (n - 1);
-    c.save();
-    c.translate(x + ((i % 2) * 2 - 1) * 4, py);
-    c.scale(1.1, 1.1);
-    cover(c, key, 0, 0, false, t, dur, false, true);
-    c.restore();
+  const variant = Math.min(2, Math.floor(hash(id, 77) * 3));
+  c.save();
+  c.translate(x, yTop);
+  if (dur < 0.4 && dur > 0) c.translate(Math.sin(t * 50) * 1.6 * (1 - dur / 0.4), 0);
+  if (dur < 0.55) c.globalAlpha = 0.5 + dur * 0.8;
+  longArt(c, key, variant, L, id);
+  c.restore();
+}
+
+/** O desenho de cada moita comprida. Coordenadas locais: x de -40 a 40; y de 0 (ponta de lá) a L (ponta de cá). */
+function longArt(c: Ctx, key: SinalMapId, v: number, L: number, id: number) {
+  const mouth = (y: number, w = 30) => blob(c, ell(0, y, w, 12), '#10181a', 3, 0);
+  if (key === 'horta') {
+    if (v === 0) {
+      // sebe cheia de bagas
+      blob(c, rect(-36, 0, 72, L, 20), '#2f9e57');
+      for (let y = 14, i = 0; y < L - 8; y += 20, i++) {
+        blob(c, circle(i % 2 ? -30 : 30, y, 15), '#3aad60', 2.5, 0);
+        blob(c, circle(i % 2 ? 30 : -30, y + 10, 14), '#3aad60', 2.5, 0);
+      }
+      blob(c, rect(-22, 10, 44, Math.max(10, L - 20), 14), '#49c26b', 2.5, 0);
+      for (let y = 18, i = 0; y < L - 10; y += 24, i++) {
+        blob(c, circle((hash(id, i) - 0.5) * 40, y, 3.4), '#e5303a', 2, 0);
+      }
+    } else if (v === 1) {
+      // túnel de arbusto: costelas e duas bocas escuras
+      blob(c, rect(-39, 0, 78, L, 24), '#3aad60');
+      for (let y = 34; y < L - 20; y += 34) line(c, -39, y, 39, y, 4, '#1f7a43');
+      for (let y = 20, i = 0; y < L - 14; y += 26, i++) {
+        blob(c, ell((hash(id, i + 9) - 0.5) * 50, y, 11, 7, 0.4), '#49c26b', 2, 0);
+      }
+      mouth(9);
+      mouth(L - 9);
+    } else {
+      // milharal: duas fileiras de espigas
+      blob(c, rect(-34, 0, 68, L, 12), '#8fcf6a', 2.5, 2);
+      for (let y = 16, i = 0; y < L - 8; y += 28, i++) {
+        const px = i % 2 ? 16 : -16;
+        line(c, px, y + 12, px, y - 12, 4, '#2f9e57');
+        blob(c, poly([[px, y - 4], [px - 14, y - 12], [px - 4, y + 2]]), '#49c26b', 1.8, 0);
+        blob(c, poly([[px, y - 4], [px + 14, y - 12], [px + 4, y + 2]]), '#49c26b', 1.8, 0);
+        blob(c, ell(px + (i % 2 ? -7 : 7), y + 2, 5, 9), '#f0cf6a', 2, 0);
+      }
+    }
+    return;
+  }
+  if (key === 'neon') {
+    if (v === 0) {
+      // túnel de cano com anéis e luzes
+      blob(c, rect(-39, 0, 78, L, 26), '#2a8fa8');
+      for (let y = 30; y < L - 14; y += 30) {
+        line(c, -39, y, 39, y, 5, '#1f6a7e');
+        line(c, -39, y + 4, 39, y + 4, 2, '#7fe4f5');
+      }
+      for (let y = 50; y < L - 20; y += 80) blob(c, circle(0, y, 5), '#ff6a2b', 2, 0);
+      mouth(9, 32);
+      mouth(L - 9, 32);
+    } else if (v === 1) {
+      // fila de containers
+      const cols = ['#e5303a', '#2f5bff', '#ffd23f', '#33c27f'];
+      for (let y = 0, i = 0; y + 30 < L; y += 54, i++) {
+        const h = Math.min(50, L - y);
+        blob(c, rect(-37, y, 74, h, 5), cols[Math.floor(hash(id, i) * 4)]!, 3, 2);
+        for (const rx of [-20, 0, 20]) line(c, rx, y + 5, rx, y + h - 5, 2);
+      }
+    } else {
+      // passagem coberta por um toldo listrado
+      blob(c, rect(-38, 0, 76, L, 10), '#ff9ecf');
+      c.save();
+      c.beginPath();
+      c.roundRect(-38, 0, 76, L, 10);
+      c.clip();
+      c.fillStyle = '#f4f4ef';
+      for (let y = 0; y < L; y += 28) c.fillRect(-38, y, 76, 14);
+      c.restore();
+      c.strokeStyle = INK;
+      c.lineWidth = 3.5;
+      c.beginPath();
+      c.roundRect(-38, 0, 76, L, 10);
+      c.stroke();
+      for (const [px, py] of [[-34, 6], [34, 6], [-34, L - 6], [34, L - 6]] as const) {
+        blob(c, circle(px, py, 5), '#3a3a36', 2, 0);
+      }
+    }
+    return;
+  }
+  if (v === 0) {
+    // túnel de pedras
+    blob(c, rect(-36, 0, 72, L, 22), '#6a5a8a');
+    for (let y = 12, i = 0; y < L - 6; y += 20, i++) {
+      blob(c, ell(-27, y, 12 + hash(id, i) * 5, 10, 0.3), '#8b79b8', 2.2, 0);
+      blob(c, ell(27, y + 6, 12 + hash(id, i + 30) * 5, 10, -0.3), '#a595cf', 2.2, 0);
+      blob(c, ell((hash(id, i + 60) - 0.5) * 26, y + 3, 11, 9, 0.2), '#8b79b8', 2.2, 0);
+    }
+    blob(c, ell(0, 8, 28, 11), '#1a0f24', 3, 0);
+    blob(c, ell(0, L - 8, 28, 11), '#1a0f24', 3, 0);
+  } else if (v === 1) {
+    // fileira de cactos floridos
+    blob(c, rect(-34, 0, 68, L, 12), '#f0c97f', 2.5, 2);
+    for (let y = 18, i = 0; y < L - 10; y += 34, i++) {
+      const px = i % 2 ? 18 : -18;
+      blob(c, rect(px - 6, y - 18, 12, 36, 6), '#3aa96b');
+      blob(c, rect(px - 17, y - 6, 9, 5, 2.5), '#3aa96b', 2.2, 0);
+      blob(c, rect(px + 8, y - 11, 9, 5, 2.5), '#3aa96b', 2.2, 0);
+      blob(c, star(px, y - 18, 4, 2, 5), '#ff9ecf', 1.6, 0);
+    }
+  } else {
+    // muro de ruína com colunas e rachaduras
+    blob(c, poly([[-34, 0], [-34, L], [34, L], [34, 0], [18, 8], [6, 0], [-8, 10], [-22, 2]]), '#c9a37a');
+    for (let y = 10; y < L - 12; y += 64) blob(c, rect(-38, y, 76, 16, 3), '#d8b88f', 2.5, 0);
+    for (let y = 30, i = 0; y < L - 20; y += 48, i++) {
+      line(c, -30 + i * 6, y, -16 + i * 6, y + 14, 2.2);
+      line(c, 14 - i * 4, y + 10, 26 - i * 4, y + 24, 2.2);
+    }
   }
 }
 

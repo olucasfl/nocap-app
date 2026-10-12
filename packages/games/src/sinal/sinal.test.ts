@@ -1207,7 +1207,7 @@ describe('moitas compridas e prêmios de se esconder', () => {
     return null;
   };
 
-  it('existem moitas compridas (6 a 12 m), mais comuns no começo, sempre para a frente', () => {
+  it('existem moitas compridas (5 a 14 m), mais comuns no começo, sempre para a frente', () => {
     const lens: number[] = [];
     let early = 0;
     let late = 0;
@@ -1226,8 +1226,10 @@ describe('moitas compridas e prêmios de se esconder', () => {
         }
       }
     }
-    expect(Math.min(...lens)).toBeGreaterThanOrEqual(6);
-    expect(Math.max(...lens)).toBeLessThanOrEqual(12);
+    expect(Math.min(...lens)).toBeGreaterThanOrEqual(5);
+    expect(Math.max(...lens)).toBeLessThanOrEqual(14);
+    // os comprimentos variam de verdade (não são todos iguais)
+    expect(Math.max(...lens) - Math.min(...lens)).toBeGreaterThan(6);
     expect(early).toBeGreaterThan(late);
   });
 
