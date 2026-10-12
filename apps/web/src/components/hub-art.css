@@ -7,8 +7,14 @@
   pointer-events: none;
 }
 .ha {
+  /* A arte nunca passa do espaço dela (nem fica gigante em tela grande): centrada e com teto de tamanho. */
+  position: absolute;
+  inset: 0;
+  margin: auto;
   width: 100%;
   height: 100%;
+  max-width: 230px;
+  max-height: 172px;
   overflow: visible;
 }
 .ha text {
@@ -192,7 +198,7 @@
     min-height: 170px;
   }
   .hub-card .hub-art .ha {
-    transform: scale(1.2);
+    transform: scale(1.08);
   }
 }
 
