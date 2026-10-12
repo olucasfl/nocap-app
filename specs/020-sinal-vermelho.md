@@ -74,8 +74,19 @@ Pausa disponível, que congela o relógio. Ao ser visto (ou alcançado pela escu
 - **Online:** todos no mesmo mapa ao mesmo tempo, com física (os bonecos não se atravessam e, ao encostar, o outro é empurrado na direção do encontro). Exigirá servidor autoritativo em sala (Colyseus). A simulação determinística de agora já nasce pensando nisso.
 - **Outros modos** (cada um com ranking próprio) e **Daily**.
 
-## Design (próxima etapa, depois de o Lucas aprovar a lógica já aprovada acima)
-Três mapas com **cenário, boneco e Vigia** diferentes, mesma dinâmica; aparência profissional e coerente com o Pop Brutal do app. O que falta definir: temas dos mapas, desenho do boneco e do Vigia, paleta de cada um, e o desenho dos esconderijos de cada mapa.
+## Design (proposta de 12/10/2026, a aprovar)
+Protótipo navegável em `docs/reference/design-sinal-vermelho.html` (abrir por um servidor local, por exemplo `python -m http.server` na pasta; as fontes vêm do Google). Mesma dinâmica nos três mapas; muda só a aparência. Estilo Pop Brutal: contorno de tinta, sombra dura, cores chapadas, sem emoji.
+
+| Mapa | Cenário | Boneco | Vigia | Esconderijo | Escuridão |
+|---|---|---|---|---|---|
+| **Horta Maluca** | dia, trilha de terra entre fileiras de plantação | Tomate | Espantalho | Arbusto | brasas amarelas |
+| **Rua Neon** | noite, asfalto, faixa de pedestre, postes laranja | Entregador | Semáforo | Caçamba | brasas ciano |
+| **Ruínas do Deserto** | areia, lajes quebradas, pedras roxas | Raposa | Totem Coruja | Cacto | brasas rosa |
+
+- **Vigia** (visto de frente, preso ao topo, gira como um cartão): de costas, aviso, olhando. O aviso acontece **com ele ainda de costas**: a luz traseira do semáforo pisca cada vez mais rápido, a costura do espantalho brilha e o chapéu inclina, a runa do totem acende. Olhando: a pupila acompanha o boneco.
+- **Boneco** em três estados: parado, andando (passinhos alternados) e escondido (translúcido, com anel tracejado no esconderijo).
+- **Escuridão:** borda ondulada animada, brasas subindo na cor do mapa e olhos piscando lá dentro.
+- **Tela:** metros no canto superior esquerdo, pausa no direito, linha tracejada amarela de "seu recorde" no chão, vinheta vermelha pulsando no aviso e carimbo amarelo "TE VIU!" no fim, como o resto do app. Analógico fixo no canto direito; o protótipo mostra a zona reservada.
 
 ## Plano (em ordem)
 1. Núcleo puro e testes (`packages/games`).

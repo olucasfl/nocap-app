@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sinal Vermelho · design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,500;0,700;0,900;1,900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #f4f4ef; --ink: #111; --orange: #ff6a2b; --blue: #2f5bff; --yellow: #ffd23f;
+    --white: #fff; --muted: #4a4a44; --green: #33c27f; --pink: #ff9ecf;
+    --border: 2.5px solid var(--ink); --shadow: 5px 5px 0 var(--ink);
+    --display: 'Archivo', 'Arial Black', system-ui, sans-serif;
+    --mono: 'Space Mono', ui-monospace, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 500 15px/1.45 var(--display); }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 28px 16px 64px; }
+  .logo { font: italic 900 22px var(--display); letter-spacing: -0.04em; }
+  .logo span { color: var(--orange); }
+  h1 { font: 900 clamp(40px, 8vw, 84px)/0.92 var(--display); letter-spacing: -0.05em; margin: 18px 0 10px; }
+  h2 { font: 900 28px/1 var(--display); letter-spacing: -0.03em; margin: 56px 0 6px; }
+  .mono { font-family: var(--mono); }
+  .lead { max-width: 62ch; color: var(--muted); }
+  .label { font: 700 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 22px; margin-top: 22px; }
+  .card { background: var(--white); border: var(--border); border-radius: 20px; box-shadow: var(--shadow); padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .card h3 { margin: 0; font: 900 26px/1 var(--display); letter-spacing: -0.03em; }
+  .card p { margin: 0; font-size: 14px; }
+  .phone { border: 3px solid var(--ink); border-radius: 30px; overflow: hidden; background: #000; box-shadow: 5px 5px 0 var(--ink); width: 100%; max-width: 360px; margin: 0 auto; }
+  .phone canvas { display: block; width: 100%; height: auto; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .btn { appearance: none; border: var(--border); background: var(--white); color: var(--ink); border-radius: 12px; padding: 9px 12px; font: 700 12px var(--mono); cursor: pointer; box-shadow: 3px 3px 0 var(--ink); }
+  .btn:active { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--ink); }
+  .btn[aria-pressed='true'] { background: var(--yellow); }
+  .range { display: grid; gap: 4px; }
+  .range input { width: 100%; accent-color: var(--orange); }
+  .swatches { display: flex; gap: 6px; flex-wrap: wrap; }
+  .sw { width: 34px; height: 34px; border: var(--border); border-radius: 10px; }
+  .sheet { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-top: 16px; }
+  .tile { background: var(--white); border: var(--border); border-radius: 16px; box-shadow: 4px 4px 0 var(--ink); padding: 10px; display: grid; gap: 6px; justify-items: center; }
+  .tile canvas { width: 100%; height: auto; background: var(--paper); border: 2px solid var(--ink); border-radius: 10px; }
+  .rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-top: 16px; }
+  .rules .card { box-shadow: 4px 4px 0 var(--ink); }
+  .rules b { font-weight: 900; }
+  @media (prefers-reduced-motion: reduce) { .btn:active { transform: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">no cap<span>!</span></div>
+  <div class="label" style="margin-top:22px">Proposta de design · spec 020</div>
+  <h1>Sinal Vermelho</h1>
+  <p class="lead">Três mapas com a mesma dinâmica: cenário, boneco e Vigia mudam; as regras, não. O mapa é sorteado quando a partida é puxada. Abaixo cada mapa está vivo: troque o estado do Vigia, mexa na escuridão e esconda o boneco. A fileira "ficha" mostra cada peça separada.</p>
+
+  <div class="grid3" id="maps"></div>
+
+  <h2>Ficha de cada peça</h2>
+  <p class="lead">Boneco (parado, andando, escondido), o Vigia nos três estados e o esconderijo de cada mapa.</p>
+  <div class="sheet" id="sheet"></div>
+
+  <h2>Como o jogador lê o jogo</h2>
+  <div class="rules">
+    <div class="card"><div class="label">1 · De costas</div><p>O Vigia está virado para o lado de lá. O boneco anda à vontade. Cada mapa dá uma pista discreta de que está tudo calmo.</p></div>
+    <div class="card"><div class="label">2 · Aviso</div><p>O Vigia ainda está de costas, mas <b>algo nele muda</b>: a luz traseira do semáforo pisca cada vez mais rápido, a costura do espantalho brilha, a runa do totem acende. O zumbido sobe de tom e uma vinheta pulsa nas bordas. Sem emoji, sem letreiro: quem aprende a ler, sobrevive.</p></div>
+    <div class="card"><div class="label">3 · Olhando</div><p>O Vigia gira e fixa o olhar (a pupila acompanha o boneco). Se o boneco estiver se mexendo, é o fim. Dentro do esconderijo, nada acontece.</p></div>
+    <div class="card"><div class="label">4 · Escuridão</div><p>Sobe de baixo da tela: borda ondulada, brasas na cor do mapa e olhos que piscam lá dentro. No começo nem se vê; quem fica parado vê ela chegar.</p></div>
+    <div class="card"><div class="label">Analógico e câmera</div><p>O analógico fica fixo no canto inferior direito. A câmera mantém o boneco na parte de cima (40% da altura), fora da <b>zona do analógico</b>, que dá para ligar nos botões de cada mapa.</p></div>
+  </div>
+</div>
+
+<script>
+(() => {
+const W = 360, H = 640, DPR = Math.min(2, window.devicePixelRatio || 1);
+const INK = '#111', PAPER = '#f4f4ef', YEL = '#ffd23f', ORG = '#ff6a2b';
+const PPM = 12;            // pixels por metro
+const PY = H * 0.4;        // altura do boneco na tela
+const ZONE = { x: W - 150, y: H - 190, w: 150, h: 190 }; // zona do analógico (reservada)
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const ease = (t) => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+function setup(canvas, w = W, h = H) {
+  canvas.width = w * DPR; canvas.height = h * DPR;
+  const c = canvas.getContext('2d'); c.scale(DPR, DPR); return c;
+}
+// Forma com contorno de tinta e sombra dura (o jeito Pop Brutal), sem gradiente.
+function blob(c, path, fill, lw = 3, sh = 3, shade = INK) {
+  c.lineJoin = 'round'; c.lineCap = 'round';
+  if (sh) { c.save(); c.translate(sh, sh); path(c); c.fillStyle = shade; c.fill(); c.restore(); }
+  path(c); c.fillStyle = fill; c.fill(); c.lineWidth = lw; c.strokeStyle = INK; c.stroke();
+}
+const circle = (x, y, r) => (c) => { c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); };
+const ell = (x, y, rx, ry, rot = 0) => (c) => { c.beginPath(); c.ellipse(x, y, rx, ry, rot, 0, Math.PI * 2); };
+const rect = (x, y, w, h, r = 6) => (c) => { c.beginPath(); c.roundRect(x, y, w, h, r); };
+const poly = (pts) => (c) => { c.beginPath(); pts.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); c.closePath(); };
+const star = (x, y, r1, r2, n = 5, rot = -Math.PI / 2) => (c) => {
+  c.beginPath();
+  for (let i = 0; i < n * 2; i++) { const r = i % 2 ? r2 : r1, a = rot + i * Math.PI / n; i ? c.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r) : c.moveTo(x + Math.cos(a) * r, y + Math.sin(a) * r); }
+  c.closePath();
+};
+function line(c, x1, y1, x2, y2, lw = 3, col = INK) { c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.lineWidth = lw; c.strokeStyle = col; c.lineCap = 'round'; c.stroke(); }
+function mono(c, text, x, y, size = 11, col = INK, align = 'left', weight = 700) { c.font = `${weight} ${size}px 'Space Mono', monospace`; c.fillStyle = col; c.textAlign = align; c.fillText(text, x, y); }
+function disp(c, text, x, y, size = 34, col = INK, align = 'left') { c.font = `900 ${size}px Archivo, 'Arial Black', sans-serif`; c.fillStyle = col; c.textAlign = align; c.fillText(text, x, y); }
+const wrapY = (v, p) => ((v % p) + p) % p;
+
+// ---------------------------------------------------------------- mapas
+const MAPS = {
+  horta: {
+    name: 'Horta Maluca', tag: 'Dia de sol, fileiras de plantação e um espantalho que desconfia de tudo.',
+    char: 'Tomate', vigia: 'Espantalho', cover: 'Arbusto', ember: '#ffd23f', dark: '#0d1a12', rim: '#ffd23f',
+    palette: ['#7ddc7a', '#f0cf94', '#2f9e57', '#e5303a', '#ffd23f', '#0d1a12'],
+  },
+  neon: {
+    name: 'Rua Neon', tag: 'Noite na cidade. Asfalto molhado, faixa de pedestre e um semáforo que não pisca à toa.',
+    char: 'Entregador', vigia: 'Semáforo', cover: 'Caçamba', ember: '#25c7e8', dark: '#07071a', rim: '#25c7e8',
+    palette: ['#1b1f4a', '#262b5e', '#2fb8a0', '#ffd23f', '#25c7e8', '#07071a'],
+  },
+  deserto: {
+    name: 'Ruínas do Deserto', tag: 'Areia, lajes quebradas e um totem de pedra que gira a cabeça para te achar.',
+    char: 'Raposa', vigia: 'Totem Coruja', cover: 'Cacto', ember: '#ff9ecf', dark: '#1a0f24', rim: '#ff9ecf',
+    palette: ['#f4c46c', '#f9deaa', '#6b5b95', '#ff9d4d', '#ff9ecf', '#1a0f24'],
+  },
+};
+
+// ---------------------------------------------------------------- chão
+function ground(c, key, scroll, t) {
+  if (key === 'horta') {
+    c.fillStyle = '#7ddc7a'; c.fillRect(0, 0, W, H);
+    // fileiras de plantação dos lados
+    for (let y = -40 + wrapY(scroll, 44); y < H + 44; y += 44) {
+      for (const x of [16, 46, 314, 344]) {
+        blob(c, ell(x, y, 12, 7), '#4fb765', 2.5, 2);
+        blob(c, star(x, y - 3, 6, 2.6, 5), '#2f9e57', 2, 0);
+      }
+    }
+    // trilha de terra
+    c.fillStyle = '#f0cf94'; c.fillRect(72, 0, W - 144, H);
+    line(c, 72, 0, 72, H, 3); line(c, W - 72, 0, W - 72, H, 3);
+    for (let i = 0; i < 18; i++) { // pedrinhas
+      const y = wrapY(i * 97 - scroll, H + 30) - 15, x = 90 + (i * 53) % (W - 180);
+      blob(c, ell(x, y, 5, 3.5), '#d4a867', 2, 2);
+    }
+    for (let y = -20 + wrapY(scroll, 120); y < H + 20; y += 120) { // pegadas antigas
+      blob(c, ell(130, y, 5, 8), '#e3b878', 0.01, 0); blob(c, ell(150, y + 28, 5, 8), '#e3b878', 0.01, 0);
+    }
+  } else if (key === 'neon') {
+    c.fillStyle = '#1b1f4a'; c.fillRect(0, 0, W, H);
+    c.fillStyle = '#262b5e'; c.fillRect(54, 0, W - 108, H);
+    line(c, 54, 0, 54, H, 3); line(c, W - 54, 0, W - 54, H, 3);
+    for (let y = -60 + wrapY(scroll, 56); y < H + 56; y += 56) { // faixa central tracejada
+      c.fillStyle = '#ffd23f'; c.fillRect(W / 2 - 3, y, 6, 28); c.strokeStyle = INK; c.lineWidth = 2; c.strokeRect(W / 2 - 3, y, 6, 28);
+    }
+    // faixa de pedestre a cada 52 m
+    const cw = wrapY(scroll, 640);
+    for (let k = 0; k < 2; k++) {
+      const y = 140 + cw - 640 * k;
+      if (y < -60 || y > H + 20) continue;
+      for (let x = 66; x < W - 70; x += 30) { c.fillStyle = PAPER; c.fillRect(x, y, 18, 46); c.strokeStyle = INK; c.lineWidth = 2; c.strokeRect(x, y, 18, 46); }
+    }
+    // postes com poça de luz laranja na calçada
+    for (let k = -1; k < 4; k++) {
+      const y = wrapY(k * 230 - scroll * 1, 920) - 120;
+      for (const x of [26, W - 26]) {
+        c.save(); c.globalAlpha = 0.28; c.fillStyle = '#ff6a2b'; c.beginPath(); c.arc(x, y, 38, 0, 7); c.fill(); c.restore();
+        blob(c, circle(x, y, 7), '#ffd23f', 2.5, 2);
+      }
+    }
+    for (let i = 0; i < 6; i++) { // poças
+      const y = wrapY(i * 211 - scroll, H + 60) - 30, x = 90 + (i * 83) % (W - 180);
+      c.save(); c.globalAlpha = .55; blob(c, ell(x, y, 22, 8), '#25c7e8', 2, 0); c.restore();
+    }
+  } else {
+    c.fillStyle = '#f4c46c'; c.fillRect(0, 0, W, H);
+    for (let y = -30 + wrapY(scroll * 0.6, 78); y < H + 40; y += 78) { // dunas ao fundo
+      for (const x0 of [10, 280]) {
+        c.beginPath(); c.arc(x0 + 30, y, 34, Math.PI * 1.1, Math.PI * 1.9); c.lineWidth = 3; c.strokeStyle = '#d99b3f'; c.stroke();
+      }
+    }
+    // lajes do caminho
+    c.fillStyle = '#f9deaa'; c.fillRect(66, 0, W - 132, H);
+    line(c, 66, 0, 66, H, 3); line(c, W - 66, 0, W - 66, H, 3);
+    for (let y = -64 + wrapY(scroll, 64); y < H + 64; y += 64) {
+      c.strokeStyle = '#c99a52'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(66, y); c.lineTo(W - 66, y); c.stroke();
+      const off = (Math.floor((y + scroll) / 64) % 2) ? 0 : 36;
+      for (let x = 66 + off; x < W - 66; x += 72) { c.beginPath(); c.moveTo(x, y); c.lineTo(x, y + 64); c.stroke(); }
+    }
+    for (let i = 0; i < 7; i++) { // pedras nas bordas
+      const y = wrapY(i * 131 - scroll * 0.9, H + 80) - 40, x = i % 2 ? 330 : 30;
+      blob(c, ell(x, y, 16, 11, .3), '#8b79b8', 2.5, 3); blob(c, ell(x - 3, y - 3, 7, 4, .3), '#a595cf', 0.01, 0);
+    }
+  }
+}
+
+// ---------------------------------------------------------------- esconderijos
+function cover(c, key, x, y, active, t) {
+  if (key === 'horta') {
+    blob(c, circle(x - 18, y + 6, 17), '#2f9e57'); blob(c, circle(x + 18, y + 6, 17), '#2f9e57');
+    blob(c, circle(x, y - 6, 21), '#49c26b'); blob(c, circle(x, y + 8, 17), '#3aad60');
+    for (const [dx, dy] of [[-8, -10], [10, -2], [-14, 6], [4, 10], [18, 8]]) blob(c, circle(x + dx, y + dy, 3.2), '#e5303a', 2, 0);
+  } else if (key === 'neon') {
+    blob(c, rect(x - 32, y - 22, 64, 44, 8), '#2fb8a0');
+    blob(c, rect(x - 28, y - 18, 56, 14, 4), '#1f8f7c', 2.5, 0);
+    line(c, x - 28, y + 4, x + 28, y + 4, 2.5); line(c, x - 28, y + 12, x + 28, y + 12, 2.5);
+    blob(c, star(x + 16, y - 11, 5, 2, 5), '#ff9ecf', 1.8, 0);
+    blob(c, circle(x - 26, y + 22, 4), '#3a3a36', 2, 0); blob(c, circle(x + 26, y + 22, 4), '#3a3a36', 2, 0);
+  } else {
+    blob(c, circle(x, y, 26), '#3aa96b');
+    for (let i = 0; i < 10; i++) { const a = i * Math.PI / 5; line(c, x + Math.cos(a) * 6, y + Math.sin(a) * 6, x + Math.cos(a) * 24, y + Math.sin(a) * 24, 2.2, '#1f6e45'); }
+    for (let i = 0; i < 10; i++) { const a = i * Math.PI / 5 + .3; c.fillStyle = PAPER; c.beginPath(); c.arc(x + Math.cos(a) * 17, y + Math.sin(a) * 17, 1.5, 0, 7); c.fill(); }
+    blob(c, star(x, y, 8, 3.6, 6, 0), '#ff9ecf', 2, 0);
+  }
+  if (active) { // anel tracejado: "aqui você está protegido"
+    c.save(); c.setLineDash([6, 6]); c.lineDashOffset = -t * 12; c.lineWidth = 3; c.strokeStyle = PAPER;
+    c.beginPath(); c.ellipse(x, y, 42, 34, 0, 0, 7); c.stroke(); c.restore();
+  }
+}
+
+// ---------------------------------------------------------------- bonecos
+function walkPhase(t, walking) { return walking ? Math.sin(t * 11) : 0; }
+function hero(c, key, x, y, t, walking, alpha = 1) {
+  const s = walkPhase(t, walking), bob = walking ? Math.abs(Math.sin(t * 11)) * 1.6 : 0;
+  c.save(); c.globalAlpha = alpha; c.translate(x, y - bob);
+  c.fillStyle = 'rgba(0,0,0,.25)'; c.beginPath(); c.ellipse(2, 12 + bob, 15, 7, 0, 0, 7); c.fill();
+  if (key === 'horta') { // Tomate
+    blob(c, ell(-8, -10 - s * 5, 5, 8), '#f4f4ef', 2.2, 0); blob(c, ell(8, -10 + s * 5, 5, 8), '#f4f4ef', 2.2, 0);
+    blob(c, circle(0, 0, 15), '#e5303a', 3, 3);
+    c.fillStyle = 'rgba(255,255,255,.45)'; c.beginPath(); c.ellipse(-6, -6, 4, 2.5, -.6, 0, 7); c.fill();
+    blob(c, star(0, -1, 9, 3.6, 5), '#33c27f', 2.4, 0);
+  } else if (key === 'neon') { // Entregador
+    blob(c, rect(-12, 4, 24, 20, 5), '#ff6a2b', 3, 3); line(c, -12, 14, 12, 14, 2);
+    blob(c, ell(0, 0, 16, 10), '#2f5bff', 3, 3);
+    blob(c, circle(-14, -3 + s * 4, 4), '#f4f4ef', 2, 0); blob(c, circle(14, -3 - s * 4, 4), '#f4f4ef', 2, 0);
+    blob(c, circle(0, -3, 10.5), '#ffd23f', 3, 0);
+    c.fillStyle = PAPER; c.fillRect(-2, -13, 4, 20); c.strokeStyle = INK; c.lineWidth = 1.6; c.strokeRect(-2, -13, 4, 20);
+  } else { // Raposa
+    blob(c, ell(0, 16, 6, 10 + Math.abs(s) * 2), '#ff9d4d', 2.6, 0); blob(c, circle(0, 24 + Math.abs(s) * 2, 4), '#f4f4ef', 2, 0);
+    blob(c, circle(-6, 2 + s * 3, 4.5), '#8b5a2b', 2, 0); blob(c, circle(6, 2 - s * 3, 4.5), '#8b5a2b', 2, 0);
+    blob(c, circle(0, 0, 13), '#ff9d4d', 3, 3);
+    blob(c, poly([[-12, -4], [-8, -22], [-2, -10]]), '#ff9d4d', 2.6, 0); blob(c, poly([[12, -4], [8, -22], [2, -10]]), '#ff9d4d', 2.6, 0);
+    c.fillStyle = '#ff9ecf'; c.beginPath(); c.moveTo(-9, -9); c.lineTo(-8, -17); c.lineTo(-5, -11); c.fill();
+    c.beginPath(); c.moveTo(9, -9); c.lineTo(8, -17); c.lineTo(5, -11); c.fill();
+  }
+  c.restore();
+}
+
+// ---------------------------------------------------------------- Vigia (vista frontal, preso ao topo)
+// face: 0 = de costas, 1 = olhando. warn: 0..1 (aviso). tx: x do boneco (para a pupila).
+function vigia(c, key, face, warn, t, tx, cx, top, sc = 1) {
+  const sx = Math.cos(face * Math.PI); // -1..1 (gira como um cartão)
+  const front = sx < 0;
+  const w = Math.max(0.04, Math.abs(sx));
+  c.save(); c.translate(cx, top); c.scale(sc, sc);
+  const shake = warn > 0 && !front ? Math.sin(t * 40) * warn * 1.4 : 0;
+  c.translate(shake, 0);
+  const look = clamp((tx - cx) / 120, -1, 1);
+  if (key === 'neon') { // Semáforo
+    blob(c, rect(-7, 70, 14, 60, 3), '#5a5a66', 3, 0);
+    c.save(); c.scale(w, 1);
+    blob(c, rect(-44, 6, 88, 112, 16), '#1d1d2b', 4, 4);
+    if (front) {
+      for (let i = 0; i < 3; i++) {
+        const y = 36 + i * 32, on = i === 0;
+        blob(c, rect(-30, y - 17, 60, 8, 3), '#3a3a56', 2.5, 0);
+        blob(c, circle(0, y + 3, 14), on ? '#e5303a' : '#3a2a2a', 3, 0);
+      }
+      c.fillStyle = '#ff7b7b'; c.beginPath(); c.arc(0, 39, 8, 0, 7); c.fill();
+      c.fillStyle = INK; c.beginPath(); c.arc(look * 4, 39, 4.2, 0, 7); c.fill();
+      c.save(); c.globalAlpha = .35; c.fillStyle = '#e5303a'; c.beginPath(); c.arc(0, 39, 26, 0, 7); c.fill(); c.restore();
+    } else {
+      blob(c, rect(-34, 18, 68, 86, 10), '#2a2a3d', 2.5, 0);
+      for (const [px, py] of [[-26, 26], [26, 26], [-26, 96], [26, 96]]) blob(c, circle(px, py, 3), '#5a5a66', 1.8, 0);
+      const rate = 2 + warn * 14, on = warn > 0 && Math.sin(t * rate * 2) > -0.2;
+      blob(c, circle(0, 60, 11), on ? '#ffb020' : '#5a4420', 3, 0);
+      if (on) { c.save(); c.globalAlpha = .45 * warn + .15; c.fillStyle = '#ffb020'; c.beginPath(); c.arc(0, 60, 30, 0, 7); c.fill(); c.restore(); }
+      mono(c, 'NÃO ATRAVESSE', 0, 92, 8.5, '#ffd23f', 'center');
+    }
+    c.restore();
+  } else if (key === 'horta') { // Espantalho
+    blob(c, rect(-5, 60, 10, 80, 3), '#8a5a2b', 3, 0);
+    blob(c, rect(-62, 66, 124, 11, 4), '#a8702f', 3, 3);
+    for (const sgn of [-1, 1]) for (let i = 0; i < 4; i++) line(c, sgn * (56 + i * 2), 72, sgn * (66 + i * 3), 88 + i * 3, 2.4, '#e5b94d');
+    c.save(); c.scale(w, 1);
+    blob(c, circle(0, 40, 30), '#d7b56d', 3.5, 4);
+    if (front) {
+      for (const sgn of [-1, 1]) {
+        blob(c, circle(sgn * 12, 38, 8), '#f4f4ef', 2.8, 0);
+        c.fillStyle = INK; c.beginPath(); c.arc(sgn * 12 + look * 3, 38, 3.6, 0, 7); c.fill();
+        c.save(); c.globalAlpha = .35; c.fillStyle = '#ff6a2b'; c.beginPath(); c.arc(sgn * 12, 38, 17, 0, 7); c.fill(); c.restore();
+      }
+      c.beginPath(); c.moveTo(-14, 56); for (let i = 0; i <= 6; i++) c.lineTo(-14 + i * 4.7, 56 + (i % 2 ? 4 : -2)); c.lineWidth = 2.8; c.strokeStyle = INK; c.stroke();
+    } else {
+      line(c, 0, 12, 0, 68, 3, INK);
+      for (let i = 0; i < 6; i++) line(c, -7, 20 + i * 8, 7, 20 + i * 8, 2.2, INK);
+      if (warn > 0) { c.save(); c.globalAlpha = .25 + .6 * warn * (0.6 + 0.4 * Math.sin(t * (4 + warn * 14))); c.strokeStyle = '#ff6a2b'; c.lineWidth = 6; c.beginPath(); c.moveTo(0, 12); c.lineTo(0, 68); c.stroke(); c.restore(); }
+    }
+    const tilt = !front && warn > 0 ? -0.12 * warn : 0;
+    c.save(); c.translate(0, 20); c.rotate(tilt);
+    blob(c, ell(0, 4, 50, 11), '#c98a3a', 3.5, 3);
+    blob(c, rect(-22, -18, 44, 24, 9), '#d89a45', 3.5, 0);
+    line(c, -22, -2, 22, -2, 6, '#b5242d');
+    c.restore();
+    c.restore();
+  } else { // Totem Coruja
+    c.save(); c.scale(w, 1);
+    blob(c, rect(-40, 14, 80, 106, 28), '#6b5b95', 4, 4);
+    blob(c, poly([[-36, 24], [-30, 0], [-14, 18]]), '#6b5b95', 3.5, 0); blob(c, poly([[36, 24], [30, 0], [14, 18]]), '#6b5b95', 3.5, 0);
+    if (front) {
+      for (const sgn of [-1, 1]) {
+        blob(c, circle(sgn * 16, 52, 15), '#f4f4ef', 3, 0);
+        blob(c, circle(sgn * 16 + look * 3, 52, 8.5), '#ff9ecf', 2.4, 0);
+        c.fillStyle = INK; c.beginPath(); c.arc(sgn * 16 + look * 4, 52, 4, 0, 7); c.fill();
+        c.save(); c.globalAlpha = .3; c.fillStyle = '#ff9ecf'; c.beginPath(); c.arc(sgn * 16, 52, 24, 0, 7); c.fill(); c.restore();
+      }
+      blob(c, poly([[-6, 66], [6, 66], [0, 80]]), '#ffd23f', 2.6, 0);
+      for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) { c.beginPath(); c.arc(-14 + j * 14, 92 + i * 8, 6, 0, Math.PI); c.lineWidth = 2.2; c.strokeStyle = '#4a3d6e'; c.stroke(); }
+    } else {
+      for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) { c.beginPath(); c.arc(-24 + j * 16 + (i % 2) * 8, 36 + i * 17, 8, 0, Math.PI); c.lineWidth = 2.4; c.strokeStyle = '#4a3d6e'; c.stroke(); }
+      const g = warn * (0.55 + 0.45 * Math.sin(t * (3 + warn * 16)));
+      blob(c, rect(-10, 52, 20, 26, 8), g > .05 ? '#2d1d52' : '#4a3d6e', 2.6, 0);
+      c.strokeStyle = `rgba(255,158,207,${.25 + .75 * g})`; c.lineWidth = 3; c.beginPath(); c.moveTo(0, 56); c.lineTo(0, 74); c.moveTo(-5, 62); c.lineTo(5, 62); c.moveTo(-5, 70); c.lineTo(5, 70); c.stroke();
+      if (g > .15) { c.save(); c.globalAlpha = g * .5; c.fillStyle = '#ff9ecf'; c.beginPath(); c.arc(0, 65, 26, 0, 7); c.fill(); c.restore(); }
+    }
+    c.restore();
+  }
+  c.restore();
+}
+
+// ---------------------------------------------------------------- escuridão
+function darkness(c, m, level, t) {
+  if (level <= 0.01) return;
+  const top = H - level * H * 0.62;
+  c.save();
+  c.fillStyle = m.dark; c.beginPath(); c.moveTo(0, H);
+  for (let x = 0; x <= W; x += 6) { const y = top + Math.sin(x * 0.035 + t * 1.6) * 7 + Math.sin(x * 0.09 - t * 2.3) * 4; c.lineTo(x, y); }
+  c.lineTo(W, H); c.closePath(); c.fill();
+  c.lineWidth = 4; c.strokeStyle = m.rim; c.globalAlpha = .85;
+  c.beginPath(); for (let x = 0; x <= W; x += 6) { const y = top + Math.sin(x * 0.035 + t * 1.6) * 7 + Math.sin(x * 0.09 - t * 2.3) * 4; x ? c.lineTo(x, y) : c.moveTo(x, y); } c.stroke();
+  c.globalAlpha = 1;
+  // brasas subindo
+  for (let i = 0; i < 26; i++) {
+    const seed = i * 7.31, px = (seed * 53) % W, rise = wrapY(t * (18 + (i % 5) * 7) + seed * 40, 150);
+    const py = top + 20 - rise + 40, a = clamp(1 - rise / 150, 0, 1);
+    if (py > H) continue; c.globalAlpha = a * .9; c.fillStyle = m.ember; c.beginPath(); c.arc(px + Math.sin(t * 2 + seed) * 6, py, 1.6 + (i % 3), 0, 7); c.fill();
+  }
+  c.globalAlpha = 1;
+  // olhos lá dentro
+  for (const [ex, ey] of [[70, 0.30], [160, 0.5], [290, 0.38]]) {
+    const y = top + 36 + ey * 90, open = Math.sin(t * 1.3 + ex) > -0.75;
+    if (open && y < H - 10) { c.fillStyle = m.rim; c.beginPath(); c.ellipse(ex, y, 5, 3.2, 0, 0, 7); c.ellipse(ex + 14, y, 5, 3.2, 0, 0, 7); c.fill(); }
+  }
+  c.restore();
+}
+
+// ---------------------------------------------------------------- HUD
+function hud(c, m, meters, record, warn, t) {
+  const hb = 38;
+  blob(c, rect(14, 12, 112, 56, 14), PAPER, 3, 3);
+  mono(c, 'METROS', 24, 28, 9.5, '#4a4a44');
+  disp(c, String(Math.floor(meters)), 24, 58, 32, INK); mono(c, 'm', 24 + c.measureText(String(Math.floor(meters))).width + 4, 58, 13, INK);
+  blob(c, rect(W - 14 - hb, 14, hb, hb, 12), PAPER, 3, 3);
+  c.fillStyle = INK; c.fillRect(W - 14 - hb + 12, 24, 5, 18); c.fillRect(W - 14 - hb + 22, 24, 5, 18);
+}
+function stick(c, dx, dy, show) {
+  const cx = W - 76, cy = H - 96, R = 54;
+  if (show) { c.save(); c.setLineDash([7, 6]); c.lineWidth = 2.5; c.strokeStyle = PAPER; c.strokeRect(ZONE.x, ZONE.y, ZONE.w, ZONE.h); c.restore(); mono(c, 'ZONA DO ANALÓGICO', ZONE.x + 6, ZONE.y + 14, 8.5, PAPER); }
+  c.save(); c.globalAlpha = .96;
+  blob(c, circle(cx, cy, R), 'rgba(244,244,239,.18)', 3, 0, 'transparent');
+  c.lineWidth = 3; c.strokeStyle = PAPER; c.beginPath(); c.arc(cx, cy, R, 0, 7); c.stroke();
+  for (const [ax, ay] of [[0, -1], [1, 0], [0, 1], [-1, 0]]) { c.beginPath(); c.moveTo(cx + ax * 40 - ay * 6 - ax * 6, cy + ay * 40 + ax * 6 - ay * 6); c.lineTo(cx + ax * 46, cy + ay * 46); c.lineTo(cx + ax * 40 + ay * 6 - ax * 6, cy + ay * 40 - ax * 6 - ay * 6); c.lineWidth = 2.6; c.stroke(); }
+  blob(c, circle(cx + dx * 26, cy + dy * 26, 24), ORG, 3, 3);
+  c.restore();
+}
+function vignette(c, warn, t, col) {
+  if (warn <= 0.02) return;
+  const a = warn * (0.35 + 0.25 * Math.sin(t * (5 + warn * 10)));
+  const g = c.createRadialGradient(W / 2, H * 0.45, H * 0.28, W / 2, H * 0.45, H * 0.72);
+  g.addColorStop(0, 'rgba(229,48,58,0)'); g.addColorStop(1, `rgba(229,48,58,${a})`);
+  c.fillStyle = g; c.fillRect(0, 0, W, H);
+}
+function deathCard(c, m, meters, t, k) {
+  c.fillStyle = `rgba(17,17,17,${.55 * k})`; c.fillRect(0, 0, W, H);
+  c.save(); c.translate(W / 2, H * 0.4); const sc = 0.6 + 0.4 * ease(clamp(k, 0, 1)); c.scale(sc, sc); c.rotate(-0.07);
+  blob(c, rect(-120, -64, 240, 128, 18), YEL, 4, 6);
+  mono(c, 'TE VIU!', 0, -22, 14, INK, 'center');
+  disp(c, String(Math.floor(meters)) + ' m', 0, 30, 60, INK, 'center');
+  mono(c, 'MAIS UMA VEZ?', 0, 52, 11, INK, 'center');
+  c.restore();
+}
+
+// ---------------------------------------------------------------- cenas vivas
+const STATES = ['costas', 'aviso', 'olhando', 'viu'];
+function makeScene(key, canvas, ui) {
+  const c = setup(canvas), m = MAPS[key];
+  const st = { mode: 'demo', phase: 'costas', pt: 0, face: 0, warn: 0, scroll: 0, px: W / 2, hidden: false, dark: .18, zone: false, dead: 0, meters: 0, record: 46 };
+  const covers = [{ x: 120, wy: -250 }, { x: 250, wy: -640 }, { x: 150, wy: -1030 }];
+  function setPhase(p) { st.phase = p; st.pt = 0; if (p !== 'viu') st.dead = 0; }
+  ui.setMode = (mode) => {
+    st.mode = mode;
+    if (mode === 'demo') { st.dead = 0; setPhase('costas'); }
+    else if (mode === 'viu') { setPhase('viu'); }
+    else setPhase(mode);
+  };
+  ui.setDark = (v) => { st.dark = v; };
+  ui.toggleHide = () => { st.hidden = !st.hidden; return st.hidden; };
+  ui.toggleZone = () => { st.zone = !st.zone; return st.zone; };
+  let last = performance.now(), t0 = last;
+  function frame(now) {
+    requestAnimationFrame(frame);
+    if (document.hidden) return;
+    const dt = Math.min(0.05, (now - last) / 1000); last = now; const t = (now - t0) / 1000;
+    st.pt += dt;
+    const D = { costas: 3.2, aviso: 1.0, olhando: 1.5, voltando: .4 };
+    if (st.mode === 'demo') {
+      if (st.phase === 'costas' && st.pt > D.costas) setPhase('aviso');
+      else if (st.phase === 'aviso' && st.pt > D.aviso) setPhase('olhando');
+      else if (st.phase === 'olhando' && st.pt > D.olhando) setPhase('voltando');
+      else if (st.phase === 'voltando' && st.pt > D.voltando) setPhase('costas');
+    }
+    const targetFace = st.phase === 'olhando' || st.phase === 'viu' ? 1 : 0;
+    st.face += clamp(targetFace - st.face, -dt * 6, dt * 6);
+    const targetWarn = st.phase === 'aviso' ? clamp(st.pt / D.aviso, 0.15, 1) : 0;
+    st.warn += (targetWarn - st.warn) * Math.min(1, dt * 10);
+    // o boneco só anda quando é seguro (ou está escondido)
+    const safe = st.phase === 'costas' || st.phase === 'aviso' || st.phase === 'voltando' || st.hidden;
+    const walking = safe && st.phase !== 'viu' && (st.mode === 'demo' || st.phase !== 'olhando');
+    if (walking) { st.scroll += dt * 54; st.meters = st.scroll / PPM; }
+    if (st.meters > 70) { st.scroll = 0; st.meters = 0; }
+    const sway = Math.sin(t * 0.9) * 22;
+    st.px = W / 2 + (st.hidden ? covers.length ? 0 : 0 : sway);
+    const coverY = (cv) => PY - (cv.wy + st.scroll) * -1 + 0; // y na tela
+    // desenha
+    ground(c, key, st.scroll, t);
+    // linha de recorde
+    const ry = PY - (st.record - st.meters) * PPM;
+    if (ry > 70 && ry < H) { c.save(); c.setLineDash([10, 7]); c.lineWidth = 4; c.strokeStyle = YEL; c.beginPath(); c.moveTo(60, ry); c.lineTo(W - 60, ry); c.stroke(); c.restore(); mono(c, 'SEU RECORDE', W / 2, ry - 8, 10, YEL, 'center'); }
+    const hx = st.hidden ? 120 : st.px;
+    // esconderijos (rolam com o chão)
+    const cy0 = PY + 14;
+    const visCovers = [];
+    for (let k = 0; k < 3; k++) { const y = wrapY(-(k * 340) + st.scroll + 40, 1020) - 120; visCovers.push({ x: [120, 250, 170][k], y }); }
+    const hideCover = visCovers.find((cv) => Math.abs(cv.y - PY) < 160) || visCovers[0];
+    const heroX = st.hidden ? hideCover.x : st.px, heroY = st.hidden ? hideCover.y : PY;
+    for (const cv of visCovers) if (cv !== hideCover || !st.hidden) cover(c, key, cv.x, cv.y, false, t);
+    hero(c, key, heroX, heroY, t, walking && !st.hidden, st.hidden ? .55 : 1);
+    if (st.hidden) cover(c, key, hideCover.x, hideCover.y, true, t);
+    // Vigia fixo no topo
+    vigia(c, key, st.face, st.warn, t, heroX, W / 2, 6, 1.0);
+    darkness(c, m, st.dark, t);
+    vignette(c, st.warn, t);
+    hud(c, m, st.meters, st.record, st.warn, t);
+    const dx = walking ? Math.sin(t * 1.4) * 0.5 : 0, dy = walking ? -0.7 : 0;
+    stick(c, dx, dy, st.zone);
+    if (st.phase === 'viu') { st.dead = Math.min(1, st.dead + dt * 3); deathCard(c, m, st.meters, t, st.dead); }
+  }
+  requestAnimationFrame(frame);
+}
+
+// ---------------------------------------------------------------- páginas
+const root = document.getElementById('maps');
+for (const key of Object.keys(MAPS)) {
+  const m = MAPS[key];
+  const card = document.createElement('article'); card.className = 'card';
+  card.innerHTML = `
+    <div class="label">${m.vigia} · ${m.char}</div>
+    <h3>${m.name}</h3>
+    <p>${m.tag}</p>
+    <div class="phone"><canvas></canvas></div>
+    <div class="row" data-modes>
+      <button class="btn" data-m="demo" aria-pressed="true">DEMO</button>
+      <button class="btn" data-m="costas" aria-pressed="false">COSTAS</button>
+      <button class="btn" data-m="aviso" aria-pressed="false">AVISO</button>
+      <button class="btn" data-m="olhando" aria-pressed="false">OLHANDO</button>
+      <button class="btn" data-m="viu" aria-pressed="false">TE VIU!</button>
+    </div>
+    <div class="row">
+      <button class="btn" data-hide aria-pressed="false">ESCONDER</button>
+      <button class="btn" data-zone aria-pressed="false">ZONA DO ANALÓGICO</button>
+    </div>
+    <label class="range"><span class="label">Escuridão</span><input type="range" min="0" max="1" step="0.01" value="0.18"></label>
+    <div class="swatches">${m.palette.map((p) => `<span class="sw" style="background:${p}" title="${p}"></span>`).join('')}</div>`;
+  root.appendChild(card);
+  const ui = {};
+  makeScene(key, card.querySelector('canvas'), ui);
+  card.querySelectorAll('[data-m]').forEach((b) => b.addEventListener('click', () => {
+    card.querySelectorAll('[data-m]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    ui.setMode(b.dataset.m);
+  }));
+  card.querySelector('[data-hide]').addEventListener('click', (e) => e.currentTarget.setAttribute('aria-pressed', String(ui.toggleHide())));
+  card.querySelector('[data-zone]').addEventListener('click', (e) => e.currentTarget.setAttribute('aria-pressed', String(ui.toggleZone())));
+  card.querySelector('input').addEventListener('input', (e) => ui.setDark(Number(e.target.value)));
+}
+
+// ficha das peças (estáticas)
+const sheet = document.getElementById('sheet');
+function tile(label, w, h, draw) {
+  const d = document.createElement('div'); d.className = 'tile';
+  const cv = document.createElement('canvas'); d.appendChild(cv);
+  const lb = document.createElement('div'); lb.className = 'label'; lb.textContent = label; d.appendChild(lb);
+  sheet.appendChild(d); const c = setup(cv, w, h); draw(c); return d;
+}
+for (const key of Object.keys(MAPS)) {
+  const m = MAPS[key];
+  tile(`${m.char} · parado`, 120, 120, (c) => { hero(c, key, 60, 62, 0, false); });
+  tile(`${m.char} · andando`, 120, 120, (c) => { hero(c, key, 60, 62, 0.14, true); });
+  tile(`${m.char} · escondido`, 120, 120, (c) => { hero(c, key, 60, 62, 0, false, .55); cover(c, key, 60, 62, true, 0.2); });
+  tile(`${m.vigia} · de costas`, 160, 150, (c) => vigia(c, key, 0, 0, 0, 80, 80, 10, 1));
+  tile(`${m.vigia} · aviso`, 160, 150, (c) => vigia(c, key, 0, 1, 0.1, 80, 80, 10, 1));
+  tile(`${m.vigia} · olhando`, 160, 150, (c) => vigia(c, key, 1, 0, 0, 100, 80, 10, 1));
+  tile(`${m.cover}`, 120, 120, (c) => cover(c, key, 60, 62, false, 0));
+  tile(`Escuridão · ${m.name}`, 160, 150, (c) => { c.fillStyle = m.palette[0]; c.fillRect(0, 0, 160, 150); c.save(); c.scale(160 / W, 150 / H * 1.2); darkness(c, m, 0.9, 0.9); c.restore(); });
+}
+})();
+</script>
+</body>
+</html>
