@@ -1,6 +1,6 @@
 # 020 · Sinal Vermelho (jogo solo de correr sem ser visto)
 
-Status: **lógica aprovada pelo Lucas (12/10/2026); design dos 3 mapas, do boneco e do Vigia ainda não começou.** Nada implementado. Online (todos no mesmo mapa, com física de empurrão) fica para depois e não faz parte desta spec.
+Status: **lógica e design aprovados pelo Lucas (12/10/2026), com Campanha, poderes e chefes; falta só polir e começar a desenvolver.** Nada implementado. Online (todos no mesmo mapa, com física de empurrão) fica para depois e não faz parte desta spec.
 
 ## A ideia
 
@@ -84,6 +84,52 @@ O Lucas achou a câmera **perto demais** e quer **mais campo de visão**, com **
 - **Salas não entram no ranking** (regra do projeto); só o histórico de sala.
 - **Decididas pelo Lucas (12/10/2026), as quatro com "sim":** (1) ser empurrado enquanto o Vigia olha **conta como se mexer** (com uma folga curta logo depois do empurrão); (2) quem sai da corrida **só assiste** os outros; (3) a velocidade da escuridão online segue **só o tempo**; (4) o empurrão **pode tirar alguém de dentro de um esconderijo**.
 
+## Esconderijo, versão clara (12/10/2026)
+O Lucas quis que a zona de proteção fique **óbvia**:
+- **Zona marcada:** cada esconderijo tem um **anel tracejado no chão** com o tamanho exato da zona. Dentro do anel, a pessoa está protegida; fora, não.
+- **Entrar no arbusto:** ao entrar na zona o boneco **vira uma silhueta** (sombra escura com o contorno na cor da pessoa), por baixo da folhagem semitransparente. Quem está de fora vê só a silhueta. O anel vira verde e anima.
+- **Indicador na tela:** uma etiqueta verde **ESCONDIDO** (com um olho riscado) abaixo dos metros, e um som de folhagem ao entrar.
+- **O esconderijo quebra:** só aguenta um tempo (cerca de 4,5 s acumulados dentro; o tempo volta devagar quando a pessoa sai). Um **anel de durabilidade** esvazia ao redor (verde, depois laranja); no final ele treme, perde a cor, caem folhas e **some**, deixando a pessoa exposta. Esconderijos de aparência rachada (frágeis, nas fases mais difíceis) aguentam só uns 2,5 s. Na Campanha, o que quebrou não volta naquela tentativa; no Clássico novos aparecem à frente. Tempos são palpite a calibrar.
+
+## Falso aviso
+De vez em quando o Vigia dá o sinal de que vai olhar **e não olha**. Acontece raramente no Clássico (a partir de uns 150 m, cerca de 1 em 8 avisos) e com frequência crescente na Campanha (de 1 em 8 a 1 em 4). Quem se escondeu à toa perde tempo e fica mais perto da escuridão.
+
+## Campanha (modo solo com fases) — decidido em 12/10/2026
+O Clássico (infinito, ranking de metros) continua. A **Campanha** é o modo com mais mecânica, para a pessoa ter para onde ir.
+- **Mundos:** cada mapa é um mundo de **10 fases** (Horta, depois Rua Neon, depois Ruínas). A versão 1 faz só a Horta.
+- **Fase** = uma distância a cumprir até a linha de chegada. Distâncias de partida (palpite): 120, 150, 190, 230, **300 (chefe)**, 260, 300, 340, 380, **480 (chefe)**. Cada fase tem uma escuridão um pouco mais rápida e um Vigia um pouco mais ligeiro.
+- **Progresso no topo da tela:** uma trilha com o boneco andando até uma bandeirinha, com o marco do meio, "FASE 3" e "faltam 84 m". Os metros grandes continuam no canto.
+- **Marco:** no meio de cada fase; ao perder, recomeça dele (tentativas ilimitadas).
+- **Estrelas:** 1 por chegar, 2 por chegar **sem perder nenhuma vez**, 3 por chegar sem perder e **dentro do tempo-alvo** da fase. As estrelas abrem as fases seguintes e liberam enfeites do boneco.
+- **Novidades por fase na Horta (palpite):** 1 e 2 básicas; 3 falso aviso; 4 esconderijo que quebra; **5 chefe Rei Espantalho**; 6 poder do Vigia (corvos); 7 esconderijos frágeis e mais falsos avisos; 8 e 9 tudo junto; **10 chefe**.
+- **Servidor:** cada fase é uma corrida determinística (seed fixa da fase). O servidor refaz pelos movimentos e só então grava estrelas e progresso por pessoa. A tabela de progresso exige **migration**, que será pedida antes de rodar.
+
+## Poderes dos Vigias
+**Regra de ouro (decidida pelo Lucas):** quando a pessoa **está escondida, o Vigia não solta poder nela**; quando está **no meio do nada**, solta. Se ela entrar num esconderijo durante o aviso do poder, o poder passa sem efeito.
+
+**Vigias comuns, "poderzinho besta"** (só nas fases normais; um a cada uns 15 a 25 s):
+- **Espantalho, bando de corvos:** corvos cruzam a tela e escondem uma parte da visão por uns 2 s (cobertura leve).
+- **Semáforo, óleo na pista:** 3 poças escorregadias aparecem perto; pisar faz deslizar por cerca de 1 s (e deslizar conta como se mexer quando ele olha).
+- **Totem Coruja, vento:** uma rajada fraca empurra de lado por uns 2 s, com riscos de areia mostrando a direção.
+
+**Chefes** (a cada 5 fases: fases 5 e 10 de cada mundo): um Vigia maior, com coroa ou detalhes próprios, que **solta vários poderes**: pode encadear dois. Reserva de poderes:
+1. **Controles invertidos** (2,5 s): o analógico muda de cor e a tela inclina um pouco no aviso.
+2. **Cortina** (tinta, penas, fumaça ou areia, 2,5 a 3 s): cobre a tela, mas sempre deixa uma janela clara ao redor do boneco.
+3. **Rajada** (empurrão de 2 s, no máximo 4 m): setas no chão mostram a direção.
+4. **Lama** (3 s, 40% da velocidade) numa área marcada no chão.
+5. **Apagão** (3 s): a tela escurece e fica um círculo de luz ao redor do boneco.
+6. **Chuva marcada:** círculos vermelhos no chão explodem depois de 1,2 s e empurram quem estiver dentro.
+O chefe também faz falsos avisos mais seguidos.
+
+**Equidade dos poderes** (o Lucas pediu: nada apelão nem injusto). Regras que o gerador cumpre e que um teste automático confere:
+- **Só com o Vigia de costas**, nunca durante o aviso de olhar nem olhando. Ele pode soltar o poder e **depois** virar: quem não se escondeu nem se virou perde, mas dá para se virar.
+- **Aviso próprio do poder** de uns 0,9 s, diferente (som e imagem) do aviso de olhar.
+- **Efeito curto** (até 3 s) e que **termina pelo menos 1,2 s antes do próximo olhar**: dá sempre tempo de parar.
+- **Nunca elimina direto:** nada de dano nem de empurrão para dentro da escuridão; o pior caso é atrapalhar.
+- **Um poder por vez**, com intervalo mínimo entre eles.
+- **O aviso de olhar nunca é coberto:** o Vigia e a vinheta de aviso continuam visíveis mesmo com cortina.
+- **Teste de justiça:** na simulação, um jogador que reage ao aviso (para a tempo ou se esconde) **nunca perde por causa de um poder**.
+
 ## Controles
 - **Celular:** o analógico (círculo e bolinha) fica **fixo no canto inferior direito**, sempre visível, com uma área de toque generosa em volta. A bolinha acompanha o dedo e volta ao centro ao soltar.
 - **A câmera nunca deixa o analógico tapar o boneco.** A tela reserva uma **zona do analógico** (canto inferior direito, com folga em volta) e a câmera mantém o boneco sempre **fora dela**: o boneco fica na parte de cima da tela (cerca de 40% da altura) e a câmera também acompanha de lado quando ele vai para a direita. É uma regra do código da câmera (função pura, com teste: para qualquer posição do boneco no corredor, em retrato e em paisagem, ele nunca fica dentro da zona do analógico). Vale também para o Vigia, os esconderijos e o aviso, que ficam fora dessa zona ou são desenhados sem depender dela.
@@ -102,7 +148,7 @@ O Lucas achou a câmera **perto demais** e quer **mais campo de visão**, com **
 
 ## Fora desta versão
 - **Online:** todos no mesmo mapa ao mesmo tempo, com física (os bonecos não se atravessam e, ao encostar, o outro é empurrado na direção do encontro). Exigirá servidor autoritativo em sala (Colyseus). A simulação determinística de agora já nasce pensando nisso.
-- **Outros modos** (cada um com ranking próprio) e **Daily**.
+- **Guardado para depois:** botão de **pedrinha** que desvia o Vigia, **fantasma** da melhor corrida, itens (capa, relógio), terrenos (gelo, areia movediça, esteira), noite e tempestade de areia, **Daily**, ranking de estrelas e os mundos 2 e 3 da Campanha.
 
 ## Design (proposta de 12/10/2026, a aprovar)
 Protótipo navegável em `docs/reference/design-sinal-vermelho.html` (abrir por um servidor local, por exemplo `python -m http.server` na pasta; as fontes vêm do Google). Mesma dinâmica nos três mapas; muda só a aparência. Estilo Pop Brutal: contorno de tinta, sombra dura, cores chapadas, sem emoji.

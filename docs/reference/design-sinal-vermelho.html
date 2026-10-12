@@ -207,8 +207,28 @@ function ground(c, key, scroll, t, vw, vh, half) {
   }
 }
 
+// ---------------------------------------------------------------- zona do esconderijo
+function zoneRing(c, x, y, active, t, dur) {
+  const rx = 44, ry = 36;
+  c.save();
+  c.setLineDash([9, 7]); c.lineDashOffset = -t * (active ? 14 : 4);
+  c.lineWidth = 6; c.strokeStyle = INK; c.beginPath(); c.ellipse(x, y, rx, ry, 0, 0, 7); c.stroke();
+  c.lineWidth = 3; c.strokeStyle = active ? '#33c27f' : PAPER; c.beginPath(); c.ellipse(x, y, rx, ry, 0, 0, 7); c.stroke();
+  c.setLineDash([]);
+  if (active) { // anel de durabilidade: esvazia enquanto a pessoa está dentro
+    c.lineWidth = 7; c.strokeStyle = INK; c.beginPath(); c.ellipse(x, y, rx + 8, ry + 8, 0, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * dur); c.stroke();
+    c.lineWidth = 4; c.strokeStyle = dur > .35 ? '#33c27f' : '#ff6a2b'; c.beginPath(); c.ellipse(x, y, rx + 8, ry + 8, 0, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * dur); c.stroke();
+  }
+  c.restore();
+}
+
 // ---------------------------------------------------------------- esconderijos
-function cover(c, key, x, y, active, t) {
+function cover(c, key, x, y, active, t, dur = 1) {
+  // zona de proteção: o anel marca exatamente onde dá para se esconder
+  zoneRing(c, x, y, active, t, dur);
+  if (dur < 0.4 && dur > 0) { x += Math.sin(t * 50) * 1.6 * (1 - dur / 0.4); }
+  c.save(); if (dur < 0.55) c.globalAlpha = 0.45 + dur * 0.8;
+
   if (key === 'horta') {
     blob(c, circle(x - 18, y + 6, 17), '#2f9e57'); blob(c, circle(x + 18, y + 6, 17), '#2f9e57');
     blob(c, circle(x, y - 6, 21), '#49c26b'); blob(c, circle(x, y + 8, 17), '#3aad60');
@@ -225,10 +245,8 @@ function cover(c, key, x, y, active, t) {
     for (let i = 0; i < 10; i++) { const a = i * Math.PI / 5 + .3; c.fillStyle = PAPER; c.beginPath(); c.arc(x + Math.cos(a) * 17, y + Math.sin(a) * 17, 1.5, 0, 7); c.fill(); }
     blob(c, star(x, y, 8, 3.6, 6, 0), '#ff9ecf', 2, 0);
   }
-  if (active) { // anel tracejado: "aqui você está protegido"
-    c.save(); c.setLineDash([6, 6]); c.lineDashOffset = -t * 12; c.lineWidth = 3; c.strokeStyle = PAPER;
-    c.beginPath(); c.ellipse(x, y, 42, 34, 0, 0, 7); c.stroke(); c.restore();
-  }
+  c.restore();
+  if (dur < 0.55 && dur > 0) { for (let i = 0; i < 4; i++) { const ph = (t * 1.3 + i * 0.37) % 1; c.fillStyle = key === 'deserto' ? '#c99a52' : '#c9a23a'; c.beginPath(); c.arc(x + (i - 1.5) * 12, y - 6 + ph * 30, 3, 0, 7); c.fill(); } }
 }
 
 // ---------------------------------------------------------------- bonecos
@@ -256,6 +274,16 @@ function hero(c, key, x, y, t, walking, alpha = 1, col) {
     c.fillStyle = '#ff9ecf'; c.beginPath(); c.moveTo(-9, -9); c.lineTo(-8, -17); c.lineTo(-5, -11); c.fill();
     c.beginPath(); c.moveTo(9, -9); c.lineTo(8, -17); c.lineTo(5, -11); c.fill();
   }
+  c.restore();
+}
+
+// Silhueta de quem está escondido: só a sombra do boneco, com a cor dele no contorno.
+function silhouette(c, x, y, col) {
+  c.save(); c.translate(x, y);
+  c.fillStyle = 'rgba(17,17,17,.88)'; c.beginPath(); c.ellipse(0, 4, 13, 16, 0, 0, 7); c.fill();
+  c.beginPath(); c.arc(0, -8, 8, 0, 7); c.fill();
+  c.lineWidth = 2.6; c.strokeStyle = col; c.beginPath(); c.ellipse(0, 4, 13, 16, 0, 0, 7); c.stroke();
+  c.beginPath(); c.arc(0, -8, 8, 0, 7); c.stroke();
   c.restore();
 }
 
@@ -426,13 +454,13 @@ function scaled(c, x, y, k, fn) { c.save(); c.translate(x, y); c.scale(k, k); fn
 
 function makeScene(key, canvas, ui) {
   const c = setup(canvas), m = MAPS[key];
-  const st = { color: COLORS[0][1], view: 'solo', mode: 'demo', phase: 'costas', pt: 0, face: 0, warn: 0, scroll: 0, px: W / 2, hidden: false, dark: .18, zone: false, dead: 0, meters: 0, record: 46 };
+  const st = { hideT: 0, gone: 0, color: COLORS[0][1], view: 'solo', mode: 'demo', phase: 'costas', pt: 0, face: 0, warn: 0, scroll: 0, px: W / 2, hidden: false, dark: .18, zone: false, dead: 0, meters: 0, record: 46 };
   function setPhase(p) { st.phase = p; st.pt = 0; if (p !== 'viu') st.dead = 0; }
   ui.setMode = (mode) => { st.mode = mode; if (mode === 'demo') { st.dead = 0; setPhase('costas'); } else if (mode === 'viu') setPhase('viu'); else setPhase(mode); };
   ui.setView = (v) => { st.view = v; };
   ui.setDark = (v) => { st.dark = v; };
   ui.setColor = (v) => { st.color = v; };
-  ui.toggleHide = () => { st.hidden = !st.hidden; return st.hidden; };
+  ui.toggleHide = () => { if (st.gone > 0) return false; st.hidden = !st.hidden; return st.hidden; };
   ui.toggleZone = () => { st.zone = !st.zone; return st.zone; };
   let last = performance.now(), t0 = last;
   function frame(now) {
@@ -454,6 +482,11 @@ function makeScene(key, canvas, ui) {
     const walking = safe && st.phase !== 'viu';
     if (walking) { st.scroll += dt * 54; st.meters = st.scroll / PPM; }
     if (st.meters > 70) { st.scroll = 0; st.meters = 0; }
+    const HIDE_MAX = 4.5; // segundos que o esconderijo aguenta
+    if (st.hidden) st.hideT += dt; else st.hideT = Math.max(0, st.hideT - dt * 0.6);
+    if (st.gone > 0) { st.gone -= dt; if (st.gone <= 0) { st.gone = 0; st.hideT = 0; } }
+    if (st.hidden && st.hideT >= HIDE_MAX) { st.hidden = false; st.gone = 3.5; if (ui.onUnhide) ui.onUnhide(); }
+    const dur = clamp(1 - st.hideT / HIDE_MAX, 0, 1);
     const sway = Math.sin(t * 0.9) * (V.half * 0.55);
 
     c.fillStyle = '#000'; c.fillRect(0, 0, W, H);
@@ -468,7 +501,7 @@ function makeScene(key, canvas, ui) {
     for (let k = 0; k < offs.length; k++) covers.push({ x: cx + offs[k], y: wrapY(-(k * 190) + st.scroll + 40, 1140) - 140 });
     const near = covers.reduce((a, b) => Math.abs(a.y - vpy) < Math.abs(b.y - vpy) ? a : b);
     const heroX = st.hidden ? near.x : cx + sway, heroY = st.hidden ? near.y : vpy;
-    for (const cv of covers) if (!(st.hidden && cv === near)) scaled(c, cv.x, cv.y, V.k, () => cover(c, key, 0, 0, false, t));
+    for (const cv of covers) if (!(st.hidden && cv === near) && !(st.gone > 0 && cv === near)) scaled(c, cv.x, cv.y, V.k, () => cover(c, key, 0, 0, false, t));
     // os outros jogadores (só no modo com amigos)
     const tags = [];
     if (st.view === 'amigos') {
@@ -480,9 +513,10 @@ function makeScene(key, canvas, ui) {
         tags.push({ x: ox, y: oy, name: NAMES[i + 1], col: oc, me: false });
       }
     }
-    scaled(c, heroX, heroY, V.k, () => hero(c, key, 0, 0, t, walking && !st.hidden, st.hidden ? .55 : 1, st.color));
+    if (!st.hidden) scaled(c, heroX, heroY, V.k, () => hero(c, key, 0, 0, t, walking, 1, st.color));
+    else scaled(c, heroX, heroY, V.k, () => silhouette(c, 0, 0, st.color));
     tags.push({ x: heroX, y: heroY, name: NAMES[0], col: st.color, me: true });
-    if (st.hidden) scaled(c, near.x, near.y, V.k, () => cover(c, key, 0, 0, true, t));
+    if (st.hidden) scaled(c, near.x, near.y, V.k, () => { c.save(); c.globalAlpha = .72; cover(c, key, 0, 0, true, t, dur); c.restore(); });
     c.restore();
 
     // tudo o que é da tela (não do mundo) não encolhe
@@ -491,10 +525,17 @@ function makeScene(key, canvas, ui) {
     vignette(c, st.warn, t);
     if (ry * Z > 70 && ry * Z < H) mono(c, 'SEU RECORDE', W / 2, ry * Z - 8, 10, YEL, 'center');
     hud(c, m, st.meters, st.record, st.warn, t);
-    for (const g of tags) if (!(st.hidden && g.me)) nameTag(c, g.x * Z, g.y * Z - 24 * V.k * Z - 6, g.name, g.col, g.me);
+    for (const g of tags) nameTag(c, g.x * Z, g.y * Z - 24 * V.k * Z - 6, g.name, g.col, g.me && !st.hidden ? true : g.me);
     // distância até a escuridão: cada jogador vê a dele (quem fica para trás a vê perto)
     blob(c, rect(14, 74, 118, 22, 11), '#0d0d12', 2.5, 2);
     mono(c, 'ESCURIDÃO ' + Math.round((1 - st.dark) * 60) + ' m', 24, 89, 10, st.dark > .6 ? '#ff6a2b' : PAPER);
+    if (st.hidden) { // indicador: você está protegido
+      blob(c, rect(14, 100, 140, 24, 12), '#33c27f', 2.5, 2);
+      c.save(); c.translate(30, 112); c.strokeStyle = INK; c.lineWidth = 2; c.beginPath(); c.ellipse(0, 0, 8, 5, 0, 0, 7); c.stroke(); c.fillStyle = INK; c.beginPath(); c.arc(0, 0, 2.4, 0, 7); c.fill(); c.beginPath(); c.moveTo(-9, 7); c.lineTo(9, -7); c.stroke(); c.restore();
+      mono(c, 'ESCONDIDO', 44, 116, 10, INK);
+    } else if (st.gone > 0) {
+      blob(c, rect(14, 100, 190, 24, 12), '#ff6a2b', 2.5, 2); mono(c, 'ESCONDERIJO QUEBROU', 24, 116, 10, INK);
+    }
     stick(c, walking ? Math.sin(t * 1.4) * 0.5 : 0, walking ? -0.7 : 0, st.zone);
     if (st.phase === 'viu') { st.dead = Math.min(1, st.dead + dt * 3); deathCard(c, m, st.meters, t, st.dead); }
   }
@@ -544,7 +585,9 @@ for (const key of Object.keys(MAPS)) {
     card.querySelectorAll('[data-v]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
     ui.setView(b.dataset.v);
   }));
-  card.querySelector('[data-hide]').addEventListener('click', (e) => e.currentTarget.setAttribute('aria-pressed', String(ui.toggleHide())));
+  const hideBtn = card.querySelector('[data-hide]');
+  ui.onUnhide = () => hideBtn.setAttribute('aria-pressed', 'false');
+  hideBtn.addEventListener('click', (e) => e.currentTarget.setAttribute('aria-pressed', String(ui.toggleHide())));
   card.querySelector('[data-zone]').addEventListener('click', (e) => e.currentTarget.setAttribute('aria-pressed', String(ui.toggleZone())));
   card.querySelector('input').addEventListener('input', (e) => ui.setDark(Number(e.target.value)));
 }

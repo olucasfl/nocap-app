@@ -22,6 +22,6 @@
 | 017 | [Presença na sala, entrar/sair e convites](017-presenca-sala.md)   | 3     | implementada; testada com servidor real e bots                             |
 | 018 | [Amigos, presença, perfil, ranking e fim de partida](018-social-e-fim-de-partida.md) | 3 | implementada; falta aplicar a migration 0005 |
 | 019 | [Eco Hero (ritmo do Ecooo, estilo Guitar Hero)](019-eco-batida.md) | 6 | solo implementado; falta jogar ao vivo e calibrar |
-| 020 | [Sinal Vermelho (correr sem ser visto)](020-sinal-vermelho.md) | 6 | lógica aprovada; design e código ainda não começaram |
+| 020 | [Sinal Vermelho (correr sem ser visto)](020-sinal-vermelho.md) | 6 | lógica, Campanha e poderes aprovados; código ainda não começou |
 
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.
