@@ -233,6 +233,31 @@ export class SinalSim {
     this.stun = Math.max(this.stun, STUN_SHOVE_TICKS);
   }
 
+  /**
+   * Sala: a escuridão é uma só para todos. Com `externalDark` ligado a simulação não anda com a
+   * escuridão sozinha; quem manda nela é a sala, que a posiciona antes de cada passo (`setDarkY`).
+   */
+  externalDark = false;
+
+  setDarkY(y: number) {
+    this.darkY = y;
+  }
+
+  /** Onde está a frente da escuridão (m). */
+  get darkFront(): number {
+    return this.darkY;
+  }
+
+  /** Quanto o boneco está "parado" (0 a 1): acelera a escuridão. */
+  get idleLevel(): number {
+    return this.idle;
+  }
+
+  /** Segundos desde o começo da fase. */
+  get time(): number {
+    return this.courseTick * DT;
+  }
+
   /** O boneco está atordoado agora? */
   get isStunned(): boolean {
     return this.stun > 0;
@@ -652,7 +677,9 @@ export class SinalSim {
     const stalled = this.yHist.length >= 6 * TPS && this.y - this.yHist[0]! < 1.5;
     this.idle = clamp(this.idle + (stalled ? DT / 3 : -DT / 1.5), 0, 1);
     // Escondido, a escuridão demora mais para chegar (um respiro, não um abrigo para sempre: o esconderijo quebra).
-    this.darkY += darkSpeed(this.course, t, this.idle) * (hidden ? COVER_DARK_FACTOR : 1) * DT;
+    if (!this.externalDark) {
+      this.darkY += darkSpeed(this.course, t, this.idle) * (hidden ? COVER_DARK_FACTOR : 1) * DT;
+    }
     if (this.y - PLAYER_R <= this.darkY) {
       this.die('escuridao', events);
       this.tick++;

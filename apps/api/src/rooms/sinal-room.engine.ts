@@ -8,6 +8,7 @@ import {
   SINAL_COLORS,
   SinalSim,
   clamp,
+  darkSpeed,
   type SinalEvent,
 } from '@nocap/games';
 import {
@@ -44,11 +45,11 @@ interface Racer {
 /**
  * O Sinal Vermelho em sala (spec 020): todo mundo corre no MESMO mapa ao mesmo tempo, com o mesmo
  * Vigia, os mesmos poderes e os mesmos obstáculos. Cada pessoa é uma `SinalSim` da mesma seed,
- * avançada em conjunto (passo fixo de 1/60 s), então o Vigia é um só para todos; a escuridão é
- * de cada um (quem fica para trás a vê perto). Os bonecos não se sobrepõem, e quem chega perto de
+ * avançada em conjunto (passo fixo de 1/60 s), então o Vigia é um só para todos; a escuridão
+ * também é uma só (quem fica para trás é pego primeiro). Os bonecos não se sobrepõem, e quem chega perto de
  * outro ganha um botão para empurrá-lo (e quem se mexe sob o olhar do Vigia perde, empurrado ou
- * não). Perdeu, vira plateia. Vence quem chegar mais longe (a corrida acaba quando só resta um que já
- * passou os que caíram, ou quando todos caem).
+ * não). Perdeu, vira plateia. Vence quem chegar mais longe, e a corrida só acaba quando todos caem:
+ * quem ainda corre continua jogando.
  */
 export class SinalRoomEngine extends ColorRoomEngine {
   override readonly game = 'sinal' as const;
@@ -64,6 +65,8 @@ export class SinalRoomEngine extends ColorRoomEngine {
   private acc = 0;
   private sinceSend = 0;
   private finishAt: number | null = null;
+  /** A frente da escuridão, uma só para a sala toda (m). */
+  private dark = 0;
 
   constructor(opts: EngineOptions) {
     super(opts);
@@ -127,6 +130,9 @@ export class SinalRoomEngine extends ColorRoomEngine {
       const sim = new SinalSim(this.seed, 'infinito');
       // Largam lado a lado, espalhados pelo corredor.
       sim.x = clamp((i - (ids.length - 1) / 2) * 1.3, -edge, edge);
+      // a escuridão é uma só: quem manda nela é a sala (veja `stepAll`)
+      sim.externalDark = true;
+      this.dark = sim.darkFront;
       this.racers.set(id, { sim, input: [0, 0], seq: 0, events: [], pushedAt: -Infinity });
     });
     this.finishAt = null;
@@ -234,13 +240,21 @@ export class SinalRoomEngine extends ColorRoomEngine {
   }
 
   private stepAll() {
+    let lead: Racer | null = null;
     for (const [id, r] of this.racers) {
       if (r.sim.dead) continue;
+      r.sim.setDarkY(this.dark);
       // Quem perdeu a conexão fica parado (a escuridão resolve).
       const live = this.members.get(id)?.connected;
       const [ax, ay] = live ? r.input : [0, 0];
       for (const e of r.sim.step(ax, ay)) this.log(r, e);
     }
+    // A névoa é UMA só, igual para todos. Anda no ritmo de quem está na frente (se ele para, ela acelera
+    // para todos), nunca mais rápida que o boneco; quem fica para trás é pego primeiro.
+    for (const r of this.racers.values()) {
+      if (!r.sim.dead && (!lead || r.sim.y > lead.sim.y)) lead = r;
+    }
+    if (lead) this.dark += darkSpeed(lead.sim.course, lead.sim.time, lead.sim.idleLevel) / 60;
     this.separate();
   }
 
@@ -274,16 +288,12 @@ export class SinalRoomEngine extends ColorRoomEngine {
     }
   }
 
-  /** A disputa se decidiu: todos caíram, ou só resta um que já passou o que os caídos fizeram. */
+  /**
+   * A corrida só acaba quando TODOS caíram: quem perdeu assiste, e quem ainda corre continua até
+   * cair também (a distância dele continua contando para o pódio).
+   */
   private decided(): boolean {
-    const all = [...this.racers.values()];
-    const alive = all.filter((r) => !r.sim.dead);
-    if (alive.length === 0) return true;
-    if (alive.length === 1 && all.length >= 2) {
-      const bestDead = Math.max(0, ...all.filter((r) => r.sim.dead).map((r) => r.sim.result.meters));
-      return alive[0]!.sim.result.meters > bestDead + 0.5;
-    }
-    return false;
+    return [...this.racers.values()].every((r) => r.sim.dead);
   }
 
   // ---- fases que o Sinal Vermelho não usa ----

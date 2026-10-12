@@ -55,10 +55,8 @@ function race(names = ['ana', 'beto']) {
   for (const n of names.slice(1)) ctx.engine.setReady(n, true);
   ctx.engine.start(names[0]!);
   ctx.advance(SINAL_COUNTDOWN_MS + 20);
-  // a escuridão fora do caminho: nos testes só importam o Vigia, os empurrões e o resto
-  for (const r of racersOf(ctx.engine).values()) {
-    (r.sim as unknown as { darkY: number }).darkY = -1e7;
-  }
+  // a escuridão (uma só, da sala) fora do caminho: aqui só importam o Vigia, os empurrões e o resto
+  (ctx.engine as unknown as { dark: number }).dark = -1e7;
   return ctx;
 }
 
@@ -174,7 +172,7 @@ describe('SinalRoomEngine: a corrida', () => {
     expect(rows).toHaveLength(2);
   });
 
-  it('o último de pé vence assim que passa quem caiu', () => {
+  it('quando alguém cai a corrida continua para quem ainda corre, e só acaba quando todos caem', () => {
     const { engine, advance } = race();
     // beto cai logo, parado no meio do caminho do olhar? não: derrubamos na marra
     const beto = racersOf(engine).get('beto')!.sim;
@@ -184,6 +182,13 @@ describe('SinalRoomEngine: a corrida', () => {
     ana.y = 20;
     (ana as unknown as { maxY: number }).maxY = 20;
     advance(200);
+    advance(SINAL_FINISH_DELAY_MS + 200);
+    // ana ainda corre (e já passou o beto): a partida NÃO acaba
+    expect(engine.currentPhase).toBe('play');
+    expect(sinalOf(engine, 'beto').target).toBe('ana'); // o beto assiste
+    engine.move('ana', 0, 100);
+    let guard = 0;
+    while (engine.currentPhase === 'play' && guard++ < 60 * 40) advance(100);
     advance(SINAL_FINISH_DELAY_MS + 200);
     expect(engine.currentPhase).toBe('final');
     expect(engine.finalRows()[0]!.userId).toBe('ana');
@@ -276,5 +281,46 @@ describe('SinalRoomEngine: o botão de empurrar', () => {
     expect(beto.dead).toBe(true);
     expect(beto.result.ended).toBe('vigia');
     expect(ana.dead).toBe(false);
+  });
+});
+
+describe('SinalRoomEngine: a névoa é uma só', () => {
+  const darkOf = (e: SinalRoomEngine, id: string) =>
+    (e.snapshot(id) as unknown as { sinal: { view: { darkY: number } } }).sinal.view.darkY;
+
+  it('todos veem a mesma névoa, e ela anda', () => {
+    const { engine, advance } = setup();
+    engine.setReady('beto', true);
+    engine.start('ana');
+    advance(SINAL_COUNTDOWN_MS + 20);
+    const d0 = darkOf(engine, 'ana');
+    advance(5000);
+    expect(darkOf(engine, 'ana')).toBeGreaterThan(d0 + 0.5);
+    expect(darkOf(engine, 'ana')).toBeCloseTo(darkOf(engine, 'beto'), 6);
+  });
+
+  it('quem fica para trás é pego primeiro; quem está na frente continua', () => {
+    const { engine, advance } = setup();
+    engine.setReady('beto', true);
+    engine.start('ana');
+    advance(SINAL_COUNTDOWN_MS + 20);
+    const ana = racersOf(engine).get('ana')!.sim;
+    const beto = racersOf(engine).get('beto')!.sim;
+    // ana corre à frente (teleporte para fora do alcance); beto fica na largada
+    ana.y = 60;
+    (ana as unknown as { maxY: number }).maxY = 60;
+    let guard = 0;
+    while (!beto.dead && guard++ < 60 * 90) advance(100);
+    expect(beto.dead).toBe(true);
+    expect(beto.result.ended).toBe('escuridao');
+    expect(ana.dead).toBe(false);
+  });
+
+  it('a névoa nunca é mais rápida que o boneco, mesmo com quem está na frente parado', () => {
+    const { engine, advance } = race();
+    (engine as unknown as { dark: number }).dark = 0;
+    advance(10_000);
+    const dark = (engine as unknown as { dark: number }).dark;
+    expect(dark / 10).toBeLessThan(4.2); // m/s médios
   });
 });
