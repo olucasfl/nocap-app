@@ -97,7 +97,9 @@ export function SinalPlay({ mode, seed, color, best, onEnd, onQuit }: Props) {
     const handle = (events: SinalEvent[]) => {
       for (const e of events) {
         audio?.event(e);
-        if (e.kind === 'choque') {
+        if (e.kind === 'folego') {
+          notice('FÔLEGO: MAIS RÁPIDO', '#33c27f', 1600);
+        } else if (e.kind === 'choque') {
           jolt = Math.max(jolt, e.size);
           buzz(Math.round(15 + 35 * e.size));
         } else if (e.kind === 'soluco') {

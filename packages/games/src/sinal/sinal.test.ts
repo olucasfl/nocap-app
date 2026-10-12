@@ -450,22 +450,29 @@ describe('esconderijos', () => {
     expect(caught).toBe(true);
   });
 
-  it('o esconderijo quebra depois de uns 4,5 s dentro e a pessoa fica exposta', () => {
-    const sim = new SinalSim('x', 'infinito');
-    const c = sim.view.covers.find((v) => !v.def.fragile)!.def;
+  it('o esconderijo quebra depois de uns 5,5 s dentro e a pessoa fica exposta', () => {
+    // uma moita simples e firme (não a comprida nem a frágil)
+    let found: { sim: SinalSim; c: { id: number; x: number; y: number } } | null = null;
+    for (let k = 0; k < 80 && !found; k++) {
+      const s2 = new SinalSim(`qb${k}`, 'infinito');
+      const cv = s2.view.covers.find((v) => !v.def.fragile && v.def.len === 0)?.def;
+      if (cv) found = { sim: s2, c: cv };
+    }
+    const sim = found!.sim;
+    const c = found!.c;
     sim.x = c.x;
     sim.y = c.y;
     let broke = -1;
     let tick = 0;
-    for (; tick < 60 * 6 && broke < 0; tick++) {
+    for (; tick < 60 * 7 && broke < 0; tick++) {
       sim.x = c.x;
       sim.y = c.y;
       const ev = sim.step(0, 0);
       if (ev.some((e) => e.kind === 'quebrou')) broke = tick;
       if (sim.dead) break;
     }
-    expect(broke / 60).toBeGreaterThan(4.3);
-    expect(broke / 60).toBeLessThan(4.8);
+    expect(broke / 60).toBeGreaterThan(5.3);
+    expect(broke / 60).toBeLessThan(5.8);
     expect(sim.view.covers.find((v) => v.def.id === c.id)!.broken).toBe(true);
     expect(sim.view.hidden).toBe(false);
   });
@@ -492,7 +499,8 @@ describe('esconderijos', () => {
       for (let i = 1; i < f.list.length; i++) {
         const a = f.list[i - 1]!;
         const b = f.list[i]!;
-        expect(b.y - a.y).toBeGreaterThanOrEqual(22 - 1e-9);
+        // o espaço conta depois do fim da moita comprida
+        expect(b.y - (a.y + a.len)).toBeGreaterThanOrEqual(16 - 1e-9);
         expect(Math.abs(b.x - a.x)).toBeGreaterThanOrEqual(3.5);
         expect(Math.abs(b.x)).toBeLessThanOrEqual(HALF - 1.6);
       }
@@ -1185,5 +1193,138 @@ describe('atordoado: bateu, fica tonto e o Vigia pega', () => {
       return sim.dead && sim.result.ended === 'vigia';
     };
     expect(seen(false)).toBe(true);
+  });
+});
+
+describe('moitas compridas e prêmios de se esconder', () => {
+  const longCover = () => {
+    for (let k = 0; k < 120; k++) {
+      const sim = new SinalSim(`lg${k}`, 'classico');
+      (sim as unknown as { darkY: number }).darkY = -1e7;
+      const c = sim.view.covers.find((v) => v.def.len > 0)?.def;
+      if (c) return { sim, c };
+    }
+    return null;
+  };
+
+  it('existem moitas compridas (6 a 12 m), mais comuns no começo, sempre para a frente', () => {
+    const lens: number[] = [];
+    let early = 0;
+    let late = 0;
+    for (const sd of SEEDS) {
+      for (const [n, bucket] of [[1, 'early'], [30, 'late']] as const) {
+        const course = classicoCourse(sd, n);
+        const f = new CoverField(course, `${sd}:cv`);
+        f.ensure(2500);
+        for (const c of f.list) {
+          if (c.len > 0) {
+            lens.push(c.len);
+            if (bucket === 'early') early++;
+            else late++;
+            expect(c.fragile).toBe(false);
+          }
+        }
+      }
+    }
+    expect(Math.min(...lens)).toBeGreaterThanOrEqual(6);
+    expect(Math.max(...lens)).toBeLessThanOrEqual(12);
+    expect(early).toBeGreaterThan(late);
+  });
+
+  it('dá para correr por toda a moita comprida com o Vigia olhando, e fora dela não', () => {
+    const { sim, c } = longCover()!;
+    const cyc = sim.vigiaTimeline.upTo(80).find((q) => !q.fake && !q.again && q.lookEnd - q.lookStart > 1.1)!;
+    // espera parado no começo da pista (fora da moita, que gasta se você fica dentro) até o olhar
+    while (sim.view.t < cyc.lookStart + 0.3 && !sim.dead) sim.step(0, 0);
+    expect(sim.dead).toBe(false);
+    // já olhando: corre pela moita inteira
+    sim.x = c.x;
+    sim.y = c.y + 0.2;
+    const startY = sim.y;
+    let ended = false;
+    for (let i = 0; i < 40 && !ended && sim.y < c.y + c.len - 0.5; i++) {
+      ended = sim.step(0, 100).some((e) => e.kind === 'fim');
+    }
+    expect(ended).toBe(false);
+    expect(sim.view.hidden).toBe(true);
+    expect(sim.y - startY).toBeGreaterThan(c.len > 5 ? 2 : 1);
+  });
+
+  it('a moita comprida gasta mais rápido por segundo, mas aguenta um pouco mais no total', () => {
+    const { sim, c } = longCover()!;
+    let broke = -1;
+    for (let i = 0; i < 60 * 8 && broke < 0; i++) {
+      sim.x = c.x;
+      sim.y = c.y + 0.5;
+      if (sim.step(0, 0).some((e) => e.kind === 'quebrou')) broke = i;
+    }
+    expect(broke / 60).toBeGreaterThan(3.5);
+    expect(broke / 60).toBeLessThan(4.6); // 6,5 s de força, gastando 1,6x
+  });
+
+  it('escondido, o atordoamento passa mais rápido, a escuridão anda devagar e sair dá fôlego', () => {
+    // atordoamento
+    const stunned = (hide: boolean) => {
+      for (let k = 0; k < 120; k++) {
+        const sim = new SinalSim(`sx${k}`, 'classico');
+        (sim as unknown as { n: number }).n = 8;
+        (sim as unknown as { startCourse: () => void }).startCourse();
+        (sim as unknown as { darkY: number }).darkY = -1e7;
+        const o = sim.view.obstacles.find((q) => q.kind === 'grande' && q.amp === 0);
+        const cv = sim.view.covers[0]?.def;
+        if (!o || !cv) continue;
+        sim.x = o.x;
+        sim.y = o.y - o.r - 0.5;
+        for (let i = 0; i < 40 && !sim.isStunned; i++) sim.step(0, 100);
+        if (!sim.isStunned) continue; // o caminho até o obstáculo tinha algo no meio: tenta outra seed
+        let n = 0;
+        while (sim.isStunned && n < 300) {
+          if (hide) {
+            sim.x = cv.x;
+            sim.y = cv.y;
+          }
+          sim.step(0, 0);
+          n++;
+        }
+        return n;
+      }
+      return 0;
+    };
+    expect(stunned(true)).toBeLessThan(stunned(false) * 0.6);
+
+    // escuridão
+    const dark = (hide: boolean) => {
+      const sim = new SinalSim('dk', 'infinito');
+      const c = sim.view.covers[0]!.def;
+      const d0 = sim.view.darkY;
+      for (let i = 0; i < 120; i++) {
+        if (hide) {
+          sim.x = c.x;
+          sim.y = c.y;
+        }
+        sim.step(0, 0);
+      }
+      return sim.view.darkY - d0;
+    };
+    expect(dark(true)).toBeLessThan(dark(false) * 0.5);
+
+    // fôlego
+    const sim = new SinalSim('fl', 'infinito');
+    (sim as unknown as { darkY: number }).darkY = -1e7;
+    const c = sim.view.covers[0]!.def;
+    for (let i = 0; i < 70; i++) {
+      sim.x = c.x;
+      sim.y = c.y;
+      sim.step(0, 0);
+    }
+    expect(sim.view.hidden).toBe(true);
+    sim.x = 0;
+    sim.y = c.y - 8;
+    let got = false;
+    for (let i = 0; i < 3; i++) got = got || sim.step(0, 0).some((e) => e.kind === 'folego');
+    expect(got).toBe(true);
+    const y0 = sim.y;
+    for (let i = 0; i < 30; i++) sim.step(0, 100);
+    expect(sim.y - y0).toBeGreaterThan(MAX_SPEED * 0.5 * 1.15);
   });
 });

@@ -11,6 +11,7 @@ import {
   circle,
   clamp,
   cover,
+  longCover,
   darkness,
   disp,
   fogHaze,
@@ -185,13 +186,19 @@ export function drawScene(c: Ctx, s: SceneInput) {
   for (const cv of view.covers) {
     const x = vcx + cv.def.x * V;
     const y = vy(cv.def.y);
-    if (y < -80 || y > vh + 80) continue;
-    const occupied = view.hidden && (view.x - cv.def.x) ** 2 + (view.y - cv.def.y) ** 2 <= 1.3 * 1.3;
+    const yTop = vy(cv.def.y + cv.def.len);
+    if (y < -80 || yTop > vh + 80) continue;
+    const near = Math.max(cv.def.y, Math.min(view.y, cv.def.y + cv.def.len));
+    const occupied = view.hidden && (view.x - cv.def.x) ** 2 + (view.y - near) ** 2 <= 1.3 * 1.3;
     if (occupied) {
       own = cv;
       continue;
     }
     if (cv.broken) continue;
+    if (cv.def.len > 0) {
+      longCover(c, map, x, y, yTop, false, s.t, cv.dur / cv.def.max);
+      continue;
+    }
     c.save();
     c.translate(x, y);
     c.scale(1.25, 1.25);
@@ -261,7 +268,12 @@ export function drawScene(c: Ctx, s: SceneInput) {
     c.scale(1.25, 1.25);
     silhouette(c, 0, 0, heroColor);
     c.restore();
-    if (own) {
+    if (own && own.def.len > 0) {
+      c.save();
+      c.globalAlpha = 0.72;
+      longCover(c, map, vcx + own.def.x * V, vy(own.def.y), vy(own.def.y + own.def.len), true, s.t, own.dur / own.def.max);
+      c.restore();
+    } else if (own) {
       c.save();
       c.globalAlpha = 0.72;
       c.translate(vcx + own.def.x * V, vy(own.def.y));

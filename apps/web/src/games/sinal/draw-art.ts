@@ -426,8 +426,56 @@ export function zoneRing(c: Ctx, x: number, y: number, active: boolean, t: numbe
   c.restore();
 }
 
-export function cover(c: Ctx, key: SinalMapId, x: number, y: number, active: boolean, t: number, dur = 1, fragile = false) {
-  zoneRing(c, x, y, active, t, dur);
+/**
+ * A moita comprida: uma fileira de moitas de `yBot` (começo) até `yTop` (fim), com a zona desenhada
+ * como uma cápsula (pontilhada; verde com a pessoa dentro, laranja quando está acabando).
+ */
+export function longCover(
+  c: Ctx,
+  key: SinalMapId,
+  x: number,
+  yBot: number,
+  yTop: number,
+  active: boolean,
+  t: number,
+  dur: number,
+) {
+  const R = 46;
+  c.save();
+  c.setLineDash([10, 8]);
+  c.lineDashOffset = -t * (active ? 14 : 4);
+  c.beginPath();
+  c.roundRect(x - R, yTop - R, R * 2, yBot - yTop + R * 2, R);
+  c.lineWidth = 6;
+  c.strokeStyle = INK;
+  c.stroke();
+  c.lineWidth = 3;
+  c.strokeStyle = active ? (dur > 0.35 ? '#33c27f' : '#ff6a2b') : PAPER;
+  c.stroke();
+  c.restore();
+  const n = Math.max(2, Math.round((yBot - yTop) / 44) + 1);
+  for (let i = 0; i < n; i++) {
+    const py = yBot - (i * (yBot - yTop)) / (n - 1);
+    c.save();
+    c.translate(x + ((i % 2) * 2 - 1) * 4, py);
+    c.scale(1.1, 1.1);
+    cover(c, key, 0, 0, false, t, dur, false, true);
+    c.restore();
+  }
+}
+
+export function cover(
+  c: Ctx,
+  key: SinalMapId,
+  x: number,
+  y: number,
+  active: boolean,
+  t: number,
+  dur = 1,
+  fragile = false,
+  noRing = false,
+) {
+  if (!noRing) zoneRing(c, x, y, active, t, dur);
   let dx = 0;
   if (dur < 0.4 && dur > 0) dx = Math.sin(t * 50) * 1.6 * (1 - dur / 0.4);
   c.save();

@@ -4,7 +4,11 @@ import {
   CHUVA_IMPULSE,
   CHUVA_PUSH_S,
   CHUVA_RADIUS,
+  COVER_DARK_FACTOR,
+  COVER_LONG_DRAIN,
+  COVER_LONG_MAX,
   COVER_REGEN,
+  COVER_STUN_FACTOR,
   COVER_ZONE_R,
   DARK_CAP,
   DEADZONE,
@@ -16,6 +20,9 @@ import {
   BUMP_TICKS,
   DT,
   ESTEIRA_SPEED,
+  FOLEGO_FACTOR,
+  FOLEGO_MIN_HIDDEN_TICKS,
+  FOLEGO_TICKS,
   GELO_SLICK,
   HALF,
   IMA_PULL,
@@ -147,6 +154,9 @@ export class SinalSim {
   private impDecay = false;
   /** Passos que faltam de atordoamento (depois de uma pancada). */
   private stun = 0;
+  /** Há quantos passos seguidos está escondido, e quanto falta do fôlego (sprint depois de sair). */
+  private hiddenTicks = 0;
+  private rested = 0;
   private bumpAt = new Map<number, number>();
   private hidden = false;
   private maxY = 0;
@@ -192,6 +202,8 @@ export class SinalSim {
     this.impY = 0;
     this.impTicks = 0;
     this.stun = 0;
+    this.hiddenTicks = 0;
+    this.rested = 0;
     this.bumpAt.clear();
     this.hidden = false;
     this.maxY = 0;
@@ -258,15 +270,20 @@ export class SinalSim {
   private nearCovers(y: number, reach: number): CoverDef[] {
     this.covers.ensure(y + 120);
     const list = this.covers.list;
+    // as moitas compridas começam até COVER_LONG_MAX antes de `y` e ainda cobrem este ponto
+    const from = y - reach - COVER_LONG_MAX;
     let lo = 0;
     let hi = list.length;
     while (lo < hi) {
       const mid = (lo + hi) >> 1;
-      if (list[mid]!.y < y - reach) lo = mid + 1;
+      if (list[mid]!.y < from) lo = mid + 1;
       else hi = mid;
     }
     const out: CoverDef[] = [];
-    for (let i = lo; i < list.length && list[i]!.y <= y + reach; i++) out.push(list[i]!);
+    for (let i = lo; i < list.length && list[i]!.y <= y + reach; i++) {
+      const c = list[i]!;
+      if (c.y + c.len >= y - reach) out.push(c);
+    }
     return out;
   }
 
@@ -487,6 +504,10 @@ export class SinalSim {
     }
     // O espelho troca só a esquerda e a direita.
     if (mirrorX) ix = -ix;
+    if (this.rested > 0) {
+      boost = Math.max(boost, FOLEGO_FACTOR);
+      this.rested--;
+    }
     const tx = ix * MAX_SPEED * speedMul * boost;
     const ty = iy * MAX_SPEED * speedMul * boost;
     // Quanto escorrega: óleo, gelo e patins (o mais escorregadio manda).
@@ -575,10 +596,12 @@ export class SinalSim {
     // Esconderijos: dentro da zona a pessoa fica protegida; ficar demais quebra o esconderijo.
     let hidden = false;
     for (const c of this.nearCovers(this.y, COVER_ZONE_R)) {
-      if ((this.x - c.x) ** 2 + (this.y - c.y) ** 2 > COVER_ZONE_R * COVER_ZONE_R) continue;
+      // a zona é uma "cápsula": o ponto mais próximo do trecho da moita (a moita simples é só um ponto)
+      const cy = Math.max(c.y, Math.min(this.y, c.y + c.len));
+      if ((this.x - c.x) ** 2 + (this.y - cy) ** 2 > COVER_ZONE_R * COVER_ZONE_R) continue;
       const s = this.coverState.get(c.id);
       if (s?.broken) continue;
-      const cur = this.curDur(c) - DT;
+      const cur = this.curDur(c) - DT * (c.len > 0 ? COVER_LONG_DRAIN : 1);
       if (cur <= 0) {
         this.coverState.set(c.id, { dur: 0, at: this.courseTick, broken: true });
         events.push({ kind: 'quebrou', cover: c.id });
@@ -588,6 +611,15 @@ export class SinalSim {
       }
     }
     this.hidden = hidden;
+    // Fôlego: quem se escondeu por um tempo sai descansado e corre mais rápido por um instante.
+    if (hidden) this.hiddenTicks++;
+    else {
+      if (this.hiddenTicks >= FOLEGO_MIN_HIDDEN_TICKS) {
+        this.rested = FOLEGO_TICKS;
+        events.push({ kind: 'folego' });
+      }
+      this.hiddenTicks = 0;
+    }
 
     // A linha de chegada vale antes de qualquer perda no mesmo instante (o Clássico).
     if (this.course.mode === 'classico' && this.y >= this.course.length) {
@@ -619,14 +651,16 @@ export class SinalSim {
     if (this.yHist.length > 6 * TPS) this.yHist.shift();
     const stalled = this.yHist.length >= 6 * TPS && this.y - this.yHist[0]! < 1.5;
     this.idle = clamp(this.idle + (stalled ? DT / 3 : -DT / 1.5), 0, 1);
-    this.darkY += darkSpeed(this.course, t, this.idle) * DT;
+    // Escondido, a escuridão demora mais para chegar (um respiro, não um abrigo para sempre: o esconderijo quebra).
+    this.darkY += darkSpeed(this.course, t, this.idle) * (hidden ? COVER_DARK_FACTOR : 1) * DT;
     if (this.y - PLAYER_R <= this.darkY) {
       this.die('escuridao', events);
       this.tick++;
       return events;
     }
 
-    if (this.stun > 0) this.stun--;
+    // Escondido, o atordoamento passa 3x mais rápido.
+    if (this.stun > 0) this.stun = Math.max(0, this.stun - (hidden ? COVER_STUN_FACTOR : 1));
     this.tick++;
     this.courseTick++;
     return events;

@@ -2,6 +2,9 @@ import { createRng } from '../core/rng';
 import {
   COVER_DURABILITY,
   COVER_FRAGILE,
+  COVER_LONG_DURABILITY,
+  COVER_LONG_MAX,
+  COVER_LONG_MIN,
   HALF,
   OWN_POWERS,
   SINAL_MAPS,
@@ -136,6 +139,8 @@ export interface CoverDef {
   fragile: boolean;
   /** Quanto aguenta, em segundos. */
   max: number;
+  /** 0 = moita; maior que 0 = moita comprida: o esconderijo vai de `y` até `y + len` (para a frente). */
+  len: number;
 }
 
 /**
@@ -166,22 +171,26 @@ export class CoverField {
   ensure(untilY: number) {
     while (this.nextY <= untilY) {
       const d = this.dAt(this.nextY);
-      const [gapR, xR, fragR] = [this.rng(), this.rng(), this.rng()];
+      const [gapR, xR, fragR, longR, lenR] = [this.rng(), this.rng(), this.rng(), this.rng(), this.rng()];
       const side = HALF - 1.6;
       // Troca de lado a cada esconderijo: nunca um atrás do outro.
       this.sign = this.sign === 0 ? (xR < 0.5 ? -1 : 1) : -this.sign;
       const x = this.sign * (1.8 + ((xR * 7.13) % 1) * (side - 1.8));
       const fragileFrom = this.course.mode === 'classico' ? this.course.n >= 4 : d > 0.2;
-      const fragile = fragileFrom && fragR < lerp(0.1, 0.5, d);
+      // Moita comprida: nas primeiras fases é mais comum (ajuda a aprender), depois fica mais rara.
+      const long = longR < lerp(0.42, 0.2, d);
+      const len = long ? COVER_LONG_MIN + lenR * (COVER_LONG_MAX - COVER_LONG_MIN) : 0;
+      const fragile = !long && fragileFrom && fragR < lerp(0.1, 0.5, d);
       this.list.push({
         id: this.list.length,
         x,
         y: this.nextY,
         fragile,
-        max: fragile ? COVER_FRAGILE : COVER_DURABILITY,
+        max: long ? COVER_LONG_DURABILITY : fragile ? COVER_FRAGILE : COVER_DURABILITY,
+        len,
       });
-      // O espaço entre eles cresce com a dificuldade.
-      this.nextY += lerp(lerp(22, 34, d), lerp(45, 80, d), gapR);
+      // O espaço até o próximo cresce com a dificuldade (e conta depois do fim da moita comprida).
+      this.nextY += len + lerp(lerp(16, 28, d), lerp(40, 76, d), gapR);
     }
   }
 }
@@ -373,9 +382,11 @@ export class ObstacleField {
         }
         if (!ok) continue;
         const y = this.nextY + i * 1.6;
-        const tooNearCover = this.covers.list.some(
-          (c) => Math.abs(c.y - y) < 5 && (c.x - x) ** 2 + (c.y - y) ** 2 < 3.4 * 3.4,
-        );
+        // longe dos esconderijos (inclusive de toda a extensão das moitas compridas)
+        const tooNearCover = this.covers.list.some((c) => {
+          const cy = Math.max(c.y, Math.min(y, c.y + c.len));
+          return Math.abs(cy - y) < 5 && (c.x - x) ** 2 + (cy - y) ** 2 < 3.4 * 3.4;
+        });
         if (tooNearCover) continue;
         placed.push({ x, e: reach });
         const period = Math.round(

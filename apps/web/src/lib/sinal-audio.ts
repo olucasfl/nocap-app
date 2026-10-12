@@ -151,6 +151,8 @@ export function createSinalAudio(): SinalAudio | null {
         hiss('lowpass', 1200, 200, 0.12, 0.2 * e.size);
       } else if (e.kind === 'soluco') {
         tone('square', 520, 260, 0.1, 0.22);
+      } else if (e.kind === 'folego') {
+        tone('triangle', 520, 880, 0.18, 0.18);
       } else if (e.kind === 'poder-evitado') {
         hiss('highpass', 3000, 6000, 0.12, 0.12);
         tone('sine', 880, 1175, 0.14, 0.14);

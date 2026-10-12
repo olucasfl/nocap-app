@@ -59,8 +59,19 @@ export const DARK_CAP = MAX_SPEED * DARK_CAP_FRACTION;
 
 /** Esconderijo: o raio da zona, quanto aguenta (s) e quanto se recupera por segundo fora dele. */
 export const COVER_ZONE_R = 1.3;
-export const COVER_DURABILITY = 4.5;
-export const COVER_FRAGILE = 2.5;
+export const COVER_DURABILITY = 5.5;
+export const COVER_FRAGILE = 3.2;
+/** Moita comprida (6 a 12 m): dá para correr dentro dela com o Vigia olhando, mas ela gasta mais rápido. */
+export const COVER_LONG_DURABILITY = 6.5;
+export const COVER_LONG_DRAIN = 1.6;
+export const COVER_LONG_MIN = 6;
+export const COVER_LONG_MAX = 12;
+/** Prêmios de se esconder: o atordoamento passa 3x mais rápido, a escuridão anda a 25% e, ao sair, vem o fôlego. */
+export const COVER_STUN_FACTOR = 3;
+export const COVER_DARK_FACTOR = 0.25;
+export const FOLEGO_MIN_HIDDEN_TICKS = 60; // pelo menos 1 s escondido
+export const FOLEGO_TICKS = 84; // 1,4 s mais rápido
+export const FOLEGO_FACTOR = 1.3;
 export const COVER_REGEN = 0.6;
 
 /** A nota guardada é em décimos de metro e cabe num campo de 16 bits. */
@@ -244,6 +255,8 @@ export type SinalEvent =
   | { kind: 'soluco' }
   /** Sala: você empurrou alguém (o botão de empurrar). */
   | { kind: 'empurrou' }
+  /** Saiu do esconderijo descansado: um sprint curto. */
+  | { kind: 'folego' }
   | { kind: 'fase'; n: number; map: SinalMapId; mapChanged: boolean }
   | { kind: 'fim'; reason: SinalEnd };
 
