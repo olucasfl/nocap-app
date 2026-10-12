@@ -65,7 +65,7 @@ O Lucas achou a câmera **perto demais** e quer **mais campo de visão**, com **
 | Vigia na tela | 82% | 62% (mais ao longe) |
 
 - O boneco, o esconderijo e o cenário encolhem com o zoom; a interface (metros, pausa, analógico, Vigia, escuridão, vinheta) não.
-- A câmera continua mantendo o boneco em cerca de 40% da altura, fora da zona do analógico.
+- A câmera mantém o boneco em cerca de 52% da altura (longe do Vigia), fora da zona do analógico.
 - A câmera do online ajusta o zoom ao número de pessoas na sala (12 é o mínimo de zoom), e cada jogador ganha um anel colorido sob o boneco para saber quem é quem.
 - Valores são palpite a calibrar jogando. O protótipo mostra as duas câmeras (`design-sinal-vermelho.html`, botões SOLO e 12 AMIGOS).
 
@@ -146,9 +146,22 @@ O chefe também faz falsos avisos mais seguidos.
 - **O aviso de olhar nunca é coberto:** o Vigia e a vinheta de aviso continuam visíveis mesmo com cortina.
 - **Teste de justiça:** na simulação, um jogador que reage ao aviso (para a tempo ou se esconde) **nunca perde por causa de um poder**.
 
+## Revisão de jogabilidade (12/10/2026): menos linear, mais difícil desde o começo
+O Lucas achou o jogo linear e fácil. O que mudou:
+- **Três poderes por Vigia, desde a primeira fase** (antes era um só e só a partir da fase 2). Eles aparecem cerca de um a cada 10 segundos:
+  - **Espantalho:** corvos (bando grande, **cobre a tela e inverte os controles** por 2,2 s), lama (devagar por 3 s) e chuva de abóboras (círculos vermelhos que empurram).
+  - **Semáforo:** óleo na pista (poças grandes que fazem deslizar), buzina (**trava no lugar** por 1,2 s) e faróis (clarão branco que cega por 2,2 s).
+  - **Totem Coruja:** poeira nos olhos (areia embaça a tela), vento (empurrão de lado de 2,4 s) e eco (**os comandos demoram 0,4 s** para responder por 2,6 s).
+- **Aviso na tela do que vai acontecer:** quando o Vigia prepara um poder aparece um quadro com o nome e o efeito ("ATENÇÃO: OS CORVOS DO ESPANTALHO. Cobrem a tela e INVERTEM seus controles por 2 s."). Continua valendo a regra de equidade e a de que escondido ninguém é atingido.
+- **Ciclos do Vigia variados** (nada de mesmo ritmo e mesmo intervalo): normal, **rápido** (aviso de 0,3 s), **longo** (olha por 3 s), **olhadinha** (0,5 s, para pegar quem corre cedo demais) e **duplo** (olha, vira, e olha de novo logo depois). O tempo de costas varia de 0,6x a 1,5x, com pausas longas de vez em quando; o zumbido do aviso muda de jeito conforme o tipo.
+- **Obstáculos no caminho** (pedras, barris, cactos, abóboras...): o boneco não passa por cima, tem que contornar. Surgem em grupos de um a três, sempre com um vão, e mais seguidos conforme a dificuldade. Não é só "pare e ande": é escolher o caminho enquanto o Vigia não olha.
+- **Névoa visível desde o começo:** uma neblina sobe do pé da tela, fraquinha, e engrossa com o tempo e conforme a escuridão chega perto. A escuridão larga mais perto (36 m no Clássico, 42 m no Infinito) e acelera mais depressa, **sempre abaixo de 92% da velocidade do boneco**.
+- **A câmera ficou mais para trás do boneco** (ele fica a 52% da altura), longe do Vigia.
+- **Conferido com jogadores simulados** (reflexos de 0,17 s, 0,27 s e 0,42 s): no Infinito, quem reage rápido chega a uns 460 m e é pego pela escuridão; quem reage em 0,27 s chega a uns 370 m (metade pego pelo Vigia, metade pela escuridão); quem reage em 0,42 s é pego pelo Vigia em cerca de um minuto (uns 175 m). No Clássico, o jogador de reflexo médio costuma cair nas fases 3 a 4. Robô não mede diversão: o que vale é a jogada do Lucas.
+
 ## Controles
 - **Celular:** o analógico (círculo e bolinha) fica **fixo embaixo, no centro da tela**, sempre visível, com uma área de toque generosa em volta. A bolinha acompanha o dedo e volta ao centro ao soltar.
-- **A câmera nunca deixa o analógico tapar o boneco.** A tela reserva uma **zona do analógico** (embaixo, no centro, com folga em volta) e a câmera mantém o boneco sempre **fora dela**: o boneco fica na parte de cima da tela (cerca de 40% da altura) e a câmera também acompanha de lado quando ele vai para a direita. É uma regra do código da câmera (função pura, com teste: para qualquer posição do boneco no corredor, em retrato e em paisagem, ele nunca fica dentro da zona do analógico). Vale também para o Vigia, os esconderijos e o aviso, que ficam fora dessa zona ou são desenhados sem depender dela.
+- **A câmera nunca deixa o analógico tapar o boneco.** A tela reserva uma **zona do analógico** (embaixo, no centro, com folga em volta) e a câmera mantém o boneco sempre **fora dela**: o boneco fica um pouco acima do meio da tela (cerca de 52% da altura, para ficar longe do Vigia) e a câmera também acompanha de lado quando ele vai para a direita. É uma regra do código da câmera (função pura, com teste: para qualquer posição do boneco no corredor, em retrato e em paisagem, ele nunca fica dentro da zona do analógico). Vale também para o Vigia, os esconderijos e o aviso, que ficam fora dessa zona ou são desenhados sem depender dela.
 - **Computador:** W A S D e setas, com a dica das teclas na tela na primeira vez.
 - Aparece o que combina com o aparelho; se o aparelho tiver os dois, valem os dois.
 

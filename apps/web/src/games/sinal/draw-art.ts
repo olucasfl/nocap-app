@@ -406,6 +406,60 @@ export function cover(c: Ctx, key: SinalMapId, x: number, y: number, active: boo
   }
 }
 
+// ---------------------------------------------------------------- obstáculos
+/** Um obstáculo do caminho (o boneco contorna): três jeitos por mapa. `r` é o raio em pixels de arte. */
+export function obstacle(c: Ctx, key: SinalMapId, kind: number, x: number, y: number, r: number) {
+  c.save();
+  c.translate(x, y);
+  const s = r / 15;
+  c.scale(s, s);
+  if (key === 'horta') {
+    if (kind === 0) {
+      blob(c, ell(0, 0, 16, 13, 0.3), '#8f9692');
+      blob(c, ell(-4, -4, 7, 4, 0.3), '#b4bbb7', 0.01, 0);
+    } else if (kind === 1) {
+      blob(c, ell(-8, 0, 10, 13), '#ff8a2b');
+      blob(c, ell(8, 0, 10, 13), '#ff8a2b');
+      blob(c, ell(0, 0, 11, 14), '#ff6a2b');
+      blob(c, rect(-2, -20, 5, 9, 2), '#2f9e57', 2.5, 0);
+    } else {
+      blob(c, rect(-16, -11, 32, 22, 6), '#e8c35c');
+      line(c, -16, -3, 16, -3, 2.2);
+      line(c, -16, 5, 16, 5, 2.2);
+      line(c, 0, -11, 0, 11, 2.2, '#b5242d');
+    }
+  } else if (key === 'neon') {
+    if (kind === 0) {
+      blob(c, circle(0, 0, 14), '#e5303a');
+      blob(c, circle(0, 0, 8), '#b5242d', 2.5, 0);
+      line(c, -10, -3, 10, -3, 2);
+      line(c, -10, 3, 10, 3, 2);
+    } else if (kind === 1) {
+      blob(c, poly([[0, -17], [11, 12], [-11, 12]]), '#ff6a2b');
+      line(c, -6, -2, 6, -2, 4, PAPER);
+      line(c, -8.5, 6, 8.5, 6, 4, PAPER);
+      blob(c, rect(-14, 11, 28, 6, 3), '#1d1d2b', 2.5, 0);
+    } else {
+      blob(c, rect(-15, -14, 30, 28, 5), '#b98a4a');
+      line(c, -15, -14, 15, 14, 2.4);
+      line(c, 15, -14, -15, 14, 2.4);
+    }
+  } else if (kind === 0) {
+    blob(c, ell(0, 0, 16, 13, -0.3), '#8b79b8');
+    blob(c, ell(-4, -4, 7, 4, -0.3), '#a595cf', 0.01, 0);
+  } else if (kind === 1) {
+    blob(c, rect(-6, -17, 12, 34, 6), '#3aa96b');
+    blob(c, rect(-17, -6, 9, 5, 2.5), '#3aa96b', 2.5, 0);
+    blob(c, rect(8, -11, 9, 5, 2.5), '#3aa96b', 2.5, 0);
+    blob(c, star(0, -17, 4, 2, 5), '#ff9ecf', 1.6, 0);
+  } else {
+    blob(c, rect(-11, -9, 22, 22, 9), '#c9824a');
+    blob(c, rect(-7, -15, 14, 8, 3), '#a9672f', 2.5, 0);
+    line(c, -9, 3, 9, 3, 2);
+  }
+  c.restore();
+}
+
 // ---------------------------------------------------------------- bonecos
 export function hero(c: Ctx, key: SinalMapId, x: number, y: number, t: number, walking: boolean, alpha: number, col: string) {
   const s = walking ? Math.sin(t * 11) : 0;
@@ -678,6 +732,50 @@ export function vigia(
 }
 
 // ---------------------------------------------------------------- escuridão
+/**
+ * A névoa preta que já se anuncia antes de a borda aparecer: uma neblina que sobe do pé da tela e
+ * engrossa conforme a escuridão chega perto (`intensity` de 0 a 1). Desde a primeira fase ela está
+ * lá, bem fraquinha, para a pessoa saber que alguma coisa vem de trás.
+ */
+export function fogHaze(c: Ctx, w: number, h: number, intensity: number, t: number, style: { dark: string; ember: string; rim: string }) {
+  if (intensity <= 0) return;
+  const alpha = clamp(0.2 + 0.6 * intensity, 0, 0.85);
+  const reach = h * (0.1 + 0.4 * intensity);
+  c.save();
+  const g = c.createLinearGradient(0, h, 0, h - reach);
+  g.addColorStop(0, hexA(style.dark, alpha));
+  g.addColorStop(1, hexA(style.dark, 0));
+  c.fillStyle = g;
+  c.fillRect(0, h - reach, w, reach);
+  // fiapos de fumaça que passam devagar
+  for (let i = 0; i < 7; i++) {
+    const x = wrapY(i * (w / 6) + t * (10 + i * 3) * (i % 2 ? 1 : -1), w + 160) - 80;
+    const y = h - reach * (0.25 + ((i * 37) % 60) / 100) + Math.sin(t * 0.8 + i) * 6;
+    c.globalAlpha = alpha * 0.55;
+    c.fillStyle = style.dark;
+    c.beginPath();
+    c.ellipse(x, y, 70 + (i % 3) * 22, 14 + (i % 2) * 6, 0, 0, 7);
+    c.fill();
+  }
+  // brasas subindo dentro da névoa
+  c.globalAlpha = Math.min(1, intensity * 1.2);
+  c.fillStyle = style.ember;
+  for (let i = 0; i < 10; i++) {
+    const seed = i * 5.7;
+    const px = (seed * 61) % w;
+    const rise = wrapY(t * (14 + (i % 4) * 6) + seed * 30, reach);
+    c.globalAlpha = clamp(1 - rise / reach, 0, 1) * Math.min(1, intensity * 1.2) * 0.9;
+    c.beginPath();
+    c.arc(px + Math.sin(t * 2 + seed) * 5, h - rise, 1.6 + (i % 3), 0, 7);
+    c.fill();
+  }
+  c.restore();
+}
+
+function hexA(hex: string, a: number): string {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+}
 /** A escuridão sobe de baixo: borda ondulada animada, brasas e olhos. `top` é a altura (px da tela) da borda. */
 export function darkness(c: Ctx, w: number, h: number, top: number, t: number, style: { dark: string; ember: string; rim: string }) {
   if (top >= h) return;

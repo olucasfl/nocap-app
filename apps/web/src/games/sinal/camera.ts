@@ -2,7 +2,7 @@ import { PLAYER_R } from '@nocap/games';
 
 /**
  * A câmera do Sinal Vermelho (spec 020). Segue o boneco para a frente e mostra bastante chão:
- * cerca de 18 m de largura e 32 m de altura. O boneco fica na parte de cima da tela e **nunca**
+ * cerca de 18 m de largura e 32 m de altura. O boneco fica um pouco acima do meio da tela e **nunca**
  * dentro da zona do analógico (embaixo, no centro), para o dedo não tapar o personagem.
  */
 
@@ -39,7 +39,8 @@ export function makeLayout(w: number, h: number, touch: boolean): Layout {
   const zone: Rect | null = touch
     ? { x: Math.max(0, w / 2 - ZONE_W / 2), y: Math.max(0, h - ZONE_H), w: Math.min(w, ZONE_W), h: Math.min(h, ZONE_H) }
     : null;
-  let heroY = h * 0.4;
+  // O boneco fica mais para baixo: longe do Vigia, com bastante chão à frente para ler o que vem.
+  let heroY = h * 0.52;
   if (zone) heroY = Math.min(heroY, zone.y - 40 - PLAYER_R * ppm * 1.4);
   return {
     w,

@@ -13,11 +13,13 @@ import {
   cover,
   darkness,
   disp,
+  fogHaze,
   ell,
   ground,
   hero,
   line,
   mono,
+  obstacle,
   poly,
   rect,
   silhouette,
@@ -26,16 +28,21 @@ import {
   type Ctx,
 } from './draw-art';
 
-export const POWER_NAME: Record<PowerKind, string> = {
-  corvos: 'CORVOS',
-  oleo: 'ÓLEO NA PISTA',
-  poeira: 'POEIRA NOS OLHOS',
-  invertido: 'CONTROLES INVERTIDOS',
-  cortina: 'CORTINA',
-  rajada: 'RAJADA',
-  lama: 'LAMA',
-  apagao: 'APAGÃO',
-  chuva: 'CHUVA MARCADA',
+/** O nome de cada poder e o que ele vai fazer com você (aparece na tela no aviso do poder). */
+export const POWER_INFO: Record<PowerKind, { name: string; text: string }> = {
+  corvos: { name: 'OS CORVOS DO ESPANTALHO', text: 'Cobrem a tela e INVERTEM seus controles por 2 s.' },
+  oleo: { name: 'ÓLEO NA PISTA', text: 'Poças escorregadias: você desliza sem controle.' },
+  poeira: { name: 'POEIRA NOS OLHOS', text: 'Areia embaça a tela inteira por 2 s.' },
+  buzina: { name: 'BUZINA DO SEMÁFORO', text: 'Você trava no lugar por 1 s.' },
+  farois: { name: 'FARÓIS', text: 'A luz branca cega a tela por 2 s.' },
+  vento: { name: 'VENTO DA CORUJA', text: 'Uma rajada empurra você de lado.' },
+  atraso: { name: 'ECO DA CORUJA', text: 'Seus comandos demoram a responder por 2 s.' },
+  invertido: { name: 'CONTROLES INVERTIDOS', text: 'Esquerda vira direita, frente vira trás.' },
+  cortina: { name: 'CORTINA', text: 'A tela escurece: só o boneco aparece.' },
+  rajada: { name: 'RAJADA', text: 'Um empurrão forte para o lado.' },
+  lama: { name: 'LAMA', text: 'Você anda bem devagar por 3 s.' },
+  apagao: { name: 'APAGÃO', text: 'Tudo escuro, só um círculo de luz.' },
+  chuva: { name: 'CHUVA DE ABÓBORAS', text: 'Saia dos círculos vermelhos: eles empurram.' },
 };
 
 export interface Joy {
@@ -91,7 +98,7 @@ export function drawScene(c: Ctx, s: SceneInput) {
   c.save();
   c.clearRect(0, 0, w, h);
   // O mundo treme de leve quando os controles estão invertidos (aviso e efeito).
-  const invWarn = s.view.powers.some((p) => p.kind === 'invertido' && !p.evaded);
+  const invWarn = s.view.powers.some((p) => (p.kind === 'invertido' || p.kind === 'corvos') && !p.evaded);
   if (invWarn && !s.view.hidden) {
     c.translate(w / 2, h / 2);
     c.rotate(Math.sin(s.t * 7) * 0.025);
@@ -133,6 +140,12 @@ export function drawScene(c: Ctx, s: SceneInput) {
   for (const p of view.patches) oilPatch(c, vcx + p.x * V, vy(p.y), s.t);
   for (const m of view.marks) rainMark(c, vcx + m.x * V, vy(m.y), s.t);
 
+  // obstáculos do caminho (o boneco contorna)
+  for (const o of view.obstacles) {
+    const y = vy(o.y);
+    if (y < -60 || y > vh + 60) continue;
+    obstacle(c, map, o.kind, vcx + o.x * V, y, o.r * V * 1.15);
+  }
   // esconderijos (os de fora primeiro; o que a pessoa ocupa vai por cima da silhueta)
   let own: SinalView['covers'][number] | null = null;
   for (const cv of view.covers) {
@@ -182,24 +195,33 @@ export function drawScene(c: Ctx, s: SceneInput) {
   vigia(c, map, s.face, s.warn, s.t, heroX, w / 2, vTop, l.vigiaScale, boss);
   const darkTop = screenY(l, view.darkY, view.y);
   darkness(c, w, h, darkTop, s.t, style);
+  // A névoa já aparece desde o começo, fraquinha, e engrossa quando a escuridão se aproxima.
+  const gapM = Math.max(0, view.y - view.darkY - PLAYER_R);
+  fogHaze(c, w, h, Math.max(clamp((55 - gapM) / 40, 0, 1), clamp(0.2 + view.t / 240, 0, 0.5)), s.t, style);
 
   // efeitos dos poderes
   if (has('rajada')) windStreaks(c, w, h, s.t, effects.find((p) => p.kind === 'rajada')!.dir, '#f4f4ef');
-  if (has('poeira')) dust(c, w, h, s.t, heroX, l.heroY);
-  if (has('corvos')) crows(c, w, h, s.t);
+  if (has('vento')) windStreaks(c, w, h, s.t, effects.find((p) => p.kind === 'vento')!.dir, '#f9deaa', 0.85);
+  if (has('poeira')) dust(c, w, h, s.t, heroX, l.heroY, 1.25);
+  if (has('corvos')) crows(c, w, h, s.t, effects.find((p) => p.kind === 'corvos')!.p);
+  if (has('farois')) glare(c, w, h, effects.find((p) => p.kind === 'farois')!.p);
+  if (has('buzina')) siren(c, w, h, s.t, heroX, l.heroY);
+  if (has('atraso')) echo(c, s.t, heroX, l.heroY, heroColor);
   if (has('cortina')) curtain(c, w, h, s.t, heroX, l.heroY, style.rim);
   if (has('apagao')) blackout(c, w, h, heroX, l.heroY);
   if (has('lama')) mud(c, w, h, s.t, heroX, l.heroY);
   for (const p of avisos) {
     if (p.kind === 'poeira') dust(c, w, h, s.t, heroX, l.heroY, 0.35);
     if (p.kind === 'rajada') windStreaks(c, w, h, s.t, p.dir, '#ffd23f', 0.5);
+    if (p.kind === 'vento') windStreaks(c, w, h, s.t, p.dir, '#ffd23f', 0.4);
+    if (p.kind === 'corvos') crows(c, w, h, s.t, -0.4, 0.5);
   }
 
   vignette(c, w, h, s.warn, s.t);
   if (view.vigia === 'olhando') lookFrame(c, w, h, s.t);
 
   hud(c, s);
-  powerBanner(c, w, avisos[0]?.kind ?? null, s.t, view.course.length !== Infinity ? 100 : 78);
+  powerBanner(c, w, avisos[0]?.kind ?? effects[0]?.kind ?? null, avisos.length > 0, s.t, l.heroY + 70);
   if (s.joy.show) stick(c, l, s.joy, s.inverted);
   else if (s.keysHint) keyHint(c, w, h);
   c.restore();
@@ -301,23 +323,85 @@ function dust(c: Ctx, w: number, h: number, t: number, hx: number, hy: number, s
   c.restore();
 }
 
-function crows(c: Ctx, w: number, h: number, t: number) {
+/**
+ * Os corvos: um bando grande, de asas largas, que cruza a tela e cobre boa parte dela. `p` é o
+ * quanto do efeito já passou (os corvos entram, ficam e saem); `scale` diminui o bando no aviso.
+ */
+function crows(c: Ctx, w: number, h: number, t: number, p: number, scale = 1) {
+  const cover = p < 0 ? 0.35 : Math.sin(Math.min(1, p) * Math.PI) ** 0.6;
   c.save();
+  if (p >= 0) {
+    c.fillStyle = `rgba(17,17,17,${0.28 * cover})`;
+    c.fillRect(0, 0, w, h);
+  }
   c.fillStyle = INK;
-  for (let i = 0; i < 14; i++) {
+  const n = 11;
+  for (let i = 0; i < n; i++) {
     const dir = i % 2 ? 1 : -1;
-    const x = wrapY(i * 71 + dir * t * (160 + (i % 4) * 40), w + 160) - 80;
-    const y = h * 0.18 + ((i * 53) % (h * 0.55)) + Math.sin(t * 5 + i) * 10;
-    const flap = Math.sin(t * 16 + i) * 8;
+    const span = (70 + (i % 4) * 22) * scale;
+    const x = wrapY(i * 83 + dir * t * (190 + (i % 4) * 50), w + span * 2) - span;
+    const y = h * (0.1 + 0.8 * ((i * 0.37) % 1)) + Math.sin(t * 4 + i) * 14;
+    const flap = Math.sin(t * 14 + i) * span * 0.22;
+    c.globalAlpha = Math.max(0.2, cover);
     c.beginPath();
-    c.moveTo(x - 22, y + flap);
-    c.quadraticCurveTo(x - 8, y - 10, x, y);
-    c.quadraticCurveTo(x + 8, y - 10, x + 22, y + flap);
-    c.quadraticCurveTo(x + 8, y + 4, x, y + 8);
-    c.quadraticCurveTo(x - 8, y + 4, x - 22, y + flap);
+    c.moveTo(x - span, y + flap);
+    c.quadraticCurveTo(x - span * 0.4, y - span * 0.35, x, y);
+    c.quadraticCurveTo(x + span * 0.4, y - span * 0.35, x + span, y + flap);
+    c.quadraticCurveTo(x + span * 0.4, y + span * 0.1, x, y + span * 0.3);
+    c.quadraticCurveTo(x - span * 0.4, y + span * 0.1, x - span, y + flap);
+    c.fill();
+    c.beginPath();
+    c.arc(x, y + span * 0.08, span * 0.13, 0, 7);
+    c.fill();
+    c.fillStyle = '#ffd23f';
+    c.beginPath();
+    c.moveTo(x + dir * span * 0.12, y + span * 0.05);
+    c.lineTo(x + dir * span * 0.3, y + span * 0.1);
+    c.lineTo(x + dir * span * 0.12, y + span * 0.14);
+    c.fill();
+    c.fillStyle = INK;
+  }
+  for (let i = 0; i < 18; i++) {
+    const px = (i * 61 + Math.sin(t * 2 + i) * 20) % w;
+    const py = wrapY(t * 80 + i * 90, h);
+    c.globalAlpha = 0.6 * cover;
+    c.fillRect(px, py, 3, 10);
+  }
+  c.restore();
+}
+
+/** Os faróis: um clarão branco que cega e vai passando. */
+function glare(c: Ctx, w: number, h: number, p: number) {
+  c.save();
+  c.globalAlpha = clamp(0.95 - 0.55 * p, 0, 0.95);
+  c.fillStyle = '#ffffff';
+  c.fillRect(0, 0, w, h);
+  c.restore();
+}
+
+/** A buzina: a borda pisca e o boneco fica travado. */
+function siren(c: Ctx, w: number, h: number, t: number, hx: number, hy: number) {
+  c.save();
+  c.globalAlpha = 0.35 + 0.3 * Math.sin(t * 22);
+  c.lineWidth = 14;
+  c.strokeStyle = '#ff4b4b';
+  c.strokeRect(7, 7, w - 14, h - 14);
+  c.restore();
+  mono(c, 'TRAVADO', hx, hy - 34, 12, '#ffd23f', 'center');
+}
+
+/** O eco: sombras do boneco que ficam para trás, como o atraso dos comandos. */
+function echo(c: Ctx, t: number, hx: number, hy: number, col: string) {
+  c.save();
+  c.globalAlpha = 0.35;
+  for (let i = 1; i <= 3; i++) {
+    c.fillStyle = col;
+    c.beginPath();
+    c.arc(hx + Math.sin(t * 5 + i) * 9 * i, hy + i * 11, 13 - i * 2, 0, 7);
     c.fill();
   }
   c.restore();
+  mono(c, 'ATRASO', hx, hy - 34, 12, '#ffd23f', 'center');
 }
 
 function curtain(c: Ctx, w: number, h: number, t: number, hx: number, hy: number, tint: string) {
@@ -461,17 +545,36 @@ function progressBar(c: Ctx, s: SceneInput, x: number, y: number, w: number) {
   mono(c, `faltam ${left} m`, x + w - 4, y + 36, 9.5, PAPER, 'right');
 }
 
-function powerBanner(c: Ctx, w: number, kind: PowerKind | null, t: number, y: number) {
+/** O aviso de um poder: o nome e o que vai acontecer com você, antes (e durante) o efeito. */
+function powerBanner(c: Ctx, w: number, kind: PowerKind | null, warning: boolean, t: number, y: number) {
   if (!kind) return;
-  const text = `ATENÇÃO: ${POWER_NAME[kind]}`;
-  const bw = text.length * 7.6 + 30;
+  const info = POWER_INFO[kind];
+  const bw = Math.min(w - 28, 330);
   const x = (w - bw) / 2;
-  const by = y + 52 > 0 ? y : 78;
   c.save();
-  c.globalAlpha = 0.75 + Math.sin(t * 14) * 0.25;
-  blob(c, rect(x, by, bw, 26, 13), YEL, 3, 3);
-  mono(c, text, w / 2, by + 17.5, 11, INK, 'center');
+  c.globalAlpha = warning ? 0.88 + Math.sin(t * 14) * 0.12 : 0.7;
+  const lines = wrapText(c, info.text, bw - 24, 11);
+  const bh = 34 + lines.length * 15;
+  blob(c, rect(x, y, bw, bh, 14), warning ? YEL : PAPER, 3, 3);
+  mono(c, warning ? `ATENÇÃO: ${info.name}` : `AGORA: ${info.name}`, w / 2, y + 20, 11.5, INK, 'center');
+  lines.forEach((ln, i) => mono(c, ln, w / 2, y + 38 + i * 15, 11, INK, 'center'));
   c.restore();
+}
+
+function wrapText(c: Ctx, text: string, maxW: number, size: number): string[] {
+  c.font = `700 ${size}px 'Space Mono', ui-monospace, monospace`;
+  const words = text.split(' ');
+  const lines: string[] = [];
+  let cur = '';
+  for (const wd of words) {
+    const next = cur ? `${cur} ${wd}` : wd;
+    if (c.measureText(next).width > maxW && cur) {
+      lines.push(cur);
+      cur = wd;
+    } else cur = next;
+  }
+  if (cur) lines.push(cur);
+  return lines;
 }
 
 function stick(c: Ctx, l: Layout, joy: Joy, inverted: boolean) {

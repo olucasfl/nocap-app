@@ -1,4 +1,5 @@
 import { ArrowRight } from '@/components/icons';
+import { ColorArt, EcoArt, SinalArt, TimeArt } from '@/components/HubArt';
 import { PartyArt } from '@/components/PartyArt';
 import { Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
@@ -17,15 +18,6 @@ import {
   type Stats,
 } from '@/lib/stats';
 import './hub.css';
-
-const SWATCHES = [
-  'var(--yellow)',
-  'var(--blue)',
-  'var(--paper)',
-  'var(--ink)',
-  'var(--pink)',
-  'var(--green)',
-];
 
 /** Recorde do modo Clássico do jogo (os outros modos mostram o recorde na ficha de cada um). */
 function bestLabel(stats: Stats | undefined, game: GameId): string {
@@ -90,10 +82,8 @@ export function Hub() {
         </Link>
 
         <Link to="/cor" className="hub-card hub-card-color" data-sfx="start">
-          <div className="hub-swatches" aria-hidden="true">
-            {SWATCHES.map((c) => (
-              <i key={c} style={{ background: c }} />
-            ))}
+          <div className="hub-art">
+            <ColorArt />
           </div>
           <div className="hub-card-foot">
             <div className="hub-card-name long">Mesmíssima</div>
@@ -103,10 +93,8 @@ export function Hub() {
         </Link>
 
         <Link to="/tempo" className="hub-card hub-card-time" data-sfx="start">
-          <div className="hub-clock" aria-hidden="true">
-            <i className="hub-clock-hand" />
-            <i className="hub-clock-hand2" />
-            <i className="hub-clock-dot" />
+          <div className="hub-art">
+            <TimeArt />
           </div>
           <div className="hub-card-foot">
             <div className="hub-card-name mid">Já Deu?</div>
@@ -116,11 +104,8 @@ export function Hub() {
         </Link>
 
         <Link to="/eco" className="hub-card hub-card-eco" data-sfx="start">
-          <div className="hub-pads" aria-hidden="true">
-            <i style={{ background: 'var(--orange)' }} />
-            <i style={{ background: 'var(--blue)' }} />
-            <i style={{ background: 'var(--yellow)' }} />
-            <i style={{ background: 'var(--eco-purple)' }} />
+          <div className="hub-art">
+            <EcoArt />
           </div>
           <div className="hub-card-foot">
             <div className="hub-card-name">Ecooo</div>
@@ -130,10 +115,8 @@ export function Hub() {
         </Link>
 
         <Link to="/sinal" className="hub-card hub-card-sinal" data-sfx="start">
-          <div className="hub-sinal" aria-hidden="true">
-            <i className="hub-sinal-lamp" />
-            <i className="hub-sinal-lamp off" />
-            <i className="hub-sinal-lamp off" />
+          <div className="hub-art">
+            <SinalArt />
           </div>
           <div className="hub-card-foot">
             <div className="hub-card-name long">Sinal Vermelho</div>

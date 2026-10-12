@@ -59,6 +59,10 @@ export type PowerKind =
   | 'corvos'
   | 'oleo'
   | 'poeira'
+  | 'buzina'
+  | 'farois'
+  | 'vento'
+  | 'atraso'
   | 'invertido'
   | 'cortina'
   | 'rajada'
@@ -73,10 +77,14 @@ export interface PowerSpec {
 }
 
 export const POWER_SPECS: Record<PowerKind, PowerSpec> = {
-  // dos Vigias comuns (um por mapa, só atrapalham de leve)
-  corvos: { tele: 0.6, effect: 2.0 },
+  // dos Vigias comuns (três por mapa): atrapalham de verdade desde a primeira fase
+  corvos: { tele: 0.9, effect: 2.2 },
   oleo: { tele: 0.8, effect: 3.0 },
-  poeira: { tele: 1.0, effect: 2.0 },
+  poeira: { tele: 1.0, effect: 2.4 },
+  buzina: { tele: 0.9, effect: 1.2 },
+  farois: { tele: 0.8, effect: 2.2 },
+  vento: { tele: 1.0, effect: 2.4 },
+  atraso: { tele: 0.9, effect: 2.6 },
   // dos chefes e do Infinito
   invertido: { tele: 0.9, effect: 2.5 },
   cortina: { tele: 0.8, effect: 2.8 },
@@ -86,11 +94,11 @@ export const POWER_SPECS: Record<PowerKind, PowerSpec> = {
   chuva: { tele: 1.2, effect: 0.4 },
 };
 
-/** O poder próprio do Vigia de cada mapa. */
-export const OWN_POWER: Record<SinalMapId, PowerKind> = {
-  horta: 'corvos',
-  neon: 'oleo',
-  deserto: 'poeira',
+/** Os poderes do Vigia de cada mapa (cada Vigia tem três). */
+export const OWN_POWERS: Record<SinalMapId, readonly PowerKind[]> = {
+  horta: ['corvos', 'lama', 'chuva'],
+  neon: ['oleo', 'buzina', 'farois'],
+  deserto: ['poeira', 'vento', 'atraso'],
 };
 
 /** A reserva dos chefes. */
@@ -111,8 +119,11 @@ export const POWER_AVISO_MARGIN_S = 0.2;
 /** Valores dos poderes que mexem no boneco. */
 export const RAJADA_SPEED = 2.0; // 2 s x 2 m/s = 4 m no máximo
 export const LAMA_FACTOR = 0.4;
-export const OLEO_SLICK = 0.05; // quanto da diferença para o alvo a velocidade corrige por passo
-export const OLEO_RADIUS = 1.2;
+export const OLEO_SLICK = 0.04; // quanto da diferença para o alvo a velocidade corrige por passo
+export const OLEO_RADIUS = 1.6;
+export const VENTO_SPEED = 1.8; // 2,4 s x 1,8 m/s = 4,3 m no máximo
+/** Atraso do analógico (passos): 0,4 s. */
+export const ATRASO_TICKS = 24;
 export const CHUVA_RADIUS = 1.8;
 export const CHUVA_IMPULSE = 6.25; // 0,4 s x 6,25 m/s = 2,5 m
 export const CHUVA_PUSH_S = 0.4;
@@ -142,7 +153,7 @@ export interface SinalResult {
 }
 
 export type SinalEvent =
-  | { kind: 'aviso'; fake: boolean }
+  | { kind: 'aviso'; fake: boolean; variant: CycleKind }
   | { kind: 'olhando' }
   | { kind: 'voltando' }
   | { kind: 'poder-aviso'; power: PowerKind }
@@ -152,6 +163,9 @@ export type SinalEvent =
   | { kind: 'quebrou'; cover: number }
   | { kind: 'fase'; n: number; map: SinalMapId; boss: boolean; mapChanged: boolean }
   | { kind: 'fim'; reason: SinalEnd };
+
+/** Os jeitos de o Vigia olhar: normal, rápido (pouco aviso), longo, espia (olhadinha) e duplo. */
+export type CycleKind = 'normal' | 'rapido' | 'longo' | 'espia' | 'duplo';
 
 export const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 export const clamp = (v: number, lo: number, hi: number) => (v < lo ? lo : v > hi ? hi : v);

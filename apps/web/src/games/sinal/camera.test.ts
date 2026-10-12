@@ -25,14 +25,17 @@ describe('câmera do Sinal Vermelho', () => {
     }
   });
 
-  it('o boneco fica na parte de cima da tela, com espaço de sobra para ver o que vem pela frente', () => {
+  it('o boneco fica um pouco acima do meio da tela, longe do Vigia, com espaço para ver o que vem pela frente', () => {
     for (const [w, h] of SIZES) {
       const l = makeLayout(w, h, true);
-      expect(l.heroY).toBeLessThanOrEqual(h * 0.4 + 1e-9);
+      expect(l.heroY).toBeLessThanOrEqual(h * 0.52 + 1e-9);
       expect(l.heroY).toBeGreaterThan(h * 0.2);
     }
     const l = makeLayout(360, 640, false);
-    expect(l.heroY).toBeCloseTo(256, 6);
+    expect(l.heroY).toBeCloseTo(332.8, 6);
+    // em tela alta e sem analógico, o Vigia (no topo) fica a uma boa distância do boneco
+    const tall = makeLayout(390, 844, false);
+    expect(tall.heroY - (112 + 150 * tall.vigiaScale * 1.25)).toBeGreaterThan(80);
   });
 
   it('mostra mais ou menos 18 m de largura e 32 m de altura, sem passar disso', () => {

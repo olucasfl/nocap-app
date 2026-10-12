@@ -1,4 +1,5 @@
 import {
+  ATRASO_TICKS,
   BACK_LIMIT,
   CHUVA_IMPULSE,
   CHUVA_PUSH_S,
@@ -21,6 +22,7 @@ import {
   SINAL_MAX_TENTHS,
   SINAL_MAX_TICKS,
   TPS,
+  VENTO_SPEED,
   clamp,
   type PowerKind,
   type SinalEnd,
@@ -29,13 +31,21 @@ import {
   type SinalMode,
   type SinalResult,
 } from './constants';
-import { CoverField, courseFor, timelineParams, type Course, type CoverDef } from './course';
-import { VigiaTimeline, stateAt, type VigiaState } from './vigia';
+import {
+  CoverField,
+  ObstacleField,
+  courseFor,
+  timelineParams,
+  type Course,
+  type CoverDef,
+  type ObstacleDef,
+} from './course';
+import { VigiaTimeline, activeLook, stateAt, type VigiaState } from './vigia';
 
 /** Velocidade-base da escuridão (m/s) antes dos aceleradores. Cresce com o tempo e, no Clássico, com a fase. */
 export function darkBase(course: Course, t: number): number {
-  if (course.mode === 'infinito') return 0.12 + 0.012 * t;
-  return (0.2 + 0.16 * (course.n - 1) + 0.006 * t) * (course.boss ? 1.15 : 1);
+  if (course.mode === 'infinito') return 0.22 + 0.016 * t;
+  return (0.4 + 0.22 * (course.n - 1) + 0.01 * t) * (course.boss ? 1.15 : 1);
 }
 
 /** A velocidade real da escuridão: a base, mais rápida quanto mais a pessoa fica parada, e NUNCA acima do teto. */
@@ -67,7 +77,9 @@ export interface SinalView {
   course: Course;
   meters: number;
   covers: { def: CoverDef; dur: number; broken: boolean }[];
-  powers: { kind: PowerKind; phase: 'aviso' | 'efeito'; dir: -1 | 1; evaded: boolean }[];
+  obstacles: ObstacleDef[];
+  /** `p` é o quanto do aviso ou do efeito já passou (0 a 1). */
+  powers: { kind: PowerKind; phase: 'aviso' | 'efeito'; dir: -1 | 1; evaded: boolean; p: number }[];
   patches: Patch[];
   marks: Mark[];
 }
@@ -83,6 +95,8 @@ export class SinalSim {
   course!: Course;
   private timeline!: VigiaTimeline;
   private covers!: CoverField;
+  private obstacles!: ObstacleField;
+  private inHist: [number, number][] = [];
   private coverState = new Map<number, { dur: number; at: number; broken: boolean }>();
   private n = 1;
   private sumDone = 0;
@@ -123,6 +137,12 @@ export class SinalSim {
       `${this.seed}:vigia:${this.mode}:${this.n}`,
     );
     this.covers = new CoverField(this.course, `${this.seed}:cover:${this.mode}:${this.n}`);
+    this.obstacles = new ObstacleField(
+      this.course,
+      `${this.seed}:obst:${this.mode}:${this.n}`,
+      this.covers,
+    );
+    this.inHist = [];
     this.coverState.clear();
     this.x = 0;
     this.y = 0;
@@ -183,6 +203,21 @@ export class SinalSim {
     return out;
   }
 
+  private nearObstacles(y: number, reach: number): ObstacleDef[] {
+    this.obstacles.ensure(y + 120);
+    const list = this.obstacles.list;
+    let lo = 0;
+    let hi = list.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (list[mid]!.y < y - reach - 1) lo = mid + 1;
+      else hi = mid;
+    }
+    const out: ObstacleDef[] = [];
+    for (let i = lo; i < list.length && list[i]!.y <= y + reach + 1; i++) out.push(list[i]!);
+    return out;
+  }
+
   private die(reason: SinalEnd, events: SinalEvent[]) {
     this.dead = true;
     this.end = reason;
@@ -201,13 +236,14 @@ export class SinalSim {
     const vs = stateAt(cycle, t);
     if (vs !== this.state) {
       this.state = vs;
-      if (vs === 'aviso') events.push({ kind: 'aviso', fake: cycle.fake });
+      if (vs === 'aviso') events.push({ kind: 'aviso', fake: cycle.fake, variant: cycle.kind });
       else if (vs === 'olhando') events.push({ kind: 'olhando' });
       else if (vs === 'voltando') events.push({ kind: 'voltando' });
     }
 
     // Os poderes (nunca em quem está escondido)
     let invert = false;
+    let lag = false;
     let speedMul = 1;
     let pushX = 0;
     let oleoActive = false;
@@ -272,9 +308,13 @@ export class SinalSim {
       }
       const live = t >= p.effectStart && t < p.effectEnd && !this.evaded.has(key);
       if (live && !this.hidden) {
-        if (p.kind === 'invertido') invert = true;
-        else if (p.kind === 'lama') speedMul = LAMA_FACTOR;
+        // Os corvos também invertem os controles (a tela fica coberta e você erra o lado).
+        if (p.kind === 'invertido' || p.kind === 'corvos') invert = true;
+        else if (p.kind === 'lama') speedMul = Math.min(speedMul, LAMA_FACTOR);
+        else if (p.kind === 'buzina') speedMul = 0;
         else if (p.kind === 'rajada') pushX = p.dir * RAJADA_SPEED;
+        else if (p.kind === 'vento') pushX = p.dir * VENTO_SPEED;
+        else if (p.kind === 'atraso') lag = true;
         else if (p.kind === 'oleo') oleoActive = true;
       }
       if (t >= p.effectEnd && !this.fired.has(`${key}:e`)) {
@@ -284,9 +324,18 @@ export class SinalSim {
       }
     });
 
-    // O analógico
-    let ix = clamp(ax, -100, 100) / 100;
-    let iy = clamp(ay, -100, 100) / 100;
+    // O analógico (com atraso, ele vale o de 0,4 s atrás)
+    this.inHist.push([ax, ay]);
+    if (this.inHist.length > ATRASO_TICKS + 2) this.inHist.shift();
+    let rax = ax;
+    let ray = ay;
+    if (lag) {
+      const old = this.inHist[this.inHist.length - 1 - ATRASO_TICKS];
+      rax = old ? old[0] : 0;
+      ray = old ? old[1] : 0;
+    }
+    let ix = clamp(rax, -100, 100) / 100;
+    let iy = clamp(ray, -100, 100) / 100;
     const mag = Math.sqrt(ix * ix + iy * iy);
     if (mag < DEADZONE) {
       ix = 0;
@@ -322,8 +371,26 @@ export class SinalSim {
       this.impTicks--;
     }
     const edge = HALF - PLAYER_R;
-    const nx = clamp(this.x + vx * DT, -edge, edge);
-    const ny = Math.max(BACK_LIMIT, this.y + vy * DT);
+    let nx = clamp(this.x + vx * DT, -edge, edge);
+    let ny = Math.max(BACK_LIMIT, this.y + vy * DT);
+    // Os obstáculos não se atravessam: o boneco desliza em volta deles.
+    for (let pass = 0; pass < 2; pass++) {
+      for (const o of this.nearObstacles(ny, 1.6)) {
+        const ox = nx - o.x;
+        const oy = ny - o.y;
+        const min = o.r + PLAYER_R;
+        const dd = ox * ox + oy * oy;
+        if (dd >= min * min) continue;
+        const len = Math.sqrt(dd);
+        if (len < 1e-6) {
+          ny = o.y + min;
+        } else {
+          nx = o.x + (ox / len) * min;
+          ny = o.y + (oy / len) * min;
+        }
+      }
+      nx = clamp(nx, -edge, edge);
+    }
     const dx = nx - this.x;
     const dy = ny - this.y;
     const moved = Math.sqrt(dx * dx + dy * dy) / DT;
@@ -366,7 +433,8 @@ export class SinalSim {
     }
 
     // Se mexeu enquanto ele olha (passada a folga), perdeu. Escondido, não.
-    if (vs === 'olhando' && t >= cycle.lookStart + LOOK_GRACE && !hidden && moved > MOVE_EPS) {
+    const look = activeLook(cycle, t);
+    if (look && t >= look.start + LOOK_GRACE && !hidden && moved > MOVE_EPS) {
       this.die('vigia', events);
       this.tick++;
       return events;
@@ -397,9 +465,9 @@ export class SinalSim {
     cycle.powers.forEach((p, i) => {
       const evaded = this.evaded.has(`${cycle.start}:${i}`);
       if (t >= p.teleStart && t < p.effectStart) {
-        powers.push({ kind: p.kind, phase: 'aviso', dir: p.dir, evaded });
+        powers.push({ kind: p.kind, phase: 'aviso', dir: p.dir, evaded, p: (t - p.teleStart) / (p.effectStart - p.teleStart) });
       } else if (t >= p.effectStart && t < p.effectEnd) {
-        powers.push({ kind: p.kind, phase: 'efeito', dir: p.dir, evaded });
+        powers.push({ kind: p.kind, phase: 'efeito', dir: p.dir, evaded, p: (t - p.effectStart) / (p.effectEnd - p.effectStart) });
       }
     });
     return {
@@ -418,6 +486,7 @@ export class SinalSim {
         dur: this.curDur(def),
         broken: this.coverState.get(def.id)?.broken ?? false,
       })),
+      obstacles: this.nearObstacles(this.y, 40),
       powers,
       patches: this.patches,
       marks: this.marks,

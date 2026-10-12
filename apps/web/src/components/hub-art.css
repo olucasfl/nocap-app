@@ -1,0 +1,217 @@
+/* A arte dos cartões do Hub: ocupa a parte de cima do cartão, acima do nome do jogo. */
+.hub-art {
+  position: absolute;
+  inset: 8px 8px 88px;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+.ha {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.ha text {
+  letter-spacing: -0.04em;
+}
+
+/* Mesmíssima: os dois cartões de cor flutuam em fases diferentes e a nota dá uma batidinha. */
+.ha-float {
+  animation: ha-float 4s ease-in-out infinite;
+}
+.ha-float.b {
+  animation-delay: -2s;
+}
+.ha-float.c {
+  animation-delay: -1s;
+}
+@keyframes ha-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+.ha-stamp {
+  transform-origin: 100px 78px;
+  animation: ha-stamp 3.2s ease-in-out infinite;
+}
+@keyframes ha-stamp {
+  0%,
+  70%,
+  100% {
+    transform: scale(1);
+  }
+  80% {
+    transform: scale(1.14);
+  }
+  90% {
+    transform: scale(0.97);
+  }
+}
+
+/* Já Deu?: o ponteiro corre e os riscos de velocidade piscam. */
+.ha-sweep {
+  transform-origin: 100px 80px;
+  animation: ha-sweep 8s linear infinite;
+}
+@keyframes ha-sweep {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+.ha-lines {
+  animation: ha-lines 1.6s ease-in-out infinite;
+}
+@keyframes ha-lines {
+  0%,
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  50% {
+    transform: translateX(-5px);
+    opacity: 0.55;
+  }
+}
+
+/* Ecooo: um botão de cada vez acende (volta ao ciclo a cada 3,2 s) e as ondas de som pulsam. */
+.ha-pad {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ha-pad 3.2s ease-in-out infinite;
+}
+.ha-glow {
+  opacity: 0;
+  animation: ha-glow 3.2s ease-in-out infinite;
+}
+@keyframes ha-pad {
+  0%,
+  18%,
+  100% {
+    transform: scale(1);
+  }
+  6% {
+    transform: scale(1.07);
+  }
+}
+@keyframes ha-glow {
+  0%,
+  18%,
+  100% {
+    opacity: 0;
+  }
+  6% {
+    opacity: 0.55;
+  }
+}
+.ha-waves {
+  animation: ha-waves 1.6s ease-in-out infinite;
+}
+@keyframes ha-waves {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* Sinal Vermelho: o olho do semáforo procura, a luz âmbar avisa e o boneco corre no lugar. */
+.ha-pupil {
+  animation: ha-look 3.6s ease-in-out infinite;
+}
+@keyframes ha-look {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  60% {
+    transform: translateX(4px);
+  }
+}
+.ha-amber {
+  opacity: 0;
+  animation: ha-amber 3.6s ease-in-out infinite;
+}
+@keyframes ha-amber {
+  0%,
+  55%,
+  100% {
+    opacity: 0;
+  }
+  62%,
+  72%,
+  82% {
+    opacity: 1;
+  }
+  67%,
+  77% {
+    opacity: 0.15;
+  }
+}
+.ha-run {
+  animation: ha-run 0.5s ease-in-out infinite;
+}
+@keyframes ha-run {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+.ha-road {
+  animation: ha-road 0.8s linear infinite;
+}
+@keyframes ha-road {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -19;
+  }
+}
+
+/* Celular: o rodapé do cartão está no fluxo, então a arte ocupa o espaço que sobra em cima dele. */
+@media (max-width: 767px) {
+  .hub-card .hub-art {
+    position: relative;
+    inset: auto;
+    flex: 1 1 auto;
+    min-height: 170px;
+  }
+  .hub-card .hub-art .ha {
+    transform: scale(1.2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ha *,
+  .ha-float,
+  .ha-stamp,
+  .ha-sweep,
+  .ha-lines,
+  .ha-pad,
+  .ha-glow,
+  .ha-waves,
+  .ha-pupil,
+  .ha-amber,
+  .ha-run,
+  .ha-road {
+    animation: none !important;
+  }
+  .ha-amber {
+    opacity: 0.6;
+  }
+}

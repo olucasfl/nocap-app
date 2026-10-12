@@ -89,10 +89,14 @@ export function createSinalAudio(): SinalAudio | null {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(70, t);
-        osc.frequency.exponentialRampToValueAtTime(260, t + 0.9);
+        // Cada jeito de olhar tem o seu zumbido: o rápido é um estalo curto e agudo, o duplo
+        // sobe depressa, a olhadinha é seca. O normal e o longo sobem devagar.
+        const quick = e.variant === 'rapido' || e.variant === 'espia';
+        const dur = quick ? 0.32 : e.variant === 'duplo' ? 0.55 : 0.9;
+        osc.frequency.setValueAtTime(quick ? 140 : 70, t);
+        osc.frequency.exponentialRampToValueAtTime(quick ? 420 : 260, t + dur);
         gain.gain.setValueAtTime(0.0001, t);
-        gain.gain.exponentialRampToValueAtTime(0.14, t + 0.25);
+        gain.gain.exponentialRampToValueAtTime(quick ? 0.2 : 0.14, t + Math.min(0.25, dur * 0.4));
         osc.connect(gain).connect(out);
         osc.start(t);
         hum = { osc, gain };
@@ -108,7 +112,17 @@ export function createSinalAudio(): SinalAudio | null {
         tone('triangle', 1318, 1318, 0.16, 0.2, t);
         tone('triangle', 1568, 1568, 0.2, 0.2, t + 0.12);
       } else if (e.kind === 'poder') {
-        hiss('bandpass', 400, 2400, 0.5, 0.35);
+        if (e.power === 'buzina') {
+          tone('square', 220, 220, 0.5, 0.3);
+          tone('square', 277, 277, 0.5, 0.25);
+        } else if (e.power === 'farois') {
+          tone('sawtooth', 2400, 600, 0.35, 0.22);
+          hiss('highpass', 5000, 9000, 0.3, 0.3);
+        } else if (e.power === 'corvos') {
+          for (let i = 0; i < 4; i++) tone('sawtooth', 420 - i * 30, 180, 0.22, 0.2, t + i * 0.12);
+        } else {
+          hiss('bandpass', 400, 2400, 0.5, 0.35);
+        }
       } else if (e.kind === 'poder-evitado') {
         hiss('highpass', 3000, 6000, 0.12, 0.12);
         tone('sine', 880, 1175, 0.14, 0.14);

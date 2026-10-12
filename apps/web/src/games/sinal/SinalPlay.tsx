@@ -210,7 +210,11 @@ export function SinalPlay({ mode, seed, color, best, onEnd, onQuit }: Props) {
       for (let i = notices.length - 1; i >= 0; i--) if (notices[i]!.until < now) notices.splice(i, 1);
 
       const inverted = v.powers.some(
-        (p) => p.kind === 'invertido' && p.phase === 'efeito' && !p.evaded && !v.hidden,
+        (p) =>
+          (p.kind === 'invertido' || p.kind === 'corvos') &&
+          p.phase === 'efeito' &&
+          !p.evaded &&
+          !v.hidden,
       );
       drawScene(c, {
         layout,

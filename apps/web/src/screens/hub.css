@@ -92,38 +92,6 @@ a.hub-card:active {
   background: var(--eco-red);
   color: var(--on-blue);
 }
-/* O semáforo do Sinal Vermelho: três lâmpadas, a vermelha acesa. */
-.hub-sinal {
-  display: grid;
-  gap: 6px;
-  width: 38px;
-  padding: 7px;
-  background: #1d1d2b;
-  border: 2.5px solid var(--ink);
-  border-radius: 12px;
-  box-shadow: 3px 3px 0 var(--ink);
-}
-.hub-sinal-lamp {
-  width: 24px;
-  height: 24px;
-  background: #ff4b4b;
-  border: 2px solid var(--ink);
-  border-radius: 50%;
-}
-.hub-sinal-lamp.off {
-  background: #3a2a2a;
-}
-.hub-pads {
-  width: 96px;
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 6px;
-}
-.hub-pads i {
-  height: 40px;
-  border: 2px solid var(--ink);
-  border-radius: 9px;
-}
 .hub-card-foot {
   position: absolute;
   left: 14px;
@@ -150,55 +118,6 @@ a.hub-card:active {
   font-size: 12px;
   font-weight: 700;
   margin-top: 6px;
-}
-
-.hub-swatches {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
-}
-.hub-swatches i {
-  height: 34px;
-  border: 2px solid var(--ink);
-  border-radius: 8px;
-}
-
-.hub-clock {
-  width: 84px;
-  height: 84px;
-  border-radius: 42px;
-  border: 2.5px solid var(--white);
-  position: relative;
-}
-.hub-clock i {
-  position: absolute;
-  display: block;
-}
-.hub-clock-hand {
-  left: 38px;
-  top: 10px;
-  width: 3px;
-  height: 30px;
-  background: var(--white);
-  border-radius: 2px;
-}
-.hub-clock-hand2 {
-  left: 38px;
-  top: 37px;
-  width: 24px;
-  height: 3px;
-  background: var(--yellow);
-  border-radius: 2px;
-  transform: rotate(28deg);
-  transform-origin: 0 50%;
-}
-.hub-clock-dot {
-  left: 33px;
-  top: 33px;
-  width: 12px;
-  height: 12px;
-  border-radius: 6px;
-  background: var(--white);
 }
 
 .hub-more {
@@ -275,62 +194,14 @@ a.hub-daily {
   }
 }
 /* As amostras do cartão da Cor e o relógio do Tempo ganham vida depois de entrar. */
-.hub-swatches i {
-  animation: hub-pop 0.3s cubic-bezier(0.2, 1.6, 0.4, 1) both;
-}
-.hub-swatches i:nth-child(1) {
-  animation-delay: 0.4s;
-}
-.hub-swatches i:nth-child(2) {
-  animation-delay: 0.44s;
-}
-.hub-swatches i:nth-child(3) {
-  animation-delay: 0.48s;
-}
-.hub-swatches i:nth-child(4) {
-  animation-delay: 0.52s;
-}
-.hub-swatches i:nth-child(5) {
-  animation-delay: 0.56s;
-}
-.hub-swatches i:nth-child(6) {
-  animation-delay: 0.6s;
-}
-@keyframes hub-pop {
-  from {
-    transform: scale(0.2) rotate(-25deg);
-    opacity: 0;
-  }
-  to {
-    transform: none;
-    opacity: 1;
-  }
-}
 @media (prefers-reduced-motion: reduce) {
   .hub-card,
-  .hub-more,
-  .hub-swatches i {
+  .hub-more {
     animation: none;
   }
 }
 
 /* O ponteiro do relógio do cartão do Tempo gira devagar (só na home, nunca durante a contagem). */
-.hub-clock-hand2 {
-  animation: hub-sweep 16s linear 0.7s infinite;
-}
-@keyframes hub-sweep {
-  from {
-    transform: rotate(28deg);
-  }
-  to {
-    transform: rotate(388deg);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .hub-clock-hand2 {
-    animation: none;
-  }
-}
 
 /* Dois seletores: precisa vencer `.hub-card { height }` dos estilos de tela grande (responsive.css). */
 .hub-card.hub-card-party {
@@ -448,7 +319,7 @@ a.hub-daily {
 @media (max-width: 767px) {
   .hub-card:not(.hub-card-party) {
     height: auto;
-    min-height: 236px;
+    min-height: 300px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
