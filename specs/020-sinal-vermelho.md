@@ -10,7 +10,7 @@ Um jogo de correr, visto de cima, infinito. Lá no fundo da tela fica o **Vigia*
 
 - **Visão de cima**, câmera subindo; 2D (mais simples e mais bonito de fazer bem).
 - **Vigia fixo** no topo da tela, acompanhando a câmera (sempre no horizonte). Um só.
-- **Dois modos na primeira versão (decidido em 12/10/2026):** **Clássico**, por fases (cada fase tem uma linha de chegada, mais difícil e mais longa que a anterior), e **Infinito**, que não acaba e vai ficando cada vez mais difícil. Em ambos, **perdeu, acabou** (no Clássico recomeça do marco da fase). O **online** vem depois.
+- **Dois modos na primeira versão (decidido em 12/10/2026):** **Clássico** (rodadas de mapas com fases e chefe, sem fim) e **Infinito** (um mapa só, sem fim, cada vez mais difícil). Os dois são uma corrida só: **perdeu, acabou**. Os dois têm ranking. O **online** vem depois.
 - **Escuridão** que vem de trás: no começo quase não aparece, vai ficando perigosa no final da corrida ou se a pessoa **ficar muito tempo parada**. Precisa ser **animada e profissional**.
 - **Controles pelo aparelho, de forma intuitiva:** celular com analógico na tela (bola e bolinha), **fixo no lado direito** (decisão de 12/10/2026, no lugar de aparecer onde o dedo tocar); computador com W A S D (e setas). Sem opção de "dica mais fácil".
 - **Mapas:** 3, com cenários, bonecos e Vigias diferentes, mas **as mesmas regras e a mesma dinâmica**. O mapa é **sorteado quando a partida é puxada** (pela seed). **Só o modo muda o ranking, o mapa não:** um ranking por modo, igual para todos os mapas.
@@ -47,7 +47,7 @@ Antes de olhar, o Vigia dá sinais discretos e que um jogador atento aprende a l
 
 ### A escuridão
 - Vem de trás e acompanha a pessoa, mais devagar do que ela corre. No começo é **quase imperceptível** (começa uns 60 m atrás e anda a uns 0,12 m/s).
-- Fica mais rápida de duas formas: **com a distância** (mais perto do final da corrida, mais veloz) e **com o tempo parado** (se a pessoa não avançou uns 1,5 m nos últimos 6 s, a escuridão acelera em até 4 vezes, devagar e sem tranco).
+- Fica mais rápida de duas formas: **com a distância** (mais perto do final da corrida, mais veloz) e **com o tempo parado** (se a pessoa não avançou uns 1,5 m nos últimos 6 s, a escuridão acelera em até 4 vezes, devagar e sem tranco), **sempre respeitando o limite de 92% da velocidade do boneco** (veja "Limite da escuridão").
 - Só aparece na tela quando está perto (uns 14 m atrás), com nevoeiro, brasas e uma borda escura animada. Se alcança a pessoa, **perdeu**.
 - É o que impede de ficar escondido para sempre e dá o ritmo da corrida.
 
@@ -94,25 +94,40 @@ O Lucas quis que a zona de proteção fique **óbvia**:
 ## Falso aviso
 De vez em quando o Vigia dá o sinal de que vai olhar **e não olha**. Acontece raramente no Infinito (a partir de uns 150 m, cerca de 1 em 8 avisos) e com frequência crescente no Clássico (de 1 em 8 a 1 em 4). Quem se escondeu à toa perde tempo e fica mais perto da escuridão.
 
-## Clássico (modo solo por fases) — decidido em 12/10/2026
-O **Infinito** (ranking de metros) é o modo que não acaba. O **Clássico** é o modo com mais mecânica, para a pessoa ter para onde ir.
-- **Mundos:** cada mapa é um mundo de **10 fases** (Horta, depois Rua Neon, depois Ruínas). A versão 1 faz só a Horta.
-- **Fase** = uma distância a cumprir até a linha de chegada. Distâncias de partida (palpite): 120, 150, 190, 230, **300 (chefe)**, 260, 300, 340, 380, **480 (chefe)**. Cada fase tem uma escuridão um pouco mais rápida e um Vigia um pouco mais ligeiro.
-- **Progresso no topo da tela:** uma trilha com o boneco andando até uma bandeirinha, com o marco do meio, "FASE 3" e "faltam 84 m". Os metros grandes continuam no canto.
-- **Marco:** no meio de cada fase; ao perder, recomeça dele (tentativas ilimitadas).
-- **Estrelas:** 1 por chegar, 2 por chegar **sem perder nenhuma vez**, 3 por chegar sem perder e **dentro do tempo-alvo** da fase. As estrelas abrem as fases seguintes e liberam enfeites do boneco.
-- **Novidades por fase na Horta (palpite):** 1 e 2 básicas; 3 falso aviso; 4 esconderijo que quebra; **5 chefe Rei Espantalho**; 6 poder do Vigia (corvos); 7 esconderijos frágeis e mais falsos avisos; 8 e 9 tudo junto; **10 chefe**.
-- **Servidor:** cada fase é uma corrida determinística (seed fixa da fase). O servidor refaz pelos movimentos e só então grava estrelas e progresso por pessoa. A tabela de progresso exige **migration**, que será pedida antes de rodar.
+## Clássico (decidido pelo Lucas em 12/10/2026)
+Uma corrida sem fim, em **rodadas de mapas**:
+1. **Sorteia um mapa** para começar.
+2. A pessoa joga **4 fases**, cada uma mais difícil e mais longa que a anterior, e na **5ª fase enfrenta o chefe** do mapa.
+3. Passou do chefe: vai para **outro mapa sorteado** (que ainda não jogou nesta corrida) e repete: 4 fases e o chefe.
+4. **Sem repetir mapa** até fechar os três. Fechou todos: **volta ao primeiro e assim vai**, e a dificuldade continua subindo.
+5. **Perdeu, acabou** a corrida. O **recorde é a distância total percorrida**, somando as distâncias de todas as fases.
+
+- **Fase** = uma distância a cumprir até a linha de chegada (a fase conta como cumprida quando o boneco cruza a linha). A distância e a dificuldade crescem com o **número da fase na corrida** (1, 2, 3...), não com o mapa: a fase 6 (primeira do 2º mapa) é mais difícil que a 5. Palpite de partida: comprimento de 100 m + 20 m por fase, e o chefe com 1,6 vez isso.
+- **Progresso no topo da tela:** uma trilha com o boneco andando até uma bandeirinha, "FASE 3" e "faltam 84 m"; no chefe a trilha muda de cor e mostra a coroa. Os metros da fase e o total da corrida ficam no canto.
+- **Entre fases:** um cartão rápido com a distância total até agora; ao trocar de mapa, o nome do mapa novo.
+- **A cada fase:** o Vigia fica um pouco mais ligeiro e a escuridão recomeça atrás da pessoa, mas um pouco mais veloz (veja a regra do limite abaixo).
+- **Novidades que entram com a dificuldade** (palpite): falso aviso a partir da fase 3; esconderijo frágil a partir da 4; o poder do Vigia do mapa a partir da fase 2; e mais de um poder por vez nos chefes.
+- **Mapas e Vigias:** cada mapa tem o seu Vigia e o seu chefe (Rei Espantalho, Semáforo Mestre e Totem Ancestral).
+- **Servidor:** o servidor refaz a corrida inteira pelos movimentos (a seed define o sorteio dos mapas, as fases, os esconderijos e os poderes). Não há tabela de progresso: só a distância total do ranking, **sem migration**.
+
+## Infinito (decidido pelo Lucas em 12/10/2026)
+- **Sorteia um mapa** e fica nele para sempre.
+- Os **poderes são aleatórios**: começa com o do Vigia do mapa e, quanto mais longe a pessoa vai, entram poderes mais variados (a reserva dos chefes, em versão mais fraca), sempre pelas regras de equidade.
+- Cada vez mais difícil: o Vigia mais ligeiro, falsos avisos mais comuns, esconderijos mais raros e frágeis, e a **neblina preta** (a escuridão) se aproximando mais depressa.
+- Recorde: **metros do ponto mais longe** que a pessoa chegou.
+
+## Limite da escuridão (regra importante)
+**A escuridão nunca anda mais rápido que o boneco.** A velocidade máxima dela é uma fração fixa da do boneco (**92%**, cerca de 3,9 m/s contra 4,2 m/s), em qualquer modo, mesmo com todos os aceleradores (distância, fase, tempo parado). Assim, quem corre sem parar nunca é alcançado; quem é alcançado é quem para demais (Vigia olhando, esconderijos, poderes). Um teste automático garante isso para qualquer corrida.
 
 ## Poderes dos Vigias
 **Regra de ouro (decidida pelo Lucas):** quando a pessoa **está escondida, o Vigia não solta poder nela**; quando está **no meio do nada**, solta. Se ela entrar num esconderijo durante o aviso do poder, o poder passa sem efeito.
 
-**Vigias comuns, "poderzinho besta"** (só nas fases normais; um a cada uns 15 a 25 s):
+**Vigias comuns, "poderzinho besta"** (nas fases normais do Clássico e, em versão variada, no Infinito; um a cada uns 15 a 25 s):
 - **Espantalho, bando de corvos:** corvos cruzam a tela e escondem uma parte da visão por uns 2 s (cobertura leve).
 - **Semáforo, óleo na pista:** 3 poças escorregadias aparecem perto; pisar faz deslizar por cerca de 1 s (e deslizar conta como se mexer quando ele olha).
-- **Totem Coruja, vento (suavizado a pedido do Lucas):** uma brisa **bem fraca** empurra de lado por uns **1,5 s**, avisada 1,1 s antes com riscos de areia que mostram a direção. É o mais leve dos três: dá para andar contra ela sem esforço.
+- **Totem Coruja, poeira nos olhos (escolha do Lucas):** uma brisa de areia **embaça só as bordas da tela** por uns 2 s, avisada 1 s antes com grãos de areia soprando. Não empurra o boneco: é o mais leve dos três.
 
-**Chefes** (a cada 5 fases: fases 5 e 10 de cada mundo): um Vigia maior, com coroa ou detalhes próprios, que **solta vários poderes**: pode encadear dois. Reserva de poderes:
+**Chefes** (a 5ª fase de cada rodada de mapa): um Vigia maior, com coroa ou detalhes próprios, que **solta vários poderes**: pode encadear dois. Reserva de poderes:
 1. **Controles invertidos** (2,5 s): o analógico muda de cor e a tela inclina um pouco no aviso.
 2. **Cortina** (tinta, penas, fumaça ou areia, 2,5 a 3 s): cobre a tela, mas sempre deixa uma janela clara ao redor do boneco.
 3. **Rajada** (empurrão de 2 s, no máximo 4 m): setas no chão mostram a direção.
@@ -140,7 +155,7 @@ O chefe também faz falsos avisos mais seguidos.
 - **Núcleo puro** em `packages/games/src/sinal/` (nome provisório): o mundo, o ciclo do Vigia, os esconderijos, a escuridão e a simulação com **passo fixo (60 por segundo)**, determinística. Sem relógio nem desenho dentro do núcleo. Testes de ciclo do Vigia, folga, zona morta, esconderijos (espaçamento e que nunca formam fila), escuridão (aceleração por distância e por tempo parado) e de que a mesma seed gera sempre a mesma corrida.
 - **O servidor refaz a partida.** O jogo manda só os **movimentos** (instante e direção do analógico, em valores inteiros de -100 a 100, e só quando mudam). O servidor roda a mesma simulação, confere que a velocidade nunca passa do limite e calcula metros e a morte. O cliente nunca diz "andei X metros".
 - **Seed e mapa:** a sessão (`/games/sinal/session`) devolve a seed e o servidor a assina, como no Eco Hero. O mapa (cenário, boneco e Vigia) sai da seed e não afeta a lógica.
-- **Nota guardada** em décimos de metro, no campo de 16 bits (teto 3276,7 m); mostrada em metros inteiros. Modo guardado no servidor: `sinal-infinito` (o Clássico guarda progresso e estrelas, sem ranking na primeira versão). Ranking por modo; um único quadro para os 3 mapas.
+- **Nota guardada** em décimos de metro, no campo de 16 bits (teto 3276,7 m); mostrada em metros inteiros. Modos guardados no servidor: `sinal-infinito` (ranking pelos metros do ponto mais longe) e `sinal-classico` (ranking pela **distância total percorrida**, somando todas as fases). Ranking por modo; um único quadro para os 3 mapas.
 - **Tela:** Canvas 2D (desenho profissional, partículas e a escuridão animada), com os elementos desenhados em código (nenhuma dependência nova). As regras de animação do projeto valem para o resto da interface; respeita movimento reduzido nos efeitos extras.
 - **Som:** Web Audio (receitas na skill `sfx`): zumbido do aviso que sobe de tom, passos, o "te viu" e a escuridão.
 - **Offline:** joga, mas sem sessão do servidor a partida não é salva (como o Eco Hero).
@@ -148,7 +163,7 @@ O chefe também faz falsos avisos mais seguidos.
 
 ## Fora desta versão
 - **Online:** todos no mesmo mapa ao mesmo tempo, com física (os bonecos não se atravessam e, ao encostar, o outro é empurrado na direção do encontro). Exigirá servidor autoritativo em sala (Colyseus). A simulação determinística de agora já nasce pensando nisso.
-- **Guardado para depois:** botão de **pedrinha** que desvia o Vigia, **fantasma** da melhor corrida, itens (capa, relógio), terrenos (gelo, areia movediça, esteira), noite e tempestade de areia, **Daily**, ranking de estrelas e os mundos 2 e 3 do Clássico.
+- **Guardado para depois:** botão de **pedrinha** que desvia o Vigia, **fantasma** da melhor corrida, itens (capa, relógio), terrenos (gelo, areia movediça, esteira), noite e tempestade de areia, e **Daily**. Nada de estrelas, marco no meio da fase nem tabela de progresso: o Clássico é uma corrida só.
 
 ## Design (proposta de 12/10/2026, a aprovar)
 Protótipo navegável em `docs/reference/design-sinal-vermelho.html` (abrir por um servidor local, por exemplo `python -m http.server` na pasta; as fontes vêm do Google). Mesma dinâmica nos três mapas; muda só a aparência. Estilo Pop Brutal: contorno de tinta, sombra dura, cores chapadas, sem emoji.
