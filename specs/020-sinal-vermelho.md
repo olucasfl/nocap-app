@@ -69,6 +69,21 @@ O Lucas achou a câmera **perto demais** e quer **mais campo de visão**, com **
 - A câmera do online ajusta o zoom ao número de pessoas na sala (12 é o mínimo de zoom), e cada jogador ganha um anel colorido sob o boneco para saber quem é quem.
 - Valores são palpite a calibrar jogando. O protótipo mostra as duas câmeras (`design-sinal-vermelho.html`, botões SOLO e 12 AMIGOS).
 
+## Seu boneco: cor e nome (12/10/2026)
+- **Antes de começar** (solo ou sala) há uma tela "Seu boneco" onde a pessoa **escolhe a cor** entre 12: laranja, azul, amarelo, verde, rosa, roxo, ciano, vermelho, branco, grafite, marrom e lima. O boneco do mapa (tomate, entregador ou raposa) usa essa cor no corpo. A escolha fica guardada.
+- **Na sala, cada cor é única:** a cor que outra pessoa já pegou aparece apagada e não dá para escolher.
+- **O nome** (o `@usuario`) aparece **em cima de cada boneco**, numa etiqueta da cor dele, com tamanho fixo na tela (para ler mesmo com a câmera longe). O seu leva uma setinha amarela.
+
+## Online: como funciona com outras pessoas (visão, fica para depois)
+- **Um mundo só**, o mesmo para todos (mesma seed: trilha, esconderijos e relógio do Vigia). O servidor manda em tudo; o jogo manda só a direção do analógico.
+- **Cada pessoa tem a sua câmera**, que segue o próprio boneco. Os outros aparecem quando estão no enquadramento, e setas na borda da tela apontam (com cor e nome) quem está fora de vista à frente ou atrás.
+- **O Vigia é um só e é igual para todos:** vira e olha no mesmo instante para a sala inteira; cada tela o mostra fixo no topo.
+- **A escuridão também é uma só**, uma parede que avança pelo mundo. Por isso cada tela a vê de um jeito: **quem ficou para trás a vê grande, quase pegando; quem está na frente a vê longe e anda tranquilo**. Ela acelera com o tempo, e quem fica parado simplesmente é alcançado. (Online não existe a aceleração por "ficar parado" do solo: a parede global já faz esse papel.)
+- **Todos jogam ao mesmo tempo**, saindo juntos de uma linha de largada. Quem é visto mexendo ou alcançado pela escuridão **sai da corrida**, ganha os metros que fez e passa a assistir os outros. Vence quem aguentar mais; a classificação é pelos metros.
+- **Física entre os bonecos:** não se atravessam. Ao encostar, o outro é jogado na direção do encontro.
+- **Salas não entram no ranking** (regra do projeto); só o histórico de sala.
+- **Decisões em aberto (para o Lucas):** (1) ser empurrado enquanto o Vigia olha **conta como se mexer**? (Eu recomendo que sim: é a armadilha divertida do jogo; mas dá para deixar uma folga curta logo depois do empurrão.) (2) Quando sai da corrida, a pessoa só **assiste** (recomendado) ou volta de algum jeito? (3) A velocidade da escuridão online segue só o tempo (recomendado) ou também a distância do líder? (4) O empurrão pode tirar alguém de dentro de um esconderijo?
+
 ## Controles
 - **Celular:** o analógico (círculo e bolinha) fica **fixo no canto inferior direito**, sempre visível, com uma área de toque generosa em volta. A bolinha acompanha o dedo e volta ao centro ao soltar.
 - **A câmera nunca deixa o analógico tapar o boneco.** A tela reserva uma **zona do analógico** (canto inferior direito, com folga em volta) e a câmera mantém o boneco sempre **fora dela**: o boneco fica na parte de cima da tela (cerca de 40% da altura) e a câmera também acompanha de lado quando ele vai para a direita. É uma regra do código da câmera (função pura, com teste: para qualquer posição do boneco no corredor, em retrato e em paisagem, ele nunca fica dentro da zona do analógico). Vale também para o Vigia, os esconderijos e o aviso, que ficam fora dessa zona ou são desenhados sem depender dela.
