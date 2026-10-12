@@ -82,7 +82,7 @@ O Lucas achou a câmera **perto demais** e quer **mais campo de visão**, com **
 - **Todos jogam ao mesmo tempo**, saindo juntos de uma linha de largada. Quem é visto mexendo ou alcançado pela escuridão **sai da corrida**, ganha os metros que fez e passa a assistir os outros. Vence quem aguentar mais; a classificação é pelos metros.
 - **Física entre os bonecos:** não se atravessam. Ao encostar, o outro é jogado na direção do encontro.
 - **Salas não entram no ranking** (regra do projeto); só o histórico de sala.
-- **Decisões em aberto (para o Lucas):** (1) ser empurrado enquanto o Vigia olha **conta como se mexer**? (Eu recomendo que sim: é a armadilha divertida do jogo; mas dá para deixar uma folga curta logo depois do empurrão.) (2) Quando sai da corrida, a pessoa só **assiste** (recomendado) ou volta de algum jeito? (3) A velocidade da escuridão online segue só o tempo (recomendado) ou também a distância do líder? (4) O empurrão pode tirar alguém de dentro de um esconderijo?
+- **Decididas pelo Lucas (12/10/2026), as quatro com "sim":** (1) ser empurrado enquanto o Vigia olha **conta como se mexer** (com uma folga curta logo depois do empurrão); (2) quem sai da corrida **só assiste** os outros; (3) a velocidade da escuridão online segue **só o tempo**; (4) o empurrão **pode tirar alguém de dentro de um esconderijo**.
 
 ## Controles
 - **Celular:** o analógico (círculo e bolinha) fica **fixo no canto inferior direito**, sempre visível, com uma área de toque generosa em volta. A bolinha acompanha o dedo e volta ao centro ao soltar.
