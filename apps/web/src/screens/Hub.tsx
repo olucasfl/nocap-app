@@ -27,6 +27,16 @@ function bestLabel(stats: Stats | undefined, game: GameId): string {
   return `RECORDE CLÁSSICO ${formatBest(game, 'classic', best)}`;
 }
 
+/** O recorde do Sinal Vermelho: o da conta (servidor) ou, sem conta, o deste aparelho. */
+function sinalBestLabel(stats: Stats | undefined): string {
+  const server = Math.max(
+    bestTenths(stats, 'sinal', 'infinito'),
+    bestTenths(stats, 'sinal', 'classico'),
+  );
+  const meters = Math.max(Math.floor(server / 10), Math.floor(Math.max(getSinalBest('infinito'), getSinalBest('classico'))));
+  return meters > 0 ? `RECORDE ${meters} M` : 'SEM RECORDE AINDA';
+}
+
 /** Situação do Daily do jogo hoje, em palavras: jogado (com a nota) ou ainda disponível. */
 function dailyStatus(stats: Stats | undefined, game: GameId): string {
   const info = stats?.daily[game];
@@ -121,11 +131,7 @@ export function Hub() {
           <div className="hub-card-foot">
             <div className="hub-card-name long">Sinal Vermelho</div>
             <div className="mono hub-card-meta">CORRA SEM SER VISTO</div>
-            <div className="mono hub-card-meta">
-              {getSinalBest('infinito') > 0
-                ? `RECORDE ${Math.floor(getSinalBest('infinito'))} M`
-                : 'SEM RECORDE AINDA'}
-            </div>
+            <div className="mono hub-card-meta">{sinalBestLabel(data)}</div>
           </div>
         </Link>
 

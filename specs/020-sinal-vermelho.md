@@ -184,6 +184,14 @@ O Lucas achou o jogo linear e fácil. O que mudou:
 - **Vigia sempre colado no topo**, inclusive no celular: o painel de distância fica mais estreito (e a trilha de fase embaixo dele) para os dois caberem lado a lado.
 - **Alerta grande do olhar:** no aviso, placa de PARE piscando com "PARE! ELE VAI OLHAR" e a borda da tela pulsando em vermelho; quando ele olha, a tela fica avermelhada com "NÃO SE MEXA! ELE ESTÁ OLHANDO". O falso aviso é idêntico ao verdadeiro.
 
+## Servidor, ranking, histórico e recordes (12/10/2026)
+- **Sessão:** `POST /games/sinal/session` devolve a seed (sorteada pelo servidor) e a sessão assinada. Sem conta ou sem internet o jogo abre como treino local e não salva.
+- **Nota:** o aparelho envia só os movimentos do analógico (`inputs`: `[passo, x, y]`). O servidor refaz a corrida inteira com a mesma simulação (`evaluateSinal`) e guarda a distância em **décimos de metro** (teto de 3276 m). Recusa movimentos inválidos, corrida que não terminou e corrida mais longa que o relógio da sessão; cada sessão vale uma vez.
+- **Ranking:** jogo `sinal`, quadros `infinito` (metros do ponto mais longe) e `clássico` (distância total), com período, Todos e **Amigos**. Sem Daily por enquanto.
+- **Histórico e recordes:** aparecem como "N m" no Histórico, nos Recordes e no Perfil (inclusive a atividade recente vista por amigos). O Hub mostra o recorde da conta.
+- **Tela final:** mostra o estado do envio (salvo, na fila, treino) e tem os atalhos "Ver ranking" e "Ranking dos amigos".
+- **Falta:** a sala online (jogar com amigos ao mesmo tempo), que continua marcada como "em breve".
+
 ## Controles
 - **Celular:** o analógico (círculo e bolinha) fica **fixo embaixo, no centro da tela**, sempre visível, com uma área de toque generosa em volta. A bolinha acompanha o dedo e volta ao centro ao soltar.
 - **A câmera nunca deixa o analógico tapar o boneco.** A tela reserva uma **zona do analógico** (embaixo, no centro, com folga em volta) e a câmera mantém o boneco sempre **fora dela**: o boneco fica um pouco acima do meio da tela (cerca de 52% da altura, para ficar longe do Vigia) e a câmera também acompanha de lado quando ele vai para a direita. É uma regra do código da câmera (função pura, com teste: para qualquer posição do boneco no corredor, em retrato e em paisagem, ele nunca fica dentro da zona do analógico). Vale também para o Vigia, os esconderijos e o aviso, que ficam fora dessa zona ou são desenhados sem depender dela.

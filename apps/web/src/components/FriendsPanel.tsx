@@ -10,7 +10,10 @@ import { useRoomEntry } from '@/lib/my-room';
 import type { GameId } from '@/lib/stats';
 import './friends-panel.css';
 
-const RULES: Record<GameId, string[]> = {
+/** Os jogos com sala (o Sinal Vermelho ainda não tem: a aba dele diz "em breve"). */
+type RoomGameId = Exclude<GameId, 'sinal'>;
+
+const RULES: Record<RoomGameId, string[]> = {
   color: [
     'Todo mundo vê a mesma cor ao mesmo tempo e recria de memória.',
     'O host escolhe rodadas, tempo para decorar e tempo para recriar.',
@@ -30,7 +33,7 @@ const RULES: Record<GameId, string[]> = {
 };
 
 /** Jogar com amigos: criar sala deste jogo ou entrar pelo código. A sala em si abre em /sala. */
-export function FriendsPanel({ game }: { game: GameId }) {
+export function FriendsPanel({ game }: { game: RoomGameId }) {
   const online = useOnline();
   const entry = useRoomEntry();
   const [code, setCode] = useState('');

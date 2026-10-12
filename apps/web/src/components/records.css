@@ -38,6 +38,10 @@
   background: var(--green);
   color: var(--on-accent);
 }
+.rc-game.on.sinal {
+  background: var(--eco-red);
+  color: var(--on-blue);
+}
 .rc-game.on {
   transform: translate(2px, 2px);
   box-shadow: 1px 1px 0 var(--ink);

@@ -58,7 +58,7 @@ export const activeFilters = (f: HistoryFilters) =>
   (f.mode ? 1 : 0) + (f.kind ? 1 : 0) + (f.period !== 'all' ? 1 : 0);
 
 export function fetchHistory(
-  game: 'color' | 'time' | 'eco',
+  game: 'color' | 'time' | 'eco' | 'sinal',
   cursor?: string,
   filters: HistoryFilters = NO_FILTERS,
 ) {
@@ -126,6 +126,7 @@ export function scoreParts(item: Pick<HistoryItem, 'game' | 'mode' | 'answers' |
   if (item.mode === 'party') return { main: String(item.totalScore * 10), unit: ' pts' };
   if (item.mode === 'impostor' || item.mode === 'leader')
     return { main: (item.totalScore / 10).toFixed(1), unit: ' pts' };
+  if (item.game === 'sinal') return { main: String(Math.round(item.totalScore / 10)), unit: ' m' };
   if (item.game === 'eco')
     return { main: String(Math.round(item.totalScore / 10)), unit: ' passos' };
   if (item.mode === 'survival')
@@ -148,11 +149,18 @@ const MODE_NAME: Record<string, string> = {
   'batida-passo': 'Eco Hero: Primeiro Passo',
   'batida-mare': 'Eco Hero: Maré Alta',
   'batida-frenesi': 'Eco Hero: Frenesi',
+  infinito: 'Infinito',
+  classico: 'Clássico',
   party: 'NoCap!',
   leader: 'Siga o Líder',
   room: 'Sala',
 };
-const GAME_NAME: Record<string, string> = { color: 'Mesmíssima', time: 'Já Deu?', eco: 'Ecooo' };
+const GAME_NAME: Record<string, string> = {
+  color: 'Mesmíssima',
+  time: 'Já Deu?',
+  eco: 'Ecooo',
+  sinal: 'Sinal Vermelho',
+};
 const KIND_NAME: Record<string, string> = { solo: 'Solo', daily: 'Daily', room: 'Sala' };
 
 export const gameLabel = (game: string) => GAME_NAME[game] ?? game;
@@ -184,6 +192,13 @@ export function classifyMatch(
 ): { label: string; tone: Tone } {
   if (item.placement !== null) {
     return { label: `${item.placement}º lugar`, tone: item.placement === 1 ? 'top' : 'mid' };
+  }
+  if (item.game === 'sinal') {
+    const m = Math.round(item.totalScore / 10);
+    if (m >= 600) return { label: 'LENDÁRIO', tone: 'top' };
+    if (m >= 300) return { label: 'FORTE', tone: 'good' };
+    if (m >= 120) return { label: 'MEH', tone: 'mid' };
+    return { label: 'VISTO CEDO', tone: 'low' };
   }
   if (item.game === 'eco') {
     const n = Math.round(item.totalScore / 10);

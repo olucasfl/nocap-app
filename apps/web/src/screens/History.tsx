@@ -49,6 +49,10 @@ const MODE_FILTERS: Record<GameId, { id: string; label: string }[]> = {
     { id: 'velocidade', label: 'Velocidade' },
     { id: 'reverso', label: 'Reverso' },
   ],
+  sinal: [
+    { id: 'infinito', label: 'Infinito' },
+    { id: 'classico', label: 'Clássico' },
+  ],
 };
 
 const KIND_FILTERS: { id: 'all' | 'solo' | 'daily' | 'room'; label: string }[] = [
@@ -68,6 +72,7 @@ const GAMES: { id: GameId; label: string }[] = [
   { id: 'color', label: 'Mesmíssima' },
   { id: 'time', label: 'Já Deu?' },
   { id: 'eco', label: 'Ecooo' },
+  { id: 'sinal', label: 'Sinal Vermelho' },
 ];
 
 function ColorDetail({ item }: { item: HistoryItem }) {
@@ -121,6 +126,14 @@ function EcoDetail({ item }: { item: HistoryItem }) {
   return (
     <p className="mono hist-note">
       {Math.round(item.totalScore / 10)} PASSOS · {item.answers.length} TOQUES
+    </p>
+  );
+}
+
+function SinalDetail({ item }: { item: HistoryItem }) {
+  return (
+    <p className="mono hist-note">
+      {Math.round(item.totalScore / 10)} METROS · SÓ O RESUMO FICA GUARDADO.
     </p>
   );
 }
@@ -182,6 +195,8 @@ function MatchRow({ item }: { item: HistoryItem }) {
           <TimeDetail item={item} />
         ) : item.game === 'eco' ? (
           <EcoDetail item={item} />
+        ) : item.game === 'sinal' ? (
+          <SinalDetail item={item} />
         ) : (
           <ColorDetail item={item} />
         ))}

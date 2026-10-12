@@ -55,22 +55,41 @@ const ecoMatchSchema = z.object({
   session: z.string().min(10).max(600),
 });
 
+const sinalMatchSchema = z.object({
+  ...base,
+  game: z.literal('sinal'),
+  /** Os movimentos do analógico: [instante (passo de 1/60 s), x, y], x e y de -100 a 100. */
+  inputs: z
+    .array(
+      z.tuple([
+        z.number().int().min(0).max(216_000),
+        z.number().int().min(-100).max(100),
+        z.number().int().min(-100).max(100),
+      ]),
+    )
+    .max(40_000),
+  /** Sessão assinada pelo servidor (`POST /games/sinal/session`). */
+  session: z.string().min(10).max(600),
+});
+
 /** O cliente manda só as respostas. Nota e alvo são ignorados/recalculados no servidor. */
 export const createMatchSchema = z.discriminatedUnion('game', [
   colorMatchSchema,
   timeMatchSchema,
   ecoMatchSchema,
+  sinalMatchSchema,
 ]);
 export type CreateMatchInput = z.infer<typeof createMatchSchema>;
 export type ColorMatchInput = z.infer<typeof colorMatchSchema>;
 export type TimeMatchInput = z.infer<typeof timeMatchSchema>;
 export type EcoMatchInput = z.infer<typeof ecoMatchSchema>;
+export type SinalMatchInput = z.infer<typeof sinalMatchSchema>;
 
 export const historyQuerySchema = z.object({
   cursor: z.string().max(200).optional(),
   limit: z.coerce.number().int().min(1).max(50).default(20),
   /** Só as partidas de um jogo (o histórico do app é separado por jogo). */
-  game: z.enum(['color', 'time', 'eco']).optional(),
+  game: z.enum(['color', 'time', 'eco', 'sinal']).optional(),
   /** Filtros do histórico: modo (classic, flash...), tipo (solo, daily, sala) e período. */
   mode: z.string().min(1).max(32).optional(),
   kind: z.enum(['solo', 'daily', 'room']).optional(),
@@ -87,3 +106,5 @@ export const timeSessionSchema = z.object({ kind: z.enum(['solo', 'daily']).defa
 export type TimeSessionInput = z.infer<typeof timeSessionSchema>;
 /** A sessão do Eco tem o mesmo formato da do Tempo. */
 export const ecoSessionSchema = timeSessionSchema;
+/** E a do Sinal Vermelho também. */
+export const sinalSessionSchema = timeSessionSchema;

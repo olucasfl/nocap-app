@@ -6,6 +6,7 @@ import { randomUUID } from 'node:crypto';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import {
   ecoSessionSchema,
+  sinalSessionSchema,
   timeSessionSchema,
   type TimeSessionInput,
 } from '../matches/match.schema';
@@ -39,6 +40,16 @@ export class GamesController {
   @RateLimit({ limit: 30, windowMs: 60_000 })
   ecoSession(@Body(new ZodValidationPipe(ecoSessionSchema)) body: TimeSessionInput) {
     const seed = body.kind === 'daily' ? dailySeed('eco') : randomUUID().slice(0, 12);
+    return { seed, session: issueTimeSession(seed) };
+  }
+
+  /** Começa uma corrida do Sinal Vermelho: seed sorteada e sessão assinada (para o tempo máximo). */
+  @Post('sinal/session')
+  @HttpCode(200)
+  @UseGuards(AuthGuard, RateLimitGuard)
+  @RateLimit({ limit: 30, windowMs: 60_000 })
+  sinalSession(@Body(new ZodValidationPipe(sinalSessionSchema)) _body: TimeSessionInput) {
+    const seed = randomUUID().slice(0, 12);
     return { seed, session: issueTimeSession(seed) };
   }
 }

@@ -32,7 +32,14 @@ export interface EcoPayload extends BasePayload {
   session: string;
 }
 
-export type SubmitPayload = ColorPayload | TimePayload | EcoPayload;
+/** Partida do Sinal Vermelho: os movimentos do analógico ([passo, x, y]) e a sessão assinada. */
+export interface SinalPayload extends BasePayload {
+  game: 'sinal';
+  inputs: [number, number, number][];
+  session: string;
+}
+
+export type SubmitPayload = ColorPayload | TimePayload | EcoPayload | SinalPayload;
 
 interface SubmitResponse {
   matchId: string;

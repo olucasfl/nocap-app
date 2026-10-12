@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import type { SinalInput, SinalMode, SinalResult } from '@nocap/games';
 import { BackButton } from '@/components/BackButton';
@@ -6,6 +7,10 @@ import { GameTabs, type GameTab } from '@/components/GameTabs';
 import { ModePicker } from '@/components/ModePicker';
 import { ModeSheet } from '@/components/ModeSheet';
 import { MuteButton } from '@/components/MuteButton';
+import { apiClient } from '@/lib/api-client';
+import { useAuth } from '@/lib/auth';
+import { bestTenths, fetchStats } from '@/lib/stats';
+import { useSaveSinal, SAVE_TEXT, type SinalRunInfo } from './useSaveSinal';
 import { ArrowRight } from '@/components/icons';
 import { SinalPlay } from './SinalPlay';
 import { getSinalBest, setSinalBest } from './storage';
@@ -17,8 +22,8 @@ const MODES: { id: SinalMode; label: string; desc: string; lead: string }[] = [
   {
     id: 'classico',
     label: 'Clássico',
-    desc: 'FASES · MAPAS · CHEFE',
-    lead: 'Quatro fases cada vez mais difíceis e, na quinta, o chefe do mapa. Passou, vem outro mapa. Quando fecha os três, volta ao primeiro e não para. O recorde é a distância total.',
+    desc: 'FASES · MAPAS · SEM FIM',
+    lead: 'Fases cada vez mais difíceis: a cada uma vêm mais poderes, mais obstáculos e uma escuridão mais ligeira. A cada 5 fases o mapa muda. O recorde é a distância total.',
   },
   {
     id: 'infinito',
@@ -30,9 +35,9 @@ const MODES: { id: SinalMode; label: string; desc: string; lead: string }[] = [
 
 const RULES: Record<SinalMode, [string, string][]> = {
   classico: [
-    ['4+1', 'fases por mapa'],
+    ['5', 'fases por mapa'],
     ['3', 'mapas'],
-    ['chefe', 'a cada 5 fases'],
+    ['mais', 'coisas a cada fase'],
   ],
   infinito: [
     ['sem', 'linha de chegada'],
@@ -49,11 +54,16 @@ const HOW = [
 ];
 
 /** O menu do jogo: as abas, os modos como cartões e a ficha do modo (como jogar e Jogar). */
-function SinalStart({ onStart }: { onStart: (mode: SinalMode) => void }) {
+function SinalStart({ onStart, busy }: { onStart: (mode: SinalMode) => void; busy: boolean }) {
+  const user = useAuth((st) => st.user);
+  const stats = useQuery({ queryKey: ['stats'], queryFn: fetchStats, enabled: !!user });
   const [tab, setTab] = useState<GameTab>('modes');
   const [open, setOpen] = useState<SinalMode | null>(null);
   const close = useCallback(() => setOpen(null), []);
-  const best = open ? getSinalBest(open) : 0;
+  // O recorde da conta (servidor) ou, sem conta, o deste aparelho.
+  const best = open
+    ? Math.max(getSinalBest(open), Math.floor(bestTenths(stats.data, 'sinal', open) / 10))
+    : 0;
 
   return (
     <section className="screen">
@@ -89,9 +99,20 @@ function SinalStart({ onStart }: { onStart: (mode: SinalMode) => void }) {
               <p className="mono sv-meta">
                 NO CELULAR, O ANALÓGICO FICA EMBAIXO, NO CENTRO. NO COMPUTADOR, W A S D OU AS SETAS.
               </p>
-              <button type="button" className="btn" data-sfx="start" onClick={() => onStart(open)}>
-                Jogar <ArrowRight />
+              <button
+                type="button"
+                className="btn"
+                data-sfx="start"
+                disabled={busy}
+                onClick={() => onStart(open)}
+              >
+                {busy ? 'Preparando...' : 'Jogar'} <ArrowRight />
               </button>
+              {!user && (
+                <p className="mono sv-meta">
+                  ENTRE NA SUA CONTA PARA SALVAR NO RANKING, NO HISTÓRICO E NOS RECORDES.
+                </p>
+              )}
             </ModeSheet>
           )}
         </>
@@ -119,15 +140,23 @@ function SinalFinal({
   mode,
   result,
   before,
+  run,
+  inputs,
+  busy,
   onAgain,
   onMenu,
 }: {
   mode: SinalMode;
   result: SinalResult;
   before: number;
+  run: SinalRunInfo;
+  inputs: SinalInput[];
+  busy: boolean;
   onAgain: () => void;
   onMenu: () => void;
 }) {
+  const user = useAuth((st) => st.user);
+  const save = useSaveSinal(run, mode, inputs);
   const classic = mode === 'classico';
   const meters = Math.floor(result.meters);
   const prev = Math.floor(before);
@@ -186,12 +215,25 @@ function SinalFinal({
         </div>
       </dl>
 
-      <p className="mono svf-note">O ranking online do Sinal Vermelho ainda não está no ar. O recorde fica só neste aparelho.</p>
+      <p className="mono svf-note" role="status">
+        {user || save === 'saved' ? SAVE_TEXT[save] : 'ENTRE NA SUA CONTA PARA SALVAR NO RANKING E NO HISTÓRICO'}
+      </p>
 
       <div className="stack svf-actions">
-        <button type="button" className="btn alt" data-sfx="start" onClick={onAgain}>
-          Jogar de novo
+        <button type="button" className="btn alt" data-sfx="start" disabled={busy} onClick={onAgain}>
+          {busy ? 'Preparando...' : 'Jogar de novo'}
         </button>
+        <Link to="/ranking" search={{ jogo: 'sinal', modo: mode }} className="btn ghost" data-sfx="select">
+          Ver ranking
+        </Link>
+        <Link
+          to="/ranking"
+          search={{ jogo: 'sinal', modo: mode, quem: 'friends' }}
+          className="btn ghost"
+          data-sfx="select"
+        >
+          Ranking dos amigos
+        </Link>
         <button type="button" className="btn ghost" data-sfx="back" onClick={onMenu}>
           Voltar ao menu
         </button>
@@ -207,24 +249,50 @@ function SinalFinal({
 export function SinalGame() {
   const [phase, setPhase] = useState<Phase>('menu');
   const [mode, setMode] = useState<SinalMode>('classico');
-  const [seed, setSeed] = useState(seedOf);
+  const [run, setRun] = useState<SinalRunInfo>(() => ({ matchId: crypto.randomUUID(), seed: seedOf(), session: '' }));
   const [result, setResult] = useState<SinalResult | null>(null);
   const [before, setBefore] = useState(0);
-  const [, setInputs] = useState<SinalInput[]>([]);
+  const [inputs, setInputs] = useState<SinalInput[]>([]);
+  const [busy, setBusy] = useState(false);
+  const queryClient = useQueryClient();
 
-  const begin = (m: SinalMode = mode) => {
+  /**
+   * O servidor sorteia a seed e assina o instante de início (é isso que deixa a partida valer no
+   * ranking). Sem conta ou sem internet dá para jogar do mesmo jeito, só que como treino.
+   */
+  const begin = async (m: SinalMode = mode) => {
+    if (busy) return;
+    setBusy(true);
     setMode(m);
-    setBefore(getSinalBest(m));
-    setSeed(seedOf());
+    let seed = seedOf();
+    let session = '';
+    try {
+      ({ seed, session } = await apiClient.post<{ seed: string; session: string }>(
+        '/games/sinal/session',
+        { kind: 'solo' },
+      ));
+    } catch {
+      /* sem conta ou sem rede: treino local, a partida não é salva */
+    }
+    let best = getSinalBest(m);
+    try {
+      const stats = await queryClient.fetchQuery({ queryKey: ['stats'], queryFn: fetchStats, staleTime: 0 });
+      best = Math.max(best, Math.floor(bestTenths(stats, 'sinal', m) / 10));
+    } catch {
+      /* convidado: vale o recorde deste aparelho */
+    }
+    setBefore(best);
+    setRun({ matchId: crypto.randomUUID(), seed, session });
+    setBusy(false);
     setPhase('play');
   };
 
   if (phase === 'play') {
     return (
       <SinalPlay
-        key={seed}
+        key={run.seed}
         mode={mode}
-        seed={seed}
+        seed={run.seed}
         best={getSinalBest(mode)}
         onEnd={(r, inp) => {
           // O recorde guardado aqui é deste aparelho; o ranking de verdade vem do servidor.
@@ -250,10 +318,21 @@ export function SinalGame() {
       </header>
 
       {phase === 'menu' && (
-        <SinalStart onStart={begin} />
+        <SinalStart onStart={(m) => void begin(m)} busy={busy} />
       )}
 
-      {phase === 'final' && result && <SinalFinal mode={mode} result={result} before={before} onAgain={() => begin()} onMenu={() => setPhase('menu')} />}
+      {phase === 'final' && result && (
+        <SinalFinal
+          mode={mode}
+          result={result}
+          before={before}
+          run={run}
+          inputs={inputs}
+          busy={busy}
+          onAgain={() => void begin()}
+          onMenu={() => setPhase('menu')}
+        />
+      )}
     </div>
   );
 }

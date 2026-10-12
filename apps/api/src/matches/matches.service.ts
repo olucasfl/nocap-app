@@ -10,6 +10,7 @@ import {
   dailySeed,
   dailyStreak,
   ecoPresets,
+  isSinalMode,
   periodStart,
   songOfMode,
   timePresets,
@@ -19,6 +20,7 @@ import {
   scoreBatidaMatch,
   scoreEcoMatch,
   scoreMatch,
+  scoreSinalMatch,
   scoreTimeMatch,
   type ScoredMatch,
 } from './match-scoring';
@@ -27,6 +29,7 @@ import type {
   CreateMatchInput,
   EcoMatchInput,
   HistoryQuery,
+  SinalMatchInput,
   TimeMatchInput,
 } from './match.schema';
 import { verifyTimeSession } from './time-session';
@@ -51,6 +54,7 @@ export class MatchesService {
     const who = { userId, playerId };
     if (input.game === 'time') return this.createTime(input, who);
     if (input.game === 'eco') return this.createEco(input, who);
+    if (input.game === 'sinal') return this.createSinal(input, who);
     return this.createColor(input, who);
   }
 
@@ -157,6 +161,24 @@ export class MatchesService {
     return this.persist(input, who, scored, true);
   }
 
+  /**
+   * Sinal Vermelho: a nota sai da corrida refeita pelos movimentos do analógico. Só solo (o ranking
+   * é por modo: infinito e clássico); a sessão assinada vale uma vez e limita a duração.
+   */
+  private async createSinal(input: SinalMatchInput, who: Who) {
+    if (!isSinalMode(input.mode)) throw new BadRequestException(`Modo desconhecido: ${input.mode}`);
+    if (input.kind === 'daily') throw new BadRequestException('O Sinal Vermelho ainda não tem Daily');
+    const session = verifyTimeSession(input.session);
+    if (!session || session.seed !== input.seed) {
+      throw new BadRequestException('Sessão da partida inválida ou expirada');
+    }
+    if (await this.repo.seedUsed('sinal', input.seed, input.matchId)) {
+      throw new ConflictException('Essa sessão já foi usada');
+    }
+    const scored = scoreSinalMatch({ ...input, elapsedMs: Date.now() - session.issuedAt });
+    return this.persist(input, who, scored, true);
+  }
+
   private async createColor(input: ColorMatchInput, who: Who) {
     // Daily vale para o mundo todo: seed e modo são os do dia, não escolha do cliente.
     if (input.kind === 'daily') {
@@ -235,7 +257,7 @@ export class MatchesService {
       string,
       { current: number; best: number; playedToday: boolean; totalScore: number | null }
     > = {};
-    for (const game of ['color', 'time', 'eco']) {
+    for (const game of ['color', 'time', 'eco', 'sinal']) {
       const days = plays.filter((p) => p.game === game).map((p) => dailyDate(p.playedAt));
       const streak = dailyStreak(days, todayStr);
       const score = today.find((t) => t.game === game)?.totalScore ?? null;

@@ -37,6 +37,17 @@ export function GameArt({ game, size = 'md' }: { game: GameId; size?: 'sm' | 'md
       </div>
     );
   }
+  if (game === 'sinal') {
+    return (
+      <div className={`ga ga-sinal ${size}`} aria-hidden="true">
+        <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round">
+          <rect x="18" y="6" width="28" height="52" rx="10" />
+          <circle cx="32" cy="22" r="7" />
+          <circle cx="32" cy="42" r="7" />
+        </svg>
+      </div>
+    );
+  }
   return (
     <div className={`ga ga-time ${size}`} aria-hidden="true">
       <svg
@@ -58,4 +69,5 @@ export const GAME_LABEL: Record<GameId, string> = {
   color: 'Mesmíssima',
   time: 'Já Deu?',
   eco: 'Ecooo',
+  sinal: 'Sinal Vermelho',
 };

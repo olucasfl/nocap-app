@@ -1,6 +1,6 @@
 import { apiClient } from './api-client';
 
-export type Game = 'color' | 'time' | 'eco';
+export type Game = 'color' | 'time' | 'eco' | 'sinal';
 export type Board =
   | 'classic'
   | 'flash'
@@ -15,6 +15,8 @@ export type Board =
   | 'batida-passo'
   | 'batida-mare'
   | 'batida-frenesi'
+  | 'infinito'
+  | 'classico'
   | 'daily';
 export type Period = 'day' | 'week' | 'all';
 export type Scope = 'all' | 'friends';
@@ -44,6 +46,7 @@ export const GAMES: { id: Game; label: string }[] = [
   { id: 'color', label: 'Mesmíssima' },
   { id: 'time', label: 'Já Deu?' },
   { id: 'eco', label: 'Ecooo' },
+  { id: 'sinal', label: 'Sinal Vermelho' },
 ];
 
 const ALL_BOARDS: { id: Board; label: string }[] = [
@@ -60,6 +63,8 @@ const ALL_BOARDS: { id: Board; label: string }[] = [
   { id: 'batida-passo', label: 'Eco Hero: Primeiro Passo' },
   { id: 'batida-mare', label: 'Eco Hero: Maré Alta' },
   { id: 'batida-frenesi', label: 'Eco Hero: Frenesi' },
+  { id: 'infinito', label: 'Infinito' },
+  { id: 'classico', label: 'Clássico' },
   { id: 'daily', label: 'Daily' },
 ];
 
@@ -76,6 +81,7 @@ const BOARD_IDS: Record<Game, Board[]> = {
     'batida-mare',
     'batida-frenesi',
   ],
+  sinal: ['infinito', 'classico'],
 };
 
 export const boardsOf = (game: Game) => ALL_BOARDS.filter((b) => BOARD_IDS[game].includes(b.id));
@@ -84,6 +90,7 @@ export const GAME_NAME: Record<Game, string> = {
   color: 'Mesmíssima',
   time: 'Já Deu?',
   eco: 'Ecooo',
+  sinal: 'Sinal Vermelho',
 };
 
 export const PERIODS: { id: Period; label: string }[] = [
@@ -95,7 +102,7 @@ export const PERIODS: { id: Period; label: string }[] = [
 /** Máximo de pontos de uma partida no quadro (10 por rodada; o Daily da Cor tem 5 rodadas). */
 export function boardMax(game: Game, board: Board): number {
   // Sobrevivência (rodadas) e Eco (passos) não têm máximo de pontos.
-  if (board === 'survival' || game === 'eco') return 0;
+  if (board === 'survival' || game === 'eco' || game === 'sinal') return 0;
   if (board === 'quick') return 10;
   if (board === 'sequence') return 50;
   if (board === 'daily') return game === 'time' ? 30 : 50;
@@ -116,7 +123,7 @@ export interface RankingsSearch {
   quem?: Scope;
 }
 
-const GAME_IDS: Game[] = ['color', 'time', 'eco'];
+const GAME_IDS: Game[] = ['color', 'time', 'eco', 'sinal'];
 const PERIOD_IDS: Period[] = ['day', 'week', 'all'];
 
 /** O período de abertura de cada quadro: o Daily abre em hoje, os outros na semana. */
@@ -125,7 +132,8 @@ export const defaultPeriod = (board: Board): Period => (board === 'daily' ? 'day
 /** Quadros de um jogo para escolher, o Daily por último. */
 export const boardChoices = (game: Game): { id: Board; label: string }[] => [
   ...boardsOf(game),
-  { id: 'daily', label: 'Daily' },
+  // O Sinal Vermelho ainda não tem Daily
+  ...(game === 'sinal' ? [] : [{ id: 'daily' as Board, label: 'Daily' }]),
 ];
 
 /** Aceita só valores que existem; o resto some (link velho ou digitado errado). */
