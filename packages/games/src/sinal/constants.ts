@@ -27,8 +27,8 @@ export const DEADZONE = 0.12;
 /** Andar mais devagar que isto (m/s) já conta como parado para o Vigia. */
 export const MOVE_EPS = 0.2;
 export const PLAYER_R = 0.45;
-/** Meia largura do corredor (o corredor tem 10 m). */
-export const HALF = 5;
+/** Meia largura do corredor (o corredor tem 15 m: espaço para desviar e escolher o caminho). */
+export const HALF = 7.5;
 /** Quanto o boneco pode voltar para trás da largada. */
 export const BACK_LIMIT = -6;
 
@@ -78,20 +78,21 @@ export interface PowerSpec {
 
 export const POWER_SPECS: Record<PowerKind, PowerSpec> = {
   // dos Vigias comuns (três por mapa): atrapalham de verdade desde a primeira fase
-  corvos: { tele: 0.9, effect: 2.2 },
-  oleo: { tele: 0.8, effect: 3.0 },
-  poeira: { tele: 1.0, effect: 2.4 },
-  buzina: { tele: 0.9, effect: 1.2 },
-  farois: { tele: 0.8, effect: 2.2 },
-  vento: { tele: 1.0, effect: 2.4 },
-  atraso: { tele: 0.9, effect: 2.6 },
+  // O aviso dura uns 2 s: dá tempo de ler o quadro e decidir o que fazer.
+  corvos: { tele: 2.0, effect: 2.2 },
+  oleo: { tele: 1.9, effect: 3.0 },
+  poeira: { tele: 2.0, effect: 2.4 },
+  buzina: { tele: 2.0, effect: 1.2 },
+  farois: { tele: 1.9, effect: 2.2 },
+  vento: { tele: 2.0, effect: 2.4 },
+  atraso: { tele: 2.0, effect: 2.6 },
   // dos chefes e do Infinito
-  invertido: { tele: 0.9, effect: 2.5 },
-  cortina: { tele: 0.8, effect: 2.8 },
-  rajada: { tele: 0.9, effect: 2.0 },
-  lama: { tele: 0.8, effect: 3.0 },
-  apagao: { tele: 0.9, effect: 3.0 },
-  chuva: { tele: 1.2, effect: 0.4 },
+  invertido: { tele: 2.0, effect: 2.5 },
+  cortina: { tele: 1.9, effect: 2.8 },
+  rajada: { tele: 2.0, effect: 2.0 },
+  lama: { tele: 1.9, effect: 3.0 },
+  apagao: { tele: 2.0, effect: 3.0 },
+  chuva: { tele: 2.2, effect: 0.4 },
 };
 
 /** Os poderes do Vigia de cada mapa (cada Vigia tem três). */

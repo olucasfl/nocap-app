@@ -152,6 +152,78 @@ export const MAP_STYLE: Record<
   },
 };
 
+// ---------------------------------------------------------------- construções da horta
+/** Um número entre 0 e 1 que sempre sai igual para a mesma dupla (o mundo não muda ao rolar). */
+export function hash(a: number, b: number): number {
+  let h = Math.imul(a | 0, 374761393) ^ Math.imul(b | 0, 668265263);
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+
+/** Percorre as "células" do mundo que aparecem na tela; a altura da célula `k` na tela é `y`. */
+function scatter(scroll: number, vh: number, cell: number, margin: number, fn: (k: number, y: number) => void) {
+  const k0 = Math.floor((-margin - scroll) / cell);
+  const k1 = Math.ceil((vh + margin - scroll) / cell);
+  for (let k = k0; k <= k1; k++) fn(k, k * cell + scroll);
+}
+
+const WALLS = ['#e5303a', '#f0a23a', '#f4f4ef', '#4f9bd9', '#e87fa6', '#b98a4a'];
+const ROOFS = ['#8c3b2a', '#ffd23f', '#3a4a8c', '#2f6e57'];
+
+/** Casinha, celeiro, silo, estufa e galpão: cinco jeitos, com cor e tamanho sorteados. */
+function farmBuilding(c: Ctx, x: number, y: number, kind: number, size: number, pick: number, side: number) {
+  const wall = WALLS[pick % WALLS.length]!;
+  const roof = ROOFS[(pick + kind) % ROOFS.length]!;
+  c.save();
+  c.translate(x, y);
+  c.scale(size * side, size);
+  // sombra no chão
+  c.fillStyle = 'rgba(0,0,0,0.18)';
+  c.beginPath();
+  c.ellipse(4, 26, 34, 8, 0, 0, 7);
+  c.fill();
+  if (kind === 0) {
+    // casinha com chaminé, porta e janela
+    blob(c, rect(14, -42, 9, 18, 2), '#9a9a92', 2.5, 0);
+    blob(c, rect(-26, -14, 52, 38, 5), wall);
+    blob(c, poly([[-32, -12], [0, -42], [32, -12]]), roof, 3, 0);
+    blob(c, rect(-6, 6, 12, 18, 3), '#6b4a2b', 2.5, 0);
+    blob(c, rect(-21, -4, 11, 11, 2), '#bfe6ff', 2.2, 0);
+    blob(c, rect(10, -4, 11, 11, 2), '#bfe6ff', 2.2, 0);
+  } else if (kind === 1) {
+    // celeiro grande, de telhado quebrado e porta em X
+    blob(c, rect(-34, -16, 68, 40, 4), '#c9302c');
+    blob(c, poly([[-38, -14], [-24, -38], [24, -38], [38, -14]]), roof, 3, 0);
+    blob(c, rect(-12, 0, 24, 24, 2), '#f4f4ef', 2.5, 0);
+    line(c, -12, 0, 12, 24, 2.2);
+    line(c, 12, 0, -12, 24, 2.2);
+    blob(c, circle(0, -26, 4.5), '#f4f4ef', 2, 0);
+  } else if (kind === 2) {
+    // silo alto com cúpula e faixas
+    blob(c, rect(-14, -40, 28, 64, 4), '#b9c2c8');
+    blob(c, ell(0, -40, 14, 9), '#8f9aa1', 3, 0);
+    line(c, -14, -22, 14, -22, 2.2);
+    line(c, -14, -2, 14, -2, 2.2);
+    blob(c, rect(-5, 10, 10, 14, 2), '#555', 2, 0);
+    blob(c, rect(18, -2, 24, 26, 3), wall, 3, 0);
+  } else if (kind === 3) {
+    // estufa: vidro azulado com as nervuras
+    blob(c, rect(-32, -10, 64, 34, 4), '#cdeffa');
+    blob(c, poly([[-32, -10], [-20, -30], [20, -30], [32, -10]]), '#e6f8ff', 3, 0);
+    for (const gx of [-16, 0, 16]) line(c, gx, -28, gx, 24, 1.8);
+    line(c, -32, 4, 32, 4, 1.8);
+    for (const [px, py] of [[-22, 14], [-6, 14], [10, 14], [24, 14]] as const) blob(c, circle(px, py, 4), '#49c26b', 1.8, 0);
+  } else {
+    // galpão baixo com feno empilhado
+    blob(c, rect(-28, -6, 44, 30, 4), wall);
+    blob(c, poly([[-32, -4], [-28, -22], [20, -16], [20, -4]]), roof, 3, 0);
+    blob(c, rect(-18, 6, 20, 18, 2), '#6b4a2b', 2.2, 0);
+    blob(c, ell(26, 16, 11, 9), '#e8c35c', 2.5, 0);
+    blob(c, ell(26, 6, 9, 7), '#f0cf6a', 2.5, 0);
+  }
+  c.restore();
+}
+
 // ---------------------------------------------------------------- chão
 /**
  * O chão rolando. Tudo é em coordenadas "virtuais" (vw x vh); `scroll` é quanto a câmera já andou
@@ -179,13 +251,18 @@ export function ground(
       for (let x = L - 30 - odd; x > -20; x -= 30) plant(c, x, y);
       for (let x = R + 30 + odd; x < vw + 20; x += 30) plant(c, x, y);
     }
-    for (let k = 0; k < 4; k++) {
-      const y = wrapY(k * 410 + scroll, 1640) - 200;
-      for (const x of [L - 74, R + 74]) {
-        blob(c, rect(x - 22, y - 16, 44, 32, 6), '#e5303a');
-        blob(c, poly([[x - 26, y - 14], [x, y - 36], [x + 26, y - 14]]), '#ffd23f', 3, 0);
+    // As construções ao redor da horta: cada lado sorteia sozinho se tem uma, qual é, o tamanho,
+    // a cor e a distância da pista (nada de par igual dos dois lados nem de fila certinha).
+    scatter(scroll, vh, 230, 120, (k, y0) => {
+      for (const side of [-1, 1] as const) {
+        const r = (n: number) => hash(k * 2 + (side > 0 ? 1 : 0), n);
+        if (r(1) > 0.62) continue;
+        const reach = 45 + r(2) * Math.max(60, Math.min(cx - half - 90, 420));
+        const x = cx + side * (half + reach);
+        const y = y0 + (r(3) - 0.5) * 150;
+        farmBuilding(c, x, y, Math.min(4, Math.floor(r(4) * 5)), 0.85 + r(5) * 0.5, Math.floor(r(6) * 4), side);
       }
-    }
+    });
     c.fillStyle = '#f0cf94';
     c.fillRect(L, 0, R - L, vh);
     line(c, L, 0, L, vh, 3);

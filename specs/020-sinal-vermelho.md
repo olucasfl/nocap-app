@@ -159,6 +159,12 @@ O Lucas achou o jogo linear e fácil. O que mudou:
 - **A câmera ficou mais para trás do boneco** (ele fica a 52% da altura), longe do Vigia.
 - **Conferido com jogadores simulados** (reflexos de 0,17 s, 0,27 s e 0,42 s): no Infinito, quem reage rápido chega a uns 460 m e é pego pela escuridão; quem reage em 0,27 s chega a uns 370 m (metade pego pelo Vigia, metade pela escuridão); quem reage em 0,42 s é pego pelo Vigia em cerca de um minuto (uns 175 m). No Clássico, o jogador de reflexo médio costuma cair nas fases 3 a 4. Robô não mede diversão: o que vale é a jogada do Lucas.
 
+## Ajustes de tela (12/10/2026)
+- **Aviso de poder com uns 2 s** (antes de 0,8 a 1,2 s): dá tempo de ler o quadro e decidir. O tempo de costas se estica para caber.
+- **Corredor mais largo:** 15 m (antes 10 m), mais espaço para andar de lado e contornar obstáculos.
+- **Progresso do Clássico** num cartãozinho embaixo da distância total (FASE n, faltam X m, boneco até a bandeira), não mais na tela inteira. O **Vigia** fica colado no topo em tela larga.
+- **Construções da horta** (casinha, celeiro, silo, estufa, galpão) sorteadas por lado, com cor, tamanho e distância da pista diferentes: nada de pares iguais nem fila certinha.
+
 ## Controles
 - **Celular:** o analógico (círculo e bolinha) fica **fixo embaixo, no centro da tela**, sempre visível, com uma área de toque generosa em volta. A bolinha acompanha o dedo e volta ao centro ao soltar.
 - **A câmera nunca deixa o analógico tapar o boneco.** A tela reserva uma **zona do analógico** (embaixo, no centro, com folga em volta) e a câmera mantém o boneco sempre **fora dela**: o boneco fica um pouco acima do meio da tela (cerca de 52% da altura, para ficar longe do Vigia) e a câmera também acompanha de lado quando ele vai para a direita. É uma regra do código da câmera (função pura, com teste: para qualquer posição do boneco no corredor, em retrato e em paisagem, ele nunca fica dentro da zona do analógico). Vale também para o Vigia, os esconderijos e o aviso, que ficam fora dessa zona ou são desenhados sem depender dela.

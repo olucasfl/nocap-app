@@ -5,6 +5,7 @@ import {
   CoverField,
   DARK_CAP,
   DT,
+  HALF,
   MAX_SPEED,
   PHASES_PER_MAP,
   POWER_AVISO_MARGIN_S,
@@ -326,8 +327,8 @@ describe('a simulação', () => {
   it('o corredor tem paredes dos lados', () => {
     const sim = new SinalSim('x', 'infinito');
     for (let i = 0; i < 300; i++) sim.step(100, 0);
-    expect(sim.x).toBeLessThanOrEqual(5);
-    expect(sim.x).toBeGreaterThan(4);
+    expect(sim.x).toBeLessThanOrEqual(HALF);
+    expect(sim.x).toBeGreaterThan(HALF - 1);
   });
 
   it('o Vigia só pega quem se mexe depois da folga, e parado ninguém é pego', () => {
@@ -438,7 +439,7 @@ describe('esconderijos', () => {
         const b = f.list[i]!;
         expect(b.y - a.y).toBeGreaterThanOrEqual(22 - 1e-9);
         expect(Math.abs(b.x - a.x)).toBeGreaterThanOrEqual(3.5);
-        expect(Math.abs(b.x)).toBeLessThanOrEqual(5);
+        expect(Math.abs(b.x)).toBeLessThanOrEqual(HALF - 1.6);
       }
       const gaps = f.list.slice(1).map((c, i) => c.y - f.list[i]!.y);
       const near = gaps.slice(0, 5).reduce((s, g) => s + g, 0) / 5;

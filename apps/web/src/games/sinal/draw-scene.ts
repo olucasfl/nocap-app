@@ -191,7 +191,8 @@ export function drawScene(c: Ctx, s: SceneInput) {
   // ---- a tela
   // O Vigia fica logo abaixo do painel (em telas baixas, no topo, para não bater no boneco).
   const classic = Number.isFinite(view.course.length);
-  const vTop = h >= 560 ? (classic ? 112 : 84) : 6;
+  // Em tela larga o Vigia fica colado no topo; em celular desce para não bater no painel.
+  const vTop = w >= 640 ? 6 : classic ? 124 : 84;
   vigia(c, map, s.face, s.warn, s.t, heroX, w / 2, vTop, l.vigiaScale, boss);
   const darkTop = screenY(l, view.darkY, view.y);
   darkness(c, w, h, darkTop, s.t, style);
@@ -479,8 +480,10 @@ function hud(c: Ctx, s: SceneInput) {
 
   let y = 76;
   if (classic) {
-    progressBar(c, s, 14, 76, l.w - 28);
-    y = 104;
+    // A trilha fica só na faixa de fora da pista, embaixo da distância total.
+    const side = l.w / 2 - HALF * l.ppm;
+    progressBar(c, s, 14, 76, Math.max(124, Math.min(side - 28, 240)));
+    y = 128;
   }
   const chips: Notice[] = [];
   const gap = Math.max(0, view.y - view.darkY - PLAYER_R);
@@ -516,48 +519,51 @@ function eyeSlash(c: Ctx, x: number, y: number) {
   c.restore();
 }
 
-/** Trilha de progresso da fase: o boneco anda até a bandeira, com "FASE n" e "faltam X m". */
+/** Trilha de progresso da fase: um cartão pequeno com "FASE n", "faltam X m" e o boneco andando até a bandeira. */
 function progressBar(c: Ctx, s: SceneInput, x: number, y: number, w: number) {
   const { view } = s;
   const boss = view.course.boss;
   const len = view.course.length;
   const p = clamp(view.y / len, 0, 1);
-  blob(c, rect(x, y, w, 22, 11), PAPER, 2.5, 2);
-  const tx = x + 8;
-  const tw = w - 16;
+  blob(c, rect(x, y, w, 44, 12), PAPER, 2.5, 2);
+  const left = Math.max(0, Math.ceil(len - view.y));
+  mono(c, `${boss ? 'CHEFE · ' : ''}FASE ${view.course.n}`, x + 10, y + 16, 10, INK);
+  mono(c, `faltam ${left} m`, x + w - 10, y + 16, 10, '#4a4a44', 'right');
+  const tx = x + 12;
+  const tw = w - 36;
+  const ty = y + 28;
   c.fillStyle = boss ? '#e5303a' : ORG;
   c.beginPath();
-  c.roundRect(tx, y + 8, Math.max(6, tw * p), 6, 3);
+  c.roundRect(tx, ty, Math.max(6, tw * p), 6, 3);
   c.fill();
   c.strokeStyle = INK;
   c.lineWidth = 1.6;
   c.beginPath();
-  c.roundRect(tx, y + 8, tw, 6, 3);
+  c.roundRect(tx, ty, tw, 6, 3);
   c.stroke();
-  line(c, tx + tw / 2, y + 5, tx + tw / 2, y + 17, 2);
+  line(c, tx + tw / 2, ty - 3, tx + tw / 2, ty + 9, 2);
   // bandeirinha
-  line(c, x + w - 12, y + 4, x + w - 12, y + 18, 2.4);
-  blob(c, poly([[x + w - 12, y + 4], [x + w - 3, y + 8], [x + w - 12, y + 12]]), boss ? '#e5303a' : YEL, 1.6, 0);
+  const fx = x + w - 14;
+  line(c, fx, ty - 5, fx, ty + 11, 2.4);
+  blob(c, poly([[fx, ty - 5], [fx + 9, ty - 1], [fx, ty + 3]]), boss ? '#e5303a' : YEL, 1.6, 0);
   // boneco
-  blob(c, circle(tx + tw * p, y + 11, 6), s.color ?? HERO_COLOR[view.course.map], 2, 0);
-  const left = Math.max(0, Math.ceil(len - view.y));
-  mono(c, `${boss ? 'CHEFE · ' : ''}FASE ${view.course.n}`, x + 6, y + 36, 9.5, PAPER);
-  mono(c, `faltam ${left} m`, x + w - 4, y + 36, 9.5, PAPER, 'right');
+  blob(c, circle(tx + tw * p, ty + 3, 6), s.color ?? HERO_COLOR[view.course.map], 2, 0);
 }
 
 /** O aviso de um poder: o nome e o que vai acontecer com você, antes (e durante) o efeito. */
 function powerBanner(c: Ctx, w: number, kind: PowerKind | null, warning: boolean, t: number, y: number) {
   if (!kind) return;
   const info = POWER_INFO[kind];
-  const bw = Math.min(w - 28, 330);
+  const bw = Math.min(w - 28, 380);
   const x = (w - bw) / 2;
   c.save();
-  c.globalAlpha = warning ? 0.88 + Math.sin(t * 14) * 0.12 : 0.7;
-  const lines = wrapText(c, info.text, bw - 24, 11);
-  const bh = 34 + lines.length * 15;
+  // Pisca devagar no aviso (dá para ler); no efeito fica firme e um pouco mais clara.
+  c.globalAlpha = warning ? 0.94 + Math.sin(t * 6) * 0.06 : 0.82;
+  const lines = wrapText(c, info.text, bw - 28, 13);
+  const bh = 40 + lines.length * 18;
   blob(c, rect(x, y, bw, bh, 14), warning ? YEL : PAPER, 3, 3);
-  mono(c, warning ? `ATENÇÃO: ${info.name}` : `AGORA: ${info.name}`, w / 2, y + 20, 11.5, INK, 'center');
-  lines.forEach((ln, i) => mono(c, ln, w / 2, y + 38 + i * 15, 11, INK, 'center'));
+  mono(c, warning ? `ATENÇÃO: ${info.name}` : `AGORA: ${info.name}`, w / 2, y + 24, 13.5, INK, 'center');
+  lines.forEach((ln, i) => mono(c, ln, w / 2, y + 45 + i * 18, 13, INK, 'center'));
   c.restore();
 }
 
