@@ -100,12 +100,15 @@ export function timelineParams(course: Course): TimelineParams {
       pool: (t): PowerKind[] => {
         const pool: PowerKind[] = [...own];
         const add = (...ks: PowerKind[]) => ks.forEach((k) => pool.includes(k) || pool.push(k));
-        if (t >= 45) add('rajada', 'cortina');
-        if (t >= 90) add('lama', 'invertido');
-        if (t >= 150) add('apagao', 'chuva');
+        if (t >= 20) add('espelho', 'bolhas');
+        if (t >= 45) add('rajada', 'cortina', 'soluco', 'negativo');
+        if (t >= 90) add('lama', 'invertido', 'bebado', 'pixelado', 'patins');
+        if (t >= 150) add('apagao', 'chuva', 'turbo', 'lupa');
         return pool;
       },
-      chain: () => 1,
+      chain: (t) => (t >= 120 ? 2 : 1),
+      // os efeitos duram mais quanto mais tempo você aguenta (até 1,9x)
+      effectScale: (t) => Math.min(1.9, 1 + t / 300),
       costasScale: 1,
     };
   }
@@ -118,6 +121,8 @@ export function timelineParams(course: Course): TimelineParams {
     pool: () => powerPool(course.map, course.n),
     // dois poderes seguidos a partir da fase 6
     chain: () => (course.n >= 6 ? 2 : 1),
+    // os efeitos duram mais a cada fase (até 1,9x)
+    effectScale: () => Math.min(1.9, 1 + 0.07 * (course.n - 1)),
     costasScale: 1,
   };
 }
@@ -195,12 +200,29 @@ export type ObstacleKind =
   | 'deslizante'
   | 'vaivem'
   | 'mola'
+  | 'orbita'
+  | 'serra'
   | 'lamacal'
   | 'esteira'
-  | 'ima';
+  | 'ima'
+  | 'gelo'
+  | 'cola'
+  | 'inversor'
+  | 'turbina';
 
-/** Os que o boneco não atravessa. */
-export const SOLID_KINDS: readonly ObstacleKind[] = ['pequeno', 'medio', 'grande', 'deslizante', 'vaivem', 'mola'];
+/** Os que o boneco não atravessa (bater neles joga para trás). */
+export const SOLID_KINDS: readonly ObstacleKind[] = [
+  'pequeno',
+  'medio',
+  'grande',
+  'deslizante',
+  'vaivem',
+  'mola',
+  'orbita',
+  'serra',
+];
+/** Os que andam sozinhos. */
+export const MOVER_KINDS: readonly ObstacleKind[] = ['deslizante', 'vaivem', 'orbita', 'serra'];
 export const isSolid = (k: ObstacleKind) => SOLID_KINDS.includes(k);
 
 /** A partir de que nível (fase no Clássico) cada obstáculo aparece, e o peso do sorteio. */
@@ -214,6 +236,12 @@ const OBSTACLE_UNLOCK: { kind: ObstacleKind; level: number; weight: number }[] =
   { kind: 'deslizante', level: 2, weight: 2.5 },
   { kind: 'vaivem', level: 3, weight: 2.2 },
   { kind: 'ima', level: 4, weight: 1.6 },
+  { kind: 'gelo', level: 2, weight: 1.8 },
+  { kind: 'cola', level: 3, weight: 1.6 },
+  { kind: 'turbina', level: 3, weight: 1.6 },
+  { kind: 'orbita', level: 4, weight: 1.8 },
+  { kind: 'serra', level: 5, weight: 1.5 },
+  { kind: 'inversor', level: 6, weight: 1.4 },
 ];
 
 export interface ObstacleDef {
@@ -228,7 +256,7 @@ export interface ObstacleDef {
   amp: number;
   period: number;
   offset: number;
-  axis: 'x' | 'y';
+  axis: 'x' | 'y' | 'xy';
   /** Esteira: para que lado empurra (-1 ou 1). */
   dir: -1 | 1;
 }
@@ -236,8 +264,15 @@ export interface ObstacleDef {
 /** Posição de um obstáculo no passo `tick` da fase: onda triangular, só soma e multiplicação. */
 export function obstaclePos(o: ObstacleDef, tick: number): { x: number; y: number } {
   if (o.amp === 0) return { x: o.x, y: o.y };
-  const ph = ((tick + o.offset) % o.period) / o.period;
-  const tri = ph < 0.5 ? ph * 4 - 1 : 3 - ph * 4;
+  const wave = (shift: number) => {
+    const ph = ((tick + o.offset + shift) % o.period) / o.period;
+    return ph < 0.5 ? ph * 4 - 1 : 3 - ph * 4;
+  };
+  if (o.axis === 'xy') {
+    // a órbita: duas ondas defasadas em um quarto de volta desenham um losango arredondado
+    return { x: o.x + o.amp * wave(0), y: o.y + o.amp * wave(Math.round(o.period / 4)) };
+  }
+  const tri = wave(0);
   return o.axis === 'x' ? { x: o.x + o.amp * tri, y: o.y } : { x: o.x, y: o.y + o.amp * tri };
 }
 
@@ -304,13 +339,27 @@ export class ObstacleField {
                   ? 0.55 + sR * 0.1
                   : kind === 'lamacal'
                     ? 1.8 + sR * 0.7
-                    : kind === 'esteira'
+                    : kind === 'esteira' || kind === 'turbina'
                       ? 1.6 + sR * 0.5
                       : kind === 'ima'
                         ? 2.2
-                        : 0.7 + sR * 0.2; // deslizante, vaivém
-        const amp = kind === 'deslizante' ? 2.2 + aR * 1.6 : kind === 'vaivem' ? 1.8 + aR * 1.4 : 0;
-        const reach = rad + (kind === 'deslizante' ? amp : 0);
+                        : kind === 'gelo' || kind === 'cola' || kind === 'inversor'
+                          ? 2.0 + sR * 0.8
+                          : kind === 'serra'
+                            ? 0.6 + sR * 0.15
+                            : 0.7 + sR * 0.2; // deslizante, vaivém, órbita
+        const amp =
+          kind === 'deslizante'
+            ? 2.2 + aR * 1.6
+            : kind === 'vaivem'
+              ? 1.8 + aR * 1.4
+              : kind === 'orbita'
+                ? 1.5 + aR * 1.0
+                : kind === 'serra'
+                  ? 3 + aR * 1.2
+                  : 0;
+        // quanto o obstáculo se espalha para os lados (as órbitas e os que deslizam)
+        const reach = rad + (kind === 'deslizante' || kind === 'orbita' || kind === 'serra' ? amp : 0);
         const lim = Math.max(0.5, side - reach);
         let x = (xR * 2 - 1) * lim;
         // sem sobreposição com os outros do grupo: se não couber, este item fica de fora
@@ -329,7 +378,10 @@ export class ObstacleField {
         );
         if (tooNearCover) continue;
         placed.push({ x, e: reach });
-        const period = Math.round((kind === 'vaivem' ? 3.6 + pR * 1.6 : 4.4 + pR * 2) * TPS);
+        const period = Math.round(
+          (kind === 'vaivem' ? 3.6 + pR * 1.6 : kind === 'serra' ? 2.2 + pR * 0.8 : kind === 'orbita' ? 5 + pR * 2 : 4.4 + pR * 2) *
+            TPS,
+        );
         this.list.push({
           id: this.list.length,
           x,
@@ -339,7 +391,7 @@ export class ObstacleField {
           amp,
           period,
           offset: Math.floor(pR * period),
-          axis: kind === 'vaivem' ? 'y' : 'x',
+          axis: kind === 'vaivem' ? 'y' : kind === 'orbita' ? 'xy' : 'x',
           dir: aR < 0.5 ? -1 : 1,
         });
       }

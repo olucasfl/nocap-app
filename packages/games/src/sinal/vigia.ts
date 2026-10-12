@@ -64,7 +64,8 @@ export interface TimelineParams {
   pool(t: number): readonly PowerKind[];
   /** Quantos poderes seguidos cabem num ciclo. */
   chain(t: number): number;
-  /** Os chefes ficam mais tempo de costas (mais espaço para soltar poderes). */
+  /** Quanto os efeitos duram em relação ao básico: cresce com a fase (ou com o tempo no Infinito). */
+  effectScale(t: number): number;
   costasScale: number;
 }
 
@@ -154,7 +155,7 @@ export class VigiaTimeline {
         for (const k of kinds) {
           const spec = POWER_SPECS[k];
           const effectStart = cursor + spec.tele;
-          const effectEnd = effectStart + spec.effect;
+          const effectEnd = effectStart + spec.effect * p.effectScale(start);
           planned.push({ kind: k, teleStart: cursor, effectStart, effectEnd });
           cursor = effectEnd + 0.4;
         }

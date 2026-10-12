@@ -23,6 +23,7 @@ import {
   poly,
   rect,
   silhouette,
+  star,
   vigia,
   wrapY,
   type Ctx,
@@ -32,17 +33,26 @@ import {
 export const POWER_INFO: Record<PowerKind, { name: string; text: string }> = {
   corvos: { name: 'OS CORVOS DO ESPANTALHO', text: 'Cobrem a tela e INVERTEM seus controles por 2 s.' },
   oleo: { name: 'ÓLEO NA PISTA', text: 'Poças escorregadias: você desliza sem controle.' },
-  poeira: { name: 'POEIRA NOS OLHOS', text: 'Areia embaça a tela inteira por 2 s.' },
+  poeira: { name: 'POEIRA NOS OLHOS', text: 'Uma nuvem de areia: você só enxerga um palmo à frente.' },
   buzina: { name: 'BUZINA DO SEMÁFORO', text: 'Você trava no lugar por 1 s.' },
-  farois: { name: 'FARÓIS', text: 'A luz branca cega a tela por 2 s.' },
+  farois: { name: 'FARÓIS', text: 'A luz cega: tudo apagado e embaçado, só dá para ver bem pouco à frente.' },
   vento: { name: 'VENTO DA CORUJA', text: 'Uma rajada empurra você de lado.' },
   atraso: { name: 'ECO DA CORUJA', text: 'Seus comandos demoram a responder por 2 s.' },
   invertido: { name: 'CONTROLES INVERTIDOS', text: 'Esquerda vira direita, frente vira trás.' },
-  cortina: { name: 'CORTINA', text: 'A tela escurece: só o boneco aparece.' },
+  cortina: { name: 'CORTINA', text: 'Uma cortina roxa embaça tudo: só se vê o que está perto.' },
   rajada: { name: 'RAJADA', text: 'Um empurrão forte para o lado.' },
   lama: { name: 'LAMA', text: 'Você anda bem devagar por 3 s.' },
-  apagao: { name: 'APAGÃO', text: 'Tudo escuro, só um círculo de luz.' },
+  apagao: { name: 'APAGÃO', text: 'Tudo escuro, só um pequeno círculo de luz em volta de você.' },
   chuva: { name: 'CHUVA DE ABÓBORAS', text: 'Saia dos círculos vermelhos: eles empurram.' },
+  espelho: { name: 'ESPELHO', text: 'Esquerda vira direita e direita vira esquerda.' },
+  bebado: { name: 'TONTURA', text: 'Você balança de um lado para o outro e a tela dobra.' },
+  soluco: { name: 'SOLUÇO', text: 'De repente um empurrão, para qualquer lado.' },
+  turbo: { name: 'TURBO', text: 'Você fica rápido demais: cuidado para conseguir parar.' },
+  patins: { name: 'PATINS', text: 'O chão vira gelo: você desliza e demora a parar.' },
+  bolhas: { name: 'BOLHAS', text: 'Bolhas enormes passam na frente e tapam a visão.' },
+  pixelado: { name: 'PIXELADO', text: 'A tela vira quadradões: difícil enxergar o caminho.' },
+  negativo: { name: 'NEGATIVO', text: 'As cores se invertem e fica estranho de ler.' },
+  lupa: { name: 'LUPA', text: 'Um zoom enorme em você: o que vem pela frente chega de surpresa.' },
 };
 
 export interface Joy {
@@ -78,6 +88,8 @@ export interface SceneInput {
   notices: Notice[];
   /** Os controles estão invertidos agora. */
   inverted: boolean;
+  /** Tranco da tela (0 a 1): pancada, soluço. */
+  jolt: number;
 }
 
 /** Desenha um quadro inteiro do Sinal Vermelho. */
@@ -98,11 +110,17 @@ export function drawScene(c: Ctx, s: SceneInput) {
   c.clearRect(0, 0, w, h);
   // O mundo treme de leve quando os controles estão invertidos (aviso e efeito).
   const invWarn = s.view.powers.some((p) => (p.kind === 'invertido' || p.kind === 'corvos') && !p.evaded);
-  if (invWarn && !s.view.hidden) {
+  const drunkP = s.view.powers.find((p) => p.kind === 'bebado' && !p.evaded);
+  const sway =
+    drunkP && !s.view.hidden ? Math.sin(s.t * 2.4) * (drunkP.phase === 'efeito' ? 0.08 : 0.02) : 0;
+  const tilt = (invWarn && !s.view.hidden ? Math.sin(s.t * 7) * 0.025 : 0) + sway;
+  if (tilt !== 0) {
     c.translate(w / 2, h / 2);
-    c.rotate(Math.sin(s.t * 7) * 0.025);
+    c.rotate(tilt);
     c.translate(-w / 2, -h / 2);
   }
+  // pancadas e soluços dão um tranco na tela inteira
+  if (s.jolt > 0.02) c.translate(Math.sin(s.t * 95) * 7 * s.jolt, Math.cos(s.t * 83) * 7 * s.jolt);
 
   // ---- o mundo, em pixels de arte
   const sc = l.ppm / V;
@@ -142,11 +160,20 @@ export function drawScene(c: Ctx, s: SceneInput) {
   // obstáculos do caminho: primeiro os de chão (lama, esteira, ímã), depois os sólidos por cima
   for (const pass of [0, 1]) {
     for (const o of view.obstacles) {
-      const floor = o.kind === 'lamacal' || o.kind === 'esteira' || o.kind === 'ima';
+      const floor = !(
+        o.kind === 'pequeno' ||
+        o.kind === 'medio' ||
+        o.kind === 'grande' ||
+        o.kind === 'deslizante' ||
+        o.kind === 'vaivem' ||
+        o.kind === 'mola' ||
+        o.kind === 'orbita' ||
+        o.kind === 'serra'
+      );
       if (floor !== (pass === 0)) continue;
       const y = vy(o.y);
       if (y < -120 || y > vh + 120) continue;
-      obstacle(c, map, o.kind, vcx + o.x * V, y, o.r * V, s.t, o.dir);
+      obstacle(c, map, o.kind, vcx + o.x * V, y, o.r * V, s.t, o.dir, o.bump);
     }
   }
   // esconderijos (os de fora primeiro; o que a pessoa ocupa vai por cima da silhueta)
@@ -172,8 +199,20 @@ export function drawScene(c: Ctx, s: SceneInput) {
     c.save();
     c.translate(hx, vpy);
     c.scale(1.25, 1.25);
+    if (view.knock > 0) {
+      // levou uma pancada: estica na direção do empurrão
+      const ang = Math.atan2(-view.knockDir.y, view.knockDir.x);
+      c.rotate(ang);
+      c.scale(1 + 0.45 * view.knock, 1 - 0.3 * view.knock);
+      c.rotate(-ang);
+    }
     hero(c, map, 0, 0, s.t, s.walking, 1, heroColor);
     c.restore();
+    if (view.knock > 0.45) {
+      // estrelinha do choque, do lado de onde veio a pancada
+      const k = view.knock;
+      blob(c, star(hx - view.knockDir.x * 24, vpy + view.knockDir.y * 24, 16 * k, 7 * k, 8, s.t * 4), YEL, 2.2, 0);
+    }
   } else {
     c.save();
     c.translate(hx, vpy);
@@ -213,23 +252,54 @@ export function drawScene(c: Ctx, s: SceneInput) {
   // efeitos dos poderes
   if (has('rajada')) windStreaks(c, w, h, s.t, effects.find((p) => p.kind === 'rajada')!.dir, '#f4f4ef');
   if (has('vento')) windStreaks(c, w, h, s.t, effects.find((p) => p.kind === 'vento')!.dir, '#f9deaa', 0.85);
+  const eff = (k: PowerKind) => effects.find((e) => e.kind === k);
+  /** Entra e sai suave: o efeito pega rápido e solta no fim. */
+  const fade = (p: number) => clamp(Math.min(p / 0.08, (1 - p) / 0.1), 0, 1);
+  const vision = l.ppm;
   if (has('poeira')) {
-    // Poeira nos olhos de verdade: o mundo todo fica embaçado (desfoque) e coberto de areia.
-    const p = effects.find((e) => e.kind === 'poeira')!.p;
-    const k = clamp(Math.min(p / 0.08, (1 - p) / 0.12), 0, 1);
-    blurWorld(c, w, 11 * k);
-    c.save();
-    c.fillStyle = `rgba(232,190,110,${0.5 * k})`;
-    c.fillRect(0, 0, w, h);
-    c.restore();
-    dust(c, w, h, s.t, heroX, l.heroY, 1.4 * k);
+    // Poeira nos olhos: a areia cobre tudo e embaça; só um palmo em volta do boneco fica à vista.
+    const k = fade(eff('poeira')!.p);
+    limitedVision(c, w, h, heroX, l.heroY, vision * 2.2, { rgb: '226,184,104', alpha: 0.97, blur: 14, k });
+    dust(c, w, h, s.t, heroX, l.heroY, 0.8 * k);
   }
   if (has('corvos')) crows(c, w, h, s.t, effects.find((p) => p.kind === 'corvos')!.p);
-  if (has('farois')) glare(c, w, h, effects.find((p) => p.kind === 'farois')!.p);
+  if (has('farois')) {
+    // Cegueira: o clarão branco passa e deixa tudo apagado e embaçado, só dá para ver bem pouco à frente.
+    const p = eff('farois')!.p;
+    const k = fade(p);
+    limitedVision(c, w, h, heroX, l.heroY, vision * 2.6, {
+      rgb: '22,22,32',
+      alpha: 0.94,
+      blur: 12,
+      k,
+      filter: 'grayscale(0.7) brightness(0.7)',
+    });
+    if (p < 0.16) {
+      c.save();
+      c.globalAlpha = 1 - p / 0.16;
+      c.fillStyle = '#ffffff';
+      c.fillRect(0, 0, w, h);
+      c.restore();
+    }
+  }
   if (has('buzina')) siren(c, w, h, s.t, heroX, l.heroY);
   if (has('atraso')) echo(c, s.t, heroX, l.heroY, heroColor);
-  if (has('cortina')) curtain(c, w, h, s.t, heroX, l.heroY, style.rim);
-  if (has('apagao')) blackout(c, w, h, heroX, l.heroY);
+  if (has('cortina')) {
+    limitedVision(c, w, h, heroX, l.heroY, vision * 3.4, { rgb: '38,18,66', alpha: 0.9, blur: 7, k: fade(eff('cortina')!.p) });
+  }
+  if (has('apagao')) {
+    limitedVision(c, w, h, heroX, l.heroY, vision * 2.0, { rgb: '0,0,0', alpha: 0.985, blur: 0, k: fade(eff('apagao')!.p) });
+  }
+  // as brincadeiras
+  if (has('espelho')) mirrorHint(c, w, h, s.t, fade(eff('espelho')!.p));
+  if (has('bebado')) ghostImage(c, w, s.t, fade(eff('bebado')!.p));
+  if (has('turbo')) speedLines(c, w, h, s.t, fade(eff('turbo')!.p));
+  if (has('patins')) iceWash(c, w, h, s.t, fade(eff('patins')!.p));
+  if (has('bolhas')) bubbles(c, w, h, s.t, fade(eff('bolhas')!.p));
+  if (has('pixelado')) pixelate(c, w, 16 * fade(eff('pixelado')!.p));
+  if (has('negativo') && fade(eff('negativo')!.p) > 0.5) negative(c, w, h);
+  if (has('lupa')) zoomLens(c, w, heroX, l.heroY, 1 + 1.3 * fade(eff('lupa')!.p));
+  if (has('soluco') && s.jolt > 0.2) mono(c, 'HIC!', heroX, l.heroY - 46, 16 + 10 * s.jolt, '#ffd23f', 'center');
   if (has('lama')) mud(c, w, h, s.t, heroX, l.heroY);
   for (const p of avisos) {
     if (p.kind === 'poeira') dust(c, w, h, s.t, heroX, l.heroY, 0.35);
@@ -324,26 +394,6 @@ function windStreaks(c: Ctx, w: number, h: number, t: number, dir: -1 | 1, col: 
   c.restore();
 }
 
-let blurTmp: HTMLCanvasElement | null = null;
-/** Embaça o que já foi desenhado (o desfoque é do navegador; sem ele, a areia por cima já cobre). */
-function blurWorld(c: Ctx, w: number, px: number) {
-  if (px < 0.5 || !('filter' in c)) return;
-  const cv = c.canvas;
-  const k = cv.width / w;
-  if (!blurTmp) blurTmp = document.createElement('canvas');
-  blurTmp.width = cv.width;
-  blurTmp.height = cv.height;
-  const tc = blurTmp.getContext('2d');
-  if (!tc) return;
-  tc.drawImage(cv, 0, 0);
-  c.save();
-  c.setTransform(1, 0, 0, 1, 0, 0);
-  c.filter = `blur(${px * k}px)`;
-  c.drawImage(blurTmp, 0, 0);
-  c.filter = 'none';
-  c.restore();
-}
-
 function dust(c: Ctx, w: number, h: number, t: number, hx: number, hy: number, strength = 1) {
   // areia nas bordas: o centro (onde está o boneco) continua claro
   c.save();
@@ -412,12 +462,218 @@ function crows(c: Ctx, w: number, h: number, t: number, p: number, scale = 1) {
   c.restore();
 }
 
-/** Os faróis: um clarão branco que cega e vai passando. */
-function glare(c: Ctx, w: number, h: number, p: number) {
+// ---------------------------------------------------------------- visão limitada e brincadeiras
+const snap: { a: HTMLCanvasElement | null; b: HTMLCanvasElement | null } = { a: null, b: null };
+
+/** Uma cópia do quadro desenhado até agora (para embaçar, pixelar, dobrar, dar zoom). */
+function snapshot(c: Ctx): HTMLCanvasElement | null {
+  const cv = c.canvas;
+  if (!snap.a) snap.a = document.createElement('canvas');
+  if (snap.a.width !== cv.width || snap.a.height !== cv.height) {
+    snap.a.width = cv.width;
+    snap.a.height = cv.height;
+  }
+  const tc = snap.a.getContext('2d');
+  if (!tc) return null;
+  tc.setTransform(1, 0, 0, 1, 0, 0);
+  tc.clearRect(0, 0, cv.width, cv.height);
+  tc.drawImage(cv, 0, 0);
+  return snap.a;
+}
+
+/**
+ * Visão curta de verdade: o quadro todo fica embaçado (desfoque do navegador) e coberto por uma
+ * tinta (areia, fumaça, escuro), e só um círculo de raio `r` em volta do boneco continua nítido.
+ */
+function limitedVision(
+  c: Ctx,
+  w: number,
+  h: number,
+  hx: number,
+  hy: number,
+  r: number,
+  o: { rgb: string; alpha: number; blur: number; k: number; filter?: string },
+) {
+  if (o.k <= 0.01) return;
+  const cv = c.canvas;
+  const px = cv.width / w;
+  if (o.blur > 0 && 'filter' in c) {
+    const src = snapshot(c);
+    if (src) {
+      c.save();
+      c.setTransform(1, 0, 0, 1, 0, 0);
+      c.filter = `blur(${o.blur * o.k * px}px)${o.filter ? ` ${o.filter}` : ''}`;
+      c.drawImage(src, 0, 0);
+      c.filter = 'none';
+      // o círculo em volta do boneco continua nítido, com a borda suave
+      if (!snap.b) snap.b = document.createElement('canvas');
+      if (snap.b.width !== cv.width || snap.b.height !== cv.height) {
+        snap.b.width = cv.width;
+        snap.b.height = cv.height;
+      }
+      const mc = snap.b.getContext('2d');
+      if (mc) {
+        mc.globalCompositeOperation = 'source-over';
+        mc.clearRect(0, 0, cv.width, cv.height);
+        mc.drawImage(src, 0, 0);
+        mc.globalCompositeOperation = 'destination-in';
+        const g = mc.createRadialGradient(hx * px, hy * px, r * px * 0.45, hx * px, hy * px, r * px);
+        g.addColorStop(0, 'rgba(0,0,0,1)');
+        g.addColorStop(1, 'rgba(0,0,0,0)');
+        mc.fillStyle = g;
+        mc.fillRect(0, 0, cv.width, cv.height);
+        c.drawImage(snap.b, 0, 0);
+      }
+      c.restore();
+    }
+  }
+  // a tinta cobre tudo o que está fora do círculo
   c.save();
-  c.globalAlpha = clamp(0.95 - 0.55 * p, 0, 0.95);
+  const g = c.createRadialGradient(hx, hy, r * 0.5, hx, hy, r * 1.25);
+  g.addColorStop(0, `rgba(${o.rgb},0)`);
+  g.addColorStop(1, `rgba(${o.rgb},${o.alpha * o.k})`);
+  c.fillStyle = g;
+  c.fillRect(0, 0, w, h);
+  c.restore();
+}
+
+/** Tontura: a imagem dobra, uma cópia balançando para os lados. */
+function ghostImage(c: Ctx, w: number, t: number, k: number) {
+  const src = snapshot(c);
+  if (!src || k <= 0) return;
+  const px = c.canvas.width / w;
+  c.save();
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.globalAlpha = 0.5 * k;
+  c.drawImage(src, Math.sin(t * 3.1) * 22 * k * px, Math.cos(t * 2.3) * 8 * k * px);
+  c.restore();
+}
+
+/** Turbo: riscos de velocidade correndo de cima para baixo. */
+function speedLines(c: Ctx, w: number, h: number, t: number, k: number) {
+  c.save();
+  c.strokeStyle = '#ffffff';
+  c.lineWidth = 3;
+  c.lineCap = 'round';
+  for (let i = 0; i < 26; i++) {
+    const x = (i * 53 + 17) % w;
+    const y = wrapY(t * 1100 + i * 131, h + 240) - 120;
+    c.globalAlpha = 0.55 * k;
+    c.beginPath();
+    c.moveTo(x, y);
+    c.lineTo(x, y + 60 + (i % 4) * 28);
+    c.stroke();
+  }
+  c.restore();
+}
+
+/** Patins: o chão vira gelo, com cintilações e geada nos cantos. */
+function iceWash(c: Ctx, w: number, h: number, t: number, k: number) {
+  c.save();
+  c.fillStyle = `rgba(170,230,255,${0.16 * k})`;
+  c.fillRect(0, 0, w, h);
+  for (const [cx, cy] of [[0, 0], [w, 0], [0, h], [w, h]] as const) {
+    const g = c.createRadialGradient(cx, cy, 0, cx, cy, Math.min(w, h) * 0.45);
+    g.addColorStop(0, `rgba(235,250,255,${0.7 * k})`);
+    g.addColorStop(1, 'rgba(235,250,255,0)');
+    c.fillStyle = g;
+    c.fillRect(0, 0, w, h);
+  }
+  c.fillStyle = '#ffffff';
+  for (let i = 0; i < 14; i++) {
+    const x = (i * 97 + 31) % w;
+    const y = (i * 151 + 53) % h;
+    c.globalAlpha = (0.4 + 0.6 * Math.abs(Math.sin(t * 3 + i))) * k;
+    c.fillRect(x - 1.5, y - 6, 3, 12);
+    c.fillRect(x - 6, y - 1.5, 12, 3);
+  }
+  c.restore();
+}
+
+/** Bolhas enormes que sobem e tapam a visão. */
+function bubbles(c: Ctx, w: number, h: number, t: number, k: number) {
+  c.save();
+  for (let i = 0; i < 11; i++) {
+    const r = 38 + (i % 5) * 17;
+    const x = ((i * 137) % 100) / 100 * w + Math.sin(t * 0.9 + i) * 34;
+    const y = h + r - ((t * (34 + (i % 4) * 13) + i * 83) % (h + r * 2));
+    const g = c.createRadialGradient(x - r * 0.3, y - r * 0.3, r * 0.1, x, y, r);
+    g.addColorStop(0, `rgba(255,255,255,${0.5 * k})`);
+    g.addColorStop(1, `rgba(150,215,255,${0.38 * k})`);
+    c.fillStyle = g;
+    c.strokeStyle = `rgba(255,255,255,${0.9 * k})`;
+    c.lineWidth = 3;
+    c.beginPath();
+    c.arc(x, y, r, 0, 7);
+    c.fill();
+    c.stroke();
+    c.beginPath();
+    c.arc(x - r * 0.35, y - r * 0.35, r * 0.18, Math.PI, Math.PI * 1.6);
+    c.stroke();
+  }
+  c.restore();
+}
+
+/** Pixelado: o quadro vira quadradões. */
+function pixelate(c: Ctx, w: number, size: number) {
+  if (size < 2) return;
+  const src = snapshot(c);
+  if (!src) return;
+  const cv = c.canvas;
+  const px = cv.width / w;
+  const sw = Math.max(8, Math.round(cv.width / (size * px)));
+  const sh = Math.max(8, Math.round(cv.height / (size * px)));
+  if (!snap.b) snap.b = document.createElement('canvas');
+  snap.b.width = sw;
+  snap.b.height = sh;
+  const mc = snap.b.getContext('2d');
+  if (!mc) return;
+  mc.drawImage(src, 0, 0, sw, sh);
+  c.save();
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.imageSmoothingEnabled = false;
+  c.drawImage(snap.b, 0, 0, sw, sh, 0, 0, cv.width, cv.height);
+  c.restore();
+}
+
+/** Negativo: todas as cores se invertem. */
+function negative(c: Ctx, w: number, h: number) {
+  c.save();
+  c.globalCompositeOperation = 'difference';
   c.fillStyle = '#ffffff';
   c.fillRect(0, 0, w, h);
+  c.restore();
+}
+
+/** Lupa: um zoom grande em volta do boneco. */
+function zoomLens(c: Ctx, w: number, hx: number, hy: number, z: number) {
+  if (z <= 1.02) return;
+  const src = snapshot(c);
+  if (!src) return;
+  const px = c.canvas.width / w;
+  c.save();
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.translate(hx * px, hy * px);
+  c.scale(z, z);
+  c.translate(-hx * px, -hy * px);
+  c.drawImage(src, 0, 0);
+  c.restore();
+}
+
+/** Espelho: um friso azul e as setas que trocam de lado. */
+function mirrorHint(c: Ctx, w: number, h: number, t: number, k: number) {
+  c.save();
+  c.fillStyle = `rgba(37,199,232,${0.09 * k})`;
+  c.fillRect(0, 0, w, h);
+  c.globalAlpha = 0.7 * k;
+  c.strokeStyle = '#25c7e8';
+  c.lineWidth = 3;
+  c.setLineDash([12, 10]);
+  c.lineDashOffset = -t * 30;
+  c.beginPath();
+  c.moveTo(w / 2, 0);
+  c.lineTo(w / 2, h);
+  c.stroke();
   c.restore();
 }
 
@@ -444,34 +700,6 @@ function echo(c: Ctx, t: number, hx: number, hy: number, col: string) {
   }
   c.restore();
   mono(c, 'ATRASO', hx, hy - 34, 12, '#ffd23f', 'center');
-}
-
-function curtain(c: Ctx, w: number, h: number, t: number, hx: number, hy: number, tint: string) {
-  // tinta, penas, fumaça ou areia: cobre a tela, mas deixa sempre uma janela clara em volta do boneco
-  c.save();
-  c.fillStyle = 'rgba(17,17,17,.9)';
-  c.beginPath();
-  c.rect(0, 0, w, h);
-  c.arc(hx, hy, Math.max(70, Math.min(w, h) * 0.2), 0, Math.PI * 2, true);
-  c.fill('evenodd');
-  c.globalAlpha = 0.5;
-  c.strokeStyle = tint;
-  c.lineWidth = 3;
-  c.beginPath();
-  c.arc(hx, hy, Math.max(70, Math.min(w, h) * 0.2) + Math.sin(t * 5) * 2, 0, 7);
-  c.stroke();
-  c.restore();
-}
-
-function blackout(c: Ctx, w: number, h: number, hx: number, hy: number) {
-  c.save();
-  const r = Math.max(80, Math.min(w, h) * 0.22);
-  c.fillStyle = 'rgba(0,0,0,.93)';
-  c.beginPath();
-  c.rect(0, 0, w, h);
-  c.arc(hx, hy, r, 0, Math.PI * 2, true);
-  c.fill('evenodd');
-  c.restore();
 }
 
 function mud(c: Ctx, w: number, h: number, t: number, hx: number, hy: number) {

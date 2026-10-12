@@ -68,7 +68,17 @@ export type PowerKind =
   | 'rajada'
   | 'lama'
   | 'apagao'
-  | 'chuva';
+  | 'chuva'
+  // as brincadeiras: efeitos que mexem com a cabeça de quem joga
+  | 'espelho'
+  | 'bebado'
+  | 'soluco'
+  | 'turbo'
+  | 'patins'
+  | 'bolhas'
+  | 'pixelado'
+  | 'negativo'
+  | 'lupa';
 
 export interface PowerSpec {
   /** Segundos de aviso (o poder ainda não faz efeito) e de efeito. */
@@ -81,18 +91,28 @@ export const POWER_SPECS: Record<PowerKind, PowerSpec> = {
   // O aviso dura uns 2 s: dá tempo de ler o quadro e decidir o que fazer.
   corvos: { tele: 2.0, effect: 2.2 },
   oleo: { tele: 1.9, effect: 3.0 },
-  poeira: { tele: 2.0, effect: 2.4 },
+  poeira: { tele: 2.0, effect: 3.2 },
   buzina: { tele: 2.0, effect: 1.2 },
-  farois: { tele: 1.9, effect: 2.2 },
+  farois: { tele: 1.9, effect: 3.0 },
   vento: { tele: 2.0, effect: 2.4 },
   atraso: { tele: 2.0, effect: 2.6 },
   // dos chefes e do Infinito
   invertido: { tele: 2.0, effect: 2.5 },
-  cortina: { tele: 1.9, effect: 2.8 },
+  cortina: { tele: 1.9, effect: 3.2 },
   rajada: { tele: 2.0, effect: 2.0 },
   lama: { tele: 1.9, effect: 3.0 },
-  apagao: { tele: 2.0, effect: 3.0 },
+  apagao: { tele: 2.0, effect: 3.5 },
   chuva: { tele: 2.2, effect: 0.4 },
+  // as brincadeiras
+  espelho: { tele: 1.8, effect: 3.0 },
+  bebado: { tele: 1.9, effect: 3.4 },
+  soluco: { tele: 1.8, effect: 3.3 },
+  turbo: { tele: 1.8, effect: 2.8 },
+  patins: { tele: 1.9, effect: 3.4 },
+  bolhas: { tele: 1.7, effect: 3.6 },
+  pixelado: { tele: 1.8, effect: 3.0 },
+  negativo: { tele: 1.8, effect: 3.0 },
+  lupa: { tele: 1.8, effect: 2.8 },
 };
 
 /** Os poderes do Vigia de cada mapa (cada Vigia tem três). */
@@ -104,9 +124,13 @@ export const OWN_POWERS: Record<SinalMapId, readonly PowerKind[]> = {
 
 /** Os poderes que vão sendo liberados para qualquer Vigia conforme a fase avança (nível mínimo). */
 export const UNLOCKED_POWERS: readonly { level: number; kinds: readonly PowerKind[] }[] = [
+  { level: 2, kinds: ['espelho', 'bolhas'] },
   { level: 3, kinds: ['rajada', 'cortina'] },
+  { level: 4, kinds: ['soluco', 'negativo'] },
   { level: 5, kinds: ['lama', 'invertido'] },
+  { level: 6, kinds: ['bebado', 'pixelado', 'patins'] },
   { level: 7, kinds: ['apagao', 'chuva'] },
+  { level: 8, kinds: ['turbo', 'lupa'] },
 ];
 
 /** O efeito termina pelo menos isto antes de o Vigia olhar (sempre dá tempo de parar). */
@@ -134,6 +158,23 @@ export const ESTEIRA_SPEED = 2.0; // esteira: empurra de lado
 export const IMA_PULL = 1.6; // ímã: puxa para o centro
 export const MOLA_IMPULSE = 7; // mola: joga para trás (0,3 s x 7 m/s = 2,1 m)
 export const MOLA_PUSH_S = 0.3;
+export const GELO_SLICK = 0.02; // gelo: escorrega quase tanto quanto o óleo
+export const TURBINA_SPEED = 2.4; // turbina: empurra para a frente ou para trás
+/** Bater em qualquer sólido joga o boneco para trás: quanto maior o obstáculo, mais forte (m/s por 0,25 s). */
+export const BUMP_BASE = 3.0;
+export const BUMP_PER_R = 3.2;
+export const BUMP_TICKS = 15;
+export const MOVER_BUMP = 5.5; // quem se mexe bate mais forte
+export const SERRA_BUMP = 9;
+
+/** As brincadeiras. */
+export const BEBADO_AMP = 1.9; // balanço de lado (m/s)
+export const BEBADO_PERIOD_TICKS = 72;
+export const SOLUCO_EVERY = 66; // um soluço a cada 1,1 s
+export const SOLUCO_PUSH_TICKS = 9;
+export const SOLUCO_SPEED = 3.8;
+export const TURBO_FACTOR = 1.6;
+export const PATINS_SLICK = 0.03;
 
 // ---- entradas e resultado ----------------------------------------------------
 
@@ -168,6 +209,9 @@ export type SinalEvent =
   | { kind: 'poder-evitado'; power: PowerKind }
   | { kind: 'poder-fim'; power: PowerKind }
   | { kind: 'quebrou'; cover: number }
+  /** Bateu num obstáculo: `size` de 0 a 1 é a força da pancada. */
+  | { kind: 'choque'; size: number }
+  | { kind: 'soluco' }
   | { kind: 'fase'; n: number; map: SinalMapId; mapChanged: boolean }
   | { kind: 'fim'; reason: SinalEnd };
 

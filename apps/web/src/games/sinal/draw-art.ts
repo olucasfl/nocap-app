@@ -495,15 +495,25 @@ export function obstacle(
   r: number,
   t = 0,
   dir = 1,
+  bump = 0,
 ) {
   c.save();
   c.translate(x, y);
   if (kind === 'lamacal') zoneMud(c, key, r, t);
   else if (kind === 'esteira') zoneBelt(c, r, t, dir);
   else if (kind === 'ima') zoneMagnet(c, r, t);
+  else if (kind === 'gelo') zoneIce(c, r, t);
+  else if (kind === 'cola') zoneGlue(c, r, t);
+  else if (kind === 'inversor') zoneInverter(c, r, t);
+  else if (kind === 'turbina') zoneFan(c, r, t, dir);
   else {
     const s = (r * 1.15) / 15;
     c.scale(s, s);
+    if (bump > 0) {
+      // a pancada: o obstáculo amassa e treme (quanto maior o choque, mais)
+      c.scale(1 + 0.3 * bump, 1 - 0.28 * bump);
+      c.translate(Math.sin(t * 90) * 2.5 * bump, 0);
+    }
     solid(c, key, kind, t);
   }
   c.restore();
@@ -521,6 +531,56 @@ function groundShadow(c: Ctx, rx: number, ry: number) {
 
 function solid(c: Ctx, key: SinalMapId, kind: ObstacleKind, t: number) {
   groundShadow(c, kind === 'grande' ? 24 : 15, kind === 'grande' ? 9 : 6);
+  if (kind === 'serra') {
+    // serra circular girando: fio de lâmina em volta, na cor do mapa
+    const col = key === 'horta' ? '#b8c0c8' : key === 'neon' ? '#25c7e8' : '#d8b88f';
+    c.save();
+    c.rotate(t * 14);
+    const pts: [number, number][] = [];
+    for (let i = 0; i < 20; i++) {
+      const rr = i % 2 ? 11 : 16;
+      const an = (i * Math.PI) / 10;
+      pts.push([Math.cos(an) * rr, Math.sin(an) * rr]);
+    }
+    blob(c, poly(pts), col, 2.6, 0);
+    c.restore();
+    blob(c, circle(0, 0, 5), '#3a3a36', 2.2, 0);
+    blob(c, circle(0, 0, 1.8), '#f4f4ef', 0.01, 0);
+    return;
+  }
+  if (kind === 'orbita') {
+    if (key === 'horta') {
+      // abelhona
+      const flap = Math.sin(t * 40) * 3;
+      blob(c, ell(-6, -9 - flap, 7, 4, -0.5), '#e8f6ff', 2, 0);
+      blob(c, ell(6, -9 - flap, 7, 4, 0.5), '#e8f6ff', 2, 0);
+      blob(c, ell(0, 0, 11, 8), '#ffd23f');
+      line(c, -3, -7, -3, 7, 3);
+      line(c, 3, -7, 3, 7, 3);
+      blob(c, circle(10, 0, 3.5), '#111111', 1, 0);
+    } else if (key === 'neon') {
+      // mina flutuante
+      for (let i = 0; i < 8; i++) {
+        const an = (i * Math.PI) / 4 + t;
+        line(c, Math.cos(an) * 9, Math.sin(an) * 9, Math.cos(an) * 15, Math.sin(an) * 15, 3.4);
+      }
+      blob(c, circle(0, 0, 10), '#1d1d2b');
+      blob(c, circle(0, 0, 4), Math.sin(t * 8) > 0 ? '#e5303a' : '#7a1d24', 1.6, 0);
+    } else {
+      // orbe de energia rosa
+      blob(c, circle(0, 0, 13), '#ff9ecf');
+      blob(c, circle(0, 0, 7), '#ffd23f', 2, 0);
+      c.save();
+      c.rotate(t * 3);
+      c.strokeStyle = INK;
+      c.lineWidth = 2.5;
+      c.beginPath();
+      c.ellipse(0, 0, 17, 6, 0, 0, 7);
+      c.stroke();
+      c.restore();
+    }
+    return;
+  }
   if (key === 'horta') {
     if (kind === 'pequeno') {
       blob(c, ell(0, 0, 14, 11, 0.3), '#8f9692');
@@ -656,6 +716,119 @@ function solid(c: Ctx, key: SinalMapId, kind: ObstacleKind, t: number) {
     blob(c, circle(0, -8, 5), '#ffd23f', 2, 0);
     c.restore();
   }
+}
+
+/** Gelo: a placa branca-azulada, rachada e cintilando; quem pisa escorrega sem parar. */
+function zoneIce(c: Ctx, r: number, t: number) {
+  c.save();
+  blob(c, ell(0, 0, r, r * 0.84), '#bfeaff', 3, 3);
+  c.beginPath();
+  c.ellipse(0, 0, r, r * 0.84, 0, 0, 7);
+  c.clip();
+  c.strokeStyle = 'rgba(255,255,255,.95)';
+  c.lineWidth = 2.6;
+  for (const [x1, y1, x2, y2] of [[-0.7, -0.2, 0.2, 0.1], [0.2, 0.1, 0.5, 0.6], [-0.2, 0.5, 0.1, 0.1], [0.2, 0.1, 0.7, -0.3]] as const) {
+    c.beginPath();
+    c.moveTo(x1 * r, y1 * r);
+    c.lineTo(x2 * r, y2 * r);
+    c.stroke();
+  }
+  for (let i = 0; i < 5; i++) {
+    const tw = 0.5 + 0.5 * Math.sin(t * 3 + i * 1.7);
+    c.globalAlpha = tw;
+    c.fillStyle = '#ffffff';
+    const sx = Math.cos(i * 2.3) * r * 0.55;
+    const sy = Math.sin(i * 1.9) * r * 0.45;
+    c.fillRect(sx - 1.5, sy - 5, 3, 10);
+    c.fillRect(sx - 5, sy - 1.5, 10, 3);
+  }
+  c.restore();
+}
+
+/** Cola: gosma roxa com fios e bolhas: os comandos demoram a responder. */
+function zoneGlue(c: Ctx, r: number, t: number) {
+  c.save();
+  blob(c, ell(0, 0, r, r * 0.84), '#b44fd0', 3, 3);
+  c.globalAlpha = 0.7;
+  c.fillStyle = '#e29bf0';
+  for (let i = 0; i < 5; i++) {
+    const bx = Math.cos(i * 1.9 + 0.5) * r * 0.5;
+    const by = Math.sin(i * 2.3) * r * 0.35;
+    const pulse = 0.5 + 0.5 * Math.sin(t * 2.4 + i * 1.1);
+    c.beginPath();
+    c.arc(bx, by - pulse * 3, 4 + pulse * 4, 0, 7);
+    c.fill();
+  }
+  c.globalAlpha = 1;
+  c.strokeStyle = '#7a2a90';
+  c.lineWidth = 2.4;
+  c.beginPath();
+  c.moveTo(-r * 0.4, 0);
+  c.quadraticCurveTo(0, -r * 0.2 + Math.sin(t * 3) * 4, r * 0.4, 0);
+  c.stroke();
+  c.restore();
+}
+
+/** Inversor: anel azul com duas setas que se cruzam: os controles trocam. */
+function zoneInverter(c: Ctx, r: number, t: number) {
+  c.save();
+  blob(c, ell(0, 0, r, r * 0.84), '#1f9fb8', 3, 3);
+  c.strokeStyle = '#f4f4ef';
+  c.lineWidth = 4;
+  c.setLineDash([10, 8]);
+  c.lineDashOffset = -t * 20;
+  c.beginPath();
+  c.ellipse(0, 0, r * 0.62, r * 0.5, 0, 0, 7);
+  c.stroke();
+  c.setLineDash([]);
+  c.fillStyle = '#f4f4ef';
+  c.strokeStyle = INK;
+  c.lineWidth = 2.4;
+  for (const dir of [-1, 1]) {
+    const y = dir * 11;
+    c.beginPath();
+    c.moveTo(-dir * 22, y - 5);
+    c.lineTo(dir * 8, y - 5);
+    c.lineTo(dir * 8, y - 12);
+    c.lineTo(dir * 24, y);
+    c.lineTo(dir * 8, y + 12);
+    c.lineTo(dir * 8, y + 5);
+    c.lineTo(-dir * 22, y + 5);
+    c.closePath();
+    c.fill();
+    c.stroke();
+  }
+  c.restore();
+}
+
+/** Turbina: um ventilador girando, com setas na direção em que ela empurra (para a frente ou para trás). */
+function zoneFan(c: Ctx, r: number, t: number, dir: number) {
+  c.save();
+  blob(c, ell(0, 0, r, r * 0.84), '#5a6470', 3, 3);
+  c.save();
+  c.rotate(t * 16 * dir);
+  for (let i = 0; i < 4; i++) {
+    c.rotate(Math.PI / 2);
+    blob(c, ell(r * 0.3, 0, r * 0.28, r * 0.1, 0.3), '#d8dde3', 2, 0);
+  }
+  c.restore();
+  blob(c, circle(0, 0, 7), '#3a3a36', 2.2, 0);
+  // setas: para cima na tela empurra para a frente (dir 1), para baixo empurra para trás
+  c.fillStyle = dir > 0 ? '#33c27f' : '#e5303a';
+  c.strokeStyle = INK;
+  c.lineWidth = 2;
+  const off = ((t * 30) % 24) * -dir;
+  for (let k = -1; k <= 1; k++) {
+    const yy = k * 24 + off;
+    c.beginPath();
+    c.moveTo(-8, yy + 5 * -dir * -1);
+    c.lineTo(0, yy - 7 * dir);
+    c.lineTo(8, yy + 5 * -dir * -1);
+    c.lineTo(0, yy + 1 * -dir * -1);
+    c.closePath();
+    c.fill();
+  }
+  c.restore();
 }
 
 /** Lamaçal / piche / areia movediça: a zona escura que deixa o boneco devagar. */

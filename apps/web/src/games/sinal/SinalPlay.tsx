@@ -89,6 +89,7 @@ export function SinalPlay({ mode, seed, color, best, onEnd, onQuit }: Props) {
     let prevX = sim.x;
     let prevY = sim.y;
     let prevHidden = false;
+    let jolt = 0;
     const notices: (Notice & { until: number })[] = [];
     const notice = (text: string, col: string, ms = 1800) =>
       notices.push({ text, color: col, until: performance.now() + ms });
@@ -96,7 +97,13 @@ export function SinalPlay({ mode, seed, color, best, onEnd, onQuit }: Props) {
     const handle = (events: SinalEvent[]) => {
       for (const e of events) {
         audio?.event(e);
-        if (e.kind === 'quebrou') {
+        if (e.kind === 'choque') {
+          jolt = Math.max(jolt, e.size);
+          buzz(Math.round(15 + 35 * e.size));
+        } else if (e.kind === 'soluco') {
+          jolt = Math.max(jolt, 0.55);
+          buzz(25);
+        } else if (e.kind === 'quebrou') {
           notice('ESCONDERIJO QUEBROU', '#ff6a2b');
           buzz(30);
         } else if (e.kind === 'poder-evitado') {
@@ -207,6 +214,7 @@ export function SinalPlay({ mode, seed, color, best, onEnd, onQuit }: Props) {
       if (v.hidden && !prevHidden) audio?.rustle();
       prevHidden = v.hidden;
       audio?.darkness(v.y - v.darkY);
+      jolt = Math.max(0, jolt - dt * 3.2);
       for (let i = notices.length - 1; i >= 0; i--) if (notices[i]!.until < now) notices.splice(i, 1);
 
       const inverted = v.powers.some(
@@ -229,6 +237,7 @@ export function SinalPlay({ mode, seed, color, best, onEnd, onQuit }: Props) {
         best: mode === 'infinito' && best > 0 ? best : null,
         notices,
         inverted,
+        jolt,
       });
     };
     raf = requestAnimationFrame(frame);

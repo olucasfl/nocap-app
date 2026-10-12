@@ -8,8 +8,14 @@ import {
   COVER_ZONE_R,
   DARK_CAP,
   DEADZONE,
+  BEBADO_AMP,
+  BEBADO_PERIOD_TICKS,
+  BUMP_BASE,
+  BUMP_PER_R,
+  BUMP_TICKS,
   DT,
   ESTEIRA_SPEED,
+  GELO_SLICK,
   HALF,
   IMA_PULL,
   LAMA_FACTOR,
@@ -17,16 +23,24 @@ import {
   MAX_SPEED,
   MOLA_IMPULSE,
   MOLA_PUSH_S,
+  MOVER_BUMP,
   MOVE_EPS,
   MUD_FACTOR,
   OLEO_RADIUS,
   OLEO_SLICK,
+  PATINS_SLICK,
   PLAYER_R,
   RAJADA_SPEED,
+  SERRA_BUMP,
   SINAL_MAX_INPUTS,
   SINAL_MAX_TENTHS,
   SINAL_MAX_TICKS,
+  SOLUCO_EVERY,
+  SOLUCO_PUSH_TICKS,
+  SOLUCO_SPEED,
   TPS,
+  TURBINA_SPEED,
+  TURBO_FACTOR,
   VENTO_SPEED,
   clamp,
   type PowerKind,
@@ -41,6 +55,7 @@ import {
   ObstacleField,
   courseFor,
   isSolid,
+  MOVER_KINDS,
   obstaclePos,
   timelineParams,
   type Course,
@@ -85,8 +100,11 @@ export interface SinalView {
   course: Course;
   meters: number;
   covers: { def: CoverDef; dur: number; broken: boolean }[];
-  /** Cada obstáculo com a posição de agora (os que se mexem já vêm no lugar certo). */
-  obstacles: ObstacleDef[];
+  /** Cada obstáculo com a posição de agora (os que se mexem já vêm no lugar certo) e a pancada (1 no choque, até 0). */
+  obstacles: (ObstacleDef & { bump: number })[];
+  /** O empurrão que o boneco está levando (1 no começo, até 0) e para onde. */
+  knock: number;
+  knockDir: { x: number; y: number };
   /** `p` é o quanto do aviso ou do efeito já passou (0 a 1). */
   powers: { kind: PowerKind; phase: 'aviso' | 'efeito'; dir: -1 | 1; evaded: boolean; p: number }[];
   patches: Patch[];
@@ -117,6 +135,9 @@ export class SinalSim {
   private impX = 0;
   private impY = 0;
   private impTicks = 0;
+  private impTotal = 1;
+  private impDecay = false;
+  private bumpAt = new Map<number, number>();
   private hidden = false;
   private maxY = 0;
   private darkY = 0;
@@ -160,6 +181,7 @@ export class SinalSim {
     this.impX = 0;
     this.impY = 0;
     this.impTicks = 0;
+    this.bumpAt.clear();
     this.hidden = false;
     this.maxY = 0;
     this.darkY = -this.course.darkStart;
@@ -262,6 +284,10 @@ export class SinalSim {
     let speedMul = 1;
     let pushX = 0;
     let oleoActive = false;
+    let mirrorX = false;
+    let wobble = 0;
+    let boost = 1;
+    let skating = false;
     cycle.powers.forEach((p, i) => {
       const key = `${cycle.start}:${i}`;
       if (t >= p.teleStart && !this.fired.has(`${key}:t`)) {
@@ -316,6 +342,8 @@ export class SinalSim {
               this.impX = dx * CHUVA_IMPULSE;
               this.impY = dy * CHUVA_IMPULSE;
               this.impTicks = Math.round(CHUVA_PUSH_S * TPS);
+              this.impTotal = this.impTicks;
+              this.impDecay = false;
             }
             this.marks = [];
           }
@@ -331,6 +359,30 @@ export class SinalSim {
         else if (p.kind === 'vento') pushX = p.dir * VENTO_SPEED;
         else if (p.kind === 'atraso') lag = true;
         else if (p.kind === 'oleo') oleoActive = true;
+        else if (p.kind === 'espelho') mirrorX = true;
+        else if (p.kind === 'turbo') boost = TURBO_FACTOR;
+        else if (p.kind === 'patins') skating = true;
+        else if (p.kind === 'bebado') {
+          // balança de lado, indo e voltando (onda triangular, sem seno)
+          const et = this.courseTick - Math.round(p.effectStart * TPS);
+          const ph = (et % BEBADO_PERIOD_TICKS) / BEBADO_PERIOD_TICKS;
+          wobble = BEBADO_AMP * (ph < 0.5 ? ph * 4 - 1 : 3 - ph * 4);
+        } else if (p.kind === 'soluco') {
+          // um soluço a cada 1,1 s: um empurrão curto para um lado sorteado
+          const startTick = Math.round(p.effectStart * TPS);
+          const et = this.courseTick - startTick;
+          if (et >= 0 && et % SOLUCO_EVERY === 0) {
+            const idx = Math.floor(et / SOLUCO_EVERY);
+            const h = Math.imul(idx * 40503 + startTick + 1, 2654435761) >>> 0;
+            const dir = h % 4;
+            this.impX = dir === 0 ? SOLUCO_SPEED : dir === 1 ? -SOLUCO_SPEED : 0;
+            this.impY = dir === 2 ? SOLUCO_SPEED : dir === 3 ? -SOLUCO_SPEED : 0;
+            this.impTicks = SOLUCO_PUSH_TICKS;
+            this.impTotal = SOLUCO_PUSH_TICKS;
+            this.impDecay = false;
+            events.push({ kind: 'soluco' });
+          }
+        }
       }
       if (t >= p.effectEnd && !this.fired.has(`${key}:e`)) {
         this.fired.add(`${key}:e`);
@@ -338,6 +390,33 @@ export class SinalSim {
         if (p.kind === 'oleo') this.patches = [];
       }
     });
+
+    // Obstáculos de chão: lamaçal (devagar), esteira (empurra de lado), ímã (puxa), turbina (para
+    // frente ou para trás), gelo (escorrega), cola (atrasa os comandos) e inversor (troca os controles).
+    let hzx = 0;
+    let hzy = 0;
+    let zoneSlick = false;
+    const around = this.nearObstacles(this.y, 3);
+    for (const o of around) {
+      if (isSolid(o.kind)) continue;
+      const ox = this.x - o.x;
+      const oy = this.y - o.y;
+      const dd = ox * ox + oy * oy;
+      if (dd > o.r * o.r) continue;
+      if (o.kind === 'lamacal') speedMul = Math.min(speedMul, MUD_FACTOR);
+      else if (o.kind === 'esteira') hzx += o.dir * ESTEIRA_SPEED;
+      else if (o.kind === 'turbina') hzy += o.dir * TURBINA_SPEED;
+      else if (o.kind === 'gelo') zoneSlick = true;
+      else if (o.kind === 'cola') lag = true;
+      else if (o.kind === 'inversor') invert = !invert;
+      else if (o.kind === 'ima') {
+        const len = Math.sqrt(dd);
+        if (len > 0.3) {
+          hzx -= (ox / len) * IMA_PULL;
+          hzy -= (oy / len) * IMA_PULL;
+        }
+      }
+    }
 
     // O analógico (com atraso, ele vale o de 0,4 s atrás)
     this.inHist.push([ax, ay]);
@@ -363,46 +442,33 @@ export class SinalSim {
       ix = -ix;
       iy = -iy;
     }
-    // Obstáculos de chão: lamaçal (devagar), esteira (empurra de lado) e ímã (puxa para o centro).
-    let hzx = 0;
-    let hzy = 0;
-    const around = this.nearObstacles(this.y, 3);
-    for (const o of around) {
-      if (isSolid(o.kind)) continue;
-      const ox = this.x - o.x;
-      const oy = this.y - o.y;
-      const dd = ox * ox + oy * oy;
-      if (dd > o.r * o.r) continue;
-      if (o.kind === 'lamacal') speedMul = Math.min(speedMul, MUD_FACTOR);
-      else if (o.kind === 'esteira') hzx += o.dir * ESTEIRA_SPEED;
-      else if (o.kind === 'ima') {
-        const len = Math.sqrt(dd);
-        if (len > 0.3) {
-          hzx -= (ox / len) * IMA_PULL;
-          hzy -= (oy / len) * IMA_PULL;
-        }
-      }
-    }
-    const tx = ix * MAX_SPEED * speedMul;
-    const ty = iy * MAX_SPEED * speedMul;
-    let slick = false;
+    // O espelho troca só a esquerda e a direita.
+    if (mirrorX) ix = -ix;
+    const tx = ix * MAX_SPEED * speedMul * boost;
+    const ty = iy * MAX_SPEED * speedMul * boost;
+    // Quanto escorrega: óleo, gelo e patins (o mais escorregadio manda).
+    let slickK = 1;
     if (oleoActive) {
       for (const p of this.patches) {
-        if ((this.x - p.x) ** 2 + (this.y - p.y) ** 2 <= OLEO_RADIUS * OLEO_RADIUS) slick = true;
+        if ((this.x - p.x) ** 2 + (this.y - p.y) ** 2 <= OLEO_RADIUS * OLEO_RADIUS) slickK = Math.min(slickK, OLEO_SLICK);
       }
     }
-    if (slick) {
-      this.svx += (tx - this.svx) * OLEO_SLICK;
-      this.svy += (ty - this.svy) * OLEO_SLICK;
+    if (zoneSlick) slickK = Math.min(slickK, GELO_SLICK);
+    if (skating) slickK = Math.min(slickK, PATINS_SLICK);
+    if (slickK < 1) {
+      this.svx += (tx - this.svx) * slickK;
+      this.svy += (ty - this.svy) * slickK;
     } else {
       this.svx = tx;
       this.svy = ty;
     }
-    let vx = this.svx + pushX + hzx;
+    let vx = this.svx + pushX + wobble + hzx;
     let vy = this.svy + hzy;
     if (this.impTicks > 0) {
-      vx += this.impX;
-      vy += this.impY;
+      // As pancadas perdem força aos poucos (o empurrão forte é no começo); as outras são constantes.
+      const f = this.impDecay ? (this.impTicks / this.impTotal) * 2 : 1;
+      vx += this.impX * f;
+      vy += this.impY * f;
       this.impTicks--;
     }
     const edge = HALF - PLAYER_R;
@@ -423,11 +489,23 @@ export class SinalSim {
         } else {
           nx = o.x + (ox / len) * min;
           ny = o.y + (oy / len) * min;
-          // a mola joga o boneco para longe
-          if (o.kind === 'mola' && this.impTicks === 0) {
-            this.impX = (ox / len) * MOLA_IMPULSE;
-            this.impY = (oy / len) * MOLA_IMPULSE;
-            this.impTicks = Math.round(MOLA_PUSH_S * TPS);
+          // Bater em qualquer sólido joga o boneco para trás; quanto maior (ou mais rápido), mais longe.
+          if (this.impTicks === 0) {
+            const power =
+              o.kind === 'mola'
+                ? MOLA_IMPULSE
+                : o.kind === 'serra'
+                  ? SERRA_BUMP
+                  : MOVER_KINDS.includes(o.kind)
+                    ? MOVER_BUMP + 1.5 * o.r
+                    : BUMP_BASE + BUMP_PER_R * o.r;
+            this.impX = (ox / len) * power;
+            this.impY = (oy / len) * power;
+            this.impTicks = o.kind === 'mola' ? Math.round(MOLA_PUSH_S * TPS) : BUMP_TICKS;
+            this.impTotal = this.impTicks;
+            this.impDecay = true;
+            this.bumpAt.set(o.id, this.courseTick);
+            events.push({ kind: 'choque', size: clamp(power / 9, 0.25, 1) });
           }
         }
       }
@@ -435,9 +513,9 @@ export class SinalSim {
     }
     const dx = nx - this.x;
     const dy = ny - this.y;
-    // Só conta como "mexer" o que a pessoa faz: ser empurrado (esteira, ímã, mola, obstáculo que
-    // se mexe) com o dedo parado não faz o Vigia te ver.
-    const moved = Math.min(Math.sqrt(dx * dx + dy * dy) / DT, Math.sqrt(this.svx * this.svx + this.svy * this.svy));
+    // Qualquer deslocamento conta como mexer, venha de onde vier: o analógico, uma pancada, a
+    // esteira, o ímã, o gelo, um obstáculo que se mexe. Para ficar parado é preciso estar parado de verdade.
+    const moved = Math.sqrt(dx * dx + dy * dy) / DT;
     this.x = nx;
     this.y = ny;
     if (this.y > this.maxY) this.maxY = this.y;
@@ -529,7 +607,17 @@ export class SinalSim {
         dur: this.curDur(def),
         broken: this.coverState.get(def.id)?.broken ?? false,
       })),
-      obstacles: this.nearObstacles(this.y, 40).filter((o) => Math.abs(o.y - this.y) < 44),
+      obstacles: this.nearObstacles(this.y, 40)
+        .filter((o) => Math.abs(o.y - this.y) < 44)
+        .map((o) => {
+          const at = this.bumpAt.get(o.id);
+          return { ...o, bump: at === undefined ? 0 : Math.max(0, 1 - (this.courseTick - at) / 21) };
+        }),
+      knock: this.impTicks > 0 && this.impDecay ? this.impTicks / this.impTotal : 0,
+      knockDir: (() => {
+        const len = Math.sqrt(this.impX * this.impX + this.impY * this.impY);
+        return len > 0 ? { x: this.impX / len, y: this.impY / len } : { x: 0, y: 0 };
+      })(),
       powers,
       patches: this.patches,
       marks: this.marks,

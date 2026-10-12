@@ -120,9 +120,35 @@ export function createSinalAudio(): SinalAudio | null {
           hiss('highpass', 5000, 9000, 0.3, 0.3);
         } else if (e.power === 'corvos') {
           for (let i = 0; i < 4; i++) tone('sawtooth', 420 - i * 30, 180, 0.22, 0.2, t + i * 0.12);
+        } else if (e.power === 'espelho') {
+          tone('triangle', 660, 330, 0.18, 0.2, t);
+          tone('triangle', 330, 660, 0.18, 0.2, t + 0.16);
+        } else if (e.power === 'bebado') {
+          for (let i = 0; i < 4; i++) tone('triangle', i % 2 ? 300 : 360, i % 2 ? 360 : 300, 0.2, 0.18, t + i * 0.18);
+        } else if (e.power === 'soluco') {
+          tone('square', 520, 260, 0.1, 0.22);
+        } else if (e.power === 'turbo') {
+          tone('sawtooth', 160, 900, 0.5, 0.2);
+        } else if (e.power === 'patins') {
+          hiss('highpass', 4000, 8000, 0.4, 0.22);
+          tone('sine', 1400, 1800, 0.25, 0.12);
+        } else if (e.power === 'bolhas') {
+          for (let i = 0; i < 4; i++) tone('sine', 700 + i * 220, 1200 + i * 200, 0.12, 0.2, t + i * 0.1);
+        } else if (e.power === 'pixelado') {
+          [262, 330, 392, 523].forEach((f, i) => tone('square', f, f, 0.08, 0.15, t + i * 0.07));
+        } else if (e.power === 'negativo') {
+          tone('sawtooth', 880, 110, 0.5, 0.2);
+        } else if (e.power === 'lupa') {
+          tone('sine', 200, 1000, 0.45, 0.22);
         } else {
           hiss('bandpass', 400, 2400, 0.5, 0.35);
         }
+      } else if (e.kind === 'choque') {
+        // a pancada: grave seco, mais forte quanto maior o obstáculo
+        tone('sine', 150 - 40 * e.size, 45, 0.18 + 0.12 * e.size, 0.35 + 0.35 * e.size);
+        hiss('lowpass', 1200, 200, 0.12, 0.2 * e.size);
+      } else if (e.kind === 'soluco') {
+        tone('square', 520, 260, 0.1, 0.22);
       } else if (e.kind === 'poder-evitado') {
         hiss('highpass', 3000, 6000, 0.12, 0.12);
         tone('sine', 880, 1175, 0.14, 0.14);
