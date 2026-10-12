@@ -251,11 +251,11 @@ function finishLine(c: Ctx, cx: number, y: number, boss: boolean) {
 function oilPatch(c: Ctx, x: number, y: number, t: number) {
   c.save();
   c.globalAlpha = 0.85;
-  blob(c, ell(x, y, 36, 24), '#1a1a2a', 3, 3);
+  blob(c, ell(x, y, 58, 50), '#1a1a2a', 3, 3);
   c.globalAlpha = 0.6;
   c.fillStyle = '#7a3cff';
   c.beginPath();
-  c.ellipse(x - 8 + Math.sin(t * 2) * 2, y - 4, 10, 5, -0.3, 0, 7);
+  c.ellipse(x - 14 + Math.sin(t * 2) * 3, y - 8, 18, 8, -0.3, 0, 7);
   c.fill();
   c.fillStyle = '#25c7e8';
   c.beginPath();

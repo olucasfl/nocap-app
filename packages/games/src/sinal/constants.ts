@@ -120,8 +120,8 @@ export const POWER_AVISO_MARGIN_S = 0.2;
 /** Valores dos poderes que mexem no boneco. */
 export const RAJADA_SPEED = 2.0; // 2 s x 2 m/s = 4 m no máximo
 export const LAMA_FACTOR = 0.4;
-export const OLEO_SLICK = 0.04; // quanto da diferença para o alvo a velocidade corrige por passo
-export const OLEO_RADIUS = 1.6;
+export const OLEO_SLICK = 0.012; // quanto da diferença para o alvo a velocidade corrige por passo (bem escorregadio: ~1,4 s para virar)
+export const OLEO_RADIUS = 2.0;
 export const VENTO_SPEED = 1.8; // 2,4 s x 1,8 m/s = 4,3 m no máximo
 /** Atraso do analógico (passos): 0,4 s. */
 export const ATRASO_TICKS = 24;
