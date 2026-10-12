@@ -215,7 +215,17 @@ export function drawScene(c: Ctx, s: SceneInput) {
   // efeitos dos poderes
   if (has('rajada')) windStreaks(c, w, h, s.t, effects.find((p) => p.kind === 'rajada')!.dir, '#f4f4ef');
   if (has('vento')) windStreaks(c, w, h, s.t, effects.find((p) => p.kind === 'vento')!.dir, '#f9deaa', 0.85);
-  if (has('poeira')) dust(c, w, h, s.t, heroX, l.heroY, 1.25);
+  if (has('poeira')) {
+    // Poeira nos olhos de verdade: o mundo todo fica embaçado (desfoque) e coberto de areia.
+    const p = effects.find((e) => e.kind === 'poeira')!.p;
+    const k = clamp(Math.min(p / 0.08, (1 - p) / 0.12), 0, 1);
+    blurWorld(c, w, 11 * k);
+    c.save();
+    c.fillStyle = `rgba(232,190,110,${0.5 * k})`;
+    c.fillRect(0, 0, w, h);
+    c.restore();
+    dust(c, w, h, s.t, heroX, l.heroY, 1.4 * k);
+  }
   if (has('corvos')) crows(c, w, h, s.t, effects.find((p) => p.kind === 'corvos')!.p);
   if (has('farois')) glare(c, w, h, effects.find((p) => p.kind === 'farois')!.p);
   if (has('buzina')) siren(c, w, h, s.t, heroX, l.heroY);
@@ -312,6 +322,26 @@ function windStreaks(c: Ctx, w: number, h: number, t: number, dir: -1 | 1, col: 
     c.lineTo(x + dir * 46, y);
     c.stroke();
   }
+  c.restore();
+}
+
+let blurTmp: HTMLCanvasElement | null = null;
+/** Embaça o que já foi desenhado (o desfoque é do navegador; sem ele, a areia por cima já cobre). */
+function blurWorld(c: Ctx, w: number, px: number) {
+  if (px < 0.5 || !('filter' in c)) return;
+  const cv = c.canvas;
+  const k = cv.width / w;
+  if (!blurTmp) blurTmp = document.createElement('canvas');
+  blurTmp.width = cv.width;
+  blurTmp.height = cv.height;
+  const tc = blurTmp.getContext('2d');
+  if (!tc) return;
+  tc.drawImage(cv, 0, 0);
+  c.save();
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.filter = `blur(${px * k}px)`;
+  c.drawImage(blurTmp, 0, 0);
+  c.filter = 'none';
   c.restore();
 }
 
