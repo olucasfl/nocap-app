@@ -12,7 +12,7 @@ Um jogo de correr, visto de cima, infinito. Lá no fundo da tela fica o **Vigia*
 - **Vigia fixo** no topo da tela, acompanhando a câmera (sempre no horizonte). Um só.
 - **Modo Clássico: perdeu, acabou** (nada de vidas). Outros modos entram depois e têm ranking próprio.
 - **Escuridão** que vem de trás: no começo quase não aparece, vai ficando perigosa no final da corrida ou se a pessoa **ficar muito tempo parada**. Precisa ser **animada e profissional**.
-- **Controles pelo aparelho, de forma intuitiva:** celular com analógico na tela (bola e bolinha) que **aparece onde o dedo tocar**; computador com W A S D (e setas). Sem opção de "dica mais fácil".
+- **Controles pelo aparelho, de forma intuitiva:** celular com analógico na tela (bola e bolinha), **fixo no lado direito** (decisão de 12/10/2026, no lugar de aparecer onde o dedo tocar); computador com W A S D (e setas). Sem opção de "dica mais fácil".
 - **Mapas:** 3, com cenários, bonecos e Vigias diferentes, mas **as mesmas regras e a mesma dinâmica**. O mapa é **sorteado quando a partida é puxada** (pela seed). **Só o modo muda o ranking, o mapa não:** um ranking por modo, igual para todos os mapas.
 - **Nota:** metros. Ranking por modo. Daily fica para depois (decidir mais adiante).
 
@@ -55,7 +55,8 @@ Antes de olhar, o Vigia dá sinais discretos e que um jogador atento aprende a l
 Pausa disponível, que congela o relógio. Ao ser visto (ou alcançado pela escuridão) mostra "Te viu!" (ou o equivalente da escuridão), os metros, o recorde e o lugar no ranking (o mesmo `MatchSummary` dos outros jogos).
 
 ## Controles
-- **Celular:** o analógico (círculo e bolinha) aparece **onde o dedo tocar**, na metade de baixo da tela. Solta o dedo, ele some.
+- **Celular:** o analógico (círculo e bolinha) fica **fixo no canto inferior direito**, sempre visível, com uma área de toque generosa em volta. A bolinha acompanha o dedo e volta ao centro ao soltar.
+- **A câmera nunca deixa o analógico tapar o boneco.** A tela reserva uma **zona do analógico** (canto inferior direito, com folga em volta) e a câmera mantém o boneco sempre **fora dela**: o boneco fica na parte de cima da tela (cerca de 40% da altura) e a câmera também acompanha de lado quando ele vai para a direita. É uma regra do código da câmera (função pura, com teste: para qualquer posição do boneco no corredor, em retrato e em paisagem, ele nunca fica dentro da zona do analógico). Vale também para o Vigia, os esconderijos e o aviso, que ficam fora dessa zona ou são desenhados sem depender dela.
 - **Computador:** W A S D e setas, com a dica das teclas na tela na primeira vez.
 - Aparece o que combina com o aparelho; se o aparelho tiver os dois, valem os dois.
 
