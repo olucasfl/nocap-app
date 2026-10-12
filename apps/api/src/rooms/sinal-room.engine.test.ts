@@ -409,13 +409,13 @@ describe('SinalRoomEngine: fases e linha de chegada', () => {
     sim.maxY = meters;
   };
 
-  it('o líder escolhe de 1 a 5 fases; o padrão são 3', () => {
+  it('o líder escolhe de 1 a 5 fases; o padrão são 2', () => {
     const { engine } = setup();
     engine.configure('ana', { rounds: 4 });
     expect(fullOf(engine, 'ana').settings.rounds).toBe(4);
     const fresh = new SinalRoomEngine({ code: 'ZZZZ', now: () => 1, newSeed: () => 's' });
     fresh.join('x', 'x');
-    expect(fullOf(fresh, 'x').settings.rounds).toBe(3);
+    expect(fullOf(fresh, 'x').settings.rounds).toBe(2);
   });
 
   it('cruzar a linha de chegada: o boneco para ali, vira plateia e entra no placar com o lugar', () => {

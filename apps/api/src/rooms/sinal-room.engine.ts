@@ -114,7 +114,7 @@ export class SinalRoomEngine extends ColorRoomEngine {
   constructor(opts: EngineOptions) {
     super(opts);
     this.mode = 'classico';
-    this.settings = { rounds: 3 };
+    this.settings = { rounds: 2 };
   }
 
   protected override settingsForMode(_mode: string, current: AnySettings): AnySettings {
