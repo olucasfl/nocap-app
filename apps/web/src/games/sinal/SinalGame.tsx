@@ -6,7 +6,6 @@ import { GameTabs, type GameTab } from '@/components/GameTabs';
 import { ModePicker } from '@/components/ModePicker';
 import { ModeSheet } from '@/components/ModeSheet';
 import { MuteButton } from '@/components/MuteButton';
-import { NewRecord } from '@/components/NewRecord';
 import { ArrowRight } from '@/components/icons';
 import { SinalPlay } from './SinalPlay';
 import { getSinalBest, setSinalBest } from './storage';
@@ -115,6 +114,95 @@ function SinalStart({ onStart }: { onStart: (mode: SinalMode) => void }) {
 
 const seedOf = () => crypto.randomUUID().replace(/-/g, '').slice(0, 12);
 
+/** O fim da partida: o veredito, a distância, o recorde e o que fazer a seguir. */
+function SinalFinal({
+  mode,
+  result,
+  before,
+  onAgain,
+  onMenu,
+}: {
+  mode: SinalMode;
+  result: SinalResult;
+  before: number;
+  onAgain: () => void;
+  onMenu: () => void;
+}) {
+  const classic = mode === 'classico';
+  const meters = Math.floor(result.meters);
+  const prev = Math.floor(before);
+  const isRecord = meters > prev;
+  const best = Math.max(meters, prev);
+  const seen = result.ended === 'vigia';
+  const diff = meters - prev;
+  const pct = best > 0 ? Math.round((meters / best) * 100) : 0;
+  return (
+    <section className="screen svf">
+      <div className={`svf-verdict ${seen ? 'vigia' : 'dark'}`}>
+        <span className="mono svf-kicker">SINAL VERMELHO · {classic ? 'CLÁSSICO' : 'INFINITO'}</span>
+        <h1>{seen ? 'O VIGIA TE VIU' : 'A ESCURIDÃO TE PEGOU'}</h1>
+        <p className="mono">
+          {seen
+            ? 'Você se mexeu na hora errada. Pare assim que o aviso tocar.'
+            : 'Você demorou demais parado ou se escondeu muito. Ande quando o Vigia estiver de costas.'}
+        </p>
+      </div>
+
+      <div className="svf-score">
+        {isRecord && (
+          <span className="svf-badge mono">{prev > 0 ? 'NOVO RECORDE' : 'PRIMEIRO RECORDE'}</span>
+        )}
+        <span className="mono svf-label">{classic ? 'DISTÂNCIA TOTAL' : 'METROS'}</span>
+        <div className="svf-big">
+          <b>{meters}</b>
+          <span>m</span>
+        </div>
+        <div className="svf-meter" aria-label={`${pct}% do seu recorde`}>
+          <i style={{ transform: `scaleX(${Math.min(1, pct / 100)})` }} />
+        </div>
+        <span className="mono svf-hint">
+          {isRecord ? (prev > 0 ? `+${diff} m sobre o recorde anterior` : 'Esse é o seu primeiro resultado neste modo') : `${pct}% do seu recorde`}
+        </span>
+      </div>
+
+      <dl className="svf-stats">
+        {classic && (
+          <div>
+            <dt className="mono">FASES CUMPRIDAS</dt>
+            <dd>{result.phases}</dd>
+          </div>
+        )}
+        <div>
+          <dt className="mono">SEU RECORDE</dt>
+          <dd>{best} m</dd>
+        </div>
+        <div>
+          <dt className="mono">RECORDE ANTERIOR</dt>
+          <dd>{prev > 0 ? `${prev} m` : '-'}</dd>
+        </div>
+        <div>
+          <dt className="mono">TEMPO DE CORRIDA</dt>
+          <dd>{Math.floor(result.endedTick / 60)} s</dd>
+        </div>
+      </dl>
+
+      <p className="mono svf-note">O ranking online do Sinal Vermelho ainda não está no ar. O recorde fica só neste aparelho.</p>
+
+      <div className="stack svf-actions">
+        <button type="button" className="btn alt" data-sfx="start" onClick={onAgain}>
+          Jogar de novo
+        </button>
+        <button type="button" className="btn ghost" data-sfx="back" onClick={onMenu}>
+          Voltar ao menu
+        </button>
+        <Link to="/" className="btn ghost">
+          Voltar aos jogos
+        </Link>
+      </div>
+    </section>
+  );
+}
+
 /** O Sinal Vermelho: menu (modo e cor do boneco), partida em tela cheia e fim. */
 export function SinalGame() {
   const [phase, setPhase] = useState<Phase>('menu');
@@ -165,48 +253,7 @@ export function SinalGame() {
         <SinalStart onStart={begin} />
       )}
 
-      {phase === 'final' && result && (
-        <section className="screen">
-          <div className="mono eco-label">SINAL VERMELHO · {mode === 'classico' ? 'CLÁSSICO' : 'INFINITO'}</div>
-          {Math.floor(result.meters) > Math.floor(before) && before > 0 && (
-            <NewRecord now={`${Math.floor(result.meters)} m`} before={`${Math.floor(before)} m`} />
-          )}
-          <div className="eco-total">
-            <div>
-              <div className="mono eco-label">{mode === 'classico' ? 'DISTÂNCIA TOTAL' : 'METROS'}</div>
-              <b>{Math.floor(result.meters)}</b>
-            </div>
-            <div className="eco-total-side">
-              <span className="eco-word">{result.ended === 'vigia' ? 'TE VIU' : 'ESCURIDÃO'}</span>
-              {mode === 'classico' && <span className="mono">{result.phases} FASES</span>}
-            </div>
-          </div>
-          <dl className="bt-stats mono">
-            <div>
-              <dt>SEU RECORDE</dt>
-              <dd>{Math.floor(Math.max(before, result.meters))} m</dd>
-            </div>
-            <div>
-              <dt>ANTES</dt>
-              <dd>{before > 0 ? `${Math.floor(before)} m` : '-'}</dd>
-            </div>
-          </dl>
-          <p className="mono sv-meta">
-            O RANKING ONLINE DO SINAL VERMELHO AINDA NÃO ESTÁ NO AR. O RECORDE FICA SÓ NESTE APARELHO.
-          </p>
-          <div className="stack">
-            <button type="button" className="btn alt" data-sfx="start" onClick={() => begin()}>
-              Jogar de novo
-            </button>
-            <button type="button" className="btn ghost" data-sfx="back" onClick={() => setPhase('menu')}>
-              Voltar ao menu
-            </button>
-            <Link to="/" className="btn ghost">
-              Voltar aos jogos
-            </Link>
-          </div>
-        </section>
-      )}
+      {phase === 'final' && result && <SinalFinal mode={mode} result={result} before={before} onAgain={() => begin()} onMenu={() => setPhase('menu')} />}
     </div>
   );
 }

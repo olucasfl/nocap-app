@@ -195,10 +195,10 @@ export function drawScene(c: Ctx, s: SceneInput) {
   const vTop = w >= 640 ? 6 : classic ? 124 : 84;
   vigia(c, map, s.face, s.warn, s.t, heroX, w / 2, vTop, l.vigiaScale, boss);
   const darkTop = screenY(l, view.darkY, view.y);
-  darkness(c, w, h, darkTop, s.t, style);
+  darkness(c, w, h, darkTop, s.t, style, l.ppm * 16);
   // A névoa já aparece desde o começo, fraquinha, e engrossa quando a escuridão se aproxima.
   const gapM = Math.max(0, view.y - view.darkY - PLAYER_R);
-  fogHaze(c, w, h, Math.max(clamp((55 - gapM) / 40, 0, 1), clamp(0.2 + view.t / 240, 0, 0.5)), s.t, style);
+  fogHaze(c, w, h, clamp((40 - gapM) / 30, 0, 1), s.t, style);
 
   // efeitos dos poderes
   if (has('rajada')) windStreaks(c, w, h, s.t, effects.find((p) => p.kind === 'rajada')!.dir, '#f4f4ef');

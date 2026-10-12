@@ -281,3 +281,138 @@
   font-size: clamp(36px, 12.5vw, 76px);
   line-height: 0.92;
 }
+
+/* ---- fim da partida */
+.svf {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.svf-verdict {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px 16px;
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 4px 4px 0 var(--ink);
+  color: #f4f4ef;
+}
+.svf-verdict.vigia {
+  background: #e5303a;
+}
+.svf-verdict.dark {
+  background: #14122a;
+}
+.svf-verdict h1 {
+  margin: 0;
+  font: 900 30px/1 var(--font-display);
+  letter-spacing: -0.03em;
+}
+.svf-verdict p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  opacity: 0.92;
+}
+.svf-kicker {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  opacity: 0.8;
+}
+.svf-score {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  background: var(--orange);
+  color: var(--on-accent);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+.svf-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.svf-big {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.svf-big b {
+  font: 900 76px/0.95 var(--font-display);
+  letter-spacing: -0.05em;
+}
+.svf-big span {
+  font: 900 26px/1 var(--font-display);
+}
+.svf-badge {
+  align-self: flex-start;
+  padding: 4px 10px;
+  background: var(--yellow);
+  color: var(--ink);
+  border: var(--border);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.svf-meter {
+  height: 12px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.55);
+  border: var(--border);
+  border-radius: 999px;
+}
+.svf-meter i {
+  display: block;
+  height: 100%;
+  background: var(--ink);
+  transform-origin: left center;
+}
+.svf-hint {
+  font-size: 11px;
+  font-weight: 700;
+}
+.svf-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 0;
+}
+.svf-stats > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  background: var(--white);
+  color: var(--ink);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.svf-stats dt {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+.svf-stats dd {
+  margin: 0;
+  font: 900 24px/1 var(--font-display);
+  letter-spacing: -0.03em;
+}
+.svf-note {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.svf-actions {
+  margin-top: 4px;
+}

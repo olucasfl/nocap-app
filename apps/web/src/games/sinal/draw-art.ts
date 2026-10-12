@@ -810,42 +810,18 @@ export function vigia(
 
 // ---------------------------------------------------------------- escuridão
 /**
- * A névoa preta que já se anuncia antes de a borda aparecer: uma neblina que sobe do pé da tela e
- * engrossa conforme a escuridão chega perto (`intensity` de 0 a 1). Desde a primeira fase ela está
- * lá, bem fraquinha, para a pessoa saber que alguma coisa vem de trás.
+ * Um escurecimento leve no pé da tela quando a escuridão está perto (`intensity` de 0 a 1). Sem
+ * nuvens: quem mostra a escuridão é a borda desenhada em `darkness`.
  */
-export function fogHaze(c: Ctx, w: number, h: number, intensity: number, t: number, style: { dark: string; ember: string; rim: string }) {
-  if (intensity <= 0) return;
-  const alpha = clamp(0.2 + 0.6 * intensity, 0, 0.85);
-  const reach = h * (0.1 + 0.4 * intensity);
+export function fogHaze(c: Ctx, w: number, h: number, intensity: number, _t: number, style: { dark: string; ember: string; rim: string }) {
+  if (intensity <= 0.02) return;
+  const reach = h * (0.08 + 0.2 * intensity);
   c.save();
   const g = c.createLinearGradient(0, h, 0, h - reach);
-  g.addColorStop(0, hexA(style.dark, alpha));
+  g.addColorStop(0, hexA(style.dark, 0.55 * intensity));
   g.addColorStop(1, hexA(style.dark, 0));
   c.fillStyle = g;
   c.fillRect(0, h - reach, w, reach);
-  // fiapos de fumaça que passam devagar
-  for (let i = 0; i < 7; i++) {
-    const x = wrapY(i * (w / 6) + t * (10 + i * 3) * (i % 2 ? 1 : -1), w + 160) - 80;
-    const y = h - reach * (0.25 + ((i * 37) % 60) / 100) + Math.sin(t * 0.8 + i) * 6;
-    c.globalAlpha = alpha * 0.55;
-    c.fillStyle = style.dark;
-    c.beginPath();
-    c.ellipse(x, y, 70 + (i % 3) * 22, 14 + (i % 2) * 6, 0, 0, 7);
-    c.fill();
-  }
-  // brasas subindo dentro da névoa
-  c.globalAlpha = Math.min(1, intensity * 1.2);
-  c.fillStyle = style.ember;
-  for (let i = 0; i < 10; i++) {
-    const seed = i * 5.7;
-    const px = (seed * 61) % w;
-    const rise = wrapY(t * (14 + (i % 4) * 6) + seed * 30, reach);
-    c.globalAlpha = clamp(1 - rise / reach, 0, 1) * Math.min(1, intensity * 1.2) * 0.9;
-    c.beginPath();
-    c.arc(px + Math.sin(t * 2 + seed) * 5, h - rise, 1.6 + (i % 3), 0, 7);
-    c.fill();
-  }
   c.restore();
 }
 
@@ -853,36 +829,96 @@ function hexA(hex: string, a: number): string {
   const n = parseInt(hex.slice(1), 16);
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
 }
-/** A escuridão sobe de baixo: borda ondulada animada, brasas e olhos. `top` é a altura (px da tela) da borda. */
-export function darkness(c: Ctx, w: number, h: number, top: number, t: number, style: { dark: string; ember: string; rim: string }) {
-  if (top >= h) return;
-  const edge = (x: number) => top + Math.sin(x * 0.035 + t * 1.6) * 7 + Math.sin(x * 0.09 - t * 2.3) * 4;
+/**
+ * A escuridão sobe de baixo: um monstro de tinta com borda de línguas pontudas que balançam, contorno
+ * grosso, brasas e olhos que piscam lá dentro. `top` é a altura (px da tela) da borda; `look` é a
+ * distância (px) a partir da qual ela já espia no pé da tela, para dar tempo de ver que vem aí.
+ */
+export function darkness(
+  c: Ctx,
+  w: number,
+  h: number,
+  top: number,
+  t: number,
+  style: { dark: string; ember: string; rim: string },
+  look = 320,
+) {
+  // Ainda fora da tela: só uma borda que sobe aos poucos (e pulsa) avisando que está chegando.
+  const near = top >= h ? clamp(1 - (top - h) / look, 0, 1) : 1;
+  if (near <= 0) return;
+  const peek = 12 * near;
+  const base = Math.min(top, h - peek);
+  const tongue = (x: number) => {
+    const cell = 58;
+    const idx = Math.floor((x + 20) / cell);
+    const u = ((x + 20) - idx * cell) / cell;
+    const tri = 1 - Math.abs(u * 2 - 1);
+    const size = 16 + 20 * ((idx * 0.618 + 0.3) % 1);
+    return Math.pow(tri, 1.3) * size * (0.8 + 0.2 * Math.sin(t * 3 + idx * 1.7));
+  };
+  const edge = (x: number) =>
+    base + Math.sin(x * 0.035 + t * 1.6) * 6 + Math.sin(x * 0.09 - t * 2.3) * 3 - tongue(x);
+  const path = (dy = 0) => {
+    c.beginPath();
+    c.moveTo(0, h + 10);
+    for (let x = 0; x <= w + 4; x += 4) c.lineTo(x, edge(x) + dy);
+    c.lineTo(w, h + 10);
+    c.closePath();
+  };
   c.save();
+  // a sombra que vai na frente da borda (mais clara, dá volume)
+  c.globalAlpha = 0.4;
   c.fillStyle = style.dark;
-  c.beginPath();
-  c.moveTo(0, h);
-  for (let x = 0; x <= w; x += 6) c.lineTo(x, edge(x));
-  c.lineTo(w, h);
-  c.closePath();
+  path(-14);
   c.fill();
-  c.lineWidth = 4;
-  c.strokeStyle = style.rim;
-  c.globalAlpha = 0.85;
+  c.globalAlpha = 1;
+  // o corpo, mais escuro quanto mais fundo
+  const g = c.createLinearGradient(0, base - 30, 0, h);
+  g.addColorStop(0, style.dark);
+  g.addColorStop(1, '#000000');
+  c.fillStyle = g;
+  path();
+  c.fill();
+  // contorno de tinta e a borda brilhante na cor do mapa
+  c.lineJoin = 'round';
+  c.lineWidth = 9;
+  c.strokeStyle = INK;
   c.beginPath();
-  for (let x = 0; x <= w; x += 6) {
+  for (let x = 0; x <= w + 4; x += 4) {
     if (x) c.lineTo(x, edge(x));
     else c.moveTo(x, edge(x));
   }
   c.stroke();
+  c.lineWidth = 3.5;
+  c.strokeStyle = style.rim;
+  c.globalAlpha = top >= h ? 0.55 + 0.4 * Math.sin(t * 8) ** 2 : 0.95;
+  c.stroke();
   c.globalAlpha = 1;
-  const depth = h - top;
+  // setas pulsando quando está para entrar na tela
+  if (top >= h - 40) {
+    c.fillStyle = style.rim;
+    for (let i = -1; i <= 1; i++) {
+      c.globalAlpha = 0.5 + 0.5 * Math.sin(t * 8 - i);
+      const x = w / 2 + i * 34;
+      const y = h - 44 - Math.abs(i) * 2;
+      c.beginPath();
+      c.moveTo(x - 11, y + 8);
+      c.lineTo(x, y - 6);
+      c.lineTo(x + 11, y + 8);
+      c.closePath();
+      c.fill();
+    }
+    c.globalAlpha = 1;
+  }
+  const depth = h - base;
+  // brasas subindo
   for (let i = 0; i < 26; i++) {
     const seed = i * 7.31;
     const px = (seed * 53) % w;
     const rise = wrapY(t * (18 + (i % 5) * 7) + seed * 40, 150);
-    const py = top + 20 - rise + 40;
+    const py = base + 20 - rise + 40;
     const a = clamp(1 - rise / 150, 0, 1);
-    if (py > h) continue;
+    if (py > h || depth < 20) continue;
     c.globalAlpha = a * 0.9;
     c.fillStyle = style.ember;
     c.beginPath();
@@ -890,16 +926,22 @@ export function darkness(c: Ctx, w: number, h: number, top: number, t: number, s
     c.fill();
   }
   c.globalAlpha = 1;
-  for (const [fx, fy] of [[0.2, 0.3], [0.45, 0.5], [0.8, 0.38]] as const) {
+  // olhos que piscam lá dentro
+  for (const [fx, fy] of [[0.2, 0.3], [0.45, 0.55], [0.8, 0.38], [0.65, 0.8]] as const) {
     const ex = fx * w;
-    const y = top + 36 + fy * 90;
-    const open = Math.sin(t * 1.3 + ex) > -0.75;
-    if (open && y < h - 10 && depth > 60) {
-      c.fillStyle = style.rim;
-      c.beginPath();
-      c.ellipse(ex, y, 5, 3.2, 0, 0, 7);
-      c.ellipse(ex + 14, y, 5, 3.2, 0, 0, 7);
-      c.fill();
+    const y = base + 44 + fy * 110;
+    const open = Math.sin(t * 1.3 + ex) > -0.7;
+    if (open && y < h - 14 && depth > 70) {
+      for (const dx of [0, 20]) {
+        c.fillStyle = style.rim;
+        c.beginPath();
+        c.ellipse(ex + dx, y, 7, 4.6, 0, 0, 7);
+        c.fill();
+        c.fillStyle = '#000';
+        c.beginPath();
+        c.ellipse(ex + dx + Math.sin(t + ex) * 1.5, y, 1.8, 4.2, 0, 0, 7);
+        c.fill();
+      }
     }
   }
   c.restore();
