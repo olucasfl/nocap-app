@@ -49,7 +49,7 @@ export const POWER_INFO: Record<PowerKind, { name: string; text: string }> = {
   soluco: { name: 'SOLUÇO', text: 'De repente um empurrão, para qualquer lado.' },
   turbo: { name: 'TURBO', text: 'Você fica rápido demais: cuidado para conseguir parar.' },
   patins: { name: 'PATINS', text: 'O chão vira gelo: você desliza e demora a parar.' },
-  bolhas: { name: 'BOLHAS', text: 'Bolhas enormes passam na frente e tapam a visão.' },
+  bolhas: { name: 'BOLHAS DE SABÃO', text: 'O chão fica ensaboado: você desliza sem parar, sem controle.' },
   pixelado: { name: 'PIXELADO', text: 'A tela vira quadradões: difícil enxergar o caminho.' },
   negativo: { name: 'NEGATIVO', text: 'As cores se invertem e fica estranho de ler.' },
   lupa: { name: 'LUPA', text: 'Um zoom enorme em você: o que vem pela frente chega de surpresa.' },
@@ -259,17 +259,17 @@ export function drawScene(c: Ctx, s: SceneInput) {
   if (has('poeira')) {
     // Poeira nos olhos: a areia cobre tudo e embaça; só um palmo em volta do boneco fica à vista.
     const k = fade(eff('poeira')!.p);
-    limitedVision(c, w, h, heroX, l.heroY, vision * 2.2, { rgb: '226,184,104', alpha: 0.97, blur: 14, k });
-    dust(c, w, h, s.t, heroX, l.heroY, 0.8 * k);
+    limitedVision(c, w, h, heroX, l.heroY, vision * 1.8, { rgb: '18,12,4', alpha: 1, blur: 14, k });
+    dust(c, w, h, s.t, heroX, l.heroY, 0.9 * k);
   }
   if (has('corvos')) crows(c, w, h, s.t, effects.find((p) => p.kind === 'corvos')!.p);
   if (has('farois')) {
     // Cegueira: o clarão branco passa e deixa tudo apagado e embaçado, só dá para ver bem pouco à frente.
     const p = eff('farois')!.p;
     const k = fade(p);
-    limitedVision(c, w, h, heroX, l.heroY, vision * 2.6, {
-      rgb: '22,22,32',
-      alpha: 0.94,
+    limitedVision(c, w, h, heroX, l.heroY, vision * 2.0, {
+      rgb: '0,0,0',
+      alpha: 1,
       blur: 12,
       k,
       filter: 'grayscale(0.7) brightness(0.7)',
@@ -285,10 +285,10 @@ export function drawScene(c: Ctx, s: SceneInput) {
   if (has('buzina')) siren(c, w, h, s.t, heroX, l.heroY);
   if (has('atraso')) echo(c, s.t, heroX, l.heroY, heroColor);
   if (has('cortina')) {
-    limitedVision(c, w, h, heroX, l.heroY, vision * 3.4, { rgb: '38,18,66', alpha: 0.9, blur: 7, k: fade(eff('cortina')!.p) });
+    limitedVision(c, w, h, heroX, l.heroY, vision * 2.4, { rgb: '8,2,18', alpha: 1, blur: 7, k: fade(eff('cortina')!.p) });
   }
   if (has('apagao')) {
-    limitedVision(c, w, h, heroX, l.heroY, vision * 2.0, { rgb: '0,0,0', alpha: 0.985, blur: 0, k: fade(eff('apagao')!.p) });
+    limitedVision(c, w, h, heroX, l.heroY, vision * 1.6, { rgb: '0,0,0', alpha: 1, blur: 0, k: fade(eff('apagao')!.p) });
   }
   // as brincadeiras
   if (has('espelho')) mirrorHint(c, w, h, s.t, fade(eff('espelho')!.p));

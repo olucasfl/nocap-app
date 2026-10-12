@@ -18,6 +18,7 @@ import {
   POWER_RECOVERY_S,
   POWER_TIGHT_MARGIN_S,
   POWER_SPECS,
+  VISION_POWERS,
   SINAL_MAPS,
   SinalSim,
   VigiaTimeline,
@@ -219,8 +220,8 @@ describe('poderes: equidade', () => {
           // um poder por vez
           expect(p.teleStart, label).toBeGreaterThanOrEqual(prevEnd - 1e-9);
           prevEnd = p.effectEnd;
-          // efeito de duração razoável (o básico, até 3,6 s; nas fases altas, até 1,9x isso)
-          expect(spec.effect).toBeLessThanOrEqual(3.6);
+          // efeito de duração razoável (os de visão são os mais longos, até 5,5 s; nas fases altas crescem)
+          expect(spec.effect).toBeLessThanOrEqual(5.5);
         }
       }
     }
@@ -1054,6 +1055,21 @@ describe('as brincadeiras: efeitos novos', () => {
     expect(sim.y - y0).toBeGreaterThan(0.25);
   });
 
+  it('bolhas de sabão deixam o chão ensaboado: desliza ainda mais que no gelo', () => {
+    const sim = untilFun('bolhas')!;
+    expect(sim).not.toBeNull();
+    for (let i = 0; i < 40; i++) sim.step(0, 100);
+    const y0 = sim.y;
+    for (let i = 0; i < 10; i++) sim.step(0, 0);
+    expect(sim.y - y0).toBeGreaterThan(0.25);
+  });
+
+  it('os efeitos de visão são os mais longos do jogo', () => {
+    for (const k of VISION_POWERS) expect(POWER_SPECS[k].effect).toBeGreaterThanOrEqual(5);
+    const others = (Object.keys(POWER_SPECS) as (keyof typeof POWER_SPECS)[]).filter((k) => !VISION_POWERS.includes(k));
+    for (const k of others) expect(POWER_SPECS[k].effect).toBeLessThan(4);
+  });
+
   it('soluço dá empurrões de tempos em tempos, e bêbado balança de lado', () => {
     const hic = untilFun('soluco')!;
     expect(hic).not.toBeNull();
@@ -1083,7 +1099,8 @@ describe('as brincadeiras: efeitos novos', () => {
       const ratios: number[] = [];
       for (const sd of SEEDS) {
         for (const c of new VigiaTimeline(timelineParams(classicoCourse(sd, n)), `${sd}${n}`).upTo(300)) {
-          for (const p of c.powers) ratios.push((p.effectEnd - p.effectStart) / POWER_SPECS[p.kind].effect);
+          // (os de visão crescem menos, então ficam de fora desta conta)
+          for (const p of c.powers) if (!VISION_POWERS.includes(p.kind)) ratios.push((p.effectEnd - p.effectStart) / POWER_SPECS[p.kind].effect);
         }
       }
       return ratios.reduce((a, b) => a + b, 0) / ratios.length;

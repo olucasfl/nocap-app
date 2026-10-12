@@ -91,17 +91,18 @@ export const POWER_SPECS: Record<PowerKind, PowerSpec> = {
   // O aviso dura uns 2 s: dá tempo de ler o quadro e decidir o que fazer.
   corvos: { tele: 2.0, effect: 2.2 },
   oleo: { tele: 1.9, effect: 3.0 },
-  poeira: { tele: 2.0, effect: 3.2 },
+  // os de visão (poeira, faróis, cortina, apagão) duram bem mais: ficar às escuras é o castigo
+  poeira: { tele: 2.0, effect: 5.0 },
   buzina: { tele: 2.0, effect: 1.2 },
-  farois: { tele: 1.9, effect: 3.0 },
+  farois: { tele: 1.9, effect: 5.0 },
   vento: { tele: 2.0, effect: 2.4 },
   atraso: { tele: 2.0, effect: 2.6 },
   // dos chefes e do Infinito
   invertido: { tele: 2.0, effect: 2.5 },
-  cortina: { tele: 1.9, effect: 3.2 },
+  cortina: { tele: 1.9, effect: 5.0 },
   rajada: { tele: 2.0, effect: 2.0 },
   lama: { tele: 1.9, effect: 3.0 },
-  apagao: { tele: 2.0, effect: 3.5 },
+  apagao: { tele: 2.0, effect: 5.5 },
   chuva: { tele: 2.2, effect: 0.4 },
   // as brincadeiras
   espelho: { tele: 1.8, effect: 3.0 },
@@ -109,7 +110,7 @@ export const POWER_SPECS: Record<PowerKind, PowerSpec> = {
   soluco: { tele: 1.8, effect: 3.3 },
   turbo: { tele: 1.8, effect: 2.8 },
   patins: { tele: 1.9, effect: 3.4 },
-  bolhas: { tele: 1.7, effect: 3.6 },
+  bolhas: { tele: 1.7, effect: 3.8 },
   pixelado: { tele: 1.8, effect: 3.0 },
   negativo: { tele: 1.8, effect: 3.0 },
   lupa: { tele: 1.8, effect: 2.8 },
@@ -175,6 +176,9 @@ export const SOLUCO_PUSH_TICKS = 9;
 export const SOLUCO_SPEED = 3.8;
 export const TURBO_FACTOR = 1.6;
 export const PATINS_SLICK = 0.03;
+export const BOLHAS_SLICK = 0.018; // bolhas de sabão: o chão ensaboado, ainda mais escorregadio que o gelo
+/** Os efeitos de visão: já são longos, então crescem menos com a fase (60% do aumento). */
+export const VISION_POWERS: readonly PowerKind[] = ['poeira', 'farois', 'cortina', 'apagao'];
 
 // ---- entradas e resultado ----------------------------------------------------
 

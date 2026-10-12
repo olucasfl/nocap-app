@@ -4,6 +4,7 @@ import {
   POWER_AVISO_MARGIN_S,
   POWER_RECOVERY_S,
   POWER_TIGHT_MARGIN_S,
+  VISION_POWERS,
   POWER_SPECS,
   lerp,
   type CycleKind,
@@ -155,7 +156,9 @@ export class VigiaTimeline {
         for (const k of kinds) {
           const spec = POWER_SPECS[k];
           const effectStart = cursor + spec.tele;
-          const effectEnd = effectStart + spec.effect * p.effectScale(start);
+          const es = p.effectScale(start);
+          const grow = VISION_POWERS.includes(k) ? 1 + (es - 1) * 0.6 : es;
+          const effectEnd = effectStart + spec.effect * grow;
           planned.push({ kind: k, teleStart: cursor, effectStart, effectEnd });
           cursor = effectEnd + 0.4;
         }

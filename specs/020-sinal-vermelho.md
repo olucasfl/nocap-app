@@ -200,6 +200,11 @@ O Lucas achou o jogo linear e fácil. O que mudou:
 - **Qualquer movimento denuncia:** com o Vigia olhando, **qualquer deslocamento** conta, venha do analógico, de uma pancada, de uma esteira, do ímã, do gelo ou de um obstáculo que se mexe. Só o esconderijo protege. (Antes, ser empurrado com o dedo parado não contava.)
 - **Obstáculos novos:** de chão, **gelo** (escorrega), **cola** (os comandos demoram), **turbina** (empurra para a frente ou para trás) e **inversor** (troca os controles); sólidos que se mexem, **órbita** (anda em losango) e **serra** (rápida, bate forte). Soma 15 tipos, liberados fase a fase.
 
+## Ajuste dos efeitos de visão e das bolhas (12/10/2026)
+- **Visão 100% escura:** poeira, faróis (a cegueira), cortina e apagão deixam tudo fora de um campo pequeno em volta do boneco **totalmente escuro** (sem enxergar nada), com a borda do campo embaçada. Raios: apagão 1,6 m, poeira 1,8 m, faróis 2,0 m, cortina 2,4 m. O alerta de PARE e o painel continuam à vista.
+- **Duram mais:** 5,0 s (poeira, faróis, cortina) e 5,5 s (apagão) no básico, e crescem com a fase (60% do aumento dos outros efeitos). Os outros efeitos ficam abaixo de 4 s.
+- **Bolhas de sabão** agora fazem o chão ficar **ensaboado: o boneco desliza sem controle** (mais escorregadio que o gelo dos patins), mantendo as bolhas na tela.
+
 ## Controles
 - **Celular:** o analógico (círculo e bolinha) fica **fixo embaixo, no centro da tela**, sempre visível, com uma área de toque generosa em volta. A bolinha acompanha o dedo e volta ao centro ao soltar.
 - **A câmera nunca deixa o analógico tapar o boneco.** A tela reserva uma **zona do analógico** (embaixo, no centro, com folga em volta) e a câmera mantém o boneco sempre **fora dela**: o boneco fica um pouco acima do meio da tela (cerca de 52% da altura, para ficar longe do Vigia) e a câmera também acompanha de lado quando ele vai para a direita. É uma regra do código da câmera (função pura, com teste: para qualquer posição do boneco no corredor, em retrato e em paisagem, ele nunca fica dentro da zona do analógico). Vale também para o Vigia, os esconderijos e o aviso, que ficam fora dessa zona ou são desenhados sem depender dela.

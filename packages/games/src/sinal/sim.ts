@@ -9,6 +9,7 @@ import {
   DARK_CAP,
   DEADZONE,
   BEBADO_AMP,
+  BOLHAS_SLICK,
   BEBADO_PERIOD_TICKS,
   BUMP_BASE,
   BUMP_PER_R,
@@ -288,6 +289,7 @@ export class SinalSim {
     let wobble = 0;
     let boost = 1;
     let skating = false;
+    let soap = false;
     cycle.powers.forEach((p, i) => {
       const key = `${cycle.start}:${i}`;
       if (t >= p.teleStart && !this.fired.has(`${key}:t`)) {
@@ -362,6 +364,7 @@ export class SinalSim {
         else if (p.kind === 'espelho') mirrorX = true;
         else if (p.kind === 'turbo') boost = TURBO_FACTOR;
         else if (p.kind === 'patins') skating = true;
+        else if (p.kind === 'bolhas') soap = true;
         else if (p.kind === 'bebado') {
           // balança de lado, indo e voltando (onda triangular, sem seno)
           const et = this.courseTick - Math.round(p.effectStart * TPS);
@@ -455,6 +458,7 @@ export class SinalSim {
     }
     if (zoneSlick) slickK = Math.min(slickK, GELO_SLICK);
     if (skating) slickK = Math.min(slickK, PATINS_SLICK);
+    if (soap) slickK = Math.min(slickK, BOLHAS_SLICK);
     if (slickK < 1) {
       this.svx += (tx - this.svx) * slickK;
       this.svy += (ty - this.svy) * slickK;
