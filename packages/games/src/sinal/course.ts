@@ -1,11 +1,12 @@
 import { createRng } from '../core/rng';
 import {
-  BOSS_POWERS,
   COVER_DURABILITY,
   COVER_FRAGILE,
   HALF,
   OWN_POWERS,
   SINAL_MAPS,
+  TPS,
+  UNLOCKED_POWERS,
   lerp,
   type PowerKind,
   type SinalMapId,
@@ -15,8 +16,8 @@ import type { TimelineParams } from './vigia';
 
 /**
  * A pista de uma partida. No Infinito é uma só, sem fim. No Clássico cada fase é uma pista com
- * linha de chegada: 4 fases e o chefe, num mapa; passou, vem outro mapa sorteado, sem repetir até
- * fechar os três, e então tudo volta ao primeiro, cada vez mais difícil.
+ * linha de chegada; a cada 5 fases o mapa troca (sorteado, sem repetir até fechar os três). Não há
+ * chefe: a cada fase vêm mais poderes, mais obstáculos e uma escuridão mais ligeira.
  */
 
 export interface Course {
@@ -24,14 +25,13 @@ export interface Course {
   /** Número da fase na corrida (1, 2, 3...). No Infinito é sempre 1. */
   n: number;
   map: SinalMapId;
-  boss: boolean;
   /** Linha de chegada em metros (Infinity no Infinito). */
   length: number;
   /** Quanto a escuridão começa atrás da largada (m). */
   darkStart: number;
 }
 
-export const PHASES_PER_MAP = 5; // 4 fases e o chefe
+export const PHASES_PER_MAP = 5; // o mapa troca a cada 5 fases
 
 /** A ordem dos mapas numa corrida do Clássico: os três, sem repetir, e depois tudo de novo. */
 export function mapOrder(seed: string): SinalMapId[] {
@@ -47,15 +47,13 @@ export function mapOrder(seed: string): SinalMapId[] {
 export function classicoCourse(seed: string, n: number): Course {
   const order = mapOrder(seed);
   const round = Math.floor((n - 1) / PHASES_PER_MAP);
-  const boss = (n - 1) % PHASES_PER_MAP === PHASES_PER_MAP - 1;
-  const base = 100 + 20 * n;
   return {
     mode: 'classico',
     n,
     map: order[round % order.length]!,
-    boss,
-    length: Math.round(boss ? base * 1.6 : base),
-    darkStart: 36,
+    length: Math.min(320, 100 + 20 * n),
+    // a escuridão larga mais perto a cada fase
+    darkStart: Math.max(22, 36 - 1.2 * (n - 1)),
   };
 }
 
@@ -65,7 +63,6 @@ export function infinitoCourse(seed: string): Course {
     mode: 'infinito',
     n: 1,
     map: SINAL_MAPS[Math.floor(rng() * SINAL_MAPS.length)]!,
-    boss: false,
     length: Infinity,
     darkStart: 42,
   };
@@ -76,9 +73,17 @@ export function courseFor(seed: string, mode: SinalMode, n: number): Course {
 }
 
 /** Dificuldade (0 a 1) de uma fase do Clássico: sobe com o número da fase, sem nunca chegar a 1. */
-export function phaseDifficulty(n: number, boss: boolean): number {
-  const d = n / (n + 9);
-  return boss ? Math.min(0.97, d + 0.1) : d;
+export function phaseDifficulty(n: number): number {
+  return n / (n + 9);
+}
+
+/** Os poderes de um Vigia na fase `level`: os três do mapa mais os que já foram liberados. */
+export function powerPool(map: SinalMapId, level: number): PowerKind[] {
+  const pool: PowerKind[] = [...OWN_POWERS[map]];
+  for (const u of UNLOCKED_POWERS) {
+    if (level >= u.level) for (const k of u.kinds) if (!pool.includes(k)) pool.push(k);
+  }
+  return pool;
 }
 
 /** Os parâmetros do Vigia de uma pista (os tempos e os poderes). */
@@ -103,26 +108,15 @@ export function timelineParams(course: Course): TimelineParams {
       costasScale: 1,
     };
   }
-  const d = phaseDifficulty(course.n, course.boss);
-  const own = OWN_POWERS[course.map];
-  if (course.boss) {
-    return {
-      dAt: () => d,
-      pFake: () => lerp(0.15, 0.3, d),
-      pPower: () => 0.95,
-      minGap: () => 3.5,
-      pool: () => [...BOSS_POWERS, ...own.filter((k) => !BOSS_POWERS.includes(k))],
-      chain: () => 2,
-      costasScale: 1.6,
-    };
-  }
+  const d = phaseDifficulty(course.n);
   return {
     dAt: () => d,
-    pFake: () => (course.n < 2 ? 0 : lerp(0.1, 0.25, d)),
+    pFake: () => (course.n < 2 ? 0 : lerp(0.1, 0.3, d)),
     pPower: () => 0.95,
     minGap: () => lerp(4.5, 2.5, d),
-    pool: () => own,
-    chain: () => 1,
+    pool: () => powerPool(course.map, course.n),
+    // dois poderes seguidos a partir da fase 6
+    chain: () => (course.n >= 6 ? 2 : 1),
     costasScale: 1,
   };
 }
@@ -159,7 +153,7 @@ export class CoverField {
   private dAt(y: number): number {
     return this.course.mode === 'infinito'
       ? y / (y + 700)
-      : phaseDifficulty(this.course.n, this.course.boss);
+      : phaseDifficulty(this.course.n);
   }
 
   /** Garante os esconderijos até a altura `untilY`. */
@@ -188,19 +182,67 @@ export class CoverField {
 
 // ---- obstáculos ----------------------------------------------------------------
 
+/**
+ * Os obstáculos do caminho. Os sólidos o boneco contorna (pequeno, médio e grande); alguns se mexem
+ * (deslizante vai de um lado a outro, vaivém vem e vai); a mola joga para trás; e os que ficam no chão
+ * agem em quem passa: lamaçal (devagar), esteira (empurra de lado) e ímã (puxa para o centro).
+ */
+export type ObstacleKind =
+  | 'pequeno'
+  | 'medio'
+  | 'grande'
+  | 'deslizante'
+  | 'vaivem'
+  | 'mola'
+  | 'lamacal'
+  | 'esteira'
+  | 'ima';
+
+/** Os que o boneco não atravessa. */
+export const SOLID_KINDS: readonly ObstacleKind[] = ['pequeno', 'medio', 'grande', 'deslizante', 'vaivem', 'mola'];
+export const isSolid = (k: ObstacleKind) => SOLID_KINDS.includes(k);
+
+/** A partir de que nível (fase no Clássico) cada obstáculo aparece, e o peso do sorteio. */
+const OBSTACLE_UNLOCK: { kind: ObstacleKind; level: number; weight: number }[] = [
+  { kind: 'pequeno', level: 1, weight: 4 },
+  { kind: 'medio', level: 1, weight: 4 },
+  { kind: 'grande', level: 2, weight: 2.5 },
+  { kind: 'lamacal', level: 2, weight: 2 },
+  { kind: 'deslizante', level: 3, weight: 2.5 },
+  { kind: 'esteira', level: 4, weight: 2 },
+  { kind: 'mola', level: 4, weight: 1.6 },
+  { kind: 'vaivem', level: 5, weight: 2.2 },
+  { kind: 'ima', level: 6, weight: 1.6 },
+];
+
 export interface ObstacleDef {
   id: number;
+  /** Posição-base (no mundo). Os que se mexem oscilam em volta dela. */
   x: number;
   y: number;
+  /** Raio (m): do corpo, ou da zona nos de chão. */
   r: number;
-  /** O desenho (0 a 2): cada mapa tem três jeitos de obstáculo. */
-  kind: 0 | 1 | 2;
+  kind: ObstacleKind;
+  /** Para os que se mexem: amplitude (m), período (passos), defasagem (passos) e eixo. */
+  amp: number;
+  period: number;
+  offset: number;
+  axis: 'x' | 'y';
+  /** Esteira: para que lado empurra (-1 ou 1). */
+  dir: -1 | 1;
+}
+
+/** Posição de um obstáculo no passo `tick` da fase: onda triangular, só soma e multiplicação. */
+export function obstaclePos(o: ObstacleDef, tick: number): { x: number; y: number } {
+  if (o.amp === 0) return { x: o.x, y: o.y };
+  const ph = ((tick + o.offset) % o.period) / o.period;
+  const tri = ph < 0.5 ? ph * 4 - 1 : 3 - ph * 4;
+  return o.axis === 'x' ? { x: o.x + o.amp * tri, y: o.y } : { x: o.x, y: o.y + o.amp * tri };
 }
 
 /**
- * Pedras, barris e cactos pelo caminho: o boneco não passa por cima, tem que contornar. Surgem em
- * grupos de um a três, sempre com um vão para passar, e mais seguidos conforme a dificuldade.
- * Não é só "pare e ande": é preciso escolher o caminho enquanto o Vigia não olha.
+ * Surgem em grupos de um a quatro e sempre sobra um vão para passar. Quanto mais avançado, mais
+ * seguidos, mais numerosos e mais variados (os tipos novos vão sendo liberados fase a fase).
  */
 export class ObstacleField {
   readonly list: ObstacleDef[] = [];
@@ -216,42 +258,92 @@ export class ObstacleField {
     this.nextY = 11 + this.rng() * 6;
   }
 
+  /** O "nível" da pista: a fase no Clássico; no Infinito sobe com a distância. */
+  private levelAt(y: number): number {
+    return this.course.mode === 'infinito' ? 1 + Math.floor(y / 70) : this.course.n;
+  }
+
   private dAt(y: number): number {
     return this.course.mode === 'infinito'
       ? y / (y + 500)
-      : phaseDifficulty(this.course.n, this.course.boss);
+      : phaseDifficulty(this.course.n);
   }
 
   ensure(untilY: number) {
     while (this.nextY <= untilY) {
       const d = this.dAt(this.nextY);
+      const level = this.levelAt(this.nextY);
       const r = Array.from({ length: 12 }, () => this.rng());
       this.covers.ensure(this.nextY + 8);
-      const count = 1 + (r[0]! < 0.4 + 0.3 * d ? 1 : 0) + (r[1]! < 0.15 + 0.3 * d ? 1 : 0);
+      const count = 1 + (r[0]! < 0.45 + 0.3 * d ? 1 : 0) + (r[1]! < 0.2 + 0.35 * d ? 1 : 0) + (r[2]! < 0.1 + 0.3 * d ? 1 : 0);
       const side = HALF - 1;
-      let lastX = (r[2]! * 2 - 1) * side;
+      const pool = OBSTACLE_UNLOCK.filter((u) => u.level <= level);
+      const total = pool.reduce((s, u) => s + u.weight, 0);
+      const placed: { x: number; e: number }[] = [];
       for (let i = 0; i < count; i++) {
-        let x = i === 0 ? lastX : lastX + (r[3 + i]! < 0.5 ? -1 : 1) * (2.8 + r[6 + i]! * 1.5);
-        x = Math.max(-side, Math.min(side, x));
-        // sem sobreposição com o anterior do grupo
-        if (i > 0 && Math.abs(x - lastX) < 2.6) x = lastX > 0 ? lastX - 2.8 : lastX + 2.8;
-        x = Math.max(-side, Math.min(side, x));
+        // cada item sorteia o tipo, o tamanho e o lugar com números novos (a pista não "desanda")
+        const [kR, sR, xR, aR, pR] = [this.rng(), this.rng(), this.rng(), this.rng(), this.rng()];
+        let pick = kR * total;
+        let kind: ObstacleKind = 'pequeno';
+        for (const u of pool) {
+          pick -= u.weight;
+          if (pick <= 0) {
+            kind = u.kind;
+            break;
+          }
+        }
+        const rad =
+          kind === 'pequeno'
+            ? 0.35 + sR * 0.15
+            : kind === 'medio'
+              ? 0.6 + sR * 0.25
+              : kind === 'grande'
+                ? 1.1 + sR * 0.4
+                : kind === 'mola'
+                  ? 0.55 + sR * 0.1
+                  : kind === 'lamacal'
+                    ? 1.8 + sR * 0.7
+                    : kind === 'esteira'
+                      ? 1.6 + sR * 0.5
+                      : kind === 'ima'
+                        ? 2.2
+                        : 0.7 + sR * 0.2; // deslizante, vaivém
+        const amp = kind === 'deslizante' ? 2.2 + aR * 1.6 : kind === 'vaivem' ? 1.8 + aR * 1.4 : 0;
+        const reach = rad + (kind === 'deslizante' ? amp : 0);
+        const lim = Math.max(0.5, side - reach);
+        let x = (xR * 2 - 1) * lim;
+        // sem sobreposição com os outros do grupo: se não couber, este item fica de fora
+        let ok = true;
+        for (const p of placed) {
+          const min = p.e + reach + 2.4;
+          if (Math.abs(x - p.x) < min) {
+            x = p.x >= 0 ? p.x - min : p.x + min;
+            if (Math.abs(x) > lim) ok = false;
+          }
+        }
+        if (!ok) continue;
         const y = this.nextY + i * 1.6;
         const tooNearCover = this.covers.list.some(
-          (c) => Math.abs(c.y - y) < 4 && (c.x - x) ** 2 + (c.y - y) ** 2 < 3.2 * 3.2,
+          (c) => Math.abs(c.y - y) < 5 && (c.x - x) ** 2 + (c.y - y) ** 2 < 3.4 * 3.4,
         );
-        if (!tooNearCover) {
-          this.list.push({
-            id: this.list.length,
-            x,
-            y,
-            r: 0.5 + r[9]! * 0.35 + i * 0.02,
-            kind: Math.min(2, Math.floor(r[10 + (i % 2)]! * 3)) as 0 | 1 | 2,
-          });
-        }
-        lastX = x;
+        if (tooNearCover) continue;
+        placed.push({ x, e: reach });
+        const period = Math.round((kind === 'vaivem' ? 3.6 + pR * 1.6 : 4.4 + pR * 2) * TPS);
+        this.list.push({
+          id: this.list.length,
+          x,
+          y,
+          r: rad,
+          kind,
+          amp,
+          period,
+          offset: Math.floor(pR * period),
+          axis: kind === 'vaivem' ? 'y' : 'x',
+          dir: aR < 0.5 ? -1 : 1,
+        });
       }
-      this.nextY += lerp(lerp(15, 9, d), lerp(26, 14, d), r[5]!);
+      // os grupos vêm mais seguidos conforme a fase avança
+      this.nextY += lerp(lerp(14, 8, d), lerp(24, 12, d), r[5]!);
     }
   }
 }

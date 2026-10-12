@@ -102,20 +102,19 @@ export const OWN_POWERS: Record<SinalMapId, readonly PowerKind[]> = {
   deserto: ['poeira', 'vento', 'atraso'],
 };
 
-/** A reserva dos chefes. */
-export const BOSS_POWERS: readonly PowerKind[] = [
-  'invertido',
-  'cortina',
-  'rajada',
-  'lama',
-  'apagao',
-  'chuva',
+/** Os poderes que vão sendo liberados para qualquer Vigia conforme a fase avança (nível mínimo). */
+export const UNLOCKED_POWERS: readonly { level: number; kinds: readonly PowerKind[] }[] = [
+  { level: 3, kinds: ['rajada', 'cortina'] },
+  { level: 5, kinds: ['lama', 'invertido'] },
+  { level: 7, kinds: ['apagao', 'chuva'] },
 ];
 
 /** O efeito termina pelo menos isto antes de o Vigia olhar (sempre dá tempo de parar). */
 export const POWER_RECOVERY_S = 1.2;
 /** E termina antes de o aviso de olhar começar, com esta folga. */
 export const POWER_AVISO_MARGIN_S = 0.2;
+/** Nos ciclos "de emboscada" o Vigia vira logo depois do poder: o efeito acaba só esta folga antes do aviso. */
+export const POWER_TIGHT_MARGIN_S = 0.15;
 
 /** Valores dos poderes que mexem no boneco. */
 export const RAJADA_SPEED = 2.0; // 2 s x 2 m/s = 4 m no máximo
@@ -128,6 +127,13 @@ export const ATRASO_TICKS = 24;
 export const CHUVA_RADIUS = 1.8;
 export const CHUVA_IMPULSE = 6.25; // 0,4 s x 6,25 m/s = 2,5 m
 export const CHUVA_PUSH_S = 0.4;
+
+/** Obstáculos que fazem coisas (ficam parados no chão e agem em quem passa por cima ou encosta). */
+export const MUD_FACTOR = 0.45; // lamaçal: anda a 45% da velocidade
+export const ESTEIRA_SPEED = 2.0; // esteira: empurra de lado
+export const IMA_PULL = 1.6; // ímã: puxa para o centro
+export const MOLA_IMPULSE = 7; // mola: joga para trás (0,3 s x 7 m/s = 2,1 m)
+export const MOLA_PUSH_S = 0.3;
 
 // ---- entradas e resultado ----------------------------------------------------
 
@@ -162,7 +168,7 @@ export type SinalEvent =
   | { kind: 'poder-evitado'; power: PowerKind }
   | { kind: 'poder-fim'; power: PowerKind }
   | { kind: 'quebrou'; cover: number }
-  | { kind: 'fase'; n: number; map: SinalMapId; boss: boolean; mapChanged: boolean }
+  | { kind: 'fase'; n: number; map: SinalMapId; mapChanged: boolean }
   | { kind: 'fim'; reason: SinalEnd };
 
 /** Os jeitos de o Vigia olhar: normal, rápido (pouco aviso), longo, espia (olhadinha) e duplo. */

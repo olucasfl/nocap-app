@@ -1,5 +1,5 @@
 import { HALF, PLAYER_R, type PowerKind, type SinalView } from '@nocap/games';
-import { V, joyCenter, screenX, screenY, type Layout } from './camera';
+import { V, joyCenter, screenX, type Layout } from './camera';
 import {
   INK,
   MAP_STYLE,
@@ -86,7 +86,6 @@ export function drawScene(c: Ctx, s: SceneInput) {
   const { w, h } = l;
   const map = view.course.map;
   const style = MAP_STYLE[map];
-  const boss = view.course.boss;
   const effects = s.view.hidden
     ? []
     : s.view.powers.filter((p) => !p.evaded && p.phase === 'efeito');
@@ -134,17 +133,21 @@ export function drawScene(c: Ctx, s: SceneInput) {
   // linha de chegada (Clássico)
   if (Number.isFinite(view.course.length)) {
     const y = vy(view.course.length);
-    if (y > -60 && y < vh + 60) finishLine(c, vcx, y, boss);
+    if (y > -60 && y < vh + 60) finishLine(c, vcx, y);
   }
   // poças de óleo e marcas da chuva
   for (const p of view.patches) oilPatch(c, vcx + p.x * V, vy(p.y), s.t);
   for (const m of view.marks) rainMark(c, vcx + m.x * V, vy(m.y), s.t);
 
-  // obstáculos do caminho (o boneco contorna)
-  for (const o of view.obstacles) {
-    const y = vy(o.y);
-    if (y < -60 || y > vh + 60) continue;
-    obstacle(c, map, o.kind, vcx + o.x * V, y, o.r * V * 1.15);
+  // obstáculos do caminho: primeiro os de chão (lama, esteira, ímã), depois os sólidos por cima
+  for (const pass of [0, 1]) {
+    for (const o of view.obstacles) {
+      const floor = o.kind === 'lamacal' || o.kind === 'esteira' || o.kind === 'ima';
+      if (floor !== (pass === 0)) continue;
+      const y = vy(o.y);
+      if (y < -120 || y > vh + 120) continue;
+      obstacle(c, map, o.kind, vcx + o.x * V, y, o.r * V, s.t, o.dir);
+    }
   }
   // esconderijos (os de fora primeiro; o que a pessoa ocupa vai por cima da silhueta)
   let own: SinalView['covers'][number] | null = null;
@@ -193,9 +196,18 @@ export function drawScene(c: Ctx, s: SceneInput) {
   const classic = Number.isFinite(view.course.length);
   // Em tela larga o Vigia fica colado no topo; em celular desce para não bater no painel.
   const vTop = w >= 640 ? 6 : classic ? 124 : 84;
-  vigia(c, map, s.face, s.warn, s.t, heroX, w / 2, vTop, l.vigiaScale, boss);
-  const darkTop = screenY(l, view.darkY, view.y);
-  darkness(c, w, h, darkTop, s.t, style, l.ppm * 16);
+  vigia(c, map, s.face, s.warn, s.t, heroX, w / 2, vTop, l.vigiaScale);
+  // A escuridão vai engolindo o mapa: de longe sobe aos poucos pela tela (compressão visual) e,
+  // a menos de 8 m, mostra a distância de verdade até o boneco.
+  const dist = Math.max(PLAYER_R, view.y - view.darkY);
+  const near = 8;
+  const room = h - l.heroY;
+  const shown =
+    dist <= near
+      ? dist * l.ppm
+      : near * l.ppm + Math.max(0, room - near * l.ppm) * clamp((dist - near) / (40 - near), 0, 1);
+  const darkTop = l.heroY + Math.min(shown, room + 40);
+  darkness(c, w, h, darkTop, s.t, style, l.ppm * 6);
   // A névoa já aparece desde o começo, fraquinha, e engrossa quando a escuridão se aproxima.
   const gapM = Math.max(0, view.y - view.darkY - PLAYER_R);
   fogHaze(c, w, h, clamp((40 - gapM) / 30, 0, 1), s.t, style);
@@ -229,7 +241,7 @@ export function drawScene(c: Ctx, s: SceneInput) {
 }
 
 // ---------------------------------------------------------------- peças do mundo
-function finishLine(c: Ctx, cx: number, y: number, boss: boolean) {
+function finishLine(c: Ctx, cx: number, y: number) {
   const w = HALF * 2 * V;
   const x0 = cx - w / 2;
   const sq = 18;
@@ -243,9 +255,9 @@ function finishLine(c: Ctx, cx: number, y: number, boss: boolean) {
   c.lineWidth = 3;
   c.strokeRect(x0, y - sq, w, sq * 2);
   for (const sx of [x0 - 6, x0 + w + 6]) {
-    blob(c, rect(sx - 4, y - 60, 8, 70, 3), boss ? '#e5303a' : '#ffd23f', 3, 3);
+    blob(c, rect(sx - 4, y - 60, 8, 70, 3), '#ffd23f', 3, 3);
   }
-  mono(c, boss ? 'CHEFE' : 'CHEGADA', cx, y - 28, 13, INK, 'center');
+  mono(c, 'CHEGADA', cx, y - 28, 13, INK, 'center');
 }
 
 function oilPatch(c: Ctx, x: number, y: number, t: number) {
@@ -522,17 +534,16 @@ function eyeSlash(c: Ctx, x: number, y: number) {
 /** Trilha de progresso da fase: um cartão pequeno com "FASE n", "faltam X m" e o boneco andando até a bandeira. */
 function progressBar(c: Ctx, s: SceneInput, x: number, y: number, w: number) {
   const { view } = s;
-  const boss = view.course.boss;
   const len = view.course.length;
   const p = clamp(view.y / len, 0, 1);
   blob(c, rect(x, y, w, 44, 12), PAPER, 2.5, 2);
   const left = Math.max(0, Math.ceil(len - view.y));
-  mono(c, `${boss ? 'CHEFE · ' : ''}FASE ${view.course.n}`, x + 10, y + 16, 10, INK);
+  mono(c, `FASE ${view.course.n}`, x + 10, y + 16, 10, INK);
   mono(c, `faltam ${left} m`, x + w - 10, y + 16, 10, '#4a4a44', 'right');
   const tx = x + 12;
   const tw = w - 36;
   const ty = y + 28;
-  c.fillStyle = boss ? '#e5303a' : ORG;
+  c.fillStyle = ORG;
   c.beginPath();
   c.roundRect(tx, ty, Math.max(6, tw * p), 6, 3);
   c.fill();
@@ -545,7 +556,7 @@ function progressBar(c: Ctx, s: SceneInput, x: number, y: number, w: number) {
   // bandeirinha
   const fx = x + w - 14;
   line(c, fx, ty - 5, fx, ty + 11, 2.4);
-  blob(c, poly([[fx, ty - 5], [fx + 9, ty - 1], [fx, ty + 3]]), boss ? '#e5303a' : YEL, 1.6, 0);
+  blob(c, poly([[fx, ty - 5], [fx + 9, ty - 1], [fx, ty + 3]]), YEL, 1.6, 0);
   // boneco
   blob(c, circle(tx + tw * p, ty + 3, 6), s.color ?? HERO_COLOR[view.course.map], 2, 0);
 }

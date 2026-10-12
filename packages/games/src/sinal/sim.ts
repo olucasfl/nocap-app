@@ -9,11 +9,16 @@ import {
   DARK_CAP,
   DEADZONE,
   DT,
+  ESTEIRA_SPEED,
   HALF,
+  IMA_PULL,
   LAMA_FACTOR,
   LOOK_GRACE,
   MAX_SPEED,
+  MOLA_IMPULSE,
+  MOLA_PUSH_S,
   MOVE_EPS,
+  MUD_FACTOR,
   OLEO_RADIUS,
   OLEO_SLICK,
   PLAYER_R,
@@ -35,6 +40,8 @@ import {
   CoverField,
   ObstacleField,
   courseFor,
+  isSolid,
+  obstaclePos,
   timelineParams,
   type Course,
   type CoverDef,
@@ -45,7 +52,8 @@ import { VigiaTimeline, activeLook, stateAt, type VigiaState } from './vigia';
 /** Velocidade-base da escuridão (m/s) antes dos aceleradores. Cresce com o tempo e, no Clássico, com a fase. */
 export function darkBase(course: Course, t: number): number {
   if (course.mode === 'infinito') return 0.22 + 0.016 * t;
-  return (0.4 + 0.22 * (course.n - 1) + 0.01 * t) * (course.boss ? 1.15 : 1);
+  // a cada fase a escuridão larga mais ligeira (e o teto de 92% do boneco continua valendo)
+  return 0.42 + 0.26 * (course.n - 1) + 0.012 * t;
 }
 
 /** A velocidade real da escuridão: a base, mais rápida quanto mais a pessoa fica parada, e NUNCA acima do teto. */
@@ -77,6 +85,7 @@ export interface SinalView {
   course: Course;
   meters: number;
   covers: { def: CoverDef; dur: number; broken: boolean }[];
+  /** Cada obstáculo com a posição de agora (os que se mexem já vêm no lugar certo). */
   obstacles: ObstacleDef[];
   /** `p` é o quanto do aviso ou do efeito já passou (0 a 1). */
   powers: { kind: PowerKind; phase: 'aviso' | 'efeito'; dir: -1 | 1; evaded: boolean; p: number }[];
@@ -203,18 +212,24 @@ export class SinalSim {
     return out;
   }
 
+  /** Obstáculos perto da altura `y`, já na posição de agora (a lista-base é ordenada por altura). */
   private nearObstacles(y: number, reach: number): ObstacleDef[] {
     this.obstacles.ensure(y + 120);
     const list = this.obstacles.list;
+    // quem se mexe oscila até 4 m para os dois lados da posição-base
+    const slack = 4.2;
     let lo = 0;
     let hi = list.length;
     while (lo < hi) {
       const mid = (lo + hi) >> 1;
-      if (list[mid]!.y < y - reach - 1) lo = mid + 1;
+      if (list[mid]!.y < y - reach - slack) lo = mid + 1;
       else hi = mid;
     }
     const out: ObstacleDef[] = [];
-    for (let i = lo; i < list.length && list[i]!.y <= y + reach + 1; i++) out.push(list[i]!);
+    for (let i = lo; i < list.length && list[i]!.y <= y + reach + slack; i++) {
+      const o = list[i]!;
+      out.push(o.amp === 0 ? o : { ...o, ...obstaclePos(o, this.courseTick) });
+    }
     return out;
   }
 
@@ -348,6 +363,26 @@ export class SinalSim {
       ix = -ix;
       iy = -iy;
     }
+    // Obstáculos de chão: lamaçal (devagar), esteira (empurra de lado) e ímã (puxa para o centro).
+    let hzx = 0;
+    let hzy = 0;
+    const around = this.nearObstacles(this.y, 3);
+    for (const o of around) {
+      if (isSolid(o.kind)) continue;
+      const ox = this.x - o.x;
+      const oy = this.y - o.y;
+      const dd = ox * ox + oy * oy;
+      if (dd > o.r * o.r) continue;
+      if (o.kind === 'lamacal') speedMul = Math.min(speedMul, MUD_FACTOR);
+      else if (o.kind === 'esteira') hzx += o.dir * ESTEIRA_SPEED;
+      else if (o.kind === 'ima') {
+        const len = Math.sqrt(dd);
+        if (len > 0.3) {
+          hzx -= (ox / len) * IMA_PULL;
+          hzy -= (oy / len) * IMA_PULL;
+        }
+      }
+    }
     const tx = ix * MAX_SPEED * speedMul;
     const ty = iy * MAX_SPEED * speedMul;
     let slick = false;
@@ -363,8 +398,8 @@ export class SinalSim {
       this.svx = tx;
       this.svy = ty;
     }
-    let vx = this.svx + pushX;
-    let vy = this.svy;
+    let vx = this.svx + pushX + hzx;
+    let vy = this.svy + hzy;
     if (this.impTicks > 0) {
       vx += this.impX;
       vy += this.impY;
@@ -376,6 +411,7 @@ export class SinalSim {
     // Os obstáculos não se atravessam: o boneco desliza em volta deles.
     for (let pass = 0; pass < 2; pass++) {
       for (const o of this.nearObstacles(ny, 1.6)) {
+        if (!isSolid(o.kind)) continue;
         const ox = nx - o.x;
         const oy = ny - o.y;
         const min = o.r + PLAYER_R;
@@ -387,13 +423,21 @@ export class SinalSim {
         } else {
           nx = o.x + (ox / len) * min;
           ny = o.y + (oy / len) * min;
+          // a mola joga o boneco para longe
+          if (o.kind === 'mola' && this.impTicks === 0) {
+            this.impX = (ox / len) * MOLA_IMPULSE;
+            this.impY = (oy / len) * MOLA_IMPULSE;
+            this.impTicks = Math.round(MOLA_PUSH_S * TPS);
+          }
         }
       }
       nx = clamp(nx, -edge, edge);
     }
     const dx = nx - this.x;
     const dy = ny - this.y;
-    const moved = Math.sqrt(dx * dx + dy * dy) / DT;
+    // Só conta como "mexer" o que a pessoa faz: ser empurrado (esteira, ímã, mola, obstáculo que
+    // se mexe) com o dedo parado não faz o Vigia te ver.
+    const moved = Math.min(Math.sqrt(dx * dx + dy * dy) / DT, Math.sqrt(this.svx * this.svx + this.svy * this.svy));
     this.x = nx;
     this.y = ny;
     if (this.y > this.maxY) this.maxY = this.y;
@@ -425,7 +469,6 @@ export class SinalSim {
         kind: 'fase',
         n: this.n,
         map: this.course.map,
-        boss: this.course.boss,
         mapChanged: this.course.map !== old,
       });
       this.tick++;
@@ -486,7 +529,7 @@ export class SinalSim {
         dur: this.curDur(def),
         broken: this.coverState.get(def.id)?.broken ?? false,
       })),
-      obstacles: this.nearObstacles(this.y, 40),
+      obstacles: this.nearObstacles(this.y, 40).filter((o) => Math.abs(o.y - this.y) < 44),
       powers,
       patches: this.patches,
       marks: this.marks,

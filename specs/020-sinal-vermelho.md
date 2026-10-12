@@ -165,6 +165,19 @@ O Lucas achou o jogo linear e fácil. O que mudou:
 - **Progresso do Clássico** num cartãozinho embaixo da distância total (FASE n, faltam X m, boneco até a bandeira), não mais na tela inteira. O **Vigia** fica colado no topo em tela larga.
 - **Construções da horta** (casinha, celeiro, silo, estufa, galpão) sorteadas por lado, com cor, tamanho e distância da pista diferentes: nada de pares iguais nem fila certinha.
 
+## Sem chefe: a cada fase vem mais coisa (12/10/2026)
+- **Não há mais chefe.** Todas as fases são iguais em estrutura; o que muda é que a cada fase vêm **mais poderes, mais obstáculos e uma escuridão mais ligeira** (larga mais perto e acelera mais, sempre abaixo de 92% do boneco). O comprimento da fase cresce até 320 m.
+- **O mapa troca a cada 5 fases** (sorteado, sem repetir até fechar os três).
+- **Poderes liberados por fase** (além dos três do mapa): fase 3 rajada e cortina; fase 5 lama e invertido; fase 7 apagão e chuva. A partir da fase 6 podem vir **dois poderes seguidos**.
+- **Emboscada:** de vez em quando (20% a 45% dos ciclos com poder, mais nas fases altas) o Vigia vira **logo depois do poder**: o efeito acaba só 0,15 s antes do aviso. O aviso ainda toca (no mínimo 0,3 s), então dá para parar, mas a folga é curta.
+- **Obstáculos (nove tipos, liberados por fase):**
+  - sólidos, que se contorna: pequeno e médio (fase 1), grande (2), deslizante, que vai de um lado a outro (3), vaivém, que vem e vai (5);
+  - mola (4): joga o boneco para trás por 0,3 s;
+  - de chão, que agem em quem passa: lamaçal (2, anda a 45%), esteira (4, empurra de lado a 2 m/s), ímã (6, puxa para o centro a 1,6 m/s).
+  Cada mapa tem a sua arte para cada tipo (carrinho de mão e cogumelo na horta; carro, drone e trampolim na rua; pilar, escorpião e flor no deserto). Os grupos sempre deixam um vão por onde passar.
+- **Regra de equidade:** ser empurrado (esteira, ímã, mola ou obstáculo que se mexe) **com o dedo parado não faz o Vigia te ver**. Só conta como "mexer" o que a pessoa faz.
+- **Escuridão:** volta a engolir o mapa de longe (a borda sobe pela tela a partir de uns 40 m); perto, a posição na tela é a distância real.
+
 ## Controles
 - **Celular:** o analógico (círculo e bolinha) fica **fixo embaixo, no centro da tela**, sempre visível, com uma área de toque generosa em volta. A bolinha acompanha o dedo e volta ao centro ao soltar.
 - **A câmera nunca deixa o analógico tapar o boneco.** A tela reserva uma **zona do analógico** (embaixo, no centro, com folga em volta) e a câmera mantém o boneco sempre **fora dela**: o boneco fica um pouco acima do meio da tela (cerca de 52% da altura, para ficar longe do Vigia) e a câmera também acompanha de lado quando ele vai para a direita. É uma regra do código da câmera (função pura, com teste: para qualquer posição do boneco no corredor, em retrato e em paisagem, ele nunca fica dentro da zona do analógico). Vale também para o Vigia, os esconderijos e o aviso, que ficam fora dessa zona ou são desenhados sem depender dela.

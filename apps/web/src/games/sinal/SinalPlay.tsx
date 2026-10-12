@@ -106,7 +106,7 @@ export function SinalPlay({ mode, seed, color, best, onEnd, onQuit }: Props) {
         } else if (e.kind === 'fase') {
           const s = MAP_STYLE[e.map];
           setBanner({
-            title: e.boss ? `CHEFE: ${s.boss.toUpperCase()}` : `FASE ${e.n}`,
+            title: `FASE ${e.n}`,
             sub: e.mapChanged ? `NOVO MAPA: ${s.name.toUpperCase()}` : s.name.toUpperCase(),
           });
           window.clearTimeout(bannerTimer);

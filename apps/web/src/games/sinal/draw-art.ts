@@ -1,4 +1,4 @@
-import type { SinalMapId } from '@nocap/games';
+import type { ObstacleKind, SinalMapId } from '@nocap/games';
 
 /**
  * A arte do Sinal Vermelho em Canvas 2D (protótipo aprovado em docs/reference/design-sinal-vermelho.html):
@@ -121,12 +121,11 @@ export const HERO_COLOR: Record<SinalMapId, string> = {
 /** Nome, cores e identidade de cada mapa. */
 export const MAP_STYLE: Record<
   SinalMapId,
-  { name: string; vigia: string; boss: string; hero: string; ember: string; dark: string; rim: string }
+  { name: string; vigia: string; hero: string; ember: string; dark: string; rim: string }
 > = {
   horta: {
     name: 'Horta Maluca',
     vigia: 'Espantalho',
-    boss: 'Rei Espantalho',
     hero: 'Tomate',
     ember: '#ffd23f',
     dark: '#0d1a12',
@@ -135,7 +134,6 @@ export const MAP_STYLE: Record<
   neon: {
     name: 'Rua Neon',
     vigia: 'Semáforo',
-    boss: 'Semáforo Mestre',
     hero: 'Entregador',
     ember: '#25c7e8',
     dark: '#07071a',
@@ -144,7 +142,6 @@ export const MAP_STYLE: Record<
   deserto: {
     name: 'Ruínas do Deserto',
     vigia: 'Totem Coruja',
-    boss: 'Totem Ancestral',
     hero: 'Raposa',
     ember: '#ff9ecf',
     dark: '#1a0f24',
@@ -484,56 +481,281 @@ export function cover(c: Ctx, key: SinalMapId, x: number, y: number, active: boo
 }
 
 // ---------------------------------------------------------------- obstáculos
-/** Um obstáculo do caminho (o boneco contorna): três jeitos por mapa. `r` é o raio em pixels de arte. */
-export function obstacle(c: Ctx, key: SinalMapId, kind: number, x: number, y: number, r: number) {
+/**
+ * Um obstáculo do caminho. Os sólidos (pequeno, médio, grande, deslizante, vaivém e mola) o boneco
+ * contorna; lamaçal, esteira e ímã ficam no chão e agem em quem passa. `r` é o raio em pixels de arte
+ * (o corpo, ou a zona nos de chão); `t` anima; `dir` é o lado da esteira.
+ */
+export function obstacle(
+  c: Ctx,
+  key: SinalMapId,
+  kind: ObstacleKind,
+  x: number,
+  y: number,
+  r: number,
+  t = 0,
+  dir = 1,
+) {
   c.save();
   c.translate(x, y);
-  const s = r / 15;
-  c.scale(s, s);
+  if (kind === 'lamacal') zoneMud(c, key, r, t);
+  else if (kind === 'esteira') zoneBelt(c, r, t, dir);
+  else if (kind === 'ima') zoneMagnet(c, r, t);
+  else {
+    const s = (r * 1.15) / 15;
+    c.scale(s, s);
+    solid(c, key, kind, t);
+  }
+  c.restore();
+}
+
+/** Sombra no chão de todo sólido (dá peso e mostra onde está). */
+function groundShadow(c: Ctx, rx: number, ry: number) {
+  c.save();
+  c.fillStyle = 'rgba(0,0,0,0.2)';
+  c.beginPath();
+  c.ellipse(3, 8, rx, ry, 0, 0, 7);
+  c.fill();
+  c.restore();
+}
+
+function solid(c: Ctx, key: SinalMapId, kind: ObstacleKind, t: number) {
+  groundShadow(c, kind === 'grande' ? 24 : 15, kind === 'grande' ? 9 : 6);
   if (key === 'horta') {
-    if (kind === 0) {
-      blob(c, ell(0, 0, 16, 13, 0.3), '#8f9692');
-      blob(c, ell(-4, -4, 7, 4, 0.3), '#b4bbb7', 0.01, 0);
-    } else if (kind === 1) {
+    if (kind === 'pequeno') {
+      blob(c, ell(0, 0, 14, 11, 0.3), '#8f9692');
+      blob(c, ell(-4, -4, 6, 3.5, 0.3), '#b4bbb7', 0.01, 0);
+    } else if (kind === 'medio') {
       blob(c, ell(-8, 0, 10, 13), '#ff8a2b');
       blob(c, ell(8, 0, 10, 13), '#ff8a2b');
       blob(c, ell(0, 0, 11, 14), '#ff6a2b');
       blob(c, rect(-2, -20, 5, 9, 2), '#2f9e57', 2.5, 0);
+    } else if (kind === 'grande') {
+      // fardo de feno enorme
+      blob(c, circle(0, 0, 20), '#e8c35c');
+      blob(c, circle(0, 0, 12), '#f0cf6a', 2.2, 0);
+      blob(c, circle(0, 0, 5), '#c99a3c', 2, 0);
+      line(c, -20, 0, 20, 0, 2.4, '#b5242d');
+    } else if (kind === 'deslizante') {
+      // carrinho de mão cheio de tomates
+      blob(c, poly([[-18, -6], [18, -6], [13, 10], [-13, 10]]), '#7a8794');
+      for (const [bx, by] of [[-8, -10], [2, -12], [10, -9]] as const) blob(c, circle(bx, by, 5), '#e5303a', 2, 0);
+      blob(c, circle(0, 12, 6), '#3a3a36', 2.5, 0);
+      line(c, 15, -4, 26, -12, 3);
+    } else if (kind === 'vaivem') {
+      // barril rolando: as tábuas giram
+      blob(c, rect(-11, -14, 22, 28, 8), '#c9824a');
+      const k = Math.sin(t * 6) * 3;
+      line(c, -11, -5 + k * 0.2, 11, -5 + k * 0.2, 2.4);
+      line(c, -11, 5 - k * 0.2, 11, 5 - k * 0.2, 2.4);
+      line(c, 0, -14, 0, 14, 1.8, '#a9672f');
     } else {
-      blob(c, rect(-16, -11, 32, 22, 6), '#e8c35c');
-      line(c, -16, -3, 16, -3, 2.2);
-      line(c, -16, 5, 16, 5, 2.2);
-      line(c, 0, -11, 0, 11, 2.2, '#b5242d');
+      // cogumelo de mola
+      blob(c, rect(-5, -2, 10, 14, 3), '#f4f4ef', 2.5, 0);
+      const sq = 1 + Math.sin(t * 5) * 0.06;
+      c.save();
+      c.scale(1 / sq, sq);
+      blob(c, ell(0, -6, 17, 12), '#e5303a');
+      for (const [bx, by] of [[-8, -8], [3, -12], [9, -5]] as const) blob(c, circle(bx, by, 2.8), '#f4f4ef', 1.6, 0);
+      c.restore();
     }
   } else if (key === 'neon') {
-    if (kind === 0) {
+    if (kind === 'pequeno') {
+      blob(c, poly([[0, -14], [9, 10], [-9, 10]]), '#ff6a2b');
+      line(c, -4, -2, 4, -2, 3, PAPER);
+      line(c, -6.5, 4, 6.5, 4, 3, PAPER);
+      blob(c, rect(-11, 9, 22, 5, 2.5), '#1d1d2b', 2.2, 0);
+    } else if (kind === 'medio') {
       blob(c, circle(0, 0, 14), '#e5303a');
       blob(c, circle(0, 0, 8), '#b5242d', 2.5, 0);
       line(c, -10, -3, 10, -3, 2);
       line(c, -10, 3, 10, 3, 2);
-    } else if (kind === 1) {
-      blob(c, poly([[0, -17], [11, 12], [-11, 12]]), '#ff6a2b');
-      line(c, -6, -2, 6, -2, 4, PAPER);
-      line(c, -8.5, 6, 8.5, 6, 4, PAPER);
-      blob(c, rect(-14, 11, 28, 6, 3), '#1d1d2b', 2.5, 0);
+    } else if (kind === 'grande') {
+      // carro parado
+      blob(c, rect(-22, -12, 44, 26, 8), '#2f5bff');
+      blob(c, rect(-14, -8, 28, 12, 4), '#bfe6ff', 2.2, 0);
+      blob(c, circle(-15, 13, 5), '#1d1d2b', 2.2, 0);
+      blob(c, circle(15, 13, 5), '#1d1d2b', 2.2, 0);
+      blob(c, circle(-17, -12, 3), '#ffd23f', 1.8, 0);
+      blob(c, circle(17, -12, 3), '#ffd23f', 1.8, 0);
+    } else if (kind === 'deslizante') {
+      // drone com hélices girando
+      blob(c, circle(0, 0, 9), '#1d1d2b');
+      blob(c, circle(0, 0, 4), '#e5303a', 1.8, 0);
+      for (const [dx, dy] of [[-14, -10], [14, -10], [-14, 10], [14, 10]] as const) {
+        line(c, 0, 0, dx, dy, 2.4);
+        c.save();
+        c.translate(dx, dy);
+        c.rotate(t * 24);
+        line(c, -8, 0, 8, 0, 3, '#25c7e8');
+        c.restore();
+      }
+    } else if (kind === 'vaivem') {
+      blob(c, rect(-11, -14, 22, 28, 6), '#3a3f86');
+      line(c, -11, -5, 11, -5, 2.4, '#ffd23f');
+      line(c, -11, 5, 11, 5, 2.4, '#ffd23f');
+      blob(c, star(0, 0, 5, 2.2, 5), '#25c7e8', 1.6, 0);
     } else {
-      blob(c, rect(-15, -14, 30, 28, 5), '#b98a4a');
-      line(c, -15, -14, 15, 14, 2.4);
-      line(c, 15, -14, -15, 14, 2.4);
+      // trampolim
+      blob(c, rect(-16, 2, 32, 8, 3), '#1d1d2b');
+      const up = Math.abs(Math.sin(t * 5)) * 4;
+      blob(c, rect(-14, -8 - up, 28, 7, 3), '#ffd23f');
+      line(c, -9, 2, -9, -1 - up, 2.2);
+      line(c, 9, 2, 9, -1 - up, 2.2);
+      line(c, 0, 2, 0, -1 - up, 2.2);
     }
-  } else if (kind === 0) {
-    blob(c, ell(0, 0, 16, 13, -0.3), '#8b79b8');
-    blob(c, ell(-4, -4, 7, 4, -0.3), '#a595cf', 0.01, 0);
-  } else if (kind === 1) {
-    blob(c, rect(-6, -17, 12, 34, 6), '#3aa96b');
-    blob(c, rect(-17, -6, 9, 5, 2.5), '#3aa96b', 2.5, 0);
-    blob(c, rect(8, -11, 9, 5, 2.5), '#3aa96b', 2.5, 0);
-    blob(c, star(0, -17, 4, 2, 5), '#ff9ecf', 1.6, 0);
+  } else if (kind === 'pequeno') {
+    blob(c, ell(0, 0, 14, 11, -0.3), '#8b79b8');
+    blob(c, ell(-4, -4, 6, 3.5, -0.3), '#a595cf', 0.01, 0);
+  } else if (kind === 'medio') {
+    blob(c, rect(-5, -16, 10, 32, 5), '#3aa96b');
+    blob(c, rect(-16, -6, 9, 5, 2.5), '#3aa96b', 2.5, 0);
+    blob(c, rect(7, -11, 9, 5, 2.5), '#3aa96b', 2.5, 0);
+    blob(c, star(0, -16, 4, 2, 5), '#ff9ecf', 1.6, 0);
+  } else if (kind === 'grande') {
+    // pilar de ruína com o topo quebrado
+    blob(c, rect(-16, -6, 32, 22, 4), '#c9a37a');
+    blob(c, poly([[-12, -6], [-8, -22], [-2, -12], [4, -26], [12, -6]]), '#d8b88f', 3, 0);
+    line(c, -16, 5, 16, 5, 2.2);
+    blob(c, circle(-6, 10, 2.4), '#a9825a', 1.6, 0);
+  } else if (kind === 'deslizante') {
+    // escorpião
+    blob(c, ell(0, 2, 12, 8), '#6b3fa0');
+    blob(c, ell(0, -5, 6, 5), '#8a5ac0', 2.4, 0);
+    line(c, -12, 2, -20, -4, 2.6);
+    line(c, 12, 2, 20, -4, 2.6);
+    c.save();
+    c.beginPath();
+    c.lineWidth = 3;
+    c.strokeStyle = INK;
+    c.moveTo(0, 8);
+    c.quadraticCurveTo(14, 18, 10, 2 + Math.sin(t * 8) * 3);
+    c.stroke();
+    c.restore();
+    blob(c, circle(10, 2 + Math.sin(t * 8) * 3, 3), '#ff9ecf', 1.6, 0);
+  } else if (kind === 'vaivem') {
+    // bola de feno rolando
+    c.save();
+    c.rotate(t * 5);
+    blob(c, circle(0, 0, 13), '#d9a85a');
+    for (let i = 0; i < 5; i++) {
+      const an = (i * Math.PI * 2) / 5;
+      line(c, 0, 0, Math.cos(an) * 12, Math.sin(an) * 12, 1.8, '#a9782f');
+    }
+    c.restore();
   } else {
-    blob(c, rect(-11, -9, 22, 22, 9), '#c9824a');
-    blob(c, rect(-7, -15, 14, 8, 3), '#a9672f', 2.5, 0);
-    line(c, -9, 3, 9, 3, 2);
+    // flor de mola
+    blob(c, rect(-3, -2, 6, 14, 3), '#3aa96b', 2.2, 0);
+    const sq = 1 + Math.sin(t * 5) * 0.08;
+    c.save();
+    c.scale(sq, 1 / sq);
+    for (let i = 0; i < 6; i++) {
+      const an = (i * Math.PI * 2) / 6;
+      blob(c, circle(Math.cos(an) * 9, -8 + Math.sin(an) * 7, 6), '#ff9ecf', 2, 0);
+    }
+    blob(c, circle(0, -8, 5), '#ffd23f', 2, 0);
+    c.restore();
   }
+}
+
+/** Lamaçal / piche / areia movediça: a zona escura que deixa o boneco devagar. */
+function zoneMud(c: Ctx, key: SinalMapId, r: number, t: number) {
+  const col = key === 'horta' ? '#6b4a2b' : key === 'neon' ? '#1a1030' : '#b98a4a';
+  const hi = key === 'horta' ? '#8a6238' : key === 'neon' ? '#5a2fb0' : '#d9a85a';
+  c.save();
+  c.globalAlpha = 0.95;
+  blob(c, ell(0, 0, r, r * 0.86), col, 3, 3);
+  c.globalAlpha = 0.6;
+  c.strokeStyle = hi;
+  c.lineWidth = 3;
+  for (let i = 1; i <= 3; i++) {
+    const k = ((t * 0.35 + i / 3) % 1);
+    c.globalAlpha = 0.6 * (1 - k);
+    c.beginPath();
+    c.ellipse(0, 0, r * (0.25 + 0.7 * k), r * 0.86 * (0.25 + 0.7 * k), 0, 0, 7);
+    c.stroke();
+  }
+  c.globalAlpha = 0.9;
+  for (let i = 0; i < 4; i++) {
+    const bx = Math.cos(i * 1.7 + 0.4) * r * 0.45;
+    const by = Math.sin(i * 2.1) * r * 0.32;
+    const pulse = 0.5 + 0.5 * Math.sin(t * 3 + i * 1.3);
+    c.fillStyle = hi;
+    c.beginPath();
+    c.arc(bx, by, 3 + pulse * 3, 0, 7);
+    c.fill();
+  }
+  c.restore();
+}
+
+/** Esteira: setas que correm para o lado em que ela empurra. */
+function zoneBelt(c: Ctx, r: number, t: number, dir: number) {
+  c.save();
+  blob(c, ell(0, 0, r, r * 0.7), '#3a3f4a', 3, 3);
+  c.beginPath();
+  c.ellipse(0, 0, r, r * 0.7, 0, 0, 7);
+  c.clip();
+  c.fillStyle = '#ffd23f';
+  const step = 26;
+  const off = ((t * 40) % step) * dir;
+  for (let x = -r - step; x <= r + step; x += step) {
+    const cx = x + off;
+    c.beginPath();
+    c.moveTo(cx - 8 * dir, -12);
+    c.lineTo(cx + 6 * dir, 0);
+    c.lineTo(cx - 8 * dir, 12);
+    c.lineTo(cx - 3 * dir, 0);
+    c.closePath();
+    c.fill();
+  }
+  c.restore();
+  c.save();
+  c.strokeStyle = INK;
+  c.lineWidth = 3;
+  c.beginPath();
+  c.ellipse(0, 0, r, r * 0.7, 0, 0, 7);
+  c.stroke();
+  c.restore();
+}
+
+/** Ímã: anéis que se fecham para dentro e o ímã em U no meio. */
+function zoneMagnet(c: Ctx, r: number, t: number) {
+  c.save();
+  for (let i = 0; i < 3; i++) {
+    const k = 1 - ((t * 0.5 + i / 3) % 1);
+    c.globalAlpha = 0.65 * k;
+    c.lineWidth = 3;
+    c.strokeStyle = '#e5303a';
+    c.setLineDash([10, 8]);
+    c.beginPath();
+    c.arc(0, 0, r * (0.3 + 0.7 * k), 0, 7);
+    c.stroke();
+  }
+  c.setLineDash([]);
+  c.globalAlpha = 1;
+  // o ímã em U
+  c.lineWidth = 9;
+  c.lineCap = 'butt';
+  c.strokeStyle = INK;
+  c.beginPath();
+  c.arc(0, 2, 10, 0, Math.PI);
+  c.moveTo(-10, 2);
+  c.lineTo(-10, -10);
+  c.moveTo(10, 2);
+  c.lineTo(10, -10);
+  c.stroke();
+  c.lineWidth = 5;
+  c.strokeStyle = '#e5303a';
+  c.beginPath();
+  c.arc(0, 2, 10, 0, Math.PI);
+  c.moveTo(-10, 2);
+  c.lineTo(-10, -10);
+  c.moveTo(10, 2);
+  c.lineTo(10, -10);
+  c.stroke();
+  c.fillStyle = PAPER;
+  c.fillRect(-12.5, -12, 5, 5);
+  c.fillRect(7.5, -12, 5, 5);
   c.restore();
 }
 
@@ -617,7 +839,7 @@ export function silhouette(c: Ctx, x: number, y: number, col: string) {
 // ---------------------------------------------------------------- Vigia (vista frontal, preso ao topo)
 /**
  * `face` 0 = de costas, 1 = olhando (gira como um cartão); `warn` 0 a 1 é o aviso (com ele ainda de
- * costas); `tx` é o x do boneco (a pupila acompanha); `boss` engrossa e põe uma coroa.
+ * costas); `tx` é o x do boneco (a pupila acompanha).
  */
 export function vigia(
   c: Ctx,
@@ -629,14 +851,13 @@ export function vigia(
   cx: number,
   top: number,
   sc: number,
-  boss: boolean,
 ) {
   const sx = Math.cos(face * Math.PI);
   const front = sx < 0;
   const w = Math.max(0.04, Math.abs(sx));
   c.save();
   c.translate(cx, top);
-  c.scale(sc * (boss ? 1.25 : 1), sc * (boss ? 1.25 : 1));
+  c.scale(sc, sc);
   const shake = warn > 0 && !front ? Math.sin(t * 40) * warn * 1.4 : 0;
   c.translate(shake, 0);
   const look = clamp((tx - cx) / 120, -1, 1);
@@ -648,7 +869,7 @@ export function vigia(
     if (front) {
       for (let i = 0; i < 3; i++) {
         const y = 36 + i * 32;
-        const on = i === 0 || (boss && i === 1);
+        const on = i === 0;
         blob(c, rect(-30, y - 17, 60, 8, 3), '#3a3a56', 2.5, 0);
         blob(c, circle(0, y + 3, 14), on ? '#e5303a' : '#3a2a2a', 3, 0);
       }
@@ -801,10 +1022,6 @@ export function vigia(
     }
     c.restore();
   }
-  if (boss) {
-    // coroa do chefe
-    blob(c, poly([[-26, -6], [-18, -26], [-8, -10], [0, -30], [8, -10], [18, -26], [26, -6]]), '#ffd23f', 3.5, 3);
-  }
   c.restore();
 }
 
@@ -853,7 +1070,7 @@ export function darkness(
     const idx = Math.floor((x + 20) / cell);
     const u = ((x + 20) - idx * cell) / cell;
     const tri = 1 - Math.abs(u * 2 - 1);
-    const size = 16 + 20 * ((idx * 0.618 + 0.3) % 1);
+    const size = 5 + 8 * ((idx * 0.618 + 0.3) % 1);
     return Math.pow(tri, 1.3) * size * (0.8 + 0.2 * Math.sin(t * 3 + idx * 1.7));
   };
   const edge = (x: number) =>

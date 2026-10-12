@@ -3,6 +3,7 @@ import {
   LEAD_IN_S,
   POWER_AVISO_MARGIN_S,
   POWER_RECOVERY_S,
+  POWER_TIGHT_MARGIN_S,
   POWER_SPECS,
   lerp,
   type CycleKind,
@@ -48,6 +49,8 @@ export interface Cycle {
   fake: boolean;
   again?: Again;
   powers: PowerEvent[];
+  /** Emboscada: o aviso de olhar vem logo depois do fim do poder (sem a folga de recuperação). */
+  tight?: boolean;
 }
 
 export interface TimelineParams {
@@ -104,8 +107,8 @@ export class VigiaTimeline {
     const last = this.cycles[this.cycles.length - 1];
     const start = last ? last.end : LEAD_IN_S;
     // Sempre os mesmos sorteios por ciclo, qualquer que seja o resultado: a corrida não "desanda".
-    const [costJ, lookJ, fakeR, powR, offR, dirR, kindR, kind2R, calmR, kindPickR] = Array.from(
-      { length: 10 },
+    const [costJ, lookJ, fakeR, powR, offR, dirR, kindR, kind2R, calmR, kindPickR, tightR] = Array.from(
+      { length: 11 },
       () => this.rng(),
     );
     const d = p.dAt(start);
@@ -134,6 +137,7 @@ export class VigiaTimeline {
 
     // Os poderes: se o ciclo vai ter poder, o tempo de costas é esticado para caber.
     const powers: PowerEvent[] = [];
+    let tight = false;
     const wantPower = powR! < p.pPower(d, start) && start >= this.lastPowerEnd + p.minGap(d);
     if (wantPower) {
       const pool = p.pool(start);
@@ -157,6 +161,12 @@ export class VigiaTimeline {
         // O tempo de costas cresce até o último poder acabar com folga antes do aviso.
         const need = planned[planned.length - 1]!.effectEnd - start + POWER_AVISO_MARGIN_S + 0.4;
         costas = Math.max(costas, need);
+        // De vez em quando o Vigia vira logo depois do poder (emboscada): o aviso ainda toca, e o
+        // efeito já acabou, então dá para parar, mas a folga é curta.
+        if (tightR! < lerp(0.2, 0.45, d)) {
+          tight = true;
+          costas = planned[planned.length - 1]!.effectEnd - start + POWER_TIGHT_MARGIN_S;
+        }
         planned.forEach((q, i) =>
           powers.push({ ...q, dir: ((dirR! < 0.5 ? -1 : 1) * (i % 2 ? -1 : 1)) as -1 | 1 }),
         );
@@ -175,11 +185,13 @@ export class VigiaTimeline {
       end = again.lookEnd + 0.35;
     }
     // Garantia de equidade (o sorteio acima já deixa folga; isto confere).
-    const limit = Math.min(lookStart - POWER_RECOVERY_S, avisoStart - POWER_AVISO_MARGIN_S);
+    const limit = tight
+      ? avisoStart - POWER_TIGHT_MARGIN_S + 1e-9
+      : Math.min(lookStart - POWER_RECOVERY_S, avisoStart - POWER_AVISO_MARGIN_S);
     while (powers.length > 0 && powers[powers.length - 1]!.effectEnd > limit) powers.pop();
     if (powers.length > 0) this.lastPowerEnd = powers[powers.length - 1]!.effectEnd;
 
-    this.cycles.push({ kind, start, avisoStart, lookStart, lookEnd, end, fake, again, powers });
+    this.cycles.push({ kind, start, avisoStart, lookStart, lookEnd, end, fake, again, powers, tight: tight && powers.length > 0 });
   }
 
   /** O ciclo que está valendo no instante `t` (segundos). */
