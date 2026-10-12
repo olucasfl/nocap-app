@@ -99,6 +99,8 @@ export function createSinalAudio(): SinalAudio | null {
         gain.gain.exponentialRampToValueAtTime(quick ? 0.2 : 0.14, t + Math.min(0.25, dur * 0.4));
         osc.connect(gain).connect(out);
         osc.start(t);
+        // Garantia: o zumbido nunca passa de dur + 1,5 s, aconteça o que acontecer com o ciclo.
+        osc.stop(t + dur + 1.5);
         hum = { osc, gain };
       } else if (e.kind === 'olhando') {
         stopHum();
@@ -156,6 +158,8 @@ export function createSinalAudio(): SinalAudio | null {
         hiss('bandpass', 2400, 600, 0.22, 0.4);
         tone('square', 220, 90, 0.16, 0.2);
       } else if (e.kind === 'fase') {
+        // Passou de fase no meio do aviso: o zumbido não tem mais quem o desligue, então corta aqui.
+        stopHum();
         [523, 659, 784, 1047].forEach((f, i) => tone('triangle', f, f, 0.22, 0.25, t + i * 0.09));
       } else if (e.kind === 'fim') {
         stopHum();
