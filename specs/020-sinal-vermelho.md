@@ -215,6 +215,10 @@ O Lucas achou o jogo linear e fácil. O que mudou:
 - **No histórico.** A partida de sala vai para o histórico (jogo Sinal Vermelho, tipo Sala), com a colocação de cada um, e **nunca entra no ranking**, como toda sala.
 - **Rede.** O aparelho manda só o analógico (quando muda) e o botão; o servidor manda o estado 15 vezes por segundo (a posição de todos e o mapa de quem você está vendo) e o aparelho suaviza o movimento. A seed nunca sai do servidor.
 
+## Atordoado e aviso mais forte (12/10/2026)
+- **Atordoado:** bater em um obstáculo sólido atordoa o boneco (estrelinhas girando na cabeça e "ATORDOADO"): de 0,9 s (pequeno) a 1,4 s (grande), 1,2 s nos que se mexem e 1,5 s na serra. Atordoado ele **não obedece o analógico**, e **se o Vigia olhar nesse tempo, perde mesmo parado** (escondido, não). Ser empurrado por outro jogador (sala) também atordoa (0,8 s). Na sala, os outros veem as estrelinhas.
+- **Aviso:** "PARE! ELE VAI VIRAR" no aviso e "VIROU! NÃO SE MEXA" quando ele olha. O vermelho da tela cresce junto com o aviso (borda mais grossa e névoa mais forte quanto mais perto de ele virar) e fica bem forte quando ele vira.
+
 ## Controles
 - **Celular:** o analógico (círculo e bolinha) fica **fixo embaixo, no centro da tela**, sempre visível, com uma área de toque generosa em volta. A bolinha acompanha o dedo e volta ao centro ao soltar.
 - **A câmera nunca deixa o analógico tapar o boneco.** A tela reserva uma **zona do analógico** (embaixo, no centro, com folga em volta) e a câmera mantém o boneco sempre **fora dela**: o boneco fica um pouco acima do meio da tela (cerca de 52% da altura, para ficar longe do Vigia) e a câmera também acompanha de lado quando ele vai para a direita. É uma regra do código da câmera (função pura, com teste: para qualquer posição do boneco no corredor, em retrato e em paisagem, ele nunca fica dentro da zona do analógico). Vale também para o Vigia, os esconderijos e o aviso, que ficam fora dessa zona ou são desenhados sem depender dela.

@@ -170,6 +170,7 @@ export function SinalRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
             x: cur.x,
             y: cur.y,
             hidden: p.hidden,
+            stunned: p.stunned,
             color: s.colors[p.id] ?? '#f4f4ef',
             name: names[p.id] ?? '?',
           };

@@ -108,6 +108,7 @@ export interface SinalRoomPlayer {
   x: number;
   y: number;
   hidden: boolean;
+  stunned?: boolean;
   dead: boolean;
   meters: number;
 }

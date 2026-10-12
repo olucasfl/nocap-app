@@ -85,7 +85,7 @@ function runWatched(sim: SinalSim, policy: (s: SinalSim) => [number, number], ma
       const v = sim.view;
       const inZone = v.obstacles.some((o) => !isSolid(o.kind) && (v.x - o.x) ** 2 + (v.y - o.y) ** 2 <= o.r * o.r);
       const nearMover = v.obstacles.some((o) => MOVER_KINDS.includes(o.kind) && (v.x - o.x) ** 2 + (v.y - o.y) ** 2 < (o.r + 1.5) ** 2);
-      envKill = v.t - lastChoque < 1 || inZone || nearMover;
+      envKill = v.t - lastChoque < 2 || inZone || nearMover;
     }
   }
   return { ended: sim.result.ended, envKill };
@@ -412,7 +412,9 @@ describe('a simulação', () => {
         },
         Math.round((fake.lookEnd + 1) * 60),
       );
-      expect(ev.some((e) => e.kind === 'fim' && e.reason === 'vigia'), seed).toBe(false);
+      // andar no falso aviso nunca pega; só uma pancada (que atordoa) explicaria ter sido visto
+      const seen = ev.some((e) => e.kind === 'fim' && e.reason === 'vigia');
+      expect(!seen || ev.some((e) => e.kind === 'choque'), seed).toBe(true);
     }
     expect(tested).toBeGreaterThan(0);
   });
@@ -1109,5 +1111,79 @@ describe('as brincadeiras: efeitos novos', () => {
     expect(avgRatio(6)).toBeGreaterThan(1.3);
     expect(avgRatio(30)).toBeCloseTo(1.9, 5);
     expect(POWER_SPECS.apagao.effect).toBeGreaterThan(POWER_SPECS.buzina.effect);
+  });
+});
+
+describe('atordoado: bateu, fica tonto e o Vigia pega', () => {
+  function bumped(kind: string) {
+    for (let k = 0; k < 120; k++) {
+      const sim = new SinalSim(`st${k}`, 'classico');
+      (sim as unknown as { n: number }).n = 8;
+      (sim as unknown as { startCourse: () => void }).startCourse();
+      (sim as unknown as { darkY: number }).darkY = -1e7;
+      const o = sim.view.obstacles.find((q) => q.kind === kind && q.amp === 0);
+      if (!o) continue;
+      sim.x = o.x;
+      sim.y = o.y - o.r - 0.5;
+      return { sim, o };
+    }
+    return null;
+  }
+
+  it('bater atordoa (mais tempo no obstáculo maior) e atordoado não obedece o analógico', () => {
+    const run = (kind: string) => {
+      const { sim } = bumped(kind)!;
+      let hit = false;
+      for (let i = 0; i < 40 && !hit; i++) hit = sim.step(0, 100).some((e) => e.kind === 'choque');
+      expect(hit).toBe(true);
+      expect(sim.isStunned).toBe(true);
+      expect(sim.view.stun).toBeGreaterThan(0);
+      let ticks = 0;
+      const y0 = sim.y;
+      while (sim.isStunned && ticks < 300) {
+        sim.step(0, 100); // manda para a frente, mas está tonto
+        ticks++;
+      }
+      // enquanto durou, o analógico não levou o boneco para a frente além do recuo da pancada
+      expect(sim.y).toBeLessThan(y0 + 0.5);
+      return ticks;
+    };
+    expect(run('grande')).toBeGreaterThan(run('pequeno'));
+    expect(run('pequeno')).toBeGreaterThan(30);
+  });
+
+  it('o atordoamento acaba sozinho', () => {
+    const { sim } = bumped('medio')!;
+    for (let i = 0; i < 40; i++) sim.step(0, 100);
+    for (let i = 0; i < 200; i++) sim.step(0, 0);
+    expect(sim.isStunned).toBe(false);
+    expect(sim.view.stun).toBe(0);
+  });
+
+  it('se o Vigia olha com o boneco atordoado, perde mesmo parado; escondido, não', () => {
+    const seen = (hide: boolean) => {
+      const { sim, o } = bumped('grande')!;
+      const c = sim.vigiaTimeline.upTo(80).find((q) => !q.fake && !q.again && q.lookEnd - q.lookStart > 1.1)!;
+      // parado até um instante antes de o olhar começar
+      while (sim.view.t < c.lookStart - 0.5 && !sim.dead) sim.step(0, 0);
+      expect(sim.dead).toBe(false);
+      sim.x = o.x;
+      sim.y = o.y - o.r - 0.5;
+      let ended = false;
+      for (let i = 0; i < 60 && !ended; i++) {
+        if (hide) {
+          const cv = sim.view.covers.find((q) => !q.broken)?.def;
+          if (cv) {
+            sim.x = cv.x;
+            sim.y = cv.y;
+          }
+        }
+        // bate no obstáculo e fica parado: só o atordoamento denuncia
+        ended = sim.step(0, i < 10 ? 100 : 0).some((e) => e.kind === 'fim' && e.reason === 'vigia');
+        if (!hide && sim.view.t > c.lookStart + 0.6) break;
+      }
+      return sim.dead && sim.result.ended === 'vigia';
+    };
+    expect(seen(false)).toBe(true);
   });
 });

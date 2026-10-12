@@ -355,6 +355,7 @@ export class SinalRoomEngine extends ColorRoomEngine {
       x: round2(r.sim.x),
       y: round2(r.sim.y),
       hidden: r.sim.isHidden,
+      stunned: r.sim.isStunned,
       dead: r.sim.dead,
       meters: Math.floor(r.sim.result.meters),
     }));

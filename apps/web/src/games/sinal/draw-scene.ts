@@ -91,7 +91,7 @@ export interface SceneInput {
   /** Tranco da tela (0 a 1): pancada, soluço. */
   jolt: number;
   /** Sala: os outros corredores (vivos), com a cor e o nome de cada um. */
-  others?: { id: string; x: number; y: number; hidden: boolean; color: string; name: string }[];
+  others?: { id: string; x: number; y: number; hidden: boolean; stunned?: boolean; color: string; name: string }[];
   /** Sala: quem está ao alcance do empurrão (ganha um anel pulsando). */
   pushTarget?: string | null;
 }
@@ -213,6 +213,7 @@ export function drawScene(c: Ctx, s: SceneInput) {
       hero(c, map, 0, 0, s.t, true, 1, o.color);
     }
     c.restore();
+    if (o.stunned) stunStars(c, ox, oy - 34, s.t);
     if (s.pushTarget === o.id) {
       c.save();
       c.strokeStyle = YEL;
@@ -245,6 +246,10 @@ export function drawScene(c: Ctx, s: SceneInput) {
     }
     hero(c, map, 0, 0, s.t, s.walking, 1, heroColor);
     c.restore();
+    if (view.stun > 0) {
+      stunStars(c, hx, vpy - 34, s.t);
+      mono(c, 'ATORDOADO', hx, vpy - 62, 11, '#ffd23f', 'center');
+    }
     if (view.knock > 0.45) {
       // estrelinha do choque, do lado de onde veio a pancada
       const k = view.knock;
@@ -347,7 +352,7 @@ export function drawScene(c: Ctx, s: SceneInput) {
 
   vignette(c, w, h, s.warn, s.t);
   if (view.vigia === 'olhando') lookFrame(c, w, h, s.t);
-  stopAlert(c, w, h, s.t, view.vigia === 'olhando' ? 'look' : s.warn > 0.12 ? 'warn' : null, Math.max(l.heroY - 120, 150));
+  stopAlert(c, w, h, s.t, view.vigia === 'olhando' ? 'look' : s.warn > 0.12 ? 'warn' : null, Math.max(l.heroY - 120, 150), s.warn);
 
   hud(c, s);
   powerBanner(c, w, avisos[0]?.kind ?? effects[0]?.kind ?? null, avisos.length > 0, s.t, l.heroY + 70);
@@ -714,6 +719,14 @@ function mirrorHint(c: Ctx, w: number, h: number, t: number, k: number) {
   c.restore();
 }
 
+/** Estrelinhas girando em volta da cabeça: o boneco está atordoado. */
+function stunStars(c: Ctx, x: number, y: number, t: number) {
+  for (let i = 0; i < 3; i++) {
+    const an = t * 7 + (i * Math.PI * 2) / 3;
+    blob(c, star(x + Math.cos(an) * 20, y + Math.sin(an) * 6, 8, 3.4, 5, t * 5 + i), YEL, 1.8, 0);
+  }
+}
+
 /** A buzina: a borda pisca e o boneco fica travado. */
 function siren(c: Ctx, w: number, h: number, t: number, hx: number, hy: number) {
   c.save();
@@ -755,8 +768,8 @@ function mud(c: Ctx, w: number, h: number, t: number, hx: number, hy: number) {
 
 function vignette(c: Ctx, w: number, h: number, warn: number, t: number) {
   if (warn <= 0.02) return;
-  const a = warn * (0.35 + 0.25 * Math.sin(t * (5 + warn * 10)));
-  const g = c.createRadialGradient(w / 2, h * 0.45, h * 0.28, w / 2, h * 0.45, h * 0.72);
+  const a = Math.min(1, warn * (0.65 + 0.3 * Math.sin(t * (5 + warn * 10))));
+  const g = c.createRadialGradient(w / 2, h * 0.45, h * 0.12, w / 2, h * 0.45, h * 0.62);
   g.addColorStop(0, 'rgba(229,48,58,0)');
   g.addColorStop(1, `rgba(229,48,58,${a})`);
   c.fillStyle = g;
@@ -767,20 +780,26 @@ function vignette(c: Ctx, w: number, h: number, warn: number, t: number) {
  * O alerta grande para quem joga sem som: no aviso, placa de PARE piscando com "ELE VAI OLHAR" e a
  * borda da tela pulsando; quando ele olha, tela avermelhada com "NÃO SE MEXA". O falso aviso é igual.
  */
-function stopAlert(c: Ctx, w: number, h: number, t: number, state: 'warn' | 'look' | null, y: number) {
+function stopAlert(c: Ctx, w: number, h: number, t: number, state: 'warn' | 'look' | null, y: number, warn: number) {
   if (!state) return;
   const look = state === 'look';
   c.save();
   if (look) {
-    c.fillStyle = 'rgba(229,48,58,0.2)';
+    // ele virou: a tela fica bem vermelha
+    c.fillStyle = 'rgba(229,48,58,0.34)';
     c.fillRect(0, 0, w, h);
+    c.lineWidth = 34;
+    c.strokeStyle = '#ff2d3a';
+    c.globalAlpha = 0.9;
+    c.strokeRect(0, 0, w, h);
   } else {
-    const pulse = 0.5 + 0.5 * Math.sin(t * 16);
-    c.globalAlpha = 0.45 + 0.5 * pulse;
-    c.lineWidth = 22;
+    // o vermelho cresce junto com o aviso: quanto mais perto de ele virar, mais forte
+    const pulse = 0.5 + 0.5 * Math.sin(t * (14 + 10 * warn));
+    c.globalAlpha = 0.55 + 0.45 * pulse;
+    c.lineWidth = 22 + 26 * warn;
     c.strokeStyle = '#ff2d3a';
     c.strokeRect(0, 0, w, h);
-    c.globalAlpha = 0.18 * pulse;
+    c.globalAlpha = (0.1 + 0.3 * warn) * (0.5 + 0.5 * pulse);
     c.fillStyle = '#ff2d3a';
     c.fillRect(0, 0, w, h);
   }
@@ -807,8 +826,8 @@ function stopAlert(c: Ctx, w: number, h: number, t: number, state: 'warn' | 'loo
     mono(c, 'PARE', ox, 6, 14, '#ffffff', 'center');
   }
   const tx = ox + R + 12;
-  disp(c, look ? 'NÃO SE MEXA!' : 'PARE!', tx, look ? -4 : -2, look ? 22 : 30, look ? '#ffffff' : INK);
-  mono(c, look ? 'ELE ESTÁ OLHANDO' : 'ELE VAI OLHAR', tx, 26, 12, look ? '#ffffff' : INK);
+  disp(c, look ? 'VIROU!' : 'PARE!', tx, look ? 2 : -2, look ? 32 : 32, look ? '#ffffff' : INK);
+  mono(c, look ? 'NÃO SE MEXA' : 'ELE VAI VIRAR', tx, 26, 12.5, look ? '#ffffff' : INK);
   c.restore();
 }
 

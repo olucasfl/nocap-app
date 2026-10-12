@@ -34,6 +34,11 @@ import {
   RAJADA_SPEED,
   SERRA_BUMP,
   SINAL_MAX_INPUTS,
+  STUN_BASE_TICKS,
+  STUN_MOVER_TICKS,
+  STUN_PER_R_TICKS,
+  STUN_SERRA_TICKS,
+  STUN_SHOVE_TICKS,
   SINAL_MAX_TENTHS,
   SINAL_MAX_TICKS,
   SOLUCO_EVERY,
@@ -103,6 +108,8 @@ export interface SinalView {
   covers: { def: CoverDef; dur: number; broken: boolean }[];
   /** Cada obstáculo com a posição de agora (os que se mexem já vêm no lugar certo) e a pancada (1 no choque, até 0). */
   obstacles: (ObstacleDef & { bump: number })[];
+  /** Atordoado (0 a 1, até 1 s e meio): estrelinhas em volta da cabeça. */
+  stun: number;
   /** O empurrão que o boneco está levando (1 no começo, até 0) e para onde. */
   knock: number;
   knockDir: { x: number; y: number };
@@ -138,6 +145,8 @@ export class SinalSim {
   private impTicks = 0;
   private impTotal = 1;
   private impDecay = false;
+  /** Passos que faltam de atordoamento (depois de uma pancada). */
+  private stun = 0;
   private bumpAt = new Map<number, number>();
   private hidden = false;
   private maxY = 0;
@@ -182,6 +191,7 @@ export class SinalSim {
     this.impX = 0;
     this.impY = 0;
     this.impTicks = 0;
+    this.stun = 0;
     this.bumpAt.clear();
     this.hidden = false;
     this.maxY = 0;
@@ -208,6 +218,12 @@ export class SinalSim {
     this.impTicks = BUMP_TICKS;
     this.impTotal = BUMP_TICKS;
     this.impDecay = true;
+    this.stun = Math.max(this.stun, STUN_SHOVE_TICKS);
+  }
+
+  /** O boneco está atordoado agora? */
+  get isStunned(): boolean {
+    return this.stun > 0;
   }
 
   /** O boneco está dentro de um esconderijo agora? */
@@ -450,6 +466,11 @@ export class SinalSim {
       rax = old ? old[0] : 0;
       ray = old ? old[1] : 0;
     }
+    // Atordoado: não obedece o analógico enquanto dura.
+    if (this.stun > 0) {
+      rax = 0;
+      ray = 0;
+    }
     let ix = clamp(rax, -100, 100) / 100;
     let iy = clamp(ray, -100, 100) / 100;
     const mag = Math.sqrt(ix * ix + iy * iy);
@@ -528,6 +549,14 @@ export class SinalSim {
             this.impTotal = this.impTicks;
             this.impDecay = true;
             this.bumpAt.set(o.id, this.courseTick);
+            this.stun = Math.max(
+              this.stun,
+              o.kind === 'serra'
+                ? STUN_SERRA_TICKS
+                : MOVER_KINDS.includes(o.kind)
+                  ? STUN_MOVER_TICKS
+                  : Math.round(STUN_BASE_TICKS + STUN_PER_R_TICKS * o.r),
+            );
             events.push({ kind: 'choque', size: clamp(power / 9, 0.25, 1) });
           }
         }
@@ -578,7 +607,8 @@ export class SinalSim {
 
     // Se mexeu enquanto ele olha (passada a folga), perdeu. Escondido, não.
     const look = activeLook(cycle, t);
-    if (look && t >= look.start + LOOK_GRACE && !hidden && moved > MOVE_EPS) {
+    // Quem está atordoado (bateu há pouco) perde também, mesmo parado: a cabeça gira e o Vigia vê.
+    if (look && t >= look.start + LOOK_GRACE && !hidden && (moved > MOVE_EPS || this.stun > 0)) {
       this.die('vigia', events);
       this.tick++;
       return events;
@@ -596,6 +626,7 @@ export class SinalSim {
       return events;
     }
 
+    if (this.stun > 0) this.stun--;
     this.tick++;
     this.courseTick++;
     return events;
@@ -636,6 +667,7 @@ export class SinalSim {
           const at = this.bumpAt.get(o.id);
           return { ...o, bump: at === undefined ? 0 : Math.max(0, 1 - (this.courseTick - at) / 21) };
         }),
+      stun: this.stun > 0 ? Math.min(1, this.stun / 60) : 0,
       knock: this.impTicks > 0 && this.impDecay ? this.impTicks / this.impTotal : 0,
       knockDir: (() => {
         const len = Math.sqrt(this.impX * this.impX + this.impY * this.impY);

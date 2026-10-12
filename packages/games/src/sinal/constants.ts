@@ -181,6 +181,12 @@ export const TURBINA_SPEED = 2.4; // turbina: empurra para a frente ou para trá
 export const BUMP_BASE = 3.0;
 export const BUMP_PER_R = 3.2;
 export const BUMP_TICKS = 15;
+/** Atordoado depois de bater: sem controle e, se o Vigia olhar, perde. Mais tempo quanto maior o obstáculo. */
+export const STUN_BASE_TICKS = 42;
+export const STUN_PER_R_TICKS = 30;
+export const STUN_MOVER_TICKS = 72;
+export const STUN_SERRA_TICKS = 90;
+export const STUN_SHOVE_TICKS = 50;
 /** Sala: o botão de empurrar aparece a esta distância (m) de outro jogador e dá este empurrão (m/s). */
 export const PUSH_RANGE = 1.9;
 export const PUSH_POWER = 7.5;
