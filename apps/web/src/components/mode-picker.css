@@ -15,6 +15,10 @@
   --accent: var(--green);
   --on: var(--on-accent);
 }
+.mp.sinal {
+  --accent: var(--eco-red);
+  --on: var(--on-blue);
+}
 .mp-card {
   display: flex;
   flex-direction: column;

@@ -241,3 +241,43 @@
     animation: none;
   }
 }
+
+/* Fichas de modo e "em breve" */
+.sv-rule {
+  background: var(--white);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  font: 700 11px var(--font-mono);
+}
+.sv-rule b {
+  display: block;
+  font: 900 20px var(--font-display);
+  letter-spacing: -0.04em;
+}
+.fp-soon {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  background: var(--white);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+.fp-soon h2 {
+  margin: 0;
+  font: 900 28px/1 var(--font-display);
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+}
+.fp-soon p {
+  margin: 0;
+  font: 400 13px/1.5 var(--font-mono);
+  color: var(--muted);
+}
+
+/* O título é comprido: cabe em duas linhas no celular. */
+.screen h1.sv-title {
+  font-size: clamp(36px, 12.5vw, 76px);
+  line-height: 0.92;
+}

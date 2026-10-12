@@ -1,7 +1,10 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import type { SinalInput, SinalMode, SinalResult } from '@nocap/games';
 import { BackButton } from '@/components/BackButton';
+import { GameTabs, type GameTab } from '@/components/GameTabs';
+import { ModePicker } from '@/components/ModePicker';
+import { ModeSheet } from '@/components/ModeSheet';
 import { MuteButton } from '@/components/MuteButton';
 import { NewRecord } from '@/components/NewRecord';
 import { ArrowRight } from '@/components/icons';
@@ -10,6 +13,7 @@ import { getSinalBest, getSinalColor, setSinalBest, setSinalColor, SINAL_COLORS 
 
 type Phase = 'menu' | 'play' | 'final';
 
+/** Os modos de partida (o Daily e o online ainda não existem). */
 const MODES: { id: SinalMode; label: string; desc: string; lead: string }[] = [
   {
     id: 'classico',
@@ -25,12 +29,114 @@ const MODES: { id: SinalMode; label: string; desc: string; lead: string }[] = [
   },
 ];
 
+const RULES: Record<SinalMode, [string, string][]> = {
+  classico: [
+    ['4+1', 'fases por mapa'],
+    ['3', 'mapas'],
+    ['chefe', 'a cada 5 fases'],
+  ],
+  infinito: [
+    ['sem', 'linha de chegada'],
+    ['1', 'mapa sorteado'],
+    ['poderes', 'aleatórios'],
+  ],
+};
+
 const HOW = [
   'O Vigia fica no topo da tela. De costas, você corre. Quando ele olha, fique parado: se mexer, acabou.',
   'Antes de olhar ele dá um sinal (som e imagem) com ele ainda de costas. Às vezes é falso.',
   'O anel no chão é um esconderijo: dentro dele você se mexe mesmo com o Vigia olhando. Mas ele quebra se você ficar demais.',
   'A escuridão vem de trás. Ela nunca é mais rápida que você: só pega quem para demais.',
 ];
+
+/** O menu do jogo: as abas, os modos como cartões e a ficha do modo (cor do boneco e Jogar). */
+function SinalStart({
+  color,
+  onColor,
+  onStart,
+}: {
+  color: string;
+  onColor: (hex: string) => void;
+  onStart: (mode: SinalMode) => void;
+}) {
+  const [tab, setTab] = useState<GameTab>('modes');
+  const [open, setOpen] = useState<SinalMode | null>(null);
+  const close = useCallback(() => setOpen(null), []);
+  const best = open ? getSinalBest(open) : 0;
+
+  return (
+    <section className="screen">
+      <BackButton to="/" label="Jogos" />
+      <h1 className="sv-title">Sinal Vermelho</h1>
+      <GameTabs game="sinal" tab={tab} onTab={setTab} />
+      {tab === 'modes' && (
+        <>
+          <ModePicker game="sinal" modes={MODES} onOpen={(id) => setOpen(id as SinalMode)} />
+          {open && (
+            <ModeSheet
+              game="sinal"
+              modeId={open}
+              title={MODES.find((m) => m.id === open)?.label ?? ''}
+              lead={MODES.find((m) => m.id === open)?.lead ?? ''}
+              record={best > 0 ? `Seu recorde aqui é de ${Math.floor(best)} m` : null}
+              onClose={close}
+              rules={RULES[open].map(([big, small]) => (
+                <div className="sv-rule" key={small}>
+                  <b>{big}</b>
+                  {small}
+                </div>
+              ))}
+            >
+              <ol className="sv-howto">
+                {HOW.map((t, i) => (
+                  <li key={i}>
+                    <b>{i + 1}</b>
+                    <span>{t}</span>
+                  </li>
+                ))}
+              </ol>
+              <div className="mono sv-meta">SEU BONECO</div>
+              <div className="sv-colors" role="radiogroup" aria-label="Cor do boneco">
+                {SINAL_COLORS.map((c) => (
+                  <button
+                    key={c.hex}
+                    type="button"
+                    role="radio"
+                    aria-checked={color === c.hex}
+                    aria-label={c.name}
+                    title={c.name}
+                    className="sv-color"
+                    data-sfx="select"
+                    style={{ background: c.hex }}
+                    onClick={() => onColor(c.hex)}
+                  />
+                ))}
+              </div>
+              <p className="mono sv-meta">
+                NO CELULAR, O ANALÓGICO FICA EMBAIXO, NO CENTRO. NO COMPUTADOR, W A S D OU AS SETAS.
+              </p>
+              <button type="button" className="btn" data-sfx="start" onClick={() => onStart(open)}>
+                Jogar <ArrowRight />
+              </button>
+            </ModeSheet>
+          )}
+        </>
+      )}
+      {tab === 'friends' && (
+        <div className="fp-soon">
+          <div className="mono sv-meta">JOGAR COM AMIGOS</div>
+          <h2>Em breve</h2>
+          <p>
+            A corrida online vem depois: todo mundo no mesmo mapa ao mesmo tempo, cada um com a sua
+            cor e o nome em cima do boneco. Os bonecos não se atravessam e, ao encostar, o outro é
+            empurrado. Quem é visto mexendo ou pego pela escuridão sai da corrida e assiste.
+          </p>
+          <p className="mono sv-meta">POR ENQUANTO, SÓ O MODO SOLO.</p>
+        </div>
+      )}
+    </section>
+  );
+}
 
 const seedOf = () => crypto.randomUUID().replace(/-/g, '').slice(0, 12);
 
@@ -44,8 +150,9 @@ export function SinalGame() {
   const [before, setBefore] = useState(0);
   const [, setInputs] = useState<SinalInput[]>([]);
 
-  const begin = () => {
-    setBefore(getSinalBest(mode));
+  const begin = (m: SinalMode = mode) => {
+    setMode(m);
+    setBefore(getSinalBest(m));
     setSeed(seedOf());
     setPhase('play');
   };
@@ -82,76 +189,14 @@ export function SinalGame() {
       </header>
 
       {phase === 'menu' && (
-        <section className="screen eco-intro">
-          <BackButton to="/" label="Voltar aos jogos" />
-          <div className="mono eco-label">SINAL VERMELHO</div>
-          <h1>Corra sem ser visto</h1>
-
-          <h2 className="sv-section">Modo</h2>
-          <ul className="sv-modes" role="radiogroup" aria-label="Modo">
-            {MODES.map((m) => (
-              <li key={m.id}>
-                <button
-                  type="button"
-                  role="radio"
-                  aria-checked={mode === m.id}
-                  className="sv-mode"
-                  data-sfx="select"
-                  onClick={() => setMode(m.id)}
-                >
-                  <span className="sv-mode-head">
-                    <b>{m.label}</b>
-                    <span className="mono sv-meta">{m.desc}</span>
-                  </span>
-                  <p>{m.lead}</p>
-                  <span className="mono sv-meta">
-                    SEU RECORDE: {getSinalBest(m.id) > 0 ? `${Math.floor(getSinalBest(m.id))} m` : '-'}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-
-          <h2 className="sv-section">Seu boneco</h2>
-          <div className="sv-colors" role="radiogroup" aria-label="Cor do boneco">
-            {SINAL_COLORS.map((c) => (
-              <button
-                key={c.hex}
-                type="button"
-                role="radio"
-                aria-checked={color === c.hex}
-                aria-label={c.name}
-                title={c.name}
-                className="sv-color"
-                data-sfx="select"
-                style={{ background: c.hex }}
-                onClick={() => {
-                  setColor(c.hex);
-                  setSinalColor(c.hex);
-                }}
-              />
-            ))}
-          </div>
-
-          <h2 className="sv-section">Como jogar</h2>
-          <ol className="sv-howto">
-            {HOW.map((t, i) => (
-              <li key={i}>
-                <b>{i + 1}</b>
-                <span>{t}</span>
-              </li>
-            ))}
-          </ol>
-          <p className="mono sv-meta">
-            NO CELULAR, O ANALÓGICO FICA EMBAIXO, NO CENTRO. NO COMPUTADOR, W A S D OU AS SETAS.
-          </p>
-
-          <div className="stack">
-            <button type="button" className="btn" data-sfx="start" onClick={begin}>
-              Jogar <ArrowRight />
-            </button>
-          </div>
-        </section>
+        <SinalStart
+          color={color}
+          onColor={(hex) => {
+            setColor(hex);
+            setSinalColor(hex);
+          }}
+          onStart={begin}
+        />
       )}
 
       {phase === 'final' && result && (
@@ -184,11 +229,11 @@ export function SinalGame() {
             O RANKING ONLINE DO SINAL VERMELHO AINDA NÃO ESTÁ NO AR. O RECORDE FICA SÓ NESTE APARELHO.
           </p>
           <div className="stack">
-            <button type="button" className="btn alt" data-sfx="start" onClick={begin}>
+            <button type="button" className="btn alt" data-sfx="start" onClick={() => begin()}>
               Jogar de novo
             </button>
             <button type="button" className="btn ghost" data-sfx="back" onClick={() => setPhase('menu')}>
-              Trocar modo ou cor
+              Voltar ao menu
             </button>
             <Link to="/" className="btn ghost">
               Voltar aos jogos

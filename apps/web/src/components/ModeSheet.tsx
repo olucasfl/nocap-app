@@ -1,7 +1,7 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { modeArt } from './ModePicker';
-import type { GameId } from '@/lib/stats';
+import type { UiGame } from './ui-game';
 import './mode-sheet.css';
 
 /**
@@ -18,7 +18,7 @@ export function ModeSheet({
   onClose,
   children,
 }: {
-  game: GameId;
+  game: UiGame;
   modeId: string;
   title: string;
   lead: string;

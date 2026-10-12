@@ -36,6 +36,10 @@
   background: var(--green);
   color: var(--on-accent);
 }
+.gt.sinal button[aria-selected='true'] {
+  background: var(--eco-red);
+  color: var(--on-blue);
+}
 .gt button:focus-visible {
   outline: 3px solid var(--blue);
   outline-offset: -6px;

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { GameId } from '@/lib/stats';
+import type { UiGame } from './ui-game';
 import './mode-picker.css';
 
 export interface ModeOption {
@@ -28,6 +28,19 @@ export function modeArt(id: string): ReactNode {
             fill="currentColor"
             stroke="none"
           />
+        </svg>
+      );
+    case 'classico':
+      return (
+        <svg viewBox="0 0 32 32" aria-hidden="true">
+          <path d="M8 28V5" {...p} />
+          <path d="M8 7h17l-4.5 5.5L25 18H8" {...p} />
+        </svg>
+      );
+    case 'infinito':
+      return (
+        <svg viewBox="0 0 32 32" aria-hidden="true">
+          <path d="M16 16c-3-5-5.5-7-8-7a7 7 0 0 0 0 14c2.5 0 5-2 8-7zm0 0c3 5 5.5 7 8 7a7 7 0 0 0 0-14c-2.5 0-5 2-8 7z" {...p} />
         </svg>
       );
     case 'impostor':
@@ -124,7 +137,7 @@ export function ModePicker({
   onOpen,
   dailyNote,
 }: {
-  game: GameId;
+  game: UiGame;
   modes: ModeOption[];
   onOpen: (id: string) => void;
   /** Situação do Daily de hoje ("FEITO · 21.4/30" ou "DISPONÍVEL"). */

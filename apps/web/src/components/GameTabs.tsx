@@ -1,4 +1,4 @@
-import type { GameId } from '@/lib/stats';
+import type { UiGame } from './ui-game';
 import './game-tabs.css';
 
 /** 'ranking' só existe como destino do botão "Ver ranking" (a página de Ranking é própria). */
@@ -17,7 +17,7 @@ export function GameTabs({
   tab,
   onTab,
 }: {
-  game: GameId;
+  game: UiGame;
   tab: GameTab;
   onTab: (t: GameTab) => void;
 }) {
