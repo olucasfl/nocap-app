@@ -5,6 +5,7 @@ import { dailySeed } from '@nocap/games';
 import { randomUUID } from 'node:crypto';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import {
+  blocksSessionSchema,
   ecoSessionSchema,
   sinalSessionSchema,
   timeSessionSchema,
@@ -49,6 +50,16 @@ export class GamesController {
   @UseGuards(AuthGuard, RateLimitGuard)
   @RateLimit({ limit: 30, windowMs: 60_000 })
   sinalSession(@Body(new ZodValidationPipe(sinalSessionSchema)) _body: TimeSessionInput) {
+    const seed = randomUUID().slice(0, 12);
+    return { seed, session: issueTimeSession(seed) };
+  }
+
+  /** Começa uma partida do Block's: seed sorteada e sessão assinada, como no Sinal. */
+  @Post('blocks/session')
+  @HttpCode(200)
+  @UseGuards(AuthGuard, RateLimitGuard)
+  @RateLimit({ limit: 30, windowMs: 60_000 })
+  blocksSession(@Body(new ZodValidationPipe(blocksSessionSchema)) _body: TimeSessionInput) {
     const seed = randomUUID().slice(0, 12);
     return { seed, session: issueTimeSession(seed) };
   }

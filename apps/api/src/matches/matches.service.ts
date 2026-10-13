@@ -10,6 +10,7 @@ import {
   dailySeed,
   dailyStreak,
   ecoPresets,
+  isBlocksMode,
   isSinalMode,
   periodStart,
   songOfMode,
@@ -20,6 +21,7 @@ import {
   scoreBatidaMatch,
   scoreEcoMatch,
   scoreMatch,
+  scoreBlocksMatch,
   scoreSinalMatch,
   scoreTimeMatch,
   type ScoredMatch,
@@ -29,6 +31,7 @@ import type {
   CreateMatchInput,
   EcoMatchInput,
   HistoryQuery,
+  BlocksMatchInput,
   SinalMatchInput,
   TimeMatchInput,
 } from './match.schema';
@@ -55,6 +58,7 @@ export class MatchesService {
     if (input.game === 'time') return this.createTime(input, who);
     if (input.game === 'eco') return this.createEco(input, who);
     if (input.game === 'sinal') return this.createSinal(input, who);
+    if (input.game === 'blocks') return this.createBlocks(input, who);
     return this.createColor(input, who);
   }
 
@@ -179,6 +183,24 @@ export class MatchesService {
     return this.persist(input, who, scored, true);
   }
 
+  /**
+   * Block's: a nota sai da partida refeita pela seed e pelas jogadas. Só solo, um quadro por modo
+   * (hoje só o Block Classic); a sessão assinada vale uma vez e limita a velocidade.
+   */
+  private async createBlocks(input: BlocksMatchInput, who: Who) {
+    if (!isBlocksMode(input.mode)) throw new BadRequestException(`Modo desconhecido: ${input.mode}`);
+    if (input.kind === 'daily') throw new BadRequestException("O Block's ainda não tem Daily");
+    const session = verifyTimeSession(input.session);
+    if (!session || session.seed !== input.seed) {
+      throw new BadRequestException('Sessão da partida inválida ou expirada');
+    }
+    if (await this.repo.seedUsed('blocks', input.seed, input.matchId)) {
+      throw new ConflictException('Essa sessão já foi usada');
+    }
+    const scored = scoreBlocksMatch({ ...input, elapsedMs: Date.now() - session.issuedAt });
+    return this.persist(input, who, scored, true);
+  }
+
   private async createColor(input: ColorMatchInput, who: Who) {
     // Daily vale para o mundo todo: seed e modo são os do dia, não escolha do cliente.
     if (input.kind === 'daily') {
@@ -257,7 +279,7 @@ export class MatchesService {
       string,
       { current: number; best: number; playedToday: boolean; totalScore: number | null }
     > = {};
-    for (const game of ['color', 'time', 'eco', 'sinal']) {
+    for (const game of ['color', 'time', 'eco', 'sinal', 'blocks']) {
       const days = plays.filter((p) => p.game === game).map((p) => dailyDate(p.playedAt));
       const streak = dailyStreak(days, todayStr);
       const score = today.find((t) => t.game === game)?.totalScore ?? null;

@@ -21,12 +21,20 @@ import {
   scoreFromDeltaE,
   scoreTime,
   timePresets,
+  evaluateBlocks,
   evaluateSinal,
+  isBlocksMode,
   isSinalMode,
   validateSinalInputs,
   TPS,
 } from '@nocap/games';
-import type { ColorMatchInput, EcoMatchInput, SinalMatchInput, TimeMatchInput } from './match.schema';
+import type {
+  BlocksMatchInput,
+  ColorMatchInput,
+  EcoMatchInput,
+  SinalMatchInput,
+  TimeMatchInput,
+} from './match.schema';
 
 export interface ScoredMatch {
   rounds: { score: number; deltaE?: number }[];
@@ -240,6 +248,43 @@ export function scoreSinalMatch(
       scoreVersion: 1,
       phases: result.phases,
       ended: result.ended,
+    },
+  };
+}
+
+/** Uma jogada de Block's leva pelo menos isto: mais rápido que isso não é gente jogando. */
+export const BLOCKS_MIN_MS_PER_MOVE = 100;
+
+/**
+ * Block's: o servidor refaz a partida inteira pela seed (gera as peças de cada rodada e confere
+ * cada jogada) e a nota é a pontuação, em décimos. Só vale uma partida que terminou, e não pode
+ * ter mais jogadas do que o tempo da sessão permite.
+ */
+export function scoreBlocksMatch(
+  input: Pick<BlocksMatchInput, 'mode' | 'seed' | 'moves'> & { elapsedMs: number },
+): ScoredMatch {
+  if (!isBlocksMode(input.mode)) {
+    throw new BadRequestException(`Modo desconhecido: ${input.mode}`);
+  }
+  if ((input.elapsedMs + ELAPSED_SLACK_MS) < input.moves.length * BLOCKS_MIN_MS_PER_MOVE) {
+    throw new BadRequestException('Jogadas rápidas demais para o tempo da sessão');
+  }
+  const check = evaluateBlocks(input.seed, input.moves);
+  if (!check.ok) throw new BadRequestException(check.error);
+  const r = check.result;
+  return {
+    rounds: [],
+    total: r.score,
+    totalTenths: r.score * 10,
+    // As jogadas não ficam no histórico (seriam milhares de números por partida).
+    encodedAnswers: [],
+    settings: {
+      mode: input.mode,
+      scoreVersion: 1,
+      moves: r.moves,
+      lines: r.lines,
+      bestStreak: r.bestStreak,
+      sets: r.sets,
     },
   };
 }
