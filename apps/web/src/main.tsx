@@ -32,6 +32,12 @@ const queryClient = new QueryClient({
 // Partidas guardadas sem conexão saem ao abrir o app e sempre que a rede voltar.
 void flushQueuedMatches().catch(() => undefined);
 window.addEventListener('online', () => void flushQueuedMatches().catch(() => undefined));
+// Se o servidor estava com problema (e não só sem rede), a partida guardada também sai sozinha:
+// de tempos em tempos e quando a pessoa volta para a aba.
+window.setInterval(() => void flushQueuedMatches().catch(() => undefined), 45_000);
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) void flushQueuedMatches().catch(() => undefined);
+});
 
 /** Some o splash do PWA (se houver) depois de um mínimo de tempo, para não piscar. */
 function hideSplash() {

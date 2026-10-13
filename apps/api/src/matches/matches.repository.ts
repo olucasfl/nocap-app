@@ -2,6 +2,7 @@ import { Inject, Injectable, ServiceUnavailableException } from '@nestjs/common'
 import { and, desc, eq, inArray, isNull, or, sql, gte } from 'drizzle-orm';
 import type { Db } from '../db/client';
 import { DB } from '../db/db.module';
+import { clampScore } from '../db/score';
 import { authUser, matchPlayers, matches, players, userGameStats, userVisits } from '../db/schema';
 import { randomUUID } from 'node:crypto';
 import { decodeCursor, encodeCursor } from './cursor';
@@ -82,7 +83,7 @@ export class MatchesRepository {
         matchId,
         playerId: guestId,
         answers: scored.encodedAnswers,
-        totalScore: scored.totalTenths,
+        totalScore: clampScore(scored.totalTenths),
         playedAt,
       });
 
@@ -96,15 +97,15 @@ export class MatchesRepository {
           game: input.game,
           mode: input.mode,
           matches: 1,
-          scoreSum: scored.totalTenths,
-          best: scored.totalTenths,
+          scoreSum: clampScore(scored.totalTenths),
+          best: clampScore(scored.totalTenths),
         })
         .onConflictDoUpdate({
           target: [userGameStats.playerId, userGameStats.game, userGameStats.mode],
           set: {
             matches: sql`${userGameStats.matches} + 1`,
-            scoreSum: sql`${userGameStats.scoreSum} + ${scored.totalTenths}`,
-            best: sql`greatest(${userGameStats.best}, ${scored.totalTenths})`,
+            scoreSum: sql`${userGameStats.scoreSum} + ${clampScore(scored.totalTenths)}`,
+            best: sql`greatest(${userGameStats.best}, ${clampScore(scored.totalTenths)})`,
           },
         });
 

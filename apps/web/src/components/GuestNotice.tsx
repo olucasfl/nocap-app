@@ -25,11 +25,27 @@ export function GuestNotice() {
 }
 
 /** A linha do fim da partida que diz como foi o salvamento (ou o aviso grande, sem conta). */
-export function SaveNote({ save, className }: { save: SaveState; className?: string }) {
+export function SaveNote({
+  save,
+  className,
+  onRetry,
+}: {
+  save: SaveState;
+  className?: string;
+  /** Reenvia o que ficou guardado (aparece quando a partida não chegou ao servidor). */
+  onRetry?: () => void;
+}) {
   if (save === 'guest') return <GuestNotice />;
   return (
-    <p className={className} role="status">
-      {SAVE_TEXT[save]}
-    </p>
+    <>
+      <p className={className} role="status">
+        {SAVE_TEXT[save]}
+      </p>
+      {save === 'queued' && onRetry && (
+        <button type="button" className="btn ghost" data-sfx="select" onClick={onRetry}>
+          Tentar enviar agora
+        </button>
+      )}
+    </>
   );
 }

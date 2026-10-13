@@ -164,7 +164,7 @@ function BlocksFinal({
   onAgain: () => void;
   onMenu: () => void;
 }) {
-  const save = useSaveBlocks(run, mode, end.moves);
+  const [save, retry] = useSaveBlocks(run, mode, end.moves);
   const score = end.result.score;
   const guest = save === 'guest';
   // Sem conta não há recorde: só a nota desta partida.
@@ -250,7 +250,7 @@ function BlocksFinal({
         )}
       </dl>
 
-      <SaveNote className="mono bkf-note" save={save} />
+      <SaveNote className="mono bkf-note" save={save} onRetry={retry} />
 
       <div className="stack bkf-actions">
         <button
@@ -311,7 +311,7 @@ function TowersFinal({
   onAgain: () => void;
   onMenu: () => void;
 }) {
-  const save = useSaveBlocks(run, 'towers', end.moves);
+  const [save, retry] = useSaveBlocks(run, 'towers', end.moves);
   const score = end.score;
   const guest = save === 'guest';
   // Sem conta não há recorde: só a nota desta partida.
@@ -383,7 +383,7 @@ function TowersFinal({
         </div>
       </dl>
 
-      <SaveNote className="mono bkf-note" save={save} />
+      <SaveNote className="mono bkf-note" save={save} onRetry={retry} />
 
       <div className="stack bkf-actions">
         <button

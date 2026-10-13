@@ -4,6 +4,7 @@ import { encodeAnswer } from '@nocap/games';
 import { and, eq, gt, inArray } from 'drizzle-orm';
 import type { Db } from '../db/client';
 import { DB } from '../db/db.module';
+import { clampScore } from '../db/score';
 import { authUser, matchPlayers, matches, players, reservedUsernames } from '../db/schema';
 import type { AnySettings, FinalRow } from './color-room.engine';
 
@@ -79,7 +80,7 @@ export class RoomsRepository {
           answers: row.answers.map((a) =>
             a === null ? NO_ANSWER : typeof a === 'number' ? a : encodeAnswer(a),
           ),
-          totalScore: row.totalTenths,
+          totalScore: clampScore(row.totalTenths),
           placement: row.placement,
           playedAt,
         });

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { BlocksMode } from '@nocap/games';
 import { useIsGuest } from '@/lib/auth';
-import { submitOrQueue } from '../color/submit';
+import { flushQueuedMatches, submitOrQueue } from '../color/submit';
 import { SAVE_TEXT, type SaveState } from '../color/useSaveMatch';
 
 export { SAVE_TEXT, type SaveState };
@@ -19,7 +19,11 @@ export interface BlocksRunInfo {
  * Manda a partida: as jogadas em ordem. O servidor refaz tudo pela seed (as peças de cada
  * rodada, cada jogada, os pontos); o ranking, o histórico e os recordes saem daí.
  */
-export function useSaveBlocks(run: BlocksRunInfo, mode: BlocksMode, moves: number[]): SaveState {
+export function useSaveBlocks(
+  run: BlocksRunInfo,
+  mode: BlocksMode,
+  moves: number[],
+): [SaveState, () => void] {
   const [save, setSave] = useState<SaveState>('saving');
   const queryClient = useQueryClient();
   const guest = useIsGuest();
@@ -57,5 +61,20 @@ export function useSaveBlocks(run: BlocksRunInfo, mode: BlocksMode, moves: numbe
     };
   }, [run, mode, moves, queryClient, guest]);
 
-  return save;
+  /** "Tentar enviar agora": reenvia o que ficou guardado e, se saiu, marca esta partida como salva. */
+  const retry = () => {
+    setSave('saving');
+    flushQueuedMatches()
+      .then((sent) => {
+        if (sent > 0) {
+          void queryClient.invalidateQueries({ queryKey: ['stats'] });
+          void queryClient.invalidateQueries({ queryKey: ['history'] });
+          void queryClient.invalidateQueries({ queryKey: ['ranking'] });
+        }
+        setSave(sent > 0 ? 'saved' : 'queued');
+      })
+      .catch(() => setSave('queued'));
+  };
+
+  return [save, retry];
 }

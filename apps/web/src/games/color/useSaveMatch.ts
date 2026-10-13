@@ -9,7 +9,7 @@ export type SaveState = 'saving' | 'saved' | 'queued' | 'offline' | 'error' | 'g
 export const SAVE_TEXT: Record<SaveState, string> = {
   saving: 'SALVANDO...',
   saved: 'SALVO NO HISTÓRICO',
-  queued: 'SEM CONEXÃO: ENVIO QUANDO VOLTAR',
+  queued: 'NÃO CHEGOU AO SERVIDOR: GUARDADA NO APARELHO E ENVIADA SOZINHA DEPOIS',
   offline: 'OFFLINE: ESTA PARTIDA NÃO FOI SALVA',
   error: 'NÃO FOI POSSÍVEL SALVAR A PARTIDA',
   guest: 'ESTA PARTIDA NÃO FOI SALVA: VOCÊ NÃO TEM CONTA',
