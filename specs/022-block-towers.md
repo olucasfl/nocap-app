@@ -34,7 +34,7 @@ No online (futuro) os três modos entram com sala de 2 a 4 pessoas, a mesma seed
 ## Regras do modo 3 vidas
 
 ### Mundo
-- Uma **plataforma** estreita no chão (7 casas de largura). Tudo que sair dela cai para o vazio.
+- Uma **plataforma** estreita no chão (8 casas de largura, alinhadas à grade). Tudo que sair dela cai para o vazio.
 - A peça nova nasce lá em cima, centralizada, e **desce sozinha**. A câmera acompanha o topo da torre.
 - A física usa 1 unidade por casa, gravidade, atrito e massa pela área das peças.
 

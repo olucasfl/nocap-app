@@ -13,7 +13,8 @@ export const TOWERS_DT = 1 / 60;
 export const MAX_LIVES = 3;
 
 // --- Mundo -----------------------------------------------------------------------------------
-export const PLATFORM_W = 7;
+/** A plataforma tem 8 casas de largura, alinhada à grade (as peças andam de casa em casa). */
+export const PLATFORM_W = 8;
 export const PLATFORM_H = 1.6;
 /** Metade da largura por onde a peça pode andar. */
 export const FIELD_HALF = 8;

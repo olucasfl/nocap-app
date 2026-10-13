@@ -226,7 +226,8 @@ describe('o jogo', () => {
   it('peça que cai fora da plataforma custa uma vida', () => {
     const g = new TowersGame('queda');
     while (!g.active) g.step(NONE);
-    const left: TowersInput = { left: true, right: false, down: true };
+    // Anda para a esquerda até o fim do campo, bem longe da plataforma, e cai direto no vazio
+    const left: TowersInput = { left: true, right: false, down: false };
     let t = 0;
     while (g.lives === MAX_LIVES && t < 15) {
       g.step(left);
