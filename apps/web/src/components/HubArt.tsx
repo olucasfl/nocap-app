@@ -156,3 +156,48 @@ export function SinalArt() {
     </svg>
   );
 }
+
+/** Block's: o tabuleiro com uma linha completa que estoura, a peça que vai cair e o selo dos pontos. */
+export function BlocksArt() {
+  const face: Record<string, string> = { o: '#ff6a2b', b: '#2f5bff', p: '#ff9ecf', g: '#33c27f', v: '#7a3cff' };
+  const U = 21;
+  const X0 = 38;
+  const Y0 = 26;
+  // linha 4 é a que completa e some; as de cima ficam
+  const grid = ['.....', '.....', 'o....', 'bb.pp', 'obgvb'];
+  const block = (c: string, r: number, k: number, clear: boolean) => (
+    <g key={`${r}-${k}`} className={clear ? 'ha-clearcell' : undefined} style={{ animationDelay: `${k * 0.06}s` }}>
+      <rect x={X0 + k * U + 1.5} y={Y0 + r * U + 1.5} width={U - 3} height={U - 3} rx="4.5" fill={face[c]} {...stroke} strokeWidth={2.4} />
+      <rect x={X0 + k * U + 4} y={Y0 + r * U + 4} width={U - 8} height="4.5" rx="2.2" fill="#fff" opacity="0.5" />
+    </g>
+  );
+  return (
+    <svg className="ha ha-blocks" viewBox="0 0 200 150" aria-hidden="true">
+      <rect x={X0 - 6 + 6} y={Y0 - 6 + 6} width={5 * U + 12} height={5 * U + 12} rx="14" {...hard} />
+      <rect x={X0 - 6} y={Y0 - 6} width={5 * U + 12} height={5 * U + 12} rx="14" fill={PAPER} {...stroke} />
+      {Array.from({ length: 25 }, (_, i) => (
+        <rect key={i} x={X0 + (i % 5) * U + 2} y={Y0 + Math.floor(i / 5) * U + 2} width={U - 4} height={U - 4} rx="4" fill={INK} opacity="0.1" />
+      ))}
+      {grid.map((row, r) => [...row].map((c, k) => (c === '.' ? null : block(c, r, k, r === 4))))}
+      <g className="ha-float a">
+        <g transform="translate(140 30) rotate(8)">
+          <rect x="4" y="4" width="22" height="22" rx="5" {...hard} />
+          <rect x="4" y="26" width="22" height="22" rx="5" {...hard} />
+          <rect x="26" y="26" width="22" height="22" rx="5" {...hard} />
+          <rect x="0" y="0" width="22" height="22" rx="5" fill="#ffd23f" {...stroke} strokeWidth={2.6} />
+          <rect x="0" y="22" width="22" height="22" rx="5" fill="#ffd23f" {...stroke} strokeWidth={2.6} />
+          <rect x="22" y="22" width="22" height="22" rx="5" fill="#ffd23f" {...stroke} strokeWidth={2.6} />
+        </g>
+      </g>
+      <g className="ha-stamp">
+        <g transform="rotate(-8 100 75)">
+          <rect x="132" y="104" width="52" height="28" rx="14" {...hard} transform="translate(3 3)" />
+          <rect x="132" y="104" width="52" height="28" rx="14" fill="#ff6a2b" {...stroke} strokeWidth={3} />
+          <text x="158" y="124" textAnchor="middle" fontFamily="Archivo, Arial Black, sans-serif" fontWeight="900" fontSize="17" fill={INK}>
+            +60
+          </text>
+        </g>
+      </g>
+    </svg>
+  );
+}

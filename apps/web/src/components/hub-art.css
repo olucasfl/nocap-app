@@ -189,6 +189,33 @@
   }
 }
 
+/* Block's: a linha completa pisca e estoura em ciclo, a peça flutua. */
+.ha-clearcell {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ha-clear 3.4s ease-in-out infinite;
+}
+@keyframes ha-clear {
+  0%,
+  52% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  62% {
+    transform: scale(1.16);
+    opacity: 1;
+  }
+  78%,
+  90% {
+    transform: scale(0.2);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
 /* Celular: o rodapé do cartão está no fluxo, então a arte ocupa o espaço que sobra em cima dele. */
 @media (max-width: 767px) {
   .hub-card .hub-art {
@@ -214,7 +241,8 @@
   .ha-pupil,
   .ha-amber,
   .ha-run,
-  .ha-road {
+  .ha-road,
+  .ha-clearcell {
     animation: none !important;
   }
   .ha-amber {

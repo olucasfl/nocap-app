@@ -21,6 +21,10 @@
   --accent: var(--eco-red);
   --on: var(--on-blue);
 }
+.rks.blocks {
+  --accent: var(--yellow);
+  --on: var(--on-accent);
+}
 .rks-head h1 {
   margin: 0;
 }
@@ -71,6 +75,10 @@
 .rks-game.sinal[aria-selected='true'] {
   background: var(--eco-red);
   color: var(--on-blue);
+}
+.rks-game.blocks[aria-selected='true'] {
+  background: var(--yellow);
+  color: var(--on-accent);
 }
 
 /* Painel de filtros: borda e faixa de cima na cor do jogo. */

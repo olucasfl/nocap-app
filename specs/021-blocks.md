@@ -1,6 +1,6 @@
 # 021 · Block's (jogos de blocos) e o modo Block Classic
 
-Status: **aprovada pelo Lucas (12/10/2026) como padrão do gênero.** Primeira etapa: **Block Classic solo**, com ranking, histórico, recordes, amigos, som e arte próprios. Salas, Daily e os outros modos de blocos ficam para depois e entram na mesma aba.
+Status: **implementada (solo, com servidor, ranking, histórico, recordes, som e arte); falta jogar ao vivo e calibrar a jogada secreta e as dicas.** Aprovada pelo Lucas (12/10/2026) como padrão do gênero. Primeira etapa: **Block Classic solo**, com ranking, histórico, recordes, amigos, som e arte próprios. Salas, Daily e os outros modos de blocos ficam para depois e entram na mesma aba.
 
 ## A ideia
 
@@ -98,6 +98,13 @@ Tudo sai da **seed** e do **estado do tabuleiro**, então o servidor refaz a par
 - `POST /matches` com `game: 'blocks'`, `mode: 'classic'`, `kind: 'solo'`, a seed, a sessão e os **movimentos**: lista de inteiros `slot x 64 + linha x 8 + coluna` (slot 0 a 2).
 - O servidor **refaz a partida inteira** pela seed (gera os trios, confere que cada movimento é legal, soma os pontos). Movimento ilegal recusa a partida. A partida precisa ter **terminado** (nenhuma peça cabe) para valer.
 - Ranking: `blocks` com o quadro `classic` (pontuação). Histórico e recordes como nos outros jogos. Sem Daily nesta etapa.
+
+## Efeitos da versão atual (pedido do Lucas em 12/10/2026: nível profissional)
+- **Prévia ao arrastar**: a peça sobe acima do dedo com sombra dura, o fantasma aparece no tabuleiro com entrada e "respiração", e as linhas que vão sumir pulsam na cor da peça.
+- **Encaixe**: a peça cai com impacto (escala que passa do ponto e assenta), clarão branco nas casas e pontos flutuando.
+- **Quebra**: faixa de luz varre a linha, os blocos piscam em branco, estouram em onda a partir da peça e soltam cacos; tela treme mais quanto maior a limpeza; palavra de elogio (DUPLO, TRIPLO, QUÁDRUPLO, MEGA, TABULEIRO LIMPO) e selo de combo; limpeza grande dá clarão amarelo.
+- **Pontuação**: o número sobe contando e dá um pulo a cada ganho.
+- **Derrota**: o tabuleiro treme, os blocos desabam em onda e o cartão "SEM ESPAÇO" cai.
 
 ## Fora desta etapa
 Salas e amigos ao vivo, Daily, aposta "Cap ou No Cap", modo às cegas (tabuleiro que some), peças coloridas com combo de cor, outros modos de blocos.

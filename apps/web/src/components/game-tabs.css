@@ -40,6 +40,10 @@
   background: var(--eco-red);
   color: var(--on-blue);
 }
+.gt.blocks button[aria-selected='true'] {
+  background: var(--yellow);
+  color: var(--on-accent);
+}
 .gt button:focus-visible {
   outline: 3px solid var(--blue);
   outline-offset: -6px;

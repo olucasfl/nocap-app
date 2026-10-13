@@ -28,7 +28,13 @@ import './rankings.css';
 const route = getRouteApi('/tabs/ranking');
 
 /** Para onde levar quem ainda não jogou o modo. */
-const GAME_PATH = { color: '/cor', time: '/tempo', eco: '/eco', sinal: '/sinal' } as const;
+const GAME_PATH = {
+  color: '/cor',
+  time: '/tempo',
+  eco: '/eco',
+  sinal: '/sinal',
+  blocks: '/blocks',
+} as const;
 
 /** Diferença de nota para mostrar: pontos com uma casa, ou número inteiro nos jogos de contagem. */
 const gapText = (tenths: number, counts: boolean) =>

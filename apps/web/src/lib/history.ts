@@ -58,7 +58,7 @@ export const activeFilters = (f: HistoryFilters) =>
   (f.mode ? 1 : 0) + (f.kind ? 1 : 0) + (f.period !== 'all' ? 1 : 0);
 
 export function fetchHistory(
-  game: 'color' | 'time' | 'eco' | 'sinal',
+  game: 'color' | 'time' | 'eco' | 'sinal' | 'blocks',
   cursor?: string,
   filters: HistoryFilters = NO_FILTERS,
 ) {
@@ -127,6 +127,7 @@ export function scoreParts(item: Pick<HistoryItem, 'game' | 'mode' | 'answers' |
   if (item.mode === 'impostor' || item.mode === 'leader')
     return { main: (item.totalScore / 10).toFixed(1), unit: ' pts' };
   if (item.game === 'sinal') return { main: String(Math.round(item.totalScore / 10)), unit: ' m' };
+  if (item.game === 'blocks') return { main: String(Math.round(item.totalScore / 10)), unit: ' pts' };
   if (item.game === 'eco')
     return { main: String(Math.round(item.totalScore / 10)), unit: ' passos' };
   if (item.mode === 'survival')
@@ -160,6 +161,7 @@ const GAME_NAME: Record<string, string> = {
   time: 'Já Deu?',
   eco: 'Ecooo',
   sinal: 'Sinal Vermelho',
+  blocks: "Block's",
 };
 const KIND_NAME: Record<string, string> = { solo: 'Solo', daily: 'Daily', room: 'Sala' };
 
@@ -199,6 +201,13 @@ export function classifyMatch(
     if (m >= 300) return { label: 'FORTE', tone: 'good' };
     if (m >= 120) return { label: 'MEH', tone: 'mid' };
     return { label: 'VISTO CEDO', tone: 'low' };
+  }
+  if (item.game === 'blocks') {
+    const n = Math.round(item.totalScore / 10);
+    if (n >= 5000) return { label: 'LENDÁRIO', tone: 'top' };
+    if (n >= 2000) return { label: 'FORTE', tone: 'good' };
+    if (n >= 800) return { label: 'MEH', tone: 'mid' };
+    return { label: 'CEDO DEMAIS', tone: 'low' };
   }
   if (item.game === 'eco') {
     const n = Math.round(item.totalScore / 10);

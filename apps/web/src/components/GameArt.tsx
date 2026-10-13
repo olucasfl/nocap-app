@@ -37,6 +37,18 @@ export function GameArt({ game, size = 'md' }: { game: GameId; size?: 'sm' | 'md
       </div>
     );
   }
+  if (game === 'blocks') {
+    return (
+      <div className={`ga ga-blocks ${size}`} aria-hidden="true">
+        <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="4" strokeLinejoin="round">
+          <rect x="8" y="8" width="20" height="20" rx="4" />
+          <rect x="36" y="8" width="20" height="20" rx="4" fill="currentColor" />
+          <rect x="8" y="36" width="20" height="20" rx="4" fill="currentColor" />
+          <rect x="36" y="36" width="20" height="20" rx="4" />
+        </svg>
+      </div>
+    );
+  }
   if (game === 'sinal') {
     return (
       <div className={`ga ga-sinal ${size}`} aria-hidden="true">
@@ -70,4 +82,5 @@ export const GAME_LABEL: Record<GameId, string> = {
   time: 'Já Deu?',
   eco: 'Ecooo',
   sinal: 'Sinal Vermelho',
+  blocks: "Block's",
 };

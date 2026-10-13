@@ -1,6 +1,6 @@
 import { apiClient } from './api-client';
 
-export type GameId = 'color' | 'time' | 'eco' | 'sinal';
+export type GameId = 'color' | 'time' | 'eco' | 'sinal' | 'blocks';
 
 export interface ModeStats {
   game: string;
@@ -50,6 +50,8 @@ const MODE_MAX_BY_GAME: Record<GameId, Record<string, number>> = {
   },
   // Sinal Vermelho: a nota é a distância (metros), sem máximo
   sinal: { infinito: 0, classico: 0 },
+  // Block's: a nota é a pontuação, sem máximo
+  blocks: { classic: 0 },
 };
 
 /** Sobrevivência: a nota é o número de rodadas jogadas (não tem máximo). */
@@ -61,7 +63,7 @@ export function modeMax(game: string, mode: string): number | undefined {
 
 /** Máximo do Daily de um jogo: 5 rodadas na Cor, 3 no Tempo. */
 export const dailyMax = (game: string) =>
-  game === 'color' ? 50 : game === 'eco' || game === 'sinal' ? 0 : 30;
+  game === 'color' ? 50 : game === 'eco' || game === 'sinal' || game === 'blocks' ? 0 : 30;
 
 /**
  * Jogos e modos cuja nota é uma contagem, não pontos de 0 a 10 por rodada: a Sobrevivência conta
@@ -73,7 +75,9 @@ export type CountUnit = 'rodadas' | 'passos' | 'pontos' | 'metros';
 export const countUnit = (game: string, mode?: string): CountUnit | null =>
   game === 'sinal'
     ? 'metros'
-    : game === 'eco'
+    : game === 'blocks'
+      ? 'pontos'
+      : game === 'eco'
       ? mode?.startsWith('batida-')
         ? 'pontos'
         : 'passos'

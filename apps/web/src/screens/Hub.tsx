@@ -1,5 +1,5 @@
 import { ArrowRight } from '@/components/icons';
-import { ColorArt, EcoArt, SinalArt, TimeArt } from '@/components/HubArt';
+import { BlocksArt, ColorArt, EcoArt, SinalArt, TimeArt } from '@/components/HubArt';
 import { PartyArt } from '@/components/PartyArt';
 import { Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
@@ -8,6 +8,7 @@ import { MuteButton } from '@/components/MuteButton';
 import { RoomBanner } from '@/components/RoomBanner';
 import { ThemeButton } from '@/components/ThemeButton';
 import { useAuth } from '@/lib/auth';
+import { getBlocksBest } from '@/games/blocks/storage';
 import { getSinalBest } from '@/games/sinal/storage';
 import {
   bestTenths,
@@ -35,6 +36,12 @@ function sinalBestLabel(stats: Stats | undefined): string {
   );
   const meters = Math.max(Math.floor(server / 10), Math.floor(Math.max(getSinalBest('infinito'), getSinalBest('classico'))));
   return meters > 0 ? `RECORDE ${meters} M` : 'SEM RECORDE AINDA';
+}
+
+/** O recorde do Block's: o da conta (servidor) ou, sem conta, o deste aparelho. */
+function blocksBestLabel(stats: Stats | undefined): string {
+  const points = Math.max(Math.floor(bestTenths(stats, 'blocks', 'classic') / 10), getBlocksBest());
+  return points > 0 ? `RECORDE ${points} PTS` : 'SEM RECORDE AINDA';
 }
 
 /** Situação do Daily do jogo hoje, em palavras: jogado (com a nota) ou ainda disponível. */
@@ -132,6 +139,17 @@ export function Hub() {
             <div className="hub-card-name long">Sinal Vermelho</div>
             <div className="mono hub-card-meta">CORRA SEM SER VISTO</div>
             <div className="mono hub-card-meta">{sinalBestLabel(data)}</div>
+          </div>
+        </Link>
+
+        <Link to="/blocks" className="hub-card hub-card-blocks" data-sfx="start">
+          <div className="hub-art">
+            <BlocksArt />
+          </div>
+          <div className="hub-card-foot">
+            <div className="hub-card-name">Block&apos;s</div>
+            <div className="mono hub-card-meta">JOGOS DE BLOCOS</div>
+            <div className="mono hub-card-meta">{blocksBestLabel(data)}</div>
           </div>
         </Link>
 

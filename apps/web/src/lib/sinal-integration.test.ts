@@ -48,6 +48,7 @@ describe('Sinal Vermelho no ranking, histórico e recordes', () => {
         time: { current: 0, best: 0, playedToday: false, totalScore: null },
         eco: { current: 0, best: 0, playedToday: false, totalScore: null },
         sinal: { current: 0, best: 0, playedToday: false, totalScore: null },
+        blocks: { current: 0, best: 0, playedToday: false, totalScore: null },
       },
       visit: { current: 0, best: 0, visitedToday: false },
     };

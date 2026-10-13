@@ -116,6 +116,18 @@
   width: 100%;
   height: 100%;
 }
+.ga-blocks {
+  background: var(--yellow);
+  color: var(--on-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+}
+.ga-blocks svg {
+  width: 100%;
+  height: 100%;
+}
 .ga-eco {
   background: var(--green);
   display: grid;

@@ -23,6 +23,6 @@
 | 018 | [Amigos, presença, perfil, ranking e fim de partida](018-social-e-fim-de-partida.md) | 3 | implementada; falta aplicar a migration 0005 |
 | 019 | [Eco Hero (ritmo do Ecooo, estilo Guitar Hero)](019-eco-batida.md) | 6 | solo implementado; falta jogar ao vivo e calibrar |
 | 020 | [Sinal Vermelho (correr sem ser visto)](020-sinal-vermelho.md) | 6 | Solo completo e sala online (2 a 12 pessoas, botão de empurrar); falta calibrar com gente jogando |
-| 021 | [Block's (jogos de blocos) e o Block Classic](021-blocks.md) | 6 | aprovada; Block Classic solo em implementação |
+| 021 | [Block's (jogos de blocos) e o Block Classic](021-blocks.md) | 6 | Block Classic solo implementado; falta jogar ao vivo e calibrar |
 
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.

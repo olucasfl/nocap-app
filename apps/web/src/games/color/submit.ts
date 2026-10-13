@@ -39,7 +39,14 @@ export interface SinalPayload extends BasePayload {
   session: string;
 }
 
-export type SubmitPayload = ColorPayload | TimePayload | EcoPayload | SinalPayload;
+/** Partida do Block's: as jogadas (`peça x 64 + linha x 8 + coluna`) e a sessão assinada. */
+export interface BlocksPayload extends BasePayload {
+  game: 'blocks';
+  moves: number[];
+  session: string;
+}
+
+export type SubmitPayload = ColorPayload | TimePayload | EcoPayload | SinalPayload | BlocksPayload;
 
 interface SubmitResponse {
   matchId: string;

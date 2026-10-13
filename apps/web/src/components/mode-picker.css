@@ -19,6 +19,10 @@
   --accent: var(--eco-red);
   --on: var(--on-blue);
 }
+.mp.blocks {
+  --accent: var(--yellow);
+  --on: var(--on-accent);
+}
 .mp-card {
   display: flex;
   flex-direction: column;

@@ -40,6 +40,10 @@
   --accent: var(--eco-red);
   --on: var(--on-blue);
 }
+.ms.blocks {
+  --accent: var(--yellow);
+  --on: var(--on-accent);
+}
 .ms-head {
   display: flex;
   align-items: center;

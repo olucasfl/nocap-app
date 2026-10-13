@@ -16,7 +16,7 @@ import {
 import { GAME_LABEL, GameArt } from './GameArt';
 import './records.css';
 
-const GAMES: GameId[] = ['color', 'time', 'eco', 'sinal'];
+const GAMES: GameId[] = ['color', 'time', 'eco', 'sinal', 'blocks'];
 
 const fmt = (game: GameId, mode: string, tenths: number) =>
   countUnit(game, mode) ? String(Math.round(tenths / 10)) : (tenths / 10).toFixed(1);

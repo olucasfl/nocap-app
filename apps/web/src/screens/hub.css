@@ -92,6 +92,10 @@ a.hub-card:active {
   background: var(--eco-red);
   color: var(--on-blue);
 }
+.hub-card-blocks {
+  background: var(--yellow);
+  color: var(--on-accent);
+}
 .hub-card-foot {
   position: absolute;
   left: 14px;
@@ -180,8 +184,11 @@ a.hub-daily {
 .hub-card-sinal {
   animation-delay: 0.54s;
 }
-.hub-more {
+.hub-card-blocks {
   animation-delay: 0.62s;
+}
+.hub-more {
+  animation-delay: 0.7s;
 }
 @keyframes hub-in {
   from {

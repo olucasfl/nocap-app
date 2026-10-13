@@ -10,7 +10,8 @@ import { useRoomEntry } from '@/lib/my-room';
 import type { GameId } from '@/lib/stats';
 import './friends-panel.css';
 
-type RoomGameId = GameId;
+/** O Block's ainda não tem sala. */
+type RoomGameId = Exclude<GameId, 'blocks'>;
 
 const RULES: Record<RoomGameId, string[]> = {
   sinal: [

@@ -162,6 +162,14 @@ const sinalRoute = createRoute({
   component: lazyRouteComponent(() => import('@/games/sinal/SinalPage'), 'SinalPage'),
 });
 
+const blocksRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/blocks',
+  validateSearch: (search: Record<string, unknown>): GameSearch<'classic'> =>
+    gameSearch(search, ['classic']),
+  component: lazyRouteComponent(() => import('@/games/blocks/BlocksPage'), 'BlocksPage'),
+});
+
 const timeRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/tempo',
@@ -183,6 +191,7 @@ const routeTree = rootRoute.addChildren([
   timeRoute,
   ecoRoute,
   sinalRoute,
+  blocksRoute,
   nocapRoute,
   loginRoute,
   registerRoute,
