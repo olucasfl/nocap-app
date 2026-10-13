@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { MIN_SEARCH, fetchFriends, searchUsers } from '@/lib/friends';
+import { useAuth } from '@/lib/auth';
 import { inviteFriend, useRoom, type RoomSnapshot } from '@/lib/rooms';
 import { GAME_OF } from './rules';
 
@@ -13,7 +14,8 @@ type Done = 'share' | 'link' | 'code' | null;
 export function InvitePanel({ snapshot }: { snapshot: RoomSnapshot }) {
   const invited = useRoom((s) => s.invited);
   const invitedEver = useRoom((s) => s.invitedEver);
-  const friends = useQuery({ queryKey: ['friends'], queryFn: fetchFriends });
+  const user = useAuth((st) => st.user);
+  const friends = useQuery({ queryKey: ['friends'], queryFn: fetchFriends, enabled: !!user });
   const [done, setDone] = useState<Done>(null);
   const [filter, setFilter] = useState('');
   const [handle, setHandle] = useState('');
@@ -86,118 +88,129 @@ export function InvitePanel({ snapshot }: { snapshot: RoomSnapshot }) {
         </div>
         <p className="mono rm-mode-note">
           {canShare
-            ? 'Quem entra precisa ter uma conta no NoCap.'
+            ? 'Quem entra pode usar só um apelido, não precisa de conta.'
             : 'Este aparelho não abre a lista de apps: o botão de cima copia a mensagem pronta.'}
         </p>
       </section>
 
-      <section className="lb-block" aria-label="Procurar pessoa">
-        <div className="mono rm-label">PROCURAR PESSOA (NÃO PRECISA SER AMIGO)</div>
-        <form
-          className="ch-form"
-          onSubmit={(e) => {
-            e.preventDefault();
-            setTerm(handle.trim().replace(/^@/, '').toLowerCase());
-          }}
-        >
-          <input
-            className="ch-input"
-            value={handle}
-            onChange={(e) => setHandle(e.target.value)}
-            placeholder={`@usuário (ao menos ${MIN_SEARCH} letras)`}
-            aria-label="Procurar pelo @usuário"
-            autoCapitalize="none"
-            autoCorrect="off"
-          />
-          <button
-            type="submit"
-            className="ch-send"
-            data-sfx="send"
-            disabled={handle.trim().replace(/^@/, '').length < MIN_SEARCH}
-          >
-            Pesquisar
-          </button>
-        </form>
-        {found.isFetching && <p className="mono lb-hint">Procurando...</p>}
-        {found.isError && <p className="mono lb-hint">Não deu para pesquisar. Tente de novo.</p>}
-        {found.isSuccess && results.length === 0 && (
-          <p className="mono lb-hint">Ninguém com esse começo de @usuário.</p>
-        )}
-        {results.length > 0 && (
-          <ul className="fr-list">
-            {results.map((u) => (
-              <li key={u.username} className="fr-row">
-                <span className="fr-name">
-                  @{u.username}
-                  {u.state === 'friends' && <span className="mono rm-badge">AMIGO</span>}
-                </span>
-                {invited.includes(u.username) ? (
-                  <span className="mono fr-state">CONVITE ENVIADO</span>
-                ) : (
-                  <button
-                    type="button"
-                    className="fr-btn"
-                    data-sfx="send"
-                    onClick={() => inviteFriend(u.username)}
-                  >
-                    {invitedEver.includes(u.username) ? 'Convidar de novo' : 'Convidar'}
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-        <p className="mono rm-mode-note">
-          Ache a pessoa e toque em Convidar. Quando ela entrar, você pode pedir amizade pela aba
-          Membros.
+      {!user && (
+        <p className="mono lb-hint">
+          Crie uma conta para chamar amigos do NoCap direto daqui. Sem conta, use o link ou o
+          código.
         </p>
-      </section>
+      )}
 
-      <section className="lb-block" aria-label="Chamar amigos">
-        <div className="mono rm-label">CHAMAR AMIGOS DO NOCAP</div>
-        {all.length >= SEARCH_FROM && (
-          <input
-            className="ch-input"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            placeholder="Buscar pelo @usuário"
-            aria-label="Buscar amigo"
-            autoCapitalize="none"
-            autoCorrect="off"
-          />
-        )}
-        {friends.isPending ? (
-          <p className="mono lb-hint">Carregando seus amigos...</p>
-        ) : list.length === 0 ? (
-          <p className="mono lb-hint">
-            {all.length === 0
-              ? 'Você ainda não tem amigos no NoCap. Use o link ou o código.'
-              : filter
-                ? 'Ninguém com esse @usuário.'
-                : 'Todos os seus amigos já estão na sala.'}
+      {user && (
+        <section className="lb-block" aria-label="Procurar pessoa">
+          <div className="mono rm-label">PROCURAR PESSOA (NÃO PRECISA SER AMIGO)</div>
+          <form
+            className="ch-form"
+            onSubmit={(e) => {
+              e.preventDefault();
+              setTerm(handle.trim().replace(/^@/, '').toLowerCase());
+            }}
+          >
+            <input
+              className="ch-input"
+              value={handle}
+              onChange={(e) => setHandle(e.target.value)}
+              placeholder={`@usuário (ao menos ${MIN_SEARCH} letras)`}
+              aria-label="Procurar pelo @usuário"
+              autoCapitalize="none"
+              autoCorrect="off"
+            />
+            <button
+              type="submit"
+              className="ch-send"
+              data-sfx="send"
+              disabled={handle.trim().replace(/^@/, '').length < MIN_SEARCH}
+            >
+              Pesquisar
+            </button>
+          </form>
+          {found.isFetching && <p className="mono lb-hint">Procurando...</p>}
+          {found.isError && <p className="mono lb-hint">Não deu para pesquisar. Tente de novo.</p>}
+          {found.isSuccess && results.length === 0 && (
+            <p className="mono lb-hint">Ninguém com esse começo de @usuário.</p>
+          )}
+          {results.length > 0 && (
+            <ul className="fr-list">
+              {results.map((u) => (
+                <li key={u.username} className="fr-row">
+                  <span className="fr-name">
+                    @{u.username}
+                    {u.state === 'friends' && <span className="mono rm-badge">AMIGO</span>}
+                  </span>
+                  {invited.includes(u.username) ? (
+                    <span className="mono fr-state">CONVITE ENVIADO</span>
+                  ) : (
+                    <button
+                      type="button"
+                      className="fr-btn"
+                      data-sfx="send"
+                      onClick={() => inviteFriend(u.username)}
+                    >
+                      {invitedEver.includes(u.username) ? 'Convidar de novo' : 'Convidar'}
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="mono rm-mode-note">
+            Ache a pessoa e toque em Convidar. Quando ela entrar, você pode pedir amizade pela aba
+            Membros.
           </p>
-        ) : (
-          <ul className="fr-list">
-            {list.map((f) => (
-              <li key={f.username} className="fr-row">
-                <span className="fr-name">@{f.username}</span>
-                {invited.includes(f.username) ? (
-                  <span className="mono fr-state">CONVITE ENVIADO</span>
-                ) : (
-                  <button
-                    type="button"
-                    className="fr-btn"
-                    data-sfx="send"
-                    onClick={() => inviteFriend(f.username)}
-                  >
-                    {invitedEver.includes(f.username) ? 'Convidar de novo' : 'Convidar'}
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+        </section>
+      )}
+
+      {user && (
+        <section className="lb-block" aria-label="Chamar amigos">
+          <div className="mono rm-label">CHAMAR AMIGOS DO NOCAP</div>
+          {all.length >= SEARCH_FROM && (
+            <input
+              className="ch-input"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              placeholder="Buscar pelo @usuário"
+              aria-label="Buscar amigo"
+              autoCapitalize="none"
+              autoCorrect="off"
+            />
+          )}
+          {friends.isPending ? (
+            <p className="mono lb-hint">Carregando seus amigos...</p>
+          ) : list.length === 0 ? (
+            <p className="mono lb-hint">
+              {all.length === 0
+                ? 'Você ainda não tem amigos no NoCap. Use o link ou o código.'
+                : filter
+                  ? 'Ninguém com esse @usuário.'
+                  : 'Todos os seus amigos já estão na sala.'}
+            </p>
+          ) : (
+            <ul className="fr-list">
+              {list.map((f) => (
+                <li key={f.username} className="fr-row">
+                  <span className="fr-name">@{f.username}</span>
+                  {invited.includes(f.username) ? (
+                    <span className="mono fr-state">CONVITE ENVIADO</span>
+                  ) : (
+                    <button
+                      type="button"
+                      className="fr-btn"
+                      data-sfx="send"
+                      onClick={() => inviteFriend(f.username)}
+                    >
+                      {invitedEver.includes(f.username) ? 'Convidar de novo' : 'Convidar'}
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
     </div>
   );
 }

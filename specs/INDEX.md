@@ -25,5 +25,6 @@
 | 020 | [Sinal Vermelho (correr sem ser visto)](020-sinal-vermelho.md) | 6 | Solo completo e sala online (2 a 12 pessoas, botão de empurrar); falta calibrar com gente jogando |
 | 021 | [Block's (jogos de blocos) e o Block Classic](021-blocks.md) | 6 | Block Classic solo implementado; falta jogar ao vivo e calibrar |
 | 022 | [Block Towers (empilhar com física)](022-block-towers.md) | 6 | modo 3 vidas (solo) implementado, com ranking/histórico/perfil (servidor refaz a física); falta jogar e calibrar |
+| 023 | [Convidado joga tudo (sem conta, nada é salvo)](023-convidado-joga-tudo.md) | 2 | implementada: solo sem conta, popup, aviso de não salvo e salas com apelido; falta jogar ao vivo |
 
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.

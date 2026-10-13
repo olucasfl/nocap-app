@@ -1,4 +1,5 @@
 import { colorGame, type ColorSettings, type Hsb, type TimeSettings } from '@nocap/games';
+import { isGuestId, nickKey } from './guest-nick';
 import { RoomChat, type ChatMessage } from './chat';
 
 export const MIN_PLAYERS = 2;
@@ -222,6 +223,12 @@ export class ColorRoomEngine {
 
   get hasConnected() {
     return [...this.members.values()].some((m) => m.connected);
+  }
+
+  /** Já tem alguém com este nome na sala (sem contar acento, maiúscula nem separadores)? */
+  hasName(name: string) {
+    const key = nickKey(name);
+    return [...this.members.values()].some((m) => nickKey(m.username) === key);
   }
 
   has(id: string) {
@@ -533,6 +540,8 @@ export class ColorRoomEngine {
         committed: this.committed.has(m.id),
         isHost: m.id === this.hostId,
         locked: this.locked.has(m.id),
+        /** Entrou sem conta: o nome é só um apelido desta sala. */
+        guest: isGuestId(m.id),
       }));
     return {
       code: this.code,

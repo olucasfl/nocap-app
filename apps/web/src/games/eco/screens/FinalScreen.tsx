@@ -12,7 +12,8 @@ import { saveBest } from '@/lib/records';
 import { ecoGradeScore } from '../grade';
 import { PadChip } from '../pads';
 import type { EndReason, Run } from '../types';
-import { SAVE_TEXT, useSaveEco } from '../useSaveEco';
+import { SaveNote } from '@/components/GuestNotice';
+import { useSaveEco } from '../useSaveEco';
 
 interface Props {
   run: Run;
@@ -89,9 +90,7 @@ export function FinalScreen({ run, taps, reason, previousBest, onMenu, onRematch
           onRanking={() => onMenu('ranking', run.preset)}
         />
       )}
-      <p className="eco-save" role="status">
-        {SAVE_TEXT[save]}
-      </p>
+      <SaveNote className="eco-save" save={save} />
       {run.kind === 'daily' && <DailyPanel game="eco" />}
       <div className="stack">
         {/* O Daily é uma tentativa por dia: sem revanche. */}

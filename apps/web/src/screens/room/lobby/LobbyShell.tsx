@@ -1,7 +1,7 @@
 import { useId, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { Crown, Lock } from '@/components/icons';
 import type { RoomSnapshot } from '@/lib/rooms';
-import { useRoom } from '@/lib/rooms';
+import { useRoom, at } from '@/lib/rooms';
 import { MIN_PLAYERS, rulesSummary } from './rules';
 import './lobby.css';
 
@@ -60,7 +60,7 @@ function Head({
       <div className={`lb-role ${role}`}>
         {role === 'leader' ? <Crown size={22} /> : <Lock size={22} />}
         <div>
-          <b>{role === 'leader' ? 'Você é o líder da sala' : `Líder da sala: @${leaderName}`}</b>
+          <b>{role === 'leader' ? 'Você é o líder da sala' : `Líder da sala: ${at(leaderName)}`}</b>
           <span>
             {role === 'leader'
               ? 'Só você muda as regras e começa a partida.'

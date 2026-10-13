@@ -12,6 +12,7 @@ import { PageLoader } from '@/components/Loader';
 import { NetworkStatus } from '@/components/NetworkStatus';
 import { PullToRefresh } from '@/components/PullToRefresh';
 import { parseRankingsSearch, type RankingsSearch } from '@/lib/ranking';
+import { GuestWelcome } from '@/components/GuestWelcome';
 import { InviteBanner } from '@/components/InviteBanner';
 import { PresenceBeat } from '@/components/PresenceBeat';
 import type { Mode } from '@/games/color/types';
@@ -33,6 +34,7 @@ const rootRoute = createRootRoute({
       <Outlet />
       <InviteBanner />
       <PresenceBeat />
+      <GuestWelcome />
     </>
   ),
 });

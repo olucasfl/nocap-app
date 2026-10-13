@@ -1,4 +1,4 @@
-import { leaveRoom, sendRoom, type RoomSnapshot } from '@/lib/rooms';
+import { leaveRoom, sendRoom, type RoomSnapshot, at } from '@/lib/rooms';
 import { InvitePanel } from './InvitePanel';
 import { LobbyShell } from './LobbyShell';
 import { MembersPanel } from './MembersPanel';
@@ -47,7 +47,7 @@ export function MemberLobby({
               </button>
               <p className="mono rm-hint">
                 {mine?.ready
-                  ? `Você está pronto. Aguardando @${leaderName} começar.`
+                  ? `Você está pronto. Aguardando ${at(leaderName)} começar.`
                   : 'Marque "pronto" quando quiser jogar. O líder começa a partida.'}
               </p>
             </>

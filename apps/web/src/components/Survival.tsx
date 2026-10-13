@@ -1,4 +1,6 @@
 import { useEffect, type CSSProperties, type ReactNode } from 'react';
+import { SaveNote } from '@/components/GuestNotice';
+import type { SaveState } from '@/games/color/useSaveMatch';
 import { Link } from '@tanstack/react-router';
 import { buzz, sfx } from '@/lib/sfx';
 import type { Board } from '@/lib/ranking';
@@ -123,7 +125,7 @@ export function SurvivalFinal({
   limit,
   rows,
   table,
-  saveText,
+  save,
   summary,
   onMenu,
   onRematch,
@@ -134,7 +136,7 @@ export function SurvivalFinal({
   rows: SurvivalRow[];
   /** Substitui a lista padrão de rodadas (o Tempo usa a tabela de colunas). */
   table?: (shown: number) => ReactNode;
-  saveText: string;
+  save: SaveState;
   /** Volta ao menu do jogo (ranking do modo ou lista de modos). */
   onMenu: (tab: GameTab, board?: Board) => void;
   /** Nota contra o recorde e lugar no ranking (o `MatchSummary` do jogo). */
@@ -172,9 +174,7 @@ export function SurvivalFinal({
         </ul>
       )}
       {done && summary}
-      <p className="sv-save mono" role="status">
-        {saveText}
-      </p>
+      <SaveNote className="sv-save mono" save={save} />
       <div className="stack">
         <button type="button" className="btn alt" onClick={onRematch}>
           Jogar de novo

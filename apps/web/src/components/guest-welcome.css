@@ -1,0 +1,66 @@
+.gw {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgb(0 0 0 / 0.55);
+  animation: gw-in 0.2s ease-out both;
+}
+.gw-card {
+  width: min(100%, 420px);
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+  background: var(--paper);
+  color: var(--ink);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 6px 6px 0 var(--ink);
+}
+.gw-tag {
+  align-self: flex-start;
+  padding: 3px 8px;
+  background: var(--yellow);
+  color: var(--on-accent);
+  border: var(--border);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.gw-card h2 {
+  margin: 0;
+  font: 900 26px/1.05 var(--font-display);
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+.gw-lead,
+.gw-note {
+  margin: 0;
+  font-size: 12px;
+}
+.gw-list {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font: 400 13px/1.4 var(--font-mono);
+}
+@keyframes gw-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gw {
+    animation: none;
+  }
+}

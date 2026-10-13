@@ -11,7 +11,8 @@ import type { Board } from '@/lib/ranking';
 import { saveBest } from '@/lib/records';
 import type { RoundResult, Run } from '../types';
 import { TimeRoundsTable } from './TimeRoundsTable';
-import { SAVE_TEXT, useSaveTime } from '../useSaveTime';
+import { SaveNote } from '@/components/GuestNotice';
+import { useSaveTime } from '../useSaveTime';
 
 interface Props {
   run: Run;
@@ -57,9 +58,7 @@ export function FinalScreen({ run, results, previousBest, onMenu, onRematch }: P
           onRanking={() => onMenu('ranking', run.preset)}
         />
       )}
-      <p className="tm-save" role="status">
-        {SAVE_TEXT[save]}
-      </p>
+      <SaveNote className="tm-save" save={save} />
       {done && run.kind === 'daily' && <DailyPanel game="time" />}
       <div className="stack">
         {/* O Daily é uma tentativa por dia: sem revanche. */}

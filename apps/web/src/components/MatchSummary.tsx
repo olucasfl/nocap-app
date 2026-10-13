@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { NewRecord } from '@/components/NewRecord';
-import { useAuth } from '@/lib/auth';
+import { useAuth, useIsGuest } from '@/lib/auth';
 import {
   compareToBest,
   meterPercents,
@@ -151,10 +151,28 @@ export function MatchSummary({
   saved: boolean;
   onRanking: () => void;
 }) {
+  const guest = useIsGuest();
   const c = compareToBest(previousBest, scoreTenths);
   const bars = meterPercents(game, mode, scoreTenths, c.best);
   const unit = scoreUnit(game, mode);
   const withSlash = unit.startsWith('/');
+
+  // Sem conta não há recorde, nem ranking, nem "novo recorde": só a nota desta partida.
+  if (guest) {
+    return (
+      <section className="sum sum-flat" aria-label="Sua nota">
+        <div className="sum-pair">
+          <div className="sum-cell now">
+            <span className="mono sum-label">ESTA PARTIDA</span>
+            <b>
+              {scoreValue(game, mode, scoreTenths)}
+              <small className="mono">{withSlash ? unit : ` ${unit}`}</small>
+            </b>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <>

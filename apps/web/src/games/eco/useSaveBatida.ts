@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { batidaMode, type BatidaTap } from '@nocap/games';
+import { useIsGuest } from '@/lib/auth';
 import { submitOrQueue } from '../color/submit';
 import { SAVE_TEXT, type SaveState } from '../color/useSaveMatch';
 import type { BatidaRunInfo } from './types';
@@ -11,8 +12,13 @@ export { SAVE_TEXT, type SaveState };
 export function useSaveBatida(run: BatidaRunInfo, taps: BatidaTap[]): SaveState {
   const [save, setSave] = useState<SaveState>('saving');
   const queryClient = useQueryClient();
+  const guest = useIsGuest();
 
   useEffect(() => {
+    if (guest) {
+      setSave('guest');
+      return;
+    }
     // Jogada offline (sem sessão do servidor): vale como treino, não há o que salvar.
     if (!run.session) {
       setSave('offline');
@@ -41,7 +47,7 @@ export function useSaveBatida(run: BatidaRunInfo, taps: BatidaTap[]): SaveState 
     return () => {
       alive = false;
     };
-  }, [run, taps, queryClient]);
+  }, [run, taps, queryClient, guest]);
 
   return save;
 }

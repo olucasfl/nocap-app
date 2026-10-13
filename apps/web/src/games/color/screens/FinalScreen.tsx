@@ -11,7 +11,8 @@ import type { Board } from '@/lib/ranking';
 import { saveBest } from '@/lib/records';
 import { toHex } from '../hex';
 import type { RoundResult, Run } from '../types';
-import { SAVE_TEXT, useSaveMatch } from '../useSaveMatch';
+import { SaveNote } from '@/components/GuestNotice';
+import { useSaveMatch } from '../useSaveMatch';
 
 interface Props {
   run: Run;
@@ -70,9 +71,7 @@ export function FinalScreen({ run, results, previousBest, onMenu, onRematch }: P
           onRanking={() => onMenu('ranking', run.preset)}
         />
       )}
-      <p className="cg-save" role="status">
-        {SAVE_TEXT[save]}
-      </p>
+      <SaveNote className="cg-save" save={save} />
       {done && run.kind === 'daily' && <DailyPanel game="color" />}
       <div className="stack">
         {/* O Daily é uma tentativa por dia: sem revanche. */}

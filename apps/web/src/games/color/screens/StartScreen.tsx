@@ -8,9 +8,9 @@ import { ModePicker } from '@/components/ModePicker';
 import { ModeSheet } from '@/components/ModeSheet';
 import { GameTabs, type GameTab } from '@/components/GameTabs';
 import { ArrowRight } from '@/components/icons';
-import { PlayGate } from '@/components/PlayGate';
 import { PullToRefresh } from '@/components/PullToRefresh';
 import { RoomConflictDialog } from '@/components/RoomConflictDialog';
+import { NicknameDialog } from '@/components/NicknameDialog';
 import { useRoomEntry } from '@/lib/my-room';
 import { useAuth } from '@/lib/auth';
 import { dailyMax, fetchStats, recordText } from '@/lib/stats';
@@ -171,40 +171,37 @@ export function StartScreen({ initialTab = 'modes', onMode, onStart }: Props) {
                     Esse modo só funciona em sala, com no mínimo 3 pessoas. Quer criar uma sala
                     agora?
                   </p>
-                  <PlayGate what="criar uma sala">
-                    <button
-                      type="button"
-                      className="btn alt"
-                      data-sfx="start"
-                      disabled={entry.busy}
-                      onClick={() => void entry.create('impostor')}
-                    >
-                      {entry.busy ? 'Criando...' : 'Criar sala'} <ArrowRight />
-                    </button>
-                    {entry.error && (
-                      <p className="mono ms-note" role="alert">
-                        {entry.error}
-                      </p>
-                    )}
-                  </PlayGate>
-                </>
-              ) : (
-                <PlayGate>
                   <button
                     type="button"
-                    className="btn"
+                    className="btn alt"
                     data-sfx="start"
-                    onClick={() => onStart(open)}
+                    disabled={entry.busy}
+                    onClick={() => void entry.create('impostor')}
                   >
-                    Jogar <ArrowRight />
+                    {entry.busy ? 'Criando...' : 'Criar sala'} <ArrowRight />
                   </button>
-                </PlayGate>
+                  {entry.error && (
+                    <p className="mono ms-note" role="alert">
+                      {entry.error}
+                    </p>
+                  )}
+                </>
+              ) : (
+                <button
+                  type="button"
+                  className="btn"
+                  data-sfx="start"
+                  onClick={() => onStart(open)}
+                >
+                  Jogar <ArrowRight />
+                </button>
               )}
             </ModeSheet>
           )}
         </>
       )}
       {tab === 'friends' && <FriendsPanel game="color" />}
+      <NicknameDialog nick={entry.nick} />
       <RoomConflictDialog
         open={!!entry.conflict}
         code={entry.conflict?.code ?? null}

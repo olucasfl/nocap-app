@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Message } from '@/components/icons';
 import { useAuth } from '@/lib/auth';
-import { markChatRead, muteMember, sendChat, useRoom, type RoomSnapshot } from '@/lib/rooms';
+import { markChatRead, muteMember, sendChat, useRoom, type RoomSnapshot, at } from '@/lib/rooms';
 import './chat.css';
 
 const MAX = 200;
@@ -74,7 +74,7 @@ export function ChatPanel({ snapshot }: { snapshot: RoomSnapshot }) {
             <li key={m.id} className={`ch-msg${mine ? ' me' : ''}${head ? ' head' : ''}`}>
               {head && (
                 <div className="ch-meta mono">
-                  <b>@{m.username}</b>
+                  <b>{at(m.username)}</b>
                   <span>{time(m.at)}</span>
                   {isHost && !mine && (
                     <button

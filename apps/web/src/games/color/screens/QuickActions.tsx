@@ -6,7 +6,8 @@ import { MatchSummary } from '@/components/MatchSummary';
 import type { Board } from '@/lib/ranking';
 import { saveBest } from '@/lib/records';
 import type { RoundResult, Run } from '../types';
-import { SAVE_TEXT, useSaveMatch } from '../useSaveMatch';
+import { SaveNote } from '@/components/GuestNotice';
+import { useSaveMatch } from '../useSaveMatch';
 
 interface Props {
   run: Run;
@@ -36,9 +37,7 @@ export function QuickActions({ run, result, previousBest, onMenu, onAgain }: Pro
         saved={save === 'saved'}
         onRanking={() => onMenu('ranking', 'quick')}
       />
-      <p className="cg-save" role="status">
-        {SAVE_TEXT[save]}
-      </p>
+      <SaveNote className="cg-save" save={save} />
       <div className="stack">
         <button type="button" className="btn alt" onClick={onAgain}>
           Outra rodada

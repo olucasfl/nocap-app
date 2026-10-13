@@ -10,7 +10,8 @@ import { GradeFx } from '@/components/GradeFx';
 import { gradeLine, gradeOf, playGrade } from '@/lib/grade';
 import { formatDiff, formatSeconds } from '../format';
 import type { RoundResult, Run } from '../types';
-import { SAVE_TEXT, useSaveTime } from '../useSaveTime';
+import { SaveNote } from '@/components/GuestNotice';
+import { useSaveTime } from '../useSaveTime';
 
 interface Props {
   result: RoundResult;
@@ -54,9 +55,7 @@ function QuickFooter({
         saved={save === 'saved'}
         onRanking={() => onMenu('ranking', 'quick')}
       />
-      <p className="tm-save" role="status">
-        {SAVE_TEXT[save]}
-      </p>
+      <SaveNote className="tm-save" save={save} />
       <div className="stack">
         <button type="button" className="btn alt" onClick={onAgain}>
           Outra rodada

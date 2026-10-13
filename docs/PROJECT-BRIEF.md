@@ -26,7 +26,7 @@
 - Nome: **NoCap** (wordmark no app: "no cap!").
 - Navegação: 4 abas, **Jogos · Histórico · Amigos · Perfil**.
 - Jogos independentes, com salas presas a um jogo. Sem "placar da noite" entre jogos.
-- Login e conta ficam para depois da Etapa 1. Até lá, o jogador é um **convidado** com UUID salvo no aparelho (`guestId`), que depois vira conta.
+- Login e conta ficam para depois da Etapa 1. Até lá, o jogador é um **convidado** com UUID salvo no aparelho (`guestId`), que depois vira conta. **Atualização (14/10/2026, spec 023): o convidado joga todos os modos solo, mas nada é salvo (sem histórico, ranking nem recorde); o Daily e as salas com @ pedem conta.**
 
 ### Design
 

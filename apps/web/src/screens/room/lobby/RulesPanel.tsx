@@ -1,5 +1,5 @@
 import { Lock } from '@/components/icons';
-import { sendRoom, type RoomSnapshot } from '@/lib/rooms';
+import { sendRoom, type RoomSnapshot, at } from '@/lib/rooms';
 import { modeOf, rulesFor, type RuleValue } from './rules';
 
 function Options({
@@ -84,7 +84,7 @@ export function RulesReadOnly({
       <p className="lb-locked">
         <Lock size={18} />
         <span>
-          Só o líder (<b>@{leaderName}</b>) pode mudar as regras. Elas mudam aqui sozinhas.
+          Só o líder (<b>{at(leaderName)}</b>) pode mudar as regras. Elas mudam aqui sozinhas.
         </span>
       </p>
       <ModeNote snapshot={snapshot} />

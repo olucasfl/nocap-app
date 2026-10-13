@@ -7,8 +7,10 @@ import {
   CODE_RE,
   RoomConflictError,
   createRoom,
+  getGuestNickname,
   joinRoom,
   leaveRoom,
+  setGuestNickname,
   useRoom,
   type Phase,
   type RoomGame,
@@ -92,7 +94,8 @@ export function useMyRoom(): RoomPresence | null {
     refetchOnWindowFocus: true,
     retry: false,
   });
-  if (!user) return null;
+  // Sem conta só vale a sala ao vivo neste aparelho (o servidor não guarda sala de visitante).
+  if (!user) return presenceOf(snapshot, status, null);
   return presenceOf(snapshot, status, server.data);
 }
 
@@ -120,9 +123,16 @@ export function useRoomEntry() {
   const [error, setError] = useState('');
   const [conflict, setConflict] = useState<{ code: string | null } | null>(null);
   const [pending, setPending] = useState<Attempt | null>(null);
+  /** Sem conta: a tentativa espera o apelido (a pessoa digita e ela segue). */
+  const [askNick, setAskNick] = useState<Attempt | null>(null);
+  const [nickError, setNickError] = useState('');
 
   const run = useCallback(
     async (attempt: Attempt): Promise<boolean> => {
+      if (!useAuth.getState().user && !getGuestNickname()) {
+        setAskNick(attempt);
+        return false;
+      }
       setBusy(true);
       setError('');
       setConflict(null);
@@ -138,6 +148,10 @@ export function useRoomEntry() {
           // Se o aparelho não sabe qual é a sala, o servidor sabe.
           const code = e.code ?? (await fetchMyRoom().catch(() => null))?.code ?? null;
           setConflict({ code });
+        } else if (!useAuth.getState().user && e instanceof Error && /apelido/i.test(e.message)) {
+          // Apelido recusado: volta a perguntar, com o motivo.
+          setNickError(e.message);
+          setAskNick(attempt);
         } else {
           setError(e instanceof Error ? e.message : 'Não foi possível entrar na sala.');
         }
@@ -177,5 +191,22 @@ export function useRoomEntry() {
       if (again) await run(again);
     },
     dismissConflict: () => setConflict(null),
+    /** "Coloque seu apelido": o que o diálogo precisa para pedir o apelido e seguir com a entrada. */
+    nick: {
+      open: askNick !== null,
+      error: nickError,
+      initial: getGuestNickname(),
+      submit: (nickname: string) => {
+        const again = askNick;
+        setGuestNickname(nickname.trim());
+        setNickError('');
+        setAskNick(null);
+        if (again) void run(again);
+      },
+      cancel: () => {
+        setAskNick(null);
+        setNickError('');
+      },
+    },
   };
 }

@@ -14,7 +14,8 @@ import { BlockDefs, Star, ThumbSeal } from './art';
 import { BlocksPlay, type BlocksEnd } from './BlocksPlay';
 import { getBlocksBest, getTowersBest, setBlocksBest, setTowersBest } from './storage';
 import { TowersPlay, type TowersEnd } from './towers/TowersPlay';
-import { SAVE_TEXT, useSaveBlocks, type BlocksRunInfo } from './useSaveBlocks';
+import { SaveNote } from '@/components/GuestNotice';
+import { useSaveBlocks, type BlocksRunInfo } from './useSaveBlocks';
 import './blocks.css';
 
 type Phase = 'menu' | 'play' | 'final';
@@ -75,13 +76,14 @@ function BlocksStart({ onStart, busy }: { onStart: (mode: UiMode) => void; busy:
   const [open, setOpen] = useState<UiMode | null>(null);
   const close = useCallback(() => setOpen(null), []);
   // Com conta, o recorde é o do servidor (o mesmo do ranking); o do aparelho só vale sem conta.
-  const best = !open
-    ? 0
-    : stats.data
-      ? Math.floor(bestTenths(stats.data, 'blocks', open) / 10)
-      : open === 'towers'
-        ? getTowersBest()
-        : getBlocksBest();
+  const best =
+    !open || !user
+      ? 0
+      : stats.data
+        ? Math.floor(bestTenths(stats.data, 'blocks', open) / 10)
+        : open === 'towers'
+          ? getTowersBest()
+          : getBlocksBest();
   const current = MODES.find((m) => m.id === open);
 
   return (
@@ -97,7 +99,11 @@ function BlocksStart({ onStart, busy }: { onStart: (mode: UiMode) => void; busy:
           modeId={open}
           title={current.label}
           lead={current.lead}
-          record={best > 0 ? `Seu recorde aqui é de ${best} ${open === 'towers' ? 'peças' : 'pontos'}` : null}
+          record={
+            best > 0
+              ? `Seu recorde aqui é de ${best} ${open === 'towers' ? 'peças' : 'pontos'}`
+              : null
+          }
           onClose={close}
           rules={RULES[open].map(([big, small]) => (
             <div className="bk-rule" key={small}>
@@ -114,16 +120,25 @@ function BlocksStart({ onStart, busy }: { onStart: (mode: UiMode) => void; busy:
               </li>
             ))}
           </ol>
-          <button type="button" className="btn" data-sfx="start" disabled={busy} onClick={() => onStart(open)}>
+          <button
+            type="button"
+            className="btn"
+            data-sfx="start"
+            disabled={busy}
+            onClick={() => onStart(open)}
+          >
             {busy ? 'Preparando...' : 'Jogar'} <ArrowRight />
           </button>
           {open === 'towers' && (
             <p className="mono bk-meta">
-              NO CELULAR USE OS BOTÕES. NO COMPUTADOR: SETAS OU A/D, CIMA PARA GIRAR, BAIXO PARA DESCER E E PARA A MAGIA.
+              NO CELULAR USE OS BOTÕES. NO COMPUTADOR: SETAS OU A/D, CIMA PARA GIRAR, BAIXO PARA
+              DESCER E E PARA A MAGIA.
             </p>
           )}
           {!user && (
-            <p className="mono bk-meta">ENTRE NA SUA CONTA PARA SALVAR NO RANKING, NO HISTÓRICO E NOS RECORDES.</p>
+            <p className="mono bk-meta">
+              ENTRE NA SUA CONTA PARA SALVAR NO RANKING, NO HISTÓRICO E NOS RECORDES.
+            </p>
           )}
         </ModeSheet>
       )}
@@ -149,10 +164,11 @@ function BlocksFinal({
   onAgain: () => void;
   onMenu: () => void;
 }) {
-  const user = useAuth((st) => st.user);
   const save = useSaveBlocks(run, mode, end.moves);
   const score = end.result.score;
-  const isRecord = score > before;
+  const guest = save === 'guest';
+  // Sem conta não há recorde: só a nota desta partida.
+  const isRecord = !guest && score > before;
   const best = Math.max(score, before);
   const pct = best > 0 ? Math.round((score / best) * 100) : 0;
   return (
@@ -174,16 +190,20 @@ function BlocksFinal({
         <div className="bkf-big">
           <b>{score}</b>
         </div>
-        <div className="bkf-meter" aria-label={`${pct}% do seu recorde`}>
-          <i style={{ transform: `scaleX(${Math.min(1, pct / 100)})` }} />
-        </div>
-        <span className="mono bkf-hint">
-          {isRecord
-            ? before > 0
-              ? `+${score - before} pontos sobre o recorde anterior`
-              : 'Esse é o seu primeiro resultado neste modo'
-            : `${pct}% do seu recorde`}
-        </span>
+        {!guest && (
+          <>
+            <div className="bkf-meter" aria-label={`${pct}% do seu recorde`}>
+              <i style={{ transform: `scaleX(${Math.min(1, pct / 100)})` }} />
+            </div>
+            <span className="mono bkf-hint">
+              {isRecord
+                ? before > 0
+                  ? `+${score - before} pontos sobre o recorde anterior`
+                  : 'Esse é o seu primeiro resultado neste modo'
+                : `${pct}% do seu recorde`}
+            </span>
+          </>
+        )}
       </div>
 
       <div className="bkf-praise">
@@ -200,10 +220,12 @@ function BlocksFinal({
       </div>
 
       <dl className="bkf-stats">
-        <div>
-          <dt className="mono">SEU RECORDE</dt>
-          <dd>{best}</dd>
-        </div>
+        {!guest && (
+          <div>
+            <dt className="mono">SEU RECORDE</dt>
+            <dd>{best}</dd>
+          </div>
+        )}
         <div>
           <dt className="mono">LINHAS LIMPAS</dt>
           <dd>{end.result.lines}</dd>
@@ -220,33 +242,46 @@ function BlocksFinal({
           <dt className="mono">DICAS USADAS</dt>
           <dd>{end.hintsUsed}/3</dd>
         </div>
-        <div>
-          <dt className="mono">RECORDE ANTERIOR</dt>
-          <dd>{before > 0 ? before : '-'}</dd>
-        </div>
+        {!guest && (
+          <div>
+            <dt className="mono">RECORDE ANTERIOR</dt>
+            <dd>{before > 0 ? before : '-'}</dd>
+          </div>
+        )}
       </dl>
 
-      <p className="mono bkf-note" role="status">
-        {user || save === 'saved'
-          ? SAVE_TEXT[save]
-          : 'ENTRE NA SUA CONTA PARA SALVAR NO RANKING E NO HISTÓRICO'}
-      </p>
+      <SaveNote className="mono bkf-note" save={save} />
 
       <div className="stack bkf-actions">
-        <button type="button" className="btn alt" data-sfx="start" disabled={busy} onClick={onAgain}>
+        <button
+          type="button"
+          className="btn alt"
+          data-sfx="start"
+          disabled={busy}
+          onClick={onAgain}
+        >
           {busy ? 'Preparando...' : 'Jogar de novo'}
         </button>
-        <Link to="/ranking" search={{ jogo: 'blocks', modo: mode }} className="btn ghost" data-sfx="select">
-          Ver ranking
-        </Link>
-        <Link
-          to="/ranking"
-          search={{ jogo: 'blocks', modo: mode, quem: 'friends' }}
-          className="btn ghost"
-          data-sfx="select"
-        >
-          Ranking dos amigos
-        </Link>
+        {!guest && (
+          <>
+            <Link
+              to="/ranking"
+              search={{ jogo: 'blocks', modo: mode }}
+              className="btn ghost"
+              data-sfx="select"
+            >
+              Ver ranking
+            </Link>
+            <Link
+              to="/ranking"
+              search={{ jogo: 'blocks', modo: mode, quem: 'friends' }}
+              className="btn ghost"
+              data-sfx="select"
+            >
+              Ranking dos amigos
+            </Link>
+          </>
+        )}
         <button type="button" className="btn ghost" data-sfx="back" onClick={onMenu}>
           Voltar ao menu
         </button>
@@ -276,10 +311,11 @@ function TowersFinal({
   onAgain: () => void;
   onMenu: () => void;
 }) {
-  const user = useAuth((st) => st.user);
   const save = useSaveBlocks(run, 'towers', end.moves);
   const score = end.score;
-  const isRecord = score > before;
+  const guest = save === 'guest';
+  // Sem conta não há recorde: só a nota desta partida.
+  const isRecord = !guest && score > before;
   const best = Math.max(score, before);
   const pct = best > 0 ? Math.round((score / best) * 100) : 0;
   return (
@@ -295,28 +331,36 @@ function TowersFinal({
       </div>
 
       <div className="bkf-score">
-        {isRecord && <span className="bkf-badge mono">{before > 0 ? 'NOVO RECORDE' : 'PRIMEIRO RECORDE'}</span>}
+        {isRecord && (
+          <span className="bkf-badge mono">{before > 0 ? 'NOVO RECORDE' : 'PRIMEIRO RECORDE'}</span>
+        )}
         <span className="mono bkf-label">PEÇAS EMPILHADAS</span>
         <div className="bkf-big">
           <b>{score}</b>
         </div>
-        <div className="bkf-meter" aria-label={`${pct}% do seu recorde`}>
-          <i style={{ transform: `scaleX(${Math.min(1, pct / 100)})` }} />
-        </div>
-        <span className="mono bkf-hint">
-          {isRecord
-            ? before > 0
-              ? `+${score - before} peças sobre o recorde anterior`
-              : 'Esse é o seu primeiro resultado neste modo'
-            : `${pct}% do seu recorde`}
-        </span>
+        {!guest && (
+          <>
+            <div className="bkf-meter" aria-label={`${pct}% do seu recorde`}>
+              <i style={{ transform: `scaleX(${Math.min(1, pct / 100)})` }} />
+            </div>
+            <span className="mono bkf-hint">
+              {isRecord
+                ? before > 0
+                  ? `+${score - before} peças sobre o recorde anterior`
+                  : 'Esse é o seu primeiro resultado neste modo'
+                : `${pct}% do seu recorde`}
+            </span>
+          </>
+        )}
       </div>
 
       <dl className="bkf-stats">
-        <div>
-          <dt className="mono">SEU RECORDE</dt>
-          <dd>{best}</dd>
-        </div>
+        {!guest && (
+          <div>
+            <dt className="mono">SEU RECORDE</dt>
+            <dd>{best}</dd>
+          </div>
+        )}
         <div>
           <dt className="mono">PEÇAS JOGADAS</dt>
           <dd>{end.pieces}</dd>
@@ -339,27 +383,38 @@ function TowersFinal({
         </div>
       </dl>
 
-      <p className="mono bkf-note" role="status">
-        {user || save === 'saved'
-          ? SAVE_TEXT[save]
-          : 'ENTRE NA SUA CONTA PARA SALVAR NO RANKING E NO HISTÓRICO'}
-      </p>
+      <SaveNote className="mono bkf-note" save={save} />
 
       <div className="stack bkf-actions">
-        <button type="button" className="btn alt" data-sfx="start" disabled={busy} onClick={onAgain}>
+        <button
+          type="button"
+          className="btn alt"
+          data-sfx="start"
+          disabled={busy}
+          onClick={onAgain}
+        >
           {busy ? 'Preparando...' : 'Jogar de novo'}
         </button>
-        <Link to="/ranking" search={{ jogo: 'blocks', modo: 'towers' }} className="btn ghost" data-sfx="select">
-          Ver ranking
-        </Link>
-        <Link
-          to="/ranking"
-          search={{ jogo: 'blocks', modo: 'towers', quem: 'friends' }}
-          className="btn ghost"
-          data-sfx="select"
-        >
-          Ranking dos amigos
-        </Link>
+        {!guest && (
+          <>
+            <Link
+              to="/ranking"
+              search={{ jogo: 'blocks', modo: 'towers' }}
+              className="btn ghost"
+              data-sfx="select"
+            >
+              Ver ranking
+            </Link>
+            <Link
+              to="/ranking"
+              search={{ jogo: 'blocks', modo: 'towers', quem: 'friends' }}
+              className="btn ghost"
+              data-sfx="select"
+            >
+              Ranking dos amigos
+            </Link>
+          </>
+        )}
         <button type="button" className="btn ghost" data-sfx="back" onClick={onMenu}>
           Voltar ao menu
         </button>
@@ -404,9 +459,16 @@ export function BlocksGame() {
     } catch {
       /* sem conta ou sem rede: treino local, a partida não é salva */
     }
-    let best = m === 'towers' ? getTowersBest() : getBlocksBest();
+    // Sem conta não há recorde; com conta, o do servidor (e o do aparelho só se ele não responder).
+    const signedIn = useAuth.getState().user !== null;
+    let best = !signedIn ? 0 : m === 'towers' ? getTowersBest() : getBlocksBest();
     try {
-      const stats = await queryClient.fetchQuery({ queryKey: ['stats'], queryFn: fetchStats, staleTime: 0 });
+      if (!signedIn) throw new Error('guest');
+      const stats = await queryClient.fetchQuery({
+        queryKey: ['stats'],
+        queryFn: fetchStats,
+        staleTime: 0,
+      });
       best = Math.floor(bestTenths(stats, 'blocks', m) / 10);
     } catch {
       /* convidado ou sem rede: vale o recorde deste aparelho */
@@ -424,7 +486,7 @@ export function BlocksGame() {
         seed={run.seed}
         best={before}
         onEnd={(e) => {
-          setTowersBest(e.score);
+          if (useAuth.getState().user) setTowersBest(e.score);
           setTowersEnd(e);
           setPhase('final');
         }}
@@ -442,7 +504,7 @@ export function BlocksGame() {
         best={before}
         onEnd={(e) => {
           // O recorde guardado aqui é deste aparelho; o ranking de verdade vem do servidor.
-          setBlocksBest(e.result.score);
+          if (useAuth.getState().user) setBlocksBest(e.result.score);
           setEnd(e);
           setPhase('final');
         }}
@@ -464,7 +526,14 @@ export function BlocksGame() {
       </header>
       {phase === 'menu' && <BlocksStart onStart={(m) => void begin(m)} busy={busy} />}
       {phase === 'final' && mode === 'towers' && towersEnd && (
-        <TowersFinal end={towersEnd} before={before} run={run} busy={busy} onAgain={() => void begin()} onMenu={() => setPhase('menu')} />
+        <TowersFinal
+          end={towersEnd}
+          before={before}
+          run={run}
+          busy={busy}
+          onAgain={() => void begin()}
+          onMenu={() => setPhase('menu')}
+        />
       )}
       {phase === 'final' && mode !== 'towers' && end && (
         <BlocksFinal

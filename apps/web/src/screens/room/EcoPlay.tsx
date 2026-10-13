@@ -4,14 +4,15 @@ import { Countdown } from '@/components/Countdown';
 import { EcoBoard } from '@/games/eco/EcoBoard';
 import '@/games/eco/eco.css';
 import { useAuth } from '@/lib/auth';
-import { sendRoom, type RoomSnapshot } from '@/lib/rooms';
+import { sendRoom, type RoomSnapshot, at } from '@/lib/rooms';
 import { buzz, sfx } from '@/lib/sfx';
 import { EcoLeaderCreate } from './EcoLeaderCreate';
 
 /** Quanto do ritmo de cada passo o botão fica aceso (igual ao modo solo). */
 const LIT_SHARE = 0.64;
 
-type Status = 'observe' | 'input' | 'waiting' | 'out' | 'wrong' | 'leader' | 'wait' | 'passed' | 'eliminated';
+type Status =
+  'observe' | 'input' | 'waiting' | 'out' | 'wrong' | 'leader' | 'wait' | 'passed' | 'eliminated';
 
 const LABEL: Record<Status, string> = {
   observe: 'OBSERVE',
@@ -32,8 +33,8 @@ function turnResult(snapshot: RoomSnapshot, name: (id: string) => string): strin
   const passed = eco.alive.includes(who);
   const next = (eco.queue ?? []).find((id) => id !== who);
   return [
-    passed ? `@${name(who)} acertou.` : `@${name(who)} errou e saiu.`,
-    eco.alive.length <= 1 ? '' : next ? `Próxima vez: @${name(next)}.` : '',
+    passed ? `${at(name(who))} acertou.` : `${at(name(who))} errou e saiu.`,
+    eco.alive.length <= 1 ? '' : next ? `Próxima vez: ${at(name(next))}.` : '',
   ]
     .join(' ')
     .trim();
@@ -52,9 +53,9 @@ function Reveal({ snapshot }: { snapshot: RoomSnapshot }) {
         {eco.turn
           ? `${turnResult(snapshot, name)}`
           : eco.leader
-            ? `@${name(eco.leader)} criou a sequência.`
+            ? `${at(name(eco.leader))} criou a sequência.`
             : eco.alive.length === 1
-              ? `Sobrou @${name(eco.alive[0]!)}.`
+              ? `Sobrou ${at(name(eco.alive[0]!))}.`
               : eco.alive.length === 0
                 ? 'Todo mundo caiu junto.'
                 : `${eco.alive.length} seguem na disputa.`}
@@ -76,7 +77,7 @@ function Reveal({ snapshot }: { snapshot: RoomSnapshot }) {
                       ? 'PASSOU'
                       : `CAIU NO ${Number(r.answer ?? 0) + 1}º TOQUE`}
               </span>
-              <span className="rm-result-name">@{name(r.id)}</span>
+              <span className="rm-result-name">{at(name(r.id))}</span>
               <span className="rm-result-score">
                 {eco.leader ? r.score.toFixed(1) : passed ? eco.length : '-'}
               </span>
@@ -208,7 +209,8 @@ export function EcoRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
 
   if (snapshot.phase === 'create') return <EcoLeaderCreate snapshot={snapshot} />;
   // Siga o Líder ainda tem a tela de resultados; a corrida por vez mostra tudo na mesma tela.
-  if (snapshot.phase === 'reveal' && !eco.turn) return <Reveal key={`r-${eco.round}`} snapshot={snapshot} />;
+  if (snapshot.phase === 'reveal' && !eco.turn)
+    return <Reveal key={`r-${eco.round}`} snapshot={snapshot} />;
   const reveal = snapshot.phase === 'reveal' && !!eco.turn;
 
   const nameOf = (id?: string | null) => snapshot.members.find((m) => m.id === id)?.username ?? '?';
@@ -237,16 +239,16 @@ export function EcoRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
         ? 'FIM DE JOGO'
         : `${alive} NA DISPUTA`
       : status === 'leader'
-      ? 'OS OUTROS ESTÃO REPETINDO'
-      : status === 'wait'
-        ? `VEZ DE @${nameOf(eco.turn)} · FILA: ${(eco.queue ?? []).map((id) => '@' + nameOf(id)).join(' > ')}`
-        : status === 'out'
-          ? `PLATEIA · ${eco.alive.length} NA DISPUTA`
-          : status === 'observe'
-            ? `${eco.length} ${eco.length === 1 ? 'PASSO' : 'PASSOS'} · ${eco.alive.length} NA DISPUTA`
-            : eco.reverse
-              ? `DE TRÁS PARA FRENTE · ${done}/${eco.length}`
-              : `${done}/${eco.length}`;
+        ? 'OS OUTROS ESTÃO REPETINDO'
+        : status === 'wait'
+          ? `VEZ DE ${at(nameOf(eco.turn))} · FILA: ${(eco.queue ?? []).map((id) => at(nameOf(id))).join(' > ')}`
+          : status === 'out'
+            ? `PLATEIA · ${eco.alive.length} NA DISPUTA`
+            : status === 'observe'
+              ? `${eco.length} ${eco.length === 1 ? 'PASSO' : 'PASSOS'} · ${eco.alive.length} NA DISPUTA`
+              : eco.reverse
+                ? `DE TRÁS PARA FRENTE · ${done}/${eco.length}`
+                : `${done}/${eco.length}`;
 
   return (
     <section className="screen eco-play">
@@ -272,16 +274,19 @@ export function EcoRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
         )}
       </div>
       {eco.turn && (
-        <div className={`eco-turn${announce ? ' big' : ''}${reveal ? ' next' : ''}`} aria-live="assertive">
+        <div
+          className={`eco-turn${announce ? ' big' : ''}${reveal ? ' next' : ''}`}
+          aria-live="assertive"
+        >
           {reveal
             ? alive <= 1
-              ? `SOBROU @${nameOf(eco.alive[0])}`
+              ? `SOBROU ${at(nameOf(eco.alive[0]))}`
               : eco.next === me
                 ? 'PRÓXIMA VEZ: VOCÊ'
-                : `PRÓXIMA VEZ: @${nameOf(eco.next)}`
+                : `PRÓXIMA VEZ: ${at(nameOf(eco.next))}`
             : eco.turn === me
               ? 'É A SUA VEZ'
-              : `VEZ DE @${nameOf(eco.turn)}`}
+              : `VEZ DE ${at(nameOf(eco.turn))}`}
           {announce && (
             <small className="mono">
               {eco.turn === me
@@ -292,10 +297,14 @@ export function EcoRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
         </div>
       )}
       {reveal && eco.result && (
-        <div key={`res-${turnNo}`} className={`eco-result ${eco.result.passed ? 'ok' : 'out'}`} role="status">
+        <div
+          key={`res-${turnNo}`}
+          className={`eco-result ${eco.result.passed ? 'ok' : 'out'}`}
+          role="status"
+        >
           <b>{eco.result.passed ? 'DEU CERTO!' : 'ELIMINADO!'}</b>
           <span className="eco-result-who">
-            {eco.result.who === me ? 'VOCÊ' : `@${nameOf(eco.result.who)}`}
+            {eco.result.who === me ? 'VOCÊ' : `${at(nameOf(eco.result.who))}`}
           </span>
           <small className="mono">
             {eco.result.passed
@@ -304,7 +313,9 @@ export function EcoRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
           </small>
           {alive > 1 && nextName && (
             <em className="mono">
-              {eco.result.passed ? `${nextName ? '@' + nextName : ''} REPETE E ACRESCENTA UM PASSO` : `@${nextName} JOGA A MESMA SEQUÊNCIA`}
+              {eco.result.passed
+                ? `${nextName ? at(nextName) : ''} REPETE E ACRESCENTA UM PASSO`
+                : `${at(nextName)} JOGA A MESMA SEQUÊNCIA`}
             </em>
           )}
         </div>

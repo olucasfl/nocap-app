@@ -1,6 +1,6 @@
 import { toHex } from '@/games/color/hex';
 import { useAuth } from '@/lib/auth';
-import { sendRoom, type PartySnapshot, type RoomSnapshot } from '@/lib/rooms';
+import { sendRoom, type PartySnapshot, type RoomSnapshot, at } from '@/lib/rooms';
 import { BigShapes, BigX1 } from './Big';
 import { MicroColor, MicroEco, MicroTime, MicroTyping } from './Micro';
 import { Stage } from './Stage';
@@ -99,7 +99,7 @@ function Ranking({ snapshot, p }: { snapshot: RoomSnapshot; p: PartySnapshot }) 
                   title={p.reveal.answers[id] ? toHex(p.reveal.answers[id]) : 'não travou'}
                 />
               )}
-              <span className="prank-name">@{nameOf(snapshot, id)}</span>
+              <span className="prank-name">{at(nameOf(snapshot, id))}</span>
               {p.typingReveal && (
                 <span className="mono prank-typed">
                   {p.typingReveal.answers[id] === undefined
@@ -148,7 +148,7 @@ function Tutorial({ snapshot, p }: { snapshot: RoomSnapshot; p: PartySnapshot })
       <ul className="pready" aria-label="Quem já está pronto">
         {connected.map((m) => (
           <li key={m.id} className={p.ready?.includes(m.id) ? 'on' : ''}>
-            <span>@{m.username}</span>
+            <span>{at(m.username)}</span>
             <span className="mono">{p.ready?.includes(m.id) ? 'PRONTO' : 'LENDO...'}</span>
           </li>
         ))}

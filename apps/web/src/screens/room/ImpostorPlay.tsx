@@ -2,7 +2,7 @@ import { useState, type CSSProperties } from 'react';
 import { Countdown } from '@/components/Countdown';
 import type { Hsb } from '@nocap/games';
 import { useAuth } from '@/lib/auth';
-import { sendRoom, type ImpostorState, type RoomSnapshot } from '@/lib/rooms';
+import { sendRoom, type ImpostorState, type RoomSnapshot, at } from '@/lib/rooms';
 import { toHex } from '@/games/color/hex';
 import { PickScreen } from '@/games/color/screens/PickScreen';
 import { ShowScreen } from '@/games/color/screens/ShowScreen';
@@ -80,7 +80,7 @@ function Waiting({ snapshot, imp }: { snapshot: RoomSnapshot; imp: ImpostorState
       <ul className="fr-list">
         {snapshot.members.map((m) => (
           <li key={m.id} className="fr-row">
-            <span className="fr-name">@{m.username}</span>
+            <span className="fr-name">{at(m.username)}</span>
             <span className={`mono rm-ready${m.locked ? ' on' : ''}`}>
               {!m.connected ? 'SEM CONEXÃO' : m.locked ? 'TRAVOU' : 'PENSANDO'}
             </span>
@@ -136,7 +136,7 @@ function Vote({ snapshot, imp }: { snapshot: RoomSnapshot; imp: ImpostorState })
                 aria-label={hex ?? 'Sem resposta'}
               />
               <span className="rm-result-name">
-                @{m.username}
+                {at(m.username)}
                 {self && <span className="mono rm-badge you">VOCÊ</span>}
               </span>
               <span className="ip-cand-side">
@@ -223,7 +223,7 @@ function Reveal({ snapshot, imp }: { snapshot: RoomSnapshot; imp: ImpostorState 
             <li key={id} className={`ip-row${id === me ? ' me' : ''}${impostor ? ' imp' : ''}`}>
               <span className="rm-swatch" style={hex ? { background: hex } : undefined} />
               <span className="ip-row-main">
-                <span className="rm-result-name">@{name(id)}</span>
+                <span className="rm-result-name">{at(name(id))}</span>
                 <span className="mono ip-row-sub">
                   <b className={impostor ? 'imp' : 'crew'}>{impostor ? 'INTRUSO' : 'TRIPULAÇÃO'}</b>
                   {impostor && (
@@ -233,7 +233,7 @@ function Reveal({ snapshot, imp }: { snapshot: RoomSnapshot; imp: ImpostorState 
                     {received} {received === 1 ? 'voto' : 'votos'}
                   </span>
                   {reveal?.votes && (
-                    <span>{target ? `votou em @${name(target)}` : 'não votou'}</span>
+                    <span>{target ? `votou em ${at(name(target))}` : 'não votou'}</span>
                   )}
                 </span>
               </span>

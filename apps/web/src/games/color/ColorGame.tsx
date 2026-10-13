@@ -28,7 +28,7 @@ import { ShowScreen } from './screens/ShowScreen';
 import type { GameTab } from '@/components/GameTabs';
 import { rankingLink, type Board } from '@/lib/ranking';
 import { StartScreen } from './screens/StartScreen';
-import { SAVE_TEXT, useSaveMatch } from './useSaveMatch';
+import { useSaveMatch } from './useSaveMatch';
 import type { Mode, RoundResult, Run } from './types';
 import './color.css';
 
@@ -262,7 +262,7 @@ function SurvivalFinalColor({
         score: r.score,
         passed: state.passed[i] ?? false,
       }))}
-      saveText={SAVE_TEXT[save]}
+      save={save}
       limit={SURVIVAL_MAX_ROUNDS.color}
       onMenu={onMenu}
       summary={

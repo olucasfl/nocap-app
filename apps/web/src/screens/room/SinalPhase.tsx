@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth';
-import { sendRoom, toLocal, type RoomSnapshot } from '@/lib/rooms';
+import { sendRoom, toLocal, type RoomSnapshot, at } from '@/lib/rooms';
 
 /**
  * O intervalo entre as fases do Sinal Vermelho: como cada pessoa terminou a fase (chegou na linha ou
@@ -16,7 +16,9 @@ export function SinalPhase({ snapshot }: { snapshot: RoomSnapshot }) {
     return () => window.clearInterval(id);
   }, []);
   const name = (id: string) => snapshot.members.find((m) => m.id === id)?.username ?? '?';
-  const left = snapshot.round?.endsAt ? Math.max(0, Math.ceil((toLocal(snapshot.round.endsAt) - now) / 1000)) : 0;
+  const left = snapshot.round?.endsAt
+    ? Math.max(0, Math.ceil((toLocal(snapshot.round.endsAt) - now) / 1000))
+    : 0;
   const isHost = snapshot.hostId === me;
   if (!summary) return null;
   const ranked = [...summary.rows].sort((a, b) => b.totalTenths - a.totalTenths);
@@ -32,7 +34,7 @@ export function SinalPhase({ snapshot }: { snapshot: RoomSnapshot }) {
           <li key={r.id} className={`rm-result${r.id === me ? ' me' : ''}`}>
             <span className="mono rm-pos">{r.place}º</span>
             <span className="rm-swatch" style={{ background: colors[r.id] }} aria-hidden="true" />
-            <span className="rm-result-name">@{name(r.id)}</span>
+            <span className="rm-result-name">{at(name(r.id))}</span>
             <span className="rm-result-score">
               {Math.round(r.tenths / 10)}
               <small className="mono"> m · {r.finished ? 'CHEGOU' : 'CAIU'}</small>
@@ -46,7 +48,7 @@ export function SinalPhase({ snapshot }: { snapshot: RoomSnapshot }) {
           <li key={r.id} className={`rm-result${r.id === me ? ' me' : ''}`}>
             <span className="mono rm-pos">{i + 1}º</span>
             <span className="rm-swatch" style={{ background: colors[r.id] }} aria-hidden="true" />
-            <span className="rm-result-name">@{name(r.id)}</span>
+            <span className="rm-result-name">{at(name(r.id))}</span>
             <span className="rm-result-score">
               {Math.round(r.totalTenths / 10)}
               <small className="mono"> m</small>

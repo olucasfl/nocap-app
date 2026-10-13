@@ -1,15 +1,13 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useNavigate } from '@tanstack/react-router';
+import { Link } from '@tanstack/react-router';
 import { BackButton } from '@/components/BackButton';
 import { Field } from '@/components/Field';
 import { RoomBanner } from '@/components/RoomBanner';
 import { RoomConflictDialog } from '@/components/RoomConflictDialog';
+import { NicknameDialog } from '@/components/NicknameDialog';
 import { useRoomEntry } from '@/lib/my-room';
-import { useAuth } from '@/lib/auth';
 
 export function NocapPage() {
-  const navigate = useNavigate();
-  const { user } = useAuth();
   const entry = useRoomEntry();
   const [code, setCode] = useState('');
 
@@ -19,10 +17,6 @@ export function NocapPage() {
   };
 
   const createRoom = () => {
-    if (!user) {
-      void navigate({ to: '/entrar' });
-      return;
-    }
     void entry.create('party');
   };
 
@@ -68,6 +62,7 @@ export function NocapPage() {
             Entrar
           </button>
         </form>
+        <NicknameDialog nick={entry.nick} />
         <RoomConflictDialog
           open={!!entry.conflict}
           code={entry.conflict?.code ?? null}

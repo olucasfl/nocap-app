@@ -6,7 +6,8 @@ import type { GameTab } from '@/components/GameTabs';
 import { MatchSummary } from '@/components/MatchSummary';
 import type { Board } from '@/lib/ranking';
 import type { BatidaRunInfo } from '../types';
-import { SAVE_TEXT, useSaveBatida } from '../useSaveBatida';
+import { SaveNote } from '@/components/GuestNotice';
+import { useSaveBatida } from '../useSaveBatida';
 
 interface Props {
   run: BatidaRunInfo;
@@ -90,9 +91,7 @@ export function BatidaFinal({ run, taps, previousBest, onMenu, onRematch }: Prop
         saved={save === 'saved'}
         onRanking={() => onMenu('ranking', batidaMode(run.song) as Board)}
       />
-      <p className="eco-save" role="status">
-        {SAVE_TEXT[save]}
-      </p>
+      <SaveNote className="eco-save" save={save} />
       <div className="stack">
         <button type="button" className="btn alt" data-sfx="start" onClick={onRematch}>
           Jogar de novo

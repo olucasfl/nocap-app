@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useIsGuest } from '@/lib/auth';
 import { submitOrQueue } from '../color/submit';
 import { SAVE_TEXT, type SaveState } from '../color/useSaveMatch';
 import type { RoundResult, Run } from './types';
@@ -10,8 +11,13 @@ export { SAVE_TEXT, type SaveState };
 export function useSaveTime(run: Run, results: RoundResult[]): SaveState {
   const [save, setSave] = useState<SaveState>('saving');
   const queryClient = useQueryClient();
+  const guest = useIsGuest();
 
   useEffect(() => {
+    if (guest) {
+      setSave('guest');
+      return;
+    }
     // Partida jogada offline (sem sessão do servidor): não há o que salvar.
     if (!run.session) {
       setSave('offline');
@@ -40,7 +46,7 @@ export function useSaveTime(run: Run, results: RoundResult[]): SaveState {
     return () => {
       alive = false;
     };
-  }, [run, results]);
+  }, [run, results, guest]);
 
   return save;
 }

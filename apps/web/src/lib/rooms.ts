@@ -52,6 +52,8 @@ export interface RoomMember {
   rematch: boolean;
   /** Topou a revanche: o lobby só espera o líder começar. */
   committed: boolean;
+  /** Entrou sem conta: o nome é só um apelido desta sala. */
+  guest?: boolean;
 }
 
 export interface RoundResult {
@@ -132,7 +134,12 @@ export interface SinalRoomState {
   events?: (SinalEvent & { n: number })[];
   endsAt?: number | null;
   finishing?: boolean;
-  mine?: { dead: boolean; finished?: boolean; place?: number | null; reason: 'vigia' | 'escuridao' | null } | null;
+  mine?: {
+    dead: boolean;
+    finished?: boolean;
+    place?: number | null;
+    reason: 'vigia' | 'escuridao' | null;
+  } | null;
   /** O placar de mortes: as últimas quedas (da mais velha para a mais nova). */
   feed?: {
     n: number;
@@ -384,6 +391,8 @@ function asConflict(e: unknown): RoomConflictError | null {
 /** Mensagem em pt-BR para erro de entrada (sala inexistente, cheia, sem login...). */
 export function joinErrorMessage(e: unknown): string {
   const message = e instanceof Error ? e.message : '';
+  // Erros do apelido já vêm prontos do servidor (repetido, inválido, de uma conta).
+  if (/apelido|Muitas tentativas/i.test(message)) return message;
   if (/not found|no rooms|invalid room/i.test(message))
     return 'Não achamos essa sala. Confira o código.';
   if (/cheia/i.test(message)) return 'A sala está cheia.';
@@ -401,14 +410,23 @@ function remember(token: string | null) {
   }
 }
 
+/** Apelidos de quem entrou sem conta nesta sala: aparecem sem o @ (que é de conta). */
+const guestNames = new Set<string>();
+
+/** Como mostrar um nome da sala: `@usuario` para conta, o apelido puro para visitante. */
+export const at = (username?: string | null): string =>
+  !username ? '?' : guestNames.has(username) ? username : `@${username}`;
+
 function attach(r: Room) {
   room = r;
+  guestNames.clear();
   remember(r.reconnectionToken);
   set({ status: 'connected', message: '' });
 
-  r.onMessage('snapshot', (s: RoomSnapshot) =>
-    set({ snapshot: s, status: 'connected', lastGame: s.game }),
-  );
+  r.onMessage('snapshot', (s: RoomSnapshot) => {
+    for (const m of s.members) if (m.guest) guestNames.add(m.username);
+    set({ snapshot: s, status: 'connected', lastGame: s.game });
+  });
   r.onMessage('pong', (m: { t0?: number; ts?: number }) => {
     if (typeof m?.t0 === 'number' && typeof m?.ts === 'number') {
       lastRtt = Math.max(0, Date.now() - m.t0);
@@ -546,16 +564,44 @@ async function connect(open: (c: Awaited<ReturnType<typeof client>>) => Promise<
   }
 }
 
+const NICK_KEY = 'nocap-room-nick';
+
+/** O apelido de quem joga sem conta: vale só na sala e só nesta aba (some ao fechar). */
+export function getGuestNickname(): string {
+  try {
+    return sessionStorage.getItem(NICK_KEY) ?? '';
+  } catch {
+    return nickMemory;
+  }
+}
+let nickMemory = '';
+export function setGuestNickname(nick: string) {
+  nickMemory = nick;
+  try {
+    sessionStorage.setItem(NICK_KEY, nick);
+  } catch {
+    /* sem storage: o apelido vale até recarregar */
+  }
+}
+
+/** Como a pessoa se apresenta à sala: pela conta ou, sem conta, só pelo apelido. */
+function entryOptions(): { token: string } | { guest: true; nickname: string } {
+  const token = getToken();
+  return token ? { token } : { guest: true, nickname: getGuestNickname() };
+}
+
 export async function createRoom(game: RoomGame = 'color') {
   assertFree();
-  await connect((c) => c.create(game, { token: getToken() }));
+  const options = entryOptions();
+  await connect((c) => c.create(game, options));
 }
 
 export async function joinRoom(code: string) {
   const wanted = code.trim().toUpperCase();
   if (room && useRoom.getState().snapshot?.code === wanted) return; // já estou nela
   assertFree(wanted);
-  await connect((c) => c.joinById(wanted, { token: getToken() }));
+  const options = entryOptions();
+  await connect((c) => c.joinById(wanted, options));
 }
 
 export function clearLastGame() {

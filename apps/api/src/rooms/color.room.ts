@@ -9,6 +9,7 @@ import { EcoLeaderRoomEngine } from './eco-leader-room.engine';
 import { PartyRoomEngine } from './party-room.engine';
 import { SinalRoomEngine } from './sinal-room.engine';
 import { IMPOSTOR_MAX_PLAYERS } from '@nocap/games';
+import { GUEST_PREFIX, cleanNickname, createGuestLimiter, isGuestId, usernameLookalikes } from './guest-nick';
 import type { InvitesService } from './invites.service';
 import type { RoomsRepository } from './rooms.repository';
 
@@ -37,7 +38,17 @@ export const roomDeps: {
 interface AuthData {
   id: string;
   username: string;
+  /** Entrou sem conta (só apelido). */
+  guest?: boolean;
 }
+
+type GuestRequest = {
+  headers?: Record<string, string | string[] | undefined>;
+  socket?: { remoteAddress?: string };
+};
+
+/** Quantas entradas de convidado por origem a cada minuto. */
+export const guestLimit = createGuestLimiter(10, 60_000);
 
 async function uniqueCode(): Promise<string> {
   for (let i = 0; i < 50; i++) {
@@ -183,7 +194,12 @@ export class ColorRoom extends Room {
   }
 
   /** Token da sessão (o mesmo do app) → conta. Sala exige conta: convidado não entra. */
-  async onAuth(_client: Client, options: { token?: string }): Promise<AuthData> {
+  async onAuth(
+    _client: Client,
+    options: { token?: string; guest?: boolean; nickname?: unknown },
+    request?: GuestRequest,
+  ): Promise<AuthData> {
+    if (options?.guest === true) return this.authGuest(options.nickname, request);
     const token = options?.token;
     if (!token || !roomDeps.auth)
       throw new ServerError(401, 'Entre na sua conta para jogar em sala');
@@ -204,6 +220,26 @@ export class ColorRoom extends Room {
     return { id: user.id, username: user.username };
   }
 
+  /**
+   * Sem conta: o servidor cria uma identidade só desta entrada (a pessoa não escolhe o id) e o
+   * apelido vale só nesta sala. Não pode repetir um nome da sala nem imitar o @ de uma conta.
+   */
+  private async authGuest(nickname: unknown, request?: GuestRequest): Promise<AuthData> {
+    const fwd = request?.headers?.['x-forwarded-for'];
+    const first = (Array.isArray(fwd) ? fwd[0] : fwd)?.split(',')[0]?.trim();
+    const origin = first || request?.socket?.remoteAddress || 'local';
+    if (!guestLimit(origin)) throw new ServerError(429, 'Muitas tentativas. Espere um pouco e tente de novo.');
+    const checked = cleanNickname(nickname);
+    if (!checked.ok) throw new ServerError(400, checked.error);
+    if (this.engine.hasName(checked.nick)) {
+      throw new ServerError(409, 'Esse apelido já está na sala. Escolha outro.');
+    }
+    if (await roomDeps.repo?.usernameTaken(usernameLookalikes(checked.nick))) {
+      throw new ServerError(409, 'Esse apelido é de uma conta. Escolha outro.');
+    }
+    return { id: GUEST_PREFIX + randomUUID(), username: checked.nick, guest: true };
+  }
+
   onJoin(client: Client, _options: unknown, auth: AuthData) {
     try {
       // Mesma conta em outro aparelho: o aparelho antigo sai.
@@ -217,7 +253,7 @@ export class ColorRoom extends Room {
     } catch (e) {
       throw new ServerError(409, e instanceof RoomError ? e.message : 'Não foi possível entrar');
     }
-    client.userData = { id: auth.id, username: auth.username };
+    client.userData = { id: auth.id, username: auth.username, guest: auth.guest };
     // Entrou de novo por uma conexão nova (link, código): a espera da conexão antiga não vale mais,
     // senão ela expiraria depois e tiraria da sala quem está jogando.
     this.cancelWaiting(auth.id);
@@ -359,6 +395,7 @@ export class ColorRoom extends Room {
   private async invite(client: Client, username?: string) {
     const me = client.userData as AuthData | undefined;
     try {
+      if (me?.guest) throw new RoomError('Crie uma conta para convidar amigos.');
       if (!me || !roomDeps.invites) return;
       if (this.engine.currentPhase !== 'lobby') {
         throw new RoomError('Só dá para convidar no lobby');
@@ -399,7 +436,8 @@ export class ColorRoom extends Room {
         mode: this.engine.historyMode,
         seed: this.engine.currentSeed,
         settings: this.engine.currentSettings,
-        rows: this.engine.finalRows(),
+        // Quem jogou sem conta não tem histórico: só as contas ficam registradas.
+        rows: this.engine.finalRows().filter((r) => !isGuestId(r.userId)),
       });
     } catch (e) {
       console.error('falha ao salvar a partida da sala', e);

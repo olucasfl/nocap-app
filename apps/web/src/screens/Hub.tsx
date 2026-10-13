@@ -6,8 +6,6 @@ import { MuteButton } from '@/components/MuteButton';
 import { RoomBanner } from '@/components/RoomBanner';
 import { ThemeButton } from '@/components/ThemeButton';
 import { useAuth } from '@/lib/auth';
-import { getBlocksBest } from '@/games/blocks/storage';
-import { getSinalBest } from '@/games/sinal/storage';
 import {
   bestTenths,
   dailyScoreText,
@@ -20,32 +18,34 @@ import './hub.css';
 
 /** Recorde do modo Clássico do jogo (os outros modos mostram o recorde na ficha de cada um). */
 function bestLabel(stats: Stats | undefined, game: GameId): string {
-  if (!stats) return 'ENTRE PARA JOGAR';
+  if (!stats) return 'JOGUE SEM CONTA';
   const best = bestTenths(stats, game, 'classic');
   if (best <= 0) return 'SEM RECORDE NO CLÁSSICO';
   return `RECORDE CLÁSSICO ${formatBest(game, 'classic', best)}`;
 }
 
-/** O recorde do Sinal Vermelho: o da conta (servidor) ou, sem conta, o deste aparelho. */
+/** O recorde do Sinal Vermelho: o da conta (sem conta não há recorde). */
 function sinalBestLabel(stats: Stats | undefined): string {
+  if (!stats) return 'JOGUE SEM CONTA';
   const server = Math.max(
     bestTenths(stats, 'sinal', 'infinito'),
     bestTenths(stats, 'sinal', 'classico'),
   );
-  const meters = Math.max(Math.floor(server / 10), Math.floor(Math.max(getSinalBest('infinito'), getSinalBest('classico'))));
+  const meters = Math.floor(server / 10);
   return meters > 0 ? `RECORDE ${meters} M` : 'SEM RECORDE AINDA';
 }
 
-/** O recorde do Block's: o da conta (servidor) ou, sem conta, o deste aparelho. */
+/** O recorde do Block's: o da conta (sem conta não há recorde). */
 function blocksBestLabel(stats: Stats | undefined): string {
-  const points = Math.max(Math.floor(bestTenths(stats, 'blocks', 'classic') / 10), getBlocksBest());
+  if (!stats) return 'JOGUE SEM CONTA';
+  const points = Math.floor(bestTenths(stats, 'blocks', 'classic') / 10);
   return points > 0 ? `RECORDE ${points} PTS` : 'SEM RECORDE AINDA';
 }
 
 /** Situação do Daily do jogo hoje, em palavras: jogado (com a nota) ou ainda disponível. */
 function dailyStatus(stats: Stats | undefined, game: GameId): string {
   const info = stats?.daily[game];
-  if (!info) return 'DAILY DISPONÍVEL';
+  if (!info) return 'DAILY SÓ COM CONTA';
   return info.playedToday
     ? `DAILY FEITO · ${dailyScoreText(game, info.totalScore ?? 0)}`
     : 'DAILY DISPONÍVEL';

@@ -1,10 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { encodeAnswer } from '@nocap/games';
-import { eq } from 'drizzle-orm';
+import { and, eq, gt, inArray } from 'drizzle-orm';
 import type { Db } from '../db/client';
 import { DB } from '../db/db.module';
-import { matchPlayers, matches, players } from '../db/schema';
+import { authUser, matchPlayers, matches, players, reservedUsernames } from '../db/schema';
 import type { AnySettings, FinalRow } from './color-room.engine';
 
 /** Rodada sem resposta no banco (a coluna é um array de inteiros). */
@@ -17,6 +17,23 @@ export class RoomsRepository {
   private get db(): Db {
     if (!this.maybeDb) throw new ServiceUnavailableException('Banco de dados não configurado');
     return this.maybeDb;
+  }
+
+  /** Algum destes é o @usuário de uma conta (ou um @ reservado)? Apelido de convidado não pode imitar. */
+  async usernameTaken(names: string[]): Promise<boolean> {
+    if (names.length === 0) return false;
+    const [account] = await this.db
+      .select({ id: authUser.id })
+      .from(authUser)
+      .where(inArray(authUser.username, names))
+      .limit(1);
+    if (account) return true;
+    const [held] = await this.db
+      .select({ username: reservedUsernames.username })
+      .from(reservedUsernames)
+      .where(and(inArray(reservedUsernames.username, names), gt(reservedUsernames.until, new Date())))
+      .limit(1);
+    return !!held;
   }
 
   /**

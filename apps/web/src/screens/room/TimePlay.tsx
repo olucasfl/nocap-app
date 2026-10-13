@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { generateTimeRound } from '@nocap/games';
 import { useAuth } from '@/lib/auth';
-import { sendRoom, type RoomSnapshot } from '@/lib/rooms';
+import { sendRoom, type RoomSnapshot, at } from '@/lib/rooms';
 import { formatDiff, formatSeconds } from '@/games/time/format';
 import { RoundScreen } from '@/games/time/screens/RoundScreen';
 import '@/games/time/time.css';
@@ -19,7 +19,7 @@ function Waiting({ snapshot }: { snapshot: RoomSnapshot }) {
       <ul className="fr-list">
         {snapshot.members.map((m) => (
           <li key={m.id} className="fr-row">
-            <span className="fr-name">@{m.username}</span>
+            <span className="fr-name">{at(m.username)}</span>
             <span className={`mono rm-ready${m.locked ? ' on' : ''}`}>
               {!m.connected ? 'SEM CONEXÃO' : m.locked ? 'PAROU' : 'CONTANDO'}
             </span>
@@ -53,7 +53,7 @@ function Reveal({ snapshot }: { snapshot: RoomSnapshot }) {
                 ? `${formatSeconds(r.answer)} · ${formatDiff(r.answer - target)}`
                 : 'SEM RESPOSTA'}
             </span>
-            <span className="rm-result-name">@{name(r.id)}</span>
+            <span className="rm-result-name">{at(name(r.id))}</span>
             <span className="rm-result-score">{r.score.toFixed(1)}</span>
           </li>
         ))}

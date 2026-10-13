@@ -7,6 +7,7 @@ import { MuteButton } from '@/components/MuteButton';
 import { LoadFailed } from '@/components/LoadFailed';
 import { RoomBanner } from '@/components/RoomBanner';
 import { RoomConflictDialog } from '@/components/RoomConflictDialog';
+import { NicknameDialog } from '@/components/NicknameDialog';
 import { useRoomEntry } from '@/lib/my-room';
 import { useAuth } from '@/lib/auth';
 import { sfx } from '@/lib/sfx';
@@ -148,7 +149,7 @@ function Entry({
 /** `/sala` e `/sala/ABCD`: entra pelo código do link, ou mostra a sala em que você já está. */
 export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomGame }) {
   const online = useOnline();
-  const { user, status: authStatus } = useAuth();
+  const { status: authStatus } = useAuth();
   const { status, snapshot, lastGame, message } = useRoom();
   const navigate = useNavigate();
   const entry = useRoomEntry();
@@ -179,11 +180,11 @@ export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomG
   // Link ou convite (/sala/ABCD): entra direto, sem digitar o código. Uma tentativa automática;
   // se falhar, a tela mostra o motivo e o botão "Tentar de novo".
   useEffect(() => {
-    if (!code || !user || resuming || snapshot || autoJoined.current) return;
+    if (!code || resuming || snapshot || autoJoined.current) return;
     if (status === 'connecting' || status === 'reconnecting') return;
     autoJoined.current = true;
     void entry.join(code);
-  }, [code, user, resuming, snapshot, status, entry]);
+  }, [code, resuming, snapshot, status, entry]);
 
   if (authStatus === 'loading' || resuming) {
     return (
@@ -206,28 +207,6 @@ export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomG
           <Link to="/" className="btn ghost">
             Voltar aos jogos
           </Link>
-        </section>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="app">
-        <Header />
-        <section className="screen rm">
-          <h1>Sala</h1>
-          <p className="lead">
-            Para jogar em sala você precisa de uma conta, assim seus amigos sabem quem é quem.
-          </p>
-          <div className="stack">
-            <Link to="/criar-conta" className="btn alt">
-              Criar conta
-            </Link>
-            <Link to="/entrar" className="btn ghost">
-              Entrar
-            </Link>
-          </div>
         </section>
       </div>
     );
@@ -262,6 +241,7 @@ export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomG
         <Entry initialCode={code} game={lastGame ?? game} entry={entry} />
       )}
       {!snapshot && entry.busy && <Loader label="Entrando na sala" />}
+      <NicknameDialog nick={entry.nick} />
       <RoomConflictDialog
         open={!!entry.conflict}
         code={entry.conflict?.code ?? null}

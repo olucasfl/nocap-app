@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { SinalInput, SinalMode } from '@nocap/games';
+import { useIsGuest } from '@/lib/auth';
 import { submitOrQueue } from '../color/submit';
 import { SAVE_TEXT, type SaveState } from '../color/useSaveMatch';
 
@@ -21,8 +22,13 @@ export interface SinalRunInfo {
 export function useSaveSinal(run: SinalRunInfo, mode: SinalMode, inputs: SinalInput[]): SaveState {
   const [save, setSave] = useState<SaveState>('saving');
   const queryClient = useQueryClient();
+  const guest = useIsGuest();
 
   useEffect(() => {
+    if (guest) {
+      setSave('guest');
+      return;
+    }
     if (!run.session) {
       setSave('offline');
       return;
@@ -49,7 +55,7 @@ export function useSaveSinal(run: SinalRunInfo, mode: SinalMode, inputs: SinalIn
     return () => {
       alive = false;
     };
-  }, [run, mode, inputs, queryClient]);
+  }, [run, mode, inputs, queryClient, guest]);
 
   return save;
 }

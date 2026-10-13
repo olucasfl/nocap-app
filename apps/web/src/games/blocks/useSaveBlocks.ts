@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { BlocksMode } from '@nocap/games';
+import { useIsGuest } from '@/lib/auth';
 import { submitOrQueue } from '../color/submit';
 import { SAVE_TEXT, type SaveState } from '../color/useSaveMatch';
 
@@ -21,8 +22,13 @@ export interface BlocksRunInfo {
 export function useSaveBlocks(run: BlocksRunInfo, mode: BlocksMode, moves: number[]): SaveState {
   const [save, setSave] = useState<SaveState>('saving');
   const queryClient = useQueryClient();
+  const guest = useIsGuest();
 
   useEffect(() => {
+    if (guest) {
+      setSave('guest');
+      return;
+    }
     if (!run.session) {
       setSave('offline');
       return;
@@ -49,7 +55,7 @@ export function useSaveBlocks(run: BlocksRunInfo, mode: BlocksMode, moves: numbe
     return () => {
       alive = false;
     };
-  }, [run, mode, moves, queryClient]);
+  }, [run, mode, moves, queryClient, guest]);
 
   return save;
 }

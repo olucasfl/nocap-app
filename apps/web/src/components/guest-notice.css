@@ -1,0 +1,40 @@
+.gn {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  background: var(--yellow);
+  color: var(--on-accent);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+.gn-tag {
+  align-self: flex-start;
+  padding: 3px 8px;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+.gn-title {
+  margin: 0;
+  font: 900 24px/1.05 var(--font-display);
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+.gn-text {
+  margin: 0;
+  font: 400 13px/1.45 var(--font-mono);
+}
+.gn-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.gn-actions .btn {
+  flex: 1 1 140px;
+  text-align: center;
+}

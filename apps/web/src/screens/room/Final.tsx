@@ -1,7 +1,9 @@
 import { useAuth } from '@/lib/auth';
+import { GuestNotice } from '@/components/GuestNotice';
+import { useIsGuest } from '@/lib/auth';
 import { useState } from 'react';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
-import { closeRoom, leaveRoom, sendRoom, useRoom, type RoomSnapshot } from '@/lib/rooms';
+import { closeRoom, leaveRoom, sendRoom, useRoom, type RoomSnapshot, at } from '@/lib/rooms';
 
 /**
  * Pódio da sala e votação da revanche. Todo mundo vota em "jogar de novo" ou sai; quando todos
@@ -22,6 +24,7 @@ export function Final({ snapshot }: { snapshot: RoomSnapshot }) {
   const max = snapshot.settings.rounds * 10;
   const mine = snapshot.members.find((m) => m.id === me);
   const voted = !!mine?.rematch;
+  const guest = useIsGuest();
   const here = snapshot.members.filter((m) => m.connected);
   const votes = here.filter((m) => m.rematch).length;
 
@@ -35,34 +38,37 @@ export function Final({ snapshot }: { snapshot: RoomSnapshot }) {
             className={`rm-pod${r.placement === 1 ? ' first' : ''}${r.userId === me ? ' me' : ''}`}
           >
             <span className="mono rm-pos">{r.placement}º</span>
-            <span className="rm-result-name">@{r.username}</span>
+            <span className="rm-result-name">
+              {r.userId.startsWith('guest:') ? r.username : `${at(r.username)}`}
+            </span>
             <span className="rm-result-score">
               {sinal
                 ? Math.round(r.totalTenths / 10)
                 : party
                   ? (r.totalTenths * 10).toLocaleString('pt-BR')
                   : hits
-                  ? (r.totalTenths / 10).toFixed(1)
-                  : eco
-                    ? Math.round(r.totalTenths / 10)
-                    : (r.totalTenths / 10).toFixed(1)}
+                    ? (r.totalTenths / 10).toFixed(1)
+                    : eco
+                      ? Math.round(r.totalTenths / 10)
+                      : (r.totalTenths / 10).toFixed(1)}
               <small className="mono">
                 {sinal
                   ? ' m'
                   : party
                     ? ' pts'
                     : hits
-                    ? `% · ${hits[r.userId] ?? 0} ${(hits[r.userId] ?? 0) === 1 ? 'acerto' : 'acertos'}`
-                    : eco
-                      ? ' passos'
-                      : impostor
-                        ? ' pts'
-                        : `/${max}`}
+                      ? `% · ${hits[r.userId] ?? 0} ${(hits[r.userId] ?? 0) === 1 ? 'acerto' : 'acertos'}`
+                      : eco
+                        ? ' passos'
+                        : impostor
+                          ? ' pts'
+                          : `/${max}`}
               </small>
             </span>
           </li>
         ))}
       </ol>
+      {guest && <GuestNotice />}
       <p className="mono rm-hint">Partida de sala: não entra no ranking.</p>
 
       <div className="rm-vote">
@@ -73,7 +79,7 @@ export function Final({ snapshot }: { snapshot: RoomSnapshot }) {
           {snapshot.members.map((m) => (
             <li key={m.id} className="fr-row">
               <span className="fr-name">
-                @{m.username}
+                {at(m.username)}
                 {m.id === me && <span className="mono rm-badge you">VOCÊ</span>}
                 {m.isHost && <span className="mono rm-badge">LÍDER</span>}
               </span>

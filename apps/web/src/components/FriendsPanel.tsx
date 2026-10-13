@@ -2,10 +2,10 @@ import { useState, type FormEvent } from 'react';
 import { Field } from '@/components/Field';
 import { LoadFailed } from '@/components/LoadFailed';
 import { useOnline } from '@/lib/network';
-import { PlayGate } from '@/components/PlayGate';
 import { GAME_LABEL } from '@/components/GameArt';
 import { RoomBanner } from '@/components/RoomBanner';
 import { RoomConflictDialog } from '@/components/RoomConflictDialog';
+import { NicknameDialog } from '@/components/NicknameDialog';
 import { useRoomEntry } from '@/lib/my-room';
 import type { GameId } from '@/lib/stats';
 import './friends-panel.css';
@@ -60,53 +60,52 @@ export function FriendsPanel({ game }: { game: RoomGameId }) {
 
   return (
     <div className="fp">
-      <PlayGate what="jogar em sala">
-        <RoomBanner />
-        <section className="fp-card">
-          <h2 className="fp-h">Criar sala de {GAME_LABEL[game]}</h2>
-          <p className="fp-text">
-            Você vira o host, define as regras e chama os amigos pelo código ou convite.
-          </p>
-          <button
-            type="button"
-            className="btn alt"
-            data-sfx="start"
-            disabled={entry.busy}
-            onClick={() => void entry.create(game)}
-          >
-            {entry.busy ? 'Criando...' : 'Criar sala'}
+      <RoomBanner />
+      <section className="fp-card">
+        <h2 className="fp-h">Criar sala de {GAME_LABEL[game]}</h2>
+        <p className="fp-text">
+          Você vira o host, define as regras e chama os amigos pelo código ou convite.
+        </p>
+        <button
+          type="button"
+          className="btn alt"
+          data-sfx="start"
+          disabled={entry.busy}
+          onClick={() => void entry.create(game)}
+        >
+          {entry.busy ? 'Criando...' : 'Criar sala'}
+        </button>
+      </section>
+      <section className="fp-card">
+        <h2 className="fp-h">Entrar com código</h2>
+        <form className="fp-join" onSubmit={join} noValidate>
+          <Field
+            label="Código da sala"
+            value={code}
+            onChange={(e) => {
+              setCode(e.target.value.toUpperCase());
+              entry.clearError();
+            }}
+            maxLength={4}
+            autoCapitalize="characters"
+            autoCorrect="off"
+            autoComplete="off"
+            hint="4 letras, como ABCD"
+            error={entry.error || undefined}
+          />
+          <button type="submit" className="btn ghost" data-sfx="roomJoin" disabled={entry.busy}>
+            Entrar
           </button>
-        </section>
-        <section className="fp-card">
-          <h2 className="fp-h">Entrar com código</h2>
-          <form className="fp-join" onSubmit={join} noValidate>
-            <Field
-              label="Código da sala"
-              value={code}
-              onChange={(e) => {
-                setCode(e.target.value.toUpperCase());
-                entry.clearError();
-              }}
-              maxLength={4}
-              autoCapitalize="characters"
-              autoCorrect="off"
-              autoComplete="off"
-              hint="4 letras, como ABCD"
-              error={entry.error || undefined}
-            />
-            <button type="submit" className="btn ghost" data-sfx="roomJoin" disabled={entry.busy}>
-              Entrar
-            </button>
-          </form>
-        </section>
-        <RoomConflictDialog
-          open={!!entry.conflict}
-          code={entry.conflict?.code ?? null}
-          onBack={entry.backToCurrent}
-          onLeave={() => void entry.leaveAndContinue()}
-          onCancel={entry.dismissConflict}
-        />
-      </PlayGate>
+        </form>
+      </section>
+      <NicknameDialog nick={entry.nick} />
+      <RoomConflictDialog
+        open={!!entry.conflict}
+        code={entry.conflict?.code ?? null}
+        onBack={entry.backToCurrent}
+        onLeave={() => void entry.leaveAndContinue()}
+        onCancel={entry.dismissConflict}
+      />
       <section className="fp-rules" aria-label="Como funciona">
         <div className="mono fp-rules-title">COMO FUNCIONA</div>
         <ul>

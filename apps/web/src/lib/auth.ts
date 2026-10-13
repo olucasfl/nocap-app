@@ -225,3 +225,6 @@ export async function restoreSession() {
   useAuth.setState({ user, status: 'ready' });
   if (user) void markVisit();
 }
+
+/** Sem conta (e a sessão já foi conferida): joga, mas nada é salvo nem vai para o ranking. */
+export const useIsGuest = (): boolean => useAuth((s) => s.status === 'ready' && s.user === null);

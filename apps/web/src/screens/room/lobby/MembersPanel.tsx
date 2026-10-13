@@ -2,13 +2,15 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { acceptRequest, fetchFriends, sendRequest, type RelationState } from '@/lib/friends';
 import { Crown } from '@/components/icons';
-import { sendRoom, type RoomMember, type RoomSnapshot } from '@/lib/rooms';
+import { useAuth } from '@/lib/auth';
+import { sendRoom, type RoomMember, type RoomSnapshot, at } from '@/lib/rooms';
 import { SINAL_COLORS } from '@nocap/games';
 import { MIN_PLAYERS } from './rules';
 
 /** Como eu me relaciono com quem está na sala: amigo, pedido enviado/recebido ou ninguém. */
 function useRelation(username: string, isMe: boolean): RelationState | 'me' {
-  const list = useQuery({ queryKey: ['friends'], queryFn: fetchFriends });
+  const signedIn = useAuth((s) => s.user !== null);
+  const list = useQuery({ queryKey: ['friends'], queryFn: fetchFriends, enabled: signedIn });
   if (isMe) return 'me';
   const d = list.data;
   if (d?.friends.some((f) => f.username === username)) return 'friends';
@@ -55,7 +57,9 @@ function Person({
   me: string | undefined;
   children?: React.ReactNode;
 }) {
-  const relation = useRelation(m.username, m.id === me);
+  const guestMember = !!m.guest;
+  const viewerIsGuest = useAuth((s) => s.user === null);
+  const relation = useRelation(m.username, m.id === me || guestMember || viewerIsGuest);
   return (
     <>
       <span
@@ -65,7 +69,8 @@ function Person({
       </span>
       <span className="lb-who">
         <b>
-          @{m.username}
+          {guestMember ? m.username : `${at(m.username)}`}
+          {guestMember && <span className="mono rm-badge">VISITANTE</span>}
           {m.id === me && <span className="mono rm-badge you">VOCÊ</span>}
         </b>
         {relation !== 'me' && relation !== 'friends' && (
@@ -139,7 +144,7 @@ function SinalColors({ snapshot, me }: { snapshot: RoomSnapshot; me: string | un
         {SINAL_COLORS.map((c) => {
           const by = owner(c.hex);
           const mine = by === me;
-          const who = by ? (mine ? 'você' : `@${nameOf(by) ?? '?'}`) : '';
+          const who = by ? (mine ? 'você' : `${at(nameOf(by) ?? '?')}`) : '';
           return (
             <div key={c.hex} className="lb-color-cell">
               <button
@@ -197,7 +202,7 @@ export function MembersPanel({
             </span>
             <span className="lb-who">
               <b>
-                @{leader.username}
+                {at(leader.username)}
                 {leader.id === me && <span className="mono rm-badge you">VOCÊ</span>}
               </b>
               <small className="mono">Define as regras e começa a partida</small>

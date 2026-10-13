@@ -21,7 +21,7 @@ import { MIN_TAP_GAP_MS, formatSeconds } from './format';
 import { FinalScreen } from './screens/FinalScreen';
 import { IntroScreen } from './screens/IntroScreen';
 import { TimeRoundsTable } from './screens/TimeRoundsTable';
-import { SAVE_TEXT, useSaveTime } from './useSaveTime';
+import { useSaveTime } from './useSaveTime';
 import { ResultScreen } from './screens/ResultScreen';
 import { StartScreen } from './screens/StartScreen';
 import { RoundScreen } from './screens/RoundScreen';
@@ -306,7 +306,7 @@ function SurvivalFinalTime({
         passed: state.passed[i] ?? false,
       }))}
       table={(shown) => <TimeRoundsTable rows={results} passed={state.passed} shown={shown} />}
-      saveText={SAVE_TEXT[save]}
+      save={save}
       limit={SURVIVAL_MAX_ROUNDS.time}
       onMenu={onMenu}
       summary={

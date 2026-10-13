@@ -11,7 +11,8 @@ import { MuteButton } from '@/components/MuteButton';
 import { apiClient } from '@/lib/api-client';
 import { useAuth } from '@/lib/auth';
 import { bestTenths, fetchStats } from '@/lib/stats';
-import { useSaveSinal, SAVE_TEXT, type SinalRunInfo } from './useSaveSinal';
+import { SaveNote } from '@/components/GuestNotice';
+import { useSaveSinal, type SinalRunInfo } from './useSaveSinal';
 import { ArrowRight } from '@/components/icons';
 import { SinalPlay } from './SinalPlay';
 import { getSinalBest, setSinalBest } from './storage';
@@ -62,9 +63,10 @@ function SinalStart({ onStart, busy }: { onStart: (mode: SinalMode) => void; bus
   const [open, setOpen] = useState<SinalMode | null>(null);
   const close = useCallback(() => setOpen(null), []);
   // O recorde da conta (servidor) ou, sem conta, o deste aparelho.
-  const best = open
-    ? Math.max(getSinalBest(open), Math.floor(bestTenths(stats.data, 'sinal', open) / 10))
-    : 0;
+  const best =
+    !open || !user
+      ? 0
+      : Math.max(getSinalBest(open), Math.floor(bestTenths(stats.data, 'sinal', open) / 10));
 
   return (
     <section className="screen">
@@ -145,12 +147,13 @@ function SinalFinal({
   onAgain: () => void;
   onMenu: () => void;
 }) {
-  const user = useAuth((st) => st.user);
   const save = useSaveSinal(run, mode, inputs);
+  const guest = save === 'guest';
   const classic = mode === 'classico';
   const meters = Math.floor(result.meters);
   const prev = Math.floor(before);
-  const isRecord = meters > prev;
+  // Sem conta não há recorde: só a distância desta partida.
+  const isRecord = !guest && meters > prev;
   const best = Math.max(meters, prev);
   const seen = result.ended === 'vigia';
   const diff = meters - prev;
@@ -158,7 +161,9 @@ function SinalFinal({
   return (
     <section className="screen svf">
       <div className={`svf-verdict ${seen ? 'vigia' : 'dark'}`}>
-        <span className="mono svf-kicker">SINAL VERMELHO · {classic ? 'CLÁSSICO' : 'INFINITO'}</span>
+        <span className="mono svf-kicker">
+          SINAL VERMELHO · {classic ? 'CLÁSSICO' : 'INFINITO'}
+        </span>
         <h1>{seen ? 'O VIGIA TE VIU' : 'A ESCURIDÃO TE PEGOU'}</h1>
         <p className="mono">
           {seen
@@ -176,12 +181,20 @@ function SinalFinal({
           <b>{meters}</b>
           <span>m</span>
         </div>
-        <div className="svf-meter" aria-label={`${pct}% do seu recorde`}>
-          <i style={{ transform: `scaleX(${Math.min(1, pct / 100)})` }} />
-        </div>
-        <span className="mono svf-hint">
-          {isRecord ? (prev > 0 ? `+${diff} m sobre o recorde anterior` : 'Esse é o seu primeiro resultado neste modo') : `${pct}% do seu recorde`}
-        </span>
+        {!guest && (
+          <>
+            <div className="svf-meter" aria-label={`${pct}% do seu recorde`}>
+              <i style={{ transform: `scaleX(${Math.min(1, pct / 100)})` }} />
+            </div>
+            <span className="mono svf-hint">
+              {isRecord
+                ? prev > 0
+                  ? `+${diff} m sobre o recorde anterior`
+                  : 'Esse é o seu primeiro resultado neste modo'
+                : `${pct}% do seu recorde`}
+            </span>
+          </>
+        )}
       </div>
 
       <dl className="svf-stats">
@@ -191,39 +204,56 @@ function SinalFinal({
             <dd>{result.phases}</dd>
           </div>
         )}
-        <div>
-          <dt className="mono">SEU RECORDE</dt>
-          <dd>{best} m</dd>
-        </div>
-        <div>
-          <dt className="mono">RECORDE ANTERIOR</dt>
-          <dd>{prev > 0 ? `${prev} m` : '-'}</dd>
-        </div>
+        {!guest && (
+          <>
+            <div>
+              <dt className="mono">SEU RECORDE</dt>
+              <dd>{best} m</dd>
+            </div>
+            <div>
+              <dt className="mono">RECORDE ANTERIOR</dt>
+              <dd>{prev > 0 ? `${prev} m` : '-'}</dd>
+            </div>
+          </>
+        )}
         <div>
           <dt className="mono">TEMPO DE CORRIDA</dt>
           <dd>{Math.floor(result.endedTick / 60)} s</dd>
         </div>
       </dl>
 
-      <p className="mono svf-note" role="status">
-        {user || save === 'saved' ? SAVE_TEXT[save] : 'ENTRE NA SUA CONTA PARA SALVAR NO RANKING E NO HISTÓRICO'}
-      </p>
+      <SaveNote className="mono svf-note" save={save} />
 
       <div className="stack svf-actions">
-        <button type="button" className="btn alt" data-sfx="start" disabled={busy} onClick={onAgain}>
+        <button
+          type="button"
+          className="btn alt"
+          data-sfx="start"
+          disabled={busy}
+          onClick={onAgain}
+        >
           {busy ? 'Preparando...' : 'Jogar de novo'}
         </button>
-        <Link to="/ranking" search={{ jogo: 'sinal', modo: mode }} className="btn ghost" data-sfx="select">
-          Ver ranking
-        </Link>
-        <Link
-          to="/ranking"
-          search={{ jogo: 'sinal', modo: mode, quem: 'friends' }}
-          className="btn ghost"
-          data-sfx="select"
-        >
-          Ranking dos amigos
-        </Link>
+        {!guest && (
+          <>
+            <Link
+              to="/ranking"
+              search={{ jogo: 'sinal', modo: mode }}
+              className="btn ghost"
+              data-sfx="select"
+            >
+              Ver ranking
+            </Link>
+            <Link
+              to="/ranking"
+              search={{ jogo: 'sinal', modo: mode, quem: 'friends' }}
+              className="btn ghost"
+              data-sfx="select"
+            >
+              Ranking dos amigos
+            </Link>
+          </>
+        )}
         <button type="button" className="btn ghost" data-sfx="back" onClick={onMenu}>
           Voltar ao menu
         </button>
@@ -239,7 +269,11 @@ function SinalFinal({
 export function SinalGame() {
   const [phase, setPhase] = useState<Phase>('menu');
   const [mode, setMode] = useState<SinalMode>('classico');
-  const [run, setRun] = useState<SinalRunInfo>(() => ({ matchId: crypto.randomUUID(), seed: seedOf(), session: '' }));
+  const [run, setRun] = useState<SinalRunInfo>(() => ({
+    matchId: crypto.randomUUID(),
+    seed: seedOf(),
+    session: '',
+  }));
   const [result, setResult] = useState<SinalResult | null>(null);
   const [before, setBefore] = useState(0);
   const [inputs, setInputs] = useState<SinalInput[]>([]);
@@ -264,9 +298,15 @@ export function SinalGame() {
     } catch {
       /* sem conta ou sem rede: treino local, a partida não é salva */
     }
-    let best = getSinalBest(m);
+    const signedIn = useAuth.getState().user !== null;
+    let best = signedIn ? getSinalBest(m) : 0;
     try {
-      const stats = await queryClient.fetchQuery({ queryKey: ['stats'], queryFn: fetchStats, staleTime: 0 });
+      if (!signedIn) throw new Error('guest');
+      const stats = await queryClient.fetchQuery({
+        queryKey: ['stats'],
+        queryFn: fetchStats,
+        staleTime: 0,
+      });
       best = Math.max(best, Math.floor(bestTenths(stats, 'sinal', m) / 10));
     } catch {
       /* convidado: vale o recorde deste aparelho */
@@ -283,10 +323,10 @@ export function SinalGame() {
         key={run.seed}
         mode={mode}
         seed={run.seed}
-        best={getSinalBest(mode)}
+        best={useAuth.getState().user ? getSinalBest(mode) : 0}
         onEnd={(r, inp) => {
           // O recorde guardado aqui é deste aparelho; o ranking de verdade vem do servidor.
-          setSinalBest(mode, r.meters);
+          if (useAuth.getState().user) setSinalBest(mode, r.meters);
           setResult(r);
           setInputs(inp);
           setPhase('final');
@@ -308,9 +348,7 @@ export function SinalGame() {
         </div>
       </header>
 
-      {phase === 'menu' && (
-        <SinalStart onStart={(m) => void begin(m)} busy={busy} />
-      )}
+      {phase === 'menu' && <SinalStart onStart={(m) => void begin(m)} busy={busy} />}
 
       {phase === 'final' && result && (
         <SinalFinal

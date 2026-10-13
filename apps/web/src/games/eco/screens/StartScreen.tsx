@@ -8,7 +8,6 @@ import { ModePicker } from '@/components/ModePicker';
 import { ModeSheet } from '@/components/ModeSheet';
 import { GameTabs, type GameTab } from '@/components/GameTabs';
 import { ArrowRight } from '@/components/icons';
-import { PlayGate } from '@/components/PlayGate';
 import { PullToRefresh } from '@/components/PullToRefresh';
 import { useAuth } from '@/lib/auth';
 import { dailyScoreText, fetchStats, recordText } from '@/lib/stats';
@@ -153,17 +152,15 @@ export function StartScreen({ initialTab = 'modes', onMode, onStart, busy, error
                   {error}
                 </p>
               )}
-              <PlayGate>
-                <button
-                  type="button"
-                  className="btn"
-                  data-sfx="start"
-                  disabled={busy}
-                  onClick={() => onStart(open)}
-                >
-                  {busy ? 'Preparando...' : 'Jogar'} <ArrowRight />
-                </button>
-              </PlayGate>
+              <button
+                type="button"
+                className="btn"
+                data-sfx="start"
+                disabled={busy}
+                onClick={() => onStart(open)}
+              >
+                {busy ? 'Preparando...' : 'Jogar'} <ArrowRight />
+              </button>
             </ModeSheet>
           )}
         </>

@@ -1,7 +1,7 @@
 import { SinalPhase } from './SinalPhase';
 import { generateColorRound, generateColorStart, type Hsb } from '@nocap/games';
 import { useAuth } from '@/lib/auth';
-import { sendRoom, type RoomSnapshot } from '@/lib/rooms';
+import { sendRoom, type RoomSnapshot, at } from '@/lib/rooms';
 import { toHex } from '@/games/color/hex';
 import { PickScreen } from '@/games/color/screens/PickScreen';
 import { ShowScreen } from '@/games/color/screens/ShowScreen';
@@ -32,7 +32,7 @@ function Waiting({ snapshot }: { snapshot: RoomSnapshot }) {
       <ul className="fr-list">
         {snapshot.members.map((m) => (
           <li key={m.id} className="fr-row">
-            <span className="fr-name">@{m.username}</span>
+            <span className="fr-name">{at(m.username)}</span>
             <span className={`mono rm-ready${m.locked ? ' on' : ''}`}>
               {!m.connected ? 'SEM CONEXÃO' : m.locked ? 'TRAVOU' : 'PENSANDO'}
             </span>
@@ -67,7 +67,7 @@ function Reveal({ snapshot }: { snapshot: RoomSnapshot }) {
               style={colorOf(r.answer) ? { background: colorOf(r.answer) } : undefined}
               aria-label={colorOf(r.answer) ?? 'Sem resposta'}
             />
-            <span className="rm-result-name">@{name(r.id)}</span>
+            <span className="rm-result-name">{at(name(r.id))}</span>
             <span className="rm-result-score">{r.score.toFixed(1)}</span>
           </li>
         ))}

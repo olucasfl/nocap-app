@@ -12,7 +12,7 @@ import { EcoBoard } from '@/games/eco/EcoBoard';
 import { PadChip } from '@/games/eco/pads';
 import '@/games/eco/eco.css';
 import { useAuth } from '@/lib/auth';
-import { sendRoom, useRoom, type RoomSnapshot } from '@/lib/rooms';
+import { sendRoom, useRoom, type RoomSnapshot, at } from '@/lib/rooms';
 import { sfx } from '@/lib/sfx';
 
 /** O pad a que uma regra se refere (cor que precisa usar ou que está proibida). */
@@ -96,7 +96,7 @@ function LeaderBanner({ name, me }: { name: string; me: boolean }) {
   return (
     <div className="eco-leader-banner" role="status" aria-live="assertive">
       <span className="mono">{me ? 'RODADA NOVA' : 'O LÍDER É'}</span>
-      <b>{me ? 'É VOCÊ!' : `@${name}`}</b>
+      <b>{me ? 'É VOCÊ!' : `${at(name)}`}</b>
       {me && <small className="mono">Monte a sequência abaixo</small>}
     </div>
   );
@@ -208,7 +208,7 @@ function Waiting({ snapshot }: { snapshot: RoomSnapshot }) {
     <section className="screen rm">
       <LeaderBanner name={leader} me={false} />
       <div className="eco-role follower">
-        <b>O LÍDER É @{leader}</b>
+        <b>O LÍDER É {at(leader)}</b>
         <span>
           Ele monta uma sequência de {eco.length} toques. Quando enviar, ela toca para todos e você
           repete.
