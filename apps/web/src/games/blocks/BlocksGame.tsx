@@ -74,12 +74,14 @@ function BlocksStart({ onStart, busy }: { onStart: (mode: UiMode) => void; busy:
   const stats = useQuery({ queryKey: ['stats'], queryFn: fetchStats, enabled: !!user });
   const [open, setOpen] = useState<UiMode | null>(null);
   const close = useCallback(() => setOpen(null), []);
-  const best =
-    open === 'towers'
-      ? Math.max(getTowersBest(), Math.floor(bestTenths(stats.data, 'blocks', 'towers') / 10))
-      : open
-        ? Math.max(getBlocksBest(), Math.floor(bestTenths(stats.data, 'blocks', open) / 10))
-        : 0;
+  // Com conta, o recorde é o do servidor (o mesmo do ranking); o do aparelho só vale sem conta.
+  const best = !open
+    ? 0
+    : stats.data
+      ? Math.floor(bestTenths(stats.data, 'blocks', open) / 10)
+      : open === 'towers'
+        ? getTowersBest()
+        : getBlocksBest();
   const current = MODES.find((m) => m.id === open);
 
   return (
@@ -405,9 +407,9 @@ export function BlocksGame() {
     let best = m === 'towers' ? getTowersBest() : getBlocksBest();
     try {
       const stats = await queryClient.fetchQuery({ queryKey: ['stats'], queryFn: fetchStats, staleTime: 0 });
-      best = Math.max(best, Math.floor(bestTenths(stats, 'blocks', m) / 10));
+      best = Math.floor(bestTenths(stats, 'blocks', m) / 10);
     } catch {
-      /* convidado: vale o recorde deste aparelho */
+      /* convidado ou sem rede: vale o recorde deste aparelho */
     }
     setBefore(best);
     setRun({ matchId: crypto.randomUUID(), seed, session });
