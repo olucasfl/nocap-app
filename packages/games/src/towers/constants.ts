@@ -40,6 +40,16 @@ export const LAND_TIME_FAST = 0.12;
  * serve para encaixar em lugar apertado, quase encostando, e jogar a peça no canto. Depois trava.
  */
 export const LAND_GRACE = 0.18;
+/**
+ * Folga (em casas) das peças que a pessoa guia: elas nunca empurram nada, então podem entrar num
+ * vão que está a um fio de ser pequeno demais (peças da torre ficam um pouco tortas).
+ */
+export const KIN_TOL = 0.06;
+/**
+ * Ajuda para entrar de lado num vão de uma casa de altura: se a peça está a até esta altura (em
+ * casas) acima ou abaixo do vão, o jogo a encaixa na altura certa em vez de barrar.
+ */
+export const ASSIST_Y = 0.4;
 /** Pausa entre soltar uma peça e nascer a próxima. */
 export const SPAWN_DELAY = 0.3;
 /** Parada o bastante (velocidade e giro) por este tempo, a peça está assentada. */

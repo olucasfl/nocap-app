@@ -855,3 +855,64 @@ describe('folga curtíssima ao pousar: ainda dá para mexer uma vez', () => {
     expect(steps).toBeLessThan(40);
   });
 });
+
+describe('encaixar em vão apertado (de uma casa)', () => {
+  const box = (g: TowersGame, x0: number, x1: number, y0: number, y1: number) => {
+    const b = new Body();
+    b.setBoxes([{ cx: 0, cy: 0, hw: (x1 - x0) / 2, hh: (y1 - y0) / 2, rc: 1, rs: 0 }], 1, true);
+    b.x = (x0 + x1) / 2;
+    b.y = (y0 + y1) / 2;
+    g.world.add(b);
+  };
+
+  /** Uma barra de 4 entra de lado num túnel de uma casa de altura (entre o azul e o verde), vindo da direita. */
+  const tunnel = (wob: number, startBottom: number) => {
+    const g = new TowersGame('tunel');
+    g.queue.unshift(0); // a barra I
+    while (!g.active) g.step(NONE);
+    box(g, -4, 0, -1 + wob, 0); // o azul, em cima da plataforma
+    box(g, -4, -1, -3, -2 + wob); // o verde, que faz o teto do túnel
+    const p = g.active!;
+    for (let i = 0; i < 6; i++) {
+      g.press(1);
+      g.step(NONE);
+    }
+    let t = 0;
+    while (g.active === p && t++ < 60 * 20) {
+      if (p.body.y + 0.5 >= startBottom) g.press(-1); // aperta esquerda, rápido, quando chega na altura
+      g.step(NONE);
+    }
+    let minX = Infinity;
+    for (const b of p.body.boxes) minX = Math.min(minX, p.body.x + b.cx - b.hw);
+    return minX;
+  };
+
+  it('entra no túnel de uma casa de altura mesmo chegando um pouco acima ou abaixo da altura certa', () => {
+    for (const wob of [0, 0.03, -0.03]) {
+      for (const start of [-1.9, -1.6, -1.3]) {
+        // 3 casas da barra ficam dentro do túnel (começa em x = -3)
+        expect(tunnel(wob, start), `desvio ${wob}, começando em ${start}`).toBeLessThanOrEqual(-2.9);
+      }
+    }
+  });
+
+  it('uma haste de uma casa entra num vão de uma casa um fio mais estreito (as peças da torre ficam tortas)', () => {
+    for (const delta of [-0.05, 0, 0.03]) {
+      const g = new TowersGame('vao-estreito');
+      g.queue.unshift(2); // o T, com a haste para baixo
+      while (!g.active) g.step(NONE);
+      box(g, -4, -1, -3, 0);
+      box(g, delta, 4, -3, 0);
+      const p = g.active!;
+      const target = Math.round((-1 + delta) / 2 - 1.5); // a haste sobre o vão
+      for (let i = 0; i < 12 && Math.abs(p.body.x - p.comx - target) > 0.4; i++) {
+        g.press(target > p.body.x - p.comx ? 1 : -1);
+        g.step(NONE);
+      }
+      let t = 0;
+      while (g.active === p && t++ < 60 * 20) g.step({ left: false, right: false, down: true });
+      // a barra do T fica em cima das colunas (topo em -3) e a haste desce dentro do vão
+      expect(p.body.y + 1, `vão ${delta}`).toBeGreaterThan(-2.5);
+    }
+  });
+});

@@ -1,5 +1,6 @@
 import { createRng } from '../core/rng';
 import {
+  ASSIST_Y,
   AUTO_ROTATE_EVERY,
   BAD_DURATION,
   BAD_SPELLS,
@@ -15,6 +16,7 @@ import {
   GOOD_SPELLS,
   ICE_FRICTION,
   KILL_Y,
+  KIN_TOL,
   LAND_TIME,
   LAND_GRACE,
   LAND_TIME_FAST,
@@ -257,7 +259,7 @@ export class TowersGame {
     let d = 0;
     while (d < MAX) {
       body.y = y0 + d + 0.5;
-      if (this.world.overlaps(body, 0.02)) break;
+      if (this.world.overlaps(body, KIN_TOL)) break;
       d += 0.5;
     }
     let a = d;
@@ -265,7 +267,7 @@ export class TowersGame {
     for (let i = 0; i < 5; i++) {
       const m = (a + b) / 2;
       body.y = y0 + m;
-      if (this.world.overlaps(body, 0.02)) b = m;
+      if (this.world.overlaps(body, KIN_TOL)) b = m;
       else a = m;
     }
     body.y = y0;
@@ -413,16 +415,32 @@ export class TowersGame {
     const dx = next - tl;
     if (Math.abs(dx) < 0.001) return false;
     body.x += dx;
-    if (!this.world.overlaps(body, 0.02)) {
+    if (!this.world.overlaps(body, KIN_TOL)) {
       this.targetTl = next;
       this.events.push({ type: 'move', dir: Math.sign(dx) });
       if (this.landed) this.graceMoves -= 1; // na folga do pouso só vale uma vez
       return true;
     }
     body.x -= dx;
+    // Vão de uma casa de altura: se a peça está um pouco acima ou abaixo da altura certa, encaixa
+    // na altura certa em vez de barrar (a peça cai sem parar, não dá para acertar a altura no olho).
+    for (const dy of [0.1, 0.2, 0.3, ASSIST_Y, -0.1, -0.2, -0.3, -ASSIST_Y]) {
+      body.y += dy;
+      if (!this.world.overlaps(body, KIN_TOL)) {
+        body.x += dx;
+        if (!this.world.overlaps(body, KIN_TOL)) {
+          this.targetTl = next;
+          this.events.push({ type: 'move', dir: Math.sign(dx) });
+          if (this.landed) this.graceMoves -= 1;
+          return true;
+        }
+        body.x -= dx;
+      }
+      body.y -= dy;
+    }
     // A vizinha pode estar a menos de uma casa: chega até encostar de verdade.
     let moved = this.slideBody(body, 'x', dx);
-    if (Math.abs(moved) < 0.04) {
+    if (Math.abs(moved) < KIN_TOL + 0.01) {
       // Já estava colada (ou a um fio): fica alinhada à grade, sem andar.
       body.x -= moved;
       moved = 0;
@@ -492,7 +510,7 @@ export class TowersGame {
     ] as const) {
       const x = clamp(baseX + dx, -FIELD_HALF, FIELD_HALF - nw * p.scale);
       this.shape(p, next, x, baseY + dy);
-      if (!this.world.overlaps(body, 0.02)) {
+      if (!this.world.overlaps(body, KIN_TOL)) {
         this.targetTl = x;
         this.events.push({ type: 'rotate' });
         return true;
@@ -662,14 +680,14 @@ export class TowersGame {
   private slideBody(body: Body, axis: 'x' | 'y', d: number): number {
     if (d === 0) return 0;
     body[axis] += d;
-    if (!this.world.overlaps(body, 0.02)) return d;
+    if (!this.world.overlaps(body, KIN_TOL)) return d;
     body[axis] -= d;
     let lo = 0;
     let hi = 1;
     for (let i = 0; i < 7; i++) {
       const mid = (lo + hi) / 2;
       body[axis] += d * mid;
-      const bad = this.world.overlaps(body, 0.02);
+      const bad = this.world.overlaps(body, KIN_TOL);
       body[axis] -= d * mid;
       if (bad) hi = mid;
       else lo = mid;
