@@ -98,17 +98,6 @@ export function Hub() {
           <PartyArt />
         </Link>
 
-        <Link to="/cor" className="hub-card hub-card-color" data-sfx="start">
-          <div className="hub-art">
-            <ColorArt />
-          </div>
-          <div className="hub-card-foot">
-            <div className="hub-card-name long">Mesmíssima</div>
-            <div className="mono hub-card-meta">{bestLabel(data, 'color')}</div>
-            <div className="mono hub-card-meta">{dailyStatus(data, 'color')}</div>
-          </div>
-        </Link>
-
         <Link to="/tempo" className="hub-card hub-card-time" data-sfx="start">
           <div className="hub-art">
             <TimeArt />
@@ -117,6 +106,28 @@ export function Hub() {
             <div className="hub-card-name mid">Já Deu?</div>
             <div className="mono hub-card-meta">{bestLabel(data, 'time')}</div>
             <div className="mono hub-card-meta">{dailyStatus(data, 'time')}</div>
+          </div>
+        </Link>
+
+        <Link to="/blocks" className="hub-card hub-card-blocks" data-sfx="start">
+          <div className="hub-art">
+            <BlocksArt />
+          </div>
+          <div className="hub-card-foot">
+            <div className="hub-card-name">Block&apos;s</div>
+            <div className="mono hub-card-meta">JOGOS DE BLOCOS</div>
+            <div className="mono hub-card-meta">{blocksBestLabel(data)}</div>
+          </div>
+        </Link>
+
+        <Link to="/cor" className="hub-card hub-card-color" data-sfx="start">
+          <div className="hub-art">
+            <ColorArt />
+          </div>
+          <div className="hub-card-foot">
+            <div className="hub-card-name long">Mesmíssima</div>
+            <div className="mono hub-card-meta">{bestLabel(data, 'color')}</div>
+            <div className="mono hub-card-meta">{dailyStatus(data, 'color')}</div>
           </div>
         </Link>
 
@@ -139,17 +150,6 @@ export function Hub() {
             <div className="hub-card-name long">Sinal Vermelho</div>
             <div className="mono hub-card-meta">CORRA SEM SER VISTO</div>
             <div className="mono hub-card-meta">{sinalBestLabel(data)}</div>
-          </div>
-        </Link>
-
-        <Link to="/blocks" className="hub-card hub-card-blocks" data-sfx="start">
-          <div className="hub-art">
-            <BlocksArt />
-          </div>
-          <div className="hub-card-foot">
-            <div className="hub-card-name">Block&apos;s</div>
-            <div className="mono hub-card-meta">JOGOS DE BLOCOS</div>
-            <div className="mono hub-card-meta">{blocksBestLabel(data)}</div>
           </div>
         </Link>
 

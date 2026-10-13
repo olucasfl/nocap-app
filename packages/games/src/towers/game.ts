@@ -546,7 +546,7 @@ export class TowersGame {
       const merged = mergeBodies(this.world, groupBodies, Math.min(...groupBodies.map((b) => b.friction)));
       const all: TowerPiece[] = [];
       for (const b of groupBodies) for (const q of (b.data.pieces as TowerPiece[] | undefined) ?? []) all.push(q);
-      merged.data = { pieces: all };
+      merged.data = { pieces: all, ivy: true };
       for (const q of all) q.body = merged;
       if (touchesGround) merged.makeStatic();
       this.events.push({ type: 'ivy', x: merged.x, y: merged.y, count: groupBodies.length });

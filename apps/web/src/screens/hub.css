@@ -172,19 +172,19 @@ a.hub-daily {
 .hub-more {
   animation: hub-in 0.38s cubic-bezier(0.2, 1.3, 0.4, 1) both;
 }
-.hub-card-color {
+.hub-card-time {
   animation-delay: 0.3s;
 }
-.hub-card-time {
+.hub-card-blocks {
   animation-delay: 0.38s;
 }
-.hub-card-eco {
+.hub-card-color {
   animation-delay: 0.46s;
 }
-.hub-card-sinal {
+.hub-card-eco {
   animation-delay: 0.54s;
 }
-.hub-card-blocks {
+.hub-card-sinal {
   animation-delay: 0.62s;
 }
 .hub-more {

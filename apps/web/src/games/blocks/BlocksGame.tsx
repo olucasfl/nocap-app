@@ -12,46 +12,74 @@ import { useAuth } from '@/lib/auth';
 import { bestTenths, fetchStats } from '@/lib/stats';
 import { BlockDefs, Star, ThumbSeal } from './art';
 import { BlocksPlay, type BlocksEnd } from './BlocksPlay';
-import { getBlocksBest, setBlocksBest } from './storage';
+import { getBlocksBest, getTowersBest, setBlocksBest, setTowersBest } from './storage';
+import { TowersPlay, type TowersEnd } from './towers/TowersPlay';
 import { SAVE_TEXT, useSaveBlocks, type BlocksRunInfo } from './useSaveBlocks';
 import './blocks.css';
 
 type Phase = 'menu' | 'play' | 'final';
 
-/** Os modos de blocos. O Block Classic é o primeiro; outros entram aqui depois. */
-const MODES: { id: BlocksMode; label: string; desc: string; lead: string }[] = [
+/** Os modos da aba: o Block Classic (vale no ranking) e o Block Towers (só neste aparelho, por ora). */
+type UiMode = BlocksMode | 'towers';
+
+/** Os modos de blocos. O Block Classic e o Block Towers; outros entram aqui depois. */
+const MODES: { id: UiMode; label: string; desc: string; lead: string }[] = [
   {
     id: 'classic',
     label: 'Block Classic',
     desc: '8X8 · SEM TEMPO · 3 DICAS',
     lead: 'Encaixe as peças na grade de 8x8 e complete linhas e colunas para fazê-las sumir. Sem tempo: a partida acaba quando nenhuma peça que resta cabe. O recorde são os pontos.',
   },
+  {
+    id: 'towers',
+    label: 'Block Towers',
+    desc: 'FÍSICA · 3 VIDAS · MAGIAS',
+    lead: 'As peças caem uma por vez e você monta uma torre que balança de verdade. Peça que cai da torre custa uma vida; com 3 vidas perdidas, acabou. O recorde são as peças empilhadas.',
+  },
 ];
 
-const RULES: [string, string][] = [
-  ['8x8', 'grade'],
-  ['3', 'peças por vez'],
-  ['3', 'dicas'],
-];
+const RULES: Record<UiMode, [string, string][]> = {
+  classic: [
+    ['8x8', 'grade'],
+    ['3', 'peças por vez'],
+    ['3', 'dicas'],
+  ],
+  towers: [
+    ['3', 'vidas'],
+    ['física', 'em tudo'],
+    ['magias', 'boas e ruins'],
+  ],
+};
 
-const HOW = [
-  'Arraste cada uma das 3 peças para a grade. Elas não giram. Quando as 3 estão colocadas, vêm outras 3.',
-  'Linha ou coluna inteira cheia some. Várias de uma vez rendem muito mais, e limpar em jogadas seguidas forma um COMBO.',
-  'Coloque a peça na melhor posição e ganha um JOINHA. As 3 peças nas melhores posições, e é PERFECT.',
-  'Tem 3 dicas por partida. Acabaram, acabou a ajuda. A partida termina quando nada mais cabe.',
-];
+const HOW: Record<UiMode, string[]> = {
+  classic: [
+    'Arraste cada uma das 3 peças para a grade. Elas não giram. Quando as 3 estão colocadas, vêm outras 3.',
+    'Linha ou coluna inteira cheia some. Várias de uma vez rendem muito mais, e limpar em jogadas seguidas forma um COMBO.',
+    'Coloque a peça na melhor posição e ganha um JOINHA. As 3 peças nas melhores posições, e é PERFECT.',
+    'Tem 3 dicas por partida. Acabaram, acabou a ajuda. A partida termina quando nada mais cabe.',
+  ],
+  towers: [
+    'A peça desce sozinha. Mova para os lados, gire e acelere a descida para encaixar na torre. O guia no alto mostra a próxima.',
+    'Tudo tem física: a torre balança e pode desmoronar. Cada peça que cair custa uma vida, e são 3.',
+    'A cada 5 peças chega uma magia. As boas você guarda e usa quando quiser (vinha, cimento, desfazer, vida extra). As ruins caem sobre você sozinhas.',
+    'A nota é o máximo de peças que você chegou a ter empilhadas. Neste modo o recorde fica só neste aparelho, por enquanto.',
+  ],
+};
 
 const seedOf = () => crypto.randomUUID().replace(/-/g, '').slice(0, 12);
 
 /** O menu: o Block's como aba de jogos de blocos, com cada modo como cartão. */
-function BlocksStart({ onStart, busy }: { onStart: (mode: BlocksMode) => void; busy: boolean }) {
+function BlocksStart({ onStart, busy }: { onStart: (mode: UiMode) => void; busy: boolean }) {
   const user = useAuth((st) => st.user);
   const stats = useQuery({ queryKey: ['stats'], queryFn: fetchStats, enabled: !!user });
-  const [open, setOpen] = useState<BlocksMode | null>(null);
+  const [open, setOpen] = useState<UiMode | null>(null);
   const close = useCallback(() => setOpen(null), []);
-  const best = open
-    ? Math.max(getBlocksBest(), Math.floor(bestTenths(stats.data, 'blocks', open) / 10))
-    : 0;
+  const best =
+    open === 'towers'
+      ? getTowersBest()
+      : open
+        ? Math.max(getBlocksBest(), Math.floor(bestTenths(stats.data, 'blocks', open) / 10))
+        : 0;
   const current = MODES.find((m) => m.id === open);
 
   return (
@@ -59,7 +87,7 @@ function BlocksStart({ onStart, busy }: { onStart: (mode: BlocksMode) => void; b
       <BackButton to="/" label="Jogos" />
       <h1 className="bk-title">Block&apos;s</h1>
       <p className="mono bk-subtitle">JOGOS DE BLOCOS</p>
-      <ModePicker game="blocks" modes={MODES} onOpen={(id) => setOpen(id as BlocksMode)} />
+      <ModePicker game="blocks" modes={MODES} onOpen={(id) => setOpen(id as UiMode)} />
       <div className="bk-soon mono">+ MAIS MODOS DE BLOCOS EM BREVE</div>
       {open && current && (
         <ModeSheet
@@ -67,9 +95,9 @@ function BlocksStart({ onStart, busy }: { onStart: (mode: BlocksMode) => void; b
           modeId={open}
           title={current.label}
           lead={current.lead}
-          record={best > 0 ? `Seu recorde aqui é de ${best} pontos` : null}
+          record={best > 0 ? `Seu recorde aqui é de ${best} ${open === 'towers' ? 'peças' : 'pontos'}` : null}
           onClose={close}
-          rules={RULES.map(([big, small]) => (
+          rules={RULES[open].map(([big, small]) => (
             <div className="bk-rule" key={small}>
               <b>{big}</b>
               {small}
@@ -77,7 +105,7 @@ function BlocksStart({ onStart, busy }: { onStart: (mode: BlocksMode) => void; b
           ))}
         >
           <ol className="bk-howto">
-            {HOW.map((t, i) => (
+            {HOW[open].map((t, i) => (
               <li key={i}>
                 <b>{i + 1}</b>
                 <span>{t}</span>
@@ -87,10 +115,16 @@ function BlocksStart({ onStart, busy }: { onStart: (mode: BlocksMode) => void; b
           <button type="button" className="btn" data-sfx="start" disabled={busy} onClick={() => onStart(open)}>
             {busy ? 'Preparando...' : 'Jogar'} <ArrowRight />
           </button>
-          {!user && (
+          {open === 'towers' ? (
             <p className="mono bk-meta">
-              ENTRE NA SUA CONTA PARA SALVAR NO RANKING, NO HISTÓRICO E NOS RECORDES.
+              NO CELULAR USE OS BOTÕES. NO COMPUTADOR: SETAS OU A/D, CIMA PARA GIRAR, BAIXO PARA DESCER E E PARA A MAGIA.
             </p>
+          ) : (
+            !user && (
+              <p className="mono bk-meta">
+                ENTRE NA SUA CONTA PARA SALVAR NO RANKING, NO HISTÓRICO E NOS RECORDES.
+              </p>
+            )
           )}
         </ModeSheet>
       )}
@@ -225,10 +259,105 @@ function BlocksFinal({
   );
 }
 
+const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+
+/** O fim do Block Towers: peças empilhadas, recorde e o resumo da torre. */
+function TowersFinal({
+  end,
+  before,
+  onAgain,
+  onMenu,
+}: {
+  end: TowersEnd;
+  before: number;
+  onAgain: () => void;
+  onMenu: () => void;
+}) {
+  const score = end.score;
+  const isRecord = score > before;
+  const best = Math.max(score, before);
+  const pct = best > 0 ? Math.round((score / best) * 100) : 0;
+  return (
+    <section className="screen bkf">
+      <div className="bkf-verdict">
+        <span className="mono bkf-kicker">BLOCK&apos;S · BLOCK TOWERS</span>
+        <h1>SEM VIDAS</h1>
+        <p className="mono">
+          {end.collapses > 0
+            ? 'A torre desabou. Mais cuidado no equilíbrio, ou use a vinha e o cimento.'
+            : 'Peças demais caíram da torre. Procure apoios largos e planos.'}
+        </p>
+      </div>
+
+      <div className="bkf-score">
+        {isRecord && <span className="bkf-badge mono">{before > 0 ? 'NOVO RECORDE' : 'PRIMEIRO RECORDE'}</span>}
+        <span className="mono bkf-label">PEÇAS EMPILHADAS</span>
+        <div className="bkf-big">
+          <b>{score}</b>
+        </div>
+        <div className="bkf-meter" aria-label={`${pct}% do seu recorde`}>
+          <i style={{ transform: `scaleX(${Math.min(1, pct / 100)})` }} />
+        </div>
+        <span className="mono bkf-hint">
+          {isRecord
+            ? before > 0
+              ? `+${score - before} peças sobre o recorde anterior`
+              : 'Esse é o seu primeiro resultado neste modo'
+            : `${pct}% do seu recorde`}
+        </span>
+      </div>
+
+      <dl className="bkf-stats">
+        <div>
+          <dt className="mono">SEU RECORDE</dt>
+          <dd>{best}</dd>
+        </div>
+        <div>
+          <dt className="mono">PEÇAS JOGADAS</dt>
+          <dd>{end.pieces}</dd>
+        </div>
+        <div>
+          <dt className="mono">TEMPO</dt>
+          <dd>{clock(end.time)}</dd>
+        </div>
+        <div>
+          <dt className="mono">MAGIAS</dt>
+          <dd>{end.spells}</dd>
+        </div>
+        <div>
+          <dt className="mono">PEÇAS CAÍDAS</dt>
+          <dd>{end.falls}</dd>
+        </div>
+        <div>
+          <dt className="mono">CAIU TUDO</dt>
+          <dd>{end.collapses}x</dd>
+        </div>
+      </dl>
+
+      <p className="mono bkf-note" role="status">
+        O BLOCK TOWERS FICA SÓ NESTE APARELHO POR ENQUANTO: SEM RANKING NEM HISTÓRICO.
+      </p>
+
+      <div className="stack bkf-actions">
+        <button type="button" className="btn alt" data-sfx="start" onClick={onAgain}>
+          Jogar de novo
+        </button>
+        <button type="button" className="btn ghost" data-sfx="back" onClick={onMenu}>
+          Voltar ao menu
+        </button>
+        <Link to="/" className="btn ghost">
+          Voltar aos jogos
+        </Link>
+      </div>
+    </section>
+  );
+}
+
 /** O Block's: menu de modos, partida em tela cheia e fim. */
 export function BlocksGame() {
   const [phase, setPhase] = useState<Phase>('menu');
-  const [mode, setMode] = useState<BlocksMode>('classic');
+  const [mode, setMode] = useState<UiMode>('classic');
+  const [towersEnd, setTowersEnd] = useState<TowersEnd | null>(null);
   const [run, setRun] = useState<BlocksRunInfo>(() => ({
     matchId: crypto.randomUUID(),
     seed: seedOf(),
@@ -243,8 +372,16 @@ export function BlocksGame() {
    * O servidor sorteia a seed e assina o início (é isso que deixa a partida valer no ranking).
    * Sem conta ou sem internet dá para jogar do mesmo jeito, só que como treino.
    */
-  const begin = async (m: BlocksMode = mode) => {
+  const begin = async (m: UiMode = mode) => {
     if (busy) return;
+    if (m === 'towers') {
+      // O Block Towers roda inteiro no aparelho: sem sessão nem servidor.
+      setMode(m);
+      setBefore(getTowersBest());
+      setRun({ matchId: crypto.randomUUID(), seed: seedOf(), session: '' });
+      setPhase('play');
+      return;
+    }
     setBusy(true);
     setMode(m);
     let seed = seedOf();
@@ -269,6 +406,22 @@ export function BlocksGame() {
     setBusy(false);
     setPhase('play');
   };
+
+  if (phase === 'play' && mode === 'towers') {
+    return (
+      <TowersPlay
+        key={run.seed}
+        seed={run.seed}
+        best={before}
+        onEnd={(e) => {
+          setTowersBest(e.score);
+          setTowersEnd(e);
+          setPhase('final');
+        }}
+        onQuit={() => setPhase('menu')}
+      />
+    );
+  }
 
   if (phase === 'play') {
     return (
@@ -298,7 +451,10 @@ export function BlocksGame() {
         </div>
       </header>
       {phase === 'menu' && <BlocksStart onStart={(m) => void begin(m)} busy={busy} />}
-      {phase === 'final' && end && (
+      {phase === 'final' && mode === 'towers' && towersEnd && (
+        <TowersFinal end={towersEnd} before={before} onAgain={() => void begin()} onMenu={() => setPhase('menu')} />
+      )}
+      {phase === 'final' && mode !== 'towers' && end && (
         <BlocksFinal
           mode={mode}
           end={end}

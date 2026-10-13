@@ -30,6 +30,15 @@ export function modeArt(id: string): ReactNode {
           />
         </svg>
       );
+    case 'towers':
+      return (
+        <svg viewBox="0 0 32 32" aria-hidden="true">
+          <rect x="9" y="22" width="14" height="7" rx="1.8" {...p} />
+          <rect x="6" y="15" width="12" height="7" rx="1.8" {...p} />
+          <rect x="11" y="8" width="12" height="7" rx="1.8" fill="currentColor" stroke="none" />
+          <path d="M16 3v3M13 4.5h6" {...p} />
+        </svg>
+      );
     case 'classico':
       return (
         <svg viewBox="0 0 32 32" aria-hidden="true">

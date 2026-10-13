@@ -72,7 +72,7 @@
 
 /* ---- partida */
 .bk-play {
-  --bw: min(calc(100vw - 32px), 440px, calc(100vh - 372px));
+  --bw: max(190px, min(calc(100vw - 32px), 440px, calc(100vh - 372px)));
   position: fixed;
   inset: 0;
   z-index: 50;
@@ -90,7 +90,7 @@
 }
 @supports (height: 100dvh) {
   .bk-play {
-    --bw: min(calc(100vw - 32px), 440px, calc(100dvh - 372px));
+    --bw: max(190px, min(calc(100vw - 32px), 440px, calc(100dvh - 372px)));
   }
 }
 .bk-top {
@@ -708,6 +708,8 @@
 }
 .bk-slot {
   position: relative;
+  container-type: size;
+  min-width: 0;
   height: clamp(86px, 22vw, 118px);
   display: grid;
   place-items: center;
@@ -719,6 +721,22 @@
   touch-action: none;
   animation: bk-deal 0.4s cubic-bezier(0.2, 1.25, 0.4, 1) both;
   animation-delay: calc(var(--i) * 70ms);
+}
+.bk-fit {
+  display: block;
+  overflow: visible;
+  /* Sem unidades de contêiner (navegador antigo): casa fixa que cabe na maioria dos celulares. */
+  width: calc(var(--w) * 15px);
+  height: calc(var(--h) * 15px);
+  max-width: 100%;
+  max-height: 100%;
+}
+@supports (width: 1cqw) {
+  .bk-fit {
+    --u: min(26px, calc((100cqw - 16px) / var(--w)), calc((100cqh - 16px) / var(--h)));
+    width: calc(var(--w) * var(--u));
+    height: calc(var(--h) * var(--u));
+  }
 }
 .bk-slot:focus-visible {
   outline: 3px solid var(--blue);
@@ -840,6 +858,69 @@
   font-weight: 700;
   letter-spacing: 0.1em;
   color: var(--muted);
+}
+
+/* Celular deitado (ou tela baixa): o tabuleiro fica à esquerda e o resto à direita. */
+@media (orientation: landscape) and (max-height: 560px) {
+  .bk-play {
+    --bw: max(190px, min(calc(100vh - 70px), 52vw));
+    display: grid;
+    grid-template-columns: var(--bw) minmax(0, 1fr);
+    grid-template-rows: auto auto 1fr auto;
+    grid-template-areas:
+      'top top'
+      'board hud'
+      'board tray'
+      'board foot';
+    column-gap: 18px;
+    align-content: start;
+    justify-content: center;
+    align-items: start;
+    padding-top: max(6px, env(safe-area-inset-top));
+    padding-bottom: 6px;
+  }
+  .bk-top {
+    grid-area: top;
+    justify-self: stretch;
+    width: 100%;
+  }
+  .bk-iconbtn {
+    width: 38px;
+    height: 38px;
+  }
+  .bk-hud {
+    grid-area: hud;
+    width: 100%;
+    margin-top: 0;
+  }
+  .bk-boardwrap {
+    grid-area: board;
+    margin-top: 4px;
+  }
+  .bk-tray {
+    grid-area: tray;
+    width: 100%;
+    margin-top: 10px;
+  }
+  .bk-slot {
+    height: clamp(70px, 24vh, 104px);
+  }
+  .bk-foot {
+    grid-area: foot;
+    width: 100%;
+    margin-top: 10px;
+  }
+}
+@media (max-height: 640px) and (orientation: portrait) {
+  .bk-play {
+    --bw: max(190px, min(calc(100vw - 32px), 440px, calc(100vh - 330px)));
+  }
+  .bk-tray {
+    margin-top: 14px;
+  }
+  .bk-foot {
+    margin-top: 10px;
+  }
 }
 
 /* ---- fim da partida */

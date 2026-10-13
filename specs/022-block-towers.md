@@ -1,6 +1,6 @@
 # 022 · Block Towers (empilhar com física) dentro do Block's
 
-Status: **aprovada pelo Lucas (13/10/2026); primeira etapa: só o modo "3 vidas", solo e offline.** Os outros dois modos (Corrida e Petrificar) e o online ficam para depois.
+Status: **implementada (modo "3 vidas", solo e offline); falta jogar para calibrar a física, a velocidade e as magias.** Aprovada pelo Lucas (13/10/2026). Os outros dois modos (Corrida e Petrificar) e o online ficam para depois.
 
 ## A ideia
 
@@ -89,7 +89,7 @@ Sorteadas pela seed, metade boas e metade ruins.
 - Só `transform`/`opacity` em animações de interface (RULES.md); o desenho do cenário e da física no Canvas respeita `prefers-reduced-motion` (sem tremor e sem partículas excessivas).
 
 ## Sons (Web Audio, sem arquivos)
-Mover (tique), girar (clique), descer rápido, **encaixe** (tom por impacto), batida forte, **assentou** (sininho que sobe com a altura da torre), **peça caiu** (assobio descendente), **perdeu vida** (coração quebrando), **caiu tudo** (estrondo), vinha (cintilar), cimento (pedra), desfazer, vida extra, magia boa/ruim (selos sonoros diferentes), fim de jogo, e música ambiente leve opcional (some no mudo).
+Mover (tique), girar (clique), descer rápido, **encaixe** (tom por impacto), batida forte, **assentou** (sininho que sobe com a altura da torre), **peça caiu** (assobio descendente), **perdeu vida** (coração quebrando), **caiu tudo** (estrondo), vinha (cintilar), cimento (pedra), desfazer, vida extra, magia boa/ruim (selos sonoros diferentes), fim de jogo. (A música ambiente fica para depois.)
 
 ## Arquitetura
 - **Motor de física próprio** em `packages/games/src/towers/physics.ts` (caixas orientadas, colisão por eixo separador, impulsos sequenciais com atrito, corpos compostos), usando só soma, subtração, multiplicação, divisão e raiz quadrada (sem sin/cos), com passo fixo: **determinístico**, o que permite o servidor refazer partidas no futuro.

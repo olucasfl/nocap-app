@@ -20,7 +20,7 @@ export const BLOCK_HEX: Record<BlockColor, string> = {
 };
 
 /** Mistura a cor com branco (`amount` > 0) ou preto (`amount` < 0), de -1 a 1. */
-function shade(hex: string, amount: number): string {
+export function shade(hex: string, amount: number): string {
   const n = parseInt(hex.slice(1), 16);
   const target = amount < 0 ? 0 : 255;
   const t = Math.abs(amount);
@@ -74,6 +74,26 @@ export function PieceArt({ shape, unit }: { shape: BlockShape; unit: number }) {
       height={shape.h * unit}
       aria-hidden="true"
       style={{ display: 'block', overflow: 'visible' }}
+    >
+      {shape.cells.map(([r, c]) => (
+        <Cell key={`${r}-${c}`} color={shape.color} row={r} col={c} />
+      ))}
+    </svg>
+  );
+}
+
+/**
+ * A peça da bandeja, que SEMPRE cabe na caixa dela: o tamanho da casa sai do tamanho da caixa
+ * (unidades de contêiner), então a barra de 4 ou 5 casas encolhe em vez de vazar. A caixa precisa
+ * ter `container-type: size` (ver `.bk-slot`).
+ */
+export function FitPiece({ shape }: { shape: BlockShape }) {
+  return (
+    <svg
+      className="bk-fit"
+      viewBox={`0 0 ${shape.w} ${shape.h}`}
+      aria-hidden="true"
+      style={{ '--w': shape.w, '--h': shape.h } as React.CSSProperties}
     >
       {shape.cells.map(([r, c]) => (
         <Cell key={`${r}-${c}`} color={shape.color} row={r} col={c} />

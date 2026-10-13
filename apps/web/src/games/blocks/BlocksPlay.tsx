@@ -27,7 +27,7 @@ import { MuteButton } from '@/components/MuteButton';
 import { createBlocksAudio, type BlocksAudio } from '@/lib/blocks-audio';
 import { buzz } from '@/lib/sfx';
 import { aimAt } from './aim';
-import { BLOCK_HEX, BlockDefs, Bulb, Cell, HintSeal, PerfectStamp, PieceArt, ThumbSeal } from './art';
+import { BLOCK_HEX, BlockDefs, Bulb, Cell, FitPiece, HintSeal, PerfectStamp, PieceArt, ThumbSeal } from './art';
 import './blocks.css';
 
 /** O que a partida entrega ao acabar: o resultado e as jogadas (que o servidor vai refazer). */
@@ -670,7 +670,7 @@ export function BlocksPlay({ seed, best, onEnd, onQuit }: Props) {
               aria-label={shape ? `Peça ${slot + 1}` : `Peça ${slot + 1} já usada`}
               onPointerDown={(e) => startDrag(e, slot)}
             >
-              {shape && <PieceArt shape={shape} unit={Math.max(12, Math.min(26, cellPx * 0.52))} />}
+              {shape && <FitPiece shape={shape} />}
             </div>
           );
         })}
