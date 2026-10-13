@@ -181,6 +181,9 @@ export class TowersGame {
   /** Velocidade pedida para a peça que desce neste passo (ela se move sem empurrar ninguém). */
   private cmdVx = 0;
   private cmdVy = 0;
+  /** A descida da peça foi barrada neste passo por algo que não a apoia por baixo (uma peça torta ao lado). */
+  private blockedY = false;
+  private stuckTimer = 0;
   private landTimer = 0;
   private autoTimer = 0;
   private fallTimes: number[] = [];
@@ -366,6 +369,8 @@ export class TowersGame {
     this.moveDir = 0;
     this.moveTimer = 0;
     this.touched = false;
+    this.blockedY = false;
+    this.stuckTimer = 0;
     this.landTimer = 0;
     this.autoTimer = AUTO_ROTATE_EVERY;
     this.pieces.push(piece);
@@ -514,7 +519,7 @@ export class TowersGame {
     }
     if (hit) this.events.push({ type: 'land', ...hit });
 
-    if (this.active && !this.touched && this.probe(this.active.body, 0, 0.06)) {
+    if (this.active && !this.touched && this.world.supportedBelow(this.active.body)) {
       // A peça pousou em cima de algo (a torre ou a plataforma): trava os movimentos e dá o "toc".
       // Encostar só de lado, descendo ao lado da torre, NÃO trava: dá para deslizar para um vão.
       this.touched = true;
@@ -576,16 +581,6 @@ export class TowersGame {
     }
   }
 
-  /** A peça (na posição de agora) bateria em algo se andasse `dx`, `dy`? Folga de 0,004 de penetração. */
-  private probe(body: Body, dx: number, dy: number): boolean {
-    body.x += dx;
-    body.y += dy;
-    const hit = this.world.overlaps(body, 0.004);
-    body.x -= dx;
-    body.y -= dy;
-    return hit;
-  }
-
   /**
    * A peça que a pessoa segura se move sozinha, sem passar pelo motor: anda o que o controle pede e,
    * se bater em algo, para antes (aproxima até encostar). Assim ela NUNCA empurra a torre; só a
@@ -611,11 +606,22 @@ export class TowersGame {
       body[axis] += d * lo;
     };
     slide('x', this.cmdVx * dt);
-    slide('y', this.cmdVy * dt);
+    const before = body.y;
+    const want = this.cmdVy * dt;
+    slide('y', want);
+    this.blockedY = want > 0 && body.y - before < want - 1e-6;
   }
 
   private checkLanding(p: TowerPiece, input: TowersInput, dt: number) {
-    if (this.probe(p.body, 0, 0.06)) this.landTimer += dt;
+    const supported = this.world.supportedBelow(p.body);
+    // Presa no ar (algo torto a barra sem apoiar por baixo) por muito tempo: solta e vira física.
+    if (this.blockedY && !supported) this.stuckTimer += dt;
+    else this.stuckTimer = 0;
+    if (this.stuckTimer >= 0.6) {
+      this.release(p);
+      return;
+    }
+    if (supported) this.landTimer += dt;
     else this.landTimer = Math.max(0, this.landTimer - dt * 2);
     const need = input.down ? LAND_TIME_FAST : LAND_TIME;
     if (this.landTimer >= need) this.release(p);

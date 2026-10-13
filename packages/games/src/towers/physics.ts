@@ -463,6 +463,32 @@ export class World {
     return false;
   }
 
+  /**
+   * Tem algo EMBAIXO deste corpo, apoiando? Desce o corpo `dy` de teste e procura contatos cuja
+   * normal aponta para baixo (um apoio de verdade). Encostar de lado, descendo ao lado de uma peça,
+   * não conta como apoio.
+   */
+  supportedBelow(body: Body, dy = 0.06, tol = 0.004): boolean {
+    for (const other of this.bodies) {
+      if (other === body || other.held) continue;
+      const dx = other.x - body.x;
+      const ddy = other.y - body.y;
+      const r = other.radius + body.radius + 0.5;
+      if (!other.isStatic && dx * dx + ddy * ddy > r * r) continue;
+      for (const ba of body.boxes) {
+        const pa = poseOf(body, ba, { x: 0, y: 0, c: 1, s: 0, hw: 0, hh: 0 });
+        pa.y += dy;
+        for (const bb of other.boxes) {
+          const pb = poseOf(other, bb, { x: 0, y: 0, c: 1, s: 0, hw: 0, hh: 0 });
+          const dd = Math.abs(pa.x - pb.x) + Math.abs(pa.y - pb.y);
+          if (dd > pa.hw + pa.hh + pb.hw + pb.hh + 1) continue;
+          for (const h of collideBoxes(pa, pb)) if (h.sep < -tol && h.ny > 0.7) return true;
+        }
+      }
+    }
+    return false;
+  }
+
   /** Alguma caixa deste corpo (na pose dada) penetra em outro corpo? Usado para validar giros. */
   overlaps(body: Body, tolerance = 0.12): boolean {
     for (const other of this.bodies) {

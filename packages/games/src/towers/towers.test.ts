@@ -574,3 +574,65 @@ describe('deslizar para um vão ao lado da torre', () => {
     expect(tl()).toBe(start - 1);
   });
 });
+
+describe('descer ao lado de uma peça nunca conta como pouso', () => {
+  it('nem ao roçar numa peça levemente torta: só apoio embaixo trava e solta', () => {
+    const g = new TowersGame('rocar');
+    while (!g.active) g.step(NONE);
+    const body = g.active!.body;
+    let right = -Infinity;
+    for (const b of body.boxes) right = Math.max(right, body.x + b.cx + b.hw);
+    // Parede um fio torta (menos de meio grau) cuja face encosta (e entra um fio) no lado da peça
+    const wall = new Body();
+    wall.setBoxes([{ cx: 0, cy: 0, hw: 0.5, hh: 3, rc: 1, rs: 0 }], 1, true);
+    wall.c = Math.cos(0.004);
+    wall.s = Math.sin(0.004);
+    wall.x = right + 0.5 - 0.004;
+    wall.y = body.y;
+    g.world.add(wall);
+    for (let i = 0; i < 40; i++) g.step(NONE); // desce roçando
+    expect(g.active).not.toBeNull(); // não foi solta
+    expect((g as unknown as { touched: boolean }).touched).toBe(false); // não travou
+    expect(g.world.supportedBelow(g.active!.body)).toBe(false);
+  });
+
+  it('com apoio embaixo, supportedBelow é verdadeiro', () => {
+    const w = new World();
+    const ground = new Body();
+    ground.setBoxes([{ cx: 0, cy: 0.8, hw: 4, hh: 0.8, rc: 1, rs: 0 }], 1, true);
+    ground.x = 0;
+    ground.y = 0.8;
+    w.add(ground);
+    const b = new Body();
+    b.setBoxes([{ cx: 0, cy: 0, hw: 0.5, hh: 0.5, rc: 1, rs: 0 }]);
+    b.x = 0;
+    b.y = -0.5; // apoiada no chão (topo em y = 0)
+    w.add(b);
+    expect(w.supportedBelow(b)).toBe(true);
+    b.y = -2; // no ar
+    expect(w.supportedBelow(b)).toBe(false);
+  });
+});
+
+describe('peça barrada no ar por algo torto', () => {
+  it('se ficar presa sem apoio por muito tempo, é solta e vira física (nunca fica pendurada)', () => {
+    const g = new TowersGame('presa');
+    while (!g.active) g.step(NONE);
+    const piece = g.active!;
+    const body = piece.body;
+    // Um teto torto logo abaixo, que barra a descida sem apoiar a peça por baixo (só passa de lado)
+    let left = Infinity;
+    for (const b of body.boxes) left = Math.min(left, body.x + b.cx - b.hw);
+    const bar = new Body();
+    bar.setBoxes([{ cx: 0, cy: 0, hw: 0.3, hh: 0.3, rc: 1, rs: 0 }], 1, true);
+    bar.x = left + 0.3 + 0.2; // dentro da largura da peça, mas só a "pontinha" lateral entra no caminho
+    bar.y = body.y + 6;
+    g.world.add(bar);
+    let released = false;
+    for (let i = 0; i < 60 * 15 && !released; i++) {
+      g.step(NONE);
+      released = g.active !== piece;
+    }
+    expect(released).toBe(true);
+  });
+});
