@@ -58,7 +58,7 @@ const GAME_NAME: Record<RoomGame, string> = {
   time: 'Já Deu?',
   impostor: 'Intruso',
   eco: 'Ecooo',
-  party: 'NoCap!',
+  party: 'Mix Nocap',
   sinal: 'Sinal Vermelho',
 };
 
@@ -69,7 +69,7 @@ const ENTRY_LEAD: Record<RoomGame, string> = {
   impostor:
     'O Intruso precisa de uma sala com no mínimo 3 pessoas: alguns não veem a cor, só uma dica, e todo mundo vota em quem desconfia.',
   party:
-    'Jogue NoCap! com amigos: micro-desafios rápidos e minijogos grandes, todos jogando ao mesmo tempo.',
+    'Jogue Mix Nocap com amigos: micro-desafios rápidos e minijogos grandes, todos jogando ao mesmo tempo.',
   sinal:
     'Corra com os amigos no mesmo mapa, cada um com a sua cor. Quem se mexe quando o Vigia olha, ou é pego pela escuridão, sai. Dá para empurrar quem chega perto.',
 };

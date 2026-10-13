@@ -152,7 +152,7 @@ const MODE_NAME: Record<string, string> = {
   'batida-frenesi': 'Eco Hero: Frenesi',
   infinito: 'Infinito',
   classico: 'Clássico',
-  party: 'NoCap!',
+  party: 'Mix Nocap',
   leader: 'Siga o Líder',
   room: 'Sala',
 };

@@ -1,6 +1,4 @@
-import { ArrowRight } from '@/components/icons';
-import { BlocksArt, ColorArt, EcoArt, SinalArt, TimeArt } from '@/components/HubArt';
-import { PartyArt } from '@/components/PartyArt';
+import { BlocksArt, ColorArt, EcoArt, MixArt, SinalArt, TimeArt } from '@/components/HubArt';
 import { Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { AnimatedText } from '@/components/AnimatedText';
@@ -82,22 +80,6 @@ export function Hub() {
       </h1>
 
       <div className="hub-grid">
-        <Link to="/nocap" className="hub-card hub-card-party" data-sfx="start">
-          <span className="hub-tag">PARA JOGAR COM AMIGOS</span>
-          <div className="hub-party-text">
-            <div className="hub-card-name party">NoCap!</div>
-            <p className="hub-party-lead">
-              O jogo que une tudo do app: cores, tempo, sequências, digitação e minijogos, todo
-              mundo disputando ao vivo na mesma sala.
-            </p>
-            <div className="mono hub-card-meta">2 A 12 PESSOAS · SÓ EM SALA</div>
-            <span className="hub-cta">
-              Jogar com amigos <ArrowRight size={20} />
-            </span>
-          </div>
-          <PartyArt />
-        </Link>
-
         <Link to="/tempo" className="hub-card hub-card-time" data-sfx="start">
           <div className="hub-art">
             <TimeArt />
@@ -150,6 +132,17 @@ export function Hub() {
             <div className="hub-card-name long">Sinal Vermelho</div>
             <div className="mono hub-card-meta">CORRA SEM SER VISTO</div>
             <div className="mono hub-card-meta">{sinalBestLabel(data)}</div>
+          </div>
+        </Link>
+
+        <Link to="/nocap" className="hub-card hub-card-mix" data-sfx="start">
+          <div className="hub-art">
+            <MixArt />
+          </div>
+          <div className="hub-card-foot">
+            <div className="hub-card-name mid">Mix Nocap</div>
+            <div className="mono hub-card-meta">JOGUE COM AMIGOS</div>
+            <div className="mono hub-card-meta">2 A 12 PESSOAS · SÓ EM SALA</div>
           </div>
         </Link>
 

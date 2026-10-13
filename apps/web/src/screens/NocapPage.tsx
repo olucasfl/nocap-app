@@ -35,7 +35,7 @@ export function NocapPage() {
       </header>
       <section className="screen rm">
         <BackButton to="/" label="Voltar aos jogos" />
-        <h1>NoCap!</h1>
+        <h1>Mix Nocap</h1>
         <p className="lead">
           Party game de micro-desafios rápidos e minijogos grandes.
           <br />

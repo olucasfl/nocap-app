@@ -51,7 +51,7 @@ export const GAME_NAME: Record<RoomGame, string> = {
   time: 'Já Deu?',
   impostor: 'Intruso',
   eco: 'Ecooo',
-  party: 'NoCap!',
+  party: 'Mix Nocap',
 };
 
 /** "Entra na minha sala ___": com a preposição certa para o convite. */
@@ -60,7 +60,7 @@ export const GAME_OF: Record<RoomGame, string> = {
   time: 'de Já Deu?',
   impostor: 'do Intruso',
   eco: 'do Ecooo',
-  party: 'do NoCap!',
+  party: 'do Mix Nocap',
   sinal: 'do Sinal Vermelho',
 };
 
@@ -103,7 +103,7 @@ export const MODES: Record<RoomGame, { id: string; label: string; note: string }
   party: [
     {
       id: 'party',
-      label: 'NoCap!',
+      label: 'Mix Nocap',
       note: 'Micro-desafios e minijogos grandes.',
     },
   ],
