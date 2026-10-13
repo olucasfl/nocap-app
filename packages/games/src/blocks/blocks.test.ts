@@ -9,6 +9,7 @@ import {
   STREAK_CAP,
   analyze,
   applyMove,
+  clearsBoard,
   decodeMove,
   emptyRows,
   encodeMove,
@@ -467,5 +468,91 @@ describe('análise, elogio e dica', () => {
     const a = analyze(emptyRows(), [shape('barra2', 0).id, shape('barra2', 1).id, shape('ponto').id], 0, 0);
     expect(a.solvable).toBe(true);
     expect(Date.now() - t).toBeLessThan(5000);
+  });
+});
+
+describe('tipos de rodada: aleatório, com começo generoso', () => {
+  const firsts = (n: number) => {
+    const out: { seed: string; kind: string | null; game: BlocksGame }[] = [];
+    for (let i = 0; i < n; i++) {
+      const seed = `abertura-${i}`;
+      const game = new BlocksGame(seed);
+      out.push({ seed, kind: game.roundKind, game });
+    }
+    return out;
+  };
+
+  it('na primeira rodada vem de tudo: às vezes limpa o tabuleiro inteiro, às vezes só encaixa bem', () => {
+    const f = firsts(150);
+    const count = (k: string) => f.filter((x) => x.kind === k).length;
+    expect(count('clean')).toBeGreaterThanOrEqual(150 * 0.15);
+    expect(count('clean')).toBeLessThanOrEqual(150 * 0.5);
+    expect(count('good') + count('great')).toBeGreaterThan(150 * 0.3);
+    expect(count('neutral')).toBeGreaterThan(0); // às vezes as peças não ajudam logo de cara
+  });
+
+  it('a rodada que limpa tudo limpa de verdade: as 3 peças se encaixam e o tabuleiro fica vazio', () => {
+    const cleans = firsts(150).filter((x) => x.kind === 'clean');
+    expect(cleans.length).toBeGreaterThan(10);
+    for (const { game } of cleans.slice(0, 20)) {
+      const shapes = game.slots.map((id) => BLOCK_SHAPES[id!]!);
+      expect(clearsBoard(game.rows, shapes)).toBe(true);
+      // seguindo a melhor sequência, o tabuleiro termina vazio (e vale o bônus de tabuleiro limpo)
+      const plan = analyze(game.rows, game.slots, game.streak, game.drought).plans[0]!;
+      let last = null;
+      for (const m of plan) last = game.play(m.slot, m.row, m.col);
+      expect(last!.boardClear).toBe(true);
+      expect(game.filled).toBe(0);
+    }
+  });
+
+  it('depois de uma rodada fraca, a seguinte costuma recompensar (melhora com o tempo)', () => {
+    let afterNeutral = 0;
+    let afterNeutralGood = 0;
+    let afterOther = 0;
+    let afterOtherGood = 0;
+    for (let i = 0; i < 30; i++) {
+      const g = new BlocksGame(`melhora-${i}`);
+      let plan: Move[] = [];
+      let prev = g.roundKind;
+      while (!g.over && g.moves.length < 90) {
+        if (g.slots.every((x) => x !== null)) plan = analyze(g.rows, g.slots, g.streak, g.drought).plans[0] ?? [];
+        const m = plan.shift() ?? g.legalMoves()[0];
+        if (!m) break;
+        const res = g.play(m.slot, m.row, m.col);
+        if (res?.newSet) {
+          const strong = g.roundKind === 'great' || g.roundKind === 'clean';
+          if (prev === 'neutral') {
+            afterNeutral++;
+            if (strong) afterNeutralGood++;
+          } else {
+            afterOther++;
+            if (strong) afterOtherGood++;
+          }
+          prev = g.roundKind;
+        }
+      }
+    }
+    expect(afterNeutral).toBeGreaterThan(20);
+    expect(afterNeutralGood / afterNeutral).toBeGreaterThan(afterOtherGood / afterOther + 0.1);
+  });
+
+  it('todo trio continua tendo solução e a conferência do servidor continua rápida', () => {
+    const g = new BlocksGame('rapida-1');
+    let plan: Move[] = [];
+    while (!g.over && g.moves.length < 240) {
+      if (g.slots.every((x) => x !== null)) {
+        expect(hasPlan(g.rows, g.slots.map((id) => BLOCK_SHAPES[id!]!), 0)).toBe(true);
+        plan = analyze(g.rows, g.slots, g.streak, g.drought).plans[0] ?? [];
+      }
+      const m = plan.shift() ?? g.legalMoves()[0];
+      if (!m) break;
+      g.play(m.slot, m.row, m.col);
+    }
+    const t = Date.now();
+    const check = evaluateBlocks('rapida-1', g.moves);
+    // (a partida do bot pode não ter terminado: só o tempo de refazer importa aqui)
+    expect(check.ok || check.error.includes('não terminou')).toBe(true);
+    expect(Date.now() - t).toBeLessThan(4000);
   });
 });

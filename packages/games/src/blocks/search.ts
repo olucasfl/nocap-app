@@ -139,6 +139,52 @@ export function hasPlan(
   return go(0, 0);
 }
 
+/**
+ * Dá para colocar as peças todas, em alguma ordem, e deixar o tabuleiro INTEIRO vazio? Para no
+ * primeiro que acha. O limite de nós corta buscas enormes (sempre no mesmo ponto).
+ */
+export function clearsBoard(
+  rows: readonly number[],
+  shapes: readonly BlockShape[],
+  nodeLimit = Number.POSITIVE_INFINITY,
+): boolean {
+  let nodes = 0;
+  const used = shapes.map(() => false);
+  const bufs = [toBuf(rows), ...shapes.map(() => new Int32Array(N))];
+
+  function go(depth: number): boolean {
+    if (depth === shapes.length) return isEmpty(bufs[depth]!);
+    const cur = bufs[depth]!;
+    const next = bufs[depth + 1]!;
+    const tried = new Set<number>();
+    for (let i = 0; i < shapes.length; i++) {
+      if (used[i]) continue;
+      const shape = shapes[i]!;
+      if (tried.has(shape.id)) continue;
+      tried.add(shape.id);
+      used[i] = true;
+      for (let r = 0; r + shape.h <= N; r++) {
+        for (let c = 0; c + shape.w <= N; c++) {
+          if (!free(cur, shape, r, c)) continue;
+          if (++nodes > nodeLimit) {
+            used[i] = false;
+            return false;
+          }
+          stamp(cur, next, shape, r, c);
+          if (go(depth + 1)) {
+            used[i] = false;
+            return true;
+          }
+        }
+      }
+      used[i] = false;
+    }
+    return false;
+  }
+
+  return go(0);
+}
+
 /** O que a busca completa descobriu sobre a rodada. */
 export interface Analysis {
   /** Alguma ordem e posição coloca as peças todas. */

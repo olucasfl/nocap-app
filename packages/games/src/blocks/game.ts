@@ -11,7 +11,7 @@ import {
   type Placed,
   type Rows,
 } from './board';
-import { dealSet } from './generator';
+import { dealSet, type RoundKind } from './generator';
 import { decodeMove, encodeMove, type Move } from './search';
 
 export interface BlocksResult {
@@ -57,8 +57,13 @@ export class BlocksGame {
     this.deal();
   }
 
+  /** O tipo da rodada de peças que está na bandeja (limpa tudo, várias linhas, uma linha ou neutra). */
+  roundKind: RoundKind | null = null;
+
   private deal() {
-    this.slots = dealSet(this.rng, this.rows, this.sets);
+    const d = dealSet(this.rng, this.rows, this.sets, this.roundKind);
+    this.slots = d.ids;
+    this.roundKind = d.kind;
     this.sets++;
   }
 

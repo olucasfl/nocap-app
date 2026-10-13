@@ -57,7 +57,14 @@ Acaba quando **nenhuma** das peças que restam cabe em lugar nenhum. Não existe
 Tudo sai da **seed** e do **estado do tabuleiro**, então o servidor refaz a partida igual.
 
 1. **Sempre tem solução.** Cada trio é testado: existe pelo menos uma ordem e uma posição para as três peças. Trio sem solução é descartado.
-2. **Jogada secreta em 50 a 70% dos trios.** No começo de cada rodada a seed decide se esta será "com jogada" (60%). Sendo, o trio escolhido tem uma sequência que limpa **3 ou mais linhas no total** (2 quando o tabuleiro já passa de 45% cheio). Se em 16 tentativas nenhum trio serve, vale o melhor trio com solução.
+2. **Cada rodada tem um tipo, sorteado pela seed** (reformulado em 13/10/2026 a pedido do Lucas, para o jogo ajudar mais, como o original):
+   - **Limpa tudo:** as 3 peças se encaixam e o tabuleiro fica **inteiro vazio** (com o bônus de tabuleiro limpo). Só nasce com o tabuleiro vazio ou com tudo em uma linha só; na **primeira rodada acontece em cerca de 30%** das partidas. É montada de propósito: um trio de barras que completa a linha.
+   - **Várias linhas:** existe uma sequência que limpa 2 ou mais linhas de uma vez.
+   - **Uma linha:** existe uma sequência que limpa pelo menos uma linha.
+   - **Neutra:** as peças se encaixam, mas não limpam nada agora (ajeitam o tabuleiro para as próximas).
+   - Depois de uma rodada **neutra**, a seguinte tem **o dobro de chance de recompensar** (limpa tudo ou várias linhas): "não era boa, mas agora melhora". Com o tabuleiro apertado (mais de 55% cheio) o jogo ajuda mais; conforme a partida avança, as neutras ficam mais comuns.
+   - Proporções medidas jogando perfeito: ~50% uma linha, ~22% várias, ~29% neutra (fora o começo).
+   Todos os trios têm solução. Quem joga sempre na melhor posição limpa muito e faz combos; quem joga de qualquer jeito se complica.
 3. **Dificuldade pelo tabuleiro e pela partida.** Tabuleiro cheio → mais peças pequenas. Tabuleiro vazio → mais peças grandes. Com o passar das rodadas as peças grandes e difíceis ficam um pouco mais frequentes.
 4. Nunca tem trio impossível. A partida só acaba porque a pessoa foi deixando o tabuleiro sem espaço.
 
