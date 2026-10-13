@@ -439,3 +439,48 @@ describe('a peça que voa nunca empurra a torre', () => {
     expect(worst).toBeLessThan(0.02);
   });
 });
+
+describe('sorteio das magias', () => {
+  const draw = (g: TowersGame, n: number) => {
+    const out: { good: boolean; name: string }[] = [];
+    const grant = (g as unknown as { grantSpell: () => void }).grantSpell.bind(g);
+    for (let i = 0; i < n; i++) {
+      grant();
+      for (const e of g.drainEvents()) if (e.type === 'spell') out.push({ good: e.good, name: e.name });
+    }
+    return out;
+  };
+
+  it('a primeira magia da partida é sempre boa', () => {
+    for (let i = 0; i < 40; i++) {
+      const g = new TowersGame(`primeira-${i}`);
+      g.stacked = 1;
+      expect(draw(g, 1)[0]!.good).toBe(true);
+    }
+  });
+
+  it('nenhuma magia repete antes de todas as outras do mesmo tipo (sacolas)', () => {
+    const g = new TowersGame('sacola-magias');
+    g.stacked = 3;
+    g.lives = 2;
+    const all = draw(g, 60);
+    const bad = all.filter((x) => !x.good).map((x) => x.name);
+    for (let i = 0; i + 6 <= bad.length; i += 6) {
+      expect(new Set(bad.slice(i, i + 6)).size).toBe(6);
+    }
+    expect(bad.length).toBeGreaterThan(10);
+    // Todas as ruins aparecem
+    expect(new Set(bad).size).toBe(6);
+  });
+
+  it('a névoa não vem sempre primeiro: a primeira magia ruim varia entre as partidas', () => {
+    const firsts = new Set<string>();
+    for (let i = 0; i < 60; i++) {
+      const g = new TowersGame(`variar-${i}`);
+      g.stacked = 2;
+      const seq = draw(g, 12).filter((x) => !x.good);
+      if (seq[0]) firsts.add(seq[0].name);
+    }
+    expect(firsts.size).toBeGreaterThanOrEqual(4);
+  });
+});

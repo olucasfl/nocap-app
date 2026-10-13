@@ -1,4 +1,4 @@
-import { MAX_LIVES, PLATFORM_H, PLATFORM_W, TOWER_KINDS, type TowersGame } from '@nocap/games';
+import { MAX_LIVES, PLATFORM_H, PLATFORM_W, SPAWN_GAP, TOWER_KINDS, type TowersGame } from '@nocap/games';
 import { BLOCK_HEX, INK, shade } from '../art';
 
 /**
@@ -968,11 +968,19 @@ export interface View {
 
 /** Desenha um quadro inteiro. `dt` anima a câmera. */
 export function drawFrame(ctx: CanvasRenderingContext2D, W: number, H: number, game: TowersGame, fx: Fx, dt: number): View {
-  const ppu = Math.min(W / 17.5, H / 27);
+  // O topo da torre fica a 64% da altura: assim o ponto onde as peças pousam fica bem acima dos
+  // botões. O tamanho da casa é o maior que cabe na largura e no caminho todo da peça (do ponto em
+  // que ela nasce, logo abaixo dos avisos, até a torre).
+  const baseY = H * 0.64;
+  const reserve = Math.min(176, H * 0.28);
+  const ppu = Math.max(12, Math.min(W / 17.5, (baseY - reserve) / (SPAWN_GAP + 4.5)));
+  // A câmera acompanha o topo da torre devagar e com teto de velocidade (subir não pode dar tontura).
   const top = Math.min(0, game.towerTop());
-  fx.camY += (top - fx.camY) * Math.min(1, dt * 2.6);
+  const diff = top - fx.camY;
+  const speed = Math.max(-6, Math.min(2.2, diff * 1.3));
+  fx.camY += speed * dt;
+  if ((diff > 0 && fx.camY > top) || (diff < 0 && fx.camY < top)) fx.camY = top;
   const camY = fx.camY;
-  const baseY = H * 0.78;
   const X = (x: number) => W / 2 + x * ppu;
   const Y = (y: number) => baseY + (y - camY) * ppu;
   const p = clamp01(-camY / 48);

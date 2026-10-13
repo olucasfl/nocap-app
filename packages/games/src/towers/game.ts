@@ -184,6 +184,9 @@ export class TowersGame {
   private fallTimes: number[] = [];
   private lastCollapse = -10;
   private releasedOrder: TowerPiece[] = [];
+  private spellsGiven = 0;
+  private goodBag: GoodSpell[] = [];
+  private badBag: BadSpell[] = [];
 
   constructor(seed: string) {
     this.seed = seed;
@@ -631,15 +634,38 @@ export class TowersGame {
     if (this.releasedCount % SPELL_EVERY === 0) this.grantSpell();
   }
 
+  /**
+   * As magias saem de "sacolas" embaralhadas (uma de boas, outra de ruins): nenhuma repete até todas
+   * as outras do mesmo tipo terem saído. A primeira magia da partida é sempre boa, para começar
+   * com um presente.
+   */
+  private drawFrom<T extends string>(bag: T[], all: readonly T[], ok: (x: T) => boolean = () => true): T {
+    if (bag.length === 0) {
+      const fresh = [...all];
+      for (let i = fresh.length - 1; i > 0; i--) {
+        const j = Math.floor(this.rng() * (i + 1));
+        [fresh[i], fresh[j]] = [fresh[j]!, fresh[i]!];
+      }
+      bag.push(...fresh);
+    }
+    const at = bag.findIndex(ok);
+    return bag.splice(at >= 0 ? at : 0, 1)[0]!;
+  }
+
   private grantSpell() {
-    if (this.rng() < GOOD_CHANCE) {
-      const pool = GOOD_SPELLS.filter((s) => (s !== 'vida' || this.lives < MAX_LIVES) && (s !== 'desfazer' || this.stacked > 0));
-      const name = pool[Math.floor(this.rng() * pool.length)]!;
+    const good = this.spellsGiven === 0 || this.rng() < GOOD_CHANCE;
+    this.spellsGiven++;
+    if (good) {
+      const name = this.drawFrom(
+        this.goodBag,
+        GOOD_SPELLS,
+        (x) => (x !== 'vida' || this.lives < MAX_LIVES) && (x !== 'desfazer' || this.stacked > 0),
+      );
       this.held.push(name);
       while (this.held.length > MAX_HELD_SPELLS) this.held.shift();
       this.events.push({ type: 'spell', good: true, name });
     } else {
-      const name = BAD_SPELLS[Math.floor(this.rng() * BAD_SPELLS.length)]!;
+      const name = this.drawFrom(this.badBag, BAD_SPELLS);
       this.fx[name] += BAD_DURATION[name];
       this.events.push({ type: 'spell', good: false, name });
     }

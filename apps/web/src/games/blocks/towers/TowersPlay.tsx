@@ -551,19 +551,19 @@ export function TowersPlay({ seed, best, onEnd, onQuit }: Props) {
             <ArrowIcon dir="right" />
           </button>
         </div>
-        <button
-          type="button"
-          className="tw-btn rot"
-          aria-label="Girar a peça"
-          onPointerDown={(e) => {
-            e.preventDefault();
-            rotateRef.current();
-          }}
-        >
-          <ArrowIcon dir="rotate" size={30} />
-          <span className="mono">GIRAR</span>
-        </button>
         <div className="tw-cluster">
+          <button
+            type="button"
+            className="tw-btn rot"
+            aria-label="Girar a peça"
+            onPointerDown={(e) => {
+              e.preventDefault();
+              rotateRef.current();
+            }}
+          >
+            <ArrowIcon dir="rotate" size={26} />
+            <span className="mono">GIRAR</span>
+          </button>
           <button type="button" className="tw-btn down" aria-label="Descer mais rápido" {...hold('down')}>
             <ArrowIcon dir="down" />
           </button>

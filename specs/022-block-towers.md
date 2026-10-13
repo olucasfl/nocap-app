@@ -55,7 +55,7 @@ No online (futuro) os três modos entram com sala de 2 a 4 pessoas, a mesma seed
 - A velocidade de descida sobe um pouco a cada peça, até um teto.
 
 ### Magias (a cada 5 peças chega uma)
-Sorteadas pela seed, metade boas e metade ruins.
+Sorteadas pela seed, metade boas e metade ruins, tiradas de **sacolas embaralhadas** (nenhuma repete até as outras do mesmo tipo terem saído) e **a primeira da partida é sempre boa**.
 
 **Boas** (ficam guardadas, até 2; toque no botão da magia para usar):
 - **Vinha**: a peça atual se gruda, ao assentar, em tudo que ela encostar (vira um bloco só, rígido).
@@ -72,6 +72,9 @@ Sorteadas pela seed, metade boas e metade ruins.
 - **Névoa**: por 3 peças a névoa cobre o alto da tela e esconde o guia da próxima peça.
 - **Gira sozinha**: as próximas 2 peças giram sozinhas de tempos em tempos.
 - **Sem giro**: as próximas 3 peças não podem girar.
+
+## Tela (celular)
+O topo da torre fica a **64% da altura da tela**, bem acima dos botões, e o tamanho da casa é o maior que cabe na largura e no caminho todo da peça. A câmera acompanha o topo da torre **devagar, com teto de velocidade**. Os botões ficam **nas pontas** (esquerda: andar; direita: girar, descer e magia) e o meio fica livre, onde a torre cresce.
 
 ## Controles
 - **Celular**: barra embaixo com **esquerda**, **direita** (segurar repete), **girar**, **descer** (segurar acelera) e o botão da **magia**.
