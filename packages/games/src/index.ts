@@ -12,3 +12,4 @@ export * from './eco/rhythm';
 export * from './party';
 export * from './sinal';
 export * from './blocks';
+export * from './towers';
