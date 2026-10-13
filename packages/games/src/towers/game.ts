@@ -176,7 +176,7 @@ export class TowersGame {
   private moveTimer = 0;
   /** Toques na esquerda/direita ainda não aplicados (cada um é uma casa, na hora). */
   private presses: number[] = [];
-  /** A peça que desce já encostou em algo: daí em diante não anda nem gira mais. */
+  /** A peça que desce já pousou em cima de algo: daí em diante não anda nem gira mais. */
   private touched = false;
   /** Velocidade pedida para a peça que desce neste passo (ela se move sem empurrar ninguém). */
   private cmdVx = 0;
@@ -514,8 +514,9 @@ export class TowersGame {
     }
     if (hit) this.events.push({ type: 'land', ...hit });
 
-    if (this.active && !this.touched && this.touchingAny(this.active.body)) {
-      // Primeiro encontro com a torre (ou a plataforma): trava os movimentos e dá o "toc".
+    if (this.active && !this.touched && this.probe(this.active.body, 0, 0.06)) {
+      // A peça pousou em cima de algo (a torre ou a plataforma): trava os movimentos e dá o "toc".
+      // Encostar só de lado, descendo ao lado da torre, NÃO trava: dá para deslizar para um vão.
       this.touched = true;
       this.targetTl = this.active.body.x - this.active.comx;
       this.events.push({ type: 'land', x: this.active.body.x, y: this.active.body.y, speed: Math.max(1.6, this.cmdVy) });
@@ -583,11 +584,6 @@ export class TowersGame {
     body.x -= dx;
     body.y -= dy;
     return hit;
-  }
-
-  /** Está a menos de uma "unha" de algo, embaixo ou dos lados? */
-  private touchingAny(body: Body): boolean {
-    return this.probe(body, 0, 0.06) || this.probe(body, 0.06, 0) || this.probe(body, -0.06, 0);
   }
 
   /**

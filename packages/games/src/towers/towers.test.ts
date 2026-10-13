@@ -548,3 +548,29 @@ describe('trocar de direção na hora', () => {
     expect(tlOf(g) + g.active!.w).toBeLessThanOrEqual(8 + 0.01);
   });
 });
+
+describe('deslizar para um vão ao lado da torre', () => {
+  it('encostar só de lado, descendo ao lado de algo, não trava: dá para entrar no vão', () => {
+    const g = new TowersGame('vao');
+    while (!g.active) g.step(NONE);
+    const body = g.active!.body;
+    // Uma parede alta colada no lado direito da peça, bem na altura em que ela está descendo
+    let right = -Infinity;
+    for (const b of body.boxes) right = Math.max(right, body.x + b.cx + b.hw);
+    const wall = new Body();
+    wall.setBoxes([{ cx: 0, cy: 0, hw: 0.5, hh: 30, rc: 1, rs: 0 }], 1, true);
+    wall.x = right + 0.5;
+    wall.y = body.y;
+    g.world.add(wall);
+    const tl = () => g.active!.body.x - g.active!.comx;
+    const start = tl();
+    for (let i = 0; i < 12; i++) g.step(NONE); // desce roçando na parede
+    expect((g as unknown as { touched: boolean }).touched).toBe(false);
+    g.press(1); // para a parede: não anda
+    g.step(NONE);
+    expect(tl()).toBe(start);
+    g.press(-1); // para o vão livre: anda na hora
+    g.step(NONE);
+    expect(tl()).toBe(start - 1);
+  });
+});
