@@ -419,6 +419,7 @@ export function BlocksGame() {
           setPhase('final');
         }}
         onQuit={() => setPhase('menu')}
+        onRestart={() => setRun((r) => ({ ...r, matchId: crypto.randomUUID(), seed: seedOf() }))}
       />
     );
   }

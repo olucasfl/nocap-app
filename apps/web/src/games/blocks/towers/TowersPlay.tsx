@@ -32,6 +32,8 @@ interface Props {
   best: number;
   onEnd: (end: TowersEnd) => void;
   onQuit: () => void;
+  /** Recomeça do zero, com peças novas (o botão do menu de pausa). */
+  onRestart: () => void;
 }
 
 interface Hud {
@@ -91,7 +93,7 @@ const DUST = ['#f2e4cc', '#e8d2b0', '#d9c1a0'];
  * (pacote de jogos); aqui se lê o teclado, se roda em passo fixo e se transforma cada evento em som
  * e animação.
  */
-export function TowersPlay({ seed, best, onEnd, onQuit }: Props) {
+export function TowersPlay({ seed, best, onEnd, onQuit, onRestart }: Props) {
   const wrap = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const gameRef = useRef<TowersGame | null>(null);
@@ -610,11 +612,14 @@ export function TowersPlay({ seed, best, onEnd, onQuit }: Props) {
               <button type="button" className="btn alt" data-sfx="start" onClick={resume}>
                 Continuar
               </button>
+              <button type="button" className="btn" data-sfx="start" onClick={onRestart}>
+                Reiniciar partida
+              </button>
               <button type="button" className="btn ghost" data-sfx="back" onClick={onQuit}>
                 Sair da partida
               </button>
             </div>
-            <p className="mono tw-pause-hint">A PARTIDA EM ANDAMENTO NÃO VALE PARA O RECORDE. ESC TAMBÉM PAUSA E VOLTA.</p>
+            <p className="mono tw-pause-hint">REINICIAR OU SAIR PERDE A PARTIDA EM ANDAMENTO. ESC TAMBÉM PAUSA E VOLTA.</p>
           </div>
         </div>
       )}

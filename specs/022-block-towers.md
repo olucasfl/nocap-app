@@ -40,7 +40,7 @@ No online (futuro) os três modos entram com sala de 2 a 4 pessoas, a mesma seed
 
 ### Peças
 - Os 7 tetraminós (I, O, T, S, Z, J, L), sorteados em **sacolas de 7** (todas aparecem antes de repetir) a partir da seed.
-- **Antes de começar** (e toda vez que volta da pausa) há uma contagem **3, 2, 1**. Há um botão de **pausa**; ao continuar, vem a contagem de novo. Sair da aba também pausa.
+- **Antes de começar** (e toda vez que volta da pausa) há uma contagem **3, 2, 1**. Há um botão de **pausa**; o menu tem **Continuar** (vem a contagem de novo), **Reiniciar partida** (recomeça do zero com peças novas e a contagem) e **Sair da partida**. Sair da aba também pausa.
 - A peça nasce **bem alto** (13 casas acima da torre) e desce **devagar** (2 casas por segundo no começo, subindo um pouco a cada peça até 5). Segurar "descer" acelera.
 - A pessoa move **de bloco em bloco, na hora** (cada toque anda uma casa inteira no mesmo instante, a troca de direção não espera o toque anterior terminar, e toques rápidos seguidos andam uma casa cada; segurar repete devagar; no desenho a peça só desliza até a casa nova), **gira em passos de 90°** e acelera a descida. A peça fica sempre alinhada à grade.
 - **Encostou, travou:** assim que a peça toca em algo (a torre, a plataforma ou o lado de outra peça) ela **não anda nem gira mais**, só desce até apoiar.
