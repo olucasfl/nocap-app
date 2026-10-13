@@ -215,18 +215,25 @@ export function dealSet(
 
   if (want !== 'neutral') {
     // Trios em cadeia: cada peça encaixa no que a anterior deixou, a partir do tabuleiro de agora.
-    let best: { chain: { ids: number[]; lines: number; exact: number }; rank: number } | null = null;
+    let best: { chain: { ids: number[]; lines: number; exact: number; empty: boolean }; rank: number } | null = null;
     for (let attempt = 0; attempt < 6; attempt++) {
       const chain = buildChain(rng, rows, w, { plug: want === 'plug' });
       if (!chain) break;
-      const kind: RoundKind =
-        want === 'plug' && chain.exact > 0 ? 'plug' : chain.lines >= greatTarget ? 'great' : chain.lines >= 1 ? 'good' : 'neutral';
+      const kind: RoundKind = chain.empty
+        ? 'clean'
+        : want === 'plug' && chain.exact > 0
+          ? 'plug'
+          : chain.lines >= greatTarget
+            ? 'great'
+            : chain.lines >= 1
+              ? 'good'
+              : 'neutral';
       const rank = RANK[kind] + (want === 'plug' && chain.exact > 0 ? 0 : 0);
       if (RANK[kind] >= RANK[want] || (want === 'plug' && chain.exact > 0)) return { ids: shuffle(rng, chain.ids), kind };
       if (!best || rank > best.rank) best = { chain, rank };
     }
     if (best) {
-      const k: RoundKind = best.chain.lines >= greatTarget ? 'great' : best.chain.lines >= 1 ? 'good' : 'neutral';
+      const k: RoundKind = best.chain.empty ? 'clean' : best.chain.lines >= greatTarget ? 'great' : best.chain.lines >= 1 ? 'good' : 'neutral';
       return { ids: shuffle(rng, best.chain.ids), kind: k };
     }
   }

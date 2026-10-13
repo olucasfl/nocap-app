@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BLOCK_SHAPES, emptyRows, fits } from '@nocap/games';
-import { aimAt, SNAP } from './aim';
+import { aimAt, LIFT_GAP, SNAP } from './aim';
 
 const shape = (name: string) => BLOCK_SHAPES.find((s) => s.name === name)!;
 const RECT = { left: 100, top: 200, width: 400 }; // cada casa tem 50 px
@@ -40,5 +40,23 @@ describe('aimAt (pontaria da peça arrastada)', () => {
     const bar = BLOCK_SHAPES.find((s) => s.name === 'barra5' && s.w === 5)!;
     const a = aimAt(100 + 8 * 50 - 10, 200 + 25, RECT, bar, false, (r, c) => fits(emptyRows(), bar, r, c));
     if (a.target) expect(a.target.col + bar.w).toBeLessThanOrEqual(8);
+  });
+});
+
+describe('a peça fica visível acima do dedo no celular', () => {
+  it('a borda de baixo da peça fica acima do dedo, qualquer que seja a altura da peça', () => {
+    const cell = RECT.width / 8;
+    for (const s of BLOCK_SHAPES) {
+      const a = aimAt(300, 560, RECT, s, true, () => false);
+      const bottom = a.top + s.h * cell;
+      expect(560 - bottom, `${s.name} ${s.w}x${s.h}`).toBeGreaterThanOrEqual(LIFT_GAP * cell - 0.001);
+    }
+  });
+
+  it('com o mouse a peça fica quase embaixo da seta', () => {
+    const cell = RECT.width / 8;
+    const bar = BLOCK_SHAPES.find((s) => s.name === 'barra5' && s.h === 5)!;
+    const a = aimAt(300, 560, RECT, bar, false, () => false);
+    expect(560 - (a.top + bar.h * cell)).toBeLessThan(0);
   });
 });

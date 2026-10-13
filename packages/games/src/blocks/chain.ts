@@ -1,6 +1,8 @@
 import { BLOCK_SHAPES, SIZE, type BlockShape } from './constants';
 import { POP, free, stamp, toBuf } from './search';
 
+const isEmptyBoard = (b: Int32Array): boolean => (b[0]! | b[1]! | b[2]! | b[3]! | b[4]! | b[5]! | b[6]! | b[7]!) === 0;
+
 /**
  * Geração "em cadeia" das peças (spec 021): em vez de sortear três peças soltas, o jogo simula uma
  * partida boa no tabuleiro de agora e escolhe cada peça para encaixar bem no que a anterior deixou.
@@ -111,7 +113,9 @@ export function bestPlacement(
       const lines = stamp(cur, scratch, shape, r, c);
       const exact = sameRegion && rid >= 0 && regions.size[rid] === shape.size && shape.size <= 5;
       const holes = holesOf(scratch) - holesBefore;
-      const score = lines * 40 + contact * 3 - holes * 12 + (exact ? 60 : 0) + rng() * 0.5;
+      // Deixar o tabuleiro vazio é o melhor de tudo: a cadeia procura esse final.
+      const empties = lines > 0 && isEmptyBoard(scratch) ? 90 : 0;
+      const score = lines * 40 + contact * 3 - holes * 12 + (exact ? 60 : 0) + empties + rng() * 0.5;
       if (!best || score > best.score) {
         best = { shape, row: r, col: c, lines, exact, score, next: Int32Array.from(scratch) };
       }
@@ -124,6 +128,8 @@ export interface Chain {
   ids: number[];
   /** Linhas que a sequência planejada limpa no total. */
   lines: number;
+  /** A sequência planejada deixa o tabuleiro inteiro vazio. */
+  empty: boolean;
   /** Quantas das peças taparam um vão pequeno inteiro. */
   exact: number;
 }
@@ -161,7 +167,9 @@ export function buildChain(
     // O peso: o da peça (mais comum ou mais rara) vezes o quanto ela ajuda aqui e agora.
     const ws = pool.map((p) => {
       const help = 1 + Math.max(0, p.score) / 14;
-      return baseWeights[p.shape.id]! * help * help * (p.exact ? 4 : 1);
+      // Peças repetidas são comuns no Block Blast (duas barras de 5, três 3x3): quem já saiu pesa mais.
+      const again = ids.includes(p.shape.id) ? 2.2 : 1;
+      return baseWeights[p.shape.id]! * help * help * (p.exact ? 4 : 1) * again;
     });
     let total = 0;
     for (const v of ws) total += v;
@@ -179,5 +187,5 @@ export function buildChain(
     if (pick.exact) exact++;
     cur = pick.next;
   }
-  return { ids, lines, exact };
+  return { ids, lines, exact, empty: isEmptyBoard(cur) };
 }

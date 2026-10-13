@@ -331,7 +331,7 @@ describe('geração das peças', () => {
     expect(sets).toBeGreaterThan(40);
   });
 
-  it('entre 50 e 70% das rodadas têm jogada secreta (para quem joga bem)', () => {
+  it('a maior parte das rodadas tem jogada especial (entre 55 e 85%, para quem joga bem)', () => {
     let sets = 0;
     let sweet = 0;
     for (let i = 0; i < 24; i++) {
@@ -352,8 +352,8 @@ describe('geração das peças', () => {
     }
     const ratio = sweet / sets;
     expect(sets).toBeGreaterThan(100);
-    expect(ratio).toBeGreaterThanOrEqual(0.5);
-    expect(ratio).toBeLessThanOrEqual(0.7);
+    expect(ratio).toBeGreaterThanOrEqual(0.55);
+    expect(ratio).toBeLessThanOrEqual(0.85);
   });
 
   it('com o tabuleiro cheio, o jogo ajuda: quase toda rodada limpa linha ou tapa um vão', () => {

@@ -15,6 +15,9 @@ export interface Aim {
   target: { row: number; col: number } | null;
 }
 
+/** Quantas casas a borda de baixo da peça fica acima do dedo (no celular). */
+export const LIFT_GAP = 1.3;
+
 /** Até onde (em casas) a peça "gruda" numa posição válida vizinha. */
 export const SNAP = 0.95;
 
@@ -32,7 +35,9 @@ export function aimAt(
   canPlace: (row: number, col: number) => boolean,
 ): Aim {
   const cell = rect.width / SIZE;
-  const lift = touch ? cell * 2.2 : cell * 0.35;
+  // No celular a peça sobe o bastante para a borda de baixo dela ficar bem acima do dedo, de qualquer
+  // altura (barra de 5 em pé, 3x3...): dá para ver onde ela vai cair. Com o mouse, fica quase embaixo da seta.
+  const lift = touch ? (shape.h / 2 + LIFT_GAP) * cell : cell * 0.35;
   const left = px - (shape.w * cell) / 2;
   const top = py - lift - (shape.h * cell) / 2;
   const fc = (left - rect.left) / cell;

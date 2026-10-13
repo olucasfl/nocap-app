@@ -65,7 +65,8 @@ Tudo sai da **seed** e do **estado do tabuleiro**, então o servidor refaz a par
    - **Neutra:** as peças se encaixam, mas não limpam nada agora (ajeitam o tabuleiro para as próximas). É a mais rara (de 8% a 20%, crescendo devagar com a partida).
    - Depois de uma rodada **neutra**, a seguinte tem mais chance de recompensar (peça exata, limpa tudo ou várias linhas): "não era boa, mas agora melhora". Com o tabuleiro apertado (mais de 55% cheio) o jogo ajuda mais.
    - **Trios em cadeia (reformulado em 13/10/2026):** as rodadas boas não são três peças soltas. O jogo **simula uma jogada boa no tabuleiro de agora**: escolhe a primeira peça (sorteio pesado pela utilidade dela: limpa linha, encaixa colada nas outras e nas bordas, tapa um vão inteiro, não abre buraco), coloca-a na melhor posição e escolhe a segunda para o que sobrou, e a terceira idem. Resultado: uma peça fecha aquele canto, a seguinte aproveita a linha que abriu, e quem joga sempre na melhor posição faz combos. A bandeja vem embaralhada (a peça-chave não é sempre a primeira).
-   - Medido com bots (a jogada perfeita sobrevive 150 rodadas seguidas em todas as partidas, ~18 mil pontos; quem acerta 75% das jogadas aguenta cerca de 21 rodadas na mediana; quem joga sem pensar, 7). Cada rodada leva ~2 ms para ser gerada.
+   - **Peças grandes e repetidas (visto em partidas reais do Block Blast, 13/10/2026):** as peças grandes aparecem muito (barra de 5, 3x3, 2x3, barra de 4), e o tabuleiro fica "limpo" (cerca de 17 casas ocupadas em média), como nas partidas de referência. Peças repetidas são comuns (duas barras de 5, três 3x3), então quem já saiu na bandeja pesa mais para sair de novo. A cadeia também procura o final que **deixa o tabuleiro vazio** (por exemplo, um 3x3 que fecha três linhas e uma barra que fecha a quarta).
+   - Medido com bots (a jogada perfeita sobrevive 150 rodadas seguidas em todas as partidas, ~22 mil pontos; quem joga sem pensar aguenta cerca de 5). Cada rodada leva ~2 ms para ser gerada.
    Todos os trios têm solução. Quem joga sempre na melhor posição limpa muito e faz combos; quem joga de qualquer jeito se complica, mas o jogo ainda manda a peça que conserta o estrago.
 3. **Dificuldade pelo tabuleiro e pela partida.** Tabuleiro cheio → mais peças pequenas. Tabuleiro vazio → mais peças grandes. Com o passar das rodadas as peças grandes e difíceis ficam um pouco mais frequentes.
 4. Nunca tem trio impossível. A partida só acaba porque a pessoa foi deixando o tabuleiro sem espaço.
@@ -85,7 +86,8 @@ Tudo sai da **seed** e do **estado do tabuleiro**, então o servidor refaz a par
 
 ## Controles
 - **Arrastar** a peça (dedo ou mouse) até a grade; um **fantasma** mostra onde ela vai cair, em verde se cabe e em vermelho se não, e as linhas que vão sumir ficam realçadas.
-- A peça sobe um pouco acima do dedo para não ficar escondida atrás dele (celular).
+- **No celular a peça sobe acima do dedo o bastante para a borda de baixo dela ficar 1,3 casa acima do dedo, qualquer que seja a altura dela** (a barra de 5 em pé também): o dedo fica embaixo e dá para ver onde a peça vai cair. Com o mouse, fica quase embaixo da seta.
+- (antes) A peça sobe um pouco acima do dedo para não ficar escondida atrás dele (celular).
 - Soltou fora de um lugar válido: a peça **volta** para a bandeja com animação.
 - Teclado: **setas** movem a peça escolhida, **Enter** confirma, **1 2 3** escolhem a peça.
 
