@@ -59,6 +59,10 @@ export class Body {
   boxes: BoxDef[] = [];
   /** Raio que envolve todas as caixas, a partir do centro de massa. */
   radius = 0;
+  /** Dormindo: parado há um tempo, não gasta conta e vale como fixo para quem encosta. */
+  asleep = false;
+  /** Há quanto tempo (s) está praticamente parado. */
+  calm = 0;
   /** Dados do jogo (qual peça é, cor etc.). */
   data: Record<string, unknown> = {};
 
@@ -394,6 +398,8 @@ const MAX_SPIN = 12;
 /** Abaixo destas velocidades o corpo está praticamente parado: amortece forte para a torre assentar. */
 const REST_SPEED = 0.22;
 const REST_SPIN = 0.3;
+/** Parado por este tempo (s), o corpo "dorme": sai da conta até algo em movimento encostar nele. */
+const SLEEP_TIME = 0.5;
 const SLOP = 0.01;
 
 export class World {
@@ -424,6 +430,15 @@ export class World {
     const i = this.bodies.indexOf(body);
     if (i >= 0) this.bodies.splice(i, 1);
     for (const [k, arb] of this.arbiters) if (arb.a === body || arb.b === body) this.arbiters.delete(k);
+    this.wakeAll();
+  }
+
+  /** Acorda todo mundo (tirar ou trocar um corpo muda o equilíbrio da torre). */
+  wakeAll() {
+    for (const b of this.bodies) {
+      b.asleep = false;
+      b.calm = 0;
+    }
   }
 
   /** Esquece os contatos guardados deste corpo (depois de mudar as caixas dele). */
@@ -555,6 +570,24 @@ export class World {
     this.impacts = [];
     const h = dt / this.substeps;
     for (let i = 0; i < this.substeps; i++) this.substep(h);
+    this.putToSleep();
+  }
+
+  /** Quem está parado há tempo (e só encosta em quem também assentou) passa a dormir. */
+  private putToSleep() {
+    const settled = (b: Body) => b.asleep || b.invM === 0 || b.calm >= SLEEP_TIME;
+    const blocked = new Set<Body>();
+    for (const arb of this.arbiters.values()) {
+      if (!settled(arb.a)) blocked.add(arb.b);
+      if (!settled(arb.b)) blocked.add(arb.a);
+    }
+    for (const b of this.bodies) {
+      if (b.asleep || b.invM === 0 || b.held || b.calm < SLEEP_TIME || blocked.has(b)) continue;
+      b.asleep = true;
+      b.vx = 0;
+      b.vy = 0;
+      b.w = 0;
+    }
   }
 
   private collideAll() {
@@ -568,6 +601,8 @@ export class World {
         // A peça que a pessoa segura não colide no motor: ela se move por conta própria e para ao
         // encostar (ver `TowersGame.moveActive`), então nunca empurra a torre.
         if (A.held || B.held) continue;
+        // Os dois dormindo (ou fixos): nada muda entre eles.
+        if ((A.asleep || A.invM === 0) && (B.asleep || B.invM === 0)) continue;
         const dx = B.x - A.x;
         const dy = B.y - A.y;
         const r = A.radius + B.radius + 0.1;
@@ -585,6 +620,14 @@ export class World {
             if (hits.length === 0) {
               this.arbiters.delete(key);
               continue;
+            }
+            // Um corpo que ainda não assentou encostou num que dorme: acorda o que dorme.
+            if (A.asleep && !B.asleep && B.invM !== 0 && B.calm < SLEEP_TIME) {
+              A.asleep = false;
+              A.calm = 0;
+            } else if (B.asleep && !A.asleep && A.invM !== 0 && A.calm < SLEEP_TIME) {
+              B.asleep = false;
+              B.calm = 0;
             }
             this.updateArbiter(key, A, B, ia, ib, hits);
           }
@@ -656,10 +699,17 @@ export class World {
     const invDt = 1 / dt;
     const g = this.gravity;
     for (const b of this.bodies) {
-      if (b.invM === 0 || b.held) continue;
+      if (b.invM === 0 || b.held || b.asleep) continue;
       b.vy += g * b.gravityScale * dt;
     }
     this.collideAll();
+    // Quem dorme vale como fixo nesta conta (massa infinita) e volta ao normal no fim.
+    const sleepers = this.bodies.filter((b) => b.asleep);
+    const saved = sleepers.map((b) => [b.invM, b.invI] as const);
+    for (const b of sleepers) {
+      b.invM = 0;
+      b.invI = 0;
+    }
 
     // Pré-passo: massas efetivas, viés e aquecimento
     for (const arb of this.arbiters.values()) {
@@ -736,8 +786,13 @@ export class World {
       }
     }
 
+    for (let i = 0; i < sleepers.length; i++) {
+      sleepers[i]!.invM = saved[i]![0];
+      sleepers[i]!.invI = saved[i]![1];
+    }
+
     for (const b of this.bodies) {
-      if (b.invM === 0 || b.held) continue;
+      if (b.invM === 0 || b.held || b.asleep) continue;
       const sp = Math.sqrt(b.vx * b.vx + b.vy * b.vy);
       if (sp > MAX_SPEED) {
         const k = MAX_SPEED / sp;
@@ -756,6 +811,9 @@ export class World {
       if (calm) {
         const lin = 1 / (1 + dt * 3);
         b.vx *= lin;
+        b.calm += dt;
+      } else {
+        b.calm = 0;
       }
       const th = b.w * dt;
       const t2 = th * th;

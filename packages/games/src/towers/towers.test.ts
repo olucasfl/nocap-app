@@ -935,7 +935,7 @@ describe('estabilidade da física', () => {
   };
 
   it('uma torre alinhada de 12 blocos fica de pé e parada', () => {
-    const w = new World({ gravity: 30, iterations: 14, substeps: 3 });
+    const w = new World({ gravity: 30, iterations: 12, substeps: 2 });
     platform(w);
     const bodies = Array.from({ length: 12 }, (_, i) => block(w, 0, -(i * 2 + 1) - 0.02));
     for (let t = 0; t < 60 * 6; t++) w.step(1 / 60);
@@ -944,7 +944,7 @@ describe('estabilidade da física', () => {
   });
 
   it('um bloco muito fora do centro tomba (física de verdade)', () => {
-    const w = new World({ gravity: 30, iterations: 14, substeps: 3 });
+    const w = new World({ gravity: 30, iterations: 12, substeps: 2 });
     platform(w);
     block(w, 0, -1.02);
     const top = block(w, 1.6, -3.04);
@@ -953,7 +953,7 @@ describe('estabilidade da física', () => {
   });
 
   it('um corpo fixo enterrado na torre não lança os blocos para longe', () => {
-    const w = new World({ gravity: 30, iterations: 14, substeps: 3 });
+    const w = new World({ gravity: 30, iterations: 12, substeps: 2 });
     platform(w);
     const bodies = Array.from({ length: 6 }, (_, i) => block(w, 0, -(i * 2 + 1) - 0.02));
     const stone = block(w, 1.5, -5, 2);

@@ -161,7 +161,7 @@ export function bodyTop(body: Body): number {
  */
 export class TowersGame {
   readonly seed: string;
-  readonly world = new World({ gravity: 30, iterations: 14, substeps: 3 });
+  readonly world = new World({ gravity: 30, iterations: 12, substeps: 2 });
   readonly platform: Body;
   pieces: TowerPiece[] = [];
   active: TowerPiece | null = null;
