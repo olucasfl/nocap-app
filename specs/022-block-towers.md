@@ -63,6 +63,8 @@ Sorteadas pela seed, metade boas e metade ruins.
 - **Desfazer**: some com a última peça colocada, sem perder vida.
 - **Vida extra**: devolve uma vida (só aparece se já perdeu alguma).
 
+**O aviso de cada magia** (nova, usada, colou, virou pedra) fica **preso no alto da tela, fora de onde as peças caem**, e dura **9 s** (4,5 s quando a magia é usada), com uma barra que mostra quanto falta para sumir. Nunca cobre o meio do jogo.
+
 **Ruins** (caem sobre você sozinhas, com aviso na tela):
 - **Gelo**: as próximas 2 peças escorregam muito.
 - **Grande**: a próxima peça vem bem maior e mais pesada.

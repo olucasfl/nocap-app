@@ -51,6 +51,21 @@ interface Banner {
   sub: string | null;
 }
 
+/** O aviso das magias: fica fixo no alto, fora de onde as peças caem, e demora para dar tempo de ler. */
+interface Notice {
+  key: number;
+  tone: 'good' | 'bad' | 'info';
+  kicker: string;
+  title: string;
+  text: string;
+  icon: GoodSpell | BadSpell;
+  ms: number;
+}
+
+/** Quanto tempo o aviso de uma magia nova fica na tela. */
+const SPELL_NOTICE_MS = 9000;
+const CAST_NOTICE_MS = 4500;
+
 const reduced = () =>
   typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -95,6 +110,7 @@ export function TowersPlay({ seed, best, onEnd, onQuit }: Props) {
 
   const [hud, setHud] = useState<Hud>(() => snapshot(game));
   const [banner, setBanner] = useState<Banner | null>(null);
+  const [notice, setNotice] = useState<Notice | null>(null);
   /** O menu de pausa está aberto. */
   const [menu, setMenu] = useState(false);
   /** Contagem de preparação (3, 2, 1): no começo e toda vez que a partida volta da pausa. */
@@ -106,6 +122,12 @@ export function TowersPlay({ seed, best, onEnd, onQuit }: Props) {
     const key = ++bannerKey.current;
     setBanner({ key, tone, title, sub });
     window.setTimeout(() => setBanner((b) => (b?.key === key ? null : b)), ms);
+  }, []);
+
+  const tell = useCallback((n: Omit<Notice, 'key'>) => {
+    const key = ++bannerKey.current;
+    setNotice({ key, ...n });
+    window.setTimeout(() => setNotice((cur) => (cur?.key === key ? null : cur)), n.ms);
   }, []);
 
   useEffect(() => {
@@ -281,11 +303,26 @@ export function TowersPlay({ seed, best, onEnd, onQuit }: Props) {
           stats.current.spells++;
           fx.glow = 1;
           fx.glowColor = e.good ? '#ffffff' : '#7a3cff';
-          say(e.good ? 'good' : 'bad', e.good ? 'MAGIA BOA' : 'MAGIA RUIM', `${SPELL_LABEL[e.name].name}: ${SPELL_LABEL[e.name].text}`, 2300);
+          tell({
+            tone: e.good ? 'good' : 'bad',
+            kicker: e.good ? 'MAGIA BOA · GUARDADA NO BOTÃO' : 'MAGIA RUIM · CAIU SOBRE VOCÊ',
+            title: SPELL_LABEL[e.name].name,
+            text: SPELL_LABEL[e.name].text,
+            icon: e.name,
+            ms: SPELL_NOTICE_MS,
+          });
           mood(e.good ? 'cheer' : 'scared');
           break;
         case 'cast':
           audio?.cast(e.name);
+          tell({
+            tone: 'good',
+            kicker: 'VOCÊ USOU',
+            title: SPELL_LABEL[e.name].name,
+            text: SPELL_LABEL[e.name].text,
+            icon: e.name,
+            ms: CAST_NOTICE_MS,
+          });
           if (e.name === 'vinha') {
             if (!calm) burst(fx, 8, { x: e.x, y: e.y }, { kind: 'leaf', color: '#33c27f', size: 0.3, gravity: 3 }, 3);
           } else if (e.name === 'cimento') {
@@ -299,11 +336,11 @@ export function TowersPlay({ seed, best, onEnd, onQuit }: Props) {
           break;
         case 'ivy':
           if (!calm) burst(fx, 12, { x: e.x, y: e.y }, { kind: 'leaf', color: '#33c27f', size: 0.3, gravity: 2 }, 4);
-          say('good', 'VINHA!', 'As peças ficaram coladas', 1300);
+          tell({ tone: 'good', kicker: 'DEU CERTO', title: 'COLOU!', text: 'A peça e as vizinhas viraram um bloco só', icon: 'vinha', ms: CAST_NOTICE_MS });
           break;
         case 'petrify':
           dust(e.x, e.y, 14, 4);
-          say('info', 'PEDRA!', null, 1000);
+          tell({ tone: 'info', kicker: 'DEU CERTO', title: 'PEDRA!', text: 'Essa peça não se mexe mais', icon: 'cimento', ms: CAST_NOTICE_MS });
           break;
         case 'over':
           audio?.over();
@@ -399,7 +436,7 @@ export function TowersPlay({ seed, best, onEnd, onQuit }: Props) {
       document.removeEventListener('visibilitychange', onHide);
       audioRef.current = null;
     };
-  }, [game, say, openMenu]);
+  }, [game, say, tell, openMenu]);
 
   // A contagem de preparação: 3, 2, 1 e a partida (re)começa.
   useEffect(() => {
@@ -455,11 +492,13 @@ export function TowersPlay({ seed, best, onEnd, onQuit }: Props) {
       </header>
 
       <div className="tw-score" aria-label="Placar">
-        <span className="mono tw-label">PEÇAS EMPILHADAS</span>
         <b key={hud.peak} className="tw-peak">
           {hud.peak}
         </b>
-        <span className="mono tw-best">RECORDE {Math.max(best, hud.peak)}</span>
+        <span className="tw-score-text">
+          <span className="mono tw-label">PEÇAS</span>
+          <span className="mono tw-best">RECORDE {Math.max(best, hud.peak)}</span>
+        </span>
       </div>
 
       {chips.length > 0 && (
@@ -473,6 +512,20 @@ export function TowersPlay({ seed, best, onEnd, onQuit }: Props) {
             </li>
           ))}
         </ul>
+      )}
+
+      {notice && (
+        <div key={notice.key} className={`tw-notice ${notice.tone}`} role="status" aria-live="polite">
+          <span className="tw-notice-icon">
+            <SpellIcon name={notice.icon} size={30} />
+          </span>
+          <span className="tw-notice-text">
+            <span className="mono tw-notice-kicker">{notice.kicker}</span>
+            <b>{notice.title}</b>
+            <span>{notice.text}</span>
+          </span>
+          <i className="tw-notice-bar" style={{ animationDuration: `${notice.ms}ms` }} />
+        </div>
       )}
 
       {banner && (
