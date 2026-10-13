@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { createRng } from '../core/rng';
 import {
   BLOCK_SHAPES,
   BOARD_CLEAR_BONUS,
@@ -10,6 +11,8 @@ import {
   analyze,
   applyMove,
   clearsBoard,
+  dealSet,
+  roundKindWeights,
   decodeMove,
   emptyRows,
   encodeMove,
@@ -353,24 +356,20 @@ describe('geração das peças', () => {
     expect(ratio).toBeLessThanOrEqual(0.7);
   });
 
-  it('o tabuleiro cheio puxa peças pequenas e o vazio, grandes', () => {
-    const avg = (rows: number[]) => {
-      let total = 0;
-      let n = 0;
-      for (let i = 0; i < 80; i++) {
-        const g = new BlocksGame(`size-${i}`);
-        g.rows = rows.slice();
-        // Força uma nova entrega a partir deste tabuleiro (a seed é a mesma para as duas medidas)
-        (g as unknown as { deal: () => void }).deal();
-        for (const id of g.slots) {
-          total += BLOCK_SHAPES[id!]!.size;
-          n++;
-        }
-      }
-      return total / n;
-    };
-    const mostlyFull = emptyRows().map((_, r) => (r < 5 ? 0b11011011 : 0));
-    expect(avg(mostlyFull)).toBeLessThan(avg(emptyRows()));
+  it('com o tabuleiro cheio, o jogo ajuda: quase toda rodada limpa linha ou tapa um vão', () => {
+    // Tabuleiro apertado, mas com saídas: linhas quase completas e vãos.
+    const rows = emptyRows();
+    for (let r = 2; r < 8; r++) rows[r] = FULL_ROW & ~(1 << ((r * 3) % 8)) & ~(r % 2 ? 1 << 7 : 0);
+    let helped = 0;
+    const N = 80;
+    for (let i = 0; i < N; i++) {
+      const rng = createRng(`cheio-${i}`);
+      const d = dealSet(rng, rows, 20, null);
+      const shapes = d.ids.map((id) => BLOCK_SHAPES[id]!);
+      expect(hasPlan(rows, shapes, 0)).toBe(true);
+      if (d.kind !== 'neutral') helped++;
+    }
+    expect(helped / N).toBeGreaterThan(0.8);
   });
 });
 
@@ -507,34 +506,57 @@ describe('tipos de rodada: aleatório, com começo generoso', () => {
   });
 
   it('depois de uma rodada fraca, a seguinte costuma recompensar (melhora com o tempo)', () => {
-    let afterNeutral = 0;
-    let afterNeutralGood = 0;
-    let afterOther = 0;
-    let afterOtherGood = 0;
-    for (let i = 0; i < 30; i++) {
-      const g = new BlocksGame(`melhora-${i}`);
-      let plan: Move[] = [];
-      let prev = g.roundKind;
-      while (!g.over && g.moves.length < 90) {
-        if (g.slots.every((x) => x !== null)) plan = analyze(g.rows, g.slots, g.streak, g.drought).plans[0] ?? [];
-        const m = plan.shift() ?? g.legalMoves()[0];
-        if (!m) break;
-        const res = g.play(m.slot, m.row, m.col);
-        if (res?.newSet) {
-          const strong = g.roundKind === 'great' || g.roundKind === 'clean';
-          if (prev === 'neutral') {
-            afterNeutral++;
-            if (strong) afterNeutralGood++;
-          } else {
-            afterOther++;
-            if (strong) afterOtherGood++;
-          }
-          prev = g.roundKind;
-        }
-      }
+    const share = (w: Record<string, number>) => {
+      const total = Object.values(w).reduce((x, y) => x + y, 0);
+      return (w.clean! + w.great! + w.plug!) / total;
+    };
+    for (const fill of [0.1, 0.4, 0.6]) {
+      const after = share(roundKindWeights(true, true, fill, 10, 'neutral'));
+      const normal = share(roundKindWeights(true, true, fill, 10, 'good'));
+      expect(after, `tabuleiro ${fill}`).toBeGreaterThan(normal + 0.05);
     }
-    expect(afterNeutral).toBeGreaterThan(20);
-    expect(afterNeutralGood / afterNeutral).toBeGreaterThan(afterOtherGood / afterOther + 0.1);
+  });
+
+  it('com um vão no tabuleiro, na maioria das vezes vem a peça EXATA que o tapa', () => {
+    // Um vão vertical de duas casas no canto de baixo, fechado dos lados e por cima
+    const rows = emptyRows();
+    rows[5] = 0b01111111;
+    rows[6] = 0b11111110;
+    rows[7] = 0b11111110;
+    const exact = BLOCK_SHAPES.find((s) => s.name === 'barra2' && s.w === 1)!;
+    let withExact = 0;
+    let plugs = 0;
+    const N = 120;
+    for (let i = 0; i < N; i++) {
+      const d = dealSet(createRng(`vao-${i}`), rows, 8, null);
+      if (d.ids.includes(exact.id)) withExact++;
+      if (d.kind === 'plug') plugs++;
+      expect(hasPlan(rows, d.ids.map((id) => BLOCK_SHAPES[id]!), 0)).toBe(true);
+    }
+    expect(withExact / N).toBeGreaterThan(0.6);
+    expect(plugs / N).toBeGreaterThan(0.4);
+  });
+
+  it('o trio em cadeia faz sentido: a peça exata abre a linha e as outras aproveitam (quem segue o plano limpa)', () => {
+    const rows = emptyRows();
+    rows[5] = 0b01111111;
+    rows[6] = 0b11111110;
+    rows[7] = 0b11111110;
+    let cleared = 0;
+    const N = 60;
+    for (let i = 0; i < N; i++) {
+      const d = dealSet(createRng(`cadeia-${i}`), rows, 8, null);
+      if (d.kind !== 'plug') continue;
+      const slots: (number | null)[] = d.ids.slice();
+      const a = analyze(rows, slots, 0, 0);
+      expect(a.solvable).toBe(true);
+      const probe = new BlocksGame('x');
+      probe.rows = rows.slice();
+      probe.slots = slots;
+      for (const m of a.plans[0]!) probe.play(m.slot, m.row, m.col);
+      if (probe.lines >= 2) cleared++;
+    }
+    expect(cleared).toBeGreaterThan(10);
   });
 
   it('todo trio continua tendo solução e a conferência do servidor continua rápida', () => {

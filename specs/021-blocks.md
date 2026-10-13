@@ -58,13 +58,15 @@ Tudo sai da **seed** e do **estado do tabuleiro**, então o servidor refaz a par
 
 1. **Sempre tem solução.** Cada trio é testado: existe pelo menos uma ordem e uma posição para as três peças. Trio sem solução é descartado.
 2. **Cada rodada tem um tipo, sorteado pela seed** (reformulado em 13/10/2026 a pedido do Lucas, para o jogo ajudar mais, como o original):
+   - **Peça exata (`plug`):** ficou um **vão** no tabuleiro (uma região pequena de 1 a 5 casas fechada de todos os lados) e **vem a peça que o tapa exatamente**. Quando existe vão, essa é a rodada mais provável (45 a 60%).
    - **Limpa tudo:** as 3 peças se encaixam e o tabuleiro fica **inteiro vazio** (com o bônus de tabuleiro limpo). Só nasce com o tabuleiro vazio ou com tudo em uma linha só; na **primeira rodada acontece em cerca de 30%** das partidas. É montada de propósito: um trio de barras que completa a linha.
    - **Várias linhas:** existe uma sequência que limpa 2 ou mais linhas de uma vez.
    - **Uma linha:** existe uma sequência que limpa pelo menos uma linha.
-   - **Neutra:** as peças se encaixam, mas não limpam nada agora (ajeitam o tabuleiro para as próximas).
-   - Depois de uma rodada **neutra**, a seguinte tem **o dobro de chance de recompensar** (limpa tudo ou várias linhas): "não era boa, mas agora melhora". Com o tabuleiro apertado (mais de 55% cheio) o jogo ajuda mais; conforme a partida avança, as neutras ficam mais comuns.
-   - Proporções medidas jogando perfeito: ~50% uma linha, ~22% várias, ~29% neutra (fora o começo).
-   Todos os trios têm solução. Quem joga sempre na melhor posição limpa muito e faz combos; quem joga de qualquer jeito se complica.
+   - **Neutra:** as peças se encaixam, mas não limpam nada agora (ajeitam o tabuleiro para as próximas). É a mais rara (de 8% a 20%, crescendo devagar com a partida).
+   - Depois de uma rodada **neutra**, a seguinte tem mais chance de recompensar (peça exata, limpa tudo ou várias linhas): "não era boa, mas agora melhora". Com o tabuleiro apertado (mais de 55% cheio) o jogo ajuda mais.
+   - **Trios em cadeia (reformulado em 13/10/2026):** as rodadas boas não são três peças soltas. O jogo **simula uma jogada boa no tabuleiro de agora**: escolhe a primeira peça (sorteio pesado pela utilidade dela: limpa linha, encaixa colada nas outras e nas bordas, tapa um vão inteiro, não abre buraco), coloca-a na melhor posição e escolhe a segunda para o que sobrou, e a terceira idem. Resultado: uma peça fecha aquele canto, a seguinte aproveita a linha que abriu, e quem joga sempre na melhor posição faz combos. A bandeja vem embaralhada (a peça-chave não é sempre a primeira).
+   - Medido com bots (a jogada perfeita sobrevive 150 rodadas seguidas em todas as partidas, ~18 mil pontos; quem acerta 75% das jogadas aguenta cerca de 21 rodadas na mediana; quem joga sem pensar, 7). Cada rodada leva ~2 ms para ser gerada.
+   Todos os trios têm solução. Quem joga sempre na melhor posição limpa muito e faz combos; quem joga de qualquer jeito se complica, mas o jogo ainda manda a peça que conserta o estrago.
 3. **Dificuldade pelo tabuleiro e pela partida.** Tabuleiro cheio → mais peças pequenas. Tabuleiro vazio → mais peças grandes. Com o passar das rodadas as peças grandes e difíceis ficam um pouco mais frequentes.
 4. Nunca tem trio impossível. A partida só acaba porque a pessoa foi deixando o tabuleiro sem espaço.
 

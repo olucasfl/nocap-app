@@ -10,17 +10,19 @@ import {
   type BlockShape,
 } from './constants';
 import { fillRatio, filledCells, type Rows } from './board';
-import { hasPlan } from './search';
+import { buildChain, pockets } from './chain';
+import { hasPlan, toBuf } from './search';
 
 /**
  * O "tipo" de cada rodada de peças, do mais generoso ao mais apertado:
+ * - `plug`: veio a peça EXATA que tapa um vão do tabuleiro (e as outras seguem em cadeia);
  * - `clean`: existe um jeito de colocar as 3 e deixar o tabuleiro INTEIRO limpo;
  * - `great`: dá para limpar várias linhas de uma vez;
  * - `good`: dá para limpar pelo menos uma linha;
  * - `neutral`: as peças se encaixam, mas não limpam nada agora (ajeitam para as próximas).
  */
-export type RoundKind = 'clean' | 'great' | 'good' | 'neutral';
-const RANK: Record<RoundKind, number> = { clean: 3, great: 2, good: 1, neutral: 0 };
+export type RoundKind = 'plug' | 'clean' | 'great' | 'good' | 'neutral';
+const RANK: Record<RoundKind, number> = { clean: 4, plug: 3, great: 2, good: 1, neutral: 0 };
 
 /**
  * O peso de cada peça agora: o tabuleiro cheio puxa peças pequenas, o vazio puxa as grandes, e
@@ -60,17 +62,26 @@ function smallTrio(rows: readonly number[]): number[] {
  * limpa o tabuleiro inteiro. Depois de uma rodada fraca vem uma recompensa; com o tabuleiro
  * apertado o jogo ajuda mais; e conforme a partida avança as rodadas fracas ficam mais comuns.
  */
-function pickKind(rng: () => number, canClean: boolean, fill: number, sets: number, last: RoundKind | null): RoundKind {
+export function roundKindWeights(
+  canClean: boolean,
+  canPlug: boolean,
+  fill: number,
+  sets: number,
+  last: RoundKind | null,
+): Record<RoundKind, number> {
   const w: Record<RoundKind, number> = {
+    // Ficou um vão no tabuleiro: na maioria das vezes vem a peça exata para ele.
+    plug: canPlug ? (fill > 0.4 ? 0.6 : 0.45) : 0,
     clean: canClean ? 0.3 : 0,
     great: 0.26,
-    good: 0.3,
-    neutral: 0.14 + Math.min(sets, 40) / 160,
+    good: 0.26,
+    neutral: 0.08 + Math.min(sets, 40) / 300,
   };
   if (last === 'neutral') {
     // "As peças não eram boas, mas agora melhora": a rodada seguinte costuma recompensar.
     w.clean *= 2;
     w.great *= 2.2;
+    w.plug *= 1.6;
     w.neutral *= 0.35;
   }
   if (last === 'clean') w.clean *= 0.3;
@@ -80,9 +91,21 @@ function pickKind(rng: () => number, canClean: boolean, fill: number, sets: numb
     w.good *= 1.5;
     w.great *= 1.5;
   }
-  const total = w.clean + w.great + w.good + w.neutral;
+  return w;
+}
+
+function pickKind(
+  rng: () => number,
+  canClean: boolean,
+  canPlug: boolean,
+  fill: number,
+  sets: number,
+  last: RoundKind | null,
+): RoundKind {
+  const w = roundKindWeights(canClean, canPlug, fill, sets, last);
+  const total = w.plug + w.clean + w.great + w.good + w.neutral;
   let x = rng() * total;
-  for (const k of ['clean', 'great', 'good', 'neutral'] as const) {
+  for (const k of ['plug', 'clean', 'great', 'good', 'neutral'] as const) {
     x -= w[k];
     if (x < 0) return k;
   }
@@ -180,32 +203,52 @@ export function dealSet(
   const fill = fillRatio(rows);
   // Rodada que limpa o tabuleiro inteiro: monta-se um trio de barras que completa a linha certa.
   const clean = filledCells(rows) <= SIZE ? cleanTrio(rows, rng) : null;
-  let want = pickKind(rng, clean !== null, fill, sets, last);
+  const canPlug = pockets(toBuf(rows)) > 0;
+  let want = pickKind(rng, clean !== null, canPlug, fill, sets, last);
+  const w = weights(fill, sets);
   if (want === 'clean') {
     if (clean && hasPlan(rows, clean.map((id) => BLOCK_SHAPES[id]!), 0, DEAL_NODE_LIMIT)) return { ids: clean, kind: 'clean' };
     want = 'great'; // não deu: cai para a próxima melhor
   }
-  const w = weights(fill, sets);
-  let total = 0;
-  for (const v of w) total += v;
   // "Várias linhas": 2 já conta (3 ou mais quando o tabuleiro está no meio e dá folga).
   const greatTarget = fill > FULL_BOARD || fill < 0.2 ? SWEET_LINES_FULL : SWEET_LINES - 1 + (sets % 2);
-  const attempts = DEAL_ATTEMPTS;
 
-  let best: { ids: number[]; kind: RoundKind } | null = null;
-  for (let attempt = 0; attempt < attempts; attempt++) {
+  if (want !== 'neutral') {
+    // Trios em cadeia: cada peça encaixa no que a anterior deixou, a partir do tabuleiro de agora.
+    let best: { chain: { ids: number[]; lines: number; exact: number }; rank: number } | null = null;
+    for (let attempt = 0; attempt < 6; attempt++) {
+      const chain = buildChain(rng, rows, w, { plug: want === 'plug' });
+      if (!chain) break;
+      const kind: RoundKind =
+        want === 'plug' && chain.exact > 0 ? 'plug' : chain.lines >= greatTarget ? 'great' : chain.lines >= 1 ? 'good' : 'neutral';
+      const rank = RANK[kind] + (want === 'plug' && chain.exact > 0 ? 0 : 0);
+      if (RANK[kind] >= RANK[want] || (want === 'plug' && chain.exact > 0)) return { ids: shuffle(rng, chain.ids), kind };
+      if (!best || rank > best.rank) best = { chain, rank };
+    }
+    if (best) {
+      const k: RoundKind = best.chain.lines >= greatTarget ? 'great' : best.chain.lines >= 1 ? 'good' : 'neutral';
+      return { ids: shuffle(rng, best.chain.ids), kind: k };
+    }
+  }
+
+  // Rodada neutra (ou sem cadeia possível): três peças soltas que se encaixam, sem ajuda.
+  let total = 0;
+  for (const v of w) total += v;
+  for (let attempt = 0; attempt < DEAL_ATTEMPTS; attempt++) {
     const ids: number[] = [];
     for (let i = 0; i < SLOTS; i++) ids.push(draw(rng, w, total));
     const shapes: BlockShape[] = ids.map((id) => BLOCK_SHAPES[id]!);
-    if (!hasPlan(rows, shapes, 0, DEAL_NODE_LIMIT)) continue;
-    if (want === 'neutral') return { ids, kind: 'neutral' };
-
-    // Que tipo de rodada é este trio? (do mais generoso para baixo, só até onde importa)
-    let kind: RoundKind = 'neutral';
-    if (RANK[want] >= RANK.great && hasPlan(rows, shapes, greatTarget, DEAL_NODE_LIMIT)) kind = 'great';
-    else if (hasPlan(rows, shapes, 1, DEAL_NODE_LIMIT)) kind = 'good';
-    if (RANK[kind] >= RANK[want]) return { ids, kind };
-    if (!best || RANK[kind] > RANK[best.kind]) best = { ids, kind };
+    if (hasPlan(rows, shapes, 0, DEAL_NODE_LIMIT)) return { ids, kind: 'neutral' };
   }
-  return best ?? { ids: smallTrio(rows), kind: 'neutral' };
+  return { ids: smallTrio(rows), kind: 'neutral' };
+}
+
+/** Embaralha a bandeja (a peça-chave não vem sempre na primeira posição). */
+function shuffle(rng: () => number, ids: number[]): number[] {
+  const out = ids.slice();
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [out[i], out[j]] = [out[j]!, out[i]!];
+  }
+  return out;
 }

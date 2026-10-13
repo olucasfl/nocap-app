@@ -32,11 +32,11 @@ export const decodeMove = (n: number): Move => ({
 // As buscas testam milhões de posições, então aqui nada aloca: o tabuleiro vive em Int32Array
 // reaproveitados, um por nível da busca. A regra é a mesma de `applyMove` (e há teste que confere).
 
-const POP = new Uint8Array(256);
+export const POP = new Uint8Array(256);
 for (let i = 1; i < 256; i++) POP[i] = POP[i >> 1]! + (i & 1);
 
 /** A peça cabe? (sem conferir borda: quem chama já limita as posições) */
-function free(cur: Int32Array, shape: BlockShape, r: number, c: number): boolean {
+export function free(cur: Int32Array, shape: BlockShape, r: number, c: number): boolean {
   for (let k = 0; k < shape.h; k++) {
     if (((shape.rows[k]! << c) & cur[r + k]!) !== 0) return false;
   }
@@ -44,7 +44,7 @@ function free(cur: Int32Array, shape: BlockShape, r: number, c: number): boolean
 }
 
 /** Coloca e limpa em `dst`. Devolve quantas linhas e colunas foram limpas. */
-function stamp(src: Int32Array, dst: Int32Array, shape: BlockShape, r: number, c: number): number {
+export function stamp(src: Int32Array, dst: Int32Array, shape: BlockShape, r: number, c: number): number {
   for (let i = 0; i < N; i++) dst[i] = src[i]!;
   for (let k = 0; k < shape.h; k++) dst[r + k]! |= shape.rows[k]! << c;
   let cols = 255;
@@ -83,7 +83,7 @@ function quality(b: Int32Array): number {
   return 64 - filled - 8 * holes;
 }
 
-const toBuf = (rows: readonly number[]): Int32Array => Int32Array.from(rows);
+export const toBuf = (rows: readonly number[]): Int32Array => Int32Array.from(rows);
 
 /** Pontos de uma jogada, com a mesma regra de `applyMove`. */
 function movePoints(size: number, lines: number, streak: number, boardClear: boolean): number {
