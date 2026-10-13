@@ -214,9 +214,9 @@ export function classifyMatch(
   }
   if (item.game === 'blocks') {
     const n = Math.round(item.totalScore / 10);
-    if (n >= 5000) return { label: 'LENDÁRIO', tone: 'top' };
-    if (n >= 2000) return { label: 'FORTE', tone: 'good' };
-    if (n >= 800) return { label: 'MEH', tone: 'mid' };
+    if (n >= 300_000) return { label: 'LENDÁRIO', tone: 'top' };
+    if (n >= 60_000) return { label: 'FORTE', tone: 'good' };
+    if (n >= 15_000) return { label: 'MEH', tone: 'mid' };
     return { label: 'CEDO DEMAIS', tone: 'low' };
   }
   if (item.game === 'eco') {

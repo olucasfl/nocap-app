@@ -101,7 +101,7 @@ function BlocksStart({ onStart, busy }: { onStart: (mode: UiMode) => void; busy:
           lead={current.lead}
           record={
             best > 0
-              ? `Seu recorde aqui é de ${best} ${open === 'towers' ? 'peças' : 'pontos'}`
+              ? `Seu recorde aqui é de ${best.toLocaleString('pt-BR')} ${open === 'towers' ? 'peças' : 'pontos'}`
               : null
           }
           onClose={close}
@@ -188,7 +188,7 @@ function BlocksFinal({
         )}
         <span className="mono bkf-label">PONTOS</span>
         <div className="bkf-big">
-          <b>{score}</b>
+          <b>{score.toLocaleString('pt-BR')}</b>
         </div>
         {!guest && (
           <>
@@ -223,7 +223,7 @@ function BlocksFinal({
         {!guest && (
           <div>
             <dt className="mono">SEU RECORDE</dt>
-            <dd>{best}</dd>
+            <dd>{best.toLocaleString('pt-BR')}</dd>
           </div>
         )}
         <div>

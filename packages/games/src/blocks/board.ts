@@ -127,7 +127,8 @@ export function applyMove(
     }
   }
   const boardClear = lines > 0 && filledCells(swept.rows) === 0;
-  if (boardClear) bonus += BOARD_CLEAR_BONUS;
+  // O bônus do tabuleiro limpo cresce com a sequência, como a limpeza de linhas.
+  if (boardClear) bonus += BOARD_CLEAR_BONUS * Math.min(nextStreak, STREAK_CAP);
   return {
     rows: swept.rows,
     clearedRows: swept.clearedRows,

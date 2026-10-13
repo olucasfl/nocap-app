@@ -23,14 +23,14 @@ export const FULL_ROW = (1 << SIZE) - 1;
 export const HINTS_PER_GAME = 3;
 
 // --- Pontos ----------------------------------------------------------------------------------
-/** Pontos de limpar `lines` linhas/colunas de uma vez, antes da sequência: 10, 40, 90, 160... */
-export const linePoints = (lines: number): number => 10 * lines * lines;
-/** A sequência (combo) multiplica a limpeza até este teto. */
-export const STREAK_CAP = 10;
+/** Pontos de limpar `lines` linhas/colunas de uma vez, antes da sequência: 100, 300, 600, 1000... */
+export const linePoints = (lines: number): number => (100 * lines * (lines + 1)) / 2;
+/** A sequência (combo) multiplica a limpeza (e o bônus do tabuleiro limpo) até este teto. */
+export const STREAK_CAP = 30;
 /** Jogadas seguidas sem limpar que quebram a sequência. */
 export const STREAK_DROUGHT = 3;
-/** Bônus do tabuleiro limpo. */
-export const BOARD_CLEAR_BONUS = 1500;
+/** Bônus do tabuleiro limpo, multiplicado pela sequência (como a limpeza de linhas). */
+export const BOARD_CLEAR_BONUS = 1000;
 
 // --- Geração das peças -----------------------------------------------------------------------
 /** Chance de uma rodada nascer "com jogada" (50 a 70% dos trios têm uma jogada secreta). */

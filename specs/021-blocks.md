@@ -44,9 +44,9 @@ Todas as formas abaixo existem, cada uma com um peso de sorteio (as grandes são
 
 ### Pontos (o servidor recalcula tudo)
 - Colocar uma peça: **1 ponto por casa** da peça.
-- Limpar `L` linhas/colunas de uma vez: `10 x L x L` (1 → 10, 2 → 40, 3 → 90, 4 → 160, 5 → 250...).
-- **Sequência (combo)**: cada jogada que limpa algo aumenta a sequência; **três jogadas seguidas sem limpar** a quebram. O bônus de limpeza é multiplicado pela sequência (de 1 a 10).
-- **Tabuleiro limpo** (nenhuma casa ocupada depois da jogada): **+1500**.
+- Limpar `L` linhas/colunas de uma vez: `100 x L x (L + 1) / 2` (1 → 100, 2 → 300, 3 → 600, 4 → 1000...).
+- **Sequência (combo)**: cada jogada que limpa algo aumenta a sequência; **três jogadas seguidas sem limpar** a quebram. O bônus de limpeza é multiplicado pela sequência (de 1 a 30).
+- **Tabuleiro limpo** (nenhuma casa ocupada depois da jogada): **+1000 vezes a sequência** (proporcional ao combo, como a limpeza de linhas).
 - A nota é a **pontuação**. No ranking e no histórico ela é guardada em décimos (como nos outros jogos), mas mostrada em pontos.
 
 ### Fim de partida
@@ -122,3 +122,25 @@ Salas e amigos ao vivo, Daily, aposta "Cap ou No Cap", modo às cegas (tabuleiro
 
 ## Testes
 Lógica: encaixe, limpeza de linhas e colunas, limpeza simultânea, pontuação e sequência, tabuleiro limpo, fim de partida, o catálogo de peças, geração determinística pela seed, **todo trio com solução**, proporção de rodadas "com jogada" entre 50 e 70%, análise (melhor sequência, joinha, PERFECT, dica). API: partida refeita pela seed, movimento ilegal e partida incompleta recusados, sessão reaproveitada recusada.
+
+### As 3 peças da rodada se ajudam (ajuste de 14/10/2026)
+
+- Cada peça da cadeia **cola** nas que a cadeia já pôs, fica **perto** delas e **engorda linhas e colunas** que já estão quase cheias: as três parecem feitas uma para a outra, e não três ajudas soltas em cantos diferentes.
+- A "peça exata" vale também para vãos de até **9 casas** (antes 5): retângulos 2x3 e 3x3, cantos grandes. Na rodada de vão (`plug`) a chance subiu para 55% a 75%.
+- O jogo compara até **3 cadeias** que cumprem o tipo da rodada e fica com a de maior nota (a que mais se ajuda).
+- Joinha e PERFECT continuam como antes: melhor posição para o momento do tabuleiro, e as três peças nas melhores posições.
+
+### As peças da rodada servem ao tabuleiro (ajuste de 14/10/2026)
+
+- As peças são escolhidas pelo que **o tabuleiro pede**, não para combinarem entre si. A cadeia simula a rodada: a peça seguinte é escolhida já no tabuleiro **depois** de a anterior limpar (o plano futuro: uma peça quebra um monte de linhas e as outras duas rendem ainda mais depois).
+- Às vezes só **uma** peça ajuda de verdade e as outras apenas cabem (25% de chance por peça depois da primeira, `LOOSE_CHANCE`).
+- A "peça exata" vale também para vãos de até **9 casas** (antes 5): retângulos 2x3 e 3x3, cantos grandes. Na rodada de vão (`plug`) a chance subiu para 55% a 75%. As peças que mais ajudam pesam mais no sorteio.
+- Joinha e PERFECT continuam como antes: melhor posição para o momento do tabuleiro, e as três peças nas melhores posições.
+
+### Dificuldade crescente e pontos (ajuste de 14/10/2026)
+
+- **Pontos grandes**: limpar vale 100/300/600/1000 vezes a sequência (até x30). Em partida boa são ~20 mil pontos nas 10 primeiras rodadas e milhões em partida longa. Pontuação versão 3.
+- **Limpar o tabuleiro todo** é raro e não é o foco (no Block Blast é quase uma armadilha): rodada própria só às vezes, e a cadeia comum foge de zerar o tabuleiro.
+- **Quase toda rodada tem saída que limpa linha** (rodada neutra é exceção, ~3 a 5%).
+- **Toda rodada tem saída**: o jogo nunca entrega um trio sem solução de propósito, e peças grandes (qualquer uma, não só o quadrado) podem vir em qualquer momento, sem peso extra com o tabuleiro cheio.
+- **Dificuldade sobe com as rodadas** (rampa de 50 rodadas) por **rodadas apertadas** (`hard`, até ~8%, só com o tabuleiro mais de 35% cheio): uma peça não cabe agora e só entra depois de as outras limparem linhas e abrirem espaço. A saída sempre existe e sempre limpa pelo menos uma linha.

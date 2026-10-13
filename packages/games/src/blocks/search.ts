@@ -88,7 +88,8 @@ export const toBuf = (rows: readonly number[]): Int32Array => Int32Array.from(ro
 /** Pontos de uma jogada, com a mesma regra de `applyMove`. */
 function movePoints(size: number, lines: number, streak: number, boardClear: boolean): number {
   if (lines === 0) return size;
-  return size + linePoints(lines) * Math.min(streak + 1, STREAK_CAP) + (boardClear ? BOARD_CLEAR_BONUS : 0);
+  const mult = Math.min(streak + 1, STREAK_CAP);
+  return size + linePoints(lines) * mult + (boardClear ? BOARD_CLEAR_BONUS * mult : 0);
 }
 
 /**

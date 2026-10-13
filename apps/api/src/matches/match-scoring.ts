@@ -284,7 +284,7 @@ export function scoreBlocksMatch(
     encodedAnswers: [],
     settings: {
       mode: input.mode,
-      scoreVersion: 2,
+      scoreVersion: 3,
       moves: r.moves,
       lines: r.lines,
       bestStreak: r.bestStreak,

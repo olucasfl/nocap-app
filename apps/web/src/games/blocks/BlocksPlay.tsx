@@ -511,7 +511,7 @@ export function BlocksPlay({ seed, best, onEnd, onQuit, onRestart }: Props) {
         <div className="bk-score">
           <span className="mono bk-label">PONTOS</span>
           <b key={ui.score} className={ui.score > 0 ? 'bump' : undefined} aria-live="off">
-            {shown}
+            {shown.toLocaleString('pt-BR')}
           </b>
         </div>
         <div className="bk-side">
@@ -523,7 +523,7 @@ export function BlocksPlay({ seed, best, onEnd, onQuit, onRestart }: Props) {
           {!guest && (
             <>
               <span className="mono bk-label">RECORDE</span>
-              <b className="bk-best">{Math.max(best, ui.score)}</b>
+              <b className="bk-best">{Math.max(best, ui.score).toLocaleString('pt-BR')}</b>
             </>
           )}
         </div>
@@ -646,7 +646,7 @@ export function BlocksPlay({ seed, best, onEnd, onQuit, onRestart }: Props) {
           {ui.over && (
             <div className="bk-over" role="status">
               <b>SEM ESPAÇO</b>
-              <span className="mono">{ui.score} PONTOS</span>
+              <span className="mono">{ui.score.toLocaleString('pt-BR')} PONTOS</span>
             </div>
           )}
         </div>

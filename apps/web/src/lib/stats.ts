@@ -92,7 +92,7 @@ export function formatCount(tenths: number, unit: CountUnit): string {
   const n = Math.round(tenths / 10);
   if (unit === 'metros') return `${n} m`;
   const one = unit === 'rodadas' ? 'rodada' : unit === 'passos' ? 'passo' : unit === 'peças' ? 'peça' : 'ponto';
-  return `${n} ${n === 1 ? one : unit}`;
+  return `${n.toLocaleString('pt-BR')} ${n === 1 ? one : unit}`;
 }
 
 /** A nota do Daily de hoje para mostrar: "21.4/30" ou, no Eco, "12 passos". */

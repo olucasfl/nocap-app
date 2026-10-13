@@ -163,8 +163,8 @@ describe('pontuação', () => {
     expect(p.lines).toBe(0);
   });
 
-  it('limpar vale 10, 30, 60, 100 (vezes a sequência)', () => {
-    expect([1, 2, 3, 4].map(linePoints)).toEqual([10, 40, 90, 160]);
+  it('limpar vale 100, 300, 600, 1000 (vezes a sequência)', () => {
+    expect([1, 2, 3, 4].map(linePoints)).toEqual([100, 300, 600, 1000]);
     const rows = emptyRows();
     rows[0] = 0b11111110;
     rows[5] = 1; // sobra uma casa: o tabuleiro não fica limpo
@@ -172,7 +172,7 @@ describe('pontuação', () => {
     expect(p.lines).toBe(1);
     expect(p.streak).toBe(1);
     expect(p.boardClear).toBe(false);
-    expect(p.points).toBe(1 + 10); // a casa da peça e a limpeza vezes a sequência 1
+    expect(p.points).toBe(1 + 100); // a casa da peça e a limpeza vezes a sequência 1
   });
 
   it('a sequência multiplica a limpeza e tem teto', () => {
@@ -181,9 +181,9 @@ describe('pontuação', () => {
     rows[5] = 1; // não deixa o tabuleiro limpo
     const a = applyMove(rows, shape('ponto'), 0, 0, 2, 0); // sequência vira 3
     expect(a.streak).toBe(3);
-    expect(a.bonus).toBe(10 * 3);
+    expect(a.bonus).toBe(100 * 3);
     const capped = applyMove(rows, shape('ponto'), 0, 0, 40, 0);
-    expect(capped.bonus).toBe(10 * STREAK_CAP);
+    expect(capped.bonus).toBe(100 * STREAK_CAP);
   });
 
   it('três jogadas seguidas sem limpar quebram a sequência', () => {
@@ -214,7 +214,8 @@ describe('pontuação', () => {
     rows[0] = 0b11111110;
     const p = applyMove(rows, shape('ponto'), 0, 0, 0, 0);
     expect(p.boardClear).toBe(true);
-    expect(p.bonus).toBe(10 + BOARD_CLEAR_BONUS);
+    // A limpeza (100) e o bônus do tabuleiro limpo contam vezes a sequência (aqui, 1).
+    expect(p.bonus).toBe(100 + BOARD_CLEAR_BONUS);
   });
 });
 
@@ -484,8 +485,8 @@ describe('tipos de rodada: aleatório, com começo generoso', () => {
   it('na primeira rodada vem de tudo: às vezes limpa o tabuleiro inteiro, às vezes só encaixa bem', () => {
     const f = firsts(150);
     const count = (k: string) => f.filter((x) => x.kind === k).length;
-    expect(count('clean')).toBeGreaterThanOrEqual(150 * 0.15);
-    expect(count('clean')).toBeLessThanOrEqual(150 * 0.5);
+    expect(count('clean')).toBeGreaterThanOrEqual(150 * 0.05);
+    expect(count('clean')).toBeLessThanOrEqual(150 * 0.25);
     expect(count('good') + count('great')).toBeGreaterThan(150 * 0.3);
     expect(count('neutral')).toBeGreaterThan(0); // às vezes as peças não ajudam logo de cara
   });

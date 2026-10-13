@@ -12,6 +12,9 @@ const isEmptyBoard = (b: Int32Array): boolean => (b[0]! | b[1]! | b[2]! | b[3]! 
 
 const N = SIZE;
 
+/** Chance de uma peça (depois da primeira) vir só "cabendo", sem ser a melhor para o tabuleiro. */
+const LOOSE_CHANCE = 0.25;
+
 /** As regiões de casas vazias coladas entre si (4 vizinhos): o id de cada casa e o tamanho de cada região. */
 export function regionsOf(b: Int32Array): { id: Int8Array; size: number[] } {
   const id = new Int8Array(N * N).fill(-1);
@@ -59,10 +62,10 @@ function holesOf(b: Int32Array): number {
   return n;
 }
 
-/** Os vãos pequenos (de 1 a 5 casas) do tabuleiro: os cantos que "pedem" uma peça exata. */
+/** Os vãos pequenos (de 1 a 9 casas) do tabuleiro: os cantos que "pedem" uma peça exata. */
 export function pockets(b: Int32Array): number {
   const { size } = regionsOf(b);
-  return size.filter((s) => s <= 5).length;
+  return size.filter((s) => s <= 9).length;
 }
 
 export interface Placement {
@@ -86,6 +89,7 @@ export function bestPlacement(
   regions: { id: Int8Array; size: number[] },
   holesBefore: number,
   rng: () => number,
+  wantClear = true,
 ): Placement | null {
   let best: Placement | null = null;
   const scratch = new Int32Array(N);
@@ -111,10 +115,11 @@ export function bestPlacement(
         }
       }
       const lines = stamp(cur, scratch, shape, r, c);
-      const exact = sameRegion && rid >= 0 && regions.size[rid] === shape.size && shape.size <= 5;
+      const exact = sameRegion && rid >= 0 && regions.size[rid] === shape.size && shape.size <= 9;
       const holes = holesOf(scratch) - holesBefore;
       // Deixar o tabuleiro vazio é o melhor de tudo: a cadeia procura esse final.
-      const empties = lines > 0 && isEmptyBoard(scratch) ? 90 : 0;
+      // Zerar o tabuleiro é raro e planejado (rodada `clean`): nas outras, a cadeia foge disso.
+      const empties = lines > 0 && isEmptyBoard(scratch) ? (wantClear ? 90 : -120) : 0;
       const score = lines * 40 + contact * 3 - holes * 12 + (exact ? 60 : 0) + empties + rng() * 0.5;
       if (!best || score > best.score) {
         best = { shape, row: r, col: c, lines, exact, score, next: Int32Array.from(scratch) };
@@ -130,6 +135,8 @@ export interface Chain {
   lines: number;
   /** A sequência planejada deixa o tabuleiro inteiro vazio. */
   empty: boolean;
+  /** Soma das notas das jogadas planejadas: quanto mais alta, mais a rodada rende no tabuleiro. */
+  score: number;
   /** Quantas das peças taparam um vão pequeno inteiro. */
   exact: number;
 }
@@ -144,32 +151,36 @@ export function buildChain(
   rng: () => number,
   rows: readonly number[],
   baseWeights: readonly number[],
-  opts: { plug: boolean },
+  opts: { plug: boolean; clear?: boolean },
 ): Chain | null {
   let cur = toBuf(rows);
   const ids: number[] = [];
   let lines = 0;
   let exact = 0;
+  let planScore = 0;
   for (let step = 0; step < 3; step++) {
     const regions = regionsOf(cur);
     const holes = holesOf(cur);
     const cands: Placement[] = [];
     for (const shape of BLOCK_SHAPES) {
-      const p = bestPlacement(cur, shape, regions, holes, rng);
+      const p = bestPlacement(cur, shape, regions, holes, rng, opts.clear ?? true);
       if (p) cands.push(p);
     }
     if (cands.length === 0) return null;
     let pool = cands;
+    // Nem toda peça precisa ser ótima: às vezes só UMA ajuda de verdade e as outras apenas cabem.
+    // (A peça de depois enxerga o tabuleiro já limpo pela de antes: é daí que vem o "plano futuro".)
+    const loose = step > 0 && rng() < LOOSE_CHANCE;
     if (opts.plug && step === 0) {
       const plugs = cands.filter((p) => p.exact);
       if (plugs.length) pool = plugs;
     }
     // O peso: o da peça (mais comum ou mais rara) vezes o quanto ela ajuda aqui e agora.
     const ws = pool.map((p) => {
-      const help = 1 + Math.max(0, p.score) / 14;
+      const help = loose ? 1 : 1 + Math.max(0, p.score) / 14;
       // Peças repetidas são comuns no Block Blast (duas barras de 5, três 3x3): quem já saiu pesa mais.
       const again = ids.includes(p.shape.id) ? 2.2 : 1;
-      return baseWeights[p.shape.id]! * help * help * (p.exact ? 4 : 1) * again;
+      return baseWeights[p.shape.id]! * help * help * help * (p.exact && !loose ? 6 : 1) * again;
     });
     let total = 0;
     for (const v of ws) total += v;
@@ -183,9 +194,10 @@ export function buildChain(
       }
     }
     ids.push(pick.shape.id);
+    planScore += pick.score;
     lines += pick.lines;
     if (pick.exact) exact++;
     cur = pick.next;
   }
-  return { ids, lines, exact, empty: isEmptyBoard(cur) };
+  return { ids, lines, exact, score: planScore, empty: isEmptyBoard(cur) };
 }

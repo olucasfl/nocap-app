@@ -9,7 +9,7 @@ import {
   SWEET_LINES_FULL,
   type BlockShape,
 } from './constants';
-import { fillRatio, filledCells, type Rows } from './board';
+import { fillRatio, filledCells, fitsAnywhere, type Rows } from './board';
 import { buildChain, pockets } from './chain';
 import { hasPlan, toBuf } from './search';
 
@@ -21,8 +21,16 @@ import { hasPlan, toBuf } from './search';
  * - `good`: dá para limpar pelo menos uma linha;
  * - `neutral`: as peças se encaixam, mas não limpam nada agora (ajeitam para as próximas).
  */
-export type RoundKind = 'plug' | 'clean' | 'great' | 'good' | 'neutral';
-const RANK: Record<RoundKind, number> = { clean: 4, plug: 3, great: 2, good: 1, neutral: 0 };
+export type RoundKind = 'plug' | 'clean' | 'great' | 'good' | 'neutral' | 'hard';
+const RANK: Record<RoundKind, number> = { clean: 4, plug: 3, great: 2, good: 1, neutral: 0, hard: 0 };
+
+/** Quantas rodadas até a dificuldade chegar ao máximo (a partida esquenta aos poucos). */
+const HARD_RAMP = 50;
+/** O quanto a dificuldade (0 a 1) já subiu nesta partida. */
+const difficulty = (sets: number): number => Math.min(1, sets / HARD_RAMP);
+
+/** No máximo, esta fração das rodadas é "apertada" (a saída exige a ordem certa das peças). */
+const HARD_MAX_SHARE = 0.08;
 
 /**
  * O peso de cada peça agora: o tabuleiro cheio puxa peças pequenas, o vazio puxa as grandes, e
@@ -71,11 +79,15 @@ export function roundKindWeights(
 ): Record<RoundKind, number> {
   const w: Record<RoundKind, number> = {
     // Ficou um vão no tabuleiro: na maioria das vezes vem a peça exata para ele.
-    plug: canPlug ? (fill > 0.4 ? 0.6 : 0.45) : 0,
-    clean: canClean ? 0.3 : 0,
-    great: 0.26,
-    good: 0.26,
-    neutral: 0.08 + Math.min(sets, 40) / 300,
+    plug: canPlug ? (fill > 0.4 ? 0.75 : 0.55) : 0,
+    // Limpar o tabuleiro todo é raro e não é o foco (no Block Blast é até uma armadilha).
+    clean: canClean ? 0.08 : 0,
+    great: 0.36,
+    good: 0.3,
+    // Rodada sem linha para limpar é a exceção: quase toda rodada tem uma saída que limpa.
+    neutral: 0.02 + Math.min(sets, 40) / 1500,
+    // Rodada apertada (a saída pede a ordem certa), cada vez mais comum, mas sempre rara.
+    hard: fill > 0.35 ? difficulty(sets) * HARD_MAX_SHARE * 1.3 : 0,
   };
   if (last === 'neutral') {
     // "As peças não eram boas, mas agora melhora": a rodada seguinte costuma recompensar.
@@ -103,9 +115,9 @@ function pickKind(
   last: RoundKind | null,
 ): RoundKind {
   const w = roundKindWeights(canClean, canPlug, fill, sets, last);
-  const total = w.plug + w.clean + w.great + w.good + w.neutral;
+  const total = w.plug + w.clean + w.great + w.good + w.neutral + w.hard;
   let x = rng() * total;
-  for (const k of ['plug', 'clean', 'great', 'good', 'neutral'] as const) {
+  for (const k of ['plug', 'clean', 'great', 'good', 'neutral', 'hard'] as const) {
     x -= w[k];
     if (x < 0) return k;
   }
@@ -189,6 +201,30 @@ function cleanTrio(rows: readonly number[], rng: () => number): number[] | null 
   return ids;
 }
 
+/** Sorteia um trio pelos pesos. */
+function drawTrio(rng: () => number, w: readonly number[]): number[] {
+  let total = 0;
+  for (const v of w) total += v;
+  return Array.from({ length: SLOTS }, () => draw(rng, w, total));
+}
+
+/**
+ * Rodada apertada: peças sorteadas como sempre (qualquer uma pode vir), mas escolhida a que tem
+ * saída só numa certa ordem, por exemplo uma peça grande que só cabe depois de outra limpar linhas.
+ * Todo trio tem solução: sem saída que limpe linha, nunca se entrega.
+ */
+function hardTrio(rng: () => number, rows: Rows, w: readonly number[]): number[] | null {
+  for (let attempt = 0; attempt < 30; attempt++) {
+    const ids = drawTrio(rng, w);
+    const shapes: BlockShape[] = ids.map((id) => BLOCK_SHAPES[id]!);
+    if (!hasPlan(rows, shapes, 1, DEAL_NODE_LIMIT)) continue;
+    // Só vale como "apertada" se alguma peça NÃO cabe agora: ela só entra depois de as outras
+    // limparem linhas e abrirem espaço (a saída existe, a pessoa precisa achar a ordem).
+    if (shapes.some((sh) => !fitsAnywhere(rows, sh))) return ids;
+  }
+  return null;
+}
+
 /**
  * Monta as três peças da rodada (spec 021). Sorteia o tipo da rodada e procura, pela seed, um trio
  * que o cumpra (se não achar, fica com o melhor que achou). Todo trio tem solução. Tudo é
@@ -206,6 +242,11 @@ export function dealSet(
   const canPlug = pockets(toBuf(rows)) > 0;
   let want = pickKind(rng, clean !== null, canPlug, fill, sets, last);
   const w = weights(fill, sets);
+  if (want === 'hard') {
+    const hard = hardTrio(rng, rows, w);
+    if (hard) return { ids: hard, kind: 'hard' };
+    want = 'good'; // não achou rodada apertada: vem uma comum, com saída
+  }
   if (want === 'clean') {
     if (clean && hasPlan(rows, clean.map((id) => BLOCK_SHAPES[id]!), 0, DEAL_NODE_LIMIT)) return { ids: clean, kind: 'clean' };
     want = 'great'; // não deu: cai para a próxima melhor
@@ -217,7 +258,7 @@ export function dealSet(
     // Trios em cadeia: cada peça encaixa no que a anterior deixou, a partir do tabuleiro de agora.
     let best: { chain: { ids: number[]; lines: number; exact: number; empty: boolean }; rank: number } | null = null;
     for (let attempt = 0; attempt < 6; attempt++) {
-      const chain = buildChain(rng, rows, w, { plug: want === 'plug' });
+      const chain = buildChain(rng, rows, w, { plug: want === 'plug', clear: false });
       if (!chain) break;
       const kind: RoundKind = chain.empty
         ? 'clean'

@@ -32,7 +32,7 @@ describe('scoreBlocksMatch', () => {
     expect(scored.totalTenths).toBe(GAME.score * 10);
     expect(scored.rounds).toEqual([]);
     expect(scored.encodedAnswers).toEqual([]);
-    expect(scored.settings).toMatchObject({ mode: 'classic', scoreVersion: 2, moves: GAME.moves.length });
+    expect(scored.settings).toMatchObject({ mode: 'classic', scoreVersion: 3, moves: GAME.moves.length });
   });
 
   it('é a mesma conta do jogo (evaluateBlocks)', () => {
