@@ -48,6 +48,8 @@ export interface Fx {
   heartBroke: number[];
   heartGain: number[];
   prevLives: number;
+  /** O quanto a peça que desce ainda está "deslizando" até a casa nova (em casas, decai rápido). */
+  slide: number;
   /** Flash de dano nas bordas (0 a 1). */
   hurt: number;
   /** Clarão de cor (magia), 0 a 1. */
@@ -69,6 +71,7 @@ export function createFx(): Fx {
     heartBroke: [],
     heartGain: [],
     prevLives: MAX_LIVES,
+    slide: 0,
     hurt: 0,
     glow: 0,
     glowColor: '#ffffff',
@@ -481,6 +484,7 @@ function drawBodies(
   Y: (y: number) => number,
   ppu: number,
   time: number,
+  slide: number,
 ) {
   for (const b of game.world.bodies) {
     if (b === game.platform) continue;
@@ -488,8 +492,10 @@ function drawBodies(
     const stone = b.isStatic;
     const isActive = game.active?.body === b;
     const glow = isActive ? (game.active!.ivy ? '#33c27f' : game.active!.stone ? '#d0d0dc' : null) : null;
+    // A peça que a pessoa segura anda de casa em casa na hora; aqui ela só desliza até lá no desenho.
+    const off = isActive ? slide : 0;
     for (const box of b.boxes) {
-      const wx = b.x + b.c * box.cx - b.s * box.cy;
+      const wx = b.x + off + b.c * box.cx - b.s * box.cy;
       const wy = b.y + b.s * box.cx + b.c * box.cy;
       const rc = b.c * box.rc - b.s * box.rs;
       const rs = b.s * box.rc + b.c * box.rs;
@@ -789,6 +795,8 @@ export function stepFx(fx: Fx, dt: number) {
   fx.time += dt;
   fx.moodT += dt;
   fx.shake *= Math.pow(0.001, dt);
+  fx.slide *= Math.pow(0.0001, dt);
+  if (Math.abs(fx.slide) < 0.01) fx.slide = 0;
   if (fx.shake < 0.05) fx.shake = 0;
   fx.hurt = Math.max(0, fx.hurt - dt * 1.8);
   fx.glow = Math.max(0, fx.glow - dt * 2.2);
@@ -991,7 +999,7 @@ export function drawFrame(ctx: CanvasRenderingContext2D, W: number, H: number, g
   drawBackdrop(ctx, W, H, p, camY, ppu, fx);
   drawIsland(ctx, X, Y, ppu, p);
   drawGuide(ctx, game, X, Y, ppu, fx.time);
-  drawBodies(ctx, game, X, Y, ppu, fx.time);
+  drawBodies(ctx, game, X, Y, ppu, fx.time, fx.slide);
   drawParticles(ctx, fx, X, Y, ppu);
   ctx.restore();
 

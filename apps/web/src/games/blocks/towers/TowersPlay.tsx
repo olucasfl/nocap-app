@@ -201,6 +201,7 @@ export function TowersPlay({ seed, best, onEnd, onQuit }: Props) {
           break;
         case 'move':
           audio?.move();
+          fx.slide = Math.max(-1.5, Math.min(1.5, fx.slide - e.dir));
           break;
         case 'rotate':
           audio?.rotate();
@@ -399,8 +400,13 @@ export function TowersPlay({ seed, best, onEnd, onQuit }: Props) {
     // Teclado: setas ou A/D movem, cima/W/espaço giram, baixo/S desce, E/Enter usam a magia.
     const keys = (e: KeyboardEvent, down: boolean) => {
       const k = e.key.toLowerCase();
-      if (k === 'arrowleft' || k === 'a') input.current.left = down;
-      else if (k === 'arrowright' || k === 'd') input.current.right = down;
+      if (k === 'arrowleft' || k === 'a') {
+        input.current.left = down;
+        if (down && !e.repeat) game.press(-1);
+      } else if (k === 'arrowright' || k === 'd') {
+        input.current.right = down;
+        if (down && !e.repeat) game.press(1);
+      }
       else if (k === 'arrowdown' || k === 's') input.current.down = down;
       else if (down && !e.repeat && (k === 'arrowup' || k === 'w' || k === ' ')) rotateRef.current();
       else if (down && !e.repeat && (k === 'e' || k === 'enter')) castRef.current();
@@ -454,6 +460,11 @@ export function TowersPlay({ seed, best, onEnd, onQuit }: Props) {
       e.preventDefault();
       (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
       input.current[key] = true;
+      // Esquerda e direita andam UMA casa no toque, na hora (a troca de direção é instantânea).
+      if (!paused.current) {
+        if (key === 'left') game.press(-1);
+        else if (key === 'right') game.press(1);
+      }
     },
     onPointerUp: () => {
       input.current[key] = false;

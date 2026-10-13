@@ -484,3 +484,67 @@ describe('sorteio das magias', () => {
     expect(firsts.size).toBeGreaterThanOrEqual(4);
   });
 });
+
+describe('trocar de direção na hora', () => {
+  const tlOf = (g: TowersGame) => g.active!.body.x - g.active!.comx;
+  const ready = (seed: string) => {
+    const g = new TowersGame(seed);
+    while (!g.active) g.step(NONE);
+    return g;
+  };
+
+  it('o toque anda uma casa no mesmo passo, sem esperar nada', () => {
+    const g = ready('instante');
+    const start = tlOf(g);
+    g.press(1);
+    g.step(NONE);
+    expect(tlOf(g)).toBe(start + 1);
+    g.press(-1);
+    g.step(NONE);
+    expect(tlOf(g)).toBe(start);
+  });
+
+  it('toques rápidos seguidos andam uma casa cada, mesmo vários no mesmo quadro', () => {
+    const g = ready('rapido');
+    const start = tlOf(g);
+    g.press(1);
+    g.press(1);
+    g.press(-1);
+    g.press(1);
+    g.step(NONE);
+    expect(tlOf(g)).toBe(start + 2);
+  });
+
+  it('um toque que também segura o botão anda só uma casa (sem passo dobrado)', () => {
+    const g = ready('sem-dobro');
+    const start = tlOf(g);
+    g.press(1);
+    g.step({ left: false, right: true, down: false });
+    g.step({ left: false, right: true, down: false });
+    expect(tlOf(g)).toBe(start + 1);
+  });
+
+  it('virar de direção segurando também é imediato', () => {
+    const g = ready('vira');
+    const start = tlOf(g);
+    for (let i = 0; i < 20; i++) g.step({ left: false, right: true, down: false });
+    const mid = tlOf(g);
+    expect(mid).toBeGreaterThan(start);
+    g.step({ left: true, right: false, down: false });
+    expect(tlOf(g)).toBe(mid - 1);
+  });
+
+  it('não passa da borda nem entra na torre', () => {
+    const g = ready('borda');
+    for (let i = 0; i < 12; i++) {
+      g.press(-1);
+      g.step(NONE);
+    }
+    expect(tlOf(g)).toBeGreaterThanOrEqual(-8);
+    for (let i = 0; i < 30; i++) {
+      g.press(1);
+      g.step(NONE);
+    }
+    expect(tlOf(g) + g.active!.w).toBeLessThanOrEqual(8 + 0.01);
+  });
+});

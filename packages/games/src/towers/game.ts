@@ -49,7 +49,7 @@ export interface TowersInput {
 
 export type TowersEvent =
   | { type: 'spawn'; kind: number }
-  | { type: 'move' }
+  | { type: 'move'; dir: number }
   | { type: 'rotate' }
   | { type: 'blocked' }
   | { type: 'land'; x: number; y: number; speed: number }
@@ -174,6 +174,8 @@ export class TowersGame {
   private targetTl = 0;
   private moveDir = 0;
   private moveTimer = 0;
+  /** Toques na esquerda/direita ainda não aplicados (cada um é uma casa, na hora). */
+  private presses: number[] = [];
   /** A peça que desce já encostou em algo: daí em diante não anda nem gira mais. */
   private touched = false;
   /** Velocidade pedida para a peça que desce neste passo (ela se move sem empurrar ninguém). */
@@ -354,6 +356,7 @@ export class TowersGame {
     const h = (maxY + 1) * scale;
     const tlx = Math.round(-w / 2);
     const tly = this.towerTop() - SPAWN_GAP - h;
+    this.presses = [];
     this.world.add(body);
     this.shape(piece, cells, tlx, tly);
     body.vx = 0;
@@ -372,6 +375,34 @@ export class TowersGame {
   }
 
   // --- Controles --------------------------------------------------------------------------
+  /**
+   * Um toque para o lado: a peça anda UMA casa na hora, sem esperar o toque anterior terminar.
+   * Vale mesmo que o toque seja mais curto que um quadro (a fila é aplicada no próximo passo).
+   */
+  press(dir: number) {
+    if (dir === 0 || this.over) return;
+    this.presses.push(dir < 0 ? -1 : 1);
+    if (this.presses.length > 8) this.presses.shift();
+  }
+
+  /** Anda uma casa para o lado, agora. Falso se algo trava (a torre, a borda) ou a peça já encostou. */
+  private nudge(p: TowerPiece, dir: number): boolean {
+    if (this.touched) return false;
+    const body = p.body;
+    const tl = body.x - p.comx;
+    const next = clamp(Math.round(tl) + dir * MOVE_STEP, -FIELD_HALF, FIELD_HALF - p.w * p.scale);
+    const dx = next - tl;
+    if (Math.abs(dx) < 0.001) return false;
+    body.x += dx;
+    if (this.world.overlaps(body, 0.02)) {
+      body.x -= dx;
+      return false;
+    }
+    this.targetTl = next;
+    this.events.push({ type: 'move', dir: Math.sign(dx) });
+    return true;
+  }
+
   /** Gira a peça que desce, 90 graus. Tenta uma folga para o lado se bater em algo. */
   rotate(): boolean {
     const p = this.active;
@@ -505,33 +536,31 @@ export class TowersGame {
 
   private control(p: TowerPiece, input: TowersInput, dt: number) {
     const body = p.body;
-    const tl = body.x - p.comx;
+    // Anda de bloco em bloco, NA HORA: cada toque é uma casa inteira e a troca de direção é
+    // instantânea. Primeiro os toques que chegaram (mesmo os mais curtos que um quadro)...
+    let pressed = 0;
+    for (const d of this.presses) {
+      this.nudge(p, d);
+      pressed = d;
+    }
+    this.presses = [];
+    // ...depois, segurar o botão repete as casas, devagar.
     const dir = this.touched ? 0 : (input.right ? 1 : 0) - (input.left ? 1 : 0);
-    const minTl = -FIELD_HALF;
-    const maxTl = FIELD_HALF - p.w * p.scale;
-    // Anda de bloco em bloco: cada passo é uma casa inteira, sempre alinhada à grade. Se a peça
-    // ainda não chegou no alvo (algo a segura), não acumula passos.
-    const step = () => {
-      const next = clamp(this.targetTl + dir * MOVE_STEP, minTl, maxTl);
-      if (next !== this.targetTl && Math.abs(next - tl) <= MOVE_STEP + 0.01) {
-        this.targetTl = next;
-        this.events.push({ type: 'move' });
-      }
-    };
     if (dir !== 0) {
       if (dir !== this.moveDir) {
-        step();
+        // Começou a segurar agora: se o toque já andou uma casa, só arma a repetição.
+        if (pressed !== dir) this.nudge(p, dir);
         this.moveTimer = MOVE_FIRST_DELAY;
       } else {
         this.moveTimer -= dt;
         if (this.moveTimer <= 0) {
-          step();
+          this.nudge(p, dir);
           this.moveTimer = MOVE_REPEAT;
         }
       }
     }
     this.moveDir = dir;
-    this.cmdVx = this.touched ? 0 : clamp((this.targetTl - tl) * 20, -20, 20);
+    this.cmdVx = 0;
     const speed = input.down ? Math.max(SOFT_DROP, this.fallSpeed(p)) : this.fallSpeed(p);
     this.cmdVy = this.landTimer > 0 ? 0 : speed;
     body.vx = 0;
