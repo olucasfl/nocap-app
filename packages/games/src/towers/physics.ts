@@ -383,6 +383,17 @@ export interface ImpactEvent {
 }
 
 const BIAS = 0.2;
+/**
+ * A correção de penetração nunca empurra mais rápido que isto (casas por segundo). Sem teto, uma
+ * peça presa dentro de outra (pedra e vinha ficam fixas onde estão) lança tudo para longe.
+ */
+const MAX_PUSH = 0.7;
+/** Velocidade máxima de um corpo: nada "explode" para fora do mundo por um erro numérico. */
+const MAX_SPEED = 28;
+const MAX_SPIN = 12;
+/** Abaixo destas velocidades o corpo está praticamente parado: amortece forte para a torre assentar. */
+const REST_SPEED = 0.22;
+const REST_SPIN = 0.3;
 const SLOP = 0.01;
 
 export class World {
@@ -670,7 +681,7 @@ export class World {
         const kt =
           a.invM + b.invM + a.invI * (c.r1x * c.r1x + c.r1y * c.r1y - rt1 * rt1) + b.invI * (c.r2x * c.r2x + c.r2y * c.r2y - rt2 * rt2);
         c.massTangent = 1 / kt;
-        c.bias = -BIAS * invDt * Math.min(0, c.sep + SLOP);
+        c.bias = Math.min(MAX_PUSH, -BIAS * invDt * Math.min(0, c.sep + SLOP));
         // aquecimento
         const px = c.pn * c.nx + c.pt * tx;
         const py = c.pn * c.ny + c.pt * ty;
@@ -727,11 +738,25 @@ export class World {
 
     for (const b of this.bodies) {
       if (b.invM === 0 || b.held) continue;
+      const sp = Math.sqrt(b.vx * b.vx + b.vy * b.vy);
+      if (sp > MAX_SPEED) {
+        const k = MAX_SPEED / sp;
+        b.vx *= k;
+        b.vy *= k;
+      }
       b.x += b.vx * dt;
       b.y += b.vy * dt;
       if (b.invI === 0) continue;
-      const damp = 1 / (1 + dt * 0.35);
+      if (b.w > MAX_SPIN) b.w = MAX_SPIN;
+      else if (b.w < -MAX_SPIN) b.w = -MAX_SPIN;
+      // Quase parado: amortece bem mais (acaba o tremor), sem segurar uma peça que realmente tomba.
+      const calm = sp < REST_SPEED && Math.abs(b.w) < REST_SPIN;
+      const damp = 1 / (1 + dt * (calm ? 6 : 0.9));
       b.w *= damp;
+      if (calm) {
+        const lin = 1 / (1 + dt * 3);
+        b.vx *= lin;
+      }
       const th = b.w * dt;
       const t2 = th * th;
       const cd = 1 - t2 / 2 + (t2 * t2) / 24;

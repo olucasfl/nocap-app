@@ -85,7 +85,7 @@ export const BAD_DURATION: Record<BadSpell, number> = {
 };
 export const BIG_SCALE = 1.6;
 export const ICE_FRICTION = 0.04;
-export const NORMAL_FRICTION = 0.7;
+export const NORMAL_FRICTION = 0.9;
 export const FAST_FACTOR = 2;
 export const AUTO_ROTATE_EVERY = 0.75;
 

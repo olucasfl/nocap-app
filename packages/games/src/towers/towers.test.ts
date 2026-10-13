@@ -916,3 +916,54 @@ describe('encaixar em vão apertado (de uma casa)', () => {
     }
   });
 });
+
+describe('estabilidade da física', () => {
+  const platform = (w: World) => {
+    const p = new Body();
+    p.friction = 0.9;
+    p.setBoxes([{ cx: 0, cy: 0.8, hw: 4, hh: 0.8, rc: 1, rs: 0 }], 1, true);
+    p.y = 0.8;
+    return w.add(p);
+  };
+  const block = (w: World, x: number, y: number, side = 2) => {
+    const b = new Body();
+    b.friction = 0.9;
+    b.setBoxes([{ cx: 0, cy: 0, hw: side / 2, hh: side / 2, rc: 1, rs: 0 }]);
+    b.x = x;
+    b.y = y;
+    return w.add(b);
+  };
+
+  it('uma torre alinhada de 12 blocos fica de pé e parada', () => {
+    const w = new World({ gravity: 30, iterations: 14, substeps: 3 });
+    platform(w);
+    const bodies = Array.from({ length: 12 }, (_, i) => block(w, 0, -(i * 2 + 1) - 0.02));
+    for (let t = 0; t < 60 * 6; t++) w.step(1 / 60);
+    for (const b of bodies) expect(Math.abs(b.x)).toBeLessThan(0.1);
+    expect(bodies[11]!.y).toBeLessThan(-22);
+  });
+
+  it('um bloco muito fora do centro tomba (física de verdade)', () => {
+    const w = new World({ gravity: 30, iterations: 14, substeps: 3 });
+    platform(w);
+    block(w, 0, -1.02);
+    const top = block(w, 1.6, -3.04);
+    for (let t = 0; t < 60 * 4; t++) w.step(1 / 60);
+    expect(top.y).toBeGreaterThan(-2.5);
+  });
+
+  it('um corpo fixo enterrado na torre não lança os blocos para longe', () => {
+    const w = new World({ gravity: 30, iterations: 14, substeps: 3 });
+    platform(w);
+    const bodies = Array.from({ length: 6 }, (_, i) => block(w, 0, -(i * 2 + 1) - 0.02));
+    const stone = block(w, 1.5, -5, 2);
+    stone.makeStatic();
+    let fastest = 0;
+    for (let t = 0; t < 60 * 3; t++) {
+      w.step(1 / 60);
+      for (const b of bodies) fastest = Math.max(fastest, Math.sqrt(b.vx * b.vx + b.vy * b.vy));
+    }
+    expect(fastest).toBeLessThan(6);
+    for (const b of bodies) expect(Math.abs(b.x)).toBeLessThan(8);
+  });
+});
