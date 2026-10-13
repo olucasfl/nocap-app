@@ -12,6 +12,7 @@ import {
   BlocksGame,
   Coach,
   HINTS_PER_GAME,
+  STREAK_CAP,
   SIZE,
   analyze,
   hintFor,
@@ -24,6 +25,7 @@ import {
 } from '@nocap/games';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Refresh } from '@/components/icons';
+import { useIsGuest } from '@/lib/auth';
 import { MuteButton } from '@/components/MuteButton';
 import { createBlocksAudio, type BlocksAudio } from '@/lib/blocks-audio';
 import { buzz } from '@/lib/sfx';
@@ -166,6 +168,7 @@ export function BlocksPlay({ seed, best, onEnd, onQuit, onRestart }: Props) {
   const [pops, setPops] = useState<Pop[]>([]);
   const [praise, setPraise] = useState<{ kind: 'thumb' | 'perfect'; key: number } | null>(null);
   const [returning, setReturning] = useState<number | null>(null);
+  const guest = useIsGuest();
   const [asking, setAsking] = useState(false);
   const [askingRestart, setAskingRestart] = useState(false);
   const [note, setNote] = useState<string | null>(null);
@@ -514,11 +517,15 @@ export function BlocksPlay({ seed, best, onEnd, onQuit, onRestart }: Props) {
         <div className="bk-side">
           {ui.streak >= 2 && (
             <span key={ui.streak} className="bk-combo mono">
-              COMBO x{Math.min(ui.streak, 6)}
+              COMBO x{Math.min(ui.streak, STREAK_CAP)}
             </span>
           )}
-          <span className="mono bk-label">RECORDE</span>
-          <b className="bk-best">{Math.max(best, ui.score)}</b>
+          {!guest && (
+            <>
+              <span className="mono bk-label">RECORDE</span>
+              <b className="bk-best">{Math.max(best, ui.score)}</b>
+            </>
+          )}
         </div>
       </section>
 

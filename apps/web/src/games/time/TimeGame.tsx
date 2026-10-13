@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
+import { soloSession } from '@/lib/solo-session';
 import { Link, useNavigate } from '@tanstack/react-router';
 import {
   evaluateSurvival,
@@ -16,7 +17,6 @@ import { MatchSummary } from '@/components/MatchSummary';
 import { SurvivalBar, SurvivalFinal, SurvivalVerdict } from '@/components/Survival';
 import { rankingLink, type Board } from '@/lib/ranking';
 import { apiClient } from '@/lib/api-client';
-import { isNetworkError } from '@/lib/network';
 import { MIN_TAP_GAP_MS, formatSeconds } from './format';
 import { FinalScreen } from './screens/FinalScreen';
 import { IntroScreen } from './screens/IntroScreen';
@@ -40,16 +40,12 @@ interface SessionResponse {
 async function newRun(mode: Mode): Promise<Run> {
   const kind = mode === 'daily' ? 'daily' : 'solo';
   const preset = mode === 'daily' ? 'classic' : mode;
-  let seed: string;
-  let session: string;
-  try {
-    ({ seed, session } = await apiClient.post<SessionResponse>('/games/time/session', { kind }));
-  } catch (e) {
-    // Sem internet dá para jogar o Tempo solo, mas sem sessão do servidor a partida não é salva.
-    if (kind === 'daily' || !isNetworkError(e)) throw e;
-    seed = crypto.randomUUID().slice(0, 12);
-    session = '';
-  }
+  // O Daily é só com conta e precisa do servidor. O solo roda como treino sem conta ou sem internet
+  // (sem sessão do servidor a partida não é salva).
+  const { seed, session } =
+    kind === 'daily'
+      ? await apiClient.post<SessionResponse>('/games/time/session', { kind })
+      : await soloSession('/games/time/session', { kind });
   return {
     matchId: crypto.randomUUID(),
     mode,

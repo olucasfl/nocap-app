@@ -1,11 +1,11 @@
 import { useCallback, useState } from 'react';
+import { soloSession } from '@/lib/solo-session';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { SONGS, batidaMode, ecoPresets, lengthAt, type BatidaTap, type SongId } from '@nocap/games';
 import type { GameTab } from '@/components/GameTabs';
 import { MuteButton } from '@/components/MuteButton';
 import { apiClient } from '@/lib/api-client';
-import { isNetworkError } from '@/lib/network';
 import { rankingLink, type Board } from '@/lib/ranking';
 import { bestTenths, type Stats } from '@/lib/stats';
 import { BatidaPlay } from './BatidaPlay';
@@ -27,17 +27,7 @@ interface SessionResponse {
 
 /** Batida: a seed e a sessão vêm do servidor; sem internet joga-se só como treino. */
 async function newBatida(): Promise<BatidaRunInfo> {
-  let seed: string;
-  let session: string;
-  try {
-    ({ seed, session } = await apiClient.post<SessionResponse>('/games/eco/session', {
-      kind: 'solo',
-    }));
-  } catch (e) {
-    if (!isNetworkError(e)) throw e;
-    seed = crypto.randomUUID().slice(0, 12);
-    session = '';
-  }
+  const { seed, session } = await soloSession('/games/eco/session', { kind: 'solo' });
   // A música é escolhida na abertura (`BatidaIntro`); até lá vale a mais calma.
   return { matchId: crypto.randomUUID(), seed, session, song: 'passo' };
 }
@@ -46,16 +36,11 @@ async function newBatida(): Promise<BatidaRunInfo> {
 async function newRun(mode: Exclude<Mode, 'batida'>): Promise<Run> {
   const kind = mode === 'daily' ? 'daily' : 'solo';
   const preset = mode === 'daily' ? 'classic' : mode;
-  let seed: string;
-  let session: string;
-  try {
-    ({ seed, session } = await apiClient.post<SessionResponse>('/games/eco/session', { kind }));
-  } catch (e) {
-    // Sem internet dá para jogar o Eco solo, mas sem sessão do servidor a partida não é salva.
-    if (kind === 'daily' || !isNetworkError(e)) throw e;
-    seed = crypto.randomUUID().slice(0, 12);
-    session = '';
-  }
+  // O Daily é só com conta e precisa do servidor. O solo roda como treino sem conta ou sem internet.
+  const { seed, session } =
+    kind === 'daily'
+      ? await apiClient.post<SessionResponse>('/games/eco/session', { kind })
+      : await soloSession('/games/eco/session', { kind });
   return {
     matchId: crypto.randomUUID(),
     mode,

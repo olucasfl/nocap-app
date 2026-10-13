@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { soloSession } from '@/lib/solo-session';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import type { SinalInput, SinalMode, SinalResult } from '@nocap/games';
@@ -8,7 +9,6 @@ import { ModePicker } from '@/components/ModePicker';
 import { ModeSheet } from '@/components/ModeSheet';
 import { FriendsPanel } from '@/components/FriendsPanel';
 import { MuteButton } from '@/components/MuteButton';
-import { apiClient } from '@/lib/api-client';
 import { useAuth } from '@/lib/auth';
 import { bestTenths, fetchStats } from '@/lib/stats';
 import { SaveNote } from '@/components/GuestNotice';
@@ -288,16 +288,7 @@ export function SinalGame() {
     if (busy) return;
     setBusy(true);
     setMode(m);
-    let seed = seedOf();
-    let session = '';
-    try {
-      ({ seed, session } = await apiClient.post<{ seed: string; session: string }>(
-        '/games/sinal/session',
-        { kind: 'solo' },
-      ));
-    } catch {
-      /* sem conta ou sem rede: treino local, a partida não é salva */
-    }
+    const { seed, session } = await soloSession('/games/sinal/session');
     const signedIn = useAuth.getState().user !== null;
     let best = signedIn ? getSinalBest(m) : 0;
     try {

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { useIsGuest } from '@/lib/auth';
 import {
   MAX_LIVES,
   TOWERS_DT,
@@ -96,6 +97,7 @@ const DUST = ['#f2e4cc', '#e8d2b0', '#d9c1a0'];
  * e animação.
  */
 export function TowersPlay({ seed, best, onEnd, onQuit, onRestart }: Props) {
+  const guest = useIsGuest();
   const wrap = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const gameRef = useRef<TowersGame | null>(null);
@@ -527,7 +529,7 @@ export function TowersPlay({ seed, best, onEnd, onQuit, onRestart }: Props) {
         </b>
         <span className="tw-score-text">
           <span className="mono tw-label">PEÇAS</span>
-          <span className="mono tw-best">RECORDE {Math.max(best, hud.peak)}</span>
+          {!guest && <span className="mono tw-best">RECORDE {Math.max(best, hud.peak)}</span>}
         </span>
       </div>
 
