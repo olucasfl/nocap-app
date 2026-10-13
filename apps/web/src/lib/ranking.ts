@@ -17,6 +17,7 @@ export type Board =
   | 'batida-frenesi'
   | 'infinito'
   | 'classico'
+  | 'towers'
   | 'daily';
 export type Period = 'day' | 'week' | 'all';
 export type Scope = 'all' | 'friends';
@@ -66,6 +67,7 @@ const ALL_BOARDS: { id: Board; label: string }[] = [
   { id: 'batida-frenesi', label: 'Eco Hero: Frenesi' },
   { id: 'infinito', label: 'Infinito' },
   { id: 'classico', label: 'Clássico' },
+  { id: 'towers', label: 'Block Towers' },
   { id: 'daily', label: 'Daily' },
 ];
 
@@ -83,7 +85,7 @@ const BOARD_IDS: Record<Game, Board[]> = {
     'batida-frenesi',
   ],
   sinal: ['infinito', 'classico'],
-  blocks: ['classic'],
+  blocks: ['classic', 'towers'],
 };
 
 export const boardsOf = (game: Game) => ALL_BOARDS.filter((b) => BOARD_IDS[game].includes(b.id));

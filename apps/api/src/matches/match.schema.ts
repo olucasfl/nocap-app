@@ -75,8 +75,11 @@ const sinalMatchSchema = z.object({
 const blocksMatchSchema = z.object({
   ...base,
   game: z.literal('blocks'),
-  /** As jogadas em ordem: `peça x 64 + linha x 8 + coluna` (peça de 0 a 2). */
-  moves: z.array(z.number().int().min(0).max(191)).min(1).max(6000),
+  /**
+   * As jogadas em ordem. Block Classic: `peça x 64 + linha x 8 + coluna` (peça de 0 a 2).
+   * Block Towers: o registro de teclas (`passo x 16 + código`). Cada modo confere o seu.
+   */
+  moves: z.array(z.number().int().min(0).max(1_200_000)).min(1).max(30_000),
   /** Sessão assinada pelo servidor (`POST /games/blocks/session`). */
   session: z.string().min(10).max(600),
 });

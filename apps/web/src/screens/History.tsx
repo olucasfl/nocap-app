@@ -53,7 +53,10 @@ const MODE_FILTERS: Record<GameId, { id: string; label: string }[]> = {
     { id: 'infinito', label: 'Infinito' },
     { id: 'classico', label: 'Clássico' },
   ],
-  blocks: [{ id: 'classic', label: 'Block Classic' }],
+  blocks: [
+    { id: 'classic', label: 'Block Classic' },
+    { id: 'towers', label: 'Block Towers' },
+  ],
 };
 
 const KIND_FILTERS: { id: 'all' | 'solo' | 'daily' | 'room'; label: string }[] = [
@@ -143,7 +146,7 @@ function SinalDetail({ item }: { item: HistoryItem }) {
 function BlocksDetail({ item }: { item: HistoryItem }) {
   return (
     <p className="mono hist-note">
-      {Math.round(item.totalScore / 10)} PONTOS · SÓ O RESUMO FICA GUARDADO.
+      {Math.round(item.totalScore / 10)} {item.mode === 'towers' ? 'PEÇAS EMPILHADAS' : 'PONTOS'} · SÓ O RESUMO FICA GUARDADO.
     </p>
   );
 }

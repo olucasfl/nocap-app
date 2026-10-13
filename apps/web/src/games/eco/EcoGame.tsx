@@ -187,6 +187,7 @@ export function EcoGame({
             setBatida({ ...batida, taps });
             setPhase('final');
           }}
+          onRestart={() => void start('batida')}
           onQuit={() => {
             setBatida(null);
             setMenu({ tab: 'modes' });

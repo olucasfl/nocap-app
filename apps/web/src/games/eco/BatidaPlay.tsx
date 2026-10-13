@@ -80,6 +80,8 @@ interface Props {
   onEnd: (taps: BatidaTap[], run: BatidaRun) => void;
   /** Saiu pelo menu de pausa. */
   onQuit: () => void;
+  /** Reinicia pelo menu de pausa (volta à escolha da música). */
+  onRestart: () => void;
 }
 
 /** Símbolos das 5 pistas, definidos uma vez e reusados pelas notas (que são criadas à mão a cada quadro). */
@@ -153,7 +155,7 @@ const keyOf = (n: BatidaNote) => `${n.bar}:${n.step}:${n.lane}`;
  * segurar até o fim. O relógio de tudo é o do áudio, e a conta é a mesma `BatidaSim` que o
  * servidor usa para refazer a partida. Pausar congela o relógio; para voltar, 3, 2, 1.
  */
-export function BatidaPlay({ seed, song, onEnd, onQuit }: Props) {
+export function BatidaPlay({ seed, song, onEnd, onQuit, onRestart }: Props) {
   const [hud, setHud] = useState<Hud>({ tenths: 0, combo: 0, mult: 1, energy: 70 });
   const [over, setOver] = useState(false);
   const [pause, setPause] = useState<Pause>({ kind: 'none' });
@@ -664,6 +666,9 @@ export function BatidaPlay({ seed, song, onEnd, onQuit }: Props) {
                   onClick={() => ctl.current?.resume()}
                 >
                   Voltar ao jogo
+                </button>
+                <button type="button" className="btn" data-sfx="start" onClick={onRestart}>
+                  Reiniciar partida
                 </button>
                 <button type="button" className="btn ghost" data-sfx="back" onClick={onQuit}>
                   Sair da partida

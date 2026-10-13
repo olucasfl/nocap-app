@@ -292,6 +292,7 @@ export function SinalGame() {
           setPhase('final');
         }}
         onQuit={() => setPhase('menu')}
+        onRestart={() => void begin(mode)}
       />
     );
   }

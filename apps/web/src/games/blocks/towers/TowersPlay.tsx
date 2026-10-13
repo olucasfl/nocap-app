@@ -24,6 +24,8 @@ export interface TowersEnd {
   spells: number;
   falls: number;
   collapses: number;
+  /** O registro de teclas: o servidor refaz a partida com ele. */
+  moves: number[];
 }
 
 interface Props {
@@ -372,6 +374,7 @@ export function TowersPlay({ seed, best, onEnd, onQuit, onRestart }: Props) {
               spells: stats.current.spells,
               falls: stats.current.falls,
               collapses: stats.current.collapses,
+              moves: game.log.slice(),
             });
           }, 2100);
           break;

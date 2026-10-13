@@ -27,7 +27,7 @@ No online (futuro) os três modos entram com sala de 2 a 4 pessoas, a mesma seed
 
 ## Interpretações desta etapa (confirmar jogando)
 
-- **Offline**: sem sala e sem servidor. A partida roda inteira no aparelho e o **recorde fica só neste aparelho**. Ranking e histórico entram junto com o online, quando houver o motor de física conferido pelo servidor.
+- **Solo com ranking (14/10/2026, pedido do Lucas)**: sem sala. A partida roda no aparelho, que grava o registro de teclas; o servidor **refaz a física** pela seed (passo fixo, sem relógio) e a nota sai daí. Entra no **ranking** (quadro `towers` do Block's), no **histórico** e no **perfil**; só vale partida terminada. O recorde também fica no aparelho. Sala e online continuam para depois.
 - **Magias em solo**: não há rival, então as magias boas ficam na mão para usar quando quiser, e as ruins **caem sobre você sozinhas** (é a "magia escura" vinda do jogo).
 - **Nota**: o **maior número de peças que chegaram a estar empilhadas** (peças soltas e paradas na torre, sem ter caído).
 

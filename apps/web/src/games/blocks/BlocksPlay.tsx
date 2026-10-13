@@ -23,6 +23,7 @@ import {
   type Move,
 } from '@nocap/games';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { Refresh } from '@/components/icons';
 import { MuteButton } from '@/components/MuteButton';
 import { createBlocksAudio, type BlocksAudio } from '@/lib/blocks-audio';
 import { buzz } from '@/lib/sfx';
@@ -45,6 +46,8 @@ interface Props {
   best: number;
   onEnd: (end: BlocksEnd) => void;
   onQuit: () => void;
+  /** Recomeça com outra seed (a partida em andamento não vale). */
+  onRestart: () => void;
 }
 
 type Cells = (BlockColor | null)[];
@@ -127,7 +130,7 @@ function useCountUp(target: number): number {
  * os efeitos de limpeza, o joinha e o PERFECT, e as 3 dicas. A lógica inteira é a de `BlocksGame`
  * (a mesma que o servidor usa para conferir a partida); aqui só se desenha e se anima.
  */
-export function BlocksPlay({ seed, best, onEnd, onQuit }: Props) {
+export function BlocksPlay({ seed, best, onEnd, onQuit, onRestart }: Props) {
   const gameRef = useRef<BlocksGame | null>(null);
   if (!gameRef.current) gameRef.current = new BlocksGame(seed);
   const g = gameRef.current;
@@ -164,6 +167,7 @@ export function BlocksPlay({ seed, best, onEnd, onQuit }: Props) {
   const [praise, setPraise] = useState<{ kind: 'thumb' | 'perfect'; key: number } | null>(null);
   const [returning, setReturning] = useState<number | null>(null);
   const [asking, setAsking] = useState(false);
+  const [askingRestart, setAskingRestart] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const [banner, setBanner] = useState<Banner | null>(null);
 
@@ -419,7 +423,7 @@ export function BlocksPlay({ seed, best, onEnd, onQuit }: Props) {
   // --- Teclado ------------------------------------------------------------------------------
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (asking || endedRef.current) return;
+      if (asking || askingRestart || endedRef.current) return;
       if (e.key === 'Escape') {
         if (kb) setKb(null);
         else setAsking(true);
@@ -494,6 +498,9 @@ export function BlocksPlay({ seed, best, onEnd, onQuit }: Props) {
           </svg>
         </button>
         <span className="mono bk-mode">BLOCK CLASSIC</span>
+        <button type="button" className="bk-iconbtn" aria-label="Reiniciar partida" data-sfx="back" onClick={() => setAskingRestart(true)}>
+          <Refresh size={20} />
+        </button>
         <MuteButton />
       </header>
 
@@ -717,6 +724,20 @@ export function BlocksPlay({ seed, best, onEnd, onQuit }: Props) {
           onQuit();
         }}
         onCancel={() => setAsking(false)}
+      />
+      <ConfirmDialog
+        open={askingRestart}
+        title="Reiniciar a partida?"
+        text="A partida em andamento não vale para o ranking nem para o histórico."
+        confirmLabel="Reiniciar"
+        confirmSfx="start"
+        cancelLabel="Continuar jogando"
+        onConfirm={() => {
+          setAskingRestart(false);
+          endedRef.current = true;
+          onRestart();
+        }}
+        onCancel={() => setAskingRestart(false)}
       />
     </div>
   );

@@ -5,7 +5,7 @@ import { countUnit, formatBest, formatCount, gameModes, knownModes, modeMax, typ
 
 describe("Block's no ranking, histórico e recordes", () => {
   it('tem o quadro classic, sem Daily, e o link do ranking leva a ele', () => {
-    expect(boardChoices('blocks').map((b) => b.id)).toEqual(['classic']);
+    expect(boardChoices('blocks').map((b) => b.id)).toEqual(['classic', 'towers']);
     expect(rankingLink('blocks', 'classic')).toEqual({ jogo: 'blocks', modo: 'classic' });
     expect(rankingLink('blocks', 'daily')).toEqual({ jogo: 'blocks' });
     expect(parseRankingsSearch({ jogo: 'blocks', modo: 'classic', quem: 'friends' })).toEqual({
@@ -18,10 +18,12 @@ describe("Block's no ranking, histórico e recordes", () => {
 
   it('a nota é em pontos (guardada em décimos)', () => {
     expect(countUnit('blocks', 'classic')).toBe('pontos');
+    expect(countUnit('blocks', 'towers')).toBe('peças');
+    expect(formatCount(70, 'peças')).toBe('7 peças');
     expect(formatCount(25_000, 'pontos')).toBe('2500 pontos');
     expect(formatBest('blocks', 'classic', 12_340)).toBe('1234 pontos');
     expect(modeMax('blocks', 'classic')).toBe(0);
-    expect(knownModes('blocks')).toEqual(['classic']);
+    expect(knownModes('blocks').sort()).toEqual(['classic', 'towers']);
   });
 
   it('o histórico mostra pontos e classifica pela pontuação', () => {

@@ -127,7 +127,9 @@ export function scoreParts(item: Pick<HistoryItem, 'game' | 'mode' | 'answers' |
   if (item.mode === 'impostor' || item.mode === 'leader')
     return { main: (item.totalScore / 10).toFixed(1), unit: ' pts' };
   if (item.game === 'sinal') return { main: String(Math.round(item.totalScore / 10)), unit: ' m' };
-  if (item.game === 'blocks') return { main: String(Math.round(item.totalScore / 10)), unit: ' pts' };
+  if (item.game === 'blocks') {
+    return { main: String(Math.round(item.totalScore / 10)), unit: item.mode === 'towers' ? ' peças' : ' pts' };
+  }
   if (item.game === 'eco')
     return { main: String(Math.round(item.totalScore / 10)), unit: ' passos' };
   if (item.mode === 'survival')
@@ -152,6 +154,7 @@ const MODE_NAME: Record<string, string> = {
   'batida-frenesi': 'Eco Hero: Frenesi',
   infinito: 'Infinito',
   classico: 'Clássico',
+  towers: 'Block Towers',
   party: 'Mix Nocap',
   leader: 'Siga o Líder',
   room: 'Sala',
@@ -201,6 +204,13 @@ export function classifyMatch(
     if (m >= 300) return { label: 'FORTE', tone: 'good' };
     if (m >= 120) return { label: 'MEH', tone: 'mid' };
     return { label: 'VISTO CEDO', tone: 'low' };
+  }
+  if (item.game === 'blocks' && item.mode === 'towers') {
+    const n = Math.round(item.totalScore / 10);
+    if (n >= 30) return { label: 'LENDÁRIO', tone: 'top' };
+    if (n >= 15) return { label: 'FORTE', tone: 'good' };
+    if (n >= 7) return { label: 'MEH', tone: 'mid' };
+    return { label: 'CEDO DEMAIS', tone: 'low' };
   }
   if (item.game === 'blocks') {
     const n = Math.round(item.totalScore / 10);

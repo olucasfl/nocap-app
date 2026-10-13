@@ -17,6 +17,7 @@ export const RANKING_BOARDS = [
   'batida-frenesi',
   'infinito',
   'classico',
+  'towers',
   'daily',
 ] as const;
 export const RANKING_GAMES = ['color', 'time', 'eco', 'sinal', 'blocks'] as const;
@@ -30,7 +31,7 @@ export const BOARDS_OF: Record<RankingGame, readonly string[]> = {
   // Sinal Vermelho: metros em cada modo (a nota é a distância, em décimos de metro)
   sinal: ['infinito', 'classico'],
   // Block's: pontos de cada modo (a nota é a pontuação, em décimos)
-  blocks: ['classic'],
+  blocks: ['classic', 'towers'],
 };
 
 export const rankingQuerySchema = z.object({

@@ -22,6 +22,8 @@ import {
   scoreTime,
   timePresets,
   evaluateBlocks,
+  evaluateTowers,
+  TOWERS_DT,
   evaluateSinal,
   isBlocksMode,
   isSinalMode,
@@ -266,9 +268,11 @@ export function scoreBlocksMatch(
   if (!isBlocksMode(input.mode)) {
     throw new BadRequestException(`Modo desconhecido: ${input.mode}`);
   }
+  if (input.mode === 'towers') return scoreTowersMatch(input);
   if ((input.elapsedMs + ELAPSED_SLACK_MS) < input.moves.length * BLOCKS_MIN_MS_PER_MOVE) {
     throw new BadRequestException('Jogadas rápidas demais para o tempo da sessão');
   }
+  if (input.moves.some((n) => n > 191)) throw new BadRequestException('Jogada inválida');
   const check = evaluateBlocks(input.seed, input.moves);
   if (!check.ok) throw new BadRequestException(check.error);
   const r = check.result;
@@ -280,11 +284,40 @@ export function scoreBlocksMatch(
     encodedAnswers: [],
     settings: {
       mode: input.mode,
-      scoreVersion: 1,
+      scoreVersion: 2,
       moves: r.moves,
       lines: r.lines,
       bestStreak: r.bestStreak,
       sets: r.sets,
+    },
+  };
+}
+
+/**
+ * Block Towers: o servidor refaz a física pela seed e pelo registro de teclas, em passo fixo. A
+ * nota é o máximo de peças empilhadas (em décimos). A partida não pode durar mais passos do que o
+ * tempo da sessão deixa (a física roda no máximo em tempo real no aparelho).
+ */
+function scoreTowersMatch(
+  input: Pick<BlocksMatchInput, 'seed' | 'moves'> & { elapsedMs: number },
+): ScoredMatch {
+  const check = evaluateTowers(input.seed, input.moves);
+  if (!check.ok) throw new BadRequestException(check.error);
+  if (input.elapsedMs + ELAPSED_SLACK_MS < check.steps * TOWERS_DT * 1000 * 0.9) {
+    throw new BadRequestException('Partida rápida demais para o tempo da sessão');
+  }
+  const r = check.result;
+  return {
+    rounds: [],
+    total: r.score,
+    totalTenths: r.score * 10,
+    encodedAnswers: [],
+    settings: {
+      mode: 'towers',
+      scoreVersion: 1,
+      pieces: r.pieces,
+      lives: r.lives,
+      seconds: Math.round(r.time),
     },
   };
 }

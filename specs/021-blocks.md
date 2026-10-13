@@ -44,9 +44,9 @@ Todas as formas abaixo existem, cada uma com um peso de sorteio (as grandes são
 
 ### Pontos (o servidor recalcula tudo)
 - Colocar uma peça: **1 ponto por casa** da peça.
-- Limpar `L` linhas/colunas de uma vez: `10 x L x (L + 1) / 2` (1 → 10, 2 → 30, 3 → 60, 4 → 100...).
-- **Sequência (combo)**: cada jogada que limpa algo aumenta a sequência; **três jogadas seguidas sem limpar** a quebram. O bônus de limpeza é multiplicado pela sequência (de 1 a 6).
-- **Tabuleiro limpo** (nenhuma casa ocupada depois da jogada): **+300**.
+- Limpar `L` linhas/colunas de uma vez: `10 x L x L` (1 → 10, 2 → 40, 3 → 90, 4 → 160, 5 → 250...).
+- **Sequência (combo)**: cada jogada que limpa algo aumenta a sequência; **três jogadas seguidas sem limpar** a quebram. O bônus de limpeza é multiplicado pela sequência (de 1 a 10).
+- **Tabuleiro limpo** (nenhuma casa ocupada depois da jogada): **+1500**.
 - A nota é a **pontuação**. No ranking e no histórico ela é guardada em décimos (como nos outros jogos), mas mostrada em pontos.
 
 ### Fim de partida

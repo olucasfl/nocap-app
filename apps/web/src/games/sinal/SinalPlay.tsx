@@ -27,6 +27,7 @@ interface Props {
   best: number;
   onEnd: (result: SinalResult, inputs: SinalInput[]) => void;
   onQuit: () => void;
+  onRestart: () => void;
 }
 
 const OVER_TEXT: Record<SinalEnd, string> = {
@@ -39,7 +40,7 @@ const OVER_TEXT: Record<SinalEnd, string> = {
  * 3-2-1 e o fim. O relógio é de passo fixo (60 por segundo), o mesmo que o servidor usa para refazer
  * a corrida a partir dos movimentos que gravamos aqui.
  */
-export function SinalPlay({ mode, seed, color, best, onEnd, onQuit }: Props) {
+export function SinalPlay({ mode, seed, color, best, onEnd, onQuit, onRestart }: Props) {
   const wrap = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const [pause, setPause] = useState<Pause>({ kind: 'none' });
@@ -307,6 +308,9 @@ export function SinalPlay({ mode, seed, color, best, onEnd, onQuit }: Props) {
               <div className="stack">
                 <button type="button" className="btn alt" data-sfx="start" onClick={() => ctl.current?.resume()}>
                   Voltar ao jogo
+                </button>
+                <button type="button" className="btn" data-sfx="start" onClick={onRestart}>
+                  Reiniciar partida
                 </button>
                 <button type="button" className="btn ghost" data-sfx="back" onClick={onQuit}>
                   Sair da partida

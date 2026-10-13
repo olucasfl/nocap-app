@@ -43,6 +43,16 @@ import {
 } from './constants';
 import { Body, World, mergeBodies, type BoxDef } from './physics';
 
+/** Códigos do registro da partida (`towers/replay.ts` refaz a partida a partir deles). */
+export const TowersCode = {
+  Rotate: 1,
+  Left: 2,
+  Right: 3,
+  Cast: 4,
+  /** 8 + os botões apertados (1 esquerda, 2 direita, 4 descer). */
+  Keys: 8,
+} as const;
+
 /** O que a pessoa está apertando agora. */
 export interface TowersInput {
   left: boolean;
@@ -171,6 +181,14 @@ export class TowersGame {
   /** As próximas peças (índices do catálogo). */
   queue: number[] = [];
   events: TowersEvent[] = [];
+  /**
+   * O registro da partida para o servidor refazer (spec 022): cada entrada é `passo x 16 + código`
+   * (ver `TowersCode`), em ordem. Os passos contam só os que rodaram.
+   */
+  readonly log: number[] = [];
+  /** Passos já rodados. */
+  steps = 0;
+  private lastBits = 0;
 
   private rng: () => number;
   private nextPieceId = 1;
@@ -398,6 +416,7 @@ export class TowersGame {
    */
   press(dir: number) {
     if (dir === 0 || this.over) return;
+    this.log.push(this.steps * 16 + (dir < 0 ? TowersCode.Left : TowersCode.Right));
     this.presses.push(dir < 0 ? -1 : 1);
     if (this.presses.length > 8) this.presses.shift();
   }
@@ -476,6 +495,7 @@ export class TowersGame {
 
   /** Gira a peça que desce, 90 graus. Tenta uma folga para o lado se bater em algo. */
   rotate(): boolean {
+    if (!this.over) this.log.push(this.steps * 16 + TowersCode.Rotate);
     const p = this.active;
     if (!p || this.over || p.noRotate) return false;
     // Pousou (ou travou): a peça só espera soltar; na folga do pouso só dá para andar, não girar.
@@ -524,6 +544,7 @@ export class TowersGame {
   /** Usa a primeira magia boa guardada. */
   castSpell(): boolean {
     if (this.over || this.held.length === 0) return false;
+    this.log.push(this.steps * 16 + TowersCode.Cast);
     const name = this.held[0]!;
     const p = this.active;
     if (name === 'vinha') {
@@ -565,6 +586,12 @@ export class TowersGame {
   // --- Passo ------------------------------------------------------------------------------
   step(input: TowersInput, dt = TOWERS_DT) {
     if (this.over) return;
+    const bits = (input.left ? 1 : 0) | (input.right ? 2 : 0) | (input.down ? 4 : 0);
+    if (bits !== this.lastBits) {
+      this.lastBits = bits;
+      this.log.push(this.steps * 16 + TowersCode.Keys + bits);
+    }
+    this.steps++;
     this.time += dt;
 
     if (!this.active && this.lives > 0) {
@@ -792,7 +819,7 @@ export class TowersGame {
     for (const p of this.pieces) {
       if (p.dead || p.phase !== 'free') continue;
       const b = p.body;
-      const calm = b.isStatic || (Math.hypot(b.vx, b.vy) < SETTLE_SPEED && Math.abs(b.w) < SETTLE_SPIN);
+      const calm = b.isStatic || (Math.sqrt(b.vx * b.vx + b.vy * b.vy) < SETTLE_SPEED && Math.abs(b.w) < SETTLE_SPIN);
       if (calm) {
         p.restTimer += dt;
         if (!p.settled && p.restTimer >= SETTLE_TIME) {
@@ -804,7 +831,7 @@ export class TowersGame {
         }
       } else {
         p.restTimer = 0;
-        if (p.settled && Math.hypot(b.vx, b.vy) > 1.5) p.settled = false;
+        if (p.settled && Math.sqrt(b.vx * b.vx + b.vy * b.vy) > 1.5) p.settled = false;
       }
     }
     void settledNow;

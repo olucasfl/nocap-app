@@ -164,7 +164,7 @@ describe('pontuação', () => {
   });
 
   it('limpar vale 10, 30, 60, 100 (vezes a sequência)', () => {
-    expect([1, 2, 3, 4].map(linePoints)).toEqual([10, 30, 60, 100]);
+    expect([1, 2, 3, 4].map(linePoints)).toEqual([10, 40, 90, 160]);
     const rows = emptyRows();
     rows[0] = 0b11111110;
     rows[5] = 1; // sobra uma casa: o tabuleiro não fica limpo

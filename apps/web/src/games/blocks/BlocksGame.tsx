@@ -62,7 +62,7 @@ const HOW: Record<UiMode, string[]> = {
     'A peça desce sozinha. Mova para os lados, gire e acelere a descida para encaixar na torre. O guia no alto mostra a próxima.',
     'Tudo tem física: a torre balança e pode desmoronar. Cada peça que cair custa uma vida, e são 3.',
     'A cada 5 peças chega uma magia. As boas você guarda e usa quando quiser (vinha, cimento, desfazer, vida extra). As ruins caem sobre você sozinhas.',
-    'A nota é o máximo de peças que você chegou a ter empilhadas. Neste modo o recorde fica só neste aparelho, por enquanto.',
+    'A nota é o máximo de peças que você chegou a ter empilhadas. Ela vale no ranking, no histórico e no perfil.',
   ],
 };
 
@@ -76,7 +76,7 @@ function BlocksStart({ onStart, busy }: { onStart: (mode: UiMode) => void; busy:
   const close = useCallback(() => setOpen(null), []);
   const best =
     open === 'towers'
-      ? getTowersBest()
+      ? Math.max(getTowersBest(), Math.floor(bestTenths(stats.data, 'blocks', 'towers') / 10))
       : open
         ? Math.max(getBlocksBest(), Math.floor(bestTenths(stats.data, 'blocks', open) / 10))
         : 0;
@@ -115,16 +115,13 @@ function BlocksStart({ onStart, busy }: { onStart: (mode: UiMode) => void; busy:
           <button type="button" className="btn" data-sfx="start" disabled={busy} onClick={() => onStart(open)}>
             {busy ? 'Preparando...' : 'Jogar'} <ArrowRight />
           </button>
-          {open === 'towers' ? (
+          {open === 'towers' && (
             <p className="mono bk-meta">
               NO CELULAR USE OS BOTÕES. NO COMPUTADOR: SETAS OU A/D, CIMA PARA GIRAR, BAIXO PARA DESCER E E PARA A MAGIA.
             </p>
-          ) : (
-            !user && (
-              <p className="mono bk-meta">
-                ENTRE NA SUA CONTA PARA SALVAR NO RANKING, NO HISTÓRICO E NOS RECORDES.
-              </p>
-            )
+          )}
+          {!user && (
+            <p className="mono bk-meta">ENTRE NA SUA CONTA PARA SALVAR NO RANKING, NO HISTÓRICO E NOS RECORDES.</p>
           )}
         </ModeSheet>
       )}
@@ -265,14 +262,20 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
 function TowersFinal({
   end,
   before,
+  run,
+  busy,
   onAgain,
   onMenu,
 }: {
   end: TowersEnd;
   before: number;
+  run: BlocksRunInfo;
+  busy: boolean;
   onAgain: () => void;
   onMenu: () => void;
 }) {
+  const user = useAuth((st) => st.user);
+  const save = useSaveBlocks(run, 'towers', end.moves);
   const score = end.score;
   const isRecord = score > before;
   const best = Math.max(score, before);
@@ -335,13 +338,26 @@ function TowersFinal({
       </dl>
 
       <p className="mono bkf-note" role="status">
-        O BLOCK TOWERS FICA SÓ NESTE APARELHO POR ENQUANTO: SEM RANKING NEM HISTÓRICO.
+        {user || save === 'saved'
+          ? SAVE_TEXT[save]
+          : 'ENTRE NA SUA CONTA PARA SALVAR NO RANKING E NO HISTÓRICO'}
       </p>
 
       <div className="stack bkf-actions">
-        <button type="button" className="btn alt" data-sfx="start" onClick={onAgain}>
-          Jogar de novo
+        <button type="button" className="btn alt" data-sfx="start" disabled={busy} onClick={onAgain}>
+          {busy ? 'Preparando...' : 'Jogar de novo'}
         </button>
+        <Link to="/ranking" search={{ jogo: 'blocks', modo: 'towers' }} className="btn ghost" data-sfx="select">
+          Ver ranking
+        </Link>
+        <Link
+          to="/ranking"
+          search={{ jogo: 'blocks', modo: 'towers', quem: 'friends' }}
+          className="btn ghost"
+          data-sfx="select"
+        >
+          Ranking dos amigos
+        </Link>
         <button type="button" className="btn ghost" data-sfx="back" onClick={onMenu}>
           Voltar ao menu
         </button>
@@ -374,14 +390,6 @@ export function BlocksGame() {
    */
   const begin = async (m: UiMode = mode) => {
     if (busy) return;
-    if (m === 'towers') {
-      // O Block Towers roda inteiro no aparelho: sem sessão nem servidor.
-      setMode(m);
-      setBefore(getTowersBest());
-      setRun({ matchId: crypto.randomUUID(), seed: seedOf(), session: '' });
-      setPhase('play');
-      return;
-    }
     setBusy(true);
     setMode(m);
     let seed = seedOf();
@@ -394,7 +402,7 @@ export function BlocksGame() {
     } catch {
       /* sem conta ou sem rede: treino local, a partida não é salva */
     }
-    let best = getBlocksBest();
+    let best = m === 'towers' ? getTowersBest() : getBlocksBest();
     try {
       const stats = await queryClient.fetchQuery({ queryKey: ['stats'], queryFn: fetchStats, staleTime: 0 });
       best = Math.max(best, Math.floor(bestTenths(stats, 'blocks', m) / 10));
@@ -419,7 +427,7 @@ export function BlocksGame() {
           setPhase('final');
         }}
         onQuit={() => setPhase('menu')}
-        onRestart={() => setRun((r) => ({ ...r, matchId: crypto.randomUUID(), seed: seedOf() }))}
+        onRestart={() => void begin('towers')}
       />
     );
   }
@@ -437,6 +445,7 @@ export function BlocksGame() {
           setPhase('final');
         }}
         onQuit={() => setPhase('menu')}
+        onRestart={() => void begin('classic')}
       />
     );
   }
@@ -453,7 +462,7 @@ export function BlocksGame() {
       </header>
       {phase === 'menu' && <BlocksStart onStart={(m) => void begin(m)} busy={busy} />}
       {phase === 'final' && mode === 'towers' && towersEnd && (
-        <TowersFinal end={towersEnd} before={before} onAgain={() => void begin()} onMenu={() => setPhase('menu')} />
+        <TowersFinal end={towersEnd} before={before} run={run} busy={busy} onAgain={() => void begin()} onMenu={() => setPhase('menu')} />
       )}
       {phase === 'final' && mode !== 'towers' && end && (
         <BlocksFinal

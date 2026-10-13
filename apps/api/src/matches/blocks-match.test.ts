@@ -32,7 +32,7 @@ describe('scoreBlocksMatch', () => {
     expect(scored.totalTenths).toBe(GAME.score * 10);
     expect(scored.rounds).toEqual([]);
     expect(scored.encodedAnswers).toEqual([]);
-    expect(scored.settings).toMatchObject({ mode: 'classic', scoreVersion: 1, moves: GAME.moves.length });
+    expect(scored.settings).toMatchObject({ mode: 'classic', scoreVersion: 2, moves: GAME.moves.length });
   });
 
   it('é a mesma conta do jogo (evaluateBlocks)', () => {
@@ -90,7 +90,7 @@ describe("o corpo da partida do Block's", () => {
   };
   it('aceita o formato certo e recusa o estragado', () => {
     expect(createMatchSchema.safeParse(base).success).toBe(true);
-    for (const moves of [[], [192], [-1], [1.5], Array(6001).fill(0), ['0']]) {
+    for (const moves of [[], [1200001], [-1], [1.5], Array(30001).fill(0), ['0']]) {
       expect(createMatchSchema.safeParse({ ...base, moves }).success).toBe(false);
     }
     expect(createMatchSchema.safeParse({ ...base, session: undefined }).success).toBe(false);
@@ -166,10 +166,29 @@ describe("MatchesService (Block's)", () => {
 });
 
 describe("ranking do Block's", () => {
-  it('tem o quadro classic e nenhum Daily', async () => {
+  it('tem os quadros classic e towers e nenhum Daily', async () => {
     const { BOARDS_OF, RANKING_GAMES, rankingQuerySchema } = await import('../rankings/ranking.schema');
     expect(RANKING_GAMES).toContain('blocks');
-    expect(BOARDS_OF.blocks).toEqual(['classic']);
+    expect(BOARDS_OF.blocks).toEqual(['classic', 'towers']);
     expect(rankingQuerySchema.safeParse({ board: 'classic' }).success).toBe(true);
+  });
+});
+
+describe('scoreBlocksMatch (Block Towers)', () => {
+  const idle = [1]; // gira uma vez no passo 0 e deixa as peças caírem até acabar
+  it('refaz a física pela seed e devolve as peças empilhadas', () => {
+    const scored = scoreBlocksMatch({ mode: 'towers', seed: 'tw-1', moves: idle, elapsedMs: 9e9 });
+    expect(scored.totalTenths).toBe(scored.total * 10);
+    expect(scored.settings.mode).toBe('towers');
+  });
+
+  it('recusa partida mais rápida que o relógio da sessão', () => {
+    const run = () => scoreBlocksMatch({ mode: 'towers', seed: 'tw-1', moves: idle, elapsedMs: 0 });
+    expect(run).toThrow(/rápida demais/);
+  });
+
+  it('recusa registro fora de ordem', () => {
+    const run = () => scoreBlocksMatch({ mode: 'towers', seed: 'tw-1', moves: [40, 17], elapsedMs: 9e9 });
+    expect(run).toThrow();
   });
 });

@@ -3,11 +3,11 @@
  * operações, para o servidor refazer a partida e chegar exatamente no mesmo resultado do jogo.
  */
 
-export type BlocksMode = 'classic';
-export const BLOCKS_MODES: readonly BlocksMode[] = ['classic'];
+export type BlocksMode = 'classic' | 'towers';
+export const BLOCKS_MODES: readonly BlocksMode[] = ['classic', 'towers'];
 
 export function isBlocksMode(m: unknown): m is BlocksMode {
-  return m === 'classic';
+  return m === 'classic' || m === 'towers';
 }
 /** O modo guardado no servidor: `blocks-classic`. */
 export const blocksMode = (m: BlocksMode): string => `blocks-${m}`;
@@ -23,14 +23,14 @@ export const FULL_ROW = (1 << SIZE) - 1;
 export const HINTS_PER_GAME = 3;
 
 // --- Pontos ----------------------------------------------------------------------------------
-/** Pontos de limpar `lines` linhas/colunas de uma vez, antes da sequência: 10, 30, 60, 100... */
-export const linePoints = (lines: number): number => (10 * lines * (lines + 1)) / 2;
+/** Pontos de limpar `lines` linhas/colunas de uma vez, antes da sequência: 10, 40, 90, 160... */
+export const linePoints = (lines: number): number => 10 * lines * lines;
 /** A sequência (combo) multiplica a limpeza até este teto. */
-export const STREAK_CAP = 6;
+export const STREAK_CAP = 10;
 /** Jogadas seguidas sem limpar que quebram a sequência. */
 export const STREAK_DROUGHT = 3;
 /** Bônus do tabuleiro limpo. */
-export const BOARD_CLEAR_BONUS = 300;
+export const BOARD_CLEAR_BONUS = 1500;
 
 // --- Geração das peças -----------------------------------------------------------------------
 /** Chance de uma rodada nascer "com jogada" (50 a 70% dos trios têm uma jogada secreta). */
