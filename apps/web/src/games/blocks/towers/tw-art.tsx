@@ -23,8 +23,8 @@ export function TinyPiece({ kind, unit = 14 }: { kind: number; unit?: number }) 
 }
 
 export const SPELL_LABEL: Record<GoodSpell | BadSpell, { name: string; text: string }> = {
-  vinha: { name: 'VINHA', text: 'A peça gruda no que encostar' },
-  cimento: { name: 'CIMENTO', text: 'A peça vira pedra' },
+  vinha: { name: 'VINHA', text: 'A peça gruda no que encostar. Bata de lado numa peça e ela cola no ar' },
+  cimento: { name: 'CIMENTO', text: 'A peça vira pedra. Bata de lado numa peça e ela fica presa no ar' },
   desfazer: { name: 'DESFAZER', text: 'Tira a última peça, sem perder vida' },
   vida: { name: 'VIDA EXTRA', text: 'Devolve uma vida' },
   gelo: { name: 'GELO', text: 'As próximas peças escorregam' },

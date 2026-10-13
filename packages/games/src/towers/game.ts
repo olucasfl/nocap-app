@@ -16,6 +16,7 @@ import {
   ICE_FRICTION,
   KILL_Y,
   LAND_TIME,
+  LAND_GRACE,
   LAND_TIME_FAST,
   MAX_HELD_SPELLS,
   MAX_LIVES,
@@ -62,6 +63,8 @@ export type TowersEvent =
   | { type: 'cast'; name: GoodSpell; x: number; y: number }
   | { type: 'ivy'; x: number; y: number; count: number }
   | { type: 'petrify'; x: number; y: number }
+  /** Bateu de lado numa peça e uma magia segurou a peça ali, no ar. */
+  | { type: 'anchor'; name: 'cimento' | 'vinha'; x: number; y: number }
   | { type: 'over' };
 
 export interface TowerPiece {
@@ -178,6 +181,10 @@ export class TowersGame {
   private presses: number[] = [];
   /** A peça que desce já pousou em cima de algo: daí em diante não anda nem gira mais. */
   private touched = false;
+  /** A peça chegou na base (pousou) e ainda está na folga curta em que dá para mexer uma vez. */
+  private landed = false;
+  private graceTimer = 0;
+  private graceMoves = 0;
   /** Velocidade pedida para a peça que desce neste passo (ela se move sem empurrar ninguém). */
   private cmdVx = 0;
   private cmdVy = 0;
@@ -369,6 +376,9 @@ export class TowersGame {
     this.moveDir = 0;
     this.moveTimer = 0;
     this.touched = false;
+    this.landed = false;
+    this.graceTimer = 0;
+    this.graceMoves = 0;
     this.blockedY = false;
     this.stuckTimer = 0;
     this.landTimer = 0;
@@ -390,8 +400,12 @@ export class TowersGame {
     if (this.presses.length > 8) this.presses.shift();
   }
 
-  /** Anda uma casa para o lado, agora. Falso se algo trava (a torre, a borda) ou a peça já encostou. */
-  private nudge(p: TowerPiece, dir: number): boolean {
+  /**
+   * Anda uma casa para o lado, agora. Falso se algo trava (a torre, a borda) ou a peça já pousou.
+   * Se trava porque a peça BATEU DE LADO em outra, e há uma magia que prende (pedra ou vinha), a
+   * peça fica presa ali, no ar. Sem magia, ela só segue caindo.
+   */
+  private nudge(p: TowerPiece, dir: number, quiet = false): boolean {
     if (this.touched) return false;
     const body = p.body;
     const tl = body.x - p.comx;
@@ -399,12 +413,46 @@ export class TowersGame {
     const dx = next - tl;
     if (Math.abs(dx) < 0.001) return false;
     body.x += dx;
-    if (this.world.overlaps(body, 0.02)) {
-      body.x -= dx;
-      return false;
+    if (!this.world.overlaps(body, 0.02)) {
+      this.targetTl = next;
+      this.events.push({ type: 'move', dir: Math.sign(dx) });
+      if (this.landed) this.graceMoves -= 1; // na folga do pouso só vale uma vez
+      return true;
     }
-    this.targetTl = next;
-    this.events.push({ type: 'move', dir: Math.sign(dx) });
+    body.x -= dx;
+    // A vizinha pode estar a menos de uma casa: chega até encostar de verdade.
+    let moved = this.slideBody(body, 'x', dx);
+    if (Math.abs(moved) < 0.04) {
+      // Já estava colada (ou a um fio): fica alinhada à grade, sem andar.
+      body.x -= moved;
+      moved = 0;
+    }
+    if (moved !== 0) this.events.push({ type: 'move', dir: Math.sign(dx) });
+    this.targetTl = body.x - p.comx;
+    // Só a face LATERAL de outra peça conta (nem por cima, nem por baixo).
+    if (this.world.sideBlocker(body, dx) && this.anchorOnBump(p)) return true;
+    if (!quiet) this.events.push({ type: 'blocked' });
+    return false;
+  }
+
+  /** A peça bateu de lado: se a pessoa tem pedra ou vinha (na mão ou já ativada), prende a peça ali. */
+  private anchorOnBump(p: TowerPiece): boolean {
+    const spell = this.held[0];
+    let name: 'cimento' | 'vinha' | null = null;
+    if (p.stone || spell === 'cimento') name = 'cimento';
+    else if (p.ivy || spell === 'vinha') name = 'vinha';
+    if (!name) return false;
+    const armed = name === 'cimento' ? p.stone : p.ivy;
+    const body = p.body;
+    if (!armed && spell === name) {
+      // Usa a magia que estava na mão.
+      this.held.shift();
+      this.events.push({ type: 'cast', name, x: body.x, y: body.y });
+    }
+    if (name === 'cimento') p.stone = true;
+    else p.ivy = true;
+    this.events.push({ type: 'anchor', name, x: body.x, y: body.y });
+    this.release(p);
     return true;
   }
 
@@ -412,8 +460,8 @@ export class TowersGame {
   rotate(): boolean {
     const p = this.active;
     if (!p || this.over || p.noRotate) return false;
-    // Encostou em algo: a peça está travada, só desce.
-    if (this.touched) {
+    // Pousou (ou travou): a peça só espera soltar; na folga do pouso só dá para andar, não girar.
+    if (this.touched || this.landed) {
       this.events.push({ type: 'blocked' });
       return false;
     }
@@ -507,7 +555,8 @@ export class TowersGame {
     }
     if (this.active) {
       this.control(this.active, input, dt);
-      this.moveActive(this.active, dt);
+      // Um encosto lateral pode ter prendido e soltado a peça dentro do controle.
+      if (this.active) this.moveActive(this.active, dt);
     }
 
     this.world.step(dt);
@@ -519,12 +568,22 @@ export class TowersGame {
     }
     if (hit) this.events.push({ type: 'land', ...hit });
 
-    if (this.active && !this.touched && this.world.supportedBelow(this.active.body)) {
-      // A peça pousou em cima de algo (a torre ou a plataforma): trava os movimentos e dá o "toc".
-      // Encostar só de lado, descendo ao lado da torre, NÃO trava: dá para deslizar para um vão.
-      this.touched = true;
-      this.targetTl = this.active.body.x - this.active.comx;
+    if (this.active && !this.landed && this.world.supportedBelow(this.active.body)) {
+      // A peça pousou em cima de algo (a torre ou a plataforma): dá o "toc" e abre uma folga
+      // curtíssima em que ainda dá para mexer UMA vez (encaixar em lugar apertado). Encostar só de
+      // lado, descendo ao lado da torre, NÃO conta: dá para deslizar para um vão.
+      this.landed = true;
+      this.graceTimer = LAND_GRACE;
+      this.graceMoves = 1;
       this.events.push({ type: 'land', x: this.active.body.x, y: this.active.body.y, speed: Math.max(1.6, this.cmdVy) });
+    }
+    if (this.active && this.landed && !this.touched) {
+      this.graceTimer -= dt;
+      if (this.graceTimer <= 0 || this.graceMoves <= 0) {
+        // Acabou a folga (ou já mexeu a uma vez): travou.
+        this.touched = true;
+        this.targetTl = this.active.body.x - this.active.comx;
+      }
     }
     if (this.active) this.checkLanding(this.active, input, dt);
     this.trackPieces(dt);
@@ -545,22 +604,26 @@ export class TowersGame {
     // Anda de bloco em bloco, NA HORA: cada toque é uma casa inteira e a troca de direção é
     // instantânea. Primeiro os toques que chegaram (mesmo os mais curtos que um quadro)...
     let pressed = 0;
-    for (const d of this.presses) {
+    const queued = this.presses;
+    this.presses = [];
+    for (const d of queued) {
       this.nudge(p, d);
+      if (this.active !== p) return; // a peça foi presa de lado e solta
       pressed = d;
     }
-    this.presses = [];
     // ...depois, segurar o botão repete as casas, devagar.
     const dir = this.touched ? 0 : (input.right ? 1 : 0) - (input.left ? 1 : 0);
     if (dir !== 0) {
       if (dir !== this.moveDir) {
         // Começou a segurar agora: se o toque já andou uma casa, só arma a repetição.
         if (pressed !== dir) this.nudge(p, dir);
+        if (this.active !== p) return;
         this.moveTimer = MOVE_FIRST_DELAY;
       } else {
         this.moveTimer -= dt;
         if (this.moveTimer <= 0) {
-          this.nudge(p, dir);
+          this.nudge(p, dir, true);
+          if (this.active !== p) return;
           this.moveTimer = MOVE_REPEAT;
         }
       }
@@ -588,28 +651,31 @@ export class TowersGame {
    */
   private moveActive(p: TowerPiece, dt: number) {
     const body = p.body;
-    const slide = (axis: 'x' | 'y', d: number) => {
-      if (d === 0) return;
-      body[axis] += d;
-      if (!this.world.overlaps(body, 0.02)) return;
-      body[axis] -= d;
-      let lo = 0;
-      let hi = 1;
-      for (let i = 0; i < 7; i++) {
-        const mid = (lo + hi) / 2;
-        body[axis] += d * mid;
-        const bad = this.world.overlaps(body, 0.02);
-        body[axis] -= d * mid;
-        if (bad) hi = mid;
-        else lo = mid;
-      }
-      body[axis] += d * lo;
-    };
-    slide('x', this.cmdVx * dt);
+    this.slideBody(body, 'x', this.cmdVx * dt);
     const before = body.y;
     const want = this.cmdVy * dt;
-    slide('y', want);
+    this.slideBody(body, 'y', want);
     this.blockedY = want > 0 && body.y - before < want - 1e-6;
+  }
+
+  /** Anda o corpo `d` num eixo; se bater em algo, para antes, encostado. Devolve quanto andou. */
+  private slideBody(body: Body, axis: 'x' | 'y', d: number): number {
+    if (d === 0) return 0;
+    body[axis] += d;
+    if (!this.world.overlaps(body, 0.02)) return d;
+    body[axis] -= d;
+    let lo = 0;
+    let hi = 1;
+    for (let i = 0; i < 7; i++) {
+      const mid = (lo + hi) / 2;
+      body[axis] += d * mid;
+      const bad = this.world.overlaps(body, 0.02);
+      body[axis] -= d * mid;
+      if (bad) hi = mid;
+      else lo = mid;
+    }
+    body[axis] += d * lo;
+    return d * lo;
   }
 
   private checkLanding(p: TowerPiece, input: TowersInput, dt: number) {

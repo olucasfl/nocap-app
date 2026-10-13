@@ -43,7 +43,7 @@ No online (futuro) os três modos entram com sala de 2 a 4 pessoas, a mesma seed
 - **Antes de começar** (e toda vez que volta da pausa) há uma contagem **3, 2, 1**. Há um botão de **pausa**; o menu tem **Continuar** (vem a contagem de novo), **Reiniciar partida** (recomeça do zero com peças novas e a contagem) e **Sair da partida**. Sair da aba também pausa.
 - A peça nasce **bem alto** (13 casas acima da torre) e desce **devagar** (2 casas por segundo no começo, subindo um pouco a cada peça até 5). Segurar "descer" acelera.
 - A pessoa move **de bloco em bloco, na hora** (cada toque anda uma casa inteira no mesmo instante, a troca de direção não espera o toque anterior terminar, e toques rápidos seguidos andam uma casa cada; segurar repete devagar; no desenho a peça só desliza até a casa nova), **gira em passos de 90°** e acelera a descida. A peça fica sempre alinhada à grade.
-- **Pousou, travou:** assim que a peça **pousa em cima de algo** (a torre ou a plataforma) ela **não anda nem gira mais**, só espera soltar. **Encostar só de lado não trava**: descendo ao lado da torre dá para deslizar para um vão livre (por exemplo, encaixar uma peça entre duas outras); a peça nunca entra numa casa ocupada.
+- **Pousou, folga curtíssima e trava:** quando a peça **pousa em cima de algo** (a torre ou a plataforma) há uma **folga de 0,18 s** em que ainda dá para **andar uma casa, uma vez só** (encaixar em lugar apertado, quase encostando, e jogar a peça no canto). Passada a folga, ou depois dessa uma vez, ela **trava**: não anda nem gira mais, só espera soltar. Na folga não dá para girar. **Encostar só de lado não trava**: descendo ao lado da torre dá para deslizar para um vão livre (por exemplo, encaixar uma peça entre duas outras); a peça nunca entra numa casa ocupada.
 - **A peça que voa nunca empurra a torre.** Enquanto a pessoa a controla, ela é guiada à parte e **para ao encostar**, sem mover nenhuma peça já colocada. Só depois de solta ela vira física, e aí o **peso dela** pode desequilibrar o lado que estava sem base (algo cai ou tomba).
 - Ela fica livre (cai sozinha pela gravidade e se apoia) depois de ficar **encostada por cerca de 0,4 s**. Nesse momento nasce a próxima.
 - Giro que bateria em algo tenta uma folga de uma casa para o lado; se não couber, não gira.
@@ -64,6 +64,13 @@ Sorteadas pela seed, metade boas e metade ruins, tiradas de **sacolas embaralhad
 - **Vida extra**: devolve uma vida (só aparece se já perdeu alguma).
 
 **O aviso de cada magia** (nova, usada, colou, virou pedra) fica **preso no alto da tela, fora de onde as peças caem**, e dura **9 s** (4,5 s quando a magia é usada), com uma barra que mostra quanto falta para sumir. Nunca cobre o meio do jogo.
+
+**Encosto lateral (pedra e vinha prendem no ar).** Se a peça que desce **bate de lado** na face lateral de outra peça (ou da plataforma), porque você a empurrou contra ela, o jogo entende que ela pode ficar ali:
+- Com **cimento** (na mão ou já ativado), a peça **vira pedra na hora**, presa na lateral, **mesmo sem nada embaixo**. A pedra fica estendendo a torre e ajudando.
+- Com **vinha**, a peça **cola** na vizinha na hora.
+- A magia é gasta e a próxima peça nasce.
+- **Sem magia**, bater de lado não faz nada: a peça só segue caindo.
+- Vale **só na lateral**: pousar por cima, ou bater no limite do campo, não prende.
 
 **Ruins** (caem sobre você sozinhas, com aviso na tela):
 - **Gelo**: as próximas 2 peças escorregam muito.

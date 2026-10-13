@@ -489,6 +489,36 @@ export class World {
     return false;
   }
 
+  /**
+   * Quem está encostado DE LADO neste corpo, do lado `dir` (-1 esquerda, 1 direita)? Empurra o corpo
+   * um fio (0,06) para esse lado, de teste, e procura contatos cuja normal é quase horizontal e
+   * aponta para lá (a face lateral de outra peça). Contato por cima ou por baixo não conta.
+   * `null` se nada encosta de lado.
+   */
+  sideBlocker(body: Body, dir: number, tol = 0.004): Body | null {
+    const dx = (dir < 0 ? -1 : 1) * 0.06;
+    for (const other of this.bodies) {
+      if (other === body || other.held) continue;
+      const ddx = other.x - body.x;
+      const ddy = other.y - body.y;
+      const r = other.radius + body.radius + 0.6;
+      if (!other.isStatic && ddx * ddx + ddy * ddy > r * r) continue;
+      for (const ba of body.boxes) {
+        const pa = poseOf(body, ba, { x: 0, y: 0, c: 1, s: 0, hw: 0, hh: 0 });
+        pa.x += dx;
+        for (const bb of other.boxes) {
+          const pb = poseOf(other, bb, { x: 0, y: 0, c: 1, s: 0, hw: 0, hh: 0 });
+          const dd = Math.abs(pa.x - pb.x) + Math.abs(pa.y - pb.y);
+          if (dd > pa.hw + pa.hh + pb.hw + pb.hh + 1) continue;
+          for (const h of collideBoxes(pa, pb)) {
+            if (h.sep < -tol && Math.abs(h.nx) > 0.7 && h.nx * dx > 0) return other;
+          }
+        }
+      }
+    }
+    return null;
+  }
+
   /** Alguma caixa deste corpo (na pose dada) penetra em outro corpo? Usado para validar giros. */
   overlaps(body: Body, tolerance = 0.12): boolean {
     for (const other of this.bodies) {

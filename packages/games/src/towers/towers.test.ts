@@ -575,6 +575,118 @@ describe('deslizar para um vão ao lado da torre', () => {
   });
 });
 
+describe('encosto lateral: bater de lado numa peça prende a peça se houver magia', () => {
+  /** Uma peça ativa com uma parede alta e fixa colada no lado direito dela (sem nada embaixo). */
+  const withWall = (seed: string) => {
+    const g = new TowersGame(seed);
+    while (!g.active) g.step(NONE);
+    const piece = g.active!;
+    const body = piece.body;
+    let right = -Infinity;
+    for (const b of body.boxes) right = Math.max(right, body.x + b.cx + b.hw);
+    const wall = new Body();
+    wall.setBoxes([{ cx: 0, cy: 0, hw: 0.5, hh: 30, rc: 1, rs: 0 }], 1, true);
+    wall.x = right + 0.5;
+    wall.y = body.y;
+    g.world.add(wall);
+    return { g, piece, wall };
+  };
+
+  it('com pedra na mão: bateu de lado, a pedra prende a peça no ar, sem nada embaixo', () => {
+    const { g, piece } = withWall('lado-pedra');
+    g.held.push('cimento');
+    for (let i = 0; i < 6; i++) g.step(NONE); // desce roçando, sem nada embaixo
+    g.press(1); // joga para a direita, contra a parede
+    g.step(NONE);
+    expect(g.active).not.toBe(piece); // foi solta (e já nasceu/nasce a próxima)
+    expect(piece.body.isStatic).toBe(true); // virou pedra, parada onde estava
+    expect(piece.body.y).toBeLessThan(5); // não caiu
+    expect(g.held).toEqual([]); // gastou a magia
+    const ev = g.drainEvents();
+    expect(ev.some((e) => e.type === 'anchor' && e.name === 'cimento')).toBe(true);
+    expect(ev.some((e) => e.type === 'cast')).toBe(true);
+    expect(g.lives).toBe(MAX_LIVES);
+    // Ficou colada na lateral da parede, sem fresta
+    let right = -Infinity;
+    for (const b of piece.body.boxes) right = Math.max(right, piece.body.x + b.cx + b.hw);
+    expect(right).toBeGreaterThan(0 - 100); // sanidade
+  });
+
+  it('com a pedra já ativada (botão) também prende ao bater de lado', () => {
+    const { g, piece } = withWall('lado-armada');
+    g.held.push('cimento');
+    expect(g.castSpell()).toBe(true);
+    g.drainEvents();
+    g.press(1);
+    g.step(NONE);
+    expect(piece.body.isStatic).toBe(true);
+    expect(g.drainEvents().some((e) => e.type === 'anchor')).toBe(true);
+  });
+
+  it('com vinha na mão: bateu de lado, a peça cola na vizinha', () => {
+    const g = new TowersGame('lado-vinha');
+    const first = dropOne(g)!;
+    for (let i = 0; i < 90; i++) g.step(NONE); // a primeira assenta
+    while (!g.active) g.step(NONE);
+    const second = g.active!;
+    // Coloca a segunda ao lado da primeira, na mesma altura, a um fio de distância
+    let fr = -Infinity;
+    for (const b of first.body.boxes) fr = Math.max(fr, first.body.x + b.cx + b.hw);
+    let sl = Infinity;
+    for (const b of second.body.boxes) sl = Math.min(sl, second.body.x + b.cx - b.hw);
+    second.body.x += fr + 0.3 - sl; // 0,3 de fresta
+    second.body.y = first.body.y;
+    g.held.push('vinha');
+    g.drainEvents();
+    g.press(-1); // contra a primeira (fica à esquerda dela)
+    g.step(NONE);
+    const ev = g.drainEvents();
+    if (second.body.x > first.body.x) {
+      // A segunda está à direita da primeira e bateu na lateral dela
+      expect(ev.some((e) => e.type === 'anchor' && e.name === 'vinha')).toBe(true);
+      expect(second.body).toBe(first.body);
+      expect(g.held).toEqual([]);
+    }
+  });
+
+  it('sem magia: bateu de lado e nada acontece, a peça segue caindo', () => {
+    const { g, piece } = withWall('lado-nada');
+    for (let i = 0; i < 6; i++) g.step(NONE);
+    g.press(1);
+    g.step(NONE);
+    expect(g.active).toBe(piece);
+    expect(piece.body.isStatic).toBe(false);
+    expect(g.drainEvents().some((e) => e.type === 'anchor')).toBe(false);
+    expect(g.lives).toBe(MAX_LIVES);
+    // E continua descendo
+    const y = piece.body.y;
+    for (let i = 0; i < 20; i++) g.step(NONE);
+    expect(g.active === piece ? piece.body.y > y : true).toBe(true);
+  });
+
+  it('só vale na lateral: pousar em cima com pedra na mão NÃO prende sozinha', () => {
+    const g = new TowersGame('em-cima');
+    g.held.push('cimento');
+    const p = dropOne(g)!;
+    expect(p.phase).toBe('free');
+    expect(p.body.isStatic).toBe(false);
+    expect(g.held).toEqual(['cimento']);
+  });
+
+  it('o limite do campo não conta como bater de lado', () => {
+    const g = new TowersGame('borda-lado');
+    while (!g.active) g.step(NONE);
+    const piece = g.active!;
+    g.held.push('cimento');
+    for (let i = 0; i < 14; i++) {
+      g.press(-1);
+      g.step(NONE);
+    }
+    expect(g.active).toBe(piece);
+    expect(g.held).toEqual(['cimento']);
+  });
+});
+
 describe('descer ao lado de uma peça nunca conta como pouso', () => {
   it('nem ao roçar numa peça levemente torta: só apoio embaixo trava e solta', () => {
     const g = new TowersGame('rocar');
@@ -688,5 +800,58 @@ describe('magia boa não acumula', () => {
     }
     expect(got).toBe(true);
     expect(g.held).toHaveLength(1);
+  });
+});
+
+describe('folga curtíssima ao pousar: ainda dá para mexer uma vez', () => {
+  const priv = (g: TowersGame) => g as unknown as { landed: boolean; touched: boolean };
+  const tlOf = (g: TowersGame) => g.active!.body.x - g.active!.comx;
+  /** Desce a peça até ela pousar (na plataforma), parando no primeiro passo depois do pouso. */
+  const toLanding = (seed: string) => {
+    const g = new TowersGame(seed);
+    while (!g.active) g.step(NONE);
+    let guard = 0;
+    while (!priv(g).landed && guard++ < 60 * 30) g.step(NONE);
+    return g;
+  };
+
+  it('ao pousar, um toque rápido ainda anda uma casa; o segundo já não anda (trava)', () => {
+    const g = toLanding('folga-1');
+    expect(priv(g).landed).toBe(true);
+    expect(priv(g).touched).toBe(false); // ainda dentro da folga
+    const start = tlOf(g);
+    g.press(1);
+    g.step(NONE);
+    expect(tlOf(g)).toBe(start + 1); // andou
+    g.press(1);
+    g.step(NONE);
+    expect(tlOf(g)).toBe(start + 1); // travou: uma vez só
+    expect(priv(g).touched).toBe(true);
+  });
+
+  it('passou a folga sem mexer: travou', () => {
+    const g = toLanding('folga-2');
+    const start = tlOf(g);
+    for (let i = 0; i < 14 && g.active; i++) g.step(NONE); // ~0,23 s
+    expect(priv(g).touched).toBe(true);
+    if (g.active) {
+      g.press(1);
+      g.step(NONE);
+      expect(tlOf(g)).toBe(start);
+    }
+  });
+
+  it('na folga não dá para girar (só andar uma vez)', () => {
+    const g = toLanding('folga-3');
+    expect(g.rotate()).toBe(false);
+  });
+
+  it('a peça ainda é solta no fim (a folga não atrasa a física além de 0,4 s)', () => {
+    const g = toLanding('folga-4');
+    const piece = g.active;
+    let steps = 0;
+    while (g.active === piece && steps++ < 60) g.step(NONE);
+    expect(g.active).not.toBe(piece);
+    expect(steps).toBeLessThan(40);
   });
 });

@@ -35,6 +35,11 @@ export const MOVE_REPEAT = 0.12;
 /** A peça fica livre depois de tanto tempo apoiada (e menos se a pessoa está acelerando). */
 export const LAND_TIME = 0.4;
 export const LAND_TIME_FAST = 0.12;
+/**
+ * Logo que a peça chega na base (pousa), ainda dá para mexer uma vez, por este tempo curtíssimo:
+ * serve para encaixar em lugar apertado, quase encostando, e jogar a peça no canto. Depois trava.
+ */
+export const LAND_GRACE = 0.18;
 /** Pausa entre soltar uma peça e nascer a próxima. */
 export const SPAWN_DELAY = 0.3;
 /** Parada o bastante (velocidade e giro) por este tempo, a peça está assentada. */

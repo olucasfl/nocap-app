@@ -341,6 +341,20 @@ export function TowersPlay({ seed, best, onEnd, onQuit, onRestart }: Props) {
           if (!calm) burst(fx, 12, { x: e.x, y: e.y }, { kind: 'leaf', color: '#33c27f', size: 0.3, gravity: 2 }, 4);
           tell({ tone: 'good', kicker: 'DEU CERTO', title: 'COLOU!', text: 'A peça e as vizinhas viraram um bloco só', icon: 'vinha', ms: CAST_NOTICE_MS });
           break;
+        case 'anchor':
+          dust(e.x, e.y, 10, 3);
+          if (e.name === 'vinha' && !calm) burst(fx, 8, { x: e.x, y: e.y }, { kind: 'leaf', color: '#33c27f', size: 0.3, gravity: 2 }, 3);
+          fx.glow = 0.5;
+          fx.glowColor = e.name === 'cimento' ? '#d0d0dc' : '#33c27f';
+          tell({
+            tone: 'good',
+            kicker: 'ENCOSTOU DE LADO',
+            title: 'PRESA NO AR!',
+            text: e.name === 'cimento' ? 'A pedra ficou presa na lateral e agora ajuda a torre' : 'A vinha colou a peça na lateral da outra',
+            icon: e.name,
+            ms: CAST_NOTICE_MS,
+          });
+          break;
         case 'petrify':
           dust(e.x, e.y, 14, 4);
           tell({ tone: 'info', kicker: 'DEU CERTO', title: 'PEDRA!', text: 'Essa peça não se mexe mais', icon: 'cimento', ms: CAST_NOTICE_MS });
