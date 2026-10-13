@@ -1,5 +1,5 @@
 import { BadRequestException, ConflictException } from '@nestjs/common';
-import { BlocksGame, evaluateBlocks } from '@nocap/games';
+import { BlocksGame, analyze, evaluateBlocks } from '@nocap/games';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { BLOCKS_MIN_MS_PER_MOVE, ELAPSED_SLACK_MS, scoreBlocksMatch } from './match-scoring';
 import { createMatchSchema } from './match.schema';
@@ -190,5 +190,24 @@ describe('scoreBlocksMatch (Block Towers)', () => {
   it('recusa registro fora de ordem', () => {
     const run = () => scoreBlocksMatch({ mode: 'towers', seed: 'tw-1', moves: [40, 17], elapsedMs: 9e9 });
     expect(run).toThrow();
+  });
+});
+
+describe('partidas de pontuação alta (recorde)', () => {
+  it('a nota passa de 32767 décimos: as colunas de nota do banco precisam ser integer (migration 0006)', () => {
+    // Quem joga bem passa de 3276 pontos (x10 estoura o smallint do banco) em poucas rodadas.
+    const g = new BlocksGame('recorde-alto');
+    let plan: { slot: number; row: number; col: number }[] = [];
+    while (g.score <= 3500 && !g.over) {
+      if (g.slots.every((x) => x !== null)) plan = analyze(g.rows, g.slots, g.streak, g.drought).plans[0] ?? [];
+      const m = plan.shift() ?? g.legalMoves()[0];
+      if (!m) break;
+      g.play(m.slot, m.row, m.col);
+    }
+    expect(g.score).toBeGreaterThan(3276);
+    // O servidor guarda a nota inteira em décimos, sem cortar: a coluna do banco é que precisa comportar.
+    const tenths = g.score * 10;
+    expect(tenths).toBeGreaterThan(32767);
+    expect(tenths).toBeLessThan(2_147_483_647);
   });
 });

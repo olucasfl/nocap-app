@@ -108,7 +108,8 @@ export const matchPlayers = pgTable(
       .references(() => players.id, { onDelete: 'cascade' }),
     // Cor: h*10000 + s*100 + b por rodada. Tempo: ms por rodada.
     answers: integer('answers').array(),
-    totalScore: smallint('total_score').notNull(),
+    // Em décimos (500 = 50.0). integer: o Block's passa de 3276 pontos (x10 estoura o smallint).
+    totalScore: integer('total_score').notNull(),
     placement: smallint('placement'),
     playedAt: timestamp('played_at', { withTimezone: true }).defaultNow().notNull(),
   },
@@ -128,7 +129,7 @@ export const userGameStats = pgTable(
     mode: text('mode').notNull(),
     matches: integer('matches').notNull().default(0),
     scoreSum: integer('score_sum').notNull().default(0),
-    best: smallint('best').notNull().default(0),
+    best: integer('best').notNull().default(0),
   },
   (t) => [primaryKey({ columns: [t.playerId, t.game, t.mode] })],
 );

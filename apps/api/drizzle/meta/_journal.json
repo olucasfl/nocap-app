@@ -43,6 +43,13 @@
       "when": 1791647593682,
       "tag": "0005_user_presence",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791930480993,
+      "tag": "0006_widen_scores",
+      "breakpoints": true
     }
   ]
 }
