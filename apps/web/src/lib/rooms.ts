@@ -96,6 +96,12 @@ export interface EcoRoomState {
   turn?: string | null;
   queue?: string[];
   announceMs?: number;
+  /** Número da vez (muda a cada vez, mesmo quando a sequência não cresce). */
+  turnNo?: number;
+  /** Quem joga depois da vez atual. */
+  next?: string | null;
+  /** Como terminou a última vez (só durante o resultado, por cima do tabuleiro). */
+  result?: { who: string; passed: boolean; taps: number } | null;
   rules?: LeaderRule[];
   timedOut?: boolean;
   /** Pódio do Siga o Líder: soma de acertos de cada pessoa como seguidora. */

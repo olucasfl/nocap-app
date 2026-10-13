@@ -11,7 +11,7 @@ import { EcoLeaderCreate } from './EcoLeaderCreate';
 /** Quanto do ritmo de cada passo o botão fica aceso (igual ao modo solo). */
 const LIT_SHARE = 0.64;
 
-type Status = 'observe' | 'input' | 'waiting' | 'out' | 'wrong' | 'leader' | 'wait';
+type Status = 'observe' | 'input' | 'waiting' | 'out' | 'wrong' | 'leader' | 'wait' | 'passed' | 'eliminated';
 
 const LABEL: Record<Status, string> = {
   observe: 'OBSERVE',
@@ -21,6 +21,8 @@ const LABEL: Record<Status, string> = {
   wrong: 'ERROU',
   leader: 'VOCÊ CRIOU',
   wait: 'AGUARDE SUA VEZ',
+  passed: 'DEU CERTO',
+  eliminated: 'ELIMINADO',
 };
 
 /** Corrida por vez: como foi a vez e de quem é a próxima. */
@@ -135,7 +137,7 @@ export function EcoRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
       setAnnounce(false);
     };
     // Uma vez por rodada (o `round` muda a cada rodada nova).
-  }, [eco.round, snapshot.phase === 'show']);
+  }, [eco.turnNo ?? eco.round, snapshot.phase === 'show']);
 
   const tap = (pad: number) => {
     if (snapshot.phase !== 'play' || !playing || wrongRef.current || mine?.locked) return;
@@ -159,6 +161,37 @@ export function EcoRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
   const tapRef = useRef(tap);
   tapRef.current = tap;
 
+  // Quem não está jogando (plateia ou esperando a vez) vê cada toque certo de quem joga.
+  const watching = snapshot.phase === 'play' && !playing && !!eco.turn;
+  const progress = eco.progress ?? 0;
+  const lastProgress = useRef(0);
+  useEffect(() => {
+    if (!watching) {
+      lastProgress.current = 0;
+      return;
+    }
+    if (progress > lastProgress.current && sequence) {
+      const order = eco.reverse ? [...sequence].reverse() : sequence;
+      const pad = order[progress - 1];
+      if (pad !== undefined) {
+        setLit(pad);
+        sfx.ecoPad(pad, 140);
+        const t = window.setTimeout(() => setLit(null), 200);
+        timers.current.push(t);
+      }
+    }
+    lastProgress.current = progress;
+  }, [progress, watching]);
+
+  // O resultado de cada vez tem som para todos (quem jogou já ouviu o seu).
+  const turnNo = eco.turnNo ?? eco.round;
+  useEffect(() => {
+    if (snapshot.phase !== 'reveal' || !eco.turn || !eco.result) return;
+    if (eco.result.who === me) return;
+    if (eco.result.passed) sfx.ecoRound();
+    else sfx.ecoWrong();
+  }, [snapshot.phase, turnNo]);
+
   // Teclas 1 a 9 (computador).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -174,11 +207,16 @@ export function EcoRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
   }, [eco.pads]);
 
   if (snapshot.phase === 'create') return <EcoLeaderCreate snapshot={snapshot} />;
-  if (snapshot.phase === 'reveal') return <Reveal key={`r-${eco.round}`} snapshot={snapshot} />;
+  // Siga o Líder ainda tem a tela de resultados; a corrida por vez mostra tudo na mesma tela.
+  if (snapshot.phase === 'reveal' && !eco.turn) return <Reveal key={`r-${eco.round}`} snapshot={snapshot} />;
+  const reveal = snapshot.phase === 'reveal' && !!eco.turn;
 
   const nameOf = (id?: string | null) => snapshot.members.find((m) => m.id === id)?.username ?? '?';
-  const status: Status =
-    snapshot.phase === 'show'
+  const status: Status = reveal
+    ? eco.result?.passed
+      ? 'passed'
+      : 'eliminated'
+    : snapshot.phase === 'show'
       ? 'observe'
       : eco.leader === me
         ? 'leader'
@@ -191,8 +229,14 @@ export function EcoRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
             : mine?.locked
               ? 'waiting'
               : 'input';
+  const alive = eco.alive.length;
+  const nextName = eco.next ? nameOf(eco.next) : '';
   const sub =
-    status === 'leader'
+    status === 'passed' || status === 'eliminated'
+      ? alive <= 1
+        ? 'FIM DE JOGO'
+        : `${alive} NA DISPUTA`
+      : status === 'leader'
       ? 'OS OUTROS ESTÃO REPETINDO'
       : status === 'wait'
         ? `VEZ DE @${nameOf(eco.turn)} · FILA: ${(eco.queue ?? []).map((id) => '@' + nameOf(id)).join(' > ')}`
@@ -207,7 +251,10 @@ export function EcoRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
   return (
     <section className="screen eco-play">
       <div className="eco-hud">
-        <div className={`eco-status ${status === 'waiting' ? 'right' : status}`} aria-live="polite">
+        <div
+          className={`eco-status ${status === 'waiting' || status === 'passed' ? 'right' : status === 'eliminated' ? 'wrong' : status}`}
+          aria-live="polite"
+        >
           {LABEL[status]}
         </div>
         <div className="mono eco-sub">{sub}</div>
@@ -225,14 +272,40 @@ export function EcoRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
         )}
       </div>
       {eco.turn && (
-        <div className={`eco-turn${announce ? ' big' : ''}`} aria-live="assertive">
-          {eco.turn === me ? 'É A SUA VEZ' : `VEZ DE @${nameOf(eco.turn)}`}
+        <div className={`eco-turn${announce ? ' big' : ''}${reveal ? ' next' : ''}`} aria-live="assertive">
+          {reveal
+            ? alive <= 1
+              ? `SOBROU @${nameOf(eco.alive[0])}`
+              : eco.next === me
+                ? 'PRÓXIMA VEZ: VOCÊ'
+                : `PRÓXIMA VEZ: @${nameOf(eco.next)}`
+            : eco.turn === me
+              ? 'É A SUA VEZ'
+              : `VEZ DE @${nameOf(eco.turn)}`}
           {announce && (
             <small className="mono">
               {eco.turn === me
                 ? 'A SEQUÊNCIA VAI TOCAR; DEPOIS REPITA TUDO'
                 : 'TODO MUNDO JOGA A MESMA SEQUÊNCIA, UM DE CADA VEZ'}
             </small>
+          )}
+        </div>
+      )}
+      {reveal && eco.result && (
+        <div key={`res-${turnNo}`} className={`eco-result ${eco.result.passed ? 'ok' : 'out'}`} role="status">
+          <b>{eco.result.passed ? 'DEU CERTO!' : 'ELIMINADO!'}</b>
+          <span className="eco-result-who">
+            {eco.result.who === me ? 'VOCÊ' : `@${nameOf(eco.result.who)}`}
+          </span>
+          <small className="mono">
+            {eco.result.passed
+              ? `REPETIU ${eco.length} ${eco.length === 1 ? 'PASSO' : 'PASSOS'}`
+              : `ERROU NO ${eco.result.taps + 1}º TOQUE`}
+          </small>
+          {alive > 1 && nextName && (
+            <em className="mono">
+              {eco.result.passed ? `${nextName ? '@' + nextName : ''} REPETE E ACRESCENTA UM PASSO` : `@${nextName} JOGA A MESMA SEQUÊNCIA`}
+            </em>
           )}
         </div>
       )}

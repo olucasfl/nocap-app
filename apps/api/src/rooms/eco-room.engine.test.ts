@@ -6,7 +6,17 @@ const SEED = 'seed-e';
 
 type Snap = {
   round: { seed: string };
-  eco: { sequence: number[]; alive: string[]; round: number; turn: string; queue: string[] };
+  eco: {
+    sequence: number[];
+    alive: string[];
+    round: number;
+    turnNo: number;
+    turn: string;
+    queue: string[];
+    next: string | null;
+    progress: number;
+    result: { who: string; passed: boolean; taps: number } | null;
+  };
 };
 
 function started(ids = ['ana', 'bia', 'cris']) {
@@ -131,5 +141,101 @@ describe('EcoRoomEngine (por vez, em fila)', () => {
     const { room, clock } = started();
     play(room, clock, 1);
     expect(() => room.tap('ana', 99)).toThrow(/inválido/);
+  });
+});
+
+describe('EcoRoomEngine: tudo na mesma tela, com eliminação e a mesma sequência', () => {
+  it('depois de uma eliminação a próxima pessoa joga a MESMA sequência, sem passo novo', () => {
+    const { room, clock } = started();
+    play(room, clock, 1);
+    winTurn(room, 1); // ana acerta o nível 1
+    clock.advance(3000);
+    room.tick();
+    play(room, clock, 2);
+    room.tap('bia', wrongPad(2)); // bia erra o nível 2 e é eliminada
+    clock.advance(3000);
+    room.tick();
+    const s = snap(room);
+    expect(s.eco.turn).toBe('cris');
+    expect(s.eco.round).toBe(2); // o nível não subiu
+    expect(s.eco.sequence).toEqual(expected(2));
+    expect(s.eco.turnNo).toBe(3); // mas é a terceira vez
+  });
+
+  it('depois de um acerto a sequência cresce um passo; o contador de vezes sobe sempre', () => {
+    const { room, clock } = started();
+    expect(snap(room).eco.turnNo).toBe(1);
+    play(room, clock, 1);
+    winTurn(room, 1);
+    clock.advance(3000);
+    room.tick();
+    expect(snap(room).eco.round).toBe(2);
+    expect(snap(room).eco.turnNo).toBe(2);
+  });
+
+  it('o resultado da vez e quem joga em seguida aparecem no estado (acerto)', () => {
+    const { room, clock } = started();
+    play(room, clock, 1);
+    winTurn(room, 1);
+    expect(room.currentPhase).toBe('reveal');
+    const s = snap(room).eco;
+    expect(s.result).toEqual({ who: 'ana', passed: true, taps: 1 });
+    expect(s.next).toBe('bia');
+  });
+
+  it('o resultado da vez e quem joga em seguida aparecem no estado (eliminação)', () => {
+    const { room, clock } = started();
+    play(room, clock, 1);
+    room.tap('ana', wrongPad(1));
+    const s = snap(room).eco;
+    expect(room.currentPhase).toBe('reveal');
+    expect(s.result).toMatchObject({ who: 'ana', passed: false });
+    expect(s.next).toBe('bia');
+    expect(s.alive).not.toContain('ana');
+  });
+
+  it('o resultado some quando a vez seguinte começa', () => {
+    const { room, clock } = started();
+    play(room, clock, 1);
+    winTurn(room, 1);
+    clock.advance(3000);
+    room.tick();
+    expect(snap(room).eco.result).toBeNull();
+  });
+
+  it('o progresso de quem joga é visível para todos (a plateia acompanha os toques)', () => {
+    const { room, clock } = started();
+    play(room, clock, 2); // nível 1: ana joga; avança só para abrir a fase
+    // (nível 1 tem um passo: o primeiro toque certo completa a vez)
+    const bia = room.snapshot('bia') as unknown as Snap;
+    expect(bia.eco.progress).toBe(0);
+    room.tap('ana', expected(1)[0]!);
+    // Depois de completar, a fase vira reveal e o progresso zera: sem erro, sem vazar a seed
+    expect((room.snapshot('bia') as unknown as Snap).round.seed).toBe('');
+  });
+
+  it('a eliminação por tempo parado também deixa a mesma sequência para o próximo', () => {
+    const { room, clock } = started();
+    play(room, clock, 1);
+    clock.advance(ECO_TAP_TIMEOUT_MS + 1);
+    room.tick();
+    clock.advance(3000);
+    room.tick();
+    const s = snap(room).eco;
+    expect(s.turn).toBe('bia');
+    expect(s.round).toBe(1);
+    expect(s.sequence).toEqual(expected(1));
+  });
+
+  it('o resultado de quem sobrou como único: sem próxima vez', () => {
+    const { room, clock } = started(['ana', 'bia']);
+    play(room, clock, 1);
+    room.tap('ana', wrongPad(1));
+    const s = snap(room).eco;
+    expect(s.alive).toEqual(['bia']);
+    expect(s.next).toBe('bia');
+    clock.advance(3000);
+    room.tick();
+    expect(room.currentPhase).toBe('final');
   });
 });

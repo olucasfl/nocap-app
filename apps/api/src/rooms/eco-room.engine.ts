@@ -21,17 +21,21 @@ import {
   type FinalRow,
 } from './color-room.engine';
 
-/** O resultado de cada vez fica na tela só o bastante para ler: o jogo segue em fila. */
-const ECO_REVEAL_MS = 2500;
+/**
+ * O resultado de cada vez (DEU CERTO ou ELIMINADO) aparece por cima do tabuleiro, na mesma tela,
+ * só o bastante para ler: o jogo segue em fila.
+ */
+export const ECO_REVEAL_MS = 2000;
 /** Aviso "VEZ DE FULANO" na tela de todos, antes de a sequência tocar e a pessoa ser liberada. */
 export const ECO_ANNOUNCE_MS = 1800;
 const PAD_COUNT = 9;
 
 /**
- * Ecooo em sala, por vez (spec 012): todo mundo joga a MESMA sequência, um de cada vez, em fila.
- * A cada vez a sequência ganha um passo novo; todos veem a reprodução, mas só quem está na vez
- * repete. Acertou: passa para o próximo da fila (que repete tudo e mais um passo). Errou ou ficou
- * 8 s parado: sai e vira plateia. Vence quem sobrar. O servidor confere cada toque e a seed nunca
+ * Ecooo em sala, por vez (spec 012): todo mundo joga a MESMA sequência, um de cada vez, em fila,
+ * tudo na mesma tela: "VEZ DE FULANO", a sequência toca, a pessoa repete, e aparece DEU CERTO ou
+ * ELIMINADO. Acertou: a próxima pessoa repete tudo e mais um passo. Errou ou ficou 8 s parado:
+ * está eliminada (vira plateia) e a próxima pessoa joga a MESMA sequência, sem passo novo. Vence
+ * quem sobrar. O servidor confere cada toque e a seed nunca
  * sai daqui. O Siga o Líder é outro motor (`EcoLeaderRoomEngine`).
  */
 export class EcoRoomEngine extends ColorRoomEngine {
@@ -51,6 +55,12 @@ export class EcoRoomEngine extends ColorRoomEngine {
   private fallen: string[] = [];
   /** Última rodada que cada pessoa completou. */
   private completed = new Map<string, number>();
+  /** Tamanho da sequência (1, 2, 3...): sobe a cada acerto e fica igual depois de uma eliminação. */
+  private level = 1;
+  /** A vez que acabou de passar foi acertada? (define se a próxima sobe de nível) */
+  private lastPassed = true;
+  /** De quem foi a última vez e como terminou (para o aviso na tela). */
+  private lastResult: { who: string; passed: boolean; taps: number } | null = null;
   private progress = 0;
   private lastTap = 0;
   private playStart = 0;
@@ -75,9 +85,20 @@ export class EcoRoomEngine extends ColorRoomEngine {
     return !!preset && merged.rounds === maxRounds(preset);
   }
 
-  /** Vez atual (1, 2, 3...): é também o tamanho da sequência (menos o começo do modo). */
+  /** Tamanho da sequência desta vez (o nível). */
   private get round(): number {
-    return this.roundIndex + 1;
+    return this.level;
+  }
+
+  /** Quem joga depois de quem está na vez (o próximo da fila que segue na disputa), ou null. */
+  private nextAfterCurrent(): string | null {
+    const n = this.queue.length;
+    if (this.alive.size === 0) return null;
+    for (let k = 1; k <= n; k++) {
+      const id = this.queue[(this.cursor + k) % n]!;
+      if (this.alive.has(id) && id !== this.current) return id;
+    }
+    return null;
   }
 
   // ---- partida ----
@@ -93,6 +114,13 @@ export class EcoRoomEngine extends ColorRoomEngine {
       this.fallen = [];
       this.completed = new Map();
       this.cursor = -1;
+      this.level = 1;
+      this.lastPassed = true;
+      this.lastResult = null;
+    } else if (this.lastPassed) {
+      // Acertou: a próxima pessoa repete tudo e mais um passo. Se a vez anterior foi uma
+      // eliminação, o nível fica igual e ela joga a mesma sequência.
+      this.level += 1;
     }
     // O próximo da fila que ainda está na disputa.
     const n = this.queue.length;
@@ -165,6 +193,8 @@ export class EcoRoomEngine extends ColorRoomEngine {
     if (this.current && !this.locked.has(this.current)) this.fall(this.current);
     if (this.current) {
       const done = this.alive.has(this.current);
+      this.lastPassed = done;
+      this.lastResult = { who: this.current, passed: done, taps: this.progress };
       this.rounds[this.roundIndex]![this.current] = {
         answer: done ? lengthAt(this.preset, this.round) : this.progress,
         score: done ? 1 : 0,
@@ -175,7 +205,7 @@ export class EcoRoomEngine extends ColorRoomEngine {
   }
 
   protected override finishReveal() {
-    const last = this.round >= maxRounds(this.preset);
+    const last = this.lastPassed && this.round >= maxRounds(this.preset);
     if (this.alive.size <= 1 || last) {
       this.phase = 'final';
       this.phaseEndsAt = null;
@@ -196,6 +226,9 @@ export class EcoRoomEngine extends ColorRoomEngine {
     this.alive = new Set();
     this.fallen = [];
     this.current = null;
+    this.level = 1;
+    this.lastPassed = true;
+    this.lastResult = null;
   }
 
   // ---- resultado ----
@@ -246,6 +279,8 @@ export class EcoRoomEngine extends ColorRoomEngine {
     return {
       eco: {
         round: this.round,
+        /** Número da vez (1, 2, 3...): muda a cada vez, mesmo quando a sequência não cresce. */
+        turnNo: this.roundIndex + 1,
         length: lengthAt(s, this.round),
         pads: padsAt(s, this.round),
         stepMs: stepMsAt(s, this.round),
@@ -256,7 +291,11 @@ export class EcoRoomEngine extends ColorRoomEngine {
         queue,
         participants: this.current ? [this.current] : [],
         alive: [...this.alive],
-        progress: viewerId === this.current ? this.progress : 0,
+        /** Quantos toques certos a pessoa da vez já deu (todos veem, para a plateia acompanhar). */
+        progress: this.phase === 'play' ? this.progress : 0,
+        /** Quem joga depois e como terminou a última vez (aparece por cima do tabuleiro). */
+        next: this.nextAfterCurrent(),
+        result: this.phase === 'reveal' ? this.lastResult : null,
         /** Quando a pessoa na vez perde por ficar parada (o contador de 8 s). */
         tapDeadline: mine ? this.lastTap + ECO_TAP_TIMEOUT_MS : null,
       },
