@@ -7,14 +7,17 @@ const RECT = { left: 100, top: 200, width: 400 }; // cada casa tem 50 px
 const open = () => (row: number, col: number, s = shape('quadrado2')) => fits(emptyRows(), s, row, col);
 
 describe('aimAt (pontaria da peça arrastada)', () => {
-  it('no mouse a peça fica quase embaixo da seta e cai na casa certa', () => {
-    // O centro de um quadrado 2x2 em (3,3) está em 100+4*50, 200+4*50
-    const a = aimAt(300, 400 + 17, RECT, shape('quadrado2'), false, open());
-    expect(a.target).toEqual({ row: 3, col: 3 });
+  it('a sombra fica acima da peça que está na mão', () => {
+    const s = shape('quadrado2');
+    // O dedo em (300, 560): a peça fica sob o dedo e a sombra cai bem acima dela, no tabuleiro
+    const a = aimAt(300, 560, RECT, s, true, open());
+    expect(a.target).not.toBeNull();
+    const shadowTop = RECT.top + a.target!.row * 50;
+    expect(shadowTop + 2 * 50).toBeLessThanOrEqual(a.top + 25); // a sombra termina onde a peça começa (com folga)
     expect(a.left).toBe(300 - 50);
   });
 
-  it('no celular a peça sobe acima do dedo', () => {
+  it('a peça tem a posição certa na mão: no celular um pouco acima do dedo', () => {
     const mouse = aimAt(300, 400, RECT, shape('quadrado2'), false, open());
     const touch = aimAt(300, 400, RECT, shape('quadrado2'), true, open());
     expect(touch.top).toBeLessThan(mouse.top);
@@ -26,7 +29,7 @@ describe('aimAt (pontaria da peça arrastada)', () => {
     rows[3] = 0b00001000; // ocupa (3,3)
     const canPlace = (r: number, c: number) => fits(rows, s, r, c);
     // Aponta bem perto de (3,3), que está ocupada: gruda em outra casa válida colada
-    const a = aimAt(300, 417, RECT, s, false, canPlace);
+    const a = aimAt(300, 520, RECT, s, false, canPlace);
     expect(a.target === null || canPlace(a.target.row, a.target.col)).toBe(true);
   });
 

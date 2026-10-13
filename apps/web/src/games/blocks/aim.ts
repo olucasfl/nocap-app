@@ -19,9 +19,10 @@ export interface Aim {
 export const SNAP = 0.95;
 
 /**
- * Para onde a peça aponta. No celular a peça fica acima do dedo (senão o dedo a esconde); com o
- * mouse ela fica quase embaixo da seta. Se a casa exata não serve mas uma vizinha serve e está
- * perto, gruda nela: assim encaixar não exige pontaria de cirurgião.
+ * Para onde a peça aponta, como no Block Blast: a peça fica na mão (um tanto acima do dedo, para o
+ * dedo não esconder) e a SOMBRA, que mostra onde ela vai cair de verdade, fica acima da peça, à
+ * vista. Quanto mais alta a peça, mais a sombra sobe, para uma não cobrir a outra. Se a casa exata
+ * não serve mas uma vizinha serve e está perto, gruda nela: encaixar não exige pontaria de cirurgião.
  */
 export function aimAt(
   px: number,
@@ -32,11 +33,13 @@ export function aimAt(
   canPlace: (row: number, col: number) => boolean,
 ): Aim {
   const cell = rect.width / SIZE;
-  const lift = touch ? cell * 2.2 : cell * 0.35;
+  const hand = touch ? cell * 0.7 : cell * 0.2;
   const left = px - (shape.w * cell) / 2;
-  const top = py - lift - (shape.h * cell) / 2;
+  const top = py - hand - (shape.h * cell) / 2;
+  // A sombra fica uma peça e meia acima da que está na mão.
+  const gap = (shape.h / 2 + 0.55) * cell;
   const fc = (left - rect.left) / cell;
-  const fr = (top - rect.top) / cell;
+  const fr = (top - gap - rect.top) / cell;
   const r0 = Math.round(fr);
   const c0 = Math.round(fc);
   let best: { row: number; col: number; d: number } | null = null;
