@@ -50,7 +50,8 @@ export const COLLAPSE_WINDOW = 1.5;
 // --- Magias ----------------------------------------------------------------------------------
 /** A cada tantas peças soltas chega uma magia. */
 export const SPELL_EVERY = 5;
-export const MAX_HELD_SPELLS = 2;
+/** Uma magia boa por vez: só vem outra quando a que está na mão for usada. */
+export const MAX_HELD_SPELLS = 1;
 export const GOOD_CHANCE = 0.5;
 
 export type GoodSpell = 'vinha' | 'cimento' | 'desfazer' | 'vida';

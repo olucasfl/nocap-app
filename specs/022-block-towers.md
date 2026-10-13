@@ -57,7 +57,7 @@ No online (futuro) os três modos entram com sala de 2 a 4 pessoas, a mesma seed
 ### Magias (a cada 5 peças chega uma)
 Sorteadas pela seed, metade boas e metade ruins, tiradas de **sacolas embaralhadas** (nenhuma repete até as outras do mesmo tipo terem saído) e **a primeira da partida é sempre boa**.
 
-**Boas** (ficam guardadas, até 2; toque no botão da magia para usar):
+**Boas** (você guarda **uma por vez**; só vem outra depois de usar a que está na mão; toque no botão da magia para usar):
 - **Vinha**: a peça atual se gruda, ao assentar, em tudo que ela encostar (vira um bloco só, rígido).
 - **Cimento**: a peça atual vira pedra ao assentar (fica imóvel para sempre).
 - **Desfazer**: some com a última peça colocada, sem perder vida.

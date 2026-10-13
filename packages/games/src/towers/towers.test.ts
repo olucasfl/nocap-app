@@ -636,3 +636,57 @@ describe('peça barrada no ar por algo torto', () => {
     expect(released).toBe(true);
   });
 });
+
+describe('magia boa não acumula', () => {
+  const grant = (g: TowersGame) => (g as unknown as { grantSpell: () => void }).grantSpell.bind(g);
+
+  it('com uma magia boa na mão, nenhuma outra boa chega', () => {
+    const g = new TowersGame('sem-acumular');
+    g.stacked = 3;
+    g.lives = 2;
+    grant(g)(); // a primeira é sempre boa
+    expect(g.held).toHaveLength(1);
+    const first = g.held[0];
+    g.drainEvents();
+    let goods = 0;
+    for (let i = 0; i < 80; i++) {
+      grant(g)();
+      for (const e of g.drainEvents()) if (e.type === 'spell' && e.good) goods++;
+    }
+    expect(goods).toBe(0);
+    expect(g.held).toEqual([first]);
+  });
+
+  it('as ruins continuam chegando normalmente', () => {
+    const g = new TowersGame('ruins-seguem');
+    g.stacked = 3;
+    g.lives = 2;
+    grant(g)();
+    g.drainEvents();
+    let bads = 0;
+    for (let i = 0; i < 60; i++) {
+      grant(g)();
+      for (const e of g.drainEvents()) if (e.type === 'spell' && !e.good) bads++;
+    }
+    expect(bads).toBeGreaterThan(10);
+  });
+
+  it('depois de usar a magia, uma nova boa pode chegar', () => {
+    const g = new TowersGame('usou');
+    g.stacked = 3;
+    g.lives = 2;
+    while (!g.active) g.step(NONE);
+    grant(g)();
+    g.drainEvents();
+    g.held[0] = 'cimento'; // uma que sempre dá para usar agora
+    expect(g.castSpell()).toBe(true);
+    expect(g.held).toHaveLength(0);
+    let got = false;
+    for (let i = 0; i < 40 && !got; i++) {
+      grant(g)();
+      got = g.drainEvents().some((e) => e.type === 'spell' && e.good);
+    }
+    expect(got).toBe(true);
+    expect(g.held).toHaveLength(1);
+  });
+});

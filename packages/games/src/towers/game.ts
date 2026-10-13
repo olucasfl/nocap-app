@@ -685,6 +685,8 @@ export class TowersGame {
 
   private grantSpell() {
     const good = this.spellsGiven === 0 || this.rng() < GOOD_CHANCE;
+    // Magia boa não acumula: com uma na mão, a próxima só vem depois de usar esta (nada chega agora).
+    if (good && this.held.length >= MAX_HELD_SPELLS) return;
     this.spellsGiven++;
     if (good) {
       const name = this.drawFrom(
@@ -693,7 +695,6 @@ export class TowersGame {
         (x) => (x !== 'vida' || this.lives < MAX_LIVES) && (x !== 'desfazer' || this.stacked > 0),
       );
       this.held.push(name);
-      while (this.held.length > MAX_HELD_SPELLS) this.held.shift();
       this.events.push({ type: 'spell', good: true, name });
     } else {
       const name = this.drawFrom(this.badBag, BAD_SPELLS);
