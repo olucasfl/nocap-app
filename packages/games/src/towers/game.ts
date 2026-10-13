@@ -174,6 +174,11 @@ export class TowersGame {
   private targetTl = 0;
   private moveDir = 0;
   private moveTimer = 0;
+  /** A peça que desce já encostou em algo: daí em diante não anda nem gira mais. */
+  private touched = false;
+  /** Velocidade pedida para a peça que desce neste passo (ela se move sem empurrar ninguém). */
+  private cmdVx = 0;
+  private cmdVy = 0;
   private landTimer = 0;
   private autoTimer = 0;
   private fallTimes: number[] = [];
@@ -344,7 +349,7 @@ export class TowersGame {
     }
     const w = (maxX + 1) * scale;
     const h = (maxY + 1) * scale;
-    const tlx = Math.round((-w / 2) * 2) / 2;
+    const tlx = Math.round(-w / 2);
     const tly = this.towerTop() - SPAWN_GAP - h;
     this.world.add(body);
     this.shape(piece, cells, tlx, tly);
@@ -354,6 +359,7 @@ export class TowersGame {
     this.targetTl = tlx;
     this.moveDir = 0;
     this.moveTimer = 0;
+    this.touched = false;
     this.landTimer = 0;
     this.autoTimer = AUTO_ROTATE_EVERY;
     this.pieces.push(piece);
@@ -367,6 +373,11 @@ export class TowersGame {
   rotate(): boolean {
     const p = this.active;
     if (!p || this.over || p.noRotate) return false;
+    // Encostou em algo: a peça está travada, só desce.
+    if (this.touched) {
+      this.events.push({ type: 'blocked' });
+      return false;
+    }
     return this.doRotate(p);
   }
 
@@ -380,21 +391,21 @@ export class TowersGame {
     const next = normalize(rotateCw(p.cells));
     const nw = Math.max(...next.map(([x]) => x)) + 1;
     const nh = Math.max(...next.map(([, y]) => y)) + 1;
-    const baseX = Math.round((cx - (nw * p.scale) / 2) * 2) / 2;
+    const baseX = Math.round(cx - (nw * p.scale) / 2);
     const baseY = cy - (nh * p.scale) / 2;
     for (const [dx, dy] of [
       [0, 0],
       [MOVE_STEP, 0],
       [-MOVE_STEP, 0],
-      [1, 0],
-      [-1, 0],
-      [0, -MOVE_STEP],
-      [MOVE_STEP, -MOVE_STEP],
-      [-MOVE_STEP, -MOVE_STEP],
+      [2 * MOVE_STEP, 0],
+      [-2 * MOVE_STEP, 0],
+      [0, -1],
+      [MOVE_STEP, -1],
+      [-MOVE_STEP, -1],
     ] as const) {
       const x = clamp(baseX + dx, -FIELD_HALF, FIELD_HALF - nw * p.scale);
       this.shape(p, next, x, baseY + dy);
-      if (!this.world.overlaps(body)) {
+      if (!this.world.overlaps(body, 0.02)) {
         this.targetTl = x;
         this.events.push({ type: 'rotate' });
         return true;
@@ -455,7 +466,10 @@ export class TowersGame {
       this.spawnTimer -= dt;
       if (this.spawnTimer <= 0) this.spawn();
     }
-    if (this.active) this.control(this.active, input, dt);
+    if (this.active) {
+      this.control(this.active, input, dt);
+      this.moveActive(this.active, dt);
+    }
 
     this.world.step(dt);
 
@@ -466,6 +480,12 @@ export class TowersGame {
     }
     if (hit) this.events.push({ type: 'land', ...hit });
 
+    if (this.active && !this.touched && this.touchingAny(this.active.body)) {
+      // Primeiro encontro com a torre (ou a plataforma): trava os movimentos e dá o "toc".
+      this.touched = true;
+      this.targetTl = this.active.body.x - this.active.comx;
+      this.events.push({ type: 'land', x: this.active.body.x, y: this.active.body.y, speed: Math.max(1.6, this.cmdVy) });
+    }
     if (this.active) this.checkLanding(this.active, input, dt);
     this.trackPieces(dt);
     this.checkFalls();
@@ -483,30 +503,38 @@ export class TowersGame {
   private control(p: TowerPiece, input: TowersInput, dt: number) {
     const body = p.body;
     const tl = body.x - p.comx;
-    const dir = (input.right ? 1 : 0) - (input.left ? 1 : 0);
+    const dir = this.touched ? 0 : (input.right ? 1 : 0) - (input.left ? 1 : 0);
     const minTl = -FIELD_HALF;
     const maxTl = FIELD_HALF - p.w * p.scale;
+    // Anda de bloco em bloco: cada passo é uma casa inteira, sempre alinhada à grade. Se a peça
+    // ainda não chegou no alvo (algo a segura), não acumula passos.
+    const step = () => {
+      const next = clamp(this.targetTl + dir * MOVE_STEP, minTl, maxTl);
+      if (next !== this.targetTl && Math.abs(next - tl) <= MOVE_STEP + 0.01) {
+        this.targetTl = next;
+        this.events.push({ type: 'move' });
+      }
+    };
     if (dir !== 0) {
       if (dir !== this.moveDir) {
-        this.targetTl = clamp(this.targetTl + dir * MOVE_STEP, Math.max(minTl, tl - 1), Math.min(maxTl, tl + 1));
+        step();
         this.moveTimer = MOVE_FIRST_DELAY;
-        this.events.push({ type: 'move' });
       } else {
         this.moveTimer -= dt;
         if (this.moveTimer <= 0) {
-          this.targetTl = clamp(this.targetTl + dir * MOVE_STEP, Math.max(minTl, tl - 1), Math.min(maxTl, tl + 1));
+          step();
           this.moveTimer = MOVE_REPEAT;
-          this.events.push({ type: 'move' });
         }
       }
     }
     this.moveDir = dir;
-    this.targetTl = clamp(this.targetTl, Math.max(minTl, tl - 1), Math.min(maxTl, tl + 1));
-    body.vx = clamp((this.targetTl - tl) * 20, -20, 20);
+    this.cmdVx = this.touched ? 0 : clamp((this.targetTl - tl) * 20, -20, 20);
     const speed = input.down ? Math.max(SOFT_DROP, this.fallSpeed(p)) : this.fallSpeed(p);
-    body.vy = this.landTimer > 0 ? 0 : speed;
+    this.cmdVy = this.landTimer > 0 ? 0 : speed;
+    body.vx = 0;
+    body.vy = 0;
     body.w = 0;
-    if (p.autoRotate) {
+    if (p.autoRotate && !this.touched) {
       this.autoTimer -= dt;
       if (this.autoTimer <= 0) {
         this.autoTimer = AUTO_ROTATE_EVERY;
@@ -515,8 +543,51 @@ export class TowersGame {
     }
   }
 
+  /** A peça (na posição de agora) bateria em algo se andasse `dx`, `dy`? Folga de 0,004 de penetração. */
+  private probe(body: Body, dx: number, dy: number): boolean {
+    body.x += dx;
+    body.y += dy;
+    const hit = this.world.overlaps(body, 0.004);
+    body.x -= dx;
+    body.y -= dy;
+    return hit;
+  }
+
+  /** Está a menos de uma "unha" de algo, embaixo ou dos lados? */
+  private touchingAny(body: Body): boolean {
+    return this.probe(body, 0, 0.06) || this.probe(body, 0.06, 0) || this.probe(body, -0.06, 0);
+  }
+
+  /**
+   * A peça que a pessoa segura se move sozinha, sem passar pelo motor: anda o que o controle pede e,
+   * se bater em algo, para antes (aproxima até encostar). Assim ela NUNCA empurra a torre; só a
+   * física depois de solta (o peso dela) pode derrubar alguma coisa.
+   */
+  private moveActive(p: TowerPiece, dt: number) {
+    const body = p.body;
+    const slide = (axis: 'x' | 'y', d: number) => {
+      if (d === 0) return;
+      body[axis] += d;
+      if (!this.world.overlaps(body, 0.02)) return;
+      body[axis] -= d;
+      let lo = 0;
+      let hi = 1;
+      for (let i = 0; i < 7; i++) {
+        const mid = (lo + hi) / 2;
+        body[axis] += d * mid;
+        const bad = this.world.overlaps(body, 0.02);
+        body[axis] -= d * mid;
+        if (bad) hi = mid;
+        else lo = mid;
+      }
+      body[axis] += d * lo;
+    };
+    slide('x', this.cmdVx * dt);
+    slide('y', this.cmdVy * dt);
+  }
+
   private checkLanding(p: TowerPiece, input: TowersInput, dt: number) {
-    if (this.world.restingOn(p.body)) this.landTimer += dt;
+    if (this.probe(p.body, 0, 0.06)) this.landTimer += dt;
     else this.landTimer = Math.max(0, this.landTimer - dt * 2);
     const need = input.down ? LAND_TIME_FAST : LAND_TIME;
     if (this.landTimer >= need) this.release(p);

@@ -968,11 +968,11 @@ export interface View {
 
 /** Desenha um quadro inteiro. `dt` anima a câmera. */
 export function drawFrame(ctx: CanvasRenderingContext2D, W: number, H: number, game: TowersGame, fx: Fx, dt: number): View {
-  const ppu = Math.min(W / 17.5, H / 24.5);
+  const ppu = Math.min(W / 17.5, H / 27);
   const top = Math.min(0, game.towerTop());
   fx.camY += (top - fx.camY) * Math.min(1, dt * 2.6);
   const camY = fx.camY;
-  const baseY = H * 0.7;
+  const baseY = H * 0.78;
   const X = (x: number) => W / 2 + x * ppu;
   const Y = (y: number) => baseY + (y - camY) * ppu;
   const p = clamp01(-camY / 48);

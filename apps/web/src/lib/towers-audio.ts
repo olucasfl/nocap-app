@@ -23,6 +23,8 @@ export interface TowersAudio {
   cast(name: GoodSpell | BadSpell): void;
   over(): void;
   win(): void;
+  /** Contagem de preparação: 3, 2, 1 e, no 0, o "vai". */
+  count(n: number): void;
 }
 
 /** Escala pentatônica de dó maior em duas oitavas: assentar cada peça é uma nota que sobe. */
@@ -156,6 +158,16 @@ export function createTowersAudio(): TowersAudio | null {
     over() {
       [392, 349.23, 311.13, 261.63, 196].forEach((f, i) => tone('triangle', f, f * 0.97, 0.34, 0.13, i * 0.2));
       tone('sawtooth', 98, 49, 0.9, 0.08, 0.6);
+    },
+    count(n) {
+      if (n > 0) {
+        const f = n === 3 ? 392 : n === 2 ? 440 : 494;
+        tone('triangle', f, f, 0.18, 0.14);
+        tone('sine', f * 2, f * 2, 0.12, 0.04);
+      } else {
+        [523.25, 659.25, 783.99].forEach((f) => tone('triangle', f, f, 0.45, 0.13));
+        hiss('highpass', 5000, 9000, 0.25, 0.04);
+      }
     },
     win() {
       [523.25, 659.25, 783.99, 1046.5, 1318.51].forEach((f, i) => tone('triangle', f, f, 0.4, 0.12, i * 0.09));

@@ -368,3 +368,73 @@ describe('magias', () => {
     expect(g.fx.grande + g.fx.gelo + g.fx.semgiro + g.fx.rapida + g.fx.gira).toBe(0);
   });
 });
+
+describe('movimento de bloco em bloco e trava ao encostar', () => {
+  const tlOf = (g: TowersGame) => g.active!.body.x - g.active!.comx;
+  const ready = (seed: string) => {
+    const g = new TowersGame(seed);
+    while (!g.active) g.step(NONE);
+    return g;
+  };
+
+  it('um toque anda exatamente uma casa e a peça fica alinhada à grade', () => {
+    const g = ready('grade');
+    const start = tlOf(g);
+    expect(Number.isInteger(start)).toBe(true);
+    for (let i = 0; i < 3; i++) g.step({ left: false, right: true, down: false });
+    for (let i = 0; i < 40; i++) g.step(NONE);
+    expect(tlOf(g)).toBeCloseTo(start + 1, 1);
+    for (let i = 0; i < 3; i++) g.step({ left: true, right: false, down: false });
+    for (let i = 0; i < 40; i++) g.step(NONE);
+    expect(tlOf(g)).toBeCloseTo(start, 1);
+  });
+
+  it('segurar anda uma casa de cada vez, devagar', () => {
+    const g = ready('segura');
+    const start = tlOf(g);
+    for (let i = 0; i < 60; i++) g.step({ left: false, right: true, down: false }); // 1 segundo
+    const moved = tlOf(g) - start;
+    expect(moved).toBeGreaterThanOrEqual(3);
+    expect(moved).toBeLessThanOrEqual(7);
+    for (let i = 0; i < 40; i++) g.step(NONE);
+    expect(Number.isInteger(Math.round(tlOf(g) * 100) / 100)).toBe(true);
+  });
+
+  it('depois de encostar em algo a peça não anda nem gira mais', () => {
+    const g = ready('trava');
+    let guard = 0;
+    while (!(g as unknown as { touched: boolean }).touched && guard++ < 60 * 20) g.step(NONE);
+    expect((g as unknown as { touched: boolean }).touched).toBe(true);
+    const tl = tlOf(g);
+    for (let i = 0; i < 8 && g.active; i++) g.step({ left: false, right: true, down: false });
+    if (g.active) expect(tlOf(g)).toBeCloseTo(tl, 1);
+    expect(g.rotate()).toBe(false);
+  });
+
+  it('a peça nasce bem alto e desce devagar', () => {
+    const g = ready('alto');
+    const p = g.active!;
+    // O caminho até a plataforma é longo (mais de 12 casas) e a descida é lenta (menos de 3 casas por segundo)
+    expect(-p.body.y).toBeGreaterThan(12);
+    expect(p.body.vy).toBeLessThan(3);
+  });
+});
+
+describe('a peça que voa nunca empurra a torre', () => {
+  it('enquanto a pessoa controla a peça, as peças da torre não saem do lugar', () => {
+    const g = new TowersGame('sem-empurrao');
+    const first = dropOne(g)!;
+    for (let i = 0; i < 90; i++) g.step(NONE); // a primeira assenta
+    const base = { x: first.body.x, y: first.body.y, c: first.body.c };
+    // A segunda peça desce empurrando para o lado e para baixo, direto na torre.
+    let steps = 0;
+    while (!g.active && steps++ < 300) g.step(NONE);
+    let worst = 0;
+    steps = 0;
+    while (g.active && steps++ < 60 * 20) {
+      g.step({ left: false, right: true, down: true });
+      worst = Math.max(worst, Math.hypot(first.body.x - base.x, first.body.y - base.y), Math.abs(first.body.c - base.c));
+    }
+    expect(worst).toBeLessThan(0.02);
+  });
+});

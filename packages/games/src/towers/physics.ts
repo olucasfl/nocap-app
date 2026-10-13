@@ -420,14 +420,34 @@ export class World {
     for (const [k, arb] of this.arbiters) if (arb.a === body || arb.b === body) this.arbiters.delete(k);
   }
 
-  /** Os corpos que encostam neste agora (com folga `gap`), pelos contatos do último passo. */
+  /** Os corpos que encostam neste agora (a menos de `gap` de distância), por geometria. */
   touching(body: Body, gap = 0.06): Body[] {
-    const out = new Set<Body>();
-    for (const arb of this.arbiters.values()) {
-      if (arb.a !== body && arb.b !== body) continue;
-      if (arb.contacts.some((c) => c.sep <= gap)) out.add(arb.a === body ? arb.b : arb.a);
+    const out: Body[] = [];
+    for (const other of this.bodies) {
+      if (other === body || other.held) continue;
+      const dx = other.x - body.x;
+      const dy = other.y - body.y;
+      const r = other.radius + body.radius + gap * 2;
+      if (!other.isStatic && dx * dx + dy * dy > r * r) continue;
+      let hit = false;
+      for (const ba of body.boxes) {
+        const pa = poseOf(body, ba, { x: 0, y: 0, c: 1, s: 0, hw: 0, hh: 0 });
+        pa.hw += gap;
+        pa.hh += gap;
+        for (const bb of other.boxes) {
+          const pb = poseOf(other, bb, { x: 0, y: 0, c: 1, s: 0, hw: 0, hh: 0 });
+          const dd = Math.abs(pa.x - pb.x) + Math.abs(pa.y - pb.y);
+          if (dd > pa.hw + pa.hh + pb.hw + pb.hh + 1) continue;
+          if (collideBoxes(pa, pb).length > 0) {
+            hit = true;
+            break;
+          }
+        }
+        if (hit) break;
+      }
+      if (hit) out.push(other);
     }
-    return [...out];
+    return out;
   }
 
   /** Contatos de apoio por baixo (normal quase vertical) deste corpo: usado para saber se pousou. */
@@ -478,6 +498,9 @@ export class World {
       for (let j = i + 1; j < bodies.length; j++) {
         const B = bodies[j]!;
         if (A.invM === 0 && B.invM === 0) continue;
+        // A peça que a pessoa segura não colide no motor: ela se move por conta própria e para ao
+        // encostar (ver `TowersGame.moveActive`), então nunca empurra a torre.
+        if (A.held || B.held) continue;
         const dx = B.x - A.x;
         const dy = B.y - A.y;
         const r = A.radius + B.radius + 0.1;
@@ -647,7 +670,7 @@ export class World {
     }
 
     for (const b of this.bodies) {
-      if (b.invM === 0 && !b.held) continue;
+      if (b.invM === 0 || b.held) continue;
       b.x += b.vx * dt;
       b.y += b.vy * dt;
       if (b.invI === 0) continue;

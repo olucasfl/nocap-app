@@ -20,17 +20,17 @@ export const FIELD_HALF = 8;
 /** Abaixo disto (y) o que caiu está perdido. */
 export const KILL_Y = 15;
 /** Quanto acima do topo da torre a peça nasce. */
-export const SPAWN_GAP = 9;
+export const SPAWN_GAP = 13;
 
 // --- Peça que desce --------------------------------------------------------------------------
-export const FALL_BASE = 3.4;
-export const FALL_PER_PIECE = 0.07;
-export const FALL_MAX = 7;
-export const SOFT_DROP = 18;
-/** Passo do movimento para os lados e a cadência de repetição ao segurar. */
-export const MOVE_STEP = 0.5;
-export const MOVE_FIRST_DELAY = 0.17;
-export const MOVE_REPEAT = 0.07;
+export const FALL_BASE = 2.0;
+export const FALL_PER_PIECE = 0.05;
+export const FALL_MAX = 5;
+export const SOFT_DROP = 13;
+/** A peça anda de bloco em bloco (1 casa por passo); segurar repete devagar. */
+export const MOVE_STEP = 1;
+export const MOVE_FIRST_DELAY = 0.22;
+export const MOVE_REPEAT = 0.12;
 /** A peça fica livre depois de tanto tempo apoiada (e menos se a pessoa está acelerando). */
 export const LAND_TIME = 0.4;
 export const LAND_TIME_FAST = 0.12;

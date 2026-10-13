@@ -381,6 +381,96 @@
   font-weight: 700;
 }
 
+/* contagem de preparação e pausa */
+.tw-countdown {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 8px;
+  background: rgba(17, 17, 17, 0.38);
+  pointer-events: none;
+}
+.tw-countdown span {
+  padding: 4px 14px;
+  background: var(--paper);
+  color: var(--ink);
+  border: var(--border);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+.tw-countdown b {
+  display: grid;
+  place-items: center;
+  width: clamp(120px, 34vw, 170px);
+  aspect-ratio: 1;
+  background: var(--yellow);
+  color: var(--on-accent);
+  border: var(--border);
+  border-radius: 50%;
+  box-shadow: 8px 8px 0 var(--ink);
+  font: 900 clamp(72px, 22vw, 110px) / 1 var(--font-display);
+  letter-spacing: -0.04em;
+  animation: tw-count 0.9s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+@keyframes tw-count {
+  0% {
+    transform: scale(0.4) rotate(-14deg);
+    opacity: 0;
+  }
+  25% {
+    transform: scale(1.12) rotate(-4deg);
+    opacity: 1;
+  }
+  80% {
+    transform: scale(1) rotate(-4deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.88) rotate(-4deg);
+    opacity: 0.2;
+  }
+}
+.tw-pause {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(17, 17, 17, 0.6);
+}
+.tw-pause-card {
+  display: grid;
+  gap: 12px;
+  width: min(100%, 340px);
+  padding: 18px;
+  background: var(--paper);
+  color: var(--ink);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+.tw-pause-card h2 {
+  margin: 0;
+  font: 900 30px / 1 var(--font-display);
+  letter-spacing: -0.03em;
+}
+.tw-pause-card p {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.tw-iconbtn:disabled {
+  opacity: 0.5;
+}
+
 /* telas baixas: tudo menor para o mundo aparecer */
 @media (max-height: 600px) {
   .tw-score {
@@ -406,6 +496,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .tw-countdown b,
   .tw-peak,
   .tw-chip,
   .tw-banner,

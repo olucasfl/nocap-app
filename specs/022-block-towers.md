@@ -40,9 +40,13 @@ No online (futuro) os três modos entram com sala de 2 a 4 pessoas, a mesma seed
 
 ### Peças
 - Os 7 tetraminós (I, O, T, S, Z, J, L), sorteados em **sacolas de 7** (todas aparecem antes de repetir) a partir da seed.
-- A pessoa move para os lados, **gira em passos de 90°** e **acelera a descida**.
-- A peça que desce **é física**: empurra a torre se encostar nela. Ela só fica livre (cai sozinha pela gravidade e se apoia) depois de ficar **encostada por cerca de 0,4 s**. Nesse momento nasce a próxima.
-- Giro que bateria em algo tenta uma folga para o lado; se não couber, não gira.
+- **Antes de começar** (e toda vez que volta da pausa) há uma contagem **3, 2, 1**. Há um botão de **pausa**; ao continuar, vem a contagem de novo. Sair da aba também pausa.
+- A peça nasce **bem alto** (13 casas acima da torre) e desce **devagar** (2 casas por segundo no começo, subindo um pouco a cada peça até 5). Segurar "descer" acelera.
+- A pessoa move **de bloco em bloco** (uma casa inteira por toque; segurar repete devagar), **gira em passos de 90°** e acelera a descida. A peça fica sempre alinhada à grade.
+- **Encostou, travou:** assim que a peça toca em algo (a torre, a plataforma ou o lado de outra peça) ela **não anda nem gira mais**, só desce até apoiar.
+- **A peça que voa nunca empurra a torre.** Enquanto a pessoa a controla, ela é guiada à parte e **para ao encostar**, sem mover nenhuma peça já colocada. Só depois de solta ela vira física, e aí o **peso dela** pode desequilibrar o lado que estava sem base (algo cai ou tomba).
+- Ela fica livre (cai sozinha pela gravidade e se apoia) depois de ficar **encostada por cerca de 0,4 s**. Nesse momento nasce a próxima.
+- Giro que bateria em algo tenta uma folga de uma casa para o lado; se não couber, não gira.
 
 ### Vidas e nota
 - **3 vidas.** Cada peça que cai da torre (ou da plataforma) custa **1 vida**. Se várias caem de uma vez (a torre toda), perdem-se várias vidas.

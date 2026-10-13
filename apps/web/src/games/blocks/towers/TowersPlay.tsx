@@ -9,7 +9,6 @@ import {
   type TowersEvent,
   type TowersInput,
 } from '@nocap/games';
-import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { MuteButton } from '@/components/MuteButton';
 import { buzz } from '@/lib/sfx';
 import { createTowersAudio, type TowersAudio } from '@/lib/towers-audio';
@@ -96,8 +95,12 @@ export function TowersPlay({ seed, best, onEnd, onQuit }: Props) {
 
   const [hud, setHud] = useState<Hud>(() => snapshot(game));
   const [banner, setBanner] = useState<Banner | null>(null);
-  const [asking, setAsking] = useState(false);
+  /** O menu de pausa está aberto. */
+  const [menu, setMenu] = useState(false);
+  /** Contagem de preparação (3, 2, 1): no começo e toda vez que a partida volta da pausa. */
+  const [count, setCount] = useState<number | null>(3);
   const [over, setOver] = useState(false);
+  const menuRef = useRef(false);
 
   const say = useCallback((tone: Banner['tone'], title: string, sub: string | null = null, ms = 1500) => {
     const key = ++bannerKey.current;
@@ -106,8 +109,18 @@ export function TowersPlay({ seed, best, onEnd, onQuit }: Props) {
   }, []);
 
   useEffect(() => {
-    paused.current = asking;
-  }, [asking]);
+    menuRef.current = menu;
+    paused.current = menu || count !== null;
+    if (menu || count !== null) input.current = { left: false, right: false, down: false };
+  }, [menu, count]);
+
+  const openMenu = useCallback(() => {
+    if (!game.over) setMenu(true);
+  }, [game]);
+  const resume = useCallback(() => {
+    setMenu(false);
+    setCount(3);
+  }, []);
 
   useEffect(() => {
     const cv = canvas.current!;
@@ -354,8 +367,12 @@ export function TowersPlay({ seed, best, onEnd, onQuit }: Props) {
       else if (k === 'arrowdown' || k === 's') input.current.down = down;
       else if (down && !e.repeat && (k === 'arrowup' || k === 'w' || k === ' ')) rotateRef.current();
       else if (down && !e.repeat && (k === 'e' || k === 'enter')) castRef.current();
-      else if (down && k === 'escape') setAsking(true);
-      else return;
+      else if (down && !e.repeat && k === 'escape') {
+        if (menuRef.current) {
+          setMenu(false);
+          setCount(3);
+        } else openMenu();
+      } else return;
       e.preventDefault();
     };
     const onDown = (e: KeyboardEvent) => keys(e, true);
@@ -366,6 +383,11 @@ export function TowersPlay({ seed, best, onEnd, onQuit }: Props) {
       input.current = { left: false, right: false, down: false };
     };
     window.addEventListener('blur', clear);
+    // Saiu da aba ou bloqueou a tela: pausa (ao voltar, a pessoa continua pelo menu e vem a contagem).
+    const onHide = () => {
+      if (document.hidden) openMenu();
+    };
+    document.addEventListener('visibilitychange', onHide);
 
     return () => {
       cancelAnimationFrame(raf);
@@ -374,9 +396,21 @@ export function TowersPlay({ seed, best, onEnd, onQuit }: Props) {
       window.removeEventListener('keydown', onDown);
       window.removeEventListener('keyup', onUp);
       window.removeEventListener('blur', clear);
+      document.removeEventListener('visibilitychange', onHide);
       audioRef.current = null;
     };
-  }, [game, say]);
+  }, [game, say, openMenu]);
+
+  // A contagem de preparação: 3, 2, 1 e a partida (re)começa.
+  useEffect(() => {
+    if (count === null) return;
+    audioRef.current?.count(count);
+    const t = window.setTimeout(() => {
+      if (count <= 1) audioRef.current?.count(0);
+      setCount(count <= 1 ? null : count - 1);
+    }, 900);
+    return () => window.clearTimeout(t);
+  }, [count]);
 
   const hold = (key: keyof TowersInput) => ({
     onPointerDown: (e: ReactPointerEvent) => {
@@ -404,9 +438,10 @@ export function TowersPlay({ seed, best, onEnd, onQuit }: Props) {
       <canvas ref={canvas} className="tw-canvas" />
 
       <header className="tw-top">
-        <button type="button" className="tw-iconbtn" aria-label="Sair da partida" data-sfx="back" onClick={() => setAsking(true)}>
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true">
-            <path d="M6 6l12 12M18 6L6 18" />
+        <button type="button" className="tw-iconbtn" aria-label="Pausar" data-sfx="select" disabled={over} onClick={openMenu}>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+            <rect x="6" y="4" width="4" height="16" rx="1" />
+            <rect x="14" y="4" width="4" height="16" rx="1" />
           </svg>
         </button>
         <div className={`tw-next${hud.fog ? ' fog' : ''}`} aria-label="Próximas peças">
@@ -495,19 +530,30 @@ export function TowersPlay({ seed, best, onEnd, onQuit }: Props) {
         </div>
       </footer>
 
-      <ConfirmDialog
-        open={asking}
-        title="Sair da partida?"
-        text="A partida em andamento não vale para o recorde."
-        confirmLabel="Sair"
-        confirmSfx="back"
-        cancelLabel="Continuar jogando"
-        onConfirm={() => {
-          setAsking(false);
-          onQuit();
-        }}
-        onCancel={() => setAsking(false)}
-      />
+      {count !== null && !menu && (
+        <div className="tw-countdown" role="status" aria-live="assertive">
+          <span className="mono">PREPARE-SE</span>
+          <b key={count}>{count}</b>
+        </div>
+      )}
+
+      {menu && (
+        <div className="tw-pause" role="dialog" aria-modal="true" aria-label="Jogo pausado">
+          <div className="tw-pause-card">
+            <h2>Pausado</h2>
+            <p className="mono">QUANDO VOLTAR, VEM A CONTAGEM 3, 2, 1.</p>
+            <div className="stack">
+              <button type="button" className="btn alt" data-sfx="start" onClick={resume}>
+                Continuar
+              </button>
+              <button type="button" className="btn ghost" data-sfx="back" onClick={onQuit}>
+                Sair da partida
+              </button>
+            </div>
+            <p className="mono tw-pause-hint">A PARTIDA EM ANDAMENTO NÃO VALE PARA O RECORDE. ESC TAMBÉM PAUSA E VOLTA.</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
