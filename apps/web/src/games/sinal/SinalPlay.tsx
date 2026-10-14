@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   DT,
+  ITEM_USE,
   SinalSim,
+  type ItemKind,
   type SinalEnd,
   type SinalEvent,
   type SinalInput,
@@ -14,6 +16,7 @@ import { makeLayout, type Layout } from './camera';
 import { attachControls } from './controls';
 import { MAP_STYLE, clamp } from './draw-art';
 import { drawScene, type Notice } from './draw-scene';
+import { ITEM_COLOR, ITEM_NAME } from './art/perigos';
 import './sinal.css';
 
 type Pause = { kind: 'none' } | { kind: 'paused' } | { kind: 'count'; n: number };
@@ -46,7 +49,8 @@ export function SinalPlay({ mode, seed, color, best, onEnd, onQuit, onRestart }:
   const [pause, setPause] = useState<Pause>({ kind: 'none' });
   const [over, setOver] = useState<{ reason: SinalEnd; meters: number } | null>(null);
   const [banner, setBanner] = useState<{ title: string; sub: string } | null>(null);
-  const ctl = useRef<{ pause: () => void; resume: () => void } | null>(null);
+  const [held, setHeld] = useState<ItemKind | null>(null);
+  const ctl = useRef<{ pause: () => void; resume: () => void; useItem: () => void } | null>(null);
   const onEndRef = useRef(onEnd);
   onEndRef.current = onEnd;
 
@@ -85,6 +89,8 @@ export function SinalPlay({ mode, seed, color, best, onEnd, onQuit, onRestart }:
     let bannerTimer = 0;
     let endTimer = 0;
     let lastIn: [number, number] = [0, 0];
+    let pendingUse = false;
+    let heldNow: ItemKind | null = null;
     let face = 0;
     let warn = 0;
     let walking = false;
@@ -109,6 +115,19 @@ export function SinalPlay({ mode, seed, color, best, onEnd, onQuit, onRestart }:
         } else if (e.kind === 'quebrou') {
           notice('ESCONDERIJO QUEBROU', '#ff6a2b');
           buzz(30);
+        } else if (e.kind === 'item') {
+          notice(`PEGOU: ${ITEM_NAME[e.item]}`, ITEM_COLOR[e.item], 1500);
+          buzz(20);
+        } else if (e.kind === 'usou') {
+          notice(`${ITEM_NAME[e.item]}!`, ITEM_COLOR[e.item], 1200);
+          buzz(30);
+        } else if (e.kind === 'perseguidor') {
+          notice('ALGO VEM ATRÁS DE VOCÊ', '#e5303a', 1800);
+          buzz(25);
+        } else if (e.kind === 'pegou') {
+          buzz(60);
+        } else if (e.kind === 'impacto' && e.hit) {
+          buzz(45);
         } else if (e.kind === 'olhando') {
           buzz(12);
         } else if (e.kind === 'fase') {
@@ -165,7 +184,10 @@ export function SinalPlay({ mode, seed, color, best, onEnd, onQuit, onRestart }:
       };
       countTimer = window.setTimeout(step, 1000);
     };
-    ctl.current = { pause: doPause, resume: doResume };
+    const useItem = () => {
+      if (!paused && !finished && sim.held) pendingUse = true;
+    };
+    ctl.current = { pause: doPause, resume: doResume, useItem };
 
     const onKey = (e: KeyboardEvent) => {
       if (e.defaultPrevented || e.repeat) return;
@@ -173,6 +195,9 @@ export function SinalPlay({ mode, seed, color, best, onEnd, onQuit, onRestart }:
         e.preventDefault();
         if (paused) doResume();
         else doPause();
+      } else if (e.key.toLowerCase() === 'e' || e.key === ' ') {
+        e.preventDefault();
+        useItem();
       }
     };
     window.addEventListener('keydown', onKey);
@@ -198,13 +223,21 @@ export function SinalPlay({ mode, seed, color, best, onEnd, onQuit, onRestart }:
           inputs.push({ tick: sim.tick, x: ax, y: ay });
           lastIn = [ax, ay];
         }
-        handle(sim.step(ax, ay));
+        // Usar o item entra nos movimentos gravados (o servidor refaz a corrida com ele).
+        const use = pendingUse && sim.held !== null;
+        pendingUse = false;
+        if (use) inputs.push({ tick: sim.tick, x: ITEM_USE, y: 0 });
+        handle(sim.step(ax, ay, use));
         acc -= DT;
         steps++;
       }
       if (steps === 8) acc = 0;
 
       const v = sim.view;
+      if (v.held !== heldNow) {
+        heldNow = v.held;
+        setHeld(heldNow);
+      }
       walking = Math.hypot(sim.x - prevX, sim.y - prevY) > 0.01;
       prevX = sim.x;
       prevY = sim.y;
@@ -274,6 +307,22 @@ export function SinalPlay({ mode, seed, color, best, onEnd, onQuit, onRestart }:
           <rect x="14" y="4" width="4" height="16" rx="1" />
         </svg>
       </button>
+      {held && !over && (
+        <button
+          type="button"
+          className="sv-itembtn"
+          aria-label={`Usar ${ITEM_NAME[held]}`}
+          data-sfx="select"
+          style={{ background: ITEM_COLOR[held] }}
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={() => ctl.current?.useItem()}
+        >
+          <svg viewBox="-14 -14 28 28" width="34" height="34" aria-hidden="true">
+            <ItemGlyph kind={held} />
+          </svg>
+          <span className="mono">{ITEM_NAME[held]}</span>
+        </button>
+      )}
       {banner && (
         <div className="sv-banner" role="status">
           <b>{banner.title}</b>
@@ -312,5 +361,27 @@ export function SinalPlay({ mode, seed, color, best, onEnd, onQuit, onRestart }:
         </div>
       )}
     </div>
+  );
+}
+
+/** O desenho do item no botão da tela (o mesmo do chão, em SVG). */
+function ItemGlyph({ kind }: { kind: ItemKind }) {
+  if (kind === 'sombra') {
+    return (
+      <g>
+        <ellipse cx="0" cy="0" rx="11" ry="7.5" fill="#ffffff" stroke="#111111" strokeWidth="1.6" />
+        <circle cx="0" cy="0" r="4" fill="#2a1a50" />
+        <path d="M-11 9L11 -9" stroke="#111111" strokeWidth="2.4" strokeLinecap="round" />
+      </g>
+    );
+  }
+  return (
+    <path
+      d="M3 -12L-8 2H-1L-4 12L8 -3H1Z"
+      fill="#ffffff"
+      stroke="#111111"
+      strokeWidth="1.6"
+      strokeLinejoin="round"
+    />
   );
 }

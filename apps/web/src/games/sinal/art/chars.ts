@@ -471,6 +471,14 @@ function songStrip(c: Ctx, o: VigiaIn, y: number): number {
   let x = o.cx - total / 2;
   const state = view.vigia;
   c.save();
+  if (view.cycle.rush && (state === 'costas' || state === 'aviso')) {
+    // o Vigia veio apressado: um aviso vermelho tremendo em cima da faixa
+    const label = 'ACELEROU!';
+    const lw = 92 * sc;
+    c.translate(Math.sin(t * 50) * 1.2, 0);
+    blob(c, rect(o.cx - lw / 2, y - 21 * sc, lw, 17 * sc, 8 * sc), '#e5303a', 2.2 * sc, 2 * sc);
+    mono(c, label, o.cx, y - 8.5 * sc, 9.5 * sc, PAPER, 'center');
+  }
   if (state === 'olhando') {
     const w = total + 20 * sc;
     c.translate(0, Math.sin(t * 30) * 0.8);

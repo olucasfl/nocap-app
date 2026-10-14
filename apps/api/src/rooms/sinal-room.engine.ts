@@ -187,6 +187,7 @@ export class SinalRoomEngine extends ColorRoomEngine {
     const edge = HALF - 1;
     ids.forEach((id, i) => {
       const sim = new SinalSim(this.seed, 'classico', phase);
+      sim.itemsEnabled = false;
       // Largam lado a lado, espalhados pelo corredor.
       sim.x = clamp((i - (ids.length - 1) / 2) * 1.3, -edge, edge);
       // A linha de chegada para o boneco ali, e a escuridão é uma só: quem manda nelas é a sala.

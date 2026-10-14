@@ -29,5 +29,6 @@
 | 024 | [Retomar partida (Block Classic)](024-retomar-partida.md) | 6 | implementada no Block Classic; falta jogar ao vivo |
 | 025 | [Block Towers: câmera final e modos online](025-block-towers-online.md) | 6 | câmera final implementada; online (Corrida e Petrificar) só registrado |
 | 026 | [Sinal Vermelho 2 (reforma completa)](026-sinal-vermelho-2.md) | 6 | núcleo, tela e som novos implementados; faltam os itens do jogador e calibrar jogando |
+| 027 | [Sinal: arremessadores, perseguidores, Vigia apressado e itens](027-sinal-perigos.md) | 6 | implementada; falta jogar e calibrar |
 
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.

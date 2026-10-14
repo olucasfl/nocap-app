@@ -3,6 +3,12 @@ import {
   BUMP_BASE,
   BUMP_PER_R,
   BUMP_TICKS,
+  CHASER_DIZZY_TICKS,
+  CHASER_GIVEUP_BEHIND,
+  CHASER_HIT_POWER,
+  CHASER_R,
+  CHASER_SPAWN_AHEAD,
+  CHASER_STUN_TICKS,
   COVER_DARK_FACTOR,
   COVER_LONG_DRAIN,
   COVER_LONG_MAX,
@@ -18,6 +24,10 @@ import {
   FOLEGO_TICKS,
   GELO_SLICK,
   IMA_PULL,
+  IMPULSO_FACTOR,
+  IMPULSO_TICKS,
+  ITEM_PICKUP_R,
+  ITEM_USE,
   LOOK_GRACE,
   MAX_SPEED,
   MOLA_IMPULSE,
@@ -26,7 +36,12 @@ import {
   MOVE_EPS,
   MUD_FACTOR,
   PLAYER_R,
+  ROLL_R,
+  ROLL_SPEED,
+  ROLL_WIND_TICKS,
+  SAFE_BEFORE_LOOK_S,
   SERRA_BUMP,
+  SOMBRA_TICKS,
   SINAL_MAX_INPUTS,
   STUN_BASE_TICKS,
   STUN_MOVER_TICKS,
@@ -35,17 +50,30 @@ import {
   STUN_SHOVE_TICKS,
   SINAL_MAX_TENTHS,
   SINAL_MAX_TICKS,
+  THROW_AHEAD,
+  THROW_BEHIND,
+  THROW_FLIGHT_TICKS,
+  THROW_HIT_POWER,
+  THROW_LEAD,
+  THROW_RADIUS,
+  THROW_STUN_TICKS,
+  THROW_WIND_TICKS,
   TPS,
   clamp,
   type SinalEnd,
   type SinalEvent,
   type SinalInput,
   type SinalMode,
+  type ItemKind,
   type SinalResult,
+  type ThrowKind,
 } from './constants';
 import {
+  ChaserField,
   CoverField,
+  ItemField,
   ObstacleField,
+  ThrowerField,
   WidthField,
   courseFor,
   isSolid,
@@ -54,7 +82,9 @@ import {
   timelineParams,
   type Course,
   type CoverDef,
+  type ItemDef,
   type ObstacleDef,
+  type ThrowerDef,
 } from './course';
 import { VigiaTimeline, activeLook, noteAt, stateAt, type Cycle, type VigiaState } from './vigia';
 
@@ -98,6 +128,49 @@ export interface SinalView {
   /** O empurrão que o boneco está levando (1 no começo, até 0) e para onde. */
   knock: number;
   knockDir: { x: number; y: number };
+  /** Quem joga coisas (nas bordas), o que está no ar ou marcado no chão, e quem corre atrás de você. */
+  throwers: { id: number; x: number; y: number; side: -1 | 1; kind: ThrowKind; phase: 'idle' | 'wind' | 'fly'; p: number }[];
+  shots: ShotView[];
+  chasers: { id: number; x: number; y: number; frozen: boolean; dizzy: boolean; speed: number }[];
+  /** Os itens no chão perto de você, o que você carrega e o quanto falta de cada efeito (1 = cheio, 0 = acabou). */
+  items: ItemDef[];
+  held: ItemKind | null;
+  shadow: number;
+  boost: number;
+}
+
+/** Um arremesso em andamento: a marca no chão, o voo ou a faixa por onde a bola rola. */
+export interface ShotView {
+  id: number;
+  kind: ThrowKind;
+  phase: 'wind' | 'fly' | 'roll';
+  /** O quanto da fase já passou (0 a 1). */
+  p: number;
+  /** De onde saiu, para onde vai e onde está agora (m). */
+  sx: number;
+  sy: number;
+  tx: number;
+  ty: number;
+  x: number;
+  y: number;
+  /** O arremesso vai cair numa hora em que o Vigia está para olhar ou olhando: não faz mal (o jogo desenha a marca apagada). */
+  dud: boolean;
+}
+
+interface Shot {
+  start: number;
+  kind: ThrowKind;
+  tx: number;
+  ty: number;
+  done: boolean;
+}
+
+interface Chaser {
+  x: number;
+  y: number;
+  gone: boolean;
+  dizzy: number;
+  frozen: boolean;
 }
 
 /**
@@ -114,6 +187,21 @@ export class SinalSim {
   private obstacles!: ObstacleField;
   private width!: WidthField;
   private noteKey = '';
+  private throwers!: ThrowerField;
+  private chasers!: ChaserField;
+  private itemField!: ItemField;
+  private taken = new Set<number>();
+  /** O item que a pessoa carrega (um por vez) e os efeitos ligados. */
+  held: ItemKind | null = null;
+  private shadowTicks = 0;
+  private boostTicks = 0;
+  /** Sala: sem itens (a sala não os usa ainda); o jogo solo liga. */
+  itemsEnabled = true;
+  private shotState = new Map<number, Shot>();
+  private chaserState = new Map<number, Chaser>();
+  /** A velocidade do boneco no passo anterior (m/s): os arremessos miram um pouco à frente. */
+  private velX = 0;
+  private velY = 0;
   private inHist: [number, number][] = [];
   private coverState = new Map<number, { dur: number; at: number; broken: boolean }>();
   private n = 1;
@@ -178,6 +266,17 @@ export class SinalSim {
       this.width,
     );
     this.noteKey = '';
+    this.throwers = new ThrowerField(this.course, `${this.seed}:lanc:${this.mode}:${this.n}`);
+    this.chasers = new ChaserField(this.course, `${this.seed}:persg:${this.mode}:${this.n}`, this.width);
+    this.itemField = new ItemField(`${this.seed}:itens:${this.mode}:${this.n}`, this.width, this.obstacles);
+    this.taken.clear();
+    this.held = null;
+    this.shadowTicks = 0;
+    this.boostTicks = 0;
+    this.shotState.clear();
+    this.chaserState.clear();
+    this.velX = 0;
+    this.velY = 0;
     this.inHist = [];
     this.coverState.clear();
     this.x = 0;
@@ -323,7 +422,7 @@ export class SinalSim {
   }
 
   /** Avança um passo (1/60 s) com o analógico em (ax, ay), inteiros de -100 a 100. */
-  step(ax: number, ay: number): SinalEvent[] {
+  step(ax: number, ay: number, use = false): SinalEvent[] {
     const events: SinalEvent[] = [];
     if (this.dead || this.finished) return events;
     const t = this.courseTick * DT;
@@ -341,7 +440,7 @@ export class SinalSim {
     const noteKey = note ? `${cycle.start}:${note.t0}` : '';
     if (noteKey !== this.noteKey) {
       this.noteKey = noteKey;
-      if (note) events.push({ kind: 'nota', syl: note.syl, hold: note.hold });
+      if (note) events.push({ kind: 'nota', syl: note.syl, hold: note.hold, rush: cycle.rush });
     }
 
     // Obstáculos de chão: lamaçal (devagar), esteira (empurra de lado), ímã (puxa) e gelo (escorrega).
@@ -383,6 +482,19 @@ export class SinalSim {
     if (this.rested > 0) {
       boost = FOLEGO_FACTOR;
       this.rested--;
+    }
+    // Usar o item que se carrega: a Sombra esconde em qualquer lugar e o Impulso acelera, por 2 s.
+    if (use && this.held && this.itemsEnabled) {
+      const item = this.held;
+      this.held = null;
+      if (item === 'sombra') this.shadowTicks = SOMBRA_TICKS;
+      else this.boostTicks = IMPULSO_TICKS;
+      events.push({ kind: 'usou', item });
+    }
+    if (this.boostTicks > 0) {
+      boost = Math.max(boost, IMPULSO_FACTOR);
+      this.boostTicks--;
+      if (this.boostTicks === 0) events.push({ kind: 'item-fim', item: 'impulso' });
     }
     const tx = ix * MAX_SPEED * speedMul * boost;
     const ty = iy * MAX_SPEED * speedMul * boost;
@@ -480,6 +592,12 @@ export class SinalSim {
         hidden = true;
       }
     }
+    // A Sombra esconde em qualquer lugar: vale como esconderijo (protege do Vigia e de tudo o mais).
+    if (this.shadowTicks > 0) {
+      hidden = true;
+      this.shadowTicks--;
+      if (this.shadowTicks === 0) events.push({ kind: 'item-fim', item: 'sombra' });
+    }
     this.hidden = hidden;
     // Fôlego: quem se escondeu por um tempo sai descansado e corre mais rápido por um instante.
     if (hidden) this.hiddenTicks++;
@@ -490,6 +608,24 @@ export class SinalSim {
       }
       this.hiddenTicks = 0;
     }
+
+    this.velX = dx / DT;
+    this.velY = dy / DT;
+    // Pegar um item do chão (só se não carrega outro): é só passar por cima.
+    if (this.itemsEnabled && this.held === null) {
+      this.itemField.ensure(this.y + 50);
+      for (const it of this.itemField.list) {
+        if (it.y > this.y + ITEM_PICKUP_R + 1) break;
+        if (this.taken.has(it.id) || it.y < this.y - ITEM_PICKUP_R - 1) continue;
+        if ((this.x - it.x) ** 2 + (this.y - it.y) ** 2 < ITEM_PICKUP_R * ITEM_PICKUP_R) {
+          this.taken.add(it.id);
+          this.held = it.kind;
+          events.push({ kind: 'item', item: it.kind });
+          break;
+        }
+      }
+    }
+    this.hazards(moved > MOVE_EPS, events);
 
     // A linha de chegada vale antes de qualquer perda no mesmo instante (o Clássico).
     if (this.course.mode === 'classico' && this.y >= this.course.length) {
@@ -545,6 +681,166 @@ export class SinalSim {
     return events;
   }
 
+  /** Joga o boneco para longe de (dx, dy) e o atordoa: o mesmo efeito de bater num obstáculo. */
+  private knock(dx: number, dy: number, power: number, stunTicks: number) {
+    const len = Math.sqrt(dx * dx + dy * dy);
+    const ux = len > 1e-6 ? dx / len : 0;
+    const uy = len > 1e-6 ? dy / len : -1;
+    this.impX = ux * power;
+    this.impY = uy * power;
+    this.impTicks = BUMP_TICKS;
+    this.impTotal = BUMP_TICKS;
+    this.impDecay = true;
+    this.stun = Math.max(this.stun, stunTicks);
+  }
+
+  /** O passo `tick` está perto demais de um olhar do Vigia para uma pancada valer (dura menos que a tontura). */
+  private isSafeWindow(tick: number): boolean {
+    const t = tick * DT;
+    const c = this.timeline.cycleAt(t);
+    return t >= c.lookStart - SAFE_BEFORE_LOOK_S && t < c.lookEnd + 0.05;
+  }
+
+  /** Os arremessadores perto da altura `y` (a lista é ordenada por altura). */
+  private nearThrowers(y: number, behind: number, ahead: number): ThrowerDef[] {
+    this.throwers.ensure(y + ahead + 30);
+    const list = this.throwers.list;
+    const out: ThrowerDef[] = [];
+    for (const th of list) {
+      if (th.y < y - behind) continue;
+      if (th.y > y + ahead) break;
+      out.push(th);
+    }
+    return out;
+  }
+
+  /**
+   * Os perigos que se mexem sozinhos: arremessadores (a marca avisa onde cai, e dá para sair) e
+   * perseguidores (só andam enquanto você anda e não está escondido). Quem está escondido não é
+   * atingido; o resto vira pancada, com tontura (e, se o Vigia olhar nesse tempo, é o fim).
+   */
+  private hazards(playerMoving: boolean, events: SinalEvent[]) {
+    const tick = this.courseTick;
+    // Justiça com o Vigia: perto de ele olhar (e enquanto olha) nada pode te atordoar, senão não haveria
+    // saída (parar para o Vigia e levar a pancada, ou desviar e ser visto). Os arremessos viram "bombas
+    // de festim" e os perseguidores esperam.
+    const safe = this.isSafeWindow(tick);
+    // ---- arremessadores
+    for (const th of this.nearThrowers(this.y, THROW_BEHIND, THROW_AHEAD)) {
+      const wind = th.kind === 'roll' ? ROLL_WIND_TICKS : THROW_WIND_TICKS;
+      const local = (tick + th.offset) % th.period;
+      const start = tick - local;
+      let st = this.shotState.get(th.id);
+      if (local === 0) {
+        // começa a mirar: o alvo é onde a pessoa vai estar daqui a pouco
+        const ahead = ((wind + (th.kind === 'lob' ? THROW_FLIGHT_TICKS : 0)) * DT) * THROW_LEAD;
+        let tx = this.x + this.velX * ahead;
+        let ty = this.y + this.velY * ahead;
+        if (th.kind === 'roll') {
+          ty += 1.0;
+          tx = 0;
+        }
+        const half = this.width.halfAt(ty);
+        tx = clamp(tx, -(half - 0.6), half - 0.6);
+        st = { start, kind: th.kind, tx, ty, done: false };
+        this.shotState.set(th.id, st);
+        events.push({ kind: 'lancou', shot: th.kind });
+      }
+      if (!st || st.start !== start || st.done) continue;
+      const age = tick - start;
+      if (th.kind === 'lob') {
+        if (age === wind + THROW_FLIGHT_TICKS) {
+          st.done = true;
+          const ddx = this.x - st.tx;
+          const ddy = this.y - st.ty;
+          const hit = !safe && !this.hidden && ddx * ddx + ddy * ddy < THROW_RADIUS * THROW_RADIUS;
+          if (hit) {
+            this.knock(ddx, ddy, THROW_HIT_POWER, THROW_STUN_TICKS);
+            events.push({ kind: 'choque', size: 0.75 });
+          }
+          events.push({ kind: 'impacto', shot: 'lob', hit });
+        }
+      } else if (age >= wind) {
+        // a bola rola de um lado ao outro pela faixa avisada
+        const half = this.width.halfAt(st.ty);
+        const dir = -th.side;
+        const bx = th.side * (half + 0.6) + dir * ROLL_SPEED * (age - wind) * DT;
+        if (Math.abs(bx) > half + 1.2) {
+          st.done = true;
+          continue;
+        }
+        const ddx = this.x - bx;
+        const ddy = this.y - st.ty;
+        const min = ROLL_R + PLAYER_R;
+        if (!safe && !this.hidden && ddx * ddx + ddy * ddy < min * min) {
+          st.done = true;
+          this.knock(dir, ddy === 0 ? 0.35 : ddy, THROW_HIT_POWER, THROW_STUN_TICKS);
+          events.push({ kind: 'choque', size: 0.75 });
+          events.push({ kind: 'impacto', shot: 'roll', hit: true });
+        }
+      }
+    }
+
+    // ---- perseguidores
+    this.chasers.ensure(this.y + CHASER_SPAWN_AHEAD + 40);
+    for (const def of this.chasers.list) {
+      if (def.y > this.y + CHASER_SPAWN_AHEAD + 40) break;
+      let ch = this.chaserState.get(def.id);
+      if (!ch) {
+        if (this.y < def.y - CHASER_SPAWN_AHEAD) continue;
+        ch = { x: def.x, y: def.y, gone: false, dizzy: 0, frozen: false };
+        this.chaserState.set(def.id, ch);
+        events.push({ kind: 'perseguidor' });
+      }
+      if (ch.gone) continue;
+      if (ch.y < this.y - CHASER_GIVEUP_BEHIND || ch.y < this.darkY) {
+        ch.gone = true;
+        continue;
+      }
+      if (ch.dizzy > 0) {
+        ch.dizzy--;
+        ch.frozen = true;
+        continue;
+      }
+      // só anda se a pessoa anda e não está escondida
+      ch.frozen = this.hidden || !playerMoving || safe;
+      if (!ch.frozen) {
+        let ddx = this.x - ch.x;
+        let ddy = this.y - ch.y;
+        const len = Math.sqrt(ddx * ddx + ddy * ddy);
+        if (len > 1e-6) {
+          ddx /= len;
+          ddy /= len;
+          ch.x += ddx * def.speed * DT;
+          ch.y += ddy * def.speed * DT;
+        }
+        // não atravessa os obstáculos sólidos: fica preso atrás deles
+        for (const o of this.nearObstacles(ch.y, 2)) {
+          if (!isSolid(o.kind)) continue;
+          const ox = ch.x - o.x;
+          const oy = ch.y - o.y;
+          const min = o.r + CHASER_R;
+          const dd = ox * ox + oy * oy;
+          if (dd >= min * min || dd < 1e-9) continue;
+          const l2 = Math.sqrt(dd);
+          ch.x = o.x + (ox / l2) * min;
+          ch.y = o.y + (oy / l2) * min;
+        }
+        const edge = this.width.halfAt(ch.y) - CHASER_R;
+        ch.x = clamp(ch.x, -edge, edge);
+      }
+      const px = this.x - ch.x;
+      const py = this.y - ch.y;
+      const touch = CHASER_R + PLAYER_R;
+      if (!safe && !this.hidden && px * px + py * py < touch * touch) {
+        this.knock(px, py, CHASER_HIT_POWER, CHASER_STUN_TICKS);
+        ch.dizzy = CHASER_DIZZY_TICKS;
+        events.push({ kind: 'choque', size: 0.8 });
+        events.push({ kind: 'pegou' });
+      }
+    }
+  }
+
   /** Tudo o que a tela precisa para desenhar agora. */
   get view(): SinalView {
     const t = this.courseTick * DT;
@@ -581,7 +877,76 @@ export class SinalSim {
         const len = Math.sqrt(this.impX * this.impX + this.impY * this.impY);
         return len > 0 ? { x: this.impX / len, y: this.impY / len } : { x: 0, y: 0 };
       })(),
+      ...this.hazardView(),
+      ...this.itemView(),
     };
+  }
+
+  private itemView(): Pick<SinalView, 'items' | 'held' | 'shadow' | 'boost'> {
+    this.itemField.ensure(this.y + 50);
+    const items = this.itemsEnabled
+      ? this.itemField.list.filter((it) => !this.taken.has(it.id) && Math.abs(it.y - this.y) < 44)
+      : [];
+    return {
+      items,
+      held: this.held,
+      shadow: this.shadowTicks / SOMBRA_TICKS,
+      boost: this.boostTicks / IMPULSO_TICKS,
+    };
+  }
+
+  private hazardView(): Pick<SinalView, 'throwers' | 'shots' | 'chasers'> {
+    const tick = this.courseTick;
+    const throwers: SinalView['throwers'] = [];
+    const shots: ShotView[] = [];
+    for (const th of this.nearThrowers(this.y, 40, 44)) {
+      const half = this.width.halfAt(th.y);
+      const tx = th.side * (half + 0.65);
+      const wind = th.kind === 'roll' ? ROLL_WIND_TICKS : THROW_WIND_TICKS;
+      const local = (tick + th.offset) % th.period;
+      const st = this.shotState.get(th.id);
+      let phase: 'idle' | 'wind' | 'fly' = 'idle';
+      let p = 0;
+      if (st && st.start === tick - local && !st.done) {
+        if (local < wind) {
+          phase = 'wind';
+          p = local / wind;
+        } else {
+          phase = 'fly';
+          p = th.kind === 'lob' ? (local - wind) / THROW_FLIGHT_TICKS : 0;
+        }
+        if (th.kind === 'lob') {
+          const fp = phase === 'fly' ? p : 0;
+          shots.push({
+            id: th.id,
+            kind: 'lob',
+            phase,
+            p,
+            sx: tx,
+            sy: th.y,
+            tx: st.tx,
+            ty: st.ty,
+            x: tx + (st.tx - tx) * fp,
+            y: th.y + (st.ty - th.y) * fp,
+            dud: this.isSafeWindow(st.start + wind + THROW_FLIGHT_TICKS),
+          });
+        } else if (phase === 'wind') {
+          shots.push({ id: th.id, kind: 'roll', phase: 'wind', p, sx: tx, sy: st.ty, tx: -tx, ty: st.ty, x: tx, y: st.ty, dud: this.isSafeWindow(st.start + wind + 60) });
+        } else {
+          const bx = tx + -th.side * ROLL_SPEED * (local - wind) * DT;
+          shots.push({ id: th.id, kind: 'roll', phase: 'roll', p: 0, sx: tx, sy: st.ty, tx: -tx, ty: st.ty, x: bx, y: st.ty, dud: this.isSafeWindow(tick) });
+        }
+      }
+      throwers.push({ id: th.id, x: tx, y: th.y, side: th.side, kind: th.kind, phase, p });
+    }
+    const chasers: SinalView['chasers'] = [];
+    for (const def of this.chasers.list) {
+      const ch = this.chaserState.get(def.id);
+      if (!ch || ch.gone) continue;
+      if (Math.abs(ch.y - this.y) > 44) continue;
+      chasers.push({ id: def.id, x: ch.x, y: ch.y, frozen: ch.frozen, dizzy: ch.dizzy > 0, speed: def.speed });
+    }
+    return { throwers, shots, chasers };
   }
 
   /** A linha do tempo do Vigia desta fase (para o jogo e para os testes). */
@@ -594,12 +959,16 @@ export class SinalSim {
 export function validateSinalInputs(inputs: readonly SinalInput[]): string | null {
   if (inputs.length > SINAL_MAX_INPUTS) return 'Movimentos demais';
   let prev = -1;
+  let prevUse = false;
   for (const i of inputs) {
     if (!Number.isInteger(i.tick) || i.tick < 0 || i.tick > SINAL_MAX_TICKS) return 'Instante inválido';
-    if (i.tick <= prev) return 'Movimentos fora de ordem';
     if (!Number.isInteger(i.x) || !Number.isInteger(i.y)) return 'Direção inválida';
-    if (i.x < -100 || i.x > 100 || i.y < -100 || i.y > 100) return 'Direção fora da faixa';
+    const use = i.x === ITEM_USE && i.y === 0;
+    // Dois movimentos não dividem o instante, mas o "usou o item" pode vir junto de uma mudança do analógico.
+    if (i.tick < prev || (i.tick === prev && !use && !prevUse)) return 'Movimentos fora de ordem';
+    if (!use && (i.x < -100 || i.x > 100 || i.y < -100 || i.y > 100)) return 'Direção fora da faixa';
     prev = i.tick;
+    prevUse = use;
   }
   return null;
 }
@@ -619,12 +988,16 @@ export function evaluateSinal(
   let ax = 0;
   let ay = 0;
   for (let tick = 0; tick < maxTicks && !sim.dead; tick++) {
+    let use = false;
     while (idx < inputs.length && inputs[idx]!.tick <= tick) {
-      ax = inputs[idx]!.x;
-      ay = inputs[idx]!.y;
+      if (inputs[idx]!.x === ITEM_USE && inputs[idx]!.y === 0) use = true;
+      else {
+        ax = inputs[idx]!.x;
+        ay = inputs[idx]!.y;
+      }
       idx++;
     }
-    sim.step(ax, ay);
+    sim.step(ax, ay, use);
   }
   return sim.result;
 }

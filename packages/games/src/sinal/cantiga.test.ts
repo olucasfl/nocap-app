@@ -40,7 +40,29 @@ const steer = (s: SinalSim): [number, number] => {
   const half = v.halfAt(v.y);
   if (v.x > half - 1.2) ax -= 100;
   if (v.x < -half + 1.2) ax += 100;
-  return [Math.max(-100, Math.min(100, ax)), 100];
+  let ay = 100;
+  // sai de baixo da marca do arremesso e espera a faixa da bola passar
+  for (const sh of v.shots) {
+    if (sh.kind === 'lob') {
+      const dx = v.x - sh.tx;
+      const dy = v.y - sh.ty;
+      if (dx * dx + dy * dy < 3.2 * 3.2) {
+        ax += (dx === 0 ? (v.x > 0 ? 1 : -1) : Math.sign(dx)) * 200;
+        ay = dy > 0 ? 100 : -100;
+      }
+    } else if (sh.ty - v.y > -1.5 && sh.ty - v.y < 4.2) {
+      return [0, 0];
+    }
+  }
+  // dá a volta nos perseguidores (eles são mais lentos que o boneco)
+  for (const ch of v.chasers) {
+    const dy = ch.y - v.y;
+    if (dy > -2 && dy < 9) {
+      const dx = v.x - ch.x;
+      if (Math.abs(dx) < 5) ax += (dx === 0 ? 1 : Math.sign(dx)) * 160;
+    }
+  }
+  return [Math.max(-100, Math.min(100, ax)), ay];
 };
 
 /** Quem sabe a cantiga: para quando o LHO esticado começa e anda no resto. */

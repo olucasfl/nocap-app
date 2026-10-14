@@ -313,7 +313,10 @@ export function createSinalAudio(): SinalAudio | null {
           startHeld(semi(v.root, v.scale[0]! - 5));
           hiss('highpass', 3000, 9000, 0.5, 0.05, t);
         } else {
-          pluck(syllable(e.syl), t, 0.2, v.decay);
+          // no ciclo apressado a cantiga sobe dois tons e ganha um tique de relógio
+          const f = e.rush ? syllable(e.syl) * 1.1225 : syllable(e.syl);
+          pluck(f, t, 0.2, e.rush ? v.decay * 0.7 : v.decay);
+          if (e.rush && e.syl % 2 === 0) hiss('highpass', 6000, 9000, 0.04, 0.05, t);
           // um "tum" de baixo na primeira sílaba marca o compasso
           if (e.syl === 0) tone('sine', semi(v.root, -24), semi(v.root, -24) * 0.97, 0.18, 0.12, t);
         }
@@ -335,6 +338,39 @@ export function createSinalAudio(): SinalAudio | null {
         hiss('bandpass', 1400, 300, 0.1, 0.22 * e.size + 0.05, t, 1.4);
         tone('triangle', 1568, 1568, 0.22, 0.08, t + 0.06, 0.5);
         tone('triangle', 2093, 2093, 0.2, 0.06, t + 0.13, 0.5);
+      } else if (e.kind === 'lancou') {
+        // o arremessador mira: um ranger que sobe (lob) ou um ronco grave (roll)
+        if (e.shot === 'lob') {
+          tone('sawtooth', 150, 330, 0.85, 0.05, t, 0.2);
+          hiss('bandpass', 500, 1500, 0.8, 0.06, t, 1.4);
+        } else {
+          tone('sine', 62, 70, 1.1, 0.12, t, 0.1);
+          hiss('lowpass', 500, 900, 1.0, 0.1, t);
+        }
+      } else if (e.kind === 'impacto') {
+        tone('sine', e.hit ? 120 : 100, 38, e.hit ? 0.28 : 0.2, e.hit ? 0.4 : 0.22, t, 0.15);
+        hiss('lowpass', 1000, 140, 0.22, e.hit ? 0.3 : 0.16, t);
+      } else if (e.kind === 'perseguidor') {
+        // um rosnado que vem de longe
+        tone('sawtooth', 140, 72, 0.6, 0.1, t, 0.3);
+        tone('sawtooth', 146, 76, 0.6, 0.08, t + 0.02, 0.3);
+        hiss('bandpass', 300, 700, 0.5, 0.08, t, 2);
+      } else if (e.kind === 'pegou') {
+        hiss('bandpass', 1600, 300, 0.22, 0.34, t, 1.2);
+        tone('square', 210, 80, 0.18, 0.16, t);
+      } else if (e.kind === 'item') {
+        const v = VOICES[map];
+        [0, 4, 7].forEach((n, i) => pluck(semi(v.root * 2, v.scale[n % v.scale.length]!), t + i * 0.07, 0.16, 0.5, 0.7));
+      } else if (e.kind === 'usou') {
+        if (e.item === 'sombra') {
+          tone('sine', 760, 180, 0.45, 0.2, t, 0.5);
+          hiss('highpass', 4000, 1500, 0.4, 0.1, t);
+        } else {
+          tone('sawtooth', 200, 1300, 0.35, 0.12, t, 0.3);
+          hiss('bandpass', 500, 4000, 0.35, 0.16, t, 1);
+        }
+      } else if (e.kind === 'item-fim') {
+        tone('triangle', 620, 300, 0.22, 0.09, t, 0.3);
       } else if (e.kind === 'folego') {
         hiss('bandpass', 600, 3200, 0.3, 0.12, t, 1.2);
         tone('triangle', 520, 880, 0.2, 0.1, t, 0.3);

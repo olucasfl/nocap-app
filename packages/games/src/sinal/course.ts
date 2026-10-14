@@ -7,13 +7,18 @@ import {
   COVER_LONG_MIN,
   HALF,
   HALF_MAX,
+  CHASER_SPEED_MAX,
+  CHASER_SPEED_MIN,
+  ITEM_KINDS,
   HALF_MIN,
   MIN_GAP,
   SINAL_MAPS,
   TPS,
   lerp,
+  type ItemKind,
   type SinalMapId,
   type SinalMode,
+  type ThrowKind,
 } from './constants';
 import type { TimelineParams } from './vigia';
 
@@ -447,6 +452,161 @@ export class ObstacleField {
       }
       // os grupos vêm mais seguidos conforme a fase avança
       this.nextY += lerp(lerp(14, 8, d), lerp(24, 12, d), r[5]!);
+    }
+  }
+}
+
+// ---- arremessadores e perseguidores (spec 027) -----------------------------------
+
+/** Quem joga coisas em você: fica na borda do corredor e mira, avisando antes (a marca no chão). */
+export interface ThrowerDef {
+  id: number;
+  side: -1 | 1;
+  y: number;
+  kind: ThrowKind;
+  /** O ciclo de arremessos, em passos, e a defasagem (cada um tem o seu ritmo). */
+  period: number;
+  offset: number;
+}
+
+/**
+ * Os arremessadores ao longo da pista, gerados à medida que a pessoa avança. Nunca nos primeiros
+ * metros; o de rolar (a faixa que cruza o corredor) só entra mais adiante. Com a dificuldade ficam
+ * mais seguidos e jogam mais depressa.
+ */
+export class ThrowerField {
+  readonly list: ThrowerDef[] = [];
+  private readonly rng: () => number;
+  private nextY: number;
+
+  constructor(
+    private readonly course: Course,
+    seedKey: string,
+  ) {
+    this.rng = createRng(seedKey);
+    this.nextY = 36 + this.rng() * 14;
+  }
+
+  private levelAt(y: number): number {
+    return this.course.mode === 'infinito' ? 1 + Math.floor(y / 70) : this.course.n;
+  }
+
+  private dAt(y: number): number {
+    return this.course.mode === 'infinito' ? y / (y + 500) : phaseDifficulty(this.course.n);
+  }
+
+  ensure(untilY: number) {
+    while (this.nextY <= untilY) {
+      const d = this.dAt(this.nextY);
+      const level = this.levelAt(this.nextY);
+      const [sideR, kindR, perR, offR, gapR] = [this.rng(), this.rng(), this.rng(), this.rng(), this.rng()];
+      const kind: ThrowKind = level >= 3 && kindR < 0.4 ? 'roll' : 'lob';
+      const period = Math.round(lerp(lerp(6.4, 3.6, d), lerp(8, 4.8, d), perR) * TPS);
+      this.list.push({
+        id: this.list.length,
+        side: sideR < 0.5 ? -1 : 1,
+        y: this.nextY,
+        kind,
+        period,
+        offset: Math.floor(offR * period),
+      });
+      this.nextY += lerp(lerp(58, 32, d), lerp(104, 58, d), gapR);
+    }
+  }
+}
+
+/** Quem corre atrás de você: aparece à frente e só anda enquanto você anda (e não está escondido). */
+export interface ChaserDef {
+  id: number;
+  y: number;
+  /** De que lado nasce (-1 ou 1), já em metros dentro do corredor. */
+  x: number;
+  speed: number;
+}
+
+export class ChaserField {
+  readonly list: ChaserDef[] = [];
+  private readonly rng: () => number;
+  private nextY: number;
+
+  constructor(
+    private readonly course: Course,
+    seedKey: string,
+    private readonly width: WidthField,
+  ) {
+    this.rng = createRng(seedKey);
+    // Na fase 1 do Clássico não há; no resto, só depois de uns metros.
+    this.nextY = course.mode === 'classico' && course.n < 2 ? Infinity : 70 + this.rng() * 30;
+  }
+
+  private dAt(y: number): number {
+    return this.course.mode === 'infinito' ? y / (y + 500) : phaseDifficulty(this.course.n);
+  }
+
+  ensure(untilY: number) {
+    while (this.nextY <= untilY) {
+      const d = this.dAt(this.nextY);
+      const [sideR, spdR, gapR] = [this.rng(), this.rng(), this.rng()];
+      const half = this.width.halfAt(this.nextY);
+      this.list.push({
+        id: this.list.length,
+        y: this.nextY,
+        x: (sideR < 0.5 ? -1 : 1) * Math.max(1.2, half - 1.4),
+        speed: lerp(CHASER_SPEED_MIN, CHASER_SPEED_MAX, d) * (0.92 + 0.16 * spdR),
+      });
+      this.nextY += lerp(lerp(120, 70, d), lerp(190, 110, d), gapR);
+    }
+  }
+}
+
+// ---- itens do jogador --------------------------------------------------------------
+
+export interface ItemDef {
+  id: number;
+  x: number;
+  y: number;
+  kind: ItemKind;
+}
+
+/**
+ * Os itens que se pega no caminho (Sombra e Impulso), em lugares fixos sorteados pela seed: nunca nos
+ * primeiros 20 m, nunca dentro de um obstáculo, e correr atrás de um é uma escolha (a pessoa se expõe).
+ */
+export class ItemField {
+  readonly list: ItemDef[] = [];
+  private readonly rng: () => number;
+  private nextY: number;
+
+  constructor(
+    seedKey: string,
+    private readonly width: WidthField,
+    private readonly obstacles: ObstacleField,
+  ) {
+    this.rng = createRng(seedKey);
+    this.nextY = 22 + this.rng() * 14;
+  }
+
+  ensure(untilY: number) {
+    while (this.nextY <= untilY) {
+      const [kindR, xR, gapR] = [this.rng(), this.rng(), this.rng()];
+      this.obstacles.ensure(this.nextY + 16);
+      let y = this.nextY;
+      let x = 0;
+      let ok = false;
+      for (let tries = 0; tries < 6 && !ok; tries++) {
+        const half = this.width.halfAt(y);
+        x = (xR * 2 - 1) * Math.max(0.5, half - 1.8);
+        ok = !this.obstacles.list.some((o) => {
+          if (Math.abs(o.y - y) > 9) return false;
+          const reach = o.r + o.amp + 1.5;
+          return (o.x - x) ** 2 + (o.y - y) ** 2 < reach * reach;
+        });
+        if (!ok) y += 3.5;
+      }
+      if (ok) {
+        this.list.push({ id: this.list.length, x, y, kind: ITEM_KINDS[kindR < 0.5 ? 0 : 1]! });
+      }
+      this.nextY = y + lerp(58, 110, gapR);
     }
   }
 }

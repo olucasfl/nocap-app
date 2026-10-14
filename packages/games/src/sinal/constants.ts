@@ -125,6 +125,57 @@ export const HALF_MAX = 9;
 /** O vão mínimo que um obstáculo deixa em qualquer ponto (m): cabe o boneco com folga. */
 export const MIN_GAP = 1.7;
 
+// ---- arremessadores, perseguidores e o Vigia apressado (spec 027) --------------
+
+/** O tipo de arremesso: `lob` cai num ponto marcado no chão; `roll` rola de um lado ao outro numa faixa avisada. */
+export type ThrowKind = 'lob' | 'roll';
+/** Do começo do aviso (a marca aparece) até a coisa cair: o tempo de sair do lugar. */
+export const THROW_WIND_TICKS = 54; // 0,9 s
+export const THROW_FLIGHT_TICKS = 33; // 0,55 s
+export const THROW_RADIUS = 1.05;
+/** Quanto o alvo "adianta" a posição de quem corre (0 = mira onde a pessoa está; 1 = onde ela vai estar). */
+export const THROW_LEAD = 0.55;
+/** O arremessador só joga quando a pessoa está a esta distância (m) à frente dele ou nesta atrás. */
+export const THROW_AHEAD = 24;
+export const THROW_BEHIND = 3;
+export const ROLL_WIND_TICKS = 66;
+export const ROLL_SPEED = 6.5;
+export const ROLL_R = 0.6;
+/** O que a pancada de um arremesso faz (como bater num obstáculo: joga para longe e atordoa). */
+export const THROW_HIT_POWER = 6.2;
+export const THROW_STUN_TICKS = 66;
+
+/** Antes de o Vigia olhar, nenhuma pancada vale por este tempo (s): é um pouco mais que a tontura. */
+export const SAFE_BEFORE_LOOK_S = 1.2;
+
+/** O perseguidor: anda atrás da pessoa, mas só enquanto ela anda e não está escondida. */
+export const CHASER_R = 0.55;
+export const CHASER_SPEED_MIN = 2.3;
+export const CHASER_SPEED_MAX = 3.5; // sempre abaixo dos 4,2 m/s do boneco
+export const CHASER_SPAWN_AHEAD = 22;
+export const CHASER_GIVEUP_BEHIND = 16;
+export const CHASER_HIT_POWER = 6.8;
+export const CHASER_STUN_TICKS = 66;
+/** Depois de pegar, o perseguidor fica tonto e parado por este tempo (a pessoa tem como fugir). */
+export const CHASER_DIZZY_TICKS = 120;
+
+/** O Vigia apressado: o compasso encolhe, mas o aviso nunca fica menor que o mínimo. */
+export const RUSH_BEAT_FACTOR = 0.62;
+export const RUSH_MIN_BEAT = 0.26;
+
+// ---- itens do jogador (spec 026/027) ----------------------------------------------
+
+/** Os itens que se pega no caminho: só beneficiam quem usa (nada mexe no Vigia). */
+export type ItemKind = 'sombra' | 'impulso';
+export const ITEM_KINDS: readonly ItemKind[] = ['sombra', 'impulso'];
+/** Nos movimentos gravados, `x` com este valor (e `y` 0) quer dizer "usou o item neste instante". */
+export const ITEM_USE = 127;
+export const ITEM_PICKUP_R = 1.1;
+/** Sombra: fica escondido em qualquer lugar por 2 s. Impulso: corre 1,6x mais rápido por 2 s. */
+export const SOMBRA_TICKS = 120;
+export const IMPULSO_TICKS = 120;
+export const IMPULSO_FACTOR = 1.6;
+
 // ---- entradas e resultado ----------------------------------------------------
 
 /** O analógico mudou: instante (passo) e direção em inteiros de -100 a 100. */
@@ -151,13 +202,27 @@ export interface SinalResult {
 
 export type SinalEvent =
   /** Uma sílaba da cantiga começou (`syl` de 0 a 4; `hold` é o último LHO esticado, o aviso). */
-  | { kind: 'nota'; syl: number; hold: boolean }
+  | { kind: 'nota'; syl: number; hold: boolean; rush: boolean }
   | { kind: 'aviso' }
   | { kind: 'olhando' }
   | { kind: 'voltando' }
   | { kind: 'quebrou'; cover: number }
   /** Bateu num obstáculo: `size` de 0 a 1 é a força da pancada. */
   | { kind: 'choque'; size: number }
+  /** Um arremessador começou a mirar (a marca aparece no chão) ou a faixa de rolar acendeu. */
+  | { kind: 'lancou'; shot: ThrowKind }
+  /** O arremesso chegou: `hit` diz se pegou a pessoa. */
+  | { kind: 'impacto'; shot: ThrowKind; hit: boolean }
+  /** Um perseguidor apareceu à frente e vem atrás de você. */
+  | { kind: 'perseguidor' }
+  /** O perseguidor te pegou. */
+  | { kind: 'pegou' }
+  /** Pegou um item no caminho. */
+  | { kind: 'item'; item: ItemKind }
+  /** Usou o item que carregava. */
+  | { kind: 'usou'; item: ItemKind }
+  /** O efeito do item acabou. */
+  | { kind: 'item-fim'; item: ItemKind }
   | { kind: 'soluco' }
   /** Sala: você empurrou alguém (o botão de empurrar). */
   | { kind: 'empurrou' }

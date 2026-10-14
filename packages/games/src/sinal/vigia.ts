@@ -6,6 +6,8 @@ import {
   HOLD_MAX,
   HOLD_MIN,
   LEAD_IN_S,
+  RUSH_BEAT_FACTOR,
+  RUSH_MIN_BEAT,
   VERSE_BREATH,
   lerp,
 } from './constants';
@@ -36,6 +38,8 @@ export interface Cycle {
   verses: number;
   /** O compasso deste ciclo (s). */
   beat: number;
+  /** O Vigia veio apressado: este ciclo é cantado bem mais depressa (o aviso continua legível). */
+  rush: boolean;
   notes: Note[];
   /** O LHO esticado começa aqui (o Vigia ainda está de costas, e ainda se pode andar). */
   avisoStart: number;
@@ -87,10 +91,13 @@ export class VigiaTimeline {
     const last = this.cycles[this.cycles.length - 1];
     const start = last ? last.end : LEAD_IN_S;
     // Sempre os mesmos sorteios por ciclo, qualquer que seja o resultado: a corrida não "desanda".
-    const [beatJ, verseR, tempoR, lookJ] = [this.rng(), this.rng(), this.rng(), this.rng()];
+    const [beatJ, verseR, tempoR, lookJ, rushR] = [this.rng(), this.rng(), this.rng(), this.rng(), this.rng()];
     const d = this.params.dAt(start);
     const first = !last;
-    const beat = lerp(BEAT_EASY, BEAT_HARD, d) * (0.92 + 0.16 * beatJ!);
+    // De vez em quando o Vigia vem apressado (nunca no começo): o compasso encolhe.
+    const rush = !first && start >= 20 && rushR! < lerp(0.12, 0.32, d);
+    let beat = lerp(BEAT_EASY, BEAT_HARD, d) * (0.92 + 0.16 * beatJ!);
+    if (rush) beat = Math.max(RUSH_MIN_BEAT, beat * RUSH_BEAT_FACTOR);
     const verses = first ? 2 : pickVerses(d, verseR!);
     const tempo: Tempo = first ? 'firme' : pickTempo(d, tempoR!);
 
@@ -123,6 +130,7 @@ export class VigiaTimeline {
       tempo,
       verses,
       beat,
+      rush,
       notes,
       avisoStart: holdNote.t0,
       lookStart,

@@ -58,12 +58,15 @@ const ecoMatchSchema = z.object({
 const sinalMatchSchema = z.object({
   ...base,
   game: z.literal('sinal'),
-  /** Os movimentos do analógico: [instante (passo de 1/60 s), x, y], x e y de -100 a 100. */
+  /**
+   * Os movimentos do analógico: [instante (passo de 1/60 s), x, y], x e y de -100 a 100. `x` 127 (com
+   * `y` 0) quer dizer "usou o item neste instante"; o servidor confere o resto.
+   */
   inputs: z
     .array(
       z.tuple([
         z.number().int().min(0).max(216_000),
-        z.number().int().min(-100).max(100),
+        z.number().int().min(-100).max(127),
         z.number().int().min(-100).max(100),
       ]),
     )

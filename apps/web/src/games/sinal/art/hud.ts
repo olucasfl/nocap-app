@@ -1,6 +1,7 @@
 import { HALF, PLAYER_R, type SinalView } from '@nocap/games';
 import { joyCenter, type Layout } from '../camera';
 import { stripBox } from './chars';
+import { ITEM_COLOR, ITEM_NAME } from './perigos';
 import { HERO_COLOR } from './palette';
 import { INK, ORG, PAPER, YEL, blob, circle, clamp, disp, line, mono, poly, rect, type Ctx } from './gfx';
 
@@ -48,7 +49,10 @@ export function hud(c: Ctx, s: HudIn) {
   const chips: Notice[] = [];
   const gap = Math.max(0, view.y - view.darkY - PLAYER_R);
   chips.push({ text: `ESCURIDÃO ${Math.floor(gap)} m`, color: gap < 15 ? ORG : '#0d0d12' });
-  if (view.hidden) chips.push({ text: 'ESCONDIDO', color: '#33c27f' });
+  if (view.hidden && view.shadow <= 0) chips.push({ text: 'ESCONDIDO', color: '#33c27f' });
+  if (view.shadow > 0) chips.push({ text: `SOMBRA ${(view.shadow * 2).toFixed(1)} s`, color: ITEM_COLOR.sombra });
+  if (view.boost > 0) chips.push({ text: `IMPULSO ${(view.boost * 2).toFixed(1)} s`, color: ITEM_COLOR.impulso });
+  if (view.held) chips.push({ text: `${ITEM_NAME[view.held]}: TOQUE OU E`, color: ITEM_COLOR[view.held] });
   chips.push(...s.notices);
   // A faixa da cantiga fica no meio do topo: os avisos que chegariam nela encolhem.
   const strip = stripBox(l);
@@ -58,7 +62,7 @@ export function hud(c: Ctx, s: HudIn) {
     const size = tight ? 9 : 10;
     const w = tight ? Math.min(text.length * 6 + 22, Math.max(70, strip.left - 22)) : Math.max(96, text.length * 7.2 + 28);
     blob(c, rect(14, y, w, 22, 11), chip.color, 2.5, 2);
-    const dark = chip.color === '#0d0d12' || chip.color === '#e5303a';
+    const dark = chip.color === '#0d0d12' || chip.color === '#e5303a' || chip.color === ITEM_COLOR.sombra;
     mono(c, text, 14 + (tight ? 9 : 14), y + 15, size, dark ? PAPER : INK);
     if (chip.text === 'ESCONDIDO') eyeSlash(c, 14 + w - 16, y + 11);
     y += 28;

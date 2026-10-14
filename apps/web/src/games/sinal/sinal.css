@@ -639,3 +639,48 @@
   padding-top: 5px;
   border-top: 2px dotted #111;
 }
+
+/* O botão do item que se carrega: embaixo à direita, longe do analógico (que fica no centro). */
+.sv-itembtn {
+  appearance: none;
+  position: absolute;
+  right: 16px;
+  bottom: max(24px, env(safe-area-inset-bottom));
+  width: 84px;
+  height: 84px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 2px;
+  color: var(--ink);
+  border: var(--border);
+  border-radius: 50%;
+  box-shadow: 4px 4px 0 var(--ink);
+  cursor: pointer;
+  touch-action: manipulation;
+  animation: sv-itempop 0.35s cubic-bezier(0.2, 1.7, 0.4, 1) both;
+}
+.sv-itembtn span {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+.sv-itembtn:active {
+  transform: translate(4px, 4px);
+  box-shadow: 0 0 0 var(--ink);
+}
+@keyframes sv-itempop {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sv-itembtn {
+    animation: none;
+  }
+}

@@ -4,6 +4,7 @@ import { MAP_STYLE, HERO_COLOR, PAL } from './art/palette';
 import { INK, PAPER, YEL, alpha, blob, clamp, mono, rect, type Ctx } from './art/gfx';
 import { hero, silhouette, vigia } from './art/chars';
 import { cover, finishLine, isFloor, longCover, obstacle } from './art/props';
+import { chaser, itemPickup, shotBody, shotMarker, thrower } from './art/perigos';
 import { darkness, deathFx, drawParticles, fogHaze, fxFor, lookAlert, pushBurst, stepFx, stunStars } from './art/fx';
 import { hud, inkOn, keyHint, offscreenArrows, stick, type Joy, type Notice } from './art/hud';
 import { drawGround, drawHaze, drawLight, sy, worldItems, type Item, type WorldCtx } from './art/world';
@@ -100,8 +101,31 @@ export function drawScene(c: Ctx, s: SceneInput) {
     obstacle(c, map, o.kind, vcx + o.x * V, y, o.r * V, s.t, o.dir, o.bump);
   }
 
+  // as marcas dos arremessos no chão (onde vai cair, por onde a bola vai rolar)
+  for (const sh of view.shots) {
+    shotMarker(c, sh, vcx, vy, view.halfAt(sh.sy) * V, s.t);
+  }
+
   // tudo o que tem altura, do fundo para a frente
   const items: Item[] = worldItems(W);
+  for (const th of view.throwers) {
+    items.push({
+      y: th.y,
+      draw: () => thrower(c, map, vcx + th.x * V, vy(th.y), th.side, th.kind, th.phase, th.p, s.t),
+    });
+  }
+  for (const sh of view.shots) {
+    items.push({ y: sh.y + (sh.kind === 'lob' ? 1.5 : 0), draw: () => shotBody(c, map, sh, vcx, vy, s.t) });
+  }
+  for (const ch of view.chasers) {
+    items.push({
+      y: ch.y,
+      draw: () => chaser(c, map, vcx + ch.x * V, vy(ch.y), ch.frozen, ch.dizzy, view.x - ch.x, s.t),
+    });
+  }
+  for (const it of view.items) {
+    items.push({ y: it.y, draw: () => itemPickup(c, it.kind, vcx + it.x * V, vy(it.y), s.t, it.id) });
+  }
   let own: SinalView['covers'][number] | null = null;
   for (const o of view.obstacles) {
     if (isFloor(o.kind)) continue;
@@ -189,6 +213,16 @@ export function drawScene(c: Ctx, s: SceneInput) {
         c.translate(hx, vpy);
         c.scale(HERO_SCALE, HERO_SCALE);
         silhouette(c, 0, 0, heroColor);
+        if (view.shadow > 0) {
+          // a Sombra: fiapos roxos girando em volta
+          for (let i = 0; i < 6; i++) {
+            const an = s.t * 3 + (i * Math.PI * 2) / 6;
+            c.fillStyle = `rgba(150,100,255,${0.35 + 0.3 * Math.sin(s.t * 6 + i)})`;
+            c.beginPath();
+            c.ellipse(Math.cos(an) * 20, -16 + Math.sin(an) * 14, 4, 7, an, 0, 7);
+            c.fill();
+          }
+        }
         c.restore();
         return;
       }
@@ -209,6 +243,23 @@ export function drawScene(c: Ctx, s: SceneInput) {
         c.rotate(ang);
         c.scale(1 + 0.45 * view.knock, 1 - 0.3 * view.knock);
         c.rotate(-ang);
+      }
+      if (view.boost > 0) {
+        // o Impulso: imagens que ficam para trás e um brilho dourado
+        for (let i = 3; i >= 1; i--) {
+          c.save();
+          c.globalAlpha = 0.34 / i;
+          c.translate(0, i * 11);
+          hero(c, map, 0, 0, s.t - i * 0.04, true, 1, heroColor);
+          c.restore();
+        }
+        c.save();
+        c.globalCompositeOperation = 'lighter';
+        c.fillStyle = 'rgba(255,176,32,0.22)';
+        c.beginPath();
+        c.arc(0, -16, 26, 0, 7);
+        c.fill();
+        c.restore();
       }
       hero(c, map, 0, 0, s.t, s.walking, 1, heroColor);
       c.restore();

@@ -43,7 +43,7 @@ O Lucas achou o resultado "muito amador". Metas, valendo para os três mapas:
 - **Som:** a **cantiga é a trilha**: melodia própria por mapa (caixinha de música, marimba e sino, uma escala por mapa), sintetizada com envelope e reverberação gerada; o LHO esticado sobe de tom e vibra. Cama sonora ambiente por mapa, passos que variam, pancadas e atordoamento com corpo, ronco/batimento da escuridão e avisos curtos. **Mixagem com compressor/limitador e sem zumbido repetitivo**; tudo respeita o botão de mudo.
 - Nada de emoji; animações só em `transform`/`opacity` nas telas de interface (o Canvas pode desenhar livremente).
 
-## Itens do jogador (decidido pelo Lucas em 14/10/2026; ainda não implementado)
+## Itens do jogador (decidido pelo Lucas em 14/10/2026; implementado na [spec 027](027-sinal-perigos.md))
 
 - **Onde se pega:** itens **no caminho, em lugares fixos sorteados pela seed**. Quem quiser pega correndo atrás dele (e se expõe).
 - **Regra de ouro:** nenhum item mexe no **Vigia** nem na lógica dele (sem Congelar, sem atrasar ou adiantar a cantiga). Os itens só **beneficiam quem usa** ou **atrapalham os outros jogadores** (esta segunda parte só existe no online).

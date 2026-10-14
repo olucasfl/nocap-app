@@ -94,7 +94,7 @@ describe('o corpo da partida do Sinal Vermelho', () => {
   it('aceita o formato certo e recusa o estragado', () => {
     expect(createMatchSchema.safeParse(base).success).toBe(true);
     for (const inputs of [
-      [[0, 101, 0]],
+      [[0, 128, 0]],
       [[0, 0, -101]],
       [[-1, 0, 0]],
       [[0.5, 0, 0]],
