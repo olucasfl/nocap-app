@@ -82,7 +82,9 @@ const VERDICT: Record<string, string> = {
   trem: 'O TREM PASSOU',
   agua: 'CAIU NA ÁGUA',
   arrastado: 'A TORA TE LEVOU',
-  afundou: 'A PEDRA AFUNDOU',
+  afundou: 'AFUNDOU',
+  mordido: 'O CROCODILO MORDEU',
+  atingido: 'FOI VARRIDO',
   escuridao: 'A ESCURIDÃO TE PEGOU',
 };
 
@@ -167,6 +169,8 @@ export function AtravessaGame() {
   const [result, setResult] = useState<AtravessaResult | null>(null);
   const [steps, setSteps] = useState<AtravessaInput[]>([]);
   const [before, setBefore] = useState(0);
+  /** A linha do recorde de quem joga (a faixa dourada): o do servidor ou, sem conta, o deste aparelho. */
+  const [record, setRecord] = useState(0);
   const [busy, setBusy] = useState(false);
   const queryClient = useQueryClient();
 
@@ -185,6 +189,7 @@ export function AtravessaGame() {
       /* convidado: vale o recorde deste aparelho */
     }
     setBefore(best);
+    setRecord(Math.max(localBest(), best));
     setRun({ matchId: crypto.randomUUID(), seed, session });
     setBusy(false);
     setPhase('play');
@@ -195,8 +200,9 @@ export function AtravessaGame() {
       <AtravessaPlay
         key={run.seed}
         seed={run.seed}
+        record={record}
         onEnd={(r, s) => {
-          if (useAuth.getState().user) saveLocalBest(r.score);
+          saveLocalBest(r.score);
           setResult(r);
           setSteps(s);
           setPhase('final');

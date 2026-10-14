@@ -2,24 +2,34 @@ import type { AtravessaBiome, AtravessaEnd, LaneKind } from '@nocap/games';
 import { audioKit } from './sfx';
 
 /**
- * O som do Atravessa! (spec 028), todo sintetizado em Web Audio. A ideia central: cada pulo para a
- * frente toca a próxima nota de uma escala pentatônica própria do bioma, então avançar vira uma
- * melodia tocada pelo ritmo de quem joga (sem trilha de fundo que brigue com o jogo). Por baixo, uma
- * cama de ambiente por bioma, pousos que soam diferente em cada chão, o sino do trem, mortes com
- * corpo e um ronco baixo e discreto quando a escuridão chega perto. Tudo passa por um compressor e
- * respeita o botão de mudo.
+ * O som do Atravessa! (specs 028 e 029), todo sintetizado em Web Audio. O pulo é um "pop" seco e
+ * alto, sempre igual (sem nota que sobe). Por baixo, uma cama de ambiente por bioma, pousos que soam
+ * diferente em cada chão, o sino do trem, a sirene da ambulância (mais alta quanto mais perto),
+ * o aviso das varridas, sons de marco e de recorde, mortes com corpo e um ronco baixo e discreto
+ * quando a escuridão chega perto. Tudo passa por um compressor e respeita o botão de mudo.
  */
 export interface AtravessaAudio {
-  /** Um pulo começou: `row` é a linha de destino (escolhe a nota) e `forward` diz se é para a frente. */
-  hop(row: number, forward: boolean): void;
+  /** Um pulo começou: `forward` diz se é para a frente (os outros soam um pouco mais graves). */
+  hop(forward: boolean): void;
   /** O herói pousou em um chão deste tipo. */
   land(kind: LaneKind): void;
   /** Passo recusado (árvore, borda). */
   bump(): void;
   /** O bioma de onde o herói está: troca o timbre e o ambiente. */
   setBiome(b: AtravessaBiome): void;
-  /** A cada quadro: quão perto a escuridão está (0 a 1) e se algum trem por perto está avisando. */
-  frame(danger: number, trainWarning: boolean): void;
+  /**
+   * A cada quadro: quão perto a escuridão está (0 a 1), se algum trem por perto está avisando e o
+   * volume da sirene (0 a 1: a ambulância mais próxima, 0 quando não há).
+   */
+  frame(danger: number, trainWarning: boolean, siren: number): void;
+  /** Cruzou um marco (a cada 50 linhas, depois a cada 100): um sino suave. */
+  milestone(): void;
+  /** Passou do recorde: três notas subindo. */
+  record(): void;
+  /** Um bipe do aviso da varrida (a tela chama mais rápido conforme o perigo se aproxima). */
+  sweepWarn(): void;
+  /** O perigo da varrida entrou na pista. */
+  sweepHit(): void;
   death(end: AtravessaEnd): void;
   pause(): void;
   resume(): void;
@@ -60,15 +70,6 @@ const VOICES: Record<AtravessaBiome, Voice> = {
 };
 
 const semi = (root: number, n: number) => root * Math.pow(2, n / 12);
-
-/** A nota do pulo da linha `row`: sobe a escala e dá a volta a cada duas oitavas. */
-export function noteFor(biome: AtravessaBiome, row: number): number {
-  const v = VOICES[biome];
-  const n = v.scale.length;
-  const i = ((row % (n * 2)) + n * 2) % (n * 2);
-  const octave = Math.floor(i / n);
-  return semi(v.root, v.scale[i % n]! + 12 * octave);
-}
 
 export function createAtravessaAudio(): AtravessaAudio | null {
   const kit = audioKit();
@@ -240,13 +241,62 @@ export function createAtravessaAudio(): AtravessaAudio | null {
   let nextBell = 0;
   let bellFlip = 0;
 
+  // ---- a sirene da ambulância: um oscilador que vai e volta de agudo para grave, mais alto de perto
+  let siren: { osc: OscillatorNode; lfo: OscillatorNode; gain: GainNode } | null = null;
+  const startSiren = () => {
+    if (siren || quiet()) return;
+    const osc = ctx.createOscillator();
+    const lfo = ctx.createOscillator();
+    const lfoGain = ctx.createGain();
+    const gain = ctx.createGain();
+    const lp = ctx.createBiquadFilter();
+    osc.type = 'triangle';
+    osc.frequency.value = 860;
+    lfo.type = 'sine';
+    lfo.frequency.value = 1.25;
+    lfoGain.gain.value = 190;
+    lp.type = 'lowpass';
+    lp.frequency.value = 2400;
+    gain.gain.value = 0.0001;
+    lfo.connect(lfoGain).connect(osc.frequency);
+    osc.connect(lp).connect(gain).connect(bus);
+    osc.start();
+    lfo.start();
+    created.push(osc, lfo);
+    siren = { osc, lfo, gain };
+  };
+
   return {
-    hop(row, forward) {
+    hop(forward) {
       const t = ctx.currentTime;
-      // o "pop" do pulo, sempre igual, e a nota da escala por cima quando é para a frente
-      tone('sine', 280, 520, 0.07, 0.07, t);
-      if (forward) pluck(noteFor(biome, row), t + 0.01, 0.13);
-      else tone('triangle', 330, 240, 0.09, 0.05, t);
+      // o "pop" do pulo: seco, alto e sempre igual (sem nota que sobe); os outros lados são mais graves
+      const k = forward ? 1 : 0.8;
+      tone('sine', 240 * k, 640 * k, 0.1, 0.24, t);
+      tone('triangle', 520 * k, 900 * k, 0.045, 0.1, t);
+      hiss('highpass', 2600, 6000, 0.03, 0.06, t);
+    },
+    milestone() {
+      const t = ctx.currentTime;
+      // um sino suave de duas notas
+      pluck(784, t, 0.12);
+      pluck(1175, t + 0.12, 0.1);
+    },
+    record() {
+      const t = ctx.currentTime;
+      // três notas subindo, mais brilhantes que o marco, e um brilho de ar no fim
+      pluck(659, t, 0.16);
+      pluck(880, t + 0.1, 0.16);
+      pluck(1319, t + 0.2, 0.18);
+      hiss('highpass', 5000, 9000, 0.35, 0.05, t + 0.22);
+    },
+    sweepWarn() {
+      const t = ctx.currentTime;
+      tone('square', 1040, 1040, 0.07, 0.05, t);
+    },
+    sweepHit() {
+      const t = ctx.currentTime;
+      hiss('bandpass', 500, 2400, 0.5, 0.2, t, 0.7);
+      tone('sine', 150, 70, 0.4, 0.14, t);
     },
     land(kind) {
       const t = ctx.currentTime;
@@ -271,8 +321,14 @@ export function createAtravessaAudio(): AtravessaAudio | null {
       biome = b;
       startAmbience();
     },
-    frame(danger, trainWarning) {
+    frame(danger, trainWarning, sirenLevel) {
       const t = ctx.currentTime;
+      if (sirenLevel > 0.04) {
+        startSiren();
+        siren?.gain.gain.setTargetAtTime(sirenLevel * 0.12 + 0.0001, t, 0.08);
+      } else if (siren) {
+        siren.gain.gain.setTargetAtTime(0.0001, t, 0.12);
+      }
       if (danger > 0.05) {
         startDrone();
         if (drone) {
@@ -309,6 +365,15 @@ export function createAtravessaAudio(): AtravessaAudio | null {
         tone('sawtooth', 392, 388, 0.5, 0.1, t);
         hiss('lowpass', 1800, 150, 0.3, 0.26, t + 0.05);
         tone('sine', 120, 34, 0.4, 0.4, t + 0.05);
+      } else if (end === 'mordido') {
+        // o estalo da mandíbula e um "gulp"
+        tone('square', 320, 140, 0.06, 0.16, t);
+        hiss('bandpass', 1400, 600, 0.12, 0.2, t, 1.6);
+        tone('sine', 180, 60, 0.3, 0.22, t + 0.08);
+      } else if (end === 'atingido') {
+        hiss('bandpass', 900, 250, 0.3, 0.26, t, 0.8);
+        tone('sine', 130, 40, 0.4, 0.34, t);
+        tone('triangle', 420, 160, 0.2, 0.1, t);
       } else if (end === 'escuridao') {
         tone('sine', 200, 40, 1.1, 0.3, t);
         tone('triangle', 90, 30, 1.3, 0.2, t);
@@ -320,6 +385,7 @@ export function createAtravessaAudio(): AtravessaAudio | null {
         for (let i = 0; i < 3; i++) tone('sine', 520 + i * 90, 900 + i * 120, 0.07, 0.045, t + 0.18 + i * 0.1);
       }
       if (drone) drone.gain.gain.setTargetAtTime(0.0001, t, 0.1);
+      if (siren) siren.gain.gain.setTargetAtTime(0.0001, t, 0.05);
     },
     pause() {
       void ctx.suspend();
@@ -329,6 +395,14 @@ export function createAtravessaAudio(): AtravessaAudio | null {
     },
     stop() {
       stopAmbience();
+      if (siren) {
+        const t = ctx.currentTime;
+        siren.gain.gain.cancelScheduledValues(t);
+        siren.gain.gain.setValueAtTime(0.0001, t);
+        siren.osc.stop(t + 0.05);
+        siren.lfo.stop(t + 0.05);
+        siren = null;
+      }
       if (drone) {
         const t = ctx.currentTime;
         drone.gain.gain.cancelScheduledValues(t);

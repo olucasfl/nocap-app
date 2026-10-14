@@ -1,4 +1,5 @@
 import {
+  ATR_CROC_HEAD,
   ATR_DARK_BASE,
   ATR_DARK_CAP,
   ATR_DARK_GROWTH,
@@ -8,6 +9,7 @@ import {
   ATR_DARK_START_GAP,
   ATR_DIRS,
   ATR_DT,
+  ATR_FLOW_HALF,
   ATR_HALF_COLS,
   ATR_HERO_R,
   ATR_LOG_SLACK,
@@ -18,15 +20,23 @@ import {
   ATR_RIVER_EDGE,
   ATR_SINK_TICKS,
   ATR_STEP_TICKS,
+  ATR_SWEEP,
+  ATR_SWEEP_COOLDOWN_TICKS,
+  ATR_SWEEP_IDLE_TICKS,
+  ATR_SWEEP_MIN_ROW,
+  ATR_SWEEP_WARN_TICKS,
   type AtravessaEnd,
   type Dir,
+  type SweepKind,
 } from './constants';
-import { AtravessaWorld, laneObjects, objX, trainState, type Lane } from './world';
+import { crocState, flowX, isSolid, type FlowItem } from './flow';
+import { AtravessaWorld, laneBiome, trainState, type Lane } from './world';
 
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 
 /** Velocidade da escuridão (linhas/s) para quem já chegou à linha `best`: devagar, e nunca acima do teto. */
-export const atravessaDarkSpeed = (best: number): number => Math.min(ATR_DARK_CAP, ATR_DARK_BASE + best * ATR_DARK_GROWTH);
+export const atravessaDarkSpeed = (best: number): number =>
+  Math.min(ATR_DARK_CAP, ATR_DARK_BASE + best * ATR_DARK_GROWTH);
 
 interface Move {
   dir: Dir;
@@ -35,6 +45,30 @@ interface Move {
   fromX: number;
   toX: number;
   t: number;
+}
+
+/** Uma varrida de aviso: um perigo que atravessa a linha onde o herói ficou parado (spec 029). */
+interface Sweep {
+  row: number;
+  kind: SweepKind;
+  /** Para que lado ele anda: 1 = para a direita. */
+  side: 1 | -1;
+  /** Tick em que o aviso começa e em que o perigo entra. */
+  start: number;
+  hit: number;
+}
+
+export interface SweepView {
+  /** Identifica a varrida (o tick em que o aviso começou). */
+  id: number;
+  row: number;
+  kind: SweepKind;
+  side: 1 | -1;
+  phase: 'warn' | 'hit';
+  /** O aviso: 0 a 1. */
+  warn: number;
+  /** Posição do perigo (casas); null enquanto só avisa. */
+  x: number | null;
 }
 
 /** O que a tela precisa para desenhar o herói e o aviso da escuridão. */
@@ -63,6 +97,10 @@ export interface AtravessaView {
   sinking: number;
   /** Quantos passos já foram recusados (árvore, borda): a tela toca o tremidinho quando sobe. */
   bumps: number;
+  /** A varrida de aviso em andamento, se houver. */
+  sweep: SweepView | null;
+  /** De que lado veio quem matou (-1 esquerda, 1 direita, 0 nenhum): a tela usa para a animação. */
+  killer: -1 | 0 | 1;
 }
 
 export class AtravessaSim {
@@ -78,11 +116,16 @@ export class AtravessaSim {
   /** Passos recusados até agora (só para a tela). */
   bumps = 0;
   dark = -ATR_DARK_START_GAP;
+  killer: -1 | 0 | 1 = 0;
   private move: Move | null = null;
   private queue: Dir[] = [];
   private landedTick = 0;
   private landedDir: Dir = 0;
   private hasLanded = false;
+  /** Há quantos ticks o herói está parado numa faixa (para as varridas). */
+  private idle = 0;
+  private sweep: Sweep | null = null;
+  private sweepFree = 0;
 
   constructor(seed: string, world?: AtravessaWorld) {
     this.world = world ?? new AtravessaWorld(seed);
@@ -94,6 +137,7 @@ export class AtravessaSim {
     Object.assign(c, this);
     c.queue = [...this.queue];
     c.move = this.move ? { ...this.move } : null;
+    c.sweep = this.sweep ? { ...this.sweep } : null;
     return c;
   }
 
@@ -107,9 +151,10 @@ export class AtravessaSim {
     return this.best;
   }
 
-  private die(end: AtravessaEnd) {
+  private die(end: AtravessaEnd, killer: -1 | 0 | 1 = 0) {
     this.alive = false;
     this.end = end;
+    this.killer = killer;
     this.queue = [];
   }
 
@@ -129,12 +174,12 @@ export class AtravessaSim {
         continue;
       }
       const there = this.world.lane(toRow);
-      const onLog = there.kind === 'rio' && !there.pads;
+      const onFlow = there.kind === 'rio' && !there.pads;
       if (dir === 0 || dir === 1) {
-        if (!onLog) toX = Math.round(toX);
+        if (!onFlow) toX = Math.round(toX);
       }
-      // limites do mapa: tora deixa chegar um pouco além da última casa; o resto, não
-      const limit = onLog ? ATR_RIVER_EDGE - 0.1 : ATR_HALF_COLS;
+      // limites do mapa: quem anda no rio deixa chegar um pouco além da última casa; o resto, não
+      const limit = onFlow ? ATR_RIVER_EDGE - 0.1 : ATR_HALF_COLS;
       if (
         Math.abs(toX) > limit + 1e-9 ||
         (there.kind === 'descanso' && there.blocked.includes(Math.round(toX))) ||
@@ -144,7 +189,18 @@ export class AtravessaSim {
         continue;
       }
       this.move = { dir, fromRow: this.row, toRow, fromX: this.hx, toX, t: 0 };
+      this.idle = 0;
     }
+  }
+
+  /** O que segura o herói em `x` nesta faixa de rio: tora, crocodilo ou tartaruga que não mergulhou. */
+  private platformAt(lane: Lane, x: number): FlowItem | null {
+    if (!lane.flow) return null;
+    for (const it of lane.flow.active(this.tick)) {
+      if (!isSolid(it, this.tick)) continue;
+      if (Math.abs(x - flowX(lane.dir, it, this.tick)) <= it.len / 2 + ATR_LOG_SLACK) return it;
+    }
+    return null;
   }
 
   private arrive(m: Move) {
@@ -154,23 +210,41 @@ export class AtravessaSim {
     this.landedTick = this.tick;
     this.landedDir = m.dir;
     this.hasLanded = true;
+    this.idle = 0;
     const lane = this.world.lane(this.row);
     if (lane.kind === 'rio') {
       if (lane.pads) {
         if (!lane.pads.some((p) => p.col === Math.round(this.hx))) return this.die('agua');
         this.hx = Math.round(this.hx);
-      } else if (!this.onLog(lane)) return this.die('agua');
+      } else if (!this.platformAt(lane, this.hx)) return this.die('agua');
     } else {
       this.hx = Math.round(this.hx);
     }
     if (this.row > this.best) this.best = this.row;
   }
 
-  private onLog(lane: Lane): boolean {
-    for (const o of lane.objs) {
-      if (Math.abs(this.hx - objX(lane, o, this.tick)) <= o.len / 2 + ATR_LOG_SLACK) return true;
-    }
-    return false;
+  /** Uma varrida de aviso na linha do herói, se ele ficou parado tempo demais numa faixa de descanso. */
+  private maybeSweep() {
+    if (this.sweep || this.tick < this.sweepFree || this.move || this.queue.length) return;
+    if (this.row < ATR_SWEEP_MIN_ROW || this.idle < ATR_SWEEP_IDLE_TICKS) return;
+    const lane = this.world.lane(this.row);
+    if (lane.kind !== 'descanso') return;
+    const biome = laneBiome(lane.biome);
+    const h = (this.row * 31 + this.tick) % 2;
+    const kind: SweepKind =
+      biome === 'horta' ? 'barril' : biome === 'neon' ? 'laser' : h === 0 ? 'feno' : 'redemoinho';
+    this.sweep = {
+      row: this.row,
+      kind,
+      side: h === 0 ? 1 : -1,
+      start: this.tick,
+      hit: this.tick + ATR_SWEEP_WARN_TICKS,
+    };
+  }
+
+  private sweepX(s: Sweep): number | null {
+    if (this.tick < s.hit) return null;
+    return s.side * (-ATR_FLOW_HALF + (ATR_SWEEP[s.kind].speed * (this.tick - s.hit)) / 60);
   }
 
   /** Avança um tick (1/60 s). */
@@ -189,10 +263,24 @@ export class AtravessaSim {
         if (!this.alive) return;
       }
     } else {
+      this.idle++;
       const lane = this.world.lane(this.row);
       if (lane.kind === 'rio' && !lane.pads) {
-        this.hx += lane.dir * lane.speed * ATR_DT;
+        // em cima de algo que anda: leva o herói junto (cada um na sua velocidade)
+        const it = this.platformAt(lane, this.hx);
+        if (!it) {
+          const turtle = lane.flow
+            ?.active(this.tick)
+            .some((t) => t.kind === 'tartaruga' && Math.abs(this.hx - flowX(lane.dir, t, this.tick)) <= t.len / 2 + ATR_LOG_SLACK);
+          return this.die(turtle ? 'afundou' : 'agua');
+        }
+        this.hx += lane.dir * it.speed * ATR_DT;
         if (Math.abs(this.hx) > ATR_RIVER_EDGE) return this.die('arrastado');
+        if (it.kind === 'croc' && crocState(it, this.tick) === 'open') {
+          const cx = flowX(lane.dir, it, this.tick);
+          const head = cx + lane.dir * (it.len / 2 - ATR_CROC_HEAD / 2);
+          if (Math.abs(this.hx - head) < ATR_CROC_HEAD / 2 + ATR_HERO_R) return this.die('mordido', lane.dir);
+        }
       }
     }
 
@@ -200,17 +288,37 @@ export class AtravessaSim {
     const m = this.move;
     const rowNow = m ? (m.t < ATR_STEP_TICKS / 2 ? m.fromRow : m.toRow) : this.row;
     const lane = this.world.lane(rowNow);
-    if (lane.kind === 'estrada') {
-      for (const o of laneObjects(lane, this.tick)) {
-        if (Math.abs(this.hx - o.x) < o.len / 2 + ATR_HERO_R) return this.die('veiculo');
+    if (lane.kind === 'estrada' && lane.flow) {
+      for (const it of lane.flow.active(this.tick)) {
+        if (Math.abs(this.hx - flowX(lane.dir, it, this.tick)) < it.len / 2 + ATR_HERO_R) {
+          return this.die('veiculo', lane.dir);
+        }
       }
     } else if (lane.kind === 'trilho') {
       const t = trainState(lane, this.tick);
-      if (t.x !== null && Math.abs(this.hx - t.x) < lane.train!.len / 2 + ATR_HERO_R) return this.die('trem');
+      if (t.x !== null && Math.abs(this.hx - t.x) < lane.train!.len / 2 + ATR_HERO_R) {
+        return this.die('trem', lane.dir);
+      }
     }
     if (!m && lane.kind === 'rio' && lane.pads) {
       const pad = lane.pads.find((p) => p.col === Math.round(this.hx));
       if (pad?.sinks && this.tick - this.landedTick >= ATR_SINK_TICKS) return this.die('afundou');
+    }
+
+    // varridas de aviso
+    this.maybeSweep();
+    if (this.sweep) {
+      const s = this.sweep;
+      const x = this.sweepX(s);
+      if (x !== null) {
+        if (rowNow === s.row && Math.abs(this.hx - x) < ATR_SWEEP[s.kind].r + ATR_HERO_R) {
+          return this.die('atingido', s.side);
+        }
+        if (x * s.side > ATR_FLOW_HALF) {
+          this.sweep = null;
+          this.sweepFree = this.tick + ATR_SWEEP_COOLDOWN_TICKS;
+        }
+      }
     }
 
     // a escuridão: devagar, parada no começo, e sem ficar mais longe que o limite
@@ -229,6 +337,7 @@ export class AtravessaSim {
     const m = this.move;
     const p = m ? m.t / ATR_STEP_TICKS : 0;
     const gap = this.y - this.dark;
+    const s = this.sweep;
     return {
       tick: this.tick,
       alive: this.alive,
@@ -245,6 +354,18 @@ export class AtravessaSim {
       danger: clamp(1 - (gap - ATR_DARK_KILL_GAP) / (ATR_DARK_MAX_GAP - ATR_DARK_KILL_GAP), 0, 1),
       sinking: this.sinkingFraction(),
       bumps: this.bumps,
+      sweep: s
+        ? {
+            id: s.start,
+            row: s.row,
+            kind: s.kind,
+            side: s.side,
+            phase: this.tick < s.hit ? 'warn' : 'hit',
+            warn: clamp((this.tick - s.start) / ATR_SWEEP_WARN_TICKS, 0, 1),
+            x: this.sweepX(s),
+          }
+        : null,
+      killer: this.killer,
     };
   }
 

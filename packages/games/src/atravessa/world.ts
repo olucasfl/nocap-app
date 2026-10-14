@@ -1,22 +1,24 @@
 import { createRng, randInt } from '../core/rng';
 import {
   ATR_BIOME_LEN,
-  ATR_COLS,
+  ATR_CROC_LEN,
   ATR_CYCLE_LEN,
+  ATR_FLOW_LEN,
   ATR_HALF_COLS,
-  ATR_RIVER_LOOP,
-  ATR_ROAD_LOOP,
+  ATR_MIN_LOG_GAP,
+  ATR_MIN_VEHICLE_GAP,
   ATR_TPS,
   ATR_TRAIN_LEN,
-  ATR_TRAIN_PASS_TICKS,
-  ATR_TRAIN_SPEED,
-  ATR_TRAIN_WARN_TICKS,
+  ATR_TRAIN_SPEED_EASY,
+  ATR_TRAIN_SPEED_HARD,
+  ATR_TRAIN_WARN_EASY,
+  ATR_TRAIN_WARN_HARD,
   ATR_TRANSITION_LEN,
-  ATR_VEHICLE_LEN,
   type AtravessaBiome,
   type LaneKind,
   type VehicleKind,
 } from './constants';
+import { LaneFlow, Signal, flowX, type FlowItem, type FlowPick } from './flow';
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
@@ -56,16 +58,11 @@ export function difficultyAt(row: number): number {
   return clamp((row - 15) / 335 + b.cycle * 0.2, 0, 1);
 }
 
-export interface MovingObj {
-  /** Centro em casas no tempo 0. */
-  x0: number;
-  len: number;
-  kind: VehicleKind | 'tora';
-}
-
 export interface TrainInfo {
   period: number; // ticks
   quiet: number; // ticks parado antes do aviso
+  warn: number; // ticks de aviso (luz e sino)
+  pass: number; // ticks que o trem leva para atravessar
   offset: number;
   len: number;
   speed: number;
@@ -76,19 +73,22 @@ export interface Pad {
   sinks: boolean;
 }
 
+export type RiverMode = 'tora' | 'tartaruga' | 'pedra';
+
 export interface Lane {
   row: number;
   biome: BiomeInfo;
   kind: LaneKind;
   /** 1 = para a direita, -1 = para a esquerda. */
   dir: 1 | -1;
-  /** Casas por segundo (estrada e tora). */
-  speed: number;
-  loop: number;
-  objs: MovingObj[];
+  /** Estrada, rio de toras e de tartarugas: o que anda na faixa (cada item com a sua velocidade). */
+  flow: LaneFlow | null;
+  /** O sinal de trânsito, só em algumas estradas. */
+  signal: Signal | null;
+  riverMode: RiverMode | null;
   /** Descanso: colunas bloqueadas (árvore, pedra, cacto). */
   blocked: number[];
-  /** Rio de pedras paradas (em vez de toras): onde se pode pisar. */
+  /** Rio de pedras paradas: onde se pode pisar. */
   pads: Pad[] | null;
   train: TrainInfo | null;
 }
@@ -98,56 +98,106 @@ const EMPTY_LANE = (row: number): Lane => ({
   biome: biomeAt(0),
   kind: 'descanso',
   dir: 1,
-  speed: 0,
-  loop: ATR_ROAD_LOOP,
-  objs: [],
+  flow: null,
+  signal: null,
+  riverMode: null,
   blocked: [],
   pads: null,
   train: null,
 });
 
-const wrap = (v: number, loop: number) => ((((v + loop / 2) % loop) + loop) % loop) - loop / 2;
-
-/** Centro de um objeto móvel da faixa no instante `tick`. */
-export const objX = (lane: Lane, o: MovingObj, tick: number): number =>
-  wrap(o.x0 + lane.dir * lane.speed * (tick / ATR_TPS), lane.loop);
-
-/** O trem: o que se vê no instante `tick` (aviso e posição). */
+/** O trem: o que se vê no instante `tick` (aviso e posição do centro). */
 export function trainState(lane: Lane, tick: number): { warning: boolean; x: number | null } {
   const t = lane.train;
   if (!t) return { warning: false, x: null };
   const phase = (tick + t.offset) % t.period;
   if (phase < t.quiet) return { warning: false, x: null };
-  if (phase < t.quiet + ATR_TRAIN_WARN_TICKS) return { warning: true, x: null };
-  const s = ((phase - t.quiet - ATR_TRAIN_WARN_TICKS) / ATR_TPS) * t.speed;
-  // x é o centro do trem; ele entra pelo lado de onde vem e sai pelo outro
-  const x = lane.dir === 1 ? -ATR_HALF_COLS - 1 - t.len / 2 + s : ATR_HALF_COLS + 1 + t.len / 2 - s;
+  if (phase < t.quiet + t.warn) return { warning: true, x: null };
+  const s = ((phase - t.quiet - t.warn) / ATR_TPS) * t.speed;
+  const edge = ATR_HALF_COLS + 1 + t.len / 2;
+  const x = lane.dir === 1 ? -edge + s : edge - s;
   return { warning: false, x };
 }
 
+/** Os itens ativos da faixa com a posição de cada um. */
+export function laneItems(lane: Lane, tick: number): (FlowItem & { x: number })[] {
+  if (!lane.flow) return [];
+  return lane.flow.active(tick).map((it) => ({ ...it, x: flowX(lane.dir, it, tick) }));
+}
+
 const WEIGHTS: Record<AtravessaBiome, Partial<Record<LaneKind, number>>> = {
-  horta: { descanso: 30, estrada: 40, rio: 30 },
-  deserto: { descanso: 25, estrada: 35, trilho: 20, rio: 20 },
-  neon: { descanso: 20, estrada: 45, rio: 35 },
+  horta: { descanso: 30, estrada: 38, rio: 28, trilho: 10 },
+  deserto: { descanso: 22, estrada: 32, rio: 18, trilho: 20 },
+  neon: { descanso: 18, estrada: 40, rio: 30, trilho: 14 },
 };
 
-const VEHICLES: Record<AtravessaBiome, VehicleKind[]> = {
-  horta: ['carro', 'carro', 'trator'],
-  deserto: ['carro', 'caminhao', 'carro'],
-  neon: ['moto', 'carro', 'drone', 'moto'],
+/**
+ * Quantas faixas seguidas dura um trecho de cada tipo (pesos). Os curtos são os mais comuns; os
+ * longos vêm, mas raros (spec 029). Com a dificuldade os longos ficam um pouco mais prováveis.
+ */
+const LEN_WEIGHTS: Record<LaneKind, number[]> = {
+  descanso: [40, 40, 20],
+  estrada: [30, 27, 19, 13, 7, 4],
+  trilho: [45, 35, 12, 5, 3],
+  rio: [34, 30, 18, 12, 6],
 };
+
+const VEHICLE_KINDS: Record<AtravessaBiome, Record<'slow' | 'mid' | 'fast', VehicleKind[]>> = {
+  horta: {
+    slow: ['trator', 'caminhao', 'onibus', 'betoneira'],
+    mid: ['carro', 'taxi', 'perua', 'picape', 'scooter'],
+    fast: ['esportivo', 'moto', 'carro'],
+  },
+  deserto: {
+    slow: ['caminhao', 'betoneira', 'onibus', 'picape'],
+    mid: ['picape', 'carro', 'perua', 'taxi'],
+    fast: ['esportivo', 'moto', 'picape'],
+  },
+  neon: {
+    slow: ['onibus', 'caminhao', 'betoneira', 'scooter'],
+    mid: ['carro', 'taxi', 'perua', 'scooter'],
+    fast: ['esportivo', 'moto', 'drone'],
+  },
+};
+
+type SpeedClass = 'slow' | 'mid' | 'fast' | 'vfast';
+const SPEED_RANGE: Record<SpeedClass, [number, number]> = {
+  slow: [0.9, 1.6],
+  mid: [1.9, 2.9],
+  fast: [3.3, 4.6],
+  vfast: [5.4, 6.6],
+};
+/** Cada faixa tem um perfil de tráfego: o que é comum nela (mas qualquer velocidade pode aparecer). */
+const PROFILES: Record<'calma' | 'normal' | 'rush', Record<SpeedClass, number>> = {
+  calma: { slow: 0.38, mid: 0.52, fast: 0.1, vfast: 0 },
+  normal: { slow: 0.22, mid: 0.48, fast: 0.27, vfast: 0.03 },
+  rush: { slow: 0.08, mid: 0.32, fast: 0.48, vfast: 0.12 },
+};
+const SPEED_SCALE: Record<AtravessaBiome, number> = { horta: 1, deserto: 1.08, neon: 1.15 };
 
 const TREE_DENSITY: Record<AtravessaBiome, number> = { horta: 0.28, deserto: 0.18, neon: 0.12 };
-const PAD_CHANCE: Record<AtravessaBiome, number> = { horta: 0.45, deserto: 0.5, neon: 0.35 };
-const SPEED_SCALE: Record<AtravessaBiome, number> = { horta: 1, deserto: 1.1, neon: 1.2 };
+const PAD_CHANCE: Record<AtravessaBiome, number> = { horta: 0.4, deserto: 0.45, neon: 0.3 };
+const TURTLE_CHANCE: Record<AtravessaBiome, number> = { horta: 0.3, deserto: 0.22, neon: 0.34 };
+
+function weighted(rng: () => number, ws: number[]): number {
+  let total = 0;
+  for (const w of ws) total += w;
+  let r = rng() * total;
+  for (let i = 0; i < ws.length; i++) {
+    r -= ws[i]!;
+    if (r <= 0) return i;
+  }
+  return ws.length - 1;
+}
 
 /**
  * O mundo: faixas geradas em ordem a partir da seed, sob demanda. Como as faixas só são geradas na
- * ordem (linha 0, 1, 2...), o resultado só depende da seed, não de quem pediu primeiro.
+ * ordem (linha 0, 1, 2...), o resultado só depende da seed, não de quem pediu primeiro. O tráfego
+ * de cada faixa tem a sua própria sequência (seed da faixa), gerada conforme o tempo passa.
  *
- * Garantias (testadas): as 3 primeiras faixas são descanso livre; faixas de descanso ou de pedras
- * consecutivas compartilham uma coluna livre (o "corredor"); veículos têm vão mínimo; toras têm vão
- * mínimo; no máximo 3 rios e 4 estradas seguidos.
+ * Garantias (testadas): a linha 0 é descanso livre; faixas de descanso ou de pedras consecutivas
+ * compartilham uma coluna livre (o "corredor"); veículos e toras nunca se sobrepõem e têm vão mínimo;
+ * trechos longos de trilho, estrada e rio existem mas são raros.
  */
 export class AtravessaWorld {
   private lanes: Lane[] = [];
@@ -156,6 +206,7 @@ export class AtravessaWorld {
   private segKind: LaneKind = 'descanso';
   private segLeft = 0;
   private prevSegKind: LaneKind | null = null;
+  private corridors: number[] = [];
 
   constructor(readonly seed: string) {
     this.rng = createRng(`${seed}:atravessa`);
@@ -172,31 +223,76 @@ export class AtravessaWorld {
     this.lane(row);
     return this.corridors[row] ?? 0;
   }
-  private corridors: number[] = [];
 
   private pickSegment(row: number, biome: AtravessaBiome, diff: number) {
     const w = { ...WEIGHTS[biome] };
     if (this.prevSegKind) delete w[this.prevSegKind];
+    // o trem só aparece depois dos primeiros metros
+    if (row < 6) delete w.trilho;
     const kinds = Object.keys(w) as LaneKind[];
-    let total = 0;
-    for (const k of kinds) total += w[k]!;
-    let r = this.rng() * total;
-    let kind = kinds[0]!;
-    for (const k of kinds) {
-      r -= w[k]!;
-      if (r <= 0) {
-        kind = k;
-        break;
-      }
-    }
-    const max = {
-      descanso: 3,
-      estrada: 1 + Math.floor(1 + diff * 3),
-      trilho: 2,
-      rio: row < 40 ? 2 : 2 + Math.floor(diff * 1.5),
-    }[kind];
+    const kind = kinds[weighted(this.rng, kinds.map((k) => w[k]!))]!;
+    const base = LEN_WEIGHTS[kind].map((x, i) => (i >= 3 ? x * (1 + diff) : x));
+    // no começo os trechos longos de perigo ficam de fora
+    const cap = row < 25 && kind !== 'descanso' ? 2 : base.length;
     this.segKind = kind;
-    this.segLeft = randInt(this.rng, 1, Math.min(max, kind === 'rio' ? 3 : kind === 'estrada' ? 4 : max));
+    this.segLeft = 1 + weighted(this.rng, base.slice(0, cap));
+  }
+
+  private roadFlow(row: number, dir: 1 | -1, biome: AtravessaBiome, diff: number): { flow: LaneFlow; signal: Signal | null } {
+    const rng = createRng(`${this.seed}:lane:${row}`);
+    const roll = rng();
+    const profile = roll < lerp(0.5, 0.12, diff) ? 'calma' : roll < lerp(0.92, 0.6, diff) ? 'normal' : 'rush';
+    const weights = { ...PROFILES[profile] };
+    // a ambulância só aparece depois dos primeiros metros
+    if (row < 30) {
+      weights.mid += weights.vfast;
+      weights.vfast = 0;
+    }
+    const classes: SpeedClass[] = ['slow', 'mid', 'fast', 'vfast'];
+    const speedMul = SPEED_SCALE[biome] * lerp(0.92, 1.15, diff);
+    const signal = row >= 8 && rng() < lerp(0.14, 0.24, diff) ? new Signal(createRng(`${this.seed}:signal:${row}`)) : null;
+    const density = rng();
+    const pick = (r: () => number): FlowPick => {
+      const cls = classes[weighted(r, classes.map((c) => weights[c]))]!;
+      const [lo, hi] = SPEED_RANGE[cls];
+      const speed = lerp(lo, hi, r()) * speedMul;
+      let kind: VehicleKind = 'ambulancia';
+      if (cls !== 'vfast') {
+        const list = VEHICLE_KINDS[biome][cls];
+        kind = list[Math.floor(r() * list.length)]!;
+      }
+      return { kind, len: ATR_FLOW_LEN[kind], speed, variant: r(), bypass: kind === 'ambulancia' };
+    };
+    const flow = new LaneFlow(
+      {
+        dir,
+        minGap: ATR_MIN_VEHICLE_GAP,
+        extraMean: signal ? 0.5 : lerp(2.6, 0.7, density),
+        extraMax: 6,
+        pick,
+        signal: signal ?? undefined,
+      },
+      rng,
+    );
+    return { flow, signal };
+  }
+
+  private riverFlow(row: number, dir: 1 | -1, mode: 'tora' | 'tartaruga', diff: number): LaneFlow {
+    const rng = createRng(`${this.seed}:lane:${row}`);
+    const crocChance = diff > 0.12 ? lerp(0.08, 0.22, diff) : 0;
+    const pick = (r: () => number): FlowPick => {
+      const speed = lerp(0.6, 1.9, r()) * lerp(0.9, 1.1, diff);
+      if (mode === 'tartaruga') {
+        const len = r() < 0.5 ? 1.7 : 2.6;
+        return { kind: 'tartaruga', len, speed: speed * 0.85, variant: r() };
+      }
+      if (r() < crocChance) return { kind: 'croc', len: ATR_CROC_LEN, speed: speed * 0.8, variant: r() };
+      return { kind: 'tora', len: randInt(r, 2, 4), speed, variant: r() };
+    };
+    return new LaneFlow(
+      { dir, minGap: ATR_MIN_LOG_GAP, extraMean: lerp(1.0, 0.35, diff), extraMax: 1.8, pick },
+      rng,
+    );
   }
 
   private gen(row: number): Lane {
@@ -204,13 +300,12 @@ export class AtravessaWorld {
     const biome = laneBiome(info);
     const diff = difficultyAt(row);
     const prev = this.lanes[row - 1];
-    if (row <= 2) {
-      this.segKind = 'descanso';
+    if (row === 0) {
       this.corridors[row] = 0;
       return { ...EMPTY_LANE(row), biome: info };
     }
     if (this.segLeft <= 0) {
-      this.prevSegKind = this.segKind;
+      this.prevSegKind = row === 1 ? 'descanso' : this.segKind;
       this.pickSegment(row, biome, diff);
     }
     this.segLeft--;
@@ -220,7 +315,7 @@ export class AtravessaWorld {
 
     if (kind === 'descanso') {
       // depois de um rio o primeiro descanso é livre: dá para pousar em qualquer coluna
-      if (prev && prev.kind !== 'rio') {
+      if (prev && prev.kind !== 'rio' && row >= 3) {
         const density = TREE_DENSITY[biome];
         for (let c = -ATR_HALF_COLS; c <= ATR_HALF_COLS; c++) {
           if (c !== this.corridor && base.blocked.length < 5 && rng() < density) base.blocked.push(c);
@@ -240,6 +335,7 @@ export class AtravessaWorld {
         if (c !== this.corridor && rng() < 0.4) pads.push({ col: c, sinks: biome !== 'horta' && rng() < 0.5 });
       }
       base.pads = pads;
+      base.riverMode = 'pedra';
       this.corridors[row] = this.corridor;
       return base;
     }
@@ -248,45 +344,21 @@ export class AtravessaWorld {
     this.corridors[row] = this.corridor;
 
     if (kind === 'estrada') {
-      base.loop = ATR_ROAD_LOOP;
-      base.speed = lerp(1.4, 3.2, diff) * SPEED_SCALE[biome] * lerp(0.85, 1.15, rng());
-      const n = randInt(rng, 1, diff > 0.5 ? 3 : 2);
-      const spacing = base.loop / n;
-      const shift = rng() * spacing * 0.3;
-      const kinds = VEHICLES[biome];
-      for (let i = 0; i < n; i++) {
-        const vk = kinds[randInt(rng, 0, kinds.length - 1)]!;
-        const jitter = (rng() - 0.5) * 0.6;
-        base.objs.push({ x0: wrap(-base.loop / 2 + i * spacing + shift + jitter, base.loop), len: ATR_VEHICLE_LEN[vk], kind: vk });
-      }
+      const { flow, signal } = this.roadFlow(row, base.dir, biome, diff);
+      base.flow = flow;
+      base.signal = signal;
     } else if (kind === 'trilho') {
       const quiet = randInt(rng, 2 * ATR_TPS, Math.round(4.5 * ATR_TPS));
-      const period = quiet + ATR_TRAIN_WARN_TICKS + ATR_TRAIN_PASS_TICKS;
-      base.train = {
-        period,
-        quiet,
-        offset: Math.floor(rng() * period),
-        len: ATR_TRAIN_LEN,
-        speed: ATR_TRAIN_SPEED,
-      };
+      const speed = lerp(ATR_TRAIN_SPEED_EASY, ATR_TRAIN_SPEED_HARD, diff) * lerp(0.95, 1.05, rng());
+      const warn = Math.round(lerp(ATR_TRAIN_WARN_EASY, ATR_TRAIN_WARN_HARD, diff));
+      const pass = Math.ceil(((ATR_TRAIN_LEN + 2 * (ATR_HALF_COLS + 1)) / speed) * ATR_TPS);
+      const period = quiet + warn + pass;
+      base.train = { period, quiet, warn, pass, offset: Math.floor(rng() * period), len: ATR_TRAIN_LEN, speed };
     } else {
-      base.loop = ATR_RIVER_LOOP;
-      base.speed = lerp(0.8, 1.8, diff) * lerp(0.85, 1.15, rng());
-      const n = randInt(rng, 3, 4);
-      const lens = Array.from({ length: n }, () => (n === 3 ? randInt(rng, 2, 4) : randInt(rng, 2, 3)));
-      const gap = (base.loop - lens.reduce((a, b) => a + b, 0)) / n;
-      const shift = rng() * base.loop;
-      let cursor = 0;
-      for (let i = 0; i < n; i++) {
-        base.objs.push({ x0: wrap(cursor + lens[i]! / 2 + shift, base.loop), len: lens[i]!, kind: 'tora' });
-        cursor += lens[i]! + gap;
-      }
+      const mode: 'tora' | 'tartaruga' = rng() < TURTLE_CHANCE[biome] ? 'tartaruga' : 'tora';
+      base.riverMode = mode;
+      base.flow = this.riverFlow(row, base.dir, mode, diff);
     }
     return base;
   }
-}
-
-/** Posição e tamanho de todos os objetos móveis de uma faixa no instante `tick`. */
-export function laneObjects(lane: Lane, tick: number): { x: number; len: number; kind: MovingObj['kind'] }[] {
-  return lane.objs.map((o) => ({ x: objX(lane, o, tick), len: o.len, kind: o.kind }));
 }

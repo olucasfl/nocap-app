@@ -11,11 +11,8 @@ const USER = '99999999-9999-4999-8999-999999999999';
 type Step = [number, number];
 const createAs = (service: MatchesService, input: unknown) => service.create(input as never, USER);
 
-/** Dois pulos para a frente (as 3 primeiras faixas são seguras) e depois a escuridão alcança. */
-const TWO: Step[] = [
-  [1, 0],
-  [13, 0],
-];
+/** Sem nenhum passo: o herói fica parado na largada até a escuridão alcançá-lo (sempre acaba, sem sorte). */
+const TWO: Step[] = [];
 const asSteps = (s: Step[]) => s.map(([t, d]) => ({ t, d: d as 0 | 1 | 2 | 3 }));
 
 describe('scoreAtravessaMatch', () => {
@@ -23,9 +20,9 @@ describe('scoreAtravessaMatch', () => {
     const scored = scoreAtravessaMatch({ mode: 'infinito', seed: 's1', steps: TWO, elapsedMs: 9e9 });
     const expected = evaluateAtravessa('s1', asSteps(TWO));
     expect(expected.end).toBe('escuridao');
-    expect(expected.score).toBe(2);
-    expect(scored.total).toBe(2);
-    expect(scored.totalTenths).toBe(20);
+    expect(expected.score).toBe(0);
+    expect(scored.total).toBe(0);
+    expect(scored.totalTenths).toBe(0);
     expect(scored.rounds).toEqual([]);
     expect(scored.encodedAnswers).toEqual([]);
     expect(scored.settings).toMatchObject({ mode: 'infinito', scoreVersion: 1, ended: 'escuridao' });
@@ -125,7 +122,7 @@ describe('MatchesService (Atravessa!)', () => {
   it('salva como ranked, no jogo atravessa e no modo infinito, com a nota recalculada', async () => {
     const { service, save } = setup();
     const res = await createAs(service, play('seed-a', 10 * 60_000));
-    expect(res.total).toBe(2);
+    expect(res.total).toBe(0);
     expect(save).toHaveBeenCalledWith(
       expect.objectContaining({ game: 'atravessa', mode: 'infinito', kind: 'solo', ranked: true }),
     );

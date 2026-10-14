@@ -1,10 +1,25 @@
 import { describe, expect, it } from 'vitest';
-import { AtravessaSim, ATR_STEP_TICKS, type AtravessaView } from '@nocap/games';
+import { AtravessaSim, AtravessaWorld, ATR_STEP_TICKS, type AtravessaView } from '@nocap/games';
 import { ANTICIPATION, LANDING_TICKS, REST, deathPose, heroPose, turnToward } from './hop';
 import { KEY_DIR, SWIPE_MIN, swipeDir } from './input';
-import { noteFor } from '@/lib/atravessa-audio';
 
 const view = (sim: AtravessaSim): AtravessaView => sim.view();
+
+/** Um herói numa faixa de descanso com mais duas de descanso à frente (ele fica na coluna livre): os pulos não dependem de sorte. */
+function calm(): AtravessaSim {
+  const w = new AtravessaWorld('hop');
+  for (let r = 3; r < 900; r++) {
+    if ([r, r + 1, r + 2].every((x) => w.lane(x).kind === 'descanso')) {
+      const sim = new AtravessaSim('hop', w);
+      sim.row = r;
+      sim.best = r;
+      sim.hx = w.corridorAt(r);
+      sim.dark = r - 8;
+      return sim;
+    }
+  }
+  throw new Error('sem trecho calmo');
+}
 
 describe('swipeDir', () => {
   it('toque curto não decide direção', () => {
@@ -25,12 +40,12 @@ describe('swipeDir', () => {
 
 describe('animação do pulo', () => {
   it('parado, o herói está em repouso', () => {
-    const sim = new AtravessaSim('hop');
+    const sim = calm();
     expect(heroPose(view(sim))).toEqual(REST);
   });
 
   it('agacha ao sair do chão, estica no ar e volta ao normal', () => {
-    const sim = new AtravessaSim('hop');
+    const sim = calm();
     sim.input(0);
     const sy: number[] = [];
     const lift: number[] = [];
@@ -52,7 +67,7 @@ describe('animação do pulo', () => {
   });
 
   it('a curva é contínua: nenhum quadro muda a altura do corpo de uma vez', () => {
-    const sim = new AtravessaSim('hop');
+    const sim = calm();
     sim.input(0);
     let prev = 1;
     for (let i = 0; i < ATR_STEP_TICKS + LANDING_TICKS + 2; i++) {
@@ -64,7 +79,7 @@ describe('animação do pulo', () => {
   });
 
   it('o pouso amassa de leve e termina exatamente em repouso', () => {
-    const sim = new AtravessaSim('hop');
+    const sim = calm();
     sim.input(0);
     for (let i = 0; i < ATR_STEP_TICKS; i++) sim.step();
     const landed: number[] = [];
@@ -78,7 +93,7 @@ describe('animação do pulo', () => {
   });
 
   it('pulos em sequência não deixam o herói deformado', () => {
-    const sim = new AtravessaSim('hop');
+    const sim = calm();
     for (let n = 0; n < 2; n++) sim.input(0);
     for (let i = 0; i < ATR_STEP_TICKS * 2 + LANDING_TICKS + 3; i++) {
       sim.step();
@@ -92,7 +107,11 @@ describe('animação do pulo', () => {
 
 describe('morte e giro', () => {
   it('cada morte termina curta e coerente', () => {
-    expect(deathPose('veiculo', 1).sy).toBeLessThan(0.3);
+    expect(deathPose('veiculo', 1, 1).sy).toBeLessThan(0.7);
+    // atropelado é arremessado para o lado de onde o carro veio
+    expect(deathPose('veiculo', 1, 1).dx).toBeGreaterThan(2);
+    expect(deathPose('veiculo', 1, -1).dx).toBeLessThan(-2);
+    expect(deathPose('trem', 1, 1).dx).toBeGreaterThan(deathPose('veiculo', 1, 1).dx);
     expect(deathPose('agua', 1).alpha).toBe(0);
     expect(deathPose('escuridao', 1).alpha).toBeGreaterThan(0);
     expect(deathPose('escuridao', 1).alpha).toBeLessThan(0.3);
@@ -106,15 +125,5 @@ describe('morte e giro', () => {
     const a = (170 * Math.PI) / 180;
     const b = (-170 * Math.PI) / 180;
     expect(turnToward(a, b, 10) - a).toBeCloseTo((20 * Math.PI) / 180);
-  });
-});
-
-describe('som: a nota de cada pulo', () => {
-  it('sobe a escala a cada linha e dá a volta depois de duas oitavas', () => {
-    for (const b of ['horta', 'deserto', 'neon'] as const) {
-      for (let r = 0; r < 9; r++) expect(noteFor(b, r + 1)).toBeGreaterThan(noteFor(b, r));
-      expect(noteFor(b, 10)).toBeCloseTo(noteFor(b, 0));
-      expect(noteFor(b, -3)).toBeGreaterThan(0);
-    }
   });
 });

@@ -3,8 +3,10 @@ import {
   ATR_DT,
   ATR_STEP_TICKS,
   AtravessaSim,
+  atravessaMilestone,
   biomeAt,
   laneBiome,
+  laneItems,
   trainState,
   type AtravessaEnd,
   type AtravessaInput,
@@ -21,6 +23,8 @@ type Pause = { kind: 'none' } | { kind: 'paused' } | { kind: 'count'; n: number 
 
 interface Props {
   seed: string;
+  /** O recorde de quem joga (em linhas); 0 = ainda não tem. A faixa dourada aparece nessa linha. */
+  record: number;
   onEnd: (result: AtravessaResult, steps: AtravessaInput[]) => void;
   onQuit: () => void;
   onRestart: () => void;
@@ -31,19 +35,24 @@ const OVER_TEXT: Record<AtravessaEnd, string> = {
   trem: 'O TREM PASSOU',
   agua: 'CAIU NA ÁGUA',
   arrastado: 'A TORA TE LEVOU',
-  afundou: 'A PEDRA AFUNDOU',
+  afundou: 'AFUNDOU',
+  mordido: 'O CROCODILO MORDEU',
+  atingido: 'FOI VARRIDO',
   escuridao: 'A ESCURIDÃO TE PEGOU',
 };
 
 /** Depois de morrer, a tela espera um pouco para o fim da partida ser visto. */
-const END_DELAY_MS = 1300;
+const END_DELAY_MS = 1500;
+const TOAST_MS = 1700;
+
+const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
 
 /**
  * A partida do Atravessa!: a cena Three.js em tela cheia, toque ou W A S D, pausa com 3-2-1 e o fim.
  * O relógio é de passo fixo (60 por segundo), o mesmo que o servidor usa para refazer a partida a
  * partir dos passos gravados aqui.
  */
-export function AtravessaPlay({ seed, onEnd, onQuit, onRestart }: Props) {
+export function AtravessaPlay({ seed, record, onEnd, onQuit, onRestart }: Props) {
   const wrap = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const [pause, setPause] = useState<Pause>({ kind: 'none' });
@@ -51,6 +60,7 @@ export function AtravessaPlay({ seed, onEnd, onQuit, onRestart }: Props) {
   const [over, setOver] = useState<{ end: AtravessaEnd; score: number } | null>(null);
   const [hint, setHint] = useState(true);
   const [failed, setFailed] = useState(false);
+  const [toast, setToast] = useState<{ text: string; kind: 'record' | 'marco'; n: number } | null>(null);
   const ctl = useRef<{ pause: () => void; resume: () => void } | null>(null);
   const onEndRef = useRef(onEnd);
   onEndRef.current = onEnd;
@@ -65,6 +75,7 @@ export function AtravessaPlay({ seed, onEnd, onQuit, onRestart }: Props) {
       setFailed(true);
       return;
     }
+    scene.setRecord(record);
     const sim = new AtravessaSim(seed);
     const audio = createAtravessaAudio();
     // só em desenvolvimento: deixa mexer no herói pelo console para ver os biomas sem jogar até lá
@@ -89,12 +100,24 @@ export function AtravessaPlay({ seed, onEnd, onQuit, onRestart }: Props) {
     let finished = false;
     let countTimer = 0;
     let endTimer = 0;
+    let toastTimer = 0;
+    let toastN = 0;
     let deathAt = 0;
     let shownScore = 0;
+    let passedRecord = false;
     // o que já foi "ouvido": o instante do último pulo e do último pouso e quantos passos foram recusados
     let hopTick = -1;
     let landTick = -1;
     let bumps = 0;
+    let sweepId = -1;
+    let sweepHit = false;
+    let nextBeep = 0;
+
+    const showToast = (text: string, kind: 'record' | 'marco') => {
+      window.clearTimeout(toastTimer);
+      setToast({ text, kind, n: ++toastN });
+      toastTimer = window.setTimeout(() => setToast(null), TOAST_MS);
+    };
 
     const doPause = () => {
       if (finished || paused) return;
@@ -166,8 +189,7 @@ export function AtravessaPlay({ seed, onEnd, onQuit, onRestart }: Props) {
           const started = sim.tick - Math.round(v.step.progress * ATR_STEP_TICKS);
           if (started !== hopTick) {
             hopTick = started;
-            const delta = v.step.dir === 0 ? 1 : v.step.dir === 1 ? -1 : 0;
-            audio?.hop(sim.row + delta, v.step.dir === 0);
+            audio?.hop(v.step.dir === 0);
           }
         }
         if (v.landed) {
@@ -183,17 +205,56 @@ export function AtravessaPlay({ seed, onEnd, onQuit, onRestart }: Props) {
         }
         const info = biomeAt(v.y);
         audio?.setBiome(laneBiome(info));
+
+        // o que avisa por som: o trem, a ambulância e a varrida
         let warning = false;
-        for (let r = Math.floor(v.y) - 5; r <= Math.floor(v.y) + 8 && !warning; r++) {
-          if (r >= 0 && sim.world.lane(r).kind === 'trilho') warning = trainState(sim.world.lane(r), sim.tick).warning;
+        let siren = 0;
+        const from = Math.floor(v.y) - 6;
+        const to = Math.floor(v.y) + 8;
+        for (let r = Math.max(0, from); r <= to; r++) {
+          const lane = sim.world.lane(r);
+          if (lane.kind === 'trilho' && !warning) warning = trainState(lane, sim.tick).warning;
+          if (lane.kind === 'estrada' && lane.flow) {
+            for (const it of laneItems(lane, sim.tick)) {
+              if (it.kind !== 'ambulancia') continue;
+              const near = clamp01(1 - Math.abs(it.x) / 17) ** 0.7 * clamp01(1 - Math.abs(r - v.y) / 9);
+              siren = Math.max(siren, near);
+            }
+          }
         }
-        if (!finished) audio?.frame(v.danger, warning);
+        if (!finished) audio?.frame(v.danger, warning, siren);
+
+        const sw = v.sweep;
+        if (sw && sw.id !== sweepId) {
+          sweepId = sw.id;
+          sweepHit = false;
+          nextBeep = 0;
+        }
+        if (sw && sw.phase === 'warn' && now / 1000 >= nextBeep) {
+          audio?.sweepWarn();
+          buzz(8);
+          nextBeep = now / 1000 + 0.34 - 0.22 * sw.warn;
+        }
+        if (sw && sw.phase === 'hit' && !sweepHit) {
+          sweepHit = true;
+          audio?.sweepHit();
+        }
       }
 
       if (sim.score !== shownScore) {
+        const prev = shownScore;
         shownScore = sim.score;
         setScore(shownScore);
         buzz(6);
+        if (record > 0 && !passedRecord && prev <= record && shownScore > record) {
+          passedRecord = true;
+          audio?.record();
+          showToast('NOVO RECORDE', 'record');
+          buzz(40);
+        } else if (atravessaMilestone(shownScore)) {
+          audio?.milestone();
+          showToast(`${shownScore} LINHAS`, 'marco');
+        }
       }
       if (!sim.alive && !finished) {
         finished = true;
@@ -213,6 +274,7 @@ export function AtravessaPlay({ seed, onEnd, onQuit, onRestart }: Props) {
       cancelAnimationFrame(raf);
       window.clearTimeout(countTimer);
       window.clearTimeout(endTimer);
+      window.clearTimeout(toastTimer);
       window.removeEventListener('keydown', onKey);
       document.removeEventListener('visibilitychange', onHide);
       window.removeEventListener('blur', doPause);
@@ -223,7 +285,7 @@ export function AtravessaPlay({ seed, onEnd, onQuit, onRestart }: Props) {
       scene.dispose();
       audio?.stop();
     };
-  }, [seed]);
+  }, [seed, record]);
 
   const paused = pause.kind !== 'none';
   const touch = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
@@ -233,6 +295,7 @@ export function AtravessaPlay({ seed, onEnd, onQuit, onRestart }: Props) {
       <canvas ref={canvas} className="at-canvas" />
       <div className="at-score" aria-live="off">
         <b>{score}</b>
+        {record > 0 && <small className="mono">REC {record}</small>}
       </div>
       <button
         type="button"
@@ -247,6 +310,11 @@ export function AtravessaPlay({ seed, onEnd, onQuit, onRestart }: Props) {
           <rect x="14" y="4" width="4" height="16" rx="1" />
         </svg>
       </button>
+      {toast && !over && (
+        <div key={toast.n} className={`at-toast ${toast.kind}`} role="status">
+          {toast.text}
+        </div>
+      )}
       {hint && !over && !failed && (
         <p className="at-hint mono">{touch ? 'TOQUE PARA PULAR · DESLIZE PARA IR PARA O LADO' : 'W A S D OU AS SETAS'}</p>
       )}

@@ -1,5 +1,5 @@
 /**
- * Atravessa! (spec 028). Tudo em grade: cada faixa é uma linha (`row`) de 9 casas (colunas -4 a 4);
+ * Atravessa! (specs 028 e 029). Tudo em grade: cada faixa é uma linha (`row`) de 9 casas (colunas -4 a 4);
  * o herói pula uma casa por passo. Nomes com prefixo ATR_ porque o pacote exporta tudo junto.
  */
 
@@ -27,28 +27,70 @@ export type AtravessaBiome = 'horta' | 'deserto' | 'neon';
 export const ATR_BIOMES: readonly AtravessaBiome[] = ['horta', 'deserto', 'neon'];
 
 export type LaneKind = 'descanso' | 'estrada' | 'trilho' | 'rio';
-export type VehicleKind = 'carro' | 'trator' | 'caminhao' | 'moto' | 'drone';
-/** Comprimento de cada veículo, em casas. */
-export const ATR_VEHICLE_LEN: Record<VehicleKind, number> = {
+
+/** Veículos (spec 029): o tipo depende da velocidade que ele sorteou. */
+export type VehicleKind =
+  | 'carro'
+  | 'esportivo'
+  | 'taxi'
+  | 'perua'
+  | 'picape'
+  | 'trator'
+  | 'caminhao'
+  | 'betoneira'
+  | 'onibus'
+  | 'moto'
+  | 'scooter'
+  | 'drone'
+  | 'ambulancia';
+/** O que boia ou carrega o herói no rio. */
+export type PlatformKind = 'tora' | 'croc' | 'tartaruga';
+export type FlowKind = VehicleKind | PlatformKind;
+
+/** Comprimento de cada coisa que anda na faixa, em casas. */
+export const ATR_FLOW_LEN: Record<VehicleKind, number> = {
   carro: 1.4,
+  esportivo: 1.5,
+  taxi: 1.4,
+  perua: 1.7,
+  picape: 1.7,
   trator: 1.8,
   caminhao: 2.8,
+  betoneira: 2.6,
+  onibus: 3.2,
   moto: 0.9,
+  scooter: 0.8,
   drone: 1.1,
+  ambulancia: 1.9,
 };
 
 /** Distância mínima (borda a borda) entre dois veículos da mesma faixa: sempre dá para passar. */
 export const ATR_MIN_VEHICLE_GAP = 2.0;
 export const ATR_MIN_LOG_GAP = 1.4;
 
-/** Volta do mundo de cada faixa móvel (casas); fora da tela dos dois lados. */
-export const ATR_ROAD_LOOP = ATR_COLS + 8;
-export const ATR_RIVER_LOOP = 18;
+/** Tudo que anda numa faixa entra pela borda a esta distância do centro (fora de qualquer tela). */
+export const ATR_FLOW_HALF = 14;
+/** A haste do sinal de trânsito fica a esta distância do centro, do lado de onde vêm os carros. */
+export const ATR_SIGNAL_X = 6.4;
 
 export const ATR_TRAIN_LEN = 12;
-export const ATR_TRAIN_SPEED = 18; // casas por segundo
-export const ATR_TRAIN_WARN_TICKS = 72; // 1,2 s de luz e sino antes do trem
-export const ATR_TRAIN_PASS_TICKS = Math.ceil(((ATR_TRAIN_LEN + ATR_COLS + 1) / ATR_TRAIN_SPEED) * ATR_TPS);
+/** O aviso do trem e a velocidade dele variam com a dificuldade (spec 029). */
+export const ATR_TRAIN_WARN_EASY = 72; // 1,2 s
+export const ATR_TRAIN_WARN_HARD = 52; // 0,87 s
+export const ATR_TRAIN_SPEED_EASY = 28; // casas por segundo
+export const ATR_TRAIN_SPEED_HARD = 44;
+
+/** Crocodilo: ciclo de 3 s; aviso de 0,5 s e boca aberta por 0,67 s; a cabeça é a ponta da frente. */
+export const ATR_CROC_PERIOD = 180;
+export const ATR_CROC_WARN = 30;
+export const ATR_CROC_OPEN = 40;
+export const ATR_CROC_LEN = 3.4;
+export const ATR_CROC_HEAD = 1.2;
+/** Tartaruga: ciclo de 5 s: na superfície, aviso de 0,67 s e 1 s submersa. */
+export const ATR_TURTLE_PERIOD = 300;
+export const ATR_TURTLE_UP = 190;
+export const ATR_TURTLE_WARN = 40;
+export const ATR_TURTLE_DOWN = 60;
 
 /** Ciclo dos biomas (spec 028): três biomas de ~80 linhas, com 6 de transição entre eles. */
 export const ATR_BIOME_LEN = 80;
@@ -66,6 +108,24 @@ export const ATR_DARK_LEAD_IN_TICKS = 90; // parada nos primeiros 1,5 s
 export const ATR_DARK_MAX_GAP = 8; // quem corre não deixa a escuridão ficar mais longe que isso
 export const ATR_DARK_KILL_GAP = 0.6;
 
+/** Varridas de aviso (spec 029): quem fica parado numa faixa de descanso leva um perigo na linha. */
+export const ATR_SWEEP_IDLE_TICKS = 180; // 3 s parado
+export const ATR_SWEEP_MIN_ROW = 20;
+export const ATR_SWEEP_WARN_TICKS = 78; // 1,3 s de aviso na própria linha
+export const ATR_SWEEP_COOLDOWN_TICKS = 300; // 5 s depois que ele passa
+export type SweepKind = 'barril' | 'feno' | 'redemoinho' | 'laser';
+/** Velocidade (casas/s) e meia largura (casas) de cada varrida. */
+export const ATR_SWEEP: Record<SweepKind, { speed: number; r: number }> = {
+  barril: { speed: 9, r: 0.55 },
+  feno: { speed: 11, r: 0.5 },
+  redemoinho: { speed: 6, r: 0.95 },
+  laser: { speed: 15, r: 0.35 },
+};
+
+/** Marcos: a cada 50 linhas até a 500, depois a cada 100. */
+export const atravessaMilestone = (row: number): boolean =>
+  row > 0 && (row <= 500 ? row % 50 === 0 : row % 100 === 0);
+
 /** Limites que o servidor aceita. */
 export const ATR_MAX_TICKS = 30 * 60 * ATR_TPS;
 export const ATR_MAX_INPUTS = 20_000;
@@ -74,7 +134,15 @@ export const ATR_MAX_SCORE = 3000;
 export type Dir = 0 | 1 | 2 | 3; // frente, trás, esquerda, direita
 export const ATR_DIRS: readonly Dir[] = [0, 1, 2, 3];
 
-export type AtravessaEnd = 'veiculo' | 'trem' | 'agua' | 'arrastado' | 'afundou' | 'escuridao';
+export type AtravessaEnd =
+  | 'veiculo'
+  | 'trem'
+  | 'agua'
+  | 'arrastado'
+  | 'afundou'
+  | 'mordido'
+  | 'atingido'
+  | 'escuridao';
 
 /** Só o Infinito por enquanto (spec 028). */
 export type AtravessaMode = 'infinito';

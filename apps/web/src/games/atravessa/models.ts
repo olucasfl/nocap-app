@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { AtravessaBiome, VehicleKind } from '@nocap/games';
+import type { AtravessaBiome } from '@nocap/games';
 
 /**
  * Os blocos do Atravessa!: tudo montado com caixas (estilo voxel), materiais simples e geometrias
@@ -148,50 +148,6 @@ export function buildTree(biome: AtravessaBiome, variant: number): THREE.Group {
     g.add(box(0.6, 0.2, 0.6, 0x232a5c, 0, 0.1, 0));
     g.add(box(0.22, h, 0.22, 0x2c3470, 0, 0.2 + h / 2, 0));
     g.add(box(0.3, 0.3, 0.3, variant > 0.5 ? 0xff2fb3 : 0x19d3ff, 0, 0.2 + h + 0.15, 0, { emissive: 0.9 }));
-  }
-  return g;
-}
-
-const VEHICLE_COLORS: Record<AtravessaBiome, number[]> = {
-  horta: [0xe5484d, 0x3e82f7, 0xf2b01e, 0x62b84a],
-  deserto: [0xd96b3b, 0xf0c05a, 0xb85042, 0x6aa5a0],
-  neon: [0xff2fb3, 0x19d3ff, 0x8a5cff, 0xffd23f],
-};
-
-/** Veículo olhando para +X. `len` já vem do núcleo (casas). */
-export function buildVehicle(kind: VehicleKind, biome: AtravessaBiome, variant: number): THREE.Group {
-  const g = new THREE.Group();
-  const colors = VEHICLE_COLORS[biome];
-  const color = colors[Math.floor(variant * colors.length) % colors.length]!;
-  const wheel = (x: number, z: number, s = 0.26) => g.add(box(s, s, 0.14, 0x15161c, x, s / 2, z));
-  if (kind === 'carro') {
-    g.add(box(1.4, 0.38, 0.72, color, 0, 0.3, 0));
-    g.add(box(0.74, 0.32, 0.62, 0xf4f4ef, -0.08, 0.64, 0));
-    g.add(box(0.76, 0.14, 0.64, 0x1b2230, -0.08, 0.66, 0, { cast: false }));
-    for (const x of [-0.45, 0.45]) for (const z of [-0.36, 0.36]) wheel(x, z);
-  } else if (kind === 'trator') {
-    g.add(box(1.1, 0.4, 0.62, 0x62b84a, 0.3, 0.38, 0));
-    g.add(box(0.62, 0.5, 0.6, 0xf2b01e, -0.45, 0.78, 0));
-    g.add(box(0.5, 0.5, 0.2, 0x15161c, -0.6, 0.38, 0.4));
-    g.add(box(0.5, 0.5, 0.2, 0x15161c, -0.6, 0.38, -0.4));
-    g.add(box(0.28, 0.28, 0.14, 0x15161c, 0.7, 0.14, 0.34));
-    g.add(box(0.28, 0.28, 0.14, 0x15161c, 0.7, 0.14, -0.34));
-  } else if (kind === 'caminhao') {
-    g.add(box(1.8, 0.85, 0.82, 0xf4f4ef, -0.45, 0.62, 0));
-    g.add(box(0.92, 0.62, 0.8, color, 0.9, 0.5, 0));
-    g.add(box(0.1, 0.28, 0.66, 0x1b2230, 1.38, 0.62, 0, { cast: false }));
-    for (const x of [-1.0, -0.2, 1.0]) for (const z of [-0.4, 0.4]) wheel(x, z, 0.3);
-  } else if (kind === 'moto') {
-    g.add(box(0.9, 0.22, 0.3, 0x14151f, 0, 0.32, 0));
-    g.add(box(0.26, 0.4, 0.3, color, 0.1, 0.55, 0));
-    g.add(box(0.3, 0.06, 0.34, color, 0, 0.45, 0, { emissive: 0.9 }));
-    g.add(box(0.28, 0.28, 0.1, 0x0a0a10, -0.34, 0.14, 0));
-    g.add(box(0.28, 0.28, 0.1, 0x0a0a10, 0.34, 0.14, 0));
-  } else {
-    // drone: corpo chato flutuando, com quatro hélices
-    g.add(box(0.6, 0.18, 0.5, 0x1b2230, 0, 0.7, 0));
-    g.add(box(0.3, 0.1, 0.3, color, 0, 0.82, 0, { emissive: 1 }));
-    for (const x of [-0.38, 0.38]) for (const z of [-0.3, 0.3]) g.add(box(0.26, 0.04, 0.26, 0x8fa3d1, x, 0.78, z, { cast: false }));
   }
   return g;
 }

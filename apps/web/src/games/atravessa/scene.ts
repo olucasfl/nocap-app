@@ -1,16 +1,22 @@
 import * as THREE from 'three';
 import {
   ATR_HALF_COLS,
+  ATR_SIGNAL_X,
   ATR_TRAIN_LEN,
   AtravessaSim,
+  atravessaMilestone,
   biomeAt,
+  crocState,
   laneBiome,
-  objX,
+  laneItems,
   trainState,
+  turtleState,
   type AtravessaBiome,
   type AtravessaEnd,
   type BiomeInfo,
+  type FlowItem,
   type Lane,
+  type SweepView,
 } from '@nocap/games';
 import { HEADING, deathPose, heroPose, turnToward, type Pose } from './hop';
 import {
@@ -21,12 +27,22 @@ import {
   buildSignal,
   buildTrain,
   buildTree,
-  buildVehicle,
   darkness,
   disposeModels,
   hash2,
   mat,
 } from './models';
+import {
+  Burst,
+  buildCroc,
+  buildGate,
+  buildSweepHazard,
+  buildSweepWarning,
+  buildTrafficLight,
+  buildTurtles,
+  lampMaterial,
+} from './props';
+import { buildVehicle } from './vehicles';
 
 /** Quantas faixas ficam montadas atrás e à frente da câmera. */
 const ROWS_BEHIND = 11;
@@ -106,18 +122,39 @@ const mixPalette = (info: BiomeInfo): Palette => {
 /** A altura do chão onde o herói pisa em cada tipo de faixa (tora e pedra ficam acima da água). */
 const TOP: Record<Lane['kind'], number> = { descanso: 0.3, estrada: 0.12, trilho: 0.12, rio: 0.22 };
 
+/** Para onde a câmera aponta (o eixo "direita" da tela no mundo), para ancorar o semáforo na borda. */
+const RIGHT = { x: 0.843, z: -0.539 };
+
+interface Holder {
+  obj: THREE.Object3D;
+  item: FlowItem;
+}
+
+interface CamInfo {
+  x: number;
+  row: number;
+  /** Meia largura visível da tela (unidades da câmera). */
+  halfW: number;
+}
+
 class LaneView {
   readonly group = new THREE.Group();
-  private movers: { holder: THREE.Object3D; obj: Lane['objs'][number] }[] = [];
+  readonly row: number;
+  private holders = new Map<number, Holder>();
   private pads = new Map<number, THREE.Object3D>();
   private train: THREE.Object3D | null = null;
-  private signals: THREE.Mesh[] = [];
-  readonly row: number;
+  private trainLights: THREE.Mesh[] = [];
+  private light: ReturnType<typeof buildTrafficLight> | null = null;
+  private readonly biome: AtravessaBiome;
 
-  constructor(readonly lane: Lane) {
+  constructor(
+    readonly lane: Lane,
+    record: number | null,
+  ) {
     this.row = lane.row;
     const pal = mixPalette(lane.biome);
     const b = laneBiome(lane.biome);
+    this.biome = b;
     this.group.position.z = -lane.row;
     const top = TOP[lane.kind];
     const g = this.group;
@@ -146,12 +183,10 @@ class LaneView {
       if (lane.kind === 'estrada') {
         g.add(box(FLOOR_W, 0.02, 0.06, pal.roadEdge, 0, 0.13, 0.46, { cast: false, emissive: b === 'neon' ? 0.9 : 0 }));
         g.add(box(FLOOR_W, 0.02, 0.06, pal.roadEdge, 0, 0.13, -0.46, { cast: false, emissive: b === 'neon' ? 0.9 : 0 }));
-        for (const o of lane.objs) {
-          const v = buildVehicle(o.kind as never, b, hash2(lane.row, Math.round(o.x0 * 10)));
-          if (lane.dir === -1) v.rotation.y = Math.PI;
-          v.position.y = top;
-          this.group.add(v);
-          this.movers.push({ holder: v, obj: o });
+        if (lane.signal) {
+          this.light = buildTrafficLight();
+          g.add(this.light.group);
+          this.light.group.position.y = 0.12;
         }
       } else {
         for (let x = -FLOOR_W / 2; x < FLOOR_W / 2; x += 0.9) g.add(box(0.28, 0.06, 0.78, 0x6b5b4a, x, 0.15, 0, { cast: false }));
@@ -167,7 +202,7 @@ class LaneView {
           const s = buildSignal();
           s.group.position.set(x, 0.12, 0.4);
           g.add(s.group);
-          this.signals.push(...s.lights);
+          this.trainLights.push(...s.lights);
         }
       }
     } else {
@@ -180,26 +215,62 @@ class LaneView {
           g.add(pad);
           this.pads.set(p.col, pad);
         }
-      } else {
-        for (const o of lane.objs) {
-          const log = buildLog(o.len, b);
-          log.position.y = 0;
-          g.add(log);
-          this.movers.push({ holder: log, obj: o });
-        }
       }
+    }
+
+    // a faixa do recorde tem prioridade sobre o arco do marco (os dois na mesma linha: só o recorde)
+    if (record !== null && lane.row === record) {
+      g.add(buildGate('recorde', `SEU RECORDE · ${record}`, lane.kind === 'rio' ? 0.1 : top));
+    } else if (atravessaMilestone(lane.row)) {
+      g.add(buildGate('marco', `${lane.row}`, lane.kind === 'rio' ? 0.1 : top));
     }
   }
 
-  update(tick: number, sim: AtravessaSim, now: number) {
-    for (const m of this.movers) m.holder.position.x = objX(this.lane, m.obj, tick);
+  private make(item: FlowItem): THREE.Object3D {
+    const { lane, biome } = this;
+    let obj: THREE.Object3D;
+    if (item.kind === 'tora') obj = buildLog(item.len, biome);
+    else if (item.kind === 'croc') obj = buildCroc(item.len, biome);
+    else if (item.kind === 'tartaruga') obj = buildTurtles(item.len, biome);
+    else {
+      obj = buildVehicle(item.kind, biome, item.variant);
+      obj.position.y = TOP.estrada;
+    }
+    if (lane.dir === -1) obj.rotation.y = Math.PI;
+    this.group.add(obj);
+    return obj;
+  }
+
+  update(tick: number, sim: AtravessaSim, now: number, cam: CamInfo) {
+    const { lane } = this;
+    if (lane.flow) {
+      const items = laneItems(lane, tick);
+      const seen = new Set<number>();
+      for (const it of items) {
+        seen.add(it.id);
+        let h = this.holders.get(it.id);
+        if (!h) {
+          h = { obj: this.make(it), item: it };
+          this.holders.set(it.id, h);
+        }
+        h.obj.position.x = it.x;
+        this.animate(h, tick, now);
+      }
+      for (const [id, h] of this.holders) {
+        if (!seen.has(id)) {
+          this.group.remove(h.obj);
+          this.holders.delete(id);
+        }
+      }
+    }
+    if (this.light && lane.signal) this.updateLight(lane, tick, cam);
     if (this.train) {
-      const st = trainState(this.lane, tick);
+      const st = trainState(lane, tick);
       this.train.visible = st.x !== null;
       if (st.x !== null) this.train.position.x = st.x;
       // pisca em 4 Hz durante o aviso; fora dele, apagado
       const on = st.warning && Math.floor(now * 4) % 2 === 0;
-      this.signals.forEach((l, i) => {
+      this.trainLights.forEach((l, i) => {
         const lit = st.warning && (i % 2 === 0 ? on : !on);
         l.material = lit ? mat(0xff2a2a, 1) : mat(0x3a1010);
       });
@@ -214,10 +285,76 @@ class LaneView {
       }
     }
   }
+
+  /** As partes que mexem de cada coisa: luzes da ambulância, hélices, boca do crocodilo, mergulho. */
+  private animate(h: Holder, tick: number, now: number) {
+    const { item, obj } = h;
+    if (item.kind === 'ambulancia') {
+      const lights = obj.userData.lights as THREE.Mesh[];
+      const flip = Math.floor(now * 7) % 2 === 0;
+      lights[0]!.material = flip ? mat(0xff2a2a, 1.4) : mat(0x4a1010);
+      lights[1]!.material = flip ? mat(0x10204a) : mat(0x2a6aff, 1.4);
+    } else if (item.kind === 'drone') {
+      for (const p of obj.userData.props as THREE.Object3D[]) p.rotation.y = now * 40;
+      obj.position.y = TOP.estrada + Math.sin(now * 3 + item.id) * 0.04;
+    } else if (item.kind === 'croc') {
+      const jaw = obj.userData.jaw as THREE.Object3D;
+      const st = crocState(item, tick);
+      // avisa estremecendo e abrindo uma fresta; depois abre bem
+      jaw.rotation.z = st === 'open' ? 0.72 : st === 'warn' ? 0.12 + Math.abs(Math.sin(now * 36)) * 0.1 : 0.02;
+    } else if (item.kind === 'tartaruga') {
+      const st = turtleState(item, tick);
+      const shells = obj.userData.shells as THREE.Group[];
+      shells.forEach((t, i) => {
+        if (st === 'up') {
+          t.position.y = Math.sin(now * 1.6 + i + item.id) * 0.02;
+          t.rotation.z = 0;
+        } else if (st === 'warn') {
+          // o casco se inclina e afunda um pouco, tremendo
+          t.position.y = -0.1 + Math.sin(now * 34 + i) * 0.03;
+          t.rotation.z = Math.sin(now * 20 + i) * 0.22;
+        } else {
+          t.position.y = -0.42;
+          t.rotation.z = 0;
+        }
+      });
+    }
+  }
+
+  /** O semáforo fica sempre à vista: encosta na borda da tela se o lugar de verdade sair dela. */
+  private updateLight(lane: Lane, tick: number, cam: CamInfo) {
+    const light = this.light!;
+    const signal = lane.signal!;
+    const gx = -lane.dir * ATR_SIGNAL_X;
+    const rel = this.row - cam.row;
+    const sx = RIGHT.x * (gx - cam.x) - RIGHT.z * rel;
+    const limit = cam.halfW - 0.8;
+    const clamped = Math.max(-limit, Math.min(limit, sx));
+    light.group.position.x = cam.x + (clamped - -RIGHT.z * rel) / RIGHT.x;
+    light.group.position.z = 0.62;
+    const green = signal.isGreen(tick);
+    // o fim do verde pisca o amarelo, para dar tempo de ver
+    const amber = green && signal.untilChange(tick) < 36 && Math.floor(tick / 6) % 2 === 0;
+    light.lamps.red.material = lampMaterial('red', !green);
+    light.lamps.amber.material = lampMaterial('amber', amber);
+    light.lamps.green.material = lampMaterial('green', green && !amber);
+  }
 }
 
 /** Quanto o herói e a câmera suavizam (por segundo). */
 const CAM_FOLLOW = 5;
+
+/** As cores dos pedacinhos que voam em cada morte. */
+const BURST_COLORS: Record<AtravessaEnd, number[]> = {
+  veiculo: [0xff8a2a, 0xffd9b0, 0xd8d8d0, 0x3a3a40],
+  trem: [0xff8a2a, 0xffd9b0, 0xffd23f, 0xd8d8d0],
+  agua: [0xffffff, 0xbfe6ff, 0x58bdf2, 0xffffff],
+  arrastado: [0xffffff, 0xbfe6ff, 0x58bdf2],
+  afundou: [0xffffff, 0xbfe6ff, 0x58bdf2],
+  mordido: [0xff8a2a, 0xffffff, 0xe5303a],
+  atingido: [0xff8a2a, 0xffd9b0, 0xc79a3c, 0xffd23f],
+  escuridao: [0x2a2540, 0x4a3f7a, 0x14102a],
+};
 
 export class AtravessaScene {
   private renderer: THREE.WebGLRenderer;
@@ -235,7 +372,17 @@ export class AtravessaScene {
   private camX = 0;
   private maxRow = 0;
   private aspect = 1;
+  private halfW = 6;
   private reduced: boolean;
+  private record: number | null = null;
+  private burst = new Burst(20);
+  private burstFired = false;
+  private sweepFx: {
+    id: number;
+    warn: ReturnType<typeof buildSweepWarning>;
+    hazard: THREE.Group;
+    row: number;
+  } | null = null;
 
   constructor(canvas: HTMLCanvasElement, reducedMotion = false) {
     this.reduced = reducedMotion;
@@ -259,19 +406,25 @@ export class AtravessaScene {
     sc.far = 60;
     this.sun.shadow.bias = -0.0006;
     this.sun.shadow.normalBias = 0.03;
-    this.scene.add(this.sun, this.sun.target, this.hemi, this.heroLight);
+    this.scene.add(this.sun, this.sun.target, this.hemi, this.heroLight, this.burst.group);
 
     this.heroBody = this.hero.getObjectByName('body')!;
     this.scene.add(this.hero);
   }
 
+  /** A linha do recorde (a faixa dourada). Chame antes de começar; `null` = sem recorde ainda. */
+  setRecord(rows: number | null) {
+    this.record = rows && rows > 0 ? rows : null;
+  }
+
   resize(w: number, h: number) {
     this.renderer.setSize(w, h, false);
     this.aspect = w / Math.max(1, h);
-    // sempre mostra ~11 casas de largura; em tela larga, no mínimo 6,2 de meia altura
+    // sempre mostra ~11 casas de largura; em tela larga, no mínimo 5,6 de meia altura
     const halfW0 = 5.6;
     const halfH = Math.max(halfW0 / this.aspect, 5.6);
     const halfW = halfH * this.aspect;
+    this.halfW = halfW;
     this.camera.left = -halfW;
     this.camera.right = halfW;
     this.camera.top = halfH;
@@ -285,26 +438,69 @@ export class AtravessaScene {
     for (const [row, lv] of this.lanes) {
       if (row < lo || row > hi) {
         this.scene.remove(lv.group);
-        lv.group.traverse((o) => {
-          o.removeFromParent();
-        });
         this.lanes.delete(row);
       }
     }
     for (let r = lo; r <= hi; r++) {
       if (this.lanes.has(r)) continue;
-      const lv = new LaneView(sim.world.lane(r));
+      const lv = new LaneView(sim.world.lane(r), this.record);
       this.lanes.set(r, lv);
       this.scene.add(lv.group);
     }
   }
 
   private applyPose(p: Pose, x: number, y: number, topY: number) {
-    this.hero.position.set(x, topY + p.lift, -y);
+    this.hero.position.set(x + p.dx, topY + p.lift, -y);
     this.heroBody.scale.set(p.sx, p.sy, p.sz);
-    this.heroBody.rotation.set(p.pitch, 0, p.roll);
+    this.heroBody.rotation.set(p.pitch, p.ry, p.roll + p.rz);
     this.hero.visible = p.alpha > 0.02;
     this.hero.scale.setScalar(Math.max(0.01, p.alpha));
+  }
+
+  /** O aviso e o perigo da varrida: nascem quando ela começa e somem quando ela acaba. */
+  private updateSweep(s: SweepView | null, now: number) {
+    if (!s) {
+      if (this.sweepFx) {
+        this.scene.remove(this.sweepFx.warn.group, this.sweepFx.hazard);
+        this.sweepFx = null;
+      }
+      return;
+    }
+    if (!this.sweepFx || this.sweepFx.id !== s.id) {
+      if (this.sweepFx) this.scene.remove(this.sweepFx.warn.group, this.sweepFx.hazard);
+      const warn = buildSweepWarning(s.side);
+      const hazard = buildSweepHazard(s.kind);
+      hazard.visible = false;
+      this.scene.add(warn.group, hazard);
+      this.sweepFx = { id: s.id, warn, hazard, row: s.row };
+    }
+    const fx = this.sweepFx;
+    const lane = this.lanes.get(s.row)?.lane;
+    const top = lane ? TOP[lane.kind] : 0.3;
+    fx.warn.group.position.set(0, top, -s.row);
+    // as listras piscam cada vez mais rápido; a placa balança
+    const rate = 4 + s.warn * 8;
+    fx.warn.blink.forEach((m, i) => {
+      m.visible = s.phase === 'hit' || Math.floor(now * rate + i) % 2 === 0;
+    });
+    fx.warn.sign.position.y = Math.abs(Math.sin(now * 8)) * 0.12;
+    if (s.phase === 'hit' && s.x !== null) {
+      const h = fx.hazard;
+      h.visible = true;
+      h.position.set(s.x, top, -s.row);
+      h.rotation.y = s.side === 1 ? 0 : Math.PI;
+      const spin = h.userData.spin as THREE.Object3D | undefined;
+      if (spin) spin.rotation.z = -s.x * 1.3;
+      const layers = h.userData.layers as THREE.Object3D[] | undefined;
+      if (layers) {
+        layers.forEach((l, i) => {
+          l.rotation.y = now * (5 + i * 1.5);
+          l.position.x = Math.sin(now * 6 + i) * 0.08 * (i + 1);
+        });
+      }
+    } else {
+      fx.hazard.visible = false;
+    }
   }
 
   /** Desenha um quadro. `dt` em segundos; `death` quando a partida acabou (age em segundos). */
@@ -322,7 +518,9 @@ export class AtravessaScene {
     this.camX += (targetX - this.camX) * (this.reduced ? 1 : 1 - Math.exp(-dt * 4));
 
     this.ensureLanes(sim, this.camRow);
-    for (const lv of this.lanes.values()) lv.update(sim.tick, sim, now);
+    const cam: CamInfo = { x: this.camX, row: this.camRow, halfW: this.halfW };
+    for (const lv of this.lanes.values()) lv.update(sim.tick, sim, now, cam);
+    this.updateSweep(v.sweep, now);
 
     // o herói
     // a altura do chão muda de leve entre faixas: acompanha o pulo em vez de saltar de uma vez
@@ -331,8 +529,27 @@ export class AtravessaScene {
     const top = TOP[sim.world.lane(lo).kind] * (1 - frac) + TOP[sim.world.lane(lo + 1).kind] * frac;
     this.heroAngle = turnToward(this.heroAngle, HEADING[v.facing], dt * 22);
     this.hero.rotation.y = this.heroAngle;
-    const pose = death ? deathPose(death.end, death.age) : heroPose(v, now);
+    const pose = death ? deathPose(death.end, death.age, v.killer) : heroPose(v, now);
     this.applyPose(pose, v.x, v.y, top);
+
+    // os pedacinhos da morte saem uma vez só, e a câmera dá um tremor curto
+    let shakeX = 0;
+    let shakeY = 0;
+    if (death) {
+      if (!this.burstFired) {
+        this.burstFired = true;
+        const o = new THREE.Vector3(v.x, top + 0.4, -v.y);
+        this.burst.fire(o, BURST_COLORS[death.end], v.killer === 0 ? 0 : v.killer, death.end === 'trem' ? 1.4 : 1);
+      }
+      if (!this.reduced && death.age < 0.35 && death.end !== 'escuridao') {
+        const a = Math.sin(death.age * 75) * 0.2 * (1 - death.age / 0.35);
+        shakeX = a;
+        shakeY = a * 0.6;
+      }
+    } else {
+      this.burstFired = false;
+    }
+    this.burst.update(dt);
 
     // luz, céu e névoa seguem o bioma de onde o herói está; a escuridão escurece de dentro para fora
     const info = biomeAt(v.y);
@@ -356,7 +573,7 @@ export class AtravessaScene {
     // (as faixas descem da esquerda para a direita e o avanço vai para cima e para a direita)
     const tx = this.camX;
     const tz = -this.camRow;
-    this.camera.position.set(tx + 4.6, 9.4, tz + 7.2);
+    this.camera.position.set(tx + 4.6 + shakeX * RIGHT.x, 9.4 + shakeY, tz + 7.2 + shakeX * RIGHT.z);
     this.camera.lookAt(tx, 0, tz);
     this.sun.position.set(tx - 7, 13, tz + 6);
     this.sun.target.position.set(tx, 0, tz);

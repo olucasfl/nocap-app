@@ -2,37 +2,76 @@ import { describe, expect, it } from 'vitest';
 import {
   ATR_BIOME_LEN,
   ATR_COLS,
+  ATR_CROC_OPEN,
+  ATR_CROC_PERIOD,
+  ATR_CROC_WARN,
   ATR_CYCLE_LEN,
   ATR_DARK_CAP,
   ATR_DARK_MAX_GAP,
   ATR_DT,
+  ATR_FLOW_HALF,
   ATR_MIN_LOG_GAP,
   ATR_MIN_VEHICLE_GAP,
+  ATR_SIGNAL_X,
   ATR_STEP_TICKS,
-  ATR_TRAIN_WARN_TICKS,
+  ATR_SWEEP_IDLE_TICKS,
+  ATR_SWEEP_WARN_TICKS,
+  ATR_TRAIN_SPEED_EASY,
+  ATR_TURTLE_PERIOD,
   AtravessaSim,
   AtravessaWorld,
-  biomeAt,
   atravessaDarkSpeed,
+  atravessaMilestone,
+  biomeAt,
+  crocState,
   difficultyAt,
   evaluateAtravessa,
-  laneObjects,
+  flowX,
+  isSolid,
+  laneItems,
   trainState,
+  turtleState,
   validateAtravessaInputs,
   type AtravessaInput,
   type Dir,
   type Lane,
 } from './index';
 
-const SEEDS = Array.from({ length: 10 }, (_, i) => `semente-${i}`);
+const SEEDS = Array.from({ length: 12 }, (_, i) => `semente-${i}`);
 const ROWS = 400;
 
-function findLane(w: AtravessaWorld, kind: Lane['kind'], pred: (l: Lane) => boolean = () => true): Lane {
-  for (let r = 3; r < 600; r++) {
+function findLane(w: AtravessaWorld, kind: Lane['kind'], pred: (l: Lane) => boolean = () => true, from = 3): Lane {
+  for (let r = from; r < 900; r++) {
     const l = w.lane(r);
     if (l.kind === kind && pred(l)) return l;
   }
   throw new Error(`sem faixa ${kind}`);
+}
+
+const ANY = "qualquer-uma";
+
+/** Um herói parado numa faixa de descanso com mais duas de descanso à frente (nada o atrapalha). */
+function calmSim(seed = "calmo") {
+  const w = new AtravessaWorld(seed);
+  for (let r = 3; r < 900; r++) {
+    if ([r, r + 1, r + 2].every((x) => w.lane(x).kind === "descanso") && w.lane(r + 1).blocked.length === 0 && w.lane(r + 2).blocked.length === 0) {
+      const sim = new AtravessaSim(seed, w);
+      sim.row = r;
+      sim.best = r;
+      sim.hx = w.corridorAt(r);
+      sim.dark = r - 8;
+      return { sim, r, w };
+    }
+  }
+  throw new Error("sem trecho calmo");
+}
+
+/** Em que tick (a partir de `from`) o primeiro item da faixa está perto do centro. */
+function itemNearCenter(lane: Lane, from = 300) {
+  for (let t = from; t < from + 6000; t++) {
+    for (const it of laneItems(lane, t)) if (Math.abs(it.x) < 2) return { t, it };
+  }
+  throw new Error('nenhum item');
 }
 
 describe('biomas', () => {
@@ -54,34 +93,87 @@ describe('biomas', () => {
   });
 });
 
+describe('marcos', () => {
+  it('a cada 50 linhas até a 500 e depois a cada 100', () => {
+    const marks = Array.from({ length: 1001 }, (_, r) => r).filter(atravessaMilestone);
+    expect(marks.slice(0, 11)).toEqual([50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600]);
+    expect(marks.slice(-2)).toEqual([900, 1000]);
+    expect(atravessaMilestone(0)).toBe(false);
+    expect(atravessaMilestone(550)).toBe(false);
+  });
+});
+
+/** Um resumo do que a seed gera (para comparar duas gerações sem comparar objetos com funções). */
+function snapshot(w: AtravessaWorld, rows: number) {
+  const out: unknown[] = [];
+  for (let r = 0; r < rows; r++) {
+    const l = w.lane(r);
+    out.push([l.kind, l.dir, l.blocked, l.pads, l.riverMode, !!l.signal, l.train?.speed]);
+    for (const t of [0, 300, 1700]) out.push(laneItems(l, t).map((i) => [i.kind, i.speed.toFixed(3), i.x.toFixed(2)]));
+  }
+  return out;
+}
+
 describe('geração', () => {
   it('é determinística e não depende da ordem em que as faixas são pedidas', () => {
     const a = new AtravessaWorld('x');
     const b = new AtravessaWorld('x');
     b.lane(50);
-    for (let r = 0; r < 60; r++) expect(a.lane(r)).toEqual(b.lane(r));
-    expect(new AtravessaWorld('y').lane(20)).not.toEqual(a.lane(20));
+    expect(snapshot(a, 60)).toEqual(snapshot(b, 60));
+    expect(snapshot(new AtravessaWorld('y'), 20)).not.toEqual(snapshot(a, 20));
   });
 
-  it('as 3 primeiras faixas são descanso livre', () => {
-    for (const s of SEEDS) {
-      const w = new AtravessaWorld(s);
-      for (let r = 0; r < 3; r++) expect(w.lane(r)).toMatchObject({ kind: 'descanso', blocked: [] });
+  it('a linha 0 é grama livre; as seguintes podem ser qualquer coisa (começar com rio ou estrada)', () => {
+    const first = new Set<string>();
+    for (let i = 0; i < 80; i++) {
+      const w = new AtravessaWorld(`ini-${i}`);
+      expect(w.lane(0)).toMatchObject({ kind: 'descanso', blocked: [] });
+      first.add(w.lane(1).kind);
     }
+    expect(first.has('rio')).toBe(true);
+    expect(first.has('estrada')).toBe(true);
+    expect(first.has('descanso')).toBe(false);
   });
 
-  it('sempre existe caminho: corredor livre, vãos mínimos e limites de rio e estrada', () => {
+  it('os trechos são balanceados: curtos comuns, longos raros, mas eles existem', () => {
+    const runs: Record<string, number[]> = { trilho: [], estrada: [], rio: [] };
+    for (let i = 0; i < 40; i++) {
+      const w = new AtravessaWorld(`trechos-${i}`);
+      let kind = '';
+      let n = 0;
+      const flush = () => {
+        if (n > 0 && runs[kind]) runs[kind]!.push(n);
+      };
+      for (let r = 1; r < 700; r++) {
+        const k = w.lane(r).kind;
+        if (k === kind) n++;
+        else {
+          flush();
+          kind = k;
+          n = 1;
+        }
+      }
+    }
+    const share = (list: number[], pred: (n: number) => boolean) => list.filter(pred).length / list.length;
+    // trem: 1 e 2 são o normal (~80%), 5 existe mas é raro
+    expect(share(runs.trilho!, (n) => n <= 2)).toBeGreaterThan(0.65);
+    expect(Math.max(...runs.trilho!)).toBeGreaterThanOrEqual(4);
+    expect(share(runs.trilho!, (n) => n >= 4)).toBeLessThan(0.2);
+    expect(Math.max(...runs.trilho!)).toBeLessThanOrEqual(5);
+    expect(share(runs.estrada!, (n) => n <= 3)).toBeGreaterThan(0.5);
+    expect(Math.max(...runs.estrada!)).toBeGreaterThanOrEqual(5);
+    expect(Math.max(...runs.estrada!)).toBeLessThanOrEqual(6);
+    expect(share(runs.rio!, (n) => n <= 3)).toBeGreaterThan(0.6);
+    expect(Math.max(...runs.rio!)).toBeGreaterThanOrEqual(4);
+    expect(Math.max(...runs.rio!)).toBeLessThanOrEqual(5);
+  });
+
+  it('sempre existe caminho: corredor livre nas faixas de descanso e de pedras seguidas', () => {
     for (const s of SEEDS) {
       const w = new AtravessaWorld(s);
-      let rios = 0;
-      let estradas = 0;
       for (let r = 0; r < ROWS; r++) {
         const l = w.lane(r);
         const prev = r > 0 ? w.lane(r - 1) : null;
-        rios = l.kind === 'rio' ? rios + 1 : 0;
-        estradas = l.kind === 'estrada' ? estradas + 1 : 0;
-        expect(rios).toBeLessThanOrEqual(3);
-        expect(estradas).toBeLessThanOrEqual(4);
         const cor = w.corridorAt(r);
         if (l.kind === 'descanso') {
           expect(l.blocked).not.toContain(cor);
@@ -92,43 +184,201 @@ describe('geração', () => {
         if (prev && (prev.kind === 'descanso' || prev.pads) && (l.kind === 'descanso' || l.pads)) {
           expect(w.corridorAt(r - 1)).toBe(cor);
         }
-        if (l.kind === 'estrada') {
-          const o = [...l.objs].sort((p, q) => p.x0 - q.x0);
-          for (let i = 0; i < o.length; i++) {
-            const n = o[(i + 1) % o.length]!;
-            const p = o[i]!;
-            let d = n.x0 - p.x0;
-            if (d <= 0) d += l.loop;
-            if (o.length > 1) expect(d - (p.len + n.len) / 2).toBeGreaterThanOrEqual(ATR_MIN_VEHICLE_GAP);
-          }
-        }
-        if (l.kind === 'rio' && !l.pads) {
-          const o = [...l.objs].sort((p, q) => p.x0 - q.x0);
-          for (let i = 0; i < o.length; i++) {
-            const n = o[(i + 1) % o.length]!;
-            const p = o[i]!;
-            let d = n.x0 - p.x0;
-            if (d <= 0) d += l.loop;
-            expect(d - (p.len + n.len) / 2).toBeGreaterThanOrEqual(ATR_MIN_LOG_GAP - 1e-9);
-          }
-        }
       }
     }
   });
 
-  it('cada bioma usa suas faixas: trilho só no deserto', () => {
+  it('o trilho aparece em todos os biomas', () => {
+    const seen = new Set<string>();
     for (const s of SEEDS) {
       const w = new AtravessaWorld(s);
       for (let r = 0; r < ATR_CYCLE_LEN; r++) {
         const l = w.lane(r);
-        if (l.kind === 'trilho') expect(l.biome.biome === 'deserto' || l.biome.next === 'deserto').toBe(true);
+        if (l.kind === 'trilho') seen.add(l.biome.blend >= 0.5 ? l.biome.next : l.biome.biome);
+      }
+    }
+    expect(seen.size).toBe(3);
+  });
+});
+
+describe('tráfego: cada veículo com a sua velocidade', () => {
+  it('nunca dois itens se sobrepõem e o vão mínimo vale em qualquer instante', () => {
+    for (const s of SEEDS.slice(0, 6)) {
+      const w = new AtravessaWorld(s);
+      for (let r = 3; r < 160; r++) {
+        const l = w.lane(r);
+        if (!l.flow) continue;
+        const min = l.kind === 'estrada' ? ATR_MIN_VEHICLE_GAP : ATR_MIN_LOG_GAP;
+        for (let t = 0; t < 5000; t += 11) {
+          const items = laneItems(l, t).sort((a, b) => a.x - b.x);
+          for (let i = 1; i < items.length; i++) {
+            const gap = items[i]!.x - items[i - 1]!.x - (items[i]!.len + items[i - 1]!.len) / 2;
+            expect(gap).toBeGreaterThanOrEqual(min - 1e-6);
+          }
+        }
       }
     }
   });
 
-  it('o trem avisa 1,2 s antes de passar', () => {
+  it('na mesma faixa aparecem veículos lentos e rápidos, não uma velocidade só', () => {
+    let mixed = 0;
+    let lanes = 0;
+    for (const s of SEEDS) {
+      const w = new AtravessaWorld(s);
+      for (let r = 3; r < 200; r++) {
+        const l = w.lane(r);
+        if (l.kind !== 'estrada') continue;
+        lanes++;
+        const speeds = new Set<number>();
+        for (let t = 0; t < 12_000; t += 30) for (const it of laneItems(l, t)) speeds.add(it.speed);
+        const list = [...speeds];
+        if (Math.max(...list) / Math.min(...list) > 1.8) mixed++;
+      }
+    }
+    expect(mixed / lanes).toBeGreaterThan(0.5);
+  });
+
+  it('há vários modelos, e o rápido tem cara de rápido', () => {
+    const slow = new Set<string>();
+    const fast = new Set<string>();
+    const all = new Set<string>();
+    for (const s of SEEDS) {
+      const w = new AtravessaWorld(s);
+      for (let r = 3; r < 300; r++) {
+        const l = w.lane(r);
+        if (l.kind !== 'estrada') continue;
+        for (let t = 0; t < 6000; t += 60) {
+          for (const it of laneItems(l, t)) {
+            all.add(it.kind);
+            (it.speed < 1.9 ? slow : it.speed > 3.2 ? fast : new Set()).add(it.kind);
+          }
+        }
+      }
+    }
+    expect(all.size).toBeGreaterThanOrEqual(11);
+    for (const k of ['esportivo', 'moto', 'ambulancia']) expect(all.has(k)).toBe(true);
+    expect(fast.has('trator')).toBe(false);
+    expect(fast.has('onibus')).toBe(false);
+    expect(slow.has('esportivo')).toBe(false);
+    expect(slow.has('ambulancia')).toBe(false);
+  });
+
+  it('a ambulância é rara, rápida e só aparece depois dos primeiros metros', () => {
+    let amb = 0;
+    let total = 0;
+    for (const s of SEEDS) {
+      const w = new AtravessaWorld(s);
+      for (let r = 3; r < 400; r++) {
+        const l = w.lane(r);
+        if (l.kind !== 'estrada') continue;
+        for (let t = 0; t < 8000; t += 40) {
+          for (const it of laneItems(l, t)) {
+            total++;
+            if (it.kind === 'ambulancia') {
+              amb++;
+              expect(r).toBeGreaterThanOrEqual(30);
+              expect(it.speed).toBeGreaterThan(5);
+              expect(it.bypass).toBe(true);
+            }
+          }
+        }
+      }
+    }
+    expect(amb).toBeGreaterThan(0);
+    expect(amb / total).toBeLessThan(0.12);
+  });
+});
+
+describe('sinal de trânsito', () => {
+  it('só em algumas estradas; o carro só passa pela haste no verde (menos a ambulância)', () => {
+    let roads = 0;
+    let withSignal = 0;
+    for (const s of SEEDS) {
+      const w = new AtravessaWorld(s);
+      for (let r = 3; r < 400; r++) {
+        const l = w.lane(r);
+        if (l.kind !== 'estrada') continue;
+        roads++;
+        if (!l.signal) continue;
+        withSignal++;
+        let bypass = 0;
+        for (let t = 0; t < 9000; t += 5) {
+          for (const it of laneItems(l, t)) {
+            const pass = it.t0 + Math.ceil(((ATR_FLOW_HALF - ATR_SIGNAL_X) / it.speed) * 60);
+            if (pass === t) {
+              if (it.bypass) bypass++;
+              else expect(l.signal.isGreen(pass)).toBe(true);
+            }
+          }
+        }
+        void bypass;
+      }
+    }
+    expect(withSignal / roads).toBeGreaterThan(0.05);
+    expect(withSignal / roads).toBeLessThan(0.4);
+  });
+
+  it('o verde e o vermelho duram pouco e variam', () => {
+    const w = new AtravessaWorld('sinal');
+    const l = findLane(w, 'estrada', (x) => !!x.signal, 8);
+    const lens: number[] = [];
+    let state = l.signal!.isGreen(0);
+    let from = 0;
+    for (let t = 1; t < 6000; t++) {
+      const g = l.signal!.isGreen(t);
+      if (g !== state) {
+        lens.push(t - from);
+        from = t;
+        state = g;
+      }
+    }
+    expect(lens.length).toBeGreaterThan(10);
+    expect(Math.max(...lens)).toBeLessThanOrEqual(300);
+    expect(Math.min(...lens)).toBeGreaterThanOrEqual(90);
+    expect(new Set(lens).size).toBeGreaterThan(5);
+  });
+});
+
+describe('rio: toras, crocodilos e tartarugas', () => {
+  it('o crocodilo avisa antes de abrir a boca, e a boca abre por pouco tempo', () => {
+    const w = new AtravessaWorld('croc');
+    const l = findLane(w, 'rio', (x) => x.riverMode === 'tora' && !!laneItems(x, 0).concat(laneItems(x, 900), laneItems(x, 2500)).find((i) => i.kind === 'croc'), 40);
+    const it = [0, 900, 2500].flatMap((t) => laneItems(l, t)).find((i) => i.kind === 'croc')!;
+    const states: string[] = [];
+    for (let t = it.t0; t < it.t0 + ATR_CROC_PERIOD * 2; t++) states.push(crocState(it, t));
+    const firstOpen = states.indexOf('open');
+    expect(states.slice(firstOpen - ATR_CROC_WARN, firstOpen).every((s) => s === 'warn')).toBe(true);
+    expect(states.filter((s) => s === 'open').length).toBe(ATR_CROC_OPEN * 2);
+  });
+
+  it('a tartaruga sobe, avisa e mergulha em ciclo, e a mergulhada não segura ninguém', () => {
+    const w = new AtravessaWorld('tart');
+    const l = findLane(w, 'rio', (x) => x.riverMode === 'tartaruga', 10);
+    const it = laneItems(l, 600)[0] ?? laneItems(l, 1500)[0]!;
+    const seen = new Set<string>();
+    for (let t = 0; t < ATR_TURTLE_PERIOD; t++) {
+      const st = turtleState(it, it.t0 + t);
+      seen.add(st);
+      expect(isSolid(it, it.t0 + t)).toBe(st !== 'down');
+    }
+    expect([...seen].sort()).toEqual(['down', 'up', 'warn']);
+  });
+
+  it('rios de tartarugas e de pedras aparecem junto com os de toras', () => {
+    const modes = new Set<string>();
+    for (const s of SEEDS) {
+      const w = new AtravessaWorld(s);
+      for (let r = 1; r < 300; r++) if (w.lane(r).riverMode) modes.add(w.lane(r).riverMode!);
+    }
+    expect([...modes].sort()).toEqual(['pedra', 'tartaruga', 'tora']);
+  });
+});
+
+describe('trem', () => {
+  it('é muito rápido e avisa antes de passar', () => {
     const w = new AtravessaWorld('trem');
-    const l = findLane(w, 'trilho');
+    const l = findLane(w, 'trilho', () => true, 8);
+    expect(l.train!.speed).toBeGreaterThanOrEqual(ATR_TRAIN_SPEED_EASY * 0.9);
     let warnTicks = 0;
     let sawTrain = false;
     let passing = false;
@@ -136,15 +386,32 @@ describe('geração', () => {
       const st = trainState(l, t);
       if (st.warning) warnTicks++;
       const now = st.x !== null;
-      // o primeiro trem pode já estar passando (a fase da faixa é sorteada): só vale quem teve aviso
+      // o primeiro aviso pode ter começado antes do tick 0: só vale conferir a partir do segundo trem
       if (now && !passing && warnTicks > 0) {
-        expect(warnTicks).toBeGreaterThanOrEqual(ATR_TRAIN_WARN_TICKS);
+        if (sawTrain) expect(warnTicks).toBeGreaterThanOrEqual(l.train!.warn);
         sawTrain = true;
       }
       if (now) warnTicks = 0;
       passing = now;
     }
     expect(sawTrain).toBe(true);
+  });
+
+  it('com a dificuldade fica mais rápido e o aviso mais curto, mas nunca some', () => {
+    let easy: Lane | null = null;
+    let hard: Lane | null = null;
+    for (const s of SEEDS) {
+      const w = new AtravessaWorld(s);
+      for (let r = 8; r < 4000; r++) {
+        const l = w.lane(r);
+        if (l.kind !== 'trilho') continue;
+        if (!easy && difficultyAt(r) < 0.1) easy = l;
+        if (!hard && difficultyAt(r) > 0.9) hard = l;
+      }
+    }
+    expect(hard!.train!.speed).toBeGreaterThan(easy!.train!.speed);
+    expect(hard!.train!.warn).toBeLessThan(easy!.train!.warn);
+    expect(hard!.train!.warn).toBeGreaterThanOrEqual(50);
   });
 });
 
@@ -154,44 +421,44 @@ describe('simulação', () => {
   };
 
   it('um passo para a frente leva 12 ticks, com arco de pulo e pouso', () => {
-    const sim = new AtravessaSim('a');
+    const { sim, r } = calmSim();
     sim.input(0);
     advance(sim, 1);
     expect(sim.view().step).toMatchObject({ dir: 0 });
     advance(sim, ATR_STEP_TICKS / 2 - 1);
     const mid = sim.view();
     expect(mid.hop).toBeCloseTo(0.45, 1);
-    expect(mid.y).toBeCloseTo(0.5, 1);
+    expect(mid.y).toBeCloseTo(r + 0.5, 1);
     advance(sim, ATR_STEP_TICKS / 2);
     const end = sim.view();
-    expect(end).toMatchObject({ step: null, score: 1, hop: 0 });
-    expect(end.y).toBe(1);
+    expect(end).toMatchObject({ step: null, score: r + 1, hop: 0 });
+    expect(end.y).toBe(r + 1);
     expect(end.landed).toMatchObject({ age: 0, dir: 0 });
     advance(sim, 3);
     expect(sim.view().landed!.age).toBe(3);
   });
 
   it('voltar e andar de lado não mudam a nota; só a maior linha conta', () => {
-    const sim = new AtravessaSim('a');
+    const { sim, r } = calmSim();
     for (const d of [0, 0, 1, 2, 3] as Dir[]) {
       sim.input(d);
       advance(sim, ATR_STEP_TICKS + 1);
     }
-    expect(sim.score).toBe(2);
-    expect(sim.row).toBe(1);
+    expect(sim.score).toBe(r + 2);
+    expect(sim.row).toBe(r + 1);
   });
 
   it('a fila guarda no máximo 2 passos além do atual', () => {
-    const sim = new AtravessaSim('a');
+    const { sim, r } = calmSim();
     for (let i = 0; i < 6; i++) sim.input(0);
     advance(sim, 1);
     expect(sim.view().queued).toBe(1);
     advance(sim, ATR_STEP_TICKS * 4);
-    expect(sim.score).toBe(2);
+    expect(sim.score).toBe(r + 2);
   });
 
   it('não sai pelos lados nem volta antes da largada', () => {
-    const sim = new AtravessaSim('a');
+    const sim = new AtravessaSim(ANY);
     sim.input(1);
     advance(sim, ATR_STEP_TICKS + 1);
     expect(sim.row).toBe(0);
@@ -216,39 +483,45 @@ describe('simulação', () => {
     advance(sim, 1);
     expect(sim.view().step).toBeNull();
     expect(sim.row).toBe(r - 1);
+    expect(sim.view().bumps).toBe(1);
   });
 
-  it('veículo mata', () => {
+  it('veículo mata e a tela sabe de que lado ele veio', () => {
     const w = new AtravessaWorld('carro');
     const lane = findLane(w, 'estrada');
+    const { t, it } = itemNearCenter(lane);
     const sim = new AtravessaSim('carro', w);
     sim.row = lane.row;
     sim.dark = lane.row - 20;
-    const o = lane.objs[0]!;
-    sim.hx = Math.round(objX0(lane, o, 1));
+    sim.tick = t - 1;
+    sim.hx = Math.round(flowX(lane.dir, it, t));
     advance(sim, 1);
     expect(sim.alive).toBe(false);
     expect(sim.end).toBe('veiculo');
+    expect(sim.view().killer).toBe(lane.dir);
   });
 
-  it('a tora carrega o herói e, passando da borda, ele é arrastado', () => {
+  it('a tora carrega o herói na velocidade dela e, passando da borda, ele é arrastado', () => {
     const w = new AtravessaWorld('tora');
-    const lane = findLane(w, 'rio', (l) => !l.pads);
+    const lane = findLane(w, 'rio', (l) => l.riverMode === 'tora');
+    const { t, it } = itemNearCenter(lane);
     const sim = new AtravessaSim('tora', w);
     sim.row = lane.row;
     sim.best = lane.row;
     sim.dark = lane.row - 20;
-    sim.hx = 0;
+    sim.tick = t - 1;
+    sim.hx = flowX(lane.dir, it, t);
     const x0 = sim.hx;
     advance(sim, 30);
-    expect(Math.sign(sim.hx - x0)).toBe(lane.dir);
+    expect(sim.alive).toBe(true);
+    expect(sim.hx - x0).toBeCloseTo(lane.dir * it.speed * 30 * ATR_DT, 1);
     advance(sim, 60 * 60);
-    expect(sim.end).toBe('arrastado');
+    expect(sim.alive).toBe(false);
   });
 
   it('pousar na água afoga', () => {
     const w = new AtravessaWorld('agua');
-    const lane = findLane(w, 'rio', (l) => !!l.pads);
+    const lane = findLane(w, 'rio', (x) => !!x.pads);
     const bad = [-4, -3, -2, -1, 0, 1, 2, 3, 4].find((c) => !lane.pads!.some((p) => p.col === c))!;
     const sim = new AtravessaSim('agua', w);
     sim.row = lane.row - 1;
@@ -260,8 +533,46 @@ describe('simulação', () => {
     expect(sim.end).toBe('agua');
   });
 
+  it('em cima da tartaruga que mergulha o herói afunda', () => {
+    const w = new AtravessaWorld('tart2');
+    const lane = findLane(w, 'rio', (l) => l.riverMode === 'tartaruga', 10);
+    const { t, it } = itemNearCenter(lane);
+    const sim = new AtravessaSim('tart2', w);
+    sim.row = lane.row;
+    sim.best = lane.row;
+    sim.dark = lane.row - 20;
+    // começa no instante em que ela acabou de subir e fica em cima até o mergulho
+    const period = ATR_TURTLE_PERIOD;
+    let start = t;
+    while (turtleState(it, start) !== 'up' || turtleState(it, start - 1) === 'up') start++;
+    expect(start - t).toBeLessThan(period);
+    sim.tick = start - 1;
+    sim.hx = flowX(lane.dir, it, start);
+    for (let i = 0; i < period && sim.alive; i++) sim.step();
+    expect(sim.alive).toBe(false);
+    expect(['afundou', 'arrastado']).toContain(sim.end);
+  });
+
+  it('crocodilo: a boca aberta na cabeça morde', () => {
+    const w = new AtravessaWorld('croc2');
+    const lane = findLane(w, 'rio', (l) => l.riverMode === 'tora' && [0, 900, 2500, 5000].some((t) => laneItems(l, t).some((i) => i.kind === 'croc')), 40);
+    const it = [0, 900, 2500, 5000].flatMap((t) => laneItems(lane, t)).find((i) => i.kind === 'croc')!;
+    let open = it.t0 + 1;
+    // a boca aberta num instante em que o crocodilo está perto do centro da tela
+    while (!(crocState(it, open) === 'open' && Math.abs(flowX(lane.dir, it, open)) < 1.5)) open++;
+    const sim = new AtravessaSim('croc2', w);
+    sim.row = lane.row;
+    sim.best = lane.row;
+    sim.dark = lane.row - 20;
+    sim.tick = open - 1;
+    const head = flowX(lane.dir, it, open) + lane.dir * (it.len / 2 - 0.6);
+    sim.hx = head;
+    advance(sim, 1);
+    expect(sim.end).toBe('mordido');
+  });
+
   it('parado, a escuridão alcança; ela nunca passa do teto de velocidade nem fica mais longe que o limite', () => {
-    const sim = new AtravessaSim('parado');
+    const sim = new AtravessaSim(ANY);
     let prev = sim.dark;
     while (sim.alive && sim.tick < 60 * 120) {
       sim.step();
@@ -270,7 +581,7 @@ describe('simulação', () => {
     }
     expect(sim.end).toBe('escuridao');
     expect(atravessaDarkSpeed(100_000)).toBe(ATR_DARK_CAP);
-    const run = new AtravessaSim('corre');
+    const run = new AtravessaSim(ANY);
     run.best = 50;
     run.row = 50;
     run.hx = 0;
@@ -279,7 +590,7 @@ describe('simulação', () => {
   });
 
   it('o perigo da escuridão sobe de forma contínua, de 0 a 1', () => {
-    const sim = new AtravessaSim('perigo');
+    const sim = new AtravessaSim(ANY);
     sim.best = 20;
     sim.row = 20;
     sim.dark = 20 - ATR_DARK_MAX_GAP;
@@ -293,107 +604,155 @@ describe('simulação', () => {
   });
 });
 
-function objX0(lane: Lane, o: Lane['objs'][number], tick: number) {
-  return laneObjects(lane, tick).find((x) => x.len === o.len)!.x;
-}
-
-/** Um jogador que procura a casa livre da próxima faixa e só pula quando sobrevive aos próximos 18 ticks. */
-function bot(seed: string, maxTicks: number): number {
-  const sim = new AtravessaSim(seed);
-  let goal: number | null = null;
-  const survives = (s: AtravessaSim, n: number) => {
-    for (let i = 0; i < n && s.alive; i++) s.step();
-    return s.alive;
+describe('varridas de aviso', () => {
+  /** Uma faixa de descanso com vizinhas de descanso (para escapar andando sem cair em outro perigo). */
+  const calmRow = (seed: string) => {
+    const w = new AtravessaWorld(seed);
+    for (let r = 24; r < 400; r++) {
+      if (w.lane(r - 1).kind === 'descanso' && w.lane(r).kind === 'descanso' && w.lane(r + 1).kind === 'descanso') {
+        return { w, r };
+      }
+    }
+    throw new Error('sem trecho calmo');
   };
-  while (sim.alive && sim.tick < maxTicks) {
-    const next = sim.world.lane(sim.row + 1);
-    const logs = (l: Lane) => l.kind === 'rio' && !l.pads;
-    // antes de entrar num rio de toras, alinha com a coluna livre da faixa que vem depois dele
-    let target = next;
-    if (logs(next) && !logs(sim.world.lane(sim.row))) {
-      let j = sim.row + 1;
-      while (logs(sim.world.lane(j))) j++;
-      target = sim.world.lane(j);
-    }
-    const free = (c: number) =>
-      target.kind === 'descanso' ? !target.blocked.includes(c) : target.pads ? target.pads.some((p) => p.col === c) : true;
-    const here = Math.round(sim.hx);
-    const cur = sim.world.lane(sim.row);
-    const open = (c: number) =>
-      Math.abs(c) <= 4 &&
-      !(cur.kind === "descanso" && cur.blocked.includes(c)) &&
-      !(cur.pads && !cur.pads.some((p) => p.col === c));
-    // encurralado: volta uma faixa e vai para o corredor livre antes de tentar de novo
-    if (goal !== null && here === goal) goal = null;
-    let want: Dir | null = null;
-    if (goal !== null) {
-      const dirStep = goal < here ? 2 : 3;
-      want = open(here + (goal < here ? -1 : 1)) ? dirStep : 1;
-    } else if (free(here) || logs(sim.world.lane(sim.row))) want = 0;
-    else {
-      let leftOk = true;
-      let rightOk = true;
-      for (let k = 1; k <= 8 && want === null; k++) {
-        leftOk = leftOk && open(here - k);
-        rightOk = rightOk && open(here + k);
-        if (leftOk && free(here - k)) want = 2;
-        else if (rightOk && free(here + k)) want = 3;
-      }
-      if (want === null) {
-        goal = sim.world.corridorAt(sim.row + 1);
-        want = 1;
-      }
-    }
-    // escolhe a primeira ação que sobrevive; se nenhuma, a que dura mais (esquivar também vale)
-    const options: (Dir | null)[] = [want, null, 2, 3, 1];
-    let pick: Dir | null | undefined;
-    let bestLife = -1;
-    for (const o of options) {
-      if (o === undefined) continue;
-      if (o === want && want === null) continue;
-      const c = sim.clone();
-      if (o !== null) c.input(o);
-      let life = 0;
-      while (life < 24 && c.alive) {
-        c.step();
-        life++;
-      }
-      if (life > bestLife) {
-        bestLife = life;
-        pick = o;
-      }
-      if (life >= 24) break;
-    }
-    if (pick !== null && pick !== undefined) {
-      sim.input(pick);
-      for (let i = 0; i < 12 && sim.alive; i++) sim.step();
-      continue;
-    }
-    sim.step();
-  }
-  return sim.score;
-}
+  const place = (seed: string) => {
+    const { w, r } = calmRow(seed);
+    const sim = new AtravessaSim(seed, w);
+    sim.row = r;
+    sim.best = r;
+    sim.hx = w.corridorAt(r);
+    sim.dark = r - 8;
+    return { sim, w, r };
+  };
 
-describe('jogabilidade', () => {
-  it('um jogador cuidadoso passa de 80 linhas em todas as sementes (sempre há passagem)', () => {
-    for (const s of SEEDS.slice(0, 5)) expect(bot(s, 60 * 240)).toBeGreaterThanOrEqual(80);
+  it('quem fica parado numa faixa de descanso leva um aviso na própria linha, antes de o perigo vir', () => {
+    for (const seed of ['barril-1', 'barril-2', 'barril-3']) {
+      const { sim, r } = place(seed);
+      for (let i = 0; i < ATR_SWEEP_IDLE_TICKS - 5; i++) sim.step();
+      expect(sim.view().sweep).toBeNull();
+      for (let i = 0; i < 12; i++) sim.step();
+      const v = sim.view();
+      expect(v.sweep).toMatchObject({ row: r, phase: 'warn', x: null });
+      expect(sim.alive).toBe(true);
+    }
+  });
+
+  it('o aviso dura 1,3 s e depois o perigo atinge quem não saiu', () => {
+    const { sim } = place('barril-9');
+    while (!sim.view().sweep) sim.step();
+    for (let i = 0; i < ATR_SWEEP_WARN_TICKS - 1; i++) {
+      sim.step();
+      expect(sim.alive).toBe(true);
+    }
+    for (let i = 0; i < 400 && sim.alive; i++) sim.step();
+    expect(sim.end).toBe('atingido');
+    expect(sim.view().killer).not.toBe(0);
+  });
+
+  it('quem sai da linha durante o aviso sobrevive', () => {
+    const { sim, r } = place('barril-9');
+    while (!sim.view().sweep) sim.step();
+    for (let i = 0; i < 10; i++) sim.step();
+    sim.input(0);
+    for (let i = 0; i < 400; i++) {
+      sim.step();
+      expect(sim.alive).toBe(true);
+    }
+    expect(sim.row).toBe(r + 1);
+    expect(sim.view().sweep).toBeNull();
+  });
+
+  it('o perigo muda com o bioma e só vem depois da linha 20', () => {
+    const kinds = new Set<string>();
+    for (const seed of ['b1', 'b2', 'b3', 'b4', 'b5', 'b6']) {
+      const w = new AtravessaWorld(seed);
+      for (const base of [30, 100, 190]) {
+        let r = base;
+        while (!(w.lane(r).kind === 'descanso' && w.lane(r - 1).kind === 'descanso' && w.lane(r + 1).kind === 'descanso')) r++;
+        const sim = new AtravessaSim(seed, w);
+        sim.row = r;
+        sim.best = r;
+        sim.hx = w.corridorAt(r);
+        sim.dark = r - 8;
+        for (let i = 0; i < ATR_SWEEP_IDLE_TICKS + 10; i++) sim.step();
+        const s = sim.view().sweep;
+        if (s) kinds.add(s.kind);
+      }
+    }
+    expect(kinds.has('barril')).toBe(true);
+    expect(kinds.has('laser')).toBe(true);
+    expect(kinds.has('feno') || kinds.has('redemoinho')).toBe(true);
+    // no começo ninguém é varrido
+    const early = new AtravessaSim(ANY);
+    for (let i = 0; i < 300; i++) early.step();
+    expect(early.view().sweep).toBeNull();
   });
 });
 
-describe('servidor', () => {
-  it('refaz a partida pelos passos e calcula a mesma nota', () => {
-    const inputs: AtravessaInput[] = [];
-    const sim = new AtravessaSim('refaz');
-    for (let n = 0; n < 2; n++) {
-      inputs.push({ t: sim.tick + 1, d: 0 });
-      sim.input(0);
-      for (let i = 0; i < 12; i++) sim.step();
+/**
+ * Procura, por busca em largura (de 6 em 6 ticks), uma sequência de passos que leve o herói até a
+ * linha `target` sem morrer. Se existe, o mundo é passável: sempre há caminho.
+ */
+function canReach(seed: string, target: number, maxTicks: number): { ok: boolean; best: number; tick: number } {
+  let frontier: AtravessaSim[] = [new AtravessaSim(seed)];
+  let best = 0;
+  for (let tick = 0; tick < maxTicks && frontier.length; tick += 6) {
+    const next = new Map<string, AtravessaSim>();
+    for (const s of frontier) {
+      for (const act of [null, 0, 1, 2, 3] as (Dir | null)[]) {
+        const c = s.clone();
+        if (act !== null) c.input(act);
+        for (let i = 0; i < 6 && c.alive; i++) c.step();
+        if (!c.alive) continue;
+        if (c.score > best) best = c.score;
+        if (c.score >= target) return { ok: true, best, tick: c.tick };
+        const v = c.view();
+        next.set(`${c.row}|${c.hx.toFixed(1)}|${v.step ? v.step.dir + v.step.progress.toFixed(2) : "-"}|${v.queued}|${c.best}`, c);
+      }
     }
-    const r = evaluateAtravessa('refaz', inputs);
-    expect(r.score).toBe(sim.score);
-    expect(r.end).toBe('escuridao');
-    expect(evaluateAtravessa('refaz', inputs)).toEqual(r);
-    expect(evaluateAtravessa('refaz', [])).toMatchObject({ score: 0, end: 'escuridao' });
+    frontier = [...next.values()];
+    // só os mais avançados seguem: basta um caminho, não todos
+    if (frontier.length > 160) frontier = frontier.sort((x, y) => y.best - x.best || y.row - x.row).slice(0, 160);
+  }
+  return { ok: false, best, tick: maxTicks };
+}
+
+describe("jogabilidade", () => {
+  it("existe sempre um caminho: dá para chegar à linha 30 em todas as sementes testadas", () => {
+    for (const s of SEEDS.slice(0, 4)) {
+      const r = canReach(s, 30, 60 * 60);
+      expect(r, `semente ${s}`).toMatchObject({ ok: true });
+    }
+  }, 120_000);
+
+  it("e mais longe (linha 70), passando por trem, rio e as primeiras ambulâncias", () => {
+    for (const s of SEEDS.slice(6, 8)) {
+      const r = canReach(s, 70, 60 * 120);
+      expect(r, `semente ${s}`).toMatchObject({ ok: true });
+    }
+  }, 300_000);
+});
+
+describe('servidor', () => {
+  it('sem passos, a escuridão acaba com a partida e a nota é zero', () => {
+    expect(evaluateAtravessa(ANY, [])).toMatchObject({ score: 0, end: 'escuridao' });
+    expect(evaluateAtravessa(ANY, [])).toEqual(evaluateAtravessa(ANY, []));
+  });
+
+  it('o servidor reproduz a partida de um robô, varridas e tráfego incluídos', () => {
+    const seed = SEEDS[3]!;
+    const live = new AtravessaSim(seed);
+    const inputs: AtravessaInput[] = [];
+    // um jogador simples: vai para a frente a cada 14 ticks e deixa o resto com a sorte
+    while (live.alive && live.tick < 60 * 40) {
+      if (live.tick % 14 === 0) {
+        inputs.push({ t: live.tick + 1, d: 0 });
+        live.input(0);
+      }
+      live.step();
+    }
+    const r = evaluateAtravessa(seed, inputs);
+    expect(r).toMatchObject({ score: live.score, end: live.end, ticks: live.tick });
   });
 
   it('valida a lista de passos', () => {

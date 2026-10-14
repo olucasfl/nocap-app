@@ -32,6 +32,48 @@
   font: 900 30px/1 var(--font-display);
   letter-spacing: -0.03em;
 }
+.at-score small {
+  display: block;
+  margin-top: 2px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.at-toast {
+  position: absolute;
+  top: 78px;
+  left: 14px;
+  padding: 7px 14px;
+  background: var(--paper);
+  color: var(--ink);
+  border: var(--border);
+  border-radius: 12px;
+  box-shadow: 3px 3px 0 var(--ink);
+  font: 900 15px/1 var(--font-display);
+  letter-spacing: -0.01em;
+  pointer-events: none;
+  animation: at-toast 1.7s ease both;
+}
+.at-toast.record {
+  background: var(--yellow);
+  color: var(--on-accent);
+}
+@keyframes at-toast {
+  0% {
+    transform: translateY(-8px);
+    opacity: 0;
+  }
+  12%,
+  80% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-4px);
+    opacity: 0;
+  }
+}
 .at-pausebtn {
   appearance: none;
   position: absolute;
@@ -236,7 +278,8 @@
   text-align: center;
 }
 @media (prefers-reduced-motion: reduce) {
-  .at-over {
+  .at-over,
+  .at-toast {
     animation: none;
   }
 }
