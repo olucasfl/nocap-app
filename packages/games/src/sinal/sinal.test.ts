@@ -1,24 +1,22 @@
 import { describe, expect, it } from 'vitest';
 import {
-  OWN_POWERS,
-  UNLOCKED_POWERS,
   isSolid,
   MOVER_KINDS,
   obstaclePos,
-  powerPool,
   ObstacleField,
   CoverField,
+  WidthField,
   DARK_CAP,
   DT,
   HALF,
+  HALF_MAX,
+  HALF_MIN,
+  HOLD_MAX,
+  HOLD_MIN,
   MAX_SPEED,
+  MIN_GAP,
   PHASES_PER_MAP,
   PLAYER_R,
-  POWER_AVISO_MARGIN_S,
-  POWER_RECOVERY_S,
-  POWER_TIGHT_MARGIN_S,
-  POWER_SPECS,
-  VISION_POWERS,
   SINAL_MAPS,
   SinalSim,
   VigiaTimeline,
@@ -29,6 +27,7 @@ import {
   infinitoCourse,
   isSinalMode,
   mapOrder,
+  noteAt,
   phaseDifficulty,
   sinalMode,
   timelineParams,
@@ -66,8 +65,9 @@ const steer = (s: SinalSim): [number, number] => {
     if (Math.abs(dx) < pad) ax += (dx === 0 ? (v.x > 0 ? -1 : 1) : Math.sign(dx)) * 100;
   }
   // longe das paredes também
-  if (v.x > HALF - 1.2) ax -= 100;
-  if (v.x < -HALF + 1.2) ax += 100;
+  const half = v.halfAt(v.y);
+  if (v.x > half - 1.2) ax -= 100;
+  if (v.x < -half + 1.2) ax += 100;
   return [Math.max(-100, Math.min(100, ax)), 100];
 };
 
@@ -91,14 +91,11 @@ function runWatched(sim: SinalSim, policy: (s: SinalSim) => [number, number], ma
   return { ended: sim.result.ended, envKill };
 }
 
-/** Quem sabe o ciclo do Vigia: para quando o aviso começa (inclusive o do olhar duplo) e anda no resto. */
+/** Quem sabe o ciclo do Vigia: para quando o LHO esticado começa e anda no resto. */
 const perfect = (s: SinalSim): [number, number] => {
   const t = s.view.t;
   const c = s.vigiaTimeline.cycleAt(t);
-  const a = c.again;
-  const stop =
-    (t >= c.avisoStart - 0.02 && t < c.lookEnd + 0.01) ||
-    (!!a && t >= a.avisoStart - 0.02 && t < a.lookEnd + 0.01);
+  const stop = t >= c.avisoStart - 0.02 && t < c.lookEnd + 0.01;
   return stop ? [0, 0] : steer(s);
 };
 
@@ -109,214 +106,6 @@ describe('modos e ids', () => {
     expect(isSinalMode('outro')).toBe(false);
     expect(sinalMode('infinito')).toBe('sinal-infinito');
     expect(sinalMode('classico')).toBe('sinal-classico');
-  });
-});
-
-describe('o Vigia', () => {
-  it('é determinístico: a mesma seed dá o mesmo ciclo, outra seed dá outro', () => {
-    for (const mode of ['infinito', 'classico'] as SinalMode[]) {
-      const mk = (seed: string) =>
-        new VigiaTimeline(timelineParams(courseFor(seed, mode, 3)), `${seed}:vigia`).upTo(120);
-      expect(mk('a')).toEqual(mk('a'));
-      expect(mk('a')).not.toEqual(mk('b'));
-    }
-  });
-
-  it('tem os quatro estados em ordem e o primeiro ciclo só começa depois da pessoa se situar', () => {
-    const tl = new VigiaTimeline(timelineParams(infinitoCourse('x')), 'x');
-    const c = tl.cycleAt(0);
-    expect(c.start).toBeGreaterThanOrEqual(2);
-    expect(c.avisoStart).toBeGreaterThan(c.start);
-    expect(c.lookStart).toBeGreaterThan(c.avisoStart);
-    expect(c.lookEnd).toBeGreaterThan(c.lookStart);
-    expect(c.end).toBeGreaterThan(c.lookEnd);
-  });
-
-  it('fica mais ligeiro com o tempo (Infinito) e com a fase (Clássico)', () => {
-    const slow = new VigiaTimeline(timelineParams(infinitoCourse('x')), 'x').upTo(60);
-    const fast = new VigiaTimeline(timelineParams(infinitoCourse('x')), 'x').upTo(1200);
-    // (só os ciclos sem poder: com poder o tempo de costas se estica para caber o efeito)
-    const avg = (cs: typeof slow) => {
-      const plain = cs.filter((c) => c.powers.length === 0);
-      return plain.reduce((s, c) => s + (c.avisoStart - c.start), 0) / Math.max(1, plain.length);
-    };
-    const early = slow.slice(0, 3);
-    const late = fast.slice(-30);
-    expect(avg(late)).toBeLessThan(avg(early));
-    const dur = (n: number) => {
-      const cs = new VigiaTimeline(timelineParams(classicoCourse('x', n)), `x${n}`).upTo(120);
-      const plain = cs.filter((c) => c.powers.length === 0);
-      return plain.reduce((s, c) => s + (c.avisoStart - c.start), 0) / Math.max(1, plain.length);
-    };
-    expect(dur(1)).toBeGreaterThan(dur(5));
-  });
-
-  it('o aviso fica mais curto que antes de olhar, mas nunca some', () => {
-    for (const n of [1, 8, 40]) {
-      const tl = new VigiaTimeline(timelineParams(classicoCourse('s', n)), `s${n}`);
-      for (const c of tl.upTo(90)) expect(c.lookStart - c.avisoStart).toBeGreaterThanOrEqual(0.3 - 1e-9);
-    }
-  });
-
-  it('falso aviso: nunca no começo, e depois de vez em quando', () => {
-    // Infinito: nenhum falso aviso no primeiro minuto
-    for (const seed of SEEDS) {
-      const early = new VigiaTimeline(timelineParams(infinitoCourse(seed)), seed).upTo(44);
-      expect(early.some((c) => c.fake)).toBe(false);
-    }
-    const later = SEEDS.flatMap((seed) =>
-      new VigiaTimeline(timelineParams(infinitoCourse(seed)), seed).upTo(900),
-    );
-    expect(later.some((c) => c.fake)).toBe(true);
-    // Clássico: nenhum na fase 1, alguns da fase 2 em diante
-    const phase = (n: number) =>
-      SEEDS.flatMap((seed) =>
-        new VigiaTimeline(timelineParams(classicoCourse(seed, n)), `${seed}${n}`).upTo(200),
-      );
-    expect(phase(1).some((c) => c.fake)).toBe(false);
-    expect(phase(4).some((c) => c.fake)).toBe(true);
-    // Raro: é uma minoria dos ciclos
-    const p4 = phase(4);
-    expect(p4.filter((c) => c.fake).length / p4.length).toBeLessThan(0.4);
-  });
-});
-
-describe('poderes: equidade', () => {
-  const timelines = () => {
-    const out: { label: string; cycles: ReturnType<VigiaTimeline['upTo']> }[] = [];
-    for (const seed of SEEDS) {
-      out.push({ label: `inf ${seed}`, cycles: new VigiaTimeline(timelineParams(infinitoCourse(seed)), seed).upTo(900) });
-      for (const n of [1, 2, 3, 5, 6, 10, 15, 25, 60]) {
-        out.push({
-          label: `cla ${seed} ${n}`,
-          cycles: new VigiaTimeline(timelineParams(classicoCourse(seed, n)), `${seed}${n}`).upTo(300),
-        });
-      }
-    }
-    return out;
-  };
-
-  it('só no período de costas, avisados antes e terminando bem antes do próximo olhar', () => {
-    let total = 0;
-    for (const { label, cycles } of timelines()) {
-      for (const c of cycles) {
-        let prevEnd = c.start;
-        for (const p of c.powers) {
-          total++;
-          const spec = POWER_SPECS[p.kind];
-          expect(p.effectStart - p.teleStart, label).toBeCloseTo(spec.tele, 6);
-          // a duração base, esticada até 1,9x conforme a fase (ou o tempo, no Infinito)
-          expect(p.effectEnd - p.effectStart, label).toBeGreaterThanOrEqual(spec.effect - 1e-6);
-          expect(p.effectEnd - p.effectStart, label).toBeLessThanOrEqual(spec.effect * 1.9 + 1e-6);
-          expect(p.teleStart, label).toBeGreaterThanOrEqual(c.start);
-          // termina com pelo menos 1,2 s de folga antes do olhar e antes do aviso começar
-          // sempre acaba antes do aviso de olhar; só nas emboscadas a folga é curta
-          if (!c.tight) {
-            expect(p.effectEnd, label).toBeLessThanOrEqual(c.lookStart - POWER_RECOVERY_S + 1e-9);
-            expect(p.effectEnd, label).toBeLessThanOrEqual(c.avisoStart - POWER_AVISO_MARGIN_S + 1e-9);
-          } else {
-            expect(p.effectEnd, label).toBeLessThanOrEqual(c.avisoStart - POWER_TIGHT_MARGIN_S + 1e-9);
-          }
-          // um poder por vez
-          expect(p.teleStart, label).toBeGreaterThanOrEqual(prevEnd - 1e-9);
-          prevEnd = p.effectEnd;
-          // efeito de duração razoável (os de visão são os mais longos, até 5,5 s; nas fases altas crescem)
-          expect(spec.effect).toBeLessThanOrEqual(5.5);
-        }
-      }
-    }
-    expect(total).toBeGreaterThan(200);
-  });
-
-  it('o intervalo entre poderes respeita o mínimo do Vigia comum', () => {
-    for (const seed of SEEDS) {
-      const cs = new VigiaTimeline(timelineParams(classicoCourse(seed, 2)), seed).upTo(600);
-      const ends = cs.flatMap((c) => c.powers.map((p) => [p.teleStart, p.effectEnd] as const));
-      for (let i = 1; i < ends.length; i++) expect(ends[i]![0] - ends[i - 1]![1]).toBeGreaterThanOrEqual(2.5 - 1e-9);
-    }
-  });
-
-  it('os poderes do Vigia vão crescendo com a fase: primeiro os do mapa, depois os liberados', () => {
-    for (const seed of SEEDS) {
-      for (const n of [1]) {
-        const course = classicoCourse(seed, n);
-        const cs = new VigiaTimeline(timelineParams(course), `${seed}${n}`).upTo(400);
-        for (const p of cs.flatMap((c) => c.powers)) expect(OWN_POWERS[course.map]).toContain(p.kind);
-      }
-    }
-    for (const map of SINAL_MAPS) {
-      expect(powerPool(map, 1).length).toBe(3);
-      expect(powerPool(map, 3).length).toBeGreaterThan(powerPool(map, 2).length);
-      expect(powerPool(map, 9).length).toBeGreaterThanOrEqual(7);
-    }
-    const kinds = new Set<string>();
-    let chained = 0;
-    for (const seed of SEEDS) {
-      for (const n of [8, 10, 12, 14, 16, 20]) {
-        const course = classicoCourse(seed, n);
-        for (const c of new VigiaTimeline(timelineParams(course), `${seed}${n}`).upTo(600)) {
-          c.powers.forEach((p) => kinds.add(p.kind));
-          if (c.powers.length === 2) chained++;
-        }
-      }
-    }
-    for (const u of UNLOCKED_POWERS) for (const k of u.kinds) expect(kinds.has(k)).toBe(true);
-    expect(chained).toBeGreaterThan(0);
-    // antes da fase 6 nunca há dois seguidos
-    for (const c of new VigiaTimeline(timelineParams(classicoCourse('x', 4)), 'x4').upTo(300)) {
-      expect(c.powers.length).toBeLessThanOrEqual(1);
-    }
-  });
-
-  it('o Infinito começa só com os poderes do mapa e a reserva vai crescendo com o tempo', () => {
-    const late = new Set<string>();
-    for (const seed of SEEDS) {
-      const c = infinitoCourse(seed);
-      for (const cy of new VigiaTimeline(timelineParams(c), seed).upTo(1500)) {
-        for (const p of cy.powers) {
-          if (cy.start < 20) expect(OWN_POWERS[c.map]).toContain(p.kind);
-          else late.add(p.kind);
-        }
-      }
-    }
-    expect(late.size).toBeGreaterThan(14);
-  });
-
-  it('há poder já no começo do Infinito e do Clássico, e os ciclos do Vigia são variados', () => {
-    let early = 0;
-    const kinds = new Set<string>();
-    for (const seed of SEEDS) {
-      const inf = new VigiaTimeline(timelineParams(infinitoCourse(seed)), seed).upTo(40);
-      early += inf.reduce((n, c) => n + c.powers.length, 0);
-      const cla = new VigiaTimeline(timelineParams(classicoCourse(seed, 1)), seed + 'c').upTo(60);
-      early += cla.reduce((n, c) => n + c.powers.length, 0);
-      for (const c of cla) kinds.add(c.kind);
-      for (const c of new VigiaTimeline(timelineParams(classicoCourse(seed, 6)), seed + 'd').upTo(200)) kinds.add(c.kind);
-    }
-    expect(early).toBeGreaterThan(20);
-    expect([...kinds].sort()).toEqual(['duplo', 'espia', 'longo', 'normal', 'rapido']);
-  });
-
-  it('os intervalos e as durações não são lineares: variam bastante de um ciclo para o outro', () => {
-    for (const seed of SEEDS) {
-      const cs = new VigiaTimeline(timelineParams(classicoCourse(seed, 3)), seed).upTo(300);
-      const costas = cs.map((c) => c.avisoStart - c.start);
-      const avisos = cs.map((c) => c.lookStart - c.avisoStart);
-      const spread = (xs: number[]) => Math.max(...xs) / Math.min(...xs);
-      expect(spread(costas)).toBeGreaterThan(2);
-      expect(spread(avisos)).toBeGreaterThan(1.5);
-    }
-  });
-
-  it('um jogador que reage ao aviso nunca perde por causa de um poder (nem do Vigia)', () => {
-    // Só o chão (pancada, obstáculo que se mexe, zona que empurra) pode ainda te pegar com o Vigia.
-    for (const mode of ['infinito', 'classico'] as SinalMode[]) {
-      for (const seed of SEEDS) {
-        const sim = new SinalSim(seed, mode);
-        const r = runWatched(sim, perfect, 60 * 600);
-        expect(r.ended === null || r.ended === 'escuridao' || r.envKill, `${mode} ${seed}`).toBe(true);
-      }
-    }
   });
 });
 
@@ -391,33 +180,6 @@ describe('a simulação', () => {
     expect(still.result.ended).not.toBe('vigia');
   });
 
-  it('o falso aviso não pega ninguém: andar nele é seguro', () => {
-    let tested = 0;
-    for (const seed of SEEDS) {
-      const sim = new SinalSim(seed, 'infinito');
-      const fake = sim.vigiaTimeline.upTo(900).find((c) => c.fake);
-      if (!fake) continue;
-      tested++;
-      // anda sempre, menos nos ciclos de verdade; no falso aviso continua andando
-      const ev = run(
-        sim,
-        (s) => {
-          const t = s.view.t;
-          const c = s.vigiaTimeline.cycleAt(t);
-          const a = c.again;
-          const stop =
-            (!c.fake && t >= c.avisoStart - 0.02 && t < c.lookEnd + 0.01) ||
-            (!!a && t >= a.avisoStart - 0.02 && t < a.lookEnd + 0.01);
-          return stop ? [0, 0] : steer(s);
-        },
-        Math.round((fake.lookEnd + 1) * 60),
-      );
-      // andar no falso aviso nunca pega; só uma pancada (que atordoa) explicaria ter sido visto
-      const seen = ev.some((e) => e.kind === 'fim' && e.reason === 'vigia');
-      expect(!seen || ev.some((e) => e.kind === 'choque'), seed).toBe(true);
-    }
-    expect(tested).toBeGreaterThan(0);
-  });
 });
 
 describe('esconderijos', () => {
@@ -481,7 +243,7 @@ describe('esconderijos', () => {
     let found = false;
     for (let i = 0; i < 60 && !found; i++) {
       const course = classicoCourse(`f${i}`, 12);
-      const f = new CoverField(course, `f${i}`);
+      const f = new CoverField(course, `f${i}`, new WidthField(course, `f${i}:w`));
       f.ensure(1500);
       const frag = f.list.find((c) => c.fragile);
       if (frag) {
@@ -494,7 +256,8 @@ describe('esconderijos', () => {
 
   it('são espaçados, trocam de lado e nunca formam fila; o espaço cresce com a dificuldade', () => {
     for (const seed of SEEDS) {
-      const f = new CoverField(infinitoCourse(seed), seed);
+      const course = infinitoCourse(seed);
+      const f = new CoverField(course, seed, new WidthField(course, `${seed}:w`));
       f.ensure(4000);
       for (let i = 1; i < f.list.length; i++) {
         const a = f.list[i - 1]!;
@@ -502,14 +265,15 @@ describe('esconderijos', () => {
         // o espaço conta depois do fim da moita comprida
         expect(b.y - (a.y + a.len)).toBeGreaterThanOrEqual(16 - 1e-9);
         expect(Math.abs(b.x - a.x)).toBeGreaterThanOrEqual(3.5);
-        expect(Math.abs(b.x)).toBeLessThanOrEqual(HALF - 1.6);
+        expect(Math.abs(b.x)).toBeLessThanOrEqual(Math.max(1.9, HALF_MAX - 1.6));
       }
       const gaps = f.list.slice(1).map((c, i) => c.y - f.list[i]!.y);
       const near = gaps.slice(0, 5).reduce((s, g) => s + g, 0) / 5;
       const far = gaps.slice(-5).reduce((s, g) => s + g, 0) / 5;
       expect(far).toBeGreaterThan(near * 0.9);
     }
-    const f = new CoverField(infinitoCourse('m'), 'm');
+    const mc = infinitoCourse('m');
+    const f = new CoverField(mc, 'm', new WidthField(mc, 'm:w'));
     f.ensure(6000);
     const gaps = f.list.slice(1).map((c, i) => c.y - f.list[i]!.y);
     const avg = (xs: number[]) => xs.reduce((s, g) => s + g, 0) / xs.length;
@@ -535,9 +299,9 @@ describe('a escuridão: nunca mais rápida que o boneco', () => {
     }
   });
 
-  it('no começo quase não se nota e depois fica mais rápida', () => {
+  it('no começo anda devagar (mas aparece) e depois fica mais rápida', () => {
     const inf = infinitoCourse('x');
-    expect(darkSpeed(inf, 0, 0)).toBeLessThan(0.3);
+    expect(darkSpeed(inf, 0, 0)).toBeLessThan(0.6);
     expect(darkSpeed(inf, 200, 0)).toBeGreaterThan(darkSpeed(inf, 0, 0) * 5);
     expect(darkSpeed(classicoCourse('x', 12), 0, 0)).toBeGreaterThan(darkSpeed(classicoCourse('x', 1), 0, 0));
   });
@@ -654,91 +418,6 @@ describe('o Clássico: rodadas de mapas e fases', () => {
   });
 });
 
-describe('os poderes mexem no boneco (quando ele está exposto)', () => {
-  /** Roda até o poder `kind` entrar em efeito num ciclo do chefe e devolve o sim parado nesse instante. */
-  function until(kind: string, seedBase: string, n = 5) {
-    for (let k = 0; k < 60; k++) {
-      const seed = `${seedBase}${k}`;
-      const sim = new SinalSim(seed, 'classico');
-      // pula direto para a fase `n` (todos os poderes já liberados) e tira a escuridão do caminho
-      (sim as unknown as { n: number }).n = n;
-      (sim as unknown as { startCourse: () => void }).startCourse();
-      (sim as unknown as { darkY: number }).darkY = -1e7;
-      let t = 0;
-      for (let i = 0; i < 60 * 140 && !sim.dead; i++) {
-        const ev = sim.step(0, 0);
-        t++;
-        if (sim.dead) break;
-        if (ev.some((e) => e.kind === 'poder' && e.power === kind)) return { sim, seed, t };
-      }
-    }
-    return null;
-  }
-
-  it('invertido troca os controles, lama deixa devagar, rajada empurra de lado', () => {
-    const inv = until('invertido', 'a');
-    expect(inv).not.toBeNull();
-    const y0 = inv!.sim.y;
-    for (let i = 0; i < 20; i++) inv!.sim.step(0, 100);
-    expect(inv!.sim.y).toBeLessThan(y0); // mandou para a frente e foi para trás
-
-    const lama = until('lama', 'b');
-    expect(lama).not.toBeNull();
-    const l0 = lama!.sim.y;
-    for (let i = 0; i < 30; i++) lama!.sim.step(0, 100);
-    expect(lama!.sim.y - l0).toBeLessThan(MAX_SPEED * 0.5 * 0.6);
-
-    const raj = until('rajada', 'c');
-    expect(raj).not.toBeNull();
-    const x0 = raj!.sim.x;
-    for (let i = 0; i < 40; i++) raj!.sim.step(0, 0);
-    expect(Math.abs(raj!.sim.x - x0)).toBeGreaterThan(0.5);
-  });
-
-  it('escondido, o poder passa sem efeito; exposto, atinge', () => {
-    let evaded = 0;
-    let hitHidden = 0;
-    let hitExposed = 0;
-    for (let k = 0; k < 30; k++) {
-      for (const hide of [true, false]) {
-        const sim = new SinalSim(`e${k}`, 'classico');
-        while (sim.course.n < 5 && !sim.dead) sim.step(...perfect(sim));
-        if (sim.dead) continue;
-        let warned = false;
-        let done = false;
-        for (let i = 0; i < 60 * 60 && !sim.dead && !done; i++) {
-          if (warned && hide) {
-            // entra num esconderijo novo durante o aviso do poder e fica lá
-            const c = sim.view.covers.find((v) => !v.broken && v.dur >= v.def.max - 1e-9)?.def;
-            if (c) {
-              sim.x = c.x;
-              sim.y = c.y;
-            }
-          }
-          // se algo (um obstáculo ou a esteira) tirou o boneco do esconderijo, esta rodada não vale
-          const wasHidden = sim.view.hidden;
-          for (const e of sim.step(0, 0)) {
-            if (e.kind === 'poder-aviso') warned = true;
-            if (warned && e.kind === 'poder-evitado') {
-              if (hide) evaded++;
-              done = true;
-            }
-            if (warned && e.kind === 'poder') {
-              if (hide) {
-                if (wasHidden) hitHidden++;
-              } else hitExposed++;
-              done = true;
-            }
-          }
-        }
-      }
-    }
-    expect(evaded).toBeGreaterThan(0);
-    expect(hitHidden).toBe(0);
-    expect(hitExposed).toBeGreaterThan(0);
-  });
-});
-
 describe('validar os movimentos', () => {
   it('aceita movimentos bem formados e recusa os estragados', () => {
     expect(validateSinalInputs([{ tick: 0, x: 0, y: 100 }, { tick: 5, x: -100, y: 0 }])).toBeNull();
@@ -750,42 +429,12 @@ describe('validar os movimentos', () => {
   });
 });
 
-describe('emboscada: o Vigia vira logo depois de um poder', () => {
-  it('acontece de vez em quando, com o aviso ainda tocando e o efeito já acabado', () => {
-    let tight = 0;
-    let total = 0;
-    for (const seed of SEEDS) {
-      for (const n of [2, 6, 12]) {
-        for (const c of new VigiaTimeline(timelineParams(classicoCourse(seed, n)), `${seed}${n}`).upTo(300)) {
-          if (c.powers.length === 0) continue;
-          total++;
-          if (!c.tight) continue;
-          tight++;
-          const last = c.powers[c.powers.length - 1]!;
-          expect(c.avisoStart - last.effectEnd).toBeLessThan(0.2);
-          expect(c.avisoStart - last.effectEnd).toBeGreaterThanOrEqual(POWER_TIGHT_MARGIN_S - 1e-6);
-          expect(c.lookStart - c.avisoStart).toBeGreaterThanOrEqual(0.3 - 1e-9);
-        }
-      }
-    }
-    expect(tight).toBeGreaterThan(0);
-    expect(tight).toBeLessThan(total * 0.6);
-  });
-
-  it('quem reage ao aviso sobrevive às emboscadas (o bot perfeito não é visto)', () => {
-    for (const seed of SEEDS.slice(0, 6)) {
-      const sim = new SinalSim(seed, 'classico');
-      const r = runWatched(sim, perfect, 60 * 120);
-      expect(r.ended !== 'vigia' || r.envKill, seed).toBe(true);
-    }
-  });
-});
-
 describe('os obstáculos: tamanhos, jeitos e o que fazem', () => {
   const field = (n: number, seed = 'obs') => {
     const course = classicoCourse(seed, n);
-    const covers = new CoverField(course, `${seed}:c`);
-    const f = new ObstacleField(course, `${seed}:o`, covers);
+    const width = new WidthField(course, `${seed}:w`);
+    const covers = new CoverField(course, `${seed}:c`, width);
+    const f = new ObstacleField(course, `${seed}:o`, covers, width);
     f.ensure(600);
     return f.list;
   };
@@ -799,12 +448,9 @@ describe('os obstáculos: tamanhos, jeitos e o que fazem', () => {
     expect(kinds(3).has('vaivem')).toBe(true);
     expect(kinds(4).has('ima')).toBe(true);
     expect(kinds(2).has('gelo')).toBe(true);
-    expect(kinds(3).has('cola')).toBe(true);
-    expect(kinds(3).has('turbina')).toBe(true);
     expect(kinds(4).has('orbita')).toBe(true);
     expect(kinds(5).has('serra')).toBe(true);
-    expect(kinds(6).has('inversor')).toBe(true);
-    expect(kinds(12).size).toBe(15);
+    expect(kinds(12).size).toBe(12);
   });
 
   it('têm tamanhos diferentes e quanto mais avançado, mais obstáculos', () => {
@@ -959,7 +605,7 @@ describe('pancadas: bater te joga para trás, e qualquer movimento denuncia', ()
     const f = withObstacle('esteira')!;
     const { sim, o } = f;
     const tl = sim.vigiaTimeline;
-    const c = tl.upTo(80).find((q) => !q.fake && !q.again && q.lookEnd - q.lookStart > 1)!;
+    const c = tl.upTo(80).find((q) => q.lookEnd - q.lookStart > 1)!;
     // parado, sem esconderijo, até logo depois de ele começar a olhar
     while (sim.view.t < c.lookStart + 0.3 && !sim.dead) sim.step(0, 0);
     expect(sim.dead).toBe(false);
@@ -969,7 +615,7 @@ describe('pancadas: bater te joga para trás, e qualquer movimento denuncia', ()
     expect(ev.some((e) => e.kind === 'fim' && e.reason === 'vigia')).toBe(true);
   });
 
-  it('o gelo escorrega, a cola atrasa, a turbina empurra e o inversor troca os controles', () => {
+  it('o gelo escorrega mesmo depois de soltar o analógico', () => {
     const ice = withObstacle('gelo')!;
     ice.sim.x = ice.o.x;
     ice.sim.y = ice.o.y;
@@ -977,33 +623,13 @@ describe('pancadas: bater te joga para trás, e qualquer movimento denuncia', ()
     const y0 = ice.sim.y;
     for (let i = 0; i < 10; i++) ice.sim.step(0, 0);
     expect(ice.sim.y - y0).toBeGreaterThan(0.2); // soltou o analógico e continuou deslizando
-
-    const glue = withObstacle('cola')!;
-    glue.sim.x = glue.o.x;
-    glue.sim.y = glue.o.y;
-    const g0 = glue.sim.y;
-    for (let i = 0; i < 10; i++) glue.sim.step(0, 100);
-    expect(glue.sim.y - g0).toBeLessThan(0.1); // os comandos demoram
-
-    const fan = withObstacle('turbina')!;
-    fan.sim.x = fan.o.x;
-    fan.sim.y = fan.o.y;
-    const f0 = fan.sim.y;
-    for (let i = 0; i < 15; i++) fan.sim.step(0, 0);
-    expect(Math.sign(fan.sim.y - f0)).toBe(fan.o.dir);
-
-    const inv = withObstacle('inversor')!;
-    inv.sim.x = inv.o.x;
-    inv.sim.y = inv.o.y;
-    const i0 = inv.sim.y;
-    for (let i = 0; i < 15; i++) inv.sim.step(0, 100);
-    expect(inv.sim.y).toBeLessThan(i0);
   });
 
   it('as órbitas e as serras andam em volta do ponto e voltam, dentro do corredor', () => {
     const orb = SEEDS.flatMap((sd) => {
       const course = classicoCourse(sd, 10);
-      const f = new ObstacleField(course, `${sd}:o`, new CoverField(course, `${sd}:c`));
+      const width = new WidthField(course, `${sd}:w`);
+      const f = new ObstacleField(course, `${sd}:o`, new CoverField(course, `${sd}:c`, width), width);
       f.ensure(500);
       return f.list.filter((o) => o.kind === 'orbita' || o.kind === 'serra');
     });
@@ -1018,107 +644,6 @@ describe('pancadas: bater te joga para trás, e qualquer movimento denuncia', ()
       expect(xs.size).toBeGreaterThan(6);
       expect(obstaclePos(o, 5)).toEqual(obstaclePos(o, 5 + o.period));
     }
-  });
-});
-
-describe('as brincadeiras: efeitos novos', () => {
-  const untilFun = (kind: string) => {
-    for (let k = 0; k < 120; k++) {
-      const sim = new SinalSim(`fun${k}`, 'classico');
-      (sim as unknown as { n: number }).n = 12;
-      (sim as unknown as { startCourse: () => void }).startCourse();
-      (sim as unknown as { darkY: number }).darkY = -1e7;
-      // sem obstáculos no caminho: o efeito é o único que mexe no boneco
-      (sim as unknown as { obstacles: { list: unknown[]; ensure: () => void } }).obstacles = { list: [], ensure: () => {} };
-      for (let i = 0; i < 60 * 120 && !sim.dead; i++) {
-        const ev = sim.step(0, 0);
-        if (ev.some((e) => e.kind === 'poder' && e.power === kind)) return sim;
-      }
-    }
-    return null;
-  };
-
-  it('espelho troca só a esquerda e a direita', () => {
-    const sim = untilFun('espelho')!;
-    expect(sim).not.toBeNull();
-    const x0 = sim.x;
-    const y0 = sim.y;
-    for (let i = 0; i < 20; i++) sim.step(100, 100);
-    expect(sim.x).toBeLessThan(x0 - 0.3);
-    expect(sim.y).toBeGreaterThan(y0 + 0.3);
-  });
-
-  it('turbo deixa mais rápido', () => {
-    const sim = untilFun('turbo')!;
-    expect(sim).not.toBeNull();
-    const y0 = sim.y;
-    for (let i = 0; i < 30; i++) sim.step(0, 100);
-    expect(sim.y - y0).toBeGreaterThan(MAX_SPEED * 0.5 * 1.3);
-  });
-
-  it('patins faz escorregar depois de soltar o analógico', () => {
-    const sim = untilFun('patins')!;
-    expect(sim).not.toBeNull();
-    for (let i = 0; i < 40; i++) sim.step(0, 100);
-    const y0 = sim.y;
-    for (let i = 0; i < 10; i++) sim.step(0, 0);
-    expect(sim.y - y0).toBeGreaterThan(0.25);
-  });
-
-  it('bolhas de sabão deixam o chão ensaboado: desliza ainda mais que no gelo', () => {
-    const sim = untilFun('bolhas')!;
-    expect(sim).not.toBeNull();
-    for (let i = 0; i < 40; i++) sim.step(0, 100);
-    const y0 = sim.y;
-    for (let i = 0; i < 10; i++) sim.step(0, 0);
-    expect(sim.y - y0).toBeGreaterThan(0.25);
-  });
-
-  it('os efeitos de visão são os mais longos do jogo', () => {
-    for (const k of VISION_POWERS) expect(POWER_SPECS[k].effect).toBeGreaterThanOrEqual(5);
-    const others = (Object.keys(POWER_SPECS) as (keyof typeof POWER_SPECS)[]).filter((k) => !VISION_POWERS.includes(k));
-    for (const k of others) expect(POWER_SPECS[k].effect).toBeLessThan(4);
-  });
-
-  it('soluço dá empurrões de tempos em tempos, e bêbado balança de lado', () => {
-    const hic = untilFun('soluco')!;
-    expect(hic).not.toBeNull();
-    let hics = 0;
-    let moved = 0;
-    for (let i = 0; i < 60 * 3; i++) {
-      const bx = hic.x;
-      const by = hic.y;
-      for (const e of hic.step(0, 0)) if (e.kind === 'soluco') hics++;
-      moved += Math.abs(hic.x - bx) + Math.abs(hic.y - by);
-    }
-    expect(hics).toBeGreaterThanOrEqual(2);
-    expect(moved).toBeGreaterThan(0.3);
-
-    const drunk = untilFun('bebado')!;
-    expect(drunk).not.toBeNull();
-    const xs: number[] = [];
-    for (let i = 0; i < 90; i++) {
-      drunk.step(0, 0);
-      xs.push(drunk.x);
-    }
-    expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThan(0.3);
-  });
-
-  it('os efeitos duram mais nas fases altas (até 1,9x) e cada um tem o seu tempo base', () => {
-    const avgRatio = (n: number) => {
-      const ratios: number[] = [];
-      for (const sd of SEEDS) {
-        for (const c of new VigiaTimeline(timelineParams(classicoCourse(sd, n)), `${sd}${n}`).upTo(300)) {
-          // (os de visão crescem menos, então ficam de fora desta conta)
-          for (const p of c.powers) if (!VISION_POWERS.includes(p.kind)) ratios.push((p.effectEnd - p.effectStart) / POWER_SPECS[p.kind].effect);
-        }
-      }
-      return ratios.reduce((a, b) => a + b, 0) / ratios.length;
-    };
-    expect(avgRatio(1)).toBeCloseTo(1, 5);
-    expect(avgRatio(6)).toBeGreaterThan(1.3);
-    expect(avgRatio(30)).toBeCloseTo(1.9, 5);
-    expect(POWER_SPECS.apagao.effect).toBeGreaterThan(POWER_SPECS.buzina.effect);
   });
 });
 
@@ -1171,7 +696,7 @@ describe('atordoado: bateu, fica tonto e o Vigia pega', () => {
   it('se o Vigia olha com o boneco atordoado, perde mesmo parado; escondido, não', () => {
     const seen = (hide: boolean) => {
       const { sim, o } = bumped('grande')!;
-      const c = sim.vigiaTimeline.upTo(80).find((q) => !q.fake && !q.again && q.lookEnd - q.lookStart > 1.1)!;
+      const c = sim.vigiaTimeline.upTo(80).find((q) => q.lookEnd - q.lookStart > 1.1)!;
       // parado até um instante antes de o olhar começar
       while (sim.view.t < c.lookStart - 0.5 && !sim.dead) sim.step(0, 0);
       expect(sim.dead).toBe(false);
@@ -1214,7 +739,7 @@ describe('moitas compridas e prêmios de se esconder', () => {
     for (const sd of SEEDS) {
       for (const [n, bucket] of [[1, 'early'], [30, 'late']] as const) {
         const course = classicoCourse(sd, n);
-        const f = new CoverField(course, `${sd}:cv`);
+        const f = new CoverField(course, `${sd}:cv`, new WidthField(course, `${sd}:cw`));
         f.ensure(2500);
         for (const c of f.list) {
           if (c.len > 0) {
@@ -1235,7 +760,7 @@ describe('moitas compridas e prêmios de se esconder', () => {
 
   it('dá para correr por toda a moita comprida com o Vigia olhando, e fora dela não', () => {
     const { sim, c } = longCover()!;
-    const cyc = sim.vigiaTimeline.upTo(80).find((q) => !q.fake && !q.again && q.lookEnd - q.lookStart > 1.1)!;
+    const cyc = sim.vigiaTimeline.upTo(80).find((q) => q.lookEnd - q.lookStart > 1.1)!;
     // espera parado no começo da pista (fora da moita, que gasta se você fica dentro) até o olhar
     while (sim.view.t < cyc.lookStart + 0.3 && !sim.dead) sim.step(0, 0);
     expect(sim.dead).toBe(false);

@@ -1,9 +1,8 @@
 import {
-  ATRASO_TICKS,
   BACK_LIMIT,
-  CHUVA_IMPULSE,
-  CHUVA_PUSH_S,
-  CHUVA_RADIUS,
+  BUMP_BASE,
+  BUMP_PER_R,
+  BUMP_TICKS,
   COVER_DARK_FACTOR,
   COVER_LONG_DRAIN,
   COVER_LONG_MAX,
@@ -12,21 +11,13 @@ import {
   COVER_ZONE_R,
   DARK_CAP,
   DEADZONE,
-  BEBADO_AMP,
-  BOLHAS_SLICK,
-  BEBADO_PERIOD_TICKS,
-  BUMP_BASE,
-  BUMP_PER_R,
-  BUMP_TICKS,
   DT,
   ESTEIRA_SPEED,
   FOLEGO_FACTOR,
   FOLEGO_MIN_HIDDEN_TICKS,
   FOLEGO_TICKS,
   GELO_SLICK,
-  HALF,
   IMA_PULL,
-  LAMA_FACTOR,
   LOOK_GRACE,
   MAX_SPEED,
   MOLA_IMPULSE,
@@ -34,11 +25,7 @@ import {
   MOVER_BUMP,
   MOVE_EPS,
   MUD_FACTOR,
-  OLEO_RADIUS,
-  OLEO_SLICK,
-  PATINS_SLICK,
   PLAYER_R,
-  RAJADA_SPEED,
   SERRA_BUMP,
   SINAL_MAX_INPUTS,
   STUN_BASE_TICKS,
@@ -48,15 +35,8 @@ import {
   STUN_SHOVE_TICKS,
   SINAL_MAX_TENTHS,
   SINAL_MAX_TICKS,
-  SOLUCO_EVERY,
-  SOLUCO_PUSH_TICKS,
-  SOLUCO_SPEED,
   TPS,
-  TURBINA_SPEED,
-  TURBO_FACTOR,
-  VENTO_SPEED,
   clamp,
-  type PowerKind,
   type SinalEnd,
   type SinalEvent,
   type SinalInput,
@@ -66,6 +46,7 @@ import {
 import {
   CoverField,
   ObstacleField,
+  WidthField,
   courseFor,
   isSolid,
   MOVER_KINDS,
@@ -75,27 +56,19 @@ import {
   type CoverDef,
   type ObstacleDef,
 } from './course';
-import { VigiaTimeline, activeLook, stateAt, type VigiaState } from './vigia';
+import { VigiaTimeline, activeLook, noteAt, stateAt, type Cycle, type VigiaState } from './vigia';
 
 /** Velocidade-base da escuridão (m/s) antes dos aceleradores. Cresce com o tempo e, no Clássico, com a fase. */
 export function darkBase(course: Course, t: number): number {
-  if (course.mode === 'infinito') return 0.22 + 0.016 * t;
-  // a cada fase a escuridão larga mais ligeira (e o teto de 92% do boneco continua valendo)
-  return 0.42 + 0.26 * (course.n - 1) + 0.012 * t;
+  // A escuridão tem que aparecer e apertar (spec 026); o teto de 92% do boneco continua valendo.
+  if (course.mode === 'infinito') return 0.5 + 0.02 * t;
+  // a cada fase a escuridão larga mais ligeira
+  return 0.7 + 0.28 * (course.n - 1) + 0.015 * t;
 }
 
 /** A velocidade real da escuridão: a base, mais rápida quanto mais a pessoa fica parada, e NUNCA acima do teto. */
 export function darkSpeed(course: Course, t: number, idle: number): number {
   return Math.min(DARK_CAP, darkBase(course, t) * (1 + 3 * idle));
-}
-
-interface Patch {
-  x: number;
-  y: number;
-}
-interface Mark {
-  x: number;
-  y: number;
 }
 
 /** O que a tela precisa saber a cada instante. */
@@ -107,8 +80,13 @@ export interface SinalView {
   y: number;
   hidden: boolean;
   vigia: VigiaState;
-  /** O Vigia está dando o falso aviso agora. */
-  fake: boolean;
+  /** O ciclo do Vigia agora (as notas da cantiga) e a sílaba em curso (-1 entre uma e outra). */
+  cycle: Cycle;
+  syl: number;
+  /** O quanto da sílaba em curso já passou (0 a 1). */
+  sylP: number;
+  /** A meia largura do corredor em qualquer altura (ele estreita e alarga). */
+  halfAt: (y: number) => number;
   darkY: number;
   course: Course;
   meters: number;
@@ -120,10 +98,6 @@ export interface SinalView {
   /** O empurrão que o boneco está levando (1 no começo, até 0) e para onde. */
   knock: number;
   knockDir: { x: number; y: number };
-  /** `p` é o quanto do aviso ou do efeito já passou (0 a 1). */
-  powers: { kind: PowerKind; phase: 'aviso' | 'efeito'; dir: -1 | 1; evaded: boolean; p: number }[];
-  patches: Patch[];
-  marks: Mark[];
 }
 
 /**
@@ -138,6 +112,8 @@ export class SinalSim {
   private timeline!: VigiaTimeline;
   private covers!: CoverField;
   private obstacles!: ObstacleField;
+  private width!: WidthField;
+  private noteKey = '';
   private inHist: [number, number][] = [];
   private coverState = new Map<number, { dur: number; at: number; broken: boolean }>();
   private n = 1;
@@ -164,10 +140,6 @@ export class SinalSim {
   private idle = 0;
   private yHist: number[] = [];
   private state: VigiaState = 'costas';
-  private fired = new Set<string>();
-  private evaded = new Set<string>();
-  private patches: Patch[] = [];
-  private marks: Mark[] = [];
 
   dead = false;
   private end: SinalEnd | null = null;
@@ -197,12 +169,15 @@ export class SinalSim {
       timelineParams(this.course),
       `${this.seed}:vigia:${this.mode}:${this.n}`,
     );
-    this.covers = new CoverField(this.course, `${this.seed}:cover:${this.mode}:${this.n}`);
+    this.width = new WidthField(this.course, `${this.seed}:largura:${this.mode}:${this.n}`);
+    this.covers = new CoverField(this.course, `${this.seed}:cover:${this.mode}:${this.n}`, this.width);
     this.obstacles = new ObstacleField(
       this.course,
       `${this.seed}:obst:${this.mode}:${this.n}`,
       this.covers,
+      this.width,
     );
+    this.noteKey = '';
     this.inHist = [];
     this.coverState.clear();
     this.x = 0;
@@ -223,10 +198,6 @@ export class SinalSim {
     this.yHist = [];
     this.courseTick = 0;
     this.state = 'costas';
-    this.fired.clear();
-    this.evaded.clear();
-    this.patches = [];
-    this.marks = [];
   }
 
   /**
@@ -358,132 +329,23 @@ export class SinalSim {
     const t = this.courseTick * DT;
     const cycle = this.timeline.cycleAt(t);
 
-    // O Vigia
+    // O Vigia canta: cada sílaba vira um evento (o som e o desenho seguem o ritmo dele).
     const vs = stateAt(cycle, t);
     if (vs !== this.state) {
       this.state = vs;
-      if (vs === 'aviso') events.push({ kind: 'aviso', fake: cycle.fake, variant: cycle.kind });
+      if (vs === 'aviso') events.push({ kind: 'aviso' });
       else if (vs === 'olhando') events.push({ kind: 'olhando' });
       else if (vs === 'voltando') events.push({ kind: 'voltando' });
     }
+    const note = noteAt(cycle, t);
+    const noteKey = note ? `${cycle.start}:${note.t0}` : '';
+    if (noteKey !== this.noteKey) {
+      this.noteKey = noteKey;
+      if (note) events.push({ kind: 'nota', syl: note.syl, hold: note.hold });
+    }
 
-    // Os poderes (nunca em quem está escondido)
-    let invert = false;
-    let lag = false;
+    // Obstáculos de chão: lamaçal (devagar), esteira (empurra de lado), ímã (puxa) e gelo (escorrega).
     let speedMul = 1;
-    let pushX = 0;
-    let oleoActive = false;
-    let mirrorX = false;
-    let wobble = 0;
-    let boost = 1;
-    let skating = false;
-    let soap = false;
-    cycle.powers.forEach((p, i) => {
-      const key = `${cycle.start}:${i}`;
-      if (t >= p.teleStart && !this.fired.has(`${key}:t`)) {
-        this.fired.add(`${key}:t`);
-        events.push({ kind: 'poder-aviso', power: p.kind });
-        if (p.kind === 'chuva') {
-          const edge = HALF - 1;
-          this.marks = [
-            [0, 2.5],
-            [-1.8 * p.dir, 4.5],
-            [1.8 * p.dir, 6.5],
-          ].map(([dx, dy]) => ({ x: clamp(this.x + dx!, -edge, edge), y: this.y + dy! }));
-        }
-      }
-      if (t >= p.effectStart && !this.fired.has(`${key}:s`)) {
-        this.fired.add(`${key}:s`);
-        if (this.hidden) {
-          this.evaded.add(key);
-          events.push({ kind: 'poder-evitado', power: p.kind });
-          if (p.kind === 'chuva') this.marks = [];
-        } else {
-          events.push({ kind: 'poder', power: p.kind });
-          if (p.kind === 'oleo') {
-            const edge = HALF - 1;
-            this.patches = [
-              [0, 3],
-              [1.5 * p.dir, 5.5],
-              [-1.2 * p.dir, 8],
-            ].map(([dx, dy]) => ({ x: clamp(this.x + dx!, -edge, edge), y: this.y + dy! }));
-          } else if (p.kind === 'chuva') {
-            // A chuva marcada explode: empurra quem estiver dentro de uma das marcas.
-            let best: Mark | null = null;
-            let bestD = Infinity;
-            for (const m of this.marks) {
-              const dd = (this.x - m.x) ** 2 + (this.y - m.y) ** 2;
-              if (dd <= CHUVA_RADIUS * CHUVA_RADIUS && dd < bestD) {
-                best = m;
-                bestD = dd;
-              }
-            }
-            if (best) {
-              let dx = this.x - best.x;
-              let dy = this.y - best.y;
-              const len = Math.sqrt(dx * dx + dy * dy);
-              if (len < 0.001) {
-                dx = 0;
-                dy = 1;
-              } else {
-                dx /= len;
-                dy /= len;
-              }
-              this.impX = dx * CHUVA_IMPULSE;
-              this.impY = dy * CHUVA_IMPULSE;
-              this.impTicks = Math.round(CHUVA_PUSH_S * TPS);
-              this.impTotal = this.impTicks;
-              this.impDecay = false;
-            }
-            this.marks = [];
-          }
-        }
-      }
-      const live = t >= p.effectStart && t < p.effectEnd && !this.evaded.has(key);
-      if (live && !this.hidden) {
-        // Os corvos também invertem os controles (a tela fica coberta e você erra o lado).
-        if (p.kind === 'invertido' || p.kind === 'corvos') invert = true;
-        else if (p.kind === 'lama') speedMul = Math.min(speedMul, LAMA_FACTOR);
-        else if (p.kind === 'buzina') speedMul = 0;
-        else if (p.kind === 'rajada') pushX = p.dir * RAJADA_SPEED;
-        else if (p.kind === 'vento') pushX = p.dir * VENTO_SPEED;
-        else if (p.kind === 'atraso') lag = true;
-        else if (p.kind === 'oleo') oleoActive = true;
-        else if (p.kind === 'espelho') mirrorX = true;
-        else if (p.kind === 'turbo') boost = TURBO_FACTOR;
-        else if (p.kind === 'patins') skating = true;
-        else if (p.kind === 'bolhas') soap = true;
-        else if (p.kind === 'bebado') {
-          // balança de lado, indo e voltando (onda triangular, sem seno)
-          const et = this.courseTick - Math.round(p.effectStart * TPS);
-          const ph = (et % BEBADO_PERIOD_TICKS) / BEBADO_PERIOD_TICKS;
-          wobble = BEBADO_AMP * (ph < 0.5 ? ph * 4 - 1 : 3 - ph * 4);
-        } else if (p.kind === 'soluco') {
-          // um soluço a cada 1,1 s: um empurrão curto para um lado sorteado
-          const startTick = Math.round(p.effectStart * TPS);
-          const et = this.courseTick - startTick;
-          if (et >= 0 && et % SOLUCO_EVERY === 0) {
-            const idx = Math.floor(et / SOLUCO_EVERY);
-            const h = Math.imul(idx * 40503 + startTick + 1, 2654435761) >>> 0;
-            const dir = h % 4;
-            this.impX = dir === 0 ? SOLUCO_SPEED : dir === 1 ? -SOLUCO_SPEED : 0;
-            this.impY = dir === 2 ? SOLUCO_SPEED : dir === 3 ? -SOLUCO_SPEED : 0;
-            this.impTicks = SOLUCO_PUSH_TICKS;
-            this.impTotal = SOLUCO_PUSH_TICKS;
-            this.impDecay = false;
-            events.push({ kind: 'soluco' });
-          }
-        }
-      }
-      if (t >= p.effectEnd && !this.fired.has(`${key}:e`)) {
-        this.fired.add(`${key}:e`);
-        if (!this.evaded.has(key)) events.push({ kind: 'poder-fim', power: p.kind });
-        if (p.kind === 'oleo') this.patches = [];
-      }
-    });
-
-    // Obstáculos de chão: lamaçal (devagar), esteira (empurra de lado), ímã (puxa), turbina (para
-    // frente ou para trás), gelo (escorrega), cola (atrasa os comandos) e inversor (troca os controles).
     let hzx = 0;
     let hzy = 0;
     let zoneSlick = false;
@@ -496,10 +358,7 @@ export class SinalSim {
       if (dd > o.r * o.r) continue;
       if (o.kind === 'lamacal') speedMul = Math.min(speedMul, MUD_FACTOR);
       else if (o.kind === 'esteira') hzx += o.dir * ESTEIRA_SPEED;
-      else if (o.kind === 'turbina') hzy += o.dir * TURBINA_SPEED;
       else if (o.kind === 'gelo') zoneSlick = true;
-      else if (o.kind === 'cola') lag = true;
-      else if (o.kind === 'inversor') invert = !invert;
       else if (o.kind === 'ima') {
         const len = Math.sqrt(dd);
         if (len > 0.3) {
@@ -509,23 +368,9 @@ export class SinalSim {
       }
     }
 
-    // O analógico (com atraso, ele vale o de 0,4 s atrás)
-    this.inHist.push([ax, ay]);
-    if (this.inHist.length > ATRASO_TICKS + 2) this.inHist.shift();
-    let rax = ax;
-    let ray = ay;
-    if (lag) {
-      const old = this.inHist[this.inHist.length - 1 - ATRASO_TICKS];
-      rax = old ? old[0] : 0;
-      ray = old ? old[1] : 0;
-    }
-    // Atordoado: não obedece o analógico enquanto dura.
-    if (this.stun > 0) {
-      rax = 0;
-      ray = 0;
-    }
-    let ix = clamp(rax, -100, 100) / 100;
-    let iy = clamp(ray, -100, 100) / 100;
+    // O analógico. Atordoado, não obedece enquanto dura.
+    let ix = clamp(this.stun > 0 ? 0 : ax, -100, 100) / 100;
+    let iy = clamp(this.stun > 0 ? 0 : ay, -100, 100) / 100;
     const mag = Math.sqrt(ix * ix + iy * iy);
     if (mag < DEADZONE) {
       ix = 0;
@@ -534,28 +379,15 @@ export class SinalSim {
       ix /= mag;
       iy /= mag;
     }
-    if (invert) {
-      ix = -ix;
-      iy = -iy;
-    }
-    // O espelho troca só a esquerda e a direita.
-    if (mirrorX) ix = -ix;
+    let boost = 1;
     if (this.rested > 0) {
-      boost = Math.max(boost, FOLEGO_FACTOR);
+      boost = FOLEGO_FACTOR;
       this.rested--;
     }
     const tx = ix * MAX_SPEED * speedMul * boost;
     const ty = iy * MAX_SPEED * speedMul * boost;
-    // Quanto escorrega: óleo, gelo e patins (o mais escorregadio manda).
-    let slickK = 1;
-    if (oleoActive) {
-      for (const p of this.patches) {
-        if ((this.x - p.x) ** 2 + (this.y - p.y) ** 2 <= OLEO_RADIUS * OLEO_RADIUS) slickK = Math.min(slickK, OLEO_SLICK);
-      }
-    }
-    if (zoneSlick) slickK = Math.min(slickK, GELO_SLICK);
-    if (skating) slickK = Math.min(slickK, PATINS_SLICK);
-    if (soap) slickK = Math.min(slickK, BOLHAS_SLICK);
+    // Quanto escorrega: só o gelo (o chão que escorrega).
+    const slickK = zoneSlick ? GELO_SLICK : 1;
     if (slickK < 1) {
       this.svx += (tx - this.svx) * slickK;
       this.svy += (ty - this.svy) * slickK;
@@ -563,7 +395,7 @@ export class SinalSim {
       this.svx = tx;
       this.svy = ty;
     }
-    let vx = this.svx + pushX + wobble + hzx;
+    let vx = this.svx + hzx;
     let vy = this.svy + hzy;
     if (this.impTicks > 0) {
       // As pancadas perdem força aos poucos (o empurrão forte é no começo); as outras são constantes.
@@ -572,9 +404,10 @@ export class SinalSim {
       vy += this.impY * f;
       this.impTicks--;
     }
-    const edge = HALF - PLAYER_R;
-    let nx = clamp(this.x + vx * DT, -edge, edge);
     let ny = Math.max(BACK_LIMIT, this.y + vy * DT);
+    // O corredor estreita e alarga: a borda é a do ponto onde o boneco está.
+    let edge = this.width.halfAt(ny) - PLAYER_R;
+    let nx = clamp(this.x + vx * DT, -edge, edge);
     // Os obstáculos não se atravessam: o boneco desliza em volta deles.
     for (let pass = 0; pass < 2; pass++) {
       for (const o of this.nearObstacles(ny, 1.6)) {
@@ -618,6 +451,7 @@ export class SinalSim {
           }
         }
       }
+      edge = this.width.halfAt(ny) - PLAYER_R;
       nx = clamp(nx, -edge, edge);
     }
     const dx = nx - this.x;
@@ -715,15 +549,7 @@ export class SinalSim {
   get view(): SinalView {
     const t = this.courseTick * DT;
     const cycle = this.timeline.cycleAt(t);
-    const powers: SinalView['powers'] = [];
-    cycle.powers.forEach((p, i) => {
-      const evaded = this.evaded.has(`${cycle.start}:${i}`);
-      if (t >= p.teleStart && t < p.effectStart) {
-        powers.push({ kind: p.kind, phase: 'aviso', dir: p.dir, evaded, p: (t - p.teleStart) / (p.effectStart - p.teleStart) });
-      } else if (t >= p.effectStart && t < p.effectEnd) {
-        powers.push({ kind: p.kind, phase: 'efeito', dir: p.dir, evaded, p: (t - p.effectStart) / (p.effectEnd - p.effectStart) });
-      }
-    });
+    const note = noteAt(cycle, t);
     return {
       tick: this.tick,
       t,
@@ -731,7 +557,10 @@ export class SinalSim {
       y: this.y,
       hidden: this.hidden,
       vigia: stateAt(cycle, t),
-      fake: cycle.fake && t >= cycle.avisoStart && t < cycle.end,
+      cycle,
+      syl: note ? note.syl : -1,
+      sylP: note ? (t - note.t0) / (note.t1 - note.t0) : 0,
+      halfAt: (y: number) => this.width.halfAt(y),
       darkY: this.darkY,
       course: this.course,
       meters: this.result.meters,
@@ -752,9 +581,6 @@ export class SinalSim {
         const len = Math.sqrt(this.impX * this.impX + this.impY * this.impY);
         return len > 0 ? { x: this.impX / len, y: this.impY / len } : { x: 0, y: 0 };
       })(),
-      powers,
-      patches: this.patches,
-      marks: this.marks,
     };
   }
 

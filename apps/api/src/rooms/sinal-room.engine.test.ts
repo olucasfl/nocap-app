@@ -271,7 +271,7 @@ describe('SinalRoomEngine: o botão de empurrar', () => {
     const { engine, advance } = race();
     const ana = racersOf(engine).get('ana')!.sim;
     // espera um olhar de verdade
-    const cycle = ana.vigiaTimeline.upTo(120).find((c) => !c.fake && c.lookEnd - c.lookStart > 1.1)!;
+    const cycle = ana.vigiaTimeline.upTo(120).find((c) => c.lookEnd - c.lookStart > 1.1)!;
     let guard = 0;
     while (ana.view.t < cycle.lookStart + 0.25 && guard++ < 60 * 100) {
       // parados (mas fora de qualquer esconderijo e longe de obstáculos)

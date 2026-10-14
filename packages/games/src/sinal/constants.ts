@@ -80,114 +80,15 @@ export const SINAL_MAX_TENTHS = 32767;
 export const SINAL_MAX_TICKS = 60 * 60 * TPS;
 export const SINAL_MAX_INPUTS = 40_000;
 
-// ---- poderes -----------------------------------------------------------------
+// ---- obstáculos ---------------------------------------------------------------
 
-export type PowerKind =
-  | 'corvos'
-  | 'oleo'
-  | 'poeira'
-  | 'buzina'
-  | 'farois'
-  | 'vento'
-  | 'atraso'
-  | 'invertido'
-  | 'cortina'
-  | 'rajada'
-  | 'lama'
-  | 'apagao'
-  | 'chuva'
-  // as brincadeiras: efeitos que mexem com a cabeça de quem joga
-  | 'espelho'
-  | 'bebado'
-  | 'soluco'
-  | 'turbo'
-  | 'patins'
-  | 'bolhas'
-  | 'pixelado'
-  | 'negativo'
-  | 'lupa';
-
-export interface PowerSpec {
-  /** Segundos de aviso (o poder ainda não faz efeito) e de efeito. */
-  tele: number;
-  effect: number;
-}
-
-export const POWER_SPECS: Record<PowerKind, PowerSpec> = {
-  // dos Vigias comuns (três por mapa): atrapalham de verdade desde a primeira fase
-  // O aviso dura uns 2 s: dá tempo de ler o quadro e decidir o que fazer.
-  corvos: { tele: 2.0, effect: 2.2 },
-  oleo: { tele: 1.9, effect: 3.0 },
-  // os de visão (poeira, faróis, cortina, apagão) duram bem mais: ficar às escuras é o castigo
-  poeira: { tele: 2.0, effect: 5.0 },
-  buzina: { tele: 2.0, effect: 1.2 },
-  farois: { tele: 1.9, effect: 5.0 },
-  vento: { tele: 2.0, effect: 2.4 },
-  atraso: { tele: 2.0, effect: 2.6 },
-  // dos chefes e do Infinito
-  invertido: { tele: 2.0, effect: 2.5 },
-  cortina: { tele: 1.9, effect: 5.0 },
-  rajada: { tele: 2.0, effect: 2.0 },
-  lama: { tele: 1.9, effect: 3.0 },
-  apagao: { tele: 2.0, effect: 5.5 },
-  chuva: { tele: 2.2, effect: 0.4 },
-  // as brincadeiras
-  espelho: { tele: 1.8, effect: 3.0 },
-  bebado: { tele: 1.9, effect: 3.4 },
-  soluco: { tele: 1.8, effect: 3.3 },
-  turbo: { tele: 1.8, effect: 2.8 },
-  patins: { tele: 1.9, effect: 3.4 },
-  bolhas: { tele: 1.7, effect: 3.8 },
-  pixelado: { tele: 1.8, effect: 3.0 },
-  negativo: { tele: 1.8, effect: 3.0 },
-  lupa: { tele: 1.8, effect: 2.8 },
-};
-
-/** Os poderes do Vigia de cada mapa (cada Vigia tem três). */
-export const OWN_POWERS: Record<SinalMapId, readonly PowerKind[]> = {
-  horta: ['corvos', 'lama', 'chuva'],
-  neon: ['oleo', 'buzina', 'farois'],
-  deserto: ['poeira', 'vento', 'atraso'],
-};
-
-/** Os poderes que vão sendo liberados para qualquer Vigia conforme a fase avança (nível mínimo). */
-export const UNLOCKED_POWERS: readonly { level: number; kinds: readonly PowerKind[] }[] = [
-  { level: 2, kinds: ['espelho', 'bolhas'] },
-  { level: 3, kinds: ['rajada', 'cortina'] },
-  { level: 4, kinds: ['soluco', 'negativo'] },
-  { level: 5, kinds: ['lama', 'invertido'] },
-  { level: 6, kinds: ['bebado', 'pixelado', 'patins'] },
-  { level: 7, kinds: ['apagao', 'chuva'] },
-  { level: 8, kinds: ['turbo', 'lupa'] },
-];
-
-/** O efeito termina pelo menos isto antes de o Vigia olhar (sempre dá tempo de parar). */
-export const POWER_RECOVERY_S = 1.2;
-/** E termina antes de o aviso de olhar começar, com esta folga. */
-export const POWER_AVISO_MARGIN_S = 0.2;
-/** Nos ciclos "de emboscada" o Vigia vira logo depois do poder: o efeito acaba só esta folga antes do aviso. */
-export const POWER_TIGHT_MARGIN_S = 0.15;
-
-/** Valores dos poderes que mexem no boneco. */
-export const RAJADA_SPEED = 2.0; // 2 s x 2 m/s = 4 m no máximo
-export const LAMA_FACTOR = 0.4;
-export const OLEO_SLICK = 0.012; // quanto da diferença para o alvo a velocidade corrige por passo (bem escorregadio: ~1,4 s para virar)
-export const OLEO_RADIUS = 2.0;
-export const VENTO_SPEED = 1.8; // 2,4 s x 1,8 m/s = 4,3 m no máximo
-/** Atraso do analógico (passos): 0,4 s. */
-export const ATRASO_TICKS = 24;
-export const CHUVA_RADIUS = 1.8;
-export const CHUVA_IMPULSE = 6.25; // 0,4 s x 6,25 m/s = 2,5 m
-export const CHUVA_PUSH_S = 0.4;
-
-/** Obstáculos que fazem coisas (ficam parados no chão e agem em quem passa por cima ou encosta). */
+/** Obstáculos que fazem coisas (ficam no chão e agem em quem passa por cima ou encosta). */
 export const MUD_FACTOR = 0.45; // lamaçal: anda a 45% da velocidade
 export const ESTEIRA_SPEED = 2.0; // esteira: empurra de lado
 export const IMA_PULL = 1.6; // ímã: puxa para o centro
 export const MOLA_IMPULSE = 7; // mola: joga para trás (0,3 s x 7 m/s = 2,1 m)
 export const MOLA_PUSH_S = 0.3;
-export const GELO_SLICK = 0.02; // gelo: escorrega quase tanto quanto o óleo
-export const TURBINA_SPEED = 2.4; // turbina: empurra para a frente ou para trás
+export const GELO_SLICK = 0.02; // gelo: escorrega muito (~1,4 s para virar)
 /** Bater em qualquer sólido joga o boneco para trás: quanto maior o obstáculo, mais forte (m/s por 0,25 s). */
 export const BUMP_BASE = 3.0;
 export const BUMP_PER_R = 3.2;
@@ -205,17 +106,24 @@ export const PUSH_COOLDOWN_MS = 2200;
 export const MOVER_BUMP = 5.5; // quem se mexe bate mais forte
 export const SERRA_BUMP = 9;
 
-/** As brincadeiras. */
-export const BEBADO_AMP = 1.9; // balanço de lado (m/s)
-export const BEBADO_PERIOD_TICKS = 72;
-export const SOLUCO_EVERY = 66; // um soluço a cada 1,1 s
-export const SOLUCO_PUSH_TICKS = 9;
-export const SOLUCO_SPEED = 3.8;
-export const TURBO_FACTOR = 1.6;
-export const PATINS_SLICK = 0.03;
-export const BOLHAS_SLICK = 0.018; // bolhas de sabão: o chão ensaboado, ainda mais escorregadio que o gelo
-/** Os efeitos de visão: já são longos, então crescem menos com a fase (60% do aumento). */
-export const VISION_POWERS: readonly PowerKind[] = ['poeira', 'farois', 'cortina', 'apagao'];
+// ---- a cantiga do Vigia (spec 026) --------------------------------------------
+
+/** As sílabas de um verso: "SI-NAL-VER-ME-LHO". */
+export const SYLLABLES = 5;
+/** O compasso (duração de uma sílaba, em segundos): de fácil a difícil. */
+export const BEAT_EASY = 0.62;
+export const BEAT_HARD = 0.34;
+/** O último LHO (o aviso) dura 2 compassos, nunca menos nem mais que isto (s). */
+export const HOLD_MIN = 0.55;
+export const HOLD_MAX = 1.3;
+/** Pausa entre dois versos (respiro) e depois do olhar (s). */
+export const VERSE_BREATH = 0.12;
+export const COME_BACK_S = 0.35;
+/** A largura do corredor: normal, mínimo (desfiladeiro) e máximo (clareira), em meia largura (m). */
+export const HALF_MIN = 3.5;
+export const HALF_MAX = 9;
+/** O vão mínimo que um obstáculo deixa em qualquer ponto (m): cabe o boneco com folga. */
+export const MIN_GAP = 1.7;
 
 // ---- entradas e resultado ----------------------------------------------------
 
@@ -242,13 +150,11 @@ export interface SinalResult {
 }
 
 export type SinalEvent =
-  | { kind: 'aviso'; fake: boolean; variant: CycleKind }
+  /** Uma sílaba da cantiga começou (`syl` de 0 a 4; `hold` é o último LHO esticado, o aviso). */
+  | { kind: 'nota'; syl: number; hold: boolean }
+  | { kind: 'aviso' }
   | { kind: 'olhando' }
   | { kind: 'voltando' }
-  | { kind: 'poder-aviso'; power: PowerKind }
-  | { kind: 'poder'; power: PowerKind }
-  | { kind: 'poder-evitado'; power: PowerKind }
-  | { kind: 'poder-fim'; power: PowerKind }
   | { kind: 'quebrou'; cover: number }
   /** Bateu num obstáculo: `size` de 0 a 1 é a força da pancada. */
   | { kind: 'choque'; size: number }
@@ -261,9 +167,6 @@ export type SinalEvent =
   | { kind: 'folego' }
   | { kind: 'fase'; n: number; map: SinalMapId; mapChanged: boolean }
   | { kind: 'fim'; reason: SinalEnd };
-
-/** Os jeitos de o Vigia olhar: normal, rápido (pouco aviso), longo, espia (olhadinha) e duplo. */
-export type CycleKind = 'normal' | 'rapido' | 'longo' | 'espia' | 'duplo';
 
 export const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 export const clamp = (v: number, lo: number, hi: number) => (v < lo ? lo : v > hi ? hi : v);

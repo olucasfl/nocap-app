@@ -6,12 +6,12 @@ import {
   COVER_LONG_MAX,
   COVER_LONG_MIN,
   HALF,
-  OWN_POWERS,
+  HALF_MAX,
+  HALF_MIN,
+  MIN_GAP,
   SINAL_MAPS,
   TPS,
-  UNLOCKED_POWERS,
   lerp,
-  type PowerKind,
   type SinalMapId,
   type SinalMode,
 } from './constants';
@@ -20,7 +20,7 @@ import type { TimelineParams } from './vigia';
 /**
  * A pista de uma partida. No Infinito é uma só, sem fim. No Clássico cada fase é uma pista com
  * linha de chegada; a cada 5 fases o mapa troca (sorteado, sem repetir até fechar os três). Não há
- * chefe: a cada fase vêm mais poderes, mais obstáculos e uma escuridão mais ligeira.
+ * chefe: a cada fase vêm mais obstáculos, desfiladeiros e uma escuridão mais ligeira.
  */
 
 export interface Course {
@@ -57,7 +57,7 @@ export function classicoCourse(seed: string, n: number): Course {
     // a primeira fase é curta (65 m) e cada uma acrescenta 15 m, até 320 m
     length: Math.min(320, 50 + 15 * n),
     // a escuridão larga mais perto a cada fase
-    darkStart: Math.max(22, 36 - 1.2 * (n - 1)),
+    darkStart: Math.max(18, 28 - 1.2 * (n - 1)),
   };
 }
 
@@ -68,7 +68,7 @@ export function infinitoCourse(seed: string): Course {
     n: 1,
     map: SINAL_MAPS[Math.floor(rng() * SINAL_MAPS.length)]!,
     length: Infinity,
-    darkStart: 42,
+    darkStart: 30,
   };
 }
 
@@ -81,53 +81,78 @@ export function phaseDifficulty(n: number): number {
   return n / (n + 9);
 }
 
-/** Os poderes de um Vigia na fase `level`: os três do mapa mais os que já foram liberados. */
-export function powerPool(map: SinalMapId, level: number): PowerKind[] {
-  const pool: PowerKind[] = [...OWN_POWERS[map]];
-  for (const u of UNLOCKED_POWERS) {
-    if (level >= u.level) for (const k of u.kinds) if (!pool.includes(k)) pool.push(k);
-  }
-  return pool;
+/** Os parâmetros do Vigia de uma pista: só a dificuldade (a cantiga sai dela e da seed). */
+export function timelineParams(course: Course): TimelineParams {
+  if (course.mode === 'infinito') return { dAt: (t) => t / (t + 240) };
+  const d = phaseDifficulty(course.n);
+  return { dAt: () => d };
 }
 
-/** Os parâmetros do Vigia de uma pista (os tempos e os poderes). */
-export function timelineParams(course: Course): TimelineParams {
-  if (course.mode === 'infinito') {
-    // Tudo cresce com o tempo de corrida: o Vigia mais ligeiro, mais falsos avisos, poderes variados.
-    const own = OWN_POWERS[course.map];
-    return {
-      dAt: (t) => t / (t + 240),
-      pFake: (d, t) => (t < 45 ? 0 : lerp(0.08, 0.25, d)),
-      pPower: (_d, t) => (t < 8 ? 0 : 0.95),
-      minGap: (d) => lerp(4.5, 2.5, d),
-      pool: (t): PowerKind[] => {
-        const pool: PowerKind[] = [...own];
-        const add = (...ks: PowerKind[]) => ks.forEach((k) => pool.includes(k) || pool.push(k));
-        if (t >= 20) add('espelho', 'bolhas');
-        if (t >= 45) add('rajada', 'cortina', 'soluco', 'negativo');
-        if (t >= 90) add('lama', 'invertido', 'bebado', 'pixelado', 'patins');
-        if (t >= 150) add('apagao', 'chuva', 'turbo', 'lupa');
-        return pool;
-      },
-      chain: (t) => (t >= 120 ? 2 : 1),
-      // os efeitos duram mais quanto mais tempo você aguenta (até 1,9x)
-      effectScale: (t) => Math.min(1.9, 1 + t / 300),
-      costasScale: 1,
-    };
+// ---- largura do corredor ---------------------------------------------------------
+
+/**
+ * O corredor não tem sempre a mesma largura: de vez em quando estreita num desfiladeiro e de vez em
+ * quando alarga numa clareira, com transições suaves. Os primeiros 30 m são sempre normais. Com a
+ * dificuldade os desfiladeiros ficam mais frequentes e mais estreitos.
+ */
+const WIDTH_RAMP = 7;
+
+export class WidthField {
+  /** Pontos (altura, meia largura) ligados por retas. */
+  readonly pts: { y: number; h: number }[] = [
+    { y: -20, h: HALF },
+    { y: 30, h: HALF },
+  ];
+  private readonly rng: () => number;
+  private nextY = 30;
+
+  constructor(
+    private readonly course: Course,
+    seedKey: string,
+  ) {
+    this.rng = createRng(seedKey);
   }
-  const d = phaseDifficulty(course.n);
-  return {
-    dAt: () => d,
-    pFake: () => (course.n < 2 ? 0 : lerp(0.1, 0.3, d)),
-    pPower: () => 0.95,
-    minGap: () => lerp(4.5, 2.5, d),
-    pool: () => powerPool(course.map, course.n),
-    // dois poderes seguidos a partir da fase 6
-    chain: () => (course.n >= 6 ? 2 : 1),
-    // os efeitos duram mais a cada fase (até 1,9x)
-    effectScale: () => Math.min(1.9, 1 + 0.07 * (course.n - 1)),
-    costasScale: 1,
-  };
+
+  private dAt(y: number): number {
+    return this.course.mode === 'infinito' ? y / (y + 600) : phaseDifficulty(this.course.n);
+  }
+
+  ensure(untilY: number) {
+    while (this.nextY <= untilY) {
+      const d = this.dAt(this.nextY);
+      const [gapR, kindR, lenR, hR] = [this.rng(), this.rng(), this.rng(), this.rng()];
+      const gap = lerp(lerp(45, 26, d), lerp(80, 45, d), gapR);
+      const start = this.nextY + gap;
+      const clearing = kindR < 0.3;
+      const h = clearing ? lerp(8.2, HALF_MAX, hR) : lerp(4.6, HALF_MIN, d * 0.7 + hR * 0.3);
+      const len = clearing ? 14 + lenR * 20 : 14 + lenR * 14;
+      this.pts.push(
+        { y: start, h: HALF },
+        { y: start + WIDTH_RAMP, h },
+        { y: start + WIDTH_RAMP + len, h },
+        { y: start + 2 * WIDTH_RAMP + len, h: HALF },
+      );
+      this.nextY = start + 2 * WIDTH_RAMP + len;
+    }
+  }
+
+  /** A meia largura do corredor na altura `y`. */
+  halfAt(y: number): number {
+    this.ensure(y + 60);
+    const pts = this.pts;
+    if (y <= pts[0]!.y) return pts[0]!.h;
+    let lo = 0;
+    let hi = pts.length - 1;
+    while (hi - lo > 1) {
+      const mid = (lo + hi) >> 1;
+      if (pts[mid]!.y <= y) lo = mid;
+      else hi = mid;
+    }
+    const a = pts[lo]!;
+    const b = pts[hi]!;
+    if (b.y === a.y) return b.h;
+    return a.h + (b.h - a.h) * ((y - a.y) / (b.y - a.y));
+  }
 }
 
 // ---- esconderijos --------------------------------------------------------------
@@ -156,6 +181,7 @@ export class CoverField {
   constructor(
     private readonly course: Course,
     seedKey: string,
+    private readonly width: WidthField,
   ) {
     this.rng = createRng(seedKey);
     this.nextY = 16 + this.rng() * 10;
@@ -172,14 +198,17 @@ export class CoverField {
     while (this.nextY <= untilY) {
       const d = this.dAt(this.nextY);
       const [gapR, xR, fragR, longR, lenR] = [this.rng(), this.rng(), this.rng(), this.rng(), this.rng()];
-      const side = HALF - 1.6;
-      // Troca de lado a cada esconderijo: nunca um atrás do outro.
-      this.sign = this.sign === 0 ? (xR < 0.5 ? -1 : 1) : -this.sign;
-      const x = this.sign * (1.8 + ((xR * 7.13) % 1) * (side - 1.8));
       const fragileFrom = this.course.mode === 'classico' ? this.course.n >= 4 : d > 0.2;
       // Moita comprida: nas primeiras fases é mais comum (ajuda a aprender), depois fica mais rara.
       const long = longR < lerp(0.42, 0.2, d);
       const len = long ? COVER_LONG_MIN + lenR * (COVER_LONG_MAX - COVER_LONG_MIN) : 0;
+      // O lado respeita o corredor em toda a extensão da moita (ele pode estreitar no meio dela).
+      let narrowest = this.width.halfAt(this.nextY);
+      for (let dy = 2; dy <= len + 2; dy += 2) narrowest = Math.min(narrowest, this.width.halfAt(this.nextY + Math.min(dy, len)));
+      const side = Math.max(1.9, narrowest - 1.6);
+      // Troca de lado a cada esconderijo: nunca um atrás do outro.
+      this.sign = this.sign === 0 ? (xR < 0.5 ? -1 : 1) : -this.sign;
+      const x = this.sign * (1.8 + ((xR * 7.13) % 1) * Math.max(0, side - 1.8));
       const fragile = !long && fragileFrom && fragR < lerp(0.1, 0.5, d);
       this.list.push({
         id: this.list.length,
@@ -214,10 +243,7 @@ export type ObstacleKind =
   | 'lamacal'
   | 'esteira'
   | 'ima'
-  | 'gelo'
-  | 'cola'
-  | 'inversor'
-  | 'turbina';
+  | 'gelo';
 
 /** Os que o boneco não atravessa (bater neles joga para trás). */
 export const SOLID_KINDS: readonly ObstacleKind[] = [
@@ -246,12 +272,13 @@ const OBSTACLE_UNLOCK: { kind: ObstacleKind; level: number; weight: number }[] =
   { kind: 'vaivem', level: 3, weight: 2.2 },
   { kind: 'ima', level: 4, weight: 1.6 },
   { kind: 'gelo', level: 2, weight: 1.8 },
-  { kind: 'cola', level: 3, weight: 1.6 },
-  { kind: 'turbina', level: 3, weight: 1.6 },
   { kind: 'orbita', level: 4, weight: 1.8 },
   { kind: 'serra', level: 5, weight: 1.5 },
-  { kind: 'inversor', level: 6, weight: 1.4 },
 ];
+
+/** Nos desfiladeiros só entra o que dá para passar: nada que varra o corredor de lado. */
+const NARROW_KINDS: readonly ObstacleKind[] = ['pequeno', 'vaivem', 'lamacal', 'esteira', 'gelo', 'mola'];
+const NARROW_HALF = 5.5;
 
 export interface ObstacleDef {
   id: number;
@@ -298,6 +325,7 @@ export class ObstacleField {
     private readonly course: Course,
     seedKey: string,
     private readonly covers: CoverField,
+    private readonly width: WidthField,
   ) {
     this.rng = createRng(seedKey);
     this.nextY = 11 + this.rng() * 6;
@@ -320,9 +348,14 @@ export class ObstacleField {
       const level = this.levelAt(this.nextY);
       const r = Array.from({ length: 12 }, () => this.rng());
       this.covers.ensure(this.nextY + 8);
-      const count = 1 + (r[0]! < 0.45 + 0.3 * d ? 1 : 0) + (r[1]! < 0.2 + 0.35 * d ? 1 : 0) + (r[2]! < 0.1 + 0.3 * d ? 1 : 0);
-      const side = HALF - 1;
-      const pool = OBSTACLE_UNLOCK.filter((u) => u.level <= level);
+      // a largura vale para o grupo todo (o corredor pode estreitar logo adiante)
+      const half = Math.min(this.width.halfAt(this.nextY), this.width.halfAt(this.nextY + 7));
+      const narrow = half < NARROW_HALF;
+      const count = narrow
+        ? 1
+        : 1 + (r[0]! < 0.45 + 0.3 * d ? 1 : 0) + (r[1]! < 0.2 + 0.35 * d ? 1 : 0) + (r[2]! < 0.1 + 0.3 * d ? 1 : 0);
+      const side = half - 1;
+      const pool = OBSTACLE_UNLOCK.filter((u) => u.level <= level && (!narrow || NARROW_KINDS.includes(u.kind)));
       const total = pool.reduce((s, u) => s + u.weight, 0);
       const placed: { x: number; e: number }[] = [];
       for (let i = 0; i < count; i++) {
@@ -348,11 +381,11 @@ export class ObstacleField {
                   ? 0.55 + sR * 0.1
                   : kind === 'lamacal'
                     ? 1.8 + sR * 0.7
-                    : kind === 'esteira' || kind === 'turbina'
+                    : kind === 'esteira'
                       ? 1.6 + sR * 0.5
                       : kind === 'ima'
                         ? 2.2
-                        : kind === 'gelo' || kind === 'cola' || kind === 'inversor'
+                        : kind === 'gelo'
                           ? 2.0 + sR * 0.8
                           : kind === 'serra'
                             ? 0.6 + sR * 0.15
@@ -369,7 +402,8 @@ export class ObstacleField {
                   : 0;
         // quanto o obstáculo se espalha para os lados (as órbitas e os que deslizam)
         const reach = rad + (kind === 'deslizante' || kind === 'orbita' || kind === 'serra' ? amp : 0);
-        const lim = Math.max(0.5, side - reach);
+        if (narrow && (kind === 'deslizante' || kind === 'orbita' || kind === 'serra')) continue;
+        const lim = Math.max(0.3, side - reach);
         let x = (xR * 2 - 1) * lim;
         // sem sobreposição com os outros do grupo: se não couber, este item fica de fora
         let ok = true;
@@ -382,6 +416,11 @@ export class ObstacleField {
         }
         if (!ok) continue;
         const y = this.nextY + i * 1.6;
+        // Sempre sobra passagem: o vão mais largo de um dos lados cabe o boneco com folga.
+        if (isSolid(kind)) {
+          const hy = this.width.halfAt(y);
+          if (Math.max(x - rad + hy, hy - (x + rad)) < MIN_GAP) continue;
+        }
         // longe dos esconderijos (inclusive de toda a extensão das moitas compridas)
         const tooNearCover = this.covers.list.some((c) => {
           const cy = Math.max(c.y, Math.min(y, c.y + c.len));

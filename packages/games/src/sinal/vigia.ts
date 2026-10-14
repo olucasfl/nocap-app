@@ -1,101 +1,80 @@
 import { createRng } from '../core/rng';
 import {
+  BEAT_EASY,
+  BEAT_HARD,
+  COME_BACK_S,
+  HOLD_MAX,
+  HOLD_MIN,
   LEAD_IN_S,
-  POWER_AVISO_MARGIN_S,
-  POWER_RECOVERY_S,
-  POWER_TIGHT_MARGIN_S,
-  VISION_POWERS,
-  POWER_SPECS,
+  VERSE_BREATH,
   lerp,
-  type CycleKind,
-  type PowerKind,
 } from './constants';
 
 /**
- * O ciclo do Vigia: de costas (pode andar), aviso (ainda pode), olhando (mexeu, perdeu) e voltando
- * (pode andar de novo). Tudo sai da seed e do tempo, nunca de onde a pessoa está, então a corrida é
- * a mesma para quem jogar a mesma seed. Nada é "sempre igual": os ciclos têm jeitos diferentes
- * (aviso rápido, olhar longo, olhadinha, olhar duplo) e o intervalo entre eles varia bastante.
- * Os poderes só caem no período de costas, avisados antes, e acabam bem antes do próximo olhar:
- * nada deles pode eliminar quem reage ao aviso.
+ * O ciclo do Vigia é uma cantiga (spec 026): ele canta "SI-NAL-VER-ME-LHO" de costas, em 1 a 3
+ * versos, e no último o LHO é esticado (o aviso). Quando a nota acaba ele vira e olha: mexeu,
+ * perdeu. Depois volta. Todos os tempos saem da seed, nunca de onde a pessoa está, então a corrida
+ * é a mesma para quem jogar a mesma seed. O acaso é só o do brinquedo (quantos versos, e um de
+ * três jeitos de cantar); o aviso nunca dura menos que `HOLD_MIN`.
  */
 
-export interface PowerEvent {
-  kind: PowerKind;
-  /** Aviso do poder, começo e fim do efeito (segundos desde o início da fase). */
-  teleStart: number;
-  effectStart: number;
-  effectEnd: number;
-  /** Para os poderes que empurram de lado: -1 ou 1. */
-  dir: -1 | 1;
-}
+/** Os três jeitos de cantar o último verso: firme, acelera (as sílabas encurtam) e arrasta (alongam). */
+export type Tempo = 'firme' | 'acelera' | 'arrasta';
 
-/** O segundo olhar do ciclo "duplo": um novo aviso curto e outro olhar logo depois do primeiro. */
-export interface Again {
-  avisoStart: number;
-  lookStart: number;
-  lookEnd: number;
+export interface Note {
+  t0: number;
+  t1: number;
+  /** A sílaba (0 a 4: SI, NAL, VER, ME, LHO). */
+  syl: number;
+  /** O último LHO, esticado: o aviso. */
+  hold: boolean;
 }
 
 export interface Cycle {
-  kind: CycleKind;
   start: number;
-  /** O aviso de olhar começa aqui (o Vigia ainda está de costas). */
+  tempo: Tempo;
+  verses: number;
+  /** O compasso deste ciclo (s). */
+  beat: number;
+  notes: Note[];
+  /** O LHO esticado começa aqui (o Vigia ainda está de costas, e ainda se pode andar). */
   avisoStart: number;
-  /** Aqui ele viraria e olharia. */
   lookStart: number;
   lookEnd: number;
   end: number;
-  /** Falso aviso: o sinal vem e ele não olha. */
-  fake: boolean;
-  again?: Again;
-  powers: PowerEvent[];
-  /** Emboscada: o aviso de olhar vem logo depois do fim do poder (sem a folga de recuperação). */
-  tight?: boolean;
 }
 
 export interface TimelineParams {
   /** Dificuldade (0 a 1) no instante t. */
   dAt(t: number): number;
-  pFake(d: number, t: number): number;
-  /** Chance de haver poder num ciclo (quando o intervalo mínimo já passou). */
-  pPower(d: number, t: number): number;
-  /** Intervalo mínimo entre o fim de um poder e o próximo, em segundos. */
-  minGap(d: number): number;
-  pool(t: number): readonly PowerKind[];
-  /** Quantos poderes seguidos cabem num ciclo. */
-  chain(t: number): number;
-  /** Quanto os efeitos duram em relação ao básico: cresce com a fase (ou com o tempo no Infinito). */
-  effectScale(t: number): number;
-  costasScale: number;
 }
 
-/** Os pesos de cada jeito de olhar: já variados desde o começo e mais agressivos com a dificuldade. */
-export function kindWeights(d: number): Record<CycleKind, number> {
-  return {
-    normal: 1,
-    longo: 0.3,
-    espia: 0.2 + 0.2 * d,
-    rapido: 0.15 + 0.6 * d,
-    duplo: 0.1 + 0.5 * d,
-  };
+const clampHold = (beat: number) => Math.max(HOLD_MIN, Math.min(HOLD_MAX, 2 * beat));
+
+/** Quantos versos o ciclo tem (1 a 3): no começo mais versos, e com a dificuldade, menos. */
+function pickVerses(d: number, r: number): number {
+  const w1 = lerp(0.2, 0.5, d);
+  const w2 = lerp(0.4, 0.35, d);
+  const w3 = lerp(0.4, 0.15, d);
+  let x = r * (w1 + w2 + w3);
+  if ((x -= w1) < 0) return 1;
+  if ((x -= w2) < 0) return 2;
+  return 3;
 }
 
-function pickKind(d: number, r: number): CycleKind {
-  const w = kindWeights(d);
-  const total = w.normal + w.longo + w.espia + w.rapido + w.duplo;
-  let x = r * total;
-  for (const k of ['normal', 'longo', 'espia', 'rapido', 'duplo'] as CycleKind[]) {
-    x -= w[k];
-    if (x < 0) return k;
-  }
-  return 'normal';
+function pickTempo(d: number, r: number): Tempo {
+  const wf = 1;
+  const wa = 0.2 + 0.5 * d;
+  const wr = 0.15 + 0.35 * d;
+  let x = r * (wf + wa + wr);
+  if ((x -= wf) < 0) return 'firme';
+  if ((x -= wa) < 0) return 'acelera';
+  return 'arrasta';
 }
 
 export class VigiaTimeline {
   readonly cycles: Cycle[] = [];
   private readonly rng: () => number;
-  private lastPowerEnd = -Infinity;
 
   constructor(
     readonly params: TimelineParams,
@@ -105,97 +84,51 @@ export class VigiaTimeline {
   }
 
   private generate() {
-    const p = this.params;
     const last = this.cycles[this.cycles.length - 1];
     const start = last ? last.end : LEAD_IN_S;
     // Sempre os mesmos sorteios por ciclo, qualquer que seja o resultado: a corrida não "desanda".
-    const [costJ, lookJ, fakeR, powR, offR, dirR, kindR, kind2R, calmR, kindPickR, tightR] = Array.from(
-      { length: 11 },
-      () => this.rng(),
-    );
-    const d = p.dAt(start);
-    const fake = fakeR! < p.pFake(d, start);
-    const kind: CycleKind = fake ? 'normal' : pickKind(d, kindPickR!);
+    const [beatJ, verseR, tempoR, lookJ] = [this.rng(), this.rng(), this.rng(), this.rng()];
+    const d = this.params.dAt(start);
+    const first = !last;
+    const beat = lerp(BEAT_EASY, BEAT_HARD, d) * (0.92 + 0.16 * beatJ!);
+    const verses = first ? 2 : pickVerses(d, verseR!);
+    const tempo: Tempo = first ? 'firme' : pickTempo(d, tempoR!);
 
-    // Quanto tempo de costas: varia bastante (0,6x a 1,5x), e às vezes é uma pausa longa.
-    let costas =
-      lerp(5.6, 2.0, d) * (0.6 + 0.9 * costJ!) * p.costasScale * (calmR! < 0.12 ? 1.6 : 1);
-    costas = Math.max(1.4, costas);
-
-    // O jeito de olhar
-    let aviso = lerp(0.95, 0.45, d);
-    let look = lerp(1.3, 2.6, d) * (0.9 + 0.2 * lookJ!);
-    if (kind === 'rapido') {
-      aviso = lerp(0.42, 0.3, d);
-      look = lerp(0.9, 1.4, d);
-    } else if (kind === 'longo') {
-      look = lerp(2.6, 3.8, d) * (0.9 + 0.2 * lookJ!);
-    } else if (kind === 'espia') {
-      look = 0.4 + 0.2 * lookJ!;
-    } else if (kind === 'duplo') {
-      look = lerp(0.8, 1.2, d);
-    }
-    if (fake) look = 0;
-
-    // Os poderes: se o ciclo vai ter poder, o tempo de costas é esticado para caber.
-    const powers: PowerEvent[] = [];
-    let tight = false;
-    const wantPower = powR! < p.pPower(d, start) && start >= this.lastPowerEnd + p.minGap(d);
-    if (wantPower) {
-      const pool = p.pool(start);
-      if (pool.length > 0) {
-        const firstIdx = Math.floor(kindR! * pool.length);
-        const kinds: PowerKind[] = [pool[firstIdx]!];
-        if (p.chain(start) >= 2 && pool.length > 1) {
-          let second = Math.floor(kind2R! * pool.length);
-          if (second === firstIdx) second = (second + 1) % pool.length;
-          kinds.push(pool[second]!);
-        }
-        let cursor = start + 0.5 + offR! * 0.8;
-        const planned: { kind: PowerKind; teleStart: number; effectStart: number; effectEnd: number }[] = [];
-        for (const k of kinds) {
-          const spec = POWER_SPECS[k];
-          const effectStart = cursor + spec.tele;
-          const es = p.effectScale(start);
-          const grow = VISION_POWERS.includes(k) ? 1 + (es - 1) * 0.6 : es;
-          const effectEnd = effectStart + spec.effect * grow;
-          planned.push({ kind: k, teleStart: cursor, effectStart, effectEnd });
-          cursor = effectEnd + 0.4;
-        }
-        // O tempo de costas cresce até o último poder acabar com folga antes do aviso.
-        const need = planned[planned.length - 1]!.effectEnd - start + POWER_AVISO_MARGIN_S + 0.4;
-        costas = Math.max(costas, need);
-        // De vez em quando o Vigia vira logo depois do poder (emboscada): o aviso ainda toca, e o
-        // efeito já acabou, então dá para parar, mas a folga é curta.
-        if (tightR! < lerp(0.2, 0.45, d)) {
-          tight = true;
-          costas = planned[planned.length - 1]!.effectEnd - start + POWER_TIGHT_MARGIN_S;
-        }
-        planned.forEach((q, i) =>
-          powers.push({ ...q, dir: ((dirR! < 0.5 ? -1 : 1) * (i % 2 ? -1 : 1)) as -1 | 1 }),
-        );
+    const notes: Note[] = [];
+    let t = start;
+    for (let v = 0; v < verses; v++) {
+      const finalVerse = v === verses - 1;
+      for (let syl = 0; syl < 4; syl++) {
+        let dur = beat;
+        if (finalVerse && tempo === 'acelera') dur = beat * (1 - 0.18 * syl);
+        else if (finalVerse && tempo === 'arrasta') dur = beat * (syl === 2 ? 1.15 : syl === 3 ? 1.4 : 1);
+        notes.push({ t0: t, t1: t + dur, syl, hold: false });
+        t += dur;
+      }
+      if (finalVerse) {
+        const hold = clampHold(beat);
+        notes.push({ t0: t, t1: t + hold, syl: 4, hold: true });
+        t += hold;
+      } else {
+        notes.push({ t0: t, t1: t + beat, syl: 4, hold: false });
+        t += beat + VERSE_BREATH;
       }
     }
-
-    const avisoStart = start + costas;
-    const lookStart = avisoStart + aviso;
+    const holdNote = notes[notes.length - 1]!;
+    const look = lerp(1.3, 2.4, d) * (0.92 + 0.16 * lookJ!);
+    const lookStart = holdNote.t1;
     const lookEnd = lookStart + look;
-    let again: Again | undefined;
-    let end = lookEnd + (fake ? 0.5 : 0.35);
-    if (kind === 'duplo' && !fake) {
-      const a2 = lookEnd + 0.25;
-      const l2 = a2 + 0.3;
-      again = { avisoStart: a2, lookStart: l2, lookEnd: l2 + lerp(0.8, 1.2, d) };
-      end = again.lookEnd + 0.35;
-    }
-    // Garantia de equidade (o sorteio acima já deixa folga; isto confere).
-    const limit = tight
-      ? avisoStart - POWER_TIGHT_MARGIN_S + 1e-9
-      : Math.min(lookStart - POWER_RECOVERY_S, avisoStart - POWER_AVISO_MARGIN_S);
-    while (powers.length > 0 && powers[powers.length - 1]!.effectEnd > limit) powers.pop();
-    if (powers.length > 0) this.lastPowerEnd = powers[powers.length - 1]!.effectEnd;
-
-    this.cycles.push({ kind, start, avisoStart, lookStart, lookEnd, end, fake, again, powers, tight: tight && powers.length > 0 });
+    this.cycles.push({
+      start,
+      tempo,
+      verses,
+      beat,
+      notes,
+      avisoStart: holdNote.t0,
+      lookStart,
+      lookEnd,
+      end: lookEnd + COME_BACK_S,
+    });
   }
 
   /** O ciclo que está valendo no instante `t` (segundos). */
@@ -226,21 +159,20 @@ export type VigiaState = 'costas' | 'aviso' | 'olhando' | 'voltando';
 export function stateAt(cycle: Cycle, t: number): VigiaState {
   if (t < cycle.avisoStart) return 'costas';
   if (t < cycle.lookStart) return 'aviso';
-  if (!cycle.fake && t < cycle.lookEnd) return 'olhando';
-  const a = cycle.again;
-  if (a) {
-    if (t >= a.avisoStart && t < a.lookStart) return 'aviso';
-    if (t >= a.lookStart && t < a.lookEnd) return 'olhando';
-  }
+  if (t < cycle.lookEnd) return 'olhando';
   return 'voltando';
 }
 
-/** O olhar que está valendo agora (o do começo do ciclo ou o segundo do olhar duplo). */
+/** O olhar que está valendo agora. */
 export function activeLook(cycle: Cycle, t: number): { start: number; end: number } | null {
-  if (!cycle.fake && t >= cycle.lookStart && t < cycle.lookEnd) {
-    return { start: cycle.lookStart, end: cycle.lookEnd };
+  if (t >= cycle.lookStart && t < cycle.lookEnd) return { start: cycle.lookStart, end: cycle.lookEnd };
+  return null;
+}
+
+/** A sílaba que está sendo cantada em `t` (ou `null` na pausa entre versos e depois da nota final). */
+export function noteAt(cycle: Cycle, t: number): Note | null {
+  for (const n of cycle.notes) {
+    if (t >= n.t0 && t < n.t1) return n;
   }
-  const a = cycle.again;
-  if (a && t >= a.lookStart && t < a.lookEnd) return { start: a.lookStart, end: a.lookEnd };
   return null;
 }
