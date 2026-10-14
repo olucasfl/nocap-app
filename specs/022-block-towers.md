@@ -1,6 +1,6 @@
 # 022 · Block Towers (empilhar com física) dentro do Block's
 
-Status: **implementada (modo "3 vidas", solo e offline); falta jogar para calibrar a física, a velocidade e as magias.** Aprovada pelo Lucas (13/10/2026). Os outros dois modos (Corrida e Petrificar) e o online ficam para depois.
+Status: **implementada (modo "3 vidas", solo e offline); falta jogar para calibrar a física, a velocidade e as magias.** Aprovada pelo Lucas (13/10/2026). Os outros dois modos (Corrida e Petrificar) e o online ficam para depois (ver [spec 025](025-block-towers-online.md)).
 
 ## A ideia
 

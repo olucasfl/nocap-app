@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { TowersGame, type TowersInput } from '@nocap/games';
-import { burst, createFx, drawFrame, stepFx } from './draw';
+import { FINALE_SECONDS, burst, createFx, drawFrame, finaleMoves, startFinale, stepFx } from './draw';
 
 /** Um contexto de Canvas de mentira: aceita qualquer chamada, para pegar erros no desenho. */
 function fakeCtx() {
@@ -50,5 +50,29 @@ describe('desenho do Block Towers', () => {
       if (i % 4 === 0) drawFrame(ctx, 390, 780, g, fx, 1 / 15);
     }
     expect(fx.camY).toBeLessThanOrEqual(0);
+  });
+});
+
+describe('final com a câmera (spec 025)', () => {
+  it('torre baixa não move a câmera; torre alta afasta e desce até mostrar tudo', () => {
+    const g = new TowersGame('final');
+    expect(finaleMoves(g, 390, 780)).toBe(false);
+    // Uma torre alta: o topo vai bem acima do que a tela mostra.
+    g.towerTop = () => -40;
+    expect(finaleMoves(g, 390, 780)).toBe(true);
+  });
+
+  it('o final termina com a câmera no chão e o desenho segue sem erro', () => {
+    const g = new TowersGame('final2');
+    g.towerTop = () => -40;
+    const fx = createFx();
+    fx.camY = -40;
+    startFinale(fx);
+    const ctx = fakeCtx();
+    for (let t = 0; t < FINALE_SECONDS + 0.5; t += 1 / 60) {
+      expect(() => drawFrame(ctx, 390, 780, g, fx, 1 / 60)).not.toThrow();
+    }
+    expect(fx.finale).toBe(1);
+    expect(fx.camY).toBeCloseTo(0, 5);
   });
 });

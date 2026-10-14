@@ -15,7 +15,7 @@ import { buzz } from '@/lib/sfx';
 import { createTowersAudio, type TowersAudio } from '@/lib/towers-audio';
 import { BlockDefs } from '../art';
 import { ArrowIcon, SPELL_LABEL, SpellIcon, TinyPiece } from './tw-art';
-import { burst, createFx, drawFrame, stepFx, type Fx, type View } from './draw';
+import { FINALE_SECONDS, burst, createFx, drawFrame, finaleMoves, startFinale, stepFx, type Fx, type View } from './draw';
 import './towers.css';
 
 export interface TowersEnd {
@@ -363,11 +363,14 @@ export function TowersPlay({ seed, best, onEnd, onQuit, onRestart }: Props) {
           dust(e.x, e.y, 14, 4);
           tell({ tone: 'info', kicker: 'DEU CERTO', title: 'PEDRA!', text: 'Essa peça não se mexe mais', icon: 'cimento', ms: CAST_NOTICE_MS });
           break;
-        case 'over':
+        case 'over': {
           audio?.over();
           mood('faint');
           darkTarget = 1;
           setOver(true);
+          // A câmera só se afasta e desce quando a torre é alta; torre baixa já cabe na tela.
+          const moves = finaleMoves(game, W, H);
+          if (moves) startFinale(fx);
           endTimer = window.setTimeout(() => {
             onEndRef.current({
               score: game.peak,
@@ -378,8 +381,9 @@ export function TowersPlay({ seed, best, onEnd, onQuit, onRestart }: Props) {
               collapses: stats.current.collapses,
               moves: game.log.slice(),
             });
-          }, 2100);
+          }, moves ? FINALE_SECONDS * 1000 + 700 : 2100);
           break;
+        }
       }
     };
 
