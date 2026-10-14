@@ -339,6 +339,23 @@ class LaneView {
 /** A raposa é menor que uma casa: ao lado dos carros e das motos ela precisa parecer pequena. */
 const HERO_SCALE = 0.82;
 
+/** O tamanho de um pixel do mapa de sombra em unidades do mundo (24 de largura / 1024). */
+const SHADOW_TEXEL = 24 / 1024;
+
+/**
+ * A qualidade de desenho, decidida uma vez pelo aparelho: tela de toque usa no máximo 1,75x (1,5x num
+ * aparelho fraco, que também fica sem sombras) e 2x no computador; antialias só onde a densidade é baixa.
+ */
+function pickQuality() {
+  const dpr = window.devicePixelRatio || 1;
+  const touch = window.matchMedia?.('(pointer: coarse)').matches ?? false;
+  const nav = navigator as Navigator & { deviceMemory?: number };
+  const weak = touch && ((nav.deviceMemory ?? 8) <= 4 || (navigator.hardwareConcurrency ?? 8) <= 4);
+  const ratio = touch ? Math.min(dpr, weak ? 1.5 : 1.75) : Math.min(dpr, 2);
+  return { touch, ratio, shadows: !weak, antialias: ratio < 1.75 };
+}
+const quality = pickQuality();
+
 /** Quanto o herói e a câmera suavizam (por segundo). */
 const CAM_FOLLOW = 5;
 
@@ -374,15 +391,7 @@ export class AtravessaScene {
   private halfH = 6;
   private reduced: boolean;
   private record: number | null = null;
-  /** Qualidade automática: se o aparelho não dá conta, corta primeiro as sombras e depois a resolução. */
-  private slowFrames = 0;
-  private fastFrames = 0;
-  private shadowsOn = true;
-  /** A resolução (pixels por pixel de CSS): começa nítida e só cai se o aparelho não der conta. */
-  private ratio = Math.min(2, window.devicePixelRatio || 1);
-  private ratioCeiling = this.ratio;
-  private readonly initialRatio = this.ratio;
-  private raisedAt = 0;
+  /** O tamanho do canvas (a resolução não muda durante a partida: redimensionar faz a imagem piscar). */
   private size = { w: 0, h: 0 };
   private burst = new Burst(20);
   private burstFired = false;
@@ -397,11 +406,12 @@ export class AtravessaScene {
 
   constructor(canvas: HTMLCanvasElement, reducedMotion = false) {
     this.reduced = reducedMotion;
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: (window.devicePixelRatio || 1) < 1.75, alpha: false, powerPreference: 'high-performance' });
-    // nítido por padrão (até 2x): a resolução cai sozinha se os quadros demorarem (veja `adapt`)
-    this.renderer.setPixelRatio(this.ratio);
-    this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: quality.antialias, alpha: false, powerPreference: 'high-performance' });
+    // a qualidade é decidida uma vez, ao abrir, pelo tipo de aparelho (celular fraco = menos pixels e sem
+    // sombras). Mexer nisso durante a partida faz o canvas redimensionar e a imagem piscar.
+    this.renderer.setPixelRatio(quality.ratio);
+    this.renderer.shadowMap.enabled = quality.shadows;
+    this.renderer.shadowMap.type = quality.touch ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
 
     // o limite do mapa: daí para fora escurece
@@ -409,7 +419,7 @@ export class AtravessaScene {
     this.scene.background = PALETTES.horta.sky.clone();
     this.scene.fog = new THREE.Fog(PALETTES.horta.sky.clone(), 34, 70);
 
-    this.sun.castShadow = true;
+    this.sun.castShadow = quality.shadows;
     this.sun.shadow.mapSize.set(1024, 1024);
     const sc = this.sun.shadow.camera;
     sc.left = -12;
@@ -435,8 +445,8 @@ export class AtravessaScene {
     this.size = { w, h };
     this.renderer.setSize(w, h, false);
     this.aspect = w / Math.max(1, h);
-    // sempre mostra ~14 casas de largura; em tela larga, no mínimo 5,6 de meia altura
-    const halfW0 = 6.9;
+    // sempre mostra ~11 casas de largura; em tela larga, no mínimo 5,6 de meia altura
+    const halfW0 = 5.6;
     const halfH = Math.max(halfW0 / this.aspect, 5.6);
     const halfW = halfH * this.aspect;
     this.halfW = halfW;
@@ -476,49 +486,6 @@ export class AtravessaScene {
     this.heroBody.rotation.set(p.pitch, p.ry, p.roll + p.rz);
     this.hero.visible = p.alpha > 0.02;
     this.hero.scale.setScalar(HERO_SCALE * Math.max(0.01, p.alpha));
-  }
-
-  private setRatio(r: number) {
-    this.ratio = r;
-    this.renderer.setPixelRatio(r);
-    this.renderer.setSize(this.size.w, this.size.h, false);
-  }
-
-  /**
-   * Resolução dinâmica: começa nítida (até 2x). Se os quadros passam de ~28 ms por um instante, baixa
-   * a resolução de 0,25 em 0,25 (até 1x) e só depois corta as sombras. Se o aparelho aguenta bem por
-   * uns 6 s, sobe de novo, mas nunca acima do ponto em que já travou uma vez (para não ficar
-   * alternando).
-   */
-  private adapt(dt: number) {
-    if (dt <= 0) return;
-    if (dt > 0.028) {
-      this.fastFrames = 0;
-      this.slowFrames++;
-      if (this.slowFrames >= 30) {
-        this.slowFrames = 0;
-        if (this.ratio > 1.001) {
-          // travou logo depois de subir (menos de 10 s): esse nível não serve, vira o teto daqui para a frente
-          if (performance.now() - this.raisedAt < 10_000) this.ratioCeiling = Math.max(1, this.ratio - 0.25);
-          this.setRatio(Math.max(1, this.ratio - 0.25));
-        } else if (this.shadowsOn) {
-          this.shadowsOn = false;
-          this.sun.castShadow = false;
-        }
-      }
-      return;
-    }
-    this.slowFrames = Math.max(0, this.slowFrames - 2);
-    if (dt < 0.0185 && this.ratio < Math.min(this.ratioCeiling, this.initialRatio) - 0.001) {
-      this.fastFrames++;
-      if (this.fastFrames >= 360) {
-        this.fastFrames = 0;
-        this.raisedAt = performance.now();
-        this.setRatio(Math.min(this.ratioCeiling, this.ratio + 0.25));
-      }
-    } else {
-      this.fastFrames = 0;
-    }
   }
 
   /** Tira da cena o que a varrida criou. */
@@ -615,7 +582,6 @@ export class AtravessaScene {
 
   /** Desenha um quadro. `dt` em segundos; `death` quando a partida acabou (age em segundos). */
   render(sim: AtravessaSim, dt: number, now: number, death: { end: AtravessaEnd; age: number } | null) {
-    this.adapt(dt);
     const v = sim.view();
     this.maxRow = Math.max(this.maxRow, v.y);
 
@@ -625,7 +591,7 @@ export class AtravessaScene {
     // um salto grande (só acontece ao teletransportar em desenvolvimento) não precisa deslizar
     if (Math.abs(targetRow - this.camRow) > 14) this.camRow = targetRow;
     this.camRow += (targetRow - this.camRow) * (this.reduced ? 1 : k);
-    const targetX = Math.max(-2.8, Math.min(2.8, v.x * 0.45));
+    const targetX = Math.max(-1.8, Math.min(1.8, v.x * 0.45));
     this.camX += (targetX - this.camX) * (this.reduced ? 1 : 1 - Math.exp(-dt * 4));
 
     this.ensureLanes(sim, this.camRow);
@@ -686,8 +652,10 @@ export class AtravessaScene {
     const tz = -this.camRow;
     this.camera.position.set(tx + 4.6 + shakeX * RIGHT.x, 9.4 + shakeY, tz + 7.2 + shakeX * RIGHT.z);
     this.camera.lookAt(tx, 0, tz);
-    this.sun.position.set(tx - 7, 13, tz + 6);
-    this.sun.target.position.set(tx, 0, tz);
+    // o sol anda em passos do tamanho de um pixel da sombra: assim a sombra não "nada" nem pisca ao andar
+    const snap = (n: number) => Math.round(n / SHADOW_TEXEL) * SHADOW_TEXEL;
+    this.sun.position.set(snap(tx - 7), 13, snap(tz + 6));
+    this.sun.target.position.set(snap(tx), 0, snap(tz));
 
     const t0 = performance.now();
     this.renderer.render(this.scene, this.camera);

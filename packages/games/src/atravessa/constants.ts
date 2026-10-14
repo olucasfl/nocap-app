@@ -6,8 +6,8 @@
 export const ATR_TPS = 60;
 export const ATR_DT = 1 / ATR_TPS;
 
-/** Colunas -6 a 6 (13 casas: o Lucas pediu 2 casas a mais para cada lado). */
-export const ATR_HALF_COLS = 6;
+/** Colunas -4 a 4 (9 casas). Com 13 casas tudo ficava pequeno demais no celular. */
+export const ATR_HALF_COLS = 4;
 export const ATR_COLS = ATR_HALF_COLS * 2 + 1;
 
 /** Um pulo dura ~0,17 s (spec 029: o ritmo subiu a pedido do Lucas). */
@@ -69,7 +69,7 @@ export const ATR_MIN_VEHICLE_GAP = 2.0;
 export const ATR_MIN_LOG_GAP = 1.4;
 
 /** Tudo que anda numa faixa entra pela borda a esta distância do centro (fora de qualquer tela). */
-export const ATR_FLOW_HALF = 16;
+export const ATR_FLOW_HALF = 14;
 
 export const ATR_TRAIN_LEN = 12;
 /** O aviso do trem e a velocidade dele variam com a dificuldade (spec 029). */

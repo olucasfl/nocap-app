@@ -319,7 +319,7 @@ export class AtravessaWorld {
       if (prev && prev.kind !== 'rio' && row >= 3) {
         const density = TREE_DENSITY[biome];
         for (let c = -ATR_HALF_COLS; c <= ATR_HALF_COLS; c++) {
-          if (c !== this.corridor && base.blocked.length < 7 && rng() < density) base.blocked.push(c);
+          if (c !== this.corridor && base.blocked.length < 5 && rng() < density) base.blocked.push(c);
         }
       }
       this.corridors[row] = this.corridor;

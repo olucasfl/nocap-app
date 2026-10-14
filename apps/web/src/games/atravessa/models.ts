@@ -17,7 +17,7 @@ export const darkness = {
   uDarkAmt: { value: 0.94 },
   uDarkCol: { value: new THREE.Color(0x03050c) },
   /** O limite lateral do mapa: de |x| = uEdge para fora o chão e tudo que passa por ali escurece. */
-  uEdge: { value: 6.5 },
+  uEdge: { value: 4.5 },
   uEdgeSoft: { value: 0.35 },
   uEdgeAmt: { value: 0.62 },
 };
