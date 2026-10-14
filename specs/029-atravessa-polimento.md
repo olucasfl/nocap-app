@@ -47,6 +47,11 @@ Status: **implementada (14/10/2026); falta jogar e calibrar** (velocidades, ambu
 - **De três em três** os biomas formam um grupo: o 2º nunca é igual ao 1º e o 3º é o que sobrou (os três aparecem). O **4º é sorteado de novo, só nunca igual ao 3º**; o 5º e o 6º seguem a mesma regra do 2º e do 3º, e assim por diante. Tudo sai da seed, então o servidor refaz a mesma ordem.
 - A dificuldade sobe a cada grupo de três concluído (450 linhas).
 
+## Água e tartarugas (14/10/2026)
+
+- **A água se mexe:** o material da água (`waterMaterial`) desenha **cristas claras que deslizam** em duas direções e um brilho largo que respira, em função da posição no mundo e do tempo (sem textura). Tora, crocodilo e tartarugas **boiam** (sobem e descem um pouco, cada um no seu ritmo). A água do deserto deixou de ser marrom (parecia areia movediça) e virou turquesa.
+- **Tartarugas de verdade:** casco em camadas com borda clara, cúpula e placas (uma no meio e quatro em volta), cabeça redonda com olhos e sorriso, quatro nadadeiras achatadas e rabinho; cores por bioma (verde, areia, roxo com placas de neon). Continuam mergulhando em ciclo.
+
 ## Regras de cuidado
 
 - Tudo continua determinístico: o servidor refaz a partida pela seed e pelos passos (inclusive o tráfego por veículo, o sinal, as varridas e os mergulhos), e o ranking só muda de forma.

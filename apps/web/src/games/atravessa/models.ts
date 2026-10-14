@@ -83,6 +83,8 @@ export function disposeModels() {
   geoCache.clear();
   for (const parts of modelCache.values()) for (const p of parts) p.geometry.dispose();
   modelCache.clear();
+  waterMat?.dispose();
+  waterMat = null;
   vcMat?.dispose();
   vcGlowMat?.dispose();
   vcMat = null;
@@ -136,12 +138,46 @@ const glowMaterial = () => {
 
 type Surface = THREE.MeshLambertMaterial | THREE.MeshBasicMaterial;
 
+/** O relógio da água (segundos): a cena atualiza a cada quadro. */
+export const waterTime = { value: 0 };
+let waterMat: THREE.MeshLambertMaterial | null = null;
+/**
+ * A água: o mesmo material dos blocos (cor nos vértices, escuridão), com **ondas que andam**: cristas
+ * claras que deslizam em duas direções e um brilho largo que respira, tudo em função da posição no
+ * mundo e do tempo (sem textura). É por isso que a água parece água, e não um bloco azul parado.
+ */
+export function waterMaterial(): THREE.MeshLambertMaterial {
+  if (waterMat) return waterMat;
+  const m = new THREE.MeshLambertMaterial({ vertexColors: true });
+  patchDarkness(m);
+  const dark = m.onBeforeCompile;
+  m.onBeforeCompile = (shader, renderer) => {
+    dark.call(m, shader, renderer);
+    shader.uniforms.uTime = waterTime;
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', '#include <common>\nuniform float uTime;')
+      .replace(
+        'float dk = smoothstep(uDarkZ - uSoft, uDarkZ, vDz);',
+        `float wa = sin(vWx * 1.05 + uTime * 0.9 + sin(vDz * 1.9 + uTime * 0.5) * 1.4);
+float wb = sin(vWx * 2.3 - uTime * 1.3 + vDz * 1.1);
+float wc = sin(vWx * 0.55 - uTime * 0.6 + vDz * 2.6);
+float crest = smoothstep(0.86, 0.98, wa * 0.5 + 0.5) * 0.24 + smoothstep(0.9, 1.0, wb * 0.5 + 0.5) * 0.14;
+float breathe = sin(vWx * 0.5 + uTime * 0.4 + vDz * 0.7) * 0.045 + wc * 0.03;
+gl_FragColor.rgb = gl_FragColor.rgb * (1.0 + breathe) + vec3(crest);
+float dk = smoothstep(uDarkZ - uSoft, uDarkZ, vDz);`,
+      );
+  };
+  m.customProgramCacheKey = () => 'atravessa-water';
+  waterMat = m;
+  return m;
+}
+
 /**
  * Junta as caixas de `source` em poucas malhas dentro de `target`. Ficam de fora, e são movidas como
  * estão, os filhos diretos marcados com `userData.keep` (as partes que a cena anima) e o que não é
  * malha (placas de texto). `own`: as geometrias são só deste lote (a cena as descarta depois).
  */
-export function bakeInto(target: THREE.Object3D, source: THREE.Object3D, own = false): void {
+export function bakeInto(target: THREE.Object3D, source: THREE.Object3D, own = false, material?: THREE.Material): void {
   source.updateMatrixWorld(true);
   const inv = new THREE.Matrix4().copy(source.matrixWorld).invert();
   const rel = new THREE.Matrix4();
@@ -186,7 +222,7 @@ export function bakeInto(target: THREE.Object3D, source: THREE.Object3D, own = f
     if (!list.length) continue;
     const merged = list.length === 1 ? list[0]! : mergeGeometries(list, false)!;
     merged.computeBoundingSphere();
-    const mesh = new THREE.Mesh(merged, kind === 'glow' ? glowMaterial() : vertexMaterial());
+    const mesh = new THREE.Mesh(merged, material ?? (kind === 'glow' ? glowMaterial() : vertexMaterial()));
     mesh.castShadow = kind === 'cast';
     mesh.receiveShadow = kind !== 'glow';
     mesh.userData.own = own;

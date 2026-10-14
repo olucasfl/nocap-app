@@ -42,21 +42,45 @@ export function buildTurtles(len: number, biome: AtravessaBiome): THREE.Group {
 
 function rawTurtles(len: number, biome: AtravessaBiome): THREE.Group {
   const g = new THREE.Group();
-  const shell = biome === 'neon' ? 0x7a5cff : biome === 'deserto' ? 0x9b7a3c : 0x3f8a4a;
-  const pattern = biome === 'neon' ? 0x19d3ff : biome === 'deserto' ? 0xc9a85a : 0x6cc76a;
+  const shell = biome === 'neon' ? 0x6a4cff : biome === 'deserto' ? 0x8a6a34 : 0x2f8a46;
+  const rim = biome === 'neon' ? 0x3a2cb0 : biome === 'deserto' ? 0xc9a85a : 0xd9e07a;
+  const plate = biome === 'neon' ? 0x19d3ff : biome === 'deserto' ? 0xd9bc72 : 0x7fcf5a;
+  const skin = biome === 'neon' ? 0x9ad8c0 : biome === 'deserto' ? 0xb9a46a : 0x9ed36a;
+  const skinDark = biome === 'neon' ? 0x6fb59d : biome === 'deserto' ? 0x8a774a : 0x6fae48;
+  const glow = biome === 'neon' ? 0.8 : 0;
+  const k = { cast: false } as const;
   const n = len > 2 ? 3 : 2;
   const shells: THREE.Group[] = [];
   const step = len / n;
   for (let i = 0; i < n; i++) {
     const t = new THREE.Group();
     t.position.set(-len / 2 + step * (i + 0.5), 0, 0);
-    t.add(box(0.78, 0.26, 0.66, shell, 0, 0.2, 0));
-    t.add(box(0.5, 0.1, 0.42, pattern, 0, 0.38, 0, { cast: false, emissive: biome === 'neon' ? 0.8 : 0 }));
-    t.add(box(0.2, 0.18, 0.22, 0xb6d98a, 0.5, 0.2, 0)); // a cabeça
-    for (const z of [-0.36, 0.36]) {
-      t.add(box(0.26, 0.08, 0.16, 0xb6d98a, 0.22, 0.1, z, { cast: false }));
-      t.add(box(0.26, 0.08, 0.16, 0xb6d98a, -0.22, 0.1, z, { cast: false }));
+    // o casco em camadas: borda clara, base escura, cúpula com placas (o desenho que todo mundo reconhece)
+    t.add(box(0.84, 0.07, 0.74, rim, 0, 0.11, 0));
+    t.add(box(0.74, 0.13, 0.64, shell, 0, 0.2, 0));
+    t.add(box(0.58, 0.1, 0.5, shell, 0, 0.31, 0));
+    t.add(box(0.38, 0.08, 0.32, shell, 0, 0.4, 0, k));
+    // as placas do casco: uma no meio e quatro em volta, mais claras
+    t.add(box(0.22, 0.03, 0.2, plate, 0, 0.45, 0, { cast: false, emissive: glow }));
+    for (const dx of [-0.2, 0.2]) {
+      for (const dz of [-0.17, 0.17]) t.add(box(0.14, 0.03, 0.12, plate, dx, 0.37, dz, { cast: false, emissive: glow }));
     }
+    for (const dz of [-0.31, 0.31]) t.add(box(0.5, 0.03, 0.06, rim, 0, 0.27, dz * 1.02, k));
+    // a cabeça redonda na frente, com pescoço, olhos e sorriso
+    t.add(box(0.14, 0.14, 0.18, skin, 0.46, 0.17, 0));
+    t.add(box(0.26, 0.22, 0.28, skin, 0.6, 0.24, 0));
+    t.add(box(0.2, 0.05, 0.22, skinDark, 0.62, 0.11, 0, k));
+    for (const dz of [-0.1, 0.1]) {
+      t.add(box(0.07, 0.07, 0.06, 0x14100c, 0.66, 0.31, dz, k));
+      t.add(box(0.025, 0.025, 0.02, 0xffffff, 0.685, 0.335, dz * 1.1, { cast: false, emissive: 0.6 }));
+    }
+    t.add(box(0.03, 0.025, 0.12, 0x2a3a1a, 0.74, 0.2, 0, k)); // o sorriso
+    // quatro nadadeiras grandes e achatadas, abertas para fora, e um rabinho
+    for (const dz of [-1, 1]) {
+      t.add(box(0.3, 0.06, 0.2, skin, 0.3, 0.1, dz * 0.42));
+      t.add(box(0.26, 0.06, 0.18, skinDark, -0.28, 0.1, dz * 0.4));
+    }
+    t.add(box(0.14, 0.05, 0.08, skinDark, -0.46, 0.12, 0, k));
     bakeChildren(t);
     t.userData.keep = true;
     g.add(t);

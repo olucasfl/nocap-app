@@ -29,6 +29,8 @@ import {
   darkness,
   disposeModels,
   disposeOwned,
+  waterMaterial,
+  waterTime,
   hash2,
   mat,
 } from './models';
@@ -82,7 +84,7 @@ const PALETTES: Record<AtravessaBiome, Palette> = {
     groundB: hex(0xe6bf72),
     road: hex(0x5d4d45),
     roadEdge: hex(0x826b5e),
-    water: hex(0xc58a4e),
+    water: hex(0x35b5c4),
     sun: hex(0xffe2b0),
     sunPower: 2.6,
     ambient: 1.1,
@@ -209,7 +211,10 @@ class LaneView {
       }
     } else {
       // rio: o fundo e a água um pouco abaixo da beirada
-      st.add(box(FLOOR_W, 0.1, 1, pal.water, 0, -0.05, 0, { cast: false, emissive: b === 'neon' ? 0.3 : 0 }));
+      // a água é uma malha à parte, com o material que anima as ondas
+      const water = new THREE.Group();
+      water.add(box(FLOOR_W, 0.1, 1, pal.water, 0, -0.05, 0, { cast: false }));
+      bakeInto(g, water, true, waterMaterial());
       if (lane.pads) {
         for (const p of lane.pads) {
           const pad = buildPad(b, p.sinks, hash2(lane.row, p.col));
@@ -302,6 +307,11 @@ class LaneView {
   /** As partes que mexem de cada coisa: luzes da ambulância, hélices, boca do crocodilo, mergulho. */
   private animate(h: Holder, tick: number, now: number) {
     const { item, obj } = h;
+    // tora, crocodilo e tartarugas boiam: sobem e descem um pouquinho, cada um no seu ritmo
+    if (item.kind === 'tora' || item.kind === 'croc' || item.kind === 'tartaruga') {
+      obj.position.y = Math.sin(now * 1.8 + item.id * 1.7) * 0.018;
+      obj.rotation.z = Math.sin(now * 1.3 + item.id) * 0.012;
+    }
     if (item.kind === 'ambulancia') {
       const lights = obj.userData.lights as THREE.Mesh[];
       const flip = Math.floor(now * 7) % 2 === 0;
@@ -596,6 +606,7 @@ export class AtravessaScene {
     this.ensureLanes(sim, this.camRow);
     const cam: CamInfo = { x: this.camX, row: this.camRow, halfW: this.halfW, reach: Math.max(16, Math.ceil(this.halfH * 2.4)) };
     for (const lv of this.lanes.values()) lv.update(sim.tick, sim, now, cam);
+    waterTime.value = now;
     this.updateSweep(v.sweep, now);
 
     // o herói
