@@ -140,6 +140,8 @@ interface CamInfo {
   row: number;
   /** Meia largura visível da tela (unidades da câmera). */
   halfW: number;
+  /** Quantas linhas para trás a tela mostra (as faixas mais longe nem precisam ser atualizadas). */
+  reach: number;
 }
 
 class LaneView {
@@ -253,7 +255,7 @@ class LaneView {
 
   update(tick: number, sim: AtravessaSim, now: number, cam: CamInfo) {
     // faixas longe da tela não precisam ser atualizadas (voltam a ser quando entram no alcance)
-    if (this.row > cam.row + 22 || this.row < cam.row - 14) return;
+    if (this.row > cam.row + cam.reach + 6 || this.row < cam.row - cam.reach) return;
     const { lane } = this;
     if (lane.flow) {
       const items = laneItems(lane, tick);
@@ -334,8 +336,8 @@ class LaneView {
   }
 }
 
-/** A raposa é só um pouco maior que uma casa, para se ler bem no meio do cenário. */
-const HERO_SCALE = 1.08;
+/** A raposa é menor que uma casa: ao lado dos carros e das motos ela precisa parecer pequena. */
+const HERO_SCALE = 0.82;
 
 /** Quanto o herói e a câmera suavizam (por segundo). */
 const CAM_FOLLOW = 5;
@@ -369,6 +371,7 @@ export class AtravessaScene {
   private maxRow = 0;
   private aspect = 1;
   private halfW = 6;
+  private halfH = 6;
   private reduced: boolean;
   private record: number | null = null;
   /** Qualidade automática: se o aparelho não dá conta, corta primeiro as sombras e depois a resolução. */
@@ -429,6 +432,7 @@ export class AtravessaScene {
     const halfH = Math.max(halfW0 / this.aspect, 5.6);
     const halfW = halfH * this.aspect;
     this.halfW = halfW;
+    this.halfH = halfH;
     this.camera.left = -halfW;
     this.camera.right = halfW;
     this.camera.top = halfH;
@@ -437,8 +441,12 @@ export class AtravessaScene {
   }
 
   private ensureLanes(sim: AtravessaSim, centerRow: number) {
-    const lo = Math.floor(centerRow) - ROWS_BEHIND; // antes da largada é grama, para a tela não ficar vazia
-    const hi = Math.floor(centerRow) + ROWS_AHEAD;
+    // celular em pé mostra muito mais linhas para cima e para baixo: monta o bastante para o céu não aparecer
+    // (antes da largada é grama, para a tela não ficar vazia)
+    const behind = Math.max(ROWS_BEHIND, Math.ceil(this.halfH * 1.9));
+    const ahead = Math.max(ROWS_AHEAD, Math.ceil(this.halfH * 2.8));
+    const lo = Math.floor(centerRow) - behind;
+    const hi = Math.floor(centerRow) + ahead;
     for (const [row, lv] of this.lanes) {
       if (row < lo || row > hi) {
         this.scene.remove(lv.group);
@@ -588,7 +596,7 @@ export class AtravessaScene {
     this.camX += (targetX - this.camX) * (this.reduced ? 1 : 1 - Math.exp(-dt * 4));
 
     this.ensureLanes(sim, this.camRow);
-    const cam: CamInfo = { x: this.camX, row: this.camRow, halfW: this.halfW };
+    const cam: CamInfo = { x: this.camX, row: this.camRow, halfW: this.halfW, reach: Math.max(16, Math.ceil(this.halfH * 2.4)) };
     for (const lv of this.lanes.values()) lv.update(sim.tick, sim, now, cam);
     this.updateSweep(v.sweep, now);
 

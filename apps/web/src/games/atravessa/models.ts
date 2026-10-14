@@ -16,6 +16,10 @@ export const darkness = {
   /** O quanto a cor some atrás da frente (0 a 1): quase tudo, mas não preto chapado. */
   uDarkAmt: { value: 0.94 },
   uDarkCol: { value: new THREE.Color(0x03050c) },
+  /** O limite lateral do mapa: de |x| = uEdge para fora o chão e tudo que passa por ali escurece. */
+  uEdge: { value: 4.5 },
+  uEdgeSoft: { value: 0.35 },
+  uEdgeAmt: { value: 0.62 },
 };
 
 /**
@@ -26,16 +30,19 @@ export function patchDarkness(m: THREE.Material) {
   m.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, darkness);
     shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', '#include <common>\nvarying float vDz;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvDz = (modelMatrix * vec4(transformed, 1.0)).z;');
+      .replace('#include <common>', '#include <common>\nvarying float vDz;\nvarying float vWx;')
+      .replace(
+        '#include <begin_vertex>',
+        '#include <begin_vertex>\nvec4 atrWorld = modelMatrix * vec4(transformed, 1.0);\nvDz = atrWorld.z;\nvWx = atrWorld.x;',
+      );
     shader.fragmentShader = shader.fragmentShader
       .replace(
         '#include <common>',
-        '#include <common>\nvarying float vDz;\nuniform float uDarkZ;\nuniform float uSoft;\nuniform float uDarkAmt;\nuniform vec3 uDarkCol;',
+        '#include <common>\nvarying float vDz;\nvarying float vWx;\nuniform float uDarkZ;\nuniform float uSoft;\nuniform float uDarkAmt;\nuniform vec3 uDarkCol;\nuniform float uEdge;\nuniform float uEdgeSoft;\nuniform float uEdgeAmt;',
       )
       .replace(
         '#include <dithering_fragment>',
-        'float dk = smoothstep(uDarkZ - uSoft, uDarkZ, vDz);\ngl_FragColor.rgb = mix(gl_FragColor.rgb, uDarkCol, dk * uDarkAmt);\n#include <dithering_fragment>',
+        'float dk = smoothstep(uDarkZ - uSoft, uDarkZ, vDz);\ngl_FragColor.rgb = mix(gl_FragColor.rgb, uDarkCol, dk * uDarkAmt);\n// fora do mapa (esquerda e direita): mais escuro, para o limite ficar claro\nfloat sd = smoothstep(uEdge, uEdge + uEdgeSoft, abs(vWx));\ngl_FragColor.rgb = mix(gl_FragColor.rgb, uDarkCol, sd * uEdgeAmt);\n#include <dithering_fragment>',
       );
   };
   m.customProgramCacheKey = () => 'atravessa-dark';
