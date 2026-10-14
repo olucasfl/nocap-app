@@ -376,7 +376,13 @@ export class AtravessaScene {
   private record: number | null = null;
   /** Qualidade automática: se o aparelho não dá conta, corta primeiro as sombras e depois a resolução. */
   private slowFrames = 0;
-  private quality = 2;
+  private fastFrames = 0;
+  private shadowsOn = true;
+  /** A resolução (pixels por pixel de CSS): começa nítida e só cai se o aparelho não der conta. */
+  private ratio = Math.min(2, window.devicePixelRatio || 1);
+  private ratioCeiling = this.ratio;
+  private readonly initialRatio = this.ratio;
+  private raisedAt = 0;
   private size = { w: 0, h: 0 };
   private burst = new Burst(20);
   private burstFired = false;
@@ -391,9 +397,9 @@ export class AtravessaScene {
 
   constructor(canvas: HTMLCanvasElement, reducedMotion = false) {
     this.reduced = reducedMotion;
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
-    // o pixel ratio é limitado: em tela de alta densidade, o custo de pintar cresce com o quadrado
-    this.renderer.setPixelRatio(Math.min(1.5, window.devicePixelRatio || 1));
+    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: (window.devicePixelRatio || 1) < 1.75, alpha: false, powerPreference: 'high-performance' });
+    // nítido por padrão (até 2x): a resolução cai sozinha se os quadros demorarem (veja `adapt`)
+    this.renderer.setPixelRatio(this.ratio);
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -472,21 +478,46 @@ export class AtravessaScene {
     this.hero.scale.setScalar(HERO_SCALE * Math.max(0.01, p.alpha));
   }
 
+  private setRatio(r: number) {
+    this.ratio = r;
+    this.renderer.setPixelRatio(r);
+    this.renderer.setSize(this.size.w, this.size.h, false);
+  }
+
   /**
-   * Se os quadros demoram mais de ~28 ms por 1 s seguido, o aparelho está sofrendo: corta as sombras;
-   * se continuar assim, baixa a resolução. Nunca volta atrás (para não ficar alternando).
+   * Resolução dinâmica: começa nítida (até 2x). Se os quadros passam de ~28 ms por um instante, baixa
+   * a resolução de 0,25 em 0,25 (até 1x) e só depois corta as sombras. Se o aparelho aguenta bem por
+   * uns 6 s, sobe de novo, mas nunca acima do ponto em que já travou uma vez (para não ficar
+   * alternando).
    */
   private adapt(dt: number) {
-    if (dt <= 0 || this.quality === 0) return;
-    this.slowFrames = dt > 0.028 ? this.slowFrames + 1 : Math.max(0, this.slowFrames - 2);
-    if (this.slowFrames < 40) return;
-    this.slowFrames = 0;
-    this.quality--;
-    if (this.quality === 1) {
-      this.sun.castShadow = false;
+    if (dt <= 0) return;
+    if (dt > 0.028) {
+      this.fastFrames = 0;
+      this.slowFrames++;
+      if (this.slowFrames >= 30) {
+        this.slowFrames = 0;
+        if (this.ratio > 1.001) {
+          // travou logo depois de subir (menos de 10 s): esse nível não serve, vira o teto daqui para a frente
+          if (performance.now() - this.raisedAt < 10_000) this.ratioCeiling = Math.max(1, this.ratio - 0.25);
+          this.setRatio(Math.max(1, this.ratio - 0.25));
+        } else if (this.shadowsOn) {
+          this.shadowsOn = false;
+          this.sun.castShadow = false;
+        }
+      }
+      return;
+    }
+    this.slowFrames = Math.max(0, this.slowFrames - 2);
+    if (dt < 0.0185 && this.ratio < Math.min(this.ratioCeiling, this.initialRatio) - 0.001) {
+      this.fastFrames++;
+      if (this.fastFrames >= 360) {
+        this.fastFrames = 0;
+        this.raisedAt = performance.now();
+        this.setRatio(Math.min(this.ratioCeiling, this.ratio + 0.25));
+      }
     } else {
-      this.renderer.setPixelRatio(1);
-      this.renderer.setSize(this.size.w, this.size.h, false);
+      this.fastFrames = 0;
     }
   }
 
