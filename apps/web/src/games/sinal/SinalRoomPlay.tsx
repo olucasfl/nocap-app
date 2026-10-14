@@ -59,6 +59,7 @@ export function SinalRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
     const cv = canvas.current!;
     const c = cv.getContext('2d')!;
     const audio = createSinalAudio();
+    let audioMap = '';
     let layout: Layout = makeLayout(360, 640, false);
     const controls = attachControls(el, () => layout);
     let layoutTouch = controls.touch();
@@ -157,8 +158,6 @@ export function SinalRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
         if (e.kind === 'choque') {
           jolt = Math.max(jolt, e.size);
           buzz(Math.round(15 + 35 * e.size));
-        } else if (e.kind === 'soluco') {
-          jolt = Math.max(jolt, 0.55);
         } else if (e.kind === 'empurrou') {
           buzz(25);
           // a direção do empurrão na tela: de você para quem estava ao alcance
@@ -220,11 +219,13 @@ export function SinalRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
       warn += (targetWarn - warn) * Math.min(1, dt * 10);
       if (view.hidden && !prevHidden) audio?.rustle();
       prevHidden = view.hidden;
+      if (view.course.map !== audioMap) {
+        audioMap = view.course.map;
+        audio?.setMap(view.course.map);
+      }
       audio?.darkness(view.y - view.darkY);
+      audio?.moving(walking && !view.hidden);
 
-      const inverted = view.powers.some(
-        (p) => (p.kind === 'invertido' || p.kind === 'corvos') && p.phase === 'efeito' && !p.evaded && !view.hidden,
-      );
       const notices: Notice[] = [];
       // o botão de empurrar: aparece só com alguém ao alcance
       const push = s.push;
@@ -249,7 +250,6 @@ export function SinalRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
         keysHint: false,
         best: null,
         notices,
-        inverted,
         jolt,
         others,
         pushTarget: alive && push?.target ? push.target : null,

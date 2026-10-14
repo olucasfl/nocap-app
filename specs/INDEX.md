@@ -28,6 +28,6 @@
 | 023 | [Convidado joga tudo (sem conta, nada é salvo)](023-convidado-joga-tudo.md) | 2 | implementada: solo sem conta, popup, aviso de não salvo e salas com apelido; falta jogar ao vivo |
 | 024 | [Retomar partida (Block Classic)](024-retomar-partida.md) | 6 | implementada no Block Classic; falta jogar ao vivo |
 | 025 | [Block Towers: câmera final e modos online](025-block-towers-online.md) | 6 | câmera final implementada; online (Corrida e Petrificar) só registrado |
-| 026 | [Sinal Vermelho 2 (reforma completa)](026-sinal-vermelho-2.md) | 6 | em andamento: núcleo, depois tela e som novos |
+| 026 | [Sinal Vermelho 2 (reforma completa)](026-sinal-vermelho-2.md) | 6 | núcleo, tela e som novos implementados; faltam os itens do jogador e calibrar jogando |
 
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.

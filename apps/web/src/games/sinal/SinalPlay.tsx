@@ -56,6 +56,7 @@ export function SinalPlay({ mode, seed, color, best, onEnd, onQuit, onRestart }:
     const c = cv.getContext('2d')!;
     const sim = new SinalSim(seed, mode);
     const audio = createSinalAudio();
+    audio?.setMap(sim.course.map);
     const inputs: SinalInput[] = [];
     let layout: Layout = makeLayout(360, 640, false);
     const controls = attachControls(el, () => layout);
@@ -105,17 +106,13 @@ export function SinalPlay({ mode, seed, color, best, onEnd, onQuit, onRestart }:
         } else if (e.kind === 'choque') {
           jolt = Math.max(jolt, e.size);
           buzz(Math.round(15 + 35 * e.size));
-        } else if (e.kind === 'soluco') {
-          jolt = Math.max(jolt, 0.55);
-          buzz(25);
         } else if (e.kind === 'quebrou') {
           notice('ESCONDERIJO QUEBROU', '#ff6a2b');
           buzz(30);
-        } else if (e.kind === 'poder-evitado') {
-          notice('PODER EVITADO', '#33c27f', 1500);
         } else if (e.kind === 'olhando') {
           buzz(12);
         } else if (e.kind === 'fase') {
+          if (e.mapChanged) audio?.setMap(e.map);
           const s = MAP_STYLE[e.map];
           setBanner({
             title: `FASE ${e.n}`,
@@ -221,16 +218,10 @@ export function SinalPlay({ mode, seed, color, best, onEnd, onQuit, onRestart }:
       if (v.hidden && !prevHidden) audio?.rustle();
       prevHidden = v.hidden;
       audio?.darkness(v.y - v.darkY);
+      audio?.moving(walking && !v.hidden && !finished);
       jolt = Math.max(0, jolt - dt * 3.2);
       for (let i = notices.length - 1; i >= 0; i--) if (notices[i]!.until < now) notices.splice(i, 1);
 
-      const inverted = v.powers.some(
-        (p) =>
-          (p.kind === 'invertido' || p.kind === 'corvos') &&
-          p.phase === 'efeito' &&
-          !p.evaded &&
-          !v.hidden,
-      );
       drawScene(c, {
         layout,
         view: v,
@@ -243,7 +234,6 @@ export function SinalPlay({ mode, seed, color, best, onEnd, onQuit, onRestart }:
         keysHint: !controls.touch() && !controls.usedKeys() && sim.tick < 60 * 15,
         best: mode === 'infinito' && best > 0 ? best : null,
         notices,
-        inverted,
         jolt,
         death: deathReason ? { reason: deathReason, age: clamp((now - deathAt) / 1300, 0, 1) } : null,
       });

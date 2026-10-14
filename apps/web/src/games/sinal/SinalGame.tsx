@@ -25,13 +25,13 @@ const MODES: { id: SinalMode; label: string; desc: string; lead: string }[] = [
     id: 'classico',
     label: 'Clássico',
     desc: 'FASES · MAPAS · SEM FIM',
-    lead: 'Fases cada vez mais difíceis: a cada uma vêm mais poderes, mais obstáculos e uma escuridão mais ligeira. A cada 5 fases o mapa muda. O recorde é a distância total.',
+    lead: 'Fases cada vez mais difíceis: a cada uma vêm mais obstáculos, corredores mais estreitos e uma escuridão mais ligeira. A cada 5 fases o mapa muda. O recorde é a distância total.',
   },
   {
     id: 'infinito',
     label: 'Infinito',
     desc: 'NÃO ACABA · CADA VEZ PIOR',
-    lead: 'Um mapa só, sem linha de chegada. Os poderes são aleatórios e a escuridão não para de chegar. O recorde são os metros do ponto mais longe que você foi.',
+    lead: 'Um mapa só, sem linha de chegada. O corredor estreita e alarga, e a escuridão não para de chegar. O recorde são os metros do ponto mais longe que você foi.',
   },
 ];
 
@@ -44,13 +44,13 @@ const RULES: Record<SinalMode, [string, string][]> = {
   infinito: [
     ['sem', 'linha de chegada'],
     ['1', 'mapa sorteado'],
-    ['poderes', 'aleatórios'],
+    ['corredor', 'que estreita'],
   ],
 };
 
 const HOW = [
   'O Vigia fica no topo da tela. De costas, você corre. Quando ele olha, fique parado: se mexer, acabou.',
-  'Antes de olhar ele dá um sinal (som e imagem) com ele ainda de costas. Às vezes é falso.',
+  'Ele canta SI-NAL-VER-ME-LHO de costas. Quando o LHO fica comprido, é o aviso: pare antes de ele virar.',
   'O anel no chão é um esconderijo: dentro dele você se mexe mesmo com o Vigia olhando. Mas ele quebra se você ficar demais.',
   'A escuridão vem de trás. Ela nunca é mais rápida que você: só pega quem para demais.',
 ];

@@ -111,7 +111,7 @@ export const MODES: Record<RoomGame, { id: string; label: string; note: string }
     {
       id: 'classico',
       label: 'Fases',
-      note: 'Corrida em fases com linha de chegada, no mesmo mapa para todos, com o mesmo Vigia e os mesmos poderes. Quem chega ou cai assiste a quem ainda corre. No fim vence quem somar mais metros.',
+      note: 'Corrida em fases com linha de chegada, no mesmo mapa para todos, com o mesmo Vigia e a mesma cantiga do Vigia. Quem chega ou cai assiste a quem ainda corre. No fim vence quem somar mais metros.',
     },
   ],
   color: [

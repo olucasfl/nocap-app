@@ -1,6 +1,6 @@
 # 026 · Sinal Vermelho 2 (reforma completa)
 
-Status: **em andamento.** Pedido do Lucas (14/10/2026): o Sinal estava "feio, com poderes ruins, Vigia aleatório demais e sons chatos". Esta spec **substitui as regras de poderes, do Vigia, da escuridão e do mapa da [spec 020](020-sinal-vermelho.md)**; o que não é citado aqui continua valendo (esconderijo, obstáculos que empurram e atordoam, Clássico e Infinito, servidor refazendo a corrida, sala).
+Status: **etapas 1 (núcleo) e 2 (tela e som novos) implementadas; falta jogar para calibrar e os itens do jogador (etapa 3).** Pedido do Lucas (14/10/2026): o Sinal estava "feio, com poderes ruins, Vigia aleatório demais e sons chatos". Esta spec **substitui as regras de poderes, do Vigia, da escuridão e do mapa da [spec 020](020-sinal-vermelho.md)**; o que não é citado aqui continua valendo (esconderijo, obstáculos que empurram e atordoam, Clássico e Infinito, servidor refazendo a corrida, sala).
 
 ## Decisões do Lucas
 
