@@ -52,7 +52,16 @@ export function hud(c: Ctx, s: HudIn) {
   if (view.hidden && view.shadow <= 0) chips.push({ text: 'ESCONDIDO', color: '#33c27f' });
   if (view.shadow > 0) chips.push({ text: `SOMBRA ${(view.shadow * 2).toFixed(1)} s`, color: ITEM_COLOR.sombra });
   if (view.boost > 0) chips.push({ text: `IMPULSO ${(view.boost * 2).toFixed(1)} s`, color: ITEM_COLOR.impulso });
-  if (view.held) chips.push({ text: `${ITEM_NAME[view.held]}: TOQUE OU E`, color: ITEM_COLOR[view.held] });
+  if (view.held) chips.push({ text: `${ITEM_NAME[view.held]}: USE`, color: ITEM_COLOR[view.held] });
+  for (const inc of view.incoming) {
+    chips.push({ text: `VEM ${ITEM_NAME[inc.item]} EM VOCÊ!`, color: '#e5303a' });
+  }
+  if (view.debuff) {
+    chips.push({
+      text: `${ITEM_NAME[view.debuff.item]} ${Math.max(0, (view.debuff.p * (view.debuff.item === 'peso' ? 2.5 : 2.5))).toFixed(1)} s`,
+      color: ITEM_COLOR[view.debuff.item],
+    });
+  }
   chips.push(...s.notices);
   // A faixa da cantiga fica no meio do topo: os avisos que chegariam nela encolhem.
   const strip = stripBox(l);

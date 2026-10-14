@@ -2,6 +2,8 @@ import {
   BACK_LIMIT,
   HALF,
   PLAYER_R,
+  POWER_RANGE,
+  POWER_WARN_TICKS,
   PUSH_COOLDOWN_MS,
   PUSH_POWER,
   PUSH_RANGE,
@@ -9,6 +11,8 @@ import {
   SinalSim,
   clamp,
   darkSpeed,
+  isHinder,
+  type ItemKind,
   type SinalEvent,
 } from '@nocap/games';
 import {
@@ -47,6 +51,8 @@ interface Racer {
   pushedBy: { by: string; at: number } | null;
   /** Ordem de chegada na linha (1 = primeiro); null enquanto não chegou. */
   place: number | null;
+  /** Apertou o botão do item: vale no próximo passo. */
+  useQueued: boolean;
 }
 
 /** Uma linha do placar da corrida: quem caiu (e por quê) ou quem chegou na linha. */
@@ -186,8 +192,8 @@ export class SinalRoomEngine extends ColorRoomEngine {
     const ids = [...this.members.values()].sort((a, b) => a.joinedAt - b.joinedAt).map((m) => m.id);
     const edge = HALF - 1;
     ids.forEach((id, i) => {
-      const sim = new SinalSim(this.seed, 'classico', phase);
-      sim.itemsEnabled = false;
+      // Na sala entram os itens que atrapalham os outros jogadores (as posições são as mesmas do solo).
+      const sim = new SinalSim(this.seed, 'classico', phase, true);
       // Largam lado a lado, espalhados pelo corredor.
       sim.x = clamp((i - (ids.length - 1) / 2) * 1.3, -edge, edge);
       // A linha de chegada para o boneco ali, e a escuridão é uma só: quem manda nelas é a sala.
@@ -202,6 +208,7 @@ export class SinalRoomEngine extends ColorRoomEngine {
         pushedAt: -Infinity,
         pushedBy: null,
         place: null,
+        useQueued: false,
       });
     });
     this.finishAt = null;
@@ -217,6 +224,49 @@ export class SinalRoomEngine extends ColorRoomEngine {
     if (!r || this.phase !== 'play') return;
     if (!Number.isFinite(x) || !Number.isFinite(y)) return;
     r.input = [clamp(Math.round(x), -100, 100), clamp(Math.round(y), -100, 100)];
+  }
+
+  /** Quem está mais perto (em qualquer direção) dentro do alcance dos poderes, ainda correndo, ou `null`. */
+  private powerTarget(id: string): string | null {
+    const me = this.racers.get(id);
+    if (!me || !this.running(me)) return null;
+    let best: string | null = null;
+    let bestD = POWER_RANGE * POWER_RANGE;
+    for (const [other, r] of this.racers) {
+      if (other === id || !this.running(r)) continue;
+      const d = (r.sim.x - me.sim.x) ** 2 + (r.sim.y - me.sim.y) ** 2;
+      if (d <= bestD) {
+        best = other;
+        bestD = d;
+      }
+    }
+    return best;
+  }
+
+  /**
+   * O botão do item. Os que beneficiam valem na hora; os que atrapalham só saem se há alguém ao
+   * alcance (senão o item fica com você e o aparelho avisa que não há alvo).
+   */
+  use(id: string) {
+    const me = this.racers.get(id);
+    if (!me || this.phase !== 'play' || !this.running(me)) return;
+    const item = me.sim.held;
+    if (!item) return;
+    if (isHinder(item) && !this.powerTarget(id)) {
+      this.log(me, { kind: 'sem-alvo' });
+      return;
+    }
+    me.useQueued = true;
+  }
+
+  /** Um poder que atrapalha saiu: vai para quem está mais perto, que tem 0,8 s de aviso. */
+  private launch(id: string, item: ItemKind) {
+    const target = this.powerTarget(id);
+    if (!target) return;
+    const other = this.racers.get(target)!;
+    other.sim.receive(item, POWER_WARN_TICKS);
+    other.pushedBy = { by: id, at: this.now() };
+    this.log(other, { kind: 'ameaca', item });
   }
 
   /** Quem caiu ou chegou escolhe quem assistir (entre quem ainda corre). */
@@ -322,7 +372,17 @@ export class SinalRoomEngine extends ColorRoomEngine {
       // Quem perdeu a conexão fica parado (a escuridão resolve).
       const live = this.members.get(id)?.connected;
       const [ax, ay] = live ? r.input : [0, 0];
-      for (const e of r.sim.step(ax, ay)) this.log(r, e);
+      const use = r.useQueued;
+      r.useQueued = false;
+      for (const e of r.sim.step(ax, ay, use)) {
+        this.log(r, e);
+        if (e.kind === 'item') {
+          // o item do chão é um só para a sala: quem pegou primeiro leva
+          for (const [oid, o] of this.racers) if (oid !== id) o.sim.markTaken(e.id);
+        } else if (e.kind === 'usou' && isHinder(e.item)) {
+          this.launch(id, e.item);
+        }
+      }
       if (r.sim.finished && r.place === null) this.announceArrival(id, r);
       else if (r.sim.dead && !this.announced.has(id)) this.announceDeath(id, r);
     }
@@ -559,6 +619,8 @@ export class SinalRoomEngine extends ColorRoomEngine {
           me && this.running(me)
             ? { target: near, readyAt: me.pushedAt + PUSH_COOLDOWN_MS, range: PUSH_RANGE }
             : null,
+        /** O alvo do próximo poder que atrapalha (o mais perto, em qualquer direção, até 15 m). */
+        power: me && this.running(me) ? { target: this.powerTarget(viewerId!), range: POWER_RANGE } : null,
       },
     };
   }

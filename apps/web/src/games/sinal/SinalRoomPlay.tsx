@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { SinalEnd, SinalEvent, SinalView } from '@nocap/games';
+import { HINDER_ITEMS, type SinalEnd, type SinalEvent, type SinalView } from '@nocap/games';
 import { useAuth } from '@/lib/auth';
 import { buzz, holdAudio } from '@/lib/sfx';
 import { createSinalAudio } from '@/lib/sinal-audio';
@@ -7,6 +7,7 @@ import { leaveRoom, sendRoomQuiet, toLocal, type RoomSnapshot } from '@/lib/room
 import { attachControls } from './controls';
 import { clamp, type Ctx } from './draw-art';
 import { drawScene, type Notice } from './draw-scene';
+import { ItemButton } from './ItemButton';
 import { makeLayout, type Layout } from './camera';
 import './sinal.css';
 
@@ -35,6 +36,7 @@ export function SinalRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
   const [finishedAt, setFinishedAt] = useState(0);
   const [pushUi, setPushUi] = useState<{ show: boolean; leftMs: number }>({ show: false, leftMs: 0 });
   const pushRef = useRef<() => void>(() => undefined);
+  const useItemRef = useRef<() => void>(() => undefined);
 
   const sinal = snapshot.sinal;
   const names = useMemo(
@@ -100,6 +102,7 @@ export function SinalRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
     let raf = 0;
     let last = performance.now();
 
+    useItemRef.current = () => sendRoomQuiet('use');
     pushRef.current = () => {
       const s = snapRef.current.sinal;
       if (s?.push?.target) sendRoomQuiet('push');
@@ -109,6 +112,10 @@ export function SinalRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
       if (e.code === 'Space' || e.key.toLowerCase() === 'e') {
         e.preventDefault();
         pushRef.current();
+      } else if (e.key.toLowerCase() === 'q' || e.key.toLowerCase() === 'f') {
+        // o item do chão (Sombra, Impulso ou um poder que atrapalha): o servidor confere se há alvo
+        e.preventDefault();
+        useItemRef.current();
       }
     };
     window.addEventListener('keydown', onKey);
@@ -171,6 +178,13 @@ export function SinalRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
             dy = -(to.y - me.y) / len;
           }
           pushFx = { at: t, dx, dy };
+        } else if (e.kind === 'item') {
+          buzz(20);
+        } else if (e.kind === 'ameaca') {
+          buzz(35);
+        } else if (e.kind === 'sofreu') {
+          buzz(55);
+          jolt = Math.max(jolt, 0.4);
         } else if (e.kind === 'fim') {
           buzz(120);
         } else if (e.kind === 'chegou') {
@@ -253,6 +267,7 @@ export function SinalRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
         jolt,
         others,
         pushTarget: alive && push?.target ? push.target : null,
+        powerTarget: alive && view.held && HINDER_ITEMS.includes(view.held) ? (s.power?.target ?? null) : null,
         death: death ? { reason: death.reason, age: clamp((t - death.at) / 1300, 0, 1) } : null,
         pushFx: pushFx && t - pushFx.at < 550 ? { age: (t - pushFx.at) / 550, dx: pushFx.dx, dy: pushFx.dy } : null,
       });
@@ -386,6 +401,14 @@ export function SinalRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
             </span>
           )}
         </div>
+      )}
+
+      {!amOut && (sinal?.view as SinalView | null | undefined)?.held && snapshot.phase === 'play' && (
+        <ItemButton
+          kind={(sinal!.view as SinalView).held!}
+          side="left"
+          onUse={() => useItemRef.current()}
+        />
       )}
 
       {pushUi.show && (

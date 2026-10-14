@@ -352,8 +352,20 @@ export function chaser(c: Ctx, map: SinalMapId, x: number, y: number, frozen: bo
 }
 
 // ---------------------------------------------------------------- itens do caminho
-export const ITEM_COLOR: Record<ItemKind, string> = { sombra: '#7a3cff', impulso: '#ffb020' };
-export const ITEM_NAME: Record<ItemKind, string> = { sombra: 'SOMBRA', impulso: 'IMPULSO' };
+export const ITEM_COLOR: Record<ItemKind, string> = {
+  sombra: '#7a3cff',
+  impulso: '#ffb020',
+  escorregao: '#25c7e8',
+  peso: '#9a9aa6',
+  atordoar: '#ff3d9a',
+};
+export const ITEM_NAME: Record<ItemKind, string> = {
+  sombra: 'SOMBRA',
+  impulso: 'IMPULSO',
+  escorregao: 'ESCORREGÃO',
+  peso: 'PESO',
+  atordoar: 'ATORDOAR',
+};
 
 /** O ícone de um item (para o chão e para o botão da tela), centrado em (0, 0). */
 export function itemIcon(c: Ctx, kind: ItemKind, r: number) {
@@ -372,6 +384,35 @@ export function itemIcon(c: Ctx, kind: ItemKind, r: number) {
     c.moveTo(-r * 0.8, r * 0.6);
     c.lineTo(r * 0.8, -r * 0.6);
     c.stroke();
+  } else if (kind === 'escorregao') {
+    c.fillStyle = '#ffffff';
+    c.beginPath();
+    c.moveTo(0, -r * 0.85);
+    c.bezierCurveTo(r * 0.5, -r * 0.2, r * 0.75, r * 0.1, r * 0.75, r * 0.38);
+    c.arc(0, r * 0.38, r * 0.75, 0, Math.PI);
+    c.bezierCurveTo(-r * 0.75, r * 0.1, -r * 0.5, -r * 0.2, 0, -r * 0.85);
+    c.fill();
+  } else if (kind === 'peso') {
+    c.fillStyle = '#ffffff';
+    c.beginPath();
+    c.roundRect(-r * 0.75, -r * 0.3, r * 1.5, r * 1.05, r * 0.25);
+    c.fill();
+    c.strokeStyle = '#ffffff';
+    c.lineWidth = Math.max(1.5, r * 0.2);
+    c.beginPath();
+    c.arc(0, -r * 0.3, r * 0.34, Math.PI, 0);
+    c.stroke();
+  } else if (kind === 'atordoar') {
+    c.fillStyle = '#ffffff';
+    c.beginPath();
+    for (let i = 0; i < 10; i++) {
+      const a = -Math.PI / 2 + (i * Math.PI) / 5;
+      const rr = i % 2 ? r * 0.38 : r * 0.9;
+      if (i) c.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
+      else c.moveTo(Math.cos(a) * rr, Math.sin(a) * rr);
+    }
+    c.closePath();
+    c.fill();
   } else {
     c.fillStyle = '#ffffff';
     c.beginPath();

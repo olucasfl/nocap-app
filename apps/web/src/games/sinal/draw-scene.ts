@@ -35,6 +35,8 @@ export interface SceneInput {
   others?: { id: string; x: number; y: number; hidden: boolean; stunned?: boolean; color: string; name: string }[];
   /** Sala: quem está ao alcance do empurrão (ganha um anel pulsando). */
   pushTarget?: string | null;
+  /** Sala: o alvo do próximo poder que atrapalha (ganha uma mira vermelha). */
+  powerTarget?: string | null;
   /** A animação de quando o boneco perde (idade de 0 a 1): o Vigia viu, ou a escuridão engoliu. */
   death?: { reason: SinalEnd; age: number } | null;
   /** Sala: a animação do empurrão que você deu (idade de 0 a 1) e a direção dele na tela. */
@@ -195,6 +197,28 @@ export function drawScene(c: Ctx, s: SceneInput) {
           c.stroke();
           c.restore();
         }
+        if (s.powerTarget === o.id) {
+          // a mira do poder: um alvo vermelho girando em volta do jogador
+          c.save();
+          c.translate(ox, oy - 14);
+          c.rotate(s.t * 2);
+          c.strokeStyle = '#ff2d3a';
+          c.lineWidth = 3.4;
+          c.setLineDash([10, 8]);
+          c.beginPath();
+          c.arc(0, 0, 34, 0, 7);
+          c.stroke();
+          c.setLineDash([]);
+          c.restore();
+          c.strokeStyle = '#ff2d3a';
+          c.lineWidth = 2.6;
+          c.beginPath();
+          c.moveTo(ox - 14, oy - 14);
+          c.lineTo(ox + 14, oy - 14);
+          c.moveTo(ox, oy - 28);
+          c.lineTo(ox, oy);
+          c.stroke();
+        }
         const label = `@${o.name}`.slice(0, 14);
         c.font = "700 11px 'Space Mono', ui-monospace, monospace";
         const lw = c.measureText(label).width + 14;
@@ -262,7 +286,35 @@ export function drawScene(c: Ctx, s: SceneInput) {
         c.restore();
       }
       hero(c, map, 0, 0, s.t, s.walking, 1, heroColor);
+      if (view.debuff?.item === 'escorregao') {
+        // chão escorregadio: brilho e riscos de gelo sob os pés
+        c.fillStyle = 'rgba(160,230,255,0.45)';
+        c.beginPath();
+        c.ellipse(0, 2, 24, 8, 0, 0, 7);
+        c.fill();
+      } else if (view.debuff?.item === 'peso') {
+        // o peso: gotas de suor e o boneco achatado
+        c.fillStyle = 'rgba(160,210,255,0.85)';
+        for (let i = 0; i < 3; i++) {
+          c.beginPath();
+          c.arc(-14 + i * 14, -38 - ((s.t * 30 + i * 9) % 12), 2.2, 0, 7);
+          c.fill();
+        }
+      }
       c.restore();
+      if (view.incoming.length > 0) {
+        // um poder vem na sua direção: o anel encolhe até bater (0,8 s)
+        const inc = view.incoming[0]!;
+        c.save();
+        c.translate(hx, vpy - 14);
+        c.strokeStyle = '#ff2d3a';
+        c.lineWidth = 3.4;
+        c.globalAlpha = 0.5 + 0.5 * Math.sin(s.t * 24);
+        c.beginPath();
+        c.arc(0, 0, 22 + 46 * (1 - inc.p), 0, 7);
+        c.stroke();
+        c.restore();
+      }
       if (view.stun > 0) {
         stunStars(c, hx, vpy - 44, s.t);
         mono(c, 'ATORDOADO', hx, vpy - 72, 11, YEL, 'center');

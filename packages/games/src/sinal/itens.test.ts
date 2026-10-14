@@ -175,4 +175,57 @@ describe('itens do jogador', () => {
     expect(validateSinalInputs([{ tick: 1, x: 126, y: 0 }])).toMatch(/faixa/);
     expect(validateSinalInputs([{ tick: 1, x: ITEM_USE, y: 5 }])).toMatch(/faixa/);
   });
+
+  it('na sala entram os itens que atrapalham, nas mesmas posições do solo', () => {
+    const course = infinitoCourse('sala');
+    const build = (online: boolean) => {
+      const width = new WidthField(course, 'sala:w');
+      const obstacles = new ObstacleField(course, 'sala:o', new CoverField(course, 'sala:c', width), width);
+      const f = new ItemField('sala:i', width, obstacles, online);
+      f.ensure(1500);
+      return f.list;
+    };
+    const solo = build(false);
+    const online = build(true);
+    expect(online.map((i) => [i.x, i.y])).toEqual(solo.map((i) => [i.x, i.y]));
+    expect(new Set(solo.map((i) => i.kind))).toEqual(new Set(['sombra', 'impulso']));
+    expect(new Set(online.map((i) => i.kind))).toEqual(new Set(['sombra', 'impulso', 'escorregao', 'peso', 'atordoar']));
+  });
+
+  it('um poder recebido bate depois do aviso: Atordoar atordoa, Peso e Escorregão duram e acabam', () => {
+    const run = (item: 'atordoar' | 'peso' | 'escorregao') => {
+      const sim = new SinalSim('recebe', 'infinito', 1, true);
+      sim.receive(item, 48);
+      const evs: SinalEvent[] = [];
+      for (let i = 0; i < 30; i++) evs.push(...sim.step(0, 0));
+      expect(sim.view.incoming).toHaveLength(1);
+      expect(evs.some((e) => e.kind === 'sofreu')).toBe(false);
+      for (let i = 0; i < 30; i++) evs.push(...sim.step(0, 0));
+      return { sim, evs };
+    };
+    const a = run('atordoar');
+    expect(a.evs.some((e) => e.kind === 'sofreu' && e.item === 'atordoar')).toBe(true);
+    expect(a.sim.isStunned).toBe(true);
+    const p = run('peso');
+    expect(p.sim.view.debuff?.item).toBe('peso');
+    const y0 = p.sim.y;
+    for (let i = 0; i < 30; i++) p.sim.step(0, 100);
+    expect((p.sim.y - y0) / 0.5).toBeLessThan(MAX_SPEED * 0.7);
+    const e = run('escorregao');
+    expect(e.sim.view.debuff?.item).toBe('escorregao');
+    for (let i = 0; i < 160; i++) e.sim.step(0, 0);
+    expect(e.sim.view.debuff).toBeNull();
+  });
+
+  it('quem está escondido (Sombra) não sofre o poder', () => {
+    const sim = new SinalSim('recebe2', 'infinito', 1, true);
+    sim.held = 'sombra';
+    sim.step(0, 0, true);
+    sim.receive('atordoar', 10);
+    const evs: SinalEvent[] = [];
+    for (let i = 0; i < 20; i++) evs.push(...sim.step(0, 0));
+    expect(evs.some((e) => e.kind === 'defendeu')).toBe(true);
+    expect(evs.some((e) => e.kind === 'sofreu')).toBe(false);
+    expect(sim.isStunned).toBe(false);
+  });
 });

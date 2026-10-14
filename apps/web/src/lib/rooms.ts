@@ -159,6 +159,8 @@ export interface SinalRoomState {
   } | null;
   /** Quem está ao alcance do empurrão (null = ninguém) e quando o botão volta (relógio do servidor). */
   push?: { target: string | null; readyAt: number; range: number } | null;
+  /** O alvo do próximo poder que atrapalha (o mais perto, até 15 m) e o alcance. */
+  power?: { target: string | null; range: number } | null;
 }
 
 export interface PartyShapeItem {

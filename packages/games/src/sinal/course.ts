@@ -10,6 +10,7 @@ import {
   CHASER_SPEED_MAX,
   CHASER_SPEED_MIN,
   ITEM_KINDS,
+  ITEM_KINDS_ONLINE,
   HALF_MIN,
   MIN_GAP,
   SINAL_MAPS,
@@ -581,6 +582,8 @@ export class ItemField {
     seedKey: string,
     private readonly width: WidthField,
     private readonly obstacles: ObstacleField,
+    /** Na sala entram também os itens que atrapalham os outros (as posições são as mesmas do solo). */
+    private readonly online = false,
   ) {
     this.rng = createRng(seedKey);
     this.nextY = 22 + this.rng() * 14;
@@ -604,7 +607,8 @@ export class ItemField {
         if (!ok) y += 3.5;
       }
       if (ok) {
-        this.list.push({ id: this.list.length, x, y, kind: ITEM_KINDS[kindR < 0.5 ? 0 : 1]! });
+        const kind = this.online ? ITEM_KINDS_ONLINE[Math.min(4, Math.floor(kindR * 5))]! : ITEM_KINDS[kindR < 0.5 ? 0 : 1]!;
+        this.list.push({ id: this.list.length, x, y, kind });
       }
       this.nextY = y + lerp(58, 110, gapR);
     }

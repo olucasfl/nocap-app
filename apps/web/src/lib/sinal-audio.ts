@@ -365,10 +365,25 @@ export function createSinalAudio(): SinalAudio | null {
         if (e.item === 'sombra') {
           tone('sine', 760, 180, 0.45, 0.2, t, 0.5);
           hiss('highpass', 4000, 1500, 0.4, 0.1, t);
+        } else if (e.item === 'escorregao' || e.item === 'peso' || e.item === 'atordoar') {
+          // o poder sai disparado para o alvo
+          tone('sawtooth', 300, 900, 0.22, 0.1, t, 0.3);
+          hiss('bandpass', 800, 3000, 0.25, 0.14, t, 1);
         } else {
           tone('sawtooth', 200, 1300, 0.35, 0.12, t, 0.3);
           hiss('bandpass', 500, 4000, 0.35, 0.16, t, 1);
         }
+      } else if (e.kind === 'ameaca') {
+        // um poder vem na sua direção: três apitos curtos que sobem (aviso de 0,8 s)
+        [660, 740, 880].forEach((f, i) => tone('square', f, f, 0.09, 0.07, t + i * 0.2, 0.15));
+      } else if (e.kind === 'sofreu') {
+        tone('sine', 140, 50, 0.3, 0.32, t, 0.2);
+        hiss('bandpass', 1400, 300, 0.2, 0.2, t, 1.2);
+      } else if (e.kind === 'defendeu') {
+        tone('triangle', 880, 1320, 0.16, 0.14, t, 0.4);
+        hiss('highpass', 3500, 7000, 0.12, 0.08, t);
+      } else if (e.kind === 'sem-alvo') {
+        tone('square', 180, 150, 0.14, 0.1, t);
       } else if (e.kind === 'item-fim') {
         tone('triangle', 620, 300, 0.22, 0.09, t, 0.3);
       } else if (e.kind === 'folego') {

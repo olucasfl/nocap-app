@@ -18,6 +18,8 @@ import {
   DARK_CAP,
   DEADZONE,
   DT,
+  ATORDOAR_TICKS,
+  ESCORREGAO_TICKS,
   ESTEIRA_SPEED,
   FOLEGO_FACTOR,
   FOLEGO_MIN_HIDDEN_TICKS,
@@ -35,6 +37,8 @@ import {
   MOVER_BUMP,
   MOVE_EPS,
   MUD_FACTOR,
+  PESO_FACTOR,
+  PESO_TICKS,
   PLAYER_R,
   ROLL_R,
   ROLL_SPEED,
@@ -64,6 +68,7 @@ import {
   type SinalEvent,
   type SinalInput,
   type SinalMode,
+  isHinder,
   type ItemKind,
   type SinalResult,
   type ThrowKind,
@@ -137,6 +142,9 @@ export interface SinalView {
   held: ItemKind | null;
   shadow: number;
   boost: number;
+  /** Sala: poderes de outros jogadores a caminho (p = quanto do aviso já passou) e o que está te atrapalhando agora. */
+  incoming: { item: ItemKind; p: number }[];
+  debuff: { item: ItemKind; p: number } | null;
 }
 
 /** Um arremesso em andamento: a marca no chão, o voo ou a faixa por onde a bola rola. */
@@ -195,6 +203,9 @@ export class SinalSim {
   held: ItemKind | null = null;
   private shadowTicks = 0;
   private boostTicks = 0;
+  /** Poderes de outros jogadores a caminho (a hora de bater, em passos) e o efeito que está valendo. */
+  private pending: { item: ItemKind; at: number; from: number }[] = [];
+  private debuff: { item: ItemKind; ticks: number; total: number } | null = null;
   /** Sala: sem itens (a sala não os usa ainda); o jogo solo liga. */
   itemsEnabled = true;
   private shotState = new Map<number, Shot>();
@@ -246,6 +257,8 @@ export class SinalSim {
     readonly seed: string,
     readonly mode: SinalMode,
     phase = 1,
+    /** Sala: entram os itens que atrapalham os outros jogadores. */
+    readonly online = false,
   ) {
     this.n = phase;
     this.startCourse();
@@ -268,8 +281,10 @@ export class SinalSim {
     this.noteKey = '';
     this.throwers = new ThrowerField(this.course, `${this.seed}:lanc:${this.mode}:${this.n}`);
     this.chasers = new ChaserField(this.course, `${this.seed}:persg:${this.mode}:${this.n}`, this.width);
-    this.itemField = new ItemField(`${this.seed}:itens:${this.mode}:${this.n}`, this.width, this.obstacles);
+    this.itemField = new ItemField(`${this.seed}:itens:${this.mode}:${this.n}`, this.width, this.obstacles, this.online);
     this.taken.clear();
+    this.pending = [];
+    this.debuff = null;
     this.held = null;
     this.shadowTicks = 0;
     this.boostTicks = 0;
@@ -443,6 +458,23 @@ export class SinalSim {
       if (note) events.push({ kind: 'nota', syl: note.syl, hold: note.hold, rush: cycle.rush });
     }
 
+    // Poderes de outros jogadores (sala): o aviso passou? bate (ou é barrado por esconderijo e perto do olhar).
+    const safeNow = this.isSafeWindow(this.courseTick);
+    for (let i = this.pending.length - 1; i >= 0; i--) {
+      const pw = this.pending[i]!;
+      if (this.courseTick < pw.at) continue;
+      this.pending.splice(i, 1);
+      if (this.hidden || safeNow) {
+        events.push({ kind: 'defendeu', item: pw.item });
+      } else if (pw.item === 'atordoar') {
+        this.stun = Math.max(this.stun, ATORDOAR_TICKS);
+        events.push({ kind: 'sofreu', item: pw.item });
+      } else {
+        const total = pw.item === 'escorregao' ? ESCORREGAO_TICKS : PESO_TICKS;
+        this.debuff = { item: pw.item, ticks: total, total };
+        events.push({ kind: 'sofreu', item: pw.item });
+      }
+    }
     // Obstáculos de chão: lamaçal (devagar), esteira (empurra de lado), ímã (puxa) e gelo (escorrega).
     let speedMul = 1;
     let hzx = 0;
@@ -467,6 +499,15 @@ export class SinalSim {
       }
     }
 
+    // O efeito de um poder que te atrapalha: vale só fora da janela do Vigia (perto do olhar, nada pesa nem escorrega).
+    if (this.debuff) {
+      this.debuff.ticks--;
+      if (this.debuff.ticks <= 0) this.debuff = null;
+      else if (!safeNow) {
+        if (this.debuff.item === 'peso') speedMul = Math.min(speedMul, PESO_FACTOR);
+        else if (this.debuff.item === 'escorregao') zoneSlick = true;
+      }
+    }
     // O analógico. Atordoado, não obedece enquanto dura.
     let ix = clamp(this.stun > 0 ? 0 : ax, -100, 100) / 100;
     let iy = clamp(this.stun > 0 ? 0 : ay, -100, 100) / 100;
@@ -488,7 +529,7 @@ export class SinalSim {
       const item = this.held;
       this.held = null;
       if (item === 'sombra') this.shadowTicks = SOMBRA_TICKS;
-      else this.boostTicks = IMPULSO_TICKS;
+      else if (item === 'impulso') this.boostTicks = IMPULSO_TICKS;
       events.push({ kind: 'usou', item });
     }
     if (this.boostTicks > 0) {
@@ -620,7 +661,7 @@ export class SinalSim {
         if ((this.x - it.x) ** 2 + (this.y - it.y) ** 2 < ITEM_PICKUP_R * ITEM_PICKUP_R) {
           this.taken.add(it.id);
           this.held = it.kind;
-          events.push({ kind: 'item', item: it.kind });
+          events.push({ kind: 'item', item: it.kind, id: it.id });
           break;
         }
       }
@@ -679,6 +720,20 @@ export class SinalSim {
     this.tick++;
     this.courseTick++;
     return events;
+  }
+
+  /** Sala: outro jogador pegou este item do chão; ele some também aqui. */
+  markTaken(id: number) {
+    this.taken.add(id);
+  }
+
+  /**
+   * Sala: um poder de outro jogador vem na sua direção. Bate daqui a `delayTicks` passos (o aviso), e
+   * não pega quem estiver escondido (esconderijo ou Sombra) nem perto de o Vigia olhar.
+   */
+  receive(item: ItemKind, delayTicks: number, from = 0) {
+    if (!isHinder(item) || this.dead || this.finished) return;
+    this.pending.push({ item, at: this.courseTick + delayTicks, from });
   }
 
   /** Joga o boneco para longe de (dx, dy) e o atordoa: o mesmo efeito de bater num obstáculo. */
@@ -882,7 +937,7 @@ export class SinalSim {
     };
   }
 
-  private itemView(): Pick<SinalView, 'items' | 'held' | 'shadow' | 'boost'> {
+  private itemView(): Pick<SinalView, 'items' | 'held' | 'shadow' | 'boost' | 'incoming' | 'debuff'> {
     this.itemField.ensure(this.y + 50);
     const items = this.itemsEnabled
       ? this.itemField.list.filter((it) => !this.taken.has(it.id) && Math.abs(it.y - this.y) < 44)
@@ -892,6 +947,11 @@ export class SinalSim {
       held: this.held,
       shadow: this.shadowTicks / SOMBRA_TICKS,
       boost: this.boostTicks / IMPULSO_TICKS,
+      incoming: this.pending.map((pw) => ({
+        item: pw.item,
+        p: clamp(1 - (pw.at - this.courseTick) / 48, 0, 1),
+      })),
+      debuff: this.debuff ? { item: this.debuff.item, p: this.debuff.ticks / this.debuff.total } : null,
     };
   }
 

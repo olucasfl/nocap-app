@@ -534,6 +534,10 @@ export class SinalRoom extends ColorRoom {
       const id = userOf(c);
       if (id) engine().push(id);
     });
+    this.onMessage('use', (c) => {
+      const id = userOf(c);
+      if (id) engine().use(id);
+    });
     this.onMessage('watch', (c, m: { id?: string }) => {
       const id = userOf(c);
       if (id) engine().watch(id, String(m?.id ?? ''));

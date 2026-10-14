@@ -17,6 +17,7 @@ import { attachControls } from './controls';
 import { MAP_STYLE, clamp } from './draw-art';
 import { drawScene, type Notice } from './draw-scene';
 import { ITEM_COLOR, ITEM_NAME } from './art/perigos';
+import { ItemButton } from './ItemButton';
 import './sinal.css';
 
 type Pause = { kind: 'none' } | { kind: 'paused' } | { kind: 'count'; n: number };
@@ -307,22 +308,7 @@ export function SinalPlay({ mode, seed, color, best, onEnd, onQuit, onRestart }:
           <rect x="14" y="4" width="4" height="16" rx="1" />
         </svg>
       </button>
-      {held && !over && (
-        <button
-          type="button"
-          className="sv-itembtn"
-          aria-label={`Usar ${ITEM_NAME[held]}`}
-          data-sfx="select"
-          style={{ background: ITEM_COLOR[held] }}
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={() => ctl.current?.useItem()}
-        >
-          <svg viewBox="-14 -14 28 28" width="34" height="34" aria-hidden="true">
-            <ItemGlyph kind={held} />
-          </svg>
-          <span className="mono">{ITEM_NAME[held]}</span>
-        </button>
-      )}
+      {held && !over && <ItemButton kind={held} onUse={() => ctl.current?.useItem()} />}
       {banner && (
         <div className="sv-banner" role="status">
           <b>{banner.title}</b>
@@ -364,24 +350,3 @@ export function SinalPlay({ mode, seed, color, best, onEnd, onQuit, onRestart }:
   );
 }
 
-/** O desenho do item no botão da tela (o mesmo do chão, em SVG). */
-function ItemGlyph({ kind }: { kind: ItemKind }) {
-  if (kind === 'sombra') {
-    return (
-      <g>
-        <ellipse cx="0" cy="0" rx="11" ry="7.5" fill="#ffffff" stroke="#111111" strokeWidth="1.6" />
-        <circle cx="0" cy="0" r="4" fill="#2a1a50" />
-        <path d="M-11 9L11 -9" stroke="#111111" strokeWidth="2.4" strokeLinecap="round" />
-      </g>
-    );
-  }
-  return (
-    <path
-      d="M3 -12L-8 2H-1L-4 12L8 -3H1Z"
-      fill="#ffffff"
-      stroke="#111111"
-      strokeWidth="1.6"
-      strokeLinejoin="round"
-    />
-  );
-}

@@ -166,8 +166,20 @@ export const RUSH_MIN_BEAT = 0.26;
 // ---- itens do jogador (spec 026/027) ----------------------------------------------
 
 /** Os itens que se pega no caminho: só beneficiam quem usa (nada mexe no Vigia). */
-export type ItemKind = 'sombra' | 'impulso';
+export type ItemKind = 'sombra' | 'impulso' | 'escorregao' | 'peso' | 'atordoar';
+/** Os itens do jogo solo (só os que beneficiam quem usa). */
 export const ITEM_KINDS: readonly ItemKind[] = ['sombra', 'impulso'];
+/** Na sala entram também os que atrapalham outro jogador (nunca o Vigia). */
+export const HINDER_ITEMS: readonly ItemKind[] = ['escorregao', 'peso', 'atordoar'];
+export const ITEM_KINDS_ONLINE: readonly ItemKind[] = ['sombra', 'impulso', 'escorregao', 'peso', 'atordoar'];
+export const isHinder = (k: ItemKind) => HINDER_ITEMS.includes(k);
+/** O alcance de um poder que atrapalha (m) e o aviso que o alvo tem antes de ser atingido. */
+export const POWER_RANGE = 15;
+export const POWER_WARN_TICKS = 48; // 0,8 s
+export const ESCORREGAO_TICKS = 150; // 2,5 s com o chão escorregadio
+export const PESO_TICKS = 150; // 2,5 s mais lento
+export const PESO_FACTOR = 0.65;
+export const ATORDOAR_TICKS = 60; // 1 s tonto
 /** Nos movimentos gravados, `x` com este valor (e `y` 0) quer dizer "usou o item neste instante". */
 export const ITEM_USE = 127;
 export const ITEM_PICKUP_R = 1.1;
@@ -218,7 +230,13 @@ export type SinalEvent =
   /** O perseguidor te pegou. */
   | { kind: 'pegou' }
   /** Pegou um item no caminho. */
-  | { kind: 'item'; item: ItemKind }
+  | { kind: 'item'; item: ItemKind; id: number }
+  /** Sala: um poder de outro jogador vem na sua direção (aviso de 0,8 s) / te atingiu / foi barrado (escondido ou perto do olhar). */
+  | { kind: 'ameaca'; item: ItemKind }
+  | { kind: 'sofreu'; item: ItemKind }
+  | { kind: 'defendeu'; item: ItemKind }
+  /** Sala: não há ninguém ao alcance para atingir (o item continua com você). */
+  | { kind: 'sem-alvo' }
   /** Usou o item que carregava. */
   | { kind: 'usou'; item: ItemKind }
   /** O efeito do item acabou. */

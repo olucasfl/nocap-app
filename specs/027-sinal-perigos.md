@@ -30,5 +30,12 @@ Decididos pelo Lucas em 14/10/2026: nenhum item mexe no Vigia.
 - Itens no caminho, em lugares fixos pela seed (nunca nos primeiros 20 m, nunca dentro de um obstáculo); passar por cima pega, **1 por vez**.
 - **Sombra:** fica escondido em qualquer lugar por **2 s** (protege do Vigia, dos arremessos e dos perseguidores). **Impulso:** corre **1,6x** mais rápido por 2 s.
 - Usar: tecla **E** ou **Espaço**, ou o botão grande que aparece embaixo à direita no celular. O uso entra nos movimentos gravados (`x` 127, `y` 0, no mesmo instante de uma mudança do analógico se preciso) e o servidor refaz a corrida com ele.
-- A **sala online não usa itens ainda** (`itemsEnabled` desligado); os arremessadores e perseguidores valem lá também.
-- Itens que atrapalham outros jogadores ficam para o redesenho da sala.
+## Poderes online (decididos pelo Lucas em 14/10/2026; implementados)
+
+Na sala há, além de Sombra e Impulso, **três poderes que atrapalham outro jogador** (nunca o Vigia):
+- **Escorregão:** o alvo desliza (chão escorregadio) por 2,5 s. **Peso:** o alvo anda 35% mais devagar por 2,5 s. **Atordoar:** o alvo fica tonto por 1 s (estrelas na cabeça).
+- **Os itens aparecem no mapa**, em lugares sorteados pela seed (as mesmas posições do solo), não são dados a cada jogador. O item do chão é **um só para a sala**: quem pega primeiro leva e some para os outros.
+- **Alvo automático:** o jogador **mais próximo, em qualquer direção** (frente, trás ou lado), até **15 m**. Se não há ninguém ao alcance, o item fica com você e o aparelho avisa ("sem alvo"). Uma mira vermelha mostra quem será o alvo enquanto você carrega um desses itens.
+- **Aviso de 0,8 s** ao alvo (três apitos, anel vermelho encolhendo em volta dele e "VEM [PODER] EM VOCÊ!"). **Quem está escondido** (esconderijo ou **Sombra**) **não é atingido**: a Sombra protege.
+- **Justiça com o Vigia:** de 1,2 s antes de ele olhar até o fim do olhar nenhum poder vale (é barrado), e Peso e Escorregão ficam suspensos nesse tempo.
+- Usar: tecla **Q** (ou F), ou o botão do item (à esquerda, embaixo; o EMPURRAR continua à direita com Espaço/E). A sala continua sem ranking, só histórico.

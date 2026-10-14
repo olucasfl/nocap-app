@@ -669,6 +669,12 @@
   transform: translate(4px, 4px);
   box-shadow: 0 0 0 var(--ink);
 }
+/* Na sala o botão de empurrar fica à direita: o do item vai para a esquerda. */
+.sv-itembtn.left {
+  right: auto;
+  left: 16px;
+  bottom: 60px;
+}
 @keyframes sv-itempop {
   from {
     transform: scale(0.4);
