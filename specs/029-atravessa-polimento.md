@@ -39,7 +39,7 @@ Status: **implementada (14/10/2026); falta jogar e calibrar** (velocidades, ambu
 
 ## O herói (14/10/2026)
 
-- **Raposa de boné** (o Lucas escolheu entre capivara, sapo, pinguim, robô e raposa melhorada; ficou a raposa): pelo laranja com costas mais fortes, peito, bochechas e barriga brancos, patas com "meias" escuras, focinho fino e nariz preto, **orelhas pontudas que saem por buracos do boné azul** (listra branca, botão, aba curva, emblema com "!" e fivelinha atrás) e **cauda grande com ponta branca** que sobe atrás: é o que mais se vê de costas. Fica virada um pouco para a câmera (três quartos, `HERO_LOOK`) para o rosto e o boné aparecerem, e 20% maior que uma casa para se ler no cenário. O cartão do Hub usa a mesma raposa.
+- **Raposa de boné** (o Lucas escolheu entre capivara, sapo, pinguim, robô e raposa melhorada; ficou a raposa): pelo laranja com costas mais fortes, peito, bochechas e barriga brancos, patas com "meias" escuras, focinho fino e nariz preto, **orelhas pontudas que saem por buracos do boné azul** (listra branca, botão, aba curva, emblema com "!" e fivelinha atrás) e **cauda grande com ponta branca** que sobe atrás: é o que mais se vê de costas. Olha **reto** para onde anda (ajustado a pedido do Lucas: antes ficava de lado, em três quartos; `HERO_LOOK = 0` deixa mexer) e é 8% maior que uma casa (`HERO_SCALE = 1.08`) para se ler no cenário. O cartão do Hub usa a mesma raposa.
 
 ## Regras de cuidado
 

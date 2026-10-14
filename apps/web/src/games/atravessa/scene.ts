@@ -334,8 +334,8 @@ class LaneView {
   }
 }
 
-/** A raposa é um pouco maior que uma casa, para se ler bem no meio do cenário. */
-const HERO_SCALE = 1.2;
+/** A raposa é só um pouco maior que uma casa, para se ler bem no meio do cenário. */
+const HERO_SCALE = 1.08;
 
 /** Quanto o herói e a câmera suavizam (por segundo). */
 const CAM_FOLLOW = 5;

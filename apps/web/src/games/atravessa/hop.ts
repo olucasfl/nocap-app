@@ -147,8 +147,8 @@ export function deathPose(end: AtravessaEnd, age: number, killer: -1 | 0 | 1 = 0
   }
 }
 
-/** O herói fica sempre virado um pouco para o lado da câmera: o rosto e o boné aparecem em três quartos. */
-export const HERO_LOOK = -0.4;
+/** Sem desvio: o herói olha reto para onde anda (como no Crossy Road). Vale mexer aqui se quiser três quartos. */
+export const HERO_LOOK = 0;
 
 /** O giro do herói (radianos em torno de Y) para cada direção; frente é -Z. */
 export const HEADING: Record<Dir, number> = { 0: 0, 1: Math.PI, 2: Math.PI / 2, 3: -Math.PI / 2 };
