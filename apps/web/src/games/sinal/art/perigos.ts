@@ -12,7 +12,7 @@ const FLIGHT = THROW_FLIGHT_TICKS;
 
 /** O quanto do caminho até o impacto já passou (0 a 1), contando o aviso e o voo. */
 export const lobProgress = (sh: ShotView) =>
-  sh.phase === 'wind' ? (sh.p * WIND) / (WIND + FLIGHT) : (WIND + sh.p * FLIGHT) / (WIND + FLIGHT);
+  clamp(sh.phase === 'wind' ? (sh.p * WIND) / (WIND + FLIGHT) : (WIND + sh.p * FLIGHT) / (WIND + FLIGHT), 0, 1);
 
 // ---------------------------------------------------------------- as marcas no chão
 /** A marca onde o arremesso vai cair, ou a faixa por onde a bola vai rolar. `dud` = não faz mal agora. */

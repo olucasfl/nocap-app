@@ -46,8 +46,32 @@ export interface SceneInput {
 /** O tamanho do boneco em relação ao desenho base. */
 const HERO_SCALE = 1.15;
 
-/** Desenha um quadro inteiro do Sinal Vermelho. */
+let warned = false;
+
+/**
+ * Desenha um quadro inteiro do Sinal Vermelho. Se algo no desenho falhar, o estado do canvas (escala,
+ * recorte, pilha de save/restore) é refeito do zero: assim um erro num quadro nunca deixa o mapa
+ * quebrado nos quadros seguintes, e o jogo (que roda por baixo) continua com a tela certa.
+ */
 export function drawScene(c: Ctx, s: SceneInput) {
+  try {
+    drawSceneInner(c, s);
+  } catch (e) {
+    if (!warned) {
+      warned = true;
+      console.error('Sinal: erro ao desenhar o quadro', e);
+    }
+    const cv = c.canvas;
+    const dpr = s.layout.w > 0 ? cv.width / s.layout.w : 1;
+    const w0 = cv.width;
+    cv.width = 0; // zera tudo (transformação, recorte e pilha de estados)
+    cv.width = w0;
+    c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    c.clearRect(0, 0, s.layout.w, s.layout.h);
+  }
+}
+
+function drawSceneInner(c: Ctx, s: SceneInput) {
   const { layout: l, view } = s;
   const { w, h } = l;
   const map = view.course.map;

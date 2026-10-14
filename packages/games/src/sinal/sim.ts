@@ -967,7 +967,9 @@ export class SinalSim {
       const st = this.shotState.get(th.id);
       let phase: 'idle' | 'wind' | 'fly' = 'idle';
       let p = 0;
-      if (st && st.start === tick - local && !st.done) {
+      // Um arremesso que já devia ter acabado (o arremessador ficou fora do alcance e não resolveu) não aparece mais.
+      const over = th.kind === 'lob' ? local >= wind + THROW_FLIGHT_TICKS : false;
+      if (st && st.start === tick - local && !st.done && !over) {
         if (local < wind) {
           phase = 'wind';
           p = local / wind;
@@ -994,6 +996,10 @@ export class SinalSim {
           shots.push({ id: th.id, kind: 'roll', phase: 'wind', p, sx: tx, sy: st.ty, tx: -tx, ty: st.ty, x: tx, y: st.ty, dud: this.isSafeWindow(st.start + wind + 60) });
         } else {
           const bx = tx + -th.side * ROLL_SPEED * (local - wind) * DT;
+          if (Math.abs(bx) > half + 1.2) {
+            throwers.push({ id: th.id, x: tx, y: th.y, side: th.side, kind: th.kind, phase: 'idle', p: 0 });
+            continue;
+          }
           shots.push({ id: th.id, kind: 'roll', phase: 'roll', p: 0, sx: tx, sy: st.ty, tx: -tx, ty: st.ty, x: bx, y: st.ty, dud: this.isSafeWindow(tick) });
         }
       }

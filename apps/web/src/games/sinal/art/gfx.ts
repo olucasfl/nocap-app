@@ -53,7 +53,8 @@ export const shade = (hex: string, amt: number) => (amt >= 0 ? mix(hex, '#ffffff
 /** A cor com transparência. */
 export function alpha(hex: string, a: number): string {
   const [r, g, b] = rgb(hex);
-  return `rgba(${r},${g},${b},${a})`;
+  // sem notação científica (valores minúsculos viram 1e-7) e sempre entre 0 e 1
+  return `rgba(${r},${g},${b},${clamp(a, 0, 1).toFixed(3)})`;
 }
 
 /** O contorno de uma cor: o mesmo tom, bem escuro (nunca o preto puro). */
