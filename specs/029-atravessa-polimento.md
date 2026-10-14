@@ -31,6 +31,12 @@ Status: **implementada (14/10/2026); falta jogar e calibrar** (velocidades, ambu
 - **Faixa do recorde:** na linha do seu recorde (o do servidor ou, sem conta, o deste aparelho), aparece uma faixa de chegada atravessando a pista, com bandeirinhas e a placa "SEU RECORDE". Ao **passar dela**, toca um som curto de recorde batido e aparece um aviso discreto "NOVO RECORDE". Sem recorde ainda, não há faixa.
 - **Marcos:** a cada **50 linhas** até a 500 e depois a cada **100** (600, 700...), um arco discreto atravessa a pista com o número e, ao cruzar, toca um som suave e aparece um aviso pequeno na tela (nada extravagante nem enjoativo).
 
+## Desempenho e ritmo (pedido do Lucas em 14/10/2026, depois de jogar)
+
+- **Travava no celular e no PC.** Medição no navegador (script em `apps/web/scripts/atravessa-bench.js`): a cena tinha ~1.160 malhas e 245 chamadas de desenho por quadro (cada caixa era uma malha). Agora **cada modelo e cada faixa viram 1 a 3 malhas** (cor nos vértices, `bakeInto` em `models.ts`; geometria compartilhada por tipo e cor de veículo; peças animadas ficam soltas), **~270 malhas e ~115 chamadas**, e o custo de CPU por quadro caiu de ~6,5 a 7,5 ms para ~3,7 a 4,8 ms. Também: pixel ratio limitado a 1,5, sombra de 24 casas, faixas longe da câmera não atualizam, materiais que piscam são criados uma vez, geometrias por cópia são descartadas, varredura de som a cada 2 quadros e **qualidade automática** (se os quadros passam de ~28 ms por 1 s, corta as sombras e depois a resolução).
+- **Ritmo maior:** veículos 1,3 a 8,8 casas/s (antes 0,9 a 6,6), toras e tartarugas 0,9 a 2,6, pulo de 10 ticks (antes 12) e escuridão mais ligeira (0,85 linha/s no começo).
+- **Som dos carros passando:** um "vush" curto quando um veículo cruza a coluna do herói nas faixas ao lado (até ~3 linhas). Rápido soa mais curto e agudo, caminhão e ônibus soam graves, moto e scooter zumbem; no máximo um som a cada 140 ms e baixo, para não poluir.
+
 ## Regras de cuidado
 
 - Tudo continua determinístico: o servidor refaz a partida pela seed e pelos passos (inclusive o tráfego por veículo, o sinal, as varridas e os mergulhos), e o ranking só muda de forma.

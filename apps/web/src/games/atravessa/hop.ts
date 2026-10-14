@@ -28,11 +28,11 @@ export interface Pose {
 }
 
 /** Quanto do pulo (0 a 1) dura o agachar de saída. */
-export const ANTICIPATION = 0.3;
+export const ANTICIPATION = 0.35;
 /** Quanto dura o amassado do pouso, em ticks. */
 export const LANDING_TICKS = 9;
-const SQUASH = 0.11;
-const STRETCH = 0.14;
+const SQUASH = 0.09;
+const STRETCH = 0.12;
 const LAND = 0.17;
 
 /** Uma lombada suave de 0 a 1 e de volta, entre `a` e `b`. */

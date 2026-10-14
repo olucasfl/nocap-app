@@ -1,11 +1,15 @@
 import * as THREE from 'three';
 import type { AtravessaBiome, SweepKind } from '@nocap/games';
-import { box, mat } from './models';
+import { bakeChildren, box, mat, model } from './models';
 
 /** Crocodilo, tartarugas, semáforo, varridas de aviso, arcos de marco e partículas (spec 029). */
 
 /** Crocodilo olhando para +X: corpo baixo, cauda e uma cabeça com o maxilar de cima que abre. */
 export function buildCroc(len: number, biome: AtravessaBiome): THREE.Group {
+  return model(null, () => rawCroc(len, biome));
+}
+
+function rawCroc(len: number, biome: AtravessaBiome): THREE.Group {
   const g = new THREE.Group();
   const skin = biome === 'neon' ? 0x2ad49a : biome === 'deserto' ? 0x7a8a3a : 0x3f9a4a;
   const dark = biome === 'neon' ? 0x14916a : biome === 'deserto' ? 0x5a6a2a : 0x2c7436;
@@ -23,6 +27,8 @@ export function buildCroc(len: number, biome: AtravessaBiome): THREE.Group {
   jaw.add(box(1.2, 0.16, 0.6, skin, 0.6, 0.08, 0));
   for (const z of [-0.25, 0.25]) jaw.add(box(0.14, 0.14, 0.14, 0xffe45a, 0.7, 0.22, z, { cast: false })); // os olhos
   for (let i = 0; i < 4; i++) jaw.add(box(0.07, 0.08, 0.07, 0xffffff, 0.35 + i * 0.22, -0.02, i % 2 ? 0.2 : -0.2, { cast: false }));
+  bakeChildren(jaw);
+  jaw.userData.keep = true;
   g.add(jaw);
   g.userData.jaw = jaw;
   return g;
@@ -30,6 +36,10 @@ export function buildCroc(len: number, biome: AtravessaBiome): THREE.Group {
 
 /** Um grupo de tartarugas (2 ou 3) olhando para +X; `shells` é o que a cena inclina e afunda. */
 export function buildTurtles(len: number, biome: AtravessaBiome): THREE.Group {
+  return model(null, () => rawTurtles(len, biome));
+}
+
+function rawTurtles(len: number, biome: AtravessaBiome): THREE.Group {
   const g = new THREE.Group();
   const shell = biome === 'neon' ? 0x7a5cff : biome === 'deserto' ? 0x9b7a3c : 0x3f8a4a;
   const pattern = biome === 'neon' ? 0x19d3ff : biome === 'deserto' ? 0xc9a85a : 0x6cc76a;
@@ -46,6 +56,8 @@ export function buildTurtles(len: number, biome: AtravessaBiome): THREE.Group {
       t.add(box(0.26, 0.08, 0.16, 0xb6d98a, 0.22, 0.1, z, { cast: false }));
       t.add(box(0.26, 0.08, 0.16, 0xb6d98a, -0.22, 0.1, z, { cast: false }));
     }
+    bakeChildren(t);
+    t.userData.keep = true;
     g.add(t);
     shells.push(t);
   }
@@ -63,14 +75,23 @@ export function buildTrafficLight(): { group: THREE.Group; lamps: Record<'red' |
     amber: box(0.28, 0.26, 0.1, 0x3a2a08, 0, 1.6, 0.22, { cast: false }),
     green: box(0.28, 0.26, 0.1, 0x0c2a14, 0, 1.28, 0.22, { cast: false }),
   };
+  for (const l of Object.values(lamps)) l.userData.keep = true;
   g.add(lamps.red, lamps.amber, lamps.green);
-  return { group: g, lamps };
+  return { group: model(null, () => g), lamps };
 }
 
 export const LAMP_ON: Record<'red' | 'amber' | 'green', number> = { red: 0xff3030, amber: 0xffb020, green: 0x35e06a };
 export const LAMP_OFF: Record<'red' | 'amber' | 'green', number> = { red: 0x3a1010, amber: 0x3a2a08, green: 0x0c2a14 };
-export const lampMaterial = (c: 'red' | 'amber' | 'green', on: boolean) =>
-  on ? mat(LAMP_ON[c], 1) : mat(LAMP_OFF[c]);
+const lampCache = new Map<string, THREE.Material>();
+export const lampMaterial = (c: 'red' | 'amber' | 'green', on: boolean): THREE.Material => {
+  const key = `${c}${on}`;
+  let m = lampCache.get(key);
+  if (!m) {
+    m = on ? mat(LAMP_ON[c], 1) : mat(LAMP_OFF[c]);
+    lampCache.set(key, m);
+  }
+  return m;
+};
 
 /** O perigo que atravessa a linha. Olha para +X; a cena gira e posiciona. */
 export function buildSweepHazard(kind: SweepKind): THREE.Group {
@@ -201,7 +222,7 @@ export function buildGate(kind: 'recorde' | 'marco', label: string, floorTop: nu
   label3d.position.set(0, floorTop + 3.1, 0);
   g.add(label3d);
   g.add(box(10.4, 0.16, 0.12, main, 0, floorTop + 2.6, 0, { cast: false }));
-  return g;
+  return model(null, () => g);
 }
 
 /** Pedacinhos de bloco que voam (poeira, respingo, estilhaço): uma piscina reaproveitada. */

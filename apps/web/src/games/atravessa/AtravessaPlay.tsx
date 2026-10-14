@@ -79,7 +79,11 @@ export function AtravessaPlay({ seed, record, onEnd, onQuit, onRestart }: Props)
     const sim = new AtravessaSim(seed);
     const audio = createAtravessaAudio();
     // só em desenvolvimento: deixa mexer no herói pelo console para ver os biomas sem jogar até lá
-    if (import.meta.env.DEV) (window as unknown as { __atr?: AtravessaSim }).__atr = sim;
+    if (import.meta.env.DEV) {
+      const w = window as unknown as { __atr?: AtravessaSim; __atrScene?: AtravessaScene };
+      w.__atr = sim;
+      w.__atrScene = scene;
+    }
     const steps: AtravessaInput[] = [];
     const pending: Dir[] = [];
     const controls = attachControls(el, (d) => {
@@ -112,6 +116,11 @@ export function AtravessaPlay({ seed, record, onEnd, onQuit, onRestart }: Props)
     let sweepId = -1;
     let sweepHit = false;
     let nextBeep = 0;
+    let frameN = 0;
+    let warning = false;
+    let siren = 0;
+    // de que lado da coluna do herói cada veículo estava no quadro anterior (para o som de passagem)
+    let sides = new Map<string, number>();
 
     const showToast = (text: string, kind: 'record' | 'marco') => {
       window.clearTimeout(toastTimer);
@@ -206,21 +215,35 @@ export function AtravessaPlay({ seed, record, onEnd, onQuit, onRestart }: Props)
         const info = biomeAt(v.y);
         audio?.setBiome(laneBiome(info));
 
-        // o que avisa por som: o trem, a ambulância e a varrida
-        let warning = false;
-        let siren = 0;
-        const from = Math.floor(v.y) - 6;
-        const to = Math.floor(v.y) + 8;
-        for (let r = Math.max(0, from); r <= to; r++) {
-          const lane = sim.world.lane(r);
-          if (lane.kind === 'trilho' && !warning) warning = trainState(lane, sim.tick).warning;
-          if (lane.kind === 'estrada' && lane.flow) {
+        // o que avisa por som: o trem, a ambulância, os veículos que passam e a varrida
+        // (a varredura das faixas é leve, mas não precisa ser a cada quadro)
+        if (frameN++ % 2 === 0) {
+          warning = false;
+          siren = 0;
+          const next = new Map<string, number>();
+          const from = Math.floor(v.y) - 6;
+          const to = Math.floor(v.y) + 8;
+          for (let r = Math.max(0, from); r <= to; r++) {
+            const lane = sim.world.lane(r);
+            if (lane.kind === "trilho" && !warning) warning = trainState(lane, sim.tick).warning;
+            if (lane.kind !== "estrada" || !lane.flow) continue;
+            const rowDist = Math.abs(r - v.y);
             for (const it of laneItems(lane, sim.tick)) {
-              if (it.kind !== 'ambulancia') continue;
-              const near = clamp01(1 - Math.abs(it.x) / 17) ** 0.7 * clamp01(1 - Math.abs(r - v.y) / 9);
-              siren = Math.max(siren, near);
+              if (it.kind === "ambulancia") {
+                const near = clamp01(1 - Math.abs(it.x) / 17) ** 0.7 * clamp01(1 - rowDist / 9);
+                siren = Math.max(siren, near);
+              }
+              // o som de passagem: só das faixas bem perto, no instante em que cruza a coluna do herói
+              if (rowDist <= 3.2 && it.kind !== "ambulancia") {
+                const key = r + ":" + it.id;
+                const side = it.x < v.x ? -1 : 1;
+                next.set(key, side);
+                const was = sides.get(key);
+                if (was !== undefined && was !== side) audio?.pass(it.speed, it.len, clamp01(1 - rowDist / 3.4));
+              }
             }
           }
+          sides = next;
         }
         if (!finished) audio?.frame(v.danger, warning, siren);
 

@@ -10,8 +10,8 @@ export const ATR_DT = 1 / ATR_TPS;
 export const ATR_HALF_COLS = 4;
 export const ATR_COLS = ATR_HALF_COLS * 2 + 1;
 
-/** Um pulo dura 0,2 s. */
-export const ATR_STEP_TICKS = 12;
+/** Um pulo dura ~0,17 s (spec 029: o ritmo subiu a pedido do Lucas). */
+export const ATR_STEP_TICKS = 10;
 /** Passos esperando na fila (além do que está em andamento). */
 export const ATR_QUEUE_MAX = 2;
 /** Meia largura do herói para colisão (em casas). */
@@ -98,11 +98,11 @@ export const ATR_TRANSITION_LEN = 6;
 export const ATR_CYCLE_LEN = (ATR_BIOME_LEN + ATR_TRANSITION_LEN) * 3;
 
 /** Pressão por trás: a escuridão (spec 028). Velocidades em linhas por segundo. */
-export const ATR_REF_PACE = 2.4; // ritmo de quem não para de avançar
+export const ATR_REF_PACE = 2.9; // ritmo de quem não para de avançar
 export const ATR_DARK_CAP_FRACTION = 0.85;
 export const ATR_DARK_CAP = ATR_REF_PACE * ATR_DARK_CAP_FRACTION;
-export const ATR_DARK_BASE = 0.7;
-export const ATR_DARK_GROWTH = 0.004; // por linha avançada
+export const ATR_DARK_BASE = 0.85;
+export const ATR_DARK_GROWTH = 0.0045; // por linha avançada
 export const ATR_DARK_START_GAP = 6; // linhas atrás do herói na largada
 export const ATR_DARK_LEAD_IN_TICKS = 90; // parada nos primeiros 1,5 s
 export const ATR_DARK_MAX_GAP = 8; // quem corre não deixa a escuridão ficar mais longe que isso

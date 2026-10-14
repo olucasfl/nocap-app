@@ -20,6 +20,7 @@ import {
 } from '@nocap/games';
 import { HEADING, deathPose, heroPose, turnToward, type Pose } from './hop';
 import {
+  bakeInto,
   box,
   buildHero,
   buildLog,
@@ -29,6 +30,7 @@ import {
   buildTree,
   darkness,
   disposeModels,
+  disposeOwned,
   hash2,
   mat,
 } from './models';
@@ -119,6 +121,10 @@ const mixPalette = (info: BiomeInfo): Palette => {
   };
 };
 
+/** Materiais de luz que piscam: criados uma vez (criar um por quadro só gera lixo). */
+const lit: Record<string, THREE.Material> = {};
+const cached = (key: string, make: () => THREE.Material) => (lit[key] ??= make());
+
 /** A altura do chão onde o herói pisa em cada tipo de faixa (tora e pedra ficam acima da água). */
 const TOP: Record<Lane['kind'], number> = { descanso: 0.3, estrada: 0.12, trilho: 0.12, rio: 0.22 };
 
@@ -158,14 +164,16 @@ class LaneView {
     this.group.position.z = -lane.row;
     const top = TOP[lane.kind];
     const g = this.group;
+    /** O que não mexe (chão, árvores, trilhos) é juntado em poucas malhas no fim. */
+    const st = new THREE.Group();
 
     if (lane.kind === 'descanso') {
       const c = lane.row % 2 === 0 ? pal.groundA : pal.groundB;
-      g.add(box(FLOOR_W, 0.3, 1, c, 0, 0.15, 0, { cast: false }));
+      st.add(box(FLOOR_W, 0.3, 1, c, 0, 0.15, 0, { cast: false }));
       for (const col of lane.blocked) {
         const t = buildTree(b, hash2(lane.row, col));
         t.position.set(col, top, 0);
-        g.add(t);
+        st.add(t);
       }
       // cenário nas laterais, fora da área de jogo
       for (const side of [-1, 1]) {
@@ -175,23 +183,23 @@ class LaneView {
           const x = side * (ATR_HALF_COLS + 1.6 + i * 1.7 + hash2(i, lane.row) * 0.8);
           const t = buildTree(b, hash2(lane.row + i, side + 3));
           t.position.set(x, top, 0);
-          g.add(t);
+          st.add(t);
         }
       }
     } else if (lane.kind === 'estrada' || lane.kind === 'trilho') {
-      g.add(box(FLOOR_W, 0.12, 1, lane.kind === 'trilho' ? pal.groundB : pal.road, 0, 0.06, 0, { cast: false }));
+      st.add(box(FLOOR_W, 0.12, 1, lane.kind === 'trilho' ? pal.groundB : pal.road, 0, 0.06, 0, { cast: false }));
       if (lane.kind === 'estrada') {
-        g.add(box(FLOOR_W, 0.02, 0.06, pal.roadEdge, 0, 0.13, 0.46, { cast: false, emissive: b === 'neon' ? 0.9 : 0 }));
-        g.add(box(FLOOR_W, 0.02, 0.06, pal.roadEdge, 0, 0.13, -0.46, { cast: false, emissive: b === 'neon' ? 0.9 : 0 }));
+        st.add(box(FLOOR_W, 0.02, 0.06, pal.roadEdge, 0, 0.13, 0.46, { cast: false, emissive: b === 'neon' ? 0.9 : 0 }));
+        st.add(box(FLOOR_W, 0.02, 0.06, pal.roadEdge, 0, 0.13, -0.46, { cast: false, emissive: b === 'neon' ? 0.9 : 0 }));
         if (lane.signal) {
           this.light = buildTrafficLight();
           g.add(this.light.group);
           this.light.group.position.y = 0.12;
         }
       } else {
-        for (let x = -FLOOR_W / 2; x < FLOOR_W / 2; x += 0.9) g.add(box(0.28, 0.06, 0.78, 0x6b5b4a, x, 0.15, 0, { cast: false }));
-        g.add(box(FLOOR_W, 0.05, 0.08, 0xb8bcc8, 0, 0.17, 0.2, { cast: false }));
-        g.add(box(FLOOR_W, 0.05, 0.08, 0xb8bcc8, 0, 0.17, -0.2, { cast: false }));
+        for (let x = -FLOOR_W / 2; x < FLOOR_W / 2; x += 0.9) st.add(box(0.28, 0.06, 0.78, 0x6b5b4a, x, 0.15, 0, { cast: false }));
+        st.add(box(FLOOR_W, 0.05, 0.08, 0xb8bcc8, 0, 0.17, 0.2, { cast: false }));
+        st.add(box(FLOOR_W, 0.05, 0.08, 0xb8bcc8, 0, 0.17, -0.2, { cast: false }));
         const tr = buildTrain(ATR_TRAIN_LEN);
         if (lane.dir === -1) tr.rotation.y = Math.PI;
         tr.position.y = top;
@@ -207,7 +215,7 @@ class LaneView {
       }
     } else {
       // rio: o fundo e a água um pouco abaixo da beirada
-      g.add(box(FLOOR_W, 0.1, 1, pal.water, 0, -0.05, 0, { cast: false, emissive: b === 'neon' ? 0.3 : 0 }));
+      st.add(box(FLOOR_W, 0.1, 1, pal.water, 0, -0.05, 0, { cast: false, emissive: b === 'neon' ? 0.3 : 0 }));
       if (lane.pads) {
         for (const p of lane.pads) {
           const pad = buildPad(b, p.sinks, hash2(lane.row, p.col));
@@ -224,6 +232,15 @@ class LaneView {
     } else if (atravessaMilestone(lane.row)) {
       g.add(buildGate('marco', `${lane.row}`, lane.kind === 'rio' ? 0.1 : top));
     }
+    bakeInto(g, st, true);
+    // a faixa não mexe: a matriz dela é calculada uma vez
+    g.updateMatrix();
+    g.matrixAutoUpdate = false;
+  }
+
+  /** Solta as geometrias que são só desta faixa (as dos modelos compartilhados ficam). */
+  dispose() {
+    disposeOwned(this.group);
   }
 
   private make(item: FlowItem): THREE.Object3D {
@@ -242,6 +259,8 @@ class LaneView {
   }
 
   update(tick: number, sim: AtravessaSim, now: number, cam: CamInfo) {
+    // faixas longe da tela não precisam ser atualizadas (voltam a ser quando entram no alcance)
+    if (this.row > cam.row + 22 || this.row < cam.row - 14) return;
     const { lane } = this;
     if (lane.flow) {
       const items = laneItems(lane, tick);
@@ -259,6 +278,7 @@ class LaneView {
       for (const [id, h] of this.holders) {
         if (!seen.has(id)) {
           this.group.remove(h.obj);
+          disposeOwned(h.obj);
           this.holders.delete(id);
         }
       }
@@ -271,8 +291,8 @@ class LaneView {
       // pisca em 4 Hz durante o aviso; fora dele, apagado
       const on = st.warning && Math.floor(now * 4) % 2 === 0;
       this.trainLights.forEach((l, i) => {
-        const lit = st.warning && (i % 2 === 0 ? on : !on);
-        l.material = lit ? mat(0xff2a2a, 1) : mat(0x3a1010);
+        const isLit = st.warning && (i % 2 === 0 ? on : !on);
+        l.material = isLit ? cached('trainOn', () => mat(0xff2a2a, 1)) : cached('trainOff', () => mat(0x3a1010));
       });
     }
     if (this.pads.size && sim.row === this.row) {
@@ -292,8 +312,8 @@ class LaneView {
     if (item.kind === 'ambulancia') {
       const lights = obj.userData.lights as THREE.Mesh[];
       const flip = Math.floor(now * 7) % 2 === 0;
-      lights[0]!.material = flip ? mat(0xff2a2a, 1.4) : mat(0x4a1010);
-      lights[1]!.material = flip ? mat(0x10204a) : mat(0x2a6aff, 1.4);
+      lights[0]!.material = flip ? cached('ambRedOn', () => mat(0xff2a2a, 1.4)) : cached('ambRedOff', () => mat(0x4a1010));
+      lights[1]!.material = flip ? cached('ambBlueOff', () => mat(0x10204a)) : cached('ambBlueOn', () => mat(0x2a6aff, 1.4));
     } else if (item.kind === 'drone') {
       for (const p of obj.userData.props as THREE.Object3D[]) p.rotation.y = now * 40;
       obj.position.y = TOP.estrada + Math.sin(now * 3 + item.id) * 0.04;
@@ -375,6 +395,10 @@ export class AtravessaScene {
   private halfW = 6;
   private reduced: boolean;
   private record: number | null = null;
+  /** Qualidade automática: se o aparelho não dá conta, corta primeiro as sombras e depois a resolução. */
+  private slowFrames = 0;
+  private quality = 2;
+  private size = { w: 0, h: 0 };
   private burst = new Burst(20);
   private burstFired = false;
   private sweepFx: {
@@ -387,7 +411,8 @@ export class AtravessaScene {
   constructor(canvas: HTMLCanvasElement, reducedMotion = false) {
     this.reduced = reducedMotion;
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
-    this.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    // o pixel ratio é limitado: em tela de alta densidade, o custo de pintar cresce com o quadrado
+    this.renderer.setPixelRatio(Math.min(1.5, window.devicePixelRatio || 1));
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -398,10 +423,10 @@ export class AtravessaScene {
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(1024, 1024);
     const sc = this.sun.shadow.camera;
-    sc.left = -15;
-    sc.right = 15;
-    sc.top = 15;
-    sc.bottom = -15;
+    sc.left = -12;
+    sc.right = 12;
+    sc.top = 12;
+    sc.bottom = -12;
     sc.near = 1;
     sc.far = 60;
     this.sun.shadow.bias = -0.0006;
@@ -418,6 +443,7 @@ export class AtravessaScene {
   }
 
   resize(w: number, h: number) {
+    this.size = { w, h };
     this.renderer.setSize(w, h, false);
     this.aspect = w / Math.max(1, h);
     // sempre mostra ~11 casas de largura; em tela larga, no mínimo 5,6 de meia altura
@@ -438,6 +464,7 @@ export class AtravessaScene {
     for (const [row, lv] of this.lanes) {
       if (row < lo || row > hi) {
         this.scene.remove(lv.group);
+        lv.dispose();
         this.lanes.delete(row);
       }
     }
@@ -455,6 +482,24 @@ export class AtravessaScene {
     this.heroBody.rotation.set(p.pitch, p.ry, p.roll + p.rz);
     this.hero.visible = p.alpha > 0.02;
     this.hero.scale.setScalar(Math.max(0.01, p.alpha));
+  }
+
+  /**
+   * Se os quadros demoram mais de ~28 ms por 1 s seguido, o aparelho está sofrendo: corta as sombras;
+   * se continuar assim, baixa a resolução. Nunca volta atrás (para não ficar alternando).
+   */
+  private adapt(dt: number) {
+    if (dt <= 0 || this.quality === 0) return;
+    this.slowFrames = dt > 0.028 ? this.slowFrames + 1 : Math.max(0, this.slowFrames - 2);
+    if (this.slowFrames < 40) return;
+    this.slowFrames = 0;
+    this.quality--;
+    if (this.quality === 1) {
+      this.sun.castShadow = false;
+    } else {
+      this.renderer.setPixelRatio(1);
+      this.renderer.setSize(this.size.w, this.size.h, false);
+    }
   }
 
   /** O aviso e o perigo da varrida: nascem quando ela começa e somem quando ela acaba. */
@@ -505,6 +550,7 @@ export class AtravessaScene {
 
   /** Desenha um quadro. `dt` em segundos; `death` quando a partida acabou (age em segundos). */
   render(sim: AtravessaSim, dt: number, now: number, death: { end: AtravessaEnd; age: number } | null) {
+    this.adapt(dt);
     const v = sim.view();
     this.maxRow = Math.max(this.maxRow, v.y);
 
@@ -578,7 +624,18 @@ export class AtravessaScene {
     this.sun.position.set(tx - 7, 13, tz + 6);
     this.sun.target.position.set(tx, 0, tz);
 
+    const t0 = performance.now();
     this.renderer.render(this.scene, this.camera);
+    if (import.meta.env.DEV) {
+      const i = this.renderer.info;
+      (window as unknown as { __atrPerf?: unknown }).__atrPerf = {
+        calls: i.render.calls,
+        tris: i.render.triangles,
+        geos: i.memory.geometries,
+        meshes: this.scene.children.length,
+        renderMs: +(performance.now() - t0).toFixed(2),
+      };
+    }
   }
 
   dispose() {

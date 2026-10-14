@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { AtravessaBiome, VehicleKind } from '@nocap/games';
-import { box } from './models';
+import { box, model } from './models';
 
 /**
  * Os veículos do Atravessa! (spec 029): cada tipo tem o seu desenho de blocos e todos olham para +X.
@@ -21,7 +21,17 @@ const pickColor = (biome: AtravessaBiome, variant: number) => {
 const TIRE = 0x15161c;
 const GLASS = 0x1b2230;
 
+/**
+ * Um veículo pronto e juntado em poucas malhas. A cor vem de 5 faixas de `variant`, então cada
+ * (tipo, bioma, cor) é montado uma vez e todas as cópias dividem a geometria.
+ */
 export function buildVehicle(kind: VehicleKind, biome: AtravessaBiome, variant: number): THREE.Group {
+  const bucket = Math.min(4, Math.floor(variant * 5));
+  const animated = kind === 'ambulancia' || kind === 'drone';
+  return model(animated ? null : `veh|${kind}|${biome}|${bucket}`, () => rawVehicle(kind, biome, (bucket + 0.5) / 5));
+}
+
+function rawVehicle(kind: VehicleKind, biome: AtravessaBiome, variant: number): THREE.Group {
   const g = new THREE.Group();
   const color = pickColor(biome, variant);
   const wheel = (x: number, z: number, s = 0.26) => g.add(box(s, s, 0.14, TIRE, x, s / 2, z));
@@ -136,6 +146,7 @@ export function buildVehicle(kind: VehicleKind, biome: AtravessaBiome, variant: 
       for (const x of [-0.38, 0.38]) {
         for (const z of [-0.3, 0.3]) {
           const p = box(0.3, 0.04, 0.08, 0x8fa3d1, x, 0.78, z, { cast: false });
+          p.userData.keep = true;
           g.add(p);
           props.push(p);
         }
@@ -155,6 +166,8 @@ export function buildVehicle(kind: VehicleKind, biome: AtravessaBiome, variant: 
       }
       const a = box(0.18, 0.12, 0.3, 0xff2a2a, 0.3, 1.06, -0.2, { cast: false, emissive: 1 });
       const b = box(0.18, 0.12, 0.3, 0x2a6aff, 0.3, 1.06, 0.2, { cast: false, emissive: 1 });
+      a.userData.keep = true;
+      b.userData.keep = true;
       g.add(a, b);
       g.userData.lights = [a, b];
       for (const x of [-0.8, 0.0, 0.85]) for (const z of [-0.4, 0.4]) wheel(x, z, 0.28);

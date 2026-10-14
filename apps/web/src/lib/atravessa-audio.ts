@@ -22,6 +22,11 @@ export interface AtravessaAudio {
    * volume da sirene (0 a 1: a ambulância mais próxima, 0 quando não há).
    */
   frame(danger: number, trainWarning: boolean, siren: number): void;
+  /**
+   * Um veículo passou pela coluna do herói: um "vush" curto. Quanto mais rápido, mais curto e agudo;
+   * veículo pesado (comprimento grande) soa grave. `loud` (0 a 1) cai com a distância até a faixa.
+   */
+  pass(speed: number, len: number, loud: number): void;
   /** Cruzou um marco (a cada 50 linhas, depois a cada 100): um sino suave. */
   milestone(): void;
   /** Passou do recorde: três notas subindo. */
@@ -241,6 +246,8 @@ export function createAtravessaAudio(): AtravessaAudio | null {
   let nextBell = 0;
   let bellFlip = 0;
 
+  let nextPass = 0;
+
   // ---- a sirene da ambulância: um oscilador que vai e volta de agudo para grave, mais alto de perto
   let siren: { osc: OscillatorNode; lfo: OscillatorNode; gain: GainNode } | null = null;
   const startSiren = () => {
@@ -274,6 +281,28 @@ export function createAtravessaAudio(): AtravessaAudio | null {
       tone('sine', 240 * k, 640 * k, 0.1, 0.24, t);
       tone('triangle', 520 * k, 900 * k, 0.045, 0.1, t);
       hiss('highpass', 2600, 6000, 0.03, 0.06, t);
+    },
+    pass(speed, len, loud) {
+      if (loud <= 0.02) return;
+      const t = ctx.currentTime;
+      // no máximo um som a cada 140 ms: com muito tráfego ele não vira barulho
+      if (t < nextPass) return;
+      nextPass = t + 0.14;
+      const fast = Math.max(0, Math.min(1, (speed - 1.3) / 6));
+      const dur = 0.62 - 0.38 * fast;
+      const peak = 0.055 * loud;
+      if (len > 2.4) {
+        // caminhão e ônibus: um ronco grave que passa devagar
+        hiss('lowpass', 420, 140, dur + 0.15, peak * 1.3, t, 0.7);
+        tone('sine', 72, 52, dur, peak * 1.2, t);
+      } else if (len < 1.0) {
+        // moto e scooter: um zumbido agudo que cai
+        hiss('bandpass', 1900 + fast * 900, 800, dur * 0.8, peak * 0.9, t, 1.4);
+        tone('sawtooth', 360 + fast * 160, 200 + fast * 70, dur * 0.7, peak * 0.35, t);
+      } else {
+        // carro: um "vush" que fica mais curto e agudo quanto mais rápido
+        hiss('bandpass', 700 + fast * 1100, 280 + fast * 160, dur, peak, t, 0.9);
+      }
     },
     milestone() {
       const t = ctx.currentTime;

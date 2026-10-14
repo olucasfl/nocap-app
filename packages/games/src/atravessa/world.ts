@@ -162,10 +162,10 @@ const VEHICLE_KINDS: Record<AtravessaBiome, Record<'slow' | 'mid' | 'fast', Vehi
 
 type SpeedClass = 'slow' | 'mid' | 'fast' | 'vfast';
 const SPEED_RANGE: Record<SpeedClass, [number, number]> = {
-  slow: [0.9, 1.6],
-  mid: [1.9, 2.9],
-  fast: [3.3, 4.6],
-  vfast: [5.4, 6.6],
+  slow: [1.3, 2.2],
+  mid: [2.6, 3.9],
+  fast: [4.5, 6.2],
+  vfast: [7.2, 8.8],
 };
 /** Cada faixa tem um perfil de tráfego: o que é comum nela (mas qualquer velocidade pode aparecer). */
 const PROFILES: Record<'calma' | 'normal' | 'rush', Record<SpeedClass, number>> = {
@@ -281,7 +281,7 @@ export class AtravessaWorld {
     const rng = createRng(`${this.seed}:lane:${row}`);
     const crocChance = diff > 0.12 ? lerp(0.08, 0.22, diff) : 0;
     const pick = (r: () => number): FlowPick => {
-      const speed = lerp(0.6, 1.9, r()) * lerp(0.9, 1.1, diff);
+      const speed = lerp(0.9, 2.6, r()) * lerp(0.9, 1.1, diff);
       if (mode === 'tartaruga') {
         const len = r() < 0.5 ? 1.7 : 2.6;
         return { kind: 'tartaruga', len, speed: speed * 0.85, variant: r() };

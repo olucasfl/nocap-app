@@ -654,7 +654,7 @@ describe('varridas de aviso', () => {
     while (!sim.view().sweep) sim.step();
     for (let i = 0; i < 10; i++) sim.step();
     sim.input(0);
-    for (let i = 0; i < 400; i++) {
+    for (let i = 0; i < 300; i++) {
       sim.step();
       expect(sim.alive).toBe(true);
     }
