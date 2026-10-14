@@ -41,6 +41,12 @@ Status: **implementada (14/10/2026); falta jogar e calibrar** (velocidades, ambu
 
 - **Raposa de boné** (o Lucas escolheu entre capivara, sapo, pinguim, robô e raposa melhorada; ficou a raposa): pelo laranja com costas mais fortes, peito, bochechas e barriga brancos, patas com "meias" escuras, focinho fino e nariz preto, **orelhas pontudas que saem por buracos do boné azul** (listra branca, botão, aba curva, emblema com "!" e fivelinha atrás) e **cauda grande com ponta branca** que sobe atrás: é o que mais se vê de costas. Olha **reto** para onde anda (ajustado a pedido do Lucas: antes ficava de lado, em três quartos; `HERO_LOOK = 0` deixa mexer) e tem 82% do tamanho (`HERO_SCALE = 0.82`) para ficar proporcional aos carros e às motos. **Mapa (14/10/2026):** 9 colunas (-4 a 4). Foi testado com 13 (2 a mais de cada lado) e **voltou a 9** a pedido do Lucas: no celular tudo ficava pequeno demais e a imagem piscava. **Limites do mapa:** de |x| > 4,5 para fora o chão e tudo que passa por ali escurece (shader, `uEdge`), para o limite esquerdo e direito ficar claro. **Celular em pé:** as faixas montadas para cima e para baixo crescem com a altura da tela (antes o céu claro aparecia atrás da escuridão e piscava). O cartão do Hub usa a mesma raposa.
 
+## Ordem dos biomas (14/10/2026)
+
+- **O primeiro mapa é sorteado** pela seed (a largada não é sempre a horta). **A cada 150 linhas há uma transição** (as últimas 6 linhas misturam os dois biomas) para o seguinte.
+- **De três em três** os biomas formam um grupo: o 2º nunca é igual ao 1º e o 3º é o que sobrou (os três aparecem). O **4º é sorteado de novo, só nunca igual ao 3º**; o 5º e o 6º seguem a mesma regra do 2º e do 3º, e assim por diante. Tudo sai da seed, então o servidor refaz a mesma ordem.
+- A dificuldade sobe a cada grupo de três concluído (450 linhas).
+
 ## Regras de cuidado
 
 - Tudo continua determinístico: o servidor refaz a partida pela seed e pelos passos (inclusive o tráfego por veículo, o sinal, as varridas e os mergulhos), e o ranking só muda de forma.

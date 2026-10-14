@@ -24,6 +24,8 @@ Pedido do Lucas: o movimento tem que ser **bem limpo**, com animação própria 
 - Sobre tora, o pulo parte da tora e pousa na próxima; na pedra que afunda, o herói balança antes de cair (`view().sinking`).
 - Câmera segue só para a frente, com suavização leve (sem balançar a cada pulo).
 
+> **Atualização (spec 029):** a ordem dos biomas agora é sorteada pela seed e há uma transição a cada 150 linhas (veja a spec 029); a tabela abaixo mostra só o desenho de cada bioma.
+
 ## Regras do jogo
 
 - Mundo em **grade**: faixas horizontais de 9 casas de largura (a câmera mostra 9 a 11), o herói pula uma casa por passo (0,2 s, com arco).

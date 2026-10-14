@@ -90,10 +90,17 @@ export const ATR_TURTLE_UP = 190;
 export const ATR_TURTLE_WARN = 40;
 export const ATR_TURTLE_DOWN = 60;
 
-/** Ciclo dos biomas (spec 028): três biomas de ~80 linhas, com 6 de transição entre eles. */
-export const ATR_BIOME_LEN = 80;
+/**
+ * Os biomas (spec 029): a cada 150 linhas há uma transição para o bioma seguinte (as últimas 6 linhas
+ * misturam os dois). A ordem é sorteada pela seed: o primeiro é sempre sorteado; de três em três os
+ * biomas formam uma sequência dos três (sem repetir, o terceiro é o que sobrou); o primeiro de cada
+ * grupo novo é sorteado de novo, só que nunca igual ao último do grupo anterior.
+ */
+export const ATR_SEGMENT_LEN = 150;
 export const ATR_TRANSITION_LEN = 6;
-export const ATR_CYCLE_LEN = (ATR_BIOME_LEN + ATR_TRANSITION_LEN) * 3;
+export const ATR_BIOME_LEN = ATR_SEGMENT_LEN - ATR_TRANSITION_LEN;
+/** Três biomas = um grupo; a dificuldade sobe a cada grupo concluído. */
+export const ATR_CYCLE_LEN = ATR_SEGMENT_LEN * 3;
 
 /** Pressão por trás: a escuridão (spec 028). Velocidades em linhas por segundo. */
 export const ATR_REF_PACE = 2.9; // ritmo de quem não para de avançar

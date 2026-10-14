@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  ATR_BIOMES,
   ATR_BIOME_LEN,
+  ATR_SEGMENT_LEN,
   ATR_COLS,
   ATR_CROC_OPEN,
   ATR_CROC_PERIOD,
@@ -24,6 +26,7 @@ import {
   atravessaDarkSpeed,
   atravessaMilestone,
   biomeAt,
+  biomeSequence,
   crocState,
   difficultyAt,
   evaluateAtravessa,
@@ -76,15 +79,47 @@ function itemNearCenter(lane: Lane, from = 300) {
 }
 
 describe('biomas', () => {
-  it('começam na horta, passam por transições de 6 linhas e dão a volta', () => {
-    expect(biomeAt(0).biome).toBe('horta');
-    expect(biomeAt(ATR_BIOME_LEN - 1)).toMatchObject({ biome: 'horta', blend: 0 });
-    const t = biomeAt(ATR_BIOME_LEN);
-    expect(t).toMatchObject({ biome: 'horta', next: 'deserto' });
+  it('a cada 150 linhas há uma transição de 6 linhas para o bioma seguinte', () => {
+    const seq = biomeSequence('transicao', 6);
+    expect(biomeAt('transicao', 0)).toMatchObject({ biome: seq[0], blend: 0 });
+    expect(biomeAt('transicao', ATR_BIOME_LEN - 1)).toMatchObject({ biome: seq[0], blend: 0 });
+    const t = biomeAt('transicao', ATR_BIOME_LEN);
+    expect(t).toMatchObject({ biome: seq[0], next: seq[1] });
     expect(t.blend).toBeGreaterThan(0);
-    expect(biomeAt(86).biome).toBe('deserto');
-    expect(biomeAt(176).biome).toBe('neon');
-    expect(biomeAt(ATR_CYCLE_LEN)).toMatchObject({ biome: 'horta', cycle: 1 });
+    expect(biomeAt('transicao', ATR_SEGMENT_LEN - 1).blend).toBeLessThan(1);
+    expect(biomeAt('transicao', ATR_SEGMENT_LEN)).toMatchObject({ biome: seq[1], blend: 0 });
+    expect(biomeAt('transicao', ATR_SEGMENT_LEN * 2)).toMatchObject({ biome: seq[2], blend: 0 });
+  });
+
+  it('a ordem segue as regras: o 2º difere do 1º, o 3º é o que sobrou, o 4º difere do 3º, e assim por diante', () => {
+    const firsts = new Set<string>();
+    for (let i = 0; i < 300; i++) {
+      const seq = biomeSequence(`ordem-${i}`, 30);
+      firsts.add(seq[0]!);
+      for (let g = 0; g < 10; g++) {
+        const [a, b, c] = [seq[g * 3]!, seq[g * 3 + 1]!, seq[g * 3 + 2]!];
+        expect(new Set([a, b, c]).size).toBe(3); // 2º ≠ 1º e o 3º é o que sobrou
+        if (g > 0) expect(a).not.toBe(seq[g * 3 - 1]); // o 1º do grupo novo ≠ o último do anterior
+      }
+    }
+    // o primeiro mapa muda de partida para partida
+    expect(firsts.size).toBe(3);
+  });
+
+  it('a ordem é a mesma para a mesma seed e muda com a seed', () => {
+    expect(biomeSequence('igual', 12)).toEqual(biomeSequence('igual', 12));
+    const all = new Set<string>();
+    for (let i = 0; i < 60; i++) all.add(biomeSequence(`outra-${i}`, 6).join(','));
+    expect(all.size).toBeGreaterThan(10);
+  });
+
+  it('o mundo usa a ordem da seed e as faixas ficam com o bioma certo', () => {
+    const w = new AtravessaWorld('mundo-biomas');
+    const seq = biomeSequence('mundo-biomas', 4);
+    for (const [row, idx] of [[5, 0], [ATR_SEGMENT_LEN + 5, 1], [ATR_SEGMENT_LEN * 2 + 5, 2], [ATR_SEGMENT_LEN * 3 + 5, 3]] as const) {
+      expect(w.lane(row).biome.biome).toBe(seq[idx]);
+      expect(ATR_BIOMES).toContain(w.lane(row).biome.biome);
+    }
   });
 
   it('a dificuldade sobe e as 15 primeiras linhas são fáceis', () => {
@@ -647,11 +682,15 @@ describe('varridas de aviso', () => {
 
   it('o perigo muda com o bioma e só vem depois da linha 20', () => {
     const kinds = new Set<string>();
-    for (const seed of ['b1', 'b2', 'b3', 'b4', 'b5', 'b6']) {
+    for (const seed of ['b1', 'b2', 'b3']) {
       const w = new AtravessaWorld(seed);
-      for (const base of [30, 100, 190]) {
-        let r = base;
-        while (!(w.lane(r).kind === 'descanso' && w.lane(r - 1).kind === 'descanso' && w.lane(r + 1).kind === 'descanso')) r++;
+      const found = new Set<string>();
+      for (let r = 24; r < ATR_SEGMENT_LEN * 4 && found.size < 3; r++) {
+        const lb = w.lane(r).biome;
+        const biome = lb.blend >= 0.5 ? lb.next : lb.biome;
+        if (found.has(biome) || lb.blend > 0) continue;
+        if (!(w.lane(r - 1).kind === 'descanso' && w.lane(r).kind === 'descanso' && w.lane(r + 1).kind === 'descanso')) continue;
+        found.add(biome);
         const sim = new AtravessaSim(seed, w);
         sim.row = r;
         sim.best = r;

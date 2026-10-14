@@ -4,7 +4,6 @@ import {
   ATR_STEP_TICKS,
   AtravessaSim,
   atravessaMilestone,
-  biomeAt,
   laneBiome,
   laneItems,
   trainState,
@@ -213,7 +212,7 @@ export function AtravessaPlay({ seed, record, onEnd, onQuit, onRestart }: Props)
           bumps = v.bumps;
           audio?.bump();
         }
-        const info = biomeAt(v.y);
+        const info = sim.world.biomeAt(v.y);
         audio?.setBiome(laneBiome(info));
 
         // o que avisa por som: o trem, a ambulância, os veículos que passam e a varrida

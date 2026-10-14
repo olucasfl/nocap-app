@@ -1,9 +1,11 @@
 import { createRng, randInt } from '../core/rng';
 import {
+  ATR_BIOMES,
   ATR_BIOME_LEN,
   ATR_CROC_LEN,
   ATR_CYCLE_LEN,
   ATR_FLOW_LEN,
+  ATR_SEGMENT_LEN,
   ATR_HALF_COLS,
   ATR_MIN_LOG_GAP,
   ATR_MIN_VEHICLE_GAP,
@@ -34,17 +36,50 @@ export interface BiomeInfo {
   cycle: number;
 }
 
-/** Em que bioma (ou transição) está uma linha. Linha 0 = largada. */
-export function biomeAt(row: number): BiomeInfo {
+const sequences = new Map<string, AtravessaBiome[]>();
+
+/**
+ * A ordem dos biomas de uma partida (spec 029). Grupos de três: cada grupo é uma ordem dos três
+ * biomas, e o primeiro de cada grupo novo nunca é igual ao último do anterior. O primeiro bioma da
+ * partida é sorteado pela seed (por isso a largada nunca é sempre a mesma).
+ */
+export function biomeSequence(seed: string, count: number): AtravessaBiome[] {
+  let seq = sequences.get(seed);
+  if (!seq) {
+    if (sequences.size > 40) sequences.delete(sequences.keys().next().value!);
+    seq = [];
+    sequences.set(seed, seq);
+  }
+  while (seq.length < count) {
+    const g = seq.length / 3;
+    const rng = createRng(`${seed}:biomas:${g}`);
+    const prevLast = seq[seq.length - 1];
+    let group: AtravessaBiome[] = [];
+    for (let tries = 0; tries < 60; tries++) {
+      group = [...ATR_BIOMES];
+      for (let i = group.length - 1; i > 0; i--) {
+        const j = Math.floor(rng() * (i + 1));
+        [group[i], group[j]] = [group[j]!, group[i]!];
+      }
+      if (group[0] !== prevLast) break;
+    }
+    if (group[0] === prevLast) group = [group[1]!, group[2]!, group[0]!];
+    seq.push(...group);
+  }
+  return seq;
+}
+
+const FIRST: BiomeInfo = { biome: 'horta', next: 'horta', blend: 0, cycle: 0 };
+
+/** Em que bioma (ou transição) está uma linha desta partida. Linha 0 = largada. */
+export function biomeAt(seed: string, row: number): BiomeInfo {
   const r = Math.max(0, Math.floor(row));
-  const cycle = Math.floor(r / ATR_CYCLE_LEN);
-  const pos = r % ATR_CYCLE_LEN;
-  const span = ATR_BIOME_LEN + ATR_TRANSITION_LEN;
-  const idx = Math.floor(pos / span) as 0 | 1 | 2;
-  const into = pos - idx * span;
-  const order: AtravessaBiome[] = ['horta', 'deserto', 'neon'];
-  const biome = order[idx]!;
-  const next = order[(idx + 1) % 3]!;
+  const idx = Math.floor(r / ATR_SEGMENT_LEN);
+  const into = r - idx * ATR_SEGMENT_LEN;
+  const seq = biomeSequence(seed, idx + 2);
+  const biome = seq[idx]!;
+  const next = seq[idx + 1]!;
+  const cycle = Math.floor(idx / 3);
   if (into < ATR_BIOME_LEN) return { biome, next: biome, blend: 0, cycle };
   return { biome, next, blend: (into - ATR_BIOME_LEN + 0.5) / ATR_TRANSITION_LEN, cycle };
 }
@@ -54,8 +89,8 @@ export const laneBiome = (b: BiomeInfo): AtravessaBiome => (b.blend >= 0.5 ? b.n
 
 /** 0 (fácil) a 1 (difícil): sobe devagar; as 15 primeiras linhas são sempre fáceis. */
 export function difficultyAt(row: number): number {
-  const b = biomeAt(row);
-  return clamp((row - 15) / 335 + b.cycle * 0.2, 0, 1);
+  const cycle = Math.floor(Math.max(0, row) / ATR_CYCLE_LEN);
+  return clamp((row - 15) / 335 + cycle * 0.2, 0, 1);
 }
 
 export interface TrainInfo {
@@ -93,7 +128,7 @@ export interface Lane {
 
 const EMPTY_LANE = (row: number): Lane => ({
   row,
-  biome: biomeAt(0),
+  biome: FIRST,
   kind: 'descanso',
   dir: 1,
   flow: null,
@@ -214,6 +249,11 @@ export class AtravessaWorld {
     this.rng = createRng(`${seed}:atravessa`);
   }
 
+  /** O bioma (ou a transição) de uma linha desta partida. */
+  biomeAt(row: number): BiomeInfo {
+    return biomeAt(this.seed, row);
+  }
+
   lane(row: number): Lane {
     if (row < 0) return EMPTY_LANE(row);
     while (this.lanes.length <= row) this.lanes.push(this.gen(this.lanes.length));
@@ -297,7 +337,7 @@ export class AtravessaWorld {
   }
 
   private gen(row: number): Lane {
-    const info = biomeAt(row);
+    const info = this.biomeAt(row);
     const biome = laneBiome(info);
     const diff = difficultyAt(row);
     const prev = this.lanes[row - 1];

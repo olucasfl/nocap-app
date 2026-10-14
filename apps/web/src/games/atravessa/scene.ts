@@ -4,7 +4,6 @@ import {
   ATR_TRAIN_LEN,
   AtravessaSim,
   atravessaMilestone,
-  biomeAt,
   crocState,
   laneBiome,
   laneItems,
@@ -629,7 +628,7 @@ export class AtravessaScene {
     this.burst.update(dt);
 
     // luz, céu e névoa seguem o bioma de onde o herói está; a escuridão escurece de dentro para fora
-    const info = biomeAt(v.y);
+    const info = sim.world.biomeAt(v.y);
     const pal = mixPalette(info);
     const danger = v.danger;
     const dim = 1 - 0.32 * danger * danger;
