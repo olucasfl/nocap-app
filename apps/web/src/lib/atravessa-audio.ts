@@ -27,6 +27,8 @@ export interface AtravessaAudio {
    * veículo pesado (comprimento grande) soa grave. `loud` (0 a 1) cai com a distância até a faixa.
    */
   pass(speed: number, len: number, loud: number): void;
+  /** Um carro de corrida está chegando (ainda fora da tela): o motor acelera, para dar tempo de olhar. */
+  rev(): void;
   /** Cruzou um marco (a cada 50 linhas, depois a cada 100): um sino suave. */
   milestone(): void;
   /** Passou do recorde: três notas subindo. */
@@ -303,6 +305,13 @@ export function createAtravessaAudio(): AtravessaAudio | null {
         // carro: um "vush" que fica mais curto e agudo quanto mais rápido
         hiss('bandpass', 700 + fast * 1100, 280 + fast * 160, dur, peak, t, 0.9);
       }
+    },
+    rev() {
+      const t = ctx.currentTime;
+      // o motor sobe de grave para agudo, curto, e um sopro de ar
+      tone('sawtooth', 80, 330, 0.5, 0.07, t);
+      tone('square', 160, 520, 0.4, 0.025, t + 0.05);
+      hiss('bandpass', 400, 2200, 0.5, 0.05, t, 1.2);
     },
     milestone() {
       const t = ctx.currentTime;

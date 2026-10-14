@@ -125,7 +125,7 @@ export function Hub() {
             <AtravessaArt />
           </div>
           <div className="hub-card-foot">
-            <div className="hub-card-name">Atravessa!</div>
+            <div className="hub-card-name long">Atravessa!</div>
             <div className="mono hub-card-meta">PULE E DESVIE SEM PARAR</div>
             <div className="mono hub-card-meta">{atravessaBestLabel(data)}</div>
           </div>

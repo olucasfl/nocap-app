@@ -259,23 +259,90 @@ export function hash2(a: number, b: number): number {
   return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
 }
 
-/** O herói: um bichinho de blocos, laranja, com orelhas, focinho claro e olhos. Olha para -Z. */
+/**
+ * O herói: uma raposa de boné (spec 029). Montada em blocos pequenos: pelo laranja com costas mais
+ * fortes, peito, bochechas e barriga brancos, "meias" escuras nas patas, focinho fino com o nariz preto,
+ * orelhas pontudas e afinando que saem por buracos do boné azul (listra branca, botão, aba curva e um
+ * "!" na frente) e a cauda grande e peluda, que sobe atrás e termina branca: é o que mais se vê de
+ * costas. Olha para -Z; a origem é nos pés, para a escala amassar para o chão.
+ */
 export function buildHero(): THREE.Group {
   const g = new THREE.Group();
   const body = new THREE.Group();
   body.name = 'body';
-  // a origem do corpo é nos pés, para a escala amassar para o chão
-  body.add(box(0.62, 0.5, 0.62, 0xff8a2a, 0, 0.25, 0));
-  body.add(box(0.58, 0.46, 0.58, 0xff8a2a, 0, 0.73, 0));
-  body.add(box(0.2, 0.2, 0.18, 0xffd9b0, 0, 0.64, -0.34)); // focinho
-  body.add(box(0.07, 0.07, 0.04, 0x1a1208, 0, 0.7, -0.44, { cast: false })); // nariz
-  body.add(box(0.1, 0.1, 0.04, 0x1a1208, -0.15, 0.82, -0.3, { cast: false })); // olhos
-  body.add(box(0.1, 0.1, 0.04, 0x1a1208, 0.15, 0.82, -0.3, { cast: false }));
-  body.add(box(0.16, 0.22, 0.14, 0xff8a2a, -0.2, 1.06, 0.02)); // orelhas
-  body.add(box(0.16, 0.22, 0.14, 0xff8a2a, 0.2, 1.06, 0.02));
-  body.add(box(0.1, 0.12, 0.08, 0xffd9b0, -0.2, 1.04, -0.04, { cast: false }));
-  body.add(box(0.1, 0.12, 0.08, 0xffd9b0, 0.2, 1.04, -0.04, { cast: false }));
-  body.add(box(0.2, 0.2, 0.34, 0xffffff, 0, 0.3, 0.42)); // rabo com ponta branca
+  const ORANGE = 0xff7d26; // pelo
+  const DEEP = 0xe5601a; // costas e sombras
+  const WHITE = 0xfff3e2; // peito, bochechas, ponta da cauda
+  const SOCK = 0x35211a; // meias, nariz, pontas das orelhas
+  const CAP = 0x2f5bff; // boné
+  const CAP_DARK = 0x2347c9;
+  const k = { cast: false } as const;
+
+  // o corpo: esguio, com o peito um pouco mais largo
+  body.add(box(0.52, 0.38, 0.72, ORANGE, 0, 0.36, 0.1));
+  body.add(box(0.46, 0.07, 0.68, DEEP, 0, 0.57, 0.1, k)); // costas
+  body.add(box(0.3, 0.07, 0.6, WHITE, 0, 0.19, 0.1, k)); // barriga
+  body.add(box(0.34, 0.28, 0.06, WHITE, 0, 0.36, -0.27, k)); // peito
+  body.add(box(0.1, 0.05, 0.12, DEEP, -0.12, 0.61, 0.3, k)); // tufos nas costas
+  body.add(box(0.1, 0.05, 0.1, DEEP, 0.14, 0.61, 0.06, k));
+  for (const x of [-0.27, 0.27]) {
+    body.add(box(0.03, 0.05, 0.4, DEEP, x, 0.46, 0.14, k)); // listras de pelo nos flancos
+    body.add(box(0.03, 0.05, 0.3, DEEP, x, 0.36, 0.2, k));
+  }
+  // as patas: coxa laranja e meia escura
+  for (const x of [-0.16, 0.16]) {
+    for (const z of [-0.18, 0.4]) {
+      body.add(box(0.15, 0.12, 0.17, ORANGE, x, 0.2, z));
+      body.add(box(0.13, 0.12, 0.15, SOCK, x, 0.06, z));
+    }
+  }
+
+  // a cabeça
+  body.add(box(0.5, 0.38, 0.42, ORANGE, 0, 0.72, -0.3));
+  for (const x of [-0.26, 0.26]) body.add(box(0.07, 0.14, 0.22, WHITE, x, 0.64, -0.4, k)); // bochechas
+  body.add(box(0.24, 0.14, 0.34, ORANGE, 0, 0.62, -0.62)); // o focinho fino
+  body.add(box(0.22, 0.06, 0.3, WHITE, 0, 0.53, -0.62, k)); // queixo
+  body.add(box(0.1, 0.09, 0.07, SOCK, 0, 0.66, -0.8, k)); // o nariz
+  body.add(box(0.13, 0.02, 0.04, SOCK, 0, 0.56, -0.77, k)); // a boca
+  for (const x of [-0.17, 0.17]) {
+    body.add(box(0.09, 0.1, 0.05, 0x15100c, x, 0.77, -0.5, k)); // os olhos
+    body.add(box(0.032, 0.032, 0.02, 0xffffff, x + (x < 0 ? -0.014 : 0.014), 0.805, -0.528, { cast: false, emissive: 0.6 }));
+  }
+
+  // o boné: justo na cabeça, em duas camadas, com listra branca, botão, aba curva e o emblema com "!"
+  body.add(box(0.54, 0.1, 0.46, CAP, 0, 0.95, -0.3));
+  body.add(box(0.42, 0.09, 0.36, CAP, 0, 1.04, -0.29));
+  body.add(box(0.56, 0.03, 0.48, 0xffffff, 0, 0.95, -0.3, k)); // listra branca
+  body.add(box(0.42, 0.022, 0.36, 0x5f82ff, 0, 1.092, -0.29, k)); // brilho no topo
+  body.add(box(0.07, 0.045, 0.07, CAP_DARK, 0, 1.12, -0.29)); // botão
+  const brim = box(0.4, 0.04, 0.26, CAP_DARK, 0, 0.93, -0.6);
+  brim.rotation.x = 0.2;
+  body.add(brim);
+  body.add(box(0.36, 0.022, 0.04, CAP, 0, 0.95, -0.72, k)); // a borda da aba
+  body.add(box(0.13, 0.11, 0.02, 0xffffff, 0, 1.03, -0.475, k)); // o emblema
+  body.add(box(0.022, 0.055, 0.025, CAP_DARK, 0, 1.045, -0.487, k));
+  body.add(box(0.022, 0.022, 0.025, CAP_DARK, 0, 0.995, -0.487, k));
+  body.add(box(0.26, 0.06, 0.04, CAP_DARK, 0, 0.92, -0.08, k)); // a tira de trás
+  body.add(box(0.07, 0.06, 0.05, 0xffffff, 0, 0.92, -0.065, k)); // a fivelinha
+  // as orelhas pontudas saem por dois buraquinhos no boné e vão afinando até a ponta escura
+  for (const x of [-0.17, 0.17]) {
+    body.add(box(0.2, 0.035, 0.14, SOCK, x, 1.03, -0.2, k)); // a borda do buraco
+    body.add(box(0.19, 0.12, 0.11, ORANGE, x, 1.1, -0.2));
+    body.add(box(0.15, 0.11, 0.09, ORANGE, x, 1.21, -0.2));
+    body.add(box(0.1, 0.09, 0.08, SOCK, x, 1.31, -0.2));
+    body.add(box(0.08, 0.16, 0.03, 0xc96a52, x, 1.15, -0.255, k)); // o miolo rosado
+  }
+
+  // a cauda: grande, peluda, sobe atrás da raposa em curva e termina branca
+  body.add(box(0.22, 0.22, 0.28, ORANGE, 0, 0.4, 0.58));
+  body.add(box(0.28, 0.28, 0.26, ORANGE, 0, 0.5, 0.78));
+  body.add(box(0.32, 0.32, 0.24, ORANGE, 0, 0.66, 0.94));
+  body.add(box(0.3, 0.3, 0.22, ORANGE, 0, 0.86, 1.02));
+  body.add(box(0.24, 0.18, 0.22, DEEP, 0, 0.45, 0.78, k)); // sombra por baixo
+  body.add(box(0.3, 0.24, 0.22, WHITE, 0, 1.06, 1.05)); // a ponta branca
+  body.add(box(0.2, 0.16, 0.14, WHITE, 0, 1.22, 1.07));
+
+  body.position.z = -0.14; // centra a raposa na casa (a cauda pesa atrás)
   bakeChildren(body);
   g.add(body);
   return g;

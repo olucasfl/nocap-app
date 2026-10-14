@@ -25,6 +25,8 @@ export interface Pose {
   dx: number;
   rz: number;
   ry: number;
+  /** Deslocamento ao longo da coluna (positivo = para trás, para a câmera). */
+  dz: number;
 }
 
 /** Quanto do pulo (0 a 1) dura o agachar de saída. */
@@ -43,7 +45,7 @@ const volume = (sy: number) => {
   return { sx: w, sy, sz: w };
 };
 
-export const REST: Pose = { lift: 0, sx: 1, sy: 1, sz: 1, pitch: 0, roll: 0, alpha: 1, dx: 0, rz: 0, ry: 0 };
+export const REST: Pose = { lift: 0, sx: 1, sy: 1, sz: 1, pitch: 0, roll: 0, alpha: 1, dx: 0, rz: 0, ry: 0, dz: 0 };
 
 export function heroPose(view: AtravessaView, now = 0): Pose {
   if (!view.alive) return REST;
@@ -81,18 +83,30 @@ const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
 export function deathPose(end: AtravessaEnd, age: number, killer: -1 | 0 | 1 = 0): Pose {
   const side = killer === 0 ? 1 : killer;
   switch (end) {
-    case 'veiculo':
     case 'atingido': {
-      const power = end === 'veiculo' ? 1 : 0.75;
+      // o perigo vem de frente pela coluna: o herói é jogado para trás, gira no ar e cai de costas
+      const e = clamp01(age / 0.5);
+      const flight = clamp01(age / 0.65);
+      const down = smooth((age - 0.58) / 0.2);
+      return {
+        ...REST,
+        ...volume(1 - 0.4 * down),
+        dz: 0.2 + 2.6 * (1 - (1 - e) * (1 - e)),
+        lift: 1.3 * Math.sin(Math.PI * flight),
+        pitch: Math.min(age * 12, 4.2),
+        sx: 1 + 0.4 * down,
+      };
+    }
+    case 'veiculo': {
       const e = clamp01(age / 0.55);
       const flight = clamp01(age / 0.7);
       const down = smooth((age - 0.62) / 0.2);
       return {
         ...REST,
         ...volume(1 - 0.45 * down),
-        dx: side * (0.15 + 3.2 * power * (1 - (1 - e) * (1 - e))),
-        lift: 1.5 * power * Math.sin(Math.PI * flight),
-        rz: -side * Math.min(age * 15, 5.0) * power + side * 0.0,
+        dx: side * (0.15 + 3.2 * (1 - (1 - e) * (1 - e))),
+        lift: 1.5 * Math.sin(Math.PI * flight),
+        rz: -side * Math.min(age * 15, 5.0),
         sx: 1 + 0.5 * down,
       };
     }
@@ -132,6 +146,9 @@ export function deathPose(end: AtravessaEnd, age: number, killer: -1 | 0 | 1 = 0
     }
   }
 }
+
+/** O herói fica sempre virado um pouco para o lado da câmera: o rosto e o boné aparecem em três quartos. */
+export const HERO_LOOK = -0.4;
 
 /** O giro do herói (radianos em torno de Y) para cada direção; frente é -Z. */
 export const HEADING: Record<Dir, number> = { 0: 0, 1: Math.PI, 2: Math.PI / 2, 3: -Math.PI / 2 };

@@ -70,8 +70,6 @@ export const ATR_MIN_LOG_GAP = 1.4;
 
 /** Tudo que anda numa faixa entra pela borda a esta distância do centro (fora de qualquer tela). */
 export const ATR_FLOW_HALF = 14;
-/** A haste do sinal de trânsito fica a esta distância do centro, do lado de onde vêm os carros. */
-export const ATR_SIGNAL_X = 6.4;
 
 export const ATR_TRAIN_LEN = 12;
 /** O aviso do trem e a velocidade dele variam com a dificuldade (spec 029). */
@@ -108,18 +106,25 @@ export const ATR_DARK_LEAD_IN_TICKS = 90; // parada nos primeiros 1,5 s
 export const ATR_DARK_MAX_GAP = 8; // quem corre não deixa a escuridão ficar mais longe que isso
 export const ATR_DARK_KILL_GAP = 0.6;
 
-/** Varridas de aviso (spec 029): quem fica parado numa faixa de descanso leva um perigo na linha. */
+/**
+ * Varridas de aviso (spec 029): quem fica parado numa faixa de descanso vê uma linha e um "!" descerem
+ * pela **coluna** em que está, e logo depois um perigo vem por essa mesma coluna, de frente. Para
+ * escapar é só pular para o lado.
+ */
 export const ATR_SWEEP_IDLE_TICKS = 180; // 3 s parado
 export const ATR_SWEEP_MIN_ROW = 20;
-export const ATR_SWEEP_WARN_TICKS = 78; // 1,3 s de aviso na própria linha
+export const ATR_SWEEP_WARN_TICKS = 84; // 1,4 s de aviso: o "!" desce e para onde o herói está
 export const ATR_SWEEP_COOLDOWN_TICKS = 300; // 5 s depois que ele passa
+/** O perigo nasce tantas linhas à frente do herói e termina tantas atrás dele. */
+export const ATR_SWEEP_AHEAD = 14;
+export const ATR_SWEEP_BEHIND = 8;
 export type SweepKind = 'barril' | 'feno' | 'redemoinho' | 'laser';
-/** Velocidade (casas/s) e meia largura (casas) de cada varrida. */
+/** Velocidade (linhas/s) e meia largura (casas) de cada varrida; um passo para o lado sempre escapa. */
 export const ATR_SWEEP: Record<SweepKind, { speed: number; r: number }> = {
-  barril: { speed: 9, r: 0.55 },
-  feno: { speed: 11, r: 0.5 },
-  redemoinho: { speed: 6, r: 0.95 },
-  laser: { speed: 15, r: 0.35 },
+  barril: { speed: 8, r: 0.5 },
+  feno: { speed: 10, r: 0.45 },
+  redemoinho: { speed: 5.5, r: 0.6 },
+  laser: { speed: 14, r: 0.3 },
 };
 
 /** Marcos: a cada 50 linhas até a 500, depois a cada 100. */

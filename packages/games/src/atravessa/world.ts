@@ -18,7 +18,7 @@ import {
   type LaneKind,
   type VehicleKind,
 } from './constants';
-import { LaneFlow, Signal, flowX, type FlowItem, type FlowPick } from './flow';
+import { LaneFlow, flowX, type FlowItem, type FlowPick } from './flow';
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
@@ -83,8 +83,6 @@ export interface Lane {
   dir: 1 | -1;
   /** Estrada, rio de toras e de tartarugas: o que anda na faixa (cada item com a sua velocidade). */
   flow: LaneFlow | null;
-  /** O sinal de trânsito, só em algumas estradas. */
-  signal: Signal | null;
   riverMode: RiverMode | null;
   /** Descanso: colunas bloqueadas (árvore, pedra, cacto). */
   blocked: number[];
@@ -99,7 +97,6 @@ const EMPTY_LANE = (row: number): Lane => ({
   kind: 'descanso',
   dir: 1,
   flow: null,
-  signal: null,
   riverMode: null,
   blocked: [],
   pads: null,
@@ -146,34 +143,39 @@ const VEHICLE_KINDS: Record<AtravessaBiome, Record<'slow' | 'mid' | 'fast', Vehi
   horta: {
     slow: ['trator', 'caminhao', 'onibus', 'betoneira'],
     mid: ['carro', 'taxi', 'perua', 'picape', 'scooter'],
-    fast: ['esportivo', 'moto', 'carro'],
+    fast: ['moto', 'carro', 'taxi'],
   },
   deserto: {
     slow: ['caminhao', 'betoneira', 'onibus', 'picape'],
     mid: ['picape', 'carro', 'perua', 'taxi'],
-    fast: ['esportivo', 'moto', 'picape'],
+    fast: ['moto', 'picape', 'carro'],
   },
   neon: {
     slow: ['onibus', 'caminhao', 'betoneira', 'scooter'],
     mid: ['carro', 'taxi', 'perua', 'scooter'],
-    fast: ['esportivo', 'moto', 'drone'],
+    fast: ['moto', 'drone', 'carro'],
   },
 };
 
-type SpeedClass = 'slow' | 'mid' | 'fast' | 'vfast';
+/**
+ * As classes de velocidade (casas/s). O carro de corrida (esportivo) quase não aparece, mas quando
+ * vem é um raio: perto da velocidade do trem (28 a 44) ou mais. A ambulância é a segunda mais rápida.
+ */
+type SpeedClass = 'slow' | 'mid' | 'fast' | 'vfast' | 'racer';
 const SPEED_RANGE: Record<SpeedClass, [number, number]> = {
-  slow: [1.3, 2.2],
-  mid: [2.6, 3.9],
-  fast: [4.5, 6.2],
-  vfast: [7.2, 8.8],
+  slow: [2.0, 3.2],
+  mid: [3.6, 5.5],
+  fast: [6.5, 9.5],
+  vfast: [11, 15],
+  racer: [24, 38],
 };
 /** Cada faixa tem um perfil de tráfego: o que é comum nela (mas qualquer velocidade pode aparecer). */
 const PROFILES: Record<'calma' | 'normal' | 'rush', Record<SpeedClass, number>> = {
-  calma: { slow: 0.38, mid: 0.52, fast: 0.1, vfast: 0 },
-  normal: { slow: 0.22, mid: 0.48, fast: 0.27, vfast: 0.03 },
-  rush: { slow: 0.08, mid: 0.32, fast: 0.48, vfast: 0.12 },
+  calma: { slow: 0.38, mid: 0.52, fast: 0.1, vfast: 0, racer: 0 },
+  normal: { slow: 0.22, mid: 0.45, fast: 0.25, vfast: 0.03, racer: 0.05 },
+  rush: { slow: 0.08, mid: 0.3, fast: 0.42, vfast: 0.1, racer: 0.1 },
 };
-const SPEED_SCALE: Record<AtravessaBiome, number> = { horta: 1, deserto: 1.08, neon: 1.15 };
+const SPEED_SCALE: Record<AtravessaBiome, number> = { horta: 1, deserto: 1.05, neon: 1.1 };
 
 const TREE_DENSITY: Record<AtravessaBiome, number> = { horta: 0.28, deserto: 0.18, neon: 0.12 };
 const PAD_CHANCE: Record<AtravessaBiome, number> = { horta: 0.4, deserto: 0.45, neon: 0.3 };
@@ -238,55 +240,54 @@ export class AtravessaWorld {
     this.segLeft = 1 + weighted(this.rng, base.slice(0, cap));
   }
 
-  private roadFlow(row: number, dir: 1 | -1, biome: AtravessaBiome, diff: number): { flow: LaneFlow; signal: Signal | null } {
+  private roadFlow(row: number, dir: 1 | -1, biome: AtravessaBiome, diff: number): { flow: LaneFlow } {
     const rng = createRng(`${this.seed}:lane:${row}`);
     const roll = rng();
     const profile = roll < lerp(0.5, 0.12, diff) ? 'calma' : roll < lerp(0.92, 0.6, diff) ? 'normal' : 'rush';
     const weights = { ...PROFILES[profile] };
-    // a ambulância só aparece depois dos primeiros metros
+    // a ambulância e o carro de corrida só aparecem depois dos primeiros metros
     if (row < 30) {
-      weights.mid += weights.vfast;
+      weights.mid += weights.vfast + weights.racer;
       weights.vfast = 0;
+      weights.racer = 0;
     }
-    const classes: SpeedClass[] = ['slow', 'mid', 'fast', 'vfast'];
-    const speedMul = SPEED_SCALE[biome] * lerp(0.92, 1.15, diff);
-    const signal = row >= 8 && rng() < lerp(0.14, 0.24, diff) ? new Signal(createRng(`${this.seed}:signal:${row}`)) : null;
+    const classes: SpeedClass[] = ['slow', 'mid', 'fast', 'vfast', 'racer'];
+    const speedMul = SPEED_SCALE[biome] * lerp(0.95, 1.12, diff);
     const density = rng();
     const pick = (r: () => number): FlowPick => {
       const cls = classes[weighted(r, classes.map((c) => weights[c]))]!;
       const [lo, hi] = SPEED_RANGE[cls];
       const speed = lerp(lo, hi, r()) * speedMul;
-      let kind: VehicleKind = 'ambulancia';
-      if (cls !== 'vfast') {
+      let kind: VehicleKind = cls === 'racer' ? 'esportivo' : 'ambulancia';
+      if (cls === 'slow' || cls === 'mid' || cls === 'fast') {
         const list = VEHICLE_KINDS[biome][cls];
         kind = list[Math.floor(r() * list.length)]!;
       }
-      return { kind, len: ATR_FLOW_LEN[kind], speed, variant: r(), bypass: kind === 'ambulancia' };
+      return { kind, len: ATR_FLOW_LEN[kind], speed, variant: r() };
     };
     const flow = new LaneFlow(
       {
         dir,
         minGap: ATR_MIN_VEHICLE_GAP,
-        extraMean: signal ? 0.5 : lerp(2.6, 0.7, density),
+        extraMean: lerp(2.6, 0.7, density),
         extraMax: 6,
         pick,
-        signal: signal ?? undefined,
       },
       rng,
     );
-    return { flow, signal };
+    return { flow };
   }
 
   private riverFlow(row: number, dir: 1 | -1, mode: 'tora' | 'tartaruga', diff: number): LaneFlow {
     const rng = createRng(`${this.seed}:lane:${row}`);
     const crocChance = diff > 0.12 ? lerp(0.08, 0.22, diff) : 0;
     const pick = (r: () => number): FlowPick => {
-      const speed = lerp(0.9, 2.6, r()) * lerp(0.9, 1.1, diff);
+      const speed = lerp(1.7, 4.0, r()) * lerp(0.95, 1.2, diff);
       if (mode === 'tartaruga') {
         const len = r() < 0.5 ? 1.7 : 2.6;
-        return { kind: 'tartaruga', len, speed: speed * 0.85, variant: r() };
+        return { kind: 'tartaruga', len, speed: speed * 0.92, variant: r() };
       }
-      if (r() < crocChance) return { kind: 'croc', len: ATR_CROC_LEN, speed: speed * 0.8, variant: r() };
+      if (r() < crocChance) return { kind: 'croc', len: ATR_CROC_LEN, speed: speed * 0.88, variant: r() };
       return { kind: 'tora', len: randInt(r, 2, 4), speed, variant: r() };
     };
     return new LaneFlow(
@@ -344,9 +345,7 @@ export class AtravessaWorld {
     this.corridors[row] = this.corridor;
 
     if (kind === 'estrada') {
-      const { flow, signal } = this.roadFlow(row, base.dir, biome, diff);
-      base.flow = flow;
-      base.signal = signal;
+      base.flow = this.roadFlow(row, base.dir, biome, diff).flow;
     } else if (kind === 'trilho') {
       const quiet = randInt(rng, 2 * ATR_TPS, Math.round(4.5 * ATR_TPS));
       const speed = lerp(ATR_TRAIN_SPEED_EASY, ATR_TRAIN_SPEED_HARD, diff) * lerp(0.95, 1.05, rng());

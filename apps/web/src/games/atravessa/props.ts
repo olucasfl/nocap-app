@@ -65,34 +65,6 @@ function rawTurtles(len: number, biome: AtravessaBiome): THREE.Group {
   return g;
 }
 
-/** O semáforo: haste, caixa e três lâmpadas. A cena acende uma por vez. */
-export function buildTrafficLight(): { group: THREE.Group; lamps: Record<'red' | 'amber' | 'green', THREE.Mesh> } {
-  const g = new THREE.Group();
-  g.add(box(0.14, 1.5, 0.14, 0x2a2a30, 0, 0.75, 0));
-  g.add(box(0.46, 1.04, 0.36, 0x1b1b22, 0, 1.6, 0));
-  const lamps = {
-    red: box(0.28, 0.26, 0.1, 0x3a1010, 0, 1.92, 0.22, { cast: false }),
-    amber: box(0.28, 0.26, 0.1, 0x3a2a08, 0, 1.6, 0.22, { cast: false }),
-    green: box(0.28, 0.26, 0.1, 0x0c2a14, 0, 1.28, 0.22, { cast: false }),
-  };
-  for (const l of Object.values(lamps)) l.userData.keep = true;
-  g.add(lamps.red, lamps.amber, lamps.green);
-  return { group: model(null, () => g), lamps };
-}
-
-export const LAMP_ON: Record<'red' | 'amber' | 'green', number> = { red: 0xff3030, amber: 0xffb020, green: 0x35e06a };
-export const LAMP_OFF: Record<'red' | 'amber' | 'green', number> = { red: 0x3a1010, amber: 0x3a2a08, green: 0x0c2a14 };
-const lampCache = new Map<string, THREE.Material>();
-export const lampMaterial = (c: 'red' | 'amber' | 'green', on: boolean): THREE.Material => {
-  const key = `${c}${on}`;
-  let m = lampCache.get(key);
-  if (!m) {
-    m = on ? mat(LAMP_ON[c], 1) : mat(LAMP_OFF[c]);
-    lampCache.set(key, m);
-  }
-  return m;
-};
-
 /** O perigo que atravessa a linha. Olha para +X; a cena gira e posiciona. */
 export function buildSweepHazard(kind: SweepKind): THREE.Group {
   const g = new THREE.Group();
@@ -126,43 +98,75 @@ export function buildSweepHazard(kind: SweepKind): THREE.Group {
     g.add(col);
     g.userData.layers = layers;
   } else {
-    // laser: um feixe fino e comprido de neon na altura do herói, e o brilho no chão
-    g.add(box(0.14, 1.5, 0.14, 0xff2fb3, 0, 0.8, 0, { emissive: 1.2, cast: false }));
-    g.add(box(0.3, 0.04, 0.9, 0xff8fd8, 0, 0.04, 0, { emissive: 1, cast: false }));
-    g.add(box(0.05, 1.5, 0.05, 0xffffff, 0, 0.8, 0, { emissive: 1, cast: false }));
+    // laser: um raio de neon comprido na altura do herói, com um núcleo branco e o brilho no chão
+    g.add(box(1.9, 0.16, 0.16, 0xff2fb3, 0, 0.55, 0, { emissive: 1.2, cast: false }));
+    g.add(box(1.95, 0.06, 0.06, 0xffffff, 0, 0.55, 0, { emissive: 1, cast: false }));
+    g.add(box(2.4, 0.04, 0.5, 0xff8fd8, 0, 0.04, 0, { emissive: 1, cast: false }));
   }
   return g;
 }
 
 /**
- * O aviso na própria linha: listras de perigo que piscam ao longo de toda a pista, setas apontando
- * por onde ele vem e uma placa de "!" na ponta de onde vem. `side` = para onde o perigo anda.
+ * O aviso (spec 029): uma linha fina e limpa que desce pela coluna do herói, um "!" que desliza por
+ * ela e para onde o herói está (ou estava), e um anel pulsando nesse lugar. Tudo olhando para a câmera,
+ * sem listras nem quadrados.
  */
-export function buildSweepWarning(side: 1 | -1): { group: THREE.Group; blink: THREE.Mesh[]; sign: THREE.Object3D } {
+const warnColor = 0xff4a3d;
+
+/** A linha: uma caixa fina e comprida ao longo de Z, de `len` casas, com o centro na origem. */
+export function buildSweepLine(len: number): THREE.Mesh {
+  const mat3 = new THREE.MeshBasicMaterial({ color: warnColor, transparent: true, opacity: 0.9, depthWrite: false });
+  const m = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.04, len), mat3);
+  m.renderOrder = 5;
+  return m;
+}
+
+/** O ponto de exclamação: um círculo vermelho com borda branca, que sempre olha para a câmera. */
+export function buildBang(): THREE.Sprite {
+  const cv = document.createElement('canvas');
+  cv.width = 128;
+  cv.height = 128;
+  const c = cv.getContext('2d')!;
+  c.fillStyle = '#ff3b30';
+  c.strokeStyle = '#ffffff';
+  c.lineWidth = 9;
+  c.beginPath();
+  c.arc(64, 64, 52, 0, Math.PI * 2);
+  c.fill();
+  c.stroke();
+  c.fillStyle = '#ffffff';
+  c.beginPath();
+  c.roundRect(55, 26, 18, 48, 8);
+  c.fill();
+  c.beginPath();
+  c.arc(64, 94, 10, 0, Math.PI * 2);
+  c.fill();
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, depthTest: false }));
+  sp.scale.set(1.0, 1.0, 1);
+  sp.renderOrder = 10;
+  return sp;
+}
+
+/** O anel no chão do alvo: um quadrado vazado de linhas finas. */
+export function buildTargetRing(): THREE.Group {
   const g = new THREE.Group();
-  const blink: THREE.Mesh[] = [];
-  for (let i = -5; i <= 5; i++) {
-    const m = box(0.6, 0.03, 0.8, i % 2 ? 0xffd23f : 0xff3030, i * 1.0, 0.02, 0, { cast: false, emissive: 0.7 });
-    g.add(m);
-    blink.push(m);
-  }
-  // setas no chão apontando para onde ele vai
-  for (const x of [-4.8, 4.8]) {
-    const a = new THREE.Group();
-    a.position.set(x, 0.05, 0);
-    a.add(box(0.5, 0.03, 0.16, 0xffffff, -0.05 * side, 0, 0, { cast: false, emissive: 0.8 }));
-    a.add(box(0.16, 0.03, 0.4, 0xffffff, 0.22 * side, 0, 0, { cast: false, emissive: 0.8 }));
+  const m = new THREE.MeshBasicMaterial({ color: warnColor, transparent: true, opacity: 0.95, depthWrite: false });
+  const geoLong = new THREE.BoxGeometry(1.0, 0.04, 0.07);
+  const geoSide = new THREE.BoxGeometry(0.07, 0.04, 1.0);
+  for (const z of [-0.5, 0.5]) {
+    const a = new THREE.Mesh(geoLong, m);
+    a.position.z = z;
     g.add(a);
   }
-  // a placa na ponta de onde ele vem
-  const sign = new THREE.Group();
-  sign.position.set(-side * 5.8, 0, 0);
-  sign.add(box(0.12, 1.2, 0.12, 0x2a2a30, 0, 0.6, 0));
-  sign.add(box(0.8, 0.8, 0.12, 0xffd23f, 0, 1.4, 0, { emissive: 0.6 }));
-  sign.add(box(0.12, 0.34, 0.14, 0x111111, 0, 1.5, 0.02, { cast: false }));
-  sign.add(box(0.12, 0.12, 0.14, 0x111111, 0, 1.2, 0.02, { cast: false }));
-  g.add(sign);
-  return { group: g, blink, sign };
+  for (const x of [-0.5, 0.5]) {
+    const a = new THREE.Mesh(geoSide, m);
+    a.position.x = x;
+    g.add(a);
+  }
+  g.renderOrder = 5;
+  return g;
 }
 
 /** Uma placa de texto que sempre olha para a câmera (o número do marco, "SEU RECORDE"). */
@@ -210,9 +214,11 @@ export function buildGate(kind: 'recorde' | 'marco', label: string, floorTop: nu
   const g = new THREE.Group();
   const main = kind === 'recorde' ? 0xffc928 : 0x2f5bff;
   const alt = kind === 'recorde' ? 0x111111 : 0xf4f4ef;
+  // a faixa quadriculada fica só nas duas bordas da pista: o meio fica livre, e dá para ver a água, a
+  // estrada e tudo que passa por baixo (tora, carro, trem)
   for (let i = -4; i <= 4; i++) {
-    g.add(box(1, 0.03, 0.5, (i + 4) % 2 === 0 ? main : alt, i, floorTop + 0.02, -0.25, { cast: false }));
-    g.add(box(1, 0.03, 0.5, (i + 4) % 2 === 0 ? alt : main, i, floorTop + 0.02, 0.25, { cast: false }));
+    g.add(box(1, 0.03, 0.12, (i + 4) % 2 === 0 ? main : alt, i, floorTop + 0.02, -0.44, { cast: false }));
+    g.add(box(1, 0.03, 0.12, (i + 4) % 2 === 0 ? alt : main, i, floorTop + 0.02, 0.44, { cast: false }));
   }
   for (const x of [-5.1, 5.1]) {
     g.add(box(0.2, 2.6, 0.2, 0x2a2a30, x, floorTop + 1.3, 0));

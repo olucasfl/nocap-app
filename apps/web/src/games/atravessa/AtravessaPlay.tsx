@@ -121,6 +121,7 @@ export function AtravessaPlay({ seed, record, onEnd, onQuit, onRestart }: Props)
     let siren = 0;
     // de que lado da coluna do herói cada veículo estava no quadro anterior (para o som de passagem)
     let sides = new Map<string, number>();
+    let revved = new Set<string>();
 
     const showToast = (text: string, kind: 'record' | 'marco') => {
       window.clearTimeout(toastTimer);
@@ -221,6 +222,7 @@ export function AtravessaPlay({ seed, record, onEnd, onQuit, onRestart }: Props)
           warning = false;
           siren = 0;
           const next = new Map<string, number>();
+          const nextRev = new Set<string>();
           const from = Math.floor(v.y) - 6;
           const to = Math.floor(v.y) + 8;
           for (let r = Math.max(0, from); r <= to; r++) {
@@ -233,6 +235,12 @@ export function AtravessaPlay({ seed, record, onEnd, onQuit, onRestart }: Props)
                 const near = clamp01(1 - Math.abs(it.x) / 17) ** 0.7 * clamp01(1 - rowDist / 9);
                 siren = Math.max(siren, near);
               }
+              // o carro de corrida avisa com o motor antes de aparecer
+              if (it.kind === 'esportivo' && rowDist <= 5) {
+                const rk = r + ':' + it.id;
+                nextRev.add(rk);
+                if (!revved.has(rk) && Math.abs(it.x) > 5) audio?.rev();
+              }
               // o som de passagem: só das faixas bem perto, no instante em que cruza a coluna do herói
               if (rowDist <= 3.2 && it.kind !== "ambulancia") {
                 const key = r + ":" + it.id;
@@ -244,6 +252,7 @@ export function AtravessaPlay({ seed, record, onEnd, onQuit, onRestart }: Props)
             }
           }
           sides = next;
+          revved = nextRev;
         }
         if (!finished) audio?.frame(v.danger, warning, siren);
 

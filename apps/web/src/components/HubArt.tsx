@@ -131,6 +131,13 @@ export function EcoArt() {
 export function AtravessaArt() {
   return (
     <svg className="ha ha-atravessa" viewBox="0 0 200 150" aria-hidden="true">
+      {/* as faixas inclinadas passam do desenho: o recorte mantém tudo dentro do cartão */}
+      <defs>
+        <clipPath id="ha-atr-clip">
+          <rect x="0" y="0" width="200" height="150" rx="16" />
+        </clipPath>
+      </defs>
+      <g clipPath="url(#ha-atr-clip)">
       <g transform="translate(0 -52) skewY(26)">
         <rect x="-10" y="70" width="220" height="30" fill="#8dd252" {...stroke} strokeWidth={3} />
         <rect x="-10" y="100" width="220" height="30" fill="#3a3d4a" {...stroke} strokeWidth={3} />
@@ -139,14 +146,29 @@ export function AtravessaArt() {
         <rect x="120" y="136" width="52" height="18" rx="3" fill="#8a5a34" {...stroke} strokeWidth={3} />
         <rect x="-10" y="160" width="220" height="40" fill="#8dd252" {...stroke} strokeWidth={3} />
       </g>
+      </g>
       <g className="ha-run">
-        <ellipse cx="86" cy="126" rx="15" ry="5" fill="rgba(0,0,0,.3)" />
-        <rect x="72" y="92" width="28" height="30" rx="4" fill="#ff8a2a" {...stroke} strokeWidth={3.5} />
-        <rect x="74" y="78" width="7" height="14" rx="2" fill="#ff8a2a" {...stroke} strokeWidth={2.6} />
-        <rect x="91" y="78" width="7" height="14" rx="2" fill="#ff8a2a" {...stroke} strokeWidth={2.6} />
-        <rect x="79" y="102" width="5" height="5" fill={INK} />
-        <rect x="89" y="102" width="5" height="5" fill={INK} />
-        <rect x="82" y="110" width="9" height="7" rx="1.5" fill="#ffd9b0" {...stroke} strokeWidth={2} />
+        <ellipse cx="88" cy="128" rx="20" ry="5" fill="rgba(0,0,0,.3)" />
+        {/* a cauda grande, com a ponta branca */}
+        <path d="M70 118c-18 2-24-16-12-28 4 10 12 14 20 14z" fill="#ff7d26" {...stroke} strokeWidth={3} />
+        <path d="M58 90c4 2 6 6 5 11-5-1-8-5-5-11z" fill="#fff3e2" {...stroke} strokeWidth={2.4} />
+        {/* o corpo e as patas escuras */}
+        <rect x="72" y="96" width="30" height="26" rx="6" fill="#ff7d26" {...stroke} strokeWidth={3.5} />
+        <rect x="76" y="116" width="8" height="10" rx="2" fill="#35211a" {...stroke} strokeWidth={2.4} />
+        <rect x="92" y="116" width="8" height="10" rx="2" fill="#35211a" {...stroke} strokeWidth={2.4} />
+        <rect x="80" y="104" width="14" height="14" rx="4" fill="#fff3e2" />
+        {/* as orelhas saindo do boné */}
+        <path d="M76 82l-3-14 11 8z" fill="#ff7d26" {...stroke} strokeWidth={2.6} />
+        <path d="M98 82l3-14-11 8z" fill="#ff7d26" {...stroke} strokeWidth={2.6} />
+        {/* o boné azul com a aba */}
+        <rect x="72" y="76" width="30" height="12" rx="5" fill="#2f5bff" {...stroke} strokeWidth={3} />
+        <rect x="72" y="83" width="30" height="3" fill="#fff" />
+        <path d="M70 90l-12 4 2 5 14-4z" fill="#2347c9" {...stroke} strokeWidth={2.6} />
+        {/* o rosto */}
+        <rect x="70" y="88" width="32" height="14" rx="4" fill="#ff7d26" {...stroke} strokeWidth={3} />
+        <rect x="76" y="92" width="4" height="5" fill={INK} />
+        <rect x="90" y="92" width="4" height="5" fill={INK} />
+        <rect x="82" y="96" width="6" height="5" rx="1.5" fill="#35211a" />
       </g>
     </svg>
   );

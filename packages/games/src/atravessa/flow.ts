@@ -3,7 +3,6 @@ import {
   ATR_CROC_PERIOD,
   ATR_CROC_WARN,
   ATR_FLOW_HALF,
-  ATR_SIGNAL_X,
   ATR_TPS,
   ATR_TURTLE_DOWN,
   ATR_TURTLE_PERIOD,
@@ -34,8 +33,6 @@ export interface FlowItem {
   variant: number;
   /** Fase do ciclo do crocodilo e da tartaruga (ticks). */
   phase: number;
-  /** Passa pelo sinal fechado (a ambulância). */
-  bypass: boolean;
 }
 
 export interface FlowPick {
@@ -43,59 +40,6 @@ export interface FlowPick {
   len: number;
   speed: number;
   variant: number;
-  bypass?: boolean;
-}
-
-/** O sinal de trânsito de uma faixa: verde e vermelho em janelas de tempo sorteadas da seed. */
-export class Signal {
-  private windows: { from: number; to: number; green: boolean }[] = [];
-  private rng: () => number;
-
-  constructor(rng: () => number, start = -4000) {
-    this.rng = rng;
-    this.windows.push(this.makeWindow(start, rng() < 0.5));
-  }
-
-  private makeWindow(from: number, green: boolean) {
-    const len = green ? 120 + Math.floor(this.rng() * 181) : 90 + Math.floor(this.rng() * 121);
-    return { from, to: from + len, green };
-  }
-
-  private extend(until: number) {
-    let last = this.windows[this.windows.length - 1]!;
-    while (last.to <= until) {
-      last = this.makeWindow(last.to, !last.green);
-      this.windows.push(last);
-    }
-  }
-
-  private at(t: number) {
-    this.extend(t);
-    let lo = 0;
-    let hi = this.windows.length - 1;
-    while (lo < hi) {
-      const mid = (lo + hi + 1) >> 1;
-      if (this.windows[mid]!.from <= t) lo = mid;
-      else hi = mid - 1;
-    }
-    return this.windows[lo]!;
-  }
-
-  isGreen(t: number): boolean {
-    return this.at(t).green;
-  }
-
-  /** O primeiro instante a partir de `t` em que o sinal está verde. */
-  nextGreenStart(t: number): number {
-    const w = this.at(t);
-    if (w.green) return t;
-    return w.to;
-  }
-
-  /** Quantos ticks faltam para o sinal mudar (a tela usa para piscar o amarelo no fim do verde). */
-  untilChange(t: number): number {
-    return this.at(t).to - t;
-  }
 }
 
 export interface FlowCfg {
@@ -106,7 +50,6 @@ export interface FlowCfg {
   extraMean: number;
   extraMax: number;
   pick: (rng: () => number) => FlowPick;
-  signal?: Signal;
 }
 
 /** Os primeiros itens já estão dentro da faixa no tick 0. */
@@ -133,10 +76,12 @@ export class LaneFlow {
     const q = this.items[this.items.length - 1];
     if (!q) return true;
     const half = (q.len + p.len) / 2;
+    // o vão cresce com a velocidade: quem é rápido deixa sempre uma janela de ~0,3 s para atravessar
+    const need = Math.max(this.cfg.minGap, this.cfg.minGap > 1.5 ? 0.6 + 0.3 * Math.max(q.speed, p.speed) : 0);
     const gapAt = (t: number) => (q.speed * (t - q.t0) - p.speed * (t - t0)) / ATR_TPS - half;
     const end = Math.min(q.t0 + q.dur, t0 + dur);
     if (end <= t0) return true;
-    return gapAt(t0) >= this.cfg.minGap && gapAt(end) >= this.cfg.minGap;
+    return gapAt(t0) >= need && gapAt(end) >= need;
   }
 
   private make() {
@@ -146,19 +91,10 @@ export class LaneFlow {
     const dur = Math.ceil(((2 * ATR_FLOW_HALF) / p.speed) * ATR_TPS);
     const extra = Math.min(cfg.extraMax, -Math.log(1 - rng()) * cfg.extraMean) * ATR_TPS;
     let t0 = last ? last.t0 + STEP + Math.floor(extra) : PRE_ROLL + Math.floor(rng() * 400);
-    const toPost = Math.ceil(((ATR_FLOW_HALF - ATR_SIGNAL_X) / p.speed) * ATR_TPS);
     for (let guard = 0; guard < 2000; guard++) {
       if (!this.fits(t0, p, dur)) {
         t0 += STEP;
         continue;
-      }
-      if (cfg.signal && !p.bypass) {
-        // só passa pela haste do sinal quando está verde
-        const pass = t0 + toPost;
-        if (!cfg.signal.isGreen(pass)) {
-          t0 = cfg.signal.nextGreenStart(pass) - toPost;
-          continue;
-        }
       }
       break;
     }
@@ -173,7 +109,6 @@ export class LaneFlow {
       dur,
       variant: p.variant,
       phase: Math.floor(rng() * 1000),
-      bypass: !!p.bypass,
     });
   }
 

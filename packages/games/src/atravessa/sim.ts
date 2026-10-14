@@ -21,6 +21,8 @@ import {
   ATR_SINK_TICKS,
   ATR_STEP_TICKS,
   ATR_SWEEP,
+  ATR_SWEEP_AHEAD,
+  ATR_SWEEP_BEHIND,
   ATR_SWEEP_COOLDOWN_TICKS,
   ATR_SWEEP_IDLE_TICKS,
   ATR_SWEEP_MIN_ROW,
@@ -47,12 +49,12 @@ interface Move {
   t: number;
 }
 
-/** Uma varrida de aviso: um perigo que atravessa a linha onde o herói ficou parado (spec 029). */
+/** Uma varrida de aviso: um perigo que desce pela coluna onde o herói ficou parado (spec 029). */
 interface Sweep {
-  row: number;
+  /** A coluna que ele vai varrer e a linha onde o herói estava quando o aviso começou. */
+  col: number;
+  row0: number;
   kind: SweepKind;
-  /** Para que lado ele anda: 1 = para a direita. */
-  side: 1 | -1;
   /** Tick em que o aviso começa e em que o perigo entra. */
   start: number;
   hit: number;
@@ -61,14 +63,16 @@ interface Sweep {
 export interface SweepView {
   /** Identifica a varrida (o tick em que o aviso começou). */
   id: number;
-  row: number;
+  col: number;
+  /** A linha onde o aviso para (onde o herói estava) e a linha onde o perigo entra. */
+  row0: number;
+  from: number;
   kind: SweepKind;
-  side: 1 | -1;
   phase: 'warn' | 'hit';
   /** O aviso: 0 a 1. */
   warn: number;
-  /** Posição do perigo (casas); null enquanto só avisa. */
-  x: number | null;
+  /** Onde o perigo está (linha, fracionária); null enquanto só avisa. */
+  at: number | null;
 }
 
 /** O que a tela precisa para desenhar o herói e o aviso da escuridão. */
@@ -223,7 +227,7 @@ export class AtravessaSim {
     if (this.row > this.best) this.best = this.row;
   }
 
-  /** Uma varrida de aviso na linha do herói, se ele ficou parado tempo demais numa faixa de descanso. */
+  /** Uma varrida de aviso na coluna do herói, se ele ficou parado tempo demais numa faixa de descanso. */
   private maybeSweep() {
     if (this.sweep || this.tick < this.sweepFree || this.move || this.queue.length) return;
     if (this.row < ATR_SWEEP_MIN_ROW || this.idle < ATR_SWEEP_IDLE_TICKS) return;
@@ -234,17 +238,18 @@ export class AtravessaSim {
     const kind: SweepKind =
       biome === 'horta' ? 'barril' : biome === 'neon' ? 'laser' : h === 0 ? 'feno' : 'redemoinho';
     this.sweep = {
-      row: this.row,
+      col: Math.round(this.hx),
+      row0: this.row,
       kind,
-      side: h === 0 ? 1 : -1,
       start: this.tick,
       hit: this.tick + ATR_SWEEP_WARN_TICKS,
     };
   }
 
-  private sweepX(s: Sweep): number | null {
+  /** Em que linha o perigo está: desce da frente do herói até passar por trás dele. */
+  private sweepAt(s: Sweep): number | null {
     if (this.tick < s.hit) return null;
-    return s.side * (-ATR_FLOW_HALF + (ATR_SWEEP[s.kind].speed * (this.tick - s.hit)) / 60);
+    return s.row0 + ATR_SWEEP_AHEAD - (ATR_SWEEP[s.kind].speed * (this.tick - s.hit)) / 60;
   }
 
   /** Avança um tick (1/60 s). */
@@ -305,16 +310,15 @@ export class AtravessaSim {
       if (pad?.sinks && this.tick - this.landedTick >= ATR_SINK_TICKS) return this.die('afundou');
     }
 
-    // varridas de aviso
+    // varridas de aviso: o perigo desce pela coluna; escapa quem sai dela
     this.maybeSweep();
     if (this.sweep) {
       const s = this.sweep;
-      const x = this.sweepX(s);
-      if (x !== null) {
-        if (rowNow === s.row && Math.abs(this.hx - x) < ATR_SWEEP[s.kind].r + ATR_HERO_R) {
-          return this.die('atingido', s.side);
-        }
-        if (x * s.side > ATR_FLOW_HALF) {
+      const at = this.sweepAt(s);
+      if (at !== null) {
+        const w = ATR_SWEEP[s.kind].r + ATR_HERO_R;
+        if (Math.abs(this.hx - s.col) < w && Math.abs(this.y - at) < w + 0.25) return this.die('atingido', 0);
+        if (at < s.row0 - ATR_SWEEP_BEHIND) {
           this.sweep = null;
           this.sweepFree = this.tick + ATR_SWEEP_COOLDOWN_TICKS;
         }
@@ -357,12 +361,13 @@ export class AtravessaSim {
       sweep: s
         ? {
             id: s.start,
-            row: s.row,
+            col: s.col,
+            row0: s.row0,
+            from: s.row0 + ATR_SWEEP_AHEAD,
             kind: s.kind,
-            side: s.side,
             phase: this.tick < s.hit ? 'warn' : 'hit',
             warn: clamp((this.tick - s.start) / ATR_SWEEP_WARN_TICKS, 0, 1),
-            x: this.sweepX(s),
+            at: this.sweepAt(s),
           }
         : null,
       killer: this.killer,

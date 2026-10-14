@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import {
   ATR_HALF_COLS,
-  ATR_SIGNAL_X,
   ATR_TRAIN_LEN,
   AtravessaSim,
   atravessaMilestone,
@@ -18,7 +17,7 @@ import {
   type Lane,
   type SweepView,
 } from '@nocap/games';
-import { HEADING, deathPose, heroPose, turnToward, type Pose } from './hop';
+import { HEADING, HERO_LOOK, deathPose, heroPose, turnToward, type Pose } from './hop';
 import {
   bakeInto,
   box,
@@ -38,11 +37,11 @@ import {
   Burst,
   buildCroc,
   buildGate,
+  buildBang,
   buildSweepHazard,
-  buildSweepWarning,
-  buildTrafficLight,
+  buildSweepLine,
+  buildTargetRing,
   buildTurtles,
-  lampMaterial,
 } from './props';
 import { buildVehicle } from './vehicles';
 
@@ -150,7 +149,6 @@ class LaneView {
   private pads = new Map<number, THREE.Object3D>();
   private train: THREE.Object3D | null = null;
   private trainLights: THREE.Mesh[] = [];
-  private light: ReturnType<typeof buildTrafficLight> | null = null;
   private readonly biome: AtravessaBiome;
 
   constructor(
@@ -191,11 +189,6 @@ class LaneView {
       if (lane.kind === 'estrada') {
         st.add(box(FLOOR_W, 0.02, 0.06, pal.roadEdge, 0, 0.13, 0.46, { cast: false, emissive: b === 'neon' ? 0.9 : 0 }));
         st.add(box(FLOOR_W, 0.02, 0.06, pal.roadEdge, 0, 0.13, -0.46, { cast: false, emissive: b === 'neon' ? 0.9 : 0 }));
-        if (lane.signal) {
-          this.light = buildTrafficLight();
-          g.add(this.light.group);
-          this.light.group.position.y = 0.12;
-        }
       } else {
         for (let x = -FLOOR_W / 2; x < FLOOR_W / 2; x += 0.9) st.add(box(0.28, 0.06, 0.78, 0x6b5b4a, x, 0.15, 0, { cast: false }));
         st.add(box(FLOOR_W, 0.05, 0.08, 0xb8bcc8, 0, 0.17, 0.2, { cast: false }));
@@ -283,7 +276,6 @@ class LaneView {
         }
       }
     }
-    if (this.light && lane.signal) this.updateLight(lane, tick, cam);
     if (this.train) {
       const st = trainState(lane, tick);
       this.train.visible = st.x !== null;
@@ -340,26 +332,10 @@ class LaneView {
       });
     }
   }
-
-  /** O semáforo fica sempre à vista: encosta na borda da tela se o lugar de verdade sair dela. */
-  private updateLight(lane: Lane, tick: number, cam: CamInfo) {
-    const light = this.light!;
-    const signal = lane.signal!;
-    const gx = -lane.dir * ATR_SIGNAL_X;
-    const rel = this.row - cam.row;
-    const sx = RIGHT.x * (gx - cam.x) - RIGHT.z * rel;
-    const limit = cam.halfW - 0.8;
-    const clamped = Math.max(-limit, Math.min(limit, sx));
-    light.group.position.x = cam.x + (clamped - -RIGHT.z * rel) / RIGHT.x;
-    light.group.position.z = 0.62;
-    const green = signal.isGreen(tick);
-    // o fim do verde pisca o amarelo, para dar tempo de ver
-    const amber = green && signal.untilChange(tick) < 36 && Math.floor(tick / 6) % 2 === 0;
-    light.lamps.red.material = lampMaterial('red', !green);
-    light.lamps.amber.material = lampMaterial('amber', amber);
-    light.lamps.green.material = lampMaterial('green', green && !amber);
-  }
 }
+
+/** A raposa é um pouco maior que uma casa, para se ler bem no meio do cenário. */
+const HERO_SCALE = 1.2;
 
 /** Quanto o herói e a câmera suavizam (por segundo). */
 const CAM_FOLLOW = 5;
@@ -403,9 +379,11 @@ export class AtravessaScene {
   private burstFired = false;
   private sweepFx: {
     id: number;
-    warn: ReturnType<typeof buildSweepWarning>;
+    line: THREE.Mesh;
+    bang: THREE.Sprite;
+    ring: THREE.Group;
     hazard: THREE.Group;
-    row: number;
+    y: number;
   } | null = null;
 
   constructor(canvas: HTMLCanvasElement, reducedMotion = false) {
@@ -477,11 +455,11 @@ export class AtravessaScene {
   }
 
   private applyPose(p: Pose, x: number, y: number, topY: number) {
-    this.hero.position.set(x + p.dx, topY + p.lift, -y);
+    this.hero.position.set(x + p.dx, topY + p.lift, -y + p.dz);
     this.heroBody.scale.set(p.sx, p.sy, p.sz);
     this.heroBody.rotation.set(p.pitch, p.ry, p.roll + p.rz);
     this.hero.visible = p.alpha > 0.02;
-    this.hero.scale.setScalar(Math.max(0.01, p.alpha));
+    this.hero.scale.setScalar(HERO_SCALE * Math.max(0.01, p.alpha));
   }
 
   /**
@@ -502,47 +480,93 @@ export class AtravessaScene {
     }
   }
 
-  /** O aviso e o perigo da varrida: nascem quando ela começa e somem quando ela acaba. */
-  private updateSweep(s: SweepView | null, now: number) {
-    if (!s) {
-      if (this.sweepFx) {
-        this.scene.remove(this.sweepFx.warn.group, this.sweepFx.hazard);
-        this.sweepFx = null;
-      }
+  /** Tira da cena o que a varrida criou. */
+  private clearSweep() {
+    const fx = this.sweepFx;
+    if (!fx) return;
+    this.scene.remove(fx.line, fx.bang, fx.ring, fx.hazard);
+    fx.line.geometry.dispose();
+    this.sweepFx = null;
+  }
+
+  /**
+   * A varrida (spec 029): uma linha fina desce pela coluna do herói, um "!" desliza por ela e para onde
+   * o herói estava, o chão do alvo pulsa; depois o perigo desce pela mesma linha, de frente.
+   * Para escapar é só pular para o lado.
+   */
+  private updateSweep(sw: SweepView | null, now: number) {
+    if (!sw) {
+      this.clearSweep();
       return;
     }
-    if (!this.sweepFx || this.sweepFx.id !== s.id) {
-      if (this.sweepFx) this.scene.remove(this.sweepFx.warn.group, this.sweepFx.hazard);
-      const warn = buildSweepWarning(s.side);
-      const hazard = buildSweepHazard(s.kind);
+    if (!this.sweepFx || this.sweepFx.id !== sw.id) {
+      this.clearSweep();
+      const len = sw.from - sw.row0;
+      const line = buildSweepLine(len);
+      const bang = buildBang();
+      const ring = buildTargetRing();
+      const hazard = buildSweepHazard(sw.kind);
       hazard.visible = false;
-      this.scene.add(warn.group, hazard);
-      this.sweepFx = { id: s.id, warn, hazard, row: s.row };
+      hazard.rotation.y = Math.PI / 2; // anda ao longo da coluna: de frente para o herói
+      line.position.set(sw.col, 0.46, -(sw.row0 + len / 2));
+      this.scene.add(line, bang, ring, hazard);
+      this.sweepFx = { id: sw.id, line, bang, ring, hazard, y: 0.3 };
     }
     const fx = this.sweepFx;
-    const lane = this.lanes.get(s.row)?.lane;
-    const top = lane ? TOP[lane.kind] : 0.3;
-    fx.warn.group.position.set(0, top, -s.row);
-    // as listras piscam cada vez mais rápido; a placa balança
-    const rate = 4 + s.warn * 8;
-    fx.warn.blink.forEach((m, i) => {
-      m.visible = s.phase === 'hit' || Math.floor(now * rate + i) % 2 === 0;
-    });
-    fx.warn.sign.position.y = Math.abs(Math.sin(now * 8)) * 0.12;
-    if (s.phase === 'hit' && s.x !== null) {
+    const len = sw.from - sw.row0;
+    const laneTop = (row: number) => {
+      const l = this.lanes.get(Math.round(row))?.lane;
+      return l ? TOP[l.kind] : 0.3;
+    };
+    const mat3 = fx.line.material as THREE.MeshBasicMaterial;
+    const hit = sw.phase === 'hit';
+
+    // a linha aparece depressa e, quando o perigo entra, fica mais discreta
+    mat3.opacity = hit ? 0.3 : Math.min(0.9, sw.warn * 7);
+    fx.line.position.y = 0.46;
+
+    // o "!" desliza do começo da linha até o alvo (primeiros 70% do aviso) e fica pulsando lá
+    const travel = Math.min(1, sw.warn / 0.7);
+    const eased = 1 - (1 - travel) * (1 - travel) * (1 - travel);
+    const bangRow = sw.from - len * eased;
+    const pulse = 1 + Math.sin(now * 11) * 0.1 * (travel >= 1 ? 1 : 0.3);
+    fx.bang.position.set(sw.col, laneTop(bangRow) + 1.35 + Math.sin(now * 6) * 0.05, -bangRow);
+    fx.bang.scale.setScalar(1.0 * pulse * (hit ? Math.max(0, 1 - 0) : 1));
+    fx.bang.visible = !hit || (sw.at !== null && sw.at > sw.row0);
+    fx.bang.material.opacity = hit ? 0.55 : Math.min(1, sw.warn * 8);
+
+    // o anel no chão do alvo pisca mais rápido quanto mais perto de o perigo chegar
+    fx.ring.position.set(sw.col, laneTop(sw.row0) + 0.06, -sw.row0);
+    const ringPulse = 1 + Math.sin(now * (6 + sw.warn * 12)) * 0.07;
+    fx.ring.scale.set(ringPulse, 1, ringPulse);
+    fx.ring.visible = sw.warn > 0.1 && (!hit || (sw.at !== null && sw.at > sw.row0 - 1));
+
+    // o perigo: desce pela coluna, rolando ou girando conforme o tipo
+    if (hit && sw.at !== null) {
       const h = fx.hazard;
       h.visible = true;
-      h.position.set(s.x, top, -s.row);
-      h.rotation.y = s.side === 1 ? 0 : Math.PI;
+      const dist = sw.from - sw.at;
+      const ground = laneTop(sw.at);
+      fx.y += (ground - fx.y) * 0.35;
+      let x = sw.col;
+      let lift = 0;
       const spin = h.userData.spin as THREE.Object3D | undefined;
-      if (spin) spin.rotation.z = -s.x * 1.3;
-      const layers = h.userData.layers as THREE.Object3D[] | undefined;
-      if (layers) {
-        layers.forEach((l, i) => {
+      if (sw.kind === 'barril') {
+        lift = Math.abs(Math.sin(dist * 2.6)) * 0.05;
+        if (spin) spin.rotation.z = -dist * 1.5;
+      } else if (sw.kind === 'feno') {
+        // a bola de feno quica enquanto rola
+        lift = Math.abs(Math.sin(dist * 1.9)) * 0.38;
+        if (spin) spin.rotation.z = -dist * 2.2;
+      } else if (sw.kind === 'redemoinho') {
+        x += Math.sin(dist * 1.4) * 0.1;
+        const layers = h.userData.layers as THREE.Object3D[] | undefined;
+        layers?.forEach((l, i) => {
           l.rotation.y = now * (5 + i * 1.5);
-          l.position.x = Math.sin(now * 6 + i) * 0.08 * (i + 1);
+          l.position.x = Math.sin(now * 6 + i) * 0.07 * (i + 1);
         });
       }
+      h.position.set(x, fx.y + lift, -sw.at);
     } else {
       fx.hazard.visible = false;
     }
@@ -573,7 +597,7 @@ export class AtravessaScene {
     const lo = Math.floor(v.y);
     const frac = v.y - lo;
     const top = TOP[sim.world.lane(lo).kind] * (1 - frac) + TOP[sim.world.lane(lo + 1).kind] * frac;
-    this.heroAngle = turnToward(this.heroAngle, HEADING[v.facing], dt * 22);
+    this.heroAngle = turnToward(this.heroAngle, HEADING[v.facing] + HERO_LOOK, dt * 22);
     this.hero.rotation.y = this.heroAngle;
     const pose = death ? deathPose(death.end, death.age, v.killer) : heroPose(v, now);
     this.applyPose(pose, v.x, v.y, top);
