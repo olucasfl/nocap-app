@@ -15,6 +15,7 @@ import {
   STREAK_CAP,
   SIZE,
   analyze,
+  decodeMove,
   hintFor,
   put,
   shapeOf,
@@ -42,8 +43,20 @@ export interface BlocksEnd {
   hintsUsed: number;
 }
 
+/** O que vem de uma partida guardada: as jogadas para refazer e o que não se refaz (elogios, dicas). */
+export interface BlocksResume {
+  moves: number[];
+  thumbs: number;
+  perfects: number;
+  hintsUsed: number;
+}
+
 interface Props {
   seed: string;
+  /** Partida guardada a retomar (o tabuleiro volta refazendo as jogadas pela seed). */
+  resume?: BlocksResume;
+  /** Avisa a cada jogada e a cada dica, para a partida poder ser guardada. */
+  onProgress?: (p: BlocksResume) => void;
   /** O recorde do aparelho, para a linha "recorde" do placar. */
   best: number;
   onEnd: (end: BlocksEnd) => void;
@@ -99,6 +112,22 @@ const idx = (row: number, col: number) => row * SIZE + col;
 const reduced = () =>
   typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+/** Refaz as jogadas guardadas: a partida e as cores do tabuleiro (as cores não saem da lógica). */
+function replay(seed: string, moves: readonly number[]): { game: BlocksGame; cells: Cells } {
+  const game = new BlocksGame(seed);
+  const cells: Cells = new Array<BlockColor | null>(SIZE * SIZE).fill(null);
+  for (const n of moves) {
+    const m = decodeMove(n);
+    const shape = shapeOf(game.slots[m.slot]!);
+    const res = game.play(m.slot, m.row, m.col);
+    if (!res) break;
+    for (const [r, c] of shape.cells) cells[idx(m.row + r, m.col + c)] = shape.color;
+    for (const r of res.clearedRows) for (let c = 0; c < SIZE; c++) cells[idx(r, c)] = null;
+    for (const c of res.clearedCols) for (let r = 0; r < SIZE; r++) cells[idx(r, c)] = null;
+  }
+  return { game, cells };
+}
+
 /** O número que sobe devagar até o valor novo: o placar "conta" os pontos. */
 function useCountUp(target: number): number {
   const [shown, setShown] = useState(target);
@@ -132,9 +161,10 @@ function useCountUp(target: number): number {
  * os efeitos de limpeza, o joinha e o PERFECT, e as 3 dicas. A lógica inteira é a de `BlocksGame`
  * (a mesma que o servidor usa para conferir a partida); aqui só se desenha e se anima.
  */
-export function BlocksPlay({ seed, best, onEnd, onQuit, onRestart }: Props) {
-  const gameRef = useRef<BlocksGame | null>(null);
-  if (!gameRef.current) gameRef.current = new BlocksGame(seed);
+export function BlocksPlay({ seed, resume, onProgress, best, onEnd, onQuit, onRestart }: Props) {
+  const startRef = useRef<{ game: BlocksGame; cells: Cells } | null>(null);
+  if (!startRef.current) startRef.current = replay(seed, resume?.moves ?? []);
+  const gameRef = useRef<BlocksGame>(startRef.current.game);
   const g = gameRef.current;
 
   const svgRef = useRef<SVGSVGElement>(null);
@@ -144,8 +174,16 @@ export function BlocksPlay({ seed, best, onEnd, onQuit, onRestart }: Props) {
   const coachRef = useRef<Coach | null>(null);
   const dragRef = useRef<Drag | null>(null);
   const ptr = useRef({ x: 0, y: 0 });
-  const cellsRef = useRef<Cells>(new Array<BlockColor | null>(SIZE * SIZE).fill(null));
-  const stats = useRef({ thumbs: 0, perfects: 0, hintsUsed: 0 });
+  const cellsRef = useRef<Cells>(startRef.current.cells);
+  const stats = useRef({
+    thumbs: resume?.thumbs ?? 0,
+    perfects: resume?.perfects ?? 0,
+    hintsUsed: resume?.hintsUsed ?? 0,
+  });
+  const onProgressRef = useRef(onProgress);
+  onProgressRef.current = onProgress;
+  const progress = () =>
+    onProgressRef.current?.({ moves: g.moves.slice(), ...stats.current });
   const keyN = useRef(0);
   const endedRef = useRef(false);
   const onEndRef = useRef(onEnd);
@@ -154,11 +192,11 @@ export function BlocksPlay({ seed, best, onEnd, onQuit, onRestart }: Props) {
   const [ui, setUi] = useState<Ui>(() => ({
     cells: cellsRef.current.slice(),
     slots: g.slots.slice(),
-    score: 0,
-    streak: 0,
+    score: g.score,
+    streak: g.streak,
     sets: g.sets,
-    over: false,
-    hints: HINTS_PER_GAME,
+    over: g.over,
+    hints: HINTS_PER_GAME - (resume?.hintsUsed ?? 0),
   }));
   const [drag, setDrag] = useState<Drag | null>(null);
   const [kb, setKb] = useState<{ slot: number; row: number; col: number } | null>(null);
@@ -312,6 +350,7 @@ export function BlocksPlay({ seed, best, onEnd, onQuit, onRestart }: Props) {
         over: g.over,
       }));
 
+      if (!g.over) progress();
       if (g.over) {
         endedRef.current = true;
         window.setTimeout(() => audio?.over(), 450);
@@ -418,6 +457,7 @@ export function BlocksPlay({ seed, best, onEnd, onQuit, onRestart }: Props) {
       null;
     if (!m) return;
     stats.current.hintsUsed++;
+    progress();
     audioRef.current?.hint();
     setHint(m);
     setUi((u) => ({ ...u, hints: u.hints - 1 }));
@@ -721,7 +761,11 @@ export function BlocksPlay({ seed, best, onEnd, onQuit, onRestart }: Props) {
       <ConfirmDialog
         open={asking}
         title="Sair da partida?"
-        text="A partida em andamento não vale para o ranking nem para o histórico."
+        text={
+          guest
+            ? 'A partida em andamento não vale para o ranking nem para o histórico.'
+            : 'A partida fica guardada: ao voltar você escolhe continuar de onde parou.'
+        }
         confirmLabel="Sair"
         confirmSfx="back"
         cancelLabel="Continuar jogando"

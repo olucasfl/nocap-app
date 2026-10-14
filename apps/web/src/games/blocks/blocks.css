@@ -1127,3 +1127,33 @@
     display: none;
   }
 }
+
+.bk-resume {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+  background: var(--paper);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+.bk-resume-kicker {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+.bk-resume dl {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 0;
+}
+.bk-resume dt {
+  font-size: 10px;
+  opacity: 0.7;
+}
+.bk-resume dd {
+  margin: 0;
+  font-family: var(--font-display, inherit);
+  font-size: 22px;
+  font-weight: 800;
+}

@@ -1,8 +1,8 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { soloSession } from '@/lib/solo-session';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import type { BlocksMode } from '@nocap/games';
+import { BlocksGame as Engine, HINTS_PER_GAME, decodeMove, type BlocksMode } from '@nocap/games';
 import { BackButton } from '@/components/BackButton';
 import { ModePicker } from '@/components/ModePicker';
 import { ModeSheet } from '@/components/ModeSheet';
@@ -11,8 +11,17 @@ import { ArrowRight } from '@/components/icons';
 import { useAuth } from '@/lib/auth';
 import { bestTenths, fetchStats } from '@/lib/stats';
 import { BlockDefs, Star, ThumbSeal } from './art';
-import { BlocksPlay, type BlocksEnd } from './BlocksPlay';
-import { getBlocksBest, getTowersBest, setBlocksBest, setTowersBest } from './storage';
+import { BlocksPlay, type BlocksEnd, type BlocksResume } from './BlocksPlay';
+import {
+  clearSavedRun,
+  getBlocksBest,
+  getTowersBest,
+  loadSavedRun,
+  saveRun,
+  setBlocksBest,
+  setTowersBest,
+  type SavedRun,
+} from './storage';
 import { TowersPlay, type TowersEnd } from './towers/TowersPlay';
 import { SaveNote } from '@/components/GuestNotice';
 import { useSaveBlocks, type BlocksRunInfo } from './useSaveBlocks';
@@ -69,8 +78,26 @@ const HOW: Record<UiMode, string[]> = {
 
 const seedOf = () => crypto.randomUUID().replace(/-/g, '').slice(0, 12);
 
+/** Pontos e rodada da partida guardada, refazendo as jogadas (é a mesma conta do servidor). */
+function summarize(run: SavedRun): { score: number; sets: number } {
+  const g = new Engine(run.seed);
+  for (const n of run.moves) {
+    const m = decodeMove(n);
+    if (!g.play(m.slot, m.row, m.col)) break;
+  }
+  return { score: g.score, sets: g.sets };
+}
+
 /** O menu: o Block's como aba de jogos de blocos, com cada modo como cartão. */
-function BlocksStart({ onStart, busy }: { onStart: (mode: UiMode) => void; busy: boolean }) {
+function BlocksStart({
+  onStart,
+  onResume,
+  busy,
+}: {
+  onStart: (mode: UiMode) => void;
+  onResume: (run: SavedRun) => void;
+  busy: boolean;
+}) {
   const user = useAuth((st) => st.user);
   const stats = useQuery({ queryKey: ['stats'], queryFn: fetchStats, enabled: !!user });
   const [open, setOpen] = useState<UiMode | null>(null);
@@ -85,6 +112,9 @@ function BlocksStart({ onStart, busy }: { onStart: (mode: UiMode) => void; busy:
           ? getTowersBest()
           : getBlocksBest();
   const current = MODES.find((m) => m.id === open);
+  const saved = useMemo(() => loadSavedRun(user?.id), [user?.id]);
+  const savedInfo = useMemo(() => (saved ? summarize(saved) : null), [saved]);
+  const resumable = open === 'classic' && saved && savedInfo;
 
   return (
     <section className="screen">
@@ -120,14 +150,43 @@ function BlocksStart({ onStart, busy }: { onStart: (mode: UiMode) => void; busy:
               </li>
             ))}
           </ol>
+          {resumable && (
+            <div className="bk-resume" role="group" aria-label="Partida em andamento">
+              <span className="mono bk-resume-kicker">PARTIDA EM ANDAMENTO</span>
+              <dl>
+                <div>
+                  <dt className="mono">PONTOS</dt>
+                  <dd>{savedInfo.score.toLocaleString('pt-BR')}</dd>
+                </div>
+                <div>
+                  <dt className="mono">RODADA</dt>
+                  <dd>{savedInfo.sets}</dd>
+                </div>
+                <div>
+                  <dt className="mono">DICAS</dt>
+                  <dd>{HINTS_PER_GAME - saved.hintsUsed}/{HINTS_PER_GAME}</dd>
+                </div>
+              </dl>
+              <button
+                type="button"
+                className="btn"
+                data-sfx="start"
+                disabled={busy}
+                onClick={() => onResume(saved)}
+              >
+                Continuar partida <ArrowRight />
+              </button>
+            </div>
+          )}
           <button
             type="button"
-            className="btn"
+            className={resumable ? 'btn ghost' : 'btn'}
             data-sfx="start"
             disabled={busy}
             onClick={() => onStart(open)}
           >
-            {busy ? 'Preparando...' : 'Jogar'} <ArrowRight />
+            {busy ? 'Preparando...' : resumable ? 'Começar do zero' : 'Jogar'}{' '}
+            {!resumable && <ArrowRight />}
           </button>
           {open === 'towers' && (
             <p className="mono bk-meta">
@@ -437,6 +496,7 @@ export function BlocksGame() {
     session: '',
   }));
   const [end, setEnd] = useState<BlocksEnd | null>(null);
+  const [resume, setResume] = useState<BlocksResume | undefined>(undefined);
   const [before, setBefore] = useState(0);
   const [busy, setBusy] = useState(false);
   const queryClient = useQueryClient();
@@ -449,6 +509,9 @@ export function BlocksGame() {
     if (busy) return;
     setBusy(true);
     setMode(m);
+    // Começar uma partida nova descarta a guardada (é o "Começar do zero" e o "Jogar de novo").
+    if (m === 'classic') clearSavedRun();
+    setResume(undefined);
     const { seed, session } = await soloSession('/games/blocks/session');
     // Sem conta não há recorde; com conta, o do servidor (e o do aparelho só se ele não responder).
     const signedIn = useAuth.getState().user !== null;
@@ -467,6 +530,20 @@ export function BlocksGame() {
     setBefore(best);
     setRun({ matchId: crypto.randomUUID(), seed, session });
     setBusy(false);
+    setPhase('play');
+  };
+
+  /** Volta para a partida guardada: o recorde de quando ela começou vale para a tela final. */
+  const resumeRun = (saved: SavedRun) => {
+    setMode('classic');
+    setBefore(saved.before);
+    setRun({ matchId: saved.matchId, seed: saved.seed, session: saved.session });
+    setResume({
+      moves: saved.moves,
+      thumbs: saved.thumbs,
+      perfects: saved.perfects,
+      hintsUsed: saved.hintsUsed,
+    });
     setPhase('play');
   };
 
@@ -492,8 +569,25 @@ export function BlocksGame() {
       <BlocksPlay
         key={run.seed}
         seed={run.seed}
+        resume={resume}
+        onProgress={(p) => {
+          const user = useAuth.getState().user;
+          // Só com conta e com sessão do servidor: treino e convidado não guardam nada.
+          if (!user || !run.session) return;
+          saveRun({
+            v: 1,
+            userId: user.id,
+            matchId: run.matchId,
+            seed: run.seed,
+            session: run.session,
+            ...p,
+            before,
+            savedAt: Date.now(),
+          });
+        }}
         best={before}
         onEnd={(e) => {
+          clearSavedRun();
           // O recorde guardado aqui é deste aparelho; o ranking de verdade vem do servidor.
           if (useAuth.getState().user) setBlocksBest(e.result.score);
           setEnd(e);
@@ -515,7 +609,7 @@ export function BlocksGame() {
           <MuteButton />
         </div>
       </header>
-      {phase === 'menu' && <BlocksStart onStart={(m) => void begin(m)} busy={busy} />}
+      {phase === 'menu' && <BlocksStart onStart={(m) => void begin(m)} onResume={resumeRun} busy={busy} />}
       {phase === 'final' && mode === 'towers' && towersEnd && (
         <TowersFinal
           end={towersEnd}
