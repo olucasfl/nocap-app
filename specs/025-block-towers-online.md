@@ -4,9 +4,9 @@ Status: **etapa 1 (câmera final no modo solo) implementada; os modos online est
 
 ## Etapa 1: câmera do final (feita)
 
-- Quando a partida acaba, a câmera **se afasta e desce**, mostrando a torre inteira de baixo até o topo, com uma bandeirinha no ponto mais alto ("N PEÇAS"). Só depois aparece a tela de resultado.
+- Quando a partida acaba, a câmera **se afasta um pouco** (a casa fica com 72% do tamanho) e **desce do topo da torre até a base**, passando por ela inteira, com uma bandeirinha no ponto mais alto ("N PEÇAS"). Só depois aparece a tela de resultado.
 - **Só mexe se faz sentido**: se a torre ainda é baixa e já cabe na tela, nada se afasta nem desce (`finaleMoves` em `towers/draw.ts`).
-- Vale para o modo 3 vidas (único que existe) e vai valer para os novos. Duração: 3,2 s (`FINALE_SECONDS`).
+- Vale para o modo 3 vidas (único que existe) e vai valer para os novos. Duração: 4,6 s (`FINALE_SECONDS`).
 
 ## Online: regras decididas
 

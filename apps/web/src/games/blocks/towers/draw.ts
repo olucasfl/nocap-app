@@ -983,7 +983,10 @@ export interface View {
 }
 
 /** Duração do final com a câmera, em segundos. */
-export const FINALE_SECONDS = 3.2;
+export const FINALE_SECONDS = 4.6;
+
+/** O quanto a câmera se afasta no final (a casa fica com esta fração do tamanho de jogo). */
+const FINALE_ZOOM = 0.72;
 
 /** O quadro de jogo normal: onde fica a base da torre e o tamanho da casa. */
 function layout(W: number, H: number) {
@@ -996,21 +999,15 @@ function layout(W: number, H: number) {
   return { baseY, ppu };
 }
 
-/** O enquadramento do final: a torre inteira na tela, com a base lá embaixo. */
-function finaleFrame(game: TowersGame, W: number, H: number) {
-  const { ppu } = layout(W, H);
-  const height = Math.max(8, -Math.min(0, game.towerTop()) + 2.5);
-  return { baseY: H * 0.86, ppu: Math.min(ppu, (H * 0.68) / height) };
-}
+const smooth = (t: number) => t * t * (3 - 2 * t);
 
 /**
- * O final só mexe a câmera quando faz sentido: se a torre já cabe na tela (ainda é baixa), nada
- * desce nem se afasta. Os modos online (spec 025) usam a mesma regra.
+ * O final só mexe a câmera quando faz sentido: se a torre é baixa (o topo dela fica perto da base
+ * e da tela de jogo), não há o que descer. Os modos online (spec 025) usam a mesma regra.
  */
 export function finaleMoves(game: TowersGame, W: number, H: number): boolean {
-  const normal = layout(W, H);
-  const fin = finaleFrame(game, W, H);
-  return fin.ppu < normal.ppu * 0.85;
+  const { ppu } = layout(W, H);
+  return -Math.min(0, game.towerTop()) * ppu > H * 0.2;
 }
 
 /** Liga o final: a câmera passa a se afastar e descer até mostrar a torre toda. */
@@ -1027,13 +1024,13 @@ export function drawFrame(ctx: CanvasRenderingContext2D, W: number, H: number, g
   let camY: number;
   const top = Math.min(0, game.towerTop());
   if (fx.finaleOn) {
-    // Câmera de despedida: afasta e desce (a base vai para baixo, o céu clareia) com suavidade.
+    // Câmera de despedida: primeiro se afasta um pouco, depois desce do topo da torre até a base.
     fx.finale = Math.min(1, fx.finale + dt / FINALE_SECONDS);
-    const k = fx.finale * fx.finale * (3 - 2 * fx.finale);
-    const fin = finaleFrame(game, W, H);
-    baseY = lerp(normal.baseY, fin.baseY, k);
-    ppu = lerp(normal.ppu, fin.ppu, k);
-    fx.camY = lerp(fx.finaleFrom, 0, k);
+    const zoom = smooth(Math.min(1, fx.finale / 0.22));
+    const down = smooth(Math.max(0, Math.min(1, (fx.finale - 0.18) / 0.82)));
+    ppu = normal.ppu * lerp(1, FINALE_ZOOM, zoom);
+    baseY = lerp(normal.baseY, H * 0.76, down);
+    fx.camY = lerp(fx.finaleFrom, 0, down);
     camY = fx.camY;
   } else {
     // A câmera acompanha o topo da torre devagar e com teto de velocidade (subir não pode dar tontura).
@@ -1055,9 +1052,9 @@ export function drawFrame(ctx: CanvasRenderingContext2D, W: number, H: number, g
   drawGuide(ctx, game, X, Y, ppu, fx.time);
   drawBodies(ctx, game, X, Y, ppu, fx.time, fx.slide);
   drawParticles(ctx, fx, X, Y, ppu);
-  if (fx.finaleOn && fx.finale > 0.55 && top < -2) {
+  if (fx.finaleOn && top < -2) {
     // A bandeirinha no ponto mais alto: quanto a torre chegou a ter.
-    const a = clamp01((fx.finale - 0.55) / 0.3);
+    const a = clamp01(fx.finale / 0.12);
     const y = Y(top);
     ctx.globalAlpha = a;
     ctx.setLineDash([ppu * 0.4, ppu * 0.3]);
