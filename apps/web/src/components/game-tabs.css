@@ -36,7 +36,7 @@
   background: var(--green);
   color: var(--on-accent);
 }
-.gt.sinal button[aria-selected='true'] {
+.gt.atravessa button[aria-selected='true'] {
   background: var(--eco-red);
   color: var(--on-blue);
 }

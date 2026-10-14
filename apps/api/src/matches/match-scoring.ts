@@ -24,17 +24,17 @@ import {
   evaluateBlocks,
   evaluateTowers,
   TOWERS_DT,
-  evaluateSinal,
+  evaluateAtravessa,
+  isAtravessaMode,
+  validateAtravessaInputs,
+  ATR_TPS,
   isBlocksMode,
-  isSinalMode,
-  validateSinalInputs,
-  TPS,
 } from '@nocap/games';
 import type {
+  AtravessaMatchInput,
   BlocksMatchInput,
   ColorMatchInput,
   EcoMatchInput,
-  SinalMatchInput,
   TimeMatchInput,
 } from './match.schema';
 
@@ -219,38 +219,30 @@ export function scoreBatidaMatch(
 }
 
 /**
- * Sinal Vermelho: o servidor refaz a corrida inteira (Vigia, poderes, obstáculos, escuridão) a
- * partir da seed e dos movimentos do analógico, com a mesma simulação do aparelho, e a nota é a
- * distância em décimos de metro. Só vale uma corrida que terminou (o Vigia viu ou a escuridão
- * pegou), e não pode durar mais que o relógio do servidor viu desde o início da sessão.
+ * Atravessa!: o servidor refaz a partida pela seed e pelos passos; a nota é a maior linha atingida
+ * (guardada em décimos). Só vale partida que terminou (a escuridão ou um perigo pegou) e que não
+ * durou mais que o relógio do servidor viu desde o início da sessão.
  */
-export function scoreSinalMatch(
-  input: Pick<SinalMatchInput, 'mode' | 'seed' | 'inputs'> & { elapsedMs: number },
+export function scoreAtravessaMatch(
+  input: Pick<AtravessaMatchInput, 'mode' | 'seed' | 'steps'> & { elapsedMs: number },
 ): ScoredMatch {
-  if (!isSinalMode(input.mode)) {
+  if (!isAtravessaMode(input.mode)) {
     throw new BadRequestException(`Modo desconhecido: ${input.mode}`);
   }
-  const moves = input.inputs.map(([tick, x, y]) => ({ tick, x, y }));
-  const problem = validateSinalInputs(moves);
-  if (problem) throw new BadRequestException(problem);
-  // Nunca refaz mais passos do que o tempo que passou (mais a folga): corrida maior é recusada.
-  const maxTicks = Math.ceil(((input.elapsedMs + ELAPSED_SLACK_MS) / 1000) * TPS);
-  const result = evaluateSinal(input.seed, input.mode, moves, maxTicks);
-  if (result.ended === null) {
-    throw new BadRequestException('A corrida enviada não terminou (ou durou mais que a sessão)');
+  const steps = input.steps.map(([t, d]) => ({ t, d: d as 0 | 1 | 2 | 3 }));
+  if (!validateAtravessaInputs(steps)) throw new BadRequestException('Passos inválidos');
+  const maxTicks = Math.ceil(((input.elapsedMs + ELAPSED_SLACK_MS) / 1000) * ATR_TPS);
+  const result = evaluateAtravessa(input.seed, steps, maxTicks);
+  if (result.end === null) {
+    throw new BadRequestException('A partida enviada não terminou (ou durou mais que a sessão)');
   }
   return {
     rounds: [],
-    total: result.tenths / 10,
-    totalTenths: result.tenths,
-    // Os movimentos não ficam no histórico (seriam milhares de números por partida).
+    total: result.score,
+    totalTenths: result.score * 10,
+    // Os passos não ficam no histórico (seriam milhares por partida).
     encodedAnswers: [],
-    settings: {
-      mode: input.mode,
-      scoreVersion: 1,
-      phases: result.phases,
-      ended: result.ended,
-    },
+    settings: { mode: input.mode, scoreVersion: 1, ended: result.end },
   };
 }
 

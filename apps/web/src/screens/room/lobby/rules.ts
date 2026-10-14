@@ -37,7 +37,6 @@ function leaderRoundOptions(players: number, current: number): number[] {
 }
 
 export const MIN_PLAYERS: Record<RoomGame, number> = {
-  sinal: 2,
   color: 2,
   time: 2,
   impostor: 3,
@@ -46,7 +45,6 @@ export const MIN_PLAYERS: Record<RoomGame, number> = {
 };
 
 export const GAME_NAME: Record<RoomGame, string> = {
-  sinal: 'Sinal Vermelho',
   color: 'Mesmíssima',
   time: 'Já Deu?',
   impostor: 'Intruso',
@@ -61,7 +59,6 @@ export const GAME_OF: Record<RoomGame, string> = {
   impostor: 'do Intruso',
   eco: 'do Ecooo',
   party: 'do Mix Nocap',
-  sinal: 'do Sinal Vermelho',
 };
 
 /** Modos de cada jogo na sala, com uma linha que explica cada um. */
@@ -107,13 +104,6 @@ export const MODES: Record<RoomGame, { id: string; label: string; note: string }
       note: 'Micro-desafios e minijogos grandes.',
     },
   ],
-  sinal: [
-    {
-      id: 'classico',
-      label: 'Fases',
-      note: 'Corrida em fases com linha de chegada, no mesmo mapa para todos, com o mesmo Vigia e a mesma cantiga do Vigia. Quem chega ou cai assiste a quem ainda corre. No fim vence quem somar mais metros.',
-    },
-  ],
   color: [
     { id: 'classic', label: 'Clássico', note: 'A cor aparece e some. Recrie de memória.' },
     { id: 'flash', label: 'Flash', note: 'A cor pisca por 0,4 s: confie no olho.' },
@@ -144,9 +134,7 @@ export function rulesSummary(s: RoomSnapshot): string {
     mode === GAME_NAME[s.game] ? undefined : mode,
     s.game === 'eco' && s.mode !== 'leader'
       ? 'Por vez'
-      : s.game === 'sinal'
-        ? `${rounds} ${rounds === 1 ? 'fase' : 'fases'}`
-        : `${rounds} ${rounds === 1 ? 'rodada' : 'rodadas'}`,
+      : `${rounds} ${rounds === 1 ? 'rodada' : 'rodadas'}`,
   ]
     .filter(Boolean)
     .join(' · ');
@@ -171,11 +159,9 @@ export function rulesFor(s: RoomSnapshot): RuleDef[] {
   if (s.game !== 'eco' || s.mode === 'leader')
     out.push({
       id: 'rounds',
-      label: s.game === 'sinal' ? 'FASES' : 'RODADAS',
+      label: 'RODADAS',
       values:
-        s.game === 'sinal'
-          ? [1, 2, 3, 4, 5]
-          : s.game === 'party'
+        s.game === 'party'
           ? [1, 2, 3, 5]
           : s.game === 'impostor'
             ? IMP_ROUNDS
@@ -183,12 +169,8 @@ export function rulesFor(s: RoomSnapshot): RuleDef[] {
               ? leaderRoundOptions(s.members.length, cfg.rounds)
               : ROUNDS,
       current: cfg.rounds,
-      format: s.game === 'sinal' ? (v) => `${v} ${v === 1 ? 'fase' : 'fases'}` : String,
+      format: String,
       patch: (v) => ({ rounds: v }),
-      note:
-        s.game === 'sinal'
-          ? 'Cada fase tem a sua linha de chegada e fica mais difícil. O total de metros de todas as fases decide quem vence.'
-          : undefined,
     });
 
   if (s.game === 'impostor') {

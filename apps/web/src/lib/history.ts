@@ -58,7 +58,7 @@ export const activeFilters = (f: HistoryFilters) =>
   (f.mode ? 1 : 0) + (f.kind ? 1 : 0) + (f.period !== 'all' ? 1 : 0);
 
 export function fetchHistory(
-  game: 'color' | 'time' | 'eco' | 'sinal' | 'blocks',
+  game: 'color' | 'time' | 'eco' | 'blocks' | 'atravessa',
   cursor?: string,
   filters: HistoryFilters = NO_FILTERS,
 ) {
@@ -126,7 +126,7 @@ export function scoreParts(item: Pick<HistoryItem, 'game' | 'mode' | 'answers' |
   if (item.mode === 'party') return { main: String(item.totalScore * 10), unit: ' pts' };
   if (item.mode === 'impostor' || item.mode === 'leader')
     return { main: (item.totalScore / 10).toFixed(1), unit: ' pts' };
-  if (item.game === 'sinal') return { main: String(Math.round(item.totalScore / 10)), unit: ' m' };
+  if (item.game === 'atravessa') return { main: String(Math.round(item.totalScore / 10)), unit: ' linhas' };
   if (item.game === 'blocks') {
     return { main: String(Math.round(item.totalScore / 10)), unit: item.mode === 'towers' ? ' peças' : ' pts' };
   }
@@ -153,7 +153,6 @@ const MODE_NAME: Record<string, string> = {
   'batida-mare': 'Eco Hero: Maré Alta',
   'batida-frenesi': 'Eco Hero: Frenesi',
   infinito: 'Infinito',
-  classico: 'Clássico',
   towers: 'Block Towers',
   party: 'Mix Nocap',
   leader: 'Siga o Líder',
@@ -163,8 +162,8 @@ const GAME_NAME: Record<string, string> = {
   color: 'Mesmíssima',
   time: 'Já Deu?',
   eco: 'Ecooo',
-  sinal: 'Sinal Vermelho',
   blocks: "Block's",
+  atravessa: 'Atravessa!',
 };
 const KIND_NAME: Record<string, string> = { solo: 'Solo', daily: 'Daily', room: 'Sala' };
 
@@ -198,12 +197,12 @@ export function classifyMatch(
   if (item.placement !== null) {
     return { label: `${item.placement}º lugar`, tone: item.placement === 1 ? 'top' : 'mid' };
   }
-  if (item.game === 'sinal') {
-    const m = Math.round(item.totalScore / 10);
-    if (m >= 600) return { label: 'LENDÁRIO', tone: 'top' };
-    if (m >= 300) return { label: 'FORTE', tone: 'good' };
-    if (m >= 120) return { label: 'MEH', tone: 'mid' };
-    return { label: 'VISTO CEDO', tone: 'low' };
+  if (item.game === 'atravessa') {
+    const n = Math.round(item.totalScore / 10);
+    if (n >= 150) return { label: 'LENDÁRIO', tone: 'top' };
+    if (n >= 70) return { label: 'FORTE', tone: 'good' };
+    if (n >= 25) return { label: 'MEH', tone: 'mid' };
+    return { label: 'CEDO DEMAIS', tone: 'low' };
   }
   if (item.game === 'blocks' && item.mode === 'towers') {
     const n = Math.round(item.totalScore / 10);

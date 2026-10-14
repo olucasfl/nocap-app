@@ -1,4 +1,4 @@
-import { BlocksArt, ColorArt, EcoArt, MixArt, SinalArt, TimeArt } from '@/components/HubArt';
+import { AtravessaArt, BlocksArt, ColorArt, EcoArt, MixArt, TimeArt } from '@/components/HubArt';
 import { Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { AnimatedText } from '@/components/AnimatedText';
@@ -24,15 +24,11 @@ function bestLabel(stats: Stats | undefined, game: GameId): string {
   return `RECORDE CLÁSSICO ${formatBest(game, 'classic', best)}`;
 }
 
-/** O recorde do Sinal Vermelho: o da conta (sem conta não há recorde). */
-function sinalBestLabel(stats: Stats | undefined): string {
+/** O recorde do Atravessa!: o da conta (sem conta não há recorde). */
+function atravessaBestLabel(stats: Stats | undefined): string {
   if (!stats) return 'JOGUE SEM CONTA';
-  const server = Math.max(
-    bestTenths(stats, 'sinal', 'infinito'),
-    bestTenths(stats, 'sinal', 'classico'),
-  );
-  const meters = Math.floor(server / 10);
-  return meters > 0 ? `RECORDE ${meters} M` : 'SEM RECORDE AINDA';
+  const rows = Math.floor(bestTenths(stats, 'atravessa', 'infinito') / 10);
+  return rows > 0 ? `RECORDE ${rows} LINHAS` : 'SEM RECORDE AINDA';
 }
 
 /** O recorde do Block's: o da conta (sem conta não há recorde). */
@@ -124,14 +120,14 @@ export function Hub() {
           </div>
         </Link>
 
-        <Link to="/sinal" className="hub-card hub-card-sinal" data-sfx="start">
+        <Link to="/atravessa" className="hub-card hub-card-atravessa" data-sfx="start">
           <div className="hub-art">
-            <SinalArt />
+            <AtravessaArt />
           </div>
           <div className="hub-card-foot">
-            <div className="hub-card-name long">Sinal Vermelho</div>
-            <div className="mono hub-card-meta">CORRA SEM SER VISTO</div>
-            <div className="mono hub-card-meta">{sinalBestLabel(data)}</div>
+            <div className="hub-card-name">Atravessa!</div>
+            <div className="mono hub-card-meta">PULE E DESVIE SEM PARAR</div>
+            <div className="mono hub-card-meta">{atravessaBestLabel(data)}</div>
           </div>
         </Link>
 

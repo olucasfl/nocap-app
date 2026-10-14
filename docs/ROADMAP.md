@@ -58,6 +58,7 @@ Podem rodar antes ou depois do passo 4 (PWA); o modo noturno toca o manifesto/`t
 - [x] **Ecooo solo** (Clássico, Escalada, Velocidade, Reverso, Daily): spec `specs/012-eco.md`
 - [x] **Ecooo em sala, Corrida** (motor `eco-room.engine.ts`, testes; falta jogar ao vivo)
 - [x] **Ecooo em sala, Siga o Líder** (`eco-leader-room.engine.ts`, `leader.ts`, testes; falta jogar ao vivo e calibrar)
+- [x] **Atravessa! (14/10/2026, `specs/028-atravessa.md`):** estilo Crossy Road em 3D (Three.js), biomas contínuos (grama, deserto, noite), solo e só Infinito; substituiu o Sinal Vermelho, que foi removido. Falta jogar e calibrar (escuridão, veículos, toras) e ouvir o som
 - [ ] **Jogar o Ecooo ao vivo e calibrar** (Velocidade, faixas de nota, coeficiente do líder)
 - [x] **Ecooo ajustes (08/10/2026):** botão aceso mais nítido; Siga o Líder rebalanceado (3 toques sem regra, depois 4 com 1 regra, 5 com 2, e variedade crescente; máximo de 12 toques); nota final por porcentagem (média das rodadas); rodadas em múltiplos do número de jogadores
 - [ ] **Próximo jogo novo: Tribunal do Absurdo** (logo depois de terminar o Ecooo). Depois, Intervalo (na fila). Ponte e Regras Vivas ficam em **standby**. Descrição de cada um em `docs/JOGOS-FUTUROS.md`

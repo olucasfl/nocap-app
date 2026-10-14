@@ -1,5 +1,7 @@
 # 027 · Sinal Vermelho: arremessadores, perseguidores, Vigia apressado e itens
 
+> **Substituída pela [spec 028 (Atravessa!)](028-atravessa.md) em 14/10/2026: o Sinal Vermelho foi removido do app e da API (o banco é zerado por `apps/api/scripts/reset-sinal.sql`). Fica só como história.**
+
 Status: **implementada (núcleo, servidor, tela e som); falta jogar para calibrar.** Pedido do Lucas (14/10/2026). Complementa a [spec 026](026-sinal-vermelho-2.md).
 
 ## Arremessadores (jogam coisas em você)

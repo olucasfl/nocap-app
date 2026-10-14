@@ -88,7 +88,7 @@ a.hub-card:active {
   background: var(--green);
   color: var(--on-accent);
 }
-.hub-card-sinal {
+.hub-card-atravessa {
   background: var(--eco-red);
   color: var(--on-blue);
 }
@@ -188,7 +188,7 @@ a.hub-daily {
 .hub-card-eco {
   animation-delay: 0.54s;
 }
-.hub-card-sinal {
+.hub-card-atravessa {
   animation-delay: 0.62s;
 }
 .hub-card-mix {

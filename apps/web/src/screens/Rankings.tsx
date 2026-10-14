@@ -32,8 +32,8 @@ const GAME_PATH = {
   color: '/cor',
   time: '/tempo',
   eco: '/eco',
-  sinal: '/sinal',
   blocks: '/blocks',
+  atravessa: '/atravessa',
 } as const;
 
 /** Diferença de nota para mostrar: pontos com uma casa, ou número inteiro nos jogos de contagem. */

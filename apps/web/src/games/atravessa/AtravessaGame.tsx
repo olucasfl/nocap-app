@@ -1,0 +1,234 @@
+import { useState } from 'react';
+import { Link } from '@tanstack/react-router';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import type { AtravessaInput, AtravessaResult } from '@nocap/games';
+import { BackButton } from '@/components/BackButton';
+import { MuteButton } from '@/components/MuteButton';
+import { SaveNote } from '@/components/GuestNotice';
+import { ArrowRight } from '@/components/icons';
+import { useAuth } from '@/lib/auth';
+import { soloSession } from '@/lib/solo-session';
+import { fetchStats, type Stats } from '@/lib/stats';
+import { AtravessaPlay } from './AtravessaPlay';
+import { useSaveAtravessa, type AtravessaRunInfo } from './useSaveAtravessa';
+import './atravessa.css';
+
+type Phase = 'menu' | 'play' | 'final';
+
+const BEST_KEY = 'nocap-atravessa-best';
+
+/** O recorde (em linhas) deste aparelho; vale para quem ainda não tem o do servidor. */
+function localBest(): number {
+  try {
+    const n = Number(localStorage.getItem(BEST_KEY));
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  } catch {
+    return 0;
+  }
+}
+function saveLocalBest(rows: number) {
+  try {
+    localStorage.setItem(BEST_KEY, String(Math.max(rows, localBest())));
+  } catch {
+    /* sem storage */
+  }
+}
+/** O recorde da conta, em linhas (o servidor guarda em décimos). */
+const serverBest = (stats: Stats | undefined) =>
+  Math.floor((stats?.modes.find((m) => m.game === 'atravessa' && m.mode === 'infinito')?.best ?? 0) / 10);
+
+const HOW = [
+  'Pule de faixa em faixa e chegue o mais longe que der. Cada linha nova vale um ponto.',
+  'Desvie dos carros e do trem (a luz vermelha avisa). No rio, pise nas toras e nas pedras, nunca na água.',
+  'Uma escuridão vem de trás. Parar demais ou voltar a deixa chegar perto: ande para a frente.',
+  'O cenário muda a cada trecho: grama, deserto e, mais longe, a noite.',
+];
+
+const seedOf = () => crypto.randomUUID().replace(/-/g, '').slice(0, 12);
+
+function AtravessaMenu({ onStart, busy }: { onStart: () => void; busy: boolean }) {
+  const user = useAuth((s) => s.user);
+  const stats = useQuery({ queryKey: ['stats'], queryFn: fetchStats, enabled: !!user });
+  const best = user ? Math.max(localBest(), serverBest(stats.data)) : 0;
+  return (
+    <section className="screen">
+      <BackButton to="/" label="Jogos" />
+      <h1 className="at-title">Atravessa!</h1>
+      <p className="at-lead">Pule, desvie e atravesse tudo o que aparecer. Sem fim: vale a distância.</p>
+      {best > 0 && <p className="mono at-best">SEU RECORDE: {best} LINHAS</p>}
+      <ol className="at-howto">
+        {HOW.map((t, i) => (
+          <li key={i}>
+            <b>{i + 1}</b>
+            <span>{t}</span>
+          </li>
+        ))}
+      </ol>
+      <p className="mono at-meta">
+        NO CELULAR: TOQUE PULA PARA A FRENTE E DESLIZAR VAI PARA O LADO OU PARA TRÁS. NO COMPUTADOR: W A S D.
+      </p>
+      <button type="button" className="btn" data-sfx="start" disabled={busy} onClick={onStart}>
+        {busy ? 'Preparando...' : 'Jogar'} <ArrowRight />
+      </button>
+      {!user && (
+        <p className="mono at-meta">ENTRE NA SUA CONTA PARA SALVAR NO RANKING, NO HISTÓRICO E NOS RECORDES.</p>
+      )}
+    </section>
+  );
+}
+
+const VERDICT: Record<string, string> = {
+  veiculo: 'ATROPELADO',
+  trem: 'O TREM PASSOU',
+  agua: 'CAIU NA ÁGUA',
+  arrastado: 'A TORA TE LEVOU',
+  afundou: 'A PEDRA AFUNDOU',
+  escuridao: 'A ESCURIDÃO TE PEGOU',
+};
+
+function AtravessaFinal({
+  result,
+  before,
+  run,
+  steps,
+  busy,
+  onAgain,
+  onMenu,
+}: {
+  result: AtravessaResult;
+  before: number;
+  run: AtravessaRunInfo;
+  steps: AtravessaInput[];
+  busy: boolean;
+  onAgain: () => void;
+  onMenu: () => void;
+}) {
+  const save = useSaveAtravessa(run, steps);
+  const guest = save === 'guest';
+  const rows = result.score;
+  const isRecord = !guest && rows > before;
+  const best = Math.max(rows, before);
+  return (
+    <section className="screen atf">
+      <div className="atf-verdict">
+        <span className="mono atf-kicker">ATRAVESSA! · INFINITO</span>
+        <h1>{VERDICT[result.end ?? 'escuridao']}</h1>
+      </div>
+      <div className="atf-score">
+        {isRecord && <span className="atf-badge mono">{before > 0 ? 'NOVO RECORDE' : 'PRIMEIRO RECORDE'}</span>}
+        <span className="mono atf-label">LINHAS</span>
+        <div className="atf-big">
+          <b>{rows}</b>
+        </div>
+        {!guest && (
+          <span className="mono atf-hint">
+            {isRecord
+              ? before > 0
+                ? `+${rows - before} sobre o recorde anterior`
+                : 'Esse é o seu primeiro resultado'
+              : `Seu recorde: ${best}`}
+          </span>
+        )}
+      </div>
+      <SaveNote className="mono atf-note" save={save} />
+      <div className="stack atf-actions">
+        <button type="button" className="btn alt" data-sfx="start" disabled={busy} onClick={onAgain}>
+          {busy ? 'Preparando...' : 'Jogar de novo'}
+        </button>
+        {!guest && (
+          <Link
+            to="/ranking"
+            search={{ jogo: 'atravessa', modo: 'infinito' } as never}
+            className="btn ghost"
+            data-sfx="select"
+          >
+            Ver ranking
+          </Link>
+        )}
+        <button type="button" className="btn ghost" data-sfx="back" onClick={onMenu}>
+          Voltar ao menu
+        </button>
+        <Link to="/" className="btn ghost">
+          Voltar aos jogos
+        </Link>
+      </div>
+    </section>
+  );
+}
+
+/** O Atravessa!: menu, partida em tela cheia e fim (spec 028). */
+export function AtravessaGame() {
+  const [phase, setPhase] = useState<Phase>('menu');
+  const [run, setRun] = useState<AtravessaRunInfo>(() => ({
+    matchId: crypto.randomUUID(),
+    seed: seedOf(),
+    session: '',
+  }));
+  const [result, setResult] = useState<AtravessaResult | null>(null);
+  const [steps, setSteps] = useState<AtravessaInput[]>([]);
+  const [before, setBefore] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const queryClient = useQueryClient();
+
+  /** O servidor sorteia a seed e assina o início; sem conta ou sem internet vira treino. */
+  const begin = async () => {
+    if (busy) return;
+    setBusy(true);
+    const { seed, session } = await soloSession('/games/atravessa/session');
+    const signedIn = useAuth.getState().user !== null;
+    let best = signedIn ? localBest() : 0;
+    try {
+      if (!signedIn) throw new Error('guest');
+      const stats = await queryClient.fetchQuery({ queryKey: ['stats'], queryFn: fetchStats, staleTime: 0 });
+      best = Math.max(best, serverBest(stats));
+    } catch {
+      /* convidado: vale o recorde deste aparelho */
+    }
+    setBefore(best);
+    setRun({ matchId: crypto.randomUUID(), seed, session });
+    setBusy(false);
+    setPhase('play');
+  };
+
+  if (phase === 'play') {
+    return (
+      <AtravessaPlay
+        key={run.seed}
+        seed={run.seed}
+        onEnd={(r, s) => {
+          if (useAuth.getState().user) saveLocalBest(r.score);
+          setResult(r);
+          setSteps(s);
+          setPhase('final');
+        }}
+        onQuit={() => setPhase('menu')}
+        onRestart={() => void begin()}
+      />
+    );
+  }
+
+  return (
+    <div className="app">
+      <header className="top">
+        <Link to="/" className="logo" aria-label="Voltar aos jogos">
+          no cap<span>!</span>
+        </Link>
+        <div className="top-actions">
+          <MuteButton />
+        </div>
+      </header>
+      {phase === 'menu' && <AtravessaMenu onStart={() => void begin()} busy={busy} />}
+      {phase === 'final' && result && (
+        <AtravessaFinal
+          result={result}
+          before={before}
+          run={run}
+          steps={steps}
+          busy={busy}
+          onAgain={() => void begin()}
+          onMenu={() => setPhase('menu')}
+        />
+      )}
+    </div>
+  );
+}

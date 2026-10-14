@@ -1,6 +1,6 @@
 import { apiClient } from './api-client';
 
-export type GameId = 'color' | 'time' | 'eco' | 'sinal' | 'blocks';
+export type GameId = 'color' | 'time' | 'eco' | 'blocks' | 'atravessa';
 
 export interface ModeStats {
   game: string;
@@ -48,8 +48,8 @@ const MODE_MAX_BY_GAME: Record<GameId, Record<string, number>> = {
     'batida-mare': 0,
     'batida-frenesi': 0,
   },
-  // Sinal Vermelho: a nota é a distância (metros), sem máximo
-  sinal: { infinito: 0, classico: 0 },
+  // Atravessa!: a nota é a distância (linhas), sem máximo
+  atravessa: { infinito: 0 },
   // Block's: a nota é a pontuação, sem máximo
   blocks: { classic: 0, towers: 0 },
 };
@@ -63,18 +63,18 @@ export function modeMax(game: string, mode: string): number | undefined {
 
 /** Máximo do Daily de um jogo: 5 rodadas na Cor, 3 no Tempo. */
 export const dailyMax = (game: string) =>
-  game === 'color' ? 50 : game === 'eco' || game === 'sinal' || game === 'blocks' ? 0 : 30;
+  game === 'color' ? 50 : game === 'eco' || game === 'blocks' || game === 'atravessa' ? 0 : 30;
 
 /**
  * Jogos e modos cuja nota é uma contagem, não pontos de 0 a 10 por rodada: a Sobrevivência conta
  * rodadas e o Eco conta passos. `null` quando a nota é em pontos.
  */
-export type CountUnit = 'rodadas' | 'passos' | 'pontos' | 'metros' | 'peças';
+export type CountUnit = 'rodadas' | 'passos' | 'pontos' | 'linhas' | 'peças';
 
 /** O Eco Hero conta pontos (guardados em décimos, como os outros: 10 = 1 ponto). */
 export const countUnit = (game: string, mode?: string): CountUnit | null =>
-  game === 'sinal'
-    ? 'metros'
+  game === 'atravessa'
+    ? 'linhas'
     : game === 'blocks'
       ? mode === 'towers'
         ? 'peças'
@@ -90,8 +90,16 @@ export const countUnit = (game: string, mode?: string): CountUnit | null =>
 /** "7 rodadas", "12 passos" (e o singular com 1). `tenths` é a nota guardada (7 = 70). */
 export function formatCount(tenths: number, unit: CountUnit): string {
   const n = Math.round(tenths / 10);
-  if (unit === 'metros') return `${n} m`;
-  const one = unit === 'rodadas' ? 'rodada' : unit === 'passos' ? 'passo' : unit === 'peças' ? 'peça' : 'ponto';
+  const one =
+    unit === 'rodadas'
+      ? 'rodada'
+      : unit === 'passos'
+        ? 'passo'
+        : unit === 'peças'
+          ? 'peça'
+          : unit === 'linhas'
+            ? 'linha'
+            : 'ponto';
   return `${n.toLocaleString('pt-BR')} ${n === 1 ? one : unit}`;
 }
 
@@ -117,7 +125,6 @@ const ORDER = [
   'batida-mare',
   'batida-frenesi',
   'infinito',
-  'classico',
 ];
 
 /** Só os modos conhecidos de um jogo, na ordem da tela de início. */

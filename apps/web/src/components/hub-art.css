@@ -129,42 +129,7 @@
   }
 }
 
-/* Sinal Vermelho: o olho do semáforo procura, a luz âmbar avisa e o boneco corre no lugar. */
-.ha-pupil {
-  animation: ha-look 3.6s ease-in-out infinite;
-}
-@keyframes ha-look {
-  0%,
-  100% {
-    transform: translateX(0);
-  }
-  25% {
-    transform: translateX(-4px);
-  }
-  60% {
-    transform: translateX(4px);
-  }
-}
-.ha-amber {
-  opacity: 0;
-  animation: ha-amber 3.6s ease-in-out infinite;
-}
-@keyframes ha-amber {
-  0%,
-  55%,
-  100% {
-    opacity: 0;
-  }
-  62%,
-  72%,
-  82% {
-    opacity: 1;
-  }
-  67%,
-  77% {
-    opacity: 0.15;
-  }
-}
+/* Atravessa!: o bichinho pula no lugar e a faixa da estrada anda. */
 .ha-run {
   animation: ha-run 0.5s ease-in-out infinite;
 }
@@ -238,14 +203,9 @@
   .ha-pad,
   .ha-glow,
   .ha-waves,
-  .ha-pupil,
-  .ha-amber,
   .ha-run,
   .ha-road,
   .ha-clearcell {
     animation: none !important;
-  }
-  .ha-amber {
-    opacity: 0.6;
   }
 }

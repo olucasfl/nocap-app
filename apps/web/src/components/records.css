@@ -38,7 +38,7 @@
   background: var(--green);
   color: var(--on-accent);
 }
-.rc-game.on.sinal {
+.rc-game.on.atravessa {
   background: var(--eco-red);
   color: var(--on-blue);
 }

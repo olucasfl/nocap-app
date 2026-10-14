@@ -96,13 +96,12 @@ const roomRoute = createRoute({
   path: '/sala',
   validateSearch: (
     search: Record<string, unknown>,
-  ): { jogo?: 'color' | 'time' | 'impostor' | 'eco' | 'party' | 'sinal' } =>
+  ): { jogo?: 'color' | 'time' | 'impostor' | 'eco' | 'party' } =>
     search.jogo === 'color' ||
     search.jogo === 'time' ||
     search.jogo === 'impostor' ||
     search.jogo === 'eco' ||
-    search.jogo === 'party' ||
-    search.jogo === 'sinal'
+    search.jogo === 'party'
       ? { jogo: search.jogo }
       : {},
   component: lazyRouteComponent(() => import('@/screens/Room'), 'RoomEntryPage'),
@@ -156,12 +155,10 @@ const ecoRoute = createRoute({
   component: lazyRouteComponent(() => import('@/games/eco/EcoPage'), 'EcoPage'),
 });
 
-const sinalRoute = createRoute({
+const atravessaRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/sinal',
-  validateSearch: (search: Record<string, unknown>): GameSearch<'infinito' | 'classico'> =>
-    gameSearch(search, ['infinito', 'classico']),
-  component: lazyRouteComponent(() => import('@/games/sinal/SinalPage'), 'SinalPage'),
+  path: '/atravessa',
+  component: lazyRouteComponent(() => import('@/games/atravessa/AtravessaPage'), 'AtravessaPage'),
 });
 
 const blocksRoute = createRoute({
@@ -192,7 +189,7 @@ const routeTree = rootRoute.addChildren([
   colorRoute,
   timeRoute,
   ecoRoute,
-  sinalRoute,
+  atravessaRoute,
   blocksRoute,
   nocapRoute,
   loginRoute,

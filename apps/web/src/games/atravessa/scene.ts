@@ -1,0 +1,373 @@
+import * as THREE from 'three';
+import {
+  ATR_HALF_COLS,
+  ATR_TRAIN_LEN,
+  AtravessaSim,
+  biomeAt,
+  laneBiome,
+  objX,
+  trainState,
+  type AtravessaBiome,
+  type AtravessaEnd,
+  type BiomeInfo,
+  type Lane,
+} from '@nocap/games';
+import { HEADING, deathPose, heroPose, turnToward, type Pose } from './hop';
+import {
+  box,
+  buildHero,
+  buildLog,
+  buildPad,
+  buildSignal,
+  buildTrain,
+  buildTree,
+  buildVehicle,
+  darkness,
+  disposeModels,
+  hash2,
+  mat,
+} from './models';
+
+/** Quantas faixas ficam montadas atrás e à frente da câmera. */
+const ROWS_BEHIND = 11;
+const ROWS_AHEAD = 26;
+/** Largura do chão de cada faixa: passa folgado da tela nos dois lados. */
+const FLOOR_W = 36;
+
+interface Palette {
+  sky: THREE.Color;
+  groundA: THREE.Color;
+  groundB: THREE.Color;
+  road: THREE.Color;
+  roadEdge: THREE.Color;
+  water: THREE.Color;
+  /** Luz do sol (cor) e quanto ela vale. */
+  sun: THREE.Color;
+  sunPower: number;
+  ambient: number;
+}
+
+const hex = (h: number) => new THREE.Color(h);
+const PALETTES: Record<AtravessaBiome, Palette> = {
+  horta: {
+    sky: hex(0xbfe6ff),
+    groundA: hex(0x8dd252),
+    groundB: hex(0x7fc447),
+    road: hex(0x4b4f5c),
+    roadEdge: hex(0x6a6f7e),
+    water: hex(0x58bdf2),
+    sun: hex(0xfff4d6),
+    sunPower: 2.3,
+    ambient: 1.25,
+  },
+  deserto: {
+    sky: hex(0xffddaa),
+    groundA: hex(0xf0cd85),
+    groundB: hex(0xe6bf72),
+    road: hex(0x5d4d45),
+    roadEdge: hex(0x826b5e),
+    water: hex(0xc58a4e),
+    sun: hex(0xffe2b0),
+    sunPower: 2.6,
+    ambient: 1.1,
+  },
+  neon: {
+    sky: hex(0x0d1130),
+    groundA: hex(0x262d6a),
+    groundB: hex(0x1e2459),
+    road: hex(0x0f1230),
+    roadEdge: hex(0xff2fb3),
+    water: hex(0x0a3fa8),
+    sun: hex(0x8fa2ff),
+    sunPower: 0.7,
+    ambient: 0.72,
+  },
+};
+
+const mixPalette = (info: BiomeInfo): Palette => {
+  const a = PALETTES[info.biome];
+  if (info.blend <= 0) return a;
+  const b = PALETTES[info.next];
+  const t = info.blend;
+  const c = (x: THREE.Color, y: THREE.Color) => x.clone().lerp(y, t);
+  return {
+    sky: c(a.sky, b.sky),
+    groundA: c(a.groundA, b.groundA),
+    groundB: c(a.groundB, b.groundB),
+    road: c(a.road, b.road),
+    roadEdge: c(a.roadEdge, b.roadEdge),
+    water: c(a.water, b.water),
+    sun: c(a.sun, b.sun),
+    sunPower: a.sunPower + (b.sunPower - a.sunPower) * t,
+    ambient: a.ambient + (b.ambient - a.ambient) * t,
+  };
+};
+
+/** A altura do chão onde o herói pisa em cada tipo de faixa (tora e pedra ficam acima da água). */
+const TOP: Record<Lane['kind'], number> = { descanso: 0.3, estrada: 0.12, trilho: 0.12, rio: 0.22 };
+
+class LaneView {
+  readonly group = new THREE.Group();
+  private movers: { holder: THREE.Object3D; obj: Lane['objs'][number] }[] = [];
+  private pads = new Map<number, THREE.Object3D>();
+  private train: THREE.Object3D | null = null;
+  private signals: THREE.Mesh[] = [];
+  readonly row: number;
+
+  constructor(readonly lane: Lane) {
+    this.row = lane.row;
+    const pal = mixPalette(lane.biome);
+    const b = laneBiome(lane.biome);
+    this.group.position.z = -lane.row;
+    const top = TOP[lane.kind];
+    const g = this.group;
+
+    if (lane.kind === 'descanso') {
+      const c = lane.row % 2 === 0 ? pal.groundA : pal.groundB;
+      g.add(box(FLOOR_W, 0.3, 1, c, 0, 0.15, 0, { cast: false }));
+      for (const col of lane.blocked) {
+        const t = buildTree(b, hash2(lane.row, col));
+        t.position.set(col, top, 0);
+        g.add(t);
+      }
+      // cenário nas laterais, fora da área de jogo
+      for (const side of [-1, 1]) {
+        for (let i = 0; i < 6; i++) {
+          const r = hash2(lane.row * 7 + side, i);
+          if (r > 0.55) continue;
+          const x = side * (ATR_HALF_COLS + 1.6 + i * 1.7 + hash2(i, lane.row) * 0.8);
+          const t = buildTree(b, hash2(lane.row + i, side + 3));
+          t.position.set(x, top, 0);
+          g.add(t);
+        }
+      }
+    } else if (lane.kind === 'estrada' || lane.kind === 'trilho') {
+      g.add(box(FLOOR_W, 0.12, 1, lane.kind === 'trilho' ? pal.groundB : pal.road, 0, 0.06, 0, { cast: false }));
+      if (lane.kind === 'estrada') {
+        g.add(box(FLOOR_W, 0.02, 0.06, pal.roadEdge, 0, 0.13, 0.46, { cast: false, emissive: b === 'neon' ? 0.9 : 0 }));
+        g.add(box(FLOOR_W, 0.02, 0.06, pal.roadEdge, 0, 0.13, -0.46, { cast: false, emissive: b === 'neon' ? 0.9 : 0 }));
+        for (const o of lane.objs) {
+          const v = buildVehicle(o.kind as never, b, hash2(lane.row, Math.round(o.x0 * 10)));
+          if (lane.dir === -1) v.rotation.y = Math.PI;
+          v.position.y = top;
+          this.group.add(v);
+          this.movers.push({ holder: v, obj: o });
+        }
+      } else {
+        for (let x = -FLOOR_W / 2; x < FLOOR_W / 2; x += 0.9) g.add(box(0.28, 0.06, 0.78, 0x6b5b4a, x, 0.15, 0, { cast: false }));
+        g.add(box(FLOOR_W, 0.05, 0.08, 0xb8bcc8, 0, 0.17, 0.2, { cast: false }));
+        g.add(box(FLOOR_W, 0.05, 0.08, 0xb8bcc8, 0, 0.17, -0.2, { cast: false }));
+        const tr = buildTrain(ATR_TRAIN_LEN);
+        if (lane.dir === -1) tr.rotation.y = Math.PI;
+        tr.position.y = top;
+        tr.visible = false;
+        g.add(tr);
+        this.train = tr;
+        for (const x of [-(ATR_HALF_COLS + 1.4), ATR_HALF_COLS + 1.4]) {
+          const s = buildSignal();
+          s.group.position.set(x, 0.12, 0.4);
+          g.add(s.group);
+          this.signals.push(...s.lights);
+        }
+      }
+    } else {
+      // rio: o fundo e a água um pouco abaixo da beirada
+      g.add(box(FLOOR_W, 0.1, 1, pal.water, 0, -0.05, 0, { cast: false, emissive: b === 'neon' ? 0.3 : 0 }));
+      if (lane.pads) {
+        for (const p of lane.pads) {
+          const pad = buildPad(b, p.sinks, hash2(lane.row, p.col));
+          pad.position.set(p.col, 0, 0);
+          g.add(pad);
+          this.pads.set(p.col, pad);
+        }
+      } else {
+        for (const o of lane.objs) {
+          const log = buildLog(o.len, b);
+          log.position.y = 0;
+          g.add(log);
+          this.movers.push({ holder: log, obj: o });
+        }
+      }
+    }
+  }
+
+  update(tick: number, sim: AtravessaSim, now: number) {
+    for (const m of this.movers) m.holder.position.x = objX(this.lane, m.obj, tick);
+    if (this.train) {
+      const st = trainState(this.lane, tick);
+      this.train.visible = st.x !== null;
+      if (st.x !== null) this.train.position.x = st.x;
+      // pisca em 4 Hz durante o aviso; fora dele, apagado
+      const on = st.warning && Math.floor(now * 4) % 2 === 0;
+      this.signals.forEach((l, i) => {
+        const lit = st.warning && (i % 2 === 0 ? on : !on);
+        l.material = lit ? mat(0xff2a2a, 1) : mat(0x3a1010);
+      });
+    }
+    if (this.pads.size && sim.row === this.row) {
+      const col = Math.round(sim.hx);
+      const pad = this.pads.get(col);
+      const v = sim.view();
+      if (pad && v.sinking > 0 && !v.step) {
+        pad.position.y = -0.18 * v.sinking;
+        pad.position.x = col + Math.sin(now * 30) * 0.03 * v.sinking;
+      }
+    }
+  }
+}
+
+/** Quanto o herói e a câmera suavizam (por segundo). */
+const CAM_FOLLOW = 5;
+
+export class AtravessaScene {
+  private renderer: THREE.WebGLRenderer;
+  private scene = new THREE.Scene();
+  private camera = new THREE.OrthographicCamera(-6, 6, 7, -7, 0.1, 140);
+  private sun = new THREE.DirectionalLight(0xffffff, 2.2);
+  private hemi = new THREE.HemisphereLight(0xffffff, 0x8899aa, 1.2);
+  /** Na noite o herói leva uma luz pequena e quente: o chão ao redor dele sempre se lê. */
+  private heroLight = new THREE.PointLight(0xffe2b0, 0, 7, 1.6);
+  private lanes = new Map<number, LaneView>();
+  private hero = buildHero();
+  private heroBody: THREE.Object3D;
+  private heroAngle = 0;
+  private camRow = 1;
+  private camX = 0;
+  private maxRow = 0;
+  private aspect = 1;
+  private reduced: boolean;
+
+  constructor(canvas: HTMLCanvasElement, reducedMotion = false) {
+    this.reduced = reducedMotion;
+    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
+    this.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+    this.scene.background = PALETTES.horta.sky.clone();
+    this.scene.fog = new THREE.Fog(PALETTES.horta.sky.clone(), 34, 70);
+
+    this.sun.castShadow = true;
+    this.sun.shadow.mapSize.set(1024, 1024);
+    const sc = this.sun.shadow.camera;
+    sc.left = -15;
+    sc.right = 15;
+    sc.top = 15;
+    sc.bottom = -15;
+    sc.near = 1;
+    sc.far = 60;
+    this.sun.shadow.bias = -0.0006;
+    this.sun.shadow.normalBias = 0.03;
+    this.scene.add(this.sun, this.sun.target, this.hemi, this.heroLight);
+
+    this.heroBody = this.hero.getObjectByName('body')!;
+    this.scene.add(this.hero);
+  }
+
+  resize(w: number, h: number) {
+    this.renderer.setSize(w, h, false);
+    this.aspect = w / Math.max(1, h);
+    // sempre mostra ~11 casas de largura; em tela larga, no mínimo 6,2 de meia altura
+    const halfW0 = 5.6;
+    const halfH = Math.max(halfW0 / this.aspect, 5.6);
+    const halfW = halfH * this.aspect;
+    this.camera.left = -halfW;
+    this.camera.right = halfW;
+    this.camera.top = halfH;
+    this.camera.bottom = -halfH;
+    this.camera.updateProjectionMatrix();
+  }
+
+  private ensureLanes(sim: AtravessaSim, centerRow: number) {
+    const lo = Math.floor(centerRow) - ROWS_BEHIND; // antes da largada é grama, para a tela não ficar vazia
+    const hi = Math.floor(centerRow) + ROWS_AHEAD;
+    for (const [row, lv] of this.lanes) {
+      if (row < lo || row > hi) {
+        this.scene.remove(lv.group);
+        lv.group.traverse((o) => {
+          o.removeFromParent();
+        });
+        this.lanes.delete(row);
+      }
+    }
+    for (let r = lo; r <= hi; r++) {
+      if (this.lanes.has(r)) continue;
+      const lv = new LaneView(sim.world.lane(r));
+      this.lanes.set(r, lv);
+      this.scene.add(lv.group);
+    }
+  }
+
+  private applyPose(p: Pose, x: number, y: number, topY: number) {
+    this.hero.position.set(x, topY + p.lift, -y);
+    this.heroBody.scale.set(p.sx, p.sy, p.sz);
+    this.heroBody.rotation.set(p.pitch, 0, p.roll);
+    this.hero.visible = p.alpha > 0.02;
+    this.hero.scale.setScalar(Math.max(0.01, p.alpha));
+  }
+
+  /** Desenha um quadro. `dt` em segundos; `death` quando a partida acabou (age em segundos). */
+  render(sim: AtravessaSim, dt: number, now: number, death: { end: AtravessaEnd; age: number } | null) {
+    const v = sim.view();
+    this.maxRow = Math.max(this.maxRow, v.y);
+
+    // a câmera só anda para a frente e acompanha de lado só um pouco
+    const k = 1 - Math.exp(-dt * CAM_FOLLOW);
+    const targetRow = this.maxRow + 2.6;
+    // um salto grande (só acontece ao teletransportar em desenvolvimento) não precisa deslizar
+    if (Math.abs(targetRow - this.camRow) > 14) this.camRow = targetRow;
+    this.camRow += (targetRow - this.camRow) * (this.reduced ? 1 : k);
+    const targetX = Math.max(-1.8, Math.min(1.8, v.x * 0.45));
+    this.camX += (targetX - this.camX) * (this.reduced ? 1 : 1 - Math.exp(-dt * 4));
+
+    this.ensureLanes(sim, this.camRow);
+    for (const lv of this.lanes.values()) lv.update(sim.tick, sim, now);
+
+    // o herói
+    // a altura do chão muda de leve entre faixas: acompanha o pulo em vez de saltar de uma vez
+    const lo = Math.floor(v.y);
+    const frac = v.y - lo;
+    const top = TOP[sim.world.lane(lo).kind] * (1 - frac) + TOP[sim.world.lane(lo + 1).kind] * frac;
+    this.heroAngle = turnToward(this.heroAngle, HEADING[v.facing], dt * 22);
+    this.hero.rotation.y = this.heroAngle;
+    const pose = death ? deathPose(death.end, death.age) : heroPose(v, now);
+    this.applyPose(pose, v.x, v.y, top);
+
+    // luz, céu e névoa seguem o bioma de onde o herói está; a escuridão escurece de dentro para fora
+    const info = biomeAt(v.y);
+    const pal = mixPalette(info);
+    const danger = v.danger;
+    const dim = 1 - 0.32 * danger * danger;
+    (this.scene.background as THREE.Color).copy(pal.sky).multiplyScalar(1 - 0.3 * danger);
+    const fog = this.scene.fog as THREE.Fog;
+    fog.color.copy(pal.sky).multiplyScalar(1 - 0.35 * danger);
+    fog.near = 34 - 10 * danger;
+    this.sun.color.copy(pal.sun);
+    this.sun.intensity = pal.sunPower * dim;
+    this.hemi.intensity = pal.ambient * dim;
+    this.hemi.color.copy(pal.sky).lerp(new THREE.Color(0xffffff), 0.5);
+    darkness.uDarkZ.value = -v.darkRow;
+    const night = Math.max(0, Math.min(1, (1.25 - pal.ambient) / 0.7));
+    this.heroLight.intensity = night * 18 * dim;
+    this.heroLight.position.set(v.x, 2.2, -v.y + 0.6);
+
+    // câmera diagonal fixa como no Crossy Road: sai do alvo para trás, para a direita e para cima
+    // (as faixas descem da esquerda para a direita e o avanço vai para cima e para a direita)
+    const tx = this.camX;
+    const tz = -this.camRow;
+    this.camera.position.set(tx + 4.6, 9.4, tz + 7.2);
+    this.camera.lookAt(tx, 0, tz);
+    this.sun.position.set(tx - 7, 13, tz + 6);
+    this.sun.target.position.set(tx, 0, tz);
+
+    this.renderer.render(this.scene, this.camera);
+  }
+
+  dispose() {
+    for (const lv of this.lanes.values()) this.scene.remove(lv.group);
+    this.lanes.clear();
+    this.renderer.dispose();
+    disposeModels();
+  }
+}

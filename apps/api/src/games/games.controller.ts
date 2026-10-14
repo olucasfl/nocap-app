@@ -7,7 +7,7 @@ import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import {
   blocksSessionSchema,
   ecoSessionSchema,
-  sinalSessionSchema,
+  atravessaSessionSchema,
   timeSessionSchema,
   type TimeSessionInput,
 } from '../matches/match.schema';
@@ -44,17 +44,17 @@ export class GamesController {
     return { seed, session: issueTimeSession(seed) };
   }
 
-  /** Começa uma corrida do Sinal Vermelho: seed sorteada e sessão assinada (para o tempo máximo). */
-  @Post('sinal/session')
+  /** Começa uma partida do Atravessa!: seed sorteada e sessão assinada (limita a duração). */
+  @Post('atravessa/session')
   @HttpCode(200)
   @UseGuards(AuthGuard, RateLimitGuard)
   @RateLimit({ limit: 30, windowMs: 60_000 })
-  sinalSession(@Body(new ZodValidationPipe(sinalSessionSchema)) _body: TimeSessionInput) {
+  atravessaSession(@Body(new ZodValidationPipe(atravessaSessionSchema)) _body: TimeSessionInput) {
     const seed = randomUUID().slice(0, 12);
     return { seed, session: issueTimeSession(seed) };
   }
 
-  /** Começa uma partida do Block's: seed sorteada e sessão assinada, como no Sinal. */
+  /** Começa uma partida do Block's: seed sorteada e sessão assinada. */
   @Post('blocks/session')
   @HttpCode(200)
   @UseGuards(AuthGuard, RateLimitGuard)

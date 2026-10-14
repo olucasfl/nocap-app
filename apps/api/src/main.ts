@@ -14,7 +14,6 @@ import {
   EcoRoom,
   ImpostorRoom,
   PartyRoom,
-  SinalRoom,
   TimeRoom,
   roomDeps,
 } from './rooms/color.room';
@@ -51,7 +50,6 @@ async function bootstrap() {
   rooms.define('impostor', ImpostorRoom);
   rooms.define('eco', EcoRoom);
   rooms.define('party', PartyRoom);
-  rooms.define('sinal', SinalRoom);
   const port = Number(process.env.PORT ?? 3333);
   await app.listen(port);
   console.log(`api no ar em http://localhost:${port}`);

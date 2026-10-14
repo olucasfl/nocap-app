@@ -49,14 +49,11 @@ const MODE_FILTERS: Record<GameId, { id: string; label: string }[]> = {
     { id: 'velocidade', label: 'Velocidade' },
     { id: 'reverso', label: 'Reverso' },
   ],
-  sinal: [
-    { id: 'infinito', label: 'Infinito' },
-    { id: 'classico', label: 'Clássico' },
-  ],
   blocks: [
     { id: 'classic', label: 'Block Classic' },
     { id: 'towers', label: 'Block Towers' },
   ],
+  atravessa: [{ id: 'infinito', label: 'Infinito' }],
 };
 
 const KIND_FILTERS: { id: 'all' | 'solo' | 'daily' | 'room'; label: string }[] = [
@@ -76,8 +73,8 @@ const GAMES: { id: GameId; label: string }[] = [
   { id: 'color', label: 'Mesmíssima' },
   { id: 'time', label: 'Já Deu?' },
   { id: 'eco', label: 'Ecooo' },
-  { id: 'sinal', label: 'Sinal Vermelho' },
   { id: 'blocks', label: "Block's" },
+  { id: 'atravessa', label: 'Atravessa!' },
 ];
 
 function ColorDetail({ item }: { item: HistoryItem }) {
@@ -135,10 +132,10 @@ function EcoDetail({ item }: { item: HistoryItem }) {
   );
 }
 
-function SinalDetail({ item }: { item: HistoryItem }) {
+function AtravessaDetail({ item }: { item: HistoryItem }) {
   return (
     <p className="mono hist-note">
-      {Math.round(item.totalScore / 10)} METROS · SÓ O RESUMO FICA GUARDADO.
+      {Math.round(item.totalScore / 10)} LINHAS · SÓ O RESUMO FICA GUARDADO.
     </p>
   );
 }
@@ -208,8 +205,8 @@ function MatchRow({ item }: { item: HistoryItem }) {
           <TimeDetail item={item} />
         ) : item.game === 'eco' ? (
           <EcoDetail item={item} />
-        ) : item.game === 'sinal' ? (
-          <SinalDetail item={item} />
+        ) : item.game === 'atravessa' ? (
+          <AtravessaDetail item={item} />
         ) : item.game === 'blocks' ? (
           <BlocksDetail item={item} />
         ) : (

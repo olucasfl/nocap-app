@@ -49,13 +49,13 @@ export function GameArt({ game, size = 'md' }: { game: GameId; size?: 'sm' | 'md
       </div>
     );
   }
-  if (game === 'sinal') {
+  if (game === 'atravessa') {
     return (
-      <div className={`ga ga-sinal ${size}`} aria-hidden="true">
+      <div className={`ga ga-atravessa ${size}`} aria-hidden="true">
         <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round">
-          <rect x="18" y="6" width="28" height="52" rx="10" />
-          <circle cx="32" cy="22" r="7" />
-          <circle cx="32" cy="42" r="7" />
+          <path d="M8 44l24-14 24 14-24 14z" />
+          <path d="M20 30V16l12-7 12 7v14" />
+          <path d="M32 30v14" />
         </svg>
       </div>
     );
@@ -81,6 +81,6 @@ export const GAME_LABEL: Record<GameId, string> = {
   color: 'Mesmíssima',
   time: 'Já Deu?',
   eco: 'Ecooo',
-  sinal: 'Sinal Vermelho',
   blocks: "Block's",
+  atravessa: 'Atravessa!',
 };

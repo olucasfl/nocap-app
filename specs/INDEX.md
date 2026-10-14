@@ -22,13 +22,14 @@
 | 017 | [Presença na sala, entrar/sair e convites](017-presenca-sala.md)   | 3     | implementada; testada com servidor real e bots                             |
 | 018 | [Amigos, presença, perfil, ranking e fim de partida](018-social-e-fim-de-partida.md) | 3 | implementada; falta aplicar a migration 0005 |
 | 019 | [Eco Hero (ritmo do Ecooo, estilo Guitar Hero)](019-eco-batida.md) | 6 | solo implementado; falta jogar ao vivo e calibrar |
-| 020 | [Sinal Vermelho (correr sem ser visto)](020-sinal-vermelho.md) | 6 | Solo completo e sala online (2 a 12 pessoas, botão de empurrar); falta calibrar com gente jogando |
+| 020 | [Sinal Vermelho (correr sem ser visto)](020-sinal-vermelho.md) | 6 | substituída pela 028 (Sinal removido) |
 | 021 | [Block's (jogos de blocos) e o Block Classic](021-blocks.md) | 6 | Block Classic solo implementado; falta jogar ao vivo e calibrar |
 | 022 | [Block Towers (empilhar com física)](022-block-towers.md) | 6 | modo 3 vidas (solo) implementado, com ranking/histórico/perfil (servidor refaz a física); falta jogar e calibrar |
 | 023 | [Convidado joga tudo (sem conta, nada é salvo)](023-convidado-joga-tudo.md) | 2 | implementada: solo sem conta, popup, aviso de não salvo e salas com apelido; falta jogar ao vivo |
 | 024 | [Retomar partida (Block Classic)](024-retomar-partida.md) | 6 | implementada no Block Classic; falta jogar ao vivo |
 | 025 | [Block Towers: câmera final e modos online](025-block-towers-online.md) | 6 | câmera final implementada; online (Corrida e Petrificar) só registrado |
-| 026 | [Sinal Vermelho 2 (reforma completa)](026-sinal-vermelho-2.md) | 6 | núcleo, tela e som novos implementados; faltam os itens do jogador e calibrar jogando |
-| 027 | [Sinal: arremessadores, perseguidores, Vigia apressado e itens](027-sinal-perigos.md) | 6 | implementada; falta jogar e calibrar |
+| 026 | [Sinal Vermelho 2 (reforma completa)](026-sinal-vermelho-2.md) | 6 | substituída pela 028 (Sinal removido) |
+| 027 | [Sinal: arremessadores, perseguidores, Vigia apressado e itens](027-sinal-perigos.md) | 6 | substituída pela 028 (Sinal removido) |
+| 028 | [Atravessa! (substitui o Sinal Vermelho, estilo Crossy Road em 3D)](028-atravessa.md) | 6 | etapas 1 a 5 implementadas (núcleo, servidor, tela, biomas e som, troca no app); falta jogar e calibrar |
 
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.

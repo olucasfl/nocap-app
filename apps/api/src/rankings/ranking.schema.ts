@@ -16,11 +16,10 @@ export const RANKING_BOARDS = [
   'batida-mare',
   'batida-frenesi',
   'infinito',
-  'classico',
   'towers',
   'daily',
 ] as const;
-export const RANKING_GAMES = ['color', 'time', 'eco', 'sinal', 'blocks'] as const;
+export const RANKING_GAMES = ['color', 'time', 'eco', 'blocks', 'atravessa'] as const;
 export type RankingGame = (typeof RANKING_GAMES)[number];
 
 /** Quadros que cada jogo tem (Flash é da Cor; "Sem estourar" é do Tempo). */
@@ -28,10 +27,10 @@ export const BOARDS_OF: Record<RankingGame, readonly string[]> = {
   color: ['classic', 'flash', 'quick', 'blind', 'survival', 'daily'],
   time: ['classic', 'quick', 'strict', 'sequence', 'survival', 'daily'],
   eco: ['classic', 'escalada', 'velocidade', 'reverso', 'batida-passo', 'batida-mare', 'batida-frenesi', 'daily'],
-  // Sinal Vermelho: metros em cada modo (a nota é a distância, em décimos de metro)
-  sinal: ['infinito', 'classico'],
   // Block's: pontos de cada modo (a nota é a pontuação, em décimos)
   blocks: ['classic', 'towers'],
+  // Atravessa!: linhas atravessadas no Infinito (a nota é a distância, em décimos de linha)
+  atravessa: ['infinito'],
 };
 
 export const rankingQuerySchema = z.object({

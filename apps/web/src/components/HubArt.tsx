@@ -127,31 +127,26 @@ export function EcoArt() {
   );
 }
 
-/** Sinal Vermelho: o semáforo de olho aberto, a pista até o horizonte e o boneco correndo. */
-export function SinalArt() {
+/** Atravessa!: faixas em diagonal (grama, estrada, rio), uma tora e o bichinho de blocos pulando. */
+export function AtravessaArt() {
   return (
-    <svg className="ha ha-sinal" viewBox="0 0 200 150" aria-hidden="true">
-      {/* a pista */}
-      <path d="M88 70L10 150H190L112 70Z" fill="#1d1d2b" {...stroke} strokeWidth={3} />
-      <path d="M100 70V150" stroke="var(--yellow)" strokeWidth="4" strokeDasharray="10 9" className="ha-road" />
-      {/* o poste e o semáforo */}
-      <rect x="95" y="64" width="10" height="14" fill="#5a5a66" {...stroke} strokeWidth={3} />
-      <rect x="62" y="6" width="76" height="62" rx="14" {...hard} transform="translate(5 5)" />
-      <rect x="62" y="6" width="76" height="62" rx="14" fill="#1d1d2b" {...stroke} />
-      <circle cx="82" cy="37" r="13" fill="#3a2a2a" {...stroke} strokeWidth={3} />
-      <circle cx="118" cy="37" r="13" fill="#3a2a2a" {...stroke} strokeWidth={3} />
-      <circle className="ha-amber" cx="82" cy="37" r="13" fill="#ffb020" />
-      {/* a lâmpada vermelha com o olho */}
-      <circle cx="100" cy="37" r="18" fill="#e5303a" {...stroke} strokeWidth={3.5} />
-      <ellipse cx="100" cy="37" rx="11" ry="8" fill="#fff" stroke={INK} strokeWidth="2.5" />
-      <circle className="ha-pupil" cx="100" cy="37" r="4.6" fill={INK} />
-      {/* o boneco */}
+    <svg className="ha ha-atravessa" viewBox="0 0 200 150" aria-hidden="true">
+      <g transform="translate(0 -52) skewY(26)">
+        <rect x="-10" y="70" width="220" height="30" fill="#8dd252" {...stroke} strokeWidth={3} />
+        <rect x="-10" y="100" width="220" height="30" fill="#3a3d4a" {...stroke} strokeWidth={3} />
+        <path d="M-10 115H210" stroke="#f4f4ef" strokeWidth="3" strokeDasharray="12 10" className="ha-road" />
+        <rect x="-10" y="130" width="220" height="30" fill="#58bdf2" {...stroke} strokeWidth={3} />
+        <rect x="120" y="136" width="52" height="18" rx="3" fill="#8a5a34" {...stroke} strokeWidth={3} />
+        <rect x="-10" y="160" width="220" height="40" fill="#8dd252" {...stroke} strokeWidth={3} />
+      </g>
       <g className="ha-run">
-        <ellipse cx="102" cy="136" rx="13" ry="5" fill="rgba(0,0,0,.3)" />
-        <ellipse cx="94" cy="124" rx="4" ry="6" fill={PAPER} {...stroke} strokeWidth={2.5} />
-        <ellipse cx="110" cy="124" rx="4" ry="6" fill={PAPER} {...stroke} strokeWidth={2.5} />
-        <circle cx="102" cy="118" r="14" fill={PAPER} {...stroke} strokeWidth={3.5} />
-        <path d="M102 114l3.5 5-3.5 4-3.5-4z" fill="#33c27f" stroke={INK} strokeWidth="2" strokeLinejoin="round" />
+        <ellipse cx="86" cy="126" rx="15" ry="5" fill="rgba(0,0,0,.3)" />
+        <rect x="72" y="92" width="28" height="30" rx="4" fill="#ff8a2a" {...stroke} strokeWidth={3.5} />
+        <rect x="74" y="78" width="7" height="14" rx="2" fill="#ff8a2a" {...stroke} strokeWidth={2.6} />
+        <rect x="91" y="78" width="7" height="14" rx="2" fill="#ff8a2a" {...stroke} strokeWidth={2.6} />
+        <rect x="79" y="102" width="5" height="5" fill={INK} />
+        <rect x="89" y="102" width="5" height="5" fill={INK} />
+        <rect x="82" y="110" width="9" height="7" rx="1.5" fill="#ffd9b0" {...stroke} strokeWidth={2} />
       </g>
     </svg>
   );

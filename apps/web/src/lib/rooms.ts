@@ -1,10 +1,10 @@
 import type { Room } from 'colyseus.js';
-import type { Hsb, LeaderRule, SinalEvent, SinalView, TimeSettings } from '@nocap/games';
+import type { Hsb, LeaderRule, TimeSettings } from '@nocap/games';
 import { create } from 'zustand';
 import { ApiError, apiBase, apiClient } from './api-client';
 import { getToken, useAuth } from './auth';
 
-export type RoomGame = 'color' | 'time' | 'impostor' | 'eco' | 'party' | 'sinal';
+export type RoomGame = 'color' | 'time' | 'impostor' | 'eco' | 'party';
 export type Phase =
   | 'lobby'
   | 'intro'
@@ -108,59 +108,6 @@ export interface EcoRoomState {
   timedOut?: boolean;
   /** Pódio do Siga o Líder: soma de acertos de cada pessoa como seguidora. */
   hits?: Record<string, number>;
-}
-
-/** Cada corredor do Sinal Vermelho na sala (posição, se está escondido e se já caiu). */
-export interface SinalRoomPlayer {
-  id: string;
-  x: number;
-  y: number;
-  hidden: boolean;
-  stunned?: boolean;
-  dead: boolean;
-  /** Cruzou a linha de chegada da fase (e o lugar em que chegou). */
-  finished?: boolean;
-  place?: number | null;
-  meters: number;
-}
-
-/** O Sinal Vermelho em sala: cores, corredores, o mapa de quem a tela segue e o botão de empurrar. */
-export interface SinalRoomState {
-  colors: Record<string, string>;
-  players?: SinalRoomPlayer[];
-  /** De quem é o mapa na tela (o seu, ou o de quem você assiste depois de cair). */
-  target?: string | null;
-  view?: SinalView | null;
-  events?: (SinalEvent & { n: number })[];
-  endsAt?: number | null;
-  finishing?: boolean;
-  mine?: {
-    dead: boolean;
-    finished?: boolean;
-    place?: number | null;
-    reason: 'vigia' | 'escuridao' | null;
-  } | null;
-  /** O placar de mortes: as últimas quedas (da mais velha para a mais nova). */
-  feed?: {
-    n: number;
-    at: number;
-    id: string;
-    kind: 'morte' | 'chegada';
-    reason: 'vigia' | 'escuridao' | null;
-    by: string | null;
-    meters: number;
-    place: number | null;
-  }[];
-  /** O resumo da fase que acabou (no intervalo entre as fases e no pódio). */
-  summary?: {
-    n: number;
-    total: number;
-    rows: { id: string; tenths: number; finished: boolean; place: number; totalTenths: number }[];
-  } | null;
-  /** Quem está ao alcance do empurrão (null = ninguém) e quando o botão volta (relógio do servidor). */
-  push?: { target: string | null; readyAt: number; range: number } | null;
-  /** O alvo do próximo poder que atrapalha (o mais perto, até 15 m) e o alcance. */
-  power?: { target: string | null; range: number } | null;
 }
 
 export interface PartyShapeItem {
@@ -285,7 +232,6 @@ export interface RoomSnapshot {
   impostor?: ImpostorState;
   eco?: EcoRoomState;
   party?: PartySnapshot;
-  sinal?: SinalRoomState;
 }
 
 /** Estado do Intruso, por pessoa: cor, dica e papéis só chegam a quem pode vê-los. */

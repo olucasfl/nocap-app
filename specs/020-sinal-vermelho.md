@@ -2,6 +2,8 @@
 
 > **Atenção:** as regras de poderes sorteados, ciclos do Vigia (falso aviso, olhar duplo), brincadeiras e a escuridão foram **substituídas pela [spec 026](026-sinal-vermelho-2.md)** (cantiga do Vigia, corredor flexível, escuridão mais forte). O resto continua valendo.
 
+> **Substituída pela [spec 028 (Atravessa!)](028-atravessa.md) em 14/10/2026: o Sinal Vermelho foi removido do app e da API (o banco é zerado por `apps/api/scripts/reset-sinal.sql`). Fica só como história.**
+
 Status: **lógica e design aprovados pelo Lucas (12/10/2026), com os dois modos (Clássico por fases e Infinito), poderes e chefes; **núcleo da lógica pronto em `packages/games/src/sinal/` e tela jogável em `apps/web/src/games/sinal/` (Canvas, analógico no celular, WASD no computador, câmera, os 3 mapas, poderes, som, menu com modo e cor, fim da partida, recorde só neste aparelho); faltam o servidor (sessão, conferência da corrida, ranking), calibrar jogando e a escolha de cor única por sala (online).** Nada implementado. Online (todos no mesmo mapa, com física de empurrão) fica para depois e não faz parte desta spec.
 
 ## A ideia

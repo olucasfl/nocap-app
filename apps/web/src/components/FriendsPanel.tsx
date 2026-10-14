@@ -11,15 +11,9 @@ import type { GameId } from '@/lib/stats';
 import './friends-panel.css';
 
 /** O Block's ainda não tem sala. */
-type RoomGameId = Exclude<GameId, 'blocks'>;
+type RoomGameId = Exclude<GameId, 'blocks' | 'atravessa'>;
 
 const RULES: Record<RoomGameId, string[]> = {
-  sinal: [
-    'Corrida em fases (o líder escolhe de 1 a 5), cada uma com linha de chegada. Todo mundo corre no MESMO mapa ao mesmo tempo, com o mesmo Vigia, os mesmos poderes e a mesma névoa. Cada um tem uma cor.',
-    'Quem chega na linha, se mexe quando o Vigia olha (ou é empurrado!) ou é pego pela névoa fica assistindo a quem ainda corre, e pode trocar de pessoa. No fim vence quem somar mais metros em todas as fases.',
-    'Chegou perto de alguém? Aparece o botão EMPURRAR: quem é empurrado conta como mexendo. Quem empurra não.',
-    'De 2 a 12 pessoas.',
-  ],
   color: [
     'Todo mundo vê a mesma cor ao mesmo tempo e recria de memória.',
     'O host escolhe rodadas, tempo para decorar e tempo para recriar.',

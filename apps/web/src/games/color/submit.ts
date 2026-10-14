@@ -32,10 +32,10 @@ export interface EcoPayload extends BasePayload {
   session: string;
 }
 
-/** Partida do Sinal Vermelho: os movimentos do analógico ([passo, x, y]) e a sessão assinada. */
-export interface SinalPayload extends BasePayload {
-  game: 'sinal';
-  inputs: [number, number, number][];
+/** Partida do Atravessa!: os passos ([instante, direção]) e a sessão assinada. */
+export interface AtravessaPayload extends BasePayload {
+  game: 'atravessa';
+  steps: [number, number][];
   session: string;
 }
 
@@ -46,7 +46,12 @@ export interface BlocksPayload extends BasePayload {
   session: string;
 }
 
-export type SubmitPayload = ColorPayload | TimePayload | EcoPayload | SinalPayload | BlocksPayload;
+export type SubmitPayload =
+  | ColorPayload
+  | TimePayload
+  | EcoPayload
+  | BlocksPayload
+  | AtravessaPayload;
 
 interface SubmitResponse {
   matchId: string;

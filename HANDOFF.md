@@ -21,6 +21,8 @@ Tudo está em `main` e publicado (API no Render, web na Vercel, banco no Supabas
 
 **Atenção:** a migration `0004` (trocar @usuário) está gerada e NÃO aplicada; rode `pnpm db:migrate` antes de testar.
 
+**Atravessa!** (`specs/028-atravessa.md`, 14/10/2026): jogo novo estilo Crossy Road em 3D (Three.js), solo e só Infinito, três biomas contínuos. **Substituiu o Sinal Vermelho**, que foi apagado do código (pacote, API, app e salas). Núcleo em `packages/games/src/atravessa`, rota `/atravessa`, API `game: atravessa`. **Falta:** jogar ao vivo no celular e no computador, calibrar escuridão, veículos e toras, ouvir o som, ver as transições de bioma andando. **Banco:** os dados do Sinal já foram apagados do banco de produção (14/10/2026: 30 partidas e 4 recordes, via `apps/api/scripts/reset-sinal.mjs`).
+
 **Eco** (`specs/012-eco.md`): repetir sequências de botões (estilo Genius). **Solo pronto** (Clássico, Escalada, Velocidade, Reverso e Daily, com ranking, recordes, histórico e perfil; 310 testes passando). **Salas Corrida e Siga o Líder prontas (faltam jogar ao vivo e calibrar o 0,7 do líder e as faixas de nota)**. São duas salas separadas (`eco` e `ecoleader`), escolhidas ao criar a sala; o spec previa escolher o formato no lobby.
 
 **Nomes na tela:** Cor = **Mesmíssima** (o 10 mostra "mesmíssima" no lugar de "cravou"), Tempo = **Já Deu?**, Eco = **Ecooo**. Ids, rotas e código não mudaram (`color`, `time`, `eco`).

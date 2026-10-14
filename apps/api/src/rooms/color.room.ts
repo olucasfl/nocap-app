@@ -7,7 +7,6 @@ import { ImpostorRoomEngine } from './impostor/impostor-room.engine';
 import { EcoRoomEngine } from './eco-room.engine';
 import { EcoLeaderRoomEngine } from './eco-leader-room.engine';
 import { PartyRoomEngine } from './party-room.engine';
-import { SinalRoomEngine } from './sinal-room.engine';
 import { IMPOSTOR_MAX_PLAYERS } from '@nocap/games';
 import { GUEST_PREFIX, cleanNickname, createGuestLimiter, isGuestId, usernameLookalikes } from './guest-nick';
 import type { InvitesService } from './invites.service';
@@ -507,43 +506,6 @@ export class EcoRoom extends ColorRoom {
       this.act(c, (id) => {
         if (this.engine instanceof EcoLeaderRoomEngine) this.engine.submit(id, m?.sequence);
       }),
-    );
-  }
-}
-
-/**
- * Sala do Sinal Vermelho (spec 020): todo mundo corre no mesmo mapa, com o mesmo Vigia. O passo da
- * simulação é de 1/60 s, então a sala avança fino; o estado vai aos aparelhos 15 vezes por segundo.
- */
-export class SinalRoom extends ColorRoom {
-  protected override tickMs = 33;
-
-  protected override makeEngine(opts: ConstructorParameters<typeof ColorRoomEngine>[0]) {
-    return new SinalRoomEngine(opts);
-  }
-
-  protected override registerGameMessages() {
-    const engine = () => this.engine as SinalRoomEngine;
-    const userOf = (c: Client) => (c.userData as AuthData | undefined)?.id;
-    // O analógico chega muitas vezes por segundo: não manda estado a todos a cada movimento.
-    this.onMessage('move', (c, m: { x?: number; y?: number }) => {
-      const id = userOf(c);
-      if (id) engine().move(id, Number(m?.x), Number(m?.y));
-    });
-    this.onMessage('push', (c) => {
-      const id = userOf(c);
-      if (id) engine().push(id);
-    });
-    this.onMessage('use', (c) => {
-      const id = userOf(c);
-      if (id) engine().use(id);
-    });
-    this.onMessage('watch', (c, m: { id?: string }) => {
-      const id = userOf(c);
-      if (id) engine().watch(id, String(m?.id ?? ''));
-    });
-    this.onMessage('color', (c, m: { hex?: string }) =>
-      this.act(c, (id) => engine().setColor(id, String(m?.hex ?? ''))),
     );
   }
 }
