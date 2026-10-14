@@ -27,7 +27,7 @@ Todos os modos novos são **só online**. O modo solo continua como está (só g
 
 - **Linha-limite fixa**. Se a torre encostar nela começa um relógio de 3 s; se ainda estiver encostando no fim, a torre **vira pedra** e conta as peças empilhadas.
 - Mesmo final da Corrida (quem ganhou, câmera descendo por todas as torres, depois a classificação).
-- Pontos a confirmar na hora de implementar: o que significa "voltar" depois de cair (proposta: a torre recomeça do zero e a pessoa segue na partida) e se o Petrificar também tem os 8 minutos.
+- **Decidido (14/10/2026):** "voltar" depois de cair = a torre **recomeça do zero** e a pessoa segue na partida; quando a torre de alguém vira pedra, a rodada acaba **só para essa pessoa** e vence quem tiver mais peças no fim; o Petrificar **também tem o limite de 8 minutos**.
 
 ## Como sincronizar (decisão técnica proposta)
 

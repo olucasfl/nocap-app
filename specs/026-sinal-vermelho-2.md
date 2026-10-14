@@ -43,9 +43,17 @@ O Lucas achou o resultado "muito amador". Metas, valendo para os três mapas:
 - **Som:** a **cantiga é a trilha**: melodia própria por mapa (caixinha de música, marimba e sino, uma escala por mapa), sintetizada com envelope e reverberação gerada; o LHO esticado sobe de tom e vibra. Cama sonora ambiente por mapa, passos que variam, pancadas e atordoamento com corpo, ronco/batimento da escuridão e avisos curtos. **Mixagem com compressor/limitador e sem zumbido repetitivo**; tudo respeita o botão de mudo.
 - Nada de emoji; animações só em `transform`/`opacity` nas telas de interface (o Canvas pode desenhar livremente).
 
-## Itens do jogador (registrado, ainda não implementado)
+## Itens do jogador (decidido pelo Lucas em 14/10/2026; ainda não implementado)
 
-Três itens que a pessoa **pega no caminho e usa quando quiser** (carrega 1 por vez): **Sombra** (fica escondido em qualquer lugar por 2 s), **Congelar** (o Vigia fica +1,5 s de costas) e **Impulso** (corre mais rápido por 2 s). A aprovar o desenho para o online: no online o item de um jogador afeta só ele, ou o Vigia (congelar) afeta todos? Decidir junto com a sala.
+- **Onde se pega:** itens **no caminho, em lugares fixos sorteados pela seed**. Quem quiser pega correndo atrás dele (e se expõe).
+- **Regra de ouro:** nenhum item mexe no **Vigia** nem na lógica dele (sem Congelar, sem atrasar ou adiantar a cantiga). Os itens só **beneficiam quem usa** ou **atrapalham os outros jogadores** (esta segunda parte só existe no online).
+- **Primeiros itens (solo):** **Sombra** (fica escondido em qualquer lugar por 2 s) e **Impulso** (corre mais rápido por 2 s). Carrega **1 por vez**; só vem outro quando usar o que tem.
+- **Online (depois):** itens que atrapalham os outros jogadores (por exemplo, atordoar ou escorregar quem está perto) e a escolha do alvo. A definir junto com o redesenho da sala.
+- O servidor refaz a corrida, então usar item entra nos movimentos gravados (formato novo de entrada: instante e item).
+
+## Calibração (14/10/2026)
+
+Jogadores simulados que só percebem o LHO comprido depois de uma sílaba comum e reagem em 0,18 a 0,55 s (com variação) chegam a **700 a 1000 m em uns 4 a 5 minutos** no Infinito e no Clássico e acabam, na maioria, engolidos pela escuridão; só quem reage em 0,55 s é pego pelo Vigia no fim (janela de 0,8 s: aviso de 0,68 s no mais difícil mais a folga de 0,12 s). Gente de verdade erra mais (deslizes, hesitação, obstáculos): o ajuste fino do compasso e da escuridão depende do Lucas jogando.
 
 ## Plano (em ordem)
 
