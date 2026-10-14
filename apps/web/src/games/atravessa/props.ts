@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { AtravessaBiome, SweepKind } from '@nocap/games';
+import { ATR_HALF_COLS } from '@nocap/games';
 import { bakeChildren, box, mat, model } from './models';
 
 /** Crocodilo, tartarugas, semáforo, varridas de aviso, arcos de marco e partículas (spec 029). */
@@ -216,18 +217,18 @@ export function buildGate(kind: 'recorde' | 'marco', label: string, floorTop: nu
   const alt = kind === 'recorde' ? 0x111111 : 0xf4f4ef;
   // a faixa quadriculada fica só nas duas bordas da pista: o meio fica livre, e dá para ver a água, a
   // estrada e tudo que passa por baixo (tora, carro, trem)
-  for (let i = -4; i <= 4; i++) {
-    g.add(box(1, 0.03, 0.12, (i + 4) % 2 === 0 ? main : alt, i, floorTop + 0.02, -0.44, { cast: false }));
-    g.add(box(1, 0.03, 0.12, (i + 4) % 2 === 0 ? alt : main, i, floorTop + 0.02, 0.44, { cast: false }));
+  for (let i = -ATR_HALF_COLS; i <= ATR_HALF_COLS; i++) {
+    g.add(box(1, 0.03, 0.12, (i + ATR_HALF_COLS) % 2 === 0 ? main : alt, i, floorTop + 0.02, -0.44, { cast: false }));
+    g.add(box(1, 0.03, 0.12, (i + ATR_HALF_COLS) % 2 === 0 ? alt : main, i, floorTop + 0.02, 0.44, { cast: false }));
   }
-  for (const x of [-5.1, 5.1]) {
+  for (const x of [-(ATR_HALF_COLS + 1.1), ATR_HALF_COLS + 1.1]) {
     g.add(box(0.2, 2.6, 0.2, 0x2a2a30, x, floorTop + 1.3, 0));
     g.add(box(0.5, 0.34, 0.06, main, x + (x < 0 ? 0.3 : -0.3), floorTop + 2.35, 0, { cast: false }));
   }
   const label3d = makeLabel(label, kind === 'recorde' ? '#111111' : '#111111', kind === 'recorde' ? '#ffd23f' : '#f4f4ef');
   label3d.position.set(0, floorTop + 3.1, 0);
   g.add(label3d);
-  g.add(box(10.4, 0.16, 0.12, main, 0, floorTop + 2.6, 0, { cast: false }));
+  g.add(box(ATR_HALF_COLS * 2 + 2.4, 0.16, 0.12, main, 0, floorTop + 2.6, 0, { cast: false }));
   return model(null, () => g);
 }
 

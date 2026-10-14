@@ -10,6 +10,7 @@ import {
   ATR_DARK_MAX_GAP,
   ATR_DT,
   ATR_FLOW_HALF,
+  ATR_HALF_COLS,
   ATR_MIN_LOG_GAP,
   ATR_MIN_VEHICLE_GAP,
   ATR_STEP_TICKS,
@@ -54,7 +55,7 @@ const ANY = "qualquer-uma";
 function calmSim(seed = "calmo") {
   const w = new AtravessaWorld(seed);
   for (let r = 3; r < 900; r++) {
-    if ([r, r + 1, r + 2].every((x) => w.lane(x).kind === "descanso") && w.lane(r + 1).blocked.length === 0 && w.lane(r + 2).blocked.length === 0) {
+    if ([r, r + 1, r + 2].every((x) => w.lane(x).kind === "descanso")) {
       const sim = new AtravessaSim(seed, w);
       sim.row = r;
       sim.best = r;
@@ -420,7 +421,7 @@ describe('simulação', () => {
       sim.input(2);
       advance(sim, ATR_STEP_TICKS + 1);
     }
-    expect(sim.hx).toBe(-4);
+    expect(sim.hx).toBe(-ATR_HALF_COLS);
   });
 
   it('casa bloqueada recusa o passo sem gastar tempo', () => {
@@ -476,7 +477,7 @@ describe('simulação', () => {
   it('pousar na água afoga', () => {
     const w = new AtravessaWorld('agua');
     const lane = findLane(w, 'rio', (x) => !!x.pads);
-    const bad = [-4, -3, -2, -1, 0, 1, 2, 3, 4].find((c) => !lane.pads!.some((p) => p.col === c))!;
+    const bad = Array.from({ length: ATR_HALF_COLS * 2 + 1 }, (_, i) => i - ATR_HALF_COLS).find((c) => !lane.pads!.some((p) => p.col === c))!;
     const sim = new AtravessaSim('agua', w);
     sim.row = lane.row - 1;
     sim.best = lane.row - 1;
@@ -538,10 +539,9 @@ describe('simulação', () => {
     }
     expect(sim.end).toBe('escuridao');
     expect(atravessaDarkSpeed(100_000)).toBe(ATR_DARK_CAP);
-    const run = new AtravessaSim(ANY);
-    run.best = 50;
-    run.row = 50;
-    run.hx = 0;
+    // numa faixa calma (numa estrada o primeiro passo poderia ser o último)
+    const { sim: run } = calmSim();
+    run.dark = -50; // a escuridão ficou muito para trás: o limite de 8 linhas a puxa
     run.step();
     expect(run.row - run.dark).toBeLessThanOrEqual(ATR_DARK_MAX_GAP + 1e-9);
   });
@@ -614,14 +614,20 @@ describe('varridas de aviso', () => {
 
   it('quem sai da coluna durante o aviso (um passo para o lado) sobrevive e o perigo passa', () => {
     const { sim, w, r } = place('barril-9');
-    const col = sim.hx;
     const lane = w.lane(r);
-    const dir: Dir = col + 1 <= 4 && !lane.blocked.includes(col + 1) ? 3 : 2;
+    // uma coluna livre com a vizinha da direita também livre (árvores podem fechar o lado)
+    let col = sim.hx;
+    if (lane.blocked.includes(col + 1) || col + 1 > ATR_HALF_COLS) {
+      col = Array.from({ length: ATR_HALF_COLS * 2 }, (_, i) => i - ATR_HALF_COLS).find((c) => !lane.blocked.includes(c) && !lane.blocked.includes(c + 1))!;
+      sim.hx = col;
+    }
+    const dir: Dir = 3;
     while (!sim.view().sweep) sim.step();
     for (let i = 0; i < 10; i++) sim.step();
     sim.input(dir);
     let passed = false;
-    for (let i = 0; i < 300; i++) {
+    for (let i = 0; i < 360; i++) {
+      sim.dark = r - 8; // o teste é do perigo, não da escuridão (o redemoinho é o mais lento)
       sim.step();
       expect(sim.alive).toBe(true);
       if (!sim.view().sweep && i > 100) passed = true;
@@ -690,16 +696,16 @@ function canReach(seed: string, target: number, maxTicks: number): { ok: boolean
     frontier = [...next.values()];
     // basta um caminho, não todos: segue um punhado de estados por linha (os mais avançados primeiro).
     // Cortar só pelos mais avançados mataria quem espera parado, que é justamente quem sobrevive.
-    if (frontier.length > 220) {
+    if (frontier.length > 360) {
       const perRow = new Map<number, number>();
       frontier = frontier
         .sort((x, y) => y.best - x.best || y.row - x.row)
         .filter((c) => {
           const n = (perRow.get(c.row) ?? 0) + 1;
           perRow.set(c.row, n);
-          return n <= 16;
+          return n <= 28;
         })
-        .slice(0, 220);
+        .slice(0, 360);
     }
   }
   return { ok: false, best, tick: maxTicks };

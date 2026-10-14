@@ -398,6 +398,8 @@ export class AtravessaScene {
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
 
+    // o limite do mapa: daí para fora escurece
+    darkness.uEdge.value = ATR_HALF_COLS + 0.5;
     this.scene.background = PALETTES.horta.sky.clone();
     this.scene.fog = new THREE.Fog(PALETTES.horta.sky.clone(), 34, 70);
 
@@ -427,8 +429,8 @@ export class AtravessaScene {
     this.size = { w, h };
     this.renderer.setSize(w, h, false);
     this.aspect = w / Math.max(1, h);
-    // sempre mostra ~11 casas de largura; em tela larga, no mínimo 5,6 de meia altura
-    const halfW0 = 5.6;
+    // sempre mostra ~14 casas de largura; em tela larga, no mínimo 5,6 de meia altura
+    const halfW0 = 6.9;
     const halfH = Math.max(halfW0 / this.aspect, 5.6);
     const halfW = halfH * this.aspect;
     this.halfW = halfW;
@@ -592,7 +594,7 @@ export class AtravessaScene {
     // um salto grande (só acontece ao teletransportar em desenvolvimento) não precisa deslizar
     if (Math.abs(targetRow - this.camRow) > 14) this.camRow = targetRow;
     this.camRow += (targetRow - this.camRow) * (this.reduced ? 1 : k);
-    const targetX = Math.max(-1.8, Math.min(1.8, v.x * 0.45));
+    const targetX = Math.max(-2.8, Math.min(2.8, v.x * 0.45));
     this.camX += (targetX - this.camX) * (this.reduced ? 1 : 1 - Math.exp(-dt * 4));
 
     this.ensureLanes(sim, this.camRow);

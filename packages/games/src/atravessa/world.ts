@@ -319,7 +319,7 @@ export class AtravessaWorld {
       if (prev && prev.kind !== 'rio' && row >= 3) {
         const density = TREE_DENSITY[biome];
         for (let c = -ATR_HALF_COLS; c <= ATR_HALF_COLS; c++) {
-          if (c !== this.corridor && base.blocked.length < 5 && rng() < density) base.blocked.push(c);
+          if (c !== this.corridor && base.blocked.length < 7 && rng() < density) base.blocked.push(c);
         }
       }
       this.corridors[row] = this.corridor;
@@ -341,7 +341,7 @@ export class AtravessaWorld {
       return base;
     }
     // faixa móvel: o próximo descanso/pedras pode ter corredor novo (a estrada deixa andar de lado)
-    this.corridor = randInt(rng, -3, 3);
+    this.corridor = randInt(rng, -(ATR_HALF_COLS - 1), ATR_HALF_COLS - 1);
     this.corridors[row] = this.corridor;
 
     if (kind === 'estrada') {
