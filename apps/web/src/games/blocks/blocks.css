@@ -95,10 +95,16 @@
 }
 .bk-top {
   width: min(100%, 440px);
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   gap: 10px;
+}
+.bk-top > :first-child {
+  justify-self: start;
+}
+.bk-top > :last-child {
+  justify-self: end;
 }
 .bk-iconbtn {
   appearance: none;
@@ -117,10 +123,58 @@
   transform: translate(3px, 3px);
   box-shadow: 0 0 0 var(--ink);
 }
-.bk-mode {
+.bk-name {
+  margin: 0;
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  line-height: 1;
+}
+.bk-name b {
+  font: 900 26px / 0.9 var(--font-display);
+  letter-spacing: -0.03em;
+  text-shadow: 2px 2px 0 var(--yellow, #ffd23f);
+}
+.bk-name i {
+  font: 800 10px / 1 var(--font-mono, monospace);
+  font-style: normal;
+  letter-spacing: 0.42em;
+  padding: 3px 4px 3px 8px;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 4px;
+}
+.bk-menu {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(17, 17, 17, 0.6);
+}
+.bk-menu-card {
+  display: grid;
+  gap: 12px;
+  width: min(100%, 340px);
+  padding: 18px;
+  background: var(--paper);
+  color: var(--ink);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+.bk-menu-card h2 {
+  margin: 0;
+  font: 900 30px / 1 var(--font-display);
+  letter-spacing: -0.03em;
+}
+.bk-menu-hint {
+  margin: 0;
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.06em;
+  color: var(--muted);
 }
 .bk-hud {
   width: var(--bw);

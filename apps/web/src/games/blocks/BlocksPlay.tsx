@@ -25,7 +25,6 @@ import {
   type Move,
 } from '@nocap/games';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
-import { Refresh } from '@/components/icons';
 import { useIsGuest } from '@/lib/auth';
 import { MuteButton } from '@/components/MuteButton';
 import { createBlocksAudio, type BlocksAudio } from '@/lib/blocks-audio';
@@ -207,6 +206,7 @@ export function BlocksPlay({ seed, resume, onProgress, best, onEnd, onQuit, onRe
   const [praise, setPraise] = useState<{ kind: 'thumb' | 'perfect'; key: number } | null>(null);
   const [returning, setReturning] = useState<number | null>(null);
   const guest = useIsGuest();
+  const [menu, setMenu] = useState(false);
   const [asking, setAsking] = useState(false);
   const [askingRestart, setAskingRestart] = useState(false);
   const [note, setNote] = useState<string | null>(null);
@@ -468,10 +468,12 @@ export function BlocksPlay({ seed, resume, onProgress, best, onEnd, onQuit, onRe
     const onKey = (e: KeyboardEvent) => {
       if (asking || askingRestart || endedRef.current) return;
       if (e.key === 'Escape') {
-        if (kb) setKb(null);
-        else setAsking(true);
+        if (menu) setMenu(false);
+        else if (kb) setKb(null);
+        else setMenu(true);
         return;
       }
+      if (menu) return;
       if (e.key === 'h' || e.key === 'H') {
         askHint();
         return;
@@ -503,7 +505,7 @@ export function BlocksPlay({ seed, resume, onProgress, best, onEnd, onQuit, onRe
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [kb, asking, g, commit, askHint]);
+  }, [kb, menu, asking, askingRestart, g, commit, askHint]);
 
   useEffect(() => {
     if (!note) return;
@@ -535,15 +537,22 @@ export function BlocksPlay({ seed, resume, onProgress, best, onEnd, onQuit, onRe
     <div className="bk-play" role="application" aria-label="Partida do Block Classic">
       <BlockDefs />
       <header className="bk-top">
-        <button type="button" className="bk-iconbtn" aria-label="Sair da partida" data-sfx="back" onClick={() => setAsking(true)}>
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true">
-            <path d="M6 6l12 12M18 6L6 18" />
+        <button
+          type="button"
+          className="bk-iconbtn"
+          aria-label="Abrir o menu"
+          aria-haspopup="dialog"
+          data-sfx="select"
+          onClick={() => setMenu(true)}
+        >
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden="true">
+            <path d="M5 7h14M5 12h14M5 17h14" />
           </svg>
         </button>
-        <span className="mono bk-mode">BLOCK CLASSIC</span>
-        <button type="button" className="bk-iconbtn" aria-label="Reiniciar partida" data-sfx="back" onClick={() => setAskingRestart(true)}>
-          <Refresh size={20} />
-        </button>
+        <h1 className="bk-name" aria-label="Block Classic">
+          <b>BLOCK</b>
+          <i>CLASSIC</i>
+        </h1>
         <MuteButton />
       </header>
 
@@ -758,6 +767,41 @@ export function BlocksPlay({ seed, resume, onProgress, best, onEnd, onQuit, onRe
         </div>
       )}
 
+      {menu && (
+        <div className="bk-menu" role="dialog" aria-modal="true" aria-label="Menu da partida" onClick={() => setMenu(false)}>
+          <div className="bk-menu-card" onClick={(e) => e.stopPropagation()}>
+            <h2>Menu</h2>
+            <div className="stack">
+              <button type="button" className="btn alt" data-sfx="start" autoFocus onClick={() => setMenu(false)}>
+                Continuar
+              </button>
+              <button
+                type="button"
+                className="btn"
+                data-sfx="select"
+                onClick={() => {
+                  setMenu(false);
+                  setAskingRestart(true);
+                }}
+              >
+                Reiniciar partida
+              </button>
+              <button
+                type="button"
+                className="btn ghost"
+                data-sfx="back"
+                onClick={() => {
+                  setMenu(false);
+                  setAsking(true);
+                }}
+              >
+                Sair da partida
+              </button>
+            </div>
+            <p className="mono bk-menu-hint">ESC ABRE E FECHA ESTE MENU. H PEDE UMA DICA.</p>
+          </div>
+        </div>
+      )}
       <ConfirmDialog
         open={asking}
         title="Sair da partida?"
