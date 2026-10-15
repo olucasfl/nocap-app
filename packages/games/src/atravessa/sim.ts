@@ -1,4 +1,5 @@
 import {
+  ATR_BACK_ROWS,
   ATR_CROC_HEAD,
   ATR_DARK_BASE,
   ATR_DARK_CAP,
@@ -173,7 +174,7 @@ export class AtravessaSim {
       if (dir === 0) toRow++;
       else if (dir === 1) toRow--;
       else toX += dir === 2 ? -1 : 1;
-      if (toRow < 0) {
+      if (toRow < -ATR_BACK_ROWS) {
         this.bumps++;
         continue;
       }

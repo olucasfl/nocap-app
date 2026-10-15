@@ -23,8 +23,13 @@ export const ATR_LOG_SLACK = 0.25;
 /** A pedra que afunda (com o herói em cima) leva 2 s. */
 export const ATR_SINK_TICKS = 120;
 
-export type AtravessaBiome = 'horta' | 'deserto' | 'neon';
+/** Linhas de descanso atrás da largada onde se pode recuar; além delas há só mata fechada. */
+export const ATR_BACK_ROWS = 4;
+
+export type AtravessaBiome ='horta' | 'deserto' | 'neon';
 export const ATR_BIOMES: readonly AtravessaBiome[] = ['horta', 'deserto', 'neon'];
+/** A largada de toda partida. */
+export const ATR_FIRST_BIOME: AtravessaBiome = 'horta';
 
 export type LaneKind = 'descanso' | 'estrada' | 'trilho' | 'rio';
 
@@ -108,7 +113,7 @@ export const ATR_DARK_CAP_FRACTION = 0.85;
 export const ATR_DARK_CAP = ATR_REF_PACE * ATR_DARK_CAP_FRACTION;
 export const ATR_DARK_BASE = 0.85;
 export const ATR_DARK_GROWTH = 0.0045; // por linha avançada
-export const ATR_DARK_START_GAP = 6; // linhas atrás do herói na largada
+export const ATR_DARK_START_GAP = 8; // linhas atrás do herói na largada (as 4 de recuo ficam à frente dela)
 export const ATR_DARK_LEAD_IN_TICKS = 90; // parada nos primeiros 1,5 s
 export const ATR_DARK_MAX_GAP = 8; // quem corre não deixa a escuridão ficar mais longe que isso
 export const ATR_DARK_KILL_GAP = 0.6;

@@ -1,6 +1,8 @@
 import { createRng, randInt } from '../core/rng';
 import {
+  ATR_BACK_ROWS,
   ATR_BIOMES,
+  ATR_FIRST_BIOME,
   ATR_BIOME_LEN,
   ATR_CROC_LEN,
   ATR_CYCLE_LEN,
@@ -41,7 +43,7 @@ const sequences = new Map<string, AtravessaBiome[]>();
 /**
  * A ordem dos biomas de uma partida (spec 029). Grupos de três: cada grupo é uma ordem dos três
  * biomas, e o primeiro de cada grupo novo nunca é igual ao último do anterior. O primeiro bioma da
- * partida é sorteado pela seed (por isso a largada nunca é sempre a mesma).
+ * partida é sempre a horta (pedido do Lucas); só a ordem dos dois seguintes vem da seed.
  */
 export function biomeSequence(seed: string, count: number): AtravessaBiome[] {
   let seq = sequences.get(seed);
@@ -55,15 +57,22 @@ export function biomeSequence(seed: string, count: number): AtravessaBiome[] {
     const rng = createRng(`${seed}:biomas:${g}`);
     const prevLast = seq[seq.length - 1];
     let group: AtravessaBiome[] = [];
-    for (let tries = 0; tries < 60; tries++) {
-      group = [...ATR_BIOMES];
-      for (let i = group.length - 1; i > 0; i--) {
-        const j = Math.floor(rng() * (i + 1));
-        [group[i], group[j]] = [group[j]!, group[i]!];
+    if (g === 0) {
+      // a largada é sempre na horta; só a ordem dos outros dois é sorteada
+      const rest: AtravessaBiome[] = ATR_BIOMES.filter((b) => b !== ATR_FIRST_BIOME);
+      if (rng() < 0.5) rest.reverse();
+      group = [ATR_FIRST_BIOME, ...rest];
+    } else {
+      for (let tries = 0; tries < 60; tries++) {
+        group = [...ATR_BIOMES];
+        for (let i = group.length - 1; i > 0; i--) {
+          const j = Math.floor(rng() * (i + 1));
+          [group[i], group[j]] = [group[j]!, group[i]!];
+        }
+        if (group[0] !== prevLast) break;
       }
-      if (group[0] !== prevLast) break;
+      if (group[0] === prevLast) group = [group[1]!, group[2]!, group[0]!];
     }
-    if (group[0] === prevLast) group = [group[1]!, group[2]!, group[0]!];
     seq.push(...group);
   }
   return seq;
@@ -244,6 +253,7 @@ export class AtravessaWorld {
   private segLeft = 0;
   private prevSegKind: LaneKind | null = null;
   private corridors: number[] = [];
+  private backLanes = new Map<number, Lane>();
 
   constructor(readonly seed: string) {
     this.rng = createRng(`${seed}:atravessa`);
@@ -255,9 +265,31 @@ export class AtravessaWorld {
   }
 
   lane(row: number): Lane {
-    if (row < 0) return EMPTY_LANE(row);
+    if (row < 0) return this.backLane(row);
     while (this.lanes.length <= row) this.lanes.push(this.gen(this.lanes.length));
     return this.lanes[row]!;
+  }
+
+  /**
+   * Atrás da largada: `ATR_BACK_ROWS` linhas de descanso com árvores (a coluna 0 fica sempre livre, é o
+   * corredor da linha 0) e, além delas, mata fechada que só enfeita. Só depende da seed e da linha.
+   */
+  private backLane(row: number): Lane {
+    const cached = this.backLanes.get(row);
+    if (cached) return cached;
+    const lane: Lane = { ...EMPTY_LANE(row), biome: FIRST };
+    if (row < -ATR_BACK_ROWS) {
+      for (let c = -ATR_HALF_COLS; c <= ATR_HALF_COLS; c++) lane.blocked.push(c);
+    } else {
+      const rng = createRng(`${this.seed}:atras:${row}`);
+      // a última linha é mais fechada, como a borda da mata
+      const density = row === -ATR_BACK_ROWS ? 0.62 : 0.4;
+      for (let c = -ATR_HALF_COLS; c <= ATR_HALF_COLS; c++) {
+        if (c !== 0 && rng() < density) lane.blocked.push(c);
+      }
+    }
+    this.backLanes.set(row, lane);
+    return lane;
   }
 
   /** A coluna livre que atravessa as faixas de descanso e de pedras seguidas. */

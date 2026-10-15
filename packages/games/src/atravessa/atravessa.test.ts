@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  ATR_BACK_ROWS,
   ATR_BIOMES,
   ATR_BIOME_LEN,
   ATR_SEGMENT_LEN,
@@ -102,15 +103,15 @@ describe('biomas', () => {
         if (g > 0) expect(a).not.toBe(seq[g * 3 - 1]); // o 1º do grupo novo ≠ o último do anterior
       }
     }
-    // o primeiro mapa muda de partida para partida
-    expect(firsts.size).toBe(3);
+    // a largada é sempre a horta (pedido do Lucas), mesmo mudando a seed
+    expect([...firsts]).toEqual(['horta']);
   });
 
   it('a ordem é a mesma para a mesma seed e muda com a seed', () => {
     expect(biomeSequence('igual', 12)).toEqual(biomeSequence('igual', 12));
     const all = new Set<string>();
-    for (let i = 0; i < 60; i++) all.add(biomeSequence(`outra-${i}`, 6).join(','));
-    expect(all.size).toBeGreaterThan(10);
+    for (let i = 0; i < 60; i++) all.add(biomeSequence(`outra-${i}`, 9).join(','));
+    expect(all.size).toBeGreaterThan(5);
   });
 
   it('o mundo usa a ordem da seed e as faixas ficam com o bioma certo', () => {
@@ -447,16 +448,46 @@ describe('simulação', () => {
     expect(sim.score).toBe(r + 2);
   });
 
-  it('não sai pelos lados nem volta antes da largada', () => {
+  it('não sai pelos lados e recua no máximo 4 linhas atrás da largada', () => {
     const sim = new AtravessaSim(ANY);
-    sim.input(1);
-    advance(sim, ATR_STEP_TICKS + 1);
-    expect(sim.row).toBe(0);
-    for (let i = 0; i < 6; i++) {
-      sim.input(2);
+    // a coluna 0 é livre em todas as linhas de trás: dá para recuar por ela
+    for (let i = 0; i < ATR_BACK_ROWS + 3; i++) {
+      sim.input(1);
       advance(sim, ATR_STEP_TICKS + 1);
     }
-    expect(sim.hx).toBe(-ATR_HALF_COLS);
+    expect(sim.row).toBe(-ATR_BACK_ROWS);
+    expect(sim.view().bumps).toBe(3);
+    expect(sim.score).toBe(0);
+    sim.row = 0;
+    sim.hx = 0;
+    for (let i = 0; i < 12; i++) {
+      sim.input(3);
+      advance(sim, ATR_STEP_TICKS + 1);
+    }
+    expect(sim.hx).toBe(ATR_HALF_COLS);
+  });
+
+  it('atrás da largada há descanso com árvores (coluna 0 livre) e mata fechada além do limite', () => {
+    for (const seed of ['a', 'b', 'c', 'd']) {
+      const w = new AtravessaWorld(seed);
+      for (let r = -1; r >= -ATR_BACK_ROWS; r--) {
+        const lane = w.lane(r);
+        expect(lane.kind).toBe('descanso');
+        expect(lane.blocked).not.toContain(0);
+        expect(lane.biome.biome).toBe('horta');
+      }
+      expect(Array.from({ length: ATR_BACK_ROWS }, (_, i) => w.lane(-1 - i).blocked.length).some((n) => n > 0)).toBe(true);
+      expect(w.lane(-ATR_BACK_ROWS - 1).blocked).toHaveLength(ATR_COLS);
+      // o mesmo mundo sempre dá as mesmas árvores
+      expect(new AtravessaWorld(seed).lane(-2).blocked).toEqual(w.lane(-2).blocked);
+    }
+  });
+
+  it('a largada é sempre na horta, em qualquer seed', () => {
+    for (let i = 0; i < 200; i++) {
+      const w = new AtravessaWorld(`largada-${i}`);
+      for (const r of [0, 1, 20, 100, 143]) expect(w.lane(r).biome.biome).toBe('horta');
+    }
   });
 
   it('casa bloqueada recusa o passo sem gastar tempo', () => {

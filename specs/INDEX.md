@@ -32,5 +32,6 @@
 | 027 | [Sinal: arremessadores, perseguidores, Vigia apressado e itens](027-sinal-perigos.md) | 6 | substituída pela 028 (Sinal removido) |
 | 028 | [Atravessa! (substitui o Sinal Vermelho, estilo Crossy Road em 3D)](028-atravessa.md) | 6 | etapas 1 a 5 implementadas (núcleo, servidor, tela, biomas e som, troca no app); falta jogar e calibrar |
 | 029 | [Atravessa!: polimento, mais perigos e marcos](029-atravessa-polimento.md) | 6 | implementada; falta jogar e calibrar |
+| 030 | [Atravessa!: largada sempre na horta e recuo de 4 linhas](030-atravessa-largada.md) | 6 | implementada; falta ver rodando |
 
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.
