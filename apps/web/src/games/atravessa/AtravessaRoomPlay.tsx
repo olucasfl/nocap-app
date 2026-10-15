@@ -407,7 +407,7 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
         const s = wt < 0 ? null : sampleAt(samples.get(m.id), gt);
         if (s) {
           cur.set(m.id, { x: s.x, y: s.y });
-          if (s.alive && !(s.flags & F_STALLED)) candidates.push(m.id);
+          if (s.alive && !(s.flags & (F_STALLED | F_FINISHED))) candidates.push(m.id);
           scene.placeRemote(m.id, world, { x: s.x, y: s.y, hop: s.hop, facing: s.facing, hide: !s.alive }, dt);
         } else {
           // ainda não largou: parada na coluna de largada
@@ -419,7 +419,8 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
       // quem assiste: o Infinito depois de morrer, quem chegou ao fim e quem entrou com a rodada rolando
       const dying = !sim.alive && !sim.finished && cfg.mode === 'infinito';
       const spectating = late || sim.finished || (dying && deathWall > 0 && now - deathWall > SPECTATE_AFTER_MS);
-      if (spectating && candidates.length > 0 && (!watch || !candidates.includes(watch))) watch = candidates[0]!;
+      if (!watch || !candidates.includes(watch)) watch = spectating ? (candidates[0] ?? null) : watch;
+      if (watch && !candidates.includes(watch)) watch = null;
       const target = spectating && watch ? cur.get(watch) : undefined;
 
       const tick = Math.max(0, sim.halted ? wt : sim.tick);
