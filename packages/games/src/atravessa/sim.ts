@@ -18,6 +18,7 @@ import {
   ATR_MAX_SCORE,
   ATR_MAX_TICKS,
   ATR_QUEUE_MAX,
+  ATR_RESPAWN_TICKS,
   ATR_RIVER_EDGE,
   ATR_SINK_TICKS,
   ATR_STEP_TICKS,
@@ -106,13 +107,57 @@ export interface AtravessaView {
   sweep: SweepView | null;
   /** De que lado veio quem matou (-1 esquerda, 1 direita, 0 nenhum): a tela usa para a animação. */
   killer: -1 | 0 | 1;
+  /** Sala (spec 031): chegou ao fim, quantas vezes morreu, o último checkpoint e quando renasce. */
+  finished: boolean;
+  deaths: number;
+  checkpoint: number;
+  /** Ticks que faltam para renascer (0 se vivo ou se a morte é definitiva). */
+  respawnIn: number;
+  /** Tick do último renascimento (a tela recomeça a pose do herói). */
+  spawnTick: number;
 }
+
+/**
+ * Regras opcionais da partida (spec 031). O padrão é o jogo solo: escuridão atrás, sem fim de mapa e
+ * sem checkpoints. A sala liga e desliga estas peças; o servidor e o aparelho usam as mesmas regras.
+ */
+export interface AtravessaRules {
+  /** A escuridão que persegue. Desligada, a partida não tem pressão de tempo. */
+  darkness: boolean;
+  /** Ticks parado (sem começar um pulo) até ser engolido; `null` = nunca. */
+  idleKillTicks: number | null;
+  /** Chegar a esta linha termina a corrida; `null` = infinito. */
+  finishRow: number | null;
+  /** Linhas dos checkpoints. Com a lista, quem morre renasce no último; `null` = a partida acaba na morte. */
+  checkpoints: readonly number[] | null;
+  /** A coluna da largada (na sala cada um começa numa, para as raposas não nascerem empilhadas). */
+  startX: number;
+}
+
+export const ATR_DEFAULT_RULES: AtravessaRules = {
+  darkness: true,
+  idleKillTicks: null,
+  finishRow: null,
+  checkpoints: null,
+  startX: 0,
+};
 
 export class AtravessaSim {
   readonly world: AtravessaWorld;
+  readonly rules: AtravessaRules;
   tick = 0;
   alive = true;
   end: AtravessaEnd | null = null;
+  /** Chegou ao fim do mapa (`rules.finishRow`): a simulação para e `finishTick` guarda quando. */
+  finished = false;
+  finishTick = 0;
+  /** Quantas vezes morreu (com checkpoints a partida continua). */
+  deaths = 0;
+  /** O último checkpoint alcançado (0 = a largada). */
+  checkpointRow = 0;
+  /** Tick em que renasce, se estiver morto e a partida continuar; `null` caso contrário. */
+  private respawnAt: number | null = null;
+  private spawnTick = 0;
   /** Colunas e linha lógicas; `hx` pode ser fracionária em cima de uma tora. */
   hx = 0;
   row = 0;
@@ -132,8 +177,17 @@ export class AtravessaSim {
   private sweep: Sweep | null = null;
   private sweepFree = 0;
 
-  constructor(seed: string, world?: AtravessaWorld) {
+  constructor(seed: string, world?: AtravessaWorld, rules: Partial<AtravessaRules> = {}) {
     this.world = world ?? new AtravessaWorld(seed);
+    this.rules = { ...ATR_DEFAULT_RULES, ...rules };
+    this.hx = this.rules.startX;
+    // sem escuridão, a frente dela fica tão atrás que nunca aparece nem alcança
+    if (!this.rules.darkness) this.dark = -1000;
+  }
+
+  /** Nada mais muda sozinho: morreu de vez ou chegou ao fim. */
+  get halted(): boolean {
+    return this.finished || (!this.alive && this.respawnAt === null);
   }
 
   /** Cópia barata (o mundo é compartilhado: só cresce e é determinístico). */
@@ -161,6 +215,35 @@ export class AtravessaSim {
     this.end = end;
     this.killer = killer;
     this.queue = [];
+    this.deaths++;
+    this.respawnAt = this.rules.checkpoints ? this.tick + ATR_RESPAWN_TICKS : null;
+  }
+
+  /** Volta ao último checkpoint (ou à largada) numa casa livre da faixa de descanso. */
+  private respawn() {
+    const row = this.checkpointRow > 0 ? this.world.restRowAtOrBelow(this.checkpointRow) : 0;
+    this.row = row;
+    this.hx = row === 0 ? this.rules.startX : this.world.corridorAt(row);
+    this.move = null;
+    this.queue = [];
+    this.alive = true;
+    this.end = null;
+    this.killer = 0;
+    this.respawnAt = null;
+    this.spawnTick = this.tick;
+    this.idle = 0;
+    this.sweep = null;
+    this.sweepFree = this.tick + ATR_SWEEP_COOLDOWN_TICKS;
+    this.hasLanded = false;
+    this.landedTick = this.tick;
+    this.facing = 0;
+  }
+
+  /** O maior checkpoint que a linha mais alta já alcançou. */
+  private updateCheckpoint() {
+    const list = this.rules.checkpoints;
+    if (!list) return;
+    for (const cp of list) if (cp <= this.best && cp > this.checkpointRow) this.checkpointRow = cp;
   }
 
   /** Tenta começar o próximo passo da fila. Passo bloqueado é descartado sem gastar tempo. */
@@ -225,7 +308,15 @@ export class AtravessaSim {
     } else {
       this.hx = Math.round(this.hx);
     }
-    if (this.row > this.best) this.best = this.row;
+    if (this.row > this.best) {
+      this.best = this.row;
+      this.updateCheckpoint();
+    }
+    const finish = this.rules.finishRow;
+    if (finish !== null && this.row >= finish) {
+      this.finished = true;
+      this.finishTick = this.tick;
+    }
   }
 
   /** Uma varrida de aviso na coluna do herói, se ele ficou parado tempo demais numa faixa de descanso. */
@@ -255,7 +346,14 @@ export class AtravessaSim {
 
   /** Avança um tick (1/60 s). */
   step() {
-    if (!this.alive) return;
+    if (this.finished) return;
+    if (!this.alive) {
+      // com checkpoints o mundo segue andando enquanto o herói espera para voltar
+      if (this.respawnAt === null) return;
+      this.tick++;
+      if (this.tick >= this.respawnAt) this.respawn();
+      return;
+    }
     this.tick++;
 
     if (!this.move) this.startMove();
@@ -327,9 +425,14 @@ export class AtravessaSim {
     }
 
     // a escuridão: devagar, parada no começo, e sem ficar mais longe que o limite
-    if (this.tick > ATR_DARK_LEAD_IN_TICKS) this.dark += atravessaDarkSpeed(this.best) * ATR_DT;
-    this.dark = Math.max(this.dark, this.best - ATR_DARK_MAX_GAP);
-    if (this.y - this.dark <= ATR_DARK_KILL_GAP) this.die('escuridao');
+    if (this.rules.darkness) {
+      if (this.tick > ATR_DARK_LEAD_IN_TICKS) this.dark += atravessaDarkSpeed(this.best) * ATR_DT;
+      this.dark = Math.max(this.dark, this.best - ATR_DARK_MAX_GAP);
+      if (this.y - this.dark <= ATR_DARK_KILL_GAP) this.die('escuridao');
+    } else {
+      const idleMax = this.rules.idleKillTicks;
+      if (idleMax !== null && !this.move && this.idle >= idleMax) this.die('parado');
+    }
   }
 
   get y(): number {
@@ -372,6 +475,11 @@ export class AtravessaSim {
           }
         : null,
       killer: this.killer,
+      finished: this.finished,
+      deaths: this.deaths,
+      checkpoint: this.checkpointRow,
+      respawnIn: this.respawnAt === null ? 0 : Math.max(0, this.respawnAt - this.tick),
+      spawnTick: this.spawnTick,
     };
   }
 

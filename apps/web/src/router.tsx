@@ -96,12 +96,13 @@ const roomRoute = createRoute({
   path: '/sala',
   validateSearch: (
     search: Record<string, unknown>,
-  ): { jogo?: 'color' | 'time' | 'impostor' | 'eco' | 'party' } =>
+  ): { jogo?: 'color' | 'time' | 'impostor' | 'eco' | 'party' | 'atravessa' } =>
     search.jogo === 'color' ||
     search.jogo === 'time' ||
     search.jogo === 'impostor' ||
     search.jogo === 'eco' ||
-    search.jogo === 'party'
+    search.jogo === 'party' ||
+    search.jogo === 'atravessa'
       ? { jogo: search.jogo }
       : {},
   component: lazyRouteComponent(() => import('@/screens/Room'), 'RoomEntryPage'),

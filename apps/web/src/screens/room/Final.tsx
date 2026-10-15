@@ -4,6 +4,23 @@ import { useIsGuest } from '@/lib/auth';
 import { useState } from 'react';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { closeRoom, leaveRoom, sendRoom, useRoom, type RoomSnapshot, at } from '@/lib/rooms';
+import { meters, raceTime, roomColor } from '@/games/atravessa/AtravessaReveal';
+
+/** Atravessa!: o que cada um fez. Infinito = metros somados; Checkpoint = tempo da chegada, ou a distância de quem não chegou. */
+function AtravessaScore({ info, id }: { info: NonNullable<RoomSnapshot['atravessa']>; id: string }) {
+  const r = info.results?.[id];
+  if (!r) return null;
+  if (info.mode === 'infinito') return <>{meters(r.meters)}</>;
+  return (
+    <>
+      {r.finished && r.ms !== null ? raceTime(r.ms) : meters(r.meters)}
+      <small className="mono">
+        {r.finished ? '' : ' · NÃO CHEGOU'}
+        {r.deaths > 0 ? ` · ${r.deaths} ${r.deaths === 1 ? 'MORTE' : 'MORTES'}` : ''}
+      </small>
+    </>
+  );
+}
 
 /**
  * Pódio da sala e votação da revanche. Todo mundo vota em "jogar de novo" ou sai; quando todos
@@ -18,6 +35,7 @@ export function Final({ snapshot }: { snapshot: RoomSnapshot }) {
     snapshot.game === 'impostor' || (snapshot.game === 'eco' && snapshot.mode === 'leader');
   const eco = snapshot.game === 'eco';
   const party = snapshot.game === 'party';
+  const atravessa = snapshot.game === 'atravessa' ? snapshot.atravessa : undefined;
   /** Siga o Líder: no pódio entra a porcentagem (média das rodadas) e a soma de acertos; as notas de cada rodada não aparecem antes. */
   const hits = snapshot.eco?.hits;
   const max = snapshot.settings.rounds * 10;
@@ -37,10 +55,17 @@ export function Final({ snapshot }: { snapshot: RoomSnapshot }) {
             className={`rm-pod${r.placement === 1 ? ' first' : ''}${r.userId === me ? ' me' : ''}`}
           >
             <span className="mono rm-pos">{r.placement}º</span>
+            {atravessa && (
+              <span className="rm-swatch" style={{ background: roomColor(snapshot, r.userId) }} aria-hidden="true" />
+            )}
             <span className="rm-result-name">
               {r.userId.startsWith('guest:') ? r.username : `${at(r.username)}`}
             </span>
             <span className="rm-result-score">
+              {atravessa ? (
+                <AtravessaScore info={atravessa} id={r.userId} />
+              ) : (
+                <>
               {party
                 ? (r.totalTenths * 10).toLocaleString('pt-BR')
                 : hits
@@ -59,6 +84,8 @@ export function Final({ snapshot }: { snapshot: RoomSnapshot }) {
                         ? ' pts'
                         : `/${max}`}
               </small>
+                </>
+              )}
             </span>
           </li>
         ))}

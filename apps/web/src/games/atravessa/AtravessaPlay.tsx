@@ -38,6 +38,7 @@ const OVER_TEXT: Record<AtravessaEnd, string> = {
   mordido: 'O CROCODILO MORDEU',
   atingido: 'FOI VARRIDO',
   escuridao: 'A ESCURIDÃO TE PEGOU',
+  parado: 'PAROU DEMAIS',
 };
 
 /** Depois de morrer, a tela espera um pouco para o fim da partida ser visto. */

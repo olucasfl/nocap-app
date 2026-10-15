@@ -10,6 +10,7 @@ import { ImpostorPlay } from './ImpostorPlay';
 import { TimePlay } from './TimePlay';
 import { PartyPlay } from './party/PartyPlay';
 import { EcoRoomPlay } from './EcoPlay';
+import { AtravessaReveal } from '@/games/atravessa/AtravessaReveal';
 
 function Waiting({ snapshot }: { snapshot: RoomSnapshot }) {
   const connected = snapshot.members.filter((m) => m.connected);
@@ -88,6 +89,7 @@ function Reveal({ snapshot }: { snapshot: RoomSnapshot }) {
 export function Play({ snapshot }: { snapshot: RoomSnapshot }) {
   if (snapshot.game === 'party') return <PartyPlay snapshot={snapshot} />;
   if (snapshot.game === 'eco') return <EcoRoomPlay snapshot={snapshot} />;
+  if (snapshot.game === 'atravessa') return <AtravessaReveal snapshot={snapshot} />;
   if (snapshot.game === 'time') return <TimePlay snapshot={snapshot} />;
   if (snapshot.game === 'impostor') return <ImpostorPlay snapshot={snapshot} />;
   const me = useAuth((s) => s.user?.id);

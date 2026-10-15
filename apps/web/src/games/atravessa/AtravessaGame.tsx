@@ -5,6 +5,7 @@ import type { AtravessaInput, AtravessaResult } from '@nocap/games';
 import { BackButton } from '@/components/BackButton';
 import { MuteButton } from '@/components/MuteButton';
 import { SaveNote } from '@/components/GuestNotice';
+import { RoomBanner } from '@/components/RoomBanner';
 import { ArrowRight } from '@/components/icons';
 import { useAuth } from '@/lib/auth';
 import { soloSession } from '@/lib/solo-session';
@@ -55,6 +56,7 @@ function AtravessaMenu({ onStart, busy }: { onStart: () => void; busy: boolean }
       <BackButton to="/" label="Jogos" />
       <h1 className="at-title">Atravessa!</h1>
       <p className="at-lead">Pule, desvie e atravesse tudo o que aparecer. Sem fim: vale a distância.</p>
+      <RoomBanner />
       {best > 0 && <p className="mono at-best">SEU RECORDE: {best} LINHAS</p>}
       <ol className="at-howto">
         {HOW.map((t, i) => (
@@ -70,6 +72,9 @@ function AtravessaMenu({ onStart, busy }: { onStart: () => void; busy: boolean }
       <button type="button" className="btn" data-sfx="start" disabled={busy} onClick={onStart}>
         {busy ? 'Preparando...' : 'Jogar'} <ArrowRight />
       </button>
+      <Link to="/sala" search={{ jogo: 'atravessa' }} className="btn ghost" data-sfx="select">
+        Jogar com amigos
+      </Link>
       {!user && (
         <p className="mono at-meta">ENTRE NA SUA CONTA PARA SALVAR NO RANKING, NO HISTÓRICO E NOS RECORDES.</p>
       )}
@@ -86,6 +91,7 @@ const VERDICT: Record<string, string> = {
   mordido: 'O CROCODILO MORDEU',
   atingido: 'FOI VARRIDO',
   escuridao: 'A ESCURIDÃO TE PEGOU',
+  parado: 'PAROU DEMAIS',
 };
 
 function AtravessaFinal({

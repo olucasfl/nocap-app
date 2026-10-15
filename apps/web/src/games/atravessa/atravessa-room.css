@@ -1,0 +1,287 @@
+/* Atravessa! em sala (spec 031): nomes sobre as raposas, ranking ao vivo, timer, contagem e plateia. */
+.atr-tags {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.atr-tag {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px 2px 5px;
+  background: var(--paper);
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  box-shadow: 2px 2px 0 var(--ink);
+  font: 800 11px/1.2 var(--font-body, inherit);
+  white-space: nowrap;
+  will-change: transform;
+  transition: opacity 0.12s linear;
+}
+.atr-tag i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  background: var(--tag);
+  flex: none;
+}
+.atr-tag.me {
+  background: var(--yellow);
+  color: var(--on-accent);
+}
+
+.atr-score {
+  top: 14px;
+  left: 14px;
+}
+.atr-clock {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  background: var(--ink);
+  color: var(--paper);
+  border: var(--border);
+  border-radius: 14px;
+  box-shadow: 3px 3px 0 var(--ink);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-align: center;
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+}
+.atr-clock small {
+  display: block;
+  margin-top: 2px;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  opacity: 0.8;
+}
+
+.atr-rank {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: min(210px, 46vw);
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: var(--paper);
+  color: var(--ink);
+  border: var(--border);
+  border-radius: 14px;
+  box-shadow: 3px 3px 0 var(--ink);
+  pointer-events: none;
+}
+.atr-rank li {
+  display: grid;
+  grid-template-columns: 14px 12px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 4px;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 8px;
+}
+.atr-rank li.me {
+  background: var(--yellow);
+  color: var(--on-accent);
+}
+.atr-rank li.out {
+  opacity: 0.45;
+}
+.atr-rank .pos {
+  font-size: 10px;
+}
+.atr-rank i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+}
+.atr-rank .name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.atr-rank .val {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.atr-deadline {
+  position: absolute;
+  top: 84px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 12px;
+  background: var(--orange);
+  color: var(--on-accent);
+  border: var(--border);
+  border-radius: 12px;
+  box-shadow: 3px 3px 0 var(--ink);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  pointer-events: none;
+}
+
+.atr-end {
+  appearance: none;
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  padding: 8px 12px;
+  background: var(--paper);
+  color: var(--ink);
+  border: var(--border);
+  border-radius: 12px;
+  box-shadow: 3px 3px 0 var(--ink);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+.atr-end:active {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 var(--ink);
+}
+
+/* contagem de largada: só entra e some (transform e opacity) */
+.atr-count {
+  position: absolute;
+  left: 50%;
+  top: 40%;
+  transform: translate(-50%, -50%);
+  font: 900 min(34vw, 190px) / 1 var(--font-display);
+  letter-spacing: -0.04em;
+  color: var(--paper);
+  -webkit-text-stroke: 5px var(--ink);
+  paint-order: stroke fill;
+  text-shadow: 6px 6px 0 var(--ink);
+  pointer-events: none;
+  animation: atr-count 0.9s ease-out both;
+}
+@keyframes atr-count {
+  0% {
+    transform: translate(-50%, -50%) scale(1.5);
+    opacity: 0;
+  }
+  18% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+  85% {
+    transform: translate(-50%, -50%) scale(0.96);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(0.9);
+    opacity: 0;
+  }
+}
+
+.atr-over {
+  top: 30%;
+}
+.atr-over.win {
+  background: var(--green);
+}
+
+/* plateia: o nome de quem está sendo assistido e as duas setas */
+.atr-watch {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  background: var(--paper);
+  color: var(--ink);
+  border: var(--border);
+  border-radius: 16px;
+  box-shadow: 4px 4px 0 var(--ink);
+  max-width: calc(100vw - 28px);
+}
+.atr-arrow {
+  appearance: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  background: var(--yellow);
+  color: var(--on-accent);
+  border: var(--border);
+  border-radius: 12px;
+  box-shadow: 2px 2px 0 var(--ink);
+  cursor: pointer;
+}
+.atr-arrow:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.atr-arrow:not(:disabled):active {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 var(--ink);
+}
+.atr-watching {
+  display: grid;
+  gap: 2px;
+  min-width: 120px;
+  max-width: 52vw;
+  text-align: center;
+}
+.atr-watching span {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.atr-watching b {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font: 900 16px/1.1 var(--font-display);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.atr-watching i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  flex: none;
+}
+
+@media (max-width: 480px) {
+  .atr-rank {
+    width: min(176px, 44vw);
+  }
+  .atr-rank li {
+    font-size: 11px;
+  }
+  .atr-clock {
+    top: 78px;
+    font-size: 18px;
+  }
+  .atr-deadline {
+    top: 130px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .atr-count {
+    animation: none;
+  }
+}

@@ -1,10 +1,10 @@
 import type { Room } from 'colyseus.js';
-import type { Hsb, LeaderRule, TimeSettings } from '@nocap/games';
+import type { AtravessaRoomMode, AtravessaRoomSize, Hsb, LeaderRule, TimeSettings } from '@nocap/games';
 import { create } from 'zustand';
 import { ApiError, apiBase, apiClient } from './api-client';
 import { getToken, useAuth } from './auth';
 
-export type RoomGame = 'color' | 'time' | 'impostor' | 'eco' | 'party';
+export type RoomGame = 'color' | 'time' | 'impostor' | 'eco' | 'party' | 'atravessa';
 export type Phase =
   | 'lobby'
   | 'intro'
@@ -35,11 +35,17 @@ export interface ImpostorRoomSettings {
 export interface PartySettings {
   rounds: number;
 }
+/** Atravessa!: rodadas do Infinito e o tamanho do mapa do Checkpoint. */
+export interface AtravessaSettings {
+  rounds: number;
+  size: AtravessaRoomSize;
+}
 /** As regras dependem do jogo da sala (`snapshot.game`). */
 export type RoomSettings = ColorRoomSettings &
   TimeRoomSettings &
   ImpostorRoomSettings &
-  PartySettings;
+  PartySettings &
+  AtravessaSettings;
 
 export interface RoomMember {
   id: string;
@@ -108,6 +114,28 @@ export interface EcoRoomState {
   timedOut?: boolean;
   /** Pódio do Siga o Líder: soma de acertos de cada pessoa como seguidora. */
   hits?: Record<string, number>;
+}
+
+/** O Atravessa! em sala (spec 031): cores, hora da largada e os placares. As posições vêm no fluxo "pos". */
+export interface AtravessaRoomState {
+  /** O id desta pessoa na sala (vale também para convidados). */
+  me: string | null;
+  mode: AtravessaRoomMode;
+  size: AtravessaRoomSize;
+  /** Metros do mapa (Checkpoint); null no Infinito. */
+  length: number | null;
+  checkpoints: number[];
+  colors: Record<string, string>;
+  /** Largada, no relógio do servidor (ms); null no lobby. */
+  startAt: number | null;
+  /** A posição de cada pessoa nos relatos "pos". */
+  slots: Record<string, number>;
+  /** Checkpoint: quando a corrida acaba para quem não chegou (depois do primeiro a chegar). */
+  endsAt: number | null;
+  /** Placar da rodada e soma até agora (placar da rodada e pódio). */
+  roundMeters: Record<string, number> | null;
+  totals: Record<string, number> | null;
+  results: Record<string, { meters: number; ms: number | null; deaths: number; finished: boolean }> | null;
 }
 
 export interface PartyShapeItem {
@@ -232,6 +260,7 @@ export interface RoomSnapshot {
   impostor?: ImpostorState;
   eco?: EcoRoomState;
   party?: PartySnapshot;
+  atravessa?: AtravessaRoomState;
 }
 
 /** Estado do Intruso, por pessoa: cor, dica e papéis só chegam a quem pode vê-los. */
@@ -302,6 +331,14 @@ async function client() {
 }
 
 let room: Room | null = null;
+
+/** Mensagens frequentes da sala (as posições do Atravessa!) não passam pelo estado: quem quer, assina. */
+type LiveType = 'pos' | 'ack';
+const live: Record<LiveType, Set<(m: unknown) => void>> = { pos: new Set(), ack: new Set() };
+export function subscribeRoom(type: LiveType, fn: (m: unknown) => void): () => void {
+  live[type].add(fn);
+  return () => void live[type].delete(fn);
+}
 /**
  * Muda a cada saída ou nova conexão. Uma reconexão que começou antes disso é de uma sala que a
  * pessoa já deixou, e não pode puxá-la de volta quando finalmente conectar.
@@ -395,6 +432,7 @@ function attach(r: Room) {
     r.send('ping', { t0: Date.now(), rtt: lastRtt });
   }, 20_000);
 
+  for (const type of ['pos', 'ack'] as const) r.onMessage(type, (m: unknown) => live[type].forEach((fn) => fn(m)));
   r.onMessage('chat', (m: ChatMessage) =>
     useRoom.setState((s) => ({
       chat: [...s.chat, m].slice(-50),

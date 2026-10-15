@@ -4,6 +4,7 @@ import { acceptRequest, fetchFriends, sendRequest, type RelationState } from '@/
 import { Crown } from '@/components/icons';
 import { useAuth } from '@/lib/auth';
 import { sendRoom, type RoomMember, type RoomSnapshot, at } from '@/lib/rooms';
+import { ATR_ROOM_COLORS } from '@nocap/games';
 import { MIN_PLAYERS } from './rules';
 
 /** Como eu me relaciono com quem está na sala: amigo, pedido enviado/recebido ou ninguém. */
@@ -121,11 +122,40 @@ function Kick({ m }: { m: RoomMember }) {
   );
 }
 
-/** A cor é clara? (para escolher a cor da letra por cima dela) */
-function lightColor(hex: string): boolean {
-  const n = parseInt(hex.slice(1), 16);
-  const lum = 0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255);
-  return lum > 150;
+/**
+ * Atravessa!: a cor da sua raposa. Cada cor é de uma pessoa só; as já escolhidas por outras ficam
+ * apagadas, com o nome de quem as pegou.
+ */
+function AtravessaColors({ snapshot, me }: { snapshot: RoomSnapshot; me: string | undefined }) {
+  const colors = snapshot.atravessa?.colors ?? {};
+  const owner = (hex: string) => Object.entries(colors).find(([, h]) => h === hex)?.[0];
+  const nameOf = (id?: string) => snapshot.members.find((m) => m.id === id)?.username;
+  return (
+    <div>
+      <div className="mono rm-label">A COR DA SUA RAPOSA</div>
+      <div className="lb-colors" role="radiogroup" aria-label="Cor da raposa">
+        {ATR_ROOM_COLORS.map((c) => {
+          const by = owner(c.hex);
+          const mine = by === me;
+          return (
+            <button
+              key={c.hex}
+              type="button"
+              role="radio"
+              aria-checked={mine}
+              aria-label={`${c.name}${by && !mine ? ` (de ${at(nameOf(by))})` : ''}`}
+              title={by && !mine ? `Já é de ${at(nameOf(by))}` : c.name}
+              className={`lb-color${mine ? ' on' : ''}${by && !mine ? ' taken' : ''}`}
+              style={{ background: c.hex }}
+              disabled={!!by && !mine}
+              data-sfx="select"
+              onClick={() => sendRoom('color', { hex: c.hex })}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 /**
@@ -150,6 +180,7 @@ export function MembersPanel({
 
   return (
     <div className="lb-members">
+      {snapshot.game === 'atravessa' && <AtravessaColors snapshot={snapshot} me={me} />}
       {leader && (
         <div>
           <div className="mono rm-label">LÍDER</div>

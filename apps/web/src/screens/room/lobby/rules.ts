@@ -24,6 +24,7 @@ const ROUNDS = [1, 3, 5, 7, 10];
 const SHOW = [400, 1000, 3000, 5000];
 const PICK = [15_000, 30_000, 60_000];
 const IMP_ROUNDS = [1, 3, 5];
+const ATR_ROUNDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 const IMP_PICK = [30_000, 45_000, 60_000];
 const IMP_VOTE = [20_000, 30_000, 60_000];
@@ -42,9 +43,11 @@ export const MIN_PLAYERS: Record<RoomGame, number> = {
   impostor: 3,
   eco: 2,
   party: 2,
+  atravessa: 2,
 };
 
 export const GAME_NAME: Record<RoomGame, string> = {
+  atravessa: 'Atravessa!',
   color: 'Mesmíssima',
   time: 'Já Deu?',
   impostor: 'Intruso',
@@ -59,6 +62,15 @@ export const GAME_OF: Record<RoomGame, string> = {
   impostor: 'do Intruso',
   eco: 'do Ecooo',
   party: 'do Mix Nocap',
+  atravessa: 'do Atravessa!',
+};
+
+/** Tamanhos do mapa do Checkpoint, em metros (o servidor tem a mesma tabela). */
+const SIZE_NAME: Record<string, string> = {
+  pequeno: 'Pequeno · 100 m',
+  medio: 'Médio · 250 m',
+  grande: 'Grande · 500 m',
+  gigante: 'Gigante · 1000 m',
 };
 
 /** Modos de cada jogo na sala, com uma linha que explica cada um. */
@@ -88,6 +100,18 @@ export const MODES: Record<RoomGame, { id: string; label: string; note: string }
       id: 'leader',
       label: 'Siga o Líder',
       note: 'Um cria a sequência dentro das regras da rodada e os outros repetem. O criador muda a cada rodada.',
+    },
+  ],
+  atravessa: [
+    {
+      id: 'infinito',
+      label: 'Infinito',
+      note: 'Todo mundo no mesmo mapa, sem checkpoint e sem escuridão. Quem morre vira espectador. Vale a soma dos metros de cada rodada. Ficar parado por 12 s também tira você.',
+    },
+    {
+      id: 'checkpoint',
+      label: 'Checkpoint',
+      note: 'Corrida até o fim do mapa. Quem morre volta ao último checkpoint (ou à largada). Vence quem chegar primeiro.',
     },
   ],
   impostor: [
@@ -132,9 +156,11 @@ export function rulesSummary(s: RoomSnapshot): string {
   return [
     GAME_NAME[s.game],
     mode === GAME_NAME[s.game] ? undefined : mode,
-    s.game === 'eco' && s.mode !== 'leader'
-      ? 'Por vez'
-      : `${rounds} ${rounds === 1 ? 'rodada' : 'rodadas'}`,
+    s.game === 'atravessa' && s.mode === 'checkpoint'
+      ? (SIZE_NAME[s.settings.size] ?? '')
+      : s.game === 'eco' && s.mode !== 'leader'
+        ? 'Por vez'
+        : `${rounds} ${rounds === 1 ? 'rodada' : 'rodadas'}`,
   ]
     .filter(Boolean)
     .join(' · ');
@@ -153,6 +179,32 @@ export function rulesFor(s: RoomSnapshot): RuleDef[] {
       format: (id) => MODES[s.game].find((m) => m.id === id)?.label ?? String(id),
       patch: (v) => ({ mode: v }),
     });
+  }
+
+  // Atravessa!: o Infinito tem rodadas; o Checkpoint, o tamanho do mapa.
+  if (s.game === 'atravessa') {
+    if (s.mode === 'checkpoint') {
+      out.push({
+        id: 'size',
+        label: 'MAPA',
+        values: Object.keys(SIZE_NAME),
+        current: cfg.size,
+        format: (v) => SIZE_NAME[String(v)] ?? String(v),
+        patch: (v) => ({ size: v }),
+        note: 'Checkpoint de 50 em 50 m até 200, de 75 em 75 até 500 e de 100 em 100 depois disso.',
+      });
+    } else {
+      out.push({
+        id: 'rounds',
+        label: 'RODADAS',
+        values: ATR_ROUNDS,
+        current: cfg.rounds,
+        format: String,
+        patch: (v) => ({ rounds: v }),
+        note: 'Vale a soma dos metros andados em cada rodada.',
+      });
+    }
+    return out;
   }
 
   // Corrida do Ecooo: as rodadas vêm do modo (a partida acaba quando sobra um).

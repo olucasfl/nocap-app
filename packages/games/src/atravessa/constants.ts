@@ -143,6 +143,56 @@ export const ATR_SWEEP: Record<SweepKind, { speed: number; r: number }> = {
 export const atravessaMilestone = (row: number): boolean =>
   row > 0 && (row <= 500 ? row % 50 === 0 : row % 100 === 0);
 
+/**
+ * Sala online (spec 031). 1 metro = 1 linha. O servidor espelha cada herói pelas entradas que o
+ * aparelho informa; nada aqui depende de colisão entre jogadores.
+ */
+export const ATR_ROOM_MAX_PLAYERS = 8;
+/** Modos da sala: Infinito (rodadas, sem checkpoint, sem escuridão) e Checkpoint (corrida até o fim). */
+export type AtravessaRoomMode = 'infinito' | 'checkpoint';
+export const ATR_ROOM_MODES: readonly AtravessaRoomMode[] = ['infinito', 'checkpoint'];
+/** Tamanhos de mapa do checkpoint, em metros. */
+export const ATR_ROOM_SIZES = { pequeno: 100, medio: 250, grande: 500, gigante: 1000 } as const;
+export type AtravessaRoomSize = keyof typeof ATR_ROOM_SIZES;
+export const ATR_ROOM_SIZE_IDS = Object.keys(ATR_ROOM_SIZES) as AtravessaRoomSize[];
+/** Quem fica parado tanto tempo no Infinito (que não tem escuridão) é engolido. */
+export const ATR_IDLE_KILL_TICKS = 12 * ATR_TPS;
+/** No checkpoint, a pausa entre a morte e voltar ao último checkpoint. */
+export const ATR_RESPAWN_TICKS = 75;
+/** Contagem de largada da sala, em ms (3-2-1 e a largada). */
+export const ATR_ROOM_COUNTDOWN_MS = 3500;
+/** Folga (ticks) que o relógio do aparelho pode estar na frente do relógio do servidor. */
+export const ATR_ROOM_TICK_SLACK = 90;
+
+/** A coluna da largada de cada posição na sala: do meio para fora, sempre numa casa livre da linha 0. */
+export const atravessaStartCol = (slot: number): number => [0, -1, 1, -2, 2, -3, 3, -4][slot % 8]!;
+
+/** As cores das raposas na sala; cada cor é de uma pessoa só. */
+export const ATR_ROOM_COLORS: readonly { name: string; hex: string }[] = [
+  { name: 'Laranja', hex: '#ff6a2b' },
+  { name: 'Azul', hex: '#2f5bff' },
+  { name: 'Amarelo', hex: '#ffd23f' },
+  { name: 'Verde', hex: '#33c27f' },
+  { name: 'Rosa', hex: '#ff9ecf' },
+  { name: 'Roxo', hex: '#7a3cff' },
+  { name: 'Ciano', hex: '#25c7e8' },
+  { name: 'Vermelho', hex: '#e5303a' },
+];
+
+/**
+ * As linhas dos checkpoints de um mapa: de 50 em 50 até 200, de 75 em 75 até 500 e de 100 em 100
+ * depois disso. A linha do fim do mapa não é checkpoint. (Mapas de 100 e 250 ficam só com os de 50.)
+ */
+export function atravessaCheckpoints(length: number): number[] {
+  const out: number[] = [];
+  let row = 0;
+  for (;;) {
+    row += row < 200 ? 50 : row < 500 ? 75 : 100;
+    if (row >= length) return out;
+    out.push(row);
+  }
+}
+
 /** Limites que o servidor aceita. */
 export const ATR_MAX_TICKS = 30 * 60 * ATR_TPS;
 export const ATR_MAX_INPUTS = 20_000;
@@ -159,7 +209,9 @@ export type AtravessaEnd =
   | 'afundou'
   | 'mordido'
   | 'atingido'
-  | 'escuridao';
+  | 'escuridao'
+  /** Parado demais num modo sem escuridão (sala Infinito). */
+  | 'parado';
 
 /** Só o Infinito por enquanto (spec 028). */
 export type AtravessaMode = 'infinito';

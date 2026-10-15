@@ -292,6 +292,13 @@ export class AtravessaWorld {
     return lane;
   }
 
+  /** A linha de descanso mais próxima de `row` para baixo (a própria, se já for): onde se renasce. */
+  restRowAtOrBelow(row: number): number {
+    let r = Math.max(0, Math.floor(row));
+    while (r > 0 && this.lane(r).kind !== 'descanso') r--;
+    return r;
+  }
+
   /** A coluna livre que atravessa as faixas de descanso e de pedras seguidas. */
   corridorAt(row: number): number {
     this.lane(row);

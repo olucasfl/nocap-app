@@ -7,7 +7,8 @@ import { ImpostorRoomEngine } from './impostor/impostor-room.engine';
 import { EcoRoomEngine } from './eco-room.engine';
 import { EcoLeaderRoomEngine } from './eco-leader-room.engine';
 import { PartyRoomEngine } from './party-room.engine';
-import { IMPOSTOR_MAX_PLAYERS } from '@nocap/games';
+import { AtravessaRoomEngine } from './atravessa-room.engine';
+import { ATR_ROOM_MAX_PLAYERS, IMPOSTOR_MAX_PLAYERS } from '@nocap/games';
 import { GUEST_PREFIX, cleanNickname, createGuestLimiter, isGuestId, usernameLookalikes } from './guest-nick';
 import type { InvitesService } from './invites.service';
 import type { RoomsRepository } from './rooms.repository';
@@ -171,6 +172,7 @@ export class ColorRoom extends Room {
 
     this.setSimulationInterval(() => {
       if (this.engine.tick()) this.publish();
+      this.afterTick();
     }, this.tickMs);
   }
 
@@ -180,6 +182,9 @@ export class ColorRoom extends Room {
 
   /** De quanto em quanto tempo a sala avança por relógio (a Arena X1 pede mais fino). */
   protected tickMs = TICK_MS;
+
+  /** Depois de cada passo da sala (o Atravessa! transmite as posições aqui). */
+  protected afterTick() {}
 
   /** O aparelho informou o tempo de ida e volta (usado só onde latência importa). */
   protected onLatency(_id: string, _rtt: number) {}
@@ -431,7 +436,7 @@ export class ColorRoom extends Room {
       // O Intruso é a Cor: entra na aba da Mesmíssima do histórico, com o modo dele.
       const game = this.engine.game;
       await roomDeps.repo?.saveRoomMatch({
-        game: game === 'impostor' || game === 'party' ? 'color' : game,
+        game: game === 'impostor' || game === 'party' || game === 'atravessa' ? 'color' : game,
         mode: this.engine.historyMode,
         seed: this.engine.currentSeed,
         settings: this.engine.currentSettings,
@@ -507,6 +512,40 @@ export class EcoRoom extends ColorRoom {
         if (this.engine instanceof EcoLeaderRoomEngine) this.engine.submit(id, m?.sequence);
       }),
     );
+  }
+}
+
+/**
+ * Sala do Atravessa! (spec 031): todo mundo no mesmo mapa. Cada aparelho simula o seu herói e manda
+ * "run" (o tick e os passos); a sala responde "ack" e transmite "pos" 10 vezes por segundo com a
+ * posição de todos, que vem do espelho do servidor.
+ */
+export class AtravessaRoom extends ColorRoom {
+  override maxClients = ATR_ROOM_MAX_PLAYERS;
+  protected override tickMs = 100;
+
+  protected override makeEngine(opts: ConstructorParameters<typeof ColorRoomEngine>[0]) {
+    return new AtravessaRoomEngine(opts);
+  }
+
+  protected override registerGameMessages() {
+    const engine = () => this.engine as AtravessaRoomEngine;
+    this.onMessage('color', (c, m: { hex?: string }) =>
+      this.act(c, (id) => engine().setColor(id, String(m?.hex ?? ''))),
+    );
+    this.onMessage('endround', (c) => this.act(c, (id) => engine().endRound(id)));
+    // Chega 10 vezes por segundo por pessoa: nada de estado a todos, só a confirmação a quem mandou.
+    this.onMessage('run', (c, m: { t?: unknown; i?: unknown; n?: unknown }) => {
+      const id = (c.userData as AuthData | undefined)?.id;
+      if (!id) return;
+      const accepted = engine().report(id, m?.t, m?.i, m?.n);
+      if (accepted !== null) c.send('ack', { n: accepted });
+    });
+  }
+
+  protected override afterTick() {
+    const engine = this.engine as AtravessaRoomEngine;
+    if (engine.currentPhase === 'play') this.broadcast('pos', engine.positions());
   }
 }
 

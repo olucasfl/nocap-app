@@ -39,7 +39,18 @@ export interface EcoRoomSettings {
   rounds: number;
 }
 
-export type AnySettings = RoomSettings | TimeRoomSettings | ImpostorRoomSettings | EcoRoomSettings;
+/** Atravessa! em sala: rodadas do Infinito (1 a 10; 1 no Checkpoint) e o tamanho do mapa do Checkpoint. */
+export interface AtravessaRoomSettings {
+  rounds: number;
+  size: 'pequeno' | 'medio' | 'grande' | 'gigante';
+}
+
+export type AnySettings =
+  | RoomSettings
+  | TimeRoomSettings
+  | ImpostorRoomSettings
+  | EcoRoomSettings
+  | AtravessaRoomSettings;
 
 /**
  * `play` é a fase de resposta do Tempo (cada um começa e para o seu relógio); `vote` é a votação
@@ -104,7 +115,7 @@ export class ColorRoomEngine {
   protected readonly newSeed: () => string;
   protected readonly maxPlayers: number;
   /** Qual jogo esta sala joga; o `TimeRoomEngine` troca. */
-  readonly game: 'color' | 'time' | 'impostor' | 'eco' | 'party' = 'color';
+  readonly game: 'color' | 'time' | 'impostor' | 'eco' | 'party' | 'atravessa' = 'color';
   /** Menos gente que isto não joga (o Intruso precisa de 3 para votar). */
   protected readonly minPlayers: number = MIN_PLAYERS;
   /** Salvar o pódio como partida de sala (o Intruso não salva). */
@@ -294,7 +305,12 @@ export class ColorRoomEngine {
 
   configure(
     id: string,
-    next: (Partial<RoomSettings> | Partial<TimeRoomSettings> | Partial<ImpostorRoomSettings>) & {
+    next: (
+      | Partial<RoomSettings>
+      | Partial<TimeRoomSettings>
+      | Partial<ImpostorRoomSettings>
+      | Partial<AtravessaRoomSettings>
+    ) & {
       mode?: string;
     },
   ) {

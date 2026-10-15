@@ -33,5 +33,6 @@
 | 028 | [Atravessa! (substitui o Sinal Vermelho, estilo Crossy Road em 3D)](028-atravessa.md) | 6 | etapas 1 a 5 implementadas (núcleo, servidor, tela, biomas e som, troca no app); falta jogar e calibrar |
 | 029 | [Atravessa!: polimento, mais perigos e marcos](029-atravessa-polimento.md) | 6 | implementada; falta jogar e calibrar |
 | 030 | [Atravessa!: largada sempre na horta e recuo de 4 linhas](030-atravessa-largada.md) | 6 | implementada; falta ver rodando |
+| 031 | [Atravessa! online (sala, sem colisão, pronta para ter colisão)](031-atravessa-online.md) | 6 | implementada; falta jogar ao vivo |
 
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.

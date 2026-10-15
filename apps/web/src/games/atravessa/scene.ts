@@ -4,6 +4,7 @@ import {
   ATR_TRAIN_LEN,
   AtravessaSim,
   atravessaMilestone,
+  type AtravessaWorld,
   crocState,
   laneBiome,
   laneItems,
@@ -43,6 +44,7 @@ import {
   buildSweepLine,
   buildTargetRing,
   buildTurtles,
+  type GateKind,
 } from './props';
 import { buildVehicle } from './vehicles';
 
@@ -131,6 +133,32 @@ const TOP: Record<Lane['kind'], number> = { descanso: 0.3, estrada: 0.12, trilho
 /** Para onde a câmera aponta (o eixo "direita" da tela no mundo), para ancorar o semáforo na borda. */
 const RIGHT = { x: 0.843, z: -0.539 };
 
+/** Marcas do mapa de sala: checkpoints, chegada e se os marcos de 50 em 50 aparecem (só no solo). */
+export interface RoomMarks {
+  checkpoints: ReadonlySet<number>;
+  finish: number | null;
+  milestones: boolean;
+}
+const SOLO_MARKS: RoomMarks = { checkpoints: new Set(), finish: null, milestones: true };
+
+interface Remote {
+  group: THREE.Group;
+  body: THREE.Object3D;
+  color: string;
+  angle: number;
+  top: number;
+}
+
+/** O que a sala pede à câmera e ao herói em cada quadro. */
+export interface RenderOpts {
+  /** Assistindo outra pessoa: a câmera segue este ponto (linha, coluna) em vez do meu herói. */
+  follow?: { x: number; y: number } | null;
+  /** Esconde o meu herói (espectando, ou ainda na contagem). */
+  hideHero?: boolean;
+  /** O relógio do mundo (ticks). Com o meu herói parado (morreu, chegou) o mundo continua andando para quem assiste. */
+  tick?: number;
+}
+
 interface Holder {
   obj: THREE.Object3D;
   item: FlowItem;
@@ -157,6 +185,7 @@ class LaneView {
   constructor(
     readonly lane: Lane,
     record: number | null,
+    marks: RoomMarks,
   ) {
     this.row = lane.row;
     const pal = mixPalette(lane.biome);
@@ -226,11 +255,12 @@ class LaneView {
     }
 
     // a faixa do recorde tem prioridade sobre o arco do marco (os dois na mesma linha: só o recorde)
-    if (record !== null && lane.row === record) {
-      g.add(buildGate('recorde', `SEU RECORDE · ${record}`, lane.kind === 'rio' ? 0.1 : top));
-    } else if (atravessaMilestone(lane.row)) {
-      g.add(buildGate('marco', `${lane.row}`, lane.kind === 'rio' ? 0.1 : top));
-    }
+    const gateTop = lane.kind === 'rio' ? 0.1 : top;
+    const gate = (kind: GateKind, label: string) => g.add(buildGate(kind, label, gateTop));
+    if (marks.finish !== null && lane.row === marks.finish) gate('chegada', `CHEGADA · ${lane.row} m`);
+    else if (marks.checkpoints.has(lane.row)) gate('checkpoint', `CHECKPOINT · ${lane.row} m`);
+    else if (record !== null && lane.row === record) gate('recorde', `SEU RECORDE · ${record}`);
+    else if (marks.milestones && atravessaMilestone(lane.row)) gate('marco', `${lane.row}`);
     bakeInto(g, st, true);
     // a faixa não mexe: a matriz dela é calculada uma vez
     g.updateMatrix();
@@ -378,6 +408,7 @@ const BURST_COLORS: Record<AtravessaEnd, number[]> = {
   mordido: [0xff8a2a, 0xffffff, 0xe5303a],
   atingido: [0xff8a2a, 0xffd9b0, 0xc79a3c, 0xffd23f],
   escuridao: [0x2a2540, 0x4a3f7a, 0x14102a],
+  parado: [0x2a2540, 0x4a3f7a, 0x14102a],
 };
 
 export class AtravessaScene {
@@ -391,6 +422,11 @@ export class AtravessaScene {
   private lanes = new Map<number, LaneView>();
   private hero = buildHero();
   private heroBody: THREE.Object3D;
+  private marks: RoomMarks = SOLO_MARKS;
+  /** As outras raposas da sala (spec 031). */
+  private remotes = new Map<string, Remote>();
+  private lastSpawn = 0;
+  private followed = false;
   private heroAngle = 0;
   private camRow = 1;
   private camX = 0;
@@ -445,6 +481,78 @@ export class AtravessaScene {
     this.scene.add(this.hero);
   }
 
+  /** Checkpoints e chegada da sala. Chame antes da primeira imagem. */
+  setMarks(marks: RoomMarks) {
+    this.marks = marks;
+    for (const lv of this.lanes.values()) {
+      this.scene.remove(lv.group);
+      lv.dispose();
+    }
+    this.lanes.clear();
+  }
+
+  /** A raposa de quem joga muda de cor (sala). */
+  setHeroColor(hex: string) {
+    this.scene.remove(this.hero);
+    disposeOwned(this.hero);
+    this.hero = buildHero({ fur: new THREE.Color(hex).getHex(), own: true });
+    this.heroBody = this.hero.getObjectByName('body')!;
+    this.scene.add(this.hero);
+  }
+
+  /** Quem está na sala além de mim: uma raposa colorida para cada um. Chame de novo se a lista mudar. */
+  setRemotes(list: { id: string; color: string }[]) {
+    const keep = new Set(list.map((r) => r.id));
+    for (const [id, r] of this.remotes) {
+      if (keep.has(id) && r.color === list.find((x) => x.id === id)!.color) continue;
+      this.scene.remove(r.group);
+      disposeOwned(r.group);
+      this.remotes.delete(id);
+    }
+    for (const { id, color } of list) {
+      if (this.remotes.has(id)) continue;
+      const group = buildHero({ fur: new THREE.Color(color).getHex(), own: true });
+      group.visible = false;
+      this.scene.add(group);
+      this.remotes.set(id, { group, body: group.getObjectByName('body')!, color, angle: 0, top: 0.3 });
+    }
+  }
+
+  /** Põe uma raposa de outra pessoa no lugar (todo quadro). `hide`: morreu ou ainda não largou. */
+  placeRemote(
+    id: string,
+    world: AtravessaWorld,
+    at: { x: number; y: number; hop: number; facing: number; hide: boolean },
+    dt: number,
+  ) {
+    const r = this.remotes.get(id);
+    if (!r) return;
+    if (at.hide) {
+      r.group.visible = false;
+      return;
+    }
+    const lo = Math.floor(at.y);
+    const frac = at.y - lo;
+    const top = TOP[world.lane(lo).kind] * (1 - frac) + TOP[world.lane(lo + 1).kind] * frac;
+    r.top = top;
+    r.angle = turnToward(r.angle, HEADING[at.facing as 0 | 1 | 2 | 3] + HERO_LOOK, dt * 22);
+    r.group.rotation.y = r.angle;
+    r.group.position.set(at.x, top + at.hop, -at.y);
+    r.group.scale.setScalar(HERO_SCALE);
+    r.group.visible = true;
+  }
+
+  /** Onde está na tela (px do canvas) o alto da raposa de alguém, ou de mim (`id` = null). */
+  screenOf(id: string | null, x: number, y: number, top = 0.3): { x: number; y: number; visible: boolean } {
+    const r = id ? this.remotes.get(id) : null;
+    const v = new THREE.Vector3(x, (r ? r.top : top) + 1.9, -y).project(this.camera);
+    return {
+      x: ((v.x + 1) / 2) * this.size.w,
+      y: ((1 - v.y) / 2) * this.size.h,
+      visible: v.z < 1 && Math.abs(v.x) < 1.2 && Math.abs(v.y) < 1.2,
+    };
+  }
+
   /** A linha do recorde (a faixa dourada). Chame antes de começar; `null` = sem recorde ainda. */
   setRecord(rows: number | null) {
     this.record = rows && rows > 0 ? rows : null;
@@ -483,7 +591,7 @@ export class AtravessaScene {
     }
     for (let r = lo; r <= hi; r++) {
       if (this.lanes.has(r)) continue;
-      const lv = new LaneView(sim.world.lane(r), this.record);
+      const lv = new LaneView(sim.world.lane(r), this.record, this.marks);
       this.lanes.set(r, lv);
       this.scene.add(lv.group);
     }
@@ -590,22 +698,36 @@ export class AtravessaScene {
   }
 
   /** Desenha um quadro. `dt` em segundos; `death` quando a partida acabou (age em segundos). */
-  render(sim: AtravessaSim, dt: number, now: number, death: { end: AtravessaEnd; age: number } | null) {
+  render(
+    sim: AtravessaSim,
+    dt: number,
+    now: number,
+    death: { end: AtravessaEnd; age: number } | null,
+    opts: RenderOpts = {},
+  ) {
     const v = sim.view();
+    const follow = opts.follow ?? null;
+    // renasceu (sala com checkpoint): a câmera recomeça junto, senão o herói ficaria fora da tela
+    if (v.spawnTick !== this.lastSpawn) {
+      this.lastSpawn = v.spawnTick;
+      this.maxRow = v.y;
+      this.camRow = v.y + 2.6;
+      this.camX = 0;
+    }
     this.maxRow = Math.max(this.maxRow, v.y);
 
-    // a câmera só anda para a frente e acompanha de lado só um pouco
+    // a câmera só anda para a frente e acompanha de lado só um pouco (quem assiste segue o outro)
     const k = 1 - Math.exp(-dt * CAM_FOLLOW);
-    const targetRow = this.maxRow + 2.6;
+    const targetRow = (follow ? follow.y : this.maxRow) + 2.6;
     // um salto grande (só acontece ao teletransportar em desenvolvimento) não precisa deslizar
     if (Math.abs(targetRow - this.camRow) > 14) this.camRow = targetRow;
     this.camRow += (targetRow - this.camRow) * (this.reduced ? 1 : k);
-    const targetX = Math.max(-1.8, Math.min(1.8, v.x * 0.45));
+    const targetX = Math.max(-1.8, Math.min(1.8, (follow ? follow.x : v.x) * 0.45));
     this.camX += (targetX - this.camX) * (this.reduced ? 1 : 1 - Math.exp(-dt * 4));
 
     this.ensureLanes(sim, this.camRow);
     const cam: CamInfo = { x: this.camX, row: this.camRow, halfW: this.halfW, reach: Math.max(16, Math.ceil(this.halfH * 2.4)) };
-    for (const lv of this.lanes.values()) lv.update(sim.tick, sim, now, cam);
+    for (const lv of this.lanes.values()) lv.update(opts.tick ?? sim.tick, sim, now, cam);
     waterTime.value = now;
     this.updateSweep(v.sweep, now);
 
@@ -618,6 +740,7 @@ export class AtravessaScene {
     this.hero.rotation.y = this.heroAngle;
     const pose = death ? deathPose(death.end, death.age, v.killer) : heroPose(v, now);
     this.applyPose(pose, v.x, v.y, top);
+    if (opts.hideHero) this.hero.visible = false;
 
     // os pedacinhos da morte saem uma vez só, e a câmera dá um tremor curto
     let shakeX = 0;
@@ -639,7 +762,7 @@ export class AtravessaScene {
     this.burst.update(dt);
 
     // luz, céu e névoa seguem o bioma de onde o herói está; a escuridão escurece de dentro para fora
-    const info = sim.world.biomeAt(v.y);
+    const info = sim.world.biomeAt(follow ? follow.y : v.y);
     const pal = mixPalette(info);
     const danger = v.danger;
     const dim = 1 - 0.32 * danger * danger;
@@ -654,7 +777,7 @@ export class AtravessaScene {
     darkness.uDarkZ.value = -v.darkRow;
     const night = Math.max(0, Math.min(1, (1.25 - pal.ambient) / 0.7));
     this.heroLight.intensity = night * 18 * dim;
-    this.heroLight.position.set(v.x, 2.2, -v.y + 0.6);
+    this.heroLight.position.set(follow ? follow.x : v.x, 2.2, -(follow ? follow.y : v.y) + 0.6);
 
     // câmera diagonal fixa como no Crossy Road: sai do alvo para trás, para a direita e para cima
     // (as faixas descem da esquerda para a direita e o avanço vai para cima e para a direita)
@@ -682,6 +805,8 @@ export class AtravessaScene {
   }
 
   dispose() {
+    for (const r of this.remotes.values()) disposeOwned(r.group);
+    this.remotes.clear();
     for (const lv of this.lanes.values()) this.scene.remove(lv.group);
     this.lanes.clear();
     this.renderer.dispose();

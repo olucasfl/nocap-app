@@ -233,12 +233,19 @@ export function makeLabel(text: string, fg: string, bg: string): THREE.Sprite {
 
 /**
  * Um arco que atravessa a pista: faixa quadriculada no chão, dois postes com bandeirinhas e a placa.
- * `kind`: 'recorde' (dourado) ou 'marco' (azul e branco, discreto).
+ * `kind`: 'recorde' (dourado), 'marco' (azul e branco, discreto), 'checkpoint' (verde) ou 'chegada'
+ * (vermelho e branco) nas salas.
  */
-export function buildGate(kind: 'recorde' | 'marco', label: string, floorTop: number): THREE.Group {
+export type GateKind = 'recorde' | 'marco' | 'checkpoint' | 'chegada';
+const GATE_COLORS: Record<GateKind, [number, number]> = {
+  recorde: [0xffc928, 0x111111],
+  marco: [0x2f5bff, 0xf4f4ef],
+  checkpoint: [0x33c27f, 0xf4f4ef],
+  chegada: [0xe5303a, 0xf4f4ef],
+};
+export function buildGate(kind: GateKind, label: string, floorTop: number): THREE.Group {
   const g = new THREE.Group();
-  const main = kind === 'recorde' ? 0xffc928 : 0x2f5bff;
-  const alt = kind === 'recorde' ? 0x111111 : 0xf4f4ef;
+  const [main, alt] = GATE_COLORS[kind];
   // a faixa quadriculada fica só nas duas bordas da pista: o meio fica livre, e dá para ver a água, a
   // estrada e tudo que passa por baixo (tora, carro, trem)
   for (let i = -ATR_HALF_COLS; i <= ATR_HALF_COLS; i++) {
@@ -249,7 +256,7 @@ export function buildGate(kind: 'recorde' | 'marco', label: string, floorTop: nu
     g.add(box(0.2, 2.6, 0.2, 0x2a2a30, x, floorTop + 1.3, 0));
     g.add(box(0.5, 0.34, 0.06, main, x + (x < 0 ? 0.3 : -0.3), floorTop + 2.35, 0, { cast: false }));
   }
-  const label3d = makeLabel(label, kind === 'recorde' ? '#111111' : '#111111', kind === 'recorde' ? '#ffd23f' : '#f4f4ef');
+  const label3d = makeLabel(label, '#111111', kind === 'recorde' ? '#ffd23f' : kind === 'checkpoint' ? '#a8ecc8' : kind === 'chegada' ? '#ffb3b8' : '#f4f4ef');
   label3d.position.set(0, floorTop + 3.1, 0);
   g.add(label3d);
   g.add(box(ATR_HALF_COLS * 2 + 2.4, 0.16, 0.12, main, 0, floorTop + 2.6, 0, { cast: false }));

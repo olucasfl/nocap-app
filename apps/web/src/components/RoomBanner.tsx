@@ -12,6 +12,7 @@ const GAME_NAME: Record<RoomGame, string> = {
   impostor: 'Intruso',
   eco: 'Ecooo',
   party: 'Mix Nocap',
+  atravessa: 'Atravessa!',
 };
 
 const phaseText = (phase: Phase) =>

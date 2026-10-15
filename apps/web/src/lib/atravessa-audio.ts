@@ -412,7 +412,7 @@ export function createAtravessaAudio(): AtravessaAudio | null {
         hiss('bandpass', 900, 250, 0.3, 0.26, t, 0.8);
         tone('sine', 130, 40, 0.4, 0.34, t);
         tone('triangle', 420, 160, 0.2, 0.1, t);
-      } else if (end === 'escuridao') {
+      } else if (end === 'escuridao' || end === 'parado') {
         tone('sine', 200, 40, 1.1, 0.3, t);
         tone('triangle', 90, 30, 1.3, 0.2, t);
         hiss('lowpass', 900, 80, 1.0, 0.14, t);

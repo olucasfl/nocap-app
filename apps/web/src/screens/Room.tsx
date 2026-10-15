@@ -17,6 +17,7 @@ import { ChatDock } from '@/components/Chat';
 import { Final } from './room/Final';
 import { Lobby } from './room/Lobby';
 import { Play } from './room/Play';
+import { AtravessaRoomPlay } from '@/games/atravessa/AtravessaRoomPlay';
 import './account.css';
 import './friends.css';
 import './room.css';
@@ -50,6 +51,7 @@ const GAME_PAGE = {
   impostor: '/cor',
   eco: '/eco',
   party: '/nocap',
+  atravessa: '/atravessa',
 } as const;
 
 const GAME_NAME: Record<RoomGame, string> = {
@@ -58,6 +60,7 @@ const GAME_NAME: Record<RoomGame, string> = {
   impostor: 'Intruso',
   eco: 'Ecooo',
   party: 'Mix Nocap',
+  atravessa: 'Atravessa!',
 };
 
 const ENTRY_LEAD: Record<RoomGame, string> = {
@@ -68,6 +71,8 @@ const ENTRY_LEAD: Record<RoomGame, string> = {
     'O Intruso precisa de uma sala com no mínimo 3 pessoas: alguns não veem a cor, só uma dica, e todo mundo vota em quem desconfia.',
   party:
     'Jogue Mix Nocap com amigos: micro-desafios rápidos e minijogos grandes, todos jogando ao mesmo tempo.',
+  atravessa:
+    'Atravesse com os amigos no mesmo mapa, cada um com a sua cor: Infinito (vale a soma dos metros das rodadas) ou Checkpoint (corrida até o fim). Até 8 pessoas.',
 };
 
 function Entry({
@@ -97,7 +102,9 @@ function Entry({
               ? '/eco'
               : game === 'party'
                 ? '/nocap'
-                : '/cor'
+                : game === 'atravessa'
+                  ? '/atravessa'
+                  : '/cor'
         }
         label="Voltar ao jogo"
       />
@@ -205,12 +212,18 @@ export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomG
     );
   }
 
+  // A corrida do Atravessa! ocupa a tela toda (sem cabeçalho nem navegação).
+  if (snapshot?.game === 'atravessa' && (snapshot.phase === 'show' || snapshot.phase === 'play')) {
+    return <AtravessaRoomPlay snapshot={snapshot} />;
+  }
+
   return (
     <div className="app">
       <Header
         round={
           snapshot &&
           snapshot.game !== 'party' &&
+          snapshot.game !== 'atravessa' &&
           snapshot?.round &&
           snapshot.phase !== 'lobby' &&
           snapshot.phase !== 'final'

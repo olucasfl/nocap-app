@@ -309,16 +309,20 @@ export function hash2(a: number, b: number): number {
  * "!" na frente) e a cauda grande e peluda, que sobe atrás e termina branca: é o que mais se vê de
  * costas. Olha para -Z; a origem é nos pés, para a escala amassar para o chão.
  */
-export function buildHero(): THREE.Group {
+export function buildHero(opts: { fur?: number; own?: boolean } = {}): THREE.Group {
   const g = new THREE.Group();
   const body = new THREE.Group();
   body.name = 'body';
-  const ORANGE = 0xff7d26; // pelo
-  const DEEP = 0xe5601a; // costas e sombras
+  // na sala cada pessoa tem a sua cor: o pelo muda; o boné troca de cor se o pelo for azulado
+  const fur = opts.fur === undefined ? null : new THREE.Color(opts.fur);
+  const ORANGE = fur ? fur.getHex() : 0xff7d26; // pelo
+  const DEEP = fur ? fur.clone().multiplyScalar(0.8).getHex() : 0xe5601a; // costas e sombras
   const WHITE = 0xfff3e2; // peito, bochechas, ponta da cauda
   const SOCK = 0x35211a; // meias, nariz, pontas das orelhas
-  const CAP = 0x2f5bff; // boné
-  const CAP_DARK = 0x2347c9;
+  const hue = fur ? fur.getHSL({ h: 0, s: 0, l: 0 }).h : 0.07;
+  const bluish = hue > 0.5 && hue < 0.8;
+  const CAP = bluish ? 0xff7d26 : 0x2f5bff; // boné
+  const CAP_DARK = bluish ? 0xc95a12 : 0x2347c9;
   const k = { cast: false } as const;
 
   // o corpo: esguio, com o peito um pouco mais largo
@@ -356,7 +360,7 @@ export function buildHero(): THREE.Group {
   body.add(box(0.54, 0.1, 0.46, CAP, 0, 0.95, -0.3));
   body.add(box(0.42, 0.09, 0.36, CAP, 0, 1.04, -0.29));
   body.add(box(0.56, 0.03, 0.48, 0xffffff, 0, 0.95, -0.3, k)); // listra branca
-  body.add(box(0.42, 0.022, 0.36, 0x5f82ff, 0, 1.092, -0.29, k)); // brilho no topo
+  body.add(box(0.42, 0.022, 0.36, bluish ? 0xffa066 : 0x5f82ff, 0, 1.092, -0.29, k)); // brilho no topo
   body.add(box(0.07, 0.045, 0.07, CAP_DARK, 0, 1.12, -0.29)); // botão
   const brim = box(0.4, 0.04, 0.26, CAP_DARK, 0, 0.93, -0.6);
   brim.rotation.x = 0.2;
@@ -386,7 +390,7 @@ export function buildHero(): THREE.Group {
   body.add(box(0.2, 0.16, 0.14, WHITE, 0, 1.22, 1.07));
 
   body.position.z = -0.14; // centra a raposa na casa (a cauda pesa atrás)
-  bakeChildren(body);
+  bakeChildren(body, opts.own ?? false);
   g.add(body);
   return g;
 }
