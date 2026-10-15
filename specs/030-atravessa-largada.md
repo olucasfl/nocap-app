@@ -10,7 +10,7 @@ Status: **implementada (15/10/2026); falta ver rodando no celular e no computado
 ## O que mudou
 
 - `biomeSequence`: o primeiro grupo de biomas é sempre `horta` + os outros dois em ordem sorteada pela seed. Os grupos seguintes seguem a regra da spec 029 (o primeiro nunca é igual ao último do grupo anterior). `ATR_FIRST_BIOME` guarda a escolha.
-- `AtravessaWorld.lane(row < 0)`: as linhas -1 a -4 (`ATR_BACK_ROWS`) são descanso da horta com árvores sorteadas pela seed (`seed:atras:linha`); **a coluna 0 fica sempre livre**, então o recuo e a volta sempre têm caminho. A linha -4 é mais fechada (borda da mata). Além dela, mata fechada (todas as colunas bloqueadas), só como enfeite.
+- `AtravessaWorld.lane(row < 0)`: as linhas -1 a -4 (`ATR_BACK_ROWS`) são descanso da horta com árvores sorteadas pela seed (`seed:atras:linha`, densidade 30% e 48% na última linha); **a coluna 0 fica sempre livre**, então o recuo e a volta sempre têm caminho. A linha -4 é mais fechada (borda da mata). Além dela, mata fechada (todas as colunas bloqueadas), só como enfeite.
 - `AtravessaSim`: recusa o passo só abaixo de `-ATR_BACK_ROWS`. A nota continua sendo a maior linha atingida, então recuar não conta nem perde nada.
 - Escuridão: `ATR_DARK_START_GAP` subiu de 6 para 8 (igual ao `ATR_DARK_MAX_GAP`) para quem recua não ser pego logo; ela continua parada nos primeiros 1,5 s e nunca passa do teto de velocidade.
 

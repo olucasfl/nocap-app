@@ -283,7 +283,7 @@ export class AtravessaWorld {
     } else {
       const rng = createRng(`${this.seed}:atras:${row}`);
       // a última linha é mais fechada, como a borda da mata
-      const density = row === -ATR_BACK_ROWS ? 0.62 : 0.4;
+      const density = row === -ATR_BACK_ROWS ? 0.48 : 0.3;
       for (let c = -ATR_HALF_COLS; c <= ATR_HALF_COLS; c++) {
         if (c !== 0 && rng() < density) lane.blocked.push(c);
       }
