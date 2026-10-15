@@ -117,23 +117,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-.atr-deadline {
-  position: absolute;
-  top: 84px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 6px 12px;
-  background: var(--orange);
-  color: var(--on-accent);
-  border: var(--border);
-  border-radius: 12px;
-  box-shadow: 3px 3px 0 var(--ink);
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  pointer-events: none;
-}
-
 .atr-end {
   appearance: none;
   position: absolute;
@@ -149,6 +132,10 @@
   font-weight: 800;
   letter-spacing: 0.06em;
   cursor: pointer;
+}
+.atr-end.sure {
+  background: var(--orange);
+  color: var(--on-accent);
 }
 .atr-end:active {
   transform: translate(3px, 3px);
@@ -274,9 +261,6 @@
   .atr-clock {
     top: 78px;
     font-size: 18px;
-  }
-  .atr-deadline {
-    top: 130px;
   }
 }
 

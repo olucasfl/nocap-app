@@ -130,8 +130,6 @@ export interface AtravessaRoomState {
   startAt: number | null;
   /** A posição de cada pessoa nos relatos "pos". */
   slots: Record<string, number>;
-  /** Checkpoint: quando a corrida acaba para quem não chegou (depois do primeiro a chegar). */
-  endsAt: number | null;
   /** Placar da rodada e soma até agora (placar da rodada e pódio). */
   roundMeters: Record<string, number> | null;
   totals: Record<string, number> | null;

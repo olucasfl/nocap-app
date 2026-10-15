@@ -28,8 +28,6 @@ import {
 export const ATRAVESSA_REVEAL_MS = 8000;
 /** Sem relato do aparelho por tanto tempo: o herói conta como parado (a rodada não espera por ele). */
 export const ATRAVESSA_STALL_MS = 8000;
-/** No Checkpoint, depois do primeiro a chegar os outros têm este tempo para terminar. */
-export const ATRAVESSA_FINISH_GRACE_MS = 60_000;
 
 const DEFAULT_ROUNDS = 3;
 
@@ -70,7 +68,6 @@ export class AtravessaRoomEngine extends ColorRoomEngine {
   private world: AtravessaWorld | null = null;
   /** Hora da largada (relógio da sala, ms). */
   private startAt = 0;
-  private finishDeadline: number | null = null;
   private forceEnd = false;
   /** Infinito: metros de cada pessoa em cada rodada já jogada. */
   private roundMeters: Record<string, number>[] = [];
@@ -188,7 +185,6 @@ export class AtravessaRoomEngine extends ColorRoomEngine {
     this.rounds[this.roundIndex] = {};
     this.locked = new Set();
     this.forceEnd = false;
-    this.finishDeadline = null;
     const seed = this.roundSeed();
     this.world = new AtravessaWorld(seed);
     this.startAt = this.now() + ATR_ROOM_COUNTDOWN_MS;
@@ -244,7 +240,6 @@ export class AtravessaRoomEngine extends ColorRoomEngine {
   private roundOver(t: number): boolean {
     if (this.forceEnd || atravessaTickAt(t, this.startAt) >= ATR_MAX_TICKS) return true;
     if (this.runs.size === 0) return true;
-    if (this.finishDeadline !== null && t >= this.finishDeadline) return true;
     for (const run of this.runs.values()) if (!this.done(run, t)) return false;
     return true;
   }
@@ -258,17 +253,13 @@ export class AtravessaRoomEngine extends ColorRoomEngine {
       return true;
     }
     if (this.phase === 'play') {
-      let changed = false;
-      // o primeiro a chegar abre o prazo dos outros
-      if (this.finishDeadline === null && [...this.runs.values()].some((r) => r.mirror.sim.finished)) {
-        this.finishDeadline = t + ATRAVESSA_FINISH_GRACE_MS;
-        changed = true;
-      }
+      // quem chega primeiro NÃO encerra a corrida: ela só fecha quando todo mundo termina (ou some), o líder
+      // encerra ou passa o limite de 30 minutos
       if (this.roundOver(t)) {
         this.closeRound();
         return true;
       }
-      return changed;
+      return false;
     }
     if (this.phase === 'reveal') {
       if (this.phaseEndsAt === null || t < this.phaseEndsAt) return false;
@@ -306,7 +297,6 @@ export class AtravessaRoomEngine extends ColorRoomEngine {
     this.slots.clear();
     this.world = null;
     this.forceEnd = false;
-    this.finishDeadline = null;
     this.roundMeters = [];
   }
 
@@ -420,8 +410,6 @@ export class AtravessaRoomEngine extends ColorRoomEngine {
         colors,
         startAt: started ? this.startAt : null,
         slots: started ? slots : {},
-        /** Checkpoint: quando a corrida acaba para quem ainda não chegou (depois do primeiro a chegar). */
-        endsAt: this.finishDeadline,
         /** Placar da rodada e soma até agora (no placar da rodada e no pódio). */
         roundMeters: showTotals ? (this.roundMeters[this.roundIndex] ?? {}) : null,
         totals: showTotals && this.roomMode === 'infinito' ? this.allTotals() : null,

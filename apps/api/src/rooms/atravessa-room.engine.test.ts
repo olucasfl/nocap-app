@@ -11,7 +11,6 @@ import {
 import { describe, expect, it } from 'vitest';
 import { RoomError } from './color-room.engine';
 import {
-  ATRAVESSA_FINISH_GRACE_MS,
   ATRAVESSA_REVEAL_MS,
   ATRAVESSA_STALL_MS,
   AtravessaRoomEngine,
@@ -387,7 +386,7 @@ describe('AtravessaRoomEngine · Infinito', () => {
 });
 
 describe('AtravessaRoomEngine · Checkpoint', () => {
-  it('é uma corrida só, sem placar entre rodadas, e o primeiro a chegar abre o prazo dos outros', () => {
+  it('o primeiro a chegar NÃO encerra a corrida: ela segue enquanto os outros jogam, e fecha quando todos terminam', () => {
     const { room, clock } = started({ mode: 'checkpoint', size: 'pequeno' });
     clock.set(startAt());
     room.tick();
@@ -401,15 +400,20 @@ describe('AtravessaRoomEngine · Checkpoint', () => {
     ana.best = 100;
     clock.set(msAt(3000));
     expect(room.report('bia', 3000, [], 0)).toBe(0);
-    expect(room.tick()).toBe(true); // publica o prazo
-    const snap = room.snapshot() as unknown as { atravessa: { endsAt: number } };
-    expect(snap.atravessa.endsAt).toBe(clock.now + ATRAVESSA_FINISH_GRACE_MS);
-    expect(room.currentPhase).toBe('play');
-    // bia segue relatando sem acabar; o prazo vence e a corrida fecha
-    clock.set(snap.atravessa.endsAt - 1);
-    expect(room.report('bia', tickNow(clock), [], 0)).toBe(0);
     expect(room.tick()).toBe(false);
-    clock.set(snap.atravessa.endsAt);
+    expect(room.currentPhase).toBe('play');
+    // dois minutos depois a bia ainda joga (passou do primeiro checkpoint, por exemplo): nada acaba
+    for (let i = 1; i <= 8; i++) {
+      clock.set(msAt(3000 + i * 900));
+      expect(room.report('bia', tickNow(clock), [], 0)).toBe(0);
+      expect(room.tick()).toBe(false);
+    }
+    expect(room.currentPhase).toBe('play');
+    // quando a bia também chega, a corrida fecha
+    const bia = sims.get('bia')!.mirror.sim;
+    bia.finished = true;
+    bia.finishTick = 9000;
+    bia.best = 100;
     expect(room.tick()).toBe(true);
     expect(room.currentPhase).toBe('final');
   });

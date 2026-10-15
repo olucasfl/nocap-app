@@ -17,6 +17,7 @@ Status: **implementada (15/10/2026); falta jogar ao vivo com amigos e calibrar.*
 - **Checkpoint sem escuridão** (o tempo já é a pressão e morrer já custa a volta).
 - **Infinito sem escuridão não pode virar sala de espera**: quem fica **12 s sem pular** é engolido (a mesma animação da escuridão). Sem barra nem contagem na tela.
 - **Espectar só quem está vivo.** Se todos morrem, a rodada acaba na hora (o líder pode encerrar antes com "Encerrar rodada"; no checkpoint, "Encerrar corrida").
+- **Chegar primeiro não encerra a corrida do Checkpoint** (corrigido em 15/10/2026: antes havia um prazo de 60 s e a partida acabou com amigos ainda jogando). Ela só fecha quando todo mundo chega ou some (8 s sem relato), o líder toca em "Encerrar corrida" ou passam 30 minutos.
 - Rodadas do Infinito de 1 a 10. No checkpoint a corrida é uma só (as rodadas ficam em 1).
 - Placar do checkpoint: quem chegou, por tempo; quem não chegou, por distância (e depois por menos mortes).
 - Partida em andamento: quem cai da conexão volta em até 60 s (como nas outras salas) e continua de onde o servidor o viu; entrar com a rodada rolando não é permitido (a sala já recusa).

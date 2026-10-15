@@ -19,7 +19,6 @@ import {
   sendRoomQuiet,
   serverNow,
   subscribeRoom,
-  toLocal,
   type RoomSnapshot,
 } from '@/lib/rooms';
 import { buzz } from '@/lib/sfx';
@@ -109,7 +108,6 @@ interface Ui {
   watching: { id: string; name: string; color: string } | null;
   spectators: number;
   over: { kind: 'dead' | 'respawn' | 'finished' | 'late'; end?: AtravessaEnd; ms?: number } | null;
-  deadline: number | null;
   checkpoint: number;
 }
 
@@ -121,7 +119,6 @@ const EMPTY_UI: Ui = {
   watching: null,
   spectators: 0,
   over: null,
-  deadline: null,
   checkpoint: 0,
 };
 
@@ -152,6 +149,13 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
   const [hint, setHint] = useState(true);
   /** O brilho verde da tela ao passar por um checkpoint pela primeira vez (`n` muda a cada um, para recomeçar). */
   const [pulse, setPulse] = useState(0);
+  /** Só o líder encerra, e com dois toques (um toque sem querer não acaba a partida de todo mundo). */
+  const [confirmEnd, setConfirmEnd] = useState(false);
+  useEffect(() => {
+    if (!confirmEnd) return;
+    const t = window.setTimeout(() => setConfirmEnd(false), 3000);
+    return () => window.clearTimeout(t);
+  }, [confirmEnd]);
   const ctl = useRef<{ cycle: (dir: 1 | -1) => void } | null>(null);
 
   useEffect(() => {
@@ -287,7 +291,6 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
       else if (!sim.alive) over = { kind: 'dead', end: sim.end! };
       const spectating = over?.kind === 'late' || over?.kind === 'finished' || over?.kind === 'dead';
       const watched = spectating && watch ? rows.find((r) => r.id === watch) : undefined;
-      const endsAt = snap.atravessa?.endsAt ?? null;
       const clockMs = sim.finished ? (sim.finishTick * 1000) / ATR_TPS : Math.max(0, serverNow() - startAt);
       const next: Ui = {
         count: wt < 0 ? Math.ceil(-wt / ATR_TPS) : wt < 45 ? 'go' : null,
@@ -297,7 +300,6 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
         watching: watched ? { id: watched.id, name: watched.name, color: watched.color } : null,
         spectators: candidates.length,
         over,
-        deadline: endsAt ? Math.max(0, Math.ceil((toLocal(endsAt) - Date.now()) / 1000)) : null,
         checkpoint: sim.checkpointRow,
       };
       const key = JSON.stringify(next);
@@ -508,20 +510,18 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
         ))}
       </ol>
 
-      {ui.deadline !== null && (
-        <div className="atr-deadline mono" role="status">
-          A CORRIDA ACABA EM {ui.deadline} S
-        </div>
-      )}
-
       {isHost && (
         <button
           type="button"
-          className="atr-end mono"
+          className={`atr-end mono${confirmEnd ? ' sure' : ''}`}
           data-sfx="select"
-          onClick={() => sendRoom('endround')}
+          onClick={() => {
+            if (!confirmEnd) return setConfirmEnd(true);
+            setConfirmEnd(false);
+            sendRoom('endround');
+          }}
         >
-          {checkpointMode ? 'ENCERRAR CORRIDA' : 'ENCERRAR RODADA'}
+          {confirmEnd ? 'TOQUE DE NOVO PARA ENCERRAR' : checkpointMode ? 'ENCERRAR CORRIDA' : 'ENCERRAR RODADA'}
         </button>
       )}
 
