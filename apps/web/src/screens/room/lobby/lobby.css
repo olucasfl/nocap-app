@@ -479,7 +479,7 @@
 /* Atravessa!: as 8 cores da raposa */
 .lb-colors {
   display: grid;
-  grid-template-columns: repeat(8, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 8px;
   margin-top: 6px;
 }
@@ -499,11 +499,6 @@
 .lb-color.taken {
   opacity: 0.3;
   cursor: not-allowed;
-}
-@media (max-width: 380px) {
-  .lb-colors {
-    grid-template-columns: repeat(4, 1fr);
-  }
 }
 
 .lb-uncolor {
@@ -542,4 +537,37 @@
   font-weight: 800;
   letter-spacing: 0.04em;
   overflow-wrap: anywhere;
+}
+
+/* cada cor com o nome de quem está com ela */
+.lb-colorcell {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.lb-colorcell .lb-color {
+  width: 100%;
+  max-width: 52px;
+}
+.lb-colorowner {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+}
+.lb-colorowner.free {
+  color: var(--muted);
+  font-weight: 600;
+}
+.lb-colorowner.me {
+  padding: 1px 6px;
+  background: var(--yellow);
+  color: var(--on-accent);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
 }

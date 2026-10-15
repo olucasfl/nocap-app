@@ -140,19 +140,23 @@ function AtravessaColors({ snapshot, me }: { snapshot: RoomSnapshot; me: string 
           const by = owner(c.hex);
           const mine = by === me;
           return (
-            <button
-              key={c.hex}
-              type="button"
-              role="radio"
-              aria-checked={mine}
-              aria-label={`${c.name}${by && !mine ? ` (de ${at(nameOf(by))})` : ''}`}
-              title={by && !mine ? `Já é de ${at(nameOf(by))}` : c.name}
-              className={`lb-color${mine ? ' on' : ''}${by && !mine ? ' taken' : ''}`}
-              style={{ background: c.hex }}
-              disabled={!!by && !mine}
-              data-sfx="select"
-              onClick={() => sendRoom('color', { hex: c.hex })}
-            />
+            <div key={c.hex} className="lb-colorcell">
+              <button
+                type="button"
+                role="radio"
+                aria-checked={mine}
+                aria-label={`${c.name}${by ? ` (de ${mine ? 'você' : at(nameOf(by))})` : ''}`}
+                title={by && !mine ? `Já é de ${at(nameOf(by))}` : c.name}
+                className={`lb-color${mine ? ' on' : ''}${by && !mine ? ' taken' : ''}`}
+                style={{ background: c.hex }}
+                disabled={!!by && !mine}
+                data-sfx="select"
+                onClick={() => sendRoom('color', { hex: c.hex })}
+              />
+              <span className={`lb-colorowner mono${mine ? ' me' : ''}${by ? '' : ' free'}`}>
+                {by ? (mine ? 'VOCÊ' : at(nameOf(by))) : 'LIVRE'}
+              </span>
+            </div>
           );
         })}
       </div>

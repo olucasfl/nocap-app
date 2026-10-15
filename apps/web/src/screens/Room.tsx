@@ -156,6 +156,8 @@ export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomG
   const entry = useRoomEntry();
   const [resuming, setResuming] = useState(true);
   const autoJoined = useRef(false);
+  /** A entrada automática pelo link já foi tentada (até lá a tela mostra só o carregando, sem piscar a entrada). */
+  const [autoTried, setAutoTried] = useState(false);
   const updateNeeded = useUpdateNeeded((s) => s.needed);
   const inRoom = !!snapshot;
 
@@ -186,8 +188,16 @@ export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomG
     if (!code || resuming || snapshot || autoJoined.current || updateNeeded) return;
     if (status === 'connecting' || status === 'reconnecting') return;
     autoJoined.current = true;
+    setAutoTried(true);
     void entry.join(code);
   }, [code, resuming, snapshot, status, entry, updateNeeded]);
+
+  // Um carregando só: conectando, entrando, ou esperando a entrada automática do link começar.
+  const joining =
+    !snapshot &&
+    (status === 'connecting' ||
+      entry.busy ||
+      (!!code && !autoTried && !entry.error && !entry.nick.open));
 
   if (authStatus === 'loading' || resuming) {
     return (
@@ -239,11 +249,8 @@ export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomG
           RECONECTANDO À SALA...
         </p>
       )}
-      {!snapshot && status === 'connecting' && <Loader label="Entrando na sala" />}
-      {!snapshot && status !== 'connecting' && !entry.busy && (
-        <Entry initialCode={code} game={lastGame ?? game} entry={entry} />
-      )}
-      {!snapshot && entry.busy && <Loader label="Entrando na sala" />}
+      {joining && <Loader label="Entrando na sala" />}
+      {!snapshot && !joining && <Entry initialCode={code} game={lastGame ?? game} entry={entry} />}
       <NicknameDialog nick={entry.nick} />
       <RoomConflictDialog
         open={!!entry.conflict}
