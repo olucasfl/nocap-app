@@ -582,11 +582,14 @@ export async function createRoom(game: RoomGame = 'color') {
 
 export async function joinRoom(code: string) {
   const wanted = code.trim().toUpperCase();
-  if (room && useRoom.getState().snapshot?.code === wanted) return; // já estou nela
+  if (room && (room.roomId === wanted || useRoom.getState().snapshot?.code === wanted)) return; // já estou nela
   assertFree(wanted);
   const options = entryOptions();
   await connect((c) => c.joinById(wanted, options));
 }
+
+/** O código da sala em que este aparelho está conectado (vale já na conexão, antes do primeiro estado). */
+export const currentRoomCode = (): string | null => room?.roomId ?? null;
 
 export function clearLastGame() {
   useRoom.setState({ lastGame: null });

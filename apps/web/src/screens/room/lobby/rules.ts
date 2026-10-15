@@ -67,10 +67,10 @@ export const GAME_OF: Record<RoomGame, string> = {
 
 /** Tamanhos do mapa do Checkpoint, em metros (o servidor tem a mesma tabela). */
 const SIZE_NAME: Record<string, string> = {
-  pequeno: 'Pequeno · 100 m',
-  medio: 'Médio · 250 m',
-  grande: 'Grande · 500 m',
-  gigante: 'Gigante · 1000 m',
+  pequeno: 'Pequeno · 50 m',
+  medio: 'Médio · 100 m',
+  grande: 'Grande · 250 m',
+  gigante: 'Gigante · 500 m',
 };
 
 /** Modos de cada jogo na sala, com uma linha que explica cada um. */
@@ -104,14 +104,14 @@ export const MODES: Record<RoomGame, { id: string; label: string; note: string }
   ],
   atravessa: [
     {
-      id: 'infinito',
-      label: 'Infinito',
-      note: 'Todo mundo no mesmo mapa, sem checkpoint e sem escuridão. Quem morre vira espectador. Vale a soma dos metros de cada rodada. Ficar parado por 12 s também tira você.',
-    },
-    {
       id: 'checkpoint',
       label: 'Checkpoint',
       note: 'Corrida até o fim do mapa. Quem morre volta ao último checkpoint (ou à largada). Vence quem chegar primeiro.',
+    },
+    {
+      id: 'infinito',
+      label: 'Infinito',
+      note: 'Todo mundo no mesmo mapa, sem checkpoint e sem escuridão. Quem morre vira espectador. Vale a soma dos metros de cada rodada. Ficar parado por 12 s também tira você.',
     },
   ],
   impostor: [
@@ -191,7 +191,7 @@ export function rulesFor(s: RoomSnapshot): RuleDef[] {
         current: cfg.size,
         format: (v) => SIZE_NAME[String(v)] ?? String(v),
         patch: (v) => ({ size: v }),
-        note: 'Checkpoint de 50 em 50 m até 200, de 75 em 75 até 500 e de 100 em 100 depois disso.',
+        note: `Checkpoints: ${(s.atravessa?.checkpoints ?? []).join(', ')} m. Quem morre volta ao último.`,
       });
     } else {
       out.push({

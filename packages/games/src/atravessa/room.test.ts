@@ -42,13 +42,14 @@ function play(
 }
 
 describe('checkpoints', () => {
-  it('de 50 em 50 até 200, de 75 em 75 até 500 e de 100 em 100 depois', () => {
-    expect(atravessaCheckpoints(100)).toEqual([50]);
-    expect(atravessaCheckpoints(250)).toEqual([50, 100, 150, 200]);
-    expect(atravessaCheckpoints(500)).toEqual([50, 100, 150, 200, 275, 350, 425]);
-    expect(atravessaCheckpoints(1000)).toEqual([
-      50, 100, 150, 200, 275, 350, 425, 500, 600, 700, 800, 900,
-    ]);
+  it('cada tamanho de mapa tem os seus checkpoints', () => {
+    expect(ATR_ROOM_SIZES).toEqual({ pequeno: 50, medio: 100, grande: 250, gigante: 500 });
+    expect(atravessaCheckpoints(50)).toEqual([25]);
+    expect(atravessaCheckpoints(100)).toEqual([25, 50]);
+    expect(atravessaCheckpoints(250)).toEqual([25, 50, 100, 150, 200]);
+    expect(atravessaCheckpoints(500)).toEqual([25, 50, 100, 150, 200, 250, 300, 350, 400]);
+    // um tamanho que não existe não tem checkpoint
+    expect(atravessaCheckpoints(77)).toEqual([]);
   });
 
   it('o fim do mapa nunca é checkpoint', () => {
@@ -59,7 +60,7 @@ describe('checkpoints', () => {
     for (let i = 0; i < 25; i++) {
       const w = new AtravessaWorld(`cp-${i}`);
       let prev = 0;
-      for (const cp of atravessaCheckpoints(1000)) {
+      for (const cp of atravessaCheckpoints(500)) {
         const row = w.restRowAtOrBelow(cp);
         expect(w.lane(row).kind).toBe('descanso');
         expect(row).toBeLessThanOrEqual(cp);
@@ -80,8 +81,8 @@ describe('regras da sala', () => {
       checkpoints: null,
     });
     const cp = atravessaRoomRules('checkpoint', 'grande');
-    expect(cp).toMatchObject({ darkness: false, idleKillTicks: null, finishRow: 500 });
-    expect(cp.checkpoints).toEqual(atravessaCheckpoints(500));
+    expect(cp).toMatchObject({ darkness: false, idleKillTicks: null, finishRow: 250 });
+    expect(cp.checkpoints).toEqual(atravessaCheckpoints(250));
   });
 
   it('o relógio do mundo vem da hora marcada da largada', () => {

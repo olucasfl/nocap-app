@@ -7,8 +7,11 @@ Status: **implementada (15/10/2026); falta jogar ao vivo com amigos e calibrar.*
 - **Mesmo mapa, mesma largada, todo mundo se vê, sem colisão entre jogadores** (as raposas se atravessam). Colisão fica para depois, mas o desenho já deixa o caminho curto.
 - **Dois modos**, escolhidos pelo líder no lobby:
   - **Infinito sem checkpoint**: o líder escolhe quantas rodadas (começa em 3). Todo mundo joga a mesma seed; **quem morre vira espectador** ("você morreu", nome de quem assiste no topo e duas setas para trocar). A rodada acaba quando todos morreram. **A nota é a soma dos metros andados em cada rodada.** Ranking em tempo real das distâncias durante a rodada. **Sem escuridão** neste modo.
-  - **Com checkpoint**: o líder escolhe o mapa (**pequeno 100 m, médio 250 m, grande 500 m, gigante 1000 m**). Quem morre **volta ao início ou ao último checkpoint**. Ranking ao vivo em cima e **timer em cima** (tempo jogado). Vence quem chega ao fim primeiro.
-- Checkpoints: **de 50 em 50 até 200 m, de 75 em 75 até 500 m, de 100 em 100 depois disso**. Mapas de 100 e 250 m: sempre de 50 em 50. O fim do mapa não é checkpoint.
+  - **Com checkpoint**: o líder escolhe o mapa (**pequeno 50 m, médio 100 m, grande 250 m, gigante 500 m**; mudou em 15/10/2026). Quem morre **volta ao início ou ao último checkpoint**. Ranking ao vivo em cima e **timer em cima** (tempo jogado). Vence quem chega ao fim primeiro.
+- Checkpoints (15/10/2026): **pequeno 25; médio 25 e 50; grande 25, 50, 100, 150 e 200; gigante 25, 50, 100, 150, 200, 250, 300, 350 e 400**. O fim do mapa não é checkpoint. Cada pessoa vê **quantos metros faltam para o próximo checkpoint** (ou para a chegada).
+- **O modo padrão da sala é o Checkpoint (médio, 100 m).** O ranking ao vivo e os metros mostram a **linha de agora**, não a maior: quem morre e volta ao checkpoint desce no ranking.
+- O endereço do navegador dentro da sala é sempre o link dela (`/sala/ABCD`), igual ao "copiar link".
+- O botão ATUALIZAR tenta o jeito normal e, se a página não recarregar em 4 s (ou na segunda tentativa), desregistra o service worker, limpa o cache e recarrega, para não ficar "atualizando" para sempre.
 - Até **8 pessoas** por sala. **Cada um escolhe a cor da sua raposa** (nenhuma cor é de duas pessoas) e o **nome aparece em cima da raposa**.
 - 1 metro = 1 linha. A nota de sala não entra no ranking global (regra 2 do projeto: só presets entram).
 

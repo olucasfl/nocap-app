@@ -7,6 +7,7 @@ import {
   CODE_RE,
   RoomConflictError,
   createRoom,
+  currentRoomCode,
   getGuestNickname,
   joinRoom,
   leaveRoom,
@@ -140,7 +141,9 @@ export function useRoomEntry() {
         if (attempt.kind === 'create') await createRoom(attempt.game);
         else await joinRoom(attempt.code);
         void queryClient.invalidateQueries({ queryKey: MY_ROOM_KEY });
-        await navigate({ to: '/sala' });
+        // o endereço do navegador já é o link da sala: dá para copiar dele e mandar, igual ao "copiar link"
+        const joined = currentRoomCode();
+        await navigate(joined ? { to: '/sala/$code', params: { code: joined }, replace: true } : { to: '/sala' });
         return true;
       } catch (e) {
         if (e instanceof RoomConflictError) {

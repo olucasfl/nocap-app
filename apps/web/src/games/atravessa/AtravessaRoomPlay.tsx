@@ -40,6 +40,8 @@ interface Sample {
   deaths: number;
   checkpoint: number;
   finishTick: number;
+  /** A linha de agora (cai quando a pessoa morre e volta ao checkpoint). */
+  row: number;
 }
 const F_ALIVE = 1;
 const F_FINISHED = 2;
@@ -109,6 +111,9 @@ interface Ui {
   spectators: number;
   over: { kind: 'dead' | 'respawn' | 'finished' | 'late'; end?: AtravessaEnd; ms?: number } | null;
   checkpoint: number;
+  /** Quantos metros faltam para o próximo checkpoint (ou a chegada); null fora do Checkpoint. */
+  toNext: number | null;
+  nextFinish: boolean;
 }
 
 const EMPTY_UI: Ui = {
@@ -120,6 +125,8 @@ const EMPTY_UI: Ui = {
   spectators: 0,
   over: null,
   checkpoint: 0,
+  toNext: null,
+  nextFinish: false,
 };
 
 /**
@@ -210,6 +217,7 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
           deaths: row[8]!,
           checkpoint: row[9]!,
           finishTick: row[10]!,
+          row: row[11] ?? row[7]!,
         });
         // só as últimas amostras ficam: bastam para a interpolação
         if (list.length > 12) list.shift();
@@ -268,16 +276,20 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
     const refreshUi = () => {
       const snap = snapRef.current;
       const wt = worldTick();
+      // a linha de agora (e não a maior): quem morre e volta ao checkpoint desce no ranking
+      const myRow = Math.max(0, Math.min(Math.floor(sim.y), sim.row + 1));
+      // o próximo ponto de parada: o próximo checkpoint que ainda não passou, ou a chegada
+      const nextStop = cfg.checkpoints.find((c) => c > sim.checkpointRow) ?? cfg.length ?? 0;
       const rows: RankRow[] = snap.members.map((m) => {
         if (m.id === meId) {
-          return { id: m.id, name: nameOf(m.id), color: colorOf(m.id), meters: sim.score, finished: sim.finished, alive: sim.alive, me: true };
+          return { id: m.id, name: nameOf(m.id), color: colorOf(m.id), meters: myRow, finished: sim.finished, alive: sim.alive, me: true };
         }
         const s = samples.get(m.id)?.at(-1);
         return {
           id: m.id,
           name: nameOf(m.id),
           color: colorOf(m.id),
-          meters: s?.best ?? 0,
+          meters: s?.row ?? 0,
           finished: !!(s && s.flags & F_FINISHED),
           alive: !!(s && s.flags & F_ALIVE),
           me: false,
@@ -294,7 +306,9 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
       const clockMs = sim.finished ? (sim.finishTick * 1000) / ATR_TPS : Math.max(0, serverNow() - startAt);
       const next: Ui = {
         count: wt < 0 ? Math.ceil(-wt / ATR_TPS) : wt < 45 ? 'go' : null,
-        meters: sim.score,
+        meters: myRow,
+        toNext: cfg.mode === 'checkpoint' && !sim.finished ? Math.max(0, nextStop - myRow) : null,
+        nextFinish: nextStop === cfg.length,
         clock: raceTime(clockMs),
         rank: rows,
         watching: watched ? { id: watched.id, name: watched.name, color: watched.color } : null,
@@ -496,6 +510,13 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
               {ui.checkpoint > 0 ? ` · CHECKPOINT ${ui.checkpoint}` : ''}
             </small>
           )}
+        </div>
+      )}
+
+      {checkpointMode && ui.toNext !== null && (
+        <div className="atr-next" aria-label="Metros até o próximo checkpoint">
+          <span className="mono">{ui.nextFinish ? 'ATÉ A CHEGADA' : 'ATÉ O CHECKPOINT'}</span>
+          <b>{ui.toNext} m</b>
         </div>
       )}
 

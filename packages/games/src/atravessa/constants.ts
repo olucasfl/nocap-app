@@ -152,7 +152,7 @@ export const ATR_ROOM_MAX_PLAYERS = 8;
 export type AtravessaRoomMode = 'infinito' | 'checkpoint';
 export const ATR_ROOM_MODES: readonly AtravessaRoomMode[] = ['infinito', 'checkpoint'];
 /** Tamanhos de mapa do checkpoint, em metros. */
-export const ATR_ROOM_SIZES = { pequeno: 100, medio: 250, grande: 500, gigante: 1000 } as const;
+export const ATR_ROOM_SIZES = { pequeno: 50, medio: 100, grande: 250, gigante: 500 } as const;
 export type AtravessaRoomSize = keyof typeof ATR_ROOM_SIZES;
 export const ATR_ROOM_SIZE_IDS = Object.keys(ATR_ROOM_SIZES) as AtravessaRoomSize[];
 /** Quem fica parado tanto tempo no Infinito (que não tem escuridão) é engolido. */
@@ -180,17 +180,24 @@ export const ATR_ROOM_COLORS: readonly { name: string; hex: string }[] = [
 ];
 
 /**
- * As linhas dos checkpoints de um mapa: de 50 em 50 até 200, de 75 em 75 até 500 e de 100 em 100
- * depois disso. A linha do fim do mapa não é checkpoint. (Mapas de 100 e 250 ficam só com os de 50.)
+ * Os checkpoints de cada tamanho de mapa (pedido do Lucas, 15/10/2026). A linha do fim do mapa não é
+ * checkpoint.
+ * - pequeno (50 m): 25
+ * - médio (100 m): 25 e 50
+ * - grande (250 m): 25, 50, 100, 150 e 200
+ * - gigante (500 m): 25, 50, 100, 150, 200, 250, 300, 350 e 400
  */
+export const ATR_ROOM_CHECKPOINTS: Record<AtravessaRoomSize, readonly number[]> = {
+  pequeno: [25],
+  medio: [25, 50],
+  grande: [25, 50, 100, 150, 200],
+  gigante: [25, 50, 100, 150, 200, 250, 300, 350, 400],
+};
+
+/** Os checkpoints do mapa que tem `length` metros (lista vazia se não for um dos tamanhos da sala). */
 export function atravessaCheckpoints(length: number): number[] {
-  const out: number[] = [];
-  let row = 0;
-  for (;;) {
-    row += row < 200 ? 50 : row < 500 ? 75 : 100;
-    if (row >= length) return out;
-    out.push(row);
-  }
+  const size = ATR_ROOM_SIZE_IDS.find((id) => ATR_ROOM_SIZES[id] === length);
+  return size ? [...ATR_ROOM_CHECKPOINTS[size]] : [];
 }
 
 /** Limites que o servidor aceita. */

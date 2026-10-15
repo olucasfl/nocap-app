@@ -298,3 +298,37 @@
     display: none;
   }
 }
+
+/* quantos metros faltam para o próximo checkpoint (ou a chegada) */
+.atr-next {
+  position: absolute;
+  top: 78px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 6px 16px;
+  min-width: 118px;
+  background: var(--green);
+  color: var(--on-accent);
+  border: var(--border);
+  border-radius: 14px;
+  box-shadow: 3px 3px 0 var(--ink);
+  pointer-events: none;
+}
+.atr-next span {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+.atr-next b {
+  font: 900 26px/1 var(--font-display);
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 480px) {
+  .atr-next {
+    top: 132px;
+  }
+}

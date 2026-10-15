@@ -37,8 +37,8 @@ function lobby(names = ['ana', 'bia']) {
 
 function started(opts: { names?: string[]; mode?: AtravessaRoomMode; rounds?: number; size?: string } = {}) {
   const { room, clock } = lobby(opts.names);
-  const cfg: Record<string, unknown> = {};
-  if (opts.mode) cfg.mode = opts.mode;
+  // os testes de rodadas usam o Infinito; o modo padrão da sala é o Checkpoint
+  const cfg: Record<string, unknown> = { mode: opts.mode ?? 'infinito' };
   if (opts.rounds) cfg.rounds = opts.rounds;
   if (opts.size) cfg.size = opts.size;
   if (Object.keys(cfg).length) room.configure('ana', cfg as never);
@@ -101,21 +101,22 @@ function drive(
 }
 
 describe('AtravessaRoomEngine · lobby', () => {
-  it('começa no Infinito com 3 rodadas, é do jogo atravessa e não guarda histórico', () => {
+  it('o modo padrão é o Checkpoint de 100 m; a sala é do jogo atravessa e não guarda histórico', () => {
     const { room } = lobby();
     const s = room.snapshot('ana');
     expect(s.game).toBe('atravessa');
-    expect(s.mode).toBe('infinito');
-    expect(s.settings).toMatchObject({ rounds: 3, size: 'medio' });
+    expect(s.mode).toBe('checkpoint');
+    expect(s.settings).toMatchObject({ rounds: 1, size: 'medio' });
     expect(s.maxPlayers).toBe(8);
     expect(room.persistable).toBe(false);
-    expect((s as unknown as { atravessa: { mode: string } }).atravessa.mode).toBe('infinito');
+    const extra = (s as unknown as { atravessa: { mode: string; length: number; checkpoints: number[] } }).atravessa;
+    expect(extra).toMatchObject({ mode: 'checkpoint', length: 100, checkpoints: [25, 50] });
   });
 
   it('só o líder muda as regras; Infinito de 1 a 10 rodadas', () => {
     const { room } = lobby();
     expect(() => room.configure('bia', { rounds: 5 })).toThrow(RoomError);
-    room.configure('ana', { rounds: 10 });
+    room.configure('ana', { mode: 'infinito', rounds: 10 });
     expect(room.snapshot().settings.rounds).toBe(10);
     expect(() => room.configure('ana', { rounds: 11 })).toThrow(RoomError);
     expect(() => room.configure('ana', { rounds: 0 })).toThrow(RoomError);
@@ -125,11 +126,17 @@ describe('AtravessaRoomEngine · lobby', () => {
 
   it('o Checkpoint é uma corrida só, com o tamanho do mapa; voltar ao Infinito volta às 3 rodadas', () => {
     const { room } = lobby();
+    const sizes = { pequeno: [50, [25]], medio: [100, [25, 50]], grande: [250, [25, 50, 100, 150, 200]] } as const;
+    for (const [size, [length, cps]] of Object.entries(sizes)) {
+      room.configure('ana', { size } as never);
+      const e = (room.snapshot() as unknown as { atravessa: { length: number; checkpoints: number[] } }).atravessa;
+      expect([e.length, e.checkpoints]).toEqual([length, cps]);
+    }
     room.configure('ana', { mode: 'checkpoint', size: 'gigante' } as never);
     expect(room.snapshot().settings).toMatchObject({ rounds: 1, size: 'gigante' });
     const extra = (room.snapshot() as unknown as { atravessa: { length: number; checkpoints: number[] } }).atravessa;
-    expect(extra.length).toBe(1000);
-    expect(extra.checkpoints).toEqual([50, 100, 150, 200, 275, 350, 425, 500, 600, 700, 800, 900]);
+    expect(extra.length).toBe(500);
+    expect(extra.checkpoints).toEqual([25, 50, 100, 150, 200, 250, 300, 350, 400]);
     expect(() => room.configure('ana', { rounds: 3 })).toThrow(RoomError);
     room.configure('ana', { mode: 'infinito' });
     expect(room.snapshot().settings).toMatchObject({ rounds: 3, size: 'gigante' });
@@ -274,7 +281,7 @@ describe('AtravessaRoomEngine · relatos', () => {
     const pos = room.positions();
     expect(pos).toHaveLength(2);
     const ana = pos.find((p) => p[0] === 0)!;
-    expect(ana).toHaveLength(11);
+    expect(ana).toHaveLength(12);
     expect(ana[1]).toBe(60);
     expect(ana[2]).toBe(1); // um passo para a direita
     expect(ana[6]! & POS_ALIVE).toBe(POS_ALIVE);
@@ -446,6 +453,26 @@ describe('AtravessaRoomEngine · Checkpoint', () => {
     }).atravessa.results;
     expect(results.bia).toMatchObject({ finished: true, ms: Math.round((3500 * 1000) / 60) });
     expect(results.caio).toMatchObject({ finished: false, ms: null });
+  });
+
+  it('o ranking ao vivo usa a linha de agora: quem morre e volta ao checkpoint desce', () => {
+    const { room, clock } = started({ mode: 'checkpoint', size: 'pequeno' });
+    clock.set(startAt());
+    room.tick();
+    const ana = (room as unknown as {
+      runs: Map<string, { mirror: { sim: { row: number; best: number; die: (e: string) => void; tick: number } } }>;
+    }).runs.get('ana')!.mirror.sim;
+    ana.row = 40;
+    ana.best = 40;
+    const row = () => room.positions().find((p) => p[0] === 0)!;
+    expect(row()[11]).toBe(40);
+    expect(row()[7]).toBe(40);
+    // morreu: a maior linha continua 40, mas a de agora cai para a largada ao voltar
+    ana.die('veiculo');
+    clock.set(msAt(ana.tick + 80));
+    expect(room.report('ana', ana.tick + 80, [], 0)).not.toBeNull();
+    expect(row()[7]).toBe(40);
+    expect(row()[11]).toBe(0);
   });
 
   it('a posição inclui o fim e o checkpoint de cada um', () => {

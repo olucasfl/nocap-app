@@ -10,6 +10,43 @@ import './update-prompt.css';
 
 /** De quanto em quanto tempo o app procura versão nova enquanto está aberto. */
 const CHECK_EVERY_MS = 60_000;
+/** Tentativas de atualizar nesta aba (zera depois de um tempo sem aviso): impede o "atualizando" sem fim. */
+const TRIES_KEY = 'nocap-update-tries';
+/** Se a atualização normal não recarregou a página neste tempo, força. */
+const FORCE_AFTER_MS = 4000;
+const CALM_AFTER_MS = 20_000;
+
+/**
+ * Atualização à força: desregistra o service worker, apaga o cache e recarrega. Sem isso a versão velha
+ * podia ficar presa (outra aba segurando o worker antigo, por exemplo) e o aviso voltava para sempre.
+ */
+async function hardReload() {
+  try {
+    const regs = (await navigator.serviceWorker?.getRegistrations?.()) ?? [];
+    await Promise.all(regs.map((r) => r.unregister()));
+    const keys = (await globalThis.caches?.keys?.()) ?? [];
+    await Promise.all(keys.map((k) => globalThis.caches.delete(k)));
+  } catch {
+    /* sem suporte: recarrega mesmo assim */
+  }
+  window.location.reload();
+}
+
+const readTries = () => {
+  try {
+    return Number(sessionStorage.getItem(TRIES_KEY) ?? 0) || 0;
+  } catch {
+    return 0;
+  }
+};
+const writeTries = (n: number | null) => {
+  try {
+    if (n === null) sessionStorage.removeItem(TRIES_KEY);
+    else sessionStorage.setItem(TRIES_KEY, String(n));
+  } catch {
+    /* sem storage */
+  }
+};
 
 /**
  * Versão nova: a tela fica travada por cima do app até a pessoa tocar em ATUALIZAR. Jogar com a
@@ -35,6 +72,22 @@ export function UpdatePrompt() {
     },
   });
   const [updating, setUpdating] = useState(false);
+  // um tempo sem aviso de versão nova: a atualização deu certo, zera a conta de tentativas
+  useEffect(() => {
+    if (needRefresh) return;
+    const t = window.setTimeout(() => writeTries(null), CALM_AFTER_MS);
+    return () => window.clearTimeout(t);
+  }, [needRefresh]);
+  const apply = () => {
+    setUpdating(true);
+    const tries = readTries();
+    writeTries(tries + 1);
+    // a segunda tentativa seguida já vai direto à força; a primeira tenta o jeito normal e, se a
+    // página não recarregar, força depois de alguns segundos
+    if (tries >= 1) return void hardReload();
+    void updateServiceWorker(true);
+    window.setTimeout(() => void hardReload(), FORCE_AFTER_MS);
+  };
   const pathname = useRouterState({ router, select: (s) => s.location.pathname });
   const inRoom = useRoom((s) => s.snapshot !== null);
   const roomPhase = useRoom((s) => s.snapshot?.phase);
@@ -60,10 +113,7 @@ export function UpdatePrompt() {
           className="btn alt"
           data-sfx="start"
           disabled={updating}
-          onClick={() => {
-            setUpdating(true);
-            void updateServiceWorker(true);
-          }}
+          onClick={apply}
         >
           {updating ? 'Atualizando...' : 'Atualizar'}
         </button>

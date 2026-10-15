@@ -78,8 +78,6 @@ const VOICES: Record<AtravessaBiome, Voice> = {
   },
 };
 
-const semi = (root: number, n: number) => root * Math.pow(2, n / 12);
-
 export function createAtravessaAudio(): AtravessaAudio | null {
   const kit = audioKit();
   if (!kit) return null;

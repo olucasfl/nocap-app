@@ -73,7 +73,7 @@ const ENTRY_LEAD: Record<RoomGame, string> = {
   party:
     'Jogue Mix Nocap com amigos: micro-desafios rápidos e minijogos grandes, todos jogando ao mesmo tempo.',
   atravessa:
-    'Atravesse com os amigos no mesmo mapa, cada um com a sua cor: Infinito (vale a soma dos metros das rodadas) ou Checkpoint (corrida até o fim). Até 8 pessoas.',
+    'Atravesse com os amigos no mesmo mapa, cada um com a sua cor: Checkpoint (corrida até o fim, voltando ao último checkpoint ao morrer) ou Infinito (vale a soma dos metros das rodadas). Até 8 pessoas.',
 };
 
 function Entry({
@@ -164,11 +164,15 @@ export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomG
   // Saiu da sala (por conta própria): volta para a página do jogo dela, na aba de amigos.
   // Se houve um aviso (expulso, sala encerrada), fica na entrada para a pessoa ler.
   useEffect(() => {
-    if (snapshot || code || !lastGame || message) return;
+    if (snapshot || !lastGame || message) return;
     if (status !== 'closed' && status !== 'idle') return;
     clearLastGame();
     void navigate({ to: GAME_PAGE[lastGame], search: { aba: 'friends' } });
-  }, [snapshot, code, lastGame, message, status, navigate]);
+  }, [snapshot, lastGame, message, status, navigate]);
+  // Dentro da sala o endereço é sempre o link dela (/sala/ABCD), para copiar do navegador e mandar.
+  useEffect(() => {
+    if (snapshot && !code) void navigate({ to: '/sala/$code', params: { code: snapshot.code }, replace: true });
+  }, [snapshot, code, navigate]);
   useEffect(() => {
     if (inRoom) sfx.roomJoin();
   }, [inRoom]);
@@ -186,7 +190,8 @@ export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomG
   useEffect(() => {
     // com versão nova esperando, o aviso de atualizar vem antes de entrar (o link continua valendo depois)
     if (!code || resuming || snapshot || autoJoined.current || updateNeeded) return;
-    if (status === 'connecting' || status === 'reconnecting') return;
+    // já conectada (acabou de entrar e o primeiro estado ainda não chegou): não entra de novo
+    if (status === 'connecting' || status === 'reconnecting' || status === 'connected') return;
     autoJoined.current = true;
     setAutoTried(true);
     void entry.join(code);

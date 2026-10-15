@@ -37,13 +37,19 @@ interface Run {
   lastReportAt: number;
 }
 
-/** Posição de um herói no fluxo `pos`: [slot, tick, x, y, pulo, direção, flags, linha, mortes, checkpoint, tick do fim]. */
+/**
+ * Posição de um herói no fluxo `pos`: [slot, tick, x, y, pulo, direção, flags, maior linha, mortes,
+ * último checkpoint, tick do fim, linha de agora]. O ranking ao vivo usa a linha de agora: quem morre e
+ * volta ao checkpoint desce no ranking.
+ */
 export type AtravessaPos = number[];
 export const POS_ALIVE = 1;
 export const POS_FINISHED = 2;
 export const POS_STALLED = 4;
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
+/** A linha em que o herói está agora (a de chegada do pulo em andamento ainda não conta), nunca abaixo de zero. */
+const nowRow = (row: number, y: number) => Math.max(0, Math.min(Math.floor(y), row + 1));
 
 /**
  * O Atravessa! em sala (spec 031). Todo mundo joga o MESMO mapa e começa junto, na hora marcada pelo
@@ -74,8 +80,9 @@ export class AtravessaRoomEngine extends ColorRoomEngine {
 
   constructor(opts: EngineOptions) {
     super({ ...opts, maxPlayers: ATR_ROOM_MAX_PLAYERS });
-    this.mode = 'infinito';
-    this.settings = { rounds: DEFAULT_ROUNDS, size: 'medio' } satisfies AtravessaRoomSettings;
+    // o modo padrão é a corrida com checkpoint (pedido do Lucas)
+    this.mode = 'checkpoint';
+    this.settings = { rounds: 1, size: 'medio' } satisfies AtravessaRoomSettings;
   }
 
   private get cfg(): AtravessaRoomSettings {
@@ -325,6 +332,7 @@ export class AtravessaRoomEngine extends ColorRoomEngine {
         v.deaths,
         v.checkpoint,
         v.finished ? sim.finishTick : 0,
+        nowRow(sim.row, v.y),
       ]);
     }
     return out;
@@ -349,7 +357,7 @@ export class AtravessaRoomEngine extends ColorRoomEngine {
       const sim = this.runs.get(id)?.mirror.sim;
       if (!sim) return [2, 0, 0];
       if (sim.finished) return [0, sim.finishTick, 0];
-      return [1, -sim.best, sim.deaths];
+      return [1, -Math.max(0, sim.row), sim.deaths];
     };
     const cmp = (a: number[], b: number[]) => {
       for (let i = 0; i < Math.max(a.length, b.length); i++) {
@@ -365,7 +373,9 @@ export class AtravessaRoomEngine extends ColorRoomEngine {
     return rows.map((r, i) => {
       if (i === 0 || cmp(r.k, rows[i - 1]!.k) !== 0) placement = i + 1;
       const meters =
-        this.roomMode === 'infinito' ? this.totalMeters(r.m.id) : (this.runs.get(r.m.id)?.mirror.sim.best ?? 0);
+        this.roomMode === 'infinito'
+          ? this.totalMeters(r.m.id)
+          : Math.max(0, this.runs.get(r.m.id)?.mirror.sim.row ?? 0);
       return {
         userId: r.m.id,
         username: r.m.username,
@@ -382,7 +392,7 @@ export class AtravessaRoomEngine extends ColorRoomEngine {
     for (const m of this.members.values()) {
       const sim = this.runs.get(m.id)?.mirror.sim;
       out[m.id] = {
-        meters: this.roomMode === 'infinito' ? this.totalMeters(m.id) : (sim?.best ?? 0),
+        meters: this.roomMode === 'infinito' ? this.totalMeters(m.id) : Math.max(0, sim?.row ?? 0),
         ms: sim?.finished ? Math.round((sim.finishTick * 1000) / ATR_TPS) : null,
         deaths: sim?.deaths ?? 0,
         finished: !!sim?.finished,
