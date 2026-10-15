@@ -7,9 +7,20 @@ describe('quando o aviso de versão nova pode aparecer', () => {
       expect(canShowUpdate(p, false), p).toBe(true);
   });
 
-  it('nunca dentro de jogo, sala, lobby ou pódio', () => {
-    for (const p of ['/cor', '/tempo', '/eco', '/nocap', '/sala', '/sala/ABCD'])
+  it('nunca dentro de um jogo', () => {
+    for (const p of ['/cor', '/tempo', '/eco', '/nocap', '/atravessa'])
       expect(canShowUpdate(p, false), p).toBe(false);
+  });
+
+  it('quem chega a uma sala sem estar nela vê o aviso antes de qualquer coisa', () => {
+    for (const p of ['/sala', '/sala/ABCD', '/sala/ABCD/'])
+      expect(canShowUpdate(p, false), p).toBe(true);
+  });
+
+  it('já dentro da sala: aparece no lobby, mas nunca no meio da partida nem no pódio', () => {
+    expect(canShowUpdate('/sala/ABCD', true, 'lobby')).toBe(true);
+    for (const phase of ['show', 'play', 'pick', 'reveal', 'final', 'micro', 'big'])
+      expect(canShowUpdate('/sala/ABCD', true, phase), phase).toBe(false);
   });
 
   it('nem em tela calma enquanto a conta está conectada a uma sala', () => {

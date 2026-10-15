@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouterState } from '@tanstack/react-router';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { router } from '@/router';
 import { canShowUpdate } from '@/lib/update-gate';
 import { useRoom } from '@/lib/rooms';
+import { useUpdateNeeded } from '@/lib/update-state';
 import { usePopupSlot } from '@/lib/popups';
 import './update-prompt.css';
 
@@ -36,8 +37,12 @@ export function UpdatePrompt() {
   const [updating, setUpdating] = useState(false);
   const pathname = useRouterState({ router, select: (s) => s.location.pathname });
   const inRoom = useRoom((s) => s.snapshot !== null);
+  const roomPhase = useRoom((s) => s.snapshot?.phase);
+  useEffect(() => {
+    useUpdateNeeded.setState({ needed: needRefresh });
+  }, [needRefresh]);
 
-  const wanted = needRefresh && canShowUpdate(pathname, inRoom);
+  const wanted = needRefresh && canShowUpdate(pathname, inRoom, roomPhase);
   // O aviso de versão nova é o mais importante: vai antes de qualquer outro popup.
   const myTurn = usePopupSlot('update', wanted, 0);
   if (!wanted || !myTurn) return null;

@@ -12,6 +12,7 @@ import { useRoomEntry } from '@/lib/my-room';
 import { useAuth } from '@/lib/auth';
 import { sfx } from '@/lib/sfx';
 import { useOnline } from '@/lib/network';
+import { useUpdateNeeded } from '@/lib/update-state';
 import { clearLastGame, resumeRoom, useRoom, type RoomGame } from '@/lib/rooms';
 import { ChatDock } from '@/components/Chat';
 import { Final } from './room/Final';
@@ -155,6 +156,7 @@ export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomG
   const entry = useRoomEntry();
   const [resuming, setResuming] = useState(true);
   const autoJoined = useRef(false);
+  const updateNeeded = useUpdateNeeded((s) => s.needed);
   const inRoom = !!snapshot;
 
   // Saiu da sala (por conta própria): volta para a página do jogo dela, na aba de amigos.
@@ -180,11 +182,12 @@ export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomG
   // Link ou convite (/sala/ABCD): entra direto, sem digitar o código. Uma tentativa automática;
   // se falhar, a tela mostra o motivo e o botão "Tentar de novo".
   useEffect(() => {
-    if (!code || resuming || snapshot || autoJoined.current) return;
+    // com versão nova esperando, o aviso de atualizar vem antes de entrar (o link continua valendo depois)
+    if (!code || resuming || snapshot || autoJoined.current || updateNeeded) return;
     if (status === 'connecting' || status === 'reconnecting') return;
     autoJoined.current = true;
     void entry.join(code);
-  }, [code, resuming, snapshot, status, entry]);
+  }, [code, resuming, snapshot, status, entry, updateNeeded]);
 
   if (authStatus === 'loading' || resuming) {
     return (
