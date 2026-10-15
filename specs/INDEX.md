@@ -27,7 +27,7 @@
 | 022 | [Block Towers (empilhar com física)](022-block-towers.md) | 6 | modo 3 vidas (solo) implementado, com ranking/histórico/perfil (servidor refaz a física); falta jogar e calibrar |
 | 023 | [Convidado joga tudo (sem conta, nada é salvo)](023-convidado-joga-tudo.md) | 2 | implementada: solo sem conta, popup, aviso de não salvo e salas com apelido; falta jogar ao vivo |
 | 024 | [Retomar partida (Block Classic)](024-retomar-partida.md) | 6 | implementada no Block Classic; falta jogar ao vivo |
-| 025 | [Block Towers: câmera final e modos online](025-block-towers-online.md) | 6 | câmera final implementada; online (Corrida e Petrificar) só registrado |
+| 025 | [Block Towers: câmera final e modos online](025-block-towers-online.md) | 6 | câmera final implementada; online com desenho e medição de CPU feitos, falta construir |
 | 026 | [Sinal Vermelho 2 (reforma completa)](026-sinal-vermelho-2.md) | 6 | substituída pela 028 (Sinal removido) |
 | 027 | [Sinal: arremessadores, perseguidores, Vigia apressado e itens](027-sinal-perigos.md) | 6 | substituída pela 028 (Sinal removido) |
 | 028 | [Atravessa! (substitui o Sinal Vermelho, estilo Crossy Road em 3D)](028-atravessa.md) | 6 | etapas 1 a 5 implementadas (núcleo, servidor, tela, biomas e som, troca no app); falta jogar e calibrar |
