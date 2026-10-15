@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import {
   ATR_TPS,
   AtravessaSim,
-  AtravessaWorld,
   atravessaRoomRules,
+  atravessaRoomWorld,
   atravessaStartCol,
   laneBiome,
   trainState,
@@ -190,7 +190,7 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
     scene.setHeroColor(colorOf(meId));
     scene.setRemotes(first.members.filter((m) => m.id !== meId).map((m) => ({ id: m.id, color: colorOf(m.id) })));
 
-    const world = new AtravessaWorld(seed);
+    const world = atravessaRoomWorld(seed, cfg.mode, cfg.size);
     const sim = new AtravessaSim(seed, world, atravessaRoomRules(cfg.mode, cfg.size, slotOf(meId)));
     const audio = createAtravessaAudio();
     const worldTick = () => Math.floor(((serverNow() - startAt) * ATR_TPS) / 1000);

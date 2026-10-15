@@ -255,8 +255,15 @@ export class AtravessaWorld {
   private corridors: number[] = [];
   private backLanes = new Map<number, Lane>();
 
-  constructor(readonly seed: string) {
+  /** Linhas que viram descanso livre, sem perigo nem árvore (as zonas seguras dos checkpoints da sala). */
+  private safeRows: ReadonlySet<number>;
+
+  constructor(
+    readonly seed: string,
+    opts: { safeRows?: Iterable<number> } = {},
+  ) {
     this.rng = createRng(`${seed}:atravessa`);
+    this.safeRows = new Set(opts.safeRows ?? []);
   }
 
   /** O bioma (ou a transição) de uma linha desta partida. */
@@ -383,6 +390,11 @@ export class AtravessaWorld {
     if (row === 0) {
       this.corridors[row] = 0;
       return { ...EMPTY_LANE(row), biome: info };
+    }
+    if (this.safeRows.has(row)) {
+      // zona segura de checkpoint: descanso livre, sem sorteio (o trecho em andamento continua depois dela)
+      this.corridors[row] = this.corridor;
+      return { ...EMPTY_LANE(row), biome: info, kind: 'descanso' };
     }
     if (this.segLeft <= 0) {
       this.prevSegKind = row === 1 ? 'descanso' : this.segKind;

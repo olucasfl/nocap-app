@@ -12,7 +12,7 @@ import {
   type Dir,
 } from './constants';
 import { AtravessaSim, type AtravessaInput, type AtravessaRules } from './sim';
-import type { AtravessaWorld } from './world';
+import { AtravessaWorld } from './world';
 
 /** Quantas entradas cabem num único relato do aparelho. */
 export const ATR_REPORT_MAX_INPUTS = 64;
@@ -39,6 +39,24 @@ export function atravessaRoomRules(
   }
   return { darkness: false, idleKillTicks: ATR_IDLE_KILL_TICKS, finishRow: null, checkpoints: null, startX };
 }
+
+/**
+ * As linhas que têm de ser zona segura numa sala de Checkpoint: cada checkpoint e as duas linhas ao
+ * redor, e a chegada com a linha de trás. Descanso livre: ao morrer, quem volta nunca cai num perigo.
+ */
+export function atravessaSafeRows(mode: AtravessaRoomMode, size: AtravessaRoomSize): number[] {
+  if (mode !== 'checkpoint') return [];
+  const rows = new Set<number>();
+  for (const cp of atravessaCheckpoints(ATR_ROOM_SIZES[size])) for (const r of [cp - 1, cp, cp + 1]) rows.add(r);
+  const finish = ATR_ROOM_SIZES[size];
+  rows.add(finish - 1);
+  rows.add(finish);
+  return [...rows].filter((r) => r >= 1).sort((a, b) => a - b);
+}
+
+/** O mundo de uma rodada da sala: servidor e aparelhos chamam isto com os mesmos argumentos. */
+export const atravessaRoomWorld = (seed: string, mode: AtravessaRoomMode, size: AtravessaRoomSize) =>
+  new AtravessaWorld(seed, { safeRows: atravessaSafeRows(mode, size) });
 
 /** O tick do mundo no instante `now`, para uma largada marcada em `startAt` (ms, relógio do servidor). */
 export const atravessaTickAt = (now: number, startAt: number): number =>

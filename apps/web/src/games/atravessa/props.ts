@@ -252,11 +252,13 @@ export function buildGate(kind: GateKind, label: string, floorTop: number): THRE
     g.add(box(1, 0.03, 0.12, (i + ATR_HALF_COLS) % 2 === 0 ? main : alt, i, floorTop + 0.02, -0.44, { cast: false }));
     g.add(box(1, 0.03, 0.12, (i + ATR_HALF_COLS) % 2 === 0 ? alt : main, i, floorTop + 0.02, 0.44, { cast: false }));
   }
+  // o checkpoint é minimalista: só a faixa no chão, sem postes, placa nem viga (não tapa a visão)
+  if (kind === 'checkpoint') return model(null, () => g);
   for (const x of [-(ATR_HALF_COLS + 1.1), ATR_HALF_COLS + 1.1]) {
     g.add(box(0.2, 2.6, 0.2, 0x2a2a30, x, floorTop + 1.3, 0));
     g.add(box(0.5, 0.34, 0.06, main, x + (x < 0 ? 0.3 : -0.3), floorTop + 2.35, 0, { cast: false }));
   }
-  const label3d = makeLabel(label, '#111111', kind === 'recorde' ? '#ffd23f' : kind === 'checkpoint' ? '#a8ecc8' : kind === 'chegada' ? '#ffb3b8' : '#f4f4ef');
+  const label3d = makeLabel(label, '#111111', kind === 'recorde' ? '#ffd23f' : kind === 'chegada' ? '#ffb3b8' : '#f4f4ef');
   label3d.position.set(0, floorTop + 3.1, 0);
   g.add(label3d);
   g.add(box(ATR_HALF_COLS * 2 + 2.4, 0.16, 0.12, main, 0, floorTop + 2.6, 0, { cast: false }));

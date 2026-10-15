@@ -8,9 +8,10 @@ import {
   ATR_ROOM_TICK_SLACK,
   ATR_TPS,
   AtravessaMirror,
-  AtravessaWorld,
+  type AtravessaWorld,
   atravessaCheckpoints,
   atravessaRoomRules,
+  atravessaRoomWorld,
   atravessaTickAt,
   type AtravessaRoomMode,
   type AtravessaRoomSize,
@@ -193,7 +194,7 @@ export class AtravessaRoomEngine extends ColorRoomEngine {
     this.locked = new Set();
     this.forceEnd = false;
     const seed = this.roundSeed();
-    this.world = new AtravessaWorld(seed);
+    this.world = atravessaRoomWorld(seed, this.roomMode, this.cfg.size);
     this.startAt = this.now() + ATR_ROOM_COUNTDOWN_MS;
     this.runs.clear();
     this.slots.clear();

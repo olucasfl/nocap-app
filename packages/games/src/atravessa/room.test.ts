@@ -10,6 +10,8 @@ import {
   AtravessaWorld,
   atravessaCheckpoints,
   atravessaRoomRules,
+  atravessaRoomWorld,
+  atravessaSafeRows,
   atravessaTickAt,
   type AtravessaInput,
   type AtravessaRules,
@@ -56,18 +58,44 @@ describe('checkpoints', () => {
     for (const len of Object.values(ATR_ROOM_SIZES)) expect(atravessaCheckpoints(len)).not.toContain(len);
   });
 
-  it('o ponto de renascer é uma faixa de descanso e fica depois do checkpoint anterior', () => {
-    for (let i = 0; i < 25; i++) {
-      const w = new AtravessaWorld(`cp-${i}`);
-      let prev = 0;
-      for (const cp of atravessaCheckpoints(500)) {
-        const row = w.restRowAtOrBelow(cp);
-        expect(w.lane(row).kind).toBe('descanso');
-        expect(row).toBeLessThanOrEqual(cp);
-        expect(row).toBeGreaterThan(prev);
-        expect(w.lane(row).blocked).not.toContain(w.corridorAt(row));
-        prev = cp;
+  it('o checkpoint é sempre zona segura: descanso livre no próprio checkpoint e ao redor, e renasce nele', () => {
+    for (const size of ['pequeno', 'medio', 'grande', 'gigante'] as const) {
+      for (let i = 0; i < 12; i++) {
+        const w = atravessaRoomWorld(`cp-${size}-${i}`, 'checkpoint', size);
+        let prev = 0;
+        for (const cp of atravessaCheckpoints(ATR_ROOM_SIZES[size])) {
+          for (const r of [cp - 1, cp, cp + 1]) {
+            expect(w.lane(r).kind, `${size} linha ${r}`).toBe('descanso');
+            expect(w.lane(r).blocked, `${size} linha ${r}`).toEqual([]);
+          }
+          // renasce exatamente no checkpoint (não uns 15 metros para trás)
+          expect(w.restRowAtOrBelow(cp)).toBe(cp);
+          expect(cp).toBeGreaterThan(prev);
+          prev = cp;
+        }
+        // a chegada também é zona segura
+        const end = ATR_ROOM_SIZES[size];
+        expect(w.lane(end).kind).toBe('descanso');
+        expect(w.lane(end - 1).kind).toBe('descanso');
       }
+    }
+  });
+
+  it('no Infinito o mundo não muda: não há zonas forçadas', () => {
+    expect(atravessaSafeRows('infinito', 'medio')).toEqual([]);
+    const a = atravessaRoomWorld('mesmo', 'infinito', 'medio');
+    const b = new AtravessaWorld('mesmo');
+    for (let r = 0; r < 120; r++) expect(a.lane(r).kind).toBe(b.lane(r).kind);
+  });
+
+  it('o mundo com zonas seguras continua passável e igual para quem o monta duas vezes', () => {
+    const one = atravessaRoomWorld('igual', 'checkpoint', 'grande');
+    const two = atravessaRoomWorld('igual', 'checkpoint', 'grande');
+    for (let r = 0; r < 260; r++) {
+      const [x, y] = [one.lane(r), two.lane(r)];
+      expect(x.kind).toBe(y.kind);
+      expect(x.blocked).toEqual(y.blocked);
+      if (x.kind === 'descanso') expect(x.blocked).not.toContain(one.corridorAt(r));
     }
   });
 });
