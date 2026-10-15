@@ -31,6 +31,8 @@ export interface AtravessaAudio {
   rev(): void;
   /** Cruzou um marco (a cada 50 linhas, depois a cada 100): um sino suave. */
   milestone(): void;
+  /** Passou por um checkpoint da sala: arpejo brilhante subindo, com um brilho de ar. */
+  checkpoint(): void;
   /** Passou do recorde: três notas subindo. */
   record(): void;
   /** Um bipe do aviso da varrida (a tela chama mais rápido conforme o perigo se aproxima). */
@@ -318,6 +320,15 @@ export function createAtravessaAudio(): AtravessaAudio | null {
       // um sino suave de duas notas
       pluck(784, t, 0.12);
       pluck(1175, t + 0.12, 0.1);
+    },
+    checkpoint() {
+      const t = ctx.currentTime;
+      // cinco notas de um acorde maior subindo depressa, um sopro que sobe e um brilho no fim
+      [523, 659, 784, 1047, 1319].forEach((f, i) => pluck(f, t + i * 0.065, 0.15));
+      tone('sine', 130, 520, 0.32, 0.1, t);
+      hiss('bandpass', 700, 3800, 0.38, 0.06, t, 1.1);
+      pluck(2093, t + 0.34, 0.09);
+      hiss('highpass', 6000, 10000, 0.45, 0.045, t + 0.3);
     },
     record() {
       const t = ctx.currentTime;

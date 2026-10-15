@@ -150,6 +150,8 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
   const [ui, setUi] = useState<Ui>(EMPTY_UI);
   const [failed, setFailed] = useState(false);
   const [hint, setHint] = useState(true);
+  /** O brilho verde da tela ao passar por um checkpoint pela primeira vez (`n` muda a cada um, para recomeçar). */
+  const [pulse, setPulse] = useState(0);
   const ctl = useRef<{ cycle: (dir: 1 | -1) => void } | null>(null);
 
   useEffect(() => {
@@ -256,6 +258,8 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
     let frameN = 0;
     let warning = false;
     let lastUi = '';
+    let lastCheckpoint = 0;
+    let pulseN = 0;
 
     const refreshUi = () => {
       const snap = snapRef.current;
@@ -357,6 +361,15 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
         }
       }
       audio?.frame(0, warning, 0);
+
+      // passou por um checkpoint (só na primeira vez de cada um): confete, anel, brilho na tela, som e vibração
+      if (v.checkpoint > lastCheckpoint) {
+        lastCheckpoint = v.checkpoint;
+        setPulse(++pulseN);
+        scene.celebrate(v.x, v.y);
+        audio?.checkpoint();
+        buzz(60);
+      }
 
       // morte: o som, o tremor e o corpo; no Checkpoint a morte passa e o herói volta
       if (!sim.alive && !sim.finished) {
@@ -521,6 +534,8 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
       {hint && ui.count === null && !ui.over && !failed && (
         <p className="at-hint mono">{touch ? 'TOQUE PARA PULAR · DESLIZE PARA O LADO' : 'W A S D OU AS SETAS'}</p>
       )}
+
+      {pulse > 0 && <div className="atr-flash" key={pulse} aria-hidden="true" />}
 
       {ui.over?.kind === 'dead' && (
         <div className="at-over atr-over" role="status">

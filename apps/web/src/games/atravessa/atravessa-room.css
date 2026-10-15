@@ -285,3 +285,32 @@
     animation: none;
   }
 }
+
+/* passou por um checkpoint: um brilho verde que nasce no centro e se abre até as bordas (só opacity e transform) */
+.atr-flash {
+  position: absolute;
+  inset: -20%;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 55%, rgba(125, 255, 180, 0) 28%, rgba(51, 194, 127, 0.55) 62%, rgba(255, 255, 255, 0.35) 100%);
+  transform-origin: 50% 55%;
+  animation: atr-flash 0.85s ease-out both;
+}
+@keyframes atr-flash {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  18% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.25);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .atr-flash {
+    animation: none;
+    display: none;
+  }
+}

@@ -533,6 +533,7 @@ export class AtravessaRoom extends ColorRoom {
     this.onMessage('color', (c, m: { hex?: string }) =>
       this.act(c, (id) => engine().setColor(id, String(m?.hex ?? ''))),
     );
+    this.onMessage('uncolor', (c) => this.act(c, (id) => engine().clearColor(id)));
     this.onMessage('endround', (c) => this.act(c, (id) => engine().endRound(id)));
     // Chega 10 vezes por segundo por pessoa: nada de estado a todos, só a confirmação a quem mandou.
     this.onMessage('run', (c, m: { t?: unknown; i?: unknown; n?: unknown }) => {

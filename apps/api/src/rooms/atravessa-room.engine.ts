@@ -144,6 +144,34 @@ export class AtravessaRoomEngine extends ColorRoomEngine {
     this.members.get(id)!.ready = false;
   }
 
+  /** Tira a sua cor (fica sem cor até escolher outra): quem estava pronto deixa de estar. */
+  clearColor(id: string) {
+    this.requirePhase('lobby');
+    const m = this.members.get(id);
+    if (!m) throw new RoomError('Você não está na sala');
+    this.colors.delete(id);
+    m.ready = false;
+  }
+
+  /** Só marca pronto quem tem cor. */
+  override setReady(id: string, ready: boolean) {
+    if (ready && this.members.has(id) && !this.colors.has(id)) throw new RoomError('Escolha a sua cor');
+    super.setReady(id, ready);
+  }
+
+  override start(id: string) {
+    const without = [...this.members.values()].filter((m) => m.connected && !this.colors.has(m.id));
+    if (this.phase === 'lobby' && without.length > 0) {
+      throw new RoomError(
+        without.length === 1
+          ? `${without[0]!.username} ainda não escolheu a cor`
+          : 'Todo mundo precisa escolher uma cor',
+      );
+    }
+    this.roundMeters = [];
+    super.start(id);
+  }
+
   // ---- a partida ----
 
   /** A seed de cada rodada do Infinito é outra; o mapa é o mesmo para todos dentro da rodada. */
@@ -153,11 +181,6 @@ export class AtravessaRoomEngine extends ColorRoomEngine {
 
   protected override publicSeed(): string {
     return this.roundSeed();
-  }
-
-  override start(id: string) {
-    this.roundMeters = [];
-    super.start(id);
   }
 
   protected override beginRound() {

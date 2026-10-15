@@ -153,6 +153,43 @@ describe('AtravessaRoomEngine · lobby', () => {
     expect(() => room.setColor('ana', '#123456')).toThrow(RoomError);
   });
 
+  it('dá para tirar a cor: o pronto sai, não dá para marcar pronto sem cor e o líder só inicia com todos coloridos', () => {
+    const { room } = lobby(['ana', 'bia']);
+    const colors = () =>
+      (room.snapshot() as unknown as { atravessa: { colors: Record<string, string> } }).atravessa.colors;
+    room.setReady('bia', true);
+    expect(room.snapshot().members.find((m) => m.id === 'bia')!.ready).toBe(true);
+
+    room.clearColor('bia');
+    expect(colors().bia).toBeUndefined();
+    expect(room.snapshot().members.find((m) => m.id === 'bia')!.ready).toBe(false);
+    expect(() => room.setReady('bia', true)).toThrow('Escolha a sua cor');
+    // o líder também precisa estar com cor, e quem falta é avisado pelo nome
+    expect(() => room.start('ana')).toThrow('bia ainda não escolheu a cor');
+    room.clearColor('ana');
+    expect(() => room.start('ana')).toThrow('Todo mundo precisa escolher uma cor');
+
+    // escolher de novo libera: a cor tirada fica livre para os outros
+    const free = ATR_ROOM_COLORS[0]!.hex;
+    room.setColor('bia', free);
+    room.setColor('ana', ATR_ROOM_COLORS[1]!.hex);
+    room.setReady('bia', true);
+    expect(() => room.start('ana')).not.toThrow();
+  });
+
+  it('com 8 pessoas todas as cores estão em uso, mas cada um pode tirar a sua e outro pega', () => {
+    const names = ['a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7', 'a8'];
+    const { room } = lobby(names);
+    const colors = () =>
+      (room.snapshot() as unknown as { atravessa: { colors: Record<string, string> } }).atravessa.colors;
+    expect(new Set(Object.values(colors())).size).toBe(8);
+    const freed = colors().a8!;
+    expect(() => room.setColor('a1', freed)).toThrow(RoomError);
+    room.clearColor('a8');
+    room.setColor('a1', freed);
+    expect(colors().a1).toBe(freed);
+  });
+
   it('a cor só muda no lobby e fica depois da revanche', () => {
     const { room } = started();
     expect(() => room.setColor('ana', ATR_ROOM_COLORS[5]!.hex)).toThrow(RoomError);

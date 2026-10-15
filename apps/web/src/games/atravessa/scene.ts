@@ -439,6 +439,10 @@ export class AtravessaScene {
   /** O tamanho do canvas (a resolução não muda durante a partida: redimensionar faz a imagem piscar). */
   private size = { w: 0, h: 0 };
   private burst = new Burst(20);
+  /** Confete e anel do checkpoint da sala. */
+  private confetti = new Burst(34);
+  private ring: THREE.Mesh | null = null;
+  private ringAge = 99;
   private burstFired = false;
   private sweepFx: {
     id: number;
@@ -475,7 +479,7 @@ export class AtravessaScene {
     sc.far = 60;
     this.sun.shadow.bias = -0.0006;
     this.sun.shadow.normalBias = 0.03;
-    this.scene.add(this.sun, this.sun.target, this.hemi, this.heroLight, this.burst.group);
+    this.scene.add(this.sun, this.sun.target, this.hemi, this.heroLight, this.burst.group, this.confetti.group);
 
     this.heroBody = this.hero.getObjectByName('body')!;
     this.scene.add(this.hero);
@@ -489,6 +493,20 @@ export class AtravessaScene {
       lv.dispose();
     }
     this.lanes.clear();
+  }
+
+  /** Passou por um checkpoint: confete para o alto e um anel verde que se abre no chão ao redor do herói. */
+  celebrate(x: number, y: number, topY = 0.3) {
+    this.confetti.fire(new THREE.Vector3(x, topY + 0.5, -y), [0x33c27f, 0xffd23f, 0xffffff, 0xff9ecf, 0x25c7e8, 0xff6a2b], 0, 1.7);
+    if (this.reduced) return;
+    if (!this.ring) {
+      const geo = new THREE.RingGeometry(0.62, 0.86, 40);
+      geo.rotateX(-Math.PI / 2);
+      this.ring = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0x7dffb4, transparent: true, depthWrite: false }));
+      this.scene.add(this.ring);
+    }
+    this.ring.position.set(x, topY + 0.06, -y);
+    this.ringAge = 0;
   }
 
   /** A raposa de quem joga muda de cor (sala). */
@@ -760,6 +778,14 @@ export class AtravessaScene {
       this.burstFired = false;
     }
     this.burst.update(dt);
+    this.confetti.update(dt);
+    if (this.ring) {
+      this.ringAge += dt;
+      const k = Math.min(1, this.ringAge / 0.7);
+      this.ring.visible = k < 1;
+      this.ring.scale.setScalar(1 + 4.2 * (1 - (1 - k) * (1 - k)));
+      (this.ring.material as THREE.MeshBasicMaterial).opacity = 0.9 * (1 - k);
+    }
 
     // luz, céu e névoa seguem o bioma de onde o herói está; a escuridão escurece de dentro para fora
     const info = sim.world.biomeAt(follow ? follow.y : v.y);
@@ -807,6 +833,8 @@ export class AtravessaScene {
   dispose() {
     for (const r of this.remotes.values()) disposeOwned(r.group);
     this.remotes.clear();
+    this.ring?.geometry.dispose();
+    (this.ring?.material as THREE.Material | undefined)?.dispose();
     for (const lv of this.lanes.values()) this.scene.remove(lv.group);
     this.lanes.clear();
     this.renderer.dispose();

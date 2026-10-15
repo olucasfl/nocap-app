@@ -130,6 +130,8 @@ function AtravessaColors({ snapshot, me }: { snapshot: RoomSnapshot; me: string 
   const colors = snapshot.atravessa?.colors ?? {};
   const owner = (hex: string) => Object.entries(colors).find(([, h]) => h === hex)?.[0];
   const nameOf = (id?: string) => snapshot.members.find((m) => m.id === id)?.username;
+  const mineHex = me ? colors[me] : undefined;
+  const missing = snapshot.members.filter((m) => !colors[m.id]);
   return (
     <div>
       <div className="mono rm-label">A COR DA SUA RAPOSA</div>
@@ -154,6 +156,25 @@ function AtravessaColors({ snapshot, me }: { snapshot: RoomSnapshot; me: string 
           );
         })}
       </div>
+      {mineHex ? (
+        <button
+          type="button"
+          className="lb-uncolor mono"
+          data-sfx="remove"
+          onClick={() => sendRoom('uncolor')}
+        >
+          <span aria-hidden="true">×</span> TIRAR MINHA COR
+        </button>
+      ) : (
+        <p className="lb-colorwarn mono" role="alert">
+          Escolha a sua cor para marcar pronto.
+        </p>
+      )}
+      {missing.length > 0 && mineHex && (
+        <p className="lb-colorwarn mono">
+          Falta escolher a cor: {missing.map((m) => at(m.username)).join(', ')}.
+        </p>
+      )}
     </div>
   );
 }
