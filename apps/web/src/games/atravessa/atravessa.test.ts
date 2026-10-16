@@ -14,7 +14,6 @@ function calm(): AtravessaSim {
       sim.row = r;
       sim.best = r;
       sim.hx = w.corridorAt(r);
-      sim.dark = r - 8;
       return sim;
     }
   }
@@ -113,8 +112,8 @@ describe('morte e giro', () => {
     expect(deathPose('veiculo', 1, -1).dx).toBeLessThan(-2);
     expect(deathPose('trem', 1, 1).dx).toBeGreaterThan(deathPose('veiculo', 1, 1).dx);
     expect(deathPose('agua', 1).alpha).toBe(0);
-    expect(deathPose('escuridao', 1).alpha).toBeGreaterThan(0);
-    expect(deathPose('escuridao', 1).alpha).toBeLessThan(0.3);
+    expect(deathPose('parado', 1).alpha).toBeGreaterThan(0);
+    expect(deathPose('parado', 1).alpha).toBeLessThan(0.3);
     expect(deathPose('trem', 0)).toMatchObject({ sx: 1, sy: 1 });
   });
 

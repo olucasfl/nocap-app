@@ -10,8 +10,6 @@ import {
   ATR_CROC_PERIOD,
   ATR_CROC_WARN,
   ATR_CYCLE_LEN,
-  ATR_DARK_CAP,
-  ATR_DARK_MAX_GAP,
   ATR_DT,
   ATR_FLOW_HALF,
   ATR_HALF_COLS,
@@ -25,7 +23,6 @@ import {
   ATR_TURTLE_PERIOD,
   AtravessaSim,
   AtravessaWorld,
-  atravessaDarkSpeed,
   atravessaMilestone,
   biomeAt,
   biomeSequence,
@@ -65,7 +62,6 @@ function calmSim(seed = "calmo") {
       sim.row = r;
       sim.best = r;
       sim.hx = w.corridorAt(r);
-      sim.dark = r - 8;
       return { sim, r, w };
     }
   }
@@ -83,7 +79,9 @@ function itemNearCenter(lane: Lane, from = 300) {
 describe('biomas', () => {
   it('a cada 150 linhas há uma transição de 6 linhas para o bioma seguinte', () => {
     const seq = biomeSequence('transicao', 6);
-    expect(biomeAt('transicao', 0)).toMatchObject({ biome: seq[0], blend: 0 });
+    // a largada é grama; depois da mistura vem o primeiro cenário sorteado
+    expect(biomeAt('transicao', 0)).toMatchObject({ biome: 'horta', blend: 0 });
+    expect(biomeAt('transicao', ATR_START_GRASS + 6)).toMatchObject({ biome: seq[0], blend: 0 });
     expect(biomeAt('transicao', ATR_BIOME_LEN - 1)).toMatchObject({ biome: seq[0], blend: 0 });
     const t = biomeAt('transicao', ATR_BIOME_LEN);
     expect(t).toMatchObject({ biome: seq[0], next: seq[1] });
@@ -105,7 +103,8 @@ describe('biomas', () => {
       }
     }
     // o primeiro bioma sorteado muda de partida para partida
-    expect(firsts.size).toBe(3);
+    // o primeiro cenário sorteado nunca é a horta (a largada já é grama): só deserto ou noite
+    expect([...firsts].sort()).toEqual(['deserto', 'neon']);
   });
 
   it('a ordem é a mesma para a mesma seed e muda com a seed', () => {
@@ -489,10 +488,10 @@ describe('simulação', () => {
     for (let i = 0; i < 200; i++) {
       const w = new AtravessaWorld(`largada-${i}`);
       for (const r of [0, 1, 5, ATR_START_GRASS - 1]) expect(w.lane(r).biome.biome, `linha ${r}`).toBe('horta');
-      later.add(w.lane(ATR_START_GRASS + 30).biome.biome);
+      later.add(w.lane(ATR_START_GRASS + 12).biome.biome);
     }
-    // depois da largada aparecem os três cenários
-    expect([...later].sort()).toEqual(['deserto', 'horta', 'neon']);
+    // depois da largada o mapa sempre muda: deserto ou noite, nunca a mesma grama
+    expect([...later].sort()).toEqual(['deserto', 'neon']);
   });
 
   it('a mistura da grama com o cenário sorteado leva 6 linhas e termina no bioma da seed', () => {
@@ -517,7 +516,6 @@ describe('simulação', () => {
     const sim = new AtravessaSim('arv', w);
     sim.row = r - 1;
     sim.best = r - 1;
-    sim.dark = r - 20;
     sim.hx = col;
     sim.input(0);
     advance(sim, 1);
@@ -532,7 +530,6 @@ describe('simulação', () => {
     const { t, it } = itemNearCenter(lane);
     const sim = new AtravessaSim('carro', w);
     sim.row = lane.row;
-    sim.dark = lane.row - 20;
     sim.tick = t - 1;
     sim.hx = Math.round(flowX(lane.dir, it, t));
     advance(sim, 1);
@@ -548,7 +545,6 @@ describe('simulação', () => {
     const sim = new AtravessaSim('tora', w);
     sim.row = lane.row;
     sim.best = lane.row;
-    sim.dark = lane.row - 20;
     sim.tick = t - 1;
     sim.hx = flowX(lane.dir, it, t);
     const x0 = sim.hx;
@@ -566,7 +562,6 @@ describe('simulação', () => {
     const sim = new AtravessaSim('agua', w);
     sim.row = lane.row - 1;
     sim.best = lane.row - 1;
-    sim.dark = lane.row - 20;
     sim.hx = bad;
     sim.input(0);
     advance(sim, ATR_STEP_TICKS + 1);
@@ -580,7 +575,6 @@ describe('simulação', () => {
     const sim = new AtravessaSim('tart2', w);
     sim.row = lane.row;
     sim.best = lane.row;
-    sim.dark = lane.row - 20;
     // começa no instante em que ela acabou de subir e fica em cima até o mergulho
     const period = ATR_TURTLE_PERIOD;
     let start = t;
@@ -606,43 +600,11 @@ describe('simulação', () => {
     const sim = new AtravessaSim('croc2', w);
     sim.row = lane.row;
     sim.best = lane.row;
-    sim.dark = lane.row - 20;
     sim.tick = open - 1;
     const head = flowX(lane.dir, it, open) + lane.dir * (it.len / 2 - 0.6);
     sim.hx = head;
     advance(sim, 1);
     expect(sim.end).toBe('mordido');
-  });
-
-  it('parado, a escuridão alcança; ela nunca passa do teto de velocidade nem fica mais longe que o limite', () => {
-    const sim = new AtravessaSim(ANY);
-    let prev = sim.dark;
-    while (sim.alive && sim.tick < 60 * 120) {
-      sim.step();
-      expect((sim.dark - prev) / ATR_DT).toBeLessThanOrEqual(ATR_DARK_CAP + 1e-6);
-      prev = sim.dark;
-    }
-    expect(sim.end).toBe('escuridao');
-    expect(atravessaDarkSpeed(100_000)).toBe(ATR_DARK_CAP);
-    // numa faixa calma (numa estrada o primeiro passo poderia ser o último)
-    const { sim: run } = calmSim();
-    run.dark = -50; // a escuridão ficou muito para trás: o limite de 8 linhas a puxa
-    run.step();
-    expect(run.row - run.dark).toBeLessThanOrEqual(ATR_DARK_MAX_GAP + 1e-9);
-  });
-
-  it('o perigo da escuridão sobe de forma contínua, de 0 a 1', () => {
-    const sim = new AtravessaSim(ANY);
-    sim.best = 20;
-    sim.row = 20;
-    sim.dark = 20 - ATR_DARK_MAX_GAP;
-    expect(sim.view().danger).toBe(0);
-    sim.dark = 20 - 4;
-    const mid = sim.view().danger;
-    expect(mid).toBeGreaterThan(0.3);
-    expect(mid).toBeLessThan(0.7);
-    sim.dark = 20 - 0.7;
-    expect(sim.view().danger).toBeGreaterThan(0.9);
   });
 });
 
@@ -663,7 +625,6 @@ describe('varridas de aviso', () => {
     sim.row = r;
     sim.best = r;
     sim.hx = w.corridorAt(r);
-    sim.dark = r - 8;
     return { sim, w, r };
   };
 
@@ -712,7 +673,6 @@ describe('varridas de aviso', () => {
     sim.input(dir);
     let passed = false;
     for (let i = 0; i < 360; i++) {
-      sim.dark = r - 8; // o teste é do perigo, não da escuridão (o redemoinho é o mais lento)
       sim.step();
       expect(sim.alive).toBe(true);
       if (!sim.view().sweep && i > 100) passed = true;
@@ -745,7 +705,6 @@ describe('varridas de aviso', () => {
         sim.row = r;
         sim.best = r;
         sim.hx = w.corridorAt(r);
-        sim.dark = r - 8;
         for (let i = 0; i < ATR_SWEEP_IDLE_TICKS + 10; i++) sim.step();
         const sw = sim.view().sweep;
         if (sw) kinds.add(sw.kind);
@@ -766,12 +725,13 @@ describe('varridas de aviso', () => {
  * linha `target` sem morrer. Se existe, o mundo é passável: sempre há caminho.
  */
 function canReach(seed: string, target: number, maxTicks: number): { ok: boolean; best: number; tick: number } {
-  let frontier: AtravessaSim[] = [new AtravessaSim(seed)];
+  // quem fica parado 6 s sai da busca (sem a escuridão, os estados parados nunca morreriam)
+  let frontier: AtravessaSim[] = [new AtravessaSim(seed, undefined, { idleKillTicks: 360 })];
   let best = 0;
   for (let tick = 0; tick < maxTicks && frontier.length; tick += 6) {
     const next = new Map<string, AtravessaSim>();
     for (const s of frontier) {
-      for (const act of [null, 0, 1, 2, 3] as (Dir | null)[]) {
+      for (const act of [null, 0, 2, 3] as (Dir | null)[]) {
         const c = s.clone();
         if (act !== null) c.input(act);
         for (let i = 0; i < 6 && c.alive; i++) c.step();
@@ -785,16 +745,16 @@ function canReach(seed: string, target: number, maxTicks: number): { ok: boolean
     frontier = [...next.values()];
     // basta um caminho, não todos: segue um punhado de estados por linha (os mais avançados primeiro).
     // Cortar só pelos mais avançados mataria quem espera parado, que é justamente quem sobrevive.
-    if (frontier.length > 360) {
+    if (frontier.length > 900) {
       const perRow = new Map<number, number>();
       frontier = frontier
         .sort((x, y) => y.best - x.best || y.row - x.row)
         .filter((c) => {
           const n = (perRow.get(c.row) ?? 0) + 1;
           perRow.set(c.row, n);
-          return n <= 28;
+          return n <= 70;
         })
-        .slice(0, 360);
+        .slice(0, 900);
     }
   }
   return { ok: false, best, tick: maxTicks };
@@ -817,9 +777,17 @@ describe("jogabilidade", () => {
 });
 
 describe('servidor', () => {
-  it('sem passos, a escuridão acaba com a partida e a nota é zero', () => {
-    expect(evaluateAtravessa(ANY, [])).toMatchObject({ score: 0, end: 'escuridao' });
-    expect(evaluateAtravessa(ANY, [])).toEqual(evaluateAtravessa(ANY, []));
+  it('sem escuridão, quem não faz nada na largada não morre: a partida só acaba no limite de tempo', () => {
+    expect(evaluateAtravessa(ANY, [], 600)).toMatchObject({ score: 0, end: null, ticks: 600 });
+    expect(evaluateAtravessa(ANY, [], 600)).toEqual(evaluateAtravessa(ANY, [], 600));
+  });
+
+  it('uma partida que termina em morte tem sempre a mesma nota e o mesmo fim', () => {
+    const inputs: AtravessaInput[] = [];
+    for (let t = 1; t < 60 * 20; t += 14) inputs.push({ t, d: 0 });
+    const a = evaluateAtravessa(ANY, inputs);
+    expect(a.end).not.toBeNull();
+    expect(evaluateAtravessa(ANY, inputs)).toEqual(a);
   });
 
   it('o servidor reproduz a partida de um robô, varridas e tráfego incluídos', () => {
@@ -834,7 +802,8 @@ describe('servidor', () => {
       }
       live.step();
     }
-    const r = evaluateAtravessa(seed, inputs);
+    // sem escuridão o herói pode estar vivo aos 40 s: o servidor refaz até o mesmo instante
+    const r = evaluateAtravessa(seed, inputs, live.tick);
     expect(r).toMatchObject({ score: live.score, end: live.end, ticks: live.tick });
   });
 

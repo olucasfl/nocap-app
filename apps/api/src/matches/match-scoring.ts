@@ -220,7 +220,7 @@ export function scoreBatidaMatch(
 
 /**
  * Atravessa!: o servidor refaz a partida pela seed e pelos passos; a nota é a maior linha atingida
- * (guardada em décimos). Só vale partida que terminou (a escuridão ou um perigo pegou) e que não
+ * (guardada em décimos). Só vale partida que terminou (um perigo pegou: veículo, trem, água...) e que não
  * durou mais que o relógio do servidor viu desde o início da sessão.
  */
 export function scoreAtravessaMatch(

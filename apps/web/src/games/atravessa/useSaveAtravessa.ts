@@ -17,7 +17,7 @@ export interface AtravessaRunInfo {
 
 /**
  * Manda a partida: os passos ([instante, direção]). O servidor refaz tudo pela seed (faixas,
- * veículos, escuridão) e calcula as linhas; ranking, histórico e recordes saem daí.
+ * veículos, varridas) e calcula as linhas; ranking, histórico e recordes saem daí.
  */
 export function useSaveAtravessa(run: AtravessaRunInfo, steps: AtravessaInput[]): SaveState {
   const [save, setSave] = useState<SaveState>('saving');

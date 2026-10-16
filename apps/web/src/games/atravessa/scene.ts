@@ -27,7 +27,7 @@ import {
   buildSignal,
   buildTrain,
   buildTree,
-  darkness,
+  mapEdge,
   disposeModels,
   disposeOwned,
   waterMaterial,
@@ -407,7 +407,6 @@ const BURST_COLORS: Record<AtravessaEnd, number[]> = {
   afundou: [0xffffff, 0xbfe6ff, 0x58bdf2],
   mordido: [0xff8a2a, 0xffffff, 0xe5303a],
   atingido: [0xff8a2a, 0xffd9b0, 0xc79a3c, 0xffd23f],
-  escuridao: [0x2a2540, 0x4a3f7a, 0x14102a],
   parado: [0x2a2540, 0x4a3f7a, 0x14102a],
 };
 
@@ -464,7 +463,7 @@ export class AtravessaScene {
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
 
     // o limite do mapa: daí para fora escurece
-    darkness.uEdge.value = ATR_HALF_COLS + 0.5;
+    mapEdge.uEdge.value = ATR_HALF_COLS + 0.5;
     this.scene.background = PALETTES.horta.sky.clone();
     this.scene.fog = new THREE.Fog(PALETTES.horta.sky.clone(), 34, 70);
 
@@ -769,7 +768,7 @@ export class AtravessaScene {
         const o = new THREE.Vector3(v.x, top + 0.4, -v.y);
         this.burst.fire(o, BURST_COLORS[death.end], v.killer === 0 ? 0 : v.killer, death.end === 'trem' ? 1.4 : 1);
       }
-      if (!this.reduced && death.age < 0.35 && death.end !== 'escuridao') {
+      if (!this.reduced && death.age < 0.35 && death.end !== 'parado') {
         const a = Math.sin(death.age * 75) * 0.2 * (1 - death.age / 0.35);
         shakeX = a;
         shakeY = a * 0.6;
@@ -787,22 +786,19 @@ export class AtravessaScene {
       (this.ring.material as THREE.MeshBasicMaterial).opacity = 0.9 * (1 - k);
     }
 
-    // luz, céu e névoa seguem o bioma de onde o herói está; a escuridão escurece de dentro para fora
+    // luz, céu e névoa seguem o bioma de onde o herói está
     const info = sim.world.biomeAt(follow ? follow.y : v.y);
     const pal = mixPalette(info);
-    const danger = v.danger;
-    const dim = 1 - 0.32 * danger * danger;
-    (this.scene.background as THREE.Color).copy(pal.sky).multiplyScalar(1 - 0.3 * danger);
+    (this.scene.background as THREE.Color).copy(pal.sky);
     const fog = this.scene.fog as THREE.Fog;
-    fog.color.copy(pal.sky).multiplyScalar(1 - 0.35 * danger);
-    fog.near = 34 - 10 * danger;
+    fog.color.copy(pal.sky);
+    fog.near = 34;
     this.sun.color.copy(pal.sun);
-    this.sun.intensity = pal.sunPower * dim;
-    this.hemi.intensity = pal.ambient * dim;
+    this.sun.intensity = pal.sunPower;
+    this.hemi.intensity = pal.ambient;
     this.hemi.color.copy(pal.sky).lerp(new THREE.Color(0xffffff), 0.5);
-    darkness.uDarkZ.value = -v.darkRow;
     const night = Math.max(0, Math.min(1, (1.25 - pal.ambient) / 0.7));
-    this.heroLight.intensity = night * 18 * dim;
+    this.heroLight.intensity = night * 18;
     this.heroLight.position.set(follow ? follow.x : v.x, 2.2, -(follow ? follow.y : v.y) + 0.6);
 
     // câmera diagonal fixa como no Crossy Road: sai do alvo para trás, para a direita e para cima

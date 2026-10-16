@@ -7,28 +7,22 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
  * compartilhadas. Quem desenha a cena (scene.ts) só monta e posiciona.
  */
 
-/** Uniforms da escuridão, compartilhados por todos os materiais (spec 028, "A escuridão"). */
-export const darkness = {
-  /** Coordenada Z da frente da escuridão (tudo com Z maior, atrás do herói, escurece). */
-  uDarkZ: { value: -1000 },
-  /** Largura da borda suave, em casas. */
-  uSoft: { value: 4 },
-  /** O quanto a cor some atrás da frente (0 a 1): quase tudo, mas não preto chapado. */
-  uDarkAmt: { value: 0.94 },
-  uDarkCol: { value: new THREE.Color(0x03050c) },
+/** Uniforms do limite lateral do mapa, compartilhados por todos os materiais. */
+export const mapEdge = {
   /** O limite lateral do mapa: de |x| = uEdge para fora o chão e tudo que passa por ali escurece. */
   uEdge: { value: 4.5 },
   uEdgeSoft: { value: 0.35 },
   uEdgeAmt: { value: 0.62 },
+  uEdgeCol: { value: new THREE.Color(0x03050c) },
 };
 
 /**
- * A escuridão é iluminação, não filtro de tela: cada pixel escurece de acordo com a posição no mundo
- * (atrás da frente), com borda suave. Assim carros, chão e árvores entram na sombra de verdade.
+ * O limite do mapa é iluminação, não filtro de tela: cada pixel escurece de acordo com a posição no
+ * mundo (fora das colunas jogáveis), com borda suave. Não há mais escuridão que persegue o herói.
  */
-export function patchDarkness(m: THREE.Material) {
+export function patchEdge(m: THREE.Material) {
   m.onBeforeCompile = (shader) => {
-    Object.assign(shader.uniforms, darkness);
+    Object.assign(shader.uniforms, mapEdge);
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', '#include <common>\nvarying float vDz;\nvarying float vWx;')
       .replace(
@@ -38,14 +32,14 @@ export function patchDarkness(m: THREE.Material) {
     shader.fragmentShader = shader.fragmentShader
       .replace(
         '#include <common>',
-        '#include <common>\nvarying float vDz;\nvarying float vWx;\nuniform float uDarkZ;\nuniform float uSoft;\nuniform float uDarkAmt;\nuniform vec3 uDarkCol;\nuniform float uEdge;\nuniform float uEdgeSoft;\nuniform float uEdgeAmt;',
+        '#include <common>\nvarying float vDz;\nvarying float vWx;\nuniform float uEdge;\nuniform float uEdgeSoft;\nuniform float uEdgeAmt;\nuniform vec3 uEdgeCol;',
       )
       .replace(
         '#include <dithering_fragment>',
-        'float dk = smoothstep(uDarkZ - uSoft, uDarkZ, vDz);\ngl_FragColor.rgb = mix(gl_FragColor.rgb, uDarkCol, dk * uDarkAmt);\n// fora do mapa (esquerda e direita): mais escuro, para o limite ficar claro\nfloat sd = smoothstep(uEdge, uEdge + uEdgeSoft, abs(vWx));\ngl_FragColor.rgb = mix(gl_FragColor.rgb, uDarkCol, sd * uEdgeAmt);\n#include <dithering_fragment>',
+        '// fora do mapa (esquerda e direita): mais escuro, para o limite ficar claro\nfloat sd = smoothstep(uEdge, uEdge + uEdgeSoft, abs(vWx));\ngl_FragColor.rgb = mix(gl_FragColor.rgb, uEdgeCol, sd * uEdgeAmt);\n#include <dithering_fragment>',
       );
   };
-  m.customProgramCacheKey = () => 'atravessa-dark';
+  m.customProgramCacheKey = () => 'atravessa-edge';
 }
 
 const matCache = new Map<string, THREE.MeshLambertMaterial>();
@@ -59,7 +53,7 @@ export function mat(color: THREE.ColorRepresentation, emissive = 0): THREE.MeshL
       m.emissive = c.clone();
       m.emissiveIntensity = emissive;
     }
-    patchDarkness(m);
+    patchEdge(m);
     matCache.set(key, m);
   }
   return m;
@@ -123,7 +117,7 @@ let vcGlowMat: THREE.MeshBasicMaterial | null = null;
 const vertexMaterial = () => {
   if (!vcMat) {
     vcMat = new THREE.MeshLambertMaterial({ vertexColors: true });
-    patchDarkness(vcMat);
+    patchEdge(vcMat);
   }
   return vcMat;
 };
@@ -131,7 +125,7 @@ const vertexMaterial = () => {
 const glowMaterial = () => {
   if (!vcGlowMat) {
     vcGlowMat = new THREE.MeshBasicMaterial({ vertexColors: true });
-    patchDarkness(vcGlowMat);
+    patchEdge(vcGlowMat);
   }
   return vcGlowMat;
 };
@@ -142,14 +136,14 @@ type Surface = THREE.MeshLambertMaterial | THREE.MeshBasicMaterial;
 export const waterTime = { value: 0 };
 let waterMat: THREE.MeshLambertMaterial | null = null;
 /**
- * A água: o mesmo material dos blocos (cor nos vértices, escuridão), com **ondas que andam**: cristas
+ * A água: o mesmo material dos blocos (cor nos vértices, limite do mapa), com **ondas que andam**: cristas
  * claras que deslizam em duas direções e um brilho largo que respira, tudo em função da posição no
  * mundo e do tempo (sem textura). É por isso que a água parece água, e não um bloco azul parado.
  */
 export function waterMaterial(): THREE.MeshLambertMaterial {
   if (waterMat) return waterMat;
   const m = new THREE.MeshLambertMaterial({ vertexColors: true });
-  patchDarkness(m);
+  patchEdge(m);
   const dark = m.onBeforeCompile;
   m.onBeforeCompile = (shader, renderer) => {
     dark.call(m, shader, renderer);
@@ -157,14 +151,14 @@ export function waterMaterial(): THREE.MeshLambertMaterial {
     shader.fragmentShader = shader.fragmentShader
       .replace('#include <common>', '#include <common>\nuniform float uTime;')
       .replace(
-        'float dk = smoothstep(uDarkZ - uSoft, uDarkZ, vDz);',
+        'float sd = smoothstep(uEdge, uEdge + uEdgeSoft, abs(vWx));',
         `float wa = sin(vWx * 1.05 + uTime * 0.9 + sin(vDz * 1.9 + uTime * 0.5) * 1.4);
 float wb = sin(vWx * 2.3 - uTime * 1.3 + vDz * 1.1);
 float wc = sin(vWx * 0.55 - uTime * 0.6 + vDz * 2.6);
 float crest = smoothstep(0.86, 0.98, wa * 0.5 + 0.5) * 0.24 + smoothstep(0.9, 1.0, wb * 0.5 + 0.5) * 0.14;
 float breathe = sin(vWx * 0.5 + uTime * 0.4 + vDz * 0.7) * 0.045 + wc * 0.03;
 gl_FragColor.rgb = gl_FragColor.rgb * (1.0 + breathe) + vec3(crest);
-float dk = smoothstep(uDarkZ - uSoft, uDarkZ, vDz);`,
+float sd = smoothstep(uEdge, uEdge + uEdgeSoft, abs(vWx));`,
       );
   };
   m.customProgramCacheKey = () => 'atravessa-water';

@@ -57,7 +57,7 @@ const nowRow = (row: number, y: number) => Math.max(0, Math.min(Math.floor(y), r
  * servidor; cada aparelho simula o seu herói e o servidor o espelha pelas entradas com tick
  * (`AtravessaMirror`), então a morte, a distância e a nota nunca saem de uma posição enviada. Os
  * heróis não colidem entre si. Dois modos:
- * - `infinito`: rodadas (o líder escolhe), sem checkpoint e sem escuridão; quem morre assiste. Vale a
+ * - `infinito`: rodadas (o líder escolhe), sem checkpoint; quem morre assiste. Vale a
  *   soma dos metros de cada rodada. Quem fica parado 12 s é engolido, senão a rodada nunca acabaria.
  * - `checkpoint`: corrida até o fim de um mapa de 100 a 1000 m; quem morre volta ao último checkpoint.
  */

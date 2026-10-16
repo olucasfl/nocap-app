@@ -41,7 +41,7 @@ const serverBest = (stats: Stats | undefined) =>
 const HOW = [
   'Pule de faixa em faixa e chegue o mais longe que der. Cada linha nova vale um ponto.',
   'Desvie dos carros e do trem (a luz vermelha avisa). No rio, pise nas toras e nas pedras, nunca na água.',
-  'Uma escuridão vem de trás. Parar demais ou voltar a deixa chegar perto: ande para a frente.',
+  'Parado numa faixa de descanso, um perigo desce pela sua coluna: pule para o lado.',
   'O cenário muda a cada trecho: grama, deserto e, mais longe, a noite.',
 ];
 
@@ -90,7 +90,6 @@ const VERDICT: Record<string, string> = {
   afundou: 'AFUNDOU',
   mordido: 'O CROCODILO MORDEU',
   atingido: 'FOI VARRIDO',
-  escuridao: 'A ESCURIDÃO TE PEGOU',
   parado: 'PAROU DEMAIS',
 };
 
@@ -120,7 +119,7 @@ function AtravessaFinal({
     <section className="screen atf">
       <div className="atf-verdict">
         <span className="mono atf-kicker">ATRAVESSA! · INFINITO</span>
-        <h1>{VERDICT[result.end ?? 'escuridao']}</h1>
+        <h1>{VERDICT[result.end ?? 'parado']}</h1>
       </div>
       <div className="atf-score">
         {isRecord && <span className="atf-badge mono">{before > 0 ? 'NOVO RECORDE' : 'PRIMEIRO RECORDE'}</span>}

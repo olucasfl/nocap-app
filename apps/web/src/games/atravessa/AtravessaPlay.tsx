@@ -37,7 +37,6 @@ const OVER_TEXT: Record<AtravessaEnd, string> = {
   afundou: 'AFUNDOU',
   mordido: 'O CROCODILO MORDEU',
   atingido: 'FOI VARRIDO',
-  escuridao: 'A ESCURIDÃO TE PEGOU',
   parado: 'PAROU DEMAIS',
 };
 
@@ -254,7 +253,7 @@ export function AtravessaPlay({ seed, record, onEnd, onQuit, onRestart }: Props)
           sides = next;
           revved = nextRev;
         }
-        if (!finished) audio?.frame(v.danger, warning, siren);
+        if (!finished) audio?.frame(warning, siren);
 
         const sw = v.sweep;
         if (sw && sw.id !== sweepId) {

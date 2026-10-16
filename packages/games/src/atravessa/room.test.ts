@@ -103,13 +103,12 @@ describe('checkpoints', () => {
 describe('regras da sala', () => {
   it('o Infinito não tem escuridão e engole quem fica parado; o Checkpoint tem corrida e checkpoints', () => {
     expect(atravessaRoomRules('infinito')).toMatchObject({
-      darkness: false,
       idleKillTicks: ATR_IDLE_KILL_TICKS,
       finishRow: null,
       checkpoints: null,
     });
     const cp = atravessaRoomRules('checkpoint', 'grande');
-    expect(cp).toMatchObject({ darkness: false, idleKillTicks: null, finishRow: 250 });
+    expect(cp).toMatchObject({ idleKillTicks: null, finishRow: 250 });
     expect(cp.checkpoints).toEqual(atravessaCheckpoints(250));
   });
 
@@ -124,13 +123,11 @@ describe('regras da sala', () => {
   });
 });
 
-describe('sem escuridão', () => {
-  it('a escuridão nunca aparece e nem mata', () => {
-    const sim = new AtravessaSim('quieto', undefined, { darkness: false });
+describe('parado demais', () => {
+  it('sem a regra de tempo parado, ninguém morre à toa na largada', () => {
+    const sim = new AtravessaSim('quieto', undefined, {});
     advance(sim, 60 * 60);
     expect(sim.alive).toBe(true);
-    expect(sim.view().danger).toBe(0);
-    expect(sim.view().darkRow).toBeLessThan(-500);
   });
 
   it('parado por 12 s é engolido; pulando de vez em quando, não', () => {
@@ -178,7 +175,7 @@ describe('fim do mapa e checkpoints na simulação', () => {
   it('chegar à linha do fim termina a corrida e para o relógio', () => {
     const w = new AtravessaWorld('fim');
     const r = restPair(w);
-    const sim = new AtravessaSim('fim', w, { darkness: false, finishRow: r + 1 });
+    const sim = new AtravessaSim('fim', w, { finishRow: r + 1 });
     sim.row = r;
     sim.best = r;
     sim.hx = w.corridorAt(r + 1);
@@ -195,7 +192,7 @@ describe('fim do mapa e checkpoints na simulação', () => {
   it('o checkpoint alcançado vale ao morrer: renasce nele, depois de uma pausa, com o mundo andando', () => {
     const w = new AtravessaWorld('renasce');
     const r = restPair(w);
-    const sim = new AtravessaSim('renasce', w, { darkness: false, checkpoints: [r + 1], finishRow: r + 100 });
+    const sim = new AtravessaSim('renasce', w, { checkpoints: [r + 1], finishRow: r + 100 });
     sim.row = r;
     sim.best = r;
     sim.hx = w.corridorAt(r + 1);
@@ -221,7 +218,7 @@ describe('fim do mapa e checkpoints na simulação', () => {
   });
 
   it('sem checkpoint alcançado volta à largada; o checkpoint em estrada renasce na faixa de descanso mais próxima', () => {
-    const sim = new AtravessaSim('largada', undefined, { darkness: false, checkpoints: [50] });
+    const sim = new AtravessaSim('largada', undefined, { checkpoints: [50] });
     advance(sim, 5);
     kill(sim);
     advance(sim, ATR_RESPAWN_TICKS);
@@ -232,7 +229,7 @@ describe('fim do mapa e checkpoints na simulação', () => {
     const w = new AtravessaWorld('estrada');
     let q = 40;
     while (w.lane(q).kind !== 'estrada') q++;
-    const s2 = new AtravessaSim('estrada', w, { darkness: false, checkpoints: [q] });
+    const s2 = new AtravessaSim('estrada', w, { checkpoints: [q] });
     s2.checkpointRow = q;
     kill(s2);
     advance(s2, ATR_RESPAWN_TICKS);
@@ -242,7 +239,7 @@ describe('fim do mapa e checkpoints na simulação', () => {
   });
 
   it('sem a lista de checkpoints a morte é definitiva', () => {
-    const sim = new AtravessaSim('fim-de-jogo', undefined, { darkness: false });
+    const sim = new AtravessaSim('fim-de-jogo', undefined, {});
     kill(sim);
     expect(sim.halted).toBe(true);
     const tick = sim.tick;
@@ -345,7 +342,7 @@ describe('espelho do servidor', () => {
     // um relato com o tick congelado do aparelho segue valendo
     expect(dead.report(dead.tick, [], dead.tick + 100)).toBe(true);
 
-    const m = new AtravessaMirror('renasce-espelho', { darkness: false, checkpoints: [50], finishRow: 100 });
+    const m = new AtravessaMirror('renasce-espelho', { checkpoints: [50], finishRow: 100 });
     kill(m.sim);
     expect(m.report(ATR_RESPAWN_TICKS + 10, [], ATR_RESPAWN_TICKS + 100)).toBe(true);
     expect(m.sim.alive).toBe(true);

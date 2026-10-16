@@ -111,7 +111,7 @@ export const MODES: Record<RoomGame, { id: string; label: string; note: string }
     {
       id: 'infinito',
       label: 'Infinito',
-      note: 'Todo mundo no mesmo mapa, sem checkpoint e sem escuridão. Quem morre vira espectador. Vale a soma dos metros de cada rodada. Ficar parado por 12 s também tira você.',
+      note: 'Todo mundo no mesmo mapa, sem checkpoint. Quem morre vira espectador. Vale a soma dos metros de cada rodada. Ficar parado por 12 s também tira você.',
     },
   ],
   impostor: [

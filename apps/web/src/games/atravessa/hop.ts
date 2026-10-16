@@ -78,7 +78,7 @@ const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
 /**
  * A pose da morte (spec 029); `age` em segundos desde o fim e `killer` é o lado de onde veio quem
  * matou (-1, 0 ou 1). Cada causa tem a sua: atropelado é arremessado e cai de lado, o trem lança
- * longe, a água engole com um balanço, a mordida fecha, a varrida derruba e a escuridão apaga.
+ * longe, a água engole com um balanço, a mordida fecha, a varrida derruba e ficar parado demais apaga.
  */
 export function deathPose(end: AtravessaEnd, age: number, killer: -1 | 0 | 1 = 0): Pose {
   const side = killer === 0 ? 1 : killer;
@@ -140,7 +140,7 @@ export function deathPose(end: AtravessaEnd, age: number, killer: -1 | 0 | 1 = 0
       return { ...REST, ...volume(1 - 0.55 * e), sx: 1 - 0.55 * e, sz: 1 - 0.55 * e, lift: 0.3 * Math.sin(Math.PI * clamp01(age / 0.5)), alpha: 1 - e, rz: shake };
     }
     default: {
-      // a escuridão: o herói vai ficando sem luz e some devagar
+      // parado demais: o herói vai ficando sem luz e some devagar
       const e = clamp01(age / 0.45);
       return { ...REST, alpha: 1 - 0.85 * e, sy: 1 - 0.1 * e };
     }

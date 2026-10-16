@@ -5,8 +5,8 @@ import { audioKit } from './sfx';
  * O som do Atravessa! (specs 028 e 029), todo sintetizado em Web Audio. O pulo é um "pop" seco e
  * alto, sempre igual (sem nota que sobe). Por baixo, uma cama de ambiente por bioma, pousos que soam
  * diferente em cada chão, o sino do trem, a sirene da ambulância (mais alta quanto mais perto),
- * o aviso das varridas, sons de marco e de recorde, mortes com corpo e um ronco baixo e discreto
- * quando a escuridão chega perto. Tudo passa por um compressor e respeita o botão de mudo.
+ * o aviso das varridas, sons de marco e de recorde e mortes com corpo.
+ * Tudo passa por um compressor e respeita o botão de mudo.
  */
 export interface AtravessaAudio {
   /** Um pulo começou: `forward` diz se é para a frente (os outros soam um pouco mais graves). */
@@ -18,10 +18,10 @@ export interface AtravessaAudio {
   /** O bioma de onde o herói está: troca o timbre e o ambiente. */
   setBiome(b: AtravessaBiome): void;
   /**
-   * A cada quadro: quão perto a escuridão está (0 a 1), se algum trem por perto está avisando e o
+   * A cada quadro: se algum trem por perto está avisando e o
    * volume da sirene (0 a 1: a ambulância mais próxima, 0 quando não há).
    */
-  frame(danger: number, trainWarning: boolean, siren: number): void;
+  frame(trainWarning: boolean, siren: number): void;
   /**
    * Um veículo passou pela coluna do herói: um "vush" curto. Quanto mais rápido, mais curto e agudo;
    * veículo pesado (comprimento grande) soa grave. `loud` (0 a 1) cai com a distância até a faixa.
@@ -219,31 +219,6 @@ export function createAtravessaAudio(): AtravessaAudio | null {
     amb = null;
   }
 
-  // ---- o ronco da escuridão: só se ouve de perto, e baixo
-  let drone: { osc: OscillatorNode; sub: OscillatorNode; gain: GainNode } | null = null;
-  let nextBeat = 0;
-  function startDrone() {
-    if (drone || quiet()) return;
-    const osc = ctx.createOscillator();
-    const sub = ctx.createOscillator();
-    const gain = ctx.createGain();
-    const lp = ctx.createBiquadFilter();
-    osc.type = 'sawtooth';
-    osc.frequency.value = 52;
-    sub.type = 'sine';
-    sub.frequency.value = 36;
-    lp.type = 'lowpass';
-    lp.frequency.value = 140;
-    gain.gain.value = 0.0001;
-    osc.connect(lp);
-    sub.connect(lp);
-    lp.connect(gain).connect(bus);
-    osc.start();
-    sub.start();
-    created.push(osc, sub);
-    drone = { osc, sub, gain };
-  }
-
   // ---- o sino do trem: dois tons que se alternam enquanto a luz pisca
   let nextBell = 0;
   let bellFlip = 0;
@@ -368,31 +343,13 @@ export function createAtravessaAudio(): AtravessaAudio | null {
       biome = b;
       startAmbience();
     },
-    frame(danger, trainWarning, sirenLevel) {
+    frame(trainWarning, sirenLevel) {
       const t = ctx.currentTime;
       if (sirenLevel > 0.04) {
         startSiren();
         siren?.gain.gain.setTargetAtTime(sirenLevel * 0.12 + 0.0001, t, 0.08);
       } else if (siren) {
         siren.gain.gain.setTargetAtTime(0.0001, t, 0.12);
-      }
-      if (danger > 0.05) {
-        startDrone();
-        if (drone) {
-          const d = danger * danger;
-          drone.gain.gain.setTargetAtTime(d * 0.2 + 0.0001, t, 0.25);
-          drone.osc.frequency.setTargetAtTime(52 + danger * 14, t, 0.3);
-          drone.sub.frequency.setTargetAtTime(36 + danger * 10, t, 0.3);
-        }
-        // batimento só bem de perto: dois "tum" mais espaçados que um coração acelerado
-        if (danger > 0.65 && t >= nextBeat && !quiet()) {
-          const k = (danger - 0.65) * 2;
-          tone('sine', 60, 40, 0.14, 0.26 * k, t);
-          tone('sine', 56, 38, 0.16, 0.18 * k, t + 0.17);
-          nextBeat = t + 1.3 - 0.5 * danger;
-        }
-      } else if (drone) {
-        drone.gain.gain.setTargetAtTime(0.0001, t, 0.3);
       }
       if (trainWarning && t >= nextBell && !quiet()) {
         const f = bellFlip++ % 2 === 0 ? 1175 : 880;
@@ -421,7 +378,7 @@ export function createAtravessaAudio(): AtravessaAudio | null {
         hiss('bandpass', 900, 250, 0.3, 0.26, t, 0.8);
         tone('sine', 130, 40, 0.4, 0.34, t);
         tone('triangle', 420, 160, 0.2, 0.1, t);
-      } else if (end === 'escuridao' || end === 'parado') {
+      } else if (end === 'parado') {
         tone('sine', 200, 40, 1.1, 0.3, t);
         tone('triangle', 90, 30, 1.3, 0.2, t);
         hiss('lowpass', 900, 80, 1.0, 0.14, t);
@@ -431,7 +388,6 @@ export function createAtravessaAudio(): AtravessaAudio | null {
         hiss('lowpass', 1800, 220, 0.5, 0.18, t + 0.04);
         for (let i = 0; i < 3; i++) tone('sine', 520 + i * 90, 900 + i * 120, 0.07, 0.045, t + 0.18 + i * 0.1);
       }
-      if (drone) drone.gain.gain.setTargetAtTime(0.0001, t, 0.1);
       if (siren) siren.gain.gain.setTargetAtTime(0.0001, t, 0.05);
     },
     pause() {
@@ -449,15 +405,6 @@ export function createAtravessaAudio(): AtravessaAudio | null {
         siren.osc.stop(t + 0.05);
         siren.lfo.stop(t + 0.05);
         siren = null;
-      }
-      if (drone) {
-        const t = ctx.currentTime;
-        drone.gain.gain.cancelScheduledValues(t);
-        drone.gain.gain.setValueAtTime(Math.max(0.0001, drone.gain.gain.value), t);
-        drone.gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.1);
-        drone.osc.stop(t + 0.12);
-        drone.sub.stop(t + 0.12);
-        drone = null;
       }
       void ctx.resume();
     },

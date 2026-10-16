@@ -30,14 +30,13 @@ export function atravessaRoomRules(
   if (mode === 'checkpoint') {
     const length = ATR_ROOM_SIZES[size];
     return {
-      darkness: false,
       idleKillTicks: null,
       finishRow: length,
       checkpoints: atravessaCheckpoints(length),
       startX,
     };
   }
-  return { darkness: false, idleKillTicks: ATR_IDLE_KILL_TICKS, finishRow: null, checkpoints: null, startX };
+  return { idleKillTicks: ATR_IDLE_KILL_TICKS, finishRow: null, checkpoints: null, startX };
 }
 
 /**

@@ -1,13 +1,6 @@
 import {
   ATR_BACK_ROWS,
   ATR_CROC_HEAD,
-  ATR_DARK_BASE,
-  ATR_DARK_CAP,
-  ATR_DARK_GROWTH,
-  ATR_DARK_KILL_GAP,
-  ATR_DARK_LEAD_IN_TICKS,
-  ATR_DARK_MAX_GAP,
-  ATR_DARK_START_GAP,
   ATR_DIRS,
   ATR_DT,
   ATR_FLOW_HALF,
@@ -37,10 +30,6 @@ import { crocState, flowX, isSolid, type FlowItem } from './flow';
 import { AtravessaWorld, laneBiome, trainState, type Lane } from './world';
 
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
-
-/** Velocidade da escuridão (linhas/s) para quem já chegou à linha `best`: devagar, e nunca acima do teto. */
-export const atravessaDarkSpeed = (best: number): number =>
-  Math.min(ATR_DARK_CAP, ATR_DARK_BASE + best * ATR_DARK_GROWTH);
 
 interface Move {
   dir: Dir;
@@ -77,7 +66,7 @@ export interface SweepView {
   at: number | null;
 }
 
-/** O que a tela precisa para desenhar o herói e o aviso da escuridão. */
+/** O que a tela precisa para desenhar o herói e as suas animações. */
 export interface AtravessaView {
   tick: number;
   alive: boolean;
@@ -96,9 +85,6 @@ export interface AtravessaView {
   /** Passos esperando na fila. */
   queued: number;
   score: number;
-  /** Frente da escuridão (linha, pode ser fracionária) e quão perto ela está: 0 (longe) a 1 (em cima). */
-  darkRow: number;
-  danger: number;
   /** Pedra afundando sob o herói: 0 a 1. */
   sinking: number;
   /** Quantos passos já foram recusados (árvore, borda): a tela toca o tremidinho quando sobe. */
@@ -118,12 +104,10 @@ export interface AtravessaView {
 }
 
 /**
- * Regras opcionais da partida (spec 031). O padrão é o jogo solo: escuridão atrás, sem fim de mapa e
- * sem checkpoints. A sala liga e desliga estas peças; o servidor e o aparelho usam as mesmas regras.
+ * Regras opcionais da partida (spec 031). O padrão é o jogo solo: sem fim de mapa, sem checkpoints e sem
+ * limite de tempo parado. A sala liga e desliga estas peças; o servidor e o aparelho usam as mesmas regras.
  */
 export interface AtravessaRules {
-  /** A escuridão que persegue. Desligada, a partida não tem pressão de tempo. */
-  darkness: boolean;
   /** Ticks parado (sem começar um pulo) até ser engolido; `null` = nunca. */
   idleKillTicks: number | null;
   /** Chegar a esta linha termina a corrida; `null` = infinito. */
@@ -135,7 +119,6 @@ export interface AtravessaRules {
 }
 
 export const ATR_DEFAULT_RULES: AtravessaRules = {
-  darkness: true,
   idleKillTicks: null,
   finishRow: null,
   checkpoints: null,
@@ -165,7 +148,6 @@ export class AtravessaSim {
   facing: Dir = 0;
   /** Passos recusados até agora (só para a tela). */
   bumps = 0;
-  dark = -ATR_DARK_START_GAP;
   killer: -1 | 0 | 1 = 0;
   private move: Move | null = null;
   private queue: Dir[] = [];
@@ -181,8 +163,6 @@ export class AtravessaSim {
     this.world = world ?? new AtravessaWorld(seed);
     this.rules = { ...ATR_DEFAULT_RULES, ...rules };
     this.hx = this.rules.startX;
-    // sem escuridão, a frente dela fica tão atrás que nunca aparece nem alcança
-    if (!this.rules.darkness) this.dark = -1000;
   }
 
   /** Nada mais muda sozinho: morreu de vez ou chegou ao fim. */
@@ -424,15 +404,9 @@ export class AtravessaSim {
       }
     }
 
-    // a escuridão: devagar, parada no começo, e sem ficar mais longe que o limite
-    if (this.rules.darkness) {
-      if (this.tick > ATR_DARK_LEAD_IN_TICKS) this.dark += atravessaDarkSpeed(this.best) * ATR_DT;
-      this.dark = Math.max(this.dark, this.best - ATR_DARK_MAX_GAP);
-      if (this.y - this.dark <= ATR_DARK_KILL_GAP) this.die('escuridao');
-    } else {
-      const idleMax = this.rules.idleKillTicks;
-      if (idleMax !== null && !this.move && this.idle >= idleMax) this.die('parado');
-    }
+    // parado por tempo demais (só nas regras que pedem: a sala Infinito)
+    const idleMax = this.rules.idleKillTicks;
+    if (idleMax !== null && !this.move && this.idle >= idleMax) this.die('parado');
   }
 
   get y(): number {
@@ -444,7 +418,6 @@ export class AtravessaSim {
   view(): AtravessaView {
     const m = this.move;
     const p = m ? m.t / ATR_STEP_TICKS : 0;
-    const gap = this.y - this.dark;
     const s = this.sweep;
     return {
       tick: this.tick,
@@ -458,8 +431,6 @@ export class AtravessaSim {
       facing: this.facing,
       queued: this.queue.length,
       score: this.best,
-      darkRow: this.dark,
-      danger: clamp(1 - (gap - ATR_DARK_KILL_GAP) / (ATR_DARK_MAX_GAP - ATR_DARK_KILL_GAP), 0, 1),
       sinking: this.sinkingFraction(),
       bumps: this.bumps,
       sweep: s
@@ -520,7 +491,8 @@ export interface AtravessaResult {
 
 /**
  * O servidor refaz a partida: mesma seed, mesmos passos nos mesmos ticks. Depois do último passo o
- * herói fica parado até a escuridão alcançá-lo, então a nota é a mesma de quem desistiu.
+ * herói fica parado até algo o pegar (varrida, veículo, tora que o leva) ou o tempo acabar; só vale
+ * partida que terminou em morte.
  */
 export function evaluateAtravessa(
   seed: string,

@@ -11,21 +11,21 @@ const USER = '99999999-9999-4999-8999-999999999999';
 type Step = [number, number];
 const createAs = (service: MatchesService, input: unknown) => service.create(input as never, USER);
 
-/** Sem nenhum passo: o herói fica parado na largada até a escuridão alcançá-lo (sempre acaba, sem sorte). */
-const TWO: Step[] = [];
+/** Um jogador que só anda para a frente: a partida acaba em morte logo (na seed s1, atropelado na primeira estrada). */
+const TWO: Step[] = Array.from({ length: 60 }, (_, i): Step => [1 + i * 14, 0]);
 const asSteps = (s: Step[]) => s.map(([t, d]) => ({ t, d: d as 0 | 1 | 2 | 3 }));
 
 describe('scoreAtravessaMatch', () => {
   it('refaz a partida pelos passos e guarda a nota em décimos', () => {
     const scored = scoreAtravessaMatch({ mode: 'infinito', seed: 's1', steps: TWO, elapsedMs: 9e9 });
     const expected = evaluateAtravessa('s1', asSteps(TWO));
-    expect(expected.end).toBe('escuridao');
+    expect(expected.end).toBe('veiculo');
     expect(expected.score).toBe(0);
     expect(scored.total).toBe(0);
     expect(scored.totalTenths).toBe(0);
     expect(scored.rounds).toEqual([]);
     expect(scored.encodedAnswers).toEqual([]);
-    expect(scored.settings).toMatchObject({ mode: 'infinito', scoreVersion: 1, ended: 'escuridao' });
+    expect(scored.settings).toMatchObject({ mode: 'infinito', scoreVersion: 1, ended: 'veiculo' });
   });
 
   it('mesma seed e mesmos passos dão sempre a mesma nota', () => {
@@ -55,9 +55,8 @@ describe('scoreAtravessaMatch', () => {
   });
 
   it('recusa partida que não terminou no tempo da sessão', () => {
-    expect(() => scoreAtravessaMatch({ mode: 'infinito', seed: 's1', steps: TWO, elapsedMs: 1000 })).toThrow(
-      'não terminou',
-    );
+    // sem escuridão, quem não faz nada na largada nunca morre: a partida não terminou
+    expect(() => scoreAtravessaMatch({ mode: 'infinito', seed: 's1', steps: [], elapsedMs: 9e9 })).toThrow('não terminou');
   });
 
   it('aceita no limite do relógio do servidor e recusa um pouco antes', () => {
@@ -122,7 +121,7 @@ describe('MatchesService (Atravessa!)', () => {
   it('salva como ranked, no jogo atravessa e no modo infinito, com a nota recalculada', async () => {
     const { service, save } = setup();
     const res = await createAs(service, play('seed-a', 10 * 60_000));
-    expect(res.total).toBe(0);
+    expect(res.total).toBe(evaluateAtravessa('seed-a', asSteps(TWO)).score);
     expect(save).toHaveBeenCalledWith(
       expect.objectContaining({ game: 'atravessa', mode: 'infinito', kind: 'solo', ranked: true }),
     );
@@ -159,7 +158,9 @@ describe('MatchesService (Atravessa!)', () => {
 
   it('recusa partida mais longa do que o tempo da sessão', async () => {
     const { service, save } = setup();
-    await expect(createAs(service, play('seed-a', 500))).rejects.toThrow('não terminou');
+    // o herói espera 50 s na largada e só então anda: a sessão de 0,5 s não cobre a morte dele
+    const late = Array.from({ length: 60 }, (_, i): Step => [3000 + i * 14, 0]);
+    await expect(createAs(service, play('seed-a', 500, { steps: late }))).rejects.toThrow('não terminou');
     expect(save).not.toHaveBeenCalled();
   });
 });

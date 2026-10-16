@@ -60,7 +60,6 @@ const OVER_TEXT: Record<AtravessaEnd, string> = {
   afundou: 'AFUNDOU',
   mordido: 'O CROCODILO MORDEU',
   atingido: 'FOI VARRIDO',
-  escuridao: 'A ESCURIDÃO TE PEGOU',
   parado: 'PAROU DEMAIS',
 };
 
@@ -349,7 +348,7 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
       }
 
       const v = sim.view();
-      // sons: o mesmo conjunto do solo, sem a escuridão (aqui não existe)
+      // sons: o mesmo conjunto do solo
       if (v.step) {
         const started = sim.tick - Math.round(v.step.progress * 10);
         if (started !== hopTick) {
@@ -376,7 +375,7 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
           if (lane.kind === 'trilho') warning = trainState(lane, sim.tick).warning;
         }
       }
-      audio?.frame(0, warning, 0);
+      audio?.frame(warning, 0);
 
       // passou por um checkpoint (só na primeira vez de cada um): confete, anel, brilho na tela, som e vibração
       if (v.checkpoint > lastCheckpoint) {

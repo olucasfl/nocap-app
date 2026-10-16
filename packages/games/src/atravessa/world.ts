@@ -43,8 +43,8 @@ const sequences = new Map<string, AtravessaBiome[]>();
 /**
  * A ordem dos biomas de uma partida (spec 029). Grupos de três: cada grupo é uma ordem dos três
  * biomas, e o primeiro de cada grupo novo nunca é igual ao último do anterior. O primeiro bioma
- * é sorteado pela seed: é ele que muda de partida para partida (o trecho de largada em grama vem de
- * `biomeAt`, não daqui).
+ * é sorteado pela seed entre deserto e noite (nunca a horta, que já é a largada): é ele que muda de
+ * partida para partida. O trecho de largada em grama vem de `biomeAt`, não daqui.
  */
 export function biomeSequence(seed: string, count: number): AtravessaBiome[] {
   let seq = sequences.get(seed);
@@ -67,6 +67,8 @@ export function biomeSequence(seed: string, count: number): AtravessaBiome[] {
       if (group[0] !== prevLast) break;
     }
     if (group[0] === prevLast) group = [group[1]!, group[2]!, group[0]!];
+    // o primeiro cenário depois da largada em grama nunca é a própria grama: o mapa sempre muda logo
+    if (g === 0 && group[0] === ATR_BIOMES[0]) [group[0], group[1]] = [group[1]!, group[0]!];
     seq.push(...group);
   }
   return seq;

@@ -29,7 +29,7 @@ export const ATR_BACK_ROWS = 4;
 export type AtravessaBiome ='horta' | 'deserto' | 'neon';
 export const ATR_BIOMES: readonly AtravessaBiome[] = ['horta', 'deserto', 'neon'];
 /** A largada de toda partida é em grama por este tanto de linhas; depois a grama se mistura ao bioma sorteado. */
-export const ATR_START_GRASS = 16;
+export const ATR_START_GRASS = 3;
 
 export type LaneKind = 'descanso' | 'estrada' | 'trilho' | 'rio';
 
@@ -107,17 +107,6 @@ export const ATR_BIOME_LEN = ATR_SEGMENT_LEN - ATR_TRANSITION_LEN;
 /** Três biomas = um grupo; a dificuldade sobe a cada grupo concluído. */
 export const ATR_CYCLE_LEN = ATR_SEGMENT_LEN * 3;
 
-/** Pressão por trás: a escuridão (spec 028). Velocidades em linhas por segundo. */
-export const ATR_REF_PACE = 2.9; // ritmo de quem não para de avançar
-export const ATR_DARK_CAP_FRACTION = 0.85;
-export const ATR_DARK_CAP = ATR_REF_PACE * ATR_DARK_CAP_FRACTION;
-export const ATR_DARK_BASE = 0.85;
-export const ATR_DARK_GROWTH = 0.0045; // por linha avançada
-export const ATR_DARK_START_GAP = 8; // linhas atrás do herói na largada (as 4 de recuo ficam à frente dela)
-export const ATR_DARK_LEAD_IN_TICKS = 90; // parada nos primeiros 1,5 s
-export const ATR_DARK_MAX_GAP = 8; // quem corre não deixa a escuridão ficar mais longe que isso
-export const ATR_DARK_KILL_GAP = 0.6;
-
 /**
  * Varridas de aviso (spec 029): quem fica parado numa faixa de descanso vê uma linha e um "!" descerem
  * pela **coluna** em que está, e logo depois um perigo vem por essa mesma coluna, de frente. Para
@@ -148,14 +137,14 @@ export const atravessaMilestone = (row: number): boolean =>
  * aparelho informa; nada aqui depende de colisão entre jogadores.
  */
 export const ATR_ROOM_MAX_PLAYERS = 8;
-/** Modos da sala: Infinito (rodadas, sem checkpoint, sem escuridão) e Checkpoint (corrida até o fim). */
+/** Modos da sala: Infinito (rodadas, sem checkpoint) e Checkpoint (corrida até o fim). */
 export type AtravessaRoomMode = 'infinito' | 'checkpoint';
 export const ATR_ROOM_MODES: readonly AtravessaRoomMode[] = ['infinito', 'checkpoint'];
 /** Tamanhos de mapa do checkpoint, em metros. */
 export const ATR_ROOM_SIZES = { pequeno: 50, medio: 100, grande: 250, gigante: 500 } as const;
 export type AtravessaRoomSize = keyof typeof ATR_ROOM_SIZES;
 export const ATR_ROOM_SIZE_IDS = Object.keys(ATR_ROOM_SIZES) as AtravessaRoomSize[];
-/** Quem fica parado tanto tempo no Infinito (que não tem escuridão) é engolido. */
+/** Quem fica parado tanto tempo no Infinito é engolido (senão a rodada nunca acabaria). */
 export const ATR_IDLE_KILL_TICKS = 12 * ATR_TPS;
 /** No checkpoint, a pausa entre a morte e voltar ao último checkpoint. */
 export const ATR_RESPAWN_TICKS = 75;
@@ -216,8 +205,7 @@ export type AtravessaEnd =
   | 'afundou'
   | 'mordido'
   | 'atingido'
-  | 'escuridao'
-  /** Parado demais num modo sem escuridão (sala Infinito). */
+  /** Parado demais (sala Infinito, ou o tempo limite parado de quem escolheu ter). */
   | 'parado';
 
 /** Só o Infinito por enquanto (spec 028). */

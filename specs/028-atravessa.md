@@ -62,7 +62,10 @@ Pedido do Lucas: o movimento tem que ser **bem limpo**, com animação própria 
 
 Depois do bioma 3 o ciclo volta ao 1 mais difícil (para o Infinito continuar).
 
-## A escuridão (realista e contida)
+## A escuridão (REMOVIDA em 16/10/2026)
+
+> **Pedido do Lucas (16/10/2026): a escuridão que mata foi apagada, em nenhum modo.** Saíram a simulação (velocidade, limite, morte "escuridão"), a iluminação por posição que escurecia o mundo atrás do herói, o ronco e o batimento do som, os campos `darkRow`/`danger` e as regras `darkness`. Ficou só o escurecimento lateral do limite do mapa. A pressão de tempo do solo agora vem das varridas de aviso (ficar parado numa faixa de descanso); o solo **não tem** limite de tempo parado (o Infinito de sala tem 12 s). O texto abaixo fica só como história.
+
 
 Fica **atrás do herói**, é a única pressão por tempo (no lugar da águia). Regras:
 

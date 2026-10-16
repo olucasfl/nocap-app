@@ -9,6 +9,7 @@ Status: **implementada (15/10/2026); falta ver rodando no celular e no computado
 
 ## O que mudou
 
+- **Atualização de 16/10/2026:** a largada em grama agora dura só 3 linhas (`ATR_START_GRASS`) e a mistura de 6 linhas leva a um primeiro cenário que **nunca é a grama** (deserto ou noite), para o mapa mudar logo e em toda partida; a horta volta nos grupos seguintes. Antes eram 16 linhas e o cenário podia ser grama de novo.
 - **Largada em grama, cenário sorteado depois (corrigido em 16/10/2026).** A primeira versão fixava a horta como primeiro bioma da ordem inteira, e todo mapa passou a parecer igual (salas de 50 a 250 m nunca saíam da grama). Agora `biomeSequence` volta a sortear o primeiro bioma pela seed e só a **largada** é fixa: as primeiras `ATR_START_GRASS` (16) linhas são horta e, nas 6 seguintes, a horta se mistura ao bioma sorteado (`biomeAt`), que pode ser a própria horta. Assim a partida começa sempre na grama e o cenário muda de partida para partida, no solo e na sala.
 - `AtravessaWorld.lane(row < 0)`: as linhas -1 a -4 (`ATR_BACK_ROWS`) são descanso da horta com árvores sorteadas pela seed (`seed:atras:linha`, densidade 30% e 48% na última linha); **a coluna 0 fica sempre livre**, então o recuo e a volta sempre têm caminho. A linha -4 é mais fechada (borda da mata). Além dela, mata fechada (todas as colunas bloqueadas), só como enfeite.
 - `AtravessaSim`: recusa o passo só abaixo de `-ATR_BACK_ROWS`. A nota continua sendo a maior linha atingida, então recuar não conta nem perde nada.
