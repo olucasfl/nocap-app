@@ -28,8 +28,6 @@ export const ATR_BACK_ROWS = 4;
 
 export type AtravessaBiome ='horta' | 'deserto' | 'neon';
 export const ATR_BIOMES: readonly AtravessaBiome[] = ['horta', 'deserto', 'neon'];
-/** A largada de toda partida é em grama por este tanto de linhas; depois a grama se mistura ao bioma sorteado. */
-export const ATR_START_GRASS = 3;
 
 export type LaneKind = 'descanso' | 'estrada' | 'trilho' | 'rio';
 
@@ -96,16 +94,29 @@ export const ATR_TURTLE_WARN = 40;
 export const ATR_TURTLE_DOWN = 60;
 
 /**
- * Os biomas (spec 029): a cada 150 linhas há uma transição para o bioma seguinte (as últimas 6 linhas
- * misturam os dois). A ordem é sorteada pela seed: o primeiro é sempre sorteado; de três em três os
+ * Os cenários (specs 029 e 030, pedido do Lucas de 16/10/2026): a largada já é no cenário da partida e
+ * ele muda a cada 50 linhas até a linha 300 e de 100 em 100 depois disso. As últimas 6 linhas de cada
+ * trecho misturam o cenário que sai com o que entra. A ordem é sorteada pela seed: de três em três os
  * biomas formam uma sequência dos três (sem repetir, o terceiro é o que sobrou); o primeiro de cada
  * grupo novo é sorteado de novo, só que nunca igual ao último do grupo anterior.
  */
-export const ATR_SEGMENT_LEN = 150;
+export const ATR_EARLY_SEGMENT_LEN = 50;
+export const ATR_EARLY_SEGMENTS = 6;
+export const ATR_LATE_SEGMENT_LEN = 100;
 export const ATR_TRANSITION_LEN = 6;
-export const ATR_BIOME_LEN = ATR_SEGMENT_LEN - ATR_TRANSITION_LEN;
-/** Três biomas = um grupo; a dificuldade sobe a cada grupo concluído. */
-export const ATR_CYCLE_LEN = ATR_SEGMENT_LEN * 3;
+/** Onde começa e quanto dura o trecho de cenário número `idx` (0 é o da largada). */
+export function atravessaSegment(row: number): { idx: number; start: number; len: number } {
+  const r = Math.max(0, Math.floor(row));
+  const early = ATR_EARLY_SEGMENT_LEN * ATR_EARLY_SEGMENTS;
+  if (r < early) {
+    const idx = Math.floor(r / ATR_EARLY_SEGMENT_LEN);
+    return { idx, start: idx * ATR_EARLY_SEGMENT_LEN, len: ATR_EARLY_SEGMENT_LEN };
+  }
+  const k = Math.floor((r - early) / ATR_LATE_SEGMENT_LEN);
+  return { idx: ATR_EARLY_SEGMENTS + k, start: early + k * ATR_LATE_SEGMENT_LEN, len: ATR_LATE_SEGMENT_LEN };
+}
+/** A dificuldade sobe a cada 450 linhas (o mesmo ritmo de antes dos cenários mudarem). */
+export const ATR_CYCLE_LEN = 450;
 
 /**
  * Varridas de aviso (spec 029): quem fica parado numa faixa de descanso vê uma linha e um "!" descerem

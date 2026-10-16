@@ -2,12 +2,10 @@ import { createRng, randInt } from '../core/rng';
 import {
   ATR_BACK_ROWS,
   ATR_BIOMES,
-  ATR_START_GRASS,
-  ATR_BIOME_LEN,
   ATR_CROC_LEN,
   ATR_CYCLE_LEN,
   ATR_FLOW_LEN,
-  ATR_SEGMENT_LEN,
+  atravessaSegment,
   ATR_HALF_COLS,
   ATR_MIN_LOG_GAP,
   ATR_MIN_VEHICLE_GAP,
@@ -43,8 +41,7 @@ const sequences = new Map<string, AtravessaBiome[]>();
 /**
  * A ordem dos biomas de uma partida (spec 029). Grupos de três: cada grupo é uma ordem dos três
  * biomas, e o primeiro de cada grupo novo nunca é igual ao último do anterior. O primeiro bioma
- * é sorteado pela seed entre deserto e noite (nunca a horta, que já é a largada): é ele que muda de
- * partida para partida. O trecho de largada em grama vem de `biomeAt`, não daqui.
+ * é sorteado pela seed (grama, deserto ou noite), e a largada já é nele.
  */
 export function biomeSequence(seed: string, count: number): AtravessaBiome[] {
   let seq = sequences.get(seed);
@@ -67,8 +64,6 @@ export function biomeSequence(seed: string, count: number): AtravessaBiome[] {
       if (group[0] !== prevLast) break;
     }
     if (group[0] === prevLast) group = [group[1]!, group[2]!, group[0]!];
-    // o primeiro cenário depois da largada em grama nunca é a própria grama: o mapa sempre muda logo
-    if (g === 0 && group[0] === ATR_BIOMES[0]) [group[0], group[1]] = [group[1]!, group[0]!];
     seq.push(...group);
   }
   return seq;
@@ -77,30 +72,20 @@ export function biomeSequence(seed: string, count: number): AtravessaBiome[] {
 const FIRST: BiomeInfo = { biome: 'horta', next: 'horta', blend: 0, cycle: 0 };
 
 /**
- * Em que bioma (ou transição) está uma linha desta partida. Linha 0 = largada. A largada é sempre em
- * grama (pedido do Lucas): as primeiras `ATR_START_GRASS` linhas são horta e, nas 6 seguintes, a
- * horta se mistura ao bioma que a seed sorteou para esta partida (que pode ser a própria horta).
+ * Em que bioma (ou transição) está uma linha desta partida. Linha 0 = largada, que já é no primeiro
+ * cenário. Os trechos têm 50 linhas até a 300 e 100 depois (`atravessaSegment`); nas últimas 6 linhas
+ * de cada um o cenário que sai se mistura ao que entra.
  */
 export function biomeAt(seed: string, row: number): BiomeInfo {
-  const r = Math.max(0, Math.floor(row));
-  const real = segmentBiomeAt(seed, r);
-  if (r < ATR_START_GRASS) return { ...FIRST, cycle: real.cycle };
-  if (r < ATR_START_GRASS + ATR_TRANSITION_LEN) {
-    const blend = (r - ATR_START_GRASS + 0.5) / ATR_TRANSITION_LEN;
-    return { biome: FIRST.biome, next: real.biome, blend, cycle: real.cycle };
-  }
-  return real;
-}
-
-function segmentBiomeAt(seed: string, r: number): BiomeInfo {
-  const idx = Math.floor(r / ATR_SEGMENT_LEN);
-  const into = r - idx * ATR_SEGMENT_LEN;
+  const { idx, start, len } = atravessaSegment(row);
+  const into = Math.max(0, Math.floor(row)) - start;
   const seq = biomeSequence(seed, idx + 2);
   const biome = seq[idx]!;
   const next = seq[idx + 1]!;
   const cycle = Math.floor(idx / 3);
-  if (into < ATR_BIOME_LEN) return { biome, next: biome, blend: 0, cycle };
-  return { biome, next, blend: (into - ATR_BIOME_LEN + 0.5) / ATR_TRANSITION_LEN, cycle };
+  const solid = len - ATR_TRANSITION_LEN;
+  if (into < solid) return { biome, next: biome, blend: 0, cycle };
+  return { biome, next, blend: (into - solid + 0.5) / ATR_TRANSITION_LEN, cycle };
 }
 
 /** O bioma que manda nas regras da faixa (na transição, o mais próximo). */
@@ -294,7 +279,7 @@ export class AtravessaWorld {
   private backLane(row: number): Lane {
     const cached = this.backLanes.get(row);
     if (cached) return cached;
-    const lane: Lane = { ...EMPTY_LANE(row), biome: FIRST };
+    const lane: Lane = { ...EMPTY_LANE(row), biome: this.biomeAt(0) };
     if (row < -ATR_BACK_ROWS) {
       for (let c = -ATR_HALF_COLS; c <= ATR_HALF_COLS; c++) lane.blocked.push(c);
     } else {

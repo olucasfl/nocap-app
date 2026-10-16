@@ -2,9 +2,6 @@ import { describe, expect, it } from 'vitest';
 import {
   ATR_BACK_ROWS,
   ATR_BIOMES,
-  ATR_BIOME_LEN,
-  ATR_SEGMENT_LEN,
-  ATR_START_GRASS,
   ATR_COLS,
   ATR_CROC_OPEN,
   ATR_CROC_PERIOD,
@@ -77,18 +74,27 @@ function itemNearCenter(lane: Lane, from = 300) {
 }
 
 describe('biomas', () => {
-  it('a cada 150 linhas há uma transição de 6 linhas para o bioma seguinte', () => {
-    const seq = biomeSequence('transicao', 6);
-    // a largada é grama; depois da mistura vem o primeiro cenário sorteado
-    expect(biomeAt('transicao', 0)).toMatchObject({ biome: 'horta', blend: 0 });
-    expect(biomeAt('transicao', ATR_START_GRASS + 6)).toMatchObject({ biome: seq[0], blend: 0 });
-    expect(biomeAt('transicao', ATR_BIOME_LEN - 1)).toMatchObject({ biome: seq[0], blend: 0 });
-    const t = biomeAt('transicao', ATR_BIOME_LEN);
-    expect(t).toMatchObject({ biome: seq[0], next: seq[1] });
-    expect(t.blend).toBeGreaterThan(0);
-    expect(biomeAt('transicao', ATR_SEGMENT_LEN - 1).blend).toBeLessThan(1);
-    expect(biomeAt('transicao', ATR_SEGMENT_LEN)).toMatchObject({ biome: seq[1], blend: 0 });
-    expect(biomeAt('transicao', ATR_SEGMENT_LEN * 2)).toMatchObject({ biome: seq[2], blend: 0 });
+  it('o cenário muda a cada 50 linhas até a 300 e de 100 em 100 depois, com 6 linhas de mistura', () => {
+    const seq = biomeSequence('transicao', 12);
+    // a largada já é no primeiro cenário
+    expect(biomeAt('transicao', 0)).toMatchObject({ biome: seq[0], blend: 0 });
+    expect(biomeAt('transicao', 43)).toMatchObject({ biome: seq[0], blend: 0 });
+    const mid = biomeAt('transicao', 47);
+    expect(mid).toMatchObject({ biome: seq[0], next: seq[1] });
+    expect(mid.blend).toBeGreaterThan(0);
+    expect(mid.blend).toBeLessThan(1);
+    expect(biomeAt('transicao', 49).blend).toBeLessThan(1);
+    expect(biomeAt('transicao', 50)).toMatchObject({ biome: seq[1], blend: 0 });
+    // seis trechos de 50 (até a linha 300)
+    for (let i = 0; i < 6; i++) expect(biomeAt('transicao', i * 50 + 10)).toMatchObject({ biome: seq[i], blend: 0 });
+    expect(biomeAt('transicao', 299).next).toBe(seq[6]);
+    // e depois de 100 em 100
+    expect(biomeAt('transicao', 300)).toMatchObject({ biome: seq[6], blend: 0 });
+    expect(biomeAt('transicao', 393).blend).toBe(0);
+    expect(biomeAt('transicao', 396).blend).toBeGreaterThan(0);
+    expect(biomeAt('transicao', 399).next).toBe(seq[7]);
+    expect(biomeAt('transicao', 400)).toMatchObject({ biome: seq[7], blend: 0 });
+    expect(biomeAt('transicao', 500)).toMatchObject({ biome: seq[8], blend: 0 });
   });
 
   it('a ordem segue as regras: o 2º difere do 1º, o 3º é o que sobrou, o 4º difere do 3º, e assim por diante', () => {
@@ -102,9 +108,8 @@ describe('biomas', () => {
         if (g > 0) expect(a).not.toBe(seq[g * 3 - 1]); // o 1º do grupo novo ≠ o último do anterior
       }
     }
-    // o primeiro bioma sorteado muda de partida para partida
-    // o primeiro cenário sorteado nunca é a horta (a largada já é grama): só deserto ou noite
-    expect([...firsts].sort()).toEqual(['deserto', 'neon']);
+    // o primeiro cenário (o da largada) é sorteado: aparecem os três
+    expect(firsts.size).toBe(3);
   });
 
   it('a ordem é a mesma para a mesma seed e muda com a seed', () => {
@@ -116,8 +121,8 @@ describe('biomas', () => {
 
   it('o mundo usa a ordem da seed e as faixas ficam com o bioma certo', () => {
     const w = new AtravessaWorld('mundo-biomas');
-    const seq = biomeSequence('mundo-biomas', 4);
-    for (const [row, idx] of [[ATR_START_GRASS + 12, 0], [ATR_SEGMENT_LEN + 5, 1], [ATR_SEGMENT_LEN * 2 + 5, 2], [ATR_SEGMENT_LEN * 3 + 5, 3]] as const) {
+    const seq = biomeSequence('mundo-biomas', 9);
+    for (const [row, idx] of [[5, 0], [55, 1], [105, 2], [255, 5], [305, 6], [405, 7]] as const) {
       expect(w.lane(row).biome.biome).toBe(seq[idx]);
       expect(ATR_BIOMES).toContain(w.lane(row).biome.biome);
     }
@@ -474,7 +479,7 @@ describe('simulação', () => {
         const lane = w.lane(r);
         expect(lane.kind).toBe('descanso');
         expect(lane.blocked).not.toContain(0);
-        expect(lane.biome.biome).toBe('horta');
+        expect(lane.biome.biome).toBe(biomeSequence(seed, 2)[0]);
       }
       expect(Array.from({ length: ATR_BACK_ROWS }, (_, i) => w.lane(-1 - i).blocked.length).some((n) => n > 0)).toBe(true);
       expect(w.lane(-ATR_BACK_ROWS - 1).blocked).toHaveLength(ATR_COLS);
@@ -483,29 +488,16 @@ describe('simulação', () => {
     }
   });
 
-  it('a largada é sempre na grama, em qualquer seed, e depois o cenário muda de partida para partida', () => {
-    const later = new Set<string>();
+  it('a largada já é no cenário da partida (as linhas de trás também) e muda de uma partida para outra', () => {
+    const firsts = new Set<string>();
     for (let i = 0; i < 200; i++) {
-      const w = new AtravessaWorld(`largada-${i}`);
-      for (const r of [0, 1, 5, ATR_START_GRASS - 1]) expect(w.lane(r).biome.biome, `linha ${r}`).toBe('horta');
-      later.add(w.lane(ATR_START_GRASS + 12).biome.biome);
-    }
-    // depois da largada o mapa sempre muda: deserto ou noite, nunca a mesma grama
-    expect([...later].sort()).toEqual(['deserto', 'neon']);
-  });
-
-  it('a mistura da grama com o cenário sorteado leva 6 linhas e termina no bioma da seed', () => {
-    for (let i = 0; i < 40; i++) {
-      const seed = `mistura-${i}`;
-      const real = biomeSequence(seed, 2)[0]!;
+      const seed = `largada-${i}`;
       const w = new AtravessaWorld(seed);
-      expect(w.biomeAt(ATR_START_GRASS - 1).blend).toBe(0);
-      const mid = w.biomeAt(ATR_START_GRASS + 2);
-      expect(mid).toMatchObject({ biome: 'horta', next: real });
-      expect(mid.blend).toBeGreaterThan(0);
-      expect(mid.blend).toBeLessThan(1);
-      expect(w.biomeAt(ATR_START_GRASS + 6)).toMatchObject({ biome: real, blend: 0 });
+      const first = biomeSequence(seed, 2)[0]!;
+      for (const r of [-4, -1, 0, 1, 20]) expect(w.lane(r).biome.biome, `linha ${r}`).toBe(first);
+      firsts.add(first);
     }
+    expect([...firsts].sort()).toEqual(['deserto', 'horta', 'neon']);
   });
 
   it('casa bloqueada recusa o passo sem gastar tempo', () => {
@@ -695,7 +687,7 @@ describe('varridas de aviso', () => {
     for (const seed of ['b1', 'b2', 'b3']) {
       const w = new AtravessaWorld(seed);
       const found = new Set<string>();
-      for (let r = 24; r < ATR_SEGMENT_LEN * 4 && found.size < 3; r++) {
+      for (let r = 24; r < 700 && found.size < 3; r++) {
         const lb = w.lane(r).biome;
         const biome = lb.blend >= 0.5 ? lb.next : lb.biome;
         if (found.has(biome) || lb.blend > 0) continue;

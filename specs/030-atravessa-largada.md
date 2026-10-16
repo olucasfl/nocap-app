@@ -4,13 +4,12 @@ Status: **implementada (15/10/2026); falta ver rodando no celular e no computado
 
 ## Pedido do Lucas
 
-1. Qualquer partida, com qualquer mapa sorteado depois, **começa sempre na grama (horta)**.
+1. ~~Qualquer partida começa sempre na grama~~ (substituído em 16/10/2026: a largada já é no cenário da partida, ver abaixo).
 2. No começo dá para **andar até 4 casas para trás**, com árvores e afins na parte de trás.
 
 ## O que mudou
 
-- **Atualização de 16/10/2026:** a largada em grama agora dura só 3 linhas (`ATR_START_GRASS`) e a mistura de 6 linhas leva a um primeiro cenário que **nunca é a grama** (deserto ou noite), para o mapa mudar logo e em toda partida; a horta volta nos grupos seguintes. Antes eram 16 linhas e o cenário podia ser grama de novo.
-- **Largada em grama, cenário sorteado depois (corrigido em 16/10/2026).** A primeira versão fixava a horta como primeiro bioma da ordem inteira, e todo mapa passou a parecer igual (salas de 50 a 250 m nunca saíam da grama). Agora `biomeSequence` volta a sortear o primeiro bioma pela seed e só a **largada** é fixa: as primeiras `ATR_START_GRASS` (16) linhas são horta e, nas 6 seguintes, a horta se mistura ao bioma sorteado (`biomeAt`), que pode ser a própria horta. Assim a partida começa sempre na grama e o cenário muda de partida para partida, no solo e na sala.
+- **Cenários (decisão final de 16/10/2026, substitui a largada fixa em grama):** a largada **já é no cenário da partida** (grama, deserto ou noite, sorteado pela seed) e o cenário **troca a cada 50 linhas até a linha 300 e de 100 em 100 depois**, com 6 linhas de mistura no fim de cada trecho (`atravessaSegment`, `biomeAt`). A ordem continua a de antes (spec 029): de três em três os biomas formam um grupo dos três, sem repetir, e o primeiro de cada grupo novo nunca é igual ao último do anterior. As 4 linhas de trás ficam no mesmo cenário da largada. (Histórico: a primeira versão fixava a grama na largada, e isso fez todo mapa parecer igual.)
 - `AtravessaWorld.lane(row < 0)`: as linhas -1 a -4 (`ATR_BACK_ROWS`) são descanso da horta com árvores sorteadas pela seed (`seed:atras:linha`, densidade 30% e 48% na última linha); **a coluna 0 fica sempre livre**, então o recuo e a volta sempre têm caminho. A linha -4 é mais fechada (borda da mata). Além dela, mata fechada (todas as colunas bloqueadas), só como enfeite.
 - `AtravessaSim`: recusa o passo só abaixo de `-ATR_BACK_ROWS`. A nota continua sendo a maior linha atingida, então recuar não conta nem perde nada.
 - Escuridão: `ATR_DARK_START_GAP` subiu de 6 para 8 (igual ao `ATR_DARK_MAX_GAP`) para quem recua não ser pego logo; ela continua parada nos primeiros 1,5 s e nunca passa do teto de velocidade.
