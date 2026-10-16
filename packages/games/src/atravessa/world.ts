@@ -2,7 +2,7 @@ import { createRng, randInt } from '../core/rng';
 import {
   ATR_BACK_ROWS,
   ATR_BIOMES,
-  ATR_FIRST_BIOME,
+  ATR_START_GRASS,
   ATR_BIOME_LEN,
   ATR_CROC_LEN,
   ATR_CYCLE_LEN,
@@ -42,8 +42,9 @@ const sequences = new Map<string, AtravessaBiome[]>();
 
 /**
  * A ordem dos biomas de uma partida (spec 029). Grupos de três: cada grupo é uma ordem dos três
- * biomas, e o primeiro de cada grupo novo nunca é igual ao último do anterior. O primeiro bioma da
- * partida é sempre a horta (pedido do Lucas); só a ordem dos dois seguintes vem da seed.
+ * biomas, e o primeiro de cada grupo novo nunca é igual ao último do anterior. O primeiro bioma
+ * é sorteado pela seed: é ele que muda de partida para partida (o trecho de largada em grama vem de
+ * `biomeAt`, não daqui).
  */
 export function biomeSequence(seed: string, count: number): AtravessaBiome[] {
   let seq = sequences.get(seed);
@@ -57,22 +58,15 @@ export function biomeSequence(seed: string, count: number): AtravessaBiome[] {
     const rng = createRng(`${seed}:biomas:${g}`);
     const prevLast = seq[seq.length - 1];
     let group: AtravessaBiome[] = [];
-    if (g === 0) {
-      // a largada é sempre na horta; só a ordem dos outros dois é sorteada
-      const rest: AtravessaBiome[] = ATR_BIOMES.filter((b) => b !== ATR_FIRST_BIOME);
-      if (rng() < 0.5) rest.reverse();
-      group = [ATR_FIRST_BIOME, ...rest];
-    } else {
-      for (let tries = 0; tries < 60; tries++) {
-        group = [...ATR_BIOMES];
-        for (let i = group.length - 1; i > 0; i--) {
-          const j = Math.floor(rng() * (i + 1));
-          [group[i], group[j]] = [group[j]!, group[i]!];
-        }
-        if (group[0] !== prevLast) break;
+    for (let tries = 0; tries < 60; tries++) {
+      group = [...ATR_BIOMES];
+      for (let i = group.length - 1; i > 0; i--) {
+        const j = Math.floor(rng() * (i + 1));
+        [group[i], group[j]] = [group[j]!, group[i]!];
       }
-      if (group[0] === prevLast) group = [group[1]!, group[2]!, group[0]!];
+      if (group[0] !== prevLast) break;
     }
+    if (group[0] === prevLast) group = [group[1]!, group[2]!, group[0]!];
     seq.push(...group);
   }
   return seq;
@@ -80,9 +74,23 @@ export function biomeSequence(seed: string, count: number): AtravessaBiome[] {
 
 const FIRST: BiomeInfo = { biome: 'horta', next: 'horta', blend: 0, cycle: 0 };
 
-/** Em que bioma (ou transição) está uma linha desta partida. Linha 0 = largada. */
+/**
+ * Em que bioma (ou transição) está uma linha desta partida. Linha 0 = largada. A largada é sempre em
+ * grama (pedido do Lucas): as primeiras `ATR_START_GRASS` linhas são horta e, nas 6 seguintes, a
+ * horta se mistura ao bioma que a seed sorteou para esta partida (que pode ser a própria horta).
+ */
 export function biomeAt(seed: string, row: number): BiomeInfo {
   const r = Math.max(0, Math.floor(row));
+  const real = segmentBiomeAt(seed, r);
+  if (r < ATR_START_GRASS) return { ...FIRST, cycle: real.cycle };
+  if (r < ATR_START_GRASS + ATR_TRANSITION_LEN) {
+    const blend = (r - ATR_START_GRASS + 0.5) / ATR_TRANSITION_LEN;
+    return { biome: FIRST.biome, next: real.biome, blend, cycle: real.cycle };
+  }
+  return real;
+}
+
+function segmentBiomeAt(seed: string, r: number): BiomeInfo {
   const idx = Math.floor(r / ATR_SEGMENT_LEN);
   const into = r - idx * ATR_SEGMENT_LEN;
   const seq = biomeSequence(seed, idx + 2);

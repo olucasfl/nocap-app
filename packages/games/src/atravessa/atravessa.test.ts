@@ -4,6 +4,7 @@ import {
   ATR_BIOMES,
   ATR_BIOME_LEN,
   ATR_SEGMENT_LEN,
+  ATR_START_GRASS,
   ATR_COLS,
   ATR_CROC_OPEN,
   ATR_CROC_PERIOD,
@@ -103,21 +104,21 @@ describe('biomas', () => {
         if (g > 0) expect(a).not.toBe(seq[g * 3 - 1]); // o 1º do grupo novo ≠ o último do anterior
       }
     }
-    // a largada é sempre a horta (pedido do Lucas), mesmo mudando a seed
-    expect([...firsts]).toEqual(['horta']);
+    // o primeiro bioma sorteado muda de partida para partida
+    expect(firsts.size).toBe(3);
   });
 
   it('a ordem é a mesma para a mesma seed e muda com a seed', () => {
     expect(biomeSequence('igual', 12)).toEqual(biomeSequence('igual', 12));
     const all = new Set<string>();
-    for (let i = 0; i < 60; i++) all.add(biomeSequence(`outra-${i}`, 9).join(','));
-    expect(all.size).toBeGreaterThan(5);
+    for (let i = 0; i < 60; i++) all.add(biomeSequence(`outra-${i}`, 6).join(','));
+    expect(all.size).toBeGreaterThan(10);
   });
 
   it('o mundo usa a ordem da seed e as faixas ficam com o bioma certo', () => {
     const w = new AtravessaWorld('mundo-biomas');
     const seq = biomeSequence('mundo-biomas', 4);
-    for (const [row, idx] of [[5, 0], [ATR_SEGMENT_LEN + 5, 1], [ATR_SEGMENT_LEN * 2 + 5, 2], [ATR_SEGMENT_LEN * 3 + 5, 3]] as const) {
+    for (const [row, idx] of [[ATR_START_GRASS + 12, 0], [ATR_SEGMENT_LEN + 5, 1], [ATR_SEGMENT_LEN * 2 + 5, 2], [ATR_SEGMENT_LEN * 3 + 5, 3]] as const) {
       expect(w.lane(row).biome.biome).toBe(seq[idx]);
       expect(ATR_BIOMES).toContain(w.lane(row).biome.biome);
     }
@@ -483,10 +484,28 @@ describe('simulação', () => {
     }
   });
 
-  it('a largada é sempre na horta, em qualquer seed', () => {
+  it('a largada é sempre na grama, em qualquer seed, e depois o cenário muda de partida para partida', () => {
+    const later = new Set<string>();
     for (let i = 0; i < 200; i++) {
       const w = new AtravessaWorld(`largada-${i}`);
-      for (const r of [0, 1, 20, 100, 143]) expect(w.lane(r).biome.biome).toBe('horta');
+      for (const r of [0, 1, 5, ATR_START_GRASS - 1]) expect(w.lane(r).biome.biome, `linha ${r}`).toBe('horta');
+      later.add(w.lane(ATR_START_GRASS + 30).biome.biome);
+    }
+    // depois da largada aparecem os três cenários
+    expect([...later].sort()).toEqual(['deserto', 'horta', 'neon']);
+  });
+
+  it('a mistura da grama com o cenário sorteado leva 6 linhas e termina no bioma da seed', () => {
+    for (let i = 0; i < 40; i++) {
+      const seed = `mistura-${i}`;
+      const real = biomeSequence(seed, 2)[0]!;
+      const w = new AtravessaWorld(seed);
+      expect(w.biomeAt(ATR_START_GRASS - 1).blend).toBe(0);
+      const mid = w.biomeAt(ATR_START_GRASS + 2);
+      expect(mid).toMatchObject({ biome: 'horta', next: real });
+      expect(mid.blend).toBeGreaterThan(0);
+      expect(mid.blend).toBeLessThan(1);
+      expect(w.biomeAt(ATR_START_GRASS + 6)).toMatchObject({ biome: real, blend: 0 });
     }
   });
 

@@ -28,8 +28,8 @@ export const ATR_BACK_ROWS = 4;
 
 export type AtravessaBiome ='horta' | 'deserto' | 'neon';
 export const ATR_BIOMES: readonly AtravessaBiome[] = ['horta', 'deserto', 'neon'];
-/** A largada de toda partida. */
-export const ATR_FIRST_BIOME: AtravessaBiome = 'horta';
+/** A largada de toda partida é em grama por este tanto de linhas; depois a grama se mistura ao bioma sorteado. */
+export const ATR_START_GRASS = 16;
 
 export type LaneKind = 'descanso' | 'estrada' | 'trilho' | 'rio';
 
