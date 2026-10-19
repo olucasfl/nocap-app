@@ -178,6 +178,30 @@ const timeRoute = createRoute({
   component: lazyRouteComponent(() => import('@/games/time/TimePage'), 'TimePage'),
 });
 
+const wordsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/words',
+  component: lazyRouteComponent(() => import('@/games/words/WordsPage'), 'WordsPage'),
+});
+const wordsClassicRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/words/classic',
+  component: lazyRouteComponent(() => import('@/games/words/ClassicPage'), 'ClassicPage'),
+});
+const wordsClassicPlayRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/words/classic/jogar',
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { tipo?: 'daily' | 'solo'; modo?: 'classic' | 'dueto' | 'quarteto' } => ({
+    ...(search.tipo === 'daily' || search.tipo === 'solo' ? { tipo: search.tipo } : {}),
+    ...(search.modo === 'classic' || search.modo === 'dueto' || search.modo === 'quarteto'
+      ? { modo: search.modo }
+      : {}),
+  }),
+  component: lazyRouteComponent(() => import('@/games/words/ClassicPlayPage'), 'ClassicPlayPage'),
+});
+
 const routeTree = rootRoute.addChildren([
   tabsRoute.addChildren([
     hubRoute,
@@ -192,6 +216,9 @@ const routeTree = rootRoute.addChildren([
   ecoRoute,
   atravessaRoute,
   blocksRoute,
+  wordsRoute,
+  wordsClassicRoute,
+  wordsClassicPlayRoute,
   nocapRoute,
   loginRoute,
   registerRoute,

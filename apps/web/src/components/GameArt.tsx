@@ -83,4 +83,5 @@ export const GAME_LABEL: Record<GameId, string> = {
   eco: 'Ecooo',
   blocks: "Block's",
   atravessa: 'Atravessa!',
+  wclassic: "Classic Word's",
 };

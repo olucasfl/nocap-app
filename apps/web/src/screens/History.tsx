@@ -29,6 +29,11 @@ import './history.css';
 
 /** Modos de cada jogo para filtrar (as salas entram pelo filtro de tipo). */
 const MODE_FILTERS: Record<GameId, { id: string; label: string }[]> = {
+  wclassic: [
+    { id: 'classic', label: '1 palavra' },
+    { id: 'dueto', label: '2 palavras' },
+    { id: 'quarteto', label: '4 palavras' },
+  ],
   color: [
     { id: 'classic', label: 'Clássico' },
     { id: 'flash', label: 'Flash' },

@@ -34,6 +34,7 @@ const GAME_PATH = {
   eco: '/eco',
   blocks: '/blocks',
   atravessa: '/atravessa',
+  wclassic: '/words/classic',
 } as const;
 
 /** Diferença de nota para mostrar: pontos com uma casa, ou número inteiro nos jogos de contagem. */

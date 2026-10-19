@@ -92,6 +92,11 @@ a.hub-card:active {
   background: var(--eco-red);
   color: var(--on-blue);
 }
+.hub-card-words {
+  background: var(--green);
+  color: var(--on-accent);
+  animation-delay: 0.66s;
+}
 .hub-card-mix {
   background: var(--eco-purple);
   color: var(--on-blue);

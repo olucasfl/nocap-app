@@ -1,4 +1,4 @@
-import { AtravessaArt, BlocksArt, ColorArt, EcoArt, MixArt, TimeArt } from '@/components/HubArt';
+import { AtravessaArt, BlocksArt, ColorArt, EcoArt, MixArt, TimeArt, WordsArt } from '@/components/HubArt';
 import { Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { AnimatedText } from '@/components/AnimatedText';
@@ -128,6 +128,17 @@ export function Hub() {
             <div className="hub-card-name long">Atravessa!</div>
             <div className="mono hub-card-meta">PULE E DESVIE SEM PARAR</div>
             <div className="mono hub-card-meta">{atravessaBestLabel(data)}</div>
+          </div>
+        </Link>
+
+        <Link to="/words" className="hub-card hub-card-words" data-sfx="start">
+          <div className="hub-art">
+            <WordsArt />
+          </div>
+          <div className="hub-card-foot">
+            <div className="hub-card-name">Word&apos;s</div>
+            <div className="mono hub-card-meta">JOGOS DE PALAVRAS</div>
+            <div className="mono hub-card-meta">{dailyStatus(data, 'wclassic')}</div>
           </div>
         </Link>
 
