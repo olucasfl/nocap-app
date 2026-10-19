@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { BackButton } from '@/components/BackButton';
 import { PlayGate } from '@/components/PlayGate';
 import { useAuth } from '@/lib/auth';
+import { fetchStats } from '@/lib/stats';
 import { fetchDaily, MODE_LABEL, type ClassicMode } from './words-api';
 import './classic.css';
 
@@ -12,6 +13,8 @@ const MODES: ClassicMode[] = ['classic', 'dueto', 'quarteto'];
 export function ClassicPage() {
   const user = useAuth((s) => s.user);
   const daily = useQuery({ queryKey: ['words', 'daily'], queryFn: fetchDaily, enabled: !!user, retry: false });
+  const stats = useQuery({ queryKey: ['stats'], queryFn: fetchStats, enabled: !!user, retry: false });
+  const streak = stats.data?.daily.wclassic;
   const run = daily.data?.run;
 
   const state = !user
@@ -40,6 +43,7 @@ export function ClassicPage() {
                 <div className="wp-name">Daily #{daily.data!.number}</div>
                 <div className="mono wp-meta">{state}</div>
                 <div className="mono wp-meta">A próxima palavra sai à meia-noite</div>
+                {streak && <div className="mono wp-meta">Sequência {streak.current} · melhor {streak.best}</div>}
               </div>
             ) : (
               <Link
@@ -53,6 +57,11 @@ export function ClassicPage() {
                 <div className="mono wp-meta">Uma palavra por dia, igual para todos · 6 tentativas</div>
               </Link>
             )}
+
+            <Link to="/ranking" search={{ jogo: 'wclassic', modo: 'daily' }} className="wp-card">
+              <div className="wp-name">Ranking do Daily</div>
+              <div className="mono wp-meta">{streak ? `Sua sequência: ${streak.current} dia(s)` : 'Veja quem acertou hoje'}</div>
+            </Link>
 
             {MODES.map((m) => {
               const info = MODE_LABEL[m];

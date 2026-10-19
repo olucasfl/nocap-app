@@ -4,6 +4,8 @@ import { decodePattern, keyboardState, wordKey, type Cell } from '@nocap/games';
 import { ApiError } from '@/lib/api-client';
 import { BackButton } from '@/components/BackButton';
 import { Loader } from '@/components/Loader';
+import { wordsAudio } from '@/lib/words-audio';
+import { shareImage } from './share-image';
 import { giveUpRun, MODE_LABEL, sendGuess, shareText, startRun, type ClassicMode, type RunView } from './words-api';
 import './classic.css';
 
@@ -46,6 +48,7 @@ export function ClassicPlay({ mode, kind }: { mode: ClassicMode; kind: 'daily' |
     if (!run || !open || busy) return;
     if ([...typed].length < LENGTH) {
       setShake(true);
+      wordsAudio.invalid();
       say('Faltam letras');
       window.setTimeout(() => setShake(false), 400);
       return;
@@ -54,11 +57,16 @@ export function ClassicPlay({ mode, kind }: { mode: ClassicMode; kind: 'daily' |
     try {
       const next = await sendGuess(run.id, typed);
       setFlipRow(next.used - 1);
+      const fresh = next.boards.find((b) => b.rows[next.used - 1] !== undefined)?.rows[next.used - 1];
+      if (fresh) wordsAudio.row(fresh);
+      if (next.state === 'won') wordsAudio.win();
+      else if (next.state === 'lost') wordsAudio.lose();
       setRun(next);
       setTyped('');
       window.setTimeout(() => setFlipRow(null), 1600);
     } catch (e) {
       setShake(true);
+      wordsAudio.invalid();
       say(e instanceof ApiError && e.status === 400 ? 'Palavra não aceita' : 'Sem conexão. Tente de novo');
       window.setTimeout(() => setShake(false), 400);
     } finally {
@@ -74,6 +82,7 @@ export function ClassicPlay({ mode, kind }: { mode: ClassicMode; kind: 'daily' |
       else if (ev.key === 'Backspace') setTyped((t) => [...t].slice(0, -1).join(''));
       else {
         const k = wordKey(ev.key);
+        if (k.length === 1 && /[a-z]/.test(k)) wordsAudio.key();
         if (k.length === 1 && /[a-z]/.test(k)) setTyped((t) => ([...t].length < LENGTH ? t + k : t));
       }
     };
@@ -109,7 +118,10 @@ export function ClassicPlay({ mode, kind }: { mode: ClassicMode; kind: 'daily' |
   const share = async () => {
     const text = shareText(run);
     try {
-      if (navigator.share) await navigator.share({ text });
+      const blob = await shareImage(run);
+      const file = blob ? new File([blob], 'classic-words.png', { type: 'image/png' }) : null;
+      if (file && navigator.canShare?.({ files: [file] })) await navigator.share({ files: [file], text });
+      else if (navigator.share) await navigator.share({ text });
       else {
         await navigator.clipboard.writeText(text);
         setCopied(true);
