@@ -214,7 +214,7 @@ test.describe("Classic Word's", () => {
     await page.keyboard.press('Enter');
     await expect(page.getByText('Acertou')).toBeVisible({ timeout: 8000 });
     await page.goto('/words/classic');
-    await expect(page.getByTestId('daily-card')).toContainText('Você já jogou hoje');
+    await expect(page.getByTestId('daily-card')).toContainText('Concluído hoje');
     await expect(page.getByTestId('play-daily')).toHaveCount(0);
   });
 

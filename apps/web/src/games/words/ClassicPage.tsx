@@ -42,7 +42,43 @@ export function ClassicPage() {
       </section>
 
       <PlayGate what="jogar">
-        <h3 className="wd-section">Escolha o modo</h3>
+        <section className="cw-gold" data-testid="daily-card">
+          <span className="cw-gold-tab">
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M8 1l2.1 4.6 5 .6-3.7 3.4 1 5L8 12.1 3.6 14.6l1-5L.9 6.2l5-.6z" />
+            </svg>
+            Daily
+          </span>
+          <span className="cw-gold-shine" aria-hidden="true" />
+          <i className="cw-spark s1" aria-hidden="true" />
+          <i className="cw-spark s2" aria-hidden="true" />
+          <i className="cw-spark s3" aria-hidden="true" />
+          <div className="cw-gold-head">
+            <div>
+              <b>Palavra do dia #{daily.data?.number ?? ''}</b>
+              <span className="mono">{done ? 'Concluído hoje' : 'Uma por dia, igual para todos'}</span>
+            </div>
+            {streak && <Pill tone="paper">Sequência {streak.current}</Pill>}
+          </div>
+          {done ? (
+            <div className="cw-gold-done">
+              <b>Nota {(run!.nota ?? 0).toFixed(1).replace('.', ',')}</b>
+              <span className="mono">
+                {run!.used} de {run!.tries} tentativas · a próxima palavra sai à meia-noite
+              </span>
+            </div>
+          ) : (
+            <Link to="/words/classic/jogar" search={{ tipo: 'daily', modo: 'classic' }} className="cw-gold-cta" data-sfx="start" data-testid="play-daily">
+              <span>{run ? 'Continuar o Daily' : 'Jogar o Daily'}</span>
+              <i aria-hidden="true">→</i>
+            </Link>
+          )}
+          <Link to="/ranking" search={{ jogo: 'wclassic', modo: 'daily' }} className="cw-gold-rank">
+            Ver o ranking do Daily →
+          </Link>
+        </section>
+
+        <h3 className="wd-section">Jogar quando quiser</h3>
         <div className="cw-modes">
           {MODES.map((m, i) => {
             const info = MODE_LABEL[m];
@@ -78,40 +114,6 @@ export function ClassicPage() {
         </div>
         <p className="mono cw-note">Sem ranking. A partida fica salva e, ao terminar, a próxima palavra já é sorteada.</p>
 
-        <section data-testid="daily-card">
-          {done ? (
-            <div className="cw-daily done">
-              <div className="cw-daily-text">
-                <b>Daily #{daily.data?.number} concluído</b>
-                <span className="mono">
-                  Nota {(run!.nota ?? 0).toFixed(1).replace('.', ',')} · {run!.used} de {run!.tries} · a próxima palavra sai à meia-noite
-                </span>
-              </div>
-              {streak && <Pill tone="paper">Sequência {streak.current}</Pill>}
-            </div>
-          ) : (
-            <Link to="/words/classic/jogar" search={{ tipo: 'daily', modo: 'classic' }} className="cw-daily" data-sfx="start" data-testid="play-daily">
-              <span className="cw-daily-shine" aria-hidden="true" />
-              <span className="cw-daily-text">
-                <b>{run ? 'Continuar o Daily' : 'Jogar o Daily'}</b>
-                <span className="mono">
-                  {run ? `${run.used} de ${run.tries} tentativas` : `A palavra do dia #${daily.data?.number ?? ''} · igual para todos`}
-                  {streak && streak.current > 0 ? ` · sequência ${streak.current}` : ''}
-                </span>
-              </span>
-              <span className="cw-daily-go" aria-hidden="true">
-                →
-              </span>
-            </Link>
-          )}
-          <Link to="/ranking" search={{ jogo: 'wclassic', modo: 'daily' }} className="wd-link cw-rank">
-            <span>
-              Ranking do Daily
-              <small>Só o Daily conta para o ranking</small>
-            </span>
-            <i>→</i>
-          </Link>
-        </section>
       </PlayGate>
 
       <button type="button" className="wd-toggle" aria-expanded={rules} onClick={() => setRules((r) => !r)} data-testid="toggle-rules">
