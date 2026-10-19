@@ -68,15 +68,15 @@ test.describe("Hub do Word's", () => {
   test('o botão Voltar leva para a tela anterior em cada nível', async ({ page }) => {
     await page.goto('/words');
     await page.getByRole('link', { name: /voltar/i }).click();
-    await expect(page).toHaveURL(//$/);
+    await expect(page).toHaveURL('/');
     await page.goto('/words/bee/fase/1');
     await page.getByRole('link', { name: /voltar/i }).click();
-    await expect(page).toHaveURL(//words/bee$/);
+    await expect(page).toHaveURL('/words/bee');
     await page.getByRole('link', { name: /voltar/i }).click();
-    await expect(page).toHaveURL(//words$/);
+    await expect(page).toHaveURL('/words');
     await page.goto('/words/connect/fase/1');
     await page.getByRole('link', { name: /voltar/i }).click();
-    await expect(page).toHaveURL(//words/connect$/);
+    await expect(page).toHaveURL('/words/connect');
   });
 
   test('cada cartão abre a página do jogo', async ({ page }) => {
