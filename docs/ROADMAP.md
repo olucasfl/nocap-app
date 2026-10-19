@@ -84,7 +84,7 @@ Ainda sem prioridade definida contra as salas do Ecooo. Cada item tem a sua spec
 
 - [x] **Word's** (grupo) e a **base de palavras em português** (coleção MIT `fserb/pt-br` + revisão humana): `specs/032-words-grupo-e-base.md`
 - [~] **Classic Word's** (estilo Termo: 1, 2 e 4 palavras e o Daily; API, tela de jogo e páginas prontas, faltam imagem de compartilhar, sons, tela do Daily com abas e jogar ao vivo): `specs/033-classic-words.md`
-- [~] **Connect Word's** (estilo Conexo e Connections; regras, API e 100 puzzles e telas do Daily prontos, falta jogar ao vivo, o arquivo na tela e a aprovação do Lucas nos puzzles): `specs/034-connect-words.md`
+- [~] **Connect Word's** (estilo Conexo e Connections; regras, API e 130 puzzles e telas do Daily prontos, falta jogar ao vivo, o arquivo na tela e a aprovação do Lucas nos puzzles): `specs/034-connect-words.md`
 - [~] **Bee Word's** (estilo Spelling Bee; regras, 60 favos gerados, API e telas do Daily prontos; falta a revisão do Lucas nos favos, o arquivo na tela, compartilhar e jogar ao vivo): `specs/035-bee-words.md`
 - Ordem sugerida de construção: base de palavras → Classic → Bee → Connect (o Connect depende de **conteúdo escrito à mão**, a parte mais lenta; dá para produzir os puzzles em paralelo).
 

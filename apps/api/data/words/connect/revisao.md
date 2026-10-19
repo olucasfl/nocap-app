@@ -1,4 +1,4 @@
-# Connect Word's: 100 puzzles para aprovação
+# Connect Word's: 130 puzzles para aprovação
 
 Tudo é original (feito para o NoCap). Corte ou troque o que não gostar em apps/api/data/words/connect/fonte/*.txt e rode node apps/api/scripts/words/montar-connect.mjs; os testes da API validam divisão única, repetição em 14 dias e títulos.
 
@@ -719,3 +719,215 @@ Tudo é original (feito para o NoCap). Corte ou troque o que não gostar em apps
 - verde · Praias famosas: COPACABANA, IPANEMA, JURERÊ, MARESIAS
 - azul · Combinam com o verbo "estourar": BOLHA, PIPOCA, BOMBA, BALÃO
 - roxo · Têm outra palavra parecida, com sentido diferente: RATIFICAR, PRESCREVER, INFRINGIR, MANDATO
+
+## c-0101
+
+- amarelo · Sabores de bolo: FUBÁ, CENOURA, LARANJA, CHOCOLATE
+- verde · Frutas de quintal: PITANGA, ACEROLA, CAJÁ, GRAVIOLA
+- azul · Combinam com o verbo "trocar": FIGURINHAS, SOCOS, PRESENTES, MENSAGENS
+- roxo · Começam com o nome de um animal: PERUCA, FOCAL, MACACADA, CAVALARIA
+
+## c-0102
+
+- amarelo · Bebidas alcoólicas: VINHO, UÍSQUE, VODCA, CERVEJA
+- verde · Chás e infusões: BOLDO, CAMOMILA, ERVA-DOCE, CAPIM-LIMÃO
+- azul · Combinam com o verbo "apagar": LUZ, FOGO, INCÊNDIO, LEMBRANÇA
+- roxo · Tirando o P, viram outra palavra: PARTE, PALMA, PASSO, PANO
+
+## c-0103
+
+- amarelo · Instalação elétrica: TOMADA, INTERRUPTOR, FIO, DISJUNTOR
+- verde · Instalação hidráulica: CANO, REGISTRO, SIFÃO, VÁLVULA
+- azul · Vêm depois de "auto": ESTIMA, RETRATO, ESTRADA, ESCOLA
+- roxo · Palíndromos (leem igual de trás para a frente): ANILINA, SOLOS, ELE, ASA
+
+## c-0104
+
+- amarelo · Setores do supermercado: PADARIA, AÇOUGUE, HORTIFRÚTI, FRIOS
+- verde · Tipos de loja: FARMÁCIA, PAPELARIA, LIVRARIA, SAPATARIA
+- azul · Vêm depois de "micro": ONDAS, FONE, EMPRESA, FILME
+- roxo · Começam com uma nota musical: DOCE, REVISTA, MILHO, LATA
+
+## c-0105
+
+- amarelo · Especialidades médicas: PEDIATRA, CARDIOLOGISTA, DERMATOLOGISTA, ORTOPEDISTA
+- verde · Setores do hospital: UTI, PRONTO-SOCORRO, CIRURGIA, MATERNIDADE
+- azul · Vêm depois de "bem": ESTAR, VINDO, QUERER, SUCEDIDO
+- roxo · Ganham um M na frente e viram outra palavra: OLHO, ASSA, ALA, ORAL
+
+## c-0106
+
+- amarelo · Corpos do céu: ESTRELA, PLANETA, GALÁXIA, SOL
+- verde · Pessoas famosas: ASTRO, ÍDOLO, CELEBRIDADE, FAMOSO
+- azul · Combinam com o verbo "plantar": BANANEIRA, BOATOS, ÁRVORE, SEMENTE
+- roxo · Escondem uma parte do corpo no começo: PERNADA, CABEÇADA, NARIZINHO, MÃOZINHA
+- pegadinha: ESTRELA também serve em "Pessoas famosas"
+
+## c-0107
+
+- amarelo · Gases: HÉLIO, NEON, ARGÔNIO, RADÔNIO
+- verde · Fenômenos da natureza: ECLIPSE, AURORA, ARCO-ÍRIS, MIRAGEM
+- azul · Vêm depois de "contra": CHEQUE, ATAQUE, SENSO, REGRA
+- roxo · Começam com um pronome: TUCANO, EUROPA, ELETRICIDADE, MEDALHA
+
+## c-0108
+
+- amarelo · Madeiras: MOGNO, PINHO, CEDRO, IMBUIA
+- verde · Pedras de revestimento: MÁRMORE, GRANITO, ARDÓSIA, BASALTO
+- azul · Combinam com o verbo "assinar": CONTRATO, DOCUMENTO, PETIÇÃO, EMBAIXO
+- roxo · O O muda de som no plural: PORCO, OSSO, MOLHO, TROCO
+
+## c-0109
+
+- amarelo · Navegação: BÚSSOLA, ÂNCORA, TIMÃO, BÓIA
+- verde · Coisas de pirata: TESOURO, PAPAGAIO, TAPA-OLHO, CARAVELA
+- azul · Vêm depois de "vice": PRESIDENTE, VERSA, CAMPEÃO, PREFEITO
+- roxo · Têm outra palavra com o mesmo som: COSER, GRAÇA, MAÇA, RUÇO
+
+## c-0110
+
+- amarelo · Profissões antigas: FERREIRO, ALFAIATE, SAPATEIRO, PADEIRO
+- verde · Partes de um castelo: TORRE, MURALHA, FOSSO, PONTE-LEVADIÇA
+- azul · Vêm depois de "anti": HERÓI, SOCIAL, VÍRUS, SÉPTICO
+- roxo · Mesma forma no masculino e no feminino: COLEGA, AGENTE, INTÉRPRETE, GARANTE
+
+## c-0111
+
+- amarelo · Para escrever e pintar: CANETA, PINCEL, GIZ, CARVÃO
+- verde · Tipos de papel: SULFITE, CARTOLINA, CREPOM, VEGETAL
+- azul · Vêm depois de "pão de": QUEIJO, FORMA, LÓ, MEL
+- roxo · Têm outra palavra parecida, com sentido diferente: DESCRIÇÃO, FLAGRANTE, EMIGRAR, SORTIR
+
+## c-0112
+
+- amarelo · Rios do mundo: NILO, DANÚBIO, SENA, MISSISSIPI
+- verde · Cadeias de montanhas: ALPES, ANDES, HIMALAIA, PIRINEUS
+- azul · Combinam com o verbo "assistir": PEÇA, JOGO, AULA, SÉRIE
+- roxo · Terminam em A, mas são masculinas: ENIGMA, EMBLEMA, POEMA, COMA
+
+## c-0113
+
+- amarelo · Árvores frutíferas: MANGUEIRA, GOIABEIRA, LARANJEIRA, JABUTICABEIRA
+- verde · Sementes: LINHAÇA, CHIA, GERGELIM, PAPOULA
+- azul · Combinam com o verbo "colher": FLORES, FRUTOS, DADOS, ASSINATURAS
+- roxo · Começam com H, letra que não se pronuncia: HABITAT, HERANÇA, HIPÓTESE, HUMILDE
+
+## c-0114
+
+- amarelo · Gêneros de TV: NOVELA, TELEJORNAL, REALITY, DESENHO
+- verde · Profissões de TV: APRESENTADOR, ROTEIRISTA, CINEGRAFISTA, MAQUIADOR
+- azul · Completam "mudar de ___": IDEIA, LUGAR, VIDA, CANAL
+- roxo · Viram outra palavra quando lidas ao contrário: ROMA, ROTA, RALOS, LAVO
+
+## c-0115
+
+- amarelo · Partes da bicicleta: PEDAL, GUIDÃO, SELIM, PARALAMA
+- verde · Equipamentos de proteção: CAPACETE, JOELHEIRA, COTOVELEIRA, CANELEIRA
+- azul · Vêm depois de "roda": GIGANTE, VIVA, PÉ, PRESA
+- roxo · O X soa como KS: FLEXÍVEL, COMPLEXO, ANEXO, CONEXÃO
+
+## c-0116
+
+- amarelo · Cores de cabelo: LOIRO, CASTANHO, RUIVO, GRISALHO
+- verde · Tipos de cabelo: CACHEADO, LISO, CRESPO, ONDULADO
+- azul · Vêm depois de "fio": DENTAL, TERRA, CONDUTOR, PRUMO
+- roxo · Vêm do tupi: CAIPIRA, TATU, JACARÉ, UBATUBA
+
+## c-0117
+
+- amarelo · Sabores de sorvete: CREME, FLOCOS, NAPOLITANO, PISTACHE
+- verde · Coberturas: CALDA, GRANULADO, CHANTILLY, CONFEITO
+- azul · Vêm depois de "festa de": FORMATURA, ANIVERSÁRIO, CASAMENTO, DESPEDIDA
+- roxo · Perdem a primeira letra e viram outra palavra: GRATO, PLANA, FRIO, TRAMA
+
+## c-0118
+
+- amarelo · Meios de comunicação antigos: TELEGRAMA, CARTA, FAX, BILHETE
+- verde · No correio: CEP, ENVELOPE, SELO, CARTEIRO
+- azul · Combinam com o verbo "enviar": MENSAGEM, CARTÃO, PACOTE, CONVITE
+- roxo · Ganham outro sentido ao receber acento: INICIO, CIRCULO, VALIDO, PRATICA
+
+## c-0119
+
+- amarelo · Animais de estimação: CACHORRO, GATO, HAMSTER, COELHO
+- verde · Coisas de pet shop: COLEIRA, RAÇÃO, CAMINHA, BEBEDOURO
+- azul · Combinam com o verbo "soltar": PIPA, FOGUETE, GARGALHADA, SUSPIRO
+- roxo · O O muda de som no plural: GOSTO, POSTO, PORTO, FOGO
+
+## c-0120
+
+- amarelo · Formas de descansar: COCHILAR, SONECA, SESTA, CABECEAR
+- verde · Sinais de cansaço: BOCEJO, OLHEIRAS, SONO, PREGUIÇA
+- azul · Vêm depois de "cama": ELÁSTICA, BOX, QUEEN, KING
+- roxo · Começam com o nome de uma bebida: CHÁCARA, LEITEIRO, CAFEZINHO, CERVEJARIA
+
+## c-0121
+
+- amarelo · Estados do Norte: PARÁ, AMAPÁ, RORAIMA, ACRE
+- verde · Capitais do Centro-Oeste: GOIÂNIA, CUIABÁ, CAMPO GRANDE, BRASÍLIA
+- azul · Vêm depois de "mata": BORRÃO, MOSCAS, RATOS, LEÃO
+- roxo · O X soa como Z: EXILADO, EXALAR, EXIBIR, EXAUSTÃO
+
+## c-0122
+
+- amarelo · Frutas cítricas: POMELO, CIDRA, LIMA, KUMQUAT
+- verde · Frutas exóticas: LICHIA, PITAIA, CARAMBOLA, MANGOSTÃO
+- azul · Vêm depois de "doce de": LEITE, ABÓBORA, COCO, GOIABA
+- roxo · O X soa como CH: BAIXO, ENXURRADA, MEXERICO, ROXO
+
+## c-0123
+
+- amarelo · Países da América do Sul: ARGENTINA, URUGUAI, PARAGUAI, COLÔMBIA
+- verde · Capitais europeias: BERLIM, VIENA, ATENAS, DUBLIN
+- azul · Vêm depois de "queda de": BRAÇO, ENERGIA, PREÇO, CABELO
+- roxo · Verbos que também são substantivos: JANTAR, ANDAR, SABER, PODER
+
+## c-0124
+
+- amarelo · Roupas de banho: BIQUÍNI, SUNGA, MAIÔ, CANGA
+- verde · Itens de praia: GUARDA-SOL, BALDINHO, PROTETOR, CADEIRA
+- azul · Combinam com o verbo "dar": CARONA, BOLO, PLANTÃO, GOLPE
+- roxo · Particípios que viraram substantivos: SAÍDA, CHEGADA, ENTRADA, PARTIDA
+
+## c-0125
+
+- amarelo · Sólidos geométricos: CUBO, ESFERA, CONE, PIRÂMIDE
+- verde · Unidades de tempo: MINUTO, HORA, SÉCULO, DÉCADA
+- azul · Vêm depois de "hora": EXTRA, MARCADA, CERTA, VAGA
+- roxo · Só existem no plural: ARREDORES, ANAIS, CÓCEGAS, PÊSAMES
+
+## c-0126
+
+- amarelo · Ferramentas de jardim: PÁ, RASTELO, ENXADA, REGADOR
+- verde · Brinquedos de parquinho: GANGORRA, BALANÇO, ESCORREGADOR, GIRA-GIRA
+- azul · Vêm depois de "jardim de": INFÂNCIA, INVERNO, ROSAS, ENCANTAMENTO
+- roxo · Tirando o S, viram outra palavra: SENTE, SERVA, SOPA, SALVA
+
+## c-0127
+
+- amarelo · Materiais recicláveis: PAPEL, PLÁSTICO, VIDRO, METAL
+- verde · Tipos de poluição: SONORA, VISUAL, ATMOSFÉRICA, HÍDRICA
+- azul · Vêm depois de "efeito": ESTUFA, BORBOLETA, COLATERAL, ESPECIAL
+- roxo · Perdem a primeira letra e viram outra palavra: BRASA, PRATA, GRITO, TRAÇO
+
+## c-0128
+
+- amarelo · Deuses romanos: JÚPITER, MINERVA, JUNO, CÉRES
+- verde · Heróis gregos: HÉRCULES, ULISSES, AQUILES, PERSEU
+- azul · Combinam com o verbo "carregar": CULPA, MALA, SEGREDO, SACOLA
+- roxo · Têm outra palavra parecida, com sentido diferente: ABSOLVER, DILATAR, EMERGIR, TRAFEGAR
+
+## c-0129
+
+- amarelo · Programas de computador: PLANILHA, EDITOR, NAVEGADOR, ANTIVÍRUS
+- verde · Partes de uma planilha: CÉLULA, LINHA, COLUNA, FÓRMULA
+- azul · Combinam com o verbo "clicar": BOTÃO, LINK, ÍCONE, ANÚNCIO
+- roxo · Mesma forma no masculino e no feminino: PIANISTA, FLORISTA, MAQUINISTA, ECONOMISTA
+
+## c-0130
+
+- amarelo · Na escola: NOTA, PROVA, BOLETIM, CHAMADA
+- verde · Dinheiro: CÉDULA, MOEDA, TROCO, GORJETA
+- azul · Vêm depois de "tempo": INTEGRAL, ÚTIL, LIVRE, PARCIAL
+- roxo · Começam com uma nota musical: SINAL, LADRÃO, MIÚDO, SOLENE
+- pegadinha: NOTA também serve em "Dinheiro"

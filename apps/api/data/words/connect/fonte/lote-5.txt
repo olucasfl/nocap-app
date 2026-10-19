@@ -1,0 +1,183 @@
+# Connect Word's, lote 5 (puzzles 101 a 130).
+
+## c-0101
+1 Sabores de bolo :: FUBÁ, CENOURA, LARANJA, CHOCOLATE
+2 Frutas de quintal :: PITANGA, ACEROLA, CAJÁ, GRAVIOLA
+3 Combinam com o verbo "trocar" :: FIGURINHAS, SOCOS, PRESENTES, MENSAGENS
+4 Começam com o nome de um animal :: PERUCA, FOCAL, MACACADA, CAVALARIA
+
+## c-0102
+1 Bebidas alcoólicas :: VINHO, UÍSQUE, VODCA, CERVEJA
+2 Chás e infusões :: BOLDO, CAMOMILA, ERVA-DOCE, CAPIM-LIMÃO
+3 Combinam com o verbo "apagar" :: LUZ, FOGO, INCÊNDIO, LEMBRANÇA
+4 Tirando o P, viram outra palavra :: PARTE, PALMA, PASSO, PANO
+
+## c-0103
+1 Instalação elétrica :: TOMADA, INTERRUPTOR, FIO, DISJUNTOR
+2 Instalação hidráulica :: CANO, REGISTRO, SIFÃO, VÁLVULA
+3 Vêm depois de "auto" :: ESTIMA, RETRATO, ESTRADA, ESCOLA
+4 Palíndromos (leem igual de trás para a frente) :: ANILINA, SOLOS, ELE, ASA
+
+## c-0104
+1 Setores do supermercado :: PADARIA, AÇOUGUE, HORTIFRÚTI, FRIOS
+2 Tipos de loja :: FARMÁCIA, PAPELARIA, LIVRARIA, SAPATARIA
+3 Vêm depois de "micro" :: ONDAS, FONE, EMPRESA, FILME
+4 Começam com uma nota musical :: DOCE, REVISTA, MILHO, LATA
+
+## c-0105
+1 Especialidades médicas :: PEDIATRA, CARDIOLOGISTA, DERMATOLOGISTA, ORTOPEDISTA
+2 Setores do hospital :: UTI, PRONTO-SOCORRO, CIRURGIA, MATERNIDADE
+3 Vêm depois de "bem" :: ESTAR, VINDO, QUERER, SUCEDIDO
+4 Ganham um M na frente e viram outra palavra :: OLHO, ASSA, ALA, ORAL
+
+## c-0106
+1 Corpos do céu :: ESTRELA, PLANETA, GALÁXIA, SOL
+2 Pessoas famosas :: ASTRO, ÍDOLO, CELEBRIDADE, FAMOSO
+3 Combinam com o verbo "plantar" :: BANANEIRA, BOATOS, ÁRVORE, SEMENTE
+4 Escondem uma parte do corpo no começo :: PERNADA, CABEÇADA, NARIZINHO, MÃOZINHA
+~ ESTRELA > Pessoas famosas
+
+## c-0107
+1 Gases :: HÉLIO, NEON, ARGÔNIO, RADÔNIO
+2 Fenômenos da natureza :: ECLIPSE, AURORA, ARCO-ÍRIS, MIRAGEM
+3 Vêm depois de "contra" :: CHEQUE, ATAQUE, SENSO, REGRA
+4 Começam com um pronome :: TUCANO, EUROPA, ELETRICIDADE, MEDALHA
+
+## c-0108
+1 Madeiras :: MOGNO, PINHO, CEDRO, IMBUIA
+2 Pedras de revestimento :: MÁRMORE, GRANITO, ARDÓSIA, BASALTO
+3 Combinam com o verbo "assinar" :: CONTRATO, DOCUMENTO, PETIÇÃO, EMBAIXO
+4 O O muda de som no plural :: PORCO, OSSO, MOLHO, TROCO
+
+## c-0109
+1 Navegação :: BÚSSOLA, ÂNCORA, TIMÃO, BÓIA
+2 Coisas de pirata :: TESOURO, PAPAGAIO, TAPA-OLHO, CARAVELA
+3 Vêm depois de "vice" :: PRESIDENTE, VERSA, CAMPEÃO, PREFEITO
+4 Têm outra palavra com o mesmo som :: COSER, GRAÇA, MAÇA, RUÇO
+
+## c-0110
+1 Profissões antigas :: FERREIRO, ALFAIATE, SAPATEIRO, PADEIRO
+2 Partes de um castelo :: TORRE, MURALHA, FOSSO, PONTE-LEVADIÇA
+3 Vêm depois de "anti" :: HERÓI, SOCIAL, VÍRUS, SÉPTICO
+4 Mesma forma no masculino e no feminino :: COLEGA, AGENTE, INTÉRPRETE, GARANTE
+
+## c-0111
+1 Para escrever e pintar :: CANETA, PINCEL, GIZ, CARVÃO
+2 Tipos de papel :: SULFITE, CARTOLINA, CREPOM, VEGETAL
+3 Vêm depois de "pão de" :: QUEIJO, FORMA, LÓ, MEL
+4 Têm outra palavra parecida, com sentido diferente :: DESCRIÇÃO, FLAGRANTE, EMIGRAR, SORTIR
+
+## c-0112
+1 Rios do mundo :: NILO, DANÚBIO, SENA, MISSISSIPI
+2 Cadeias de montanhas :: ALPES, ANDES, HIMALAIA, PIRINEUS
+3 Combinam com o verbo "assistir" :: PEÇA, JOGO, AULA, SÉRIE
+4 Terminam em A, mas são masculinas :: ENIGMA, EMBLEMA, POEMA, COMA
+
+## c-0113
+1 Árvores frutíferas :: MANGUEIRA, GOIABEIRA, LARANJEIRA, JABUTICABEIRA
+2 Sementes :: LINHAÇA, CHIA, GERGELIM, PAPOULA
+3 Combinam com o verbo "colher" :: FLORES, FRUTOS, DADOS, ASSINATURAS
+4 Começam com H, letra que não se pronuncia :: HABITAT, HERANÇA, HIPÓTESE, HUMILDE
+
+## c-0114
+1 Gêneros de TV :: NOVELA, TELEJORNAL, REALITY, DESENHO
+2 Profissões de TV :: APRESENTADOR, ROTEIRISTA, CINEGRAFISTA, MAQUIADOR
+3 Completam "mudar de ___" :: IDEIA, LUGAR, VIDA, CANAL
+4 Viram outra palavra quando lidas ao contrário :: ROMA, ROTA, RALOS, LAVO
+
+## c-0115
+1 Partes da bicicleta :: PEDAL, GUIDÃO, SELIM, PARALAMA
+2 Equipamentos de proteção :: CAPACETE, JOELHEIRA, COTOVELEIRA, CANELEIRA
+3 Vêm depois de "roda" :: GIGANTE, VIVA, PÉ, PRESA
+4 O X soa como KS :: FLEXÍVEL, COMPLEXO, ANEXO, CONEXÃO
+
+## c-0116
+1 Cores de cabelo :: LOIRO, CASTANHO, RUIVO, GRISALHO
+2 Tipos de cabelo :: CACHEADO, LISO, CRESPO, ONDULADO
+3 Vêm depois de "fio" :: DENTAL, TERRA, CONDUTOR, PRUMO
+4 Vêm do tupi :: CAIPIRA, TATU, JACARÉ, UBATUBA
+
+## c-0117
+1 Sabores de sorvete :: CREME, FLOCOS, NAPOLITANO, PISTACHE
+2 Coberturas :: CALDA, GRANULADO, CHANTILLY, CONFEITO
+3 Vêm depois de "festa de" :: FORMATURA, ANIVERSÁRIO, CASAMENTO, DESPEDIDA
+4 Perdem a primeira letra e viram outra palavra :: GRATO, PLANA, FRIO, TRAMA
+
+## c-0118
+1 Meios de comunicação antigos :: TELEGRAMA, CARTA, FAX, BILHETE
+2 No correio :: CEP, ENVELOPE, SELO, CARTEIRO
+3 Combinam com o verbo "enviar" :: MENSAGEM, CARTÃO, PACOTE, CONVITE
+4 Ganham outro sentido ao receber acento :: INICIO, CIRCULO, VALIDO, PRATICA
+
+## c-0119
+1 Animais de estimação :: CACHORRO, GATO, HAMSTER, COELHO
+2 Coisas de pet shop :: COLEIRA, RAÇÃO, CAMINHA, BEBEDOURO
+3 Combinam com o verbo "soltar" :: PIPA, FOGUETE, GARGALHADA, SUSPIRO
+4 O O muda de som no plural :: GOSTO, POSTO, PORTO, FOGO
+
+## c-0120
+1 Formas de descansar :: COCHILAR, SONECA, SESTA, CABECEAR
+2 Sinais de cansaço :: BOCEJO, OLHEIRAS, SONO, PREGUIÇA
+3 Vêm depois de "cama" :: ELÁSTICA, BOX, QUEEN, KING
+4 Começam com o nome de uma bebida :: CHÁCARA, LEITEIRO, CAFEZINHO, CERVEJARIA
+
+## c-0121
+1 Estados do Norte :: PARÁ, AMAPÁ, RORAIMA, ACRE
+2 Capitais do Centro-Oeste :: GOIÂNIA, CUIABÁ, CAMPO GRANDE, BRASÍLIA
+3 Vêm depois de "mata" :: BORRÃO, MOSCAS, RATOS, LEÃO
+4 O X soa como Z :: EXILADO, EXALAR, EXIBIR, EXAUSTÃO
+
+## c-0122
+1 Frutas cítricas :: POMELO, CIDRA, LIMA, KUMQUAT
+2 Frutas exóticas :: LICHIA, PITAIA, CARAMBOLA, MANGOSTÃO
+3 Vêm depois de "doce de" :: LEITE, ABÓBORA, COCO, GOIABA
+4 O X soa como CH :: BAIXO, ENXURRADA, MEXERICO, ROXO
+
+## c-0123
+1 Países da América do Sul :: ARGENTINA, URUGUAI, PARAGUAI, COLÔMBIA
+2 Capitais europeias :: BERLIM, VIENA, ATENAS, DUBLIN
+3 Vêm depois de "queda de" :: BRAÇO, ENERGIA, PREÇO, CABELO
+4 Verbos que também são substantivos :: JANTAR, ANDAR, SABER, PODER
+
+## c-0124
+1 Roupas de banho :: BIQUÍNI, SUNGA, MAIÔ, CANGA
+2 Itens de praia :: GUARDA-SOL, BALDINHO, PROTETOR, CADEIRA
+3 Combinam com o verbo "dar" :: CARONA, BOLO, PLANTÃO, GOLPE
+4 Particípios que viraram substantivos :: SAÍDA, CHEGADA, ENTRADA, PARTIDA
+
+## c-0125
+1 Sólidos geométricos :: CUBO, ESFERA, CONE, PIRÂMIDE
+2 Unidades de tempo :: MINUTO, HORA, SÉCULO, DÉCADA
+3 Vêm depois de "hora" :: EXTRA, MARCADA, CERTA, VAGA
+4 Só existem no plural :: ARREDORES, ANAIS, CÓCEGAS, PÊSAMES
+
+## c-0126
+1 Ferramentas de jardim :: PÁ, RASTELO, ENXADA, REGADOR
+2 Brinquedos de parquinho :: GANGORRA, BALANÇO, ESCORREGADOR, GIRA-GIRA
+3 Vêm depois de "jardim de" :: INFÂNCIA, INVERNO, ROSAS, ENCANTAMENTO
+4 Tirando o S, viram outra palavra :: SENTE, SERVA, SOPA, SALVA
+
+## c-0127
+1 Materiais recicláveis :: PAPEL, PLÁSTICO, VIDRO, METAL
+2 Tipos de poluição :: SONORA, VISUAL, ATMOSFÉRICA, HÍDRICA
+3 Vêm depois de "efeito" :: ESTUFA, BORBOLETA, COLATERAL, ESPECIAL
+4 Perdem a primeira letra e viram outra palavra :: BRASA, PRATA, GRITO, TRAÇO
+
+## c-0128
+1 Deuses romanos :: JÚPITER, MINERVA, JUNO, CÉRES
+2 Heróis gregos :: HÉRCULES, ULISSES, AQUILES, PERSEU
+3 Combinam com o verbo "carregar" :: CULPA, MALA, SEGREDO, SACOLA
+4 Têm outra palavra parecida, com sentido diferente :: ABSOLVER, DILATAR, EMERGIR, TRAFEGAR
+
+## c-0129
+1 Programas de computador :: PLANILHA, EDITOR, NAVEGADOR, ANTIVÍRUS
+2 Partes de uma planilha :: CÉLULA, LINHA, COLUNA, FÓRMULA
+3 Combinam com o verbo "clicar" :: BOTÃO, LINK, ÍCONE, ANÚNCIO
+4 Mesma forma no masculino e no feminino :: PIANISTA, FLORISTA, MAQUINISTA, ECONOMISTA
+
+## c-0130
+1 Na escola :: NOTA, PROVA, BOLETIM, CHAMADA
+2 Dinheiro :: CÉDULA, MOEDA, TROCO, GORJETA
+3 Vêm depois de "tempo" :: INTEGRAL, ÚTIL, LIVRE, PARCIAL
+4 Começam com uma nota musical :: SINAL, LADRÃO, MIÚDO, SOLENE
+~ NOTA > Dinheiro
