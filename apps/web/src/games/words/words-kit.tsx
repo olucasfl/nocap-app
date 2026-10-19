@@ -12,6 +12,7 @@ export function WordsShell({
   accent,
   children,
   className = '',
+  fit = false,
 }: {
   title: string;
   back?: string;
@@ -19,9 +20,11 @@ export function WordsShell({
   accent?: Accent;
   children: ReactNode;
   className?: string;
+  /** Tela de jogo que cabe inteira na tela do celular, sem rolar. */
+  fit?: boolean;
 }) {
   return (
-    <div className="app wd-app">
+    <div className={`app wd-app${fit ? ' fit' : ''}`}>
       <main className={`screen wd ${accent ? `wd-${accent}` : ''} ${className}`}>
         <header className="wd-top">
           <BackButton to={back} />

@@ -132,7 +132,7 @@ test.describe("Classic Word's", () => {
     await type(page, 'xxxxx');
     await page.keyboard.press('Enter');
     await expect(page.getByText('Palavra não aceita')).toBeVisible();
-    await expect(page.getByText('6 tentativas')).toBeVisible();
+    await expect(page.getByText('6 restam')).toBeVisible();
     await page.keyboard.press('Backspace');
     await page.keyboard.press('Enter');
     await expect(page.getByText('Faltam letras')).toBeVisible();
@@ -148,7 +148,7 @@ test.describe("Classic Word's", () => {
     await expect(page.getByText('A palavra era AMIGO')).toBeVisible();
     await page.getByTestId('again').click();
     await expect(page.getByTestId('board-0')).toBeVisible();
-    await expect(page.getByText('6 tentativas')).toBeVisible();
+    await expect(page.getByText('6 restam')).toBeVisible();
     await expect(page.locator('.cw-row[data-testid]')).toHaveCount(0);
   });
 
@@ -163,7 +163,7 @@ test.describe("Classic Word's", () => {
     await expect(page.getByTestId('mode-card-classic')).toContainText('Em andamento · 1 de 6');
     await page.getByTestId('mode-classic').click();
     await expect(page.getByTestId('row-0-0')).toBeVisible();
-    await expect(page.getByText('5 tentativas')).toBeVisible();
+    await expect(page.getByText('5 restam')).toBeVisible();
   });
 
   test('o teclado da tela funciona (letras, apagar e enter)', async ({ page }) => {

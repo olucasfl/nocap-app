@@ -9,6 +9,9 @@ import { connectProgress, useProgress } from '../levels/progress';
 import { CONNECT_RULES } from './ConnectCatalog';
 import './connect.css';
 
+/** Agrupa o tamanho das palavras em faixas: a letra não muda de tamanho a cada palavra, só quando precisa. */
+const bucket = (n: number) => (n <= 6 ? 6 : n <= 8 ? 8 : n);
+
 function Band({ group, missed = false }: { group: ConnectGroup; missed?: boolean }) {
   return (
     <div className={`cx-band l${group.level}${missed ? ' missed' : ''}`} data-testid={`band-${group.level}`}>
@@ -175,6 +178,7 @@ export function ConnectPlay() {
       title={`Fase ${num}`}
       back="/words/connect"
       accent="blue"
+      fit
       className="cx-theme"
       right={<Pill tone="paper">{tier}</Pill>}
     >
@@ -248,7 +252,7 @@ export function ConnectPlay() {
                       key={w}
                       type="button"
                       className={`cx-word${at >= 0 ? ' on' : ''}${w.length > 9 ? ' long' : ''}`}
-                      style={{ '--i': i } as CSSProperties}
+                      style={{ '--i': i, '--len': bucket(Math.max(...w.split(' ').map((x) => x.length))) } as CSSProperties}
                       aria-pressed={at >= 0}
                       onClick={() => toggle(w)}
                     >

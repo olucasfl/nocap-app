@@ -340,24 +340,34 @@
   opacity: 0.8;
 }
 .cx-aux {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.cx-aux .cx-hintbtn {
+  height: 42px;
+  font-size: 13px;
 }
 .cx-hintbtn:disabled {
   opacity: 0.55;
 }
 .cx-giveup {
-  min-height: 44px;
-  padding: 0 12px;
-  border: 0;
-  background: none;
-  color: var(--muted);
-  font-size: 12px;
+  height: 42px;
+  padding: 0 14px;
+  border: 2.5px solid var(--ink);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  font: 800 12px var(--font-mono, monospace);
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  text-decoration: underline;
   cursor: pointer;
+  transition: transform 0.08s ease, background 0.15s ease;
+}
+.cx-giveup:active {
+  transform: scale(0.96);
+  background: var(--ink);
+  color: var(--paper);
 }
 .cx-found {
   display: grid;
@@ -509,4 +519,43 @@
     animation: none !important;
     transition: none !important;
   }
+}
+
+/* ---------- celular: a fase cabe inteira na tela ---------- */
+[data-testid='grid'].cx-grid {
+  container-type: inline-size;
+}
+.cx-word {
+  /* o tamanho da letra acompanha a palavra mais longa da casa, sem quebrar no meio */
+  font-size: clamp(8px, calc(((100cqw - 24px) / 4 - 14px) / (var(--len, 6) * 0.8)), 15px);
+  overflow-wrap: normal;
+  hyphens: none;
+}
+.wd-app.fit .cx-theme {
+  gap: 8px;
+}
+.wd-app.fit [data-testid='grid'].cx-grid {
+  flex: 1;
+  min-height: 0;
+  max-height: 400px;
+  grid-auto-rows: minmax(0, 1fr);
+  align-content: stretch;
+}
+.wd-app.fit .cx-word {
+  min-height: 0;
+}
+.wd-app.fit .cx-actions .btn {
+  height: 46px;
+}
+.wd-app.fit .cx-status {
+  padding: 8px 12px;
+}
+.wd-app.fit .cx-band {
+  padding: 6px 12px 6px 46px;
+}
+.wd-app.fit .cx-band span {
+  font-size: 11px;
+}
+.wd-app.fit .cx-found {
+  gap: 6px;
 }

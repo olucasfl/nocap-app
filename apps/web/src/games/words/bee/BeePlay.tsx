@@ -233,12 +233,9 @@ export function BeePlay() {
       title={`Fase ${num}`}
       back="/words/bee"
       accent="yellow"
-      className="bee-theme"
-      right={
-        <Pill tone="paper">
-          {tier} · {found.length} palavras
-        </Pill>
-      }
+      fit
+      className={`bee-theme${tab !== 'words' ? ' info' : ''}`}
+      right={<Pill tone="paper">{tier}</Pill>}
     >
       <Confetti burst={burst} />
 
@@ -293,12 +290,14 @@ export function BeePlay() {
             <span className="bz-caret" aria-hidden="true" />
           </div>
 
-          <svg className={`bz-hive${wave ? ' wave' : ''}`} viewBox="0 0 300 280" role="group" aria-label="Letras do favo">
-            <Hex x={150} y={140} letter={level.c} center onPress={() => add(level.c)} />
-            {order.map((l, i) => (
-              <Hex key={l} x={OUTER[i]![0]} y={OUTER[i]![1]} letter={l} onPress={() => add(l)} />
-            ))}
-          </svg>
+          <div className="bz-hive-wrap">
+            <svg className={`bz-hive${wave ? ' wave' : ''}`} viewBox="0 0 300 280" role="group" aria-label="Letras do favo">
+              <Hex x={150} y={140} letter={level.c} center onPress={() => add(level.c)} />
+              {order.map((l, i) => (
+                <Hex key={l} x={OUTER[i]![0]} y={OUTER[i]![1]} letter={l} onPress={() => add(l)} />
+              ))}
+            </svg>
+          </div>
 
           <div className="bz-actions">
             <button type="button" className="btn ghost" onClick={() => setTyped((t) => t.slice(0, -1))} data-testid="delete">

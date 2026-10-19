@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { Link } from '@tanstack/react-router';
 import { decodePattern, keyboardState, wordKey, type Cell } from '@nocap/games';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { ApiError } from '@/lib/api-client';
 import { wordsAudio } from '@/lib/words-audio';
 import { Pill, ResultSheet, TileLoader, useTyped, WordsShell } from './words-kit';
@@ -18,6 +19,7 @@ export function ClassicPlay({ mode, kind }: { mode: ClassicMode; kind: 'daily' |
   const [busy, setBusy] = useState(false);
   const [flipRow, setFlipRow] = useState<number | null>(null);
   const [winRow, setWinRow] = useState<number | null>(null);
+  const [askGiveUp, setAskGiveUp] = useState(false);
   const accepted = useRef<Set<string> | null>(null);
   const toastTimer = useRef<number | undefined>(undefined);
 
@@ -138,8 +140,9 @@ export function ClassicPlay({ mode, kind }: { mode: ClassicMode; kind: 'daily' |
       title={title}
       back="/words/classic"
       accent="green"
+      fit
       className={`cw-${run.mode}`}
-      right={open ? <Pill tone="paper">{left} {left === 1 ? 'tentativa' : 'tentativas'}</Pill> : undefined}
+      right={open ? <Pill tone="paper">{left} {left === 1 ? 'resta' : 'restam'}</Pill> : undefined}
     >
       <div className="wd-toast-slot" aria-live="polite">
         {toast && (
@@ -192,8 +195,11 @@ export function ClassicPlay({ mode, kind }: { mode: ClassicMode; kind: 'daily' |
           {ROWS.map((letters, ri) => (
             <div className="cw-krow" key={ri}>
               {ri === 2 && (
-                <button type="button" className="cw-key wide" onClick={() => void submit()} data-testid="enter">
-                  Enter
+                <button type="button" className="cw-key wide" aria-label="Enviar" onClick={() => void submit()} data-testid="enter">
+                  <svg viewBox="0 0 24 24" className="cw-ico" aria-hidden="true">
+                    <path d="M20 5v6a3 3 0 0 1-3 3H5" />
+                    <path d="M9 9l-4 5 4 5" />
+                  </svg>
                 </button>
               )}
               {[...letters].map((l) => {
@@ -211,13 +217,16 @@ export function ClassicPlay({ mode, kind }: { mode: ClassicMode; kind: 'daily' |
               })}
               {ri === 2 && (
                 <button type="button" className="cw-key wide" aria-label="Apagar" onClick={erase} data-testid="backspace">
-                  Apagar
+                  <svg viewBox="0 0 24 24" className="cw-ico" aria-hidden="true">
+                    <path d="M9 5h11a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H9l-6-7z" />
+                    <path d="M12.5 9.5l5 5M17.5 9.5l-5 5" />
+                  </svg>
                 </button>
               )}
             </div>
           ))}
           {run.kind === 'solo' && (
-            <button type="button" className="cw-giveup mono" onClick={() => void giveUpRun(run.id).then(setRun)} data-testid="giveup">
+            <button type="button" className="cw-giveup" onClick={() => setAskGiveUp(true)} data-testid="giveup">
               Desistir
             </button>
           )}
@@ -229,7 +238,7 @@ export function ClassicPlay({ mode, kind }: { mode: ClassicMode; kind: 'daily' |
           label="TENTATIVAS"
           value={run.used}
           decimals={0}
-          detail={`${run.answers!.length === 1 ? 'A palavra era' : 'As palavras eram'} ${run.answers!.join(', ').toUpperCase()} · ${run.state === 'won' ? `acertou em ${run.used} de ${run.tries}` : `${run.tries} de ${run.tries} tentativas usadas`}`}
+          detail={`${run.answers!.length === 1 ? 'A palavra era' : 'As palavras eram'} ${run.answers!.join(', ').toUpperCase()} · ${run.state === 'won' ? `acertou em ${run.used} de ${run.tries}` : `${run.used} de ${run.tries} tentativas usadas`}`}
         >
           {run.kind === 'solo' ? (
             <button type="button" className="btn alt" onClick={begin} data-testid="again">
@@ -245,6 +254,20 @@ export function ClassicPlay({ mode, kind }: { mode: ClassicMode; kind: 'daily' |
           </Link>
         </ResultSheet>
       )}
+
+      <ConfirmDialog
+        open={askGiveUp}
+        title="Desistir desta palavra?"
+        text="A partida termina e as respostas são reveladas."
+        confirmLabel="Desistir"
+        confirmSfx="back"
+        cancelLabel="Continuar jogando"
+        onConfirm={() => {
+          setAskGiveUp(false);
+          void giveUpRun(run.id).then(setRun);
+        }}
+        onCancel={() => setAskGiveUp(false)}
+      />
     </WordsShell>
   );
 }

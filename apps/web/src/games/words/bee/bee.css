@@ -705,3 +705,54 @@
     opacity: 1;
   }
 }
+
+/* celular: a colmeia ocupa o espaço que sobra e as listas rolam dentro do próprio quadro (a tela não rola) */
+.bz-hive-wrap {
+  flex: 1;
+  min-height: 150px;
+  display: grid;
+  place-items: center;
+}
+.bz-hive-wrap .bz-hive {
+  width: 100%;
+  max-width: 330px;
+  height: 100%;
+}
+.wd-app.fit .bz-word {
+  height: 40px;
+  font-size: 30px;
+}
+.wd-app.fit .bz-caret {
+  height: 28px;
+}
+.wd-app.fit .bz-actions .btn {
+  height: 46px;
+}
+.wd-app.fit .bz-found,
+.wd-app.fit .bz-hints {
+  flex: none;
+  max-height: 20dvh;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.wd-app.fit .bz-found {
+  min-height: 48px;
+  padding: 8px 10px;
+}
+
+/* aba de dicas ou regras aberta: a lista toma o lugar da colmeia (que volta ao abrir "Palavras") */
+.wd-app.fit .bee-theme.info .bz-hive-wrap,
+.wd-app.fit .bee-theme.info .bz-word,
+.wd-app.fit .bee-theme.info .bz-actions,
+.wd-app.fit .bee-theme.info .bz-finish {
+  display: none;
+}
+.wd-app.fit .bee-theme.info .bz-found,
+.wd-app.fit .bee-theme.info .bz-hints,
+.wd-app.fit .bee-theme.info .wd-panel {
+  flex: 1;
+  max-height: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
