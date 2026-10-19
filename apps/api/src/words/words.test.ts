@@ -25,10 +25,21 @@ describe('listas de palavras', () => {
     expect(lists.canonical('xxxxx')).toBeNull();
   });
 
+  it('quando a lista acaba, repete em outra ordem, igual para todos e sem repetir dentro da volta', () => {
+    const size = lists.order.length;
+    const day = (n: number) => new Date(Date.parse(WORDS_DAILY_EPOCH + 'T00:00:00Z') + n * 86_400_000).toISOString().slice(0, 10);
+    const lap1 = Array.from({ length: size }, (_, i) => lists.daily(day(size + i)).word);
+    expect(new Set(lap1).size).toBe(size);
+    expect(lap1).not.toEqual(lists.order);
+    expect(lists.daily(day(size)).word).toBe(lap1[0]);
+    expect(lists.daily(day(size)).word).not.toBe(lists.order[size - 1]);
+    expect(lists.daily(day(size)).number).toBe(size + 1);
+  });
+
   it('o Daily anda um dia por vez e o primeiro dia é o número 1', () => {
     expect(lists.daily(WORDS_DAILY_EPOCH).number).toBe(1);
     expect(lists.daily(WORDS_DAILY_EPOCH).word).toBe(lists.order[0]);
-    expect(lists.daily('2026-10-21').word).toBe(lists.order[1]);
+    expect(lists.daily('2026-10-20').word).toBe(lists.order[1]);
     expect(lists.daily('2020-01-01').number).toBe(1);
   });
 });
