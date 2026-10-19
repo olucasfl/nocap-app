@@ -45,7 +45,7 @@ describe('Atravessa! no ranking, histórico e recordes', () => {
     const none = { current: 0, best: 0, playedToday: false, totalScore: null };
     const stats: Stats = {
       modes: [{ game: 'atravessa', mode: 'infinito', matches: 1, best: 900, average: 900 }],
-      daily: { color: none, time: none, eco: none, blocks: none, atravessa: none, wclassic: none },
+      daily: { color: none, time: none, eco: none, blocks: none, atravessa: none, wclassic: none, wbee: none },
       visit: { current: 0, best: 0, visitedToday: false },
     };
     expect(gameModes(stats, 'atravessa').map((m) => m.mode)).toEqual(['infinito']);

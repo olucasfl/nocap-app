@@ -23,6 +23,7 @@ const stats: Stats = {
     eco: { current: 0, best: 0, playedToday: false, totalScore: null },
     atravessa: { current: 0, best: 0, playedToday: false, totalScore: null },
     wclassic: { current: 0, best: 0, playedToday: false, totalScore: null },
+    wbee: { current: 0, best: 0, playedToday: false, totalScore: null },
     blocks: { current: 0, best: 0, playedToday: false, totalScore: null },
   },
   visit: { current: 0, best: 0, visitedToday: false },

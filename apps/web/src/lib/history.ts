@@ -58,7 +58,7 @@ export const activeFilters = (f: HistoryFilters) =>
   (f.mode ? 1 : 0) + (f.kind ? 1 : 0) + (f.period !== 'all' ? 1 : 0);
 
 export function fetchHistory(
-  game: 'color' | 'time' | 'eco' | 'blocks' | 'atravessa' | 'wclassic',
+  game: 'color' | 'time' | 'eco' | 'blocks' | 'atravessa' | 'wclassic' | 'wbee',
   cursor?: string,
   filters: HistoryFilters = NO_FILTERS,
 ) {
@@ -154,6 +154,7 @@ const MODE_NAME: Record<string, string> = {
   'batida-frenesi': 'Eco Hero: Frenesi',
   infinito: 'Infinito',
   towers: 'Block Towers',
+  archive: 'Arquivo',
   dueto: '2 palavras',
   quarteto: '4 palavras',
   party: 'Mix Nocap',

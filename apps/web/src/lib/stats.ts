@@ -1,6 +1,6 @@
 import { apiClient } from './api-client';
 
-export type GameId = 'color' | 'time' | 'eco' | 'blocks' | 'atravessa' | 'wclassic';
+export type GameId = 'color' | 'time' | 'eco' | 'blocks' | 'atravessa' | 'wclassic' | 'wbee';
 
 export interface ModeStats {
   game: string;
@@ -54,6 +54,8 @@ const MODE_MAX_BY_GAME: Record<GameId, Record<string, number>> = {
   blocks: { classic: 0, towers: 0 },
   // Classic Word's: a nota é de 0 a 10
   wclassic: { classic: 10, dueto: 10, quarteto: 10 },
+  // Bee Word's: a nota é de 0 a 10
+  wbee: { classic: 10, archive: 10 },
 };
 
 /** Sobrevivência: a nota é o número de rodadas jogadas (não tem máximo). */

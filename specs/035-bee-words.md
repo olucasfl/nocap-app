@@ -1,6 +1,6 @@
 # 035 · Bee Word's (7 letras, uma delas obrigatória, o estilo Spelling Bee)
 
-Status: **aprovada (19/10/2026); vem depois do Classic.** Faz parte do grupo [032 Word's](032-words-grupo-e-base.md) (base de palavras, corridas no servidor, Daily, compartilhar, acessibilidade). Pesquisa em [docs/pesquisa-termo.md](../docs/pesquisa-termo.md).
+Status: **aprovada (19/10/2026), em construção: Daily jogável (regras, API e telas); falta o arquivo na tela e o compartilhar.** Faz parte do grupo [032 Word's](032-words-grupo-e-base.md) (base de palavras, corridas no servidor, Daily, compartilhar, acessibilidade). Pesquisa em [docs/pesquisa-termo.md](../docs/pesquisa-termo.md).
 
 ## Objetivo
 

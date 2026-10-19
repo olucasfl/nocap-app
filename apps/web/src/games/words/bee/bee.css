@@ -1,0 +1,150 @@
+/* Bee Word's: favo, palavra em montagem, patentes. Só transform/opacity animam. */
+.bee-rank {
+  display: grid;
+  gap: 6px;
+}
+.bee-rank-name {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 20px;
+  text-transform: uppercase;
+}
+.bee-steps {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 4px;
+}
+.bee-steps i {
+  height: 10px;
+  border: 2px solid var(--ink);
+  border-radius: 4px;
+  background: var(--paper);
+}
+.bee-steps i.on {
+  background: var(--yellow);
+}
+.cw-toast.good {
+  background: var(--green);
+  color: var(--on-accent);
+}
+.bee-word {
+  min-height: 44px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2px;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 30px;
+}
+.bee-word .center {
+  color: var(--orange);
+}
+.bee-word .out {
+  opacity: 0.4;
+}
+.bee-caret {
+  width: 3px;
+  height: 30px;
+  background: var(--ink);
+  opacity: 0.6;
+}
+.bee-hive {
+  width: min(100%, 320px);
+  margin: 0 auto;
+  display: block;
+  overflow: visible;
+}
+.bee-hex {
+  cursor: pointer;
+  transition: transform 0.35s ease;
+  outline: none;
+}
+.bee-hex .shadow {
+  fill: var(--ink);
+}
+.bee-hex .face {
+  fill: var(--white);
+  stroke: var(--ink);
+  stroke-width: 3;
+  stroke-linejoin: round;
+}
+.bee-hex.center .face {
+  fill: var(--yellow);
+}
+.bee-hex text {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 32px;
+  fill: var(--on-accent);
+  pointer-events: none;
+}
+.bee-hex:not(.center) text {
+  fill: var(--ink);
+}
+.bee-hex .dot {
+  fill: var(--ink);
+}
+.bee-hex:active .face {
+  transform: translate(2px, 2px);
+}
+.bee-hex:focus-visible .face {
+  stroke: var(--orange);
+}
+.bee-hive.wave .bee-hex {
+  animation: bee-wave 0.6s ease;
+}
+@keyframes bee-wave {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+.bee-actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.bee-panel {
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  padding: 8px 12px;
+}
+.bee-panel summary {
+  font-family: var(--font-display);
+  font-weight: 900;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.bee-found {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  padding-top: 8px;
+  font-size: 14px;
+}
+.bee-found .latest {
+  font-weight: 900;
+  background: var(--yellow);
+  color: var(--on-accent);
+  border-radius: 4px;
+  padding: 0 4px;
+}
+.bee-hints {
+  display: grid;
+  gap: 4px;
+  padding-top: 8px;
+  font-size: 11px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bee-hex {
+    transition: none;
+  }
+  .bee-hive.wave .bee-hex {
+    animation: none;
+  }
+}

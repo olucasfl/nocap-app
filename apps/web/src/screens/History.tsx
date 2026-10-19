@@ -29,6 +29,7 @@ import './history.css';
 
 /** Modos de cada jogo para filtrar (as salas entram pelo filtro de tipo). */
 const MODE_FILTERS: Record<GameId, { id: string; label: string }[]> = {
+  wbee: [{ id: 'classic', label: 'Daily' }, { id: 'archive', label: 'Arquivo' }],
   wclassic: [
     { id: 'classic', label: '1 palavra' },
     { id: 'dueto', label: '2 palavras' },
