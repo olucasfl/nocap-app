@@ -80,6 +80,14 @@ Ainda sem prioridade definida contra as salas do Ecooo. Cada item tem a sua spec
 
 - [x] **NoCap! fases 1 a 8 implementadas e testadas ao vivo** (falta validar a Arena X1 com 2 pessoas reais e calibrar): `specs/016-maratona.md`
 
+## Etapa 7: Word's (jogos de palavras), 19/10/2026
+
+- [ ] **Word's** (grupo) e a **base de palavras em português** (coleção MIT `fserb/pt-br` + revisão humana): `specs/032-words-grupo-e-base.md`
+- [ ] **Classic Word's** (estilo Termo: 1, 2 e 4 palavras e o Daily): `specs/033-classic-words.md`
+- [ ] **Connect Word's** (estilo Conexo e Connections): `specs/034-connect-words.md`
+- [ ] **Bee Word's** (estilo Spelling Bee): `specs/035-bee-words.md`
+- Ordem sugerida de construção: base de palavras → Classic → Bee → Connect (o Connect depende de **conteúdo escrito à mão**, a parte mais lenta; dá para produzir os puzzles em paralelo).
+
 ## Etapa 6: produção
 
 - [ ] Cloudflare Pages (web), Fly.io (api + Colyseus), Upstash (Redis), domínio, monitoramento

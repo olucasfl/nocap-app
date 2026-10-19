@@ -106,3 +106,32 @@ A palavra secreta **nunca vai para o aparelho** (nem pelo DevTools). O aparelho 
 - [NYT e as notificações contra clones (Techdirt)](https://www.techdirt.com/2024/03/08/the-ny-times-war-on-all-wordle-clones-continues/)
 - [Análise jurídica canadense sobre clones do Wordle](https://iplaw.allard.ubc.ca/?p=10381)
 - [Erros comuns com letras repetidas em clones (Cemetech)](https://www.cemetech.net/forum/viewtopic.php?p=309931)
+
+---
+
+## Atualização de 19/10/2026: o grupo Word's (Classic, Connect e Bee)
+
+Decisão do Lucas: o **Word's** é um grupo de jogos de palavras com **Classic Word's** (base do Termo), **Connect Word's** (Conexo e Connections) e **Bee Word's** (Spelling Bee). Specs: [032](../specs/032-words-grupo-e-base.md), [033](../specs/033-classic-words.md), [034](../specs/034-connect-words.md) e [035](../specs/035-bee-words.md).
+
+### Os jogos de palavras do menu do NYT (o que cada um é)
+- **Connections:** 16 palavras, 4 grupos de 4, 4 erros, "falta uma" quando uma palavra está errada, cores de dificuldade (amarelo, verde, azul, roxo).
+- **Spelling Bee:** 7 letras, uma obrigatória no centro, palavras de 4+ letras, 4 letras = 1 ponto, mais = 1 por letra, pangrama +7, patentes até Gênio (70%) e Rainha (todas).
+- **Strands:** grade 6x8 com tema, ligar letras vizinhas deslizando, palavras do tema azuis e o spangram (que atravessa a grade de lado a lado) amarelo, todas as letras usadas no fim; palavras fora do tema enchem uma barra de dica.
+- **Letter Boxed:** 12 letras nos 4 lados de um quadrado, palavras de 3+ letras, letras seguidas nunca do mesmo lado, cada palavra começa na última letra da anterior, usar todas as letras com o menor número de palavras.
+- **Crossplay:** Scrabble de dois jogadores, 7 letras escondidas, bônus de casa e de palavra, 40 pontos por usar as 7, dicionário mais rígido.
+- **The Crossword, The Midi e The Mini:** palavras cruzadas em três tamanhos; o Mini tem cronômetro e ranking de tempo.
+- Não são de palavras: Pips, Tiles, Sudoku.
+
+### O Conexo (brasileiro)
+Da Daydash, em conexo.ws: 4 grupos de 4, temas variados (cinema, música, ciência, esportes, cultura geral) escritos por uma **equipe editorial**, puzzle diário com arquivo, sem cadastro. As cores indicam dificuldade e o jogo explora palavras ambíguas. As regras de erros variam entre as fontes (**não confirmei na página oficial**, que não abre pelas ferramentas). O projeto aberto **Decifra** (GitHub `PHLoures/decifra`, também em português) tem Classic em Solo, Dueto e Quarteto, usa a mesma coleção `fserb/pt-br` e separa **respostas** de **palavras aceitas**, com arquivos `fora.txt` e `extras.txt` e a regra de **não mudar os dias já jogados**.
+
+### A base de palavras (medida em 19/10/2026)
+Coleção `fserb/pt-br` (MIT, 17 MB): léxico de 145.744 palavras, 195.751 conjugações, 4.023 verbos, ICF de 419.486 palavras e listas de países, estados, municípios e palavras negativas.
+- 5 letras no léxico: **6.300** (5.452 sem formas verbais; 5.308 sem países, estados, municípios e negativas). O léxico **quase não tem plural** (`casas` só aparece nas conjugações; `amigos` não aparece).
+- Com plurais simples somados: 6.578 palavras de 5 letras com frequência. **Candidatas a resposta** por ICF: ≤ 13 = 1.442; ≤ 14 = 1.980; ≤ 15 = 2.576. **Palpites aceitos**: 9.049.
+- Amostra de ICF 10 a 12: `solar negra vinte rodas limpo pouca vinha milho cabos mexer vapor`; de 12 a 13: `bossa tricô ciúme maçãs suíço cesto linho clero nudez cozer balsa`. Sujeira que aparece e precisa sair na revisão: nomes (`césar`, `ávila`, `bangu`), grafia antiga (`jóias`), termos obscuros (`caput`).
+- **Bee:** 18.967 palavras de 4+ letras (ICF ≤ 13,5, sem acento); 2.416 conjuntos de 7 letras com pangrama (1.479 sem a letra S); **5.141** combinações de conjunto e letra central com 20 a 70 palavras e 1 ou 2 pangramas. A lista bruta traz nomes próprios (`joão`, `joana`) que a revisão tira.
+- Detalhe técnico do formato: `lexico` e `conjugações` são uma palavra por linha; `icf` é `palavra,nota` (menor = mais comum).
+
+### Ideias de jogos de palavras diferentes (anotadas)
+Ficaram em `docs/JOGOS-FUTUROS.md`: Bomba de sílabas, Letras caindo, Corrida de letras, Adedonha, Caça-letras de dedo, Batalha de rimas, Forca de dupla com poderes, Palavra bloqueada e as salas de Word's.

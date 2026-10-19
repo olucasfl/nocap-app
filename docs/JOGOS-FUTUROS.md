@@ -94,3 +94,19 @@ Foram sugeridas na conversa e o Lucas não comentou: **Fusível** (segurar para 
 1. Terminar as salas do Ecooo (itens 1 a 3 da seção 1), porque elas validam a base de salas com um jogo novo.
 2. Detalhar o **Tribunal do Absurdo** (pergunta por pergunta, começando pelas "perguntas abertas" acima) e escrever a spec dele (`/spec`), com critérios de aceite.
 3. Só então implementar. Intervalo, Ponte e Regras Vivas voltam à conversa depois, na ordem da seção "Ordem decidida".
+
+
+## Word's: ideias para depois (19/10/2026)
+
+Jogos de palavras **diferentes do Termo** que o Lucas pediu para anotar. Os três primeiros do grupo (Classic, Connect e Bee) estão nas specs 032 a 035; estas ficam de reserva:
+
+- **Bomba de sílabas** (sala): uma bomba com um pedaço de palavra ("RAC") passa de mão em mão; digite uma palavra que contenha o pedaço antes de explodir. Poderes: congelar a bomba, inverter a ordem, pedir um pedaço mais difícil ao próximo.
+- **Letras caindo** (solo e versus, sem digitar): letras caem como num Tetris e se formam palavras tocando em sequência; no versus, palavras grandes mandam letras ruins ao adversário. Reaproveita a física do Block Towers.
+- **Corrida de letras** (solo e sala, sem digitar): corredor de 3 faixas como o Atravessa!, coletando na ordem as letras da palavra-alvo e desviando das erradas.
+- **Adedonha** (sala): letra sorteada e categorias; vale mais a resposta que ninguém mais deu. Respostas livres, então precisa de votação do grupo.
+- **Caça-letras de dedo** (solo e sala): grade 4x4, deslizar entre letras vizinhas como no Boggle, com poderes (congelar a grade do rival, letra dourada).
+- **Batalha de rimas** (sala): rimas em tempo curto, uma pessoa de cada vez; o servidor confere pelo final da palavra.
+- **Forca de dupla com poderes**: quem escolhe a palavra dificulta (esconder uma letra, trocar a palavra por outra parecida) e quem chuta tem os seus poderes.
+- **Palavra bloqueada** (sala): a regra muda a cada rodada ("com Z", "sem A", "terminando em -ão") e um poder troca a regra; parente das Regras Vivas.
+- **Salas de Word's**: corrida (mesma palavra para todos, tabuleiros dos outros só com cores), duelo, Conexão relâmpago e corrida de favos.
+- **Outros jogos de palavras do NYT** (referência, descrições em `docs/pesquisa-termo.md`): Strands (caça-palavras com tema, sem digitar), Letter Boxed (cadeia de palavras num quadrado) e Crossplay (Scrabble em dupla).
