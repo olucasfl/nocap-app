@@ -1283,7 +1283,7 @@ a.wd-card:hover .wd-card-go {
   padding: 0 14px 0 10px;
   border: var(--border);
   border-radius: 12px 12px 0 0;
-  background: var(--ink);
+  background: var(--party-bg);
   color: var(--yellow);
   font: 900 14px var(--font-display);
   letter-spacing: 0.04em;
@@ -1309,7 +1309,7 @@ a.wd-card:hover .wd-card-go {
   left: -60px;
   width: 40px;
   background: #fff;
-  opacity: 0.35;
+  opacity: 0.2;
   transform: skewX(-18deg);
   animation: cw-daily-shine 3.8s ease-in-out 1s infinite;
 }
@@ -1367,7 +1367,7 @@ a.wd-card:hover .wd-card-go {
   padding: 0 18px;
   border: var(--border);
   border-radius: 16px;
-  background: var(--ink);
+  background: var(--party-bg);
   color: var(--yellow);
   box-shadow: 5px 5px 0 var(--orange);
   font: 900 19px var(--font-display);
@@ -1391,7 +1391,8 @@ a.wd-card:hover .wd-card-go {
   padding: 10px 14px;
   border: var(--border);
   border-radius: 14px;
-  background: var(--paper);
+  background: #f4f4ef;
+  color: #111111;
 }
 .cw-gold-done b {
   font: 900 26px var(--font-display);
