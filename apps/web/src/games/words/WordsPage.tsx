@@ -69,7 +69,7 @@ export function WordsPage() {
   ] as const;
 
   return (
-    <WordsShell title="Word's">
+    <WordsShell title="Word's" back="/">
       <section className="wd-hero" aria-label="Jogos de palavras">
         <div className="wd-hero-tiles" aria-hidden="true">
           {TILES.map(([l, c], i) => (

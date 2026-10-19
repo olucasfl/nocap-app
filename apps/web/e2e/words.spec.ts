@@ -65,6 +65,20 @@ test.describe("Hub do Word's", () => {
     expect(errors).toEqual([]);
   });
 
+  test('o botão Voltar leva para a tela anterior em cada nível', async ({ page }) => {
+    await page.goto('/words');
+    await page.getByRole('link', { name: /voltar/i }).click();
+    await expect(page).toHaveURL(//$/);
+    await page.goto('/words/bee/fase/1');
+    await page.getByRole('link', { name: /voltar/i }).click();
+    await expect(page).toHaveURL(//words/bee$/);
+    await page.getByRole('link', { name: /voltar/i }).click();
+    await expect(page).toHaveURL(//words$/);
+    await page.goto('/words/connect/fase/1');
+    await page.getByRole('link', { name: /voltar/i }).click();
+    await expect(page).toHaveURL(//words/connect$/);
+  });
+
   test('cada cartão abre a página do jogo', async ({ page }) => {
     for (const [id, url] of [
       ['classic', /\/words\/classic$/],
