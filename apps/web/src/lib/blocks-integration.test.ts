@@ -40,7 +40,7 @@ describe("Block's no ranking, histórico e recordes", () => {
     const none = { current: 0, best: 0, playedToday: false, totalScore: null };
     const stats: Stats = {
       modes: [{ game: 'blocks', mode: 'classic', matches: 3, best: 31_000, average: 20_000 }],
-      daily: { color: none, time: none, eco: none, blocks: none, atravessa: none, wclassic: none, wbee: none, wconnect: none },
+      daily: { color: none, time: none, eco: none, blocks: none, atravessa: none, wclassic: none },
       visit: { current: 0, best: 0, visitedToday: false },
     };
     expect(gameModes(stats, 'blocks').map((m) => m.mode)).toEqual(['classic']);

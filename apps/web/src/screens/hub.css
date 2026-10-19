@@ -92,9 +92,10 @@ a.hub-card:active {
   background: var(--eco-red);
   color: var(--on-blue);
 }
+/* Word's: cartão preto e papel (igual nos dois temas), com letras coloridas */
 .hub-card-words {
-  background: var(--green);
-  color: var(--on-accent);
+  background: var(--party-bg);
+  color: var(--party-fg);
   animation-delay: 0.66s;
 }
 .hub-card-mix {

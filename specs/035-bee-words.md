@@ -1,6 +1,6 @@
 # 035 · Bee Word's (7 letras, uma delas obrigatória, o estilo Spelling Bee)
 
-Status: **aprovada (19/10/2026), em construção: Daily e jogo livre jogáveis (regras, API e telas), 120 favos; falta o arquivo na tela e o compartilhar.** Faz parte do grupo [032 Word's](032-words-grupo-e-base.md) (base de palavras, corridas no servidor, Daily, compartilhar, acessibilidade). Pesquisa em [docs/pesquisa-termo.md](../docs/pesquisa-termo.md).
+Status: **reformulada em 19/10/2026: jogo offline só com fases (200), do mais fácil ao mais difícil, progresso salvo no aparelho, sem Daily, ranking ou servidor. As seções de Daily, arquivo e API abaixo ficam como histórico.** Faz parte do grupo [032 Word's](032-words-grupo-e-base.md) (base de palavras, corridas no servidor, Daily, compartilhar, acessibilidade). Pesquisa em [docs/pesquisa-termo.md](../docs/pesquisa-termo.md).
 
 ## Objetivo
 

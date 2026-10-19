@@ -11,7 +11,7 @@ import type { GameId } from '@/lib/stats';
 import './friends-panel.css';
 
 /** O Block's ainda não tem sala. */
-type RoomGameId = Exclude<GameId, 'blocks' | 'atravessa' | 'wclassic' | 'wbee' | 'wconnect'>;
+type RoomGameId = Exclude<GameId, 'blocks' | 'atravessa' | 'wclassic'>;
 
 const RULES: Record<RoomGameId, string[]> = {
   color: [

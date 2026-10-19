@@ -269,28 +269,3 @@ export function MixArt() {
   );
 }
 
-/** Word's: uma linha de letras pintadas como no jogo (certa, em outro lugar, errada). */
-export function WordsArt() {
-  const tiles = [
-    { l: 'P', c: '#ffd23f' },
-    { l: 'A', c: '#f4f4ef' },
-    { l: 'L', c: '#33c27f' },
-    { l: 'A', c: '#33c27f' },
-    { l: 'S', c: '#ffd23f' },
-  ];
-  const U = 30;
-  const X0 = 20;
-  return (
-    <svg className="ha ha-words" viewBox="0 0 200 150" aria-hidden="true">
-      {tiles.map((t, k) => (
-        <g key={k} className="ha-float a" style={{ animationDelay: `${k * 0.12}s` }}>
-          <rect x={X0 + k * (U + 4) + 3} y={53} width={U} height={U} rx="6" {...hard} />
-          <rect x={X0 + k * (U + 4)} y={50} width={U} height={U} rx="6" fill={t.c} {...stroke} strokeWidth={2.6} />
-          <text x={X0 + k * (U + 4) + U / 2} y={73} textAnchor="middle" fontFamily="Archivo, Arial Black, sans-serif" fontWeight="900" fontSize="18" fill={INK}>
-            {t.l}
-          </text>
-        </g>
-      ))}
-    </svg>
-  );
-}

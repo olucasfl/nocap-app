@@ -84,6 +84,4 @@ export const GAME_LABEL: Record<GameId, string> = {
   blocks: "Block's",
   atravessa: 'Atravessa!',
   wclassic: "Classic Word's",
-  wbee: "Bee Word's",
-  wconnect: "Connect Word's",
 };

@@ -102,21 +102,45 @@ export class WordsService {
       if (!created) throw new ConflictException('Você já jogou o Daily de hoje');
       return this.view(created);
     }
+    // Modo livre: se já tem uma partida aberta neste modo, continua nela (a sessão fica salva).
+    const open = (await this.runs.runsOf(userId, game)).find((r) => r.kind === 'solo' && r.mode === mode && r.state === 'open');
+    if (open) return this.view(open);
+    return this.view(await this.createSolo(game, userId, mode));
+  }
+
+  /** Sorteia as palavras de uma partida livre (só do pool dos modos livres, sem repetir as últimas jogadas). */
+  private async createSolo(game: WordGame, userId: string, mode: ClassicMode): Promise<WordRun> {
     const recent = new Set((await this.runs.recentAnswers(userId, game, CLASSIC_RECENT_WORDS)).map(wordKey));
-    const pool = this.lists.answers.filter((w) => !recent.has(wordKey(w)));
+    const pool = this.lists.freeAnswers.filter((w) => !recent.has(wordKey(w)));
     const words = CLASSIC_MODE_INFO[mode].words;
-    const source = pool.length >= words ? pool : this.lists.answers;
+    const source = pool.length >= words ? pool : this.lists.freeAnswers;
     const picked = new Set<string>();
     while (picked.size < words) picked.add(source[randomInt(source.length)]!);
     const created = await this.runs.create({
       userId,
       game,
       mode,
-      kind,
+      kind: 'solo',
       seed: randomUUID(),
       answers: [...picked],
     });
-    return this.view(created!);
+    return created!;
+  }
+
+  /** O resumo de cada modo livre: quantas partidas, quantas vitórias e a que está em andamento. */
+  async modes(game: WordGame, userId: string) {
+    const runs = await this.runs.runsOf(userId, game);
+    const out: Record<string, { played: number; won: number; open: { used: number; tries: number } | null }> = {};
+    for (const mode of ['classic', 'dueto', 'quarteto'] as const) {
+      const mine = runs.filter((r) => r.kind === 'solo' && r.mode === mode);
+      const open = mine.find((r) => r.state === 'open');
+      out[mode] = {
+        played: mine.filter((r) => r.state !== 'open').length,
+        won: mine.filter((r) => r.state === 'won').length,
+        open: open ? { used: open.guesses.length, tries: CLASSIC_MODE_INFO[mode].tries } : null,
+      };
+    }
+    return out;
   }
 
   async get(userId: string, id: string): Promise<RunView> {
@@ -178,6 +202,8 @@ export class WordsService {
       ranked: run.kind === 'daily',
       scored,
     });
+    // Modo livre: a próxima palavra já fica sorteada, esperando a pessoa voltar.
+    if (run.kind === 'solo') await this.createSolo(run.game as WordGame, run.userId!, run.mode as ClassicMode);
     return { ...this.view(next), nota };
   }
 }

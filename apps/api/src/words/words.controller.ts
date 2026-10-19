@@ -36,6 +36,12 @@ export class WordsController {
     return this.words.dailyStatus(game(g), req.user.id);
   }
 
+  @Get('modes')
+  @RateLimit({ limit: 60, windowMs: 60_000 })
+  modes(@Req() req: AuthedRequest, @Param('game') g: string) {
+    return this.words.modes(game(g), req.user.id);
+  }
+
   @Post('runs')
   @HttpCode(201)
   @RateLimit({ limit: 30, windowMs: 60_000 })

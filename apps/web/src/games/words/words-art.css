@@ -1,0 +1,101 @@
+/* Animações da arte do Word's. Só transform e opacity; tudo para com movimento reduzido. */
+.wa-art {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.wa-mini {
+  width: 100%;
+  height: 100%;
+}
+.wa-flip {
+  transform-box: view-box;
+  animation: wa-flip 4.6s ease-in-out infinite;
+}
+@keyframes wa-flip {
+  0%,
+  8%,
+  100% {
+    transform: scaleY(1);
+  }
+  14% {
+    transform: scaleY(0.06);
+  }
+  22% {
+    transform: scaleY(1);
+  }
+}
+.wa-float {
+  animation: wa-float 4s ease-in-out infinite;
+}
+.wa-float.b {
+  animation-delay: -2s;
+}
+@keyframes wa-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+.wa-slide {
+  animation: wa-slide 4.8s ease-in-out infinite both;
+}
+@keyframes wa-slide {
+  0%,
+  10% {
+    transform: translateX(-10px);
+    opacity: 0.4;
+  }
+  20%,
+  85% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(10px);
+    opacity: 0.4;
+  }
+}
+.wa-pop {
+  animation: wa-pop 3.6s ease-in-out infinite both;
+}
+@keyframes wa-pop {
+  0%,
+  60%,
+  100% {
+    transform: scale(1);
+  }
+  72% {
+    transform: scale(1.16);
+  }
+  84% {
+    transform: scale(0.97);
+  }
+}
+.wa-shine {
+  animation: wa-shine 5s ease-in-out infinite;
+}
+@keyframes wa-shine {
+  0%,
+  60% {
+    transform: translateX(0) skewX(-18deg);
+  }
+  100% {
+    transform: translateX(290px) skewX(-18deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wa-flip,
+  .wa-float,
+  .wa-slide,
+  .wa-pop,
+  .wa-shine {
+    animation: none;
+  }
+  .wa-shine {
+    display: none;
+  }
+}

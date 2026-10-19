@@ -48,3 +48,9 @@ export function shareText(run: RunView): string {
   const grids = run.boards.map((b) => b.rows.map((r) => [...r].map((c) => sym[c]).join('')).join('\n'));
   return `${title}  ${score}  nota ${run.nota?.toFixed(1).replace('.', ',') ?? '0,0'}\n\n${grids.join('\n\n')}`;
 }
+
+/** O resumo de cada modo livre: partidas, vitórias e a que está em andamento. */
+export interface ModesSummary {
+  [mode: string]: { played: number; won: number; open: { used: number; tries: number } | null };
+}
+export const fetchModes = () => apiClient.get<ModesSummary>('/words/wclassic/modes');

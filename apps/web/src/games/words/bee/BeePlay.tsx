@@ -1,106 +1,170 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useSearch } from '@tanstack/react-router';
-import { wordKey } from '@nocap/games';
-import { ApiError } from '@/lib/api-client';
-import { BackButton } from '@/components/BackButton';
-import { Loader } from '@/components/Loader';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { Link, useParams } from '@tanstack/react-router';
+import {
+  BEE_RANKS,
+  beeHints,
+  beeMaxPoints,
+  beeRank,
+  beeScore,
+  checkBeeWord,
+  wordKey,
+  type BeeReject,
+} from '@nocap/games';
 import { wordsAudio } from '@/lib/words-audio';
-import { BEE_RANK_STEPS, REJECT_TEXT, finishBee, sendBeeWord, startBee, type BeeView } from './bee-api';
+import { Confetti, HexLoader, Pill, ResultSheet, RulesList, Tabs, useTyped, WordsShell } from '../words-kit';
+import { loadBeeLevels, tierOf, toBeePuzzle, type BeeLevel } from '../levels/levels';
+import { beeProgress, useProgress } from '../levels/progress';
+import { BeeMascot, hexPoints } from './BeeArt';
+import { BEE_RULES } from './BeeCatalog';
 import './bee.css';
 
-/** Hexágono de ponta para cima centrado em (cx, cy) com raio `r`. */
-function hex(cx: number, cy: number, r: number): string {
-  return Array.from({ length: 6 }, (_, i) => {
-    const a = (Math.PI / 180) * (60 * i - 30);
-    return `${(cx + r * Math.cos(a)).toFixed(1)},${(cy + r * Math.sin(a)).toFixed(1)}`;
-  }).join(' ');
-}
+const REJECT_TEXT: Record<BeeReject, string> = {
+  short: 'Muito curta',
+  center: 'Falta a letra do centro',
+  letters: 'Tem letra fora do favo',
+  dup: 'Já achada',
+  notlisted: 'Não está na lista',
+};
 
 const OUTER: [number, number][] = Array.from({ length: 6 }, (_, i) => {
   const a = (Math.PI / 180) * (60 * i - 90);
   return [150 + 84 * Math.cos(a), 140 + 84 * Math.sin(a)];
 });
 
+function Hex({ x, y, letter, center, onPress }: { x: number; y: number; letter: string; center?: boolean; onPress: () => void }) {
+  return (
+    <g
+      className={`bz-hex${center ? ' center' : ''}`}
+      style={{ transform: `translate(${x - 150}px, ${y - 140}px)` }}
+      onClick={onPress}
+      onKeyDown={(e) => (e.key === ' ' ? onPress() : undefined)}
+      role="button"
+      tabIndex={0}
+      aria-label={center ? `${letter}, letra do centro` : letter}
+      data-testid={center ? 'hex-center' : `hex-${letter}`}
+    >
+      <g className="hx">
+        <polygon points={hexPoints(153, 143, 40)} className="shadow" />
+        <polygon points={hexPoints(150, 140, 40)} className="face" />
+        <text x={150} y={151} textAnchor="middle">
+          {letter.toUpperCase()}
+        </text>
+      </g>
+    </g>
+  );
+}
+
+interface Float {
+  id: number;
+  text: string;
+  big: boolean;
+}
+
+/** Uma fase do Bee: o favo, as palavras, a patente. Tudo salvo no aparelho a cada palavra. */
 export function BeePlay() {
-  const [run, setRun] = useState<BeeView | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [typed, setTyped] = useState('');
+  const { n } = useParams({ strict: false }) as { n?: string };
+  const num = Number(n);
+  const [levels, setLevels] = useState<BeeLevel[] | null>(null);
+  const progress = useProgress(beeProgress);
+  const [typed, setTyped, typedRef] = useTyped();
   const [order, setOrder] = useState<string[]>([]);
-  const [toast, setToast] = useState<{ text: string; good: boolean } | null>(null);
+  const [toast, setToast] = useState<{ text: string; tone: 'good' | 'bad' } | null>(null);
   const [latest, setLatest] = useState<string | null>(null);
+  const [floats, setFloats] = useState<Float[]>([]);
   const [wave, setWave] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [buzz, setBuzz] = useState(false);
+  const [burst, setBurst] = useState(0);
+  const [shake, setShake] = useState(false);
+  const [banner, setBanner] = useState<string | null>(null);
+  const [tab, setTab] = useState<'words' | 'hints' | 'rules'>('words');
   const [confirmEnd, setConfirmEnd] = useState(false);
-  const timer = useRef<number | undefined>(undefined);
+  const timers = useRef<number[]>([]);
+  const floatId = useRef(0);
 
-  const { tipo } = useSearch({ strict: false }) as { tipo?: string };
-  const free = tipo === 'livre';
-
-  const begin = useCallback(() => {
-    setRun(null);
-    setTyped('');
-    setLatest(null);
-    startBee(free ? 'free' : 'daily')
-      .then((r) => {
-        setRun(r);
-        setOrder(r.letters);
-      })
-      .catch((e: unknown) => setError(e instanceof ApiError ? e.message : 'Não deu para abrir o favo'));
-  }, [free]);
-
-  useEffect(begin, [begin]);
-
-  const say = useCallback((text: string, good = false) => {
-    setToast({ text, good });
-    window.clearTimeout(timer.current);
-    timer.current = window.setTimeout(() => setToast(null), 1600);
+  useEffect(() => {
+    void loadBeeLevels().then(setLevels);
+    return () => timers.current.forEach(window.clearTimeout);
   }, []);
 
-  const allowed = useMemo(() => new Set(run ? [run.center, ...run.letters] : []), [run]);
-  const open = !!run && !run.closed;
+  const level = levels?.[num - 1];
+  const puzzle = useMemo(() => (level ? toBeePuzzle(level) : null), [level]);
+  useEffect(() => {
+    if (level) setOrder(level.l);
+    setTyped(() => '');
+    setLatest(null);
+    setTab('words');
+  }, [level]);
 
-  const submit = useCallback(async () => {
-    if (!run || !open || busy) return;
-    if (typed.length === 0) return;
-    setBusy(true);
-    try {
-      const move = await sendBeeWord(run.id, typed);
-      if (move.result === 'rejected') {
-        wordsAudio.invalid();
-        say(REJECT_TEXT[move.reason]);
-      } else {
-        const rankUp = move.run.rank.id !== run.rank.id;
-        setRun(move.run);
-        setLatest(move.shown);
-        if (move.pangram) {
-          setWave(true);
-          window.setTimeout(() => setWave(false), 1200);
-        }
-        say(move.pangram ? `Pangrama! +${move.points}` : `+${move.points}`, true);
-        if (move.pangram || rankUp) wordsAudio.win();
-        else wordsAudio.row('hh');
-      }
-      setTyped('');
-    } catch (e) {
-      say(e instanceof ApiError && e.status === 409 ? 'O dia fechou' : 'Sem conexão. Tente de novo');
-    } finally {
-      setBusy(false);
-    }
-  }, [run, open, busy, typed, say]);
+  const saved = progress[String(num)];
+  const found = saved?.found ?? [];
+  const closed = saved?.closed ?? false;
+  const open = !!level && !closed;
+  const allowed = useMemo(() => new Set(level ? [level.c, ...level.l] : []), [level]);
+
+  const later = useCallback((fn: () => void, ms: number) => {
+    timers.current.push(window.setTimeout(fn, ms));
+  }, []);
+  const say = useCallback(
+    (text: string, tone: 'good' | 'bad') => {
+      setToast({ text, tone });
+      later(() => setToast(null), 1500);
+    },
+    [later],
+  );
 
   const add = useCallback(
     (l: string) => {
-      wordsAudio.key();
+      wordsAudio.honey(l === level?.c ? 0 : (order.indexOf(l) + 1) % 7);
       setTyped((t) => (t.length < 20 ? t + l : t));
     },
-    [],
+    [level, order, setTyped],
   );
+
+  const submit = useCallback(() => {
+    const word = typedRef.current;
+    if (!puzzle || !open || word.length === 0) return;
+    const check = checkBeeWord(puzzle, found, word);
+    if (!check.ok) {
+      wordsAudio.beeReject();
+      setShake(true);
+      later(() => setShake(false), 420);
+      say(REJECT_TEXT[check.reason], 'bad');
+      setTyped(() => '');
+      return;
+    }
+    const before = beeRank(beeScore(puzzle, found), beeMaxPoints(puzzle));
+    const next = [...found, check.shown];
+    const after = beeRank(beeScore(puzzle, next), beeMaxPoints(puzzle));
+    const complete = next.length === puzzle.words.length;
+    beeProgress.set(num, { found: next, closed: complete, at: Date.now() });
+    setLatest(check.shown);
+    setTyped(() => '');
+    const id = ++floatId.current;
+    setFloats((f) => [...f, { id, text: `+${check.points}`, big: check.pangram }]);
+    later(() => setFloats((f) => f.filter((x) => x.id !== id)), 1200);
+    setBuzz(true);
+    later(() => setBuzz(false), 700);
+    if (check.pangram) {
+      wordsAudio.pangram();
+      setWave(true);
+      setBurst((b) => b + 1);
+      later(() => setWave(false), 1200);
+      setBanner('Pangrama!');
+      later(() => setBanner(null), 1800);
+    } else if (after.id !== before.id) {
+      wordsAudio.rankUp();
+      setBurst((b) => b + 1);
+      setBanner(after.name);
+      later(() => setBanner(null), 2000);
+    } else wordsAudio.beeFound(check.points);
+    say(check.pangram ? `Pangrama! +${check.points}` : `+${check.points}`, 'good');
+  }, [puzzle, open, typedRef, found, num, later, say, setTyped]);
 
   useEffect(() => {
     if (!open) return;
     const onKey = (ev: KeyboardEvent) => {
       if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
-      if (ev.key === 'Enter') void submit();
+      if (ev.key === 'Enter') submit();
       else if (ev.key === 'Backspace') setTyped((t) => t.slice(0, -1));
       else {
         const k = wordKey(ev.key);
@@ -111,25 +175,35 @@ export function BeePlay() {
     return () => window.removeEventListener('keydown', onKey);
   }, [open, allowed, add, submit]);
 
-  if (error) {
+  if (!levels) {
     return (
-      <div className="app">
-        <main className="screen cw">
-          <BackButton to="/words/bee" />
-          <p className="cw-error">{error}</p>
-        </main>
-      </div>
+      <WordsShell title={`Fase ${num}`} back="/words/bee" accent="yellow" className="bee-theme">
+        <HexLoader />
+      </WordsShell>
     );
   }
-  if (!run) {
+  if (!level || !puzzle) {
     return (
-      <div className="app">
-        <Loader />
-      </div>
+      <WordsShell title="Bee Word's" back="/words/bee" accent="yellow" className="bee-theme">
+        <p className="wd-error">Essa fase não existe.</p>
+        <Link to="/words/bee" className="btn alt">
+          Ver as fases
+        </Link>
+      </WordsShell>
     );
   }
 
-  const shuffle = () => {
+  const points = beeScore(puzzle, found);
+  const max = beeMaxPoints(puzzle);
+  const rank = beeRank(points, max);
+  const rankIndex = BEE_RANKS.findIndex((r) => r.id === rank.id);
+  const genius = Math.min(1, points / (0.7 * max));
+  const hints = beeHints(puzzle, found);
+  const sorted = [...found].sort((a, b) => a.localeCompare(b, 'pt'));
+  const tier = tierOf(num - 1, levels.length);
+  const hasNext = num < levels.length;
+
+  const shuffle = () =>
     setOrder((o) => {
       const next = [...o];
       for (let i = next.length - 1; i > 0; i--) {
@@ -138,180 +212,182 @@ export function BeePlay() {
       }
       return next;
     });
+
+  const conclude = () => {
+    if (!confirmEnd) {
+      setConfirmEnd(true);
+      later(() => setConfirmEnd(false), 3000);
+      return;
+    }
+    beeProgress.set(num, { found, closed: true, at: Date.now() });
+    setBurst((b) => b + 1);
+    wordsAudio.win();
   };
 
-  const rankIndex = BEE_RANK_STEPS.findIndex((s) => s.id === run.rank.id);
-  const sorted = [...run.found].sort((a, b) => a.localeCompare(b, 'pt'));
-  const h = run.hints;
-
   return (
-    <div className="app">
-      <main className="screen cw bee">
-        <header className="cw-top">
-          <BackButton to="/words/bee" />
-          <div className="cw-title">{free ? `Livre #${run.number}` : `Daily #${run.number}`}</div>
-          <div className="mono cw-left">{run.points} pts</div>
-        </header>
+    <WordsShell
+      title={`Fase ${num}`}
+      back="/words/bee"
+      accent="yellow"
+      className="bee-theme"
+      right={
+        <Pill tone="paper">
+          {tier} · {found.length} palavras
+        </Pill>
+      }
+    >
+      <Confetti burst={burst} />
 
-        <div className="bee-rank" aria-label={`Patente: ${run.rank.name}`}>
-          <div className="bee-rank-name">{run.rank.name}</div>
-          <div className="bee-steps" aria-hidden="true">
-            {BEE_RANK_STEPS.map((s, i) => (
-              <i key={s.id} className={i <= rankIndex ? 'on' : ''} />
+      <section className={`bz-rankcard${buzz ? ' buzz' : ''}`} aria-label={`Patente: ${rank.name}`} data-testid="rank">
+        <BeeMascot className="bz-rank-bee" flying={buzz || open} />
+        <div className="bz-rank-body">
+          <div className="bz-rankrow">
+            <span className="bz-rankname">{rank.name}</span>
+            <span className="bz-points">
+              <b key={points}>{points}</b> / {max} pts
+            </span>
+          </div>
+          <div className={`bz-meter${genius >= 1 ? ' genius' : ''}`} aria-hidden="true">
+            <i style={{ transform: `scaleX(${genius})` }} />
+            <em style={{ left: '100%' }} />
+          </div>
+          <div className="bz-steps" aria-hidden="true">
+            {BEE_RANKS.map((r, i) => (
+              <i key={r.id} className={i < rankIndex ? 'on' : i === rankIndex ? 'on now' : ''} />
             ))}
           </div>
         </div>
+      </section>
 
-        <div className="cw-toast-slot">
-          {toast && (
-            <div className={`cw-toast${toast.good ? ' good' : ''}`} role="status">
-              {toast.text}
-            </div>
-          )}
-        </div>
-
-        <div className="bee-word" aria-live="polite">
-          {[...typed].map((ch, i) => (
-            <span key={i} className={ch === run.center ? 'center' : allowed.has(ch) ? '' : 'out'}>
-              {ch.toUpperCase()}
-            </span>
-          ))}
-          {open && <span className="bee-caret" aria-hidden="true" />}
-        </div>
-
-        {open ? (
-          <>
-            <svg className={`bee-hive${wave ? ' wave' : ''}`} viewBox="0 0 300 280" role="group" aria-label="Letras do favo">
-              <g className="bee-hex center" onClick={() => add(run.center)} role="button" tabIndex={0} aria-label={`${run.center}, letra do centro`}>
-                <polygon points={hex(153, 143, 40)} className="shadow" />
-                <polygon points={hex(150, 140, 40)} className="face" />
-                <text x={150} y={150} textAnchor="middle">
-                  {run.center.toUpperCase()}
-                </text>
-                <circle cx={150} cy={166} r={3} className="dot" />
-              </g>
-              {order.map((l, i) => {
-                const [x, y] = OUTER[i]!;
-                return (
-                  <g
-                    key={l}
-                    className="bee-hex"
-                    style={{ transform: `translate(${x - 150}px, ${y - 140}px)` }}
-                    onClick={() => add(l)}
-                    role="button"
-                    tabIndex={0}
-                    aria-label={l}
-                  >
-                    <polygon points={hex(153, 143, 40)} className="shadow" />
-                    <polygon points={hex(150, 140, 40)} className="face" />
-                    <text x={150} y={150} textAnchor="middle">
-                      {l.toUpperCase()}
-                    </text>
-                  </g>
-                );
-              })}
-            </svg>
-
-            <div className="bee-actions">
-              <button type="button" className="btn ghost" onClick={() => setTyped((t) => t.slice(0, -1))}>
-                Apagar
-              </button>
-              <button type="button" className="btn ghost" onClick={shuffle}>
-                Embaralhar
-              </button>
-              <button type="button" className="btn alt" disabled={busy} onClick={() => void submit()}>
-                Enviar
-              </button>
-            </div>
-          </>
-        ) : (
-          <section className="cw-result" aria-label="Resultado">
-            <div className="cw-stamp won">{run.rank.name}</div>
-            <div className="cw-score">
-              <span className="mono">NOTA</span>
-              <b>{run.nota.toFixed(1).replace('.', ',')}</b>
-            </div>
-            <div className="mono cw-used">
-              {run.points} de {run.max} pontos · {run.found.length} de {run.hints.total} palavras
-            </div>
-            <div className="cw-actions">
-              {free ? (
-                <button type="button" className="btn alt" onClick={begin}>
-                  Jogar outro favo
-                </button>
-              ) : (
-                <Link to="/ranking" search={{ jogo: 'wbee', modo: 'daily' }} className="btn alt">
-                  Ver ranking
-                </Link>
-              )}
-              <Link to="/words/bee" className="btn ghost">
-                Voltar
-              </Link>
-            </div>
-          </section>
+      <div className="wd-toast-slot" aria-live="polite">
+        {toast && (
+          <div className={`wd-toast ${toast.tone}`} role="status" key={toast.text + toast.tone}>
+            {toast.text}
+          </div>
         )}
+      </div>
 
-        <details className="bee-panel" open={!open}>
-          <summary>
-            {run.found.length} {run.found.length === 1 ? 'palavra' : 'palavras'}
-          </summary>
-          <div className="bee-found">
-            {sorted.map((w) => (
-              <span key={w} className={w === latest ? 'latest' : ''}>
-                {w}
+      {banner && (
+        <div className="bz-banner" role="status" key={banner}>
+          {banner}
+        </div>
+      )}
+
+      {open ? (
+        <>
+          <div className={`bz-word${shake ? ' shake' : ''}`} aria-live="polite" data-testid="word">
+            {floats.map((f) => (
+              <span key={f.id} className={`bz-float${f.big ? ' big' : ''}`} aria-hidden="true">
+                {f.text}
               </span>
             ))}
-            {sorted.length === 0 && <span className="mono">Nenhuma ainda</span>}
+            {[...typed].map((ch, i) => (
+              <span key={`${i}-${ch}`} className={`bz-letter ${ch === level.c ? 'center' : allowed.has(ch) ? '' : 'out'}`}>
+                {ch.toUpperCase()}
+              </span>
+            ))}
+            <span className="bz-caret" aria-hidden="true" />
           </div>
-        </details>
 
-        {open && (
-          <details className="bee-panel">
-            <summary>Dicas</summary>
-            <div className="bee-hints mono">
-              <div>
-                Faltam {h.left} de {h.total} palavras · pangramas {h.pangrams - h.pangramsLeft}/{h.pangrams}
-              </div>
-              <div>Por tamanho: {Object.entries(h.bySize).map(([n, c]) => `${n} letras ${c}`).join(' · ') || 'nenhuma'}</div>
-              <div>
-                Por inicial: {Object.entries(h.byInitial).map(([l, c]) => `${l.toUpperCase()} ${c}`).join(' · ') || 'nenhuma'}
-              </div>
+          <svg className={`bz-hive${wave ? ' wave' : ''}`} viewBox="0 0 300 280" role="group" aria-label="Letras do favo">
+            <Hex x={150} y={140} letter={level.c} center onPress={() => add(level.c)} />
+            {order.map((l, i) => (
+              <Hex key={l} x={OUTER[i]![0]} y={OUTER[i]![1]} letter={l} onPress={() => add(l)} />
+            ))}
+          </svg>
+
+          <div className="bz-actions">
+            <button type="button" className="btn ghost" onClick={() => setTyped((t) => t.slice(0, -1))} data-testid="delete">
+              Apagar
+            </button>
+            <button type="button" className="btn ghost" onClick={shuffle} data-testid="shuffle">
+              Embaralhar
+            </button>
+            <button type="button" className="btn alt" onClick={submit} data-testid="submit">
+              Enviar
+            </button>
+          </div>
+
+          {genius >= 1 && (
+            <button type="button" className="bz-finish" onClick={conclude} data-testid="end">
+              {confirmEnd ? 'Toque de novo para concluir' : 'Você chegou ao Gênio. Concluir a fase'}
+            </button>
+          )}
+        </>
+      ) : (
+        <ResultSheet won stamp={rank.name} label="PONTOS" value={points} decimals={0} detail={`${found.length} de ${hints.total} palavras · fase ${num}`}>
+          {hasNext ? (
+            <Link to="/words/bee/fase/$n" params={{ n: String(num + 1) }} className="btn alt" data-testid="next">
+              Próxima fase
+            </Link>
+          ) : null}
+          <Link to="/words/bee" className="btn ghost" data-testid="back-catalog">
+            Ver todas as fases
+          </Link>
+        </ResultSheet>
+      )}
+
+      <Tabs
+        label="Informações da fase"
+        value={tab}
+        onChange={setTab}
+        tabs={[
+          { id: 'words', label: 'Palavras' },
+          { id: 'hints', label: closed ? 'Todas' : 'Dicas' },
+          { id: 'rules', label: 'Regras' },
+        ]}
+      />
+
+      {tab === 'words' && (
+        <div className="bz-found" data-testid="found">
+          {sorted.map((w) => (
+            <span key={w} className={`${w === latest ? 'latest' : ''}${level.p.includes(w) ? ' pangram' : ''}`}>
+              {w}
+            </span>
+          ))}
+          {sorted.length === 0 && <span className="empty">Nenhuma ainda. Toque nas letras do favo.</span>}
+        </div>
+      )}
+      {tab === 'hints' &&
+        (closed ? (
+          <div className="bz-found" data-testid="all">
+            {[...level.w]
+              .sort((a, b) => a.localeCompare(b, 'pt'))
+              .map((w) => (
+                <span key={w} className={`${found.includes(w) ? 'latest' : ''}${level.p.includes(w) ? ' pangram' : ''}`}>
+                  {w}
+                </span>
+              ))}
+          </div>
+        ) : (
+          <div className="bz-hints" data-testid="hints">
+            <div className="bz-hint-big">
+              <b>{hints.left}</b> palavras faltando de {hints.total}
             </div>
-          </details>
-        )}
-
-        {run.closed && run.all && (
-          <details className="bee-panel">
-            <summary>Todas as palavras do favo</summary>
-            <div className="bee-found">
-              {[...run.all]
-                .sort((a, b) => a.localeCompare(b, 'pt'))
-                .map((w) => (
-                  <span key={w} className={run.found.includes(w) ? 'latest' : ''}>
-                    {w}
-                  </span>
-                ))}
+            <div>
+              Pangramas: <b>{hints.pangrams - hints.pangramsLeft}</b> de {hints.pangrams}
             </div>
-          </details>
-        )}
-
-        {open && (
-          <button
-            type="button"
-            className="cw-giveup mono"
-            onClick={() => {
-              if (!confirmEnd) {
-                setConfirmEnd(true);
-                window.setTimeout(() => setConfirmEnd(false), 3000);
-                return;
-              }
-              void finishBee(run.id).then(setRun);
-            }}
-          >
-            {confirmEnd ? 'Toque de novo para encerrar' : free ? 'Encerrar' : 'Encerrar o dia'}
-          </button>
-        )}
-      </main>
-    </div>
+            <div className="bz-hint-row">
+              {Object.entries(hints.bySize).map(([size, c]) => (
+                <span key={size}>
+                  {size} letras <b>{c}</b>
+                </span>
+              ))}
+            </div>
+            <div className="bz-hint-row">
+              {Object.entries(hints.byInitial).map(([l, c]) => (
+                <span key={l}>
+                  {l.toUpperCase()} <b>{c}</b>
+                </span>
+              ))}
+            </div>
+          </div>
+        ))}
+      {tab === 'rules' && (
+        <section className="wd-panel" data-testid="rules">
+          <RulesList steps={BEE_RULES} />
+        </section>
+      )}
+    </WordsShell>
   );
 }

@@ -1,5 +1,6 @@
-import { AtravessaArt, BlocksArt, ColorArt, EcoArt, MixArt, TimeArt, WordsArt } from '@/components/HubArt';
+import { AtravessaArt, BlocksArt, ColorArt, EcoArt, MixArt, TimeArt } from '@/components/HubArt';
 import { Link } from '@tanstack/react-router';
+import { WordsHubArt } from '@/games/words/words-art';
 import { useQuery } from '@tanstack/react-query';
 import { AnimatedText } from '@/components/AnimatedText';
 import { MuteButton } from '@/components/MuteButton';
@@ -133,7 +134,7 @@ export function Hub() {
 
         <Link to="/words" className="hub-card hub-card-words" data-sfx="start">
           <div className="hub-art">
-            <WordsArt />
+            <WordsHubArt />
           </div>
           <div className="hub-card-foot">
             <div className="hub-card-name">Word&apos;s</div>

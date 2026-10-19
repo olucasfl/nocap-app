@@ -205,24 +205,21 @@ const wordsClassicPlayRoute = createRoute({
 const wordsBeeRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/words/bee',
-  component: lazyRouteComponent(() => import('@/games/words/bee/BeePage'), 'BeePage'),
+  component: lazyRouteComponent(() => import('@/games/words/bee/BeeCatalog'), 'BeeCatalog'),
 });
-const wordsBeePlayRoute = createRoute({
+const wordsBeeLevelRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/words/bee/jogar',
-  validateSearch: (search: Record<string, unknown>): { tipo?: 'livre' } => (search.tipo === 'livre' ? { tipo: 'livre' } : {}),
+  path: '/words/bee/fase/$n',
   component: lazyRouteComponent(() => import('@/games/words/bee/BeePlay'), 'BeePlay'),
 });
-
 const wordsConnectRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/words/connect',
-  component: lazyRouteComponent(() => import('@/games/words/connect/ConnectPage'), 'ConnectPage'),
+  component: lazyRouteComponent(() => import('@/games/words/connect/ConnectCatalog'), 'ConnectCatalog'),
 });
-const wordsConnectPlayRoute = createRoute({
+const wordsConnectLevelRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/words/connect/jogar',
-  validateSearch: (search: Record<string, unknown>): { tipo?: 'livre' } => (search.tipo === 'livre' ? { tipo: 'livre' } : {}),
+  path: '/words/connect/fase/$n',
   component: lazyRouteComponent(() => import('@/games/words/connect/ConnectPlay'), 'ConnectPlay'),
 });
 
@@ -244,9 +241,9 @@ const routeTree = rootRoute.addChildren([
   wordsClassicRoute,
   wordsClassicPlayRoute,
   wordsBeeRoute,
-  wordsBeePlayRoute,
+  wordsBeeLevelRoute,
   wordsConnectRoute,
-  wordsConnectPlayRoute,
+  wordsConnectLevelRoute,
   nocapRoute,
   loginRoute,
   registerRoute,

@@ -16,3 +16,7 @@ Thumbs.db
 .vite/
 apps/web/dev-dist/
 .claude/settings.local.json
+
+# Playwright
+apps/web/test-results/
+apps/web/playwright-report/

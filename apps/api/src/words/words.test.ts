@@ -26,13 +26,13 @@ describe('listas de palavras', () => {
   });
 
   it('quando a lista acaba, repete em outra ordem, igual para todos e sem repetir dentro da volta', () => {
-    const size = lists.order.length;
+    const size = lists.dailyWords.length;
     const day = (n: number) => new Date(Date.parse(WORDS_DAILY_EPOCH + 'T00:00:00Z') + n * 86_400_000).toISOString().slice(0, 10);
     const lap1 = Array.from({ length: size }, (_, i) => lists.daily(day(size + i)).word);
     expect(new Set(lap1).size).toBe(size);
-    expect(lap1).not.toEqual(lists.order);
+    expect(lap1).not.toEqual(lists.dailyWords);
     expect(lists.daily(day(size)).word).toBe(lap1[0]);
-    expect(lists.daily(day(size)).word).not.toBe(lists.order[size - 1]);
+    expect(lists.daily(day(size)).word).not.toBe(lists.dailyWords[size - 1]);
     expect(lists.daily(day(size)).number).toBe(size + 1);
   });
 
@@ -55,6 +55,8 @@ function setup() {
     },
     daily: async (userId: string, game: string, day: string) =>
       [...rows.values()].find((r) => r.userId === userId && r.game === game && r.day === day) ?? null,
+    runsOf: async (userId: string, game: string) =>
+      [...rows.values()].filter((r) => r.userId === userId && r.game === game),
     recentAnswers: async (userId: string) =>
       [...rows.values()].filter((r) => r.userId === userId).flatMap((r) => r.answers),
     create: async (row: Partial<WordRun>) => {
@@ -132,6 +134,38 @@ describe('Classic Word\'s no servidor', () => {
     await expect(service.move('u1', run.id, 'xxxxx')).rejects.toThrow();
     await expect(service.move('u1', run.id, 'casa')).rejects.toThrow();
     expect(rows.get(run.id)!.guesses).toHaveLength(0);
+  });
+
+  it('modo livre: voltar continua a partida aberta; ao terminar a próxima palavra já está sorteada', async () => {
+    const { service, rows } = setup();
+    const first = await service.start('wclassic', 'u1', 'classic', 'solo');
+    const again = await service.start('wclassic', 'u1', 'classic', 'solo');
+    expect(again.id).toBe(first.id);
+    await service.giveUp('u1', first.id);
+    const open = [...rows.values()].filter((r) => r.kind === 'solo' && r.mode === 'classic' && r.state === 'open');
+    expect(open).toHaveLength(1);
+    expect(open[0]!.id).not.toBe(first.id);
+    const next = await service.start('wclassic', 'u1', 'classic', 'solo');
+    expect(next.id).toBe(open[0]!.id);
+  });
+
+  it('as palavras do Daily ficam separadas das dos modos livres', async () => {
+    const { service } = setup();
+    const daily = new Set(service.lists.dailyWords.map(wordKey));
+    for (const w of service.lists.freeAnswers) expect(daily.has(wordKey(w))).toBe(false);
+    expect(service.lists.dailyWords.length).toBeGreaterThanOrEqual(300);
+    expect(service.lists.freeAnswers.length).toBeGreaterThanOrEqual(300);
+  });
+
+  it('o resumo dos modos mostra partidas, vitórias e a aberta', async () => {
+    const { service, rows } = setup();
+    const run = await service.start('wclassic', 'u1', 'dueto', 'solo');
+    const answer = rows.get(run.id)!.answers[0]!;
+    await service.move('u1', run.id, answer);
+    const modes = await service.modes('wclassic', 'u1');
+    expect(modes.dueto!.open).toEqual({ used: 1, tries: 7 });
+    expect(modes.classic!.open).toBeNull();
+    expect(modes.classic!.played).toBe(0);
   });
 
   it('a partida de outra conta não aparece', async () => {

@@ -1,6 +1,6 @@
 import { apiClient } from './api-client';
 
-export type Game = 'color' | 'time' | 'eco' | 'blocks' | 'atravessa' | 'wclassic' | 'wbee' | 'wconnect';
+export type Game = 'color' | 'time' | 'eco' | 'blocks' | 'atravessa' | 'wclassic';
 export type Board =
   | 'classic'
   | 'flash'
@@ -49,8 +49,6 @@ export const GAMES: { id: Game; label: string }[] = [
   { id: 'blocks', label: "Block's" },
   { id: 'atravessa', label: 'Atravessa!' },
   { id: 'wclassic', label: "Classic Word's" },
-  { id: 'wbee', label: "Bee Word's" },
-  { id: 'wconnect', label: "Connect Word's" },
 ];
 
 const ALL_BOARDS: { id: Board; label: string }[] = [
@@ -89,8 +87,6 @@ const BOARD_IDS: Record<Game, Board[]> = {
   atravessa: ['infinito'],
   // só o Daily tem ranking (ver boardChoices)
   wclassic: [],
-  wbee: [],
-  wconnect: [],
 };
 
 export const boardsOf = (game: Game) => ALL_BOARDS.filter((b) => BOARD_IDS[game].includes(b.id));
@@ -102,8 +98,6 @@ export const GAME_NAME: Record<Game, string> = {
   blocks: "Block's",
   atravessa: 'Atravessa!',
   wclassic: "Classic Word's",
-  wbee: "Bee Word's",
-  wconnect: "Connect Word's",
 };
 
 export const PERIODS: { id: Period; label: string }[] = [
@@ -116,7 +110,7 @@ export const PERIODS: { id: Period; label: string }[] = [
 export function boardMax(game: Game, board: Board): number {
   // Sobrevivência (rodadas) e Eco (passos) não têm máximo de pontos.
   if (board === 'survival' || game === 'eco' || game === 'blocks' || game === 'atravessa') return 0;
-  if (game === 'wclassic' || game === 'wbee' || game === 'wconnect') return 10;
+  if (game === 'wclassic') return 10;
   if (board === 'quick') return 10;
   if (board === 'sequence') return 50;
   if (board === 'daily') return game === 'time' ? 30 : 50;
@@ -137,7 +131,7 @@ export interface RankingsSearch {
   quem?: Scope;
 }
 
-const GAME_IDS: Game[] = ['color', 'time', 'eco', 'blocks', 'atravessa', 'wclassic', 'wbee', 'wconnect'];
+const GAME_IDS: Game[] = ['color', 'time', 'eco', 'blocks', 'atravessa', 'wclassic'];
 const PERIOD_IDS: Period[] = ['day', 'week', 'all'];
 
 /** O período de abertura de cada quadro: o Daily abre em hoje, os outros na semana. */

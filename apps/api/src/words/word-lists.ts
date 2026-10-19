@@ -14,17 +14,27 @@ const readLines = (file: string): string[] =>
 /** Primeiro dia do Daily (palavra 1). Mudar depois do lançamento embaralha o número de todos os dias. */
 export const WORDS_DAILY_EPOCH = '2026-10-19';
 
+/** Quantas palavras da ordem fixa ficam só para o Daily (as mais comuns); as outras são dos modos livres. */
+export const CLASSIC_DAILY_POOL = 600;
+
 export class WordLists {
   /** Palavras que o jogo pode sortear como resposta (formas corretas, com acento). */
   readonly answers: string[];
   /** Ordem fixa do Daily (só cresce no fim). */
   readonly order: string[];
+  /** As palavras do Daily (as primeiras da ordem fixa) e as dos modos livres (todas as outras respostas). */
+  readonly dailyWords: string[];
+  readonly freeAnswers: string[];
   /** Chave sem acento -> forma correta, de tudo o que vale como palpite. */
   readonly accepted: Map<string, string>;
 
   constructor(answers = readLines('respostas5.txt'), order = readLines('ordem5.txt'), accepted = readLines('aceitas5.txt')) {
     this.answers = answers;
     this.order = order;
+    this.dailyWords = order.slice(0, Math.min(CLASSIC_DAILY_POOL, order.length));
+    const reserved = new Set(this.dailyWords.map(wordKey));
+    const free = answers.filter((w) => !reserved.has(wordKey(w)));
+    this.freeAnswers = free.length >= 50 ? free : answers;
     this.accepted = buildDictionary([...accepted, ...answers]);
   }
 
@@ -41,7 +51,7 @@ export class WordLists {
   daily(day: string): { number: number; word: string } {
     const diff = Math.round((Date.parse(`${day}T00:00:00Z`) - Date.parse(`${WORDS_DAILY_EPOCH}T00:00:00Z`)) / 86_400_000);
     const n = Math.max(0, diff);
-    const size = this.order.length;
+    const size = this.dailyWords.length;
     const lap = Math.floor(n / size);
     return { number: n + 1, word: this.lap(lap)[n % size]! };
   }
@@ -50,10 +60,10 @@ export class WordLists {
 
   /** A ordem da volta `lap`: a 0 é a ordem fixa; as outras são embaralhadas pela volta. */
   private lap(lap: number): string[] {
-    if (lap === 0) return this.order;
+    if (lap === 0) return this.dailyWords;
     let order = this.laps.get(lap);
     if (!order) {
-      order = [...this.order];
+      order = [...this.dailyWords];
       const rand = mulberry32(lap * 7919 + 17);
       for (let i = order.length - 1; i > 0; i--) {
         const j = Math.floor(rand() * (i + 1));
