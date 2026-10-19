@@ -1,622 +1,4614 @@
 [
-  {
-    "id": "c-0001",
-    "groups": [
-      {
-        "level": 1,
-        "title": "Frutas",
-        "words": [
-          "CAJU",
-          "GOIABA",
-          "MAMÃO",
-          "UVA"
-        ]
-      },
-      {
-        "level": 2,
-        "title": "Partes da camisa",
-        "words": [
-          "GOLA",
-          "PUNHO",
-          "BOTÃO",
-          "MANGA"
-        ]
-      },
-      {
-        "level": 3,
-        "title": "Vêm depois de \"guarda-\"",
-        "words": [
-          "CHUVA",
-          "ROUPA",
-          "SOL",
-          "COSTAS"
-        ]
-      },
-      {
-        "level": 4,
-        "title": "Palíndromos (leem igual de trás para a frente)",
-        "words": [
-          "ARARA",
-          "RADAR",
-          "OVO",
-          "OSSO"
-        ]
-      }
-    ],
-    "traps": [
-      {
-        "word": "MANGA",
-        "alsoFits": "Frutas"
-      }
-    ],
-    "themes": [
-      "fruta",
-      "roupa"
-    ],
-    "notes": "MANGA parece fruta, mas só fecha como parte da camisa."
-  },
-  {
-    "id": "c-0002",
-    "groups": [
-      {
-        "level": 1,
-        "title": "Posições no futebol",
-        "words": [
-          "GOLEIRO",
-          "ZAGUEIRO",
-          "LATERAL",
-          "ATACANTE"
-        ]
-      },
-      {
-        "level": 2,
-        "title": "Cômodos de uma casa",
-        "words": [
-          "SALA",
-          "QUARTO",
-          "COZINHA",
-          "VARANDA"
-        ]
-      },
-      {
-        "level": 3,
-        "title": "Dor de ___",
-        "words": [
-          "CABEÇA",
-          "DENTE",
-          "BARRIGA",
-          "GARGANTA"
-        ]
-      },
-      {
-        "level": 4,
-        "title": "Mudam de sentido com \"o\" ou \"a\"",
-        "words": [
-          "GRAMA",
-          "CAPITAL",
-          "RÁDIO",
-          "CURA"
-        ]
-      }
-    ],
-    "themes": [
-      "esporte",
-      "casa",
-      "corpo"
+ {
+  "id": "c-0001",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Pães",
+    "words": [
+     "BAGUETE",
+     "CIABATTA",
+     "BRIOCHE",
+     "FRANCÊS"
     ]
-  },
-  {
-    "id": "c-0003",
-    "groups": [
-      {
-        "level": 1,
-        "title": "Animais de fazenda",
-        "words": [
-          "VACA",
-          "PORCO",
-          "GALINHA",
-          "OVELHA"
-        ]
-      },
-      {
-        "level": 2,
-        "title": "Cores",
-        "words": [
-          "LARANJA",
-          "CINZA",
-          "MARROM",
-          "AZUL"
-        ]
-      },
-      {
-        "level": 3,
-        "title": "Flores",
-        "words": [
-          "ROSA",
-          "MARGARIDA",
-          "ORQUÍDEA",
-          "TULIPA"
-        ]
-      },
-      {
-        "level": 4,
-        "title": "Viram outra palavra quando lidas ao contrário",
-        "words": [
-          "AMOR",
-          "ATOR",
-          "SOLAR",
-          "OVAL"
-        ]
-      }
-    ],
-    "traps": [
-      {
-        "word": "ROSA",
-        "alsoFits": "Cores"
-      }
-    ],
-    "themes": [
-      "natureza"
-    ],
-    "notes": "ROSA é flor e cor; como só há 3 outras flores, fecha nas flores. Reversos: roma, rota, ralos, lavo."
-  },
-  {
-    "id": "c-0004",
-    "groups": [
-      {
-        "level": 1,
-        "title": "Instrumentos musicais",
-        "words": [
-          "VIOLÃO",
-          "PIANO",
-          "FLAUTA",
-          "TROMBONE"
-        ]
-      },
-      {
-        "level": 2,
-        "title": "Partes da bicicleta",
-        "words": [
-          "PEDAL",
-          "GUIDÃO",
-          "CORRENTE",
-          "SELIM"
-        ]
-      },
-      {
-        "level": 3,
-        "title": "Completam \"pão de ___\"",
-        "words": [
-          "QUEIJO",
-          "FORMA",
-          "LÓ",
-          "MEL"
-        ]
-      },
-      {
-        "level": 4,
-        "title": "Começam com o nome de um animal",
-        "words": [
-          "GATILHO",
-          "COBRANÇA",
-          "RATOEIRA",
-          "GALOPE"
-        ]
-      }
-    ],
-    "themes": [
-      "música",
-      "comida"
+   },
+   {
+    "level": 2,
+    "title": "Partes do corpo",
+    "words": [
+     "JOELHO",
+     "TORNOZELO",
+     "COTOVELO",
+     "PUNHO"
     ]
-  },
-  {
-    "id": "c-0005",
-    "groups": [
-      {
-        "level": 1,
-        "title": "Países da América do Sul",
-        "words": [
-          "PERU",
-          "CHILE",
-          "BOLÍVIA",
-          "EQUADOR"
-        ]
-      },
-      {
-        "level": 2,
-        "title": "Capitais de estados brasileiros",
-        "words": [
-          "RECIFE",
-          "NATAL",
-          "BELÉM",
-          "CURITIBA"
-        ]
-      },
-      {
-        "level": 3,
-        "title": "Têm asa",
-        "words": [
-          "AVIÃO",
-          "BORBOLETA",
-          "MORCEGO",
-          "XÍCARA"
-        ]
-      },
-      {
-        "level": 4,
-        "title": "Mudam de sentido com \"o\" ou \"a\"",
-        "words": [
-          "GUIA",
-          "MORAL",
-          "LENTE",
-          "CAIXA"
-        ]
-      }
-    ],
-    "themes": [
-      "geografia"
+   },
+   {
+    "level": 3,
+    "title": "Partes do violão",
+    "words": [
+     "CORDA",
+     "CRAVELHA",
+     "TAMPO",
+     "BRAÇO"
     ]
-  },
-  {
-    "id": "c-0006",
-    "groups": [
-      {
-        "level": 1,
-        "title": "Partes do rosto",
-        "words": [
-          "TESTA",
-          "SOBRANCELHA",
-          "QUEIXO",
-          "BOCHECHA"
-        ]
-      },
-      {
-        "level": 2,
-        "title": "Frutas",
-        "words": [
-          "ABACAXI",
-          "MELANCIA",
-          "MORANGO",
-          "PÊSSEGO"
-        ]
-      },
-      {
-        "level": 3,
-        "title": "Vêm depois de \"Dia dos/das\"",
-        "words": [
-          "NAMORADOS",
-          "PAIS",
-          "MÃES",
-          "CRIANÇAS"
-        ]
-      },
-      {
-        "level": 4,
-        "title": "Perdem a primeira letra e viram outra palavra",
-        "words": [
-          "PRATO",
-          "CASA",
-          "TRIO",
-          "CALMA"
-        ]
-      }
-    ],
-    "themes": [
-      "corpo",
-      "fruta",
-      "datas"
+   },
+   {
+    "level": 4,
+    "title": "Só existem no plural",
+    "words": [
+     "ÓCULOS",
+     "FÉRIAS",
+     "NÚPCIAS",
+     "PARABÉNS"
     ]
-  },
-  {
-    "id": "c-0007",
-    "groups": [
-      {
-        "level": 1,
-        "title": "Esportes",
-        "words": [
-          "VÔLEI",
-          "NATAÇÃO",
-          "TÊNIS",
-          "BASQUETE"
-        ]
-      },
-      {
-        "level": 2,
-        "title": "Peças de xadrez",
-        "words": [
-          "RAINHA",
-          "TORRE",
-          "BISPO",
-          "PEÃO"
-        ]
-      },
-      {
-        "level": 3,
-        "title": "Completam \"bola de ___\"",
-        "words": [
-          "NEVE",
-          "GUDE",
-          "FOGO",
-          "CRISTAL"
-        ]
-      },
-      {
-        "level": 4,
-        "title": "Escondem um número",
-        "words": [
-          "DEZEMBRO",
-          "UMBIGO",
-          "SETEMBRO",
-          "NOVELA"
-        ]
-      }
-    ],
-    "themes": [
-      "esporte",
-      "jogos"
+   }
+  ],
+  "traps": [
+   {
+    "word": "BRAÇO",
+    "alsoFits": "Partes do corpo"
+   }
+  ]
+ },
+ {
+  "id": "c-0002",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Países da Europa",
+    "words": [
+     "PORTUGAL",
+     "ESPANHA",
+     "ITÁLIA",
+     "GRÉCIA"
     ]
-  },
-  {
-    "id": "c-0008",
-    "groups": [
-      {
-        "level": 1,
-        "title": "Meios de transporte",
-        "words": [
-          "ÔNIBUS",
-          "METRÔ",
-          "BARCO",
-          "TREM"
-        ]
-      },
-      {
-        "level": 2,
-        "title": "Itens de um computador",
-        "words": [
-          "TECLADO",
-          "MOUSE",
-          "MONITOR",
-          "GABINETE"
-        ]
-      },
-      {
-        "level": 3,
-        "title": "Vêm depois de \"pé de\"",
-        "words": [
-          "MOLEQUE",
-          "MEIA",
-          "PATO",
-          "CANA"
-        ]
-      },
-      {
-        "level": 4,
-        "title": "Ganham outro sentido ao receber acento",
-        "words": [
-          "COCO",
-          "SABIA",
-          "PELO",
-          "PUBLICO"
-        ]
-      }
-    ],
-    "themes": [
-      "transporte",
-      "tecnologia"
-    ],
-    "notes": "cocô, sabiá, pêlo, público."
-  },
-  {
-    "id": "c-0009",
-    "groups": [
-      {
-        "level": 1,
-        "title": "Partes de fora da casa",
-        "words": [
-          "TELHADO",
-          "JANELA",
-          "PORTÃO",
-          "GARAGEM"
-        ]
-      },
-      {
-        "level": 2,
-        "title": "Móveis",
-        "words": [
-          "SOFÁ",
-          "ESTANTE",
-          "ARMÁRIO",
-          "CÔMODA"
-        ]
-      },
-      {
-        "level": 3,
-        "title": "Completam \"banco de ___\"",
-        "words": [
-          "DADOS",
-          "SANGUE",
-          "AREIA",
-          "JARDIM"
-        ]
-      },
-      {
-        "level": 4,
-        "title": "Ganham um S na frente e viram outra palavra",
-        "words": [
-          "ALA",
-          "OBRA",
-          "ERRA",
-          "ALTO"
-        ]
-      }
-    ],
-    "themes": [
-      "casa",
-      "tecnologia"
-    ],
-    "notes": "sala, sobra, serra, salto."
-  },
-  {
-    "id": "c-0010",
-    "groups": [
-      {
-        "level": 1,
-        "title": "Dias da semana",
-        "words": [
-          "SEGUNDA",
-          "QUARTA",
-          "SEXTA",
-          "DOMINGO"
-        ]
-      },
-      {
-        "level": 2,
-        "title": "Meses do ano",
-        "words": [
-          "JANEIRO",
-          "MARÇO",
-          "JUNHO",
-          "AGOSTO"
-        ]
-      },
-      {
-        "level": 3,
-        "title": "Planetas",
-        "words": [
-          "VÊNUS",
-          "MARTE",
-          "URANO",
-          "NETUNO"
-        ]
-      },
-      {
-        "level": 4,
-        "title": "Começam com uma nota musical",
-        "words": [
-          "REMÉDIO",
-          "MIOLO",
-          "FARINHA",
-          "SOLDADO"
-        ]
-      }
-    ],
-    "traps": [
-      {
-        "word": "DOMINGO",
-        "alsoFits": "Começam com uma nota musical"
-      }
-    ],
-    "themes": [
-      "tempo",
-      "ciência",
-      "música"
-    ],
-    "notes": "DOMINGO começa com DO, mas só há 3 dias além dele; fecha nos dias. Notas: re, mi, fa, sol."
-  },
-  {
-    "id": "c-0011",
-    "groups": [
-      {
-        "level": 1,
-        "title": "Legumes",
-        "words": [
-          "CENOURA",
-          "BETERRABA",
-          "ABOBRINHA",
-          "BERINJELA"
-        ]
-      },
-      {
-        "level": 2,
-        "title": "Temperos",
-        "words": [
-          "CEBOLA",
-          "ORÉGANO",
-          "SALSA",
-          "CRAVO"
-        ]
-      },
-      {
-        "level": 3,
-        "title": "Vêm depois de \"dente de\"",
-        "words": [
-          "ALHO",
-          "LEÃO",
-          "LEITE",
-          "OURO"
-        ]
-      },
-      {
-        "level": 4,
-        "title": "Repetem a mesma sílaba",
-        "words": [
-          "BEBÊ",
-          "BABÁ",
-          "BOBO",
-          "TITIA"
-        ]
-      }
-    ],
-    "traps": [
-      {
-        "word": "ALHO",
-        "alsoFits": "Temperos"
-      }
-    ],
-    "themes": [
-      "comida",
-      "corpo"
-    ],
-    "notes": "ALHO é tempero, mas o grupo \"dente de\" só fecha com ele."
-  },
-  {
-    "id": "c-0012",
-    "groups": [
-      {
-        "level": 1,
-        "title": "Aplicativos populares",
-        "words": [
-          "WHATSAPP",
-          "INSTAGRAM",
-          "YOUTUBE",
-          "NETFLIX"
-        ]
-      },
-      {
-        "level": 2,
-        "title": "Peças de roupa",
-        "words": [
-          "CAMISETA",
-          "CALÇA",
-          "SAIA",
-          "VESTIDO"
-        ]
-      },
-      {
-        "level": 3,
-        "title": "Vêm depois de \"porta-\"",
-        "words": [
-          "RETRATO",
-          "MALAS",
-          "LUVAS",
-          "COPOS"
-        ]
-      },
-      {
-        "level": 4,
-        "title": "Começam com um pronome",
-        "words": [
-          "ELEGANTE",
-          "ELÁSTICO",
-          "EUCALIPTO",
-          "TUBARÃO"
-        ]
-      }
-    ],
-    "themes": [
-      "tecnologia",
-      "roupa"
-    ],
-    "notes": "ele, ela, eu, tu."
-  }
+   },
+   {
+    "level": 2,
+    "title": "Moedas",
+    "words": [
+     "EURO",
+     "DÓLAR",
+     "PESO",
+     "LIBRA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Signos",
+    "words": [
+     "ÁRIES",
+     "LEÃO",
+     "TOURO",
+     "VIRGEM"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Perdem a primeira letra e viram outra palavra",
+    "words": [
+     "PRATO",
+     "TRIO",
+     "CALMA",
+     "CASA"
+    ]
+   }
+  ],
+  "traps": [
+   {
+    "word": "LIBRA",
+    "alsoFits": "Signos"
+   }
+  ]
+ },
+ {
+  "id": "c-0003",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Frutas vermelhas",
+    "words": [
+     "MORANGO",
+     "FRAMBOESA",
+     "CEREJA",
+     "AMORA"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Naipes do baralho",
+    "words": [
+     "OUROS",
+     "COPAS",
+     "PAUS",
+     "ESPADAS"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Têm coroa",
+    "words": [
+     "REI",
+     "DENTE",
+     "ABACAXI",
+     "PRINCESA"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Viram outra palavra quando lidas ao contrário",
+    "words": [
+     "AMOR",
+     "ATOR",
+     "SOLAR",
+     "OVAL"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0004",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Prédios de uma cidade",
+    "words": [
+     "ESCOLA",
+     "HOSPITAL",
+     "IGREJA",
+     "BIBLIOTECA"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Onde se senta",
+    "words": [
+     "SOFÁ",
+     "POLTRONA",
+     "CADEIRA",
+     "BANCO"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Vêm depois de \"mesa de\"",
+    "words": [
+     "CABECEIRA",
+     "JANTAR",
+     "TRABALHO",
+     "CENTRO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Repetem a mesma sílaba",
+    "words": [
+     "BEBÊ",
+     "BABÁ",
+     "TITIA",
+     "BOBO"
+    ]
+   }
+  ],
+  "traps": [
+   {
+    "word": "BANCO",
+    "alsoFits": "Prédios de uma cidade"
+   }
+  ]
+ },
+ {
+  "id": "c-0005",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Partes do pé",
+    "words": [
+     "CALCANHAR",
+     "DEDÃO",
+     "SOLA",
+     "ARCO"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Papéis de uma obra",
+    "words": [
+     "MAQUETE",
+     "PROJETO",
+     "ALVARÁ",
+     "PLANTA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Vêm depois de \"pé de\"",
+    "words": [
+     "MOLEQUE",
+     "MEIA",
+     "CANA",
+     "PATO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Ganham outro sentido ao receber acento",
+    "words": [
+     "COCO",
+     "SABIA",
+     "PELO",
+     "PUBLICO"
+    ]
+   }
+  ],
+  "traps": [
+   {
+    "word": "PLANTA",
+    "alsoFits": "Partes do pé"
+   }
+  ]
+ },
+ {
+  "id": "c-0006",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Peixes",
+    "words": [
+     "SALMÃO",
+     "ATUM",
+     "TAINHA",
+     "ROBALO"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Ferramentas",
+    "words": [
+     "MARTELO",
+     "SERROTE",
+     "ALICATE",
+     "TRENA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Servem para abrir coisas",
+    "words": [
+     "CHAVE",
+     "ABRIDOR",
+     "ZÍPER",
+     "SACA-ROLHA"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Começam com o nome de um animal",
+    "words": [
+     "GATILHO",
+     "COBRANÇA",
+     "RATOEIRA",
+     "GALOPE"
+    ]
+   }
+  ],
+  "traps": [
+   {
+    "word": "CHAVE",
+    "alsoFits": "Ferramentas"
+   }
+  ]
+ },
+ {
+  "id": "c-0007",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Instrumentos de sopro",
+    "words": [
+     "FLAUTA",
+     "TROMPETE",
+     "CLARINETE",
+     "SAXOFONE"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Instrumentos de percussão",
+    "words": [
+     "PANDEIRO",
+     "TAMBORIM",
+     "SURDO",
+     "AGOGÔ"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Instrumentos de corda",
+    "words": [
+     "VIOLINO",
+     "HARPA",
+     "VIOLONCELO",
+     "CAVAQUINHO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Começam com uma nota musical",
+    "words": [
+     "REMÉDIO",
+     "MIOLO",
+     "FARINHA",
+     "SOLDADO"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0008",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Estados do Nordeste",
+    "words": [
+     "BAHIA",
+     "CEARÁ",
+     "PIAUÍ",
+     "SERGIPE"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Rios do Brasil",
+    "words": [
+     "AMAZONAS",
+     "TOCANTINS",
+     "XINGU",
+     "PARNAÍBA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Doces brasileiros",
+    "words": [
+     "BRIGADEIRO",
+     "BEIJINHO",
+     "CAJUZINHO",
+     "QUINDIM"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Escondem um número no começo",
+    "words": [
+     "DEZEMBRO",
+     "UMBIGO",
+     "SETEMBRO",
+     "NOVELA"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0009",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Partes de fora da casa",
+    "words": [
+     "TELHADO",
+     "JANELA",
+     "PORTÃO",
+     "GARAGEM"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Móveis",
+    "words": [
+     "MESA",
+     "ESTANTE",
+     "ARMÁRIO",
+     "CÔMODA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Vêm depois de \"banco de\"",
+    "words": [
+     "DADOS",
+     "SANGUE",
+     "AREIA",
+     "JARDIM"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Com um S antes, viram outra palavra",
+    "words": [
+     "ALA",
+     "OBRA",
+     "ERRA",
+     "ALTO"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0010",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Dias da semana",
+    "words": [
+     "SEGUNDA",
+     "QUARTA",
+     "SEXTA",
+     "DOMINGO"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Meses do ano",
+    "words": [
+     "JANEIRO",
+     "MARÇO",
+     "JUNHO",
+     "AGOSTO"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Planetas",
+    "words": [
+     "VÊNUS",
+     "MARTE",
+     "URANO",
+     "SATURNO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Escondem um animal no começo",
+    "words": [
+     "PATOLOGIA",
+     "VACARIA",
+     "BOIADA",
+     "PORCARIA"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0011",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Legumes",
+    "words": [
+     "CENOURA",
+     "BETERRABA",
+     "ABOBRINHA",
+     "BERINJELA"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Temperos e ervas",
+    "words": [
+     "ORÉGANO",
+     "MANJERICÃO",
+     "ALECRIM",
+     "HORTELÃ"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Vêm depois de \"dente de\"",
+    "words": [
+     "ALHO",
+     "SERRA",
+     "LEITE",
+     "OURO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Mudam de sentido com \"o\" ou \"a\"",
+    "words": [
+     "GRAMA",
+     "CAPITAL",
+     "RÁDIO",
+     "CURA"
+    ]
+   }
+  ],
+  "traps": [
+   {
+    "word": "ALHO",
+    "alsoFits": "Temperos e ervas"
+   }
+  ]
+ },
+ {
+  "id": "c-0012",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Aplicativos populares",
+    "words": [
+     "WHATSAPP",
+     "INSTAGRAM",
+     "YOUTUBE",
+     "NETFLIX"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Peças de roupa",
+    "words": [
+     "CAMISETA",
+     "CALÇA",
+     "SAIA",
+     "VESTIDO"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Vêm depois de \"porta-\"",
+    "words": [
+     "JÓIAS",
+     "BANDEIRA",
+     "VOZ",
+     "CHAVES"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Começam com um pronome",
+    "words": [
+     "ELEGANTE",
+     "ELÁSTICO",
+     "EUCALIPTO",
+     "TUBARÃO"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0013",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Aves",
+    "words": [
+     "PAVÃO",
+     "TUCANO",
+     "CORUJA",
+     "FLAMINGO"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Partes de uma ave",
+    "words": [
+     "BICO",
+     "ASA",
+     "CRISTA",
+     "PENA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Usados na escrita antiga",
+    "words": [
+     "TINTEIRO",
+     "PERGAMINHO",
+     "PAPIRO",
+     "NANQUIM"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Só têm a vogal A",
+    "words": [
+     "BANANA",
+     "SALADA",
+     "ALCATRAZ",
+     "CANALHA"
+    ]
+   }
+  ],
+  "traps": [
+   {
+    "word": "PENA",
+    "alsoFits": "Usados na escrita antiga"
+   }
+  ]
+ },
+ {
+  "id": "c-0014",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Oceanos",
+    "words": [
+     "ATLÂNTICO",
+     "PACÍFICO",
+     "ÍNDICO",
+     "ÁRTICO"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Biomas brasileiros",
+    "words": [
+     "CERRADO",
+     "CAATINGA",
+     "PANTANAL",
+     "PAMPA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Vêm depois de \"bom\"",
+    "words": [
+     "DIA",
+     "APETITE",
+     "SENSO",
+     "HUMOR"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Têm outra palavra com o mesmo som",
+    "words": [
+     "CESTA",
+     "CONSERTO",
+     "CAÇAR",
+     "HERA"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0015",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Deuses gregos",
+    "words": [
+     "ZEUS",
+     "ARES",
+     "ATENA",
+     "APOLO"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Seres do folclore brasileiro",
+    "words": [
+     "SACI",
+     "CUCA",
+     "CURUPIRA",
+     "IARA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Vêm depois de \"sem\"",
+    "words": [
+     "NOÇÃO",
+     "VERGONHA",
+     "GRAÇA",
+     "CERIMÔNIA"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Com um S antes, viram outra palavra",
+    "words": [
+     "ERVA",
+     "ENTE",
+     "OPA",
+     "ALVA"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0016",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Turma do gibi mais famoso do Brasil",
+    "words": [
+     "MÔNICA",
+     "CEBOLINHA",
+     "MAGALI",
+     "CASCÃO"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Palíndromos (leem igual de trás para a frente)",
+    "words": [
+     "ARARA",
+     "OVO",
+     "OSSO",
+     "RADAR"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Vêm depois de \"quebra-\"",
+    "words": [
+     "CABEÇA",
+     "MAR",
+     "GELO",
+     "NOZES"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Palavras que nasceram de siglas",
+    "words": [
+     "LASER",
+     "SONAR",
+     "OVNI",
+     "AIDS"
+    ]
+   }
+  ],
+  "traps": [
+   {
+    "word": "RADAR",
+    "alsoFits": "Palavras que nasceram de siglas"
+   }
+  ]
+ },
+ {
+  "id": "c-0017",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Água em movimento",
+    "words": [
+     "RIO",
+     "CÓRREGO",
+     "RIACHO",
+     "CORRENTE"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Joias",
+    "words": [
+     "COLAR",
+     "PULSEIRA",
+     "BRINCO",
+     "ANEL"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Vêm depois de \"para-\"",
+    "words": [
+     "QUEDAS",
+     "CHOQUE",
+     "LAMA",
+     "RAIOS"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Ganham outro sentido ao receber acento",
+    "words": [
+     "ESTA",
+     "CRITICA",
+     "ANALISE",
+     "TERMINO"
+    ]
+   }
+  ],
+  "traps": [
+   {
+    "word": "CORRENTE",
+    "alsoFits": "Joias"
+   }
+  ]
+ },
+ {
+  "id": "c-0018",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Elementos químicos",
+    "words": [
+     "OXIGÊNIO",
+     "HIDROGÊNIO",
+     "CARBONO",
+     "NITROGÊNIO"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Metais",
+    "words": [
+     "FERRO",
+     "COBRE",
+     "ZINCO",
+     "ESTANHO"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Vêm depois de \"tira-\"",
+    "words": [
+     "GOSTO",
+     "TEIMA",
+     "DÚVIDAS",
+     "MANCHAS"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Perdem a primeira letra e viram outra palavra",
+    "words": [
+     "BRISA",
+     "CLIMA",
+     "BLOCO",
+     "PRIMA"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0019",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Peças de xadrez",
+    "words": [
+     "RAINHA",
+     "TORRE",
+     "BISPO",
+     "PEÃO"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Jogos de tabuleiro",
+    "words": [
+     "DAMAS",
+     "DOMINÓ",
+     "LUDO",
+     "GAMÃO"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Naipes do baralho",
+    "words": [
+     "OUROS",
+     "COPAS",
+     "PAUS",
+     "ESPADAS"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Escondem uma parte do corpo no começo",
+    "words": [
+     "BOCADO",
+     "PEITORAL",
+     "UNHADA",
+     "PÉROLA"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0020",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Eletrodomésticos",
+    "words": [
+     "GELADEIRA",
+     "LIQUIDIFICADOR",
+     "MICRO-ONDAS",
+     "BATEDEIRA"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Utensílios de cozinha",
+    "words": [
+     "ESPÁTULA",
+     "CONCHA",
+     "PENEIRA",
+     "RALADOR"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Vêm depois de \"lava-\"",
+    "words": [
+     "LOUÇAS",
+     "ROUPAS",
+     "JATO",
+     "RÁPIDO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Mudam de sentido com \"o\" ou \"a\"",
+    "words": [
+     "GUIA",
+     "MORAL",
+     "LENTE",
+     "CAIXA"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0021",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Estações do ano",
+    "words": [
+     "VERÃO",
+     "OUTONO",
+     "INVERNO",
+     "PRIMAVERA"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Partes do dia",
+    "words": [
+     "AMANHECER",
+     "MEIO-DIA",
+     "ENTARDECER",
+     "MADRUGADA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Vêm depois de \"fim de\"",
+    "words": [
+     "SEMANA",
+     "ANO",
+     "JOGO",
+     "FESTA"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Só têm a vogal O",
+    "words": [
+     "POLVO",
+     "SOLO",
+     "COLOSSO",
+     "ROCOCÓ"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0022",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Matérias da escola",
+    "words": [
+     "HISTÓRIA",
+     "GEOGRAFIA",
+     "QUÍMICA",
+     "BIOLOGIA"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Classes de palavras",
+    "words": [
+     "VERBO",
+     "ADVÉRBIO",
+     "PRONOME",
+     "ADJETIVO"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Vêm depois de \"má\"",
+    "words": [
+     "FÉ",
+     "SORTE",
+     "EDUCAÇÃO",
+     "VONTADE"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Singular igual ao plural",
+    "words": [
+     "LÁPIS",
+     "PIRES",
+     "TÓRAX",
+     "ATLAS"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0023",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Ritmos brasileiros",
+    "words": [
+     "SAMBA",
+     "FORRÓ",
+     "FREVO",
+     "BAIÃO"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Palavras de origem africana",
+    "words": [
+     "CAÇULA",
+     "MOLEQUE",
+     "FUBÁ",
+     "BANGUELA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Vêm depois de \"alto\"",
+    "words": [
+     "FALANTE",
+     "FORNO",
+     "RELEVO",
+     "ASTRAL"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Viram outra palavra quando lidas ao contrário",
+    "words": [
+     "SAPOS",
+     "SERA",
+     "SOMA",
+     "ALEM"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0024",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Fases da Lua",
+    "words": [
+     "CHEIA",
+     "NOVA",
+     "MINGUANTE",
+     "CRESCENTE"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Formas de relevo",
+    "words": [
+     "PLANALTO",
+     "PLANÍCIE",
+     "DEPRESSÃO",
+     "MONTANHA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Têm asa",
+    "words": [
+     "AVIÃO",
+     "BORBOLETA",
+     "MORCEGO",
+     "XÍCARA"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Mudam de sentido com \"o\" ou \"a\"",
+    "words": [
+     "CÓLERA",
+     "GUARDA",
+     "COMA",
+     "VOGA"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0025",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Pedras preciosas",
+    "words": [
+     "RUBI",
+     "ESMERALDA",
+     "SAFIRA",
+     "TOPÁZIO"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Símbolos da realeza",
+    "words": [
+     "COROA",
+     "CETRO",
+     "TRONO",
+     "MANTO"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Têm dentes",
+    "words": [
+     "PENTE",
+     "SERROTE",
+     "ENGRENAGEM",
+     "ZÍPER"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Têm outra palavra com o mesmo som",
+    "words": [
+     "CELA",
+     "SESSÃO",
+     "TRAZ",
+     "CHÁ"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0026",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Felinos",
+    "words": [
+     "LEOPARDO",
+     "JAGUATIRICA",
+     "PUMA",
+     "GUEPARDO"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Mamíferos do mar",
+    "words": [
+     "BALEIA",
+     "GOLFINHO",
+     "FOCA",
+     "MANATI"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Têm olhos",
+    "words": [
+     "FURACÃO",
+     "AGULHA",
+     "BATATA",
+     "DADO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Letras em ordem alfabética",
+    "words": [
+     "BEIJO",
+     "FLOR",
+     "ACHO",
+     "ADEUS"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0027",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Gêneros de filme",
+    "words": [
+     "TERROR",
+     "COMÉDIA",
+     "ROMANCE",
+     "SUSPENSE"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Gêneros literários",
+    "words": [
+     "SONETO",
+     "HAICAI",
+     "CRÔNICA",
+     "FÁBULA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Vêm depois de \"primeiro\"",
+    "words": [
+     "PLANO",
+     "ATO",
+     "AMOR",
+     "NOME"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "O X soa como Z",
+    "words": [
+     "EXAME",
+     "EXÉRCITO",
+     "ÊXITO",
+     "EXEMPLO"
+    ]
+   }
+  ],
+  "traps": [
+   {
+    "word": "ROMANCE",
+    "alsoFits": "Gêneros literários"
+   }
+  ]
+ },
+ {
+  "id": "c-0028",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Doenças infantis",
+    "words": [
+     "GRIPE",
+     "SARAMPO",
+     "CAXUMBA",
+     "CATAPORA"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Fenômenos do tempo",
+    "words": [
+     "GRANIZO",
+     "NEBLINA",
+     "TROVOADA",
+     "GEADA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Têm boca",
+    "words": [
+     "TÚNEL",
+     "VULCÃO",
+     "FOGÃO",
+     "GARRAFA"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Plural em -ÃES",
+    "words": [
+     "PÃO",
+     "CÃO",
+     "CAPITÃO",
+     "ALEMÃO"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0029",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Gêneros musicais",
+    "words": [
+     "ROCK",
+     "SERTANEJO",
+     "PAGODE",
+     "FUNK"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Partes de uma música",
+    "words": [
+     "REFRÃO",
+     "ESTROFE",
+     "INTRODUÇÃO",
+     "PONTE"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Vêm depois de \"estrela\"",
+    "words": [
+     "CADENTE",
+     "DO MAR",
+     "DALVA",
+     "POLAR"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Plural em -ÕES",
+    "words": [
+     "BOTÃO",
+     "LIMÃO",
+     "BALÃO",
+     "MELÃO"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0030",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Profissões de obra e casa",
+    "words": [
+     "PEDREIRO",
+     "ENCANADOR",
+     "ELETRICISTA",
+     "MARCENEIRO"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Profissões da saúde",
+    "words": [
+     "ENFERMEIRO",
+     "DENTISTA",
+     "FISIOTERAPEUTA",
+     "NUTRICIONISTA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Personagens de um tribunal",
+    "words": [
+     "JUIZ",
+     "PROMOTOR",
+     "ADVOGADO",
+     "RÉU"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Plural em -ÃOS",
+    "words": [
+     "MÃO",
+     "IRMÃO",
+     "CIDADÃO",
+     "ÓRGÃO"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0031",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Formas de preparar comida",
+    "words": [
+     "ASSAR",
+     "FRITAR",
+     "REFOGAR",
+     "COZINHAR"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Sentimentos",
+    "words": [
+     "SAUDADE",
+     "RAIVA",
+     "INVEJA",
+     "CIÚME"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Têm pé",
+    "words": [
+     "ESCADA",
+     "CAMA",
+     "PÁGINA",
+     "MESA"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "O X soa como CH",
+    "words": [
+     "ABACAXI",
+     "XAMPU",
+     "LIXO",
+     "ENXADA"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0032",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Sobremesas",
+    "words": [
+     "PUDIM",
+     "MOUSSE",
+     "PAVÊ",
+     "TORTA"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Tipos de café",
+    "words": [
+     "EXPRESSO",
+     "CAPUCCINO",
+     "LATTE",
+     "MACCHIATO"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Vêm depois de \"papel\"",
+    "words": [
+     "HIGIÊNICO",
+     "ALUMÍNIO",
+     "TOALHA",
+     "MOEDA"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "O X soa como KS",
+    "words": [
+     "TÁXI",
+     "TÓXICO",
+     "FIXO",
+     "REFLEXO"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0033",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Partes do carro",
+    "words": [
+     "VOLANTE",
+     "FAROL",
+     "EMBREAGEM",
+     "RETROVISOR"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Veículos de duas rodas",
+    "words": [
+     "BICICLETA",
+     "MOTO",
+     "PATINETE",
+     "SKATE"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Vêm depois de \"água\"",
+    "words": [
+     "VIVA",
+     "SANITÁRIA",
+     "BENTA",
+     "MINERAL"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Começam e terminam com a mesma letra",
+    "words": [
+     "ANTENA",
+     "ESTUDANTE",
+     "ARENA",
+     "ELEFANTE"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0034",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Capitais europeias",
+    "words": [
+     "LISBOA",
+     "PARIS",
+     "ROMA",
+     "MADRI"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Capitais sul-americanas",
+    "words": [
+     "LIMA",
+     "QUITO",
+     "BOGOTÁ",
+     "ASSUNÇÃO"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Países da Ásia",
+    "words": [
+     "JAPÃO",
+     "TAILÂNDIA",
+     "VIETNÃ",
+     "MONGÓLIA"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Têm outra palavra com o mesmo som",
+    "words": [
+     "CEM",
+     "CENSO",
+     "ACENTO",
+     "TACHA"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0035",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Verduras de folha",
+    "words": [
+     "ALFACE",
+     "RÚCULA",
+     "AGRIÃO",
+     "COUVE"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Frutas tropicais",
+    "words": [
+     "CAJU",
+     "GOIABA",
+     "MAMÃO",
+     "ACEROLA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Cortes de carne",
+    "words": [
+     "PICANHA",
+     "ALCATRA",
+     "FRALDINHA",
+     "COSTELA"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Tirando o R, viram outra palavra",
+    "words": [
+     "PRATO",
+     "FRANGO",
+     "BRAÇO",
+     "TREM"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0036",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Brinquedos",
+    "words": [
+     "PIÃO",
+     "PIPA",
+     "IOIÔ",
+     "CARRINHO"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Brincadeiras",
+    "words": [
+     "PIQUE-ESCONDE",
+     "AMARELINHA",
+     "ESTÁTUA",
+     "CABRA-CEGA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Vêm depois de \"casa de\"",
+    "words": [
+     "BONECA",
+     "CAMPO",
+     "PRAIA",
+     "MÁQUINAS"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Proparoxítonas (acento na antepenúltima sílaba)",
+    "words": [
+     "ÁRVORE",
+     "LÂMPADA",
+     "MÚSICA",
+     "PÁSSARO"
+    ]
+   }
+  ],
+  "traps": [
+   {
+    "word": "BONECA",
+    "alsoFits": "Brinquedos"
+   }
+  ]
+ },
+ {
+  "id": "c-0037",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Comidas de festa junina",
+    "words": [
+     "PAMONHA",
+     "CANJICA",
+     "PAÇOCA",
+     "CURAU"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Danças típicas",
+    "words": [
+     "QUADRILHA",
+     "XOTE",
+     "FANDANGO",
+     "CIRANDA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Vêm depois de \"ponto de\"",
+    "words": [
+     "ÔNIBUS",
+     "VISTA",
+     "PARTIDA",
+     "ENCONTRO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Têm um U que não se pronuncia",
+    "words": [
+     "GUERRA",
+     "QUEIJO",
+     "GUITARRA",
+     "QUILO"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0038",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Figuras geométricas",
+    "words": [
+     "TRIÂNGULO",
+     "LOSANGO",
+     "CÍRCULO",
+     "RETÂNGULO"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Unidades de medida",
+    "words": [
+     "METRO",
+     "LITRO",
+     "QUILATE",
+     "SEGUNDO"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Vêm depois de \"cartão de\"",
+    "words": [
+     "CRÉDITO",
+     "NATAL",
+     "VISITA",
+     "PONTO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Usam as cinco vogais",
+    "words": [
+     "SEQUOIA",
+     "PNEUMONIA",
+     "EDUCACIONAL",
+     "AEROPORTUÁRIO"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0039",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Material escolar",
+    "words": [
+     "BORRACHA",
+     "RÉGUA",
+     "APONTADOR",
+     "COMPASSO"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Partes de um livro",
+    "words": [
+     "CAPA",
+     "LOMBADA",
+     "ÍNDICE",
+     "PREFÁCIO"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Usados na chuva",
+    "words": [
+     "GALOCHA",
+     "IMPERMEÁVEL",
+     "SOMBRINHA",
+     "GUARDA-CHUVA"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Ganham um P na frente e viram outra palavra",
+    "words": [
+     "ARTE",
+     "ALMA",
+     "RATO",
+     "ASSO"
+    ]
+   }
+  ],
+  "traps": [
+   {
+    "word": "CAPA",
+    "alsoFits": "Usados na chuva"
+   }
+  ]
+ },
+ {
+  "id": "c-0040",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Raças de cachorro",
+    "words": [
+     "LABRADOR",
+     "DÁLMATA",
+     "DACHSHUND",
+     "BULLDOG"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Raças de gato",
+    "words": [
+     "SIAMÊS",
+     "PERSA",
+     "ANGORÁ",
+     "BENGAL"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Têm cauda",
+    "words": [
+     "COMETA",
+     "VESTIDO",
+     "FILA",
+     "ESCORPIÃO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Verbo + substantivo",
+    "words": [
+     "PASSATEMPO",
+     "GUARDANAPO",
+     "PARAQUEDAS",
+     "BEIJA-FLOR"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0041",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Insetos",
+    "words": [
+     "BESOURO",
+     "GAFANHOTO",
+     "LIBÉLULA",
+     "CIGARRA"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Bichos peçonhentos",
+    "words": [
+     "ARANHA",
+     "CENTOPEIA",
+     "LAGARTA",
+     "VESPA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Vêm depois de \"olho de\"",
+    "words": [
+     "BOI",
+     "GATO",
+     "PEIXE",
+     "SOGRA"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Terminam em A, mas são masculinas",
+    "words": [
+     "PROBLEMA",
+     "TEOREMA",
+     "PLANETA",
+     "MAPA"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0042",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Animais brasileiros",
+    "words": [
+     "TUIUIÚ",
+     "CAPIVARA",
+     "SUCURI",
+     "BOTO"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Frutas da Amazônia",
+    "words": [
+     "AÇAÍ",
+     "CUPUAÇU",
+     "TUCUMÃ",
+     "BACURI"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Vêm depois de \"mão de\"",
+    "words": [
+     "OBRA",
+     "VACA",
+     "FERRO",
+     "ONÇA"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Singular igual ao plural",
+    "words": [
+     "TÊNIS",
+     "VÍRUS",
+     "CÁCTUS",
+     "CÓRTEX"
+    ]
+   }
+  ],
+  "traps": [
+   {
+    "word": "ONÇA",
+    "alsoFits": "Animais brasileiros"
+   }
+  ]
+ },
+ {
+  "id": "c-0043",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Meios de comunicação",
+    "words": [
+     "TELEVISÃO",
+     "JORNAL",
+     "REVISTA",
+     "OUTDOOR"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Partes do olho",
+    "words": [
+     "PUPILA",
+     "ÍRIS",
+     "RETINA",
+     "CÓRNEA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Músculos",
+    "words": [
+     "BÍCEPS",
+     "TRÍCEPS",
+     "PEITORAL",
+     "GLÚTEO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Ossos",
+    "words": [
+     "FÊMUR",
+     "ÚMERO",
+     "TÍBIA",
+     "RÁDIO"
+    ]
+   }
+  ],
+  "traps": [
+   {
+    "word": "RÁDIO",
+    "alsoFits": "Meios de comunicação"
+   }
+  ]
+ },
+ {
+  "id": "c-0044",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Árvores brasileiras",
+    "words": [
+     "IPÊ",
+     "JACARANDÁ",
+     "ARAUCÁRIA",
+     "PAU-BRASIL"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Partes de uma árvore",
+    "words": [
+     "RAIZ",
+     "GALHO",
+     "TRONCO",
+     "FOLHA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Competições esportivas",
+    "words": [
+     "COPA",
+     "OLIMPÍADA",
+     "MUNDIAL",
+     "CAMPEONATO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Letras em ordem alfabética",
+    "words": [
+     "ACENO",
+     "CINTO",
+     "FIOS",
+     "DEMO"
+    ]
+   }
+  ],
+  "traps": [
+   {
+    "word": "COPA",
+    "alsoFits": "Partes de uma árvore"
+   }
+  ]
+ },
+ {
+  "id": "c-0045",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Frutas cítricas",
+    "words": [
+     "LIMÃO",
+     "LARANJA",
+     "TANGERINA",
+     "BERGAMOTA"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Cores",
+    "words": [
+     "VERMELHO",
+     "AMARELO",
+     "AZUL",
+     "ROXO"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Tipos de feijão",
+    "words": [
+     "PRETO",
+     "CARIOCA",
+     "FRADINHO",
+     "BRANCO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Tirando o R, viram outra palavra",
+    "words": [
+     "DRAMA",
+     "FRASE",
+     "FREIO",
+     "CARTA"
+    ]
+   }
+  ],
+  "traps": [
+   {
+    "word": "PRETO",
+    "alsoFits": "Cores"
+   },
+   {
+    "word": "BRANCO",
+    "alsoFits": "Cores"
+   }
+  ]
+ },
+ {
+  "id": "c-0046",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Peças de cama",
+    "words": [
+     "LENÇOL",
+     "TRAVESSEIRO",
+     "COBERTOR",
+     "EDREDOM"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Itens do banheiro",
+    "words": [
+     "CHUVEIRO",
+     "PIA",
+     "VASO",
+     "TOALHEIRO"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Vêm depois de \"dia de\"",
+    "words": [
+     "FOLGA",
+     "CHUVA",
+     "SORTE",
+     "PAGAMENTO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Terminam em A, mas são masculinas",
+    "words": [
+     "DIA",
+     "CLIMA",
+     "PIJAMA",
+     "SISTEMA"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0047",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Esportes de inverno",
+    "words": [
+     "SKI",
+     "SNOWBOARD",
+     "PATINAÇÃO",
+     "HÓQUEI"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Esportes de luta",
+    "words": [
+     "BOXE",
+     "JUDÔ",
+     "KARATÊ",
+     "CAPOEIRA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Equipamentos de academia",
+    "words": [
+     "HALTER",
+     "ESTEIRA",
+     "CORDA",
+     "COLCHONETE"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Verbo + substantivo",
+    "words": [
+     "SALVA-VIDAS",
+     "ARRANHA-CÉU",
+     "GUARDA-ROUPA",
+     "CAÇA-NÍQUEL"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0048",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Capitais do Sul e do Sudeste",
+    "words": [
+     "PORTO ALEGRE",
+     "FLORIANÓPOLIS",
+     "CURITIBA",
+     "VITÓRIA"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Capitais do Norte",
+    "words": [
+     "MANAUS",
+     "BELÉM",
+     "PORTO VELHO",
+     "MACAPÁ"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Destinos turísticos",
+    "words": [
+     "GRAMADO",
+     "BONITO",
+     "PARATY",
+     "JERICOACOARA"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Palavras de origem árabe",
+    "words": [
+     "AÇÚCAR",
+     "ALGODÃO",
+     "ALMOFADA",
+     "AZEITE"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0049",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Sabores de pizza",
+    "words": [
+     "CALABRESA",
+     "MARGHERITA",
+     "QUATRO QUEIJOS",
+     "PORTUGUESA"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Bebidas",
+    "words": [
+     "GUARANÁ",
+     "CAIPIRINHA",
+     "CERVEJA",
+     "CACHAÇA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Vêm depois de \"sopa de\"",
+    "words": [
+     "LETRAS",
+     "PEDRA",
+     "LEGUMES",
+     "CEBOLA"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Letras gregas",
+    "words": [
+     "ALFA",
+     "BETA",
+     "GAMA",
+     "ÔMEGA"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0050",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Oleaginosas",
+    "words": [
+     "CASTANHA",
+     "AMÊNDOA",
+     "NOZ",
+     "AVELÃ"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Cereais",
+    "words": [
+     "ARROZ",
+     "TRIGO",
+     "MILHO",
+     "AVEIA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Vêm depois de \"água de\"",
+    "words": [
+     "COCO",
+     "CHEIRO",
+     "TORNEIRA",
+     "ROSAS"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Tirando o L, viram outra palavra",
+    "words": [
+     "PLANO",
+     "CLARO",
+     "PLACA",
+     "PLUMA"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0051",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Esportes aquáticos",
+    "words": [
+     "NATAÇÃO",
+     "POLO AQUÁTICO",
+     "SURFE",
+     "REMO"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Posições do vôlei",
+    "words": [
+     "LEVANTADOR",
+     "LÍBERO",
+     "PONTEIRO",
+     "OPOSTO"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Combinam com o verbo \"bater\"",
+    "words": [
+     "PALMAS",
+     "PORTA",
+     "RECORDE",
+     "CARTEIRA"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Ganham um A na frente e viram outra palavra",
+    "words": [
+     "MAR",
+     "TENTO",
+     "CASO",
+     "BRIR"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0052",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Dedos da mão",
+    "words": [
+     "POLEGAR",
+     "INDICADOR",
+     "MÉDIO",
+     "ANELAR"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Pratos típicos",
+    "words": [
+     "FEIJOADA",
+     "MOQUECA",
+     "ACARAJÉ",
+     "VATAPÁ"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Combinam com o verbo \"tomar\"",
+    "words": [
+     "BANHO",
+     "CAFÉ",
+     "DECISÃO",
+     "SUSTO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Ganham outro sentido ao receber acento",
+    "words": [
+     "MEDICO",
+     "CALCULO",
+     "DUVIDA",
+     "FABRICA"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0053",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Materiais de construção",
+    "words": [
+     "CIMENTO",
+     "TIJOLO",
+     "TELHA",
+     "VERGALHÃO"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Tipos de nuvem",
+    "words": [
+     "CIRRO",
+     "CÚMULO",
+     "ESTRATO",
+     "NIMBO"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Combinam com o verbo \"fazer\"",
+    "words": [
+     "COMPRAS",
+     "GRAÇA",
+     "FESTA",
+     "CARETA"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Palíndromos (leem igual de trás para a frente)",
+    "words": [
+     "REVIVER",
+     "SOCOS",
+     "RALAR",
+     "MIRIM"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0054",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Pontos cardeais",
+    "words": [
+     "NORTE",
+     "SUL",
+     "LESTE",
+     "OESTE"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Talheres",
+    "words": [
+     "GARFO",
+     "FACA",
+     "COLHER",
+     "PALITO"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Combinam com o verbo \"pegar\"",
+    "words": [
+     "ONDA",
+     "RESFRIADO",
+     "CARONA",
+     "TRÂNSITO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Têm outra palavra com o mesmo som",
+    "words": [
+     "PAÇO",
+     "CERRAR",
+     "CASSA",
+     "ESPIAR"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0055",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Flores",
+    "words": [
+     "MARGARIDA",
+     "ORQUÍDEA",
+     "TULIPA",
+     "GIRASSOL"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Partes da flor",
+    "words": [
+     "PÉTALA",
+     "CAULE",
+     "SÉPALA",
+     "PISTILO"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Combinam com o verbo \"passar\"",
+    "words": [
+     "ROUPA",
+     "PANO",
+     "VERGONHA",
+     "BATOM"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Proparoxítonas (acento na antepenúltima sílaba)",
+    "words": [
+     "SÁBADO",
+     "RÁPIDO",
+     "CÂMERA",
+     "TÉCNICO"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0056",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Contos e personagens infantis",
+    "words": [
+     "CINDERELA",
+     "RAPUNZEL",
+     "PINÓQUIO",
+     "PETER PAN"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Termos de conjugação",
+    "words": [
+     "PRESENTE",
+     "PRETÉRITO",
+     "FUTURO",
+     "GERÚNDIO"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Vêm depois de \"pé\"",
+    "words": [
+     "DIREITO",
+     "FRIO",
+     "QUENTE",
+     "CHATO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "O X soa como S",
+    "words": [
+     "PRÓXIMO",
+     "MÁXIMO",
+     "AUXILIAR",
+     "EXPLODIR"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0057",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Calçados",
+    "words": [
+     "CHINELO",
+     "SAPATILHA",
+     "BOTA",
+     "MOCASSIM"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Acessórios de roupa",
+    "words": [
+     "SUSPENSÓRIO",
+     "GRAVATA",
+     "CACHECOL",
+     "LUVA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Partes do sapato",
+    "words": [
+     "SALTO",
+     "CADARÇO",
+     "PALMILHA",
+     "BIQUEIRA"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Verbo + substantivo",
+    "words": [
+     "PARA-BRISA",
+     "MATA-BORRÃO",
+     "CORTA-VENTO",
+     "ESPANTALHO"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0058",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Filósofos",
+    "words": [
+     "PLATÃO",
+     "ARISTÓTELES",
+     "SÓCRATES",
+     "DESCARTES"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Pintores",
+    "words": [
+     "PICASSO",
+     "MONET",
+     "PORTINARI",
+     "DALÍ"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Compositores",
+    "words": [
+     "BACH",
+     "MOZART",
+     "BEETHOVEN",
+     "VIVALDI"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Viram outra palavra quando lidas ao contrário",
+    "words": [
+     "AMAR",
+     "SOPA",
+     "SOMA",
+     "SERA"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0059",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Figuras de linguagem",
+    "words": [
+     "METÁFORA",
+     "HIPÉRBOLE",
+     "IRONIA",
+     "METONÍMIA"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Sinais de pontuação",
+    "words": [
+     "VÍRGULA",
+     "PONTO",
+     "ASPAS",
+     "TRAVESSÃO"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Combinam com o verbo \"dar\"",
+    "words": [
+     "BRONCA",
+     "PALPITE",
+     "CONTA",
+     "JEITO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Começam com H, letra que não se pronuncia",
+    "words": [
+     "HORTA",
+     "HINO",
+     "HOMEM",
+     "HUMOR"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0060",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Massas",
+    "words": [
+     "PENNE",
+     "FUSILLI",
+     "TALHARIM",
+     "NHOQUE"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Queijos",
+    "words": [
+     "MINAS",
+     "COALHO",
+     "PROVOLONE",
+     "GORGONZOLA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Vêm depois de \"molho de\"",
+    "words": [
+     "TOMATE",
+     "PIMENTA",
+     "SOJA",
+     "ALHO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Plural em -ÃOS",
+    "words": [
+     "GRÃO",
+     "ÓRFÃO",
+     "SÓTÃO",
+     "CRISTÃO"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0061",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Animais africanos",
+    "words": [
+     "GIRAFA",
+     "ZEBRA",
+     "HIPOPÓTAMO",
+     "RINOCERONTE"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Animais do frio",
+    "words": [
+     "PINGUIM",
+     "MORSA",
+     "URSO POLAR",
+     "RENA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Vêm depois de \"dor de\"",
+    "words": [
+     "CABEÇA",
+     "DENTE",
+     "BARRIGA",
+     "GARGANTA"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Repetem a mesma sílaba",
+    "words": [
+     "PAPAI",
+     "TUTU",
+     "VOVÔ",
+     "XIXI"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0062",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Comidas de boteco",
+    "words": [
+     "COXINHA",
+     "PASTEL",
+     "PORÇÃO",
+     "TORRESMO"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Sabores de suco",
+    "words": [
+     "LARANJA",
+     "UVA",
+     "MARACUJÁ",
+     "ABACAXI"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Vêm depois de \"jogo de\"",
+    "words": [
+     "AZAR",
+     "CINTURA",
+     "CHÁ",
+     "DAMAS"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "O X soa como CH",
+    "words": [
+     "XADREZ",
+     "XAROPE",
+     "FAIXA",
+     "MEXER"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0063",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Países da África",
+    "words": [
+     "ANGOLA",
+     "EGITO",
+     "QUÊNIA",
+     "MARROCOS"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Países da América Central",
+    "words": [
+     "PANAMÁ",
+     "CUBA",
+     "COSTA RICA",
+     "HONDURAS"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Idiomas",
+    "words": [
+     "INGLÊS",
+     "JAPONÊS",
+     "MANDARIM",
+     "HINDI"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Vieram do inglês e foram aportuguesadas",
+    "words": [
+     "FUTEBOL",
+     "BIFE",
+     "CLUBE",
+     "PUDIM"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0064",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Partes de um barco",
+    "words": [
+     "VELA",
+     "LEME",
+     "MASTRO",
+     "CASCO"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Itens de festa de aniversário",
+    "words": [
+     "BOLO",
+     "BALÃO",
+     "CONFETE",
+     "DOCINHO"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Partes do avião",
+    "words": [
+     "ASA",
+     "TURBINA",
+     "CABINE",
+     "FUSELAGEM"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Só têm a vogal A",
+    "words": [
+     "CABANA",
+     "PALHAÇADA",
+     "MARACANÃ",
+     "ALAVANCA"
+    ]
+   }
+  ],
+  "traps": [
+   {
+    "word": "VELA",
+    "alsoFits": "Itens de festa de aniversário"
+   }
+  ]
+ },
+ {
+  "id": "c-0065",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Estilos de dança",
+    "words": [
+     "BALÉ",
+     "JAZZ",
+     "SAPATEADO",
+     "HIP HOP"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Instrumentos de orquestra",
+    "words": [
+     "OBOÉ",
+     "FAGOTE",
+     "TUBA",
+     "TÍMPANO"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Combinam com o verbo \"levar\"",
+    "words": [
+     "FORA",
+     "PANCADA",
+     "TOMBO",
+     "CALOTE"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Mudam de sentido com \"o\" ou \"a\"",
+    "words": [
+     "GRAMA",
+     "CAPITAL",
+     "RÁDIO",
+     "CURA"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0066",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Itens de papelaria",
+    "words": [
+     "GRAMPEADOR",
+     "CLIPE",
+     "PERCEVEJO",
+     "FICHÁRIO"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Profissões de escritório",
+    "words": [
+     "CONTADOR",
+     "SECRETÁRIA",
+     "GERENTE",
+     "RECEPCIONISTA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Sinônimos de cansado",
+    "words": [
+     "EXAUSTO",
+     "ESGOTADO",
+     "FATIGADO",
+     "EXTENUADO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "O O muda de som no plural",
+    "words": [
+     "OVO",
+     "OLHO",
+     "FOGO",
+     "JOGO"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0067",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Condimentos",
+    "words": [
+     "KETCHUP",
+     "MOSTARDA",
+     "MAIONESE",
+     "VINAGRE"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Frutos do mar",
+    "words": [
+     "CAMARÃO",
+     "LAGOSTA",
+     "MARISCO",
+     "POLVO"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Vêm depois de \"bicho de\"",
+    "words": [
+     "PÉ",
+     "GOIABA",
+     "ESTIMAÇÃO",
+     "SETE CABEÇAS"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "O feminino é outra palavra",
+    "words": [
+     "BODE",
+     "GENRO",
+     "CAVALO",
+     "CARNEIRO"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0068",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Sentidos do corpo",
+    "words": [
+     "VISÃO",
+     "AUDIÇÃO",
+     "OLFATO",
+     "PALADAR"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Gostos",
+    "words": [
+     "DOCE",
+     "SALGADO",
+     "AMARGO",
+     "AZEDO"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Vêm depois de \"sala de\"",
+    "words": [
+     "AULA",
+     "ESTAR",
+     "ESPERA",
+     "REUNIÃO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Mesma forma no masculino e no feminino",
+    "words": [
+     "ESTUDANTE",
+     "ARTISTA",
+     "JOVEM",
+     "CLIENTE"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0069",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Esportes olímpicos",
+    "words": [
+     "ATLETISMO",
+     "GINÁSTICA",
+     "ESGRIMA",
+     "CICLISMO"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Provas de atletismo",
+    "words": [
+     "ARREMESSO",
+     "MARATONA",
+     "REVEZAMENTO",
+     "SALTO TRIPLO"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Combinam com o verbo \"quebrar\"",
+    "words": [
+     "JEJUM",
+     "GALHO",
+     "PROMESSA",
+     "SILÊNCIO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Letras em ordem alfabética",
+    "words": [
+     "FINO",
+     "DEUS",
+     "BEM",
+     "AMOS"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0070",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Gentílicos",
+    "words": [
+     "CARIOCA",
+     "GAÚCHO",
+     "BAIANO",
+     "PAULISTA"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Festas populares",
+    "words": [
+     "CARNAVAL",
+     "FESTA JUNINA",
+     "OKTOBERFEST",
+     "PARINTINS"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Pássaros brasileiros",
+    "words": [
+     "SABIÁ",
+     "BEM-TE-VI",
+     "JOÃO-DE-BARRO",
+     "CANÁRIO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Vêm do tupi",
+    "words": [
+     "JABUTICABA",
+     "MANDIOCA",
+     "PIPOCA",
+     "CAPIM"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0071",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Tipos de barco",
+    "words": [
+     "CANOA",
+     "IATE",
+     "VELEIRO",
+     "NAVIO"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Tipos de moradia",
+    "words": [
+     "APARTAMENTO",
+     "SOBRADO",
+     "CHALÉ",
+     "COBERTURA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Combinam com o verbo \"puxar\"",
+    "words": [
+     "SACO",
+     "CONVERSA",
+     "ASSUNTO",
+     "ORELHA"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Perdem a primeira letra e viram outra palavra",
+    "words": [
+     "BLOCO",
+     "CRUA",
+     "BRISA",
+     "PRIMO"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0072",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Chapéus",
+    "words": [
+     "BONÉ",
+     "BOINA",
+     "CARTOLA",
+     "SOMBRERO"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Roupas de frio",
+    "words": [
+     "CASACO",
+     "MOLETOM",
+     "JAQUETA",
+     "TOUCA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Combinam com o verbo \"acender\"",
+    "words": [
+     "CIGARRO",
+     "LUZ",
+     "FOGUEIRA",
+     "CHURRASQUEIRA"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Tirando a última letra, viram outra palavra",
+    "words": [
+     "PANELA",
+     "CASAL",
+     "PORTAL",
+     "CARTAZ"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0073",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Grãos e leguminosas",
+    "words": [
+     "FEIJÃO",
+     "LENTILHA",
+     "GRÃO-DE-BICO",
+     "ERVILHA"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Raízes e tubérculos",
+    "words": [
+     "BATATA",
+     "BETERRABA",
+     "INHAME",
+     "CARÁ"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Combinam com o verbo \"armar\"",
+    "words": [
+     "BARRACA",
+     "CONFUSÃO",
+     "ARMADILHA",
+     "ESQUEMA"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Têm outra palavra com o mesmo som",
+    "words": [
+     "SEÇÃO",
+     "CERVO",
+     "CELA",
+     "XEQUE"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0074",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Frutas de caroço",
+    "words": [
+     "PÊSSEGO",
+     "AMEIXA",
+     "DAMASCO",
+     "AZEITONA"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Frutas de casca grossa",
+    "words": [
+     "MELANCIA",
+     "ABÓBORA",
+     "COCO",
+     "JACA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Vêm depois de \"lua de\"",
+    "words": [
+     "MEL",
+     "SANGUE",
+     "MEL AZEDO",
+     "PRATA"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Terminam em A, mas são masculinas",
+    "words": [
+     "DILEMA",
+     "ESTRATAGEMA",
+     "DIAGRAMA",
+     "TELEGRAMA"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0075",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Eletrônicos",
+    "words": [
+     "TABLET",
+     "NOTEBOOK",
+     "SMARTPHONE",
+     "SMARTWATCH"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Linguagens de programação",
+    "words": [
+     "PYTHON",
+     "RUBY",
+     "SWIFT",
+     "KOTLIN"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Combinam com o verbo \"perder\"",
+    "words": [
+     "TEMPO",
+     "PRAZO",
+     "CHANCE",
+     "PACIÊNCIA"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Vieram do inglês e foram aportuguesadas",
+    "words": [
+     "MOUSE",
+     "TÚNEL",
+     "DRIBLE",
+     "ESPORTE"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0076",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Cobras",
+    "words": [
+     "JIBOIA",
+     "SUCURI",
+     "CASCAVEL",
+     "CORAL"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Aves de rapina",
+    "words": [
+     "ÁGUIA",
+     "FALCÃO",
+     "GAVIÃO",
+     "CARCARÁ"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Combinam com o verbo \"jogar\"",
+    "words": [
+     "LIXO",
+     "DADOS",
+     "CARTAS",
+     "VIDEOGAME"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Começam com o nome de um animal",
+    "words": [
+     "COBRADOR",
+     "FOCADO",
+     "PATOTA",
+     "BOIADEIRO"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0077",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Vidrarias de laboratório",
+    "words": [
+     "BÉQUER",
+     "PIPETA",
+     "PROVETA",
+     "MICROSCÓPIO"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Ciências",
+    "words": [
+     "FÍSICA",
+     "QUÍMICA",
+     "BIOLOGIA",
+     "GEOLOGIA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Combinam com o verbo \"meter\"",
+    "words": [
+     "MEDO",
+     "COLHER",
+     "BEDELHO",
+     "NARIZ"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "O O muda de som no plural",
+    "words": [
+     "POVO",
+     "FORNO",
+     "MORTO",
+     "CORPO"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0078",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Tipos de via",
+    "words": [
+     "AVENIDA",
+     "TRAVESSA",
+     "ALAMEDA",
+     "BECO"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Lugares de passeio",
+    "words": [
+     "PRAÇA",
+     "PARQUE",
+     "MIRANTE",
+     "ORLA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Combinam com o verbo \"abrir\"",
+    "words": [
+     "MÃO",
+     "PORTA",
+     "CONTA",
+     "ESPAÇO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Palavras de origem francesa",
+    "words": [
+     "ABAJUR",
+     "BUQUÊ",
+     "SUTIÃ",
+     "CROISSANT"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0079",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Partes de um jornal",
+    "words": [
+     "MANCHETE",
+     "CLASSIFICADO",
+     "EDITORIAL",
+     "COLUNA"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Gêneros jornalísticos",
+    "words": [
+     "NOTÍCIA",
+     "REPORTAGEM",
+     "ENTREVISTA",
+     "ARTIGO"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Combinam com o verbo \"ler\"",
+    "words": [
+     "MENTES",
+     "JORNAL",
+     "HORÓSCOPO",
+     "BULA"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Só têm a vogal E",
+    "words": [
+     "REFERENTE",
+     "DESDENTE",
+     "EXPRESSE",
+     "REPRESENTE"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0080",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Fontes de energia",
+    "words": [
+     "EÓLICA",
+     "HIDRÁULICA",
+     "NUCLEAR",
+     "GEOTÉRMICA"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Combustíveis",
+    "words": [
+     "GASOLINA",
+     "ETANOL",
+     "DIESEL",
+     "QUEROSENE"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Combinam com o verbo \"baixar\"",
+    "words": [
+     "APLICATIVO",
+     "PREÇO",
+     "ARQUIVO",
+     "VOLUME"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Ganham outro sentido ao receber acento",
+    "words": [
+     "PERIODO",
+     "DOMINO",
+     "FORMULA",
+     "NUMERO"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0081",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Esportes de equipe",
+    "words": [
+     "HANDEBOL",
+     "RÚGBI",
+     "BASQUETE",
+     "POLO"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Posições do futebol",
+    "words": [
+     "GOLEIRO",
+     "ZAGUEIRO",
+     "LATERAL",
+     "ATACANTE"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Vêm depois de \"bola de\"",
+    "words": [
+     "NEVE",
+     "GUDE",
+     "FOGO",
+     "CRISTAL"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Ganham um L na frente e viram outra palavra",
+    "words": [
+     "ADO",
+     "ANA",
+     "AGO",
+     "ARDO"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0082",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Meios de pagamento",
+    "words": [
+     "DINHEIRO",
+     "CARTÃO",
+     "CHEQUE",
+     "PIX"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Documentos",
+    "words": [
+     "CPF",
+     "RG",
+     "CNH",
+     "PASSAPORTE"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Vêm depois de \"carteira de\"",
+    "words": [
+     "MOTORISTA",
+     "TRABALHO",
+     "IDENTIDADE",
+     "VACINAÇÃO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Palavras de origem japonesa",
+    "words": [
+     "TSUNAMI",
+     "KARAOKÊ",
+     "SUSHI",
+     "ORIGAMI"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0083",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Formas de se mover",
+    "words": [
+     "CORRER",
+     "PULAR",
+     "ENGATINHAR",
+     "RASTEJAR"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Formas de olhar",
+    "words": [
+     "ENCARAR",
+     "OBSERVAR",
+     "FITAR",
+     "ESPREITAR"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Combinam com o verbo \"chamar\"",
+    "words": [
+     "ATENÇÃO",
+     "TÁXI",
+     "SOCORRO",
+     "GARÇOM"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Têm mais de um plural",
+    "words": [
+     "ANÃO",
+     "VILÃO",
+     "VERÃO",
+     "SULTÃO"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0084",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Formas de falar",
+    "words": [
+     "SUSSURRAR",
+     "GRITAR",
+     "MURMURAR",
+     "BERRAR"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Formas de cortar alimentos",
+    "words": [
+     "FATIAR",
+     "PICAR",
+     "RALAR",
+     "DESFIAR"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Combinam com o verbo \"ganhar\"",
+    "words": [
+     "PESO",
+     "PRÊMIO",
+     "ALTURA",
+     "TERRENO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Com um S antes, viram outra palavra",
+    "words": [
+     "ALVO",
+     "ALGO",
+     "ONDA",
+     "OBRE"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0085",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Países da América do Norte",
+    "words": [
+     "CANADÁ",
+     "MÉXICO",
+     "ESTADOS UNIDOS",
+     "GROENLÂNDIA"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Cidades dos Estados Unidos",
+    "words": [
+     "NOVA YORK",
+     "MIAMI",
+     "CHICAGO",
+     "LAS VEGAS"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Combinam com o verbo \"tirar\"",
+    "words": [
+     "FOTO",
+     "SONO",
+     "DÚVIDA",
+     "SOSSEGO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Ganham um P na frente e viram outra palavra",
+    "words": [
+     "ASTA",
+     "ANO",
+     "ILHA",
+     "ELO"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0086",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Tecidos",
+    "words": [
+     "LINHO",
+     "SEDA",
+     "VELUDO",
+     "ORGANZA"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Estampas",
+    "words": [
+     "LISTRADO",
+     "POÁ",
+     "FLORAL",
+     "XADREZ"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Combinam com o verbo \"cortar\"",
+    "words": [
+     "CABELO",
+     "UNHA",
+     "GASTOS",
+     "CAMINHO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Ganham um A na frente e viram outra palavra",
+    "words": [
+     "CORDO",
+     "PAGA",
+     "NOTA",
+     "VISO"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0087",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Para dormir",
+    "words": [
+     "REDE",
+     "CAMA",
+     "BERÇO",
+     "COLCHÃO"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Material de pesca",
+    "words": [
+     "ANZOL",
+     "VARA",
+     "ISCA",
+     "MOLINETE"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Vêm depois de \"caixa de\"",
+    "words": [
+     "SURPRESA",
+     "PANDORA",
+     "CORREIO",
+     "LÁPIS"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Tirando o L, viram outra palavra",
+    "words": [
+     "ALTO",
+     "FALTA",
+     "CALMA",
+     "MALTA"
+    ]
+   }
+  ],
+  "traps": [
+   {
+    "word": "REDE",
+    "alsoFits": "Material de pesca"
+   }
+  ]
+ },
+ {
+  "id": "c-0088",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Esportes radicais",
+    "words": [
+     "PARAPENTE",
+     "ESCALADA",
+     "RAFTING",
+     "BUNGEE JUMP"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Esportes de praia",
+    "words": [
+     "FUTEVÔLEI",
+     "FRESCOBOL",
+     "BEACH TENNIS",
+     "SURFE"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Vêm depois de \"cabeça de\"",
+    "words": [
+     "VENTO",
+     "PONTE",
+     "PORCO",
+     "ALFINETE"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "O X soa como Z",
+    "words": [
+     "EXÍLIO",
+     "EXATO",
+     "EXISTIR",
+     "EXIGIR"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0089",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Peças internas do computador",
+    "words": [
+     "PROCESSADOR",
+     "MEMÓRIA",
+     "PLACA-MÃE",
+     "FONTE"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Conexões sem fio e com fio",
+    "words": [
+     "WI-FI",
+     "BLUETOOTH",
+     "ETHERNET",
+     "HDMI"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Vêm depois de \"caixa\"",
+    "words": [
+     "ALTA",
+     "BAIXA",
+     "FORTE",
+     "POSTAL"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Têm mais de um plural",
+    "words": [
+     "ALDEÃO",
+     "ANCIÃO",
+     "CORRIMÃO",
+     "GUARDIÃO"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0090",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Feriados",
+    "words": [
+     "NATAL",
+     "PÁSCOA",
+     "TIRADENTES",
+     "INDEPENDÊNCIA"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Símbolos de Natal",
+    "words": [
+     "PAPAI NOEL",
+     "PRESÉPIO",
+     "PINHEIRO",
+     "GUIRLANDA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Combinam com o verbo \"fechar\"",
+    "words": [
+     "NEGÓCIO",
+     "CARA",
+     "TORNEIRA",
+     "ACORDO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "O feminino é outra palavra",
+    "words": [
+     "HOMEM",
+     "BOI",
+     "ZANGÃO",
+     "REI"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0091",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Corpos do espaço",
+    "words": [
+     "ASTEROIDE",
+     "METEORO",
+     "SATÉLITE",
+     "NEBULOSA"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Equipamentos espaciais",
+    "words": [
+     "FOGUETE",
+     "SONDA",
+     "CÁPSULA",
+     "TELESCÓPIO"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Combinam com o verbo \"contar\"",
+    "words": [
+     "HISTÓRIA",
+     "PIADA",
+     "VANTAGEM",
+     "ANOS"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Vêm do tupi",
+    "words": [
+     "TAPIOCA",
+     "URUBU",
+     "PIRANHA",
+     "IGARAPÉ"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0092",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Estilos de arte",
+    "words": [
+     "BARROCO",
+     "CUBISMO",
+     "SURREALISMO",
+     "IMPRESSIONISMO"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Gêneros de teatro",
+    "words": [
+     "TRAGÉDIA",
+     "MUSICAL",
+     "MONÓLOGO",
+     "FARSA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Vêm depois de \"guarda-\"",
+    "words": [
+     "LOUÇA",
+     "PÓ",
+     "MÓVEIS",
+     "CHAVES"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Mesma forma no masculino e no feminino",
+    "words": [
+     "DENTISTA",
+     "TURISTA",
+     "JORNALISTA",
+     "ATLETA"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0093",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Fases da vida",
+    "words": [
+     "INFÂNCIA",
+     "ADOLESCÊNCIA",
+     "JUVENTUDE",
+     "VELHICE"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Parentes",
+    "words": [
+     "TIO",
+     "PRIMO",
+     "SOBRINHO",
+     "CUNHADO"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Vêm depois de \"meia\"",
+    "words": [
+     "LUA",
+     "NOITE",
+     "IDADE",
+     "CALÇA"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Têm outra palavra parecida, com sentido diferente",
+    "words": [
+     "ACENDER",
+     "EMINENTE",
+     "CUMPRIMENTO",
+     "DISCRIMINAR"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0094",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Mares",
+    "words": [
+     "MEDITERRÂNEO",
+     "CARIBE",
+     "VERMELHO",
+     "MORTO"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Desertos",
+    "words": [
+     "SAARA",
+     "ATACAMA",
+     "GOBI",
+     "KALAHARI"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Combinam com o verbo \"comer\"",
+    "words": [
+     "POEIRA",
+     "MOSCA",
+     "BOLA",
+     "PÃO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Duas palavras coladas",
+    "words": [
+     "GIRASSOL",
+     "VAIVÉM",
+     "SOBREMESA",
+     "PONTAPÉ"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0095",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Peixes de rio",
+    "words": [
+     "DOURADO",
+     "PIRARUCU",
+     "TUCUNARÉ",
+     "TAMBAQUI"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Peixes do mar",
+    "words": [
+     "SARDINHA",
+     "BACALHAU",
+     "LINGUADO",
+     "BADEJO"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Vêm depois de \"peixe\"",
+    "words": [
+     "ESPADA",
+     "VOADOR",
+     "PALHAÇO",
+     "ZEBRA"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Só têm a vogal A",
+    "words": [
+     "BATATA",
+     "CAMADA",
+     "CARAMBA",
+     "SALAMANDRA"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0096",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Jogos de cartas",
+    "words": [
+     "TRUCO",
+     "BURACO",
+     "PÔQUER",
+     "CANASTRA"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Jogos de azar",
+    "words": [
+     "BINGO",
+     "ROLETA",
+     "LOTERIA",
+     "CASSINO"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Vêm depois de \"jogo da\" ou \"jogo do\"",
+    "words": [
+     "VELHA",
+     "FORCA",
+     "GARRAFA",
+     "BICHO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Tirando o S, viram outra palavra",
+    "words": [
+     "SALTO",
+     "SERRA",
+     "SOBRA",
+     "SALA"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0097",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Profissões do circo",
+    "words": [
+     "MÁGICO",
+     "ACROBATA",
+     "MALABARISTA",
+     "DOMADOR"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Apresentações ao vivo",
+    "words": [
+     "SHOW",
+     "FESTIVAL",
+     "RECITAL",
+     "CONCERTO"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Vêm depois de \"tiro\"",
+    "words": [
+     "AO ALVO",
+     "LIVRE",
+     "DE META",
+     "CURTO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "O X soa como Z",
+    "words": [
+     "ÊXODO",
+     "EXECUTAR",
+     "EXÓTICO",
+     "EXUBERANTE"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0098",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Medidores de tempo",
+    "words": [
+     "RELÓGIO",
+     "AMPULHETA",
+     "CRONÔMETRO",
+     "CALENDÁRIO"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Partes de um relógio",
+    "words": [
+     "PONTEIRO",
+     "MOSTRADOR",
+     "CORDA",
+     "BATERIA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Combinam com o verbo \"marcar\"",
+    "words": [
+     "GOL",
+     "HORA",
+     "PRESENÇA",
+     "ENCONTRO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Palavras de origem italiana",
+    "words": [
+     "LASANHA",
+     "ESPAGUETE",
+     "SORVETE",
+     "PIZZA"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0099",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Cozinhas do mundo",
+    "words": [
+     "FRANCESA",
+     "CHINESA",
+     "INDIANA",
+     "MEXICANA"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Comidas mexicanas",
+    "words": [
+     "TACO",
+     "BURRITO",
+     "NACHOS",
+     "GUACAMOLE"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Tipos de pimenta",
+    "words": [
+     "DO REINO",
+     "MALAGUETA",
+     "BIQUINHO",
+     "JALAPEÑO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Terminam em A, mas são masculinas",
+    "words": [
+     "CINEMA",
+     "PROGRAMA",
+     "TRAUMA",
+     "PANORAMA"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0100",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Capitais do Nordeste",
+    "words": [
+     "FORTALEZA",
+     "SALVADOR",
+     "SÃO LUÍS",
+     "JOÃO PESSOA"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Praias famosas",
+    "words": [
+     "COPACABANA",
+     "IPANEMA",
+     "JURERÊ",
+     "MARESIAS"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Combinam com o verbo \"estourar\"",
+    "words": [
+     "BOLHA",
+     "PIPOCA",
+     "BOMBA",
+     "BALÃO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Têm outra palavra parecida, com sentido diferente",
+    "words": [
+     "RATIFICAR",
+     "PRESCREVER",
+     "INFRINGIR",
+     "MANDATO"
+    ]
+   }
+  ]
+ }
 ]

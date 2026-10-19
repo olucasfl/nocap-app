@@ -1,0 +1,152 @@
+# Connect Word's, lote 4 (puzzles 76 a 100).
+
+## c-0076
+1 Cobras :: JIBOIA, SUCURI, CASCAVEL, CORAL
+2 Aves de rapina :: ÁGUIA, FALCÃO, GAVIÃO, CARCARÁ
+3 Combinam com o verbo "jogar" :: LIXO, DADOS, CARTAS, VIDEOGAME
+4 Começam com o nome de um animal :: COBRADOR, FOCADO, PATOTA, BOIADEIRO
+
+## c-0077
+1 Vidrarias de laboratório :: BÉQUER, PIPETA, PROVETA, MICROSCÓPIO
+2 Ciências :: FÍSICA, QUÍMICA, BIOLOGIA, GEOLOGIA
+3 Combinam com o verbo "meter" :: MEDO, COLHER, BEDELHO, NARIZ
+4 O O muda de som no plural :: POVO, FORNO, MORTO, CORPO
+
+## c-0078
+1 Tipos de via :: AVENIDA, TRAVESSA, ALAMEDA, BECO
+2 Lugares de passeio :: PRAÇA, PARQUE, MIRANTE, ORLA
+3 Combinam com o verbo "abrir" :: MÃO, PORTA, CONTA, ESPAÇO
+4 Palavras de origem francesa :: ABAJUR, BUQUÊ, SUTIÃ, CROISSANT
+
+## c-0079
+1 Partes de um jornal :: MANCHETE, CLASSIFICADO, EDITORIAL, COLUNA
+2 Gêneros jornalísticos :: NOTÍCIA, REPORTAGEM, ENTREVISTA, ARTIGO
+3 Combinam com o verbo "ler" :: MENTES, JORNAL, HORÓSCOPO, BULA
+4 Só têm a vogal E :: REFERENTE, DESDENTE, EXPRESSE, REPRESENTE
+
+## c-0080
+1 Fontes de energia :: EÓLICA, HIDRÁULICA, NUCLEAR, GEOTÉRMICA
+2 Combustíveis :: GASOLINA, ETANOL, DIESEL, QUEROSENE
+3 Combinam com o verbo "baixar" :: APLICATIVO, PREÇO, ARQUIVO, VOLUME
+4 Ganham outro sentido ao receber acento :: PERIODO, DOMINO, FORMULA, NUMERO
+
+## c-0081
+1 Esportes de equipe :: HANDEBOL, RÚGBI, BASQUETE, POLO
+2 Posições do futebol :: GOLEIRO, ZAGUEIRO, LATERAL, ATACANTE
+3 Vêm depois de "bola de" :: NEVE, GUDE, FOGO, CRISTAL
+4 Ganham um L na frente e viram outra palavra :: ADO, ANA, AGO, ARDO
+
+## c-0082
+1 Meios de pagamento :: DINHEIRO, CARTÃO, CHEQUE, PIX
+2 Documentos :: CPF, RG, CNH, PASSAPORTE
+3 Vêm depois de "carteira de" :: MOTORISTA, TRABALHO, IDENTIDADE, VACINAÇÃO
+4 Palavras de origem japonesa :: TSUNAMI, KARAOKÊ, SUSHI, ORIGAMI
+
+## c-0083
+1 Formas de se mover :: CORRER, PULAR, ENGATINHAR, RASTEJAR
+2 Formas de olhar :: ENCARAR, OBSERVAR, FITAR, ESPREITAR
+3 Combinam com o verbo "chamar" :: ATENÇÃO, TÁXI, SOCORRO, GARÇOM
+4 Têm mais de um plural :: ANÃO, VILÃO, VERÃO, SULTÃO
+
+## c-0084
+1 Formas de falar :: SUSSURRAR, GRITAR, MURMURAR, BERRAR
+2 Formas de cortar alimentos :: FATIAR, PICAR, RALAR, DESFIAR
+3 Combinam com o verbo "ganhar" :: PESO, PRÊMIO, ALTURA, TERRENO
+4 Com um S antes, viram outra palavra :: ALVO, ALGO, ONDA, OBRE
+
+## c-0085
+1 Países da América do Norte :: CANADÁ, MÉXICO, ESTADOS UNIDOS, GROENLÂNDIA
+2 Cidades dos Estados Unidos :: NOVA YORK, MIAMI, CHICAGO, LAS VEGAS
+3 Combinam com o verbo "tirar" :: FOTO, SONO, DÚVIDA, SOSSEGO
+4 Ganham um P na frente e viram outra palavra :: ASTA, ANO, ILHA, ELO
+
+## c-0086
+1 Tecidos :: LINHO, SEDA, VELUDO, ORGANZA
+2 Estampas :: LISTRADO, POÁ, FLORAL, XADREZ
+3 Combinam com o verbo "cortar" :: CABELO, UNHA, GASTOS, CAMINHO
+4 Ganham um A na frente e viram outra palavra :: CORDO, PAGA, NOTA, VISO
+
+## c-0087
+1 Para dormir :: REDE, CAMA, BERÇO, COLCHÃO
+2 Material de pesca :: ANZOL, VARA, ISCA, MOLINETE
+3 Vêm depois de "caixa de" :: SURPRESA, PANDORA, CORREIO, LÁPIS
+4 Tirando o L, viram outra palavra :: ALTO, FALTA, CALMA, MALTA
+~ REDE > Material de pesca
+
+## c-0088
+1 Esportes radicais :: PARAPENTE, ESCALADA, RAFTING, BUNGEE JUMP
+2 Esportes de praia :: FUTEVÔLEI, FRESCOBOL, BEACH TENNIS, SURFE
+3 Vêm depois de "cabeça de" :: VENTO, PONTE, PORCO, ALFINETE
+4 O X soa como Z :: EXÍLIO, EXATO, EXISTIR, EXIGIR
+
+## c-0089
+1 Peças internas do computador :: PROCESSADOR, MEMÓRIA, PLACA-MÃE, FONTE
+2 Conexões sem fio e com fio :: WI-FI, BLUETOOTH, ETHERNET, HDMI
+3 Vêm depois de "caixa" :: ALTA, BAIXA, FORTE, POSTAL
+4 Têm mais de um plural :: ALDEÃO, ANCIÃO, CORRIMÃO, GUARDIÃO
+
+## c-0090
+1 Feriados :: NATAL, PÁSCOA, TIRADENTES, INDEPENDÊNCIA
+2 Símbolos de Natal :: PAPAI NOEL, PRESÉPIO, PINHEIRO, GUIRLANDA
+3 Combinam com o verbo "fechar" :: NEGÓCIO, CARA, TORNEIRA, ACORDO
+4 O feminino é outra palavra :: HOMEM, BOI, ZANGÃO, REI
+
+## c-0091
+1 Corpos do espaço :: ASTEROIDE, METEORO, SATÉLITE, NEBULOSA
+2 Equipamentos espaciais :: FOGUETE, SONDA, CÁPSULA, TELESCÓPIO
+3 Combinam com o verbo "contar" :: HISTÓRIA, PIADA, VANTAGEM, ANOS
+4 Vêm do tupi :: TAPIOCA, URUBU, PIRANHA, IGARAPÉ
+
+## c-0092
+1 Estilos de arte :: BARROCO, CUBISMO, SURREALISMO, IMPRESSIONISMO
+2 Gêneros de teatro :: TRAGÉDIA, MUSICAL, MONÓLOGO, FARSA
+3 Vêm depois de "guarda-" :: LOUÇA, PÓ, MÓVEIS, CHAVES
+4 Mesma forma no masculino e no feminino :: DENTISTA, TURISTA, JORNALISTA, ATLETA
+
+## c-0093
+1 Fases da vida :: INFÂNCIA, ADOLESCÊNCIA, JUVENTUDE, VELHICE
+2 Parentes :: TIO, PRIMO, SOBRINHO, CUNHADO
+3 Vêm depois de "meia" :: LUA, NOITE, IDADE, CALÇA
+4 Têm outra palavra parecida, com sentido diferente :: ACENDER, EMINENTE, CUMPRIMENTO, DISCRIMINAR
+
+## c-0094
+1 Mares :: MEDITERRÂNEO, CARIBE, VERMELHO, MORTO
+2 Desertos :: SAARA, ATACAMA, GOBI, KALAHARI
+3 Combinam com o verbo "comer" :: POEIRA, MOSCA, BOLA, PÃO
+4 Duas palavras coladas :: GIRASSOL, VAIVÉM, SOBREMESA, PONTAPÉ
+
+## c-0095
+1 Peixes de rio :: DOURADO, PIRARUCU, TUCUNARÉ, TAMBAQUI
+2 Peixes do mar :: SARDINHA, BACALHAU, LINGUADO, BADEJO
+3 Vêm depois de "peixe" :: ESPADA, VOADOR, PALHAÇO, ZEBRA
+4 Só têm a vogal A :: BATATA, CAMADA, CARAMBA, SALAMANDRA
+
+## c-0096
+1 Jogos de cartas :: TRUCO, BURACO, PÔQUER, CANASTRA
+2 Jogos de azar :: BINGO, ROLETA, LOTERIA, CASSINO
+3 Vêm depois de "jogo da" ou "jogo do" :: VELHA, FORCA, GARRAFA, BICHO
+4 Tirando o S, viram outra palavra :: SALTO, SERRA, SOBRA, SALA
+
+## c-0097
+1 Profissões do circo :: MÁGICO, ACROBATA, MALABARISTA, DOMADOR
+2 Apresentações ao vivo :: SHOW, FESTIVAL, RECITAL, CONCERTO
+3 Vêm depois de "tiro" :: AO ALVO, LIVRE, DE META, CURTO
+4 O X soa como Z :: ÊXODO, EXECUTAR, EXÓTICO, EXUBERANTE
+
+## c-0098
+1 Medidores de tempo :: RELÓGIO, AMPULHETA, CRONÔMETRO, CALENDÁRIO
+2 Partes de um relógio :: PONTEIRO, MOSTRADOR, CORDA, BATERIA
+3 Combinam com o verbo "marcar" :: GOL, HORA, PRESENÇA, ENCONTRO
+4 Palavras de origem italiana :: LASANHA, ESPAGUETE, SORVETE, PIZZA
+
+## c-0099
+1 Cozinhas do mundo :: FRANCESA, CHINESA, INDIANA, MEXICANA
+2 Comidas mexicanas :: TACO, BURRITO, NACHOS, GUACAMOLE
+3 Tipos de pimenta :: DO REINO, MALAGUETA, BIQUINHO, JALAPEÑO
+4 Terminam em A, mas são masculinas :: CINEMA, PROGRAMA, TRAUMA, PANORAMA
+
+## c-0100
+1 Capitais do Nordeste :: FORTALEZA, SALVADOR, SÃO LUÍS, JOÃO PESSOA
+2 Praias famosas :: COPACABANA, IPANEMA, JURERÊ, MARESIAS
+3 Combinam com o verbo "estourar" :: BOLHA, PIPOCA, BOMBA, BALÃO
+4 Têm outra palavra parecida, com sentido diferente :: RATIFICAR, PRESCREVER, INFRINGIR, MANDATO

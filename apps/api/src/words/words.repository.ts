@@ -1,5 +1,5 @@
 import { Inject, Injectable, ServiceUnavailableException } from '@nestjs/common';
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, sql } from 'drizzle-orm';
 import type { Db } from '../db/client';
 import { DB } from '../db/db.module';
 import { wordRuns } from '../db/schema';
@@ -37,6 +37,16 @@ export class WordsRepository {
       .select()
       .from(wordRuns)
       .where(and(eq(wordRuns.userId, userId), eq(wordRuns.game, game), eq(wordRuns.seed, seed)));
+    return row ?? null;
+  }
+
+  /** A conta já jogou (ou está jogando) este puzzle em qualquer partida? */
+  async puzzleRun(userId: string, game: string, puzzleId: string): Promise<WordRun | null> {
+    const [row] = await this.db
+      .select()
+      .from(wordRuns)
+      .where(and(eq(wordRuns.userId, userId), eq(wordRuns.game, game), sql`${wordRuns.answers} @> ARRAY[${puzzleId}]::text[]`))
+      .limit(1);
     return row ?? null;
   }
 

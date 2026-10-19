@@ -1,0 +1,160 @@
+# Connect Word's, lote 1 (puzzles 1 a 25). Formato em scripts/words/montar-connect.mjs.
+
+## c-0001
+1 Pães :: BAGUETE, CIABATTA, BRIOCHE, FRANCÊS
+2 Partes do corpo :: JOELHO, TORNOZELO, COTOVELO, PUNHO
+3 Partes do violão :: CORDA, CRAVELHA, TAMPO, BRAÇO
+4 Só existem no plural :: ÓCULOS, FÉRIAS, NÚPCIAS, PARABÉNS
+~ BRAÇO > Partes do corpo
+
+## c-0002
+1 Países da Europa :: PORTUGAL, ESPANHA, ITÁLIA, GRÉCIA
+2 Moedas :: EURO, DÓLAR, PESO, LIBRA
+3 Signos :: ÁRIES, LEÃO, TOURO, VIRGEM
+4 Perdem a primeira letra e viram outra palavra :: PRATO, TRIO, CALMA, CASA
+~ LIBRA > Signos
+
+## c-0003
+1 Frutas vermelhas :: MORANGO, FRAMBOESA, CEREJA, AMORA
+2 Naipes do baralho :: OUROS, COPAS, PAUS, ESPADAS
+3 Têm coroa :: REI, DENTE, ABACAXI, PRINCESA
+4 Viram outra palavra quando lidas ao contrário :: AMOR, ATOR, SOLAR, OVAL
+
+## c-0004
+1 Prédios de uma cidade :: ESCOLA, HOSPITAL, IGREJA, BIBLIOTECA
+2 Onde se senta :: SOFÁ, POLTRONA, CADEIRA, BANCO
+3 Vêm depois de "mesa de" :: CABECEIRA, JANTAR, TRABALHO, CENTRO
+4 Repetem a mesma sílaba :: BEBÊ, BABÁ, TITIA, BOBO
+~ BANCO > Prédios de uma cidade
+
+## c-0005
+1 Partes do pé :: CALCANHAR, DEDÃO, SOLA, ARCO
+2 Papéis de uma obra :: MAQUETE, PROJETO, ALVARÁ, PLANTA
+3 Vêm depois de "pé de" :: MOLEQUE, MEIA, CANA, PATO
+4 Ganham outro sentido ao receber acento :: COCO, SABIA, PELO, PUBLICO
+~ PLANTA > Partes do pé
+
+## c-0006
+1 Peixes :: SALMÃO, ATUM, TAINHA, ROBALO
+2 Ferramentas :: MARTELO, SERROTE, ALICATE, TRENA
+3 Servem para abrir coisas :: CHAVE, ABRIDOR, ZÍPER, SACA-ROLHA
+4 Começam com o nome de um animal :: GATILHO, COBRANÇA, RATOEIRA, GALOPE
+~ CHAVE > Ferramentas
+
+## c-0007
+1 Instrumentos de sopro :: FLAUTA, TROMPETE, CLARINETE, SAXOFONE
+2 Instrumentos de percussão :: PANDEIRO, TAMBORIM, SURDO, AGOGÔ
+3 Instrumentos de corda :: VIOLINO, HARPA, VIOLONCELO, CAVAQUINHO
+4 Começam com uma nota musical :: REMÉDIO, MIOLO, FARINHA, SOLDADO
+
+## c-0008
+1 Estados do Nordeste :: BAHIA, CEARÁ, PIAUÍ, SERGIPE
+2 Rios do Brasil :: AMAZONAS, TOCANTINS, XINGU, PARNAÍBA
+3 Doces brasileiros :: BRIGADEIRO, BEIJINHO, CAJUZINHO, QUINDIM
+4 Escondem um número no começo :: DEZEMBRO, UMBIGO, SETEMBRO, NOVELA
+
+## c-0009
+1 Partes de fora da casa :: TELHADO, JANELA, PORTÃO, GARAGEM
+2 Móveis :: MESA, ESTANTE, ARMÁRIO, CÔMODA
+3 Vêm depois de "banco de" :: DADOS, SANGUE, AREIA, JARDIM
+4 Com um S antes, viram outra palavra :: ALA, OBRA, ERRA, ALTO
+
+## c-0010
+1 Dias da semana :: SEGUNDA, QUARTA, SEXTA, DOMINGO
+2 Meses do ano :: JANEIRO, MARÇO, JUNHO, AGOSTO
+3 Planetas :: VÊNUS, MARTE, URANO, SATURNO
+4 Escondem um animal no começo :: PATOLOGIA, VACARIA, BOIADA, PORCARIA
+
+## c-0011
+1 Legumes :: CENOURA, BETERRABA, ABOBRINHA, BERINJELA
+2 Temperos e ervas :: ORÉGANO, MANJERICÃO, ALECRIM, HORTELÃ
+3 Vêm depois de "dente de" :: ALHO, SERRA, LEITE, OURO
+4 Mudam de sentido com "o" ou "a" :: GRAMA, CAPITAL, RÁDIO, CURA
+~ ALHO > Temperos e ervas
+
+## c-0012
+1 Aplicativos populares :: WHATSAPP, INSTAGRAM, YOUTUBE, NETFLIX
+2 Peças de roupa :: CAMISETA, CALÇA, SAIA, VESTIDO
+3 Vêm depois de "porta-" :: JÓIAS, BANDEIRA, VOZ, CHAVES
+4 Começam com um pronome :: ELEGANTE, ELÁSTICO, EUCALIPTO, TUBARÃO
+
+## c-0013
+1 Aves :: PAVÃO, TUCANO, CORUJA, FLAMINGO
+2 Partes de uma ave :: BICO, ASA, CRISTA, PENA
+3 Usados na escrita antiga :: TINTEIRO, PERGAMINHO, PAPIRO, NANQUIM
+4 Só têm a vogal A :: BANANA, SALADA, ALCATRAZ, CANALHA
+~ PENA > Usados na escrita antiga
+
+## c-0014
+1 Oceanos :: ATLÂNTICO, PACÍFICO, ÍNDICO, ÁRTICO
+2 Biomas brasileiros :: CERRADO, CAATINGA, PANTANAL, PAMPA
+3 Vêm depois de "bom" :: DIA, APETITE, SENSO, HUMOR
+4 Têm outra palavra com o mesmo som :: CESTA, CONSERTO, CAÇAR, HERA
+
+## c-0015
+1 Deuses gregos :: ZEUS, ARES, ATENA, APOLO
+2 Seres do folclore brasileiro :: SACI, CUCA, CURUPIRA, IARA
+3 Vêm depois de "sem" :: NOÇÃO, VERGONHA, GRAÇA, CERIMÔNIA
+4 Com um S antes, viram outra palavra :: ERVA, ENTE, OPA, ALVA
+
+## c-0016
+1 Turma do gibi mais famoso do Brasil :: MÔNICA, CEBOLINHA, MAGALI, CASCÃO
+2 Palíndromos (leem igual de trás para a frente) :: ARARA, OVO, OSSO, RADAR
+3 Vêm depois de "quebra-" :: CABEÇA, MAR, GELO, NOZES
+4 Palavras que nasceram de siglas :: LASER, SONAR, OVNI, AIDS
+~ RADAR > Palavras que nasceram de siglas
+
+## c-0017
+1 Água em movimento :: RIO, CÓRREGO, RIACHO, CORRENTE
+2 Joias :: COLAR, PULSEIRA, BRINCO, ANEL
+3 Vêm depois de "para-" :: QUEDAS, CHOQUE, LAMA, RAIOS
+4 Ganham outro sentido ao receber acento :: ESTA, CRITICA, ANALISE, TERMINO
+~ CORRENTE > Joias
+
+## c-0018
+1 Elementos químicos :: OXIGÊNIO, HIDROGÊNIO, CARBONO, NITROGÊNIO
+2 Metais :: FERRO, COBRE, ZINCO, ESTANHO
+3 Vêm depois de "tira-" :: GOSTO, TEIMA, DÚVIDAS, MANCHAS
+4 Perdem a primeira letra e viram outra palavra :: BRISA, CLIMA, BLOCO, PRIMA
+
+## c-0019
+1 Peças de xadrez :: RAINHA, TORRE, BISPO, PEÃO
+2 Jogos de tabuleiro :: DAMAS, DOMINÓ, LUDO, GAMÃO
+3 Naipes do baralho :: OUROS, COPAS, PAUS, ESPADAS
+4 Escondem uma parte do corpo no começo :: BOCADO, PEITORAL, UNHADA, PÉROLA
+
+## c-0020
+1 Eletrodomésticos :: GELADEIRA, LIQUIDIFICADOR, MICRO-ONDAS, BATEDEIRA
+2 Utensílios de cozinha :: ESPÁTULA, CONCHA, PENEIRA, RALADOR
+3 Vêm depois de "lava-" :: LOUÇAS, ROUPAS, JATO, RÁPIDO
+4 Mudam de sentido com "o" ou "a" :: GUIA, MORAL, LENTE, CAIXA
+
+## c-0021
+1 Estações do ano :: VERÃO, OUTONO, INVERNO, PRIMAVERA
+2 Partes do dia :: AMANHECER, MEIO-DIA, ENTARDECER, MADRUGADA
+3 Vêm depois de "fim de" :: SEMANA, ANO, JOGO, FESTA
+4 Só têm a vogal O :: POLVO, SOLO, COLOSSO, ROCOCÓ
+
+## c-0022
+1 Matérias da escola :: HISTÓRIA, GEOGRAFIA, QUÍMICA, BIOLOGIA
+2 Classes de palavras :: VERBO, ADVÉRBIO, PRONOME, ADJETIVO
+3 Vêm depois de "má" :: FÉ, SORTE, EDUCAÇÃO, VONTADE
+4 Singular igual ao plural :: LÁPIS, PIRES, TÓRAX, ATLAS
+
+## c-0023
+1 Ritmos brasileiros :: SAMBA, FORRÓ, FREVO, BAIÃO
+2 Palavras de origem africana :: CAÇULA, MOLEQUE, FUBÁ, BANGUELA
+3 Vêm depois de "alto" :: FALANTE, FORNO, RELEVO, ASTRAL
+4 Viram outra palavra quando lidas ao contrário :: SAPOS, SERA, SOMA, ALEM
+
+## c-0024
+1 Fases da Lua :: CHEIA, NOVA, MINGUANTE, CRESCENTE
+2 Formas de relevo :: PLANALTO, PLANÍCIE, DEPRESSÃO, MONTANHA
+3 Têm asa :: AVIÃO, BORBOLETA, MORCEGO, XÍCARA
+4 Mudam de sentido com "o" ou "a" :: CÓLERA, GUARDA, COMA, VOGA
+
+## c-0025
+1 Pedras preciosas :: RUBI, ESMERALDA, SAFIRA, TOPÁZIO
+2 Símbolos da realeza :: COROA, CETRO, TRONO, MANTO
+3 Têm dentes :: PENTE, SERROTE, ENGRENAGEM, ZÍPER
+4 Têm outra palavra com o mesmo som :: CELA, SESSÃO, TRAZ, CHÁ

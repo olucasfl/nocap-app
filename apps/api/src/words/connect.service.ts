@@ -119,6 +119,11 @@ export class ConnectService {
         if (existing.state !== 'open') throw new ConflictException('Você já jogou o Daily de hoje');
         return this.view(existing);
       }
+      // Puzzle que a conta já jogou não volta (vale quando a lista dá a volta e repete um puzzle).
+      const todays = this.puzzles.of(today).puzzle;
+      if (await this.runs.puzzleRun(userId, GAME, todays.id)) {
+        throw new ConflictException('Você já jogou o puzzle de hoje');
+      }
       const created = await this.runs.create({
         userId,
         game: GAME,
@@ -126,7 +131,7 @@ export class ConnectService {
         kind: 'daily',
         day: today,
         seed: `${GAME}:${today}`,
-        answers: [this.puzzles.of(today).puzzle.id],
+        answers: [todays.id],
       });
       if (!created) throw new ConflictException('Você já jogou o Daily de hoje');
       return this.view(created);
@@ -136,8 +141,12 @@ export class ConnectService {
     }
     const { puzzle } = this.puzzles.of(archiveDay);
     const seed = `${GAME}-archive:${puzzle.id}@${archiveDay}`;
-    const existing = await this.runs.bySeed(userId, GAME, seed);
-    if (existing) return this.view(existing);
+    // Um puzzle só pode ser jogado uma vez por conta: aberto retoma, terminado não volta.
+    const existing = await this.runs.puzzleRun(userId, GAME, puzzle.id);
+    if (existing) {
+      if (existing.state !== 'open') throw new ConflictException('Você já jogou este puzzle');
+      return this.view(existing);
+    }
     const created = await this.runs.create({
       userId,
       game: GAME,

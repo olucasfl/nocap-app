@@ -1,0 +1,159 @@
+# Connect Word's, lote 2 (puzzles 26 a 50).
+
+## c-0026
+1 Felinos :: LEOPARDO, JAGUATIRICA, PUMA, GUEPARDO
+2 Mamíferos do mar :: BALEIA, GOLFINHO, FOCA, MANATI
+3 Têm olhos :: FURACÃO, AGULHA, BATATA, DADO
+4 Letras em ordem alfabética :: BEIJO, FLOR, ACHO, ADEUS
+
+## c-0027
+1 Gêneros de filme :: TERROR, COMÉDIA, ROMANCE, SUSPENSE
+2 Gêneros literários :: SONETO, HAICAI, CRÔNICA, FÁBULA
+3 Vêm depois de "primeiro" :: PLANO, ATO, AMOR, NOME
+4 O X soa como Z :: EXAME, EXÉRCITO, ÊXITO, EXEMPLO
+~ ROMANCE > Gêneros literários
+
+## c-0028
+1 Doenças infantis :: GRIPE, SARAMPO, CAXUMBA, CATAPORA
+2 Fenômenos do tempo :: GRANIZO, NEBLINA, TROVOADA, GEADA
+3 Têm boca :: TÚNEL, VULCÃO, FOGÃO, GARRAFA
+4 Plural em -ÃES :: PÃO, CÃO, CAPITÃO, ALEMÃO
+
+## c-0029
+1 Gêneros musicais :: ROCK, SERTANEJO, PAGODE, FUNK
+2 Partes de uma música :: REFRÃO, ESTROFE, INTRODUÇÃO, PONTE
+3 Vêm depois de "estrela" :: CADENTE, DO MAR, DALVA, POLAR
+4 Plural em -ÕES :: BOTÃO, LIMÃO, BALÃO, MELÃO
+
+## c-0030
+1 Profissões de obra e casa :: PEDREIRO, ENCANADOR, ELETRICISTA, MARCENEIRO
+2 Profissões da saúde :: ENFERMEIRO, DENTISTA, FISIOTERAPEUTA, NUTRICIONISTA
+3 Personagens de um tribunal :: JUIZ, PROMOTOR, ADVOGADO, RÉU
+4 Plural em -ÃOS :: MÃO, IRMÃO, CIDADÃO, ÓRGÃO
+
+## c-0031
+1 Formas de preparar comida :: ASSAR, FRITAR, REFOGAR, COZINHAR
+2 Sentimentos :: SAUDADE, RAIVA, INVEJA, CIÚME
+3 Têm pé :: ESCADA, CAMA, PÁGINA, MESA
+4 O X soa como CH :: ABACAXI, XAMPU, LIXO, ENXADA
+
+## c-0032
+1 Sobremesas :: PUDIM, MOUSSE, PAVÊ, TORTA
+2 Tipos de café :: EXPRESSO, CAPUCCINO, LATTE, MACCHIATO
+3 Vêm depois de "papel" :: HIGIÊNICO, ALUMÍNIO, TOALHA, MOEDA
+4 O X soa como KS :: TÁXI, TÓXICO, FIXO, REFLEXO
+
+## c-0033
+1 Partes do carro :: VOLANTE, FAROL, EMBREAGEM, RETROVISOR
+2 Veículos de duas rodas :: BICICLETA, MOTO, PATINETE, SKATE
+3 Vêm depois de "água" :: VIVA, SANITÁRIA, BENTA, MINERAL
+4 Começam e terminam com a mesma letra :: ANTENA, ESTUDANTE, ARENA, ELEFANTE
+
+## c-0034
+1 Capitais europeias :: LISBOA, PARIS, ROMA, MADRI
+2 Capitais sul-americanas :: LIMA, QUITO, BOGOTÁ, ASSUNÇÃO
+3 Países da Ásia :: JAPÃO, TAILÂNDIA, VIETNÃ, MONGÓLIA
+4 Têm outra palavra com o mesmo som :: CEM, CENSO, ACENTO, TACHA
+
+## c-0035
+1 Verduras de folha :: ALFACE, RÚCULA, AGRIÃO, COUVE
+2 Frutas tropicais :: CAJU, GOIABA, MAMÃO, ACEROLA
+3 Cortes de carne :: PICANHA, ALCATRA, FRALDINHA, COSTELA
+4 Tirando o R, viram outra palavra :: PRATO, FRANGO, BRAÇO, TREM
+
+## c-0036
+1 Brinquedos :: PIÃO, PIPA, IOIÔ, CARRINHO
+2 Brincadeiras :: PIQUE-ESCONDE, AMARELINHA, ESTÁTUA, CABRA-CEGA
+3 Vêm depois de "casa de" :: BONECA, CAMPO, PRAIA, MÁQUINAS
+4 Proparoxítonas (acento na antepenúltima sílaba) :: ÁRVORE, LÂMPADA, MÚSICA, PÁSSARO
+~ BONECA > Brinquedos
+
+## c-0037
+1 Comidas de festa junina :: PAMONHA, CANJICA, PAÇOCA, CURAU
+2 Danças típicas :: QUADRILHA, XOTE, FANDANGO, CIRANDA
+3 Vêm depois de "ponto de" :: ÔNIBUS, VISTA, PARTIDA, ENCONTRO
+4 Têm um U que não se pronuncia :: GUERRA, QUEIJO, GUITARRA, QUILO
+
+## c-0038
+1 Figuras geométricas :: TRIÂNGULO, LOSANGO, CÍRCULO, RETÂNGULO
+2 Unidades de medida :: METRO, LITRO, QUILATE, SEGUNDO
+3 Vêm depois de "cartão de" :: CRÉDITO, NATAL, VISITA, PONTO
+4 Usam as cinco vogais :: SEQUOIA, PNEUMONIA, EDUCACIONAL, AEROPORTUÁRIO
+
+## c-0039
+1 Material escolar :: BORRACHA, RÉGUA, APONTADOR, COMPASSO
+2 Partes de um livro :: CAPA, LOMBADA, ÍNDICE, PREFÁCIO
+3 Usados na chuva :: GALOCHA, IMPERMEÁVEL, SOMBRINHA, GUARDA-CHUVA
+4 Ganham um P na frente e viram outra palavra :: ARTE, ALMA, RATO, ASSO
+~ CAPA > Usados na chuva
+
+## c-0040
+1 Raças de cachorro :: LABRADOR, DÁLMATA, DACHSHUND, BULLDOG
+2 Raças de gato :: SIAMÊS, PERSA, ANGORÁ, BENGAL
+3 Têm cauda :: COMETA, VESTIDO, FILA, ESCORPIÃO
+4 Verbo + substantivo :: PASSATEMPO, GUARDANAPO, PARAQUEDAS, BEIJA-FLOR
+
+## c-0041
+1 Insetos :: BESOURO, GAFANHOTO, LIBÉLULA, CIGARRA
+2 Bichos peçonhentos :: ARANHA, CENTOPEIA, LAGARTA, VESPA
+3 Vêm depois de "olho de" :: BOI, GATO, PEIXE, SOGRA
+4 Terminam em A, mas são masculinas :: PROBLEMA, TEOREMA, PLANETA, MAPA
+
+## c-0042
+1 Animais brasileiros :: TUIUIÚ, CAPIVARA, SUCURI, BOTO
+2 Frutas da Amazônia :: AÇAÍ, CUPUAÇU, TUCUMÃ, BACURI
+3 Vêm depois de "mão de" :: OBRA, VACA, FERRO, ONÇA
+4 Singular igual ao plural :: TÊNIS, VÍRUS, CÁCTUS, CÓRTEX
+~ ONÇA > Animais brasileiros
+
+## c-0043
+1 Meios de comunicação :: TELEVISÃO, JORNAL, REVISTA, OUTDOOR
+2 Partes do olho :: PUPILA, ÍRIS, RETINA, CÓRNEA
+3 Músculos :: BÍCEPS, TRÍCEPS, PEITORAL, GLÚTEO
+4 Ossos :: FÊMUR, ÚMERO, TÍBIA, RÁDIO
+~ RÁDIO > Meios de comunicação
+
+## c-0044
+1 Árvores brasileiras :: IPÊ, JACARANDÁ, ARAUCÁRIA, PAU-BRASIL
+2 Partes de uma árvore :: RAIZ, GALHO, TRONCO, FOLHA
+3 Competições esportivas :: COPA, OLIMPÍADA, MUNDIAL, CAMPEONATO
+4 Letras em ordem alfabética :: ACENO, CINTO, FIOS, DEMO
+~ COPA > Partes de uma árvore
+
+## c-0045
+1 Frutas cítricas :: LIMÃO, LARANJA, TANGERINA, BERGAMOTA
+2 Cores :: VERMELHO, AMARELO, AZUL, ROXO
+3 Tipos de feijão :: PRETO, CARIOCA, FRADINHO, BRANCO
+4 Tirando o R, viram outra palavra :: DRAMA, FRASE, FREIO, CARTA
+~ PRETO > Cores
+~ BRANCO > Cores
+
+## c-0046
+1 Peças de cama :: LENÇOL, TRAVESSEIRO, COBERTOR, EDREDOM
+2 Itens do banheiro :: CHUVEIRO, PIA, VASO, TOALHEIRO
+3 Vêm depois de "dia de" :: FOLGA, CHUVA, SORTE, PAGAMENTO
+4 Terminam em A, mas são masculinas :: DIA, CLIMA, PIJAMA, SISTEMA
+
+## c-0047
+1 Esportes de inverno :: SKI, SNOWBOARD, PATINAÇÃO, HÓQUEI
+2 Esportes de luta :: BOXE, JUDÔ, KARATÊ, CAPOEIRA
+3 Equipamentos de academia :: HALTER, ESTEIRA, CORDA, COLCHONETE
+4 Verbo + substantivo :: SALVA-VIDAS, ARRANHA-CÉU, GUARDA-ROUPA, CAÇA-NÍQUEL
+
+## c-0048
+1 Capitais do Sul e do Sudeste :: PORTO ALEGRE, FLORIANÓPOLIS, CURITIBA, VITÓRIA
+2 Capitais do Norte :: MANAUS, BELÉM, PORTO VELHO, MACAPÁ
+3 Destinos turísticos :: GRAMADO, BONITO, PARATY, JERICOACOARA
+4 Palavras de origem árabe :: AÇÚCAR, ALGODÃO, ALMOFADA, AZEITE
+
+## c-0049
+1 Sabores de pizza :: CALABRESA, MARGHERITA, QUATRO QUEIJOS, PORTUGUESA
+2 Bebidas :: GUARANÁ, CAIPIRINHA, CERVEJA, CACHAÇA
+3 Vêm depois de "sopa de" :: LETRAS, PEDRA, LEGUMES, CEBOLA
+4 Letras gregas :: ALFA, BETA, GAMA, ÔMEGA
+
+## c-0050
+1 Oleaginosas :: CASTANHA, AMÊNDOA, NOZ, AVELÃ
+2 Cereais :: ARROZ, TRIGO, MILHO, AVEIA
+3 Vêm depois de "água de" :: COCO, CHEIRO, TORNEIRA, ROSAS
+4 Tirando o L, viram outra palavra :: PLANO, CLARO, PLACA, PLUMA

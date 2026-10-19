@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { ConnectPuzzles } from './connect-puzzles';
 import { ConnectService } from './connect.service';
 import type { WordRun } from './words.repository';
@@ -29,6 +29,8 @@ function setup() {
       [...rows.values()].find((r) => r.userId === userId && r.game === game && r.day === day) ?? null,
     bySeed: async (userId: string, game: string, seed: string) =>
       [...rows.values()].find((r) => r.userId === userId && r.game === game && r.seed === seed) ?? null,
+    puzzleRun: async (userId: string, game: string, puzzleId: string) =>
+      [...rows.values()].find((r) => r.userId === userId && r.game === game && r.answers.includes(puzzleId)) ?? null,
     create: async (row: Partial<WordRun>) => {
       const created = { id: crypto.randomUUID(), guesses: [], state: 'open', matchId: null, day: null, startedAt: new Date(), finishedAt: null, ...row } as WordRun;
       rows.set(created.id, created);
@@ -119,6 +121,25 @@ describe('Connect no servidor', () => {
     const run = await service.start('u1', 'daily');
     await expect(service.move('u1', run.id, ['x', 'y', 'z', 'w'])).rejects.toThrow();
     await expect(service.move('u1', run.id, [run.words[0]!, run.words[0]!, run.words[1]!, run.words[2]!])).rejects.toThrow();
+  });
+
+  it('puzzle já jogado não volta: nem no arquivo, nem quando a lista dá a volta', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-19T15:00:00Z'));
+    const { service } = setup();
+    const first = await service.start('u1', 'daily');
+    for (const g of service.puzzles.of(first.day!).puzzle.groups) await service.move('u1', first.id, g.words);
+    vi.setSystemTime(new Date('2026-10-22T15:00:00Z'));
+    // o arquivo oferece o dia 19, que a conta já jogou
+    await expect(service.start('u1', 'archive', '2026-10-19')).rejects.toThrow();
+    // o arquivo deixa jogar um dia que a conta ainda não jogou
+    const other = await service.start('u1', 'archive', '2026-10-20');
+    expect(other.kind).toBe('archive');
+    expect((await service.start('u1', 'archive', '2026-10-20')).id).toBe(other.id);
+    // 100 dias depois o Daily repete o puzzle 1: quem já jogou não joga de novo
+    vi.setSystemTime(new Date(Date.parse('2026-10-19T15:00:00Z') + service.puzzles.puzzles.length * 86_400_000));
+    await expect(service.start('u1', 'daily')).rejects.toThrow();
+    vi.useRealTimers();
   });
 
   it('a partida de outra conta não aparece', async () => {
