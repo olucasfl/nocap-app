@@ -97,7 +97,7 @@ export const historyQuerySchema = z.object({
   cursor: z.string().max(200).optional(),
   limit: z.coerce.number().int().min(1).max(50).default(20),
   /** Só as partidas de um jogo (o histórico do app é separado por jogo). */
-  game: z.enum(['color', 'time', 'eco', 'blocks', 'atravessa']).optional(),
+  game: z.enum(['color', 'time', 'eco', 'blocks', 'atravessa', 'wclassic']).optional(),
   /** Filtros do histórico: modo (classic, flash...), tipo (solo, daily, sala) e período. */
   mode: z.string().min(1).max(32).optional(),
   kind: z.enum(['solo', 'daily', 'room']).optional(),

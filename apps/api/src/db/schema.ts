@@ -177,3 +177,31 @@ export const userPresence = pgTable('user_presence', {
     .references(() => authUser.id, { onDelete: 'cascade' }),
   lastSeenAt: timestamp('last_seen_at', { withTimezone: true }).notNull(),
 });
+
+/**
+ * Partidas do Word's em andamento ou terminadas (spec 032). A resposta fica só aqui, no servidor:
+ * o aparelho manda palpites e recebe as cores. `matchId` liga à partida salva em `matches` ao terminar.
+ */
+export const wordRuns = pgTable(
+  'word_runs',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id').references(() => authUser.id, { onDelete: 'cascade' }),
+    game: text('game').notNull(), // wclassic
+    mode: text('mode').notNull(), // classic | dueto | quarteto
+    kind: text('kind').notNull(), // daily | solo
+    /** Dia do Daily (America/Sao_Paulo, AAAA-MM-DD); nulo nos modos livres. */
+    day: text('day'),
+    seed: text('seed').notNull(),
+    answers: text('answers').array().notNull(),
+    guesses: text('guesses').array().notNull().default([]),
+    state: text('state').notNull().default('open'), // open | won | lost
+    matchId: uuid('match_id'),
+    startedAt: timestamp('started_at', { withTimezone: true }).defaultNow().notNull(),
+    finishedAt: timestamp('finished_at', { withTimezone: true }),
+  },
+  (t) => [
+    index('word_runs_user_idx').on(t.userId, t.startedAt.desc()),
+    unique('word_runs_daily_unique').on(t.userId, t.game, t.day),
+  ],
+);

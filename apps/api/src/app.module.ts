@@ -10,6 +10,7 @@ import { FriendsModule } from './friends/friends.module';
 import { MatchesModule } from './matches/matches.module';
 import { RankingsModule } from './rankings/rankings.module';
 import { RoomsModule } from './rooms/rooms.module';
+import { WordsModule } from './words/words.module';
 
 // Um módulo por domínio entra aqui.
 @Module({
@@ -21,6 +22,7 @@ import { RoomsModule } from './rooms/rooms.module';
     FriendsModule,
     RankingsModule,
     RoomsModule,
+    WordsModule,
   ],
   controllers: [HealthController, GamesController],
   providers: [{ provide: APP_GUARD, useClass: GlobalRateLimitGuard }],
