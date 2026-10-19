@@ -279,7 +279,7 @@ export class MatchesService {
       string,
       { current: number; best: number; playedToday: boolean; totalScore: number | null }
     > = {};
-    for (const game of ['color', 'time', 'eco', 'blocks', 'atravessa', 'wclassic']) {
+    for (const game of ['color', 'time', 'eco', 'blocks', 'atravessa', 'wclassic', 'wbee']) {
       const days = plays.filter((p) => p.game === game).map((p) => dailyDate(p.playedAt));
       const streak = dailyStreak(days, todayStr);
       const score = today.find((t) => t.game === game)?.totalScore ?? null;

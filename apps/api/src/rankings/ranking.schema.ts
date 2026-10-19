@@ -19,7 +19,7 @@ export const RANKING_BOARDS = [
   'towers',
   'daily',
 ] as const;
-export const RANKING_GAMES = ['color', 'time', 'eco', 'blocks', 'atravessa', 'wclassic'] as const;
+export const RANKING_GAMES = ['color', 'time', 'eco', 'blocks', 'atravessa', 'wclassic', 'wbee'] as const;
 export type RankingGame = (typeof RANKING_GAMES)[number];
 
 /** Quadros que cada jogo tem (Flash é da Cor; "Sem estourar" é do Tempo). */
@@ -33,6 +33,8 @@ export const BOARDS_OF: Record<RankingGame, readonly string[]> = {
   atravessa: ['infinito'],
   // Classic Word's: só o Daily tem ranking (nota de 0 a 10); os modos livres ficam nos recordes
   wclassic: ['daily'],
+  // Bee Word's: só o Daily tem ranking (nota de 0 a 10; chegar ao Gênio dá 10)
+  wbee: ['daily'],
 };
 
 export const rankingQuerySchema = z.object({

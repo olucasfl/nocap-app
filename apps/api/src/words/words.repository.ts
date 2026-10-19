@@ -31,6 +31,24 @@ export class WordsRepository {
     return row ?? null;
   }
 
+  /** Partida da conta ligada a um favo ou desafio (pela seed), para não criar duas. */
+  async bySeed(userId: string, game: string, seed: string): Promise<WordRun | null> {
+    const [row] = await this.db
+      .select()
+      .from(wordRuns)
+      .where(and(eq(wordRuns.userId, userId), eq(wordRuns.game, game), eq(wordRuns.seed, seed)));
+    return row ?? null;
+  }
+
+  /** Partidas abertas de dias que já passaram (o Bee fecha à meia-noite). */
+  async openBefore(userId: string, game: string, day: string): Promise<WordRun[]> {
+    const rows = await this.db
+      .select()
+      .from(wordRuns)
+      .where(and(eq(wordRuns.userId, userId), eq(wordRuns.game, game), eq(wordRuns.state, 'open')));
+    return rows.filter((r) => r.day !== null && r.day < day);
+  }
+
   /** Respostas das últimas partidas da conta, para o sorteio não repetir palavra. */
   async recentAnswers(userId: string, game: string, limit: number): Promise<string[]> {
     const rows = await this.db

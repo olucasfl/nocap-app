@@ -282,6 +282,17 @@ export class MatchesRepository {
     return id;
   }
 
+  /** Atualiza a nota de uma partida já salva (o Bee sobe a nota a cada palavra, até o dia fechar). */
+  async updateScore(matchId: string, playerId: string, scored: ScoredMatch): Promise<void> {
+    await this.db.transaction(async (tx) => {
+      await tx.update(matches).set({ settings: scored.settings }).where(eq(matches.id, matchId));
+      await tx
+        .update(matchPlayers)
+        .set({ answers: scored.encodedAnswers, totalScore: clampScore(scored.totalTenths) })
+        .where(and(eq(matchPlayers.matchId, matchId), eq(matchPlayers.playerId, playerId)));
+    });
+  }
+
   /** Registra que a conta abriu o app neste dia. Repetir no mesmo dia não muda nada. */
   async recordVisit(userId: string, day: string) {
     await this.db.insert(userVisits).values({ userId, day }).onConflictDoNothing();
