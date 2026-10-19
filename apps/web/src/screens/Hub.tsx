@@ -77,14 +77,14 @@ export function Hub() {
       </h1>
 
       <div className="hub-grid">
-        <Link to="/tempo" className="hub-card hub-card-time" data-sfx="start">
+        <Link to="/words" className="hub-card hub-card-words" data-sfx="start">
           <div className="hub-art">
-            <TimeArt />
+            <WordsHubArt />
           </div>
           <div className="hub-card-foot">
-            <div className="hub-card-name mid">Já Deu?</div>
-            <div className="mono hub-card-meta">{bestLabel(data, 'time')}</div>
-            <div className="mono hub-card-meta">{dailyStatus(data, 'time')}</div>
+            <div className="hub-card-name">Word&apos;s</div>
+            <div className="mono hub-card-meta">JOGOS DE PALAVRAS</div>
+            <div className="mono hub-card-meta">{dailyStatus(data, 'wclassic')}</div>
           </div>
         </Link>
 
@@ -96,6 +96,28 @@ export function Hub() {
             <div className="hub-card-name">Block&apos;s</div>
             <div className="mono hub-card-meta">JOGOS DE BLOCOS</div>
             <div className="mono hub-card-meta">{blocksBestLabel(data)}</div>
+          </div>
+        </Link>
+
+        <Link to="/tempo" className="hub-card hub-card-time" data-sfx="start">
+          <div className="hub-art">
+            <TimeArt />
+          </div>
+          <div className="hub-card-foot">
+            <div className="hub-card-name mid">Já Deu?</div>
+            <div className="mono hub-card-meta">{bestLabel(data, 'time')}</div>
+            <div className="mono hub-card-meta">{dailyStatus(data, 'time')}</div>
+          </div>
+        </Link>
+
+        <Link to="/atravessa" className="hub-card hub-card-atravessa" data-sfx="start">
+          <div className="hub-art">
+            <AtravessaArt />
+          </div>
+          <div className="hub-card-foot">
+            <div className="hub-card-name long">Atravessa!</div>
+            <div className="mono hub-card-meta">PULE E DESVIE SEM PARAR</div>
+            <div className="mono hub-card-meta">{atravessaBestLabel(data)}</div>
           </div>
         </Link>
 
@@ -118,28 +140,6 @@ export function Hub() {
             <div className="hub-card-name">Ecooo</div>
             <div className="mono hub-card-meta">{bestLabel(data, 'eco')}</div>
             <div className="mono hub-card-meta">{dailyStatus(data, 'eco')}</div>
-          </div>
-        </Link>
-
-        <Link to="/atravessa" className="hub-card hub-card-atravessa" data-sfx="start">
-          <div className="hub-art">
-            <AtravessaArt />
-          </div>
-          <div className="hub-card-foot">
-            <div className="hub-card-name long">Atravessa!</div>
-            <div className="mono hub-card-meta">PULE E DESVIE SEM PARAR</div>
-            <div className="mono hub-card-meta">{atravessaBestLabel(data)}</div>
-          </div>
-        </Link>
-
-        <Link to="/words" className="hub-card hub-card-words" data-sfx="start">
-          <div className="hub-art">
-            <WordsHubArt />
-          </div>
-          <div className="hub-card-foot">
-            <div className="hub-card-name">Word&apos;s</div>
-            <div className="mono hub-card-meta">JOGOS DE PALAVRAS</div>
-            <div className="mono hub-card-meta">{dailyStatus(data, 'wclassic')}</div>
           </div>
         </Link>
 
