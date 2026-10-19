@@ -15508,5 +15508,7674 @@
     "w": "vovó"
    }
   ]
+ },
+ {
+  "id": "b-0121",
+  "center": "i",
+  "letters": [
+   "c",
+   "e",
+   "o",
+   "r",
+   "t",
+   "x"
+  ],
+  "words": [
+   {
+    "w": "certeiro"
+   },
+   {
+    "w": "cético"
+   },
+   {
+    "w": "circo"
+   },
+   {
+    "w": "cite"
+   },
+   {
+    "w": "citei"
+   },
+   {
+    "w": "cítrico"
+   },
+   {
+    "w": "correio"
+   },
+   {
+    "w": "corri"
+   },
+   {
+    "w": "cortei"
+   },
+   {
+    "w": "creio"
+   },
+   {
+    "w": "crie"
+   },
+   {
+    "w": "criei"
+   },
+   {
+    "w": "crio"
+   },
+   {
+    "w": "critério"
+   },
+   {
+    "w": "crítico"
+   },
+   {
+    "w": "eixo"
+   },
+   {
+    "w": "errei"
+   },
+   {
+    "w": "ético"
+   },
+   {
+    "w": "exercício"
+   },
+   {
+    "w": "exército",
+    "pangram": true
+   },
+   {
+    "w": "êxito"
+   },
+   {
+    "w": "exótico"
+   },
+   {
+    "w": "exterior"
+   },
+   {
+    "w": "irei"
+   },
+   {
+    "w": "ócio"
+   },
+   {
+    "w": "oito"
+   },
+   {
+    "w": "receio"
+   },
+   {
+    "w": "reitor"
+   },
+   {
+    "w": "retire"
+   },
+   {
+    "w": "retirei"
+   },
+   {
+    "w": "retiro"
+   },
+   {
+    "w": "rico"
+   },
+   {
+    "w": "rito"
+   },
+   {
+    "w": "teórico"
+   },
+   {
+    "w": "terceiro"
+   },
+   {
+    "w": "terei"
+   },
+   {
+    "w": "terreiro"
+   },
+   {
+    "w": "território"
+   },
+   {
+    "w": "tire"
+   },
+   {
+    "w": "tirei"
+   },
+   {
+    "w": "tiro"
+   },
+   {
+    "w": "tiroteio"
+   },
+   {
+    "w": "tóxico"
+   },
+   {
+    "w": "tricô"
+   },
+   {
+    "w": "trio"
+   }
+  ]
+ },
+ {
+  "id": "b-0122",
+  "center": "v",
+  "letters": [
+   "a",
+   "e",
+   "i",
+   "j",
+   "n",
+   "t"
+  ],
+  "words": [
+   {
+    "w": "ativa"
+   },
+   {
+    "w": "ative"
+   },
+   {
+    "w": "avante"
+   },
+   {
+    "w": "aveia"
+   },
+   {
+    "w": "envia"
+   },
+   {
+    "w": "envie"
+   },
+   {
+    "w": "enviei"
+   },
+   {
+    "w": "evita"
+   },
+   {
+    "w": "evite"
+   },
+   {
+    "w": "inveja"
+   },
+   {
+    "w": "inventa"
+   },
+   {
+    "w": "inventei"
+   },
+   {
+    "w": "nave"
+   },
+   {
+    "w": "neve"
+   },
+   {
+    "w": "tava"
+   },
+   {
+    "w": "tentativa"
+   },
+   {
+    "w": "tentava"
+   },
+   {
+    "w": "teve"
+   },
+   {
+    "w": "tive"
+   },
+   {
+    "w": "veia"
+   },
+   {
+    "w": "veja"
+   },
+   {
+    "w": "viaja"
+   },
+   {
+    "w": "viajante",
+    "pangram": true
+   },
+   {
+    "w": "viajava"
+   },
+   {
+    "w": "viaje"
+   },
+   {
+    "w": "viajei"
+   },
+   {
+    "w": "vinte"
+   },
+   {
+    "w": "viva"
+   },
+   {
+    "w": "vive"
+   },
+   {
+    "w": "vivi"
+   },
+   {
+    "w": "vivia"
+   }
+  ]
+ },
+ {
+  "id": "b-0123",
+  "center": "h",
+  "letters": [
+   "a",
+   "c",
+   "i",
+   "m",
+   "n",
+   "r"
+  ],
+  "words": [
+   {
+    "w": "acha"
+   },
+   {
+    "w": "acham"
+   },
+   {
+    "w": "achar"
+   },
+   {
+    "w": "acharam"
+   },
+   {
+    "w": "amanhã"
+   },
+   {
+    "w": "aranha"
+   },
+   {
+    "w": "arranha"
+   },
+   {
+    "w": "cachaça"
+   },
+   {
+    "w": "caminha"
+   },
+   {
+    "w": "caminham"
+   },
+   {
+    "w": "caminhar",
+    "pangram": true
+   },
+   {
+    "w": "chacina"
+   },
+   {
+    "w": "chama"
+   },
+   {
+    "w": "chamam"
+   },
+   {
+    "w": "chamar"
+   },
+   {
+    "w": "chamaram"
+   },
+   {
+    "w": "chamaria"
+   },
+   {
+    "w": "chia"
+   },
+   {
+    "w": "mancha"
+   },
+   {
+    "w": "manchar"
+   },
+   {
+    "w": "manhã"
+   },
+   {
+    "w": "marcha"
+   },
+   {
+    "w": "marinha"
+   },
+   {
+    "w": "racha"
+   },
+   {
+    "w": "rainha"
+   }
+  ]
+ },
+ {
+  "id": "b-0124",
+  "center": "m",
+  "letters": [
+   "a",
+   "e",
+   "f",
+   "i",
+   "n",
+   "t"
+  ],
+  "words": [
+   {
+    "w": "afetam"
+   },
+   {
+    "w": "afim"
+   },
+   {
+    "w": "amam"
+   },
+   {
+    "w": "amante"
+   },
+   {
+    "w": "amei"
+   },
+   {
+    "w": "amém"
+   },
+   {
+    "w": "anemia"
+   },
+   {
+    "w": "anima"
+   },
+   {
+    "w": "atentamente"
+   },
+   {
+    "w": "emana"
+   },
+   {
+    "w": "ementa"
+   },
+   {
+    "w": "eminente"
+   },
+   {
+    "w": "eminentemente"
+   },
+   {
+    "w": "emite"
+   },
+   {
+    "w": "emitem"
+   },
+   {
+    "w": "enfim"
+   },
+   {
+    "w": "fêmea"
+   },
+   {
+    "w": "iminente"
+   },
+   {
+    "w": "imita"
+   },
+   {
+    "w": "infame"
+   },
+   {
+    "w": "infinitamente",
+    "pangram": true
+   },
+   {
+    "w": "íntima"
+   },
+   {
+    "w": "intimamente"
+   },
+   {
+    "w": "item"
+   },
+   {
+    "w": "máfia"
+   },
+   {
+    "w": "mama"
+   },
+   {
+    "w": "mamãe"
+   },
+   {
+    "w": "mania"
+   },
+   {
+    "w": "manta"
+   },
+   {
+    "w": "mantém"
+   },
+   {
+    "w": "matam"
+   },
+   {
+    "w": "mate"
+   },
+   {
+    "w": "matei"
+   },
+   {
+    "w": "meia"
+   },
+   {
+    "w": "menina"
+   },
+   {
+    "w": "menta"
+   },
+   {
+    "w": "mente"
+   },
+   {
+    "w": "mentem"
+   },
+   {
+    "w": "meta"
+   },
+   {
+    "w": "mete"
+   },
+   {
+    "w": "metem"
+   },
+   {
+    "w": "meti"
+   },
+   {
+    "w": "mina"
+   },
+   {
+    "w": "mínima"
+   },
+   {
+    "w": "minimamente"
+   },
+   {
+    "w": "teima"
+   },
+   {
+    "w": "tema"
+   },
+   {
+    "w": "teme"
+   },
+   {
+    "w": "temem"
+   },
+   {
+    "w": "temia"
+   },
+   {
+    "w": "tentam"
+   },
+   {
+    "w": "tentem"
+   },
+   {
+    "w": "time"
+   }
+  ]
+ },
+ {
+  "id": "b-0125",
+  "center": "d",
+  "letters": [
+   "b",
+   "e",
+   "i",
+   "n",
+   "o",
+   "x"
+  ],
+  "words": [
+   {
+    "w": "bebendo"
+   },
+   {
+    "w": "bebido"
+   },
+   {
+    "w": "bode"
+   },
+   {
+    "w": "bonde"
+   },
+   {
+    "w": "dedo"
+   },
+   {
+    "w": "deixe"
+   },
+   {
+    "w": "deixei"
+   },
+   {
+    "w": "deixo"
+   },
+   {
+    "w": "dendê"
+   },
+   {
+    "w": "diodo"
+   },
+   {
+    "w": "dióxido"
+   },
+   {
+    "w": "doendo"
+   },
+   {
+    "w": "doido"
+   },
+   {
+    "w": "dono"
+   },
+   {
+    "w": "exibido"
+   },
+   {
+    "w": "exibindo",
+    "pangram": true
+   },
+   {
+    "w": "êxodo"
+   },
+   {
+    "w": "índio"
+   },
+   {
+    "w": "indo"
+   },
+   {
+    "w": "iodo"
+   },
+   {
+    "w": "odeio"
+   },
+   {
+    "w": "odiei"
+   },
+   {
+    "w": "ódio"
+   },
+   {
+    "w": "onde"
+   },
+   {
+    "w": "óxido"
+   }
+  ]
+ },
+ {
+  "id": "b-0126",
+  "center": "f",
+  "letters": [
+   "c",
+   "e",
+   "i",
+   "n",
+   "o",
+   "r"
+  ],
+  "words": [
+   {
+    "w": "cofre"
+   },
+   {
+    "w": "confere"
+   },
+   {
+    "w": "conferir",
+    "pangram": true
+   },
+   {
+    "w": "confie"
+   },
+   {
+    "w": "confio"
+   },
+   {
+    "w": "feio"
+   },
+   {
+    "w": "feno"
+   },
+   {
+    "w": "fere"
+   },
+   {
+    "w": "ferir"
+   },
+   {
+    "w": "ferreiro"
+   },
+   {
+    "w": "ferro"
+   },
+   {
+    "w": "fico"
+   },
+   {
+    "w": "fino"
+   },
+   {
+    "w": "foco"
+   },
+   {
+    "w": "fofo"
+   },
+   {
+    "w": "foice"
+   },
+   {
+    "w": "fone"
+   },
+   {
+    "w": "force"
+   },
+   {
+    "w": "fornece"
+   },
+   {
+    "w": "fornecer"
+   },
+   {
+    "w": "forno"
+   },
+   {
+    "w": "foro"
+   },
+   {
+    "w": "forró"
+   },
+   {
+    "w": "frei"
+   },
+   {
+    "w": "freio"
+   },
+   {
+    "w": "frio"
+   },
+   {
+    "w": "inferior"
+   },
+   {
+    "w": "inferir"
+   },
+   {
+    "w": "oferece"
+   },
+   {
+    "w": "oferecer"
+   },
+   {
+    "w": "ofereço"
+   },
+   {
+    "w": "ofício"
+   },
+   {
+    "w": "orifício"
+   },
+   {
+    "w": "refere"
+   },
+   {
+    "w": "referi"
+   },
+   {
+    "w": "referir"
+   },
+   {
+    "w": "refiro"
+   },
+   {
+    "w": "reforço"
+   }
+  ]
+ },
+ {
+  "id": "b-0127",
+  "center": "o",
+  "letters": [
+   "a",
+   "e",
+   "i",
+   "j",
+   "r",
+   "t"
+  ],
+  "words": [
+   {
+    "w": "aéreo"
+   },
+   {
+    "w": "arroio"
+   },
+   {
+    "w": "aterro"
+   },
+   {
+    "w": "ator"
+   },
+   {
+    "w": "átrio"
+   },
+   {
+    "w": "atrito"
+   },
+   {
+    "w": "erário"
+   },
+   {
+    "w": "erro"
+   },
+   {
+    "w": "jato"
+   },
+   {
+    "w": "jeito"
+   },
+   {
+    "w": "joia"
+   },
+   {
+    "w": "oito"
+   },
+   {
+    "w": "orar"
+   },
+   {
+    "w": "oratória"
+   },
+   {
+    "w": "oratório"
+   },
+   {
+    "w": "raio"
+   },
+   {
+    "w": "raro"
+   },
+   {
+    "w": "rato"
+   },
+   {
+    "w": "reator"
+   },
+   {
+    "w": "reitor"
+   },
+   {
+    "w": "reitoria"
+   },
+   {
+    "w": "retiro"
+   },
+   {
+    "w": "reto"
+   },
+   {
+    "w": "retrato"
+   },
+   {
+    "w": "rito"
+   },
+   {
+    "w": "roer"
+   },
+   {
+    "w": "rota"
+   },
+   {
+    "w": "rotor"
+   },
+   {
+    "w": "tarô"
+   },
+   {
+    "w": "teatro"
+   },
+   {
+    "w": "teor"
+   },
+   {
+    "w": "teoria"
+   },
+   {
+    "w": "terão"
+   },
+   {
+    "w": "terreiro"
+   },
+   {
+    "w": "térreo"
+   },
+   {
+    "w": "território"
+   },
+   {
+    "w": "terror"
+   },
+   {
+    "w": "teto"
+   },
+   {
+    "w": "tiro"
+   },
+   {
+    "w": "tiroteio"
+   },
+   {
+    "w": "toro"
+   },
+   {
+    "w": "torre"
+   },
+   {
+    "w": "torta"
+   },
+   {
+    "w": "torto"
+   },
+   {
+    "w": "trajeto"
+   },
+   {
+    "w": "trajetória",
+    "pangram": true
+   },
+   {
+    "w": "trarão"
+   },
+   {
+    "w": "trato"
+   },
+   {
+    "w": "trator"
+   },
+   {
+    "w": "trio"
+   },
+   {
+    "w": "trote"
+   }
+  ]
+ },
+ {
+  "id": "b-0128",
+  "center": "r",
+  "letters": [
+   "a",
+   "b",
+   "e",
+   "h",
+   "n",
+   "o"
+  ],
+  "words": [
+   {
+    "w": "abóbora"
+   },
+   {
+    "w": "abra"
+   },
+   {
+    "w": "abre"
+   },
+   {
+    "w": "abro"
+   },
+   {
+    "w": "aéreo"
+   },
+   {
+    "w": "árabe"
+   },
+   {
+    "w": "aranha"
+   },
+   {
+    "w": "área"
+   },
+   {
+    "w": "arena"
+   },
+   {
+    "w": "arranha"
+   },
+   {
+    "w": "babar"
+   },
+   {
+    "w": "barba"
+   },
+   {
+    "w": "bárbaro"
+   },
+   {
+    "w": "barbear"
+   },
+   {
+    "w": "barrar"
+   },
+   {
+    "w": "beber"
+   },
+   {
+    "w": "borra"
+   },
+   {
+    "w": "erra"
+   },
+   {
+    "w": "errar"
+   },
+   {
+    "w": "erro"
+   },
+   {
+    "w": "honra"
+   },
+   {
+    "w": "honrar"
+   },
+   {
+    "w": "hora"
+   },
+   {
+    "w": "horror"
+   },
+   {
+    "w": "narra"
+   },
+   {
+    "w": "narrar"
+   },
+   {
+    "w": "nobre"
+   },
+   {
+    "w": "nora"
+   },
+   {
+    "w": "obra"
+   },
+   {
+    "w": "orar"
+   },
+   {
+    "w": "rabo"
+   },
+   {
+    "w": "raro"
+   },
+   {
+    "w": "rebanho",
+    "pangram": true
+   },
+   {
+    "w": "robô"
+   },
+   {
+    "w": "roer"
+   }
+  ]
+ },
+ {
+  "id": "b-0129",
+  "center": "n",
+  "letters": [
+   "e",
+   "g",
+   "m",
+   "r",
+   "t",
+   "u"
+  ],
+  "words": [
+   {
+    "w": "emergente"
+   },
+   {
+    "w": "entre"
+   },
+   {
+    "w": "entregue"
+   },
+   {
+    "w": "entrem"
+   },
+   {
+    "w": "entreter"
+   },
+   {
+    "w": "gene"
+   },
+   {
+    "w": "gente"
+   },
+   {
+    "w": "gerente"
+   },
+   {
+    "w": "mente"
+   },
+   {
+    "w": "mentem"
+   },
+   {
+    "w": "menu"
+   },
+   {
+    "w": "merengue"
+   },
+   {
+    "w": "nutre"
+   },
+   {
+    "w": "regente"
+   },
+   {
+    "w": "remetente"
+   },
+   {
+    "w": "rente"
+   },
+   {
+    "w": "reúne"
+   },
+   {
+    "w": "reúnem"
+   },
+   {
+    "w": "tenente"
+   },
+   {
+    "w": "tentem"
+   },
+   {
+    "w": "tênue"
+   },
+   {
+    "w": "turnê"
+   },
+   {
+    "w": "unem"
+   },
+   {
+    "w": "urgente"
+   },
+   {
+    "w": "urgentemente",
+    "pangram": true
+   }
+  ]
+ },
+ {
+  "id": "b-0130",
+  "center": "i",
+  "letters": [
+   "c",
+   "e",
+   "n",
+   "o",
+   "t",
+   "u"
+  ],
+  "words": [
+   {
+    "w": "cético"
+   },
+   {
+    "w": "ciente"
+   },
+   {
+    "w": "cinco"
+   },
+   {
+    "w": "cine"
+   },
+   {
+    "w": "cinto"
+   },
+   {
+    "w": "cite"
+   },
+   {
+    "w": "citei"
+   },
+   {
+    "w": "citou"
+   },
+   {
+    "w": "conceito"
+   },
+   {
+    "w": "contei"
+   },
+   {
+    "w": "continente"
+   },
+   {
+    "w": "continue",
+    "pangram": true
+   },
+   {
+    "w": "continuei",
+    "pangram": true
+   },
+   {
+    "w": "continuo"
+   },
+   {
+    "w": "continuou"
+   },
+   {
+    "w": "ético"
+   },
+   {
+    "w": "étnico"
+   },
+   {
+    "w": "ícone"
+   },
+   {
+    "w": "inicie"
+   },
+   {
+    "w": "iniciei"
+   },
+   {
+    "w": "início"
+   },
+   {
+    "w": "iniciou"
+   },
+   {
+    "w": "inocente"
+   },
+   {
+    "w": "intento"
+   },
+   {
+    "w": "intuito"
+   },
+   {
+    "w": "noite"
+   },
+   {
+    "w": "notei"
+   },
+   {
+    "w": "noticiou"
+   },
+   {
+    "w": "ócio"
+   },
+   {
+    "w": "oito"
+   },
+   {
+    "w": "técnico"
+   },
+   {
+    "w": "tentei"
+   },
+   {
+    "w": "tinto"
+   },
+   {
+    "w": "tônico"
+   },
+   {
+    "w": "único"
+   },
+   {
+    "w": "uniu"
+   }
+  ]
+ },
+ {
+  "id": "b-0131",
+  "center": "p",
+  "letters": [
+   "a",
+   "d",
+   "g",
+   "i",
+   "m",
+   "r"
+  ],
+  "words": [
+   {
+    "w": "apaga"
+   },
+   {
+    "w": "apagar"
+   },
+   {
+    "w": "ímpar"
+   },
+   {
+    "w": "imprima"
+   },
+   {
+    "w": "imprimir"
+   },
+   {
+    "w": "mapa"
+   },
+   {
+    "w": "padaria"
+   },
+   {
+    "w": "paga"
+   },
+   {
+    "w": "pagam"
+   },
+   {
+    "w": "pagar"
+   },
+   {
+    "w": "pagará"
+   },
+   {
+    "w": "pagaram"
+   },
+   {
+    "w": "pagaria"
+   },
+   {
+    "w": "paira"
+   },
+   {
+    "w": "pampa"
+   },
+   {
+    "w": "papa"
+   },
+   {
+    "w": "papai"
+   },
+   {
+    "w": "para"
+   },
+   {
+    "w": "parada"
+   },
+   {
+    "w": "paradigma",
+    "pangram": true
+   },
+   {
+    "w": "param"
+   },
+   {
+    "w": "parar"
+   },
+   {
+    "w": "pararam"
+   },
+   {
+    "w": "piada"
+   },
+   {
+    "w": "pipa"
+   },
+   {
+    "w": "pira"
+   },
+   {
+    "w": "praga"
+   },
+   {
+    "w": "praia"
+   },
+   {
+    "w": "prima"
+   },
+   {
+    "w": "primária"
+   },
+   {
+    "w": "rampa"
+   }
+  ]
+ },
+ {
+  "id": "b-0132",
+  "center": "f",
+  "letters": [
+   "a",
+   "c",
+   "e",
+   "i",
+   "n",
+   "o"
+  ],
+  "words": [
+   {
+    "w": "afeição"
+   },
+   {
+    "w": "afinação"
+   },
+   {
+    "w": "afinco"
+   },
+   {
+    "w": "café"
+   },
+   {
+    "w": "cafeína"
+   },
+   {
+    "w": "confecção"
+   },
+   {
+    "w": "confia"
+   },
+   {
+    "w": "confiança"
+   },
+   {
+    "w": "confie"
+   },
+   {
+    "w": "confio"
+   },
+   {
+    "w": "eficácia"
+   },
+   {
+    "w": "eficiência"
+   },
+   {
+    "w": "enfia"
+   },
+   {
+    "w": "faça"
+   },
+   {
+    "w": "facão"
+   },
+   {
+    "w": "facção"
+   },
+   {
+    "w": "face"
+   },
+   {
+    "w": "faço"
+   },
+   {
+    "w": "feição"
+   },
+   {
+    "w": "feio"
+   },
+   {
+    "w": "feno"
+   },
+   {
+    "w": "fiação"
+   },
+   {
+    "w": "fiança"
+   },
+   {
+    "w": "fica"
+   },
+   {
+    "w": "ficção"
+   },
+   {
+    "w": "fico"
+   },
+   {
+    "w": "financia"
+   },
+   {
+    "w": "fino"
+   },
+   {
+    "w": "foca"
+   },
+   {
+    "w": "foco"
+   },
+   {
+    "w": "fofa"
+   },
+   {
+    "w": "fofo"
+   },
+   {
+    "w": "fofoca"
+   },
+   {
+    "w": "foice"
+   },
+   {
+    "w": "fone"
+   },
+   {
+    "w": "ineficiência"
+   },
+   {
+    "w": "infância"
+   },
+   {
+    "w": "infecção",
+    "pangram": true
+   },
+   {
+    "w": "oficina"
+   },
+   {
+    "w": "ofício"
+   }
+  ]
+ },
+ {
+  "id": "b-0133",
+  "center": "v",
+  "letters": [
+   "a",
+   "e",
+   "m",
+   "n",
+   "o",
+   "t"
+  ],
+  "words": [
+   {
+    "w": "amava"
+   },
+   {
+    "w": "avante"
+   },
+   {
+    "w": "envenenamento",
+    "pangram": true
+   },
+   {
+    "w": "evento"
+   },
+   {
+    "w": "manteve"
+   },
+   {
+    "w": "mova"
+   },
+   {
+    "w": "move"
+   },
+   {
+    "w": "movem"
+   },
+   {
+    "w": "nave"
+   },
+   {
+    "w": "neve"
+   },
+   {
+    "w": "névoa"
+   },
+   {
+    "w": "nova"
+   },
+   {
+    "w": "novamente",
+    "pangram": true
+   },
+   {
+    "w": "novato"
+   },
+   {
+    "w": "nove"
+   },
+   {
+    "w": "novena"
+   },
+   {
+    "w": "noventa"
+   },
+   {
+    "w": "novo"
+   },
+   {
+    "w": "tava"
+   },
+   {
+    "w": "tentava"
+   },
+   {
+    "w": "tentavam"
+   },
+   {
+    "w": "teve"
+   },
+   {
+    "w": "tomava"
+   },
+   {
+    "w": "veem"
+   },
+   {
+    "w": "veneno"
+   },
+   {
+    "w": "vento"
+   },
+   {
+    "w": "veto"
+   },
+   {
+    "w": "voam"
+   },
+   {
+    "w": "vota"
+   },
+   {
+    "w": "votam"
+   },
+   {
+    "w": "vote"
+   },
+   {
+    "w": "votem"
+   },
+   {
+    "w": "voto"
+   },
+   {
+    "w": "vovó"
+   }
+  ]
+ },
+ {
+  "id": "b-0134",
+  "center": "i",
+  "letters": [
+   "a",
+   "o",
+   "q",
+   "r",
+   "u",
+   "v"
+  ],
+  "words": [
+   {
+    "w": "aquário"
+   },
+   {
+    "w": "aqui"
+   },
+   {
+    "w": "arquivar"
+   },
+   {
+    "w": "arquivo",
+    "pangram": true
+   },
+   {
+    "w": "arroio"
+   },
+   {
+    "w": "avaria"
+   },
+   {
+    "w": "avião"
+   },
+   {
+    "w": "iria"
+   },
+   {
+    "w": "ouvi"
+   },
+   {
+    "w": "ouvia"
+   },
+   {
+    "w": "ouvir"
+   },
+   {
+    "w": "ouviu"
+   },
+   {
+    "w": "ovário"
+   },
+   {
+    "w": "raia"
+   },
+   {
+    "w": "raio"
+   },
+   {
+    "w": "raiva"
+   },
+   {
+    "w": "ruiva"
+   },
+   {
+    "w": "ruivo"
+   },
+   {
+    "w": "vaio"
+   },
+   {
+    "w": "varia"
+   },
+   {
+    "w": "variar"
+   },
+   {
+    "w": "variou"
+   },
+   {
+    "w": "viário"
+   },
+   {
+    "w": "vira"
+   },
+   {
+    "w": "virão"
+   },
+   {
+    "w": "virar"
+   },
+   {
+    "w": "viria"
+   },
+   {
+    "w": "viro"
+   },
+   {
+    "w": "virou"
+   },
+   {
+    "w": "viúva"
+   },
+   {
+    "w": "viúvo"
+   },
+   {
+    "w": "viva"
+   },
+   {
+    "w": "vivi"
+   },
+   {
+    "w": "vivia"
+   },
+   {
+    "w": "vivo"
+   }
+  ]
+ },
+ {
+  "id": "b-0135",
+  "center": "d",
+  "letters": [
+   "a",
+   "c",
+   "i",
+   "n",
+   "r",
+   "t"
+  ],
+  "words": [
+   {
+    "w": "adia"
+   },
+   {
+    "w": "adianta"
+   },
+   {
+    "w": "adiantar"
+   },
+   {
+    "w": "adiar"
+   },
+   {
+    "w": "ainda"
+   },
+   {
+    "w": "anda"
+   },
+   {
+    "w": "andar"
+   },
+   {
+    "w": "arrancada"
+   },
+   {
+    "w": "caçada"
+   },
+   {
+    "w": "cada"
+   },
+   {
+    "w": "caída"
+   },
+   {
+    "w": "candidata"
+   },
+   {
+    "w": "candidatar",
+    "pangram": true
+   },
+   {
+    "w": "cantada"
+   },
+   {
+    "w": "cardíaca"
+   },
+   {
+    "w": "cidadania"
+   },
+   {
+    "w": "ciranda"
+   },
+   {
+    "w": "criada"
+   },
+   {
+    "w": "criançada"
+   },
+   {
+    "w": "dada"
+   },
+   {
+    "w": "danada"
+   },
+   {
+    "w": "dança"
+   },
+   {
+    "w": "dançar"
+   },
+   {
+    "w": "dançarina"
+   },
+   {
+    "w": "dará"
+   },
+   {
+    "w": "daria"
+   },
+   {
+    "w": "data"
+   },
+   {
+    "w": "diária"
+   },
+   {
+    "w": "dica"
+   },
+   {
+    "w": "didática"
+   },
+   {
+    "w": "dirá"
+   },
+   {
+    "w": "diria"
+   },
+   {
+    "w": "dita"
+   },
+   {
+    "w": "ditar"
+   },
+   {
+    "w": "incidir"
+   },
+   {
+    "w": "indica"
+   },
+   {
+    "w": "indicar"
+   },
+   {
+    "w": "nada"
+   },
+   {
+    "w": "nadar"
+   },
+   {
+    "w": "radar"
+   },
+   {
+    "w": "tarda"
+   },
+   {
+    "w": "tirada"
+   },
+   {
+    "w": "trancada"
+   },
+   {
+    "w": "tratada"
+   }
+  ]
+ },
+ {
+  "id": "b-0136",
+  "center": "f",
+  "letters": [
+   "a",
+   "c",
+   "i",
+   "l",
+   "r",
+   "t"
+  ],
+  "words": [
+   {
+    "w": "alfa"
+   },
+   {
+    "w": "alfaiataria"
+   },
+   {
+    "w": "artificial",
+    "pangram": true
+   },
+   {
+    "w": "cifra"
+   },
+   {
+    "w": "faça"
+   },
+   {
+    "w": "facial"
+   },
+   {
+    "w": "fácil"
+   },
+   {
+    "w": "facilita"
+   },
+   {
+    "w": "facilitar",
+    "pangram": true
+   },
+   {
+    "w": "fala"
+   },
+   {
+    "w": "falácia"
+   },
+   {
+    "w": "falar"
+   },
+   {
+    "w": "falará"
+   },
+   {
+    "w": "falaria"
+   },
+   {
+    "w": "falta"
+   },
+   {
+    "w": "faltar"
+   },
+   {
+    "w": "faltará"
+   },
+   {
+    "w": "fará"
+   },
+   {
+    "w": "faria"
+   },
+   {
+    "w": "farra"
+   },
+   {
+    "w": "farta"
+   },
+   {
+    "w": "fatal"
+   },
+   {
+    "w": "fatia"
+   },
+   {
+    "w": "fica"
+   },
+   {
+    "w": "ficar"
+   },
+   {
+    "w": "ficará"
+   },
+   {
+    "w": "ficaria"
+   },
+   {
+    "w": "fila"
+   },
+   {
+    "w": "filial"
+   },
+   {
+    "w": "filtrar"
+   },
+   {
+    "w": "fita"
+   },
+   {
+    "w": "fraca"
+   },
+   {
+    "w": "fria"
+   },
+   {
+    "w": "frita"
+   },
+   {
+    "w": "fritar"
+   },
+   {
+    "w": "tarifa"
+   }
+  ]
+ },
+ {
+  "id": "b-0137",
+  "center": "l",
+  "letters": [
+   "a",
+   "c",
+   "i",
+   "m",
+   "n",
+   "t"
+  ],
+  "words": [
+   {
+    "w": "acalma"
+   },
+   {
+    "w": "alça"
+   },
+   {
+    "w": "alcança"
+   },
+   {
+    "w": "alcançam"
+   },
+   {
+    "w": "alia"
+   },
+   {
+    "w": "alma"
+   },
+   {
+    "w": "alta"
+   },
+   {
+    "w": "analítica"
+   },
+   {
+    "w": "animal"
+   },
+   {
+    "w": "cala"
+   },
+   {
+    "w": "calça"
+   },
+   {
+    "w": "calma"
+   },
+   {
+    "w": "canal"
+   },
+   {
+    "w": "canil"
+   },
+   {
+    "w": "clama"
+   },
+   {
+    "w": "clima"
+   },
+   {
+    "w": "clínica"
+   },
+   {
+    "w": "inicial"
+   },
+   {
+    "w": "italiana"
+   },
+   {
+    "w": "lama"
+   },
+   {
+    "w": "lâmina"
+   },
+   {
+    "w": "lança"
+   },
+   {
+    "w": "lançam"
+   },
+   {
+    "w": "lata"
+   },
+   {
+    "w": "latim"
+   },
+   {
+    "w": "latina"
+   },
+   {
+    "w": "liam"
+   },
+   {
+    "w": "licita"
+   },
+   {
+    "w": "lima"
+   },
+   {
+    "w": "limita"
+   },
+   {
+    "w": "limitam"
+   },
+   {
+    "w": "mala"
+   },
+   {
+    "w": "malícia"
+   },
+   {
+    "w": "manancial"
+   },
+   {
+    "w": "matinal"
+   },
+   {
+    "w": "milícia"
+   },
+   {
+    "w": "militância",
+    "pangram": true
+   }
+  ]
+ },
+ {
+  "id": "b-0138",
+  "center": "o",
+  "letters": [
+   "b",
+   "c",
+   "d",
+   "i",
+   "n",
+   "r"
+  ],
+  "words": [
+   {
+    "w": "bico"
+   },
+   {
+    "w": "bobo"
+   },
+   {
+    "w": "bordo"
+   },
+   {
+    "w": "brinco"
+   },
+   {
+    "w": "cinco"
+   },
+   {
+    "w": "circo"
+   },
+   {
+    "w": "cobrindo",
+    "pangram": true
+   },
+   {
+    "w": "cobrir"
+   },
+   {
+    "w": "coco"
+   },
+   {
+    "w": "coibir"
+   },
+   {
+    "w": "coincidir"
+   },
+   {
+    "w": "concordo"
+   },
+   {
+    "w": "concorrido"
+   },
+   {
+    "w": "coro"
+   },
+   {
+    "w": "corri"
+   },
+   {
+    "w": "corrido"
+   },
+   {
+    "w": "corro"
+   },
+   {
+    "w": "crio"
+   },
+   {
+    "w": "crônico"
+   },
+   {
+    "w": "diodo"
+   },
+   {
+    "w": "dobro"
+   },
+   {
+    "w": "doido"
+   },
+   {
+    "w": "dono"
+   },
+   {
+    "w": "indício"
+   },
+   {
+    "w": "indico"
+   },
+   {
+    "w": "índio"
+   },
+   {
+    "w": "indo"
+   },
+   {
+    "w": "início"
+   },
+   {
+    "w": "iodo"
+   },
+   {
+    "w": "irônico"
+   },
+   {
+    "w": "nono"
+   },
+   {
+    "w": "ócio"
+   },
+   {
+    "w": "ocorrido"
+   },
+   {
+    "w": "ódio"
+   },
+   {
+    "w": "odor"
+   },
+   {
+    "w": "rico"
+   },
+   {
+    "w": "rindo"
+   },
+   {
+    "w": "robô"
+   },
+   {
+    "w": "rodo"
+   },
+   {
+    "w": "ronco"
+   }
+  ]
+ },
+ {
+  "id": "b-0139",
+  "center": "h",
+  "letters": [
+   "a",
+   "c",
+   "e",
+   "m",
+   "n",
+   "t"
+  ],
+  "words": [
+   {
+    "w": "acha"
+   },
+   {
+    "w": "acham"
+   },
+   {
+    "w": "ache"
+   },
+   {
+    "w": "amanhã"
+   },
+   {
+    "w": "cachaça"
+   },
+   {
+    "w": "cache"
+   },
+   {
+    "w": "chama"
+   },
+   {
+    "w": "chamam"
+   },
+   {
+    "w": "chame"
+   },
+   {
+    "w": "chamem"
+   },
+   {
+    "w": "chance"
+   },
+   {
+    "w": "chata"
+   },
+   {
+    "w": "checa"
+   },
+   {
+    "w": "encha"
+   },
+   {
+    "w": "enche"
+   },
+   {
+    "w": "enchem"
+   },
+   {
+    "w": "enchente"
+   },
+   {
+    "w": "mancha"
+   },
+   {
+    "w": "manchete",
+    "pangram": true
+   },
+   {
+    "w": "manhã"
+   },
+   {
+    "w": "mantenha"
+   },
+   {
+    "w": "mantenham"
+   },
+   {
+    "w": "mecha"
+   },
+   {
+    "w": "tenha"
+   },
+   {
+    "w": "tenham"
+   }
+  ]
+ },
+ {
+  "id": "b-0140",
+  "center": "d",
+  "letters": [
+   "a",
+   "c",
+   "e",
+   "g",
+   "l",
+   "o"
+  ],
+  "words": [
+   {
+    "w": "adega"
+   },
+   {
+    "w": "adoção"
+   },
+   {
+    "w": "alçada"
+   },
+   {
+    "w": "alegado"
+   },
+   {
+    "w": "algodão"
+   },
+   {
+    "w": "caçada"
+   },
+   {
+    "w": "cada"
+   },
+   {
+    "w": "cadê"
+   },
+   {
+    "w": "cadeado"
+   },
+   {
+    "w": "calada"
+   },
+   {
+    "w": "calado"
+   },
+   {
+    "w": "calçada"
+   },
+   {
+    "w": "calçadão"
+   },
+   {
+    "w": "calda"
+   },
+   {
+    "w": "caldo"
+   },
+   {
+    "w": "cede"
+   },
+   {
+    "w": "cedo"
+   },
+   {
+    "w": "colada"
+   },
+   {
+    "w": "colado"
+   },
+   {
+    "w": "colocada"
+   },
+   {
+    "w": "colocado"
+   },
+   {
+    "w": "dada"
+   },
+   {
+    "w": "dado"
+   },
+   {
+    "w": "década"
+   },
+   {
+    "w": "dedo"
+   },
+   {
+    "w": "dela"
+   },
+   {
+    "w": "delação"
+   },
+   {
+    "w": "dele"
+   },
+   {
+    "w": "delegação",
+    "pangram": true
+   },
+   {
+    "w": "delegado"
+   },
+   {
+    "w": "delgado"
+   },
+   {
+    "w": "doação"
+   },
+   {
+    "w": "doado"
+   },
+   {
+    "w": "doce"
+   },
+   {
+    "w": "gado"
+   },
+   {
+    "w": "geada"
+   },
+   {
+    "w": "gelada"
+   },
+   {
+    "w": "gelado"
+   },
+   {
+    "w": "goleada"
+   },
+   {
+    "w": "lado"
+   },
+   {
+    "w": "lealdade"
+   },
+   {
+    "w": "legado"
+   },
+   {
+    "w": "lodo"
+   }
+  ]
+ },
+ {
+  "id": "b-0141",
+  "center": "p",
+  "letters": [
+   "e",
+   "l",
+   "m",
+   "o",
+   "r",
+   "t"
+  ],
+  "words": [
+   {
+    "w": "metrópole",
+    "pangram": true
+   },
+   {
+    "w": "opõe"
+   },
+   {
+    "w": "opõem"
+   },
+   {
+    "w": "opor"
+   },
+   {
+    "w": "opte"
+   },
+   {
+    "w": "pele"
+   },
+   {
+    "w": "pelo"
+   },
+   {
+    "w": "perto"
+   },
+   {
+    "w": "petróleo"
+   },
+   {
+    "w": "põem"
+   },
+   {
+    "w": "polo"
+   },
+   {
+    "w": "porém"
+   },
+   {
+    "w": "porte"
+   },
+   {
+    "w": "pote"
+   },
+   {
+    "w": "preto"
+   },
+   {
+    "w": "prole"
+   },
+   {
+    "w": "promete"
+   },
+   {
+    "w": "prometem"
+   },
+   {
+    "w": "prometer"
+   },
+   {
+    "w": "prometo"
+   },
+   {
+    "w": "promotor"
+   },
+   {
+    "w": "propõe"
+   },
+   {
+    "w": "propõem"
+   },
+   {
+    "w": "propor"
+   },
+   {
+    "w": "protetor"
+   },
+   {
+    "w": "repete"
+   },
+   {
+    "w": "repetem"
+   },
+   {
+    "w": "repleto"
+   },
+   {
+    "w": "repor"
+   },
+   {
+    "w": "repórter"
+   },
+   {
+    "w": "rompe"
+   },
+   {
+    "w": "romper"
+   },
+   {
+    "w": "tempere"
+   },
+   {
+    "w": "tempero"
+   },
+   {
+    "w": "templo"
+   },
+   {
+    "w": "tempo"
+   },
+   {
+    "w": "topo"
+   },
+   {
+    "w": "trompete"
+   }
+  ]
+ },
+ {
+  "id": "b-0142",
+  "center": "c",
+  "letters": [
+   "a",
+   "e",
+   "g",
+   "o",
+   "t",
+   "v"
+  ],
+  "words": [
+   {
+    "w": "ação"
+   },
+   {
+    "w": "acetato"
+   },
+   {
+    "w": "ataca"
+   },
+   {
+    "w": "caça"
+   },
+   {
+    "w": "caco"
+   },
+   {
+    "w": "cata"
+   },
+   {
+    "w": "cave"
+   },
+   {
+    "w": "cega"
+   },
+   {
+    "w": "cego"
+   },
+   {
+    "w": "coação"
+   },
+   {
+    "w": "coca"
+   },
+   {
+    "w": "coco"
+   },
+   {
+    "w": "cota"
+   },
+   {
+    "w": "cotação"
+   },
+   {
+    "w": "cova"
+   },
+   {
+    "w": "evoca"
+   },
+   {
+    "w": "taça"
+   },
+   {
+    "w": "taco"
+   },
+   {
+    "w": "toca"
+   },
+   {
+    "w": "tocava"
+   },
+   {
+    "w": "toco"
+   },
+   {
+    "w": "vaca"
+   },
+   {
+    "w": "vegetação",
+    "pangram": true
+   },
+   {
+    "w": "vocação"
+   },
+   {
+    "w": "você"
+   },
+   {
+    "w": "votação"
+   }
+  ]
+ },
+ {
+  "id": "b-0143",
+  "center": "l",
+  "letters": [
+   "a",
+   "g",
+   "i",
+   "n",
+   "o",
+   "t"
+  ],
+  "words": [
+   {
+    "w": "ágil"
+   },
+   {
+    "w": "algo"
+   },
+   {
+    "w": "alia"
+   },
+   {
+    "w": "alta"
+   },
+   {
+    "w": "alto"
+   },
+   {
+    "w": "analogia"
+   },
+   {
+    "w": "análogo"
+   },
+   {
+    "w": "antologia",
+    "pangram": true
+   },
+   {
+    "w": "gaiola"
+   },
+   {
+    "w": "gala"
+   },
+   {
+    "w": "galão"
+   },
+   {
+    "w": "galo"
+   },
+   {
+    "w": "gola"
+   },
+   {
+    "w": "italiana"
+   },
+   {
+    "w": "lago"
+   },
+   {
+    "w": "lata"
+   },
+   {
+    "w": "latão"
+   },
+   {
+    "w": "latina"
+   },
+   {
+    "w": "lato"
+   },
+   {
+    "w": "liga"
+   },
+   {
+    "w": "ligo"
+   },
+   {
+    "w": "litígio"
+   },
+   {
+    "w": "lítio"
+   },
+   {
+    "w": "logo"
+   },
+   {
+    "w": "lona"
+   },
+   {
+    "w": "longa"
+   },
+   {
+    "w": "longo"
+   },
+   {
+    "w": "natalino"
+   },
+   {
+    "w": "talo"
+   },
+   {
+    "w": "tola"
+   },
+   {
+    "w": "tolo"
+   },
+   {
+    "w": "total"
+   }
+  ]
+ },
+ {
+  "id": "b-0144",
+  "center": "l",
+  "letters": [
+   "a",
+   "d",
+   "m",
+   "o",
+   "r",
+   "u"
+  ],
+  "words": [
+   {
+    "w": "alma"
+   },
+   {
+    "w": "aula"
+   },
+   {
+    "w": "dólar"
+   },
+   {
+    "w": "lado"
+   },
+   {
+    "w": "ladrão"
+   },
+   {
+    "w": "lama"
+   },
+   {
+    "w": "laudo"
+   },
+   {
+    "w": "lodo"
+   },
+   {
+    "w": "loura"
+   },
+   {
+    "w": "louro"
+   },
+   {
+    "w": "luar"
+   },
+   {
+    "w": "lula"
+   },
+   {
+    "w": "mala"
+   },
+   {
+    "w": "modal"
+   },
+   {
+    "w": "modular",
+    "pangram": true
+   },
+   {
+    "w": "módulo"
+   },
+   {
+    "w": "mola"
+   },
+   {
+    "w": "moldado"
+   },
+   {
+    "w": "moldar"
+   },
+   {
+    "w": "moldura",
+    "pangram": true
+   },
+   {
+    "w": "moral"
+   },
+   {
+    "w": "mula"
+   },
+   {
+    "w": "mural"
+   },
+   {
+    "w": "oral"
+   },
+   {
+    "w": "orla"
+   },
+   {
+    "w": "ralado"
+   },
+   {
+    "w": "ralo"
+   },
+   {
+    "w": "ramal"
+   },
+   {
+    "w": "rolam"
+   },
+   {
+    "w": "rolar"
+   },
+   {
+    "w": "rolo"
+   },
+   {
+    "w": "rolou"
+   },
+   {
+    "w": "rural"
+   }
+  ]
+ },
+ {
+  "id": "b-0145",
+  "center": "c",
+  "letters": [
+   "a",
+   "e",
+   "g",
+   "l",
+   "n",
+   "o"
+  ],
+  "words": [
+   {
+    "w": "ação"
+   },
+   {
+    "w": "acne"
+   },
+   {
+    "w": "acolá"
+   },
+   {
+    "w": "alça"
+   },
+   {
+    "w": "alcança"
+   },
+   {
+    "w": "alcance"
+   },
+   {
+    "w": "álcool"
+   },
+   {
+    "w": "alegação"
+   },
+   {
+    "w": "alocação"
+   },
+   {
+    "w": "caça"
+   },
+   {
+    "w": "caco"
+   },
+   {
+    "w": "cala"
+   },
+   {
+    "w": "calça"
+   },
+   {
+    "w": "calção"
+   },
+   {
+    "w": "cale"
+   },
+   {
+    "w": "calo"
+   },
+   {
+    "w": "cana"
+   },
+   {
+    "w": "canal"
+   },
+   {
+    "w": "canção"
+   },
+   {
+    "w": "cancela"
+   },
+   {
+    "w": "caneca"
+   },
+   {
+    "w": "cano"
+   },
+   {
+    "w": "canoa"
+   },
+   {
+    "w": "cega"
+   },
+   {
+    "w": "cego"
+   },
+   {
+    "w": "cela"
+   },
+   {
+    "w": "cena"
+   },
+   {
+    "w": "clone"
+   },
+   {
+    "w": "coação"
+   },
+   {
+    "w": "coca"
+   },
+   {
+    "w": "coco"
+   },
+   {
+    "w": "cola"
+   },
+   {
+    "w": "colação"
+   },
+   {
+    "w": "colágeno",
+    "pangram": true
+   },
+   {
+    "w": "cole"
+   },
+   {
+    "w": "coleção"
+   },
+   {
+    "w": "colega"
+   },
+   {
+    "w": "colo"
+   },
+   {
+    "w": "coloca"
+   },
+   {
+    "w": "colocação"
+   },
+   {
+    "w": "coloco"
+   },
+   {
+    "w": "cólon"
+   },
+   {
+    "w": "cone"
+   },
+   {
+    "w": "elenco"
+   },
+   {
+    "w": "encenação"
+   },
+   {
+    "w": "enlace"
+   },
+   {
+    "w": "golaço"
+   },
+   {
+    "w": "laço"
+   },
+   {
+    "w": "lança"
+   },
+   {
+    "w": "lance"
+   },
+   {
+    "w": "lanço"
+   },
+   {
+    "w": "lenço"
+   },
+   {
+    "w": "lençol"
+   },
+   {
+    "w": "locação"
+   },
+   {
+    "w": "local"
+   },
+   {
+    "w": "loção"
+   },
+   {
+    "w": "nação"
+   },
+   {
+    "w": "negação"
+   },
+   {
+    "w": "noção"
+   },
+   {
+    "w": "oceano"
+   },
+   {
+    "w": "onça"
+   }
+  ]
+ },
+ {
+  "id": "b-0146",
+  "center": "l",
+  "letters": [
+   "a",
+   "i",
+   "m",
+   "n",
+   "r",
+   "u"
+  ],
+  "words": [
+   {
+    "w": "alia"
+   },
+   {
+    "w": "aliar"
+   },
+   {
+    "w": "alma"
+   },
+   {
+    "w": "animal"
+   },
+   {
+    "w": "anual"
+   },
+   {
+    "w": "anula"
+   },
+   {
+    "w": "anular"
+   },
+   {
+    "w": "aula"
+   },
+   {
+    "w": "ilumina"
+   },
+   {
+    "w": "iluminar",
+    "pangram": true
+   },
+   {
+    "w": "lama"
+   },
+   {
+    "w": "lâmina"
+   },
+   {
+    "w": "liam"
+   },
+   {
+    "w": "lima"
+   },
+   {
+    "w": "limiar"
+   },
+   {
+    "w": "liminar"
+   },
+   {
+    "w": "lira"
+   },
+   {
+    "w": "luar"
+   },
+   {
+    "w": "lula"
+   },
+   {
+    "w": "lumiar"
+   },
+   {
+    "w": "luminária",
+    "pangram": true
+   },
+   {
+    "w": "lunar"
+   },
+   {
+    "w": "mala"
+   },
+   {
+    "w": "malária"
+   },
+   {
+    "w": "manual"
+   },
+   {
+    "w": "mula"
+   },
+   {
+    "w": "mural"
+   },
+   {
+    "w": "ramal"
+   },
+   {
+    "w": "rural"
+   }
+  ]
+ },
+ {
+  "id": "b-0147",
+  "center": "l",
+  "letters": [
+   "a",
+   "b",
+   "d",
+   "e",
+   "h",
+   "i"
+  ],
+  "words": [
+   {
+    "w": "abalada"
+   },
+   {
+    "w": "abelha"
+   },
+   {
+    "w": "aldeia"
+   },
+   {
+    "w": "alheia"
+   },
+   {
+    "w": "alia"
+   },
+   {
+    "w": "baile"
+   },
+   {
+    "w": "bala"
+   },
+   {
+    "w": "balada"
+   },
+   {
+    "w": "balde"
+   },
+   {
+    "w": "balé"
+   },
+   {
+    "w": "baleia"
+   },
+   {
+    "w": "bela"
+   },
+   {
+    "w": "bíblia"
+   },
+   {
+    "w": "dali"
+   },
+   {
+    "w": "dela"
+   },
+   {
+    "w": "dele"
+   },
+   {
+    "w": "hábil"
+   },
+   {
+    "w": "habilidade",
+    "pangram": true
+   },
+   {
+    "w": "ideal"
+   },
+   {
+    "w": "ilha"
+   },
+   {
+    "w": "labial"
+   },
+   {
+    "w": "leal"
+   },
+   {
+    "w": "lealdade"
+   },
+   {
+    "w": "leia"
+   },
+   {
+    "w": "lida"
+   },
+   {
+    "w": "lide"
+   }
+  ]
+ },
+ {
+  "id": "b-0148",
+  "center": "c",
+  "letters": [
+   "a",
+   "n",
+   "p",
+   "r",
+   "t",
+   "u"
+  ],
+  "words": [
+   {
+    "w": "açúcar"
+   },
+   {
+    "w": "acupuntura",
+    "pangram": true
+   },
+   {
+    "w": "arca"
+   },
+   {
+    "w": "arcar"
+   },
+   {
+    "w": "arranca"
+   },
+   {
+    "w": "arrancar"
+   },
+   {
+    "w": "ataca"
+   },
+   {
+    "w": "atacar"
+   },
+   {
+    "w": "caça"
+   },
+   {
+    "w": "caçar"
+   },
+   {
+    "w": "cacau"
+   },
+   {
+    "w": "cana"
+   },
+   {
+    "w": "canta"
+   },
+   {
+    "w": "cantar"
+   },
+   {
+    "w": "capa"
+   },
+   {
+    "w": "capta"
+   },
+   {
+    "w": "captar"
+   },
+   {
+    "w": "captura"
+   },
+   {
+    "w": "capturar"
+   },
+   {
+    "w": "cara"
+   },
+   {
+    "w": "carcaça"
+   },
+   {
+    "w": "carta"
+   },
+   {
+    "w": "cata"
+   },
+   {
+    "w": "catar"
+   },
+   {
+    "w": "catarata"
+   },
+   {
+    "w": "catraca"
+   },
+   {
+    "w": "cura"
+   },
+   {
+    "w": "curar"
+   },
+   {
+    "w": "curta"
+   },
+   {
+    "w": "nuca"
+   },
+   {
+    "w": "nunca"
+   },
+   {
+    "w": "pacata"
+   },
+   {
+    "w": "praça"
+   },
+   {
+    "w": "raça"
+   },
+   {
+    "w": "taça"
+   },
+   {
+    "w": "traça"
+   },
+   {
+    "w": "traçar"
+   },
+   {
+    "w": "trança"
+   },
+   {
+    "w": "trancar"
+   }
+  ]
+ },
+ {
+  "id": "b-0149",
+  "center": "u",
+  "letters": [
+   "a",
+   "c",
+   "m",
+   "o",
+   "p",
+   "t"
+  ],
+  "words": [
+   {
+    "w": "amou"
+   },
+   {
+    "w": "atacou"
+   },
+   {
+    "w": "atua"
+   },
+   {
+    "w": "atuação"
+   },
+   {
+    "w": "atuam"
+   },
+   {
+    "w": "atum"
+   },
+   {
+    "w": "atuou"
+   },
+   {
+    "w": "auto"
+   },
+   {
+    "w": "automação"
+   },
+   {
+    "w": "cacau"
+   },
+   {
+    "w": "caução"
+   },
+   {
+    "w": "computação",
+    "pangram": true
+   },
+   {
+    "w": "comum"
+   },
+   {
+    "w": "comutação"
+   },
+   {
+    "w": "cupom"
+   },
+   {
+    "w": "matou"
+   },
+   {
+    "w": "muco"
+   },
+   {
+    "w": "mutação"
+   },
+   {
+    "w": "mútua"
+   },
+   {
+    "w": "mútuo"
+   },
+   {
+    "w": "ocupa"
+   },
+   {
+    "w": "ocupação"
+   },
+   {
+    "w": "ocupam"
+   },
+   {
+    "w": "ocupou"
+   },
+   {
+    "w": "optou"
+   },
+   {
+    "w": "ouça"
+   },
+   {
+    "w": "ouçam"
+   },
+   {
+    "w": "ouço"
+   },
+   {
+    "w": "pauta"
+   },
+   {
+    "w": "pouca"
+   },
+   {
+    "w": "pouco"
+   },
+   {
+    "w": "poupa"
+   },
+   {
+    "w": "poupou"
+   },
+   {
+    "w": "puma"
+   },
+   {
+    "w": "tampouco",
+    "pangram": true
+   },
+   {
+    "w": "tatu"
+   },
+   {
+    "w": "tocou"
+   },
+   {
+    "w": "tomou"
+   },
+   {
+    "w": "touca"
+   }
+  ]
+ },
+ {
+  "id": "b-0150",
+  "center": "a",
+  "letters": [
+   "e",
+   "f",
+   "l",
+   "n",
+   "r",
+   "u"
+  ],
+  "words": [
+   {
+    "w": "alfa"
+   },
+   {
+    "w": "anel"
+   },
+   {
+    "w": "anual"
+   },
+   {
+    "w": "anula"
+   },
+   {
+    "w": "anular"
+   },
+   {
+    "w": "área"
+   },
+   {
+    "w": "arena"
+   },
+   {
+    "w": "aula"
+   },
+   {
+    "w": "aura"
+   },
+   {
+    "w": "erra"
+   },
+   {
+    "w": "errar"
+   },
+   {
+    "w": "fala"
+   },
+   {
+    "w": "falar"
+   },
+   {
+    "w": "falará"
+   },
+   {
+    "w": "fale"
+   },
+   {
+    "w": "fará"
+   },
+   {
+    "w": "farra"
+   },
+   {
+    "w": "fauna"
+   },
+   {
+    "w": "fera"
+   },
+   {
+    "w": "férrea"
+   },
+   {
+    "w": "frear"
+   },
+   {
+    "w": "funeral",
+    "pangram": true
+   },
+   {
+    "w": "fura"
+   },
+   {
+    "w": "furar"
+   },
+   {
+    "w": "leal"
+   },
+   {
+    "w": "luar"
+   },
+   {
+    "w": "lula"
+   },
+   {
+    "w": "lunar"
+   },
+   {
+    "w": "nana"
+   },
+   {
+    "w": "narra"
+   },
+   {
+    "w": "narrar"
+   },
+   {
+    "w": "nela"
+   },
+   {
+    "w": "neural"
+   },
+   {
+    "w": "real"
+   },
+   {
+    "w": "renal"
+   },
+   {
+    "w": "rural"
+   },
+   {
+    "w": "urna"
+   }
+  ]
+ },
+ {
+  "id": "b-0151",
+  "center": "p",
+  "letters": [
+   "a",
+   "e",
+   "m",
+   "n",
+   "o",
+   "t"
+  ],
+  "words": [
+   {
+    "w": "aponta"
+   },
+   {
+    "w": "apontam"
+   },
+   {
+    "w": "aponte"
+   },
+   {
+    "w": "apto"
+   },
+   {
+    "w": "empata"
+   },
+   {
+    "w": "empate"
+   },
+   {
+    "w": "etapa"
+   },
+   {
+    "w": "mapa"
+   },
+   {
+    "w": "mapeamento",
+    "pangram": true
+   },
+   {
+    "w": "opõe"
+   },
+   {
+    "w": "opõem"
+   },
+   {
+    "w": "oponente"
+   },
+   {
+    "w": "opta"
+   },
+   {
+    "w": "optam"
+   },
+   {
+    "w": "opte"
+   },
+   {
+    "w": "pampa"
+   },
+   {
+    "w": "pane"
+   },
+   {
+    "w": "panetone"
+   },
+   {
+    "w": "pano"
+   },
+   {
+    "w": "pântano"
+   },
+   {
+    "w": "panteão"
+   },
+   {
+    "w": "papa"
+   },
+   {
+    "w": "papão"
+   },
+   {
+    "w": "papo"
+   },
+   {
+    "w": "pata"
+   },
+   {
+    "w": "patente"
+   },
+   {
+    "w": "pato"
+   },
+   {
+    "w": "peão"
+   },
+   {
+    "w": "pena"
+   },
+   {
+    "w": "pente"
+   },
+   {
+    "w": "põem"
+   },
+   {
+    "w": "poema"
+   },
+   {
+    "w": "poente"
+   },
+   {
+    "w": "poeta"
+   },
+   {
+    "w": "pompa"
+   },
+   {
+    "w": "ponta"
+   },
+   {
+    "w": "pontapé"
+   },
+   {
+    "w": "ponte"
+   },
+   {
+    "w": "ponto"
+   },
+   {
+    "w": "popa"
+   },
+   {
+    "w": "pote"
+   },
+   {
+    "w": "potente"
+   },
+   {
+    "w": "tampa"
+   },
+   {
+    "w": "tampão"
+   },
+   {
+    "w": "tampe"
+   },
+   {
+    "w": "tampo"
+   },
+   {
+    "w": "tapa"
+   },
+   {
+    "w": "tapete"
+   },
+   {
+    "w": "tempão"
+   },
+   {
+    "w": "tempo"
+   },
+   {
+    "w": "topa"
+   },
+   {
+    "w": "topo"
+   }
+  ]
+ },
+ {
+  "id": "b-0152",
+  "center": "f",
+  "letters": [
+   "a",
+   "i",
+   "o",
+   "r",
+   "t",
+   "v"
+  ],
+  "words": [
+   {
+    "w": "afora"
+   },
+   {
+    "w": "fará"
+   },
+   {
+    "w": "farão"
+   },
+   {
+    "w": "faria"
+   },
+   {
+    "w": "farofa"
+   },
+   {
+    "w": "farra"
+   },
+   {
+    "w": "farta"
+   },
+   {
+    "w": "farto"
+   },
+   {
+    "w": "fatia"
+   },
+   {
+    "w": "fato"
+   },
+   {
+    "w": "fator"
+   },
+   {
+    "w": "favor"
+   },
+   {
+    "w": "favorita",
+    "pangram": true
+   },
+   {
+    "w": "favorito",
+    "pangram": true
+   },
+   {
+    "w": "fita"
+   },
+   {
+    "w": "fofa"
+   },
+   {
+    "w": "fofo"
+   },
+   {
+    "w": "fora"
+   },
+   {
+    "w": "foro"
+   },
+   {
+    "w": "forró"
+   },
+   {
+    "w": "foto"
+   },
+   {
+    "w": "fria"
+   },
+   {
+    "w": "frio"
+   },
+   {
+    "w": "frita"
+   },
+   {
+    "w": "fritar"
+   },
+   {
+    "w": "frito"
+   },
+   {
+    "w": "frota"
+   },
+   {
+    "w": "órfão"
+   },
+   {
+    "w": "tarifa"
+   }
+  ]
+ },
+ {
+  "id": "b-0153",
+  "center": "h",
+  "letters": [
+   "a",
+   "c",
+   "e",
+   "l",
+   "o",
+   "t"
+  ],
+  "words": [
+   {
+    "w": "acha"
+   },
+   {
+    "w": "ache"
+   },
+   {
+    "w": "acho"
+   },
+   {
+    "w": "acolhe"
+   },
+   {
+    "w": "alho"
+   },
+   {
+    "w": "atalho"
+   },
+   {
+    "w": "cachaça"
+   },
+   {
+    "w": "cache"
+   },
+   {
+    "w": "cachecol"
+   },
+   {
+    "w": "calha"
+   },
+   {
+    "w": "chão"
+   },
+   {
+    "w": "chata"
+   },
+   {
+    "w": "chato"
+   },
+   {
+    "w": "checa"
+   },
+   {
+    "w": "choca"
+   },
+   {
+    "w": "chocolate",
+    "pangram": true
+   },
+   {
+    "w": "coelho"
+   },
+   {
+    "w": "colcha"
+   },
+   {
+    "w": "colchão"
+   },
+   {
+    "w": "colhe"
+   },
+   {
+    "w": "halo"
+   },
+   {
+    "w": "hotel"
+   },
+   {
+    "w": "olha"
+   },
+   {
+    "w": "olhe"
+   },
+   {
+    "w": "olho"
+   },
+   {
+    "w": "tacho"
+   },
+   {
+    "w": "talha"
+   },
+   {
+    "w": "toalha"
+   },
+   {
+    "w": "tocha"
+   }
+  ]
+ },
+ {
+  "id": "b-0154",
+  "center": "d",
+  "letters": [
+   "a",
+   "i",
+   "l",
+   "o",
+   "q",
+   "u"
+  ],
+  "words": [
+   {
+    "w": "adia"
+   },
+   {
+    "w": "adiado"
+   },
+   {
+    "w": "aliado"
+   },
+   {
+    "w": "áudio"
+   },
+   {
+    "w": "dada"
+   },
+   {
+    "w": "dado"
+   },
+   {
+    "w": "dali"
+   },
+   {
+    "w": "daquilo",
+    "pangram": true
+   },
+   {
+    "w": "diluído"
+   },
+   {
+    "w": "diodo"
+   },
+   {
+    "w": "doado"
+   },
+   {
+    "w": "doida"
+   },
+   {
+    "w": "doido"
+   },
+   {
+    "w": "doou"
+   },
+   {
+    "w": "ídolo"
+   },
+   {
+    "w": "iodo"
+   },
+   {
+    "w": "lado"
+   },
+   {
+    "w": "laudo"
+   },
+   {
+    "w": "lida"
+   },
+   {
+    "w": "lido"
+   },
+   {
+    "w": "liquida"
+   },
+   {
+    "w": "líquido"
+   },
+   {
+    "w": "lodo"
+   },
+   {
+    "w": "odiado"
+   },
+   {
+    "w": "ódio"
+   }
+  ]
+ },
+ {
+  "id": "b-0155",
+  "center": "l",
+  "letters": [
+   "a",
+   "e",
+   "g",
+   "i",
+   "n",
+   "v"
+  ],
+  "words": [
+   {
+    "w": "ágil"
+   },
+   {
+    "w": "alega"
+   },
+   {
+    "w": "alia"
+   },
+   {
+    "w": "alienígena"
+   },
+   {
+    "w": "alivia"
+   },
+   {
+    "w": "anel"
+   },
+   {
+    "w": "aval"
+   },
+   {
+    "w": "avalia"
+   },
+   {
+    "w": "avalie"
+   },
+   {
+    "w": "elege"
+   },
+   {
+    "w": "eleva"
+   },
+   {
+    "w": "gala"
+   },
+   {
+    "w": "galega"
+   },
+   {
+    "w": "geleia"
+   },
+   {
+    "w": "genial"
+   },
+   {
+    "w": "ilegal"
+   },
+   {
+    "w": "inegável",
+    "pangram": true
+   },
+   {
+    "w": "inviável"
+   },
+   {
+    "w": "lava"
+   },
+   {
+    "w": "lavável"
+   },
+   {
+    "w": "lave"
+   },
+   {
+    "w": "leal"
+   },
+   {
+    "w": "legal"
+   },
+   {
+    "w": "legível"
+   },
+   {
+    "w": "leia"
+   },
+   {
+    "w": "leva"
+   },
+   {
+    "w": "levava"
+   },
+   {
+    "w": "leve"
+   },
+   {
+    "w": "levei"
+   },
+   {
+    "w": "liga"
+   },
+   {
+    "w": "ligava"
+   },
+   {
+    "w": "naval"
+   },
+   {
+    "w": "nela"
+   },
+   {
+    "w": "nele"
+   },
+   {
+    "w": "nível"
+   },
+   {
+    "w": "vala"
+   },
+   {
+    "w": "vale"
+   },
+   {
+    "w": "valia"
+   },
+   {
+    "w": "vela"
+   },
+   {
+    "w": "viável"
+   },
+   {
+    "w": "vigília"
+   },
+   {
+    "w": "vila"
+   },
+   {
+    "w": "vinil"
+   }
+  ]
+ },
+ {
+  "id": "b-0156",
+  "center": "l",
+  "letters": [
+   "a",
+   "d",
+   "e",
+   "i",
+   "t",
+   "v"
+  ],
+  "words": [
+   {
+    "w": "aldeia"
+   },
+   {
+    "w": "alia"
+   },
+   {
+    "w": "alivia"
+   },
+   {
+    "w": "alta"
+   },
+   {
+    "w": "ateliê"
+   },
+   {
+    "w": "atleta"
+   },
+   {
+    "w": "aval"
+   },
+   {
+    "w": "avalia"
+   },
+   {
+    "w": "avalie"
+   },
+   {
+    "w": "dali"
+   },
+   {
+    "w": "dela"
+   },
+   {
+    "w": "dele"
+   },
+   {
+    "w": "deleite"
+   },
+   {
+    "w": "edital"
+   },
+   {
+    "w": "eleva"
+   },
+   {
+    "w": "elite"
+   },
+   {
+    "w": "ideal"
+   },
+   {
+    "w": "lata"
+   },
+   {
+    "w": "late"
+   },
+   {
+    "w": "lava"
+   },
+   {
+    "w": "lavada"
+   },
+   {
+    "w": "lavável"
+   },
+   {
+    "w": "lave"
+   },
+   {
+    "w": "leal"
+   },
+   {
+    "w": "lealdade"
+   },
+   {
+    "w": "leia"
+   },
+   {
+    "w": "leite"
+   },
+   {
+    "w": "letal"
+   },
+   {
+    "w": "leva"
+   },
+   {
+    "w": "levada"
+   },
+   {
+    "w": "levava"
+   },
+   {
+    "w": "leve"
+   },
+   {
+    "w": "levei"
+   },
+   {
+    "w": "lida"
+   },
+   {
+    "w": "lide"
+   },
+   {
+    "w": "tela"
+   },
+   {
+    "w": "vala"
+   },
+   {
+    "w": "vale"
+   },
+   {
+    "w": "valia"
+   },
+   {
+    "w": "valida"
+   },
+   {
+    "w": "validade"
+   },
+   {
+    "w": "vela"
+   },
+   {
+    "w": "viável"
+   },
+   {
+    "w": "vila"
+   },
+   {
+    "w": "vital"
+   },
+   {
+    "w": "vitalidade",
+    "pangram": true
+   }
+  ]
+ },
+ {
+  "id": "b-0157",
+  "center": "u",
+  "letters": [
+   "a",
+   "c",
+   "d",
+   "l",
+   "o",
+   "r"
+  ],
+  "words": [
+   {
+    "w": "acordou"
+   },
+   {
+    "w": "açúcar"
+   },
+   {
+    "w": "adorou"
+   },
+   {
+    "w": "árduo"
+   },
+   {
+    "w": "aula"
+   },
+   {
+    "w": "aura"
+   },
+   {
+    "w": "cacau"
+   },
+   {
+    "w": "caçula"
+   },
+   {
+    "w": "calcula"
+   },
+   {
+    "w": "calculado"
+   },
+   {
+    "w": "calculadora",
+    "pangram": true
+   },
+   {
+    "w": "calcular"
+   },
+   {
+    "w": "cálculo"
+   },
+   {
+    "w": "calou"
+   },
+   {
+    "w": "calouro"
+   },
+   {
+    "w": "caução"
+   },
+   {
+    "w": "cauda"
+   },
+   {
+    "w": "colocou"
+   },
+   {
+    "w": "couro"
+   },
+   {
+    "w": "cura"
+   },
+   {
+    "w": "curado"
+   },
+   {
+    "w": "curador"
+   },
+   {
+    "w": "curar"
+   },
+   {
+    "w": "curou"
+   },
+   {
+    "w": "curral"
+   },
+   {
+    "w": "doçura"
+   },
+   {
+    "w": "doou"
+   },
+   {
+    "w": "dourada"
+   },
+   {
+    "w": "dourar"
+   },
+   {
+    "w": "dura"
+   },
+   {
+    "w": "duração"
+   },
+   {
+    "w": "duradouro"
+   },
+   {
+    "w": "durão"
+   },
+   {
+    "w": "durar"
+   },
+   {
+    "w": "duro"
+   },
+   {
+    "w": "durou"
+   },
+   {
+    "w": "laudo"
+   },
+   {
+    "w": "locução"
+   },
+   {
+    "w": "louca"
+   },
+   {
+    "w": "louco"
+   },
+   {
+    "w": "loucura"
+   },
+   {
+    "w": "loura"
+   },
+   {
+    "w": "louro"
+   },
+   {
+    "w": "luar"
+   },
+   {
+    "w": "lucrar"
+   },
+   {
+    "w": "lucro"
+   },
+   {
+    "w": "lula"
+   },
+   {
+    "w": "ocular"
+   },
+   {
+    "w": "oráculo"
+   },
+   {
+    "w": "ouça"
+   },
+   {
+    "w": "ouço"
+   },
+   {
+    "w": "rodou"
+   },
+   {
+    "w": "rolou"
+   },
+   {
+    "w": "rúcula"
+   },
+   {
+    "w": "rural"
+   }
+  ]
+ },
+ {
+  "id": "b-0158",
+  "center": "c",
+  "letters": [
+   "d",
+   "i",
+   "l",
+   "o",
+   "r",
+   "u"
+  ],
+  "words": [
+   {
+    "w": "ciclo"
+   },
+   {
+    "w": "circo"
+   },
+   {
+    "w": "círculo"
+   },
+   {
+    "w": "cloro"
+   },
+   {
+    "w": "coco"
+   },
+   {
+    "w": "colo"
+   },
+   {
+    "w": "coloco"
+   },
+   {
+    "w": "colocou"
+   },
+   {
+    "w": "colorido"
+   },
+   {
+    "w": "colorir"
+   },
+   {
+    "w": "coro"
+   },
+   {
+    "w": "corri"
+   },
+   {
+    "w": "corrido"
+   },
+   {
+    "w": "corro"
+   },
+   {
+    "w": "couro"
+   },
+   {
+    "w": "crio"
+   },
+   {
+    "w": "criou"
+   },
+   {
+    "w": "crocodilo"
+   },
+   {
+    "w": "cuido"
+   },
+   {
+    "w": "cuidou"
+   },
+   {
+    "w": "curou"
+   },
+   {
+    "w": "currículo"
+   },
+   {
+    "w": "dócil"
+   },
+   {
+    "w": "licor"
+   },
+   {
+    "w": "lírico"
+   },
+   {
+    "w": "louco"
+   },
+   {
+    "w": "lúcido"
+   },
+   {
+    "w": "lucro"
+   },
+   {
+    "w": "lúdico"
+   },
+   {
+    "w": "ócio"
+   },
+   {
+    "w": "ocorrido"
+   },
+   {
+    "w": "ouço"
+   },
+   {
+    "w": "rico"
+   },
+   {
+    "w": "ridículo",
+    "pangram": true
+   }
+  ]
+ },
+ {
+  "id": "b-0159",
+  "center": "u",
+  "letters": [
+   "a",
+   "c",
+   "o",
+   "p",
+   "r",
+   "v"
+  ],
+  "words": [
+   {
+    "w": "açúcar"
+   },
+   {
+    "w": "aprovou"
+   },
+   {
+    "w": "apura"
+   },
+   {
+    "w": "apuração"
+   },
+   {
+    "w": "apurar"
+   },
+   {
+    "w": "apurou"
+   },
+   {
+    "w": "aura"
+   },
+   {
+    "w": "cacau"
+   },
+   {
+    "w": "caução"
+   },
+   {
+    "w": "corrupção"
+   },
+   {
+    "w": "couro"
+   },
+   {
+    "w": "cura"
+   },
+   {
+    "w": "curar"
+   },
+   {
+    "w": "curou"
+   },
+   {
+    "w": "curva"
+   },
+   {
+    "w": "curvo"
+   },
+   {
+    "w": "ocupa"
+   },
+   {
+    "w": "ocupação"
+   },
+   {
+    "w": "ocupar"
+   },
+   {
+    "w": "ocupava"
+   },
+   {
+    "w": "ocupou"
+   },
+   {
+    "w": "ouça"
+   },
+   {
+    "w": "ouço"
+   },
+   {
+    "w": "parou"
+   },
+   {
+    "w": "pouca"
+   },
+   {
+    "w": "pouco"
+   },
+   {
+    "w": "poupa"
+   },
+   {
+    "w": "poupar"
+   },
+   {
+    "w": "poupou"
+   },
+   {
+    "w": "procura"
+   },
+   {
+    "w": "procuração"
+   },
+   {
+    "w": "procurar"
+   },
+   {
+    "w": "procurava",
+    "pangram": true
+   },
+   {
+    "w": "procuro"
+   },
+   {
+    "w": "procurou"
+   },
+   {
+    "w": "provocou"
+   },
+   {
+    "w": "provou"
+   },
+   {
+    "w": "pura"
+   },
+   {
+    "w": "puro"
+   },
+   {
+    "w": "púrpura"
+   },
+   {
+    "w": "roupa"
+   },
+   {
+    "w": "roupão"
+   },
+   {
+    "w": "vácuo"
+   },
+   {
+    "w": "voou"
+   }
+  ]
+ },
+ {
+  "id": "b-0160",
+  "center": "l",
+  "letters": [
+   "a",
+   "e",
+   "n",
+   "t",
+   "u",
+   "v"
+  ],
+  "words": [
+   {
+    "w": "alta"
+   },
+   {
+    "w": "anel"
+   },
+   {
+    "w": "anual"
+   },
+   {
+    "w": "anula"
+   },
+   {
+    "w": "atleta"
+   },
+   {
+    "w": "atual"
+   },
+   {
+    "w": "aula"
+   },
+   {
+    "w": "aval"
+   },
+   {
+    "w": "avental"
+   },
+   {
+    "w": "eleva"
+   },
+   {
+    "w": "eventual",
+    "pangram": true
+   },
+   {
+    "w": "lata"
+   },
+   {
+    "w": "late"
+   },
+   {
+    "w": "latente"
+   },
+   {
+    "w": "lava"
+   },
+   {
+    "w": "lavável"
+   },
+   {
+    "w": "lave"
+   },
+   {
+    "w": "leal"
+   },
+   {
+    "w": "lente"
+   },
+   {
+    "w": "letal"
+   },
+   {
+    "w": "leva"
+   },
+   {
+    "w": "levanta"
+   },
+   {
+    "w": "levantava"
+   },
+   {
+    "w": "levante"
+   },
+   {
+    "w": "levava"
+   },
+   {
+    "w": "leve"
+   },
+   {
+    "w": "lula"
+   },
+   {
+    "w": "luta"
+   },
+   {
+    "w": "lutava"
+   },
+   {
+    "w": "lute"
+   },
+   {
+    "w": "luva"
+   },
+   {
+    "w": "naval"
+   },
+   {
+    "w": "nela"
+   },
+   {
+    "w": "nele"
+   },
+   {
+    "w": "tela"
+   },
+   {
+    "w": "túnel"
+   },
+   {
+    "w": "tutela"
+   },
+   {
+    "w": "vala"
+   },
+   {
+    "w": "vale"
+   },
+   {
+    "w": "válvula"
+   },
+   {
+    "w": "vela"
+   }
+  ]
+ },
+ {
+  "id": "b-0161",
+  "center": "l",
+  "letters": [
+   "a",
+   "e",
+   "g",
+   "i",
+   "m",
+   "r"
+  ],
+  "words": [
+   {
+    "w": "ágil"
+   },
+   {
+    "w": "alargar"
+   },
+   {
+    "w": "alarme"
+   },
+   {
+    "w": "alega"
+   },
+   {
+    "w": "alegam"
+   },
+   {
+    "w": "alegar"
+   },
+   {
+    "w": "alegra"
+   },
+   {
+    "w": "alegrar"
+   },
+   {
+    "w": "além"
+   },
+   {
+    "w": "alemã"
+   },
+   {
+    "w": "alergia"
+   },
+   {
+    "w": "alia"
+   },
+   {
+    "w": "aliar"
+   },
+   {
+    "w": "alma"
+   },
+   {
+    "w": "amarela"
+   },
+   {
+    "w": "argila"
+   },
+   {
+    "w": "elege"
+   },
+   {
+    "w": "eleger"
+   },
+   {
+    "w": "elegeram"
+   },
+   {
+    "w": "gala"
+   },
+   {
+    "w": "galega"
+   },
+   {
+    "w": "galera"
+   },
+   {
+    "w": "galeria"
+   },
+   {
+    "w": "geleia"
+   },
+   {
+    "w": "geral"
+   },
+   {
+    "w": "gergelim"
+   },
+   {
+    "w": "girl"
+   },
+   {
+    "w": "graal"
+   },
+   {
+    "w": "grill"
+   },
+   {
+    "w": "ilegal"
+   },
+   {
+    "w": "irreal"
+   },
+   {
+    "w": "lágrima"
+   },
+   {
+    "w": "lama"
+   },
+   {
+    "w": "lareira"
+   },
+   {
+    "w": "larga"
+   },
+   {
+    "w": "largar"
+   },
+   {
+    "w": "leal"
+   },
+   {
+    "w": "leem"
+   },
+   {
+    "w": "legal"
+   },
+   {
+    "w": "leia"
+   },
+   {
+    "w": "leiam"
+   },
+   {
+    "w": "lema"
+   },
+   {
+    "w": "leram"
+   },
+   {
+    "w": "lerem"
+   },
+   {
+    "w": "liam"
+   },
+   {
+    "w": "liga"
+   },
+   {
+    "w": "ligam"
+   },
+   {
+    "w": "ligar"
+   },
+   {
+    "w": "ligaram"
+   },
+   {
+    "w": "ligeira"
+   },
+   {
+    "w": "lima"
+   },
+   {
+    "w": "limiar"
+   },
+   {
+    "w": "lira"
+   },
+   {
+    "w": "mala"
+   },
+   {
+    "w": "malária"
+   },
+   {
+    "w": "milagre",
+    "pangram": true
+   },
+   {
+    "w": "ramal"
+   },
+   {
+    "w": "real"
+   },
+   {
+    "w": "relé"
+   },
+   {
+    "w": "reler"
+   },
+   {
+    "w": "rímel"
+   }
+  ]
+ },
+ {
+  "id": "b-0162",
+  "center": "a",
+  "letters": [
+   "i",
+   "o",
+   "p",
+   "q",
+   "r",
+   "u"
+  ],
+  "words": [
+   {
+    "w": "apoia"
+   },
+   {
+    "w": "apoiar"
+   },
+   {
+    "w": "apoio"
+   },
+   {
+    "w": "apoiou"
+   },
+   {
+    "w": "apropriar"
+   },
+   {
+    "w": "apura"
+   },
+   {
+    "w": "apurar"
+   },
+   {
+    "w": "apurou"
+   },
+   {
+    "w": "aquário"
+   },
+   {
+    "w": "aqui"
+   },
+   {
+    "w": "arroio"
+   },
+   {
+    "w": "aura"
+   },
+   {
+    "w": "iria"
+   },
+   {
+    "w": "orar"
+   },
+   {
+    "w": "paira"
+   },
+   {
+    "w": "papa"
+   },
+   {
+    "w": "papai"
+   },
+   {
+    "w": "papão"
+   },
+   {
+    "w": "papo"
+   },
+   {
+    "w": "para"
+   },
+   {
+    "w": "parar"
+   },
+   {
+    "w": "paro"
+   },
+   {
+    "w": "paróquia",
+    "pangram": true
+   },
+   {
+    "w": "parou"
+   },
+   {
+    "w": "piora"
+   },
+   {
+    "w": "piorar"
+   },
+   {
+    "w": "pipa"
+   },
+   {
+    "w": "pira"
+   },
+   {
+    "w": "popa"
+   },
+   {
+    "w": "porão"
+   },
+   {
+    "w": "poupa"
+   },
+   {
+    "w": "poupar"
+   },
+   {
+    "w": "praia"
+   },
+   {
+    "w": "proa"
+   },
+   {
+    "w": "pura"
+   },
+   {
+    "w": "púrpura"
+   },
+   {
+    "w": "raia"
+   },
+   {
+    "w": "raio"
+   },
+   {
+    "w": "raro"
+   },
+   {
+    "w": "roupa"
+   },
+   {
+    "w": "roupão"
+   }
+  ]
+ },
+ {
+  "id": "b-0163",
+  "center": "a",
+  "letters": [
+   "c",
+   "e",
+   "g",
+   "i",
+   "n",
+   "x"
+  ],
+  "words": [
+   {
+    "w": "açaí"
+   },
+   {
+    "w": "acne"
+   },
+   {
+    "w": "agência"
+   },
+   {
+    "w": "agia"
+   },
+   {
+    "w": "anexa"
+   },
+   {
+    "w": "caça"
+   },
+   {
+    "w": "caia"
+   },
+   {
+    "w": "caixa"
+   },
+   {
+    "w": "cana"
+   },
+   {
+    "w": "caneca"
+   },
+   {
+    "w": "canina"
+   },
+   {
+    "w": "cega"
+   },
+   {
+    "w": "ceia"
+   },
+   {
+    "w": "cena"
+   },
+   {
+    "w": "ciência"
+   },
+   {
+    "w": "cigana"
+   },
+   {
+    "w": "encaixa"
+   },
+   {
+    "w": "encaixe"
+   },
+   {
+    "w": "engana"
+   },
+   {
+    "w": "engane"
+   },
+   {
+    "w": "enganei"
+   },
+   {
+    "w": "exigência",
+    "pangram": true
+   },
+   {
+    "w": "exigia"
+   },
+   {
+    "w": "ganância"
+   },
+   {
+    "w": "gincana"
+   },
+   {
+    "w": "inicia"
+   },
+   {
+    "w": "nana"
+   }
+  ]
+ },
+ {
+  "id": "b-0164",
+  "center": "u",
+  "letters": [
+   "a",
+   "c",
+   "d",
+   "l",
+   "o",
+   "p"
+  ],
+  "words": [
+   {
+    "w": "aula"
+   },
+   {
+    "w": "cacau"
+   },
+   {
+    "w": "caçula"
+   },
+   {
+    "w": "calcula"
+   },
+   {
+    "w": "calculado"
+   },
+   {
+    "w": "cálculo"
+   },
+   {
+    "w": "calou"
+   },
+   {
+    "w": "caução"
+   },
+   {
+    "w": "cauda"
+   },
+   {
+    "w": "colocou"
+   },
+   {
+    "w": "culpa"
+   },
+   {
+    "w": "culpado",
+    "pangram": true
+   },
+   {
+    "w": "cúpula"
+   },
+   {
+    "w": "doou"
+   },
+   {
+    "w": "dupla"
+   },
+   {
+    "w": "duplo"
+   },
+   {
+    "w": "laudo"
+   },
+   {
+    "w": "locução"
+   },
+   {
+    "w": "louca"
+   },
+   {
+    "w": "louco"
+   },
+   {
+    "w": "lula"
+   },
+   {
+    "w": "lupa"
+   },
+   {
+    "w": "ocupa"
+   },
+   {
+    "w": "ocupação"
+   },
+   {
+    "w": "ocupado"
+   },
+   {
+    "w": "ocupou"
+   },
+   {
+    "w": "ouça"
+   },
+   {
+    "w": "ouço"
+   },
+   {
+    "w": "população"
+   },
+   {
+    "w": "pouca"
+   },
+   {
+    "w": "pouco"
+   },
+   {
+    "w": "poupa"
+   },
+   {
+    "w": "poupado"
+   },
+   {
+    "w": "poupou"
+   },
+   {
+    "w": "pula"
+   },
+   {
+    "w": "pulo"
+   },
+   {
+    "w": "pulou"
+   }
+  ]
+ },
+ {
+  "id": "b-0165",
+  "center": "l",
+  "letters": [
+   "a",
+   "f",
+   "m",
+   "o",
+   "r",
+   "u"
+  ],
+  "words": [
+   {
+    "w": "alfa"
+   },
+   {
+    "w": "alma"
+   },
+   {
+    "w": "aula"
+   },
+   {
+    "w": "fala"
+   },
+   {
+    "w": "falam"
+   },
+   {
+    "w": "falar"
+   },
+   {
+    "w": "falará"
+   },
+   {
+    "w": "falaram"
+   },
+   {
+    "w": "falo"
+   },
+   {
+    "w": "falou"
+   },
+   {
+    "w": "flor"
+   },
+   {
+    "w": "flora"
+   },
+   {
+    "w": "floral"
+   },
+   {
+    "w": "flúor"
+   },
+   {
+    "w": "formal"
+   },
+   {
+    "w": "formol"
+   },
+   {
+    "w": "fórmula",
+    "pangram": true
+   },
+   {
+    "w": "formular",
+    "pangram": true
+   },
+   {
+    "w": "lama"
+   },
+   {
+    "w": "loura"
+   },
+   {
+    "w": "louro"
+   },
+   {
+    "w": "luar"
+   },
+   {
+    "w": "lula"
+   },
+   {
+    "w": "mala"
+   },
+   {
+    "w": "mola"
+   },
+   {
+    "w": "moral"
+   },
+   {
+    "w": "mula"
+   },
+   {
+    "w": "mural"
+   },
+   {
+    "w": "oral"
+   },
+   {
+    "w": "orla"
+   },
+   {
+    "w": "ralo"
+   },
+   {
+    "w": "ramal"
+   },
+   {
+    "w": "rolam"
+   },
+   {
+    "w": "rolar"
+   },
+   {
+    "w": "rolo"
+   },
+   {
+    "w": "rolou"
+   },
+   {
+    "w": "rural"
+   }
+  ]
+ },
+ {
+  "id": "b-0166",
+  "center": "o",
+  "letters": [
+   "f",
+   "i",
+   "m",
+   "n",
+   "r",
+   "u"
+  ],
+  "words": [
+   {
+    "w": "fino"
+   },
+   {
+    "w": "firmou"
+   },
+   {
+    "w": "fofo"
+   },
+   {
+    "w": "formou"
+   },
+   {
+    "w": "forno"
+   },
+   {
+    "w": "foro"
+   },
+   {
+    "w": "forró"
+   },
+   {
+    "w": "fórum"
+   },
+   {
+    "w": "frio"
+   },
+   {
+    "w": "fumo"
+   },
+   {
+    "w": "furo"
+   },
+   {
+    "w": "furor"
+   },
+   {
+    "w": "informo"
+   },
+   {
+    "w": "informou",
+    "pangram": true
+   },
+   {
+    "w": "mimo"
+   },
+   {
+    "w": "mínimo"
+   },
+   {
+    "w": "miro"
+   },
+   {
+    "w": "mofo"
+   },
+   {
+    "w": "morno"
+   },
+   {
+    "w": "moro"
+   },
+   {
+    "w": "morou"
+   },
+   {
+    "w": "morri"
+   },
+   {
+    "w": "morro"
+   },
+   {
+    "w": "muro"
+   },
+   {
+    "w": "nono"
+   },
+   {
+    "w": "rumo"
+   },
+   {
+    "w": "rumor"
+   }
+  ]
+ },
+ {
+  "id": "b-0167",
+  "center": "b",
+  "letters": [
+   "a",
+   "c",
+   "e",
+   "n",
+   "o",
+   "t"
+  ],
+  "words": [
+   {
+    "w": "abacate"
+   },
+   {
+    "w": "abençoa"
+   },
+   {
+    "w": "abençoe"
+   },
+   {
+    "w": "abono"
+   },
+   {
+    "w": "acaba"
+   },
+   {
+    "w": "acabe"
+   },
+   {
+    "w": "acabo"
+   },
+   {
+    "w": "babá"
+   },
+   {
+    "w": "bacana"
+   },
+   {
+    "w": "baço"
+   },
+   {
+    "w": "banana"
+   },
+   {
+    "w": "banca"
+   },
+   {
+    "w": "banco"
+   },
+   {
+    "w": "bata"
+   },
+   {
+    "w": "batata"
+   },
+   {
+    "w": "bate"
+   },
+   {
+    "w": "batente"
+   },
+   {
+    "w": "bato"
+   },
+   {
+    "w": "beba"
+   },
+   {
+    "w": "bebê"
+   },
+   {
+    "w": "bebo"
+   },
+   {
+    "w": "beco"
+   },
+   {
+    "w": "boate"
+   },
+   {
+    "w": "boato"
+   },
+   {
+    "w": "bobo"
+   },
+   {
+    "w": "boca"
+   },
+   {
+    "w": "boné"
+   },
+   {
+    "w": "boneca"
+   },
+   {
+    "w": "boneco"
+   },
+   {
+    "w": "bota"
+   },
+   {
+    "w": "botão"
+   },
+   {
+    "w": "bote"
+   },
+   {
+    "w": "boteco"
+   },
+   {
+    "w": "cabana"
+   },
+   {
+    "w": "cabe"
+   },
+   {
+    "w": "cabeça"
+   },
+   {
+    "w": "cabeçote"
+   },
+   {
+    "w": "cabo"
+   },
+   {
+    "w": "obtenção",
+    "pangram": true
+   },
+   {
+    "w": "tabaco"
+   }
+  ]
+ },
+ {
+  "id": "b-0168",
+  "center": "l",
+  "letters": [
+   "a",
+   "d",
+   "e",
+   "n",
+   "o",
+   "t"
+  ],
+  "words": [
+   {
+    "w": "alento"
+   },
+   {
+    "w": "alta"
+   },
+   {
+    "w": "alto"
+   },
+   {
+    "w": "anel"
+   },
+   {
+    "w": "atleta"
+   },
+   {
+    "w": "dela"
+   },
+   {
+    "w": "dele"
+   },
+   {
+    "w": "dental"
+   },
+   {
+    "w": "etanol"
+   },
+   {
+    "w": "lado"
+   },
+   {
+    "w": "lata"
+   },
+   {
+    "w": "latão"
+   },
+   {
+    "w": "late"
+   },
+   {
+    "w": "latente"
+   },
+   {
+    "w": "lato"
+   },
+   {
+    "w": "leal"
+   },
+   {
+    "w": "lealdade"
+   },
+   {
+    "w": "leão"
+   },
+   {
+    "w": "lenda"
+   },
+   {
+    "w": "lendo"
+   },
+   {
+    "w": "lente"
+   },
+   {
+    "w": "lento"
+   },
+   {
+    "w": "leoa"
+   },
+   {
+    "w": "letal"
+   },
+   {
+    "w": "lodo"
+   },
+   {
+    "w": "lona"
+   },
+   {
+    "w": "lotada"
+   },
+   {
+    "w": "lotado"
+   },
+   {
+    "w": "lote"
+   },
+   {
+    "w": "nela"
+   },
+   {
+    "w": "nele"
+   },
+   {
+    "w": "neonatal"
+   },
+   {
+    "w": "talento"
+   },
+   {
+    "w": "talo"
+   },
+   {
+    "w": "tela"
+   },
+   {
+    "w": "telão"
+   },
+   {
+    "w": "tola"
+   },
+   {
+    "w": "tolo"
+   },
+   {
+    "w": "tonelada",
+    "pangram": true
+   },
+   {
+    "w": "total"
+   }
+  ]
+ },
+ {
+  "id": "b-0169",
+  "center": "p",
+  "letters": [
+   "d",
+   "e",
+   "i",
+   "o",
+   "r",
+   "t"
+  ],
+  "words": [
+   {
+    "w": "depor"
+   },
+   {
+    "w": "opõe"
+   },
+   {
+    "w": "opor"
+   },
+   {
+    "w": "opte"
+   },
+   {
+    "w": "optei"
+   },
+   {
+    "w": "pede"
+   },
+   {
+    "w": "pedi"
+   },
+   {
+    "w": "pedido"
+   },
+   {
+    "w": "pedir"
+   },
+   {
+    "w": "pedreiro"
+   },
+   {
+    "w": "peito"
+   },
+   {
+    "w": "perde"
+   },
+   {
+    "w": "perdedor"
+   },
+   {
+    "w": "perder"
+   },
+   {
+    "w": "perdi"
+   },
+   {
+    "w": "perdido"
+   },
+   {
+    "w": "perdoe"
+   },
+   {
+    "w": "período"
+   },
+   {
+    "w": "perito"
+   },
+   {
+    "w": "perto"
+   },
+   {
+    "w": "pior"
+   },
+   {
+    "w": "pode"
+   },
+   {
+    "w": "poder"
+   },
+   {
+    "w": "poderei"
+   },
+   {
+    "w": "poderio"
+   },
+   {
+    "w": "pódio"
+   },
+   {
+    "w": "podre"
+   },
+   {
+    "w": "porte"
+   },
+   {
+    "w": "porteiro"
+   },
+   {
+    "w": "pote"
+   },
+   {
+    "w": "prédio"
+   },
+   {
+    "w": "pretérito"
+   },
+   {
+    "w": "preto"
+   },
+   {
+    "w": "propõe"
+   },
+   {
+    "w": "propor"
+   },
+   {
+    "w": "próprio"
+   },
+   {
+    "w": "protetor"
+   },
+   {
+    "w": "protótipo"
+   },
+   {
+    "w": "repertório"
+   },
+   {
+    "w": "repete"
+   },
+   {
+    "w": "repeti"
+   },
+   {
+    "w": "repetido",
+    "pangram": true
+   },
+   {
+    "w": "repetir"
+   },
+   {
+    "w": "repito"
+   },
+   {
+    "w": "repor"
+   },
+   {
+    "w": "repórter"
+   },
+   {
+    "w": "tipo"
+   },
+   {
+    "w": "topo"
+   },
+   {
+    "w": "torpedo"
+   },
+   {
+    "w": "tripé"
+   }
+  ]
+ },
+ {
+  "id": "b-0170",
+  "center": "f",
+  "letters": [
+   "a",
+   "b",
+   "g",
+   "i",
+   "o",
+   "r"
+  ],
+  "words": [
+   {
+    "w": "afogar"
+   },
+   {
+    "w": "afora"
+   },
+   {
+    "w": "bafo"
+   },
+   {
+    "w": "biografia",
+    "pangram": true
+   },
+   {
+    "w": "fará"
+   },
+   {
+    "w": "farão"
+   },
+   {
+    "w": "faria"
+   },
+   {
+    "w": "farofa"
+   },
+   {
+    "w": "farra"
+   },
+   {
+    "w": "fibra"
+   },
+   {
+    "w": "figo"
+   },
+   {
+    "w": "fobia"
+   },
+   {
+    "w": "fofa"
+   },
+   {
+    "w": "fofo"
+   },
+   {
+    "w": "fogão"
+   },
+   {
+    "w": "fogo"
+   },
+   {
+    "w": "fora"
+   },
+   {
+    "w": "foro"
+   },
+   {
+    "w": "forró"
+   },
+   {
+    "w": "fria"
+   },
+   {
+    "w": "frigobar",
+    "pangram": true
+   },
+   {
+    "w": "frio"
+   },
+   {
+    "w": "garfo"
+   },
+   {
+    "w": "garrafa"
+   },
+   {
+    "w": "girafa"
+   },
+   {
+    "w": "grafia"
+   },
+   {
+    "w": "grifo"
+   },
+   {
+    "w": "órfão"
+   }
+  ]
+ },
+ {
+  "id": "b-0171",
+  "center": "l",
+  "letters": [
+   "a",
+   "e",
+   "g",
+   "m",
+   "n",
+   "t"
+  ],
+  "words": [
+   {
+    "w": "alega"
+   },
+   {
+    "w": "alegam"
+   },
+   {
+    "w": "além"
+   },
+   {
+    "w": "alemã"
+   },
+   {
+    "w": "alma"
+   },
+   {
+    "w": "alta"
+   },
+   {
+    "w": "altamente"
+   },
+   {
+    "w": "anel"
+   },
+   {
+    "w": "atleta"
+   },
+   {
+    "w": "elegante"
+   },
+   {
+    "w": "elege"
+   },
+   {
+    "w": "gala"
+   },
+   {
+    "w": "galega"
+   },
+   {
+    "w": "lama"
+   },
+   {
+    "w": "lamenta"
+   },
+   {
+    "w": "lata"
+   },
+   {
+    "w": "late"
+   },
+   {
+    "w": "latente"
+   },
+   {
+    "w": "leal"
+   },
+   {
+    "w": "leem"
+   },
+   {
+    "w": "legal"
+   },
+   {
+    "w": "legalmente",
+    "pangram": true
+   },
+   {
+    "w": "lema"
+   },
+   {
+    "w": "lentamente"
+   },
+   {
+    "w": "lente"
+   },
+   {
+    "w": "letal"
+   },
+   {
+    "w": "mala"
+   },
+   {
+    "w": "maleta"
+   },
+   {
+    "w": "malte"
+   },
+   {
+    "w": "matagal"
+   },
+   {
+    "w": "mental"
+   },
+   {
+    "w": "mentalmente"
+   },
+   {
+    "w": "metal"
+   },
+   {
+    "w": "nela"
+   },
+   {
+    "w": "nele"
+   },
+   {
+    "w": "tela"
+   }
+  ]
+ },
+ {
+  "id": "b-0172",
+  "center": "m",
+  "letters": [
+   "a",
+   "e",
+   "j",
+   "n",
+   "t",
+   "u"
+  ],
+  "words": [
+   {
+    "w": "amam"
+   },
+   {
+    "w": "amante"
+   },
+   {
+    "w": "amém"
+   },
+   {
+    "w": "atentamente"
+   },
+   {
+    "w": "atuam"
+   },
+   {
+    "w": "atum"
+   },
+   {
+    "w": "aumenta"
+   },
+   {
+    "w": "aumentam"
+   },
+   {
+    "w": "aumente"
+   },
+   {
+    "w": "emana"
+   },
+   {
+    "w": "ementa"
+   },
+   {
+    "w": "jejum"
+   },
+   {
+    "w": "juntam"
+   },
+   {
+    "w": "juntamente",
+    "pangram": true
+   },
+   {
+    "w": "mama"
+   },
+   {
+    "w": "mamãe"
+   },
+   {
+    "w": "manta"
+   },
+   {
+    "w": "mantém"
+   },
+   {
+    "w": "matam"
+   },
+   {
+    "w": "mate"
+   },
+   {
+    "w": "menta"
+   },
+   {
+    "w": "mente"
+   },
+   {
+    "w": "mentem"
+   },
+   {
+    "w": "menu"
+   },
+   {
+    "w": "meta"
+   },
+   {
+    "w": "mete"
+   },
+   {
+    "w": "metem"
+   },
+   {
+    "w": "meteu"
+   },
+   {
+    "w": "mutante"
+   },
+   {
+    "w": "mútua"
+   },
+   {
+    "w": "mutuamente"
+   },
+   {
+    "w": "numa"
+   },
+   {
+    "w": "tema"
+   },
+   {
+    "w": "teme"
+   },
+   {
+    "w": "temem"
+   },
+   {
+    "w": "tentam"
+   },
+   {
+    "w": "tentem"
+   },
+   {
+    "w": "unem"
+   }
+  ]
+ },
+ {
+  "id": "b-0173",
+  "center": "o",
+  "letters": [
+   "b",
+   "c",
+   "e",
+   "f",
+   "i",
+   "n"
+  ],
+  "words": [
+   {
+    "w": "bebo"
+   },
+   {
+    "w": "beco"
+   },
+   {
+    "w": "benefício",
+    "pangram": true
+   },
+   {
+    "w": "benéfico",
+    "pangram": true
+   },
+   {
+    "w": "bico"
+   },
+   {
+    "w": "biênio"
+   },
+   {
+    "w": "bobo"
+   },
+   {
+    "w": "boné"
+   },
+   {
+    "w": "boneco"
+   },
+   {
+    "w": "cinco"
+   },
+   {
+    "w": "coco"
+   },
+   {
+    "w": "cone"
+   },
+   {
+    "w": "confie"
+   },
+   {
+    "w": "confio"
+   },
+   {
+    "w": "feio"
+   },
+   {
+    "w": "feno"
+   },
+   {
+    "w": "fico"
+   },
+   {
+    "w": "fino"
+   },
+   {
+    "w": "foco"
+   },
+   {
+    "w": "fofo"
+   },
+   {
+    "w": "foice"
+   },
+   {
+    "w": "fone"
+   },
+   {
+    "w": "ícone"
+   },
+   {
+    "w": "início"
+   },
+   {
+    "w": "nono"
+   },
+   {
+    "w": "ócio"
+   },
+   {
+    "w": "ofício"
+   }
+  ]
+ },
+ {
+  "id": "b-0174",
+  "center": "p",
+  "letters": [
+   "a",
+   "c",
+   "h",
+   "i",
+   "o",
+   "r"
+  ],
+  "words": [
+   {
+    "w": "aparição"
+   },
+   {
+    "w": "apoia"
+   },
+   {
+    "w": "apoiar"
+   },
+   {
+    "w": "apoio"
+   },
+   {
+    "w": "apropriação"
+   },
+   {
+    "w": "apropriar"
+   },
+   {
+    "w": "caipira"
+   },
+   {
+    "w": "capa"
+   },
+   {
+    "w": "capão"
+   },
+   {
+    "w": "capricho",
+    "pangram": true
+   },
+   {
+    "w": "chapa"
+   },
+   {
+    "w": "chip"
+   },
+   {
+    "w": "copa"
+   },
+   {
+    "w": "cópia"
+   },
+   {
+    "w": "copiar"
+   },
+   {
+    "w": "copo"
+   },
+   {
+    "w": "corpo"
+   },
+   {
+    "w": "corporação"
+   },
+   {
+    "w": "harpa"
+   },
+   {
+    "w": "opaco"
+   },
+   {
+    "w": "opção"
+   },
+   {
+    "w": "opor"
+   },
+   {
+    "w": "paço"
+   },
+   {
+    "w": "paira"
+   },
+   {
+    "w": "papa"
+   },
+   {
+    "w": "papai"
+   },
+   {
+    "w": "papão"
+   },
+   {
+    "w": "papo"
+   },
+   {
+    "w": "para"
+   },
+   {
+    "w": "parar"
+   },
+   {
+    "w": "paro"
+   },
+   {
+    "w": "pároco"
+   },
+   {
+    "w": "picar"
+   },
+   {
+    "w": "pico"
+   },
+   {
+    "w": "pior"
+   },
+   {
+    "w": "piora"
+   },
+   {
+    "w": "piorar"
+   },
+   {
+    "w": "pipa"
+   },
+   {
+    "w": "pipoca"
+   },
+   {
+    "w": "pira"
+   },
+   {
+    "w": "poça"
+   },
+   {
+    "w": "poço"
+   },
+   {
+    "w": "popa"
+   },
+   {
+    "w": "porão"
+   },
+   {
+    "w": "porca"
+   },
+   {
+    "w": "porção"
+   },
+   {
+    "w": "porco"
+   },
+   {
+    "w": "praça"
+   },
+   {
+    "w": "praia"
+   },
+   {
+    "w": "proa"
+   },
+   {
+    "w": "propicia"
+   },
+   {
+    "w": "propiciar"
+   },
+   {
+    "w": "propício"
+   },
+   {
+    "w": "propor"
+   },
+   {
+    "w": "proporção"
+   },
+   {
+    "w": "próprio"
+   }
+  ]
+ },
+ {
+  "id": "b-0175",
+  "center": "e",
+  "letters": [
+   "a",
+   "i",
+   "m",
+   "n",
+   "r",
+   "x"
+  ],
+  "words": [
+   {
+    "w": "amei"
+   },
+   {
+    "w": "ameixa"
+   },
+   {
+    "w": "amém"
+   },
+   {
+    "w": "anemia"
+   },
+   {
+    "w": "anexa"
+   },
+   {
+    "w": "anexar"
+   },
+   {
+    "w": "área"
+   },
+   {
+    "w": "arena"
+   },
+   {
+    "w": "emana"
+   },
+   {
+    "w": "eram"
+   },
+   {
+    "w": "erra"
+   },
+   {
+    "w": "errar"
+   },
+   {
+    "w": "errei"
+   },
+   {
+    "w": "exame"
+   },
+   {
+    "w": "examina"
+   },
+   {
+    "w": "examinar",
+    "pangram": true
+   },
+   {
+    "w": "irei"
+   },
+   {
+    "w": "irem"
+   },
+   {
+    "w": "mamãe"
+   },
+   {
+    "w": "maneira"
+   },
+   {
+    "w": "maré"
+   },
+   {
+    "w": "meia"
+   },
+   {
+    "w": "menina"
+   },
+   {
+    "w": "mera"
+   },
+   {
+    "w": "mexa"
+   },
+   {
+    "w": "mexe"
+   },
+   {
+    "w": "mexem"
+   },
+   {
+    "w": "mexer"
+   },
+   {
+    "w": "mexia"
+   },
+   {
+    "w": "reexame"
+   },
+   {
+    "w": "reina"
+   },
+   {
+    "w": "reinar"
+   },
+   {
+    "w": "riem"
+   }
+  ]
+ },
+ {
+  "id": "b-0176",
+  "center": "o",
+  "letters": [
+   "d",
+   "f",
+   "g",
+   "i",
+   "n",
+   "u"
+  ],
+  "words": [
+   {
+    "w": "difundido"
+   },
+   {
+    "w": "digno"
+   },
+   {
+    "w": "digo"
+   },
+   {
+    "w": "diodo"
+   },
+   {
+    "w": "doido"
+   },
+   {
+    "w": "dono"
+   },
+   {
+    "w": "doou"
+   },
+   {
+    "w": "figo"
+   },
+   {
+    "w": "findo"
+   },
+   {
+    "w": "fingindo"
+   },
+   {
+    "w": "fino"
+   },
+   {
+    "w": "fofo"
+   },
+   {
+    "w": "fogo"
+   },
+   {
+    "w": "fugido"
+   },
+   {
+    "w": "fugindo",
+    "pangram": true
+   },
+   {
+    "w": "fundido"
+   },
+   {
+    "w": "fundo"
+   },
+   {
+    "w": "fundou"
+   },
+   {
+    "w": "fungo"
+   },
+   {
+    "w": "índio"
+   },
+   {
+    "w": "indo"
+   },
+   {
+    "w": "iodo"
+   },
+   {
+    "w": "nono"
+   },
+   {
+    "w": "ódio"
+   },
+   {
+    "w": "ungido"
+   },
+   {
+    "w": "unido"
+   },
+   {
+    "w": "unindo"
+   }
+  ]
+ },
+ {
+  "id": "b-0177",
+  "center": "c",
+  "letters": [
+   "a",
+   "d",
+   "f",
+   "n",
+   "o",
+   "u"
+  ],
+  "words": [
+   {
+    "w": "ação"
+   },
+   {
+    "w": "adoção"
+   },
+   {
+    "w": "caça"
+   },
+   {
+    "w": "caçada"
+   },
+   {
+    "w": "caçando"
+   },
+   {
+    "w": "cacau"
+   },
+   {
+    "w": "caco"
+   },
+   {
+    "w": "cada"
+   },
+   {
+    "w": "cana"
+   },
+   {
+    "w": "canção"
+   },
+   {
+    "w": "cano"
+   },
+   {
+    "w": "canoa"
+   },
+   {
+    "w": "canudo"
+   },
+   {
+    "w": "caução"
+   },
+   {
+    "w": "cauda"
+   },
+   {
+    "w": "coação"
+   },
+   {
+    "w": "coca"
+   },
+   {
+    "w": "coco"
+   },
+   {
+    "w": "condução"
+   },
+   {
+    "w": "dança"
+   },
+   {
+    "w": "dançando"
+   },
+   {
+    "w": "danço"
+   },
+   {
+    "w": "dançou"
+   },
+   {
+    "w": "doação"
+   },
+   {
+    "w": "faça"
+   },
+   {
+    "w": "facada"
+   },
+   {
+    "w": "facão"
+   },
+   {
+    "w": "facção"
+   },
+   {
+    "w": "faço"
+   },
+   {
+    "w": "foca"
+   },
+   {
+    "w": "focado"
+   },
+   {
+    "w": "focando"
+   },
+   {
+    "w": "foco"
+   },
+   {
+    "w": "fofoca"
+   },
+   {
+    "w": "função"
+   },
+   {
+    "w": "fundação",
+    "pangram": true
+   },
+   {
+    "w": "nação"
+   },
+   {
+    "w": "noção"
+   },
+   {
+    "w": "nuca"
+   },
+   {
+    "w": "nunca"
+   },
+   {
+    "w": "onça"
+   },
+   {
+    "w": "ouça"
+   },
+   {
+    "w": "ouço"
+   },
+   {
+    "w": "unção"
+   }
+  ]
+ },
+ {
+  "id": "b-0178",
+  "center": "e",
+  "letters": [
+   "i",
+   "n",
+   "q",
+   "r",
+   "t",
+   "u"
+  ],
+  "words": [
+   {
+    "w": "enquete"
+   },
+   {
+    "w": "entre"
+   },
+   {
+    "w": "entrei"
+   },
+   {
+    "w": "entreter"
+   },
+   {
+    "w": "errei"
+   },
+   {
+    "w": "inerente"
+   },
+   {
+    "w": "inerte"
+   },
+   {
+    "w": "internet"
+   },
+   {
+    "w": "irei"
+   },
+   {
+    "w": "nutre"
+   },
+   {
+    "w": "nutriente"
+   },
+   {
+    "w": "quente"
+   },
+   {
+    "w": "quer"
+   },
+   {
+    "w": "querer"
+   },
+   {
+    "w": "rente"
+   },
+   {
+    "w": "requer"
+   },
+   {
+    "w": "requerente"
+   },
+   {
+    "w": "requerer"
+   },
+   {
+    "w": "requereu"
+   },
+   {
+    "w": "requinte",
+    "pangram": true
+   },
+   {
+    "w": "reter"
+   },
+   {
+    "w": "retire"
+   },
+   {
+    "w": "retirei"
+   },
+   {
+    "w": "reúne"
+   },
+   {
+    "w": "reuni"
+   },
+   {
+    "w": "reunir"
+   },
+   {
+    "w": "reuniu"
+   },
+   {
+    "w": "rinite"
+   },
+   {
+    "w": "tenente"
+   },
+   {
+    "w": "tentei"
+   },
+   {
+    "w": "tênue"
+   },
+   {
+    "w": "terei"
+   },
+   {
+    "w": "tire"
+   },
+   {
+    "w": "tirei"
+   },
+   {
+    "w": "truque"
+   },
+   {
+    "w": "turnê"
+   }
+  ]
+ },
+ {
+  "id": "b-0179",
+  "center": "n",
+  "letters": [
+   "a",
+   "e",
+   "g",
+   "h",
+   "i",
+   "r"
+  ],
+  "words": [
+   {
+    "w": "angariar"
+   },
+   {
+    "w": "aranha"
+   },
+   {
+    "w": "arena"
+   },
+   {
+    "w": "arranha"
+   },
+   {
+    "w": "energia"
+   },
+   {
+    "w": "engana"
+   },
+   {
+    "w": "enganar"
+   },
+   {
+    "w": "engane"
+   },
+   {
+    "w": "enganei"
+   },
+   {
+    "w": "engenharia",
+    "pangram": true
+   },
+   {
+    "w": "ganha"
+   },
+   {
+    "w": "ganhar"
+   },
+   {
+    "w": "ganhará"
+   },
+   {
+    "w": "ganharia"
+   },
+   {
+    "w": "ganhe"
+   },
+   {
+    "w": "ganhei"
+   },
+   {
+    "w": "gene"
+   },
+   {
+    "w": "grana"
+   },
+   {
+    "w": "hangar"
+   },
+   {
+    "w": "hérnia"
+   },
+   {
+    "w": "higiene"
+   },
+   {
+    "w": "ingerir"
+   },
+   {
+    "w": "nana"
+   },
+   {
+    "w": "narra"
+   },
+   {
+    "w": "narrar"
+   },
+   {
+    "w": "negar"
+   },
+   {
+    "w": "rainha"
+   },
+   {
+    "w": "range"
+   },
+   {
+    "w": "ranger"
+   },
+   {
+    "w": "reina"
+   },
+   {
+    "w": "reinar"
+   }
+  ]
+ },
+ {
+  "id": "b-0180",
+  "center": "e",
+  "letters": [
+   "a",
+   "b",
+   "d",
+   "l",
+   "o",
+   "r"
+  ],
+  "words": [
+   {
+    "w": "abade"
+   },
+   {
+    "w": "abre"
+   },
+   {
+    "w": "adere"
+   },
+   {
+    "w": "aéreo"
+   },
+   {
+    "w": "alarde"
+   },
+   {
+    "w": "árabe"
+   },
+   {
+    "w": "arde"
+   },
+   {
+    "w": "arder"
+   },
+   {
+    "w": "área"
+   },
+   {
+    "w": "balde"
+   },
+   {
+    "w": "balé"
+   },
+   {
+    "w": "baleado"
+   },
+   {
+    "w": "barbear"
+   },
+   {
+    "w": "beba"
+   },
+   {
+    "w": "bêbado"
+   },
+   {
+    "w": "bebê"
+   },
+   {
+    "w": "beber"
+   },
+   {
+    "w": "bebo"
+   },
+   {
+    "w": "bela"
+   },
+   {
+    "w": "belo"
+   },
+   {
+    "w": "bode"
+   },
+   {
+    "w": "bolero"
+   },
+   {
+    "w": "dedo"
+   },
+   {
+    "w": "dela"
+   },
+   {
+    "w": "dele"
+   },
+   {
+    "w": "dera"
+   },
+   {
+    "w": "dobre"
+   },
+   {
+    "w": "doer"
+   },
+   {
+    "w": "elabora"
+   },
+   {
+    "w": "elaborado",
+    "pangram": true
+   },
+   {
+    "w": "elaborar"
+   },
+   {
+    "w": "erra"
+   },
+   {
+    "w": "errada"
+   },
+   {
+    "w": "errado"
+   },
+   {
+    "w": "errar"
+   },
+   {
+    "w": "erro"
+   },
+   {
+    "w": "leal"
+   },
+   {
+    "w": "lealdade"
+   },
+   {
+    "w": "leão"
+   },
+   {
+    "w": "lebre"
+   },
+   {
+    "w": "leoa"
+   },
+   {
+    "w": "lorde"
+   },
+   {
+    "w": "real"
+   },
+   {
+    "w": "rebelde"
+   },
+   {
+    "w": "rede"
+   },
+   {
+    "w": "redor"
+   },
+   {
+    "w": "relé"
+   },
+   {
+    "w": "reler"
+   },
+   {
+    "w": "rodeado"
+   },
+   {
+    "w": "roer"
+   }
+  ]
  }
 ]
