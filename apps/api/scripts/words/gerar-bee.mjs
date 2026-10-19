@@ -102,7 +102,7 @@ const fresh = [];
 for (const c of pool) {
   if (existing.length + fresh.length >= WANT) break;
   const id = `${c.ls.join('')}${c.center}`;
-  if ([...existing, ...fresh].some((p) => p.letters.join('') === c.ls.join(''))) continue;
+  if ([...existing, ...fresh].some((p) => [p.center, ...p.letters].sort().join('') === c.ls.join(''))) continue;
   if (used.has(id)) continue;
   fresh.push({
     id: `b-${String(existing.length + fresh.length + 1).padStart(4, '0')}`,

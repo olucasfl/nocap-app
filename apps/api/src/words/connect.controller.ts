@@ -6,7 +6,7 @@ import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { ConnectService } from './connect.service';
 
 const startSchema = z.object({
-  kind: z.enum(['daily', 'archive']),
+  kind: z.enum(['daily', 'archive', 'free']),
   day: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/)

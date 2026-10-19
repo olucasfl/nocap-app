@@ -13,6 +13,8 @@ import type { ScoredMatch } from '../matches/match-scoring';
 import { MatchesRepository } from '../matches/matches.repository';
 import { ConnectPuzzles } from './connect-puzzles';
 import { WORDS_DAILY_EPOCH } from './word-lists';
+import { freePool } from './free-pick';
+import { randomInt } from 'node:crypto';
 import { WordsRepository, type WordRun } from './words.repository';
 
 const GAME = 'wconnect';
@@ -26,7 +28,7 @@ interface GroupView {
 /** O que o aparelho recebe: as palavras soltas e os grupos já achados; os que faltam só aparecem no fim. */
 export interface ConnectView {
   id: string;
-  kind: 'daily' | 'archive';
+  kind: 'daily' | 'archive' | 'free';
   day: string | null;
   number: number;
   /** As palavras ainda soltas, na ordem embaralhada da partida. */
@@ -91,9 +93,9 @@ export class ConnectService {
     const day = run.day ?? run.seed.split('@')[1] ?? null;
     return {
       id: run.id,
-      kind: run.kind as 'daily' | 'archive',
+      kind: run.kind as 'daily' | 'archive' | 'free',
       day: run.day,
-      number: day ? ConnectPuzzles.dayIndex(day) + 1 : 0,
+      number: day ? ConnectPuzzles.dayIndex(day) + 1 : puzzle.id ? this.puzzles.puzzles.findIndex((p) => p.id === puzzle.id) + 1 : 0,
       words: order.filter((w) => left.has(w)),
       found: state.found.map(group),
       lives: state.lives,
@@ -111,7 +113,7 @@ export class ConnectService {
     return { day, number: this.puzzles.of(day).number, run: run ? this.view(run) : null };
   }
 
-  async start(userId: string, kind: 'daily' | 'archive', archiveDay?: string): Promise<ConnectView> {
+  async start(userId: string, kind: 'daily' | 'archive' | 'free', archiveDay?: string): Promise<ConnectView> {
     const today = dailyDate();
     if (kind === 'daily') {
       const existing = await this.runs.daily(userId, GAME, today);
@@ -135,6 +137,24 @@ export class ConnectService {
       });
       if (!created) throw new ConflictException('Você já jogou o Daily de hoje');
       return this.view(created);
+    }
+    if (kind === 'free') {
+      // Jogar a qualquer hora: um puzzle que a conta ainda não jogou. Se tem um aberto, continua nele.
+      const runs = await this.runs.runsOf(userId, GAME);
+      const open = runs.find((r) => r.kind === 'free' && r.state === 'open');
+      if (open) return this.view(open);
+      const pool = freePool(this.puzzles.puzzles, ConnectPuzzles.dayIndex(today), new Set(runs.flatMap((r) => r.answers)));
+      if (pool.length === 0) throw new ConflictException('Você jogou todos os puzzles até aqui');
+      const puzzle = pool[randomInt(pool.length)]!;
+      const created = await this.runs.create({
+        userId,
+        game: GAME,
+        mode: 'free',
+        kind: 'free',
+        seed: `${GAME}-free:${puzzle.id}`,
+        answers: [puzzle.id],
+      });
+      return this.view(created!);
     }
     if (!archiveDay || !/^\d{4}-\d{2}-\d{2}$/.test(archiveDay) || archiveDay >= today || archiveDay < WORDS_DAILY_EPOCH) {
       throw new BadRequestException('O arquivo só tem dias que já passaram');

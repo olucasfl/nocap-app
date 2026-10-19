@@ -155,6 +155,7 @@ const MODE_NAME: Record<string, string> = {
   infinito: 'Infinito',
   towers: 'Block Towers',
   archive: 'Arquivo',
+  free: 'Livre',
   dueto: '2 palavras',
   quarteto: '4 palavras',
   party: 'Mix Nocap',

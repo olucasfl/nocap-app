@@ -1,6 +1,6 @@
 # 034 · Connect Word's (16 palavras, 4 grupos, o estilo Conexo e Connections)
 
-Status: **aprovada (19/10/2026), em construção: regras, API e 100 puzzles originais prontos (mais difíceis: pegadinhas, expressões e jogos de palavras); cada conta joga um puzzle uma vez só; telas do Daily prontas, falta o arquivo na tela.** Faz parte do grupo [032 Word's](032-words-grupo-e-base.md) (corridas no servidor, Daily, compartilhar, acessibilidade). Pesquisa em [docs/pesquisa-termo.md](../docs/pesquisa-termo.md).
+Status: **aprovada (19/10/2026), em construção: regras, API e 100 puzzles originais prontos (mais difíceis: pegadinhas, expressões e jogos de palavras); cada conta joga um puzzle uma vez só; telas do Daily e do jogo livre ("Jogar quando quiser") prontas, falta o arquivo na tela.** Faz parte do grupo [032 Word's](032-words-grupo-e-base.md) (corridas no servidor, Daily, compartilhar, acessibilidade). Pesquisa em [docs/pesquisa-termo.md](../docs/pesquisa-termo.md).
 
 ## Objetivo
 

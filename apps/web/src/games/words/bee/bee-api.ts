@@ -60,7 +60,8 @@ export const REJECT_TEXT: Record<BeeReject, string> = {
 };
 
 export const fetchBeeDaily = () => apiClient.get<BeeDaily>('/words/wbee/daily');
-export const startBee = () => apiClient.post<BeeView>('/words/wbee/runs', { kind: 'daily' });
+export const startBee = (kind: 'daily' | 'free' = 'daily') =>
+  apiClient.post<BeeView>('/words/wbee/runs', { kind });
 export const sendBeeWord = (id: string, word: string) =>
   apiClient.post<BeeMove>(`/words/wbee/runs/${id}/moves`, { word });
 export const finishBee = (id: string) => apiClient.post<BeeView>(`/words/wbee/runs/${id}/finish`, {});

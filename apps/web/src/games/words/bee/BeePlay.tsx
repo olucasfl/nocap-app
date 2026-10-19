@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from '@tanstack/react-router';
+import { Link, useSearch } from '@tanstack/react-router';
 import { wordKey } from '@nocap/games';
 import { ApiError } from '@/lib/api-client';
 import { BackButton } from '@/components/BackButton';
@@ -33,14 +33,22 @@ export function BeePlay() {
   const [confirmEnd, setConfirmEnd] = useState(false);
   const timer = useRef<number | undefined>(undefined);
 
-  useEffect(() => {
-    startBee()
+  const { tipo } = useSearch({ strict: false }) as { tipo?: string };
+  const free = tipo === 'livre';
+
+  const begin = useCallback(() => {
+    setRun(null);
+    setTyped('');
+    setLatest(null);
+    startBee(free ? 'free' : 'daily')
       .then((r) => {
         setRun(r);
         setOrder(r.letters);
       })
       .catch((e: unknown) => setError(e instanceof ApiError ? e.message : 'Não deu para abrir o favo'));
-  }, []);
+  }, [free]);
+
+  useEffect(begin, [begin]);
 
   const say = useCallback((text: string, good = false) => {
     setToast({ text, good });
@@ -141,7 +149,7 @@ export function BeePlay() {
       <main className="screen cw bee">
         <header className="cw-top">
           <BackButton to="/words/bee" />
-          <div className="cw-title">Daily #{run.number}</div>
+          <div className="cw-title">{free ? `Livre #${run.number}` : `Daily #${run.number}`}</div>
           <div className="mono cw-left">{run.points} pts</div>
         </header>
 
@@ -227,9 +235,15 @@ export function BeePlay() {
               {run.points} de {run.max} pontos · {run.found.length} de {run.hints.total} palavras
             </div>
             <div className="cw-actions">
-              <Link to="/ranking" search={{ jogo: 'wbee', modo: 'daily' }} className="btn alt">
-                Ver ranking
-              </Link>
+              {free ? (
+                <button type="button" className="btn alt" onClick={begin}>
+                  Jogar outro favo
+                </button>
+              ) : (
+                <Link to="/ranking" search={{ jogo: 'wbee', modo: 'daily' }} className="btn alt">
+                  Ver ranking
+                </Link>
+              )}
               <Link to="/words/bee" className="btn ghost">
                 Voltar
               </Link>
@@ -294,7 +308,7 @@ export function BeePlay() {
               void finishBee(run.id).then(setRun);
             }}
           >
-            {confirmEnd ? 'Toque de novo para encerrar' : 'Encerrar o dia'}
+            {confirmEnd ? 'Toque de novo para encerrar' : free ? 'Encerrar' : 'Encerrar o dia'}
           </button>
         )}
       </main>

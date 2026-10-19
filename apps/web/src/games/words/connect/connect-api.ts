@@ -35,7 +35,8 @@ export interface ConnectDaily {
 export const LIVES = 5;
 
 export const fetchConnectDaily = () => apiClient.get<ConnectDaily>('/words/wconnect/daily');
-export const startConnect = () => apiClient.post<ConnectView>('/words/wconnect/runs', { kind: 'daily' });
+export const startConnect = (kind: 'daily' | 'free' = 'daily') =>
+  apiClient.post<ConnectView>('/words/wconnect/runs', { kind });
 export const sendConnect = (id: string, words: string[]) =>
   apiClient.post<ConnectMove>(`/words/wconnect/runs/${id}/moves`, { words });
 

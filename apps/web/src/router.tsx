@@ -210,6 +210,7 @@ const wordsBeeRoute = createRoute({
 const wordsBeePlayRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/words/bee/jogar',
+  validateSearch: (search: Record<string, unknown>): { tipo?: 'livre' } => (search.tipo === 'livre' ? { tipo: 'livre' } : {}),
   component: lazyRouteComponent(() => import('@/games/words/bee/BeePlay'), 'BeePlay'),
 });
 
@@ -221,6 +222,7 @@ const wordsConnectRoute = createRoute({
 const wordsConnectPlayRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/words/connect/jogar',
+  validateSearch: (search: Record<string, unknown>): { tipo?: 'livre' } => (search.tipo === 'livre' ? { tipo: 'livre' } : {}),
   component: lazyRouteComponent(() => import('@/games/words/connect/ConnectPlay'), 'ConnectPlay'),
 });
 

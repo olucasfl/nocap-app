@@ -29,6 +29,7 @@ function setup() {
       [...rows.values()].find((r) => r.userId === userId && r.game === game && r.day === day) ?? null,
     bySeed: async (userId: string, game: string, seed: string) =>
       [...rows.values()].find((r) => r.userId === userId && r.game === game && r.seed === seed) ?? null,
+    runsOf: async (userId: string, game: string) => [...rows.values()].filter((r) => r.userId === userId && r.game === game),
     puzzleRun: async (userId: string, game: string, puzzleId: string) =>
       [...rows.values()].find((r) => r.userId === userId && r.game === game && r.answers.includes(puzzleId)) ?? null,
     create: async (row: Partial<WordRun>) => {
@@ -140,6 +141,22 @@ describe('Connect no servidor', () => {
     vi.setSystemTime(new Date(Date.parse('2026-10-19T15:00:00Z') + service.puzzles.puzzles.length * 86_400_000));
     await expect(service.start('u1', 'daily')).rejects.toThrow();
     vi.useRealTimers();
+  });
+
+  it('jogo livre: qualquer hora, sem repetir puzzle e sem usar os próximos dias do Daily', async () => {
+    const { service } = setup();
+    const seen = new Set<string>();
+    for (let i = 0; i < 20; i++) {
+      const run = await service.start('u1', 'free');
+      expect(run.kind).toBe('free');
+      const puzzle = service.puzzles.puzzles.find((p) => p.groups.every((g) => g.words.every((w) => run.words.includes(w) || true)) && p.groups.flatMap((g) => g.words).sort().join() === [...run.words].sort().join());
+      expect(puzzle).toBeDefined();
+      expect(seen.has(puzzle!.id)).toBe(false);
+      seen.add(puzzle!.id);
+      const idx = service.puzzles.puzzles.findIndex((p) => p.id === puzzle!.id);
+      expect(idx >= 30).toBe(true); // hoje é o dia 1: os 30 próximos ficam reservados ao Daily
+      for (const g of puzzle!.groups) await service.move('u1', run.id, g.words);
+    }
   });
 
   it('a partida de outra conta não aparece', async () => {

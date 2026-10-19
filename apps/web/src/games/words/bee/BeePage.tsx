@@ -41,6 +41,10 @@ export function BeePage() {
               <div className="mono wp-meta">Forme palavras com 7 letras · aberto até a meia-noite</div>
               {streak && <div className="mono wp-meta">Sequência {streak.current} · melhor {streak.best}</div>}
             </Link>
+            <Link to="/words/bee/jogar" search={{ tipo: 'livre' }} className="wp-card" data-sfx="start">
+              <div className="wp-name">Jogar quando quiser</div>
+              <div className="mono wp-meta">Um favo novo a qualquer hora · sem ranking</div>
+            </Link>
             <Link to="/ranking" search={{ jogo: 'wbee', modo: 'daily' }} className="wp-card">
               <div className="wp-name">Ranking do Daily</div>
               <div className="mono wp-meta">Chegar ao Gênio dá nota 10</div>

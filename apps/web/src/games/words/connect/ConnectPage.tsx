@@ -49,6 +49,10 @@ export function ConnectPage() {
                 <div className="mono wp-meta">16 palavras, 4 grupos · 5 vidas</div>
               </Link>
             )}
+            <Link to="/words/connect/jogar" search={{ tipo: 'livre' }} className="wp-card" data-sfx="start">
+              <div className="wp-name">Jogar quando quiser</div>
+              <div className="mono wp-meta">Um puzzle novo a qualquer hora · sem ranking</div>
+            </Link>
             <Link to="/ranking" search={{ jogo: 'wconnect', modo: 'daily' }} className="wp-card">
               <div className="wp-name">Ranking do Daily</div>
               <div className="mono wp-meta">Menos erros, nota maior</div>

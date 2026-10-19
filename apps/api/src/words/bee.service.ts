@@ -16,6 +16,8 @@ import type { ScoredMatch } from '../matches/match-scoring';
 import { MatchesRepository } from '../matches/matches.repository';
 import { BeePuzzles } from './bee-puzzles';
 import { WORDS_DAILY_EPOCH } from './word-lists';
+import { freePool } from './free-pick';
+import { randomInt } from 'node:crypto';
 import { WordsRepository, type WordRun } from './words.repository';
 
 const GAME = 'wbee';
@@ -23,7 +25,7 @@ const GAME = 'wbee';
 /** O que o aparelho recebe: as letras e as palavras já achadas; nunca as que faltam. */
 export interface BeeView {
   id: string;
-  kind: 'daily' | 'archive';
+  kind: 'daily' | 'archive' | 'free';
   day: string | null;
   number: number;
   center: string;
@@ -64,9 +66,9 @@ export class BeeService {
     const rank = beeRank(points, max);
     return {
       id: run.id,
-      kind: run.kind as 'daily' | 'archive',
+      kind: run.kind as 'daily' | 'archive' | 'free',
       day: run.day,
-      number: run.day ? this.puzzles.of(run.day).number : BeePuzzles.dayIndex(run.seed.split('@')[1] ?? dailyDate()) + 1,
+      number: run.day ? this.puzzles.of(run.day).number : this.puzzles.puzzles.findIndex((p) => p.id === puzzle.id) + 1,
       center: puzzle.center,
       letters: puzzle.letters,
       found: run.guesses,
@@ -108,7 +110,7 @@ export class BeeService {
     return { day, number: this.puzzles.of(day).number, run: run ? this.view(run) : null };
   }
 
-  async start(userId: string, kind: 'daily' | 'archive', archiveDay?: string): Promise<BeeView> {
+  async start(userId: string, kind: 'daily' | 'archive' | 'free', archiveDay?: string): Promise<BeeView> {
     await this.closeStale(userId);
     const today = dailyDate();
     if (kind === 'daily') {
@@ -125,6 +127,24 @@ export class BeeService {
       });
       if (!created) throw new ConflictException('Você já começou o Daily de hoje');
       return this.view(created);
+    }
+    if (kind === 'free') {
+      // Jogar a qualquer hora: um puzzle que a conta ainda não jogou. Se tem um aberto, continua nele.
+      const runs = await this.runs.runsOf(userId, GAME);
+      const open = runs.find((r) => r.kind === 'free' && r.state === 'open');
+      if (open) return this.view(open);
+      const pool = freePool(this.puzzles.puzzles, BeePuzzles.dayIndex(today), new Set(runs.flatMap((r) => r.answers)));
+      if (pool.length === 0) throw new ConflictException('Você jogou todos os puzzles até aqui');
+      const puzzle = pool[randomInt(pool.length)]!;
+      const created = await this.runs.create({
+        userId,
+        game: GAME,
+        mode: 'free',
+        kind: 'free',
+        seed: `${GAME}-free:${puzzle.id}`,
+        answers: [puzzle.id],
+      });
+      return this.view(created!);
     }
     if (!archiveDay || !/^\d{4}-\d{2}-\d{2}$/.test(archiveDay) || archiveDay >= today || archiveDay < WORDS_DAILY_EPOCH) {
       throw new BadRequestException('O arquivo só tem dias que já passaram');

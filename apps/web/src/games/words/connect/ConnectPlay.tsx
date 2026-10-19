@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link } from '@tanstack/react-router';
+import { Link, useSearch } from '@tanstack/react-router';
 import { ApiError } from '@/lib/api-client';
 import { BackButton } from '@/components/BackButton';
 import { Loader } from '@/components/Loader';
@@ -33,14 +33,21 @@ export function ConnectPlay() {
   const [copied, setCopied] = useState(false);
   const timer = useRef<number | undefined>(undefined);
 
-  useEffect(() => {
-    startConnect()
+  const { tipo } = useSearch({ strict: false }) as { tipo?: string };
+  const free = tipo === 'livre';
+
+  const begin = useCallback(() => {
+    setRun(null);
+    setPicked([]);
+    startConnect(free ? 'free' : 'daily')
       .then((r) => {
         setRun(r);
         setOrder(r.words);
       })
       .catch((e: unknown) => setError(e instanceof ApiError ? e.message : 'Não deu para abrir o puzzle'));
-  }, []);
+  }, [free]);
+
+  useEffect(begin, [begin]);
 
   const say = useCallback((text: string) => {
     setToast(text);
@@ -125,7 +132,7 @@ export function ConnectPlay() {
       <main className="screen cw">
         <header className="cw-top">
           <BackButton to="/words/connect" />
-          <div className="cw-title">Daily #{run.number}</div>
+          <div className="cw-title">{free ? `Livre #${run.number}` : `Daily #${run.number}`}</div>
           <span />
         </header>
 
@@ -185,9 +192,15 @@ export function ConnectPlay() {
               <button type="button" className="btn" onClick={() => void share()}>
                 {copied ? 'Copiado' : 'Compartilhar'}
               </button>
-              <Link to="/ranking" search={{ jogo: 'wconnect', modo: 'daily' }} className="btn alt">
-                Ver ranking
-              </Link>
+              {free ? (
+                <button type="button" className="btn alt" onClick={begin}>
+                  Jogar outro puzzle
+                </button>
+              ) : (
+                <Link to="/ranking" search={{ jogo: 'wconnect', modo: 'daily' }} className="btn alt">
+                  Ver ranking
+                </Link>
+              )}
               <Link to="/words/connect" className="btn ghost">
                 Voltar
               </Link>

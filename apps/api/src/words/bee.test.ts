@@ -39,6 +39,7 @@ function setup() {
       [...rows.values()].find((r) => r.userId === userId && r.game === game && r.day === day) ?? null,
     bySeed: async (userId: string, game: string, seed: string) =>
       [...rows.values()].find((r) => r.userId === userId && r.game === game && r.seed === seed) ?? null,
+    runsOf: async (userId: string, game: string) => [...rows.values()].filter((r) => r.userId === userId && r.game === game),
     openBefore: async (userId: string, game: string, day: string) =>
       [...rows.values()].filter((r) => r.userId === userId && r.game === game && r.state === 'open' && r.day !== null && r.day < day),
     create: async (row: Partial<WordRun>) => {
@@ -125,6 +126,23 @@ describe('Bee no servidor', () => {
     const b = await service.start('u1', 'archive', '2026-10-25');
     expect(b.id).toBe(a.id);
     expect(a.kind).toBe('archive');
+  });
+
+  it('jogo livre: qualquer hora, um favo novo por vez, sem tocar nos próximos dias do Daily', async () => {
+    const { service } = setup();
+    const a = await service.start('u1', 'free');
+    expect(a.kind).toBe('free');
+    expect((await service.start('u1', 'free')).id).toBe(a.id); // continua no aberto
+    const idx = BeePuzzles.dayIndex(new Date().toISOString().slice(0, 10));
+    const next = service.puzzles.puzzles.slice(idx, idx + 30).map((p) => p.id);
+    const ids = new Set<string>();
+    for (let i = 0; i < 25; i++) {
+      const r = await service.start('u1', 'free');
+      expect(next).not.toContain(service.puzzles.byId(service.puzzles.puzzles.find((p) => p.id === (r as { id: string }).id)?.id ?? '')?.id ?? 'x');
+      ids.add(r.id);
+      await service.finish('u1', r.id);
+    }
+    expect(ids.size).toBe(25);
   });
 
   it('a partida de outra conta não aparece', async () => {

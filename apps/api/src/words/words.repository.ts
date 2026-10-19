@@ -40,6 +40,14 @@ export class WordsRepository {
     return row ?? null;
   }
 
+  /** Todas as partidas da conta neste jogo (para o jogo livre escolher o que ainda não foi jogado). */
+  async runsOf(userId: string, game: string): Promise<WordRun[]> {
+    return this.db
+      .select()
+      .from(wordRuns)
+      .where(and(eq(wordRuns.userId, userId), eq(wordRuns.game, game)));
+  }
+
   /** A conta já jogou (ou está jogando) este puzzle em qualquer partida? */
   async puzzleRun(userId: string, game: string, puzzleId: string): Promise<WordRun | null> {
     const [row] = await this.db
