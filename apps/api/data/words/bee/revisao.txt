@@ -1,0 +1,179 @@
+b-0001  centro A  letras A D G I L U V  (47 palavras)
+  adia, agia, ágil, agiu, água, águia, alia, alivia, aluga, aula, aval, avalia, dada, dádiva, dali, dava, diga, diva, dívida, dividida, *divulga*, dúvida, gala, guia, guiada, gula, igual, lava, lavada, lida, liga, ligada, ligava, lula, luva, vaga, vala, valia, valida, válvula, vida, viga, vigília, vila, viúva, viva, vivia
+
+b-0002  centro A  letras A D E I L Q U  (25 palavras)
+  adia, aldeia, aleluia, alia, aquela, aquele, aqui, aula, dada, dali, dela, dualidade, equidade, idade, ideal, ideia, leal, lealdade, leia, lida, liquida, lula, qual, *qualidade*, queda
+
+b-0003  centro O  letras O B C I L P U  (27 palavras)
+  bíblico, bico, bloco, bobo, bolo, bulbo, ciclo, coco, colo, coloco, colocou, copo, cubo, lobo, louco, ócio, ocupou, ouço, pico, poço, polo, pouco, poupou, *público*, *publicou*, pulo, pulou
+
+b-0004  centro N  letras N A D H I M R  (27 palavras)
+  ainda, amanhã, anda, andam, andar, andaram, anima, animar, aranha, arranha, danada, *madrinha*, mandam, mandar, mandaram, mandarim, manhã, mania, marinha, mina, mínima, nada, nadar, nana, narra, narrar, rainha
+
+b-0005  centro L  letras L A E I N T V  (48 palavras)
+  alia, alivia, alta, anel, ateliê, atleta, aval, avalia, avalie, avental, eleva, elite, *inevitável*, inviável, italiana, lata, late, latente, latina, lava, lavável, lave, leal, leia, leite, lente, letal, leva, levanta, levantava, levante, *levantei*, levava, leve, levei, naval, nela, nele, nível, tela, vala, vale, valia, vela, viável, vila, vinil, vital
+
+b-0006  centro T  letras T A D I O U V  (35 palavras)
+  aditivo, adota, adotado, adotou, ativa, ativado, ativo, atua, atuado, atuava, atuou, *auditivo*, auto, data, datado, dita, ditado, dito, dotado, oitava, oitavo, oito, tatu, tava, tido, titia, toda, todavia, todo, tudo, *viaduto*, vota, votado, voto, votou
+
+b-0007  centro T  letras T A B D I O Z  (28 palavras)
+  abatido, adota, adotado, baita, bata, batata, bati, batia, batida, batido, *batizado*, bato, boato, bota, botão, data, datado, dita, ditado, dito, dotado, óbito, obtido, oito, tido, titia, toda, todo
+
+b-0008  centro N  letras N A D I L O V  (50 palavras)
+  ainda, aliando, anão, anda, andado, andando, andava, ando, *avaliando*, danada, danado, dando, dano, dividindo, divina, doando, dona, dono, indiano, índio, indo, inova, inovando, invadido, invadindo, *inválido*, lavanda, lavando, lidando, linda, lindo, lona, nada, nadando, nado, nana, naval, navio, noiva, noivado, noivo, nono, nova, novo, onda, vinda, vindo, vinil, violino, voando
+
+b-0009  centro D  letras D A E G L R V  (34 palavras)
+  adega, adere, agrada, agradar, *agradável*, agrade, alarde, arde, arder, dada, dará, dava, dela, dele, delegar, dera, deva, devagar, deve, dever, deverá, errada, geada, gelada, grade, largada, lavada, lealdade, levada, radar, rede, veda, verdade, verde
+
+b-0010  centro L  letras L A D I M T U  (26 palavras)
+  alia, alma, alta, atual, aula, dali, lama, lata, latim, liam, lida, lidam, lima, limita, limitam, lula, luta, lutam, mala, maldita, mula, mulata, multa, *multimídia*, última, útil
+
+b-0011  centro O  letras O E I M N P T  (56 palavras)
+  ímpeto, impõe, impõem, *imponente*, *impotente*, intento, íntimo, meio, menino, mento, mimo, mínimo, mito, momento, monte, montei, mote, moto, neto, noite, nome, nono, note, notei, notem, noto, oito, onipotente, ontem, opõe, opõem, oponente, opte, optei, ótimo, peito, pepino, pino, põem, poente, ponte, ponto, pote, potente, temo, tempo, teto, tinto, tipo, tome, tomei, tomem, tomo, tonto, topo, totem
+
+b-0012  centro M  letras M A C F G I N  (25 palavras)
+  acima, afim, amam, amiga, anima, caiam, cama, cima, façam, ficam, gama, imagina, imaginam, iniciam, maçã, maciça, máfia, magia, mágica, *magnífica*, mama, mangá, mania, mina, mínima
+
+b-0013  centro E  letras E A C I L P V  (34 palavras)
+  apela, ápice, *aplicável*, avalie, aveia, cale, cálice, calvície, cave, ceia, cela, clipe, eleva, épica, lavável, lave, leal, leia, leva, levava, leve, levei, palpável, papel, peça, pela, pele, picape, vale, veia, vela, viável, vice, vive
+
+b-0014  centro U  letras U A H L P R T  (25 palavras)
+  altura, apura, apurar, atua, atual, atuar, atuará, aturar, aula, aura, luar, lula, lupa, luta, lutar, *patrulha*, pauta, plural, pula, pular, pura, púrpura, ruptura, rural, tatu
+
+b-0015  centro E  letras E A J L N P R  (37 palavras)
+  anel, apela, apelar, área, arena, erra, errar, janela, leal, nela, nele, pane, panela, papel, paralela, pare, pela, pele, pena, penal, pera, perene, perna, planeja, *planejar*, planeje, prepara, preparar, prepare, rapel, real, relé, reler, renal, repara, reparar, repare
+
+b-0016  centro A  letras A D E I L O Z  (28 palavras)
+  adia, adiado, aldeia, alia, aliado, azedo, azia, dada, dado, dali, dela, dizia, doado, doida, idade, ideal, *idealizado*, ideia, lado, leal, lealdade, leão, leia, leilão, leoa, lida, odeia, odiado
+
+b-0017  centro F  letras F A E O P R T  (37 palavras)
+  afeta, afetar, afeto, afora, artefato, fará, farão, farofa, farra, farta, farto, fato, fator, fera, fere, ferrão, férrea, ferro, feto, fofa, fofo, fora, foro, forró, forte, foto, frear, frete, frota, oferta, ofertar, órfão, prefere, *profeta*, refere, refrão, tarefa
+
+b-0018  centro U  letras U A I L R T V  (27 palavras)
+  altura, atraiu, atua, atual, atuar, atuará, atuava, aturar, aula, aura, luar, lula, luta, lutar, lutava, luva, ritual, ruiva, rural, tatu, titular, traiu, útil, válvula, viatura, *virtual*, viúva
+
+b-0019  centro O  letras O C E I M N Z  (31 palavras)
+  cinco, coco, come, comece, comecei, comecem, começo, comem, comi, comício, cômico, como, cone, econômico, *economize*, emocionei, ícone, início, meio, mencionei, menino, mico, mimo, mínimo, moço, nome, nono, ócio, onze, ozônio, zinco
+
+b-0020  centro E  letras E A C D F I L  (36 palavras)
+  aldeia, alface, cadê, cadeia, café, cale, cálice, cede, ceia, cela, cidade, década, decida, decide, decidi, dedica, dela, dele, delicada, delícia, eficácia, face, *facilidade*, fale, falei, *felicidade*, fidelidade, fiel, file, idade, ideal, ideia, leal, lealdade, leia, lide
+
+b-0021  centro A  letras A C E I L P X  (31 palavras)
+  açaí, alça, alia, apela, ápice, aplica, caça, caia, caixa, cala, calça, cale, cálice, capa, ceia, cela, épica, *explica*, leal, leia, lixa, pala, papa, papai, papal, papel, peça, pela, picape, pipa, placa
+
+b-0022  centro E  letras E A D I L O P  (40 palavras)
+  aldeia, apela, *apelidado*, *apelido*, apelo, apoie, dedo, dela, dele, idade, ideal, ideia, leal, lealdade, leão, leia, leilão, leio, leoa, lide, odeia, odeio, odiei, opõe, papel, papelada, papelão, peão, pedal, pede, pedi, pedia, pedida, pedido, pela, pelada, pelado, pele, pelo, pode
+
+b-0023  centro I  letras I E G L M O T  (25 palavras)
+  eleito, elite, elogio, emite, emitem, item, *legítimo*, leigo, leio, leite, leito, ligo, limite, litígio, lítio, meigo, meio, meti, mimo, miolo, mito, oito, ótimo, time, tomei
+
+b-0024  centro U  letras U A I L O R T  (43 palavras)
+  altura, atirou, atraiu, atua, atual, atuar, atuará, atuou, aturar, aula, aura, auto, autor, autoral, autoria, autoritário, irritou, loura, louro, luar, lula, luta, lutar, luto, lutou, outro, outrora, ritual, rolou, rótulo, rural, tatu, tirou, titular, título, tortura, touro, traiu, tratou, tutor, *tutorial*, útil, *utilitário*
+
+b-0025  centro L  letras L A C F I M T  (36 palavras)
+  acalma, alça, alfa, alia, alma, alta, cala, calça, calma, clama, clima, facial, fácil, facilita, *facilitam*, fala, falácia, falam, falta, faltam, família, fatal, fila, filial, filma, lama, lata, latim, liam, licita, lima, limita, limitam, mala, malícia, milícia
+
+b-0026  centro D  letras D A I L N R V  (39 palavras)
+  adia, adiar, ainda, anda, andar, andava, dada, dádiva, dali, danada, dará, daria, dava, diária, dirá, diria, diva, dívida, dividi, dividida, dividir, divina, invadir, lavada, lavanda, *lavandaria*, lida, lidar, linda, nada, nadar, radar, radial, valida, validar, varanda, vida, vinda, virada
+
+b-0027  centro I  letras I A E F G L M  (27 palavras)
+  afim, agia, ágil, alia, amei, amiga, falei, família, fiel, fila, file, filial, filma, *filmagem*, filme, geleia, ilegal, imagem, leia, leiam, liam, liga, ligam, lima, máfia, magia, meia
+
+b-0028  centro E  letras E A C D I L O  (49 palavras)
+  aldeia, cadê, cadeado, cadeia, cale, cálice, cede, cedido, cedo, ceia, cela, cidade, cole, coleção, década, decida, decide, decidi, decidido, decido, dedica, dedicação, dedicado, dedico, dedo, dela, delação, dele, delicada, *delicado*, delícia, doce, edição, eleição, idade, ideal, ideia, leal, lealdade, leão, leia, leilão, leio, leoa, lide, *localidade*, odeia, odeio, odiei
+
+b-0029  centro L  letras L A E I N P T  (37 palavras)
+  alia, alta, anel, apela, apelante, ateliê, atleta, elite, italiana, lata, late, latente, latina, leal, leia, leite, lente, letal, nela, nele, pala, paleta, palpite, panela, pantanal, papal, papel, pela, pele, penal, *pênalti*, plana, planeta, planta, plantel, plateia, tela
+
+b-0030  centro V  letras V A D E N O T  (42 palavras)
+  *advento*, andava, avante, dava, deteve, deva, deve, devendo, devo, devoto, evento, nave, nevada, neve, névoa, nova, novato, nove, novena, noventa, novo, tava, tentava, teve, veda, vedado, venda, vende, vendendo, vendo, veneno, vento, vetado, veto, voando, *vontade*, vota, votado, votando, vote, voto, vovó
+
+b-0031  centro I  letras I A B D E M X  (31 palavras)
+  abadia, abaixa, abaixe, adia, amei, ameixa, baía, baixa, baixada, baixe, baixei, bebi, bebia, bebida, deixada, deixam, deixe, deixei, deixem, *embaixada*, exibe, exibem, idade, ideia, idem, máxima, média, medida, meia, mexia, mídia
+
+b-0032  centro E  letras E A C H I N O  (26 palavras)
+  ache, achei, acne, cache, caneca, ceia, cena, chance, checa, cheia, cheio, ciência, cine, cone, conheça, conhece, conheci, *conhecia*, conheço, encenação, encha, enche, ícone, inicie, iniciei, oceano
+
+b-0033  centro P  letras P A C E I L U  (25 palavras)
+  apela, ápice, aplica, capa, clipe, culpa, cúpula, épica, lupa, pala, papa, papai, papal, papel, peça, pela, pele, *película*, *pelúcia*, picape, pílula, pipa, placa, pula, pule
+
+b-0034  centro D  letras D A G I L N O  (55 palavras)
+  adia, adiado, agido, agindo, ainda, algodão, aliado, aliando, anda, andado, andando, ando, dada, dado, dali, danada, danado, dando, dano, *diagonal*, diálogo, diga, digna, digno, digo, diodo, doado, doando, doida, doido, dona, dono, gado, ídolo, indiano, indignado, índio, indo, iodo, lado, lida, lidando, lido, ligada, ligado, *ligando*, linda, lindo, lodo, nada, nadando, nado, odiado, ódio, onda
+
+b-0035  centro C  letras C A F G I N R  (40 palavras)
+  açaí, africana, arca, arcar, arranca, arrancar, caça, caçar, caia, cair, cairá, cana, canina, cara, carcaça, carga, cifra, cigana, cria, criança, criar, criará, faça, fiança, fica, ficar, ficará, ficaria, financia, financiar, fraca, *fragrância*, ganância, gincana, gráfica, infância, inicia, iniciar, iniciará, raça
+
+b-0036  centro O  letras O C E L M P X  (26 palavras)
+  coco, cole, colo, coloco, come, comece, comecem, começo, comem, como, *complexo*, compõe, compõem, copo, exemplo, expõe, expõem, moço, mole, opõe, opõem, peço, pelo, poço, põem, polo
+
+b-0037  centro L  letras L A G I R T U  (39 palavras)
+  ágil, alargar, alia, aliar, alta, altar, altura, aluga, alugar, argila, atual, aula, gala, girl, graal, grill, gula, igual, igualar, lagarta, larga, largar, largura, lata, lataria, liga, ligar, lira, *liturgia*, luar, lugar, lula, luta, lutar, ritual, rural, titular, trial, útil
+
+b-0038  centro C  letras C A I L N P R  (52 palavras)
+  açaí, alça, alcança, alcançar, aplica, aplicar, arca, arcar, arranca, arrancar, caça, caçar, caia, caipira, cair, cairá, cala, calar, calça, cana, canal, canil, canina, capa, capilar, cara, carcaça, carnal, clara, clicar, clínica, cria, criança, criar, criará, inicia, inicial, iniciar, iniciará, lança, lançar, lançará, lírica, parcial, picar, pinça, placa, placar, praça, *principal*, raça, racial
+
+b-0039  centro U  letras U A C I N O P  (25 palavras)
+  acionou, anuncia, anúncio, anunciou, apoiou, cacau, caiu, caução, iniciou, nuca, nunca, ocupa, ocupação, ocupou, ouça, ouço, pouca, pouco, poupa, poupança, poupou, *punição*, unção, único, uniu
+
+b-0040  centro O  letras O D E I M N P  (48 palavras)
+  dedo, demônio, dependendo, diodo, doem, doendo, doido, dome, domínio, dominó, dono, impedido, *impedindo*, impõe, impõem, impondo, índio, indo, iodo, medido, medindo, médio, medo, meio, menino, mimo, mínimo, modem, modo, moído, nome, nono, odeio, odiei, ódio, onde, opõe, opõem, pedido, pedindo, pepino, pino, pode, podem, podendo, pódio, põem, pondo
+
+b-0041  centro V  letras V E H I L N O  (25 palavras)
+  envie, enviei, envio, envolve, leve, levei, levo, neve, nível, noivo, nove, novo, veio, *velhinho*, velho, veneno, venho, vinho, vinil, violino, vive, vivi, vivo, vôlei, vovó
+
+b-0042  centro N  letras N A C H M O U  (25 palavras)
+  amanhã, anão, cana, canção, canhão, cano, canoa, comuna, *comunhão*, concha, cunho, humano, mancha, manhã, mano, nação, nana, noção, nono, nuca, numa, nunca, onça, unção, unha
+
+b-0043  centro I  letras I A C D E N U  (44 palavras)
+  açaí, adia, ainda, andei, anuidade, anuncia, anunciada, anuncie, audácia, *audiência*, cadeia, cadência, caia, caída, caiu, canina, ceia, cidadania, cidade, ciência, cine, cuida, cuide, decadência, decência, decida, decide, decidi, decidiu, dedica, *denúncia*, denuncie, dica, idade, ideia, incide, incidência, indica, índice, inicia, inicie, iniciei, unidade, uniu
+
+b-0044  centro N  letras N D E F I R T  (34 palavras)
+  defende, defender, define, defini, definir, dendê, dente, dentre, *diferente*, enfeite, enfrente, entende, entender, entendi, entre, entrei, entreter, frente, *indiferente*, inerente, inerte, inferir, interfere, interferir, internet, redefinir, referente, rende, render, rente, rinite, tende, tenente, tentei
+
+b-0045  centro F  letras F E I O P R T  (32 palavras)
+  efeito, feio, feitio, feito, fere, ferir, ferreiro, ferro, feto, fofo, foro, forró, forte, foto, frei, freio, frete, frio, frite, frito, *perfeito*, *prefeito*, prefere, preferi, preferir, prefiro, proferir, refeitório, refere, referi, referir, refiro
+
+b-0046  centro A  letras A B C D I N U  (44 palavras)
+  abadia, *abundância*, acaba, açaí, adia, ainda, anda, anuncia, anunciada, audácia, babá, bacana, bacia, baía, baiana, banana, banca, bancada, banda, bica, cabana, cabia, caça, caçada, cacau, cada, caia, caída, caiu, cana, canina, cauda, cidadania, cuida, dada, danada, dança, dica, indica, inicia, nada, nana, nuca, nunca
+
+b-0047  centro D  letras D E O P R U Z  (31 palavras)
+  dedo, depor, doer, doeu, doou, doze, dure, duro, durou, odor, pede, perde, perdedor, perder, perdeu, perdoe, perdoou, pode, poder, podre, produz, pude, puder, pudor, rede, redor, reduz, *reproduz*, rodo, rodou, rude
+
+b-0048  centro V  letras V D E I R T U  (30 palavras)
+  detetive, deteve, deve, dever, deveu, diverte, diverti, divertir, divide, dividi, dividir, dividiu, evite, revê, rever, reverter, reviver, teve, tive, tiver, verde, verei, vier, vire, virei, *virtude*, vive, viver, viveu, vivi
+
+b-0049  centro I  letras I A M O T U V  (35 palavras)
+  ativa, ativo, *automotivo*, avião, imita, maio, mimo, mito, moita, motiva, motivo, motivou, muito, múmia, oitava, oitavo, oito, ótimo, ouvi, ouvia, ouviu, timão, titia, vaio, viam, vítima, viúva, viúvo, viva, vivam, vivi, vivia, viviam, vivo, vômito
+
+b-0050  centro O  letras O C I M N P U  (29 palavras)
+  cinco, coco, comi, comício, cômico, como, comum, comunicou, copo, cupom, incomum, início, iniciou, mico, mimo, mínimo, moço, muco, *município*, nono, ócio, ocupou, ouço, pico, pino, poço, pouco, poupou, único
+
+b-0051  centro D  letras D A E H L O T  (27 palavras)
+  adota, adotado, adote, dada, dado, data, datado, dedo, dela, dele, detalha, *detalhado*, detalhe, doado, dotado, dote, lado, lealdade, lodo, lotada, lotado, olhada, olhado, talhada, *telhado*, toda, todo
+
+b-0052  centro F  letras F A C E I R V  (36 palavras)
+  aferir, arrefecer, café, cifra, eficácia, faça, face, fará, farei, faria, farra, feira, fera, fere, ferir, férrea, ferva, ferver, fica, ficar, ficará, ficarei, ficaria, ficava, fraca, frear, frei, freira, fria, refere, referi, referia, referir, refira, *verifica*, *verificar*
+
+b-0053  centro D  letras D A J N O T U  (43 palavras)
+  *adjunto*, adota, adotado, adotando, adotou, ajuda, ajudado, ajudando, ajudo, ajudou, anda, andado, andando, ando, andou, anotado, atuado, atuando, dada, dado, danada, danado, dando, dano, data, datado, doado, doando, dona, dono, doou, dotado, judô, juntada, *juntando*, nada, nadando, nado, notado, onda, toda, todo, tudo
+
+b-0054  centro V  letras V E I M N O T  (36 palavras)
+  envie, enviei, enviem, envio, evento, evite, evitem, evito, inventei, invento, motivo, move, movem, *movimento*, neve, noivo, nove, novo, teve, tive, veem, veio, veneno, vento, veto, vinte, vive, vivem, vivi, vivo, vômito, vote, votei, votem, voto, vovó
+
+b-0055  centro A  letras A E I L Q U V  (34 palavras)
+  aleluia, alia, alivia, aquela, aquele, aqui, aula, aval, avalia, avalie, aveia, eleva, *equivale*, lava, lavável, lave, leal, leia, leva, levava, lula, luva, qual, vala, vale, valia, válvula, veia, vela, viável, vila, viúva, viva, vivia
+
+b-0056  centro F  letras F A C G I O R  (52 palavras)
+  açafrão, afogar, afora, cifra, faça, facão, facção, faço, fará, farão, faria, farofa, farra, fiação, fica, ficar, ficará, ficarão, ficaria, ficção, fico, figo, foca, focar, foco, fofa, fofo, fofoca, fogão, fogo, fora, força, forçar, foro, forró, fraca, fração, fraco, fria, fricção, frigorífico, frio, garfo, garrafa, girafa, grafia, gráfica, *gráfico*, grifo, ofício, órfão, orifício
+
+b-0057  centro O  letras O C E F I N U  (26 palavras)
+  cinco, coco, cone, confie, confio, confiou, enfiou, feio, feno, fico, ficou, fino, foco, fofo, foice, fone, *funcione*, funcionou, ícone, início, iniciou, nono, ócio, ofício, ouço, único
+
+b-0058  centro D  letras D A H I N R V  (31 palavras)
+  adia, adiar, adivinha, *adivinhar*, ainda, anda, andar, andava, dada, dádiva, danada, dará, daria, dava, diária, dirá, diria, diva, dívida, dividi, dividida, dividir, divina, invadir, nada, nadar, radar, varanda, vida, vinda, virada
+
+b-0059  centro H  letras H A C E M N O  (30 palavras)
+  acha, acham, ache, acho, amanhã, cachaça, cache, canhão, chama, chamam, chame, chamem, chance, chão, checa, choca, concha, conheça, *conheçam*, conhece, conhecem, conheço, encha, enche, enchem, homem, macho, mancha, manhã, mecha
+
+b-0060  centro I  letras I C L N O U V  (28 palavras)
+  ciclo, cinco, cívico, civil, clínico, concílio, conclui, concluiu, convívio, inclui, incluiu, início, iniciou, invoco, nocivo, noivo, ócio, ouvi, ouviu, único, uniu, vício, *vínculo*, vinil, violino, viúvo, vivi, vivo
