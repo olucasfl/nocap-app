@@ -1,6 +1,6 @@
 # 032 · Word's: o grupo de jogos de palavras e a base de palavras em português
 
-Status: **rascunho (19/10/2026), à espera das decisões da seção "Decisões em aberto".** Pesquisa de base em [docs/pesquisa-termo.md](../docs/pesquisa-termo.md). Specs dos jogos: [033 Classic Word's](033-classic-words.md), [034 Connect Word's](034-connect-words.md) e [035 Bee Word's](035-bee-words.md).
+Status: **aprovada (19/10/2026): decisões do Lucas registradas abaixo; construção começa pela base de palavras e pelo Classic.** Pesquisa de base em [docs/pesquisa-termo.md](../docs/pesquisa-termo.md). Specs dos jogos: [033 Classic Word's](033-classic-words.md), [034 Connect Word's](034-connect-words.md) e [035 Bee Word's](035-bee-words.md).
 
 ## Objetivo
 
@@ -20,6 +20,7 @@ Este arquivo cobre o que os três têm em comum: o grupo, a **base de palavras**
 - Ordem pedida: **Classic Word's**, **Connect Word's**, **Bee Word's**.
 - O **Classic** tem uma **página própria**: tocar nele abre uma tela para escolher **Daily**, **1 palavra**, **2 palavras** ou **4 palavras**, com as regras já conhecidas de cada modo. O **Daily tem uma interface própria**, que controla se a pessoa já jogou e mostra o que precisa.
 - **Os três precisam de uma base de palavras em português boa.** Sem palavras distantes ou difíceis demais. No Connect as palavras **precisam combinar de verdade**.
+- **Respostas às decisões em aberto (19/10/2026):** (1) **convidado joga os modos livres sem salvar; o Daily só com conta**; (2) **os modos livres NÃO têm ranking, só o Daily**; (3) **pode usar a coleção MIT `fserb/pt-br` e o esquema de revisão** (eu monto o corte e leio as listas, o Lucas dá a palavra final); (4) corrida em banco (`word_runs`), como proposto; (5) vale para os três jogos o que está em cada spec.
 - Não é para só copiar o Termo e os outros: o que for igual ao original segue o gênero; o que diferencia (poderes, modos de sala, etc.) é tratado nas melhorias da seção final e em specs futuras.
 
 ## Regras comuns
@@ -155,11 +156,11 @@ Salas e modos de vários jogadores; modo de treino offline; dicionário com sign
 
 ## Decisões em aberto
 
-1. **Convidado joga?** Padrão proposto: convidado joga os **modos livres** sem salvar (spec 023) e o **Daily só com conta**. O servidor precisa de uma corrida mesmo para convidado (de vida curta), com limite por IP.
-2. **Ranking dos modos livres.** Os modos de 1, 2 e 4 palavras dão sorte (acertar de primeira). Padrão proposto: **sem ranking de nota máxima**; mostrar **sequência de vitórias**, **tentativas médias** e **vitórias** nos recordes, e deixar um quadro de "melhor sequência" para uma etapa seguinte.
-3. **Posso usar a coleção `fserb/pt-br` (MIT) como base?** (sim, é a recomendação).
-4. **Quem revisa as respostas?** Proposta: eu monto o primeiro corte e leio a lista inteira marcando o que sai; o Lucas dá a palavra final em amostras e nas dúvidas.
-5. **Corrida em banco ou em memória?** Proposta: banco (a tabela `word_runs`), porque o Daily não pode perder tentativas se o servidor reiniciar.
+1. ~~Convidado joga?~~ **Decidido:** convidado joga os modos livres sem salvar; Daily só com conta. (Proposta original: convidado joga os **modos livres** sem salvar (spec 023) e o **Daily só com conta**. O servidor precisa de uma corrida mesmo para convidado (de vida curta), com limite por IP.)
+2. ~~Ranking dos modos livres.~~ **Decidido: não tem ranking, só o Daily.** Os modos livres mostram sequência de vitórias, tentativas médias e vitórias nos recordes. (Proposta original: **sem ranking de nota máxima**; mostrar **sequência de vitórias**, **tentativas médias** e **vitórias** nos recordes, e deixar um quadro de "melhor sequência" para uma etapa seguinte.)
+3. ~~Posso usar a coleção `fserb/pt-br` (MIT) como base?~~ **Decidido: sim.**
+4. ~~Quem revisa as respostas?~~ **Decidido:** (proposta aprovada) eu monto o primeiro corte e leio a lista inteira marcando o que sai; o Lucas dá a palavra final em amostras e nas dúvidas.
+5. ~~Corrida em banco ou em memória?~~ **Decidido:** banco (a tabela `word_runs`), porque o Daily não pode perder tentativas se o servidor reiniciar.
 
 ## Melhorias e acréscimos sugeridos (para o Lucas decidir)
 

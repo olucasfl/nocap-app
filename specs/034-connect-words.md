@@ -1,6 +1,6 @@
 # 034 · Connect Word's (16 palavras, 4 grupos, o estilo Conexo e Connections)
 
-Status: **rascunho (19/10/2026).** Faz parte do grupo [032 Word's](032-words-grupo-e-base.md) (corridas no servidor, Daily, compartilhar, acessibilidade). Pesquisa em [docs/pesquisa-termo.md](../docs/pesquisa-termo.md).
+Status: **aprovada (19/10/2026); vem depois do Classic e do Bee.** Faz parte do grupo [032 Word's](032-words-grupo-e-base.md) (corridas no servidor, Daily, compartilhar, acessibilidade). Pesquisa em [docs/pesquisa-termo.md](../docs/pesquisa-termo.md).
 
 ## Objetivo
 
@@ -19,16 +19,17 @@ O que o NoCap adota: as regras do Connections (4 erros, "falta uma", embaralhar,
 - Nome: **Connect Word's**; "tipo o Conexo e o Connections do NY Times".
 - **As palavras precisam realmente se conectar bem**; nada distante, difícil demais ou "forçado".
 - Usa a **base em português** do grupo e a mesma infraestrutura do Word's.
+- **Respostas às decisões em aberto (19/10/2026):** **5 vidas** (não 4); **eu preparo os puzzles em lotes de 30 e o Lucas aprova**, com **90 no lançamento**; expressões de 2 palavras valem (até 14 letras).
 
 ## Regras
 
 ### O jogo
 - **16 palavras** numa grade 4x4, em ordem embaralhada (a ordem inicial sai da seed da corrida). A pessoa **toca em 4 palavras** e aperta **Enviar**.
   - **Acertou:** o grupo **trava no topo** com a cor do nível e o **nome da categoria**, e as outras 12 palavras se reorganizam.
-  - **Errou:** perde **1 de 4 vidas** (corações). Se **3 das 4** palavras são de um mesmo grupo, aparece **"Falta uma"** (nada mais é revelado). Palpite com 2 ou menos acertos num mesmo grupo não dá pista.
+  - **Errou:** perde **1 de 5 vidas** (corações). Se **3 das 4** palavras são de um mesmo grupo, aparece **"Falta uma"** (nada mais é revelado). Palpite com 2 ou menos acertos num mesmo grupo não dá pista.
   - **Repetir** exatamente o mesmo palpite errado não gasta vida ("Você já tentou esse grupo").
 - **Embaralhar** (reorganiza as palavras ainda soltas, só visual) e **Limpar seleção**.
-- A partida acaba ao **achar os 4 grupos** (vitória) ou ao **perder as 4 vidas** (derrota: o jogo **revela os grupos que faltam** com os nomes).
+- A partida acaba ao **achar os 4 grupos** (vitória) ou ao **perder as 5 vidas** (derrota: o jogo **revela os grupos que faltam** com os nomes).
 - Os grupos têm **4 níveis**, e o **nível só é revelado quando o grupo é achado**:
 
 | Nível | Cor (tokens do Pop Brutal) | Tipo de ligação |
@@ -39,8 +40,8 @@ O que o NoCap adota: as regras do Connections (4 erros, "falta uma", embaralhar,
 | 4 | roxo (ou laranja) | **jogo de palavras**: palíndromos, palavras que mudam de sentido com o/a, palavras que **escondem** outra palavra |
 
 ### Nota (0 a 10, no servidor)
-- **Vitória** com `e` erros: **10** (0 erros), **8,5** (1), **7** (2), **5,5** (3).
-- **Derrota** com `g` grupos achados: **0** (0), **1** (1), **2** (2), **3** (3).
+- **Vitória** com `e` erros: **10** (0 erros), **8,5** (1), **7** (2), **5,5** (3), **4** (4).
+- **Derrota** (5 erros) com `g` grupos achados: **0** (0), **1** (1), **2** (2), **3** (3).
 - O tempo não conta. O servidor registra só quando começou e terminou.
 
 ### Modos
@@ -118,7 +119,7 @@ A ordem em que os puzzles vão ao ar vem de um arquivo `calendario.json` **só d
 
 ### Tela de jogo
 - Grade 4x4 de **casas grandes** (Pop Brutal: borda de tinta, sombra dura). Tocar **levanta** a casa (`translateY`) e muda a borda; selecionar uma quinta troca a primeira. Texto da palavra **se ajusta** ao tamanho da casa (nenhum corte).
-- **Enviar**, **Embaralhar**, **Limpar**; **4 corações** (o que se perde estoura). "Falta uma" aparece como etiqueta no topo.
+- **Enviar**, **Embaralhar**, **Limpar**; **5 corações** (o que se perde estoura). "Falta uma" aparece como etiqueta no topo.
 - **Grupo achado:** as 4 casas **voam** para a linha de cima (`transform`), a faixa fica da cor do nível e mostra o **nome da categoria**; um som por nível.
 - **Erro:** a seleção **balança** e perde o coração. Palpite repetido: aviso, sem custo.
 - **Fim:** vitória (carimbo, nota, os 4 grupos coloridos com os nomes) ou derrota (os grupos que faltam são **revelados** e ficam esmaecidos com os nomes).
@@ -143,7 +144,7 @@ Rotas genéricas da spec 032 (`/words/wconnect/...`).
 - **Dado** um palpite com 4 palavras do mesmo grupo, **então** o grupo trava com nome e cor e as outras 12 se reorganizam.
 - **Dado** um palpite com 3 palavras de um grupo e 1 de outro, **então** aparece "Falta uma" e perco 1 vida.
 - **Dado** o mesmo palpite errado duas vezes, **então** a segunda não gasta vida.
-- **Dado** que perdi as 4 vidas, **então** os grupos que faltam são revelados com nomes e a nota é a da tabela.
+- **Dado** que perdi as 5 vidas, **então** os grupos que faltam são revelados com nomes e a nota é a da tabela.
 - **Dado** o Daily concluído, **quando** tento jogar de novo, **então** o servidor recusa (409) e a tela mostra o resultado.
 - **Dado** qualquer resposta durante a partida, **então** ela não contém grupos ainda não achados nem o nível deles.
 - **Dado** um puzzle novo no lote, **quando** a validação roda, **então** ele só passa com uma divisão possível, 16 palavras distintas e sem palavra da lista de negativas.
@@ -156,12 +157,12 @@ Salas (separar mais rápido, cooperativo); editor de puzzles no app; criar o pr�
 
 ## Decisões em aberto
 
-1. **Vidas:** 4 (como o Connections) ou ilimitadas (como o Conexo, segundo uma das fontes). Proposta: **4**.
+1. ~~Vidas~~ **Decidido: 5 vidas.**
 2. **Dica**: uma dica por partida que revela **uma palavra** de um grupo ainda não achado e **tira 2 pontos da nota**. Entra agora ou depois?
 3. **Cores do nível 4**: roxo (não está nos tokens atuais?) ou laranja; escolher com o design.
 4. **Arquivo**: escolher a data livremente ou receber o próximo não jogado? Proposta: os dois (lista por data).
-5. **Quem escreve** os puzzles (proposta: eu preparo os lotes de 30 e o Lucas aprova) e **o volume do lançamento** (proposta: 90).
-6. **Aceitar expressões de 2 palavras** (`PÃO DE QUEIJO`) nas casas? Proposta: sim, até 14 letras.
+5. ~~Quem escreve os puzzles e o volume do lançamento~~ **Decidido:** eu preparo os lotes de 30, o Lucas aprova, 90 no lançamento.
+6. ~~Aceitar expressões de 2 palavras~~ **Decidido: sim**, até 14 letras.
 
 ## Melhorias e acréscimos sugeridos
 

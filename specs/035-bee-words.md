@@ -1,6 +1,6 @@
 # 035 · Bee Word's (7 letras, uma delas obrigatória, o estilo Spelling Bee)
 
-Status: **rascunho (19/10/2026).** Faz parte do grupo [032 Word's](032-words-grupo-e-base.md) (base de palavras, corridas no servidor, Daily, compartilhar, acessibilidade). Pesquisa em [docs/pesquisa-termo.md](../docs/pesquisa-termo.md).
+Status: **aprovada (19/10/2026); vem depois do Classic.** Faz parte do grupo [032 Word's](032-words-grupo-e-base.md) (base de palavras, corridas no servidor, Daily, compartilhar, acessibilidade). Pesquisa em [docs/pesquisa-termo.md](../docs/pesquisa-termo.md).
 
 ## Objetivo
 
@@ -18,6 +18,7 @@ Formar o **maior número de palavras** com **7 letras** dispostas num favo de me
 
 - Nome: **Bee Word's**, "igual ao Spelling Bee".
 - Base de palavras em português, **sem palavras distantes ou difíceis**; a lógica tem de estar boa.
+- **Respostas às decisões em aberto (19/10/2026):** **sem a letra S** nos favos e **formas verbais valem**; o resto segue as propostas (palavra rara digitada = "não está na lista", nota 10 no Gênio, patentes do original, dicas sempre abertas).
 
 ## Regras
 
@@ -152,8 +153,8 @@ Salas (corrida de favos); modo de favo aleatório sem revisão; letra `S` e `Ç`
 
 ## Decisões em aberto
 
-1. **Excluir a letra `S`** (proposta: sim, pelo peso dos plurais; mais difícil de explicar se as pessoas acharem estranho).
-2. **Formas verbais valem?** Proposta: **sim** (são palavras reais e dão muita graça), com revisão para não haver 15 formas do mesmo verbo.
+1. ~~Excluir a letra `S`~~ **Decidido: sim.**
+2. ~~Formas verbais valem?~~ **Decidido: sim**, com revisão para não haver 15 formas do mesmo verbo.
 3. **Palavra rara digitada:** "Não está na lista" (como o original) ou **valer sem pontos** (para não frustrar quem conhece a palavra)? Proposta: **não está na lista**, simples e justo.
 4. **Nota máxima no Gênio (70%)** ou em 100%? Proposta: **Gênio**.
 5. **Patentes com esses nomes** (e as porcentagens do original) ou nomes do NoCap?

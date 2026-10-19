@@ -1,6 +1,6 @@
 # 033 · Classic Word's (a base do Termo, com 1, 2 e 4 palavras e o Daily)
 
-Status: **rascunho (19/10/2026).** Faz parte do grupo [032 Word's](032-words-grupo-e-base.md), que define a base de palavras, as corridas no servidor, o Daily, o compartilhar e as regras comuns. Pesquisa em [docs/pesquisa-termo.md](../docs/pesquisa-termo.md).
+Status: **aprovada (19/10/2026), em construção.** Faz parte do grupo [032 Word's](032-words-grupo-e-base.md), que define a base de palavras, as corridas no servidor, o Daily, o compartilhar e as regras comuns. Pesquisa em [docs/pesquisa-termo.md](../docs/pesquisa-termo.md).
 
 ## Objetivo
 
@@ -12,6 +12,7 @@ O jogo de adivinhar a **palavra secreta de 5 letras**, com a identidade do NoCap
 - Modos: **1, 2 e 4 palavras** e o **Daily**.
 - **Interface própria**: ao tocar no Classic abre uma página para escolher Daily, 1, 2 ou 4 palavras, com as **regras que já existem** para cada modo.
 - O **Daily tem interface própria** para controlar se a pessoa já jogou e mostrar o que precisa.
+- **Respostas às decisões em aberto (19/10/2026):** tentativas **como no Termo** (6, 7 e 9); **os modos livres não têm ranking, só o Daily**; convidado joga os modos livres sem salvar, o Daily só com conta.
 
 ## Regras
 
@@ -84,7 +85,7 @@ Usa as rotas genéricas da spec 032 (`/words/wclassic/...`).
 - `POST /words/wclassic/runs` com `{ kind: 'daily' | 'solo', mode: 'classic' | 'dueto' | 'quarteto' }` cria ou retoma a corrida. Resposta: `runId`, número de tabuleiros, tentativas, jogadas já feitas com as cores de cada uma.
 - `POST /words/wclassic/runs/:id/moves` com `{ guess }` (5 letras, com ou sem acento). Respostas: `{ accepted: false, reason }` (não aceita, não gasta tentativa) ou `{ accepted: true, shown, patterns: [...], solved: [...], over, answers? }`. `shown` é a forma acentuada do palpite; `patterns` traz uma linha de 5 estados por tabuleiro (`hit`, `near`, `miss`); `answers` só vem quando `over` é verdadeiro.
 - Partida salva em `matches`: `game: 'wclassic'`, `mode` (`daily` usa `classic` com `kind: 'daily'`, como o resto do app), `settings: { words, tries, scoreVersion: 1 }`, `encodedAnswers` com os palpites, nota em décimos.
-- `GameId`, `RANKING_GAMES`, `BOARDS_OF`, estatísticas, recordes e histórico passam a conhecer `wclassic`. Quadros do ranking: `daily` (soma das notas) e, depois da decisão 2 da spec 032, os modos livres.
+- `GameId`, `RANKING_GAMES`, `BOARDS_OF`, estatísticas, recordes e histórico passam a conhecer `wclassic`. Quadro do ranking: **só `daily`** (soma das notas dos dias). Os modos livres aparecem nos recordes (vitórias, sequência de vitórias, tentativas médias) e no histórico, sem ranking.
 - Código novo: `packages/games/src/words/classic/` (cores, nota, regras, testes), `apps/api/src/words/` (rotas e serviço), `apps/web/src/games/words/classic/` (páginas e tela de jogo), `apps/web/src/lib/words-audio.ts` (sons).
 
 ## Critérios de aceite
@@ -106,11 +107,11 @@ Salas (corrida, duelo, poderes); modo difícil; Daily de Dueto e de Quarteto; pa
 
 ## Decisões em aberto
 
-1. **Número de tentativas** (6, 7 e 9, como no Termo) ou ajustar. O Decifra dá 1 a mais por tabuleiro extra e mais em palavras longas; o Termo usa 6/7/9.
+1. ~~Número de tentativas~~ **Decidido: 6, 7 e 9, como no Termo.**
 2. **Modo difícil** (obriga a reusar as dicas): entra agora como opção nos modos livres? (proposta: **não** nesta etapa).
 3. **Daily também de Dueto e Quarteto?** (proposta: só o de 1 palavra por enquanto; os outros viram "Dailies extras" depois, se o Daily simples pegar).
 4. **Tecla do `Ç`**: proposta é não ter, e mostrar `ç` automaticamente (`coracao` vira `coração`). Alguém pode querer digitar `ç` com o teclado físico: aceitar como `c`.
-5. **Ranking dos modos livres** (decisão 2 da spec 032).
+5. ~~Ranking dos modos livres~~ **Decidido: não há; só o Daily tem ranking.**
 6. **A palavra do Daily revela o significado** no fim? Só depois de acharmos uma fonte de definições livre.
 
 ## Melhorias e acréscimos sugeridos
