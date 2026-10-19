@@ -1162,3 +1162,177 @@ a.wd-card:hover .wd-card-go {
   font-style: normal;
   font-size: 20px;
 }
+
+/* ====================== Classic: modos em destaque e Daily chamativo ====================== */
+.cw-modes {
+  display: grid;
+  gap: 12px;
+}
+.cw-modecard {
+  display: grid;
+  grid-template-columns: 92px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: var(--border);
+  border-radius: 20px;
+  background: var(--white);
+  color: var(--ink);
+  box-shadow: 5px 5px 0 var(--ink);
+  text-decoration: none;
+  transition:
+    transform 0.08s ease-out,
+    box-shadow 0.08s ease-out;
+  animation: wd-rise 0.45s cubic-bezier(0.2, 1.2, 0.4, 1) both;
+  animation-delay: calc(var(--i) * 0.08s + 0.1s);
+}
+.cw-modecard:active {
+  transform: translate(5px, 5px);
+  box-shadow: 0 0 0 var(--ink);
+}
+.cw-modecard.m1 {
+  background: var(--green);
+  color: var(--on-accent);
+}
+.cw-modecard.m2 {
+  background: var(--yellow);
+  color: var(--on-accent);
+}
+.cw-modecard.m4 {
+  background: var(--orange);
+  color: var(--on-accent);
+}
+.cw-modecard-art {
+  height: 74px;
+  padding: 8px;
+  border: 2.5px solid var(--ink);
+  border-radius: 14px;
+  background: var(--paper);
+}
+.cw-modecard-body {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.cw-modecard-body b {
+  font: 900 clamp(20px, 5.6vw, 26px) var(--font-display);
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+.cw-modecard-body .mono {
+  font-size: 11px;
+  text-transform: uppercase;
+}
+.cw-modecard-stats {
+  opacity: 0.75;
+}
+.cw-modecard-go {
+  padding: 10px 14px;
+  border: 2.5px solid var(--ink);
+  border-radius: 12px;
+  background: var(--ink);
+  color: var(--paper);
+  font: 900 13px var(--font-display);
+  text-transform: uppercase;
+}
+.cw-daily {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 16px;
+  border: var(--border);
+  border-radius: 20px;
+  background: var(--ink);
+  color: var(--paper);
+  box-shadow: 5px 5px 0 var(--orange);
+  text-decoration: none;
+  overflow: hidden;
+  transition:
+    transform 0.08s ease-out,
+    box-shadow 0.08s ease-out;
+  animation: wd-rise 0.45s cubic-bezier(0.2, 1.2, 0.4, 1) 0.4s both;
+}
+.cw-daily:active {
+  transform: translate(5px, 5px);
+  box-shadow: 0 0 0 var(--orange);
+}
+.cw-daily-text {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.cw-daily-text b {
+  font: 900 clamp(24px, 7vw, 32px) var(--font-display);
+  letter-spacing: -0.045em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+.cw-daily-text .mono {
+  font-size: 11px;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+.cw-daily-go {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 2.5px solid var(--ink);
+  border-radius: 50%;
+  background: var(--orange);
+  color: var(--on-accent);
+  font: 900 22px var(--font-display);
+  animation: cw-daily-pulse 1.8s ease-in-out 1.2s infinite;
+}
+.cw-daily-shine {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -60px;
+  width: 36px;
+  background: #fff;
+  opacity: 0.16;
+  transform: skewX(-18deg);
+  animation: cw-daily-shine 3.6s ease-in-out 1.5s infinite;
+}
+.cw-daily.done {
+  background: var(--white);
+  color: var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+  animation: wd-rise 0.45s ease 0.4s both;
+}
+.cw-rank {
+  margin-top: 10px;
+}
+@keyframes cw-daily-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.18);
+  }
+}
+@keyframes cw-daily-shine {
+  0%,
+  55% {
+    transform: translateX(0) skewX(-18deg);
+  }
+  100% {
+    transform: translateX(520px) skewX(-18deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cw-modecard,
+  .cw-daily,
+  .cw-daily-go,
+  .cw-daily-shine {
+    animation: none !important;
+  }
+  .cw-daily-shine {
+    display: none;
+  }
+}

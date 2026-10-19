@@ -1,14 +1,14 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { PlayGate } from '@/components/PlayGate';
 import { useAuth } from '@/lib/auth';
 import { fetchStats } from '@/lib/stats';
 import { ClassicArt, MiniBoards } from './words-art';
-import { Pill, RulesList, Tabs, WordsShell } from './words-kit';
+import { Pill, RulesList, WordsShell } from './words-kit';
 import { fetchDaily, fetchModes, MODE_LABEL, type ClassicMode } from './words-api';
 
-type Tab = 'daily' | ClassicMode;
+const MODES: ClassicMode[] = ['classic', 'dueto', 'quarteto'];
 
 const RULES = [
   'Digite uma palavra de 5 letras e aperte Enter. Ela precisa existir na lista do jogo.',
@@ -18,10 +18,9 @@ const RULES = [
   'A partida fica salva: saia e volte quando quiser. Ao terminar, a próxima palavra já é sorteada.',
 ];
 
-/** A página do Classic Word's: abas Daily, 1, 2 e 4 palavras, com as partidas salvas de cada modo. */
+/** A página do Classic Word's: os modos de 1, 2 e 4 palavras em destaque e o Daily como botão chamativo. */
 export function ClassicPage() {
   const user = useAuth((s) => s.user);
-  const [tab, setTab] = useState<Tab>('daily');
   const [rules, setRules] = useState(false);
   const daily = useQuery({ queryKey: ['words', 'daily'], queryFn: fetchDaily, enabled: !!user, retry: false });
   const modes = useQuery({ queryKey: ['words', 'modes'], queryFn: fetchModes, enabled: !!user, retry: false, refetchOnMount: 'always' });
@@ -43,91 +42,76 @@ export function ClassicPage() {
       </section>
 
       <PlayGate what="jogar">
-        <Tabs
-          label="Modos"
-          value={tab}
-          onChange={setTab}
-          tabs={[
-            { id: 'daily', label: 'Daily' },
-            { id: 'classic', label: '1 palavra' },
-            { id: 'dueto', label: '2 palavras' },
-            { id: 'quarteto', label: '4 palavras' },
-          ]}
-        />
-
-        {tab === 'daily' ? (
-          <section className="wd-panel daily" data-testid="daily-card">
-            <div className="wd-panel-head">
-              <h3>Daily{daily.data ? ` #${daily.data.number}` : ''}</h3>
-              {streak && <Pill tone="paper">Sequência {streak.current}</Pill>}
-            </div>
-            {done ? (
-              <>
-                <div className="mono">
-                  Você já jogou hoje · nota {(run!.nota ?? 0).toFixed(1).replace('.', ',')} · {run!.used} de {run!.tries} tentativas
-                </div>
-                <div className="mono">A próxima palavra sai à meia-noite.</div>
-              </>
-            ) : (
-              <>
-                <div className="mono">
-                  {run ? `Em andamento · ${run.used} de ${run.tries} tentativas` : 'Uma palavra por dia, igual para todos · 6 tentativas'}
-                </div>
-                <Link to="/words/classic/jogar" search={{ tipo: 'daily', modo: 'classic' }} className="btn alt" data-sfx="start" data-testid="play-daily">
-                  {run ? 'Continuar o Daily' : 'Jogar o Daily'}
-                </Link>
-              </>
-            )}
-            <Link to="/ranking" search={{ jogo: 'wclassic', modo: 'daily' }} className="wd-link">
-              <span>
-                Ranking do Daily
-                <small>Só o Daily conta para o ranking</small>
-              </span>
-              <i>→</i>
-            </Link>
-          </section>
-        ) : (
-          (() => {
-            const info = MODE_LABEL[tab];
-            const m = modes.data?.[tab];
+        <h3 className="wd-section">Escolha o modo</h3>
+        <div className="cw-modes">
+          {MODES.map((m, i) => {
+            const info = MODE_LABEL[m];
+            const s = modes.data?.[m];
             return (
-              <section className="wd-panel cw-mode" data-testid={`mode-card-${tab}`}>
-                <div className="cw-mode-art">
+              <Link
+                key={m}
+                to="/words/classic/jogar"
+                search={{ tipo: 'solo', modo: m }}
+                className={`cw-modecard m${info.words}`}
+                style={{ '--i': i } as CSSProperties}
+                data-sfx="start"
+                data-testid={`mode-${m}`}
+              >
+                <div className="cw-modecard-art">
                   <MiniBoards count={info.words as 1 | 2 | 4} />
                 </div>
-                <div className="wd-panel-head">
-                  <h3>{info.name}</h3>
-                  <Pill tone="paper">{info.tries} tentativas</Pill>
-                </div>
-                <div className="mono">
-                  {m?.open
-                    ? `Em andamento · ${m.open.used} de ${m.open.tries} tentativas`
-                    : `${info.words === 1 ? 'Uma palavra' : `${info.words} palavras ao mesmo tempo`}. Jogue quando quiser.`}
-                </div>
-                {m && (
-                  <div className="cw-mode-stats mono">
-                    <span>
-                      <b>{m.played}</b> jogadas
+                <div className="cw-modecard-body" data-testid={`mode-card-${m}`}>
+                  <b>{info.name}</b>
+                  <span className="mono">
+                    {s?.open ? `Em andamento · ${s.open.used} de ${s.open.tries}` : `${info.tries} tentativas`}
+                  </span>
+                  {s && s.played > 0 && (
+                    <span className="mono cw-modecard-stats">
+                      {s.won} vitória{s.won === 1 ? '' : 's'} em {s.played}
                     </span>
-                    <span>
-                      <b>{m.won}</b> vitórias
-                    </span>
-                  </div>
-                )}
-                <Link
-                  to="/words/classic/jogar"
-                  search={{ tipo: 'solo', modo: tab }}
-                  className="btn alt"
-                  data-sfx="start"
-                  data-testid={`mode-${tab}`}
-                >
-                  {m?.open ? 'Continuar' : 'Jogar'}
-                </Link>
-                <div className="mono cw-note">Sem ranking. A partida fica salva e, ao terminar, a próxima palavra já é sorteada.</div>
-              </section>
+                  )}
+                </div>
+                <span className="cw-modecard-go">{s?.open ? 'Continuar' : 'Jogar'}</span>
+              </Link>
             );
-          })()
-        )}
+          })}
+        </div>
+        <p className="mono cw-note">Sem ranking. A partida fica salva e, ao terminar, a próxima palavra já é sorteada.</p>
+
+        <section data-testid="daily-card">
+          {done ? (
+            <div className="cw-daily done">
+              <div className="cw-daily-text">
+                <b>Daily #{daily.data?.number} concluído</b>
+                <span className="mono">
+                  Nota {(run!.nota ?? 0).toFixed(1).replace('.', ',')} · {run!.used} de {run!.tries} · a próxima palavra sai à meia-noite
+                </span>
+              </div>
+              {streak && <Pill tone="paper">Sequência {streak.current}</Pill>}
+            </div>
+          ) : (
+            <Link to="/words/classic/jogar" search={{ tipo: 'daily', modo: 'classic' }} className="cw-daily" data-sfx="start" data-testid="play-daily">
+              <span className="cw-daily-shine" aria-hidden="true" />
+              <span className="cw-daily-text">
+                <b>{run ? 'Continuar o Daily' : 'Jogar o Daily'}</b>
+                <span className="mono">
+                  {run ? `${run.used} de ${run.tries} tentativas` : `A palavra do dia #${daily.data?.number ?? ''} · igual para todos`}
+                  {streak && streak.current > 0 ? ` · sequência ${streak.current}` : ''}
+                </span>
+              </span>
+              <span className="cw-daily-go" aria-hidden="true">
+                →
+              </span>
+            </Link>
+          )}
+          <Link to="/ranking" search={{ jogo: 'wclassic', modo: 'daily' }} className="wd-link cw-rank">
+            <span>
+              Ranking do Daily
+              <small>Só o Daily conta para o ranking</small>
+            </span>
+            <i>→</i>
+          </Link>
+        </section>
       </PlayGate>
 
       <button type="button" className="wd-toggle" aria-expanded={rules} onClick={() => setRules((r) => !r)} data-testid="toggle-rules">

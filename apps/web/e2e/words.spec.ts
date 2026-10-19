@@ -94,18 +94,13 @@ test.describe("Hub do Word's", () => {
 });
 
 test.describe("Classic Word's", () => {
-  test('a página tem as abas Daily, 1, 2 e 4 palavras', async ({ page }) => {
+  test('a página destaca os 3 modos e tem o botão do Daily', async ({ page }) => {
     await page.goto('/words/classic');
-    await expect(page.getByTestId('daily-card')).toContainText('Jogar o Daily');
-    for (const [tab, label] of [
-      ['classic', '1 palavra'],
-      ['dueto', '2 palavras'],
-      ['quarteto', '4 palavras'],
-    ] as const) {
-      await page.getByTestId(`tab-${tab}`).click();
-      await expect(page.getByTestId(`mode-card-${tab}`)).toContainText(label);
-      await expect(page.getByTestId(`mode-${tab}`)).toBeVisible();
+    for (const [m, label] of [['classic', '1 palavra'], ['dueto', '2 palavras'], ['quarteto', '4 palavras']] as const) {
+      await expect(page.getByTestId(`mode-${m}`)).toBeVisible();
+      await expect(page.getByTestId(`mode-card-${m}`)).toContainText(label);
     }
+    await expect(page.getByTestId('play-daily')).toContainText('Jogar o Daily');
     await noOverflow(page);
   });
 
@@ -158,14 +153,12 @@ test.describe("Classic Word's", () => {
 
   test('a partida fica salva: sair e voltar continua de onde parou', async ({ page }) => {
     await page.goto('/words/classic');
-    await page.getByTestId('tab-classic').click();
     await page.getByTestId('mode-classic').click();
     await expect(page.getByTestId('board-0')).toBeVisible();
     await type(page, 'casas');
     await page.keyboard.press('Enter');
     await expect(page.getByTestId('row-0-0')).toBeVisible();
     await page.goto('/words/classic');
-    await page.getByTestId('tab-classic').click();
     await expect(page.getByTestId('mode-card-classic')).toContainText('Em andamento · 1 de 6');
     await page.getByTestId('mode-classic').click();
     await expect(page.getByTestId('row-0-0')).toBeVisible();
