@@ -213,6 +213,17 @@ const wordsBeePlayRoute = createRoute({
   component: lazyRouteComponent(() => import('@/games/words/bee/BeePlay'), 'BeePlay'),
 });
 
+const wordsConnectRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/words/connect',
+  component: lazyRouteComponent(() => import('@/games/words/connect/ConnectPage'), 'ConnectPage'),
+});
+const wordsConnectPlayRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/words/connect/jogar',
+  component: lazyRouteComponent(() => import('@/games/words/connect/ConnectPlay'), 'ConnectPlay'),
+});
+
 const routeTree = rootRoute.addChildren([
   tabsRoute.addChildren([
     hubRoute,
@@ -232,6 +243,8 @@ const routeTree = rootRoute.addChildren([
   wordsClassicPlayRoute,
   wordsBeeRoute,
   wordsBeePlayRoute,
+  wordsConnectRoute,
+  wordsConnectPlayRoute,
   nocapRoute,
   loginRoute,
   registerRoute,

@@ -58,7 +58,7 @@ export const activeFilters = (f: HistoryFilters) =>
   (f.mode ? 1 : 0) + (f.kind ? 1 : 0) + (f.period !== 'all' ? 1 : 0);
 
 export function fetchHistory(
-  game: 'color' | 'time' | 'eco' | 'blocks' | 'atravessa' | 'wclassic' | 'wbee',
+  game: 'color' | 'time' | 'eco' | 'blocks' | 'atravessa' | 'wclassic' | 'wbee' | 'wconnect',
   cursor?: string,
   filters: HistoryFilters = NO_FILTERS,
 ) {

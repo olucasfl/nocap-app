@@ -36,6 +36,7 @@ const GAME_PATH = {
   atravessa: '/atravessa',
   wclassic: '/words/classic',
   wbee: '/words/bee',
+  wconnect: '/words/connect',
 } as const;
 
 /** Diferença de nota para mostrar: pontos com uma casa, ou número inteiro nos jogos de contagem. */

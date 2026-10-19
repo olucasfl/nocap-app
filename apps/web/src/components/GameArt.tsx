@@ -85,4 +85,5 @@ export const GAME_LABEL: Record<GameId, string> = {
   atravessa: 'Atravessa!',
   wclassic: "Classic Word's",
   wbee: "Bee Word's",
+  wconnect: "Connect Word's",
 };

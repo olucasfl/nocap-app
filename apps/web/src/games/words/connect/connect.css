@@ -1,0 +1,118 @@
+/* Connect Word's: grade 4x4, grupos achados e vidas. Só transform/opacity animam. */
+.cn-lives {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+.cn-lives i {
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid var(--ink);
+  border-radius: 50%;
+  background: var(--orange);
+  transition: transform 0.25s ease, opacity 0.25s ease;
+}
+.cn-lives i.lost {
+  background: transparent;
+  opacity: 0.4;
+  transform: scale(0.8);
+}
+.cn-found {
+  display: grid;
+  gap: 6px;
+}
+.cn-band {
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  text-align: center;
+  color: var(--on-accent);
+  animation: cn-in 0.4s ease both;
+}
+.cn-band.l1 {
+  background: var(--yellow);
+}
+.cn-band.l2 {
+  background: var(--green);
+}
+.cn-band.l3 {
+  background: var(--blue);
+  color: var(--on-blue);
+}
+.cn-band.l4 {
+  background: var(--eco-purple);
+  color: var(--on-blue);
+}
+.cn-band.missed {
+  opacity: 0.6;
+}
+.cn-band b {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 900;
+  text-transform: uppercase;
+  font-size: 14px;
+}
+.cn-band span {
+  font-size: 12px;
+}
+.cn-marks {
+  letter-spacing: 3px;
+  font-size: 10px;
+}
+.cn-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.cn-word {
+  min-height: 62px;
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-weight: 900;
+  text-transform: uppercase;
+  font-size: clamp(10px, 2.9vw, 14px);
+  padding: 4px;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+  transition: transform 0.15s ease;
+}
+.cn-word.long {
+  font-size: clamp(8px, 2.3vw, 11px);
+}
+.cn-word.on {
+  transform: translateY(-4px);
+  background: var(--yellow);
+  color: var(--on-accent);
+}
+.cn-grid.shake {
+  animation: cw-shake 0.4s ease;
+}
+.cn-actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+@keyframes cn-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cn-band,
+  .cn-grid.shake {
+    animation: none;
+  }
+  .cn-word,
+  .cn-lives i {
+    transition: none;
+  }
+}
