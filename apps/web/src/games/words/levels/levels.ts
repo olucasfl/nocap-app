@@ -1,17 +1,24 @@
 import type { BeePuzzle, ConnectPuzzle } from '@nocap/games';
 
-/** Uma fase do Bee: letra do centro, as 6 de fora, as palavras do favo e quais delas são pangramas. */
+/**
+ * Uma fase do Bee: letra do centro, as 6 de fora, as palavras da fase e quais delas são pangramas.
+ * `t` é a faixa (0 Fácil a 3 Mestre). `x` são palavras que existem no favo mas não contam nesta fase
+ * (nas faixas fáceis a lista é "aparada" para ficar com palavras curtas e comuns).
+ */
 export interface BeeLevel {
   id: string;
+  t: number;
   c: string;
   l: string[];
   w: string[];
   p: string[];
+  x: string[];
 }
 
-/** Uma fase do Connect: 4 grupos com nível (1 a 4), título e palavras. */
+/** Uma fase do Connect: 4 grupos com nível (1 a 4), título e palavras; `t` é a faixa (0 Fácil a 3 Mestre). */
 export interface ConnectLevel {
   id: string;
+  t: number;
   g: { l: number; t: string; w: string[] }[];
 }
 
@@ -38,9 +45,15 @@ export const toConnectPuzzle = (l: ConnectLevel): ConnectPuzzle => ({
 export const TIERS = ['Fácil', 'Médio', 'Difícil', 'Mestre'] as const;
 export type Tier = (typeof TIERS)[number];
 
-/** A faixa de dificuldade de uma fase (quatro partes iguais da lista ordenada). */
-export function tierOf(index: number, total: number): Tier {
-  return TIERS[Math.min(3, Math.floor((index / Math.max(1, total)) * 4))]!;
+/** A faixa de dificuldade de uma fase (as listas já vêm agrupadas por faixa, da mais fácil à mais difícil). */
+export const tierOf = (level: { t: number }): Tier => TIERS[Math.min(3, Math.max(0, level.t))]!;
+
+/** De que fase a que fase vai cada faixa (1 a N), para o catálogo. */
+export function tierRanges(levels: readonly { t: number }[]): { tier: Tier; from: number; to: number }[] {
+  return TIERS.map((tier, t) => {
+    const idx = levels.map((l, i) => (l.t === t ? i + 1 : 0)).filter(Boolean);
+    return { tier, from: idx[0] ?? 0, to: idx[idx.length - 1] ?? 0 };
+  }).filter((r) => r.from > 0);
 }
 
 /** Embaralhamento estável pela semente (a mesma fase abre sempre na mesma ordem). */

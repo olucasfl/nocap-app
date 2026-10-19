@@ -586,19 +586,100 @@
 .bz-hint-big b {
   font: 900 28px var(--font-display);
 }
-.bz-hint-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+.bz-hint-pang b {
+  font-weight: 900;
 }
-.bz-hint-row span {
-  padding: 3px 9px;
+.bz-hint-block {
+  display: grid;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 2px dashed var(--ink);
+}
+.bz-hint-block h4 {
+  margin: 0;
+  font: 900 13px var(--font-display);
+  letter-spacing: 0.02em;
+}
+/* "Começa com": uma linha por letra, com a letra num hexágono-ficha e uma barra do quanto tem. */
+.bz-initials,
+.bz-sizes {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.bz-initials li {
+  display: grid;
+  grid-template-columns: 38px 1fr auto;
+  align-items: center;
+  gap: 10px;
+}
+.bz-chip {
+  display: grid;
+  place-items: center;
+  height: 34px;
+  background: var(--yellow);
+  border: 2.5px solid var(--ink);
+  border-radius: 10px;
+  box-shadow: 2px 2px 0 var(--ink);
+  font: 900 17px var(--font-display);
+}
+.bz-initials i,
+.bz-sizes i {
+  display: block;
+  height: 14px;
   border: 2px solid var(--ink);
   border-radius: 999px;
   background: var(--paper);
+  position: relative;
+  overflow: hidden;
 }
-.bz-hint-row b {
-  font-weight: 900;
+.bz-initials i::after,
+.bz-sizes i::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform-origin: left;
+  transform: scaleX(var(--w, 0));
+  background: var(--orange);
+  animation: bz-bar 0.5s cubic-bezier(0.2, 1, 0.3, 1) both;
+}
+.bz-sizes i::after {
+  background: var(--blue);
+}
+.bz-initials b,
+.bz-sizes b {
+  min-width: 70px;
+  text-align: right;
+  font: 700 11px var(--font-mono);
+}
+/* "Quantidade de letras": uma linha por tamanho, com a barra azul. */
+.bz-sizes li {
+  display: grid;
+  grid-template-columns: 74px 1fr auto;
+  align-items: center;
+  gap: 10px;
+}
+.bz-sizes li > span {
+  font: 700 11px var(--font-mono);
+}
+.bz-sizes b {
+  min-width: 82px;
+}
+@keyframes bz-bar {
+  from {
+    transform: scaleX(0);
+  }
+}
+.bz-cell-in small.score {
+  font-size: 9.5px;
+  opacity: 0.85;
+}
+.bz-cell-in small.done-word {
+  font-size: 8px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -614,6 +695,8 @@
   .bz-hex,
   .bz-hex .hx,
   .bz-found span,
+  .bz-initials i::after,
+  .bz-sizes i::after,
   .bz-rankcard {
     animation: none !important;
     transition: none !important;

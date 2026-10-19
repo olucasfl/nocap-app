@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { Link } from '@tanstack/react-router';
-import { playConnect } from '@nocap/games';
 import { GridLoader, Pill, RulesList, Tabs, WordsShell } from '../words-kit';
-import { loadConnectLevels, tierOf, toConnectPuzzle, TIERS, type ConnectLevel } from '../levels/levels';
+import { connectClass, playConnect } from '@nocap/games';
+import { loadConnectLevels, tierOf, tierRanges, toConnectPuzzle, type ConnectLevel } from '../levels/levels';
 import { connectProgress, useProgress, type LevelStatus } from '../levels/progress';
 import { ConnectArt } from '../words-art';
 import './connect.css';
@@ -17,7 +17,8 @@ const FILTERS: { id: Filter; label: string }[] = [
 
 export const CONNECT_RULES = [
   'São 16 palavras e 4 grupos escondidos. Marque 4 palavras que têm algo em comum e toque em Enviar.',
-  'Cada erro custa 1 de 5 vidas (os corações). "Falta uma" quer dizer que 3 das 4 palavras estão certas.',
+  'Não há vidas: cada palpite errado só soma 1 ao contador de erros. "Falta uma" quer dizer que 3 das 4 palavras estão certas.',
+  'Você tem 1 dica por fase: ela mostra o nome de um dos grupos que ainda faltam. Se travar, pode desistir (pede confirmação) e as palavras são reveladas.',
   'A cor do grupo mostra a dificuldade: amarelo é o mais fácil, verde, azul e roxo (o mais difícil).',
   'Cuidado com as palavras que servem a dois grupos: só existe uma divisão certa.',
   'Seu progresso fica salvo neste aparelho: saia e volte quando quiser, a fase continua de onde parou.',
@@ -38,8 +39,8 @@ export function ConnectCatalog() {
     if (!levels) return null;
     return levels.map((lv, i) => {
       const p = prog[String(i + 1)];
-      if (!p || p.guesses.length === 0) return { n: i + 1, status: 'new' as LevelStatus, groups: [] as number[], won: false, errors: 0, at: 0 };
-      const state = playConnect(toConnectPuzzle(lv), p.guesses);
+      if (!p || (p.guesses.length === 0 && !p.gaveUp)) return { n: i + 1, status: 'new' as LevelStatus, groups: [] as number[], won: false, errors: 0, at: 0, klass: '' };
+      const state = playConnect(toConnectPuzzle(lv), p.guesses, { gaveUp: p.gaveUp });
       return {
         n: i + 1,
         status: (state.over ? 'done' : 'open') as LevelStatus,
@@ -47,6 +48,7 @@ export function ConnectCatalog() {
         won: state.won,
         errors: state.errors,
         at: p.at,
+        klass: state.over ? connectClass(state.won, state.errors, state.gaveUp).name : '',
       };
     });
   }, [levels, prog]);
@@ -103,7 +105,7 @@ export function ConnectCatalog() {
           <span>
             <b>{last ? 'Continuar' : 'Começar'}</b>
             <small>
-              {last ? `Fase ${last.n} · ${last.groups.length} de 4 grupos` : `Fase ${nextNew!.n} · ${tierOf(nextNew!.n - 1, info.length)}`}
+              {last ? `Fase ${last.n} · ${last.groups.length} de 4 grupos` : `Fase ${nextNew!.n} · ${tierOf(levels[nextNew!.n - 1]!)}`}
             </small>
           </span>
           <i>→</i>
@@ -135,14 +137,13 @@ export function ConnectCatalog() {
             ))}
           </div>
 
-          {TIERS.map((tier) => {
-            const cells = info.filter((x) => tierOf(x.n - 1, info.length) === tier && (filter === 'all' || x.status === filter));
+          {tierRanges(levels).map(({ tier, from, to }) => {
+            const cells = info.filter((x) => x.n >= from && x.n <= to && (filter === 'all' || x.status === filter));
             if (cells.length === 0) return null;
-            const all = info.filter((x) => tierOf(x.n - 1, info.length) === tier);
             return (
               <section className="cx-tier" key={tier} aria-label={tier}>
                 <h3 className="wd-section">
-                  {tier} · fases {all[0]!.n} a {all[all.length - 1]!.n}
+                  {tier} · fases {from} a {to}
                 </h3>
                 <div className="cx-grid">
                   {cells.map((x, i) => (
@@ -154,7 +155,7 @@ export function ConnectCatalog() {
                       style={{ '--i': i } as CSSProperties}
                       data-testid={`level-${x.n}`}
                       data-status={x.status}
-                      aria-label={`Fase ${x.n}: ${x.status === 'done' ? (x.won ? 'concluída' : 'não concluída') : x.status === 'open' ? 'em andamento' : 'nova'}`}
+                      aria-label={`Fase ${x.n}: ${x.status === 'done' ? (x.won ? `concluída, ${x.errors} ${x.errors === 1 ? 'erro' : 'erros'}` : 'desistência') : x.status === 'open' ? 'em andamento' : 'nova'}`}
                     >
                       <b>{x.n}</b>
                       <span className="cx-bars" aria-hidden="true">
@@ -162,7 +163,7 @@ export function ConnectCatalog() {
                           <i key={l} className={x.groups.includes(l) ? `l${l}` : ''} />
                         ))}
                       </span>
-                      {x.status === 'done' && <small>{x.won ? (x.errors === 0 ? 'perfeita' : `${x.errors} erro${x.errors > 1 ? 's' : ''}`) : 'perdeu'}</small>}
+                      {x.status === 'done' && <small>{x.won ? (x.errors === 0 ? 'perfeita' : `${x.errors} erro${x.errors > 1 ? 's' : ''}`) : 'desistiu'}</small>}
                       {x.status === 'open' && <small>{x.groups.length}/4</small>}
                     </Link>
                   ))}

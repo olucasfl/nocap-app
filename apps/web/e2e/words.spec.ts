@@ -138,12 +138,13 @@ test.describe("Classic Word's", () => {
     await expect(page.getByText('Faltam letras')).toBeVisible();
   });
 
-  test('vencer mostra a nota contando até 10,0 e a próxima palavra já está sorteada', async ({ page }) => {
+  test('vencer mostra em quantas tentativas acertou (sem nota) e a próxima palavra já está sorteada', async ({ page }) => {
     await openPlay(page, '/words/classic/jogar?tipo=solo&modo=classic');
     await type(page, 'amigo');
     await page.keyboard.press('Enter');
     await expect(page.getByText('Acertou')).toBeVisible({ timeout: 8000 });
-    await expect(page.getByTestId('nota')).toHaveText('10,0', { timeout: 5000 });
+    await expect(page.getByTestId('nota')).toHaveText('1', { timeout: 5000 });
+    await expect(page.getByText('Compartilhar')).toHaveCount(0);
     await expect(page.getByText('A palavra era AMIGO')).toBeVisible();
     await page.getByTestId('again').click();
     await expect(page.getByTestId('board-0')).toBeVisible();
@@ -335,27 +336,28 @@ test.describe("Connect Word's (fases offline)", () => {
   test('o catálogo mostra todas as fases ordenadas e com status', async ({ page }) => {
     const errors = watch(page);
     await page.goto('/words/connect');
-    await expect(page.getByTestId('connect-hero')).toContainText('130 puzzles');
-    await expect(page.locator('[data-testid^="level-"]')).toHaveCount(130);
+    await expect(page.getByTestId('connect-hero')).toContainText('166 puzzles');
+    await expect(page.locator('[data-testid^="level-"]')).toHaveCount(166);
     await expect(page.getByTestId('level-1')).toHaveAttribute('data-status', 'new');
     await page.getByTestId('tab-regras').click();
-    await expect(page.getByText('Cada erro custa 1 de 5 vidas')).toBeVisible();
+    await expect(page.getByText('Não há vidas')).toBeVisible();
     await noOverflow(page);
     expect(errors).toEqual([]);
   });
 
-  test('vidas são corações rotulados e a tela mostra o progresso', async ({ page }) => {
+  test('não há vidas: a tela mostra o contador de erros e o progresso', async ({ page }) => {
     const errors = watch(page);
     await page.goto('/words/connect/fase/1');
-    await expect(page.getByTestId('lives')).toContainText('Vidas');
-    await expect(page.getByTestId('lives').getByTestId('heart')).toHaveCount(5);
+    await expect(page.getByTestId('errors')).toContainText('Erros');
+    await expect(page.getByTestId('error-count')).toHaveText('0');
+    await expect(page.getByTestId('heart')).toHaveCount(0);
     await expect(page.getByText('0 de 4 grupos')).toBeVisible();
     await expect(page.locator('.cx-word')).toHaveCount(16);
     await noOverflow(page);
     expect(errors).toEqual([]);
   });
 
-  test('acertar trava o grupo; "falta uma" e erro tiram coração; repetido não custa; tudo salvo', async ({ page }) => {
+  test('acertar trava o grupo; "falta uma" e erro somam erro; repetido não custa; tudo salvo', async ({ page }) => {
     await page.goto('/words/connect/fase/1');
     const [g1, g2, g3] = first.g;
     await pick(page, g1!.w);
@@ -367,19 +369,19 @@ test.describe("Connect Word's (fases offline)", () => {
     await pick(page, oneAway);
     await page.getByTestId('submit').click();
     await expect(page.getByText('Falta uma!')).toBeVisible();
-    await expect(page.getByTestId('heart-lost')).toHaveCount(1);
+    await expect(page.getByTestId('error-count')).toHaveText('1');
     await pick(page, oneAway);
     await page.getByTestId('submit').click();
     await expect(page.getByText('Você já tentou esse grupo')).toBeVisible();
-    await expect(page.getByTestId('heart-lost')).toHaveCount(1);
+    await expect(page.getByTestId('error-count')).toHaveText('1');
     // sair e voltar: continua de onde parou
     await page.goto('/words/connect');
     await expect(page.getByTestId('level-1')).toHaveAttribute('data-status', 'open');
     await page.getByTestId('level-1').click();
     await expect(page.locator('.cx-word')).toHaveCount(12);
-    await expect(page.getByTestId('heart-lost')).toHaveCount(1);
+    await expect(page.getByTestId('error-count')).toHaveText('1');
     await page.reload();
-    await expect(page.getByTestId('heart-lost')).toHaveCount(1);
+    await expect(page.getByTestId('error-count')).toHaveText('1');
   });
 
   test('o botão Enviar só liga com 4 palavras e Limpar desmarca', async ({ page }) => {
@@ -401,7 +403,132 @@ test.describe("Connect Word's (fases offline)", () => {
       await page.getByTestId('submit').click();
       await expect(page.getByTestId(`band-${g.l}`)).toBeVisible();
     }
-    await expect(page.getByText('Conectou tudo')).toBeVisible();
+    await expect(page.getByText('Perfeito')).toBeVisible();
+    await expect(page.getByTestId('next')).toBeVisible();
+    await page.getByTestId('back-catalog').click();
+    await expect(page.getByTestId('level-1')).toHaveAttribute('data-status', 'done');
+  });
+
+  test('errar muito não acaba o jogo: só soma erros e dá para concluir', async ({ page }) => {
+    await page.goto('/words/connect/fase/1');
+    const [g1, g2, g3, g4] = first.g;
+    for (let i = 0; i < 4; i++) {
+      await pick(page, [g1!.w[i % 4]!, g2!.w[i % 4]!, g3!.w[(i + 1) % 4]!, g4!.w[(i + 2) % 4]!]);
+      await page.getByTestId('submit').click();
+      await page.waitForTimeout(100);
+    }
+    await expect(page.getByTestId('submit')).toBeVisible();
+    for (const g of first.g) {
+      await pick(page, g.w);
+      await page.getByTestId('submit').click();
+      await expect(page.getByTestId(`band-${g.l}`)).toBeVisible();
+    }
+    await expect(page.getByTestId('error-count')).not.toHaveText('0');
+  });
+
+  test('a dica mostra o nome de um conjunto que falta, uma vez por fase', async ({ page }) => {
+    await page.goto('/words/connect/fase/1');
+    await page.getByTestId('hint').click();
+    await expect(page.getByTestId('hint-text')).toContainText(first.g.slice().sort((x, y) => x.l - y.l)[0]!.t);
+    await expect(page.getByTestId('hint')).toBeDisabled();
+  });
+
+  test('desistir pede confirmação, classifica como Desistência e revela os grupos', async ({ page }) => {
+    await page.goto('/words/connect/fase/1');
+    await page.getByTestId('giveup').click();
+    await page.getByRole('button', { name: 'Continuar jogando' }).click();
+    await expect(page.getByTestId('grid')).toBeVisible();
+    await page.getByTestId('giveup').click();
+    await page.getByRole('button', { name: 'Desistir', exact: true }).last().click();
+    await expect(page.getByText('Desistência').first()).toBeVisible();
+    for (const g of first.g) await expect(page.getByTestId(`band-${g.l}`)).toBeVisible();
+  });
+
+  test('fase que não existe mostra aviso', async ({ page }) => {
+    await page.goto('/words/bee/fase/9999');
+    await expect(page.getByText('Essa fase não existe')).toBeVisible();
+  });
+});
+
+test.describe("Connect Word's (fases offline)", () => {
+  const first = CONNECT[0]!;
+  const word = (page: Page, w: string) => page.locator('.cx-word', { hasText: new RegExp(`^${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`) });
+  const pick = async (page: Page, words: string[]) => {
+    for (const w of words) await word(page, w).click();
+  };
+  const others = first.g.flatMap((g) => g.w);
+
+  test('o catálogo mostra todas as fases ordenadas e com status', async ({ page }) => {
+    const errors = watch(page);
+    await page.goto('/words/connect');
+    await expect(page.getByTestId('connect-hero')).toContainText('166 puzzles');
+    await expect(page.locator('[data-testid^="level-"]')).toHaveCount(166);
+    await expect(page.getByTestId('level-1')).toHaveAttribute('data-status', 'new');
+    await page.getByTestId('tab-regras').click();
+    await expect(page.getByText('Não há vidas')).toBeVisible();
+    await noOverflow(page);
+    expect(errors).toEqual([]);
+  });
+
+  test('não há vidas: a tela mostra o contador de erros e o progresso', async ({ page }) => {
+    const errors = watch(page);
+    await page.goto('/words/connect/fase/1');
+    await expect(page.getByTestId('errors')).toContainText('Erros');
+    await expect(page.getByTestId('error-count')).toHaveText('0');
+    await expect(page.getByTestId('heart')).toHaveCount(0);
+    await expect(page.getByText('0 de 4 grupos')).toBeVisible();
+    await expect(page.locator('.cx-word')).toHaveCount(16);
+    await noOverflow(page);
+    expect(errors).toEqual([]);
+  });
+
+  test('acertar trava o grupo; "falta uma" e erro somam erro; repetido não custa; tudo salvo', async ({ page }) => {
+    await page.goto('/words/connect/fase/1');
+    const [g1, g2, g3] = first.g;
+    await pick(page, g1!.w);
+    await page.getByTestId('submit').click();
+    await expect(page.getByTestId(`band-${g1!.l}`)).toContainText(g1!.t);
+    await expect(page.locator('.cx-word')).toHaveCount(12);
+    // 3 do grupo 2 + 1 do grupo 3 = falta uma
+    const oneAway = [...g2!.w.slice(0, 3), g3!.w[0]!];
+    await pick(page, oneAway);
+    await page.getByTestId('submit').click();
+    await expect(page.getByText('Falta uma!')).toBeVisible();
+    await expect(page.getByTestId('error-count')).toHaveText('1');
+    await pick(page, oneAway);
+    await page.getByTestId('submit').click();
+    await expect(page.getByText('Você já tentou esse grupo')).toBeVisible();
+    await expect(page.getByTestId('error-count')).toHaveText('1');
+    // sair e voltar: continua de onde parou
+    await page.goto('/words/connect');
+    await expect(page.getByTestId('level-1')).toHaveAttribute('data-status', 'open');
+    await page.getByTestId('level-1').click();
+    await expect(page.locator('.cx-word')).toHaveCount(12);
+    await expect(page.getByTestId('error-count')).toHaveText('1');
+    await page.reload();
+    await expect(page.getByTestId('error-count')).toHaveText('1');
+  });
+
+  test('o botão Enviar só liga com 4 palavras e Limpar desmarca', async ({ page }) => {
+    await page.goto('/words/connect/fase/1');
+    const submit = page.getByTestId('submit');
+    await expect(submit).toBeDisabled();
+    await pick(page, others.slice(0, 2));
+    await expect(submit).toContainText('2/4');
+    await page.getByTestId('clear').click();
+    await expect(submit).toContainText('0/4');
+    await pick(page, others.slice(0, 4));
+    await expect(submit).toBeEnabled();
+  });
+
+  test('vencer os 4 grupos conclui a fase e libera a próxima', async ({ page }) => {
+    await page.goto('/words/connect/fase/1');
+    for (const g of first.g) {
+      await pick(page, g.w);
+      await page.getByTestId('submit').click();
+      await expect(page.getByTestId(`band-${g.l}`)).toBeVisible();
+    }
+    await expect(page.getByText('Perfeito')).toBeVisible();
     await expect(page.getByTestId('next')).toBeVisible();
     await page.getByTestId('back-catalog').click();
     await expect(page.getByTestId('level-1')).toHaveAttribute('data-status', 'done');

@@ -1,0 +1,217 @@
+# Connect Word's, lote 6 (puzzles 131 a 166): os FÁCEIS, para as primeiras fases. Só categorias concretas que todo mundo conhece, sem jogo de palavras, sem pegadinha. Formato em scripts/words/montar-connect.mjs.
+
+## c-0131
+1 Frutas :: BANANA, MORANGO, UVA, MELANCIA
+2 Animais da fazenda :: VACA, PORCO, GALINHA, OVELHA
+3 Meios de transporte :: TREM, ÔNIBUS, AVIÃO, BICICLETA
+4 Partes do corpo :: JOELHO, OMBRO, COTOVELO, PESCOÇO
+
+## c-0132
+1 Cores :: AZUL, VERDE, AMARELO, ROXO
+2 Instrumentos musicais :: VIOLÃO, PIANO, BATERIA, FLAUTA
+3 Doces :: BRIGADEIRO, PUDIM, SORVETE, PIRULITO
+4 Cômodos e lugares da casa :: COZINHA, QUARTO, VARANDA, GARAGEM
+
+## c-0133
+1 Animais selvagens :: LEÃO, ELEFANTE, GIRAFA, ZEBRA
+2 Roupas :: CAMISA, CALÇA, SAIA, VESTIDO
+3 Material escolar :: LÁPIS, BORRACHA, RÉGUA, CADERNO
+4 Fenômenos do tempo :: CHUVA, VENTO, TROVÃO, GRANIZO
+
+## c-0134
+1 Dias da semana :: SEGUNDA, QUARTA, SEXTA, DOMINGO
+2 Legumes e verduras :: CENOURA, BATATA, ALFACE, CEBOLA
+3 Esportes :: FUTEBOL, VÔLEI, NATAÇÃO, JUDÔ
+4 Eletrodomésticos :: GELADEIRA, FOGÃO, LIQUIDIFICADOR, VENTILADOR
+
+## c-0135
+1 Animais de estimação :: CACHORRO, GATO, COELHO, HAMSTER
+2 Móveis :: CAMA, SOFÁ, ARMÁRIO, ESTANTE
+3 Planetas :: MARTE, VÊNUS, SATURNO, NETUNO
+4 Profissões :: MÉDICO, BOMBEIRO, PADEIRO, PROFESSOR
+
+## c-0136
+1 Aves :: ARARA, TUCANO, CORUJA, PAVÃO
+2 Para comer à mesa :: GARFO, COLHER, PRATO, COPO
+3 Formas geométricas :: CÍRCULO, QUADRADO, TRIÂNGULO, RETÂNGULO
+4 Lugares da cidade :: ESCOLA, HOSPITAL, PRAÇA, FARMÁCIA
+
+## c-0137
+1 Insetos :: FORMIGA, ABELHA, MOSCA, BORBOLETA
+2 Calçados :: CHINELO, SANDÁLIA, BOTA, SAPATO
+3 Brinquedos :: BONECA, CARRINHO, PIPA, QUEBRA-CABEÇA
+4 Países :: BRASIL, JAPÃO, ITÁLIA, MÉXICO
+
+## c-0138
+1 Bichos do mar :: BALEIA, TUBARÃO, GOLFINHO, POLVO
+2 Partes do rosto :: OLHO, NARIZ, BOCA, ORELHA
+3 Bebidas :: SUCO, LEITE, CAFÉ, REFRIGERANTE
+4 Instrumentos de corda :: VIOLINO, HARPA, VIOLONCELO, GUITARRA
+
+## c-0139
+1 Meses do ano :: JANEIRO, MARÇO, JUNHO, OUTUBRO
+2 Pratos de comida :: FEIJOADA, LASANHA, PIZZA, HAMBÚRGUER
+3 Natureza :: MONTANHA, FLORESTA, LAGO, VULCÃO
+4 Ferramentas :: MARTELO, SERROTE, ALICATE, FURADEIRA
+
+## c-0140
+1 Frutas :: MAÇÃ, PERA, MAMÃO, KIWI
+2 Partes da casa :: TELHADO, JANELA, PORTA, PAREDE
+3 Cores :: PRETO, BRANCO, CINZA, MARROM
+4 Estações do ano :: VERÃO, OUTONO, INVERNO, PRIMAVERA
+
+## c-0141
+1 Animais do mato brasileiro :: ONÇA, CAPIVARA, TATU, JACARÉ
+2 Roupas de frio :: CASACO, CACHECOL, LUVA, TOUCA
+3 Material de pintura :: PINCEL, TINTA, TELA, AQUARELA
+4 Transportes na água :: BARCO, NAVIO, CANOA, LANCHA
+
+## c-0142
+1 Flores :: MARGARIDA, GIRASSOL, TULIPA, ORQUÍDEA
+2 Verduras :: ALFACE, COUVE, RÚCULA, AGRIÃO
+3 Esportes na água :: NATAÇÃO, SURFE, REMO, CANOAGEM
+4 Estados do Brasil :: BAHIA, PARANÁ, GOIÁS, CEARÁ
+
+## c-0143
+1 Animais do campo :: CAVALO, BOI, CABRA, PATO
+2 Doces :: CHOCOLATE, BALA, TORTA, PICOLÉ
+3 Lugares de diversão :: PARQUE, CINEMA, ZOOLÓGICO, CIRCO
+4 Acessórios :: CHAPÉU, ÓCULOS, RELÓGIO, COLAR
+
+## c-0144
+1 Corpos do céu :: SOL, LUA, ESTRELA, COMETA
+2 Instrumentos de sopro :: TROMPETE, FLAUTA, SAXOFONE, CLARINETE
+3 Profissões de obra :: PEDREIRO, ENCANADOR, ELETRICISTA, PINTOR
+4 Capitais brasileiras :: RECIFE, CURITIBA, MANAUS, SALVADOR
+
+## c-0145
+1 Bichos de jardim :: MINHOCA, CARACOL, JOANINHA, GRILO
+2 Para limpar a casa :: VASSOURA, RODO, SABÃO, ESPONJA
+3 Esportes de equipe :: HANDEBOL, BASQUETE, RÚGBI, VÔLEI
+4 Frutas vermelhas :: MORANGO, CEREJA, FRAMBOESA, AMORA
+
+## c-0146
+1 Partes da bicicleta :: PEDAL, GUIDÃO, SELIM, CORRENTE
+2 Frutas tropicais :: ABACAXI, MANGA, CAJU, GOIABA
+3 Gêneros de filme :: TERROR, COMÉDIA, ROMANCE, AVENTURA
+4 Parentes :: AVÓ, TIO, PRIMO, IRMÃO
+
+## c-0147
+1 Peixes :: SALMÃO, ATUM, SARDINHA, TILÁPIA
+2 Temperos :: SAL, ALHO, PIMENTA, ORÉGANO
+3 Partes do dia :: MANHÃ, TARDE, NOITE, MADRUGADA
+4 Instrumentos de percussão :: TAMBOR, PANDEIRO, TRIÂNGULO, XILOFONE
+
+## c-0148
+1 Tipos de moradia :: APARTAMENTO, SOBRADO, MANSÃO, CHALÉ
+2 Mamíferos :: MACACO, URSO, TIGRE, CANGURU
+3 Ingredientes de bolo :: FARINHA, OVO, AÇÚCAR, MANTEIGA
+4 Formas de pagar :: DINHEIRO, CARTÃO, CHEQUE, PIX
+
+## c-0149
+1 Sentidos do corpo :: VISÃO, AUDIÇÃO, OLFATO, PALADAR
+2 Pontos cardeais :: NORTE, SUL, LESTE, OESTE
+3 Formas de cozinhar :: ASSAR, FRITAR, GRELHAR, REFOGAR
+4 Doenças comuns :: GRIPE, RESFRIADO, DENGUE, SARAMPO
+
+## c-0150
+1 Material de escritório :: GRAMPEADOR, CLIPE, FOLHA, ENVELOPE
+2 Animais do gelo :: PINGUIM, URSO-POLAR, MORSA, FOCA
+3 Grãos :: ARROZ, FEIJÃO, MILHO, TRIGO
+4 Meios de comunicação :: TELEVISÃO, RÁDIO, JORNAL, REVISTA
+
+## c-0151
+1 Esportes olímpicos :: ATLETISMO, GINÁSTICA, CICLISMO, ESGRIMA
+2 Bebidas quentes :: CAFÉ, CHÁ, CAPUCCINO, CHOCOLATE
+3 Cômodos da casa :: SALA, BANHEIRO, QUARTO, COZINHA
+4 Aves de quintal :: GALINHA, PATO, GANSO, PERU
+
+## c-0152
+1 Brinquedos de parquinho :: GANGORRA, ESCORREGADOR, BALANÇO, GIRA-GIRA
+2 Frutas de verão :: ABACAXI, MELÃO, PÊSSEGO, AMEIXA
+3 Eletrônicos :: CELULAR, TABLET, NOTEBOOK, FONE
+4 Partes da planta :: RAIZ, TRONCO, GALHO, FOLHA
+
+## c-0153
+1 Itens de praia :: GUARDA-SOL, TOALHA, BALDINHO, PRANCHA
+2 Aves :: PINGUIM, AVESTRUZ, PARDAL, POMBO
+3 Instrumentos de medida :: RÉGUA, BALANÇA, TERMÔMETRO, RELÓGIO
+4 Esportes :: FUTEBOL, SURFE, BASQUETE, CORRIDA
+
+## c-0154
+1 Meses do ano :: FEVEREIRO, ABRIL, MAIO, JULHO
+2 Brinquedos :: BOLA, PIÃO, IOIÔ, BONECO
+3 Carnes :: FRANGO, PICANHA, LINGUIÇA, COSTELA
+4 Embalagens :: CAIXA, SACOLA, GARRAFA, LATA
+
+## c-0155
+1 Répteis :: COBRA, LAGARTO, JACARÉ, TARTARUGA
+2 Roupa de cama :: LENÇOL, TRAVESSEIRO, COBERTOR, COLCHÃO
+3 Frutas :: LIMÃO, MELÃO, GOIABA, ABACATE
+4 Profissões da saúde :: ENFERMEIRO, DENTISTA, FARMACÊUTICO, PSICÓLOGO
+
+## c-0156
+1 Animais da floresta :: ONÇA, TUCANO, SAGUI, ANTA
+2 Usados em casa à noite :: PIJAMA, CAMISOLA, ROUPÃO, CHINELO
+3 Utensílios de cozinha :: PANELA, FRIGIDEIRA, PENEIRA, RALADOR
+4 Bebidas :: ÁGUA, SUCO, LEITE, REFRIGERANTE
+
+## c-0157
+1 Frutas cítricas :: LARANJA, LIMÃO, TANGERINA, BERGAMOTA
+2 Peças de roupa :: BLUSA, CASACO, BERMUDA, MEIA
+3 Esportes :: BASQUETE, HANDEBOL, JUDÔ, NATAÇÃO
+4 Jogos :: XADREZ, DAMAS, DOMINÓ, BARALHO
+
+## c-0158
+1 Comidas de festa junina :: PAÇOCA, PÉ DE MOLEQUE, CANJICA, PAMONHA
+2 Cores :: PRETO, BRANCO, VERDE, AZUL
+3 Meios de transporte :: METRÔ, TÁXI, MOTO, CAMINHÃO
+4 Animais da fazenda :: GALINHA, BOI, PORCO, CAVALO
+
+## c-0159
+1 Partes do corpo :: BRAÇO, PERNA, MÃO, PÉ
+2 Frutas :: MORANGO, MELANCIA, LARANJA, UVA
+3 Estações do ano :: VERÃO, OUTONO, INVERNO, PRIMAVERA
+4 Material escolar :: CADERNO, MOCHILA, TESOURA, CANETA
+
+## c-0160
+1 Aves coloridas :: PAPAGAIO, PERIQUITO, CANÁRIO, BEIJA-FLOR
+2 Utensílios de cozinha :: FACA, GARFO, COLHER, CONCHA
+3 Instrumentos musicais :: PIANO, TAMBOR, VIOLINO, TROMPETE
+4 Lugares de compras :: MERCADO, FEIRA, SHOPPING, PADARIA
+
+## c-0161
+1 Ferramentas :: MARTELO, CHAVE DE FENDA, ALICATE, TRENA
+2 Roedores :: RATO, HAMSTER, CAPIVARA, ESQUILO
+3 Peças de roupa :: CAMISETA, JAQUETA, BERMUDA, MEIA
+4 Cores :: ROSA, LILÁS, DOURADO, PRATEADO
+
+## c-0162
+1 Países da América do Sul :: ARGENTINA, CHILE, PERU, URUGUAI
+2 Formas :: CÍRCULO, ESTRELA, LOSANGO, QUADRADO
+3 Frutas :: BANANA, MAMÃO, MANGA, ABACATE
+4 Animais de estimação :: CACHORRO, GATO, PEIXE, PAPAGAIO
+
+## c-0163
+1 Comidas japonesas :: SUSHI, TEMAQUI, SASHIMI, YAKISOBA
+2 Massas :: ESPAGUETE, LASANHA, NHOQUE, MACARRÃO
+3 Sobremesas :: PUDIM, MOUSSE, SORVETE, TORTA
+4 Verduras :: ALFACE, RÚCULA, COUVE, ESPINAFRE
+
+## c-0164
+1 Esportes de quadra :: VÔLEI, BASQUETE, HANDEBOL, FUTSAL
+2 Animais que voam :: MORCEGO, CORUJA, MARIPOSA, VAGALUME
+3 Cores :: VERMELHO, AMARELO, VERDE, ROXO
+4 Eletrodomésticos :: MICRO-ONDAS, ASPIRADOR, TORRADEIRA, BATEDEIRA
+
+## c-0165
+1 Natureza :: RIO, LAGO, MAR, CACHOEIRA
+2 Doces :: BOMBOM, BALA, PIRULITO, CHICLETE
+3 Quem conduz veículos :: PILOTO, MOTORISTA, MARINHEIRO, MAQUINISTA
+4 Móveis do quarto :: CAMA, GUARDA-ROUPA, CÔMODA, CRIADO-MUDO
+
+## c-0166
+1 Animais africanos :: ELEFANTE, GIRAFA, HIPOPÓTAMO, RINOCERONTE
+2 Higiene pessoal :: SABONETE, SHAMPOO, ESCOVA, TOALHA
+3 Meios de transporte :: BARCO, TREM, BICICLETA, FOGUETE
+4 Lugares de uma escola :: SALA DE AULA, BIBLIOTECA, QUADRA, CANTINA

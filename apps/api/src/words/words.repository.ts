@@ -50,6 +50,26 @@ export class WordsRepository {
     return rows.flatMap((r) => r.answers);
   }
 
+  /**
+   * Junta o palpite aos da partida em UMA ida ao banco (e devolve a partida já atualizada): só vale se a
+   * partida é da conta, está aberta e ainda não passou do máximo de palpites. `null` se nada foi gravado.
+   */
+  async appendGuess(id: string, userId: string, word: string, maxGuesses: number): Promise<WordRun | null> {
+    const [row] = await this.db
+      .update(wordRuns)
+      .set({ guesses: sql`array_append(${wordRuns.guesses}, ${word})` })
+      .where(
+        and(
+          eq(wordRuns.id, id),
+          eq(wordRuns.userId, userId),
+          eq(wordRuns.state, 'open'),
+          sql`cardinality(${wordRuns.guesses}) < ${maxGuesses}`,
+        ),
+      )
+      .returning();
+    return row ?? null;
+  }
+
   /** `null` quando o Daily do dia já existe (corrida entre dois pedidos). */
   async create(row: typeof wordRuns.$inferInsert): Promise<WordRun | null> {
     const [created] = await this.db.insert(wordRuns).values(row).onConflictDoNothing().returning();

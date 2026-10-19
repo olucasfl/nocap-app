@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  connectNota,
+  connectClass,
+  connectHint,
   countSolutions,
   guessKey,
   judgeGuess,
@@ -21,10 +22,19 @@ const puzzle: ConnectPuzzle = {
 };
 const [f, c, g, p] = puzzle.groups.map((x) => x.words);
 
-describe('nota', () => {
-  it('vitória por erros e derrota por grupos', () => {
-    expect([0, 1, 2, 3, 4].map((e) => connectNota(true, e, 4))).toEqual([10, 8.5, 7, 5.5, 4]);
-    expect([0, 1, 2, 3].map((n) => connectNota(false, 5, n))).toEqual([0, 1, 2, 3]);
+describe('classificação', () => {
+  it('quem conclui é classificado pelos erros; desistir é Desistência', () => {
+    expect([0, 1, 2, 3, 5, 6, 12].map((e) => connectClass(true, e, false).id)).toEqual([
+      'perfeito',
+      'muito-bom',
+      'muito-bom',
+      'bom',
+      'bom',
+      'concluida',
+      'concluida',
+    ]);
+    expect(connectClass(false, 3, true)).toEqual({ id: 'desistencia', name: 'Desistência' });
+    expect(connectClass(false, 0, false).id).toBe('desistencia');
   });
 });
 
@@ -45,31 +55,52 @@ describe('partida', () => {
     const s = playConnect(puzzle, [f!, c!, g!, p!]);
     expect(s.won).toBe(true);
     expect(s.errors).toBe(0);
-    expect(s.nota).toBe(10);
     expect(s.found.map((x) => x.level)).toEqual([1, 2, 3, 4]);
   });
 
-  it('palpite errado custa vida, repetido não custa', () => {
+  it('palpite errado soma 1 ao contador de erros, repetido não soma', () => {
     const wrong = ['CAJU', 'GOIABA', 'MAMÃO', 'GOLA'];
     const s = playConnect(puzzle, [wrong, wrong]);
     expect(s.results).toEqual(['one_away', 'repeat']);
     expect(s.errors).toBe(1);
-    expect(s.lives).toBe(4);
+    expect(s.over).toBe(false);
   });
 
-  it('perde depois de 5 erros', () => {
+  it('não há vidas: muitos erros não acabam a fase, e dá para concluir mesmo assim', () => {
     const wrongs = [
       ['GOLA', 'CHUVA', 'ARARA', 'OVO'],
       ['PUNHO', 'ROUPA', 'RADAR', 'OSSO'],
       ['BOTÃO', 'SOL', 'OVO', 'ARARA'],
       ['MANGA', 'COSTAS', 'OSSO', 'RADAR'],
       ['GOLA', 'PUNHO', 'SOL', 'OSSO'],
+      ['GOLA', 'ROUPA', 'OVO', 'RADAR'],
+      ['PUNHO', 'CHUVA', 'ARARA', 'OSSO'],
     ];
-    const s = playConnect(puzzle, [f!, ...wrongs]);
+    const open = playConnect(puzzle, [f!, ...wrongs]);
+    expect(open.errors).toBe(7);
+    expect(open.over).toBe(false);
+    expect(open.won).toBe(false);
+    const done = playConnect(puzzle, [f!, ...wrongs, c!, g!, p!]);
+    expect(done.won).toBe(true);
+    expect(done.errors).toBe(7);
+    expect(connectClass(done.won, done.errors, done.gaveUp).id).toBe('concluida');
+  });
+
+  it('desistir acaba a fase sem vitória e revela o que faltava', () => {
+    const s = playConnect(puzzle, [f!], { gaveUp: true });
+    expect(s.gaveUp).toBe(true);
     expect(s.over).toBe(true);
     expect(s.won).toBe(false);
     expect(s.found).toHaveLength(1);
-    expect(s.nota).toBe(1);
+    expect(s.left).toHaveLength(12);
+    // quem já venceu não "desiste"
+    expect(playConnect(puzzle, [f!, c!, g!, p!], { gaveUp: true }).gaveUp).toBe(false);
+  });
+
+  it('a dica dá o nome do grupo mais fácil que ainda falta, sem palavras', () => {
+    expect(connectHint(puzzle, [])?.title).toBe('Frutas');
+    expect(connectHint(puzzle, [f!])?.title).toBe('Partes da camisa');
+    expect(connectHint(puzzle, [f!, c!, g!, p!])).toBeNull();
   });
 
   it('palpite com palavra que já saiu é erro de uso', () => {

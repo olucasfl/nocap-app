@@ -11,6 +11,7 @@ import {
   keyboardState,
   playClassic,
   scoreGuess,
+  colorKey,
   wordKey,
   type Cell,
 } from './index';
@@ -72,8 +73,10 @@ describe('cores de um palpite', () => {
 
   it('acento não muda a cor: aviao e avião são a mesma palavra', () => {
     expect(row('avião', 'aviao')).toBe('hhhhh');
-    expect(row('coração', 'coracao')).toBe('hhhhhhh');
-    expect(row('ação', 'acao')).toBe('hhhh');
+    // (o servidor sempre pinta a forma correta da palavra, com ç: `coracao` chega como `coração`)
+    expect(row('coração', 'coração')).toBe('hhhhhhh');
+    expect(row('ação', 'ação')).toBe('hhhh');
+    expect(row('avião', 'aviao')).toBe('hhhhh');
   });
 
   it('palpite e resposta de tamanhos diferentes é erro', () => {
@@ -174,5 +177,34 @@ describe('partida do Classic', () => {
   it('erros de uso: quantidade de respostas e tamanho do palpite', () => {
     expect(() => playClassic('dueto', ['amigo'], [])).toThrow();
     expect(() => playClassic('classic', ['amigo'], ['casa'])).toThrow();
+  });
+});
+
+describe('o ç é uma letra à parte nas cores', () => {
+  it('um ç no palpite só pinta quando a resposta tem ç; um c comum não pinta o ç', () => {
+    // resposta com ç: o ç do palpite acerta, e o c de outra palavra não conta
+    expect(row('braço', 'braço')).toBe('hhhhh');
+    const barcoVsBraco = scoreGuess('braço', 'barco');
+    // o c de "barco" (posição 4) NÃO é o ç da resposta: cinza
+    expect(barcoVsBraco[3]).toBe('miss');
+    // resposta com c comum: o ç do palpite fica cinza, mesmo havendo um c na resposta
+    const bracoVsBarco = scoreGuess('barco', 'braço');
+    expect(bracoVsBarco[3]).toBe('miss');
+    // c com c continua normal (amarelo quando está em outro lugar)
+    expect(scoreGuess('cacho', 'chaco')[0]).toBe('hit');
+  });
+
+  it('o ç do palpite não pinta a tecla do c (o teclado não tem ç)', () => {
+    const rows = [scoreGuess('barco', 'braço')];
+    const kb = keyboardState(['braço'], rows);
+    expect(kb.has('c')).toBe(false);
+    expect(kb.get('ç')).toBe('miss');
+    expect(kb.get('b')).toBe('hit');
+  });
+
+  it('só o ç é especial: os outros acentos continuam sem importar', () => {
+    expect(scoreGuess('avião', 'aviao')).toEqual(['hit', 'hit', 'hit', 'hit', 'hit']);
+    expect(colorKey('Coração')).toBe('coraçao');
+    expect(wordKey('Coração')).toBe('coracao');
   });
 });

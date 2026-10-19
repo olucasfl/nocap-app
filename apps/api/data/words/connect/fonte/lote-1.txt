@@ -112,7 +112,7 @@
 ~ CORRENTE > Joias
 
 ## c-0018
-1 Elementos químicos :: OXIGÊNIO, HIDROGÊNIO, CARBONO, NITROGÊNIO
+1 Não-metais da tabela periódica :: OXIGÊNIO, HIDROGÊNIO, CARBONO, NITROGÊNIO
 2 Metais :: FERRO, COBRE, ZINCO, ESTANHO
 3 Vêm depois de "tira-" :: GOSTO, TEIMA, DÚVIDAS, MANCHAS
 4 Perdem a primeira letra e viram outra palavra :: BRISA, CLIMA, BLOCO, PRIMA
@@ -151,7 +151,7 @@
 1 Fases da Lua :: CHEIA, NOVA, MINGUANTE, CRESCENTE
 2 Formas de relevo :: PLANALTO, PLANÍCIE, DEPRESSÃO, MONTANHA
 3 Têm asa :: AVIÃO, BORBOLETA, MORCEGO, XÍCARA
-4 Mudam de sentido com "o" ou "a" :: CÓLERA, GUARDA, COMA, VOGA
+4 Mudam de sentido com "o" ou "a" :: CÓLERA, GUARDA, COMA, CISMA
 
 ## c-0025
 1 Pedras preciosas :: RUBI, ESMERALDA, SAFIRA, TOPÁZIO

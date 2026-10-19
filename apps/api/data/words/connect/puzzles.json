@@ -823,7 +823,7 @@
   "groups": [
    {
     "level": 1,
-    "title": "Elementos químicos",
+    "title": "Não-metais da tabela periódica",
     "words": [
      "OXIGÊNIO",
      "HIDROGÊNIO",
@@ -1128,7 +1128,7 @@
      "CÓLERA",
      "GUARDA",
      "COMA",
-     "VOGA"
+     "CISMA"
     ]
    }
   ]
@@ -2389,7 +2389,7 @@
      "MAR",
      "TENTO",
      "CASO",
-     "BRIR"
+     "COLHER"
     ]
    }
   ]
@@ -3337,7 +3337,7 @@
     "level": 4,
     "title": "Tirando a última letra, viram outra palavra",
     "words": [
-     "PANELA",
+     "CANTOR",
      "CASAL",
      "PORTAL",
      "CARTAZ"
@@ -3878,7 +3878,7 @@
     "title": "Com um S antes, viram outra palavra",
     "words": [
      "ALVO",
-     "ALGO",
+     "ELA",
      "ONDA",
      "OBRE"
     ]
@@ -3890,12 +3890,12 @@
   "groups": [
    {
     "level": 1,
-    "title": "Países da América do Norte",
+    "title": "Países americanos",
     "words": [
      "CANADÁ",
      "MÉXICO",
      "ESTADOS UNIDOS",
-     "GROENLÂNDIA"
+     "CUBA"
     ]
    },
    {
@@ -5970,6 +5970,1626 @@
    {
     "word": "NOTA",
     "alsoFits": "Dinheiro"
+   }
+  ]
+ },
+ {
+  "id": "c-0131",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Frutas",
+    "words": [
+     "BANANA",
+     "MORANGO",
+     "UVA",
+     "MELANCIA"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Animais da fazenda",
+    "words": [
+     "VACA",
+     "PORCO",
+     "GALINHA",
+     "OVELHA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Meios de transporte",
+    "words": [
+     "TREM",
+     "ÔNIBUS",
+     "AVIÃO",
+     "BICICLETA"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Partes do corpo",
+    "words": [
+     "JOELHO",
+     "OMBRO",
+     "COTOVELO",
+     "PESCOÇO"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0132",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Cores",
+    "words": [
+     "AZUL",
+     "VERDE",
+     "AMARELO",
+     "ROXO"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Instrumentos musicais",
+    "words": [
+     "VIOLÃO",
+     "PIANO",
+     "BATERIA",
+     "FLAUTA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Doces",
+    "words": [
+     "BRIGADEIRO",
+     "PUDIM",
+     "SORVETE",
+     "PIRULITO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Cômodos e lugares da casa",
+    "words": [
+     "COZINHA",
+     "QUARTO",
+     "VARANDA",
+     "GARAGEM"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0133",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Animais selvagens",
+    "words": [
+     "LEÃO",
+     "ELEFANTE",
+     "GIRAFA",
+     "ZEBRA"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Roupas",
+    "words": [
+     "CAMISA",
+     "CALÇA",
+     "SAIA",
+     "VESTIDO"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Material escolar",
+    "words": [
+     "LÁPIS",
+     "BORRACHA",
+     "RÉGUA",
+     "CADERNO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Fenômenos do tempo",
+    "words": [
+     "CHUVA",
+     "VENTO",
+     "TROVÃO",
+     "GRANIZO"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0134",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Dias da semana",
+    "words": [
+     "SEGUNDA",
+     "QUARTA",
+     "SEXTA",
+     "DOMINGO"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Legumes e verduras",
+    "words": [
+     "CENOURA",
+     "BATATA",
+     "ALFACE",
+     "CEBOLA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Esportes",
+    "words": [
+     "FUTEBOL",
+     "VÔLEI",
+     "NATAÇÃO",
+     "JUDÔ"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Eletrodomésticos",
+    "words": [
+     "GELADEIRA",
+     "FOGÃO",
+     "LIQUIDIFICADOR",
+     "VENTILADOR"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0135",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Animais de estimação",
+    "words": [
+     "CACHORRO",
+     "GATO",
+     "COELHO",
+     "HAMSTER"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Móveis",
+    "words": [
+     "CAMA",
+     "SOFÁ",
+     "ARMÁRIO",
+     "ESTANTE"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Planetas",
+    "words": [
+     "MARTE",
+     "VÊNUS",
+     "SATURNO",
+     "NETUNO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Profissões",
+    "words": [
+     "MÉDICO",
+     "BOMBEIRO",
+     "PADEIRO",
+     "PROFESSOR"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0136",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Aves",
+    "words": [
+     "ARARA",
+     "TUCANO",
+     "CORUJA",
+     "PAVÃO"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Para comer à mesa",
+    "words": [
+     "GARFO",
+     "COLHER",
+     "PRATO",
+     "COPO"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Formas geométricas",
+    "words": [
+     "CÍRCULO",
+     "QUADRADO",
+     "TRIÂNGULO",
+     "RETÂNGULO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Lugares da cidade",
+    "words": [
+     "ESCOLA",
+     "HOSPITAL",
+     "PRAÇA",
+     "FARMÁCIA"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0137",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Insetos",
+    "words": [
+     "FORMIGA",
+     "ABELHA",
+     "MOSCA",
+     "BORBOLETA"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Calçados",
+    "words": [
+     "CHINELO",
+     "SANDÁLIA",
+     "BOTA",
+     "SAPATO"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Brinquedos",
+    "words": [
+     "BONECA",
+     "CARRINHO",
+     "PIPA",
+     "QUEBRA-CABEÇA"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Países",
+    "words": [
+     "BRASIL",
+     "JAPÃO",
+     "ITÁLIA",
+     "MÉXICO"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0138",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Bichos do mar",
+    "words": [
+     "BALEIA",
+     "TUBARÃO",
+     "GOLFINHO",
+     "POLVO"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Partes do rosto",
+    "words": [
+     "OLHO",
+     "NARIZ",
+     "BOCA",
+     "ORELHA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Bebidas",
+    "words": [
+     "SUCO",
+     "LEITE",
+     "CAFÉ",
+     "REFRIGERANTE"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Instrumentos de corda",
+    "words": [
+     "VIOLINO",
+     "HARPA",
+     "VIOLONCELO",
+     "GUITARRA"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0139",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Meses do ano",
+    "words": [
+     "JANEIRO",
+     "MARÇO",
+     "JUNHO",
+     "OUTUBRO"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Pratos de comida",
+    "words": [
+     "FEIJOADA",
+     "LASANHA",
+     "PIZZA",
+     "HAMBÚRGUER"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Natureza",
+    "words": [
+     "MONTANHA",
+     "FLORESTA",
+     "LAGO",
+     "VULCÃO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Ferramentas",
+    "words": [
+     "MARTELO",
+     "SERROTE",
+     "ALICATE",
+     "FURADEIRA"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0140",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Frutas",
+    "words": [
+     "MAÇÃ",
+     "PERA",
+     "MAMÃO",
+     "KIWI"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Partes da casa",
+    "words": [
+     "TELHADO",
+     "JANELA",
+     "PORTA",
+     "PAREDE"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Cores",
+    "words": [
+     "PRETO",
+     "BRANCO",
+     "CINZA",
+     "MARROM"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Estações do ano",
+    "words": [
+     "VERÃO",
+     "OUTONO",
+     "INVERNO",
+     "PRIMAVERA"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0141",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Animais do mato brasileiro",
+    "words": [
+     "ONÇA",
+     "CAPIVARA",
+     "TATU",
+     "JACARÉ"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Roupas de frio",
+    "words": [
+     "CASACO",
+     "CACHECOL",
+     "LUVA",
+     "TOUCA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Material de pintura",
+    "words": [
+     "PINCEL",
+     "TINTA",
+     "TELA",
+     "AQUARELA"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Transportes na água",
+    "words": [
+     "BARCO",
+     "NAVIO",
+     "CANOA",
+     "LANCHA"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0142",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Flores",
+    "words": [
+     "MARGARIDA",
+     "GIRASSOL",
+     "TULIPA",
+     "ORQUÍDEA"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Verduras",
+    "words": [
+     "ALFACE",
+     "COUVE",
+     "RÚCULA",
+     "AGRIÃO"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Esportes na água",
+    "words": [
+     "NATAÇÃO",
+     "SURFE",
+     "REMO",
+     "CANOAGEM"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Estados do Brasil",
+    "words": [
+     "BAHIA",
+     "PARANÁ",
+     "GOIÁS",
+     "CEARÁ"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0143",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Animais do campo",
+    "words": [
+     "CAVALO",
+     "BOI",
+     "CABRA",
+     "PATO"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Doces",
+    "words": [
+     "CHOCOLATE",
+     "BALA",
+     "TORTA",
+     "PICOLÉ"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Lugares de diversão",
+    "words": [
+     "PARQUE",
+     "CINEMA",
+     "ZOOLÓGICO",
+     "CIRCO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Acessórios",
+    "words": [
+     "CHAPÉU",
+     "ÓCULOS",
+     "RELÓGIO",
+     "COLAR"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0144",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Corpos do céu",
+    "words": [
+     "SOL",
+     "LUA",
+     "ESTRELA",
+     "COMETA"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Instrumentos de sopro",
+    "words": [
+     "TROMPETE",
+     "FLAUTA",
+     "SAXOFONE",
+     "CLARINETE"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Profissões de obra",
+    "words": [
+     "PEDREIRO",
+     "ENCANADOR",
+     "ELETRICISTA",
+     "PINTOR"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Capitais brasileiras",
+    "words": [
+     "RECIFE",
+     "CURITIBA",
+     "MANAUS",
+     "SALVADOR"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0145",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Bichos de jardim",
+    "words": [
+     "MINHOCA",
+     "CARACOL",
+     "JOANINHA",
+     "GRILO"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Para limpar a casa",
+    "words": [
+     "VASSOURA",
+     "RODO",
+     "SABÃO",
+     "ESPONJA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Esportes de equipe",
+    "words": [
+     "HANDEBOL",
+     "BASQUETE",
+     "RÚGBI",
+     "VÔLEI"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Frutas vermelhas",
+    "words": [
+     "MORANGO",
+     "CEREJA",
+     "FRAMBOESA",
+     "AMORA"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0146",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Partes da bicicleta",
+    "words": [
+     "PEDAL",
+     "GUIDÃO",
+     "SELIM",
+     "CORRENTE"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Frutas tropicais",
+    "words": [
+     "ABACAXI",
+     "MANGA",
+     "CAJU",
+     "GOIABA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Gêneros de filme",
+    "words": [
+     "TERROR",
+     "COMÉDIA",
+     "ROMANCE",
+     "AVENTURA"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Parentes",
+    "words": [
+     "AVÓ",
+     "TIO",
+     "PRIMO",
+     "IRMÃO"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0147",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Peixes",
+    "words": [
+     "SALMÃO",
+     "ATUM",
+     "SARDINHA",
+     "TILÁPIA"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Temperos",
+    "words": [
+     "SAL",
+     "ALHO",
+     "PIMENTA",
+     "ORÉGANO"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Partes do dia",
+    "words": [
+     "MANHÃ",
+     "TARDE",
+     "NOITE",
+     "MADRUGADA"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Instrumentos de percussão",
+    "words": [
+     "TAMBOR",
+     "PANDEIRO",
+     "TRIÂNGULO",
+     "XILOFONE"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0148",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Tipos de moradia",
+    "words": [
+     "APARTAMENTO",
+     "SOBRADO",
+     "MANSÃO",
+     "CHALÉ"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Mamíferos",
+    "words": [
+     "MACACO",
+     "URSO",
+     "TIGRE",
+     "CANGURU"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Ingredientes de bolo",
+    "words": [
+     "FARINHA",
+     "OVO",
+     "AÇÚCAR",
+     "MANTEIGA"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Formas de pagar",
+    "words": [
+     "DINHEIRO",
+     "CARTÃO",
+     "CHEQUE",
+     "PIX"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0149",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Sentidos do corpo",
+    "words": [
+     "VISÃO",
+     "AUDIÇÃO",
+     "OLFATO",
+     "PALADAR"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Pontos cardeais",
+    "words": [
+     "NORTE",
+     "SUL",
+     "LESTE",
+     "OESTE"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Formas de cozinhar",
+    "words": [
+     "ASSAR",
+     "FRITAR",
+     "GRELHAR",
+     "REFOGAR"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Doenças comuns",
+    "words": [
+     "GRIPE",
+     "RESFRIADO",
+     "DENGUE",
+     "SARAMPO"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0150",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Material de escritório",
+    "words": [
+     "GRAMPEADOR",
+     "CLIPE",
+     "FOLHA",
+     "ENVELOPE"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Animais do gelo",
+    "words": [
+     "PINGUIM",
+     "URSO-POLAR",
+     "MORSA",
+     "FOCA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Grãos",
+    "words": [
+     "ARROZ",
+     "FEIJÃO",
+     "MILHO",
+     "TRIGO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Meios de comunicação",
+    "words": [
+     "TELEVISÃO",
+     "RÁDIO",
+     "JORNAL",
+     "REVISTA"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0151",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Esportes olímpicos",
+    "words": [
+     "ATLETISMO",
+     "GINÁSTICA",
+     "CICLISMO",
+     "ESGRIMA"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Bebidas quentes",
+    "words": [
+     "CAFÉ",
+     "CHÁ",
+     "CAPUCCINO",
+     "CHOCOLATE"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Cômodos da casa",
+    "words": [
+     "SALA",
+     "BANHEIRO",
+     "QUARTO",
+     "COZINHA"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Aves de quintal",
+    "words": [
+     "GALINHA",
+     "PATO",
+     "GANSO",
+     "PERU"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0152",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Brinquedos de parquinho",
+    "words": [
+     "GANGORRA",
+     "ESCORREGADOR",
+     "BALANÇO",
+     "GIRA-GIRA"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Frutas de verão",
+    "words": [
+     "ABACAXI",
+     "MELÃO",
+     "PÊSSEGO",
+     "AMEIXA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Eletrônicos",
+    "words": [
+     "CELULAR",
+     "TABLET",
+     "NOTEBOOK",
+     "FONE"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Partes da planta",
+    "words": [
+     "RAIZ",
+     "TRONCO",
+     "GALHO",
+     "FOLHA"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0153",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Itens de praia",
+    "words": [
+     "GUARDA-SOL",
+     "TOALHA",
+     "BALDINHO",
+     "PRANCHA"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Aves",
+    "words": [
+     "PINGUIM",
+     "AVESTRUZ",
+     "PARDAL",
+     "POMBO"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Instrumentos de medida",
+    "words": [
+     "RÉGUA",
+     "BALANÇA",
+     "TERMÔMETRO",
+     "RELÓGIO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Esportes",
+    "words": [
+     "FUTEBOL",
+     "SURFE",
+     "BASQUETE",
+     "CORRIDA"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0154",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Meses do ano",
+    "words": [
+     "FEVEREIRO",
+     "ABRIL",
+     "MAIO",
+     "JULHO"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Brinquedos",
+    "words": [
+     "BOLA",
+     "PIÃO",
+     "IOIÔ",
+     "BONECO"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Carnes",
+    "words": [
+     "FRANGO",
+     "PICANHA",
+     "LINGUIÇA",
+     "COSTELA"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Embalagens",
+    "words": [
+     "CAIXA",
+     "SACOLA",
+     "GARRAFA",
+     "LATA"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0155",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Répteis",
+    "words": [
+     "COBRA",
+     "LAGARTO",
+     "JACARÉ",
+     "TARTARUGA"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Roupa de cama",
+    "words": [
+     "LENÇOL",
+     "TRAVESSEIRO",
+     "COBERTOR",
+     "COLCHÃO"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Frutas",
+    "words": [
+     "LIMÃO",
+     "MELÃO",
+     "GOIABA",
+     "ABACATE"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Profissões da saúde",
+    "words": [
+     "ENFERMEIRO",
+     "DENTISTA",
+     "FARMACÊUTICO",
+     "PSICÓLOGO"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0156",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Animais da floresta",
+    "words": [
+     "ONÇA",
+     "TUCANO",
+     "SAGUI",
+     "ANTA"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Usados em casa à noite",
+    "words": [
+     "PIJAMA",
+     "CAMISOLA",
+     "ROUPÃO",
+     "CHINELO"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Utensílios de cozinha",
+    "words": [
+     "PANELA",
+     "FRIGIDEIRA",
+     "PENEIRA",
+     "RALADOR"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Bebidas",
+    "words": [
+     "ÁGUA",
+     "SUCO",
+     "LEITE",
+     "REFRIGERANTE"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0157",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Frutas cítricas",
+    "words": [
+     "LARANJA",
+     "LIMÃO",
+     "TANGERINA",
+     "BERGAMOTA"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Peças de roupa",
+    "words": [
+     "BLUSA",
+     "CASACO",
+     "BERMUDA",
+     "MEIA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Esportes",
+    "words": [
+     "BASQUETE",
+     "HANDEBOL",
+     "JUDÔ",
+     "NATAÇÃO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Jogos",
+    "words": [
+     "XADREZ",
+     "DAMAS",
+     "DOMINÓ",
+     "BARALHO"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0158",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Comidas de festa junina",
+    "words": [
+     "PAÇOCA",
+     "PÉ DE MOLEQUE",
+     "CANJICA",
+     "PAMONHA"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Cores",
+    "words": [
+     "PRETO",
+     "BRANCO",
+     "VERDE",
+     "AZUL"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Meios de transporte",
+    "words": [
+     "METRÔ",
+     "TÁXI",
+     "MOTO",
+     "CAMINHÃO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Animais da fazenda",
+    "words": [
+     "GALINHA",
+     "BOI",
+     "PORCO",
+     "CAVALO"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0159",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Partes do corpo",
+    "words": [
+     "BRAÇO",
+     "PERNA",
+     "MÃO",
+     "PÉ"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Frutas",
+    "words": [
+     "MORANGO",
+     "MELANCIA",
+     "LARANJA",
+     "UVA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Estações do ano",
+    "words": [
+     "VERÃO",
+     "OUTONO",
+     "INVERNO",
+     "PRIMAVERA"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Material escolar",
+    "words": [
+     "CADERNO",
+     "MOCHILA",
+     "TESOURA",
+     "CANETA"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0160",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Aves coloridas",
+    "words": [
+     "PAPAGAIO",
+     "PERIQUITO",
+     "CANÁRIO",
+     "BEIJA-FLOR"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Utensílios de cozinha",
+    "words": [
+     "FACA",
+     "GARFO",
+     "COLHER",
+     "CONCHA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Instrumentos musicais",
+    "words": [
+     "PIANO",
+     "TAMBOR",
+     "VIOLINO",
+     "TROMPETE"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Lugares de compras",
+    "words": [
+     "MERCADO",
+     "FEIRA",
+     "SHOPPING",
+     "PADARIA"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0161",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Ferramentas",
+    "words": [
+     "MARTELO",
+     "CHAVE DE FENDA",
+     "ALICATE",
+     "TRENA"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Roedores",
+    "words": [
+     "RATO",
+     "HAMSTER",
+     "CAPIVARA",
+     "ESQUILO"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Peças de roupa",
+    "words": [
+     "CAMISETA",
+     "JAQUETA",
+     "BERMUDA",
+     "MEIA"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Cores",
+    "words": [
+     "ROSA",
+     "LILÁS",
+     "DOURADO",
+     "PRATEADO"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0162",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Países da América do Sul",
+    "words": [
+     "ARGENTINA",
+     "CHILE",
+     "PERU",
+     "URUGUAI"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Formas",
+    "words": [
+     "CÍRCULO",
+     "ESTRELA",
+     "LOSANGO",
+     "QUADRADO"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Frutas",
+    "words": [
+     "BANANA",
+     "MAMÃO",
+     "MANGA",
+     "ABACATE"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Animais de estimação",
+    "words": [
+     "CACHORRO",
+     "GATO",
+     "PEIXE",
+     "PAPAGAIO"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0163",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Comidas japonesas",
+    "words": [
+     "SUSHI",
+     "TEMAQUI",
+     "SASHIMI",
+     "YAKISOBA"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Massas",
+    "words": [
+     "ESPAGUETE",
+     "LASANHA",
+     "NHOQUE",
+     "MACARRÃO"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Sobremesas",
+    "words": [
+     "PUDIM",
+     "MOUSSE",
+     "SORVETE",
+     "TORTA"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Verduras",
+    "words": [
+     "ALFACE",
+     "RÚCULA",
+     "COUVE",
+     "ESPINAFRE"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0164",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Esportes de quadra",
+    "words": [
+     "VÔLEI",
+     "BASQUETE",
+     "HANDEBOL",
+     "FUTSAL"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Animais que voam",
+    "words": [
+     "MORCEGO",
+     "CORUJA",
+     "MARIPOSA",
+     "VAGALUME"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Cores",
+    "words": [
+     "VERMELHO",
+     "AMARELO",
+     "VERDE",
+     "ROXO"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Eletrodomésticos",
+    "words": [
+     "MICRO-ONDAS",
+     "ASPIRADOR",
+     "TORRADEIRA",
+     "BATEDEIRA"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0165",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Natureza",
+    "words": [
+     "RIO",
+     "LAGO",
+     "MAR",
+     "CACHOEIRA"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Doces",
+    "words": [
+     "BOMBOM",
+     "BALA",
+     "PIRULITO",
+     "CHICLETE"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Quem conduz veículos",
+    "words": [
+     "PILOTO",
+     "MOTORISTA",
+     "MARINHEIRO",
+     "MAQUINISTA"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Móveis do quarto",
+    "words": [
+     "CAMA",
+     "GUARDA-ROUPA",
+     "CÔMODA",
+     "CRIADO-MUDO"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "c-0166",
+  "groups": [
+   {
+    "level": 1,
+    "title": "Animais africanos",
+    "words": [
+     "ELEFANTE",
+     "GIRAFA",
+     "HIPOPÓTAMO",
+     "RINOCERONTE"
+    ]
+   },
+   {
+    "level": 2,
+    "title": "Higiene pessoal",
+    "words": [
+     "SABONETE",
+     "SHAMPOO",
+     "ESCOVA",
+     "TOALHA"
+    ]
+   },
+   {
+    "level": 3,
+    "title": "Meios de transporte",
+    "words": [
+     "BARCO",
+     "TREM",
+     "BICICLETA",
+     "FOGUETE"
+    ]
+   },
+   {
+    "level": 4,
+    "title": "Lugares de uma escola",
+    "words": [
+     "SALA DE AULA",
+     "BIBLIOTECA",
+     "QUADRA",
+     "CANTINA"
+    ]
    }
   ]
  }

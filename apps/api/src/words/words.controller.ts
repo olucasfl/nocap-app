@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Get,
+  Header,
   HttpCode,
   Param,
   ParseUUIDPipe,
@@ -34,6 +35,15 @@ export class WordsController {
   @RateLimit({ limit: 60, windowMs: 60_000 })
   daily(@Req() req: AuthedRequest, @Param('game') g: string) {
     return this.words.dailyStatus(game(g), req.user.id);
+  }
+
+  /** As palavras aceitas (chaves sem acento) para o aparelho conferir o palpite na hora. Não revela as respostas. */
+  @Get('accepted')
+  @Header('Cache-Control', 'private, max-age=86400')
+  @RateLimit({ limit: 20, windowMs: 60_000 })
+  accepted(@Param('game') g: string) {
+    game(g);
+    return { keys: this.words.accepted() };
   }
 
   @Get('modes')

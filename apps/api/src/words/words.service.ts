@@ -39,6 +39,9 @@ export interface RunView {
   nota: number | null;
 }
 
+/** O maior número de palpites de qualquer modo (o Quarteto): o banco não grava além disso. */
+const MAX_GUESSES = Math.max(...Object.values(CLASSIC_MODE_INFO).map((m) => m.tries));
+
 /** Os palpites em inteiros (base 27, a=1) para a coluna `answers` de `match_players`. */
 const encodeGuess = (guess: string): number =>
   [...wordKey(guess)].reduce((n, ch) => n * 27 + (ch.charCodeAt(0) - 96), 0);
@@ -153,22 +156,33 @@ export class WordsService {
     return run;
   }
 
+  /**
+   * Um palpite. A conferência da palavra não precisa do banco, e o palpite é gravado e a partida lida de
+   * volta numa só ida ao banco (é o que deixa o envio rápido); só o fim da partida faz mais uma.
+   */
   async move(userId: string, id: string, guess: string): Promise<RunView> {
-    const run = await this.mine(userId, id);
-    if (run.state !== 'open') throw new ConflictException('A partida já acabou');
     if ([...wordKey(guess)].length !== CLASSIC_WORD_LENGTH) {
       throw new BadRequestException('A palavra tem 5 letras');
     }
     const word = this.lists.canonical(guess);
     if (!word) throw new BadRequestException('Essa palavra não está na lista');
-    const guesses = [...run.guesses, word];
-    const state = playClassic(run.mode as ClassicMode, run.answers, guesses);
-    if (!state.over) {
-      await this.runs.update(run.id, { guesses });
-      return this.view({ ...run, guesses });
+    const run = await this.runs.appendGuess(id, userId, word, MAX_GUESSES);
+    if (!run) {
+      // não gravou: a partida não existe, acabou ou chegou no limite (o erro certo vem da leitura)
+      const current = await this.mine(userId, id);
+      throw new ConflictException(current.state !== 'open' ? 'A partida já acabou' : 'Não deu para enviar o palpite');
     }
-    return this.finish(run, guesses, state, false);
+    const state = playClassic(run.mode as ClassicMode, run.answers, run.guesses);
+    if (!state.over) return this.view(run);
+    return this.finish(run, state.guesses, state, false);
   }
+
+  /** Tudo o que vale como palpite, sem acento: o aparelho confere a palavra na hora, sem esperar o servidor. */
+  accepted(): string[] {
+    this.acceptedKeys ??= [...this.lists.accepted.keys()].sort();
+    return this.acceptedKeys;
+  }
+  private acceptedKeys: string[] | null = null;
 
   /** Desistir: a partida acaba como derrota (nota 0) e as respostas aparecem. */
   async giveUp(userId: string, id: string): Promise<RunView> {

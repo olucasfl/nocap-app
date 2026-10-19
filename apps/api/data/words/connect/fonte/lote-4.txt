@@ -52,10 +52,10 @@
 1 Formas de falar :: SUSSURRAR, GRITAR, MURMURAR, BERRAR
 2 Formas de cortar alimentos :: FATIAR, PICAR, RALAR, DESFIAR
 3 Combinam com o verbo "ganhar" :: PESO, PRÊMIO, ALTURA, TERRENO
-4 Com um S antes, viram outra palavra :: ALVO, ALGO, ONDA, OBRE
+4 Com um S antes, viram outra palavra :: ALVO, ELA, ONDA, OBRE
 
 ## c-0085
-1 Países da América do Norte :: CANADÁ, MÉXICO, ESTADOS UNIDOS, GROENLÂNDIA
+1 Países americanos :: CANADÁ, MÉXICO, ESTADOS UNIDOS, CUBA
 2 Cidades dos Estados Unidos :: NOVA YORK, MIAMI, CHICAGO, LAS VEGAS
 3 Combinam com o verbo "tirar" :: FOTO, SONO, DÚVIDA, SOSSEGO
 4 Ganham um P na frente e viram outra palavra :: ASTA, ANO, ILHA, ELO

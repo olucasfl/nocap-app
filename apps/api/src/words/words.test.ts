@@ -73,6 +73,13 @@ function setup() {
       rows.set(created.id, created);
       return created;
     },
+    appendGuess: async (id: string, userId: string, word: string, max: number) => {
+      const r = rows.get(id);
+      if (!r || r.userId !== userId || r.state !== 'open' || r.guesses.length >= max) return null;
+      const next = { ...r, guesses: [...r.guesses, word] };
+      rows.set(id, next);
+      return next;
+    },
     update: async (id: string, patch: Partial<WordRun>) => {
       rows.set(id, { ...rows.get(id)!, ...patch });
     },
@@ -184,5 +191,33 @@ describe('Classic Word\'s no servidor', () => {
     expect(view.state).toBe('lost');
     expect(view.answers).not.toBeNull();
     expect(view.nota).toBe(0);
+  });
+
+  it('palavras comuns que também são nome de lugar ou plural valem como palpite (arcos, areia, bolos)', async () => {
+    const { service } = setup();
+    for (const w of ['arcos', 'areia', 'feliz', 'farol', 'bolos', 'gatos', 'mesas', 'reais']) {
+      expect(service.lists.canonical(w), w).not.toBeNull();
+    }
+    const keys = service.accepted();
+    expect(keys).toContain('arcos');
+    expect(keys.length).toBeGreaterThan(10_000);
+    // a lista aceita não entrega quais são as respostas
+    expect(keys.length).toBeGreaterThan(service.lists.answers.length * 3);
+  });
+
+  it('o ç é uma letra à parte: o amarelo de um ç só vale quando a resposta tem ç', async () => {
+    const { service, rows } = setup();
+    const run = await service.start('wclassic', 'u1', 'classic', 'solo');
+    // resposta com ç e palpite "barco": o c do palpite não é o ç da resposta
+    rows.set(run.id, { ...rows.get(run.id)!, answers: ['braço'] });
+    const view = await service.move('u1', run.id, 'barco');
+    const row = view.boards[0]!.rows[0]!;
+    expect(row[3]).toBe('m');
+    // resposta com c comum e palpite com ç ("braço"): o ç fica cinza
+    const run2 = await service.start('wclassic', 'u1', 'dueto', 'solo');
+    rows.set(run2.id, { ...rows.get(run2.id)!, answers: ['barco', 'zebra'] });
+    const v2 = await service.move('u1', run2.id, 'braco');
+    expect(service.lists.canonical('braco')).toBe('braço');
+    expect(v2.boards[0]!.rows[0]![3]).toBe('m');
   });
 });

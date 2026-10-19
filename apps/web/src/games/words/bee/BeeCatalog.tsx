@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { Link } from '@tanstack/react-router';
 import { beeMaxPoints, beeRank, beeScore } from '@nocap/games';
 import { HexLoader, Pill, RulesList, Tabs, WordsShell } from '../words-kit';
-import { loadBeeLevels, tierOf, toBeePuzzle, TIERS, type BeeLevel } from '../levels/levels';
+import { loadBeeLevels, tierOf, tierRanges, toBeePuzzle, type BeeLevel } from '../levels/levels';
 import { beeProgress, useProgress, type LevelStatus } from '../levels/progress';
 import { BeeMascot } from './BeeArt';
 import './bee.css';
@@ -39,12 +39,11 @@ export function BeeCatalog() {
     return levels.map((lv, i) => {
       const p = prog[String(i + 1)];
       const status: LevelStatus = !p ? 'new' : p.closed ? 'done' : p.found.length > 0 ? 'open' : 'new';
-      let rank = '';
-      if (status !== 'new' && p) {
-        const puzzle = toBeePuzzle(lv);
-        rank = beeRank(beeScore(puzzle, p.found), beeMaxPoints(puzzle)).name;
-      }
-      return { n: i + 1, status, rank, at: p?.at ?? 0, words: p?.found.length ?? 0 };
+      const puzzle = toBeePuzzle(lv);
+      const max = beeMaxPoints(puzzle);
+      const pts = p ? beeScore(puzzle, p.found) : 0;
+      const rank = status !== 'new' ? beeRank(pts, max).name : '';
+      return { n: i + 1, status, rank, at: p?.at ?? 0, words: p?.found.length ?? 0, pts, max };
     });
   }, [levels, prog]);
 
@@ -100,7 +99,7 @@ export function BeeCatalog() {
           <span>
             <b>{last ? 'Continuar' : 'Começar'}</b>
             <small>
-              {last ? `Fase ${last.n} · ${last.words} palavras achadas` : `Fase ${nextNew!.n} · ${tierOf(nextNew!.n - 1, info.length)}`}
+              {last ? `Fase ${last.n} · ${last.pts}/${last.max} pontos` : `Fase ${nextNew!.n} · ${tierOf(levels[nextNew!.n - 1]!)}`}
             </small>
           </span>
           <i>→</i>
@@ -132,14 +131,13 @@ export function BeeCatalog() {
             ))}
           </div>
 
-          {TIERS.map((tier) => {
-            const cells = info.filter((x) => tierOf(x.n - 1, info.length) === tier && (filter === 'all' || x.status === filter));
+          {tierRanges(levels).map(({ tier, from, to }) => {
+            const cells = info.filter((x) => x.n >= from && x.n <= to && (filter === 'all' || x.status === filter));
             if (cells.length === 0) return null;
-            const all = info.filter((x) => tierOf(x.n - 1, info.length) === tier);
             return (
               <section className="bz-tier" key={tier} aria-label={tier}>
                 <h3 className="wd-section">
-                  {tier} · fases {all[0]!.n} a {all[all.length - 1]!.n}
+                  {tier} · fases {from} a {to}
                 </h3>
                 <div className="bz-grid">
                   {cells.map((x, i) => (
@@ -151,16 +149,22 @@ export function BeeCatalog() {
                       style={{ '--i': i } as CSSProperties}
                       data-testid={`level-${x.n}`}
                       data-status={x.status}
-                      aria-label={`Fase ${x.n}: ${x.status === 'done' ? `concluída, ${x.rank}` : x.status === 'open' ? 'em andamento' : 'nova'}`}
+                      aria-label={`Fase ${x.n}: ${x.status === 'done' ? `completa, ${x.rank}` : x.status === 'open' ? `em andamento, ${x.pts} de ${x.max} pontos` : `nova, ${x.max} pontos no total`}`}
                     >
                       <span className="bz-cell-in">
                         <b>{x.n}</b>
-                        {x.status === 'done' && (
-                          <svg viewBox="0 0 16 16" aria-hidden="true">
-                            <path d="M3 8.5l3.2 3.2L13 4.8" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
+                        {x.status === 'done' ? (
+                          <>
+                            <svg viewBox="0 0 16 16" aria-hidden="true">
+                              <path d="M3 8.5l3.2 3.2L13 4.8" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                            <small className="done-word">completo</small>
+                          </>
+                        ) : (
+                          <small className="score" data-testid={`score-${x.n}`}>
+                            {x.pts}/{x.max}
+                          </small>
                         )}
-                        {x.status === 'open' && <small>{x.words}</small>}
                       </span>
                     </Link>
                   ))}

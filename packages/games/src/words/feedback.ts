@@ -1,4 +1,4 @@
-import { wordKey } from './text';
+import { colorKey } from './text';
 
 /** O que uma letra do palpite mostra: lugar certo, existe em outro lugar, ou não existe (mais). */
 export type Cell = 'hit' | 'near' | 'miss';
@@ -21,11 +21,12 @@ export function decodePattern(text: string): Cell[] {
  * 2) marca os **amarelos** só com o que sobrou; o resto fica cinza.
  * Assim uma letra repetida só é pintada tantas vezes quanto aparece na resposta
  * (resposta `amigo`, palpite `mamae`: o 1º `m` amarelo, o 2º `m` cinza).
- * Compara pela chave sem acento: `aviao` e `avião` são a mesma coisa.
+ * Compara pela chave sem acento (`aviao` e `avião` são a mesma coisa), mas o `ç` é uma letra à parte:
+ * `ç` só combina com `ç` (ver `colorKey`).
  */
 export function scoreGuess(answer: string, guess: string): Cell[] {
-  const a = [...wordKey(answer)];
-  const g = [...wordKey(guess)];
+  const a = [...colorKey(answer)];
+  const g = [...colorKey(guess)];
   if (a.length !== g.length) throw new Error('Palpite e resposta têm tamanhos diferentes');
   const out: Cell[] = g.map(() => 'miss');
   const left = new Map<string, number>();
@@ -57,7 +58,7 @@ export function keyboardState(guesses: readonly string[], rows: readonly (readon
   guesses.forEach((guess, i) => {
     const row = rows[i];
     if (!row) return;
-    [...wordKey(guess)].forEach((letter, j) => {
+    [...colorKey(guess)].forEach((letter, j) => {
       const cell = row[j]!;
       const cur = state.get(letter);
       if (!cur || rank[cell] > rank[cur]) state.set(letter, cell);

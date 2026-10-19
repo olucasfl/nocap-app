@@ -3,9 +3,8 @@ import { Link } from '@tanstack/react-router';
 import { decodePattern, keyboardState, wordKey, type Cell } from '@nocap/games';
 import { ApiError } from '@/lib/api-client';
 import { wordsAudio } from '@/lib/words-audio';
-import { shareImage } from './share-image';
 import { Pill, ResultSheet, TileLoader, useTyped, WordsShell } from './words-kit';
-import { giveUpRun, MODE_LABEL, sendGuess, shareText, startRun, type ClassicMode, type RunView } from './words-api';
+import { fetchAccepted, giveUpRun, MODE_LABEL, sendGuess, startRun, type ClassicMode, type RunView } from './words-api';
 
 const ROWS = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
 const LENGTH = 5;
@@ -19,7 +18,7 @@ export function ClassicPlay({ mode, kind }: { mode: ClassicMode; kind: 'daily' |
   const [busy, setBusy] = useState(false);
   const [flipRow, setFlipRow] = useState<number | null>(null);
   const [winRow, setWinRow] = useState<number | null>(null);
-  const [copied, setCopied] = useState(false);
+  const accepted = useRef<Set<string> | null>(null);
   const toastTimer = useRef<number | undefined>(undefined);
 
   const begin = useCallback(() => {
@@ -33,6 +32,11 @@ export function ClassicPlay({ mode, kind }: { mode: ClassicMode; kind: 'daily' |
 
   useEffect(begin, [begin]);
 
+  // a lista de palavras aceitas chega em segundo plano: com ela, uma palavra inválida é recusada na hora
+  useEffect(() => {
+    void fetchAccepted().then((s) => (accepted.current = s));
+  }, []);
+
   const say = useCallback((text: string, tone: 'bad' | 'good' | '' = 'bad') => {
     setToast({ text, tone });
     window.clearTimeout(toastTimer.current);
@@ -41,9 +45,14 @@ export function ClassicPlay({ mode, kind }: { mode: ClassicMode; kind: 'daily' |
 
   const open = run?.state === 'open';
 
+  const busyRef = useRef(false);
   const type = useCallback((l: string) => {
+    if (busyRef.current) return;
     wordsAudio.key();
     setTyped((t) => ([...t].length < LENGTH ? t + l : t));
+  }, [setTyped]);
+  const erase = useCallback(() => {
+    if (!busyRef.current) setTyped((t) => [...t].slice(0, -1).join(''));
   }, [setTyped]);
 
   const submit = useCallback(async () => {
@@ -56,6 +65,16 @@ export function ClassicPlay({ mode, kind }: { mode: ClassicMode; kind: 'daily' |
       window.setTimeout(() => setShake(false), 420);
       return;
     }
+    // palavra que sabemos que não existe: recusa na hora, sem ir ao servidor
+    if (accepted.current && !accepted.current.has(wordKey(word))) {
+      setShake(true);
+      wordsAudio.invalid();
+      say('Palavra não aceita');
+      window.setTimeout(() => setShake(false), 420);
+      return;
+    }
+    // envia já: a linha fica "carregando" (animada) enquanto o servidor responde, depois vira
+    busyRef.current = true;
     setBusy(true);
     try {
       const next = await sendGuess(run.id, word);
@@ -73,6 +92,7 @@ export function ClassicPlay({ mode, kind }: { mode: ClassicMode; kind: 'daily' |
       say(e instanceof ApiError && e.status === 400 ? 'Palavra não aceita' : 'Sem conexão. Tente de novo');
       window.setTimeout(() => setShake(false), 420);
     } finally {
+      busyRef.current = false;
       setBusy(false);
     }
   }, [run, open, busy, typedRef, say, setTyped]);
@@ -82,7 +102,7 @@ export function ClassicPlay({ mode, kind }: { mode: ClassicMode; kind: 'daily' |
     const onKey = (ev: KeyboardEvent) => {
       if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
       if (ev.key === 'Enter') void submit();
-      else if (ev.key === 'Backspace') setTyped((t) => [...t].slice(0, -1).join(''));
+      else if (ev.key === 'Backspace') erase();
       else {
         const k = wordKey(ev.key);
         if (k.length === 1 && /[a-z]/.test(k)) type(k);
@@ -90,7 +110,7 @@ export function ClassicPlay({ mode, kind }: { mode: ClassicMode; kind: 'daily' |
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [open, submit, type]);
+  }, [open, submit, type, erase, setTyped]);
 
   if (error) {
     return (
@@ -112,23 +132,6 @@ export function ClassicPlay({ mode, kind }: { mode: ClassicMode; kind: 'daily' |
   const info = MODE_LABEL[run.mode];
   const left = run.tries - run.used;
   const title = run.kind === 'daily' ? `Daily #${run.number}` : info.name;
-
-  const share = async () => {
-    const text = shareText(run);
-    try {
-      const blob = await shareImage(run);
-      const file = blob ? new File([blob], 'classic-words.png', { type: 'image/png' }) : null;
-      if (file && navigator.canShare?.({ files: [file] })) await navigator.share({ files: [file], text });
-      else if (navigator.share) await navigator.share({ text });
-      else {
-        await navigator.clipboard.writeText(text);
-        setCopied(true);
-        window.setTimeout(() => setCopied(false), 2000);
-      }
-    } catch {
-      /* cancelou */
-    }
-  };
 
   return (
     <WordsShell
@@ -158,7 +161,7 @@ export function ClassicPlay({ mode, kind }: { mode: ClassicMode; kind: 'daily' |
                 const animating = flipRow === r && !!row;
                 return (
                   <div
-                    className={`cw-row${typingHere && shake ? ' shake' : ''}${animating ? ' flip' : ''}${winRow === r && board.solvedAt === r + 1 ? ' win' : ''}`}
+                    className={`cw-row${typingHere && shake ? ' shake' : ''}${typingHere && busy ? ' loading' : ''}${animating ? ' flip' : ''}${winRow === r && board.solvedAt === r + 1 ? ' win' : ''}`}
                     key={r}
                     data-testid={row ? `row-${b}-${r}` : undefined}
                   >
@@ -207,7 +210,7 @@ export function ClassicPlay({ mode, kind }: { mode: ClassicMode; kind: 'daily' |
                 );
               })}
               {ri === 2 && (
-                <button type="button" className="cw-key wide" aria-label="Apagar" onClick={() => setTyped((t) => [...t].slice(0, -1).join(''))} data-testid="backspace">
+                <button type="button" className="cw-key wide" aria-label="Apagar" onClick={erase} data-testid="backspace">
                   Apagar
                 </button>
               )}
@@ -223,12 +226,11 @@ export function ClassicPlay({ mode, kind }: { mode: ClassicMode; kind: 'daily' |
         <ResultSheet
           won={run.state === 'won'}
           stamp={run.state === 'won' ? 'Acertou' : 'Não foi dessa vez'}
-          value={run.nota ?? 0}
-          detail={`${run.answers!.length === 1 ? 'A palavra era' : 'As palavras eram'} ${run.answers!.join(', ').toUpperCase()} · ${run.used} de ${run.tries}`}
+          label="TENTATIVAS"
+          value={run.used}
+          decimals={0}
+          detail={`${run.answers!.length === 1 ? 'A palavra era' : 'As palavras eram'} ${run.answers!.join(', ').toUpperCase()} · ${run.state === 'won' ? `acertou em ${run.used} de ${run.tries}` : `${run.tries} de ${run.tries} tentativas usadas`}`}
         >
-          <button type="button" className="btn" onClick={() => void share()}>
-            {copied ? 'Copiado' : 'Compartilhar'}
-          </button>
           {run.kind === 'solo' ? (
             <button type="button" className="btn alt" onClick={begin} data-testid="again">
               Próxima palavra

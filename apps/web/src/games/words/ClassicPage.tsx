@@ -62,7 +62,7 @@ export function ClassicPage() {
           </div>
           {done ? (
             <div className="cw-gold-done">
-              <b>Nota {(run!.nota ?? 0).toFixed(1).replace('.', ',')}</b>
+              <b>{run!.state === 'won' ? `Acertou em ${run!.used}` : 'Não foi dessa vez'}</b>
               <span className="mono">
                 {run!.used} de {run!.tries} tentativas · a próxima palavra sai à meia-noite
               </span>

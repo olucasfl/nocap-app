@@ -110,6 +110,13 @@ export function beeHints(puzzle: BeePuzzle, found: readonly string[]) {
     pangrams: puzzle.words.filter((x) => x.pangram).length,
     bySize,
     byInitial,
+    /** O mesmo, em listas ordenadas para a tela: "começa com T: 6", "4 letras: 14". */
+    initials: Object.entries(byInitial)
+      .map(([letter, count]) => ({ letter, count }))
+      .sort((a, b) => a.letter.localeCompare(b.letter)),
+    sizes: Object.entries(bySize)
+      .map(([size, count]) => ({ size: Number(size), count }))
+      .sort((a, b) => a.size - b.size),
   };
 }
 

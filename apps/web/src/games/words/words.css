@@ -565,6 +565,22 @@ a.wd-card:hover .wd-card-go {
   animation: wd-shake 0.4s ease;
 }
 
+/* enviada, esperando o servidor: os quadrados pulsam em onda até virar */
+.cw-row.loading .cw-tile {
+  animation: cw-wait 0.7s ease-in-out infinite;
+  animation-delay: calc(var(--i) * 90ms);
+}
+@keyframes cw-wait {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(-4px) scale(1.06);
+    opacity: 0.7;
+  }
+}
 .cw-tile {
   width: var(--size);
   height: var(--size);

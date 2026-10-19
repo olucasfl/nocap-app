@@ -37,16 +37,20 @@ export const sendGuess = (id: string, guess: string) =>
   apiClient.post<RunView>(`/words/wclassic/runs/${id}/moves`, { guess });
 export const giveUpRun = (id: string) => apiClient.post<RunView>(`/words/wclassic/runs/${id}/finish`, {});
 
-/** Texto para compartilhar: sem emoji, e sem revelar a palavra (as letras de cada casa viram símbolos). */
-export function shareText(run: RunView): string {
-  const title =
-    run.kind === 'daily'
-      ? `Classic Word's #${run.number}`
-      : `Classic Word's · ${MODE_LABEL[run.mode].name}`;
-  const score = run.state === 'won' ? `${run.used}/${run.tries}` : `X/${run.tries}`;
-  const sym: Record<string, string> = { h: '#', n: '+', m: '.' };
-  const grids = run.boards.map((b) => b.rows.map((r) => [...r].map((c) => sym[c]).join('')).join('\n'));
-  return `${title}  ${score}  nota ${run.nota?.toFixed(1).replace('.', ',') ?? '0,0'}\n\n${grids.join('\n\n')}`;
+let acceptedCache: Promise<Set<string>> | null = null;
+/**
+ * As palavras aceitas (sem acento, c e ç iguais) para conferir o palpite no aparelho, sem esperar o servidor.
+ * Baixa uma vez só; se falhar, devolve null e o servidor continua sendo quem decide.
+ */
+export function fetchAccepted(): Promise<Set<string> | null> {
+  acceptedCache ??= apiClient
+    .get<{ keys: string[] }>('/words/wclassic/accepted')
+    .then((r) => new Set(r.keys))
+    .catch(() => {
+      acceptedCache = null;
+      return new Set<string>();
+    });
+  return acceptedCache.then((s) => (s.size > 0 ? s : null));
 }
 
 /** O resumo de cada modo livre: partidas, vitórias e a que está em andamento. */

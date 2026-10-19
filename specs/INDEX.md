@@ -36,7 +36,7 @@
 | 031 | [Atravessa! online (sala, sem colisão, pronta para ter colisão)](031-atravessa-online.md) | 6 | implementada; falta jogar ao vivo |
 
 | 032 | [Word's: grupo e base de palavras](032-words-grupo-e-base.md) | 7 | rascunho (aguardando decisões) |
-| 033 | [Classic Word's (1, 2 e 4 palavras e o Daily)](033-classic-words.md) | 7 | rascunho |
+| 033 | [Classic Word's (1, 2 e 4 palavras e o Daily)](033-classic-words.md) | 7 | rascunho (revisado 19/10) |
 | 034 | [Connect Word's (16 palavras, 4 grupos)](034-connect-words.md) | 7 | rascunho |
 | 035 | [Bee Word's (7 letras, uma obrigatória)](035-bee-words.md) | 7 | rascunho |
 

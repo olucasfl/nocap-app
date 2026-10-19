@@ -1,21 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { Link, useParams } from '@tanstack/react-router';
-import { CONNECT_LIVES, playConnect, type ConnectGroup } from '@nocap/games';
+import { connectClass, connectHint, playConnect, type ConnectGroup } from '@nocap/games';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { wordsAudio } from '@/lib/words-audio';
 import { Confetti, GridLoader, Pill, ResultSheet, RulesList, Tabs, WordsShell } from '../words-kit';
 import { loadConnectLevels, seededShuffle, tierOf, toConnectPuzzle, type ConnectLevel } from '../levels/levels';
 import { connectProgress, useProgress } from '../levels/progress';
 import { CONNECT_RULES } from './ConnectCatalog';
 import './connect.css';
-
-/** Um coração de vida (cheio ou perdido). */
-function Heart({ lost }: { lost: boolean }) {
-  return (
-    <svg className={`cx-heart${lost ? ' lost' : ''}`} viewBox="0 0 24 22" aria-hidden="true" data-testid={lost ? 'heart-lost' : 'heart'}>
-      <path d="M12 20.5C5 15.2 2.2 11.7 2.2 7.6 2.2 4.6 4.5 2.4 7.3 2.4c1.9 0 3.7 1 4.7 2.8 1-1.8 2.8-2.8 4.7-2.8 2.8 0 5.1 2.2 5.1 5.2 0 4.1-2.8 7.6-9.8 12.9z" />
-    </svg>
-  );
-}
 
 function Band({ group, missed = false }: { group: ConnectGroup; missed?: boolean }) {
   return (
@@ -29,7 +21,11 @@ function Band({ group, missed = false }: { group: ConnectGroup; missed?: boolean
   );
 }
 
-/** Uma fase do Connect: 16 palavras, 4 grupos, 5 vidas. Cada palpite é salvo no aparelho. */
+/**
+ * Uma fase do Connect: 16 palavras e 4 grupos. Não há vidas: cada palpite errado soma 1 ao contador de
+ * erros. Há uma dica por fase (o nome de um grupo que falta) e dá para desistir (com confirmação), o que
+ * revela as palavras. Tudo é salvo no aparelho a cada passo.
+ */
 export function ConnectPlay() {
   const { n } = useParams({ strict: false }) as { n?: string };
   const num = Number(n);
@@ -40,8 +36,8 @@ export function ConnectPlay() {
   const [toast, setToast] = useState<{ text: string; tone: 'good' | 'bad' | '' } | null>(null);
   const [shake, setShake] = useState(false);
   const [burst, setBurst] = useState(0);
-  const [lastLost, setLastLost] = useState(-1);
   const [tab, setTab] = useState<'game' | 'rules'>('game');
+  const [askGiveUp, setAskGiveUp] = useState(false);
   const timers = useRef<number[]>([]);
 
   useEffect(() => {
@@ -51,13 +47,16 @@ export function ConnectPlay() {
 
   const level = levels?.[num - 1];
   const puzzle = useMemo(() => (level ? toConnectPuzzle(level) : null), [level]);
-  const guesses = progress[String(num)]?.guesses ?? [];
-  const state = useMemo(() => (puzzle ? playConnect(puzzle, guesses) : null), [puzzle, guesses]);
+  const saved = progress[String(num)];
+  const guesses = saved?.guesses ?? [];
+  const gaveUp = saved?.gaveUp ?? false;
+  const state = useMemo(() => (puzzle ? playConnect(puzzle, guesses, { gaveUp }) : null), [puzzle, guesses, gaveUp]);
 
   useEffect(() => {
     if (level) setOrder(seededShuffle(level.g.flatMap((g) => g.w), level.id));
     setPicked([]);
     setTab('game');
+    setAskGiveUp(false);
   }, [level]);
 
   const later = useCallback((fn: () => void, ms: number) => {
@@ -92,7 +91,7 @@ export function ConnectPlay() {
       setPicked([]);
       return;
     }
-    connectProgress.set(num, { guesses: next, at: Date.now() });
+    connectProgress.set(num, { ...saved, guesses: next, at: Date.now() });
     setPicked([]);
     if (result === 'correct') {
       const g = after.found[after.found.length - 1]!;
@@ -102,16 +101,31 @@ export function ConnectPlay() {
       wordsAudio.heartLoss();
       if (result === 'one_away') {
         wordsAudio.oneAway();
-        say('Falta uma!', 'bad');
-      } else say('Esse não é um grupo', 'bad');
+        say('Falta uma! +1 erro', 'bad');
+      } else say('Esse não é um grupo. +1 erro', 'bad');
       setShake(true);
-      setLastLost(after.errors - 1);
       later(() => setShake(false), 420);
     }
     if (after.over) {
-      later(() => (after.won ? wordsAudio.win() : wordsAudio.lose()), 500);
-      if (after.won) setBurst((b) => b + 1);
+      later(() => wordsAudio.win(), 500);
+      setBurst((b) => b + 1);
     }
+  };
+
+  /** A dica (uma por fase): mostra o nome de um grupo que ainda falta, o mais fácil. */
+  const useHint = () => {
+    if (!puzzle || !state || state.over || saved?.hint !== undefined) return;
+    const g = connectHint(puzzle, guesses);
+    if (!g) return;
+    wordsAudio.tap();
+    connectProgress.set(num, { guesses, ...saved, hint: g.level, at: Date.now() });
+  };
+
+  const giveUp = () => {
+    setAskGiveUp(false);
+    if (!state || state.over) return;
+    connectProgress.set(num, { guesses, ...saved, gaveUp: true, at: Date.now() });
+    wordsAudio.lose();
   };
 
   const shuffle = () =>
@@ -148,7 +162,13 @@ export function ConnectPlay() {
   const missing = 4 - state.found.length;
   const reveal = state.over ? puzzle.groups.filter((g) => !state.found.includes(g)) : [];
   const hasNext = num < levels.length;
-  const tier = tierOf(num - 1, levels.length);
+  const tier = tierOf(level);
+  const hintGroup =
+    saved?.hint !== undefined && !state.over
+      ? puzzle.groups.find((g) => g.level === saved.hint && !state.found.includes(g))
+      : undefined;
+  const hintUsed = saved?.hint !== undefined;
+  const klass = connectClass(state.won, state.errors, state.gaveUp);
 
   return (
     <WordsShell
@@ -158,7 +178,7 @@ export function ConnectPlay() {
       className="cx-theme"
       right={<Pill tone="paper">{tier}</Pill>}
     >
-      <Confetti burst={burst} />
+      <Confetti burst={state.won ? burst : 0} />
       <Tabs
         label="Seções"
         value={tab}
@@ -175,7 +195,7 @@ export function ConnectPlay() {
         </section>
       ) : (
         <>
-          <section className="cx-status" aria-label="Progresso e vidas">
+          <section className="cx-status" aria-label="Progresso e erros">
             <div className="cx-progress">
               <span className="mono">
                 {state.found.length} de 4 grupos{!state.over && missing > 0 ? ` · faltam ${missing}` : ''}
@@ -186,15 +206,11 @@ export function ConnectPlay() {
                 ))}
               </div>
             </div>
-            <div className="cx-lives" data-testid="lives" aria-label={`${state.lives} de ${CONNECT_LIVES} vidas`}>
-              <span className="mono">Vidas</span>
-              <div className="cx-hearts">
-                {Array.from({ length: CONNECT_LIVES }, (_, i) => (
-                  <span key={i} className={i === lastLost ? 'breaking' : ''}>
-                    <Heart lost={i >= state.lives} />
-                  </span>
-                ))}
-              </div>
+            <div className="cx-errors" data-testid="errors" aria-label={`${state.errors} ${state.errors === 1 ? 'erro' : 'erros'}`}>
+              <span className="mono">Erros</span>
+              <b key={state.errors} className={state.errors > 0 ? 'bump' : ''} data-testid="error-count">
+                {state.errors}
+              </b>
             </div>
           </section>
 
@@ -205,6 +221,13 @@ export function ConnectPlay() {
               </div>
             )}
           </div>
+
+          {hintGroup && (
+            <div className={`cx-hint l${hintGroup.level}`} role="status" data-testid="hint-text">
+              <span className="mono">Nome do conjunto</span>
+              <b>{hintGroup.title}</b>
+            </div>
+          )}
 
           <div className="cx-found">
             {state.found.map((g) => (
@@ -246,17 +269,29 @@ export function ConnectPlay() {
                   Enviar {picked.length}/4
                 </button>
               </div>
+              <div className="cx-aux">
+                <button type="button" className="btn ghost cx-hintbtn" onClick={useHint} disabled={hintUsed} data-testid="hint">
+                  {hintUsed ? 'Dica usada' : 'Dica (1 por fase)'}
+                </button>
+                <button type="button" className="cx-giveup mono" onClick={() => setAskGiveUp(true)} data-testid="giveup">
+                  Desistir
+                </button>
+              </div>
             </>
           )}
 
           {state.over && (
             <ResultSheet
               won={state.won}
-              stamp={state.won ? 'Conectou tudo' : 'Não foi dessa vez'}
-              label={state.won ? 'ERROS' : 'GRUPOS'}
-              value={state.won ? state.errors : state.found.length}
+              stamp={klass.name}
+              label="ERROS"
+              value={state.errors}
               decimals={0}
-              detail={state.won ? `fase ${num} concluída` : `${state.found.length} de 4 grupos · fase ${num}`}
+              detail={
+                state.won
+                  ? `${state.errors === 0 ? 'Sem nenhum erro' : state.errors === 1 ? '1 erro' : `${state.errors} erros`} · fase ${num} concluída`
+                  : `Você desistiu · ${state.found.length} de 4 grupos${state.errors > 0 ? ` · ${state.errors} ${state.errors === 1 ? 'erro' : 'erros'}` : ''} · fase ${num}`
+              }
             >
               {hasNext && (
                 <Link to="/words/connect/fase/$n" params={{ n: String(num + 1) }} className="btn alt" data-testid="next">
@@ -270,6 +305,17 @@ export function ConnectPlay() {
           )}
         </>
       )}
+
+      <ConfirmDialog
+        open={askGiveUp}
+        title="Desistir desta fase?"
+        text="As palavras que faltam serão reveladas e a fase termina como Desistência."
+        confirmLabel="Desistir"
+        confirmSfx="back"
+        cancelLabel="Continuar jogando"
+        onConfirm={giveUp}
+        onCancel={() => setAskGiveUp(false)}
+      />
     </WordsShell>
   );
 }

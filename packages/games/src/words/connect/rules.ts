@@ -5,7 +5,6 @@ import { wordKey } from '../text';
  * palavras embaralhadas e, a cada palpite, só o que a regra revela.
  */
 
-export const CONNECT_LIVES = 5;
 export const CONNECT_GROUPS = 4;
 export const CONNECT_GROUP_SIZE = 4;
 
@@ -37,20 +36,40 @@ export interface ConnectState {
   found: ConnectGroup[];
   /** Palavras ainda soltas. */
   left: string[];
+  /** Quantos palpites errados (não há vidas: o jogo só conta). */
   errors: number;
-  lives: number;
   won: boolean;
+  /** A pessoa desistiu (as palavras que faltavam são reveladas). */
+  gaveUp: boolean;
+  /** A fase acabou: achou os 4 grupos ou desistiu. */
   over: boolean;
   /** O resultado de cada palpite, na ordem. */
   results: ConnectResult[];
-  /** Só vale quando `over`. */
-  nota: number;
 }
 
-/** Nota de 0 a 10: vitória com e erros (10, 8,5, 7, 5,5, 4) ou derrota com g grupos (0 a 3). */
-export function connectNota(won: boolean, errors: number, groupsFound: number): number {
-  if (won) return [10, 8.5, 7, 5.5, 4][Math.min(errors, 4)]!;
-  return Math.min(groupsFound, 3);
+/** A classificação de uma fase terminada: pelos erros de quem concluiu, ou a desistência. */
+export interface ConnectClass {
+  id: 'perfeito' | 'muito-bom' | 'bom' | 'concluida' | 'desistencia';
+  name: string;
+}
+
+/** Sem erro é Perfeito; de 1 a 2 Muito bom; de 3 a 5 Bom; mais que isso, Concluída. Desistir é Desistência. */
+export function connectClass(won: boolean, errors: number, gaveUp: boolean): ConnectClass {
+  if (gaveUp || !won) return { id: 'desistencia', name: 'Desistência' };
+  if (errors === 0) return { id: 'perfeito', name: 'Perfeito' };
+  if (errors <= 2) return { id: 'muito-bom', name: 'Muito bom' };
+  if (errors <= 5) return { id: 'bom', name: 'Bom' };
+  return { id: 'concluida', name: 'Concluída' };
+}
+
+/**
+ * A dica (uma por partida): o nome de um dos grupos que ainda não foram achados. Entrega o conjunto mais
+ * fácil que falta (o de menor nível), sem mostrar nenhuma palavra.
+ */
+export function connectHint(puzzle: ConnectPuzzle, guesses: readonly (readonly string[])[]): ConnectGroup | null {
+  const state = playConnect(puzzle, guesses);
+  const left = puzzle.groups.filter((g) => !state.found.includes(g));
+  return [...left].sort((a, b) => a.level - b.level)[0] ?? null;
 }
 
 /** O que um palpite de 4 palavras vale contra os grupos que faltam. */
@@ -71,15 +90,21 @@ export function judgeGuess(
 
 /**
  * Refaz a partida pelos palpites (cada um com 4 palavras). Palpite com palavra que não está solta, ou
- * que não tem 4 palavras diferentes, é erro de quem chama. Repetir um palpite já errado não custa vida.
+ * que não tem 4 palavras diferentes, é erro de quem chama. Repetir um palpite já errado não conta erro.
+ * Não há vidas: cada palpite errado soma 1 ao contador e a fase só acaba quando os 4 grupos são achados
+ * ou quando a pessoa desiste (`gaveUp`).
  */
-export function playConnect(puzzle: ConnectPuzzle, guesses: readonly (readonly string[])[]): ConnectState {
+export function playConnect(
+  puzzle: ConnectPuzzle,
+  guesses: readonly (readonly string[])[],
+  opts: { gaveUp?: boolean } = {},
+): ConnectState {
   const found: ConnectGroup[] = [];
   const results: ConnectResult[] = [];
   const tried = new Set<string>();
   let errors = 0;
   for (const guess of guesses) {
-    if (errors >= CONNECT_LIVES || found.length === CONNECT_GROUPS) break;
+    if (found.length === CONNECT_GROUPS) break;
     const left = puzzle.groups.filter((g) => !found.includes(g));
     const loose = new Set(left.flatMap((g) => g.words.map(norm)));
     const keys = guess.map(norm);
@@ -100,17 +125,17 @@ export function playConnect(puzzle: ConnectPuzzle, guesses: readonly (readonly s
     }
   }
   const won = found.length === CONNECT_GROUPS;
-  const over = won || errors >= CONNECT_LIVES;
+  const gaveUp = !!opts.gaveUp && !won;
+  const over = won || gaveUp;
   const foundWords = new Set(found.flatMap((g) => g.words.map(norm)));
   return {
     found,
     left: puzzle.groups.flatMap((g) => g.words).filter((w) => !foundWords.has(norm(w))),
     errors,
-    lives: CONNECT_LIVES - errors,
     won,
+    gaveUp,
     over,
     results,
-    nota: over ? connectNota(won, errors, found.length) : 0,
   };
 }
 

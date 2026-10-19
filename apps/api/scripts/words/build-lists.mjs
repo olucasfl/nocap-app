@@ -14,7 +14,7 @@
  *
  * As respostas finais saem de `candidatas5.txt` menos `fora5.txt` mais `extras5.txt` (ver `apply-review.mjs`).
  */
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -79,10 +79,33 @@ const sortWords = (list) => list.sort((a, b) => key(a).localeCompare(key(b)) || 
 const five = [...icf.keys()].filter((w) => len(w) === 5 && clean(w));
 // candidatas a resposta: palavras "de dicionário" (léxico ou plural), nunca só forma verbal conjugada
 const candidates = byKey(five.filter((w) => (lex.has(w) || isPlural(w)) && icf.get(w) <= 16));
-const accepted = byKey(
-  five.filter((w) => lex.has(w) || conj.has(w) || isPlural(w)),
-  new Set(candidates),
-);
+// Palpites aceitos: qualquer palavra de verdade, mesmo as que também são nome de lugar (arcos, areia, feliz,
+// farol) ou não têm nota de frequência. Só as RESPOSTAS passam pelo filtro de nomes e de palavras negativas.
+// Entram: palavras do léxico e tudo o que tem nota de frequência (ICF) e é palavra (léxico, conjugação ou plural).
+// Formas raríssimas, sem nota e só de conjugação ou de "plural fabricado", ficam de fora.
+const acceptedPool = new Set();
+for (const w of lex) if (len(w) === 5 && letters.test(w)) acceptedPool.add(w);
+for (const w of icf.keys()) {
+  if (len(w) === 5 && letters.test(w) && (lex.has(w) || conj.has(w) || isPlural(w))) acceptedPool.add(w);
+}
+// O léxico quase não traz plurais (bolos, gatos, mesas): eles saem do singular pelas regras simples.
+// Só plurais de 5 letras, só de palavras que não são infinitivo: vogal + s (bolo, bolos), r ou z + es
+// (luz, luzes) m vira ns (item, itens) e al/ul viram ais/uis (real, reais).
+const VOWEL_END = /[aeiouáéíóúâêôãõ]$/;
+for (const w of lex) {
+  if (!letters.test(w)) continue;
+  let plural = null;
+  if (len(w) === 4 && VOWEL_END.test(w)) plural = w + 's';
+  else if (len(w) === 3 && /[rz]$/.test(w)) plural = w + 'es';
+  else if (len(w) === 4 && w.endsWith('m')) plural = w.slice(0, -1) + 'ns';
+  else if (len(w) === 4 && /[au]l$/.test(w)) plural = w.slice(0, -1) + 'is';
+  if (plural && len(plural) === 5) acceptedPool.add(plural);
+}
+// A forma (com acento) que já estava na lista continua sendo a preferida: o jogo e o Daily já a usam.
+const before = existsSync(join(out, 'aceitas5.txt'))
+  ? readFileSync(join(out, 'aceitas5.txt'), 'utf8').split(/\r?\n/).filter(Boolean)
+  : [];
+const accepted = byKey([...acceptedPool, ...before], new Set([...candidates, ...before]));
 
 writeFileSync(join(out, 'aceitas5.txt'), sortWords(accepted).join('\n') + '\n');
 writeFileSync(

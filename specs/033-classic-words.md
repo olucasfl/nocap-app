@@ -121,3 +121,11 @@ Salas (corrida, duelo, poderes); modo difícil; Daily de Dueto e de Quarteto; pa
 - **Modo "Sem pistas de cor"** (só a quantidade de acertos) como desafio.
 - **Dailies com tema** em datas especiais (a palavra do dia "combina" com a data, sem exagero).
 - Salas: **corrida** (mesma palavra para todos; os tabuleiros dos outros aparecem só com as cores, sem letras) e **duelo**; em spec própria depois do Classic estar jogável.
+
+## Revisão (19/10/2026): mais palavras, ç, sem nota na tela, sem compartilhar, envio instantâneo
+
+- **Palavras aceitas:** a lista de aceitas (`aceitas5.txt`, ~10,4 mil) passou a incluir plurais e formas comuns (ex.: "arcos", "bolos"). As respostas e a ordem do Daily não mudam.
+- **ç é uma letra própria na cor:** `colorKey` mantém o ç; amarelo/verde no ç só se a palavra certa tem ç (os outros acentos continuam ignorados). A busca no dicionário segue tratando c e ç como iguais; o servidor pontua sempre a forma canônica.
+- **Fim da partida:** não mostra nota; mostra quantas tentativas usou ("acertou em N de M"). A nota continua existindo no servidor só para o ranking do Daily.
+- **Compartilhar foi removido** (texto e imagem).
+- **Envio instantâneo:** `GET /words/wclassic/accepted` entrega a lista (cache de 1 dia); palavra inválida é recusada na hora no aparelho. Palavra válida é enviada ao servidor com a linha em estado de carregamento (onda animada, só `transform`/`opacity`) e depois vira. O servidor faz um único `UPDATE ... array_append ... RETURNING` por jogada.

@@ -92,6 +92,16 @@ describe('dicas', () => {
     expect(h.pangramsLeft).toBe(0);
     expect(h.bySize).toEqual({ 4: 1, 5: 2, 7: 1 });
     expect(h.byInitial).toEqual({ d: 1, t: 2, e: 1 });
+    expect(h.initials).toEqual([
+      { letter: 'd', count: 1 },
+      { letter: 'e', count: 1 },
+      { letter: 't', count: 2 },
+    ]);
+    expect(h.sizes).toEqual([
+      { size: 4, count: 1 },
+      { size: 5, count: 2 },
+      { size: 7, count: 1 },
+    ]);
   });
 });
 

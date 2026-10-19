@@ -128,7 +128,9 @@ export function BeePlay() {
       wordsAudio.beeReject();
       setShake(true);
       later(() => setShake(false), 420);
-      say(REJECT_TEXT[check.reason], 'bad');
+      // uma palavra que existe no favo mas ficou fora desta fase (as fases fáceis só usam palavras comuns)
+      const outside = check.reason === 'notlisted' && (level?.x ?? []).some((w) => wordKey(w) === wordKey(word));
+      say(outside ? 'Existe, mas não vale nesta fase' : REJECT_TEXT[check.reason], 'bad');
       setTyped(() => '');
       return;
     }
@@ -158,7 +160,7 @@ export function BeePlay() {
       later(() => setBanner(null), 2000);
     } else wordsAudio.beeFound(check.points);
     say(check.pangram ? `Pangrama! +${check.points}` : `+${check.points}`, 'good');
-  }, [puzzle, open, typedRef, found, num, later, say, setTyped]);
+  }, [puzzle, open, typedRef, found, num, later, say, setTyped, level]);
 
   useEffect(() => {
     if (!open) return;
@@ -199,8 +201,10 @@ export function BeePlay() {
   const rankIndex = BEE_RANKS.findIndex((r) => r.id === rank.id);
   const genius = Math.min(1, points / (0.7 * max));
   const hints = beeHints(puzzle, found);
+  const maxInitial = Math.max(1, ...hints.initials.map((x) => x.count));
+  const maxSize = Math.max(1, ...hints.sizes.map((x) => x.count));
   const sorted = [...found].sort((a, b) => a.localeCompare(b, 'pt'));
-  const tier = tierOf(num - 1, levels.length);
+  const tier = tierOf(level);
   const hasNext = num < levels.length;
 
   const shuffle = () =>
@@ -364,23 +368,39 @@ export function BeePlay() {
             <div className="bz-hint-big">
               <b>{hints.left}</b> palavras faltando de {hints.total}
             </div>
-            <div>
+            <div className="bz-hint-pang">
               Pangramas: <b>{hints.pangrams - hints.pangramsLeft}</b> de {hints.pangrams}
             </div>
-            <div className="bz-hint-row">
-              {Object.entries(hints.bySize).map(([size, c]) => (
-                <span key={size}>
-                  {size} letras <b>{c}</b>
-                </span>
-              ))}
-            </div>
-            <div className="bz-hint-row">
-              {Object.entries(hints.byInitial).map(([l, c]) => (
-                <span key={l}>
-                  {l.toUpperCase()} <b>{c}</b>
-                </span>
-              ))}
-            </div>
+
+            <section className="bz-hint-block" aria-label="Começa com">
+              <h4>Começa com</h4>
+              <ul className="bz-initials" data-testid="hint-initials">
+                {hints.initials.map(({ letter, count }) => (
+                  <li key={letter} style={{ '--w': count / maxInitial } as CSSProperties}>
+                    <span className="bz-chip">{letter.toUpperCase()}</span>
+                    <i aria-hidden="true" />
+                    <b>
+                      {count} {count === 1 ? 'vez' : 'vezes'}
+                    </b>
+                  </li>
+                ))}
+              </ul>
+            </section>
+
+            <section className="bz-hint-block" aria-label="Quantidade de letras">
+              <h4>Quantidade de letras</h4>
+              <ul className="bz-sizes" data-testid="hint-sizes">
+                {hints.sizes.map(({ size, count }) => (
+                  <li key={size} style={{ '--w': count / maxSize } as CSSProperties}>
+                    <span>{size} letras</span>
+                    <i aria-hidden="true" />
+                    <b>
+                      {count} {count === 1 ? 'palavra' : 'palavras'}
+                    </b>
+                  </li>
+                ))}
+              </ul>
+            </section>
           </div>
         ))}
       {tab === 'rules' && (

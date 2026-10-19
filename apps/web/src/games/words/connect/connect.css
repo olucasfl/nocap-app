@@ -275,40 +275,89 @@
 .cx-dots i.l4 {
   background: var(--eco-purple);
 }
-.cx-lives {
+.cx-errors {
   display: grid;
   justify-items: end;
-  gap: 4px;
+  gap: 2px;
 }
-.cx-lives .mono {
+.cx-errors .mono {
   font-size: 10px;
   text-transform: uppercase;
   color: var(--muted);
 }
-.cx-hearts {
+.cx-errors b {
+  display: inline-block;
+  min-width: 34px;
+  padding: 2px 10px;
+  border: var(--border);
+  border-radius: 10px;
+  background: var(--paper);
+  font-size: 20px;
+  line-height: 1.1;
+  text-align: center;
+}
+.cx-errors b.bump {
+  background: var(--orange);
+  animation: cx-bump 0.45s ease both;
+}
+.cx-hint {
+  display: grid;
+  gap: 2px;
+  padding: 10px 14px;
+  border: var(--border);
+  border-radius: 14px;
+  box-shadow: 3px 3px 0 var(--ink);
+  background: var(--white);
+  color: var(--ink);
+  animation: cx-in 0.4s ease both;
+}
+.cx-hint .mono {
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.cx-hint.l1 {
+  background: var(--yellow);
+  color: var(--on-accent);
+}
+.cx-hint.l2 {
+  background: var(--green);
+  color: var(--on-accent);
+}
+.cx-hint.l3 {
+  background: var(--blue);
+  color: var(--on-accent);
+}
+.cx-hint.l4 {
+  background: var(--eco-purple);
+  color: var(--on-accent);
+}
+.cx-hint.l1 .mono,
+.cx-hint.l2 .mono,
+.cx-hint.l3 .mono,
+.cx-hint.l4 .mono {
+  color: inherit;
+  opacity: 0.8;
+}
+.cx-aux {
   display: flex;
-  gap: 3px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
 }
-.cx-hearts > span {
-  display: inline-flex;
-}
-.cx-hearts > span.breaking {
-  animation: cx-break 0.55s ease both;
-}
-.cx-heart {
-  width: 22px;
-  height: 20px;
-  overflow: visible;
-}
-.cx-heart path {
-  fill: var(--orange);
-  stroke: var(--ink);
-  stroke-width: 2.4;
-  stroke-linejoin: round;
-}
-.cx-heart.lost path {
-  fill: var(--paper);
+.cx-hintbtn:disabled {
   opacity: 0.55;
+}
+.cx-giveup {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  text-decoration: underline;
+  cursor: pointer;
 }
 .cx-found {
   display: grid;
@@ -437,7 +486,7 @@
     opacity: 1;
   }
 }
-@keyframes cx-break {
+@keyframes cx-bump {
   0% {
     transform: scale(1.5) rotate(-14deg);
   }
@@ -454,7 +503,8 @@
   .cx-word,
   .cx-hero,
   .cx-continue,
-  .cx-hearts > span.breaking,
+  .cx-errors b.bump,
+  .cx-hint,
   .cx-grid.shake {
     animation: none !important;
     transition: none !important;

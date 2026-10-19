@@ -165,3 +165,10 @@ Salas (corrida de favos); modo de favo aleatório sem revisão; letra `S` e `Ç`
 - **"Palavra do dia" em destaque** quando alguém acha o pangrama (aviso discreto aos amigos: "@fulano achou o pangrama").
 - **Corrida de favos em sala:** mesmo favo para todos, tempo curto (3 minutos), cada um vê só **quantos pontos** os outros fizeram, não as palavras; vence quem mais pontuar. É onde **poderes** cabem (congelar o favo de um rival por 5 segundos, embaralhar o dele, letra dobrada).
 - **Favo de fim de semana** maior e mais difícil (9 letras).
+
+## Revisão (19/10/2026): dicas claras, catálogo com pontos e dificuldade em faixas
+
+- **Dicas:** "Começa com" (letra, barra proporcional e "N vezes") e "Quantidade de letras" ("N letras: M palavras").
+- **Catálogo:** cada fase mostra pontos/máximo (ex.: 14/83); fase completa mostra só "completo".
+- **Dificuldade:** 200 fases em 4 faixas de 50. A lista de cada favo é aparada por faixa: Fácil usa palavras comuns de até 7 letras (pangrama até 8), 10 a 22 palavras; Médio até 8, 18 a 34; Difícil até 9, 28 a 52; Mestre é o favo inteiro. Palavras reais que ficaram de fora vão em `x` e são recusadas com "Existe, mas não vale nesta fase".
+- Progresso em `nocap-bee-v2` (`nocap-words-bee-v2`); o v1 é apagado.

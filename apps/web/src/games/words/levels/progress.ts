@@ -73,9 +73,22 @@ export interface BeeProgress {
 export interface ConnectProgress {
   guesses: string[][];
   at: number;
+  /** A pessoa desistiu: as palavras que faltavam foram reveladas. */
+  gaveUp?: boolean;
+  /** Nível (cor) do grupo cujo nome a dica já mostrou: uma dica por fase. */
+  hint?: number;
 }
 
-export const beeProgress = createProgress<BeeProgress>('nocap-words-bee-v1');
-export const connectProgress = createProgress<ConnectProgress>('nocap-words-connect-v1');
+// v2: as fases foram refeitas (outra ordem e outra dificuldade), então o progresso antigo não vale mais.
+export const beeProgress = createProgress<BeeProgress>('nocap-words-bee-v2');
+export const connectProgress = createProgress<ConnectProgress>('nocap-words-connect-v2');
 
 export type LevelStatus = 'new' | 'open' | 'done';
+
+// O que ficou guardado da primeira versão das fases não é mais usado: sai do aparelho.
+try {
+  localStorage.removeItem('nocap-words-bee-v1');
+  localStorage.removeItem('nocap-words-connect-v1');
+} catch {
+  /* sem armazenamento: nada a limpar */
+}

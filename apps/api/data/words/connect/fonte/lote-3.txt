@@ -4,7 +4,7 @@
 1 Esportes aquáticos :: NATAÇÃO, POLO AQUÁTICO, SURFE, REMO
 2 Posições do vôlei :: LEVANTADOR, LÍBERO, PONTEIRO, OPOSTO
 3 Combinam com o verbo "bater" :: PALMAS, PORTA, RECORDE, CARTEIRA
-4 Ganham um A na frente e viram outra palavra :: MAR, TENTO, CASO, BRIR
+4 Ganham um A na frente e viram outra palavra :: MAR, TENTO, CASO, COLHER
 
 ## c-0052
 1 Dedos da mão :: POLEGAR, INDICADOR, MÉDIO, ANELAR
@@ -131,7 +131,7 @@
 1 Chapéus :: BONÉ, BOINA, CARTOLA, SOMBRERO
 2 Roupas de frio :: CASACO, MOLETOM, JAQUETA, TOUCA
 3 Combinam com o verbo "acender" :: CIGARRO, LUZ, FOGUEIRA, CHURRASQUEIRA
-4 Tirando a última letra, viram outra palavra :: PANELA, CASAL, PORTAL, CARTAZ
+4 Tirando a última letra, viram outra palavra :: CANTOR, CASAL, PORTAL, CARTAZ
 
 ## c-0073
 1 Grãos e leguminosas :: FEIJÃO, LENTILHA, GRÃO-DE-BICO, ERVILHA

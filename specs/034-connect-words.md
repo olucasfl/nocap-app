@@ -170,3 +170,12 @@ Salas (separar mais rápido, cooperativo); editor de puzzles no app; criar o pr�
 - **Estatística de grupos**: "só 23% acharam o roxo hoje", mostrada depois do fim (vem de graça do servidor).
 - **Conexão relâmpago** (sala): vários jogadores no mesmo puzzle, ganha quem separa os 4 grupos primeiro; o tabuleiro dos outros aparece sem as palavras, só com quantos grupos cada um já achou.
 - **Puzzles feitos por amigos**: um jogador monta 4 grupos e manda para a sala (precisa de moderação do conteúdo; só em spec futura).
+
+## Revisão (19/10/2026): sem vidas, dica, desistir e dificuldade em faixas
+
+- **Sem vidas:** cada palpite errado soma 1 ao contador de **erros** (não há derrota por erro).
+- **Dica (1 por fase):** mostra "Nome do conjunto: ..." de um grupo que ainda falta (o de menor nível), sem palavras.
+- **Desistir:** pede confirmação; revela os grupos que faltam e classifica como **Desistência**.
+- **Classificação ao concluir:** 0 erros Perfeito; 1 a 2 Muito bom; 3 a 5 Bom; mais que isso Concluída. A tela final mostra só o número de erros e a classificação.
+- **Dificuldade:** 166 fases em 4 faixas (Fácil, Médio, Difícil, Mestre). A faixa Fácil é um lote novo (36 puzzles, só categorias comuns, sem jogo de palavras); o resto é ordenado pela dureza dos títulos. Conteúdo com erro (palavras inexistentes, categorias sobrepostas) foi corrigido.
+- Progresso em `nocap-words-connect-v2` (o v1 é apagado).
