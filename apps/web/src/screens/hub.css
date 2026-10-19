@@ -92,10 +92,10 @@ a.hub-card:active {
   background: var(--eco-red);
   color: var(--on-blue);
 }
-/* Word's: cartão preto e papel (igual nos dois temas), com letras coloridas */
+/* Word's: ciano (as casas coloridas da arte contrastam bem) */
 .hub-card-words {
-  background: var(--party-bg);
-  color: var(--party-fg);
+  background: var(--eco-cyan);
+  color: var(--on-accent);
   animation-delay: 0.66s;
 }
 .hub-card-mix {
