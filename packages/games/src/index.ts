@@ -13,3 +13,4 @@ export * from './party';
 export * from './blocks';
 export * from './towers';
 export * from './atravessa';
+export * from './words';

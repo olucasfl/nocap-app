@@ -1,0 +1,123 @@
+# Palavras que SAEM da lista de respostas do Classic Word's (a revisão humana da spec 032).
+# Uma por linha; linhas com # são comentário. Pode estar em qualquer ordem. Só entra aqui o que
+# a coleção traz e não serve de resposta: nome próprio, estrangeirismo, pronome/contração, forma
+# verbal conjugada, grafia antiga, termo técnico obscuro, vulgar ou ofensivo.
+#
+# --- faixa ICF até 11,5 (revisão de 19/10/2026)
+# nomes próprios
+bruno
+celso
+césar
+chico
+diogo
+joana
+júlio
+laura
+lucas
+maria
+marta
+marte
+mauro
+moura
+nunes
+silva
+jesus
+paris
+vasco
+bento
+# estrangeirismos e termos de internet
+black
+blues
+drive
+flash
+green
+jeans
+light
+login
+looks
+mouse
+posts
+sites
+skate
+stand
+anime
+queen
+multi
+infra
+ultra
+# pronomes, contrações e demonstrativos
+ambas
+ambos
+algum
+daqui
+delas
+deles
+desta
+deste
+dessa
+desse
+essas
+esses
+estas
+estes
+neles
+nessa
+nesse
+nesta
+neste
+nisso
+disso
+disto
+pelas
+pelos
+nossa
+nosso
+minha
+vosso
+vocês
+# formas verbais conjugadas
+tinha
+fomos
+estou
+sabes
+serão
+chamo
+chega
+chora
+corre
+corta
+custa
+deixa
+fecha
+tenta
+tente
+tento
+fique
+jogue
+valeu
+volte
+volto
+manda
+penso
+perca
+abreu
+basta
+salve
+# grafia antiga, estrangeira ou regional, vulgar ou obscuro
+caput
+jóias
+facto
+tesão
+seios
+cível
+autos
+#
+# --- faixa ICF 11,5 a 13
+abate
+achas adobe aedes afora alpes alter amaro anglo anima apaga apart apolo aquém ataca ávila babel bangu bebes beija bessa betão blush books break cache cairo canso cante capão celta cerro chefs chica chips chupa clean close coach combo corra corro cosmo couto cover cruza dante deita demos derby deves diana ditas doado dobre donde drink dunga elena erica fezes foste fraga front gávea grill grita guria hacer hasta haste henry hidro hobby horto ibope janta jeová judas judeu lauro lidas livra lobão lobby logar logos loiça lúcio luzia macro madre magno maias mando match milão mixer moção modem monta morra nelas nerds nisto nobel nylon orgia pagas paper peres persa pondo poupa póvoa prega prime quiçá quota rally reiki relax remix romão romeu rouge round rugby sacra saído sairá sedan sejas sexos short siena sigma simão sírio slide sofra souto spray staff still strip sueca sueco suíço supra swing tarso tecto teles teres timão timer timor toner torce torço tours trago trans túlio turco unção valia varão vazão veiga vênus versa veste vilar volvo votes vulgo weber xerox
+#
+# --- faixa ICF 13 a 14
+abade acolá ágape alana algoz âmago andas anexa antão argel áries áureo ávido axial baila bamba bardo basal basco basto batel bates beata beato berta betel blast blend bongo borla borra botox brabo brado brita bumba buggy burla cabal cação cânon carma carte catch caves cegas célio checo chili chita choca círio cisão clama clave cobro coeso coifa conca copel corja corso corto coupé coura cousa creta crias crivo crush cuido cúria curió curry cusco débil decks devir dinda ditar dolly dosar dotar dotes dreno drone drops dumas édipo égide enfia epóxi error espia ethos fados faial ferry fiada finda findo flame fores foros fosca frisa furor gabar ganga geeks gleba gnome grado grafo guaçu guião haras hedge hertz honor ibero ícaro ileso ímpio incas input irado irina islão ítalo jango jaque judia juris kraft labor laico lamas lanço lavra leone levas lides lives lixão lixar lofts logon lomba lotar lótus lúpus luxos lycra maçom malte mango manja marra mento messe mirra mitra modal modus mogno moído molha molhe motim mouro murta nadir neuro ninfa nitro novel numas óbice ocaso óscar ósseo óvulo pacas pagão papal papão parda páreo parma parra parta parva parvo pasmo pavio pazes pegas penny penta pilão pimba plebe polia pompa porre poses potro pousa povão prior prole proto punha quito rabão rabos racha racks raiar ralar rapel rasto ratio rebel recta recua reger régia reich reles rente retal retém retos revés rolim rombo rotor runas sabre sacas sacro sadio safar sarja sarna sarro seiva selar selim senda serva sheik shoyu sinhá sisal sismo socar solas somas sonar sorgo sósia suado suede suíno sujar sutra swell taipa talão talha tarja tasca tátil tecno tenor tesla testo tetos tirso toada toldo tomas tomba torga torpe totem trace train trenó trepa treva trial trofa tróia trupe truta tumba turca tutti twist umbro untar urano uréia úrico vaias vanda vazar velar venta veras vetar viril vulto xangô xiita xisto zerar zorra zorro zumba
+#
+# --- revisão final da lista completa (neutralidade: nacionalidades, termos que ofendem e vulgares)
+alemã árabe belga grega grego hindu russo índio negra negro gorda gordo nudez

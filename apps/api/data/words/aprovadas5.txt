@@ -1,0 +1,8 @@
+# Respostas APROVADAS entre as palavras mais raras (ICF acima de 14): só entram as que a revisão
+# reconhece como de uso comum. Abaixo de 14 vale tudo que não está em fora5.txt.
+#
+# --- faixa ICF 14 a 15
+ábaco álibi ameba antro apuro assaz audaz axila banjo bebum bemol bocha boiar boias bolor bombo botes bucho bumbo burca cacto calço canga carão cardo caril carpa casto cegar ceias ceifa cerol chaga chiar chulé cidra coado coala coice colmo covil crina cuíca cuspe dardo datar dengo deprê deque derma dique douto durex ébano ébrio écran éguas emoji facho falir feder feudo filão finta fitar floco focas fofão fumos gambá garbo gatil gosma grelo grota grude harém hidra hiena húmus inato istmo jambo jegue jirau lasca latir lauda légua lerdo lesma limas linfa locar logro mambo malho malva manco matiz melro mimar míope monja morsa musse neura nevar nódoa ofurô ogiva orçar paiol pajem pança pecha pelve penca piche pífio pirão platô podar pólio purga quibe quite ranço rango rédea regal rinha rocio rogar rojão rouco rubor ruela rumba sanha sarar sesta sidra sifão soldo sovar taxar tenaz tíbia tique titio tonal tonel topar tordo torso trapo trena tripa trova turba úmero ungir usura vadio vaiar vedar verve viela vinco vivaz zanga
+#
+# --- faixa ICF 15 a 16
+arpão bicar bufar calva catre cerda cílio cutia cútis dedal fiapo fisga furão furna galgo gamão haiku hurra laçar leoas lhama mamba mofar mofos moela nevão orlas pargo parka piaba polca quati quepe rapar razia resma rugir rusga sagui sarda saúva símio taiga tição topaz uivar urucu zonzo cuias jambu

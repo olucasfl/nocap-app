@@ -1,0 +1,2 @@
+# Palavras que ENTRAM nas respostas mesmo sem estar nas candidatas (comuns que a coleção não traz).
+# Uma por linha ou várias por linha, separadas por espaço. Linhas com # são comentário.
