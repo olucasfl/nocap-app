@@ -1,6 +1,6 @@
 # 034 · Connect Word's (16 palavras, 4 grupos, o estilo Conexo e Connections)
 
-Status: **aprovada (19/10/2026); vem depois do Classic e do Bee.** Faz parte do grupo [032 Word's](032-words-grupo-e-base.md) (corridas no servidor, Daily, compartilhar, acessibilidade). Pesquisa em [docs/pesquisa-termo.md](../docs/pesquisa-termo.md).
+Status: **aprovada (19/10/2026), em construção: regras, API e lote 1 de 12 puzzles prontos; faltam as telas.** Faz parte do grupo [032 Word's](032-words-grupo-e-base.md) (corridas no servidor, Daily, compartilhar, acessibilidade). Pesquisa em [docs/pesquisa-termo.md](../docs/pesquisa-termo.md).
 
 ## Objetivo
 
