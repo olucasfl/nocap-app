@@ -1303,3 +1303,106 @@
   color: var(--ink);
   font: 900 14px var(--font-display);
 }
+
+/* pangrama: cartão com estrela, explicação e o tamanho (quando o mapa abre) */
+.bz-pang {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  border: var(--border);
+  border-radius: 14px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.bz-pang.done {
+  background: var(--green);
+  color: var(--on-accent);
+}
+.bz-pang-star {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border: var(--border);
+  border-radius: 50%;
+  background: var(--yellow);
+  color: var(--on-accent);
+}
+.bz-pang-star svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+  stroke: var(--ink);
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+}
+.bz-pang-text {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.bz-pang-text b {
+  font: 900 15px/1.1 var(--font-display);
+  text-transform: uppercase;
+}
+.bz-pang-text .mono {
+  font-size: 10.5px;
+  line-height: 1.35;
+  text-transform: uppercase;
+}
+.bz-pang-size {
+  justify-self: start;
+  padding: 2px 9px;
+  border: 2.5px solid var(--ink);
+  border-radius: 999px;
+  background: var(--white);
+  color: var(--ink);
+  font-weight: 800;
+}
+
+/* etiquetas que dizem o que cada número é: "com 4 letras" e "3 palavras" */
+.bz-map-sizes li {
+  gap: 8px;
+  padding: 3px 4px 3px 10px;
+  font: 700 12px var(--font-mono);
+  text-transform: none;
+}
+.bz-map-sizes li span b {
+  font: 900 14px var(--font-display);
+}
+.bz-map-sizes li em {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--paper);
+  font: 800 11px var(--font-mono);
+  font-style: normal;
+  text-transform: uppercase;
+}
+.bz-pairs li span {
+  min-width: 0;
+  padding: 2px 8px;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+/* cada tamanho é um mini cartão em duas linhas: quantas letras e, embaixo, quantas palavras (nada de número solto) */
+.bz-map-sizes li {
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  min-width: 82px;
+  padding: 5px 8px 6px;
+  border-radius: 14px;
+  white-space: nowrap;
+}
+.bz-map-sizes li span {
+  font: 700 11px var(--font-mono);
+  text-transform: uppercase;
+}
+.bz-map-sizes li span b {
+  font: 900 18px/1 var(--font-display);
+}

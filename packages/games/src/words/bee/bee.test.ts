@@ -106,6 +106,18 @@ describe('dicas', () => {
   });
 });
 
+describe('dicas: pangrama', () => {
+  it('conta os pangramas que faltam e o tamanho de cada um', () => {
+    const h = beeHints(puzzle, []);
+    expect(h.pangrams).toBe(1);
+    expect(h.pangramsLeft).toBe(1);
+    expect(h.pangramSizes).toEqual([7]);
+    const done = beeHints(puzzle, ['durante']);
+    expect(done.pangramsLeft).toBe(0);
+    expect(done.pangramSizes).toEqual([]);
+  });
+});
+
 describe('dicas: mapa e pares de letras', () => {
   const left = ['durante', 'nada'];
   it('o mapa conta inicial x tamanho só do que falta', () => {

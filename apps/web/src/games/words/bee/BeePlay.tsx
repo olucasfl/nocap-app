@@ -419,9 +419,28 @@ export function BeePlay() {
             <div className="bz-hint-big">
               <b>{hints.left}</b> palavras faltando de {hints.total}
             </div>
-            <div className="bz-hint-pang">
-              Pangramas: <b>{hints.pangrams - hints.pangramsLeft}</b> de {hints.pangrams}
-            </div>
+            <section className={`bz-pang${hints.pangramsLeft === 0 ? ' done' : ''}`} aria-label="Pangrama" data-testid="hint-pangram">
+              <span className="bz-pang-star" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M12 2l2.9 6.6 7.1.7-5.3 4.8 1.5 7-6.2-3.7-6.2 3.7 1.5-7L2 9.3l7.1-.7z" />
+                </svg>
+              </span>
+              <div className="bz-pang-text">
+                <b>{hints.pangramsLeft === 0 ? (hints.pangrams === 1 ? 'Pangrama achado!' : 'Pangramas achados!') : hints.pangrams === 1 ? 'Falta o pangrama' : `Faltam ${hints.pangramsLeft} pangramas`}</b>
+                <span className="mono">
+                  {hints.pangramsLeft === 0
+                    ? `Você achou ${hints.pangrams} de ${hints.pangrams} (+7 pontos).`
+                    : 'Pangrama é a palavra que usa as 7 letras do favo. Vale +7 pontos.'}
+                </span>
+                {hints.pangramsLeft > 0 && (
+                  <span className="bz-pang-size mono" data-testid="hint-pangram-size">
+                    {hints.needMap === 0
+                      ? `Tem ${hints.pangramSizes.join(' ou ')} letras`
+                      : `O tamanho dele aparece quando o mapa abrir (faltam ${hints.needMap}).`}
+                  </span>
+                )}
+              </div>
+            </section>
 
             <section className="bz-hint-block" aria-label="Quantidade de letras">
               <h4>Quantas letras</h4>
@@ -463,8 +482,12 @@ export function BeePlay() {
                               const count = hints.map.cells[r]![c]!;
                               return count > 0 ? (
                                 <li key={n}>
-                                  <span>{n} letras</span>
-                                  <b>{count}</b>
+                                  <span>
+                                    <b>{n}</b> letras
+                                  </span>
+                                  <em>
+                                    {count} {count === 1 ? 'palavra' : 'palavras'}
+                                  </em>
                                 </li>
                               ) : null;
                             })}
@@ -491,7 +514,9 @@ export function BeePlay() {
                   {hints.pairs.map(({ prefix, count }) => (
                     <li key={prefix}>
                       <b>{prefix.toUpperCase()}</b>
-                      <span>{count}</span>
+                      <span>
+                        {count} {count === 1 ? 'palavra' : 'palavras'}
+                      </span>
                     </li>
                   ))}
                 </ul>

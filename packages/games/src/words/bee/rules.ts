@@ -145,6 +145,8 @@ export function beeHints(puzzle: BeePuzzle, found: readonly string[]) {
     left: left.length,
     pangramsLeft: left.filter((x) => x.pangram).length,
     pangrams: puzzle.words.filter((x) => x.pangram).length,
+    /** O tamanho de cada pangrama que ainda falta (a dica só mostra depois que o mapa abre). */
+    pangramSizes: left.filter((x) => x.pangram).map((x) => wordKey(x.w).length).sort((a, b) => a - b),
     bySize,
     byInitial,
     /** O mesmo, em listas ordenadas para a tela: "começa com T: 6", "4 letras: 14". */
