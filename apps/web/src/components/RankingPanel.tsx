@@ -29,17 +29,22 @@ export function Score({
   /** Sobrevivência (rodadas) e Eco (passos): a nota é uma contagem. */
   unit?: CountUnit | null;
 }) {
-  // Classic Word's: o valor é em tentativas (a média nos períodos), nunca uma nota
+  // Classic Word's: o valor é em tentativas, nunca uma nota. Hoje: as do dia ("Não acertou" quando passou do limite);
+  // Semana e Sempre: a SOMA das tentativas do período.
   if (unit === 'tentativas') {
+    if (showDays) {
+      const total = Math.round(entry.score / 10);
+      return (
+        <>
+          {total}
+          <small className="mono">{total === 1 ? 'tentativa' : 'tentativas'}</small>
+        </>
+      );
+    }
     return (
       <>
         {formatAttempts(entry.score, true)}
         {entry.score <= 60 && <small className="mono">{entry.score === 10 ? 'tentativa' : 'tentativas'}</small>}
-        {showDays && entry.days !== undefined && (
-          <small className="mono rp-days">
-            {entry.days > 1 ? `MÉDIA DE ${entry.days} DIAS` : '1 DIA JOGADO'}
-          </small>
-        )}
       </>
     );
   }

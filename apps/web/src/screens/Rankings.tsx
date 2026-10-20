@@ -195,7 +195,7 @@ function RankingView({ game }: { game: Game }) {
   const note = isDaily
     ? dailySum
       ? game === 'wclassic'
-        ? 'Média de tentativas nos Dailys do período (menos é melhor)'
+        ? 'Soma das tentativas nos Dailys do período; vence a menor média por dia'
         : 'Soma dos Dailys do período (um por dia)'
       : game === 'wclassic'
         ? 'Tentativas no Daily de hoje (menos é melhor)'

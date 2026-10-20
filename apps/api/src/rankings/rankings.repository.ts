@@ -20,7 +20,8 @@ export class RankingsRepository {
 
   /**
    * Quadros normais: a melhor partida de cada conta, só presets (`ranked`) e **sem** Daily.
-   * Quadro Daily (`dailyOnly`): a SOMA das notas dos Dailys do período (é uma partida por dia).
+   * Quadro Daily (`dailyOnly`): a SOMA das notas dos Dailys do período (é uma partida por dia); no Classic Word's
+   * (tentativas) é a soma das tentativas, classificada pela média por dia.
    * Convidado não entra: não tem nome. Empate vale quem chegou lá primeiro.
    */
   async leaderboard(opts: {
@@ -31,11 +32,12 @@ export class RankingsRepository {
   }): Promise<RankingRow[]> {
     if (!this.maybeDb) throw new ServiceUnavailableException('Banco de dados não configurado');
     const kind = opts.dailyOnly ? sql`and m.kind = 'daily'` : sql`and m.kind <> 'daily'`;
-    // Classic Word's: o Daily conta tentativas, então menos é melhor e o período mostra a MÉDIA (e não a soma).
+    // Classic Word's: o Daily conta tentativas, então menos é melhor. O período mostra a SOMA das tentativas, mas a
+    // classificação é pela MÉDIA por dia (quem jogou mais dias não sai prejudicado); empate: mais dias, depois quem chegou antes.
     const fewerIsBetter = opts.dailyOnly && opts.game === 'wclassic';
-    const dailyScore = fewerIsBetter ? sql`round(avg(mp.total_score))::int` : sql`sum(mp.total_score)::int`;
+    const dailyScore = sql`sum(mp.total_score)::int`;
     const order = fewerIsBetter
-      ? sql`order by score asc, days desc, played_at asc`
+      ? sql`order by score::numeric / days asc, days desc, played_at asc`
       : sql`order by score desc, played_at asc`;
     const since = opts.since
       ? sql`and mp.played_at >= ${opts.since.toISOString()}::timestamptz`

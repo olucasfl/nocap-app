@@ -32,8 +32,8 @@ describe('página de ranking', () => {
     expect(boardChoices('time').some((b) => b.id === 'strict')).toBe(true);
   });
 
-  it('o Daily abre em hoje; os outros na semana', () => {
-    expect(defaultPeriod('daily')).toBe('all');
+  it('o Daily abre em hoje; os outros em sempre', () => {
+    expect(defaultPeriod('daily')).toBe('day');
     expect(defaultPeriod('classic')).toBe('all');
   });
 

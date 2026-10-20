@@ -134,8 +134,8 @@ export interface RankingsSearch {
 const GAME_IDS: Game[] = ['color', 'time', 'eco', 'blocks', 'atravessa', 'wclassic'];
 const PERIOD_IDS: Period[] = ['day', 'week', 'all'];
 
-/** O período de abertura de todo quadro é sempre "Sempre". */
-export const defaultPeriod = (_board: Board): Period => 'all';
+/** O período de abertura: nos Dailys é "Hoje"; nos outros quadros é "Sempre". */
+export const defaultPeriod = (board: Board): Period => (board === 'daily' ? 'day' : 'all');
 
 /** Quadros de um jogo para escolher, o Daily por último. */
 export const boardChoices = (game: Game): { id: Board; label: string }[] => [
