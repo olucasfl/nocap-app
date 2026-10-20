@@ -420,6 +420,12 @@ export function BeePlay() {
               <b>{hints.left}</b> palavras faltando de {hints.total}
             </div>
 
+            <div className="bz-hint-pang" data-testid="hint-pangram">
+              {hints.pangramsLeft === 0
+                ? 'Nenhum pangrama faltando'
+                : `${hints.pangramsLeft === 1 ? 'Falta 1 pangrama' : `Faltam ${hints.pangramsLeft} pangramas`}${hints.needMap === 0 ? ` (tem ${hints.pangramSizes.join(' ou ')} letras)` : ''}`}
+            </div>
+
             <section className="bz-hint-block" aria-label="Quantidade de letras">
               <h4>Quantas letras</h4>
               <ul className="bz-sizes" data-testid="hint-sizes">
@@ -433,17 +439,6 @@ export function BeePlay() {
                   </li>
                 ))}
               </ul>
-              <p className={`bz-pang-line${hints.pangramsLeft === 0 ? ' done' : ''}`} data-testid="hint-pangram">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M12 2l2.9 6.6 7.1.7-5.3 4.8 1.5 7-6.2-3.7-6.2 3.7 1.5-7L2 9.3l7.1-.7z" />
-                </svg>
-                <span>
-                  <b>Pangrama</b> (usa as 7 letras, +7 pts):{' '}
-                  {hints.pangramsLeft === 0
-                    ? 'achado!'
-                    : `falta ${hints.pangramsLeft === 1 ? '1' : hints.pangramsLeft}${hints.needMap === 0 ? `, tem ${hints.pangramSizes.join(' ou ')} letras` : ''}`}
-                </span>
-              </p>
             </section>
 
             <section className="bz-hint-block" aria-label="Mapa das palavras">
