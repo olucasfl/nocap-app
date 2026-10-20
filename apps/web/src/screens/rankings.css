@@ -107,15 +107,20 @@
   appearance: none;
   grid-column: 1 / -1;
   justify-self: stretch;
-  padding: 9px 12px;
+  padding: 12px 14px;
   border: var(--border);
-  border-radius: 12px;
+  border-radius: 14px;
   background: var(--party-bg);
   color: var(--party-fg);
-  font: 900 12px var(--font-display);
+  box-shadow: 3px 3px 0 var(--ink);
+  font: 900 14px var(--font-display);
   text-transform: uppercase;
   cursor: pointer;
-  transition: transform 0.08s ease-out;
+  transition: transform 0.08s ease-out, box-shadow 0.08s ease-out;
+}
+.rkp-switch span {
+  margin-right: 4px;
+  font-size: 18px;
 }
 .rkp-switch:active {
   transform: translate(2px, 2px);
@@ -506,71 +511,57 @@
   text-decoration: none;
 }
 
-/* ---------- janela de escolher o jogo ---------- */
-.rkp-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
+/* ---------- primeira tela: escolher o jogo ---------- */
+.rkp-picks {
   display: grid;
-  align-items: end;
-  background: rgba(17, 17, 17, 0.55);
-  animation: rkp-fade 0.2s ease both;
-}
-.rkp-sheet {
-  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
-  padding: 16px 16px calc(20px + env(safe-area-inset-bottom));
-  border: var(--border);
-  border-bottom: 0;
-  border-radius: 22px 22px 0 0;
-  background: var(--paper);
-  animation: rkp-sheet 0.3s cubic-bezier(0.2, 1.1, 0.4, 1) both;
-}
-.rkp-sheet-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.rkp-sheet-head b {
-  font: 900 20px var(--font-display);
-  text-transform: uppercase;
-}
-.rkp-close {
-  appearance: none;
-  width: 38px;
-  height: 38px;
-  border: var(--border);
-  border-radius: 50%;
-  background: var(--white);
-  color: var(--ink);
-  font: 900 22px/1 var(--font-display);
-  cursor: pointer;
-}
-.rkp-sheet-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
 }
 .rkp-pick {
   appearance: none;
   display: grid;
-  justify-items: center;
-  gap: 6px;
-  padding: 10px 4px;
+  justify-items: start;
+  gap: 8px;
+  padding: 14px;
   border: var(--border);
-  border-radius: 14px;
-  background: var(--white);
-  color: var(--ink);
-  box-shadow: 3px 3px 0 var(--ink);
-  font: 900 12px var(--font-display);
-  text-transform: uppercase;
+  border-radius: 20px;
+  background: var(--accent) var(--dots);
+  color: var(--on);
+  box-shadow: 5px 5px 0 var(--ink);
+  text-align: left;
   cursor: pointer;
+  transition: transform 0.08s ease-out, box-shadow 0.08s ease-out;
 }
-.rkp-pick.on {
-  background: var(--yellow);
-  color: var(--on-accent);
-  transform: translate(2px, 2px);
+.rkp-pick:active {
+  transform: translate(4px, 4px);
   box-shadow: 1px 1px 0 var(--ink);
+}
+.rkp-pick.time { --accent: var(--blue); --on: var(--on-blue); }
+.rkp-pick.eco { --accent: var(--green); --on: var(--on-accent); }
+.rkp-pick.atravessa { --accent: var(--eco-red); --on: var(--on-blue); }
+.rkp-pick.blocks { --accent: var(--yellow); --on: var(--on-accent); }
+.rkp-pick.wclassic { --accent: var(--eco-cyan); --on: var(--on-accent); }
+.rkp-pick.color { --accent: var(--orange); --on: var(--on-accent); }
+.rkp-pick-art {
+  width: 64px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+}
+.rkp-pick-name {
+  font: 900 20px var(--font-display);
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+.rkp-pick-go {
+  padding: 3px 9px;
+  border: 2.5px solid var(--ink);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 10px;
+  font-weight: 700;
 }
 
 @keyframes rkp-in {
@@ -611,22 +602,6 @@
     opacity: 0.7;
   }
 }
-@keyframes rkp-fade {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-@keyframes rkp-sheet {
-  from {
-    transform: translateY(100%);
-  }
-  to {
-    transform: none;
-  }
-}
 
 /* Tablet e computador: o menu fica ao lado, a posição fixa desce e a janela vira um cartão no centro */
 @media (min-width: 768px) {
@@ -636,15 +611,8 @@
   .rkp-me {
     bottom: 16px;
   }
-  .rkp-backdrop {
-    align-items: center;
-    justify-items: center;
-  }
-  .rkp-sheet {
-    width: min(480px, 92vw);
-    border: var(--border);
-    border-radius: 22px;
-    box-shadow: 6px 6px 0 var(--ink);
+  .rkp-picks {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -655,8 +623,5 @@
   .rkp-row,
   .rkp-skel i,
   .rkp-skel-pod,
-  .rkp-backdrop,
-  .rkp-sheet {
-    animation: none !important;
-  }
+  
 }

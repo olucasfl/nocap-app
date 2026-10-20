@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Link, getRouteApi, useNavigate } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { GAME_LABEL, GameArt } from '@/components/GameArt';
@@ -113,40 +113,33 @@ function Skeleton() {
   );
 }
 
-/** A janela para escolher o jogo do ranking. */
-function GameSheet({ game, onPick, onClose }: { game: Game; onPick: (g: Game) => void; onClose: () => void }) {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+/** A primeira tela: escolher de qual jogo é o ranking. */
+function GamePicker({ onPick }: { onPick: (g: Game) => void }) {
   return (
-    <div className="rkp-backdrop" onClick={onClose} role="presentation">
-      <div className="rkp-sheet" role="dialog" aria-modal="true" aria-label="Escolher o jogo" onClick={(e) => e.stopPropagation()}>
-        <div className="rkp-sheet-head">
-          <b>Escolha o jogo</b>
-          <button type="button" className="rkp-close" onClick={onClose} aria-label="Fechar">
-            ×
+    <main className="rkp picker">
+      <header className="rkp-head">
+        <h1>Ranking</h1>
+        <p className="mono">Escolha um jogo para ver quem manda nele</p>
+      </header>
+      <div className="rkp-picks">
+        {GAMES.map((g) => (
+          <button
+            key={g.id}
+            type="button"
+            data-sfx="select"
+            data-testid={`pick-${g.id}`}
+            className={`rkp-pick ${g.id}`}
+            onClick={() => onPick(g.id)}
+          >
+            <span className="rkp-pick-art">
+              <GameArt game={g.id} size="md" />
+            </span>
+            <span className="rkp-pick-name">{GAME_LABEL[g.id]}</span>
+            <span className="rkp-pick-go mono">VER RANKING</span>
           </button>
-        </div>
-        <div className="rkp-sheet-grid">
-          {GAMES.map((g) => (
-            <button
-              key={g.id}
-              type="button"
-              data-sfx="select"
-              data-testid={`pick-${g.id}`}
-              className={`rkp-pick ${g.id}${g.id === game ? ' on' : ''}`}
-              aria-pressed={g.id === game}
-              onClick={() => onPick(g.id)}
-            >
-              <GameArt game={g.id} size="sm" />
-              <span>{GAME_LABEL[g.id]}</span>
-            </button>
-          ))}
-        </div>
+        ))}
       </div>
-    </div>
+    </main>
   );
 }
 
@@ -159,10 +152,17 @@ function GameSheet({ game, onPick, onClose }: { game: Game; onPick: (g: Game) =>
 export function Rankings() {
   const search = route.useSearch();
   const navigate = useNavigate();
-  const user = useAuth((s) => s.user);
-  const [picking, setPicking] = useState(false);
+  if (!search.jogo) {
+    return <GamePicker onPick={(g) => void navigate({ to: '/ranking', search: { ...search, jogo: g, modo: undefined, periodo: undefined } })} />;
+  }
+  return <RankingView game={search.jogo} />;
+}
 
-  const game: Game = search.jogo ?? 'wclassic';
+function RankingView({ game }: { game: Game }) {
+  const search = route.useSearch();
+  const navigate = useNavigate();
+  const user = useAuth((s) => s.user);
+
   const board: Board = search.modo ?? boardChoices(game)[0]!.id;
   const period: Period = search.periodo ?? defaultPeriod(board);
   const scope: Scope = user && search.quem === 'friends' ? 'friends' : 'all';
@@ -172,10 +172,8 @@ export function Rankings() {
   const go = (patch: Partial<RankingsSearch>) =>
     void navigate({ to: '/ranking', search: { ...search, ...patch }, replace: true });
 
-  const pickGame = (g: Game) => {
-    setPicking(false);
-    go({ jogo: g, modo: undefined, periodo: undefined });
-  };
+  const changeGame = () =>
+    void navigate({ to: '/ranking', search: { ...search, jogo: undefined, modo: undefined, periodo: undefined, quem: undefined } });
 
   const query = useQuery({
     queryKey: ['ranking', game, board, period, scope, user?.id ?? null],
@@ -232,8 +230,8 @@ export function Rankings() {
           <b>{GAME_LABEL[game]}</b>
           <span className="rkp-chip mono">{boardLabel}</span>
         </div>
-        <button type="button" className="rkp-switch" data-sfx="select" data-testid="change-game" onClick={() => setPicking(true)}>
-          Trocar jogo
+        <button type="button" className="rkp-switch" data-sfx="select" data-testid="change-game" onClick={changeGame}>
+          <span aria-hidden="true">‹</span> Trocar de jogo
         </button>
       </section>
 
@@ -357,7 +355,6 @@ export function Rankings() {
         </aside>
       )}
 
-      {picking && <GameSheet game={game} onPick={pickGame} onClose={() => setPicking(false)} />}
     </main>
   );
 }
