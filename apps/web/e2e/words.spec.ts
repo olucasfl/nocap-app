@@ -127,6 +127,28 @@ test.describe("Classic Word's", () => {
     expect(errors).toEqual([]);
   });
 
+  test('letra cinza trava a tecla: avisa e não entra na palavra', async ({ page }) => {
+    await openPlay(page, '/words/classic/jogar?tipo=solo&modo=classic');
+    await type(page, 'casas');
+    await page.keyboard.press('Enter');
+    await expect(page.getByTestId('row-0-0')).toBeVisible();
+    await expect(page.getByTestId('key-c')).toHaveClass(/blocked/);
+    await page.getByTestId('key-c').click();
+    await expect(page.getByText('Essa letra não está na palavra')).toBeVisible();
+    await expect(page.locator('.cw-tile.filled')).toHaveCount(0);
+    await expect(page.getByTestId('key-m')).not.toHaveClass(/blocked/);
+  });
+
+  test('a legenda das cores aparece no jogo e a aba Como jogar explica', async ({ page }) => {
+    await openPlay(page, '/words/classic/jogar?tipo=solo&modo=classic');
+    await expect(page.getByText('Lugar certo')).toBeVisible();
+    await expect(page.getByText('Outro lugar')).toBeVisible();
+    await expect(page.getByText('Não tem', { exact: true })).toBeVisible();
+    await page.goto('/words/classic');
+    await page.getByTestId('tab-regras').click();
+    await expect(page.getByText('Tem a letra, mas em outro lugar')).toBeVisible();
+  });
+
   test('palavra fora da lista balança, avisa e não gasta tentativa', async ({ page }) => {
     await openPlay(page, '/words/classic/jogar?tipo=solo&modo=classic');
     await type(page, 'xxxxx');
@@ -160,7 +182,7 @@ test.describe("Classic Word's", () => {
     await page.keyboard.press('Enter');
     await expect(page.getByTestId('row-0-0')).toBeVisible();
     await page.goto('/words/classic');
-    await expect(page.getByTestId('mode-card-classic')).toContainText('Em andamento · 1 de 6');
+    await expect(page.getByTestId('mode-card-classic')).toContainText('Em andamento 1/6');
     await page.getByTestId('mode-classic').click();
     await expect(page.getByTestId('row-0-0')).toBeVisible();
     await expect(page.getByText('5 restam')).toBeVisible();

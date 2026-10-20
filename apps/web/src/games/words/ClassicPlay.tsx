@@ -4,7 +4,7 @@ import { decodePattern, keyboardState, wordKey, type Cell } from '@nocap/games';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { ApiError } from '@/lib/api-client';
 import { wordsAudio } from '@/lib/words-audio';
-import { Pill, ResultSheet, TileLoader, useTyped, WordsShell } from './words-kit';
+import { ColorLegend, Pill, ResultSheet, TileLoader, useTyped, WordsShell } from './words-kit';
 import { fetchAccepted, giveUpRun, MODE_LABEL, sendGuess, startRun, type ClassicMode, type RunView } from './words-api';
 
 const ROWS = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
@@ -20,6 +20,8 @@ export function ClassicPlay({ mode, kind }: { mode: ClassicMode; kind: 'daily' |
   const [flipRow, setFlipRow] = useState<number | null>(null);
   const [winRow, setWinRow] = useState<number | null>(null);
   const [askGiveUp, setAskGiveUp] = useState(false);
+  const [denied, setDenied] = useState<{ l: string; n: number } | null>(null);
+  const blockedRef = useRef<Set<string>>(new Set());
   const accepted = useRef<Set<string> | null>(null);
   const toastTimer = useRef<number | undefined>(undefined);
 
@@ -50,9 +52,17 @@ export function ClassicPlay({ mode, kind }: { mode: ClassicMode; kind: 'daily' |
   const busyRef = useRef(false);
   const type = useCallback((l: string) => {
     if (busyRef.current) return;
+    // letra cinza: não existe na palavra, então não dá para usar (som, tremida e aviso)
+    if (blockedRef.current.has(l)) {
+      wordsAudio.invalid();
+      setDenied((d) => ({ l, n: (d?.n ?? 0) + 1 }));
+      window.setTimeout(() => setDenied(null), 450);
+      say('Essa letra não está na palavra');
+      return;
+    }
     wordsAudio.key();
     setTyped((t) => ([...t].length < LENGTH ? t + l : t));
-  }, [setTyped]);
+  }, [setTyped, say]);
   const erase = useCallback(() => {
     if (!busyRef.current) setTyped((t) => [...t].slice(0, -1).join(''));
   }, [setTyped]);
@@ -131,6 +141,13 @@ export function ClassicPlay({ mode, kind }: { mode: ClassicMode; kind: 'daily' |
 
   const decoded: Cell[][][] = run.boards.map((b) => b.rows.map(decodePattern));
   const keys = run.boards.map((b, i) => keyboardState(run.guesses.slice(0, b.rows.length), decoded[i]!));
+  // letras que já sabemos que não existem: cinza em todos os tabuleiros ainda abertos
+  const open0 = run.boards.map((b, i) => (b.solvedAt === null ? i : -1)).filter((i) => i >= 0);
+  const blocked = new Set<string>();
+  for (const l of ROWS.join('')) {
+    if (open0.length > 0 && open0.every((i) => keys[i]!.get(l) === 'miss')) blocked.add(l);
+  }
+  blockedRef.current = blocked;
   const info = MODE_LABEL[run.mode];
   const left = run.tries - run.used;
   const title = run.kind === 'daily' ? `Daily #${run.number}` : info.name;
@@ -191,6 +208,8 @@ export function ClassicPlay({ mode, kind }: { mode: ClassicMode; kind: 'daily' |
       </div>
 
       {open ? (
+        <>
+        <ColorLegend />
         <div className="cw-dock">
           {ROWS.map((letters, ri) => (
             <div className="cw-krow" key={ri}>
@@ -205,7 +224,15 @@ export function ClassicPlay({ mode, kind }: { mode: ClassicMode; kind: 'daily' |
               {[...letters].map((l) => {
                 const colored = keys.some((k) => k.has(l));
                 return (
-                  <button type="button" key={l} className={`cw-key${colored ? ' has-color' : ''}`} aria-label={l} data-testid={`key-${l}`} onClick={() => type(l)}>
+                  <button
+                    type="button"
+                    key={`${l}-${denied?.l === l ? denied.n : 0}`}
+                    className={`cw-key${colored ? ' has-color' : ''}${blocked.has(l) ? ' blocked' : ''}${denied?.l === l ? ' deny' : ''}`}
+                    aria-label={blocked.has(l) ? `${l} (não está na palavra)` : l}
+                    aria-disabled={blocked.has(l)}
+                    data-testid={`key-${l}`}
+                    onClick={() => type(l)}
+                  >
                     <span className="cw-key-bg" aria-hidden="true">
                       {keys.map((k, i) => (
                         <i key={i} className={k.get(l) ?? ''} />
@@ -231,6 +258,7 @@ export function ClassicPlay({ mode, kind }: { mode: ClassicMode; kind: 'daily' |
             </button>
           )}
         </div>
+        </>
       ) : (
         <ResultSheet
           won={run.state === 'won'}

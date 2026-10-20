@@ -4,25 +4,25 @@ import { useQuery } from '@tanstack/react-query';
 import { PlayGate } from '@/components/PlayGate';
 import { useAuth } from '@/lib/auth';
 import { fetchStats } from '@/lib/stats';
-import { ClassicArt, MiniBoards } from './words-art';
-import { Pill, RulesList, WordsShell } from './words-kit';
+import { MiniBoards } from './words-art';
+import { ColorLegend, Pill, RulesList, Tabs, WordsShell } from './words-kit';
 import { fetchDaily, fetchModes, MODE_LABEL, type ClassicMode } from './words-api';
 
 const MODES: ClassicMode[] = ['classic', 'dueto', 'quarteto'];
 
-const RULES = [
+const STEPS = [
   'Digite uma palavra de 5 letras e aperte Enter. Ela precisa existir na lista do jogo.',
-  'Verde: letra no lugar certo. Amarelo: a letra existe, mas em outro lugar. Cinza: não existe (ou já foi usada).',
-  'Letra repetida: cada letra da resposta só pinta uma casa. Se a palavra tem um O só e você põe dois, o O do lugar certo fica verde e o outro cinza (igual ao Wordle e ao Termo).',
-  'No Dueto e no Quarteto o mesmo palpite vale para todos os tabuleiros; o resolvido trava.',
+  'Cada letra mostra uma cor. Use as cores para chegar na palavra certa.',
+  'Letra repetida: cada letra da resposta só pinta uma casa (igual ao Wordle e ao Termo).',
+  'Letras cinza não existem na palavra: o teclado bloqueia elas.',
   'Acentos não importam: digite "aviao" e o jogo mostra "avião".',
-  'A partida fica salva: saia e volte quando quiser. Ao terminar, a próxima palavra já é sorteada.',
+  'No Dueto e no Quarteto o mesmo palpite vale para todos os tabuleiros.',
 ];
 
 /** A página do Classic Word's: os modos de 1, 2 e 4 palavras em destaque e o Daily como botão chamativo. */
 export function ClassicPage() {
   const user = useAuth((s) => s.user);
-  const [rules, setRules] = useState(false);
+  const [tab, setTab] = useState<'jogar' | 'regras'>('jogar');
   const daily = useQuery({ queryKey: ['words', 'daily'], queryFn: fetchDaily, enabled: !!user, retry: false });
   const modes = useQuery({ queryKey: ['words', 'modes'], queryFn: fetchModes, enabled: !!user, retry: false, refetchOnMount: 'always' });
   const stats = useQuery({ queryKey: ['stats'], queryFn: fetchStats, enabled: !!user, retry: false });
@@ -32,16 +32,32 @@ export function ClassicPage() {
 
   return (
     <WordsShell title="Classic Word's" accent="green" className="cw-theme">
-      <section className="wd-banner">
-        <div className="wd-banner-art">
-          <ClassicArt />
-        </div>
-        <div>
-          <h2>Descubra a palavra</h2>
-          <p>5 letras. Verde: lugar certo. Amarelo: existe, mas em outro lugar.</p>
-        </div>
-      </section>
+      <Tabs
+        label="Seções"
+        value={tab}
+        onChange={setTab}
+        tabs={[
+          { id: 'jogar', label: 'Jogar' },
+          { id: 'regras', label: 'Como jogar' },
+        ]}
+      />
 
+      {tab === 'regras' ? (
+        <section className="wd-panel cw-howto" data-testid="rules">
+          <h3>As cores</h3>
+          <ColorLegend big />
+          <div className="cw-example" aria-label="Exemplo: a palavra é AMIGO e você tentou AMBOS">
+            {[...'AMBOS'].map((ch, i) => (
+              <span key={i} className={`cw-ex ${['hit', 'hit', 'miss', 'near', 'miss'][i]}`}>
+                {ch}
+              </span>
+            ))}
+          </div>
+          <p className="mono cw-example-note">Palavra: AMIGO. Tentativa: AMBOS: A e M no lugar certo, O existe mas em outro lugar, B e S não existem.</p>
+          <h3>Regras</h3>
+          <RulesList steps={STEPS} />
+        </section>
+      ) : (
       <PlayGate what="jogar">
         <section className="cw-gold" data-testid="daily-card">
           <span className="cw-gold-tab">
@@ -51,9 +67,6 @@ export function ClassicPage() {
             Daily
           </span>
           <span className="cw-gold-shine" aria-hidden="true" />
-          <i className="cw-spark s1" aria-hidden="true" />
-          <i className="cw-spark s2" aria-hidden="true" />
-          <i className="cw-spark s3" aria-hidden="true" />
           <div className="cw-gold-head">
             <div>
               <b>Palavra do dia #{daily.data?.number ?? ''}</b>
@@ -79,7 +92,7 @@ export function ClassicPage() {
           </Link>
         </section>
 
-        <h3 className="wd-section">Jogar quando quiser</h3>
+        <h3 className="wd-section">Ou jogue sem pressa</h3>
         <div className="cw-modes">
           {MODES.map((m, i) => {
             const info = MODE_LABEL[m];
@@ -100,7 +113,7 @@ export function ClassicPage() {
                 <div className="cw-modecard-body" data-testid={`mode-card-${m}`}>
                   <b>{info.name}</b>
                   <span className="mono">
-                    {s?.open ? `Em andamento · ${s.open.used} de ${s.open.tries}` : `${info.tries} tentativas`}
+                    {s?.open ? `Em andamento ${s.open.used}/${s.open.tries}` : `${info.tries} tentativas`}
                   </span>
                   {s && s.played > 0 && (
                     <span className="mono cw-modecard-stats">
@@ -113,17 +126,8 @@ export function ClassicPage() {
             );
           })}
         </div>
-        <p className="mono cw-note">Sem ranking. A partida fica salva e, ao terminar, a próxima palavra já é sorteada.</p>
-
       </PlayGate>
 
-      <button type="button" className="wd-toggle" aria-expanded={rules} onClick={() => setRules((r) => !r)} data-testid="toggle-rules">
-        Como jogar <i>{rules ? '−' : '+'}</i>
-      </button>
-      {rules && (
-        <section className="wd-panel">
-          <RulesList steps={RULES} />
-        </section>
       )}
     </WordsShell>
   );

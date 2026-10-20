@@ -149,6 +149,32 @@ export function TileLoader({ label = 'Sorteando a palavra...' }: { label?: strin
 
 const CONFETTI_COLORS = ['var(--yellow)', 'var(--orange)', 'var(--green)', 'var(--blue)', 'var(--eco-purple)'];
 
+/** O que cada cor das casas quer dizer (usado na tela de regras e dentro do jogo). */
+export function ColorLegend({ big = false }: { big?: boolean }) {
+  // na tela de regras a frase inteira; dentro do jogo, curta para caber numa linha
+  const items = big
+    ? [
+        { tone: 'hit', text: 'Letra no lugar certo' },
+        { tone: 'near', text: 'Tem a letra, mas em outro lugar' },
+        { tone: 'miss', text: 'Não tem essa letra' },
+      ]
+    : [
+        { tone: 'hit', text: 'Lugar certo' },
+        { tone: 'near', text: 'Outro lugar' },
+        { tone: 'miss', text: 'Não tem' },
+      ];
+  return (
+    <ul className={`cw-legend${big ? ' big' : ''}`} aria-label="Significado das cores">
+      {items.map((i) => (
+        <li key={i.tone}>
+          <i className={i.tone} aria-hidden="true" />
+          {i.text}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export type FilterId = 'all' | 'new' | 'open' | 'done';
 
 const FILTER_ICON: Record<FilterId, ReactNode> = {
