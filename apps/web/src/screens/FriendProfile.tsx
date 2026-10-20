@@ -6,7 +6,6 @@ import { BackButton } from '@/components/BackButton';
 import { LoadFailed } from '@/components/LoadFailed';
 import { Loader } from '@/components/Loader';
 import { Records } from '@/components/Records';
-import { WordsProgress } from '@/components/WordsProgress';
 import {
   ago,
   fetchFriendProfile,
@@ -84,10 +83,8 @@ function Details({ data: raw }: { data: FriendProfileData }) {
         </div>
       </section>
 
-      <WordsProgress summary={words.data} whose={`de @${data.username}`} />
-
       <h2 className="pfx-h">Recordes</h2>
-      <Records stats={data.stats} />
+      <Records stats={data.stats} words={words.data ?? (words.isError ? null : undefined)} />
       <RemoveFriend username={data.username} />
     </>
   );

@@ -6,7 +6,7 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { InstallApp } from '@/components/InstallApp';
 import { HubTabs } from '@/components/GameHub';
 import { Records } from '@/components/Records';
-import { WordsProgress, useMyWordsSummary } from '@/components/WordsProgress';
+import { useMyWordsSummary } from '@/components/WordsProgress';
 import { ProfileEdit, type EditStep } from '@/components/ProfileEdit';
 import { logout, useAuth } from '@/lib/auth';
 import { leaveRoom } from '@/lib/rooms';
@@ -153,8 +153,7 @@ export function Profile() {
         </>
       ) : (
         <>
-          <WordsProgress summary={wordsSummary} whose="suas fases" />
-          <Records stats={stats} />
+          <Records stats={stats} words={wordsSummary} />
         </>
       )}
       <ConfirmDialog

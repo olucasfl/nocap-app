@@ -16,9 +16,14 @@ import {
   type Stats,
 } from '@/lib/stats';
 import { GAME_LABEL, GameArt } from './GameArt';
+import { WordsRows, type WordsSummary } from './WordsProgress';
 import './records.css';
 
 const GAMES: GameId[] = ['color', 'time', 'eco', 'blocks', 'atravessa'];
+
+/** O Word's não tem recordes por modo: o bloco mostra a fase de cada jogo. */
+type Tab = GameId | 'words';
+const TABS: Tab[] = ['words', ...GAMES];
 
 const fmt = (game: GameId, mode: string, tenths: number) =>
   countUnit(game, mode) ? String(Math.round(tenths / 10)) : (tenths / 10).toFixed(1);
@@ -64,29 +69,30 @@ function ModeTile({ game, mode, stat }: { game: GameId; mode: string; stat?: Mod
 }
 
 /** Um jogo de cada vez: a pessoa escolhe em cima e vê só os modos dele. */
-function RecordsView({ stats }: { stats: Stats }) {
+function RecordsView({ stats, words }: { stats: Stats; words?: WordsSummary | null }) {
   const matchesOf = (g: GameId) => gameModes(stats, g).reduce((n, m) => n + m.matches, 0);
-  const [game, setGame] = useState<GameId>(() => GAMES.find((g) => matchesOf(g) > 0) ?? 'color');
+  const [tab, setTab] = useState<Tab>(() => GAMES.find((g) => matchesOf(g) > 0) ?? 'color');
+  const game: GameId = tab === 'words' ? 'wclassic' : tab;
   const daily = stats.daily[game];
   const total = matchesOf(game);
 
   return (
     <div className="rc">
-      <div className="rc-games" role="tablist" aria-label="Jogo">
-        {GAMES.map((g) => (
+      <div className="rc-games six" role="tablist" aria-label="Jogo">
+        {TABS.map((g) => (
           <button
             key={g}
             type="button"
             role="tab"
             id={`rc-tab-${g}`}
-            aria-selected={game === g}
+            aria-selected={tab === g}
             aria-controls="rc-panel"
-            className={`rc-game ${g}${game === g ? ' on' : ''}`}
+            className={`rc-game ${g}${tab === g ? ' on' : ''}`}
             data-sfx="select"
-            onClick={() => setGame(g)}
+            onClick={() => setTab(g)}
           >
-            <GameArt game={g} size="sm" />
-            <span>{GAME_LABEL[g]}</span>
+            <GameArt game={g === 'words' ? 'wclassic' : g} size="sm" />
+            <span>{g === 'words' ? "Word's" : GAME_LABEL[g]}</span>
           </button>
         ))}
       </div>
@@ -94,20 +100,24 @@ function RecordsView({ stats }: { stats: Stats }) {
       <section
         id="rc-panel"
         role="tabpanel"
-        aria-labelledby={`rc-tab-${game}`}
-        className={`rc-panel ${game}`}
+        aria-labelledby={`rc-tab-${tab}`}
+        className={`rc-panel ${tab}`}
       >
         <header className="rc-head">
           <span className="rc-head-ico" aria-hidden="true">
             <GameArt game={game} size="sm" />
           </span>
           <div>
-            <b>{GAME_LABEL[game]}</b>
+            <b>{tab === 'words' ? "Word's" : GAME_LABEL[game]}</b>
             <span className="mono">
-              {total > 0 ? `${total} ${total === 1 ? 'partida jogada' : 'partidas jogadas'}` : 'Nenhuma partida ainda'}
+              {tab === 'words' ? 'Em que fase você está em cada jogo' : total > 0 ? `${total} ${total === 1 ? 'partida jogada' : 'partidas jogadas'}` : 'Nenhuma partida ainda'}
             </span>
           </div>
         </header>
+        {tab === 'words' ? (
+          <WordsRows summary={words} />
+        ) : (
+          <>
         <ul className="rc-grid">
           {knownModes(game).map((mode) => (
             <ModeTile
@@ -133,21 +143,23 @@ function RecordsView({ stats }: { stats: Stats }) {
           </li>
         </ul>
         {total === 0 && <p className="mono rc-empty">Jogue uma partida para criar o seu primeiro recorde.</p>}
+          </>
+        )}
       </section>
     </div>
   );
 }
 
 /** Aba de recordes: escolha o jogo e veja o recorde de cada modo; toque num modo para ver os detalhes. */
-export function Records({ stats }: { stats?: Stats }) {
-  if (stats) return <RecordsView stats={stats} />;
-  return <MyRecords />;
+export function Records({ stats, words }: { stats?: Stats; words?: WordsSummary | null }) {
+  if (stats) return <RecordsView stats={stats} words={words} />;
+  return <MyRecords words={words} />;
 }
 
-function MyRecords() {
+function MyRecords({ words }: { words?: WordsSummary | null }) {
   const q = useQuery({ queryKey: ['stats'], queryFn: fetchStats });
   if (q.isPending && q.fetchStatus !== 'paused')
     return <Loader inline label="Carregando recordes" />;
   if (!q.data) return <LoadFailed what="seus recordes" onRetry={() => void q.refetch()} />;
-  return <RecordsView stats={q.data} />;
+  return <RecordsView stats={q.data} words={words} />;
 }

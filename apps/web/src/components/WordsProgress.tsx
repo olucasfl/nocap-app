@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { summarizeProgress, type ProgressGame, type ProgressSummary } from '@nocap/games';
 import meta from '@/games/words/levels/meta.json';
 import { beeProgress, classicProgress, connectProgress, useProgress } from '@/games/words/levels/progress';
@@ -24,43 +23,27 @@ export function useMyWordsSummary(): WordsSummary {
   return summarizeProgress({ bee, connect, 'classic-c': c, 'classic-d': d, 'classic-q': q });
 }
 
-/**
- * O botão "Word's" do perfil: abre e fecha o quadro com a fase em que a pessoa está em cada jogo do Word's.
- * `summary` vazio = ainda carregando (ou indisponível).
- */
-export function WordsProgress({ summary, whose }: { summary: WordsSummary | null | undefined; whose: string }) {
-  const [open, setOpen] = useState(false);
+/** As fases de cada jogo do Word's: a fase em que a pessoa está e quantas já fez. `null` = não deu para carregar. */
+export function WordsRows({ summary }: { summary: WordsSummary | null | undefined }) {
+  if (summary === null) return <p className="mono wp-fail">Não deu para carregar as fases agora.</p>;
   return (
-    <section className="wp" aria-label="Fases do Word's">
-      <button type="button" className="wp-btn" data-sfx="select" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
-        <span className="wp-btn-name">Word's</span>
-        <span className="mono wp-btn-sub">{open ? 'FECHAR' : `FASES ${whose.toUpperCase()}`}</span>
-        <span className="wp-chev" aria-hidden="true">
-          ›
-        </span>
-      </button>
-      {open && (
-        <ul className="wp-list" data-testid="words-progress">
-          {ROWS.map((r) => {
-            const s = summary?.[r.game];
-            const count = s ? (s.done ?? s.played) : 0;
-            return (
-              <li key={r.game} className={`wp-row ${r.game}`}>
-                <div className="wp-top">
-                  <b>{r.name}</b>
-                  <span className="mono wp-at">{!s ? '...' : s.furthest > 0 ? `FASE ${s.furthest}` : 'NÃO COMEÇOU'}</span>
-                </div>
-                <div className="wp-bar" aria-hidden="true">
-                  <i style={{ transform: `scaleX(${Math.min(1, count / r.total)})` }} />
-                </div>
-                <span className="mono wp-sub">
-                  {s ? `${count} DE ${r.total} ${s.done === null ? 'JOGADAS' : 'CONCLUÍDAS'}` : ''}
-                </span>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </section>
+    <ul className="wp-list" data-testid="words-progress">
+      {ROWS.map((r) => {
+        const s = summary?.[r.game];
+        const count = s ? (s.done ?? s.played) : 0;
+        return (
+          <li key={r.game} className={`wp-row ${r.game}`}>
+            <div className="wp-top">
+              <b>{r.name}</b>
+              <span className="mono wp-at">{!s ? '...' : s.furthest > 0 ? `FASE ${s.furthest}` : 'NÃO COMEÇOU'}</span>
+            </div>
+            <div className="wp-bar" aria-hidden="true">
+              <i style={{ transform: `scaleX(${Math.min(1, count / r.total)})` }} />
+            </div>
+            <span className="mono wp-sub">{s ? `${count} DE ${r.total} ${s.done === null ? 'JOGADAS' : 'CONCLUÍDAS'}` : ''}</span>
+          </li>
+        );
+      })}
+    </ul>
   );
 }

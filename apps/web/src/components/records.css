@@ -42,6 +42,10 @@
   background: var(--eco-red);
   color: var(--on-blue);
 }
+.rc-game.on.words {
+  background: var(--eco-cyan);
+  color: var(--on-accent);
+}
 .rc-game.on.blocks {
   background: var(--yellow);
   color: var(--on-accent);
@@ -182,7 +186,12 @@
   padding: 8px 4px;
   border-radius: 14px;
 }
-.rc-game:nth-child(n + 4) {
+.rc-games.six .rc-game:nth-child(n + 4) {
+  grid-column: span 2;
+  flex-direction: column;
+  gap: 4px;
+}
+.rc-games:not(.six) .rc-game:nth-child(n + 4) {
   grid-column: span 3;
   flex-direction: row;
   justify-content: center;
@@ -203,6 +212,9 @@
 }
 .rc-panel.eco {
   --acc: var(--green);
+}
+.rc-panel.words {
+  --acc: var(--eco-cyan);
 }
 .rc-panel.atravessa {
   --acc: var(--eco-red);
