@@ -94,9 +94,9 @@ export function beeScore(puzzle: BeePuzzle, found: readonly string[]): number {
 
 /**
  * Quando as dicas mais fortes abrem: o mapa (inicial x tamanho) depois de achar 15% das palavras e os pares de
- * letras depois de 40%. Assim a dica ajuda sem entregar a fase logo de cara: antes, só o total por tamanho.
+ * letras só perto do fim, depois de 70%. Assim a dica ajuda sem entregar a fase logo de cara: antes, só o total por tamanho.
  */
-export const BEE_HINT_UNLOCK = { map: 0.15, pairs: 0.4 } as const;
+export const BEE_HINT_UNLOCK = { map: 0.15, pairs: 0.7 } as const;
 
 /** O mapa de palavras que faltam: uma linha por letra inicial, uma coluna por tamanho (como no Spelling Bee). */
 export interface BeeHintMap {
