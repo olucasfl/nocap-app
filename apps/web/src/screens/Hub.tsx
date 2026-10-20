@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { WordsHubArt } from '@/games/words/words-art';
 import { useQuery } from '@tanstack/react-query';
+import { StreakFire } from '@/components/StreakFire';
 import { MuteButton } from '@/components/MuteButton';
 import { RoomBanner } from '@/components/RoomBanner';
 import { ThemeButton } from '@/components/ThemeButton';
@@ -148,13 +149,7 @@ export function Hub() {
         </div>
         {streak > 0 && (
           <span className={`hz-fire-wrap${streak >= 2 ? ' hot' : ''}`}>
-            {streak >= 2 && (
-              <span className="hz-fire" aria-hidden="true">
-                {Array.from({ length: 9 }, (_, i) => (
-                  <i key={i} style={{ '--i': i } as React.CSSProperties} />
-                ))}
-              </span>
-            )}
+            {streak >= 2 && <StreakFire />}
             <span className="hz-streak mono" title="Dias seguidos entrando no NoCap">
               <b>{streak}</b> {streakLabel(streak).replace(/^\d+ /, '').toUpperCase()} SEGUIDOS
             </span>
