@@ -11,6 +11,7 @@ import { MatchesModule } from './matches/matches.module';
 import { RankingsModule } from './rankings/rankings.module';
 import { RoomsModule } from './rooms/rooms.module';
 import { WordsModule } from './words/words.module';
+import { WordsProgressModule } from './words-progress/words-progress.module';
 
 // Um módulo por domínio entra aqui.
 @Module({
@@ -23,6 +24,7 @@ import { WordsModule } from './words/words.module';
     RankingsModule,
     RoomsModule,
     WordsModule,
+    WordsProgressModule,
   ],
   controllers: [HealthController, GamesController],
   providers: [{ provide: APP_GUARD, useClass: GlobalRateLimitGuard }],

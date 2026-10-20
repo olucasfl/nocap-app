@@ -9,6 +9,8 @@ export interface ProgressStore<T> {
   get(level: number): T | undefined;
   set(level: number, value: T): void;
   clear(): void;
+  /** Troca tudo de uma vez (usado pela sincronização com a conta). */
+  replaceAll(next: Record<string, T>): void;
   subscribe(fn: () => void): () => void;
   version(): number;
 }
@@ -39,6 +41,15 @@ export function createProgress<T>(storageKey: string): ProgressStore<T> {
         localStorage.setItem(storageKey, JSON.stringify(cache));
       } catch {
         /* sem armazenamento: o progresso vale só até fechar a aba */
+      }
+      notify();
+    },
+    replaceAll(next) {
+      cache = { ...next };
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(cache));
+      } catch {
+        /* sem armazenamento: vale só até fechar a aba */
       }
       notify();
     },
@@ -79,9 +90,24 @@ export interface ConnectProgress {
   hint?: number;
 }
 
+export interface ClassicProgress {
+  guesses: string[];
+  at: number;
+  gaveUp?: boolean;
+  /** A fase terminou (acertou, gastou as tentativas ou desistiu): o menu conta as fases completas sem refazer a partida. */
+  done?: boolean;
+}
+
 // v2: as fases foram refeitas (outra ordem e outra dificuldade), então o progresso antigo não vale mais.
 export const beeProgress = createProgress<BeeProgress>('nocap-words-bee-v2');
 export const connectProgress = createProgress<ConnectProgress>('nocap-words-connect-v2');
+
+/** Um progresso por modo do Classic: 1, 2 e 4 palavras. */
+export const classicProgress = {
+  classic: createProgress<ClassicProgress>('nocap-words-classic-c-v1'),
+  dueto: createProgress<ClassicProgress>('nocap-words-classic-d-v1'),
+  quarteto: createProgress<ClassicProgress>('nocap-words-classic-q-v1'),
+} as const;
 
 export type LevelStatus = 'new' | 'open' | 'done';
 

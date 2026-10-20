@@ -205,3 +205,22 @@ export const wordRuns = pgTable(
     unique('word_runs_daily_unique').on(t.userId, t.game, t.day),
   ],
 );
+
+/**
+ * O progresso das fases do Word's (Bee, Connect e Classic) de cada conta (spec 037). Uma linha por fase; só
+ * cresce: o servidor junta o que chega com o que já existe e nunca apaga (só some se a conta for apagada).
+ */
+export const wordsProgress = pgTable(
+  'words_progress',
+  {
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => authUser.id, { onDelete: 'cascade' }),
+    /** bee | connect | classic-c | classic-d | classic-q */
+    game: text('game').notNull(),
+    level: integer('level').notNull(),
+    data: jsonb('data').notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.game, t.level] })],
+);

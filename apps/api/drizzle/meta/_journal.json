@@ -57,6 +57,13 @@
       "when": 1792431986171,
       "tag": "0007_confused_odin",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792506666333,
+      "tag": "0008_words_progress",
+      "breakpoints": true
     }
   ]
 }

@@ -15,6 +15,7 @@ import { parseRankingsSearch, type RankingsSearch } from '@/lib/ranking';
 import { GuestWelcome } from '@/components/GuestWelcome';
 import { InviteBanner } from '@/components/InviteBanner';
 import { PresenceBeat } from '@/components/PresenceBeat';
+import { ProgressSync } from '@/components/ProgressSync';
 import type { Mode } from '@/games/color/types';
 import type { Mode as TimeMode } from '@/games/time/types';
 import type { Mode as EcoMode } from '@/games/eco/types';
@@ -33,6 +34,7 @@ const rootRoute = createRootRoute({
       <Outlet />
       <InviteBanner />
       <PresenceBeat />
+      <ProgressSync />
       <GuestWelcome />
     </>
   ),

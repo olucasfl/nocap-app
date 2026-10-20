@@ -1,6 +1,6 @@
 import { buildDictionary, encodePattern, playClassic, wordKey, type ClassicMode } from '@nocap/games';
 import { ApiError } from '@/lib/api-client';
-import { createProgress } from './levels/progress';
+import { classicProgress, type ClassicProgress } from './levels/progress';
 import { loadClassicAccepted, type ClassicLevel } from './levels/levels';
 import { fetchAccepted, giveUpRun, sendGuess, startRun, type RunView } from './words-api';
 
@@ -26,22 +26,10 @@ export const dailyEngine = (mode: ClassicMode): ClassicEngine => ({
   canGiveUp: false,
 });
 
-/** O que fica salvo de cada fase: os palpites (já na forma certa, com acento) e se desistiu. */
-export interface ClassicProgress {
-  guesses: string[];
-  at: number;
-  gaveUp?: boolean;
-  /** A fase terminou (acertou, gastou as tentativas ou desistiu): o menu conta as fases completas sem refazer a partida. */
-  done?: boolean;
-}
+export { classicProgress };
 
-/** Um progresso por modo: 1, 2 e 4 palavras. */
+/** O modo de cada conjunto de fases (as chaves de `classic-levels.json`). */
 export const CLASSIC_KEYS = { classic: 'c', dueto: 'd', quarteto: 'q' } as const;
-export const classicProgress = {
-  classic: createProgress<ClassicProgress>('nocap-words-classic-c-v1'),
-  dueto: createProgress<ClassicProgress>('nocap-words-classic-d-v1'),
-  quarteto: createProgress<ClassicProgress>('nocap-words-classic-q-v1'),
-} as const;
 
 /** A partida de uma fase, montada só com as palavras da fase, os palpites e se desistiu. */
 export function levelView(mode: ClassicMode, level: ClassicLevel, num: number, guesses: readonly string[], gaveUp: boolean): RunView {

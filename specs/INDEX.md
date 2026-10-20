@@ -40,5 +40,6 @@
 | 034 | [Connect Word's (16 palavras, 4 grupos)](034-connect-words.md) | 7 | rascunho |
 | 035 | [Bee Word's (7 letras, uma obrigatória)](035-bee-words.md) | 7 | rascunho |
 | 036 | [Classic Word's em fases (1, 2 e 4 palavras)](036-classic-fases.md) | 7 | concluída |
+| 037 | [Progresso das fases na conta](037-progresso-na-conta.md) | 7 | concluída |
 
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.
