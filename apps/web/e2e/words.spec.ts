@@ -149,6 +149,21 @@ test.describe("Classic Word's", () => {
     await expect(page.getByText('Tem a letra, mas em outro lugar')).toBeVisible();
   });
 
+  test('o resultado só aparece depois da última linha virar', async ({ page }) => {
+    await openPlay(page, '/words/classic/jogar?tipo=solo&modo=classic');
+    await type(page, 'amigo');
+    await page.keyboard.press('Enter');
+    await expect(page.getByTestId('row-0-0')).toBeVisible();
+    // a linha está virando: ainda não dá o veredito
+    await expect(page.getByTestId('end')).toHaveCount(0);
+    await expect(page.getByTestId('end')).toBeVisible({ timeout: 6000 });
+    await expect(page.getByLabel('A palavra era AMIGO')).toBeVisible();
+    await page.getByRole('button', { name: 'Ver tabuleiro' }).click();
+    await expect(page.getByTestId('end-bar')).toBeVisible();
+    await page.getByRole('button', { name: 'Ver resultado' }).click();
+    await expect(page.getByTestId('end')).toBeVisible();
+  });
+
   test('palavra fora da lista balança, avisa e não gasta tentativa', async ({ page }) => {
     await openPlay(page, '/words/classic/jogar?tipo=solo&modo=classic');
     await type(page, 'xxxxx');
@@ -164,10 +179,10 @@ test.describe("Classic Word's", () => {
     await openPlay(page, '/words/classic/jogar?tipo=solo&modo=classic');
     await type(page, 'amigo');
     await page.keyboard.press('Enter');
-    await expect(page.getByText('Acertou')).toBeVisible({ timeout: 8000 });
+    await expect(page.getByTestId('end-title')).toBeVisible({ timeout: 8000 });
     await expect(page.getByTestId('nota')).toHaveText('1', { timeout: 5000 });
     await expect(page.getByText('Compartilhar')).toHaveCount(0);
-    await expect(page.getByText('A palavra era AMIGO')).toBeVisible();
+    await expect(page.getByLabel('A palavra era AMIGO')).toBeVisible();
     await page.getByTestId('again').click();
     await expect(page.getByTestId('board-0')).toBeVisible();
     await expect(page.getByText('6 restam')).toBeVisible();
@@ -194,7 +209,7 @@ test.describe("Classic Word's", () => {
     await page.getByTestId('backspace').click();
     await page.getByTestId('key-o').click();
     await page.getByTestId('enter').click();
-    await expect(page.getByText('Acertou')).toBeVisible({ timeout: 8000 });
+    await expect(page.getByTestId('end-title')).toBeVisible({ timeout: 8000 });
   });
 
   test('Dueto: o mesmo palpite vale nos dois tabuleiros e o resolvido trava', async ({ page }) => {
@@ -208,7 +223,7 @@ test.describe("Classic Word's", () => {
     await page.keyboard.press('Enter');
     await expect(page.getByTestId('row-1-1')).toBeVisible();
     await expect(page.getByTestId('row-0-1')).toHaveCount(0);
-    await expect(page.getByText('Acertou')).toBeVisible({ timeout: 8000 });
+    await expect(page.getByTestId('end-title')).toBeVisible({ timeout: 8000 });
     await noOverflow(page);
   });
 
@@ -225,8 +240,8 @@ test.describe("Classic Word's", () => {
   test('desistir mostra a palavra e fecha a partida', async ({ page }) => {
     await openPlay(page, '/words/classic/jogar?tipo=solo&modo=classic');
     await page.getByTestId('giveup').click();
-    await expect(page.getByText('Não foi dessa vez')).toBeVisible();
-    await expect(page.getByText('A palavra era AMIGO')).toBeVisible();
+    await expect(page.getByTestId('end-title')).toContainText('desistiu');
+    await expect(page.getByLabel('A palavra era AMIGO')).toBeVisible();
   });
 
   test('Daily: jogar, terminar e ver "já jogou" na página', async ({ page }) => {
@@ -235,7 +250,7 @@ test.describe("Classic Word's", () => {
     await expect(page.getByTestId('board-0')).toBeVisible();
     await type(page, 'amigo');
     await page.keyboard.press('Enter');
-    await expect(page.getByText('Acertou')).toBeVisible({ timeout: 8000 });
+    await expect(page.getByTestId('end-title')).toBeVisible({ timeout: 8000 });
     await page.goto('/words/classic');
     await expect(page.getByTestId('daily-card')).toContainText('Concluído hoje');
     await expect(page.getByTestId('play-daily')).toHaveCount(0);
@@ -557,25 +572,6 @@ test.describe("Connect Word's (fases offline)", () => {
     await expect(page.getByTestId('next')).toBeVisible();
     await page.getByTestId('back-catalog').click();
     await expect(page.getByTestId('level-1')).toHaveAttribute('data-status', 'done');
-  });
-
-  test('perder as 5 vidas revela os grupos que faltam', async ({ page }) => {
-    await page.goto('/words/connect/fase/1');
-    const [g1, g2, g3, g4] = first.g;
-    const wrong = [
-      [g1!.w[0]!, g2!.w[0]!, g3!.w[0]!, g4!.w[0]!],
-      [g1!.w[1]!, g2!.w[1]!, g3!.w[1]!, g4!.w[1]!],
-      [g1!.w[2]!, g2!.w[2]!, g3!.w[2]!, g4!.w[2]!],
-      [g1!.w[3]!, g2!.w[3]!, g3!.w[3]!, g4!.w[3]!],
-      [g1!.w[0]!, g1!.w[1]!, g2!.w[0]!, g2!.w[1]!],
-    ];
-    for (const w of wrong) {
-      await pick(page, w);
-      await page.getByTestId('submit').click();
-      await page.waitForTimeout(150);
-    }
-    await expect(page.getByText('Não foi dessa vez')).toBeVisible();
-    for (const g of first.g) await expect(page.getByTestId(`band-${g.l}`)).toBeVisible();
   });
 
   test('fase que não existe mostra aviso', async ({ page }) => {

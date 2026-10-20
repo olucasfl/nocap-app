@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
-import { Link } from '@tanstack/react-router';
 import { decodePattern, keyboardState, wordKey, type Cell } from '@nocap/games';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { ApiError } from '@/lib/api-client';
 import { wordsAudio } from '@/lib/words-audio';
-import { ColorLegend, Pill, ResultSheet, TileLoader, useTyped, WordsShell } from './words-kit';
+import { ClassicEnd } from './ClassicEnd';
+import { ColorLegend, Pill, TileLoader, useTyped, WordsShell } from './words-kit';
 import { fetchAccepted, giveUpRun, MODE_LABEL, sendGuess, startRun, type ClassicMode, type RunView } from './words-api';
 
 const ROWS = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
@@ -20,6 +20,9 @@ export function ClassicPlay({ mode, kind }: { mode: ClassicMode; kind: 'daily' |
   const [flipRow, setFlipRow] = useState<number | null>(null);
   const [winRow, setWinRow] = useState<number | null>(null);
   const [askGiveUp, setAskGiveUp] = useState(false);
+  // o resultado só aparece depois que a última linha termina de virar
+  const [resultReady, setResultReady] = useState(true);
+  const [endCollapsed, setEndCollapsed] = useState(false);
   const [denied, setDenied] = useState<{ l: string; n: number } | null>(null);
   const blockedRef = useRef<Set<string>>(new Set());
   const accepted = useRef<Set<string> | null>(null);
@@ -28,6 +31,8 @@ export function ClassicPlay({ mode, kind }: { mode: ClassicMode; kind: 'daily' |
   const begin = useCallback(() => {
     setRun(null);
     setError(null);
+    setResultReady(true);
+    setEndCollapsed(false);
     setTyped(() => '');
     startRun(mode, kind)
       .then(setRun)
@@ -93,7 +98,19 @@ export function ClassicPlay({ mode, kind }: { mode: ClassicMode; kind: 'daily' |
       setFlipRow(next.used - 1);
       const fresh = next.boards.find((b) => b.rows[next.used - 1] !== undefined)?.rows[next.used - 1];
       if (fresh) wordsAudio.row(fresh);
-      if (next.state !== 'open') window.setTimeout(() => (next.state === 'won' ? wordsAudio.win() : wordsAudio.lose()), 1500);
+      if (next.state !== 'open') {
+        // espera as casas virarem (e a dancinha da vitória) antes de dizer se acertou ou perdeu
+        setResultReady(false);
+        setEndCollapsed(false);
+        window.setTimeout(
+          () => {
+            setResultReady(true);
+            if (next.state === 'won') wordsAudio.win();
+            else wordsAudio.lose();
+          },
+          next.state === 'won' ? 2500 : 1900,
+        );
+      }
       if (next.state === 'won') setWinRow(next.used - 1);
       setRun(next);
       setTyped(() => '');
@@ -207,10 +224,10 @@ export function ClassicPlay({ mode, kind }: { mode: ClassicMode; kind: 'daily' |
         </div>
       </div>
 
-      {open ? (
+      {open || !resultReady ? (
         <>
         <ColorLegend />
-        <div className="cw-dock">
+        <div className={`cw-dock${open ? '' : ' locked'}`}>
           {ROWS.map((letters, ri) => (
             <div className="cw-krow" key={ri}>
               {ri === 2 && (
@@ -260,28 +277,7 @@ export function ClassicPlay({ mode, kind }: { mode: ClassicMode; kind: 'daily' |
         </div>
         </>
       ) : (
-        <ResultSheet
-          won={run.state === 'won'}
-          epic={run.state === 'won' && run.used <= 2}
-          stamp={run.state === 'won' ? 'Acertou' : 'Não foi dessa vez'}
-          label="TENTATIVAS"
-          value={run.used}
-          decimals={0}
-          detail={`${run.answers!.length === 1 ? 'A palavra era' : 'As palavras eram'} ${run.answers!.join(', ').toUpperCase()} · ${run.state === 'won' ? `acertou em ${run.used} de ${run.tries}` : `${run.used} de ${run.tries} tentativas usadas`}`}
-        >
-          {run.kind === 'solo' ? (
-            <button type="button" className="btn alt" onClick={begin} data-testid="again">
-              Próxima palavra
-            </button>
-          ) : (
-            <Link to="/ranking" search={{ jogo: 'wclassic', modo: 'daily' }} className="btn alt">
-              Ver ranking
-            </Link>
-          )}
-          <Link to="/words/classic" className="btn ghost">
-            Voltar aos modos
-          </Link>
-        </ResultSheet>
+        <ClassicEnd run={run} collapsed={endCollapsed} onToggle={() => setEndCollapsed((c) => !c)} onAgain={begin} />
       )}
 
       <ConfirmDialog
