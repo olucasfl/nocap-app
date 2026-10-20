@@ -34,6 +34,8 @@ Tudo está em `main` e publicado (API no Render, web na Vercel, banco no Supabas
 
 **Word's reformulado (19/10/2026):** o Classic tem Daily, ranking e partidas salvas no servidor (abas Daily, 1, 2 e 4 palavras; palavras do Daily separadas das dos modos livres; Daily repete embaralhado quando acaba; partida livre aberta continua e a próxima já é sorteada). **Bee (200 fases) e Connect (130 fases) são jogos offline, sem Daily nem ranking**: catálogo do mais fácil ao mais difícil, status por fase (nova, em andamento, concluída) e progresso salvo no aparelho (localStorage). Os dados vêm de 'apps/api/data/words' e são exportados para o app com 'node apps/api/scripts/words/exportar-fases.mjs' (rode de novo ao mexer nos favos/puzzles). Testes de ponta a ponta com Playwright em 'apps/web/e2e' (API simulada): 'pnpm --filter @nocap/web exec playwright test'.
 
+**Mix Nocap removido (20/10/2026):** a rota /nocap, as salas party (API e web), o pacote de regras e os textos saíram do código. Sobras no banco: `node apps/api/scripts/apagar-mix-nocap.mjs` mostra o que há; `--apply` apaga.
+
 **Eco** (`specs/012-eco.md`): repetir sequências de botões (estilo Genius). **Solo pronto** (Clássico, Escalada, Velocidade, Reverso e Daily, com ranking, recordes, histórico e perfil; 310 testes passando). **Salas Corrida e Siga o Líder prontas (faltam jogar ao vivo e calibrar o 0,7 do líder e as faixas de nota)**. São duas salas separadas (`eco` e `ecoleader`), escolhidas ao criar a sala; o spec previa escolher o formato no lobby.
 
 **Nomes na tela:** Cor = **Mesmíssima** (o 10 mostra "mesmíssima" no lugar de "cravou"), Tempo = **Já Deu?**, Eco = **Ecooo**. Ids, rotas e código não mudaram (`color`, `time`, `eco`).

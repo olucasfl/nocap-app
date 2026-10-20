@@ -8,7 +8,7 @@ describe('quando o aviso de versão nova pode aparecer', () => {
   });
 
   it('nunca dentro de um jogo', () => {
-    for (const p of ['/cor', '/tempo', '/eco', '/nocap', '/atravessa'])
+    for (const p of ['/cor', '/tempo', '/eco', '/atravessa'])
       expect(canShowUpdate(p, false), p).toBe(false);
   });
 

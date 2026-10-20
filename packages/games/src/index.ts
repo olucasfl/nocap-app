@@ -9,7 +9,6 @@ export * from './impostor';
 export * from './eco';
 export * from './eco/rhythm';
 
-export * from './party';
 export * from './blocks';
 export * from './towers';
 export * from './atravessa';

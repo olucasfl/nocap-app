@@ -11,7 +11,6 @@ const GAME_NAME: Record<RoomGame, string> = {
   time: 'Já Deu?',
   impostor: 'Intruso',
   eco: 'Ecooo',
-  party: 'Mix Nocap',
   atravessa: 'Atravessa!',
 };
 

@@ -4,7 +4,7 @@ import { create } from 'zustand';
 import { ApiError, apiBase, apiClient } from './api-client';
 import { getToken, useAuth } from './auth';
 
-export type RoomGame = 'color' | 'time' | 'impostor' | 'eco' | 'party' | 'atravessa';
+export type RoomGame = 'color' | 'time' | 'impostor' | 'eco' | 'atravessa';
 export type Phase =
   | 'lobby'
   | 'intro'
@@ -32,9 +32,6 @@ export interface ImpostorRoomSettings {
   impostors: number;
   anonymous: boolean;
 }
-export interface PartySettings {
-  rounds: number;
-}
 /** Atravessa!: rodadas do Infinito e o tamanho do mapa do Checkpoint. */
 export interface AtravessaSettings {
   rounds: number;
@@ -44,7 +41,6 @@ export interface AtravessaSettings {
 export type RoomSettings = ColorRoomSettings &
   TimeRoomSettings &
   ImpostorRoomSettings &
-  PartySettings &
   AtravessaSettings;
 
 export interface RoomMember {
@@ -136,105 +132,6 @@ export interface AtravessaRoomState {
   results: Record<string, { meters: number; ms: number | null; deaths: number; finished: boolean }> | null;
 }
 
-export interface PartyShapeItem {
-  id: number;
-  kind:
-    | 'circle'
-    | 'triangle'
-    | 'square'
-    | 'rect'
-    | 'diamond'
-    | 'star'
-    | 'hexagon'
-    | 'cross'
-    | 'pentagon'
-    | 'heart';
-  color: 'orange' | 'blue' | 'yellow' | 'green' | 'purple';
-  at: number;
-  life: number;
-  cls: 'good' | 'bad' | 'neutral';
-}
-
-export interface PartyX1View {
-  opponent: string;
-  /** Meus pontos e os do adversário (nunca negativos). */
-  myName: string;
-  mine: number;
-  theirs: number;
-  /** Diferença do meu ponto de vista (+2 = estou 2 na frente). */
-  lead: number;
-  round: number;
-  state: 'wait' | 'go' | 'between' | 'done';
-  shot: { x: number; y: number } | null;
-  goAt: number | null;
-  last: {
-    mine: number | null;
-    theirs: number | null;
-    won: boolean | null;
-    /** Quanto MEU placar mudou no último disparo: +1, -1 ou 0 (já estava em zero). */
-    delta: number;
-    early: 'me' | 'them' | null;
-  } | null;
-  result: 'win' | 'tie' | 'loss' | null;
-  duels: number;
-  finished: number;
-}
-
-/** O que o aparelho precisa para mostrar o desafio (cada jogo usa os seus campos). */
-export interface PartyChallenge {
-  // Mesmíssima
-  target?: Hsb;
-  start?: Hsb;
-  showMs?: number;
-  blind?: boolean;
-  // Já Deu?
-  targetMs?: number;
-  // Ecooo
-  sequence?: number[];
-  pads?: number;
-  stepMs?: number;
-  length?: number;
-  // Digitação
-  word?: string;
-  /** Palavra solta ou frase (a tela mostra qual é). */
-  kind?: 'palavra' | 'frase';
-}
-
-export interface PartySnapshot {
-  totals: Record<string, number>;
-  round: number;
-  rounds: number;
-  index: number;
-  count: number;
-  kind?: 'micro' | 'big';
-  game?: 'color' | 'time' | 'eco' | 'typing' | 'shapes' | 'x1';
-  variant?: string;
-  position?: number;
-  command?: string;
-  info?: { title: string; lines: string[] };
-  times?: { showAt: number; pickAt: number; endsAt: number };
-  challenge?: PartyChallenge;
-  submitted?: string[];
-  ready?: string[];
-  mine?: boolean;
-  started?: boolean;
-  delta?: Record<string, number>;
-  /** Mesmíssima: a cor alvo e a que cada um travou (aparece no placar). */
-  reveal?: { target: Hsb; answers: Record<string, Hsb> } | null;
-  /** Digitação: texto mostrado, o que era para digitar (null na Mão Boba) e o que cada um enviou. */
-  typingReveal?: {
-    word: string;
-    expected: string | null;
-    kind: 'palavra' | 'frase';
-    answers: Record<string, string>;
-  } | null;
-  /** Já Deu?: tempo certo, alvo mostrado e o tempo medido de cada um (em ms). */
-  timeReveal?: { expectedMs: number; targetMs: number; answers: Record<string, number> } | null;
-  autoStartAt?: number | null;
-  shapes?: { items: PartyShapeItem[]; simSeed: string } | null;
-  x1?: PartyX1View | null;
-}
-
 export interface RoomSnapshot {
   code: string;
   game: RoomGame;
@@ -257,7 +154,6 @@ export interface RoomSnapshot {
   chat: { open: boolean; muted: string[] };
   impostor?: ImpostorState;
   eco?: EcoRoomState;
-  party?: PartySnapshot;
   atravessa?: AtravessaRoomState;
 }
 

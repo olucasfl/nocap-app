@@ -34,7 +34,6 @@ export function Final({ snapshot }: { snapshot: RoomSnapshot }) {
   const impostor =
     snapshot.game === 'impostor' || (snapshot.game === 'eco' && snapshot.mode === 'leader');
   const eco = snapshot.game === 'eco';
-  const party = snapshot.game === 'party';
   const atravessa = snapshot.game === 'atravessa' ? snapshot.atravessa : undefined;
   /** Siga o Líder: no pódio entra a porcentagem (média das rodadas) e a soma de acertos; as notas de cada rodada não aparecem antes. */
   const hits = snapshot.eco?.hits;
@@ -66,23 +65,19 @@ export function Final({ snapshot }: { snapshot: RoomSnapshot }) {
                 <AtravessaScore info={atravessa} id={r.userId} />
               ) : (
                 <>
-              {party
-                ? (r.totalTenths * 10).toLocaleString('pt-BR')
-                : hits
-                  ? (r.totalTenths / 10).toFixed(1)
-                  : eco
-                    ? Math.round(r.totalTenths / 10)
-                    : (r.totalTenths / 10).toFixed(1)}
+              {hits
+                ? (r.totalTenths / 10).toFixed(1)
+                : eco
+                  ? Math.round(r.totalTenths / 10)
+                  : (r.totalTenths / 10).toFixed(1)}
               <small className="mono">
-                {party
-                  ? ' pts'
-                  : hits
-                    ? `% · ${hits[r.userId] ?? 0} ${(hits[r.userId] ?? 0) === 1 ? 'acerto' : 'acertos'}`
-                    : eco
-                      ? ' passos'
-                      : impostor
-                        ? ' pts'
-                        : `/${max}`}
+                {hits
+                  ? `% · ${hits[r.userId] ?? 0} ${(hits[r.userId] ?? 0) === 1 ? 'acerto' : 'acertos'}`
+                  : eco
+                    ? ' passos'
+                    : impostor
+                      ? ' pts'
+                      : `/${max}`}
               </small>
                 </>
               )}

@@ -6,7 +6,6 @@ import { TimeRoomEngine } from './time-room.engine';
 import { ImpostorRoomEngine } from './impostor/impostor-room.engine';
 import { EcoRoomEngine } from './eco-room.engine';
 import { EcoLeaderRoomEngine } from './eco-leader-room.engine';
-import { PartyRoomEngine } from './party-room.engine';
 import { AtravessaRoomEngine } from './atravessa-room.engine';
 import { ATR_ROOM_MAX_PLAYERS, IMPOSTOR_MAX_PLAYERS } from '@nocap/games';
 import { GUEST_PREFIX, cleanNickname, createGuestLimiter, isGuestId, usernameLookalikes } from './guest-nick';
@@ -436,7 +435,7 @@ export class ColorRoom extends Room {
       // O Intruso é a Cor: entra na aba da Mesmíssima do histórico, com o modo dele.
       const game = this.engine.game;
       await roomDeps.repo?.saveRoomMatch({
-        game: game === 'impostor' || game === 'party' || game === 'atravessa' ? 'color' : game,
+        game: game === 'impostor' || game === 'atravessa' ? 'color' : game,
         mode: this.engine.historyMode,
         seed: this.engine.currentSeed,
         settings: this.engine.currentSettings,
@@ -547,42 +546,5 @@ export class AtravessaRoom extends ColorRoom {
   protected override afterTick() {
     const engine = this.engine as AtravessaRoomEngine;
     if (engine.currentPhase === 'play') this.broadcast('pos', engine.positions());
-  }
-}
-
-/** Sala do NoCap!: micro-desafios e minijogos grandes, todos jogando ao mesmo tempo (spec 016). */
-export class PartyRoom extends ColorRoom {
-  /** Fino o bastante para o botão da Arena X1 aparecer na hora marcada. */
-  protected override tickMs = 50;
-
-  protected override onLatency(id: string, rtt: number) {
-    (this.engine as PartyRoomEngine).setLatency(id, rtt);
-  }
-
-  protected override makeEngine(opts: ConstructorParameters<typeof ColorRoomEngine>[0]) {
-    return new PartyRoomEngine(opts);
-  }
-
-  protected override registerGameMessages() {
-    const engine = () => this.engine as PartyRoomEngine;
-    this.onMessage('submit', (c, m: { color?: { h: number; s: number; b: number } }) =>
-      this.act(c, (id) => engine().submitColor(id, m?.color as never)),
-    );
-    this.onMessage('tbegin', (c) => this.act(c, (id) => engine().timeBegin(id)));
-    this.onMessage('tstop', (c) => this.act(c, (id) => engine().timeStop(id)));
-    this.onMessage('etap', (c, m: { pad?: number }) =>
-      this.act(c, (id) => engine().ecoTap(id, Number(m?.pad))),
-    );
-    this.onMessage('type', (c, m: { text?: string; touched?: boolean; submit?: boolean }) =>
-      this.act(c, (id) => engine().typing(id, String(m?.text ?? ''), !!m?.touched, !!m?.submit)),
-    );
-    // Clique de forma: sem aviso a todos (muitos por segundo e nada muda na tela de ninguém).
-    this.onMessage('sclick', (c, m: { id?: number }) => {
-      const uid = (c.userData as { id?: string } | undefined)?.id;
-      if (uid) engine().shapeClick(uid, Number(m?.id));
-    });
-    this.onMessage('xclick', (c) => this.act(c, (id) => engine().xClick(id)));
-    this.onMessage('tready', (c) => this.act(c, (id) => engine().tutorialReady(id)));
-    this.onMessage('begin', (c) => this.act(c, (id) => engine().begin(id)));
   }
 }

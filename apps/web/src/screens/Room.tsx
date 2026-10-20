@@ -51,7 +51,6 @@ const GAME_PAGE = {
   time: '/tempo',
   impostor: '/cor',
   eco: '/eco',
-  party: '/nocap',
   atravessa: '/atravessa',
 } as const;
 
@@ -60,7 +59,6 @@ const GAME_NAME: Record<RoomGame, string> = {
   time: 'Já Deu?',
   impostor: 'Intruso',
   eco: 'Ecooo',
-  party: 'Mix Nocap',
   atravessa: 'Atravessa!',
 };
 
@@ -70,8 +68,6 @@ const ENTRY_LEAD: Record<RoomGame, string> = {
   time: 'Jogue Já Deu? com amigos: o mesmo alvo para todos, cada um conta de cabeça.',
   impostor:
     'O Intruso precisa de uma sala com no mínimo 3 pessoas: alguns não veem a cor, só uma dica, e todo mundo vota em quem desconfia.',
-  party:
-    'Jogue Mix Nocap com amigos: micro-desafios rápidos e minijogos grandes, todos jogando ao mesmo tempo.',
   atravessa:
     'Atravesse com os amigos no mesmo mapa, cada um com a sua cor: Checkpoint (corrida até o fim, voltando ao último checkpoint ao morrer) ou Infinito (vale a soma dos metros das rodadas). Até 8 pessoas.',
 };
@@ -101,11 +97,9 @@ function Entry({
             ? '/tempo'
             : game === 'eco'
               ? '/eco'
-              : game === 'party'
-                ? '/nocap'
-                : game === 'atravessa'
-                  ? '/atravessa'
-                  : '/cor'
+              : game === 'atravessa'
+                ? '/atravessa'
+                : '/cor'
         }
         label="Voltar ao jogo"
       />
@@ -240,7 +234,6 @@ export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomG
       <Header
         round={
           snapshot &&
-          snapshot.game !== 'party' &&
           snapshot.game !== 'atravessa' &&
           snapshot?.round &&
           snapshot.phase !== 'lobby' &&

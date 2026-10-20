@@ -1,4 +1,4 @@
-import { AtravessaArt, BlocksArt, ColorArt, EcoArt, MixArt, TimeArt } from '@/components/HubArt';
+import { AtravessaArt, BlocksArt, ColorArt, EcoArt, TimeArt } from '@/components/HubArt';
 import { Link } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { WordsHubArt } from '@/games/words/words-art';
@@ -208,44 +208,6 @@ export function Hub() {
         </Link>
       )}
 
-      <section className="hz-sec" aria-label="Com amigos">
-        <h2 className="hz-h">
-          Com amigos <small className="mono">SALAS DE 2 A 12 PESSOAS</small>
-        </h2>
-        <div className="hz-grid one">
-          <GameCard
-            to="/nocap"
-            cls="hub-card-mix"
-            art={<MixArt />}
-            name="Mix Nocap"
-            lines={['JOGUE COM AMIGOS', 'CRIE UMA SALA E CHAME A TURMA']}
-            wide
-            badge="MULTIJOGADOR"
-          />
-        </div>
-      </section>
-
-      <section className="hz-sec" aria-label="Reflexo e precisão">
-        <h2 className="hz-h">
-          Reflexo e precisão <small className="mono">COR, TEMPO E RITMO</small>
-        </h2>
-        <div className="hz-grid">
-          <GameCard to="/cor" cls="hub-card-color" art={<ColorArt />} name="Mesmíssima" size="long" lines={[bestLabel(data, 'color')]} />
-          <GameCard to="/tempo" cls="hub-card-time" art={<TimeArt />} name="Já Deu?" size="mid" lines={[bestLabel(data, 'time')]} />
-          <GameCard to="/eco" cls="hub-card-eco" art={<EcoArt />} name="Ecooo" lines={[bestLabel(data, 'eco')]} />
-        </div>
-      </section>
-
-      <section className="hz-sec" aria-label="Arcade">
-        <h2 className="hz-h">
-          Arcade <small className="mono">BATA SEU RECORDE</small>
-        </h2>
-        <div className="hz-grid">
-          <GameCard to="/atravessa" cls="hub-card-atravessa" art={<AtravessaArt />} name="Atravessa!" size="long" lines={[atravessaBestLabel(data)]} />
-          <GameCard to="/blocks" cls="hub-card-blocks" art={<BlocksArt />} name="Block's" lines={[blocksBestLabel(data)]} />
-        </div>
-      </section>
-
       <section className="hz-sec" aria-label="Palavras">
         <h2 className="hz-h">
           Palavras <small className="mono">CLASSIC, CONNECT E BEE</small>
@@ -260,6 +222,27 @@ export function Hub() {
             wide
             badge="NOVO"
           />
+        </div>
+      </section>
+
+      <section className="hz-sec" aria-label="Arcade">
+        <h2 className="hz-h">
+          Arcade <small className="mono">BATA SEU RECORDE</small>
+        </h2>
+        <div className="hz-grid">
+          <GameCard to="/blocks" cls="hub-card-blocks" art={<BlocksArt />} name="Block's" lines={[blocksBestLabel(data)]} />
+          <GameCard to="/atravessa" cls="hub-card-atravessa" art={<AtravessaArt />} name="Atravessa!" size="long" lines={[atravessaBestLabel(data)]} />
+        </div>
+      </section>
+
+      <section className="hz-sec" aria-label="Reflexo e precisão">
+        <h2 className="hz-h">
+          Reflexo e precisão <small className="mono">COR, TEMPO E RITMO</small>
+        </h2>
+        <div className="hz-grid">
+          <GameCard to="/cor" cls="hub-card-color" art={<ColorArt />} name="Mesmíssima" size="long" lines={[bestLabel(data, 'color')]} />
+          <GameCard to="/tempo" cls="hub-card-time" art={<TimeArt />} name="Já Deu?" size="mid" lines={[bestLabel(data, 'time')]} />
+          <GameCard to="/eco" cls="hub-card-eco" art={<EcoArt />} name="Ecooo" lines={[bestLabel(data, 'eco')]} />
         </div>
       </section>
 

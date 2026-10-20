@@ -14,7 +14,6 @@ import {
   ColorRoom,
   EcoRoom,
   ImpostorRoom,
-  PartyRoom,
   TimeRoom,
   roomDeps,
 } from './rooms/color.room';
@@ -50,7 +49,6 @@ async function bootstrap() {
   rooms.define('time', TimeRoom);
   rooms.define('impostor', ImpostorRoom);
   rooms.define('eco', EcoRoom);
-  rooms.define('party', PartyRoom);
   rooms.define('atravessa', AtravessaRoom);
   const port = Number(process.env.PORT ?? 3333);
   await app.listen(port);

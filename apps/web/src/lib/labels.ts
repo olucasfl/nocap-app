@@ -18,7 +18,6 @@ const MODE_NAME: Record<string, string> = {
   towers: 'Block Towers',
   dueto: '2 palavras',
   quarteto: '4 palavras',
-  party: 'Mix Nocap',
   leader: 'Siga o Líder',
   room: 'Sala',
 };

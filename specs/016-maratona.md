@@ -1,6 +1,6 @@
 # 016 · Maratona (nome de trabalho): o jogo-festa com micro-desafios e minijogos grandes
 
-Status: **em planejamento (nada implementado)**. Pedido do Lucas em 08/10/2026, com documento de conceito. É o jogo mais complexo e mais investido do NoCap. Este arquivo organiza o plano, o que já temos para reaproveitar, os riscos e as **perguntas que precisam de resposta antes de codar** (seção 9).
+Status: **removido em 20/10/2026 (o Mix Nocap foi apagado do app, da API e do banco por decisão do Lucas). Este arquivo fica só como histórico.** (seção 9).
 
 > Nome: o documento do Lucas chama o jogo de "NoCap!", que já é o nome do app. Aqui vai como **Maratona** (provisório). Ver pergunta 4.
 

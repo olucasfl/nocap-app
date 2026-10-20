@@ -98,10 +98,6 @@ a.hub-card:active {
   color: var(--on-accent);
   animation-delay: 0.66s;
 }
-.hub-card-mix {
-  background: var(--eco-purple);
-  color: var(--on-blue);
-}
 .hub-card-blocks {
   background: var(--yellow);
   color: var(--on-accent);
@@ -196,9 +192,6 @@ a.hub-daily {
 }
 .hub-card-atravessa {
   animation-delay: 0.62s;
-}
-.hub-card-mix {
-  animation-delay: 0.7s;
 }
 .hub-more {
   animation-delay: 0.78s;
