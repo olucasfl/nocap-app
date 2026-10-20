@@ -36,7 +36,9 @@ export function Score({
         {formatAttempts(entry.score, true)}
         {entry.score <= 60 && <small className="mono">{entry.score === 10 ? 'tentativa' : 'tentativas'}</small>}
         {showDays && entry.days !== undefined && (
-          <small className="mono rp-days">{streakLabel(entry.days).toUpperCase()}</small>
+          <small className="mono rp-days">
+            {entry.days > 1 ? `MÉDIA DE ${entry.days} DIAS` : '1 DIA JOGADO'}
+          </small>
         )}
       </>
     );
