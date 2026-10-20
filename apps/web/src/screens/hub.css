@@ -618,12 +618,3 @@ a.hub-daily {
   margin-left: 36px;
 }
 
-/* Sequência de 2+ dias: fogo cartoon (StreakFlame) atrás do cilindro. */
-.hz-fire-wrap {
-  position: relative;
-  display: inline-flex;
-}
-.hz-fire-wrap > .hz-streak {
-  position: relative;
-  z-index: 1;
-}
