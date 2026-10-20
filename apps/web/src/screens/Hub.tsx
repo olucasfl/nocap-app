@@ -3,7 +3,6 @@ import { Link } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { WordsHubArt } from '@/games/words/words-art';
 import { useQuery } from '@tanstack/react-query';
-import { Flame } from '@/components/icons';
 import { MuteButton } from '@/components/MuteButton';
 import { RoomBanner } from '@/components/RoomBanner';
 import { ThemeButton } from '@/components/ThemeButton';
@@ -148,13 +147,17 @@ export function Hub() {
           {!user && <p className="mono">ENTRE PARA GUARDAR RECORDES E DAILYS</p>}
         </div>
         {streak > 0 && (
-          <span className="hz-streak mono" title="Dias seguidos entrando no NoCap">
+          <span className={`hz-fire-wrap${streak >= 2 ? ' hot' : ''}`}>
             {streak >= 2 && (
-              <span className="hz-flame" aria-hidden="true">
-                <Flame size={20} />
+              <span className="hz-fire" aria-hidden="true">
+                {Array.from({ length: 9 }, (_, i) => (
+                  <i key={i} style={{ '--i': i } as React.CSSProperties} />
+                ))}
               </span>
             )}
-            <b>{streak}</b> {streakLabel(streak).replace(/^\d+ /, '').toUpperCase()} SEGUIDOS
+            <span className="hz-streak mono" title="Dias seguidos entrando no NoCap">
+              <b>{streak}</b> {streakLabel(streak).replace(/^\d+ /, '').toUpperCase()} SEGUIDOS
+            </span>
           </span>
         )}
       </section>

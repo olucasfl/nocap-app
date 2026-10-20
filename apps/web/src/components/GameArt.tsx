@@ -50,26 +50,43 @@ export function GameArt({ game, size = 'md' }: { game: GameId; size?: 'sm' | 'md
     );
   }
   if (game === 'atravessa') {
+    // Pista com um carro passando e a seta de quem atravessa para cima.
     return (
       <div className={`ga ga-atravessa ${size}`} aria-hidden="true">
-        <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round">
-          <path d="M8 44l24-14 24 14-24 14z" />
-          <path d="M20 30V16l12-7 12 7v14" />
-          <path d="M32 30v14" />
+        <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M6 14h52M6 50h52" />
+          <path d="M6 32h6M20 32h6M34 32h6M48 32h6" strokeWidth="2.5" />
+          <rect x="8" y="35" width="24" height="10" rx="3" fill="currentColor" />
+          <rect x="12" y="20" width="22" height="10" rx="3" />
+          <path d="M50 58V26M42 34l8-8 8 8" />
         </svg>
       </div>
     );
   }
   if (game === 'wclassic') {
+    // Palavra no tabuleiro: letras certas (verde), no lugar errado (amarelo) e as casas ainda vazias.
+    const tiles: [number, number, string, string | null][] = [
+      [6, 8, 'P', 'var(--green)'],
+      [24, 8, 'A', 'var(--yellow)'],
+      [42, 8, 'T', 'var(--paper)'],
+      [6, 28, 'O', 'var(--green)'],
+      [24, 28, '', null],
+      [42, 28, '', null],
+    ];
     return (
       <div className={`ga ga-blocks ${size}`} aria-hidden="true">
-        <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="4" strokeLinejoin="round">
-          <rect x="6" y="10" width="14" height="20" rx="3" fill="currentColor" />
-          <rect x="25" y="10" width="14" height="20" rx="3" />
-          <rect x="44" y="10" width="14" height="20" rx="3" fill="currentColor" />
-          <rect x="6" y="36" width="14" height="20" rx="3" />
-          <rect x="25" y="36" width="14" height="20" rx="3" fill="currentColor" />
-          <rect x="44" y="36" width="14" height="20" rx="3" />
+        <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="3" strokeLinejoin="round">
+          {tiles.map(([x, y, l, fill]) => (
+            <g key={`${x}-${y}`}>
+              <rect x={x} y={y} width="16" height="16" rx="3" fill={fill ?? 'none'} />
+              {l && (
+                <text x={x + 8} y={y + 12.5} textAnchor="middle" fontSize="12" fontWeight="900" fill="var(--party-bg)" stroke="none" style={{ fontFamily: 'var(--font-display)' }}>
+                  {l}
+                </text>
+              )}
+            </g>
+          ))}
+          <path d="M6 50h52" strokeWidth="3.5" strokeLinecap="round" />
         </svg>
       </div>
     );

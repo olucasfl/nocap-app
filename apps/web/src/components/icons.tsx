@@ -147,16 +147,3 @@ export const Pencil = (p: IconProps) => (
     <path d="M4 20l1-4L16 5l3 3L8 19zM14 7l3 3" />
   </Svg>
 );
-
-/** Chama da sequência de dias: preenchida (laranja com miolo amarelo), só formas. */
-export const Flame = ({ size = 18 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" strokeLinejoin="round" strokeLinecap="round">
-    <path
-      d="M12 2.5c.6 3.2 2.3 4.6 3.8 6.3 1.4 1.6 2.4 3.3 2.4 5.5a6.2 6.2 0 0 1-12.4 0c0-1.7.7-3 1.6-4 .3 1.2 1 2 1.9 2.3-.4-3.6.3-7.4 2.7-10.1z"
-      fill="var(--orange)"
-      stroke="var(--ink)"
-      strokeWidth="2"
-    />
-    <path d="M12 20.2a3 3 0 0 1-3-3c0-1.6 1.2-2.5 2-3.7.3 1 1.1 1.4 1.7 2.1.5.6.8 1.2.8 1.8a2.7 2.7 0 0 1-1.5 2.8z" fill="var(--yellow)" />
-  </svg>
-);

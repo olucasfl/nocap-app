@@ -618,24 +618,88 @@ a.hub-daily {
   margin-left: 36px;
 }
 
-/* Chama ao lado da sequência (2 dias ou mais): balança de leve; só transform. */
-.hz-flame {
-  display: inline-grid;
-  margin-left: -2px;
-  transform-origin: 50% 90%;
-  animation: hz-flicker 1.6s ease-in-out infinite;
+/* Sequência de 2+ dias: o cilindro fica cercado por chamas animadas (só transform e opacity). */
+.hz-fire-wrap {
+  position: relative;
+  display: inline-flex;
 }
-@keyframes hz-flicker {
+.hz-fire-wrap > .hz-streak {
+  position: relative;
+  z-index: 1;
+}
+.hz-fire-wrap.hot::before {
+  content: '';
+  position: absolute;
+  inset: -6px -10px;
+  border-radius: 999px;
+  background: radial-gradient(closest-side, var(--orange), transparent);
+  filter: blur(8px);
+  opacity: 0.55;
+  animation: hz-glow 1.4s ease-in-out infinite;
+}
+.hz-fire {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.hz-fire i {
+  position: absolute;
+  bottom: calc(100% - 7px);
+  left: calc(4% + var(--i) * 11%);
+  width: 16px;
+  height: 24px;
+  margin-left: -8px;
+  background: linear-gradient(to top, var(--yellow) 0 30%, var(--orange) 30% 75%, var(--eco-red) 75%);
+  clip-path: polygon(50% 0, 78% 32%, 100% 68%, 86% 100%, 14% 100%, 0 68%, 22% 32%);
+  transform-origin: 50% 100%;
+  animation: hz-lick calc(0.7s + (var(--i) % 3) * 0.18s) ease-in-out infinite;
+  animation-delay: calc(var(--i) * -0.17s);
+}
+/* as pontas e os lados: chamas menores, inclinadas para fora */
+.hz-fire i:nth-child(1),
+.hz-fire i:nth-child(9) {
+  bottom: 2px;
+  width: 12px;
+  height: 18px;
+}
+.hz-fire i:nth-child(1) {
+  left: -4px;
+  rotate: -50deg;
+}
+.hz-fire i:nth-child(9) {
+  left: calc(100% + 4px);
+  rotate: 50deg;
+}
+.hz-fire i:nth-child(2n) {
+  height: 18px;
+}
+@keyframes hz-lick {
   0%,
   100% {
-    transform: scale(1) rotate(-3deg);
+    transform: scale(1, 0.75);
+    opacity: 0.95;
+  }
+  35% {
+    transform: scale(0.85, 1.2) translateY(-1px);
+    opacity: 1;
+  }
+  70% {
+    transform: scale(1.05, 0.9);
+    opacity: 0.85;
+  }
+}
+@keyframes hz-glow {
+  0%,
+  100% {
+    opacity: 0.4;
   }
   50% {
-    transform: scale(1.12) rotate(3deg);
+    opacity: 0.75;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .hz-flame {
+  .hz-fire i,
+  .hz-fire-wrap.hot::before {
     animation: none;
   }
 }
