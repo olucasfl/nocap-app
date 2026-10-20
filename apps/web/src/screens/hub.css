@@ -618,7 +618,7 @@ a.hub-daily {
   margin-left: 36px;
 }
 
-/* Sequência de 2+ dias: fogo em WebGL (StreakFire) atrás do cilindro, mais um brilho que pulsa. */
+/* Sequência de 2+ dias: fogo cartoon (StreakFlame) atrás do cilindro. */
 .hz-fire-wrap {
   position: relative;
   display: inline-flex;
@@ -626,33 +626,4 @@ a.hub-daily {
 .hz-fire-wrap > .hz-streak {
   position: relative;
   z-index: 1;
-}
-.hz-fire-wrap.hot::before {
-  content: '';
-  position: absolute;
-  inset: -6px -10px;
-  border-radius: 999px;
-  background: radial-gradient(closest-side, var(--orange), transparent);
-  filter: blur(8px);
-  opacity: 0.4;
-  animation: hz-glow 1.4s ease-in-out infinite;
-}
-.hz-fire-canvas {
-  position: absolute;
-  z-index: 0;
-  pointer-events: none;
-}
-@keyframes hz-glow {
-  0%,
-  100% {
-    opacity: 0.3;
-  }
-  50% {
-    opacity: 0.55;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .hz-fire-wrap.hot::before {
-    animation: none;
-  }
 }
