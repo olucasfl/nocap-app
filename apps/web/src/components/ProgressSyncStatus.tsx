@@ -1,8 +1,8 @@
 import { useSyncExternalStore } from 'react';
-import { getSyncStatus, subscribeSyncStatus, syncNow } from '@/games/words/levels/progress-sync';
+import { getSyncStatus, subscribeSyncStatus } from '@/games/words/levels/progress-sync';
 import { useAuth } from '@/lib/auth';
 
-/** No Perfil: mostra se o progresso das fases do Word's está salvo na conta (e deixa sincronizar na hora). */
+/** No Perfil: mostra se o progresso das fases do Word's está salvo na conta (a sincronização é automática). */
 export function ProgressSyncStatus() {
   const id = useAuth((s) => s.user?.id);
   const s = useSyncExternalStore(subscribeSyncStatus, getSyncStatus);
@@ -19,9 +19,6 @@ export function ProgressSyncStatus() {
     <section className="pf-sync" aria-label="Progresso das fases na conta" data-testid="sync-status" data-phase={s.phase}>
       <div className="mono pf-sync-label">PROGRESSO DAS FASES DO WORD&apos;S</div>
       <div className="pf-sync-text">{text}</div>
-      <button type="button" className="btn ghost" data-sfx="select" disabled={s.phase === 'syncing'} onClick={() => void syncNow(id).catch(() => undefined)}>
-        Sincronizar agora
-      </button>
     </section>
   );
 }
