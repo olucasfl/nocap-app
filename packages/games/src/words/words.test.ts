@@ -53,6 +53,16 @@ describe('cores de um palpite', () => {
     expect(row('amigo', 'mamae')).toBe('nnmmm');
   });
 
+  it('duas letras iguais para uma só na resposta: a do lugar certo fica verde e a outra cinza (regra do Wordle/Termo)', () => {
+    // folha tem um o só (2ª casa): o o do lugar certo é verde e o outro, cinza, nunca amarelo
+    expect(row('folha', 'coroa')).toBe('mhmmh');
+    expect(row('folha', 'ooxxx')).toBe('mhmmm');
+    // sem verde, o amarelo vai para a 1ª ocorrência e a outra fica cinza
+    expect(row('folha', 'oxoxx')).toBe('nmmmm');
+    // duas letras na resposta: as duas podem pintar
+    expect(row('bolso', 'ooxxx')).toBe('nhmmm');
+  });
+
   it('tabela de repetições', () => {
     // a resposta tem 3 letras a e o palpite só tem a
     expect(row('arara', 'aaaaa')).toBe('hmhmh');

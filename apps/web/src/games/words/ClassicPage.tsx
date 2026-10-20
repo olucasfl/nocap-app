@@ -13,6 +13,7 @@ const MODES: ClassicMode[] = ['classic', 'dueto', 'quarteto'];
 const RULES = [
   'Digite uma palavra de 5 letras e aperte Enter. Ela precisa existir na lista do jogo.',
   'Verde: letra no lugar certo. Amarelo: a letra existe, mas em outro lugar. Cinza: não existe (ou já foi usada).',
+  'Letra repetida: cada letra da resposta só pinta uma casa. Se a palavra tem um O só e você põe dois, o O do lugar certo fica verde e o outro cinza (igual ao Wordle e ao Termo).',
   'No Dueto e no Quarteto o mesmo palpite vale para todos os tabuleiros; o resolvido trava.',
   'Acentos não importam: digite "aviao" e o jogo mostra "avião".',
   'A partida fica salva: saia e volte quando quiser. Ao terminar, a próxima palavra já é sorteada.',
