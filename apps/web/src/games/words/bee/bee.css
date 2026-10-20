@@ -1406,3 +1406,33 @@
 .bz-map-sizes li span b {
   font: 900 18px/1 var(--font-display);
 }
+
+/* pangrama: uma linha dentro da dica "Quantas letras" */
+.bz-pang-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 6px 10px;
+  border: 2.5px solid var(--ink);
+  border-radius: 12px;
+  background: var(--yellow);
+  color: var(--on-accent);
+  font: 700 11px/1.35 var(--font-mono);
+  text-transform: uppercase;
+}
+.bz-pang-line.done {
+  background: var(--green);
+}
+.bz-pang-line svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  fill: currentColor;
+  stroke: var(--ink);
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+}
+.bz-pang-line b {
+  font: 900 12px var(--font-display);
+}
