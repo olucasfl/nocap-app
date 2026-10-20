@@ -134,7 +134,6 @@ export function Profile() {
 
       {tab === 'profile' ? (
         <>
-          <WordsProgress summary={wordsSummary} whose="suas fases" />
           <section className="pf2-group" aria-label="Conta">
             <h2 className="mono">Conta</h2>
             <Row icon="M4 20h4L19 9l-4-4L4 16zM14 6l4 4" title="Editar perfil" hint="Nome e @usuário" onClick={() => setEditing('menu')} />
@@ -153,7 +152,10 @@ export function Profile() {
           </section>
         </>
       ) : (
-        <Records stats={stats} />
+        <>
+          <WordsProgress summary={wordsSummary} whose="suas fases" />
+          <Records stats={stats} />
+        </>
       )}
       <ConfirmDialog
         open={confirming}

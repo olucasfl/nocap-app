@@ -124,7 +124,7 @@ export function Hub() {
   const data = user ? stats.data : undefined;
   const doneToday = DAILIES.filter((d) => data?.daily[d.game]?.playedToday).length;
   const streak = data?.visit.current ?? 0;
-  const rawName = user?.name?.trim().split(/s+/)[0] || user?.username || '';
+  const rawName = user?.name?.trim().split(/\s+/)[0] || user?.username || '';
   const firstName = rawName ? rawName.charAt(0).toUpperCase() + rawName.slice(1).toLowerCase() : '';
 
   return (
