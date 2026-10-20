@@ -361,7 +361,7 @@ export function BeePlay() {
             {[...level.w]
               .sort((a, b) => a.localeCompare(b, 'pt'))
               .map((w) => (
-                <span key={w} className={`${found.includes(w) ? 'latest' : ''}${level.p.includes(w) ? ' pangram' : ''}`}>
+                <span key={w} className={`${found.includes(w) ? 'got' : ''}${level.p.includes(w) ? ' pangram' : ''}`}>
                   {w}
                 </span>
               ))}

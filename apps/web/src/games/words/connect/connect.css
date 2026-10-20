@@ -845,3 +845,13 @@
   padding: 0 6px;
   font-size: 12px;
 }
+
+/* a partir da segunda vez o popup da dica abre calmo, sem animações */
+.cx-pop-card.calm,
+.cx-pop-card.calm .cx-pop-badge,
+.cx-pop-card.calm .cx-pop-title {
+  animation: none;
+}
+.cx-pop:has(.cx-pop-card.calm) {
+  animation: none;
+}

@@ -32,7 +32,7 @@ function softBreak(word: string): string {
 const longest = (w: string) => (w.includes(' ') || w.length <= 8 ? Math.max(...w.split(' ').map((x) => x.length)) : Math.ceil(w.length / 2) + 1);
 
 /** O popup da dica: o nome de um conjunto que falta, num cartão especial. Dá para abrir de novo quando quiser. */
-function HintPopup({ group, found, onClose }: { group: ConnectGroup; found: boolean; onClose: () => void }) {
+function HintPopup({ group, found, fancy, onClose }: { group: ConnectGroup; found: boolean; fancy: boolean; onClose: () => void }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
@@ -41,14 +41,14 @@ function HintPopup({ group, found, onClose }: { group: ConnectGroup; found: bool
   return (
     <div className="cx-pop" role="presentation" onClick={onClose} data-testid="hint-popup">
       <div
-        className={`cx-pop-card l${group.level}`}
+        className={`cx-pop-card l${group.level}${fancy ? '' : ' calm'}`}
         role="dialog"
         aria-modal="true"
         aria-label="Dica do Connect Word's"
         onClick={(e) => e.stopPropagation()}
       >
-        <span className="cx-pop-rays" aria-hidden="true" />
-        <Celebrate burst={1} kind="gold" />
+        {fancy && <span className="cx-pop-rays" aria-hidden="true" />}
+        {fancy && <Celebrate burst={1} kind="gold" />}
         <div className="cx-pop-badge" aria-hidden="true">
           <svg viewBox="0 0 24 24">
             <path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z" />
@@ -97,7 +97,7 @@ export function ConnectPlay() {
   const [toast, setToast] = useState<{ text: string; tone: 'good' | 'bad' | '' } | null>(null);
   const [shake, setShake] = useState(false);
   const [spark, setSpark] = useState(0);
-  const [hintOpen, setHintOpen] = useState(false);
+  const [hintOpen, setHintOpen] = useState<false | 'first' | 'again'>(false);
   const [tab, setTab] = useState<'game' | 'rules'>('game');
   const [askGiveUp, setAskGiveUp] = useState(false);
   const timers = useRef<number[]>([]);
@@ -175,13 +175,15 @@ export function ConnectPlay() {
   /** A dica (uma por fase): mostra o nome de um grupo que ainda falta, o mais fácil. */
   const useHint = () => {
     if (!puzzle || !state || state.over) return;
-    if (saved?.hint === undefined) {
+    const first = saved?.hint === undefined;
+    if (first) {
       const g = connectHint(puzzle, guesses);
       if (!g) return;
       connectProgress.set(num, { guesses, ...saved, hint: g.level, at: Date.now() });
     }
     wordsAudio.tap();
-    setHintOpen(true);
+    // o espetáculo (raios, faíscas, selo girando) é só da primeira vez; depois o popup abre calmo
+    setHintOpen(first ? 'first' : 'again');
   };
 
   const giveUp = () => {
@@ -403,7 +405,7 @@ export function ConnectPlay() {
       )}
 
       {hintOpen && hintGroup && (
-        <HintPopup group={hintGroup} found={hintFound} onClose={() => setHintOpen(false)} />
+        <HintPopup group={hintGroup} found={hintFound} fancy={hintOpen === 'first'} onClose={() => setHintOpen(false)} />
       )}
 
       <ConfirmDialog

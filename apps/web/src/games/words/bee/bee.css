@@ -537,11 +537,6 @@
   font: 700 13px var(--font-display);
   animation: wd-tile 0.35s cubic-bezier(0.2, 1.4, 0.4, 1) both;
 }
-.bz-found span.latest {
-  background: var(--yellow);
-  color: var(--on-accent);
-  font-weight: 900;
-}
 .bz-found span.pangram {
   background: var(--orange);
   color: var(--on-accent);
@@ -797,4 +792,9 @@
   .bz-banner-star {
     animation: none !important;
   }
+}
+/* na lista completa (fase fechada), as palavras que a pessoa achou ficam em verde */
+.bz-found span.got {
+  background: var(--green);
+  color: var(--on-accent);
 }
