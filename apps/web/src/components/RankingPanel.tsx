@@ -34,10 +34,16 @@ export function Score({
   if (unit === 'tentativas') {
     if (showDays) {
       const total = Math.round(entry.score / 10);
+      const days = Math.max(1, entry.days ?? 1);
+      // a classificação é pela média por dia: mostrar só a soma faria quem jogou mais dias parecer pior
+      const avg = (entry.score / 10 / days).toFixed(1).replace('.', ',').replace(',0', '');
       return (
         <>
           {total}
           <small className="mono">{total === 1 ? 'tentativa' : 'tentativas'}</small>
+          <small className="mono rp-days">
+            MÉDIA {avg} · {days} {days === 1 ? 'DIA' : 'DIAS'}
+          </small>
         </>
       );
     }
