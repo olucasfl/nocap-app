@@ -6,6 +6,7 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { InstallApp } from '@/components/InstallApp';
 import { HubTabs } from '@/components/GameHub';
 import { Records } from '@/components/Records';
+import { WordsProgress, useMyWordsSummary } from '@/components/WordsProgress';
 import { ProfileEdit, type EditStep } from '@/components/ProfileEdit';
 import { logout, useAuth } from '@/lib/auth';
 import { leaveRoom } from '@/lib/rooms';
@@ -57,6 +58,7 @@ export function Profile() {
   const [editing, setEditing] = useState<EditStep>(null);
   const statsQuery = useQuery({ queryKey: ['stats'], queryFn: fetchStats, enabled: !!user });
   const stats = statsQuery.data;
+  const wordsSummary = useMyWordsSummary();
 
   const signOut = async () => {
     // A sala é da conta: sair da conta tira a pessoa dela (precisa ser antes, com a sessão valendo).
@@ -132,6 +134,7 @@ export function Profile() {
 
       {tab === 'profile' ? (
         <>
+          <WordsProgress summary={wordsSummary} whose="suas fases" />
           <section className="pf2-group" aria-label="Conta">
             <h2 className="mono">Conta</h2>
             <Row icon="M4 20h4L19 9l-4-4L4 16zM14 6l4 4" title="Editar perfil" hint="Nome e @usuário" onClick={() => setEditing('menu')} />

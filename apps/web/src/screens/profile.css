@@ -363,3 +363,87 @@
     animation: none !important;
   }
 }
+
+/* ====================== Perfil (amigo e pessoal): premium ====================== */
+.pfx-hero {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border: var(--border);
+  border-radius: 20px;
+  background: var(--yellow);
+  color: var(--on-accent);
+  box-shadow: 5px 5px 0 var(--ink);
+}
+.pfx-hero.on {
+  background: var(--green);
+}
+.pfx-avatar {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  display: grid;
+  place-items: center;
+  border: var(--border);
+  border-radius: 20px;
+  background: var(--paper);
+  color: var(--ink);
+  font: 900 40px var(--font-display);
+}
+.pfx-id {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  justify-items: start;
+}
+.pfx-name {
+  margin: 0;
+  font: 900 clamp(24px, 7vw, 34px)/1 var(--font-display);
+  letter-spacing: -0.04em;
+  overflow-wrap: anywhere;
+}
+.pfx-pill {
+  padding: 3px 10px;
+  border: 2.5px solid var(--ink);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 10.5px;
+  font-weight: 700;
+}
+.pfx-rank {
+  grid-column: 1 / -1;
+  padding: 12px 14px;
+  border: var(--border);
+  border-radius: 14px;
+  background: var(--party-bg);
+  color: var(--party-fg);
+  box-shadow: 3px 3px 0 var(--ink);
+  font: 900 14px var(--font-display);
+  text-align: center;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+.pfx-h {
+  margin: 4px 0 0;
+  font: 900 20px var(--font-display);
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+}
+.pf-fact {
+  border-radius: 16px;
+  padding: 12px 14px;
+}
+@media (min-width: 760px) {
+  .pfx-hero {
+    grid-template-columns: auto 1fr auto;
+  }
+  .pfx-rank {
+    grid-column: auto;
+  }
+  .pf-facts {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}

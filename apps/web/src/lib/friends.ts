@@ -1,4 +1,5 @@
 import { apiClient } from './api-client';
+import type { WordsSummary } from '@/components/WordsProgress';
 import type { Stats } from './stats';
 
 export type RelationState = 'none' | 'friends' | 'outgoing' | 'incoming';
@@ -47,6 +48,10 @@ export const sendPing = () => apiClient.post<{ ok: boolean }>('/me/ping', {});
 
 export const fetchFriendProfile = (username: string) =>
   apiClient.get<FriendProfile>(`/friends/${encodeURIComponent(username)}/profile`);
+
+/** Em que fase o amigo está em cada jogo do Word's. */
+export const fetchFriendWords = (username: string) =>
+  apiClient.get<WordsSummary>(`/friends/${encodeURIComponent(username)}/words-progress`);
 
 export const fetchFriends = () => apiClient.get<FriendsList>('/friends');
 

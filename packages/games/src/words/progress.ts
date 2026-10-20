@@ -97,3 +97,34 @@ export function mergeProgress<G extends ProgressGame>(game: G, a: ProgressData<G
 
 /** As duas versões são a mesma (não precisa gravar de novo)? */
 export const sameProgress = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSON.stringify(b);
+
+/** Resumo de um jogo de fases: quantas já foram abertas, quantas terminadas e a fase mais adiantada. */
+export interface ProgressSummary {
+  played: number;
+  /** Fases terminadas (Bee fechadas, Classic concluídas). O Connect não sabe sem as respostas: `null`. */
+  done: number | null;
+  /** Número da fase mais adiantada que a pessoa abriu (0 = nenhuma). */
+  furthest: number;
+}
+
+/** Resumo do progresso de uma conta, a partir de `{ jogo: { fase: dados } }` (o que o servidor e o aparelho guardam). */
+export function summarizeProgress(all: Partial<Record<string, Record<string, unknown>>>): Record<ProgressGame, ProgressSummary> {
+  const out = {} as Record<ProgressGame, ProgressSummary>;
+  for (const game of PROGRESS_GAMES) {
+    let played = 0;
+    let done = 0;
+    let furthest = 0;
+    for (const [level, raw] of Object.entries(all[game] ?? {})) {
+      const p = sanitizeProgress(game, raw);
+      const n = Number(level);
+      if (!p || !Number.isInteger(n)) continue;
+      const started = game === 'bee' ? (p as BeeProgressData).found.length > 0 || (p as BeeProgressData).closed : (p as ClassicProgressData).guesses.length > 0 || !!(p as ClassicProgressData).gaveUp;
+      if (!started) continue;
+      played++;
+      if (n > furthest) furthest = n;
+      if (game === 'bee' ? (p as BeeProgressData).closed : !!(p as ClassicProgressData).done) done++;
+    }
+    out[game] = { played, done: game === 'connect' ? null : done, furthest };
+  }
+  return out;
+}

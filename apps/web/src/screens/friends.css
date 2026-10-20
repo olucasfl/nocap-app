@@ -446,3 +446,137 @@
     border-right: 2px solid var(--ink);
   }
 }
+
+/* ====================== Amigos (premium, responsivo) ====================== */
+.fr-head h1 {
+  margin: 0;
+  font-size: clamp(30px, 8vw, 44px);
+}
+.fr-head p {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+.fr-tabs {
+  box-shadow: 4px 4px 0 var(--ink);
+  border-radius: 14px;
+}
+.fr-tabs button {
+  min-height: 48px;
+  font-size: 15px;
+}
+.fr-tabs button.on {
+  background: var(--orange);
+}
+.fr-who.plain {
+  grid-template-areas: 'av name';
+  grid-template-columns: 40px 1fr;
+  min-width: 0;
+}
+.fr-row {
+  border-radius: 14px;
+}
+.fr-row:has(.fr-who.plain) {
+  flex-wrap: nowrap;
+}
+.fr-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.fr-group-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.fr-group-title::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: var(--muted);
+}
+.fr-group-title.on::before {
+  background: var(--green);
+}
+.fr-cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+.fr-fcard {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: var(--border);
+  border-radius: 16px;
+  background: var(--white);
+  color: var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+  text-decoration: none;
+  transition: transform 0.08s ease-out, box-shadow 0.08s ease-out;
+}
+.fr-fcard.on {
+  background: color-mix(in srgb, var(--green) 16%, var(--white));
+}
+.fr-fcard:active {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 var(--ink);
+}
+.fr-fcard:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 2px;
+}
+.fr-avatar.lg {
+  grid-area: auto;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  font-size: 26px;
+}
+.fr-fcard-body {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.fr-fcard-body .fr-name {
+  font-size: 17px;
+}
+.fr-tag {
+  justify-self: start;
+  max-width: 100%;
+  padding: 2px 8px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (min-width: 700px) {
+  .fr-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1100px) {
+  .fr-cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .fr-tabs {
+    max-width: 520px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fr-fcard {
+    transition: none;
+  }
+}

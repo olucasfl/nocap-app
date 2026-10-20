@@ -603,7 +603,7 @@
   }
 }
 
-/* Tablet e computador: o menu fica ao lado, a posição fixa desce e a janela vira um cartão no centro */
+/* Tablet e computador: o menu fica ao lado e a posição fixa desce */
 @media (min-width: 768px) {
   .rkp {
     padding-bottom: 24px;
@@ -622,6 +622,7 @@
   .rkp-pod svg,
   .rkp-row,
   .rkp-skel i,
-  .rkp-skel-pod,
-  
+  .rkp-skel-pod {
+    animation: none !important;
+  }
 }

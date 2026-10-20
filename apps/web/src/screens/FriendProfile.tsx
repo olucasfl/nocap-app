@@ -6,9 +6,11 @@ import { BackButton } from '@/components/BackButton';
 import { LoadFailed } from '@/components/LoadFailed';
 import { Loader } from '@/components/Loader';
 import { Records } from '@/components/Records';
+import { WordsProgress } from '@/components/WordsProgress';
 import {
   ago,
   fetchFriendProfile,
+  fetchFriendWords,
   removeFriend,
   presenceText,
   type FriendProfile as FriendProfileData,
@@ -37,19 +39,21 @@ function Details({ data: raw }: { data: FriendProfileData }) {
     lastPlayed: raw.lastPlayed ?? null,
   };
   const { total, favorite } = playSummary(data.stats);
+  const words = useQuery({ queryKey: ['friend-words', data.username], queryFn: () => fetchFriendWords(data.username), retry: false });
   return (
     <>
-      <section className="pf-card">
-        <div className="pf-avatar pf-avatar-live" aria-hidden="true">
+      <section className={`pfx-hero${data.online ? ' on' : ''}`}>
+        <div className="pfx-avatar" aria-hidden="true">
           {data.username.charAt(0).toUpperCase()}
           <i className={`pf-dot${data.online ? ' on' : ''}`} />
         </div>
-        <div className="pf-id">
-          <div className="pf-name">@{data.username}</div>
-          <div className={`mono pf-status${data.online ? ' on' : ''}`}>
-            {presenceText(data).toUpperCase()}
-          </div>
+        <div className="pfx-id">
+          <h1 className="pfx-name">@{data.username}</h1>
+          <span className={`pfx-pill mono${data.online ? ' on' : ''}`}>{presenceText(data).toUpperCase()}</span>
         </div>
+        <Link to="/ranking" search={{ quem: 'friends' }} className="pfx-rank" data-sfx="select">
+          Ver ranking entre amigos
+        </Link>
       </section>
 
       <section className="pf-facts" aria-label="Atividade">
@@ -80,7 +84,9 @@ function Details({ data: raw }: { data: FriendProfileData }) {
         </div>
       </section>
 
-      <h2 className="mono fr-title">RECORDES</h2>
+      <WordsProgress summary={words.data} whose={`de @${data.username}`} />
+
+      <h2 className="pfx-h">Recordes</h2>
       <Records stats={data.stats} />
       <RemoveFriend username={data.username} />
     </>

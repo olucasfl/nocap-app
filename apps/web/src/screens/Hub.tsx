@@ -6,8 +6,6 @@ import { useQuery } from '@tanstack/react-query';
 import { MuteButton } from '@/components/MuteButton';
 import { RoomBanner } from '@/components/RoomBanner';
 import { ThemeButton } from '@/components/ThemeButton';
-import { classicProgress } from '@/games/words/classic-engine';
-import { beeProgress, useProgress } from '@/games/words/levels/progress';
 import { useAuth } from '@/lib/auth';
 import {
   bestTenths,
@@ -115,34 +113,6 @@ function GameCard({
   );
 }
 
-/** A última coisa que ficou pela metade nos jogos de fases (Bee e Classic): o botão "Continuar". */
-function useContinue(): { to: string; params?: Record<string, string>; title: string; sub: string } | null {
-  const bee = useProgress(beeProgress);
-  const c = useProgress(classicProgress.classic);
-  const d = useProgress(classicProgress.dueto);
-  const q = useProgress(classicProgress.quarteto);
-  const options: { at: number; to: string; params: Record<string, string>; title: string; sub: string }[] = [];
-  for (const [n, p] of Object.entries(bee)) {
-    if (!p.closed && p.found.length > 0) {
-      options.push({ at: p.at, to: '/words/bee/fase/$n', params: { n }, title: "Bee Word's", sub: `Fase ${n} · ${p.found.length} palavras` });
-    }
-  }
-  const classic = [
-    ['classic', '1 palavra', c],
-    ['dueto', '2 palavras', d],
-    ['quarteto', '4 palavras', q],
-  ] as const;
-  for (const [modo, label, prog] of classic) {
-    for (const [n, p] of Object.entries(prog)) {
-      if (!p.done && p.guesses.length > 0) {
-        options.push({ at: p.at, to: '/words/classic/fase/$modo/$n', params: { modo, n }, title: "Classic Word's", sub: `${label} · fase ${n}` });
-      }
-    }
-  }
-  const last = options.sort((a, b) => b.at - a.at)[0];
-  return last ?? null;
-}
-
 export function Hub() {
   const user = useAuth((s) => s.user);
   const stats = useQuery({
@@ -152,9 +122,10 @@ export function Hub() {
     retry: false,
   });
   const data = user ? stats.data : undefined;
-  const resume = useContinue();
   const doneToday = DAILIES.filter((d) => data?.daily[d.game]?.playedToday).length;
   const streak = data?.visit.current ?? 0;
+  const rawName = user?.name?.trim().split(/s+/)[0] || user?.username || '';
+  const firstName = rawName ? rawName.charAt(0).toUpperCase() + rawName.slice(1).toLowerCase() : '';
 
   return (
     <main className="hub hz">
@@ -172,10 +143,8 @@ export function Hub() {
 
       <section className="hz-hello" aria-label="Resumo">
         <div>
-          <h1>{user?.username ? `Oi, @${user.username}` : 'Bora jogar?'}</h1>
-          <p className="mono">
-            {data ? `${doneToday} DE ${DAILIES.length} DAILYS FEITOS HOJE` : 'ENTRE PARA GUARDAR RECORDES E DAILYS'}
-          </p>
+          <h1>{firstName ? `Olá, ${firstName}!` : 'Bora jogar?'}</h1>
+          {!user && <p className="mono">ENTRE PARA GUARDAR RECORDES E DAILYS</p>}
         </div>
         {streak > 0 && (
           <span className="hz-streak mono" title="Dias seguidos entrando no NoCap">
@@ -211,27 +180,6 @@ export function Hub() {
           ))}
         </div>
       </section>
-
-      {resume && (
-        <Link
-          to={resume.to as '/'}
-          params={resume.params as never}
-          className="hz-resume"
-          data-sfx="start"
-          data-testid="resume"
-        >
-          <span className="hz-resume-icon" aria-hidden="true">
-            ▶
-          </span>
-          <span>
-            <b>Continuar</b>
-            <small className="mono">
-              {resume.title.toUpperCase()} · {resume.sub.toUpperCase()}
-            </small>
-          </span>
-          <i aria-hidden="true">→</i>
-        </Link>
-      )}
 
       <section className="hz-sec" aria-label="Palavras">
         <h2 className="hz-h">

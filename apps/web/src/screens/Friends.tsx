@@ -49,7 +49,12 @@ function Person({
           <span className="mono fr-see">VER PERFIL</span>
         </Link>
       ) : (
-        <span className="fr-name">@{username}</span>
+        <span className="fr-who plain">
+          <span className="fr-avatar" aria-hidden="true">
+            {username.charAt(0).toUpperCase()}
+          </span>
+          <span className="fr-name">@{username}</span>
+        </span>
       )}
       <span className="fr-actions">{children}</span>
     </li>
@@ -223,7 +228,14 @@ export function Friends() {
 
   return (
     <main className="fr">
-      <h1>Amigos</h1>
+      <header className="fr-head">
+        <h1>Amigos</h1>
+        <p className="mono">
+          {data
+            ? `${data.friends.length} ${data.friends.length === 1 ? 'AMIGO' : 'AMIGOS'} · ${data.friends.filter((f) => f.online).length} ONLINE`
+            : 'JOGUE E COMPARE COM QUEM VOCÊ CONHECE'}
+        </p>
+      </header>
       <div className="fr-tabs" role="tablist" aria-label="Seções de amigos">
         {tabs.map(([id, label, n]) => (
           <button
@@ -379,36 +391,33 @@ export function Friends() {
               ].map(
                 ([label, group]) =>
                   (group as typeof shown).length > 0 && (
-                    <section
-                      key={label as string}
-                      className="fr-group"
-                      aria-label={label as string}
-                    >
-                      <h3 className="mono fr-group-title">
+                    <section key={label as string} className="fr-group" aria-label={label as string}>
+                      <h3 className={`mono fr-group-title${label === 'ONLINE' ? ' on' : ''}`}>
                         {label as string} · {(group as typeof shown).length}
                       </h3>
-                      <ul className="fr-list2">
+                      <ul className="fr-cards">
                         {(group as typeof shown).map((p) => (
                           <li key={p.username}>
                             <Link
                               to="/amigos/$username"
                               params={{ username: p.username }}
-                              className="fr-row2"
+                              className={`fr-fcard${p.online ? ' on' : ''}`}
                               data-sfx="select"
                             >
-                              <span className="fr-avatar sm" aria-hidden="true">
+                              <span className="fr-avatar lg" aria-hidden="true">
                                 {p.username.charAt(0).toUpperCase()}
                                 <i className={`fr-dot${p.online ? ' on' : ''}`} />
                               </span>
-                              <span className="fr-row2-body">
+                              <span className="fr-fcard-body">
                                 <b className="fr-name">@{p.username}</b>
                                 <span className={`mono fr-row2-sub${p.online ? ' on' : ''}`}>
-                                  {p.online
-                                    ? 'Online agora'
-                                    : presenceText(p).replace('Ainda não entrou', 'Nunca entrou')}
-                                  {p.lastPlayed &&
-                                    ` · ${gameLabel(p.lastPlayed.game)} ${ago(p.lastPlayed.playedAt)}`}
+                                  {p.online ? 'ONLINE AGORA' : presenceText(p).replace('Ainda não entrou', 'Nunca entrou').toUpperCase()}
                                 </span>
+                                {p.lastPlayed && (
+                                  <span className="fr-tag mono">
+                                    {gameLabel(p.lastPlayed.game)} · {ago(p.lastPlayed.playedAt)}
+                                  </span>
+                                )}
                               </span>
                               <span className="fr-chev" aria-hidden="true">
                                 ›

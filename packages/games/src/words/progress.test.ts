@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mergeProgress, sameProgress, sanitizeProgress, type BeeProgressData, type ClassicProgressData, type ConnectProgressData } from './progress';
+import { mergeProgress, sameProgress, sanitizeProgress, summarizeProgress, type BeeProgressData, type ClassicProgressData, type ConnectProgressData } from './progress';
 
 describe('juntar o progresso (nunca perde nada)', () => {
   it('Bee: une as palavras achadas e mantém a fase fechada', () => {
@@ -40,5 +40,17 @@ describe('sanitizeProgress', () => {
     expect(sanitizeProgress('classic-c', { guesses: Array(61).fill('casas'), at: 1 })).toBeNull();
     expect(sanitizeProgress('classic-c', { guesses: ['x'.repeat(41)], at: 1 })).toBeNull();
     expect(sanitizeProgress('classic-c', null)).toBeNull();
+  });
+});
+
+describe('summarizeProgress', () => {
+  it('conta fases abertas, terminadas e a mais adiantada', () => {
+    const s = summarizeProgress({
+      bee: { '3': { found: ['casa'], closed: true, at: 1 }, '9': { found: ['pato'], closed: false, at: 2 }, '12': { found: [], closed: false, at: 3 } },
+      'classic-c': { '5': { guesses: ['casas'], done: true, at: 1 } },
+    });
+    expect(s.bee).toEqual({ played: 2, done: 1, furthest: 9 });
+    expect(s['classic-c']).toEqual({ played: 1, done: 1, furthest: 5 });
+    expect(s.connect).toEqual({ played: 0, done: null, furthest: 0 });
   });
 });

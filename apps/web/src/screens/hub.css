@@ -310,8 +310,9 @@ a.hub-daily {
 }
 .hz-chip {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 8px 10px;
   padding: 10px 12px;
   border: var(--border);
   border-radius: 14px;
@@ -374,7 +375,7 @@ a.hub-daily {
   display: grid;
   gap: 2px;
   min-width: 0;
-  flex: 1;
+  flex: 1 1 calc(100% - 44px);
 }
 .hz-chip-body b {
   font: 900 15px var(--font-display);
@@ -388,6 +389,7 @@ a.hub-daily {
 }
 .hz-chip-go {
   flex: none;
+  order: 3;
   padding: 3px 8px;
   border-radius: 999px;
   background: var(--party-bg);
@@ -609,4 +611,9 @@ a.hub-daily {
     bottom: auto;
     transform: translateY(-50%);
   }
+}
+
+/* O botão JOGAR fica numa linha própria, alinhado ao texto (cabe em qualquer largura de cartão). */
+.hz-chip-go {
+  margin-left: 36px;
 }
