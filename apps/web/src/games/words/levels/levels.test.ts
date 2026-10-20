@@ -1,8 +1,12 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { beeMaxPoints, playConnect } from '@nocap/games';
+import { beeMaxPoints, playConnect, wordKey } from '@nocap/games';
 import bee from './bee-levels.json';
 import connect from './connect-levels.json';
-import { tierOf, tierRanges, toBeePuzzle, toConnectPuzzle, type BeeLevel, type ConnectLevel } from './levels';
+import classicLevels from './classic-levels.json';
+import classicAccepted from './classic-accepted.json';
+import { tierOf, tierRanges, toBeePuzzle, toConnectPuzzle, type BeeLevel, type ClassicLevel, type ConnectLevel } from './levels';
 
 const BEE = bee as BeeLevel[];
 const CONNECT = connect as ConnectLevel[];
@@ -72,5 +76,46 @@ describe('fases do Connect', () => {
     const quit = playConnect(p, [], { gaveUp: true });
     expect(quit.over).toBe(true);
     expect(quit.won).toBe(false);
+  });
+});
+
+describe('fases do Classic', () => {
+  const classic = classicLevels as unknown as { c: ClassicLevel[]; d: ClassicLevel[]; q: ClassicLevel[] };
+  const daily = new Set(
+    readFileSync(join(__dirname, '../../../../../api/data/words/ordem5.txt'), 'utf8')
+      .split(/\r?\n/)
+      .filter(Boolean)
+      .slice(0, 600),
+  );
+
+  it('têm as quantidades combinadas: 1 palavra, 2 palavras e 4 palavras', () => {
+    expect(classic.c).toHaveLength(400);
+    expect(classic.d).toHaveLength(150);
+    expect(classic.q).toHaveLength(66);
+    for (const l of classic.c) expect(l.w).toHaveLength(1);
+    for (const l of classic.d) expect(l.w).toHaveLength(2);
+    for (const l of classic.q) expect(l.w).toHaveLength(4);
+  });
+
+  it('nenhuma palavra repete, e nenhuma é do Daily (as respostas vão no app, o Daily fica no servidor)', () => {
+    const all = [...classic.c, ...classic.d, ...classic.q].flatMap((l) => l.w);
+    expect(new Set(all).size).toBe(all.length);
+    for (const w of all) {
+      expect([...w]).toHaveLength(5);
+      expect(daily.has(w)).toBe(false);
+    }
+  });
+
+  it('as faixas crescem em cada modo (Fácil primeiro, Mestre por último)', () => {
+    for (const levels of [classic.c, classic.d, classic.q]) {
+      const ts = levels.map((l) => l.t);
+      expect(ts).toEqual([...ts].sort((a, b) => a - b));
+      expect(new Set(ts).size).toBe(4);
+    }
+  });
+
+  it('o dicionário aceita todas as respostas das fases', () => {
+    const accepted = new Set((classicAccepted as string[]).map(wordKey));
+    for (const w of [...classic.c, ...classic.d, ...classic.q].flatMap((l) => l.w)) expect(accepted.has(wordKey(w))).toBe(true);
   });
 });

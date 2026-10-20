@@ -16,7 +16,7 @@ const TILES: [string, string][] = [
   ['S', 'y'],
 ];
 
-/** O grupo Word's. O Classic tem Daily e ranking; o Bee e o Connect são fases offline, salvas no aparelho. */
+/** O grupo Word's. O Classic tem o Daily (com ranking) e fases offline; o Bee e o Connect são fases offline, salvas no aparelho. */
 export function WordsPage() {
   const user = useAuth((s) => s.user);
   const classic = useQuery({ queryKey: ['words', 'daily'], queryFn: fetchDaily, enabled: !!user, retry: false });
@@ -43,7 +43,7 @@ export function WordsPage() {
       key: 'classic',
       to: '/words/classic',
       name: "Classic Word's",
-      desc: 'Descubra a palavra de 5 letras. Daily, 1, 2 ou 4 palavras, com ranking.',
+      desc: 'Descubra a palavra de 5 letras. Daily com ranking e 616 fases de 1, 2 ou 4 palavras.',
       art: <ClassicArt />,
       tags: [classicTag, 'Ranking'],
       good: classicTag === 'Daily feito',
@@ -79,7 +79,7 @@ export function WordsPage() {
           ))}
         </div>
         <h2>Jogos de palavras</h2>
-        <p>Classic com Daily e ranking. Connect e Bee têm centenas de fases para jogar quando quiser.</p>
+        <p>Classic, Connect e Bee têm centenas de fases para jogar quando quiser. O Daily do Classic tem ranking.</p>
       </section>
 
       <div className="wd-games">

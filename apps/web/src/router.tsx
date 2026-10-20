@@ -196,6 +196,17 @@ const wordsClassicPlayRoute = createRoute({
   component: lazyRouteComponent(() => import('@/games/words/ClassicPlayPage'), 'ClassicPlayPage'),
 });
 
+const wordsClassicCatalogRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/words/classic/fases/$modo',
+  component: lazyRouteComponent(() => import('@/games/words/ClassicCatalog'), 'ClassicCatalog'),
+});
+const wordsClassicLevelRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/words/classic/fase/$modo/$n',
+  component: lazyRouteComponent(() => import('@/games/words/ClassicLevelPlay'), 'ClassicLevelPlay'),
+});
+
 const wordsBeeRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/words/bee',
@@ -233,6 +244,8 @@ const routeTree = rootRoute.addChildren([
   wordsRoute,
   wordsClassicRoute,
   wordsClassicPlayRoute,
+  wordsClassicCatalogRoute,
+  wordsClassicLevelRoute,
   wordsBeeRoute,
   wordsBeeLevelRoute,
   wordsConnectRoute,

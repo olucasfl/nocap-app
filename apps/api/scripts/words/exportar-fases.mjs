@@ -143,6 +143,44 @@ const connect = tiers.flatMap((list, ti) =>
 );
 writeFileSync(join(out, 'connect-levels.json'), JSON.stringify(connect));
 
-writeFileSync(join(out, 'meta.json'), JSON.stringify({ bee: beeTiers.length, connect: connect.length, version: 2 }));
+// ---------------------------------------------------------------- Classic
+/**
+ * As fases do Classic Word's (1, 2 e 4 palavras). As respostas vão dentro do app (jogo offline), então só
+ * entram palavras que NÃO são do Daily: as 600 primeiras da ordem fixa ficam reservadas a ele e nunca saem
+ * do servidor. As outras (ordenadas da mais comum à mais rara) são repartidas entre os três modos sem
+ * repetir nenhuma, de modo que cada modo cobre da faixa Fácil à Mestre.
+ */
+const DAILY_POOL = 600;
+const CLASSIC_COUNTS = { c: 400, d: 300, q: 264 }; // palavras por modo (fases: 400, 150 e 66)
+const lines = (f) => readFileSync(join(data, f), 'utf8').split(/\r?\n/).map((l) => l.trim()).filter((l) => l && !l.startsWith('#'));
+const orderFixed = lines('ordem5.txt');
+const answers = new Set(lines('respostas5.txt'));
+const freeWords = orderFixed.slice(DAILY_POOL).filter((w) => answers.has(w));
+const bag = { c: [], d: [], q: [] };
+const total = CLASSIC_COUNTS.c + CLASSIC_COUNTS.d + CLASSIC_COUNTS.q;
+const given = { c: 0, d: 0, q: 0 };
+for (let i = 0; i < freeWords.length && bag.c.length + bag.d.length + bag.q.length < total; i++) {
+  // o modo mais "atrasado" em relação à sua cota recebe a próxima palavra
+  const pick = ['c', 'd', 'q']
+    .filter((m) => bag[m].length < CLASSIC_COUNTS[m])
+    .sort((x, y) => given[x] / CLASSIC_COUNTS[x] - given[y] / CLASSIC_COUNTS[y])[0];
+  bag[pick].push(freeWords[i]);
+  given[pick]++;
+}
+const size = { c: 1, d: 2, q: 4 };
+const classic = {};
+for (const m of ['c', 'd', 'q']) {
+  const n = Math.floor(bag[m].length / size[m]);
+  classic[m] = Array.from({ length: n }, (_, i) => ({
+    id: `${m}-${String(i + 1).padStart(3, '0')}`,
+    t: Math.min(3, Math.floor((i / n) * 4)),
+    w: bag[m].slice(i * size[m], (i + 1) * size[m]),
+  }));
+}
+writeFileSync(join(out, 'classic-levels.json'), JSON.stringify(classic));
+// o dicionário de palpites (sem acento -> forma certa) também vai para o app, para conferir sem internet
+writeFileSync(join(out, 'classic-accepted.json'), JSON.stringify([...new Set([...lines('aceitas5.txt'), ...answers])].sort()));
+
+writeFileSync(join(out, 'meta.json'), JSON.stringify({ bee: beeTiers.length, connect: connect.length, classic: { c: classic.c.length, d: classic.d.length, q: classic.q.length }, version: 3 }));
 const count = (levels) => [0, 1, 2, 3].map((t) => levels.filter((l) => l.t === t).length).join('/');
-console.log(`bee: ${beeTiers.length} fases (${count(beeTiers)}) | connect: ${connect.length} fases (${count(connect)})`);
+console.log(`bee: ${beeTiers.length} fases (${count(beeTiers)}) | connect: ${connect.length} fases (${count(connect)}) | classic: ${classic.c.length}/${classic.d.length}/${classic.q.length} fases`);

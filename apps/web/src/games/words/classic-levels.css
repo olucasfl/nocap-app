@@ -1,0 +1,22 @@
+/* O catálogo de fases do Classic reaproveita os componentes do Connect, em verde. */
+.cl-theme .cx-hero {
+  background: var(--green) var(--dots-bg);
+  color: var(--on-accent);
+}
+.cl-theme .cx-meter i {
+  background: var(--ink);
+}
+.cl-theme .cx-continue {
+  box-shadow: 5px 5px 0 var(--green);
+}
+.cl-theme .cx-continue:active {
+  box-shadow: 0 0 0 var(--green);
+}
+.cl-theme .cx-continue-n {
+  background: var(--green);
+  color: var(--on-accent);
+}
+.cl-theme .cx-hero-art {
+  display: grid;
+  place-items: center;
+}

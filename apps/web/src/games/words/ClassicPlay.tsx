@@ -5,12 +5,33 @@ import { ApiError } from '@/lib/api-client';
 import { wordsAudio } from '@/lib/words-audio';
 import { ClassicEnd } from './ClassicEnd';
 import { ColorLegend, Pill, TileLoader, useTyped, WordsShell } from './words-kit';
-import { fetchAccepted, giveUpRun, MODE_LABEL, sendGuess, startRun, type ClassicMode, type RunView } from './words-api';
+import type { ReactNode } from 'react';
+import type { ClassicEngine } from './classic-engine';
+import { MODE_LABEL, type ClassicMode, type RunView } from './words-api';
 
 const ROWS = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
 const LENGTH = 5;
 
-export function ClassicPlay({ mode, kind }: { mode: ClassicMode; kind: 'daily' | 'solo' }) {
+/**
+ * A tela de jogo do Classic. Serve ao Daily (servidor) e às fases (aparelho): `engine` diz de onde vem a
+ * partida, `endActions` os botões do fim e `title`/`back` o cabeçalho.
+ */
+export function ClassicPlay({
+  mode,
+  engine,
+  title: fixedTitle,
+  back = '/words/classic',
+  loading,
+  endActions,
+}: {
+  mode: ClassicMode;
+  engine: ClassicEngine;
+  /** Título do cabeçalho; sem ele, usa "Daily #N". */
+  title?: string;
+  back?: string;
+  loading: string;
+  endActions: (run: RunView) => ReactNode;
+}) {
   const [run, setRun] = useState<RunView | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [typed, setTyped, typedRef] = useTyped();
@@ -32,17 +53,18 @@ export function ClassicPlay({ mode, kind }: { mode: ClassicMode; kind: 'daily' |
     setResultReady(true);
     setEndCollapsed(false);
     setTyped(() => '');
-    startRun(mode, kind)
+    engine
+      .start()
       .then(setRun)
       .catch((e: unknown) => setError(e instanceof ApiError ? e.message : 'Não deu para começar a partida'));
-  }, [mode, kind]);
+  }, [engine]);
 
   useEffect(begin, [begin]);
 
   // a lista de palavras aceitas chega em segundo plano: com ela, uma palavra inválida é recusada na hora
   useEffect(() => {
-    void fetchAccepted().then((s) => (accepted.current = s));
-  }, []);
+    void engine.accepted().then((s) => (accepted.current = s));
+  }, [engine]);
 
   const say = useCallback((text: string, tone: 'bad' | 'good' | '' = 'bad') => {
     setToast({ text, tone });
@@ -84,7 +106,7 @@ export function ClassicPlay({ mode, kind }: { mode: ClassicMode; kind: 'daily' |
     busyRef.current = true;
     setBusy(true);
     try {
-      const next = await sendGuess(run.id, word);
+      const next = await engine.send(run, word);
       setFlipRow(next.used - 1);
       const fresh = next.boards.find((b) => b.rows[next.used - 1] !== undefined)?.rows[next.used - 1];
       if (fresh) wordsAudio.row(fresh);
@@ -133,15 +155,15 @@ export function ClassicPlay({ mode, kind }: { mode: ClassicMode; kind: 'daily' |
 
   if (error) {
     return (
-      <WordsShell title="Classic Word's" back="/words/classic" accent="green">
+      <WordsShell title="Classic Word's" back={back} accent="green">
         <p className="wd-error">{error}</p>
       </WordsShell>
     );
   }
   if (!run) {
     return (
-      <WordsShell title={kind === 'daily' ? 'Daily' : MODE_LABEL[mode].name} back="/words/classic" accent="green" className="cw-theme">
-        <TileLoader label={kind === 'daily' ? 'Abrindo o Daily...' : 'Sorteando a palavra...'} />
+      <WordsShell title={fixedTitle ?? MODE_LABEL[mode].name} back={back} accent="green" className="cw-theme">
+        <TileLoader label={loading} />
       </WordsShell>
     );
   }
@@ -157,12 +179,12 @@ export function ClassicPlay({ mode, kind }: { mode: ClassicMode; kind: 'daily' |
   }
   const info = MODE_LABEL[run.mode];
   const left = run.tries - run.used;
-  const title = run.kind === 'daily' ? `Daily #${run.number}` : info.name;
+  const title = fixedTitle ?? (run.kind === 'daily' ? `Daily #${run.number}` : info.name);
 
   return (
     <WordsShell
       title={title}
-      back="/words/classic"
+      back={back}
       accent="green"
       fit
       className={`cw-${run.mode}`}
@@ -258,7 +280,7 @@ export function ClassicPlay({ mode, kind }: { mode: ClassicMode; kind: 'daily' |
               )}
             </div>
           ))}
-          {run.kind === 'solo' && (
+          {engine.canGiveUp && (
             <button type="button" className="cw-giveup" onClick={() => setAskGiveUp(true)} data-testid="giveup">
               Desistir
             </button>
@@ -266,7 +288,7 @@ export function ClassicPlay({ mode, kind }: { mode: ClassicMode; kind: 'daily' |
         </div>
         </>
       ) : (
-        <ClassicEnd run={run} collapsed={endCollapsed} onToggle={() => setEndCollapsed((c) => !c)} onAgain={begin} />
+        <ClassicEnd run={run} collapsed={endCollapsed} onToggle={() => setEndCollapsed((c) => !c)} actions={endActions(run)} />
       )}
 
       <ConfirmDialog
@@ -278,7 +300,7 @@ export function ClassicPlay({ mode, kind }: { mode: ClassicMode; kind: 'daily' |
         cancelLabel="Continuar jogando"
         onConfirm={() => {
           setAskGiveUp(false);
-          void giveUpRun(run.id).then(setRun);
+          void engine.giveUp(run).then(setRun);
         }}
         onCancel={() => setAskGiveUp(false)}
       />

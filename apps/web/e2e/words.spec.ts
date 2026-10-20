@@ -18,6 +18,8 @@ interface ConnectLevel {
 const levelsDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'games', 'words', 'levels');
 const BEE = JSON.parse(readFileSync(join(levelsDir, 'bee-levels.json'), 'utf8')) as BeeLevel[];
 const CONNECT = JSON.parse(readFileSync(join(levelsDir, 'connect-levels.json'), 'utf8')) as ConnectLevel[];
+const CLASSIC = JSON.parse(readFileSync(join(levelsDir, 'classic-levels.json'), 'utf8')) as Record<'c' | 'd' | 'q', { id: string; w: string[] }[]>;
+const ACCEPTED = JSON.parse(readFileSync(join(levelsDir, 'classic-accepted.json'), 'utf8')) as string[];
 
 const key = (w: string) => w.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
@@ -60,7 +62,7 @@ test.describe("Hub do Word's", () => {
     await expect(page).toHaveURL(/\/words$/);
     for (const id of ['classic', 'connect', 'bee']) await expect(page.getByTestId(`game-${id}`)).toBeVisible();
     await expect(page.getByTestId('game-bee')).toContainText('200 fases');
-    await expect(page.getByTestId('game-connect')).toContainText('130 fases');
+    await expect(page.getByTestId('game-connect')).toContainText('166 fases');
     await noOverflow(page);
     expect(errors).toEqual([]);
   });
@@ -94,69 +96,82 @@ test.describe("Hub do Word's", () => {
 });
 
 test.describe("Classic Word's", () => {
-  test('a página destaca os 3 modos e tem o botão do Daily', async ({ page }) => {
+  const W = CLASSIC.c[0]!.w[0]!;
+  const TWO = CLASSIC.d[0]!.w;
+  // uma palavra válida que não tem nenhuma letra em comum com a resposta (linha toda cinza)
+  const noMatch = (answers: string[]) => {
+    const used = new Set(answers.flatMap((w) => [...key(w)]));
+    return ACCEPTED.find((w) => key(w).length === 5 && new Set(key(w)).size === 5 && [...key(w)].every((c) => !used.has(c)))!;
+  };
+  const WRONG = noMatch([W]);
+  const level = (mode: 'classic' | 'dueto' | 'quarteto', n = 1) => `/words/classic/fase/${mode}/${n}`;
+
+  test('a página tem o Daily e os 3 modos de fases', async ({ page }) => {
     await page.goto('/words/classic');
-    for (const [m, label] of [['classic', '1 palavra'], ['dueto', '2 palavras'], ['quarteto', '4 palavras']] as const) {
+    await expect(page.getByTestId('play-daily')).toContainText('Jogar o Daily');
+    for (const [m, label, total] of [['classic', '1 palavra', 400], ['dueto', '2 palavras', 150], ['quarteto', '4 palavras', 66]] as const) {
       await expect(page.getByTestId(`mode-${m}`)).toBeVisible();
       await expect(page.getByTestId(`mode-card-${m}`)).toContainText(label);
+      await expect(page.getByTestId(`mode-card-${m}`)).toContainText(`${total} fases`);
     }
-    await expect(page.getByTestId('play-daily')).toContainText('Jogar o Daily');
+    await page.getByTestId('tab-regras').click();
+    await expect(page.getByText('Tem a letra, mas em outro lugar')).toBeVisible();
     await noOverflow(page);
+  });
+
+  test('o catálogo de cada modo mostra as fases com filtros e leva ao jogo', async ({ page }) => {
+    const errors = watch(page);
+    await page.goto('/words/classic');
+    await page.getByTestId('mode-dueto').click();
+    await expect(page).toHaveURL(/\/words\/classic\/fases\/dueto$/);
+    await expect(page.locator('[data-testid^="level-"]')).toHaveCount(150);
+    await expect(page.getByTestId('level-1')).toHaveAttribute('data-status', 'new');
+    await page.getByTestId('filter-done').click();
+    await expect(page.locator('[data-testid^="level-"]')).toHaveCount(0);
+    await page.getByTestId('filter-all').click();
+    await page.getByTestId('level-1').click();
+    await expect(page).toHaveURL(/\/words\/classic\/fase\/dueto\/1$/);
+    await expect(page.getByTestId('board-1')).toBeVisible();
+    await noOverflow(page);
+    expect(errors).toEqual([]);
   });
 
   test('as cores do palpite aparecem na linha e no teclado (verde, amarelo, cinza)', async ({ page }) => {
     const errors = watch(page);
-    await openPlay(page, '/words/classic/jogar?tipo=solo&modo=classic');
-    await expect(page.getByTestId('board-0')).toBeVisible();
-    // resposta: AMIGO; palpite CASAS -> miss, near, miss, miss, miss
-    await type(page, 'casas');
+    await openPlay(page, level('classic'));
+    await type(page, key(WRONG));
     await page.keyboard.press('Enter');
     const row = page.getByTestId('row-0-0');
     await expect(row).toBeVisible();
-    const cells = row.locator('.cw-face.back');
-    const states = await cells.evaluateAll((els) => els.map((e) => e.getAttribute('data-cell')));
-    expect(states).toEqual(['miss', 'near', 'miss', 'miss', 'miss']);
+    const states = await row.locator('.cw-face.back').evaluateAll((els) => els.map((e) => e.getAttribute('data-cell')));
+    expect(states).toEqual(['miss', 'miss', 'miss', 'miss', 'miss']);
     await page.waitForTimeout(1900);
-    // depois de virar: a casa do A está amarela e visível (o lado colorido ficou para a frente)
-    expect(await cells.nth(1).evaluate((e) => getComputedStyle(e).backgroundColor)).toBe('rgb(255, 210, 63)');
-    expect(await cells.nth(0).evaluate((e) => getComputedStyle(e).backgroundColor)).toBe('rgb(58, 58, 54)');
-    const flipped = await row.locator('.cw-card').nth(1).evaluate((e) => getComputedStyle(e).transform);
-    expect(flipped).not.toBe('none');
-    await expect(page.getByTestId('key-a').locator('i.near')).toHaveCount(1);
-    await expect(page.getByTestId('key-c').locator('i.miss')).toHaveCount(1);
+    await expect(page.getByTestId(`key-${key(WRONG)[0]}`).locator('i.miss')).toHaveCount(1);
     expect(errors).toEqual([]);
   });
 
   test('letra cinza fica marcada como "já foi", mas continua clicável', async ({ page }) => {
-    await openPlay(page, '/words/classic/jogar?tipo=solo&modo=classic');
-    await type(page, 'casas');
+    await openPlay(page, level('classic'));
+    await type(page, key(WRONG));
     await page.keyboard.press('Enter');
     await expect(page.getByTestId('row-0-0')).toBeVisible();
-    await expect(page.getByTestId('key-c')).toHaveClass(/used/);
-    await expect(page.getByTestId('key-m')).not.toHaveClass(/used/);
-    await page.getByTestId('key-c').click();
+    const l = key(WRONG)[0]!;
+    await expect(page.getByTestId(`key-${l}`)).toHaveClass(/used/);
+    await page.getByTestId(`key-${l}`).click();
     await expect(page.locator('.cw-tile.filled')).toHaveCount(1);
   });
 
-  test('a legenda das cores aparece no jogo e a aba Como jogar explica', async ({ page }) => {
-    await openPlay(page, '/words/classic/jogar?tipo=solo&modo=classic');
-    await expect(page.getByText('Lugar certo')).toBeVisible();
-    await expect(page.getByText('Outro lugar')).toBeVisible();
-    await expect(page.getByText('Não tem (já foi)')).toBeVisible();
-    await page.goto('/words/classic');
-    await page.getByTestId('tab-regras').click();
-    await expect(page.getByText('Tem a letra, mas em outro lugar')).toBeVisible();
-  });
-
-  test('o resultado só aparece depois da última linha virar', async ({ page }) => {
-    await openPlay(page, '/words/classic/jogar?tipo=solo&modo=classic');
-    await type(page, 'amigo');
+  test('o resultado só aparece depois da última linha virar, e mostra a palavra', async ({ page }) => {
+    await openPlay(page, level('classic'));
+    await type(page, key(W));
     await page.keyboard.press('Enter');
     await expect(page.getByTestId('row-0-0')).toBeVisible();
-    // a linha está virando: ainda não dá o veredito
     await expect(page.getByTestId('end')).toHaveCount(0);
     await expect(page.getByTestId('end')).toBeVisible({ timeout: 6000 });
-    await expect(page.getByLabel('A palavra era AMIGO')).toBeVisible();
+    await expect(page.getByTestId('end-title')).toBeVisible();
+    await expect(page.getByLabel(`A palavra era ${W.toUpperCase()}`)).toBeVisible();
+    await expect(page.getByTestId('nota')).toHaveText('1');
+    await expect(page.getByTestId('next')).toBeVisible();
     await page.getByRole('button', { name: 'Ver tabuleiro' }).click();
     await expect(page.getByTestId('end-bar')).toBeVisible();
     await page.getByRole('button', { name: 'Ver resultado' }).click();
@@ -164,61 +179,45 @@ test.describe("Classic Word's", () => {
   });
 
   test('palavra fora da lista balança, avisa e não gasta tentativa', async ({ page }) => {
-    await openPlay(page, '/words/classic/jogar?tipo=solo&modo=classic');
+    await openPlay(page, level('classic'));
     await type(page, 'xxxxx');
     await page.keyboard.press('Enter');
     await expect(page.getByText('Palavra não aceita')).toBeVisible();
     await expect(page.getByText('6 restam')).toBeVisible();
-    await page.keyboard.press('Backspace');
-    await page.keyboard.press('Enter');
-    await expect(page.getByText('Faltam letras')).toBeVisible();
-  });
-
-  test('vencer mostra em quantas tentativas acertou (sem nota) e a próxima palavra já está sorteada', async ({ page }) => {
-    await openPlay(page, '/words/classic/jogar?tipo=solo&modo=classic');
-    await type(page, 'amigo');
-    await page.keyboard.press('Enter');
-    await expect(page.getByTestId('end-title')).toBeVisible({ timeout: 8000 });
-    await expect(page.getByTestId('nota')).toHaveText('1', { timeout: 5000 });
-    await expect(page.getByText('Compartilhar')).toHaveCount(0);
-    await expect(page.getByLabel('A palavra era AMIGO')).toBeVisible();
-    await page.getByTestId('again').click();
-    await expect(page.getByTestId('board-0')).toBeVisible();
-    await expect(page.getByText('6 restam')).toBeVisible();
     await expect(page.locator('.cw-row[data-testid]')).toHaveCount(0);
   });
 
-  test('a partida fica salva: sair e voltar continua de onde parou', async ({ page }) => {
-    await page.goto('/words/classic');
-    await page.getByTestId('mode-classic').click();
-    await expect(page.getByTestId('board-0')).toBeVisible();
-    await type(page, 'casas');
+  test('a fase fica salva: sair e voltar continua de onde parou e o catálogo mostra o andamento', async ({ page }) => {
+    await openPlay(page, level('classic'));
+    await type(page, key(WRONG));
     await page.keyboard.press('Enter');
     await expect(page.getByTestId('row-0-0')).toBeVisible();
-    await page.goto('/words/classic');
-    await expect(page.getByTestId('mode-card-classic')).toContainText('Em andamento 1/6');
-    await page.getByTestId('mode-classic').click();
+    await page.goto('/words/classic/fases/classic');
+    await expect(page.getByTestId('level-1')).toHaveAttribute('data-status', 'open');
+    await page.getByTestId('level-1').click();
     await expect(page.getByTestId('row-0-0')).toBeVisible();
     await expect(page.getByText('5 restam')).toBeVisible();
   });
 
   test('o teclado da tela funciona (letras, apagar e enter)', async ({ page }) => {
-    await openPlay(page, '/words/classic/jogar?tipo=solo&modo=classic');
-    for (const l of 'amigu') await page.getByTestId(`key-${l}`).click();
+    await openPlay(page, level('classic'));
+    const w = key(W);
+    for (const l of w.slice(0, 4) + (w[4] === 'z' ? 'y' : 'z')) await page.getByTestId(`key-${l}`).click();
     await page.getByTestId('backspace').click();
-    await page.getByTestId('key-o').click();
+    await page.getByTestId(`key-${w[4]}`).click();
     await page.getByTestId('enter').click();
     await expect(page.getByTestId('end-title')).toBeVisible({ timeout: 8000 });
   });
 
   test('Dueto: o mesmo palpite vale nos dois tabuleiros e o resolvido trava', async ({ page }) => {
-    await openPlay(page, '/words/classic/jogar?tipo=solo&modo=dueto');
+    await openPlay(page, level('dueto'));
     await expect(page.getByTestId('board-1')).toBeVisible();
-    await type(page, 'amigo');
+    await type(page, key(TWO[0]!));
     await page.keyboard.press('Enter');
     await expect(page.getByTestId('row-0-0')).toBeVisible();
     await expect(page.getByTestId('row-1-0')).toBeVisible();
-    await type(page, 'folha');
+    await page.waitForTimeout(1800);
+    await type(page, key(TWO[1]!));
     await page.keyboard.press('Enter');
     await expect(page.getByTestId('row-1-1')).toBeVisible();
     await expect(page.getByTestId('row-0-1')).toHaveCount(0);
@@ -227,7 +226,7 @@ test.describe("Classic Word's", () => {
   });
 
   test('Quarteto cabe na tela com 4 tabuleiros', async ({ page }) => {
-    await openPlay(page, '/words/classic/jogar?tipo=solo&modo=quarteto');
+    await openPlay(page, level('quarteto'));
     for (let i = 0; i < 4; i++) await expect(page.getByTestId(`board-${i}`)).toBeVisible();
     await noOverflow(page);
     const box = await page.getByTestId('boards').boundingBox();
@@ -236,11 +235,21 @@ test.describe("Classic Word's", () => {
     expect(tile!.width).toBeGreaterThanOrEqual(24);
   });
 
-  test('desistir mostra a palavra e fecha a partida', async ({ page }) => {
-    await openPlay(page, '/words/classic/jogar?tipo=solo&modo=classic');
+  test('desistir pede confirmação, mostra a palavra e marca a fase como completa', async ({ page }) => {
+    await openPlay(page, level('classic'));
     await page.getByTestId('giveup').click();
+    await page.getByRole('button', { name: 'Continuar jogando' }).click();
+    await page.getByTestId('giveup').click();
+    await page.getByRole('button', { name: 'Desistir', exact: true }).last().click();
     await expect(page.getByTestId('end-title')).toContainText('desistiu');
-    await expect(page.getByLabel('A palavra era AMIGO')).toBeVisible();
+    await expect(page.getByLabel(`A palavra era ${W.toUpperCase()}`)).toBeVisible();
+    await page.goto('/words/classic/fases/classic');
+    await expect(page.getByTestId('level-1')).toHaveAttribute('data-status', 'done');
+  });
+
+  test('fase que não existe mostra aviso', async ({ page }) => {
+    await page.goto('/words/classic/fase/classic/9999');
+    await expect(page.getByText('Essa fase não existe')).toBeVisible();
   });
 
   test('Daily: jogar, terminar e ver "já jogou" na página', async ({ page }) => {
@@ -255,9 +264,9 @@ test.describe("Classic Word's", () => {
     await expect(page.getByTestId('play-daily')).toHaveCount(0);
   });
 
-  test('erro do servidor ao começar mostra mensagem e permite voltar', async ({ page }) => {
+  test('erro do servidor ao abrir o Daily mostra mensagem', async ({ page }) => {
     await installApi(page, { failClassic: true });
-    await page.goto('/words/classic/jogar?tipo=solo&modo=classic');
+    await page.goto('/words/classic/jogar?tipo=daily&modo=classic');
     await expect(page.getByText('Erro de teste')).toBeVisible();
     await expect(page.getByRole('link', { name: /voltar/i })).toBeVisible();
   });

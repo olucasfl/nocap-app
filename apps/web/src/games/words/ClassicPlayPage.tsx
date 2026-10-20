@@ -1,13 +1,26 @@
-import { useSearch } from '@tanstack/react-router';
+import { useMemo } from 'react';
+import { Link } from '@tanstack/react-router';
 import { ClassicPlay } from './ClassicPlay';
+import { dailyEngine } from './classic-engine';
 
-type Search = { tipo?: 'daily' | 'solo'; modo?: 'classic' | 'dueto' | 'quarteto' };
-
-/** A rota /words/classic/jogar: `?tipo=daily|solo&modo=classic|dueto|quarteto`. */
+/** A rota /words/classic/jogar: o Daily (as outras partidas são as fases do catálogo). */
 export function ClassicPlayPage() {
-  const { tipo, modo } = useSearch({ strict: false }) as Search;
-  const daily = tipo === 'daily';
+  const engine = useMemo(() => dailyEngine('classic'), []);
   return (
-    <ClassicPlay key={`${tipo}-${modo}`} kind={daily ? 'daily' : 'solo'} mode={daily ? 'classic' : (modo ?? 'classic')} />
+    <ClassicPlay
+      mode="classic"
+      engine={engine}
+      loading="Abrindo o Daily..."
+      endActions={() => (
+        <>
+          <Link to="/ranking" search={{ jogo: 'wclassic', modo: 'daily' }} className="btn alt">
+            Ver ranking
+          </Link>
+          <Link to="/words/classic" className="btn ghost">
+            Voltar aos modos
+          </Link>
+        </>
+      )}
+    />
   );
 }

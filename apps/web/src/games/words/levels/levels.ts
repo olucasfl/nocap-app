@@ -22,12 +22,28 @@ export interface ConnectLevel {
   g: { l: number; t: string; w: string[] }[];
 }
 
+/** Uma fase do Classic: as palavras da fase (1, 2 ou 4, com acento); `t` é a faixa (0 Fácil a 3 Mestre). */
+export interface ClassicLevel {
+  id: string;
+  t: number;
+  w: string[];
+}
+export type ClassicLevels = { c: ClassicLevel[]; d: ClassicLevel[]; q: ClassicLevel[] };
+
 /** Os dados são carregados sob demanda (um pedaço separado do app), já ordenados do mais fácil ao mais difícil. */
 export async function loadBeeLevels(): Promise<BeeLevel[]> {
   return (await import('./bee-levels.json')).default as BeeLevel[];
 }
 export async function loadConnectLevels(): Promise<ConnectLevel[]> {
   return (await import('./connect-levels.json')).default as ConnectLevel[];
+}
+
+export async function loadClassicLevels(): Promise<ClassicLevels> {
+  return (await import('./classic-levels.json')).default as ClassicLevels;
+}
+/** Todas as palavras que valem como palpite (o dicionário que o servidor também usa). */
+export async function loadClassicAccepted(): Promise<string[]> {
+  return (await import('./classic-accepted.json')).default as string[];
 }
 
 export const toBeePuzzle = (l: BeeLevel): BeePuzzle => ({

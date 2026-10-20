@@ -39,5 +39,6 @@
 | 033 | [Classic Word's (1, 2 e 4 palavras e o Daily)](033-classic-words.md) | 7 | rascunho (revisado 19/10) |
 | 034 | [Connect Word's (16 palavras, 4 grupos)](034-connect-words.md) | 7 | rascunho |
 | 035 | [Bee Word's (7 letras, uma obrigatória)](035-bee-words.md) | 7 | rascunho |
+| 036 | [Classic Word's em fases (1, 2 e 4 palavras)](036-classic-fases.md) | 7 | concluída |
 
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.

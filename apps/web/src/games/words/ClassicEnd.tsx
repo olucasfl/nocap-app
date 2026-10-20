@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { Link } from '@tanstack/react-router';
+import type { ReactNode } from 'react';
 import { Celebrate } from './words-kit';
 import type { RunView } from './words-api';
 
@@ -20,35 +20,19 @@ export function ClassicEnd({
   run,
   collapsed,
   onToggle,
-  onAgain,
+  actions,
 }: {
   run: RunView;
   collapsed: boolean;
   onToggle: () => void;
-  onAgain: () => void;
+  /** Os botões do fim (próxima fase, voltar...). */
+  actions: ReactNode;
 }) {
   const won = run.state === 'won';
   const gaveUp = !won && run.used < run.tries;
   const answers = run.answers ?? [];
   const title = won ? winTitle(run.used, run.tries) : gaveUp ? 'Você desistiu' : 'Não foi dessa vez';
   const many = answers.length > 1;
-
-  const actions = (
-    <>
-      {run.kind === 'solo' ? (
-        <button type="button" className="btn alt" onClick={onAgain} data-testid="again">
-          Próxima palavra
-        </button>
-      ) : (
-        <Link to="/ranking" search={{ jogo: 'wclassic', modo: 'daily' }} className="btn alt">
-          Ver ranking
-        </Link>
-      )}
-      <Link to="/words/classic" className="btn ghost">
-        Voltar aos modos
-      </Link>
-    </>
-  );
 
   if (collapsed) {
     return (
