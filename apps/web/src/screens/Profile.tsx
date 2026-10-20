@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { InstallApp } from '@/components/InstallApp';
 import { Choice } from '@/components/RankingList';
+import { ProgressSyncStatus } from '@/components/ProgressSyncStatus';
 import { Records } from '@/components/Records';
 import { Pencil } from '@/components/icons';
 import { ProfileEdit, type EditStep } from '@/components/ProfileEdit';
@@ -114,6 +115,7 @@ export function Profile() {
             onStep={setEditing}
           />
           <VisitStreak />
+          <ProgressSyncStatus />
           <InstallApp />
           <div className="pf-actions">
             <button

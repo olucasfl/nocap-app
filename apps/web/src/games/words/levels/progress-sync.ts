@@ -55,6 +55,28 @@ function mergeLevels(game: ProgressGame, a: Record<string, unknown>, b: Record<s
   return out;
 }
 
+export interface SyncStatus {
+  phase: 'idle' | 'syncing' | 'ok' | 'error';
+  at: number;
+  /** Quantas fases a conta tem guardadas (depois de uma sincronização que deu certo). */
+  levels: number;
+  /** Quantas ainda não chegaram ao servidor. */
+  waiting: number;
+  error: string | null;
+}
+let status: SyncStatus = { phase: 'idle', at: 0, levels: 0, waiting: 0, error: null };
+const listeners = new Set<() => void>();
+const setStatus = (next: Partial<SyncStatus>) => {
+  status = { ...status, ...next };
+  listeners.forEach((l) => l());
+};
+export const getSyncStatus = (): SyncStatus => status;
+export const subscribeSyncStatus = (fn: () => void): (() => void) => {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
+};
+const countServer = (): number => PROGRESS_GAMES.reduce((n, g) => n + Object.keys(state.server[g]).length, 0);
+
 export interface SyncState {
   userId: string | null;
   /** O que o servidor já tem (para só enviar o que mudou). */
@@ -84,6 +106,7 @@ export async function push(): Promise<void> {
     await apiClient.put('/me/words-progress', { entries: batch });
     for (const e of batch) state.server[e.game][String(e.level)] = e.data;
   }
+  setStatus({ levels: countServer(), waiting: pending().length });
 }
 
 /** Agenda o envio logo depois que o progresso muda (junta várias jogadas num só pedido). */
@@ -120,6 +143,7 @@ function switchOwner(userId: string): void {
 /** Baixa o progresso da conta, junta com o do aparelho e envia o que o servidor ainda não tem. */
 export async function syncNow(userId: string): Promise<void> {
   if (state.running) return state.running;
+  setStatus({ phase: 'syncing', error: null });
   state.running = (async () => {
     const remote = await apiClient.get<Remote>('/me/words-progress');
     if (state.userId !== userId) {
@@ -133,9 +157,15 @@ export async function syncNow(userId: string): Promise<void> {
       STORES[game].replaceAll(mergeLevels(game, STORES[game].all(), theirs));
     }
     await push();
-  })().finally(() => {
-    state.running = null;
-  });
+    setStatus({ phase: 'ok', at: Date.now(), levels: countServer(), waiting: pending().length, error: null });
+  })()
+    .catch((e: unknown) => {
+      setStatus({ phase: 'error', at: Date.now(), waiting: pending().length, error: e instanceof Error ? e.message : 'Falha desconhecida' });
+      throw e;
+    })
+    .finally(() => {
+      state.running = null;
+    });
   return state.running;
 }
 
