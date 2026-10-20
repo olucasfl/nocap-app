@@ -72,8 +72,8 @@
   box-shadow: 5px 5px 0 var(--ink);
 }
 .rkp-hero-art {
-  width: 72px;
-  height: 72px;
+  width: 76px;
+  height: 76px;
   display: grid;
   place-items: center;
 }
@@ -543,8 +543,9 @@
 .rkp-pick.wclassic { --accent: var(--eco-cyan); --on: var(--on-accent); }
 .rkp-pick.color { --accent: var(--orange); --on: var(--on-accent); }
 .rkp-pick-art {
-  width: 64px;
-  height: 64px;
+  width: 76px;
+  height: 76px;
+  margin-bottom: 4px;
   display: grid;
   place-items: center;
 }
