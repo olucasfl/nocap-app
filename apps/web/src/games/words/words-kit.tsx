@@ -149,6 +149,90 @@ export function TileLoader({ label = 'Sorteando a palavra...' }: { label?: strin
 
 const CONFETTI_COLORS = ['var(--yellow)', 'var(--orange)', 'var(--green)', 'var(--blue)', 'var(--eco-purple)'];
 
+export type FxKind = 'win' | 'epic' | 'gold' | 'lose' | 'spark';
+
+/** Um número "aleatório" estável (0 a 1) para cada peça: a explosão sai igual em toda renderização. */
+const jitter = (i: number, salt: number) => (((i + 1) * 9301 + salt * 49297) % 233280) / 233280;
+
+/**
+ * A comemoração dos jogos do Word's, só com `transform` e `opacity`. Mude `burst` para disparar de novo
+ * (0 não mostra nada).
+ *   win / epic  confete em duas ondas, anéis de luz e um brilho central (epic = mais peças e anel extra)
+ *   gold        o mesmo em dourado (pangrama, Rainha)
+ *   spark       faíscas pequenas, presas ao elemento pai (que precisa ser `position: relative`)
+ *   lose        o tom escurece e cacos cinza caem devagar, sem festa
+ */
+export function Celebrate({ burst, kind = 'win' }: { burst: number; kind?: FxKind }) {
+  const pieces = useMemo(() => {
+    const count = kind === 'epic' ? 54 : kind === 'spark' ? 10 : kind === 'lose' ? 14 : 38;
+    return Array.from({ length: count }, (_, i) => {
+      const a = jitter(i, 1);
+      const b = jitter(i, 2);
+      const c = jitter(i, 3);
+      if (kind === 'lose') {
+        return {
+          x: Math.round((a - 0.5) * 300),
+          y: Math.round(240 + b * 320),
+          r: Math.round((c - 0.5) * 520),
+          s: 0.7 + b * 0.8,
+          d: a * 0.5,
+          w: 8 + Math.round(c * 8),
+          shape: 'shard',
+          color: 'var(--eco-graphite)',
+        };
+      }
+      const angle = a * Math.PI * 2;
+      const power = kind === 'spark' ? 34 + b * 40 : 80 + b * (kind === 'epic' ? 190 : 140);
+      const gold = kind === 'gold';
+      return {
+        x: Math.round(Math.cos(angle) * power),
+        y: Math.round(Math.sin(angle) * power - (kind === 'spark' ? 10 : 60)),
+        r: Math.round((c - 0.5) * 900),
+        s: 0.6 + c * 0.9,
+        d: (i % 2) * 0.18 + b * 0.08,
+        w: kind === 'spark' ? 5 + Math.round(c * 4) : 7 + Math.round(c * 7),
+        shape: ['sq', 'dot', 'bar', 'star'][Math.floor(jitter(i, 4) * 4)]!,
+        color: gold
+          ? ['var(--yellow)', 'var(--orange)', 'var(--yellow)', 'var(--paper)'][i % 4]!
+          : CONFETTI_COLORS[i % CONFETTI_COLORS.length]!,
+      };
+    });
+  }, [kind]);
+  if (burst === 0) return null;
+  const light = kind === 'win' || kind === 'epic' || kind === 'gold';
+  return (
+    <div className={`wd-fx ${kind}`} key={`${kind}-${burst}`} aria-hidden="true">
+      {kind === 'lose' && <i className="veil" />}
+      {light && (
+        <>
+          <i className="glow" />
+          <i className="ring r1" />
+          <i className="ring r2" />
+          {kind !== 'win' && <i className="ring r3" />}
+        </>
+      )}
+      {pieces.map((p, i) => (
+        <i
+          key={i}
+          className={`p ${p.shape}`}
+          style={
+            {
+              '--x': `${p.x}px`,
+              '--y': `${p.y}px`,
+              '--r': `${p.r}deg`,
+              '--s': p.s,
+              '--w': `${p.w}px`,
+              background: p.shape === 'star' ? undefined : p.color,
+              color: p.color,
+              animationDelay: `${p.d}s`,
+            } as CSSProperties
+          }
+        />
+      ))}
+    </div>
+  );
+}
+
 /** Uma explosão de confete (só transform e opacity). Mude `burst` para disparar de novo; 0 não mostra nada. */
 export function Confetti({ burst, count = 22 }: { burst: number; count?: number }) {
   const pieces = useMemo(
@@ -205,9 +289,12 @@ export function ResultSheet({
   value,
   decimals = 1,
   detail,
+  epic = false,
   children,
 }: {
   won: boolean;
+  /** Vitória especial (sem erros, patente máxima...): mais peças e um anel a mais. */
+  epic?: boolean;
   stamp: string;
   label?: string;
   value: number;
@@ -217,8 +304,9 @@ export function ResultSheet({
 }) {
   const shown = useCountUp(value);
   return (
-    <section className="wd-result" aria-label="Resultado">
-      <Confetti burst={won ? 1 : 0} />
+    <section className={`wd-result ${won ? 'won' : 'lost'}`} aria-label="Resultado">
+      <Celebrate burst={1} kind={won ? (epic ? 'epic' : 'win') : 'lose'} />
+      <span className="wd-shine" aria-hidden="true" />
       <div className={`wd-stamp ${won ? 'won' : 'lost'}`}>{stamp}</div>
       <div className="wd-score">
         <span className="mono">{label}</span>

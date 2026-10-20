@@ -1632,9 +1632,11 @@ a.wd-card:hover .wd-card-go {
   overflow: visible;
 }
 .wd-app.fit .wd-toast {
-  position: absolute;
-  top: 6px;
+  /* flutua sobre o cabeçalho, longe do que a pessoa está olhando (grade, tabuleiro, contador de erros) */
+  position: fixed;
+  top: calc(12px + env(safe-area-inset-top));
   left: 50%;
+  z-index: 60;
   translate: -50% 0;
   white-space: nowrap;
 }
@@ -1661,5 +1663,358 @@ a.wd-card:hover .wd-card-go {
   }
   .wd-card-desc {
     font-size: 10.5px;
+  }
+}
+
+/* ====================== comemoração premium (ganhar, perder, pontuar) ====================== */
+.wd-fx {
+  position: fixed;
+  left: 50%;
+  top: 36%;
+  width: 0;
+  height: 0;
+  z-index: 30;
+  pointer-events: none;
+}
+.wd-fx.spark {
+  position: absolute;
+  top: 50%;
+  z-index: 4;
+}
+.wd-fx .p {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--w);
+  height: var(--w);
+  margin: calc(var(--w) / -2) 0 0 calc(var(--w) / -2);
+  border: 2px solid var(--ink);
+  border-radius: 2px;
+  opacity: 0;
+  animation: wd-fly 1.5s cubic-bezier(0.12, 0.8, 0.3, 1) both;
+}
+.wd-fx .p.dot {
+  border-radius: 50%;
+}
+.wd-fx .p.bar {
+  height: calc(var(--w) * 0.45);
+  border-width: 1.5px;
+  border-radius: 6px;
+}
+.wd-fx .p.star {
+  border: 0;
+  width: calc(var(--w) * 1.6);
+  height: calc(var(--w) * 1.6);
+  margin: calc(var(--w) * -0.8) 0 0 calc(var(--w) * -0.8);
+  background: currentColor;
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+  animation-name: wd-twinkle;
+}
+.wd-fx.spark .p {
+  border-width: 1.5px;
+  animation-duration: 0.9s;
+}
+.wd-fx .ring {
+  position: absolute;
+  left: -60px;
+  top: -60px;
+  width: 120px;
+  height: 120px;
+  border: 4px solid var(--yellow);
+  border-radius: 50%;
+  opacity: 0;
+  animation: wd-ring 1.1s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+.wd-fx .ring.r2 {
+  border-color: var(--orange);
+  animation-delay: 0.14s;
+}
+.wd-fx .ring.r3 {
+  border-color: var(--green);
+  animation-delay: 0.28s;
+}
+.wd-fx.gold .ring {
+  border-color: var(--yellow);
+}
+.wd-fx .glow {
+  position: absolute;
+  left: -160px;
+  top: -160px;
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--yellow) 0%, transparent 68%);
+  opacity: 0;
+  animation: wd-glow 1.2s ease-out both;
+}
+.wd-fx.lose .veil {
+  position: fixed;
+  inset: 0;
+  left: -50vw;
+  top: -36vh;
+  width: 100vw;
+  height: 100vh;
+  background: radial-gradient(circle at 50% 40%, transparent 30%, #000 100%);
+  opacity: 0;
+  animation: wd-veil 1.6s ease-out both;
+}
+.wd-fx.lose .p {
+  border-color: var(--eco-graphite);
+  border-radius: 1px;
+  clip-path: polygon(0 0, 100% 18%, 74% 100%, 12% 82%);
+  animation-name: wd-fall;
+  animation-duration: 2.2s;
+  animation-timing-function: cubic-bezier(0.3, 0.1, 0.6, 1);
+}
+@keyframes wd-fly {
+  0% {
+    transform: translate(0, 0) rotate(0) scale(0.2);
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  55% {
+    transform: translate(var(--x), var(--y)) rotate(var(--r)) scale(var(--s));
+    opacity: 1;
+  }
+  100% {
+    transform: translate(calc(var(--x) * 1.15), calc(var(--y) + 150px)) rotate(calc(var(--r) * 1.6)) scale(var(--s));
+    opacity: 0;
+  }
+}
+@keyframes wd-twinkle {
+  0% {
+    transform: translate(0, 0) scale(0) rotate(0);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  45% {
+    transform: translate(var(--x), var(--y)) scale(var(--s)) rotate(120deg);
+    opacity: 1;
+  }
+  60% {
+    transform: translate(var(--x), var(--y)) scale(calc(var(--s) * 0.5)) rotate(180deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(calc(var(--x) * 1.05), calc(var(--y) + 40px)) scale(0) rotate(300deg);
+    opacity: 0;
+  }
+}
+@keyframes wd-ring {
+  0% {
+    transform: scale(0.15);
+    opacity: 0.95;
+  }
+  100% {
+    transform: scale(3.6);
+    opacity: 0;
+  }
+}
+@keyframes wd-glow {
+  0% {
+    transform: scale(0.2);
+    opacity: 0;
+  }
+  25% {
+    opacity: 0.75;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+@keyframes wd-veil {
+  0% {
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.62;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes wd-fall {
+  0% {
+    transform: translate(0, -40px) rotate(0) scale(var(--s));
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(var(--x), var(--y)) rotate(var(--r)) scale(var(--s));
+    opacity: 0;
+  }
+}
+
+/* o cartão de resultado: entrada em etapas, brilho que passa e carimbo com impacto */
+.wd-result {
+  overflow: hidden;
+}
+.wd-shine {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.wd-shine::after {
+  content: '';
+  position: absolute;
+  top: -20%;
+  left: -40%;
+  width: 36%;
+  height: 140%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  transform: translateX(0) skewX(-18deg);
+  opacity: 0;
+}
+.wd-result.won .wd-shine::after {
+  animation: wd-sweep 1.3s ease-out 0.55s both;
+}
+.wd-result.lost {
+  animation: wd-drop 0.9s cubic-bezier(0.3, 0, 0.3, 1) both;
+}
+.wd-result.won {
+  animation: wd-sheet 0.6s cubic-bezier(0.2, 1.2, 0.4, 1) both;
+}
+.wd-stamp.won {
+  animation: wd-slam 0.8s cubic-bezier(0.2, 1, 0.3, 1) 0.25s both;
+}
+.wd-stamp.lost {
+  animation: wd-slam-lost 0.9s cubic-bezier(0.3, 0.6, 0.3, 1) 0.45s both;
+}
+.wd-result.won .wd-score b {
+  animation: wd-scorepop 0.8s cubic-bezier(0.2, 1.5, 0.4, 1) 0.55s both;
+}
+.wd-result.lost .wd-score b {
+  animation: wd-scorefall 0.7s ease-out 0.7s both;
+}
+.wd-result .wd-actions > * {
+  animation: wd-rise 0.5s cubic-bezier(0.2, 1.2, 0.4, 1) both;
+  animation-delay: 0.9s;
+}
+.wd-result .wd-actions > :nth-child(2) {
+  animation-delay: 1s;
+}
+.wd-result .wd-actions > :nth-child(3) {
+  animation-delay: 1.1s;
+}
+@keyframes wd-sweep {
+  0% {
+    transform: translateX(0) skewX(-18deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(520%) skewX(-18deg);
+    opacity: 0;
+  }
+}
+@keyframes wd-drop {
+  0% {
+    transform: translateY(-80px);
+    opacity: 0;
+  }
+  45% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  62% {
+    transform: translateY(-16px);
+  }
+  78% {
+    transform: translateY(0);
+  }
+  88% {
+    transform: translateY(-5px);
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+@keyframes wd-slam {
+  0% {
+    transform: rotate(-14deg) scale(3.2);
+    opacity: 0;
+  }
+  45% {
+    transform: rotate(-1deg) scale(0.9);
+    opacity: 1;
+  }
+  65% {
+    transform: rotate(-4deg) scale(1.12);
+  }
+  100% {
+    transform: rotate(-3deg) scale(1);
+    opacity: 1;
+  }
+}
+@keyframes wd-slam-lost {
+  0% {
+    transform: rotate(12deg) scale(2.4) translateY(-30px);
+    opacity: 0;
+  }
+  40% {
+    transform: rotate(3deg) scale(1) translateY(0);
+    opacity: 1;
+  }
+  50% {
+    transform: rotate(5deg) scale(1) translateX(-5px);
+  }
+  60% {
+    transform: rotate(3deg) scale(1) translateX(5px);
+  }
+  70%,
+  100% {
+    transform: rotate(4deg) scale(1) translateX(0);
+    opacity: 1;
+  }
+}
+@keyframes wd-scorepop {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.25);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+@keyframes wd-scorefall {
+  0% {
+    transform: translateY(-24px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wd-fx,
+  .wd-shine::after {
+    display: none;
+  }
+  .wd-result,
+  .wd-result.won,
+  .wd-result.lost,
+  .wd-stamp.won,
+  .wd-stamp.lost,
+  .wd-result .wd-score b,
+  .wd-result .wd-actions > * {
+    animation: none !important;
   }
 }

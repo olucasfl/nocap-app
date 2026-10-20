@@ -11,7 +11,7 @@ import {
   type BeeReject,
 } from '@nocap/games';
 import { wordsAudio } from '@/lib/words-audio';
-import { Confetti, HexLoader, Pill, ResultSheet, RulesList, Tabs, useTyped, WordsShell } from '../words-kit';
+import { Celebrate, HexLoader, Pill, ResultSheet, RulesList, Tabs, useTyped, WordsShell } from '../words-kit';
 import { loadBeeLevels, tierOf, toBeePuzzle, type BeeLevel } from '../levels/levels';
 import { beeProgress, useProgress } from '../levels/progress';
 import { BeeMascot, hexPoints } from './BeeArt';
@@ -73,7 +73,8 @@ export function BeePlay() {
   const [floats, setFloats] = useState<Float[]>([]);
   const [wave, setWave] = useState(false);
   const [buzz, setBuzz] = useState(false);
-  const [burst, setBurst] = useState(0);
+  const [fx, setFx] = useState<{ n: number; kind: 'win' | 'gold' }>({ n: 0, kind: 'win' });
+  const [spark, setSpark] = useState(0);
   const [shake, setShake] = useState(false);
   const [banner, setBanner] = useState<string | null>(null);
   const [tab, setTab] = useState<'words' | 'hints' | 'rules'>('words');
@@ -145,17 +146,18 @@ export function BeePlay() {
     setFloats((f) => [...f, { id, text: `+${check.points}`, big: check.pangram }]);
     later(() => setFloats((f) => f.filter((x) => x.id !== id)), 1200);
     setBuzz(true);
+    setSpark((n) => n + 1);
     later(() => setBuzz(false), 700);
     if (check.pangram) {
       wordsAudio.pangram();
       setWave(true);
-      setBurst((b) => b + 1);
+      setFx((f) => ({ n: f.n + 1, kind: 'gold' }));
       later(() => setWave(false), 1200);
       setBanner('Pangrama!');
       later(() => setBanner(null), 1800);
     } else if (after.id !== before.id) {
       wordsAudio.rankUp();
-      setBurst((b) => b + 1);
+      setFx((f) => ({ n: f.n + 1, kind: 'win' }));
       setBanner(after.name);
       later(() => setBanner(null), 2000);
     } else wordsAudio.beeFound(check.points);
@@ -224,7 +226,6 @@ export function BeePlay() {
       return;
     }
     beeProgress.set(num, { found, closed: true, at: Date.now() });
-    setBurst((b) => b + 1);
     wordsAudio.win();
   };
 
@@ -237,7 +238,7 @@ export function BeePlay() {
       className={`bee-theme${tab !== 'words' ? ' info' : ''}`}
       right={<Pill tone="paper">{tier}</Pill>}
     >
-      <Confetti burst={burst} />
+      <Celebrate burst={fx.n} kind={fx.kind} />
 
       <section className={`bz-rankcard${buzz ? ' buzz' : ''}`} aria-label={`Patente: ${rank.name}`} data-testid="rank">
         <BeeMascot className="bz-rank-bee" flying={buzz || open} />
@@ -269,8 +270,10 @@ export function BeePlay() {
       </div>
 
       {banner && (
-        <div className="bz-banner" role="status" key={banner}>
+        <div className={`bz-banner${banner === 'Pangrama!' ? ' gold' : ''}`} role="status" key={banner}>
+          <i className="bz-banner-star" aria-hidden="true" />
           {banner}
+          <i className="bz-banner-star r" aria-hidden="true" />
         </div>
       )}
 
@@ -288,6 +291,7 @@ export function BeePlay() {
               </span>
             ))}
             <span className="bz-caret" aria-hidden="true" />
+            <Celebrate burst={spark} kind="spark" />
           </div>
 
           <div className="bz-hive-wrap">
@@ -318,7 +322,7 @@ export function BeePlay() {
           )}
         </>
       ) : (
-        <ResultSheet won stamp={rank.name} label="PONTOS" value={points} decimals={0} detail={`${found.length} de ${hints.total} palavras · fase ${num}`}>
+        <ResultSheet won epic={genius >= 1} stamp={rank.name} label="PONTOS" value={points} decimals={0} detail={`${found.length} de ${hints.total} palavras · fase ${num}`}>
           {hasNext ? (
             <Link to="/words/bee/fase/$n" params={{ n: String(num + 1) }} className="btn alt" data-testid="next">
               Próxima fase

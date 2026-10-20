@@ -430,7 +430,10 @@ test.describe("Connect Word's (fases offline)", () => {
     await page.goto('/words/connect/fase/1');
     await page.getByTestId('hint').click();
     await expect(page.getByTestId('hint-text')).toContainText(first.g.slice().sort((x, y) => x.l - y.l)[0]!.t);
-    await expect(page.getByTestId('hint')).toBeDisabled();
+    await page.getByRole('button', { name: 'Entendi' }).click();
+    // a dica pode ser vista de novo, sempre que quiser
+    await page.getByTestId('hint').click();
+    await expect(page.getByTestId('hint-text')).toBeVisible();
   });
 
   test('desistir pede confirmação, classifica como Desistência e revela os grupos', async ({ page }) => {

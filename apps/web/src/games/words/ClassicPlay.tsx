@@ -234,6 +234,7 @@ export function ClassicPlay({ mode, kind }: { mode: ClassicMode; kind: 'daily' |
       ) : (
         <ResultSheet
           won={run.state === 'won'}
+          epic={run.state === 'won' && run.used <= 2}
           stamp={run.state === 'won' ? 'Acertou' : 'Não foi dessa vez'}
           label="TENTATIVAS"
           value={run.used}

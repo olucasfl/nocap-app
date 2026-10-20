@@ -3,7 +3,7 @@ import { Link, useParams } from '@tanstack/react-router';
 import { connectClass, connectHint, playConnect, type ConnectGroup } from '@nocap/games';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { wordsAudio } from '@/lib/words-audio';
-import { Confetti, GridLoader, Pill, ResultSheet, RulesList, Tabs, WordsShell } from '../words-kit';
+import { Celebrate, GridLoader, Pill, ResultSheet, RulesList, Tabs, WordsShell } from '../words-kit';
 import { loadConnectLevels, seededShuffle, tierOf, toConnectPuzzle, type ConnectLevel } from '../levels/levels';
 import { connectProgress, useProgress } from '../levels/progress';
 import { CONNECT_RULES } from './ConnectCatalog';
@@ -11,6 +11,45 @@ import './connect.css';
 
 /** Agrupa o tamanho das palavras em faixas: a letra não muda de tamanho a cada palavra, só quando precisa. */
 const bucket = (n: number) => (n <= 6 ? 6 : n <= 8 ? 8 : n);
+
+/** O popup da dica: o nome de um conjunto que falta, num cartão especial. Dá para abrir de novo quando quiser. */
+function HintPopup({ group, found, onClose }: { group: ConnectGroup; found: boolean; onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+  return (
+    <div className="cx-pop" role="presentation" onClick={onClose} data-testid="hint-popup">
+      <div
+        className={`cx-pop-card l${group.level}`}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Dica do Connect Word's"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <span className="cx-pop-rays" aria-hidden="true" />
+        <Celebrate burst={1} kind="gold" />
+        <div className="cx-pop-badge" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z" />
+          </svg>
+        </div>
+        <span className="mono cx-pop-kicker">Dica do Connect Word&apos;s</span>
+        <span className="mono cx-pop-label">Nome do conjunto</span>
+        <b className="cx-pop-title" data-testid="hint-text">
+          {group.title}
+        </b>
+        <p className="mono cx-pop-note">
+          {found ? 'Você já achou esse grupo.' : 'Quatro palavras da grade combinam com esse nome.'}
+        </p>
+        <button type="button" className="btn alt cx-pop-ok" onClick={onClose} autoFocus>
+          Entendi
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function Band({ group, missed = false }: { group: ConnectGroup; missed?: boolean }) {
   return (
@@ -38,7 +77,8 @@ export function ConnectPlay() {
   const [picked, setPicked] = useState<string[]>([]);
   const [toast, setToast] = useState<{ text: string; tone: 'good' | 'bad' | '' } | null>(null);
   const [shake, setShake] = useState(false);
-  const [burst, setBurst] = useState(0);
+  const [spark, setSpark] = useState(0);
+  const [hintOpen, setHintOpen] = useState(false);
   const [tab, setTab] = useState<'game' | 'rules'>('game');
   const [askGiveUp, setAskGiveUp] = useState(false);
   const timers = useRef<number[]>([]);
@@ -97,6 +137,7 @@ export function ConnectPlay() {
     connectProgress.set(num, { ...saved, guesses: next, at: Date.now() });
     setPicked([]);
     if (result === 'correct') {
+      setSpark((n) => n + 1);
       const g = after.found[after.found.length - 1]!;
       wordsAudio.group(g.level);
       say(g.title, 'good');
@@ -109,19 +150,19 @@ export function ConnectPlay() {
       setShake(true);
       later(() => setShake(false), 420);
     }
-    if (after.over) {
-      later(() => wordsAudio.win(), 500);
-      setBurst((b) => b + 1);
-    }
+    if (after.over) later(() => wordsAudio.win(), 500);
   };
 
   /** A dica (uma por fase): mostra o nome de um grupo que ainda falta, o mais fácil. */
   const useHint = () => {
-    if (!puzzle || !state || state.over || saved?.hint !== undefined) return;
-    const g = connectHint(puzzle, guesses);
-    if (!g) return;
+    if (!puzzle || !state || state.over) return;
+    if (saved?.hint === undefined) {
+      const g = connectHint(puzzle, guesses);
+      if (!g) return;
+      connectProgress.set(num, { guesses, ...saved, hint: g.level, at: Date.now() });
+    }
     wordsAudio.tap();
-    connectProgress.set(num, { guesses, ...saved, hint: g.level, at: Date.now() });
+    setHintOpen(true);
   };
 
   const giveUp = () => {
@@ -166,10 +207,8 @@ export function ConnectPlay() {
   const reveal = state.over ? puzzle.groups.filter((g) => !state.found.includes(g)) : [];
   const hasNext = num < levels.length;
   const tier = tierOf(level);
-  const hintGroup =
-    saved?.hint !== undefined && !state.over
-      ? puzzle.groups.find((g) => g.level === saved.hint && !state.found.includes(g))
-      : undefined;
+  const hintGroup = saved?.hint !== undefined ? puzzle.groups.find((g) => g.level === saved.hint) : undefined;
+  const hintFound = !!hintGroup && state.found.includes(hintGroup);
   const hintUsed = saved?.hint !== undefined;
   const klass = connectClass(state.won, state.errors, state.gaveUp);
 
@@ -182,7 +221,6 @@ export function ConnectPlay() {
       className="cx-theme"
       right={<Pill tone="paper">{tier}</Pill>}
     >
-      <Confetti burst={state.won ? burst : 0} />
       <Tabs
         label="Seções"
         value={tab}
@@ -226,14 +264,8 @@ export function ConnectPlay() {
             )}
           </div>
 
-          {hintGroup && (
-            <div className={`cx-hint l${hintGroup.level}`} role="status" data-testid="hint-text">
-              <span className="mono">Nome do conjunto</span>
-              <b>{hintGroup.title}</b>
-            </div>
-          )}
-
           <div className="cx-found">
+            <Celebrate burst={spark} kind="spark" />
             {state.found.map((g) => (
               <Band key={g.title} group={g} />
             ))}
@@ -262,24 +294,55 @@ export function ConnectPlay() {
                   );
                 })}
               </div>
-              <div className="cx-actions">
-                <button type="button" className="btn ghost" onClick={shuffle} data-testid="shuffle">
-                  Embaralhar
-                </button>
-                <button type="button" className="btn ghost" onClick={() => setPicked([])} data-testid="clear">
-                  Limpar
-                </button>
-                <button type="button" className="btn alt" disabled={picked.length !== 4} onClick={submit} data-testid="submit">
-                  Enviar {picked.length}/4
-                </button>
-              </div>
-              <div className="cx-aux">
-                <button type="button" className="btn ghost cx-hintbtn" onClick={useHint} disabled={hintUsed} data-testid="hint">
-                  {hintUsed ? 'Dica usada' : 'Dica (1 por fase)'}
-                </button>
-                <button type="button" className="cx-giveup mono" onClick={() => setAskGiveUp(true)} data-testid="giveup">
-                  Desistir
-                </button>
+              <div className="cx-controls">
+                <div className="cx-actions">
+                  <button type="button" className="cx-btn shuffle" onClick={shuffle} data-testid="shuffle">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M3 7h3.5c3.5 0 5 10 8.5 10H21M3 17h3.5c1.4 0 2.4-1.5 3.3-3.2M21 7h-6c-1.4 0-2.4 1.5-3.3 3.2" />
+                      <path d="M18 4l3 3-3 3M18 14l3 3-3 3" />
+                    </svg>
+                    Embaralhar
+                  </button>
+                  <button type="button" className="cx-btn clear" onClick={() => setPicked([])} data-testid="clear">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M6 6l12 12M18 6L6 18" />
+                    </svg>
+                    Limpar
+                  </button>
+                  <button type="button" className="cx-btn send" disabled={picked.length !== 4} onClick={submit} data-testid="submit">
+                    Enviar {picked.length}/4
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M4 12.5l5 5L20 6.5" />
+                    </svg>
+                  </button>
+                </div>
+                <div className="cx-aux">
+                  <button
+                    type="button"
+                    className={`cx-btn hint${hintUsed ? ' seen' : ''}`}
+                    onClick={useHint}
+                    aria-label={hintUsed ? 'Ver a dica' : 'Usar a dica (1 por fase)'}
+                    data-testid="hint"
+                  >
+                    {hintUsed ? (
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                    ) : (
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z" />
+                      </svg>
+                    )}
+                    {hintUsed ? 'Ver dica' : 'Dica'}
+                  </button>
+                  <button type="button" className="cx-btn giveup" onClick={() => setAskGiveUp(true)} data-testid="giveup">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M5 21V4M5 4h11l-2 4 2 4H5" />
+                    </svg>
+                    Desistir
+                  </button>
+                </div>
               </div>
             </>
           )}
@@ -287,6 +350,7 @@ export function ConnectPlay() {
           {state.over && (
             <ResultSheet
               won={state.won}
+              epic={state.won && state.errors === 0}
               stamp={klass.name}
               label="ERROS"
               value={state.errors}
@@ -308,6 +372,10 @@ export function ConnectPlay() {
             </ResultSheet>
           )}
         </>
+      )}
+
+      {hintOpen && hintGroup && (
+        <HintPopup group={hintGroup} found={hintFound} onClose={() => setHintOpen(false)} />
       )}
 
       <ConfirmDialog
