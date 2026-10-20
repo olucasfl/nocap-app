@@ -426,17 +426,25 @@
   /* o tamanho da letra acompanha a palavra mais longa da casa, sem quebrar no meio */
   font-size: clamp(8px, calc(((100cqw - 24px) / 4 - 14px) / (var(--len, 6) * 0.8)), 15px);
   overflow-wrap: normal;
-  hyphens: none;
+  hyphens: manual;
+  text-wrap: balance;
 }
 .wd-app.fit .cx-theme {
   gap: 8px;
 }
-.wd-app.fit [data-testid='grid'].cx-grid {
+/* as casas têm sempre o mesmo tamanho (como se a grade tivesse 4 linhas): quando sobram poucas palavras elas
+   continuam do mesmo jeito, no topo, e não viram retângulos esticados */
+.cx-gridwrap {
   flex: 1;
   min-height: 0;
-  max-height: 400px;
-  grid-auto-rows: minmax(0, 1fr);
-  align-content: stretch;
+  container-type: size;
+  display: grid;
+  align-items: start;
+}
+.wd-app.fit [data-testid='grid'].cx-grid {
+  --h: min(calc((100cqw - 24px) / 4 * 0.9), calc((100cqh - (var(--rows, 4) - 1) * 8px) / var(--rows, 4)), 96px);
+  grid-auto-rows: var(--h);
+  align-content: start;
 }
 .wd-app.fit .cx-word {
   min-height: 0;

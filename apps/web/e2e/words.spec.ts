@@ -363,7 +363,7 @@ test.describe("Bee Word's (fases offline)", () => {
 
 test.describe("Connect Word's (fases offline)", () => {
   const first = CONNECT[0]!;
-  const word = (page: Page, w: string) => page.locator('.cx-word', { hasText: new RegExp(`^${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`) });
+  const word = (page: Page, w: string) => page.locator(`.cx-word[data-word="${w}"]`);
   const pick = async (page: Page, words: string[]) => {
     for (const w of words) await word(page, w).click();
   };
@@ -491,7 +491,7 @@ test.describe("Connect Word's (fases offline)", () => {
 
 test.describe("Connect Word's (fases offline)", () => {
   const first = CONNECT[0]!;
-  const word = (page: Page, w: string) => page.locator('.cx-word', { hasText: new RegExp(`^${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`) });
+  const word = (page: Page, w: string) => page.locator(`.cx-word[data-word="${w}"]`);
   const pick = async (page: Page, words: string[]) => {
     for (const w of words) await word(page, w).click();
   };

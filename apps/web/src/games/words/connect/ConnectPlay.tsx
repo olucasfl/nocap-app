@@ -12,6 +12,25 @@ import './connect.css';
 /** Agrupa o tamanho das palavras em faixas: a letra não muda de tamanho a cada palavra, só quando precisa. */
 const bucket = (n: number) => (n <= 6 ? 6 : n <= 8 ? 8 : n);
 
+const VOWELS = 'aeiouáâãàéêíóôõú';
+/**
+ * Palavra comprida (CHURRASQUEIRA) não cabe numa casa estreita do celular: ganha um hífen opcional perto do
+ * meio, que só aparece se ela precisar quebrar em duas linhas. O texto continua o mesmo (`data-word`).
+ */
+function softBreak(word: string): string {
+  if (word.includes(' ') || word.length <= 8) return word;
+  const mid = Math.round(word.length / 2);
+  for (const d of [0, 1, -1, 2, -2]) {
+    const i = mid + d;
+    if (i >= 3 && i <= word.length - 3 && Math.max(i, word.length - i) <= Math.ceil(word.length / 2) + 1 && VOWELS.includes(word[i - 1]!.toLowerCase()) && !VOWELS.includes(word[i]!.toLowerCase())) {
+      return `${word.slice(0, i)}\u00ad${word.slice(i)}`;
+    }
+  }
+  return `${word.slice(0, mid)}\u00ad${word.slice(mid)}`;
+}
+/** O tamanho da letra pede o maior pedaço que cabe numa linha (já contando o hífen). */
+const longest = (w: string) => (w.includes(' ') || w.length <= 8 ? Math.max(...w.split(' ').map((x) => x.length)) : Math.ceil(w.length / 2) + 1);
+
 /** O popup da dica: o nome de um conjunto que falta, num cartão especial. Dá para abrir de novo quando quiser. */
 function HintPopup({ group, found, onClose }: { group: ConnectGroup; found: boolean; onClose: () => void }) {
   useEffect(() => {
@@ -276,23 +295,32 @@ export function ConnectPlay() {
 
           {!state.over && (
             <>
-              <div className={`cx-grid${shake ? ' shake' : ''}`} role="group" aria-label="Palavras" data-testid="grid">
+              <div className="cx-gridwrap">
+              <div
+                className={`cx-grid${shake ? ' shake' : ''}`}
+                style={{ '--rows': Math.ceil(words.length / 4) } as CSSProperties}
+                role="group"
+                aria-label="Palavras"
+                data-testid="grid"
+              >
                 {words.map((w, i) => {
                   const at = picked.indexOf(w);
                   return (
                     <button
                       key={w}
                       type="button"
-                      className={`cx-word${at >= 0 ? ' on' : ''}${w.length > 9 ? ' long' : ''}`}
-                      style={{ '--i': i, '--len': bucket(Math.max(...w.split(' ').map((x) => x.length))) } as CSSProperties}
+                      data-word={w}
+                      className={`cx-word${at >= 0 ? ' on' : ''}`}
+                      style={{ '--i': i, '--len': bucket(longest(w)) } as CSSProperties}
                       aria-pressed={at >= 0}
                       onClick={() => toggle(w)}
                     >
                       {at >= 0 && <span className="order">{at + 1}</span>}
-                      {w}
+                      {softBreak(w)}
                     </button>
                   );
                 })}
+              </div>
               </div>
               <div className="cx-controls">
                 <div className="cx-actions">
