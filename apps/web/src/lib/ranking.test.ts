@@ -33,8 +33,8 @@ describe('página de ranking', () => {
   });
 
   it('o Daily abre em hoje; os outros na semana', () => {
-    expect(defaultPeriod('daily')).toBe('day');
-    expect(defaultPeriod('classic')).toBe('week');
+    expect(defaultPeriod('daily')).toBe('all');
+    expect(defaultPeriod('classic')).toBe('all');
   });
 
   it('a URL só aceita jogo, modo, período e recorte que existem', () => {

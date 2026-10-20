@@ -1,475 +1,661 @@
-/* Ranking: a página inteira usa a cor do jogo escolhido (--accent). */
-.rks {
+/*
+ * Ranking: a página usa a cor do jogo escolhido (--accent). Blocos: cabeçalho do jogo, filtros, classificação
+ * (pódio + lista) e a sua posição fixa embaixo. Só tokens do Pop Brutal; só transform e opacity animam.
+ */
+.rkp {
   --accent: var(--orange);
   --on: var(--on-accent);
-  --soft: color-mix(in srgb, var(--accent) 38%, var(--white));
-  --softer: color-mix(in srgb, var(--accent) 18%, var(--white));
+  --dots: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20'%3E%3Ccircle cx='10' cy='10' r='1.5' fill='%23111' fill-opacity='.18'/%3E%3C/svg%3E");
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding-bottom: 8px;
+  gap: 16px;
+  padding-bottom: 96px;
 }
-.rks.time {
+.rkp.time {
   --accent: var(--blue);
   --on: var(--on-blue);
 }
-.rks.eco {
+.rkp.eco {
   --accent: var(--green);
   --on: var(--on-accent);
 }
-.rks.atravessa {
+.rkp.atravessa {
   --accent: var(--eco-red);
   --on: var(--on-blue);
 }
-.rks.blocks {
+.rkp.blocks {
   --accent: var(--yellow);
   --on: var(--on-accent);
 }
-.rks-head h1 {
-  margin: 0;
+.rkp.wclassic {
+  --accent: var(--eco-cyan);
+  --on: var(--on-accent);
 }
-.rks-lead {
+.rkp > * {
+  animation: rkp-in 0.4s cubic-bezier(0.2, 1.2, 0.4, 1) both;
+}
+.rkp > *:nth-child(2) {
+  animation-delay: 0.05s;
+}
+.rkp > *:nth-child(3) {
+  animation-delay: 0.1s;
+}
+.rkp > *:nth-child(n + 4) {
+  animation-delay: 0.15s;
+}
+
+.rkp-head h1 {
+  margin: 0;
+  font: 900 clamp(30px, 8vw, 44px) var(--font-display);
+  letter-spacing: -0.05em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+.rkp-head p {
   margin: 6px 0 0;
   font-size: 12px;
   color: var(--muted);
+  text-transform: uppercase;
 }
 
-/* Jogo: três botões grandes com a arte de cada jogo. */
-.rks-games {
+/* ---------- 1. o jogo ---------- */
+.rkp-hero {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-}
-.rks-game {
-  appearance: none;
-  display: flex;
-  flex-direction: column;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 6px;
-  padding: 8px 2px;
-  background: var(--white);
-  color: var(--ink);
+  gap: 14px;
+  padding: 14px;
   border: var(--border);
-  border-radius: var(--radius-sm);
-  box-shadow: 3px 3px 0 var(--ink);
+  border-radius: 20px;
+  background: var(--accent) var(--dots);
+  color: var(--on);
+  box-shadow: 5px 5px 0 var(--ink);
+}
+.rkp-hero-art {
+  width: 72px;
+  height: 72px;
+  display: grid;
+  place-items: center;
+}
+.rkp-hero-text {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.rkp-hero-text .mono {
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+}
+.rkp-hero-text b {
+  font: 900 clamp(22px, 6vw, 30px) var(--font-display);
+  letter-spacing: -0.045em;
+  text-transform: uppercase;
+  line-height: 0.95;
+}
+.rkp-chip {
+  justify-self: start;
+  padding: 3px 10px;
+  border: 2.5px solid var(--ink);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.rkp-switch {
+  appearance: none;
+  align-self: start;
+  padding: 9px 12px;
+  border: var(--border);
+  border-radius: 12px;
+  background: var(--party-bg);
+  color: var(--party-fg);
   font: 900 12px var(--font-display);
   text-transform: uppercase;
   cursor: pointer;
+  transition: transform 0.08s ease-out;
 }
-.rks-game[aria-selected='true'] {
+.rkp-switch:active {
   transform: translate(2px, 2px);
-  box-shadow: 1px 1px 0 var(--ink);
-}
-.rks-game.color[aria-selected='true'] {
-  background: var(--orange);
-  color: var(--on-accent);
-}
-.rks-game.time[aria-selected='true'] {
-  background: var(--blue);
-  color: var(--on-blue);
-}
-.rks-game.eco[aria-selected='true'] {
-  background: var(--green);
-  color: var(--on-accent);
-}
-.rks-game.atravessa[aria-selected='true'] {
-  background: var(--eco-red);
-  color: var(--on-blue);
-}
-.rks-game.blocks[aria-selected='true'] {
-  background: var(--yellow);
-  color: var(--on-accent);
 }
 
-/* Painel de filtros: borda e faixa de cima na cor do jogo. */
-.rks-panel {
-  display: flex;
-  flex-direction: column;
+/* ---------- 2. os filtros ---------- */
+.rkp-filters {
+  display: grid;
   gap: 12px;
-  padding: 12px 12px 10px;
-  background: var(--white);
+  padding: 12px;
   border: var(--border);
-  border-top: 8px solid var(--accent);
-  border-radius: var(--radius-lg);
-  box-shadow: 3px 3px 0 var(--ink);
+  border-radius: 18px;
+  background: var(--white);
+  box-shadow: 4px 4px 0 var(--ink);
 }
-.rks-label {
-  display: block;
-  margin-bottom: 6px;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  color: var(--muted);
-}
-
-/* Modo: chips (formato redondo). Escolhido = cor do jogo. O Daily tem borda tracejada e um selo. */
-.rks-modes {
+.rkp-cats {
   display: flex;
-  flex-wrap: wrap;
   gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
 }
-.rks-modes button {
+.rkp-cats::-webkit-scrollbar {
+  display: none;
+}
+.rkp-cats button {
   appearance: none;
+  flex: none;
   padding: 8px 14px;
+  border: 2.5px solid var(--ink);
+  border-radius: 999px;
   background: var(--paper);
   color: var(--ink);
-  border: var(--border);
-  border-radius: 999px;
   font: 900 13px var(--font-display);
   cursor: pointer;
+  transition: transform 0.12s cubic-bezier(0.2, 1.4, 0.4, 1);
 }
-.rks-modes button[aria-selected='true'] {
+.rkp-cats button[aria-selected='true'] {
   background: var(--accent);
   color: var(--on);
-  box-shadow: 2px 2px 0 var(--ink);
+  transform: translateY(-2px);
+  box-shadow: 0 3px 0 var(--ink);
 }
-.rks-modes button.daily {
-  border-style: dashed;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-.rks-modes button.daily::before {
-  content: '';
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: var(--yellow);
-  border: 2px solid var(--ink);
-}
-
-/* Período: faixa emendada. Escolhido = tom claro da cor do jogo com sublinhado grosso. */
-.rks-filters {
+.rkp-row2 {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 12px;
+  gap: 10px;
 }
-.rks-filters .rks-field:first-child {
-  flex: 1 1 200px;
-  min-width: 0;
-}
-.rks-seg {
-  display: flex;
-  border: var(--border);
-  border-radius: var(--radius-sm);
+.rkp-seg {
+  display: inline-grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  flex: 1;
+  min-width: 190px;
+  border: 2.5px solid var(--ink);
+  border-radius: 12px;
   overflow: hidden;
   background: var(--paper);
 }
-.rks-seg button {
+.rkp-seg.who {
+  flex: none;
+  min-width: 150px;
+}
+.rkp-seg button {
   appearance: none;
-  flex: 1;
-  height: 40px;
-  padding: 0 8px;
+  height: 38px;
+  padding: 0 10px;
+  border: 0;
+  border-left: 2.5px solid var(--ink);
   background: transparent;
   color: var(--ink);
-  border: 0;
-  border-right: 2px solid var(--ink);
-  font: 700 13px var(--font-mono);
+  font: 900 12.5px var(--font-display);
+  text-transform: uppercase;
   cursor: pointer;
 }
-.rks-seg button:last-child {
-  border-right: 0;
+.rkp-seg button:first-child {
+  border-left: 0;
 }
-.rks-seg button[aria-checked='true'] {
-  background: var(--soft);
-  color: var(--ink);
-  font-weight: 900;
-  box-shadow: inset 0 -5px 0 var(--accent);
+.rkp-seg button[aria-checked='true'] {
+  background: var(--party-bg);
+  color: var(--party-fg);
+}
+.rkp-note {
+  margin: 0;
+  font-size: 10.5px;
+  color: var(--muted);
+  text-transform: uppercase;
 }
 
-/* Só amigos: chave liga/desliga (formato próprio, diferente dos chips e da faixa). */
-.rks-friends {
-  flex: 0 0 auto;
+/* ---------- 3. a classificação ---------- */
+.rkp-board {
+  display: grid;
+  gap: 12px;
 }
-.rks-switch {
-  appearance: none;
-  position: relative;
-  width: 64px;
-  height: 40px;
-  padding: 0;
-  border: var(--border);
-  border-radius: 999px;
-  background: var(--paper);
-  cursor: pointer;
-}
-.rks-switch i {
-  position: absolute;
-  top: 5px;
-  left: 5px;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: var(--ink);
-  transition: transform 0.12s ease-out;
-}
-.rks-switch[aria-checked='true'] {
-  background: var(--accent);
-}
-.rks-switch[aria-checked='true'] i {
-  transform: translateX(24px);
-  background: var(--white);
-  outline: 2px solid var(--ink);
-}
-.rks-game:focus-visible,
-.rks-modes button:focus-visible,
-.rks-seg button:focus-visible,
-.rks-switch:focus-visible,
-.rks-play:focus-visible {
-  outline: 3px solid var(--ink);
-  outline-offset: 2px;
-}
-.rks-note {
+.rkp-h {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
   margin: 0;
-  font-size: 11px;
+  font: 900 20px var(--font-display);
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+}
+.rkp-h small {
+  font-size: 10.5px;
   font-weight: 700;
   color: var(--muted);
 }
-.rks-empty {
-  margin: 0;
-}
-
-/* Sua posição: logo acima do pódio, na cor do jogo (a do primeiro lugar ganha coroa de ouro). */
-.rks-me {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 12px 14px;
-  background: var(--accent);
-  color: var(--on);
-  border: var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow);
-}
-.rks-me.first {
-  background: var(--yellow);
-  color: var(--on-accent);
-}
-.rks-me.out {
-  background: var(--white);
-  color: var(--ink);
-  border-style: dashed;
-  box-shadow: none;
-  justify-content: space-between;
-}
-.rks-me-pos {
-  min-width: 52px;
-  font: 900 40px/1 var(--font-display);
-  letter-spacing: -0.04em;
-}
-.rks-me-body {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-.rks-me-body b {
-  font: 900 17px var(--font-display);
-}
-.rks-me-body .mono {
-  font-size: 11px;
-  font-weight: 700;
-  overflow-wrap: anywhere;
-}
-.rks-play {
-  flex-shrink: 0;
-  padding: 10px 16px;
-  background: var(--accent);
-  color: var(--on);
-  border: var(--border);
-  border-radius: 10px;
-  font: 900 14px var(--font-display);
-  text-transform: uppercase;
-  text-decoration: none;
-}
-
-/* Pódio: degraus em tons da cor do jogo; o campeão no meio, mais alto, com coroa. */
-.rks-podium {
+.rkp-podium {
   list-style: none;
-  margin: 6px 0 0;
-  padding: 0;
+  margin: 0;
+  padding: 14px 10px 0;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: end;
   gap: 8px;
+  border: var(--border);
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--accent) 22%, var(--white)) var(--dots);
+  box-shadow: 4px 4px 0 var(--ink);
+  overflow: hidden;
 }
-.rks-pod {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
+.rkp-pod {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
   min-width: 0;
-  text-align: center;
+  animation: rkp-rise 0.5s cubic-bezier(0.2, 1.3, 0.4, 1) both;
+  animation-delay: calc(var(--i) * 0.1s + 0.2s);
 }
-.rks-pod.p1 > svg {
+.rkp-pod.empty {
+  visibility: hidden;
+}
+.rkp-pod svg {
   color: var(--ink);
+  fill: var(--yellow);
+  animation: rkp-crown 2.4s ease-in-out infinite;
 }
-.rks-pod-avatar {
-  width: 46px;
-  height: 46px;
+.rkp-avatar {
+  width: 52px;
+  height: 52px;
   display: grid;
   place-items: center;
-  background: var(--white);
-  color: var(--ink);
   border: var(--border);
   border-radius: 50%;
+  background: var(--white);
+  color: var(--ink);
   font: 900 22px var(--font-display);
 }
-.rks-pod.p1 .rks-pod-avatar {
-  width: 58px;
-  height: 58px;
-  font-size: 28px;
+.rkp-avatar.sm {
+  width: 36px;
+  height: 36px;
+  font-size: 16px;
+  border-width: 2.5px;
+}
+.rkp-pod.p1 .rkp-avatar {
+  width: 62px;
+  height: 62px;
   background: var(--yellow);
   color: var(--on-accent);
+  box-shadow: 0 0 0 3px var(--paper), 0 0 0 5.5px var(--ink);
 }
-.rks-pod-name {
+.rkp-pod.p3 .rkp-avatar {
+  background: var(--orange);
+  color: var(--on-accent);
+}
+.rkp-pod-name {
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font: 900 13px var(--font-display);
 }
-.rks-you {
-  padding: 1px 6px;
-  background: var(--ink);
-  color: var(--paper);
+.rkp-pod-score {
+  font: 900 18px var(--font-display);
+  letter-spacing: -0.03em;
+}
+.rkp-pod-score small {
+  margin-left: 3px;
+  font: 700 10px var(--font-mono);
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.rkp-step {
+  width: 100%;
+  display: grid;
+  place-items: center;
+  margin-top: 4px;
+  border: var(--border);
+  border-bottom: 0;
+  border-radius: 12px 12px 0 0;
+  background: var(--white);
+  color: var(--ink);
+  font: 900 26px var(--font-display);
+}
+.rkp-pod.p1 .rkp-step {
+  height: 74px;
+  background: var(--yellow);
+  color: var(--on-accent);
+}
+.rkp-pod.p2 .rkp-step {
+  height: 54px;
+}
+.rkp-pod.p3 .rkp-step {
+  height: 40px;
+  background: var(--orange);
+  color: var(--on-accent);
+}
+.rkp-you {
+  padding: 1px 7px;
   border-radius: 999px;
+  background: var(--party-bg);
+  color: var(--party-fg);
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.06em;
 }
-.rks-pod-score {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  font: 900 20px var(--font-display);
-  letter-spacing: -0.04em;
-}
-.rks-pod-score small {
-  font-size: 10px;
-  font-weight: 700;
-}
-.rks-pod-step {
-  width: 100%;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding-top: 6px;
-  border: var(--border);
-  border-bottom: 0;
-  border-radius: 12px 12px 0 0;
-  background: var(--softer);
-}
-.rks-pod-step b {
-  font: 900 28px/1 var(--font-display);
-}
-.rks-pod.p1 .rks-pod-step {
-  height: 100px;
-  background: var(--accent);
-  color: var(--on);
-}
-.rks-pod.p2 .rks-pod-step {
-  height: 72px;
-  background: var(--soft);
-}
-.rks-pod.p3 .rks-pod-step {
-  height: 54px;
-}
-.rks-pod.me .rks-pod-avatar {
-  outline: 3px solid var(--ink);
-  outline-offset: 2px;
+.rkp-pod.me .rkp-pod-name {
+  text-decoration: underline;
+  text-decoration-thickness: 3px;
 }
 
-/* Lista do 4º em diante. */
-.rks-list {
+.rkp-list {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: flex;
-  flex-direction: column;
+  display: grid;
   gap: 8px;
 }
-.rks-item {
+.rkp-row {
   display: grid;
-  grid-template-columns: 30px 38px 1fr auto;
+  grid-template-columns: 34px auto 1fr auto;
   align-items: center;
   gap: 10px;
-  padding: 10px 12px;
+  padding: 9px 12px;
+  border: var(--border);
+  border-radius: 14px;
   background: var(--white);
-  border: var(--border);
-  border-radius: var(--radius-sm);
+  color: var(--ink);
   box-shadow: 3px 3px 0 var(--ink);
+  animation: rkp-in 0.35s cubic-bezier(0.2, 1.2, 0.4, 1) both;
+  animation-delay: calc(var(--i) * 0.03s);
 }
-.rks-item.me {
-  background: var(--soft);
+.rkp-row.me {
+  background: var(--yellow);
+  color: var(--on-accent);
 }
-.rks-pos {
-  font: 900 16px var(--font-display);
-  text-align: center;
-}
-.rks-avatar {
-  width: 38px;
-  height: 38px;
-  display: grid;
-  place-items: center;
-  background: var(--softer);
-  border: var(--border);
-  border-radius: 10px;
+.rkp-pos {
   font: 900 18px var(--font-display);
+  letter-spacing: -0.03em;
+  color: var(--muted);
 }
-.rks-item.me .rks-avatar {
-  background: var(--accent);
-  color: var(--on);
+.rkp-row.me .rkp-pos {
+  color: var(--on-accent);
 }
-.rks-who {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  min-width: 0;
-}
-.rks-name {
+.rkp-who {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font: 900 15px var(--font-display);
+  font: 900 14px var(--font-display);
 }
-.rks-bar {
-  display: block;
-  height: 6px;
-  background: var(--softer);
-  border: 1.5px solid var(--ink);
-  border-radius: 999px;
-  overflow: hidden;
+.rkp-score {
+  font: 900 17px var(--font-display);
+  letter-spacing: -0.03em;
+  white-space: nowrap;
 }
-.rks-bar i {
-  display: block;
-  height: 100%;
-  background: var(--accent);
+.rkp-score small {
+  margin-left: 4px;
+  font: 700 10px var(--font-mono);
+  color: var(--muted);
+  text-transform: uppercase;
 }
-.rks-score {
-  display: flex;
-  align-items: baseline;
-  gap: 4px;
-  font: 900 20px var(--font-display);
-  letter-spacing: -0.04em;
-}
-.rks-score small {
-  font-size: 11px;
-  font-weight: 700;
+.rkp-row.me .rkp-score small {
+  color: var(--on-accent);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .rks-switch i {
-    transition: none;
+/* ---------- vazio, carregando e visitante ---------- */
+.rkp-empty {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 24px 16px;
+  border: 2.5px dashed var(--ink);
+  border-radius: 20px;
+  text-align: center;
+}
+.rkp-empty b {
+  font: 900 20px var(--font-display);
+  text-transform: uppercase;
+}
+.rkp-empty .mono {
+  max-width: 34ch;
+  font-size: 11px;
+  color: var(--muted);
+}
+.rkp-empty .btn {
+  height: 50px;
+  max-width: 260px;
+  margin-top: 6px;
+}
+.rkp-guest {
+  margin: 0;
+  font-size: 13px;
+}
+.rkp-skel {
+  display: grid;
+  gap: 8px;
+}
+.rkp-skel i,
+.rkp-skel-pod {
+  display: block;
+  height: 52px;
+  border: 2.5px solid var(--ink);
+  border-radius: 14px;
+  background: var(--white);
+  opacity: 0.5;
+  animation: rkp-pulse 1.2s ease-in-out infinite;
+  animation-delay: calc(var(--i, 0) * 0.12s);
+}
+.rkp-skel-pod {
+  height: 150px;
+  border-radius: 20px;
+}
+
+/* ---------- 4. sua posição (fixa embaixo) ---------- */
+.rkp-me {
+  position: sticky;
+  bottom: calc(96px + env(safe-area-inset-bottom));
+  z-index: 5;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border: var(--border);
+  border-radius: 16px;
+  background: var(--party-bg);
+  color: var(--party-fg);
+  box-shadow: 4px 4px 0 var(--accent);
+}
+.rkp-me.out {
+  grid-template-columns: 1fr auto;
+}
+.rkp-me.first {
+  box-shadow: 4px 4px 0 var(--yellow);
+}
+.rkp-me-pos {
+  min-width: 48px;
+  display: grid;
+  place-items: center;
+  padding: 6px 8px;
+  border-radius: 12px;
+  background: var(--accent);
+  color: var(--on);
+  font: 900 22px var(--font-display);
+}
+.rkp-me-body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.rkp-me-body b {
+  font: 900 15px var(--font-display);
+}
+.rkp-me-body small {
+  margin-left: 3px;
+  font: 700 10px var(--font-mono);
+  opacity: 0.8;
+  text-transform: uppercase;
+}
+.rkp-me-body .mono {
+  font-size: 10.5px;
+  opacity: 0.85;
+  text-transform: uppercase;
+}
+.rkp-play {
+  padding: 9px 14px;
+  border: 2.5px solid var(--party-fg);
+  border-radius: 12px;
+  background: var(--accent);
+  color: var(--on);
+  font: 900 13px var(--font-display);
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+/* ---------- janela de escolher o jogo ---------- */
+.rkp-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  align-items: end;
+  background: rgba(17, 17, 17, 0.55);
+  animation: rkp-fade 0.2s ease both;
+}
+.rkp-sheet {
+  display: grid;
+  gap: 12px;
+  padding: 16px 16px calc(20px + env(safe-area-inset-bottom));
+  border: var(--border);
+  border-bottom: 0;
+  border-radius: 22px 22px 0 0;
+  background: var(--paper);
+  animation: rkp-sheet 0.3s cubic-bezier(0.2, 1.1, 0.4, 1) both;
+}
+.rkp-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.rkp-sheet-head b {
+  font: 900 20px var(--font-display);
+  text-transform: uppercase;
+}
+.rkp-close {
+  appearance: none;
+  width: 38px;
+  height: 38px;
+  border: var(--border);
+  border-radius: 50%;
+  background: var(--white);
+  color: var(--ink);
+  font: 900 22px/1 var(--font-display);
+  cursor: pointer;
+}
+.rkp-sheet-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.rkp-pick {
+  appearance: none;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 10px 4px;
+  border: var(--border);
+  border-radius: 14px;
+  background: var(--white);
+  color: var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+  font: 900 12px var(--font-display);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.rkp-pick.on {
+  background: var(--yellow);
+  color: var(--on-accent);
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+
+@keyframes rkp-in {
+  from {
+    transform: translateY(14px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes rkp-rise {
+  from {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes rkp-crown {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-4deg);
+  }
+  50% {
+    transform: translateY(-4px) rotate(4deg);
+  }
+}
+@keyframes rkp-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+@keyframes rkp-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes rkp-sheet {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: none;
   }
 }
 
-/* Celular: a barra de navegação é fixa no rodapé; sem esta folga ela cobre o fim da lista. */
-@media (max-width: 767px) {
-  .rks {
-    padding-bottom: calc(110px + env(safe-area-inset-bottom));
+/* Tablet e computador: o menu fica ao lado, a posição fixa desce e a janela vira um cartão no centro */
+@media (min-width: 768px) {
+  .rkp {
+    padding-bottom: 24px;
+  }
+  .rkp-me {
+    bottom: 16px;
+  }
+  .rkp-backdrop {
+    align-items: center;
+    justify-items: center;
+  }
+  .rkp-sheet {
+    width: min(480px, 92vw);
+    border: var(--border);
+    border-radius: 22px;
+    box-shadow: 6px 6px 0 var(--ink);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rkp > *,
+  .rkp-pod,
+  .rkp-pod svg,
+  .rkp-row,
+  .rkp-skel i,
+  .rkp-skel-pod,
+  .rkp-backdrop,
+  .rkp-sheet {
+    animation: none !important;
   }
 }

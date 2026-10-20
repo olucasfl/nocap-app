@@ -43,12 +43,12 @@ export interface Ranking {
 }
 
 export const GAMES: { id: Game; label: string }[] = [
+  { id: 'wclassic', label: "Classic Word's" },
+  { id: 'blocks', label: "Block's" },
+  { id: 'atravessa', label: 'Atravessa!' },
   { id: 'color', label: 'Mesmíssima' },
   { id: 'time', label: 'Já Deu?' },
   { id: 'eco', label: 'Ecooo' },
-  { id: 'blocks', label: "Block's" },
-  { id: 'atravessa', label: 'Atravessa!' },
-  { id: 'wclassic', label: "Classic Word's" },
 ];
 
 const ALL_BOARDS: { id: Board; label: string }[] = [
@@ -134,8 +134,8 @@ export interface RankingsSearch {
 const GAME_IDS: Game[] = ['color', 'time', 'eco', 'blocks', 'atravessa', 'wclassic'];
 const PERIOD_IDS: Period[] = ['day', 'week', 'all'];
 
-/** O período de abertura de cada quadro: o Daily abre em hoje, os outros na semana. */
-export const defaultPeriod = (board: Board): Period => (board === 'daily' ? 'day' : 'week');
+/** O período de abertura de todo quadro é sempre "Sempre". */
+export const defaultPeriod = (_board: Board): Period => 'all';
 
 /** Quadros de um jogo para escolher, o Daily por último. */
 export const boardChoices = (game: Game): { id: Board; label: string }[] => [
