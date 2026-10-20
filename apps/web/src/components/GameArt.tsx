@@ -60,6 +60,20 @@ export function GameArt({ game, size = 'md' }: { game: GameId; size?: 'sm' | 'md
       </div>
     );
   }
+  if (game === 'wclassic') {
+    return (
+      <div className={`ga ga-blocks ${size}`} aria-hidden="true">
+        <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="4" strokeLinejoin="round">
+          <rect x="6" y="10" width="14" height="20" rx="3" fill="currentColor" />
+          <rect x="25" y="10" width="14" height="20" rx="3" />
+          <rect x="44" y="10" width="14" height="20" rx="3" fill="currentColor" />
+          <rect x="6" y="36" width="14" height="20" rx="3" />
+          <rect x="25" y="36" width="14" height="20" rx="3" fill="currentColor" />
+          <rect x="44" y="36" width="14" height="20" rx="3" />
+        </svg>
+      </div>
+    );
+  }
   return (
     <div className={`ga ga-time ${size}`} aria-hidden="true">
       <svg

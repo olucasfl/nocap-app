@@ -61,9 +61,9 @@
 /* ---------- 1. o jogo ---------- */
 .rkp-hero {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 1fr;
   align-items: center;
-  gap: 14px;
+  gap: 12px 14px;
   padding: 14px;
   border: var(--border);
   border-radius: 20px;
@@ -105,7 +105,8 @@
 }
 .rkp-switch {
   appearance: none;
-  align-self: start;
+  grid-column: 1 / -1;
+  justify-self: stretch;
   padding: 9px 12px;
   border: var(--border);
   border-radius: 12px;
