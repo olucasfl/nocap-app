@@ -110,7 +110,7 @@ export const PERIODS: { id: Period; label: string }[] = [
 export function boardMax(game: Game, board: Board): number {
   // Sobrevivência (rodadas) e Eco (passos) não têm máximo de pontos.
   if (board === 'survival' || game === 'eco' || game === 'blocks' || game === 'atravessa') return 0;
-  if (game === 'wclassic') return 10;
+  if (game === 'wclassic') return 0;
   if (board === 'quick') return 10;
   if (board === 'sequence') return 50;
   if (board === 'daily') return game === 'time' ? 30 : 50;
@@ -169,16 +169,20 @@ export interface Neighbors {
   below: { username: string; gap: number } | null;
 }
 
-/** Vizinhos da minha posição na lista (só quando eu apareço nela). */
-export function neighborsOf(entries: RankingEntry[]): Neighbors {
+/** No Classic Word's o Daily conta tentativas: quanto MENOS, melhor. */
+export const fewerIsBetter = (game: Game): boolean => game === 'wclassic';
+
+/** Vizinhos da minha posição na lista (só quando eu apareço nela). `lowerWins`: menos é melhor (tentativas). */
+export function neighborsOf(entries: RankingEntry[], lowerWins = false): Neighbors {
   const i = entries.findIndex((e) => e.isMe);
   if (i === -1) return { above: null, below: null };
   const me = entries[i]!;
   const up = entries[i - 1];
   const down = entries[i + 1];
+  const gap = (better: RankingEntry, worse: RankingEntry) => (lowerWins ? worse.score - better.score : better.score - worse.score);
   return {
-    above: up ? { username: up.username, gap: up.score - me.score } : null,
-    below: down ? { username: down.username, gap: me.score - down.score } : null,
+    above: up ? { username: up.username, gap: gap(up, me) } : null,
+    below: down ? { username: down.username, gap: gap(me, down) } : null,
   };
 }
 

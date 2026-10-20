@@ -31,13 +31,19 @@ export class RankingsRepository {
   }): Promise<RankingRow[]> {
     if (!this.maybeDb) throw new ServiceUnavailableException('Banco de dados não configurado');
     const kind = opts.dailyOnly ? sql`and m.kind = 'daily'` : sql`and m.kind <> 'daily'`;
+    // Classic Word's: o Daily conta tentativas, então menos é melhor e o período mostra a MÉDIA (e não a soma).
+    const fewerIsBetter = opts.dailyOnly && opts.game === 'wclassic';
+    const dailyScore = fewerIsBetter ? sql`round(avg(mp.total_score))::int` : sql`sum(mp.total_score)::int`;
+    const order = fewerIsBetter
+      ? sql`order by score asc, days desc, played_at asc`
+      : sql`order by score desc, played_at asc`;
     const since = opts.since
       ? sql`and mp.played_at >= ${opts.since.toISOString()}::timestamptz`
       : sql``;
 
     const body = opts.dailyOnly
       ? sql`
-        select u.id as user_id, u.username, sum(mp.total_score)::int as score,
+        select u.id as user_id, u.username, ${dailyScore} as score,
                count(*)::int as days, max(mp.played_at) as played_at
         from match_players mp
         join matches m on m.id = mp.match_id
@@ -71,7 +77,7 @@ export class RankingsRepository {
     }>(sql`
       with best as (${body})
       select user_id, username, score, days, played_at,
-             row_number() over (order by score desc, played_at asc) as rank
+             row_number() over (${order}) as rank
       from best
       order by rank
     `);

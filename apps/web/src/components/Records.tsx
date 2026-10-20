@@ -5,6 +5,8 @@ import { useQuery } from '@tanstack/react-query';
 import { modeLabel } from '@/lib/labels';
 import {
   fetchStats,
+  formatAttempts,
+  gameModes,
   knownModes,
   countUnit,
   modeMax,
@@ -63,8 +65,7 @@ function ModeTile({ game, mode, stat }: { game: GameId; mode: string; stat?: Mod
 
 /** Um jogo de cada vez: a pessoa escolhe em cima e vê só os modos dele. */
 function RecordsView({ stats }: { stats: Stats }) {
-  const matchesOf = (g: GameId) =>
-    stats.modes.filter((m) => m.game === g).reduce((n, m) => n + m.matches, 0);
+  const matchesOf = (g: GameId) => gameModes(stats, g).reduce((n, m) => n + m.matches, 0);
   const [game, setGame] = useState<GameId>(() => GAMES.find((g) => matchesOf(g) > 0) ?? 'color');
   const daily = stats.daily[game];
   const total = matchesOf(game);
@@ -125,6 +126,9 @@ function RecordsView({ stats }: { stats: Stats }) {
               <span className="mono rc-tile-hint">
                 MELHOR SEQUÊNCIA {streakLabel(daily.best).toUpperCase()}
               </span>
+              {game === 'wclassic' && daily.playedToday && (
+                <span className="mono rc-tile-hint">HOJE: {formatAttempts(daily.totalScore ?? 0).toUpperCase()}</span>
+              )}
             </div>
           </li>
         </ul>

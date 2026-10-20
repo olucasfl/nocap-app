@@ -4,7 +4,6 @@ import {
   CLASSIC_MODE_INFO,
   CLASSIC_RECENT_WORDS,
   CLASSIC_WORD_LENGTH,
-  classicTenths,
   dailyDate,
   encodePattern,
   isClassicMode,
@@ -197,10 +196,14 @@ export class WordsService {
     const nota = gaveUp ? 0 : state.nota;
     const finishedAt = new Date();
     const next: WordRun = { ...run, guesses, state: won ? 'won' : 'lost', finishedAt, matchId: run.id };
+    // O que vale é em quantas tentativas acertou (guardado em décimos, como os outros jogos: 3 tentativas = 30).
+    // Quem não acertou fica com "tentativas + 1", depois de todo mundo que acertou.
+    const lost = CLASSIC_MODE_INFO[run.mode as ClassicMode].tries + 1;
+    const attempts = won ? guesses.length : lost;
     const scored: ScoredMatch = {
-      rounds: state.boards.map((b) => ({ score: gaveUp || b.solvedAt === null ? 0 : nota })),
-      total: nota,
-      totalTenths: classicTenths(nota),
+      rounds: state.boards.map((b) => ({ score: gaveUp || b.solvedAt === null ? lost : b.solvedAt })),
+      total: attempts,
+      totalTenths: attempts * 10,
       encodedAnswers: guesses.map(encodeGuess),
       settings: { won, tries: guesses.length, answers: run.answers.join(',') },
     };

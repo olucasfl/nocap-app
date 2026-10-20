@@ -52,8 +52,8 @@ const MODE_MAX_BY_GAME: Record<GameId, Record<string, number>> = {
   atravessa: { infinito: 0 },
   // Block's: a nota é a pontuação, sem máximo
   blocks: { classic: 0, towers: 0 },
-  // Classic Word's: a nota é de 0 a 10
-  wclassic: { classic: 10, dueto: 10, quarteto: 10 },
+  // Classic Word's: só o Daily conta (em tentativas); as fases são offline e não têm recorde de nota
+  wclassic: {},
 };
 
 /** Sobrevivência: a nota é o número de rodadas jogadas (não tem máximo). */
@@ -71,11 +71,13 @@ export const dailyMax = (game: string) =>
  * Jogos e modos cuja nota é uma contagem, não pontos de 0 a 10 por rodada: a Sobrevivência conta
  * rodadas e o Eco conta passos. `null` quando a nota é em pontos.
  */
-export type CountUnit = 'rodadas' | 'passos' | 'pontos' | 'linhas' | 'peças';
+export type CountUnit = 'rodadas' | 'passos' | 'pontos' | 'linhas' | 'peças' | 'tentativas';
 
 /** O Eco Hero conta pontos (guardados em décimos, como os outros: 10 = 1 ponto). */
 export const countUnit = (game: string, mode?: string): CountUnit | null =>
-  game === 'atravessa'
+  game === 'wclassic'
+    ? 'tentativas'
+    : game === 'atravessa'
     ? 'linhas'
     : game === 'blocks'
       ? mode === 'towers'
@@ -91,6 +93,7 @@ export const countUnit = (game: string, mode?: string): CountUnit | null =>
 
 /** "7 rodadas", "12 passos" (e o singular com 1). `tenths` é a nota guardada (7 = 70). */
 export function formatCount(tenths: number, unit: CountUnit): string {
+  if (unit === 'tentativas') return formatAttempts(tenths);
   const n = Math.round(tenths / 10);
   const one =
     unit === 'rodadas'
@@ -105,8 +108,24 @@ export function formatCount(tenths: number, unit: CountUnit): string {
   return `${n.toLocaleString('pt-BR')} ${n === 1 ? one : unit}`;
 }
 
+/** Em quantas tentativas o Daily do Classic foi acertado. Passou do máximo (6): não acertou. */
+export const CLASSIC_DAILY_TRIES = 6;
+
+/**
+ * "3 tentativas" (guardado em décimos: 30), ou "3,5 tentativas" na média de vários dias, ou "Não acertou"
+ * quando o valor passa do máximo de tentativas do Daily.
+ */
+export function formatAttempts(tenths: number, plain = false): string {
+  const n = tenths / 10;
+  if (n > CLASSIC_DAILY_TRIES && Number.isInteger(n)) return 'Não acertou';
+  const text = Number.isInteger(n) ? String(n) : n.toFixed(1).replace('.', ',');
+  if (plain) return text;
+  return `${text} ${n === 1 ? 'tentativa' : 'tentativas'}`;
+}
+
 /** A nota do Daily de hoje para mostrar: "21.4/30" ou, no Eco, "12 passos". */
 export function dailyScoreText(game: string, tenths: number): string {
+  if (game === 'wclassic') return formatAttempts(tenths);
   return game === 'eco'
     ? formatCount(tenths, 'passos')
     : `${(tenths / 10).toFixed(1)}/${dailyMax(game)}`;

@@ -47,7 +47,7 @@ describe('listas de palavras', () => {
 /** Repositórios em memória: o que importa aqui é a regra, não o SQL. */
 function setup() {
   const rows = new Map<string, WordRun>();
-  const saved: { matchId: string; ranked: boolean; kind: string }[] = [];
+  const saved: { matchId: string; ranked: boolean; kind: string; scoredTenths?: number }[] = [];
   const runs = {
     byId: async (id: string, userId: string) => {
       const r = rows.get(id);
@@ -86,8 +86,8 @@ function setup() {
   };
   const matches = {
     playerOfUser: async () => 'player-1',
-    save: async (m: { matchId: string; ranked: boolean; kind: string }) => {
-      saved.push(m);
+    save: async (m: { matchId: string; ranked: boolean; kind: string; scored: { totalTenths: number } }) => {
+      saved.push({ ...m, scoredTenths: m.scored.totalTenths });
       return { duplicate: false };
     },
   };
@@ -162,6 +162,16 @@ describe('Classic Word\'s no servidor', () => {
     for (const w of service.lists.freeAnswers) expect(daily.has(wordKey(w))).toBe(false);
     expect(service.lists.dailyWords.length).toBeGreaterThanOrEqual(300);
     expect(service.lists.freeAnswers.length).toBeGreaterThanOrEqual(300);
+  });
+
+  it('a partida guarda as tentativas (e não uma nota): acertar no 1º = 10, não acertar = tentativas + 1', async () => {
+    const { service, rows, saved } = setup();
+    const won = await service.start('wclassic', 'u1', 'classic', 'daily');
+    await service.move('u1', won.id, rows.get(won.id)!.answers[0]!);
+    expect(saved[0]).toMatchObject({ scoredTenths: 10 });
+    const run = await service.start('wclassic', 'u2', 'classic', 'daily');
+    await service.giveUp('u2', run.id);
+    expect(saved[1]).toMatchObject({ scoredTenths: 70 });
   });
 
   it('o resumo dos modos mostra partidas, vitórias e a aberta', async () => {

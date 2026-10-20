@@ -14,6 +14,7 @@ import {
   boardMax,
   defaultPeriod,
   fetchRanking,
+  fewerIsBetter,
   neighborsOf,
   type Board,
   type Game,
@@ -40,6 +41,12 @@ const GAME_PATH = {
 /** Diferença de nota para mostrar: pontos com uma casa, ou número inteiro nos jogos de contagem. */
 const gapText = (tenths: number, counts: boolean) =>
   counts ? String(Math.max(1, Math.round(tenths / 10))) : (tenths / 10).toFixed(1);
+
+/** Quanto falta para passar quem está acima (no Classic Word's é "menos tentativas"). */
+const passText = (game: Game, gap: number, counts: boolean, username: string) =>
+  fewerIsBetter(game)
+    ? `Acerte com ${gap >= 10 ? Math.round(gap / 10) : '1'} ${gap > 10 ? 'tentativas' : 'tentativa'} a menos para passar @${username}`
+    : `Faltam ${gapText(gap, counts)} para passar @${username}`;
 
 type ScoreProps = { max: number; showDays: boolean; unit: CountUnit | null };
 
@@ -142,13 +149,17 @@ export function Rankings() {
   const unit = countUnit(game, board);
   const me = query.data?.me ?? entries.find((e) => e.isMe) ?? null;
   const meInList = entries.some((e) => e.isMe);
-  const near = useMemo(() => neighborsOf(entries), [entries]);
+  const near = useMemo(() => neighborsOf(entries, fewerIsBetter(game)), [entries, game]);
   const score: ScoreProps = { max, showDays: dailySum, unit };
 
   const note = isDaily
     ? dailySum
-      ? 'Soma dos Dailys do período (um por dia)'
-      : 'Nota do Daily de hoje'
+      ? game === 'wclassic'
+        ? 'Média de tentativas nos Dailys do período (menos é melhor)'
+        : 'Soma dos Dailys do período (um por dia)'
+      : game === 'wclassic'
+        ? 'Tentativas no Daily de hoje (menos é melhor)'
+        : 'Nota do Daily de hoje'
     : period === 'day'
       ? 'Melhor partida de hoje'
       : period === 'week'
@@ -159,14 +170,14 @@ export function Rankings() {
     me?.rank === 1
       ? 'Você está em primeiro. Segure a coroa!'
       : meInList && near.above
-        ? `Faltam ${gapText(near.above.gap, counts)} para passar @${near.above.username}`
+        ? passText(game, near.above.gap, counts, near.above.username)
         : `${query.data?.total ?? 0} ${query.data?.total === 1 ? 'pessoa' : 'pessoas'} no ranking`;
 
   return (
     <main className={`rks ${game}`}>
       <div className="rks-head">
         <h1>Ranking</h1>
-        <p className="mono rks-lead">Compare suas notas com todo mundo ou só com os amigos.</p>
+        <p className="mono rks-lead">Compare seus resultados com todo mundo ou só com os amigos.</p>
       </div>
 
       <div className="rks-games" role="tablist" aria-label="Jogo">

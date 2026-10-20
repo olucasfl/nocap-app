@@ -14,7 +14,7 @@ import {
   type Period,
   type RankingEntry,
 } from '@/lib/ranking';
-import { countUnit, dailyMax, streakLabel, type CountUnit } from '@/lib/stats';
+import { countUnit, dailyMax, formatAttempts, streakLabel, type CountUnit } from '@/lib/stats';
 import './ranking-panel.css';
 
 export function Score({
@@ -29,6 +29,18 @@ export function Score({
   /** Sobrevivência (rodadas) e Eco (passos): a nota é uma contagem. */
   unit?: CountUnit | null;
 }) {
+  // Classic Word's: o valor é em tentativas (a média nos períodos), nunca uma nota
+  if (unit === 'tentativas') {
+    return (
+      <>
+        {formatAttempts(entry.score, true)}
+        {entry.score <= 60 && <small className="mono">{entry.score === 10 ? 'tentativa' : 'tentativas'}</small>}
+        {showDays && entry.days !== undefined && (
+          <small className="mono rp-days">{streakLabel(entry.days).toUpperCase()}</small>
+        )}
+      </>
+    );
+  }
   return (
     <>
       {unit ? Math.round(entry.score / 10) : (entry.score / 10).toFixed(1)}
