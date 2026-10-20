@@ -1,0 +1,295 @@
+/*
+ * Telas de abertura dos jogos (Block's, Atravessa!): banner colorido, abas, cartões e passos.
+ * Só tokens do Pop Brutal; só transform e opacity animam; respeita prefers-reduced-motion.
+ */
+.gh {
+  gap: 14px;
+  --gh-dots: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22'%3E%3Ccircle cx='11' cy='11' r='1.6' fill='%23fff' fill-opacity='.35'/%3E%3C/svg%3E");
+}
+
+/* ---------- banner ---------- */
+.gh-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(96px, 36%) 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: var(--border);
+  border-radius: 20px;
+  box-shadow: 5px 5px 0 var(--ink);
+  background: var(--yellow) var(--gh-dots);
+  color: var(--on-accent);
+  overflow: hidden;
+  animation: wd-rise 0.45s cubic-bezier(0.2, 1.2, 0.4, 1) both;
+}
+.gh-hero.red {
+  background: var(--eco-red) var(--gh-dots);
+  color: var(--on-blue);
+}
+.gh-hero.green {
+  background: var(--green) var(--gh-dots);
+}
+.gh-hero.blue {
+  background: var(--blue) var(--gh-dots);
+  color: var(--on-blue);
+}
+.gh-hero.orange {
+  background: var(--orange) var(--gh-dots);
+}
+.gh-hero-art {
+  position: relative;
+  height: 104px;
+}
+.gh-hero-text h1 {
+  margin: 0;
+  font: 900 clamp(26px, 8vw, 38px) var(--font-display);
+  letter-spacing: -0.05em;
+  line-height: 0.92;
+  text-transform: uppercase;
+}
+.gh-hero-text p {
+  margin: 6px 0 0;
+  font-size: 11px;
+  line-height: 1.35;
+  text-transform: uppercase;
+}
+.gh-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0 0;
+}
+.gh-stats div {
+  padding: 4px 10px;
+  border: 2.5px solid var(--ink);
+  border-radius: 12px;
+  background: var(--paper);
+  color: var(--ink);
+}
+.gh-stats dt {
+  margin: 0;
+  font-size: 9px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.gh-stats dd {
+  margin: 0;
+  font: 900 16px/1.1 var(--font-display);
+}
+
+/* ---------- abas ---------- */
+.gh-tabs {
+  display: grid;
+  grid-template-columns: repeat(var(--n, 2), minmax(0, 1fr));
+  border: var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--white);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.gh-tabs button {
+  height: 44px;
+  padding: 0 6px;
+  border: 0;
+  border-left: 2.5px solid var(--ink);
+  background: var(--white);
+  color: var(--ink);
+  font: 900 13px var(--font-display);
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.gh-tabs button:first-child {
+  border-left: 0;
+}
+.gh-tabs button[aria-selected='true'] {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* ---------- cartões ---------- */
+.gh-modes {
+  display: grid;
+  gap: 12px;
+}
+.gh-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  grid-template-areas:
+    'art body'
+    'go go';
+  align-items: center;
+  gap: 10px 12px;
+  width: 100%;
+  padding: 14px;
+  border: var(--border);
+  border-radius: 20px;
+  box-shadow: 5px 5px 0 var(--ink);
+  background: var(--yellow);
+  color: var(--on-accent);
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    transform 0.08s ease-out,
+    box-shadow 0.08s ease-out;
+  animation: wd-rise 0.45s cubic-bezier(0.2, 1.2, 0.4, 1) both;
+}
+.gh-card:nth-child(2) {
+  animation-delay: 0.08s;
+}
+.gh-card:nth-child(3) {
+  animation-delay: 0.16s;
+}
+.gh-card:active:not(:disabled) {
+  transform: translate(5px, 5px);
+  box-shadow: 0 0 0 var(--ink);
+}
+.gh-card.red {
+  background: var(--eco-red);
+  color: var(--on-blue);
+}
+.gh-card.blue {
+  background: var(--blue);
+  color: var(--on-blue);
+}
+.gh-card.green {
+  background: var(--green);
+}
+.gh-card.orange {
+  background: var(--orange);
+}
+.gh-card:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+.gh-card-art {
+  grid-area: art;
+  display: grid;
+  place-items: center;
+  height: 72px;
+  border: 2.5px solid var(--ink);
+  border-radius: 16px;
+  background: var(--paper);
+  color: var(--ink);
+}
+.gh-card-art svg {
+  width: 44px;
+  height: 44px;
+}
+.gh-card-body {
+  grid-area: body;
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.gh-card-body b {
+  font: 900 clamp(22px, 6.6vw, 28px) var(--font-display);
+  letter-spacing: -0.04em;
+  line-height: 0.95;
+  text-transform: uppercase;
+}
+.gh-card-body .mono {
+  font-size: 10.5px;
+  text-transform: uppercase;
+}
+.gh-card-tag {
+  justify-self: start;
+  margin-top: 2px;
+  padding: 2px 9px;
+  border: 2.5px solid var(--ink);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  font-weight: 800;
+}
+.gh-card-go {
+  grid-area: go;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 46px;
+  border: var(--border);
+  border-radius: 14px;
+  background: var(--ink);
+  color: var(--paper);
+  font: 900 16px var(--font-display);
+  text-transform: uppercase;
+}
+.gh-card-go svg {
+  animation: cx-nudge 1.4s ease-in-out infinite;
+}
+
+/* ---------- passos e avisos ---------- */
+.gh-panel {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: var(--border);
+  border-radius: 18px;
+  background: var(--white);
+  color: var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+  animation: wd-rise 0.4s ease both;
+}
+.gh-panel h3 {
+  margin: 0;
+  font: 900 15px var(--font-display);
+  text-transform: uppercase;
+}
+.gh-steps {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.gh-steps li {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 10px;
+  align-items: start;
+  font-size: 13px;
+  line-height: 1.4;
+  animation: wd-rise 0.35s ease both;
+  animation-delay: calc(var(--i, 0) * 0.05s);
+}
+.gh-steps li b {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 2.5px solid var(--ink);
+  border-radius: 50%;
+  background: var(--yellow);
+  color: var(--on-accent);
+  font: 900 13px var(--font-display);
+}
+.gh-note {
+  margin: 0;
+  padding: 10px 12px;
+  border: 2.5px dashed var(--ink);
+  border-radius: 14px;
+  font-size: 10.5px;
+  line-height: 1.4;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.gh-soon {
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gh-hero,
+  .gh-card,
+  .gh-panel,
+  .gh-steps li,
+  .gh-card-go svg {
+    animation: none !important;
+    transition: none !important;
+  }
+}

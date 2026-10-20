@@ -194,28 +194,3 @@
   gap: 10px;
   margin-top: 8px;
 }
-
-/* progresso das fases na conta */
-.pf-sync {
-  display: grid;
-  gap: 8px;
-  padding: 14px;
-  border: var(--border);
-  border-radius: 16px;
-  background: var(--white);
-  color: var(--ink);
-  box-shadow: 4px 4px 0 var(--ink);
-}
-.pf-sync[data-phase='ok'] {
-  box-shadow: 4px 4px 0 var(--green);
-}
-.pf-sync[data-phase='error'] {
-  box-shadow: 4px 4px 0 var(--orange);
-}
-.pf-sync-label {
-  font-size: 11px;
-  color: var(--muted);
-}
-.pf-sync-text {
-  font: 800 15px/1.3 var(--font-display);
-}

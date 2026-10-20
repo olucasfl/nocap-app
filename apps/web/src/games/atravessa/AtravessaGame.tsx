@@ -3,10 +3,11 @@ import { Link } from '@tanstack/react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { AtravessaInput, AtravessaResult } from '@nocap/games';
 import { BackButton } from '@/components/BackButton';
+import { HubCard, HubHero, HubNote, HubSteps, HubTabs } from '@/components/GameHub';
+import { AtravessaArt } from '@/components/HubArt';
 import { MuteButton } from '@/components/MuteButton';
 import { SaveNote } from '@/components/GuestNotice';
 import { RoomBanner } from '@/components/RoomBanner';
-import { ArrowRight } from '@/components/icons';
 import { useAuth } from '@/lib/auth';
 import { soloSession } from '@/lib/solo-session';
 import { fetchStats, type Stats } from '@/lib/stats';
@@ -48,35 +49,73 @@ const HOW = [
 const seedOf = () => crypto.randomUUID().replace(/-/g, '').slice(0, 12);
 
 function AtravessaMenu({ onStart, busy }: { onStart: () => void; busy: boolean }) {
+  const [tab, setTab] = useState<'jogar' | 'como'>('jogar');
   const user = useAuth((s) => s.user);
   const stats = useQuery({ queryKey: ['stats'], queryFn: fetchStats, enabled: !!user });
   const best = user ? Math.max(localBest(), serverBest(stats.data)) : 0;
   return (
-    <section className="screen">
+    <section className="screen gh">
       <BackButton to="/" label="Jogos" />
-      <h1 className="at-title">Atravessa!</h1>
-      <p className="at-lead">Pule, desvie e atravesse tudo o que aparecer. Sem fim: vale a distância.</p>
+      <HubHero
+        accent="red"
+        art={<AtravessaArt />}
+        title="Atravessa!"
+        text="Pule, desvie e atravesse tudo. Sem fim: vale a distância."
+        stats={best > 0 ? [{ label: 'Seu recorde', value: `${best} linhas` }] : undefined}
+      />
       <RoomBanner />
-      {best > 0 && <p className="mono at-best">SEU RECORDE: {best} LINHAS</p>}
-      <ol className="at-howto">
-        {HOW.map((t, i) => (
-          <li key={i}>
-            <b>{i + 1}</b>
-            <span>{t}</span>
-          </li>
-        ))}
-      </ol>
-      <p className="mono at-meta">
-        NO CELULAR: TOQUE PULA PARA A FRENTE E DESLIZAR VAI PARA O LADO OU PARA TRÁS. NO COMPUTADOR: W A S D.
-      </p>
-      <button type="button" className="btn" data-sfx="start" disabled={busy} onClick={onStart}>
-        {busy ? 'Preparando...' : 'Jogar'} <ArrowRight />
-      </button>
-      <Link to="/sala" search={{ jogo: 'atravessa' }} className="btn ghost" data-sfx="select">
-        Jogar com amigos
-      </Link>
-      {!user && (
-        <p className="mono at-meta">ENTRE NA SUA CONTA PARA SALVAR NO RANKING, NO HISTÓRICO E NOS RECORDES.</p>
+      <HubTabs
+        value={tab}
+        onChange={setTab}
+        tabs={[
+          { id: 'jogar', label: 'Jogar' },
+          { id: 'como', label: 'Como jogar' },
+        ]}
+      />
+      {tab === 'jogar' ? (
+        <>
+          <div className="gh-modes">
+            <HubCard
+              tone="red"
+              art={
+                <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M16 27V8M8 15l8-8 8 8" />
+                </svg>
+              }
+              name="Infinito"
+              desc="Sem fim · vale a distância"
+              tag={best > 0 ? `Recorde ${best} linhas` : 'Sem recorde ainda'}
+              cta={busy ? 'Preparando...' : 'Jogar'}
+              disabled={busy}
+              onClick={onStart}
+              testId="atravessa-play"
+            />
+            <HubCard
+              tone="blue"
+              art={
+                <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="11" cy="12" r="4" />
+                  <circle cx="22" cy="13" r="3.2" />
+                  <path d="M3 26c0-4 3.6-7 8-7s8 3 8 7M18 26c.4-3 2.4-5 5-5 3 0 5 2 5 5" />
+                </svg>
+              }
+              name="Com amigos"
+              desc="Corrida em sala · até 8 jogadores"
+              cta="Jogar com amigos"
+              to="/sala"
+              search={{ jogo: 'atravessa' }}
+              testId="atravessa-friends"
+            />
+          </div>
+          {!user && <HubNote>Entre na sua conta para salvar no ranking, no histórico e nos recordes.</HubNote>}
+        </>
+      ) : (
+        <>
+          <HubSteps title="Como jogar" steps={HOW} />
+          <HubNote>
+            No celular: toque pula para a frente e deslizar vai para o lado ou para trás. No computador: W A S D.
+          </HubNote>
+        </>
       )}
     </section>
   );

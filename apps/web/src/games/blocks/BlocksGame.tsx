@@ -4,7 +4,9 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { BlocksGame as Engine, HINTS_PER_GAME, decodeMove, type BlocksMode } from '@nocap/games';
 import { BackButton } from '@/components/BackButton';
-import { ModePicker } from '@/components/ModePicker';
+import { HubCard, HubHero, HubNote, HubSteps, HubTabs } from '@/components/GameHub';
+import { BlocksArt } from '@/components/HubArt';
+import { modeArt } from '@/components/ModePicker';
 import { ModeSheet } from '@/components/ModeSheet';
 import { MuteButton } from '@/components/MuteButton';
 import { ArrowRight } from '@/components/icons';
@@ -101,6 +103,7 @@ function BlocksStart({
   const user = useAuth((st) => st.user);
   const stats = useQuery({ queryKey: ['stats'], queryFn: fetchStats, enabled: !!user });
   const [open, setOpen] = useState<UiMode | null>(null);
+  const [tab, setTab] = useState<'jogar' | 'como'>('jogar');
   const close = useCallback(() => setOpen(null), []);
   // Com conta, o recorde é o do servidor (o mesmo do ranking); o do aparelho só vale sem conta.
   const best =
@@ -116,13 +119,64 @@ function BlocksStart({
   const savedInfo = useMemo(() => (saved ? summarize(saved) : null), [saved]);
   const resumable = open === 'classic' && saved && savedInfo;
 
+  // Recorde de cada modo (da conta; sem conta não há recorde)
+  const recordOf = (mode: UiMode): number =>
+    !user ? 0 : stats.data ? Math.floor(bestTenths(stats.data, 'blocks', mode) / 10) : mode === 'towers' ? getTowersBest() : getBlocksBest();
+  const recordTag = (mode: UiMode): string => {
+    const r = recordOf(mode);
+    return r > 0 ? `Recorde ${r.toLocaleString('pt-BR')} ${mode === 'towers' ? 'peças' : 'pts'}` : 'Sem recorde ainda';
+  };
+
   return (
-    <section className="screen">
+    <section className="screen gh">
       <BackButton to="/" label="Jogos" />
-      <h1 className="bk-title">Block&apos;s</h1>
-      <p className="mono bk-subtitle">JOGOS DE BLOCOS</p>
-      <ModePicker game="blocks" modes={MODES} onOpen={(id) => setOpen(id as UiMode)} />
-      <div className="bk-soon mono">+ MAIS MODOS DE BLOCOS EM BREVE</div>
+      <HubHero
+        accent="yellow"
+        art={<BlocksArt />}
+        title="Block's"
+        text="Encaixe, empilhe e bata o seu recorde."
+        stats={[
+          { label: 'Recorde Classic', value: recordOf('classic').toLocaleString('pt-BR') },
+          { label: 'Recorde Towers', value: recordOf('towers').toLocaleString('pt-BR') },
+        ].filter((x) => x.value !== '0')}
+      />
+      <HubTabs
+        value={tab}
+        onChange={setTab}
+        tabs={[
+          { id: 'jogar', label: 'Jogar' },
+          { id: 'como', label: 'Como jogar' },
+        ]}
+      />
+      {tab === 'jogar' ? (
+        <>
+          <div className="gh-modes">
+            {MODES.map((m, i) => (
+              <HubCard
+                key={m.id}
+                tone={i === 0 ? 'orange' : 'blue'}
+                art={modeArt(m.id)}
+                name={m.label}
+                desc={m.desc}
+                tag={recordTag(m.id)}
+                cta={m.id === 'classic' && saved && savedInfo ? 'Continuar ou jogar' : 'Jogar'}
+                onClick={() => setOpen(m.id)}
+                testId={`mode-${m.id}`}
+              />
+            ))}
+          </div>
+          <HubNote>+ mais modos de blocos em breve</HubNote>
+        </>
+      ) : (
+        <>
+          {MODES.map((m) => (
+            <HubSteps key={m.id} title={m.label} steps={HOW[m.id]} />
+          ))}
+          <HubNote>
+            Block Towers: no celular use os botões; no computador, setas ou A/D, cima para girar, baixo para descer e E para a magia.
+          </HubNote>
+        </>
+      )}
       {open && current && (
         <ModeSheet
           game="blocks"
