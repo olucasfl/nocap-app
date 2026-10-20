@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  BEE_HINT_UNLOCK,
   beeHints,
   beeMaxPoints,
   beeNota,
@@ -102,6 +103,39 @@ describe('dicas', () => {
       { size: 5, count: 2 },
       { size: 7, count: 1 },
     ]);
+  });
+});
+
+describe('dicas: mapa e pares de letras', () => {
+  const left = ['durante', 'nada'];
+  it('o mapa conta inicial x tamanho só do que falta', () => {
+    const h = beeHints(puzzle, left);
+    expect(h.map.letters).toEqual(['d', 'e', 't']);
+    expect(h.map.sizes).toEqual([4, 5, 7]);
+    expect(h.map.rowTotals.reduce((a, b) => a + b, 0)).toBe(h.left);
+    expect(h.map.colTotals).toEqual([1, 2, 1]);
+    // cada célula bate com a contagem por tamanho e por inicial
+    h.map.letters.forEach((l, i) => expect(h.map.rowTotals[i]).toBe(h.byInitial[l]));
+    h.map.sizes.forEach((n, j) => expect(h.map.colTotals[j]).toBe(h.bySize[n]));
+  });
+
+  it('os pares de letras somam o que falta', () => {
+    const h = beeHints(puzzle, left);
+    expect(h.pairs.reduce((a, b) => a + b.count, 0)).toBe(h.left);
+    for (const p of h.pairs) expect(p.prefix).toHaveLength(2);
+  });
+
+  it('as dicas mais fortes só abrem depois de achar parte das palavras (não fica fácil demais)', () => {
+    const total = puzzle.words.length;
+    expect(BEE_HINT_UNLOCK.map).toBeLessThan(BEE_HINT_UNLOCK.pairs);
+    const none = beeHints(puzzle, []);
+    expect(none.needMap).toBe(Math.ceil(total * BEE_HINT_UNLOCK.map));
+    expect(none.needPairs).toBe(Math.ceil(total * BEE_HINT_UNLOCK.pairs));
+    const all = beeHints(puzzle, puzzle.words.map((x) => x.w));
+    expect(all.needMap).toBe(0);
+    expect(all.needPairs).toBe(0);
+    // achar uma palavra aproxima o desbloqueio em uma
+    expect(beeHints(puzzle, [puzzle.words[0]!.w]).needMap).toBe(none.needMap - 1);
   });
 });
 

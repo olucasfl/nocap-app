@@ -92,6 +92,43 @@ export function beeScore(puzzle: BeePuzzle, found: readonly string[]): number {
   return puzzle.words.reduce((s, x) => (keys.has(wordKey(x.w)) ? s + beePoints(x.w, !!x.pangram) : s), 0);
 }
 
+/**
+ * Quando as dicas mais fortes abrem: o mapa (inicial x tamanho) depois de achar 15% das palavras e os pares de
+ * letras depois de 40%. Assim a dica ajuda sem entregar a fase logo de cara: antes, só o total por tamanho.
+ */
+export const BEE_HINT_UNLOCK = { map: 0.15, pairs: 0.4 } as const;
+
+/** O mapa de palavras que faltam: uma linha por letra inicial, uma coluna por tamanho (como no Spelling Bee). */
+export interface BeeHintMap {
+  letters: string[];
+  sizes: number[];
+  /** `cells[linha][coluna]`: quantas palavras faltam com aquela inicial e aquele tamanho. */
+  cells: number[][];
+  rowTotals: number[];
+  colTotals: number[];
+}
+
+function hintMap(keys: string[]): BeeHintMap {
+  const letters = [...new Set(keys.map((k) => k[0]!))].sort();
+  const sizes = [...new Set(keys.map((k) => k.length))].sort((a, b) => a - b);
+  const cells = letters.map((l) => sizes.map((n) => keys.filter((k) => k[0] === l && k.length === n).length));
+  return {
+    letters,
+    sizes,
+    cells,
+    rowTotals: cells.map((r) => r.reduce((a, b) => a + b, 0)),
+    colTotals: sizes.map((_, c) => cells.reduce((a, r) => a + r[c]!, 0)),
+  };
+}
+
+function hintPairs(keys: string[]): { prefix: string; count: number }[] {
+  const by: Record<string, number> = {};
+  for (const k of keys) by[k.slice(0, 2)] = (by[k.slice(0, 2)] ?? 0) + 1;
+  return Object.entries(by)
+    .map(([prefix, count]) => ({ prefix, count }))
+    .sort((a, b) => a.prefix.localeCompare(b.prefix));
+}
+
 /** As dicas sem entregar palavras: quantas faltam, quantos pangramas, por tamanho e por inicial. */
 export function beeHints(puzzle: BeePuzzle, found: readonly string[]) {
   const keys = new Set(found.map(wordKey));
@@ -111,6 +148,12 @@ export function beeHints(puzzle: BeePuzzle, found: readonly string[]) {
     bySize,
     byInitial,
     /** O mesmo, em listas ordenadas para a tela: "começa com T: 6", "4 letras: 14". */
+    /** Mapa inicial x tamanho e os pares de letras ("FA: 3"), só do que ainda falta. */
+    map: hintMap(left.map((x) => wordKey(x.w))),
+    pairs: hintPairs(left.map((x) => wordKey(x.w))),
+    /** Quantas palavras ainda é preciso achar para abrir o mapa e os pares (0 = já abriu). */
+    needMap: Math.max(0, Math.ceil(puzzle.words.length * BEE_HINT_UNLOCK.map) - keys.size),
+    needPairs: Math.max(0, Math.ceil(puzzle.words.length * BEE_HINT_UNLOCK.pairs) - keys.size),
     initials: Object.entries(byInitial)
       .map(([letter, count]) => ({ letter, count }))
       .sort((a, b) => a.letter.localeCompare(b.letter)),

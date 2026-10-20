@@ -11,7 +11,7 @@ import {
   type BeeReject,
 } from '@nocap/games';
 import { wordsAudio } from '@/lib/words-audio';
-import { Celebrate, HexLoader, Pill, ResultSheet, RulesList, Tabs, useTyped, WordsShell } from '../words-kit';
+import { Celebrate, HexLoader, Pill, ResultSheet, RulesList, useTyped, WordsShell } from '../words-kit';
 import { loadBeeLevels, tierOf, toBeePuzzle, type BeeLevel } from '../levels/levels';
 import { beeProgress, useProgress } from '../levels/progress';
 import { BeeMascot, hexPoints } from './BeeArt';
@@ -203,7 +203,6 @@ export function BeePlay() {
   const rankIndex = BEE_RANKS.findIndex((r) => r.id === rank.id);
   const genius = Math.min(1, points / (0.7 * max));
   const hints = beeHints(puzzle, found);
-  const maxInitial = Math.max(1, ...hints.initials.map((x) => x.count));
   const maxSize = Math.max(1, ...hints.sizes.map((x) => x.count));
   const sorted = [...found].sort((a, b) => a.localeCompare(b, 'pt'));
   const tier = tierOf(level);
@@ -304,14 +303,25 @@ export function BeePlay() {
           </div>
 
           <div className="bz-actions">
-            <button type="button" className="btn ghost" onClick={() => setTyped((t) => t.slice(0, -1))} data-testid="delete">
-              Apagar
+            <button type="button" className="bz-act mix" onClick={shuffle} data-testid="shuffle" aria-label="Embaralhar">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3 7h3.5c3.5 0 5 10 8.5 10H21M3 17h3.5c1.4 0 2.4-1.5 3.3-3.2M21 7h-6c-1.4 0-2.4 1.5-3.3 3.2" />
+                <path d="M18 4l3 3-3 3M18 14l3 3-3 3" />
+              </svg>
+              <span>Embaralhar</span>
             </button>
-            <button type="button" className="btn ghost" onClick={shuffle} data-testid="shuffle">
-              Embaralhar
-            </button>
-            <button type="button" className="btn alt" onClick={submit} data-testid="submit">
+            <button type="button" className="bz-act send" onClick={submit} data-testid="submit">
               Enviar
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 12.5l5 5L20 6.5" />
+              </svg>
+            </button>
+            <button type="button" className="bz-act del" onClick={() => setTyped((t) => t.slice(0, -1))} data-testid="delete" aria-label="Apagar">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M9 5h11a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H9l-6-7z" />
+                <path d="M12.5 9.5l5 5M17.5 9.5l-5 5" />
+              </svg>
+              <span>Apagar</span>
             </button>
           </div>
 
@@ -334,26 +344,53 @@ export function BeePlay() {
         </ResultSheet>
       )}
 
-      <Tabs
-        label="Informações da fase"
-        value={tab}
-        onChange={setTab}
-        tabs={[
-          { id: 'words', label: 'Palavras' },
-          { id: 'hints', label: closed ? 'Todas' : 'Dicas' },
-          { id: 'rules', label: 'Regras' },
-        ]}
-      />
+      <div className="bz-tabs" role="tablist" aria-label="Informações da fase">
+        <button type="button" role="tab" aria-selected={tab === 'words'} className="bz-tab words" data-testid="tab-words" onClick={() => setTab('words')}>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01" />
+          </svg>
+          <span>Palavras</span>
+          <small>
+            {found.length}/{hints.total}
+          </small>
+        </button>
+        <button type="button" role="tab" aria-selected={tab === 'hints'} className="bz-tab hints" data-testid="tab-hints" onClick={() => setTab('hints')}>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z" />
+          </svg>
+          <span>{closed ? 'Todas' : 'Dicas'}</span>
+          {!closed && <small>{1 + (hints.needMap === 0 ? 1 : 0) + (hints.needPairs === 0 ? 1 : 0)}/3</small>}
+        </button>
+        <button type="button" role="tab" aria-selected={tab === 'rules'} className="bz-tab rules" data-testid="tab-rules" onClick={() => setTab('rules')}>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h11" />
+          </svg>
+          <span>Regras</span>
+        </button>
+      </div>
 
       {tab === 'words' && (
-        <div className="bz-found" data-testid="found">
-          {sorted.map((w) => (
-            <span key={w} className={`${w === latest ? 'latest' : ''}${level.p.includes(w) ? ' pangram' : ''}`}>
-              {w}
+        <section className="bz-found-panel" aria-label="Palavras achadas">
+          <div className="bz-found-head">
+            <b>
+              {found.length} de {hints.total} palavras
+            </b>
+            <span className="mono">
+              {level.p.filter((w) => found.includes(w)).length}/{level.p.length} pangrama
             </span>
-          ))}
-          {sorted.length === 0 && <span className="empty">Nenhuma ainda. Toque nas letras do favo.</span>}
-        </div>
+          </div>
+          <div className="bz-found-bar" aria-hidden="true">
+            <i style={{ transform: `scaleX(${found.length / Math.max(1, hints.total)})` }} />
+          </div>
+          <div className="bz-found" data-testid="found">
+            {sorted.map((w) => (
+              <span key={w} className={`${w === latest ? 'latest' : ''}${level.p.includes(w) ? ' pangram' : ''}`}>
+                {w}
+              </span>
+            ))}
+            {sorted.length === 0 && <span className="empty">Nenhuma ainda. Toque nas letras do favo e envie.</span>}
+          </div>
+        </section>
       )}
       {tab === 'hints' &&
         (closed ? (
@@ -368,6 +405,17 @@ export function BeePlay() {
           </div>
         ) : (
           <div className="bz-hints" data-testid="hints">
+            <div className="bz-hints-banner" aria-hidden="true">
+              <span>
+                <svg viewBox="0 0 24 24">
+                  <path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z" />
+                </svg>
+              </span>
+              <div>
+                <b>Dicas da fase</b>
+                <small className="mono">Quanto mais você acha, mais dicas abrem</small>
+              </div>
+            </div>
             <div className="bz-hint-big">
               <b>{hints.left}</b> palavras faltando de {hints.total}
             </div>
@@ -375,23 +423,8 @@ export function BeePlay() {
               Pangramas: <b>{hints.pangrams - hints.pangramsLeft}</b> de {hints.pangrams}
             </div>
 
-            <section className="bz-hint-block" aria-label="Começa com">
-              <h4>Começa com</h4>
-              <ul className="bz-initials" data-testid="hint-initials">
-                {hints.initials.map(({ letter, count }) => (
-                  <li key={letter} style={{ '--w': count / maxInitial } as CSSProperties}>
-                    <span className="bz-chip">{letter.toUpperCase()}</span>
-                    <i aria-hidden="true" />
-                    <b>
-                      {count} {count === 1 ? 'vez' : 'vezes'}
-                    </b>
-                  </li>
-                ))}
-              </ul>
-            </section>
-
             <section className="bz-hint-block" aria-label="Quantidade de letras">
-              <h4>Quantidade de letras</h4>
+              <h4>Quantas letras</h4>
               <ul className="bz-sizes" data-testid="hint-sizes">
                 {hints.sizes.map(({ size, count }) => (
                   <li key={size} style={{ '--w': count / maxSize } as CSSProperties}>
@@ -404,10 +437,98 @@ export function BeePlay() {
                 ))}
               </ul>
             </section>
+
+            <section className="bz-hint-block" aria-label="Mapa das palavras">
+              <h4>Começa com... e tem N letras</h4>
+              {hints.needMap > 0 ? (
+                <p className="bz-lock" data-testid="hint-map-lock">
+                  <b>Bloqueado.</b> Ache mais {hints.needMap} {hints.needMap === 1 ? 'palavra' : 'palavras'} para abrir o mapa.
+                </p>
+              ) : (
+                <div
+                  className="bz-map"
+                  data-testid="hint-map"
+                  role="table"
+                  aria-label="Palavras que faltam, por letra inicial e tamanho"
+                  style={{ '--cols': hints.map.sizes.length + 2 } as CSSProperties}
+                >
+                  <div className="bz-map-row head" role="row">
+                    <span className="bz-map-corner" role="columnheader" aria-label="Letra inicial" />
+                    {hints.map.sizes.map((n) => (
+                      <b key={n} className="bz-map-head" role="columnheader">
+                        {n}
+                      </b>
+                    ))}
+                    <b className="bz-map-head" role="columnheader">
+                      Σ
+                    </b>
+                  </div>
+                  {hints.map.letters.map((l, r) => (
+                    <div key={l} className="bz-map-row" role="row">
+                      <b className="bz-chip" role="rowheader">
+                        {l.toUpperCase()}
+                      </b>
+                      {hints.map.cells[r]!.map((n, c) => (
+                        <span key={c} className={`bz-map-cell${n > 0 ? ' has' : ''}`} role="cell">
+                          {n > 0 ? n : '·'}
+                        </span>
+                      ))}
+                      <span className="bz-map-cell sum" role="cell">
+                        {hints.map.rowTotals[r]}
+                      </span>
+                    </div>
+                  ))}
+                  <div className="bz-map-row foot" role="row">
+                    <span className="bz-chip sum" role="rowheader">
+                      Σ
+                    </span>
+                    {hints.map.colTotals.map((n, c) => (
+                      <span key={c} className="bz-map-cell sum" role="cell">
+                        {n}
+                      </span>
+                    ))}
+                    <span className="bz-map-cell sum" role="cell">
+                      {hints.left}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </section>
+
+            <section className="bz-hint-block" aria-label="Começo das palavras">
+              <h4>Duas primeiras letras</h4>
+              {hints.needPairs > 0 ? (
+                <p className="bz-lock" data-testid="hint-pairs-lock">
+                  <b>Bloqueado.</b> Ache mais {hints.needPairs} {hints.needPairs === 1 ? 'palavra' : 'palavras'} para ver como as palavras começam.
+                </p>
+              ) : (
+                <ul className="bz-pairs" data-testid="hint-pairs">
+                  {hints.pairs.map(({ prefix, count }) => (
+                    <li key={prefix}>
+                      <b>{prefix.toUpperCase()}</b>
+                      <span>{count}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
           </div>
         ))}
       {tab === 'rules' && (
-        <section className="wd-panel" data-testid="rules">
+        <section className="wd-panel bz-rules" data-testid="rules">
+          <h3>Como pontua</h3>
+          <ul className="bz-points-legend">
+            <li>
+              <b>4</b> letras<span>1 pt</span>
+            </li>
+            <li>
+              <b>5+</b> letras<span>1 pt por letra</span>
+            </li>
+            <li className="pang">
+              Pangrama<span>+7 pts</span>
+            </li>
+          </ul>
+          <h3>Regras</h3>
           <RulesList steps={BEE_RULES} />
         </section>
       )}

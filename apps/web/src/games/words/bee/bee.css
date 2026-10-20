@@ -798,3 +798,470 @@
   background: var(--green);
   color: var(--on-accent);
 }
+
+/* dicas: bloqueio, mapa (inicial x tamanho) e pares de letras */
+.bz-lock {
+  margin: 0;
+  padding: 10px 12px;
+  border: 2.5px dashed var(--ink);
+  border-radius: 12px;
+  font: 700 12px/1.35 var(--font-mono);
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.bz-lock b {
+  color: var(--ink);
+}
+.bz-map {
+  display: grid;
+  gap: 4px;
+}
+.bz-map-row {
+  display: grid;
+  grid-template-columns: 34px repeat(calc(var(--cols) - 1), minmax(0, 1fr));
+  gap: 4px;
+  align-items: center;
+}
+.bz-map-head {
+  text-align: center;
+  font: 800 11px var(--font-mono);
+  color: var(--muted);
+}
+.bz-map-cell {
+  display: grid;
+  place-items: center;
+  height: 30px;
+  border: 2.5px solid var(--ink);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font: 800 13px var(--font-mono);
+}
+.bz-map-cell.has {
+  background: var(--yellow);
+  color: var(--on-accent);
+}
+.bz-map-cell.sum {
+  border-style: dashed;
+  background: var(--paper);
+  color: var(--ink);
+}
+.bz-map-row.foot {
+  margin-top: 2px;
+}
+.bz-map .bz-chip.sum {
+  display: grid;
+  place-items: center;
+  background: var(--paper);
+}
+.bz-pairs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.bz-pairs li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 4px 3px 10px;
+  border: 2.5px solid var(--ink);
+  border-radius: 999px;
+  background: var(--white);
+  color: var(--ink);
+  font: 900 13px var(--font-display);
+}
+.bz-pairs li span {
+  min-width: 22px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--paper);
+  font: 800 12px var(--font-mono);
+  text-align: center;
+}
+
+/* ====================== tela do Bee: botões, abas e painéis ====================== */
+.bz-actions {
+  grid-template-columns: 1fr 1.7fr 1fr;
+  gap: 10px;
+  align-items: center;
+}
+.bz-act {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: var(--border);
+  font: 900 14px var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition:
+    transform 0.08s ease-out,
+    box-shadow 0.08s ease-out;
+}
+.bz-act svg {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.bz-act:active {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 var(--ink);
+}
+.bz-act.del,
+.bz-act.mix {
+  height: 48px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.bz-act.del {
+  background: var(--paper);
+  color: var(--ink);
+  border-style: dashed;
+}
+.bz-act.mix {
+  background: var(--blue);
+  color: var(--on-blue);
+}
+.bz-act.send {
+  height: 56px;
+  border-radius: 18px;
+  background: var(--orange);
+  color: var(--on-accent);
+  font-size: 18px;
+  box-shadow: 5px 5px 0 var(--ink);
+}
+.bz-act.send svg {
+  width: 24px;
+  height: 24px;
+  animation: cx-nudge 1.4s ease-in-out infinite;
+}
+.wd-app.fit .bz-act.send {
+  height: 52px;
+}
+.wd-app.fit .bz-act.del,
+.wd-app.fit .bz-act.mix {
+  height: 44px;
+}
+@media (max-width: 360px) {
+  .bz-act.del span,
+  .bz-act.mix span {
+    display: none;
+  }
+}
+
+.bz-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1.15fr 1fr;
+  gap: 8px;
+}
+.bz-tab {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 6px;
+  height: 46px;
+  padding: 0 10px;
+  border: var(--border);
+  border-radius: 14px;
+  background: var(--white);
+  color: var(--ink);
+  font: 900 12.5px var(--font-display);
+  text-align: left;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 3px 3px 0 var(--ink);
+  transition:
+    transform 0.1s ease-out,
+    box-shadow 0.1s ease-out;
+}
+.bz-tab svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.bz-tab small {
+  padding: 1px 7px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  font: 800 10.5px var(--font-mono);
+}
+.bz-tab[aria-selected='true'] {
+  background: var(--ink);
+  color: var(--paper);
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 var(--ink);
+}
+/* a aba de dicas é a mais chamativa: amarela, com lâmpada e brilho */
+.bz-tab.hints {
+  background: var(--yellow);
+  color: var(--on-accent);
+  overflow: hidden;
+}
+.bz-tab.hints::after {
+  content: '';
+  position: absolute;
+  top: -20%;
+  left: -40%;
+  width: 26%;
+  height: 140%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.7), transparent);
+  transform: translateX(0) skewX(-18deg);
+  animation: cx-glint 3.2s ease-in-out infinite;
+  pointer-events: none;
+}
+.bz-tab.hints[aria-selected='true'] {
+  background: var(--ink);
+  color: var(--yellow);
+}
+.bz-tab.hints[aria-selected='true']::after {
+  display: none;
+}
+
+.bz-found-panel {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: var(--border);
+  border-radius: 16px;
+  background: var(--white);
+  color: var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+.bz-found-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.bz-found-head b {
+  font: 900 15px var(--font-display);
+  text-transform: uppercase;
+}
+.bz-found-head .mono {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.bz-found-bar {
+  height: 10px;
+  border: 2.5px solid var(--ink);
+  border-radius: 999px;
+  background: var(--paper);
+  overflow: hidden;
+}
+.bz-found-bar i {
+  display: block;
+  height: 100%;
+  background: var(--orange);
+  transform-origin: left center;
+  transition: transform 0.5s cubic-bezier(0.2, 1, 0.3, 1);
+}
+.bz-found-panel .bz-found {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+.bz-found span.pangram::before {
+  content: '★ ';
+}
+.bz-hints-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: var(--border);
+  border-radius: 14px;
+  background: var(--yellow);
+  color: var(--on-accent);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.bz-hints-banner > span {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  border: var(--border);
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--yellow);
+}
+.bz-hints-banner svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.bz-hints-banner b {
+  display: block;
+  font: 900 15px var(--font-display);
+  text-transform: uppercase;
+}
+.bz-hints-banner small {
+  font-size: 10.5px;
+  text-transform: uppercase;
+}
+.bz-rules h3 {
+  margin: 0;
+  font: 900 14px var(--font-display);
+  text-transform: uppercase;
+}
+.bz-points-legend {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.bz-points-legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 2.5px solid var(--ink);
+  border-radius: 10px;
+  font: 700 12px var(--font-mono);
+  text-transform: uppercase;
+}
+.bz-points-legend li b {
+  font: 900 15px var(--font-display);
+}
+.bz-points-legend li span {
+  margin-left: auto;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--paper);
+  font-weight: 800;
+}
+.bz-points-legend li.pang {
+  background: var(--yellow);
+  color: var(--on-accent);
+}
+.wd-app.fit .bz-found-panel {
+  flex: none;
+  max-height: 24dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.wd-app.fit .bee-theme.info .bz-found-panel {
+  flex: 1;
+  max-height: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bz-tab.hints::after,
+  .bz-act.send svg {
+    animation: none !important;
+  }
+}
+
+.wd-app.fit .bz-found-panel .bz-found {
+  max-height: none;
+  overflow: visible;
+  flex: none;
+  min-height: 0;
+  padding: 0;
+}
+
+/* colunas que não crescem com o conteúdo: cada botão fica com a sua parte da largura */
+.bz-actions {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr) minmax(0, 1fr);
+}
+.bz-tabs {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+.bz-tab {
+  grid-template-columns: auto minmax(0, 1fr);
+  font-size: 12px;
+}
+.bz-tab small {
+  position: absolute;
+  top: -9px;
+  right: -4px;
+  line-height: 16px;
+  padding: 0 6px;
+}
+.bz-tab span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* botões redondos só com o ícone nas pontas e o Enviar grande no meio; abas com o ícone em cima */
+.bz-actions {
+  grid-template-columns: 54px minmax(0, 1fr) 54px;
+}
+.bz-act.del,
+.bz-act.mix {
+  width: 54px;
+  height: 54px;
+  padding: 0;
+  border-radius: 50%;
+}
+.bz-act.del span,
+.bz-act.mix span {
+  display: none;
+}
+.bz-act.del svg,
+.bz-act.mix svg {
+  width: 24px;
+  height: 24px;
+}
+.wd-app.fit .bz-act.del,
+.wd-app.fit .bz-act.mix {
+  width: 48px;
+  height: 48px;
+}
+.wd-app.fit .bz-actions {
+  grid-template-columns: 48px minmax(0, 1fr) 48px;
+}
+.bz-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  height: 52px;
+  padding: 4px 6px;
+  font-size: 11px;
+  text-align: center;
+}
+.bz-tab svg {
+  width: 19px;
+  height: 19px;
+}
+.bz-tab span {
+  overflow: visible;
+  text-overflow: clip;
+}
+.bz-tab.hints {
+  overflow: visible;
+}
+.bz-tab.hints::after {
+  display: none;
+}

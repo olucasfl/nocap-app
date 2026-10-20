@@ -130,7 +130,7 @@ export function ClassicCatalog() {
                   aria-label={`Fase ${x.n}: ${x.status === 'done' ? (x.won ? `completa em ${x.used} de ${x.tries}` : 'não resolvida') : x.status === 'open' ? `em andamento, ${x.used} de ${x.tries}` : 'nova'}`}
                 >
                   <b>{x.n}</b>
-                  <small>{x.status === 'new' ? 'nova' : x.status === 'done' && !x.won ? 'perdeu' : `${x.used}/${x.tries}`}</small>
+                  {x.status !== 'new' && <small>{x.status === 'done' && !x.won ? 'perdeu' : `${x.used}/${x.tries}`}</small>}
                 </Link>
               ))}
             </div>
