@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { WordsHubArt } from '@/games/words/words-art';
 import { useQuery } from '@tanstack/react-query';
+import { Flame } from '@/components/icons';
 import { MuteButton } from '@/components/MuteButton';
 import { RoomBanner } from '@/components/RoomBanner';
 import { ThemeButton } from '@/components/ThemeButton';
@@ -55,8 +56,8 @@ function DailyChip({ game, name, to, stats }: { game: GameId; name: string; to: 
   const state = !stats ? 'guest' : done ? 'done' : 'todo';
   return (
     <Link
-      to={to as '/'}
-      search={game === 'wclassic' ? undefined : ({ modo: 'daily' } as never)}
+      to={(game === 'wclassic' && state === 'todo' ? '/words/classic/jogar' : to) as '/'}
+      search={game === 'wclassic' ? undefined : ({ modo: 'daily', ...(state === 'todo' ? { jogar: 1 } : {}) } as never)}
       className={`hz-chip ${game} ${state}`}
       data-sfx="start"
       data-testid={`daily-${game}`}
@@ -148,6 +149,11 @@ export function Hub() {
         </div>
         {streak > 0 && (
           <span className="hz-streak mono" title="Dias seguidos entrando no NoCap">
+            {streak >= 2 && (
+              <span className="hz-flame" aria-hidden="true">
+                <Flame size={20} />
+              </span>
+            )}
             <b>{streak}</b> {streakLabel(streak).replace(/^\d+ /, '').toUpperCase()} SEGUIDOS
           </span>
         )}

@@ -617,3 +617,25 @@ a.hub-daily {
 .hz-chip-go {
   margin-left: 36px;
 }
+
+/* Chama ao lado da sequência (2 dias ou mais): balança de leve; só transform. */
+.hz-flame {
+  display: inline-grid;
+  margin-left: -2px;
+  transform-origin: 50% 90%;
+  animation: hz-flicker 1.6s ease-in-out infinite;
+}
+@keyframes hz-flicker {
+  0%,
+  100% {
+    transform: scale(1) rotate(-3deg);
+  }
+  50% {
+    transform: scale(1.12) rotate(3deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hz-flame {
+    animation: none;
+  }
+}

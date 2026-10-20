@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
 import {
   colorDeltaE,
@@ -50,9 +50,12 @@ function newRun(mode: Mode): Run {
 export function ColorGame({
   initialMode = 'classic',
   initialTab,
+  autoStart,
 }: {
   initialMode?: Mode;
   initialTab?: GameTab;
+  /** Veio do atalho da Home: começa o Daily sem esperar o toque em "Jogar". */
+  autoStart?: boolean;
 }) {
   const [mode, setMode] = useState<Mode>(initialMode);
   const navigate = useNavigate();
@@ -84,6 +87,14 @@ export function ColorGame({
     },
     [queryClient, begin],
   );
+
+  // Atalho da Home: abre o Daily já jogando (uma vez só, para o "Voltar" não reiniciar).
+  const autoRan = useRef(false);
+  useEffect(() => {
+    if (!autoStart || autoRan.current) return;
+    autoRan.current = true;
+    void start('daily');
+  }, [autoStart, start]);
 
   const target: Hsb | null = run ? generateColorRound(run.seed, run.settings, index) : null;
 
