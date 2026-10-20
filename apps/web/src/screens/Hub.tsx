@@ -1,17 +1,20 @@
 import { AtravessaArt, BlocksArt, ColorArt, EcoArt, MixArt, TimeArt } from '@/components/HubArt';
 import { Link } from '@tanstack/react-router';
+import type { ReactNode } from 'react';
 import { WordsHubArt } from '@/games/words/words-art';
 import { useQuery } from '@tanstack/react-query';
-import { AnimatedText } from '@/components/AnimatedText';
 import { MuteButton } from '@/components/MuteButton';
 import { RoomBanner } from '@/components/RoomBanner';
 import { ThemeButton } from '@/components/ThemeButton';
+import { classicProgress } from '@/games/words/classic-engine';
+import { beeProgress, useProgress } from '@/games/words/levels/progress';
 import { useAuth } from '@/lib/auth';
 import {
   bestTenths,
   dailyScoreText,
   fetchStats,
   formatBest,
+  streakLabel,
   type GameId,
   type Stats,
 } from '@/lib/stats';
@@ -39,13 +42,97 @@ function blocksBestLabel(stats: Stats | undefined): string {
   return points > 0 ? `RECORDE ${points} PTS` : 'SEM RECORDE AINDA';
 }
 
-/** Situação do Daily do jogo hoje, em palavras: jogado (com a nota) ou ainda disponível. */
-function dailyStatus(stats: Stats | undefined, game: GameId): string {
+/** Os Dailys de hoje: o que cada jogo mostra no chip. */
+const DAILIES = [
+  { game: 'color', name: 'Mesmíssima', to: '/cor' },
+  { game: 'time', name: 'Já Deu?', to: '/tempo' },
+  { game: 'eco', name: 'Ecooo', to: '/eco' },
+  { game: 'wclassic', name: "Word's", to: '/words/classic' },
+] as const;
+
+function DailyChip({ game, name, to, stats }: { game: GameId; name: string; to: string; stats: Stats | undefined }) {
   const info = stats?.daily[game];
-  if (!info) return 'DAILY SÓ COM CONTA';
-  if (!info.playedToday) return 'DAILY DISPONÍVEL';
-  // o Classic Word's não mostra nota para a pessoa: só que o Daily do dia foi feito
-  return game === 'wclassic' ? 'DAILY FEITO' : `DAILY FEITO · ${dailyScoreText(game, info.totalScore ?? 0)}`;
+  const done = !!info?.playedToday;
+  const result = done ? dailyScoreText(game, info!.totalScore ?? 0) : null;
+  return (
+    <Link
+      to={to as '/'}
+      search={game === 'wclassic' ? undefined : ({ modo: 'daily' } as never)}
+      className={`hz-chip ${game}${done ? ' done' : ''}`}
+      data-sfx="start"
+      data-testid={`daily-${game}`}
+    >
+      <span className="hz-chip-dot" aria-hidden="true" />
+      <span className="hz-chip-body">
+        <b>{name}</b>
+        <small className="mono">{!stats ? 'SÓ COM CONTA' : done ? `FEITO · ${result}` : 'PENDENTE'}</small>
+      </span>
+    </Link>
+  );
+}
+
+/** Um cartão de jogo (a capa). `wide` ocupa a linha inteira, com a capa ao lado do texto. */
+function GameCard({
+  to,
+  cls,
+  art,
+  name,
+  size,
+  lines,
+  wide = false,
+  badge,
+}: {
+  to: string;
+  cls: string;
+  art: ReactNode;
+  name: string;
+  size?: 'mid' | 'long';
+  lines: string[];
+  wide?: boolean;
+  badge?: string;
+}) {
+  return (
+    <Link to={to as '/'} className={`hub-card ${cls}${wide ? ' wide' : ''}`} data-sfx="start" data-testid={`card-${cls.replace('hub-card-', '')}`}>
+      {badge && <span className="hz-badge mono">{badge}</span>}
+      <div className="hub-art">{art}</div>
+      <div className="hub-card-foot">
+        <div className={`hub-card-name${size ? ` ${size}` : ''}`}>{name}</div>
+        {lines.map((l) => (
+          <div key={l} className="mono hub-card-meta">
+            {l}
+          </div>
+        ))}
+      </div>
+    </Link>
+  );
+}
+
+/** A última coisa que ficou pela metade nos jogos de fases (Bee e Classic): o botão "Continuar". */
+function useContinue(): { to: string; params?: Record<string, string>; title: string; sub: string } | null {
+  const bee = useProgress(beeProgress);
+  const c = useProgress(classicProgress.classic);
+  const d = useProgress(classicProgress.dueto);
+  const q = useProgress(classicProgress.quarteto);
+  const options: { at: number; to: string; params: Record<string, string>; title: string; sub: string }[] = [];
+  for (const [n, p] of Object.entries(bee)) {
+    if (!p.closed && p.found.length > 0) {
+      options.push({ at: p.at, to: '/words/bee/fase/$n', params: { n }, title: "Bee Word's", sub: `Fase ${n} · ${p.found.length} palavras` });
+    }
+  }
+  const classic = [
+    ['classic', '1 palavra', c],
+    ['dueto', '2 palavras', d],
+    ['quarteto', '4 palavras', q],
+  ] as const;
+  for (const [modo, label, prog] of classic) {
+    for (const [n, p] of Object.entries(prog)) {
+      if (!p.done && p.guesses.length > 0) {
+        options.push({ at: p.at, to: '/words/classic/fase/$modo/$n', params: { modo, n }, title: "Classic Word's", sub: `${label} · fase ${n}` });
+      }
+    }
+  }
+  const last = options.sort((a, b) => b.at - a.at)[0];
+  return last ?? null;
 }
 
 export function Hub() {
@@ -57,9 +144,12 @@ export function Hub() {
     retry: false,
   });
   const data = user ? stats.data : undefined;
+  const resume = useContinue();
+  const doneToday = DAILIES.filter((d) => data?.daily[d.game]?.playedToday).length;
+  const streak = data?.visit.current ?? 0;
 
   return (
-    <main className="hub">
+    <main className="hub hz">
       <header className="top">
         <div className="logo hub-logo">
           no cap<span>!</span>
@@ -72,90 +162,108 @@ export function Hub() {
 
       <RoomBanner />
 
-      <h1 className="hub-title">
-        <AnimatedText lines={['O que vai', 'ser hoje?']} />
-      </h1>
+      <section className="hz-hello" aria-label="Resumo">
+        <div>
+          <h1>{user?.username ? `Oi, @${user.username}` : 'Bora jogar?'}</h1>
+          <p className="mono">
+            {data ? `${doneToday} DE ${DAILIES.length} DAILYS FEITOS HOJE` : 'ENTRE PARA GUARDAR RECORDES E DAILYS'}
+          </p>
+        </div>
+        {streak > 0 && (
+          <span className="hz-streak mono" title="Dias seguidos entrando no NoCap">
+            <b>{streak}</b> {streakLabel(streak).replace(/^\d+ /, '').toUpperCase()} SEGUIDOS
+          </span>
+        )}
+      </section>
 
-      <div className="hub-grid">
-        <Link to="/words" className="hub-card hub-card-words" data-sfx="start">
-          <div className="hub-art">
-            <WordsHubArt />
-          </div>
-          <div className="hub-card-foot">
-            <div className="hub-card-name">Word&apos;s</div>
-            <div className="mono hub-card-meta">JOGOS DE PALAVRAS</div>
-            <div className="mono hub-card-meta">{dailyStatus(data, 'wclassic')}</div>
-          </div>
+      <section className="hz-sec" aria-label="Dailys de hoje">
+        <h2 className="hz-h">
+          Hoje <small className="mono">UM DAILY POR JOGO, TODO DIA</small>
+        </h2>
+        <div className="hz-chips">
+          {DAILIES.map((d) => (
+            <DailyChip key={d.game} game={d.game} name={d.name} to={d.to} stats={data} />
+          ))}
+        </div>
+      </section>
+
+      {resume && (
+        <Link
+          to={resume.to as '/'}
+          params={resume.params as never}
+          className="hz-resume"
+          data-sfx="start"
+          data-testid="resume"
+        >
+          <span className="hz-resume-icon" aria-hidden="true">
+            ▶
+          </span>
+          <span>
+            <b>Continuar</b>
+            <small className="mono">
+              {resume.title.toUpperCase()} · {resume.sub.toUpperCase()}
+            </small>
+          </span>
+          <i aria-hidden="true">→</i>
         </Link>
+      )}
 
-        <Link to="/blocks" className="hub-card hub-card-blocks" data-sfx="start">
-          <div className="hub-art">
-            <BlocksArt />
-          </div>
-          <div className="hub-card-foot">
-            <div className="hub-card-name">Block&apos;s</div>
-            <div className="mono hub-card-meta">JOGOS DE BLOCOS</div>
-            <div className="mono hub-card-meta">{blocksBestLabel(data)}</div>
-          </div>
-        </Link>
+      <section className="hz-sec" aria-label="Com amigos">
+        <h2 className="hz-h">
+          Com amigos <small className="mono">SALAS DE 2 A 12 PESSOAS</small>
+        </h2>
+        <div className="hz-grid one">
+          <GameCard
+            to="/nocap"
+            cls="hub-card-mix"
+            art={<MixArt />}
+            name="Mix Nocap"
+            lines={['JOGUE COM AMIGOS', 'CRIE UMA SALA E CHAME A TURMA']}
+            wide
+            badge="MULTIJOGADOR"
+          />
+        </div>
+      </section>
 
-        <Link to="/tempo" className="hub-card hub-card-time" data-sfx="start">
-          <div className="hub-art">
-            <TimeArt />
-          </div>
-          <div className="hub-card-foot">
-            <div className="hub-card-name mid">Já Deu?</div>
-            <div className="mono hub-card-meta">{bestLabel(data, 'time')}</div>
-            <div className="mono hub-card-meta">{dailyStatus(data, 'time')}</div>
-          </div>
-        </Link>
+      <section className="hz-sec" aria-label="Reflexo e precisão">
+        <h2 className="hz-h">
+          Reflexo e precisão <small className="mono">COR, TEMPO E RITMO</small>
+        </h2>
+        <div className="hz-grid">
+          <GameCard to="/cor" cls="hub-card-color" art={<ColorArt />} name="Mesmíssima" size="long" lines={[bestLabel(data, 'color')]} />
+          <GameCard to="/tempo" cls="hub-card-time" art={<TimeArt />} name="Já Deu?" size="mid" lines={[bestLabel(data, 'time')]} />
+          <GameCard to="/eco" cls="hub-card-eco" art={<EcoArt />} name="Ecooo" lines={[bestLabel(data, 'eco')]} />
+        </div>
+      </section>
 
-        <Link to="/atravessa" className="hub-card hub-card-atravessa" data-sfx="start">
-          <div className="hub-art">
-            <AtravessaArt />
-          </div>
-          <div className="hub-card-foot">
-            <div className="hub-card-name long">Atravessa!</div>
-            <div className="mono hub-card-meta">PULE E DESVIE SEM PARAR</div>
-            <div className="mono hub-card-meta">{atravessaBestLabel(data)}</div>
-          </div>
-        </Link>
+      <section className="hz-sec" aria-label="Arcade">
+        <h2 className="hz-h">
+          Arcade <small className="mono">BATA SEU RECORDE</small>
+        </h2>
+        <div className="hz-grid">
+          <GameCard to="/atravessa" cls="hub-card-atravessa" art={<AtravessaArt />} name="Atravessa!" size="long" lines={[atravessaBestLabel(data)]} />
+          <GameCard to="/blocks" cls="hub-card-blocks" art={<BlocksArt />} name="Block's" lines={[blocksBestLabel(data)]} />
+        </div>
+      </section>
 
-        <Link to="/cor" className="hub-card hub-card-color" data-sfx="start">
-          <div className="hub-art">
-            <ColorArt />
-          </div>
-          <div className="hub-card-foot">
-            <div className="hub-card-name long">Mesmíssima</div>
-            <div className="mono hub-card-meta">{bestLabel(data, 'color')}</div>
-            <div className="mono hub-card-meta">{dailyStatus(data, 'color')}</div>
-          </div>
-        </Link>
+      <section className="hz-sec" aria-label="Palavras">
+        <h2 className="hz-h">
+          Palavras <small className="mono">CLASSIC, CONNECT E BEE</small>
+        </h2>
+        <div className="hz-grid one">
+          <GameCard
+            to="/words"
+            cls="hub-card-words"
+            art={<WordsHubArt />}
+            name="Word's"
+            lines={['JOGOS DE PALAVRAS', 'DAILY COM RANKING E CENTENAS DE FASES']}
+            wide
+            badge="NOVO"
+          />
+        </div>
+      </section>
 
-        <Link to="/eco" className="hub-card hub-card-eco" data-sfx="start">
-          <div className="hub-art">
-            <EcoArt />
-          </div>
-          <div className="hub-card-foot">
-            <div className="hub-card-name">Ecooo</div>
-            <div className="mono hub-card-meta">{bestLabel(data, 'eco')}</div>
-            <div className="mono hub-card-meta">{dailyStatus(data, 'eco')}</div>
-          </div>
-        </Link>
-
-        <Link to="/nocap" className="hub-card hub-card-mix" data-sfx="start">
-          <div className="hub-art">
-            <MixArt />
-          </div>
-          <div className="hub-card-foot">
-            <div className="hub-card-name mid">Mix Nocap</div>
-            <div className="mono hub-card-meta">JOGUE COM AMIGOS</div>
-            <div className="mono hub-card-meta">2 A 12 PESSOAS · SÓ EM SALA</div>
-          </div>
-        </Link>
-
-        <div className="hub-more mono">+ MAIS JOGOS EM BREVE</div>
-      </div>
+      <div className="hub-more mono">+ MAIS JOGOS EM BREVE</div>
     </main>
   );
 }
