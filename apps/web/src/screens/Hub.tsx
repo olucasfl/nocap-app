@@ -54,19 +54,27 @@ function DailyChip({ game, name, to, stats }: { game: GameId; name: string; to: 
   const info = stats?.daily[game];
   const done = !!info?.playedToday;
   const result = done ? dailyScoreText(game, info!.totalScore ?? 0) : null;
+  const state = !stats ? 'guest' : done ? 'done' : 'todo';
   return (
     <Link
       to={to as '/'}
       search={game === 'wclassic' ? undefined : ({ modo: 'daily' } as never)}
-      className={`hz-chip ${game}${done ? ' done' : ''}`}
+      className={`hz-chip ${game} ${state}`}
       data-sfx="start"
       data-testid={`daily-${game}`}
     >
-      <span className="hz-chip-dot" aria-hidden="true" />
+      <span className="hz-chip-mark" aria-hidden="true">
+        {done && (
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M5 12.5l4.5 4.5L19 7" />
+          </svg>
+        )}
+      </span>
       <span className="hz-chip-body">
         <b>{name}</b>
-        <small className="mono">{!stats ? 'SÓ COM CONTA' : done ? `FEITO · ${result}` : 'PENDENTE'}</small>
+        <small className="mono">{state === 'guest' ? 'SÓ COM CONTA' : done ? `FEITO · ${result}` : 'AINDA NÃO FEZ HOJE'}</small>
       </span>
+      {state !== 'done' && <span className="hz-chip-go mono">{state === 'todo' ? 'JOGAR' : 'ABRIR'}</span>}
     </Link>
   );
 }
@@ -178,8 +186,25 @@ export function Hub() {
 
       <section className="hz-sec" aria-label="Dailys de hoje">
         <h2 className="hz-h">
-          Hoje <small className="mono">UM DAILY POR JOGO, TODO DIA</small>
+          Dailys de hoje{' '}
+          <small className="mono">
+            {data ? (doneToday === DAILIES.length ? 'TUDO FEITO. VOLTE AMANHÃ' : `FALTAM ${DAILIES.length - doneToday} DE ${DAILIES.length}`) : 'UM POR JOGO, TODO DIA'}
+          </small>
         </h2>
+        {data && (
+          <div
+            className="hz-prog"
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={DAILIES.length}
+            aria-valuenow={doneToday}
+            aria-label="Dailys feitos hoje"
+          >
+            {DAILIES.map((d) => (
+              <i key={d.game} className={data.daily[d.game]?.playedToday ? 'on' : ''} />
+            ))}
+          </div>
+        )}
         <div className="hz-chips">
           {DAILIES.map((d) => (
             <DailyChip key={d.game} game={d.game} name={d.name} to={d.to} stats={data} />

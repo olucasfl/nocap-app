@@ -328,16 +328,38 @@ a.hub-daily {
   transform: translate(3px, 3px);
   box-shadow: 0 0 0 var(--ink);
 }
-.hz-chip-dot {
+.hz-prog {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 6px;
+}
+.hz-prog i {
+  height: 10px;
+  border: 2.5px solid var(--ink);
+  border-radius: 999px;
+  background: var(--white);
+}
+.hz-prog i.on {
+  background: var(--green);
+}
+.hz-chip-mark {
   position: relative;
   flex: none;
-  width: 14px;
-  height: 14px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
   border: 2.5px solid var(--ink);
   border-radius: 50%;
   background: var(--orange);
+  color: var(--on-accent);
 }
-.hz-chip:not(.done) .hz-chip-dot::after {
+.hz-chip-mark svg {
+  width: 14px;
+  height: 14px;
+}
+.hz-chip.todo .hz-chip-mark::after {
   content: '';
   position: absolute;
   inset: -6px;
@@ -345,13 +367,14 @@ a.hub-daily {
   border-radius: 50%;
   animation: hz-ping 1.8s ease-out infinite;
 }
-.hz-chip.done .hz-chip-dot {
+.hz-chip.done .hz-chip-mark {
   background: var(--green);
 }
 .hz-chip-body {
   display: grid;
   gap: 2px;
   min-width: 0;
+  flex: 1;
 }
 .hz-chip-body b {
   font: 900 15px var(--font-display);
@@ -359,12 +382,32 @@ a.hub-daily {
   letter-spacing: -0.02em;
 }
 .hz-chip-body small {
-  font-size: 10px;
+  font-size: 9.5px;
   color: var(--muted);
   text-transform: uppercase;
 }
+.hz-chip-go {
+  flex: none;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--party-bg);
+  color: var(--party-fg);
+  font-size: 10px;
+  font-weight: 700;
+}
+.hz-chip.todo {
+  background: var(--yellow);
+  color: var(--on-accent);
+}
+.hz-chip.todo small {
+  color: var(--on-accent);
+}
 .hz-chip.done {
   background: var(--paper);
+  box-shadow: 2px 2px 0 var(--ink);
+}
+.hz-chip.done b {
+  opacity: 0.7;
 }
 @keyframes hz-ping {
   0% {
@@ -544,7 +587,7 @@ a.hub-daily {
   .hz-hello,
   .hz-chip,
   .hz-resume,
-  .hz-chip-dot::after {
+  .hz-chip-mark::after {
     animation: none !important;
   }
 }
