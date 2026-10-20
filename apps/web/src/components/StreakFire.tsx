@@ -99,22 +99,36 @@ function compile(gl: WebGLRenderingContext, type: number, src: string): WebGLSha
  * Sem WebGL o canvas simplesmente não aparece (o brilho em CSS continua).
  */
 export function StreakFire() {
-  const ref = useRef<HTMLCanvasElement>(null);
+  const mark = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
-    const canvas = ref.current;
-    const host = canvas?.parentElement;
-    if (!canvas || !host) return;
+    const host = mark.current?.parentElement;
+    if (!host) return;
+    // O canvas nasce aqui (e morre aqui): o modo estrito do React roda o efeito duas vezes, e um canvas que já
+    // perdeu o contexto não volta a desenhar.
+    const canvas = document.createElement('canvas');
+    canvas.className = 'hz-fire-canvas';
+    canvas.setAttribute('aria-hidden', 'true');
+    host.appendChild(canvas);
     const gl = canvas.getContext('webgl', { premultipliedAlpha: true, alpha: true, antialias: false });
-    if (!gl) return;
+    if (!gl) {
+      canvas.remove();
+      return;
+    }
     const vs = compile(gl, gl.VERTEX_SHADER, VERT);
     const fs = compile(gl, gl.FRAGMENT_SHADER, FRAG);
     const prog = gl.createProgram();
-    if (!vs || !fs || !prog) return;
+    if (!vs || !fs || !prog) {
+      canvas.remove();
+      return;
+    }
     gl.attachShader(prog, vs);
     gl.attachShader(prog, fs);
     gl.linkProgram(prog);
-    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return;
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+      canvas.remove();
+      return;
+    }
     gl.useProgram(prog);
 
     const buf = gl.createBuffer();
@@ -193,8 +207,9 @@ export function StreakFire() {
       io.disconnect();
       document.removeEventListener('visibilitychange', start);
       gl.getExtension('WEBGL_lose_context')?.loseContext();
+      canvas.remove();
     };
   }, []);
 
-  return <canvas ref={ref} className="hz-fire-canvas" aria-hidden="true" />;
+  return <span ref={mark} hidden />;
 }
