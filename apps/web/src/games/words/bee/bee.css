@@ -1745,3 +1745,128 @@
     padding: 14px;
   }
 }
+
+/* ====================== dicas: abas no topo (Quantas letras já aberta) ====================== */
+.bz-hsw {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+.bz-hsw-b {
+  appearance: none;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 6px 6px;
+  border: var(--border);
+  border-radius: 12px;
+  background: var(--paper);
+  color: var(--ink);
+  font: 900 11px/1.1 var(--font-display);
+  text-align: center;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.bz-hsw-b[aria-selected='true'] {
+  background: var(--yellow);
+  color: var(--on-accent);
+  box-shadow: inset 0 -4px 0 rgb(0 0 0 / 0.25);
+}
+.bz-hsw-b.locked:not([aria-selected='true']) {
+  border-style: dashed;
+  color: var(--muted);
+}
+.bz-hsw-b svg {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.bz-hsw-b.new {
+  animation: bz-hint-pulse 1.8s ease-in-out infinite;
+}
+.bz-hsw-new {
+  position: absolute;
+  top: -8px;
+  right: -4px;
+  padding: 1px 7px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--orange);
+  color: var(--on-accent);
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 800;
+}
+.bz-mapg-list {
+  display: grid;
+  gap: 14px;
+}
+.bz-mapg {
+  display: grid;
+  gap: 6px;
+}
+.bz-mapg-h {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.bz-mapg-h .bz-chip {
+  width: 30px;
+  height: 30px;
+  font-size: 16px;
+}
+.bz-mapg-h b {
+  font: 900 13px var(--font-display);
+}
+.bz-mapg-h small {
+  margin-left: auto;
+  font-size: 10.5px;
+  color: var(--muted);
+}
+.bz-locked {
+  justify-items: center;
+  gap: 8px;
+  padding: 18px 8px;
+  text-align: center;
+}
+.bz-locked-ico {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border: 2.5px dashed var(--muted);
+  border-radius: 16px;
+  color: var(--muted);
+}
+.bz-locked-ico svg {
+  width: 26px;
+  height: 26px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.bz-locked p {
+  margin: 0;
+  max-width: 28ch;
+  font-size: 11px;
+  color: var(--muted);
+}
+.bz-locked .bz-hcard-bar {
+  width: min(240px, 100%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .bz-hsw-b.new {
+    animation: none;
+  }
+}
