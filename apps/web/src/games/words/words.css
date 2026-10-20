@@ -2530,3 +2530,22 @@ a.wd-card:hover .wd-card-go {
 .cw-end.won .wd-shine::after {
   animation: wd-sweep 1.3s ease-out 0.6s both;
 }
+
+/* letra já usada e cinza: um cinza mais claro que o das teclas normais, visível no modo escuro */
+.cw-key-bg i.miss {
+  background: #9a9a92;
+}
+.cw-key.has-color.blocked .cw-key-l {
+  color: #1a1a17;
+  text-shadow: none;
+}
+.cw-key.blocked {
+  opacity: 1;
+}
+.cw-key.blocked::after {
+  background: #1a1a17;
+  opacity: 0.7;
+}
+.cw-legend i.miss {
+  background: #9a9a92;
+}
