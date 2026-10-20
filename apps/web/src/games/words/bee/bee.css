@@ -812,48 +812,6 @@
 .bz-lock b {
   color: var(--ink);
 }
-.bz-map {
-  display: grid;
-  gap: 4px;
-}
-.bz-map-row {
-  display: grid;
-  grid-template-columns: 34px repeat(calc(var(--cols) - 1), minmax(0, 1fr));
-  gap: 4px;
-  align-items: center;
-}
-.bz-map-head {
-  text-align: center;
-  font: 800 11px var(--font-mono);
-  color: var(--muted);
-}
-.bz-map-cell {
-  display: grid;
-  place-items: center;
-  height: 30px;
-  border: 2.5px solid var(--ink);
-  border-radius: 8px;
-  background: transparent;
-  color: var(--muted);
-  font: 800 13px var(--font-mono);
-}
-.bz-map-cell.has {
-  background: var(--yellow);
-  color: var(--on-accent);
-}
-.bz-map-cell.sum {
-  border-style: dashed;
-  background: var(--paper);
-  color: var(--ink);
-}
-.bz-map-row.foot {
-  margin-top: 2px;
-}
-.bz-map .bz-chip.sum {
-  display: grid;
-  place-items: center;
-  background: var(--paper);
-}
 .bz-pairs {
   display: flex;
   flex-wrap: wrap;
@@ -1264,4 +1222,84 @@
 }
 .bz-tab.hints::after {
   display: none;
+}
+
+/* mapa por letra: um cartão por letra inicial, com os tamanhos em etiquetas que quebram de linha (cabe em qualquer tela) */
+.bz-map {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.bz-map-row {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border: 2.5px solid var(--ink);
+  border-radius: 14px;
+  background: var(--white);
+}
+.bz-map-letter {
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+  padding: 4px 2px;
+  border-radius: 10px;
+  background: var(--yellow);
+  color: var(--on-accent);
+  text-align: center;
+}
+.bz-map-letter .mono {
+  font-size: 8.5px;
+  text-transform: uppercase;
+}
+.bz-map-letter b {
+  font: 900 30px/1 var(--font-display);
+}
+.bz-map-letter small {
+  font-size: 9px;
+  text-transform: uppercase;
+}
+.bz-map-sizes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.bz-map-sizes li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 4px 3px 10px;
+  border: 2.5px solid var(--ink);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  font: 800 12px var(--font-display);
+  text-transform: uppercase;
+}
+.bz-map-sizes li b {
+  min-width: 24px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--paper);
+  font: 800 13px var(--font-mono);
+  text-align: center;
+}
+.bz-map-total {
+  margin: 0;
+  font-size: 11px;
+  text-align: right;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.bz-map-total b {
+  color: var(--ink);
+  font: 900 14px var(--font-display);
 }

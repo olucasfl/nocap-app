@@ -439,59 +439,44 @@ export function BeePlay() {
             </section>
 
             <section className="bz-hint-block" aria-label="Mapa das palavras">
-              <h4>Começa com... e tem N letras</h4>
+              <h4>Por letra e tamanho</h4>
               {hints.needMap > 0 ? (
                 <p className="bz-lock" data-testid="hint-map-lock">
                   <b>Bloqueado.</b> Ache mais {hints.needMap} {hints.needMap === 1 ? 'palavra' : 'palavras'} para abrir o mapa.
                 </p>
               ) : (
-                <div
-                  className="bz-map"
-                  data-testid="hint-map"
-                  role="table"
-                  aria-label="Palavras que faltam, por letra inicial e tamanho"
-                  style={{ '--cols': hints.map.sizes.length + 2 } as CSSProperties}
-                >
-                  <div className="bz-map-row head" role="row">
-                    <span className="bz-map-corner" role="columnheader" aria-label="Letra inicial" />
-                    {hints.map.sizes.map((n) => (
-                      <b key={n} className="bz-map-head" role="columnheader">
-                        {n}
-                      </b>
-                    ))}
-                    <b className="bz-map-head" role="columnheader">
-                      Σ
-                    </b>
-                  </div>
-                  {hints.map.letters.map((l, r) => (
-                    <div key={l} className="bz-map-row" role="row">
-                      <b className="bz-chip" role="rowheader">
-                        {l.toUpperCase()}
-                      </b>
-                      {hints.map.cells[r]!.map((n, c) => (
-                        <span key={c} className={`bz-map-cell${n > 0 ? ' has' : ''}`} role="cell">
-                          {n > 0 ? n : '·'}
-                        </span>
-                      ))}
-                      <span className="bz-map-cell sum" role="cell">
-                        {hints.map.rowTotals[r]}
-                      </span>
-                    </div>
-                  ))}
-                  <div className="bz-map-row foot" role="row">
-                    <span className="bz-chip sum" role="rowheader">
-                      Σ
-                    </span>
-                    {hints.map.colTotals.map((n, c) => (
-                      <span key={c} className="bz-map-cell sum" role="cell">
-                        {n}
-                      </span>
-                    ))}
-                    <span className="bz-map-cell sum" role="cell">
-                      {hints.left}
-                    </span>
-                  </div>
-                </div>
+                <>
+                  <ul className="bz-map" data-testid="hint-map">
+                    {hints.map.letters.map((l, r) => {
+                      const total = hints.map.rowTotals[r]!;
+                      return (
+                        <li key={l} className="bz-map-row">
+                          <div className="bz-map-letter">
+                            <span className="mono">Começa com</span>
+                            <b>{l.toUpperCase()}</b>
+                            <small className="mono">
+                              {total} {total === 1 ? 'palavra' : 'palavras'}
+                            </small>
+                          </div>
+                          <ul className="bz-map-sizes">
+                            {hints.map.sizes.map((n, c) => {
+                              const count = hints.map.cells[r]![c]!;
+                              return count > 0 ? (
+                                <li key={n}>
+                                  <span>{n} letras</span>
+                                  <b>{count}</b>
+                                </li>
+                              ) : null;
+                            })}
+                          </ul>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  <p className="bz-map-total mono">
+                    Total que falta: <b>{hints.left}</b> {hints.left === 1 ? 'palavra' : 'palavras'}
+                  </p>
+                </>
               )}
             </section>
 
