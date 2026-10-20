@@ -5,6 +5,6 @@ const route = getRouteApi('/eco');
 
 /** Ponte entre a rota (/eco?modo=daily) e o jogo. Carregado sob demanda (lazy). */
 export function EcoPage() {
-  const { modo, aba, jogar } = route.useSearch();
-  return <EcoGame initialMode={modo} initialTab={aba} autoStart={jogar} />;
+  const { modo, aba } = route.useSearch();
+  return <EcoGame initialMode={modo} initialTab={aba} />;
 }

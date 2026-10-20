@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { soloSession } from '@/lib/solo-session';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
@@ -55,12 +55,9 @@ async function newRun(mode: Exclude<Mode, 'batida'>): Promise<Run> {
 export function EcoGame({
   initialMode = 'classic',
   initialTab,
-  autoStart,
 }: {
   initialMode?: Mode;
   initialTab?: GameTab;
-  /** Veio do atalho da Home: começa o Daily sem esperar o toque em "Jogar". */
-  autoStart?: boolean;
 }) {
   const [mode, setMode] = useState<Mode>(initialMode);
   const navigate = useNavigate();
@@ -113,14 +110,6 @@ export function EcoGame({
     },
     [queryClient],
   );
-
-  // Atalho da Home: abre o Daily já jogando (uma vez só, para o "Voltar" não reiniciar).
-  const autoRan = useRef(false);
-  useEffect(() => {
-    if (!autoStart || autoRan.current) return;
-    autoRan.current = true;
-    void start('daily');
-  }, [autoStart, start]);
 
   /** Do fim da partida de volta ao menu do jogo, já na aba (e no quadro do ranking) pedidos. */
   const goMenu = (tab: GameTab, board?: Board) => {

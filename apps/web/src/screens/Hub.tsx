@@ -56,8 +56,8 @@ function DailyChip({ game, name, to, stats }: { game: GameId; name: string; to: 
   const state = !stats ? 'guest' : done ? 'done' : 'todo';
   return (
     <Link
-      to={(game === 'wclassic' && state === 'todo' ? '/words/classic/jogar' : to) as '/'}
-      search={game === 'wclassic' ? undefined : ({ modo: 'daily', ...(state === 'todo' ? { jogar: 1 } : {}) } as never)}
+      to={to as '/'}
+      search={game === 'wclassic' ? undefined : ({ modo: 'daily' } as never)}
       className={`hz-chip ${game} ${state}`}
       data-sfx="start"
       data-testid={`daily-${game}`}

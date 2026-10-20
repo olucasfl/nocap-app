@@ -112,8 +112,6 @@ const roomCodeRoute = createRoute({
 interface GameSearch<M> {
   modo?: M;
   aba?: GameTab;
-  /** `jogar=1` com `modo=daily`: começa o Daily direto, sem passar pela tela do jogo. */
-  jogar?: true;
 }
 const TABS: GameTab[] = ['modes', 'friends'];
 
@@ -123,7 +121,6 @@ function gameSearch<M extends string>(search: Record<string, unknown>, modes: M[
   const aba = TABS.find((t) => t === search.aba);
   if (modo) out.modo = modo;
   if (aba) out.aba = aba;
-  if (modo === 'daily' && (search.jogar === 1 || search.jogar === '1' || search.jogar === true)) out.jogar = true;
   return out;
 }
 
