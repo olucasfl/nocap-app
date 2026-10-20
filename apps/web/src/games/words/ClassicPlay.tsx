@@ -23,8 +23,6 @@ export function ClassicPlay({ mode, kind }: { mode: ClassicMode; kind: 'daily' |
   // o resultado só aparece depois que a última linha termina de virar
   const [resultReady, setResultReady] = useState(true);
   const [endCollapsed, setEndCollapsed] = useState(false);
-  const [denied, setDenied] = useState<{ l: string; n: number } | null>(null);
-  const blockedRef = useRef<Set<string>>(new Set());
   const accepted = useRef<Set<string> | null>(null);
   const toastTimer = useRef<number | undefined>(undefined);
 
@@ -57,17 +55,9 @@ export function ClassicPlay({ mode, kind }: { mode: ClassicMode; kind: 'daily' |
   const busyRef = useRef(false);
   const type = useCallback((l: string) => {
     if (busyRef.current) return;
-    // letra cinza: não existe na palavra, então não dá para usar (som, tremida e aviso)
-    if (blockedRef.current.has(l)) {
-      wordsAudio.invalid();
-      setDenied((d) => ({ l, n: (d?.n ?? 0) + 1 }));
-      window.setTimeout(() => setDenied(null), 450);
-      say('Essa letra não está na palavra');
-      return;
-    }
     wordsAudio.key();
     setTyped((t) => ([...t].length < LENGTH ? t + l : t));
-  }, [setTyped, say]);
+  }, [setTyped]);
   const erase = useCallback(() => {
     if (!busyRef.current) setTyped((t) => [...t].slice(0, -1).join(''));
   }, [setTyped]);
@@ -158,13 +148,13 @@ export function ClassicPlay({ mode, kind }: { mode: ClassicMode; kind: 'daily' |
 
   const decoded: Cell[][][] = run.boards.map((b) => b.rows.map(decodePattern));
   const keys = run.boards.map((b, i) => keyboardState(run.guesses.slice(0, b.rows.length), decoded[i]!));
-  // letras que já sabemos que não existem: cinza em todos os tabuleiros ainda abertos
+  // letras que já sabemos que não existem (cinza em todos os tabuleiros ainda abertos): ficam marcadas como
+  // "já foi", mas continuam clicáveis (a pessoa pode testar palavras só para eliminar letras)
   const open0 = run.boards.map((b, i) => (b.solvedAt === null ? i : -1)).filter((i) => i >= 0);
-  const blocked = new Set<string>();
+  const used = new Set<string>();
   for (const l of ROWS.join('')) {
-    if (open0.length > 0 && open0.every((i) => keys[i]!.get(l) === 'miss')) blocked.add(l);
+    if (open0.length > 0 && open0.every((i) => keys[i]!.get(l) === 'miss')) used.add(l);
   }
-  blockedRef.current = blocked;
   const info = MODE_LABEL[run.mode];
   const left = run.tries - run.used;
   const title = run.kind === 'daily' ? `Daily #${run.number}` : info.name;
@@ -243,10 +233,9 @@ export function ClassicPlay({ mode, kind }: { mode: ClassicMode; kind: 'daily' |
                 return (
                   <button
                     type="button"
-                    key={`${l}-${denied?.l === l ? denied.n : 0}`}
-                    className={`cw-key${colored ? ' has-color' : ''}${blocked.has(l) ? ' blocked' : ''}${denied?.l === l ? ' deny' : ''}`}
-                    aria-label={blocked.has(l) ? `${l} (não está na palavra)` : l}
-                    aria-disabled={blocked.has(l)}
+                    key={l}
+                    className={`cw-key${colored ? ' has-color' : ''}${used.has(l) ? ' used' : ''}`}
+                    aria-label={used.has(l) ? `${l} (já foi: não tem na palavra)` : l}
                     data-testid={`key-${l}`}
                     onClick={() => type(l)}
                   >

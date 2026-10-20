@@ -2237,12 +2237,11 @@ a.wd-card:hover .wd-card-go {
   border-radius: 4px;
 }
 
-/* letra cinza: não existe na palavra, então a tecla fica travada */
-.cw-key.blocked {
+/* letra que já foi (cinza, não existe na palavra): marcada com um risco, mas continua clicável */
+.cw-key.used {
   opacity: 0.38;
-  cursor: not-allowed;
 }
-.cw-key.blocked::after {
+.cw-key.used::after {
   content: '';
   position: absolute;
   left: 10%;
@@ -2252,50 +2251,6 @@ a.wd-card:hover .wd-card-go {
   background: var(--ink);
   transform: rotate(-35deg);
   pointer-events: none;
-}
-.cw-key.deny {
-  animation: cw-deny 0.45s ease both;
-}
-.cw-key.deny::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: var(--orange);
-  opacity: 0.55;
-  z-index: 1;
-  animation: cw-deny-flash 0.45s ease-out both;
-}
-@keyframes cw-deny {
-  0%,
-  100% {
-    transform: translateX(0);
-  }
-  18% {
-    transform: translateX(-5px) rotate(-4deg);
-  }
-  36% {
-    transform: translateX(5px) rotate(4deg);
-  }
-  54% {
-    transform: translateX(-4px);
-  }
-  72% {
-    transform: translateX(3px);
-  }
-}
-@keyframes cw-deny-flash {
-  from {
-    opacity: 0.7;
-  }
-  to {
-    opacity: 0;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .cw-key.deny,
-  .cw-key.deny::before {
-    animation: none !important;
-  }
 }
 
 /* ====================== fim de partida do Classic ====================== */
@@ -2535,14 +2490,14 @@ a.wd-card:hover .wd-card-go {
 .cw-key-bg i.miss {
   background: #9a9a92;
 }
-.cw-key.has-color.blocked .cw-key-l {
+.cw-key.has-color.used .cw-key-l {
   color: #1a1a17;
   text-shadow: none;
 }
-.cw-key.blocked {
+.cw-key.used {
   opacity: 1;
 }
-.cw-key.blocked::after {
+.cw-key.used::after {
   background: #1a1a17;
   opacity: 0.7;
 }

@@ -161,7 +161,7 @@ export function ColorLegend({ big = false }: { big?: boolean }) {
     : [
         { tone: 'hit', text: 'Lugar certo' },
         { tone: 'near', text: 'Outro lugar' },
-        { tone: 'miss', text: 'Não tem' },
+        { tone: 'miss', text: 'Não tem (já foi)' },
       ];
   return (
     <ul className={`cw-legend${big ? ' big' : ''}`} aria-label="Significado das cores">

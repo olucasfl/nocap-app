@@ -14,7 +14,7 @@ const STEPS = [
   'Digite uma palavra de 5 letras e aperte Enter. Ela precisa existir na lista do jogo.',
   'Cada letra mostra uma cor. Use as cores para chegar na palavra certa.',
   'Letra repetida: cada letra da resposta só pinta uma casa (igual ao Wordle e ao Termo).',
-  'Letras cinza não existem na palavra: o teclado bloqueia elas.',
+  'No teclado, a letra cinza clara riscada "já foi": não tem na palavra. Você ainda pode usar ela para testar palavras e eliminar outras.',
   'Acentos não importam: digite "aviao" e o jogo mostra "avião".',
   'No Dueto e no Quarteto o mesmo palpite vale para todos os tabuleiros.',
 ];
