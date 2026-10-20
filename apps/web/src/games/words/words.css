@@ -2018,3 +2018,131 @@ a.wd-card:hover .wd-card-go {
     animation: none !important;
   }
 }
+
+/* ====================== filtro das fases ====================== */
+.wd-filters {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+@media (min-width: 560px) {
+  .wd-filters {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+.wd-filter {
+  --tone: var(--ink);
+  --on-tone: var(--paper);
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+  height: 46px;
+  padding: 0 10px;
+  border: var(--border);
+  border-radius: 14px;
+  background: var(--white);
+  color: var(--ink);
+  box-shadow: 3px 3px 0 var(--tone);
+  font: 900 13px var(--font-display);
+  letter-spacing: -0.01em;
+  text-align: left;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    transform 0.1s ease-out,
+    box-shadow 0.1s ease-out;
+}
+.wd-filter.new {
+  --tone: var(--blue);
+  --on-tone: var(--on-blue);
+}
+.wd-filter.open {
+  --tone: var(--orange);
+  --on-tone: var(--on-accent);
+}
+.wd-filter.done {
+  --tone: var(--green);
+  --on-tone: var(--on-accent);
+}
+.wd-filter svg {
+  width: 20px;
+  height: 20px;
+  padding: 3px;
+  border-radius: 50%;
+  background: var(--tone);
+  color: var(--on-tone);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  box-sizing: content-box;
+}
+.wd-filter.new svg,
+.wd-filter.open svg {
+  fill: currentColor;
+  stroke-width: 1.5;
+}
+.wd-filter-label {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.wd-filter-count {
+  min-width: 26px;
+  padding: 2px 7px;
+  border: 2.5px solid var(--ink);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  font: 800 12px var(--font-mono);
+  text-align: center;
+}
+.wd-filter[aria-pressed='true'] {
+  background: var(--tone);
+  color: var(--on-tone);
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 var(--ink);
+}
+.wd-filter[aria-pressed='true'] svg {
+  background: var(--on-tone);
+  color: var(--tone);
+}
+.wd-filter[aria-pressed='true'] .wd-filter-count {
+  animation: wd-bump 0.35s ease-out;
+}
+.wd-filter:active:not([aria-pressed='true']) {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--tone);
+}
+@media (prefers-reduced-motion: reduce) {
+  .wd-filter,
+  .wd-filter-count {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+.wd-filter {
+  gap: 6px;
+  font-size: 12px;
+}
+/* a quantidade vira um selo no canto: sobra espaço para o nome inteiro */
+.wd-filter {
+  grid-template-columns: auto 1fr;
+}
+.wd-filter-count {
+  position: absolute;
+  top: -9px;
+  right: -5px;
+  min-width: 24px;
+  padding: 0 6px;
+  font-size: 11px;
+  line-height: 18px;
+}
+.wd-filter[aria-pressed='true'] .wd-filter-count {
+  background: var(--ink);
+  color: var(--paper);
+}

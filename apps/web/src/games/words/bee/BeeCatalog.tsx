@@ -1,19 +1,13 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { Link } from '@tanstack/react-router';
 import { beeMaxPoints, beeRank, beeScore } from '@nocap/games';
-import { HexLoader, Pill, RulesList, Tabs, WordsShell } from '../words-kit';
+import { FilterBar, HexLoader, Pill, RulesList, Tabs, WordsShell } from '../words-kit';
 import { loadBeeLevels, tierOf, tierRanges, toBeePuzzle, type BeeLevel } from '../levels/levels';
 import { beeProgress, useProgress, type LevelStatus } from '../levels/progress';
 import { BeeMascot } from './BeeArt';
 import './bee.css';
 
 type Filter = 'all' | LevelStatus;
-const FILTERS: { id: Filter; label: string }[] = [
-  { id: 'all', label: 'Todas' },
-  { id: 'new', label: 'Novas' },
-  { id: 'open', label: 'Em andamento' },
-  { id: 'done', label: 'Concluídas' },
-];
 
 export const BEE_RULES = [
   'Toda palavra tem 4 letras ou mais, usa só as 7 letras do favo e leva a letra do centro (a amarela).',
@@ -123,13 +117,7 @@ export function BeeCatalog() {
         </section>
       ) : (
         <>
-          <div className="bz-filters" role="group" aria-label="Filtro">
-            {FILTERS.map((f) => (
-              <button key={f.id} type="button" aria-pressed={filter === f.id} data-testid={`filter-${f.id}`} onClick={() => setFilter(f.id)}>
-                {f.label}
-              </button>
-            ))}
-          </div>
+          <FilterBar value={filter} onChange={setFilter} counts={{ all: info.length, new: info.filter((x) => x.status === 'new').length, open: info.filter((x) => x.status === 'open').length, done: info.filter((x) => x.status === 'done').length }} />
 
           {tierRanges(levels).map(({ tier, from, to }) => {
             const cells = info.filter((x) => x.n >= from && x.n <= to && (filter === 'all' || x.status === filter));

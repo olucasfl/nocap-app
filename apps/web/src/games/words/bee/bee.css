@@ -151,26 +151,6 @@
   clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
 }
 
-.bz-filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.bz-filters button {
-  height: 34px;
-  padding: 0 12px;
-  border: 2.5px solid var(--ink);
-  border-radius: 999px;
-  background: var(--white);
-  color: var(--ink);
-  font: 700 12px var(--font-mono);
-  text-transform: uppercase;
-  cursor: pointer;
-}
-.bz-filters button[aria-pressed='true'] {
-  background: var(--ink);
-  color: var(--paper);
-}
 .bz-tier {
   display: grid;
   gap: 8px;

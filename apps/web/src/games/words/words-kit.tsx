@@ -149,6 +149,58 @@ export function TileLoader({ label = 'Sorteando a palavra...' }: { label?: strin
 
 const CONFETTI_COLORS = ['var(--yellow)', 'var(--orange)', 'var(--green)', 'var(--blue)', 'var(--eco-purple)'];
 
+export type FilterId = 'all' | 'new' | 'open' | 'done';
+
+const FILTER_ICON: Record<FilterId, ReactNode> = {
+  all: <path d="M4 5h16M4 12h16M4 19h16" />,
+  new: <path d="M12 3l2.2 5.3L20 9l-4.4 3.8L17 18.5 12 15.6 7 18.5l1.4-5.7L4 9l5.8-.7z" />,
+  open: <path d="M8 5v14l11-7z" />,
+  done: <path d="M4 12.5l5 5L20 6.5" />,
+};
+
+/**
+ * Filtro das fases (Todas, Novas, Em andamento, Concluídas): cada opção tem cor, ícone e a quantidade de
+ * fases, e a escolhida "afunda" e se enche de cor.
+ */
+export function FilterBar({
+  value,
+  onChange,
+  counts,
+  className = '',
+}: {
+  value: FilterId;
+  onChange: (id: FilterId) => void;
+  counts: Record<FilterId, number>;
+  className?: string;
+}) {
+  const items: { id: FilterId; label: string }[] = [
+    { id: 'all', label: 'Todas' },
+    { id: 'new', label: 'Novas' },
+    { id: 'open', label: 'Andamento' },
+    { id: 'done', label: 'Completas' },
+  ];
+  return (
+    <div className={`wd-filters ${className}`} role="group" aria-label="Filtro">
+      {items.map((f) => (
+        <button
+          key={f.id}
+          type="button"
+          className={`wd-filter ${f.id}`}
+          aria-pressed={value === f.id}
+          data-testid={`filter-${f.id}`}
+          onClick={() => onChange(f.id)}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            {FILTER_ICON[f.id]}
+          </svg>
+          <span className="wd-filter-label">{f.label}</span>
+          <b className="wd-filter-count">{counts[f.id]}</b>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export type FxKind = 'win' | 'epic' | 'gold' | 'lose' | 'spark';
 
 /** Um número "aleatório" estável (0 a 1) para cada peça: a explosão sai igual em toda renderização. */

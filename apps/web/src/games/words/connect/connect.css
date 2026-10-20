@@ -109,26 +109,6 @@
   color: var(--on-blue);
   font: 900 20px var(--font-display);
 }
-.cx-filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.cx-filters button {
-  height: 34px;
-  padding: 0 12px;
-  border: 2.5px solid var(--ink);
-  border-radius: 999px;
-  background: var(--white);
-  color: var(--ink);
-  font: 700 12px var(--font-mono);
-  text-transform: uppercase;
-  cursor: pointer;
-}
-.cx-filters button[aria-pressed='true'] {
-  background: var(--ink);
-  color: var(--paper);
-}
 .cx-tier {
   display: grid;
   gap: 8px;
