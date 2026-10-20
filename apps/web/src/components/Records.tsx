@@ -96,9 +96,17 @@ function RecordsView({ stats }: { stats: Stats }) {
         aria-labelledby={`rc-tab-${game}`}
         className={`rc-panel ${game}`}
       >
-        <div className="mono rc-total">
-          {total} {total === 1 ? 'PARTIDA' : 'PARTIDAS'} EM {GAME_LABEL[game].toUpperCase()}
-        </div>
+        <header className="rc-head">
+          <span className="rc-head-ico" aria-hidden="true">
+            <GameArt game={game} size="sm" />
+          </span>
+          <div>
+            <b>{GAME_LABEL[game]}</b>
+            <span className="mono">
+              {total > 0 ? `${total} ${total === 1 ? 'partida jogada' : 'partidas jogadas'}` : 'Nenhuma partida ainda'}
+            </span>
+          </div>
+        </header>
         <ul className="rc-grid">
           {knownModes(game).map((mode) => (
             <ModeTile
@@ -120,6 +128,7 @@ function RecordsView({ stats }: { stats: Stats }) {
             </div>
           </li>
         </ul>
+        {total === 0 && <p className="mono rc-empty">Jogue uma partida para criar o seu primeiro recorde.</p>}
       </section>
     </div>
   );

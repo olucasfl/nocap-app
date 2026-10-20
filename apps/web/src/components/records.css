@@ -165,3 +165,126 @@
   font: 900 26px var(--font-display);
   letter-spacing: -0.03em;
 }
+
+/* ====================== recordes (premium) ====================== */
+.rc {
+  gap: 14px;
+}
+/* a escolha do jogo vira uma fileira que rola de lado, sem quebrar em duas linhas */
+.rc-games {
+  display: flex;
+  gap: 8px;
+  padding: 2px 2px 8px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+.rc-games::-webkit-scrollbar {
+  display: none;
+}
+.rc-game {
+  flex: none;
+  min-width: 84px;
+  padding: 8px 10px;
+  scroll-snap-align: start;
+  border-radius: 14px;
+}
+.rc-panel {
+  --acc: var(--yellow);
+  --on-acc: var(--on-accent);
+  display: grid;
+  gap: 12px;
+}
+.rc-panel.color {
+  --acc: var(--orange);
+}
+.rc-panel.time {
+  --acc: var(--blue);
+  --on-acc: var(--on-blue);
+}
+.rc-panel.eco {
+  --acc: var(--green);
+}
+.rc-panel.atravessa {
+  --acc: var(--eco-red);
+  --on-acc: var(--on-blue);
+}
+.rc-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: var(--border);
+  border-radius: 18px;
+  background: var(--acc);
+  color: var(--on-acc);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+.rc-head-ico {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  flex: none;
+  border: 2.5px solid var(--ink);
+  border-radius: 14px;
+  background: var(--paper);
+}
+.rc-head b {
+  display: block;
+  font: 900 22px/1 var(--font-display);
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+}
+.rc-head .mono {
+  font-size: 10.5px;
+  text-transform: uppercase;
+}
+.rc-tile {
+  position: relative;
+  border-radius: 16px;
+  box-shadow: 4px 4px 0 var(--ink);
+}
+.rc-tile::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  background: var(--acc);
+  border-right: 2.5px solid var(--ink);
+}
+.rc-tile-btn {
+  padding: 10px 12px 10px 20px;
+}
+.rc-tile-best {
+  font-size: 36px;
+}
+.rc-tile.empty::before {
+  background: var(--paper);
+}
+.rc-tile.open {
+  background: var(--white);
+  color: var(--ink);
+}
+.rc-tile.daily {
+  background: var(--acc);
+  color: var(--on-acc);
+}
+.rc-tile.daily::before {
+  display: none;
+}
+.rc-tile.daily .rc-tile-btn {
+  padding-left: 14px;
+}
+.rc-empty {
+  margin: 0;
+  padding: 10px 12px;
+  border: 2.5px dashed var(--ink);
+  border-radius: 14px;
+  font-size: 10.5px;
+  text-align: center;
+  text-transform: uppercase;
+  color: var(--muted);
+}

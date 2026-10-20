@@ -21,7 +21,7 @@
   background: var(--yellow) var(--gh-dots);
   color: var(--on-accent);
   overflow: hidden;
-  animation: wd-rise 0.45s cubic-bezier(0.2, 1.2, 0.4, 1) both;
+  animation: gh-rise 0.45s cubic-bezier(0.2, 1.2, 0.4, 1) both;
 }
 .gh-hero.red {
   background: var(--eco-red) var(--gh-dots);
@@ -136,7 +136,7 @@
   transition:
     transform 0.08s ease-out,
     box-shadow 0.08s ease-out;
-  animation: wd-rise 0.45s cubic-bezier(0.2, 1.2, 0.4, 1) both;
+  animation: gh-rise 0.45s cubic-bezier(0.2, 1.2, 0.4, 1) both;
 }
 .gh-card:nth-child(2) {
   animation-delay: 0.08s;
@@ -221,7 +221,7 @@
   text-transform: uppercase;
 }
 .gh-card-go svg {
-  animation: cx-nudge 1.4s ease-in-out infinite;
+  animation: gh-nudge 1.4s ease-in-out infinite;
 }
 
 /* ---------- passos e avisos ---------- */
@@ -234,7 +234,7 @@
   background: var(--white);
   color: var(--ink);
   box-shadow: 4px 4px 0 var(--ink);
-  animation: wd-rise 0.4s ease both;
+  animation: gh-rise 0.4s ease both;
 }
 .gh-panel h3 {
   margin: 0;
@@ -255,7 +255,7 @@
   align-items: start;
   font-size: 13px;
   line-height: 1.4;
-  animation: wd-rise 0.35s ease both;
+  animation: gh-rise 0.35s ease both;
   animation-delay: calc(var(--i, 0) * 0.05s);
 }
 .gh-steps li b {
@@ -291,5 +291,25 @@
   .gh-card-go svg {
     animation: none !important;
     transition: none !important;
+  }
+}
+
+@keyframes gh-rise {
+  from {
+    transform: translateY(18px) scale(0.97);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes gh-nudge {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(3px);
   }
 }
