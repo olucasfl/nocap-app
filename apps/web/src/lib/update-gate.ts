@@ -2,7 +2,6 @@
 const CALM_ROUTES = [
   '/',
   '/ranking',
-  '/historico',
   '/amigos',
   '/perfil',
   '/entrar',
@@ -10,8 +9,8 @@ const CALM_ROUTES = [
 ];
 
 /**
- * O aviso de versão nova só aparece quando não vai atrapalhar: no início, no ranking, no
- * histórico, nos amigos, no perfil e no login. Nunca dentro de um jogo (nem no menu dele, que leva
+ * O aviso de versão nova só aparece quando não vai atrapalhar: no início, no ranking, nos
+ * amigos, no perfil e no login. Nunca dentro de um jogo (nem no menu dele, que leva
  * a uma partida) nem no meio de uma partida de sala: a versão nova espera.
  *
  * Exceção, a pedido do Lucas: quem chega a uma sala (link, código) sem a versão nova vê o aviso

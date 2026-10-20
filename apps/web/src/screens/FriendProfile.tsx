@@ -12,23 +12,12 @@ import {
   removeFriend,
   presenceText,
   type FriendProfile as FriendProfileData,
-  type RecentMatch,
 } from '@/lib/friends';
-import { formatPlayedAt, gameLabel, kindLabel, modeLabel } from '@/lib/history';
-import { countUnit, streakLabel, type Stats } from '@/lib/stats';
+import { gameLabel, modeLabel } from '@/lib/labels';
+import { streakLabel, type Stats } from '@/lib/stats';
 import './profile.css';
 
-/** A atividade recente mostra no máximo as últimas 5 partidas. */
-const RECENT_MAX = 5;
-
 const route = getRouteApi('/tabs/amigos/$username');
-
-const scoreText = (m: Pick<RecentMatch, 'game' | 'mode' | 'totalScore'>) => {
-  const unit = countUnit(m.game, m.mode);
-  return unit
-    ? `${Math.round(m.totalScore / 10)} ${unit}`
-    : `${(m.totalScore / 10).toFixed(1)} pts`;
-};
 
 /** Total de partidas e o jogo que mais aparece, a partir dos recordes por modo. */
 function playSummary(stats: Stats) {
@@ -46,8 +35,6 @@ function Details({ data: raw }: { data: FriendProfileData }) {
     online: raw.online ?? false,
     lastSeenAt: raw.lastSeenAt ?? null,
     lastPlayed: raw.lastPlayed ?? null,
-    // No máximo as 5 últimas (uma API antiga ainda manda mais).
-    recent: (raw.recent ?? []).slice(0, RECENT_MAX),
   };
   const { total, favorite } = playSummary(data.stats);
   return (
@@ -92,28 +79,6 @@ function Details({ data: raw }: { data: FriendProfileData }) {
           <small className="mono">MELHOR {streakLabel(data.stats.visit.best).toUpperCase()}</small>
         </div>
       </section>
-
-      <h2 className="mono fr-title">ATIVIDADE RECENTE</h2>
-      {data.recent.length === 0 ? (
-        <p className="lead">@{data.username} ainda não jogou nenhuma partida.</p>
-      ) : (
-        <ul className="pf-recent">
-          {data.recent.map((m, i) => (
-            <li key={`${m.playedAt}-${i}`} className="pf-recent-row">
-              <div className="pf-recent-main">
-                <b>{gameLabel(m.game)}</b>
-                <span className="mono">
-                  {modeLabel(m.mode)} · {kindLabel(m.kind)}
-                </span>
-              </div>
-              <div className="pf-recent-side">
-                <b>{m.kind === 'room' && m.placement ? `${m.placement}º lugar` : scoreText(m)}</b>
-                <span className="mono">{formatPlayedAt(m.playedAt)}</span>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
 
       <h2 className="mono fr-title">RECORDES</h2>
       <Records stats={data.stats} />
@@ -174,7 +139,7 @@ function RemoveFriend({ username }: { username: string }) {
 
 /**
  * Perfil de um amigo: se está online, quando entrou por último, o que jogou por último, a
- * atividade recente (jogo, modo, nota e horário), dias seguidos e recordes. Só amigos veem.
+ * dias seguidos e recordes. Só amigos veem.
  */
 export function FriendProfile() {
   const { username } = route.useParams();

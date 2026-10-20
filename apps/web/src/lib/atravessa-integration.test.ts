@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { classifyMatch, gameLabel, modeLabel, scoreParts } from './history';
+import { gameLabel, modeLabel } from './labels';
 import { boardChoices, boardMax, parseRankingsSearch, rankingLink } from './ranking';
 import { countUnit, formatBest, formatCount, gameModes, knownModes, modeMax, type Stats } from './stats';
 
@@ -30,13 +30,7 @@ describe('Atravessa! no ranking, histórico e recordes', () => {
     expect(knownModes('atravessa')).toEqual(['infinito']);
   });
 
-  it('o histórico mostra linhas e classifica pela distância', () => {
-    const item = (n: number) => ({ game: 'atravessa', mode: 'infinito', answers: null, placement: null, totalScore: n * 10 });
-    expect(scoreParts(item(250))).toEqual({ main: '250', unit: ' linhas' });
-    expect(classifyMatch(item(200)).tone).toBe('top');
-    expect(classifyMatch(item(90)).tone).toBe('good');
-    expect(classifyMatch(item(30)).tone).toBe('mid');
-    expect(classifyMatch(item(10)).tone).toBe('low');
+  it('os nomes do jogo e do modo', () => {
     expect(gameLabel('atravessa')).toBe('Atravessa!');
     expect(modeLabel('infinito')).toBe('Infinito');
   });

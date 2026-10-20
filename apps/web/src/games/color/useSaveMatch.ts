@@ -39,7 +39,6 @@ export function useSaveMatch(run: Run, results: RoundResult[]): SaveState {
         if (r === 'sent') {
           // A partida já conta: recordes, histórico e rankings pedem dados novos.
           void queryClient.invalidateQueries({ queryKey: ['stats'] });
-          void queryClient.invalidateQueries({ queryKey: ['history'] });
           void queryClient.invalidateQueries({ queryKey: ['ranking'] });
         }
         if (alive) setSave(r === 'sent' ? 'saved' : r === 'queued' ? 'queued' : 'error');

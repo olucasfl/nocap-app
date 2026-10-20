@@ -70,14 +70,6 @@ export const Grid = (p: IconProps) => (
   </Svg>
 );
 
-export const History = (p: IconProps) => (
-  <Svg {...p}>
-    <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
-    <path d="M3 3v5h5" />
-    <path d="M12 7v5l3 2" />
-  </Svg>
-);
-
 export const Friends = (p: IconProps) => (
   <Svg {...p}>
     <circle cx="9" cy="8" r="4" />

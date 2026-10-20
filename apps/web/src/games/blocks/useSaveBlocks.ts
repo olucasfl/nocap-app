@@ -50,7 +50,6 @@ export function useSaveBlocks(
       .then((r) => {
         if (r === 'sent') {
           void queryClient.invalidateQueries({ queryKey: ['stats'] });
-          void queryClient.invalidateQueries({ queryKey: ['history'] });
           void queryClient.invalidateQueries({ queryKey: ['ranking'] });
         }
         if (alive) setSave(r === 'sent' ? 'saved' : r === 'queued' ? 'queued' : 'error');
@@ -68,7 +67,6 @@ export function useSaveBlocks(
       .then((sent) => {
         if (sent > 0) {
           void queryClient.invalidateQueries({ queryKey: ['stats'] });
-          void queryClient.invalidateQueries({ queryKey: ['history'] });
           void queryClient.invalidateQueries({ queryKey: ['ranking'] });
         }
         setSave(sent > 0 ? 'saved' : 'queued');

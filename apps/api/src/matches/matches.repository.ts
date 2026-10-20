@@ -1,11 +1,10 @@
 import { Inject, Injectable, ServiceUnavailableException } from '@nestjs/common';
-import { and, desc, eq, inArray, isNull, or, sql, gte } from 'drizzle-orm';
+import { and, eq, inArray, isNull, or, sql } from 'drizzle-orm';
 import type { Db } from '../db/client';
 import { DB } from '../db/db.module';
 import { clampScore } from '../db/score';
-import { authUser, matchPlayers, matches, players, userGameStats, userVisits } from '../db/schema';
+import { matchPlayers, matches, players, userGameStats, userVisits } from '../db/schema';
 import { randomUUID } from 'node:crypto';
-import { decodeCursor, encodeCursor } from './cursor';
 import type { ScoredMatch } from './match-scoring';
 
 export interface SaveMatchInput {
@@ -17,21 +16,6 @@ export interface SaveMatchInput {
   seed: string;
   ranked: boolean;
   scored: ScoredMatch;
-}
-
-export interface HistoryItem {
-  matchId: string;
-  game: string;
-  mode: string;
-  kind: string;
-  /** Permite ao cliente regenerar os alvos de cada rodada (alvo x voce). */
-  seed: string;
-  playedAt: string;
-  /** Soma das notas em décimos (500 = 50.0). */
-  totalScore: number;
-  placement: number | null;
-  /** Respostas codificadas; `null` depois da retenção das últimas 200 partidas por jogo. */
-  answers: number[] | null;
 }
 
 @Injectable()
@@ -50,7 +34,7 @@ export class MatchesRepository {
    */
   async save(input: SaveMatchInput): Promise<{ duplicate: boolean } | 'conflict'> {
     const { matchId, guestId, scored } = input;
-    // Mesmo instante nas duas tabelas, com precisão de ms (o cursor do histórico depende disso).
+    // Mesmo instante nas duas tabelas.
     const playedAt = new Date();
 
     return this.db.transaction(async (tx) => {
@@ -82,7 +66,8 @@ export class MatchesRepository {
       await tx.insert(matchPlayers).values({
         matchId,
         playerId: guestId,
-        answers: scored.encodedAnswers,
+        // as respostas não são guardadas: não existe mais histórico de partidas para mostrar
+        answers: null,
         totalScore: clampScore(scored.totalTenths),
         playedAt,
       });
@@ -111,95 +96,6 @@ export class MatchesRepository {
 
       return { duplicate: false };
     });
-  }
-
-  /** Histórico de um ou mais aparelhos (conta), mais recente primeiro, paginado por keyset (played_at, match_id). */
-  async history(
-    playerIds: string[],
-    limit: number,
-    cursor?: string,
-    filters: { game?: string; mode?: string; kind?: string; since?: Date | null } = {},
-  ) {
-    if (playerIds.length === 0) return { items: [] as HistoryItem[], nextCursor: null };
-    const after = cursor ? decodeCursor(cursor) : null;
-
-    const rows = await this.db
-      .select({
-        matchId: matches.id,
-        game: matches.game,
-        mode: matches.mode,
-        kind: matches.kind,
-        seed: matches.seed,
-        playedAt: matchPlayers.playedAt,
-        totalScore: matchPlayers.totalScore,
-        placement: matchPlayers.placement,
-        answers: matchPlayers.answers,
-      })
-      .from(matchPlayers)
-      .innerJoin(matches, eq(matches.id, matchPlayers.matchId))
-      .where(
-        and(
-          inArray(matchPlayers.playerId, playerIds),
-          filters.game ? eq(matches.game, filters.game) : undefined,
-          filters.mode ? eq(matches.mode, filters.mode) : undefined,
-          filters.kind ? eq(matches.kind, filters.kind) : undefined,
-          filters.since ? gte(matchPlayers.playedAt, filters.since) : undefined,
-          after
-            ? sql`(${matchPlayers.playedAt}, ${matchPlayers.matchId}) < (${after.playedAt}::timestamptz, ${after.matchId}::uuid)`
-            : undefined,
-        ),
-      )
-      .orderBy(desc(matchPlayers.playedAt), desc(matchPlayers.matchId))
-      .limit(limit + 1);
-
-    const page = rows.slice(0, limit);
-    const last = page[page.length - 1];
-    const items: HistoryItem[] = page.map((r) => ({ ...r, playedAt: r.playedAt.toISOString() }));
-    const nextCursor =
-      rows.length > limit && last
-        ? encodeCursor({ playedAt: last.playedAt.toISOString(), matchId: last.matchId })
-        : null;
-
-    return { items, nextCursor };
-  }
-
-  /**
-   * Quem jogou uma partida de sala, em ordem de colocação. Só devolve se uma das contas pedidas
-   * esteve na partida, e só expõe o @usuário (nunca nome real nem e-mail).
-   */
-  async roomPlayers(matchId: string, playerIds: string[]) {
-    if (playerIds.length === 0) return null;
-    const rows = await this.db
-      .select({
-        playerId: matchPlayers.playerId,
-        username: authUser.username,
-        placement: matchPlayers.placement,
-        totalScore: matchPlayers.totalScore,
-        answers: matchPlayers.answers,
-        kind: matches.kind,
-        game: matches.game,
-        seed: matches.seed,
-      })
-      .from(matchPlayers)
-      .innerJoin(matches, eq(matches.id, matchPlayers.matchId))
-      .innerJoin(players, eq(players.id, matchPlayers.playerId))
-      .leftJoin(authUser, eq(authUser.id, players.userId))
-      .where(eq(matchPlayers.matchId, matchId))
-      .orderBy(matchPlayers.placement, desc(matchPlayers.totalScore));
-    const first = rows[0];
-    if (!first || first.kind !== 'room') return null;
-    if (!rows.some((r) => playerIds.includes(r.playerId))) return null;
-    return {
-      game: first.game,
-      seed: first.seed,
-      players: rows.map((r) => ({
-        username: r.username,
-        placement: r.placement,
-        totalScore: r.totalScore,
-        answers: r.answers,
-        isMe: playerIds.includes(r.playerId),
-      })),
-    };
   }
 
   /** Aparelhos (convidados) vinculados a uma conta. */

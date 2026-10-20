@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { classifyMatch, gameLabel, scoreParts } from './history';
+import { gameLabel } from './labels';
 import { boardChoices, boardMax, parseRankingsSearch, rankingLink } from './ranking';
 import { countUnit, formatBest, formatCount, gameModes, knownModes, modeMax, type Stats } from './stats';
 
@@ -26,13 +26,7 @@ describe("Block's no ranking, histórico e recordes", () => {
     expect(knownModes('blocks').sort()).toEqual(['classic', 'towers']);
   });
 
-  it('o histórico mostra pontos e classifica pela pontuação', () => {
-    const item = (p: number) => ({ game: 'blocks', mode: 'classic', answers: null, placement: null, totalScore: p * 10 });
-    expect(scoreParts(item(1234))).toEqual({ main: '1234', unit: ' pts' });
-    expect(classifyMatch(item(400000)).tone).toBe('top');
-    expect(classifyMatch(item(80000)).tone).toBe('good');
-    expect(classifyMatch(item(20000)).tone).toBe('mid');
-    expect(classifyMatch(item(3000)).tone).toBe('low');
+  it('os nomes do jogo e do modo', () => {
     expect(gameLabel('blocks')).toBe("Block's");
   });
 

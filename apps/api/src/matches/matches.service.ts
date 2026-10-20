@@ -2,7 +2,6 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
-  NotFoundException,
 } from '@nestjs/common';
 import {
   colorGame,
@@ -30,7 +29,6 @@ import type {
   ColorMatchInput,
   CreateMatchInput,
   EcoMatchInput,
-  HistoryQuery,
   BlocksMatchInput,
   AtravessaMatchInput,
   TimeMatchInput,
@@ -43,9 +41,6 @@ interface Who {
   userId: string;
   playerId: string;
 }
-
-/** Quantas partidas aparecem na atividade recente do perfil de um amigo (no máximo). */
-export const RECENT_MATCHES = 5;
 
 @Injectable()
 export class MatchesService {
@@ -216,43 +211,6 @@ export class MatchesService {
     const scored = scoreMatch(input);
     // Só os modos padrão (presets) contam para ranking; salas personalizadas nunca.
     return this.persist(input, who, scored, input.mode in colorGame.presets);
-  }
-
-  /** Histórico da conta: todos os aparelhos vinculados a ela. */
-  async historyOf(userId: string, query: HistoryQuery) {
-    return this.repo.history(await this.repo.playerIdsOf(userId), query.limit, query.cursor, {
-      game: query.game,
-      mode: query.mode,
-      kind: query.kind,
-      since: periodStart(query.period),
-    });
-  }
-
-  /**
-   * As últimas partidas da conta, só o que um amigo pode ver: jogo, modo, tipo, quando, nota e
-   * colocação (nunca a seed nem as respostas).
-   */
-  async recentOf(userId: string, limit = RECENT_MATCHES) {
-    // Nunca mais que o teto, mesmo que alguém peça mais.
-    const page = await this.repo.history(
-      await this.repo.playerIdsOf(userId),
-      Math.min(limit, RECENT_MATCHES),
-    );
-    return page.items.map((i) => ({
-      game: i.game,
-      mode: i.mode,
-      kind: i.kind,
-      playedAt: i.playedAt,
-      totalScore: i.totalScore,
-      placement: i.placement,
-    }));
-  }
-
-  /** Participantes de uma partida de sala em que a conta jogou. */
-  async roomOf(userId: string, matchId: string) {
-    const found = await this.repo.roomPlayers(matchId, await this.repo.playerIdsOf(userId));
-    if (!found) throw new NotFoundException('Partida de sala não encontrada');
-    return found;
   }
 
   async claim(userId: string, guestId: string) {

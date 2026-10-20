@@ -6,7 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Field } from '@/components/Field';
 import { ApiError } from '@/lib/api-client';
 import { useAuth } from '@/lib/auth';
-import { gameLabel } from '@/lib/history';
+import { gameLabel } from '@/lib/labels';
 import {
   MIN_SEARCH,
   ago,

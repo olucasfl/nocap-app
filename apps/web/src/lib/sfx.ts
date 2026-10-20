@@ -157,11 +157,6 @@ const rawSfx = {
     tone('triangle', 523, 523, 0.07, 0.2);
     tone('triangle', 784, 784, 0.1, 0.2, 0.06);
   },
-  /** aba Histórico: folhear de página */
-  navHistory() {
-    noise('bandpass', 1200, 3200, 0.9, 0.12, 0.25);
-    tone('sine', 330, 330, 0.05, 0.1, 0.09);
-  },
   /** aba Amigos: dois "pops" de gente chegando */
   navFriends() {
     tone('sine', 520, 680, 0.06, 0.22);

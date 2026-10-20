@@ -38,7 +38,6 @@ export function useSaveBatida(run: BatidaRunInfo, taps: BatidaTap[]): SaveState 
       .then((r) => {
         if (r === 'sent') {
           void queryClient.invalidateQueries({ queryKey: ['stats'] });
-          void queryClient.invalidateQueries({ queryKey: ['history'] });
           void queryClient.invalidateQueries({ queryKey: ['ranking'] });
         }
         if (alive) setSave(r === 'sent' ? 'saved' : r === 'queued' ? 'queued' : 'error');

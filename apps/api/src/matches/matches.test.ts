@@ -1,9 +1,8 @@
 import { BadRequestException, ConflictException } from '@nestjs/common';
 import { colorGame, dailySeed, encodeAnswer } from '@nocap/games';
 import { describe, expect, it, vi } from 'vitest';
-import { decodeCursor, encodeCursor } from './cursor';
 import { scoreMatch } from './match-scoring';
-import { createMatchSchema, historyQuerySchema } from './match.schema';
+import { createMatchSchema } from './match.schema';
 import { MatchesService } from './matches.service';
 import type { MatchesRepository } from './matches.repository';
 
@@ -30,7 +29,6 @@ const fakeRepo = (
   return {
     repo: {
       save,
-      history: vi.fn(),
       dailyPlayed,
       playerOfUser,
       playerIdsOf,
@@ -95,32 +93,6 @@ describe('createMatchSchema', () => {
       createMatchSchema.safeParse({ ...base, answers: [{ h: 400, s: 50, b: 50 }] }).success,
     ).toBe(false);
     expect(createMatchSchema.safeParse({ ...base, answers: [] }).success).toBe(false);
-  });
-});
-
-describe('historyQuerySchema', () => {
-  it('usa limit 20 por padrão e limita a 50', () => {
-    expect(historyQuerySchema.parse({}).limit).toBe(20);
-    expect(historyQuerySchema.safeParse({ limit: '100' }).success).toBe(false);
-    expect(historyQuerySchema.parse({ game: 'time' }).game).toBe('time');
-    expect(historyQuerySchema.safeParse({ game: 'xadrez' }).success).toBe(false);
-    // Filtros: modo, tipo e período (padrão: tudo).
-    const f = historyQuerySchema.parse({ mode: 'survival', kind: 'daily', period: 'week' });
-    expect(f).toMatchObject({ mode: 'survival', kind: 'daily', period: 'week' });
-    expect(historyQuerySchema.parse({}).period).toBe('all');
-    expect(historyQuerySchema.safeParse({ kind: 'torneio' }).success).toBe(false);
-    expect(historyQuerySchema.safeParse({ period: 'ano' }).success).toBe(false);
-  });
-});
-
-describe('cursor', () => {
-  it('encode/decode é reversível e recusa lixo', () => {
-    const c = {
-      playedAt: '2026-03-10T12:00:00.123Z',
-      matchId: '22222222-2222-4222-8222-222222222222',
-    };
-    expect(decodeCursor(encodeCursor(c))).toEqual(c);
-    expect(() => decodeCursor('lixo')).toThrow(BadRequestException);
   });
 });
 

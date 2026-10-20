@@ -43,9 +43,9 @@ function blocksBestLabel(stats: Stats | undefined): string {
 function dailyStatus(stats: Stats | undefined, game: GameId): string {
   const info = stats?.daily[game];
   if (!info) return 'DAILY SÓ COM CONTA';
-  return info.playedToday
-    ? `DAILY FEITO · ${dailyScoreText(game, info.totalScore ?? 0)}`
-    : 'DAILY DISPONÍVEL';
+  if (!info.playedToday) return 'DAILY DISPONÍVEL';
+  // o Classic Word's não mostra nota para a pessoa: só que o Daily do dia foi feito
+  return game === 'wclassic' ? 'DAILY FEITO' : `DAILY FEITO · ${dailyScoreText(game, info.totalScore ?? 0)}`;
 }
 
 export function Hub() {

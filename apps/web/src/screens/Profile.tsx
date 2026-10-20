@@ -48,7 +48,6 @@ export function Profile() {
     await logout();
     queryClient.removeQueries({ queryKey: ['my-room'] });
     queryClient.removeQueries({ queryKey: ['invites'] });
-    queryClient.removeQueries({ queryKey: ['history'] });
     queryClient.removeQueries({ queryKey: ['stats'] });
     setConfirming(false);
     await navigate({ to: '/' });

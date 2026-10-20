@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { LoadFailed } from './LoadFailed';
 import { Loader } from './Loader';
 import { useQuery } from '@tanstack/react-query';
-import { modeLabel } from '@/lib/history';
+import { modeLabel } from '@/lib/labels';
 import {
   fetchStats,
   knownModes,

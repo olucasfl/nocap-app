@@ -18,7 +18,6 @@ import { PresenceBeat } from '@/components/PresenceBeat';
 import type { Mode } from '@/games/color/types';
 import type { Mode as TimeMode } from '@/games/time/types';
 import type { Mode as EcoMode } from '@/games/eco/types';
-import { History } from '@/screens/History';
 import { Friends } from '@/screens/Friends';
 import { FriendProfile } from '@/screens/FriendProfile';
 import { Hub } from '@/screens/Hub';
@@ -53,11 +52,6 @@ const tabsRoute = createRoute({
 });
 
 const hubRoute = createRoute({ getParentRoute: () => tabsRoute, path: '/', component: Hub });
-const historyRoute = createRoute({
-  getParentRoute: () => tabsRoute,
-  path: '/historico',
-  component: History,
-});
 const friendsRoute = createRoute({
   getParentRoute: () => tabsRoute,
   path: '/amigos',
@@ -227,7 +221,6 @@ const routeTree = rootRoute.addChildren([
   tabsRoute.addChildren([
     hubRoute,
     rankingsRoute,
-    historyRoute,
     friendsRoute,
     friendProfileRoute,
     profileRoute,

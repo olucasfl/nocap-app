@@ -3,7 +3,7 @@ import { canShowUpdate } from './update-gate';
 
 describe('quando o aviso de versão nova pode aparecer', () => {
   it('nas telas calmas', () => {
-    for (const p of ['/', '/ranking', '/historico', '/amigos', '/amigos/ana', '/perfil', '/entrar'])
+    for (const p of ['/', '/ranking', '/amigos', '/amigos/ana', '/perfil', '/entrar'])
       expect(canShowUpdate(p, false), p).toBe(true);
   });
 

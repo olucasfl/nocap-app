@@ -34,23 +34,12 @@ export interface SearchResult extends FriendUser {
 
 export const MIN_SEARCH = 2;
 
-/** Uma partida recente de um amigo (só o que ele deixa ver: nunca a seed nem as respostas). */
-export interface RecentMatch {
-  game: string;
-  mode: string;
-  kind: string;
-  playedAt: string;
-  totalScore: number;
-  placement: number | null;
-}
-
 export interface FriendProfile {
   username: string;
   stats: Stats;
   online: boolean;
   lastSeenAt: string | null;
   lastPlayed: LastPlayed | null;
-  recent: RecentMatch[];
 }
 
 /** O app está aberto: avisa o servidor (alimenta "online" e "visto por último" dos amigos). */

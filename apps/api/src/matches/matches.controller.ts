@@ -4,9 +4,7 @@ import {
   Get,
   HttpCode,
   Param,
-  ParseUUIDPipe,
   Post,
-  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -17,10 +15,8 @@ import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import {
   claimSchema,
   createMatchSchema,
-  historyQuerySchema,
   type ClaimInput,
   type CreateMatchInput,
-  type HistoryQuery,
 } from './match.schema';
 import { MatchesService } from './matches.service';
 
@@ -37,12 +33,11 @@ export class MatchesController {
   @RateLimit({ limit: 60, windowMs: 60_000 })
   async friendProfile(@Req() req: AuthedRequest, @Param('username') username: string) {
     const friend = await this.friends.friendByUsername(req.user.id, username.trim().toLowerCase());
-    const [stats, activity, recent] = await Promise.all([
+    const [stats, activity] = await Promise.all([
       this.matches.statsOfUser(friend.id),
       this.friends.activityOf(friend.id),
-      this.matches.recentOf(friend.id),
     ]);
-    return { username: friend.username, stats, ...activity, recent };
+    return { username: friend.username, stats, ...activity };
   }
 
   /** Só com conta: o convidado pode ver o app, mas não joga. */
@@ -70,21 +65,6 @@ export class MatchesController {
   @UseGuards(AuthGuard)
   myStats(@Req() req: AuthedRequest) {
     return this.matches.statsOfUser(req.user.id);
-  }
-
-  @Get('me/matches')
-  @UseGuards(AuthGuard)
-  myHistory(
-    @Req() req: AuthedRequest,
-    @Query(new ZodValidationPipe(historyQuerySchema)) query: HistoryQuery,
-  ) {
-    return this.matches.historyOf(req.user.id, query);
-  }
-
-  @Get('me/matches/:matchId/room')
-  @UseGuards(AuthGuard)
-  roomMatch(@Req() req: AuthedRequest, @Param('matchId', ParseUUIDPipe) matchId: string) {
-    return this.matches.roomOf(req.user.id, matchId);
   }
 
   @Post('players/claim')

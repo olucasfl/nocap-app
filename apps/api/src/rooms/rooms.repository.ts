@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable, ServiceUnavailableException } from '@nestjs/common';
-import { encodeAnswer } from '@nocap/games';
 import { and, eq, gt, inArray } from 'drizzle-orm';
 import type { Db } from '../db/client';
 import { DB } from '../db/db.module';
@@ -76,10 +75,7 @@ export class RoomsRepository {
         await tx.insert(matchPlayers).values({
           matchId,
           playerId,
-          // Cor guarda o HSB codificado; Tempo guarda os ms.
-          answers: row.answers.map((a) =>
-            a === null ? NO_ANSWER : typeof a === 'number' ? a : encodeAnswer(a),
-          ),
+          answers: null,
           totalScore: clampScore(row.totalTenths),
           placement: row.placement,
           playedAt,
