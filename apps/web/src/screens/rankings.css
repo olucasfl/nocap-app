@@ -196,8 +196,9 @@
   border-left: 0;
 }
 .rkp-seg button[aria-checked='true'] {
-  background: var(--party-bg);
-  color: var(--party-fg);
+  background: var(--accent);
+  color: var(--on);
+  box-shadow: inset 0 -4px 0 rgb(0 0 0 / 0.28);
 }
 .rkp-note {
   margin: 0;
@@ -319,6 +320,8 @@
 }
 .rkp-pod.p2 .rkp-step {
   height: 54px;
+  background: var(--party-fg);
+  color: var(--party-bg);
 }
 .rkp-pod.p3 .rkp-step {
   height: 40px;
