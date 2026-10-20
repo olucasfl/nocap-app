@@ -193,18 +193,22 @@ export function BeePlay() {
     setFloats((f) => [...f, { id, text: `+${check.points}`, big: check.pangram }]);
     later(() => setFloats((f) => f.filter((x) => x.id !== id)), 1200);
     setBuzz(true);
+    // as faíscas somem depois de tocar: se ficassem montadas, a animação recomeçaria ao voltar para esta aba
     setSpark((n) => n + 1);
+    later(() => setSpark(0), 1200);
     later(() => setBuzz(false), 700);
     if (check.pangram) {
       wordsAudio.pangram();
       setWave(true);
       setFx((f) => ({ n: f.n + 1, kind: 'gold' }));
+      later(() => setFx((f) => ({ ...f, n: 0 })), 2800);
       later(() => setWave(false), 1200);
       setBanner('Pangrama!');
       later(() => setBanner(null), 1800);
     } else if (after.id !== before.id) {
       wordsAudio.rankUp();
       setFx((f) => ({ n: f.n + 1, kind: 'win' }));
+      later(() => setFx((f) => ({ ...f, n: 0 })), 2800);
       setBanner(after.name);
       later(() => setBanner(null), 2000);
     } else wordsAudio.beeFound(check.points);

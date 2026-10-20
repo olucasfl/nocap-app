@@ -1685,3 +1685,63 @@
     transform: translateX(3px);
   }
 }
+
+/* dicas: o conteúdo começa no topo (sem esticar as linhas pelo espaço que sobra) e aproveita a largura em telas maiores */
+.bz-hints {
+  align-content: start;
+}
+.bz-hint-block {
+  align-content: start;
+}
+.bz-hback {
+  justify-self: start;
+}
+.bz-hcards {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  align-items: stretch;
+}
+.bz-map {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+}
+.bz-sizes {
+  max-width: 560px;
+}
+
+/* quando sobra espaço (telas altas), as dicas crescem em vez de ficarem pequenas no canto */
+@media (min-height: 640px) {
+  .bz-map-row {
+    grid-template-columns: 92px minmax(0, 1fr);
+    gap: 14px;
+    padding: 12px;
+  }
+  .bz-map-letter {
+    padding: 8px 4px;
+  }
+  .bz-map-letter b {
+    font-size: 44px;
+  }
+  .bz-map-sizes {
+    gap: 8px;
+  }
+  .bz-map-sizes li {
+    min-width: 96px;
+    padding: 8px 10px 9px;
+  }
+  .bz-map-sizes li span b {
+    font-size: 24px;
+  }
+  .bz-sizes {
+    gap: 14px;
+  }
+  .bz-sizes li {
+    min-height: 40px;
+    font-size: 14px;
+  }
+  .bz-pairs li {
+    padding: 6px 6px 6px 14px;
+    font-size: 18px;
+  }
+  .bz-hcard {
+    padding: 14px;
+  }
+}

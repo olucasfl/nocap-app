@@ -157,6 +157,8 @@ export function ConnectPlay() {
     setPicked([]);
     if (result === 'correct') {
       setSpark((n) => n + 1);
+      // as faíscas somem depois de tocar: ao voltar de outra aba elas não podem tocar de novo
+      later(() => setSpark(0), 1200);
       const g = after.found[after.found.length - 1]!;
       wordsAudio.group(g.level);
       say(g.title, 'good');

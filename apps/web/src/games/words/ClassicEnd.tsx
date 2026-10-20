@@ -1,5 +1,4 @@
-import type { CSSProperties } from 'react';
-import type { ReactNode } from 'react';
+import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import { Celebrate } from './words-kit';
 import type { RunView } from './words-api';
 
@@ -28,6 +27,12 @@ export function ClassicEnd({
   /** Os botões do fim (próxima fase, voltar...). */
   actions: ReactNode;
 }) {
+  // a comemoração toca uma vez só: ao fechar e reabrir o resultado ela não repete
+  const [fx, setFx] = useState(true);
+  useEffect(() => {
+    const t = window.setTimeout(() => setFx(false), 3500);
+    return () => window.clearTimeout(t);
+  }, []);
   const won = run.state === 'won';
   const gaveUp = !won && run.used < run.tries;
   const answers = run.answers ?? [];
@@ -47,7 +52,7 @@ export function ClassicEnd({
 
   return (
     <div className={`cw-end ${won ? 'won' : 'lost'}`} role="dialog" aria-label="Resultado da partida" data-testid="end">
-      <Celebrate burst={1} kind={won ? (run.used <= 2 ? 'epic' : 'win') : 'lose'} />
+      {fx && <Celebrate burst={1} kind={won ? (run.used <= 2 ? 'epic' : 'win') : 'lose'} />}
       <div className="cw-end-card">
         <span className="wd-shine" aria-hidden="true" />
         <div className={`wd-stamp ${won ? 'won' : 'lost'}`} data-testid="end-title">
