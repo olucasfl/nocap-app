@@ -138,18 +138,15 @@
 }
 .rkp-cats {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
-  overflow-x: auto;
-  padding-bottom: 2px;
-  scrollbar-width: none;
-}
-.rkp-cats::-webkit-scrollbar {
-  display: none;
+  padding-bottom: 3px;
 }
 .rkp-cats button {
   appearance: none;
-  flex: none;
-  padding: 8px 14px;
+  flex: 0 1 auto;
+  max-width: 100%;
+  padding: 8px 12px;
   border: 2.5px solid var(--ink);
   border-radius: 999px;
   background: var(--paper);
@@ -161,7 +158,6 @@
 .rkp-cats button[aria-selected='true'] {
   background: var(--accent);
   color: var(--on);
-  transform: translateY(-2px);
   box-shadow: 0 3px 0 var(--ink);
 }
 .rkp-row2 {
@@ -173,21 +169,21 @@
   display: inline-grid;
   grid-auto-flow: column;
   grid-auto-columns: 1fr;
-  flex: 1;
-  min-width: 190px;
+  flex: 1 1 220px;
+  min-width: 0;
   border: 2.5px solid var(--ink);
   border-radius: 12px;
   overflow: hidden;
   background: var(--paper);
 }
 .rkp-seg.who {
-  flex: none;
-  min-width: 150px;
+  flex: 1 1 150px;
 }
 .rkp-seg button {
   appearance: none;
-  height: 38px;
-  padding: 0 10px;
+  height: 40px;
+  padding: 0 6px;
+  min-width: 0;
   border: 0;
   border-left: 2.5px solid var(--ink);
   background: transparent;
