@@ -903,7 +903,7 @@
 .bz-act.send svg {
   width: 24px;
   height: 24px;
-  animation: cx-nudge 1.4s ease-in-out infinite;
+  animation: bz-nudge 1.4s ease-in-out infinite;
 }
 .wd-app.fit .bz-act.send {
   height: 52px;
@@ -987,7 +987,7 @@
   pointer-events: none;
 }
 .bz-tab.hints[aria-selected='true'] {
-  background: var(--ink);
+  background: #111111;
   color: var(--yellow);
 }
 .bz-tab.hints[aria-selected='true']::after {
@@ -1062,7 +1062,7 @@
   flex: none;
   border: var(--border);
   border-radius: 50%;
-  background: var(--ink);
+  background: #111111;
   color: var(--yellow);
 }
 .bz-hints-banner svg {
@@ -1412,4 +1412,276 @@
   font: 700 12px/1.35 var(--font-mono);
   text-transform: uppercase;
   color: var(--ink);
+}
+
+/* ====================== dicas em 3 blocos ====================== */
+.bz-hcards {
+  display: grid;
+  gap: 10px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.bz-hcard {
+  position: relative;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: var(--border);
+  border-radius: 16px;
+  background: var(--white);
+  color: var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 0.08s ease-out,
+    box-shadow 0.08s ease-out;
+}
+.bz-hcard:active:not(:disabled) {
+  transform: translate(4px, 4px);
+  box-shadow: 0 0 0 var(--ink);
+}
+.bz-hcard.locked {
+  cursor: default;
+  background: var(--paper);
+  border-style: dashed;
+  box-shadow: none;
+  color: var(--muted);
+}
+.bz-hcard.new {
+  background: var(--yellow);
+  color: var(--on-accent);
+  animation: bz-hint-pulse 1.8s ease-in-out infinite;
+}
+.bz-hcard-n {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 2.5px solid var(--ink);
+  border-radius: 14px;
+  background: var(--yellow);
+  color: var(--on-accent);
+  font: 900 20px var(--font-display);
+}
+.bz-hcard.locked .bz-hcard-n {
+  background: var(--paper);
+  color: var(--muted);
+  border-style: dashed;
+}
+.bz-hcard.new .bz-hcard-n {
+  background: #111111;
+  color: var(--yellow);
+}
+.bz-hcard-n svg,
+.bz-hcard-go,
+.bz-hback svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.bz-hcard-body {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.bz-hcard-body b {
+  font: 900 16px/1.1 var(--font-display);
+  text-transform: uppercase;
+}
+.bz-hcard-body small {
+  font-size: 10.5px;
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+.bz-hcard-bar {
+  display: block;
+  height: 8px;
+  border: 2px solid var(--muted);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.bz-hcard-bar em {
+  display: block;
+  height: 100%;
+  background: var(--orange);
+  transform-origin: left center;
+}
+.bz-hcard-new {
+  padding: 2px 8px;
+  border: 2.5px solid var(--ink);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.bz-hback {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  height: 38px;
+  padding: 0 14px 0 8px;
+  border: var(--border);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+  font: 900 12px var(--font-display);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.bz-tab small.new {
+  background: var(--orange);
+  color: var(--on-accent);
+  animation: bz-hint-pulse 1.4s ease-in-out infinite;
+}
+/* o aviso de que uma dica abriu: aparece em cima do jogo, toque para ir direto nela */
+.bz-unlock {
+  position: fixed;
+  left: 50%;
+  top: calc(64px + env(safe-area-inset-top));
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(calc(100% - 32px), 420px);
+  padding: 10px 12px;
+  border: var(--border);
+  border-radius: 16px;
+  background: var(--yellow);
+  color: var(--on-accent);
+  box-shadow: 5px 5px 0 var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  translate: -50% 0;
+  animation: bz-unlock-in 0.6s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+.bz-unlock svg {
+  width: 36px;
+  height: 36px;
+  padding: 7px;
+  flex: none;
+  border: 2.5px solid var(--ink);
+  border-radius: 50%;
+  background: #111111;
+  color: var(--yellow);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  box-sizing: border-box;
+}
+.bz-unlock b {
+  display: block;
+  font: 900 15px/1.1 var(--font-display);
+  text-transform: uppercase;
+}
+.bz-unlock small {
+  font-size: 10.5px;
+  text-transform: uppercase;
+}
+@keyframes bz-unlock-in {
+  0% {
+    transform: translateY(-30px) scale(0.9);
+    opacity: 0;
+  }
+  100% {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes bz-hint-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.025);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bz-hcard.new,
+  .bz-tab small.new,
+  .bz-unlock {
+    animation: none !important;
+  }
+}
+
+/* dica aberta: um botão de verdade ("Abrir dica") na largura toda do cartão */
+.bz-hcard {
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  grid-template-areas:
+    'n body new'
+    'cta cta cta';
+  row-gap: 10px;
+}
+.bz-hcard.locked {
+  grid-template-areas: 'n body new';
+}
+.bz-hcard-n {
+  grid-area: n;
+}
+.bz-hcard-body {
+  grid-area: body;
+}
+.bz-hcard-new {
+  grid-area: new;
+}
+.bz-hcard-cta {
+  grid-area: cta;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 42px;
+  border: var(--border);
+  border-radius: 12px;
+  background: var(--orange);
+  color: var(--on-accent);
+  box-shadow: 3px 3px 0 var(--ink);
+  font: 900 14px var(--font-display);
+  text-transform: uppercase;
+}
+.bz-hcard-cta svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  animation: bz-nudge 1.4s ease-in-out infinite;
+}
+.bz-hcard.new .bz-hcard-cta {
+  background: #111111;
+  color: var(--yellow);
+}
+@media (prefers-reduced-motion: reduce) {
+  .bz-hcard-cta svg {
+    animation: none !important;
+  }
+}
+
+@keyframes bz-nudge {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(3px);
+  }
 }

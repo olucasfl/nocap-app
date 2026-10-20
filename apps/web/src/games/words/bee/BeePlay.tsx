@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties }
 import { Link, useParams } from '@tanstack/react-router';
 import {
   BEE_RANKS,
+  BEE_HINT_UNLOCK,
   beeHints,
   beeMaxPoints,
   beeRank,
@@ -61,6 +62,15 @@ interface Float {
 }
 
 /** Uma fase do Bee: o favo, as palavras, a patente. Tudo salvo no aparelho a cada palavra. */
+type HintId = 'sizes' | 'map' | 'pairs';
+
+/** Os 3 blocos de dicas, do mais fraco ao mais forte (os dois últimos abrem conforme a pessoa acha palavras). */
+const HINT_CARDS: { id: HintId; title: 'Quantas letras' | 'Por letra e tamanho' | 'Duas primeiras letras'; desc: string }[] = [
+  { id: 'sizes', title: 'Quantas letras', desc: 'Quantas palavras faltam de cada tamanho' },
+  { id: 'map', title: 'Por letra e tamanho', desc: 'Começa com qual letra e tem quantas letras' },
+  { id: 'pairs', title: 'Duas primeiras letras', desc: 'Como as palavras começam (por exemplo FA ou ME)' },
+];
+
 export function BeePlay() {
   const { n } = useParams({ strict: false }) as { n?: string };
   const num = Number(n);
@@ -78,6 +88,11 @@ export function BeePlay() {
   const [shake, setShake] = useState(false);
   const [banner, setBanner] = useState<string | null>(null);
   const [tab, setTab] = useState<'words' | 'hints' | 'rules'>('words');
+  /** Qual dica está aberta (null = a lista com os 3 blocos) e quais já foram vistas. */
+  const [hintView, setHintView] = useState<HintId | null>(null);
+  const [seen, setSeen] = useState<string[]>([]);
+  const unlockTimer = useRef<number | undefined>(undefined);
+  const [unlockMsg, setUnlockMsg] = useState<{ id: HintId; text: string } | null>(null);
   const [confirmEnd, setConfirmEnd] = useState(false);
   const timers = useRef<number[]>([]);
   const floatId = useRef(0);
@@ -101,6 +116,31 @@ export function BeePlay() {
   const closed = saved?.closed ?? false;
   const open = !!level && !closed;
   const allowed = useMemo(() => new Set(level ? [level.c, ...level.l] : []), [level]);
+
+  useEffect(() => {
+    try {
+      setSeen(JSON.parse(localStorage.getItem(`nocap-words-bee-hints-${num}`) ?? '[]') as string[]);
+    } catch {
+      setSeen([]);
+    }
+    setHintView(null);
+    setUnlockMsg(null);
+  }, [num]);
+  const markSeen = useCallback(
+    (id: HintId) => {
+      setSeen((cur) => {
+        if (cur.includes(id)) return cur;
+        const next = [...cur, id];
+        try {
+          localStorage.setItem(`nocap-words-bee-hints-${num}`, JSON.stringify(next));
+        } catch {
+          /* sem armazenamento: vale só até fechar */
+        }
+        return next;
+      });
+    },
+    [num],
+  );
 
   const later = useCallback((fn: () => void, ms: number) => {
     timers.current.push(window.setTimeout(fn, ms));
@@ -140,7 +180,14 @@ export function BeePlay() {
     const after = beeRank(beeScore(puzzle, next), beeMaxPoints(puzzle));
     const complete = next.length === puzzle.words.length;
     beeProgress.set(num, { found: next, closed: complete, at: Date.now() });
+    // uma dica nova abriu? avisa na tela (a mais forte primeiro)
+    const need = (pct: number, count: number) => Math.max(0, Math.ceil(puzzle.words.length * pct) - count);
+    const crossed = (pct: number) => need(pct, found.length) > 0 && need(pct, next.length) === 0;
+    if (!complete && crossed(BEE_HINT_UNLOCK.pairs)) setUnlockMsg({ id: 'pairs', text: 'Duas primeiras letras' });
+    else if (!complete && crossed(BEE_HINT_UNLOCK.map)) setUnlockMsg({ id: 'map', text: 'Por letra e tamanho' });
     setLatest(check.shown);
+    if (unlockTimer.current) window.clearTimeout(unlockTimer.current);
+    unlockTimer.current = window.setTimeout(() => setUnlockMsg(null), 6000);
     setTyped(() => '');
     const id = ++floatId.current;
     setFloats((f) => [...f, { id, text: `+${check.points}`, big: check.pangram }]);
@@ -204,6 +251,8 @@ export function BeePlay() {
   const genius = Math.min(1, points / (0.7 * max));
   const hints = beeHints(puzzle, found);
   const maxSize = Math.max(1, ...hints.sizes.map((x) => x.count));
+  const unlockedIds: HintId[] = ['sizes', ...(hints.needMap === 0 ? (['map'] as HintId[]) : []), ...(hints.needPairs === 0 ? (['pairs'] as HintId[]) : [])];
+  const unseenCount = unlockedIds.filter((id) => id !== 'sizes' && !seen.includes(id)).length;
   const sorted = [...found].sort((a, b) => a.localeCompare(b, 'pt'));
   const tier = tierOf(level);
   const hasNext = num < levels.length;
@@ -267,6 +316,28 @@ export function BeePlay() {
           </div>
         )}
       </div>
+
+      {unlockMsg && !closed && (
+        <button
+          type="button"
+          className="bz-unlock"
+          data-testid="unlock-banner"
+          onClick={() => {
+            setTab('hints');
+            setHintView(unlockMsg.id);
+            markSeen(unlockMsg.id);
+            setUnlockMsg(null);
+          }}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z" />
+          </svg>
+          <span>
+            <b>Dica desbloqueada!</b>
+            <small className="mono">{unlockMsg.text} · toque para ver</small>
+          </span>
+        </button>
+      )}
 
       {banner && (
         <div className={`bz-banner${banner === 'Pangrama!' ? ' gold' : ''}`} role="status" key={banner}>
@@ -354,12 +425,16 @@ export function BeePlay() {
             {found.length}/{hints.total}
           </small>
         </button>
-        <button type="button" role="tab" aria-selected={tab === 'hints'} className="bz-tab hints" data-testid="tab-hints" onClick={() => setTab('hints')}>
+        <button type="button" role="tab" aria-selected={tab === 'hints'} className="bz-tab hints" data-testid="tab-hints" onClick={() => { setTab('hints'); setHintView(null); }}>
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z" />
           </svg>
           <span>{closed ? 'Todas' : 'Dicas'}</span>
-          {!closed && <small>{1 + (hints.needMap === 0 ? 1 : 0) + (hints.needPairs === 0 ? 1 : 0)}/3</small>}
+          {!closed && (
+            <small className={unseenCount > 0 ? 'new' : ''}>
+              {unseenCount > 0 ? 'nova' : `${1 + (hints.needMap === 0 ? 1 : 0) + (hints.needPairs === 0 ? 1 : 0)}/3`}
+            </small>
+          )}
         </button>
         <button type="button" role="tab" aria-selected={tab === 'rules'} className="bz-tab rules" data-testid="tab-rules" onClick={() => setTab('rules')}>
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -405,107 +480,150 @@ export function BeePlay() {
           </div>
         ) : (
           <div className="bz-hints" data-testid="hints">
-            <div className="bz-hints-banner" aria-hidden="true">
-              <span>
-                <svg viewBox="0 0 24 24">
-                  <path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z" />
-                </svg>
-              </span>
-              <div>
-                <b>Dicas da fase</b>
-                <small className="mono">Quanto mais você acha, mais dicas abrem</small>
-              </div>
-            </div>
-            <div className="bz-hint-big">
-              <b>{hints.left}</b> palavras faltando de {hints.total}
-            </div>
-
-            <div className="bz-hint-pang" data-testid="hint-pangram">
-              {hints.pangramsLeft === 0
-                ? 'Nenhum pangrama faltando'
-                : `${hints.pangramsLeft === 1 ? 'Falta 1 pangrama' : `Faltam ${hints.pangramsLeft} pangramas`}${hints.needMap === 0 ? ` (tem ${hints.pangramSizes.join(' ou ')} letras)` : ''}`}
-            </div>
-
-            <section className="bz-hint-block" aria-label="Quantidade de letras">
-              <h4>Quantas letras</h4>
-              <ul className="bz-sizes" data-testid="hint-sizes">
-                {hints.sizes.map(({ size, count }) => (
-                  <li key={size} style={{ '--w': count / maxSize } as CSSProperties}>
-                    <span>{size} letras</span>
-                    <i aria-hidden="true" />
-                    <b>
-                      {count} {count === 1 ? 'palavra' : 'palavras'}
-                    </b>
-                  </li>
-                ))}
-              </ul>
-            </section>
-
-            <section className="bz-hint-block" aria-label="Mapa das palavras">
-              <h4>Por letra e tamanho</h4>
-              {hints.needMap > 0 ? (
-                <p className="bz-lock" data-testid="hint-map-lock">
-                  <b>Bloqueado.</b> Ache mais {hints.needMap} {hints.needMap === 1 ? 'palavra' : 'palavras'} para abrir o mapa.
-                </p>
-              ) : (
-                <>
-                  <ul className="bz-map" data-testid="hint-map">
-                    {hints.map.letters.map((l, r) => {
-                      const total = hints.map.rowTotals[r]!;
-                      return (
-                        <li key={l} className="bz-map-row">
-                          <div className="bz-map-letter">
-                            <span className="mono">Começa com</span>
-                            <b>{l.toUpperCase()}</b>
+            {hintView === null ? (
+              <>
+                <div className="bz-hint-big">
+                  <b>{hints.left}</b> palavras faltando de {hints.total}
+                </div>
+                <div className="bz-hint-pang" data-testid="hint-pangram">
+                  {hints.pangramsLeft === 0
+                    ? 'Nenhum pangrama faltando'
+                    : `${hints.pangramsLeft === 1 ? 'Falta 1 pangrama' : `Faltam ${hints.pangramsLeft} pangramas`}${hints.needMap === 0 ? ` (tem ${hints.pangramSizes.join(' ou ')} letras)` : ''}`}
+                </div>
+                <ol className="bz-hcards" aria-label="Blocos de dicas">
+                  {HINT_CARDS.map((c, i) => {
+                    const need = c.id === 'map' ? hints.needMap : c.id === 'pairs' ? hints.needPairs : 0;
+                    const locked = need > 0;
+                    const total = Math.ceil(hints.total * (c.id === 'map' ? BEE_HINT_UNLOCK.map : c.id === 'pairs' ? BEE_HINT_UNLOCK.pairs : 0));
+                    const isNew = !locked && c.id !== 'sizes' && !seen.includes(c.id);
+                    return (
+                      <li key={c.id}>
+                        <button
+                          type="button"
+                          className={`bz-hcard${locked ? ' locked' : ''}${isNew ? ' new' : ''}`}
+                          disabled={locked}
+                          data-testid={`hint-card-${c.id}`}
+                          data-sfx="select"
+                          onClick={() => {
+                            markSeen(c.id);
+                            setHintView(c.id);
+                          }}
+                        >
+                          <span className="bz-hcard-n" aria-hidden="true">
+                            {locked ? (
+                              <svg viewBox="0 0 24 24">
+                                <path d="M7 11V8a5 5 0 0 1 10 0v3M5 11h14v9H5z" />
+                              </svg>
+                            ) : (
+                              i + 1
+                            )}
+                          </span>
+                          <span className="bz-hcard-body">
+                            <b>{c.title}</b>
                             <small className="mono">
-                              {total} {total === 1 ? 'palavra' : 'palavras'}
+                              {locked ? `Ache mais ${need} ${need === 1 ? 'palavra' : 'palavras'} para abrir` : c.desc}
                             </small>
-                          </div>
-                          <ul className="bz-map-sizes">
-                            {hints.map.sizes.map((n, c) => {
-                              const count = hints.map.cells[r]![c]!;
-                              return count > 0 ? (
-                                <li key={n}>
-                                  <span>
-                                    <b>{n}</b> letras
-                                  </span>
-                                  <em>
-                                    {count} {count === 1 ? 'palavra' : 'palavras'}
-                                  </em>
-                                </li>
-                              ) : null;
-                            })}
-                          </ul>
+                            {locked && (
+                              <i className="bz-hcard-bar" aria-hidden="true">
+                                <em style={{ transform: `scaleX(${Math.max(0, (total - need) / Math.max(1, total))})` }} />
+                              </i>
+                            )}
+                          </span>
+                          {isNew && <span className="bz-hcard-new mono">nova</span>}
+                          {!locked && (
+                            <span className="bz-hcard-cta">
+                              Abrir dica
+                              <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M9 6l6 6-6 6" />
+                              </svg>
+                            </span>
+                          )}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ol>
+              </>
+            ) : (
+              <>
+                <button type="button" className="bz-hback" data-sfx="back" data-testid="hint-back" onClick={() => setHintView(null)}>
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M15 6l-6 6 6 6" />
+                  </svg>
+                  Todas as dicas
+                </button>
+                {hintView === 'sizes' && (
+                  <section className="bz-hint-block" aria-label="Quantidade de letras">
+                    <h4>Quantas letras</h4>
+                    <ul className="bz-sizes" data-testid="hint-sizes">
+                      {hints.sizes.map(({ size, count }) => (
+                        <li key={size} style={{ '--w': count / maxSize } as CSSProperties}>
+                          <span>{size} letras</span>
+                          <i aria-hidden="true" />
+                          <b>
+                            {count} {count === 1 ? 'palavra' : 'palavras'}
+                          </b>
                         </li>
-                      );
-                    })}
-                  </ul>
-                  <p className="bz-map-total mono">
-                    Total que falta: <b>{hints.left}</b> {hints.left === 1 ? 'palavra' : 'palavras'}
-                  </p>
-                </>
-              )}
-            </section>
-
-            <section className="bz-hint-block" aria-label="Começo das palavras">
-              <h4>Duas primeiras letras</h4>
-              {hints.needPairs > 0 ? (
-                <p className="bz-lock" data-testid="hint-pairs-lock">
-                  <b>Bloqueado.</b> Ache mais {hints.needPairs} {hints.needPairs === 1 ? 'palavra' : 'palavras'} para ver como as palavras começam.
-                </p>
-              ) : (
-                <ul className="bz-pairs" data-testid="hint-pairs">
-                  {hints.pairs.map(({ prefix, count }) => (
-                    <li key={prefix}>
-                      <b>{prefix.toUpperCase()}</b>
-                      <span>
-                        {count} {count === 1 ? 'palavra' : 'palavras'}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
+                      ))}
+                    </ul>
+                  </section>
+                )}
+                {hintView === 'map' && (
+                  <section className="bz-hint-block" aria-label="Mapa das palavras">
+                    <h4>Por letra e tamanho</h4>
+                    <ul className="bz-map" data-testid="hint-map">
+                      {hints.map.letters.map((l, r) => {
+                        const total = hints.map.rowTotals[r]!;
+                        return (
+                          <li key={l} className="bz-map-row">
+                            <div className="bz-map-letter">
+                              <span className="mono">Começa com</span>
+                              <b>{l.toUpperCase()}</b>
+                              <small className="mono">
+                                {total} {total === 1 ? 'palavra' : 'palavras'}
+                              </small>
+                            </div>
+                            <ul className="bz-map-sizes">
+                              {hints.map.sizes.map((n, c) => {
+                                const count = hints.map.cells[r]![c]!;
+                                return count > 0 ? (
+                                  <li key={n}>
+                                    <span>
+                                      <b>{n}</b> letras
+                                    </span>
+                                    <em>
+                                      {count} {count === 1 ? 'palavra' : 'palavras'}
+                                    </em>
+                                  </li>
+                                ) : null;
+                              })}
+                            </ul>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                    <p className="bz-map-total mono">
+                      Total que falta: <b>{hints.left}</b> {hints.left === 1 ? 'palavra' : 'palavras'}
+                    </p>
+                  </section>
+                )}
+                {hintView === 'pairs' && (
+                  <section className="bz-hint-block" aria-label="Começo das palavras">
+                    <h4>Duas primeiras letras</h4>
+                    <ul className="bz-pairs" data-testid="hint-pairs">
+                      {hints.pairs.map(({ prefix, count }) => (
+                        <li key={prefix}>
+                          <b>{prefix.toUpperCase()}</b>
+                          <span>
+                            {count} {count === 1 ? 'palavra' : 'palavras'}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                )}
+              </>
+            )}
           </div>
         ))}
       {tab === 'rules' && (
