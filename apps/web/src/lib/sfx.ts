@@ -375,6 +375,11 @@ export function toggleMute() {
   sfx.clack();
 }
 
+/** Mudo agora? (a vibração dos jogos também cala junto) */
+export function isMuted(): boolean {
+  return muted;
+}
+
 export function useMuted(): boolean {
   return useSyncExternalStore(
     (cb) => {

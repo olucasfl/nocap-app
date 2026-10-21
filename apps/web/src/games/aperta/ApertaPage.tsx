@@ -1,3 +1,4 @@
+import { LOW_END } from './perf';
 import { useEffect, useMemo, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { useAuth } from '@/lib/auth';
@@ -51,7 +52,7 @@ export function ApertaPage() {
   }
 
   return (
-    <main className="ap">
+    <main className={`ap${LOW_END ? ' is-lite' : ''}`}>
       <Sky />
       {screen.name === 'title' && (
         <>

@@ -1,3 +1,4 @@
+import { apertaSfx } from '@/lib/aperta-audio';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { askDelete, backOrClose, cancelDelete, savesModalStart } from './saves-flow';
 import {
@@ -62,12 +63,14 @@ export function SavesModal({ store, onClose, onPick }: Props) {
   const create = (slot: SaveSlot) =>
     run(async () => {
       const save = await store.create(slot);
+      apertaSfx.thunk();
       onPick(save, true);
     });
 
   const confirmDelete = (slot: SaveSlot) =>
     run(async () => {
       await store.remove(slot);
+      apertaSfx.boing();
       setFlow(cancelDelete());
       setNotice({
         text: `Save ${slot} apagado. Dá para recuperar em até ${RECOVERY_DAYS} dias.`,
@@ -79,6 +82,7 @@ export function SavesModal({ store, onClose, onPick }: Props) {
   const undo = (slot: SaveSlot) =>
     run(async () => {
       const restored = await store.restore(slot);
+      if (restored) apertaSfx.flip();
       setNotice(
         restored
           ? { text: `Save ${slot} de volta.` }
@@ -189,7 +193,10 @@ export function SavesModal({ store, onClose, onPick }: Props) {
                     type="button"
                     className="ap-btn small"
                     disabled={busy}
-                    onClick={() => onPick(save, false)}
+                    onClick={() => {
+                      apertaSfx.thunk();
+                      onPick(save, false);
+                    }}
                   >
                     Continuar
                   </button>

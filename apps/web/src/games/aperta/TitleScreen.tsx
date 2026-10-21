@@ -12,7 +12,7 @@ interface Props {
 export function TitleScreen({ access, onPlay }: Props) {
   const muted = useMuted();
   return (
-    <section className="ap-title" aria-label="Aperta!">
+    <section className="ap-title ap-screen-in" aria-label="Aperta!">
       <TitleArt />
       <div className="ap-titlebox">
         <p className="ap-tag">Um clicker no espaço</p>

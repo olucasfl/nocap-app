@@ -6,6 +6,7 @@ import {
   setVibrationEnabled,
   vibrationEnabled,
 } from './aperta-audio';
+import { isMuted, toggleMute } from './sfx';
 
 function stubStorage(initial: Record<string, string> = {}) {
   const data = new Map(Object.entries(initial));
@@ -61,5 +62,23 @@ describe('vibração', () => {
     stubStorage();
     vi.stubGlobal('navigator', {});
     expect(apertaVibrate()).toBe(false);
+  });
+});
+
+describe('vibração e mudo', () => {
+  it('o mudo cala a vibração e desmudar a devolve', () => {
+    stubStorage();
+    const vibrate = vi.fn(() => true);
+    vi.stubGlobal('navigator', { vibrate });
+    vi.stubGlobal('window', {}); // sem AudioContext: o clack do botão de mudo vira silêncio
+    if (isMuted()) toggleMute();
+    expect(apertaVibrate(8)).toBe(true);
+    toggleMute();
+    expect(isMuted()).toBe(true);
+    vibrate.mockClear();
+    expect(apertaVibrate(8)).toBe(false);
+    expect(vibrate).not.toHaveBeenCalled();
+    toggleMute();
+    expect(apertaVibrate(8)).toBe(true);
   });
 });

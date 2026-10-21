@@ -1,4 +1,4 @@
-import { audioKit } from './sfx';
+import { audioKit, isMuted } from './sfx';
 
 /**
  * Sons do Aperta!, todos sintetizados em Web Audio (sem arquivos) e respeitando o botão de mudo
@@ -112,9 +112,9 @@ export function setVibrationEnabled(on: boolean) {
   }
 }
 
-/** Vibra só onde existe (Android; iOS não suporta) e se a pessoa não desligou. */
+/** Vibra só onde existe (Android; iOS não suporta), se a pessoa não desligou e fora do mudo. */
 export function apertaVibrate(pattern: number | number[] = 8): boolean {
-  if (!vibrationEnabled()) return false;
+  if (!vibrationEnabled() || isMuted()) return false;
   try {
     return typeof navigator.vibrate === 'function' && navigator.vibrate(pattern);
   } catch {

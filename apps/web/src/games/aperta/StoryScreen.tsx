@@ -1,3 +1,4 @@
+import { apertaSfx } from '@/lib/aperta-audio';
 import { useState } from 'react';
 import { StoryScene } from './art';
 import { STORY, storyButton, storyNext, storySkip, storyStart } from './story';
@@ -8,11 +9,16 @@ export function StoryScreen({ onDone }: { onDone: () => void }) {
 
   const apply = (next: typeof state) => {
     setState(next);
-    if (next.done) onDone();
+    if (next.done) {
+      apertaSfx.thunk();
+      onDone();
+    } else {
+      apertaSfx.flip();
+    }
   };
 
   return (
-    <section className="ap-story" aria-label="História">
+    <section className="ap-story ap-screen-in" aria-label="História">
       <div className="ap-story-box">
         <StoryScene index={state.index} />
         <p className="ap-story-k">
