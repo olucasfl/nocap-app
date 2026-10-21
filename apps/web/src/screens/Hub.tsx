@@ -1,4 +1,4 @@
-import { AtravessaArt, BlocksArt, ColorArt, EcoArt, TimeArt } from '@/components/HubArt';
+import { ApertaArt, AtravessaArt, BlocksArt, ColorArt, EcoArt, TimeArt } from '@/components/HubArt';
 import { Link } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { WordsHubArt } from '@/games/words/words-art';
@@ -205,6 +205,14 @@ export function Hub() {
         <div className="hz-grid">
           <GameCard to="/blocks" cls="hub-card-blocks" art={<BlocksArt />} name="Block's" lines={[blocksBestLabel(data)]} />
           <GameCard to="/atravessa" cls="hub-card-atravessa" art={<AtravessaArt />} name="Atravessa!" size="long" lines={[atravessaBestLabel(data)]} />
+          {/* Só quem tem conta joga: o convidado é levado ao login. */}
+          <GameCard
+            to={user ? '/arcade/aperta' : '/entrar'}
+            cls="hub-card-aperta"
+            art={<ApertaArt />}
+            name="Aperta!"
+            lines={[user ? 'CLICKER NO ESPAÇO' : 'ENTRE PARA JOGAR']}
+          />
         </div>
       </section>
 

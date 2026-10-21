@@ -1,0 +1,21 @@
+/* Tokens do tema espaço do Aperta! (exceção nomeada em RULES.md, spec 038 seção 13).
+   Escopo na classe .ap: nada daqui vaza para o resto do app, que continua Pop Brutal. */
+.ap {
+  --space-bg: #04060f;
+  --space-panel: #0f1838;
+  --space-panel-2: #18255a;
+  --space-line: #33479b;
+  --space-blue: #3c9cf0;
+  --space-blue-dark: #1b5fa8;
+  --space-red: #ee3a2f;
+  --space-red-dark: #8e1514;
+  --space-gold: #ffc857;
+  --space-cyan: #5ce1ff;
+  --space-violet: #9b7bff;
+  --space-text: #e8eeff;
+  --space-muted: #93a1d6;
+  --space-ink: #02030a;
+
+  --space-font-display: 'Chakra Petch', system-ui, sans-serif;
+  --space-font-text: 'Space Grotesk', system-ui, sans-serif;
+}

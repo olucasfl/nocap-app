@@ -151,6 +151,12 @@ const atravessaRoute = createRoute({
   component: lazyRouteComponent(() => import('@/games/atravessa/AtravessaPage'), 'AtravessaPage'),
 });
 
+const apertaRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/arcade/aperta',
+  component: lazyRouteComponent(() => import('@/games/aperta/ApertaPage'), 'ApertaPage'),
+});
+
 const blocksRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/blocks',
@@ -235,6 +241,7 @@ const routeTree = rootRoute.addChildren([
   timeRoute,
   ecoRoute,
   atravessaRoute,
+  apertaRoute,
   blocksRoute,
   wordsRoute,
   wordsClassicRoute,

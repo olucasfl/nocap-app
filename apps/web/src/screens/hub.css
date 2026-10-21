@@ -98,6 +98,10 @@ a.hub-card:active {
   color: var(--on-accent);
   animation-delay: 0.66s;
 }
+.hub-card-aperta {
+  background: var(--blue);
+  color: var(--on-blue);
+}
 .hub-card-blocks {
   background: var(--yellow);
   color: var(--on-accent);
