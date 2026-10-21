@@ -220,3 +220,19 @@ export function BlocksArt() {
 }
 
 
+
+/** Aperta!: o botão vermelho sobre a base e a estrela que acende. Sem tema espaço aqui: o Hub é Pop Brutal. */
+export function ApertaArt() {
+  return (
+    <svg className="ha ha-aperta" viewBox="0 0 200 150" aria-hidden="true">
+      <g className="ha-float a">
+        <path d="M150 22l5 16 16 5-16 5-5 16-5-16-16-5 16-5z" fill={PAPER} {...stroke} strokeWidth={2.6} />
+      </g>
+      <ellipse cx="104" cy="122" rx="62" ry="17" {...hard} />
+      <ellipse cx="100" cy="116" rx="62" ry="17" fill="#c7cede" {...stroke} strokeWidth={3} />
+      <rect x="60" y="78" width="80" height="34" fill="#b3140f" {...stroke} strokeWidth={3} />
+      <ellipse cx="100" cy="78" rx="40" ry="15" fill="#e5303a" {...stroke} strokeWidth={3} />
+      <ellipse cx="88" cy="73" rx="17" ry="4.5" fill="#fff" opacity="0.5" />
+    </svg>
+  );
+}

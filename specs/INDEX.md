@@ -41,6 +41,6 @@
 | 035 | [Bee Word's (7 letras, uma obrigatória)](035-bee-words.md) | 7 | rascunho |
 | 036 | [Classic Word's em fases (1, 2 e 4 palavras)](036-classic-fases.md) | 7 | concluída |
 | 037 | [Progresso das fases na conta](037-progresso-na-conta.md) | 7 | concluída |
-| 038 | [Aperta! (clicker no espaço, solo, saves na conta)](038-clicker.md) | 8 | aprovada (21/10); etapa 1 (motor e simulador) liberada |
+| 038 | [Aperta! (clicker no espaço, solo, saves na conta)](038-clicker.md) | 8 | aprovada (21/10); etapa 3 (título, saves e história) feita com SaveStore local de dev |
 
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.

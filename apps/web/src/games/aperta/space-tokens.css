@@ -59,6 +59,7 @@
   /* Fontes (carregadas por loadSpaceFonts, só quando o jogo abre) */
   --space-font-display: 'Chakra Petch', system-ui, sans-serif;
   --space-font-body: 'Space Grotesk', system-ui, sans-serif;
+  --space-font-text: var(--space-font-body); /* alias usado pela tela de título */
 
   color: var(--space-text);
   font-family: var(--space-font-body);
