@@ -1,6 +1,6 @@
 # 038 · Aperta! (clicker no espaço)
 
-Status: **aprovada pelo Lucas em 21/10/2026 (todas as decisões resolvidas, inclusive o conteúdo da v1).** Etapa 1 pode começar.).
+Status: **aprovada pelo Lucas em 21/10/2026 (todas as decisões resolvidas, inclusive o conteúdo da v1).** **Etapa 1 (motor e simulador) pronta** em `packages/games/src/aperta`; números finais na seção 6.7.
 
 Fontes de verdade: as regras ditadas pelo Lucas em 21/10/2026 (seção 2) e o design aprovado no artifact "Aperta! Espaço" (`project/Main.dc.html`, mockup para idealizar o visual; a lógica complexa é desta spec). O Lucas aprovou a paleta, os gradientes e as fontes do mockup para esta tela (seção 13); o resto das regras do projeto continua valendo.
 
@@ -143,7 +143,7 @@ A família define o **bônus de conjunto** do Atlas (seção 8.2). Cada grimóri
 **Comuns (10)**
 | Grimório | Família | Efeito | Arte |
 | --- | --- | --- | --- |
-| Lua | Luas | a cada 10 toques, +5 toques de poeira | esfera cinza clara com crateras |
+| Lua | Luas | a cada 10 toques, +1 toque de poeira (calibrado na etapa 1; +5 dava +50% de poeira no nível 1) | esfera cinza clara com crateras |
 | Mercúrio | Planetas | energia enche 10% mais rápido | esfera marrom-cinza, crateras pequenas |
 | Vênus | Planetas | objetos duram 2 s a mais | esfera creme-dourada com faixas de nuvem |
 | Marte | Planetas | cometas dão +25% | esfera ferrugem com calota polar branca |
@@ -164,7 +164,7 @@ A família define o **bônus de conjunto** do Atlas (seção 8.2). Cada grimóri
 | Netuno | Planetas | satélites duram o dobro | esfera azul-profundo com faixa branca |
 | Ganimedes | Luas | +10% de energia por toque | esfera cinza com sulcos claros |
 | Plutão | Pequenos corpos | objetos valem +12% | esfera bege com "coração" claro |
-| Tritão | Luas | cada objeto capturado dá +2% da barra de energia | esfera rosada com calota de gelo |
+| Tritão | Luas | cada objeto capturado dá energia de 2 toques (calibrado; % da barra anulava o passo de energia) | esfera rosada com calota de gelo |
 
 **Épicos (6)**
 | Grimório | Família | Efeito | Arte |
@@ -174,7 +174,7 @@ A família define o **bônus de conjunto** do Atlas (seção 8.2). Cada grimóri
 | Betelgeuse | Estrelas | troque 1 das 3 opções (1 vez por escolha) | gigante laranja com manchas |
 | Polaris | Estrelas | o toque depois de capturar um objeto vale x5 | estrela azul-branca com halo fino |
 | Antares | Estrelas | objetos valem +20% | gigante vermelha com brilho |
-| Nebulosa do Caranguejo | Nebulosas e galáxias | grimório repetido sobe 2 níveis | filamentos laranja e azuis |
+| Nebulosa do Caranguejo | Nebulosas e galáxias | grimório repetido sobe 2 níveis (1 extra) | filamentos laranja e azuis |
 
 **Lendários (3)**
 | Grimório | Família | Efeito | Arte |
@@ -329,6 +329,23 @@ Regra: a **duração da vida k** (do início até colapsar) parte de **8 h** e c
 - Isto **substitui** a meta anterior "10º colapso em 40 a 60 h": com a vida encurtando, o 10º colapso chega em ~32 h (faixa 27 a 37 h) e o 15º em ~38 h (faixa 33 a 44 h).
 - **Pesos de raridade nas vidas seguintes:** como cada vida zera as escolhas, os limiares da 4.3 (`n >= 3 / 8 / 14 / 22`) caem para **60%** depois do 1º colapso e **40%** depois do 5º, para os raros e épicos aparecerem mais cedo em vidas curtas. O simulador confirma.
 - Os "mín. de escolhas" e as metas de poeira são o ponto de partida; o simulador também valida que **nenhuma vida fica mais longa que a anterior**.
+
+### 6.7 Calibração da etapa 1 (números finais do motor)
+Simulador: `pnpm --filter @nocap/games sim` (fora do `pnpm test`). Os testes (`sim.test.ts`) exigem, no perfil normal (2,5 toques/s), a **média de 3 sementes** de cada vida 1 a 5 a ±15% da tabela 6.6, 1º colapso entre 6 e 10 h e nenhuma vida mais longa que a anterior. Uma semente isolada varia ±15% a +40% (a sorte dos grimórios), por isso a tabela impressa de uma semente só é indicativa.
+
+| Vida | Meta de poeira (final) | Duração (média de 3 sementes) | Alvo |
+| --- | --- | --- | --- |
+| 1º | 5,36 mi | 8,0 h | 8 h |
+| 2º | 5,87 mi | 5,0 h | 5 h |
+| 3º | 6,15 mi | 3,5 h | 3,5 h |
+| 4º | 11,2 mi | 3,0 h | 3 h |
+| 5º | 8,06 mi | 2,6 h | 2,6 h |
+
+- **Vidas 6 a 15:** metas provisórias (5,5 a 7,3 mi), **sem calibrar**: o conteúdo desses colapsos só chega nas etapas 14 e 15.
+- **Ajustes de número feitos na calibração:** (1) **energia dos objetos em toques de energia** e não em % da barra (estrela 8 toques, asteroide 3, Tritão 2): com % da barra o simulador fazia 180 escolhas em 8 h, porque a barra cresce x1,35 e a estrela dava 10% dela em qualquer fase; agora a 1ª vida fecha com ~21 escolhas; (2) Lua +1 toque a cada 10 (antes +5); (3) Caranguejo = +1 nível extra no repetido; (4) as metas de poeira acima (a de 2 mi do rascunho deixava o 1º colapso em ~1,5 h). Custos, bases, passos de energia e níveis máximos ficaram como na 6.2.
+- **Marcos da 1ª vida, perfil normal (uma semente):** 1ª melhoria ~7 min, 1ª escolha ~2 min, 10 escolhas ~1 h, 1 mi de poeira ~3,5 h, estrela pronta ~8 a 9 h.
+- **Regras de motor decididas na etapa 1:** o toque exige 1/12 s entre toques; salto de relógio maior que 5 s é aba escondida (nada conta, objetos/boost/combo congelam); com a escolha aberta o campo congela; escolha em 2 passos (`selectGrimoire` e `chooseGrimoire`, bloqueio de 1,6 s); sorteio escolhe a raridade pelo peso e depois a carta; grimório no nível 10 sai do sorteio; efeitos de preço dos proibidos têm a marca `price` (é o `forbiddenTradeoff`) e a página do Atlas reduz preço e ganho a 60% (a escolha dupla de Órion não é guardada na página); descontos de custo são multiplicativos com piso de 40%; combo máximo com teto 12; `startDust` do Titã = 1.500 de poeira por nível.
+- **Não feito nesta etapa:** `validateSave`, `mergeSaves`, `eventTick`, `canAscend`, conquistas, mecânica Favorito (etapa 2 em diante).
 
 ### 6.5 Simulador de economia (proposta)
 Um script em `packages/games` (`aperta/sim`, rodado por um comando `pnpm`) que **usa o próprio motor do jogo** (mesmas funções, sem cópia da regra) e simula jogadores por perfil e estratégia de compra (gulosa, só toque, mista). Entradas: tabelas de custo, efeitos, pesos, passos de energia. Saídas: tabela de **horas de jogo aberto até cada marco** (1ª melhoria, 1ª escolha, 10 escolhas, ~1 mi, estrela pronta, 2º colapso, 10º colapso), **distribuição de grimórios**, quanto cada grimório vale (retorno por escolha) e **alertas** (grimório que domina, ramo da árvore que quebra, valor que passa de 1e15). Testes automatizados: "cada vida do perfil normal fica a ±15% da tabela 6.6, e nenhuma é mais longa que a anterior"; "1º colapso do perfil normal entre 6 e 10 h" falha o build se uma mudança de número sair da faixa; "nenhum caminho dá infinito ou NaN".
