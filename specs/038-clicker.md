@@ -113,6 +113,8 @@ Véu escuro sobre tudo, **spotlight** no elemento certo (brilho que pulsa em `op
 5. **Agora os grimórios:** seta no ícone de livro; a página mostra o álbum, o trancado e o Atlas; botão **Começar a jogar**.
 Pular marca o tutorial como feito no save. O progresso do tutorial é salvo (voltar no meio retoma no passo).
 
+*Como ficou (etapa 8):* o passo vai em `SaveState.tutorial` (1 a 5 ou `'done'`; sem campo novo, saves antigos seguem válidos; save com toques e passo 1 vem de antes do tutorial e abre como concluído). O véu são quatro faixas ao redor do alvo (o alvo fica tocável, o resto recebe o toque e não faz nada), cliques e Enter/Espaço em botões de fora e os atalhos G, M e Esc também são barrados, e o motor recusa toque fora do passo 1 e compra que não seja o Pulso Solar no passo 4. O cartão vai para baixo quando o alvo está na metade de cima da tela. Retomar no passo 4 ou 5 sem a página aberta aponta de volta ao botão da dock. Cada passo guarda a cópia do aparelho na hora (`store.stage`) e sobe em seguida. O Aperta! não sorteia objetos no tutorial (`tutorialActive(state)` em `packages/games`, para a etapa 7).
+
 ### 4.7 Proteção contra clique acidental
 - Escolha de grimório: **cartas bloqueadas por 1,6 s** (barra de contagem) e **2 passos** (selecionar, depois confirmar).
 - **Colapsar** e **Apagar save** também em 2 passos.
@@ -560,11 +562,12 @@ Todo o trabalho está na branch **`develop`** (nada na `main`, por ordem do Luca
 
 - **Etapa 5 (Melhorias), pronta (21/10/2026, branch `claude/aperta-etapa-5-2dde26`):** `UpgradesPage`, `upgrades-logic.ts`, `upgrades.css`, `controller.buy` com trava de 250 ms (4.7). Mostra as melhorias que o colapso atual abriu; as de liberação (Plêiades, Hubble, Voyager) aparecem trancadas com a dica. Ganho da próxima compra vem do `effectiveStats` do motor; botão "Falta N" sem saldo. Combo só liga após a Ressonância (teste). Conferida em 320, 390 e 1280 px sem rolagem lateral.
 - **Etapa 6 (grimórios e álbum), pronta (21/10/2026, branch `claude/aperta-etapa-6-1f9010`):** modal de escolha completo, página de Grimórios com álbum e Atlas (espaços; bônus de conjunto e botão Colapsar ficam na etapa 9), testes de pesos por `n` e de clique acidental. Conferida em 320, 390 e 1280 px.
+- **Etapa 8 (tutorial guiado), pronta (21/10/2026, branch `claude/aperta-etapa-8-88d554`):** `tutorial.ts` no motor (concessões da Lua e da poeira, `tutorialAllows`, `tutorialActive`), `Tutorial.tsx` (véu, anel em `opacity`, seta, cartão, modal "Primeiro grimório"), `tutorial-logic.ts`, `tutorial.css`, passos no `game-controller`. Playwright `e2e/aperta-tutorial.spec.ts` (toque emulado, DPR 2, 320, 390 e 1280 px): bloqueio fora do alvo, pular, retomar o passo 5 após recarregar e sem rolagem lateral.
 
 ### O que falta, na ordem
 1. **Etapa 2, só falta o banco:** (a) o Lucas decide quando **aplicar `0009_aperta.sql`** (`pnpm db:migrate`; só cria tabela); (b) depois, conferir as rotas contra o banco real (criar, gravar, 409 com dois aparelhos, apagar e restaurar) e o diálogo de conflito no navegador com duas abas. Pendência de desenho: aviso "aberto em outro aparelho" e histórico de 5 revisões não foram feitos (ver o quadro em 10.1).
 2. **Etapa 4: fechada** (ver acima).
-3. **Etapas 7 a 10:** Objetos no espaço, Tutorial guiado, Colapso e Atlas Eterno, Árvore e conquistas. As páginas de Grimórios, Conquistas e Árvore hoje são **vazias provisórias**.
+3. **Etapas 7, 9 e 10** (a 8, Tutorial guiado, está pronta): Objetos no espaço, Colapso e Atlas Eterno, Árvore e conquistas. As páginas de Grimórios, Conquistas e Árvore hoje são **vazias provisórias**.
 4. **Etapa 11:** ligar a arte e os sons ao jogo, transições, desempenho em celular fraco.
 5. **Etapas 12 e 13:** conteúdo dos colapsos 1 a 5 e QA responsivo com calibragem ao vivo (fecha a v1).
 6. **Depois da v1:** etapas 14 a 16.

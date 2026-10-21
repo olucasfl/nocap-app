@@ -1,0 +1,209 @@
+/*
+ * Tutorial guiado do Aperta! (spec 038, 4.6). Só `transform` e `opacity` animam; as posições do véu,
+ * do anel e da seta são estáticas (recalculadas quando o alvo muda de lugar).
+ */
+.ap-tut {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+}
+.ap-tut-veil {
+  position: absolute;
+  background: rgba(2, 3, 10, 0.78);
+  pointer-events: auto;
+  touch-action: none;
+}
+.ap-tut-ring {
+  position: absolute;
+  border: 3px solid var(--space-gold);
+  border-radius: 16px;
+  pointer-events: none;
+}
+.ap-tut-glow {
+  position: absolute;
+  inset: -7px;
+  border-radius: 22px;
+  box-shadow:
+    0 0 0 2px rgba(255, 200, 87, 0.6),
+    0 0 26px 6px rgba(255, 200, 87, 0.75);
+  opacity: 0.35;
+  animation: ap-tut-pulse 1.4s ease-in-out infinite alternate;
+}
+@keyframes ap-tut-pulse {
+  from {
+    opacity: 0.25;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.ap-tut-arrowpos {
+  position: absolute;
+  pointer-events: none;
+}
+.ap-tut-arrowpos.is-above {
+  transform: translate(-50%, -100%);
+}
+.ap-tut-arrowpos.is-below {
+  transform: translate(-50%, 0);
+}
+.ap-tut-arrow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  animation: ap-tut-bob-up 0.9s ease-in-out infinite alternate;
+}
+.is-below .ap-tut-arrow {
+  flex-direction: column-reverse;
+  animation-name: ap-tut-bob-down;
+}
+.ap-tut-arrow b {
+  padding: 6px 12px;
+  border: 3px solid var(--space-ink);
+  border-radius: 10px;
+  background: var(--space-gold);
+  color: var(--space-ink);
+  font: 700 14px/1 var(--space-font-display);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.ap-tut-arrow svg {
+  width: 26px;
+  height: 20px;
+  fill: var(--space-gold);
+  stroke: var(--space-ink);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+@keyframes ap-tut-bob-up {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-8px);
+  }
+}
+@keyframes ap-tut-bob-down {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(8px);
+  }
+}
+
+.ap-tut-card {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  max-width: 520px;
+  margin: 0 auto;
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 3px solid var(--space-gold);
+  border-radius: 14px;
+  background: var(--space-panel);
+  box-shadow: 0 6px 0 var(--space-ink);
+  pointer-events: auto;
+}
+.ap-tut-card.is-top {
+  top: 10px;
+}
+.ap-tut-card.is-bottom {
+  bottom: 10px;
+}
+.ap-tut-count {
+  font: 700 11px/1 var(--space-font-display);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--space-gold);
+}
+.ap-tut-card h2 {
+  font: 700 19px/1.15 var(--space-font-display);
+  color: var(--space-text);
+}
+.ap-tut-card p {
+  font: 500 14px/1.35 var(--space-font-body);
+}
+.ap-tut-card .ap-tut-count {
+  font: 700 11px/1 var(--space-font-display);
+}
+.ap-tut-card div > p {
+  color: var(--space-muted);
+  margin-top: 4px;
+}
+.ap-tut-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 2px;
+}
+.ap-tut-go {
+  min-height: 48px;
+  font-size: 15px;
+}
+.ap-tut-skip {
+  min-height: 44px;
+  margin-left: auto;
+  padding: 0 14px;
+  border: 2px solid var(--space-line);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--space-muted);
+  font: 600 13px var(--space-font-body);
+}
+
+/* Passo 2: o livro da Lua */
+.ap-first {
+  align-items: center;
+  text-align: center;
+}
+.ap-first-book {
+  display: grid;
+  place-items: center;
+}
+.ap-first-name {
+  display: grid;
+  gap: 2px;
+}
+.ap-first-name b {
+  font: 700 18px/1 var(--space-font-display);
+}
+
+@media (max-width: 720px) {
+  .ap-tut-card h2 {
+    font-size: 17px;
+  }
+  .ap-tut-card p {
+    font-size: 13px;
+  }
+}
+@media (max-height: 560px) {
+  .ap-tut-card {
+    padding: 8px 12px;
+    gap: 3px;
+  }
+  .ap-tut-card h2 {
+    font-size: 15px;
+  }
+  .ap-tut-card div > p {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ap-tut-glow {
+    animation: none;
+    opacity: 0.8;
+  }
+  .ap-tut-arrow {
+    animation: none;
+  }
+}

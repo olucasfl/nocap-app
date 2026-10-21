@@ -38,6 +38,7 @@ Tudo está em `main` e publicado (API no Render, web na Vercel, banco no Supabas
 
 **Aperta! etapa 5 pronta (21/10/2026, branch `claude/aperta-etapa-5-2dde26`):** página de Melhorias (`UpgradesPage`, `upgrades-logic.ts`, `upgrades.css`) com preço, ganho da próxima compra, trancadas com dica e compra pelo `controller.buy` (trava de toque duplo de 250 ms). Conferida em 320/390/1280 px sem rolagem lateral.
 **Aperta! etapa 6 pronta (21/10/2026, branch `claude/aperta-etapa-6-1f9010`):** `ChoiceModal` completo (guarda de 300 ms, trocar carta, 2 escolhas da Nebulosa de Órion), `GrimoiresPage` (álbum + Atlas, sem botão Colapsar: é da etapa 9), `albumView` em `game-logic.ts`, `controller.reroll`. Mexe pouco em `GameScreen`/`GamePage` (só passa o filho da página de Grimórios), para não bater com a etapa 5.
+**Aperta! etapa 8 pronta (21/10/2026, branch `claude/aperta-etapa-8-88d554`):** tutorial guiado (`Tutorial.tsx`, `tutorial-logic.ts`, `tutorial.css`, `packages/games/src/aperta/tutorial.ts`); o passo vai em `SaveState.tutorial`. Teste de ponta a ponta: `E2E_PORT=5208 playwright test e2e/aperta-tutorial.spec.ts --project=desktop` (a porta é configurável). Para a etapa 7: sem objetos enquanto `tutorialActive(state)`.
 
 **Aperta! etapa 4 fechada (21/10/2026, branch `claude/aperta-etapa-4-c0fba5`):** tela de jogo conferida em 320/390/1280 px, pausa por `visibilitychange` e repetição de tecla (6/s) testadas.
 

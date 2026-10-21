@@ -17,6 +17,8 @@ function chromiumPath(): string | undefined {
   return exe && existsSync(exe) ? exe : undefined;
 }
 const executablePath = chromiumPath();
+/** Porta do dev server dos testes; troque com E2E_PORT quando outra sessão já usa a 5199. */
+const PORT = process.env.E2E_PORT ?? '5199';
 
 /**
  * Testes de ponta a ponta do Word's. A API é simulada no navegador (`e2e/mock-api.ts`), então não
@@ -29,7 +31,7 @@ export default defineConfig({
   fullyParallel: true,
   reporter: [['list']],
   use: {
-    baseURL: 'http://localhost:5199',
+    baseURL: `http://localhost:${PORT}`,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     locale: 'pt-BR',
@@ -40,8 +42,8 @@ export default defineConfig({
     { name: 'desktop', use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 } } },
   ],
   webServer: {
-    command: 'pnpm exec vite --port 5199 --strictPort',
-    port: 5199,
+    command: `pnpm exec vite --port ${PORT} --strictPort`,
+    port: Number(PORT),
     reuseExistingServer: true,
     timeout: 120_000,
   },

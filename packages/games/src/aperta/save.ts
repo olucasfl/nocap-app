@@ -20,6 +20,7 @@ import {
   upgradeCost,
 } from './economy';
 import { SAVE_VERSION, effectiveStats, type SaveState } from './engine';
+import { TUTORIAL_DUST_ALLOWANCE } from './tutorial';
 
 /** Tamanho máximo do save em JSON (o real fica em poucos KB). */
 export const MAX_SAVE_BYTES = 64 * 1024;
@@ -257,7 +258,7 @@ export function validateSave(raw: unknown, opts: ValidateOptions = {}): SaveVali
       flagged.push('playSeconds');
     }
   }
-  const ceiling = dustPerSecondCeiling(save) * save.playSeconds + effectiveStats(save).startDust + 1000;
+  const ceiling = dustPerSecondCeiling(save) * save.playSeconds + effectiveStats(save).startDust + 1000 + TUTORIAL_DUST_ALLOWANCE;
   if (run.dustLife > ceiling) {
     const excess = run.dustLife - ceiling;
     run.dustLife = ceiling;

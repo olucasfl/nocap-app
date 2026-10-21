@@ -48,7 +48,7 @@ export function GamePage({ name, notice, onClose, children }: Props) {
             X
           </button>
         </header>
-        <div className="ap-sbody">
+        <div className="ap-sbody" data-tut={`${name}-page`}>
           <p className="ap-pnotice">
             <i aria-hidden="true">!</i>
             <span>{notice}</span>
