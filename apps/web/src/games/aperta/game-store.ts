@@ -1,4 +1,5 @@
 import type { SaveState } from '@nocap/games';
+import type { SyncedSaveStore } from './api-save-store';
 import type { SaveSlot } from './save-store';
 
 /**
@@ -58,6 +59,24 @@ export function createLocalGameStore(userId: string): GameStore {
     async save(slot, state) {
       // Falha de armazenamento sobe para o controlador contar as tentativas (spec 11).
       localStorage.setItem(key(slot), JSON.stringify(state));
+    },
+  };
+}
+
+/**
+ * Estado da partida na conta: delega ao `SyncedSaveStore` (cópia local, autosave, subida ao voltar a
+ * internet). `open` já devolve o estado juntado quando há conflito; o aviso de escolha vem de `conflict()`.
+ */
+export function createSyncedGameStore(saves: SyncedSaveStore): GameStore {
+  return {
+    async load(slot) {
+      return (await saves.open(slot)).state;
+    },
+    async save(slot, state) {
+      saves.update(slot, state);
+      await saves.flush(slot);
+      // Offline não é falha (a cópia local guarda); só erro de verdade conta para o aviso.
+      if (saves.sync(slot) === 'error') throw new Error('save-failed');
     },
   };
 }

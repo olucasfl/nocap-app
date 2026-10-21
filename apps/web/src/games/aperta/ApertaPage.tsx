@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/lib/auth';
 import { Sky } from './art';
 import { GameScreen } from './GameScreen';
-import { createLocalGameStore, type GameStore } from './game-store';
+import { createSyncedGameStore, type GameStore } from './game-store';
 import { SavesModal } from './SavesModal';
 import { afterPick, apertaAccess } from './saves-flow';
 import { createApiSaveStore } from './api-save-store';
@@ -39,7 +39,7 @@ export function ApertaPage() {
   const userId = user?.id;
   // Os saves vão para a API (etapa 2); o estado da partida em curso ainda usa o store local até as etapas seguintes.
   const store = useMemo(() => (userId ? createApiSaveStore(userId) : null), [userId]);
-  const gameStore = useMemo(() => (userId ? createLocalGameStore(userId) : null), [userId]);
+  const gameStore = useMemo(() => (store ? createSyncedGameStore(store) : null), [store]);
   const [screen, setScreen] = useState<Screen>({ name: 'title', saves: false });
 
   function pick(save: SaveSummary) {
