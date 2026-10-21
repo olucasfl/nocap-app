@@ -14,6 +14,7 @@ import { ChoiceModal } from './ChoiceModal';
 import { GamePage, PageIcon, PAGE_TITLE } from './GamePage';
 import { RegionBackdrop, type RegionId } from './RegionBackdrop';
 import { SpaceArtSprite } from './SpaceArtSprite';
+import { UpgradesPage } from './UpgradesPage';
 import type { GameController, GameEvent } from './game-controller';
 import {
   NOTICE_MS,
@@ -369,7 +370,9 @@ export function GameScreen({ controller, onExit }: Props) {
           name={page}
           notice={pageNotice(page, affordable, albumCount, state.collapses)}
           onClose={() => setPage(null)}
-        />
+        >
+          {page === 'upgrades' && <UpgradesPage state={state} onBuy={controller.buy} />}
+        </GamePage>
       )}
 
       {pending && (

@@ -1,0 +1,154 @@
+/*
+ * Página de Melhorias do Aperta! (spec 038, 3.5). Tokens --space-*; só transform e opacity animam.
+ */
+.ap-uplist {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ap-up {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 3px solid var(--space-line);
+  border-radius: 14px;
+  background: linear-gradient(180deg, var(--space-panel-2), var(--space-panel));
+}
+.ap-up.is-affordable {
+  border-color: var(--space-cyan);
+}
+.ap-up.is-locked,
+.ap-up.is-maxed {
+  opacity: 0.6;
+}
+.ap-up-medal {
+  width: 56px;
+  height: 56px;
+  --ap-trim: var(--space-cyan);
+}
+.ap-up.is-locked .ap-up-medal {
+  filter: grayscale(1);
+}
+.ap-up-body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.ap-up-body h3 {
+  margin: 0;
+  font: 700 16px var(--space-font-display);
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+.ap-up-body p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.ap-up-text {
+  font: 400 13px/1.35 var(--space-font-body);
+  color: var(--space-muted);
+}
+.ap-up-gain {
+  font: 600 13px/1.35 var(--space-font-body);
+  color: var(--space-cyan);
+}
+.ap-up-lock {
+  font: 600 12px var(--space-font-display);
+  color: var(--space-gold);
+}
+.ap-up-level {
+  font: 600 11px var(--space-font-display);
+  color: var(--space-gold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  animation: apu-bump 0.25s ease-out;
+}
+.ap-up-buy {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  min-width: 96px;
+  min-height: 52px;
+  padding: 6px 12px;
+  border: 3px solid var(--space-ink);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #58b4ff, #2b86d8);
+  color: #fff;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+  box-shadow:
+    0 5px 0 var(--space-blue-dark),
+    inset 0 2px 0 rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+}
+.ap-up-buy b {
+  font: 700 16px var(--space-font-display);
+  white-space: nowrap;
+}
+.ap-up-buy small {
+  font: 600 10px var(--space-font-display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.ap-up-buy:active {
+  transform: translateY(3px);
+}
+.ap-up-buy[aria-disabled='true'] {
+  background: linear-gradient(180deg, #3a4262, #262c48);
+  color: var(--space-muted);
+  text-shadow: none;
+  box-shadow:
+    0 5px 0 #11152b,
+    inset 0 2px 0 rgba(255, 255, 255, 0.12);
+  cursor: default;
+}
+.ap-up-buy[aria-disabled='true']:active {
+  transform: none;
+}
+
+/* Celular estreito: o botão desce para a linha de baixo e ocupa a largura toda. */
+@media (max-width: 420px) {
+  .ap-up {
+    grid-template-columns: 48px minmax(0, 1fr);
+  }
+  .ap-up-medal {
+    width: 48px;
+    height: 48px;
+  }
+  .ap-up-buy {
+    grid-column: 1 / -1;
+    grid-auto-flow: column;
+    justify-content: center;
+    gap: 8px;
+    min-height: 48px;
+  }
+}
+
+@keyframes apu-bump {
+  from {
+    transform: scale(1.2);
+    opacity: 0.4;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ap-up-level {
+    animation: none;
+  }
+  .ap-up-buy:active {
+    transform: none;
+  }
+}
+
+.ap-up-buy:focus-visible {
+  outline: 3px solid var(--space-gold, #ffc857);
+  outline-offset: 3px;
+}

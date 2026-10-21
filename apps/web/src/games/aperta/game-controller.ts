@@ -1,5 +1,6 @@
 import {
   GRIMOIRES,
+  buyUpgrade,
   chooseGrimoire,
   newSave,
   press,
@@ -10,6 +11,7 @@ import {
 } from '@nocap/games';
 import type { GameStore } from './game-store';
 import type { SaveSlot } from './save-store';
+import { BUY_GUARD_SEC } from './upgrades-logic';
 
 /** Falhas de salvamento seguidas até o aviso persistente (spec 038, seção 11). */
 export const SAVE_FAILURES_BEFORE_WARNING = 3;
@@ -49,6 +51,7 @@ export function createGameController({ initial, store, slot, perf = () => perfor
   let eventId = 0;
   let lastWholeSecond = -1;
   let saveFailures = 0;
+  let lastBuyAt = -Infinity;
   let saving = false;
   let dirty = false;
 
@@ -139,6 +142,22 @@ export function createGameController({ initial, store, slot, perf = () => perfor
       commit(next);
       const def = GRIMOIRES.find((g) => g.id === id);
       emit({ type: 'grimoire', id, name: def?.name ?? id, level: next.run.build[id] ?? 1 });
+      void save();
+      return true;
+    },
+
+    /**
+     * Compra um nível da melhoria. O motor confere saldo, trava e máximo; aqui só entra a trava de
+     * toque duplo (spec 4.7), que vale para qualquer melhoria. Devolve `true` se comprou.
+     */
+    buy(index: number): boolean {
+      if (pausedAt !== null || state.run.pending) return false;
+      const t = now();
+      if (t - lastBuyAt < BUY_GUARD_SEC) return false;
+      const next = buyUpgrade(state, index);
+      if (next === state) return false;
+      lastBuyAt = t;
+      commit(next);
       void save();
       return true;
     },
