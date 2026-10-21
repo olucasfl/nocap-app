@@ -1,3 +1,5 @@
+import { LOW_END } from './perf';
+
 export const SPACE_OBJECTS = ['comet', 'meteor', 'satellite', 'asteroid', 'probe'] as const;
 export type SpaceObjectKind = (typeof SPACE_OBJECTS)[number];
 
@@ -106,7 +108,7 @@ export function SpaceObject({ kind, size = 62, glow = false, label, className }:
       aria-hidden={accessible ? undefined : true}
       focusable="false"
       data-kind={kind}
-      style={glow ? { filter: `drop-shadow(0 0 12px ${SPACE_OBJECT_COLOR[kind]})` } : undefined}
+      style={glow && !LOW_END ? { filter: `drop-shadow(0 0 12px ${SPACE_OBJECT_COLOR[kind]})` } : undefined}
     >
       <Shape kind={kind} />
     </svg>

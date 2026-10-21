@@ -531,7 +531,45 @@
   }
 }
 
+/* ---------- troca de tela ---------- */
+/* Só opacity: transform num ancestral prenderia os filhos fixed. 'backwards' não deixa camada depois. */
+.ap-screen-in {
+  animation: ap-screen-in 0.28s ease-out backwards;
+}
+@keyframes ap-screen-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ---------- aparelho fraco (4 núcleos ou menos) ---------- */
+/* Desfoque de 70px num elemento grande custa caro a cada quadro de composição: vira degradê radial. */
+.is-lite .ap-neb {
+  filter: none;
+  background: radial-gradient(closest-side, currentColor, transparent);
+  opacity: 0.3;
+}
+.is-lite .ap-n1 {
+  color: #5b2e91;
+}
+.is-lite .ap-n2 {
+  color: #1b4f9c;
+}
+.is-lite .ap-s3,
+.is-lite .ap-shoot {
+  display: none;
+}
+.is-lite .ap-scene,
+.is-lite .ap-bigbtn-shadow,
+.is-lite .ap-bigbtn-base {
+  filter: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .ap-screen-in {
+    animation-duration: 0.12s;
+    animation-timing-function: linear;
+  }
   .ap-s1,
   .ap-s2,
   .ap-s3,

@@ -1,3 +1,4 @@
+import { apertaSfx } from '@/lib/aperta-audio';
 import { GRIMOIRES } from '@nocap/games';
 import { useEffect, useRef, useState } from 'react';
 import { GrimoireBook } from './GrimoireBook';
@@ -191,7 +192,9 @@ export function FirstGrimoireModal({ onDone }: { onDone: () => void }) {
           className="ap-btn"
           data-tut="ok"
           onClick={() => {
-            if (!modalGuarded(openedAt.current, performance.now())) onDone();
+            if (modalGuarded(openedAt.current, performance.now())) return;
+            apertaSfx.thunk();
+            onDone();
           }}
         >
           Entendi

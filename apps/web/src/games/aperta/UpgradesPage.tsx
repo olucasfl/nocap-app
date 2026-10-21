@@ -1,3 +1,4 @@
+import { apertaSfx, apertaVibrate } from '@/lib/aperta-audio';
 import { formatNumber, type SaveState } from '@nocap/games';
 import { AstroMedal } from './AstroMedal';
 import { buyLabel, upgradeRows, type UpgradeRow } from './upgrades-logic';
@@ -5,10 +6,10 @@ import './upgrades.css';
 
 interface Props {
   state: SaveState;
-  onBuy: (index: number) => void;
+  onBuy: (index: number) => boolean | void;
 }
 
-function UpgradeCard({ row, onBuy }: { row: UpgradeRow; onBuy: (index: number) => void }) {
+function UpgradeCard({ row, onBuy }: { row: UpgradeRow; onBuy: (index: number) => boolean | void }) {
   const canBuy = row.status === 'affordable';
   const label =
     row.status === 'affordable'
@@ -39,7 +40,16 @@ function UpgradeCard({ row, onBuy }: { row: UpgradeRow; onBuy: (index: number) =
         aria-label={label}
         aria-disabled={!canBuy}
         onClick={() => {
-          if (canBuy) onBuy(row.index);
+          if (canBuy) {
+            // Só soa se o controller comprou de fato (a trava de toque duplo recusa sem barulho).
+            if (onBuy(row.index)) {
+              apertaSfx.thunk();
+              apertaVibrate(14);
+            }
+          } else if (row.status === 'short') {
+            apertaSfx.boing();
+            apertaVibrate([10, 40, 10]);
+          }
         }}
       >
         <b>{buyLabel(row)}</b>

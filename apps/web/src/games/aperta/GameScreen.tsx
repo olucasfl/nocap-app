@@ -8,6 +8,7 @@ import {
 } from '@nocap/games';
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { apertaSfx, apertaVibrate } from '@/lib/aperta-audio';
+import { LOW_END } from './perf';
 import { AstroMedal } from './AstroMedal';
 import { BigButton } from './BigButton';
 import { ChoiceModal } from './ChoiceModal';
@@ -79,8 +80,7 @@ const BURST_MS = 900;
 const CAPTURE_MS = 1000;
 const MAX_BURSTS = 5;
 const SPARKS = 8;
-const lowEnd = typeof navigator !== 'undefined' && (navigator.hardwareConcurrency ?? 8) <= 4;
-const SPARK_ANGLES = Array.from({ length: lowEnd ? 4 : SPARKS }, (_, i) => (360 / (lowEnd ? 4 : SPARKS)) * i);
+const SPARK_ANGLES = Array.from({ length: LOW_END ? 4 : SPARKS }, (_, i) => (360 / (LOW_END ? 4 : SPARKS)) * i);
 
 /** A região em que o save está, no índice do kit de arte (0 a 5). */
 function regionIndex(regionId: string): RegionId {
@@ -155,7 +155,7 @@ export function GameScreen({ controller, onExit }: Props) {
       } else if (e.type === 'choice-open') {
         apertaSfx.flip();
       } else if (e.type === 'capture') {
-        apertaSfx.thunk();
+        apertaSfx.ding();
         apertaVibrate(14);
         const art = objectArt(e.kind);
         const text = rewardText(e.preview);
@@ -193,6 +193,16 @@ export function GameScreen({ controller, onExit }: Props) {
     });
   }, [controller, later]);
 
+  // Objeto novo no campo: whoosh. O primeiro render só registra os que já estavam (retomar o save não faz barulho).
+  const seenObjects = useRef<Set<number> | null>(null);
+  const objects = state.run.objects;
+  useEffect(() => {
+    const seen = seenObjects.current;
+    const ids = new Set(objects.map((o) => o.id));
+    seenObjects.current = ids;
+    if (seen && objects.some((o) => !seen.has(o.id))) apertaSfx.whoosh();
+  }, [objects]);
+
   const doPress = useCallback(() => {
     if (blocked.current) return;
     controller.press();
@@ -203,7 +213,10 @@ export function GameScreen({ controller, onExit }: Props) {
     const step = tutorialRef.current;
     if (step !== null && !tutorialPageAllowed(step, target)) return;
     setPage((current) => togglePage(current, target));
-    if (target === 'grimoires') setFreshGrimoire(false);
+    if (target === 'grimoires') {
+      setFreshGrimoire(false);
+      if (pageRef.current !== 'grimoires') apertaSfx.flip();
+    }
   }, []);
 
   // Teclado: Espaço/Enter tocam (segurar repete a 6/s), G e M abrem páginas, Esc fecha.
@@ -268,7 +281,7 @@ export function GameScreen({ controller, onExit }: Props) {
   }
 
   return (
-    <section className="ap-game space-theme" aria-label="Jogo">
+    <section className={`ap-game space-theme ap-screen-in${LOW_END ? ' is-lite' : ''}`} aria-label="Jogo">
       <SpaceArtSprite />
       <RegionBackdrop region={regionIndex(state.regionId)} paused={paused} />
 
@@ -481,7 +494,10 @@ export function GameScreen({ controller, onExit }: Props) {
         <TutorialOverlay
           view={tutorialView(tutorial, page)}
           onSkip={controller.tutorialSkip}
-          onFinish={controller.tutorialSkip}
+          onFinish={() => {
+            apertaSfx.win();
+            controller.tutorialSkip();
+          }}
         />
       )}
     </section>
