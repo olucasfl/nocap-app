@@ -57,6 +57,7 @@ const runSchema = z.object({
   clicks: int(Number.MAX_SAFE_INTEGER),
   combo: int(COMBO_HARD_CAP),
   lastPressAt: stamp,
+  comboFullSince: stamp.default(-1e9),
   boostUntil: stamp,
   boostMult: z.number().finite().min(1).max(1000),
   afterCapture: z.boolean(),
@@ -111,6 +112,13 @@ const saveSchema = z.object({
     objectsCaptured: int(Number.MAX_SAFE_INTEGER),
     picks: int(MAX_PICKS * 100),
     dustTotal: nonNeg,
+    // Campos das conquistas (etapa 10): saves antigos não têm, então entram zerados.
+    bestLevel: int(GRIMOIRE_MAX_LEVEL).default(0),
+    comboMaxHits: int(Number.MAX_SAFE_INTEGER).default(0),
+    comboFullBest: nonNeg.default(0),
+    satelliteStreak: int(Number.MAX_SAFE_INTEGER).default(0),
+    satelliteBest: int(Number.MAX_SAFE_INTEGER).default(0),
+    respecs: int(Number.MAX_SAFE_INTEGER).default(0),
   }),
 });
 
@@ -360,6 +368,12 @@ export function mergeSaves(a: SaveState, b: SaveState): MergeResult {
       objectsCaptured: maxNum(a.stats.objectsCaptured, b.stats.objectsCaptured),
       picks: maxNum(a.stats.picks, b.stats.picks),
       dustTotal: maxNum(a.stats.dustTotal, b.stats.dustTotal),
+      bestLevel: maxNum(a.stats.bestLevel, b.stats.bestLevel),
+      comboMaxHits: maxNum(a.stats.comboMaxHits, b.stats.comboMaxHits),
+      comboFullBest: maxNum(a.stats.comboFullBest, b.stats.comboFullBest),
+      satelliteStreak: maxNum(a.stats.satelliteStreak, b.stats.satelliteStreak),
+      satelliteBest: maxNum(a.stats.satelliteBest, b.stats.satelliteBest),
+      respecs: maxNum(a.stats.respecs, b.stats.respecs),
     },
   };
   return { save, winner, conflict: !lifeDominated(other, top) };

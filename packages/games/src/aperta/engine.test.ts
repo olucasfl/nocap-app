@@ -855,7 +855,7 @@ describe('colapso', () => {
     expect(after.run.build).toEqual({});
     expect(after.run.upgradeLevels.every((l) => l === 0)).toBe(true);
     expect(after.album).toEqual(['vega', 'moon']);
-    expect(after.achievements).toEqual(['first']);
+    expect(after.achievements).toContain('first');
     expect(after.stats.clicks).toBe(999);
     expect(effectiveStats(after).dustPerTouch).toBeCloseTo(1 + 0.15 * 2 * 0.6, 9);
     assertSane(after);

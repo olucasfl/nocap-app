@@ -166,6 +166,18 @@
     0 0 26px rgba(92, 225, 255, 0.5);
   animation: apg-slide 0.35s cubic-bezier(0.2, 1.3, 0.4, 1) both;
 }
+.ap-pickup-ach {
+  border-color: var(--space-gold);
+  box-shadow:
+    0 0 0 3px var(--space-ink),
+    0 0 26px rgba(255, 200, 87, 0.5);
+}
+.ap-pickup-ach b {
+  color: var(--space-gold);
+}
+.ap-pickup-ach .ap-pickup-medal {
+  --ap-trim: var(--space-gold);
+}
 .ap-pickup-medal {
   flex: none;
   width: 40px;

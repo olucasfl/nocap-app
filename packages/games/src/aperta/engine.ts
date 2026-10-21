@@ -3,6 +3,7 @@
 // avança com o jogo aberto: quem chama não pode passar tempo de aba escondida (seção 7.4).
 
 import { hashSeed } from '../core/rng';
+import { awardAchievements } from './achievements';
 import {
   FAMILIES,
   GRIMOIRES,
@@ -95,6 +96,8 @@ export interface RunState {
   clicks: number;
   combo: number;
   lastPressAt: number;
+  /** Desde quando o combo está no máximo sem cair (carimbo do relógio; `NEVER` fora do máximo). */
+  comboFullSince: number;
   boostUntil: number;
   boostMult: number;
   /** Polaris: o próximo toque depois de capturar um objeto vale mais. */
@@ -135,8 +138,39 @@ export interface SaveState {
   /** Ramo -> nível (0 a 3). */
   tree: Record<string, number>;
   achievements: string[];
-  stats: { clicks: number; objectsCaptured: number; picks: number; dustTotal: number };
+  stats: SaveStats;
 }
+
+export interface SaveStats {
+  clicks: number;
+  objectsCaptured: number;
+  picks: number;
+  dustTotal: number;
+  /** Maior nível que um grimório já teve (as conquistas de nível 5 e 10). */
+  bestLevel: number;
+  /** Toques dados com o combo no máximo. */
+  comboMaxHits: number;
+  /** Maior tempo seguido, em segundos, com o combo no máximo. */
+  comboFullBest: number;
+  /** Satélites capturados em sequência agora (outro objeto zera) e o recorde. */
+  satelliteStreak: number;
+  satelliteBest: number;
+  /** Vezes que a árvore foi refeita. */
+  respecs: number;
+}
+
+export const FRESH_STATS: SaveStats = {
+  clicks: 0,
+  objectsCaptured: 0,
+  picks: 0,
+  dustTotal: 0,
+  bestLevel: 0,
+  comboMaxHits: 0,
+  comboFullBest: 0,
+  satelliteStreak: 0,
+  satelliteBest: 0,
+  respecs: 0,
+};
 
 export function clampNum(x: number): number {
   if (Number.isNaN(x)) return 0;
@@ -167,6 +201,7 @@ function freshRun(rngState: number, upgradeCount = UPGRADES.length): RunState {
     clicks: 0,
     combo: 0,
     lastPressAt: NEVER,
+    comboFullSince: NEVER,
     boostUntil: NEVER,
     boostMult: 1,
     afterCapture: false,
@@ -198,7 +233,7 @@ export function newSave(seed: string, createdAt = 0, name = 'Missão Perigeu'): 
     fragments: { earned: 0, spent: 0 },
     tree: {},
     achievements: [],
-    stats: { clicks: 0, objectsCaptured: 0, picks: 0, dustTotal: 0 },
+    stats: { ...FRESH_STATS },
   };
 }
 
@@ -227,6 +262,7 @@ function shiftRun(run: RunState, gap: number, shiftPending: boolean): RunState {
   return {
     ...run,
     lastPressAt: run.lastPressAt + gap,
+    comboFullSince: run.comboFullSince + gap,
     boostUntil: run.boostUntil + gap,
     nextSpawnAt: run.nextSpawnAt === null ? null : run.nextSpawnAt + gap,
     objects: run.objects.map((o) => ({ ...o, bornAt: o.bornAt + gap, expiresAt: o.expiresAt + gap })),
@@ -705,13 +741,13 @@ export function chooseGrimoire(state: SaveState, id: string, now: number): SaveS
     ...s,
     run,
     album: s.album.includes(id) ? s.album : [...s.album, id],
-    stats: { ...s.stats, picks: s.stats.picks + 1 },
+    stats: { ...s.stats, picks: s.stats.picks + 1, bestLevel: Math.max(s.stats.bestLevel, nextLevel) },
   };
   if (p.picksLeft > 1) {
     const nextStats = effectiveStats(next);
-    return openChoice(next, now, p.picksLeft - 1, nextStats.choice.rerolls, run.energy);
+    return awardAchievements(openChoice(next, now, p.picksLeft - 1, nextStats.choice.rerolls, run.energy));
   }
-  return { ...next, run: { ...next.run, energy: 0 } };
+  return awardAchievements({ ...next, run: { ...next.run, energy: 0 } });
 }
 
 /** Betelgeuse e a Sonda Voyager: troca uma das cartas oferecidas por outra que não esteja na oferta. */
@@ -767,10 +803,13 @@ export function press(state: SaveState, now: number): SaveState {
   const gain = clampNum(Math.max(1, Math.floor(clampNum(value))));
 
   const cap = energyCap(run.picks, stats.energyStepFactor);
+  const full = stats.combo.enabled && stats.combo.max > 0 && combo >= stats.combo.max;
+  const fullSince = full ? (run.comboFullSince > NEVER / 2 ? run.comboFullSince : now) : NEVER;
   const next: SaveState = {
     ...s,
     run: {
       ...run,
+      comboFullSince: fullSince,
       dust: clampNum(run.dust + gain),
       dustLife: clampNum(run.dustLife + gain),
       energy: clampNum(run.energy + stats.energyPerTouch + (cap * barBonusPct) / 100),
@@ -780,9 +819,15 @@ export function press(state: SaveState, now: number): SaveState {
       afterCapture: false,
       lastGain: gain,
     },
-    stats: { ...s.stats, clicks: s.stats.clicks + 1, dustTotal: clampNum(s.stats.dustTotal + gain) },
+    stats: {
+      ...s.stats,
+      clicks: s.stats.clicks + 1,
+      dustTotal: clampNum(s.stats.dustTotal + gain),
+      comboMaxHits: s.stats.comboMaxHits + (full ? 1 : 0),
+      comboFullBest: full ? Math.max(s.stats.comboFullBest, now - fullSince) : s.stats.comboFullBest,
+    },
   };
-  return openChoiceIfFull(next, now);
+  return awardAchievements(openChoiceIfFull(next, now));
 }
 
 // --- Melhorias ---
@@ -920,6 +965,7 @@ export function captureObject(state: SaveState, id: number, now: number): SaveSt
   } else if (obj.kind === 'probe') {
     next.freeRerolls = run.freeRerolls + 1;
   }
+  const satelliteStreak = obj.kind === 'satellite' ? s.stats.satelliteStreak + 1 : 0;
   const withStats: SaveState = {
     ...s,
     run: next,
@@ -927,9 +973,11 @@ export function captureObject(state: SaveState, id: number, now: number): SaveSt
       ...s.stats,
       objectsCaptured: s.stats.objectsCaptured + 1,
       dustTotal: clampNum(s.stats.dustTotal + reward.dust),
+      satelliteStreak,
+      satelliteBest: Math.max(s.stats.satelliteBest, satelliteStreak),
     },
   };
-  return openChoiceIfFull(withStats, now);
+  return awardAchievements(openChoiceIfFull(withStats, now));
 }
 
 // --- Colapso, Atlas e árvore ---
@@ -988,7 +1036,7 @@ export function collapse(state: SaveState, pageId: string, replaceIndex?: number
   };
   // A poeira inicial (Titã) depende do Atlas novo, por isso a vida nova é montada depois dele.
   const startDust = effectiveStats(base).startDust;
-  return { ...base, run: { ...base.run, dust: startDust, dustLife: startDust } };
+  return awardAchievements({ ...base, run: { ...base.run, dust: startDust, dustLife: startDust } });
 }
 
 export function fragmentsAvailable(state: SaveState): number {
@@ -1009,15 +1057,20 @@ export function buyTreeNode(state: SaveState, nodeId: string): SaveState {
   if (target !== current + 1) return state;
   const cost = treeNodeCost(target);
   if (fragmentsAvailable(state) < cost) return state;
-  return {
+  return awardAchievements({
     ...state,
     tree: { ...state.tree, [branch.id]: target },
     fragments: { earned: state.fragments.earned, spent: state.fragments.spent + cost },
-  };
+  });
 }
 
 /** Refazer a árvore devolve os Fragmentos gastos menos 20% (a taxa fica como gasta). Sem custo de poeira. */
 export function respecTree(state: SaveState): SaveState {
   if (state.fragments.spent <= 0 || Object.keys(state.tree).length === 0) return state;
-  return { ...state, tree: {}, fragments: { earned: state.fragments.earned, spent: respecFee(state.fragments.spent) } };
+  return awardAchievements({
+    ...state,
+    tree: {},
+    fragments: { earned: state.fragments.earned, spent: respecFee(state.fragments.spent) },
+    stats: { ...state.stats, respecs: state.stats.respecs + 1 },
+  });
 }

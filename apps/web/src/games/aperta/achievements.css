@@ -1,0 +1,109 @@
+/*
+ * Página de Conquistas do Aperta! (spec 038, 3.5 e 5.3). Tokens --space-*; a barra usa scaleX (sem animar largura).
+ */
+.ap-achpage {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+.ap-ach-total {
+  margin: 0;
+  font: 600 13px var(--space-font-display);
+  color: var(--space-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.ap-ach-total b {
+  font: 700 28px var(--space-font-display);
+  color: var(--space-gold);
+  letter-spacing: 0;
+}
+.ap-ach-group {
+  margin: 0 0 8px;
+  font: 700 14px var(--space-font-display);
+  color: var(--space-cyan);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.ap-ach-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+@media (min-width: 700px) {
+  .ap-ach-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.ap-ach {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 3px solid var(--space-line);
+  border-radius: 14px;
+  background: linear-gradient(180deg, var(--space-panel-2), var(--space-panel));
+}
+.ap-ach.is-earned {
+  border-color: var(--space-gold);
+}
+.ap-ach-medal {
+  width: 48px;
+  height: 48px;
+  --ap-trim: var(--space-cyan);
+}
+.ap-ach.is-earned .ap-ach-medal {
+  --ap-trim: var(--space-gold);
+}
+.ap-ach:not(.is-earned) .ap-ach-medal {
+  filter: grayscale(1);
+  opacity: 0.7;
+}
+.ap-ach-body {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.ap-ach-body h4 {
+  margin: 0;
+  font: 700 15px var(--space-font-display);
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+.ap-ach-body p {
+  margin: 0;
+}
+.ap-ach-text {
+  font: 400 13px/1.35 var(--space-font-body);
+  color: var(--space-muted);
+  overflow-wrap: anywhere;
+}
+.ap-ach-bar {
+  display: block;
+  height: 8px;
+  overflow: hidden;
+  border: 2px solid var(--space-ink);
+  border-radius: 5px;
+  background: rgba(2, 3, 10, 0.6);
+}
+.ap-ach-bar i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, var(--space-cyan), var(--space-blue));
+  transform-origin: left center;
+}
+.ap-ach.is-earned .ap-ach-bar i {
+  background: linear-gradient(90deg, #ffd978, var(--space-gold));
+}
+.ap-ach-count {
+  font: 600 11px var(--space-font-display);
+  color: var(--space-gold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}

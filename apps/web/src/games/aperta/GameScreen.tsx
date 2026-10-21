@@ -12,6 +12,8 @@ import { LOW_END } from './perf';
 import { AstroMedal } from './AstroMedal';
 import { BigButton } from './BigButton';
 import { ChoiceModal } from './ChoiceModal';
+import { AchievementsPage } from './AchievementsPage';
+import { achievementCounts } from './achievements-logic';
 import { CollapseModal } from './CollapseModal';
 import { FieldObjects, SignalChip } from './FieldObjects';
 import { GamePage, PageIcon, PAGE_TITLE } from './GamePage';
@@ -20,6 +22,7 @@ import { RegionBackdrop, type RegionId } from './RegionBackdrop';
 import { SpaceArtSprite } from './SpaceArtSprite';
 import { SpaceObject, type SpaceObjectKind } from './SpaceObject';
 import { FirstGrimoireModal, TutorialOverlay } from './Tutorial';
+import { TreePage } from './TreePage';
 import { UpgradesPage } from './UpgradesPage';
 import type { GameController, GameEvent } from './game-controller';
 import {
@@ -88,7 +91,7 @@ function regionIndex(regionId: string): RegionId {
   return Math.min(5, Math.max(0, i)) as RegionId;
 }
 
-function pageNotice(page: PageName, affordable: number, albumCount: number, collapses: number): string {
+function pageNotice(page: PageName, affordable: number, albumCount: number, collapses: number, achievements: { earned: number; total: number }): string {
   switch (page) {
     case 'upgrades':
       return affordable > 0
@@ -99,7 +102,7 @@ function pageNotice(page: PageName, affordable: number, albumCount: number, coll
         ? `Você já descobriu ${albumCount} ${albumCount === 1 ? 'grimório' : 'grimórios'}.`
         : 'Encha a barra de energia para ganhar seu primeiro grimório.';
     case 'achievements':
-      return 'As conquistas contam do primeiro toque em diante.';
+      return `${achievements.earned} de ${achievements.total} conquistas ganhas. Elas contam do primeiro toque em diante.`;
     case 'tree':
       return collapses > 0 ? 'Gaste seus Fragmentos nos ramos da árvore.' : 'Os ramos se abrem depois do seu primeiro colapso.';
   }
@@ -112,6 +115,7 @@ export function GameScreen({ controller, onExit }: Props) {
   const [pressed, setPressed] = useState(false);
   const [bursts, setBursts] = useState<Burst[]>([]);
   const [notice, setNotice] = useState<Notice | null>(null);
+  const [achNotice, setAchNotice] = useState<{ id: number; title: string; text: string } | null>(null);
   const [captures, setCaptures] = useState<Capture[]>([]);
   const [freshGrimoire, setFreshGrimoire] = useState(false);
   const [collapseOpen, setCollapseOpen] = useState(false);
@@ -142,6 +146,7 @@ export function GameScreen({ controller, onExit }: Props) {
   }, []);
 
   const noticeTimer = useRef<number | null>(null);
+  const achTimer = useRef<number | null>(null);
   useEffect(() => {
     return controller.onEvent((e: GameEvent) => {
       if (e.type === 'press') {
@@ -152,6 +157,12 @@ export function GameScreen({ controller, onExit }: Props) {
           { id: e.id, gain: e.gain, turn: (e.id * 37) % 45, drift: ((e.id * 53) % 61) - 30 },
         ]);
         later(() => setBursts((list) => list.filter((b) => b.id !== e.id)), BURST_MS);
+      } else if (e.type === 'achievement') {
+        apertaSfx.win();
+        apertaVibrate([12, 40, 12]);
+        if (achTimer.current !== null) window.clearTimeout(achTimer.current);
+        setAchNotice({ id: Date.now(), title: 'Conquista', text: e.name });
+        achTimer.current = later(() => setAchNotice(null), NOTICE_MS * 1.4);
       } else if (e.type === 'choice-open') {
         apertaSfx.flip();
       } else if (e.type === 'capture') {
@@ -334,6 +345,19 @@ export function GameScreen({ controller, onExit }: Props) {
             </div>
           )}
         </div>
+        <div className="ap-pickup-slot" role="status" aria-live="polite">
+          {achNotice && (
+            <div key={achNotice.id} className="ap-pickup ap-pickup-ach">
+              <span className="ap-pickup-medal">
+                <AstroMedal astro="galaxy" />
+              </span>
+              <span>
+                <b>{achNotice.title}</b>
+                <small>{achNotice.text}</small>
+              </span>
+            </div>
+          )}
+        </div>
         {starReady && !pending && (
           <button type="button" className="ap-hbtn ap-hbtn-go ap-ready" onClick={() => setCollapseOpen(true)}>
             Estrela pronta: colapsar
@@ -464,10 +488,12 @@ export function GameScreen({ controller, onExit }: Props) {
         <GamePage
           key={page}
           name={page}
-          notice={pageNotice(page, affordable, albumCount, state.collapses)}
+          notice={pageNotice(page, affordable, albumCount, state.collapses, achievementCounts(state))}
           onClose={() => setPage(null)}
         >
           {page === 'upgrades' && <UpgradesPage state={state} onBuy={controller.buy} />}
+          {page === 'achievements' && <AchievementsPage state={state} />}
+          {page === 'tree' && <TreePage state={state} onBuy={controller.buyTree} onRespec={controller.respec} />}
           {page === 'grimoires' ? <GrimoiresPage state={state} onCollapse={() => setCollapseOpen(true)} /> : undefined}
         </GamePage>
       )}

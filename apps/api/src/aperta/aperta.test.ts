@@ -216,7 +216,7 @@ describe('vários aparelhos', () => {
       tutorial: 'done',
       regionId: 'asteroid-belt',
       fragments: { earned: 4, spent: 0 },
-      stats: { clicks: 0, objectsCaptured: 0, picks: 20, dustTotal: 6e6 },
+      stats: { ...newSave('a', T0).stats, picks: 20, dustTotal: 6e6 },
     };
     await service.put('u', 1, { data: newSave('a', T0), baseRevision: 0 });
     await service.put('u', 1, { data: ahead, baseRevision: 1 });

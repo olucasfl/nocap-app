@@ -1,3 +1,4 @@
+export * from './achievements';
 export * from './catalog';
 export * from './economy';
 export * from './engine';

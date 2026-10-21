@@ -1,6 +1,8 @@
 import {
   GRIMOIRES,
+  achievementById,
   advanceTutorial,
+  buyTreeNode,
   buyUpgrade,
   canCollapse,
   captureObject,
@@ -13,6 +15,7 @@ import {
   objectPreview,
   press,
   rerollGrimoire,
+  respecTree,
   resumeClock,
   selectGrimoire,
   syncClock,
@@ -34,6 +37,7 @@ export type GameEvent =
   | { type: 'grimoire'; id: string; name: string; level: number }
   | { type: 'capture'; objectId: number; kind: ObjectKind; preview: ObjectPreview }
   | { type: 'choice-open' }
+  | { type: 'achievement'; id: string; name: string }
   | { type: 'collapse'; pageId: string; pageName: string; fragments: number };
 
 export interface GameSnapshot {
@@ -70,6 +74,7 @@ export function createGameController({ initial, store, slot, perf = () => perfor
   let saving = false;
   let again = false;
   let dirty = false;
+  const announced: GameEvent[] = [];
 
   const listeners = new Set<() => void>();
   const eventListeners = new Set<(e: GameEvent) => void>();
@@ -84,12 +89,24 @@ export function createGameController({ initial, store, slot, perf = () => perfor
   }
   function emit(e: GameEvent) {
     for (const l of eventListeners) l(e);
+    // O aviso de conquista vem logo depois do evento da ação que a deu (o toque, a escolha, a captura).
+    flushAchievements();
+  }
+  function flushAchievements() {
+    const list = announced.splice(0);
+    for (const a of list) for (const l of eventListeners) l(a);
   }
   function commit(next: SaveState) {
     if (next === state) return;
+    const gained = next.achievements.filter((id) => !state.achievements.includes(id));
+    // Durante o tutorial a conquista fica guardada, mas o aviso espera (não cobre o cartão do coach).
+    const announce = state.tutorial === 'done' && next.tutorial === 'done';
     state = next;
     dirty = true;
     notify();
+    if (announce) {
+      for (const id of gained) announced.push({ type: 'achievement', id, name: achievementById(id)?.name ?? id });
+    }
   }
 
   /** Guarda na cópia do aparelho na hora e sobe em seguida: para o que não pode se perder (escolha, compra, tutorial). */
@@ -195,6 +212,7 @@ export function createGameController({ initial, store, slot, perf = () => perfor
       lastBuyAt = t;
       commit(advanceTutorial(next, 4, 5));
       saveNow();
+      flushAchievements();
       return true;
     },
 
@@ -211,6 +229,28 @@ export function createGameController({ initial, store, slot, perf = () => perfor
       const def = GRIMOIRES.find((g) => g.id === pageId);
       emit({ type: 'collapse', pageId, pageName: def?.name ?? pageId, fragments: next.fragments.earned - before.fragments.earned });
       saveNow();
+      return true;
+    },
+
+    /** Compra o nó `ramo:nível` da árvore com Fragmentos. O motor confere saldo, ordem e se a árvore abriu. */
+    buyTree(nodeId: string): boolean {
+      if (pausedAt !== null || state.run.pending) return false;
+      const next = buyTreeNode(state, nodeId);
+      if (next === state) return false;
+      commit(next);
+      saveNow();
+      flushAchievements();
+      return true;
+    },
+
+    /** Refaz a árvore: devolve os Fragmentos gastos menos a taxa (a confirmação em 2 passos é da tela). */
+    respec(): boolean {
+      if (pausedAt !== null || state.run.pending) return false;
+      const next = respecTree(state);
+      if (next === state) return false;
+      commit(next);
+      saveNow();
+      flushAchievements();
       return true;
     },
 

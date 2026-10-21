@@ -132,8 +132,8 @@ for (const size of SIZES) {
 
       // A vida recomeça: aviso, contador, Fragmentos e a página no Atlas.
       await expect(page.getByRole('dialog')).toHaveCount(0);
-      await expect(page.locator('.ap-pickup')).toContainText('Estrela colapsada');
-      await expect(page.locator('.ap-pickup')).toContainText('Lua');
+      await expect(page.locator('.ap-pickup:not(.ap-pickup-ach)')).toContainText('Estrela colapsada');
+      await expect(page.locator('.ap-pickup:not(.ap-pickup-ach)')).toContainText('Lua');
       await expect(page.locator('.ap-hudrow-2 b')).toHaveText('1');
       await expect(page.getByRole('button', { name: 'Estrela pronta: colapsar' })).toHaveCount(0);
       await shot('4-colapsada');

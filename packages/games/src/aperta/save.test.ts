@@ -6,6 +6,7 @@ import {
   canCollapse,
   chooseGrimoire,
   collapse,
+  FRESH_STATS,
   newSave,
   nextUpgradeCost,
   press,
@@ -280,7 +281,7 @@ describe('mergeSaves', () => {
       achievements: ['a1'],
       storySeen: true,
       playSeconds: 900,
-      stats: { clicks: 900, objectsCaptured: 9, picks: 9, dustTotal: 1e5 },
+      stats: { ...FRESH_STATS, clicks: 900, objectsCaptured: 9, picks: 9, dustTotal: 1e5 },
     };
     const hi: SaveState = {
       ...newSave('x', 3),
@@ -291,7 +292,7 @@ describe('mergeSaves', () => {
       achievements: ['b2'],
       atlas: { slots: 3, pages: [{ grimoireId: 'venus', level: 2 }] },
       fragments: { earned: 4, spent: 0 },
-      stats: { clicks: 10, objectsCaptured: 1, picks: 20, dustTotal: 6e6 },
+      stats: { ...FRESH_STATS, clicks: 10, objectsCaptured: 1, picks: 20, dustTotal: 6e6 },
     };
     const r = mergeSaves(lo, hi);
     expect(r.winner).toBe('b');
@@ -302,7 +303,7 @@ describe('mergeSaves', () => {
     expect(r.save.storySeen).toBe(true);
     expect(r.save.createdAt).toBe(3);
     expect(r.save.playSeconds).toBe(900);
-    expect(r.save.stats).toEqual({ clicks: 900, objectsCaptured: 9, picks: 20, dustTotal: 6e6 });
+    expect(r.save.stats).toMatchObject({ clicks: 900, objectsCaptured: 9, picks: 20, dustTotal: 6e6 });
   });
 
   it('o Atlas junta páginas até os espaços e fica com o maior nível', () => {

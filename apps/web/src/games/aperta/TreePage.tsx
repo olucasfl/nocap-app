@@ -1,0 +1,133 @@
+import { useState } from 'react';
+import { apertaSfx, apertaVibrate } from '@/lib/aperta-audio';
+import { formatNumber, type SaveState } from '@nocap/games';
+import { AstroMedal } from './AstroMedal';
+import { treeView, type TreeNodeRow } from './tree-logic';
+import './tree.css';
+
+interface Props {
+  state: SaveState;
+  onBuy: (nodeId: string) => boolean | void;
+  onRespec: () => boolean | void;
+}
+
+function nodeLabel(n: TreeNodeRow, branch: string): string {
+  const base = `${branch}, nível ${n.level}: ${n.text}`;
+  switch (n.status) {
+    case 'owned':
+      return `${base}. Comprado`;
+    case 'buyable':
+      return `${base}. Comprar por ${n.cost} Fragmentos`;
+    case 'short':
+      return `${base}. Falta ${n.missing} Fragmentos`;
+    case 'blocked':
+      return `${base}. Compre o nível anterior primeiro`;
+    case 'closed':
+      return `${base}. Abre depois do primeiro colapso`;
+  }
+}
+
+function nodeButton(n: TreeNodeRow): string {
+  switch (n.status) {
+    case 'owned':
+      return 'Comprado';
+    case 'buyable':
+      return `Comprar · ${n.cost}`;
+    case 'short':
+      return `Falta ${n.missing}`;
+    default:
+      return `Custo ${n.cost}`;
+  }
+}
+
+/** Corpo da página da Árvore de Habilidades (spec 038, 3.5 e 8.3): 6 ramos de 3 níveis e o refazer em 2 passos. */
+export function TreePage({ state, onBuy, onRespec }: Props) {
+  const view = treeView(state);
+  const [confirming, setConfirming] = useState(false);
+
+  return (
+    <div className="ap-tree">
+      <p className="ap-tree-frag" aria-live="polite">
+        <b>{formatNumber(view.available)}</b>
+        <span>{view.available === 1 ? 'Fragmento' : 'Fragmentos'} para gastar</span>
+      </p>
+
+      <ul className="ap-tree-grid" aria-label="Ramos da árvore">
+        {view.branches.map((b) => (
+          <li key={b.id} className={`ap-branch${b.level >= 3 ? ' is-full' : ''}${view.open ? '' : ' is-closed'}`}>
+            <header>
+              <span className="ap-branch-medal">
+                <AstroMedal astro={b.astro} />
+              </span>
+              <h3>{b.name}</h3>
+              <small>{b.level} de 3</small>
+            </header>
+            <ol>
+              {b.nodes.map((n) => (
+                <li key={n.id} className={`ap-node is-${n.status}`}>
+                  <p>
+                    <b>Nível {n.level}</b>
+                    <span>{n.text}</span>
+                  </p>
+                  <button
+                    type="button"
+                    className="ap-node-buy"
+                    aria-label={nodeLabel(n, b.name)}
+                    aria-disabled={n.status !== 'buyable'}
+                    onClick={() => {
+                      if (n.status === 'buyable') {
+                        if (onBuy(n.id)) {
+                          apertaSfx.thunk();
+                          apertaVibrate(14);
+                        }
+                      } else if (n.status === 'short') {
+                        apertaSfx.boing();
+                        apertaVibrate([10, 40, 10]);
+                      }
+                    }}
+                  >
+                    {nodeButton(n)}
+                  </button>
+                </li>
+              ))}
+            </ol>
+          </li>
+        ))}
+      </ul>
+
+      <section className="ap-respec" aria-labelledby="ap-respec-title">
+        <h3 id="ap-respec-title">Refazer árvore</h3>
+        {view.respec.can ? (
+          <p className="ap-sub">
+            Devolve {view.respec.refund} {view.respec.refund === 1 ? 'Fragmento' : 'Fragmentos'} dos {view.spent} gastos; a taxa é de {view.respec.fee} (20%).
+            Sem custo de poeira e sem limite de vezes.
+          </p>
+        ) : (
+          <p className="ap-sub">Compre algum nó para poder refazer a árvore depois. Não gasta poeira.</p>
+        )}
+        {!confirming ? (
+          <button type="button" className="ap-tbtn" disabled={!view.respec.can} onClick={() => setConfirming(true)}>
+            Refazer árvore
+          </button>
+        ) : (
+          <div className="ap-respec-confirm" role="group" aria-label="Confirmar refazer a árvore">
+            <button
+              type="button"
+              className="ap-tbtn is-danger"
+              autoFocus
+              onClick={() => {
+                if (onRespec()) apertaSfx.boing();
+                setConfirming(false);
+              }}
+            >
+              Confirmar: devolver {view.respec.refund}
+            </button>
+            <button type="button" className="ap-tbtn is-ghost" onClick={() => setConfirming(false)}>
+              Cancelar
+            </button>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}

@@ -124,7 +124,7 @@ describe('controlador: colapsar', () => {
     expect(s.run.build).toEqual({});
     expect(s.run.dustLife).toBe(0);
     expect(s.fragments.earned).toBe(4);
-    expect(events).toEqual([{ type: 'collapse', pageId: 'moon', pageName: 'Lua', fragments: 4 }]);
+    expect(events.filter((e) => e.type === 'collapse')).toEqual([{ type: 'collapse', pageId: 'moon', pageName: 'Lua', fragments: 4 }]);
     expect(store.saved[1]?.collapses).toBe(1);
   });
 
