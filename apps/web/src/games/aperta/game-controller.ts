@@ -4,6 +4,7 @@ import {
   chooseGrimoire,
   newSave,
   press,
+  rerollGrimoire,
   resumeClock,
   selectGrimoire,
   syncClock,
@@ -160,6 +161,11 @@ export function createGameController({ initial, store, slot, perf = () => perfor
       commit(next);
       void save();
       return true;
+    },
+
+    /** Betelgeuse / Voyager: troca uma carta oferecida. */
+    reroll(id: string) {
+      if (pausedAt === null) commit(rerollGrimoire(state, id, now()));
     },
 
     /** Avança o relógio: playSeconds, combo e a contagem das cartas. Notifica só quando a tela precisa. */

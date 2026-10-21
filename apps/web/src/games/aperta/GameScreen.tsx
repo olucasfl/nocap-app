@@ -12,6 +12,7 @@ import { AstroMedal } from './AstroMedal';
 import { BigButton } from './BigButton';
 import { ChoiceModal } from './ChoiceModal';
 import { GamePage, PageIcon, PAGE_TITLE } from './GamePage';
+import { GrimoiresPage } from './GrimoiresPage';
 import { RegionBackdrop, type RegionId } from './RegionBackdrop';
 import { SpaceArtSprite } from './SpaceArtSprite';
 import { UpgradesPage } from './UpgradesPage';
@@ -372,6 +373,7 @@ export function GameScreen({ controller, onExit }: Props) {
           onClose={() => setPage(null)}
         >
           {page === 'upgrades' && <UpgradesPage state={state} onBuy={controller.buy} />}
+          {page === 'grimoires' ? <GrimoiresPage state={state} /> : undefined}
         </GamePage>
       )}
 
@@ -384,6 +386,7 @@ export function GameScreen({ controller, onExit }: Props) {
           paused={paused}
           onSelect={controller.select}
           onConfirm={controller.choose}
+          onReroll={controller.reroll}
         />
       )}
     </section>
