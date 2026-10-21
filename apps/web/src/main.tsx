@@ -52,13 +52,19 @@ function hideSplash() {
   }, wait);
 }
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-      <UpdatePrompt />
-    </QueryClientProvider>
-  </StrictMode>,
-);
+const root = createRoot(document.getElementById('root')!);
+if (import.meta.env.DEV && window.location.pathname === '/dev/sons') {
+  // Página de teste manual dos sons: só em desenvolvimento, fora do roteador.
+  void import('@/dev/SoundTest').then(({ SoundTest }) => root.render(<SoundTest />));
+} else {
+  root.render(
+    <StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+        <UpdatePrompt />
+      </QueryClientProvider>
+    </StrictMode>,
+  );
+}
 
 requestAnimationFrame(hideSplash);
