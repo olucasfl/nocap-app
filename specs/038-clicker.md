@@ -333,15 +333,17 @@ Regra: a **duração da vida k** (do início até colapsar) parte de **8 h** e c
 - Os "mín. de escolhas" e as metas de poeira são o ponto de partida; o simulador também valida que **nenhuma vida fica mais longa que a anterior**.
 
 ### 6.7 Calibração da etapa 1 (números finais do motor)
-Simulador: `pnpm --filter @nocap/games sim` (fora do `pnpm test`). Os testes (`sim.test.ts`) exigem, no perfil normal (2,5 toques/s), a **média de 3 sementes** de cada vida 1 a 5 a ±15% da tabela 6.6, 1º colapso entre 6 e 10 h e nenhuma vida mais longa que a anterior. Uma semente isolada varia ±15% a +40% (a sorte dos grimórios), por isso a tabela impressa de uma semente só é indicativa.
+Simulador: `pnpm --filter @nocap/games sim` (fora do `pnpm test`). Os testes (`sim.test.ts`) exigem, no perfil normal (2,5 toques/s), a **média de 60 sementes** (`v0` a `v59`, nenhuma usada para calibrar) de cada vida 1 a 5 a ±15% da tabela 6.6, 1º colapso entre 6 e 10 h e nenhuma vida mais longa que a anterior. Uma semente isolada varia de 1 a 6 h na mesma vida (a sorte dos grimórios), por isso a tabela impressa de uma semente só é indicativa. A etapa 13 recalibrou: a calibração da etapa 1 usava 3 sementes e estava ajustada a elas (com 16 sementes diferentes as vidas 1, 3 e 5 saíam 8 a 15% abaixo e a 4ª 20% acima), e o simulador travava quando o Atlas enchia (agora a página nova substitui a mais fraca).
 
-| Vida | Meta de poeira (final) | Duração (média de 3 sementes) | Alvo |
-| --- | --- | --- | --- |
-| 1º | 5,36 mi | 8,0 h | 8 h |
-| 2º | 5,87 mi | 5,0 h | 5 h |
-| 3º | 6,15 mi | 3,5 h | 3,5 h |
-| 4º | 11,2 mi | 3,0 h | 3 h |
-| 5º | 8,06 mi | 2,6 h | 2,6 h |
+| Vida | Meta de poeira (final) | Duração (média de 60 sementes) | Alvo | Desvio |
+| --- | --- | --- | --- | --- |
+| 1º | 5,9 mi | 7,72 h | 8 h | -3% |
+| 2º | 7,7 mi | 4,73 h | 5 h | -5% |
+| 3º | 6,57 mi | 3,56 h | 3,5 h | +2% |
+| 4º | 8,15 mi | 3,13 h | 3 h | +4% |
+| 5º | 6,82 mi | 2,61 h | 2,6 h | 0% |
+
+As metas das vidas 4 e 5 ficam de propósito um pouco fora do centro (3,1 h e 2,45 h na calibração) para a média continuar decrescente apesar do ruído da sorte.
 
 - **Vidas 6 a 15:** metas provisórias (5,5 a 7,3 mi), **sem calibrar**: o conteúdo desses colapsos só chega nas etapas 14 e 15.
 - **Ajustes de número feitos na calibração:** (1) **energia dos objetos em toques de energia** e não em % da barra (estrela 8 toques, asteroide 3, Tritão 2): com % da barra o simulador fazia 180 escolhas em 8 h, porque a barra cresce x1,35 e a estrela dava 10% dela em qualquer fase; agora a 1ª vida fecha com ~21 escolhas; (2) Lua +1 toque a cada 10 (antes +5); (3) Caranguejo = +1 nível extra no repetido; (4) as metas de poeira acima (a de 2 mi do rascunho deixava o 1º colapso em ~1,5 h). Custos, bases, passos de energia e níveis máximos ficaram como na 6.2.

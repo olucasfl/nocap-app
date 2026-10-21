@@ -2,7 +2,8 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { TARGET_HOURS } from './economy';
 import { PROFILES, formatSimReport, simulate, simulateAverage, type SimResult } from './sim';
 
-const SEEDS = ['a', 'b', 'c'];
+// 60 sementes que não foram usadas para calibrar (a calibração usou 60 outras): uma vida isolada varia de 1 a 6 h pela sorte dos grimórios.
+const SEEDS = Array.from({ length: 60 }, (_, i) => `v${i}`);
 
 describe('simulate', () => {
   it('é determinístico pela semente', () => {

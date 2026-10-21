@@ -193,6 +193,15 @@ function bestPage(state: SaveState, profile: Profile): string {
   return best;
 }
 
+/** Atlas cheio: a página nova entra no lugar da mais fraca (a que menos pesa no score). */
+function replaceIndexFor(state: SaveState, pageId: string): number | undefined {
+  const pages = state.atlas.pages;
+  if (pages.some((p) => p.grimoireId === pageId) || pages.length < state.atlas.slots) return undefined;
+  let weakest = 0;
+  for (let i = 1; i < pages.length; i++) if ((pages[i] as { level: number }).level < (pages[weakest] as { level: number }).level) weakest = i;
+  return weakest;
+}
+
 function spendFragments(state: SaveState, profile: Profile): SaveState {
   let s = state;
   for (;;) {
@@ -284,7 +293,15 @@ export function simulate(options: SimOptions): SimResult {
         upgradeLevels: state.run.upgradeLevels,
         stalled: false,
       });
-      state = spendFragments(collapse(state, bestPage(state, profile)), profile);
+      const before = state.collapses;
+      const page = bestPage(state, profile);
+      state = collapse(state, page, replaceIndexFor(state, page));
+      if (state.collapses === before) {
+        // Sem isto a vida ficava "pronta" para sempre e o laço seguia colapsando no mesmo instante.
+        result.alerts.push(`vida ${k} travou (o colapso foi recusado)`);
+        break;
+      }
+      state = spendFragments(state, profile);
       milestones = MILESTONE_NAMES.map(() => null);
       lifeStart = t;
       decided.clear();
