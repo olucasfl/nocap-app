@@ -113,7 +113,6 @@ export function BeePlay() {
   const [seen, setSeen] = useState<string[]>([]);
   const unlockTimer = useRef<number | undefined>(undefined);
   const [unlockMsg, setUnlockMsg] = useState<{ id: HintId; text: string } | null>(null);
-  const [confirmEnd, setConfirmEnd] = useState(false);
   const timers = useRef<number[]>([]);
   const floatId = useRef(0);
 
@@ -291,15 +290,6 @@ export function BeePlay() {
       return next;
     });
 
-  const conclude = () => {
-    if (!confirmEnd) {
-      setConfirmEnd(true);
-      later(() => setConfirmEnd(false), 3000);
-      return;
-    }
-    beeProgress.set(num, { found, closed: true, at: Date.now() });
-    wordsAudio.win();
-  };
 
   return (
     <WordsShell
@@ -420,11 +410,6 @@ export function BeePlay() {
             </button>
           </div>
 
-          {genius >= 1 && (
-            <button type="button" className="bz-finish" onClick={conclude} data-testid="end">
-              {confirmEnd ? 'Toque de novo para concluir' : 'Gênio! Já dá para concluir a fase'}
-            </button>
-          )}
         </>
       ) : (
         <ResultSheet won epic={genius >= 1} stamp={rank.name} label="PONTOS" value={points} decimals={0} detail={`${found.length} de ${hints.total} palavras · fase ${num}`}>
