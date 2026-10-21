@@ -27,6 +27,7 @@ import {
   type RegionDef,
   type UpgradeDef,
 } from './catalog';
+import { eventsOpen, mechanicOpen, missionById, MISSIONS, type EventId, type MissionDef } from './content';
 import {
   ATLAS_PAGE_POWER,
   BASE_ENERGY_PER_TOUCH,
@@ -37,6 +38,14 @@ import {
   COMBO_BONUS_PER_POINT,
   COMBO_HARD_CAP,
   COMBO_WINDOW_PER_LEVEL_SEC,
+  EVENT_DURATION_SEC,
+  EVENT_INTERVAL_SEC,
+  EVENT_JITTER,
+  FAVORITE_WEIGHT,
+  METEOR_SHOWER_EXTRA_MAX,
+  METEOR_SHOWER_INTERVAL_SEC,
+  MISSION_FRAGMENTS,
+  SOLAR_STORM_ENERGY_MULT,
   GRIMOIRE_MAX_LEVEL,
   HUBBLE_VALUE_PER_LEVEL_PCT,
   KEPLER_SPAWN_PER_LEVEL,
@@ -70,6 +79,19 @@ export interface GameObject {
   kind: ObjectKind;
   bornAt: number;
   expiresAt: number;
+}
+
+/** Evento em andamento (Chuva de meteoros, Tempestade solar): termina em `until`. */
+export interface ActiveEvent {
+  id: EventId;
+  until: number;
+}
+
+/** Missão da estação da vida atual: `progress` sobe pela métrica da missão. */
+export interface MissionState {
+  id: string;
+  progress: number;
+  done: boolean;
 }
 
 export interface PendingChoice {
@@ -108,6 +130,10 @@ export interface RunState {
   rngState: number;
   /** Último ganho de poeira por toque, para o "+N" da tela. */
   lastGain: number;
+  event: ActiveEvent | null;
+  /** Quando o próximo evento começa; `null` até o jogo marcar o primeiro. */
+  nextEventAt: number | null;
+  mission: MissionState | null;
 }
 
 export interface AtlasPage {
@@ -130,6 +156,8 @@ export interface SaveState {
   atlas: { slots: number; pages: AtlasPage[] };
   collapses: number;
   regionId: string;
+  /** Grimório favorito (pesa o dobro no sorteio); só depois de o Favorito abrir, no 2º colapso. */
+  favorite: string | null;
   seenUnlocks: string[];
   fragments: { earned: number; spent: number };
   /** Ramo -> nível (0 a 3). */
@@ -177,6 +205,9 @@ function freshRun(rngState: number, upgradeCount = UPGRADES.length): RunState {
     pending: null,
     rngState,
     lastGain: 0,
+    event: null,
+    nextEventAt: null,
+    mission: null,
   };
 }
 
@@ -194,6 +225,7 @@ export function newSave(seed: string, createdAt = 0, name = 'Missão Perigeu'): 
     atlas: { slots: atlasSlots(0), pages: [] },
     collapses: 0,
     regionId: (REGIONS[0] as RegionDef).id,
+    favorite: null,
     seenUnlocks: [],
     fragments: { earned: 0, spent: 0 },
     tree: {},
@@ -229,6 +261,8 @@ function shiftRun(run: RunState, gap: number, shiftPending: boolean): RunState {
     lastPressAt: run.lastPressAt + gap,
     boostUntil: run.boostUntil + gap,
     nextSpawnAt: run.nextSpawnAt === null ? null : run.nextSpawnAt + gap,
+    nextEventAt: run.nextEventAt === null ? null : run.nextEventAt + gap,
+    event: run.event ? { ...run.event, until: run.event.until + gap } : null,
     objects: run.objects.map((o) => ({ ...o, bornAt: o.bornAt + gap, expiresAt: o.expiresAt + gap })),
     pending: run.pending && shiftPending ? { ...run.pending, openedAt: run.pending.openedAt + gap } : run.pending,
   };
@@ -613,6 +647,7 @@ export function drawGrimoires(state: SaveState, exclude: readonly string[] = [],
   const pool = new Map<Rarity, GrimoireDef[]>();
   for (const g of open) pool.set(g.rarity, [...(pool.get(g.rarity) ?? []), g]);
 
+  const favorite = mechanicOpen('favorite', state.collapses) ? state.favorite : null;
   let rng = state.run.rngState;
   const offers: string[] = [];
   while (offers.length < want) {
@@ -633,7 +668,16 @@ export function drawGrimoires(state: SaveState, exclude: readonly string[] = [],
     const cards = pool.get(rarity) as GrimoireDef[];
     let pick: number;
     [pick, rng] = nextRandom(rng);
-    const card = cards[Math.min(cards.length - 1, Math.floor(pick * cards.length))] as GrimoireDef;
+    const weight = (c: GrimoireDef) => (c.id === favorite ? FAVORITE_WEIGHT : 1);
+    let left = pick * cards.reduce((sum, c) => sum + weight(c), 0);
+    let card = cards[cards.length - 1] as GrimoireDef;
+    for (const c of cards) {
+      left -= weight(c);
+      if (left < 0) {
+        card = c;
+        break;
+      }
+    }
     offers.push(card.id);
     pool.set(rarity, cards.filter((c) => c.id !== card.id));
   }
@@ -703,7 +747,7 @@ export function chooseGrimoire(state: SaveState, id: string, now: number): SaveS
   };
   const next: SaveState = {
     ...s,
-    run,
+    run: bumpMission(run, 'pick'),
     album: s.album.includes(id) ? s.album : [...s.album, id],
     stats: { ...s.stats, picks: s.stats.picks + 1 },
   };
@@ -773,7 +817,7 @@ export function press(state: SaveState, now: number): SaveState {
       ...run,
       dust: clampNum(run.dust + gain),
       dustLife: clampNum(run.dustLife + gain),
-      energy: clampNum(run.energy + stats.energyPerTouch + (cap * barBonusPct) / 100),
+      energy: clampNum(run.energy + (stats.energyPerTouch + (cap * barBonusPct) / 100) * energyMult(run, now)),
       clicks,
       combo,
       lastPressAt: now,
@@ -782,7 +826,7 @@ export function press(state: SaveState, now: number): SaveState {
     },
     stats: { ...s.stats, clicks: s.stats.clicks + 1, dustTotal: clampNum(s.stats.dustTotal + gain) },
   };
-  return openChoiceIfFull(next, now);
+  return openChoiceIfFull({ ...next, run: bumpMission(next.run, 'touch') }, now);
 }
 
 // --- Melhorias ---
@@ -827,6 +871,71 @@ function pickObjectKind(state: SaveState, rngState: number): { kind: ObjectKind;
   return { kind: (open[open.length - 1] as ObjectDef).kind, rngState: next };
 }
 
+// --- Eventos e missões (spec 038, 5.4) ---
+
+/** O evento que está valendo agora, ou `null`. */
+export function activeEventId(state: SaveState, now: number): EventId | null {
+  const e = state.run.event;
+  return e && now < e.until ? e.id : null;
+}
+
+function energyMult(run: RunState, now: number): number {
+  return run.event?.id === 'solar-storm' && now < run.event.until ? SOLAR_STORM_ENERGY_MULT : 1;
+}
+
+/**
+ * Sorteio dos eventos e da missão: sai do tempo de jogo e do colapso, não do `rngState` da vida,
+ * para não mexer na sequência das cartas (o simulador e os saves antigos seguem iguais).
+ */
+function sideRoll(now: number, collapses: number, salt: number): number {
+  return nextRandom(Math.floor(now * 1000) * 31 + collapses * 7919 + salt)[0];
+}
+
+/** Próximo início de evento: o intervalo base com ±`EVENT_JITTER`. */
+function nextEventTime(now: number, collapses: number): number {
+  return now + EVENT_INTERVAL_SEC * (1 + (sideRoll(now, collapses, 1) * 2 - 1) * EVENT_JITTER);
+}
+
+/** Encerra o evento vencido, marca o próximo e, na hora, começa um dos eventos abertos. */
+function tickEvents(state: SaveState, run: RunState, now: number): RunState {
+  const open = eventsOpen(state.collapses);
+  if (open.length === 0) return run;
+  let next = run;
+  if (next.event && now >= next.event.until) next = { ...next, event: null };
+  if (next.nextEventAt === null) return { ...next, nextEventAt: nextEventTime(now, state.collapses) };
+  if (next.event === null && now >= next.nextEventAt) {
+    const id = open[Math.min(open.length - 1, Math.floor(sideRoll(now, state.collapses, 2) * open.length))] as EventId;
+    return {
+      ...next,
+      event: { id, until: now + EVENT_DURATION_SEC },
+      nextEventAt: nextEventTime(now + EVENT_DURATION_SEC, state.collapses),
+    };
+  }
+  return next;
+}
+
+/** A missão da vida: sorteada quando a mecânica está aberta e a vida ainda não tem uma. */
+function assignMission(state: SaveState, run: RunState): RunState {
+  if (run.mission || !mechanicOpen('missions', state.collapses)) return run;
+  const roll = sideRoll(state.playSeconds, state.collapses, 3);
+  const def = MISSIONS[Math.min(MISSIONS.length - 1, Math.floor(roll * MISSIONS.length))] as MissionDef;
+  return { ...run, mission: { id: def.id, progress: 0, done: false } };
+}
+
+function bumpMission(run: RunState, metric: MissionDef['metric']): RunState {
+  const m = run.mission;
+  if (!m || m.done) return run;
+  const def = missionById(m.id);
+  if (!def || def.metric !== metric) return run;
+  const progress = Math.min(def.target, m.progress + 1);
+  return { ...run, mission: { id: m.id, progress, done: progress >= def.target } };
+}
+
+/** Fragmentos extras que a vida atual rende por ter cumprido a missão da estação. */
+export function missionBonus(state: SaveState): number {
+  return state.run.mission?.done ? MISSION_FRAGMENTS : 0;
+}
+
 /** Remove os que expiraram e faz nascer um novo no ritmo da Kepler. Sem objetos em escolha aberta nem com o jogo parado. */
 export function tickObjects(state: SaveState, now: number): SaveState {
   const s = syncClock(state, now);
@@ -835,18 +944,26 @@ export function tickObjects(state: SaveState, now: number): SaveState {
   let next: RunState = alive.length === run.objects.length ? run : { ...run, objects: alive };
   if (run.pending) return next === run ? s : { ...s, run: next };
 
+  next = assignMission(s, tickEvents(s, next, now));
   const stats = effectiveStats(s);
   if (stats.objects.disabled) return next === run ? s : { ...s, run: next };
+  const shower = next.event?.id === 'meteor-shower' && now < next.event.until;
+  const interval = shower ? Math.min(METEOR_SHOWER_INTERVAL_SEC, stats.objects.intervalSec) : stats.objects.intervalSec;
+  const room = stats.objects.maxOnField + (shower ? METEOR_SHOWER_EXTRA_MAX : 0);
   if (next.nextSpawnAt === null) {
-    next = { ...next, nextSpawnAt: now + stats.objects.intervalSec };
-  } else if (now >= next.nextSpawnAt && next.objects.length < stats.objects.maxOnField) {
-    const { kind, rngState } = pickObjectKind(s, next.rngState);
+    next = { ...next, nextSpawnAt: now + interval };
+  } else if (shower && next.nextSpawnAt > now + interval) {
+    // A chuva começa na hora, sem esperar o intervalo normal que já estava marcado.
+    next = { ...next, nextSpawnAt: now };
+  } else if (now >= next.nextSpawnAt && next.objects.length < room) {
+    const picked = shower ? { kind: 'shooting-star' as const, rngState: next.rngState } : pickObjectKind(s, next.rngState);
+    const { kind, rngState } = picked;
     const object: GameObject = { id: next.nextObjectId, kind, bornAt: now, expiresAt: now + stats.objects.lifeSec[kind] };
     next = {
       ...next,
       objects: [...next.objects, object],
       nextObjectId: next.nextObjectId + 1,
-      nextSpawnAt: now + stats.objects.intervalSec,
+      nextSpawnAt: now + interval,
       rngState,
     };
   }
@@ -911,7 +1028,7 @@ export function captureObject(state: SaveState, id: number, now: number): SaveSt
     objects: run.objects.filter((o) => o.id !== id),
     dust: clampNum(run.dust + reward.dust),
     dustLife: clampNum(run.dustLife + reward.dust),
-    energy: clampNum(run.energy + reward.energy + stats.objects.onCaptureEnergyTouches * stats.energyPerTouch),
+    energy: clampNum(run.energy + (reward.energy + stats.objects.onCaptureEnergyTouches * stats.energyPerTouch) * energyMult(run, now)),
     afterCapture: stats.objects.afterCaptureMult > 1,
   };
   if (obj.kind === 'satellite') {
@@ -922,7 +1039,7 @@ export function captureObject(state: SaveState, id: number, now: number): SaveSt
   }
   const withStats: SaveState = {
     ...s,
-    run: next,
+    run: bumpMission(next, 'capture'),
     stats: {
       ...s.stats,
       objectsCaptured: s.stats.objectsCaptured + 1,
@@ -974,7 +1091,7 @@ export function collapse(state: SaveState, pageId: string, replaceIndex?: number
     return state;
   }
 
-  const gained = fragmentsFor(k, state.run.dustLife);
+  const gained = fragmentsFor(k, state.run.dustLife) + missionBonus(state);
   const open = REGIONS.filter((r) => r.unlockedAtCollapse <= k);
   const base: SaveState = {
     ...state,
@@ -989,6 +1106,23 @@ export function collapse(state: SaveState, pageId: string, replaceIndex?: number
   // A poeira inicial (Titã) depende do Atlas novo, por isso a vida nova é montada depois dele.
   const startDust = effectiveStats(base).startDust;
   return { ...base, run: { ...base.run, dust: startDust, dustLife: startDust } };
+}
+
+/** Marca (ou, com `null`, desmarca) o favorito. Só depois de o Favorito abrir e só um grimório já descoberto. */
+export function setFavorite(state: SaveState, id: string | null): SaveState {
+  if (!mechanicOpen('favorite', state.collapses)) return state;
+  if (id !== null) {
+    const def = grimoireById(id);
+    if (!def || def.unlockedAtCollapse > state.collapses || !state.album.includes(id)) return state;
+  }
+  return state.favorite === id ? state : { ...state, favorite: id };
+}
+
+/** Rever uma região já aberta (spec 5.4, sem custo): só muda o cenário. */
+export function setRegion(state: SaveState, regionId: string): SaveState {
+  const def = REGIONS.find((r) => r.id === regionId);
+  if (!def || def.unlockedAtCollapse > state.collapses || state.regionId === regionId) return state;
+  return { ...state, regionId };
 }
 
 export function fragmentsAvailable(state: SaveState): number {

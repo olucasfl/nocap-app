@@ -42,6 +42,8 @@ export const PROFILES: Record<Profile['id'], Profile> = {
 
 /** Tempo que o jogador gasta lendo as cartas e confirmando (além do bloqueio de 1,6 s). */
 const PICK_THINK_SEC = 2.5;
+/** Carimbo de "nunca" para o próximo evento: o simulador não os dispara. */
+const NO_EVENT = 1e12;
 const ENERGY_WEIGHT = 0.5;
 const MILESTONE_NAMES = ['1ª melhoria', '1ª escolha', '10 escolhas', '1 mi de poeira', 'Estrela pronta'] as const;
 
@@ -248,6 +250,8 @@ export function simulate(options: SimOptions): SimResult {
 
     t += dt;
     state = tickObjects(state, t);
+    // O simulador calibra a economia sem os eventos (bônus de 15 s, calibrados na etapa 13).
+    if (state.run.nextEventAt !== NO_EVENT) state = { ...state, run: { ...state.run, event: null, nextEventAt: NO_EVENT } };
     for (const obj of state.run.objects) {
       if (!decided.has(obj.id)) decided.set(obj.id, rng() < profile.captureChance ? t + 0.5 + rng() * 2.5 : -1);
       const at = decided.get(obj.id) as number;

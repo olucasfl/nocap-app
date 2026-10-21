@@ -42,6 +42,19 @@ export const CHANDRA_LIFE_PER_LEVEL_PCT = 5;
 export const WEBB_COST_PER_LEVEL_PCT = -2;
 export const VOYAGER_SEC_PER_LEVEL = 1;
 
+/** Eventos (spec 038, 5.4): um a cada ~8 min de jogo (sorteio de ±25%), 15 s cada. */
+export const EVENT_INTERVAL_SEC = 480;
+export const EVENT_JITTER = 0.25;
+export const EVENT_DURATION_SEC = 15;
+/** Chuva de meteoros: uma estrela cadente por segundo, com folga no campo para todas caberem. */
+export const METEOR_SHOWER_INTERVAL_SEC = 1;
+export const METEOR_SHOWER_EXTRA_MAX = 6;
+export const SOLAR_STORM_ENERGY_MULT = 2;
+/** Favorito pesa o dobro no sorteio da carta dentro da raridade. */
+export const FAVORITE_WEIGHT = 2;
+/** Fragmentos extras por missão da estação cumprida na vida. */
+export const MISSION_FRAGMENTS = 2;
+
 /** Tempo que as cartas ficam bloqueadas depois que a escolha abre (seção 4.7). */
 export const CHOICE_LOCK_SEC = 1.6;
 /** No máximo 12 toques por segundo no total, por segurança (seção 4.1). */
