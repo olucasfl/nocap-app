@@ -1,5 +1,9 @@
 import {
   COMBO_BONUS_PER_POINT,
+  formatDecimal,
+  formatNumber,
+  type ObjectKind,
+  type ObjectPreview,
   UPGRADES,
   currentEnergyCap,
   effectiveStats,
@@ -10,6 +14,7 @@ import {
 } from '@nocap/games';
 import type { AstroId } from './astros';
 import type { Rarity as ArtRarity } from './rarity';
+import { SPACE_OBJECT_LABEL, type SpaceObjectKind } from './SpaceObject';
 
 /** Segurar Espaço/Enter repete no máximo isto por segundo (spec 038, 4.1 e decisão 14.20). */
 export const HOLD_TOUCHES_PER_SEC = 6;
@@ -191,4 +196,81 @@ export function albumView(state: SaveState): AlbumView {
 /** Verdadeiro enquanto o modal acabou de abrir e o toque ainda deve ser ignorado. */
 export function modalGuarded(openedAtMs: number, nowMs: number): boolean {
   return nowMs - openedAtMs < MODAL_OPEN_GUARD_MS;
+}
+
+// --- Objetos no espaço (spec 038, 4.5) ---
+
+const OBJECT_ART: Record<ObjectKind, SpaceObjectKind> = {
+  comet: 'comet',
+  'shooting-star': 'meteor',
+  satellite: 'satellite',
+  asteroid: 'asteroid',
+  probe: 'probe',
+};
+
+/** O motor chama de `shooting-star`; o kit de arte, de `meteor`. */
+export function objectArt(kind: ObjectKind): SpaceObjectKind {
+  return OBJECT_ART[kind];
+}
+
+export function objectName(kind: ObjectKind): string {
+  return SPACE_OBJECT_LABEL[OBJECT_ART[kind]];
+}
+
+/** "+120 poeira", "+2 energia", "Sinal forte x2 por 8 s": o que o objeto entrega (etiqueta e aviso). */
+export function rewardText(p: ObjectPreview): string {
+  const parts: string[] = [];
+  if (p.dust > 0) parts.push(`+${formatNumber(p.dust)} poeira`);
+  if (p.energy > 0) parts.push(`+${formatDecimal(p.energy, 1)} energia`);
+  if (p.boostMult > 0) parts.push(`Sinal forte x${formatDecimal(p.boostMult, 1)} por ${Math.round(p.boostSec)} s`);
+  if (p.freeReroll) parts.push('1 troca grátis');
+  return parts.join(' e ');
+}
+
+/** Texto curto que sobe do lugar da captura (cabe na faixa do campo no celular). */
+export function floatText(p: ObjectPreview): string {
+  return rewardText(p).replace(/ por \d+ s/, '');
+}
+
+/** "Cometa capturado", "Estrela cadente capturada". */
+export function capturedTitle(kind: ObjectKind): string {
+  return `${objectName(kind)} ${kind === 'shooting-star' ? 'capturada' : 'capturado'}`;
+}
+
+export interface ObjectSlot {
+  /** Posição no campo, em %. */
+  x: number;
+  y: number;
+  /** Deriva lenta (px) e o tempo de um vai e vem (s). */
+  dx: number;
+  dy: number;
+  drift: number;
+}
+
+/**
+ * Onde o objeto flutua, derivado do id (sem sorteio na tela, sem mexer no rng do save). Fica nas faixas
+ * de cima e de baixo, longe do botão central, e alterna a faixa para dois objetos não se sobreporem.
+ */
+export function objectSlot(id: number): ObjectSlot {
+  const h = (id * 2654435761) >>> 0;
+  const top = id % 2 === 0;
+  return {
+    x: 25 + (h % 51),
+    y: top ? 9 + ((h >>> 8) % 6) : 86 - ((h >>> 8) % 6),
+    dx: ((h >>> 12) % 31) - 15,
+    dy: ((h >>> 17) % 21) - 10,
+    drift: 3 + ((h >>> 21) % 3),
+  };
+}
+
+export interface SignalView {
+  mult: number;
+  /** Segundos que faltam. */
+  remaining: number;
+}
+
+/** O chip "Sinal forte" do HUD: só existe enquanto o boost do satélite corre. */
+export function signalView(state: SaveState, now: number): SignalView | null {
+  const { boostUntil, boostMult } = state.run;
+  return boostMult > 1 && now < boostUntil ? { mult: boostMult, remaining: boostUntil - now } : null;
 }

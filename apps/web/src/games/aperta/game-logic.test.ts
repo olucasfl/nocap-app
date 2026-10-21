@@ -6,10 +6,16 @@ import {
   HOLD_TOUCHES_PER_SEC,
   affordableCount,
   artRarity,
+  capturedTitle,
+  floatText,
   astroFor,
   comboView,
   createHoldLimiter,
   energyView,
+  objectArt,
+  objectSlot,
+  rewardText,
+  signalView,
   togglePage,
 } from './game-logic';
 import { RARITIES } from './rarity';
@@ -103,5 +109,45 @@ describe('arte dos grimórios', () => {
 
   it('a Lua usa a medalha da Lua', () => {
     expect(astroFor('moon', 'moons')).toBe('moon');
+  });
+});
+
+describe('objetos no espaço', () => {
+  it('a estrela cadente do motor usa a arte do meteoro', () => {
+    expect(objectArt('shooting-star')).toBe('meteor');
+    expect(objectArt('comet')).toBe('comet');
+  });
+
+  it('a etiqueta diz a recompensa de cada objeto', () => {
+    const none = { dust: 0, energy: 0, boostMult: 0, boostSec: 0, freeReroll: false };
+    expect(rewardText({ ...none, dust: 1200 })).toContain('poeira');
+    expect(rewardText({ ...none, energy: 2 })).toBe('+2 energia');
+    expect(rewardText({ ...none, boostMult: 2, boostSec: 8 })).toBe('Sinal forte x2 por 8 s');
+    expect(rewardText({ ...none, freeReroll: true })).toBe('1 troca grátis');
+  });
+
+  it('o aviso concorda em gênero e o texto flutuante é curto', () => {
+    expect(capturedTitle('comet')).toBe('Cometa capturado');
+    expect(capturedTitle('shooting-star')).toBe('Estrela cadente capturada');
+    expect(floatText({ dust: 0, energy: 0, boostMult: 2, boostSec: 8, freeReroll: false })).toBe('Sinal forte x2');
+  });
+
+  it('a posição é fixa por id, fica nas faixas de cima e de baixo e alterna a faixa', () => {
+    for (let id = 1; id < 200; id++) {
+      const a = objectSlot(id);
+      expect(a).toEqual(objectSlot(id));
+      expect(a.x).toBeGreaterThanOrEqual(25);
+      expect(a.x).toBeLessThanOrEqual(75);
+      expect(a.y < 20 || a.y > 78).toBe(true);
+    }
+    expect(objectSlot(1).y > 50).not.toBe(objectSlot(2).y > 50);
+  });
+
+  it('o chip Sinal forte só existe enquanto o boost corre', () => {
+    const s = fresh();
+    expect(signalView(s, 1)).toBeNull();
+    const boosted = { ...s, run: { ...s.run, boostMult: 2, boostUntil: 10 } };
+    expect(signalView(boosted, 4)).toEqual({ mult: 2, remaining: 6 });
+    expect(signalView(boosted, 10)).toBeNull();
   });
 });

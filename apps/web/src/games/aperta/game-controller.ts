@@ -1,13 +1,18 @@
 import {
   GRIMOIRES,
   buyUpgrade,
+  captureObject,
   chooseGrimoire,
   newSave,
+  objectPreview,
   press,
   rerollGrimoire,
   resumeClock,
   selectGrimoire,
   syncClock,
+  tickObjects,
+  type ObjectKind,
+  type ObjectPreview,
   type SaveState,
 } from '@nocap/games';
 import type { GameStore } from './game-store';
@@ -20,6 +25,7 @@ export const SAVE_FAILURES_BEFORE_WARNING = 3;
 export type GameEvent =
   | { type: 'press'; id: number; gain: number; combo: number }
   | { type: 'grimoire'; id: string; name: string; level: number }
+  | { type: 'capture'; objectId: number; kind: ObjectKind; preview: ObjectPreview }
   | { type: 'choice-open' };
 
 export interface GameSnapshot {
@@ -163,6 +169,24 @@ export function createGameController({ initial, store, slot, perf = () => perfor
       return true;
     },
 
+    /** Pega um objeto no espaço. Devolve `true` se o motor entregou a recompensa. */
+    capture(objectId: number): boolean {
+      if (pausedAt !== null) return false;
+      const before = state;
+      const obj = before.run.objects.find((o) => o.id === objectId);
+      if (!obj) return false;
+      const preview = objectPreview(before, obj.kind);
+      const next = captureObject(before, objectId, now());
+      if (next.run.objects.length >= before.run.objects.length) {
+        commit(next);
+        return false;
+      }
+      commit(next);
+      emit({ type: 'capture', objectId, kind: obj.kind, preview });
+      if (!before.run.pending && next.run.pending) emit({ type: 'choice-open' });
+      return true;
+    },
+
     /** Betelgeuse / Voyager: troca uma carta oferecida. */
     reroll(id: string) {
       if (pausedAt === null) commit(rerollGrimoire(state, id, now()));
@@ -172,13 +196,18 @@ export function createGameController({ initial, store, slot, perf = () => perfor
     tick() {
       if (pausedAt !== null) return;
       const t = now();
-      const next = syncClock(state, t);
+      const before = state;
+      const next = tickObjects(state, t);
       if (next !== state) {
         state = next;
         dirty = true;
       }
+      // Objeto que nasceu ou sumiu muda a tela na hora; o resto espera o segundo cheio.
+      const objectsChanged =
+        next.run.objects.length !== before.run.objects.length ||
+        next.run.objects.some((o, i) => o.id !== before.run.objects[i]?.id);
       const whole = Math.floor(t);
-      if (state.run.pending || state.run.combo > 0 || whole !== lastWholeSecond) {
+      if (objectsChanged || state.run.pending || state.run.combo > 0 || whole !== lastWholeSecond) {
         lastWholeSecond = whole;
         notify();
       }

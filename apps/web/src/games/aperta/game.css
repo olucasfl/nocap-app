@@ -821,6 +821,186 @@
   }
 }
 
+/* ---------- objetos no espaço (spec 4.5) ---------- */
+.ap-field-over {
+  z-index: 4;
+  pointer-events: none;
+  display: block;
+}
+.ap-objs,
+.ap-capfx {
+  position: absolute;
+  inset: 0;
+}
+.ap-obj {
+  position: absolute;
+  width: 76px;
+  height: 76px;
+  margin: -38px 0 0 -38px;
+  padding: 0;
+  border: 0;
+  background: none;
+  pointer-events: auto;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  animation: apg-pop 0.35s cubic-bezier(0.2, 1.3, 0.4, 1) both;
+}
+.ap-obj-drift {
+  position: absolute;
+  inset: 8px;
+  display: grid;
+  place-items: center;
+  animation: apg-drift var(--ob-drift) ease-in-out infinite alternate;
+}
+.ap-obj-pulse {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 3px solid var(--ob-color);
+  opacity: 0;
+  animation: apg-objpulse 1.2s ease-out infinite;
+}
+.ap-obj-life {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: -2px;
+  height: 7px;
+  border: 2px solid var(--space-ink);
+  border-radius: 4px;
+  background: rgba(8, 12, 30, 0.9);
+  overflow: hidden;
+}
+.ap-obj-life i,
+.ap-signal-bar i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--ob-color, var(--space-gold));
+  transform-origin: left center;
+  animation: apg-life var(--ob-life) linear var(--ob-elapsed) both;
+}
+.ap-obj.is-paused .ap-obj-life i,
+.ap-obj.is-paused .ap-obj-drift,
+.ap-obj.is-paused .ap-obj-pulse,
+.ap-signal-bar i.is-paused {
+  animation-play-state: paused;
+}
+.ap-obj-tag {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 2px);
+  transform: translateX(-50%);
+  padding: 2px 8px;
+  border: 2px solid var(--ob-color);
+  border-radius: 10px;
+  background: rgba(8, 12, 30, 0.92);
+  color: var(--space-text);
+  font: 700 12px/1.3 var(--space-font-display);
+  white-space: nowrap;
+}
+.ap-cap {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+.ap-cap-ring {
+  position: absolute;
+  left: -34px;
+  top: -34px;
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  border: 4px solid var(--space-gold);
+  animation: apg-ring 0.7s ease-out both;
+}
+.ap-cap b {
+  position: absolute;
+  left: 0;
+  top: -10px;
+  white-space: nowrap;
+  font: 700 15px var(--space-font-display);
+  color: var(--space-gold);
+  text-shadow: 0 2px 0 var(--space-ink);
+  animation: apg-float 1s ease-out both;
+}
+.ap-signal {
+  display: grid;
+  gap: 4px;
+  min-width: 170px;
+  padding: 6px 14px;
+  border: 3px solid var(--space-gold);
+  border-radius: 14px;
+  background: rgba(8, 12, 30, 0.95);
+  box-shadow:
+    0 0 0 3px var(--space-ink),
+    0 0 22px rgba(255, 200, 87, 0.45);
+  animation: apg-slide 0.35s cubic-bezier(0.2, 1.3, 0.4, 1) both;
+}
+.ap-signal b {
+  font: 700 14px var(--space-font-display);
+  color: var(--space-gold);
+  text-transform: uppercase;
+  text-align: center;
+}
+.ap-signal-bar {
+  height: 8px;
+  border: 2px solid var(--space-ink);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+.ap-signal-bar i {
+  background: var(--space-gold);
+  animation: apg-life var(--sg-total) linear both;
+}
+@keyframes apg-pop {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes apg-drift {
+  from {
+    transform: translate(0, 0);
+  }
+  to {
+    transform: translate(var(--ob-dx), var(--ob-dy));
+  }
+}
+@keyframes apg-objpulse {
+  from {
+    transform: scale(0.85);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(1.3);
+    opacity: 0;
+  }
+}
+@keyframes apg-life {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+@keyframes apg-float {
+  from {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+  to {
+    transform: translate(-50%, -46px);
+    opacity: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ap-bump,
   .ap-badge,
@@ -832,8 +1012,22 @@
   }
   .ap-ring,
   .ap-spark,
-  .ap-lockbar {
+  .ap-lockbar,
+  .ap-cap-ring {
     display: none;
+  }
+  .ap-obj,
+  .ap-obj-drift,
+  .ap-signal {
+    animation: none !important;
+  }
+  .ap-obj-pulse {
+    animation: none !important;
+    opacity: 0.8;
+  }
+  .ap-cap b {
+    animation: apg-fade 1s linear both !important;
+    transform: translateX(-50%) !important;
   }
   /* O número ainda aparece, só que parado e some em fade. */
   .ap-gain {

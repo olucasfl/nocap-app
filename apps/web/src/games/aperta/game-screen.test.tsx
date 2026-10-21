@@ -142,3 +142,36 @@ describe('escolha de energia cheia', () => {
     expect(modal({ build: { moon: 2 } })).toContain('Você tem nível 2: sobe para o 3');
   });
 });
+
+describe('objetos no espaço', () => {
+  const withObject = (kind: 'comet' | 'shooting-star' | 'satellite') => (s: ReturnType<typeof newSave>) => ({
+    ...s,
+    clock: 3,
+    run: { ...s.run, objects: [{ id: 7, kind, bornAt: 0, expiresAt: 7 }], nextObjectId: 8, nextSpawnAt: 1e6 },
+  });
+
+  it('sem objetos, a camada fica escondida', () => {
+    expect(screen()).toMatch(/class="ap-objs"[^>]*hidden/);
+    expect(screen()).not.toContain('ap-obj-tag');
+  });
+
+  it('cada objeto é um botão com nome e recompensa antes de tocar, e barra de vida', () => {
+    const markup = screen(withObject('comet'));
+    expect(markup).toMatch(/<button[^>]*class="ap-obj[^"]*"[^>]*aria-label="Cometa: \+\d+ poeira\. Capturar"/);
+    expect(markup).toContain('ap-obj-tag');
+    expect(markup).toContain('ap-obj-life');
+    expect(markup).toContain('ap-obj-pulse');
+  });
+
+  it('estrela cadente mostra energia e satélite promete o Sinal forte', () => {
+    expect(screen(withObject('shooting-star'))).toMatch(/Estrela cadente: \+[\d,]+ energia/);
+    expect(screen(withObject('satellite'))).toContain('Sinal forte x2 por 8 s');
+  });
+
+  it('o chip Sinal forte aparece no HUD só com o boost ativo', () => {
+    expect(screen()).not.toContain('ap-signal');
+    const markup = screen((s) => ({ ...s, clock: 0, run: { ...s.run, boostMult: 2, boostUntil: 50 } }));
+    expect(markup).toContain('ap-signal');
+    expect(markup).toContain('Sinal forte x2');
+  });
+});

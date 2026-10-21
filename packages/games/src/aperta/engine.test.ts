@@ -29,6 +29,7 @@ import {
   unlockedContent,
   type RunState,
   type SaveState,
+  objectPreview,
 } from './engine';
 
 const idx = upgradeIndex;
@@ -669,6 +670,25 @@ describe('relógio e jogo parado', () => {
 });
 
 describe('objetos no espaço', () => {
+  it('a prévia da etiqueta bate com o que a captura entrega', () => {
+    const s = tickTo0(newSave('p'));
+    for (const kind of ['comet', 'shooting-star', 'satellite'] as const) {
+      const p = objectPreview(s, kind);
+      const id = 1;
+      const withObj: SaveState = {
+        ...s,
+        run: { ...s.run, objects: [{ id, kind, bornAt: 0, expiresAt: 7 }], nextObjectId: 2 },
+      };
+      const after = captureObject(withObj, id, 1);
+      expect(after.run.dust - s.run.dust).toBe(p.dust);
+      expect(after.run.energy - s.run.energy).toBeCloseTo(p.energy, 9);
+      if (kind === 'satellite') {
+        expect(p).toMatchObject({ boostMult: 2, boostSec: 8 });
+        expect(after.run.boostMult).toBe(p.boostMult);
+      } else expect(p.boostMult).toBe(0);
+    }
+  });
+
   /** Passa o tempo em passos de 1 s (um salto maior que 5 s seria aba escondida). */
   function tickTo(s: SaveState, from: number, to: number): SaveState {
     let state = s;
@@ -1060,4 +1080,8 @@ function hashish(s: string): number {
   let h = 17;
   for (const c of s) h = (h * 31 + c.charCodeAt(0)) | 0;
   return h;
+}
+
+function tickTo0(s: SaveState): SaveState {
+  return tickObjects(s, 0);
 }

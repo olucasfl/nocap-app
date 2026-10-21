@@ -560,11 +560,12 @@ Todo o trabalho está na branch **`develop`** (nada na `main`, por ordem do Luca
 
 - **Etapa 5 (Melhorias), pronta (21/10/2026, branch `claude/aperta-etapa-5-2dde26`):** `UpgradesPage`, `upgrades-logic.ts`, `upgrades.css`, `controller.buy` com trava de 250 ms (4.7). Mostra as melhorias que o colapso atual abriu; as de liberação (Plêiades, Hubble, Voyager) aparecem trancadas com a dica. Ganho da próxima compra vem do `effectiveStats` do motor; botão "Falta N" sem saldo. Combo só liga após a Ressonância (teste). Conferida em 320, 390 e 1280 px sem rolagem lateral.
 - **Etapa 6 (grimórios e álbum), pronta (21/10/2026, branch `claude/aperta-etapa-6-1f9010`):** modal de escolha completo, página de Grimórios com álbum e Atlas (espaços; bônus de conjunto e botão Colapsar ficam na etapa 9), testes de pesos por `n` e de clique acidental. Conferida em 320, 390 e 1280 px.
+- **Etapa 7 (objetos no espaço), pronta (21/10/2026, branch `claude/aperta-etapa-7-e2dc63`):** `FieldObjects`, `SignalChip`, `controller.capture`, `objectPreview` (motor, testado), etiqueta com a recompensa antes de tocar, aviso "<Objeto> capturado" depois, chip "Sinal forte" (fica na pilha de avisos sob o HUD, não dentro do painel, para caber em 320 px), teclado (Tab e Enter/Espaço). Decisão: a posição vem do id (faixas de cima e de baixo do campo, longe do botão). Falta ligar o bloqueio no tutorial (etapa 8). Conferida em 320, 390 e 1280 px.
 
 ### O que falta, na ordem
 1. **Etapa 2, só falta o banco:** (a) o Lucas decide quando **aplicar `0009_aperta.sql`** (`pnpm db:migrate`; só cria tabela); (b) depois, conferir as rotas contra o banco real (criar, gravar, 409 com dois aparelhos, apagar e restaurar) e o diálogo de conflito no navegador com duas abas. Pendência de desenho: aviso "aberto em outro aparelho" e histórico de 5 revisões não foram feitos (ver o quadro em 10.1).
 2. **Etapa 4: fechada** (ver acima).
-3. **Etapas 7 a 10:** Objetos no espaço, Tutorial guiado, Colapso e Atlas Eterno, Árvore e conquistas. As páginas de Grimórios, Conquistas e Árvore hoje são **vazias provisórias**.
+3. **Etapas 8 a 10:** Tutorial guiado, Colapso e Atlas Eterno, Árvore e conquistas. As páginas de Grimórios, Conquistas e Árvore hoje são **vazias provisórias**.
 4. **Etapa 11:** ligar a arte e os sons ao jogo, transições, desempenho em celular fraco.
 5. **Etapas 12 e 13:** conteúdo dos colapsos 1 a 5 e QA responsivo com calibragem ao vivo (fecha a v1).
 6. **Depois da v1:** etapas 14 a 16.

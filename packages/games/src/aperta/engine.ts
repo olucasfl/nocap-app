@@ -874,6 +874,29 @@ export function objectReward(state: SaveState, kind: ObjectKind): { dust: number
   }
 }
 
+/** Tudo que a etiqueta do objeto promete antes de tocar (a mesma conta de `captureObject`). */
+export interface ObjectPreview {
+  dust: number;
+  energy: number;
+  /** "Sinal forte": multiplicador e duração em segundos (satélite); 0 nos demais. */
+  boostMult: number;
+  boostSec: number;
+  freeReroll: boolean;
+}
+
+export function objectPreview(state: SaveState, kind: ObjectKind): ObjectPreview {
+  const { dust, energy } = objectReward(state, kind);
+  const { objects } = effectiveStats(state);
+  const signal = kind === 'satellite';
+  return {
+    dust,
+    energy: energy + objects.onCaptureEnergyTouches * effectiveStats(state).energyPerTouch,
+    boostMult: signal ? objects.signalMult : 0,
+    boostSec: signal ? objects.signalSec : 0,
+    freeReroll: kind === 'probe',
+  };
+}
+
 export function captureObject(state: SaveState, id: number, now: number): SaveState {
   const s = syncClock(state, now);
   const run = s.run;

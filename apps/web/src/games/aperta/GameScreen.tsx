@@ -11,10 +11,12 @@ import { apertaSfx, apertaVibrate } from '@/lib/aperta-audio';
 import { AstroMedal } from './AstroMedal';
 import { BigButton } from './BigButton';
 import { ChoiceModal } from './ChoiceModal';
+import { FieldObjects, SignalChip } from './FieldObjects';
 import { GamePage, PageIcon, PAGE_TITLE } from './GamePage';
 import { GrimoiresPage } from './GrimoiresPage';
 import { RegionBackdrop, type RegionId } from './RegionBackdrop';
 import { SpaceArtSprite } from './SpaceArtSprite';
+import { SpaceObject, type SpaceObjectKind } from './SpaceObject';
 import { UpgradesPage } from './UpgradesPage';
 import type { GameController, GameEvent } from './game-controller';
 import {
@@ -24,6 +26,12 @@ import {
   comboView,
   createHoldLimiter,
   energyView,
+  capturedTitle,
+  floatText,
+  objectArt,
+  objectSlot,
+  rewardText,
+  signalView,
   togglePage,
   type PageName,
 } from './game-logic';
@@ -49,10 +57,22 @@ interface Notice {
   id: number;
   title: string;
   text: string;
-  astro: ReturnType<typeof astroFor>;
+  astro?: ReturnType<typeof astroFor>;
+  /** Aviso de captura: mostra o objeto no lugar do astro. */
+  object?: SpaceObjectKind;
+}
+
+/** Efeito de uma captura: anel e texto saindo de onde o objeto estava. */
+interface Capture {
+  id: number;
+  x: number;
+  y: number;
+  kind: SpaceObjectKind;
+  text: string;
 }
 
 const BURST_MS = 900;
+const CAPTURE_MS = 1000;
 const MAX_BURSTS = 5;
 const SPARKS = 8;
 const lowEnd = typeof navigator !== 'undefined' && (navigator.hardwareConcurrency ?? 8) <= 4;
@@ -88,6 +108,7 @@ export function GameScreen({ controller, onExit }: Props) {
   const [pressed, setPressed] = useState(false);
   const [bursts, setBursts] = useState<Burst[]>([]);
   const [notice, setNotice] = useState<Notice | null>(null);
+  const [captures, setCaptures] = useState<Capture[]>([]);
   const [freshGrimoire, setFreshGrimoire] = useState(false);
 
   const pending = state.run.pending;
@@ -125,6 +146,17 @@ export function GameScreen({ controller, onExit }: Props) {
         later(() => setBursts((list) => list.filter((b) => b.id !== e.id)), BURST_MS);
       } else if (e.type === 'choice-open') {
         apertaSfx.flip();
+      } else if (e.type === 'capture') {
+        apertaSfx.thunk();
+        apertaVibrate(14);
+        const art = objectArt(e.kind);
+        const text = rewardText(e.preview);
+        const slot = objectSlot(e.objectId);
+        setCaptures((list) => [...list.slice(-3), { id: e.objectId, x: slot.x, y: slot.y, kind: art, text: floatText(e.preview) }]);
+        later(() => setCaptures((list) => list.filter((c) => c.id !== e.objectId)), CAPTURE_MS);
+        if (noticeTimer.current !== null) window.clearTimeout(noticeTimer.current);
+        setNotice({ id: Date.now(), title: capturedTitle(e.kind), text, object: art });
+        noticeTimer.current = later(() => setNotice(null), NOTICE_MS);
       } else {
         apertaSfx.thunk();
         setFreshGrimoire(true);
@@ -198,6 +230,7 @@ export function GameScreen({ controller, onExit }: Props) {
   const energy = energyView(state);
   const affordable = affordableCount(state);
   const combo = comboView(state, now);
+  const signal = signalView(state, now);
   const fragments = fragmentsAvailable(state);
   const albumCount = state.album.length;
 
@@ -245,11 +278,12 @@ export function GameScreen({ controller, onExit }: Props) {
       </header>
 
       <div className="ap-banners">
+        {signal && <SignalChip key={state.run.boostUntil} signal={signal} paused={paused} />}
         <div className="ap-pickup-slot" role="status" aria-live="polite">
           {notice && (
             <div key={notice.id} className="ap-pickup">
               <span className="ap-pickup-medal">
-                <AstroMedal astro={notice.astro} />
+                {notice.object ? <SpaceObject kind={notice.object} size={40} /> : notice.astro && <AstroMedal astro={notice.astro} />}
               </span>
               <span>
                 <b>{notice.title}</b>
@@ -303,6 +337,18 @@ export function GameScreen({ controller, onExit }: Props) {
               <small>Combo</small> x{formatDecimal(combo.mult, 1)}
             </p>
           )}
+        </div>
+      </div>
+
+      <div className="ap-field ap-field-over">
+        <FieldObjects state={state} now={now} paused={paused} onCapture={controller.capture} />
+        <div className="ap-capfx" aria-hidden="true">
+          {captures.map((c) => (
+            <span key={c.id} className="ap-cap" style={{ left: `${c.x}%`, top: `${c.y}%` }} data-kind={c.kind}>
+              <i className="ap-cap-ring" />
+              <b>{c.text}</b>
+            </span>
+          ))}
         </div>
       </div>
 

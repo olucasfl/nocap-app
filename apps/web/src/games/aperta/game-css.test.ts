@@ -37,4 +37,14 @@ describe('CSS da tela de jogo', () => {
   it('os botões têm foco visível para teclado', () => {
     expect(css).toMatch(/\.ap-game button:focus-visible/);
   });
+
+  it('os objetos têm alvo de toque de pelo menos 44 px e a camada deixa o botão central livre', () => {
+    expect(css.match(/\.ap-obj \{([^}]*)\}/)?.[1]).toMatch(/width:\s*(4[4-9]|[5-9]\d)px/);
+    expect(css.match(/\.ap-field-over \{([^}]*)\}/)?.[1]).toMatch(/pointer-events:\s*none/);
+  });
+
+  it('com movimento reduzido os objetos ficam parados', () => {
+    const reduced = css.slice(css.indexOf('prefers-reduced-motion: reduce'));
+    expect(reduced).toMatch(/\.ap-obj-drift/);
+  });
 });

@@ -172,6 +172,72 @@ describe('salvamento', () => {
   });
 });
 
+describe('objetos no espaço', () => {
+  /** Passa o tempo do aparelho em passos de 1 s, como o relógio da tela. */
+  function advance(t: ReturnType<typeof setup>, seconds: number) {
+    for (let i = 0; i < seconds; i++) {
+      t.clock.ms += 1000;
+      t.ctl.tick();
+    }
+  }
+
+  it('um objeto nasce depois de uns 9 s e a tela é avisada na hora', () => {
+    const t = setup();
+    let notified = 0;
+    t.ctl.subscribe(() => (notified += 1));
+    advance(t, 8);
+    expect(t.ctl.getSnapshot().state.run.objects).toHaveLength(0);
+    advance(t, 12);
+    expect(t.ctl.getSnapshot().state.run.objects.length).toBeGreaterThan(0);
+    expect(notified).toBeGreaterThan(0);
+  });
+
+  it('capturar entrega a recompensa que a etiqueta mostrou e emite o aviso', () => {
+    const t = setup();
+    advance(t, 12);
+    const { run } = t.ctl.getSnapshot().state;
+    const obj = run.objects[0]!;
+    expect(t.ctl.capture(obj.id)).toBe(true);
+    const ev = t.events.find((e) => e.type === 'capture');
+    expect(ev).toMatchObject({ type: 'capture', objectId: obj.id, kind: obj.kind });
+    const after = t.ctl.getSnapshot().state;
+    expect(after.run.objects.find((o) => o.id === obj.id)).toBeUndefined();
+    expect(after.stats.objectsCaptured).toBe(1);
+    if (ev?.type === 'capture') expect(after.run.dust - run.dust).toBe(ev.preview.dust);
+  });
+
+  it('capturar duas vezes, ou um id que não existe, não entrega nada', () => {
+    const t = setup();
+    advance(t, 12);
+    const id = t.ctl.getSnapshot().state.run.objects[0]!.id;
+    expect(t.ctl.capture(id)).toBe(true);
+    expect(t.ctl.capture(id)).toBe(false);
+    expect(t.ctl.capture(999)).toBe(false);
+    expect(t.events.filter((e) => e.type === 'capture')).toHaveLength(1);
+  });
+
+  it('com o jogo pausado nada nasce e nada é capturado', () => {
+    const t = setup();
+    advance(t, 12);
+    const id = t.ctl.getSnapshot().state.run.objects[0]!.id;
+    t.ctl.pause();
+    expect(t.ctl.capture(id)).toBe(false);
+    expect(t.ctl.getSnapshot().state.run.objects.some((o) => o.id === id)).toBe(true);
+  });
+
+  it('o satélite liga o Sinal forte no estado', () => {
+    const base = newSave('teste', 0);
+    const t = setup({
+      ...base,
+      run: { ...base.run, objects: [{ id: 1, kind: 'satellite', bornAt: 0, expiresAt: 100 }], nextObjectId: 2, nextSpawnAt: 1e6 },
+    });
+    expect(t.ctl.capture(1)).toBe(true);
+    const { run } = t.ctl.getSnapshot().state;
+    expect(run.boostMult).toBe(2);
+    expect(run.boostUntil).toBeGreaterThan(t.ctl.now());
+  });
+});
+
 describe('carregar', () => {
   it('abre o save guardado ou começa um novo jogo', async () => {
     const store = createMemoryGameStore();
