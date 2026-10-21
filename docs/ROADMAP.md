@@ -88,6 +88,12 @@ Ainda sem prioridade definida contra as salas do Ecooo. Cada item tem a sua spec
 - [x] **Bee Word's** (offline, 200 fases por dificuldade, progresso salvo no aparelho; sem Daily nem ranking): `specs/035-bee-words.md`
 - Ordem sugerida de construção: base de palavras → Classic → Bee → Connect (o Connect depende de **conteúdo escrito à mão**, a parte mais lenta; dá para produzir os puzzles em paralelo).
 
+## Etapa 8: Aperta! (clicker no espaço), 21/10/2026
+
+- [x] **Etapa 1: motor e simulador** (`packages/games/src/aperta`, só lógica pura; vidas 1 a 5 calibradas pelo simulador): `specs/038-clicker.md`
+- [ ] Etapas 2 a 13 (persistência na conta, telas, tutorial, colapso/Atlas, árvore, arte e sons, conteúdo dos colapsos 1 a 5, QA): ver seção 15 da spec
+- [ ] Etapas 14 a 16 (conteúdo dos colapsos 6 a 15 e Ascender, depois da v1)
+
 ## Etapa 6: produção
 
 - [ ] Cloudflare Pages (web), Fly.io (api + Colyseus), Upstash (Redis), domínio, monitoramento

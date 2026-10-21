@@ -21,6 +21,7 @@
     "build": "tsup src/index.ts --format esm,cjs --dts --clean",
     "dev": "tsup src/index.ts --format esm,cjs --dts --watch",
     "test": "vitest run",
+    "sim": "vitest run --config vitest.sim.config.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
