@@ -1,6 +1,6 @@
 # 038 · Aperta! (clicker no espaço)
 
-Status: **rascunho reescrito em 21/10/2026 com o jogo aprovado pelo Lucas; atualizado no mesmo dia com as respostas dele (paleta, nomes, números, dados e os 30 grimórios). Faltam as decisões pendentes da seção 14.** Só desenho; nada implementado. Substitui o primeiro rascunho desta spec (baús, Biblioteca, Cartório e Sprint com ranking, tudo **descartado**).
+Status: **rascunho reescrito em 21/10/2026 com o jogo aprovado pelo Lucas; atualizado no mesmo dia com as respostas dele. Só a decisão 10 (Ascender) está pendente; spec pronta para a aprovação final.** Só desenho; nada implementado. Substitui o primeiro rascunho desta spec (baús, Biblioteca, Cartório e Sprint com ranking, tudo **descartado**).
 
 Fontes de verdade: as regras ditadas pelo Lucas em 21/10/2026 (seção 2) e o design aprovado no artifact "Aperta! Espaço" (`project/Main.dc.html`, mockup para idealizar o visual; a lógica complexa é desta spec). O Lucas aprovou a paleta, os gradientes e as fontes do mockup para esta tela (seção 13); o resto das regras do projeto continua valendo.
 
@@ -374,33 +374,35 @@ O Lucas decidiu em 21/10/2026 que o Aperta! usa o **tema do mockup**: paleta azu
 
 ## 14. Decisões (resolvidas e em aberto)
 
-### Resolvidas pelo Lucas (21/10/2026)
-1. **Paleta, gradientes e fontes:** **RESOLVIDA.** Tema do mockup, com tokens `--space-*` em um só arquivo; resto do app segue Pop Brutal (seções 11 e 13).
+Todas respondidas pelo Lucas em 21/10/2026, **exceto a 10 (Ascender)**.
+
+### Resolvidas
+1. **Paleta, gradientes e fontes:** **RESOLVIDA.** Usar a paleta do mockup (azul-noite, azul, ouro, vermelho, sombreamento radial, Chakra Petch e Space Grotesk) e **mudar as regras**: exceção nomeada só para a tela do Aperta!, com tokens `--space-*` em um só arquivo (seções 11 e 13).
 2. **Nomes:** **RESOLVIDA.** Poeira estelar, Fragmentos, Colapsar a estrela, Atlas Eterno, Árvore de Habilidades, grimórios, Cometa, Estrela cadente e Satélite.
-3. **Números de balanceamento e custos:** **RESOLVIDA** (Lucas delegou; valores fixados na seção 6.2, inclusive o custo de refazer a árvore). O simulador da etapa 1 calibra. As antigas 4 (meta de tempo: 6 a 10 h no ritmo normal, 40 a 60 h até o 10º colapso) e 5 (repetido +50% por nível, máx. 10) ficam **resolvidas por esta**.
-6. **Os 30 grimórios:** **RESOLVIDA.** Lista aprovada e detalhada com nome, efeito e arte (seção 5.2).
-9. **Fragmentos e árvore:** **RESOLVIDA** (`3 + nº do colapso` + bônus por poeira; refazer devolve tudo menos 20%; seção 8.3).
-11. **Álbum/conquistas por save ou por conta:** **RESOLVIDA.** Tudo no banco, ligado à conta, e **2 saves independentes** por conta, cada um com álbum, Atlas e conquistas próprios.
-12 (parte de dados). **RESOLVIDA.** Exige conta; o servidor é a fonte da verdade; qualquer aparelho carrega o mesmo save (seção 10).
-18. **Mesmo save em dois aparelhos:** **RESOLVIDA.** Sincroniza entre aparelhos e avisa em caso de conflito (seção 10.4).
+3. **Números iniciais:** **RESOLVIDA ("sim").** Custos base x60, energia por toque 0,25, passos x1,35 depois do 6º, estrela pronta em ~2 mi de poeira e 20 escolhas (seção 6.2). O simulador da etapa 1 calibra.
+4. **Meta de tempo:** **RESOLVIDA ("sim").** "6 a 10 h até o 1º colapso" conta **só tempo de jogo aberto**, ritmo normal (2,5 toques/s); o 10º colapso em **40 a 60 h**.
+5. **Grimório repetido:** **RESOLVIDA (Lucas delegou; decidi o mais balanceado).** +50% do efeito por nível, máximo nível 10; o simulador calibra.
+6. **Os 30 grimórios:** **RESOLVIDA.** Lista aprovada, com nome, efeito e arte (seção 5.2).
+7. **Proibidos:** **RESOLVIDA.** Aprovados: Sagitário A* (a partir de 22 escolhas), Cygnus X-1 (após o 3º colapso) e M87* (após o 5º), com os preços da tabela.
+8. **Atlas:** **RESOLVIDA (Lucas delegou; decidi o mais balanceado).** 3 espaços iniciais, +1 nos colapsos 5, 10, 25 e 50 (máx. 7); com tudo cheio, o colapso troca uma página; bônus de conjunto da seção 8.2; o simulador calibra.
+9. **Fragmentos e árvore:** **RESOLVIDA (Lucas delegou; decidi o mais balanceado).** `3 + nº do colapso` Fragmentos mais bônus por poeira; **refazer a árvore devolve tudo menos 20%** (seção 8.3).
+11. **Saves:** **RESOLVIDA.** Tudo no banco, ligado à conta; mesma conta carrega igual em qualquer aparelho; **2 saves independentes** por conta, cada um com álbum, Atlas e conquistas próprios.
+12. **Offline:** **RESOLVIDA.** O jogo exige conta; o servidor é a fonte da verdade; depois de aberto continua se a internet cair (cópia local, sobe depois), mas começa só com internet (seção 10).
+13. **Apagar save:** **RESOLVIDA ("ok").** 2 passos e recuperável por 7 dias.
+14. **Sons:** **RESOLVIDA ("ok").** `clack` com tom subindo no combo, `whoosh`, `ding`, `flip`, `thunk`, `win`, `boing`; sem música na v1; vibração só no Android, desligável.
+15. **Modo demonstração:** **RESOLVIDA ("ok").** Só como flag de desenvolvimento, fora do app final.
+16. **Conquistas:** **RESOLVIDA ("ok").** Lista da 5.3, só medalha na v1.
+17. **Ordem das etapas:** **RESOLVIDA ("ok").** A da seção 15, começando pelo motor e simulador.
+18. **Mesmo save em vários aparelhos:** **RESOLVIDA.** Sincronização com aviso em caso de conflito (seção 10.4).
+19. **Convidado:** **RESOLVIDA ("ok").** O cartão aparece no Arcade com "Entre para jogar".
+20. **Segurar a tecla:** **RESOLVIDA ("ok").** Permitido, até 6 toques/s.
 
-### Ainda pendentes (com a minha recomendação)
-4 e 5: já resolvidas por 3 (acima). Restam:
-7. **Proibidos:** aprova Sagitário A* (a partir de 22 escolhas), Cygnus X-1 (após o 3º colapso) e M87* (após o 5º), com os preços da tabela? *Recomendo sim.*
-8. **Atlas:** começa com **3 espaços** (+1 nos colapsos 5, 10, 25 e 50, total 7) e, com tudo cheio, o colapso **troca** uma página? Os bônus de conjunto por família da 8.2 servem? *Recomendo sim aos dois.*
-10. **Ascender (camada 2):** entra **depois da v1** (etapa 12) com a regra proposta (zera colapsos e árvore, guarda álbum, conquistas e Atlas, dá Constelações a partir de ~25 colapsos) ou na v1? *Recomendo depois da v1: calibrar a camada 1 primeiro.*
-12 (parte restante). **Jogar sem rede:** depois de aberto, o jogo **continua se a internet cair** (cópia local, sobe depois), mas **exige conta e internet para começar**? *Recomendo sim.*
-13. **Apagar save:** 2 passos e **recuperável por 7 dias**, ou definitivo? *Recomendo 2 passos e 7 dias.*
-14. **Sons:** aprova a lista (`clack` com tom subindo no combo, `whoosh`, `ding`, `flip`, `thunk`, `win`, `boing`)? Música de fundo e vibração no Android? *Recomendo a lista, sem música na v1 e vibração só no Android, desligável.*
-15. **Modo demonstração** do mockup (20x): fica só como flag de desenvolvimento? *Recomendo sim (fora do app final).*
-16. **Conquistas:** a lista da 5.3 serve? Dão só **medalha** ou também **bônus pequeno**? *Recomendo só medalha na v1.*
-17. **Ordem das etapas:** confirma a ordem da seção 15, começando pelo **motor e simulador**? *Recomendo sim.*
-19. **Convidado:** o cartão aparece no Arcade com "Entre para jogar" ou **só aparece para quem tem conta**? *Recomendo aparecer com "Entre para jogar".*
-20. **Segurar a tecla:** permitir **segurar Espaço/Enter** para repetir (até 6/s) ou só toque a toque? *Recomendo permitir, por causa do cansaço do clique.*
+### Pendente
+10. **Ascender (camada 2):** entra **depois da v1** (etapa 12) com a regra da seção 8.4 (zera colapsos, Fragmentos e árvore; guarda álbum, conquistas e Atlas; dá Constelações a partir de ~25 colapsos), ou já na v1? **Recomendação: depois da v1**, para calibrar a camada 1 antes (ela é a base do simulador). **O Lucas ainda não respondeu.**
 
-### Para o Lucas confirmar: exceção de regra (item 1)
-A mudança em `.claude/rules/RULES.md` e `CLAUDE.md` **não foi feita nesta sessão** (regras permanentes só mudam por pedido direto do Lucas, não por mensagem de outra sessão). Texto pronto, para colar quando o Lucas disser "sim":
-- `RULES.md`, na lista "Nunca", trocar "Usar emoji, gradiente genérico, Inter/Roboto, ou cores fora dos tokens Pop Brutal." por: "Usar emoji, gradiente genérico, Inter/Roboto, ou cores fora dos tokens Pop Brutal, **exceto a tela do Aperta! (spec 038)**: o tema espaço do Aperta! usa tokens próprios `--space-*`, definidos em um só arquivo; o resto do app continua Pop Brutal."
+### Exceção de regra (item 1) ainda não registrada nos arquivos de regras
+A mudança em `.claude/rules/RULES.md` e `CLAUDE.md` **não foi feita por esta sessão**: regras permanentes só mudam por pedido direto do Lucas, e a ordem chegou por mensagem entre sessões. Texto pronto:
+- `RULES.md`, lista "Nunca": trocar "Usar emoji, gradiente genérico, Inter/Roboto, ou cores fora dos tokens Pop Brutal." por "Usar emoji, gradiente genérico, Inter/Roboto, ou cores fora dos tokens Pop Brutal, **exceto a tela do Aperta! (spec 038)**: o tema espaço do Aperta! usa tokens próprios `--space-*`, definidos em um só arquivo; o resto do app continua Pop Brutal."
 - `CLAUDE.md`, regra 6: acrescentar "(exceção: tela do Aperta!, tokens `--space-*`; spec 038)".
 
 ## 15. Plano de entrega (etapas pequenas)
