@@ -37,7 +37,7 @@ pnpm db:migrate   # aplica no Supabase (session pooler 5432)
 3. Tempo: nada de cronômetro, número, barra, som ou animação rítmica durante a contagem.
 4. Cor: nota por ΔE2000 (Lab), nunca distância RGB.
 5. Animar só `transform`/`opacity`, respeitando `prefers-reduced-motion`.
-6. Telas seguem os tokens Pop Brutal. Sem emoji.
+6. Telas seguem os tokens Pop Brutal. Sem emoji. (Exceção: a tela do Aperta!, tokens `--space-*`; spec 038.)
 7. Itens da seção 6 do brief são decisão do Lucas: pergunte, não decida.
 
 ## Comandos de agente

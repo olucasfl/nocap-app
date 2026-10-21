@@ -12,7 +12,7 @@ Padrão: negar por padrão, abrir exceções nomeadas, dizer o que fazer em vez 
 - Colocar sala personalizada no ranking.
 - Mostrar cronômetro, número, barra, som ou animação rítmica durante a contagem do jogo do Tempo.
 - Usar distância RGB para nota de cor (use ΔE2000 em Lab).
-- Usar emoji, gradiente genérico, Inter/Roboto, ou cores fora dos tokens Pop Brutal.
+- Usar emoji, gradiente genérico, Inter/Roboto, ou cores fora dos tokens Pop Brutal. Única exceção (decisão do Lucas em 21/10/2026): a tela do Aperta! (spec 038) usa o tema espaço, com tokens próprios `--space-*` definidos em um só arquivo, gradientes de sombreamento nos astros e as fontes Chakra Petch e Space Grotesk. O resto do app continua Pop Brutal, e emoji continua proibido em todo lugar.
 - Animar propriedades que não sejam `transform`/`opacity`.
 - Mudar uma decisão da seção 2 do `docs/PROJECT-BRIEF.md` sem pedir.
 
