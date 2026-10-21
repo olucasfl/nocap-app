@@ -95,4 +95,38 @@ describe('movimento no CSS do Aperta!', () => {
     const sky = files.find((f) => f.name === 'aperta.css')!.css;
     expect(sky).toMatch(/\.is-lite \.ap-neb \{[^}]*filter:\s*none/);
   });
+
+  it('o CSS do polimento das telas novas existe, anima e é conferido como os outros', () => {
+    const polish = files.find((f) => f.name === 'polish.css');
+    expect(polish, 'polish.css').toBeDefined();
+    const names = keyframes(polish!.css).map((k) => k.name);
+    expect(names).toEqual(
+      expect.arrayContaining(['app-flash', 'app-flash-ring', 'app-region-in', 'app-streak', 'app-storm', 'app-card-in', 'app-node-pop']),
+    );
+  });
+
+  it('todo CSS do Aperta! é importado por algum componente (nenhum arquivo órfão fora da checagem)', () => {
+    const sources = readdirSync(__dirname)
+      .filter((f) => /\.tsx?$/.test(f) && !f.includes('.test.'))
+      .map((f) => readFileSync(join(__dirname, f), 'utf8'))
+      .join('\n');
+    for (const { name } of files) {
+      if (name === 'ArtPreview.css') continue; // página de pré-visualização do kit de arte
+      expect(sources, name).toContain("'./" + name + "'");
+    }
+  });
+
+  it('o movimento reduzido silencia cada loop e cada entrada do polimento', () => {
+    const polish = files.find((f) => f.name === 'polish.css')!.css;
+    const reduced = polish.slice(polish.indexOf('prefers-reduced-motion'));
+    for (const sel of ['.ap-flash', '.ap-evfx-shower i', '.ap-evfx-storm', '.ap-atlas-pages li.is-full', '.ap-node.is-owned', '.ap-game .ap-region']) {
+      expect(reduced, sel).toContain(sel);
+    }
+  });
+
+  it('os loops de evento não pedem desfoque nem sombra animada', () => {
+    const polish = files.find((f) => f.name === 'polish.css')!.css;
+    expect(polish).not.toMatch(/filter/);
+    for (const k of keyframes(polish)) expect(k.body, k.name).not.toMatch(/box-shadow|filter|width|height|left|top/);
+  });
 });

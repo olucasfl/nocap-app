@@ -1,0 +1,176 @@
+/* Polimento das telas e eventos novos do Aperta! (spec 038, seção 11, etapa 11b): colapso, regiões,
+   eventos, Atlas e Árvore. Só tokens --space-*; anima só transform e opacity. */
+
+/* ---------- colapso: clarão e anel ---------- */
+.ap-flash {
+  position: absolute;
+  inset: 0;
+  z-index: 45;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 46%, #fff6d8 0%, var(--space-gold) 28%, transparent 70%);
+  animation: app-flash 1.1s ease-out both;
+}
+.ap-flash i {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: 40vmin;
+  height: 40vmin;
+  margin: -20vmin 0 0 -20vmin;
+  border: 4px solid var(--space-gold);
+  border-radius: 50%;
+  animation: app-flash-ring 1.1s ease-out both;
+}
+@keyframes app-flash {
+  0% {
+    opacity: 0;
+  }
+  18% {
+    opacity: 0.95;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes app-flash-ring {
+  from {
+    transform: scale(0.2);
+    opacity: 1;
+  }
+  to {
+    transform: scale(3);
+    opacity: 0;
+  }
+}
+
+/* ---------- região: o fundo novo aparece em fade ---------- */
+.ap-game .ap-region {
+  animation: app-region-in 0.7s ease-out backwards;
+}
+@keyframes app-region-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ---------- eventos: arte sobre o campo ---------- */
+.ap-evfx {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  overflow: hidden;
+  pointer-events: none;
+}
+.ap-evfx-shower i {
+  position: absolute;
+  top: -12%;
+  width: 3px;
+  height: 18vmin;
+  border-radius: 3px;
+  background: linear-gradient(180deg, transparent, var(--space-cyan));
+  opacity: 0;
+  transform: translate(0, 0) rotate(-18deg);
+  animation: app-streak 1.4s linear infinite;
+}
+@keyframes app-streak {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) rotate(-18deg);
+  }
+  15% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-30vmin, 130vh) rotate(-18deg);
+  }
+}
+.ap-evfx-storm {
+  background: radial-gradient(circle at 80% 0%, rgba(255, 200, 87, 0.55), transparent 62%);
+  opacity: 0.35;
+  animation: app-storm 2.4s ease-in-out infinite;
+}
+@keyframes app-storm {
+  50% {
+    opacity: 0.8;
+  }
+}
+.ap-chip-ico {
+  width: 14px;
+  height: 14px;
+  vertical-align: -2px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+/* ---------- Atlas: as páginas entram uma a uma ---------- */
+.ap-atlas-pages li.is-full {
+  animation: app-card-in 0.35s ease-out backwards;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+@keyframes app-card-in {
+  from {
+    transform: translateY(10px) scale(0.96);
+    opacity: 0;
+  }
+}
+
+/* ---------- Árvore: o nó comprado estala e a conquista ganha brilho ---------- */
+.ap-node.is-owned {
+  animation: app-node-pop 0.4s cubic-bezier(0.2, 1.4, 0.4, 1) backwards;
+}
+@keyframes app-node-pop {
+  from {
+    transform: scale(0.94);
+    opacity: 0.6;
+  }
+}
+.ap-pickup-ach .ap-pickup-medal {
+  animation: app-medal-spin 0.9s ease-out both;
+}
+@keyframes app-medal-spin {
+  from {
+    transform: rotate(-180deg) scale(0.4);
+    opacity: 0;
+  }
+}
+
+/* ---------- aparelho fraco: sem clarão grande nem anel ---------- */
+.is-lite .ap-flash i {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ap-flash {
+    animation: app-flash-soft 0.4s linear both;
+  }
+  .ap-flash i,
+  .ap-evfx-shower i {
+    display: none;
+  }
+  .ap-game .ap-region {
+    animation-duration: 0.12s;
+  }
+  .ap-evfx-storm {
+    animation: none;
+    opacity: 0.5;
+  }
+  .ap-atlas-pages li.is-full,
+  .ap-node.is-owned,
+  .ap-pickup-ach .ap-pickup-medal {
+    animation: none !important;
+  }
+}
+@keyframes app-flash-soft {
+  0% {
+    opacity: 0;
+  }
+  40% {
+    opacity: 0.35;
+  }
+  100% {
+    opacity: 0;
+  }
+}

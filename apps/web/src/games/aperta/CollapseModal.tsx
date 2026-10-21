@@ -1,5 +1,6 @@
 import { formatNumber, type SaveState } from '@nocap/games';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { apertaSfx, apertaVibrate } from '@/lib/aperta-audio';
 import { AstroMedal } from './AstroMedal';
 import { atlasView, collapseCandidates, collapseView, modalGuarded, needsReplacement } from './game-logic';
 import { useDialog } from './useDialog';
@@ -22,6 +23,14 @@ export function CollapseModal({ state, onCancel, onConfirm }: Props) {
   const [step, setStep] = useState<1 | 2>(1);
   const [pageId, setPageId] = useState<string | null>(null);
   const [replace, setReplace] = useState<number | null>(null);
+  // Abrir o modal soa como virar a página do Atlas; o passo 2 repete, mais baixo, ao mudar de passo.
+  useEffect(() => {
+    apertaSfx.flip();
+  }, []);
+  const goStep = (to: 1 | 2) => {
+    apertaSfx.page();
+    setStep(to);
+  };
 
   const candidates = collapseCandidates(state);
   const view = collapseView(state);
@@ -61,6 +70,8 @@ export function CollapseModal({ state, onCancel, onConfirm }: Props) {
                     aria-pressed={pageId === c.id}
                     onClick={() => {
                       if (guarded()) return;
+                      apertaSfx.clack(3);
+                      apertaVibrate(8);
                       setPageId(c.id);
                       setReplace(null);
                     }}
@@ -89,7 +100,11 @@ export function CollapseModal({ state, onCancel, onConfirm }: Props) {
                         type="button"
                         className={`ap-cc-page${replace === i ? ' is-selected' : ''}`}
                         aria-pressed={replace === i}
-                        onClick={() => !guarded() && setReplace(i)}
+                        onClick={() => {
+                          if (guarded()) return;
+                          apertaSfx.clack(1);
+                          setReplace(i);
+                        }}
                       >
                         <b>{p.name}</b>
                         <small>nível {p.level}</small>
@@ -103,7 +118,7 @@ export function CollapseModal({ state, onCancel, onConfirm }: Props) {
               <button type="button" className="ap-hbtn ap-hbtn-ghost" onClick={onCancel}>
                 Agora não
               </button>
-              <button type="button" className="ap-hbtn" disabled={!canContinue} onClick={() => !guarded() && setStep(2)}>
+              <button type="button" className="ap-hbtn" disabled={!canContinue} onClick={() => !guarded() && goStep(2)}>
                 Continuar
               </button>
             </div>
@@ -138,7 +153,7 @@ export function CollapseModal({ state, onCancel, onConfirm }: Props) {
               </section>
             </div>
             <div className="ap-cc-actions">
-              <button type="button" className="ap-hbtn ap-hbtn-ghost" onClick={() => setStep(1)}>
+              <button type="button" className="ap-hbtn ap-hbtn-ghost" onClick={() => goStep(1)}>
                 Voltar
               </button>
               <button

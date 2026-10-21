@@ -8,6 +8,7 @@ import {
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { apertaSfx, apertaVibrate } from '@/lib/aperta-audio';
 import { LOW_END } from './perf';
+import { cuesFor, playCue, type CueInput } from './cues';
 import { AstroMedal } from './AstroMedal';
 import { BigButton } from './BigButton';
 import { ChoiceModal } from './ChoiceModal';
@@ -20,7 +21,7 @@ import { GamePage, PageIcon, PAGE_TITLE } from './GamePage';
 import { GrimoiresPage } from './GrimoiresPage';
 import { RegionBackdrop } from './regions';
 import { RegionMenu } from './RegionMenu';
-import { EventChip, MissionChip, NewInSpace } from './StatusStrips';
+import { EventChip, EventFx, MissionChip, NewInSpace } from './StatusStrips';
 import { SpaceArtSprite } from './SpaceArtSprite';
 import { SpaceObject, type SpaceObjectKind } from './SpaceObject';
 import { FirstGrimoireModal, TutorialOverlay } from './Tutorial';
@@ -49,6 +50,7 @@ import { useGameSnapshot } from './useApertaGame';
 import './art.css';
 import './game.css';
 import './content.css';
+import './polish.css';
 
 interface Props {
   controller: GameController;
@@ -117,6 +119,7 @@ export function GameScreen({ controller, onExit }: Props) {
   const [freshGrimoire, setFreshGrimoire] = useState(false);
   const [collapseOpen, setCollapseOpen] = useState(false);
   const [regionsOpen, setRegionsOpen] = useState(false);
+  const [flash, setFlash] = useState<number | null>(null);
 
   const pending = state.run.pending;
   const tutorial = state.tutorial === 'done' ? null : state.tutorial;
@@ -164,9 +167,9 @@ export function GameScreen({ controller, onExit }: Props) {
       } else if (e.type === 'choice-open') {
         apertaSfx.flip();
       } else if (e.type === 'capture') {
-        apertaSfx.ding();
-        apertaVibrate(14);
         const art = objectArt(e.kind);
+        apertaSfx.ding(art === 'asteroid' || art === 'probe' ? art : undefined);
+        apertaVibrate(14);
         const text = rewardText(e.preview);
         const slot = objectSlot(e.objectId);
         setCaptures((list) => [...list.slice(-3), { id: e.objectId, x: slot.x, y: slot.y, kind: art, text: floatText(e.preview) }]);
@@ -175,7 +178,10 @@ export function GameScreen({ controller, onExit }: Props) {
         setNotice({ id: Date.now(), title: capturedTitle(e.kind), text, object: art });
         noticeTimer.current = later(() => setNotice(null), NOTICE_MS);
       } else if (e.type === 'collapse') {
-        apertaSfx.thunk();
+        apertaSfx.collapse();
+        apertaVibrate([30, 60, 30, 60, 90]);
+        setFlash(Date.now());
+        later(() => setFlash(null), 1200);
         setCollapseOpen(false);
         setPage(null);
         if (noticeTimer.current !== null) window.clearTimeout(noticeTimer.current);
@@ -209,7 +215,11 @@ export function GameScreen({ controller, onExit }: Props) {
     const seen = seenObjects.current;
     const ids = new Set(objects.map((o) => o.id));
     seenObjects.current = ids;
-    if (seen && objects.some((o) => !seen.has(o.id))) apertaSfx.whoosh();
+    const fresh = seen ? objects.find((o) => !seen.has(o.id)) : undefined;
+    if (fresh) {
+      const art = objectArt(fresh.kind);
+      apertaSfx.whoosh(art === 'asteroid' || art === 'probe' ? art : undefined);
+    }
   }, [objects]);
 
   const doPress = useCallback(() => {
@@ -225,6 +235,8 @@ export function GameScreen({ controller, onExit }: Props) {
     if (target === 'grimoires') {
       setFreshGrimoire(false);
       if (pageRef.current !== 'grimoires') apertaSfx.flip();
+    } else if (pageRef.current !== target) {
+      apertaSfx.page();
     }
   }, []);
 
@@ -289,6 +301,21 @@ export function GameScreen({ controller, onExit }: Props) {
   const liveEvent = eventView(state, now);
   const regions = regionMenuItems(state);
 
+  // Sons de transição (estrela pronta, evento, missão, região, faixa nova): só na mudança, nunca ao montar.
+  const lastCue = useRef<CueInput | null>(null);
+  const cReady = starReady;
+  const cEvent = liveEvent?.id ?? null;
+  const cMission = mission?.done ?? false;
+  const cRegion = state.regionId;
+  // Sem olhar o modal de escolha aberto: a faixa some e volta, e isso não é novidade.
+  const cFresh = newInSpaceView(state)?.key ?? null;
+  useEffect(() => {
+    const next: CueInput = { starReady: cReady, eventId: cEvent, missionDone: cMission, region: cRegion, freshKey: cFresh };
+    const cues = cuesFor(lastCue.current, next);
+    lastCue.current = next;
+    cues.forEach((cue, i) => (cue === 'chime' ? later(() => playCue(cue), 700) : i === 0 ? playCue(cue) : later(() => playCue(cue), 250 * i)));
+  }, [cReady, cEvent, cMission, cRegion, cFresh, later]);
+
   function exit() {
     void controller.save(true).then(onExit);
   }
@@ -296,7 +323,8 @@ export function GameScreen({ controller, onExit }: Props) {
   return (
     <section className={`ap-game space-theme ap-screen-in${LOW_END ? ' is-lite' : ''}`} aria-label="Jogo">
       <SpaceArtSprite />
-      <RegionBackdrop region={state.regionId} paused={paused} />
+      <RegionBackdrop key={state.regionId} region={state.regionId} paused={paused} />
+      {liveEvent && !paused && <EventFx key={liveEvent.id} id={liveEvent.id} lite={LOW_END} />}
 
       <header className="ap-hud">
         <div className="ap-panel ap-hudp">
@@ -536,7 +564,7 @@ export function GameScreen({ controller, onExit }: Props) {
         <RegionMenu
           items={regions}
           onPick={(id) => {
-            controller.setRegion(id);
+            if (id !== state.regionId) controller.setRegion(id);
             setRegionsOpen(false);
           }}
           onClose={() => setRegionsOpen(false)}
@@ -545,6 +573,12 @@ export function GameScreen({ controller, onExit }: Props) {
 
       {collapseOpen && starReady && !pending && (
         <CollapseModal state={state} onCancel={() => setCollapseOpen(false)} onConfirm={controller.collapse} />
+      )}
+
+      {flash !== null && (
+        <div key={flash} className="ap-flash" aria-hidden="true">
+          <i />
+        </div>
       )}
 
       {tutorial === 2 && <FirstGrimoireModal onDone={() => controller.tutorialStep(2, 3)} />}

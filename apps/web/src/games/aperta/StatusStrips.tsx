@@ -38,8 +38,44 @@ export function MissionChip({ view }: { view: MissionView }) {
 export function EventChip({ view }: { view: EventView }) {
   return (
     <div className={`ap-chip ap-chip-event ap-chip-${view.id}`} role="status">
-      <b>{view.name}</b>
+      <b>
+        <EventIcon id={view.id} /> {view.name}
+      </b>
       <span>{view.text}</span>
     </div>
   );
+}
+
+const EVENT_ICON: Record<string, string> = {
+  'meteor-shower': 'M4 4l8 8M9 3l9 9M3 10l7 7M16 14l5 5M13 17l2 2',
+  'solar-storm': 'M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zM12 1v3M12 20v3M1 12h3M20 12h3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1',
+};
+
+/** Ícone de traço do evento (sem emoji), decorativo: o nome já está no texto do chip. */
+export function EventIcon({ id }: { id: string }) {
+  return (
+    <svg className="ap-chip-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d={EVENT_ICON[id] ?? EVENT_ICON['solar-storm']} />
+    </svg>
+  );
+}
+
+const STREAKS = [8, 22, 36, 51, 64, 79, 92];
+const STREAKS_LITE = [14, 45, 78];
+
+/**
+ * Arte do evento sobre o campo: riscos de meteoros caindo ou uma luz quente que pulsa. Só `transform`
+ * e `opacity`, `pointer-events: none` (nunca atrapalha o toque) e menos riscos em aparelho fraco.
+ */
+export function EventFx({ id, lite }: { id: string; lite: boolean }) {
+  if (id === 'meteor-shower') {
+    return (
+      <div className="ap-evfx ap-evfx-shower" aria-hidden="true">
+        {(lite ? STREAKS_LITE : STREAKS).map((x, i) => (
+          <i key={x} style={{ left: `${x}%`, animationDelay: `${(i * 0.37) % 1.6}s`, animationDuration: `${1.1 + (i % 3) * 0.3}s` }} />
+        ))}
+      </div>
+    );
+  }
+  return <div className="ap-evfx ap-evfx-storm" aria-hidden="true" />;
 }

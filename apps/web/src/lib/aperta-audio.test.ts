@@ -82,3 +82,20 @@ describe('vibração e mudo', () => {
     expect(apertaVibrate(8)).toBe(true);
   });
 });
+
+describe('sons das telas novas', () => {
+  const names = ['page', 'ready', 'collapse', 'warp', 'chime', 'shower', 'storm', 'mission', 'star'] as const;
+
+  it('existem e não quebram sem Web Audio', () => {
+    vi.stubGlobal('window', {});
+    vi.stubGlobal('navigator', {});
+    for (const n of names) {
+      expect(typeof apertaSfx[n], n).toBe('function');
+      expect(() => apertaSfx[n]()).not.toThrow();
+    }
+    expect(() => apertaSfx.whoosh('asteroid')).not.toThrow();
+    expect(() => apertaSfx.whoosh('probe')).not.toThrow();
+    expect(() => apertaSfx.ding('asteroid')).not.toThrow();
+    expect(() => apertaSfx.ding('probe')).not.toThrow();
+  });
+});

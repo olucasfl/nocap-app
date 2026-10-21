@@ -1,4 +1,5 @@
-import { useRef, type CSSProperties } from 'react';
+import { useEffect, useRef, type CSSProperties } from 'react';
+import { apertaSfx } from '@/lib/aperta-audio';
 import type { RegionMenuItem } from './content-logic';
 import { useDialog } from './useDialog';
 
@@ -12,6 +13,9 @@ interface Props {
 export function RegionMenu({ items, onPick, onClose }: Props) {
   const root = useRef<HTMLDivElement>(null);
   useDialog(root, onClose);
+  useEffect(() => {
+    apertaSfx.flip();
+  }, []);
   return (
     <div className="ap-modal-game">
       <div ref={root} className="ap-mcard-game ap-regionmenu" role="dialog" aria-modal="true" aria-labelledby="ap-region-title">

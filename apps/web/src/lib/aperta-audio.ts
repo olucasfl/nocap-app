@@ -61,14 +61,69 @@ export const apertaSfx = {
     tone('triangle', f, f, 0.05, 0.16);
     noise(2400, 2400, 1.2, 0.02, 0.12);
   },
-  /** objeto aparecendo na tela */
-  whoosh() {
-    noise(400, 3200, 0.8, 0.22, 0.18);
+  /** objeto aparecendo na tela; o asteroide passa grave e a sonda deixa um bipe */
+  whoosh(kind?: 'asteroid' | 'probe') {
+    if (kind === 'asteroid') noise(180, 1400, 0.9, 0.3, 0.22);
+    else noise(400, 3200, 0.8, 0.22, 0.18);
+    if (kind === 'probe') tone('sine', 1568, 1568, 0.08, 0.07, 0.16);
   },
   /** capturou o objeto */
-  ding() {
+  ding(kind?: 'asteroid' | 'probe') {
+    if (kind === 'asteroid') {
+      tone('triangle', 659, 659, 0.2, 0.22);
+      tone('sine', 165, 90, 0.16, 0.3);
+      return;
+    }
     tone('sine', 1319, 1319, 0.22, 0.2);
     tone('sine', 1760, 1760, 0.3, 0.1, 0.06);
+    if (kind === 'probe') tone('sine', 2093, 2093, 0.24, 0.07, 0.12);
+  },
+  /** abrir página (Melhorias, Conquistas, Árvore): sopro curto e baixo, mais manso que o `flip` */
+  page() {
+    noise(500, 1800, 0.8, 0.12, 0.1);
+  },
+  /** estrela pronta para colapsar: arpejo que sobe e fica no ar */
+  ready() {
+    [392, 523, 659, 784].forEach((f, i) => tone('sine', f, f, 0.34, 0.12, 0.1 * i));
+  },
+  /** colapso confirmado: queda grave, estouro de ruído e o acorde da conquista por cima */
+  collapse() {
+    tone('sine', 140, 32, 0.7, 0.8);
+    noise(2400, 160, 0.6, 0.5, 0.4);
+    [392, 523, 659, 988].forEach((f, i) => tone('triangle', f, f, 0.5, 0.16, 0.34 + 0.09 * i));
+  },
+  /** trocou de região: varrida que abre e fecha */
+  warp() {
+    noise(300, 2600, 0.7, 0.3, 0.2);
+    tone('triangle', 220, 440, 0.3, 0.1);
+  },
+  /** novidade no espaço (faixa Novo no espaço): dois toques de sino */
+  chime() {
+    tone('sine', 880, 880, 0.3, 0.15);
+    tone('sine', 1319, 1319, 0.4, 0.12, 0.12);
+  },
+  /** chuva de meteoros começou: riscos agudos em sequência */
+  shower() {
+    [2093, 1760, 2349, 1568, 2637].forEach((f, i) => {
+      tone('sine', f, f * 0.6, 0.12, 0.08, 0.07 * i);
+      noise(5000, 2000, 1.5, 0.08, 0.05, 0.07 * i);
+    });
+  },
+  /** tempestade solar começou: estrondo que sobe devagar */
+  storm() {
+    noise(150, 2200, 0.6, 0.7, 0.28);
+    tone('sawtooth', 70, 110, 0.6, 0.1);
+  },
+  /** missão da estação cumprida */
+  mission() {
+    tone('triangle', 784, 784, 0.14, 0.2);
+    tone('triangle', 988, 988, 0.14, 0.2, 0.1);
+    tone('triangle', 1319, 1319, 0.34, 0.22, 0.2);
+  },
+  /** marcou o favorito */
+  star() {
+    tone('sine', 1568, 1568, 0.16, 0.14);
+    tone('sine', 2349, 2349, 0.3, 0.1, 0.07);
   },
   /** abrir ou virar um grimório */
   flip() {

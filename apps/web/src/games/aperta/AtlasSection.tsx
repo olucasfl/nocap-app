@@ -1,4 +1,5 @@
 import type { SaveState } from '@nocap/games';
+import type { CSSProperties } from 'react';
 import { AstroMedal } from './AstroMedal';
 import { atlasView, collapseView } from './game-logic';
 import './collapse.css';
@@ -24,7 +25,7 @@ export function AtlasSection({ state, onCollapse }: Props) {
         {Array.from({ length: atlas.slots }, (_, i) => {
           const page = atlas.pages[i];
           return (
-            <li key={i} className={page ? 'is-full' : 'is-empty'}>
+            <li key={i} className={page ? 'is-full' : 'is-empty'} style={{ '--i': i } as CSSProperties}>
               {page ? (
                 <>
                   <span className="ap-atlas-medal">

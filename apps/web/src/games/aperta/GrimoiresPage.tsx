@@ -1,4 +1,5 @@
 import type { SaveState } from '@nocap/games';
+import { apertaSfx, apertaVibrate } from '@/lib/aperta-audio';
 import { AtlasSection } from './AtlasSection';
 import { favoriteOpen } from './content-logic';
 import { GrimoireBook } from './GrimoireBook';
@@ -50,7 +51,14 @@ export function GrimoiresPage({
                 className="ap-fav"
                 aria-pressed={e.favorite}
                 aria-label={e.favorite ? `Tirar ${e.name} dos favoritos` : `Marcar ${e.name} como favorito`}
-                onClick={() => onFavorite(e.favorite ? null : e.id)}
+                onClick={() => {
+                  if (e.favorite) apertaSfx.clack(0);
+                  else {
+                    apertaSfx.star();
+                    apertaVibrate(12);
+                  }
+                  onFavorite(e.favorite ? null : e.id);
+                }}
               >
                 {e.favorite ? 'Favorito' : 'Favoritar'}
               </button>
