@@ -1,6 +1,6 @@
 # 038 · Aperta! (clicker no espaço)
 
-Status: **rascunho reescrito em 21/10/2026 com o jogo aprovado pelo Lucas; atualizado no mesmo dia com as respostas dele. Só a decisão 10 (Ascender) está pendente; spec pronta para a aprovação final.** Só desenho; nada implementado. Substitui o primeiro rascunho desta spec (baús, Biblioteca, Cartório e Sprint com ranking, tudo **descartado**).
+Status: **aprovada pelo Lucas em 21/10/2026 (todas as decisões resolvidas, inclusive o conteúdo da v1).** Etapa 1 pode começar.).
 
 Fontes de verdade: as regras ditadas pelo Lucas em 21/10/2026 (seção 2) e o design aprovado no artifact "Aperta! Espaço" (`project/Main.dc.html`, mockup para idealizar o visual; a lógica complexa é desta spec). O Lucas aprovou a paleta, os gradientes e as fontes do mockup para esta tela (seção 13); o resto das regras do projeto continua valendo.
 
@@ -473,7 +473,7 @@ O Lucas decidiu em 21/10/2026 que o Aperta! usa o **tema do mockup**: paleta azu
 
 ## 14. Decisões (resolvidas e em aberto)
 
-Respondidas pelo Lucas em 21/10/2026, **exceto o que está em "Pendentes"** (só o conteúdo da v1, decisão 21).
+Todas respondidas pelo Lucas em 21/10/2026. Nada pendente.
 
 ### Resolvidas
 1. **Paleta, gradientes e fontes:** **RESOLVIDA.** Usar a paleta do mockup (azul-noite, azul, ouro, vermelho, sombreamento radial, Chakra Petch e Space Grotesk) e **mudar as regras**: exceção nomeada só para a tela do Aperta!, com tokens `--space-*` em um só arquivo (seções 11 e 13).
@@ -495,16 +495,14 @@ Respondidas pelo Lucas em 21/10/2026, **exceto o que está em "Pendentes"** (só
 18. **Mesmo save em vários aparelhos:** **RESOLVIDA.** Sincronização com aviso em caso de conflito (seção 10.4).
 19. **Convidado:** **RESOLVIDA ("ok").** O cartão aparece no Arcade com "Entre para jogar".
 20. **Segurar a tecla:** **RESOLVIDA ("ok").** Permitido, até 6 toques/s.
+10. **Ascender (camada 2):** **RESOLVIDA.** Gatilho **depois de 15 colapsos** (seção 8.4) e entra **depois da v1** (etapa 16), decidido pelo Lucas em 21/10/2026.
+21. **Conteúdo na v1:** **RESOLVIDA (Lucas: "tudo certo, vamos de recomendado").** A v1 traz **colapsos 0 a 5** (6 regiões, 40 grimórios); o resto chega por atualização (v1.1: colapsos 6 a 10; v1.2: colapsos 11 a 15).
 
 ### Pendentes
-10. **Ascender (camada 2):** **RESOLVIDA.** Gatilho **depois de 15 colapsos** (seção 8.4) e entra **depois da v1** (etapa 16), decidido pelo Lucas em 21/10/2026.
+Nenhuma. A spec está **aprovada pelo Lucas** (21/10/2026) e a etapa 1 (motor e simulador) pode começar.
 
-21. **Conteúdo na v1:** o lançamento traz **colapsos 0 a 5** (6 regiões, 40 grimórios) e o resto chega nas atualizações v1.1 (colapsos 6 a 10) e v1.2 (11 a 15)? Ou quer **tudo (60 grimórios, 16 regiões) já na v1**? **Recomendação: v1 até o colapso 5**, porque cada região e grimório novo pede arte e calibragem, e jogar a v1 por ~22 h já cobre bem o primeiro mês. **O Lucas ainda não respondeu.**
-
-### Exceção de regra (item 1) ainda não registrada nos arquivos de regras
-A mudança em `.claude/rules/RULES.md` e `CLAUDE.md` **não foi feita por esta sessão**: regras permanentes só mudam por pedido direto do Lucas, e a ordem chegou por mensagem entre sessões. Texto pronto:
-- `RULES.md`, lista "Nunca": trocar "Usar emoji, gradiente genérico, Inter/Roboto, ou cores fora dos tokens Pop Brutal." por "Usar emoji, gradiente genérico, Inter/Roboto, ou cores fora dos tokens Pop Brutal, **exceto a tela do Aperta! (spec 038)**: o tema espaço do Aperta! usa tokens próprios `--space-*`, definidos em um só arquivo; o resto do app continua Pop Brutal."
-- `CLAUDE.md`, regra 6: acrescentar "(exceção: tela do Aperta!, tokens `--space-*`; spec 038)".
+### Exceção de regra (item 1)
+Registrada em `.claude/rules/RULES.md` e `CLAUDE.md` (commit `docs(rules): excecao do tema espaco do Aperta!`), por pedido direto do Lucas.
 
 ## 15. Plano de entrega (etapas pequenas)
 
