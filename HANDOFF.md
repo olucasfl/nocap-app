@@ -36,6 +36,8 @@ Tudo está em `main` e publicado (API no Render, web na Vercel, banco no Supabas
 
 **Mix Nocap removido (20/10/2026):** a rota /nocap, as salas party (API e web), o pacote de regras e os textos saíram do código. Sobras no banco: `node apps/api/scripts/apagar-mix-nocap.mjs` mostra o que há; `--apply` apaga.
 
+**Aperta!** (`specs/038-clicker.md`, 21/10/2026): clicker no espaço, solo, saves na conta. **Etapa 1 pronta** (branch `claude/aperta-etapa-1-53da69`): motor e simulador em `packages/games/src/aperta` (só lógica; `pnpm --filter @nocap/games sim` imprime a tabela de horas; números finais na seção 6.7 da spec). **Próximo:** etapa 2 (migration `0009_aperta.sql`, módulo da API, `validateSave`/`mergeSaves`), depois as telas. Sem tela nem API ainda.
+
 **Eco** (`specs/012-eco.md`): repetir sequências de botões (estilo Genius). **Solo pronto** (Clássico, Escalada, Velocidade, Reverso e Daily, com ranking, recordes, histórico e perfil; 310 testes passando). **Salas Corrida e Siga o Líder prontas (faltam jogar ao vivo e calibrar o 0,7 do líder e as faixas de nota)**. São duas salas separadas (`eco` e `ecoleader`), escolhidas ao criar a sala; o spec previa escolher o formato no lobby.
 
 **Nomes na tela:** Cor = **Mesmíssima** (o 10 mostra "mesmíssima" no lugar de "cravou"), Tempo = **Já Deu?**, Eco = **Ecooo**. Ids, rotas e código não mudaram (`color`, `time`, `eco`).

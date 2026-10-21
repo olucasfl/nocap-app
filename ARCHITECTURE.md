@@ -120,6 +120,13 @@ Etapa 1, passos 1 a 3 concluídos (lógica, API e UI da Cor). Próximo: PWA (pas
 - **Progresso na conta** (spec 037): o progresso das fases (Bee, Connect e Classic) fica no aparelho e é sincronizado com a tabela `words_progress` (`/me/words-progress`), juntando sempre pelo mais adiantado: nunca se perde.
 - **Bee e Connect**: offline, só com fases (`apps/web/src/games/words/levels/*.json`, geradas por `apps/api/scripts/words/exportar-fases.mjs` em 4 faixas), progresso no aparelho (`nocap-words-bee-v2`, `nocap-words-connect-v2`). Connect não tem vidas: conta erros, tem 1 dica e desistência com classificação.
 
+## 12b. Aperta! (clicker, spec 038)
+
+- **Etapa 1 pronta (21/10/2026): só lógica pura em `packages/games/src/aperta/`**, sem tela nem API. `catalog.ts` (dados: 40 grimórios, 10 melhorias, 5 objetos, 6 regiões, bônus de conjunto, árvore), `economy.ts` (custos `base x 1,65^nível`, passos de energia, metas de colapso `DUST_GOAL`/`MIN_PICKS`/`TARGET_HOURS`), `engine.ts` (`SaveState` imutável; `press`, `buyUpgrade`, `drawGrimoires`, `selectGrimoire`/`chooseGrimoire` em 2 passos com bloqueio de 1,6 s, `tickObjects`/`captureObject`, `collapse`, árvore, `effectiveStats` memoizada), `format.ts` (pt-BR), `sim.ts` (simulador por perfil que usa o próprio motor).
+- O relógio vem de fora (`now` em segundos de jogo): salto maior que 5 s é aba escondida e congela objetos, boost e combo. Aleatório com `rngState` no save (determinístico). Tudo trava em 1e300.
+- `pnpm --filter @nocap/games sim` imprime a tabela de horas por marco (fora do `pnpm test`).
+- Falta (etapas 2 em diante): `validateSave`/`mergeSaves`, tabelas e API, telas.
+
 ## 13. Histórico removido (19/10/2026)
 
 A aba e a tela de Histórico, `GET /me/matches`, `GET /me/matches/:id/room` e a "atividade recente" do perfil de amigo foram removidas. As tabelas `matches`/`match_players` continuam, mas só como fonte de Ranking, recordes e Daily (as respostas de cada partida não são mais gravadas: `answers` fica nulo). O app mostra só rótulos de jogo/modo em `apps/web/src/lib/labels.ts`.
