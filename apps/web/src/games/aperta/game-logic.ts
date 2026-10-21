@@ -173,6 +173,8 @@ export interface AlbumEntry {
   discovered: boolean;
   /** Nível na vida atual (0 = ainda não pego nesta vida). */
   level: number;
+  /** É o favorito do sorteio (spec 5.4, colapso 2). */
+  favorite: boolean;
 }
 
 export interface AlbumView {
@@ -197,6 +199,7 @@ export function albumView(state: SaveState): AlbumView {
       rarity: artRarity(g.rarity),
       discovered,
       level: state.run.build[g.id] ?? 0,
+      favorite: state.favorite === g.id,
     };
   });
   return { entries, discovered: entries.filter((e) => e.discovered).length, total: entries.length };

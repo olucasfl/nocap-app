@@ -18,6 +18,8 @@ import {
   respecTree,
   resumeClock,
   selectGrimoire,
+  setFavorite,
+  setRegion,
   syncClock,
   tickObjects,
   type ObjectKind,
@@ -287,6 +289,31 @@ export function createGameController({ initial, store, slot, perf = () => perfor
     tutorialSkip() {
       if (state.tutorial === 'done') return;
       commit(finishTutorial(state));
+      saveNow();
+    },
+
+    /** Menu de regiões: rever o cenário de uma região já aberta (sem custo). */
+    setRegion(regionId: string) {
+      if (pausedAt !== null) return;
+      const next = setRegion(state, regionId);
+      if (next === state) return;
+      commit(next);
+      saveNow();
+    },
+
+    /** Marca (ou, com `null`, desmarca) o grimório favorito. */
+    setFavorite(id: string | null) {
+      if (pausedAt !== null) return;
+      const next = setFavorite(state, id);
+      if (next === state) return;
+      commit(next);
+      saveNow();
+    },
+
+    /** Dispensa a faixa "Novo no espaço" (a chave fica em `seenUnlocks`, no save). */
+    dismissNew(key: string) {
+      if (state.seenUnlocks.includes(key)) return;
+      commit({ ...state, seenUnlocks: [...state.seenUnlocks, key] });
       saveNow();
     },
 

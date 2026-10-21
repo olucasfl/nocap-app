@@ -5,7 +5,7 @@ import { BigButton } from './BigButton';
 import { loadSpaceFonts } from './fonts';
 import { GrimoireBook, type BookSize } from './GrimoireBook';
 import { RARITIES, RARITY_LABEL, type Rarity } from './rarity';
-import { REGION_IDS, REGIONS, RegionBackdrop, type RegionId } from './RegionBackdrop';
+import { REGION_ART, RegionBackdrop } from './regions';
 import { SpaceArtSprite } from './SpaceArtSprite';
 import { SPACE_OBJECT_COLOR, SPACE_OBJECT_LABEL, SPACE_OBJECTS, SpaceObject } from './SpaceObject';
 import './space-tokens.css';
@@ -41,7 +41,7 @@ const TOKENS = [
 
 /** Pré-visualização do kit de arte. Só existe em desenvolvimento (aperta-art.html), fora do app final. */
 export function ArtPreview() {
-  const [region, setRegion] = useState<RegionId>(0);
+  const [region, setRegion] = useState<string>(REGION_ART[0]!.id);
   const [pressed, setPressed] = useState(false);
   const [presses, setPresses] = useState(0);
 
@@ -153,7 +153,7 @@ export function ArtPreview() {
       <section className="ap-pv-sec">
         <h2>RegionBackdrop</h2>
         <div className="ap-pv-tabs" role="tablist" aria-label="Região">
-          {REGION_IDS.map((id) => (
+          {REGION_ART.map(({ id, name }, n) => (
             <button
               key={id}
               type="button"
@@ -162,7 +162,7 @@ export function ArtPreview() {
               className={region === id ? 'on' : undefined}
               onClick={() => setRegion(id)}
             >
-              {id}. {REGIONS[id].name}
+              {n}. {name}
             </button>
           ))}
         </div>

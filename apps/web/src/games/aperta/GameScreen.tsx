@@ -1,6 +1,5 @@
 import {
   GRIMOIRES,
-  REGIONS as REGION_DEFS,
   choiceLockRemaining,
   formatDecimal,
   formatNumber,
@@ -15,10 +14,13 @@ import { ChoiceModal } from './ChoiceModal';
 import { AchievementsPage } from './AchievementsPage';
 import { achievementCounts } from './achievements-logic';
 import { CollapseModal } from './CollapseModal';
+import { eventView, gaiaPreviews, missionView, newInSpaceView, regionMenuItems } from './content-logic';
 import { FieldObjects, SignalChip } from './FieldObjects';
 import { GamePage, PageIcon, PAGE_TITLE } from './GamePage';
 import { GrimoiresPage } from './GrimoiresPage';
-import { RegionBackdrop, type RegionId } from './RegionBackdrop';
+import { RegionBackdrop } from './regions';
+import { RegionMenu } from './RegionMenu';
+import { EventChip, MissionChip, NewInSpace } from './StatusStrips';
 import { SpaceArtSprite } from './SpaceArtSprite';
 import { SpaceObject, type SpaceObjectKind } from './SpaceObject';
 import { FirstGrimoireModal, TutorialOverlay } from './Tutorial';
@@ -46,6 +48,7 @@ import { tutorialPageAllowed, tutorialView } from './tutorial-logic';
 import { useGameSnapshot } from './useApertaGame';
 import './art.css';
 import './game.css';
+import './content.css';
 
 interface Props {
   controller: GameController;
@@ -85,12 +88,6 @@ const MAX_BURSTS = 5;
 const SPARKS = 8;
 const SPARK_ANGLES = Array.from({ length: LOW_END ? 4 : SPARKS }, (_, i) => (360 / (LOW_END ? 4 : SPARKS)) * i);
 
-/** A região em que o save está, no índice do kit de arte (0 a 5). */
-function regionIndex(regionId: string): RegionId {
-  const i = REGION_DEFS.findIndex((r) => r.id === regionId);
-  return Math.min(5, Math.max(0, i)) as RegionId;
-}
-
 function pageNotice(page: PageName, affordable: number, albumCount: number, collapses: number, achievements: { earned: number; total: number }): string {
   switch (page) {
     case 'upgrades':
@@ -119,12 +116,13 @@ export function GameScreen({ controller, onExit }: Props) {
   const [captures, setCaptures] = useState<Capture[]>([]);
   const [freshGrimoire, setFreshGrimoire] = useState(false);
   const [collapseOpen, setCollapseOpen] = useState(false);
+  const [regionsOpen, setRegionsOpen] = useState(false);
 
   const pending = state.run.pending;
   const tutorial = state.tutorial === 'done' ? null : state.tutorial;
   // Os handlers de teclado e toque leem isto sem refazer os listeners a cada render.
   const blocked = useRef(false);
-  blocked.current = page !== null || pending !== null || collapseOpen;
+  blocked.current = page !== null || pending !== null || collapseOpen || regionsOpen;
   const pageRef = useRef(page);
   pageRef.current = page;
   const tutorialRef = useRef(tutorial);
@@ -286,6 +284,10 @@ export function GameScreen({ controller, onExit }: Props) {
   const fragments = fragmentsAvailable(state);
   const albumCount = state.album.length;
   const starReady = tutorial === null && collapseView(state).ready;
+  const fresh = pending ? null : newInSpaceView(state);
+  const mission = missionView(state);
+  const liveEvent = eventView(state, now);
+  const regions = regionMenuItems(state);
 
   function exit() {
     void controller.save(true).then(onExit);
@@ -294,7 +296,7 @@ export function GameScreen({ controller, onExit }: Props) {
   return (
     <section className={`ap-game space-theme ap-screen-in${LOW_END ? ' is-lite' : ''}`} aria-label="Jogo">
       <SpaceArtSprite />
-      <RegionBackdrop region={regionIndex(state.regionId)} paused={paused} />
+      <RegionBackdrop region={state.regionId} paused={paused} />
 
       <header className="ap-hud">
         <div className="ap-panel ap-hudp">
@@ -305,11 +307,26 @@ export function GameScreen({ controller, onExit }: Props) {
             </b>
             <small>poeira</small>
           </p>
-          <p className="ap-hudrow ap-hudrow-2">
-            <i className="ap-ico ap-ico-swirl" aria-hidden="true" />
-            <b>{state.collapses}</b>
-            <small>{state.collapses === 1 ? 'colapso' : 'colapsos'}</small>
-          </p>
+          {regions.length > 1 && tutorial === null ? (
+            <button
+              type="button"
+              className="ap-hudrow ap-hudrow-2 ap-hudrow-btn"
+              aria-label={`${state.collapses} ${state.collapses === 1 ? 'colapso' : 'colapsos'}. Abrir o menu de regiões`}
+              onClick={() => setRegionsOpen(true)}
+            >
+              <i className="ap-ico ap-ico-swirl" aria-hidden="true" />
+              <b>{state.collapses}</b>
+              <small>
+                {state.collapses === 1 ? 'colapso' : 'colapsos'} <em>Regiões</em>
+              </small>
+            </button>
+          ) : (
+            <p className="ap-hudrow ap-hudrow-2">
+              <i className="ap-ico ap-ico-swirl" aria-hidden="true" />
+              <b>{state.collapses}</b>
+              <small>{state.collapses === 1 ? 'colapso' : 'colapsos'}</small>
+            </p>
+          )}
         </div>
         <button type="button" className="ap-hbtn ap-hbtn-ghost ap-hbtn-exit" onClick={exit}>
           Sair
@@ -331,6 +348,9 @@ export function GameScreen({ controller, onExit }: Props) {
       </header>
 
       <div className="ap-banners">
+        {fresh && <NewInSpace view={fresh} onDismiss={() => controller.dismissNew(fresh.key)} />}
+        {liveEvent && <EventChip view={liveEvent} />}
+        {mission && tutorial === null && <MissionChip view={mission} />}
         {signal && <SignalChip key={state.run.boostUntil} signal={signal} paused={paused} />}
         <div className="ap-pickup-slot" role="status" aria-live="polite">
           {notice && (
@@ -494,7 +514,7 @@ export function GameScreen({ controller, onExit }: Props) {
           {page === 'upgrades' && <UpgradesPage state={state} onBuy={controller.buy} />}
           {page === 'achievements' && <AchievementsPage state={state} />}
           {page === 'tree' && <TreePage state={state} onBuy={controller.buyTree} onRespec={controller.respec} />}
-          {page === 'grimoires' ? <GrimoiresPage state={state} onCollapse={() => setCollapseOpen(true)} /> : undefined}
+          {page === 'grimoires' ? <GrimoiresPage state={state} onCollapse={() => setCollapseOpen(true)} onFavorite={controller.setFavorite} /> : undefined}
         </GamePage>
       )}
 
@@ -508,6 +528,18 @@ export function GameScreen({ controller, onExit }: Props) {
           onSelect={controller.select}
           onConfirm={controller.choose}
           onReroll={controller.reroll}
+          gain={gaiaPreviews(state, pending.offers)}
+        />
+      )}
+
+      {regionsOpen && (
+        <RegionMenu
+          items={regions}
+          onPick={(id) => {
+            controller.setRegion(id);
+            setRegionsOpen(false);
+          }}
+          onClose={() => setRegionsOpen(false)}
         />
       )}
 

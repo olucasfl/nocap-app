@@ -15,10 +15,12 @@ import {
   GRIMOIRE_MAX_LEVEL,
   MAX_NUMBER,
   MAX_TOUCHES_PER_SEC,
+  MISSION_FRAGMENTS,
   atlasSlots,
   energyCap,
   upgradeCost,
 } from './economy';
+import { eventsOpen, mechanicOpen, missionById } from './content';
 import { SAVE_VERSION, effectiveStats, type SaveState } from './engine';
 import { TUTORIAL_DUST_ALLOWANCE } from './tutorial';
 
@@ -37,6 +39,7 @@ const MAX_LEVELS_PER_PICK = 2;
 const CLOCK_SLACK_SEC = 120;
 const TOLERANCE = 1.000001;
 
+const EVENT_IDS = ['meteor-shower', 'solar-storm'] as const;
 const OBJECT_KINDS = OBJECTS.map((o) => o.kind) as [ObjectKind, ...ObjectKind[]];
 
 // --- Formato ---
@@ -85,6 +88,13 @@ const runSchema = z.object({
     .nullable(),
   rngState: z.number().int().min(-2147483648).max(4294967295),
   lastGain: nonNeg,
+  // Campos da etapa 12: saves antigos não os têm, então entram com o valor de "nada ainda".
+  event: z.object({ id: z.enum(EVENT_IDS), until: stamp }).nullable().default(null),
+  nextEventAt: stamp.nullable().default(null),
+  mission: z
+    .object({ id: id, progress: int(1e6), done: z.boolean() })
+    .nullable()
+    .default(null),
 });
 
 const saveSchema = z.object({
@@ -103,6 +113,7 @@ const saveSchema = z.object({
   }),
   collapses: int(MAX_COLLAPSES),
   regionId: id,
+  favorite: id.nullable().default(null),
   seenUnlocks: z.array(id).max(MAX_SEEN_UNLOCKS),
   fragments: z.object({ earned: int(1e9), spent: int(1e9) }),
   tree: z.record(id, z.number().int().min(0).max(TREE_COSTS.length)),
@@ -188,6 +199,16 @@ export function validateSave(raw: unknown, opts: ValidateOptions = {}): SaveVali
     if (!def || def.unlockedAtCollapse > c) errors.push(`Objeto de colapso futuro: ${o.kind}`);
   }
   if (!noDupes(run.objects.map((o) => String(o.id)))) errors.push('Objetos repetidos');
+  if (run.event && !eventsOpen(c).includes(run.event.id)) errors.push(`Evento de colapso futuro: ${run.event.id}`);
+  if (run.mission) {
+    const def = missionById(run.mission.id);
+    if (!def || !mechanicOpen('missions', c)) errors.push(`Missão de colapso futuro: ${run.mission.id}`);
+    else if (run.mission.progress > def.target || run.mission.done !== run.mission.progress >= def.target) errors.push('Missão incoerente');
+  }
+  if (save.favorite !== null) {
+    const fav = grimoireById(save.favorite);
+    if (!fav || fav.unlockedAtCollapse > c || !mechanicOpen('favorite', c) || !save.album.includes(save.favorite)) errors.push('Favorito inválido');
+  }
   if (run.pending) {
     for (const oid of [...run.pending.offers, ...(run.pending.selected ? [run.pending.selected] : [])]) {
       const g = grimoireById(oid);
@@ -242,7 +263,7 @@ export function validateSave(raw: unknown, opts: ValidateOptions = {}): SaveVali
   const bonusCap = Math.max(0, Math.floor(Math.log10(Math.max(1, save.stats.dustTotal / 2e6))));
   for (let k = 1; k <= c; k++) {
     minEarned += 3 + k;
-    maxEarned += 3 + k + bonusCap;
+    maxEarned += 3 + k + bonusCap + (mechanicOpen('missions', k - 1) ? MISSION_FRAGMENTS : 0);
   }
   if (earned < minEarned || earned > maxEarned) errors.push('Fragmentos não batem com os colapsos');
   let treeCost = 0;

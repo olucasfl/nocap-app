@@ -296,11 +296,6 @@
   pointer-events: none;
   background: radial-gradient(120% 90% at 78% 6%, var(--ap-sky-a) 0%, var(--ap-sky-b) 40%, var(--ap-sky-c) 78%);
 }
-.ap-region--1 { --ap-sky-a: #3a2518; --ap-sky-b: #1c110c; --ap-sky-c: #070408; --ap-glow-a: #8a5a2a; --ap-glow-b: #5a3a22; }
-.ap-region--2 { --ap-sky-a: #3a2a4a; --ap-sky-b: #151633; --ap-sky-c: #05060f; --ap-glow-a: #a8683a; --ap-glow-b: #3a4a9a; }
-.ap-region--3 { --ap-sky-a: #1a4a72; --ap-sky-b: #0a1d3a; --ap-sky-c: #030812; --ap-glow-a: #2a7ab0; --ap-glow-b: #1a3a8a; }
-.ap-region--4 { --ap-sky-a: #34185e; --ap-sky-b: #160a30; --ap-sky-c: #040108; --ap-glow-a: #6a36b0; --ap-glow-b: #2a1a7a; }
-.ap-region--5 { --ap-sky-a: #5a3a30; --ap-sky-b: #1c1a3e; --ap-sky-c: #05060f; --ap-glow-a: #c8821c; --ap-glow-b: #3a4aa0; }
 .ap-region-glow {
   position: absolute;
   border-radius: 50%;

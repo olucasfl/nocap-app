@@ -16,13 +16,15 @@ interface Props {
   onConfirm: (id: string) => void;
   /** Betelgeuse e Sonda Voyager: troca uma carta por outra. */
   onReroll?: (id: string) => void;
+  /** Observatório Gaia: o efeito de cada carta com os números da vida (id -> texto). */
+  gain?: Record<string, string>;
 }
 
 /**
  * Escolha de 1 entre 3 grimórios (spec 038, 3.6 e 4.7), versão provisória da etapa 4: cartas
  * simples. Cartas bloqueadas por 1,6 s e escolha em dois passos (marcar, depois confirmar).
  */
-export function ChoiceModal({ pending, lockRemaining, build, paused, onSelect, onConfirm, onReroll }: Props) {
+export function ChoiceModal({ pending, lockRemaining, build, paused, onSelect, onConfirm, onReroll, gain }: Props) {
   const root = useRef<HTMLDivElement>(null);
   // Esc não fecha: a barra cheia obriga a escolher, e o toque acidental não pode escapar dela.
   useDialog(root, () => {});
@@ -94,6 +96,7 @@ export function ChoiceModal({ pending, lockRemaining, build, paused, onSelect, o
                 <span className="ap-pick-name">{def.name}</span>
                 <span className="ap-pick-rar">{RARITY_LABEL[rarity]}</span>
                 <span className="ap-pick-fx">{def.text}</span>
+                {gain?.[id] && <span className="ap-pick-gain">{gain[id]}</span>}
                 {have > 0 && <span className="ap-pick-lv">Você tem nível {have}: sobe para o {have + 1}</span>}
               </button>
               {onReroll && pending.rerollsLeft > 0 && (

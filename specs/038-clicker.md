@@ -567,12 +567,14 @@ Todo o trabalho está na branch **`develop`** (nada na `main`, por ordem do Luca
 - **Etapa 10 (Árvore e conquistas), pronta (21/10/2026, branch `claude/aperta-etapa-10-ff7591`):** `achievements.ts` no motor (31 conquistas da 5.3 em dados; `awardAchievements` ao fim de toque, escolha, captura, colapso, compra de nó e refazer), contadores novos em `stats` e `run.comboFullSince` (saves antigos entram zerados em `validateSave`; `mergeSaves` fica com o maior), `TreePage` (6 ramos, refazer em 2 passos devolvendo o gasto menos 20%), `AchievementsPage` e faixa dourada de conquista (some durante o tutorial). Decisão: a escondida é "Mudei de ideia" (refazer a árvore). "Horizonte de eventos" depende dos proibidos entrarem no sorteio (etapa 12). Conferida em 320, 390 e 1280 px (`e2e/aperta-tree.spec.ts`).
 - **Etapa 9 (colapso e Atlas), pronta (21/10/2026, branch `claude/aperta-etapa-9-04381f`):** `CollapseModal` (2 passos; com o Atlas cheio pede a página que sai), `AtlasSection` (espaços, bônus de conjunto e botão Colapsar, na página de Grimórios), botão "Estrela pronta: colapsar" sob o HUD (fora do tutorial), `controller.collapse` com salvamento na hora e faixa "Estrela colapsada". Motor: `collapse` deixa o tutorial como `'done'`; testes de espaços 5/10/25/50 e de `validateSave` com cadeia de 10 colapsos. Decisão: o botão desabilitado com "Falta N para a estrela colapsar" e a barra ficam na página de Grimórios (no HUD só aparece quando está pronta, para caber em 320 px). Conferida em 320, 390 e 1280 px (`e2e/aperta-collapse.spec.ts`).
 
+- **Etapa 12 (conteúdo dos colapsos 1 a 5), pronta (21/10/2026, branch `claude/aperta-etapa-12-cd2404`):** tabela de conteúdo por colapso em dados, regiões em dados com menu e troca ao colapsar, faixa "Novo no espaço", Favorito, Chuva de meteoros, Tempestade solar, Missões da estação (4 missões, +2 Fragmentos) e Gaia (a carta mostra o que muda nos números). `validateSave` rejeita conteúdo futuro e aceita saves antigos. Decisões: eventos a cada ~8 min (±25%) por 15 s, sorteados pelo tempo de jogo; o simulador não os dispara (a calibragem fica para a etapa 13). Playwright (320, 390, 768, 1280 px): `e2e/aperta-regions.spec.ts`. **Falta:** as conquistas dos colapsos 1 a 5 ("Primeira estrela colapsada", "Pegar um proibido", "Atlas com 4 páginas", "Saí do Sistema Solar"), junto da etapa 10.
+
 ### O que falta, na ordem
 1. **Etapa 2, só falta o banco:** (a) o Lucas decide quando **aplicar `0009_aperta.sql`** (`pnpm db:migrate`; só cria tabela); (b) depois, conferir as rotas contra o banco real (criar, gravar, 409 com dois aparelhos, apagar e restaurar) e o diálogo de conflito no navegador com duas abas. Pendência de desenho: aviso "aberto em outro aparelho" e histórico de 5 revisões não foram feitos (ver o quadro em 10.1).
 2. **Etapa 4: fechada** (ver acima).
 3. **Etapa 10: fechada** (ver acima).
-4. **Etapa 11:** ligar a arte e os sons ao jogo, transições, desempenho em celular fraco.
-5. **Etapas 12 e 13:** conteúdo dos colapsos 1 a 5 e QA responsivo com calibragem ao vivo (fecha a v1).
+4. **Etapa 11, o que falta:** arte e sons das telas de colapso, Atlas, Árvore, Conquistas e regiões (a revisão visual é do Lucas).
+5. **Etapa 13:** QA responsivo com calibragem ao vivo (fecha a v1).
 6. **Depois da v1:** etapas 14 a 16.
 
 ### Como retomar
