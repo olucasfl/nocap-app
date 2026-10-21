@@ -2,7 +2,9 @@ import {
   GRIMOIRES,
   advanceTutorial,
   buyUpgrade,
+  canCollapse,
   captureObject,
+  collapse,
   chooseGrimoire,
   finishTutorial,
   grantTutorialDust,
@@ -31,7 +33,8 @@ export type GameEvent =
   | { type: 'press'; id: number; gain: number; combo: number }
   | { type: 'grimoire'; id: string; name: string; level: number }
   | { type: 'capture'; objectId: number; kind: ObjectKind; preview: ObjectPreview }
-  | { type: 'choice-open' };
+  | { type: 'choice-open' }
+  | { type: 'collapse'; pageId: string; pageName: string; fragments: number };
 
 export interface GameSnapshot {
   state: SaveState;
@@ -191,6 +194,22 @@ export function createGameController({ initial, store, slot, perf = () => perfor
       if (next === state) return false;
       lastBuyAt = t;
       commit(advanceTutorial(next, 4, 5));
+      saveNow();
+      return true;
+    },
+
+    /**
+     * Colapsa a estrela guardando `pageId` no Atlas (spec 8.1). Com o Atlas cheio, `replaceIndex` diz qual
+     * página sai. O motor confere tudo; aqui só o salvamento na hora, porque a vida inteira recomeça.
+     */
+    collapse(pageId: string, replaceIndex?: number): boolean {
+      if (pausedAt !== null || state.tutorial !== 'done' || !canCollapse(state)) return false;
+      const before = state;
+      const next = collapse(before, pageId, replaceIndex);
+      if (next === before) return false;
+      commit(next);
+      const def = GRIMOIRES.find((g) => g.id === pageId);
+      emit({ type: 'collapse', pageId, pageName: def?.name ?? pageId, fragments: next.fragments.earned - before.fragments.earned });
       saveNow();
       return true;
     },

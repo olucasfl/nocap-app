@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { GRIMOIRES, UPGRADES } from './catalog';
+import { atlasSlots, dustGoal, minPicks } from './economy';
 import {
   buyUpgrade,
   canCollapse,
@@ -72,6 +73,45 @@ describe('validateSave: formato', () => {
     expect(s.collapses).toBe(1);
     const r = validateSave(s);
     expect(r.ok, r.ok ? '' : r.errors.join(';')).toBe(true);
+  });
+
+  it('uma cadeia de 10 colapsos com troca de página no Atlas cheio passa (espaços 5 e 10)', () => {
+    const pages = ['moon', 'mars', 'venus', 'mercury', 'ceres', 'vesta', 'phobos', 'io', 'europa', 'titan'];
+    let s: SaveState = { ...newSave('chain'), tutorial: 'done' };
+    for (let k = 1; k <= 10; k++) {
+      const goal = dustGoal(k);
+      const id = pages[k - 1] as string;
+      s = {
+        ...s,
+        run: { ...s.run, picks: minPicks(k), dust: goal, dustLife: goal, build: { [id]: 1 } },
+        album: [...new Set([...s.album, id])],
+        stats: { ...s.stats, picks: s.stats.picks + minPicks(k), dustTotal: s.stats.dustTotal + goal },
+      };
+      // Com o Atlas cheio o jogador escolhe qual página sai (aqui, sempre a primeira).
+      s = collapse(s, id, 0);
+      expect(s.collapses).toBe(k);
+      expect(s.atlas.slots).toBe(atlasSlots(k));
+      const r = validateSave(s);
+      expect(r.ok, r.ok ? '' : `colapso ${k}: ${r.errors.join(';')}`).toBe(true);
+    }
+    expect(s.atlas.slots).toBe(5);
+  });
+
+  it('o servidor recusa Atlas com mais páginas que espaços e espaços que não batem com os colapsos', () => {
+    const fresh = newSave('a');
+    const ok = {
+      ...fresh,
+      tutorial: 'done' as const,
+      collapses: 1,
+      fragments: { earned: 4, spent: 0 },
+      stats: { ...fresh.stats, picks: 20, dustTotal: 6e6 },
+      album: ['moon', 'mars'],
+      atlas: { slots: 3, pages: [{ grimoireId: 'moon', level: 1 }] },
+    };
+    const first = validateSave(ok);
+    expect(first.ok, first.ok ? '' : first.errors.join(';')).toBe(true);
+    expect(rejects({ ...ok, atlas: { slots: 4, pages: ok.atlas.pages } })).toContain('Espaços do Atlas não batem com os colapsos');
+    expect(rejects({ ...ok, atlas: { slots: 3, pages: [{ grimoireId: 'moon', level: 1 }, { grimoireId: 'mars', level: 1 }] } })).toContain('Páginas no Atlas sem colapso');
   });
 
   it('recusa lixo, campo faltando, tipo errado e versão do futuro', () => {

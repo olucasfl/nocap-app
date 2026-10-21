@@ -983,6 +983,8 @@ export function collapse(state: SaveState, pageId: string, replaceIndex?: number
     atlas: { slots, pages },
     fragments: { earned: state.fragments.earned + gained, spent: state.fragments.spent },
     run: freshRun(state.run.rngState),
+    // Cada colapso começa uma vida nova com o tutorial concluído (spec 8.1).
+    tutorial: 'done',
   };
   // A poeira inicial (Titã) depende do Atlas novo, por isso a vida nova é montada depois dele.
   const startDust = effectiveStats(base).startDust;

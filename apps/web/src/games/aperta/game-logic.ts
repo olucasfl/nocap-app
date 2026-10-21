@@ -1,5 +1,12 @@
 import {
+  ATLAS_SLOT_COLLAPSES,
   COMBO_BONUS_PER_POINT,
+  FAMILIES,
+  FAMILY_NAMES,
+  GRIMOIRES,
+  SET_BONUS_THRESHOLDS,
+  atlasSlots,
+  collapseProgress,
   formatDecimal,
   formatNumber,
   type ObjectKind,
@@ -7,7 +14,9 @@ import {
   UPGRADES,
   currentEnergyCap,
   effectiveStats,
+  fragmentsFor,
   nextUpgradeCost,
+  setBonusTier,
   unlockedContent,
   type Family,
   type SaveState,
@@ -273,4 +282,155 @@ export interface SignalView {
 export function signalView(state: SaveState, now: number): SignalView | null {
   const { boostUntil, boostMult } = state.run;
   return boostMult > 1 && now < boostUntil ? { mult: boostMult, remaining: boostUntil - now } : null;
+}
+
+// --- Colapso e Atlas Eterno (spec 038, seções 8.1 e 8.2) ---
+
+/** Texto do bônus de conjunto de cada família e nível (0, 1, 2 = com 2, 3 e 4+ páginas). */
+const SET_BONUS_TEXT: Record<Family, [string, string, string]> = {
+  planets: ['+5% de poeira por toque', '+12% de poeira por toque', '+25% de poeira por toque'],
+  moons: ['+5% de energia por toque', '+12% de energia por toque', '+25% de energia por toque'],
+  'small-bodies': ['+10% de duração dos objetos', '+20% de duração dos objetos', '+35% de duração dos objetos'],
+  stars: ['+1 de combo máximo', '+2 de combo máximo', '+3 de combo máximo'],
+  nebulae: ['-3% no custo das melhorias', '-6% no custo das melhorias', '-10% no custo das melhorias'],
+  'black-holes': [
+    '+20% de poder dos proibidos e 25% mais baratos',
+    '+40% de poder dos proibidos e 50% mais baratos',
+    '+80% de poder dos proibidos e 75% mais baratos',
+  ],
+};
+
+export interface AtlasPageView {
+  id: string;
+  name: string;
+  family: Family;
+  familyName: string;
+  level: number;
+  astro: AstroId;
+}
+
+export interface SetBonusView {
+  family: Family;
+  familyName: string;
+  count: number;
+  /** -1 = sem bônus ainda. */
+  tier: number;
+  /** Bônus ativo, ou `null`. */
+  active: string | null;
+  /** Quantas páginas faltam para o próximo nível, ou `null` no máximo. */
+  missing: number | null;
+  next: string | null;
+}
+
+export interface AtlasView {
+  slots: number;
+  pages: AtlasPageView[];
+  /** Só as famílias com páginas, mais as que já têm bônus. */
+  bonuses: SetBonusView[];
+  /** Próximo colapso que dá um espaço novo, ou `null` no máximo. */
+  nextSlotAt: number | null;
+}
+
+/** O Atlas como a página mostra: espaços, família de cada página e bônus de conjunto (ativos e a conquistar). */
+export function atlasView(state: SaveState): AtlasView {
+  const pages: AtlasPageView[] = [];
+  for (const p of state.atlas.pages) {
+    const def = GRIMOIRES.find((g) => g.id === p.grimoireId);
+    if (!def) continue;
+    pages.push({
+      id: def.id,
+      name: def.name,
+      family: def.family,
+      familyName: FAMILY_NAMES[def.family],
+      level: p.level,
+      astro: astroFor(def.id, def.family),
+    });
+  }
+  const bonuses = FAMILIES.map((family): SetBonusView => {
+    const count = pages.filter((p) => p.family === family).length;
+    const tier = setBonusTier(count);
+    const nextIdx = tier + 1;
+    const nextNeed = SET_BONUS_THRESHOLDS[nextIdx];
+    return {
+      family,
+      familyName: FAMILY_NAMES[family],
+      count,
+      tier,
+      active: tier >= 0 ? SET_BONUS_TEXT[family][tier]! : null,
+      missing: nextNeed === undefined ? null : nextNeed - count,
+      next: nextNeed === undefined ? null : SET_BONUS_TEXT[family][nextIdx]!,
+    };
+  });
+  const nextSlotAt = ATLAS_SLOT_COLLAPSES.find((c) => c > state.collapses) ?? null;
+  return { slots: state.atlas.slots, pages, bonuses, nextSlotAt };
+}
+
+export interface CollapseView {
+  ready: boolean;
+  /** Fração da meta de poeira, 0 a 1. */
+  dustFill: number;
+  dustMissing: number;
+  picksMissing: number;
+  /** "Falta N de poeira", "Faltam N escolhas" ou os dois, para o botão desabilitado. */
+  hint: string;
+  /** Fragmentos que o colapso dá agora. */
+  fragments: number;
+  /** Escolha de grimório aberta: o colapso espera ela. */
+  waitingChoice: boolean;
+}
+
+export function collapseView(state: SaveState): CollapseView {
+  const p = collapseProgress(state);
+  const dustMissing = Math.max(0, p.dustGoal - p.dust);
+  const picksMissing = Math.max(0, p.minPicks - p.picks);
+  const parts: string[] = [];
+  if (dustMissing > 0) parts.push(`${formatNumber(dustMissing)} de poeira`);
+  if (picksMissing > 0) parts.push(`${picksMissing} ${picksMissing === 1 ? 'escolha' : 'escolhas'}`);
+  const waitingChoice = state.run.pending !== null && dustMissing === 0 && picksMissing === 0;
+  return {
+    ready: p.ready,
+    dustFill: p.dustGoal > 0 ? Math.min(1, p.dust / p.dustGoal) : 0,
+    dustMissing,
+    picksMissing,
+    hint: waitingChoice ? 'Termine a escolha de grimório' : parts.length ? `Falta ${parts.join(' e ')} para a estrela colapsar` : '',
+    fragments: fragmentsFor(state.collapses + 1, state.run.dustLife),
+    waitingChoice,
+  };
+}
+
+export interface CollapseCandidate {
+  id: string;
+  name: string;
+  family: Family;
+  familyName: string;
+  level: number;
+  astro: AstroId;
+  /** Já tem página no Atlas: a página só sobe de nível, sem gastar espaço. */
+  inAtlas: boolean;
+}
+
+/** Os grimórios da vida que podem virar página, do maior nível para o menor. */
+export function collapseCandidates(state: SaveState): CollapseCandidate[] {
+  return Object.entries(state.run.build)
+    .map(([id, level]): CollapseCandidate | null => {
+      const def = GRIMOIRES.find((g) => g.id === id);
+      if (!def) return null;
+      return {
+        id,
+        name: def.name,
+        family: def.family,
+        familyName: FAMILY_NAMES[def.family],
+        level,
+        astro: astroFor(id, def.family),
+        inAtlas: state.atlas.pages.some((p) => p.grimoireId === id),
+      };
+    })
+    .filter((c): c is CollapseCandidate => c !== null)
+    .sort((a, b) => b.level - a.level || a.name.localeCompare(b.name, 'pt-BR'));
+}
+
+/** O Atlas está cheio e a página escolhida é nova: a pessoa precisa dizer qual página sai. */
+export function needsReplacement(state: SaveState, pageId: string | null): boolean {
+  if (pageId === null) return false;
+  return !state.atlas.pages.some((p) => p.grimoireId === pageId) && state.atlas.pages.length >= atlasSlots(state.collapses + 1);
 }

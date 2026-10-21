@@ -11,6 +11,7 @@ import { apertaSfx, apertaVibrate } from '@/lib/aperta-audio';
 import { AstroMedal } from './AstroMedal';
 import { BigButton } from './BigButton';
 import { ChoiceModal } from './ChoiceModal';
+import { CollapseModal } from './CollapseModal';
 import { FieldObjects, SignalChip } from './FieldObjects';
 import { GamePage, PageIcon, PAGE_TITLE } from './GamePage';
 import { GrimoiresPage } from './GrimoiresPage';
@@ -23,6 +24,7 @@ import type { GameController, GameEvent } from './game-controller';
 import {
   NOTICE_MS,
   affordableCount,
+  collapseView,
   astroFor,
   comboView,
   createHoldLimiter,
@@ -112,12 +114,13 @@ export function GameScreen({ controller, onExit }: Props) {
   const [notice, setNotice] = useState<Notice | null>(null);
   const [captures, setCaptures] = useState<Capture[]>([]);
   const [freshGrimoire, setFreshGrimoire] = useState(false);
+  const [collapseOpen, setCollapseOpen] = useState(false);
 
   const pending = state.run.pending;
   const tutorial = state.tutorial === 'done' ? null : state.tutorial;
   // Os handlers de teclado e toque leem isto sem refazer os listeners a cada render.
   const blocked = useRef(false);
-  blocked.current = page !== null || pending !== null;
+  blocked.current = page !== null || pending !== null || collapseOpen;
   const pageRef = useRef(page);
   pageRef.current = page;
   const tutorialRef = useRef(tutorial);
@@ -162,6 +165,18 @@ export function GameScreen({ controller, onExit }: Props) {
         if (noticeTimer.current !== null) window.clearTimeout(noticeTimer.current);
         setNotice({ id: Date.now(), title: capturedTitle(e.kind), text, object: art });
         noticeTimer.current = later(() => setNotice(null), NOTICE_MS);
+      } else if (e.type === 'collapse') {
+        apertaSfx.thunk();
+        setCollapseOpen(false);
+        setPage(null);
+        if (noticeTimer.current !== null) window.clearTimeout(noticeTimer.current);
+        setNotice({
+          id: Date.now(),
+          title: 'Estrela colapsada',
+          text: `Página guardada no Atlas: ${e.pageName}. +${e.fragments} Fragmentos`,
+          astro: astroFor(e.pageId, GRIMOIRES.find((g) => g.id === e.pageId)?.family ?? 'planets'),
+        });
+        noticeTimer.current = later(() => setNotice(null), NOTICE_MS * 2);
       } else {
         apertaSfx.thunk();
         setFreshGrimoire(true);
@@ -246,6 +261,7 @@ export function GameScreen({ controller, onExit }: Props) {
   const signal = signalView(state, now);
   const fragments = fragmentsAvailable(state);
   const albumCount = state.album.length;
+  const starReady = tutorial === null && collapseView(state).ready;
 
   function exit() {
     void controller.save(true).then(onExit);
@@ -305,6 +321,11 @@ export function GameScreen({ controller, onExit }: Props) {
             </div>
           )}
         </div>
+        {starReady && !pending && (
+          <button type="button" className="ap-hbtn ap-hbtn-go ap-ready" onClick={() => setCollapseOpen(true)}>
+            Estrela pronta: colapsar
+          </button>
+        )}
         {saveFailures >= 3 && (
           <div className="ap-savewarn" role="alert">
             <span>Não deu para salvar seu progresso.</span>
@@ -434,7 +455,7 @@ export function GameScreen({ controller, onExit }: Props) {
           onClose={() => setPage(null)}
         >
           {page === 'upgrades' && <UpgradesPage state={state} onBuy={controller.buy} />}
-          {page === 'grimoires' ? <GrimoiresPage state={state} /> : undefined}
+          {page === 'grimoires' ? <GrimoiresPage state={state} onCollapse={() => setCollapseOpen(true)} /> : undefined}
         </GamePage>
       )}
 
@@ -449,6 +470,10 @@ export function GameScreen({ controller, onExit }: Props) {
           onConfirm={controller.choose}
           onReroll={controller.reroll}
         />
+      )}
+
+      {collapseOpen && starReady && !pending && (
+        <CollapseModal state={state} onCancel={() => setCollapseOpen(false)} onConfirm={controller.collapse} />
       )}
 
       {tutorial === 2 && <FirstGrimoireModal onDone={() => controller.tutorialStep(2, 3)} />}

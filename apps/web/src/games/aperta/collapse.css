@@ -1,0 +1,197 @@
+/* Colapso e Atlas Eterno (spec 038, etapa 9). Só tokens --space-*; anima só transform e opacity. */
+.ap-collapse {
+  width: min(560px, 100%);
+  overflow-y: auto;
+}
+.ap-collapse-step {
+  font: 600 12px var(--space-font-display);
+  color: var(--space-muted);
+  text-transform: uppercase;
+}
+.ap-cc-list,
+.ap-cc-pages {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-y: auto;
+  max-height: 34vh;
+}
+.ap-cc-pages {
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+}
+.ap-cc,
+.ap-cc-page {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 52px;
+  padding: 8px 10px;
+  border: 3px solid var(--space-line);
+  border-radius: 12px;
+  background: rgba(15, 24, 56, 0.7);
+  color: var(--space-text);
+  text-align: left;
+}
+.ap-cc-page {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+.ap-cc.is-selected,
+.ap-cc-page.is-selected {
+  border-color: var(--space-gold);
+  background: rgba(60, 50, 20, 0.6);
+}
+.ap-cc-medal {
+  flex: none;
+  width: 40px;
+  height: 40px;
+}
+.ap-cc-txt {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.ap-cc-txt b,
+.ap-cc-page b {
+  font: 700 14px var(--space-font-display);
+  overflow-wrap: anywhere;
+}
+.ap-cc-txt small,
+.ap-cc-page small {
+  font: 400 12px var(--space-font-body);
+  color: var(--space-muted);
+}
+.ap-cc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.ap-cc-actions .ap-hbtn:disabled {
+  filter: grayscale(1) brightness(0.6);
+}
+.ap-cc-gain {
+  font: 700 28px var(--space-font-display);
+  color: var(--space-gold);
+}
+.ap-cc-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.ap-cc-cols h3 {
+  margin-bottom: 4px;
+  font: 700 15px var(--space-font-display);
+  text-transform: uppercase;
+}
+.ap-cc-cols ul {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-left: 16px;
+  font: 400 13px/1.3 var(--space-font-body);
+}
+.ap-hbtn.ap-hbtn-go {
+  background: linear-gradient(180deg, #ffd24a, #e8a410);
+  color: var(--space-ink);
+  text-shadow: none;
+  box-shadow:
+    0 5px 0 #9a6a05,
+    inset 0 2px 0 rgba(255, 255, 255, 0.5);
+}
+.ap-hbtn.ap-hbtn-go:disabled {
+  filter: grayscale(1) brightness(0.55);
+}
+.ap-atlas-medal {
+  width: 34px;
+  height: 34px;
+}
+.ap-atlas-sub {
+  margin-top: 6px;
+  font: 700 14px var(--space-font-display);
+  text-transform: uppercase;
+}
+.ap-sets {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ap-sets li {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 2px solid var(--space-line);
+  border-radius: 10px;
+  font: 400 12px/1.3 var(--space-font-body);
+  color: var(--space-muted);
+  overflow-wrap: anywhere;
+}
+.ap-sets li b {
+  font: 700 13px var(--space-font-display);
+  color: var(--space-text);
+}
+.ap-sets li.is-on {
+  border-color: var(--space-gold);
+  color: var(--space-text);
+}
+.ap-sets li.is-off {
+  opacity: 0.75;
+}
+.ap-collapse-box {
+  display: grid;
+  gap: 8px;
+}
+.ap-cbar {
+  height: 14px;
+  overflow: hidden;
+  border: 3px solid var(--space-ink);
+  border-radius: 8px;
+  background: rgba(3, 5, 14, 0.7);
+}
+.ap-cbar i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--space-gold);
+  transform-origin: left center;
+}
+/* Estrela pronta: botão sob o HUD, com um anel que pulsa só em opacity. */
+.ap-ready {
+  pointer-events: auto;
+  position: relative;
+}
+.ap-ready::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border: 3px solid var(--space-gold);
+  border-radius: 16px;
+  opacity: 0;
+  animation: ap-ready-pulse 1.8s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes ap-ready-pulse {
+  50% {
+    opacity: 0.85;
+  }
+}
+@media (max-width: 480px) {
+  .ap-cc-cols {
+    grid-template-columns: 1fr;
+  }
+  .ap-cc-gain {
+    font-size: 24px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ap-ready::after {
+    animation: none;
+    opacity: 0.85;
+  }
+}

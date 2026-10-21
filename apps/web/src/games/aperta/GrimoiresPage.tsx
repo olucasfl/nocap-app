@@ -1,12 +1,12 @@
-import { FAMILY_NAMES, GRIMOIRES, type SaveState } from '@nocap/games';
+import type { SaveState } from '@nocap/games';
+import { AtlasSection } from './AtlasSection';
 import { GrimoireBook } from './GrimoireBook';
 import { albumView, astroFor } from './game-logic';
 import { RARITY_LABEL } from './rarity';
 
 /** Página de Grimórios (spec 038, 3.5): álbum com os escondidos trancados e o Atlas Eterno. */
-export function GrimoiresPage({ state }: { state: SaveState }) {
+export function GrimoiresPage({ state, onCollapse = () => {} }: { state: SaveState; onCollapse?: () => void }) {
   const album = albumView(state);
-  const familyOf = (id: string) => GRIMOIRES.find((g) => g.id === id);
   return (
     <div className="ap-album-wrap">
       <p className="ap-album-count">
@@ -34,32 +34,7 @@ export function GrimoiresPage({ state }: { state: SaveState }) {
         ))}
       </ul>
 
-      <section className="ap-atlas" aria-labelledby="ap-atlas-title">
-        <h3 id="ap-atlas-title">Atlas Eterno</h3>
-        <p className="ap-sub">
-          {state.atlas.pages.length} de {state.atlas.slots} espaços de página em uso. As páginas ficam entre os colapsos.
-        </p>
-        <ul className="ap-atlas-pages">
-          {Array.from({ length: state.atlas.slots }, (_, i) => {
-            const page = state.atlas.pages[i];
-            const def = page ? familyOf(page.grimoireId) : undefined;
-            return (
-              <li key={i} className={page ? 'is-full' : 'is-empty'}>
-                {page && def ? (
-                  <>
-                    <b>{def.name}</b>
-                    <small>
-                      {FAMILY_NAMES[def.family]} · nível {page.level}
-                    </small>
-                  </>
-                ) : (
-                  <small>Espaço livre</small>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      </section>
+      <AtlasSection state={state} onCollapse={onCollapse} />
     </div>
   );
 }
