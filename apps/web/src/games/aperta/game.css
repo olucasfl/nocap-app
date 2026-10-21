@@ -1,0 +1,850 @@
+/*
+ * Tela de jogo do Aperta! (spec 038, 3.4 e 3.5; layout do mockup aprovado). Tokens --space-* de
+ * space-tokens.css. Só transform e opacity animam: sombra e brilho viram elementos irmãos.
+ */
+.ap-game {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  font-family: var(--space-font-body);
+  color: var(--space-text);
+}
+.ap-game p,
+.ap-game h2 {
+  margin: 0;
+}
+.ap-game button {
+  font-family: var(--space-font-display);
+  color: inherit;
+}
+
+/* ---------- HUD ---------- */
+.ap-hud {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  top: 14px;
+  z-index: 6;
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: start;
+  gap: 8px;
+}
+.ap-hud .ap-hudp {
+  grid-column: 1;
+}
+.ap-hbtn-exit {
+  grid-column: 3;
+}
+.ap-hbtn-tree {
+  grid-column: 4;
+}
+.ap-panel {
+  background: linear-gradient(180deg, rgba(26, 38, 88, 0.92), rgba(12, 18, 48, 0.94));
+  border: 3px solid var(--space-line);
+  border-radius: 14px;
+  box-shadow:
+    0 0 0 3px var(--space-ink),
+    inset 0 2px 0 rgba(255, 255, 255, 0.12);
+}
+.ap-hudp {
+  display: grid;
+  gap: 4px;
+  min-width: 170px;
+  padding: 8px 14px;
+}
+.ap-hudrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ap-hudrow b {
+  display: inline-block;
+  white-space: nowrap;
+  font: 700 22px var(--space-font-display);
+  color: var(--space-gold);
+}
+.ap-hudrow-2 b {
+  font-size: 18px;
+  color: var(--space-violet);
+}
+.ap-hudrow small {
+  font: 600 10px var(--space-font-display);
+  color: var(--space-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+.ap-ico {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 3px solid var(--space-ink);
+}
+.ap-ico-coin {
+  background: radial-gradient(circle at 35% 30%, #fff1b8, #e0a21a);
+}
+.ap-ico-swirl {
+  background: radial-gradient(circle, #0a0a12 0 28%, #7b5cff 30% 60%, #0a0a12 62%);
+}
+.ap-bump {
+  animation: apg-bump 0.25s ease-out;
+}
+.ap-hbtn {
+  position: relative;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 3px solid var(--space-ink);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #58b4ff, #2b86d8);
+  color: #fff;
+  font: 700 13px var(--space-font-display);
+  text-transform: uppercase;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+  box-shadow:
+    0 5px 0 var(--space-blue-dark),
+    inset 0 2px 0 rgba(255, 255, 255, 0.4);
+}
+.ap-hbtn:active {
+  transform: translateY(3px);
+}
+.ap-hbtn-ghost {
+  background: linear-gradient(180deg, #2a3a7c, #1c2958);
+  box-shadow:
+    0 5px 0 #0c1233,
+    inset 0 2px 0 rgba(255, 255, 255, 0.18);
+}
+.ap-hbtn.is-dim {
+  filter: brightness(0.6);
+}
+.ap-badge {
+  position: absolute;
+  right: -10px;
+  top: -12px;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 6px;
+  border: 3px solid var(--space-ink);
+  border-radius: 13px;
+  background: var(--space-red);
+  color: #fff;
+  font: 700 13px/20px var(--space-font-display);
+  text-align: center;
+  text-shadow: none;
+  pointer-events: none;
+  animation: apg-badge 1.6s ease-in-out infinite;
+}
+
+/* ---------- avisos ---------- */
+.ap-banners {
+  position: absolute;
+  left: 50%;
+  top: 76px;
+  z-index: 25;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  width: min(94vw, 520px);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.ap-pickup {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 100%;
+  padding: 8px 18px 8px 10px;
+  border: 3px solid var(--space-cyan);
+  border-radius: 16px;
+  background: rgba(8, 12, 30, 0.95);
+  box-shadow:
+    0 0 0 3px var(--space-ink),
+    0 0 26px rgba(92, 225, 255, 0.5);
+  animation: apg-slide 0.35s cubic-bezier(0.2, 1.3, 0.4, 1) both;
+}
+.ap-pickup-medal {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  --ap-trim: var(--space-cyan);
+}
+.ap-pickup b {
+  display: block;
+  font: 700 15px var(--space-font-display);
+  color: var(--space-cyan);
+  text-transform: uppercase;
+}
+.ap-pickup small {
+  font: 500 13px var(--space-font-body);
+  color: var(--space-text);
+}
+.ap-savewarn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: 8px 12px;
+  border: 3px solid var(--space-red);
+  border-radius: 12px;
+  background: rgba(40, 8, 8, 0.95);
+  font: 500 14px var(--space-font-body);
+  pointer-events: auto;
+}
+
+/* ---------- campo e botão ---------- */
+.ap-field {
+  position: absolute;
+  left: 0;
+  right: 76px;
+  top: 92px;
+  bottom: 100px;
+  display: grid;
+  place-items: center;
+  container-type: size;
+}
+.ap-stage {
+  position: relative;
+  width: min(54vmin, 330px);
+  width: min(330px, 80cqmin);
+  aspect-ratio: 1;
+}
+.ap-fx {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.ap-burst {
+  position: absolute;
+  inset: 0;
+}
+.ap-ring {
+  position: absolute;
+  inset: 12%;
+  border-radius: 50%;
+  border: 4px solid var(--space-cyan);
+  opacity: 0;
+  animation: apg-ring 0.6s ease-out;
+}
+.ap-spark {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: 9px;
+  height: 9px;
+  margin: -4px;
+  border-radius: 50%;
+  background: var(--space-gold);
+  opacity: 0;
+  animation: apg-spark 0.55s ease-out;
+}
+.ap-gain {
+  position: absolute;
+  top: -4%;
+  left: 50%;
+  font: 700 32px var(--space-font-display);
+  color: var(--space-gold);
+  text-shadow: 0 3px 0 var(--space-ink);
+  white-space: nowrap;
+  opacity: 0;
+  animation: apg-gain 0.8s ease-out;
+}
+.ap-combo {
+  position: absolute;
+  left: 50%;
+  bottom: -9%;
+  transform: translateX(-50%);
+  font: 700 22px var(--space-font-display);
+  color: #fff;
+  text-shadow: 0 3px 0 var(--space-ink);
+  white-space: nowrap;
+}
+.ap-combo small {
+  margin-right: 6px;
+  font-size: 13px;
+  color: var(--space-cyan);
+  text-transform: uppercase;
+}
+
+/* ---------- energia ---------- */
+.ap-energy {
+  position: absolute;
+  right: 14px;
+  top: 92px;
+  bottom: 100px;
+  z-index: 5;
+  width: 48px;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  justify-items: center;
+  gap: 6px;
+}
+.ap-energy small {
+  font: 600 10px var(--space-font-display);
+  color: var(--space-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+.ap-energy b {
+  font: 700 13px var(--space-font-display);
+  white-space: nowrap;
+}
+.ap-energy b.is-hot {
+  color: var(--space-gold);
+}
+.ap-evwrap {
+  position: relative;
+  width: 32px;
+  min-height: 0;
+}
+.ap-evbar {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border: 4px solid var(--space-ink);
+  border-radius: 10px;
+  background: #0a1030;
+  box-shadow: 0 0 0 3px var(--space-line);
+}
+.ap-evfill {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(0deg, #1f78d6, var(--space-cyan));
+  transform-origin: bottom;
+  will-change: transform;
+}
+/* Dez gomos: a barra lê "quantos faltam" sem número. */
+.ap-evsegs {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0,
+    transparent calc(10% - 3px),
+    rgba(0, 0, 0, 0.45) calc(10% - 3px),
+    rgba(0, 0, 0, 0.45) 10%
+  );
+}
+/* O brilho é um irmão que pulsa em opacity; a sombra dele nunca muda. */
+.ap-evglow {
+  position: absolute;
+  inset: -3px;
+  border-radius: 12px;
+  box-shadow:
+    0 0 0 3px var(--space-gold),
+    0 0 22px var(--space-gold);
+  pointer-events: none;
+  animation: apg-glow 1.1s ease-in-out infinite;
+}
+
+/* ---------- dock ---------- */
+.ap-dock {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 14px;
+  z-index: 12;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ap-dockb {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 66px;
+  min-width: 66px;
+  padding: 0 14px;
+  border: 3px solid var(--space-ink);
+  border-radius: 14px;
+  background: linear-gradient(180deg, #2c3d86, #1a2658);
+  color: #fff;
+  font: 700 16px var(--space-font-display);
+  text-transform: uppercase;
+  box-shadow:
+    0 6px 0 #0a1030,
+    inset 0 2px 0 rgba(255, 255, 255, 0.2);
+}
+.ap-dockb.on,
+.ap-dockb-big {
+  background: linear-gradient(180deg, #58b4ff, #2b86d8);
+}
+.ap-dockb-big {
+  margin-left: auto;
+  min-width: 200px;
+  font-size: 19px;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+  box-shadow:
+    0 6px 0 var(--space-blue-dark),
+    inset 0 2px 0 rgba(255, 255, 255, 0.4);
+}
+.ap-dockb:active {
+  transform: translateY(4px);
+}
+.ap-dock-i,
+.ap-shead-icon svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ap-dock-i {
+  width: 30px;
+  height: 30px;
+}
+
+/* ---------- páginas ---------- */
+.ap-sheetwrap {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  top: 92px;
+  bottom: 98px;
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+}
+.ap-sheet {
+  display: flex;
+  flex-direction: column;
+  width: min(900px, 100%);
+  height: 100%;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(14, 22, 56, 0.98), rgba(7, 11, 30, 0.98));
+  border: 3px solid var(--space-line);
+  border-radius: 18px;
+  box-shadow:
+    0 0 0 3px var(--space-ink),
+    0 20px 50px rgba(0, 0, 0, 0.5);
+  animation: apg-up 0.28s ease-out both;
+}
+.ap-shead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 3px solid var(--space-line);
+  background: linear-gradient(180deg, #1e2d6a, #16214d);
+}
+.ap-shead-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--space-ink);
+  border-radius: 10px;
+  background: var(--space-blue);
+}
+.ap-shead-icon svg {
+  width: 22px;
+  height: 22px;
+  stroke: #fff;
+  stroke-width: 2.6;
+}
+.ap-shead h2 {
+  margin-right: auto;
+  font: 700 21px var(--space-font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.ap-x {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border: 3px solid var(--space-ink);
+  border-radius: 10px;
+  background: linear-gradient(180deg, #ff6a5c, #d92a20);
+  color: #fff;
+  font: 700 18px/1 var(--space-font-display);
+  box-shadow: 0 3px 0 #8e1514;
+}
+.ap-sbody {
+  flex: 1;
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  padding: 14px 16px 22px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.ap-pnotice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 3px solid var(--space-gold);
+  border-radius: 12px;
+  background: rgba(255, 200, 87, 0.1);
+  font: 500 14px/1.35 var(--space-font-body);
+}
+.ap-pnotice i {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--space-ink);
+  border-radius: 50%;
+  background: var(--space-gold);
+  color: var(--space-ink);
+  font: 700 16px/22px var(--space-font-display);
+  font-style: normal;
+  text-align: center;
+}
+
+/* ---------- escolha de grimório ---------- */
+.ap-modal-game {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 14px;
+  overflow-y: auto;
+  background: rgba(3, 5, 14, 0.82);
+}
+.ap-mcard-game {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(820px, 100%);
+  max-height: 100%;
+  padding: 18px;
+  overflow: hidden;
+  border: 3px solid var(--space-line);
+  border-radius: 20px;
+  background: linear-gradient(180deg, #121c46, #0a1030);
+  box-shadow:
+    0 0 0 3px var(--space-ink),
+    0 24px 60px rgba(0, 0, 0, 0.6);
+  animation: apg-up 0.28s ease-out both;
+}
+.ap-mcard-game:focus {
+  outline: none;
+}
+.ap-mcard-game h2 {
+  font: 700 24px var(--space-font-display);
+  text-transform: uppercase;
+}
+.ap-sub {
+  font: 500 13px/1.4 var(--space-font-body);
+  color: var(--space-muted);
+}
+.ap-lockrow {
+  display: grid;
+  gap: 6px;
+  min-height: 34px;
+}
+.ap-lockrow small {
+  font: 600 12px var(--space-font-display);
+  color: var(--space-gold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.ap-lockbar {
+  display: block;
+  height: 10px;
+  overflow: hidden;
+  border: 3px solid var(--space-ink);
+  border-radius: 8px;
+  background: #0a1030;
+}
+.ap-lockbar i {
+  display: block;
+  height: 100%;
+  background: var(--space-gold);
+  transform-origin: left;
+  animation: apg-lock 1.6s linear both;
+}
+/* Só as cartas rolam: o título e o confirmar ficam à vista mesmo em tela pequena. */
+.ap-picks {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: max-content;
+  gap: 12px;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 8px 4px;
+  overflow-y: auto;
+}
+.ap-pick {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 4px;
+  min-height: 44px;
+  padding: 12px;
+  border: 3px solid var(--space-line);
+  border-radius: 14px;
+  background: linear-gradient(180deg, var(--space-panel-2), var(--space-panel));
+  text-align: center;
+  cursor: pointer;
+}
+.ap-pick:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.ap-pick.is-selected {
+  border-color: var(--space-cyan);
+  box-shadow: 0 0 0 3px var(--space-cyan);
+  animation: apg-pop 0.18s ease-out;
+  transform: translateY(-6px);
+}
+.ap-pick-name {
+  font: 700 17px var(--space-font-display);
+}
+.ap-pick-rar {
+  font: 600 11px var(--space-font-display);
+  color: var(--space-cyan);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.ap-pick-fx,
+.ap-pick-lv {
+  font: 400 13px/1.35 var(--space-font-body);
+  color: var(--space-muted);
+}
+.ap-pick-lv {
+  color: var(--space-gold);
+}
+
+/* ---------- celular ---------- */
+@media (max-width: 720px) {
+  .ap-field,
+  .ap-energy {
+    top: 140px;
+    bottom: 104px;
+  }
+  .ap-field {
+    right: 66px;
+  }
+  .ap-sheetwrap {
+    top: 140px;
+  }
+  .ap-banners {
+    top: 132px;
+  }
+  .ap-hud {
+    grid-template-columns: 1fr auto;
+  }
+  .ap-hud .ap-hudp {
+    display: flex;
+    gap: 10px;
+    min-width: 0;
+    padding: 6px 8px;
+  }
+  .ap-hbtn-exit {
+    grid-column: 2;
+  }
+  .ap-hbtn-tree {
+    grid-column: 1 / -1;
+  }
+  .ap-hudrow b {
+    font-size: 19px;
+  }
+  .ap-hudrow-2 b {
+    font-size: 16px;
+  }
+  .ap-hudrow {
+    display: grid;
+    grid-template-columns: 24px auto;
+    grid-template-areas: 'i b' 'i s';
+    column-gap: 8px;
+    align-items: center;
+  }
+  .ap-hudrow .ap-ico {
+    grid-area: i;
+  }
+  .ap-hudrow b {
+    grid-area: b;
+  }
+  .ap-hudrow small {
+    grid-area: s;
+  }
+  .ap-hbtn {
+    font-size: 12px;
+    padding: 0 12px;
+  }
+  .ap-dockb {
+    height: 62px;
+  }
+  .ap-dockb-big {
+    flex: 1;
+    min-width: 0;
+  }
+  .ap-picks {
+    grid-template-columns: 1fr;
+  }
+  .ap-pick {
+    grid-template-columns: 96px 1fr;
+    justify-items: start;
+    text-align: left;
+    gap: 2px 12px;
+  }
+  .ap-pick .ap-book {
+    grid-row: 1 / span 4;
+  }
+  .ap-mcard-game {
+    padding: 14px;
+  }
+  .ap-mcard-game h2 {
+    font-size: 20px;
+  }
+  .ap-modal-intro {
+    display: none;
+  }
+}
+/* Celular deitado: pouca altura, então o HUD cabe numa linha e o campo ganha espaço. */
+@media (max-height: 480px) and (min-width: 480px) {
+  .ap-field,
+  .ap-energy {
+    top: 78px;
+    bottom: 86px;
+  }
+  .ap-sheetwrap {
+    top: 78px;
+    bottom: 84px;
+  }
+  .ap-banners {
+    top: 70px;
+  }
+  .ap-dockb {
+    height: 56px;
+  }
+}
+
+/* ---------- animações (só transform e opacity) ---------- */
+@keyframes apg-bump {
+  from {
+    transform: scale(1.25);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+@keyframes apg-badge {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+}
+@keyframes apg-slide {
+  from {
+    transform: translateY(-30px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes apg-ring {
+  from {
+    transform: scale(0.7);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(1.55);
+    opacity: 0;
+  }
+}
+@keyframes apg-spark {
+  from {
+    transform: rotate(calc(var(--a) + var(--turn))) translateY(-40px);
+    opacity: 1;
+  }
+  to {
+    transform: rotate(calc(var(--a) + var(--turn))) translateY(-160px) scale(0.3);
+    opacity: 0;
+  }
+}
+@keyframes apg-gain {
+  from {
+    transform: translate(calc(-50% + var(--drift)), 0);
+    opacity: 1;
+  }
+  to {
+    transform: translate(calc(-50% + var(--drift)), -90px);
+    opacity: 0;
+  }
+}
+@keyframes apg-glow {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes apg-up {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes apg-lock {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes apg-pop {
+  from {
+    transform: translateY(-6px) scale(0.96);
+  }
+  to {
+    transform: translateY(-6px) scale(1);
+  }
+}
+@keyframes apg-fade {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ap-bump,
+  .ap-badge,
+  .ap-evglow,
+  .ap-sheet,
+  .ap-mcard-game,
+  .ap-pick.is-selected {
+    animation: none !important;
+  }
+  .ap-ring,
+  .ap-spark,
+  .ap-lockbar {
+    display: none;
+  }
+  /* O número ainda aparece, só que parado e some em fade. */
+  .ap-gain {
+    animation: apg-fade 0.9s linear both !important;
+    transform: translateX(-50%) !important;
+  }
+  .ap-pickup {
+    animation: apg-fade 0.12s linear reverse both !important;
+  }
+  .ap-hbtn:active,
+  .ap-dockb:active {
+    transform: none;
+  }
+}

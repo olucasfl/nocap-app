@@ -1,0 +1,103 @@
+import { CHOICE_LOCK_SEC, GRIMOIRES, type PendingChoice } from '@nocap/games';
+import { useEffect, useRef, type CSSProperties } from 'react';
+import { GrimoireBook } from './GrimoireBook';
+import { artRarity, astroFor } from './game-logic';
+import { RARITY_LABEL } from './rarity';
+import { useDialog } from './useDialog';
+
+interface Props {
+  pending: PendingChoice;
+  /** Segundos que faltam para as cartas destravarem (0 = livres). */
+  lockRemaining: number;
+  /** Nível atual de cada grimório da vida, para "sobe para o nível N". */
+  build: Record<string, number>;
+  paused: boolean;
+  onSelect: (id: string) => void;
+  onConfirm: (id: string) => void;
+}
+
+/**
+ * Escolha de 1 entre 3 grimórios (spec 038, 3.6 e 4.7), versão provisória da etapa 4: cartas
+ * simples. Cartas bloqueadas por 1,6 s e escolha em dois passos (marcar, depois confirmar).
+ */
+export function ChoiceModal({ pending, lockRemaining, build, paused, onSelect, onConfirm }: Props) {
+  const root = useRef<HTMLDivElement>(null);
+  // Esc não fecha: a barra cheia obriga a escolher, e o toque acidental não pode escapar dela.
+  useDialog(root, () => {});
+  useEffect(() => {
+    // Com as cartas travadas não há nada focável: o foco vai para o próprio diálogo.
+    if (root.current && !root.current.contains(document.activeElement)) root.current.focus();
+  }, []);
+
+  // A barra continua de onde a contagem estava, mesmo se a tela for montada no meio do bloqueio.
+  const elapsed = useRef(Math.max(0, CHOICE_LOCK_SEC - lockRemaining));
+  const locked = lockRemaining > 0;
+  const lockStyle: CSSProperties = {
+    animationDuration: `${CHOICE_LOCK_SEC}s`,
+    animationDelay: `-${elapsed.current.toFixed(2)}s`,
+    animationPlayState: paused ? 'paused' : 'running',
+  };
+
+  const selected = pending.selected;
+  return (
+    <div className="ap-modal-game">
+      <div
+        ref={root}
+        className="ap-mcard-game"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="ap-choice-title"
+        tabIndex={-1}
+      >
+        <h2 id="ap-choice-title">A energia transbordou</h2>
+        <p className="ap-sub ap-modal-intro">Escolha um grimório. Toque para marcar e confirme em seguida.</p>
+        <div className="ap-lockrow" role="status">
+          {locked ? (
+            <>
+              <small>Aguarde um instante...</small>
+              <span className="ap-lockbar" aria-hidden="true">
+                <i style={lockStyle} />
+              </span>
+            </>
+          ) : (
+            <small>Escolha uma carta</small>
+          )}
+        </div>
+        <div className="ap-picks">
+          {pending.offers.map((id) => {
+            const def = GRIMOIRES.find((g) => g.id === id);
+            if (!def) return null;
+            const rarity = artRarity(def.rarity);
+            const have = build[id] ?? 0;
+            const isSelected = selected === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                className={`ap-pick${isSelected ? ' is-selected' : ''}`}
+                aria-pressed={isSelected}
+                disabled={locked}
+                onClick={() => onSelect(id)}
+              >
+                <GrimoireBook rarity={rarity} astro={astroFor(id, def.family)} name={def.name} size="sm" still />
+                <span className="ap-pick-name">{def.name}</span>
+                <span className="ap-pick-rar">{RARITY_LABEL[rarity]}</span>
+                <span className="ap-pick-fx">{def.text}</span>
+                {have > 0 && <span className="ap-pick-lv">Você tem nível {have}: sobe para o {have + 1}</span>}
+              </button>
+            );
+          })}
+        </div>
+        <p className="ap-sub">Pegar o mesmo de novo sobe o nível dele.</p>
+        <button
+          type="button"
+          className="ap-btn"
+          disabled={locked || selected === null}
+          onClick={() => selected && onConfirm(selected)}
+        >
+          Escolher este grimório
+        </button>
+      </div>
+    </div>
+  );
+}

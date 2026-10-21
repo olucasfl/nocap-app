@@ -24,6 +24,7 @@ export function BigButton({
     <span className="ap-bigbtn-wrap" style={{ width: size }}>
       <span className="ap-bigbtn-shadow" aria-hidden="true" />
       <span className="ap-bigbtn-base" aria-hidden="true" />
+      <span className="ap-bigbtn-stem" aria-hidden="true" />
       {highlight && <span className="ap-bigbtn-halo" aria-hidden="true" />}
       <button
         {...rest}

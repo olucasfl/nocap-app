@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/lib/auth';
 import { Sky } from './art';
+import { GameScreen } from './GameScreen';
+import { createLocalGameStore, type GameStore } from './game-store';
 import { SavesModal } from './SavesModal';
 import { afterPick, apertaAccess } from './saves-flow';
 import { createLocalSaveStore, type SaveSummary } from './save-store';
 import { StoryScreen } from './StoryScreen';
 import { TitleScreen } from './TitleScreen';
+import { useApertaGame } from './useApertaGame';
 import './aperta.css';
 
 const FONTS_HREF =
@@ -25,21 +28,22 @@ function useSpaceFonts() {
 type Screen =
   | { name: 'title'; saves: boolean }
   | { name: 'story'; save: SaveSummary }
-  | { name: 'wip'; save: SaveSummary };
+  | { name: 'game'; save: SaveSummary };
 
-/** A rota /arcade/aperta: título, saves, história e, por enquanto, a tela provisória do jogo. */
+/** A rota /arcade/aperta: título, saves, história e a tela de jogo. */
 export function ApertaPage() {
   useSpaceFonts();
   const { user, status } = useAuth();
   const access = apertaAccess(status, !!user);
   const userId = user?.id;
-  // Só dev: a etapa 2 troca por um store que fala com a API.
+  // Só dev: a etapa 2 troca os dois stores por versões que falam com a API.
   const store = useMemo(() => (userId ? createLocalSaveStore(userId) : null), [userId]);
+  const gameStore = useMemo(() => (userId ? createLocalGameStore(userId) : null), [userId]);
   const [screen, setScreen] = useState<Screen>({ name: 'title', saves: false });
 
   function pick(save: SaveSummary) {
     setScreen(
-      afterPick(save.storySeen) === 'story' ? { name: 'story', save } : { name: 'wip', save },
+      afterPick(save.storySeen) === 'story' ? { name: 'story', save } : { name: 'game', save },
     );
   }
 
@@ -62,26 +66,48 @@ export function ApertaPage() {
         <StoryScreen
           onDone={() => {
             void store?.markStorySeen(screen.save.slot);
-            setScreen({ name: 'wip', save: { ...screen.save, storySeen: true } });
+            setScreen({ name: 'game', save: { ...screen.save, storySeen: true } });
           }}
         />
       )}
-      {screen.name === 'wip' && (
-        <section className="ap-wip" aria-label="Em construção">
-          <h1>Em construção</h1>
-          <p className="ap-sub">
-            {screen.save.name} está salva. A tela de jogo chega na próxima etapa.
-          </p>
-          <button
-            type="button"
-            className="ap-btn"
-            autoFocus
-            onClick={() => setScreen({ name: 'title', saves: false })}
-          >
-            Voltar
-          </button>
-        </section>
+      {screen.name === 'game' && gameStore && userId && (
+        <GameLoader
+          store={gameStore}
+          save={screen.save}
+          userId={userId}
+          onExit={() => setScreen({ name: 'title', saves: false })}
+        />
       )}
     </main>
+  );
+}
+
+/** Carrega o save do espaço e abre a tela de jogo. */
+function GameLoader({
+  store,
+  save,
+  userId,
+  onExit,
+}: {
+  store: GameStore;
+  save: SaveSummary;
+  userId: string;
+  onExit: () => void;
+}) {
+  const seed = `${userId}:${save.slot}:${save.lastPlayedAt}`;
+  const load = useApertaGame({ store, slot: save.slot, seed, name: save.name });
+  if (load.status === 'ready') return <GameScreen controller={load.controller} onExit={onExit} />;
+  return (
+    <section className="ap-wip" aria-label={load.status === 'error' ? 'Erro ao carregar' : 'Carregando'}>
+      <h1>{load.status === 'error' ? 'Não carregou' : 'Carregando'}</h1>
+      {load.status === 'error' && (
+        <>
+          <p className="ap-sub">Não deu para abrir {save.name}. Tente de novo.</p>
+          <button type="button" className="ap-btn" autoFocus onClick={onExit}>
+            Voltar
+          </button>
+        </>
+      )}
+    </section>
   );
 }
