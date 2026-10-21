@@ -1870,3 +1870,69 @@
     animation: none;
   }
 }
+
+/* ====================== celular: a colmeia nunca invade os botões ======================
+ * A colmeia ocupa só o que sobra (não impõe altura): o SVG é encaixado no espaço do quadro. O resto da tela
+ * (patente, botões, abas, painel) é compacto para sobrar espaço às letras, mesmo em telas baixas. */
+.bz-hive-wrap {
+  position: relative;
+  display: block;
+  flex: 1 1 0;
+  min-height: 150px;
+}
+.bz-hive-wrap .bz-hive {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+}
+.wd-app.fit .bz-rankcard {
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 8px;
+  padding: 7px 12px;
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.wd-app.fit .bz-rank-bee {
+  height: 40px;
+}
+.wd-app.fit .bz-rank-body {
+  gap: 4px;
+}
+.wd-app.fit .bz-rankname,
+.wd-app.fit .bz-points b {
+  font-size: 17px;
+}
+.wd-app.fit .bz-meter {
+  height: 12px;
+}
+.wd-app.fit .bz-word {
+  height: 34px;
+  font-size: 28px;
+}
+.wd-app.fit .bz-caret {
+  height: 24px;
+}
+.wd-app.fit .bz-finish {
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  line-height: 1.1;
+}
+.wd-app.fit .bz-tab {
+  height: 46px;
+}
+.wd-app.fit .bz-found-panel {
+  max-height: clamp(92px, 15dvh, 170px);
+  padding: 8px 10px;
+  gap: 6px;
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.wd-app.fit .bee-theme.info .bz-found-panel {
+  max-height: none;
+}
+@media (min-height: 760px) {
+  .wd-app.fit .bz-found-panel {
+    max-height: clamp(120px, 20dvh, 220px);
+  }
+}

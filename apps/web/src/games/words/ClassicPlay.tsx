@@ -120,7 +120,7 @@ export function ClassicPlay({
             if (next.state === 'won') wordsAudio.win();
             else wordsAudio.lose();
           },
-          next.state === 'won' ? 2500 : 1900,
+          next.state === 'won' ? 2700 : 2200,
         );
       }
       if (next.state === 'won') setWinRow(next.used - 1);

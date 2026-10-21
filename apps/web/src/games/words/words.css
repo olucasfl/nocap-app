@@ -2254,9 +2254,10 @@ a.wd-card:hover .wd-card-go {
 }
 
 /* ====================== fim de partida do Classic ====================== */
+/* a partida acabou mas as casas ainda estão virando: o teclado só deixa de responder, sem escurecer a tela
+   (o escurecimento é do resultado, que entra depois que a palavra inteira foi revelada) */
 .cw-dock.locked {
   pointer-events: none;
-  opacity: 0.55;
 }
 .cw-end {
   position: fixed;

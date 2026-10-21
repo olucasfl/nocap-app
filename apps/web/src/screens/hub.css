@@ -478,20 +478,31 @@ a.hub-daily {
 .hz-grid.one {
   grid-template-columns: 1fr;
 }
+/* O cartão é uma coluna: a arte pega o espaço que sobra e o rodapé (nome + linhas) fica no fluxo, embaixo.
+   Assim, nome ou linha que quebra em tela estreita empurra a arte em vez de ficar por cima dela. */
 .hz .hub-card {
-  display: block;
-  height: 214px;
-  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: auto;
+  min-height: 206px;
   padding: 12px;
 }
 .hz .hub-card .hub-card-foot {
-  position: absolute;
-  left: 12px;
-  right: 12px;
-  bottom: 12px;
+  position: static;
+  flex: none;
+  min-width: 0;
+  transform: none;
 }
-.hz .hub-art {
-  inset: 6px 6px 78px;
+.hz .hub-card .hub-art {
+  position: relative;
+  inset: auto;
+  flex: 1 1 auto;
+  min-height: 96px;
+  width: auto;
+}
+.hz .hub-card .hub-art .ha {
+  transform: none;
 }
 .hz .hub-card-name {
   font-size: clamp(22px, 6vw, 28px);
@@ -505,19 +516,22 @@ a.hub-daily {
 .hz .hub-card-meta {
   font-size: 10.5px;
 }
+/* cartão largo: arte à esquerda, texto à direita (o selo NOVO tem espaço próprio no topo) */
 .hz .hub-card.wide {
-  height: 168px;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  min-height: 168px;
+  padding: 14px;
 }
 .hz .hub-card.wide .hub-art {
-  inset: 8px auto 8px 8px;
-  width: 42%;
+  flex: 0 0 42%;
+  align-self: stretch;
+  min-height: 120px;
 }
 .hz .hub-card.wide .hub-card-foot {
-  left: 46%;
-  right: 14px;
-  top: 50%;
-  bottom: auto;
-  transform: translateY(-50%);
+  flex: 1 1 0;
+  padding-top: 18px;
 }
 .hz .hub-card.wide .hub-card-name {
   font-size: clamp(26px, 7vw, 36px);
@@ -553,24 +567,16 @@ a.hub-daily {
     gap: 16px;
   }
   .hz .hub-card {
-    height: 250px;
+    min-height: 250px;
     padding: 16px;
   }
-  .hz .hub-card .hub-card-foot {
-    left: 16px;
-    right: 16px;
-    bottom: 16px;
-  }
-  .hz .hub-art {
-    inset: 8px 8px 84px;
-  }
   .hz .hub-card.wide {
-    height: 200px;
+    min-height: 200px;
   }
 }
 @media (min-width: 1100px) {
   .hz .hub-card {
-    height: 270px;
+    min-height: 270px;
   }
   .hz .hub-card-name {
     font-size: 28px;
@@ -579,7 +585,7 @@ a.hub-daily {
     font-size: 22px;
   }
   .hz .hub-card.wide {
-    height: 210px;
+    min-height: 210px;
   }
   .hz .hub-card.wide .hub-card-name {
     font-size: 40px;
@@ -598,18 +604,18 @@ a.hub-daily {
 @media (max-width: 767px) {
   .hz-grid:not(.one) > .hub-card:first-child:nth-last-child(3) {
     grid-column: 1 / -1;
-    height: 168px;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    min-height: 160px;
   }
   .hz-grid:not(.one) > .hub-card:first-child:nth-last-child(3) .hub-art {
-    inset: 8px auto 8px 8px;
-    width: 46%;
+    flex: 0 0 46%;
+    align-self: stretch;
+    min-height: 110px;
   }
   .hz-grid:not(.one) > .hub-card:first-child:nth-last-child(3) .hub-card-foot {
-    left: 50%;
-    right: 14px;
-    top: 50%;
-    bottom: auto;
-    transform: translateY(-50%);
+    flex: 1 1 0;
   }
 }
 
@@ -618,3 +624,19 @@ a.hub-daily {
   margin-left: 36px;
 }
 
+
+/* Celular estreito: o nome do daily (Mesmíssima) encolhe para caber no cartão em vez de ser cortado */
+.hz-chip-body b {
+  font-size: clamp(11.5px, 3.9vw, 15px);
+  overflow-wrap: anywhere;
+}
+@media (max-width: 340px) {
+  .hz-chip {
+    gap: 6px;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+  .hz-chip-go {
+    margin-left: 32px;
+  }
+}

@@ -422,7 +422,7 @@ export function BeePlay() {
 
           {genius >= 1 && (
             <button type="button" className="bz-finish" onClick={conclude} data-testid="end">
-              {confirmEnd ? 'Toque de novo para concluir' : 'Você chegou ao Gênio. Concluir a fase'}
+              {confirmEnd ? 'Toque de novo para concluir' : 'Gênio! Já dá para concluir a fase'}
             </button>
           )}
         </>
