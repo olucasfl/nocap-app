@@ -28,4 +28,13 @@ describe('CSS da tela de jogo', () => {
       expect(rule?.[1], sel).toMatch(/(min-)?(height|width):\s*(4[4-9]|[5-9]\d)px/);
     }
   });
+
+  it('a tela não rola na horizontal e tem ajuste para celular', () => {
+    expect(css).toMatch(/\.ap-game \{[^}]*overflow:\s*hidden/);
+    expect(css).toMatch(/@media \(max-width:\s*720px\)/);
+  });
+
+  it('os botões têm foco visível para teclado', () => {
+    expect(css).toMatch(/\.ap-game button:focus-visible/);
+  });
 });

@@ -848,3 +848,9 @@
     transform: none;
   }
 }
+
+/* Foco visível para teclado em todos os controles da tela de jogo (outline não anima). */
+.ap-game button:focus-visible {
+  outline: 3px solid var(--space-gold, #ffc857);
+  outline-offset: 3px;
+}
