@@ -299,6 +299,8 @@ export function BeePlay() {
     }
     beeProgress.set(num, { found, closed: true, at: Date.now() });
     wordsAudio.win();
+    // ao concluir, a lista mostra todas as palavras da fase (as achadas em verde)
+    setTab('hints');
   };
 
   return (
@@ -421,8 +423,12 @@ export function BeePlay() {
           </div>
 
           {genius >= 1 && (
-            <button type="button" className="bz-finish" onClick={conclude} data-testid="end">
-              {confirmEnd ? 'Toque de novo para concluir' : 'Gênio! Já dá para concluir a fase'}
+            <button type="button" className={`bz-finish${confirmEnd ? ' sure' : ''}`} onClick={conclude} data-testid="end">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 21V4M6 4h11l-2 4 2 4H6" />
+              </svg>
+              <span>{confirmEnd ? 'Toque de novo para ver as palavras' : 'Concluir fase'}</span>
+              {!confirmEnd && <small className="mono">Gênio</small>}
             </button>
           )}
         </>
@@ -494,6 +500,9 @@ export function BeePlay() {
       {tab === 'hints' &&
         (closed ? (
           <div className="bz-found" data-testid="all">
+            <p className="bz-all-head mono">
+              Todas as palavras da fase: <b>{found.length}</b> de {hints.total} achadas (em verde)
+            </p>
             {[...level.w]
               .sort((a, b) => a.localeCompare(b, 'pt'))
               .map((w) => (
