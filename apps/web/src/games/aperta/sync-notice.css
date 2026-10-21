@@ -1,0 +1,90 @@
+/* Avisos de sincronização do Aperta! (spec 038, 10.4). Só tokens --space-*; sem animação. */
+.ap-sync-strip {
+  position: fixed;
+  top: 8px;
+  left: 50%;
+  z-index: 35;
+  width: min(560px, calc(100% - 24px));
+  padding: 8px 12px;
+  transform: translateX(-50%);
+  border: 3px solid var(--space-ink);
+  border-radius: 12px;
+  background: var(--space-panel-2);
+  color: var(--space-text);
+  font: 500 13px/1.35 var(--space-font-body);
+  text-align: center;
+}
+.ap-sync-wrap {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 14px;
+  overflow-y: auto;
+  background: rgba(3, 5, 14, 0.88);
+}
+.ap-sync-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(460px, 100%);
+  padding: 18px;
+  border: 3px solid var(--space-line);
+  border-radius: 20px;
+  background: var(--space-panel);
+  box-shadow: 0 0 0 3px var(--space-ink);
+  color: var(--space-text);
+}
+.ap-sync-card:focus {
+  outline: none;
+}
+.ap-sync-card h2 {
+  font: 700 22px var(--space-font-display);
+  text-transform: uppercase;
+}
+.ap-sync-sub {
+  font: 500 13px/1.4 var(--space-font-body);
+  color: var(--space-muted);
+}
+.ap-sync-warn {
+  font: 600 13px/1.4 var(--space-font-body);
+  color: var(--space-gold);
+}
+.ap-sync-col,
+.ap-sync-row {
+  display: flex;
+  gap: 10px;
+}
+.ap-sync-col {
+  flex-direction: column;
+}
+.ap-sync-btn {
+  min-height: 48px;
+  padding: 10px 16px;
+  border: 3px solid var(--space-ink);
+  border-radius: 12px;
+  background: var(--space-blue);
+  color: var(--space-ink);
+  font: 700 15px var(--space-font-display);
+  cursor: pointer;
+}
+.ap-sync-row .ap-sync-btn {
+  flex: 1;
+}
+.ap-sync-btn.ghost {
+  background: var(--space-panel-2);
+  color: var(--space-text);
+}
+.ap-sync-btn.danger {
+  background: var(--space-red);
+  color: var(--space-text);
+}
+.ap-sync-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.ap-sync-btn:focus-visible {
+  outline: 3px solid var(--space-gold);
+  outline-offset: 2px;
+}

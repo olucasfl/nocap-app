@@ -427,10 +427,13 @@ aperta_settings(user_id uuid pk, data jsonb, updated_at timestamptz)   -- som, e
 - **Por conta:** preferências (som ligado, efeitos reduzidos). Nada de progresso fica só no aparelho.
 - Colunas desnormalizadas (`collapses`, `picks`, `dust_log10`, `play_seconds`) servem para validar e mostrar a lista de saves sem abrir o JSON. `ON DELETE CASCADE` só ao apagar a conta.
 
+> **Como ficou na etapa 2 (21/10/2026):** a implementação ficou menor que o desenho acima. Existe só `aperta_saves` (sem `active_device`/`active_until`; com `deleted_at`, que guarda o save apagado por 7 dias), e **não** foram criadas `aperta_save_history` nem `aperta_settings`. A trava entre aparelhos é só a `revision` (409 com o save da conta e a junção proposta); o aviso "aberto em outro aparelho" e o `takeover` não existem. A versão que perde um conflito fica numa cópia no aparelho (`backup`), não no servidor. As preferências de som ficam no aparelho por enquanto. Se quisermos o histórico de 5 revisões, as preferências na conta ou a reserva por aparelho, é migration nova e decisão do Lucas.
+
 ### 10.2 API (módulo `apps/api/src/aperta/`)
 - `GET /me/aperta/saves` (resumo dos 2 saves), `GET /me/aperta/saves/:slot` (completo) e `GET/PUT /me/aperta/settings`.
 - `PUT /me/aperta/saves/:slot` `{ data, baseRevision, deviceId }`: valida, junta e grava; `409` com o save atual se `baseRevision` ficou velho ou se outro aparelho está ativo.
-- `POST /me/aperta/saves/:slot/takeover` `{ deviceId }`: assume o save neste aparelho (o outro passa a receber `409` e vira somente leitura).
+- `POST /me/aperta/saves/:slot/takeover`: **não implementado** (ver o quadro acima).
+- `POST /me/aperta/saves/:slot/restore`: desfaz o apagar dentro de 7 dias.
 - `DELETE /me/aperta/saves/:slot` (apagar; 2 passos no cliente).
 - Convidado (sem conta) recebe `401`.
 
@@ -544,7 +547,7 @@ Cada etapa só começa com o "sim" do Lucas para a anterior; cada uma termina co
 
 **Ordem de dependência:** 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12 -> 13 (v1) -> 14 (v1.1) -> 15 (v1.2) -> 16 (Ascender). As etapas 5, 6 e 7 só dependem da 4 e podem trocar de ordem se o Lucas preferir (decisão 14.17).
 
-## 16. Estado atual e o que falta (atualizado em 21/10/2026, fim do dia)
+## 16. Estado atual e o que falta (atualizado em 21/10/2026, fim do dia; etapa 2 fechada no código)
 
 Todo o trabalho está na branch **`develop`** (nada na `main`, por ordem do Lucas). Testes: `packages/games` 564, `apps/web` 301, `apps/api` 334 passando; typecheck limpo. Duas sessões foram interrompidas por limite de uso e o que elas deixaram foi mesclado na `develop` como está.
 
@@ -552,11 +555,11 @@ Todo o trabalho está na branch **`develop`** (nada na `main`, por ordem do Luca
 - **Etapa 1 (motor e simulador):** completa e calibrada para as vidas 1 a 5 (seção 6.7). Vidas 6 a 15 provisórias.
 - **Etapa 3 (título, saves e história):** completa, conferida no navegador.
 - **Parte da etapa 11:** kit de arte (astros, livros, botão, objetos, cenários, tokens `--space-*`) e sons (`aperta-audio`), ainda não ligados ao jogo inteiro.
-- **Etapa 2 (saves na conta), quase pronta:** migration `0009_aperta.sql`, `validateSave` e `mergeSaves` em `packages/games/src/aperta/save.ts`, módulo Nest `apps/api/src/aperta/`, `api-save-store.ts` no web. Com testes verdes.
+- **Etapa 2 (saves na conta), pronta no código (branch `claude/aperta-etapa-2-300247`):** migration `0009_aperta.sql` (revisada: só cria `aperta_saves`, batendo com o schema do Drizzle; **não aplicada**), `validateSave` e `mergeSaves` em `packages/games/src/aperta/save.ts`, módulo Nest `apps/api/src/aperta/` (GET/PUT/DELETE/restaurar, 401, 409, 7 dias, limite de 5 s por save; testes com repositório em memória e no controlador), `api-save-store.ts` (autosave 30 s, cópia local, subida ao voltar a internet), `SyncNotice` (faixa de offline/erro e diálogo de conflito entre aparelhos) e a partida em curso salva pela conta (`createSyncedGameStore`). Testes verdes.
 - **Etapa 4 (tela de jogo e toque), quase pronta:** `GameScreen`, `GamePage`, `ChoiceModal` provisório, `game-controller`, `useApertaGame`, `game-store` local, CSS e testes verdes.
 
 ### O que falta, na ordem
-1. **Etapa 2, fechar:** (a) revisar a migration e **aplicar no banco** (o Lucas decide quando; nada foi aplicado); (b) conferir a API contra o banco real (GET/PUT/DELETE/restaurar, 401 do convidado, 409 de conflito, recuperação de 7 dias); (c) autosave a cada 30 s, cópia local e subida ao voltar a internet, e o aviso de conflito entre aparelhos na tela; (d) trocar o `createLocalGameStore` (estado da partida em curso, hoje local) pela API; (e) atualizar `ARCHITECTURE.md`, `docs/ROADMAP.md` e `HANDOFF.md`.
+1. **Etapa 2, só falta o banco:** (a) o Lucas decide quando **aplicar `0009_aperta.sql`** (`pnpm db:migrate`; só cria tabela); (b) depois, conferir as rotas contra o banco real (criar, gravar, 409 com dois aparelhos, apagar e restaurar) e o diálogo de conflito no navegador com duas abas. Pendência de desenho: aviso "aberto em outro aparelho" e histórico de 5 revisões não foram feitos (ver o quadro em 10.1).
 2. **Etapa 4, fechar:** (a) conferir no navegador em 320, 390 e 1280 px (a sessão foi interrompida antes); (b) relógio que pausa com a aba escondida e repetição por tecla (até 6 toques/s) validados à mão; (c) docs.
 3. **Etapas 5 a 10:** Melhorias, Grimórios e álbum (modal completo com bloqueio de 1,6 s e escolha em 2 passos, que hoje é provisório), Objetos no espaço, Tutorial guiado, Colapso e Atlas Eterno, Árvore e conquistas. As páginas de Melhorias, Grimórios, Conquistas e Árvore hoje são **vazias provisórias**.
 4. **Etapa 11:** ligar a arte e os sons ao jogo, transições, desempenho em celular fraco.

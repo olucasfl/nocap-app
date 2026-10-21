@@ -303,3 +303,25 @@ describe('erros usados pelo cliente', () => {
     await expect(service.put('u', 1, { data: newSave('a', T0), baseRevision: 0 })).rejects.toBeInstanceOf(ConflictException);
   });
 });
+
+describe('rotas do controlador', () => {
+  it('GET, PUT, DELETE e restaurar chegam ao serviço pela conta da sessão', async () => {
+    const { service } = setup();
+    const c = new ApertaController(service);
+    const req = { user: { id: 'u' } } as never;
+    expect((await c.list(req)).slots.map((s) => s.save)).toEqual([null, null]);
+    expect((await c.put(req, 1, { data: newSave('a', T0), baseRevision: 0 })).revision).toBe(1);
+    expect((await c.get(req, 1)).revision).toBe(1);
+    await c.remove(req, 1);
+    expect((await c.list(req)).slots[0]).toMatchObject({ save: null });
+    expect((await c.restore(req, 1)).slot).toBe(1);
+    expect((await c.get(req, 1)).revision).toBe(1);
+  });
+
+  it('limita a gravação a 2 por 5 s (1 por save) e as outras rotas têm teto próprio', () => {
+    const rule = (name: keyof ApertaController) =>
+      Reflect.getMetadata('nocap:rate', ApertaController.prototype[name]) as { limit: number; windowMs: number };
+    expect(rule('put')).toEqual({ limit: 2, windowMs: 5_000 });
+    for (const name of ['list', 'get', 'remove', 'restore'] as const) expect(rule(name).windowMs).toBe(60_000);
+  });
+});

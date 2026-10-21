@@ -92,7 +92,8 @@ Ainda sem prioridade definida contra as salas do Ecooo. Cada item tem a sua spec
 ## Etapa 8: Aperta! (clicker no espaço), 21/10/2026
 
 - [x] **Etapa 1: motor e simulador** (`packages/games/src/aperta`, só lógica pura; vidas 1 a 5 calibradas pelo simulador): `specs/038-clicker.md`
-- [ ] Etapas 2 a 13 (persistência na conta, telas, tutorial, colapso/Atlas, árvore, arte e sons, conteúdo dos colapsos 1 a 5, QA): ver seção 15 da spec
+- [x] **Etapa 2: saves na conta** (21/10/2026): `validateSave`/`mergeSaves`, migration `0009_aperta.sql` (escrita, **ainda não aplicada no banco**), módulo `apps/api/src/aperta/` (GET/PUT/DELETE/restaurar, 401 de convidado, 409 de conflito, recuperação por 7 dias), `api-save-store` com autosave de 30 s, cópia local, subida ao voltar a internet e aviso de conflito entre aparelhos; partida em curso salva pela conta. Falta só aplicar a migration (decisão do Lucas) e conferir contra o banco real
+- [ ] Etapas 4 a 13 (tela de jogo, melhorias, grimórios, tutorial, colapso/Atlas, árvore, arte e sons, conteúdo dos colapsos 1 a 5, QA): ver seção 15 da spec
 - [ ] Etapas 14 a 16 (conteúdo dos colapsos 6 a 15 e Ascender, depois da v1)
 
 ## Etapa 6: produção
