@@ -5,7 +5,7 @@ import { AstroMedal } from './AstroMedal';
 import { BigButton } from './BigButton';
 import { GrimoireBook } from './GrimoireBook';
 import { RARITIES, RARITY_GEMS } from './rarity';
-import { REGION_IDS, RegionBackdrop } from './RegionBackdrop';
+import { REGION_ART, RegionBackdrop } from './regions';
 import { SpaceArtSprite } from './SpaceArtSprite';
 import { SPACE_OBJECTS, SpaceObject } from './SpaceObject';
 
@@ -67,7 +67,7 @@ describe('kit de arte do Aperta!', () => {
     expect(html(<BigButton highlight />)).toContain('ap-bigbtn-halo');
   });
 
-  it.each(REGION_IDS)('RegionBackdrop %i renderiza céu, estrelas e camadas', (id) => {
+  it.each(REGION_ART.map((r) => r.id))('RegionBackdrop %s renderiza céu, estrelas e camadas', (id) => {
     const markup = html(<RegionBackdrop region={id} />);
     expect(markup).toContain(`ap-region--${id}`);
     expect(markup).toContain('aria-hidden="true"');
@@ -76,6 +76,6 @@ describe('kit de arte do Aperta!', () => {
   });
 
   it('RegionBackdrop pausa quando pedido', () => {
-    expect(html(<RegionBackdrop region={0} paused />)).toContain('is-paused');
+    expect(html(<RegionBackdrop region="inner-solar-system" paused />)).toContain('is-paused');
   });
 });

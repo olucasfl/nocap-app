@@ -1,0 +1,158 @@
+import {
+  EVENT_NAMES,
+  EVENT_TEXT,
+  UPGRADES,
+  activeEventId,
+  effectiveStats,
+  formatDecimal,
+  formatNumber,
+  mechanicOpen,
+  missionById,
+  newContentAt,
+  unlockedContent,
+  type ContentKind,
+  type EffectiveStats,
+  type EventId,
+  type NewContentItem,
+  type SaveState,
+} from '@nocap/games';
+import { REGION_ART, type RegionArt } from './regions';
+
+// --- Faixa "Novo no espaço" (spec 038, 5.4) ---
+
+export const CONTENT_KIND_LABEL: Record<ContentKind, string> = {
+  region: 'Região',
+  grimoire: 'Grimório',
+  upgrade: 'Melhoria',
+  object: 'Objeto',
+  mechanic: 'Mecânica',
+  event: 'Evento',
+};
+
+export interface NewInSpaceView {
+  /** Chave guardada em `seenUnlocks` quando a pessoa dispensa a faixa. */
+  key: string;
+  collapse: number;
+  items: NewContentItem[];
+}
+
+export function newInSpaceKey(collapse: number): string {
+  return `collapse:${collapse}`;
+}
+
+/** O que o último colapso trouxe, enquanto a pessoa não dispensou a faixa. Sem novidade, `null`. */
+export function newInSpaceView(state: SaveState): NewInSpaceView | null {
+  const k = state.collapses;
+  if (k < 1 || state.tutorial !== 'done') return null;
+  const key = newInSpaceKey(k);
+  if (state.seenUnlocks.includes(key)) return null;
+  const items = newContentAt(k);
+  return items.length > 0 ? { key, collapse: k, items } : null;
+}
+
+// --- Menu de regiões ---
+
+export interface RegionMenuItem {
+  art: RegionArt;
+  current: boolean;
+}
+
+/** As regiões já abertas, na ordem da viagem. Só vale ter menu quando há mais de uma. */
+export function regionMenuItems(state: SaveState): RegionMenuItem[] {
+  const open = new Set(unlockedContent(state).regions.map((r) => r.id));
+  return REGION_ART.filter((a) => open.has(a.id)).map((art) => ({ art, current: art.id === state.regionId }));
+}
+
+// --- Missão da estação e eventos ---
+
+export interface MissionView {
+  text: string;
+  progress: number;
+  target: number;
+  done: boolean;
+}
+
+export function missionView(state: SaveState): MissionView | null {
+  const m = state.run.mission;
+  const def = m && missionById(m.id);
+  if (!m || !def) return null;
+  return { text: def.text, progress: m.progress, target: def.target, done: m.done };
+}
+
+export interface EventView {
+  id: EventId;
+  name: string;
+  text: string;
+}
+
+/** Evento em andamento. Sem contagem na tela: só o nome e o que ele faz. */
+export function eventView(state: SaveState, now: number): EventView | null {
+  const id = activeEventId(state, now);
+  return id ? { id, name: EVENT_NAMES[id], text: EVENT_TEXT[id] } : null;
+}
+
+// --- Favorito ---
+
+export function favoriteOpen(state: SaveState): boolean {
+  return mechanicOpen('favorite', state.collapses);
+}
+
+// --- Observatório Gaia: a carta mostra o efeito já com os números da vida ---
+
+export function gaiaActive(state: SaveState): boolean {
+  const i = UPGRADES.findIndex((u) => u.id === 'gaia');
+  return i >= 0 && (state.run.upgradeLevels[i] ?? 0) > 0;
+}
+
+interface StatLine {
+  label: string;
+  read: (s: EffectiveStats) => number;
+  show: (v: number) => string;
+}
+
+const pct = (v: number) => `${formatDecimal(v * 100, 0)}%`;
+const secs = (v: number) => `${formatDecimal(v, 1)} s`;
+
+const STAT_LINES: StatLine[] = [
+  { label: 'Poeira por toque', read: (s) => s.dustPerTouch, show: (v) => (v >= 100 ? formatNumber(Math.floor(v)) : formatDecimal(v, 1)) },
+  { label: 'Energia por toque', read: (s) => s.energyPerTouch, show: (v) => formatDecimal(v, 3) },
+  { label: 'Combo máximo', read: (s) => s.combo.max, show: (v) => `x${v}` },
+  { label: 'Janela do combo', read: (s) => s.combo.windowSec, show: secs },
+  { label: 'Custo das melhorias', read: (s) => s.costFactor, show: pct },
+  { label: 'Objeto a cada', read: (s) => s.objects.intervalSec, show: secs },
+  { label: 'Objeto no campo', read: (s) => s.objects.lifeSec.comet, show: secs },
+  { label: 'Valor dos objetos', read: (s) => s.objects.valueMult.comet, show: pct },
+  { label: 'Duração do sinal', read: (s) => s.objects.signalSec, show: secs },
+  { label: 'Energia até o próximo', read: (s) => s.energyStepFactor, show: pct },
+];
+
+/** O mesmo save com o grimório `id` pego (nível 1) ou subindo um nível, só para comparar os números. */
+function withGrimoire(state: SaveState, id: string): SaveState {
+  const level = state.run.build[id] ?? 0;
+  return { ...state, run: { ...state.run, build: { ...state.run.build, [id]: level + 1 } } };
+}
+
+/**
+ * "Poeira por toque: 12 -> 14": o que mudaria na vida atual se a carta fosse escolhida (até 2 linhas).
+ * Efeitos que não aparecem nesses números (toque especial, captura) devolvem `null`.
+ */
+export function cardGain(state: SaveState, id: string): string | null {
+  const before = effectiveStats(state);
+  const after = effectiveStats(withGrimoire(state, id));
+  const lines: string[] = [];
+  for (const line of STAT_LINES) {
+    const a = line.read(before);
+    const b = line.read(after);
+    if (Math.abs(a - b) > 1e-9) lines.push(`${line.label}: ${line.show(a)} -> ${line.show(b)}`);
+    if (lines.length === 2) break;
+  }
+  return lines.length > 0 ? lines.join(' · ') : null;
+}
+
+/** Texto extra de cada carta oferecida, só com o Observatório Gaia comprado. */
+export function gaiaPreviews(state: SaveState, offers: readonly string[]): Record<string, string> {
+  if (!gaiaActive(state)) return {};
+  const out: Record<string, string> = {};
+  for (const id of offers) out[id] = cardGain(state, id) ?? 'Efeito de ocasião: sem mudança nos números agora';
+  return out;
+}
