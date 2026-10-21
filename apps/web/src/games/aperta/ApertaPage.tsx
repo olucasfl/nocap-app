@@ -3,7 +3,8 @@ import { useAuth } from '@/lib/auth';
 import { Sky } from './art';
 import { SavesModal } from './SavesModal';
 import { afterPick, apertaAccess } from './saves-flow';
-import { createLocalSaveStore, type SaveSummary } from './save-store';
+import { createApiSaveStore } from './api-save-store';
+import type { SaveSummary } from './save-store';
 import { StoryScreen } from './StoryScreen';
 import { TitleScreen } from './TitleScreen';
 import './aperta.css';
@@ -33,8 +34,7 @@ export function ApertaPage() {
   const { user, status } = useAuth();
   const access = apertaAccess(status, !!user);
   const userId = user?.id;
-  // Só dev: a etapa 2 troca por um store que fala com a API.
-  const store = useMemo(() => (userId ? createLocalSaveStore(userId) : null), [userId]);
+  const store = useMemo(() => (userId ? createApiSaveStore(userId) : null), [userId]);
   const [screen, setScreen] = useState<Screen>({ name: 'title', saves: false });
 
   function pick(save: SaveSummary) {
