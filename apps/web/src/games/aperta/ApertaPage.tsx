@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { useAuth } from '@/lib/auth';
 import { Sky } from './art';
 import { GameScreen } from './GameScreen';
 import { createSyncedGameStore, type GameStore } from './game-store';
 import { SavesModal } from './SavesModal';
 import { afterPick, apertaAccess } from './saves-flow';
-import { createApiSaveStore } from './api-save-store';
+import { createApiSaveStore, type SyncedSaveStore } from './api-save-store';
 import type { SaveSummary } from './save-store';
 import { StoryScreen } from './StoryScreen';
+import { SyncNotice } from './SyncNotice';
 import { TitleScreen } from './TitleScreen';
 import { useApertaGame } from './useApertaGame';
 import './aperta.css';
@@ -37,7 +39,7 @@ export function ApertaPage() {
   const { user, status } = useAuth();
   const access = apertaAccess(status, !!user);
   const userId = user?.id;
-  // Os saves vão para a API (etapa 2); o estado da partida em curso ainda usa o store local até as etapas seguintes.
+  // Lista de saves e partida em curso vão para a API (etapa 2), com cópia local para jogar sem internet.
   const store = useMemo(() => (userId ? createApiSaveStore(userId) : null), [userId]);
   const gameStore = useMemo(() => (store ? createSyncedGameStore(store) : null), [store]);
   const [screen, setScreen] = useState<Screen>({ name: 'title', saves: false });
@@ -73,6 +75,7 @@ export function ApertaPage() {
       )}
       {screen.name === 'game' && gameStore && userId && (
         <GameLoader
+          saves={store!}
           store={gameStore}
           save={screen.save}
           userId={userId}
@@ -83,8 +86,43 @@ export function ApertaPage() {
   );
 }
 
-/** Carrega o save do espaço e abre a tela de jogo. */
+/**
+ * Carrega o save do espaço e abre a tela de jogo, com o aviso de sincronização por cima. Ao resolver um
+ * conflito entre aparelhos a partida é desmontada antes (o salvamento de saída do jogo velho não pode
+ * passar por cima da escolha) e recarregada com o estado escolhido.
+ */
 function GameLoader({
+  saves,
+  store,
+  save,
+  userId,
+  onExit,
+}: {
+  saves: SyncedSaveStore;
+  store: GameStore;
+  save: SaveSummary;
+  userId: string;
+  onExit: () => void;
+}) {
+  const [playing, setPlaying] = useState(true);
+  const [epoch, setEpoch] = useState(0);
+  return (
+    <>
+      {playing && <GamePlay key={epoch} store={store} save={save} userId={userId} onExit={onExit} />}
+      <SyncNotice
+        saves={saves}
+        slot={save.slot}
+        onBeforeResolve={() => flushSync(() => setPlaying(false))}
+        onResolved={() => {
+          setEpoch((e) => e + 1);
+          setPlaying(true);
+        }}
+      />
+    </>
+  );
+}
+
+function GamePlay({
   store,
   save,
   userId,
