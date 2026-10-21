@@ -4,6 +4,7 @@ import {
   currentEnergyCap,
   effectiveStats,
   nextUpgradeCost,
+  unlockedContent,
   type Family,
   type SaveState,
 } from '@nocap/games';
@@ -143,4 +144,51 @@ const FAMILY_ASTRO: Record<Family, AstroId> = {
 /** Medalha de um grimório do catálogo; os do catálogo futuro caem na medalha da família. */
 export function astroFor(id: string, family: Family): AstroId {
   return GRIMOIRE_ASTRO[id] ?? FAMILY_ASTRO[family];
+}
+
+/** Toques ignorados nos primeiros ms depois de abrir um modal: o dedo ainda estava no botão (spec 4.7). */
+export const MODAL_OPEN_GUARD_MS = 300;
+
+export interface AlbumEntry {
+  id: string;
+  name: string;
+  text: string;
+  family: Family;
+  rarity: ArtRarity;
+  /** Já descoberto neste save (o álbum guarda para sempre, a vida não). */
+  discovered: boolean;
+  /** Nível na vida atual (0 = ainda não pego nesta vida). */
+  level: number;
+}
+
+export interface AlbumView {
+  entries: AlbumEntry[];
+  discovered: number;
+  total: number;
+}
+
+/**
+ * Álbum da página de Grimórios: só os grimórios já liberados pelos colapsos, na ordem do catálogo.
+ * Os não descobertos viram "???": o nome e o efeito só saem do catálogo depois da primeira escolha.
+ */
+export function albumView(state: SaveState): AlbumView {
+  const open = unlockedContent(state).grimoires;
+  const entries = open.map((g): AlbumEntry => {
+    const discovered = state.album.includes(g.id);
+    return {
+      id: g.id,
+      name: discovered ? g.name : '???',
+      text: discovered ? g.text : 'Ainda escondido no espaço',
+      family: g.family,
+      rarity: artRarity(g.rarity),
+      discovered,
+      level: state.run.build[g.id] ?? 0,
+    };
+  });
+  return { entries, discovered: entries.filter((e) => e.discovered).length, total: entries.length };
+}
+
+/** Verdadeiro enquanto o modal acabou de abrir e o toque ainda deve ser ignorado. */
+export function modalGuarded(openedAtMs: number, nowMs: number): boolean {
+  return nowMs - openedAtMs < MODAL_OPEN_GUARD_MS;
 }

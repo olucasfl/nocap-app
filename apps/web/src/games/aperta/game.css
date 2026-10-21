@@ -854,3 +854,125 @@
   outline: 3px solid var(--space-gold, #ffc857);
   outline-offset: 3px;
 }
+
+/* ---------- escolha: trocar carta e proibido ---------- */
+.ap-pickcell {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+}
+.ap-pick.is-forbidden {
+  border-color: var(--space-red);
+}
+.ap-pick.is-forbidden .ap-pick-fx {
+  color: #ff8a80;
+}
+.ap-reroll {
+  min-height: 44px;
+  border: 3px solid var(--space-line);
+  border-radius: 12px;
+  background: var(--space-panel);
+  color: var(--space-text);
+  font: 600 13px var(--space-font-display);
+  cursor: pointer;
+}
+.ap-reroll:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* ---------- página de grimórios ---------- */
+.ap-album-wrap {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+.ap-album-count {
+  font: 500 15px var(--space-font-body);
+  color: var(--space-muted);
+}
+.ap-album-count b {
+  font: 700 22px var(--space-font-display);
+  color: var(--space-gold);
+}
+.ap-album {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ap-album-item {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px 8px;
+  border: 3px solid var(--space-line);
+  border-radius: 14px;
+  background: linear-gradient(180deg, var(--space-panel-2), var(--space-panel));
+  text-align: center;
+}
+.ap-album-item.is-locked {
+  opacity: 0.7;
+}
+.ap-album-item.is-forbidden:not(.is-locked) {
+  border-color: var(--space-red);
+}
+.ap-album-name {
+  font: 700 15px var(--space-font-display);
+  overflow-wrap: anywhere;
+}
+.ap-album-fx {
+  font: 400 12px/1.35 var(--space-font-body);
+  color: var(--space-muted);
+  overflow-wrap: anywhere;
+}
+.ap-album-lv {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--space-gold);
+  color: var(--space-ink);
+  font: 700 12px var(--space-font-display);
+}
+.ap-atlas {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 3px solid var(--space-line);
+  border-radius: 14px;
+  background: rgba(15, 24, 56, 0.7);
+}
+.ap-atlas h3 {
+  font: 700 17px var(--space-font-display);
+}
+.ap-atlas-pages {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ap-atlas-pages li {
+  display: grid;
+  gap: 2px;
+  min-height: 52px;
+  padding: 8px;
+  border: 2px dashed var(--space-line);
+  border-radius: 10px;
+  font: 400 12px var(--space-font-body);
+  color: var(--space-muted);
+}
+.ap-atlas-pages li.is-full {
+  border-style: solid;
+  border-color: var(--space-gold);
+  color: var(--space-text);
+}
+@media (min-width: 1000px) {
+  .ap-album {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}

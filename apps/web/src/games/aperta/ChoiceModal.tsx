@@ -1,7 +1,7 @@
 import { CHOICE_LOCK_SEC, GRIMOIRES, type PendingChoice } from '@nocap/games';
 import { useEffect, useRef, type CSSProperties } from 'react';
 import { GrimoireBook } from './GrimoireBook';
-import { artRarity, astroFor } from './game-logic';
+import { artRarity, astroFor, modalGuarded } from './game-logic';
 import { RARITY_LABEL } from './rarity';
 import { useDialog } from './useDialog';
 
@@ -14,13 +14,15 @@ interface Props {
   paused: boolean;
   onSelect: (id: string) => void;
   onConfirm: (id: string) => void;
+  /** Betelgeuse e Sonda Voyager: troca uma carta por outra. */
+  onReroll?: (id: string) => void;
 }
 
 /**
  * Escolha de 1 entre 3 grimórios (spec 038, 3.6 e 4.7), versão provisória da etapa 4: cartas
  * simples. Cartas bloqueadas por 1,6 s e escolha em dois passos (marcar, depois confirmar).
  */
-export function ChoiceModal({ pending, lockRemaining, build, paused, onSelect, onConfirm }: Props) {
+export function ChoiceModal({ pending, lockRemaining, build, paused, onSelect, onConfirm, onReroll }: Props) {
   const root = useRef<HTMLDivElement>(null);
   // Esc não fecha: a barra cheia obriga a escolher, e o toque acidental não pode escapar dela.
   useDialog(root, () => {});
@@ -38,6 +40,9 @@ export function ChoiceModal({ pending, lockRemaining, build, paused, onSelect, o
     animationPlayState: paused ? 'paused' : 'running',
   };
 
+  // Spec 4.7: o dedo que abriu o modal ainda pode estar descendo, então os primeiros 300 ms não contam.
+  const openedAt = useRef(performance.now());
+  const guarded = () => modalGuarded(openedAt.current, performance.now());
   const selected = pending.selected;
   return (
     <div className="ap-modal-game">
@@ -50,7 +55,11 @@ export function ChoiceModal({ pending, lockRemaining, build, paused, onSelect, o
         tabIndex={-1}
       >
         <h2 id="ap-choice-title">A energia transbordou</h2>
-        <p className="ap-sub ap-modal-intro">Escolha um grimório. Toque para marcar e confirme em seguida.</p>
+        <p className="ap-sub ap-modal-intro">
+          {pending.picksLeft > 1
+            ? `Escolha ${pending.picksLeft} grimórios, um de cada vez. Toque para marcar e confirme em seguida.`
+            : 'Escolha um grimório. Toque para marcar e confirme em seguida.'}
+        </p>
         <div className="ap-lockrow" role="status">
           {locked ? (
             <>
@@ -71,13 +80,15 @@ export function ChoiceModal({ pending, lockRemaining, build, paused, onSelect, o
             const have = build[id] ?? 0;
             const isSelected = selected === id;
             return (
+              <div key={id} className="ap-pickcell">
               <button
-                key={id}
                 type="button"
-                className={`ap-pick${isSelected ? ' is-selected' : ''}`}
+                className={`ap-pick${isSelected ? ' is-selected' : ''}${rarity === 'proibido' ? ' is-forbidden' : ''}`}
                 aria-pressed={isSelected}
                 disabled={locked}
-                onClick={() => onSelect(id)}
+                onClick={() => {
+                  if (!guarded()) onSelect(id);
+                }}
               >
                 <GrimoireBook rarity={rarity} astro={astroFor(id, def.family)} name={def.name} size="sm" still />
                 <span className="ap-pick-name">{def.name}</span>
@@ -85,6 +96,12 @@ export function ChoiceModal({ pending, lockRemaining, build, paused, onSelect, o
                 <span className="ap-pick-fx">{def.text}</span>
                 {have > 0 && <span className="ap-pick-lv">Você tem nível {have}: sobe para o {have + 1}</span>}
               </button>
+              {onReroll && pending.rerollsLeft > 0 && (
+                <button type="button" className="ap-reroll" disabled={locked} onClick={() => !guarded() && onReroll(id)}>
+                  Trocar esta carta
+                </button>
+              )}
+              </div>
             );
           })}
         </div>
@@ -93,9 +110,9 @@ export function ChoiceModal({ pending, lockRemaining, build, paused, onSelect, o
           type="button"
           className="ap-btn"
           disabled={locked || selected === null}
-          onClick={() => selected && onConfirm(selected)}
+          onClick={() => selected && !guarded() && onConfirm(selected)}
         >
-          Escolher este grimório
+          {pending.picksLeft > 1 ? `Escolher este grimório (faltam ${pending.picksLeft})` : 'Escolher este grimório'}
         </button>
       </div>
     </div>

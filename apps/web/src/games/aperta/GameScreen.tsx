@@ -12,6 +12,7 @@ import { AstroMedal } from './AstroMedal';
 import { BigButton } from './BigButton';
 import { ChoiceModal } from './ChoiceModal';
 import { GamePage, PageIcon, PAGE_TITLE } from './GamePage';
+import { GrimoiresPage } from './GrimoiresPage';
 import { RegionBackdrop, type RegionId } from './RegionBackdrop';
 import { SpaceArtSprite } from './SpaceArtSprite';
 import type { GameController, GameEvent } from './game-controller';
@@ -369,7 +370,9 @@ export function GameScreen({ controller, onExit }: Props) {
           name={page}
           notice={pageNotice(page, affordable, albumCount, state.collapses)}
           onClose={() => setPage(null)}
-        />
+        >
+          {page === 'grimoires' ? <GrimoiresPage state={state} /> : undefined}
+        </GamePage>
       )}
 
       {pending && (
@@ -381,6 +384,7 @@ export function GameScreen({ controller, onExit }: Props) {
           paused={paused}
           onSelect={controller.select}
           onConfirm={controller.choose}
+          onReroll={controller.reroll}
         />
       )}
     </section>
