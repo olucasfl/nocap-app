@@ -1,0 +1,65 @@
+/*
+ * Tema espaço do Aperta! (spec 038, seção 11). Único arquivo com os tokens --space-*.
+ * Escopo na classe .space-theme para não vazar para o resto do app (Pop Brutal).
+ * Exceção de cor/fonte registrada em .claude/rules/RULES.md.
+ */
+.space-theme {
+  /* Azul-noite */
+  --space-bg: #04060f;
+  --space-panel: #0f1838;
+  --space-panel-2: #18255a;
+  --space-line: #33479b;
+  --space-ink: #02030a;
+
+  /* Cores de destaque */
+  --space-blue: #3c9cf0;
+  --space-blue-dark: #1b5fa8;
+  --space-gold: #ffc857;
+  --space-red: #ee3a2f;
+  --space-red-dark: #7d0d09;
+  --space-cyan: #5ce1ff;
+  --space-violet: #9b7bff;
+
+  /* Texto */
+  --space-text: #e8eeff;
+  --space-muted: #93a1d6;
+
+  /* Raridades: couro (claro, escuro), detalhe e brilho */
+  --space-comum-1: #3c4d72;
+  --space-comum-2: #232d49;
+  --space-comum-trim: #c4cde4;
+  --space-comum-glow: rgba(196, 205, 228, 0);
+  --space-raro-1: #1f5ba8;
+  --space-raro-2: #0c2a5c;
+  --space-raro-trim: #7fe3ff;
+  --space-raro-glow: rgba(127, 227, 255, 0.35);
+  --space-epico-1: #6a36b0;
+  --space-epico-2: #30185f;
+  --space-epico-trim: #ffd166;
+  --space-epico-glow: rgba(167, 123, 255, 0.5);
+  --space-lendario-1: #c8921c;
+  --space-lendario-2: #6a460a;
+  --space-lendario-trim: #fff3b8;
+  --space-lendario-glow: rgba(255, 200, 87, 0.7);
+  --space-proibido-1: #1c0a14;
+  --space-proibido-2: #050308;
+  --space-proibido-trim: #ff4d5e;
+  --space-proibido-glow: rgba(255, 77, 94, 0.55);
+  --space-locked-1: #18204a;
+  --space-locked-2: #0d1330;
+  --space-locked-trim: #4a5aa0;
+
+  /* Objetos no espaço */
+  --space-obj-comet: #7fe3ff;
+  --space-obj-meteor: #ffd166;
+  --space-obj-satellite: #b79bff;
+  --space-obj-asteroid: #c9a27a;
+  --space-obj-probe: #9fe8c0;
+
+  /* Fontes (carregadas por loadSpaceFonts, só quando o jogo abre) */
+  --space-font-display: 'Chakra Petch', system-ui, sans-serif;
+  --space-font-body: 'Space Grotesk', system-ui, sans-serif;
+
+  color: var(--space-text);
+  font-family: var(--space-font-body);
+}
