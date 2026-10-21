@@ -5,7 +5,8 @@ import { GameScreen } from './GameScreen';
 import { createLocalGameStore, type GameStore } from './game-store';
 import { SavesModal } from './SavesModal';
 import { afterPick, apertaAccess } from './saves-flow';
-import { createLocalSaveStore, type SaveSummary } from './save-store';
+import { createApiSaveStore } from './api-save-store';
+import type { SaveSummary } from './save-store';
 import { StoryScreen } from './StoryScreen';
 import { TitleScreen } from './TitleScreen';
 import { useApertaGame } from './useApertaGame';
@@ -36,8 +37,8 @@ export function ApertaPage() {
   const { user, status } = useAuth();
   const access = apertaAccess(status, !!user);
   const userId = user?.id;
-  // Só dev: a etapa 2 troca os dois stores por versões que falam com a API.
-  const store = useMemo(() => (userId ? createLocalSaveStore(userId) : null), [userId]);
+  // Os saves vão para a API (etapa 2); o estado da partida em curso ainda usa o store local até as etapas seguintes.
+  const store = useMemo(() => (userId ? createApiSaveStore(userId) : null), [userId]);
   const gameStore = useMemo(() => (userId ? createLocalGameStore(userId) : null), [userId]);
   const [screen, setScreen] = useState<Screen>({ name: 'title', saves: false });
 

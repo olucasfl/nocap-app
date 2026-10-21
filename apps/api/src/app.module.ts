@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { GlobalRateLimitGuard } from './common/rate-limit';
 import { AccountModule } from './account/account.module';
+import { ApertaModule } from './aperta/aperta.module';
 import { AuthModule } from './auth/auth.module';
 import { DbModule } from './db/db.module';
 import { GamesController } from './games/games.controller';
@@ -25,6 +26,7 @@ import { WordsProgressModule } from './words-progress/words-progress.module';
     RoomsModule,
     WordsModule,
     WordsProgressModule,
+    ApertaModule,
   ],
   controllers: [HealthController, GamesController],
   providers: [{ provide: APP_GUARD, useClass: GlobalRateLimitGuard }],

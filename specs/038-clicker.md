@@ -543,3 +543,27 @@ Cada etapa só começa com o "sim" do Lucas para a anterior; cada uma termina co
 16. **Ascender (camada 2, depois de 15 colapsos; fora da v1, decidido).** *Escopo:* `canAscend`, Constelações, reinício da viagem, calibragem pelo simulador. *Commit:* `feat(games): Ascender no Aperta!`.
 
 **Ordem de dependência:** 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12 -> 13 (v1) -> 14 (v1.1) -> 15 (v1.2) -> 16 (Ascender). As etapas 5, 6 e 7 só dependem da 4 e podem trocar de ordem se o Lucas preferir (decisão 14.17).
+
+## 16. Estado atual e o que falta (atualizado em 21/10/2026, fim do dia)
+
+Todo o trabalho está na branch **`develop`** (nada na `main`, por ordem do Lucas). Testes: `packages/games` 564, `apps/web` 301, `apps/api` 334 passando; typecheck limpo. Duas sessões foram interrompidas por limite de uso e o que elas deixaram foi mesclado na `develop` como está.
+
+### Pronto na `develop`
+- **Etapa 1 (motor e simulador):** completa e calibrada para as vidas 1 a 5 (seção 6.7). Vidas 6 a 15 provisórias.
+- **Etapa 3 (título, saves e história):** completa, conferida no navegador.
+- **Parte da etapa 11:** kit de arte (astros, livros, botão, objetos, cenários, tokens `--space-*`) e sons (`aperta-audio`), ainda não ligados ao jogo inteiro.
+- **Etapa 2 (saves na conta), quase pronta:** migration `0009_aperta.sql`, `validateSave` e `mergeSaves` em `packages/games/src/aperta/save.ts`, módulo Nest `apps/api/src/aperta/`, `api-save-store.ts` no web. Com testes verdes.
+- **Etapa 4 (tela de jogo e toque), quase pronta:** `GameScreen`, `GamePage`, `ChoiceModal` provisório, `game-controller`, `useApertaGame`, `game-store` local, CSS e testes verdes.
+
+### O que falta, na ordem
+1. **Etapa 2, fechar:** (a) revisar a migration e **aplicar no banco** (o Lucas decide quando; nada foi aplicado); (b) conferir a API contra o banco real (GET/PUT/DELETE/restaurar, 401 do convidado, 409 de conflito, recuperação de 7 dias); (c) autosave a cada 30 s, cópia local e subida ao voltar a internet, e o aviso de conflito entre aparelhos na tela; (d) trocar o `createLocalGameStore` (estado da partida em curso, hoje local) pela API; (e) atualizar `ARCHITECTURE.md`, `docs/ROADMAP.md` e `HANDOFF.md`.
+2. **Etapa 4, fechar:** (a) conferir no navegador em 320, 390 e 1280 px (a sessão foi interrompida antes); (b) relógio que pausa com a aba escondida e repetição por tecla (até 6 toques/s) validados à mão; (c) docs.
+3. **Etapas 5 a 10:** Melhorias, Grimórios e álbum (modal completo com bloqueio de 1,6 s e escolha em 2 passos, que hoje é provisório), Objetos no espaço, Tutorial guiado, Colapso e Atlas Eterno, Árvore e conquistas. As páginas de Melhorias, Grimórios, Conquistas e Árvore hoje são **vazias provisórias**.
+4. **Etapa 11:** ligar a arte e os sons ao jogo, transições, desempenho em celular fraco.
+5. **Etapas 12 e 13:** conteúdo dos colapsos 1 a 5 e QA responsivo com calibragem ao vivo (fecha a v1).
+6. **Depois da v1:** etapas 14 a 16.
+
+### Como retomar
+- Trabalhar em worktree/branch própria cortada da `develop`, uma sessão por vez enquanto o limite de uso estiver baixo; mesclar na `develop` e dar push dela; **nada na `main` sem ordem do Lucas**.
+- Comandos: `pnpm --filter @nocap/games test`, `pnpm --filter @nocap/games sim` (calibração, fora do `pnpm test`), `pnpm typecheck`. Depois de mudar `packages/games`, rebuild: `npx tsup src/index.ts --format esm,cjs --dts --clean` dentro do pacote.
+- Lint geral tem erros antigos fora do Aperta! (Atravessa); não são desta spec.

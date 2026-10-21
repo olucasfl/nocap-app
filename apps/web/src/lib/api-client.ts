@@ -16,6 +16,8 @@ export class ApiError extends Error {
   constructor(
     readonly status: number,
     message: string,
+    /** Corpo da resposta de erro (o 409 do Aperta! traz o save da conta). */
+    readonly body?: unknown,
   ) {
     super(message);
   }
@@ -28,8 +30,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
   if (!res.ok) {
     const body = (await res.json().catch(() => null)) as { message?: string } | null;
-    throw new ApiError(res.status, body?.message ?? res.statusText);
+    throw new ApiError(res.status, body?.message ?? res.statusText, body);
   }
+  // 204 (apagar) não tem corpo
+  if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
 }
 

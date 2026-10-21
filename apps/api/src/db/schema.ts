@@ -1,7 +1,9 @@
 import {
   boolean,
+  check,
   index,
   integer,
+  real,
   jsonb,
   pgTable,
   primaryKey,
@@ -11,6 +13,7 @@ import {
   timestamp,
   uuid,
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 
 // Tabelas do Better Auth (nomes dos campos são os que o adaptador do Drizzle espera).
 export const authUser = pgTable('auth_user', {
@@ -223,4 +226,38 @@ export const wordsProgress = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [primaryKey({ columns: [t.userId, t.game, t.level] })],
+);
+
+/**
+ * Os 2 saves do Aperta! de cada conta (spec 038, seção 10). O servidor é a fonte da verdade: o `data` é o
+ * `SaveState` inteiro, já validado por `validateSave`. `revision` sobe a cada gravação e serve de trava
+ * entre aparelhos (PUT com `baseRevision` velho dá 409). As colunas soltas só alimentam a lista de saves
+ * sem abrir o JSON. Apagar só preenche `deleted_at`: a linha fica 7 dias para a pessoa se arrepender.
+ */
+export const apertaSaves = pgTable(
+  'aperta_saves',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => authUser.id, { onDelete: 'cascade' }),
+    slot: smallint('slot').notNull(),
+    name: text('name').notNull(),
+    data: jsonb('data').notNull(),
+    /** Versão do formato do `SaveState` (migra no aparelho e no servidor quando mudar). */
+    version: smallint('version').notNull(),
+    revision: integer('revision').notNull().default(1),
+    playSeconds: integer('play_seconds').notNull().default(0),
+    collapses: integer('collapses').notNull().default(0),
+    picks: integer('picks').notNull().default(0),
+    /** log10 da poeira da vida (o número em si pode passar de 1e15). */
+    dustLog10: real('dust_log10').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+  },
+  (t) => [
+    unique('aperta_saves_user_slot_unique').on(t.userId, t.slot),
+    check('aperta_saves_slot_check', sql`${t.slot} in (1, 2)`),
+  ],
 );

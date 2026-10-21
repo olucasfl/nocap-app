@@ -41,6 +41,6 @@
 | 035 | [Bee Word's (7 letras, uma obrigatória)](035-bee-words.md) | 7 | rascunho |
 | 036 | [Classic Word's em fases (1, 2 e 4 palavras)](036-classic-fases.md) | 7 | concluída |
 | 037 | [Progresso das fases na conta](037-progresso-na-conta.md) | 7 | concluída |
-| 038 | [Aperta! (clicker no espaço, solo, saves na conta)](038-clicker.md) | 8 | em andamento: etapas 1 (motor e simulador) e 3 (título, saves e história) prontas na `develop`, mais o kit de arte e os sons; etapa 2 (persistência) é a próxima |
+| 038 | [Aperta! (clicker no espaço, solo, saves na conta)](038-clicker.md) | 8 | em andamento na `develop`: etapas 1 e 3 prontas; 2 e 4 quase prontas; ver seção 16 da spec |
 
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.
