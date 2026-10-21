@@ -553,11 +553,11 @@ Todo o trabalho está na branch **`develop`** (nada na `main`, por ordem do Luca
 - **Etapa 3 (título, saves e história):** completa, conferida no navegador.
 - **Parte da etapa 11:** kit de arte (astros, livros, botão, objetos, cenários, tokens `--space-*`) e sons (`aperta-audio`), ainda não ligados ao jogo inteiro.
 - **Etapa 2 (saves na conta), quase pronta:** migration `0009_aperta.sql`, `validateSave` e `mergeSaves` em `packages/games/src/aperta/save.ts`, módulo Nest `apps/api/src/aperta/`, `api-save-store.ts` no web. Com testes verdes.
-- **Etapa 4 (tela de jogo e toque), quase pronta:** `GameScreen`, `GamePage`, `ChoiceModal` provisório, `game-controller`, `useApertaGame`, `game-store` local, CSS e testes verdes.
+- **Etapa 4 (tela de jogo e toque), pronta (21/10/2026):** `GameScreen`, `GamePage`, `ChoiceModal` provisório, `game-controller`, `useApertaGame`, `game-store`, CSS e testes verdes. Conferida no navegador (celular emulado com toque e DPR 2) em 320, 390 e 1280 px: sem rolagem lateral, texto cortado ou sobreposição. Pausa com a aba escondida coberta por `run-controller.test.ts`; tecla segurada medida em 12 toques em 2 s (limite de 6/s).
 
 ### O que falta, na ordem
 1. **Etapa 2, fechar:** (a) revisar a migration e **aplicar no banco** (o Lucas decide quando; nada foi aplicado); (b) conferir a API contra o banco real (GET/PUT/DELETE/restaurar, 401 do convidado, 409 de conflito, recuperação de 7 dias); (c) autosave a cada 30 s, cópia local e subida ao voltar a internet, e o aviso de conflito entre aparelhos na tela; (d) trocar o `createLocalGameStore` (estado da partida em curso, hoje local) pela API; (e) atualizar `ARCHITECTURE.md`, `docs/ROADMAP.md` e `HANDOFF.md`.
-2. **Etapa 4, fechar:** (a) conferir no navegador em 320, 390 e 1280 px (a sessão foi interrompida antes); (b) relógio que pausa com a aba escondida e repetição por tecla (até 6 toques/s) validados à mão; (c) docs.
+2. **Etapa 4: fechada** (ver acima).
 3. **Etapas 5 a 10:** Melhorias, Grimórios e álbum (modal completo com bloqueio de 1,6 s e escolha em 2 passos, que hoje é provisório), Objetos no espaço, Tutorial guiado, Colapso e Atlas Eterno, Árvore e conquistas. As páginas de Melhorias, Grimórios, Conquistas e Árvore hoje são **vazias provisórias**.
 4. **Etapa 11:** ligar a arte e os sons ao jogo, transições, desempenho em celular fraco.
 5. **Etapas 12 e 13:** conteúdo dos colapsos 1 a 5 e QA responsivo com calibragem ao vivo (fecha a v1).
