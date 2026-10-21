@@ -137,7 +137,7 @@ Valores de **efeito** e **base** são ponto de partida (seção 6 reescala).
 
 Níveis máximos por melhoria (para não quebrar a economia): 30 na maioria, 5 a 10 nas de efeito qualitativo (Kepler, Plêiades, Voyager).
 
-### 5.2 Grimórios (30 no lançamento, **lista aprovada pelo Lucas**)
+### 5.2 Grimórios (30 iniciais, **lista aprovada pelo Lucas**; mais 30 por colapso na 5.4)
 A família define o **bônus de conjunto** do Atlas (seção 8.2). Cada grimório é **dado** (id, nome, plaquinha, raridade, família, efeito, arte), montado só com as primitivas da seção 7.3. **Arte:** livro com cor por raridade (comum cinza-azul, raro azul com borda ciano, épico roxo com dourado e anel girando, lendário dourado que flutua, proibido preto com rachadura vermelha) e uma **medalha** redonda com o astro em SVG (esfera com sombreamento radial). Os efeitos são em **percentual** (os absolutos do mockup viram "% de um toque"). Na tabela, **Arte** é o desenho da medalha.
 
 **Comuns (10)**
@@ -192,7 +192,7 @@ A família define o **bônus de conjunto** do Atlas (seção 8.2). Cada grimóri
 
 Famílias: **Planetas 7 · Luas 7 · Pequenos corpos 4 · Estrelas 5 · Nebulosas e galáxias 4 · Buracos negros 3** (30). Livros escondidos aparecem como "???" com a medalha de cadeado até a descoberta.
 
-### 5.3 Conquistas (~24 no lançamento)
+### 5.3 Conquistas (~24 no lançamento, mais ~2 por colapso, ver 5.4)
 Cada uma com ícone, barra de progresso e "N/M"; ao ganhar, faixa de aviso (`transform`/`opacity`). Sem recompensa de poder na v1 (decisão 14.16).
 - **Toques:** Primeiro toque (1), 100, 1.000, 10.000, 100.000 toques.
 - **Poeira:** juntar 1 mil, 1 mi, 1 bi (na vida e no total).
@@ -203,12 +203,84 @@ Cada uma com ícone, barra de progresso e "N/M"; ao ganhar, faixa de aviso (`tra
 - **Árvore:** comprar o 1º nó; completar um ramo.
 - **Escondida:** uma conquista surpresa (por exemplo, apertar o botão no título sem entrar).
 
+### 5.4 Conteúdo por colapso (cada colapso traz coisas novas, não só números)
+Cada colapso **destrava conteúdo novo para a vida seguinte**: uma **região do espaço** (cenário próprio), **2 grimórios novos**, e mais um ou dois itens entre objetos, melhorias, mecânicas, eventos e conquistas. Tudo com nomes de astros reais, dentro da lore (a estação Perigeu segue o sinal das estrelas até o Horizonte de Eventos) e **orientado a dados**: cada linha da tabela é um registro no catálogo e cabe numa etapa pequena. Ao colapsar, o jogo mostra a **faixa "Novo no espaço"** com o que chegou.
+
+**Totais do catálogo completo (colapsos 0 a 15):**
+| Tipo | Lançamento (v1, colapsos 0 a 5) | Total (colapso 15) |
+| --- | --- | --- |
+| Grimórios | **30** + 10 novos = **40** (proibidos Cygnus e M87* chegam nos colapsos 3 e 5) | **60** |
+| Regiões (cenários) | 6 (início + colapsos 1 a 5) | **16** |
+| Objetos no espaço | 3 + 2 = 5 | **8** |
+| Melhorias | 8 + 2 = 10 | **14** |
+| Mecânicas simples | 3 | **6** |
+| Eventos | 2 | **6** |
+| Conquistas | ~24 + 10 = ~34 | ~54 |
+
+**Grimórios novos (30; entram 2 por colapso, na tabela abaixo). Efeitos só com as primitivas da 7.3; arte = medalha SVG do astro.**
+| Colapso | Grimório (raridade, família) | Efeito |
+| --- | --- | --- |
+| 1 | Palas (comum, Pequenos corpos) | objetos duram +1,5 s |
+| 1 | Hygiea (comum, Pequenos corpos) | +8% de energia por toque |
+| 2 | Calisto (raro, Luas) | satélites dão x2,5 em vez de x2 |
+| 2 | Encélado (raro, Luas) | estrela cadente dá +50% de energia |
+| 3 | Éris (raro, Pequenos corpos) | objetos valem +10% |
+| 3 | Haumea (comum, Pequenos corpos) | janela do combo +10% |
+| 4 | Sedna (épico, Pequenos corpos) | objetos aparecem 20% mais rápido |
+| 4 | Hale-Bopp (raro, Pequenos corpos) | cometas duram o dobro |
+| 5 | Proxima Centauri (raro, Estrelas) | +8% de poeira por toque |
+| 5 | Alfa Centauri A (épico, Estrelas) | todo 25º toque vale x6 |
+| 6 | Sirius B (épico, Estrelas) | combo máximo +1 e +10% de energia |
+| 6 | Canopus (raro, Estrelas) | melhorias custam 6% menos |
+| 7 | Alcíone (raro, Estrelas) | +1 objeto máximo na tela |
+| 7 | Maia (comum, Estrelas) | +5% de poeira por toque com o combo cheio |
+| 8 | Rigel (épico, Estrelas) | +12% de poeira e +6% de energia por toque |
+| 8 | Trapézio de Órion (raro, Nebulosas e galáxias) | grimórios comuns valem +15% |
+| 9 | Pulsar do Caranguejo (épico, Estrelas) | todo 50º toque dá +5% da barra de energia |
+| 9 | Cabeça de Cavalo (raro, Nebulosas e galáxias) | satélites também dão +5% de energia |
+| 10 | Omega Centauri (épico, Nebulosas e galáxias) | melhorias custam 4% menos por grimório diferente ativo (até 20%) |
+| 10 | Pilares da Criação (lendário, Nebulosas e galáxias) | estrelas cadentes enchem +25% da barra |
+| 11 | Grande Nuvem de Magalhães (lendário, Nebulosas e galáxias) | cada grimório diferente descoberto dá +0,5% de poeira por toque (máx. +15%) |
+| 11 | SN 1987A (épico, Estrelas) | 3 objetos capturados em sequência: o próximo toque vale x10 |
+| 12 | Quasar 3C 273 (épico, Buracos negros) | +25% de poeira por toque com o combo cheio |
+| 12 | Galáxia do Triângulo, M33 (lendário, Nebulosas e galáxias) | +10% de poeira e de energia por família com 2+ grimórios ativos (máx. +40%) |
+| 13 | Galáxia do Sombrero (lendário, Nebulosas e galáxias) | páginas do Atlas valem 70% em vez de 60% |
+| 13 | Aglomerado de Virgem (lendário, Nebulosas e galáxias) | escolhas mostram 4 cartas |
+| 14 | Grande Atrator (lendário, Nebulosas e galáxias) | o objeto mais próximo é capturado sozinho a cada 40 s |
+| 14 | TON 618 (**proibido**, Buracos negros) | poeira por toque x6, **mas a energia enche 85% mais devagar** |
+| 15 | Horizonte de Eventos (lendário, Buracos negros) | bônus de conjunto de todas as famílias +50% |
+| 15 | Phoenix A (**proibido**, Buracos negros) | cada colapso feito dá +10% de poder total, **mas melhorias custam +40%** |
+
+**Tabela dos 15 colapsos: o que cada um destrava** (o colapso 0 é o início do jogo).
+| Colapso | Região nova (cenário) | Grimórios | Objeto, melhoria ou mecânica | Evento ou conquista | Entra em |
+| --- | --- | --- | --- | --- | --- |
+| 0 (início) | **Sistema Solar interno** (cabine Perigeu; Mercúrio a Marte ao fundo) | os 30 iniciais (os não proibidos) | Cometa, Estrela cadente, Satélite; 5 melhorias base | conquistas básicas (24) | v1 |
+| 1 | **Cinturão de Asteroides** (rochas girando em camadas, tom marrom) | Palas, Hygiea | objeto **Asteroide** (poeira e um pouco de energia, lento); melhoria **Observatório James Webb** | conquista "Primeira estrela colapsada" | v1 |
+| 2 | **Júpiter e Saturno** (planetas grandes e anéis ao fundo) | Calisto, Encélado | objeto **Sonda Voyager** (próxima escolha ganha 1 troca grátis); mecânica **Favorito** (marca 1 grimório para pesar x2 no sorteio) | evento **Chuva de meteoros** (15 s de estrelas cadentes) | v1 |
+| 3 | **Cinturão de Kuiper** (gelo azulado, Plutão ao longe) | Éris, Haumea + libera **Cygnus X-1** (proibido) | melhoria **Telescópio Chandra** (objetos +% de duração) | conquista "Pegar um proibido" | v1 |
+| 4 | **Nuvem de Oort** (bolhas de gelo, tom violeta escuro) | Sedna, Hale-Bopp | mecânica **Missões da estação** (1 objetivo por vida, dá Fragmentos extras) | evento **Tempestade solar** (15 s de energia x2) | v1 |
+| 5 | **Alfa Centauro** (3 sóis, planeta Proxima b) | Proxima Centauri, Alfa Centauri A + libera **M87\*** (proibido) | melhoria **Observatório Gaia** (sorteio mostra o efeito já na carta) | conquistas "Atlas com 4 páginas" e "Saí do Sistema Solar" | v1 |
+| 6 | **Sirius** (estrela azul-branca e anã companheira) | Sirius B, Canopus | objeto **Pulsar** (próximos 10 toques x3) | conquista "10 pulsares" | v1.1 |
+| 7 | **Plêiades** (aglomerado azul com nebulosidade) | Alcíone, Maia | mecânica **Combo de objetos** (2 objetos em 3 s dão bônus) | evento **Eclipse** (a cada ~10 min, 20 s de poeira x2) | v1.1 |
+| 8 | **Nebulosa de Órion** (nuvens rosa e turquesa) | Rigel, Trapézio de Órion | melhoria **Telescópio Spitzer** (+energia por toque) | conquista "Todos os grimórios de Estrelas" | v1.1 |
+| 9 | **Nebulosa do Caranguejo** (filamentos laranja e azuis, pulsar) | Pulsar do Caranguejo, Cabeça de Cavalo | objeto **Supernova** (poeira grande e energia grande, raro) | evento **Supernova próxima** (objetos raros por 20 s) | v1.1 |
+| 10 | **Via Láctea** (núcleo galáctico e braço espiral) | Omega Centauri, Pilares da Criação | melhoria **LIGO** (ondas gravitacionais: combo máx. +1 por nível) | evento **Alinhamento galáctico** (combo máx. +2 por 30 s); conquista "10 colapsos" | v1.1 |
+| 11 | **Grandes Nuvens de Magalhães** (duas galáxias-anãs) | Grande Nuvem de Magalhães, SN 1987A | mecânica **4ª carta** (ver uma carta extra na escolha, 1 vez por vida) | conquista "Todas as regiões da Via Láctea" | v1.2 |
+| 12 | **Andrômeda** (galáxia espiral enorme se aproximando) | Quasar 3C 273, Galáxia do Triângulo (M33) | objeto **Quasar** (x3 por 6 s, raro) | evento **Passagem do cometa Halley** (cometas grandes por 20 s) | v1.2 |
+| 13 | **Aglomerado de Virgem** (centenas de galáxias, tom dourado) | Galáxia do Sombrero, Aglomerado de Virgem | mecânica **Captura automática** (a Perigeu pega 1 objeto a cada 60 s) | conquista "Todas as famílias com 2 páginas" | v1.2 |
+| 14 | **Grande Atrator** (fluxo de galáxias, tom vermelho) | Grande Atrator, TON 618 (proibido) | melhoria **Event Horizon Telescope** (+% de poder dos proibidos) | evento **Maré gravitacional** (objetos atraídos para o botão por 15 s) | v1.2 |
+| 15 | **Horizonte de Eventos** (buraco negro com disco, fim da viagem) | Horizonte de Eventos, Phoenix A (proibido) | **desbloqueia o Ascender** (8.4) | conquista "Estrela final" e final da história | v1.2 (Ascender: depois da v1, etapa 16) |
+
+- **Regiões:** cada uma é um **tema de cenário** em dados (cores do céu, 2 a 3 camadas de decoração em SVG que se movem só em `transform`, ilustração do fundo, cor do brilho do botão). Mudam a cada colapso; a região fica no save (`regionId`) e dá para **rever as já abertas** no menu de regiões do HUD (sem custo).
+- **Ordem do jogo:** todo o conteúdo de um colapso entra **no mesmo release**; o jogador vê só o que o colapso atual já abriu (os demais grimórios aparecem como "???" no álbum, e o total "N de 60" cresce a cada colapso).
+- **Lançamento (v1) = colapsos 0 a 5.** O que vem depois chega por atualização: **v1.1** (colapsos 6 a 10) e **v1.2** (colapsos 11 a 15). Se o jogador passar do colapso 5 antes de v1.1, os colapsos seguintes só dão Fragmentos e Atlas (sem novidade), com aviso "Mais espaço chegando". **Recomendação, ainda por confirmar** (decisão 21).
+
 ## 6. Economia e balanceamento
 
 ### 6.1 Metas de duração
 - **1º colapso: 6 a 10 horas de jogo aberto, espalhadas em vários dias** (sem renda offline). Uma sessão boa tem 20 a 40 min.
-- Cada colapso seguinte: **~60% do tempo do anterior** no começo, subindo de novo com o Atlas e a árvore; o 10º colapso em ~40 a 60 h de jogo.
-- **Ascender (camada 2):** meta de dezenas de colapsos por ciclo, "quase infinito".
+- **Cada colapso seguinte é MAIS RÁPIDO que o anterior** (decisão do Lucas): a vida encurta por causa das páginas do Atlas, da árvore e do conteúdo acumulado. A **tabela-alvo dos 15 colapsos está na seção 6.6**; o 1º segue o mais longo (8 h), o 15º chega ao piso de ~1,2 h.
+- **Ascender (camada 2):** libera **depois de 15 colapsos** (decisão do Lucas), "quase infinito" depois disso; **fora da v1** (decidido pelo Lucas; etapa 16, 8.4).
 - Primeira escolha de grimório: **~2 a 4 min** de jogo (para o jogador ver a graça antes de enjoar); as escolhas seguintes se espaçam (seção 6.3).
 
 ### 6.2 Valores iniciais fixados (o Lucas pediu que eu decidisse; o simulador da etapa 1 ajusta)
@@ -219,9 +291,9 @@ Escolhi o conjunto mais balanceado que a simulação rápida (6.3) sustentou: **
 - **Energia:** base **0,25 por toque**; passos de escolha **60, 90, 130, 180, 240, 320** e depois **x1,35** por escolha.
 - **Objetos:** cometa = **20 toques de poeira** (cresce com Hubble e grimórios), estrela cadente = **+10% da barra atual** (mín. 2), satélite = **x2 por 8 s**.
 - **Grimório repetido:** +50% do efeito por nível, **nível máx. 10**.
-- **Colapso:** estrela pronta com **2 mi de poeira acumulada na vida e >= 20 escolhas**; `meta(k) = 2 mi x 3^(k-1)` (a calibrar para o 2º colapso levar ~60% do 1º com Atlas e árvore).
+- **Colapso:** estrela pronta com **2 mi de poeira acumulada na vida e >= 20 escolhas** no 1º colapso (**15** do 2º ao 5º e **12** a partir do 6º); a meta de poeira começa em `meta(k) = 2 mi x 3^(k-1)` e é **a variável que o simulador ajusta** para a vida k durar o tempo-alvo da tabela 6.6.
 - **Atlas:** página a **60%**, 3 espaços iniciais, bônus de conjunto da seção 8.2.
-- **Metas de tempo:** 1º colapso em **6 a 10 h** de jogo aberto no ritmo normal (2,5 toques/s); 10º colapso em **40 a 60 h**.
+- **Metas de tempo:** 1º colapso em **6 a 10 h** (alvo 8 h) de jogo aberto no ritmo normal (2,5 toques/s); cada colapso seguinte mais rápido, até o piso de ~1,2 h no 15º (tabela 6.6); **15 colapsos em ~38 h** de jogo aberto.
 
 ### 6.3 O que o simulador de rascunho mostrou (e por que reescalar)
 Rodei uma simulação rápida e **descartável** (jogador que toca 2,5 vezes por segundo, compra sempre a melhoria de melhor retorno, grimórios dando +3% de poeira por escolha, combo cheio) com os números do mockup (base 25 a 260, **+1 energia por toque**, passos 60 a 320 e depois x1,25):
@@ -233,15 +305,41 @@ Rodei uma simulação rápida e **descartável** (jogador que toca 2,5 vezes por
 - **Fragmentos** por colapso: `3 + nº do colapso` + `floor(log10(poeira da vida / 2 mi))` quando positivo.
 - **Atlas:** a página fica com 60% do poder (8.2).
 
+### 6.6 Curva de duração e tabela-alvo dos 15 colapsos (para o simulador calibrar)
+Regra: a **duração da vida k** (do início até colapsar) parte de **8 h** e cai com **razão crescente** (a vida encurta rápido no começo e se aproxima de um **piso de 1,2 h**). Razão entre vidas consecutivas ~0,63 no 2º colapso, subindo até ~0,96 no 15º. A tabela é a **meta**; o simulador mexe em `meta(k)`, nos pesos e nos ganhos do Atlas/árvore até o perfil normal bater **±15%** em cada linha.
+
+| Colapso | Duração da vida (alvo) | Acumulado | Meta de poeira (inicial) | Mín. de escolhas |
+| --- | --- | --- | --- | --- |
+| 1º | 8,0 h | 8,0 h | 2 mi | 20 |
+| 2º | 5,0 h | 13,0 h | 6 mi | 15 |
+| 3º | 3,5 h | 16,5 h | 18 mi | 15 |
+| 4º | 3,0 h | 19,5 h | 54 mi | 15 |
+| 5º | 2,6 h | 22,1 h | 160 mi | 15 |
+| 6º | 2,3 h | 24,4 h | 490 mi | 12 |
+| 7º | 2,1 h | 26,5 h | 1,5 bi | 12 |
+| 8º | 1,9 h | 28,4 h | 4,4 bi | 12 |
+| 9º | 1,75 h | 30,15 h | 13 bi | 12 |
+| 10º | 1,6 h | 31,75 h | 40 bi | 12 |
+| 11º | 1,5 h | 33,25 h | 120 bi | 12 |
+| 12º | 1,4 h | 34,65 h | 350 bi | 12 |
+| 13º | 1,3 h | 35,95 h | 1,1 tri | 12 |
+| 14º | 1,25 h | 37,2 h | 3,2 tri | 12 |
+| 15º | 1,2 h | 38,4 h | 9,6 tri | 12 |
+
+- Isto **substitui** a meta anterior "10º colapso em 40 a 60 h": com a vida encurtando, o 10º colapso chega em ~32 h (faixa 27 a 37 h) e o 15º em ~38 h (faixa 33 a 44 h).
+- **Pesos de raridade nas vidas seguintes:** como cada vida zera as escolhas, os limiares da 4.3 (`n >= 3 / 8 / 14 / 22`) caem para **60%** depois do 1º colapso e **40%** depois do 5º, para os raros e épicos aparecerem mais cedo em vidas curtas. O simulador confirma.
+- Os "mín. de escolhas" e as metas de poeira são o ponto de partida; o simulador também valida que **nenhuma vida fica mais longa que a anterior**.
+
 ### 6.5 Simulador de economia (proposta)
-Um script em `packages/games` (`aperta/sim`, rodado por um comando `pnpm`) que **usa o próprio motor do jogo** (mesmas funções, sem cópia da regra) e simula jogadores por perfil e estratégia de compra (gulosa, só toque, mista). Entradas: tabelas de custo, efeitos, pesos, passos de energia. Saídas: tabela de **horas de jogo aberto até cada marco** (1ª melhoria, 1ª escolha, 10 escolhas, ~1 mi, estrela pronta, 2º colapso, 10º colapso), **distribuição de grimórios**, quanto cada grimório vale (retorno por escolha) e **alertas** (grimório que domina, ramo da árvore que quebra, valor que passa de 1e15). Testes automatizados: "1º colapso do perfil normal entre 6 e 10 h" falha o build se uma mudança de número sair da faixa; "nenhum caminho dá infinito ou NaN".
+Um script em `packages/games` (`aperta/sim`, rodado por um comando `pnpm`) que **usa o próprio motor do jogo** (mesmas funções, sem cópia da regra) e simula jogadores por perfil e estratégia de compra (gulosa, só toque, mista). Entradas: tabelas de custo, efeitos, pesos, passos de energia. Saídas: tabela de **horas de jogo aberto até cada marco** (1ª melhoria, 1ª escolha, 10 escolhas, ~1 mi, estrela pronta, 2º colapso, 10º colapso), **distribuição de grimórios**, quanto cada grimório vale (retorno por escolha) e **alertas** (grimório que domina, ramo da árvore que quebra, valor que passa de 1e15). Testes automatizados: "cada vida do perfil normal fica a ±15% da tabela 6.6, e nenhuma é mais longa que a anterior"; "1º colapso do perfil normal entre 6 e 10 h" falha o build se uma mudança de número sair da faixa; "nenhum caminho dá infinito ou NaN".
 
 ## 7. Motor (lógica em `packages/games/src/aperta/`)
 
 ### 7.1 Estado
-`SaveState` = { `version`, `name`, `createdAt`, `playSeconds`, `tutorial` (passo ou concluído), `storySeen`, `run` { `dust`, `dustLife`, `energy`, `picks`, `upgradeLevels[]`, `build` { grimórioId -> nível }, `clicks`, `combo`, `boostUntil`, `rngState` }, `album` (descobertos), `atlas` { `slots`, `pages` [{ grimórioId, nível }] }, `collapses`, `fragments` { `earned`, `spent` }, `tree` (nós e níveis), `achievements`, `stats` (toques, objetos, etc.) } e, mais tarde, `ascensions` e `constellations`.
+`SaveState` = { `version`, `name`, `createdAt`, `playSeconds`, `tutorial` (passo ou concluído), `storySeen`, `run` { `dust`, `dustLife`, `energy`, `picks`, `upgradeLevels[]`, `build` { grimórioId -> nível }, `clicks`, `combo`, `boostUntil`, `rngState` }, `album` (descobertos), `atlas` { `slots`, `pages` [{ grimórioId, nível }] }, `collapses` (colapso atual), `regionId` (região em que está), `seenUnlocks` (conteúdo novo já avisado), `eventState` (recargas dos eventos), `fragments` { `earned`, `spent` }, `tree` (nós e níveis), `achievements`, `stats` (toques, objetos, etc.) } e, mais tarde, `ascensions` e `constellations`.
 
 ### 7.2 Funções puras (todas testadas)
+O **conteúdo liberado é derivado** do colapso atual: cada grimório, região, objeto, melhoria, mecânica e evento do catálogo tem um campo `unlockedAtCollapse`, e `unlockedContent(state)` devolve só o que já está aberto (o save **não** guarda a lista, para não ter como desalinhar). Funções extras: `unlockedContent`, `regionFor(state)`, `eventTick(state, now)`, `canAscend(state)`.
 `newSave(seed)`, `press(state, now)`, `tickObjects(state, now)`, `captureObject(state, id)`, `buyUpgrade(state, i)`, `drawGrimoires(state)` (3 sem repetir, por peso), `chooseGrimoire(state, id)`, `canCollapse(state)`, `collapse(state, pageId)`, `respecTree(state)`, `buyTreeNode(state, id)`, `effectiveStats(state)` (junta melhorias, grimórios, Atlas, bônus de conjunto e árvore em números finais), `validateSave(raw)` (formato e coerência, seção 10), `mergeSaves(a, b)`.
 
 ### 7.3 Primitivas de efeito (todo grimório e nó da árvore usa só estas)
@@ -284,7 +382,7 @@ O motor é **orientado a eventos** (toque, captura, compra) e a um relógio de j
 - **Refazer árvore (decidido por mim, ajustável pelo simulador):** devolve **todos os Fragmentos gastos menos 20%** (arredonda para cima; mínimo 1 de taxa se houver gasto), com confirmação em 2 passos, sem limite de vezes e sem cobrar poeira, para ninguém ser punido por testar builds.
 
 ### 8.4 Ascender (camada 2, depois da v1)
-Proposta: quando o jogador chega a **N colapsos** (a calibrar, ~25), pode **Ascender**: zera colapsos, Fragmentos e árvore (mantém **álbum, conquistas e Atlas**) e ganha **Constelações** (moeda permanente) que dão um multiplicador global e destravam grimórios e espaços novos. Cada ascensão pede mais colapsos que a anterior. Fica fora da v1 (etapa 12) para a economia da camada 1 ser calibrada antes.
+Regra (gatilho decidido pelo Lucas em 21/10/2026): o jogador pode **Ascender depois de 15 colapsos** (o 15º é o do **Horizonte de Eventos**, fim da primeira viagem). Ascender zera colapsos, Fragmentos e árvore (mantém **álbum, conquistas e Atlas**) e ganha **Constelações** (moeda permanente) que dão um multiplicador global e destravam grimórios e espaços novos; a viagem recomeça do Sistema Solar interno com os 15 colapsos de novo, mais rápidos pelo bônus. Cada ascensão pede os mesmos 15 colapsos (e o piso de duração sobe com as Constelações, a calibrar). **Fica fora da v1 (etapa 16), decidido pelo Lucas**, para a economia da camada 1 ser calibrada antes.
 
 ## 9. Encaixe no NoCap
 
@@ -308,7 +406,7 @@ aperta_save_history(save_id uuid, revision int, data jsonb, saved_at timestamptz
   pk(save_id, revision))                 -- últimas 5 revisões por save, para desfazer conflito
 aperta_settings(user_id uuid pk, data jsonb, updated_at timestamptz)   -- som, efeitos reduzidos, avisos vistos
 ```
-- **Por save (dentro do `data`):** vida atual (poeira, energia, melhorias, grimórios e níveis, combo), **álbum de grimórios**, **Atlas Eterno**, **Fragmentos e árvore**, **colapsos**, **conquistas**, **estatísticas**, **passo do tutorial** e **história vista**. Os **2 saves por conta são independentes** (álbum e conquistas por save).
+- **Por save (dentro do `data`):** vida atual (poeira, energia, melhorias, grimórios e níveis, combo), **álbum de grimórios**, **Atlas Eterno**, **Fragmentos e árvore**, **colapso atual** e **região**, **conteúdo novo já avisado**, **conquistas**, **estatísticas**, **passo do tutorial** e **história vista**. Os **2 saves por conta são independentes** (álbum e conquistas por save).
 - **Por conta:** preferências (som ligado, efeitos reduzidos). Nada de progresso fica só no aparelho.
 - Colunas desnormalizadas (`collapses`, `picks`, `dust_log10`, `play_seconds`) servem para validar e mostrar a lista de saves sem abrir o JSON. `ON DELETE CASCADE` só ao apagar a conta.
 
@@ -322,7 +420,7 @@ aperta_settings(user_id uuid pk, data jsonb, updated_at timestamptz)   -- som, e
 ### 10.3 Validações no servidor (sem ranking, mas sem valor impossível)
 O servidor usa a **mesma função de validação de `packages/games`** (`validateSave`, `mergeSaves`):
 1. **Formato:** zod do `SaveState`; limites de tamanho; ids só do catálogo; níveis dentro dos máximos.
-2. **Coerência de gastos:** soma dos custos dos níveis de melhoria <= poeira total ganha na vida; grimórios por nível somam <= escolhas feitas (`picks`); páginas do Atlas <= espaços do nº de colapsos; Fragmentos gastos <= `earned`; `earned` coerente com `collapses`.
+2. **Coerência de gastos:** soma dos custos dos níveis de melhoria <= poeira total ganha na vida; grimórios por nível somam <= escolhas feitas (`picks`); páginas do Atlas <= espaços do nº de colapsos; Fragmentos gastos <= `earned`; `earned` coerente com `collapses`; **todo grimório, melhoria e objeto usado tem `unlockedAtCollapse` <= colapso atual** (conteúdo de colapso futuro é rejeitado); `regionId` é uma região já aberta.
 3. **Ritmo possível:** `dustLife <= playSeconds x teto de poeira por segundo` calculado pelo motor para o que foi comprado (com teto de 12 toques/s) e `playSeconds <= tempo desde created_at`. Estourou: **corta ao valor possível** e marca `flagged` (não bane).
 4. **Nunca diminui por engano:** a junção automática fica com o mais avançado (mais colapsos; empate, mais escolhas e mais poeira da vida); álbum, conquistas e Atlas são **união**.
 5. Rate limit de 1 `PUT` a cada 5 s por save.
@@ -361,6 +459,7 @@ O servidor usa a **mesma função de validação de `packages/games`** (`validat
 | **Cansaço do clique** | Segurar tecla repete (teto 6/s), objetos e grimórios dão "respiro", sem exigir milhares de cliques seguidos. |
 | **Estouro numérico** | Teto de 1e300, formato pt-BR, testes de borda; mantissa-expoente só se o Ascender exigir. |
 | **Escopo** (30 grimórios, arte, textos) | Entrega em etapas; a arte de astros é SVG reaproveitável; 12 grimórios no primeiro playtest. |
+| **Conteúdo por colapso é muito trabalho (16 regiões, 30 grimórios novos, 5 objetos, 6 eventos)** | Tudo em dados e em etapas pequenas (12 a 15), v1 só até o colapso 5, simulador valida a curva a cada pacote. |
 | **Aba em segundo plano e relógio** | Relógio do jogo pausa; nada rende parado; o servidor não usa a hora do aparelho para progresso. |
 | **Mockup fora dos tokens Pop Brutal** | Resolvido: exceção nomeada só para a tela do Aperta! (seções 11 e 13); falta o Lucas confirmar o registro em RULES.md. |
 | **Desempenho em celular fraco** | Camadas `transform`, sem animar sombra/filtro, redução automática de efeitos, medir no QA. |
@@ -374,13 +473,13 @@ O Lucas decidiu em 21/10/2026 que o Aperta! usa o **tema do mockup**: paleta azu
 
 ## 14. Decisões (resolvidas e em aberto)
 
-Todas respondidas pelo Lucas em 21/10/2026, **exceto a 10 (Ascender)**.
+Respondidas pelo Lucas em 21/10/2026, **exceto o que está em "Pendentes"** (só o conteúdo da v1, decisão 21).
 
 ### Resolvidas
 1. **Paleta, gradientes e fontes:** **RESOLVIDA.** Usar a paleta do mockup (azul-noite, azul, ouro, vermelho, sombreamento radial, Chakra Petch e Space Grotesk) e **mudar as regras**: exceção nomeada só para a tela do Aperta!, com tokens `--space-*` em um só arquivo (seções 11 e 13).
 2. **Nomes:** **RESOLVIDA.** Poeira estelar, Fragmentos, Colapsar a estrela, Atlas Eterno, Árvore de Habilidades, grimórios, Cometa, Estrela cadente e Satélite.
 3. **Números iniciais:** **RESOLVIDA ("sim").** Custos base x60, energia por toque 0,25, passos x1,35 depois do 6º, estrela pronta em ~2 mi de poeira e 20 escolhas (seção 6.2). O simulador da etapa 1 calibra.
-4. **Meta de tempo:** **RESOLVIDA ("sim").** "6 a 10 h até o 1º colapso" conta **só tempo de jogo aberto**, ritmo normal (2,5 toques/s); o 10º colapso em **40 a 60 h**.
+4. **Meta de tempo:** **RESOLVIDA ("sim") e atualizada.** "6 a 10 h até o 1º colapso" (alvo 8 h) conta **só tempo de jogo aberto**, ritmo normal (2,5 toques/s). Cada colapso seguinte é **mais rápido**, com a tabela-alvo da seção 6.6 (5 h, 3,5 h... até ~1,2 h no 15º; 15 colapsos em ~38 h). Isto substitui a meta antiga "10º colapso em 40 a 60 h".
 5. **Grimório repetido:** **RESOLVIDA (Lucas delegou; decidi o mais balanceado).** +50% do efeito por nível, máximo nível 10; o simulador calibra.
 6. **Os 30 grimórios:** **RESOLVIDA.** Lista aprovada, com nome, efeito e arte (seção 5.2).
 7. **Proibidos:** **RESOLVIDA.** Aprovados: Sagitário A* (a partir de 22 escolhas), Cygnus X-1 (após o 3º colapso) e M87* (após o 5º), com os preços da tabela.
@@ -397,8 +496,10 @@ Todas respondidas pelo Lucas em 21/10/2026, **exceto a 10 (Ascender)**.
 19. **Convidado:** **RESOLVIDA ("ok").** O cartão aparece no Arcade com "Entre para jogar".
 20. **Segurar a tecla:** **RESOLVIDA ("ok").** Permitido, até 6 toques/s.
 
-### Pendente
-10. **Ascender (camada 2):** entra **depois da v1** (etapa 12) com a regra da seção 8.4 (zera colapsos, Fragmentos e árvore; guarda álbum, conquistas e Atlas; dá Constelações a partir de ~25 colapsos), ou já na v1? **Recomendação: depois da v1**, para calibrar a camada 1 antes (ela é a base do simulador). **O Lucas ainda não respondeu.**
+### Pendentes
+10. **Ascender (camada 2):** **RESOLVIDA.** Gatilho **depois de 15 colapsos** (seção 8.4) e entra **depois da v1** (etapa 16), decidido pelo Lucas em 21/10/2026.
+
+21. **Conteúdo na v1:** o lançamento traz **colapsos 0 a 5** (6 regiões, 40 grimórios) e o resto chega nas atualizações v1.1 (colapsos 6 a 10) e v1.2 (11 a 15)? Ou quer **tudo (60 grimórios, 16 regiões) já na v1**? **Recomendação: v1 até o colapso 5**, porque cada região e grimório novo pede arte e calibragem, e jogar a v1 por ~22 h já cobre bem o primeiro mês. **O Lucas ainda não respondeu.**
 
 ### Exceção de regra (item 1) ainda não registrada nos arquivos de regras
 A mudança em `.claude/rules/RULES.md` e `CLAUDE.md` **não foi feita por esta sessão**: regras permanentes só mudam por pedido direto do Lucas, e a ordem chegou por mensagem entre sessões. Texto pronto:
@@ -420,6 +521,10 @@ Cada etapa só começa com o "sim" do Lucas para a anterior; cada uma termina co
 9. **Colapso e Atlas.** *Escopo:* `canCollapse`/`collapse`, modal em 2 passos, Atlas com espaços e bônus de conjunto, Fragmentos, "estrela pronta" na UI. *Pronto quando:* a vida recomeça, a página guarda 60%, os espaços sobem nos colapsos 5/10/25/50 (teste), e o servidor aceita o save. *Commit:* `feat(games): colapso e Atlas Eterno do Aperta!`.
 10. **Árvore e conquistas.** *Escopo:* Árvore de Habilidades (6 ramos x 3 níveis, refazer pagando), página de Conquistas, avisos de conquista. *Pronto quando:* os nós alteram `effectiveStats` com teste, refazer devolve com a taxa decidida, conquistas contam e salvam. *Commit:* `feat(web): árvore e conquistas do Aperta!`.
 11. **Polimento visual e sons.** *Escopo:* arte dos astros e livros, receitas de `sfx`, transições, animações só `transform`/`opacity`, `prefers-reduced-motion`, desempenho em celular fraco. *Pronto quando:* revisão manual aprovada pelo Lucas e nenhuma animação de propriedade proibida (checagem automática do CSS). *Commit:* `feat(web): arte, sons e polimento do Aperta!`.
-12. **QA responsivo e calibragem ao vivo.** *Escopo:* 320, 390, 768, 1024, 1280 e 1920 px, toque e mouse e teclado, calibrar a economia jogando com o Lucas (ajustar tabelas pelo simulador), `Ascender` (camada 2) se aprovada. *Pronto quando:* o Lucas aprova jogar por 1 a 2 dias e o ritmo bate com a meta. *Commit:* `fix(games): calibragem do Aperta!` (e, depois, `feat(games): Ascender no Aperta!`).
+12. **Conteúdo por colapso: base de dados e colapsos 1 a 5 (v1).** *Escopo:* campo `unlockedAtCollapse` em todo o catálogo, `unlockedContent`, **regiões** em dados (cores, camadas de SVG, troca ao colapsar, menu de regiões), faixa "Novo no espaço", e o conteúdo dos colapsos 1 a 5 da tabela 5.4 (10 grimórios, Asteroide, Sonda Voyager, James Webb, Chandra, Gaia, Favorito, Missões da estação, Chuva de meteoros, Tempestade solar, 5 regiões e as conquistas). *Pode dividir em 12a (base, regiões e colapso 1), 12b (colapsos 2 e 3) e 12c (colapsos 4 e 5), cada uma com seu commit.* *Arquivos:* `packages/games/src/aperta/content/*`, `apps/web/src/games/aperta/regions/*`. *Pronto quando:* testes mostram que cada colapso destrava exatamente a linha da tabela, o servidor rejeita conteúdo de colapso futuro e cada região renderiza em 320, 390, 768 e 1280 px. *Commit:* `feat(games): conteúdo dos colapsos 1 a 5 do Aperta!`.
+13. **QA responsivo e calibragem ao vivo (fecha a v1).** *Escopo:* 320, 390, 768, 1024, 1280 e 1920 px, toque, mouse e teclado; calibrar a economia **jogando com o Lucas** (ajustar tabelas pelo simulador até as vidas 1 a 5 da tabela 6.6 baterem ±15%). *Pronto quando:* o Lucas aprova jogar por 1 a 2 dias e o ritmo bate com a meta. *Commit:* `fix(games): calibragem do Aperta!`.
+14. **Conteúdo dos colapsos 6 a 10 (v1.1).** *Escopo:* itens da tabela 5.4 (10 grimórios, Pulsar, Supernova, Spitzer, LIGO, Combo de objetos, Eclipse, Alinhamento galáctico e Supernova próxima, 5 regiões, conquistas). *Pode dividir em 14a (6 e 7), 14b (8 e 9) e 14c (10).* *Pronto quando:* o simulador confirma as vidas 6 a 10 da tabela 6.6 e os testes de desbloqueio passam. *Commit:* `feat(games): conteúdo dos colapsos 6 a 10 do Aperta!`.
+15. **Conteúdo dos colapsos 11 a 15 (v1.2).** *Escopo:* itens da tabela 5.4 (10 grimórios com TON 618 e Phoenix A, Quasar, 4ª carta, Captura automática, Event Horizon Telescope, Passagem do Halley, Maré gravitacional, 5 regiões, final da história no Horizonte de Eventos). *Pode dividir em 15a (11 e 12), 15b (13 e 14) e 15c (15).* *Pronto quando:* as vidas 11 a 15 da tabela 6.6 batem ±15% e o 15º colapso mostra o final. *Commit:* `feat(games): conteúdo dos colapsos 11 a 15 do Aperta!`.
+16. **Ascender (camada 2, depois de 15 colapsos; fora da v1, decidido).** *Escopo:* `canAscend`, Constelações, reinício da viagem, calibragem pelo simulador. *Commit:* `feat(games): Ascender no Aperta!`.
 
-**Ordem de dependência:** 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12. As etapas 5, 6 e 7 só dependem da 4 e podem trocar de ordem se o Lucas preferir (decisão 14.17).
+**Ordem de dependência:** 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12 -> 13 (v1) -> 14 (v1.1) -> 15 (v1.2) -> 16 (Ascender). As etapas 5, 6 e 7 só dependem da 4 e podem trocar de ordem se o Lucas preferir (decisão 14.17).
