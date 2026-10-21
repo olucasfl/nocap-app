@@ -11,6 +11,8 @@ export interface GameStore {
   /** `null` = save sem partida ainda (novo jogo). */
   load(slot: SaveSlot): Promise<SaveState | null>;
   save(slot: SaveSlot, state: SaveState): Promise<void>;
+  /** Guarda já, de forma síncrona, só neste aparelho: o que importa não se perde se a aba fechar durante uma subida. */
+  stage?(slot: SaveSlot, state: SaveState): void;
 }
 
 /** Só em memória: testes. */
@@ -71,6 +73,9 @@ export function createSyncedGameStore(saves: SyncedSaveStore): GameStore {
   return {
     async load(slot) {
       return (await saves.open(slot)).state;
+    },
+    stage(slot, state) {
+      saves.update(slot, state);
     },
     async save(slot, state) {
       saves.update(slot, state);

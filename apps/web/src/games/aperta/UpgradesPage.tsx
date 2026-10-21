@@ -35,6 +35,7 @@ function UpgradeCard({ row, onBuy }: { row: UpgradeRow; onBuy: (index: number) =
       <button
         type="button"
         className="ap-up-buy"
+        data-tut={row.id === 'pulse' ? 'buy-pulse' : undefined}
         aria-label={label}
         aria-disabled={!canBuy}
         onClick={() => {

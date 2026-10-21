@@ -4,3 +4,4 @@ export * from './engine';
 export * from './format';
 export * from './save';
 export * from './sim';
+export * from './tutorial';

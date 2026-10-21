@@ -17,6 +17,7 @@ import { GrimoiresPage } from './GrimoiresPage';
 import { RegionBackdrop, type RegionId } from './RegionBackdrop';
 import { SpaceArtSprite } from './SpaceArtSprite';
 import { SpaceObject, type SpaceObjectKind } from './SpaceObject';
+import { FirstGrimoireModal, TutorialOverlay } from './Tutorial';
 import { UpgradesPage } from './UpgradesPage';
 import type { GameController, GameEvent } from './game-controller';
 import {
@@ -35,6 +36,7 @@ import {
   togglePage,
   type PageName,
 } from './game-logic';
+import { tutorialPageAllowed, tutorialView } from './tutorial-logic';
 import { useGameSnapshot } from './useApertaGame';
 import './art.css';
 import './game.css';
@@ -112,11 +114,14 @@ export function GameScreen({ controller, onExit }: Props) {
   const [freshGrimoire, setFreshGrimoire] = useState(false);
 
   const pending = state.run.pending;
+  const tutorial = state.tutorial === 'done' ? null : state.tutorial;
   // Os handlers de teclado e toque leem isto sem refazer os listeners a cada render.
   const blocked = useRef(false);
   blocked.current = page !== null || pending !== null;
   const pageRef = useRef(page);
   pageRef.current = page;
+  const tutorialRef = useRef(tutorial);
+  tutorialRef.current = tutorial;
   const timers = useRef(new Set<number>());
   const later = useCallback((fn: () => void, ms: number) => {
     const id = window.setTimeout(() => {
@@ -179,6 +184,9 @@ export function GameScreen({ controller, onExit }: Props) {
   }, [controller]);
 
   const openPage = useCallback((target: PageName) => {
+    // No tutorial só abre a página do passo (a dock fora do alvo já está bloqueada; isto cobre o teclado).
+    const step = tutorialRef.current;
+    if (step !== null && !tutorialPageAllowed(step, target)) return;
     setPage((current) => togglePage(current, target));
     if (target === 'grimoires') setFreshGrimoire(false);
   }, []);
@@ -207,7 +215,7 @@ export function GameScreen({ controller, onExit }: Props) {
         return;
       }
       if (e.key === 'Escape') {
-        if (pageRef.current) setPage(null);
+        if (pageRef.current && tutorialRef.current === null) setPage(null);
         return;
       }
       if (e.target instanceof Element && e.target.closest('input, textarea, select')) return;
@@ -226,6 +234,11 @@ export function GameScreen({ controller, onExit }: Props) {
       if (flash !== null) window.clearTimeout(flash);
     };
   }, [controller, openPage]);
+
+  // Passo 3 -> 4 quando a página de Melhorias abre; o passo fica salvo.
+  useEffect(() => {
+    if (tutorial === 3 && page === 'upgrades') controller.tutorialStep(3, 4);
+  }, [tutorial, page, controller]);
 
   const energy = energyView(state);
   const affordable = affordableCount(state);
@@ -303,7 +316,7 @@ export function GameScreen({ controller, onExit }: Props) {
       </div>
 
       <div className="ap-field">
-        <div className="ap-stage">
+        <div className="ap-stage" data-tut="press">
           <BigButton
             size="100%"
             pressed={pressed}
@@ -383,6 +396,7 @@ export function GameScreen({ controller, onExit }: Props) {
         </button>
         <button
           type="button"
+          data-tut="dock-grimoires"
           className={`ap-dockb${page === 'grimoires' ? ' on' : ''}`}
           aria-label={freshGrimoire ? 'Grimórios, tem novidade' : PAGE_TITLE.grimoires}
           aria-pressed={page === 'grimoires'}
@@ -397,6 +411,7 @@ export function GameScreen({ controller, onExit }: Props) {
         </button>
         <button
           type="button"
+          data-tut="dock-upgrades"
           className={`ap-dockb ap-dockb-big${page === 'upgrades' ? ' on' : ''}`}
           aria-label={affordable > 0 ? `Melhorias, ${affordable} para comprar` : PAGE_TITLE.upgrades}
           aria-pressed={page === 'upgrades'}
@@ -433,6 +448,15 @@ export function GameScreen({ controller, onExit }: Props) {
           onSelect={controller.select}
           onConfirm={controller.choose}
           onReroll={controller.reroll}
+        />
+      )}
+
+      {tutorial === 2 && <FirstGrimoireModal onDone={() => controller.tutorialStep(2, 3)} />}
+      {tutorial !== null && (
+        <TutorialOverlay
+          view={tutorialView(tutorial, page)}
+          onSkip={controller.tutorialSkip}
+          onFinish={controller.tutorialSkip}
         />
       )}
     </section>

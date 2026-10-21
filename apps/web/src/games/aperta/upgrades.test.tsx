@@ -12,7 +12,7 @@ import { buyLabel, upgradeRows } from './upgrades-logic';
 const noop = () => {};
 const rich = (dust: number, over: Partial<SaveState['run']> = {}): SaveState => {
   const s = newSave('teste', 0);
-  return { ...s, run: { ...s.run, dust, ...over } };
+  return { ...s, tutorial: 'done', run: { ...s.run, dust, ...over } };
 };
 const row = (state: SaveState, id: string) => upgradeRows(state).find((r) => r.id === id)!;
 

@@ -1,8 +1,12 @@
 import {
   GRIMOIRES,
+  advanceTutorial,
   buyUpgrade,
   captureObject,
   chooseGrimoire,
+  finishTutorial,
+  grantTutorialDust,
+  grantTutorialGrimoire,
   newSave,
   objectPreview,
   press,
@@ -13,6 +17,7 @@ import {
   tickObjects,
   type ObjectKind,
   type ObjectPreview,
+  tutorialAllows,
   type SaveState,
 } from '@nocap/games';
 import type { GameStore } from './game-store';
@@ -60,6 +65,7 @@ export function createGameController({ initial, store, slot, perf = () => perfor
   let saveFailures = 0;
   let lastBuyAt = -Infinity;
   let saving = false;
+  let again = false;
   let dirty = false;
 
   const listeners = new Set<() => void>();
@@ -83,9 +89,20 @@ export function createGameController({ initial, store, slot, perf = () => perfor
     notify();
   }
 
+  /** Guarda na cópia do aparelho na hora e sobe em seguida: para o que não pode se perder (escolha, compra, tutorial). */
+  function saveNow() {
+    store.stage?.(slot, state);
+    void save();
+  }
+
   /** Grava o estado atual. Três falhas seguidas ligam o aviso persistente. */
   async function save(force = false): Promise<boolean> {
-    if (saving || (!dirty && !force)) return !saveFailures;
+    if (saving) {
+      // Mudou durante a subida (passo do tutorial, compra): sobe de novo logo depois, sem esperar o autosave.
+      if (dirty) again = true;
+      return !saveFailures;
+    }
+    if (!dirty && !force) return !saveFailures;
     saving = true;
     const toSave = state;
     dirty = false;
@@ -99,6 +116,11 @@ export function createGameController({ initial, store, slot, perf = () => perfor
       saving = false;
       notify();
     }
+    if (again && dirty) {
+      again = false;
+      return save();
+    }
+    again = false;
     return saveFailures === 0;
   }
 
@@ -117,18 +139,22 @@ export function createGameController({ initial, store, slot, perf = () => perfor
 
     /** Um toque. Devolve `false` se o motor ignorou (escolha aberta, rápido demais, pausado). */
     press(): boolean {
-      if (pausedAt !== null) return false;
+      if (pausedAt !== null || !tutorialAllows(state, 'press')) return false;
       const t = now();
       const before = state;
-      const next = press(state, t);
+      let next = press(state, t);
       if (next.stats.clicks === before.stats.clicks) {
         commit(next);
         return false;
       }
+      // Passo 1 do tutorial: o 1º toque entrega a Lua e abre o aviso do passo 2 (sem sorteio).
+      const firstGrimoire = next.tutorial === 1;
+      if (firstGrimoire) next = advanceTutorial(grantTutorialGrimoire(next), 1, 2);
       commit(next);
+      if (firstGrimoire) saveNow();
       eventId += 1;
       emit({ type: 'press', id: eventId, gain: next.run.lastGain, combo: next.run.combo });
-      if (!before.run.pending && next.run.pending) emit({ type: 'choice-open' });
+      if (!firstGrimoire && !before.run.pending && next.run.pending) emit({ type: 'choice-open' });
       return true;
     },
 
@@ -149,7 +175,7 @@ export function createGameController({ initial, store, slot, perf = () => perfor
       commit(next);
       const def = GRIMOIRES.find((g) => g.id === id);
       emit({ type: 'grimoire', id, name: def?.name ?? id, level: next.run.build[id] ?? 1 });
-      void save();
+      saveNow();
       return true;
     },
 
@@ -158,14 +184,14 @@ export function createGameController({ initial, store, slot, perf = () => perfor
      * toque duplo (spec 4.7), que vale para qualquer melhoria. Devolve `true` se comprou.
      */
     buy(index: number): boolean {
-      if (pausedAt !== null || state.run.pending) return false;
+      if (pausedAt !== null || state.run.pending || !tutorialAllows(state, 'buy', index)) return false;
       const t = now();
       if (t - lastBuyAt < BUY_GUARD_SEC) return false;
       const next = buyUpgrade(state, index);
       if (next === state) return false;
       lastBuyAt = t;
-      commit(next);
-      void save();
+      commit(advanceTutorial(next, 4, 5));
+      saveNow();
       return true;
     },
 
@@ -185,6 +211,24 @@ export function createGameController({ initial, store, slot, perf = () => perfor
       emit({ type: 'capture', objectId, kind: obj.kind, preview });
       if (!before.run.pending && next.run.pending) emit({ type: 'choice-open' });
       return true;
+    },
+
+    /**
+     * Tutorial (spec 4.6): vai de `from` para `to` só se o save ainda está em `from`. Sair do passo 2
+     * ("Entendi") entrega a poeira da 1ª compra. O progresso é salvo na hora para o passo sobreviver.
+     */
+    tutorialStep(from: number, to: number | 'done') {
+      if (state.tutorial !== from) return;
+      const moved = advanceTutorial(state, from, to);
+      commit(from === 2 ? grantTutorialDust(moved) : moved);
+      saveNow();
+    },
+
+    /** "Pular tutorial" e "Começar a jogar". */
+    tutorialSkip() {
+      if (state.tutorial === 'done') return;
+      commit(finishTutorial(state));
+      saveNow();
     },
 
     /** Betelgeuse / Voyager: troca uma carta oferecida. */
@@ -234,7 +278,7 @@ export function createGameController({ initial, store, slot, perf = () => perfor
 
 export type GameController = ReturnType<typeof createGameController>;
 
-/** Carrega o save do espaço ou começa um novo jogo (sem tutorial por enquanto: é da etapa 8). */
+/** Carrega o save do espaço ou começa um novo jogo (o tutorial começa no passo 1 do save novo). */
 export async function loadOrCreate(
   store: GameStore,
   slot: SaveSlot,
@@ -243,5 +287,7 @@ export async function loadOrCreate(
   nowMs: number = Date.now(),
 ): Promise<SaveState> {
   const saved = await store.load(slot);
-  return saved ?? newSave(seed, nowMs, name);
+  if (!saved) return newSave(seed, nowMs, name);
+  // Save de antes do tutorial: o passo 1 só salva depois do 1º toque, então toque com passo 1 = jogo antigo.
+  return saved.tutorial === 1 && saved.stats.clicks > 0 ? finishTutorial(saved) : saved;
 }
