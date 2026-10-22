@@ -424,6 +424,8 @@ O motor é **orientado a eventos** (toque, captura, compra) e a um relógio de j
 - Cada colapso começa uma **vida nova** do zero, com o tutorial concluído.
 
 ### 8.2 Atlas Eterno (livro pessoal do save)
+> **Substituída em 22/10/2026 pela spec 040** (colapso infinito, Cofre dos Proibidos, Cintilas e árvore grande). Texto abaixo mantido só como histórico.
+
 - Espaços iniciais **3** (decisão 14.8); **+1 espaço** nos colapsos **5, 10, 25 e 50** (máx. 7).
 - Uma página mantém o grimório (com o nível que tinha) a **60% do poder** em **todas** as vidas.
 - **Bônus de conjunto por família:** com 2, 3 e 4+ páginas da mesma família ativa o bônus daquela família (valores iniciais a calibrar):
@@ -437,6 +439,8 @@ O motor é **orientado a eventos** (toque, captura, compra) e a um relógio de j
 - A página mostra os espaços, a família de cada página, os bônus ativos e os que faltam.
 
 ### 8.3 Fragmentos e Árvore de Habilidades
+> **Substituída em 22/10/2026 pela spec 040** (colapso infinito, Cofre dos Proibidos, Cintilas e árvore grande). Texto abaixo mantido só como histórico.
+
 - A árvore **abre no 1º colapso**. Seis ramos (nomes do mockup) com 3 níveis cada (18 nós; custo em Fragmentos **1, 2 e 4** por nível):
   - **Sistema Alfa Centauro:** poeira por toque +10% / +20% / +35%.
   - **Nebulosa do Caranguejo:** energia por toque +10% / +20% / +35%.
@@ -447,6 +451,8 @@ O motor é **orientado a eventos** (toque, captura, compra) e a um relógio de j
 - **Refazer árvore (decidido por mim, ajustável pelo simulador):** devolve **todos os Fragmentos gastos menos 20%** (arredonda para cima; mínimo 1 de taxa se houver gasto), com confirmação em 2 passos, sem limite de vezes e sem cobrar poeira, para ninguém ser punido por testar builds.
 
 ### 8.4 Ascender (camada 2, depois da v1)
+> **Substituída em 22/10/2026 pela spec 040** (colapso infinito, Cofre dos Proibidos, Cintilas e árvore grande). Texto abaixo mantido só como histórico.
+
 Regra (gatilho decidido pelo Lucas em 21/10/2026): o jogador pode **Ascender depois de 15 colapsos** (o 15º é o do **Horizonte de Eventos**, fim da primeira viagem). Ascender zera colapsos, Fragmentos e árvore (mantém **álbum, conquistas e Atlas**) e ganha **Constelações** (moeda permanente) que dão um multiplicador global e destravam grimórios e espaços novos; a viagem recomeça do Sistema Solar interno com os 15 colapsos de novo, mais rápidos pelo bônus. Cada ascensão pede os mesmos 15 colapsos (e o piso de duração sobe com as Constelações, a calibrar). **Fica fora da v1 (etapa 16), decidido pelo Lucas**, para a economia da camada 1 ser calibrada antes.
 
 ## 9. Encaixe no NoCap
@@ -589,11 +595,9 @@ Cada etapa só começa com o "sim" do Lucas para a anterior; cada uma termina co
 11. **Polimento visual e sons.** *Escopo:* arte dos astros e livros, receitas de `sfx`, transições, animações só `transform`/`opacity`, `prefers-reduced-motion`, desempenho em celular fraco. *Pronto quando:* revisão manual aprovada pelo Lucas e nenhuma animação de propriedade proibida (checagem automática do CSS). *Commit:* `feat(web): arte, sons e polimento do Aperta!`.
 12. **Conteúdo por colapso: base de dados e colapsos 1 a 5 (v1).** *Escopo:* campo `unlockedAtCollapse` em todo o catálogo, `unlockedContent`, **regiões** em dados (cores, camadas de SVG, troca ao colapsar, menu de regiões), faixa "Novo no espaço", e o conteúdo dos colapsos 1 a 5 da tabela 5.4 (10 grimórios, Asteroide, Sonda Voyager, James Webb, Chandra, Gaia, Favorito, Missões da estação, Chuva de meteoros, Tempestade solar, 5 regiões e as conquistas). *Pode dividir em 12a (base, regiões e colapso 1), 12b (colapsos 2 e 3) e 12c (colapsos 4 e 5), cada uma com seu commit.* *Arquivos:* `packages/games/src/aperta/content/*`, `apps/web/src/games/aperta/regions/*`. *Pronto quando:* testes mostram que cada colapso destrava exatamente a linha da tabela, o servidor rejeita conteúdo de colapso futuro e cada região renderiza em 320, 390, 768 e 1280 px. *Commit:* `feat(games): conteúdo dos colapsos 1 a 5 do Aperta!`.
 13. **QA responsivo e calibragem ao vivo (fecha a v1).** *Escopo:* 320, 390, 768, 1024, 1280 e 1920 px, toque, mouse e teclado; calibrar a economia **jogando com o Lucas** (ajustar tabelas pelo simulador até as vidas 1 a 5 da tabela 6.6 baterem ±15%). *Pronto quando:* o Lucas aprova jogar por 1 a 2 dias e o ritmo bate com a meta. *Commit:* `fix(games): calibragem do Aperta!`.
-14. **Conteúdo dos colapsos 6 a 10 (v1.1).** *Escopo:* itens da tabela 5.4 (10 grimórios, Pulsar, Supernova, Spitzer, LIGO, Combo de objetos, Eclipse, Alinhamento galáctico e Supernova próxima, 5 regiões, conquistas). *Pode dividir em 14a (6 e 7), 14b (8 e 9) e 14c (10).* *Pronto quando:* o simulador confirma as vidas 6 a 10 da tabela 6.6 e os testes de desbloqueio passam. *Commit:* `feat(games): conteúdo dos colapsos 6 a 10 do Aperta!`.
-15. **Conteúdo dos colapsos 11 a 15 (v1.2).** *Escopo:* itens da tabela 5.4 (10 grimórios com TON 618 e Phoenix A, Quasar, 4ª carta, Captura automática, Event Horizon Telescope, Passagem do Halley, Maré gravitacional, 5 regiões, final da história no Horizonte de Eventos). *Pode dividir em 15a (11 e 12), 15b (13 e 14) e 15c (15).* *Pronto quando:* as vidas 11 a 15 da tabela 6.6 batem ±15% e o 15º colapso mostra o final. *Commit:* `feat(games): conteúdo dos colapsos 11 a 15 do Aperta!`.
-16. **Ascender (camada 2, depois de 15 colapsos; fora da v1, decidido).** *Escopo:* `canAscend`, Constelações, reinício da viagem, calibragem pelo simulador. *Commit:* `feat(games): Ascender no Aperta!`.
+14. a 21. **Substituídas pela spec 040** (colapso infinito e requisitos, Cofre dos Proibidos, Cintilas e conquistas, árvore grande: motor, tela, habilidades e automações, sorte e exploração, calibragem). O plano completo e a ordem estão na seção 8 da 040; o Ascender (antiga etapa 16) foi cancelado.
 
-**Ordem de dependência:** 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12 -> 13 (v1) -> 14 (v1.1) -> 15 (v1.2) -> 16 (Ascender). As etapas 5, 6 e 7 só dependem da 4 e podem trocar de ordem se o Lucas preferir (decisão 14.17).
+**Ordem de dependência:** 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12 -> 13 (v1) -> 14 a 21 (spec 040). As etapas 5, 6 e 7 só dependem da 4 e podem trocar de ordem se o Lucas preferir (decisão 14.17).
 
 ## 16. Estado atual e o que falta (atualizado em 21/10/2026, fim do dia; etapa 2 fechada no código)
 
@@ -624,7 +628,7 @@ Todo o trabalho está na branch **`develop`** (nada na `main`, por ordem do Luca
 3. **Etapa 10: fechada** (ver acima).
 4. **Etapa 11: fechada no código** (11 e 11b); falta só a revisão visual do Lucas.
 5. **Etapa 13: fechada no código (22/10/2026), falta só jogar:** varredura de QA em 320, 390, 768, 1024, 1280 e 1920 px (toque e mouse) sem problemas; falta o Lucas jogar 1 a 2 dias para aprovar o ritmo.
-6. **Depois da v1:** etapas 14 a 16.
+6. **Depois da v1:** etapas 14 a 21 da **spec 040** (colapso infinito, Cofre dos Proibidos, Cintilas, árvore grande). Ascender cancelado.
 
 ### Como retomar
 - Trabalhar em worktree/branch própria cortada da `develop`, uma sessão por vez enquanto o limite de uso estiver baixo; mesclar na `develop` e dar push dela; **nada na `main` sem ordem do Lucas**.
