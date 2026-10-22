@@ -26,9 +26,10 @@ describe('melhorias e grimórios não competem', () => {
     }
   });
 
-  it('as melhorias cobrem poder básico: poeira por toque, por segundo e energia por toque', () => {
-    expect(upgradeDomains).toContain('dustPerTouch');
+  it('as melhorias cobrem poder básico: toque, poeira por segundo, energia por segundo e por toque', () => {
+    expect(upgradeDomains).toContain('touchMult');
     expect(upgradeDomains).toContain('dustPerSecond');
+    expect(upgradeDomains).toContain('energyPerSecond');
     expect(upgradeDomains).toContain('energyPerTouch');
   });
 
@@ -96,28 +97,39 @@ describe('melhorias e grimórios não competem', () => {
   });
 });
 
-describe('melhorias: liberação e preço', () => {
-  it('a 1ª melhoria é o Pulso Solar, custa 25 e é a única sem marco', () => {
-    expect(UPGRADES[0]!.id).toBe('pulse');
-    expect(UPGRADES[0]!.base).toBe(25);
-    expect(UPGRADES.filter((u) => u.unlock === undefined && u.unlockedAtCollapse === 0 && !u.requiresUpgrade).map((u) => u.id)).toEqual(['pulse']);
+describe('melhorias: prateleira e preço', () => {
+  it('a 1ª de cada tipo é a Lente Polida (100), o Satélite (15) e a Antena (400)', () => {
+    const first = (kind: string) => UPGRADES.find((u) => u.kind === kind && u.unlockedAtCollapse === 0)!;
+    expect([first('touch').id, first('touch').base]).toEqual(['lens', 100]);
+    expect([first('generator').id, first('generator').base]).toEqual(['satellite', 15]);
+    expect([first('energy').id, first('energy').base]).toEqual(['antenna', 400]);
   });
 
-  it('todo marco aponta para melhorias que existem e para um nível possível, e o custo cresce', () => {
-    for (const u of UPGRADES) {
-      for (const ref of [u.unlock?.upgrade, u.requiresUpgrade]) {
-        if (!ref) continue;
-        const target = UPGRADES.find((x) => x.id === ref.id);
-        expect(target, `${u.id} -> ${ref.id}`).toBeDefined();
-        expect(ref.level).toBeLessThanOrEqual(target!.max);
-      }
-      expect(u.growth).toBeGreaterThan(1);
+  it('dentro de cada tipo a fila segue a ordem do preço', () => {
+    for (const kind of ['touch', 'generator', 'energy']) {
+      const early = UPGRADES.filter((u) => u.kind === kind && u.unlockedAtCollapse === 0);
+      early.forEach((u, i) => {
+        if (i > 0) expect(u.base, u.id).toBeGreaterThanOrEqual((early[i - 1] as typeof u).base);
+      });
     }
   });
 
-  it('o marco de poeira abre a melhoria perto do preço da 1ª compra (nunca muito antes)', () => {
+  it('as de toque são únicas, as de gerador crescem 15% por unidade, e toda exigência existe', () => {
     for (const u of UPGRADES) {
-      if (u.unlock?.dust !== undefined) expect(u.unlock.dust, u.id).toBeLessThanOrEqual(u.base * 1.2);
+      if (u.kind === 'touch') expect([u.id, u.max, u.growth]).toEqual([u.id, 1, 1]);
+      else expect(u.growth, u.id).toBe(1.15);
+      if (u.requiresUpgrade) {
+        const target = UPGRADES.find((x) => x.id === u.requiresUpgrade!.id);
+        expect(target, u.id).toBeDefined();
+        expect(u.requiresUpgrade.level).toBeLessThanOrEqual(target!.max);
+      }
+    }
+  });
+
+  it('as melhorias de toque cobrem tipos variados, não só "dobra o toque"', () => {
+    const touchDomains = new Set(UPGRADES.filter((u) => u.kind === 'touch').flatMap((u) => u.domains));
+    for (const d of ['touchMult', 'touchFlat', 'touchNth', 'touchCrit', 'touchEcho', 'comboUnlock', 'objectSpawn']) {
+      expect(touchDomains, d).toContain(d);
     }
   });
 });

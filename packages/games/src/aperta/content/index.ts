@@ -49,7 +49,11 @@ export const COLLAPSE_CONTENT: readonly CollapseContent[] = [
       'sirius', 'vega', 'betelgeuse', 'polaris', 'antares', 'crab-nebula',
       'orion-nebula', 'milky-way', 'andromeda', 'sagittarius-a',
     ],
-    upgrades: [],
+    upgrades: [
+      'lens', 'gloves', 'trained', 'rhythm', 'magnet', 'hands', 'charged', 'luck', 'cadence', 'kepler', 'lens2', 'echo',
+      'cabin', 'voyager', 'satellite', 'probe', 'telescope', 'observatory', 'station', 'colony', 'fleet', 'portal',
+      'antenna', 'receiver', 'matrix', 'deepnet',
+    ],
     objects: ['comet', 'shooting-star', 'satellite'],
     mechanics: [],
     events: [],

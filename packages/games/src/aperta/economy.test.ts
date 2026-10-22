@@ -20,38 +20,41 @@ import {
   upgradeCost,
 } from './economy';
 
-const pulse = UPGRADES[0]!;
+const pulse = UPGRADES.find((u) => u.id === 'satellite')!;
 
 describe('upgradeCost', () => {
-  it('a 1ª melhoria custa 25 e o preço sobe a cada compra (25, 28, 31...)', () => {
-    expect(upgradeCost(pulse, 0)).toBe(25);
-    expect(upgradeCost(pulse, 1)).toBe(28);
-    expect(upgradeCost(pulse, 2)).toBe(31);
-    for (let l = 1; l < pulse.max; l++) expect(upgradeCost(pulse, l)).toBeGreaterThan(upgradeCost(pulse, l - 1));
+  it('o 1º Satélite custa 15 e o preço sobe 15% a cada compra (15, 17, 20...)', () => {
+    expect(upgradeCost(pulse, 0)).toBe(15);
+    expect(upgradeCost(pulse, 1)).toBe(17);
+    expect(upgradeCost(pulse, 2)).toBe(20);
+    for (let l = 1; l < 60; l++) expect(upgradeCost(pulse, l)).toBeGreaterThan(upgradeCost(pulse, l - 1));
   });
 
-  it('começa em ~x1,12 por nível e fica mais íngreme depois do trecho suave', () => {
-    const soft = pulse.steep!.from;
-    expect(upgradeCost(pulse, soft)).toBe(Math.round(25 * Math.pow(1.12, soft)));
+  it('cada compra custa x1,15 da anterior', () => {
     const ratio = (l: number) => upgradeCost(pulse, l + 1) / upgradeCost(pulse, l);
-    expect(ratio(1)).toBeGreaterThan(1.1);
-    expect(ratio(1)).toBeLessThan(1.15);
-    expect(ratio(soft + 3)).toBeGreaterThan(1.5);
+    for (const l of [10, 20, 30]) {
+      expect(ratio(l)).toBeGreaterThan(1.14);
+      expect(ratio(l)).toBeLessThan(1.16);
+    }
   });
 
-  it('as melhorias seguintes abrem bem mais caras que a primeira', () => {
-    for (const def of UPGRADES.slice(1)) expect(def.base, def.id).toBeGreaterThan(pulse.base * 4);
+  it('cada gerador abre bem mais caro que o anterior', () => {
+    for (const kind of ['generator', 'energy'] as const) {
+      const list = UPGRADES.filter((u) => u.kind === kind);
+      list.slice(1).forEach((def, i) => expect(def.base, def.id).toBeGreaterThanOrEqual((list[i] as typeof def).base * 5));
+    }
   });
 
   it('aplica o desconto com piso de 40% do custo', () => {
-    expect(upgradeCost(pulse, 10, 0.5)).toBe(Math.round(upgradeCost(pulse, 10) * 0.5));
-    expect(upgradeCost(pulse, 10, 0.01)).toBe(Math.round(upgradeCost(pulse, 10) * COST_FLOOR));
+    const near = (a: number, b: number) => expect(Math.abs(a - b)).toBeLessThanOrEqual(1);
+    near(upgradeCost(pulse, 10, 0.5), upgradeCost(pulse, 10) * 0.5);
+    near(upgradeCost(pulse, 10, 0.01), upgradeCost(pulse, 10) * COST_FLOOR);
     expect(clampCostFactor(0.1)).toBe(COST_FLOOR);
     expect(clampCostFactor(1.4)).toBe(1.4);
   });
 
   it('nunca devolve NaN, zero nem infinito', () => {
-    expect(upgradeCost(pulse, -3)).toBe(25);
+    expect(upgradeCost(pulse, -3)).toBe(15);
     expect(upgradeCost(pulse, 5000)).toBe(MAX_NUMBER);
     expect(upgradeCost(pulse, 2, Number.NaN)).toBe(upgradeCost(pulse, 2));
     expect(upgradeCost(pulse, 2, Infinity)).toBe(upgradeCost(pulse, 2));

@@ -80,11 +80,11 @@ describe('tabela de conteúdo por colapso (spec 5.4)', () => {
     expect(sorted(inTable)).toEqual(sorted(GRIMOIRES.map((g) => g.id)));
   });
 
-  it('os totais do lançamento batem: 40 grimórios, 6 regiões, 5 objetos, 10 melhorias, 2 eventos', () => {
+  it('os totais do lançamento batem: 40 grimórios, 6 regiões, 5 objetos, 29 melhorias, 2 eventos', () => {
     expect(GRIMOIRES).toHaveLength(40);
     expect(REGIONS).toHaveLength(6);
     expect(OBJECTS).toHaveLength(5);
-    expect(UPGRADES).toHaveLength(10);
+    expect(UPGRADES).toHaveLength(29);
     expect(COLLAPSE_CONTENT.flatMap((r) => r.events)).toHaveLength(2);
     // As mecânicas novas da v1; o Combo já existe desde o início.
     expect(COLLAPSE_CONTENT.flatMap((r) => r.mechanics)).toEqual(['favorite', 'missions']);

@@ -30,7 +30,7 @@ function withObjects(s: SaveState, kinds: GameObject['kind'][]): SaveState {
 
 function withResonance(s: SaveState): SaveState {
   const upgradeLevels = s.run.upgradeLevels.slice();
-  upgradeLevels[upgradeIndex('resonance')] = 1;
+  upgradeLevels[upgradeIndex('rhythm')] = 1;
   return withRun(s, { upgradeLevels });
 }
 
