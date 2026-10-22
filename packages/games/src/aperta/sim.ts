@@ -85,7 +85,8 @@ function income(stats: EffectiveStats, profile: Profile, objectKinds: readonly O
   const point = full ? 1 + stats.combo.pointValue * stats.combo.max : 1;
   const nth = stats.nth.reduce((acc, r) => acc * (1 + (r.mult - 1) / r.n), 1);
   const base = stats.dustPerTouch + (full ? stats.combo.fullDustAdd : 0);
-  const perTouch = base * point * (full ? stats.combo.fullMult : 1) * nth;
+  const crit = 1 + stats.crit.chance * (stats.crit.mult - 1);
+  const perTouch = base * point * (full ? stats.combo.fullMult : 1) * nth * crit;
   const touchEnergy =
     stats.energyPerTouch + (full ? stats.combo.fullEnergyAdd : 0) + stats.nth.reduce((acc, r) => acc + r.energy / r.n, 0);
 
@@ -93,7 +94,9 @@ function income(stats: EffectiveStats, profile: Profile, objectKinds: readonly O
   let objectEnergy = 0;
   if (!stats.objects.disabled) {
     const totalWeight = objectKinds.reduce((sum, k) => sum + weightOf(k), 0);
-    const rate = (1 / stats.objects.intervalSec) * profile.captureChance;
+    // Cada toque encurta a espera (Toque Magnético): T = I / (1 + toques/s * corte).
+    const interval = (stats.objects.spawnMinSec + stats.objects.spawnMaxSec) / 2 / (1 + tps * stats.objects.spawnCutPerTouch);
+    const rate = (1 / interval) * profile.captureChance;
     for (const k of objectKinds) {
       const share = weightOf(k) / totalWeight;
       const r = stats.objects.reward[k];
@@ -102,8 +105,9 @@ function income(stats: EffectiveStats, profile: Profile, objectKinds: readonly O
     }
   }
   return {
-    dust: tps * perTouch + objectDust + stats.dustPerSecond,
-    energy: tps * touchEnergy * 1 + objectEnergy,
+    // O simulador toca sem parar, então os geradores rendem no ritmo ativo (com o teto).
+    dust: tps * perTouch + objectDust + Math.min(stats.autoDustPerSec, stats.autoDustCap),
+    energy: tps * touchEnergy * 1 + objectEnergy + Math.min(stats.autoEnergyPerSec, stats.autoEnergyCap),
   };
 }
 

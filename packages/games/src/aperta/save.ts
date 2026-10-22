@@ -97,7 +97,8 @@ const runSchema = z.object({
 });
 
 const saveSchema = z.object({
-  version: z.number().int().min(1).max(SAVE_VERSION),
+  // Saves de versões antigas são recusados: a economia v2 (spec 039) zerou todos.
+  version: z.number().int().min(SAVE_VERSION).max(SAVE_VERSION),
   name: z.string().trim().min(1).max(40),
   createdAt: nonNeg,
   playSeconds: z.number().finite().min(0).max(MAX_PLAY_SECONDS),
@@ -163,10 +164,11 @@ function dustPerSecondCeiling(save: SaveState): number {
   const comboMult = (1 + s.combo.pointValue * s.combo.max) * s.combo.fullMult;
   const nthMult = s.nth.reduce((m, r) => m * Math.max(1, r.mult), 1);
   const burst = Math.max(1, s.objects.afterCaptureMult) * Math.max(1, s.objects.signalMult);
-  const perTouch = (Math.max(1, s.dustPerTouch) + s.combo.fullDustAdd) * comboMult * nthMult * burst;
+  const crit = s.crit.chance > 0 ? s.crit.mult : 1;
+  const perTouch = (Math.max(1, s.dustPerTouch) + s.combo.fullDustAdd) * comboMult * nthMult * burst * crit;
   const bestObject = Math.max(...Object.values(s.objects.reward).map((r) => r.dust));
-  const objects = s.objects.disabled ? 0 : (1 / Math.max(0.5, s.objects.intervalSec)) * s.dustPerTouch * bestObject;
-  return MAX_TOUCHES_PER_SEC * perTouch + objects + s.dustPerSecond;
+  const objects = s.objects.disabled ? 0 : (1 / Math.max(0.5, s.objects.spawnMinSec)) * s.dustPerTouch * bestObject;
+  return MAX_TOUCHES_PER_SEC * perTouch + objects + Math.min(s.autoDustPerSec, s.autoDustCap);
 }
 
 /** Confere formato e coerência de um save vindo de fora (aparelho ou banco). Não muta `raw`. */

@@ -287,26 +287,26 @@ export function grimoireById(id: string): GrimoireDef | undefined {
   return GRIMOIRE_BY_ID.get(id);
 }
 
-// --- Melhorias (seção 5.1 e 6.2) ---
+// --- Melhorias (spec 039: toque conquistado, geradores e geradores de energia) ---
+
+/** `touch`: melhoria de toque (compra única); `generator`: poeira por segundo; `energy`: energia por segundo. */
+export type UpgradeKind = 'touch' | 'generator' | 'energy';
 
 export interface UpgradeDef {
   id: string;
   name: string;
   text: string;
-  /** Custo do nível 0; cada nível multiplica por `growth` (suave, ~x1,13 nas primeiras compras). */
+  kind: UpgradeKind;
+  /** Custo do nível 0; cada nível multiplica por `growth` (1,15 nos geradores; 1 nas de toque, que são únicas). */
   base: number;
   growth: number;
   /** Depois de `from` níveis o fator por nível passa a `growth` de cá: o custo sobe mais que o ganho. */
   steep?: { from: number; growth: number };
   max: number;
   unlockedAtCollapse: number;
-  /**
-   * Liberação progressiva (spec 038, 5.1): a melhoria abre quando a vida já ganhou `dust` de poeira OU
-   * quando a outra melhoria chega ao nível pedido. Sem `unlock`, abre no início. Depois do 1º colapso
-   * as melhorias já conhecidas abrem no início da vida (o marco só vale na 1ª vida).
-   */
-  unlock?: { dust?: number; upgrade?: { id: string; level: number } };
-  /** Exige a outra comprada, além do marco ("Plêiades exige a Ressonância"). */
+  /** Gerador: poeira por segundo por unidade. Gerador de energia: toques equivalentes por segundo. */
+  perSec?: number;
+  /** Exige a outra comprada ("Cadência exige o Ritmo Firme"). */
   requiresUpgrade?: { id: string; level: number };
   /**
    * Domínios de efeito que a melhoria controla (ver `effectDomain`). Nenhum grimório pode usá-los:
@@ -315,96 +315,82 @@ export interface UpgradeDef {
   domains: readonly string[];
 }
 
+/** Dobra o gerador com tantas unidades (spec 039, seção 4). */
+export const GENERATOR_MILESTONES = [10, 25, 50] as const;
+export const GENERATOR_GROWTH = 1.15;
+export const GENERATOR_MAX = 400;
+
+const touch = (
+  id: string,
+  name: string,
+  base: number,
+  text: string,
+  domains: readonly string[],
+  extra: Partial<UpgradeDef> = {},
+): UpgradeDef => ({ id, name, text, kind: 'touch', base, growth: 1, max: 1, unlockedAtCollapse: 0, domains, ...extra });
+
+const generator = (id: string, name: string, base: number, perSec: number): UpgradeDef => ({
+  id,
+  name,
+  text: `+${String(perSec).replace('.', ',')} poeira por segundo`,
+  kind: 'generator',
+  base,
+  growth: GENERATOR_GROWTH,
+  max: GENERATOR_MAX,
+  unlockedAtCollapse: 0,
+  perSec,
+  domains: ['dustPerSecond'],
+});
+
+const energyGen = (id: string, name: string, base: number, perSec: number): UpgradeDef => ({
+  id,
+  name,
+  text: `+${String(perSec).replace('.', ',')} toque de energia por segundo`,
+  kind: 'energy',
+  base,
+  growth: GENERATOR_GROWTH,
+  max: GENERATOR_MAX,
+  unlockedAtCollapse: 0,
+  perSec,
+  domains: ['energyPerSecond'],
+});
+
+/**
+ * A ordem é a do preço dentro de cada tipo: a prateleira (`upgradeShelf`) mostra os primeiros e deixa o resto
+ * escondido. Os números são os iniciais da spec 039 e passam pelo simulador antes de valerem.
+ */
 export const UPGRADES: readonly UpgradeDef[] = [
-  { id: 'pulse', name: 'Pulso Solar', text: '+1 poeira por toque', base: 25, growth: 1.12, steep: { from: 5, growth: 1.7 }, max: 40, unlockedAtCollapse: 0, domains: ['dustPerTouch'] },
-  {
-    id: 'resonance',
-    name: 'Ressonância de Vênus',
-    text: 'Libera o combo; níveis seguintes: cada ponto de combo vale mais',
-    base: 150,
-    growth: 1.35,
-    max: 5,
-    unlockedAtCollapse: 0,
-    unlock: { dust: 100, upgrade: { id: 'pulse', level: 4 } },
-    domains: ['comboUnlock', 'comboPoint'],
-  },
-  {
-    id: 'reactor',
-    name: 'Reator de Aldebarã',
-    text: '+0,25 de energia por toque',
-    base: 400,
-    growth: 1.3, steep: { from: 3, growth: 1.7 },
-    max: 20,
-    unlockedAtCollapse: 0,
-    unlock: { dust: 300, upgrade: { id: 'pulse', level: 8 } },
-    domains: ['energyPerTouch'],
-  },
-  {
-    id: 'pleiades',
-    name: 'Alinhamento das Plêiades',
-    text: 'Combo máximo +1',
-    base: 1500,
-    growth: 1.9,
-    max: 5,
-    unlockedAtCollapse: 0,
-    unlock: { dust: 1000, upgrade: { id: 'resonance', level: 2 } },
-    requiresUpgrade: { id: 'resonance', level: 1 },
-    domains: ['comboMax'],
-  },
-  {
-    id: 'kepler',
-    name: 'Sonda Kepler',
-    text: 'Objetos aparecem 3 s mais cedo; o 1º nível abre mais um lugar no campo',
-    base: 4000,
-    growth: 1.9,
-    max: 5,
-    unlockedAtCollapse: 0,
-    unlock: { dust: 2500, upgrade: { id: 'reactor', level: 4 } },
-    domains: ['objectSpawn', 'objectRoom'],
-  },
-  {
-    id: 'hubble',
-    name: 'Telescópio Hubble',
-    text: '+1 poeira por segundo, sem tocar',
-    base: 800,
-    growth: 1.3, steep: { from: 4, growth: 1.7 },
-    max: 30,
-    unlockedAtCollapse: 0,
-    unlock: { dust: 600, upgrade: { id: 'pulse', level: 10 } },
-    domains: ['dustPerSecond'],
-  },
-  {
-    id: 'voyager',
-    name: 'Voyager',
-    text: 'Satélites duram +1 s',
-    base: 12000,
-    growth: 1.7,
-    max: 8,
-    unlockedAtCollapse: 0,
-    unlock: { dust: 8000, upgrade: { id: 'kepler', level: 2 } },
-    domains: ['signalDuration'],
-  },
-  {
-    id: 'webb',
-    name: 'Observatório James Webb',
-    text: '+5 poeira por toque',
-    base: 120000,
-    growth: 1.45,
-    max: 20,
-    unlockedAtCollapse: 1,
-    domains: ['dustPerTouch'],
-  },
-  {
-    id: 'chandra',
-    name: 'Telescópio Chandra',
-    text: 'Objetos ficam +0,5 s no campo',
-    base: 300000,
-    growth: 1.6,
-    max: 10,
-    unlockedAtCollapse: 3,
-    domains: ['objectLife'],
-  },
-  { id: 'gaia', name: 'Observatório Gaia', text: 'O sorteio mostra o efeito já na carta', base: 1500000, growth: 1.5, max: 1, unlockedAtCollapse: 5, domains: ['cardInfo'] },
+  touch('lens', 'Lente Polida', 100, 'Toque x2', ['touchMult']),
+  touch('gloves', 'Luvas de Astronauta', 225, '+1 poeira por toque', ['touchFlat']),
+  touch('trained', 'Dedo Treinado', 500, 'A cada 25 toques, o 25º rende x5', ['touchNth']),
+  touch('rhythm', 'Ritmo Firme', 850, 'Libera o combo: toques em sequência rendem mais', ['comboUnlock', 'comboPoint']),
+  touch('magnet', 'Toque Magnético', 1000, 'Cada toque encurta em 0,5 s a espera do próximo objeto', ['objectSpawn']),
+  touch('hands', 'Mãos do Astronauta', 1000, 'A cada 10 geradores comprados, +1 poeira por toque', ['touchPerGenerator']),
+  touch('charged', 'Pulso Carregado', 1500, '+0,25 de energia por toque', ['energyPerTouch']),
+  touch('luck', 'Toque de Sorte', 2000, '4% de chance de o toque render x10', ['touchCrit']),
+  touch('cadence', 'Cadência', 3000, 'Combo máximo +1', ['comboMax'], { requiresUpgrade: { id: 'rhythm', level: 1 } }),
+  touch('kepler', 'Sonda Kepler', 4000, 'Objetos aparecem 20% mais cedo', ['objectSpawnWindow']),
+  touch('lens2', 'Lente Dupla', 5000, 'Toque x2', ['touchMult']),
+  touch('echo', 'Eco', 8000, 'Cada toque rende +1% do auto por segundo (até +50% do toque)', ['touchEcho']),
+  touch('cabin', 'Cabine Reforçada', 10000, 'Toque x2', ['touchMult']),
+  touch('voyager', 'Voyager', 12000, 'Satélites duram +4 s', ['signalDuration']),
+  touch('webb', 'Observatório James Webb', 120000, 'Toque x2', ['touchMult'], { unlockedAtCollapse: 1 }),
+  touch('chandra', 'Telescópio Chandra', 300000, 'Objetos ficam 50% mais tempo no campo', ['objectLife'], { unlockedAtCollapse: 3 }),
+  touch('gaia', 'Observatório Gaia', 1500000, 'O sorteio mostra o efeito já na carta', ['cardInfo'], { unlockedAtCollapse: 5 }),
+
+  generator('satellite', 'Satélite', 15, 0.1),
+  generator('probe', 'Sonda Voyager', 100, 1),
+  generator('telescope', 'Telescópio', 1100, 8),
+  generator('observatory', 'Observatório', 12000, 47),
+  generator('station', 'Estação Orbital', 130000, 260),
+  generator('colony', 'Colônia Lunar', 1400000, 1400),
+  generator('fleet', 'Frota Estelar', 20000000, 7800),
+  generator('portal', 'Portal', 330000000, 44000),
+
+  energyGen('antenna', 'Antena', 400, 0.02),
+  energyGen('receiver', 'Receptor de Sinal', 3000, 0.1),
+  energyGen('matrix', 'Matriz de Escuta', 30000, 0.5),
+  energyGen('deepnet', 'Rede Profunda', 400000, 2.5),
 ];
 
 const UPGRADE_INDEX = new Map(UPGRADES.map((u, i) => [u.id, i]));
@@ -543,9 +529,9 @@ export const TREE: readonly TreeBranchDef[] = [
     name: 'Plêiades',
     text: 'Cada vida começa com 1 / 2 / 4 níveis do Pulso Solar de graça',
     levels: [
-      [{ kind: 'freeUpgradeLevels', upgrade: 'pulse', levels: 1 }],
-      [{ kind: 'freeUpgradeLevels', upgrade: 'pulse', levels: 2 }],
-      [{ kind: 'freeUpgradeLevels', upgrade: 'pulse', levels: 4 }],
+      [{ kind: 'freeUpgradeLevels', upgrade: 'satellite', levels: 1 }],
+      [{ kind: 'freeUpgradeLevels', upgrade: 'satellite', levels: 2 }],
+      [{ kind: 'freeUpgradeLevels', upgrade: 'satellite', levels: 4 }],
     ],
   },
   {

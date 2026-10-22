@@ -175,3 +175,39 @@ export function respecFee(spent: number): number {
   if (spent <= 0) return 0;
   return Math.max(1, Math.ceil(spent * 0.2));
 }
+
+// --- Economia v2 (spec 039) ---
+
+/** Toque nos últimos tantos segundos conta como "tocando": os geradores rendem 100%. */
+export const ACTIVE_WINDOW_SEC = 4;
+/** Parado, os geradores rendem esta fração do ritmo ativo. */
+export const IDLE_FACTOR = 0.25;
+/** Teto do ganho automático: fração do que os toques rendem no ritmo normal. */
+export const AUTO_CAP_SHARE = 0.35;
+export const NOMINAL_TOUCHES_PER_SEC = 2.5;
+
+export const CRIT_CHANCE = 0.04;
+export const CRIT_MULT = 10;
+export const TRAINED_N = 25;
+export const TRAINED_MULT = 5;
+export const ECHO_SHARE_OF_AUTO = 0.01;
+export const ECHO_CAP_SHARE = 0.5;
+export const CHARGED_ENERGY = 0.25;
+export const HANDS_GENERATORS_PER_POINT = 10;
+export const VOYAGER_SEC = 4;
+export const CHANDRA_LIFE_MULT = 1.5;
+
+/** Janela do próximo objeto comum: de 60 a 90 s depois do anterior; melhorias encurtam, com piso. */
+export const SPAWN_MIN_SEC = 60;
+export const SPAWN_MAX_SEC = 90;
+export const SPAWN_FLOOR_MIN_SEC = 30;
+export const SPAWN_FLOOR_MAX_SEC = 45;
+export const KEPLER_SPAWN_FACTOR = 0.8;
+export const MAGNET_SEC_PER_TOUCH = 0.5;
+/** O 1º objeto do tutorial aparece logo, para a dica "Pegue aqui" não esperar 90 s. */
+export const FIRST_OBJECT_DELAY_SEC = 8;
+
+/** A melhoria some como "???" até a poeira da vida chegar a esta fração do preço. */
+export const REVEAL_SHARE = 0.7;
+/** Quantas melhorias de cada tipo a prateleira mostra à frente das compradas. */
+export const SHELF_AHEAD = 2;
