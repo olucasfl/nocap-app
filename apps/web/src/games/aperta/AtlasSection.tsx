@@ -62,7 +62,7 @@ export function AtlasSection({ state, onCollapse }: Props) {
         <h4 className="ap-atlas-sub">Colapsar a estrela (colapso {collapse.next})</h4>
         <RequirementBars view={collapse} />
         {collapse.ready ? (
-          <p className="ap-sub">A estrela está pronta. Ao colapsar você ganha {collapse.fragments} Fragmentos e começa uma vida nova.</p>
+          <p className="ap-sub">A estrela está pronta. Ao colapsar você {collapse.sparks > 0 ? `ganha ${collapse.sparks} ${collapse.sparks === 1 ? 'Cintila' : 'Cintilas'} e ` : ''}começa uma vida nova.</p>
         ) : (
           <p className="ap-sub">{collapse.hint}</p>
         )}

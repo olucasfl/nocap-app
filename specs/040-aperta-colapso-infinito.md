@@ -1,6 +1,6 @@
 # 040 · Aperta!: colapso infinito, Cofre dos Proibidos e Árvore de Habilidades grande
 
-Status: **decidida pelo Lucas em 22/10/2026 (conversa de design). Etapa 14 pronta em 22/10/2026 (seção 10); as etapas 15 a 21 não foram começadas.** Sobrepõe a spec 038 nas seções 8.2 (Atlas), 8.3 (Fragmentos e árvore), 8.4 (Ascender), 5.3 (conquistas sem recompensa) e nas etapas 14 a 16 da seção 15. "Rebirth" é o **Colapso** (nome já decidido na 038; na tela continua "Colapsar a estrela").
+Status: **decidida pelo Lucas em 22/10/2026 (conversa de design). Etapas 14 e 16 prontas em 22/10/2026 (seções 10 e 11); as etapas 15 e 17 a 21 não foram começadas.** Sobrepõe a spec 038 nas seções 8.2 (Atlas), 8.3 (Fragmentos e árvore), 8.4 (Ascender), 5.3 (conquistas sem recompensa) e nas etapas 14 a 16 da seção 15. "Rebirth" é o **Colapso** (nome já decidido na 038; na tela continua "Colapsar a estrela").
 
 ## 1. O que mudou (decisões do Lucas)
 
@@ -105,7 +105,7 @@ Numeração continua a da 038. Todas terminam com testes, typecheck, docs e comm
 
 14. **Colapso infinito e requisitos. PRONTA em 22/10/2026 (seção 10).** *Escopo:* sem teto de colapsos, remover o Ascender (`canAscend` e tudo que o cita), `meta(n)` x3 sem teto, marcos do colapso (6 marcos que giram), números grandes sem teto, `validateSave` com o teto do colapso `n`, simulador com 3 perfis e as travas de duração (1 a 3 h até o 15º; +3% depois), conteúdo por colapso só até o 15º. *Pronto quando:* testes mostram o requisito crescendo, o simulador cumpre as travas e o save antigo abre.
 15. **Cofre dos Proibidos (substitui o Atlas e a 8.2).** *Escopo:* 10 proibidos com níveis 1 a 5 e selo do nível 5, oferta de 3 no colapso (regras da seção 3), Selo Estelar, modal em 2 passos, página Cofre dos Proibidos, remover Atlas, espaços e bônus de conjunto, migração do save (páginas viram Cintilas), tutorial do Cofre. *Depende da 14.* *Pronto quando:* testes cobrem a oferta (nunca nível 5, até 3 distintas), a evolução até 5 e a migração; o simulador confere que cada proibido tem preço real.
-16. **Cintilas, fontes e conquistas ampliadas (pode rodar junto com a 14).** *Escopo:* moeda `sparks` no save, ~150 conquistas em dados com recompensa, fontes do álbum, capturas raras, degraus e marcos que repetem (5.1), remover Fragmentos e migrar o save, avisos de ganho de Cintilas, página de Conquistas maior (filtros, progresso). *Pronto quando:* o **teste de balanço** da seção 5.4 passa e a página funciona em 320 a 1920 px.
+16. **Cintilas, fontes e conquistas ampliadas (pode rodar junto com a 14). PRONTA em 22/10/2026 (seção 11).** *Escopo:* moeda `sparks` no save, ~150 conquistas em dados com recompensa, fontes do álbum, capturas raras, degraus e marcos que repetem (5.1), remover Fragmentos e migrar o save, avisos de ganho de Cintilas, página de Conquistas maior (filtros, progresso). *Pronto quando:* o **teste de balanço** da seção 5.4 passa e a página funciona em 320 a 1920 px.
 17. **Árvore: motor e dados.** *Escopo:* `tree.ts` com o grafo (~120 nós, pré-requisitos, níveis, custo por tier), compra, refazer 100%, `validateSave`, **teste de não-duplicação** e de poder direto <= 15%, balanço de Cintilas (5.4) ligado à árvore real. *Depende da 16.*
 18. **Árvore: tela em forma de árvore.** *Escopo:* SVG com arrastar e zoom, nós e linhas, estados, busca e centralizar, página separada do Cofre, tutorial da árvore. *Depende da 17.* *Pronto quando:* confere em 320, 390, 768, 1024, 1280 e 1920 px com toque e mouse, sem rolagem lateral da página.
 19. **Habilidades ativas e automações (pode rodar junto com a 20).** *Escopo:* barra de habilidades, Autoclick (60 s, níveis de velocidade, duração e recarga), Captura automática, Compra automática, Pulso, Supernova menor, Dobra temporal, Lente, Ímã estelar, tudo dentro da regra anti-farm. *Depende da 17.*
@@ -135,7 +135,7 @@ Numeração continua a da 038. Todas terminam com testes, typecheck, docs e comm
 
 ### 10.2 O que mudou do plano (decisões minhas, registradas porque a spec dizia outra coisa)
 
-1. **A razão x3 não se sustenta.** Com x3 o simulador mostrou vidas 1 a 8 de 1 a 3 h e vidas 9 a 12 de 9 a 21 h (o poder permanente não acompanha 3^n). A meta virou trechos calibrados (`GOAL_SEGMENTS`): 1º colapso em **50 mi** (o Lucas pediu 80 mi, mas o simulador mostrou a vida 1 em 3,3 h, acima da trava de 3 h; com 50 mi fica em 2,85 h) e do 1º para o 2º x2,8 (50 mi -> 140 mi), x2,1 até o 4º, **x1,28 até o 30º** e **x1,08 depois**. A razão volta a subir quando as etapas 15 a 20 trouxerem poder permanente novo (proibidos, árvore, habilidades): é só trocar os números e rodar o calibrador.
+1. **A razão x3 não se sustenta.** Com x3 o simulador mostrou vidas 1 a 8 de 1 a 3 h e vidas 9 a 12 de 9 a 21 h (o poder permanente não acompanha 3^n). A meta virou trechos calibrados (`GOAL_SEGMENTS`): 1º colapso em **50 mi** (o Lucas pediu 80 mi, mas o simulador mostrou a vida 1 em 3,3 h, acima da trava de 3 h; com 50 mi fica em 2,85 h) e do 1º para o 2º x2,8 (50 mi -> 140 mi), x1,95 até o 4º (x2,1 antes da etapa 16), **x1,28 até o 30º** e **x1,08 depois**. A razão volta a subir quando as etapas 15 a 20 trouxerem poder permanente novo (proibidos, árvore, habilidades): é só trocar os números e rodar o calibrador.
 2. **Energia depois da 6ª escolha: x1,22 em vez de x1,35** (`ENERGY_STEP_GROWTH`). Com x1,35 as 20 escolhas do 1º colapso levavam ~6,7 h e a trava manda no máximo 3 h; com x1,22 levam ~2,1 h. Os 6 primeiros passos (38 a 640) e a sensação do começo não mudaram. Efeito num save antigo: quem estava com a barra quase cheia passa do teto novo, a energia é aparada e a escolha abre na hora (`flagged: ['energy']`, nada se perde).
 3. **"Combo" do marco = sequência de toques seguidos** (cada um dentro da janela do anterior, com o Ritmo Firme comprado), e não o nível de combo: o nível para em 3 ou 4 sem grimórios raros, então a meta 5 do 1º colapso seria impossível. Teto de 30 toques. O combo cheio tem teto de 180 s (humano).
 4. **Missões da estação em sequência:** a próxima chega 5 s depois da cumprida (`MISSION_NEXT_DELAY_SEC`) e o sorteio usa só missões curtas (3, 5 e 8 objetos; 150 e 300 toques; 3 e 5 escolhas, ~8 min em média). As 4 da v1 ficam marcadas `legacy` só para validar saves antigos. O bônus de Fragmentos continua uma vez por vida.
@@ -213,3 +213,50 @@ Leitura: o normal fica em 1,5 a 2,8 h de jogo da vida 1 à 15 (1 a 2 dias de cal
 - A tela só foi vista no Chromium headless emulando celular (Pixel/DPR 2) em 320, 390 e 1280 px; não em aparelho real, Safari nem Firefox. O Chromium headless não tem Web Audio, então o som do colapso não foi ouvido.
 - As rotas da API do Aperta! seguem testadas só com repositório em memória (`apps/api/src/aperta/aperta.test.ts`), não contra o banco real.
 - Os testes de ponta a ponta (Playwright) foram rodados só para o colapso; os de regiões, árvore e tutorial não foram repetidos (nenhum mexe no que mudou além do botão "Estrela pronta", que não aparece neles).
+
+## 11. Etapa 16 pronta: Cintilas, fontes e conquistas ampliadas (22/10/2026)
+
+### 11.1 Entregue
+
+- **Moeda `sparks` no save** (`SaveState.sparks = { legacy, spent }`; `sparks.ts`). O saldo **não é um contador que sobe**: é calculado do que o save já guarda (conquistas, álbum, capturas raras, colapsos, poeira total, eventos vistos, níveis dos proibidos) mais `legacy` (o que os Fragmentos antigos valiam). Só o gasto é contador. Assim nenhuma fonte paga duas vezes nem fica sem pagar, e o servidor refaz a mesma conta (`sparkSources`, `sparksTotal`, `sparksAvailable`).
+- **Migração 1:1:** um save com `fragments { earned, spent }` vira `sparks { legacy: earned, spent }` na leitura (`migrateSparks` no `validateSave`); a árvore comprada continua paga. Testado com os 11 saves reais antigos (`fixtures/legacy-*.json`): saldo e gasto idênticos, e o saldo novo nunca é menor porque as fontes só somam (quem já tinha conquistas ou álbum ganha as Cintilas deles).
+- **Fragmentos removidos:** `fragments`, `fragmentsFor`, `fragmentsAvailable`, `respecFee`, `missionBonus` e `MISSION_FRAGMENTS` saíram do motor; a tela e os textos (HUD, modal de colapso, Atlas, tutorial, árvore, chip da missão) falam de Cintilas. O colapso não dá mais Fragmentos por conta própria: dá Cintilas pelas fontes que abre.
+- **Fontes (seção 5.1):** álbum (1 comum ou raro, 2 épico, 3 lendário, 4 proibido, na 1ª descoberta); 1ª captura de cada objeto raro ou lendário (Estrela Dourada e Sonda hoje; lendários na etapa 20) = 3, e degraus de 10, 50, 200 e 1.000 capturas raras = 2, 3, 5 e 8; marcos que repetem (1 a cada 3 colapsos, 1 a cada marco de poeira total 1e6, 1e9, 1e12..., 1 na 1ª vez de cada evento raro); **Estrela dos Proibidos** (nível 3 = 2 e nível 5 = 4, uma vez por proibido) ligada a `stats.forbiddenBest`, que o motor já atualiza ao escolher um proibido: funciona hoje com Sagitário A*, Cygnus X-1 e M87*, e o Cofre (etapa 15) só precisa manter esse campo.
+- **Conquistas:** de 31 para **159** em dados (`achievements.ts`), com os 31 ids antigos intactos e 16 famílias (Toques, Poeira, Grimórios, Objetos, Combo e ritmo, Colapsos, Proibidos, Automação, Sorte, Exploração, Árvore, Geradores e toque, Missões da estação, Regiões, Tempo, Escondidas). Recompensa por tamanho: pequena 1 (16), média 2 (52), grande 3 (60), épica 5 (31); as 10 escondidas valem 3. **127 contam hoje e 32 esperam conteúdo** (`needs`): novos proibidos, automação e habilidades, objetos lendários, eventos novos, árvore nova, sequência de dias e mais regiões; `FEATURES` guarda as chaves e a etapa que entregar a feature liga a sua. Enquanto a chave está desligada a conquista nunca é dada, aparece como "em breve" e o servidor recusa um save que a traga.
+- **Contadores novos em `SaveStats`** (saves antigos entram com 0; `mergeSaves` junta pelo maior ou pela união): `raresCaptured`, `capturedKinds`, `chainBest`, `missionsDone`, `eventsSeen`, `genBest`, `upgradesBought`, `touchBest`, `offers`, `legendaryOffers`, `firstOfferLegendary`, `rareStreak`/`rareStreakBest`, `rerolls`, `forbiddenBest`, e os de habilidades e dias seguidos que as etapas 19 e 20 vão ligar. O motor os atualiza em `press`, `captureObject`, `buyUpgrade`, `chooseGrimoire`, `rerollGrimoire`, na abertura da oferta e no início de cada evento.
+- **`validateSave`:** `sparks.legacy` limitado ao que os Fragmentos antigos podiam dar; gasto <= saldo; árvore <= gasto; conquista só do catálogo e só de conteúdo que existe; contadores novos coerentes (raros <= capturas, tipos e eventos válidos, `forbiddenBest` só de proibidos já abertos).
+- **Tela:** faixa de aviso `+N Cintilas` (`.ap-pickup-sparks`, em `transform`/`opacity`, com o saldo para gastar) logo depois do aviso da conquista; contador de Cintilas no botão da árvore (já existia para os Fragmentos) e, na página da árvore, o saldo, o ganho e o gasto e "De onde vêm as Cintilas" (por fonte); refazer a árvore devolve 100% (seção 5.3). **Página de Conquistas maior:** filtro por família (com N/M de cada), busca sem acento, estado (todas, faltam, ganhas), recompensa em cada card, Cintilas ganhas, a ganhar e em breve, e as que esperam conteúdo em tracejado.
+- **Balanço (5.4):** `balance.ts` + `tree-targets.ts` + `balance.test.ts` (a conta abaixo).
+
+### 11.2 A conta do balanço
+
+`T` vem de `tree-targets.ts` (5 ramos de 24 nós = **120 nós**; por ramo: tier 1 = 4 nós de 2 níveis, tier 2 = 6 de 2, tier 3 = 3 de 2 e 3 de 1, tier 4 = 5 de 1, tier 5 = 3 de 1; custo por nível 1, 2, 3, 5 e 8 Cintilas = 108 por ramo). Quando a árvore real existir (etapa 17) o teste passa a lê-la.
+
+| Termo | Cálculo (dos dados) | Valor |
+| --- | --- | --- |
+| **T** (custo da árvore alvo) | 5 ramos x 108 | **540** |
+| conquistas | soma de `reward` das 159 | 455 |
+| álbum | 17 comuns x 1 + 19 raros x 1 + 13 épicos x 2 + 6 lendários x 3 + 3 proibidos x 4 | 92 |
+| raros | 2 tipos (Sonda e Estrela Dourada) x 3 + degraus 2 + 3 + 5 + 8 | 24 |
+| Estrela dos Proibidos | 3 proibidos x (2 + 4) | 18 |
+| **F** (fontes finitas) | 455 + 92 + 24 + 18 | **589** |
+| **R25** (repetem até o colapso 25) | 8 (a cada 3 colapsos) + 2 (poeira total passa de 1e6 e 1e9, não de 1e12) + 6 (eventos: 2 de hoje e 4 planejados) | **16** |
+
+- `F >= 0,80 x T`: 589 >= 432 (F/T = 1,09). `F + R25 >= 1,10 x T`: 605 >= 594 ((F+R25)/T = 1,12). O teste também confere que uma árvore 2x mais cara quebra a regra.
+- **F hoje** (só as conquistas que já contam, sem as 32 que esperam conteúdo): 354 + 92 + 24 + 18 = **488**. O resto (101 Cintilas) chega com as etapas 15 a 20.
+
+### 11.3 Desvios do plano
+
+1. **Alvo da conta:** a spec pedia `T` 500 a 600, `F` 420 a 480 e as duas regras juntas. Com `R25` perto de 16 (as fontes que repetem dão pouco até o colapso 25) a regra `F + R25 >= 1,10 x T` exige `F` perto de 1,1 x `T`, o que as duas faixas do texto não permitem. Mantive `T` em 540 (dentro da faixa) e subi `F` para 589 ajustando a lista e as recompensas, como a seção 5.4 manda; `F` ficou **acima** dos 480 do alvo inicial.
+2. **O saldo é derivado, não guardado:** a spec dizia "moeda `sparks` no save". Guardo `legacy` e `spent`; o total vem das fontes. Foi a forma de a migração e o servidor não poderem divergir.
+3. **Refazer a árvore devolve 100% já nesta etapa** (a 5.3 é da etapa 17, mas a taxa de 20% dependia dos Fragmentos). A restrição "só fora de uma vida em andamento" fica para a etapa 17.
+4. **"Dias seguidos" e habilidades** ficam em `needs`: o motor não tem relógio de parede (nada rende offline) e as habilidades são da etapa 19.
+5. **Metas de poeira a partir do 4º colapso ~14% menores** (passo x1,95 em vez de x2,1 entre o 2º e o 4º): as Cintilas das conquistas chegam mais devagar que os Fragmentos de antes (3 + nº por colapso), então a árvore enche mais tarde e as vidas 13 e 19 passaram da trava. A tabela da seção 10.3 foi gerada com o passo antigo; o teste do simulador (`sim.test.ts`) passa com o novo.
+6. **Ordem e valores das famílias são decisão minha** (a spec só dava as famílias e exemplos): tabela de recompensas e metas em `achievements.ts`.
+
+### 11.4 O que não foi testado
+
+- Ninguém jogou isto à mão: o ritmo de ganho de Cintilas e o preço dos nós da árvore real (etapa 17) ainda não foram sentidos; o balanço é uma conta, não uma sessão de jogo.
+- As Cintilas das 32 conquistas dormentes só podem ser testadas ligando `FEATURES` num teste; as features reais chegam depois.
+- A página só foi vista no Chromium headless emulando celular, em 320, 390 e 1280 px (ver o relatório); sem aparelho real, sem Safari nem Firefox e sem som (o aviso toca `chime`, que não roda no Chromium headless).
+- A API do Aperta! continua testada só com repositório em memória.

@@ -266,7 +266,7 @@ for (const size of SIZES) {
       account.rev = 1;
       await openGame(page, false);
       await expect(page.locator('.ap-tut-card')).toContainText('Árvore de Habilidades');
-      await expect(page.locator('.ap-tut-card')).toContainText('Fragmentos');
+      await expect(page.locator('.ap-tut-card')).toContainText('Cintilas');
       await shot(page, '10-arvore');
       await noOverflow(page);
       await page.getByRole('button', { name: 'Entendi' }).click();

@@ -15,7 +15,7 @@ interface Props {
 
 /**
  * Colapso em 2 passos (spec 038, 8.1). Passo 1: escolher o grimório que vira página do Atlas (e, com o
- * Atlas cheio, qual página sai). Passo 2: ver o que fica, o que sai e os Fragmentos, e confirmar.
+ * Atlas cheio, qual página sai). Passo 2: ver o que fica, o que sai e as Cintilas, e confirmar.
  */
 export function CollapseModal({ state, onCancel, onConfirm }: Props) {
   const root = useRef<HTMLDivElement>(null);
@@ -128,7 +128,7 @@ export function CollapseModal({ state, onCancel, onConfirm }: Props) {
         ) : (
           <>
             <p className="ap-cc-gain">
-              <b>+{view.fragments}</b> Fragmentos
+              <b>+{view.sparks}</b> {view.sparks === 1 ? 'Cintila' : 'Cintilas'}
             </p>
             <p className="ap-sub">
               Página guardada: <b>{chosen?.name ?? ''}</b>
@@ -141,7 +141,7 @@ export function CollapseModal({ state, onCancel, onConfirm }: Props) {
                   <li>Álbum de grimórios</li>
                   <li>Conquistas</li>
                   <li>Atlas Eterno ({atlas.slots} espaços)</li>
-                  <li>Árvore de Habilidades e Fragmentos</li>
+                  <li>Árvore de Habilidades e Cintilas</li>
                 </ul>
               </section>
               <section aria-labelledby="ap-cc-lose">

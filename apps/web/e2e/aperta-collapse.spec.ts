@@ -35,7 +35,7 @@ function midLifeSave(): SaveState {
     collapses: c,
     regionId: 'alpha-centauri',
     atlas: { slots: atlasSlots(c), pages: [] },
-    fragments: { earned, spent: 0 },
+    sparks: { legacy: earned, spent: 0 },
     album: ['moon', 'mars'],
     run: { ...s.run, picks: 9, dust: dustGoal(c + 1) * 0.37, dustLife: dustGoal(c + 1) * 0.37, build: { moon: 1, mars: 1 }, captured: 2, chainBest: 4 },
     stats: { ...s.stats, picks: c * 12 + 9, dustTotal: total + dustGoal(c + 1) * 0.37, objectsCaptured: 2 },
@@ -151,18 +151,18 @@ for (const size of SIZES) {
       await noOverflow(page);
       await tapCenter(page, page.getByRole('button', { name: 'Continuar' }), touch);
 
-      // Passo 2: o que fica, o que sai e os Fragmentos.
+      // Passo 2: o que fica, o que sai e as Cintilas.
       await expect(page.getByRole('dialog', { name: 'Colapsar a estrela?' })).toBeVisible();
-      await expect(page.locator('.ap-cc-gain')).toContainText('+5');
+      await expect(page.locator('.ap-cc-gain')).toContainText(/\+\d+ Cintilas?/);
       await shot('3-passo2');
       await insideViewport(page, '.ap-collapse');
       await noOverflow(page);
       await tapCenter(page, page.getByRole('button', { name: 'Colapsar a estrela' }), touch);
 
-      // A vida recomeça: aviso, contador, Fragmentos e a página no Atlas.
+      // A vida recomeça: aviso, contador, Cintilas e a página no Atlas.
       await expect(page.getByRole('dialog')).toHaveCount(0);
-      await expect(page.locator('.ap-pickup:not(.ap-pickup-ach)')).toContainText('Estrela colapsada');
-      await expect(page.locator('.ap-pickup:not(.ap-pickup-ach)')).toContainText('Lua');
+      await expect(page.locator('.ap-pickup:not(.ap-pickup-ach):not(.ap-pickup-sparks)')).toContainText('Estrela colapsada');
+      await expect(page.locator('.ap-pickup:not(.ap-pickup-ach):not(.ap-pickup-sparks)')).toContainText('Lua');
       await expect(page.locator('.ap-hudrow-2 b')).toHaveText('1');
       await expect(page.getByRole('button', { name: /Estrela pronta/ })).toHaveCount(0);
       await shot('4-colapsada');

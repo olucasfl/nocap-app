@@ -62,7 +62,7 @@ describe('validateSave: formato', () => {
     expect(r.ok && r.save.run.picks).toBeGreaterThan(0);
   });
 
-  it('um save depois de colapso também passa (Atlas, Fragmentos)', () => {
+  it('um save depois de colapso também passa (Atlas, Cintilas)', () => {
     const fresh = newSave('k');
     const ready: SaveState = {
       ...fresh,
@@ -105,7 +105,7 @@ describe('validateSave: formato', () => {
       ...fresh,
       tutorial: 'done' as const,
       collapses: 1,
-      fragments: { earned: 4, spent: 0 },
+      sparks: { legacy: 4, spent: 0 },
       stats: { ...fresh.stats, picks: 20, dustTotal: 2e8 },
       album: ['moon', 'mars'],
       atlas: { slots: 3, pages: [{ grimoireId: 'moon', level: 1 }] },
@@ -126,7 +126,7 @@ describe('validateSave: formato', () => {
     rejects({ ...s, run: { ...s.run, dust: -1 } });
     rejects({ ...s, run: { ...s.run, dustLife: NaN } });
     rejects({ ...s, playSeconds: Infinity });
-    rejects({ ...s, fragments: { earned: -3, spent: 0 } });
+    rejects({ ...s, sparks: { legacy: -3, spent: 0 } });
     // pelo fio o NaN vira null, que também não é número
     rejects(JSON.parse(JSON.stringify({ ...s, run: { ...s.run, energy: NaN } })));
   });
@@ -180,18 +180,18 @@ describe('validateSave: coerência', () => {
     expect(rejects({ ...s, stats: { ...s.stats, dustTotal: 0 } })).toContain('Poeira da vida maior que o total');
   });
 
-  it('recusa Atlas e Fragmentos incoerentes', () => {
+  it('recusa Atlas e Cintilas incoerentes', () => {
     const s = newSave('x');
     expect(rejects({ ...s, atlas: { slots: 3, pages: [{ grimoireId: 'moon', level: 1 }] }, album: ['moon'] })).toContain('Páginas no Atlas sem colapso');
-    expect(rejects({ ...s, fragments: { earned: 5, spent: 9 } })).toContain('Fragmentos gastos maiores que os ganhos');
-    expect(rejects({ ...s, fragments: { earned: 50, spent: 0 } })).toContain('Fragmentos não batem com os colapsos');
+    expect(rejects({ ...s, sparks: { legacy: 0, spent: 9 } })).toContain('Cintilas gastas maiores que as ganhas');
+    expect(rejects({ ...s, sparks: { legacy: 50, spent: 0 } })).toContain('Cintilas migradas não batem com os colapsos');
     expect(rejects({ ...s, atlas: { slots: 9, pages: [] } })).toContain('Espaços do Atlas não batem com os colapsos');
   });
 
-  it('recusa árvore que custa mais que os Fragmentos gastos', () => {
+  it('recusa árvore que custa mais que as Cintilas gastas', () => {
     const s = { ...newSave('x'), collapses: 1, tutorial: 'done' as const, regionId: 'asteroid-belt' };
-    const withTree = { ...s, tree: { 'alpha-centauri': 3 }, fragments: { earned: 4, spent: 2 }, stats: { ...s.stats, picks: 1 } };
-    expect(rejects(withTree)).toContain('Árvore custa mais que os Fragmentos gastos');
+    const withTree = { ...s, tree: { 'alpha-centauri': 3 }, sparks: { legacy: 4, spent: 2 }, stats: { ...s.stats, picks: 1 } };
+    expect(rejects(withTree)).toContain('Árvore custa mais que as Cintilas gastas');
   });
 
   it('recusa região ainda fechada', () => {
@@ -292,7 +292,7 @@ describe('mergeSaves', () => {
       album: ['venus'],
       achievements: ['b2'],
       atlas: { slots: 3, pages: [{ grimoireId: 'venus', level: 2 }] },
-      fragments: { earned: 4, spent: 0 },
+      sparks: { legacy: 4, spent: 0 },
       stats: { ...FRESH_STATS, clicks: 10, objectsCaptured: 1, picks: 20, dustTotal: 2e8 },
     };
     const r = mergeSaves(lo, hi);
@@ -314,7 +314,7 @@ describe('mergeSaves', () => {
       tutorial: 'done',
       regionId: 'asteroid-belt',
       atlas: { slots: 3, pages },
-      fragments: { earned: 4 * collapses, spent: 0 },
+      sparks: { legacy: 4 * collapses, spent: 0 },
     });
     const a = mk([{ grimoireId: 'moon', level: 1 }, { grimoireId: 'mars', level: 2 }], 2);
     const b = mk([{ grimoireId: 'moon', level: 4 }, { grimoireId: 'venus', level: 1 }, { grimoireId: 'ceres', level: 1 }], 1);
@@ -327,20 +327,20 @@ describe('mergeSaves', () => {
     expect(r.save.atlas.pages.length).toBeLessThanOrEqual(r.save.atlas.slots);
   });
 
-  it('a árvore fica com o máximo de cada ramo se os Fragmentos cobrem', () => {
+  it('a árvore fica com o máximo de cada ramo se as Cintilas cobrem', () => {
     const mk = (tree: Record<string, number>, spent: number): SaveState => ({
       ...newSave('x'),
       collapses: 1,
       tutorial: 'done',
       regionId: 'asteroid-belt',
       tree,
-      fragments: { earned: 8, spent },
+      sparks: { legacy: 8, spent },
     });
     const r = mergeSaves(mk({ 'alpha-centauri': 2 }, 3), mk({ 'crab-nebula': 1 }, 1));
     expect(r.save.tree).toEqual({ 'alpha-centauri': 2, 'crab-nebula': 1 });
-    expect(r.save.fragments).toEqual({ earned: 8, spent: 4 });
+    expect(r.save.sparks).toEqual({ legacy: 8, spent: 4 });
     const bad = mergeSaves(mk({ 'alpha-centauri': 3 }, 7), mk({ 'crab-nebula': 3 }, 7));
-    expect(bad.save.fragments.spent).toBeLessThanOrEqual(bad.save.fragments.earned);
+    expect(bad.save.sparks.spent).toBeLessThanOrEqual(bad.save.sparks.legacy);
   });
 
   it('não muta os dois lados', () => {
@@ -425,7 +425,7 @@ describe('validateSave: economia v2 (spec 039)', () => {
     const s = clone(newSave('colapsada', NOW));
     s.collapses = 1;
     s.atlas = { slots: atlasSlots(1), pages: [] };
-    s.fragments = { earned: 4, spent: 0 };
+    s.sparks = { legacy: 4, spent: 0 };
     s.stats.picks = 1;
     s.regionId = 'asteroid-belt';
     s.run.upgradeLevels[upg('gloves')] = 1;

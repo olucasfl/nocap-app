@@ -1,13 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { GRIMOIRES, OBJECTS, REGIONS, UPGRADES } from '../catalog';
-import { EVENT_DURATION_SEC, EVENT_INTERVAL_SEC, MISSION_FRAGMENTS, atlasSlots, dustGoal, minPicks } from '../economy';
+import { EVENT_DURATION_SEC, EVENT_INTERVAL_SEC, atlasSlots, dustGoal, minPicks } from '../economy';
 import {
   activeEventId,
   captureObject,
   chooseGrimoire,
   collapse,
   drawGrimoires,
-  missionBonus,
   newSave,
   press,
   selectGrimoire,
@@ -49,7 +48,7 @@ function atCollapse(k: number, patch: Partial<SaveState> = {}): SaveState {
     tutorial: 'done',
     regionId: (region as (typeof REGIONS)[number]).id,
     atlas: { slots: atlasSlots(k), pages: [] },
-    fragments: { earned, spent: 0 },
+    sparks: { legacy: 0, spent: 0 },
     stats: { ...s.stats, picks: k, dustTotal },
     ...patch,
   };
@@ -293,7 +292,8 @@ describe('Missões da estação (colapso 4)', () => {
     const s = run(started(4), { mission: { id: def.id, progress: def.target - 1, done: false, doneAt: -1e9 } });
     const after = press(s, s.clock + 1);
     expect(after.run.mission).toMatchObject({ progress: def.target, done: true });
-    expect(missionBonus(after)).toBe(MISSION_FRAGMENTS);
+    expect(after.run.missionsDone).toBe(1);
+    expect(after.stats.missionsDone).toBe(1);
     expect(press(after, s.clock + 2).run.mission?.progress).toBe(def.target);
   });
 
@@ -317,7 +317,7 @@ describe('Missões da estação (colapso 4)', () => {
     expect(chosen.run.mission?.progress).toBe(1);
   });
 
-  it('a missão cumprida rende Fragmentos extras ao colapsar e a vida nova começa sem missão', () => {
+  it('a missão cumprida conta no total da conta e a vida nova começa sem missão', () => {
     const build = (done: boolean) =>
       run(atCollapse(4, { album: ['moon'], stats: { ...atCollapse(4).stats, picks: 30 } }), {
         dustLife: dustGoal(5),
@@ -329,7 +329,8 @@ describe('Missões da estação (colapso 4)', () => {
     const plain = collapse(build(false), 'moon');
     const bonus = collapse(build(true), 'moon');
     expect(plain.collapses).toBe(5);
-    expect(bonus.fragments.earned - plain.fragments.earned).toBe(MISSION_FRAGMENTS);
+    // Sem Fragmentos por missão: a missão vale pelas conquistas (spec 040).
+    expect(bonus.sparks).toEqual(plain.sparks);
     expect(bonus.run.mission).toBeNull();
   });
 });
@@ -401,9 +402,11 @@ describe('validateSave e o conteúdo dos colapsos 1 a 5', () => {
     }
   });
 
-  it('os Fragmentos extras de missão cabem no teto do servidor, e um a mais não', () => {
+  it('as Cintilas migradas cabem no teto do servidor, e muito mais que ele não', () => {
     const s = atCollapse(5);
-    expect(validateSave({ ...s, fragments: { earned: s.fragments.earned + MISSION_FRAGMENTS, spent: 0 } }).ok).toBe(true);
-    expect(errorsOf({ ...s, fragments: { earned: s.fragments.earned + 1000, spent: 0 } })).toContain('Fragmentos não batem');
+    let legacyMax = 0;
+    for (let k = 1; k <= 5; k++) legacyMax += 3 + k + 2 + 25;
+    expect(validateSave({ ...s, sparks: { legacy: 40, spent: 0 } }).ok).toBe(true);
+    expect(errorsOf({ ...s, sparks: { legacy: legacyMax + 1000, spent: 0 } })).toContain('Cintilas migradas não batem');
   });
 });

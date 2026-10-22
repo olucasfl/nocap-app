@@ -17,7 +17,7 @@ function saveAt(k: number): SaveState {
     collapses: k,
     regionId: (REGIONS.filter((r) => r.unlockedAtCollapse <= k).at(-1) ?? REGIONS[0])!.id,
     atlas: { slots: atlasSlots(k), pages: [] },
-    fragments: { earned, spent: 0 },
+    sparks: { legacy: earned, spent: 0 },
     stats: { ...s.stats, picks: k },
   };
 }

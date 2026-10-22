@@ -35,6 +35,7 @@ import {
 } from './catalog';
 import { ASSIGNABLE_MISSIONS, eventsOpen, mechanicOpen, missionById, type EventId, type MissionDef } from './content';
 import { MISSION_NEXT_DELAY_SEC, milestoneProgress, type MilestoneProgress } from './milestone';
+import { RARE_OBJECT_KINDS, LEGENDARY_OBJECT_KINDS, sparksAvailable } from './sparks';
 import {
   ATLAS_PAGE_POWER,
   BASE_ENERGY_PER_TOUCH,
@@ -49,7 +50,6 @@ import {
   FAVORITE_WEIGHT,
   METEOR_SHOWER_EXTRA_MAX,
   METEOR_SHOWER_INTERVAL_SEC,
-  MISSION_FRAGMENTS,
   SOLAR_STORM_ENERGY_MULT,
   GRIMOIRE_MAX_LEVEL,
   MAX_NUMBER,
@@ -94,11 +94,9 @@ import {
   clampCostFactor,
   dustGoal,
   energyCap,
-  fragmentsFor,
   levelFactor,
   minPicks,
   rarityUnlockPicks,
-  respecFee,
   setBonusTier,
   upgradeCost,
 } from './economy';
@@ -216,7 +214,11 @@ export interface SaveState {
   /** Grimório favorito (pesa o dobro no sorteio); só depois de o Favorito abrir, no 2º colapso. */
   favorite: string | null;
   seenUnlocks: string[];
-  fragments: { earned: number; spent: number };
+  /**
+   * Cintilas (spec 040, seção 5): `legacy` é o que os Fragmentos antigos valiam (migração 1:1); o resto do saldo vem das
+   * fontes que o save já guarda (`sparks.ts`). Só o gasto é um contador.
+   */
+  sparks: { legacy: number; spent: number };
   /** Ramo -> nível (0 a 3). */
   tree: Record<string, number>;
   achievements: string[];
@@ -239,6 +241,33 @@ export interface SaveStats {
   satelliteBest: number;
   /** Vezes que a árvore foi refeita. */
   respecs: number;
+  // Contadores das conquistas ampliadas e das fontes de Cintilas (spec 040, etapa 16); saves antigos entram com 0.
+  /** Objetos raros capturados (Estrela Dourada e Sonda) e os tipos de objeto já capturados. */
+  raresCaptured: number;
+  capturedKinds: string[];
+  /** Maior sequência de toques seguidos com o combo ligado, em qualquer vida. */
+  chainBest: number;
+  missionsDone: number;
+  /** Eventos raros já vistos (a 1ª vez de cada um rende Cintila). */
+  eventsSeen: string[];
+  /** Maior nível de um gerador, compras de melhoria e o máximo de melhorias de toque numa vida. */
+  genBest: number;
+  upgradesBought: number;
+  touchBest: number;
+  /** Ofertas de grimório abertas, ofertas com lendário ou proibido, e se a 1ª oferta do jogo já tinha um (0 ou 1). */
+  offers: number;
+  legendaryOffers: number;
+  firstOfferLegendary: number;
+  /** Escolhas seguidas de raridade rara ou melhor, o recorde, e trocas de carta. */
+  rareStreak: number;
+  rareStreakBest: number;
+  rerolls: number;
+  /** Maior nível já alcançado de cada grimório proibido (a Estrela dos Proibidos lê isto). */
+  forbiddenBest: Record<string, number>;
+  /** Habilidades da etapa 19 e sequência de dias (ainda não existem): ficam prontas para as conquistas. */
+  skillsUsed: string[];
+  skillUses: number;
+  dayStreakBest: number;
 }
 
 export const FRESH_STATS: SaveStats = {
@@ -252,7 +281,30 @@ export const FRESH_STATS: SaveStats = {
   satelliteStreak: 0,
   satelliteBest: 0,
   respecs: 0,
+  raresCaptured: 0,
+  capturedKinds: [],
+  chainBest: 0,
+  missionsDone: 0,
+  eventsSeen: [],
+  genBest: 0,
+  upgradesBought: 0,
+  touchBest: 0,
+  offers: 0,
+  legendaryOffers: 0,
+  firstOfferLegendary: 0,
+  rareStreak: 0,
+  rareStreakBest: 0,
+  rerolls: 0,
+  forbiddenBest: {},
+  skillsUsed: [],
+  skillUses: 0,
+  dayStreakBest: 0,
 };
+
+/** Contadores zerados, com cópias novas dos que são lista ou mapa. */
+export function freshStats(): SaveStats {
+  return { ...FRESH_STATS, capturedKinds: [], eventsSeen: [], forbiddenBest: {}, skillsUsed: [] };
+}
 
 export function clampNum(x: number): number {
   if (Number.isNaN(x)) return 0;
@@ -325,10 +377,10 @@ export function newSave(seed: string, createdAt = 0, name = 'Missão Perigeu'): 
     regionId: (REGIONS[0] as RegionDef).id,
     favorite: null,
     seenUnlocks: [],
-    fragments: { earned: 0, spent: 0 },
+    sparks: { legacy: 0, spent: 0 },
     tree: {},
     achievements: [],
-    stats: { ...FRESH_STATS },
+    stats: freshStats(),
   };
 }
 
@@ -979,7 +1031,11 @@ function openChoice(state: SaveState, now: number, picksLeft: number, rerollsLef
     // Nada para oferecer (tudo no nível máximo): a barra só zera, sem travar o jogo.
     return { ...state, run: { ...state.run, energy: 0, rngState } };
   }
-  return {
+  const legendary = offers.some((o) => {
+    const r = grimoireById(o)?.rarity;
+    return r === 'legendary' || r === 'forbidden';
+  });
+  return awardAchievements({
     ...state,
     run: {
       ...state.run,
@@ -988,7 +1044,13 @@ function openChoice(state: SaveState, now: number, picksLeft: number, rerollsLef
       rngState,
       pending: { offers, openedAt: now, selected: null, picksLeft, rerollsLeft },
     },
-  };
+    stats: {
+      ...state.stats,
+      offers: state.stats.offers + 1,
+      legendaryOffers: state.stats.legendaryOffers + (legendary ? 1 : 0),
+      firstOfferLegendary: state.stats.firstOfferLegendary || (state.stats.offers === 0 && legendary ? 1 : 0),
+    },
+  });
 }
 
 /** Tempo que ainda falta para as cartas destravarem (0 = livres). */
@@ -1024,12 +1086,27 @@ export function chooseGrimoire(state: SaveState, id: string, now: number): SaveS
     picks: s.run.picks + 1,
     pending: null,
   };
-  const next: SaveState = {
-    ...s,
-    run: bumpMission(run, 'pick', now),
-    album: s.album.includes(id) ? s.album : [...s.album, id],
-    stats: { ...s.stats, picks: s.stats.picks + 1, bestLevel: Math.max(s.stats.bestLevel, nextLevel) },
-  };
+  const def = grimoireById(id);
+  const streak = def && def.rarity !== 'common' ? s.stats.rareStreak + 1 : 0;
+  const forbiddenBest =
+    def?.rarity === 'forbidden' && nextLevel > (s.stats.forbiddenBest[id] ?? 0) ? { ...s.stats.forbiddenBest, [id]: nextLevel } : s.stats.forbiddenBest;
+  const next: SaveState = bumpMissionState(
+    {
+      ...s,
+      run,
+      album: s.album.includes(id) ? s.album : [...s.album, id],
+      stats: {
+        ...s.stats,
+        picks: s.stats.picks + 1,
+        bestLevel: Math.max(s.stats.bestLevel, nextLevel),
+        rareStreak: streak,
+        rareStreakBest: Math.max(s.stats.rareStreakBest, streak),
+        forbiddenBest,
+      },
+    },
+    'pick',
+    now,
+  );
   if (p.picksLeft > 1) {
     const nextStats = effectiveStats(next);
     return awardAchievements(openChoice(next, now, p.picksLeft - 1, nextStats.choice.rerolls, run.energy));
@@ -1045,7 +1122,7 @@ export function rerollGrimoire(state: SaveState, id: string, now: number): SaveS
   const { offers, rngState } = drawGrimoires(s, p.offers, 1);
   const replacement = offers[0];
   if (replacement === undefined) return s;
-  return {
+  return awardAchievements({
     ...s,
     run: {
       ...s.run,
@@ -1057,7 +1134,8 @@ export function rerollGrimoire(state: SaveState, id: string, now: number): SaveS
         rerollsLeft: p.rerollsLeft - 1,
       },
     },
-  };
+    stats: { ...s.stats, rerolls: s.stats.rerolls + 1 },
+  });
 }
 
 // --- Toque ---
@@ -1125,9 +1203,10 @@ export function press(state: SaveState, now: number): SaveState {
       dustTotal: clampNum(s.stats.dustTotal + gain),
       comboMaxHits: s.stats.comboMaxHits + (full ? 1 : 0),
       comboFullBest: full ? Math.max(s.stats.comboFullBest, now - fullSince) : s.stats.comboFullBest,
+      chainBest: Math.max(s.stats.chainBest, Math.min(chain, 1e6)),
     },
   };
-  return awardAchievements(openChoiceIfFull({ ...next, run: bumpMission(next.run, 'touch', now) }, now));
+  return awardAchievements(openChoiceIfFull(bumpMissionState(next, 'touch', now), now));
 }
 
 // --- Melhorias ---
@@ -1222,7 +1301,18 @@ export function buyUpgrade(state: SaveState, index: number): SaveState {
   upgradeLevels[index] = (upgradeLevels[index] ?? 0) + 1;
   // Ceres e Saturno: a compra devolve a poeira de alguns toques (nunca mais que o preço).
   const refund = Math.min(cost, Math.floor(effectiveStats(state).buyRefundTouches * effectiveStats(state).dustPerTouch));
-  return { ...state, run: { ...state.run, dust: clampNum(state.run.dust - cost + refund), upgradeLevels } };
+  const def = UPGRADES[index] as UpgradeDef;
+  const touchOwned = UPGRADES.reduce((n, u, i) => n + (u.kind === 'touch' && (upgradeLevels[i] ?? 0) > 0 ? 1 : 0), 0);
+  return awardAchievements({
+    ...state,
+    run: { ...state.run, dust: clampNum(state.run.dust - cost + refund), upgradeLevels },
+    stats: {
+      ...state.stats,
+      upgradesBought: state.stats.upgradesBought + 1,
+      genBest: def.kind === 'touch' ? state.stats.genBest : Math.max(state.stats.genBest, upgradeLevels[index] ?? 0),
+      touchBest: Math.max(state.stats.touchBest, touchOwned),
+    },
+  });
 }
 
 // --- Objetos no espaço ---
@@ -1312,9 +1402,12 @@ function bumpMission(run: RunState, metric: MissionDef['metric'], now: number): 
   };
 }
 
-/** Fragmentos extras que a vida atual rende por ter cumprido a missão da estação. */
-export function missionBonus(state: SaveState): number {
-  return state.run.missionsDone > 0 || state.run.mission?.done ? MISSION_FRAGMENTS : 0;
+/** `bumpMission` no estado inteiro: a missão cumprida também entra no total da conta (conquistas). */
+function bumpMissionState(state: SaveState, metric: MissionDef['metric'], now: number): SaveState {
+  const run = bumpMission(state.run, metric, now);
+  if (run === state.run) return state;
+  const done = run.missionsDone - state.run.missionsDone;
+  return { ...state, run, stats: done > 0 ? { ...state.stats, missionsDone: state.stats.missionsDone + done } : state.stats };
 }
 
 /** Os objetos só aparecem depois da primeira melhoria da vida (ou depois do 1º colapso). */
@@ -1385,7 +1478,13 @@ function tickObjectsCore(state: SaveState, now: number): SaveState {
 
 /** Passa o tempo, faz nascer objetos e abre a escolha se os geradores de energia encheram a barra. */
 export function tickObjects(state: SaveState, now: number): SaveState {
-  return openChoiceIfFull(tickObjectsCore(state, now), now);
+  const next = openChoiceIfFull(tickObjectsCore(state, now), now);
+  // Primeira vez que cada evento raro aparece: vira Cintila e conquista (spec 040, 5.1).
+  const ev = next.run.event?.id;
+  if (ev && !next.stats.eventsSeen.includes(ev)) {
+    return awardAchievements({ ...next, stats: { ...next.stats, eventsSeen: [...next.stats.eventsSeen, ev] } });
+  }
+  return next;
 }
 
 /** Recompensa que o objeto mostra na etiqueta (poeira e energia já com os bônus). */
@@ -1471,18 +1570,21 @@ export function captureObject(state: SaveState, id: number, now: number): SaveSt
     }
   }
   const satelliteStreak = obj.kind === 'satellite' ? s.stats.satelliteStreak + 1 : 0;
+  const rareKind = RARE_OBJECT_KINDS.includes(obj.kind) || LEGENDARY_OBJECT_KINDS.includes(obj.kind);
   const withStats: SaveState = {
     ...s,
-    run: bumpMission({ ...next, captured: run.captured + 1, rares: run.rares + (obj.kind === 'golden' ? 1 : 0) }, 'capture', now),
+    run: { ...next, captured: run.captured + 1, rares: run.rares + (obj.kind === 'golden' ? 1 : 0) },
     stats: {
       ...s.stats,
+      raresCaptured: s.stats.raresCaptured + (rareKind ? 1 : 0),
+      capturedKinds: s.stats.capturedKinds.includes(obj.kind) ? s.stats.capturedKinds : [...s.stats.capturedKinds, obj.kind],
       objectsCaptured: s.stats.objectsCaptured + 1,
       dustTotal: clampNum(s.stats.dustTotal + reward.dust + rainDust),
       satelliteStreak,
       satelliteBest: Math.max(s.stats.satelliteBest, satelliteStreak),
     },
   };
-  return awardAchievements(openChoiceIfFull(withStats, now));
+  return awardAchievements(openChoiceIfFull(bumpMissionState(withStats, 'capture', now), now));
 }
 
 // --- Colapso, Atlas e árvore ---
@@ -1522,7 +1624,7 @@ export function canCollapse(state: SaveState): boolean {
 }
 
 /**
- * Colapsa a estrela: guarda `pageId` (um grimório da vida) no Atlas a 60%, dá Fragmentos e recomeça
+ * Colapsa a estrela: guarda `pageId` (um grimório da vida) no Atlas a 60% e recomeça
  * do zero. Com o Atlas cheio, `replaceIndex` diz qual página sai. Sem as condições, devolve o mesmo estado.
  */
 export function collapse(state: SaveState, pageId: string, replaceIndex?: number): SaveState {
@@ -1544,14 +1646,12 @@ export function collapse(state: SaveState, pageId: string, replaceIndex?: number
     return state;
   }
 
-  const gained = fragmentsFor(k, state.run.dustLife) + missionBonus(state);
   const open = REGIONS.filter((r) => r.unlockedAtCollapse <= k);
   const base: SaveState = {
     ...state,
     collapses: k,
     regionId: (open[open.length - 1] as RegionDef).id,
     atlas: { slots, pages },
-    fragments: { earned: state.fragments.earned + gained, spent: state.fragments.spent },
     run: freshRun(state.run.rngState),
     // Cada colapso começa uma vida nova com o tutorial concluído (spec 8.1).
     tutorial: 'done',
@@ -1578,15 +1678,13 @@ export function setRegion(state: SaveState, regionId: string): SaveState {
   return { ...state, regionId };
 }
 
-export function fragmentsAvailable(state: SaveState): number {
-  return Math.max(0, state.fragments.earned - state.fragments.spent);
-}
+export { sparksAvailable };
 
 export function treeNodeCost(level: number): number {
   return TREE_COSTS[level - 1] ?? Infinity;
 }
 
-/** Compra o nó `branch:nível`. A árvore abre no 1º colapso e cada nível exige o anterior. */
+/** Compra o nó `branch:nível` com Cintilas. A árvore abre no 1º colapso e cada nível exige o anterior. */
 export function buyTreeNode(state: SaveState, nodeId: string): SaveState {
   if (state.collapses < 1) return state;
   const branch = TREE.find((b) => [1, 2, 3].some((l) => treeNodeId(b.id, l) === nodeId));
@@ -1595,21 +1693,21 @@ export function buyTreeNode(state: SaveState, nodeId: string): SaveState {
   const current = state.tree[branch.id] ?? 0;
   if (target !== current + 1) return state;
   const cost = treeNodeCost(target);
-  if (fragmentsAvailable(state) < cost) return state;
+  if (sparksAvailable(state) < cost) return state;
   return awardAchievements({
     ...state,
     tree: { ...state.tree, [branch.id]: target },
-    fragments: { earned: state.fragments.earned, spent: state.fragments.spent + cost },
+    sparks: { legacy: state.sparks.legacy, spent: state.sparks.spent + cost },
   });
 }
 
-/** Refazer a árvore devolve os Fragmentos gastos menos 20% (a taxa fica como gasta). Sem custo de poeira. */
+/** Refazer a árvore devolve 100% das Cintilas gastas, sem custo (spec 040, 5.3): a moeda é finita e dá para testar builds. */
 export function respecTree(state: SaveState): SaveState {
-  if (state.fragments.spent <= 0 || Object.keys(state.tree).length === 0) return state;
+  if (state.sparks.spent <= 0 || Object.keys(state.tree).length === 0) return state;
   return awardAchievements({
     ...state,
     tree: {},
-    fragments: { earned: state.fragments.earned, spent: respecFee(state.fragments.spent) },
+    sparks: { legacy: state.sparks.legacy, spent: 0 },
     stats: { ...state.stats, respecs: state.stats.respecs + 1 },
   });
 }

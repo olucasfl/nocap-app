@@ -113,7 +113,7 @@ describe('missão e evento na tela', () => {
     expect(missionView(open)).toMatchObject({ progress: 3, target: 10, done: false });
     expect(html(<MissionChip view={missionView(open)!} />)).toContain('(3/10)');
     const done = { ...s, run: { ...s.run, mission: { id: 'capture-10', progress: 10, done: true, doneAt: -1e9 } } };
-    expect(html(<MissionChip view={missionView(done)!} />)).toContain('Fragmentos extras');
+    expect(html(<MissionChip view={missionView(done)!} />)).toContain('Missão cumprida');
     expect(missionView(s)).toBeNull();
   });
 

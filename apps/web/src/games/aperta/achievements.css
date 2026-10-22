@@ -107,3 +107,109 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
+
+/* ---- Página ampliada (spec 040, etapa 16): cabeçalho com Cintilas, filtros, busca e recompensa de cada conquista ---- */
+.ap-ach-head {
+  display: grid;
+  gap: 6px;
+}
+.ap-ach-sparks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 0;
+  font: 500 13px var(--space-font-body);
+  color: var(--space-muted);
+}
+.ap-ach-sparks b {
+  font: 700 15px var(--space-font-display);
+  color: var(--space-violet);
+}
+.ap-ach-tools {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+.ap-ach-search {
+  display: grid;
+  gap: 4px;
+  font: 600 12px var(--space-font-display);
+  color: var(--space-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.ap-ach-search input {
+  min-height: 44px;
+  width: 100%;
+  min-width: 0;
+  padding: 8px 12px;
+  border: 3px solid var(--space-line);
+  border-radius: 10px;
+  background: rgba(3, 5, 14, 0.8);
+  color: var(--space-text);
+  font: 500 16px var(--space-font-body);
+}
+.ap-ach-search input:focus-visible {
+  outline: 3px solid var(--space-gold);
+  outline-offset: 2px;
+}
+.ap-ach-status,
+.ap-ach-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+.ap-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 6px 12px;
+  border: 3px solid var(--space-line);
+  border-radius: 999px;
+  background: rgba(15, 24, 56, 0.8);
+  color: var(--space-text);
+  font: 700 13px var(--space-font-display);
+  text-transform: uppercase;
+}
+.ap-chip small {
+  font: 600 11px var(--space-font-body);
+  color: var(--space-muted);
+}
+.ap-chip[aria-pressed='true'] {
+  border-color: var(--space-gold);
+  background: rgba(60, 50, 20, 0.7);
+}
+.ap-chip:focus-visible {
+  outline: 3px solid var(--space-gold);
+  outline-offset: 2px;
+}
+.ap-ach-group small {
+  margin-left: 8px;
+  font: 600 12px var(--space-font-body);
+  color: var(--space-muted);
+  letter-spacing: 0;
+}
+.ap-ach {
+  position: relative;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+}
+.ap-ach-reward {
+  align-self: start;
+  padding: 2px 8px;
+  border: 2px solid var(--space-violet);
+  border-radius: 999px;
+  background: rgba(40, 25, 80, 0.8);
+  color: var(--space-violet);
+  font: 700 12px var(--space-font-display);
+  white-space: nowrap;
+}
+.ap-ach.is-earned .ap-ach-reward {
+  border-color: var(--space-gold);
+  color: var(--space-gold);
+}
+.ap-ach.is-soon {
+  opacity: 0.65;
+  border-style: dashed;
+}

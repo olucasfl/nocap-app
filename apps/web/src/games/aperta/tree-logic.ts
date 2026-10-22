@@ -1,4 +1,4 @@
-import { TREE, TREE_COSTS, fragmentsAvailable, respecFee, treeNodeCost, treeNodeId, type SaveState } from '@nocap/games';
+import { TREE, TREE_COSTS, sparkSources, sparksAvailable, sparksTotal, treeNodeCost, treeNodeId, type SaveState } from '@nocap/games';
 import type { AstroId } from './astros';
 
 /** Planeta-ícone de cada ramo (spec 038, 3.5). */
@@ -26,7 +26,7 @@ const NODE_TEXT: Record<string, [string, string, string]> = {
 };
 
 /**
- * owned: já comprado. buyable: o próximo e dá para pagar. short: o próximo, falta Fragmento.
+ * owned: já comprado. buyable: o próximo e dá para pagar. short: o próximo, falta Cintila.
  * blocked: precisa do nível de baixo. closed: a árvore ainda não abriu (antes do 1º colapso).
  */
 export type TreeNodeStatus = 'owned' | 'buyable' | 'short' | 'blocked' | 'closed';
@@ -37,7 +37,7 @@ export interface TreeNodeRow {
   cost: number;
   text: string;
   status: TreeNodeStatus;
-  /** Fragmentos que faltam (só no `short`). */
+  /** Cintilas que faltam (só no `short`). */
   missing: number;
 }
 
@@ -54,18 +54,19 @@ export interface TreeView {
   available: number;
   spent: number;
   branches: TreeBranchRow[];
+  /** Total já ganho e de onde veio (a página mostra para a pessoa saber como ganhar mais). */
+  earned: number;
+  sources: { id: string; label: string; value: number }[];
   respec: {
     can: boolean;
-    /** Fragmentos que voltam ao refazer. */
+    /** Cintilas que voltam ao refazer: todas as gastas (spec 040, 5.3). */
     refund: number;
-    /** Taxa que fica como gasta. */
-    fee: number;
   };
 }
 
 export function treeView(state: SaveState): TreeView {
   const open = state.collapses >= 1;
-  const available = fragmentsAvailable(state);
+  const available = sparksAvailable(state);
   const branches = TREE.map((b): TreeBranchRow => {
     const owned = Math.min(TREE_COSTS.length, state.tree[b.id] ?? 0);
     const nodes = TREE_COSTS.map((_, i): TreeNodeRow => {
@@ -87,13 +88,24 @@ export function treeView(state: SaveState): TreeView {
     });
     return { id: b.id, name: b.name, astro: BRANCH_ASTRO[b.id] ?? 'star', level: owned, nodes };
   });
-  const can = state.fragments.spent > 0 && Object.values(state.tree).some((l) => l > 0);
-  const fee = can ? respecFee(state.fragments.spent) : 0;
+  const can = state.sparks.spent > 0 && Object.values(state.tree).some((l) => l > 0);
+  const src = sparkSources(state);
+  const sources = [
+    { id: 'achievements', label: 'Conquistas', value: src.achievements },
+    { id: 'album', label: 'Grimórios novos no álbum', value: src.album },
+    { id: 'rare', label: 'Objetos raros', value: src.rareFirst + src.rareSteps },
+    { id: 'stars', label: 'Estrela dos Proibidos', value: src.stars },
+    { id: 'collapses', label: 'Colapsos e poeira total', value: src.collapseMarks + src.dustMarks },
+    { id: 'events', label: 'Eventos raros', value: src.eventFirst },
+    ...(state.sparks.legacy > 0 ? [{ id: 'legacy', label: 'Fragmentos de antes', value: state.sparks.legacy }] : []),
+  ];
   return {
     open,
     available,
-    spent: state.fragments.spent,
+    spent: state.sparks.spent,
+    earned: sparksTotal(state),
+    sources,
     branches,
-    respec: { can, fee, refund: can ? state.fragments.spent - fee : 0 },
+    respec: { can, refund: can ? state.sparks.spent : 0 },
   };
 }

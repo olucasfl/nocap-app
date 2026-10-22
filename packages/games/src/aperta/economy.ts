@@ -60,8 +60,6 @@ export const METEOR_SHOWER_EXTRA_MAX = 6;
 export const SOLAR_STORM_ENERGY_MULT = 2;
 /** Favorito pesa o dobro no sorteio da carta dentro da raridade. */
 export const FAVORITE_WEIGHT = 2;
-/** Fragmentos extras por missão da estação cumprida na vida. */
-export const MISSION_FRAGMENTS = 2;
 
 /** Tempo que as cartas ficam bloqueadas depois que a escolha abre (seção 4.7). */
 export const CHOICE_LOCK_SEC = 1.6;
@@ -128,7 +126,7 @@ export const GOAL_BASE = 5e7;
 export const GOAL_SEGMENTS: { upTo: number; ratio: number }[] = [
   // 1º -> 2º colapso: de 50 mi a 140 mi (o que a vida 2 rende em ~2 h). Os 3 primeiros passos acompanham o poder que cada colapso acumula (páginas do Atlas e Fragmentos).
   { upTo: 2, ratio: 2.8 },
-  { upTo: 4, ratio: 2.1 },
+  { upTo: 4, ratio: 1.95 },
   // Do 5º ao 30º colapso: x1,28 por colapso mantém a vida do perfil normal em ~2 h (calibrado, 12 sementes).
   { upTo: 30, ratio: 1.28 },
   // Depois do 30º o poder permanente já encheu (Atlas e árvore): x1,08 dá ~1,4% a mais de horas por colapso (limite: 3%).
@@ -186,14 +184,6 @@ export function lifeHoursBand(nextCollapse: number, prevHours: number | null): {
   return { min: LIFE_HOURS_MIN, max: prevHours * (1 + LIFE_GROWTH_MAX) };
 }
 
-/** Fragmentos do colapso `collapseNumber` (1 = primeiro): `3 + nº` mais 1 por década acima de 2 mi de poeira. */
-export function fragmentsFor(collapseNumber: number, dustLife: number): number {
-  const base = 3 + Math.max(1, Math.floor(collapseNumber));
-  const ratio = dustLife / 2e6;
-  const bonus = Number.isFinite(ratio) && ratio >= 10 ? Math.floor(Math.log10(ratio)) : 0;
-  return base + bonus;
-}
-
 /** Espaços do Atlas depois de `collapses` colapsos: 3 mais 1 em cada marco 5, 10, 25 e 50. */
 export function atlasSlots(collapses: number): number {
   return ATLAS_BASE_SLOTS + ATLAS_SLOT_COLLAPSES.filter((c) => collapses >= c).length;
@@ -206,12 +196,6 @@ export function setBonusTier(count: number): number {
     if (count >= t) tier = i;
   });
   return tier;
-}
-
-/** Fragmentos devolvidos ao refazer a árvore: tudo menos 20% (taxa arredondada para cima, mínimo 1 se houve gasto). */
-export function respecFee(spent: number): number {
-  if (spent <= 0) return 0;
-  return Math.max(1, Math.ceil(spent * 0.2));
 }
 
 // --- Economia v2 (spec 039) ---

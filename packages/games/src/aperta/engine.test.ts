@@ -14,7 +14,7 @@ import {
   currentEnergyCap,
   drawGrimoires,
   effectiveStats,
-  fragmentsAvailable,
+  sparksAvailable,
   newSave,
   nextRandom,
   nextUpgradeCost,
@@ -86,8 +86,8 @@ function assertSane(s: SaveState): void {
     s.run.combo,
     s.run.lastGain,
     s.stats.dustTotal,
-    s.fragments.earned,
-    s.fragments.spent,
+    s.sparks.legacy,
+    s.sparks.spent,
     ...s.run.upgradeLevels,
     ...Object.values(s.run.build),
   ];
@@ -1078,7 +1078,7 @@ describe('colapso', () => {
     expect(p.ready).toBe(false);
   });
 
-  it('guarda a página, dá Fragmentos e recomeça do zero', () => {
+  it('guarda a página, não dá Fragmentos e recomeça do zero', () => {
     let s = withBuild(withLevels(newSave('co'), { pulse: 7 }), { vesta: 3, moon: 1 });
     s = withRun(s, { ...s.run, dust: 12345, energy: 10, clicks: 999 });
     s = { ...s, album: ['vesta', 'moon'], achievements: ['first'], stats: { ...s.stats, clicks: 999 } };
@@ -1086,7 +1086,9 @@ describe('colapso', () => {
     const after = collapse(s, 'vesta');
     expect(after.collapses).toBe(1);
     expect(after.atlas.pages).toEqual([{ grimoireId: 'vesta', level: 3 }]);
-    expect(after.fragments.earned).toBeGreaterThanOrEqual(4);
+    // Sem Fragmentos por colapso: o saldo de Cintilas só vem das fontes (conquistas, álbum...).
+    expect(after.sparks).toEqual({ legacy: 0, spent: 0 });
+    expect(sparksAvailable(after)).toBeGreaterThan(0);
     expect(after.run.dust).toBe(0);
     expect(after.run.dustLife).toBe(0);
     expect(after.run.picks).toBe(0);
@@ -1177,12 +1179,6 @@ describe('colapso', () => {
     }
   });
 
-  it('os Fragmentos crescem com o colapso e com a poeira acima de 2 mi', () => {
-    const s1 = collapse(readyToCollapse(withBuild(newSave('fr'), { moon: 1 })), 'moon');
-    const s2 = collapse(withRun(readyToCollapse(withBuild(s1, { moon: 1 })), { dustLife: 1e15 }), 'moon');
-    expect(s2.fragments.earned - s1.fragments.earned).toBe(3 + 2 + Math.floor(Math.log10(1e15 / 2e6)));
-  });
-
   it('não colapsa com a escolha de grimório aberta', () => {
     const s = withRun(readyToCollapse(withBuild(newSave('co'), { moon: 1 })), {
       pending: { offers: ['moon', 'vesta', 'mars'], openedAt: 0, selected: null, picksLeft: 1, rerollsLeft: 0 },
@@ -1192,23 +1188,25 @@ describe('colapso', () => {
 });
 
 describe('Árvore de Habilidades', () => {
-  const withFragments = (n: number): SaveState => ({ ...newSave('tr'), collapses: 1, fragments: { earned: n, spent: 0 } });
+  const withFragments = (n: number): SaveState => ({ ...newSave('tr'), collapses: 1, sparks: { legacy: n, spent: 0 } });
 
   it('só abre depois do 1º colapso', () => {
-    const s = { ...newSave('tr'), fragments: { earned: 9, spent: 0 } };
+    const s = { ...newSave('tr'), sparks: { legacy: 9, spent: 0 } };
     expect(buyTreeNode(s, 'alpha-centauri:1')).toBe(s);
   });
 
-  it('custa 1, 2 e 4 Fragmentos e exige o nível anterior', () => {
+  it('custa 1, 2 e 4 Cintilas e exige o nível anterior', () => {
     let s = withFragments(7);
     expect(buyTreeNode(s, 'alpha-centauri:2')).toBe(s);
     s = buyTreeNode(s, 'alpha-centauri:1');
     expect(s.tree['alpha-centauri']).toBe(1);
-    expect(fragmentsAvailable(s)).toBe(6);
+    expect(s.sparks.spent).toBe(1);
     s = buyTreeNode(s, 'alpha-centauri:2');
     s = buyTreeNode(s, 'alpha-centauri:3');
     expect(s.tree['alpha-centauri']).toBe(3);
-    expect(fragmentsAvailable(s)).toBe(0);
+    // 1 + 2 + 4 gastos; as conquistas da árvore (tree-1...) rendem Cintilas no caminho, então o saldo não é 0.
+    expect(s.sparks.spent).toBe(7);
+    expect(sparksAvailable(s)).toBeGreaterThanOrEqual(0);
     expect(buyTreeNode(s, 'alpha-centauri:3')).toBe(s);
   });
 
@@ -1242,14 +1240,14 @@ describe('Árvore de Habilidades', () => {
     expect(forbiddenSeen(10, { 'event-horizon': 3 })).toBe(true);
   });
 
-  it('refazer devolve tudo menos 20% (arredondado para cima) e limpa a árvore', () => {
+  it('refazer devolve 100% das Cintilas gastas e limpa a árvore', () => {
     let s = withFragments(20);
     s = buyTreeNode(buyTreeNode(buyTreeNode(s, 'alpha-centauri:1'), 'alpha-centauri:2'), 'crab-nebula:1');
-    expect(s.fragments.spent).toBe(4);
+    expect(s.sparks.spent).toBe(4);
     const reset = respecTree(s);
     expect(reset.tree).toEqual({});
-    expect(reset.fragments.spent).toBe(1);
-    expect(fragmentsAvailable(reset)).toBe(19);
+    expect(reset.sparks.spent).toBe(0);
+    expect(sparksAvailable(reset)).toBeGreaterThanOrEqual(20);
   });
 
   it('refazer sem gasto, ou duas vezes seguidas, não cobra taxa extra', () => {

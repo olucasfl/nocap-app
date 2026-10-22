@@ -28,7 +28,7 @@ export function MissionChip({ view }: { view: MissionView }) {
     <div className={`ap-chip ap-chip-mission${view.done ? ' is-done' : ''}`} role="status">
       <small>Missão da estação</small>
       <span>
-        {view.done ? 'Cumprida: Fragmentos extras ao colapsar' : `${view.text} (${view.progress}/${view.target})`}
+        {view.done ? 'Missão cumprida' : `${view.text} (${view.progress}/${view.target})`}
       </span>
     </div>
   );

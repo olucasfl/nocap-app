@@ -43,6 +43,6 @@
 | 037 | [Progresso das fases na conta](037-progresso-na-conta.md) | 7 | concluída |
 | 038 | [Aperta! (clicker no espaço, solo, saves na conta)](038-clicker.md) | 8 | em andamento na `develop`: etapas 1, 2 (falta aplicar a migration), 3, 4, 5 (Melhorias), 6 (grimórios e álbum), 7 (objetos no espaço), 8 (tutorial, refeito como dinâmico em 22/10/2026), 9 (colapso e Atlas), 10 (Árvore e conquistas), 11 e 11b (arte e sons, incluindo as telas novas) e 12 (conteúdo dos colapsos 1 a 5) prontas; economia reformulada em 22/10/2026 (começo do zero, melhorias progressivas, grimórios em números, vidas 1 a 5 recalibradas); ver seção 16 da spec |
 | 039 | [Aperta!: economia v2 (toque conquistado, geradores e raros)](039-aperta-economia-v2.md) | 8 | rascunho (aguarda decisões do Lucas) |
-| 040 | [Aperta!: colapso infinito, Cofre dos Proibidos e árvore grande](040-aperta-colapso-infinito.md) | 8 | plano escrito em 22/10/2026 (etapas 14 a 21); **etapa 14 (colapso infinito e requisitos) pronta em 22/10/2026**, 15 a 21 não começadas; substitui o Atlas, os Fragmentos e a camada 2 da 038 |
+| 040 | [Aperta!: colapso infinito, Cofre dos Proibidos e árvore grande](040-aperta-colapso-infinito.md) | 8 | plano escrito em 22/10/2026 (etapas 14 a 21); **etapas 14 (colapso infinito e requisitos) e 16 (Cintilas e conquistas ampliadas) prontas em 22/10/2026**, 15 e 17 a 21 não começadas; substitui o Atlas, os Fragmentos e a camada 2 da 038 |
 
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.

@@ -8,6 +8,8 @@ import { dustGoal, minPicks } from './economy';
 import { canCollapse, collapse, collapseProgress, press, type SaveState } from './engine';
 import { meetMilestone } from './milestone';
 import { mergeSaves, validateSave } from './save';
+import { achievementById } from './achievements';
+import { sparksAvailable } from './sparks';
 
 const dir = join(__dirname, 'fixtures');
 const names = readdirSync(dir).filter((f) => f.startsWith('legacy-') && f.endsWith('.json'));
@@ -57,6 +59,22 @@ describe('saves antigos (anteriores à spec 040)', () => {
     expect(s.run.dust).toBeGreaterThanOrEqual(r.save.run.dust);
     const again = validateSave(JSON.parse(JSON.stringify(s)), { createdAtMs: s.createdAt, nowMs: s.createdAt + s.playSeconds * 1000 + 60_000 });
     expect(again.ok, again.ok ? '' : again.errors.join(' | ')).toBe(true);
+  });
+
+  it.each(names)('%s: os Fragmentos viram Cintilas 1:1 (saldo e gasto) e os totais novos entram zerados', (name) => {
+    const raw = load(name);
+    const frag = raw.fragments as { earned: number; spent: number };
+    expect(frag).toBeDefined();
+    expect(raw.sparks).toBeUndefined();
+    const r = validateSave(raw, opts(raw));
+    if (!r.ok) throw new Error(r.errors.join(' | '));
+    expect(r.save.sparks).toEqual({ legacy: frag.earned, spent: frag.spent });
+    expect((r.save as unknown as Record<string, unknown>).fragments).toBeUndefined();
+    // Quem migrou nunca fica com saldo menor que o de antes (as fontes novas só somam).
+    expect(sparksAvailable(r.save)).toBeGreaterThanOrEqual(frag.earned - frag.spent);
+    expect(r.save.stats).toMatchObject({ raresCaptured: 0, rareStreak: 0, forbiddenBest: {}, eventsSeen: [] });
+    // As conquistas que o save já tinha continuam e valem Cintilas.
+    for (const id of r.save.achievements) expect(achievementById(id), id).toBeDefined();
   });
 
   it('a junção entre um save antigo e ele mesmo não perde nada', () => {

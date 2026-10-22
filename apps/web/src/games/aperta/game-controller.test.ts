@@ -97,7 +97,8 @@ describe('energia cheia', () => {
     expect(state.run.energy).toBe(0);
     expect(state.run.build[id]).toBe(1);
     expect(state.album).toContain(id);
-    expect(t.events.at(-1)).toMatchObject({ type: 'grimoire', id });
+    // O grimório novo rende Cintilas (fonte do álbum): o aviso delas vem logo depois do aviso do grimório.
+    expect(t.events.find((e) => e.type === 'grimoire')).toMatchObject({ type: 'grimoire', id });
   });
 
   it('escolher grava na hora', async () => {
@@ -344,7 +345,7 @@ describe('tutorial pelo controlador', () => {
     expect(t.events.map((e) => e.type)).toEqual(['press']);
     const free = setup({ ...newSave('teste', 0), tutorial: TUTORIAL.FREE });
     free.tap();
-    expect(free.events.map((e) => e.type)).toEqual(['press', 'achievement']);
+    expect(free.events.map((e) => e.type)).toEqual(['press', 'achievement', 'sparks']);
   });
 
   it('cartões do jogo livre: cada um marcado uma vez; os três concluem o tutorial', () => {

@@ -16,7 +16,7 @@ import {
   chooseGrimoire,
   collapse,
   effectiveStats,
-  fragmentsAvailable,
+  sparksAvailable,
   newSave,
   nextUpgradeCost,
   press,
@@ -236,7 +236,7 @@ function replaceIndexFor(state: SaveState, pageId: string): number | undefined {
   return weakest;
 }
 
-function spendFragments(state: SaveState, profile: Profile): SaveState {
+function spendSparks(state: SaveState, profile: Profile): SaveState {
   let s = state;
   for (;;) {
     const base = score(s, profile);
@@ -246,7 +246,7 @@ function spendFragments(state: SaveState, profile: Profile): SaveState {
       const next = (s.tree[branch.id] ?? 0) + 1;
       if (next > 3) continue;
       const cost = treeNodeCost(next);
-      if (cost > fragmentsAvailable(s)) continue;
+      if (cost > sparksAvailable(s)) continue;
       const gain = score({ ...s, tree: { ...s.tree, [branch.id]: next } }, profile) - base;
       if (gain / cost > bestRatio) {
         bestRatio = gain / cost;
@@ -370,7 +370,7 @@ export function simulate(options: SimOptions): SimResult {
         result.alerts.push(`vida ${k} travou (o colapso foi recusado)`);
         break;
       }
-      state = spendFragments(state, profile);
+      state = spendSparks(state, profile);
       milestones = MILESTONE_NAMES.map(() => null);
       req = [null, null, null];
       lifeStart = t;

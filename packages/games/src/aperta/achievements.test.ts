@@ -42,8 +42,10 @@ describe('catálogo de conquistas', () => {
       expect(a.goal).toBeGreaterThan(0);
       expect(a.name.length).toBeGreaterThan(0);
     }
-    expect(ACHIEVEMENTS.filter((a) => a.hidden).map((a) => a.id)).toEqual(['respec']);
-    expect(ACHIEVEMENTS.length).toBeGreaterThanOrEqual(24);
+    const hidden = ACHIEVEMENTS.filter((a) => a.hidden);
+    expect(hidden.length).toBe(10);
+    expect(hidden.map((a) => a.id)).toContain('respec');
+    expect(ACHIEVEMENTS.length).toBeGreaterThanOrEqual(140);
   });
 
   it('um save novo não tem nenhuma conquista pronta', () => {
@@ -163,7 +165,7 @@ describe('colapsos e árvore', () => {
   });
 
   it('comprar o 1º nó, completar um ramo e refazer (escondida)', () => {
-    let s: SaveState = { ...newSave('a'), collapses: 1, fragments: { earned: 20, spent: 0 } };
+    let s: SaveState = { ...newSave('a'), collapses: 1, sparks: { legacy: 20, spent: 0 } };
     const branch = (TREE[0] as { id: string }).id;
     expect(has(s, 'tree-1')).toBe(false);
     s = buyTreeNode(s, `${branch}:1`);

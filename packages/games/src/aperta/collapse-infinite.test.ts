@@ -10,7 +10,6 @@ import {
   captureObject,
   collapse,
   collapseProgress,
-  missionBonus,
   newSave,
   press,
   tickObjects,
@@ -170,14 +169,7 @@ describe('missões da estação em sequência', () => {
     const next = s.run.mission!;
     expect(next).toMatchObject({ done: false, progress: 0 });
     expect(next.id).not.toBe(first.id);
-    expect(missionBonus(s)).toBeGreaterThan(0);
-  });
-
-  it('o bônus de Fragmentos vale uma vez por vida, mesmo com várias missões', () => {
-    const one = withRun(atCollapse(4), { missionsDone: 1 });
-    const three = withRun(atCollapse(4), { missionsDone: 3 });
-    expect(missionBonus(three)).toBe(missionBonus(one));
-    expect(missionBonus(atCollapse(4))).toBe(0);
+    expect(s.run.missionsDone).toBeGreaterThan(0);
   });
 
   it('há missões curtas e longas, e todas têm id único', () => {
@@ -202,13 +194,11 @@ describe('números grandes', () => {
     const c = 500;
     let total = 0;
     for (let k = 1; k <= c; k++) total += dustGoal(k);
-    let earned = 0;
-    for (let k = 1; k <= c; k++) earned += 3 + k;
     const s: SaveState = {
       ...atCollapse(c),
       regionId: 'alpha-centauri',
       atlas: { slots: 7, pages: [] },
-      fragments: { earned, spent: 0 },
+      sparks: { legacy: 0, spent: 0 },
       stats: { ...newSave('inf', 1).stats, picks: c * 12, dustTotal: Math.min(MAX_NUMBER, total * 2) },
     };
     const r = validateSave(s);

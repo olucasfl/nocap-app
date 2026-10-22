@@ -16,11 +16,9 @@ import {
   clampCostFactor,
   dustGoal,
   energyCap,
-  fragmentsFor,
   levelFactor,
   minPicks,
   rarityUnlockPicks,
-  respecFee,
   setBonusTier,
   upgradeCost,
 } from './economy';
@@ -189,23 +187,6 @@ describe('requisitos de colapso (spec 040)', () => {
   });
 });
 
-describe('fragmentsFor', () => {
-  it('dá 3 + nº do colapso', () => {
-    expect(fragmentsFor(1, 2e6)).toBe(4);
-    expect(fragmentsFor(5, 1e6)).toBe(8);
-  });
-
-  it('soma 1 por década acima de 2 mi', () => {
-    expect(fragmentsFor(1, 2e7)).toBe(5);
-    expect(fragmentsFor(1, 2e9)).toBe(7);
-    expect(fragmentsFor(1, 1.9e7)).toBe(4);
-  });
-
-  it('é seguro com poeira inválida', () => {
-    expect(fragmentsFor(1, Number.NaN)).toBe(4);
-    expect(fragmentsFor(1, 0)).toBe(4);
-  });
-});
 
 describe('Atlas', () => {
   it('abre com 3 espaços e ganha 1 nos colapsos 5, 10, 25 e 50', () => {
@@ -224,12 +205,3 @@ describe('Atlas', () => {
   });
 });
 
-describe('respecFee', () => {
-  it('é 20% arredondado para cima, mínimo 1 se houve gasto', () => {
-    expect(respecFee(0)).toBe(0);
-    expect(respecFee(1)).toBe(1);
-    expect(respecFee(7)).toBe(2);
-    expect(respecFee(10)).toBe(2);
-    expect(respecFee(11)).toBe(3);
-  });
-});

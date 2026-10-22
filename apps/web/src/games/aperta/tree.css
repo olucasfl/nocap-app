@@ -230,3 +230,41 @@
   border-color: var(--space-line);
   box-shadow: none;
 }
+
+/* Cintilas: de onde vêm (spec 040, etapa 16). */
+.ap-tree-frag small {
+  display: block;
+  margin-top: 2px;
+  font: 500 12px var(--space-font-body);
+  color: var(--space-muted);
+}
+.ap-tree-sources {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border: 2px solid var(--space-line);
+  border-radius: 10px;
+  background: rgba(8, 12, 32, 0.6);
+  font: 500 13px var(--space-font-body);
+  color: var(--space-text);
+}
+.ap-tree-sources summary {
+  cursor: pointer;
+  font: 700 13px var(--space-font-display);
+  color: var(--space-cyan);
+  text-transform: uppercase;
+}
+.ap-tree-sources ul {
+  display: grid;
+  gap: 4px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.ap-tree-sources li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ap-tree-sources b {
+  font-variant-numeric: tabular-nums;
+}

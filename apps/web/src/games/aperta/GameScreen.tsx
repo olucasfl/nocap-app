@@ -3,7 +3,7 @@ import {
   choiceLockRemaining,
   formatDecimal,
   formatNumber,
-  fragmentsAvailable,
+  sparksAvailable,
   objectsVisible,
   pendingHint,
   TUTORIAL,
@@ -110,7 +110,7 @@ function pageNotice(page: PageName, affordable: number, albumCount: number, coll
     case 'achievements':
       return `${achievements.earned} de ${achievements.total} conquistas ganhas. Elas contam do primeiro toque em diante.`;
     case 'tree':
-      return collapses > 0 ? 'Gaste seus Fragmentos nos ramos da árvore.' : 'Os ramos se abrem depois do seu primeiro colapso.';
+      return collapses > 0 ? 'Gaste suas Cintilas nos ramos da árvore.' : 'Os ramos se abrem depois do seu primeiro colapso.';
   }
 }
 
@@ -130,6 +130,7 @@ export function GameScreen({ controller, onExit }: Props) {
   const [bursts, setBursts] = useState<Burst[]>([]);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [achNotice, setAchNotice] = useState<{ id: number; title: string; text: string } | null>(null);
+  const [sparkNotice, setSparkNotice] = useState<{ id: number; amount: number; available: number } | null>(null);
   const [captures, setCaptures] = useState<Capture[]>([]);
   const [freshGrimoire, setFreshGrimoire] = useState(false);
   const [collapseOpen, setCollapseOpen] = useState(false);
@@ -168,6 +169,7 @@ export function GameScreen({ controller, onExit }: Props) {
 
   const noticeTimer = useRef<number | null>(null);
   const achTimer = useRef<number | null>(null);
+  const sparkTimer = useRef<number | null>(null);
   useEffect(() => {
     return controller.onEvent((e: GameEvent) => {
       if (e.type === 'press') {
@@ -184,6 +186,11 @@ export function GameScreen({ controller, onExit }: Props) {
         if (achTimer.current !== null) window.clearTimeout(achTimer.current);
         setAchNotice({ id: Date.now(), title: 'Conquista', text: e.name });
         achTimer.current = later(() => setAchNotice(null), NOTICE_MS * 1.4);
+      } else if (e.type === 'sparks') {
+        apertaSfx.chime();
+        if (sparkTimer.current !== null) window.clearTimeout(sparkTimer.current);
+        setSparkNotice({ id: Date.now(), amount: e.amount, available: e.available });
+        sparkTimer.current = later(() => setSparkNotice(null), NOTICE_MS * 1.4);
       } else if (e.type === 'choice-open') {
         apertaSfx.flip();
       } else if (e.type === 'capture') {
@@ -209,7 +216,7 @@ export function GameScreen({ controller, onExit }: Props) {
         setNotice({
           id: Date.now(),
           title: 'Estrela colapsada',
-          text: `Página guardada no Atlas: ${e.pageName}. +${e.fragments} Fragmentos`,
+          text: `Página guardada no Atlas: ${e.pageName}.${e.sparks > 0 ? ` +${e.sparks} ${e.sparks === 1 ? 'Cintila' : 'Cintilas'}` : ''}`,
           astro: astroFor(e.pageId, GRIMOIRES.find((g) => g.id === e.pageId)?.family ?? 'planets'),
         });
         noticeTimer.current = later(() => setNotice(null), NOTICE_MS * 2);
@@ -321,7 +328,7 @@ export function GameScreen({ controller, onExit }: Props) {
   const upBadge = upgradeBadge(state, seenUp);
   const combo = comboView(state, now);
   const signal = signalView(state, now);
-  const fragments = fragmentsAvailable(state);
+  const sparks = sparksAvailable(state);
   const albumCount = state.album.length;
   const collapse = collapseView(state);
   const starReady = tutorial === null && collapse.ready;
@@ -401,13 +408,13 @@ export function GameScreen({ controller, onExit }: Props) {
           data-tut="tree"
           className={`ap-hbtn ap-hbtn-tree${state.collapses < 1 ? ' is-dim' : ''}`}
           aria-pressed={page === 'tree'}
-          aria-label={fragments > 0 ? `Árvore de Habilidades, ${fragments} Fragmentos` : 'Árvore de Habilidades'}
+          aria-label={sparks > 0 ? `Árvore de Habilidades, ${sparks} ${sparks === 1 ? 'Cintila' : 'Cintilas'}` : 'Árvore de Habilidades'}
           onClick={() => openPage('tree')}
         >
           Árvore de Habilidades
-          {fragments > 0 && (
+          {sparks > 0 && (
             <span className="ap-badge" aria-hidden="true">
-              {fragments}
+              {sparks}
             </span>
           )}
         </button>
@@ -441,6 +448,23 @@ export function GameScreen({ controller, onExit }: Props) {
               <span>
                 <b>{achNotice.title}</b>
                 <small>{achNotice.text}</small>
+              </span>
+            </div>
+          )}
+        </div>
+        <div className="ap-pickup-slot" role="status" aria-live="polite">
+          {sparkNotice && (
+            <div key={sparkNotice.id} className="ap-pickup ap-pickup-sparks">
+              <span className="ap-pickup-medal">
+                <AstroMedal astro="star" />
+              </span>
+              <span>
+                <b>
+                  +{sparkNotice.amount} {sparkNotice.amount === 1 ? 'Cintila' : 'Cintilas'}
+                </b>
+                <small>
+                  {sparkNotice.available} {sparkNotice.available === 1 ? 'para gastar' : 'para gastar'} na árvore
+                </small>
               </span>
             </div>
           )}

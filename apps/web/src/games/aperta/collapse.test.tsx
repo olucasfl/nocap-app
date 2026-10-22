@@ -28,10 +28,10 @@ describe('visão do colapso', () => {
     expect(v.requirements.every((r) => !r.done && r.fill < 1)).toBe(true);
   });
 
-  it('pronta quando poeira e escolhas batem; os Fragmentos já aparecem', () => {
+  it('pronta quando poeira e escolhas batem; as Cintilas já aparecem', () => {
     const v = collapseView(ready());
     expect(v.ready).toBe(true);
-    expect(v.fragments).toBe(5);
+    expect(v.sparks).toBeGreaterThanOrEqual(0);
     expect(v.requirements.every((r) => r.done && r.fill === 1)).toBe(true);
     expect(v.dustFill).toBe(1);
   });
@@ -132,8 +132,12 @@ describe('controlador: colapsar', () => {
     expect(s.atlas.pages).toEqual([{ grimoireId: 'moon', level: 2 }]);
     expect(s.run.build).toEqual({});
     expect(s.run.dustLife).toBe(0);
-    expect(s.fragments.earned).toBe(5);
-    expect(events.filter((e) => e.type === 'collapse')).toEqual([{ type: 'collapse', pageId: 'moon', pageName: 'Lua', fragments: 5 }]);
+    // Sem Fragmentos: o colapso só dá Cintilas pelas fontes que abre (conquista "Primeira estrela colapsada", por exemplo).
+    expect(s.sparks).toEqual({ legacy: 0, spent: 0 });
+    const got = events.filter((e) => e.type === 'collapse');
+    expect(got).toHaveLength(1);
+    expect(got[0]).toMatchObject({ type: 'collapse', pageId: 'moon', pageName: 'Lua' });
+    expect((got[0] as { sparks: number }).sparks).toBeGreaterThan(0);
     expect(store.saved[1]?.collapses).toBe(1);
   });
 

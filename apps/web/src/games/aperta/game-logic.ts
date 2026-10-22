@@ -17,7 +17,7 @@ import {
   UPGRADES,
   currentEnergyCap,
   effectiveStats,
-  fragmentsFor,
+  sparksOnCollapse,
   nextUpgradeCost,
   setBonusTier,
   unlockedContent,
@@ -444,8 +444,8 @@ export interface CollapseView {
   requirements: RequirementView[];
   /** "Falta N de poeira", "Faltam N escolhas" ou os dois, para o botão desabilitado. */
   hint: string;
-  /** Fragmentos que o colapso dá agora. */
-  fragments: number;
+  /** Cintilas que o colapso dá agora (as fontes novas que ele abre: marco de colapsos e conquistas). */
+  sparks: number;
   /** Escolha de grimório aberta: o colapso espera ela. */
   waitingChoice: boolean;
 }
@@ -515,7 +515,7 @@ export function collapseView(state: SaveState): CollapseView {
     picksMissing,
     requirements,
     hint: waitingChoice ? 'Termine a escolha de grimório' : parts.length ? `Falta ${joinList(parts)} para a estrela colapsar` : '',
-    fragments: fragmentsFor(state.collapses + 1, state.run.dustLife),
+    sparks: sparksOnCollapse(state),
     waitingChoice,
   };
 }

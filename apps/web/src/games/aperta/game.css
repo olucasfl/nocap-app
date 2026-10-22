@@ -1197,3 +1197,17 @@
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
+
+/* Aviso de Cintilas (spec 040, etapa 16): a mesma faixa da conquista, em ciano e com brilho próprio. */
+.ap-pickup-sparks {
+  border-color: var(--space-violet);
+  box-shadow:
+    0 0 0 3px var(--space-ink),
+    0 0 26px rgba(155, 123, 255, 0.55);
+}
+.ap-pickup-sparks b {
+  color: var(--space-violet);
+}
+.ap-pickup-sparks .ap-pickup-medal {
+  --ap-trim: var(--space-violet);
+}

@@ -129,7 +129,7 @@ const HINTS: Record<TutorialHint, CoachView> = {
     target: 'tree',
     label: 'Árvore',
     title: 'Árvore de Habilidades',
-    text: 'Ao colapsar uma estrela você ganha Fragmentos. É nesta árvore que eles viram melhorias permanentes. Os ramos abrem depois do seu primeiro colapso.',
+    text: 'Conquistas, grimórios novos e colapsos dão Cintilas. É nesta árvore que elas viram melhorias permanentes. Os ramos abrem depois do seu primeiro colapso.',
     dismiss: 'tree',
   },
 };

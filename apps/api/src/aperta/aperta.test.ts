@@ -215,8 +215,8 @@ describe('vários aparelhos', () => {
       collapses: 1,
       tutorial: 'done',
       regionId: 'asteroid-belt',
-      fragments: { earned: 4, spent: 0 },
-      stats: { ...newSave('a', T0).stats, picks: 20, dustTotal: 6e6 },
+      sparks: { legacy: 4, spent: 0 },
+      stats: { ...newSave('a', T0).stats, picks: 20, dustTotal: 2e8 },
     };
     await service.put('u', 1, { data: newSave('a', T0), baseRevision: 0 });
     await service.put('u', 1, { data: ahead, baseRevision: 1 });
@@ -230,14 +230,14 @@ describe('vários aparelhos', () => {
   it('álbum e conquistas só crescem: o servidor une com o que a conta já tem', async () => {
     const { service } = setup();
     const a = played(40);
-    const withMoon: SaveState = { ...a, album: ['moon'], run: { ...a.run, build: { moon: 1 }, picks: 1 }, stats: { ...a.stats, picks: 1 }, achievements: ['first'] };
+    const withMoon: SaveState = { ...a, album: ['moon'], run: { ...a.run, build: { moon: 1 }, picks: 1 }, stats: { ...a.stats, picks: 1 }, achievements: ['tap-1'] };
     const b = played(80);
     const stale: SaveState = { ...b, album: ['mars'], run: { ...b.run, build: { mars: 1 }, picks: 1 }, stats: { ...b.stats, picks: 1 } };
     await service.put('u', 1, { data: newSave('a', T0), baseRevision: 0 });
     await service.put('u', 1, { data: withMoon, baseRevision: 1 });
     const r = await service.put('u', 1, { data: stale, baseRevision: 2 });
     expect(r.data!.album).toEqual(expect.arrayContaining(['moon', 'mars']));
-    expect(r.data!.achievements).toEqual(expect.arrayContaining(['first']));
+    expect(r.data!.achievements).toEqual(expect.arrayContaining(['tap-1']));
   });
 });
 

@@ -15,13 +15,14 @@ import {
   MAX_COLLAPSE_COUNT,
   MAX_NUMBER,
   MAX_TOUCHES_PER_SEC,
-  MISSION_FRAGMENTS,
   atlasSlots,
   dustGoal,
   energyCap,
   upgradeCost,
 } from './economy';
 import { eventsOpen, mechanicOpen, missionById } from './content';
+import { ACHIEVEMENTS, achievementActive, achievementById } from './achievements';
+import { EVENT_IDS_NOW, sparkSources } from './sparks';
 import { SAVE_VERSION, effectiveStats, upgradeLock, type SaveState } from './engine';
 import { TUTORIAL_HINTS, UI_BUTTONS, migrateTutorial } from './tutorial';
 
@@ -38,6 +39,8 @@ const MAX_LEVELS_PER_PICK = 2;
 /** Folga para arredondamento e para o relógio do aparelho andar um pouco à frente do servidor. */
 const CLOCK_SLACK_SEC = 120;
 const TOLERANCE = 1.000001;
+/** Fragmentos extras por missão no tempo em que os Fragmentos existiam (só para o teto de `sparks.legacy`). */
+const LEGACY_MISSION_FRAGMENTS = 2;
 
 const EVENT_IDS = ['meteor-shower', 'solar-storm'] as const;
 const OBJECT_KINDS = [...OBJECTS.map((o) => o.kind), 'golden'] as unknown as [ObjectKind, ...ObjectKind[]];
@@ -134,7 +137,8 @@ const saveSchema = z.object({
   regionId: id,
   favorite: id.nullable().default(null),
   seenUnlocks: z.array(id).max(MAX_SEEN_UNLOCKS),
-  fragments: z.object({ earned: int(1e9), spent: int(1e9) }),
+  // Saves de antes da etapa 16 têm `fragments`: `migrateSparks` os transforma em `sparks` antes da leitura.
+  sparks: z.object({ legacy: int(1e9), spent: int(1e9) }),
   tree: z.record(id, z.number().int().min(0).max(TREE_COSTS.length)),
   achievements: z.array(id).max(MAX_ACHIEVEMENTS),
   stats: z.object({
@@ -149,8 +153,41 @@ const saveSchema = z.object({
     satelliteStreak: int(Number.MAX_SAFE_INTEGER).default(0),
     satelliteBest: int(Number.MAX_SAFE_INTEGER).default(0),
     respecs: int(Number.MAX_SAFE_INTEGER).default(0),
+    // Contadores das conquistas ampliadas e das fontes de Cintilas (spec 040, etapa 16): saves antigos entram zerados.
+    raresCaptured: int(Number.MAX_SAFE_INTEGER).default(0),
+    capturedKinds: z.array(id).max(32).default([]),
+    chainBest: int(1e6).default(0),
+    missionsDone: int(Number.MAX_SAFE_INTEGER).default(0),
+    eventsSeen: z.array(id).max(32).default([]),
+    genBest: int(1000).default(0),
+    upgradesBought: int(Number.MAX_SAFE_INTEGER).default(0),
+    touchBest: int(64).default(0),
+    offers: int(Number.MAX_SAFE_INTEGER).default(0),
+    legendaryOffers: int(Number.MAX_SAFE_INTEGER).default(0),
+    firstOfferLegendary: int(1).default(0),
+    rareStreak: int(Number.MAX_SAFE_INTEGER).default(0),
+    rareStreakBest: int(Number.MAX_SAFE_INTEGER).default(0),
+    rerolls: int(Number.MAX_SAFE_INTEGER).default(0),
+    forbiddenBest: z.record(id, int(GRIMOIRE_MAX_LEVEL)).default({}),
+    skillsUsed: z.array(id).max(32).default([]),
+    skillUses: int(Number.MAX_SAFE_INTEGER).default(0),
+    dayStreakBest: int(100_000).default(0),
   }),
 });
+
+/**
+ * Saves anteriores à etapa 16 guardam `fragments { earned, spent }`: viram `sparks { legacy, spent }` 1:1 (o saldo e o
+ * gasto são os mesmos; o resto das Cintilas vem das fontes novas). Não muta o que recebe.
+ */
+function migrateSparks(raw: unknown): unknown {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return raw;
+  const o = raw as Record<string, unknown>;
+  if (o.sparks !== undefined || typeof o.fragments !== 'object' || o.fragments === null) return raw;
+  const f = o.fragments as Record<string, unknown>;
+  const { fragments: _old, ...rest } = o;
+  void _old;
+  return { ...rest, sparks: { legacy: f.earned, spent: f.spent } };
+}
 
 export type SaveValidation =
   | { ok: true; save: SaveState; flagged: string[] }
@@ -202,7 +239,7 @@ export function validateSave(raw: unknown, opts: ValidateOptions = {}): SaveVali
   }
   if (size > MAX_SAVE_BYTES) return { ok: false, errors: ['Save grande demais'] };
 
-  const parsed = saveSchema.safeParse(raw);
+  const parsed = saveSchema.safeParse(migrateSparks(raw));
   if (!parsed.success) {
     const errors = parsed.error.issues.slice(0, 8).map((i) => `${i.path.join('.') || 'save'}: ${i.message}`);
     return { ok: false, errors };
@@ -294,24 +331,46 @@ export function validateSave(raw: unknown, opts: ValidateOptions = {}): SaveVali
     else if (!save.album.includes(p.grimoireId)) errors.push(`Página fora do álbum: ${p.grimoireId}`);
   }
 
-  // Fragmentos e árvore.
-  const { earned, spent: fragSpent } = save.fragments;
-  if (fragSpent > earned) errors.push('Fragmentos gastos maiores que os ganhos');
-  let minEarned = 0;
-  let maxEarned = 0;
+  // Cintilas: `legacy` só pode valer o que os Fragmentos antigos podiam ter dado (3 + nº do colapso, mais 1 por década
+  // de poeira acima de 2 mi e 2 por missão); um save novo tem 0. O gasto cabe no que as fontes já deram.
+  const { legacy, spent: sparkSpent } = save.sparks;
+  let legacyMax = 0;
   const bonusCap = Math.max(0, Math.floor(Math.log10(Math.max(1, save.stats.dustTotal / 2e6))));
-  for (let k = 1; k <= c; k++) {
-    minEarned += 3 + k;
-    maxEarned += 3 + k + bonusCap + (mechanicOpen('missions', k - 1) ? MISSION_FRAGMENTS : 0);
+  for (let k = 1; k <= c; k++) legacyMax += 3 + k + bonusCap + (mechanicOpen('missions', k - 1) ? LEGACY_MISSION_FRAGMENTS : 0);
+  if (legacy > legacyMax) errors.push('Cintilas migradas não batem com os colapsos');
+  const sources = sparkSources(save);
+  if (sparkSpent > legacy + sources.total) errors.push('Cintilas gastas maiores que as ganhas');
+
+  // Conquistas e contadores novos: só ids do catálogo, só conteúdo que já existe e nada acima do que a conta fez.
+  for (const aid of save.achievements) {
+    const def = achievementById(aid);
+    if (!def) errors.push(`Conquista desconhecida: ${aid}`);
+    else if (!achievementActive(def)) errors.push(`Conquista de conteúdo que ainda não existe: ${aid}`);
   }
-  if (earned < minEarned || earned > maxEarned) errors.push('Fragmentos não batem com os colapsos');
+  const st = save.stats;
+  if (st.raresCaptured > st.objectsCaptured) errors.push('Raros capturados maiores que as capturas');
+  const kinds = new Set<string>([...OBJECTS.map((o) => o.kind as string), 'golden']);
+  if (st.capturedKinds.some((k) => !kinds.has(k)) || !noDupes(st.capturedKinds)) errors.push('Tipos de objeto capturados inválidos');
+  if (st.eventsSeen.some((e) => !EVENT_IDS_NOW.includes(e) || !eventsOpen(c).includes(e as never)) || !noDupes(st.eventsSeen)) errors.push('Eventos vistos inválidos');
+  for (const [gid, lvl] of Object.entries(st.forbiddenBest)) {
+    const g = grimoireById(gid);
+    if (!g || g.rarity !== 'forbidden' || g.unlockedAtCollapse > c || lvl < 1) errors.push(`Nível de proibido inválido: ${gid}`);
+  }
+  // Saves de antes da etapa 16 não têm os totais da conta: o que a vida em andamento já fez entra neles.
+  st.chainBest = Math.max(st.chainBest, run.chainBest);
+  st.missionsDone = Math.max(st.missionsDone, run.missionsDone);
+  st.raresCaptured = Math.max(st.raresCaptured, run.rares);
+  st.objectsCaptured = Math.max(st.objectsCaptured, run.captured);
+  if (st.rareStreak > st.rareStreakBest || st.rareStreakBest > st.picks) errors.push('Sequência de raros incoerente');
+  if (st.legendaryOffers > st.offers && st.offers > 0) errors.push('Ofertas lendárias maiores que as ofertas');
+  if (st.genBest > 400 || st.touchBest > UPGRADES.filter((u) => u.kind === 'touch').length) errors.push('Recorde de melhorias impossível');
   let treeCost = 0;
   for (const [branch, lvl] of Object.entries(save.tree)) {
     if (!TREE.some((b) => b.id === branch)) errors.push(`Ramo desconhecido: ${branch}`);
     for (let l = 1; l <= lvl; l++) treeCost += TREE_COSTS[l - 1] ?? 0;
   }
   if (Object.keys(save.tree).length > 0 && c < 1) errors.push('Árvore antes do 1º colapso');
-  if (treeCost > fragSpent) errors.push('Árvore custa mais que os Fragmentos gastos');
+  if (treeCost > sparkSpent) errors.push('Árvore custa mais que as Cintilas gastas');
   // Piso do total ganho: cada colapso exigiu a meta de poeira da vida, nas regras de hoje ou nas de antes da
   // spec 040 (a menor das duas vale, para um save antigo legítimo nunca ser recusado).
   let minTotal = 0;
@@ -365,6 +424,11 @@ export interface MergeResult {
 }
 
 const union = (a: readonly string[], b: readonly string[]) => [...new Set([...a, ...b])];
+const mergeBest = (a: Record<string, number>, b: Record<string, number>): Record<string, number> => {
+  const out: Record<string, number> = { ...a };
+  for (const [k, v] of Object.entries(b)) out[k] = Math.max(out[k] ?? 0, v);
+  return out;
+};
 const maxNum = (a: number, b: number) => Math.max(a, b);
 
 /** Quem está mais adiante: mais colapsos; empate, mais escolhas e depois mais poeira da vida. */
@@ -402,8 +466,7 @@ export function mergeSaves(a: SaveState, b: SaveState): MergeResult {
     else if (pages.length < slots) pages.push({ ...p });
   }
 
-  // Árvore: máximo por ramo, só se os Fragmentos gastos cobrem; senão fica a da vencedora.
-  const earned = maxNum(top.fragments.earned, other.fragments.earned);
+  // Árvore: máximo por ramo, só se as Cintilas gastas cobrem; senão fica a da vencedora.
   const tree: Record<string, number> = { ...top.tree };
   for (const [branch, lvl] of Object.entries(other.tree)) tree[branch] = maxNum(tree[branch] ?? 0, lvl);
   const treeCost = Object.values(tree).reduce((sum, lvl) => {
@@ -411,9 +474,6 @@ export function mergeSaves(a: SaveState, b: SaveState): MergeResult {
     for (let l = 1; l <= lvl; l++) cost += TREE_COSTS[l - 1] ?? 0;
     return sum + cost;
   }, 0);
-  const spentMax = maxNum(top.fragments.spent, other.fragments.spent);
-  const fitsTree = Math.max(spentMax, treeCost) <= earned;
-  const fragments = fitsTree ? { earned, spent: Math.max(spentMax, treeCost) } : { ...top.fragments };
 
   const tutorial =
     top.tutorial === 'done' || other.tutorial === 'done' ? 'done' : Math.max(top.tutorial, other.tutorial);
@@ -432,8 +492,8 @@ export function mergeSaves(a: SaveState, b: SaveState): MergeResult {
     album: union(top.album, other.album),
     atlas: { slots, pages },
     seenUnlocks: union(top.seenUnlocks, other.seenUnlocks),
-    fragments,
-    tree: fitsTree ? tree : { ...top.tree },
+    sparks: { ...top.sparks },
+    tree,
     achievements: union(top.achievements, other.achievements),
     stats: {
       clicks: maxNum(a.stats.clicks, b.stats.clicks),
@@ -446,7 +506,34 @@ export function mergeSaves(a: SaveState, b: SaveState): MergeResult {
       satelliteStreak: maxNum(a.stats.satelliteStreak, b.stats.satelliteStreak),
       satelliteBest: maxNum(a.stats.satelliteBest, b.stats.satelliteBest),
       respecs: maxNum(a.stats.respecs, b.stats.respecs),
+      raresCaptured: maxNum(a.stats.raresCaptured, b.stats.raresCaptured),
+      capturedKinds: union(a.stats.capturedKinds, b.stats.capturedKinds),
+      chainBest: maxNum(a.stats.chainBest, b.stats.chainBest),
+      missionsDone: maxNum(a.stats.missionsDone, b.stats.missionsDone),
+      eventsSeen: union(a.stats.eventsSeen, b.stats.eventsSeen),
+      genBest: maxNum(a.stats.genBest, b.stats.genBest),
+      upgradesBought: maxNum(a.stats.upgradesBought, b.stats.upgradesBought),
+      touchBest: maxNum(a.stats.touchBest, b.stats.touchBest),
+      offers: maxNum(a.stats.offers, b.stats.offers),
+      legendaryOffers: maxNum(a.stats.legendaryOffers, b.stats.legendaryOffers),
+      firstOfferLegendary: maxNum(a.stats.firstOfferLegendary, b.stats.firstOfferLegendary),
+      rareStreak: top.stats.rareStreak,
+      rareStreakBest: maxNum(a.stats.rareStreakBest, b.stats.rareStreakBest),
+      rerolls: maxNum(a.stats.rerolls, b.stats.rerolls),
+      forbiddenBest: mergeBest(a.stats.forbiddenBest, b.stats.forbiddenBest),
+      skillsUsed: union(a.stats.skillsUsed, b.stats.skillsUsed),
+      skillUses: maxNum(a.stats.skillUses, b.stats.skillUses),
+      dayStreakBest: maxNum(a.stats.dayStreakBest, b.stats.dayStreakBest),
     },
   };
+  // Cintilas: o `legacy` maior e o gasto maior (ou o que a árvore unida custa), desde que as fontes da conta unida cubram.
+  const legacy = maxNum(a.sparks.legacy, b.sparks.legacy);
+  const spent = Math.max(maxNum(a.sparks.spent, b.sparks.spent), treeCost);
+  if (spent <= legacy + sparkSources(save).total) {
+    save.sparks = { legacy, spent };
+  } else {
+    save.tree = { ...top.tree };
+    save.sparks = { ...top.sparks };
+  }
   return { save, winner, conflict: !lifeDominated(other, top) };
 }

@@ -28,6 +28,8 @@ import {
   tutorialStep,
   type SaveState,
   TUTORIAL,
+  sparksAvailable,
+  sparksTotal,
   type TutorialHint,
 } from '@nocap/games';
 import type { GameStore } from './game-store';
@@ -43,7 +45,9 @@ export type GameEvent =
   | { type: 'capture'; objectId: number; kind: ObjectKind; preview: ObjectPreview }
   | { type: 'choice-open' }
   | { type: 'achievement'; id: string; name: string }
-  | { type: 'collapse'; pageId: string; pageName: string; fragments: number };
+  /** Cintilas ganhas nesta ação (conquista, álbum, captura rara, colapso...) e o saldo para gastar. */
+  | { type: 'sparks'; amount: number; available: number }
+  | { type: 'collapse'; pageId: string; pageName: string; sparks: number };
 
 export interface GameSnapshot {
   state: SaveState;
@@ -106,6 +110,7 @@ export function createGameController({ initial, store, slot, perf = () => perfor
     const next = settleTutorial(raw);
     if (next === state) return;
     const gained = next.achievements.filter((id) => !state.achievements.includes(id));
+    const prevSparks: number | null = sparksTotal(state);
     // Nos passos guiados a conquista fica guardada, mas o aviso espera: a tela é só o roteiro. Do jogo livre em diante avisa.
     const announce = (tutorialStep(next) ?? Infinity) >= TUTORIAL.FREE;
     state = next;
@@ -113,6 +118,8 @@ export function createGameController({ initial, store, slot, perf = () => perfor
     notify();
     if (announce) {
       for (const id of gained) announced.push({ type: 'achievement', id, name: achievementById(id)?.name ?? id });
+      const amount = prevSparks === null ? 0 : sparksTotal(next) - prevSparks;
+      if (amount > 0) announced.push({ type: 'sparks', amount, available: sparksAvailable(next) });
     }
   }
 
@@ -232,12 +239,12 @@ export function createGameController({ initial, store, slot, perf = () => perfor
       if (next === before) return false;
       commit(next);
       const def = GRIMOIRES.find((g) => g.id === pageId);
-      emit({ type: 'collapse', pageId, pageName: def?.name ?? pageId, fragments: next.fragments.earned - before.fragments.earned });
+      emit({ type: 'collapse', pageId, pageName: def?.name ?? pageId, sparks: Math.max(0, sparksTotal(next) - sparksTotal(before)) });
       saveNow();
       return true;
     },
 
-    /** Compra o nó `ramo:nível` da árvore com Fragmentos. O motor confere saldo, ordem e se a árvore abriu. */
+    /** Compra o nó `ramo:nível` da árvore com Cintilas. O motor confere saldo, ordem e se a árvore abriu. */
     buyTree(nodeId: string): boolean {
       if (pausedAt !== null || state.run.pending) return false;
       const next = buyTreeNode(state, nodeId);
@@ -248,7 +255,7 @@ export function createGameController({ initial, store, slot, perf = () => perfor
       return true;
     },
 
-    /** Refaz a árvore: devolve os Fragmentos gastos menos a taxa (a confirmação em 2 passos é da tela). */
+    /** Refaz a árvore: devolve 100% das Cintilas gastas (a confirmação em 2 passos é da tela). */
     respec(): boolean {
       if (pausedAt !== null || state.run.pending) return false;
       const next = respecTree(state);

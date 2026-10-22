@@ -17,9 +17,9 @@ function nodeLabel(n: TreeNodeRow, branch: string): string {
     case 'owned':
       return `${base}. Comprado`;
     case 'buyable':
-      return `${base}. Comprar por ${n.cost} Fragmentos`;
+      return `${base}. Comprar por ${n.cost} Cintilas`;
     case 'short':
-      return `${base}. Falta ${n.missing} Fragmentos`;
+      return `${base}. Falta ${n.missing} Cintilas`;
     case 'blocked':
       return `${base}. Compre o nível anterior primeiro`;
     case 'closed':
@@ -40,7 +40,7 @@ function nodeButton(n: TreeNodeRow): string {
   }
 }
 
-/** Corpo da página da Árvore de Habilidades (spec 038, 3.5 e 8.3): 6 ramos de 3 níveis e o refazer em 2 passos. */
+/** Corpo da página da Árvore de Habilidades (spec 038, 3.5; moeda da spec 040): 6 ramos de 3 níveis e o refazer em 2 passos. */
 export function TreePage({ state, onBuy, onRespec }: Props) {
   const view = treeView(state);
   const [confirming, setConfirming] = useState(false);
@@ -49,8 +49,22 @@ export function TreePage({ state, onBuy, onRespec }: Props) {
     <div className="ap-tree">
       <p className="ap-tree-frag" aria-live="polite">
         <b>{formatNumber(view.available)}</b>
-        <span>{view.available === 1 ? 'Fragmento' : 'Fragmentos'} para gastar</span>
+        <span>{view.available === 1 ? 'Cintila' : 'Cintilas'} para gastar</span>
+        <small>
+          {formatNumber(view.earned)} ganhas · {formatNumber(view.spent)} gastas
+        </small>
       </p>
+      <details className="ap-tree-sources">
+        <summary>De onde vêm as Cintilas</summary>
+        <ul>
+          {view.sources.map((s) => (
+            <li key={s.id}>
+              <span>{s.label}</span>
+              <b>{formatNumber(s.value)}</b>
+            </li>
+          ))}
+        </ul>
+      </details>
 
       <ul className="ap-tree-grid" aria-label="Ramos da árvore">
         {view.branches.map((b) => (
@@ -99,8 +113,8 @@ export function TreePage({ state, onBuy, onRespec }: Props) {
         <h3 id="ap-respec-title">Refazer árvore</h3>
         {view.respec.can ? (
           <p className="ap-sub">
-            Devolve {view.respec.refund} {view.respec.refund === 1 ? 'Fragmento' : 'Fragmentos'} dos {view.spent} gastos; a taxa é de {view.respec.fee} (20%).
-            Sem custo de poeira e sem limite de vezes.
+            Devolve todas as {view.respec.refund} {view.respec.refund === 1 ? 'Cintila gasta' : 'Cintilas gastas'}, sem taxa, sem custo de poeira e sem
+            limite de vezes.
           </p>
         ) : (
           <p className="ap-sub">Compre algum nó para poder refazer a árvore depois. Não gasta poeira.</p>
