@@ -121,8 +121,8 @@ export const TARGET_HOURS = [8, 5, 3.5, 3, 2.6, 2.3, 2.1, 1.9, 1.75, 1.6, 1.5, 1
 
 /** Poeira acumulada na vida necessária para a estrela ficar pronta (calibrada pelo simulador). */
 export const DUST_GOAL: number[] = [
-  // Vidas 1 a 5 (economia de 22/10/2026): calibradas pelo simulador, perfil normal, 60 sementes (spec 038, 6.6 e 6.7).
-  1.753e7, 6.621e7, 5.4e7, 6.5e7, 6.3e7,
+  // Vidas 1 a 5 (economia v2, spec 039, 22/10/2026): calibradas pelo simulador, perfil normal, 60 sementes (spec 038, 6.6 e 6.7).
+  7.217e7, 2.136e8, 1.981e8, 2.52e8, 1.07e8,
   // Vidas 6 a 15: provisórias, sem calibrar (o conteúdo desses colapsos chega nas etapas 14 e 15).
   6.3e7, 6.5e7, 6.7e7, 6.9e7, 7.1e7, 7.3e7, 7.5e7, 7.7e7, 7.9e7, 8.1e7,
 ];

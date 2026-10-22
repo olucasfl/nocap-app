@@ -1,6 +1,6 @@
 # 039 · Aperta!: economia v2 (toque conquistado, geradores e raros)
 
-Status: **aprovada pelo Lucas em 22/10/2026** (decisões da seção 9 resolvidas). Em implementação na branch `claude/aperta-economia-v2`; nada na `develop` até as etapas A e B fecharem juntas.
+Status: **aprovada pelo Lucas em 22/10/2026 (decisões da seção 9 resolvidas). Etapas A (motor, simulador, save) e B (abas, "???", selos) prontas e na `develop`; faltam C (grimórios), D (objetos raros) e E (calibrar jogando).**
 
 ## 1. Por que
 
@@ -118,7 +118,18 @@ Grimório não dá "+X por toque" direto; dá multiplicadores, janelas e sorte. 
 3. **Revelação a 70% do preço.** Quando algo novo é desbloqueado numa aba de Melhorias, aparecem **ícones com número** (ex.: "2") no botão Melhorias e na aba, dizendo quantas coisas há para ver.
 4. **Nomes:** os provisórios das seções 3, 4 e 8 valem; o Lucas troca depois.
 
-## 10. Etapas (depois da aprovação)
+## 10. Implementação (22/10/2026)
+
+**Feito nas etapas A e B:** catálogo novo (`kind`: `touch`, `generator`, `energy`; 17 de toque, 8 geradores de poeira, 4 de energia), prateleira (`upgradeShelf` por `upgradeOnShelf`/`upgradeRevealed`: 1ª de cada tipo mais uma escondida; nome a 70% do preço), ritmo ativo (100% tocando, 25% parado) com teto de 35%, janela de objetos comuns de 60 a 90 s, `SAVE_VERSION = 2` (saves antigos recusados) e abas Toque e Geradores com selos. `DUST_GOAL` das vidas 1 a 5 recalibrada (60 sementes, ±15%).
+
+**Decisões que a implementação trouxe:**
+- **Eco** passou a ser o elo dos geradores com o toque: cada toque rende +0,4% da produção por segundo dos geradores (sem ele, o teto de 35% fazia os geradores perderem sentido depois de ~1 h). Custa 20 mil.
+- **Pulso Carregado** soma +0,25 de energia por toque (em vez de +10%).
+- **Aquecimento** (spec 3, "5 s tocando") e as **melhorias de gerador criativas** (4.1) ficam para depois: não foram implementadas.
+- Reordenei a fila por preço: Lente Dupla 25 mil, Cabine Reforçada 150 mil.
+- Webb, Chandra e Gaia continuam como melhorias de toque que abrem por colapso.
+
+## 11. Etapas (depois da aprovação)
 
 - **A. Motor e simulador:** `UPGRADES` vira toque + geradores, ritmo ativo, marcos, `validateSave`, testes (inclui a invariante da seção 5) e recalibração das vidas 1 a 5.
 - **B. Web:** abas Toque e Geradores, "???", indicações e ajuste do tutorial.

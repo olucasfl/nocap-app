@@ -35,14 +35,15 @@ describe('simulate', () => {
     expect(marks[3]!).toBeLessThanOrEqual(marks[4]!);
   });
 
-  it('a 1ª melhoria sai em segundos e o 1º grimório logo depois (reformulação do começo, seção 6.2)', () => {
+  it('a 1ª melhoria sai em até 1 min e o 1º grimório logo (economia v2, spec 039)', () => {
     const life = simulate({ profile: 'normal', seed: 'first', collapses: 1 }).lives[0]!;
     const upgradeSec = (life.milestones[0] as number) * 3600;
     const pickSec = (life.milestones[1] as number) * 3600;
-    // 25 toques a 2,5 por segundo = 10 s; o 1º grimório vem ~13 toques depois.
-    expect(upgradeSec).toBeGreaterThanOrEqual(9);
-    expect(upgradeSec).toBeLessThanOrEqual(15);
-    expect(pickSec).toBeGreaterThan(upgradeSec);
+    // O Satélite custa 15 (6 s de toques); o simulador junta para a melhoria de melhor ganho por preço, então a
+    // 1ª compra leva até ~1 min. O 1º grimório sai aos 38 toques (~15 s).
+    expect(upgradeSec).toBeGreaterThanOrEqual(5);
+    expect(upgradeSec).toBeLessThanOrEqual(60);
+    expect(pickSec).toBeGreaterThan(5);
     expect(pickSec).toBeLessThanOrEqual(40);
   });
 
