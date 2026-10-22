@@ -259,19 +259,62 @@ export interface ObjectSlot {
   drift: number;
 }
 
+/** Vagas do campo: 0 cima/esquerda, 1 baixo/direita, 2 cima/direita, 3 baixo/esquerda; 4 a 7 repetem as quatro na fileira de dentro. */
+export const OBJECT_LANES = 8;
+
 /**
- * Onde o objeto flutua, derivado do id (sem sorteio na tela, sem mexer no rng do save). Fica nas faixas
- * de cima e de baixo, longe do botão central, e alterna a faixa para dois objetos não se sobreporem.
+ * Onde o objeto flutua, derivado do id e da vaga (sem sorteio na tela, sem mexer no rng do save). As quatro
+ * primeiras vagas ficam uma em cada canto, longe do botão central: nenhum objeto cobre outro nem encavala a
+ * etiqueta da recompensa. A 5ª a 8ª usam a fileira de dentro, mais perto do botão. A faixa de baixo para em
+ * 80% da altura do campo para a etiqueta (até 3 linhas) não ir parar embaixo do dock.
  */
-export function objectSlot(id: number): ObjectSlot {
+export function objectSlot(id: number, lane: number = id % 4): ObjectSlot {
   const h = (id * 2654435761) >>> 0;
-  const top = id % 2 === 0;
+  const corner = lane % 4;
+  const top = corner === 0 || corner === 2;
+  const left = corner === 0 || corner === 3;
+  const inner = lane >= 4 ? 1 : 0;
+  const jitter = (h >>> 8) % 4;
   return {
-    x: 25 + (h % 51),
-    y: top ? 9 + ((h >>> 8) % 6) : 86 - ((h >>> 8) % 6),
+    x: (left ? 21 : 73) + (h % 7),
+    y: top ? 9 + jitter + inner * 12 : 80 - jitter - inner * 12,
     dx: ((h >>> 12) % 31) - 15,
     dy: ((h >>> 17) % 21) - 10,
     drift: 3 + ((h >>> 21) % 3),
+  };
+}
+
+/** A primeira vaga livre a partir da preferida (id mod 4); com as quatro de fora tomadas, as de dentro. */
+export function objectLane(id: number, taken: readonly number[]): number {
+  for (let row = 0; row < 2; row++) {
+    for (let i = 0; i < 4; i++) {
+      const lane = ((id + i) % 4) + row * 4;
+      if (!taken.includes(lane)) return lane;
+    }
+  }
+  return id % OBJECT_LANES;
+}
+
+/**
+ * Quem está em qual vaga. Um objeto guarda a vaga em que nasceu até sumir (não pula quando outro some), e um
+ * novo pega uma vaga livre em vez de cair em cima de um que já está no campo.
+ */
+export interface LaneBook {
+  /** Chamado a cada render com os objetos presentes: solta as vagas dos que sumiram e dá vaga aos novos. */
+  sync(ids: readonly number[]): void;
+  slot(id: number): ObjectSlot;
+}
+
+export function createLaneBook(): LaneBook {
+  const lanes = new Map<number, number>();
+  return {
+    sync(ids) {
+      for (const id of [...lanes.keys()]) if (!ids.includes(id)) lanes.delete(id);
+      for (const id of [...ids].sort((a, b) => a - b)) {
+        if (!lanes.has(id)) lanes.set(id, objectLane(id, [...lanes.values()]));
+      }
+    },
+    slot: (id) => objectSlot(id, lanes.get(id)),
   };
 }
 

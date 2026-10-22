@@ -72,7 +72,7 @@ describe('tabela de conteúdo por colapso (spec 5.4)', () => {
   });
 
   it('nada no catálogo fica de fora da tabela nem fala de colapso além do 5', () => {
-    for (const list of [GRIMOIRES, UPGRADES, OBJECTS, REGIONS] as readonly { unlockedAtCollapse: number }[][]) {
+    for (const list of [GRIMOIRES, UPGRADES, OBJECTS, REGIONS] as readonly (readonly { unlockedAtCollapse: number }[])[]) {
       for (const d of list) expect(d.unlockedAtCollapse).toBeLessThanOrEqual(LAST_CONTENT_COLLAPSE);
     }
     const inTable = COLLAPSE_CONTENT.flatMap((r) => r.grimoires);

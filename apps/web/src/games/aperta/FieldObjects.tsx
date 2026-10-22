@@ -1,12 +1,14 @@
 import { formatDecimal, objectPreview, type GameObject, type SaveState } from '@nocap/games';
 import { useRef, type CSSProperties } from 'react';
 import { SpaceObject, SPACE_OBJECT_COLOR } from './SpaceObject';
-import { objectArt, objectName, objectSlot, rewardText, type SignalView } from './game-logic';
+import { objectArt, objectName, rewardText, type LaneBook, type SignalView } from './game-logic';
 
 interface Props {
   state: SaveState;
   now: number;
   paused: boolean;
+  /** Vagas dos objetos (a tela de jogo guarda o livro para o anel da captura sair do mesmo lugar). */
+  lanes: LaneBook;
   onCapture: (id: number) => void;
 }
 
@@ -15,13 +17,14 @@ interface ItemProps {
   state: SaveState;
   now: number;
   paused: boolean;
+  lanes: LaneBook;
   onCapture: (id: number) => void;
 }
 
-function FieldObject({ object, state, now, paused, onCapture }: ItemProps) {
+function FieldObject({ object, state, now, paused, lanes, onCapture }: ItemProps) {
   // A barra de vida roda em CSS (transform); o atraso fixa de onde ela parte e não pode mudar depois.
   const elapsed = useRef(Math.max(0, now - object.bornAt));
-  const slot = objectSlot(object.id);
+  const slot = lanes.slot(object.id);
   const art = objectArt(object.kind);
   const reward = rewardText(objectPreview(state, object.kind));
   const life = object.expiresAt - object.bornAt;
@@ -69,12 +72,13 @@ function FieldObject({ object, state, now, paused, onCapture }: ItemProps) {
 }
 
 /** Os objetos que cruzam o campo: a recompensa aparece antes de tocar (spec 038, 4.5). */
-export function FieldObjects({ state, now, paused, onCapture }: Props) {
+export function FieldObjects({ state, now, paused, lanes, onCapture }: Props) {
   const { objects, pending } = state.run;
+  lanes.sync(objects.map((o) => o.id));
   return (
     <div className="ap-objs" role="group" aria-label="Objetos no espaço" hidden={objects.length === 0 || pending !== null}>
       {objects.map((o) => (
-        <FieldObject key={o.id} object={o} state={state} now={now} paused={paused} onCapture={onCapture} />
+        <FieldObject key={o.id} object={o} state={state} now={now} paused={paused} lanes={lanes} onCapture={onCapture} />
       ))}
     </div>
   );

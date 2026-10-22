@@ -13,6 +13,7 @@ import {
   createHoldLimiter,
   energyView,
   objectArt,
+  createLaneBook,
   objectSlot,
   rewardText,
   signalView,
@@ -136,11 +137,55 @@ describe('objetos no espaço', () => {
     for (let id = 1; id < 200; id++) {
       const a = objectSlot(id);
       expect(a).toEqual(objectSlot(id));
-      expect(a.x).toBeGreaterThanOrEqual(25);
-      expect(a.x).toBeLessThanOrEqual(75);
-      expect(a.y < 20 || a.y > 78).toBe(true);
+      expect(a.x).toBeGreaterThanOrEqual(21);
+      expect(a.x).toBeLessThanOrEqual(79);
+      expect(a.y < 26 || a.y > 64).toBe(true);
     }
     expect(objectSlot(1).y > 50).not.toBe(objectSlot(2).y > 50);
+  });
+
+  it('quatro objetos seguidos ficam cada um num canto (nada se cobre)', () => {
+    for (let id = 1; id < 100; id++) {
+      const slots = [0, 1, 2, 3].map((i) => objectSlot(id + i));
+      for (let i = 0; i < 4; i++) {
+        for (let j = i + 1; j < 4; j++) {
+          const a = slots[i]!;
+          const b = slots[j]!;
+          const sameBand = (a.y > 50) === (b.y > 50);
+          // Na mesma faixa (cima ou baixo) um fica à esquerda e o outro à direita.
+          if (sameBand) expect(Math.abs(a.x - b.x)).toBeGreaterThanOrEqual(40);
+          else expect(Math.abs(a.y - b.y)).toBeGreaterThan(40);
+        }
+      }
+    }
+  });
+
+  it('ids que não são seguidos também pegam cantos diferentes (livro de vagas)', () => {
+    const book = createLaneBook();
+    book.sync([7, 9, 11, 14]);
+    const slots = [7, 9, 11, 14].map((id) => book.slot(id));
+    const corners = new Set(slots.map((s) => `${s.y > 50 ? 'b' : 't'}${s.x > 50 ? 'r' : 'l'}`));
+    expect(corners.size).toBe(4);
+  });
+
+  it('o objeto guarda a vaga até sumir e o novo ocupa uma vaga livre', () => {
+    const book = createLaneBook();
+    book.sync([1, 2, 3]);
+    const before = book.slot(2);
+    book.sync([2, 3]);
+    expect(book.slot(2)).toEqual(before);
+    book.sync([2, 3, 5]);
+    const taken = [2, 3].map((id) => book.slot(id));
+    expect(taken.some((t) => t.x === book.slot(5).x && t.y === book.slot(5).y)).toBe(false);
+  });
+
+  it('do 5º objeto em diante usa a fileira de dentro, mais perto do botão', () => {
+    const book = createLaneBook();
+    book.sync([1, 2, 3, 4, 5]);
+    const outer = [1, 2, 3, 4].map((id) => book.slot(id));
+    const fifth = book.slot(5);
+    const sameCorner = outer.find((o) => (o.y > 50) === (fifth.y > 50) && (o.x > 50) === (fifth.x > 50))!;
+    expect(Math.abs(sameCorner.y - fifth.y)).toBeGreaterThanOrEqual(8);
   });
 
   it('o chip Sinal forte só existe enquanto o boost corre', () => {

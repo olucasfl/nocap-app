@@ -39,7 +39,7 @@ import {
   capturedTitle,
   floatText,
   objectArt,
-  objectSlot,
+  createLaneBook,
   rewardText,
   signalView,
   togglePage,
@@ -130,6 +130,7 @@ export function GameScreen({ controller, onExit }: Props) {
   pageRef.current = page;
   const tutorialRef = useRef(tutorial);
   tutorialRef.current = tutorial;
+  const lanes = useRef(createLaneBook());
   const timers = useRef(new Set<number>());
   const later = useCallback((fn: () => void, ms: number) => {
     const id = window.setTimeout(() => {
@@ -171,7 +172,7 @@ export function GameScreen({ controller, onExit }: Props) {
         apertaSfx.ding(art === 'asteroid' || art === 'probe' ? art : undefined);
         apertaVibrate(14);
         const text = rewardText(e.preview);
-        const slot = objectSlot(e.objectId);
+        const slot = lanes.current.slot(e.objectId);
         setCaptures((list) => [...list.slice(-3), { id: e.objectId, x: slot.x, y: slot.y, kind: art, text: floatText(e.preview) }]);
         later(() => setCaptures((list) => list.filter((c) => c.id !== e.objectId)), CAPTURE_MS);
         if (noticeTimer.current !== null) window.clearTimeout(noticeTimer.current);
@@ -321,7 +322,7 @@ export function GameScreen({ controller, onExit }: Props) {
   }
 
   return (
-    <section className={`ap-game space-theme ap-screen-in${LOW_END ? ' is-lite' : ''}`} aria-label="Jogo">
+    <section className={`ap-game space-theme ap-screen-in${page ? ' has-page' : ''}${LOW_END ? ' is-lite' : ''}`} aria-label="Jogo">
       <SpaceArtSprite />
       <RegionBackdrop key={state.regionId} region={state.regionId} paused={paused} />
       {liveEvent && !paused && <EventFx key={liveEvent.id} id={liveEvent.id} lite={LOW_END} />}
@@ -460,7 +461,7 @@ export function GameScreen({ controller, onExit }: Props) {
       </div>
 
       <div className="ap-field ap-field-over">
-        <FieldObjects state={state} now={now} paused={paused} onCapture={controller.capture} />
+        <FieldObjects state={state} now={now} paused={paused} lanes={lanes.current} onCapture={controller.capture} />
         <div className="ap-capfx" aria-hidden="true">
           {captures.map((c) => (
             <span key={c.id} className="ap-cap" style={{ left: `${c.x}%`, top: `${c.y}%` }} data-kind={c.kind}>
