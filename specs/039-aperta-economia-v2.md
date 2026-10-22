@@ -93,17 +93,26 @@ Além dos de poeira, a aba Geradores tem uma fileira de **geradores de energia**
 - Ícone com número ("1", "2"...) no botão Melhorias e em cada aba quando há melhoria nova para ver ou que cabe no bolso; faixa "Novo" e seta do tutorial **uma vez por categoria** (geradores, toque, marcos).
 - O tutorial atual (passos 1 a 7) é ajustado: a "1ª melhoria" passa a ser o Satélite de 15.
 
-## 7. Grimórios (mesmas regras de escolha, novos efeitos)
+## 7. Grimórios: categorias, raridade e textos claros
 
-Grimório não dá "+X por toque" direto; dá multiplicadores, janelas e sorte. Efeitos novos (por família; o mapa exato à família existente fica para a spec de conteúdo):
+Todo grimório tem **categoria** (o que ele ajuda, com selo colorido na carta) e **raridade** (comum, raro, épico, lendário, proibido). A família (planetas, luas, corpos pequenos, estrelas, nebulosas, buracos negros) segue sendo a do astro e conta para o bônus de conjunto do Atlas.
 
-- **Geradores:** +% de uma faixa (ou de todos); desconto pequeno no preço (piso de 40% já existente).
-- **Ritmo:** janela do ritmo ativo maior (4 s para até 8 s); piso parado de 25% para até 40% (nunca acima do ativo).
-- **Combo:** o combo cheio dá bônus extra no toque por tempo limitado.
-- **Objetos comuns:** aparecem mais, duram mais, rendem mais.
-- **Raros:** reduzem o intervalo entre raros (seção 8, com piso) e aumentam a duração do efeito.
-- **Sorte:** chance de grimório de raridade maior, rerroll grátis, uma carta extra na escolha.
-- **Proibidos:** bônus altos com um custo (como hoje).
+| Categoria | Cor do selo | O que ajuda | Quantos |
+|---|---|---|---|
+| **Toque** | dourado | cada toque render mais: toque especial a cada N toques, combo, poeira por toque | 17 |
+| **Objetos** | ciano | recompensa e frequência dos cometas, satélites etc., e a Estrela Dourada | 19 |
+| **Geradores** | azul | o ganho automático: rendem mais, seguem cheios depois do toque, rendem mais parados | 9 |
+| **Energia e sorte** | violeta | encher a barra, trocar cartas, poeira de partida, preço das melhorias | 13 |
+
+Total: **58 grimórios** (40 anteriores mais 18 novos, que entram do colapso 0 ao 5: ver `content/index.ts`). Cada categoria tem grimórios de pelo menos 3 raridades.
+
+**Efeitos novos** (`catalog.ts`): `generatorPct` e `energyGenPct` (geradores rendem x), `activeWindow` (os geradores seguem "tocando" por mais s depois do toque), `idleFloor` (parado rendem mais, até 0,5 do ritmo ativo), `spawnCut` (objetos comuns mais cedo, com piso de 30 a 45 s), `rareCut` e `rareLife` (Estrela Dourada mais cedo, nunca abaixo de 5 min, e mais tempo no campo).
+
+**Regra do texto da carta:** diz o que muda em palavras que dispensam conhecer o jogo. "+N toques" é N vezes o que o seu toque rende; "combo" vem explicado ("a sequência de toques") onde aparece; nada de "janela"; sem "%" (só no M87*); até 150 caracteres. Testado em `catalog.test.ts`.
+
+**Poeira dos geradores também enche a barra de grimórios:** conta como toques, a 1/4 da energia de um toque (`AUTO_ENERGY_SHARE`). Os geradores de energia continuam somando por cima.
+
+**Farm automático à vista:** cada tipo de gerador vira um astro em órbita em volta do botão (cresce nos marcos de 10, 25 e 50; brilha tocando e apaga parado), e a cada segundo sobe "+0,1" (com vírgula) ao lado do contador de poeira.
 
 ## 8. Objetos
 
