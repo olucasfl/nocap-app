@@ -131,7 +131,7 @@ const PREVIEW: Record<string, Preview> = {
 
 /** Melhorias de toque cujo efeito não mexe num número do `effectiveStats` que valha mostrar antes e depois. */
 const PLAIN_GAIN: Record<string, string> = {
-  rhythm: 'Liga o combo: cada toque seguido soma 0,2 ao toque',
+  rhythm: 'Combo: tocar de novo em até 1,3 s mantém a sequência, e cada toque seguido soma 0,2 do toque',
   trained: 'A cada 25 toques, o toque rende x5',
   gaia: 'As cartas passam a mostrar o efeito',
 };

@@ -172,6 +172,8 @@ describe('categorias de grimório (spec 039, seção 7)', () => {
   it('o texto da carta diz o que muda, sem jargão solto: combo vem explicado e nada de "janela"', () => {
     for (const g of GRIMOIRES) {
       expect(g.text, g.id).not.toMatch(/janela/i);
+      // Quem fala em combo explica o que é, porque a carta aparece antes de a pessoa ter o Ritmo Firme.
+      if (/combo/i.test(g.text)) expect(g.text, g.id).toMatch(/sequência/);
       expect(g.text.length, g.id).toBeLessThanOrEqual(150);
     }
   });

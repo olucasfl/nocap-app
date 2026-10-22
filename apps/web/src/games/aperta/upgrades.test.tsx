@@ -99,7 +99,7 @@ describe('linhas da página de Melhorias', () => {
     expect(row(rich(0), 'antenna').gain).toBe('Energia por segundo (tocando): 0 -> 0,02');
     const open = owning(rich(0, { dustLife: 1e6 }), ['lens', 'gloves']);
     expect(row(open, 'trained').gain).toBe('A cada 25 toques, o toque rende x5');
-    expect(row(open, 'rhythm').gain).toMatch(/^Liga o combo/);
+    expect(row(open, 'rhythm').gain).toMatch(/^Combo: tocar de novo em até 1,3 s/);
     // Escondida não promete ganho.
     expect(row(rich(0), 'gloves').gain).toBeNull();
   });

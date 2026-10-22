@@ -221,19 +221,19 @@ export const GRIMOIRES: readonly GrimoireDef[] = [
   grim('io', 'Io', 'common', 'moons', 'Satélite capturado: o toque rende x2,5 por 8 s, em vez de x2.', 'esfera amarelo-enxofre com manchas vermelhas', [
     { kind: 'satelliteMult', add: 0.5 },
   ]),
-  grim('vesta', 'Vesta', 'common', 'small-bodies', 'Com o combo no máximo, cada toque rende +0,5 de poeira a mais.', 'rocha clara com faixa escura', [
+  grim('vesta', 'Vesta', 'common', 'small-bodies', 'Combo (toques em sequência rápida) no máximo: cada toque rende +0,5 de poeira a mais.', 'rocha clara com faixa escura', [
     { kind: 'comboFullDust', add: 0.5 },
   ]),
   grim('halley', 'Halley', 'common', 'small-bodies', 'Cada objeto capturado dá +1 toque de recompensa e os objetos aparecem 4 s mais cedo.', 'núcleo claro com cauda azul', [
     { kind: 'objectReward', target: 'all', add: 1 },
     { kind: 'spawnCut', sec: 4 },
   ]),
-  grim('uranus', 'Urano', 'common', 'planets', 'Você pode esperar +0,2 s entre dois toques sem perder o combo (a sequência de toques).', 'esfera ciano-gelo com anel fino vertical', [
+  grim('uranus', 'Urano', 'common', 'planets', 'Combo (toques em sequência rápida, liberado pelo Ritmo Firme): +0,2 s de folga entre os toques para não perder a sequência.', 'esfera ciano-gelo com anel fino vertical', [
     { kind: 'comboWindow', sec: 0.2 },
   ]),
 
   // Raros
-  grim('europa', 'Europa', 'rare', 'moons', 'Você pode esperar +0,5 s entre dois toques sem perder o combo (a sequência de toques).', 'esfera branca com rachaduras marrons', [
+  grim('europa', 'Europa', 'rare', 'moons', 'Combo (toques em sequência rápida, liberado pelo Ritmo Firme): +0,5 s de folga entre os toques para não perder a sequência.', 'esfera branca com rachaduras marrons', [
     { kind: 'comboWindow', sec: 0.5 },
   ]),
   grim('titan', 'Titã', 'rare', 'moons', 'Cada vida começa com 200 de poeira.', 'esfera laranja com névoa', [
@@ -248,7 +248,7 @@ export const GRIMOIRES: readonly GrimoireDef[] = [
   grim('neptune', 'Netuno', 'rare', 'planets', 'Satélite capturado: o toque rende x3 por 8 s, em vez de x2.', 'esfera azul-profundo com faixa branca', [
     { kind: 'satelliteMult', add: 1 },
   ]),
-  grim('ganymede', 'Ganimedes', 'rare', 'moons', 'Com o combo no máximo, +0,5 de energia por toque. Parado, os geradores rendem 0,35 do ritmo de quando você toca (em vez de 0,25).', 'esfera cinza com sulcos claros', [
+  grim('ganymede', 'Ganimedes', 'rare', 'moons', 'Combo (toques em sequência rápida) no máximo: +0,5 de energia por toque. Parado, os geradores rendem 0,35 do ritmo de quando você toca.', 'esfera cinza com sulcos claros', [
     { kind: 'comboFullEnergy', add: 0.5 },
     { kind: 'idleFloor', add: 0.1 },
   ]),
@@ -261,7 +261,7 @@ export const GRIMOIRES: readonly GrimoireDef[] = [
   ]),
 
   // Épicos
-  grim('sirius', 'Sirius', 'epic', 'stars', 'Com o combo no máximo, cada toque rende +2 de poeira a mais.', 'estrela branca de 4 pontas com halo azul', [
+  grim('sirius', 'Sirius', 'epic', 'stars', 'Combo (toques em sequência rápida) no máximo: cada toque rende +2 de poeira a mais.', 'estrela branca de 4 pontas com halo azul', [
     { kind: 'comboFullDust', add: 2 },
   ]),
   grim('vega', 'Vega', 'epic', 'stars', 'Cada grimório comum que você tem soma +0,5 de poeira por toque.', 'estrela branco-azulada de 8 raios', [
@@ -298,7 +298,7 @@ export const GRIMOIRES: readonly GrimoireDef[] = [
     { kind: 'dustMult', mult: 3 },
     { kind: 'energyMult', mult: 0.3, price: true },
   ]),
-  grim('cygnus-x1', 'Cygnus X-1', 'forbidden', 'black-holes', 'Com o combo no máximo, o toque rende x2 e você pode esperar o dobro do tempo entre toques sem perder o combo, mas os objetos param de aparecer.', 'buraco negro com estrela azul companheira', [
+  grim('cygnus-x1', 'Cygnus X-1', 'forbidden', 'black-holes', 'Combo (toques em sequência rápida) no máximo: o toque rende x2 e a folga entre toques dobra, mas os objetos param de aparecer.', 'buraco negro com estrela azul companheira', [
     { kind: 'comboFullMult', mult: 2 },
     { kind: 'comboWindow', mult: 2 },
     { kind: 'objectsDisabled', price: true },
@@ -325,7 +325,7 @@ export const GRIMOIRES: readonly GrimoireDef[] = [
   grim('eris', 'Éris', 'rare', 'small-bodies', 'Cada asteroide capturado dá +6 toques de poeira (6 vezes o que o seu toque rende).', 'esfera clara com lua pequena', [
     { kind: 'objectReward', target: 'asteroid', add: 6 },
   ], 3),
-  grim('haumea', 'Haumea', 'common', 'small-bodies', 'Você pode esperar +0,3 s entre dois toques sem perder o combo, e os geradores seguem rendendo cheios por +2 s depois de cada toque.', 'elipsoide branco com anel', [
+  grim('haumea', 'Haumea', 'common', 'small-bodies', 'Combo (toques em sequência rápida): +0,3 s de folga entre os toques. Os geradores seguem cheios por +2 s depois de cada toque.', 'elipsoide branco com anel', [
     { kind: 'comboWindow', sec: 0.3 },
     { kind: 'activeWindow', sec: 2 },
   ], 3),
@@ -335,7 +335,7 @@ export const GRIMOIRES: readonly GrimoireDef[] = [
   grim('hale-bopp', 'Hale-Bopp', 'rare', 'small-bodies', 'Cada cometa capturado dá +10 toques de poeira (10 vezes o que o seu toque rende).', 'núcleo com duas caudas, azul e branca', [
     { kind: 'objectReward', target: 'comet', add: 10 },
   ], 4),
-  grim('proxima-centauri', 'Proxima Centauri', 'rare', 'stars', 'Com o combo no máximo, cada toque rende +1 de poeira a mais, e a Estrela Dourada fica +5 s no campo.', 'anã vermelha com chama pequena', [
+  grim('proxima-centauri', 'Proxima Centauri', 'rare', 'stars', 'Combo (toques em sequência rápida) no máximo: +1 de poeira por toque. A Estrela Dourada fica +5 s no campo.', 'anã vermelha com chama pequena', [
     { kind: 'comboFullDust', add: 1 },
     { kind: 'rareLife', sec: 5 },
   ], 5),
@@ -360,7 +360,7 @@ export const GRIMOIRES: readonly GrimoireDef[] = [
   grim('tethys', 'Tétis', 'rare', 'moons', 'A cada 6 toques, o 6º toque dá +3 de energia.', 'esfera clara com um vale enorme', [
     { kind: 'everyNthTouch', n: 6, mult: 1, energy: 3 },
   ]),
-  grim('rigel', 'Rigel', 'rare', 'stars', 'Com o combo no máximo, cada toque rende +1,5 de poeira a mais.', 'estrela azul brilhante', [
+  grim('rigel', 'Rigel', 'rare', 'stars', 'Combo (toques em sequência rápida) no máximo: cada toque rende +1,5 de poeira a mais.', 'estrela azul brilhante', [
     { kind: 'comboFullDust', add: 1.5 },
   ]),
   grim('voyager-1', 'Voyager 1', 'rare', 'small-bodies', 'Os objetos do espaço aparecem 8 s mais cedo.', 'sonda com antena dourada', [
@@ -487,7 +487,7 @@ export const UPGRADES: readonly UpgradeDef[] = [
   touch('lens', 'Lente Polida', 100, 'Toque x2', ['touchMult']),
   touch('gloves', 'Luvas de Astronauta', 225, '+1 poeira por toque', ['touchFlat']),
   touch('trained', 'Dedo Treinado', 500, 'A cada 25 toques, o 25º rende x5', ['touchNth']),
-  touch('rhythm', 'Ritmo Firme', 850, 'Libera o combo: toques em sequência rendem mais', ['comboUnlock', 'comboPoint']),
+  touch('rhythm', 'Ritmo Firme', 850, 'Libera o combo: tocar de novo em até 1,3 s mantém a sequência, e cada toque seguido soma 0,2 do toque (até 3 seguidos)', ['comboUnlock', 'comboPoint']),
   touch('magnet', 'Toque Magnético', 1000, 'Cada toque encurta em 0,5 s a espera do próximo objeto', ['objectSpawn']),
   touch('hands', 'Mãos do Astronauta', 1000, 'A cada 10 geradores comprados, +1 poeira por toque', ['touchPerGenerator']),
   touch('charged', 'Pulso Carregado', 1500, '+0,25 de energia por toque', ['energyPerTouch']),
