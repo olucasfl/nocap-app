@@ -20,14 +20,14 @@ Fontes de verdade: as regras ditadas pelo Lucas em 21/10/2026 (seção 2) e o de
 - **Click the Button (LoopCap, 26/08/2026, US$ 3,99, ~89% a 94% de aprovação na Steam):** o que prende é **entrada instantânea** (um botão, sem tutorial longo), **recompensa variável a cada ação**, **duas camadas de coleção** (dinheiro e álbum) e **renascer com árvore** (o reinício vira escolha). O que reclamam: **curto demais** (100% em 1 a 3 h), **repetitivo**, sorte frustrante em item raro e **cansaço do clique**. Fontes: [Steam](https://store.steampowered.com/app/3946950/Click_the_Button/), [resenha note.com](https://note.com/inari_229/n/nc00b3a54753a?hl=en), [Click the Button Wiki](https://clickthebutton.wiki/), [conquistas](https://clickthisbutton.wiki/achievements/), [guia 100%](https://9puz.com/5287-click-the-button-100-walkthrough/).
 - **Cookie Clicker:** custo exponencial (~x1,15 por unidade), prestígio com bônus permanente, evento aleatório que pede atenção (biscoito dourado), muitos marcos no começo, ganho visual a cada compra. Armadilhas: saturação e trapaça fácil sem conta. Fontes: [Game Developer](https://www.gamedeveloper.com/design/the-recipe-behind-cookie-clicker), [wiki de construções](https://cookieclicker.wiki.gg/wiki/Building), [Wikipedia](https://en.wikipedia.org/wiki/Cookie_Clicker).
 - **Limite da pesquisa:** a rede da sessão bloqueou Steam, fóruns e wikis; usei resumos de busca e não li avaliações individuais.
-- **Aplicação aqui:** começo muito lento (pedido do Lucas), escolha de 1 entre 3 (a variação do "baú"), álbum com itens escondidos, colapso com livro permanente (Atlas) e uma segunda camada (Ascender) para ser quase infinito; salvar na conta resolve a trapaça de salvamento local.
+- **Aplicação aqui:** começo muito lento (pedido do Lucas), escolha de 1 entre 3 (a variação do "baú"), álbum com itens escondidos, colapso com livro permanente (Atlas) e colapsos sem limite (spec 040); salvar na conta resolve a trapaça de salvamento local.
 
 ## 2. Regras já decididas pelo Lucas (não perguntar de novo)
 
 - **Escopo v1:** solo, **sem Daily, ranking, histórico, perfil público, salas ou gacha**. **Convidado NÃO joga** (precisa de conta). Salva **tudo na conta**, **até 2 saves** ao mesmo tempo. **Sem renda offline** (só rende com o jogo aberto). Tela própria, estilo jogo, responsiva (celular, tablet, PC). Abre com história curta e tutorial guiado.
 - **Ritmo:** começo MUITO mais lento; **sem multiplicador de cliques no começo** (combo só depois de comprar a melhoria); moedas e grimórios balanceados para demorar. Grimórios simples no começo, **só comuns nas primeiras escolhas**; raridades maiores entram aos poucos. A energia para ganhar grimório **sobe a cada escolha**.
 - **Grimórios:** escolha de **1 entre 3**; raridades **comum, raro, épico, lendário, proibido**. Proibidos mudam uma regra **com preço**, dentro da lore. Álbum com grimórios **escondidos** que vão sendo descobertos. **~30 no lançamento** e crescer.
-- **Rebirth:** recomeça do zero e guarda **uma página no Atlas Eterno** (60% do poder; bônus de conjunto por família; mais espaços nos rebirths **5, 10, 25 e 50**). O **primeiro rebirth leva 6 a 10 h espalhadas em vários dias**; **camada 2 (Ascender)** para ser quase infinito. Árvore de habilidades **refazível pagando**.
+- **Rebirth:** recomeça do zero e guarda **uma página no Atlas Eterno** (60% do poder; bônus de conjunto por família; mais espaços nos rebirths **5, 10, 25 e 50**). O **primeiro rebirth leva 6 a 10 h espalhadas em vários dias**; **colapsos sem limite** (spec 040). Árvore de habilidades **refazível pagando**.
 - **Clique acidental:** ao abrir a escolha, as cartas ficam **bloqueadas ~1,6 s** e a escolha é **em dois passos** (selecionar, depois confirmar).
 - **Objetos no espaço** (cometa, estrela cadente, satélite): têm de **mostrar o que dão** e **avisar o que foi capturado**.
 - **Tutorial dinâmico (pedido do Lucas, 22/10/2026, sobrepõe o tutorial de véu):** a tela começa só com o botão e os botões do dock vão **surgindo por gatilho** (poeira da 1ª melhoria, 1ª escolha de grimório, 1ª conquista); o jogador age, a tela reage, nada escurece, e dá para **pular** a qualquer momento (tudo é liberado de uma vez).
@@ -296,7 +296,7 @@ Cada colapso **destrava conteúdo novo para a vida seguinte**: uma **região do 
 | 12 | **Andrômeda** (galáxia espiral enorme se aproximando) | Quasar 3C 273, Galáxia do Triângulo (M33) | objeto **Quasar** (x3 por 6 s, raro) | evento **Passagem do cometa Halley** (cometas grandes por 20 s) | v1.2 |
 | 13 | **Aglomerado de Virgem** (centenas de galáxias, tom dourado) | Galáxia do Sombrero, Aglomerado de Virgem | mecânica **Captura automática** (a Perigeu pega 1 objeto a cada 60 s) | conquista "Todas as famílias com 2 páginas" | v1.2 |
 | 14 | **Grande Atrator** (fluxo de galáxias, tom vermelho) | Grande Atrator, TON 618 (proibido) | melhoria **Event Horizon Telescope** (+% de poder dos proibidos) | evento **Maré gravitacional** (objetos atraídos para o botão por 15 s) | v1.2 |
-| 15 | **Horizonte de Eventos** (buraco negro com disco, fim da viagem) | Horizonte de Eventos, Phoenix A (proibido) | **desbloqueia o Ascender** (8.4) | conquista "Estrela final" e final da história | v1.2 (Ascender: depois da v1, etapa 16) |
+| 15 | **Horizonte de Eventos** (buraco negro com disco, fim da viagem) | Horizonte de Eventos, Phoenix A (proibido) | último com conteúdo "por colapso" (spec 040) | conquista "Estrela final" e final da história | v1.2 |
 
 - **Regiões:** cada uma é um **tema de cenário** em dados (cores do céu, 2 a 3 camadas de decoração em SVG que se movem só em `transform`, ilustração do fundo, cor do brilho do botão). Mudam a cada colapso; a região fica no save (`regionId`) e dá para **rever as já abertas** no menu de regiões do HUD (sem custo).
 - **Ordem do jogo:** todo o conteúdo de um colapso entra **no mesmo release**; o jogador vê só o que o colapso atual já abriu (os demais grimórios aparecem como "???" no álbum, e o total "N de 60" cresce a cada colapso).
@@ -307,7 +307,7 @@ Cada colapso **destrava conteúdo novo para a vida seguinte**: uma **região do 
 ### 6.1 Metas de duração
 - **1º colapso: 6 a 10 horas de jogo aberto, espalhadas em vários dias** (sem renda offline). Uma sessão boa tem 20 a 40 min.
 - **Cada colapso seguinte é MAIS RÁPIDO que o anterior** (decisão do Lucas): a vida encurta por causa das páginas do Atlas, da árvore e do conteúdo acumulado. A **tabela-alvo dos 15 colapsos está na seção 6.6**; o 1º segue o mais longo (8 h), o 15º chega ao piso de ~1,2 h.
-- **Ascender (camada 2):** libera **depois de 15 colapsos** (decisão do Lucas), "quase infinito" depois disso; **fora da v1** (decidido pelo Lucas; etapa 16, 8.4).
+- **Colapsos sem limite (spec 040):** a vida de cada colapso leva de 1 h a 3 h até o 15º e, depois, cresce no máximo 3% por colapso (seção 10 da spec 040). A tabela da 6.6 vale como história; as metas de hoje são as da spec 040.
 - Primeira escolha de grimório: **~2 a 4 min** de jogo (para o jogador ver a graça antes de enjoar); as escolhas seguintes se espaçam (seção 6.3).
 
 ### 6.2 Valores iniciais fixados (o Lucas pediu que eu decidisse; o simulador ajusta)
@@ -391,7 +391,7 @@ As metas das vidas 4 e 5 ficam de propósito um pouco fora do centro (3,1 h e 2,
 - **Ajustes de número feitos na calibração:** (1) **energia dos objetos em toques de energia** e não em % da barra (estrela 8 toques, asteroide 3, Tritão 2): com % da barra o simulador fazia 180 escolhas em 8 h, porque a barra cresce x1,35 e a estrela dava 10% dela em qualquer fase; agora a 1ª vida fecha com ~21 escolhas; (2) Lua +1 toque a cada 10 (antes +5); (3) Caranguejo = +1 nível extra no repetido; (4) as metas de poeira acima (a de 2 mi do rascunho deixava o 1º colapso em ~1,5 h). Custos, bases, passos de energia e níveis máximos ficaram como na 6.2.
 - **Marcos da 1ª vida, perfil normal (uma semente):** 1ª melhoria ~7 min, 1ª escolha ~2 min, 10 escolhas ~1 h, 1 mi de poeira ~3,5 h, estrela pronta ~8 a 9 h.
 - **Regras de motor decididas na etapa 1:** o toque exige 1/12 s entre toques; salto de relógio maior que 5 s é aba escondida (nada conta, objetos/boost/combo congelam); com a escolha aberta o campo congela; escolha em 2 passos (`selectGrimoire` e `chooseGrimoire`, bloqueio de 1,6 s); sorteio escolhe a raridade pelo peso e depois a carta; grimório no nível 10 sai do sorteio; efeitos de preço dos proibidos têm a marca `price` (é o `forbiddenTradeoff`) e a página do Atlas reduz preço e ganho a 60% (a escolha dupla de Órion não é guardada na página); descontos de custo são multiplicativos com piso de 40%; combo máximo com teto 12; `startDust` do Titã = 1.500 de poeira por nível.
-- **Não feito nesta etapa:** `validateSave`, `mergeSaves`, `eventTick`, `canAscend`, conquistas, mecânica Favorito (etapa 2 em diante).
+- **Não feito nesta etapa:** `validateSave`, `mergeSaves`, `eventTick`, conquistas, mecânica Favorito (etapa 2 em diante).
 
 ### 6.5 Simulador de economia (proposta)
 Um script em `packages/games` (`aperta/sim`, rodado por um comando `pnpm`) que **usa o próprio motor do jogo** (mesmas funções, sem cópia da regra) e simula jogadores por perfil e estratégia de compra (gulosa, só toque, mista). Entradas: tabelas de custo, efeitos, pesos, passos de energia. Saídas: tabela de **horas de jogo aberto até cada marco** (1ª melhoria, 1ª escolha, 10 escolhas, ~1 mi, estrela pronta, 2º colapso, 10º colapso), **distribuição de grimórios**, quanto cada grimório vale (retorno por escolha) e **alertas** (grimório que domina, ramo da árvore que quebra, valor que passa de 1e15). Testes automatizados: "cada vida do perfil normal fica a ±15% da tabela 6.6, e nenhuma é mais longa que a anterior"; "1º colapso do perfil normal entre 6 e 10 h" falha o build se uma mudança de número sair da faixa; "nenhum caminho dá infinito ou NaN".
@@ -399,10 +399,10 @@ Um script em `packages/games` (`aperta/sim`, rodado por um comando `pnpm`) que *
 ## 7. Motor (lógica em `packages/games/src/aperta/`)
 
 ### 7.1 Estado
-`SaveState` = { `version`, `name`, `createdAt`, `playSeconds`, `tutorial` (passo ou concluído), `ui` { `unlocked` (botões do dock liberados), `hints` (cartões do tutorial vistos) }, `storySeen`, `run` { `dust`, `dustLife`, `energy`, `picks`, `upgradeLevels[]`, `build` { grimórioId -> nível }, `clicks`, `combo`, `boostUntil`, `rngState` }, `album` (descobertos), `atlas` { `slots`, `pages` [{ grimórioId, nível }] }, `collapses` (colapso atual), `regionId` (região em que está), `seenUnlocks` (conteúdo novo já avisado), `eventState` (recargas dos eventos), `fragments` { `earned`, `spent` }, `tree` (nós e níveis), `achievements`, `stats` (toques, objetos, etc.) } e, mais tarde, `ascensions` e `constellations`.
+`SaveState` = { `version`, `name`, `createdAt`, `playSeconds`, `tutorial` (passo ou concluído), `ui` { `unlocked` (botões do dock liberados), `hints` (cartões do tutorial vistos) }, `storySeen`, `run` { `dust`, `dustLife`, `energy`, `picks`, `upgradeLevels[]`, `build` { grimórioId -> nível }, `clicks`, `combo`, `boostUntil`, `rngState` }, `album` (descobertos), `atlas` { `slots`, `pages` [{ grimórioId, nível }] }, `collapses` (colapso atual), `regionId` (região em que está), `seenUnlocks` (conteúdo novo já avisado), `eventState` (recargas dos eventos), `fragments` { `earned`, `spent` }, `tree` (nós e níveis), `achievements`, `stats` (toques, objetos, etc.) }.
 
 ### 7.2 Funções puras (todas testadas)
-O **conteúdo liberado é derivado** do colapso atual: cada grimório, região, objeto, melhoria, mecânica e evento do catálogo tem um campo `unlockedAtCollapse`, e `unlockedContent(state)` devolve só o que já está aberto (o save **não** guarda a lista, para não ter como desalinhar). Funções extras: `unlockedContent`, `regionFor(state)`, `eventTick(state, now)`, `canAscend(state)`.
+O **conteúdo liberado é derivado** do colapso atual: cada grimório, região, objeto, melhoria, mecânica e evento do catálogo tem um campo `unlockedAtCollapse`, e `unlockedContent(state)` devolve só o que já está aberto (o save **não** guarda a lista, para não ter como desalinhar). Funções extras: `unlockedContent`, `regionFor(state)`, `eventTick(state, now)`.
 `newSave(seed)`, `press(state, now)`, `tickObjects(state, now)`, `captureObject(state, id)`, `buyUpgrade(state, i)`, `drawGrimoires(state)` (3 sem repetir, por peso), `chooseGrimoire(state, id)`, `canCollapse(state)`, `collapse(state, pageId)`, `respecTree(state)`, `buyTreeNode(state, id)`, `effectiveStats(state)` (junta melhorias, grimórios, Atlas, bônus de conjunto e árvore em números finais), `validateSave(raw)` (formato e coerência, seção 10), `mergeSaves(a, b)`.
 
 ### 7.3 Primitivas de efeito (todo grimório e nó da árvore usa só estas)
@@ -414,7 +414,7 @@ O **conteúdo liberado é derivado** do colapso atual: cada grimório, região, 
 O motor é **orientado a eventos** (toque, captura, compra) e a um relógio de jogo que **só avança com a aba visível** (`document.visibilityState`); ao esconder a aba/app, o relógio pausa e objetos e boosts congelam. **Nada rende offline.** O servidor nunca confia no relógio do aparelho para progresso (seção 10).
 
 ### 7.5 Números grandes
-`number` (double) basta até ~1e15 sem perda relevante; o formato mostra mil, mi, bi, tri e depois notação científica com Space Mono. O motor **trava em 1e300** e os testes cobrem estouro. Se o Ascender ultrapassar isso, trocar para mantissa-expoente (decisão futura).
+`number` (double) basta até ~1e15 sem perda relevante; o formato mostra mil, mi, bi, tri e depois notação científica com Space Mono. O motor **trava em 1e300** e os testes cobrem estouro. Sem teto de colapsos (spec 040): a meta de poeira cresce até esse guarda e o `validateSave` recusa colapsos além do que a meta ainda comporta.
 
 ## 8. Colapso (rebirth), Atlas Eterno, Fragmentos e árvore
 
@@ -449,11 +449,6 @@ O motor é **orientado a eventos** (toque, captura, compra) e a um relógio de j
   - **Plêiades:** cada vida começa com 1 / 2 / 4 níveis do Pulso Solar de graça.
   - **Horizonte de Eventos:** proibidos liberam em `n >= 18 / 14 / 10` e custam 20% / 40% / 60% menos.
 - **Refazer árvore (decidido por mim, ajustável pelo simulador):** devolve **todos os Fragmentos gastos menos 20%** (arredonda para cima; mínimo 1 de taxa se houver gasto), com confirmação em 2 passos, sem limite de vezes e sem cobrar poeira, para ninguém ser punido por testar builds.
-
-### 8.4 Ascender (camada 2, depois da v1)
-> **Substituída em 22/10/2026 pela spec 040** (colapso infinito, Cofre dos Proibidos, Cintilas e árvore grande). Texto abaixo mantido só como histórico.
-
-Regra (gatilho decidido pelo Lucas em 21/10/2026): o jogador pode **Ascender depois de 15 colapsos** (o 15º é o do **Horizonte de Eventos**, fim da primeira viagem). Ascender zera colapsos, Fragmentos e árvore (mantém **álbum, conquistas e Atlas**) e ganha **Constelações** (moeda permanente) que dão um multiplicador global e destravam grimórios e espaços novos; a viagem recomeça do Sistema Solar interno com os 15 colapsos de novo, mais rápidos pelo bônus. Cada ascensão pede os mesmos 15 colapsos (e o piso de duração sobe com as Constelações, a calibrar). **Fica fora da v1 (etapa 16), decidido pelo Lucas**, para a economia da camada 1 ser calibrada antes.
 
 ## 9. Encaixe no NoCap
 
@@ -531,7 +526,7 @@ O servidor usa a **mesma função de validação de `packages/games`** (`validat
 | **Dois aparelhos ao mesmo tempo** | `revision`, `409` e sessão única por save. |
 | **Clique acidental** | Bloqueio de 1,6 s, 2 passos, ignorar toques logo após abrir modais. |
 | **Cansaço do clique** | Segurar tecla repete (teto 6/s), objetos e grimórios dão "respiro", sem exigir milhares de cliques seguidos. |
-| **Estouro numérico** | Teto de 1e300, formato pt-BR, testes de borda; mantissa-expoente só se o Ascender exigir. |
+| **Estouro numérico** | Teto de 1e300, formato pt-BR, testes de borda; mantissa-expoente só se o guarda de 1e300 virar limite na prática. |
 | **Escopo** (30 grimórios, arte, textos) | Entrega em etapas; a arte de astros é SVG reaproveitável; 12 grimórios no primeiro playtest. |
 | **Conteúdo por colapso é muito trabalho (16 regiões, 30 grimórios novos, 5 objetos, 6 eventos)** | Tudo em dados e em etapas pequenas (12 a 15), v1 só até o colapso 5, simulador valida a curva a cada pacote. |
 | **Aba em segundo plano e relógio** | Relógio do jogo pausa; nada rende parado; o servidor não usa a hora do aparelho para progresso. |
@@ -569,7 +564,7 @@ Todas respondidas pelo Lucas em 21/10/2026. Nada pendente.
 18. **Mesmo save em vários aparelhos:** **RESOLVIDA.** Sincronização com aviso em caso de conflito (seção 10.4).
 19. **Convidado:** **RESOLVIDA ("ok").** O cartão aparece no Arcade com "Entre para jogar".
 20. **Segurar a tecla:** **RESOLVIDA ("ok").** Permitido, até 6 toques/s.
-10. **Ascender (camada 2):** **RESOLVIDA.** Gatilho **depois de 15 colapsos** (seção 8.4) e entra **depois da v1** (etapa 16), decidido pelo Lucas em 21/10/2026.
+10. **Fim da viagem:** **SUBSTITUÍDA** pela spec 040 (colapsos sem limite e requisitos que crescem, em vez de uma camada 2).
 21. **Conteúdo na v1:** **RESOLVIDA (Lucas: "tudo certo, vamos de recomendado").** A v1 traz **colapsos 0 a 5** (6 regiões, 40 grimórios); o resto chega por atualização (v1.1: colapsos 6 a 10; v1.2: colapsos 11 a 15).
 
 ### Pendentes
@@ -595,7 +590,7 @@ Cada etapa só começa com o "sim" do Lucas para a anterior; cada uma termina co
 11. **Polimento visual e sons.** *Escopo:* arte dos astros e livros, receitas de `sfx`, transições, animações só `transform`/`opacity`, `prefers-reduced-motion`, desempenho em celular fraco. *Pronto quando:* revisão manual aprovada pelo Lucas e nenhuma animação de propriedade proibida (checagem automática do CSS). *Commit:* `feat(web): arte, sons e polimento do Aperta!`.
 12. **Conteúdo por colapso: base de dados e colapsos 1 a 5 (v1).** *Escopo:* campo `unlockedAtCollapse` em todo o catálogo, `unlockedContent`, **regiões** em dados (cores, camadas de SVG, troca ao colapsar, menu de regiões), faixa "Novo no espaço", e o conteúdo dos colapsos 1 a 5 da tabela 5.4 (10 grimórios, Asteroide, Sonda Voyager, James Webb, Chandra, Gaia, Favorito, Missões da estação, Chuva de meteoros, Tempestade solar, 5 regiões e as conquistas). *Pode dividir em 12a (base, regiões e colapso 1), 12b (colapsos 2 e 3) e 12c (colapsos 4 e 5), cada uma com seu commit.* *Arquivos:* `packages/games/src/aperta/content/*`, `apps/web/src/games/aperta/regions/*`. *Pronto quando:* testes mostram que cada colapso destrava exatamente a linha da tabela, o servidor rejeita conteúdo de colapso futuro e cada região renderiza em 320, 390, 768 e 1280 px. *Commit:* `feat(games): conteúdo dos colapsos 1 a 5 do Aperta!`.
 13. **QA responsivo e calibragem ao vivo (fecha a v1).** *Escopo:* 320, 390, 768, 1024, 1280 e 1920 px, toque, mouse e teclado; calibrar a economia **jogando com o Lucas** (ajustar tabelas pelo simulador até as vidas 1 a 5 da tabela 6.6 baterem ±15%). *Pronto quando:* o Lucas aprova jogar por 1 a 2 dias e o ritmo bate com a meta. *Commit:* `fix(games): calibragem do Aperta!`.
-14. a 21. **Substituídas pela spec 040** (colapso infinito e requisitos, Cofre dos Proibidos, Cintilas e conquistas, árvore grande: motor, tela, habilidades e automações, sorte e exploração, calibragem). O plano completo e a ordem estão na seção 8 da 040; o Ascender (antiga etapa 16) foi cancelado.
+14. a 21. **Substituídas pela spec 040** (colapso infinito e requisitos, Cofre dos Proibidos, Cintilas e conquistas, árvore grande: motor, tela, habilidades e automações, sorte e exploração, calibragem). O plano completo e a ordem estão na seção 8 da 040.
 
 **Ordem de dependência:** 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12 -> 13 (v1) -> 14 a 21 (spec 040). As etapas 5, 6 e 7 só dependem da 4 e podem trocar de ordem se o Lucas preferir (decisão 14.17).
 
@@ -628,7 +623,7 @@ Todo o trabalho está na branch **`develop`** (nada na `main`, por ordem do Luca
 3. **Etapa 10: fechada** (ver acima).
 4. **Etapa 11: fechada no código** (11 e 11b); falta só a revisão visual do Lucas.
 5. **Etapa 13: fechada no código (22/10/2026), falta só jogar:** varredura de QA em 320, 390, 768, 1024, 1280 e 1920 px (toque e mouse) sem problemas; falta o Lucas jogar 1 a 2 dias para aprovar o ritmo.
-6. **Depois da v1:** etapas 14 a 21 da **spec 040** (colapso infinito, Cofre dos Proibidos, Cintilas, árvore grande). Ascender cancelado.
+6. **Depois da v1:** etapas 14 a 21 da **spec 040** (colapso infinito, Cofre dos Proibidos, Cintilas, árvore grande).
 
 ### Como retomar
 - Trabalhar em worktree/branch própria cortada da `develop`, uma sessão por vez enquanto o limite de uso estiver baixo; mesclar na `develop` e dar push dela; **nada na `main` sem ordem do Lucas**.
