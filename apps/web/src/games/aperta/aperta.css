@@ -331,6 +331,17 @@
   height: auto;
   filter: drop-shadow(0 10px 30px rgba(60, 156, 240, 0.25));
 }
+.ap-story-books {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 10px;
+  height: 190px;
+}
+/* Três livros de 150 px não cabem em 320 px: encolhem juntos (só tamanho, sem animar). */
+.ap-story-books .ap-book {
+  --ap-w: clamp(78px, 24vw, 130px);
+}
 .ap-story-k {
   font: 600 12px var(--space-font-display);
   color: var(--space-cyan);

@@ -1,10 +1,12 @@
+import { TUTORIAL, energyCap, newSave, nextUpgradeCost, type SaveState } from '@nocap/games';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { installApi } from './mock-api';
 
 /**
- * Tutorial guiado do Aperta! (spec 038, 4.6) de ponta a ponta: save novo, bloqueio de tudo fora do alvo,
- * compra do Pulso Solar, retomar o passo salvo e pular. A API de saves é uma conta falsa em memória.
- * O celular emula toque de verdade (isMobile, hasTouch, DPR 2); o PC usa mouse.
+ * Tutorial dinâmico do Aperta! (spec 038, 4.6) de ponta a ponta: só o botão no começo, Melhorias que surge com a
+ * poeira, Grimórios que surge com a escolha, os cartões do jogo livre e o "Pular tutorial". A API de saves é uma
+ * conta falsa em memória; cada fase parte de um save montado com o próprio motor (os números do motor mudam, então
+ * o teste lê o preço e o teto da barra dele). O celular emula toque de verdade (isMobile, hasTouch, DPR 2).
  */
 interface SaveData {
   tutorial: number | 'done';
@@ -63,7 +65,7 @@ async function watch(page: Page) {
 const noOverflow = async (page: Page) =>
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth), 'rolagem lateral').toBeLessThanOrEqual(1);
 
-/** Toque (celular) ou clique (PC) nas coordenadas do centro do elemento, passando por cima de qualquer véu. */
+/** Toque (celular) ou clique (PC) nas coordenadas do centro do elemento. */
 async function tapCenter(page: Page, target: Locator, touch: boolean) {
   const box = (await target.boundingBox())!;
   const x = box.x + box.width / 2;
@@ -87,7 +89,20 @@ async function openGame(page: Page, fresh: boolean) {
   await expect(page.locator('.ap-game')).toBeVisible();
 }
 
-const card = (page: Page) => page.locator('.ap-tut-card');
+const dock = (page: Page, name: string) => page.locator('.ap-dock').getByRole('button', { name: new RegExp(`^${name}`) });
+const coach = (page: Page) => page.locator('.ap-tut');
+const card = (page: Page) => page.locator('.ap-tut-card, .ap-tut-inline');
+
+/** Um save no meio do roteiro, montado pelo motor: `patch` ajusta o que a fase precisa. */
+function saveAt(patch: (s: SaveState) => SaveState): SaveData {
+  const base = newSave('e2e', Date.now() - 600_000, 'Missão Perigeu');
+  return patch({ ...base, storySeen: true }) as unknown as SaveData;
+}
+const nearUpgrade = (s: SaveState): SaveState => {
+  const cost = nextUpgradeCost(s, 0) as number;
+  return { ...s, run: { ...s.run, dust: cost - 1, dustLife: cost - 1 } };
+};
+const nearFull = (s: SaveState): SaveState => ({ ...s, run: { ...s.run, energy: energyCap(s.run.picks) - 0.01 } });
 
 const SIZES = [
   { name: '320 px', viewport: { width: 320, height: 640 }, touch: true },
@@ -103,107 +118,199 @@ for (const size of SIZES) {
       hasTouch: size.touch,
       deviceScaleFactor: size.touch ? 2 : 1,
     });
+    const touch = size.touch;
+    const shotDir = process.env.E2E_SHOTS ?? 'test-results';
+    const shot = (page: Page, n: string) => page.screenshot({ path: `${shotDir}/ftue-${size.viewport.width}-${n}.png` });
+    const press = (page: Page) => tapCenter(page, page.getByRole('button', { name: 'Apertar o botão' }), touch);
 
-    test('guia os 5 passos, bloqueia o resto e retoma o passo salvo', async ({ page }, info) => {
+    test('começa só com o botão: poeira sobe de 1 em 1 e nada mais aparece', async ({ page }, info) => {
       test.skip(info.project.name !== 'desktop', 'o tamanho vem do describe; um projeto basta');
       const errors = await watch(page);
       await installApi(page);
-      const account = await installSaves(page);
-      const touch = size.touch;
+      await installSaves(page);
       await openGame(page, true);
-      const shot = (n: string) => page.screenshot({ path: `${process.env.E2E_SHOTS ?? 'test-results'}/tut-${size.viewport.width}-${n}.png` });
-
-      // Passo 1: só o botão grande funciona.
-      await expect(card(page)).toContainText('passo 1 de 5');
+      await expect(coach(page)).toContainText('Toque aqui para ganhar poeira');
       await expect(page.locator('.ap-tut-ring')).toBeVisible();
-      await shot('1');
-      await tapCenter(page, page.getByRole('button', { name: 'Melhorias' }), touch);
-      await tapCenter(page, page.getByRole('button', { name: /Árvore/ }), touch);
-      await tapCenter(page, page.getByRole('button', { name: 'Sair' }), touch);
-      await expect(page.locator('.ap-sheet')).toHaveCount(0);
-      await expect(page.locator('.ap-game')).toBeVisible();
+      await expect(page.locator('.ap-dock')).toHaveCount(0);
+      await expect(page.locator('[data-tut="tree"]')).toHaveCount(0);
+      await expect(page.locator('.ap-hudrow-2')).toHaveCount(0);
+      await expect(page.getByRole('button', { name: 'Pular tutorial' })).toBeVisible();
+      await shot(page, '1-botao');
+      // O motor aceita no máximo 12 toques por segundo: um respiro entre os toques.
+      for (let i = 0; i < 3; i++) {
+        await press(page);
+        await page.waitForTimeout(160);
+      }
+      await expect(page.locator('.ap-hudrow b').first()).toHaveText('3');
+      await expect(page.locator('.ap-dock')).toHaveCount(0);
+      await shot(page, '1b-tres-toques');
       await noOverflow(page);
-
-      await tapCenter(page, page.getByRole('button', { name: 'Apertar o botão' }), touch);
-
-      // Passo 2: o livro da Lua; só "Entendi" funciona.
-      await expect(card(page)).toContainText('passo 2 de 5');
-      await expect(page.getByRole('dialog', { name: 'Primeiro grimório' })).toBeVisible();
-      await shot('2');
-      await page.keyboard.press('g');
-      await page.keyboard.press('Escape');
-      await expect(page.locator('.ap-sheet')).toHaveCount(0);
-      await noOverflow(page);
-      await page.waitForTimeout(450);
-      await tapCenter(page, page.getByRole('button', { name: 'Entendi' }), touch);
-
-      // Passo 3: seta em Melhorias; Conquistas e Grimórios seguem bloqueados.
-      await expect(card(page)).toContainText('passo 3 de 5');
-      await shot('3');
-      await tapCenter(page, page.getByRole('button', { name: 'Grimórios' }), touch);
-      await page.keyboard.press('g');
-      await expect(page.locator('.ap-sheet')).toHaveCount(0);
-      await tapCenter(page, page.getByRole('button', { name: /^Melhorias/ }), touch);
-
-      // Passo 4: só o preço do Pulso Solar; o X da página e as outras linhas ficam bloqueados.
-      await expect(page.locator('.ap-sheet')).toBeVisible();
-      await expect(card(page)).toContainText('passo 4 de 5');
-      await shot('4');
-      await tapCenter(page, page.locator('.ap-sheet .ap-x'), touch);
-      await page.keyboard.press('Escape');
-      await expect(page.locator('.ap-sheet')).toBeVisible();
-      await noOverflow(page);
-      await tapCenter(page, page.locator('[data-tut="buy-pulse"]'), touch);
-
-      // Passo 5: recarregar no meio retoma daí (a cópia do aparelho e a conta guardam o passo e a compra).
-      await expect(card(page)).toContainText('passo 5 de 5');
-      await page.waitForTimeout(600); // deixa a subida do passo 5 terminar (uma pessoa leva mais que isso)
-      await page.reload();
-      await openGame(page, false);
-      await expect(card(page)).toContainText('passo 5 de 5');
-      await expect(card(page)).toContainText('Agora os grimórios');
-      await shot('5a');
-      await tapCenter(page, page.getByRole('button', { name: /^Melhorias/ }), touch);
-      await expect(page.locator('.ap-sheet')).toHaveCount(0);
-      await tapCenter(page, page.getByRole('button', { name: /^Grimórios/ }), touch);
-
-      await expect(page.locator('.ap-sheet')).toBeVisible();
-      await expect(card(page)).toContainText('Sua coleção');
-      await shot('5b');
-      await noOverflow(page);
-      await page.getByRole('button', { name: 'Começar a jogar' }).click();
-      await expect(page.locator('.ap-tut')).toHaveCount(0);
-
-      // Livre: tudo volta a funcionar, e a compra e a Lua do tutorial continuam no save.
-      await page.locator('.ap-sheet .ap-x').click();
-      await tapCenter(page, page.getByRole('button', { name: 'Apertar o botão' }), touch);
-      await page.waitForTimeout(600);
-      await page.reload();
-      await openGame(page, false);
-      await expect(page.locator('.ap-tut')).toHaveCount(0);
-      await expect.poll(() => account.data?.tutorial).toBe('done');
-      expect(account.data?.run.upgradeLevels[0]).toBe(1);
-      expect(account.data?.album).toContain('moon');
       expect(errors).toEqual([]);
     });
 
-    test('pular marca como feito e libera o jogo', async ({ page }, info) => {
+    test('poeira da 1ª melhoria: surge Melhorias, compra, volta e a barra sobe; recarregar retoma', async ({ page }, info) => {
+      test.skip(info.project.name !== 'desktop', 'o tamanho vem do describe; um projeto basta');
+      const errors = await watch(page);
+      await installApi(page);
+      const account = await installSaves(page);
+      account.data = saveAt(nearUpgrade);
+      account.rev = 1;
+      await openGame(page, false);
+      await expect(dock(page, 'Melhorias')).toHaveCount(0);
+      await press(page);
+      await expect(coach(page)).toContainText('Você já pode comprar sua primeira melhoria.');
+      await expect(dock(page, 'Melhorias')).toBeVisible();
+      await expect(dock(page, 'Grimórios')).toHaveCount(0);
+      await expect(dock(page, 'Conquistas')).toHaveCount(0);
+      await shot(page, '2-parabens');
+      await noOverflow(page);
+
+      // O passo fica salvo: recarregar volta no mesmo ponto.
+      await expect.poll(() => account.data?.tutorial).toBe(TUTORIAL.UPGRADE);
+      await page.reload();
+      await openGame(page, false);
+      await expect(coach(page)).toContainText('Você já pode comprar sua primeira melhoria.');
+
+      await tapCenter(page, dock(page, 'Melhorias'), touch);
+      await expect(page.locator('.ap-sheet')).toBeVisible();
+      await expect(coach(page)).toContainText('Toque no preço para comprar');
+      await shot(page, '3-comprar');
+      await noOverflow(page);
+      await tapCenter(page, page.locator('[data-tut="buy-first"]'), touch);
+      await expect(coach(page)).toContainText('Feche a página e volte a tocar');
+      await shot(page, '4-voltar');
+      await tapCenter(page, page.locator('.ap-sheet .ap-x'), touch);
+      await expect(page.locator('.ap-sheet')).toHaveCount(0);
+      await expect(coach(page)).toContainText('Encha a barra de energia');
+      await expect(dock(page, 'Grimórios')).toHaveCount(0);
+      await shot(page, '5-barra');
+      await noOverflow(page);
+      await expect.poll(() => account.data?.tutorial).toBe(TUTORIAL.FILL);
+      expect(errors).toEqual([]);
+    });
+
+    test('barra cheia: escolha do 1º grimório com o cartão, surge Grimórios, depois o jogo livre', async ({ page }, info) => {
+      test.skip(info.project.name !== 'desktop', 'o tamanho vem do describe; um projeto basta');
+      const errors = await watch(page);
+      await installApi(page);
+      const account = await installSaves(page);
+      account.data = saveAt((s) => nearFull({ ...s, tutorial: TUTORIAL.FILL, ui: { unlocked: ['upgrades'], hints: [] } }));
+      account.rev = 1;
+      await openGame(page, false);
+      await expect(dock(page, 'Grimórios')).toHaveCount(0);
+      await press(page);
+      await expect(page.locator('.ap-tut-inline')).toContainText('Você ganhou seu primeiro grimório!');
+      await expect(page.locator('.ap-tut-inline')).toContainText('1,6 s');
+      await expect(page.getByRole('dialog')).toBeVisible();
+      await shot(page, '6-escolha');
+      await noOverflow(page);
+      await page.waitForTimeout(2000);
+      await page.locator('.ap-pick').first().click();
+      await page.getByRole('button', { name: 'Escolher este grimório' }).click();
+      await expect(coach(page)).toContainText('Seus grimórios');
+      await expect(dock(page, 'Grimórios')).toBeVisible();
+      await expect(dock(page, 'Conquistas')).toHaveCount(0);
+      await shot(page, '7-grimorios');
+      await tapCenter(page, dock(page, 'Grimórios'), touch);
+      await expect(page.locator('.ap-sheet')).toBeVisible();
+      await expect.poll(() => account.data?.tutorial).toBe(TUTORIAL.FREE);
+      await shot(page, '8-colecao');
+      await tapCenter(page, page.locator('.ap-sheet .ap-x'), touch);
+      await expect(card(page)).toHaveCount(0);
+      await noOverflow(page);
+      expect(errors).toEqual([]);
+    });
+
+    test('jogo livre: o cartão de conquistas vem com a conquista e libera o botão', async ({ page }, info) => {
+      test.skip(info.project.name !== 'desktop', 'o tamanho vem do describe; um projeto basta');
+      const errors = await watch(page);
+      await installApi(page);
+      const account = await installSaves(page);
+      account.data = saveAt((s) => ({
+        ...s,
+        tutorial: TUTORIAL.FREE,
+        ui: { unlocked: ['upgrades', 'grimoires'], hints: [] },
+        album: ['moon'],
+        run: { ...s.run, picks: 1, build: { moon: 1 } },
+        stats: { ...s.stats, clicks: 99, picks: 1 },
+        achievements: ['tap-1'],
+      }));
+      account.rev = 1;
+      await openGame(page, false);
+      await expect(dock(page, 'Conquistas')).toHaveCount(0);
+      await expect(page.locator('.ap-tut-card')).toHaveCount(0);
+      await press(page); // o toque 100 dá a segunda conquista
+      await expect(page.locator('.ap-tut-card')).toContainText('Sua primeira conquista!');
+      await expect(dock(page, 'Conquistas')).toBeVisible();
+      await shot(page, '9-conquistas');
+      await noOverflow(page);
+      await page.getByRole('button', { name: 'Entendi' }).click();
+      await expect(page.locator('.ap-tut-card')).toHaveCount(0);
+      expect(errors).toEqual([]);
+    });
+
+    test('a árvore é o último cartão e dispensá-lo conclui o tutorial', async ({ page }, info) => {
+      test.skip(info.project.name !== 'desktop', 'o tamanho vem do describe; um projeto basta');
+      const errors = await watch(page);
+      await installApi(page);
+      const account = await installSaves(page);
+      account.data = saveAt((s) => ({
+        ...s,
+        tutorial: TUTORIAL.FREE,
+        ui: { unlocked: ['upgrades', 'grimoires', 'achievements'], hints: ['achievements', 'objects'] },
+        album: ['moon'],
+        run: { ...s.run, picks: 1, build: { moon: 1 } },
+        stats: { ...s.stats, clicks: 300, picks: 1 },
+        achievements: ['tap-1', 'tap-100'],
+      }));
+      account.rev = 1;
+      await openGame(page, false);
+      await expect(page.locator('.ap-tut-card')).toContainText('Árvore de Habilidades');
+      await expect(page.locator('.ap-tut-card')).toContainText('Fragmentos');
+      await shot(page, '10-arvore');
+      await noOverflow(page);
+      await page.getByRole('button', { name: 'Entendi' }).click();
+      await expect(coach(page)).toHaveCount(0);
+      await expect.poll(() => account.data?.tutorial).toBe('done');
+      expect(errors).toEqual([]);
+    });
+
+    test('história: a última tela mostra livros de grimório, não planetas', async ({ page }, info) => {
+      test.skip(info.project.name !== 'desktop', 'o tamanho vem do describe; um projeto basta');
+      const errors = await watch(page);
+      await installApi(page);
+      await installSaves(page);
+      await page.goto('/arcade/aperta');
+      await page.getByRole('button', { name: 'Jogar' }).first().click();
+      await page.getByRole('button', { name: 'Novo jogo' }).first().click();
+      for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'Continuar' }).click();
+      await expect(page.locator('.ap-story-books .ap-book')).toHaveCount(3);
+      await expect(page.locator('svg.ap-scene')).toHaveCount(0);
+      await shot(page, '0-historia');
+      await noOverflow(page);
+      await page.getByRole('button', { name: 'Começar' }).click();
+      await expect(page.locator('.ap-game')).toBeVisible();
+      expect(errors).toEqual([]);
+    });
+
+    test('pular libera tudo de uma vez e não volta depois de recarregar', async ({ page }, info) => {
       test.skip(info.project.name !== 'desktop', 'o tamanho vem do describe; um projeto basta');
       const errors = await watch(page);
       await installApi(page);
       const account = await installSaves(page);
       await openGame(page, true);
-      await expect(card(page)).toContainText('passo 1 de 5');
       await page.getByRole('button', { name: 'Pular tutorial' }).click();
-      await expect(page.locator('.ap-tut')).toHaveCount(0);
-      await tapCenter(page, page.getByRole('button', { name: /^Melhorias/ }), size.touch);
-      await expect(page.locator('.ap-sheet')).toBeVisible();
-      // Voltar ao jogo não traz o tutorial de volta.
+      await expect(coach(page)).toHaveCount(0);
+      for (const name of ['Conquistas', 'Grimórios', 'Melhorias']) await expect(dock(page, name)).toBeVisible();
+      await expect(page.getByRole('button', { name: /Árvore/ })).toBeVisible();
+      await shot(page, '11-pulou');
+      await noOverflow(page);
+      await press(page);
+      await expect.poll(() => account.data?.tutorial).toBe('done');
       await page.reload();
       await openGame(page, false);
-      await expect(page.locator('.ap-tut')).toHaveCount(0);
-      await expect.poll(() => account.data?.tutorial).toBe('done');
-      await noOverflow(page);
+      await expect(coach(page)).toHaveCount(0);
+      await expect(dock(page, 'Grimórios')).toBeVisible();
       expect(errors).toEqual([]);
     });
   });

@@ -1,63 +1,137 @@
-import { TUTORIAL_STEPS } from '@nocap/games';
+import { CHOICE_LOCK_SEC, TUTORIAL, pendingHint, type SaveState, type TutorialHint } from '@nocap/games';
 import type { PageName } from './game-logic';
 
 /** O que o tutorial destaca; cada alvo é um `data-tut` na tela de jogo. */
-export type TutorialTarget = 'press' | 'ok' | 'dock-upgrades' | 'buy-pulse' | 'dock-grimoires' | 'grimoires-page';
+export type TutorialTarget = 'press' | 'dock-upgrades' | 'buy-first' | 'page-close' | 'dock-grimoires' | 'dock-achievements' | 'tree';
 
-export interface TutorialView {
-  /** Passo mostrado no cartão (1 a 5). */
-  step: number;
-  total: number;
-  target: TutorialTarget;
-  title: string;
-  text: string;
-  /** Mostra a seta "Toque aqui" (a página inteira não precisa de seta). */
-  arrow: boolean;
-  /** Passo 5 com a página aberta: o cartão ganha "Começar a jogar". */
-  finish: boolean;
+export interface CoachView {
+  /** Muda a cada dica nova: refaz o cartão e roda a animação de entrada. */
+  key: string;
+  target: TutorialTarget | null;
+  /** Etiqueta da seta ("Toque aqui..."); `null` sem seta. */
+  label: string | null;
+  title: string | null;
+  text: string | null;
+  /** Cartão do jogo livre: "Entendi" marca este cartão como visto. */
+  dismiss: TutorialHint | null;
+  /** Vai dentro do modal de escolha em vez de flutuar sobre a tela. */
+  inline: boolean;
+  /** Onde o cartão fica quando flutua: páginas pedem o pé da tela (o alvo está no meio ou no alto). */
+  place: 'top' | 'bottom';
 }
 
-/** O passo 3 vira 4 assim que a página de Melhorias abre; a tela mostra o 4 sem esperar o save. */
-export function displayStep(step: number, page: PageName | null): number {
-  return step === 3 && page === 'upgrades' ? 4 : step;
-}
+/** A página que cada cartão do jogo livre apresenta: abri-la já conta como visto. */
+export const HINT_PAGE: Partial<Record<TutorialHint, PageName>> = { achievements: 'achievements', tree: 'tree' };
 
-/** Textos, alvo e seta de cada passo (spec 038, 4.6). Os passos 4 e 5 voltam ao botão da dock se a página não está aberta. */
-export function tutorialView(step: number, page: PageName | null): TutorialView {
-  const shown = displayStep(step, page);
-  const base = { step: shown, total: TUTORIAL_STEPS, arrow: true, finish: false };
-  switch (shown) {
-    case 1:
-      return { ...base, target: 'press', title: 'Aperte o botão', text: 'Cada toque rende poeira estelar e enche a barra de energia. Toque no botão grande.' };
-    case 2:
-      return { ...base, target: 'ok', title: 'Seu primeiro grimório', text: 'Quando a energia enche, você ganha um grimório. Leia este e toque em Entendi.' };
-    case 3:
-      return { ...base, target: 'dock-upgrades', title: 'Hora de melhorar', text: 'Toque em Melhorias para gastar a poeira que você juntou.' };
-    case 4:
+const NONE = { label: null, title: null, text: null, dismiss: null, inline: false, place: 'top' } as const;
+
+/**
+ * Dica do momento (spec 038, 4.6), ou `null` se o tutorial acabou ou o momento não é para ela (página de outro
+ * assunto aberta, janela por cima). Só lê o save e a página aberta: a tela não guarda estado do tutorial.
+ * `busy`: há uma janela por cima (colapso, regiões) e nada flutua.
+ */
+export function coachView(state: SaveState, page: PageName | null, busy = false): CoachView | null {
+  const step = state.tutorial;
+  if (step === 'done' || busy) return null;
+  const pending = state.run.pending !== null;
+  switch (step) {
+    case TUTORIAL.TOUCH:
+      return page ? null : { ...NONE, key: 'touch', target: 'press', label: 'Toque aqui para ganhar poeira' };
+    case TUTORIAL.UPGRADE:
+      if (page === 'upgrades') {
+        return {
+          ...NONE,
+          key: 'upgrade-buy',
+          target: 'buy-first',
+          title: 'Sua primeira melhoria',
+          text: 'Melhorias fazem a poeira render mais. Toque no preço para comprar.',
+          place: 'bottom',
+        };
+      }
+      return page
+        ? null
+        : {
+            ...NONE,
+            key: 'upgrade-open',
+            target: 'dock-upgrades',
+            label: 'Toque aqui',
+            title: 'Parabéns!',
+            text: 'Você já pode comprar sua primeira melhoria.',
+          };
+    case TUTORIAL.BACK:
       return page === 'upgrades'
-        ? { ...base, target: 'buy-pulse', title: 'Compre sua primeira melhoria', text: 'O Pulso Solar faz cada toque render mais poeira. Toque no preço para comprar.' }
-        : { ...base, target: 'dock-upgrades', title: 'Hora de melhorar', text: 'Toque em Melhorias para gastar a poeira que você juntou.' };
-    default:
-      return page === 'grimoires'
+        ? { ...NONE, key: 'back', target: 'page-close', title: 'Comprado!', text: 'Feche a página e volte a tocar no botão.', place: 'bottom' }
+        : null;
+    case TUTORIAL.FILL:
+      return page
+        ? null
+        : {
+            ...NONE,
+            key: 'fill',
+            target: 'press',
+            label: 'Continue tocando',
+            title: 'Encha a barra de energia',
+            text: 'A cada toque a barra sobe. Quando encher, você ganha um grimório.',
+          };
+    case TUTORIAL.CHOOSE:
+      return pending
         ? {
-            ...base,
-            step: 5,
-            target: 'grimoires-page',
-            arrow: false,
-            finish: true,
-            title: 'Sua coleção',
-            text: 'Aqui ficam os grimórios que você tem, os que ainda estão trancados e o Atlas. Veja com calma e comece a jogar.',
+            ...NONE,
+            key: 'choose',
+            target: null,
+            title: 'Você ganhou seu primeiro grimório!',
+            text: `Escolha um: toque numa carta para marcá-la (ela destrava em ${String(CHOICE_LOCK_SEC).replace('.', ',')} s) e depois toque em Escolher.`,
+            inline: true,
           }
-        : { ...base, step: 5, target: 'dock-grimoires', title: 'Agora os grimórios', text: 'Toque no ícone do livro para ver a sua coleção.' };
+        : null;
+    case TUTORIAL.GRIMOIRES:
+      return page || pending
+        ? null
+        : {
+            ...NONE,
+            key: 'grimoires',
+            target: 'dock-grimoires',
+            label: 'Toque aqui',
+            title: 'Seus grimórios',
+            text: 'Os que você escolher ficam guardados nesta página, junto com os que ainda faltam descobrir.',
+          };
+    default: {
+      if (page || pending) return null;
+      const hint = pendingHint(state);
+      if (!hint) return null;
+      return HINTS[hint];
+    }
   }
 }
 
-/** Qual página o passo deixa abrir (atalhos de teclado e a dock respeitam isto). */
-export function tutorialPageAllowed(step: number, page: PageName): boolean {
-  if (step === 3 || step === 4) return page === 'upgrades';
-  if (step === 5) return page === 'grimoires';
-  return false;
-}
+const HINTS: Record<TutorialHint, CoachView> = {
+  achievements: {
+    ...NONE,
+    key: 'hint-achievements',
+    target: 'dock-achievements',
+    label: 'Conquistas',
+    title: 'Sua primeira conquista!',
+    text: 'Conquistas são metas do jogo. Elas contam desde o seu primeiro toque; veja todas neste botão.',
+    dismiss: 'achievements',
+  },
+  objects: {
+    ...NONE,
+    key: 'hint-objects',
+    target: null,
+    title: 'Objetos no espaço',
+    text: 'Cometas, estrelas cadentes e satélites passam pela tela. Toque neles antes que sumam para ganhar poeira ou energia.',
+    dismiss: 'objects',
+  },
+  tree: {
+    ...NONE,
+    key: 'hint-tree',
+    target: 'tree',
+    label: 'Árvore',
+    title: 'Árvore de Habilidades',
+    text: 'Ao colapsar uma estrela você ganha Fragmentos. É nesta árvore que eles viram melhorias permanentes. Os ramos abrem depois do seu primeiro colapso.',
+    dismiss: 'tree',
+  },
+};
 
 export interface Rect {
   x: number;
@@ -70,19 +144,6 @@ export function padRect(r: Rect, pad: number, bounds: { w: number; h: number }):
   const x = Math.max(0, r.x - pad);
   const y = Math.max(0, r.y - pad);
   return { x, y, w: Math.min(bounds.w, r.x + r.w + pad) - x, h: Math.min(bounds.h, r.y + r.h + pad) - y };
-}
-
-/** Quatro faixas ao redor do buraco: juntas cobrem tudo menos o alvo, que continua tocável. */
-export function veilPieces(hole: Rect | null, bounds: { w: number; h: number }): Rect[] {
-  if (!hole) return [{ x: 0, y: 0, w: bounds.w, h: bounds.h }];
-  const right = hole.x + hole.w;
-  const bottom = hole.y + hole.h;
-  return [
-    { x: 0, y: 0, w: bounds.w, h: hole.y },
-    { x: 0, y: bottom, w: bounds.w, h: Math.max(0, bounds.h - bottom) },
-    { x: 0, y: hole.y, w: hole.x, h: hole.h },
-    { x: right, y: hole.y, w: Math.max(0, bounds.w - right), h: hole.h },
-  ].filter((p) => p.w > 0 && p.h > 0);
 }
 
 /** O cartão fica no topo, a não ser que o alvo esteja na metade de cima (aí vai para baixo e não cobre o alvo). */

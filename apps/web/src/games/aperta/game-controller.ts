@@ -9,8 +9,8 @@ import {
   collapse,
   chooseGrimoire,
   finishTutorial,
-  grantTutorialDust,
-  grantTutorialGrimoire,
+  markHintSeen,
+  migrateTutorial,
   newSave,
   objectPreview,
   press,
@@ -24,8 +24,11 @@ import {
   tickObjects,
   type ObjectKind,
   type ObjectPreview,
-  tutorialAllows,
+  settleTutorial,
+  tutorialStep,
   type SaveState,
+  TUTORIAL,
+  type TutorialHint,
 } from '@nocap/games';
 import type { GameStore } from './game-store';
 import type { SaveSlot } from './save-store';
@@ -98,11 +101,13 @@ export function createGameController({ initial, store, slot, perf = () => perfor
     const list = announced.splice(0);
     for (const a of list) for (const l of eventListeners) l(a);
   }
-  function commit(next: SaveState) {
+  function commit(raw: SaveState) {
+    // Passos que dependem só do progresso (poeira juntada, compra feita, escolha aberta) andam aqui.
+    const next = settleTutorial(raw);
     if (next === state) return;
     const gained = next.achievements.filter((id) => !state.achievements.includes(id));
-    // Durante o tutorial a conquista fica guardada, mas o aviso espera (não cobre o cartão do coach).
-    const announce = state.tutorial === 'done' && next.tutorial === 'done';
+    // Nos passos guiados a conquista fica guardada, mas o aviso espera: a tela é só o roteiro. Do jogo livre em diante avisa.
+    const announce = (tutorialStep(next) ?? Infinity) >= TUTORIAL.FREE;
     state = next;
     dirty = true;
     notify();
@@ -161,22 +166,20 @@ export function createGameController({ initial, store, slot, perf = () => perfor
 
     /** Um toque. Devolve `false` se o motor ignorou (escolha aberta, rápido demais, pausado). */
     press(): boolean {
-      if (pausedAt !== null || !tutorialAllows(state, 'press')) return false;
+      if (pausedAt !== null) return false;
       const t = now();
       const before = state;
-      let next = press(state, t);
+      const next = press(state, t);
       if (next.stats.clicks === before.stats.clicks) {
         commit(next);
         return false;
       }
-      // Passo 1 do tutorial: o 1º toque entrega a Lua e abre o aviso do passo 2 (sem sorteio).
-      const firstGrimoire = next.tutorial === 1;
-      if (firstGrimoire) next = advanceTutorial(grantTutorialGrimoire(next), 1, 2);
       commit(next);
-      if (firstGrimoire) saveNow();
+      // O passo do tutorial pode ter mudado com este toque (poeira da 1ª melhoria, barra cheia): salva na hora.
+      if (state.tutorial !== before.tutorial) saveNow();
       eventId += 1;
       emit({ type: 'press', id: eventId, gain: next.run.lastGain, combo: next.run.combo });
-      if (!firstGrimoire && !before.run.pending && next.run.pending) emit({ type: 'choice-open' });
+      if (!before.run.pending && next.run.pending) emit({ type: 'choice-open' });
       return true;
     },
 
@@ -206,13 +209,13 @@ export function createGameController({ initial, store, slot, perf = () => perfor
      * toque duplo (spec 4.7), que vale para qualquer melhoria. Devolve `true` se comprou.
      */
     buy(index: number): boolean {
-      if (pausedAt !== null || state.run.pending || !tutorialAllows(state, 'buy', index)) return false;
+      if (pausedAt !== null || state.run.pending) return false;
       const t = now();
       if (t - lastBuyAt < BUY_GUARD_SEC) return false;
       const next = buyUpgrade(state, index);
       if (next === state) return false;
       lastBuyAt = t;
-      commit(advanceTutorial(next, 4, 5));
+      commit(next);
       saveNow();
       flushAchievements();
       return true;
@@ -275,17 +278,24 @@ export function createGameController({ initial, store, slot, perf = () => perfor
     },
 
     /**
-     * Tutorial (spec 4.6): vai de `from` para `to` só se o save ainda está em `from`. Sair do passo 2
-     * ("Entendi") entrega a poeira da 1ª compra. O progresso é salvo na hora para o passo sobreviver.
+     * Tutorial (spec 4.6): passo que depende de uma ação da tela (abrir ou fechar uma página). Vai de `from`
+     * para `to` só se o save ainda está em `from`; o progresso é salvo na hora para o passo sobreviver.
      */
     tutorialStep(from: number, to: number | 'done') {
       if (state.tutorial !== from) return;
-      const moved = advanceTutorial(state, from, to);
-      commit(from === 2 ? grantTutorialDust(moved) : moved);
+      commit(advanceTutorial(state, from, to));
       saveNow();
     },
 
-    /** "Pular tutorial" e "Começar a jogar". */
+    /** O jogador viu um cartão do jogo livre (conquistas, objetos, árvore). */
+    tutorialHint(hint: TutorialHint) {
+      const next = markHintSeen(state, hint);
+      if (next === state) return;
+      commit(next);
+      saveNow();
+    },
+
+    /** "Pular tutorial": conclui tudo e libera todos os botões de uma vez. */
     tutorialSkip() {
       if (state.tutorial === 'done') return;
       commit(finishTutorial(state));
@@ -327,7 +337,7 @@ export function createGameController({ initial, store, slot, perf = () => perfor
       if (pausedAt !== null) return;
       const t = now();
       const before = state;
-      const next = tickObjects(state, t);
+      const next = settleTutorial(tickObjects(state, t));
       if (next !== state) {
         state = next;
         dirty = true;
@@ -374,6 +384,6 @@ export async function loadOrCreate(
 ): Promise<SaveState> {
   const saved = await store.load(slot);
   if (!saved) return newSave(seed, nowMs, name);
-  // Save de antes do tutorial: o passo 1 só salva depois do 1º toque, então toque com passo 1 = jogo antigo.
-  return saved.tutorial === 1 && saved.stats.clicks > 0 ? finishTutorial(saved) : saved;
+  // Save de antes do tutorial dinâmico (sem `ui`): quem já jogou entra com tudo liberado.
+  return settleTutorial(migrateTutorial(saved));
 }

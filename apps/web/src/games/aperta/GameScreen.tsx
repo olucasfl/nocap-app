@@ -4,6 +4,10 @@ import {
   formatDecimal,
   formatNumber,
   fragmentsAvailable,
+  objectsVisible,
+  pendingHint,
+  TUTORIAL,
+  unlockedButtons,
 } from '@nocap/games';
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { apertaSfx, apertaVibrate } from '@/lib/aperta-audio';
@@ -24,7 +28,7 @@ import { RegionMenu } from './RegionMenu';
 import { EventChip, EventFx, MissionChip, NewInSpace } from './StatusStrips';
 import { SpaceArtSprite } from './SpaceArtSprite';
 import { SpaceObject, type SpaceObjectKind } from './SpaceObject';
-import { FirstGrimoireModal, TutorialOverlay } from './Tutorial';
+import { TutorialCoach, TutorialInline } from './Tutorial';
 import { TreePage } from './TreePage';
 import { UpgradesPage } from './UpgradesPage';
 import type { GameController, GameEvent } from './game-controller';
@@ -45,7 +49,7 @@ import {
   togglePage,
   type PageName,
 } from './game-logic';
-import { tutorialPageAllowed, tutorialView } from './tutorial-logic';
+import { HINT_PAGE, coachView } from './tutorial-logic';
 import { useGameSnapshot } from './useApertaGame';
 import './art.css';
 import './game.css';
@@ -130,6 +134,10 @@ export function GameScreen({ controller, onExit }: Props) {
   pageRef.current = page;
   const tutorialRef = useRef(tutorial);
   tutorialRef.current = tutorial;
+  const unlocked = unlockedButtons(state);
+  const unlockedRef = useRef(unlocked);
+  unlockedRef.current = unlocked;
+  const showObjects = objectsVisible(state);
   const lanes = useRef(createLaneBook());
   const timers = useRef(new Set<number>());
   const later = useCallback((fn: () => void, ms: number) => {
@@ -217,11 +225,11 @@ export function GameScreen({ controller, onExit }: Props) {
     const ids = new Set(objects.map((o) => o.id));
     seenObjects.current = ids;
     const fresh = seen ? objects.find((o) => !seen.has(o.id)) : undefined;
-    if (fresh) {
+    if (fresh && showObjects) {
       const art = objectArt(fresh.kind);
       apertaSfx.whoosh(art === 'asteroid' || art === 'probe' ? art : undefined);
     }
-  }, [objects]);
+  }, [objects, showObjects]);
 
   const doPress = useCallback(() => {
     if (blocked.current) return;
@@ -229,9 +237,8 @@ export function GameScreen({ controller, onExit }: Props) {
   }, [controller]);
 
   const openPage = useCallback((target: PageName) => {
-    // No tutorial só abre a página do passo (a dock fora do alvo já está bloqueada; isto cobre o teclado).
-    const step = tutorialRef.current;
-    if (step !== null && !tutorialPageAllowed(step, target)) return;
+    // Botão ainda escondido pelo tutorial: nem o atalho de teclado abre a página.
+    if (!unlockedRef.current.has(target)) return;
     setPage((current) => togglePage(current, target));
     if (target === 'grimoires') {
       setFreshGrimoire(false);
@@ -265,7 +272,7 @@ export function GameScreen({ controller, onExit }: Props) {
         return;
       }
       if (e.key === 'Escape') {
-        if (pageRef.current && tutorialRef.current === null) setPage(null);
+        if (pageRef.current) setPage(null);
         return;
       }
       if (e.target instanceof Element && e.target.closest('input, textarea, select')) return;
@@ -285,10 +292,16 @@ export function GameScreen({ controller, onExit }: Props) {
     };
   }, [controller, openPage]);
 
-  // Passo 3 -> 4 quando a página de Melhorias abre; o passo fica salvo.
+  // Passos do tutorial que dependem de uma página (o resto anda sozinho pelo progresso do save).
   useEffect(() => {
-    if (tutorial === 3 && page === 'upgrades') controller.tutorialStep(3, 4);
+    if (tutorial === TUTORIAL.BACK && page === null) controller.tutorialStep(TUTORIAL.BACK, TUTORIAL.FILL);
+    else if (tutorial === TUTORIAL.GRIMOIRES && page === 'grimoires') controller.tutorialStep(TUTORIAL.GRIMOIRES, TUTORIAL.FREE);
   }, [tutorial, page, controller]);
+  // Cartão do jogo livre que apresenta uma página: abrir a página já conta como visto.
+  const pendingHintId = pendingHint(state);
+  useEffect(() => {
+    if (pendingHintId && page !== null && HINT_PAGE[pendingHintId] === page) controller.tutorialHint(pendingHintId);
+  }, [pendingHintId, page, controller]);
 
   const energy = energyView(state);
   const affordable = affordableCount(state);
@@ -297,10 +310,11 @@ export function GameScreen({ controller, onExit }: Props) {
   const fragments = fragmentsAvailable(state);
   const albumCount = state.album.length;
   const starReady = tutorial === null && collapseView(state).ready;
-  const fresh = pending ? null : newInSpaceView(state);
+  const fresh = pending || tutorial !== null ? null : newInSpaceView(state);
   const mission = missionView(state);
   const liveEvent = eventView(state, now);
   const regions = regionMenuItems(state);
+  const coach = coachView(state, page, collapseOpen || regionsOpen);
 
   // Sons de transição (estrela pronta, evento, missão, região, faixa nova): só na mudança, nunca ao montar.
   const lastCue = useRef<CueInput | null>(null);
@@ -336,7 +350,7 @@ export function GameScreen({ controller, onExit }: Props) {
             </b>
             <small>poeira</small>
           </p>
-          {regions.length > 1 && tutorial === null ? (
+          {!unlocked.has('tree') ? null : regions.length > 1 && tutorial === null ? (
             <button
               type="button"
               className="ap-hudrow ap-hudrow-2 ap-hudrow-btn"
@@ -360,8 +374,15 @@ export function GameScreen({ controller, onExit }: Props) {
         <button type="button" className="ap-hbtn ap-hbtn-ghost ap-hbtn-exit" onClick={exit}>
           Sair
         </button>
+        {tutorial !== null && !unlocked.has('tree') && (
+          <button type="button" className="ap-hbtn ap-hbtn-ghost ap-hbtn-skip" onClick={controller.tutorialSkip}>
+            Pular tutorial
+          </button>
+        )}
+        {unlocked.has('tree') && (
         <button
           type="button"
+          data-tut="tree"
           className={`ap-hbtn ap-hbtn-tree${state.collapses < 1 ? ' is-dim' : ''}`}
           aria-pressed={page === 'tree'}
           aria-label={fragments > 0 ? `Árvore de Habilidades, ${fragments} Fragmentos` : 'Árvore de Habilidades'}
@@ -374,6 +395,7 @@ export function GameScreen({ controller, onExit }: Props) {
             </span>
           )}
         </button>
+        )}
       </header>
 
       <div className="ap-banners">
@@ -460,7 +482,7 @@ export function GameScreen({ controller, onExit }: Props) {
         </div>
       </div>
 
-      <div className="ap-field ap-field-over">
+      <div className="ap-field ap-field-over" style={showObjects ? undefined : { display: 'none' }}>
         <FieldObjects state={state} now={now} paused={paused} lanes={lanes.current} onCapture={controller.capture} />
         <div className="ap-capfx" aria-hidden="true">
           {captures.map((c) => (
@@ -491,20 +513,25 @@ export function GameScreen({ controller, onExit }: Props) {
         <b className={energy.hot ? 'is-hot' : undefined}>{energy.label}</b>
       </aside>
 
+      {(unlocked.has('achievements') || unlocked.has('grimoires') || unlocked.has('upgrades')) && (
       <nav className="ap-dock" aria-label="Menu do jogo">
+        {unlocked.has('achievements') && (
         <button
           type="button"
-          className={`ap-dockb${page === 'achievements' ? ' on' : ''}`}
+          data-tut="dock-achievements"
+          className={`ap-dockb ap-dock-in${page === 'achievements' ? ' on' : ''}`}
           aria-label={PAGE_TITLE.achievements}
           aria-pressed={page === 'achievements'}
           onClick={() => openPage('achievements')}
         >
           <PageIcon name="achievements" className="ap-dock-i" />
         </button>
+        )}
+        {unlocked.has('grimoires') && (
         <button
           type="button"
           data-tut="dock-grimoires"
-          className={`ap-dockb${page === 'grimoires' ? ' on' : ''}`}
+          className={`ap-dockb ap-dock-in${page === 'grimoires' ? ' on' : ''}`}
           aria-label={freshGrimoire ? 'Grimórios, tem novidade' : PAGE_TITLE.grimoires}
           aria-pressed={page === 'grimoires'}
           onClick={() => openPage('grimoires')}
@@ -516,10 +543,12 @@ export function GameScreen({ controller, onExit }: Props) {
             </span>
           )}
         </button>
+        )}
+        {unlocked.has('upgrades') && (
         <button
           type="button"
           data-tut="dock-upgrades"
-          className={`ap-dockb ap-dockb-big${page === 'upgrades' ? ' on' : ''}`}
+          className={`ap-dockb ap-dockb-big ap-dock-in${page === 'upgrades' ? ' on' : ''}`}
           aria-label={affordable > 0 ? `Melhorias, ${affordable} para comprar` : PAGE_TITLE.upgrades}
           aria-pressed={page === 'upgrades'}
           onClick={() => openPage('upgrades')}
@@ -531,7 +560,9 @@ export function GameScreen({ controller, onExit }: Props) {
             </span>
           )}
         </button>
+        )}
       </nav>
+      )}
 
       {page && (
         <GamePage
@@ -558,6 +589,7 @@ export function GameScreen({ controller, onExit }: Props) {
           onConfirm={controller.choose}
           onReroll={controller.reroll}
           gain={gaiaPreviews(state, pending.offers)}
+          coach={coach?.inline ? <TutorialInline view={coach} onSkip={controller.tutorialSkip} /> : undefined}
         />
       )}
 
@@ -582,15 +614,12 @@ export function GameScreen({ controller, onExit }: Props) {
         </div>
       )}
 
-      {tutorial === 2 && <FirstGrimoireModal onDone={() => controller.tutorialStep(2, 3)} />}
-      {tutorial !== null && (
-        <TutorialOverlay
-          view={tutorialView(tutorial, page)}
+      {coach && !coach.inline && (
+        <TutorialCoach
+          view={coach}
+          onDismiss={() => coach.dismiss && controller.tutorialHint(coach.dismiss)}
           onSkip={controller.tutorialSkip}
-          onFinish={() => {
-            apertaSfx.win();
-            controller.tutorialSkip();
-          }}
+          skipInCard={unlocked.has('tree')}
         />
       )}
     </section>

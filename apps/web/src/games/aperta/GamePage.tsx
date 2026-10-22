@@ -44,7 +44,7 @@ export function GamePage({ name, notice, onClose, children }: Props) {
             <PageIcon name={name} />
           </span>
           <h2 id={`ap-sheet-${name}`}>{PAGE_TITLE[name]}</h2>
-          <button type="button" className="ap-x" aria-label={`Fechar ${PAGE_TITLE[name]}`} onClick={onClose}>
+          <button type="button" className="ap-x" data-tut="page-close" aria-label={`Fechar ${PAGE_TITLE[name]}`} onClick={onClose}>
             X
           </button>
         </header>

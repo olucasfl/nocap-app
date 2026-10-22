@@ -74,7 +74,7 @@ export function TitleArt() {
 
 const INK = '#02030a';
 
-/** As 4 ilustrações da história: estação, botão, estrela acendendo, planetas. */
+/** As 3 primeiras ilustrações da história: estação, botão, estrela acendendo (a 4ª tela mostra grimórios, ver StoryScreen). */
 export function StoryScene({ index }: { index: number }) {
   return (
     <svg className="ap-scene" viewBox="0 0 440 190" aria-hidden="true">
@@ -83,31 +83,6 @@ export function StoryScene({ index }: { index: number }) {
           <stop offset=".45" stopColor="#000" stopOpacity="0" />
           <stop offset="1" stopColor="#000" stopOpacity=".55" />
         </radialGradient>
-        <radialGradient id="ap-g-mars" cx="35%" cy="30%" r="80%">
-          <stop offset="0" stopColor="#ff9a6b" />
-          <stop offset="1" stopColor="#8f2d12" />
-        </radialGradient>
-        <radialGradient id="ap-g-jup" cx="35%" cy="30%" r="80%">
-          <stop offset="0" stopColor="#f3d8ae" />
-          <stop offset="1" stopColor="#a8683a" />
-        </radialGradient>
-        <radialGradient id="ap-g-sat" cx="35%" cy="30%" r="80%">
-          <stop offset="0" stopColor="#fbe8b6" />
-          <stop offset="1" stopColor="#b88a3e" />
-        </radialGradient>
-        <radialGradient id="ap-g-nep" cx="35%" cy="30%" r="80%">
-          <stop offset="0" stopColor="#9cc3ff" />
-          <stop offset="1" stopColor="#173a94" />
-        </radialGradient>
-        <radialGradient id="ap-g-moon" cx="35%" cy="30%" r="80%">
-          <stop offset="0" stopColor="#f6f8fd" />
-          <stop offset="1" stopColor="#8c94a8" />
-        </radialGradient>
-        <linearGradient id="ap-g-ring" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0" stopColor="#8a6a2e" />
-          <stop offset=".5" stopColor="#f3d58e" />
-          <stop offset="1" stopColor="#8a6a2e" />
-        </linearGradient>
       </defs>
       {index === 0 && (
         <g>
@@ -144,20 +119,6 @@ export function StoryScene({ index }: { index: number }) {
           <circle className="ap-blink" cx="340" cy="60" r="3" fill="#fff" />
           <circle className="ap-blink" cx="360" cy="140" r="2" fill="#fff" />
           <circle className="ap-blink" cx="70" cy="130" r="2" fill="#fff" />
-        </g>
-      )}
-      {index === 3 && (
-        <g>
-          <circle cx="70" cy="100" r="22" fill="url(#ap-g-mars)" />
-          <circle cx="130" cy="86" r="30" fill="url(#ap-g-jup)" />
-          <g transform="rotate(-18 210 96)">
-            <ellipse cx="210" cy="96" rx="48" ry="12" fill="none" stroke="url(#ap-g-ring)" strokeWidth="5" />
-            <circle cx="210" cy="96" r="22" fill="url(#ap-g-sat)" />
-          </g>
-          <circle cx="290" cy="90" r="26" fill="url(#ap-g-nep)" />
-          <circle cx="360" cy="100" r="16" fill="url(#ap-g-moon)" />
-          <circle cx="70" cy="100" r="22" fill="url(#ap-g-shade)" />
-          <circle cx="130" cy="86" r="30" fill="url(#ap-g-shade)" />
         </g>
       )}
     </svg>

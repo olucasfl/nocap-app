@@ -1,27 +1,58 @@
 import { UPGRADES } from './catalog';
-import { clampNum, nextUpgradeCost, type SaveState } from './engine';
+import { nextUpgradeCost, type SaveState } from './engine';
 
-/** Passos do tutorial guiado (spec 038, seção 4.6). `SaveState.tutorial` guarda o passo atual ou 'done'. */
-export const TUTORIAL_STEPS = 5;
-/** O grimório do tutorial é sempre a Lua. */
-export const TUTORIAL_GRIMOIRE = 'moon';
-/** A melhoria do passo 4. */
-export const TUTORIAL_UPGRADE_ID = 'pulse';
+/**
+ * Tutorial dinâmico do Aperta! (spec 038, seção 4.6): o jogador age, a tela reage e o passo só avança por
+ * ação. `SaveState.tutorial` guarda o passo atual ou 'done'; `SaveState.ui` guarda o que já apareceu.
+ *
+ *  1 TOUCH      só o botão central: "Toque aqui para ganhar poeira"
+ *  2 UPGRADE    poeira da 1ª melhoria juntada: surge Melhorias; abrir a página e comprar
+ *  3 BACK       comprou: fechar a página e voltar a tocar
+ *  4 FILL       tocar até a barra de energia encher
+ *  5 CHOOSE     a escolha do 1º grimório abriu: surge Grimórios; cartão explica a escolha
+ *  6 GRIMOIRES  abrir a página de Grimórios
+ *  7 FREE       jogo livre; cartões curtos por gatilho (conquista, objeto) e, por último, a árvore
+ */
+export const TUTORIAL = { TOUCH: 1, UPGRADE: 2, BACK: 3, FILL: 4, CHOOSE: 5, GRIMOIRES: 6, FREE: 7 } as const;
+/** Último passo guiado (os passos 1 a 6 são seguidos; o 7 só mostra cartões por gatilho). */
+export const TUTORIAL_STEPS = TUTORIAL.GRIMOIRES;
 
-/** Poeira que o tutorial entrega de uma vez (a 1ª compra do Pulso Solar): a validação do ritmo a perdoa. */
-export const TUTORIAL_DUST_ALLOWANCE = UPGRADES.find((u) => u.id === TUTORIAL_UPGRADE_ID)?.base ?? 0;
+/** Botões que nascem escondidos e vão surgindo com o tutorial. Os objetos no espaço aparecem no passo 7. */
+export type UiButton = 'upgrades' | 'grimoires' | 'achievements' | 'tree';
+export const UI_BUTTONS: readonly UiButton[] = ['upgrades', 'grimoires', 'achievements', 'tree'];
+
+/** Cartões do passo 7: cada um tem um gatilho, menos a árvore, que vem por último. */
+export type TutorialHint = 'achievements' | 'objects' | 'tree';
+export const TUTORIAL_HINTS: readonly TutorialHint[] = ['achievements', 'objects', 'tree'];
+
+/**
+ * A 1ª conquista ("Primeiro toque") cai no 1º toque, no meio do passo 1, e ninguém a vê. O cartão de
+ * Conquistas espera a seguinte, que chega com o aviso na tela.
+ */
+export const ACHIEVEMENT_HINT_AT = 2;
+
+export interface UiState {
+  /** Botões já liberados pelo tutorial (quem pula ou tem progresso antigo vê todos, ver `unlockedButtons`). */
+  unlocked: UiButton[];
+  /** Cartões do passo 7 já vistos. */
+  hints: TutorialHint[];
+}
+
+export const freshUi = (): UiState => ({ unlocked: [], hints: [] });
 
 export function tutorialActive(state: SaveState): boolean {
   return state.tutorial !== 'done';
 }
 
-/** Passo atual (1 a 5) ou `null` com o tutorial concluído. */
+/** Passo atual (1 a 7) ou `null` com o tutorial concluído. */
 export function tutorialStep(state: SaveState): number | null {
-  return state.tutorial === 'done' ? null : Math.min(TUTORIAL_STEPS, Math.max(1, state.tutorial));
+  return state.tutorial === 'done' ? null : Math.min(TUTORIAL.FREE, Math.max(1, state.tutorial));
 }
 
-export function tutorialUpgradeIndex(): number {
-  return UPGRADES.findIndex((u) => u.id === TUTORIAL_UPGRADE_ID);
+/** Os objetos no espaço só aparecem a partir do jogo livre (antes disso a tela é só o botão). */
+export function objectsVisible(state: SaveState): boolean {
+  const step = tutorialStep(state);
+  return step === null || step >= TUTORIAL.FREE;
 }
 
 /** Vai para o passo `to` só se o save está em `from`: uma transição repetida (duplo toque) não pula passos. */
@@ -30,51 +61,110 @@ export function advanceTutorial(state: SaveState, from: number, to: number | 'do
   return { ...state, tutorial: to };
 }
 
-/** "Pular tutorial" e "Começar a jogar": marca como feito. */
+/** "Pular tutorial": marca como feito, e com isso todos os botões aparecem de uma vez. */
 export function finishTutorial(state: SaveState): SaveState {
   return state.tutorial === 'done' ? state : { ...state, tutorial: 'done' };
 }
 
-/**
- * Passo 1: o primeiro toque já entrega a Lua, sem sorteio nem espera. Conta como uma escolha de verdade
- * (álbum, nível, contagem de escolhas), zera a barra e fecha qualquer escolha que o toque tenha aberto.
- */
-export function grantTutorialGrimoire(state: SaveState): SaveState {
-  const run = state.run;
-  const current = run.build[TUTORIAL_GRIMOIRE] ?? 0;
-  return {
-    ...state,
-    run: {
-      ...run,
-      build: { ...run.build, [TUTORIAL_GRIMOIRE]: Math.max(1, current) },
-      picks: run.picks + (current === 0 ? 1 : 0),
-      energy: 0,
-      pending: null,
-    },
-    album: state.album.includes(TUTORIAL_GRIMOIRE) ? state.album : [...state.album, TUTORIAL_GRIMOIRE],
-    stats: { ...state.stats, picks: state.stats.picks + (current === 0 ? 1 : 0) },
-  };
+const totalUpgradeLevels = (state: SaveState) => state.run.upgradeLevels.reduce((sum, lvl) => sum + lvl, 0);
+
+/** Alguma melhoria já cabe na poeira de agora? (o gatilho do passo 1; o preço vem do motor) */
+export function canAffordUpgrade(state: SaveState): boolean {
+  return affordableUpgradeIndex(state) !== null;
 }
 
-/** Passo 2: completa a poeira que falta para a 1ª compra do Pulso Solar (nunca tira poeira). */
-export function grantTutorialDust(state: SaveState): SaveState {
-  const cost = nextUpgradeCost(state, tutorialUpgradeIndex());
-  if (cost === null || state.run.dust >= cost) return state;
-  const missing = cost - state.run.dust;
-  return {
-    ...state,
-    run: { ...state.run, dust: clampNum(cost), dustLife: clampNum(state.run.dustLife + missing) },
-    stats: { ...state.stats, dustTotal: clampNum(state.stats.dustTotal + missing) },
-  };
+/** A melhoria mais barata que já dá para comprar: a que o tutorial manda comprar. */
+export function affordableUpgradeIndex(state: SaveState): number | null {
+  let best: number | null = null;
+  let bestCost = Infinity;
+  for (let i = 0; i < UPGRADES.length; i++) {
+    const cost = nextUpgradeCost(state, i);
+    if (cost !== null && state.run.dust >= cost && cost < bestCost) {
+      best = i;
+      bestCost = cost;
+    }
+  }
+  return best;
+}
+
+/** O cartão do passo 7 que está na vez (ou `null`): conquista e objeto por gatilho, a árvore por último. */
+export function pendingHint(state: SaveState): TutorialHint | null {
+  if (state.tutorial !== TUTORIAL.FREE) return null;
+  const seen = state.ui.hints;
+  if (!seen.includes('achievements') && state.achievements.length >= ACHIEVEMENT_HINT_AT) return 'achievements';
+  if (!seen.includes('objects') && state.run.objects.length > 0) return 'objects';
+  if (!seen.includes('tree') && seen.includes('achievements') && seen.includes('objects')) return 'tree';
+  return null;
+}
+
+/** Botão que o cartão `hint` apresenta (o de objetos não tem botão). */
+export function hintButton(hint: TutorialHint): UiButton | null {
+  return hint === 'objects' ? null : hint;
+}
+
+/** Marca um cartão como visto; com os três vistos, o tutorial termina. */
+export function markHintSeen(state: SaveState, hint: TutorialHint): SaveState {
+  if (state.tutorial === 'done' || state.ui.hints.includes(hint)) return state;
+  const hints = [...state.ui.hints, hint];
+  const ui = { ...state.ui, hints };
+  return TUTORIAL_HINTS.every((h) => hints.includes(h)) ? { ...state, ui, tutorial: 'done' } : { ...state, ui };
+}
+
+function unlock(state: SaveState, ...buttons: UiButton[]): SaveState {
+  const missing = buttons.filter((b) => !state.ui.unlocked.includes(b));
+  return missing.length === 0 ? state : { ...state, ui: { ...state.ui, unlocked: [...state.ui.unlocked, ...missing] } };
+}
+
+function settleOnce(state: SaveState): SaveState {
+  const step = state.tutorial;
+  if (step === 'done') return state;
+  const pending = state.run.pending !== null;
+
+  // A barra pode encher antes do que o roteiro previa (toques sem comprar): pula direto para a escolha.
+  if (step < TUTORIAL.CHOOSE && pending) return unlock({ ...state, tutorial: TUTORIAL.CHOOSE }, 'upgrades', 'grimoires');
+  if (step === TUTORIAL.TOUCH && canAffordUpgrade(state)) return unlock({ ...state, tutorial: TUTORIAL.UPGRADE }, 'upgrades');
+  if (step === TUTORIAL.UPGRADE && totalUpgradeLevels(state) > 0) return { ...state, tutorial: TUTORIAL.BACK };
+  if (step === TUTORIAL.CHOOSE && !pending && state.run.picks > 0) return unlock({ ...state, tutorial: TUTORIAL.GRIMOIRES }, 'grimoires');
+  if (step === TUTORIAL.FREE) {
+    const hint = pendingHint(state);
+    const button = hint ? hintButton(hint) : null;
+    if (button) return unlock(state, button);
+  }
+  return state;
 }
 
 /**
- * O que o motor permite durante o tutorial: no passo 1 só o toque, no 4 só a compra do Pulso Solar,
- * nos outros nada. Com o tutorial concluído, tudo.
+ * Aplica as transições que dependem só do progresso (poeira juntada, compra feita, escolha aberta ou feita,
+ * gatilhos do passo 7). O controlador chama depois de cada mudança; devolve o mesmo objeto se nada mudou.
  */
-export function tutorialAllows(state: SaveState, action: 'press' | 'buy', upgradeIndex?: number): boolean {
-  const step = tutorialStep(state);
-  if (step === null) return true;
-  if (action === 'press') return step === 1;
-  return step === 4 && upgradeIndex === tutorialUpgradeIndex();
+export function settleTutorial(state: SaveState): SaveState {
+  let current = state;
+  for (let i = 0; i < 8; i++) {
+    const next = settleOnce(current);
+    if (next === current) return current;
+    current = next;
+  }
+  return current;
+}
+
+/**
+ * Botões visíveis. Com o tutorial concluído (ou pulado) são todos; durante ele valem os liberados e o que o
+ * progresso já provou (comprou melhoria, tem grimório), para o save não esconder o que a pessoa já usou.
+ */
+export function unlockedButtons(state: SaveState): ReadonlySet<UiButton> {
+  if (state.tutorial === 'done') return new Set(UI_BUTTONS);
+  const set = new Set<UiButton>(state.ui.unlocked);
+  if (totalUpgradeLevels(state) > 0) set.add('upgrades');
+  if (state.album.length > 0 || state.run.picks > 0) set.add('grimoires');
+  return set;
+}
+
+/**
+ * Save de antes do tutorial dinâmico (sem `ui`): quem já tocou entra com tudo liberado (tutorial concluído),
+ * mesmo parado num passo do roteiro antigo, cujos números mudaram; quem nunca tocou começa do passo 1.
+ */
+export function migrateTutorial(save: SaveState): SaveState {
+  if ((save as Partial<SaveState>).ui !== undefined) return save;
+  const played = save.stats.clicks > 0 || save.run.clicks > 0;
+  return { ...save, ui: freshUi(), tutorial: save.tutorial === 'done' || played ? 'done' : 1 };
 }

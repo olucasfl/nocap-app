@@ -12,7 +12,9 @@ const html = (el: React.ReactElement) => renderToStaticMarkup(el);
 const noop = () => {};
 
 function screen(mutate?: (s: ReturnType<typeof newSave>) => ReturnType<typeof newSave>) {
-  const initial = mutate ? mutate(newSave('teste', 0)) : newSave('teste', 0);
+  // Jogo já com o tutorial concluído (o tutorial tem testes próprios em tutorial.test.tsx).
+  const base = { ...newSave('teste', 0), tutorial: 'done' as const };
+  const initial = mutate ? mutate(base) : base;
   const controller = createGameController({ initial, store: createMemoryGameStore(), slot: 1 });
   return html(<GameScreen controller={controller} onExit={noop} />);
 }
