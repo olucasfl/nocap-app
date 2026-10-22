@@ -1,6 +1,6 @@
 # 039 · Aperta!: economia v2 (toque conquistado, geradores e raros)
 
-Status: **rascunho (22/10/2026)**, à espera do "sim" do Lucas nas decisões da seção 9. Nada foi implementado. Quando aprovada, **substitui a seção 5.1 da spec 038** (melhorias) e obriga a recalibrar a seção 6.6 (vidas).
+Status: **aprovada pelo Lucas em 22/10/2026** (decisões da seção 9 resolvidas). Em implementação na branch `claude/aperta-economia-v2`; nada na `develop` até as etapas A e B fecharem juntas.
 
 ## 1. Por que
 
@@ -88,9 +88,9 @@ Além dos de poeira, a aba Geradores tem uma fileira de **geradores de energia**
 
 ## 6. Revelação e indicações
 
-- Cada aba mostra a 1ª melhoria e **um "???" com só o preço**; o nome e o efeito aparecem quando a poeira chega a **60% do preço**.
+- Cada aba mostra a 1ª melhoria e **um "???" com só o preço**; o nome e o efeito aparecem quando a poeira chega a **70% do preço**.
 - Ao comprar ou liberar uma, a próxima sai do escuro e a seguinte vira "???".
-- Bolinha de aviso no botão Melhorias quando algo cabe no bolso; faixa "Novo" e seta do tutorial **uma vez por categoria** (geradores, toque, marcos).
+- Ícone com número ("1", "2"...) no botão Melhorias e em cada aba quando há melhoria nova para ver ou que cabe no bolso; faixa "Novo" e seta do tutorial **uma vez por categoria** (geradores, toque, marcos).
 - O tutorial atual (passos 1 a 7) é ajustado: a "1ª melhoria" passa a ser o Satélite de 15.
 
 ## 7. Grimórios (mesmas regras de escolha, novos efeitos)
@@ -111,12 +111,12 @@ Grimório não dá "+X por toque" direto; dá multiplicadores, janelas e sorte. 
 - **Raros** (nome a definir; ex.: Estrela Dourada): intervalo base de **8 min** (±25%), duram **10 s**, efeitos sorteados: Frenesi (toque ×7 por 30 s), Chuva de poeira (~15 min de produção de uma vez) e Ressonância (geradores a 100% mesmo parado por 60 s).
 - **Freio contra abuso:** o intervalo entre raros **nunca cai abaixo de 5 min**, mesmo empilhando grimórios; o efeito do raro nunca excede ~15 min de produção. Sorteio pelo tempo de jogo, não pelo `rngState` das cartas.
 
-## 9. Decisões em aberto (do Lucas)
+## 9. Decisões do Lucas (22/10/2026)
 
-1. **Ritmo ativo (100% tocando, 25% parado) mais o teto de 35%,** ou só o teto?
-2. **Zerar os saves do Aperta! (só o do Lucas existe) ou migrar?** Recomendo zerar: a economia muda por inteiro.
-3. **Revelar a melhoria a 60% do preço** está bom, ou prefere outro ponto?
-4. **Nomes** dos geradores e do raro.
+1. **Ritmo ativo e teto, os dois juntos:** os geradores são mais fortes enquanto a pessoa clica.
+2. **Zerar todos os saves** do Aperta! (sem migração; `validateSave` rejeita o formato antigo e o jogo começa do zero).
+3. **Revelação a 70% do preço.** Quando algo novo é desbloqueado numa aba de Melhorias, aparecem **ícones com número** (ex.: "2") no botão Melhorias e na aba, dizendo quantas coisas há para ver.
+4. **Nomes:** os provisórios das seções 3, 4 e 8 valem; o Lucas troca depois.
 
 ## 10. Etapas (depois da aprovação)
 
