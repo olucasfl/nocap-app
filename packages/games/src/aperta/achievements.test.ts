@@ -146,6 +146,21 @@ describe('colapsos e árvore', () => {
     expect(has(next, 'collapse-5')).toBe(false);
   });
 
+  it('"Saí do Sistema Solar" só no colapso que abre Alfa Centauro e "Atlas com 4 páginas" com 4 páginas', () => {
+    const solar = (collapses: number) => awardAchievements({ ...newSave('a'), collapses });
+    expect(has(solar(4), 'leave-solar')).toBe(false);
+    expect(has(solar(5), 'leave-solar')).toBe(true);
+
+    const page = (grimoireId: string) => ({ grimoireId, level: 1 });
+    const withPages = (n: number) => {
+      const s = newSave('a');
+      const pages = ['moon', 'mars', 'venus', 'mercury'].slice(0, n).map(page);
+      return awardAchievements({ ...s, atlas: { ...s.atlas, pages } as SaveState['atlas'] });
+    };
+    expect(has(withPages(3), 'atlas-4')).toBe(false);
+    expect(has(withPages(4), 'atlas-4')).toBe(true);
+  });
+
   it('comprar o 1º nó, completar um ramo e refazer (escondida)', () => {
     let s: SaveState = { ...newSave('a'), collapses: 1, fragments: { earned: 20, spent: 0 } };
     const branch = (TREE[0] as { id: string }).id;

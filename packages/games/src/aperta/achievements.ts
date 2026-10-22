@@ -3,7 +3,7 @@
 // números, e o id ganho fica em `save.achievements` (nunca sai, nem se a árvore for refeita).
 // Sem recompensa de poder na v1 (decisão 14.16).
 
-import { FAMILIES, RARITIES, TREE, grimoireById } from './catalog';
+import { FAMILIES, RARITIES, REGIONS, TREE, grimoireById } from './catalog';
 import { GRIMOIRE_MAX_LEVEL } from './economy';
 import type { SaveState } from './engine';
 
@@ -91,6 +91,15 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
   def('collapse-10', 'collapses', 'Dez colapsos', 'Colapse a estrela 10 vezes.', 10, collapses),
   def('collapse-25', 'collapses', 'Veterana do espaço', 'Colapse a estrela 25 vezes.', 25, collapses),
   def('collapse-50', 'collapses', 'Lenda de Perigeu', 'Colapse a estrela 50 vezes.', 50, collapses),
+  def('atlas-4', 'collapses', 'Atlas com 4 páginas', 'Guarde 4 páginas no Atlas.', 4, (s) => s.atlas.pages.length),
+  def(
+    'leave-solar',
+    'collapses',
+    'Saí do Sistema Solar',
+    'Chegue a Alfa Centauro, a primeira região fora do Sistema Solar.',
+    1,
+    (s) => (s.collapses >= (REGIONS.find((r) => r.id === 'alpha-centauri')?.unlockedAtCollapse ?? Infinity) ? 1 : 0),
+  ),
   def(
     'atlas-families',
     'collapses',
