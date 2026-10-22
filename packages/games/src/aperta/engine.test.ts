@@ -1110,20 +1110,20 @@ describe('colapso', () => {
 
   it('cada colapso destrava exatamente as linhas da tabela 5.4', () => {
     const expected: Record<number, string[]> = {
-      1: ['pallas', 'hygiea'],
-      2: ['callisto', 'enceladus'],
-      3: ['eris', 'haumea', 'cygnus-x1'],
-      4: ['sedna', 'hale-bopp'],
-      5: ['proxima-centauri', 'alpha-centauri-a', 'm87'],
+      1: ['pallas', 'hygiea', 'ryugu', 'kepler-22b'],
+      2: ['callisto', 'enceladus', 'horsehead', 'golden-record'],
+      3: ['eris', 'haumea', 'cygnus-x1', 'trappist-1', 'aldebaran'],
+      4: ['sedna', 'hale-bopp', 'oumuamua', 'vela-pulsar'],
+      5: ['proxima-centauri', 'alpha-centauri-a', 'm87', 'pleiades-cluster', 'sombrero', 'pillars'],
     };
     for (let c = 1; c <= 5; c++) {
       const before = new Set(unlockedContent({ ...newSave('u'), collapses: c - 1 }).grimoires.map((g) => g.id));
       const now = unlockedContent({ ...newSave('u'), collapses: c }).grimoires.map((g) => g.id);
       expect(now.filter((id) => !before.has(id)).sort()).toEqual([...(expected[c] as string[])].sort());
     }
-    expect(unlockedContent({ ...newSave('u'), collapses: 0 }).grimoires).toHaveLength(28);
+    expect(unlockedContent({ ...newSave('u'), collapses: 0 }).grimoires).toHaveLength(35);
     expect(unlockedContent({ ...newSave('u'), collapses: 5 }).grimoires).toHaveLength(GRIMOIRES.length);
-    expect(GRIMOIRES).toHaveLength(40);
+    expect(GRIMOIRES).toHaveLength(58);
     expect(unlockedContent({ ...newSave('u'), collapses: 5 }).regions).toHaveLength(6);
   });
 
@@ -1308,7 +1308,7 @@ describe('robustez numérica', () => {
       expect(g.effects.length).toBeGreaterThan(0);
       expect(g.text.length).toBeGreaterThan(0);
     }
-    expect(GRIMOIRES.filter((g) => g.rarity === 'common' && g.unlockedAtCollapse === 0)).toHaveLength(10);
+    expect(GRIMOIRES.filter((g) => g.rarity === 'common' && g.unlockedAtCollapse === 0)).toHaveLength(13);
     expect(GRIMOIRES.filter((g) => g.rarity === 'forbidden')).toHaveLength(3);
   });
 });

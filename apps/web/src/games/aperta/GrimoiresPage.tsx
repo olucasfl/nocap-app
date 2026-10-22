@@ -4,6 +4,7 @@ import { AtlasSection } from './AtlasSection';
 import { favoriteOpen } from './content-logic';
 import { GrimoireBook } from './GrimoireBook';
 import { albumView, astroFor } from './game-logic';
+import { CategoryTag } from './CategoryTag';
 import { RARITY_LABEL } from './rarity';
 
 /** Página de Grimórios (spec 038, 3.5): álbum com os escondidos trancados e o Atlas Eterno. */
@@ -43,6 +44,7 @@ export function GrimoiresPage({
             />
             <span className="ap-album-name">{e.name}</span>
             {e.discovered && <span className="ap-pick-rar">{RARITY_LABEL[e.rarity]}</span>}
+            {e.discovered && <CategoryTag category={e.category} />}
             <span className="ap-album-fx">{e.text}</span>
             {e.level > 0 && <span className="ap-album-lv">Nível {e.level}</span>}
             {canFavorite && e.discovered && (

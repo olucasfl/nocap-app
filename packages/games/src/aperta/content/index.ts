@@ -48,6 +48,7 @@ export const COLLAPSE_CONTENT: readonly CollapseContent[] = [
       'europa', 'titan', 'jupiter', 'saturn', 'neptune', 'ganymede', 'pluto', 'triton',
       'sirius', 'vega', 'betelgeuse', 'polaris', 'antares', 'crab-nebula',
       'orion-nebula', 'milky-way', 'andromeda', 'sagittarius-a',
+      'earth', 'sun', 'deimos', 'charon', 'tethys', 'rigel', 'voyager-1',
     ],
     upgrades: [
       'lens', 'gloves', 'trained', 'rhythm', 'magnet', 'hands', 'charged', 'luck', 'cadence', 'kepler', 'lens2', 'echo',
@@ -58,25 +59,25 @@ export const COLLAPSE_CONTENT: readonly CollapseContent[] = [
     mechanics: [],
     events: [],
   },
-  { region: 'asteroid-belt', grimoires: ['pallas', 'hygiea'], upgrades: ['webb'], objects: ['asteroid'], mechanics: [], events: [] },
+  { region: 'asteroid-belt', grimoires: ['pallas', 'hygiea', 'ryugu', 'kepler-22b'], upgrades: ['webb'], objects: ['asteroid'], mechanics: [], events: [] },
   {
     region: 'jupiter-saturn',
-    grimoires: ['callisto', 'enceladus'],
+    grimoires: ['callisto', 'enceladus', 'horsehead', 'golden-record'],
     upgrades: [],
     objects: ['probe'],
     mechanics: ['favorite'],
     events: ['meteor-shower'],
   },
-  { region: 'kuiper-belt', grimoires: ['eris', 'haumea', 'cygnus-x1'], upgrades: ['chandra'], objects: [], mechanics: [], events: [] },
+  { region: 'kuiper-belt', grimoires: ['eris', 'haumea', 'cygnus-x1', 'trappist-1', 'aldebaran'], upgrades: ['chandra'], objects: [], mechanics: [], events: [] },
   {
     region: 'oort-cloud',
-    grimoires: ['sedna', 'hale-bopp'],
+    grimoires: ['sedna', 'hale-bopp', 'oumuamua', 'vela-pulsar'],
     upgrades: [],
     objects: [],
     mechanics: ['missions'],
     events: ['solar-storm'],
   },
-  { region: 'alpha-centauri', grimoires: ['proxima-centauri', 'alpha-centauri-a', 'm87'], upgrades: ['gaia'], objects: [], mechanics: [], events: [] },
+  { region: 'alpha-centauri', grimoires: ['proxima-centauri', 'alpha-centauri-a', 'm87', 'pleiades-cluster', 'sombrero', 'pillars'], upgrades: ['gaia'], objects: [], mechanics: [], events: [] },
 ];
 
 /** Último colapso com conteúdo nesta versão (v1). */

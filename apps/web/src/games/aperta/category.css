@@ -1,0 +1,24 @@
+/* Categoria dos grimórios (spec 039): um selo com a cor e o nome, para a pessoa ver de longe o que a carta ajuda. */
+.ap-cat {
+  display: inline-block;
+  padding: 1px 8px;
+  border: 2px solid var(--cat, var(--space-line));
+  border-radius: 999px;
+  color: var(--cat, var(--space-muted));
+  font: 700 10px var(--space-font-display);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.ap-cat[data-cat='touch'] {
+  --cat: var(--space-gold);
+}
+.ap-cat[data-cat='objects'] {
+  --cat: var(--space-cyan);
+}
+.ap-cat[data-cat='generators'] {
+  --cat: var(--space-blue);
+}
+.ap-cat[data-cat='luck'] {
+  --cat: var(--space-violet);
+}

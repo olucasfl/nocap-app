@@ -107,7 +107,12 @@ function income(stats: EffectiveStats, profile: Profile, objectKinds: readonly O
   return {
     // O simulador toca sem parar, então os geradores rendem no ritmo ativo (com o teto).
     dust: tps * perTouch + objectDust + Math.min(stats.autoDustPerSec, stats.autoDustCap),
-    energy: tps * touchEnergy * 1 + objectEnergy + Math.min(stats.autoEnergyPerSec, stats.autoEnergyCap),
+    energy:
+      tps * touchEnergy * 1 +
+      objectEnergy +
+      Math.min(stats.autoEnergyPerSec, stats.autoEnergyCap) +
+      // A poeira dos geradores também enche a barra (como toques, a uma fração da energia do toque).
+      (Math.min(stats.autoDustPerSec, stats.autoDustCap) / Math.max(1, stats.dustPerTouch)) * stats.energyPerTouch * 0.25,
   };
 }
 

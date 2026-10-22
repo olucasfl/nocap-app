@@ -80,8 +80,8 @@ describe('tabela de conteúdo por colapso (spec 5.4)', () => {
     expect(sorted(inTable)).toEqual(sorted(GRIMOIRES.map((g) => g.id)));
   });
 
-  it('os totais do lançamento batem: 40 grimórios, 6 regiões, 5 objetos, 29 melhorias, 2 eventos', () => {
-    expect(GRIMOIRES).toHaveLength(40);
+  it('os totais do lançamento batem: 58 grimórios, 6 regiões, 5 objetos, 29 melhorias, 2 eventos', () => {
+    expect(GRIMOIRES).toHaveLength(58);
     expect(REGIONS).toHaveLength(6);
     expect(OBJECTS).toHaveLength(5);
     expect(UPGRADES).toHaveLength(29);
@@ -90,8 +90,8 @@ describe('tabela de conteúdo por colapso (spec 5.4)', () => {
     expect(COLLAPSE_CONTENT.flatMap((r) => r.mechanics)).toEqual(['favorite', 'missions']);
   });
 
-  it('cada colapso novo traz 2 grimórios (mais o proibido dos colapsos 3 e 5) e uma região', () => {
-    expect(COLLAPSE_CONTENT.slice(1).map((r) => r.grimoires.length)).toEqual([2, 2, 3, 2, 3]);
+  it('cada colapso novo traz 4 a 6 grimórios (um deles proibido nos colapsos 3 e 5) e uma região', () => {
+    expect(COLLAPSE_CONTENT.slice(1).map((r) => r.grimoires.length)).toEqual([4, 4, 5, 4, 6]);
     expect(COLLAPSE_CONTENT.slice(1).every((r) => r.region)).toBe(true);
   });
 

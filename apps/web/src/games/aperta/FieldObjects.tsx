@@ -26,7 +26,7 @@ function FieldObject({ object, state, now, paused, lanes, onCapture }: ItemProps
   const elapsed = useRef(Math.max(0, now - object.bornAt));
   const slot = lanes.slot(object.id);
   const art = objectArt(object.kind);
-  const reward = rewardText(objectPreview(state, object.kind));
+  const reward = rewardText(objectPreview(state, object.kind, object.power));
   const life = object.expiresAt - object.bornAt;
   const pinned = pinsFirstObject(state);
   const style = {
@@ -94,8 +94,8 @@ export function SignalChip({ signal, paused }: { signal: SignalView; paused: boo
   const total = useRef(Math.max(signal.remaining, 0.1));
   const mult = formatDecimal(signal.mult, 1);
   return (
-    <div className="ap-signal" role="status" aria-label={`Sinal forte x${mult} ativo`}>
-      <b>Sinal forte x{mult}</b>
+    <div className="ap-signal" role="status" aria-label={`${signal.mult >= 5 ? 'Frenesi' : 'Sinal forte'} x${mult} ativo`}>
+      <b>{signal.mult >= 5 ? 'Frenesi' : 'Sinal forte'} x{mult}</b>
       <span className="ap-signal-bar" aria-hidden="true">
         <i className={paused ? 'is-paused' : undefined} style={{ '--sg-total': `${total.current}s` } as CSSProperties} />
       </span>

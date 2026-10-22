@@ -1,6 +1,6 @@
 import { LOW_END } from './perf';
 
-export const SPACE_OBJECTS = ['comet', 'meteor', 'satellite', 'asteroid', 'probe'] as const;
+export const SPACE_OBJECTS = ['comet', 'meteor', 'satellite', 'asteroid', 'probe', 'golden'] as const;
 export type SpaceObjectKind = (typeof SPACE_OBJECTS)[number];
 
 export const SPACE_OBJECT_LABEL: Record<SpaceObjectKind, string> = {
@@ -9,6 +9,7 @@ export const SPACE_OBJECT_LABEL: Record<SpaceObjectKind, string> = {
   satellite: 'Satélite',
   asteroid: 'Asteroide',
   probe: 'Sonda',
+  golden: 'Estrela Dourada',
 };
 
 /** Cor de destaque de cada objeto (halo, etiqueta). Os valores vêm dos tokens --space-obj-*. */
@@ -18,6 +19,7 @@ export const SPACE_OBJECT_COLOR: Record<SpaceObjectKind, string> = {
   satellite: 'var(--space-obj-satellite)',
   asteroid: 'var(--space-obj-asteroid)',
   probe: 'var(--space-obj-probe)',
+  golden: 'var(--space-obj-golden)',
 };
 
 type Props = {
@@ -78,6 +80,20 @@ function Shape({ kind }: { kind: SpaceObjectKind }) {
           <circle cx="40" cy="38" r="6" fill="#6f5d4a" />
           <circle cx="38" cy="22" r="2.5" fill="#6f5d4a" />
           <path d="M16 20l10-6" stroke="#d8c4a8" strokeWidth="2.5" strokeLinecap="round" opacity=".7" />
+        </>
+      );
+    case 'golden':
+      return (
+        <>
+          <circle cx="32" cy="32" r="27" fill="#ffd447" opacity=".22" />
+          <path
+            d="M32 2l8 19 21 2-16 14 5 20-18-11-18 11 5-20L3 23l21-2z"
+            fill="#ffd447"
+            stroke="#8a5a00"
+            strokeWidth="3"
+            strokeLinejoin="round"
+          />
+          <path d="M32 14l5 12 13 1-10 9 3 13-11-7-11 7 3-13-10-9 13-1z" fill="#fff6c9" />
         </>
       );
     case 'probe':

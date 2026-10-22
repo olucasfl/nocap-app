@@ -265,7 +265,7 @@ export function createGameController({ initial, store, slot, perf = () => perfor
       const before = state;
       const obj = before.run.objects.find((o) => o.id === objectId);
       if (!obj) return false;
-      const preview = objectPreview(before, obj.kind);
+      const preview = objectPreview(before, obj.kind, obj.power);
       const next = captureObject(before, objectId, now());
       if (next.run.objects.length >= before.run.objects.length) {
         commit(next);

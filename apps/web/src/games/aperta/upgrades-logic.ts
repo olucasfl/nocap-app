@@ -58,6 +58,11 @@ const UPGRADE_ASTRO: Record<string, AstroId> = {
   deepnet: 'hole',
 };
 
+/** Astro-ícone de uma melhoria (cartões e órbitas dos geradores). */
+export function upgradeAstro(id: string): AstroId {
+  return UPGRADE_ASTRO[id] ?? 'star';
+}
+
 export type UpgradeStatus = 'locked' | 'mystery' | 'maxed' | 'affordable' | 'short';
 
 export interface UpgradeRow {

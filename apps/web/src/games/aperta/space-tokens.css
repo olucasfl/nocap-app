@@ -55,6 +55,7 @@
   --space-obj-satellite: #b79bff;
   --space-obj-asteroid: #c9a27a;
   --space-obj-probe: #9fe8c0;
+  --space-obj-golden: #ffd447;
 
   /* Fontes (carregadas por loadSpaceFonts, só quando o jogo abre) */
   --space-font-display: 'Chakra Petch', system-ui, sans-serif;

@@ -119,17 +119,22 @@ describe('objetos no espaço', () => {
   });
 
   it('a etiqueta diz a recompensa de cada objeto', () => {
-    const none = { dust: 0, energy: 0, boostMult: 0, boostSec: 0, freeReroll: false };
+    const none = { dust: 0, energy: 0, boostMult: 0, boostSec: 0, frenzy: false, surgeSec: 0, freeReroll: false };
     expect(rewardText({ ...none, dust: 1200 })).toContain('poeira');
     expect(rewardText({ ...none, energy: 2 })).toBe('+2 energia');
     expect(rewardText({ ...none, boostMult: 2, boostSec: 8 })).toBe('Sinal forte x2 por 8 s');
     expect(rewardText({ ...none, freeReroll: true })).toBe('1 troca grátis');
+    // Estrela Dourada: Frenesi, Chuva (poeira) e Surto dos geradores.
+    expect(rewardText({ ...none, boostMult: 7, boostSec: 30, frenzy: true })).toBe('Frenesi x7 por 30 s');
+    expect(rewardText({ ...none, surgeSec: 45 })).toBe('Geradores a todo vapor por 45 s');
   });
 
   it('o aviso concorda em gênero e o texto flutuante é curto', () => {
     expect(capturedTitle('comet')).toBe('Cometa capturado');
     expect(capturedTitle('shooting-star')).toBe('Estrela cadente capturada');
-    expect(floatText({ dust: 0, energy: 0, boostMult: 2, boostSec: 8, freeReroll: false })).toBe('Sinal forte x2');
+    expect(floatText({ dust: 0, energy: 0, boostMult: 2, boostSec: 8, frenzy: false, surgeSec: 0, freeReroll: false })).toBe('Sinal forte x2');
+    expect(capturedTitle('golden')).toBe('Estrela Dourada capturada');
+    expect(objectArt('golden')).toBe('golden');
   });
 
   it('a posição é fixa por id, fica nas faixas de cima e de baixo e alterna a faixa', () => {

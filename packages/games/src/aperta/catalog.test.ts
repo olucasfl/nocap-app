@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { GRIMOIRES, UPGRADES, effectDomain, type Effect } from './catalog';
+import { GRIMOIRES, GRIMOIRE_CATEGORIES, RARITIES, UPGRADES, effectDomain, type Effect } from './catalog';
 
 // Melhorias x grimórios (spec 038, 5.1 e 5.2): melhoria = poder básico contínuo, grimório = estilo e situação.
 
@@ -91,8 +91,8 @@ describe('melhorias e grimórios não competem', () => {
     }
   });
 
-  it('o catálogo tem 40 grimórios e os ids não se repetem', () => {
-    expect(GRIMOIRES).toHaveLength(40);
+  it('o catálogo tem 58 grimórios e os ids não se repetem', () => {
+    expect(GRIMOIRES).toHaveLength(58);
     expect(new Set(GRIMOIRES.map((g) => g.id)).size).toBe(GRIMOIRES.length);
   });
 });
@@ -130,6 +130,49 @@ describe('melhorias: prateleira e preço', () => {
     const touchDomains = new Set(UPGRADES.filter((u) => u.kind === 'touch').flatMap((u) => u.domains));
     for (const d of ['touchMult', 'touchFlat', 'touchNth', 'touchCrit', 'touchEcho', 'comboUnlock', 'objectSpawn']) {
       expect(touchDomains, d).toContain(d);
+    }
+  });
+});
+
+describe('categorias de grimório (spec 039, seção 7)', () => {
+  it('todo grimório tem categoria e raridade, e as categorias têm nome e explicação', () => {
+    const ids = new Set(GRIMOIRE_CATEGORIES.map((c) => c.id));
+    expect(ids.size).toBe(4);
+    for (const c of GRIMOIRE_CATEGORIES) {
+      expect(c.label.length).toBeGreaterThan(0);
+      expect(c.hint.length).toBeGreaterThan(10);
+    }
+    for (const g of GRIMOIRES) {
+      expect(ids.has(g.category), g.id).toBe(true);
+      expect(RARITIES, g.id).toContain(g.rarity);
+    }
+  });
+
+  it('cada categoria tem grimórios de pelo menos 3 raridades e um bom punhado deles', () => {
+    for (const c of GRIMOIRE_CATEGORIES) {
+      const list = GRIMOIRES.filter((g) => g.category === c.id);
+      expect(list.length, c.id).toBeGreaterThanOrEqual(9);
+      expect(new Set(list.map((g) => g.rarity)).size, c.id).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it('a categoria bate com o que o grimório faz', () => {
+    const kindsOf = (id: string) => GRIMOIRES.find((g) => g.id === id)!.effects.map((e) => e.kind);
+    for (const g of GRIMOIRES.filter((x) => x.category === 'generators')) {
+      expect(kindsOf(g.id).some((k) => ['generatorPct', 'energyGenPct', 'idleFloor', 'activeWindow'].includes(k)), g.id).toBe(true);
+    }
+    for (const g of GRIMOIRES.filter((x) => x.category === 'objects')) {
+      expect(
+        kindsOf(g.id).some((k) => ['objectReward', 'spawnCut', 'rareCut', 'rareLife', 'satelliteMult', 'onCapture', 'afterCaptureMult'].includes(k)),
+        g.id,
+      ).toBe(true);
+    }
+  });
+
+  it('o texto da carta diz o que muda, sem jargão solto: combo vem explicado e nada de "janela"', () => {
+    for (const g of GRIMOIRES) {
+      expect(g.text, g.id).not.toMatch(/janela/i);
+      expect(g.text.length, g.id).toBeLessThanOrEqual(150);
     }
   });
 });

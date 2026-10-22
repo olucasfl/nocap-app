@@ -57,6 +57,7 @@ import {
   OBJECT_BASE_MAX,
   ACTIVE_WINDOW_SEC,
   AUTO_CAP_SHARE,
+  AUTO_ENERGY_SHARE,
   FRENZY_MULT,
   FRENZY_SEC,
   IDLE_FACTOR_MAX,
@@ -327,12 +328,9 @@ export function syncClock(state: SaveState, now: number): SaveState {
   if (!frozen) {
     // Geradores (spec 039): rendem cheio enquanto a pessoa toca e uma fração parada, nunca acima do teto
     // do toque. O teto vale para o ritmo ativo; parado é uma fração dele, então tocar sempre rende mais.
-    const st = effectiveStats(state);
-    const surge = state.clock < run.surgeUntil;
-    const factor = surge || state.clock - run.lastPressAt <= st.activeWindowSec ? 1 : st.idleFactor;
-    const capMult = surge ? SURGE_CAP_MULT : 1;
-    const earn = Math.min(st.autoDustPerSec, st.autoDustCap * capMult) * factor * gap;
-    const energyEarn = Math.min(st.autoEnergyPerSec, st.autoEnergyCap * capMult) * factor * gap;
+    const rates = autoRates(state);
+    const earn = rates.dust * gap;
+    const energyEarn = rates.energy * gap;
     if (earn > 0 || energyEarn > 0) {
       run = {
         ...run,
@@ -350,6 +348,24 @@ export function syncClock(state: SaveState, now: number): SaveState {
     run,
     stats,
   };
+}
+
+/**
+ * O que os geradores rendem por segundo agora: poeira e energia, e se estão "tocando" (cheios) ou parados.
+ * Uma só conta para o motor (`syncClock`) e para a tela (o número que sobe e as órbitas).
+ */
+export function autoRates(state: SaveState): { dust: number; energy: number; active: boolean; surge: boolean } {
+  const st = effectiveStats(state);
+  const run = state.run;
+  const surge = state.clock < run.surgeUntil;
+  const active = surge || state.clock - run.lastPressAt <= st.activeWindowSec;
+  const factor = active ? 1 : st.idleFactor;
+  const capMult = surge ? SURGE_CAP_MULT : 1;
+  const dust = Math.min(st.autoDustPerSec, st.autoDustCap * capMult) * factor;
+  const generated = Math.min(st.autoEnergyPerSec, st.autoEnergyCap * capMult) * factor;
+  // A poeira dos geradores também conta para o grimório: como toques, a uma fração da energia do toque.
+  const fromDust = st.dustPerTouch > 0 ? (dust / st.dustPerTouch) * st.energyPerTouch * AUTO_ENERGY_SHARE : 0;
+  return { dust, energy: generated + fromDust, active, surge };
 }
 
 function shiftRun(run: RunState, gap: number, shiftPending: boolean): RunState {

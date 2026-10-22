@@ -61,7 +61,10 @@ describe('álbum', () => {
   it('a página mostra a contagem, o cadeado e o Atlas', () => {
     const s = newSave('a', 0);
     const markup = html(<GrimoiresPage state={{ ...s, album: ['moon'], run: { ...s.run, build: { moon: 2 } } }} />);
-    expect(markup).toContain('de 28 descobertos');
+    expect(markup).toContain('de 35 descobertos');
+    // O descoberto mostra a categoria (Toque); os escondidos não entregam nada.
+    expect(markup).toContain('data-cat="touch"');
+    expect(markup).toContain('>Toque<');
     expect(markup).toContain('Nível 2');
     expect(markup).toContain('Grimório escondido');
     expect(markup).toContain('Atlas Eterno');

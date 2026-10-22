@@ -2,6 +2,7 @@ import { CHOICE_LOCK_SEC, GRIMOIRES, type PendingChoice } from '@nocap/games';
 import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { GrimoireBook } from './GrimoireBook';
 import { artRarity, astroFor, modalGuarded } from './game-logic';
+import { CategoryTag } from './CategoryTag';
 import { RARITY_LABEL } from './rarity';
 import { useDialog } from './useDialog';
 
@@ -98,6 +99,7 @@ export function ChoiceModal({ pending, lockRemaining, build, paused, onSelect, o
                 <GrimoireBook rarity={rarity} astro={astroFor(id, def.family)} name={def.name} size="sm" still />
                 <span className="ap-pick-name">{def.name}</span>
                 <span className="ap-pick-rar">{RARITY_LABEL[rarity]}</span>
+                <CategoryTag category={def.category} />
                 <span className="ap-pick-fx">{def.text}</span>
                 {gain?.[id] && <span className="ap-pick-gain">{gain[id]}</span>}
                 {have > 0 && <span className="ap-pick-lv">Você tem nível {have}: sobe para o {have + 1}</span>}

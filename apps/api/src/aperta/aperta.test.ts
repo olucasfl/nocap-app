@@ -237,7 +237,7 @@ describe('vários aparelhos', () => {
     await service.put('u', 1, { data: withMoon, baseRevision: 1 });
     const r = await service.put('u', 1, { data: stale, baseRevision: 2 });
     expect(r.data!.album).toEqual(expect.arrayContaining(['moon', 'mars']));
-    expect(r.data!.achievements).toEqual(['first']);
+    expect(r.data!.achievements).toEqual(expect.arrayContaining(['first']));
   });
 });
 

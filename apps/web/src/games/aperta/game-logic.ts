@@ -9,6 +9,7 @@ import {
   collapseProgress,
   formatDecimal,
   formatNumber,
+  type GrimoireCategory,
   type ObjectKind,
   type ObjectPreview,
   UPGRADES,
@@ -168,6 +169,8 @@ export interface AlbumEntry {
   name: string;
   text: string;
   family: Family;
+  /** O que o grimório ajuda (toque, objetos, geradores, energia e sorte). */
+  category: GrimoireCategory;
   rarity: ArtRarity;
   /** Já descoberto neste save (o álbum guarda para sempre, a vida não). */
   discovered: boolean;
@@ -196,6 +199,7 @@ export function albumView(state: SaveState): AlbumView {
       name: discovered ? g.name : '???',
       text: discovered ? g.text : 'Ainda escondido no espaço',
       family: g.family,
+      category: g.category,
       rarity: artRarity(g.rarity),
       discovered,
       level: state.run.build[g.id] ?? 0,
@@ -218,6 +222,7 @@ const OBJECT_ART: Record<ObjectKind, SpaceObjectKind> = {
   satellite: 'satellite',
   asteroid: 'asteroid',
   probe: 'probe',
+  golden: 'golden',
 };
 
 /** O motor chama de `shooting-star`; o kit de arte, de `meteor`. */
@@ -234,7 +239,8 @@ export function rewardText(p: ObjectPreview): string {
   const parts: string[] = [];
   if (p.dust > 0) parts.push(`+${formatNumber(p.dust)} poeira`);
   if (p.energy > 0) parts.push(`+${formatDecimal(p.energy, 1)} energia`);
-  if (p.boostMult > 0) parts.push(`Sinal forte x${formatDecimal(p.boostMult, 1)} por ${Math.round(p.boostSec)} s`);
+  if (p.boostMult > 0) parts.push(`${p.frenzy ? 'Frenesi' : 'Sinal forte'} x${formatDecimal(p.boostMult, 1)} por ${Math.round(p.boostSec)} s`);
+  if (p.surgeSec > 0) parts.push(`Geradores a todo vapor por ${Math.round(p.surgeSec)} s`);
   if (p.freeReroll) parts.push('1 troca grátis');
   return parts.join(' e ');
 }
@@ -246,7 +252,7 @@ export function floatText(p: ObjectPreview): string {
 
 /** "Cometa capturado", "Estrela cadente capturada". */
 export function capturedTitle(kind: ObjectKind): string {
-  return `${objectName(kind)} ${kind === 'shooting-star' ? 'capturada' : 'capturado'}`;
+  return `${objectName(kind)} ${kind === 'shooting-star' || kind === 'golden' ? 'capturada' : 'capturado'}`;
 }
 
 export interface ObjectSlot {
