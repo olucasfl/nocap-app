@@ -1,57 +1,79 @@
+import { TUTORIAL, newSave, type SaveState } from '@nocap/games';
 import { describe, expect, it } from 'vitest';
-import { arrowSide, arrowX, cardSide, displayStep, padRect, tutorialPageAllowed, tutorialView, veilPieces } from './tutorial-logic';
+import { HINT_PAGE, arrowSide, arrowX, cardSide, coachView, padRect } from './tutorial-logic';
 
-describe('passos do tutorial', () => {
-  it('cada passo tem seu alvo e seu "N de 5"', () => {
-    expect(tutorialView(1, null)).toMatchObject({ step: 1, total: 5, target: 'press', arrow: true });
-    expect(tutorialView(2, null).target).toBe('ok');
-    expect(tutorialView(3, null).target).toBe('dock-upgrades');
-    expect(tutorialView(4, 'upgrades').target).toBe('buy-pulse');
-    expect(tutorialView(5, null).target).toBe('dock-grimoires');
-    expect(tutorialView(5, 'grimoires')).toMatchObject({ target: 'grimoires-page', finish: true, arrow: false });
+const at = (tutorial: SaveState['tutorial'], patch: Partial<SaveState['run']> = {}): SaveState => {
+  const s = newSave('coach', 0);
+  return { ...s, tutorial, run: { ...s.run, ...patch } };
+};
+const pending = { offers: ['moon'], openedAt: 0, selected: null, picksLeft: 1, rerollsLeft: 0 };
+
+describe('dica de cada momento', () => {
+  it('passo 1: só a etiqueta no botão, sem cartão', () => {
+    expect(coachView(at(TUTORIAL.TOUCH), null)).toMatchObject({
+      target: 'press',
+      label: 'Toque aqui para ganhar poeira',
+      title: null,
+      dismiss: null,
+    });
   });
 
-  it('retomar no passo 4 ou 5 sem a página aberta aponta de volta para a dock', () => {
-    expect(tutorialView(4, null).target).toBe('dock-upgrades');
-    expect(tutorialView(5, 'upgrades').target).toBe('dock-grimoires');
-    expect(tutorialView(5, 'upgrades').finish).toBe(false);
+  it('passo 2: aponta para Melhorias; com a página aberta, para o preço', () => {
+    expect(coachView(at(TUTORIAL.UPGRADE), null)).toMatchObject({ target: 'dock-upgrades', title: 'Parabéns!' });
+    expect(coachView(at(TUTORIAL.UPGRADE), null)?.text).toMatch(/primeira melhoria/);
+    expect(coachView(at(TUTORIAL.UPGRADE), 'upgrades')).toMatchObject({ target: 'buy-first', place: 'bottom' });
   });
 
-  it('o passo 3 já aparece como 4 com Melhorias aberta', () => {
-    expect(displayStep(3, 'upgrades')).toBe(4);
-    expect(tutorialView(3, 'upgrades').step).toBe(4);
-    expect(displayStep(3, null)).toBe(3);
+  it('passo 3: com a página aberta manda voltar, apontando para o X', () => {
+    expect(coachView(at(TUTORIAL.BACK), 'upgrades')).toMatchObject({ target: 'page-close', place: 'bottom' });
+    expect(coachView(at(TUTORIAL.BACK), null)).toBeNull();
   });
 
-  it('só deixa abrir a página do passo', () => {
-    expect(tutorialPageAllowed(3, 'upgrades')).toBe(true);
-    expect(tutorialPageAllowed(4, 'grimoires')).toBe(false);
-    expect(tutorialPageAllowed(5, 'grimoires')).toBe(true);
-    expect(tutorialPageAllowed(5, 'upgrades')).toBe(false);
-    expect(tutorialPageAllowed(1, 'upgrades')).toBe(false);
-    expect(tutorialPageAllowed(2, 'tree')).toBe(false);
+  it('passo 4: explica a barra de energia no botão', () => {
+    expect(coachView(at(TUTORIAL.FILL), null)).toMatchObject({ target: 'press', title: 'Encha a barra de energia' });
+    expect(coachView(at(TUTORIAL.FILL), 'upgrades')).toBeNull();
+  });
+
+  it('passo 5: o cartão vai dentro do modal de escolha e fala do bloqueio de 1,6 s', () => {
+    const v = coachView(at(TUTORIAL.CHOOSE, { pending }), null);
+    expect(v).toMatchObject({ inline: true, target: null, title: 'Você ganhou seu primeiro grimório!' });
+    expect(v?.text).toContain('1,6 s');
+    expect(coachView(at(TUTORIAL.CHOOSE), null)).toBeNull();
+  });
+
+  it('passo 6: aponta para Grimórios', () => {
+    expect(coachView(at(TUTORIAL.GRIMOIRES), null)).toMatchObject({ target: 'dock-grimoires' });
+    expect(coachView(at(TUTORIAL.GRIMOIRES), 'grimoires')).toBeNull();
+  });
+
+  it('jogo livre: cartão só com o gatilho, e a árvore por último', () => {
+    const free = at(TUTORIAL.FREE);
+    expect(coachView(free, null)).toBeNull();
+    const withObject = { ...free, run: { ...free.run, objects: [{ id: 1, kind: 'comet' as const, bornAt: 0, expiresAt: 9 }] } };
+    expect(coachView(withObject, null)).toMatchObject({ dismiss: 'objects', target: null });
+    const twoAch = { ...free, achievements: ['tap-1', 'tap-100'] };
+    expect(coachView(twoAch, null)).toMatchObject({ dismiss: 'achievements', target: 'dock-achievements' });
+    const last = { ...free, ui: { unlocked: [], hints: ['achievements', 'objects'] as SaveState['ui']['hints'] } };
+    expect(coachView(last, null)).toMatchObject({ dismiss: 'tree', target: 'tree' });
+    expect(HINT_PAGE.tree).toBe('tree');
+    expect(HINT_PAGE.achievements).toBe('achievements');
+  });
+
+  it('nada flutua com página aberta, janela por cima ou tutorial concluído', () => {
+    const twoAch = { ...at(TUTORIAL.FREE), achievements: ['tap-1', 'tap-100'] };
+    expect(coachView(twoAch, 'grimoires')).toBeNull();
+    expect(coachView(twoAch, null, true)).toBeNull();
+    expect(coachView(at('done'), null)).toBeNull();
+    expect(coachView(at(TUTORIAL.TOUCH), null, true)).toBeNull();
+  });
+
+  it('o botão de dispensar só existe nos cartões do jogo livre', () => {
+    for (const step of [1, 2, 3, 4, 6]) expect(coachView(at(step), step === 3 ? 'upgrades' : null)?.dismiss ?? null).toBeNull();
   });
 });
 
-describe('véu e posições', () => {
+describe('posições', () => {
   const bounds = { w: 400, h: 800 };
-  const area = (rs: { w: number; h: number }[]) => rs.reduce((a, r) => a + r.w * r.h, 0);
-
-  it('as faixas cobrem tudo menos o buraco', () => {
-    const hole = { x: 100, y: 300, w: 120, h: 80 };
-    const pieces = veilPieces(hole, bounds);
-    expect(area(pieces)).toBe(400 * 800 - 120 * 80);
-    for (const p of pieces) {
-      const overlaps = p.x < hole.x + hole.w && p.x + p.w > hole.x && p.y < hole.y + hole.h && p.y + p.h > hole.y;
-      expect(overlaps).toBe(false);
-    }
-  });
-
-  it('buraco colado na borda não gera faixa vazia, e sem alvo o véu é inteiro', () => {
-    const edge = { x: 0, y: 700, w: 400, h: 100 };
-    expect(veilPieces(edge, bounds)).toEqual([{ x: 0, y: 0, w: 400, h: 700 }]);
-    expect(veilPieces(null, bounds)).toEqual([{ x: 0, y: 0, w: 400, h: 800 }]);
-  });
 
   it('o respiro não sai da tela', () => {
     expect(padRect({ x: 2, y: 790, w: 396, h: 10 }, 6, bounds)).toEqual({ x: 0, y: 784, w: 400, h: 16 });

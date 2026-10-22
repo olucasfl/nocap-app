@@ -40,7 +40,8 @@
 .ap-hbtn-exit {
   grid-column: 3;
 }
-.ap-hbtn-tree {
+.ap-hbtn-tree,
+.ap-hbtn-skip {
   grid-column: 4;
 }
 .ap-panel {
@@ -659,7 +660,8 @@
   .ap-hbtn-exit {
     grid-column: 2;
   }
-  .ap-hbtn-tree {
+  .ap-hbtn-tree,
+  .ap-hbtn-skip {
     grid-column: 1 / -1;
   }
   .ap-hudrow b {

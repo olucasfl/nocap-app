@@ -1,18 +1,13 @@
 /*
- * Tutorial guiado do Aperta! (spec 038, 4.6). Só `transform` e `opacity` animam; as posições do véu,
- * do anel e da seta são estáticas (recalculadas quando o alvo muda de lugar).
+ * Tutorial dinâmico do Aperta! (spec 038, 4.6). Nada escurece a tela: só um anel no alvo, a etiqueta com seta
+ * e um cartão pequeno. Só `transform` e `opacity` animam; as posições do anel e da seta são estáticas
+ * (recalculadas quando o alvo muda de lugar). O contêiner não pega toque: só o cartão.
  */
 .ap-tut {
   position: absolute;
   inset: 0;
   z-index: 60;
   pointer-events: none;
-}
-.ap-tut-veil {
-  position: absolute;
-  background: rgba(2, 3, 10, 0.78);
-  pointer-events: auto;
-  touch-action: none;
 }
 .ap-tut-ring {
   position: absolute;
@@ -69,7 +64,9 @@
   font: 700 14px/1 var(--space-font-display);
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  white-space: nowrap;
+  max-width: 220px;
+  text-align: center;
+  text-wrap: balance;
 }
 .ap-tut-arrow svg {
   width: 26px;
@@ -96,12 +93,8 @@
   }
 }
 
-.ap-tut-card {
-  position: absolute;
-  left: 12px;
-  right: 12px;
-  max-width: 520px;
-  margin: 0 auto;
+.ap-tut-card,
+.ap-tut-inline {
   display: grid;
   gap: 6px;
   padding: 12px 14px;
@@ -109,33 +102,61 @@
   border-radius: 14px;
   background: var(--space-panel);
   box-shadow: 0 6px 0 var(--space-ink);
-  pointer-events: auto;
 }
+.ap-tut-card {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  max-width: 460px;
+  margin: 0 auto;
+  pointer-events: auto;
+  animation: ap-tut-in 0.28s ease-out both;
+}
+/* Abaixo do HUD (poeira, Sair): a dica não esconde o que o jogador está acompanhando. */
 .ap-tut-card.is-top {
-  top: 10px;
+  top: 96px;
 }
 .ap-tut-card.is-bottom {
   bottom: 10px;
 }
-.ap-tut-count {
-  font: 700 11px/1 var(--space-font-display);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--space-gold);
+@keyframes ap-tut-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
-.ap-tut-card h2 {
-  font: 700 19px/1.15 var(--space-font-display);
+/* "Pular tutorial" do topo: sempre à mão, mas só texto, para nunca pesar mais que o alvo da dica. */
+.ap-hbtn.ap-hbtn-skip {
+  justify-self: end;
+  padding: 0 6px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  text-shadow: none;
+  color: var(--space-muted);
+  font: 600 13px var(--space-font-body);
+  text-transform: none;
+  text-decoration: underline;
+}
+
+.ap-tut-card h2,
+.ap-tut-inline h2 {
+  font: 700 18px/1.15 var(--space-font-display);
   color: var(--space-text);
 }
-.ap-tut-card p {
-  font: 500 14px/1.35 var(--space-font-body);
-}
-.ap-tut-card .ap-tut-count {
-  font: 700 11px/1 var(--space-font-display);
-}
-.ap-tut-card div > p {
-  color: var(--space-muted);
+.ap-tut-card p,
+.ap-tut-inline p {
   margin-top: 4px;
+  font: 500 14px/1.35 var(--space-font-body);
+  color: var(--space-muted);
+}
+.ap-tut-inline {
+  border-color: var(--space-gold);
+  text-align: left;
 }
 .ap-tut-actions {
   display: flex;
@@ -143,45 +164,54 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-top: 2px;
 }
-.ap-tut-go {
-  min-height: 48px;
-  font-size: 15px;
-}
+/* Os botões do cartão são discretos de propósito: o destaque é do alvo, não do tutorial. */
+.ap-tut-ok,
 .ap-tut-skip {
   min-height: 44px;
-  margin-left: auto;
   padding: 0 14px;
   border: 2px solid var(--space-line);
   border-radius: 10px;
   background: transparent;
-  color: var(--space-muted);
+  color: var(--space-text);
   font: 600 13px var(--space-font-body);
 }
+.ap-tut-ok {
+  margin-left: auto;
+}
+.ap-tut-skip {
+  padding: 0 4px;
+  color: var(--space-muted);
+  border-color: transparent;
+  text-decoration: underline;
+}
 
-/* Passo 2: o livro da Lua */
-.ap-first {
-  align-items: center;
-  text-align: center;
+/* Botão do dock que acabou de ser liberado: entra crescendo (sem fill-mode forward, para o :active seguir valendo). */
+.ap-dock-in {
+  animation: ap-dock-in 0.4s cubic-bezier(0.2, 1.4, 0.4, 1) backwards;
 }
-.ap-first-book {
-  display: grid;
-  place-items: center;
-}
-.ap-first-name {
-  display: grid;
-  gap: 2px;
-}
-.ap-first-name b {
-  font: 700 18px/1 var(--space-font-display);
+@keyframes ap-dock-in {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 @media (max-width: 720px) {
-  .ap-tut-card h2 {
-    font-size: 17px;
+  /* No celular o HUD tem duas linhas (poeira + Sair, depois Pular tutorial): a dica começa abaixo delas. */
+  .ap-tut-card.is-top {
+    top: 144px;
   }
-  .ap-tut-card p {
+  .ap-tut-card h2,
+  .ap-tut-inline h2 {
+    font-size: 16px;
+  }
+  .ap-tut-card p,
+  .ap-tut-inline p {
     font-size: 13px;
   }
 }
@@ -193,8 +223,11 @@
   .ap-tut-card h2 {
     font-size: 15px;
   }
-  .ap-tut-card div > p {
+  .ap-tut-card p {
     display: none;
+  }
+  .ap-tut-card.is-top {
+    top: 70px;
   }
 }
 
@@ -203,7 +236,9 @@
     animation: none;
     opacity: 0.8;
   }
-  .ap-tut-arrow {
+  .ap-tut-arrow,
+  .ap-tut-card,
+  .ap-dock-in {
     animation: none;
   }
 }

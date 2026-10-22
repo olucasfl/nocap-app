@@ -1,5 +1,5 @@
 import { CHOICE_LOCK_SEC, GRIMOIRES, type PendingChoice } from '@nocap/games';
-import { useEffect, useRef, type CSSProperties } from 'react';
+import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { GrimoireBook } from './GrimoireBook';
 import { artRarity, astroFor, modalGuarded } from './game-logic';
 import { RARITY_LABEL } from './rarity';
@@ -18,13 +18,15 @@ interface Props {
   onReroll?: (id: string) => void;
   /** Observatório Gaia: o efeito de cada carta com os números da vida (id -> texto). */
   gain?: Record<string, string>;
+  /** Dica do tutorial na 1ª escolha: fica acima das cartas, dentro do modal. */
+  coach?: ReactNode;
 }
 
 /**
  * Escolha de 1 entre 3 grimórios (spec 038, 3.6 e 4.7), versão provisória da etapa 4: cartas
  * simples. Cartas bloqueadas por 1,6 s e escolha em dois passos (marcar, depois confirmar).
  */
-export function ChoiceModal({ pending, lockRemaining, build, paused, onSelect, onConfirm, onReroll, gain }: Props) {
+export function ChoiceModal({ pending, lockRemaining, build, paused, onSelect, onConfirm, onReroll, gain, coach }: Props) {
   const root = useRef<HTMLDivElement>(null);
   // Esc não fecha: a barra cheia obriga a escolher, e o toque acidental não pode escapar dela.
   useDialog(root, () => {});
@@ -57,6 +59,7 @@ export function ChoiceModal({ pending, lockRemaining, build, paused, onSelect, o
         tabIndex={-1}
       >
         <h2 id="ap-choice-title">A energia transbordou</h2>
+        {coach}
         <p className="ap-sub ap-modal-intro">
           {pending.picksLeft > 1
             ? `Escolha ${pending.picksLeft} grimórios, um de cada vez. Toque para marcar e confirme em seguida.`

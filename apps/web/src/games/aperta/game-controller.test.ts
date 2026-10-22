@@ -1,4 +1,13 @@
-import { CHOICE_LOCK_SEC, newSave, type SaveState } from '@nocap/games';
+import {
+  CHOICE_LOCK_SEC,
+  TUTORIAL,
+  UI_BUTTONS,
+  affordableUpgradeIndex,
+  newSave,
+  nextUpgradeCost,
+  unlockedButtons,
+  type SaveState,
+} from '@nocap/games';
 import { describe, expect, it } from 'vitest';
 import {
   SAVE_FAILURES_BEFORE_WARNING,
@@ -263,67 +272,83 @@ describe('carregar', () => {
 describe('tutorial pelo controlador', () => {
   const fresh = () => setup(newSave('teste', 0));
   const state = (t: ReturnType<typeof setup>) => t.ctl.getSnapshot().state;
+  /** Um save novo com a poeira a 1 toque do preço da 1ª melhoria (o preço vem do motor). */
+  const nearFirstUpgrade = () => {
+    const s = newSave('teste', 0);
+    const cost = nextUpgradeCost(s, 0) as number;
+    return setup({ ...s, run: { ...s.run, dust: cost - 1, dustLife: cost - 1 } });
+  };
 
-  it('o 1º toque entrega a Lua, vai ao passo 2 e não abre escolha', () => {
+  it('começa só com o botão: o 1º toque rende poeira, não abre nada e não muda de passo', () => {
     const t = fresh();
     expect(t.tap()).toBe(true);
-    expect(state(t).tutorial).toBe(2);
-    expect(state(t).run.build.moon).toBe(1);
+    expect(t.tap()).toBe(true);
+    expect(state(t).tutorial).toBe(TUTORIAL.TOUCH);
+    expect(state(t).run.dust).toBe(2);
     expect(state(t).run.pending).toBeNull();
-    expect(t.events.map((e) => e.type)).toEqual(['press']);
+    expect(state(t).ui.unlocked).toEqual([]);
+    expect(t.events.map((e) => e.type)).toEqual(['press', 'press']);
   });
 
-  it('depois do 1º toque o motor recusa toque e compra até o passo certo', () => {
-    const t = fresh();
-    t.tap();
-    expect(t.tap()).toBe(false);
-    expect(state(t).stats.clicks).toBe(1);
-    expect(t.ctl.buy(0)).toBe(false);
-  });
-
-  it('Entendi leva ao passo 3 e entrega a poeira da 1ª compra; passo repetido não faz nada', () => {
-    const t = fresh();
-    t.tap();
-    t.ctl.tutorialStep(2, 3);
-    expect(state(t).tutorial).toBe(3);
-    expect(state(t).run.dust).toBeGreaterThanOrEqual(25);
-    const dust = state(t).run.dust;
-    t.ctl.tutorialStep(2, 3);
-    expect(state(t).tutorial).toBe(3);
-    expect(state(t).run.dust).toBe(dust);
-  });
-
-  it('no passo 4 só o Pulso Solar compra, e a compra leva ao passo 5', () => {
-    const t = fresh();
-    t.tap();
-    t.ctl.tutorialStep(2, 3);
-    expect(t.ctl.buy(0)).toBe(false); // passo 3: ainda não
-    t.ctl.tutorialStep(3, 4);
-    t.clock.ms += 1000;
-    expect(t.ctl.buy(1)).toBe(false);
-    expect(t.ctl.buy(0)).toBe(true);
-    expect(state(t).tutorial).toBe(5);
-    expect(state(t).run.upgradeLevels[0]).toBe(1);
-    t.clock.ms += 1000;
-    expect(t.ctl.buy(0)).toBe(false);
-  });
-
-  it('cada passo guarda o save na hora (cópia local e subida)', async () => {
-    const t = fresh();
+  it('poeira da 1ª melhoria: passo 2, Melhorias liberado e o passo salvo na hora', async () => {
+    const t = nearFirstUpgrade();
     const staged: unknown[] = [];
     const store = { ...t.store, stage: (_slot: 1 | 2, s: SaveState) => staged.push(s.tutorial) };
-    const ctl = createGameController({ initial: newSave('teste', 0), store, slot: 1, perf: () => t.clock.ms });
+    const ctl = createGameController({ initial: t.ctl.getSnapshot().state, store, slot: 1, perf: () => t.clock.ms });
     t.clock.ms += 200;
     ctl.press();
-    ctl.tutorialStep(2, 3);
-    ctl.tutorialStep(3, 4);
-    expect(staged).toEqual([2, 3, 4]);
+    expect(ctl.getSnapshot().state.tutorial).toBe(TUTORIAL.UPGRADE);
+    expect(ctl.getSnapshot().state.ui.unlocked).toEqual(['upgrades']);
+    expect(staged).toEqual([TUTORIAL.UPGRADE]);
     await ctl.save(true);
-    expect(t.store.saved[1]?.tutorial).toBe(4);
+    expect(t.store.saved[1]?.tutorial).toBe(TUTORIAL.UPGRADE);
+  });
+
+  it('o roteiro inteiro: comprar, voltar, encher a barra, escolher, ver os grimórios', () => {
+    const t = nearFirstUpgrade();
+    t.tap();
+    expect(state(t).tutorial).toBe(TUTORIAL.UPGRADE);
+    t.clock.ms += 1000;
+    expect(t.ctl.buy(affordableUpgradeIndex(state(t)) as number)).toBe(true);
+    expect(state(t).tutorial).toBe(TUTORIAL.BACK);
+    t.ctl.tutorialStep(TUTORIAL.BACK, TUTORIAL.FILL);
+    t.ctl.tutorialStep(TUTORIAL.BACK, TUTORIAL.FILL); // repetido: nada
+    expect(state(t).tutorial).toBe(TUTORIAL.FILL);
+    fill(t);
+    expect(state(t).tutorial).toBe(TUTORIAL.CHOOSE);
+    expect(t.events.some((e) => e.type === 'choice-open')).toBe(true);
+    expect(unlockedButtons(state(t)).has('grimoires')).toBe(true);
+    const offer = state(t).run.pending?.offers[0] as string;
+    t.clock.ms += (CHOICE_LOCK_SEC + 0.2) * 1000;
+    t.ctl.select(offer);
+    expect(t.ctl.choose(offer)).toBe(true);
+    expect(state(t).tutorial).toBe(TUTORIAL.GRIMOIRES);
+    t.ctl.tutorialStep(TUTORIAL.GRIMOIRES, TUTORIAL.FREE);
+    expect(state(t).tutorial).toBe(TUTORIAL.FREE);
+  });
+
+  it('a conquista do 1º toque não aparece durante o roteiro; no jogo livre os avisos voltam', () => {
+    const t = fresh();
+    t.tap();
+    expect(state(t).achievements).toContain('tap-1');
+    expect(t.events.map((e) => e.type)).toEqual(['press']);
+    const free = setup({ ...newSave('teste', 0), tutorial: TUTORIAL.FREE });
+    free.tap();
+    expect(free.events.map((e) => e.type)).toEqual(['press', 'achievement']);
+  });
+
+  it('cartões do jogo livre: cada um marcado uma vez; os três concluem o tutorial', () => {
+    const t = setup({ ...newSave('teste', 0), tutorial: TUTORIAL.FREE });
+    t.ctl.tutorialHint('objects');
+    t.ctl.tutorialHint('objects');
+    expect(state(t).ui.hints).toEqual(['objects']);
+    t.ctl.tutorialHint('achievements');
+    t.ctl.tutorialHint('tree');
+    expect(state(t).tutorial).toBe('done');
   });
 
   it('subida em andamento não perde o passo seguinte: sobe de novo logo depois', async () => {
-    const initial = newSave('teste', 0);
+    const initial = nearFirstUpgrade().ctl.getSnapshot().state;
     const writes: unknown[] = [];
     let release: () => void = () => {};
     const store = {
@@ -333,29 +358,39 @@ describe('tutorial pelo controlador', () => {
         if (writes.length === 1) await new Promise<void>((r) => (release = r));
       },
     };
-    const ctl = createGameController({ initial, store, slot: 1, perf: () => 1000 + writes.length * 0 + 300 });
+    const ctl = createGameController({ initial, store, slot: 1, perf: () => 1300 });
     ctl.press(); // passo 2, sobe (fica pendurada)
-    ctl.tutorialStep(2, 3); // chega durante a subida
+    ctl.tutorialStep(TUTORIAL.UPGRADE, TUTORIAL.FILL); // chega durante a subida
     release();
     await new Promise((r) => setTimeout(r, 0));
-    expect(writes).toEqual([2, 3]);
+    expect(writes).toEqual([TUTORIAL.UPGRADE, TUTORIAL.FILL]);
   });
 
-  it('pular libera tudo e fica salvo', () => {
+  it('pular libera tudo de uma vez e fica salvo', () => {
     const t = fresh();
+    expect([...unlockedButtons(state(t))]).toEqual([]);
     t.ctl.tutorialSkip();
     expect(state(t).tutorial).toBe('done');
+    expect(unlockedButtons(state(t)).size).toBe(UI_BUTTONS.length);
     expect(t.tap()).toBe(true);
     expect(state(t).tutorial).toBe('done');
-    expect(state(t).run.build.moon).toBeUndefined();
   });
 
-  it('save de antes do tutorial (passo 1 com toques) abre sem tutorial; um novo continua no passo 1', async () => {
-    const old = { ...newSave('x', 0), stats: { ...newSave('x', 0).stats, clicks: 40 } };
-    const store = createMemoryGameStore({ 1: old });
-    expect((await loadOrCreate(store, 1, 's', 'n', 0)).tutorial).toBe('done');
+  it('saves antigos com progresso entram com tudo liberado; um novo começa no passo 1', async () => {
+    const strip = (s: SaveState) => {
+      const rest: Partial<SaveState> = { ...s };
+      delete rest.ui;
+      return rest as SaveState;
+    };
+    const played = { ...newSave('x', 0), stats: { ...newSave('x', 0).stats, clicks: 40 } };
+    for (const tutorial of [1, 3, 5, 'done'] as const) {
+      const loaded = await loadOrCreate(createMemoryGameStore({ 1: strip({ ...played, tutorial }) }), 1, 's', 'n', 0);
+      expect(loaded.tutorial, String(tutorial)).toBe('done');
+      expect(unlockedButtons(loaded).size).toBe(UI_BUTTONS.length);
+    }
     expect((await loadOrCreate(createMemoryGameStore(), 1, 's', 'n', 0)).tutorial).toBe(1);
-    const mid = { ...newSave('x', 0), tutorial: 3 as const, stats: { ...newSave('x', 0).stats, clicks: 1 } };
-    expect((await loadOrCreate(createMemoryGameStore({ 1: mid }), 1, 's', 'n', 0)).tutorial).toBe(3);
+    // Save já no formato novo, no meio do roteiro, continua de onde parou.
+    const mid = { ...newSave('x', 0), tutorial: TUTORIAL.BACK, stats: { ...newSave('x', 0).stats, clicks: 60 } };
+    expect((await loadOrCreate(createMemoryGameStore({ 1: mid }), 1, 's', 'n', 0)).tutorial).toBe(TUTORIAL.BACK);
   });
 });

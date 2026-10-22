@@ -1,26 +1,63 @@
 import { describe, expect, it } from 'vitest';
-import { UPGRADES } from './catalog';
-import { buyUpgrade, newSave, nextUpgradeCost, press } from './engine';
-import { validateSave } from './save';
+import { energyCap } from './economy';
+import { buyUpgrade, chooseGrimoire, newSave, nextUpgradeCost, press, selectGrimoire, type SaveState } from './engine';
+import { mergeSaves, validateSave } from './save';
 import {
-  TUTORIAL_GRIMOIRE,
+  ACHIEVEMENT_HINT_AT,
+  TUTORIAL,
+  UI_BUTTONS,
   advanceTutorial,
+  affordableUpgradeIndex,
+  canAffordUpgrade,
   finishTutorial,
-  grantTutorialDust,
-  grantTutorialGrimoire,
+  markHintSeen,
+  migrateTutorial,
+  objectsVisible,
+  pendingHint,
+  settleTutorial,
   tutorialActive,
-  tutorialAllows,
   tutorialStep,
-  tutorialUpgradeIndex,
+  unlockedButtons,
 } from './tutorial';
 
 const fresh = () => newSave('tutorial', 0);
 
+/** Dá a poeira exata do 1º preço. */
+function withDustForFirstUpgrade(s: SaveState): SaveState {
+  const idx = affordableIndexAfterDust(s);
+  const cost = nextUpgradeCost(s, idx) as number;
+  return { ...s, run: { ...s.run, dust: cost, dustLife: cost } };
+}
+const affordableIndexAfterDust = (s: SaveState) => (nextUpgradeCost(s, 0) === null ? 1 : 0);
+
+/** Leva um save novo até o passo `to` pelo mesmo caminho do jogo (toque, compra, barra, escolha). */
+function reach(to: number): SaveState {
+  let s = fresh();
+  if (to === TUTORIAL.TOUCH) return s;
+  s = settleTutorial(withDustForFirstUpgrade(s));
+  if (to === TUTORIAL.UPGRADE) return s;
+  const idx = affordableUpgradeIndex(s) as number;
+  s = settleTutorial(buyUpgrade(s, idx));
+  if (to === TUTORIAL.BACK) return s;
+  s = advanceTutorial(s, TUTORIAL.BACK, TUTORIAL.FILL);
+  if (to === TUTORIAL.FILL) return s;
+  s = { ...s, run: { ...s.run, energy: energyCap(s.run.picks) - 0.01 } };
+  s = settleTutorial(press(s, 1));
+  if (to === TUTORIAL.CHOOSE) return s;
+  const offer = s.run.pending?.offers[0] as string;
+  s = settleTutorial(chooseGrimoire(selectGrimoire(s, offer, 3), offer, 3));
+  if (to === TUTORIAL.GRIMOIRES) return s;
+  return settleTutorial(advanceTutorial(s, TUTORIAL.GRIMOIRES, TUTORIAL.FREE));
+}
+
 describe('tutorial: passos', () => {
-  it('um save novo começa no passo 1 e o tutorial está ativo', () => {
+  it('um save novo começa no passo 1, ativo, sem nada liberado', () => {
     const s = fresh();
     expect(tutorialActive(s)).toBe(true);
     expect(tutorialStep(s)).toBe(1);
+    expect(s.ui).toEqual({ unlocked: [], hints: [] });
+    expect([...unlockedButtons(s)]).toEqual([]);
+    expect(objectsVisible(s)).toBe(false);
   });
 
   it('só avança do passo em que está (toque repetido não pula passos)', () => {
@@ -30,96 +67,186 @@ describe('tutorial: passos', () => {
     expect(advanceTutorial(s, 3, 4)).toBe(s);
   });
 
-  it('pular ou terminar marca como feito e não mexe no resto', () => {
+  it('pular marca como feito, libera todos os botões e não mexe no resto', () => {
     const s = fresh();
     const done = finishTutorial(s);
     expect(done.tutorial).toBe('done');
     expect(tutorialActive(done)).toBe(false);
     expect(tutorialStep(done)).toBeNull();
     expect(finishTutorial(done)).toBe(done);
+    expect([...unlockedButtons(done)].sort()).toEqual([...UI_BUTTONS].sort());
+    expect(objectsVisible(done)).toBe(true);
     expect({ ...done, tutorial: 1 }).toEqual(s);
   });
-
-  it('o pulso é a melhoria do passo 4', () => {
-    expect(UPGRADES[tutorialUpgradeIndex()]?.id).toBe('pulse');
-  });
 });
 
-describe('tutorial: concessões', () => {
-  it('a Lua entra como escolha de verdade e nunca deixa escolha aberta', () => {
+describe('tutorial: do primeiro toque ao jogo livre', () => {
+  it('passo 1: enquanto a poeira não cobre a 1ª melhoria, nada muda', () => {
     let s = fresh();
-    s = { ...s, run: { ...s.run, energy: 55 } };
-    s = grantTutorialGrimoire(press(s, 1));
-    expect(s.run.build[TUTORIAL_GRIMOIRE]).toBe(1);
-    expect(s.album).toContain(TUTORIAL_GRIMOIRE);
-    expect(s.run.picks).toBe(1);
-    expect(s.stats.picks).toBe(1);
-    expect(s.run.energy).toBe(0);
-    expect(s.run.pending).toBeNull();
+    for (let i = 1; i <= 5; i++) s = settleTutorial(press(s, i));
+    expect(s.tutorial).toBe(TUTORIAL.TOUCH);
+    expect(canAffordUpgrade(s)).toBe(false);
+    expect([...unlockedButtons(s)]).toEqual([]);
   });
 
-  it('repetir a concessão não conta duas escolhas nem duplica o álbum', () => {
-    const once = grantTutorialGrimoire(fresh());
-    const twice = grantTutorialGrimoire(once);
-    expect(twice.run.picks).toBe(1);
-    expect(twice.album).toEqual([TUTORIAL_GRIMOIRE]);
+  it('passo 2: poeira da 1ª melhoria libera Melhorias, e só ela', () => {
+    const s = reach(TUTORIAL.UPGRADE);
+    expect(s.tutorial).toBe(TUTORIAL.UPGRADE);
+    expect([...unlockedButtons(s)]).toEqual(['upgrades']);
+    expect(affordableUpgradeIndex(s)).not.toBeNull();
   });
 
-  it('a poeira cobre exatamente a 1ª compra e a compra funciona', () => {
-    const s = grantTutorialDust(grantTutorialGrimoire(press(fresh(), 1)));
-    const idx = tutorialUpgradeIndex();
-    const cost = nextUpgradeCost(s, idx) as number;
-    expect(s.run.dust).toBeGreaterThanOrEqual(cost);
-    expect(s.run.dustLife).toBeGreaterThanOrEqual(s.run.dust);
-    expect(buyUpgrade(s, idx).run.upgradeLevels[idx]).toBe(1);
+  it('comprar leva ao passo 3 (voltar ao jogo); sem comprar, fica no 2', () => {
+    expect(settleTutorial(reach(TUTORIAL.UPGRADE)).tutorial).toBe(TUTORIAL.UPGRADE);
+    expect(reach(TUTORIAL.BACK).tutorial).toBe(TUTORIAL.BACK);
   });
 
-  it('quem já tem poeira de sobra não perde nada', () => {
-    const s = fresh();
-    const rich = { ...s, run: { ...s.run, dust: 9000, dustLife: 9000 } };
-    expect(grantTutorialDust(rich)).toBe(rich);
+  it('a barra cheia abre a escolha do 1º grimório e libera Grimórios', () => {
+    const s = reach(TUTORIAL.CHOOSE);
+    expect(s.tutorial).toBe(TUTORIAL.CHOOSE);
+    expect(s.run.pending).not.toBeNull();
+    expect(unlockedButtons(s).has('grimoires')).toBe(true);
+    expect(unlockedButtons(s).has('achievements')).toBe(false);
+    expect(unlockedButtons(s).has('tree')).toBe(false);
+  });
+
+  it('escolher o grimório leva ao passo 6; abrir a página leva ao jogo livre', () => {
+    const s = reach(TUTORIAL.GRIMOIRES);
+    expect(s.tutorial).toBe(TUTORIAL.GRIMOIRES);
+    expect(s.album).toHaveLength(1);
+    expect(reach(TUTORIAL.FREE).tutorial).toBe(TUTORIAL.FREE);
+    expect(objectsVisible(reach(TUTORIAL.FREE))).toBe(true);
+  });
+
+  it('barra cheia antes de comprar pula direto para a escolha, sem perder o que já aprendeu', () => {
+    let s = fresh();
+    s = { ...s, run: { ...s.run, energy: energyCap(0) - 0.01 } };
+    s = settleTutorial(press(s, 1));
+    expect(s.tutorial).toBe(TUTORIAL.CHOOSE);
+    expect(unlockedButtons(s).has('upgrades')).toBe(true);
+    expect(unlockedButtons(s).has('grimoires')).toBe(true);
+  });
+
+  it('o botão de Melhorias também vem do progresso (comprou), mesmo que ui.unlocked esteja vazio', () => {
+    const bought = reach(TUTORIAL.BACK);
+    const stripped = { ...bought, ui: { unlocked: [], hints: [] } };
+    expect(unlockedButtons(stripped).has('upgrades')).toBe(true);
   });
 });
 
-describe('tutorial: o que o motor permite', () => {
-  const at = (step: number | 'done') => ({ ...fresh(), tutorial: step });
-  it('toque só no passo 1 (ou concluído)', () => {
-    expect(tutorialAllows(at(1), 'press')).toBe(true);
-    for (const n of [2, 3, 4, 5]) expect(tutorialAllows(at(n), 'press')).toBe(false);
-    expect(tutorialAllows(at('done'), 'press')).toBe(true);
+describe('tutorial: cartões do jogo livre', () => {
+  const free = () => reach(TUTORIAL.FREE);
+  const withAchievements = (s: SaveState, n: number) => ({ ...s, achievements: ['tap-1', 'tap-100', 'dust-1k'].slice(0, n) });
+  const withObject = (s: SaveState) => ({
+    ...s,
+    run: { ...s.run, objects: [{ id: 1, kind: 'comet' as const, bornAt: 0, expiresAt: 9 }] },
   });
 
-  it('compra só do Pulso Solar e só no passo 4', () => {
-    const pulse = tutorialUpgradeIndex();
-    expect(tutorialAllows(at(4), 'buy', pulse)).toBe(true);
-    expect(tutorialAllows(at(4), 'buy', pulse + 1)).toBe(false);
-    expect(tutorialAllows(at(3), 'buy', pulse)).toBe(false);
-    expect(tutorialAllows(at('done'), 'buy', pulse + 1)).toBe(true);
+  it('só a 1ª conquista (a do primeiro toque) não dispara o cartão de Conquistas', () => {
+    expect(ACHIEVEMENT_HINT_AT).toBe(2);
+    expect(pendingHint(withAchievements(free(), 1))).toBeNull();
+    expect(unlockedButtons(settleTutorial(withAchievements(free(), 1))).has('achievements')).toBe(false);
+  });
+
+  it('a conquista seguinte dispara o cartão e libera o botão', () => {
+    const s = settleTutorial(withAchievements(free(), 2));
+    expect(pendingHint(s)).toBe('achievements');
+    expect(unlockedButtons(s).has('achievements')).toBe(true);
+  });
+
+  it('o objeto no campo dispara o cartão de objetos (sem botão novo)', () => {
+    const s = settleTutorial(withObject(free()));
+    expect(pendingHint(s)).toBe('objects');
+    expect(s.ui.unlocked).toEqual(['upgrades', 'grimoires']);
+  });
+
+  it('conquista vem antes de objeto quando os dois estão prontos', () => {
+    expect(pendingHint(withObject(withAchievements(free(), 2)))).toBe('achievements');
+  });
+
+  it('a árvore é o último: só depois dos outros dois, sem gatilho próprio', () => {
+    let s = free();
+    expect(pendingHint(s)).toBeNull();
+    s = markHintSeen(withAchievements(s, 2), 'achievements');
+    expect(pendingHint(s)).toBeNull();
+    s = markHintSeen(s, 'objects');
+    expect(pendingHint(s)).toBe('tree');
+    expect(unlockedButtons(settleTutorial(s)).has('tree')).toBe(true);
+  });
+
+  it('ver os três cartões conclui o tutorial e libera tudo', () => {
+    let s = free();
+    s = markHintSeen(markHintSeen(markHintSeen(s, 'achievements'), 'objects'), 'tree');
+    expect(s.tutorial).toBe('done');
+    expect(unlockedButtons(s).size).toBe(UI_BUTTONS.length);
+  });
+
+  it('marcar o mesmo cartão duas vezes não muda nada; fora do jogo livre não há cartão', () => {
+    const once = markHintSeen(free(), 'objects');
+    expect(markHintSeen(once, 'objects')).toBe(once);
+    expect(pendingHint(withObject(reach(TUTORIAL.CHOOSE)))).toBeNull();
+    expect(pendingHint(finishTutorial(withObject(free())))).toBeNull();
   });
 });
 
 describe('tutorial: save', () => {
-  it('cada passo e o "done" passam em validateSave, e o passo sobrevive ao ciclo', () => {
-    for (const t of [1, 2, 3, 4, 5, 'done'] as const) {
-      const r = validateSave({ ...fresh(), tutorial: t });
+  it('cada passo, o "done" e o ui passam em validateSave e sobrevivem ao ciclo', () => {
+    for (let t = 1; t <= TUTORIAL.FREE; t++) {
+      const r = validateSave({ ...fresh(), tutorial: t, ui: { unlocked: ['upgrades'], hints: ['objects'] } });
       expect(r.ok, String(t)).toBe(true);
-      if (r.ok) expect(r.save.tutorial).toBe(t);
+      if (r.ok) {
+        expect(r.save.tutorial).toBe(t);
+        expect(r.save.ui).toEqual({ unlocked: ['upgrades'], hints: ['objects'] });
+      }
     }
+    const done = validateSave({ ...fresh(), tutorial: 'done' });
+    expect(done.ok && done.save.tutorial).toBe('done');
   });
 
-  it('a poeira entregue no tutorial não é cortada pela validação de ritmo', () => {
-    const base = grantTutorialDust(grantTutorialGrimoire(press(fresh(), 1)));
-    const s = { ...base, playSeconds: 4, tutorial: 3 as const };
-    const r = validateSave(s, { nowMs: 60_000, createdAtMs: 0 });
-    expect(r.ok).toBe(true);
-    if (r.ok) {
-      expect(r.flagged).toEqual([]);
-      expect(r.save.run.dust).toBe(s.run.dust);
-    }
+  it('ui com botão ou cartão desconhecido é recusado', () => {
+    expect(validateSave({ ...fresh(), ui: { unlocked: ['segredo'], hints: [] } }).ok).toBe(false);
+    expect(validateSave({ ...fresh(), ui: { unlocked: [], hints: ['segredo'] } }).ok).toBe(false);
   });
 
-  it('save antigo sem campo novo continua válido (o tutorial não criou campo)', () => {
-    const r = validateSave(JSON.parse(JSON.stringify(fresh())));
-    expect(r.ok).toBe(true);
+  describe('saves de antes do tutorial dinâmico (sem ui)', () => {
+    const old = (patch: Partial<SaveState>) => {
+      const rest: Partial<SaveState> = { ...fresh(), ...patch };
+      delete rest.ui;
+      return rest;
+    };
+    const played = { stats: { ...fresh().stats, clicks: 40 } };
+
+    it('com progresso entram com o tutorial concluído, mesmo parados num passo do roteiro antigo', () => {
+      for (const t of ['done', 1, 3, 5] as const) {
+        const r = validateSave(old({ ...played, tutorial: t }));
+        expect(r.ok, String(t)).toBe(true);
+        if (r.ok) {
+          expect(r.save.tutorial).toBe('done');
+          expect(r.save.ui).toEqual({ unlocked: [], hints: [] });
+          expect(unlockedButtons(r.save).size).toBe(UI_BUTTONS.length);
+        }
+      }
+    });
+
+    it('sem nenhum toque recomeçam do passo 1 (o roteiro antigo não vale mais)', () => {
+      const r = validateSave(old({ tutorial: 3 }));
+      expect(r.ok && r.save.tutorial).toBe(1);
+    });
+
+    it('migrateTutorial não mexe em save que já tem ui', () => {
+      const s = reach(TUTORIAL.BACK);
+      expect(migrateTutorial(s)).toBe(s);
+    });
+  });
+
+  it('juntar saves une o que cada aparelho já mostrou', () => {
+    const a = { ...reach(TUTORIAL.FREE), ui: { unlocked: ['upgrades', 'grimoires'] as const, hints: ['objects'] as const } };
+    const b = { ...reach(TUTORIAL.FREE), ui: { unlocked: ['achievements'] as const, hints: ['achievements'] as const } };
+    const { save } = mergeSaves(
+      { ...a, ui: { unlocked: [...a.ui.unlocked], hints: [...a.ui.hints] } },
+      { ...b, ui: { unlocked: [...b.ui.unlocked], hints: [...b.ui.hints] } },
+    );
+    expect(new Set(save.ui.unlocked)).toEqual(new Set(['upgrades', 'grimoires', 'achievements']));
+    expect(new Set(save.ui.hints)).toEqual(new Set(['objects', 'achievements']));
   });
 });

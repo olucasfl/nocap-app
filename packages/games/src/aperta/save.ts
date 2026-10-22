@@ -21,7 +21,7 @@ import {
 } from './economy';
 import { eventsOpen, mechanicOpen, missionById } from './content';
 import { SAVE_VERSION, effectiveStats, upgradeLock, type SaveState } from './engine';
-import { TUTORIAL_DUST_ALLOWANCE } from './tutorial';
+import { TUTORIAL_HINTS, UI_BUTTONS, migrateTutorial } from './tutorial';
 
 /** Tamanho máximo do save em JSON (o real fica em poucos KB). */
 export const MAX_SAVE_BYTES = 64 * 1024;
@@ -103,6 +103,13 @@ const saveSchema = z.object({
   playSeconds: z.number().finite().min(0).max(MAX_PLAY_SECONDS),
   clock: stamp,
   tutorial: z.union([z.literal('done'), z.number().int().min(1).max(MAX_TUTORIAL_STEP)]),
+  // Saves de antes do tutorial dinâmico não têm `ui`: `migrateTutorial` os trata depois da leitura.
+  ui: z
+    .object({
+      unlocked: z.array(z.enum(UI_BUTTONS as [string, ...string[]])).max(UI_BUTTONS.length),
+      hints: z.array(z.enum(TUTORIAL_HINTS as [string, ...string[]])).max(TUTORIAL_HINTS.length),
+    })
+    .optional(),
   storySeen: z.boolean(),
   run: runSchema,
   album: z.array(id).max(GRIMOIRES.length),
@@ -178,7 +185,7 @@ export function validateSave(raw: unknown, opts: ValidateOptions = {}): SaveVali
     return { ok: false, errors };
   }
   // O zod devolve uma cópia profunda (e descarta chaves desconhecidas): daqui para frente pode-se alterar.
-  const save = parsed.data as unknown as SaveState;
+  const save = migrateTutorial(parsed.data as unknown as SaveState);
   const errors: string[] = [];
   const flagged: string[] = [];
   const c = save.collapses;
@@ -287,7 +294,7 @@ export function validateSave(raw: unknown, opts: ValidateOptions = {}): SaveVali
       flagged.push('playSeconds');
     }
   }
-  const ceiling = dustPerSecondCeiling(save) * save.playSeconds + effectiveStats(save).startDust + 1000 + TUTORIAL_DUST_ALLOWANCE;
+  const ceiling = dustPerSecondCeiling(save) * save.playSeconds + effectiveStats(save).startDust + 1000;
   if (run.dustLife > ceiling) {
     const excess = run.dustLife - ceiling;
     run.dustLife = ceiling;
@@ -377,6 +384,10 @@ export function mergeSaves(a: SaveState, b: SaveState): MergeResult {
     createdAt: createdAts.length > 0 ? Math.min(...createdAts) : top.createdAt,
     playSeconds: maxNum(a.playSeconds, b.playSeconds),
     tutorial,
+    ui: {
+      unlocked: union(a.ui.unlocked, b.ui.unlocked) as SaveState['ui']['unlocked'],
+      hints: union(a.ui.hints, b.ui.hints) as SaveState['ui']['hints'],
+    },
     storySeen: a.storySeen || b.storySeen,
     album: union(top.album, other.album),
     atlas: { slots, pages },

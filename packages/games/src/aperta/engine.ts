@@ -4,6 +4,7 @@
 
 import { hashSeed } from '../core/rng';
 import { awardAchievements } from './achievements';
+import type { UiState } from './tutorial';
 import {
   FAMILIES,
   GRIMOIRES,
@@ -154,6 +155,8 @@ export interface SaveState {
   /** Último `now` visto; a diferença para o próximo é o tempo que passou. */
   clock: number;
   tutorial: number | 'done';
+  /** O que o tutorial já liberou e mostrou (botões do dock, cartões); ver tutorial.ts. */
+  ui: UiState;
   storySeen: boolean;
   run: RunState;
   album: string[];
@@ -255,6 +258,7 @@ export function newSave(seed: string, createdAt = 0, name = 'Missão Perigeu'): 
     playSeconds: 0,
     clock: 0,
     tutorial: 1,
+    ui: { unlocked: [], hints: [] },
     storySeen: false,
     run: freshRun(hashSeed(seed)),
     album: [],

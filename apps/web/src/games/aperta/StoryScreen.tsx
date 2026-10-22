@@ -1,7 +1,29 @@
 import { apertaSfx } from '@/lib/aperta-audio';
+import { GRIMOIRES } from '@nocap/games';
 import { useState } from 'react';
 import { StoryScene } from './art';
+import { GrimoireBook } from './GrimoireBook';
+import { SpaceArtSprite } from './SpaceArtSprite';
+import { artRarity, astroFor } from './game-logic';
 import { STORY, storyButton, storyNext, storySkip, storyStart } from './story';
+
+/** Os livros da última tela: um comum, um raro e um épico do catálogo, os mesmos das cartas de grimório. */
+const STORY_BOOKS = (['common', 'rare', 'epic'] as const).flatMap((rarity) => {
+  const def = rarity === 'common' ? (GRIMOIRES.find((g) => g.id === 'moon') ?? GRIMOIRES.find((g) => g.rarity === rarity)) : GRIMOIRES.find((g) => g.rarity === rarity);
+  return def ? [def] : [];
+});
+
+function StoryBooks() {
+  return (
+    <div className="ap-scene ap-story-books" aria-hidden="true">
+      {/* As medalhas dos livros vêm do sprite de astros, que a tela de jogo monta mas a história não. */}
+      <SpaceArtSprite />
+      {STORY_BOOKS.map((g) => (
+        <GrimoireBook key={g.id} rarity={artRarity(g.rarity)} astro={astroFor(g.id, g.family)} name={g.name} size="md" still />
+      ))}
+    </div>
+  );
+}
 
 /** A história de 4 telas, só no primeiro jogo de cada save (spec 038, 3.3). */
 export function StoryScreen({ onDone }: { onDone: () => void }) {
@@ -20,7 +42,7 @@ export function StoryScreen({ onDone }: { onDone: () => void }) {
   return (
     <section className="ap-story ap-screen-in" aria-label="História">
       <div className="ap-story-box">
-        <StoryScene index={state.index} />
+        {state.index === STORY.length - 1 ? <StoryBooks /> : <StoryScene index={state.index} />}
         <p className="ap-story-k">
           Registro {state.index + 1} de {STORY.length}
         </p>

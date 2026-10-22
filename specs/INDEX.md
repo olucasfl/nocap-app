@@ -41,6 +41,6 @@
 | 035 | [Bee Word's (7 letras, uma obrigatória)](035-bee-words.md) | 7 | rascunho |
 | 036 | [Classic Word's em fases (1, 2 e 4 palavras)](036-classic-fases.md) | 7 | concluída |
 | 037 | [Progresso das fases na conta](037-progresso-na-conta.md) | 7 | concluída |
-| 038 | [Aperta! (clicker no espaço, solo, saves na conta)](038-clicker.md) | 8 | em andamento na `develop`: etapas 1, 2 (falta aplicar a migration), 3, 4, 5 (Melhorias), 6 (grimórios e álbum), 7 (objetos no espaço), 8 (tutorial), 9 (colapso e Atlas), 10 (Árvore e conquistas), 11 e 11b (arte e sons, incluindo as telas novas) e 12 (conteúdo dos colapsos 1 a 5) prontas; economia reformulada em 22/10/2026 (começo do zero, melhorias progressivas, grimórios em números, vidas 1 a 5 recalibradas); ver seção 16 da spec |
+| 038 | [Aperta! (clicker no espaço, solo, saves na conta)](038-clicker.md) | 8 | em andamento na `develop`: etapas 1, 2 (falta aplicar a migration), 3, 4, 5 (Melhorias), 6 (grimórios e álbum), 7 (objetos no espaço), 8 (tutorial, refeito como dinâmico em 22/10/2026), 9 (colapso e Atlas), 10 (Árvore e conquistas), 11 e 11b (arte e sons, incluindo as telas novas) e 12 (conteúdo dos colapsos 1 a 5) prontas; economia reformulada em 22/10/2026 (começo do zero, melhorias progressivas, grimórios em números, vidas 1 a 5 recalibradas); ver seção 16 da spec |
 
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.

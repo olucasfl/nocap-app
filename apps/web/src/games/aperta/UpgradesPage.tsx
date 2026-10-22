@@ -1,5 +1,5 @@
 import { apertaSfx, apertaVibrate } from '@/lib/aperta-audio';
-import { formatNumber, type SaveState } from '@nocap/games';
+import { affordableUpgradeIndex, formatNumber, type SaveState } from '@nocap/games';
 import { AstroMedal } from './AstroMedal';
 import { buyLabel, upgradeRows, type UpgradeRow } from './upgrades-logic';
 import './upgrades.css';
@@ -9,7 +9,7 @@ interface Props {
   onBuy: (index: number) => boolean | void;
 }
 
-function UpgradeCard({ row, onBuy }: { row: UpgradeRow; onBuy: (index: number) => boolean | void }) {
+function UpgradeCard({ row, onBuy, tutorialTarget }: { row: UpgradeRow; onBuy: (index: number) => boolean | void; tutorialTarget: boolean }) {
   const canBuy = row.status === 'affordable';
   const label =
     row.status === 'affordable'
@@ -36,7 +36,7 @@ function UpgradeCard({ row, onBuy }: { row: UpgradeRow; onBuy: (index: number) =
       <button
         type="button"
         className="ap-up-buy"
-        data-tut={row.id === 'pulse' ? 'buy-pulse' : undefined}
+        data-tut={tutorialTarget ? 'buy-first' : undefined}
         aria-label={label}
         aria-disabled={!canBuy}
         onClick={() => {
@@ -62,10 +62,12 @@ function UpgradeCard({ row, onBuy }: { row: UpgradeRow; onBuy: (index: number) =
 /** Corpo da página de Melhorias (spec 038, 3.5 e 5.1): um cartão por melhoria que o colapso atual abriu. */
 export function UpgradesPage({ state, onBuy }: Props) {
   const rows = upgradeRows(state);
+  // O tutorial aponta para a melhoria mais barata que já cabe na poeira.
+  const first = affordableUpgradeIndex(state);
   return (
     <ul className="ap-uplist" aria-label="Melhorias">
       {rows.map((row) => (
-        <UpgradeCard key={row.id} row={row} onBuy={onBuy} />
+        <UpgradeCard key={row.id} row={row} onBuy={onBuy} tutorialTarget={row.index === first} />
       ))}
     </ul>
   );
