@@ -7,7 +7,8 @@
 // marca `flagged`, sem banir ninguém (seção 10.3).
 
 import { z } from 'zod';
-import { GRIMOIRES, OBJECTS, REGIONS, TREE, TREE_COSTS, UPGRADES, grimoireById, RARE_EFFECTS, type ObjectKind, type RareEffect } from './catalog';
+import { treeErrors, treeSpent, treeStats } from './tree';
+import { GRIMOIRES, OBJECTS, REGIONS, UPGRADES, grimoireById, RARE_EFFECTS, type ObjectKind, type RareEffect } from './catalog';
 import {
   COMBO_HARD_CAP,
   COST_FLOOR,
@@ -139,7 +140,7 @@ const saveSchema = z.object({
   seenUnlocks: z.array(id).max(MAX_SEEN_UNLOCKS),
   // Saves de antes da etapa 16 têm `fragments`: `migrateSparks` os transforma em `sparks` antes da leitura.
   sparks: z.object({ legacy: int(1e9), spent: int(1e9) }),
-  tree: z.record(id, z.number().int().min(0).max(TREE_COSTS.length)),
+  tree: z.record(id, z.number().int().min(0).max(5)),
   achievements: z.array(id).max(MAX_ACHIEVEMENTS),
   stats: z.object({
     clicks: int(Number.MAX_SAFE_INTEGER),
@@ -198,7 +199,7 @@ function migrateVault(raw: unknown): unknown {
   if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return raw;
   const o = raw as Record<string, unknown>;
   if (o.version !== 2) return raw;
-  const out: Record<string, unknown> = { ...o, version: SAVE_VERSION, vault: {}, seals: 0 };
+  const out: Record<string, unknown> = { ...o, version: 3, vault: {}, seals: 0 };
   const atlas = o.atlas as { pages?: unknown[] } | undefined;
   const pages = Array.isArray(atlas?.pages) ? (atlas?.pages as unknown[]).length : 0;
   delete out.atlas;
@@ -216,6 +217,18 @@ function migrateVault(raw: unknown): unknown {
     out.run = { ...run, build, pending };
   }
   return out;
+}
+
+/**
+ * Versão 3 para 4: a árvore antiga (6 ramos de 3 níveis) é descartada. O que ela custou volta como Cintilas livres
+ * (`sparks.spent` zera: era só o gasto na árvore), então ninguém perde nada e a árvore nova começa vazia.
+ */
+function migrateTree(raw: unknown): unknown {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return raw;
+  const o = raw as Record<string, unknown>;
+  if (o.version !== 3) return raw;
+  const sp = o.sparks as { legacy?: number; spent?: number } | undefined;
+  return { ...o, version: SAVE_VERSION, tree: {}, ...(sp && typeof sp.legacy === 'number' ? { sparks: { ...sp, spent: 0 } } : {}) };
 }
 
 export type SaveValidation =
@@ -268,7 +281,7 @@ export function validateSave(raw: unknown, opts: ValidateOptions = {}): SaveVali
   }
   if (size > MAX_SAVE_BYTES) return { ok: false, errors: ['Save grande demais'] };
 
-  const parsed = saveSchema.safeParse(migrateVault(migrateSparks(raw)));
+  const parsed = saveSchema.safeParse(migrateTree(migrateVault(migrateSparks(raw))));
   if (!parsed.success) {
     const errors = parsed.error.issues.slice(0, 8).map((i) => `${i.path.join('.') || 'save'}: ${i.message}`);
     return { ok: false, errors };
@@ -325,8 +338,10 @@ export function validateSave(raw: unknown, opts: ValidateOptions = {}): SaveVali
 
   // Escolhas e níveis: cada escolha compra um grimório novo (nível 1) ou sobe um repetido.
   const levels = Object.values(run.build);
-  if (Object.keys(run.build).length > run.picks) errors.push('Mais grimórios do que escolhas');
-  if (levels.reduce((a, b) => a + b, 0) > run.picks * MAX_LEVELS_PER_PICK) errors.push('Níveis demais para as escolhas');
+  // Cartas de capa (árvore): o favorito comum pode começar a vida num nível, sem ter gasto escolha.
+  const cover = treeStats(save.tree).coverLevel;
+  if (Object.keys(run.build).length > run.picks + (cover > 0 ? 1 : 0)) errors.push('Mais grimórios do que escolhas');
+  if (levels.reduce((a, b) => a + b, 0) > run.picks * MAX_LEVELS_PER_PICK + cover) errors.push('Níveis demais para as escolhas');
   if (run.picks > save.stats.picks) errors.push('Escolhas da vida maiores que o total');
   if (save.stats.picks < c) errors.push('Escolhas totais menores que os colapsos');
 
@@ -392,11 +407,8 @@ export function validateSave(raw: unknown, opts: ValidateOptions = {}): SaveVali
   if (st.rareStreak > st.rareStreakBest || st.rareStreakBest > st.picks) errors.push('Sequência de raros incoerente');
   if (st.legendaryOffers > st.offers && st.offers > 0) errors.push('Ofertas lendárias maiores que as ofertas');
   if (st.genBest > 400 || st.touchBest > UPGRADES.filter((u) => u.kind === 'touch').length) errors.push('Recorde de melhorias impossível');
-  let treeCost = 0;
-  for (const [branch, lvl] of Object.entries(save.tree)) {
-    if (!TREE.some((b) => b.id === branch)) errors.push(`Ramo desconhecido: ${branch}`);
-    for (let l = 1; l <= lvl; l++) treeCost += TREE_COSTS[l - 1] ?? 0;
-  }
+  errors.push(...treeErrors(save.tree));
+  const treeCost = treeSpent(save.tree);
   if (Object.keys(save.tree).length > 0 && c < 1) errors.push('Árvore antes do 1º colapso');
   if (treeCost > sparkSpent) errors.push('Árvore custa mais que as Cintilas gastas');
   // Piso do total ganho: cada colapso exigiu a meta de poeira da vida, nas regras de hoje ou nas de antes da
@@ -490,14 +502,10 @@ export function mergeSaves(a: SaveState, b: SaveState): MergeResult {
   const vault = mergeBest(a.vault, b.vault);
   const vaultOk = Object.values(vault).reduce((x, y) => x + y, 0) + maxNum(a.seals, b.seals) <= top.collapses;
 
-  // Árvore: máximo por ramo, só se as Cintilas gastas cobrem; senão fica a da vencedora.
+  // Árvore: máximo por nó (a união de duas árvores válidas é válida: os pais de um nó vêm de uma das duas), só se as Cintilas gastas cobrem; senão fica a da vencedora.
   const tree: Record<string, number> = { ...top.tree };
   for (const [branch, lvl] of Object.entries(other.tree)) tree[branch] = maxNum(tree[branch] ?? 0, lvl);
-  const treeCost = Object.values(tree).reduce((sum, lvl) => {
-    let cost = 0;
-    for (let l = 1; l <= lvl; l++) cost += TREE_COSTS[l - 1] ?? 0;
-    return sum + cost;
-  }, 0);
+  const treeCost = treeSpent(tree);
 
   const tutorial =
     top.tutorial === 'done' || other.tutorial === 'done' ? 'done' : Math.max(top.tutorial, other.tutorial);

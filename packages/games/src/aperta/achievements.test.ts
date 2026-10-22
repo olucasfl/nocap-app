@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ACHIEVEMENTS, achievementViews, awardAchievements, newlyEarned } from './achievements';
-import { TREE, upgradeIndex } from './catalog';
+import { upgradeIndex } from './catalog';
+import { TREE_NODES, nodeLive } from './tree';
 import {
   buyTreeNode,
   captureObject,
@@ -163,13 +164,14 @@ describe('colapsos e árvore', () => {
 
   it('comprar o 1º nó, completar um ramo e refazer (escondida)', () => {
     let s: SaveState = { ...newSave('a'), collapses: 1, sparks: { legacy: 20, spent: 0 } };
-    const branch = (TREE[0] as { id: string }).id;
     expect(has(s, 'tree-1')).toBe(false);
-    s = buyTreeNode(s, `${branch}:1`);
+    s = buyTreeNode(s, 'co-01');
     expect(has(s, 'tree-1')).toBe(true);
     expect(has(s, 'tree-branch')).toBe(false);
-    s = buyTreeNode(buyTreeNode(s, `${branch}:2`), `${branch}:3`);
-    expect(has(s, 'tree-branch')).toBe(true);
+    // Ramo completo = todos os nós que existem hoje no nível máximo (os que esperam uma mecânica não contam).
+    const live = TREE_NODES.filter((n) => n.branch === 'cosmos' && nodeLive(n));
+    const full = awardAchievements({ ...s, tree: Object.fromEntries(live.map((n) => [n.id, n.maxLevel])) });
+    expect(has(full, 'tree-branch')).toBe(true);
     expect(has(s, 'respec')).toBe(false);
 
     s = respecTree(s);
@@ -178,7 +180,6 @@ describe('colapsos e árvore', () => {
     expect(has(s, 'respec')).toBe(true);
     // Ganha-se uma vez: refazer a árvore não tira nada.
     expect(has(s, 'tree-1')).toBe(true);
-    expect(has(s, 'tree-branch')).toBe(true);
   });
 });
 

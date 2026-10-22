@@ -3,12 +3,13 @@
 // qual carta pegar. As horas que ele devolve são de jogo aberto, não de relógio de parede.
 
 import { createRng } from '../core/rng';
-import { OBJECTS, TREE, UPGRADES, grimoireById, treeNodeId, upgradeIndex, type ObjectKind } from './catalog';
+import { OBJECTS, UPGRADES, grimoireById, upgradeIndex, type ObjectKind } from './catalog';
+import { TREE_NODES, nodeLive } from './tree';
 import { formatDecimal, formatNumber } from './format';
 import { dustGoal, lifeHoursBand } from './economy';
 import { generatorsAtLevel, milestoneGoal, milestoneProgress } from './milestone';
 import {
-  buyTreeNode,
+  buyNode,
   buyUpgrade,
   canCollapse,
   collapseProgress,
@@ -23,7 +24,7 @@ import {
   press,
   selectGrimoire,
   tickObjects,
-  treeNodeCost,
+  nodeNextCost,
   type EffectiveStats,
   type SaveState,
 } from './engine';
@@ -80,7 +81,11 @@ export interface SimResult {
   alerts: string[];
 }
 
+/** Como o jogador simulado trata a árvore: compra o que dá na ordem de custo, nada, ou já começa com tudo que existe. */
+export type TreeMode = 'cost' | 'none' | 'full';
+
 export interface SimOptions {
+  tree?: TreeMode;
   profile: Profile['id'];
   seed: string;
   /** Quantos colapsos simular. */
@@ -230,25 +235,27 @@ function bestVault(state: SaveState, profile: Profile): string | null {
   return best;
 }
 
-function spendSparks(state: SaveState, profile: Profile): SaveState {
+/**
+ * Gasta as Cintilas na árvore. `cost` (padrão): o jogador compra, a cada colapso, o nó implementável mais barato que
+ * dá para pagar, na ordem de custo (empate: ordem da árvore); `none`: não compra nada; `full`: a árvore toda já vem
+ * comprada (ver `simulate`), então aqui não há o que gastar.
+ */
+function spendSparks(state: SaveState, mode: TreeMode): SaveState {
+  if (mode !== 'cost') return state;
   let s = state;
   for (;;) {
-    const base = score(s, profile);
     let bestId: string | null = null;
-    let bestRatio = 0;
-    for (const branch of TREE) {
-      const next = (s.tree[branch.id] ?? 0) + 1;
-      if (next > 3) continue;
-      const cost = treeNodeCost(next);
-      if (cost > sparksAvailable(s)) continue;
-      const gain = score({ ...s, tree: { ...s.tree, [branch.id]: next } }, profile) - base;
-      if (gain / cost > bestRatio) {
-        bestRatio = gain / cost;
-        bestId = treeNodeId(branch.id, next);
+    let bestCost = Infinity;
+    for (const n of TREE_NODES) {
+      const cost = nodeNextCost(s, n.id);
+      if (cost === null || cost > sparksAvailable(s)) continue;
+      if (cost < bestCost) {
+        bestCost = cost;
+        bestId = n.id;
       }
     }
     if (bestId === null) return s;
-    const bought = buyTreeNode(s, bestId);
+    const bought = buyNode(s, bestId);
     if (bought === s) return s;
     s = bought;
   }
@@ -282,7 +289,11 @@ export function simulate(options: SimOptions): SimResult {
   const dt = 1 / profile.touchesPerSec;
   const result: SimResult = { profile: options.profile, seed: options.seed, lives: [], grimoirePicks: {}, alerts: [] };
 
+  const treeMode: TreeMode = options.tree ?? 'cost';
   let state = newSave(options.seed);
+  if (treeMode === 'full') {
+    state = { ...state, tree: Object.fromEntries(TREE_NODES.filter(nodeLive).map((n) => [n.id, n.maxLevel])) };
+  }
   let t = 0;
   let lifeStart = 0;
   let milestones: (number | null)[] = MILESTONE_NAMES.map(() => null);
@@ -364,7 +375,7 @@ export function simulate(options: SimOptions): SimResult {
         result.alerts.push(`vida ${k} travou (o colapso foi recusado)`);
         break;
       }
-      state = spendSparks(state, profile);
+      state = spendSparks(state, treeMode);
       milestones = MILESTONE_NAMES.map(() => null);
       req = [null, null, null];
       lifeStart = t;
@@ -413,8 +424,9 @@ export function simulateAverage(
   seeds: readonly string[],
   collapses: number,
   maxHoursPerLife?: number,
+  tree?: TreeMode,
 ): { hours: number[]; results: SimResult[] } {
-  const results = seeds.map((seed) => simulate({ profile, seed, collapses, maxHoursPerLife }));
+  const results = seeds.map((seed) => simulate({ profile, seed, collapses, maxHoursPerLife, tree }));
   const hours: number[] = [];
   for (let i = 0; i < collapses; i++) {
     const values = results.map((r) => r.lives[i]?.hours).filter((h): h is number => h !== undefined);

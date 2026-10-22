@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { GRIMOIRES, OBJECTS, TREE, UPGRADES, grimoireById, upgradeIndex, type GrimoireDef } from './catalog';
+import { GRIMOIRES, OBJECTS, UPGRADES, grimoireById, upgradeIndex, type GrimoireDef } from './catalog';
 import { CHOICE_LOCK_SEC, MAX_NUMBER, dustGoal, energyCap, minPicks } from './economy';
 import { meetMilestone } from './milestone';
 import {
-  buyTreeNode,
   buyUpgrade,
   canCollapse,
   captureObject,
@@ -25,7 +24,6 @@ import {
   regionFor,
   rerollGrimoire,
   resumeClock,
-  respecTree,
   selectGrimoire,
   syncClock,
   tickObjects,
@@ -1088,78 +1086,6 @@ describe('colapso', () => {
       pending: { offers: ['moon', 'vesta', 'mars'], openedAt: 0, selected: null, picksLeft: 1, rerollsLeft: 0 },
     });
     expect(canCollapse(s)).toBe(false);
-  });
-});
-
-describe('Árvore de Habilidades', () => {
-  const withFragments = (n: number): SaveState => ({ ...newSave('tr'), collapses: 1, sparks: { legacy: n, spent: 0 } });
-
-  it('só abre depois do 1º colapso', () => {
-    const s = { ...newSave('tr'), sparks: { legacy: 9, spent: 0 } };
-    expect(buyTreeNode(s, 'alpha-centauri:1')).toBe(s);
-  });
-
-  it('custa 1, 2 e 4 Cintilas e exige o nível anterior', () => {
-    let s = withFragments(7);
-    expect(buyTreeNode(s, 'alpha-centauri:2')).toBe(s);
-    s = buyTreeNode(s, 'alpha-centauri:1');
-    expect(s.tree['alpha-centauri']).toBe(1);
-    expect(s.sparks.spent).toBe(1);
-    s = buyTreeNode(s, 'alpha-centauri:2');
-    s = buyTreeNode(s, 'alpha-centauri:3');
-    expect(s.tree['alpha-centauri']).toBe(3);
-    // 1 + 2 + 4 gastos; as conquistas da árvore (tree-1...) rendem Cintilas no caminho, então o saldo não é 0.
-    expect(s.sparks.spent).toBe(7);
-    expect(sparksAvailable(s)).toBeGreaterThanOrEqual(0);
-    expect(buyTreeNode(s, 'alpha-centauri:3')).toBe(s);
-  });
-
-  it('não compra sem saldo nem nó que não existe', () => {
-    const s = withFragments(0);
-    expect(buyTreeNode(s, 'alpha-centauri:1')).toBe(s);
-    expect(buyTreeNode(withFragments(9), 'nada:1')).toEqual(withFragments(9));
-  });
-
-  it('cada ramo altera os números finais', () => {
-    const level = (branch: string, n: number): SaveState => ({ ...newSave('tr'), collapses: 1, tree: { [branch]: n } });
-    expect(effectiveStats(level('alpha-centauri', 3)).dustPerTouch).toBeCloseTo(1.35, 9);
-    expect(effectiveStats(level('crab-nebula', 2)).energyPerTouch).toBeCloseTo(1.2, 9);
-    expect(effectiveStats(level('kuiper-belt', 3)).objects.maxOnField).toBe(4);
-    expect(effectiveStats(level('saturn-rings', 1)).combo.windowSec).toBeCloseTo(1.3 * 1.15, 9);
-    // Plêiades dá Satélites de graça (4 x 0,1 por segundo) e não mexe no toque.
-    expect(effectiveStats(level('pleiades', 3)).autoDustPerSec).toBeCloseTo(0.4, 9);
-    expect(effectiveStats(level('pleiades', 3)).dustPerTouch).toBe(1);
-  });
-
-  it('o Horizonte de Eventos reforça os proibidos do Cofre e corta o preço deles', () => {
-    const vault = { 'sagittarius-a': 1 };
-    const plain = effectiveStats({ ...newSave('eh'), collapses: 1, vault });
-    const boosted = effectiveStats({ ...newSave('eh'), collapses: 1, vault, tree: { 'event-horizon': 3 } });
-    expect(boosted.dustPerTouch).toBeGreaterThan(plain.dustPerTouch);
-    expect(boosted.energyPerTouch).toBeGreaterThan(plain.energyPerTouch);
-  });
-
-  it('refazer devolve 100% das Cintilas gastas e limpa a árvore', () => {
-    let s = withFragments(20);
-    s = buyTreeNode(buyTreeNode(buyTreeNode(s, 'alpha-centauri:1'), 'alpha-centauri:2'), 'crab-nebula:1');
-    expect(s.sparks.spent).toBe(4);
-    const reset = respecTree(s);
-    expect(reset.tree).toEqual({});
-    expect(reset.sparks.spent).toBe(0);
-    expect(sparksAvailable(reset)).toBeGreaterThanOrEqual(20);
-  });
-
-  it('refazer sem gasto, ou duas vezes seguidas, não cobra taxa extra', () => {
-    const s = withFragments(5);
-    expect(respecTree(s)).toBe(s);
-    const bought = buyTreeNode(s, 'alpha-centauri:1');
-    const once = respecTree(bought);
-    expect(respecTree(once)).toBe(once);
-  });
-
-  it('todos os 18 nós existem no catálogo', () => {
-    expect(TREE).toHaveLength(6);
-    for (const b of TREE) expect(b.levels).toHaveLength(3);
   });
 });
 

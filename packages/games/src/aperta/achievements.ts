@@ -7,7 +7,8 @@
 // árvore nova, sequência de dias) entra aqui com `needs` e só conta quando `FEATURES[needs]` for verdadeiro: a etapa que
 // entrega a feature liga a chave e o resto já funciona.
 
-import { GRIMOIRES, RARITIES, REGIONS, TREE, UPGRADES, grimoireById } from './catalog';
+import { GRIMOIRES, RARITIES, REGIONS, UPGRADES, grimoireById } from './catalog';
+import { TREE_BRANCHES, TREE_NODES, nodeLive } from './tree';
 import { FORBIDDEN_MAX_LEVEL } from './forbidden';
 import { GRIMOIRE_MAX_LEVEL } from './economy';
 import type { SaveState } from './engine';
@@ -98,7 +99,11 @@ export interface AchievementDef {
 const albumOf = (s: SaveState) => s.album.map((id) => grimoireById(id)).filter((g) => g !== undefined);
 const planetsFound = (s: SaveState) => albumOf(s).filter((g) => g.family === 'planets').length;
 const treeNodes = (s: SaveState) => Object.values(s.tree).reduce((sum, lvl) => sum + lvl, 0);
-const fullBranches = (s: SaveState) => TREE.filter((b) => (s.tree[b.id] ?? 0) >= 3).length;
+const fullBranches = (s: SaveState) =>
+  TREE_BRANCHES.filter((b) => {
+    const live = TREE_NODES.filter((n) => n.branch === b.id && nodeLive(n));
+    return live.length > 0 && live.every((n) => (s.tree[n.id] ?? 0) >= n.maxLevel);
+  }).length;
 const albumRarity = (r: (typeof RARITIES)[number]) => (s: SaveState) => albumOf(s).filter((g) => g.rarity === r).length;
 const count = (r: (typeof RARITIES)[number]) => GRIMOIRES.filter((g) => g.rarity === r).length;
 
@@ -329,7 +334,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
   def('tree-10', 'tree', 'M', 'Dez nós', 'Compre 10 níveis na árvore.', 10, treeNodes),
   def('tree-branch', 'tree', 'M', 'Ramo completo', 'Complete os 3 níveis de um ramo da árvore.', 1, fullBranches),
   def('tree-branch-3', 'tree', 'M', 'Três ramos', 'Complete 3 ramos da árvore.', 3, fullBranches),
-  def('tree-all', 'tree', 'L', 'Árvore completa', 'Complete todos os ramos da árvore.', TREE.length, fullBranches),
+  def('tree-all', 'tree', 'L', 'Árvore completa', 'Complete todos os ramos da árvore.', TREE_BRANCHES.length, fullBranches),
   ...([25, 50, 100, 120] as const).map((n) =>
     def(`tree-nodes-${n}`, 'tree', n >= 50 ? 'E' : 'L', `${n} nós`, `Compre ${n} nós na árvore nova.`, n, (s) => Object.keys(s.tree).length, { needs: 'tree-v2' }),
   ),

@@ -10,5 +10,5 @@ export * from './content';
 export * from './milestone';
 export * from './sparks';
 export * from './balance';
-export * from './tree-targets';
+export * from './tree';
 export * from './forbidden';

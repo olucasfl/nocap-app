@@ -1,5 +1,5 @@
 // Balanço das Cintilas (spec 040, seção 5.4): a conta que tem que fechar para a árvore completa ser alcançável.
-//   T   = custo total dos nós da árvore (hoje o alvo de `tree-targets.ts`; na etapa 17, a árvore real)
+//   T   = custo total dos nós da árvore (a árvore real de `tree.ts`)
 //   F   = fontes que acabam: conquistas + álbum + capturas raras e degraus + Estrela dos Proibidos
 //   R25 = o que as fontes que repetem dão até o colapso 25 no perfil normal
 // Regras: F >= 0,80 x T (a árvore quase toda se alcança só jogando e colecionando) e F + R25 >= 1,10 x T (a árvore
@@ -7,7 +7,7 @@
 
 import { dustGoal } from './economy';
 import { COLLAPSES_PER_SPARK, EVENT_IDS_NOW, EVENT_IDS_PLANNED, EVENT_FIRST_SPARKS, dustMarks, finiteSparksCeiling } from './sparks';
-import { targetTreeCost } from './tree-targets';
+import { TREE_TOTAL_COST } from './tree';
 
 export const BALANCE_COLLAPSE = 25;
 export const BALANCE_MIN_FINITE = 0.8;
@@ -29,7 +29,7 @@ export function dustTotalAtCollapse(n: number): number {
   return sum;
 }
 
-export function sparkBalance(tree: number = targetTreeCost(), collapse: number = BALANCE_COLLAPSE): SparkBalance {
+export function sparkBalance(tree: number = TREE_TOTAL_COST, collapse: number = BALANCE_COLLAPSE): SparkBalance {
   const f = finiteSparksCeiling();
   const collapseMarks = Math.floor(collapse / COLLAPSES_PER_SPARK);
   const dust = dustMarks(dustTotalAtCollapse(collapse));

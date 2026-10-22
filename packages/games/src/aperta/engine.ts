@@ -14,11 +14,8 @@ import {
   RARITIES,
   RARITY_WEIGHT,
   REGIONS,
-  TREE,
-  TREE_COSTS,
   UPGRADES,
   grimoireById,
-  treeNodeId,
   upgradeIndex,
   type Effect,
   type GrimoireDef,
@@ -33,6 +30,7 @@ import {
 import { ASSIGNABLE_MISSIONS, eventsOpen, mechanicOpen, missionById, type EventId, type MissionDef } from './content';
 import { MISSION_NEXT_DELAY_SEC, milestoneProgress, type MilestoneProgress } from './milestone';
 import { RARE_OBJECT_KINDS, LEGENDARY_OBJECT_KINDS, sparksAvailable } from './sparks';
+import { CONSTELLATION_MIN_NODES, branchesWith, nodeLevelCost, nodeLive, parentsMet, treeNodeById, treeSourceEffects, treeStats, type TreeStats } from './tree';
 import { FORBIDDEN_IDS, FORBIDDEN_MAX_LEVEL, SEAL_DUST_PER_TOUCH, VAULT_OFFER_SIZE, forbiddenEffects } from './forbidden';
 import {
   BASE_ENERGY_PER_TOUCH,
@@ -97,7 +95,7 @@ import {
 } from './economy';
 
 /** 3: Cofre dos Proibidos no lugar do Atlas (spec 040, etapa 15). */
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 /** Valor de "nunca tocou": negativo e finito, para o save continuar sendo JSON válido. */
 const NEVER = -1e9;
 
@@ -490,6 +488,8 @@ export interface EffectiveStats {
     fullMult: number;
   };
   costFactor: number;
+  /** Números da árvore que o motor lê fora de `Effect` (eco, capa, largada). */
+  tree: TreeStats;
   /** Cada melhoria comprada devolve a poeira de tantos toques. */
   buyRefundTouches: number;
   startDust: number;
@@ -585,11 +585,16 @@ function collectSources(state: SaveState): { sources: Source[] } {
     const effects = forbiddenEffects(id, lvl);
     if (effects.length > 0) sources.push({ effects, gain: 1, price: 1, count: 1, forbidden: true });
   }
-  for (const branch of TREE) {
-    const lvl = Math.min(3, state.tree[branch.id] ?? 0);
-    if (lvl > 0) sources.push({ effects: branch.levels[lvl - 1] as Effect[], gain: 1, price: 1, count: 1, forbidden: false });
-  }
+  // Árvore (spec 040, seção 6): os nós de poder direto e a força dos proibidos entram como uma fonte só.
+  const treeEffects = treeSourceEffects(state.tree);
+  if (treeEffects.length > 0) sources.push({ effects: treeEffects, gain: 1, price: 1, count: 1, forbidden: false });
   return { sources };
+}
+
+/** Poeira fixa por toque que a árvore soma: Sintonia (por nível de proibido) e Constelação (por ramo com 5 nós). */
+function treeFlatDust(state: SaveState, ts: TreeStats): number {
+  const vaultLevels = Object.values(state.vault).reduce((a, b) => a + b, 0);
+  return ts.attunePerForbiddenLevel * vaultLevels + ts.constellationPerBranch * branchesWith(state.tree, CONSTELLATION_MIN_NODES);
 }
 
 function computeStats(state: SaveState): EffectiveStats {
@@ -784,6 +789,7 @@ function computeStats(state: SaveState): EffectiveStats {
   }
 
   const costFactor = clampCostFactor(costFactors.reduce((a, b) => a * b, 1));
+  const ts = treeStats(state.tree);
 
   const comboMax = Math.min(COMBO_HARD_CAP, Math.max(0, Math.floor(COMBO_BASE_MAX + (has('cadence') ? 1 : 0) + comboMaxAdd)));
   const windowSec = (COMBO_BASE_WINDOW_SEC + windowSecAdd) * (1 + windowPct / 100) * windowMult;
@@ -791,7 +797,7 @@ function computeStats(state: SaveState): EffectiveStats {
   if (has('trained')) nth.push({ n: TRAINED_N, mult: TRAINED_MULT, energy: 0 });
   const touchDoublings = ['lens', 'lens2', 'cabin', 'webb'].filter(has).length;
   // Selo Estelar: poeira fixa por toque, por selo (spec 040, seção 3).
-  const flat = (has('gloves') ? 1 : 0) + (has('hands') ? Math.floor(generators / HANDS_GENERATORS_PER_POINT) : 0) + dustFlat + state.seals * SEAL_DUST_PER_TOUCH;
+  const flat = (has('gloves') ? 1 : 0) + (has('hands') ? Math.floor(generators / HANDS_GENERATORS_PER_POINT) : 0) + dustFlat + state.seals * SEAL_DUST_PER_TOUCH + treeFlatDust(state, ts);
   let dustPerTouch = (1 + flat) * 2 ** touchDoublings * Math.max(0, 1 + dustPct / 100) * dustMult;
   // Eco: os geradores alimentam o toque. É o que faz investir neles valer a pena sem o auto passar do teto.
   if (has('echo')) dustPerTouch += autoDust * ECHO_SHARE_OF_AUTO;
@@ -843,6 +849,7 @@ function computeStats(state: SaveState): EffectiveStats {
       fullMult: comboFullMult,
     },
     costFactor,
+    tree: ts,
     buyRefundTouches: refund,
     startDust: Math.floor(startDust),
     energyStepFactor: Math.max(0.1, 1 + stepPct / 100),
@@ -1157,6 +1164,8 @@ export function press(state: SaveState, now: number): SaveState {
       bonusEnergy += rule.energy;
     }
   }
+  // Eco do colapso: os primeiros toques da vida nova rendem várias vezes mais.
+  if (clicks <= stats.tree.echoTouches) value *= stats.tree.echoMult;
   if (run.afterCapture) value *= stats.objects.afterCaptureMult;
   if (now < run.boostUntil) value *= run.boostMult;
   // Toque de Sorte: sorteio por toque derivado do contador, para não mexer no `rngState` das cartas.
@@ -1666,8 +1675,16 @@ export function collapse(state: SaveState, choice?: string | null): SaveState {
     tutorial: 'done',
   };
   // A poeira inicial (Holmberg 15A, Titã) depende do Cofre novo, por isso a vida nova é montada depois dele.
-  const startDust = effectiveStats(base).startDust;
-  return awardAchievements({ ...base, run: { ...base.run, dust: startDust, dustLife: startDust } });
+  // Cartas de capa (árvore): o favorito comum já começa a vida no nível que o nó dá, sem gastar escolha.
+  const ts = treeStats(state.tree);
+  const fav = state.favorite !== null ? grimoireById(state.favorite) : undefined;
+  const build: RunState['build'] =
+    ts.coverLevel > 0 && fav && fav.rarity === 'common' && base.album.includes(fav.id) ? { [fav.id]: Math.min(GRIMOIRE_MAX_LEVEL, ts.coverLevel) } : {};
+  const seeded: SaveState = { ...base, run: { ...base.run, build } };
+  const fx = effectiveStats(seeded);
+  // Largada (árvore): a vida começa com um pouco de energia, sempre abaixo de encher a barra.
+  const energy = Math.min(fx.tree.warmStartTouches * fx.energyPerTouch, energyCap(0, fx.energyStepFactor) * 0.9);
+  return awardAchievements({ ...seeded, run: { ...seeded.run, energy, dust: fx.startDust, dustLife: fx.startDust } });
 }
 
 /** Marca (ou, com `null`, desmarca) o favorito. Só depois de o Favorito abrir e só um grimório já descoberto. */
@@ -1689,30 +1706,40 @@ export function setRegion(state: SaveState, regionId: string): SaveState {
 
 export { sparksAvailable };
 
-export function treeNodeCost(level: number): number {
-  return TREE_COSTS[level - 1] ?? Infinity;
+/** Custo de comprar o próximo nível do nó, ou `null` se não pode (fechado, no máximo, sem pai, sem a árvore aberta). */
+export function nodeNextCost(state: SaveState, nodeId: string): number | null {
+  if (state.collapses < 1) return null;
+  const n = treeNodeById(nodeId);
+  if (!n || !nodeLive(n)) return null;
+  const lvl = state.tree[nodeId] ?? 0;
+  if (lvl >= n.maxLevel || !parentsMet(state.tree, n)) return null;
+  return nodeLevelCost(n);
 }
 
-/** Compra o nó `branch:nível` com Cintilas. A árvore abre no 1º colapso e cada nível exige o anterior. */
-export function buyTreeNode(state: SaveState, nodeId: string): SaveState {
-  if (state.collapses < 1) return state;
-  const branch = TREE.find((b) => [1, 2, 3].some((l) => treeNodeId(b.id, l) === nodeId));
-  if (!branch) return state;
-  const target = [1, 2, 3].find((l) => treeNodeId(branch.id, l) === nodeId) as number;
-  const current = state.tree[branch.id] ?? 0;
-  if (target !== current + 1) return state;
-  const cost = treeNodeCost(target);
-  if (sparksAvailable(state) < cost) return state;
+/** Compra 1 nível do nó: confere a árvore aberta (1º colapso), a mecânica, os pré-requisitos, o nível máximo e as Cintilas. */
+export function buyNode(state: SaveState, nodeId: string): SaveState {
+  const cost = nodeNextCost(state, nodeId);
+  if (cost === null || sparksAvailable(state) < cost) return state;
   return awardAchievements({
     ...state,
-    tree: { ...state.tree, [branch.id]: target },
+    tree: { ...state.tree, [nodeId]: (state.tree[nodeId] ?? 0) + 1 },
     sparks: { legacy: state.sparks.legacy, spent: state.sparks.spent + cost },
   });
 }
 
+/** Compat com a tela atual: o id do nó é o mesmo. */
+export const buyTreeNode = buyNode;
+
+/** Só dá para refazer fora de uma vida em andamento: na tela de colapso (estrela pronta) ou com a vida ainda zerada. */
+export function canRespec(state: SaveState): boolean {
+  if (Object.keys(state.tree).length === 0) return false;
+  const r = state.run;
+  return canCollapse(state) || (r.clicks === 0 && r.picks === 0 && r.pending === null);
+}
+
 /** Refazer a árvore devolve 100% das Cintilas gastas, sem custo (spec 040, 5.3): a moeda é finita e dá para testar builds. */
 export function respecTree(state: SaveState): SaveState {
-  if (state.sparks.spent <= 0 || Object.keys(state.tree).length === 0) return state;
+  if (!canRespec(state)) return state;
   return awardAchievements({
     ...state,
     tree: {},

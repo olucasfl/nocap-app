@@ -6,21 +6,20 @@ import { GRIMOIRES } from './catalog';
 import { FORBIDDEN } from './forbidden';
 import { BALANCE_COLLAPSE, BALANCE_MIN_FINITE, BALANCE_MIN_TOTAL, dustTotalAtCollapse, sparkBalance } from './balance';
 import { ALBUM_SPARKS, RARE_CAPTURE_STEPS, STAR_STEPS, finiteSparksCeiling } from './sparks';
-import { TARGET_BRANCHES, TIER_COST, targetNodeCount, targetTreeCost } from './tree-targets';
+import { TREE_BRANCHES, TREE_NODES, TREE_TIER_COST, TREE_TOTAL_COST } from './tree';
 
-describe('árvore alvo (T)', () => {
-  it('5 ramos de 24 nós, ~120 nós, custo por tier 1, 2, 3, 5 e 8', () => {
-    expect(TIER_COST).toEqual([1, 2, 3, 5, 8]);
-    expect(TARGET_BRANCHES).toHaveLength(5);
-    for (const b of TARGET_BRANCHES) expect(b.nodes).toHaveLength(24);
-    expect(targetNodeCount()).toBe(120);
-    for (const b of TARGET_BRANCHES) for (const n of b.nodes) expect(n.levels).toBeGreaterThanOrEqual(1);
+describe('a árvore real (T)', () => {
+  it('5 ramos de 24 nós, 120 nós, custo por tier 1, 2, 3, 5 e 8', () => {
+    expect(TREE_TIER_COST).toEqual([1, 2, 3, 5, 8]);
+    expect(TREE_BRANCHES).toHaveLength(5);
+    for (const b of TREE_BRANCHES) expect(TREE_NODES.filter((n) => n.branch === b.id)).toHaveLength(24);
+    expect(TREE_NODES).toHaveLength(120);
   });
 
   it('T bate com a soma dos níveis x custo do tier e fica entre 500 e 600', () => {
     let t = 0;
-    for (const b of TARGET_BRANCHES) for (const n of b.nodes) t += n.levels * TIER_COST[n.tier - 1]!;
-    expect(targetTreeCost()).toBe(t);
+    for (const n of TREE_NODES) t += n.maxLevel * TREE_TIER_COST[n.tier - 1]!;
+    expect(TREE_TOTAL_COST).toBe(t);
     expect(t).toBeGreaterThanOrEqual(500);
     expect(t).toBeLessThanOrEqual(600);
   });
@@ -66,7 +65,7 @@ describe('balanço da seção 5.4', () => {
   });
 
   it('o teste pega o desbalanceamento: uma árvore 2x mais cara quebra a regra', () => {
-    const big = sparkBalance(2 * targetTreeCost());
+    const big = sparkBalance(2 * TREE_TOTAL_COST);
     expect(big.totalOk).toBe(false);
   });
 

@@ -50,7 +50,7 @@ describe('saves antigos (anteriores à spec 040)', () => {
     expect(r.save.album).toEqual(raw.album);
     // O Atlas virou Cintilas (valor fixo por página) e o Cofre começa vazio.
     expect((r.save as unknown as Record<string, unknown>).atlas).toBeUndefined();
-    expect(r.save.version).toBe(3);
+    expect(r.save.version).toBe(4);
     expect(r.save.vault).toEqual({});
     expect(r.save.seals).toBe(0);
   });
@@ -66,7 +66,7 @@ describe('saves antigos (anteriores à spec 040)', () => {
     expect(again.ok, again.ok ? '' : again.errors.join(' | ')).toBe(true);
   });
 
-  it.each(names)('%s: os Fragmentos viram Cintilas 1:1 (saldo e gasto) e os totais novos entram zerados', (name) => {
+  it.each(names)('%s: os Fragmentos viram Cintilas 1:1 (o gasto na árvore antiga volta livre) e os totais novos entram zerados', (name) => {
     const raw = load(name);
     const frag = raw.fragments as { earned: number; spent: number };
     expect(frag).toBeDefined();
@@ -74,10 +74,11 @@ describe('saves antigos (anteriores à spec 040)', () => {
     const r = validateSave(raw, opts(raw));
     if (!r.ok) throw new Error(r.errors.join(' | '));
     const pages = (raw.atlas as { pages: unknown[] }).pages.length;
-    expect(r.save.sparks).toEqual({ legacy: frag.earned + pages * ATLAS_PAGE_SPARKS, spent: frag.spent });
+    expect(r.save.sparks).toEqual({ legacy: frag.earned + pages * ATLAS_PAGE_SPARKS, spent: 0 });
     expect((r.save as unknown as Record<string, unknown>).fragments).toBeUndefined();
     // Quem migrou nunca fica com saldo menor que o de antes (as fontes novas só somam).
-    expect(sparksAvailable(r.save)).toBeGreaterThanOrEqual(frag.earned - frag.spent);
+    expect(sparksAvailable(r.save)).toBeGreaterThanOrEqual(frag.earned);
+    expect(r.save.tree).toEqual({});
     expect(r.save.stats).toMatchObject({ raresCaptured: 0, rareStreak: 0, forbiddenBest: {}, eventsSeen: [] });
     // As conquistas que o save já tinha continuam e valem Cintilas.
     for (const id of r.save.achievements) expect(achievementById(id), id).toBeDefined();

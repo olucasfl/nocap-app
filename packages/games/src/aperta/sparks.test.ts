@@ -1,7 +1,7 @@
 // Cintilas (spec 040, etapa 16): as fontes da seção 5.1, a migração dos Fragmentos e o gasto na árvore.
 import { describe, expect, it } from 'vitest';
 import { ACHIEVEMENTS, achievementById } from './achievements';
-import { GRIMOIRES, TREE, grimoireById } from './catalog';
+import { GRIMOIRES, grimoireById } from './catalog';
 import { FORBIDDEN } from './forbidden';
 import { buyTreeNode, newSave, respecTree, type SaveState } from './engine';
 import {
@@ -104,9 +104,8 @@ describe('saldo', () => {
 
   it('comprar na árvore gasta e refazer devolve 100%, mesmo sem nenhuma fonte', () => {
     let s = base({ collapses: 1, sparks: { legacy: 7, spent: 0 } });
-    const branch = (TREE[0] as { id: string }).id;
-    s = buyTreeNode(buyTreeNode(buyTreeNode(s, `${branch}:1`), `${branch}:2`), `${branch}:3`);
-    expect(s.sparks.spent).toBe(7);
+    s = buyTreeNode(buyTreeNode(buyTreeNode(s, 'co-02'), 'co-05'), 'co-11');
+    expect(s.sparks.spent).toBe(1 + 2 + 3);
     const back = respecTree(s);
     expect(back.sparks).toEqual({ legacy: 7, spent: 0 });
     expect(respecTree(back)).toBe(back);
@@ -133,16 +132,17 @@ describe('migração dos Fragmentos para Cintilas', () => {
     expect(sparksAvailable(r.save)).toBeGreaterThanOrEqual(9 - 3);
   });
 
-  it('os nós antigos da árvore continuam pagos', () => {
+  it('a árvore antiga é descartada e o gasto dela volta', () => {
     const raw = old({ earned: 9, spent: 7 });
     raw.tree = { 'alpha-centauri': 3 };
+    raw.version = 3;
     const r = validateSave(raw);
     expect(r.ok, r.ok ? '' : r.errors.join(' | ')).toBe(true);
-    if (r.ok) expect(r.save.tree['alpha-centauri']).toBe(3);
-    // Árvore que custa mais que o gasto continua recusada.
-    const bad = old({ earned: 9, spent: 2 });
-    bad.tree = { 'alpha-centauri': 3 };
-    expect(validateSave(bad).ok).toBe(false);
+    // A árvore antiga é descartada e o gasto volta como Cintilas livres (spec 040, etapa 17).
+    if (r.ok) {
+      expect(r.save.tree).toEqual({});
+      expect(r.save.sparks.spent).toBe(0);
+    }
   });
 
   it('um save já migrado (com `sparks`) não é tocado, e os dois campos juntos valem o novo', () => {

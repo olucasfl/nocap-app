@@ -192,7 +192,7 @@ describe('validateSave: coerência', () => {
 
   it('recusa árvore que custa mais que as Cintilas gastas', () => {
     const s = { ...newSave('x'), collapses: 1, tutorial: 'done' as const, regionId: 'asteroid-belt' };
-    const withTree = { ...s, tree: { 'alpha-centauri': 3 }, sparks: { legacy: 4, spent: 2 }, stats: { ...s.stats, picks: 1 } };
+    const withTree = { ...s, tree: { 'co-02': 1, 'co-05': 2, 'co-11': 1 }, sparks: { legacy: 4, spent: 2 }, stats: { ...s.stats, picks: 1 } };
     expect(rejects(withTree)).toContain('Árvore custa mais que as Cintilas gastas');
   });
 
@@ -336,10 +336,10 @@ describe('mergeSaves', () => {
       tree,
       sparks: { legacy: 8, spent },
     });
-    const r = mergeSaves(mk({ 'alpha-centauri': 2 }, 3), mk({ 'crab-nebula': 1 }, 1));
-    expect(r.save.tree).toEqual({ 'alpha-centauri': 2, 'crab-nebula': 1 });
+    const r = mergeSaves(mk({ 'co-02': 1, 'co-05': 1 }, 3), mk({ 'co-01': 1 }, 1));
+    expect(r.save.tree).toEqual({ 'co-02': 1, 'co-05': 1, 'co-01': 1 });
     expect(r.save.sparks).toEqual({ legacy: 8, spent: 4 });
-    const bad = mergeSaves(mk({ 'alpha-centauri': 3 }, 7), mk({ 'crab-nebula': 3 }, 7));
+    const bad = mergeSaves(mk({ 'co-02': 1, 'co-05': 2, 'co-11': 2 }, 7), mk({ 'co-01': 2, 'co-04': 2 }, 7));
     expect(bad.save.sparks.spent).toBeLessThanOrEqual(bad.save.sparks.legacy);
   });
 
