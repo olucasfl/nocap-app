@@ -920,6 +920,8 @@
   /* Quebra em duas linhas em vez de passar por cima do objeto vizinho (a recompensa pode ser longa). */
   width: max-content;
   max-width: min(124px, 38cqw);
+  /* O rótulo é só leitura: sem isso, o de um objeto cobre o vizinho e rouba o toque dele. */
+  pointer-events: none;
 }
 .ap-cap {
   position: absolute;
