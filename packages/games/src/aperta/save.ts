@@ -7,9 +7,8 @@
 // marca `flagged`, sem banir ninguém (seção 10.3).
 
 import { z } from 'zod';
-import { GRIMOIRES, OBJECTS, OBJECT_REWARD, REGIONS, TREE, TREE_COSTS, UPGRADES, grimoireById, type ObjectKind } from './catalog';
+import { GRIMOIRES, OBJECTS, REGIONS, TREE, TREE_COSTS, UPGRADES, grimoireById, type ObjectKind } from './catalog';
 import {
-  COMBO_BONUS_PER_POINT,
   COMBO_HARD_CAP,
   COST_FLOOR,
   GRIMOIRE_MAX_LEVEL,
@@ -21,7 +20,7 @@ import {
   upgradeCost,
 } from './economy';
 import { eventsOpen, mechanicOpen, missionById } from './content';
-import { SAVE_VERSION, effectiveStats, type SaveState } from './engine';
+import { SAVE_VERSION, effectiveStats, upgradeLock, type SaveState } from './engine';
 import { TUTORIAL_DUST_ALLOWANCE } from './tutorial';
 
 /** Tamanho máximo do save em JSON (o real fica em poucos KB). */
@@ -146,18 +145,21 @@ export interface ValidateOptions {
 
 const noDupes = (list: readonly string[]) => new Set(list).size === list.length;
 
-/** Teto de poeira por segundo de jogo para o que está comprado: 12 toques/s com tudo no máximo, mais objetos. */
+/**
+ * Teto de poeira por segundo de jogo para o que está comprado: 12 toques/s com tudo no máximo, mais
+ * objetos e o ganho passivo. Saves antigos (economia anterior à reformulação do começo, spec 038 6.2)
+ * passam por este mesmo teto: se a poeira da vida passa dele, `validateSave` corta ao teto e marca
+ * `dustLife` em `flagged`, sem recusar o save.
+ */
 function dustPerSecondCeiling(save: SaveState): number {
   const s = effectiveStats(save);
-  const comboMult = (1 + COMBO_BONUS_PER_POINT * s.combo.max) * (1 + s.combo.fullDustPct / 100);
+  const comboMult = (1 + s.combo.pointValue * s.combo.max) * s.combo.fullMult;
   const nthMult = s.nth.reduce((m, r) => m * Math.max(1, r.mult), 1);
   const burst = Math.max(1, s.objects.afterCaptureMult) * Math.max(1, s.objects.signalMult);
-  const perTouch = Math.max(1, s.dustPerTouch) * comboMult * nthMult * burst;
-  const maxValue = Math.max(...Object.values(s.objects.valueMult), 1);
-  const objects = s.objects.disabled
-    ? 0
-    : (1 / Math.max(0.5, s.objects.intervalSec)) * s.dustPerTouch * OBJECT_REWARD.cometTouches * maxValue;
-  return MAX_TOUCHES_PER_SEC * perTouch + objects;
+  const perTouch = (Math.max(1, s.dustPerTouch) + s.combo.fullDustAdd) * comboMult * nthMult * burst;
+  const bestObject = Math.max(...Object.values(s.objects.reward).map((r) => r.dust));
+  const objects = s.objects.disabled ? 0 : (1 / Math.max(0.5, s.objects.intervalSec)) * s.dustPerTouch * bestObject;
+  return MAX_TOUCHES_PER_SEC * perTouch + objects + s.dustPerSecond;
 }
 
 /** Confere formato e coerência de um save vindo de fora (aparelho ou banco). Não muta `raw`. */
@@ -231,12 +233,10 @@ export function validateSave(raw: unknown, opts: ValidateOptions = {}): SaveVali
     const lvl = run.upgradeLevels[i] ?? 0;
     if (lvl === 0) return;
     if (lvl > def.max) errors.push(`Nível acima do máximo: ${def.id}`);
-    if (def.unlockedAtCollapse > c) errors.push(`Melhoria de colapso futuro: ${def.id}`);
-    if (def.requiresPicks !== undefined && run.picks < def.requiresPicks) errors.push(`Melhoria trancada: ${def.id}`);
-    if (def.requiresUpgrade) {
-      const need = UPGRADES.findIndex((u) => u.id === def.requiresUpgrade?.id);
-      if ((run.upgradeLevels[need] ?? 0) < def.requiresUpgrade.level) errors.push(`Melhoria trancada: ${def.id}`);
-    }
+    // Liberação progressiva: o marco (poeira da vida ou nível de outra melhoria) e a exigência precisam estar cumpridos.
+    const lock = upgradeLock(save, i);
+    if (lock?.kind === 'collapse') errors.push(`Melhoria de colapso futuro: ${def.id}`);
+    else if (lock) errors.push(`Melhoria trancada: ${def.id}`);
     for (let l = 0; l < Math.min(lvl, def.max); l++) spent += upgradeCost(def, l, COST_FLOOR);
   });
   if (spent > run.dustLife * TOLERANCE + 1) errors.push('Melhorias custam mais que a poeira ganha');

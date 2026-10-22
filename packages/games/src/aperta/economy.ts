@@ -6,19 +6,22 @@ import { RARITY_UNLOCK_PICKS, SET_BONUS_THRESHOLDS, type Rarity, type UpgradeDef
 /** O motor trava qualquer número aqui (seção 7.5): evita Infinity e NaN em vidas longas. */
 export const MAX_NUMBER = 1e300;
 
-export const COST_GROWTH = 1.65;
 /** Descontos de custo são multiplicativos, mas nunca passam de 60% (piso de 40% do custo). */
 export const COST_FLOOR = 0.4;
 
 /** Energia base por toque; o Reator soma `REACTOR_STEP` por nível. */
-export const BASE_ENERGY_PER_TOUCH = 0.25;
-export const REACTOR_STEP = 0.125;
+export const BASE_ENERGY_PER_TOUCH = 1;
+export const REACTOR_STEP = 0.25;
 
-/** Passos de energia das seis primeiras escolhas; depois cresce `ENERGY_STEP_GROWTH` a cada escolha. */
-export const ENERGY_STEPS = [60, 90, 130, 180, 240, 320] as const;
+/**
+ * Passos de energia das seis primeiras escolhas; depois cresce `ENERGY_STEP_GROWTH` a cada escolha.
+ * O 1º passo fecha com ~50 de poeira ganha: 25 toques, a 1ª melhoria (25 de poeira) e mais ~13 toques
+ * de 2 poeira. As barras seguintes caem no começo (spec 038, 6.2).
+ */
+export const ENERGY_STEPS = [38, 80, 150, 260, 420, 640] as const;
 export const ENERGY_STEP_GROWTH = 1.35;
 
-/** Grimório repetido: +50% do efeito por nível, até o nível 10. */
+/** Grimório repetido: cada nível soma metade do número base (+0,5 vira +0,75, +1...), até o nível 10. */
 export const GRIMOIRE_MAX_LEVEL = 10;
 export const GRIMOIRE_LEVEL_STEP = 0.5;
 /** Uma página do Atlas guarda 60% do poder do grimório. */
@@ -28,19 +31,23 @@ export const ATLAS_BASE_SLOTS = 3;
 export const ATLAS_SLOT_COLLAPSES = [5, 10, 25, 50] as const;
 
 export const COMBO_BONUS_PER_POINT = 0.2;
+/** Cada nível da Ressonância depois do 1º soma isto ao valor de cada ponto de combo. */
+export const RESONANCE_POINT_PER_LEVEL = 0.05;
 export const COMBO_BASE_MAX = 3;
 export const COMBO_BASE_WINDOW_SEC = 1.3;
-export const COMBO_WINDOW_PER_LEVEL_SEC = 0.2;
 /** Teto duro de combo, para um empilhamento de grimórios não virar x(infinito). */
 export const COMBO_HARD_CAP = 12;
 
-export const OBJECT_BASE_INTERVAL_SEC = 9;
-export const OBJECT_BASE_MAX = 2;
-export const KEPLER_SPAWN_PER_LEVEL = 0.1;
-export const HUBBLE_VALUE_PER_LEVEL_PCT = 10;
-export const CHANDRA_LIFE_PER_LEVEL_PCT = 5;
-export const WEBB_COST_PER_LEVEL_PCT = -2;
+/** Objetos no espaço (spec 038, 4.5): raros no começo, a Kepler os traz mais cedo. */
+export const OBJECT_BASE_INTERVAL_SEC = 32;
+export const OBJECT_MIN_INTERVAL_SEC = 4;
+export const OBJECT_BASE_MAX = 1;
+export const KEPLER_INTERVAL_PER_LEVEL_SEC = 3;
+export const CHANDRA_LIFE_PER_LEVEL_SEC = 0.5;
 export const VOYAGER_SEC_PER_LEVEL = 1;
+/** Poder das melhorias de poeira: Hubble (por segundo) e Webb (por toque). */
+export const HUBBLE_DUST_PER_SEC_PER_LEVEL = 1;
+export const WEBB_DUST_PER_LEVEL = 5;
 
 /** Eventos (spec 038, 5.4): um a cada ~8 min de jogo (sorteio de ±25%), 15 s cada. */
 export const EVENT_INTERVAL_SEC = 480;
@@ -62,9 +69,12 @@ export const MAX_TOUCHES_PER_SEC = 12;
 /** Intervalo maior que isto entre duas chamadas conta como jogo parado (aba escondida): o tempo congela. */
 export const MAX_STEP_SEC = 5;
 
-/** Poeira inicial do Pulso Solar etc: custo do nível `level` (arredondado) com o fator de desconto aplicado. */
+/** Custo do nível `level` (0 = a 1ª compra), arredondado, com o fator de desconto aplicado. */
 export function upgradeCost(def: UpgradeDef, level: number, costFactor = 1): number {
-  const raw = def.base * Math.pow(COST_GROWTH, Math.max(0, level)) * clampCostFactor(costFactor);
+  const l = Math.max(0, level);
+  const soft = def.steep ? Math.min(l, def.steep.from) : l;
+  const hard = def.steep ? Math.max(0, l - def.steep.from) : 0;
+  const raw = def.base * Math.pow(def.growth, soft) * Math.pow(def.steep?.growth ?? 1, hard) * clampCostFactor(costFactor);
   return Math.min(MAX_NUMBER, Math.max(1, Math.round(raw)));
 }
 
@@ -111,10 +121,10 @@ export const TARGET_HOURS = [8, 5, 3.5, 3, 2.6, 2.3, 2.1, 1.9, 1.75, 1.6, 1.5, 1
 
 /** Poeira acumulada na vida necessária para a estrela ficar pronta (calibrada pelo simulador). */
 export const DUST_GOAL: number[] = [
-  // Vidas 1 a 5 (v1): calibradas pelo simulador, perfil normal, média de 60 sementes (spec 038, 6.6 e 6.7).
-  5.9e6, 7.7e6, 6.57e6, 8.15e6, 6.82e6,
+  // Vidas 1 a 5 (economia de 22/10/2026): calibradas pelo simulador, perfil normal, 60 sementes (spec 038, 6.6 e 6.7).
+  1.753e7, 6.621e7, 5.4e7, 6.5e7, 6.3e7,
   // Vidas 6 a 15: provisórias, sem calibrar (o conteúdo desses colapsos chega nas etapas 14 e 15).
-  5.5e6, 5.7e6, 5.9e6, 6.1e6, 6.3e6, 6.5e6, 6.7e6, 6.9e6, 7.1e6, 7.3e6,
+  6.3e7, 6.5e7, 6.7e7, 6.9e7, 7.1e7, 7.3e7, 7.5e7, 7.7e7, 7.9e7, 8.1e7,
 ];
 
 /** Escolhas mínimas: 20 no 1º colapso, 15 do 2º ao 5º e 12 a partir do 6º. */

@@ -66,9 +66,9 @@ describe('validateSave: formato', () => {
     const ready: SaveState = {
       ...fresh,
       tutorial: 'done',
-      run: { ...fresh.run, picks: 20, dust: 6e6, dustLife: 6e6, build: { moon: 1 } },
+      run: { ...fresh.run, picks: 20, dust: dustGoal(1), dustLife: dustGoal(1), build: { moon: 1 } },
       album: ['moon'],
-      stats: { ...fresh.stats, picks: 20, dustTotal: 6e6 },
+      stats: { ...fresh.stats, picks: 20, dustTotal: dustGoal(1) },
     };
     const s = collapse(ready, 'moon');
     expect(s.collapses).toBe(1);
@@ -155,7 +155,7 @@ describe('validateSave: coerência', () => {
   it('recusa nível acima do máximo e melhoria de colapso futuro', () => {
     const s = clone(base());
     s.run.dustLife = s.stats.dustTotal = 1e30;
-    s.run.upgradeLevels[0] = 31;
+    s.run.upgradeLevels[0] = UPGRADES[0]!.max + 1;
     expect(rejects(s)).toContain('Nível acima do máximo: pulse');
     const f = clone(base());
     f.run.dustLife = f.stats.dustTotal = 1e30;
@@ -364,4 +364,87 @@ describe('validateSave: partida longa de verdade', () => {
     }
     expect(s.collapses).toBeGreaterThanOrEqual(1);
   }, 120_000);
+});
+
+describe('validateSave: economia nova e saves antigos', () => {
+  const upg = (id: string) => UPGRADES.findIndex((u) => u.id === id);
+
+  /** Um save como a economia antiga o gravava: bases de 1,5 mil, objetos a cada 9 s, grimórios em %. */
+  function oldSave(): SaveState {
+    const s = clone(newSave('antigo', NOW - 4 * 3600 * 1000));
+    s.playSeconds = 3 * 3600;
+    s.tutorial = 'done';
+    s.run.upgradeLevels = [10, 3, 6, 2, 2, 3, 0, 0, 0, 0];
+    s.run.dustLife = 300_000;
+    s.run.dust = 40_000;
+    s.stats.dustTotal = 300_000;
+    s.run.picks = 12;
+    s.run.build = { moon: 2, vega: 1, venus: 1, mars: 1 };
+    s.album = ['moon', 'vega', 'venus', 'mars'];
+    s.stats.picks = 12;
+    s.stats.clicks = s.run.clicks = 20_000;
+    return s;
+  }
+
+  it('um save da economia antiga continua válido, sem ser cortado', () => {
+    const r = validateSave(oldSave(), { nowMs: NOW, createdAtMs: NOW - 4 * 3600 * 1000 });
+    expect(r.ok, r.ok ? '' : r.errors.join(';')).toBe(true);
+    expect(r.ok && r.flagged).toEqual([]);
+  });
+
+  it('um save antigo com a lista de melhorias do tamanho de hoje (10) é aceito; menor é completada com zeros', () => {
+    const s = oldSave();
+    s.run.upgradeLevels = [10, 3, 6];
+    const r = validateSave(s, { nowMs: NOW, createdAtMs: NOW - 4 * 3600 * 1000 });
+    expect(r.ok && r.save.run.upgradeLevels).toHaveLength(UPGRADES.length);
+  });
+
+  it('poeira acima do novo teto é cortada ao teto e marcada, sem recusar o save', () => {
+    const s = oldSave();
+    s.playSeconds = 600;
+    s.run.dustLife = s.stats.dustTotal = 5e8;
+    s.run.dust = 4e8;
+    const r = validateSave(s, { nowMs: NOW, createdAtMs: NOW - 4 * 3600 * 1000 });
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.flagged).toContain('dustLife');
+      expect(r.save.run.dustLife).toBeLessThan(5e8);
+      expect(r.save.run.dust).toBeLessThanOrEqual(r.save.run.dustLife);
+      expect(r.save.stats.dustTotal).toBeGreaterThanOrEqual(r.save.run.dustLife);
+    }
+  });
+
+  it('recusa melhoria que o marco ainda não liberou', () => {
+    const s = clone(newSave('trancada', NOW));
+    s.run.upgradeLevels[upg('reactor')] = 1;
+    // 200 de poeira cobre o preço (com o desconto máximo), mas não chega ao marco de 300.
+    s.run.dustLife = s.stats.dustTotal = 200;
+    const errors = rejects(s);
+    expect(errors).toContain('Melhoria trancada: reactor');
+
+    // Com o marco de nível da anterior cumprido (Pulso no 8), a mesma compra é válida.
+    const ok = clone(s);
+    ok.run.upgradeLevels[upg('pulse')] = 8;
+    ok.run.dustLife = ok.stats.dustTotal = 5000;
+    expect(validateSave(ok).ok).toBe(true);
+  });
+
+  it('depois do 1º colapso as melhorias conhecidas não precisam de marco', () => {
+    const s = clone(newSave('colapsada', NOW));
+    s.collapses = 1;
+    s.atlas = { slots: atlasSlots(1), pages: [] };
+    s.fragments = { earned: 4, spent: 0 };
+    s.stats.picks = 1;
+    s.regionId = 'asteroid-belt';
+    s.run.upgradeLevels[upg('reactor')] = 1;
+    s.run.dustLife = s.stats.dustTotal = 200;
+    expect(validateSave(s).ok).toBe(true);
+  });
+
+  it('o 1º toque do jogo vale exatamente 1 de poeira, com 0 de poeira de partida', () => {
+    const fresh = newSave('zero', NOW);
+    expect(fresh.run.dust).toBe(0);
+    const r = validateSave(press(fresh, 1));
+    expect(r.ok && r.save.run.dust).toBe(1);
+  });
 });

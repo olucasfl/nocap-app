@@ -71,11 +71,13 @@ Todas têm cabeçalho com ícone, título e **X**, e uma faixa de aviso.
 
 ### 4.1 Toque
 Cada toque no botão (clique, toque, Espaço ou Enter) dá **poeira** e **energia**. Segurar Espaço/Enter **repete** a no máximo 6 toques/s (decisão 14.20). Dedos múltiplos contam como toques separados, com o mesmo teto de 12/s no total por segurança.
-`poeira por toque = (1 + nível do Pulso Solar) x combo x sinal x grimórios x Atlas x árvore`, arredondado para baixo com mínimo 1.
-`energia por toque = base + nível do Reator de Aldebarã x passo` (valores na seção 6).
+**O save novo começa com 0 de poeira e o 1º toque dá exatamente 1** (a primeira melhoria custa 25, então são 25 toques).
+`poeira por toque = (1 + nível do Pulso Solar + 5 x nível do Webb + números dos grimórios) x (1 + % do Atlas e da árvore) x combo x sinal`, arredondado para baixo com mínimo 1. Os grimórios somam **números** (+0,5 por toque, +1...), não percentuais (5.2).
+`energia por toque = (1 + 0,25 x nível do Reator de Aldebarã) x Atlas e árvore` mais as bonificações de situação dos grimórios (valores na seção 6).
+**Ganho passivo:** `poeira por segundo = 1 x nível do Telescópio Hubble`, só com o jogo aberto, sem escolha aberta e sem a aba escondida.
 
 ### 4.2 Energia e escolha de grimório
-A barra enche até o **limite do passo atual**: **60, 90, 130, 180, 240, 320** nas seis primeiras escolhas, e depois cresce `x1,35` a cada escolha (proposta). Ao encher, abre a **escolha de 1 entre 3 grimórios** (seção 4.3). Toques durante a escolha **não contam** (modal aberto). Depois de escolher, a energia volta a zero.
+A barra enche até o **limite do passo atual**: **38, 80, 150, 260, 420, 640** de energia nas seis primeiras escolhas (1 de energia por toque no início) e depois cresce `x1,35` a cada escolha. O 1º passo fecha com **~50 de poeira ganha** (25 toques, a 1ª melhoria de 25 e ~13 toques de 2 de poeira): a dinâmica é "1ª melhoria, depois o 1º grimório". As barras do começo ficam bem mais curtas que as da calibragem anterior (60, 90, 130... a 0,25 de energia por toque, ou seja 240, 360, 520... toques). Ao encher, abre a **escolha de 1 entre 3 grimórios** (seção 4.3). Toques durante a escolha **não contam** (modal aberto). Depois de escolher, a energia volta a zero.
 
 ### 4.3 Sorteio dos 3 grimórios
 Sem repetir carta na mesma oferta, com **pesos por raridade que liberam aos poucos** (nº de escolhas já feitas `n`):
@@ -94,15 +96,15 @@ Escolher um grimório que já se tem **sobe o nível dele** (efeito x `1 + 0,5 x
 **Só existe depois de comprar a Ressonância de Vênus.** Cada toque dentro da janela (1,3 s + 0,2 s por nível) soma +1 de combo; cada ponto vale +20% de poeira; máximo 3 (+1 por nível do Alinhamento das Plêiades). O combo cai ao passar a janela. Mostra "COMBO x1,6" sob o botão.
 
 ### 4.5 Objetos no espaço
-Aparecem no campo a cada **9 s** (6 s com a Sonda Kepler), no máximo **2** na tela (3 com a Kepler), duram **7 s** e mostram uma **barra de vida**, **anel pulsante** e uma **etiqueta com a recompensa** antes de tocar. Não aparecem no tutorial, em modais nem com o jogo pausado. Ao capturar: anel que se expande, texto flutuante e faixa **"<Objeto> capturado: <efeito>"**. Também funcionam por teclado (cada um é um botão com `aria-label`).
+**Raros e fracos no começo (reformulação de 22/10/2026).** **Nada aparece antes da 1ª melhoria da vida** (`objectsOpen(state)`; depois do 1º colapso já abrem). Aparecem no campo a cada **32 s** (cada nível da Sonda Kepler tira 3 s, piso de 4 s), **1** na tela por vez (2 com a Kepler), duram **7 s** (+0,5 s por nível do Chandra) e mostram uma **barra de vida**, **anel pulsante** e uma **etiqueta com a recompensa** antes de tocar. Não aparecem no tutorial, em modais nem com o jogo pausado. Ao capturar: anel que se expande, texto flutuante e faixa **"<Objeto> capturado: <efeito>"**. Também funcionam por teclado (cada um é um botão com `aria-label`).
 
-| Objeto | Efeito | Valor inicial |
-| --- | --- | --- |
-| **Cometa** (mais comum) | poeira instantânea | `30 + 15 x nível do Pulso`, em unidades de toque após o rebalanceamento (seção 6) |
-| **Estrela cadente** | energia instantânea | +4 (em passos de energia, ver 6.3) |
-| **Satélite** | "Sinal forte": poeira x2 | por 8 s, com contagem no HUD |
+| Objeto | Efeito | Valor inicial | O que melhora |
+| --- | --- | --- | --- |
+| **Cometa** (mais comum) | poeira instantânea | **6 toques** de poeira | Vênus +3, Sedna +15, Hale-Bopp +10, Halley, Plutão, Antares (+1, +2, +4) |
+| **Estrela cadente** | energia instantânea | **2 toques** de energia | Marte +2, Encélado +4 e os "todo objeto" |
+| **Satélite** | "Sinal forte": poeira x2 | por 8 s, com contagem no HUD | Voyager (+1 s por nível), Io (+0,5) e Netuno (+1) no multiplicador, Calisto (+4 toques de poeira ao capturar) |
 
-Sorteio: cometa 50%, estrela 25%, satélite 25%. Nada pune quem não pega.
+Sorteio: cometa 50%, estrela 25%, satélite 25%. Nada pune quem não pega. Antes: 9 s entre objetos, 2 na tela e cometa de 20 toques, o que dava um quarto da renda logo no começo.
 
 ### 4.6 Tutorial guiado (obrigatório, só seguir ou pular)
 Véu escuro sobre tudo, **spotlight** no elemento certo (brilho que pulsa em `opacity`), **seta** "Toque aqui" e um cartão de coach no topo ("Tutorial · passo N de 5", título, texto, **Pular tutorial**). Todo o resto fica bloqueado e esmaecido (inclusive o X das páginas).
@@ -123,76 +125,97 @@ Pular marca o tutorial como feito no save. O progresso do tutorial é salvo (vol
 
 ## 5. Melhorias, grimórios e conquistas (catálogo)
 
-### 5.1 Melhorias (poeira; custo `base x 1,65^nível`)
-Valores de **efeito** e **base** são ponto de partida (seção 6 reescala).
+### 5.1 Melhorias (poeira; poder básico contínuo; liberação progressiva)
+**Reformulação de 22/10/2026 (pedido direto do Lucas, sobrepõe o que a spec dizia antes).** Melhoria e grimório **não competem**: a melhoria é o **poder básico contínuo** (poeira por toque, ganho passivo, energia por toque, o combo em si, o ritmo e a duração dos objetos); o grimório é **estilo e situação** (5.2). Cada melhoria declara os **domínios** que controla (`UpgradeDef.domains`) e `catalog.test.ts` exige que nenhum grimório use um desses domínios.
 
-| # | Melhoria (nome real) | Efeito por nível | Base (mockup) | Libera |
+**Liberação progressiva.** No começo existe **só a 1ª melhoria** (Pulso Solar, **25 de poeira**). As outras aparecem **"em breve"** com a condição escrita, e abrem por **marco**: **poeira total ganha na vida** OU **nível de outra melhoria** (o que vier primeiro). Uma melhoria pode estar **aberta e cara**: o jogador evolui para alcançá-la (a página mostra "Falta N"). Depois do 1º colapso as melhorias já conhecidas abrem no início de cada vida (o marco só vale na 1ª). Pelo motor: `upgradeUnlocks(state)` devolve, na ordem do catálogo, `{ unlocked, hidden, lock }` com a condição (`milestone`, `requires` ou `collapse`); `upgradeLock(state, i)` e `upgradeAvailable(state, i)` fazem o mesmo para uma só.
+
+**Preço.** `custo(nível) = base x g^nível`, com **g ≈ 1,12 a 1,3 nas primeiras compras** (Pulso: 25, 28, 31, 35, 39...) e um trecho **íngreme** depois (`steep`: ×1,5 a ×1,7 por nível, porque o ganho é linear e o preço exponencial). As seguintes custam **bem mais** que a primeira (base de 150 a 1,5 mi).
+
+| # | Melhoria | Efeito por nível | Base | Cresce | Máx. | Libera (poeira da vida OU nível) |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | **Pulso Solar** | +1 poeira por toque | 25 | x1,12; x1,7 depois do nível 5 | 40 | início |
+| 2 | **Ressonância de Vênus** | nível 1 **liga o combo**; depois, cada ponto de combo soma +0,05 ao toque | 150 | x1,35 | 5 | 100 ou Pulso 4 |
+| 3 | **Reator de Aldebarã** | +0,25 de energia por toque | 400 | x1,3; x1,7 depois do nível 3 | 20 | 300 ou Pulso 8 |
+| 4 | **Alinhamento das Plêiades** | combo máx. +1 (exige a Ressonância) | 1.500 | x1,9 | 5 | 1 mil ou Ressonância 2 |
+| 5 | **Sonda Kepler** | objetos aparecem 3 s mais cedo; o nível 1 abre mais um lugar no campo | 4.000 | x1,9 | 5 | 2,5 mil ou Reator 4 |
+| 6 | **Telescópio Hubble** | **+1 poeira por segundo** sem tocar (ganho passivo) | 800 | x1,3; x1,7 depois do nível 4 | 30 | 600 ou Pulso 10 |
+| 7 | **Voyager** | satélites duram +1 s | 12.000 | x1,7 | 8 | 8 mil ou Kepler 2 |
+| 8 | **Observatório James Webb** | +5 poeira por toque | 120.000 | x1,45 | 20 | colapso 1 |
+| 9 | **Telescópio Chandra** | objetos ficam +0,5 s no campo | 300.000 | x1,6 | 10 | colapso 3 |
+| 10 | **Observatório Gaia** | a carta mostra o efeito | 1,5 mi | x1,5 | 1 | colapso 5 |
+
+O Webb deixou de reduzir o custo (isso é efeito de grimório: Ceres, Saturno e M87*) e passou a somar poeira por toque; o Hubble deixou de valorizar objetos (isso é do Antares, Plutão...) e passou a render poeira por segundo; a Kepler, o Voyager e o Chandra ficaram com o **ritmo e a duração** dos objetos. Passivo: o ganho por segundo só corre com o jogo aberto, sem escolha aberta e sem a aba escondida (7.4).
+
+### 5.2 Grimórios (40 no catálogo; **lista aprovada pelo Lucas**, efeitos reformulados em 22/10/2026)
+A família define o **bônus de conjunto** do Atlas (seção 8.2). Cada grimório é **dado** (id, nome, plaquinha, raridade, família, efeito, arte), montado só com as primitivas da seção 7.3. **Arte:** livro com cor por raridade (comum cinza-azul, raro azul com borda ciano, épico roxo com dourado e anel girando, lendário dourado que flutua, proibido preto com rachadura vermelha) e uma **medalha** redonda com o astro em SVG (esfera com sombreamento radial).
+
+**Os efeitos são em NÚMEROS, não em %** (pedido do Lucas): "+0,5 poeira por toque", "+2 de energia", "+3 toques de poeira", "+0,5 s". Só ficam como fator os multiplicadores sem outra forma ("o toque vale o dobro", "x3", "x5") e as trocas dos proibidos (M87* mantém o desconto de 30% e o preço de +25%). **Nível por repetição:** cada nível soma **metade do número base** (um "+0,5" vira +0,75 no nível 2, +1 no 3... até o 10); efeitos de contagem (trocar carta, escolher 2) não crescem. A página do Atlas guarda 60% do número.
+
+**Grimório não repete melhoria.** A melhoria é o poder básico contínuo (poeira por toque, por segundo, energia por toque, combo e ritmo/duração dos objetos); o grimório é **estilo e situação**: toques especiais (a cada N toques), bônus com o **combo no máximo**, **janela** do combo, **recompensa** dos objetos e do sinal, o que acontece **ao capturar**, **sorte** (trocar, escolher 2, subir de nível), poeira inicial, devolução na compra e escala por coleção/colapsos. Efeitos que só duplicavam uma melhoria (+% de poeira ou de energia por toque, combo máximo, objetos mais rápidos ou que duram mais, melhorias mais baratas) foram trocados por uma versão de situação, por exemplo "+5% de poeira por toque" virou "com o combo no máximo, +0,5 poeira por toque". Os exemplos do pedido em formato de melhoria ("+2 poeira por segundo", "+1 de energia por toque") ficaram **com a melhoria** (Hubble, Reator) e a versão do grimório exige uma condição. `catalog.test.ts` lista os domínios de efeito das melhorias e dos grimórios e **garante que não coincidem**.
+
+**Comuns (13)**
+| Grimório | Família | Efeito | Libera | Arte |
 | --- | --- | --- | --- | --- |
-| 1 | **Pulso Solar** | +1 poeira por toque | 25 | início |
-| 2 | **Ressonância de Vênus** | **libera o combo**; níveis seguintes: +janela | 90 | início |
-| 3 | **Reator de Aldebarã** | +energia por toque | 140 | início |
-| 4 | **Alinhamento das Plêiades** | combo máx. +1 (exige a Ressonância) | 260 | após a Ressonância |
-| 5 | **Sonda Kepler** | mais objetos no espaço e mais rápidos | 200 | início |
-| 6 | **Telescópio Hubble** | objetos valem +10% por nível | a definir | após 3 escolhas |
-| 7 | **Voyager** | satélites duram +1 s por nível | a definir | após 8 escolhas |
-| 8 | **Observatório James Webb** | melhorias custam -2% por nível (teto) | a definir | após o 1º colapso |
+| Lua | Luas | A cada 10 toques, o toque vale o dobro | início | esfera cinza clara com crateras |
+| Mercúrio | Planetas | A cada 5 toques, +2 de energia | início | esfera marrom-cinza, crateras pequenas |
+| Vênus | Planetas | Cometas dão +3 toques de poeira | início | esfera creme-dourada com faixas de nuvem |
+| Marte | Planetas | Estrelas cadentes dão +2 toques de energia | início | esfera ferrugem com calota polar branca |
+| Ceres | Pequenos corpos | Cada melhoria comprada devolve a poeira de 2 toques | início | rocha cinza com ponto brilhante |
+| Fobos | Luas | Cada objeto capturado dá a energia de 1 toque | início | rocha irregular com uma cratera grande |
+| Io | Luas | O sinal dos satélites vale x2,5 em vez de x2 | início | esfera amarelo-enxofre com manchas vermelhas |
+| Vesta | Pequenos corpos | Com o combo no máximo, +0,5 poeira por toque | início | rocha clara com faixa escura |
+| Halley | Pequenos corpos | Todo objeto vale +1 toque a mais | início | núcleo claro com cauda azul |
+| Urano | Planetas | A janela do combo dura +0,2 s | início | esfera ciano-gelo com anel fino vertical |
+| Palas | Pequenos corpos | Com o combo no máximo, +0,25 de energia por toque | colapso 1 | rocha acinzentada com sulcos |
+| Hygiea | Pequenos corpos | A cada 8 toques, +3 de energia | colapso 1 | esfera escura quase redonda |
+| Haumea | Pequenos corpos | A janela do combo dura +0,3 s | colapso 3 | elipsoide branco com anel |
 
-Níveis máximos por melhoria (para não quebrar a economia): 30 na maioria, 5 a 10 nas de efeito qualitativo (Kepler, Plêiades, Voyager).
+**Raros (13)**
+| Grimório | Família | Efeito | Libera | Arte |
+| --- | --- | --- | --- | --- |
+| Europa | Luas | A janela do combo dura +0,5 s | início | esfera branca com rachaduras marrons |
+| Titã | Luas | Cada vida começa com 200 de poeira | início | esfera laranja com névoa |
+| Júpiter | Planetas | A cada 10 toques, o toque vale o triplo | início | esfera com faixas marrons e a grande mancha vermelha |
+| Saturno | Planetas | Cada melhoria comprada devolve a poeira de 5 toques | início | esfera dourada com anéis inclinados |
+| Netuno | Planetas | O sinal dos satélites vale x3 em vez de x2 | início | esfera azul-profundo com faixa branca |
+| Ganimedes | Luas | Com o combo no máximo, +0,5 de energia por toque | início | esfera cinza com sulcos claros |
+| Plutão | Pequenos corpos | Todo objeto vale +2 toques a mais | início | esfera bege com "coração" claro |
+| Tritão | Luas | Cada objeto capturado dá a energia de 3 toques | início | esfera rosada com calota de gelo |
+| Calisto | Luas | Satélites capturados dão +4 toques de poeira | colapso 2 | esfera cinza-marrom com crateras claras |
+| Encélado | Luas | Estrelas cadentes dão +4 toques de energia | colapso 2 | esfera branca com jatos de gelo |
+| Éris | Pequenos corpos | Asteroides dão +6 toques de poeira | colapso 3 | esfera clara com lua pequena |
+| Hale-Bopp | Pequenos corpos | Cometas dão +10 toques de poeira | colapso 4 | núcleo com duas caudas, azul e branca |
+| Proxima Centauri | Estrelas | Com o combo no máximo, +1 poeira por toque | colapso 5 | anã vermelha com chama pequena |
 
-### 5.2 Grimórios (30 iniciais, **lista aprovada pelo Lucas**; mais 30 por colapso na 5.4)
-A família define o **bônus de conjunto** do Atlas (seção 8.2). Cada grimório é **dado** (id, nome, plaquinha, raridade, família, efeito, arte), montado só com as primitivas da seção 7.3. **Arte:** livro com cor por raridade (comum cinza-azul, raro azul com borda ciano, épico roxo com dourado e anel girando, lendário dourado que flutua, proibido preto com rachadura vermelha) e uma **medalha** redonda com o astro em SVG (esfera com sombreamento radial). Os efeitos são em **percentual** (os absolutos do mockup viram "% de um toque"). Na tabela, **Arte** é o desenho da medalha.
-
-**Comuns (10)**
-| Grimório | Família | Efeito | Arte |
-| --- | --- | --- | --- |
-| Lua | Luas | a cada 10 toques, +1 toque de poeira (calibrado na etapa 1; +5 dava +50% de poeira no nível 1) | esfera cinza clara com crateras |
-| Mercúrio | Planetas | energia enche 10% mais rápido | esfera marrom-cinza, crateras pequenas |
-| Vênus | Planetas | objetos duram 2 s a mais | esfera creme-dourada com faixas de nuvem |
-| Marte | Planetas | cometas dão +25% | esfera ferrugem com calota polar branca |
-| Ceres | Pequenos corpos | melhorias custam 3% menos | rocha cinza com ponto brilhante |
-| Fobos | Luas | estrelas cadentes dão +25% de energia | rocha irregular com uma cratera grande |
-| Io | Luas | satélites duram +2 s | esfera amarelo-enxofre com manchas vermelhas |
-| Vesta | Pequenos corpos | +5% de poeira por toque | rocha clara com faixa escura |
-| Halley | Pequenos corpos | objetos aparecem 10% mais rápido | núcleo claro com cauda azul |
-| Urano | Planetas | janela do combo +10% | esfera ciano-gelo com anel fino vertical |
-
-**Raros (8)**
-| Grimório | Família | Efeito | Arte |
-| --- | --- | --- | --- |
-| Europa | Luas | o combo dura 20% mais | esfera branca com rachaduras marrons |
-| Titã | Luas | cada vida começa com poeira extra (1 nível do Pulso) | esfera laranja com névoa |
-| Júpiter | Planetas | todo 10º toque vale o triplo | esfera com faixas marrons e a grande mancha vermelha |
-| Saturno | Planetas | melhorias custam 8% menos | esfera dourada com anéis inclinados |
-| Netuno | Planetas | satélites duram o dobro | esfera azul-profundo com faixa branca |
-| Ganimedes | Luas | +10% de energia por toque | esfera cinza com sulcos claros |
-| Plutão | Pequenos corpos | objetos valem +12% | esfera bege com "coração" claro |
-| Tritão | Luas | cada objeto capturado dá energia de 2 toques (calibrado; % da barra anulava o passo de energia) | esfera rosada com calota de gelo |
-
-**Épicos (6)**
-| Grimório | Família | Efeito | Arte |
-| --- | --- | --- | --- |
-| Sirius | Estrelas | combo máximo +2 | estrela branca de 4 pontas com halo azul |
-| Vega | Estrelas | +15% de poeira por toque | estrela branco-azulada de 8 raios |
-| Betelgeuse | Estrelas | troque 1 das 3 opções (1 vez por escolha) | gigante laranja com manchas |
-| Polaris | Estrelas | o toque depois de capturar um objeto vale x5 | estrela azul-branca com halo fino |
-| Antares | Estrelas | objetos valem +20% | gigante vermelha com brilho |
-| Nebulosa do Caranguejo | Nebulosas e galáxias | grimório repetido sobe 2 níveis (1 extra) | filamentos laranja e azuis |
+**Épicos (8)**
+| Grimório | Família | Efeito | Libera | Arte |
+| --- | --- | --- | --- | --- |
+| Sirius | Estrelas | Com o combo no máximo, +2 poeira por toque | início | estrela branca de 4 pontas com halo azul |
+| Vega | Estrelas | Cada grimório comum no livro soma +0,5 poeira por toque | início | estrela branco-azulada de 8 raios |
+| Betelgeuse | Estrelas | Troque 1 das opções (1 vez por escolha) | início | gigante laranja com manchas |
+| Polaris | Estrelas | O toque depois de capturar um objeto vale x5 | início | estrela azul-branca com halo fino |
+| Antares | Estrelas | Todo objeto vale +4 toques a mais | início | gigante vermelha com brilho |
+| Nebulosa do Caranguejo | Nebulosas e galáxias | Grimório repetido sobe 2 níveis | início | filamentos laranja e azuis |
+| Sedna | Pequenos corpos | Cometas dão +15 toques de poeira | colapso 4 | esfera vermelho-escura distante |
+| Alfa Centauri A | Estrelas | A cada 25 toques, o toque vale x6 | colapso 5 | estrela amarela com halo dourado |
 
 **Lendários (3)**
-| Grimório | Família | Efeito | Arte |
-| --- | --- | --- | --- |
-| Nebulosa de Órion | Nebulosas e galáxias | ao encher a energia, escolha 2 grimórios | nuvem rosa, turquesa e violeta com estrelas |
-| Via Láctea | Nebulosas e galáxias | cada grimório raro vale +10% de poeira | galáxia espiral de 4 braços |
-| Andrômeda | Nebulosas e galáxias | cada colapso já feito dá +3% de poeira por toque | espiral inclinada com núcleo claro |
-
-**Proibidos (3)** (mudam uma regra, com preço; o preço aparece em vermelho no cartão)
-| Grimório | Família | Efeito e preço | Condição | Arte |
+| Grimório | Família | Efeito | Libera | Arte |
 | --- | --- | --- | --- | --- |
-| Sagitário A* | Buracos negros | poeira por toque x3, **mas a energia enche 70% mais devagar** | `n >= 22` | disco de acreção dourado ao redor de círculo preto |
-| Cygnus X-1 | Buracos negros | combo máximo x2 e janela x2, **mas os objetos no espaço param de aparecer** | só depois do 3º colapso | buraco negro com estrela azul companheira |
-| M87* | Buracos negros | melhorias custam 30% menos, **mas cada energia para o próximo grimório custa +25%** | só depois do 5º colapso | buraco negro com jato de luz |
+| Nebulosa de Órion | Nebulosas e galáxias | Ao encher a energia, escolha 2 grimórios | início | nuvem rosa, turquesa e violeta com estrelas |
+| Via Láctea | Nebulosas e galáxias | Cada grimório raro no livro soma +1 poeira por toque | início | galáxia espiral de 4 braços |
+| Andrômeda | Nebulosas e galáxias | Cada colapso já feito soma +1 poeira por toque | início | espiral inclinada com núcleo claro |
 
-Famílias: **Planetas 7 · Luas 7 · Pequenos corpos 4 · Estrelas 5 · Nebulosas e galáxias 4 · Buracos negros 3** (30). Livros escondidos aparecem como "???" com a medalha de cadeado até a descoberta.
+**Proibidos (3)**
+| Grimório | Família | Efeito | Libera | Arte |
+| --- | --- | --- | --- | --- |
+| Sagitário A* | Buracos negros | Poeira por toque x3, mas a energia por toque cai para x0,3 | início | disco de acreção dourado ao redor de círculo preto |
+| Cygnus X-1 | Buracos negros | Com o combo no máximo, a poeira vale x2 e a janela dura o dobro, mas os objetos no espaço param de aparecer | colapso 3 | buraco negro com estrela azul companheira |
+| M87* | Buracos negros | Melhorias custam 30% menos, mas cada energia para o próximo grimório custa +25% | colapso 5 | buraco negro com jato de luz |
+
+
+Famílias: **Planetas 7 · Luas 7 · Pequenos corpos 4 · Estrelas 5 · Nebulosas e galáxias 4 · Buracos negros 3** nos 30 iniciais; os 10 dos colapsos 1 a 5 vêm na 5.4. Livros escondidos aparecem como "???" com a medalha de cadeado até a descoberta.
 
 ### 5.3 Conquistas (~24 no lançamento, mais ~2 por colapso, ver 5.4)
 Cada uma com ícone, barra de progresso e "N/M"; ao ganhar, faixa de aviso (`transform`/`opacity`). Sem recompensa de poder na v1 (decisão 14.16).
@@ -285,16 +308,17 @@ Cada colapso **destrava conteúdo novo para a vida seguinte**: uma **região do 
 - **Ascender (camada 2):** libera **depois de 15 colapsos** (decisão do Lucas), "quase infinito" depois disso; **fora da v1** (decidido pelo Lucas; etapa 16, 8.4).
 - Primeira escolha de grimório: **~2 a 4 min** de jogo (para o jogador ver a graça antes de enjoar); as escolhas seguintes se espaçam (seção 6.3).
 
-### 6.2 Valores iniciais fixados (o Lucas pediu que eu decidisse; o simulador da etapa 1 ajusta)
-Escolhi o conjunto mais balanceado que a simulação rápida (6.3) sustentou: **1º colapso em ~6 a 10 h para o ritmo normal**, começo lento e sem "paredes". É a versão 0 das tabelas do motor; o simulador oficial corrige em arquivos de dados, não no código.
-- **Custo:** `custo(nível) = base x 1,65^nível`, arredondado; descontos (Ceres, Saturno, M87*, Webb, árvore) **multiplicativos com piso de 40%** do custo.
-- **Melhorias (base já x60 do mockup):** Pulso Solar **1.500** (máx. 30), Ressonância de Vênus **5.400** (máx. 10), Reator de Aldebarã **8.400** (máx. 20), Alinhamento das Plêiades **15.600** (máx. 5), Sonda Kepler **12.000** (máx. 5), Telescópio Hubble **30.000** (máx. 20), Voyager **60.000** (máx. 8), Observatório James Webb **120.000** (máx. 10).
-- **Efeito do Pulso Solar:** +1 poeira por toque por nível. **Reator:** +0,125 de energia por toque por nível (máx. +2,5).
-- **Energia:** base **0,25 por toque**; passos de escolha **60, 90, 130, 180, 240, 320** e depois **x1,35** por escolha.
-- **Objetos:** cometa = **20 toques de poeira** (cresce com Hubble e grimórios), estrela cadente = **+10% da barra atual** (mín. 2), satélite = **x2 por 8 s**.
-- **Grimório repetido:** +50% do efeito por nível, **nível máx. 10**.
-- **Colapso:** estrela pronta com **2 mi de poeira acumulada na vida e >= 20 escolhas** no 1º colapso (**15** do 2º ao 5º e **12** a partir do 6º); a meta de poeira começa em `meta(k) = 2 mi x 3^(k-1)` e é **a variável que o simulador ajusta** para a vida k durar o tempo-alvo da tabela 6.6.
-- **Atlas:** página a **60%**, 3 espaços iniciais, bônus de conjunto da seção 8.2.
+### 6.2 Valores iniciais fixados (o Lucas pediu que eu decidisse; o simulador ajusta)
+Reformulado em 22/10/2026 a pedido do Lucas, que testou a versão anterior à mão (começava com 1,5 mil de poeira do tutorial, objetos demais e fortes, 1ª barra lenta, melhorias e grimórios se sobrepondo, grimórios em %). Fica o que o simulador sustentou (6.7); o resto é só dado em `catalog.ts` e `economy.ts`.
+- **Começo:** **0 de poeira**, o toque dá **1**, a 1ª melhoria (Pulso Solar) custa **25** e o 1º grimório sai com **~50 de poeira ganha no total**. O tutorial entrega só os 25 que faltam (`TUTORIAL_DUST_ALLOWANCE` lê a base do Pulso).
+- **Custo:** `custo(nível) = base x g^nível`, arredondado, com `g` por melhoria (x1,12 no Pulso, x1,3 a x1,9 nas outras) e trecho íngreme (`steep`) nas que ficam muito longas; descontos (Ceres devolve poeira na compra, M87*, árvore, Atlas) **multiplicativos com piso de 40%**.
+- **Melhorias e liberação:** tabela da 5.1. Só a 1ª existe no começo; as outras abrem por marco (poeira ganha na vida ou nível da anterior) e custam bem mais.
+- **Efeito do Pulso Solar:** +1 poeira por toque por nível (máx. 40). **Reator:** +0,25 de energia por toque por nível (máx. 20). **Hubble:** +1 poeira por segundo por nível (máx. 30).
+- **Energia:** base **1 por toque**; passos de escolha **38, 80, 150, 260, 420, 640** e depois **x1,35** por escolha.
+- **Objetos:** cometa = **6 toques de poeira**, estrela cadente = **2 toques de energia**, satélite = **x2 por 8 s**; um a cada 32 s, 1 na tela, e só depois da 1ª melhoria (4.5).
+- **Grimório repetido:** +50% do número base por nível, **nível máx. 10**.
+- **Colapso:** estrela pronta com a **meta de poeira acumulada na vida** da tabela 6.7 e **>= 20 escolhas** no 1º colapso (**15** do 2º ao 5º e **12** a partir do 6º); a meta é **a variável que o simulador ajusta** para a vida k durar o tempo-alvo da tabela 6.6.
+- **Atlas:** página a **60%**, 3 espaços iniciais, bônus de conjunto da seção 8.2 (esses seguem em %: não são grimórios).
 - **Metas de tempo:** 1º colapso em **6 a 10 h** (alvo 8 h) de jogo aberto no ritmo normal (2,5 toques/s); cada colapso seguinte mais rápido, até o piso de ~1,2 h no 15º (tabela 6.6); **15 colapsos em ~38 h** de jogo aberto.
 
 ### 6.3 O que o simulador de rascunho mostrou (e por que reescalar)
@@ -332,7 +356,23 @@ Regra: a **duração da vida k** (do início até colapsar) parte de **8 h** e c
 - **Pesos de raridade nas vidas seguintes:** como cada vida zera as escolhas, os limiares da 4.3 (`n >= 3 / 8 / 14 / 22`) caem para **60%** depois do 1º colapso e **40%** depois do 5º, para os raros e épicos aparecerem mais cedo em vidas curtas. O simulador confirma.
 - Os "mín. de escolhas" e as metas de poeira são o ponto de partida; o simulador também valida que **nenhuma vida fica mais longa que a anterior**.
 
-### 6.7 Calibração da etapa 1 (números finais do motor)
+### 6.7 Calibração (economia reformulada em 22/10/2026; números finais do motor)
+Simulador: `pnpm --filter @nocap/games sim` (fora do `pnpm test`; `simulate({ ..., trace })` dá o estado a cada minuto para diagnóstico). Os testes (`sim.test.ts`) exigem, no perfil normal (2,5 toques/s), a **média de 60 sementes** (`v0` a `v59`) de cada vida 1 a 5 a ±15% da tabela 6.6, 1º colapso entre 6 e 10 h e nenhuma vida mais longa que a anterior. A calibragem usou 60 sementes `c0` a `c59`; as duas colunas abaixo são as médias de cada conjunto.
+
+| Vida | Meta de poeira (final) | Duração (sementes `c`) | Duração (sementes `v`, as do teste) | Alvo | Desvio (`c` / `v`) |
+| --- | --- | --- | --- | --- | --- |
+| 1º | 17,53 mi | 8,00 h | 7,50 h | 8 h | 0% / -6% |
+| 2º | 66,21 mi | 4,99 h | 5,06 h | 5 h | 0% / +1% |
+| 3º | 54 mi | 3,60 h | 3,18 h | 3,5 h | +3% / -9% |
+| 4º | 65 mi | 3,04 h | 2,65 h | 3 h | +1% / -12% |
+| 5º | 63 mi | 2,58 h | 2,48 h | 2,6 h | -1% / -5% |
+
+- **Por que as metas são maiores que antes (5,9 a 8,2 mi):** a poeira por toque agora cresce com preço exponencial íngreme e ganhos lineares, então a renda de cada fase é menor no começo e a meta da vida sobe junto com o Atlas e a árvore (a vida 2 abre o Webb e todas as melhorias sem marco). As vidas 6 a 15 seguem provisórias (6,3 a 8,1 mi x 10).
+- **Marcos da 1ª vida (uma semente, perfil normal):** 1ª melhoria ~10 s, 1ª escolha ~18 s (~50 de poeira ganha), 3 escolhas em 2 min, 9 em 10 min, 15 em 1 h, 1 mi de poeira ~1 h, 20 escolhas em ~4 h, estrela pronta em ~8 h. Melhorias no fim: Pulso 27, Ressonância 5, Reator 19, Plêiades 5, Kepler 5, Hubble 14.
+- **O que mudou no motor para isso:** energia base 1 por toque e passos 38, 80, 150, 260, 420, 640 (x1,35 depois); Pulso base 25 com preço x1,12 e trecho íngreme x1,7; objetos a cada 32 s, 1 no campo, 6 toques de poeira no cometa e só depois da 1ª melhoria; grimórios em números (5.2); Webb soma poeira por toque e o Hubble rende poeira por segundo (5.1).
+- **Alerta aberto do simulador:** a Lua e o Mercúrio dominam 25% a 30% das escolhas da 1ª vida porque o jogador simulado pega o ganho imediato; não trava nenhum teste.
+
+#### Calibração anterior (etapas 1 e 13, economia antiga; histórico)
 Simulador: `pnpm --filter @nocap/games sim` (fora do `pnpm test`). Os testes (`sim.test.ts`) exigem, no perfil normal (2,5 toques/s), a **média de 60 sementes** (`v0` a `v59`, nenhuma usada para calibrar) de cada vida 1 a 5 a ±15% da tabela 6.6, 1º colapso entre 6 e 10 h e nenhuma vida mais longa que a anterior. Uma semente isolada varia de 1 a 6 h na mesma vida (a sorte dos grimórios), por isso a tabela impressa de uma semente só é indicativa. A etapa 13 recalibrou: a calibração da etapa 1 usava 3 sementes e estava ajustada a elas (com 16 sementes diferentes as vidas 1, 3 e 5 saíam 8 a 15% abaixo e a 4ª 20% acima), e o simulador travava quando o Atlas enchia (agora a página nova substitui a mais fraca).
 
 | Vida | Meta de poeira (final) | Duração (média de 60 sementes) | Alvo | Desvio |
@@ -364,7 +404,9 @@ O **conteúdo liberado é derivado** do colapso atual: cada grimório, região, 
 `newSave(seed)`, `press(state, now)`, `tickObjects(state, now)`, `captureObject(state, id)`, `buyUpgrade(state, i)`, `drawGrimoires(state)` (3 sem repetir, por peso), `chooseGrimoire(state, id)`, `canCollapse(state)`, `collapse(state, pageId)`, `respecTree(state)`, `buyTreeNode(state, id)`, `effectiveStats(state)` (junta melhorias, grimórios, Atlas, bônus de conjunto e árvore em números finais), `validateSave(raw)` (formato e coerência, seção 10), `mergeSaves(a, b)`.
 
 ### 7.3 Primitivas de efeito (todo grimório e nó da árvore usa só estas)
-`dustPerTouchPct`, `energyPerTouchPct`, `energyFillRate`, `everyNthTouch(n, mult)`, `objectDuration`, `objectSpawnRate`, `objectValuePct` (por tipo), `comboMax`, `comboWindow`, `upgradeCostPct`, `startDust`, `choiceExtra` (reroll, 2 escolhas, repetido +2 níveis), `forbiddenTradeoff`. Isso mantém os 30 grimórios (e os futuros) como **dados** e o motor pequeno.
+**Grimórios (em números):** `everyNthTouch(n, mult, energy)` (a cada N toques o toque vale x e soma energia), `comboFullDust(add)` e `comboFullEnergy(add)` (com o combo no máximo, +poeira e +energia por toque), `comboFullMult(mult)`, `comboWindow(sec | mult)`, `objectReward(alvo, add)` (+toques de recompensa por tipo de objeto), `satelliteMult(add)`, `onCapture(energyTouches)`, `afterCaptureMult(mult)`, `startDust(amount)`, `buyRefund(touches)` (a compra devolve a poeira de N toques), `dustPerOwned(raridade, add)`, `dustPerCollapse(add)`, `choiceExtra` (reroll, 2 escolhas, repetido +2 níveis), `dustMult`, `energyMult`, `objectsDisabled`, `upgradeCostPct` e `energyStepPct` (proibidos) e `forbiddenTradeoff`.
+**Atlas e árvore (em %):** `dustPerTouchPct`, `energyPerTouchPct`, `objectDuration` (% de vida), `maxObjects`, `comboMax`, `comboWindow(pct)`, `upgradeCostPct`, `freeUpgradeLevels`, `forbiddenUnlock`, `forbiddenPower`.
+**Melhorias:** não usam primitivas de efeito: o motor lê o nível de cada uma em `effectiveStats` (Pulso, Webb, Hubble, Reator, Ressonância, Plêiades, Kepler, Voyager, Chandra). `effectDomain(efeito)` e `UpgradeDef.domains` dão o domínio de cada lado para o teste de não-duplicação. Isso mantém os 40 grimórios (e os futuros) como **dados** e o motor pequeno.
 
 ### 7.4 Tempo e jogo parado
 O motor é **orientado a eventos** (toque, captura, compra) e a um relógio de jogo que **só avança com a aba visível** (`document.visibilityState`); ao esconder a aba/app, o relógio pausa e objetos e boosts congelam. **Nada rende offline.** O servidor nunca confia no relógio do aparelho para progresso (seção 10).
@@ -445,7 +487,7 @@ aperta_settings(user_id uuid pk, data jsonb, updated_at timestamptz)   -- som, e
 O servidor usa a **mesma função de validação de `packages/games`** (`validateSave`, `mergeSaves`):
 1. **Formato:** zod do `SaveState`; limites de tamanho; ids só do catálogo; níveis dentro dos máximos.
 2. **Coerência de gastos:** soma dos custos dos níveis de melhoria <= poeira total ganha na vida; grimórios por nível somam <= escolhas feitas (`picks`); páginas do Atlas <= espaços do nº de colapsos; Fragmentos gastos <= `earned`; `earned` coerente com `collapses`; **todo grimório, melhoria e objeto usado tem `unlockedAtCollapse` <= colapso atual** (conteúdo de colapso futuro é rejeitado); `regionId` é uma região já aberta.
-3. **Ritmo possível:** `dustLife <= playSeconds x teto de poeira por segundo` calculado pelo motor para o que foi comprado (com teto de 12 toques/s) e `playSeconds <= tempo desde created_at`. Estourou: **corta ao valor possível** e marca `flagged` (não bane).
+3. **Ritmo possível:** `dustLife <= playSeconds x teto de poeira por segundo` calculado pelo motor para o que foi comprado (com teto de 12 toques/s, bônus de combo cheio, objetos e o ganho passivo do Hubble) e `playSeconds <= tempo desde created_at`. Estourou: **corta ao valor possível** e marca `flagged` (não bane). **Saves da economia antiga** (anteriores à reformulação de 22/10/2026) seguem válidos: o formato não mudou, a lista de melhorias menor é completada com zeros e as compras antigas cabem nos marcos novos (cada compra antiga já custou mais que o marco). Se a poeira da vida de um save antigo passar do teto novo (objetos mais raros e grimórios em número valem menos), ela é **cortada ao teto** (`dustLife` e `dust`, com `stats.dustTotal` ajustado) e marcada, sem recusar e sem tirar melhorias, grimórios, Atlas ou Fragmentos. Uma melhoria comprada que o marco ainda não liberou (`Melhoria trancada`) é recusada, e o marco só vale na 1ª vida (depois do 1º colapso todas as conhecidas estão abertas).
 4. **Nunca diminui por engano:** a junção automática fica com o mais avançado (mais colapsos; empate, mais escolhas e mais poeira da vida); álbum, conquistas e Atlas são **união**.
 5. Rate limit de 1 `PUT` a cada 5 s por save.
 
@@ -570,6 +612,7 @@ Todo o trabalho está na branch **`develop`** (nada na `main`, por ordem do Luca
 - **Etapa 9 (colapso e Atlas), pronta (21/10/2026, branch `claude/aperta-etapa-9-04381f`):** `CollapseModal` (2 passos; com o Atlas cheio pede a página que sai), `AtlasSection` (espaços, bônus de conjunto e botão Colapsar, na página de Grimórios), botão "Estrela pronta: colapsar" sob o HUD (fora do tutorial), `controller.collapse` com salvamento na hora e faixa "Estrela colapsada". Motor: `collapse` deixa o tutorial como `'done'`; testes de espaços 5/10/25/50 e de `validateSave` com cadeia de 10 colapsos. Decisão: o botão desabilitado com "Falta N para a estrela colapsar" e a barra ficam na página de Grimórios (no HUD só aparece quando está pronta, para caber em 320 px). Conferida em 320, 390 e 1280 px (`e2e/aperta-collapse.spec.ts`).
 
 - **Etapa 12 (conteúdo dos colapsos 1 a 5), pronta (21/10/2026, branch `claude/aperta-etapa-12-cd2404`):** tabela de conteúdo por colapso em dados, regiões em dados com menu e troca ao colapsar, faixa "Novo no espaço", Favorito, Chuva de meteoros, Tempestade solar, Missões da estação (4 missões, +2 Fragmentos) e Gaia (a carta mostra o que muda nos números). `validateSave` rejeita conteúdo futuro e aceita saves antigos. Decisões: eventos a cada ~8 min (±25%) por 15 s, sorteados pelo tempo de jogo; o simulador não os dispara (a calibragem fica para a etapa 13). Playwright (320, 390, 768, 1280 px): `e2e/aperta-regions.spec.ts`. **Falta:** as conquistas dos colapsos 1 a 5 ("Primeira estrela colapsada", "Pegar um proibido", "Atlas com 4 páginas", "Saí do Sistema Solar"), junto da etapa 10.
+- **Economia reformulada (22/10/2026, branch `claude/aperta-economia-7e0f6f`, sem push; sobrepõe a spec onde discordava):** começo com 0 de poeira (toque = 1, 1ª melhoria = 25, 1º grimório com ~50 de poeira ganha), objetos raros e fracos e só depois da 1ª melhoria, melhorias com liberação progressiva (`upgradeUnlocks`) e preço crescente (seção 5.1), grimórios em números e sem repetir melhoria (5.2, `catalog.test.ts`), ganho passivo (Hubble), `validateSave` coerente (marcos, teto de ritmo com o passivo; saves antigos válidos, poeira acima do teto novo cortada e marcada, 10.3) e vidas 1 a 5 recalibradas a ±15% (6.7). Web: só textos de Melhorias e das linhas das cartas (Gaia). **Falta:** conferir o ritmo ao vivo (a economia nova foi calibrada só pelo simulador); vidas 6 a 15 seguem provisórias.
 - **Etapa 11b (arte e sons das telas novas), pronta (21/10/2026, branch `claude/aperta-etapa-11b-b6e3b5`):** nove sons novos (`page`, `ready`, `collapse`, `warp`, `chime`, `shower`, `storm`, `mission`, `star`) e variações de `whoosh`/`ding` para Asteroide e Sonda, ligados por `cues.ts` (só na mudança de estado) e pelos componentes; clarão do colapso, fade ao trocar de região, riscos da Chuva de meteoros, brilho da Tempestade solar, ícones nos chips de evento, entrada das páginas do Atlas, nó da Árvore e giro da medalha de conquista (`polish.css`), tudo em `transform`/`opacity` com reduced-motion e `is-lite`. Webb e Chandra seguem como melhorias (medalha de astro), não como objetos no campo. Conferida em 320, 390 e 1280 px. **Falta:** revisão visual do Lucas; a pilha de avisos sobrepõe a página aberta em celular quando há muitos chips (etapa 13).
 
 ### O que falta, na ordem

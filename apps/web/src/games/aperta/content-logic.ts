@@ -113,16 +113,21 @@ interface StatLine {
 const pct = (v: number) => `${formatDecimal(v * 100, 0)}%`;
 const secs = (v: number) => `${formatDecimal(v, 1)} s`;
 
+const touches = (v: number) => `${formatDecimal(v, v % 1 === 0 ? 0 : 1)} toques`;
+
 const STAT_LINES: StatLine[] = [
   { label: 'Poeira por toque', read: (s) => s.dustPerTouch, show: (v) => (v >= 100 ? formatNumber(Math.floor(v)) : formatDecimal(v, 1)) },
-  { label: 'Energia por toque', read: (s) => s.energyPerTouch, show: (v) => formatDecimal(v, 3) },
-  { label: 'Combo máximo', read: (s) => s.combo.max, show: (v) => `x${v}` },
+  { label: 'Poeira por toque no combo máximo', read: (s) => s.combo.fullDustAdd, show: (v) => `+${formatDecimal(v, 2)}` },
+  { label: 'Energia por toque', read: (s) => s.energyPerTouch, show: (v) => formatDecimal(v, 2) },
+  { label: 'Energia por toque no combo máximo', read: (s) => s.combo.fullEnergyAdd, show: (v) => `+${formatDecimal(v, 2)}` },
   { label: 'Janela do combo', read: (s) => s.combo.windowSec, show: secs },
   { label: 'Custo das melhorias', read: (s) => s.costFactor, show: pct },
-  { label: 'Objeto a cada', read: (s) => s.objects.intervalSec, show: secs },
-  { label: 'Objeto no campo', read: (s) => s.objects.lifeSec.comet, show: secs },
-  { label: 'Valor dos objetos', read: (s) => s.objects.valueMult.comet, show: pct },
-  { label: 'Duração do sinal', read: (s) => s.objects.signalSec, show: secs },
+  { label: 'Cometa', read: (s) => s.objects.reward.comet.dust, show: touches },
+  { label: 'Estrela cadente', read: (s) => s.objects.reward['shooting-star'].energy, show: touches },
+  { label: 'Satélite (poeira)', read: (s) => s.objects.reward.satellite.dust, show: touches },
+  { label: 'Sinal forte', read: (s) => s.objects.signalMult, show: (v) => `x${formatDecimal(v, 1)}` },
+  { label: 'Energia ao capturar', read: (s) => s.objects.onCaptureEnergyTouches, show: touches },
+  { label: 'Poeira inicial', read: (s) => s.startDust, show: (v) => formatNumber(v) },
   { label: 'Energia até o próximo', read: (s) => s.energyStepFactor, show: pct },
 ];
 

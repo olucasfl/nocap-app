@@ -57,15 +57,15 @@ describe('repetição por tecla', () => {
 
 describe('barra de energia', () => {
   it('começa vazia, com o teto do primeiro passo', () => {
-    expect(energyView(fresh())).toMatchObject({ fill: 0, hot: false, label: '0/60', cap: 60 });
+    expect(energyView(fresh())).toMatchObject({ fill: 0, hot: false, label: '0/38', cap: 38 });
   });
 
   it('mostra inteiros e acende a partir de 85%', () => {
     const s = fresh();
     const at = (energy: number): SaveState => ({ ...s, run: { ...s.run, energy } });
-    expect(energyView(at(12.9)).label).toBe('12/60');
-    expect(energyView(at(60 * ENERGY_HOT_FROM - 0.5)).hot).toBe(false);
-    expect(energyView(at(60 * ENERGY_HOT_FROM)).hot).toBe(true);
+    expect(energyView(at(12.9)).label).toBe('12/38');
+    expect(energyView(at(38 * ENERGY_HOT_FROM - 0.5)).hot).toBe(false);
+    expect(energyView(at(38 * ENERGY_HOT_FROM)).hot).toBe(true);
   });
 });
 
@@ -73,7 +73,7 @@ describe('selo de Melhorias', () => {
   it('conta quantas dá para comprar com a poeira atual', () => {
     const s = fresh();
     expect(affordableCount(s)).toBe(0);
-    const rich: SaveState = { ...s, run: { ...s.run, dust: 1500 } };
+    const rich: SaveState = { ...s, run: { ...s.run, dust: 25, dustLife: 25 } };
     expect(affordableCount(rich)).toBe(1);
     expect(affordableCount(buyUpgrade(rich, 0))).toBe(0);
   });
@@ -88,7 +88,7 @@ describe('combo na tela', () => {
 
   it('depois da melhoria aparece e some quando a janela passa', () => {
     let s: SaveState = fresh();
-    s = { ...s, run: { ...s.run, dust: 100000 } };
+    s = { ...s, run: { ...s.run, dust: 100000, dustLife: 100000 } };
     s = buyUpgrade(s, 1);
     expect(s.run.upgradeLevels[1]).toBe(1);
     for (let i = 0; i < 4; i++) s = press(s, 1 + i * 0.2);

@@ -3,9 +3,9 @@
 // qual carta pegar. As horas que ele devolve são de jogo aberto, não de relógio de parede.
 
 import { createRng } from '../core/rng';
-import { TREE, UPGRADES, grimoireById, treeNodeId, type ObjectKind } from './catalog';
+import { OBJECTS, TREE, UPGRADES, grimoireById, treeNodeId, type ObjectKind } from './catalog';
 import { formatDecimal, formatNumber } from './format';
-import { COMBO_BONUS_PER_POINT, targetHours } from './economy';
+import { targetHours } from './economy';
 import {
   buyTreeNode,
   buyUpgrade,
@@ -74,31 +74,36 @@ export interface SimOptions {
   collapses: number;
   /** Trava de segurança por vida (horas de jogo). */
   maxHoursPerLife?: number;
+  /** Diagnóstico: chamado uma vez por minuto de jogo, com as horas desde o início da vida e o estado. */
+  trace?: (hoursInLife: number, state: SaveState) => void;
 }
 
 /** Renda estimada por segundo, só para o jogador decidir o que comprar (não é regra do jogo). */
 function income(stats: EffectiveStats, profile: Profile, objectKinds: readonly ObjectKind[]): { dust: number; energy: number } {
   const tps = profile.touchesPerSec;
-  const comboHolds = stats.combo.enabled && 1 / tps <= stats.combo.windowSec;
-  let combo = comboHolds ? 1 + COMBO_BONUS_PER_POINT * stats.combo.max : 1;
-  if (comboHolds && stats.combo.fullDustPct > 0) combo *= 1 + stats.combo.fullDustPct / 100;
+  const full = stats.combo.enabled && 1 / tps <= stats.combo.windowSec;
+  const point = full ? 1 + stats.combo.pointValue * stats.combo.max : 1;
   const nth = stats.nth.reduce((acc, r) => acc * (1 + (r.mult - 1) / r.n), 1);
-  const perTouch = stats.dustPerTouch * combo * nth;
+  const base = stats.dustPerTouch + (full ? stats.combo.fullDustAdd : 0);
+  const perTouch = base * point * (full ? stats.combo.fullMult : 1) * nth;
+  const touchEnergy =
+    stats.energyPerTouch + (full ? stats.combo.fullEnergyAdd : 0) + stats.nth.reduce((acc, r) => acc + r.energy / r.n, 0);
 
   let objectDust = 0;
   let objectEnergy = 0;
   if (!stats.objects.disabled) {
-    const totalWeight = objectKinds.reduce((s, k) => s + weightOf(k), 0);
+    const totalWeight = objectKinds.reduce((sum, k) => sum + weightOf(k), 0);
     const rate = (1 / stats.objects.intervalSec) * profile.captureChance;
     for (const k of objectKinds) {
       const share = weightOf(k) / totalWeight;
-      if (k === 'comet') objectDust += rate * share * 20 * stats.dustPerTouch * stats.objects.valueMult.comet;
-      if (k === 'shooting-star') objectEnergy += rate * share * 6 * stats.objects.valueMult['shooting-star'];
+      const r = stats.objects.reward[k];
+      objectDust += rate * share * r.dust * stats.dustPerTouch;
+      objectEnergy += rate * share * (r.energy * stats.energyPerTouch + stats.objects.onCaptureEnergyTouches * stats.energyPerTouch);
     }
   }
   return {
-    dust: tps * perTouch + objectDust,
-    energy: tps * stats.energyPerTouch + objectEnergy,
+    dust: tps * perTouch + objectDust + stats.dustPerSecond,
+    energy: tps * touchEnergy * 1 + objectEnergy,
   };
 }
 
@@ -108,7 +113,8 @@ function weightOf(kind: ObjectKind): number {
 
 function score(state: SaveState, profile: Profile): number {
   const stats = effectiveStats(state);
-  const inc = income(stats, profile, ['comet', 'shooting-star']);
+  const kinds = OBJECTS.filter((o) => o.unlockedAtCollapse <= state.collapses).map((o) => o.kind);
+  const inc = income(stats, profile, kinds);
   return Math.log(inc.dust) + ENERGY_WEIGHT * Math.log(inc.energy) - 0.5 * Math.log(stats.costFactor);
 }
 
@@ -280,6 +286,7 @@ export function simulate(options: SimOptions): SimResult {
     }
 
     if (state.run.dustLife >= 1e6) mark(3);
+    if (options.trace && Math.floor(t / 60) !== Math.floor((t - dt) / 60)) options.trace((t - lifeStart) / 3600, state);
 
     if (canCollapse(state)) {
       mark(4);

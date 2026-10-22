@@ -23,21 +23,35 @@ import {
 const pulse = UPGRADES[0]!;
 
 describe('upgradeCost', () => {
-  it('começa na base e cresce x1,65 por nível', () => {
-    expect(upgradeCost(pulse, 0)).toBe(1500);
-    expect(upgradeCost(pulse, 1)).toBe(Math.round(1500 * 1.65));
-    expect(upgradeCost(pulse, 5)).toBe(Math.round(1500 * Math.pow(1.65, 5)));
+  it('a 1ª melhoria custa 25 e o preço sobe a cada compra (25, 28, 31...)', () => {
+    expect(upgradeCost(pulse, 0)).toBe(25);
+    expect(upgradeCost(pulse, 1)).toBe(28);
+    expect(upgradeCost(pulse, 2)).toBe(31);
+    for (let l = 1; l < pulse.max; l++) expect(upgradeCost(pulse, l)).toBeGreaterThan(upgradeCost(pulse, l - 1));
+  });
+
+  it('começa em ~x1,12 por nível e fica mais íngreme depois do trecho suave', () => {
+    const soft = pulse.steep!.from;
+    expect(upgradeCost(pulse, soft)).toBe(Math.round(25 * Math.pow(1.12, soft)));
+    const ratio = (l: number) => upgradeCost(pulse, l + 1) / upgradeCost(pulse, l);
+    expect(ratio(1)).toBeGreaterThan(1.1);
+    expect(ratio(1)).toBeLessThan(1.15);
+    expect(ratio(soft + 3)).toBeGreaterThan(1.5);
+  });
+
+  it('as melhorias seguintes abrem bem mais caras que a primeira', () => {
+    for (const def of UPGRADES.slice(1)) expect(def.base, def.id).toBeGreaterThan(pulse.base * 4);
   });
 
   it('aplica o desconto com piso de 40% do custo', () => {
-    expect(upgradeCost(pulse, 0, 0.5)).toBe(750);
-    expect(upgradeCost(pulse, 0, 0.01)).toBe(Math.round(1500 * COST_FLOOR));
+    expect(upgradeCost(pulse, 10, 0.5)).toBe(Math.round(upgradeCost(pulse, 10) * 0.5));
+    expect(upgradeCost(pulse, 10, 0.01)).toBe(Math.round(upgradeCost(pulse, 10) * COST_FLOOR));
     expect(clampCostFactor(0.1)).toBe(COST_FLOOR);
     expect(clampCostFactor(1.4)).toBe(1.4);
   });
 
   it('nunca devolve NaN, zero nem infinito', () => {
-    expect(upgradeCost(pulse, -3)).toBe(1500);
+    expect(upgradeCost(pulse, -3)).toBe(25);
     expect(upgradeCost(pulse, 5000)).toBe(MAX_NUMBER);
     expect(upgradeCost(pulse, 2, Number.NaN)).toBe(upgradeCost(pulse, 2));
     expect(upgradeCost(pulse, 2, Infinity)).toBe(upgradeCost(pulse, 2));
@@ -46,21 +60,34 @@ describe('upgradeCost', () => {
 
 describe('energyCap', () => {
   it('usa os seis passos e depois cresce x1,35', () => {
-    expect([0, 1, 2, 3, 4, 5].map((n) => energyCap(n))).toEqual([60, 90, 130, 180, 240, 320]);
-    expect(energyCap(6)).toBeCloseTo(432, 6);
-    expect(energyCap(7)).toBeCloseTo(432 * 1.35, 6);
+    expect([0, 1, 2, 3, 4, 5].map((n) => energyCap(n))).toEqual([38, 80, 150, 260, 420, 640]);
+    expect(energyCap(6)).toBeCloseTo(864, 6);
+    expect(energyCap(7)).toBeCloseTo(864 * 1.35, 6);
+  });
+
+  it('o 1º passo cabe em ~50 de poeira ganha (25 toques, a 1ª melhoria, mais ~13 toques de 2)', () => {
+    const touches = 25 + (energyCap(0) - 25); // energia 1 por toque
+    const dust = 25 + (touches - 25) * 2;
+    expect(dust).toBeGreaterThanOrEqual(45);
+    expect(dust).toBeLessThanOrEqual(60);
+  });
+
+  it('as barras do começo ficam mais curtas que as da calibragem antiga (60, 90, 130...) em toques', () => {
+    // Em toques (energia por toque: 0,25 antes, 1 agora).
+    const old = [60, 90, 130, 180, 240, 320].map((e) => e / 0.25);
+    [0, 1, 2, 3, 4, 5].forEach((n, i) => expect(energyCap(n) / 1).toBeLessThan(old[i]!));
   });
 
   it('aplica o fator de passo (M87*) e ignora fator inválido', () => {
-    expect(energyCap(0, 1.25)).toBe(75);
-    expect(energyCap(0, Number.NaN)).toBe(60);
-    expect(energyCap(0, -2)).toBe(60);
+    expect(energyCap(0, 1.25)).toBe(47.5);
+    expect(energyCap(0, Number.NaN)).toBe(38);
+    expect(energyCap(0, -2)).toBe(38);
   });
 
   it('fica finito em contagens absurdas', () => {
     expect(Number.isFinite(energyCap(100_000))).toBe(true);
     expect(energyCap(100_000)).toBeLessThanOrEqual(MAX_NUMBER);
-    expect(energyCap(-4)).toBe(60);
+    expect(energyCap(-4)).toBe(38);
   });
 });
 

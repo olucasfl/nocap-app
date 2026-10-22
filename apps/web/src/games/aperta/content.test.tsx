@@ -165,21 +165,21 @@ describe('Observatório Gaia: a carta mostra o efeito', () => {
   });
 
   it('com Gaia, cada carta diz o que muda nos números da vida', () => {
-    const p = gaiaPreviews(withGaia(), ['vega', 'sirius', 'moon']);
-    expect(p.vega).toMatch(/^Poeira por toque: .* -> /);
-    expect(p.sirius).toContain('Combo máximo');
+    const p = gaiaPreviews(withGaia(), ['sirius', 'mars', 'moon']);
+    expect(p.sirius).toMatch(/^Poeira por toque no combo máximo: \+0 -> \+2/);
+    expect(p.mars).toContain('Estrela cadente: 2 toques -> 4 toques');
     expect(p.moon).toContain('sem mudança');
   });
 
   it('o cálculo vem do motor: pegar de novo sobe o nível', () => {
     const s = withGaia();
-    const lv1 = { ...s, run: { ...s.run, build: { vega: 1 } } };
-    expect(cardGain(s, 'vega')).not.toEqual(cardGain(lv1, 'vega'));
+    const lv1 = { ...s, run: { ...s.run, build: { sirius: 1 } } };
+    expect(cardGain(s, 'sirius')).not.toEqual(cardGain(lv1, 'sirius'));
   });
 
   it('a escolha mostra a linha extra', () => {
     const s = withGaia();
-    const pending = { offers: ['vega'], openedAt: 0, selected: null, picksLeft: 1, rerollsLeft: 0 };
+    const pending = { offers: ['sirius'], openedAt: 0, selected: null, picksLeft: 1, rerollsLeft: 0 };
     const markup = html(
       <ChoiceModal
         pending={pending}
@@ -192,6 +192,6 @@ describe('Observatório Gaia: a carta mostra o efeito', () => {
       />,
     );
     expect(markup).toContain('ap-pick-gain');
-    expect(markup).toContain('Poeira por toque');
+    expect(markup).toContain('Poeira por toque no combo máximo');
   });
 });

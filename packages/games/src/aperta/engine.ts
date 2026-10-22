@@ -32,13 +32,12 @@ import { eventsOpen, mechanicOpen, missionById, MISSIONS, type EventId, type Mis
 import {
   ATLAS_PAGE_POWER,
   BASE_ENERGY_PER_TOUCH,
-  CHANDRA_LIFE_PER_LEVEL_PCT,
+  CHANDRA_LIFE_PER_LEVEL_SEC,
   CHOICE_LOCK_SEC,
   COMBO_BASE_MAX,
   COMBO_BASE_WINDOW_SEC,
   COMBO_BONUS_PER_POINT,
   COMBO_HARD_CAP,
-  COMBO_WINDOW_PER_LEVEL_SEC,
   EVENT_DURATION_SEC,
   EVENT_INTERVAL_SEC,
   EVENT_JITTER,
@@ -48,16 +47,18 @@ import {
   MISSION_FRAGMENTS,
   SOLAR_STORM_ENERGY_MULT,
   GRIMOIRE_MAX_LEVEL,
-  HUBBLE_VALUE_PER_LEVEL_PCT,
-  KEPLER_SPAWN_PER_LEVEL,
+  HUBBLE_DUST_PER_SEC_PER_LEVEL,
+  KEPLER_INTERVAL_PER_LEVEL_SEC,
   MAX_NUMBER,
   MAX_STEP_SEC,
   MAX_TOUCHES_PER_SEC,
   OBJECT_BASE_INTERVAL_SEC,
   OBJECT_BASE_MAX,
+  OBJECT_MIN_INTERVAL_SEC,
   REACTOR_STEP,
+  RESONANCE_POINT_PER_LEVEL,
   VOYAGER_SEC_PER_LEVEL,
-  WEBB_COST_PER_LEVEL_PCT,
+  WEBB_DUST_PER_LEVEL,
   atlasSlots,
   clampCostFactor,
   dustGoal,
@@ -281,12 +282,22 @@ export function syncClock(state: SaveState, now: number): SaveState {
   if (!(gap > 0)) return state;
   const hidden = gap > MAX_STEP_SEC;
   const frozen = hidden || state.run.pending !== null;
-  const run = frozen ? shiftRun(state.run, gap, hidden) : state.run;
+  let run = frozen ? shiftRun(state.run, gap, hidden) : state.run;
+  let stats = state.stats;
+  if (!frozen) {
+    // Ganho passivo (Telescópio Hubble): poeira por segundo de jogo aberto, sem escolha aberta.
+    const earn = effectiveStats(state).dustPerSecond * gap;
+    if (earn > 0) {
+      run = { ...run, dust: clampNum(run.dust + earn), dustLife: clampNum(run.dustLife + earn) };
+      stats = { ...stats, dustTotal: clampNum(stats.dustTotal + earn) };
+    }
+  }
   return {
     ...state,
     clock: now,
     playSeconds: hidden ? state.playSeconds : state.playSeconds + gap,
     run,
+    stats,
   };
 }
 
@@ -317,18 +328,34 @@ export interface EffectiveStats {
   pulseLevel: number;
   /** Poeira de um toque sem combo, nth e boost (ainda com decimais). */
   dustPerTouch: number;
+  /** Poeira por segundo sem tocar (Telescópio Hubble). */
+  dustPerSecond: number;
   energyPerTouch: number;
-  combo: { enabled: boolean; max: number; windowSec: number; fullDustPct: number };
+  combo: {
+    enabled: boolean;
+    max: number;
+    windowSec: number;
+    /** Quanto cada ponto de combo soma ao toque (0,2 = +20%; a Ressonância sobe). */
+    pointValue: number;
+    /** Com o combo no máximo: poeira e energia somadas ao toque e fator da poeira. */
+    fullDustAdd: number;
+    fullEnergyAdd: number;
+    fullMult: number;
+  };
   costFactor: number;
+  /** Cada melhoria comprada devolve a poeira de tantos toques. */
+  buyRefundTouches: number;
   startDust: number;
   energyStepFactor: number;
-  nth: { n: number; mult: number; energyBarPct: number }[];
+  /** `energy`: energia somada quando a regra dispara (número, não % da barra). */
+  nth: { n: number; mult: number; energy: number }[];
   objects: {
     disabled: boolean;
     intervalSec: number;
     maxOnField: number;
     lifeSec: Record<ObjectKind, number>;
-    valueMult: Record<ObjectKind, number>;
+    /** Recompensa de cada objeto em toques: `dust` (poeira de toques) e `energy` (energia de toques). */
+    reward: Record<ObjectKind, { dust: number; energy: number }>;
     signalMult: number;
     signalSec: number;
     onCaptureEnergyTouches: number;
@@ -442,37 +469,35 @@ function computeStats(state: SaveState): EffectiveStats {
   }
   priceCut = Math.min(90, priceCut);
 
-  const rareOwned = (rarity: Rarity): number =>
+  const ownedOf = (rarity: Rarity): number =>
     Object.keys(state.run.build).filter((id) => grimoireById(id)?.rarity === rarity).length;
 
   let dustPct = 0;
-  let comboFullPct = 0;
+  let dustFlat = 0;
   let dustMult = 1;
+  let comboFullDust = 0;
+  let comboFullEnergy = 0;
+  let comboFullMult = 1;
   let energyPct = 0;
-  let fillPct = 0;
-  let spawnPct = 0;
+  let energyMult = 1;
   let maxAdd = 0;
   let satAdd = 0;
   let comboMaxAdd = 0;
-  let comboMaxMult = 1;
   let windowPct = 0;
+  let windowSecAdd = 0;
   let windowMult = 1;
   let stepPct = 0;
-  let startDustLevels = 0;
+  let startDust = 0;
   let freePulse = 0;
+  let refund = 0;
   let onCapture = 0;
   let afterCaptureMult = 1;
   let disabled = false;
   const costFactors: number[] = [];
   const nth: EffectiveStats['nth'] = [];
   const choice = { cards: 0, picks: 0, rerolls: 0, repeatLevels: 0 };
-  const lifeSec = emptyByKind(0);
-  const lifeMult = emptyByKind(1);
   const lifePct = emptyByKind(0);
-  const effSec = emptyByKind(0);
-  const effMult = emptyByKind(1);
-  const effPct = emptyByKind(0);
-  const valuePct = emptyByKind(0);
+  const rewardAdd = emptyByKind(0);
   const targets = (t: string): ObjectKind[] => (t === 'all' ? OBJECT_KINDS : OBJECT_KINDS.filter((k) => k === t));
 
   for (const src of sources) {
@@ -482,39 +507,34 @@ function computeStats(state: SaveState): EffectiveStats {
       const m = (mult: number): number => 1 + (mult - 1) * s;
       switch (e.kind) {
         case 'dustPerTouchPct':
-          if (e.when === 'comboFull') comboFullPct += e.pct * s;
-          else dustPct += e.pct * s;
+          dustPct += e.pct * s;
           break;
         case 'dustMult':
           dustMult *= m(e.mult);
           break;
+        case 'comboFullDust':
+          comboFullDust += e.add * s;
+          break;
+        case 'comboFullEnergy':
+          comboFullEnergy += e.add * s;
+          break;
+        case 'comboFullMult':
+          comboFullMult *= m(e.mult);
+          break;
         case 'energyPerTouchPct':
           energyPct += e.pct * s;
           break;
-        case 'energyFillRate':
-          fillPct += e.pct * s;
+        case 'energyMult':
+          energyMult *= Math.max(0.05, m(e.mult));
           break;
         case 'everyNthTouch':
-          nth.push({ n: e.n, mult: m(e.mult), energyBarPct: (e.energyBarPct ?? 0) * s });
+          nth.push({ n: e.n, mult: m(e.mult), energy: (e.energy ?? 0) * s });
           break;
         case 'objectDuration':
-          for (const k of targets(e.target)) {
-            if (e.of === 'effect') {
-              effSec[k] += (e.sec ?? 0) * s;
-              effMult[k] *= m(e.mult ?? 1);
-              effPct[k] += (e.pct ?? 0) * s;
-            } else {
-              lifeSec[k] += (e.sec ?? 0) * s;
-              lifeMult[k] *= m(e.mult ?? 1);
-              lifePct[k] += (e.pct ?? 0) * s;
-            }
-          }
+          for (const k of targets(e.target)) lifePct[k] += e.pct * s;
           break;
-        case 'objectSpawnRate':
-          spawnPct += e.pct * s;
-          break;
-        case 'objectValuePct':
-          for (const k of targets(e.target)) valuePct[k] += e.pct * s;
+        case 'objectReward':
+          for (const k of targets(e.target)) rewardAdd[k] += e.add * s;
           break;
         case 'objectsDisabled':
           disabled = true;
@@ -526,11 +546,11 @@ function computeStats(state: SaveState): EffectiveStats {
           satAdd += e.add * s;
           break;
         case 'comboMax':
-          comboMaxAdd += (e.add ?? 0) * s;
-          comboMaxMult *= m(e.mult ?? 1);
+          comboMaxAdd += e.add * s;
           break;
         case 'comboWindow':
           windowPct += (e.pct ?? 0) * s;
+          windowSecAdd += (e.sec ?? 0) * s;
           windowMult *= m(e.mult ?? 1);
           break;
         case 'upgradeCostPct':
@@ -540,10 +560,13 @@ function computeStats(state: SaveState): EffectiveStats {
           stepPct += e.pct * s;
           break;
         case 'startDust':
-          if (e.upgrade === 'pulse') startDustLevels += e.levels * s;
+          startDust += e.amount * s;
           break;
         case 'freeUpgradeLevels':
           if (e.upgrade === 'pulse') freePulse += Math.floor(e.levels * src.count);
+          break;
+        case 'buyRefund':
+          refund += e.touches * s;
           break;
         case 'choiceExtra':
           // Efeitos de contagem não crescem com o nível e a página arredonda o poder (60%): Caranguejo e Betelgeuse
@@ -560,10 +583,10 @@ function computeStats(state: SaveState): EffectiveStats {
           afterCaptureMult *= m(e.mult);
           break;
         case 'dustPerOwned':
-          dustPct += rareOwned(e.rarity) * e.pct * s;
+          dustFlat += ownedOf(e.rarity) * e.add * s;
           break;
         case 'dustPerCollapse':
-          dustPct += state.collapses * e.pct * s;
+          dustFlat += state.collapses * e.add * s;
           break;
         case 'forbiddenUnlock':
         case 'forbiddenPower':
@@ -572,9 +595,8 @@ function computeStats(state: SaveState): EffectiveStats {
     }
   }
 
-  // Melhorias (a Ressonância e a Kepler têm regras próprias; o resto é por nível).
-  const pulseBought = level(state, 'pulse');
-  const pulseLevel = pulseBought + freePulse;
+  // Melhorias: poder básico contínuo, cada uma no seu domínio (a Ressonância liga o combo).
+  const pulseLevel = level(state, 'pulse') + freePulse;
   const resonance = level(state, 'resonance');
   const reactor = level(state, 'reactor');
   const kepler = level(state, 'kepler');
@@ -584,45 +606,56 @@ function computeStats(state: SaveState): EffectiveStats {
   const chandra = level(state, 'chandra');
   const pleiades = level(state, 'pleiades');
 
-  costFactors.push(1 + (webb * WEBB_COST_PER_LEVEL_PCT) / 100);
   const costFactor = clampCostFactor(costFactors.reduce((a, b) => a * b, 1));
 
-  const comboMax = Math.min(COMBO_HARD_CAP, Math.max(0, Math.floor((COMBO_BASE_MAX + pleiades + comboMaxAdd) * comboMaxMult)));
-  const windowSec =
-    (COMBO_BASE_WINDOW_SEC + COMBO_WINDOW_PER_LEVEL_SEC * Math.max(0, resonance - 1)) *
-    (1 + windowPct / 100) *
-    windowMult;
+  const comboMax = Math.min(COMBO_HARD_CAP, Math.max(0, Math.floor(COMBO_BASE_MAX + pleiades + comboMaxAdd)));
+  const windowSec = (COMBO_BASE_WINDOW_SEC + windowSecAdd) * (1 + windowPct / 100) * windowMult;
 
-  const fillRate = Math.max(0.05, 1 + fillPct / 100);
-  const energyPerTouch = (BASE_ENERGY_PER_TOUCH + REACTOR_STEP * reactor) * Math.max(0, 1 + energyPct / 100) * fillRate;
-  const dustPerTouch = (1 + pulseLevel) * Math.max(0, 1 + dustPct / 100) * dustMult;
+  const energyPerTouch =
+    (BASE_ENERGY_PER_TOUCH + REACTOR_STEP * reactor) * Math.max(0, 1 + energyPct / 100) * energyMult;
+  const dustPerTouch =
+    (1 + pulseLevel + WEBB_DUST_PER_LEVEL * webb + dustFlat) * Math.max(0, 1 + dustPct / 100) * dustMult;
 
   const life = emptyByKind(0);
-  const value = emptyByKind(1);
+  const reward = {} as Record<ObjectKind, { dust: number; energy: number }>;
   for (const def of OBJECTS) {
     const k = def.kind;
-    life[k] = Math.max(1, (def.lifeSec + lifeSec[k]) * lifeMult[k] * (1 + (lifePct[k] + CHANDRA_LIFE_PER_LEVEL_PCT * chandra) / 100));
-    value[k] = 1 + (valuePct[k] + HUBBLE_VALUE_PER_LEVEL_PCT * hubble) / 100;
+    life[k] = Math.max(1, (def.lifeSec + CHANDRA_LIFE_PER_LEVEL_SEC * chandra) * (1 + lifePct[k] / 100));
+    reward[k] = { dust: 0, energy: 0 };
   }
-  const satBase = OBJECT_REWARD.satelliteMult + satAdd;
-  const signalMult = 1 + (satBase - 1) * (value.satellite ?? 1);
-  const signalSec = Math.max(1, (OBJECT_REWARD.satelliteSec + VOYAGER_SEC_PER_LEVEL * voyager + effSec.satellite) * effMult.satellite * (1 + effPct.satellite / 100));
+  reward.comet.dust = OBJECT_REWARD.cometTouches + rewardAdd.comet;
+  reward.asteroid.dust = OBJECT_REWARD.asteroidTouches + rewardAdd.asteroid;
+  reward.asteroid.energy = OBJECT_REWARD.asteroidEnergyTouches;
+  reward['shooting-star'].energy = OBJECT_REWARD.starEnergyTouches + rewardAdd['shooting-star'];
+  reward.satellite.dust = rewardAdd.satellite;
+  const signalMult = OBJECT_REWARD.satelliteMult + satAdd;
+  const signalSec = Math.max(1, OBJECT_REWARD.satelliteSec + VOYAGER_SEC_PER_LEVEL * voyager);
 
   return {
     pulseLevel,
     dustPerTouch,
+    dustPerSecond: HUBBLE_DUST_PER_SEC_PER_LEVEL * hubble,
     energyPerTouch,
-    combo: { enabled: resonance > 0, max: comboMax, windowSec, fullDustPct: comboFullPct },
+    combo: {
+      enabled: resonance > 0,
+      max: comboMax,
+      windowSec,
+      pointValue: COMBO_BONUS_PER_POINT + RESONANCE_POINT_PER_LEVEL * Math.max(0, resonance - 1),
+      fullDustAdd: comboFullDust,
+      fullEnergyAdd: comboFullEnergy,
+      fullMult: comboFullMult,
+    },
     costFactor,
-    startDust: Math.floor(startDustLevels * (UPGRADES[0] as UpgradeDef).base),
+    buyRefundTouches: refund,
+    startDust: Math.floor(startDust),
     energyStepFactor: Math.max(0.1, 1 + stepPct / 100),
     nth,
     objects: {
       disabled,
-      intervalSec: OBJECT_BASE_INTERVAL_SEC / (1 + KEPLER_SPAWN_PER_LEVEL * kepler) / (1 + spawnPct / 100),
+      intervalSec: Math.max(OBJECT_MIN_INTERVAL_SEC, OBJECT_BASE_INTERVAL_SEC - KEPLER_INTERVAL_PER_LEVEL_SEC * kepler),
       maxOnField: OBJECT_BASE_MAX + (kepler > 0 ? 1 : 0) + maxAdd,
       lifeSec: life,
-      valueMult: value,
+      reward,
       signalMult,
       signalSec,
       onCaptureEnergyTouches: onCapture,
@@ -821,7 +854,8 @@ export function rerollGrimoire(state: SaveState, id: string, now: number): SaveS
 
 /**
  * Um toque: poeira, energia e combo. Ignorado com a escolha aberta (seção 4.2) e mais rápido que
- * `MAX_TOUCHES_PER_SEC` (seção 4.1). `poeira = (1 + Pulso) x combo x ...`, para baixo, mínimo 1.
+ * `MAX_TOUCHES_PER_SEC` (seção 4.1). `poeira = (1 + Pulso + ...) x combo x ...`, para baixo, mínimo 1:
+ * um save novo tem 0 de poeira e o 1º toque dá exatamente 1.
  */
 export function press(state: SaveState, now: number): SaveState {
   const s = syncClock(state, now);
@@ -833,21 +867,20 @@ export function press(state: SaveState, now: number): SaveState {
   const clicks = run.clicks + 1;
   const combo = stats.combo.enabled && now - run.lastPressAt <= stats.combo.windowSec ? Math.min(stats.combo.max, run.combo + 1) : 0;
 
-  let value = stats.dustPerTouch * (1 + COMBO_BONUS_PER_POINT * combo);
-  if (stats.combo.enabled && combo >= stats.combo.max && stats.combo.fullDustPct > 0) value *= 1 + stats.combo.fullDustPct / 100;
-  let barBonusPct = 0;
+  const full = stats.combo.enabled && stats.combo.max > 0 && combo >= stats.combo.max;
+  let value = (stats.dustPerTouch + (full ? stats.combo.fullDustAdd : 0)) * (1 + stats.combo.pointValue * combo);
+  if (full) value *= stats.combo.fullMult;
+  let bonusEnergy = full ? stats.combo.fullEnergyAdd : 0;
   for (const rule of stats.nth) {
     if (clicks % rule.n === 0) {
       value *= rule.mult;
-      barBonusPct += rule.energyBarPct;
+      bonusEnergy += rule.energy;
     }
   }
   if (run.afterCapture) value *= stats.objects.afterCaptureMult;
   if (now < run.boostUntil) value *= run.boostMult;
   const gain = clampNum(Math.max(1, Math.floor(clampNum(value))));
 
-  const cap = energyCap(run.picks, stats.energyStepFactor);
-  const full = stats.combo.enabled && stats.combo.max > 0 && combo >= stats.combo.max;
   const fullSince = full ? (run.comboFullSince > NEVER / 2 ? run.comboFullSince : now) : NEVER;
   const next: SaveState = {
     ...s,
@@ -856,7 +889,7 @@ export function press(state: SaveState, now: number): SaveState {
       comboFullSince: fullSince,
       dust: clampNum(run.dust + gain),
       dustLife: clampNum(run.dustLife + gain),
-      energy: clampNum(run.energy + (stats.energyPerTouch + (cap * barBonusPct) / 100) * energyMult(run, now)),
+      energy: clampNum(run.energy + (stats.energyPerTouch + bonusEnergy) * energyMult(run, now)),
       clicks,
       combo,
       lastPressAt: now,
@@ -876,13 +909,56 @@ export function press(state: SaveState, now: number): SaveState {
 
 // --- Melhorias ---
 
-export function upgradeAvailable(state: SaveState, index: number): boolean {
+/** Por que uma melhoria ainda não abriu, ou `null` se já está liberada. */
+export type UpgradeLock =
+  | { kind: 'collapse'; collapse: number }
+  | { kind: 'requires'; upgrade: string; level: number }
+  | { kind: 'milestone'; dust: number | null; upgrade: { id: string; level: number } | null };
+
+function milestoneMet(state: SaveState, def: UpgradeDef): boolean {
+  const u = def.unlock;
+  if (!u) return true;
+  // Depois do 1º colapso o jogador já conhece as melhorias: o marco só vale na primeira vida.
+  if (state.collapses >= 1) return true;
+  if (u.dust !== undefined && state.run.dustLife >= u.dust) return true;
+  if (u.upgrade && level(state, u.upgrade.id) >= u.upgrade.level) return true;
+  return false;
+}
+
+/** O que falta para a melhoria abrir (`null` = liberada). Só depende do estado, nunca do relógio. */
+export function upgradeLock(state: SaveState, index: number): UpgradeLock | null {
   const def = UPGRADES[index];
-  if (!def) return false;
-  if (def.unlockedAtCollapse > state.collapses) return false;
-  if (def.requiresPicks !== undefined && state.run.picks < def.requiresPicks) return false;
-  if (def.requiresUpgrade && level(state, def.requiresUpgrade.id) < def.requiresUpgrade.level) return false;
-  return true;
+  if (!def) return { kind: 'collapse', collapse: Infinity };
+  if (def.unlockedAtCollapse > state.collapses) return { kind: 'collapse', collapse: def.unlockedAtCollapse };
+  if (def.requiresUpgrade && level(state, def.requiresUpgrade.id) < def.requiresUpgrade.level) {
+    return { kind: 'requires', upgrade: def.requiresUpgrade.id, level: def.requiresUpgrade.level };
+  }
+  if (!milestoneMet(state, def)) {
+    return { kind: 'milestone', dust: def.unlock?.dust ?? null, upgrade: def.unlock?.upgrade ?? null };
+  }
+  return null;
+}
+
+export function upgradeAvailable(state: SaveState, index: number): boolean {
+  return upgradeLock(state, index) === null;
+}
+
+/** Linha do painel de melhorias: liberada ou "em breve" com a condição (spec 038, 5.1). */
+export interface UpgradeUnlockInfo {
+  index: number;
+  id: string;
+  unlocked: boolean;
+  /** Ainda não existe nesta fase do jogo (colapso futuro): a tela nem a lista. */
+  hidden: boolean;
+  lock: UpgradeLock | null;
+}
+
+/** Quais melhorias estão liberadas e quais estão em breve (com a condição), na ordem do catálogo. */
+export function upgradeUnlocks(state: SaveState): UpgradeUnlockInfo[] {
+  return UPGRADES.map((def, index) => {
+    const lock = upgradeLock(state, index);
+    return { index, id: def.id, unlocked: lock === null, hidden: lock?.kind === 'collapse', lock };
+  });
 }
 
 /** Custo da próxima compra, ou `null` se a melhoria está no máximo, trancada ou não existe. */
@@ -899,7 +975,9 @@ export function buyUpgrade(state: SaveState, index: number): SaveState {
   if (cost === null || state.run.dust < cost) return state;
   const upgradeLevels = state.run.upgradeLevels.slice();
   upgradeLevels[index] = (upgradeLevels[index] ?? 0) + 1;
-  return { ...state, run: { ...state.run, dust: clampNum(state.run.dust - cost), upgradeLevels } };
+  // Ceres e Saturno: a compra devolve a poeira de alguns toques (nunca mais que o preço).
+  const refund = Math.min(cost, Math.floor(effectiveStats(state).buyRefundTouches * effectiveStats(state).dustPerTouch));
+  return { ...state, run: { ...state.run, dust: clampNum(state.run.dust - cost + refund), upgradeLevels } };
 }
 
 // --- Objetos no espaço ---
@@ -981,6 +1059,11 @@ export function missionBonus(state: SaveState): number {
   return state.run.mission?.done ? MISSION_FRAGMENTS : 0;
 }
 
+/** Os objetos só aparecem depois da primeira melhoria da vida (ou depois do 1º colapso). */
+export function objectsOpen(state: SaveState): boolean {
+  return state.collapses >= 1 || state.run.upgradeLevels.some((l) => l > 0);
+}
+
 /** Remove os que expiraram e faz nascer um novo no ritmo da Kepler. Sem objetos em escolha aberta nem com o jogo parado. */
 export function tickObjects(state: SaveState, now: number): SaveState {
   const s = syncClock(state, now);
@@ -991,7 +1074,8 @@ export function tickObjects(state: SaveState, now: number): SaveState {
 
   next = assignMission(s, tickEvents(s, next, now));
   const stats = effectiveStats(s);
-  if (stats.objects.disabled) return next === run ? s : { ...s, run: next };
+  // Nada de objeto antes da 1ª melhoria (spec 038, 4.5): o começo é só toque, melhoria e grimório.
+  if (stats.objects.disabled || !objectsOpen(s)) return next === run ? s : { ...s, run: next };
   const shower = next.event?.id === 'meteor-shower' && now < next.event.until;
   const interval = shower ? Math.min(METEOR_SHOWER_INTERVAL_SEC, stats.objects.intervalSec) : stats.objects.intervalSec;
   const room = stats.objects.maxOnField + (shower ? METEOR_SHOWER_EXTRA_MAX : 0);
@@ -1018,22 +1102,11 @@ export function tickObjects(state: SaveState, now: number): SaveState {
 /** Recompensa que o objeto mostra na etiqueta (poeira e energia já com os bônus). */
 export function objectReward(state: SaveState, kind: ObjectKind): { dust: number; energy: number } {
   const stats = effectiveStats(state);
-  const value = stats.objects.valueMult[kind];
-  const touch = stats.dustPerTouch;
-  switch (kind) {
-    case 'comet':
-      return { dust: Math.max(1, Math.floor(touch * OBJECT_REWARD.cometTouches * value)), energy: 0 };
-    case 'shooting-star':
-      return { dust: 0, energy: OBJECT_REWARD.starEnergyTouches * stats.energyPerTouch * value };
-    case 'asteroid':
-      return {
-        dust: Math.max(1, Math.floor(touch * OBJECT_REWARD.asteroidTouches * value)),
-        energy: OBJECT_REWARD.asteroidEnergyTouches * stats.energyPerTouch * value,
-      };
-    case 'satellite':
-    case 'probe':
-      return { dust: 0, energy: 0 };
-  }
+  const r = stats.objects.reward[kind];
+  return {
+    dust: r.dust > 0 ? Math.max(1, Math.floor(stats.dustPerTouch * r.dust)) : 0,
+    energy: r.energy * stats.energyPerTouch,
+  };
 }
 
 /** Tudo que a etiqueta do objeto promete antes de tocar (a mesma conta de `captureObject`). */

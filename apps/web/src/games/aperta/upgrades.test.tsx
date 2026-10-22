@@ -1,4 +1,4 @@
-import { COST_GROWTH, UPGRADES, effectiveStats, newSave, nextUpgradeCost, type SaveState } from '@nocap/games';
+import { UPGRADES, effectiveStats, newSave, nextUpgradeCost, upgradeCost, type SaveState } from '@nocap/games';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -12,7 +12,8 @@ import { buyLabel, upgradeRows } from './upgrades-logic';
 const noop = () => {};
 const rich = (dust: number, over: Partial<SaveState['run']> = {}): SaveState => {
   const s = newSave('teste', 0);
-  return { ...s, tutorial: 'done', run: { ...s.run, dust, ...over } };
+  // A poeira da vida nunca é menor que a que sobra: é ela que libera as melhorias.
+  return { ...s, tutorial: 'done', run: { ...s.run, dust, dustLife: dust, ...over } };
 };
 const row = (state: SaveState, id: string) => upgradeRows(state).find((r) => r.id === id)!;
 
@@ -28,19 +29,33 @@ describe('linhas da página de Melhorias', () => {
     expect(ids).toEqual(['pulse', 'resonance', 'reactor', 'pleiades', 'kepler', 'hubble', 'voyager']);
   });
 
-  it('as de liberação aparecem trancadas com a dica do motivo', () => {
+  it('só a 1ª melhoria está liberada no começo; as outras aparecem em breve com a condição', () => {
     const s = newSave('teste', 0);
+    expect(upgradeRows(s).filter((r) => r.status !== 'locked').map((r) => r.id)).toEqual(['pulse']);
     expect(row(s, 'pleiades')).toMatchObject({ status: 'locked', lockHint: 'Compre Ressonância de Vênus primeiro' });
-    expect(row(s, 'hubble')).toMatchObject({ status: 'locked', lockHint: 'Libera após 3 grimórios' });
-    expect(row(s, 'voyager').lockHint).toBe('Libera após 8 grimórios');
+    expect(row(s, 'resonance')).toMatchObject({
+      status: 'locked',
+      lockHint: 'Em breve: libera com 100 de poeira ganha ou Pulso Solar no nível 4',
+    });
+    expect(row(s, 'hubble').lockHint).toBe('Em breve: libera com 600 de poeira ganha ou Pulso Solar no nível 10');
+    expect(row(s, 'voyager').lockHint).toBe('Em breve: libera com 8 mil de poeira ganha ou Sonda Kepler no nível 2');
   });
 
-  it('a liberação segue as escolhas e a compra da Ressonância', () => {
-    const picked = rich(0, { picks: 3 });
-    expect(row(picked, 'hubble').status).toBe('short');
-    expect(row(picked, 'voyager').status).toBe('locked');
-    const bought = rich(0, { upgradeLevels: [0, 1, 0, 0, 0, 0, 0, 0, 0, 0] });
+  it('a liberação segue a poeira ganha na vida, o nível da anterior e a compra da Ressonância', () => {
+    expect(row(rich(0, { dustLife: 100 }), 'resonance').status).toBe('short');
+    expect(row(rich(0, { dustLife: 99 }), 'resonance').status).toBe('locked');
+    expect(row(rich(0, { dustLife: 600 }), 'hubble').status).toBe('short');
+    expect(row(rich(0, { dustLife: 600 }), 'voyager').status).toBe('locked');
+    const byLevel = rich(0, { dustLife: 0, upgradeLevels: [4, 0, 0, 0, 0, 0, 0, 0, 0, 0] });
+    expect(row(byLevel, 'resonance').status).toBe('short');
+    const bought = rich(0, { dustLife: 1000, upgradeLevels: [0, 1, 0, 0, 0, 0, 0, 0, 0, 0] });
     expect(row(bought, 'pleiades').status).toBe('short');
+  });
+
+  it('uma melhoria liberada pode estar cara: mostra o quanto falta para alcançá-la', () => {
+    const s = rich(40, { dustLife: 8000 });
+    expect(row(s, 'voyager')).toMatchObject({ status: 'short', cost: 12000, missing: 11960 });
+    expect(buyLabel(row(s, 'voyager'))).toBe('Falta 12 mil');
   });
 
   it('o James Webb entra depois do 1º colapso', () => {
@@ -49,18 +64,22 @@ describe('linhas da página de Melhorias', () => {
     expect(upgradeRows(s).map((r) => r.id)).not.toContain('chandra');
   });
 
-  it('o preço é o do motor: base x 1,65^nível', () => {
+  it('o preço é o do motor e sobe a cada compra: 25, 28, 31...', () => {
+    const costs: number[] = [];
     for (let level = 0; level < 6; level++) {
       const levels = [level, 0, 0, 0, 0, 0, 0, 0, 0, 0];
       const s = rich(0, { upgradeLevels: levels });
-      expect(row(s, 'pulse').cost).toBe(Math.round(1500 * Math.pow(COST_GROWTH, level)));
+      costs.push(row(s, 'pulse').cost as number);
+      expect(row(s, 'pulse').cost).toBe(upgradeCost(UPGRADES[0]!, level));
       expect(row(s, 'pulse').cost).toBe(nextUpgradeCost(s, 0));
     }
+    expect(costs.slice(0, 3)).toEqual([25, 28, 31]);
+    expect([...costs].sort((a, b) => a - b)).toEqual(costs);
   });
 
   it('sem saldo mostra "Falta N"; com saldo mostra o preço; no máximo some o preço', () => {
-    expect(buyLabel(row(rich(1000), 'pulse'))).toBe('Falta 500');
-    expect(buyLabel(row(rich(1500), 'pulse'))).toBe('1,5 mil');
+    expect(buyLabel(row(rich(10), 'pulse'))).toBe('Falta 15');
+    expect(buyLabel(row(rich(25), 'pulse'))).toBe('25');
     const maxed = rich(1e9, { upgradeLevels: [UPGRADES[0]!.max, 0, 0, 0, 0, 0, 0, 0, 0, 0] });
     expect(row(maxed, 'pulse')).toMatchObject({ status: 'maxed', cost: null, gain: null });
     expect(buyLabel(row(maxed, 'pulse'))).toBe('No máximo');
@@ -68,11 +87,15 @@ describe('linhas da página de Melhorias', () => {
 
   it('mostra o ganho da próxima compra lendo o motor', () => {
     expect(row(rich(0), 'pulse').gain).toBe('Poeira por toque: 1 -> 2');
-    expect(row(rich(0), 'reactor').gain).toBe('Energia por toque: 0,25 -> 0,375');
-    expect(row(rich(0), 'resonance').gain).toMatch(/^Liga o combo/);
-    const lvl2 = rich(0, { upgradeLevels: [1, 1, 0, 0, 0, 0, 0, 0, 0, 0] });
+    const open = rich(0, { dustLife: 1000 });
+    expect(row(open, 'reactor').gain).toBe('Energia por toque: 1 -> 1,25');
+    expect(row(open, 'hubble').gain).toBe('Poeira por segundo: 0 -> 1');
+    expect(row(open, 'resonance').gain).toMatch(/^Liga o combo/);
+    const lvl2 = rich(0, { dustLife: 1000, upgradeLevels: [1, 1, 0, 0, 0, 0, 0, 0, 0, 0] });
     expect(row(lvl2, 'pulse').gain).toBe('Poeira por toque: 2 -> 3');
-    expect(row(lvl2, 'resonance').gain).toBe('Janela do combo: 1,3 s -> 1,5 s');
+    expect(row(lvl2, 'resonance').gain).toMatch(/^Valor de cada ponto de combo: \+0,2 -> \+0,25/);
+    // Melhoria em breve não promete ganho.
+    expect(row(rich(0), 'reactor').gain).toBeNull();
   });
 });
 
@@ -83,14 +106,15 @@ describe('página renderizada', () => {
     const markup = html(rich(2000));
     expect(markup.match(/class="ap-up /g)).toHaveLength(7);
     expect(markup).toContain('Pulso Solar');
-    expect(markup).toContain('Nível 0 de 30');
-    expect(markup).toContain('Comprar Pulso Solar por 1,5 mil de poeira');
+    expect(markup).toContain('Nível 0 de 40');
+    expect(markup).toContain('Comprar Pulso Solar por 25 de poeira');
   });
 
   it('o que não dá para comprar fica com aria-disabled e "Falta N"', () => {
     const markup = html(rich(0));
     expect(markup).toContain('aria-disabled="true"');
-    expect(markup).toContain('Falta 1,5 mil');
+    expect(markup).toContain('Falta 25');
+    expect(markup).toContain('Em breve: libera com 100 de poeira ganha ou Pulso Solar no nível 4');
     expect(markup).not.toContain('aria-disabled="false"><b>Falta');
   });
 
@@ -98,7 +122,7 @@ describe('página renderizada', () => {
     const initial = rich(6000);
     const ctl = createGameController({ initial, store: createMemoryGameStore(), slot: 1 });
     const markup = renderToStaticMarkup(<GameScreen controller={ctl} onExit={noop} />);
-    expect(markup).toContain('Melhorias, 2 para comprar');
+    expect(markup).toContain('Melhorias, 5 para comprar');
   });
 });
 
@@ -107,15 +131,15 @@ describe('compra pelo controlador', () => {
     const t = setup(rich(2000));
     expect(t.ctl.buy(0)).toBe(true);
     expect(t.state().run.upgradeLevels[0]).toBe(1);
-    expect(t.state().run.dust).toBe(500);
+    expect(t.state().run.dust).toBe(1975);
   });
 
   it('sem saldo, trancada ou índice inválido não compra', () => {
-    const t = setup(rich(100));
+    const t = setup(rich(10));
     expect(t.ctl.buy(0)).toBe(false);
     expect(t.ctl.buy(3)).toBe(false);
     expect(t.ctl.buy(99)).toBe(false);
-    expect(t.state().run.dust).toBe(100);
+    expect(t.state().run.dust).toBe(10);
   });
 
   it('toque duplo em 250 ms compra uma vez só; depois do intervalo compra de novo', () => {
@@ -129,7 +153,7 @@ describe('compra pelo controlador', () => {
     expect(t.state().run.upgradeLevels[0]).toBe(2);
   });
 
-  it('custos seguidos batem com base x 1,65^n', () => {
+  it('custos seguidos batem com a tabela do motor (25, 28, 31...)', () => {
     const t = setup(rich(1e9));
     let spent = 0;
     for (let n = 0; n < 4; n++) {
@@ -137,7 +161,7 @@ describe('compra pelo controlador', () => {
       t.clock.ms += 300;
       expect(t.ctl.buy(0)).toBe(true);
       const paid = before - t.state().run.dust;
-      expect(paid).toBe(Math.round(1500 * Math.pow(COST_GROWTH, n)));
+      expect(paid).toBe(upgradeCost(UPGRADES[0]!, n));
       spent += paid;
     }
     expect(1e9 - t.state().run.dust).toBe(spent);

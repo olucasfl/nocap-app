@@ -1,11 +1,12 @@
 import {
-  COMBO_BONUS_PER_POINT,
   UPGRADES,
   effectiveStats,
   formatDecimal,
   formatNumber,
   nextUpgradeCost,
   upgradeAvailable,
+  upgradeLock,
+  type UpgradeLock,
   type EffectiveStats,
   type SaveState,
 } from '@nocap/games';
@@ -58,17 +59,17 @@ const seconds = (x: number) => `${formatDecimal(x, 1)} s`;
 
 /** O que cada melhoria muda, lido do próprio `effectiveStats` (a regra continua no motor). */
 const PREVIEW: Record<string, Preview> = {
-  pulse: { label: 'Poeira por toque', read: (s) => formatNumber(Math.floor(s.dustPerTouch)) },
+  pulse: { label: 'Poeira por toque', read: (s) => formatDecimal(s.dustPerTouch, 0) },
   resonance: {
-    label: 'Janela do combo',
-    read: (s) => (s.combo.enabled ? seconds(s.combo.windowSec) : 'sem combo'),
+    label: 'Valor de cada ponto de combo',
+    read: (s) => (s.combo.enabled ? `+${formatDecimal(s.combo.pointValue, 2)}` : 'sem combo'),
   },
-  reactor: { label: 'Energia por toque', read: (s) => formatDecimal(s.energyPerTouch, 3) },
+  reactor: { label: 'Energia por toque', read: (s) => formatDecimal(s.energyPerTouch, 2) },
   pleiades: { label: 'Combo máximo', read: (s) => `x${s.combo.max}` },
   kepler: { label: 'Objeto a cada', read: (s) => `${seconds(s.objects.intervalSec)} (até ${s.objects.maxOnField})` },
-  hubble: { label: 'Valor dos objetos', read: (s) => `+${formatDecimal((s.objects.valueMult.comet - 1) * 100, 0)}%` },
+  hubble: { label: 'Poeira por segundo', read: (s) => formatDecimal(s.dustPerSecond, 0) },
   voyager: { label: 'Duração do sinal', read: (s) => seconds(s.objects.signalSec) },
-  webb: { label: 'Custo das melhorias', read: (s) => `${formatDecimal(s.costFactor * 100, 0)}%` },
+  webb: { label: 'Poeira por toque', read: (s) => formatDecimal(s.dustPerTouch, 0) },
   chandra: { label: 'Objeto no campo', read: (s) => seconds(s.objects.lifeSec.comet) },
 };
 
@@ -84,21 +85,34 @@ function gainText(state: SaveState, index: number, id: string): string | null {
   if (!preview) return id === 'gaia' ? 'As cartas passam a mostrar o efeito' : null;
   const before = preview.read(effectiveStats(state));
   const after = preview.read(effectiveStats(withLevelUp(state, index)));
-  if (id === 'resonance' && (state.run.upgradeLevels[index] ?? 0) === 0) return `Liga o combo: cada toque seguido vale +${COMBO_BONUS_PER_POINT * 100}%`;
+  if (id === 'resonance' && (state.run.upgradeLevels[index] ?? 0) === 0) return 'Liga o combo: cada toque seguido soma 0,2 ao toque';
   return `${preview.label}: ${before} -> ${after}`;
 }
 
+/** "Em breve": a condição que falta, em palavras (spec 038, 5.1). */
+export function lockText(lock: UpgradeLock): string {
+  switch (lock.kind) {
+    case 'collapse':
+      return `Libera no colapso ${lock.collapse}`;
+    case 'requires': {
+      const need = UPGRADES.find((u) => u.id === lock.upgrade);
+      return `Compre ${need?.name ?? 'a anterior'} primeiro`;
+    }
+    case 'milestone': {
+      const parts: string[] = [];
+      if (lock.dust !== null) parts.push(`${formatNumber(lock.dust)} de poeira ganha`);
+      if (lock.upgrade) {
+        const need = UPGRADES.find((u) => u.id === lock.upgrade?.id);
+        parts.push(`${need?.name ?? 'a anterior'} no nível ${lock.upgrade.level}`);
+      }
+      return `Em breve: libera com ${parts.join(' ou ')}`;
+    }
+  }
+}
+
 function lockHint(state: SaveState, index: number): string | null {
-  const def = UPGRADES[index];
-  if (!def) return null;
-  if (def.requiresPicks !== undefined && state.run.picks < def.requiresPicks) {
-    return `Libera após ${def.requiresPicks} grimórios`;
-  }
-  if (def.requiresUpgrade) {
-    const need = UPGRADES.find((u) => u.id === def.requiresUpgrade?.id);
-    return `Compre ${need?.name ?? 'a anterior'} primeiro`;
-  }
-  return null;
+  const lock = upgradeLock(state, index);
+  return lock ? lockText(lock) : null;
 }
 
 /** As linhas da página de Melhorias: só o que o colapso atual já abriu, na ordem do catálogo. */

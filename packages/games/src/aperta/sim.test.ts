@@ -35,11 +35,15 @@ describe('simulate', () => {
     expect(marks[3]!).toBeLessThanOrEqual(marks[4]!);
   });
 
-  it('a 1ª escolha chega em 2 a 4 minutos no ritmo normal (seção 6.1)', () => {
+  it('a 1ª melhoria sai em segundos e o 1º grimório logo depois (reformulação do começo, seção 6.2)', () => {
     const life = simulate({ profile: 'normal', seed: 'first', collapses: 1 }).lives[0]!;
-    const minutes = (life.milestones[1] as number) * 60;
-    expect(minutes).toBeGreaterThanOrEqual(1.5);
-    expect(minutes).toBeLessThanOrEqual(4.5);
+    const upgradeSec = (life.milestones[0] as number) * 3600;
+    const pickSec = (life.milestones[1] as number) * 3600;
+    // 25 toques a 2,5 por segundo = 10 s; o 1º grimório vem ~13 toques depois.
+    expect(upgradeSec).toBeGreaterThanOrEqual(9);
+    expect(upgradeSec).toBeLessThanOrEqual(15);
+    expect(pickSec).toBeGreaterThan(upgradeSec);
+    expect(pickSec).toBeLessThanOrEqual(40);
   });
 
   it('quem toca mais rápido chega antes', () => {

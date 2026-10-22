@@ -34,7 +34,7 @@ describe('toque', () => {
     expect(t.tap()).toBe(true);
     const { run, stats } = t.ctl.getSnapshot().state;
     expect(run.dust).toBe(1);
-    expect(run.energy).toBeCloseTo(0.25);
+    expect(run.energy).toBeCloseTo(1);
     expect(stats.clicks).toBe(1);
     expect(t.events[0]).toMatchObject({ type: 'press', gain: 1, combo: 0 });
   });
@@ -173,6 +173,12 @@ describe('salvamento', () => {
 });
 
 describe('objetos no espaço', () => {
+  /** Uma vida com a 1ª melhoria comprada: antes dela nenhum objeto aparece (spec 038, 4.5). */
+  const afterFirstUpgrade = (): SaveState => {
+    const s = { ...newSave('teste', 0), tutorial: 'done' as const };
+    return { ...s, run: { ...s.run, upgradeLevels: s.run.upgradeLevels.map((l, i) => (i === 0 ? 1 : l)) } };
+  };
+
   /** Passa o tempo do aparelho em passos de 1 s, como o relógio da tela. */
   function advance(t: ReturnType<typeof setup>, seconds: number) {
     for (let i = 0; i < seconds; i++) {
@@ -181,20 +187,26 @@ describe('objetos no espaço', () => {
     }
   }
 
-  it('um objeto nasce depois de uns 9 s e a tela é avisada na hora', () => {
+  it('nenhum objeto nasce antes da 1ª melhoria', () => {
     const t = setup();
+    advance(t, 60);
+    expect(t.ctl.getSnapshot().state.run.objects).toHaveLength(0);
+  });
+
+  it('um objeto nasce depois de uns 32 s e a tela é avisada na hora', () => {
+    const t = setup(afterFirstUpgrade());
     let notified = 0;
     t.ctl.subscribe(() => (notified += 1));
-    advance(t, 8);
+    advance(t, 30);
     expect(t.ctl.getSnapshot().state.run.objects).toHaveLength(0);
-    advance(t, 12);
+    advance(t, 5);
     expect(t.ctl.getSnapshot().state.run.objects.length).toBeGreaterThan(0);
     expect(notified).toBeGreaterThan(0);
   });
 
   it('capturar entrega a recompensa que a etiqueta mostrou e emite o aviso', () => {
-    const t = setup();
-    advance(t, 12);
+    const t = setup(afterFirstUpgrade());
+    advance(t, 35);
     const { run } = t.ctl.getSnapshot().state;
     const obj = run.objects[0]!;
     expect(t.ctl.capture(obj.id)).toBe(true);
@@ -207,8 +219,8 @@ describe('objetos no espaço', () => {
   });
 
   it('capturar duas vezes, ou um id que não existe, não entrega nada', () => {
-    const t = setup();
-    advance(t, 12);
+    const t = setup(afterFirstUpgrade());
+    advance(t, 35);
     const id = t.ctl.getSnapshot().state.run.objects[0]!.id;
     expect(t.ctl.capture(id)).toBe(true);
     expect(t.ctl.capture(id)).toBe(false);
@@ -217,8 +229,8 @@ describe('objetos no espaço', () => {
   });
 
   it('com o jogo pausado nada nasce e nada é capturado', () => {
-    const t = setup();
-    advance(t, 12);
+    const t = setup(afterFirstUpgrade());
+    advance(t, 35);
     const id = t.ctl.getSnapshot().state.run.objects[0]!.id;
     t.ctl.pause();
     expect(t.ctl.capture(id)).toBe(false);
@@ -274,7 +286,7 @@ describe('tutorial pelo controlador', () => {
     t.tap();
     t.ctl.tutorialStep(2, 3);
     expect(state(t).tutorial).toBe(3);
-    expect(state(t).run.dust).toBeGreaterThanOrEqual(1500);
+    expect(state(t).run.dust).toBeGreaterThanOrEqual(25);
     const dust = state(t).run.dust;
     t.ctl.tutorialStep(2, 3);
     expect(state(t).tutorial).toBe(3);
