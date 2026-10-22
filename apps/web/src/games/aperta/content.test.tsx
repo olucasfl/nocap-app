@@ -109,10 +109,10 @@ describe('faixa "Novo no espaço"', () => {
 describe('missão e evento na tela', () => {
   it('a missão mostra o progresso; cumprida, mostra o prêmio', () => {
     const s = atCollapse(4);
-    const open = { ...s, run: { ...s.run, mission: { id: 'capture-10', progress: 3, done: false } } };
+    const open = { ...s, run: { ...s.run, mission: { id: 'capture-10', progress: 3, done: false, doneAt: -1e9 } } };
     expect(missionView(open)).toMatchObject({ progress: 3, target: 10, done: false });
     expect(html(<MissionChip view={missionView(open)!} />)).toContain('(3/10)');
-    const done = { ...s, run: { ...s.run, mission: { id: 'capture-10', progress: 10, done: true } } };
+    const done = { ...s, run: { ...s.run, mission: { id: 'capture-10', progress: 10, done: true, doneAt: -1e9 } } };
     expect(html(<MissionChip view={missionView(done)!} />)).toContain('Fragmentos extras');
     expect(missionView(s)).toBeNull();
   });

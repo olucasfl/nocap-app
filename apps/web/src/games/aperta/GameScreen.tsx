@@ -27,6 +27,7 @@ import { GrimoiresPage } from './GrimoiresPage';
 import { RegionBackdrop } from './regions';
 import { RegionMenu } from './RegionMenu';
 import { EventChip, EventFx, MissionChip, NewInSpace } from './StatusStrips';
+import { RequirementBars } from './Requirements';
 import { SpaceArtSprite } from './SpaceArtSprite';
 import { SpaceObject, type SpaceObjectKind } from './SpaceObject';
 import { TutorialCoach, TutorialInline } from './Tutorial';
@@ -322,7 +323,8 @@ export function GameScreen({ controller, onExit }: Props) {
   const signal = signalView(state, now);
   const fragments = fragmentsAvailable(state);
   const albumCount = state.album.length;
-  const starReady = tutorial === null && collapseView(state).ready;
+  const collapse = collapseView(state);
+  const starReady = tutorial === null && collapse.ready;
   const fresh = pending || tutorial !== null ? null : newInSpaceView(state);
   const mission = missionView(state);
   const liveEvent = eventView(state, now);
@@ -444,9 +446,12 @@ export function GameScreen({ controller, onExit }: Props) {
           )}
         </div>
         {starReady && !pending && (
-          <button type="button" className="ap-hbtn ap-hbtn-go ap-ready" onClick={() => setCollapseOpen(true)}>
-            Estrela pronta: colapsar
-          </button>
+          <div className="ap-ready-wrap">
+            <button type="button" className="ap-hbtn ap-hbtn-go ap-ready" onClick={() => setCollapseOpen(true)}>
+              Estrela pronta: colapso {collapse.next}
+            </button>
+            <RequirementBars view={collapse} compact />
+          </div>
         )}
         {saveFailures >= 3 && (
           <div className="ap-savewarn" role="alert">

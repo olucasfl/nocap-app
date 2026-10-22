@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { GRIMOIRES, UPGRADES } from './catalog';
 import { atlasSlots, dustGoal, minPicks } from './economy';
+import { meetMilestone } from './milestone';
 import {
   buyUpgrade,
   canCollapse,
@@ -18,7 +19,7 @@ import { MAX_SAVE_BYTES, mergeSaves, validateSave } from './save';
 const NOW = Date.parse('2026-10-21T12:00:00Z');
 
 /** Joga como uma pessoa: toca 10x/s, escolhe a 1ª carta, compra a melhoria mais barata, colapsa quando pode. */
-function play(seed: string, seconds: number, from: SaveState = newSave(seed, NOW - seconds * 2000)): SaveState {
+function play(seed: string, seconds: number, from: SaveState = newSave(seed, NOW - seconds * 2000), collapsing = false): SaveState {
   let s = from;
   let t = s.clock;
   const end = t + seconds;
@@ -37,7 +38,7 @@ function play(seed: string, seconds: number, from: SaveState = newSave(seed, NOW
       if (c !== null && c < cost) [best, cost] = [i, c];
     });
     if (best >= 0 && s.run.dust >= cost) s = buyUpgrade(s, best);
-    if (canCollapse(s)) {
+    if (collapsing && canCollapse(s)) {
       const page = Object.keys(s.run.build)[0];
       if (page) s = collapse(s, page);
     }
@@ -66,7 +67,7 @@ describe('validateSave: formato', () => {
     const ready: SaveState = {
       ...fresh,
       tutorial: 'done',
-      run: { ...fresh.run, picks: 20, dust: dustGoal(1), dustLife: dustGoal(1), build: { moon: 1 } },
+      run: { ...fresh.run, picks: 20, dust: dustGoal(1), dustLife: dustGoal(1), build: { moon: 1 }, ...meetMilestone(0, fresh.run.upgradeLevels) },
       album: ['moon'],
       stats: { ...fresh.stats, picks: 20, dustTotal: dustGoal(1) },
     };
@@ -84,7 +85,7 @@ describe('validateSave: formato', () => {
       const id = pages[k - 1] as string;
       s = {
         ...s,
-        run: { ...s.run, picks: minPicks(k), dust: goal, dustLife: goal, build: { [id]: 1 } },
+        run: { ...s.run, picks: minPicks(k), dust: goal, dustLife: goal, build: { [id]: 1 }, ...meetMilestone(k - 1, s.run.upgradeLevels) },
         album: [...new Set([...s.album, id])],
         stats: { ...s.stats, picks: s.stats.picks + minPicks(k), dustTotal: s.stats.dustTotal + goal },
       };
@@ -148,7 +149,7 @@ describe('validateSave: formato', () => {
 describe('validateSave: coerência', () => {
   it('recusa melhoria que custa mais que a poeira ganha', () => {
     const s = clone(base());
-    s.run.upgradeLevels[UPGRADES.findIndex((u) => u.id === 'satellite')] = 60;
+    s.run.upgradeLevels[UPGRADES.findIndex((u) => u.id === 'satellite')] = 150;
     expect(rejects(s)).toContain('Melhorias custam mais que a poeira ganha');
   });
 
@@ -356,7 +357,7 @@ describe('validateSave: partida longa de verdade', () => {
     let s = newSave('longa', 0);
     let t = 0;
     while (t < 40_000) {
-      s = play('longa', 300, s);
+      s = play('longa', 300, s, true);
       t = s.clock;
       const r = validateSave(clone(s), { nowMs: 1e12, createdAtMs: 1e12 - t * 1000 - 10_000 });
       expect(r.ok, r.ok ? '' : r.errors.join(';')).toBe(true);
@@ -429,7 +430,8 @@ describe('validateSave: economia v2 (spec 039)', () => {
     s.regionId = 'asteroid-belt';
     s.run.upgradeLevels[upg('gloves')] = 1;
     s.run.upgradeLevels[upg('lens')] = 1;
-    s.run.dustLife = s.stats.dustTotal = 500;
+    s.run.dustLife = 500;
+    s.stats.dustTotal = dustGoal(1) + 500;
     expect(validateSave(s).ok).toBe(true);
   });
 

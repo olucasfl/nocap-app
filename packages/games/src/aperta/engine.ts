@@ -33,7 +33,8 @@ import {
   type UpgradeDef,
   type UpgradeKind,
 } from './catalog';
-import { eventsOpen, mechanicOpen, missionById, MISSIONS, type EventId, type MissionDef } from './content';
+import { ASSIGNABLE_MISSIONS, eventsOpen, mechanicOpen, missionById, type EventId, type MissionDef } from './content';
+import { MISSION_NEXT_DELAY_SEC, milestoneProgress, type MilestoneProgress } from './milestone';
 import {
   ATLAS_PAGE_POWER,
   BASE_ENERGY_PER_TOUCH,
@@ -126,6 +127,8 @@ export interface MissionState {
   id: string;
   progress: number;
   done: boolean;
+  /** Carimbo do relógio em que foi cumprida (`NEVER` antes); a próxima missão chega `MISSION_NEXT_DELAY_SEC` depois. */
+  doneAt: number;
 }
 
 export interface PendingChoice {
@@ -174,6 +177,18 @@ export interface RunState {
   /** Surto dos geradores (Estrela Dourada): até quando valem cheios e com o teto x3. */
   surgeUntil: number;
   mission: MissionState | null;
+  // Contadores da vida que o marco do colapso lê (spec 040, seção 2); zeram no colapso.
+  /** Objetos capturados na vida (qualquer tipo). */
+  captured: number;
+  /** Estrelas Douradas capturadas na vida. */
+  rares: number;
+  /** Toques seguidos agora com o combo ligado (cada um dentro da janela do anterior) e o melhor da vida. */
+  chain: number;
+  chainBest: number;
+  /** Maior tempo seguido, em segundos, com o combo no máximo, nesta vida. */
+  fullBest: number;
+  /** Missões da estação cumpridas na vida. */
+  missionsDone: number;
 }
 
 export interface AtlasPage {
@@ -284,6 +299,12 @@ function freshRun(rngState: number, upgradeCount = UPGRADES.length): RunState {
     nextRareAt: null,
     surgeUntil: NEVER,
     mission: null,
+    captured: 0,
+    rares: 0,
+    chain: 0,
+    chainBest: 0,
+    fullBest: 0,
+    missionsDone: 0,
   };
 }
 
@@ -379,6 +400,7 @@ function shiftRun(run: RunState, gap: number, shiftPending: boolean): RunState {
     nextRareAt: run.nextRareAt === null ? null : run.nextRareAt + gap,
     surgeUntil: run.surgeUntil + gap,
     event: run.event ? { ...run.event, until: run.event.until + gap } : null,
+    mission: run.mission && run.mission.done ? { ...run.mission, doneAt: run.mission.doneAt + gap } : run.mission,
     objects: run.objects.map((o) => ({ ...o, bornAt: o.bornAt + gap, expiresAt: o.expiresAt + gap })),
     pending: run.pending && shiftPending ? { ...run.pending, openedAt: run.pending.openedAt + gap } : run.pending,
   };
@@ -1004,7 +1026,7 @@ export function chooseGrimoire(state: SaveState, id: string, now: number): SaveS
   };
   const next: SaveState = {
     ...s,
-    run: bumpMission(run, 'pick'),
+    run: bumpMission(run, 'pick', now),
     album: s.album.includes(id) ? s.album : [...s.album, id],
     stats: { ...s.stats, picks: s.stats.picks + 1, bestLevel: Math.max(s.stats.bestLevel, nextLevel) },
   };
@@ -1074,11 +1096,16 @@ export function press(state: SaveState, now: number): SaveState {
   const gain = clampNum(Math.max(1, Math.floor(clampNum(value))));
 
   const fullSince = full ? (run.comboFullSince > NEVER / 2 ? run.comboFullSince : now) : NEVER;
+  // Sequência do combo (marco da vida): sem teto no nível, ao contrário de `combo`, que para no máximo.
+  const chain = stats.combo.enabled ? (now - run.lastPressAt <= stats.combo.windowSec ? run.chain + 1 : 1) : 0;
   const next: SaveState = {
     ...s,
     run: {
       ...run,
       comboFullSince: fullSince,
+      chain: Math.min(chain, 1e6),
+      chainBest: Math.max(run.chainBest, Math.min(chain, 1e6)),
+      fullBest: full ? Math.max(run.fullBest, now - fullSince) : run.fullBest,
       dust: clampNum(run.dust + gain),
       dustLife: clampNum(run.dustLife + gain),
       energy: clampNum(run.energy + (stats.energyPerTouch + bonusEnergy) * energyMult(run, now)),
@@ -1100,7 +1127,7 @@ export function press(state: SaveState, now: number): SaveState {
       comboFullBest: full ? Math.max(s.stats.comboFullBest, now - fullSince) : s.stats.comboFullBest,
     },
   };
-  return awardAchievements(openChoiceIfFull({ ...next, run: bumpMission(next.run, 'touch') }, now));
+  return awardAchievements(openChoiceIfFull({ ...next, run: bumpMission(next.run, 'touch', now) }, now));
 }
 
 // --- Melhorias ---
@@ -1255,26 +1282,39 @@ function tickEvents(state: SaveState, run: RunState, now: number): RunState {
   return next;
 }
 
-/** A missão da vida: sorteada quando a mecânica está aberta e a vida ainda não tem uma. */
-function assignMission(state: SaveState, run: RunState): RunState {
-  if (run.mission || !mechanicOpen('missions', state.collapses)) return run;
-  const roll = sideRoll(state.playSeconds, state.collapses, 3);
-  const def = MISSIONS[Math.min(MISSIONS.length - 1, Math.floor(roll * MISSIONS.length))] as MissionDef;
-  return { ...run, mission: { id: def.id, progress: 0, done: false } };
+/**
+ * A missão da estação: sorteada quando a mecânica está aberta e a vida ainda não tem uma. Cumprida a missão, a
+ * próxima chega `MISSION_NEXT_DELAY_SEC` depois (o marco "missões da estação" pede várias na mesma vida).
+ */
+function assignMission(state: SaveState, run: RunState, now: number): RunState {
+  if (!mechanicOpen('missions', state.collapses)) return run;
+  const cur = run.mission;
+  if (cur && !(cur.done && now >= cur.doneAt + MISSION_NEXT_DELAY_SEC)) return run;
+  const roll = sideRoll(state.playSeconds, state.collapses, 3 + run.missionsDone * 11);
+  let index = Math.min(ASSIGNABLE_MISSIONS.length - 1, Math.floor(roll * ASSIGNABLE_MISSIONS.length));
+  // Nunca a mesma missão duas vezes seguidas.
+  if (cur && (ASSIGNABLE_MISSIONS[index] as MissionDef).id === cur.id) index = (index + 1) % ASSIGNABLE_MISSIONS.length;
+  const def = ASSIGNABLE_MISSIONS[index] as MissionDef;
+  return { ...run, mission: { id: def.id, progress: 0, done: false, doneAt: NEVER } };
 }
 
-function bumpMission(run: RunState, metric: MissionDef['metric']): RunState {
+function bumpMission(run: RunState, metric: MissionDef['metric'], now: number): RunState {
   const m = run.mission;
   if (!m || m.done) return run;
   const def = missionById(m.id);
   if (!def || def.metric !== metric) return run;
   const progress = Math.min(def.target, m.progress + 1);
-  return { ...run, mission: { id: m.id, progress, done: progress >= def.target } };
+  const done = progress >= def.target;
+  return {
+    ...run,
+    mission: { id: m.id, progress, done, doneAt: done ? now : NEVER },
+    missionsDone: run.missionsDone + (done ? 1 : 0),
+  };
 }
 
 /** Fragmentos extras que a vida atual rende por ter cumprido a missão da estação. */
 export function missionBonus(state: SaveState): number {
-  return state.run.mission?.done ? MISSION_FRAGMENTS : 0;
+  return state.run.missionsDone > 0 || state.run.mission?.done ? MISSION_FRAGMENTS : 0;
 }
 
 /** Os objetos só aparecem depois da primeira melhoria da vida (ou depois do 1º colapso). */
@@ -1300,7 +1340,7 @@ function tickObjectsCore(state: SaveState, now: number): SaveState {
   let next: RunState = alive.length === run.objects.length ? run : { ...run, objects: alive };
   if (run.pending) return next === run ? s : { ...s, run: next };
 
-  next = assignMission(s, tickEvents(s, next, now));
+  next = assignMission(s, tickEvents(s, next, now), now);
   const stats = effectiveStats(s);
   // Nada de objeto antes da 1ª melhoria (spec 038, 4.5): o começo é só toque, melhoria e grimório.
   if (stats.objects.disabled || !objectsOpen(s)) return next === run ? s : { ...s, run: next };
@@ -1433,7 +1473,7 @@ export function captureObject(state: SaveState, id: number, now: number): SaveSt
   const satelliteStreak = obj.kind === 'satellite' ? s.stats.satelliteStreak + 1 : 0;
   const withStats: SaveState = {
     ...s,
-    run: bumpMission(next, 'capture'),
+    run: bumpMission({ ...next, captured: run.captured + 1, rares: run.rares + (obj.kind === 'golden' ? 1 : 0) }, 'capture', now),
     stats: {
       ...s.stats,
       objectsCaptured: s.stats.objectsCaptured + 1,
@@ -1447,16 +1487,33 @@ export function captureObject(state: SaveState, id: number, now: number): SaveSt
 
 // --- Colapso, Atlas e árvore ---
 
-export function collapseProgress(state: SaveState): { dust: number; dustGoal: number; picks: number; minPicks: number; ready: boolean } {
+export interface CollapseProgress {
+  /** Colapso que esta vida termina (1 = primeiro). */
+  next: number;
+  dust: number;
+  dustGoal: number;
+  picks: number;
+  minPicks: number;
+  /** O marco da vida (terceiro requisito). */
+  milestone: MilestoneProgress;
+  ready: boolean;
+}
+
+/** Os três requisitos do colapso `n` (spec 040, seção 2): poeira da vida, escolhas e o marco que gira. */
+export function collapseProgress(state: SaveState): CollapseProgress {
   const k = state.collapses + 1;
   const goal = dustGoal(k);
   const min = minPicks(k);
+  const run = state.run;
+  const milestone = milestoneProgress(k, state.collapses, run, effectiveStats(state).objects.disabled);
   return {
-    dust: state.run.dustLife,
+    next: k,
+    dust: run.dustLife,
     dustGoal: goal,
-    picks: state.run.picks,
+    picks: run.picks,
     minPicks: min,
-    ready: state.run.dustLife >= goal && state.run.picks >= min && state.run.pending === null,
+    milestone,
+    ready: run.dustLife >= goal && run.picks >= min && milestone.done && run.pending === null,
   };
 }
 

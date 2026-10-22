@@ -1,6 +1,6 @@
 # 040 · Aperta!: colapso infinito, Cofre dos Proibidos e Árvore de Habilidades grande
 
-Status: **decidida pelo Lucas em 22/10/2026 (conversa de design). Só este plano está escrito; nenhuma etapa foi começada.** Sobrepõe a spec 038 nas seções 8.2 (Atlas), 8.3 (Fragmentos e árvore), 8.4 (Ascender), 5.3 (conquistas sem recompensa) e nas etapas 14 a 16 da seção 15. "Rebirth" é o **Colapso** (nome já decidido na 038; na tela continua "Colapsar a estrela").
+Status: **decidida pelo Lucas em 22/10/2026 (conversa de design). Etapa 14 pronta em 22/10/2026 (seção 10); as etapas 15 a 21 não foram começadas.** Sobrepõe a spec 038 nas seções 8.2 (Atlas), 8.3 (Fragmentos e árvore), 8.4 (Ascender), 5.3 (conquistas sem recompensa) e nas etapas 14 a 16 da seção 15. "Rebirth" é o **Colapso** (nome já decidido na 038; na tela continua "Colapsar a estrela").
 
 ## 1. O que mudou (decisões do Lucas)
 
@@ -15,7 +15,7 @@ Status: **decidida pelo Lucas em 22/10/2026 (conversa de design). Só este plano
 ## 2. Colapso infinito e requisitos crescentes
 
 - **Requisito do colapso `n`** (todos precisam ser cumpridos, e o jogo mostra a barra de cada um):
-  1. **Poeira da vida** >= `meta(n)`. Meta inicial 2 mi no 1º colapso, **x3 a cada colapso** (é exatamente a curva da tabela 6.6 da 038: 2 mi, 6 mi, 18 mi... 9,6 tri no 15º) e **continua x3 depois do 15º, sem teto**. A razão sobe (ex. x3,2) só se o simulador mostrar que o poder do jogador deixou de acompanhar.
+  1. **Poeira da vida** >= `meta(n)`. Meta inicial 2 mi no 1º colapso, **x3 a cada colapso** (a curva da tabela 6.6 da 038: 2 mi, 6 mi, 18 mi... 9,6 tri no 15º) e **continua crescendo depois do 15º, sem teto**. **Resultado da etapa 14 (seção 10): o simulador mostrou que o poder do jogador não acompanha x3** (as vidas 9 a 12 saíam com 9 a 21 h), então a razão virou trechos calibrados (`GOAL_SEGMENTS`); a razão sobe de novo quando as etapas 15 a 20 trouxerem poder permanente novo.
   2. **Escolhas de grimório** >= mínimo (20 no 1º, 15 até o 5º, 12 depois; é o `minChoices` da 6.6).
   3. **Um marco da vida** que muda a cada colapso e cresce com `n`. Ciclo de 6 marcos: capturar `ceil(2 + n/2)` objetos; chegar ao combo `min(5 + n/3, teto)`; ter `k` geradores acima do nível `f(n)`; completar `ceil(n/4)` missões da estação; acertar `ceil(n/5)` objetos raros; manter o combo cheio por `20 + n` s. O marco do colapso `n` é o de índice `n mod 6`. Marcos só entram se o conteúdo que exigem já estiver liberado (o que não existe é pulado).
 - **Duração da vida:** não tem alvo fixo. O simulador mede **por perfil** (casual 30 min/dia, normal 1 a 2 h/dia, ativo 4 h/dia). Trava de balanceamento: para o perfil normal a vida `k` leva de **1 h a 3 h** até o 15º colapso; depois pode crescer no máximo **+3% por colapso** em relação à anterior (nunca vira muro).
@@ -103,7 +103,7 @@ O tutorial dinâmico (spec 038, 4.6, refeita em 22/10/2026) ganha passos de gati
 
 Numeração continua a da 038. Todas terminam com testes, typecheck, docs e commit na `develop`. Substituem as antigas 14, 15 e 16 da 038.
 
-14. **Colapso infinito e requisitos.** *Escopo:* sem teto de colapsos, remover o Ascender (`canAscend` e tudo que o cita), `meta(n)` x3 sem teto, marcos do colapso (6 marcos que giram), números grandes sem teto, `validateSave` com o teto do colapso `n`, simulador com 3 perfis e as travas de duração (1 a 3 h até o 15º; +3% depois), conteúdo por colapso só até o 15º. *Pronto quando:* testes mostram o requisito crescendo, o simulador cumpre as travas e o save antigo abre.
+14. **Colapso infinito e requisitos. PRONTA em 22/10/2026 (seção 10).** *Escopo:* sem teto de colapsos, remover o Ascender (`canAscend` e tudo que o cita), `meta(n)` x3 sem teto, marcos do colapso (6 marcos que giram), números grandes sem teto, `validateSave` com o teto do colapso `n`, simulador com 3 perfis e as travas de duração (1 a 3 h até o 15º; +3% depois), conteúdo por colapso só até o 15º. *Pronto quando:* testes mostram o requisito crescendo, o simulador cumpre as travas e o save antigo abre.
 15. **Cofre dos Proibidos (substitui o Atlas e a 8.2).** *Escopo:* 10 proibidos com níveis 1 a 5 e selo do nível 5, oferta de 3 no colapso (regras da seção 3), Selo Estelar, modal em 2 passos, página Cofre dos Proibidos, remover Atlas, espaços e bônus de conjunto, migração do save (páginas viram Cintilas), tutorial do Cofre. *Depende da 14.* *Pronto quando:* testes cobrem a oferta (nunca nível 5, até 3 distintas), a evolução até 5 e a migração; o simulador confere que cada proibido tem preço real.
 16. **Cintilas, fontes e conquistas ampliadas (pode rodar junto com a 14).** *Escopo:* moeda `sparks` no save, ~150 conquistas em dados com recompensa, fontes do álbum, capturas raras, degraus e marcos que repetem (5.1), remover Fragmentos e migrar o save, avisos de ganho de Cintilas, página de Conquistas maior (filtros, progresso). *Pronto quando:* o **teste de balanço** da seção 5.4 passa e a página funciona em 320 a 1920 px.
 17. **Árvore: motor e dados.** *Escopo:* `tree.ts` com o grafo (~120 nós, pré-requisitos, níveis, custo por tier), compra, refazer 100%, `validateSave`, **teste de não-duplicação** e de poder direto <= 15%, balanço de Cintilas (5.4) ligado à árvore real. *Depende da 16.*
@@ -118,3 +118,98 @@ Numeração continua a da 038. Todas terminam com testes, typecheck, docs e comm
 
 - Tomadas: colapso infinito; sem Ascender, sem Atlas, sem Fragmentos; 10 proibidos com níveis 1 a 5; oferta de 3 sem nível 5; Selo Estelar quando tudo está no 5; moeda da árvore vem de conquistas, álbum, capturas raras e marcos; ~150 conquistas; árvore de ~120 nós em forma de árvore; sem ramo de memória; Autoclick 60 s com níveis; eventos "2x tudo"; refazer a árvore devolve 100%.
 - **O Lucas ainda pode mudar (não bloqueia nada):** o nome **Cintilas**, os nomes e efeitos exatos dos proibidos 4 a 10, a razão x3 do requisito depois do 15º colapso, e o tamanho final da árvore (120 nós é meta, não regra).
+
+## 10. Etapa 14 pronta: o que foi feito, o que mudou do plano e a tabela do simulador (22/10/2026)
+
+### 10.1 Entregue
+
+- **Sem teto de colapsos.** `dustGoal(n)` cresce sem fim até o guarda de 1e300 (`MAX_NUMBER`); `MAX_COLLAPSE_COUNT` (8659) é o último colapso cuja meta ainda cabe e o `validateSave` recusa mais que isso.
+- **Ascender removido por completo:** nenhuma linha de código, tela, teste ou texto do Aperta! o cita (a 038 perdeu a seção 8.4, a decisão 10 e as menções; `collapse-infinite.test.ts` varre `packages/games`, `apps/web` e `apps/api` e falha se ele voltar). Só esta spec guarda o registro de que foi cancelado.
+- **Requisito do colapso n** (`collapseProgress`, `canCollapse`): poeira da vida >= `dustGoal(n)`; escolhas >= 20 (1º), 15 (2º ao 5º) ou 12; e o **marco da vida** (`milestone.ts`), que gira em 6 tipos por `n mod 6` na ordem objetos capturados, combo, geradores, missões, raros e combo cheio, e **pula** o que ainda não existe (missões antes do colapso 4; capturas, raros e missões enquanto os objetos estão desligados por Cygnus X-1, senão a vida ficaria impossível de colapsar). Metas: objetos `ceil(2 + n/2)`; combo `min(5 + n/3, 30)` toques seguidos; geradores `k` no nível `f(n)` (2 geradores no nível `6 + n` até o teto de 40, mais um gerador a cada 12 colapsos até 4); missões `ceil(n/4)`; raros `ceil(n/5)`; combo cheio `min(20 + n, 180)` s.
+- **Contadores da vida** no `RunState` (`captured`, `rares`, `chain`/`chainBest`, `fullBest`, `missionsDone`), zerados no colapso; save antigo entra com 0 e a missão já cumprida vale 1.
+- **Números grandes:** `formatNumber` mostra mil, mi, bi, tri e, de 1e15 em diante, notação científica (`4,2e250`), com testes de 1e0 a 1e300; o motor trava tudo em 1e300 (`clampNum`, `upgradeCost`, `energyCap`, `dustGoal`, teto do `validateSave`); a tela só usa `formatNumber`.
+- **`validateSave`:** `collapses <= MAX_COLLAPSE_COUNT`; piso do total de poeira ganha (a menor entre a meta nova e a antiga de cada colapso, para um save antigo legítimo nunca ser recusado); teto de poeira da vida preso em 1e300; contadores do marco coerentes (capturas <= total, raros <= capturas, sequência <= toques, combo cheio <= tempo jogado). Testado com **11 saves reais antigos** (`src/aperta/fixtures/legacy-*.json`, gerados pelo simulador com o motor do commit `1293fd1`, vidas 1 a 5, com e sem escolha aberta): todos abrem, nada é cortado (a energia pode ser aparada, ver 10.2), tocam, gravam e abrem de novo; um colapso feito num deles segue as regras novas.
+- **Conteúdo "por colapso" só até o 15º:** a tabela de conteúdo continua com as linhas 0 a 5 (v1) e nada novo entra por colapso depois do 15º (a spec 038 manda o resto para a árvore, os proibidos e as conquistas); testes com colapsos 15, 99, 250 e 499 conferem que nada quebra sem linha de conteúdo.
+- **UI:** `RequirementBars` mostra a barra de cada requisito no botão "Estrela pronta: colapso N" (versão compacta), no modal de colapso (passo 1) e no Atlas (com "Falta ..."). Conferida com Playwright (celular emulado: isMobile, hasTouch, DPR 2) em 320, 390 e 1280 px, sem rolagem lateral (`e2e/aperta-collapse.spec.ts`, 6 testes).
+- **Simulador:** 3 perfis (casual 1 toque/s e 30 min/dia; normal 2,5 toques/s e 1,5 h/dia; ativo 4 toques/s e 4 h/dia), horas **e dias** por vida, o jogador persegue o marco da vida, modela a Estrela Dourada na renda e evita o Cygnus X-1. Os testes (`sim.test.ts`, 16 sementes `v0` a `v15`, 40 colapsos) exigem as travas abaixo.
+
+### 10.2 O que mudou do plano (decisões minhas, registradas porque a spec dizia outra coisa)
+
+1. **A razão x3 não se sustenta.** Com x3 o simulador mostrou vidas 1 a 8 de 1 a 3 h e vidas 9 a 12 de 9 a 21 h (o poder permanente não acompanha 3^n). A meta virou trechos calibrados (`GOAL_SEGMENTS`): do 1º para o 2º colapso x70 (2 mi -> 140 mi: o 1º colapso cumpre os 2 mi sozinho, preso nas 20 escolhas), x2,1 até o 4º, **x1,28 até o 30º** e **x1,08 depois**. A razão volta a subir quando as etapas 15 a 20 trouxerem poder permanente novo (proibidos, árvore, habilidades): é só trocar os números e rodar o calibrador.
+2. **Energia depois da 6ª escolha: x1,22 em vez de x1,35** (`ENERGY_STEP_GROWTH`). Com x1,35 as 20 escolhas do 1º colapso levavam ~6,7 h e a trava manda no máximo 3 h; com x1,22 levam ~2,1 h. Os 6 primeiros passos (38 a 640) e a sensação do começo não mudaram. Efeito num save antigo: quem estava com a barra quase cheia passa do teto novo, a energia é aparada e a escolha abre na hora (`flagged: ['energy']`, nada se perde).
+3. **"Combo" do marco = sequência de toques seguidos** (cada um dentro da janela do anterior, com o Ritmo Firme comprado), e não o nível de combo: o nível para em 3 ou 4 sem grimórios raros, então a meta 5 do 1º colapso seria impossível. Teto de 30 toques. O combo cheio tem teto de 180 s (humano).
+4. **Missões da estação em sequência:** a próxima chega 5 s depois da cumprida (`MISSION_NEXT_DELAY_SEC`) e o sorteio usa só missões curtas (3, 5 e 8 objetos; 150 e 300 toques; 3 e 5 escolhas, ~8 min em média). As 4 da v1 ficam marcadas `legacy` só para validar saves antigos. O bônus de Fragmentos continua uma vez por vida.
+5. **Geradores:** `k` e `f(n)` têm tetos (4 geradores no nível 40), porque o poder de uma vida não passa de ~1e10 de poeira, onde só os 4 primeiros geradores chegam ao nível 40. As etapas 15 a 20 pedem nova calibragem.
+6. **O jogador simulado evita o Cygnus X-1.** Com ele as vidas ficavam 2 a 3x mais longas (a Estrela Dourada some) e a média misturava dois mundos; sem ele o simulador converge. É uma hipótese de jogador, não uma regra do jogo.
+7. **Piso de poeira no `validateSave`** é novo (a spec só falava do teto): impede um save com 500 colapsos e quase nenhuma poeira.
+
+### 10.3 Travas (testadas) e tabela do simulador
+
+- Perfil normal, média de 16 sementes (`v`): da vida 1 à 15 cada uma fica **entre 1 h e 3 h**; da 16 em diante a **tendência** (regressão do log das horas) cresce no máximo **3% por colapso** e nenhuma média passa de 3 h x 1,03^(n-15). Uma vida isolada oscila muito (sorte dos grimórios e das missões); por isso as travas valem para a média.
+- Calibração: sementes `c` (calibrador) e `e` (exploração); conferência: `v` (teste) e `r` (tabela abaixo, 12 sementes, 40 colapsos, outras que não foram usadas para calibrar).
+- Comandos: `pnpm --filter @nocap/games test` (inclui o simulador, ~3 min) e `pnpm --filter @nocap/games sim` (tabela completa, ~7 min; `APERTA_SIM_SEEDS`, `APERTA_SIM_COLLAPSES`). Recalibrar: `CAL=1 CAL_LIVES=30 pnpm exec vitest run --config vitest.sim.config.ts src/aperta/calibrate.sim.ts`.
+
+Horas de jogo aberto até cada marco (vida 1, uma semente):
+
+```
+Marco | Casual | Normal | Ativo
+1ª melhoria | 0,03 h | 0,01 h | 0,01 h
+1ª escolha | 0,01 h | 0 h | 0 h
+10 escolhas | 0,65 h | 0,35 h | 0,21 h
+1 mi de poeira | 1,19 h | 0,71 h | 0,26 h
+Estrela pronta | 4,42 h | 2,36 h | 1,43 h
+```
+
+Média de 12 sementes por vida e por perfil (horas de jogo aberto e, entre parênteses, dias de calendário no ritmo do perfil). A coluna "Faixa" é a trava do perfil normal; os perfis casual e ativo só são medidos (a spec só fixa a faixa do normal):
+
+| Colapso | Meta de poeira | Casual (0.5 h/dia) | Normal (1.5 h/dia) | Ativo (4 h/dia) | Faixa (normal) |
+| --- | --- | --- | --- | --- | --- |
+| 1º | 2 mi | 4,29 h (8,6 d) | 2,08 h (1,4 d) | 1,41 h (0,4 d) | 1 a 3 h |
+| 2º | 140 mi | 3,19 h (6,4 d) | 1,61 h (1,1 d) | 0,89 h (0,2 d) | 1 a 3 h |
+| 3º | 294 mi | 4,77 h (9,5 d) | 1,84 h (1,2 d) | 0,95 h (0,2 d) | 1 a 3 h |
+| 4º | 617 mi | 4,88 h (9,8 d) | 1,86 h (1,2 d) | 1,36 h (0,3 d) | 1 a 3 h |
+| 5º | 790 mi | 4,59 h (9,2 d) | 2,02 h (1,3 d) | 1,65 h (0,4 d) | 1 a 3 h |
+| 6º | 1,01 bi | 4 h (8 d) | 2,49 h (1,7 d) | 1,17 h (0,3 d) | 1 a 3 h |
+| 7º | 1,29 bi | 5,75 h (11,5 d) | 2,41 h (1,6 d) | 0,98 h (0,2 d) | 1 a 3 h |
+| 8º | 1,66 bi | 4,18 h (8,4 d) | 2,27 h (1,5 d) | 1,21 h (0,3 d) | 1 a 3 h |
+| 9º | 2,12 bi | 4,19 h (8,4 d) | 2,14 h (1,4 d) | 0,96 h (0,2 d) | 1 a 3 h |
+| 10º | 2,72 bi | 2,93 h (5,9 d) | 1,56 h (1 d) | 1,35 h (0,3 d) | 1 a 3 h |
+| 11º | 3,48 bi | 3,95 h (7,9 d) | 1,46 h (1 d) | 1,35 h (0,3 d) | 1 a 3 h |
+| 12º | 4,45 bi | 5 h (10 d) | 1,61 h (1,1 d) | 1,16 h (0,3 d) | 1 a 3 h |
+| 13º | 5,69 bi | 4,66 h (9,3 d) | 2,82 h (1,9 d) | 1,04 h (0,3 d) | 1 a 3 h |
+| 14º | 7,29 bi | 6,67 h (13,3 d) | 2,06 h (1,4 d) | 0,86 h (0,2 d) | 1 a 3 h |
+| 15º | 9,33 bi | 5,82 h (11,6 d) | 1,9 h (1,3 d) | 1,8 h (0,5 d) | 1 a 3 h |
+| 16º | 11,9 bi | 6,37 h (12,7 d) | 2,99 h (2 d) | 1,27 h (0,3 d) | 1 a 1,95 h |
+| 17º | 15,3 bi | 5,38 h (10,8 d) | 2,56 h (1,7 d) | 1,43 h (0,4 d) | 1 a 3,08 h |
+| 18º | 19,6 bi | 7 h (14 d) | 2,18 h (1,5 d) | 1,1 h (0,3 d) | 1 a 2,64 h |
+| 19º | 25 bi | 5,38 h (10,8 d) | 1,73 h (1,2 d) | 0,96 h (0,2 d) | 1 a 2,25 h |
+| 20º | 32,1 bi | 8,08 h (16,2 d) | 2,26 h (1,5 d) | 1,11 h (0,3 d) | 1 a 1,78 h |
+| 21º | 41 bi | 6,94 h (13,9 d) | 2,35 h (1,6 d) | 1,17 h (0,3 d) | 1 a 2,33 h |
+| 22º | 52,5 bi | 5,56 h (11,1 d) | 1,53 h (1 d) | 1,59 h (0,4 d) | 1 a 2,42 h |
+| 23º | 67,2 bi | 7,15 h (14,3 d) | 2,96 h (2 d) | 1,03 h (0,3 d) | 1 a 1,57 h |
+| 24º | 86,1 bi | 6,4 h (12,8 d) | 1,68 h (1,1 d) | 1,06 h (0,3 d) | 1 a 3,05 h |
+| 25º | 110 bi | 7,96 h (15,9 d) | 2,01 h (1,3 d) | 1,81 h (0,5 d) | 1 a 1,73 h |
+| 26º | 141 bi | 5,86 h (11,7 d) | 2,79 h (1,9 d) | 1,54 h (0,4 d) | 1 a 2,07 h |
+| 27º | 180 bi | 7,57 h (15,1 d) | 2,52 h (1,7 d) | 1,84 h (0,5 d) | 1 a 2,88 h |
+| 28º | 231 bi | 6,23 h (12,5 d) | 4,03 h (2,7 d) | 1,74 h (0,4 d) | 1 a 2,6 h |
+| 29º | 296 bi | 5,04 h (10,1 d) | 2,01 h (1,3 d) | 1,37 h (0,3 d) | 1 a 4,15 h |
+| 30º | 378 bi | 8,88 h (17,8 d) | 2,86 h (1,9 d) | 1,65 h (0,4 d) | 1 a 2,07 h |
+| 31º | 409 bi | 5,98 h (12 d) | 3,27 h (2,2 d) | 2,48 h (0,6 d) | 1 a 2,94 h |
+| 32º | 441 bi | 5,75 h (11,5 d) | 2,69 h (1,8 d) | 2,28 h (0,6 d) | 1 a 3,37 h |
+| 33º | 477 bi | 9,19 h (18,4 d) | 2,22 h (1,5 d) | 2,65 h (0,7 d) | 1 a 2,77 h |
+| 34º | 515 bi | 6,34 h (12,7 d) | 3,24 h (2,2 d) | 2,36 h (0,6 d) | 1 a 2,29 h |
+| 35º | 556 bi | 5,43 h (10,9 d) | 3,59 h (2,4 d) | 2,57 h (0,6 d) | 1 a 3,34 h |
+| 36º | 601 bi | 5,47 h (10,9 d) | 3,87 h (2,6 d) | 1,9 h (0,5 d) | 1 a 3,69 h |
+| 37º | 649 bi | 8,93 h (17,9 d) | 3,8 h (2,5 d) | 2,25 h (0,6 d) | 1 a 3,98 h |
+| 38º | 701 bi | 5,95 h (11,9 d) | 3,59 h (2,4 d) | 2,78 h (0,7 d) | 1 a 3,91 h |
+| 39º | 757 bi | 8,34 h (16,7 d) | 2,85 h (1,9 d) | 1,76 h (0,4 d) | 1 a 3,69 h |
+| 40º | 817 bi | 4,6 h (9,2 d) | 3,25 h (2,2 d) | 1,96 h (0,5 d) | 1 a 2,94 h |
+
+Leitura: o normal fica em 1,5 a 2,8 h de jogo da vida 1 à 15 (1 a 2 dias de calendário por vida); o ativo, em 0,9 a 2,1 h; o casual, em 3 a 7 h (6 a 14 dias por vida), o que é esperado para 30 min por dia. Depois do 30º colapso o normal sobe devagar (de ~2,5 h para ~3,3 h até o 40º).
+
+### 10.4 O que não foi testado
+
+- **Ninguém jogou isto a mão:** o ritmo (1 a 3 h) vem só do simulador; o Lucas ainda precisa jogar 1 a 2 dias (etapa 21). Os marcos de combo (sequência de toques seguidos e combo cheio por 20 + n s) e de missões em sequência em especial pedem mão humana: o simulador toca num ritmo constante.
+- A tela só foi vista no Chromium headless emulando celular (Pixel/DPR 2) em 320, 390 e 1280 px; não em aparelho real, Safari nem Firefox. O Chromium headless não tem Web Audio, então o som do colapso não foi ouvido.
+- As rotas da API do Aperta! seguem testadas só com repositório em memória (`apps/api/src/aperta/aperta.test.ts`), não contra o banco real.
+- Os testes de ponta a ponta (Playwright) foram rodados só para o colapso; os de regiões, árvore e tutorial não foram repetidos (nenhum mexe no que mudou além do botão "Estrela pronta", que não aparece neles).

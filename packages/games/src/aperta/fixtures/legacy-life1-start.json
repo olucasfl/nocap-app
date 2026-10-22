@@ -1,0 +1,106 @@
+{
+ "version": 2,
+ "name": "Missão Perigeu",
+ "createdAt": 1760000000000,
+ "playSeconds": 60.19999999999987,
+ "clock": 60.19999999999987,
+ "tutorial": 1,
+ "ui": {
+  "unlocked": [],
+  "hints": []
+ },
+ "storySeen": false,
+ "run": {
+  "dust": 116,
+  "dustLife": 216,
+  "energy": 20,
+  "picks": 2,
+  "upgradeLevels": [
+   1,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "build": {
+   "deimos": 1,
+   "halley": 1
+  },
+  "clicks": 138,
+  "combo": 0,
+  "lastPressAt": 60.19999999999987,
+  "comboFullSince": -1000000000,
+  "boostUntil": -999999995,
+  "boostMult": 1,
+  "afterCapture": false,
+  "objects": [],
+  "nextObjectId": 1,
+  "nextSpawnAt": 131.26022150376804,
+  "freeRerolls": 0,
+  "pending": null,
+  "rngState": -768462594,
+  "lastGain": 2,
+  "event": null,
+  "nextEventAt": 1000000000000,
+  "nextRareAt": null,
+  "surgeUntil": -999999995,
+  "mission": null
+ },
+ "album": [
+  "deimos",
+  "halley"
+ ],
+ "atlas": {
+  "slots": 3,
+  "pages": []
+ },
+ "collapses": 0,
+ "regionId": "inner-solar-system",
+ "favorite": null,
+ "seenUnlocks": [],
+ "fragments": {
+  "earned": 0,
+  "spent": 0
+ },
+ "tree": {},
+ "achievements": [
+  "tap-1",
+  "tap-100"
+ ],
+ "stats": {
+  "clicks": 138,
+  "objectsCaptured": 0,
+  "picks": 2,
+  "dustTotal": 216,
+  "bestLevel": 1,
+  "comboMaxHits": 0,
+  "comboFullBest": 0,
+  "satelliteStreak": 0,
+  "satelliteBest": 0,
+  "respecs": 0
+ }
+}

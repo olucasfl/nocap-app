@@ -16,10 +16,11 @@ export const REACTOR_STEP = 0.25;
 /**
  * Passos de energia das seis primeiras escolhas; depois cresce `ENERGY_STEP_GROWTH` a cada escolha.
  * O 1º passo fecha com ~50 de poeira ganha: 25 toques, a 1ª melhoria (25 de poeira) e mais ~13 toques
- * de 2 poeira. As barras seguintes caem no começo (spec 038, 6.2).
+ * de 2 poeira. As barras seguintes caem no começo (spec 038, 6.2). O crescimento depois da 6ª escolha era x1,35; a spec 040
+ * pede 20 escolhas no 1º colapso dentro de 3 h e, com x1,35, o simulador levava ~6,7 h: x1,22 leva ~2,1 h.
  */
 export const ENERGY_STEPS = [38, 80, 150, 260, 420, 640] as const;
-export const ENERGY_STEP_GROWTH = 1.35;
+export const ENERGY_STEP_GROWTH = 1.22;
 
 /** Grimório repetido: cada nível soma metade do número base (+0,5 vira +0,75, +1...), até o nível 10. */
 export const GRIMOIRE_MAX_LEVEL = 10;
@@ -113,39 +114,77 @@ export function rarityUnlockPicks(rarity: Rarity, collapses: number, forbiddenOv
   return Math.max(1, Math.ceil(base * scale));
 }
 
-// --- Metas de colapso (seção 6.6) ---
-// Índice 0 = 1º colapso. `DUST_GOAL` é a variável que o simulador calibra.
+// --- Requisitos de colapso (spec 040, seção 2) ---
+// O jogo não tem último colapso: a meta de poeira cresce por uma razão fixa, sem teto, e o simulador
+// confere que a vida do perfil normal fica dentro da faixa abaixo.
 
-/** Duração-alvo de cada vida, em horas de jogo aberto (perfil normal, 2,5 toques/s). */
-export const TARGET_HOURS = [8, 5, 3.5, 3, 2.6, 2.3, 2.1, 1.9, 1.75, 1.6, 1.5, 1.4, 1.3, 1.25, 1.2] as const;
-
-/** Poeira acumulada na vida necessária para a estrela ficar pronta (calibrada pelo simulador). */
-export const DUST_GOAL: number[] = [
-  // Vidas 1 a 5 (economia v2, spec 039, 22/10/2026): calibradas pelo simulador, perfil normal, 60 sementes (spec 038, 6.6 e 6.7).
-  8.803e7, 1.972e8, 2.5e8, 2.6e8, 1.0e8,
-  // Vidas 6 a 15: provisórias, sem calibrar (o conteúdo desses colapsos chega nas etapas 14 e 15).
-  6.3e7, 6.5e7, 6.7e7, 6.9e7, 7.1e7, 7.3e7, 7.5e7, 7.7e7, 7.9e7, 8.1e7,
+/**
+ * Meta de poeira da vida do 1º colapso (2 mi) e a razão entre uma meta e a seguinte (spec 040, seção 2). A spec previa
+ * x3 sempre; o simulador mostrou que o poder do jogador (Atlas e árvore, que enchem) não acompanha x3 depois dos
+ * primeiros colapsos (spec 040, seção 10). A razão vira trechos: a do passo `n-1 -> n` é a do primeiro trecho cujo
+ * `upTo` é >= `n`. Os números são o que o simulador calibra; o último trecho vale para sempre.
+ */
+export const GOAL_BASE = 2e6;
+export const GOAL_SEGMENTS: { upTo: number; ratio: number }[] = [
+  // 1º -> 2º colapso: o salto leva a meta de 2 mi (que o 1º colapso cumpre sozinho, preso nas 20 escolhas) ao que a vida
+  // 2 realmente rende em ~2 h. Os 3 primeiros passos acompanham o poder que cada colapso acumula (páginas do Atlas e Fragmentos).
+  { upTo: 2, ratio: 70 },
+  { upTo: 4, ratio: 2.1 },
+  // Do 5º ao 30º colapso: x1,28 por colapso mantém a vida do perfil normal em ~2 h (calibrado, 12 sementes).
+  { upTo: 30, ratio: 1.28 },
+  // Depois do 30º o poder permanente já encheu (Atlas e árvore): x1,08 dá ~1,4% a mais de horas por colapso (limite: 3%).
+  { upTo: Infinity, ratio: 1.08 },
 ];
 
 /** Escolhas mínimas: 20 no 1º colapso, 15 do 2º ao 5º e 12 a partir do 6º. */
-export const MIN_PICKS = [20, 15, 15, 15, 15, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12] as const;
+export const MIN_PICKS_FIRST = 20;
+export const MIN_PICKS_EARLY = 15;
+export const MIN_PICKS_LATE = 12;
 
-/** Meta de poeira da vida que termina no colapso `nextCollapse` (1 = primeiro). Passando de 15, segue x3 por colapso. */
+/**
+ * Travas de duração da vida (perfil normal, 1 a 2 h por dia, spec 040 seção 2): até o 15º colapso cada vida
+ * leva de 1 h a 3 h; depois pode crescer no máximo 3% por colapso em relação à anterior.
+ */
+export const LIFE_HOURS_MIN = 1;
+export const LIFE_HOURS_MAX = 3;
+export const LIFE_BAND_LAST_COLLAPSE = 15;
+export const LIFE_GROWTH_MAX = 0.03;
+
+/**
+ * Meta de poeira da vida que termina no colapso `nextCollapse` (1 = primeiro): `GOAL_BASE` vezes a razão de cada passo
+ * (`GOAL_SEGMENTS`), sem teto até o guarda de 1e300 (`MAX_NUMBER`).
+ */
 export function dustGoal(nextCollapse: number): number {
   const k = Math.max(1, Math.floor(nextCollapse));
-  if (k <= DUST_GOAL.length) return DUST_GOAL[k - 1] as number;
-  const last = DUST_GOAL[DUST_GOAL.length - 1] as number;
-  return Math.min(MAX_NUMBER, last * Math.pow(3, k - DUST_GOAL.length));
+  let goal = GOAL_BASE;
+  let lo = 1;
+  for (const seg of GOAL_SEGMENTS) {
+    const steps = Math.max(0, Math.min(k, seg.upTo) - lo);
+    // Potência a potência (e não exp/log): a meta do 1º colapso sai exatamente 2.000.000.
+    if (steps > 0) goal = Math.min(MAX_NUMBER, goal * Math.pow(seg.ratio, steps));
+    lo = Math.max(lo, seg.upTo);
+    if (k <= lo) break;
+  }
+  return Math.min(MAX_NUMBER, goal);
 }
+
+/** Maior colapso cuja meta ainda cabe abaixo do guarda de 1e300: o `validateSave` recusa mais que isto. */
+export const MAX_COLLAPSE_COUNT = (() => {
+  let k = 1;
+  while (dustGoal(k + 1) < MAX_NUMBER && k < 100_000) k++;
+  return k;
+})();
 
 export function minPicks(nextCollapse: number): number {
   const k = Math.max(1, Math.floor(nextCollapse));
-  return MIN_PICKS[Math.min(k, MIN_PICKS.length) - 1] as number;
+  return k === 1 ? MIN_PICKS_FIRST : k <= 5 ? MIN_PICKS_EARLY : MIN_PICKS_LATE;
 }
 
-export function targetHours(nextCollapse: number): number {
+/** Faixa de horas permitida para a vida do colapso `nextCollapse` quando a anterior durou `prevHours` (ou `null`). */
+export function lifeHoursBand(nextCollapse: number, prevHours: number | null): { min: number; max: number } {
   const k = Math.max(1, Math.floor(nextCollapse));
-  return TARGET_HOURS[Math.min(k, TARGET_HOURS.length) - 1] as number;
+  if (k <= LIFE_BAND_LAST_COLLAPSE || prevHours === null) return { min: LIFE_HOURS_MIN, max: LIFE_HOURS_MAX };
+  return { min: LIFE_HOURS_MIN, max: prevHours * (1 + LIFE_GROWTH_MAX) };
 }
 
 /** Fragmentos do colapso `collapseNumber` (1 = primeiro): `3 + nº` mais 1 por década acima de 2 mi de poeira. */

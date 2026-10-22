@@ -12,10 +12,12 @@ import {
   COMBO_HARD_CAP,
   COST_FLOOR,
   GRIMOIRE_MAX_LEVEL,
+  MAX_COLLAPSE_COUNT,
   MAX_NUMBER,
   MAX_TOUCHES_PER_SEC,
   MISSION_FRAGMENTS,
   atlasSlots,
+  dustGoal,
   energyCap,
   upgradeCost,
 } from './economy';
@@ -25,7 +27,6 @@ import { TUTORIAL_HINTS, UI_BUTTONS, migrateTutorial } from './tutorial';
 
 /** Tamanho máximo do save em JSON (o real fica em poucos KB). */
 export const MAX_SAVE_BYTES = 64 * 1024;
-const MAX_COLLAPSES = 1000;
 const MAX_PICKS = 100_000;
 const MAX_PLAY_SECONDS = 1e9;
 const MAX_ACHIEVEMENTS = 500;
@@ -94,9 +95,16 @@ const runSchema = z.object({
   nextRareAt: stamp.nullable().default(null),
   surgeUntil: stamp.default(-1e9),
   mission: z
-    .object({ id: id, progress: int(1e6), done: z.boolean() })
+    .object({ id: id, progress: int(1e6), done: z.boolean(), doneAt: stamp.default(-1e9) })
     .nullable()
     .default(null),
+  // Contadores do marco da vida (spec 040): saves antigos não os têm e entram zerados.
+  captured: int(Number.MAX_SAFE_INTEGER).default(0),
+  rares: int(Number.MAX_SAFE_INTEGER).default(0),
+  chain: int(1e6).default(0),
+  chainBest: int(1e6).default(0),
+  fullBest: nonNeg.default(0),
+  missionsDone: int(Number.MAX_SAFE_INTEGER).default(0),
 });
 
 const saveSchema = z.object({
@@ -121,7 +129,8 @@ const saveSchema = z.object({
     slots: int(20),
     pages: z.array(z.object({ grimoireId: id, level: z.number().int().min(1).max(GRIMOIRE_MAX_LEVEL) })).max(20),
   }),
-  collapses: int(MAX_COLLAPSES),
+  // Sem último colapso (spec 040): o teto é o do guarda de 1e300, onde a meta de poeira deixa de crescer.
+  collapses: int(MAX_COLLAPSE_COUNT),
   regionId: id,
   favorite: id.nullable().default(null),
   seenUnlocks: z.array(id).max(MAX_SEEN_UNLOCKS),
@@ -175,6 +184,14 @@ function dustPerSecondCeiling(save: SaveState): number {
   return MAX_TOUCHES_PER_SEC * perTouch + objects + Math.min(s.autoDustPerSec, s.autoDustCap);
 }
 
+/** Metas de poeira de antes da spec 040 (economia v2 calibrada, 22/10/2026): só para o piso dos saves antigos. */
+const LEGACY_DUST_GOAL = [8.803e7, 1.972e8, 2.5e8, 2.6e8, 1.0e8, 6.3e7, 6.5e7, 6.7e7, 6.9e7, 7.1e7, 7.3e7, 7.5e7, 7.7e7, 7.9e7, 8.1e7];
+
+function legacyDustGoal(k: number): number {
+  if (k <= LEGACY_DUST_GOAL.length) return LEGACY_DUST_GOAL[k - 1] as number;
+  return Math.min(MAX_NUMBER, (LEGACY_DUST_GOAL[LEGACY_DUST_GOAL.length - 1] as number) * Math.pow(3, k - LEGACY_DUST_GOAL.length));
+}
+
 /** Confere formato e coerência de um save vindo de fora (aparelho ou banco). Não muta `raw`. */
 export function validateSave(raw: unknown, opts: ValidateOptions = {}): SaveValidation {
   let size = 0;
@@ -215,6 +232,14 @@ export function validateSave(raw: unknown, opts: ValidateOptions = {}): SaveVali
     if (!def || def.unlockedAtCollapse > c) errors.push(`Objeto de colapso futuro: ${o.kind}`);
   }
   if (!noDupes(run.objects.map((o) => String(o.id)))) errors.push('Objetos repetidos');
+  // Contadores do marco: nenhum passa do que a vida (ou a conta) já fez.
+  if (run.captured > save.stats.objectsCaptured) errors.push('Capturas da vida maiores que o total');
+  if (run.rares > run.captured) errors.push('Raros maiores que as capturas');
+  if (run.chainBest > run.clicks || run.chain > run.chainBest) errors.push('Sequência de combo incoerente');
+  if (run.fullBest > save.playSeconds + CLOCK_SLACK_SEC) errors.push('Combo cheio maior que o tempo jogado');
+  if (run.missionsDone > 0 && !mechanicOpen('missions', c)) errors.push('Missão de colapso futuro');
+  // Missão cumprida de save antigo: conta como feita (o contador novo não existia).
+  if (run.mission?.done && run.missionsDone === 0) run.missionsDone = 1;
   if (run.event && !eventsOpen(c).includes(run.event.id)) errors.push(`Evento de colapso futuro: ${run.event.id}`);
   if (run.mission) {
     const def = missionById(run.mission.id);
@@ -287,6 +312,11 @@ export function validateSave(raw: unknown, opts: ValidateOptions = {}): SaveVali
   }
   if (Object.keys(save.tree).length > 0 && c < 1) errors.push('Árvore antes do 1º colapso');
   if (treeCost > fragSpent) errors.push('Árvore custa mais que os Fragmentos gastos');
+  // Piso do total ganho: cada colapso exigiu a meta de poeira da vida, nas regras de hoje ou nas de antes da
+  // spec 040 (a menor das duas vale, para um save antigo legítimo nunca ser recusado).
+  let minTotal = 0;
+  for (let k = 1; k <= c; k++) minTotal += Math.min(dustGoal(k), legacyDustGoal(k));
+  if (save.stats.dustTotal * TOLERANCE + 1 < Math.min(MAX_NUMBER, minTotal)) errors.push('Poeira total menor que a exigida pelos colapsos');
   // Cada colapso começa com o tutorial concluído (seção 8.1); o motor não mexe nele, então normaliza em vez de recusar.
   if (c > 0) save.tutorial = 'done';
 
@@ -301,7 +331,10 @@ export function validateSave(raw: unknown, opts: ValidateOptions = {}): SaveVali
       flagged.push('playSeconds');
     }
   }
-  const ceiling = dustPerSecondCeiling(save) * save.playSeconds + effectiveStats(save).startDust + 1000;
+  // Teto teórico desta vida (do colapso `c`): o que o que está comprado rende no pior caso, sem passar do guarda de 1e300.
+  const perSec = dustPerSecondCeiling(save);
+  const rawCeiling = (Number.isFinite(perSec) ? perSec : MAX_NUMBER) * save.playSeconds + effectiveStats(save).startDust + 1000;
+  const ceiling = Number.isFinite(rawCeiling) ? Math.min(MAX_NUMBER, rawCeiling) : MAX_NUMBER;
   if (run.dustLife > ceiling) {
     const excess = run.dustLife - ceiling;
     run.dustLife = ceiling;

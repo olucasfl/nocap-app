@@ -106,7 +106,8 @@ Ainda sem prioridade definida contra as salas do Ecooo. Cada item tem a sua spec
 - [x] **Etapa 1: motor e simulador** (`packages/games/src/aperta`, só lógica pura; vidas 1 a 5 calibradas pelo simulador): `specs/038-clicker.md`
 - [x] **Etapa 2: saves na conta** (21/10/2026): `validateSave`/`mergeSaves`, migration `0009_aperta.sql` (escrita, **ainda não aplicada no banco**), módulo `apps/api/src/aperta/` (GET/PUT/DELETE/restaurar, 401 de convidado, 409 de conflito, recuperação por 7 dias), `api-save-store` com autosave de 30 s, cópia local, subida ao voltar a internet e aviso de conflito entre aparelhos; partida em curso salva pela conta. Falta só aplicar a migration (decisão do Lucas) e conferir contra o banco real
 - [ ] Etapas 4 a 13 (tela de jogo, melhorias, grimórios, tutorial, colapso/Atlas, árvore, arte e sons, conteúdo dos colapsos 1 a 5, QA): ver seção 15 da spec
-- [ ] Etapas 14 a 16 (conteúdo dos colapsos 6 a 15 e Ascender, depois da v1)
+- [x] **Etapa 14 da spec 040: colapso infinito e requisitos** (22/10/2026): sem teto de colapsos, requisito de poeira + escolhas + marco da vida que gira entre 6 tipos, sem camada 2, números grandes até 1e300, `validateSave` com piso e teto por colapso (testado com saves reais antigos), simulador com 3 perfis e as travas de duração (1 a 3 h até o 15º, +3% depois). Barra de cada requisito no botão "Estrela pronta", no modal e no Atlas. Calibragem e tabela na seção 10 da spec 040
+- [ ] Etapas 15 a 21 da spec 040 (Cofre dos Proibidos, Cintilas e conquistas, árvore grande, habilidades, sorte e exploração, QA da v2)
 
 ## Etapa 6: produção
 

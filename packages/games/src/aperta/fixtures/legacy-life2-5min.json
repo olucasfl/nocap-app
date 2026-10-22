@@ -1,0 +1,139 @@
+{
+ "version": 2,
+ "name": "Missão Perigeu",
+ "createdAt": 1760000000000,
+ "playSeconds": 29340.10000003656,
+ "clock": 29340.10000003656,
+ "tutorial": "done",
+ "ui": {
+  "unlocked": [],
+  "hints": []
+ },
+ "storySeen": false,
+ "run": {
+  "dust": 4408.170000003654,
+  "dustLife": 35348.170000003534,
+  "energy": 285.4505885418279,
+  "picks": 5,
+  "upgradeLevels": [
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   9,
+   7,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   7,
+   4,
+   0,
+   0
+  ],
+  "build": {
+   "deimos": 1,
+   "mercury": 2,
+   "rigel": 1,
+   "moon": 1
+  },
+  "clicks": 662,
+  "combo": 4,
+  "lastPressAt": 29340.10000003656,
+  "comboFullSince": 29144.100000035847,
+  "boostUntil": 29248.100000036196,
+  "boostMult": 2,
+  "afterCapture": false,
+  "objects": [],
+  "nextObjectId": 6,
+  "nextSpawnAt": 29345.00677518409,
+  "freeRerolls": 0,
+  "pending": null,
+  "rngState": -96329333,
+  "lastGain": 19,
+  "event": null,
+  "nextEventAt": 1000000000000,
+  "nextRareAt": 29551.37657364367,
+  "surgeUntil": -999999987.5,
+  "mission": null
+ },
+ "album": [
+  "deimos",
+  "halley",
+  "mercury",
+  "moon",
+  "charon",
+  "titan",
+  "venus",
+  "phobos",
+  "milky-way",
+  "sirius",
+  "rigel"
+ ],
+ "atlas": {
+  "slots": 3,
+  "pages": [
+   {
+    "grimoireId": "deimos",
+    "level": 5
+   }
+  ]
+ },
+ "collapses": 1,
+ "regionId": "asteroid-belt",
+ "favorite": null,
+ "seenUnlocks": [],
+ "fragments": {
+  "earned": 5,
+  "spent": 5
+ },
+ "tree": {
+  "alpha-centauri": 2,
+  "crab-nebula": 1,
+  "pleiades": 1
+ },
+ "achievements": [
+  "tap-1",
+  "tap-100",
+  "dust-1k",
+  "combo-max",
+  "combo-30",
+  "tap-1k",
+  "obj-20",
+  "dust-1m",
+  "obj-100",
+  "tap-10k",
+  "grim-lv5",
+  "grim-10",
+  "obj-500",
+  "collapse-1",
+  "tree-1"
+ ],
+ "stats": {
+  "clicks": 73191,
+  "objectsCaptured": 821,
+  "picks": 25,
+  "dustTotal": 197982467.30488214,
+  "bestLevel": 5,
+  "comboMaxHits": 72624,
+  "comboFullBest": 28854.000000035594,
+  "satelliteStreak": 0,
+  "satelliteBest": 6,
+  "respecs": 0
+ }
+}

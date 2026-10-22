@@ -1,9 +1,9 @@
-import { dustGoal, minPicks, newSave, type SaveState } from '@nocap/games';
+import { atlasSlots, dustGoal, meetMilestone, minPicks, newSave, type SaveState } from '@nocap/games';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { installApi } from './mock-api';
 
 /**
- * Colapso e Atlas Eterno do Aperta! (spec 038, 8.1 e 8.2) de ponta a ponta: a estrela pronta, o modal de
+ * Colapso e Atlas Eterno do Aperta! (spec 038, 8.1 e 8.2; requisitos da spec 040) de ponta a ponta: a estrela pronta, o modal de
  * 2 passos, a vida que recomeça e a página no Atlas. A conta é falsa e já guarda uma vida pronta para colapsar.
  */
 function readySave(): SaveState {
@@ -12,14 +12,38 @@ function readySave(): SaveState {
     ...s,
     tutorial: 'done',
     storySeen: true,
-    run: { ...s.run, picks: minPicks(1), dust: dustGoal(1), dustLife: dustGoal(1), build: { moon: 2, mars: 1, vesta: 1 } },
+    run: { ...s.run, picks: minPicks(1), dust: dustGoal(1), dustLife: dustGoal(1), build: { moon: 2, mars: 1, vesta: 1 }, ...meetMilestone(0, s.run.upgradeLevels) },
     album: ['moon', 'mars', 'vesta'],
     stats: { ...s.stats, picks: minPicks(1), dustTotal: dustGoal(1) },
   };
 }
 
-async function installSaves(page: Page) {
-  const account: { rev: number; data: SaveState | null } = { rev: 1, data: readySave() };
+/** Um save no 7º colapso (6 feitos) com a vida pela metade: nenhum requisito cumprido, para ver as barras andando. */
+function midLifeSave(): SaveState {
+  const c = 6;
+  const s = newSave('meio', Date.now() - 3_600_000, 'Missão meio');
+  let earned = 0;
+  let total = 0;
+  for (let k = 1; k <= c; k++) {
+    earned += 3 + k;
+    total += dustGoal(k);
+  }
+  return {
+    ...s,
+    tutorial: 'done',
+    storySeen: true,
+    collapses: c,
+    regionId: 'alpha-centauri',
+    atlas: { slots: atlasSlots(c), pages: [] },
+    fragments: { earned, spent: 0 },
+    album: ['moon', 'mars'],
+    run: { ...s.run, picks: 9, dust: dustGoal(c + 1) * 0.37, dustLife: dustGoal(c + 1) * 0.37, build: { moon: 1, mars: 1 }, captured: 2, chainBest: 4 },
+    stats: { ...s.stats, picks: c * 12 + 9, dustTotal: total + dustGoal(c + 1) * 0.37, objectsCaptured: 2 },
+  };
+}
+
+async function installSaves(page: Page, initial: SaveState = readySave()) {
+  const account: { rev: number; data: SaveState | null } = { rev: 1, data: initial };
   await page.route(/localhost:3333\/me\/aperta\/saves/, async (route) => {
     const req = route.request();
     const path = new URL(req.url()).pathname;
@@ -105,15 +129,20 @@ for (const size of SIZES) {
       await expect(page.locator('.ap-game')).toBeVisible();
 
       // Estrela pronta no HUD.
-      const ready = page.getByRole('button', { name: 'Estrela pronta: colapsar' });
+      const ready = page.getByRole('button', { name: 'Estrela pronta: colapso 1' });
       await expect(ready).toBeVisible();
+      // O botão traz a barra de cada requisito (poeira, escolhas e o marco da vida).
+      await expect(page.locator('.ap-ready-wrap .ap-reqs li')).toHaveCount(3);
+      await expect(page.locator('.ap-ready-wrap .ap-reqs li.is-done')).toHaveCount(3);
       await shot('1-pronta');
       await noOverflow(page);
 
       // Passo 1: escolhe a Lua; "Continuar" só liga depois.
       await tapCenter(page, ready, touch);
-      const dialog = page.getByRole('dialog', { name: 'A estrela está pronta' });
+      const dialog = page.getByRole('dialog', { name: /A estrela está pronta/ });
       await expect(dialog).toBeVisible();
+      await expect(dialog.locator('.ap-reqs li')).toHaveCount(3);
+      await expect(dialog.locator('.ap-reqs')).toContainText('Combo: toques seguidos');
       await page.waitForTimeout(400); // guarda de 300 ms contra toque acidental
       await expect(page.getByRole('button', { name: 'Continuar' })).toBeDisabled();
       await tapCenter(page, dialog.getByRole('button', { name: /^Lua/ }), touch);
@@ -135,7 +164,7 @@ for (const size of SIZES) {
       await expect(page.locator('.ap-pickup:not(.ap-pickup-ach)')).toContainText('Estrela colapsada');
       await expect(page.locator('.ap-pickup:not(.ap-pickup-ach)')).toContainText('Lua');
       await expect(page.locator('.ap-hudrow-2 b')).toHaveText('1');
-      await expect(page.getByRole('button', { name: 'Estrela pronta: colapsar' })).toHaveCount(0);
+      await expect(page.getByRole('button', { name: /Estrela pronta/ })).toHaveCount(0);
       await shot('4-colapsada');
       await noOverflow(page);
 
@@ -152,6 +181,39 @@ for (const size of SIZES) {
       // O servidor aceitou: o save na conta já é o da vida nova.
       await expect.poll(() => account.data?.collapses, { timeout: 5000 }).toBe(1);
       expect(account.data?.atlas.pages).toEqual([{ grimoireId: 'moon', level: 2 }]);
+      expect(errors).toEqual([]);
+    });
+
+    test('colapso 7: as barras de cada requisito andam no Atlas e não há botão enquanto falta algo', async ({ page }, info) => {
+      test.skip(info.project.name !== 'desktop', 'o tamanho vem do describe; um projeto basta');
+      const errors: string[] = [];
+      page.on('pageerror', (e) => errors.push(e.message));
+      await installApi(page);
+      await installSaves(page, midLifeSave());
+      const shot = (n: string) => page.screenshot({ path: `${process.env.E2E_SHOTS ?? 'test-results'}/col-${size.viewport.width}-${n}.png` });
+
+      await page.goto('/arcade/aperta');
+      await page.getByRole('button', { name: 'Jogar' }).first().click();
+      await page.getByRole('button', { name: /Continuar/ }).first().click();
+      const skip = page.getByRole('button', { name: 'Pular história' });
+      if (await skip.isVisible({ timeout: 1500 }).catch(() => false)) await skip.click();
+      await expect(page.locator('.ap-game')).toBeVisible();
+      await expect(page.getByRole('button', { name: /Estrela pronta/ })).toHaveCount(0);
+
+      await tapCenter(page, page.getByRole('button', { name: /^Grimórios/ }), size.touch);
+      const box = page.locator('.ap-collapse-box');
+      await box.scrollIntoViewIfNeeded();
+      await expect(box.locator('.ap-reqs li')).toHaveCount(3);
+      await expect(box.locator('.ap-reqs li.is-done')).toHaveCount(0);
+      await expect(box).toContainText('Poeira da vida');
+      await expect(box).toContainText('Escolhas de grimório');
+      await expect(box).toContainText('Falta');
+      await expect(box.getByRole('button', { name: 'Estrela ainda não está pronta' })).toBeDisabled();
+      // A barra de poeira está em ~37%: anda por transform, sem largura.
+      const fill = await box.locator('.ap-reqs li[data-req="dust"] .ap-cbar i').evaluate((el) => (el as HTMLElement).style.transform);
+      expect(fill).toMatch(/scaleX\(0\.3[67]/);
+      await shot('6-barras');
+      await noOverflow(page);
       expect(errors).toEqual([]);
     });
   });

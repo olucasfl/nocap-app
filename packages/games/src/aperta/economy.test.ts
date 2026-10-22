@@ -2,10 +2,16 @@ import { describe, expect, it } from 'vitest';
 import { UPGRADES } from './catalog';
 import {
   COST_FLOOR,
-  DUST_GOAL,
+  GOAL_BASE,
+  GOAL_SEGMENTS,
+  LIFE_BAND_LAST_COLLAPSE,
+  LIFE_GROWTH_MAX,
+  LIFE_HOURS_MAX,
+  LIFE_HOURS_MIN,
+  ENERGY_STEP_GROWTH,
+  MAX_COLLAPSE_COUNT,
+  lifeHoursBand,
   MAX_NUMBER,
-  MIN_PICKS,
-  TARGET_HOURS,
   atlasSlots,
   clampCostFactor,
   dustGoal,
@@ -16,7 +22,6 @@ import {
   rarityUnlockPicks,
   respecFee,
   setBonusTier,
-  targetHours,
   upgradeCost,
 } from './economy';
 
@@ -62,10 +67,10 @@ describe('upgradeCost', () => {
 });
 
 describe('energyCap', () => {
-  it('usa os seis passos e depois cresce x1,35', () => {
+  it('usa os seis passos e depois cresce pelo fator da economia', () => {
     expect([0, 1, 2, 3, 4, 5].map((n) => energyCap(n))).toEqual([38, 80, 150, 260, 420, 640]);
-    expect(energyCap(6)).toBeCloseTo(864, 6);
-    expect(energyCap(7)).toBeCloseTo(864 * 1.35, 6);
+    expect(energyCap(6)).toBeCloseTo(640 * ENERGY_STEP_GROWTH, 6);
+    expect(energyCap(7)).toBeCloseTo(640 * ENERGY_STEP_GROWTH ** 2, 6);
   });
 
   it('o 1º passo cabe em ~50 de poeira ganha (25 toques, a 1ª melhoria, mais ~13 toques de 2)', () => {
@@ -126,29 +131,61 @@ describe('rarityUnlockPicks', () => {
   });
 });
 
-describe('metas de colapso', () => {
-  it('tem uma linha por colapso, até o 15º', () => {
-    expect(DUST_GOAL).toHaveLength(15);
-    expect(MIN_PICKS).toHaveLength(15);
-    expect(TARGET_HOURS).toHaveLength(15);
+describe('requisitos de colapso (spec 040)', () => {
+  it('a meta do 1º colapso é 2 mi e as metas só crescem', () => {
+    expect(GOAL_BASE).toBe(2e6);
+    expect(dustGoal(1)).toBe(2e6);
+    expect(dustGoal(0)).toBe(dustGoal(1));
+    for (let k = 2; k <= 2000; k++) expect(dustGoal(k), `colapso ${k}`).toBeGreaterThan(dustGoal(k - 1));
   });
 
-  it('segue x3 por colapso depois do 15º e trava no teto', () => {
-    expect(dustGoal(16)).toBeCloseTo(dustGoal(15) * 3, -3);
-    expect(dustGoal(10_000)).toBe(MAX_NUMBER);
-    expect(dustGoal(0)).toBe(dustGoal(1));
+  it('a razão por trecho vem de GOAL_SEGMENTS e a meta é o produto delas', () => {
+    let expected = GOAL_BASE;
+    let lo = 1;
+    const seen: number[] = [];
+    for (const seg of GOAL_SEGMENTS) {
+      const hi = Math.min(seg.upTo, 40);
+      for (let k = lo + 1; k <= hi; k++) {
+        expected *= seg.ratio;
+        seen[k] = expected;
+      }
+      lo = Math.max(lo, hi);
+    }
+    for (let k = 2; k <= 40; k++) expect(dustGoal(k) / (seen[k] as number)).toBeCloseTo(1, 9);
+    expect(GOAL_SEGMENTS.at(-1)!.upTo).toBe(Infinity);
+    // Os trechos estão em ordem.
+    const ups = GOAL_SEGMENTS.map((s) => s.upTo);
+    expect([...ups].sort((a, b) => a - b)).toEqual(ups);
+  });
+
+  it('trava no guarda de 1e300 e o último colapso aceito é o que ainda cabe', () => {
+    expect(dustGoal(10_000_000)).toBe(MAX_NUMBER);
+    expect(dustGoal(MAX_COLLAPSE_COUNT)).toBeLessThan(MAX_NUMBER);
+    expect(dustGoal(MAX_COLLAPSE_COUNT + 1)).toBe(MAX_NUMBER);
+    expect(Number.isFinite(dustGoal(Number.MAX_SAFE_INTEGER))).toBe(true);
   });
 
   it('pede mais escolhas no 1º colapso', () => {
     expect(minPicks(1)).toBe(20);
     expect(minPicks(2)).toBe(15);
+    expect(minPicks(5)).toBe(15);
+    expect(minPicks(6)).toBe(12);
     expect(minPicks(30)).toBe(12);
+    expect(minPicks(100_000)).toBe(12);
   });
 
-  it('as durações-alvo nunca crescem', () => {
-    for (let k = 2; k <= 15; k++) expect(targetHours(k)).toBeLessThan(targetHours(k - 1));
-    expect(targetHours(1)).toBe(8);
-    expect(targetHours(40)).toBe(1.2);
+  it('a faixa de horas: 1 a 3 h até o 15º e, depois, +3% sobre a vida anterior', () => {
+    expect([LIFE_HOURS_MIN, LIFE_HOURS_MAX, LIFE_BAND_LAST_COLLAPSE, LIFE_GROWTH_MAX]).toEqual([1, 3, 15, 0.03]);
+    expect(lifeHoursBand(1, null)).toEqual({ min: 1, max: 3 });
+    expect(lifeHoursBand(15, 2)).toEqual({ min: 1, max: 3 });
+    expect(lifeHoursBand(16, 2).max).toBeCloseTo(2.06, 9);
+    expect(lifeHoursBand(40, 5).max).toBeCloseTo(5.15, 9);
+  });
+
+  it('a energia cresce x1,22 depois da 6ª escolha', () => {
+    expect(ENERGY_STEP_GROWTH).toBe(1.22);
+    expect(energyCap(6)).toBeCloseTo(640 * 1.22, 6);
+    expect(energyCap(7)).toBeCloseTo(640 * 1.22 * 1.22, 6);
   });
 });
 

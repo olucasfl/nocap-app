@@ -20,6 +20,7 @@ import {
   type SaveState,
 } from '../engine';
 import { validateSave } from '../save';
+import { meetMilestone } from '../milestone';
 import {
   COLLAPSE_CONTENT,
   EVENT_NAMES,
@@ -37,7 +38,11 @@ function atCollapse(k: number, patch: Partial<SaveState> = {}): SaveState {
   const s = newSave('conteudo', 1);
   const region = [...REGIONS].reverse().find((r) => r.unlockedAtCollapse <= k) ?? REGIONS[0];
   let earned = 0;
-  for (let j = 1; j <= k; j++) earned += 3 + j;
+  let dustTotal = 0;
+  for (let j = 1; j <= k; j++) {
+    earned += 3 + j;
+    dustTotal += dustGoal(j);
+  }
   return {
     ...s,
     collapses: k,
@@ -45,7 +50,7 @@ function atCollapse(k: number, patch: Partial<SaveState> = {}): SaveState {
     regionId: (region as (typeof REGIONS)[number]).id,
     atlas: { slots: atlasSlots(k), pages: [] },
     fragments: { earned, spent: 0 },
-    stats: { ...s.stats, picks: k },
+    stats: { ...s.stats, picks: k, dustTotal },
     ...patch,
   };
 }
@@ -204,7 +209,7 @@ describe('regiões (menu)', () => {
   });
 
   it('colapsar leva à região nova, mesmo se o jogador estava vendo uma antiga', () => {
-    const s = run(atCollapse(0, { album: ['moon'] }), { dustLife: dustGoal(1), picks: minPicks(1), build: { moon: 1 } });
+    const s = run(atCollapse(0, { album: ['moon'] }), { dustLife: dustGoal(1), picks: minPicks(1), build: { moon: 1 }, ...meetMilestone(0, []) });
     const next = collapse(setRegion({ ...s, collapses: 0 }, 'inner-solar-system'), 'moon');
     expect(next.collapses).toBe(1);
     expect(next.regionId).toBe('asteroid-belt');
@@ -285,7 +290,7 @@ describe('Missões da estação (colapso 4)', () => {
 
   it('cada missão avança pela sua métrica e termina no alvo', () => {
     const def = MISSIONS.find((x) => x.metric === 'touch')!;
-    const s = run(started(4), { mission: { id: def.id, progress: def.target - 1, done: false } });
+    const s = run(started(4), { mission: { id: def.id, progress: def.target - 1, done: false, doneAt: -1e9 } });
     const after = press(s, s.clock + 1);
     expect(after.run.mission).toMatchObject({ progress: def.target, done: true });
     expect(missionBonus(after)).toBe(MISSION_FRAGMENTS);
@@ -295,17 +300,17 @@ describe('Missões da estação (colapso 4)', () => {
   it('capturar objetos conta só nas missões de captura', () => {
     const cap = MISSIONS.find((x) => x.metric === 'capture')!;
     const field = { objects: [{ id: 1, kind: 'comet' as const, bornAt: 0, expiresAt: 100 }], nextObjectId: 2 };
-    const s = run(started(4), { ...field, mission: { id: cap.id, progress: 0, done: false } });
+    const s = run(started(4), { ...field, mission: { id: cap.id, progress: 0, done: false, doneAt: -1e9 } });
     expect(captureObject(s, 1, 2).run.mission?.progress).toBe(1);
     const touch = MISSIONS.find((x) => x.metric === 'touch')!;
-    const other = run(s, { mission: { id: touch.id, progress: 0, done: false } });
+    const other = run(s, { mission: { id: touch.id, progress: 0, done: false, doneAt: -1e9 } });
     expect(captureObject(other, 1, 2).run.mission?.progress).toBe(0);
   });
 
   it('escolher grimório conta nas missões de escolha', () => {
     const def = MISSIONS.find((x) => x.metric === 'pick')!;
     const s = run(started(4), {
-      mission: { id: def.id, progress: 0, done: false },
+      mission: { id: def.id, progress: 0, done: false, doneAt: -1e9 },
       pending: { offers: ['moon'], openedAt: 0, selected: null, picksLeft: 1, rerollsLeft: 0 },
     });
     const chosen = chooseGrimoire(selectGrimoire(s, 'moon', 5), 'moon', 5);
@@ -318,7 +323,8 @@ describe('Missões da estação (colapso 4)', () => {
         dustLife: dustGoal(5),
         picks: minPicks(5),
         build: { moon: 1 },
-        mission: { id: 'touch-600', progress: done ? 600 : 10, done },
+        ...meetMilestone(4, []),
+        mission: { id: 'touch-600', progress: done ? 600 : 10, done, doneAt: -1e9 },
       });
     const plain = collapse(build(false), 'moon');
     const bonus = collapse(build(true), 'moon');
@@ -361,9 +367,9 @@ describe('validateSave e o conteúdo dos colapsos 1 a 5', () => {
     ['Gaia no colapso 4', withUpgrade(4, 'gaia'), 'Melhoria de colapso futuro'],
     ['Chuva de meteoros no colapso 1', run(atCollapse(1), { event: { id: 'meteor-shower', until: 10 }, nextEventAt: 20 }), 'Evento de colapso futuro'],
     ['Tempestade solar no colapso 3', run(atCollapse(3), { event: { id: 'solar-storm', until: 10 }, nextEventAt: 20 }), 'Evento de colapso futuro'],
-    ['missão no colapso 3', run(atCollapse(3), { mission: { id: 'touch-600', progress: 0, done: false } }), 'Missão de colapso futuro'],
+    ['missão no colapso 3', run(atCollapse(3), { mission: { id: 'touch-600', progress: 0, done: false, doneAt: -1e9 } }), 'Missão de colapso futuro'],
     ['favorito no colapso 1', atCollapse(1, { album: ['moon'], favorite: 'moon' }), 'Favorito inválido'],
-    ['missão com progresso incoerente', run(atCollapse(4), { mission: { id: 'touch-600', progress: 10, done: true } }), 'Missão incoerente'],
+    ['missão com progresso incoerente', run(atCollapse(4), { mission: { id: 'touch-600', progress: 10, done: true, doneAt: -1e9 } }), 'Missão incoerente'],
   ])('recusa: %s', (_, save, message) => {
     expect(errorsOf(save)).toContain(message);
   });
@@ -374,7 +380,7 @@ describe('validateSave e o conteúdo dos colapsos 1 a 5', () => {
       build: { sedna: 1, moon: 1 },
       event: { id: 'solar-storm', until: 10 },
       nextEventAt: 500,
-      mission: { id: 'touch-600', progress: 10, done: false },
+      mission: { id: 'touch-600', progress: 10, done: false, doneAt: -1e9 },
     });
     const r = validateSave(s);
     expect(r.ok, r.ok ? '' : r.errors.join(' | ')).toBe(true);
@@ -398,6 +404,6 @@ describe('validateSave e o conteúdo dos colapsos 1 a 5', () => {
   it('os Fragmentos extras de missão cabem no teto do servidor, e um a mais não', () => {
     const s = atCollapse(5);
     expect(validateSave({ ...s, fragments: { earned: s.fragments.earned + MISSION_FRAGMENTS, spent: 0 } }).ok).toBe(true);
-    expect(errorsOf({ ...s, fragments: { earned: s.fragments.earned + MISSION_FRAGMENTS * 5 + 1, spent: 0 } })).toContain('Fragmentos não batem');
+    expect(errorsOf({ ...s, fragments: { earned: s.fragments.earned + 1000, spent: 0 } })).toContain('Fragmentos não batem');
   });
 });

@@ -1,6 +1,7 @@
 import type { SaveState } from '@nocap/games';
 import type { CSSProperties } from 'react';
 import { AstroMedal } from './AstroMedal';
+import { RequirementBars } from './Requirements';
 import { atlasView, collapseView } from './game-logic';
 import './collapse.css';
 
@@ -58,17 +59,8 @@ export function AtlasSection({ state, onCollapse }: Props) {
       </ul>
 
       <div className="ap-collapse-box">
-        <h4 className="ap-atlas-sub">Colapsar a estrela</h4>
-        <div
-          className="ap-cbar"
-          role="progressbar"
-          aria-label="Poeira da vida para colapsar"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={Math.round(collapse.dustFill * 100)}
-        >
-          <i style={{ transform: `scaleX(${collapse.dustFill})` }} />
-        </div>
+        <h4 className="ap-atlas-sub">Colapsar a estrela (colapso {collapse.next})</h4>
+        <RequirementBars view={collapse} />
         {collapse.ready ? (
           <p className="ap-sub">A estrela está pronta. Ao colapsar você ganha {collapse.fragments} Fragmentos e começa uma vida nova.</p>
         ) : (

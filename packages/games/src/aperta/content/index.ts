@@ -138,14 +138,30 @@ export interface MissionDef {
   metric: MissionMetric;
   target: number;
   text: string;
+  /** Missão da v1: ainda vale num save que a tem em andamento, mas não é mais sorteada. */
+  legacy?: true;
 }
 
+/**
+ * Com o marco "missões da estação" (spec 040) a vida pede várias missões em sequência (`ceil(n/4)`), então as
+ * sorteadas são curtas: em média ~8 min cada. As quatro da v1 ficam só para validar saves antigos.
+ */
 export const MISSIONS: readonly MissionDef[] = [
-  { id: 'capture-10', metric: 'capture', target: 10, text: 'Capturar 10 objetos no espaço' },
-  { id: 'touch-600', metric: 'touch', target: 600, text: 'Tocar o botão 600 vezes' },
-  { id: 'pick-10', metric: 'pick', target: 10, text: 'Escolher 10 grimórios' },
-  { id: 'capture-20', metric: 'capture', target: 20, text: 'Capturar 20 objetos no espaço' },
+  { id: 'capture-10', metric: 'capture', target: 10, text: 'Capturar 10 objetos no espaço', legacy: true },
+  { id: 'touch-600', metric: 'touch', target: 600, text: 'Tocar o botão 600 vezes', legacy: true },
+  { id: 'pick-10', metric: 'pick', target: 10, text: 'Escolher 10 grimórios', legacy: true },
+  { id: 'capture-20', metric: 'capture', target: 20, text: 'Capturar 20 objetos no espaço', legacy: true },
+  { id: 'capture-3', metric: 'capture', target: 3, text: 'Capturar 3 objetos no espaço' },
+  { id: 'capture-5', metric: 'capture', target: 5, text: 'Capturar 5 objetos no espaço' },
+  { id: 'capture-8', metric: 'capture', target: 8, text: 'Capturar 8 objetos no espaço' },
+  { id: 'touch-150', metric: 'touch', target: 150, text: 'Tocar o botão 150 vezes' },
+  { id: 'touch-300', metric: 'touch', target: 300, text: 'Tocar o botão 300 vezes' },
+  { id: 'pick-3', metric: 'pick', target: 3, text: 'Escolher 3 grimórios' },
+  { id: 'pick-5', metric: 'pick', target: 5, text: 'Escolher 5 grimórios' },
 ];
+
+/** As que o sorteio usa. */
+export const ASSIGNABLE_MISSIONS: readonly MissionDef[] = MISSIONS.filter((m) => !m.legacy);
 
 export function missionById(id: string): MissionDef | undefined {
   return MISSIONS.find((m) => m.id === id);

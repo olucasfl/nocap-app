@@ -1,8 +1,9 @@
-import { atlasSlots, dustGoal, minPicks, newSave, type SaveState } from '@nocap/games';
+import { MILESTONE_ORDER, atlasSlots, dustGoal, meetMilestone, milestoneKind, minPicks, newSave, type SaveState } from '@nocap/games';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { AtlasSection } from './AtlasSection';
 import { CollapseModal } from './CollapseModal';
+import { RequirementBars } from './Requirements';
 import { GameScreen } from './GameScreen';
 import { createGameController, type GameEvent } from './game-controller';
 import { createMemoryGameStore } from './game-store';
@@ -14,7 +15,7 @@ const noop = () => {};
 function ready(over: Partial<SaveState> = {}, build: Record<string, number> = { moon: 2, mars: 1 }): SaveState {
   const base = { ...newSave('c', 0), tutorial: 'done' as const, ...over };
   const k = base.collapses + 1;
-  return { ...base, run: { ...base.run, build, picks: minPicks(k), dustLife: dustGoal(k), dust: dustGoal(k) } };
+  return { ...base, run: { ...base.run, build, picks: minPicks(k), dustLife: dustGoal(k), dust: dustGoal(k), ...meetMilestone(base.collapses, base.run.upgradeLevels) } };
 }
 
 describe('visão do colapso', () => {
@@ -22,13 +23,16 @@ describe('visão do colapso', () => {
     const s = { ...newSave('c', 0), tutorial: 'done' as const };
     const v = collapseView(s);
     expect(v.ready).toBe(false);
-    expect(v.hint).toMatch(/^Falta .* de poeira e \d+ escolhas para a estrela colapsar$/);
+    expect(v.hint).toMatch(/^Falta .* de poeira, \d+ escolhas e .+ para a estrela colapsar$/);
+    expect(v.requirements.map((r) => r.id)).toEqual(['dust', 'picks', 'milestone']);
+    expect(v.requirements.every((r) => !r.done && r.fill < 1)).toBe(true);
   });
 
   it('pronta quando poeira e escolhas batem; os Fragmentos já aparecem', () => {
     const v = collapseView(ready());
     expect(v.ready).toBe(true);
-    expect(v.fragments).toBe(5);
+    expect(v.fragments).toBe(4);
+    expect(v.requirements.every((r) => r.done && r.fill === 1)).toBe(true);
     expect(v.dustFill).toBe(1);
   });
 
@@ -97,7 +101,12 @@ describe('tela de jogo com a estrela pronta', () => {
   const screen = (s: SaveState) => html(<GameScreen controller={createGameController({ initial: s, store: createMemoryGameStore(), slot: 1 })} onExit={noop} />);
 
   it('mostra o botão "Estrela pronta"', () => {
-    expect(screen(ready())).toContain('Estrela pronta: colapsar');
+    const markup = screen(ready());
+    expect(markup).toContain('Estrela pronta: colapso 1');
+    // O botão traz a barra de cada requisito.
+    expect(markup).toContain('Poeira da vida');
+    expect(markup).toContain('Escolhas de grimório');
+    expect(markup).toContain('Combo: toques seguidos');
     expect(screen({ ...newSave('c', 0), tutorial: 'done' })).not.toContain('Estrela pronta');
   });
 
@@ -123,8 +132,8 @@ describe('controlador: colapsar', () => {
     expect(s.atlas.pages).toEqual([{ grimoireId: 'moon', level: 2 }]);
     expect(s.run.build).toEqual({});
     expect(s.run.dustLife).toBe(0);
-    expect(s.fragments.earned).toBe(5);
-    expect(events.filter((e) => e.type === 'collapse')).toEqual([{ type: 'collapse', pageId: 'moon', pageName: 'Lua', fragments: 5 }]);
+    expect(s.fragments.earned).toBe(4);
+    expect(events.filter((e) => e.type === 'collapse')).toEqual([{ type: 'collapse', pageId: 'moon', pageName: 'Lua', fragments: 4 }]);
     expect(store.saved[1]?.collapses).toBe(1);
   });
 
@@ -145,5 +154,65 @@ describe('controlador: colapsar', () => {
 
   it('não colapsa com o tutorial em andamento', () => {
     expect(setup({ ...ready(), tutorial: 4 }).ctl.collapse('moon')).toBe(false);
+  });
+});
+
+describe('requisitos do colapso na tela (spec 040)', () => {
+  it('três barras com o que falta: poeira, escolhas e o marco da vida', () => {
+    const s = { ...newSave('c', 0), tutorial: 'done' as const };
+    const markup = html(<RequirementBars view={collapseView(s)} />);
+    expect(markup.match(/role="progressbar"/g)).toHaveLength(3);
+    expect(markup).toContain('Poeira da vida');
+    expect(markup).toContain('0 de 2 mi');
+    expect(markup).toContain('Escolhas de grimório');
+    expect(markup).toContain('0 de 20');
+    expect(markup).toContain('Combo: toques seguidos');
+    expect(markup).toContain('0 de 5');
+    expect(markup).toContain('scaleX(0)');
+  });
+
+  it('a barra enche só em transform e mostra "cumprido" nos requisitos prontos', () => {
+    const markup = html(<RequirementBars view={collapseView(ready())} compact />);
+    expect(markup).toContain('is-compact');
+    expect(markup.match(/is-done/g)).toHaveLength(3);
+    expect(markup.match(/ap-req-ok/g)).toHaveLength(3);
+    expect(markup.match(/scaleX\(1\)/g)).toHaveLength(3);
+    expect(markup).not.toMatch(/style="[^"]*width/);
+  });
+
+  it('cada tipo de marco tem nome e texto próprios, e o tipo gira de um colapso para o outro', () => {
+    const labels = new Set<string>();
+    for (const c of [1, 2, 4, 5, 6, 7, 8, 9]) {
+      const s = { ...newSave('c', 0), tutorial: 'done' as const, collapses: c };
+      const m = collapseView(s).requirements[2]!;
+      labels.add(m.label.replace(/\d+/g, 'N'));
+      expect(m.missing).not.toBe('');
+      expect(m.text).toContain(' de ');
+    }
+    expect(labels.size).toBe(MILESTONE_ORDER.length);
+    expect(milestoneKind(7, 6)).not.toBe(milestoneKind(8, 7));
+  });
+
+  it('o Atlas mostra as três barras e o número do colapso', () => {
+    const markup = html(<AtlasSection state={{ ...newSave('c', 0), tutorial: 'done' }} onCollapse={noop} />);
+    expect(markup.match(/role="progressbar"/g)).toHaveLength(3);
+    expect(markup).toContain('Colapsar a estrela (colapso 1)');
+  });
+
+  it('números enormes saem em notação científica e sem rolar a tela (colapso 300)', () => {
+    const base = { ...newSave('c', 0), tutorial: 'done' as const, collapses: 300 };
+    const s = { ...base, run: { ...base.run, dust: 4.2e250, dustLife: 4.2e250, picks: 30 }, stats: { ...base.stats, dustTotal: 1e280 } };
+    const view = collapseView(s);
+    expect(view.requirements[0]!.text).toMatch(/e\d+ de \S+e\d+$/);
+    expect(view.requirements[0]!.text).not.toMatch(/NaN|Infinity|undefined/);
+    expect(view.next).toBe(301);
+    const screen = html(<GameScreen controller={createGameController({ initial: s, store: createMemoryGameStore(), slot: 1 })} onExit={noop} />);
+    expect(screen).toContain('4,2e250');
+  });
+
+  it('o modal de colapso mostra as barras no passo 1', () => {
+    const markup = html(<CollapseModal state={ready()} onCancel={noop} onConfirm={noop} />);
+    expect(markup).toContain('A estrela está pronta (colapso 1)');
+    expect(markup.match(/role="progressbar"/g)).toHaveLength(3);
   });
 });

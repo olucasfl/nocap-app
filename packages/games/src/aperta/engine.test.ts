@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { GRIMOIRES, OBJECTS, TREE, UPGRADES, grimoireById, upgradeIndex, type GrimoireDef } from './catalog';
 import { CHOICE_LOCK_SEC, MAX_NUMBER, dustGoal, energyCap, minPicks } from './economy';
+import { meetMilestone } from './milestone';
 import {
   buyTreeNode,
   buyUpgrade,
@@ -70,7 +71,8 @@ function pick(s: SaveState, id: string, now: number): SaveState {
 
 function readyToCollapse(s: SaveState): SaveState {
   const k = s.collapses + 1;
-  return withRun(s, { dustLife: dustGoal(k), picks: minPicks(k) });
+  const base = withRun(s, { dustLife: dustGoal(k), picks: minPicks(k) });
+  return withRun(base, meetMilestone(s.collapses, base.run.upgradeLevels));
 }
 
 function assertSane(s: SaveState): void {

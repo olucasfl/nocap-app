@@ -8,7 +8,9 @@ import {
   atlasSlots,
   collapseProgress,
   formatDecimal,
+  formatDuration,
   formatNumber,
+  type CollapseProgress,
   type GrimoireCategory,
   type ObjectKind,
   type ObjectPreview,
@@ -417,12 +419,29 @@ export function atlasView(state: SaveState): AtlasView {
   return { slots: state.atlas.slots, pages, bonuses, nextSlotAt };
 }
 
+/** Um dos três requisitos do colapso (spec 040, seção 2), com a barra pronta para a tela. */
+export interface RequirementView {
+  id: 'dust' | 'picks' | 'milestone';
+  label: string;
+  /** "4,2 mi de 6 mi": o que a pessoa tem e o que precisa. */
+  text: string;
+  /** 0 a 1. */
+  fill: number;
+  done: boolean;
+  /** "faltam 3 escolhas" etc., só quando não está cumprido. */
+  missing: string;
+}
+
 export interface CollapseView {
   ready: boolean;
+  /** Número do colapso que esta vida termina (1 = primeiro). */
+  next: number;
   /** Fração da meta de poeira, 0 a 1. */
   dustFill: number;
   dustMissing: number;
   picksMissing: number;
+  /** Poeira, escolhas e marco da vida, nesta ordem, cada um com a sua barra. */
+  requirements: RequirementView[];
   /** "Falta N de poeira", "Faltam N escolhas" ou os dois, para o botão desabilitado. */
   hint: string;
   /** Fragmentos que o colapso dá agora. */
@@ -431,20 +450,71 @@ export interface CollapseView {
   waitingChoice: boolean;
 }
 
+/** "a, b e c". */
+const joinList = (items: string[]) => (items.length < 2 ? (items[0] ?? '') : `${items.slice(0, -1).join(', ')} e ${items[items.length - 1]}`);
+
+const plural = (n: number, one: string, many: string) => `${formatNumber(n)} ${n === 1 ? one : many}`;
+
+/** Nome e texto da barra do marco da vida, por tipo (o tipo gira a cada colapso). */
+export function milestoneView(m: CollapseProgress['milestone']): RequirementView {
+  const value = m.kind === 'comboFull' ? formatDuration(m.value) : formatNumber(m.value);
+  const target = m.kind === 'comboFull' ? formatDuration(m.target) : formatNumber(m.target);
+  const left = m.target - m.value;
+  const base = { id: 'milestone' as const, text: `${value} de ${target}`, fill: m.fill, done: m.done };
+  switch (m.kind) {
+    case 'capture':
+      return { ...base, label: 'Objetos capturados', missing: m.done ? '' : plural(left, 'objeto', 'objetos') };
+    case 'combo':
+      return { ...base, label: 'Combo: toques seguidos', missing: m.done ? '' : plural(left, 'toque seguido', 'toques seguidos') };
+    case 'generators':
+      return {
+        ...base,
+        label: `Geradores no nível ${m.level}`,
+        missing: m.done ? '' : plural(left, 'gerador no nível', 'geradores no nível') + ` ${m.level}`,
+      };
+    case 'missions':
+      return { ...base, label: 'Missões da estação', missing: m.done ? '' : plural(left, 'missão', 'missões') };
+    case 'rares':
+      return { ...base, label: 'Estrelas Douradas capturadas', missing: m.done ? '' : plural(left, 'Estrela Dourada', 'Estrelas Douradas') };
+    case 'comboFull':
+      return { ...base, label: 'Combo cheio sem parar', missing: m.done ? '' : `${formatDuration(left)} de combo cheio` };
+  }
+}
+
 export function collapseView(state: SaveState): CollapseView {
   const p = collapseProgress(state);
   const dustMissing = Math.max(0, p.dustGoal - p.dust);
   const picksMissing = Math.max(0, p.minPicks - p.picks);
-  const parts: string[] = [];
-  if (dustMissing > 0) parts.push(`${formatNumber(dustMissing)} de poeira`);
-  if (picksMissing > 0) parts.push(`${picksMissing} ${picksMissing === 1 ? 'escolha' : 'escolhas'}`);
-  const waitingChoice = state.run.pending !== null && dustMissing === 0 && picksMissing === 0;
+  const milestone = milestoneView(p.milestone);
+  const requirements: RequirementView[] = [
+    {
+      id: 'dust',
+      label: 'Poeira da vida',
+      text: `${formatNumber(Math.min(p.dust, p.dustGoal))} de ${formatNumber(p.dustGoal)}`,
+      fill: p.dustGoal > 0 ? Math.min(1, p.dust / p.dustGoal) : 0,
+      done: dustMissing === 0,
+      missing: dustMissing > 0 ? `${formatNumber(dustMissing)} de poeira` : '',
+    },
+    {
+      id: 'picks',
+      label: 'Escolhas de grimório',
+      text: `${Math.min(p.picks, p.minPicks)} de ${p.minPicks}`,
+      fill: p.minPicks > 0 ? Math.min(1, p.picks / p.minPicks) : 1,
+      done: picksMissing === 0,
+      missing: picksMissing > 0 ? plural(picksMissing, 'escolha', 'escolhas') : '',
+    },
+    milestone,
+  ];
+  const parts = requirements.filter((r) => !r.done).map((r) => r.missing);
+  const waitingChoice = state.run.pending !== null && parts.length === 0;
   return {
     ready: p.ready,
-    dustFill: p.dustGoal > 0 ? Math.min(1, p.dust / p.dustGoal) : 0,
+    next: p.next,
+    dustFill: requirements[0]!.fill,
     dustMissing,
     picksMissing,
-    hint: waitingChoice ? 'Termine a escolha de grimório' : parts.length ? `Falta ${parts.join(' e ')} para a estrela colapsar` : '',
+    requirements,
+    hint: waitingChoice ? 'Termine a escolha de grimório' : parts.length ? `Falta ${joinList(parts)} para a estrela colapsar` : '',
     fragments: fragmentsFor(state.collapses + 1, state.run.dustLife),
     waitingChoice,
   };

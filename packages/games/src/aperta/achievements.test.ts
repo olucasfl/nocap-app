@@ -13,6 +13,7 @@ import {
   type SaveState,
 } from './engine';
 import { dustGoal, minPicks } from './economy';
+import { meetMilestone } from './milestone';
 import { mergeSaves, validateSave } from './save';
 
 const has = (s: SaveState, id: string) => s.achievements.includes(id);
@@ -138,7 +139,7 @@ describe('combo', () => {
 
 describe('colapsos e árvore', () => {
   it('o primeiro colapso ganha a conquista e ela sobrevive à vida nova', () => {
-    let s = withRun(newSave('a'), { dustLife: dustGoal(1), picks: minPicks(1), build: { moon: 1 } });
+    let s = withRun(newSave('a'), { dustLife: dustGoal(1), picks: minPicks(1), build: { moon: 1 }, ...meetMilestone(0, []) });
     s = { ...s, album: ['moon'], stats: { ...s.stats, picks: minPicks(1), dustTotal: dustGoal(1) }, tutorial: 'done' };
     const next = collapse(s, 'moon');
     expect(next.collapses).toBe(1);

@@ -2,6 +2,7 @@ import { formatNumber, type SaveState } from '@nocap/games';
 import { useEffect, useRef, useState } from 'react';
 import { apertaSfx, apertaVibrate } from '@/lib/aperta-audio';
 import { AstroMedal } from './AstroMedal';
+import { RequirementBars } from './Requirements';
 import { atlasView, collapseCandidates, collapseView, modalGuarded, needsReplacement } from './game-logic';
 import { useDialog } from './useDialog';
 import './collapse.css';
@@ -51,13 +52,14 @@ export function CollapseModal({ state, onCancel, onConfirm }: Props) {
         aria-labelledby="ap-collapse-title"
         tabIndex={-1}
       >
-        <h2 id="ap-collapse-title">{step === 1 ? 'A estrela está pronta' : 'Colapsar a estrela?'}</h2>
+        <h2 id="ap-collapse-title">{step === 1 ? `A estrela está pronta (colapso ${view.next})` : 'Colapsar a estrela?'}</h2>
         <p className="ap-collapse-step" aria-live="polite">
           Passo {step} de 2
         </p>
 
         {step === 1 ? (
           <>
+            <RequirementBars view={view} />
             <p className="ap-sub">
               Escolha um grimório desta vida para guardar como página no Atlas Eterno. Ele fica a 60% do poder em todas as vidas.
             </p>

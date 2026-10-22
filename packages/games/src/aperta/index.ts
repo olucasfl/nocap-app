@@ -7,3 +7,4 @@ export * from './save';
 export * from './sim';
 export * from './tutorial';
 export * from './content';
+export * from './milestone';
