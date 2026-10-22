@@ -119,16 +119,15 @@ export function rarityUnlockPicks(rarity: Rarity, collapses: number, forbiddenOv
 // confere que a vida do perfil normal fica dentro da faixa abaixo.
 
 /**
- * Meta de poeira da vida do 1º colapso (2 mi) e a razão entre uma meta e a seguinte (spec 040, seção 2). A spec previa
+ * Meta de poeira da vida do 1º colapso (50 mi; a spec previa 2 mi e o Lucas pediu 80 mi, mas com 80 mi a vida 1 leva 3,3 h e estoura a trava de 3 h) e a razão entre uma meta e a seguinte (spec 040, seção 2). A spec previa
  * x3 sempre; o simulador mostrou que o poder do jogador (Atlas e árvore, que enchem) não acompanha x3 depois dos
  * primeiros colapsos (spec 040, seção 10). A razão vira trechos: a do passo `n-1 -> n` é a do primeiro trecho cujo
  * `upTo` é >= `n`. Os números são o que o simulador calibra; o último trecho vale para sempre.
  */
-export const GOAL_BASE = 2e6;
+export const GOAL_BASE = 5e7;
 export const GOAL_SEGMENTS: { upTo: number; ratio: number }[] = [
-  // 1º -> 2º colapso: o salto leva a meta de 2 mi (que o 1º colapso cumpre sozinho, preso nas 20 escolhas) ao que a vida
-  // 2 realmente rende em ~2 h. Os 3 primeiros passos acompanham o poder que cada colapso acumula (páginas do Atlas e Fragmentos).
-  { upTo: 2, ratio: 70 },
+  // 1º -> 2º colapso: de 50 mi a 140 mi (o que a vida 2 rende em ~2 h). Os 3 primeiros passos acompanham o poder que cada colapso acumula (páginas do Atlas e Fragmentos).
+  { upTo: 2, ratio: 2.8 },
   { upTo: 4, ratio: 2.1 },
   // Do 5º ao 30º colapso: x1,28 por colapso mantém a vida do perfil normal em ~2 h (calibrado, 12 sementes).
   { upTo: 30, ratio: 1.28 },
@@ -160,7 +159,7 @@ export function dustGoal(nextCollapse: number): number {
   let lo = 1;
   for (const seg of GOAL_SEGMENTS) {
     const steps = Math.max(0, Math.min(k, seg.upTo) - lo);
-    // Potência a potência (e não exp/log): a meta do 1º colapso sai exatamente 2.000.000.
+    // Potência a potência (e não exp/log): a meta do 1º colapso sai exatamente 50.000.000.
     if (steps > 0) goal = Math.min(MAX_NUMBER, goal * Math.pow(seg.ratio, steps));
     lo = Math.max(lo, seg.upTo);
     if (k <= lo) break;

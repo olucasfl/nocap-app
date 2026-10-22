@@ -132,9 +132,9 @@ describe('rarityUnlockPicks', () => {
 });
 
 describe('requisitos de colapso (spec 040)', () => {
-  it('a meta do 1º colapso é 2 mi e as metas só crescem', () => {
-    expect(GOAL_BASE).toBe(2e6);
-    expect(dustGoal(1)).toBe(2e6);
+  it('a meta do 1º colapso é 50 mi e as metas só crescem', () => {
+    expect(GOAL_BASE).toBe(5e7);
+    expect(dustGoal(1)).toBe(5e7);
     expect(dustGoal(0)).toBe(dustGoal(1));
     for (let k = 2; k <= 2000; k++) expect(dustGoal(k), `colapso ${k}`).toBeGreaterThan(dustGoal(k - 1));
   });

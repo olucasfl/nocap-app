@@ -31,7 +31,7 @@ describe('visão do colapso', () => {
   it('pronta quando poeira e escolhas batem; os Fragmentos já aparecem', () => {
     const v = collapseView(ready());
     expect(v.ready).toBe(true);
-    expect(v.fragments).toBe(4);
+    expect(v.fragments).toBe(5);
     expect(v.requirements.every((r) => r.done && r.fill === 1)).toBe(true);
     expect(v.dustFill).toBe(1);
   });
@@ -132,8 +132,8 @@ describe('controlador: colapsar', () => {
     expect(s.atlas.pages).toEqual([{ grimoireId: 'moon', level: 2 }]);
     expect(s.run.build).toEqual({});
     expect(s.run.dustLife).toBe(0);
-    expect(s.fragments.earned).toBe(4);
-    expect(events.filter((e) => e.type === 'collapse')).toEqual([{ type: 'collapse', pageId: 'moon', pageName: 'Lua', fragments: 4 }]);
+    expect(s.fragments.earned).toBe(5);
+    expect(events.filter((e) => e.type === 'collapse')).toEqual([{ type: 'collapse', pageId: 'moon', pageName: 'Lua', fragments: 5 }]);
     expect(store.saved[1]?.collapses).toBe(1);
   });
 
@@ -163,7 +163,7 @@ describe('requisitos do colapso na tela (spec 040)', () => {
     const markup = html(<RequirementBars view={collapseView(s)} />);
     expect(markup.match(/role="progressbar"/g)).toHaveLength(3);
     expect(markup).toContain('Poeira da vida');
-    expect(markup).toContain('0 de 2 mi');
+    expect(markup).toContain('0 de 50 mi');
     expect(markup).toContain('Escolhas de grimório');
     expect(markup).toContain('0 de 20');
     expect(markup).toContain('Combo: toques seguidos');

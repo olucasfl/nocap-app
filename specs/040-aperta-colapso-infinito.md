@@ -135,7 +135,7 @@ Numeração continua a da 038. Todas terminam com testes, typecheck, docs e comm
 
 ### 10.2 O que mudou do plano (decisões minhas, registradas porque a spec dizia outra coisa)
 
-1. **A razão x3 não se sustenta.** Com x3 o simulador mostrou vidas 1 a 8 de 1 a 3 h e vidas 9 a 12 de 9 a 21 h (o poder permanente não acompanha 3^n). A meta virou trechos calibrados (`GOAL_SEGMENTS`): do 1º para o 2º colapso x70 (2 mi -> 140 mi: o 1º colapso cumpre os 2 mi sozinho, preso nas 20 escolhas), x2,1 até o 4º, **x1,28 até o 30º** e **x1,08 depois**. A razão volta a subir quando as etapas 15 a 20 trouxerem poder permanente novo (proibidos, árvore, habilidades): é só trocar os números e rodar o calibrador.
+1. **A razão x3 não se sustenta.** Com x3 o simulador mostrou vidas 1 a 8 de 1 a 3 h e vidas 9 a 12 de 9 a 21 h (o poder permanente não acompanha 3^n). A meta virou trechos calibrados (`GOAL_SEGMENTS`): 1º colapso em **50 mi** (o Lucas pediu 80 mi, mas o simulador mostrou a vida 1 em 3,3 h, acima da trava de 3 h; com 50 mi fica em 2,85 h) e do 1º para o 2º x2,8 (50 mi -> 140 mi), x2,1 até o 4º, **x1,28 até o 30º** e **x1,08 depois**. A razão volta a subir quando as etapas 15 a 20 trouxerem poder permanente novo (proibidos, árvore, habilidades): é só trocar os números e rodar o calibrador.
 2. **Energia depois da 6ª escolha: x1,22 em vez de x1,35** (`ENERGY_STEP_GROWTH`). Com x1,35 as 20 escolhas do 1º colapso levavam ~6,7 h e a trava manda no máximo 3 h; com x1,22 levam ~2,1 h. Os 6 primeiros passos (38 a 640) e a sensação do começo não mudaram. Efeito num save antigo: quem estava com a barra quase cheia passa do teto novo, a energia é aparada e a escolha abre na hora (`flagged: ['energy']`, nada se perde).
 3. **"Combo" do marco = sequência de toques seguidos** (cada um dentro da janela do anterior, com o Ritmo Firme comprado), e não o nível de combo: o nível para em 3 ou 4 sem grimórios raros, então a meta 5 do 1º colapso seria impossível. Teto de 30 toques. O combo cheio tem teto de 180 s (humano).
 4. **Missões da estação em sequência:** a próxima chega 5 s depois da cumprida (`MISSION_NEXT_DELAY_SEC`) e o sorteio usa só missões curtas (3, 5 e 8 objetos; 150 e 300 toques; 3 e 5 escolhas, ~8 min em média). As 4 da v1 ficam marcadas `legacy` só para validar saves antigos. O bônus de Fragmentos continua uma vez por vida.
@@ -164,7 +164,7 @@ Média de 12 sementes por vida e por perfil (horas de jogo aberto e, entre parê
 
 | Colapso | Meta de poeira | Casual (0.5 h/dia) | Normal (1.5 h/dia) | Ativo (4 h/dia) | Faixa (normal) |
 | --- | --- | --- | --- | --- | --- |
-| 1º | 2 mi | 4,29 h (8,6 d) | 2,08 h (1,4 d) | 1,41 h (0,4 d) | 1 a 3 h |
+| 1º | 50 mi | 4,29 h (8,6 d) | 2,08 h (1,4 d) | 1,41 h (0,4 d) | 1 a 3 h |
 | 2º | 140 mi | 3,19 h (6,4 d) | 1,61 h (1,1 d) | 0,89 h (0,2 d) | 1 a 3 h |
 | 3º | 294 mi | 4,77 h (9,5 d) | 1,84 h (1,2 d) | 0,95 h (0,2 d) | 1 a 3 h |
 | 4º | 617 mi | 4,88 h (9,8 d) | 1,86 h (1,2 d) | 1,36 h (0,3 d) | 1 a 3 h |

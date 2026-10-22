@@ -153,7 +153,7 @@ for (const size of SIZES) {
 
       // Passo 2: o que fica, o que sai e os Fragmentos.
       await expect(page.getByRole('dialog', { name: 'Colapsar a estrela?' })).toBeVisible();
-      await expect(page.locator('.ap-cc-gain')).toContainText('+4');
+      await expect(page.locator('.ap-cc-gain')).toContainText('+5');
       await shot('3-passo2');
       await insideViewport(page, '.ap-collapse');
       await noOverflow(page);
