@@ -1,5 +1,5 @@
 // Ferramenta de calibragem (spec 039): ajusta DUST_GOAL das vidas 1 a 5 até o perfil normal bater com TARGET_HOURS.
-// Roda com: pnpm exec vitest run --config vitest.sim.config.ts src/aperta/calibrate.sim.ts
+// Roda com: CAL=1 pnpm exec vitest run --config vitest.sim.config.ts src/aperta/calibrate.sim.ts
 import { it } from 'vitest';
 import { DUST_GOAL, TARGET_HOURS } from './economy';
 import { simulateAverage } from './sim';
@@ -7,7 +7,8 @@ import { simulateAverage } from './sim';
 const LIVES = 5;
 const SEEDS = Array.from({ length: Number(process.env.CAL_SEEDS ?? 16) }, (_, i) => `c${i}`);
 
-it('calibra', () => {
+// Só roda com CAL=1, para não entrar no `pnpm sim` comum.
+it.skipIf(!process.env.CAL)('calibra', () => {
   const history: { ln: number; h: number }[][] = Array.from({ length: LIVES }, () => []);
   for (let iter = 0; iter < Number(process.env.CAL_ITERS ?? 8); iter++) {
     const { hours } = simulateAverage('normal', SEEDS, LIVES);
