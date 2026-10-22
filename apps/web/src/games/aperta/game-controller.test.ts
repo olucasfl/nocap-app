@@ -196,26 +196,36 @@ describe('objetos no espaço', () => {
     }
   }
 
+  /** Espera o 1º objeto aparecer (a janela é de 60 a 90 s) e devolve em que segundo foi. */
+  function waitForObject(t: ReturnType<typeof setup>): number {
+    for (let sec = 1; sec <= 95; sec++) {
+      advance(t, 1);
+      if (t.ctl.getSnapshot().state.run.objects.length > 0) return sec;
+    }
+    return -1;
+  }
+
   it('nenhum objeto nasce antes da 1ª melhoria', () => {
     const t = setup();
     advance(t, 60);
     expect(t.ctl.getSnapshot().state.run.objects).toHaveLength(0);
   });
 
-  it('um objeto nasce depois de uns 32 s e a tela é avisada na hora', () => {
+  it('um objeto nasce entre 60 e 90 s e a tela é avisada na hora', () => {
     const t = setup(afterFirstUpgrade());
     let notified = 0;
     t.ctl.subscribe(() => (notified += 1));
-    advance(t, 30);
+    advance(t, 55);
     expect(t.ctl.getSnapshot().state.run.objects).toHaveLength(0);
-    advance(t, 5);
-    expect(t.ctl.getSnapshot().state.run.objects.length).toBeGreaterThan(0);
+    const at = waitForObject(t) + 55;
+    expect(at).toBeGreaterThanOrEqual(60);
+    expect(at).toBeLessThanOrEqual(91);
     expect(notified).toBeGreaterThan(0);
   });
 
   it('capturar entrega a recompensa que a etiqueta mostrou e emite o aviso', () => {
     const t = setup(afterFirstUpgrade());
-    advance(t, 35);
+    waitForObject(t);
     const { run } = t.ctl.getSnapshot().state;
     const obj = run.objects[0]!;
     expect(t.ctl.capture(obj.id)).toBe(true);
@@ -229,7 +239,7 @@ describe('objetos no espaço', () => {
 
   it('capturar duas vezes, ou um id que não existe, não entrega nada', () => {
     const t = setup(afterFirstUpgrade());
-    advance(t, 35);
+    waitForObject(t);
     const id = t.ctl.getSnapshot().state.run.objects[0]!.id;
     expect(t.ctl.capture(id)).toBe(true);
     expect(t.ctl.capture(id)).toBe(false);
@@ -239,7 +249,7 @@ describe('objetos no espaço', () => {
 
   it('com o jogo pausado nada nasce e nada é capturado', () => {
     const t = setup(afterFirstUpgrade());
-    advance(t, 35);
+    waitForObject(t);
     const id = t.ctl.getSnapshot().state.run.objects[0]!.id;
     t.ctl.pause();
     expect(t.ctl.capture(id)).toBe(false);

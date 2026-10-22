@@ -59,7 +59,6 @@ import {
   CHARGED_ENERGY,
   CRIT_CHANCE,
   CRIT_MULT,
-  ECHO_CAP_SHARE,
   ECHO_SHARE_OF_AUTO,
   FIRST_OBJECT_DELAY_SEC,
   HANDS_GENERATORS_PER_POINT,
@@ -659,7 +658,8 @@ function computeStats(state: SaveState): EffectiveStats {
   const touchDoublings = ['lens', 'lens2', 'cabin', 'webb'].filter(has).length;
   const flat = (has('gloves') ? 1 : 0) + (has('hands') ? Math.floor(generators / HANDS_GENERATORS_PER_POINT) : 0) + dustFlat;
   let dustPerTouch = (1 + flat) * 2 ** touchDoublings * Math.max(0, 1 + dustPct / 100) * dustMult;
-  if (has('echo')) dustPerTouch += Math.min(dustPerTouch * ECHO_CAP_SHARE, autoDust * ECHO_SHARE_OF_AUTO);
+  // Eco: os geradores alimentam o toque. É o que faz investir neles valer a pena sem o auto passar do teto.
+  if (has('echo')) dustPerTouch += autoDust * ECHO_SHARE_OF_AUTO;
 
   const energyPerTouch =
     (BASE_ENERGY_PER_TOUCH + (has('charged') ? CHARGED_ENERGY : 0)) * Math.max(0, 1 + energyPct / 100) * energyMult;
@@ -1015,10 +1015,10 @@ export function upgradeLock(state: SaveState, index: number): UpgradeLock | null
   const def = UPGRADES[index];
   if (!def) return { kind: 'collapse', collapse: Infinity };
   if (def.unlockedAtCollapse > state.collapses) return { kind: 'collapse', collapse: def.unlockedAtCollapse };
+  if (!upgradeOnShelf(state, index)) return { kind: 'shelf' };
   if (def.requiresUpgrade && level(state, def.requiresUpgrade.id) < def.requiresUpgrade.level) {
     return { kind: 'requires', upgrade: def.requiresUpgrade.id, level: def.requiresUpgrade.level };
   }
-  if (!upgradeOnShelf(state, index)) return { kind: 'shelf' };
   if (!upgradeRevealed(state, index)) {
     return { kind: 'mystery', cost: upgradeCost(def, state.run.upgradeLevels[index] ?? 0, effectiveStats(state).costFactor) };
   }

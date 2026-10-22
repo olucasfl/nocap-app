@@ -1,4 +1,4 @@
-import { GRIMOIRES, buyUpgrade, newSave, press, type SaveState } from '@nocap/games';
+import { GRIMOIRES, UPGRADES, buyUpgrade, newSave, press, type SaveState } from '@nocap/games';
 import { describe, expect, it } from 'vitest';
 import { ASTROS } from './astros';
 import {
@@ -73,9 +73,9 @@ describe('selo de Melhorias', () => {
   it('conta quantas dá para comprar com a poeira atual', () => {
     const s = fresh();
     expect(affordableCount(s)).toBe(0);
-    const rich: SaveState = { ...s, run: { ...s.run, dust: 25, dustLife: 25 } };
+    const rich: SaveState = { ...s, run: { ...s.run, dust: 15, dustLife: 15 } };
     expect(affordableCount(rich)).toBe(1);
-    expect(affordableCount(buyUpgrade(rich, 0))).toBe(0);
+    expect(affordableCount(buyUpgrade(rich, UPGRADES.findIndex((u) => u.id === 'satellite')))).toBe(0);
   });
 });
 
@@ -88,9 +88,8 @@ describe('combo na tela', () => {
 
   it('depois da melhoria aparece e some quando a janela passa', () => {
     let s: SaveState = fresh();
-    s = { ...s, run: { ...s.run, dust: 100000, dustLife: 100000 } };
-    s = buyUpgrade(s, 1);
-    expect(s.run.upgradeLevels[1]).toBe(1);
+    const rhythm = UPGRADES.findIndex((u) => u.id === 'rhythm');
+    s = { ...s, run: { ...s.run, upgradeLevels: s.run.upgradeLevels.map((l, i) => (i === rhythm ? 1 : l)) } };
     for (let i = 0; i < 4; i++) s = press(s, 1 + i * 0.2);
     const live = comboView(s, 1.8);
     expect(live.points).toBeGreaterThan(0);

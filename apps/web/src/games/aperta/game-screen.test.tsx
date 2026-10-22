@@ -52,7 +52,8 @@ describe('tela de jogo', () => {
 
   it('o selo de Melhorias conta o que dá para comprar', () => {
     const markup = screen((s) => ({ ...s, run: { ...s.run, dust: 2000 } }));
-    expect(markup).toContain('Melhorias, 1 para comprar');
+    // Lente, Satélite e Antena cabem em 2000 de poeira; as escondidas não contam.
+    expect(markup).toContain('Melhorias, 3 para ver');
   });
 
   it('a barra brilha quando quase cheia', () => {

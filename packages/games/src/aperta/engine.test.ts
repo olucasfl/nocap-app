@@ -204,7 +204,7 @@ describe('press', () => {
   });
 
   it('a Cadência só compra com o Ritmo Firme', () => {
-    const open = { lens: 1, gloves: 1, trained: 1, magnet: 1, hands: 1, charged: 1 };
+    const open = { lens: 1, gloves: 1, trained: 1, magnet: 1, hands: 1, charged: 1, luck: 1 };
     let s = withRun(withLevels(newSave('p'), open), { dust: 1e6, dustLife: 1e6 });
     expect(upgradeLock(s, idx('cadence'))).toEqual({ kind: 'requires', upgrade: 'rhythm', level: 1 });
     expect(nextUpgradeCost(s, idx('cadence'))).toBeNull();

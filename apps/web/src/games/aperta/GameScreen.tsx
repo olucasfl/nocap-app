@@ -31,6 +31,7 @@ import { SpaceObject, type SpaceObjectKind } from './SpaceObject';
 import { TutorialCoach, TutorialInline } from './Tutorial';
 import { TreePage } from './TreePage';
 import { UpgradesPage } from './UpgradesPage';
+import { revealedIds, upgradeBadge } from './upgrades-logic';
 import type { GameController, GameEvent } from './game-controller';
 import {
   NOTICE_MS,
@@ -115,6 +116,14 @@ function pageNotice(page: PageName, affordable: number, albumCount: number, coll
 export function GameScreen({ controller, onExit }: Props) {
   const { state, now, paused, saveFailures } = useGameSnapshot(controller);
   const [page, setPage] = useState<PageName | null>(null);
+  // Melhorias que a pessoa já viu: começa com tudo que já está na tela, para o selo só contar as descobertas novas.
+  const [seenUp, setSeenUp] = useState<ReadonlySet<string>>(() => new Set(revealedIds(state)));
+  const markSeen = useCallback((ids: string[]) => {
+    setSeenUp((prev) => {
+      if (ids.every((id) => prev.has(id))) return prev;
+      return new Set([...prev, ...ids]);
+    });
+  }, []);
   const [pressed, setPressed] = useState(false);
   const [bursts, setBursts] = useState<Burst[]>([]);
   const [notice, setNotice] = useState<Notice | null>(null);
@@ -305,6 +314,8 @@ export function GameScreen({ controller, onExit }: Props) {
 
   const energy = energyView(state);
   const affordable = affordableCount(state);
+  // Selo do botão: coisas para ver nas duas abas (à venda agora ou descobertas e ainda não vistas).
+  const upBadge = upgradeBadge(state, seenUp);
   const combo = comboView(state, now);
   const signal = signalView(state, now);
   const fragments = fragmentsAvailable(state);
@@ -549,14 +560,14 @@ export function GameScreen({ controller, onExit }: Props) {
           type="button"
           data-tut="dock-upgrades"
           className={`ap-dockb ap-dockb-big ap-dock-in${page === 'upgrades' ? ' on' : ''}`}
-          aria-label={affordable > 0 ? `Melhorias, ${affordable} para comprar` : PAGE_TITLE.upgrades}
+          aria-label={upBadge > 0 ? `Melhorias, ${upBadge} para ver` : PAGE_TITLE.upgrades}
           aria-pressed={page === 'upgrades'}
           onClick={() => openPage('upgrades')}
         >
           Melhorias
-          {affordable > 0 && (
+          {upBadge > 0 && (
             <span className="ap-badge" aria-hidden="true">
-              {affordable}
+              {upBadge}
             </span>
           )}
         </button>
@@ -571,7 +582,7 @@ export function GameScreen({ controller, onExit }: Props) {
           notice={pageNotice(page, affordable, albumCount, state.collapses, achievementCounts(state))}
           onClose={() => setPage(null)}
         >
-          {page === 'upgrades' && <UpgradesPage state={state} onBuy={controller.buy} />}
+          {page === 'upgrades' && <UpgradesPage state={state} onBuy={controller.buy} seen={seenUp} onSeen={markSeen} />}
           {page === 'achievements' && <AchievementsPage state={state} />}
           {page === 'tree' && <TreePage state={state} onBuy={controller.buyTree} onRespec={controller.respec} />}
           {page === 'grimoires' ? <GrimoiresPage state={state} onCollapse={() => setCollapseOpen(true)} onFavorite={controller.setFavorite} /> : undefined}

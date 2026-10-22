@@ -152,3 +152,56 @@
   outline: 3px solid var(--space-gold, #ffc857);
   outline-offset: 3px;
 }
+
+/* Abas Toque e Geradores (spec 039, seção 6). */
+.ap-upwrap {
+  display: grid;
+  gap: 12px;
+}
+.ap-uptabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.ap-uptab {
+  position: relative;
+  min-height: 48px;
+  padding: 8px 12px;
+  border: 3px solid var(--space-line);
+  border-radius: 12px;
+  background: var(--space-panel);
+  color: var(--space-muted);
+  font: 700 15px var(--space-font-display);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.ap-uptab.on {
+  border-color: var(--space-cyan);
+  color: var(--space-text);
+  background: linear-gradient(180deg, var(--space-panel-2), var(--space-panel));
+}
+.ap-uptab:focus-visible {
+  outline: 3px solid var(--space-gold, #ffc857);
+  outline-offset: 3px;
+}
+.ap-uptab-badge {
+  position: absolute;
+  top: -8px;
+  right: -4px;
+}
+.ap-up-auto {
+  margin: 0;
+  font: 600 13px/1.4 var(--space-font-body);
+  color: var(--space-muted);
+}
+.ap-up-auto b {
+  color: var(--space-cyan);
+}
+/* Escondida: só o preço aparece; nome e efeito vêm quando a poeira chega a 70% do valor. */
+.ap-up.is-mystery {
+  border-style: dashed;
+  opacity: 0.75;
+}
+.ap-up.is-mystery .ap-up-medal {
+  filter: grayscale(1);
+}
