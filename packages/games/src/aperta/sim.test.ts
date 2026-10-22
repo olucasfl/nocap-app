@@ -172,3 +172,27 @@ describe('formatSimReport', () => {
     expect(text).not.toMatch(/NaN|Infinity/);
   });
 });
+
+describe('perfil com árvore (spec 040, 6.3)', () => {
+  it('compra nós que existem hoje na ordem de custo; sem árvore não compra nada', () => {
+    const withTree = simulate({ profile: 'normal', seed: 'arv', collapses: 10, maxHoursPerLife: 40 });
+    const without = simulate({ profile: 'normal', seed: 'arv', collapses: 10, maxHoursPerLife: 40, tree: 'none' });
+    expect(withTree.lives.at(-1)!.treeNodes).toBeGreaterThan(0);
+    expect(without.lives.every((l) => l.treeNodes === 0)).toBe(true);
+    // Os nós crescem de uma vida para a outra, nunca diminuem.
+    const counts = withTree.lives.map((l) => l.treeNodes);
+    expect([...counts].sort((a, b) => a - b)).toEqual(counts);
+  }, 300_000);
+
+  it('a árvore completa (os nós que existem) não encurta a vida mais de ~25%', () => {
+    const seeds = SEEDS.slice(0, 6);
+    const mean = (tree: 'none' | 'full'): number => {
+      const { hours } = simulateAverage('normal', seeds, 15, 40, tree);
+      const mid = hours.slice(5, 15);
+      return mid.reduce((a, b) => a + b, 0) / mid.length;
+    };
+    const none = mean('none');
+    const full = mean('full');
+    expect(full / none, `com árvore ${full.toFixed(2)} h, sem ${none.toFixed(2)} h`).toBeGreaterThanOrEqual(0.75);
+  }, 600_000);
+});

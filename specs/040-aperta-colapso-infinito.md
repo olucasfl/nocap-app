@@ -279,7 +279,7 @@ Leitura: o normal fica em 1,5 a 2,8 h de jogo da vida 1 à 15 (1 a 2 dias de cal
 - Dois bônus levam um efeito extra para não copiar um grimório comum (TON 618: parado, mantém ritmo; Phoenix A: janela do combo maior).
 - `apertaSfx` e a arte não ganharam nada específico do Cofre; o aviso do colapso usa o texto "Cofre: nome, nível N".
 
-### 12.3 Simulador: as travas ainda não fecham (pendência real)
+### 12.3 Simulador: as travas não fechavam (RESOLVIDO na etapa 17, seção 13)
 
 - Depois de duas rodadas de ajuste nos números dos proibidos (soma dos níveis, bônus geométrico por nível, preços mais leves), as vidas 1 a 5 e a maioria das 7 a 15 ficam na faixa de 1 a 3 h, mas **3 testes de `sim.test.ts` seguem vermelhos**: a vida 6 sai em 0,93 h (abaixo de 1 h), a média da vida 16 fica em ~6 h (limite 3,09 h) e algumas sementes travam (40 h) a partir do colapso ~16. A variação entre sementes é grande porque a sorte da oferta (Sagitário A* e GW150914 aceleram muito; Gaia BH3 e Holmberg 15A quase nada) decide a vida.
 - Causa: o Atlas dava poder acumulado (páginas e bônus de conjunto) que o Cofre (no máximo 50 níveis, 1 por colapso) não repõe sozinho depois do colapso ~15. O resto do poder tardio é da árvore grande (etapa 17). Próximo passo: nivelar os 10 proibidos (os fracos sobem, os que aceleram demais descem) e recalibrar junto com a árvore real; as travas não foram mexidas.
@@ -288,4 +288,38 @@ Leitura: o normal fica em 1,5 a 2,8 h de jogo da vida 1 à 15 (1 a 2 dias de cal
 
 - Nenhum Playwright nem varredura responsiva (320/390/1280); os specs e2e do colapso, da árvore e do tutorial ainda falam do Atlas e precisam ser atualizados na rodada de telas.
 - Ninguém jogou o Cofre à mão: o equilíbrio dos números de cada proibido vem do simulador, não de sessão real.
+
+## 13. Etapa 17 pronta: Árvore de Habilidades, motor e dados (22/10/2026)
+
+### 13.1 Entregue
+
+- `tree.ts`: 120 nós em 5 ramos de 24 (Automação, Habilidades ativas, Sorte, Exploração, Cosmos). Cada nó tem id (`au-01`...), tier 1 a 5, 1 a 2 níveis, 1 a 3 pais (6 ligações cruzadas entre ramos), custo por nível 1/2/3/5/8 e o efeito em dados (`effect: { kind, params }`). Por ramo: tier 1 = 4 nós, tier 2 = 6, tier 3 = 6, tier 4 = 5, tier 5 = 3.
+- `needs`: os nós de mecânica futura (Autoclick, captura e compra automáticas, habilidades, rerolls, 4ª carta, pity, eventos, lendários, Mapa) ficam fechados por `TREE_FEATURES` (Automação e Habilidades ligam na 19; Sorte e Exploração na 20). Um nó cujo pai está fechado também está. Hoje existem 29 nós (115 Cintilas).
+- Funcionam já: poder direto (15 nós, 12,5%: poeira por toque, energia por toque, geradores), Reforço dos proibidos (`forbiddenPower`), Sintonia (poeira por nível de proibido), Constelação (por ramo com 5 nós), Eco do colapso (primeiros toques da vida), Cartas de capa (o favorito comum começa a vida em nível) e Largada (energia inicial).
+- `buyNode` (pais, nível máximo, Cintilas, árvore aberta no 1º colapso), `respecTree` devolve 100% e só com `canRespec` (estrela pronta ou vida zerada).
+- Save v4: a árvore antiga (6 ramos x 3 níveis) é descartada e `sparks.spent` volta a 0 (o gasto vira Cintilas livres); `validateSave` confere nós, níveis, pais e mecânica aberta. Testado com os 11 `fixtures/legacy-*.json`.
+- Testes: grafo (pais de tier menor, alcançável, custo por tier), compra, pais, refazer, validação, migração, poder direto <= 15%, não-duplicação (domínios de melhorias, grimórios e proibidos) e o balanço com a árvore real. A tela atual da árvore virou uma lista provisória (a tela em grafo é a etapa 18).
+
+### 13.2 Balanço das Cintilas (seção 5.4, árvore real)
+
+| Termo | Valor |
+| --- | --- |
+| T (120 nós) | 540 |
+| F (conquistas 463 + álbum 120 + raros 24 + Estrela dos Proibidos 60) | 667 |
+| R25 | 16 |
+
+F/T = 1,24 (>= 0,80) e (F + R25)/T = 1,27 (>= 1,10). Não precisou ajustar custos.
+
+### 13.3 Nivelamento e tabela do simulador (perfil normal, 16 sementes, 40 vidas)
+
+- Os 10 proibidos passaram a ter um fator de poeira por toque que cresce por nível (geométrico) além do efeito de cada um, para o poder dos fracos acompanhar o dos fortes; o preço ficou mais leve. Os nós de poder direto e o Eco do colapso foram reduzidos (o Eco, com tudo comprado, encurtava as vidas em ~34%). As travas e `GOAL_SEGMENTS` não foram tocados.
+- Horas por vida, jogador que compra os nós implementáveis na ordem de custo: 2,85 2,29 2,33 2,51 2,26 1,90 1,83 1,52 1,55 1,37 1,22 1,96 2,07 2,72 2,14 (vidas 1 a 15, todas entre 1 e 3 h), depois 1,88 1,62 1,81 1,95 1,60 1,66 1,89 1,36 1,92 2,71 1,71 1,91 1,67 1,38 1,76 1,56 1,23 1,53 1,44 1,23 1,48 1,09 1,09 2,36 1,47 (vidas 16 a 40, sem crescer).
+- Sem árvore as vidas 6 a 15 ficam em 2 a 4,5 h; com a árvore completa (os nós que existem) a média das vidas 6 a 15 cai menos de 25% (`sim.test.ts`). O `sim.test.ts` passa inteiro (17 testes).
+
+### 13.4 Desvios e o que não foi testado
+
+- A chave `tree-v2` das conquistas segue desligada: com só 29 nós alcançáveis, "120 nós" seria impossível; liga junto com as etapas 19 e 20.
+- Poder direto ficou em 15 nós; o nivelamento usou o Eco, o Reforço e o poder direto, e a oferta de proibidos não mudou.
+- Cartas de capa e Largada só têm teste de unidade; o simulador não define favorito, então a capa não entrou na conta das vidas.
+- Os specs e2e da árvore (`aperta-tree`) ainda falam da árvore antiga; sem Playwright nesta etapa.
 

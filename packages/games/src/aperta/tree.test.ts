@@ -78,7 +78,10 @@ describe('o grafo', () => {
     const reach = new Set<string>();
     for (let changed = true; changed; ) {
       changed = false;
-      for (const n of TREE_NODES) if (!reach.has(n.id) && n.parents.every((p) => reach.has(p))) (reach.add(n.id), (changed = true));
+      for (const n of TREE_NODES) if (!reach.has(n.id) && n.parents.every((p) => reach.has(p))) {
+          reach.add(n.id);
+          changed = true;
+        }
     }
     expect(reach.size).toBe(120);
   });
@@ -227,13 +230,13 @@ describe('os nós que já funcionam entram em effectiveStats', () => {
   it('poder direto, Sintonia, Constelação, Eco, Capa e Largada', () => {
     const base = effectiveStats(open());
     const tree = (t: Record<string, number>, over: Partial<SaveState> = {}) => effectiveStats(open(0, { tree: t, ...over }));
-    expect(tree({ 'co-04': 2 }).dustPerTouch).toBeCloseTo(base.dustPerTouch * 1.2, 9);
-    expect(tree({ 'co-08': 1 }).energyPerTouch).toBeCloseTo(base.energyPerTouch * 1.1, 9);
-    // Sintonia: +2 de poeira por nível de proibido no Cofre.
-    const vault = { m87: 2, 'cygnus-x1': 1 };
+    expect(tree({ 'co-04': 2 }).dustPerTouch).toBeCloseTo(base.dustPerTouch * 1.02, 9);
+    expect(tree({ 'co-08': 1 }).energyPerTouch).toBeCloseTo(base.energyPerTouch * 1.015, 9);
+    // Sintonia: +0,1 de poeira por nível de proibido no Cofre.
+    const vault = { 'cygnus-x1': 3 };
     const noTree = effectiveStats(open(0, { vault })).dustPerTouch;
-    expect(tree({ 'co-02': 1 }, { vault }).dustPerTouch).toBeCloseTo(noTree + 2 * 3, 9);
-    expect(treeStats({ 'co-03': 2 })).toMatchObject({ echoTouches: 100, echoMult: 5 });
+    expect(tree({ 'co-02': 1 }, { vault }).dustPerTouch).toBeCloseTo(noTree + 0.1 * 3, 9);
+    expect(treeStats({ 'co-03': 2 })).toMatchObject({ echoTouches: 60, echoMult: 1.6 });
     expect(treeStats({ 'co-01': 2 }).coverLevel).toBe(2);
     expect(treeStats({ 'co-10': 2 }).warmStartTouches).toBe(30);
     expect(treeStats({ 'au-01': 1 })).toEqual(treeStats({}));

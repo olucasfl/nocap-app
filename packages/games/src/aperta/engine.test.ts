@@ -645,10 +645,10 @@ describe('effectiveStats', () => {
     expect(deep).toBeGreaterThanOrEqual(0.4);
   });
 
-  it('o preço do proibido pesa: Sagitário quintuplica a poeira e corta a energia', () => {
+  it('o preço do proibido pesa: Sagitário multiplica a poeira por 3,5 e corta a energia', () => {
     const base = effectiveStats(newSave('sg'));
     const s = effectiveStats({ ...newSave('sg'), vault: { 'sagittarius-a': 1 } });
-    expect(s.dustPerTouch).toBeCloseTo(base.dustPerTouch * 5, 9);
+    expect(s.dustPerTouch).toBeCloseTo(base.dustPerTouch * 3.5, 9);
     expect(s.energyPerTouch).toBeCloseTo(base.energyPerTouch * 0.5, 9);
   });
 

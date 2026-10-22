@@ -1,4 +1,4 @@
-import { ACHIEVEMENT_GROUPS, newSave, press, sparksAvailable, type SaveState } from '@nocap/games';
+import { ACHIEVEMENT_GROUPS, newSave, press, type SaveState } from '@nocap/games';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { AchievementsPage } from './AchievementsPage';

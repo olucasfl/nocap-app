@@ -71,6 +71,8 @@ export interface LifeResult {
   milestoneKind: string;
   /** O que a vida tinha no Cofre quando terminou (id para nível). */
   vault: Record<string, number>;
+  /** Nós da árvore comprados quando a vida terminou. */
+  treeNodes: number;
 }
 
 export interface SimResult {
@@ -86,6 +88,8 @@ export type TreeMode = 'cost' | 'none' | 'full';
 
 export interface SimOptions {
   tree?: TreeMode;
+  /** Calibragem: no modo `full`, só entram os nós para os quais devolve `true` (padrão: todos que existem). */
+  treeFilter?: (n: (typeof TREE_NODES)[number]) => boolean;
   profile: Profile['id'];
   seed: string;
   /** Quantos colapsos simular. */
@@ -292,7 +296,7 @@ export function simulate(options: SimOptions): SimResult {
   const treeMode: TreeMode = options.tree ?? 'cost';
   let state = newSave(options.seed);
   if (treeMode === 'full') {
-    state = { ...state, tree: Object.fromEntries(TREE_NODES.filter(nodeLive).map((n) => [n.id, n.maxLevel])) };
+    state = { ...state, tree: Object.fromEntries(TREE_NODES.filter((n) => nodeLive(n) && (options.treeFilter?.(n) ?? true)).map((n) => [n.id, n.maxLevel])) };
   }
   let t = 0;
   let lifeStart = 0;
@@ -367,6 +371,7 @@ export function simulate(options: SimOptions): SimResult {
         reqHours: req,
         milestoneKind: collapseProgress(state).milestone.kind,
         vault: state.vault,
+        treeNodes: Object.keys(state.tree).length,
       });
       const before = state.collapses;
       state = collapse(state, bestVault(state, profile));
@@ -394,6 +399,7 @@ export function simulate(options: SimOptions): SimResult {
         reqHours: req,
         milestoneKind: collapseProgress(state).milestone.kind,
         vault: state.vault,
+        treeNodes: Object.keys(state.tree).length,
       });
       result.alerts.push(`vida ${state.collapses + 1} travou (passou de ${options.maxHoursPerLife ?? 60} h)`);
       break;
