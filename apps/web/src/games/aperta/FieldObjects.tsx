@@ -1,4 +1,4 @@
-import { formatDecimal, objectPreview, type GameObject, type SaveState } from '@nocap/games';
+import { formatDecimal, objectPreview, pinsFirstObject, type GameObject, type SaveState } from '@nocap/games';
 import { useRef, type CSSProperties } from 'react';
 import { SpaceObject, SPACE_OBJECT_COLOR } from './SpaceObject';
 import { objectArt, objectName, rewardText, type LaneBook, type SignalView } from './game-logic';
@@ -28,6 +28,7 @@ function FieldObject({ object, state, now, paused, lanes, onCapture }: ItemProps
   const art = objectArt(object.kind);
   const reward = rewardText(objectPreview(state, object.kind));
   const life = object.expiresAt - object.bornAt;
+  const pinned = pinsFirstObject(state);
   const style = {
     left: `${slot.x}%`,
     top: `${slot.y}%`,
@@ -42,7 +43,8 @@ function FieldObject({ object, state, now, paused, lanes, onCapture }: ItemProps
   return (
     <button
       type="button"
-      className={`ap-obj${paused ? ' is-paused' : ''}`}
+      className={`ap-obj${paused ? ' is-paused' : ''}${pinned ? ' is-pinned' : ''}`}
+      {...(pinned ? { 'data-tut': 'first-object' } : {})}
       style={style}
       data-kind={art}
       aria-label={`${objectName(object.kind)}: ${reward}. Capturar`}

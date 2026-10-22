@@ -50,7 +50,7 @@ describe('dica de cada momento', () => {
     const free = at(TUTORIAL.FREE);
     expect(coachView(free, null)).toBeNull();
     const withObject = { ...free, run: { ...free.run, objects: [{ id: 1, kind: 'comet' as const, bornAt: 0, expiresAt: 9 }] } };
-    expect(coachView(withObject, null)).toMatchObject({ dismiss: 'objects', target: null });
+    expect(coachView(withObject, null)).toMatchObject({ dismiss: null, target: 'first-object', label: 'Pegue aqui' });
     const twoAch = { ...free, achievements: ['tap-1', 'tap-100'] };
     expect(coachView(twoAch, null)).toMatchObject({ dismiss: 'achievements', target: 'dock-achievements' });
     const last = { ...free, ui: { unlocked: [], hints: ['achievements', 'objects'] as SaveState['ui']['hints'] } };

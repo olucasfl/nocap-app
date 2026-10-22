@@ -2,7 +2,7 @@ import { CHOICE_LOCK_SEC, TUTORIAL, pendingHint, type SaveState, type TutorialHi
 import type { PageName } from './game-logic';
 
 /** O que o tutorial destaca; cada alvo é um `data-tut` na tela de jogo. */
-export type TutorialTarget = 'press' | 'dock-upgrades' | 'buy-first' | 'page-close' | 'dock-grimoires' | 'dock-achievements' | 'tree';
+export type TutorialTarget = 'press' | 'dock-upgrades' | 'buy-first' | 'page-close' | 'dock-grimoires' | 'dock-achievements' | 'tree' | 'first-object';
 
 export interface CoachView {
   /** Muda a cada dica nova: refaz o cartão e roda a animação de entrada. */
@@ -117,10 +117,11 @@ const HINTS: Record<TutorialHint, CoachView> = {
   objects: {
     ...NONE,
     key: 'hint-objects',
-    target: null,
+    target: 'first-object',
+    label: 'Pegue aqui',
     title: 'Objetos no espaço',
-    text: 'Cometas, estrelas cadentes e satélites passam pela tela. Toque neles antes que sumam para ganhar poeira ou energia.',
-    dismiss: 'objects',
+    text: 'Cometas, estrelas cadentes e satélites passam pela tela. Este fica parado: toque nele para ganhar poeira ou energia.',
+    // Sem "Entendi": o cartão sai quando a pessoa pega o objeto (o controlador marca como visto).
   },
   tree: {
     ...NONE,

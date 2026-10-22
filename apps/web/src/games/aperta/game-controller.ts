@@ -271,7 +271,8 @@ export function createGameController({ initial, store, slot, perf = () => perfor
         commit(next);
         return false;
       }
-      commit(next);
+      // Pegar o primeiro objeto encerra o cartão de objetos do tutorial.
+      commit(markHintSeen(next, 'objects'));
       emit({ type: 'capture', objectId, kind: obj.kind, preview });
       if (!before.run.pending && next.run.pending) emit({ type: 'choice-open' });
       return true;

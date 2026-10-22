@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { energyCap } from './economy';
-import { buyUpgrade, chooseGrimoire, newSave, nextUpgradeCost, press, selectGrimoire, type SaveState } from './engine';
+import { buyUpgrade, captureObject, pinsFirstObject, tickObjects, chooseGrimoire, newSave, nextUpgradeCost, press, selectGrimoire, type SaveState } from './engine';
 import { mergeSaves, validateSave } from './save';
 import {
   ACHIEVEMENT_HINT_AT,
@@ -141,6 +141,25 @@ describe('tutorial: cartões do jogo livre', () => {
     ...s,
     run: { ...s.run, objects: [{ id: 1, kind: 'comet' as const, bornAt: 0, expiresAt: 9 }] },
   });
+  it('o primeiro objeto não some até ser pego; depois do cartão visto volta a expirar', () => {
+    const s = withObject(free());
+    expect(pinsFirstObject(s)).toBe(true);
+    const step = (st: SaveState, to: number) => {
+      let cur = st;
+      for (let t = Math.ceil(cur.clock) + 1, end = t + to; t <= end; t++) cur = tickObjects(cur, t);
+      return cur;
+    };
+    const later = step(s, 40);
+    expect(later.run.objects).toHaveLength(1);
+    expect(pendingHint(settleTutorial(later))).toBe('objects');
+    const caught = captureObject(later, 1, later.clock + 0.5);
+    expect(caught.run.objects).toHaveLength(0);
+
+    const seen = markHintSeen(withObject(free()), 'objects');
+    expect(pinsFirstObject(seen)).toBe(false);
+    expect(step(seen, 40).run.objects.some((o) => o.id === 1)).toBe(false);
+  });
+
 
   it('só a 1ª conquista (a do primeiro toque) não dispara o cartão de Conquistas', () => {
     expect(ACHIEVEMENT_HINT_AT).toBe(2);

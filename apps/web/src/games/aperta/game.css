@@ -905,6 +905,9 @@
 .ap-signal-bar i.is-paused {
   animation-play-state: paused;
 }
+.ap-obj.is-pinned .ap-obj-life {
+  display: none;
+}
 .ap-obj-tag {
   position: absolute;
   left: 50%;

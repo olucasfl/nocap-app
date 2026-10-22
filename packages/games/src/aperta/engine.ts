@@ -1068,11 +1068,21 @@ export function objectsOpen(state: SaveState): boolean {
   return state.collapses >= 1 || state.run.upgradeLevels.some((l) => l > 0);
 }
 
+/**
+ * O primeiro objeto do tutorial (passo 7, "jogo livre", antes de o cartão de objetos ser visto) não some e
+ * é o único no campo: a dica fica até a pessoa pegá-lo. O número é `TUTORIAL.FREE` (tutorial.ts não pode ser
+ * importado aqui: ele já importa o motor).
+ */
+export function pinsFirstObject(state: SaveState): boolean {
+  return state.tutorial === 7 && !state.ui.hints.includes('objects');
+}
+
 /** Remove os que expiraram e faz nascer um novo no ritmo da Kepler. Sem objetos em escolha aberta nem com o jogo parado. */
 export function tickObjects(state: SaveState, now: number): SaveState {
   const s = syncClock(state, now);
   const run = s.run;
-  const alive = run.objects.filter((o) => o.expiresAt > now);
+  const pinned = pinsFirstObject(s);
+  const alive = pinned ? run.objects : run.objects.filter((o) => o.expiresAt > now);
   let next: RunState = alive.length === run.objects.length ? run : { ...run, objects: alive };
   if (run.pending) return next === run ? s : { ...s, run: next };
 
@@ -1082,7 +1092,7 @@ export function tickObjects(state: SaveState, now: number): SaveState {
   if (stats.objects.disabled || !objectsOpen(s)) return next === run ? s : { ...s, run: next };
   const shower = next.event?.id === 'meteor-shower' && now < next.event.until;
   const interval = shower ? Math.min(METEOR_SHOWER_INTERVAL_SEC, stats.objects.intervalSec) : stats.objects.intervalSec;
-  const room = stats.objects.maxOnField + (shower ? METEOR_SHOWER_EXTRA_MAX : 0);
+  const room = pinned ? 1 : stats.objects.maxOnField + (shower ? METEOR_SHOWER_EXTRA_MAX : 0);
   if (next.nextSpawnAt === null) {
     next = { ...next, nextSpawnAt: now + interval };
   } else if (shower && next.nextSpawnAt > now + interval) {
@@ -1141,7 +1151,7 @@ export function captureObject(state: SaveState, id: number, now: number): SaveSt
   const run = s.run;
   if (run.pending) return s;
   const obj = run.objects.find((o) => o.id === id);
-  if (!obj || obj.expiresAt <= now) return s;
+  if (!obj || (obj.expiresAt <= now && !pinsFirstObject(s))) return s;
 
   const stats = effectiveStats(s);
   const reward = objectReward(s, obj.kind);
