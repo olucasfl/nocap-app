@@ -7,7 +7,7 @@
 // marca `flagged`, sem banir ninguém (seção 10.3).
 
 import { z } from 'zod';
-import { GRIMOIRES, OBJECTS, REGIONS, TREE, TREE_COSTS, UPGRADES, grimoireById, type ObjectKind } from './catalog';
+import { GRIMOIRES, OBJECTS, REGIONS, TREE, TREE_COSTS, UPGRADES, grimoireById, RARE_EFFECTS, type ObjectKind, type RareEffect } from './catalog';
 import {
   COMBO_HARD_CAP,
   COST_FLOOR,
@@ -39,7 +39,7 @@ const CLOCK_SLACK_SEC = 120;
 const TOLERANCE = 1.000001;
 
 const EVENT_IDS = ['meteor-shower', 'solar-storm'] as const;
-const OBJECT_KINDS = OBJECTS.map((o) => o.kind) as [ObjectKind, ...ObjectKind[]];
+const OBJECT_KINDS = [...OBJECTS.map((o) => o.kind), 'golden'] as unknown as [ObjectKind, ...ObjectKind[]];
 
 // --- Formato ---
 
@@ -68,6 +68,7 @@ const runSchema = z.object({
       z.object({
         id: int(Number.MAX_SAFE_INTEGER),
         kind: z.enum(OBJECT_KINDS),
+        power: z.enum(RARE_EFFECTS as [RareEffect, ...RareEffect[]]).optional(),
         bornAt: stamp,
         expiresAt: stamp,
       }),
@@ -90,6 +91,8 @@ const runSchema = z.object({
   // Campos da etapa 12: saves antigos não os têm, então entram com o valor de "nada ainda".
   event: z.object({ id: z.enum(EVENT_IDS), until: stamp }).nullable().default(null),
   nextEventAt: stamp.nullable().default(null),
+  nextRareAt: stamp.nullable().default(null),
+  surgeUntil: stamp.default(-1e9),
   mission: z
     .object({ id: id, progress: int(1e6), done: z.boolean() })
     .nullable()
@@ -164,7 +167,8 @@ function dustPerSecondCeiling(save: SaveState): number {
   const comboMult = (1 + s.combo.pointValue * s.combo.max) * s.combo.fullMult;
   const nthMult = s.nth.reduce((m, r) => m * Math.max(1, r.mult), 1);
   const burst = Math.max(1, s.objects.afterCaptureMult) * Math.max(1, s.objects.signalMult);
-  const crit = s.crit.chance > 0 ? s.crit.mult : 1;
+  // A Estrela Dourada (frenesi x7 por 30 s e chuva de 5 min a cada 5 min no mínimo) pode somar até ~3x à média.
+  const crit = (s.crit.chance > 0 ? s.crit.mult : 1) * 3;
   const perTouch = (Math.max(1, s.dustPerTouch) + s.combo.fullDustAdd) * comboMult * nthMult * burst * crit;
   const bestObject = Math.max(...Object.values(s.objects.reward).map((r) => r.dust));
   const objects = s.objects.disabled ? 0 : (1 / Math.max(0.5, s.objects.spawnMinSec)) * s.dustPerTouch * bestObject;
@@ -206,6 +210,7 @@ export function validateSave(raw: unknown, opts: ValidateOptions = {}): SaveVali
   const region = REGIONS.find((r) => r.id === save.regionId);
   if (!region || region.unlockedAtCollapse > c) errors.push('Região ainda fechada');
   for (const o of run.objects) {
+    if (o.kind === 'golden') continue;
     const def = OBJECTS.find((d) => d.kind === o.kind);
     if (!def || def.unlockedAtCollapse > c) errors.push(`Objeto de colapso futuro: ${o.kind}`);
   }

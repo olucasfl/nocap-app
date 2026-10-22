@@ -210,3 +210,19 @@ export const FIRST_OBJECT_DELAY_SEC = 8;
 export const REVEAL_SHARE = 0.7;
 /** Quantas melhorias de cada tipo a prateleira mostra à frente das compradas. */
 export const SHELF_AHEAD = 2;
+
+// --- Objetos raros e efeitos de grimório (spec 039, seções 7 e 8) ---
+
+/** Estrela Dourada: intervalo base de 8 min (±25%), nunca abaixo de 5 min, dura 10 s. */
+export const RARE_INTERVAL_SEC = 480;
+export const RARE_INTERVAL_JITTER = 0.25;
+export const RARE_MIN_INTERVAL_SEC = 300;
+export const RARE_LIFE_SEC = 10;
+/** Frenesi: toque x7 por 30 s. Chuva: 5 min de produção de uma vez. Surto: geradores cheios e teto x3 por 45 s. */
+export const FRENZY_MULT = 7;
+export const FRENZY_SEC = 30;
+export const RAIN_SEC = 300;
+export const SURGE_SEC = 45;
+export const SURGE_CAP_MULT = 3;
+/** O parado nunca passa de 50% do ritmo ativo, por mais grimórios que se empilhem. */
+export const IDLE_FACTOR_MAX = 0.5;

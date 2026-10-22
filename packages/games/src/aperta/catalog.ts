@@ -4,7 +4,10 @@
 
 export type Rarity = 'common' | 'rare' | 'epic' | 'legendary' | 'forbidden';
 export type Family = 'planets' | 'moons' | 'small-bodies' | 'stars' | 'nebulae' | 'black-holes';
-export type ObjectKind = 'comet' | 'shooting-star' | 'satellite' | 'asteroid' | 'probe';
+export type ObjectKind = 'comet' | 'shooting-star' | 'satellite' | 'asteroid' | 'probe' | 'golden';
+/** O que a Estrela Dourada faz ao ser pega (sorteado quando ela nasce, para a etiqueta mostrar antes). */
+export type RareEffect = 'frenzy' | 'rain' | 'surge';
+export const RARE_EFFECTS: readonly RareEffect[] = ['frenzy', 'rain', 'surge'];
 export type ObjectTarget = ObjectKind | 'all';
 
 export const RARITIES: readonly Rarity[] = ['common', 'rare', 'epic', 'legendary', 'forbidden'];
@@ -93,6 +96,20 @@ export type Effect = (
   /** Cada melhoria comprada devolve a poeira de `touches` toques. */
   | { kind: 'buyRefund'; touches: number }
   | { kind: 'energyStepPct'; pct: number }
+  /** Geradores de poeira rendem +`pct`%. */
+  | { kind: 'generatorPct'; pct: number }
+  /** Geradores de energia rendem +`pct`%. */
+  | { kind: 'energyGenPct'; pct: number }
+  /** Os geradores contam como "tocando" por +`sec` segundos depois de cada toque. */
+  | { kind: 'activeWindow'; sec: number }
+  /** Parado, os geradores rendem +`add` (0,1 = +10 pontos) do ritmo ativo; nunca passa de 50%. */
+  | { kind: 'idleFloor'; add: number }
+  /** Os objetos comuns aparecem `sec` segundos mais cedo (a janela de 60 a 90 s encurta, com piso). */
+  | { kind: 'spawnCut'; sec: number }
+  /** A Estrela Dourada vem `sec` segundos mais cedo (o intervalo nunca fica abaixo de 5 min). */
+  | { kind: 'rareCut'; sec: number }
+  /** A Estrela Dourada fica +`sec` segundos no campo. */
+  | { kind: 'rareLife'; sec: number }
 ) & { price?: true };
 
 /**
@@ -161,8 +178,9 @@ export const GRIMOIRES: readonly GrimoireDef[] = [
   grim('ceres', 'Ceres', 'common', 'small-bodies', 'Cada melhoria comprada devolve a poeira de 2 toques', 'rocha cinza com ponto brilhante', [
     { kind: 'buyRefund', touches: 2 },
   ]),
-  grim('phobos', 'Fobos', 'common', 'moons', 'Cada objeto capturado dá a energia de 1 toque', 'rocha irregular com uma cratera grande', [
+  grim('phobos', 'Fobos', 'common', 'moons', 'Cada objeto capturado dá a energia de 1 toque e os geradores de energia rendem x1,1', 'rocha irregular com uma cratera grande', [
     { kind: 'onCapture', energyTouches: 1 },
+    { kind: 'energyGenPct', pct: 10 },
   ]),
   grim('io', 'Io', 'common', 'moons', 'O sinal dos satélites vale x2,5 em vez de x2', 'esfera amarelo-enxofre com manchas vermelhas', [
     { kind: 'satelliteMult', add: 0.5 },
@@ -170,8 +188,9 @@ export const GRIMOIRES: readonly GrimoireDef[] = [
   grim('vesta', 'Vesta', 'common', 'small-bodies', 'Com o combo no máximo, +0,5 poeira por toque', 'rocha clara com faixa escura', [
     { kind: 'comboFullDust', add: 0.5 },
   ]),
-  grim('halley', 'Halley', 'common', 'small-bodies', 'Todo objeto vale +1 toque a mais', 'núcleo claro com cauda azul', [
+  grim('halley', 'Halley', 'common', 'small-bodies', 'Todo objeto vale +1 toque a mais e aparece 4 s mais cedo', 'núcleo claro com cauda azul', [
     { kind: 'objectReward', target: 'all', add: 1 },
+    { kind: 'spawnCut', sec: 4 },
   ]),
   grim('uranus', 'Urano', 'common', 'planets', 'A janela do combo dura +0,2 s', 'esfera ciano-gelo com anel fino vertical', [
     { kind: 'comboWindow', sec: 0.2 },
@@ -193,11 +212,13 @@ export const GRIMOIRES: readonly GrimoireDef[] = [
   grim('neptune', 'Netuno', 'rare', 'planets', 'O sinal dos satélites vale x3 em vez de x2', 'esfera azul-profundo com faixa branca', [
     { kind: 'satelliteMult', add: 1 },
   ]),
-  grim('ganymede', 'Ganimedes', 'rare', 'moons', 'Com o combo no máximo, +0,5 de energia por toque', 'esfera cinza com sulcos claros', [
+  grim('ganymede', 'Ganimedes', 'rare', 'moons', 'Com o combo no máximo, +0,5 de energia por toque; parado, os geradores rendem +10 pontos a mais', 'esfera cinza com sulcos claros', [
     { kind: 'comboFullEnergy', add: 0.5 },
+    { kind: 'idleFloor', add: 0.1 },
   ]),
-  grim('pluto', 'Plutão', 'rare', 'small-bodies', 'Todo objeto vale +2 toques a mais', 'esfera bege com "coração" claro', [
+  grim('pluto', 'Plutão', 'rare', 'small-bodies', 'Todo objeto vale +2 toques a mais e aparece 6 s mais cedo', 'esfera bege com "coração" claro', [
     { kind: 'objectReward', target: 'all', add: 2 },
+    { kind: 'spawnCut', sec: 6 },
   ]),
   grim('triton', 'Tritão', 'rare', 'moons', 'Cada objeto capturado dá a energia de 3 toques', 'esfera rosada com calota de gelo', [
     { kind: 'onCapture', energyTouches: 3 },
@@ -216,8 +237,9 @@ export const GRIMOIRES: readonly GrimoireDef[] = [
   grim('polaris', 'Polaris', 'epic', 'stars', 'O toque depois de capturar um objeto vale x5', 'estrela azul-branca com halo fino', [
     { kind: 'afterCaptureMult', mult: 5 },
   ]),
-  grim('antares', 'Antares', 'epic', 'stars', 'Todo objeto vale +4 toques a mais', 'gigante vermelha com brilho', [
+  grim('antares', 'Antares', 'epic', 'stars', 'Todo objeto vale +4 toques a mais; a Estrela Dourada vem 45 s mais cedo', 'gigante vermelha com brilho', [
     { kind: 'objectReward', target: 'all', add: 4 },
+    { kind: 'rareCut', sec: 45 },
   ]),
   grim('crab-nebula', 'Nebulosa do Caranguejo', 'epic', 'nebulae', 'Grimório repetido sobe 2 níveis', 'filamentos laranja e azuis', [
     { kind: 'choiceExtra', repeatLevels: 1 },
@@ -227,8 +249,9 @@ export const GRIMOIRES: readonly GrimoireDef[] = [
   grim('orion-nebula', 'Nebulosa de Órion', 'legendary', 'nebulae', 'Ao encher a energia, escolha 2 grimórios', 'nuvem rosa, turquesa e violeta com estrelas', [
     { kind: 'choiceExtra', picks: 1 },
   ]),
-  grim('milky-way', 'Via Láctea', 'legendary', 'nebulae', 'Cada grimório raro no livro soma +1 poeira por toque', 'galáxia espiral de 4 braços', [
+  grim('milky-way', 'Via Láctea', 'legendary', 'nebulae', 'Cada grimório raro no livro soma +1 poeira por toque e os geradores rendem x1,3', 'galáxia espiral de 4 braços', [
     { kind: 'dustPerOwned', rarity: 'rare', add: 1 },
+    { kind: 'generatorPct', pct: 30 },
   ]),
   grim('andromeda', 'Andrômeda', 'legendary', 'nebulae', 'Cada colapso já feito soma +1 poeira por toque', 'espiral inclinada com núcleo claro', [
     { kind: 'dustPerCollapse', add: 1 },
@@ -250,11 +273,12 @@ export const GRIMOIRES: readonly GrimoireDef[] = [
   ], 5),
 
   // Colapsos 1 a 5 (seção 5.4)
-  grim('pallas', 'Palas', 'common', 'small-bodies', 'Com o combo no máximo, +0,25 de energia por toque', 'rocha acinzentada com sulcos', [
-    { kind: 'comboFullEnergy', add: 0.25 },
+  grim('pallas', 'Palas', 'common', 'small-bodies', 'Os geradores de energia rendem x1,15', 'rocha acinzentada com sulcos', [
+    { kind: 'energyGenPct', pct: 15 },
   ], 1),
-  grim('hygiea', 'Hygiea', 'common', 'small-bodies', 'A cada 8 toques, +3 de energia', 'esfera escura quase redonda', [
+  grim('hygiea', 'Hygiea', 'common', 'small-bodies', 'A cada 8 toques, +3 de energia; os geradores rendem x1,06', 'esfera escura quase redonda', [
     { kind: 'everyNthTouch', n: 8, mult: 1, energy: 3 },
+    { kind: 'generatorPct', pct: 6 },
   ], 1),
   grim('callisto', 'Calisto', 'rare', 'moons', 'Satélites capturados dão +4 toques de poeira', 'esfera cinza-marrom com crateras claras', [
     { kind: 'objectReward', target: 'satellite', add: 4 },
@@ -265,8 +289,9 @@ export const GRIMOIRES: readonly GrimoireDef[] = [
   grim('eris', 'Éris', 'rare', 'small-bodies', 'Asteroides dão +6 toques de poeira', 'esfera clara com lua pequena', [
     { kind: 'objectReward', target: 'asteroid', add: 6 },
   ], 3),
-  grim('haumea', 'Haumea', 'common', 'small-bodies', 'A janela do combo dura +0,3 s', 'elipsoide branco com anel', [
+  grim('haumea', 'Haumea', 'common', 'small-bodies', 'A janela do combo dura +0,3 s e os geradores seguem "tocando" por +2 s depois de cada toque', 'elipsoide branco com anel', [
     { kind: 'comboWindow', sec: 0.3 },
+    { kind: 'activeWindow', sec: 2 },
   ], 3),
   grim('sedna', 'Sedna', 'epic', 'small-bodies', 'Cometas dão +15 toques de poeira', 'esfera vermelho-escura distante', [
     { kind: 'objectReward', target: 'comet', add: 15 },
@@ -274,11 +299,13 @@ export const GRIMOIRES: readonly GrimoireDef[] = [
   grim('hale-bopp', 'Hale-Bopp', 'rare', 'small-bodies', 'Cometas dão +10 toques de poeira', 'núcleo com duas caudas, azul e branca', [
     { kind: 'objectReward', target: 'comet', add: 10 },
   ], 4),
-  grim('proxima-centauri', 'Proxima Centauri', 'rare', 'stars', 'Com o combo no máximo, +1 poeira por toque', 'anã vermelha com chama pequena', [
+  grim('proxima-centauri', 'Proxima Centauri', 'rare', 'stars', 'Com o combo no máximo, +1 poeira por toque; a Estrela Dourada fica +5 s no campo', 'anã vermelha com chama pequena', [
     { kind: 'comboFullDust', add: 1 },
+    { kind: 'rareLife', sec: 5 },
   ], 5),
-  grim('alpha-centauri-a', 'Alfa Centauri A', 'epic', 'stars', 'A cada 25 toques, o toque vale x6', 'estrela amarela com halo dourado', [
+  grim('alpha-centauri-a', 'Alfa Centauri A', 'epic', 'stars', 'A cada 25 toques, o toque vale x6; os geradores rendem x1,15', 'estrela amarela com halo dourado', [
     { kind: 'everyNthTouch', n: 25, mult: 6 },
+    { kind: 'generatorPct', pct: 15 },
   ], 5),
 ];
 

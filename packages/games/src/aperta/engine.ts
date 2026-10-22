@@ -11,6 +11,7 @@ import {
   GRIMOIRES,
   OBJECTS,
   OBJECT_REWARD,
+  RARE_EFFECTS,
   RARITIES,
   RARITY_WEIGHT,
   REGIONS,
@@ -27,6 +28,7 @@ import {
   type ObjectDef,
   type ObjectKind,
   type Rarity,
+  type RareEffect,
   type RegionDef,
   type UpgradeDef,
   type UpgradeKind,
@@ -55,6 +57,17 @@ import {
   OBJECT_BASE_MAX,
   ACTIVE_WINDOW_SEC,
   AUTO_CAP_SHARE,
+  FRENZY_MULT,
+  FRENZY_SEC,
+  IDLE_FACTOR_MAX,
+  NOMINAL_TOUCHES_PER_SEC as NOMINAL_TPS,
+  RAIN_SEC,
+  RARE_INTERVAL_JITTER,
+  RARE_INTERVAL_SEC,
+  RARE_LIFE_SEC,
+  RARE_MIN_INTERVAL_SEC,
+  SURGE_CAP_MULT,
+  SURGE_SEC,
   CHANDRA_LIFE_MULT,
   CHARGED_ENERGY,
   CRIT_CHANCE,
@@ -97,6 +110,8 @@ export interface GameObject {
   kind: ObjectKind;
   bornAt: number;
   expiresAt: number;
+  /** Só na Estrela Dourada: o que ela faz ao ser pega. */
+  power?: RareEffect;
 }
 
 /** Evento em andamento (Chuva de meteoros, Tempestade solar): termina em `until`. */
@@ -153,6 +168,10 @@ export interface RunState {
   event: ActiveEvent | null;
   /** Quando o próximo evento começa; `null` até o jogo marcar o primeiro. */
   nextEventAt: number | null;
+  /** Quando a próxima Estrela Dourada nasce; `null` até o jogo marcar a primeira. */
+  nextRareAt: number | null;
+  /** Surto dos geradores (Estrela Dourada): até quando valem cheios e com o teto x3. */
+  surgeUntil: number;
   mission: MissionState | null;
 }
 
@@ -261,6 +280,8 @@ function freshRun(rngState: number, upgradeCount = UPGRADES.length): RunState {
     lastGain: 0,
     event: null,
     nextEventAt: null,
+    nextRareAt: null,
+    surgeUntil: NEVER,
     mission: null,
   };
 }
@@ -307,9 +328,11 @@ export function syncClock(state: SaveState, now: number): SaveState {
     // Geradores (spec 039): rendem cheio enquanto a pessoa toca e uma fração parada, nunca acima do teto
     // do toque. O teto vale para o ritmo ativo; parado é uma fração dele, então tocar sempre rende mais.
     const st = effectiveStats(state);
-    const factor = state.clock - run.lastPressAt <= ACTIVE_WINDOW_SEC ? 1 : IDLE_FACTOR;
-    const earn = Math.min(st.autoDustPerSec, st.autoDustCap) * factor * gap;
-    const energyEarn = Math.min(st.autoEnergyPerSec, st.autoEnergyCap) * factor * gap;
+    const surge = state.clock < run.surgeUntil;
+    const factor = surge || state.clock - run.lastPressAt <= st.activeWindowSec ? 1 : st.idleFactor;
+    const capMult = surge ? SURGE_CAP_MULT : 1;
+    const earn = Math.min(st.autoDustPerSec, st.autoDustCap * capMult) * factor * gap;
+    const energyEarn = Math.min(st.autoEnergyPerSec, st.autoEnergyCap * capMult) * factor * gap;
     if (earn > 0 || energyEarn > 0) {
       run = {
         ...run,
@@ -337,6 +360,8 @@ function shiftRun(run: RunState, gap: number, shiftPending: boolean): RunState {
     boostUntil: run.boostUntil + gap,
     nextSpawnAt: run.nextSpawnAt === null ? null : run.nextSpawnAt + gap,
     nextEventAt: run.nextEventAt === null ? null : run.nextEventAt + gap,
+    nextRareAt: run.nextRareAt === null ? null : run.nextRareAt + gap,
+    surgeUntil: run.surgeUntil + gap,
     event: run.event ? { ...run.event, until: run.event.until + gap } : null,
     objects: run.objects.map((o) => ({ ...o, bornAt: o.bornAt + gap, expiresAt: o.expiresAt + gap })),
     pending: run.pending && shiftPending ? { ...run.pending, openedAt: run.pending.openedAt + gap } : run.pending,
@@ -364,6 +389,9 @@ export interface EffectiveStats {
   autoEnergyCap: number;
   /** Chance de um toque render `mult` vezes (determinística por toque). */
   crit: { chance: number; mult: number };
+  /** Quanto tempo depois de um toque os geradores contam como "tocando", e que fração rendem parados. */
+  activeWindowSec: number;
+  idleFactor: number;
   energyPerTouch: number;
   combo: {
     enabled: boolean;
@@ -390,6 +418,10 @@ export interface EffectiveStats {
     spawnMaxSec: number;
     /** Cada toque encurta a espera do próximo objeto em tantos segundos. */
     spawnCutPerTouch: number;
+    /** Estrela Dourada: janela entre uma e outra (com o corte dos grimórios) e quanto fica no campo. */
+    rareMinSec: number;
+    rareMaxSec: number;
+    rareLifeSec: number;
     maxOnField: number;
     lifeSec: Record<ObjectKind, number>;
     /** Recompensa de cada objeto em toques: `dust` (poeira de toques) e `energy` (energia de toques). */
@@ -417,7 +449,7 @@ interface Source {
 const OBJECT_KINDS = OBJECTS.map((o) => o.kind);
 
 function emptyByKind(value: number): Record<ObjectKind, number> {
-  return { comet: value, 'shooting-star': value, satellite: value, asteroid: value, probe: value };
+  return { comet: value, 'shooting-star': value, satellite: value, asteroid: value, probe: value, golden: value };
 }
 
 const statsCache = new WeakMap<
@@ -527,6 +559,13 @@ function computeStats(state: SaveState): EffectiveStats {
   let stepPct = 0;
   let startDust = 0;
   let freeSat = 0;
+  let genPct = 0;
+  let energyGenPct = 0;
+  let activeWindowAdd = 0;
+  let idleAdd = 0;
+  let spawnCutSec = 0;
+  let rareCutSec = 0;
+  let rareLifeAdd = 0;
   let refund = 0;
   let onCapture = 0;
   let afterCaptureMult = 1;
@@ -626,6 +665,27 @@ function computeStats(state: SaveState): EffectiveStats {
         case 'dustPerCollapse':
           dustFlat += state.collapses * e.add * s;
           break;
+        case 'generatorPct':
+          genPct += e.pct * s;
+          break;
+        case 'energyGenPct':
+          energyGenPct += e.pct * s;
+          break;
+        case 'activeWindow':
+          activeWindowAdd += e.sec * s;
+          break;
+        case 'idleFloor':
+          idleAdd += e.add * s;
+          break;
+        case 'spawnCut':
+          spawnCutSec += e.sec * s;
+          break;
+        case 'rareCut':
+          rareCutSec += e.sec * s;
+          break;
+        case 'rareLife':
+          rareLifeAdd += e.sec * s;
+          break;
         case 'forbiddenUnlock':
         case 'forbiddenPower':
           break;
@@ -665,6 +725,10 @@ function computeStats(state: SaveState): EffectiveStats {
     (BASE_ENERGY_PER_TOUCH + (has('charged') ? CHARGED_ENERGY : 0)) * Math.max(0, 1 + energyPct / 100) * energyMult;
 
   const spawnFactor = has('kepler') ? KEPLER_SPAWN_FACTOR : 1;
+  const spawnCut = Math.max(0, spawnCutSec);
+  const rareCut = Math.max(0, rareCutSec);
+  const autoMult = Math.max(0, 1 + genPct / 100);
+  const energyGenMult = Math.max(0, 1 + energyGenPct / 100);
 
   const life = emptyByKind(0);
   const reward = {} as Record<ObjectKind, { dust: number; energy: number }>;
@@ -673,6 +737,9 @@ function computeStats(state: SaveState): EffectiveStats {
     life[k] = Math.max(1, def.lifeSec * (has('chandra') ? CHANDRA_LIFE_MULT : 1) * (1 + lifePct[k] / 100));
     reward[k] = { dust: 0, energy: 0 };
   }
+  // A Estrela Dourada não tem recompensa fixa: o efeito dela vem de `GameObject.power` (ver `objectPreview`).
+  life.golden = RARE_LIFE_SEC + Math.max(0, rareLifeAdd);
+  reward.golden = { dust: 0, energy: 0 };
   reward.comet.dust = OBJECT_REWARD.cometTouches + rewardAdd.comet;
   reward.asteroid.dust = OBJECT_REWARD.asteroidTouches + rewardAdd.asteroid;
   reward.asteroid.energy = OBJECT_REWARD.asteroidEnergyTouches;
@@ -683,11 +750,13 @@ function computeStats(state: SaveState): EffectiveStats {
 
   return {
     dustPerTouch,
-    autoDustPerSec: autoDust,
-    autoEnergyPerSec: autoEnergyTouches * energyPerTouch,
+    autoDustPerSec: autoDust * autoMult,
+    autoEnergyPerSec: autoEnergyTouches * energyPerTouch * energyGenMult,
     autoDustCap: dustPerTouch * NOMINAL_TOUCHES_PER_SEC * AUTO_CAP_SHARE,
     autoEnergyCap: energyPerTouch * NOMINAL_TOUCHES_PER_SEC * AUTO_CAP_SHARE,
     crit: { chance: has('luck') ? CRIT_CHANCE : 0, mult: CRIT_MULT },
+    activeWindowSec: ACTIVE_WINDOW_SEC + activeWindowAdd,
+    idleFactor: Math.min(IDLE_FACTOR_MAX, IDLE_FACTOR + Math.max(0, idleAdd)),
     energyPerTouch,
     combo: {
       enabled: has('rhythm'),
@@ -705,9 +774,12 @@ function computeStats(state: SaveState): EffectiveStats {
     nth,
     objects: {
       disabled,
-      spawnMinSec: Math.max(SPAWN_FLOOR_MIN_SEC, SPAWN_MIN_SEC * spawnFactor),
-      spawnMaxSec: Math.max(SPAWN_FLOOR_MAX_SEC, SPAWN_MAX_SEC * spawnFactor),
+      spawnMinSec: Math.max(SPAWN_FLOOR_MIN_SEC, SPAWN_MIN_SEC * spawnFactor - spawnCut),
+      spawnMaxSec: Math.max(SPAWN_FLOOR_MAX_SEC, SPAWN_MAX_SEC * spawnFactor - spawnCut),
       spawnCutPerTouch: has('magnet') ? MAGNET_SEC_PER_TOUCH : 0,
+      rareMinSec: Math.max(RARE_MIN_INTERVAL_SEC, RARE_INTERVAL_SEC * (1 - RARE_INTERVAL_JITTER) - rareCut),
+      rareMaxSec: Math.max(RARE_MIN_INTERVAL_SEC, RARE_INTERVAL_SEC * (1 + RARE_INTERVAL_JITTER) - rareCut),
+      rareLifeSec: RARE_LIFE_SEC + Math.max(0, rareLifeAdd),
       maxOnField: OBJECT_BASE_MAX + maxAdd,
       lifeSec: life,
       reward,
@@ -1171,6 +1243,18 @@ function tickObjectsCore(state: SaveState, now: number): SaveState {
   const stats = effectiveStats(s);
   // Nada de objeto antes da 1ª melhoria (spec 038, 4.5): o começo é só toque, melhoria e grimório.
   if (stats.objects.disabled || !objectsOpen(s)) return next === run ? s : { ...s, run: next };
+  // Estrela Dourada (spec 039, seção 8): bem mais rara que os comuns, só fora do tutorial e com o jogo aberto.
+  if (s.tutorial === 'done') {
+    const rareRoll = (salt: number) => nextRandom((next.rngState + Math.imul(next.nextObjectId + salt, 0x85ebca6b)) | 0)[0];
+    const rareGap = () => stats.objects.rareMinSec + (stats.objects.rareMaxSec - stats.objects.rareMinSec) * rareRoll(7);
+    if (next.nextRareAt === null) {
+      next = { ...next, nextRareAt: now + rareGap() };
+    } else if (now >= next.nextRareAt && !next.objects.some((o) => o.kind === 'golden')) {
+      const power = RARE_EFFECTS[Math.floor(rareRoll(13) * RARE_EFFECTS.length)] as RareEffect;
+      const golden: GameObject = { id: next.nextObjectId, kind: 'golden', bornAt: now, expiresAt: now + stats.objects.lifeSec.golden, power };
+      next = { ...next, objects: [...next.objects, golden], nextObjectId: next.nextObjectId + 1, nextRareAt: now + rareGap() };
+    }
+  }
   const shower = next.event?.id === 'meteor-shower' && now < next.event.until;
   // Janela do próximo objeto comum (spec 039, seção 8); o 1º do tutorial vem logo. O sorteio da janela não
   // usa o `rngState` das cartas, só um derivado dele e do número do objeto.
@@ -1183,7 +1267,7 @@ function tickObjectsCore(state: SaveState, now: number): SaveState {
   } else if (shower && next.nextSpawnAt > now + interval) {
     // A chuva começa na hora, sem esperar o intervalo normal que já estava marcado.
     next = { ...next, nextSpawnAt: now };
-  } else if (now >= next.nextSpawnAt && next.objects.length < room) {
+  } else if (now >= next.nextSpawnAt && next.objects.filter((o) => o.kind !== 'golden').length < room) {
     const picked = shower ? { kind: 'shooting-star' as const, rngState: next.rngState } : pickObjectKind(s, next.rngState);
     const { kind, rngState } = picked;
     const object: GameObject = { id: next.nextObjectId, kind, bornAt: now, expiresAt: now + stats.objects.lifeSec[kind] };
@@ -1220,18 +1304,31 @@ export interface ObjectPreview {
   /** "Sinal forte": multiplicador e duração em segundos (satélite); 0 nos demais. */
   boostMult: number;
   boostSec: number;
+  /** Estrela Dourada: o "sinal" é um Frenesi (toque x7), e o Surto dura `surgeSec` (0 nos demais). */
+  frenzy: boolean;
+  surgeSec: number;
   freeReroll: boolean;
 }
 
-export function objectPreview(state: SaveState, kind: ObjectKind): ObjectPreview {
+/** Poeira da Chuva da Estrela Dourada: 5 min do ritmo normal (toque e geradores, já com o teto). */
+function rainAmount(stats: EffectiveStats): number {
+  const perSec = stats.dustPerTouch * NOMINAL_TPS + Math.min(stats.autoDustPerSec, stats.autoDustCap);
+  return Math.max(1, Math.floor(perSec * RAIN_SEC));
+}
+
+export function objectPreview(state: SaveState, kind: ObjectKind, power?: RareEffect): ObjectPreview {
   const { dust, energy } = objectReward(state, kind);
-  const { objects } = effectiveStats(state);
+  const all = effectiveStats(state);
+  const { objects } = all;
   const signal = kind === 'satellite';
+  const rare = kind === 'golden';
   return {
-    dust,
-    energy: energy + objects.onCaptureEnergyTouches * effectiveStats(state).energyPerTouch,
-    boostMult: signal ? objects.signalMult : 0,
-    boostSec: signal ? objects.signalSec : 0,
+    dust: rare && power === 'rain' ? rainAmount(all) : dust,
+    energy: energy + objects.onCaptureEnergyTouches * all.energyPerTouch,
+    boostMult: signal ? objects.signalMult : rare && power === 'frenzy' ? FRENZY_MULT : 0,
+    boostSec: signal ? objects.signalSec : rare && power === 'frenzy' ? FRENZY_SEC : 0,
+    frenzy: rare && power === 'frenzy',
+    surgeSec: rare && power === 'surge' ? SURGE_SEC : 0,
     freeReroll: kind === 'probe',
   };
 }
@@ -1245,6 +1342,7 @@ export function captureObject(state: SaveState, id: number, now: number): SaveSt
 
   const stats = effectiveStats(s);
   const reward = objectReward(s, obj.kind);
+  let rainDust = 0;
   const next: RunState = {
     ...run,
     objects: run.objects.filter((o) => o.id !== id),
@@ -1258,6 +1356,18 @@ export function captureObject(state: SaveState, id: number, now: number): SaveSt
     next.boostMult = stats.objects.signalMult;
   } else if (obj.kind === 'probe') {
     next.freeRerolls = run.freeRerolls + 1;
+  } else if (obj.kind === 'golden') {
+    if (obj.power === 'frenzy') {
+      next.boostUntil = Math.max(next.boostUntil, now + FRENZY_SEC);
+      next.boostMult = Math.max(next.boostMult, FRENZY_MULT);
+    } else if (obj.power === 'surge') {
+      next.surgeUntil = now + SURGE_SEC;
+    } else if (obj.power === 'rain') {
+      const rain = rainAmount(stats);
+      next.dust = clampNum(next.dust + rain);
+      next.dustLife = clampNum(next.dustLife + rain);
+      rainDust = rain;
+    }
   }
   const satelliteStreak = obj.kind === 'satellite' ? s.stats.satelliteStreak + 1 : 0;
   const withStats: SaveState = {
@@ -1266,7 +1376,7 @@ export function captureObject(state: SaveState, id: number, now: number): SaveSt
     stats: {
       ...s.stats,
       objectsCaptured: s.stats.objectsCaptured + 1,
-      dustTotal: clampNum(s.stats.dustTotal + reward.dust),
+      dustTotal: clampNum(s.stats.dustTotal + reward.dust + rainDust),
       satelliteStreak,
       satelliteBest: Math.max(s.stats.satelliteBest, satelliteStreak),
     },
