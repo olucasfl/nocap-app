@@ -848,14 +848,59 @@ export function currentEnergyCap(state: SaveState): number {
  * liberadas pelo nº de escolhas da vida, depois carta uniforme dentro da raridade. Grimório já no
  * nível máximo não aparece. Não muta o estado: devolve as cartas e o estado novo do gerador.
  */
+const COMBO_EFFECTS = new Set<Effect['kind']>(['comboFullDust', 'comboFullEnergy', 'comboFullMult', 'comboWindow', 'comboMax']);
+const OBJECT_EFFECTS = new Set<Effect['kind']>([
+  'objectReward',
+  'objectDuration',
+  'satelliteMult',
+  'onCapture',
+  'afterCaptureMult',
+  'maxObjects',
+  'spawnCut',
+  'rareCut',
+  'rareLife',
+]);
+
+/**
+ * O grimório faz algo AGORA com o que a pessoa tem? Um grimório de combo sem o Ritmo Firme, de geradores sem
+ * nenhum gerador ou de objetos antes de os objetos abrirem não rende nada, então a escolha não o oferece
+ * (spec 039, seção 7). Basta um efeito útil; os efeitos "de preço" dos proibidos não contam.
+ */
+export function grimoireUseful(state: SaveState, g: GrimoireDef): boolean {
+  const owns = (kind: UpgradeDef['kind']): boolean => UPGRADES.some((d) => d.kind === kind && level(state, d.id) > 0);
+  const hasDust = owns('generator');
+  const hasEnergy = owns('energy');
+  const rhythm = level(state, 'rhythm') > 0;
+  const objects = objectsOpen(state);
+  const useful = (e: Effect): boolean => {
+    if (COMBO_EFFECTS.has(e.kind)) return rhythm;
+    if (e.kind === 'generatorPct') return hasDust;
+    if (e.kind === 'energyGenPct') return hasEnergy;
+    if (e.kind === 'activeWindow' || e.kind === 'idleFloor') return hasDust || hasEnergy;
+    if (OBJECT_EFFECTS.has(e.kind)) {
+      if (!objects) return false;
+      if (e.kind === 'objectReward' && e.target !== 'all') {
+        const def = OBJECTS.find((o) => o.kind === e.target);
+        return def !== undefined && def.unlockedAtCollapse <= state.collapses;
+      }
+      return true;
+    }
+    return true;
+  };
+  return g.effects.some((e) => !e.price && useful(e));
+}
+
 export function drawGrimoires(state: SaveState, exclude: readonly string[] = [], count?: number): { offers: string[]; rngState: number } {
   const stats = effectiveStats(state);
   const want = count ?? stats.choice.cards;
-  const open = unlockedContent(state).grimoires.filter((g) => {
+  const candidates = unlockedContent(state).grimoires.filter((g) => {
     if (exclude.includes(g.id)) return false;
     if ((state.run.build[g.id] ?? 0) >= GRIMOIRE_MAX_LEVEL) return false;
     return state.run.picks >= rarityUnlockPicks(g.rarity, state.collapses, stats.forbiddenUnlockPicks);
   });
+  // Só o que rende agora; se faltar carta para a escolha, completa com o resto (nunca abre vazia).
+  const usable = candidates.filter((g) => grimoireUseful(state, g));
+  const open = usable.length >= want ? usable : [...usable, ...candidates.filter((g) => !usable.includes(g))];
   const pool = new Map<Rarity, GrimoireDef[]>();
   for (const g of open) pool.set(g.rarity, [...(pool.get(g.rarity) ?? []), g]);
 

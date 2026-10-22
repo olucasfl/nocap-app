@@ -479,7 +479,9 @@ describe('drawGrimoires', () => {
     }
     const ids = new Set<string>();
     for (let i = 0; i < 600; i++) {
-      for (const id of drawGrimoires({ ...withRun(newSave(`g${i}`), { picks: 40 }), collapses: 5 }).offers) ids.add(id);
+      // Com combo, geradores de poeira e de energia na mão, todos os grimórios do colapso 5 podem sair.
+      const base = withLevels({ ...withRun(newSave(`g${i}`), { picks: 40 }), collapses: 5 }, { rhythm: 1, satellite: 1, antenna: 1 });
+      for (const id of drawGrimoires(base).offers) ids.add(id);
     }
     expect(ids.has('cygnus-x1')).toBe(true);
     expect(ids.has('m87')).toBe(true);
