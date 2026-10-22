@@ -52,7 +52,7 @@ export function ApertaPage() {
   }
 
   return (
-    <main className={`ap${LOW_END ? ' is-lite' : ''}`}>
+    <main className={`ap space-theme${LOW_END ? ' is-lite' : ''}`}>
       <Sky />
       {screen.name === 'title' && (
         <>

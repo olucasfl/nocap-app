@@ -32,7 +32,7 @@
   letter-spacing: 0.08em;
 }
 .ap-newstrip header .ap-hbtn {
-  min-height: 36px;
+  min-height: 44px;
   padding: 0 12px;
 }
 .ap-newstrip ul {
@@ -71,13 +71,16 @@
 
 /* ---------- missão e evento ---------- */
 .ap-chip {
-  display: grid;
-  gap: 2px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 2px 8px;
   max-width: 100%;
-  padding: 5px 12px;
+  padding: 4px 10px;
   border: 3px solid var(--space-line);
   border-radius: 12px;
-  background: rgba(8, 12, 30, 0.94);
+  background: rgba(8, 12, 30, 0.86);
   box-shadow: 0 0 0 3px var(--space-ink);
   text-align: center;
   animation: apg-slide 0.35s cubic-bezier(0.2, 1.3, 0.4, 1) both;
@@ -121,21 +124,27 @@
   color: var(--space-gold);
 }
 
+/* Com uma página aberta (Melhorias, Grimórios...) os avisos de fundo saem: eles ficavam por cima do cabeçalho
+   da folha e cobriam o botão de fechar. Voltam quando a página fecha. */
+.ap-game.has-page .ap-newstrip,
+.ap-game.has-page .ap-chip {
+  display: none;
+}
+
 /* ---------- HUD: linha dos colapsos vira o botão das regiões ---------- */
 .ap-hudrow-btn {
   position: relative;
   width: 100%;
+  /* Alvo de toque de 44 px: a folga sai da margem, o painel do HUD não cresce. */
+  min-height: 44px;
+  margin: -10px 0;
+  align-content: center;
   padding: 0;
   border: 0;
   background: none;
   color: inherit;
   text-align: left;
   cursor: pointer;
-}
-.ap-hudrow-btn::after {
-  content: '';
-  position: absolute;
-  inset: -8px -6px;
 }
 .ap-hudrow-btn:focus-visible {
   outline: 3px solid var(--space-gold);
@@ -206,7 +215,7 @@
 
 /* ---------- favorito no álbum ---------- */
 .ap-fav {
-  min-height: 36px;
+  min-height: 44px;
   margin-top: 4px;
   padding: 0 12px;
   border: 2px solid var(--space-line);

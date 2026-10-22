@@ -639,8 +639,13 @@
   .ap-sheetwrap {
     top: 140px;
   }
+  /* Os avisos ficam à esquerda da barra de energia (não a cobrem) e em largura cheia do que sobra. */
   .ap-banners {
     top: 132px;
+    left: 14px;
+    right: 80px;
+    width: auto;
+    transform: none;
   }
   .ap-hud {
     grid-template-columns: 1fr auto;
@@ -909,7 +914,10 @@
   background: rgba(8, 12, 30, 0.92);
   color: var(--space-text);
   font: 700 12px/1.3 var(--space-font-display);
-  white-space: nowrap;
+  text-align: center;
+  /* Quebra em duas linhas em vez de passar por cima do objeto vizinho (a recompensa pode ser longa). */
+  width: max-content;
+  max-width: min(124px, 38cqw);
 }
 .ap-cap {
   position: absolute;
