@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { GRIMOIRES, UPGRADES } from './catalog';
-import { atlasSlots, dustGoal, minPicks } from './economy';
+import { dustGoal, minPicks } from './economy';
 import { meetMilestone } from './milestone';
 import {
   buyUpgrade,
@@ -13,6 +13,7 @@ import {
   press,
   selectGrimoire,
   type SaveState,
+  effectiveStats,
 } from './engine';
 import { MAX_SAVE_BYTES, mergeSaves, validateSave } from './save';
 
@@ -39,8 +40,7 @@ function play(seed: string, seconds: number, from: SaveState = newSave(seed, NOW
     });
     if (best >= 0 && s.run.dust >= cost) s = buyUpgrade(s, best);
     if (collapsing && canCollapse(s)) {
-      const page = Object.keys(s.run.build)[0];
-      if (page) s = collapse(s, page);
+      s = collapse(s);
     }
   }
   return s;
@@ -71,35 +71,35 @@ describe('validateSave: formato', () => {
       album: ['moon'],
       stats: { ...fresh.stats, picks: 20, dustTotal: dustGoal(1) },
     };
-    const s = collapse(ready, 'moon');
+    const s = collapse(ready);
     expect(s.collapses).toBe(1);
+    expect(Object.values(s.vault)).toEqual([1]);
     const r = validateSave(s);
     expect(r.ok, r.ok ? '' : r.errors.join(';')).toBe(true);
   });
 
-  it('uma cadeia de 10 colapsos com troca de página no Atlas cheio passa (espaços 5 e 10)', () => {
+  it('uma cadeia de 12 colapsos com o Cofre crescendo passa em cada passo', () => {
     const pages = ['moon', 'mars', 'venus', 'mercury', 'ceres', 'vesta', 'phobos', 'io', 'europa', 'titan'];
     let s: SaveState = { ...newSave('chain'), tutorial: 'done' };
-    for (let k = 1; k <= 10; k++) {
+    for (let k = 1; k <= 12; k++) {
       const goal = dustGoal(k);
-      const id = pages[k - 1] as string;
+      const id = pages[(k - 1) % pages.length] as string;
       s = {
         ...s,
-        run: { ...s.run, picks: minPicks(k), dust: goal, dustLife: goal, build: { [id]: 1 }, ...meetMilestone(k - 1, s.run.upgradeLevels) },
+        run: { ...s.run, picks: minPicks(k), dust: goal, dustLife: goal, build: { [id]: 1 }, ...meetMilestone(k - 1, s.run.upgradeLevels, effectiveStats(s).objects.disabled) },
         album: [...new Set([...s.album, id])],
         stats: { ...s.stats, picks: s.stats.picks + minPicks(k), dustTotal: s.stats.dustTotal + goal },
       };
-      // Com o Atlas cheio o jogador escolhe qual página sai (aqui, sempre a primeira).
-      s = collapse(s, id, 0);
+      s = collapse(s);
       expect(s.collapses).toBe(k);
-      expect(s.atlas.slots).toBe(atlasSlots(k));
+      expect(Object.values(s.vault).reduce((a, b) => a + b, 0)).toBe(k);
       const r = validateSave(s);
       expect(r.ok, r.ok ? '' : `colapso ${k}: ${r.errors.join(';')}`).toBe(true);
     }
-    expect(s.atlas.slots).toBe(5);
+    expect(Object.keys(s.vault).length).toBeGreaterThan(1);
   });
 
-  it('o servidor recusa Atlas com mais páginas que espaços e espaços que não batem com os colapsos', () => {
+  it('o servidor recusa Cofre inválido: proibido que não existe, nível 6, mais níveis que colapsos e selo sem o Cofre completo', () => {
     const fresh = newSave('a');
     const ok = {
       ...fresh,
@@ -107,13 +107,17 @@ describe('validateSave: formato', () => {
       collapses: 1,
       sparks: { legacy: 4, spent: 0 },
       stats: { ...fresh.stats, picks: 20, dustTotal: 2e8 },
-      album: ['moon', 'mars'],
-      atlas: { slots: 3, pages: [{ grimoireId: 'moon', level: 1 }] },
+      album: ['moon', 'm87'],
+      vault: { m87: 1 },
+      regionId: 'asteroid-belt',
     };
     const first = validateSave(ok);
     expect(first.ok, first.ok ? '' : first.errors.join(';')).toBe(true);
-    expect(rejects({ ...ok, atlas: { slots: 4, pages: ok.atlas.pages } })).toContain('Espaços do Atlas não batem com os colapsos');
-    expect(rejects({ ...ok, atlas: { slots: 3, pages: [{ grimoireId: 'moon', level: 1 }, { grimoireId: 'mars', level: 1 }] } })).toContain('Páginas no Atlas sem colapso');
+    expect(rejects({ ...ok, vault: { 'nao-existe': 1 }, album: ['moon', 'nao-existe'] })).toContain('Proibido inválido no Cofre: nao-existe');
+    expect(rejects({ ...ok, vault: { m87: 6 } })).toBeTruthy();
+    expect(rejects({ ...ok, vault: { m87: 1, 'cygnus-x1': 1 }, album: ['moon', 'm87', 'cygnus-x1'] })).toContain('Cofre maior que os colapsos');
+    expect(rejects({ ...ok, vault: {}, seals: 1 })).toContain('Selos sem o Cofre completo');
+    expect(rejects({ ...ok, vault: { m87: 1 }, album: ['moon'] })).toContain('Proibido fora do álbum: m87');
   });
 
   it('recusa lixo, campo faltando, tipo errado e versão do futuro', () => {
@@ -180,12 +184,10 @@ describe('validateSave: coerência', () => {
     expect(rejects({ ...s, stats: { ...s.stats, dustTotal: 0 } })).toContain('Poeira da vida maior que o total');
   });
 
-  it('recusa Atlas e Cintilas incoerentes', () => {
+  it('recusa Cintilas incoerentes', () => {
     const s = newSave('x');
-    expect(rejects({ ...s, atlas: { slots: 3, pages: [{ grimoireId: 'moon', level: 1 }] }, album: ['moon'] })).toContain('Páginas no Atlas sem colapso');
     expect(rejects({ ...s, sparks: { legacy: 0, spent: 9 } })).toContain('Cintilas gastas maiores que as ganhas');
     expect(rejects({ ...s, sparks: { legacy: 50, spent: 0 } })).toContain('Cintilas migradas não batem com os colapsos');
-    expect(rejects({ ...s, atlas: { slots: 9, pages: [] } })).toContain('Espaços do Atlas não batem com os colapsos');
   });
 
   it('recusa árvore que custa mais que as Cintilas gastas', () => {
@@ -291,7 +293,6 @@ describe('mergeSaves', () => {
       regionId: 'asteroid-belt',
       album: ['venus'],
       achievements: ['b2'],
-      atlas: { slots: 3, pages: [{ grimoireId: 'venus', level: 2 }] },
       sparks: { legacy: 4, spent: 0 },
       stats: { ...FRESH_STATS, clicks: 10, objectsCaptured: 1, picks: 20, dustTotal: 2e8 },
     };
@@ -307,24 +308,23 @@ describe('mergeSaves', () => {
     expect(r.save.stats).toMatchObject({ clicks: 900, objectsCaptured: 9, picks: 20, dustTotal: 2e8 });
   });
 
-  it('o Atlas junta páginas até os espaços e fica com o maior nível', () => {
-    const mk = (pages: { grimoireId: string; level: number }[], collapses: number): SaveState => ({
+  it('o Cofre junta o maior nível de cada proibido, desde que caiba nos colapsos do save mais avançado', () => {
+    const mk = (vault: Record<string, number>, collapses: number): SaveState => ({
       ...newSave('x'),
       collapses,
       tutorial: 'done',
       regionId: 'asteroid-belt',
-      atlas: { slots: 3, pages },
+      album: Object.keys(vault),
+      vault,
       sparks: { legacy: 4 * collapses, spent: 0 },
     });
-    const a = mk([{ grimoireId: 'moon', level: 1 }, { grimoireId: 'mars', level: 2 }], 2);
-    const b = mk([{ grimoireId: 'moon', level: 4 }, { grimoireId: 'venus', level: 1 }, { grimoireId: 'ceres', level: 1 }], 1);
-    const r = mergeSaves(a, b);
-    expect(r.save.atlas.pages).toEqual([
-      { grimoireId: 'moon', level: 4 },
-      { grimoireId: 'mars', level: 2 },
-      { grimoireId: 'venus', level: 1 },
-    ]);
-    expect(r.save.atlas.pages.length).toBeLessThanOrEqual(r.save.atlas.slots);
+    const a = mk({ m87: 2, 'ton-618': 1 }, 3);
+    const b = mk({ m87: 1, 'gaia-bh3': 1 }, 2);
+    // Juntos dariam 2 + 1 + 1 = 4 níveis em 3 colapsos: não cabe, fica o do mais avançado.
+    expect(mergeSaves(a, b).save.vault).toEqual({ m87: 2, 'ton-618': 1 });
+    const c = mk({ m87: 2 }, 3);
+    const d = mk({ m87: 1, 'gaia-bh3': 1 }, 3);
+    expect(mergeSaves(c, d).save.vault).toEqual({ m87: 2, 'gaia-bh3': 1 });
   });
 
   it('a árvore fica com o máximo de cada ramo se as Cintilas cobrem', () => {
@@ -424,7 +424,6 @@ describe('validateSave: economia v2 (spec 039)', () => {
   it('depois do 1º colapso as melhorias de toque não pedem a fila inteira de novo', () => {
     const s = clone(newSave('colapsada', NOW));
     s.collapses = 1;
-    s.atlas = { slots: atlasSlots(1), pages: [] };
     s.sparks = { legacy: 4, spent: 0 };
     s.stats.picks = 1;
     s.regionId = 'asteroid-belt';

@@ -50,7 +50,7 @@ describe('grimório só é oferecido se rende agora (spec 039, seção 7)', () =
   });
 
   it('os que sempre rendem (toque a cada N, energia, poeira de partida) saem desde o começo', () => {
-    for (const id of ['moon', 'mercury', 'jupiter', 'ceres', 'titan', 'betelgeuse', 'sagittarius-a']) {
+    for (const id of ['moon', 'mercury', 'jupiter', 'ceres', 'titan', 'betelgeuse']) {
       expect(grimoireUseful(start(), byId(id)), id).toBe(true);
     }
   });

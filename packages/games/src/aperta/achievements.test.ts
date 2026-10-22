@@ -83,7 +83,7 @@ describe('grimórios', () => {
   });
 
   it('álbum: proibido conta e o progresso mostra quantos faltam', () => {
-    const s = awardAchievements({ ...newSave('a'), album: ['moon', 'mars', 'cygnus-x1'] });
+    const s = awardAchievements({ ...newSave('a'), album: ['moon', 'mars', 'sagittarius-a'], vault: { 'sagittarius-a': 1 } });
     expect(has(s, 'forbidden')).toBe(true);
     expect(has(s, 'grim-10')).toBe(false);
     expect(achievementViews(s).find((v) => v.def.id === 'grim-10')?.value).toBe(3);
@@ -143,7 +143,7 @@ describe('colapsos e árvore', () => {
   it('o primeiro colapso ganha a conquista e ela sobrevive à vida nova', () => {
     let s = withRun(newSave('a'), { dustLife: dustGoal(1), picks: minPicks(1), build: { moon: 1 }, ...meetMilestone(0, []) });
     s = { ...s, album: ['moon'], stats: { ...s.stats, picks: minPicks(1), dustTotal: dustGoal(1) }, tutorial: 'done' };
-    const next = collapse(s, 'moon');
+    const next = collapse(s);
     expect(next.collapses).toBe(1);
     expect(has(next, 'collapse-1')).toBe(true);
     expect(has(next, 'collapse-5')).toBe(false);
@@ -154,14 +154,11 @@ describe('colapsos e árvore', () => {
     expect(has(solar(4), 'leave-solar')).toBe(false);
     expect(has(solar(5), 'leave-solar')).toBe(true);
 
-    const page = (grimoireId: string) => ({ grimoireId, level: 1 });
-    const withPages = (n: number) => {
-      const s = newSave('a');
-      const pages = ['moon', 'mars', 'venus', 'mercury'].slice(0, n).map(page);
-      return awardAchievements({ ...s, atlas: { ...s.atlas, pages } as SaveState['atlas'] });
-    };
-    expect(has(withPages(3), 'atlas-4')).toBe(false);
-    expect(has(withPages(4), 'atlas-4')).toBe(true);
+    // O Atlas saiu: as conquistas dele estão aposentadas (nunca são dadas) e o Cofre tem as suas.
+    const vault = (n: number) => awardAchievements({ ...newSave('a'), vault: Object.fromEntries(['m87', 'cygnus-x1', 'ton-618', 'gaia-bh3'].slice(0, n).map((id) => [id, 1])) });
+    expect(has(vault(3), 'vault-4')).toBe(false);
+    expect(has(vault(4), 'vault-4')).toBe(true);
+    expect(has(vault(4), 'atlas-4')).toBe(false);
   });
 
   it('comprar o 1º nó, completar um ramo e refazer (escondida)', () => {

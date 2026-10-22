@@ -6,7 +6,6 @@ import { hashSeed } from '../core/rng';
 import { awardAchievements } from './achievements';
 import type { UiState } from './tutorial';
 import {
-  FAMILIES,
   GENERATOR_MILESTONES,
   GRIMOIRES,
   OBJECTS,
@@ -15,7 +14,6 @@ import {
   RARITIES,
   RARITY_WEIGHT,
   REGIONS,
-  SET_BONUSES,
   TREE,
   TREE_COSTS,
   UPGRADES,
@@ -23,7 +21,6 @@ import {
   treeNodeId,
   upgradeIndex,
   type Effect,
-  type Family,
   type GrimoireDef,
   type ObjectDef,
   type ObjectKind,
@@ -36,8 +33,8 @@ import {
 import { ASSIGNABLE_MISSIONS, eventsOpen, mechanicOpen, missionById, type EventId, type MissionDef } from './content';
 import { MISSION_NEXT_DELAY_SEC, milestoneProgress, type MilestoneProgress } from './milestone';
 import { RARE_OBJECT_KINDS, LEGENDARY_OBJECT_KINDS, sparksAvailable } from './sparks';
+import { FORBIDDEN_IDS, FORBIDDEN_MAX_LEVEL, SEAL_DUST_PER_TOUCH, VAULT_OFFER_SIZE, forbiddenEffects } from './forbidden';
 import {
-  ATLAS_PAGE_POWER,
   BASE_ENERGY_PER_TOUCH,
   CHOICE_LOCK_SEC,
   COMBO_BASE_MAX,
@@ -90,18 +87,17 @@ import {
   TRAINED_MULT,
   TRAINED_N,
   VOYAGER_SEC,
-  atlasSlots,
   clampCostFactor,
   dustGoal,
   energyCap,
   levelFactor,
   minPicks,
   rarityUnlockPicks,
-  setBonusTier,
   upgradeCost,
 } from './economy';
 
-export const SAVE_VERSION = 2;
+/** 3: Cofre dos Proibidos no lugar do Atlas (spec 040, etapa 15). */
+export const SAVE_VERSION = 3;
 /** Valor de "nunca tocou": negativo e finito, para o save continuar sendo JSON válido. */
 const NEVER = -1e9;
 
@@ -189,11 +185,6 @@ export interface RunState {
   missionsDone: number;
 }
 
-export interface AtlasPage {
-  grimoireId: string;
-  level: number;
-}
-
 export interface SaveState {
   version: number;
   name: string;
@@ -208,7 +199,10 @@ export interface SaveState {
   storySeen: boolean;
   run: RunState;
   album: string[];
-  atlas: { slots: number; pages: AtlasPage[] };
+  /** Cofre dos Proibidos: proibido -> nível (1 a 5). Todos os que estão aqui ficam ativos (spec 040, seção 3). */
+  vault: Record<string, number>;
+  /** Selos Estelares: colapsos em que não sobrou proibido para escolher (spec 040, seção 3). */
+  seals: number;
   collapses: number;
   regionId: string;
   /** Grimório favorito (pesa o dobro no sorteio); só depois de o Favorito abrir, no 2º colapso. */
@@ -372,7 +366,8 @@ export function newSave(seed: string, createdAt = 0, name = 'Missão Perigeu'): 
     storySeen: false,
     run: freshRun(hashSeed(seed)),
     album: [],
-    atlas: { slots: atlasSlots(0), pages: [] },
+    vault: {},
+    seals: 0,
     collapses: 0,
     regionId: (REGIONS[0] as RegionDef).id,
     favorite: null,
@@ -521,8 +516,7 @@ export interface EffectiveStats {
     onCaptureEnergyTouches: number;
     afterCaptureMult: number;
   };
-  choice: { cards: number; picks: number; rerolls: number; repeatLevels: number };
-  forbiddenUnlockPicks: number | undefined;
+  choice: { cards: number; picks: number; rerolls: number; repeatLevels: number; noCommon: boolean; rarityBoost: number };
 }
 
 interface Source {
@@ -544,17 +538,18 @@ function emptyByKind(value: number): Record<ObjectKind, number> {
 
 const statsCache = new WeakMap<
   number[],
-  { build: RunState['build']; pages: AtlasPage[]; tree: SaveState['tree']; collapses: number; stats: EffectiveStats }
+  { build: RunState['build']; vault: SaveState['vault']; seals: number; tree: SaveState['tree']; collapses: number; stats: EffectiveStats }
 >();
 
-/** Junta melhorias, grimórios, Atlas, bônus de conjunto e árvore. Memoizada: o estado é imutável. */
+/** Junta melhorias, grimórios, Cofre dos Proibidos e árvore. Memoizada: o estado é imutável. */
 export function effectiveStats(state: SaveState): EffectiveStats {
   const key = state.run.upgradeLevels;
   const hit = statsCache.get(key);
   if (
     hit &&
     hit.build === state.run.build &&
-    hit.pages === state.atlas.pages &&
+    hit.vault === state.vault &&
+    hit.seals === state.seals &&
     hit.tree === state.tree &&
     hit.collapses === state.collapses
   ) {
@@ -563,7 +558,8 @@ export function effectiveStats(state: SaveState): EffectiveStats {
   const stats = computeStats(state);
   statsCache.set(key, {
     build: state.run.build,
-    pages: state.atlas.pages,
+    vault: state.vault,
+    seals: state.seals,
     tree: state.tree,
     collapses: state.collapses,
     stats,
@@ -576,38 +572,24 @@ function level(state: SaveState, upgradeId: string): number {
   return i < 0 ? 0 : (state.run.upgradeLevels[i] ?? 0);
 }
 
-function collectSources(state: SaveState): { sources: Source[]; setTiers: Map<Family, number> } {
+function collectSources(state: SaveState): { sources: Source[] } {
   const sources: Source[] = [];
   for (const [id, lvl] of Object.entries(state.run.build)) {
     const g = grimoireById(id);
     if (!g) continue;
-    sources.push({ effects: g.effects, gain: levelFactor(lvl), price: 1, count: 1, forbidden: g.rarity === 'forbidden' });
+    sources.push({ effects: g.effects, gain: levelFactor(lvl), price: 1, count: 1, forbidden: false });
   }
-  const familyCount = new Map<Family, number>();
-  for (const page of state.atlas.pages) {
-    const g = grimoireById(page.grimoireId);
-    if (!g) continue;
-    sources.push({
-      effects: g.effects,
-      gain: levelFactor(page.level) * ATLAS_PAGE_POWER,
-      price: ATLAS_PAGE_POWER,
-      count: ATLAS_PAGE_POWER,
-      forbidden: g.rarity === 'forbidden',
-    });
-    familyCount.set(g.family, (familyCount.get(g.family) ?? 0) + 1);
-  }
-  const setTiers = new Map<Family, number>();
-  for (const family of FAMILIES) {
-    const tier = setBonusTier(familyCount.get(family) ?? 0);
-    if (tier < 0) continue;
-    setTiers.set(family, tier);
-    sources.push({ effects: [SET_BONUSES[family][tier] as Effect], gain: 1, price: 1, count: 1, forbidden: false });
+  // Cofre dos Proibidos: todos os que a pessoa tem valem ao mesmo tempo, com os números do nível (já escalados);
+  // `forbidden: true` deixa o ramo Horizonte de Eventos da árvore reforçar o ganho e cortar o preço deles.
+  for (const [id, lvl] of Object.entries(state.vault)) {
+    const effects = forbiddenEffects(id, lvl);
+    if (effects.length > 0) sources.push({ effects, gain: 1, price: 1, count: 1, forbidden: true });
   }
   for (const branch of TREE) {
     const lvl = Math.min(3, state.tree[branch.id] ?? 0);
     if (lvl > 0) sources.push({ effects: branch.levels[lvl - 1] as Effect[], gain: 1, price: 1, count: 1, forbidden: false });
   }
-  return { sources, setTiers };
+  return { sources };
 }
 
 function computeStats(state: SaveState): EffectiveStats {
@@ -616,14 +598,11 @@ function computeStats(state: SaveState): EffectiveStats {
   // Buracos negros e a árvore reforçam o ganho dos proibidos e cortam o preço deles.
   let forbiddenPower = 0;
   let priceCut = 0;
-  let forbiddenUnlock: number | undefined;
   for (const src of sources) {
     for (const e of src.effects) {
       if (e.kind === 'forbiddenPower') {
         forbiddenPower += e.pct;
         priceCut += e.priceCutPct;
-      } else if (e.kind === 'forbiddenUnlock') {
-        forbiddenUnlock = forbiddenUnlock === undefined ? e.picks : Math.min(forbiddenUnlock, e.picks);
       }
     }
   }
@@ -662,7 +641,7 @@ function computeStats(state: SaveState): EffectiveStats {
   let disabled = false;
   const costFactors: number[] = [];
   const nth: EffectiveStats['nth'] = [];
-  const choice = { cards: 0, picks: 0, rerolls: 0, repeatLevels: 0 };
+  const choice = { cards: 0, picks: 0, rerolls: 0, repeatLevels: 0, noCommon: false, rarityBoost: 0 };
   const lifePct = emptyByKind(0);
   const rewardAdd = emptyByKind(0);
   const targets = (t: string): ObjectKind[] => (t === 'all' ? OBJECT_KINDS : OBJECT_KINDS.filter((k) => k === t));
@@ -705,6 +684,12 @@ function computeStats(state: SaveState): EffectiveStats {
           break;
         case 'objectsDisabled':
           disabled = true;
+          break;
+        case 'noCommon':
+          choice.noCommon = true;
+          break;
+        case 'rarityBoost':
+          choice.rarityBoost += e.add * s;
           break;
         case 'maxObjects':
           maxAdd += Math.floor(e.add * src.count);
@@ -776,7 +761,6 @@ function computeStats(state: SaveState): EffectiveStats {
         case 'rareLife':
           rareLifeAdd += e.sec * s;
           break;
-        case 'forbiddenUnlock':
         case 'forbiddenPower':
           break;
       }
@@ -806,7 +790,8 @@ function computeStats(state: SaveState): EffectiveStats {
 
   if (has('trained')) nth.push({ n: TRAINED_N, mult: TRAINED_MULT, energy: 0 });
   const touchDoublings = ['lens', 'lens2', 'cabin', 'webb'].filter(has).length;
-  const flat = (has('gloves') ? 1 : 0) + (has('hands') ? Math.floor(generators / HANDS_GENERATORS_PER_POINT) : 0) + dustFlat;
+  // Selo Estelar: poeira fixa por toque, por selo (spec 040, seção 3).
+  const flat = (has('gloves') ? 1 : 0) + (has('hands') ? Math.floor(generators / HANDS_GENERATORS_PER_POINT) : 0) + dustFlat + state.seals * SEAL_DUST_PER_TOUCH;
   let dustPerTouch = (1 + flat) * 2 ** touchDoublings * Math.max(0, 1 + dustPct / 100) * dustMult;
   // Eco: os geradores alimentam o toque. É o que faz investir neles valer a pena sem o auto passar do teto.
   if (has('echo')) dustPerTouch += autoDust * ECHO_SHARE_OF_AUTO;
@@ -883,8 +868,9 @@ function computeStats(state: SaveState): EffectiveStats {
       picks: 1 + choice.picks,
       rerolls: choice.rerolls,
       repeatLevels: 1 + choice.repeatLevels,
+      noCommon: choice.noCommon,
+      rarityBoost: choice.rarityBoost,
     },
-    forbiddenUnlockPicks: forbiddenUnlock,
   };
 }
 
@@ -964,13 +950,18 @@ export function grimoireUseful(state: SaveState, g: GrimoireDef): boolean {
   return g.effects.some((e) => !e.price && useful(e));
 }
 
+/** Sobrou alguma carta acima de comum? (sem isso, `noCommon` nunca deixa a oferta vazia). */
+function hasAbove(pool: Map<Rarity, GrimoireDef[]>): boolean {
+  return RARITIES.some((r) => r !== 'common' && (pool.get(r)?.length ?? 0) > 0);
+}
+
 export function drawGrimoires(state: SaveState, exclude: readonly string[] = [], count?: number): { offers: string[]; rngState: number } {
   const stats = effectiveStats(state);
   const want = count ?? stats.choice.cards;
   const candidates = unlockedContent(state).grimoires.filter((g) => {
     if (exclude.includes(g.id)) return false;
     if ((state.run.build[g.id] ?? 0) >= GRIMOIRE_MAX_LEVEL) return false;
-    return state.run.picks >= rarityUnlockPicks(g.rarity, state.collapses, stats.forbiddenUnlockPicks);
+    return state.run.picks >= rarityUnlockPicks(g.rarity, state.collapses);
   });
   // Só o que rende agora; se faltar carta para a escolha, completa com o resto (nunca abre vazia).
   const usable = candidates.filter((g) => grimoireUseful(state, g));
@@ -982,15 +973,16 @@ export function drawGrimoires(state: SaveState, exclude: readonly string[] = [],
   let rng = state.run.rngState;
   const offers: string[] = [];
   while (offers.length < want) {
-    const rarities = RARITIES.filter((r) => (pool.get(r)?.length ?? 0) > 0);
+    const rarities = RARITIES.filter((r) => (pool.get(r)?.length ?? 0) > 0 && !(r === 'common' && stats.choice.noCommon && hasAbove(pool)));
     if (rarities.length === 0) break;
-    const total = rarities.reduce((sum, r) => sum + RARITY_WEIGHT[r], 0);
+    const weightOf = (r: Rarity): number => RARITY_WEIGHT[r] + (r === 'epic' || r === 'legendary' ? stats.choice.rarityBoost : 0);
+    const total = rarities.reduce((sum, r) => sum + weightOf(r), 0);
     let roll: number;
     [roll, rng] = nextRandom(rng);
     let acc = roll * total;
     let rarity = rarities[rarities.length - 1] as Rarity;
     for (const r of rarities) {
-      acc -= RARITY_WEIGHT[r];
+      acc -= weightOf(r);
       if (acc < 0) {
         rarity = r;
         break;
@@ -1624,39 +1616,56 @@ export function canCollapse(state: SaveState): boolean {
 }
 
 /**
- * Colapsa a estrela: guarda `pageId` (um grimório da vida) no Atlas a 60% e recomeça
- * do zero. Com o Atlas cheio, `replaceIndex` diz qual página sai. Sem as condições, devolve o mesmo estado.
+ * As opções do Cofre no colapso atual: até `VAULT_OFFER_SIZE` proibidos distintos entre os que ainda não estão no nível 5
+ * (spec 040, seção 3). Sai da semente da vida (`rngState`), então é a mesma enquanto a vida não muda; com menos de 3
+ * elegíveis, só os que sobram; com nenhum, a lista é vazia e o colapso dá um Selo Estelar.
  */
-export function collapse(state: SaveState, pageId: string, replaceIndex?: number): SaveState {
+export function vaultOffers(state: SaveState): string[] {
+  const eligible = FORBIDDEN_IDS.filter((id) => (state.vault[id] ?? 0) < FORBIDDEN_MAX_LEVEL);
+  if (eligible.length <= VAULT_OFFER_SIZE) return eligible.slice();
+  const pool = eligible.slice();
+  const out: string[] = [];
+  let rng = state.run.rngState ^ Math.imul(state.collapses + 1, 0x9e3779b1);
+  while (out.length < VAULT_OFFER_SIZE) {
+    let roll: number;
+    [roll, rng] = nextRandom(rng);
+    out.push(pool.splice(Math.floor(roll * pool.length), 1)[0] as string);
+  }
+  return out;
+}
+
+/**
+ * Colapsa a estrela e recomeça do zero. `choice` é um dos proibidos de `vaultOffers` (um que a pessoa já tem sobe 1
+ * nível; um novo entra no nível 1); sem opções (todos no nível 5) o colapso dá um Selo Estelar e `choice` é `null`.
+ * Sem `choice`, vale a primeira opção (ou o selo). Sem as condições, ou com uma escolha fora das opções, devolve o mesmo estado.
+ */
+export function collapse(state: SaveState, choice?: string | null): SaveState {
   if (!canCollapse(state)) return state;
-  const lvl = state.run.build[pageId];
-  if (lvl === undefined) return state;
+  const offers = vaultOffers(state);
+  const picked = choice === undefined ? (offers[0] ?? null) : choice;
+  if (offers.length === 0 ? picked !== null : picked === null || !offers.includes(picked)) return state;
 
   const k = state.collapses + 1;
-  const slots = atlasSlots(k);
-  const pages = state.atlas.pages.slice();
-  const existing = pages.findIndex((p) => p.grimoireId === pageId);
-  if (existing >= 0) {
-    pages[existing] = { grimoireId: pageId, level: Math.max((pages[existing] as AtlasPage).level, lvl) };
-  } else if (pages.length < slots) {
-    pages.push({ grimoireId: pageId, level: lvl });
-  } else if (replaceIndex !== undefined && replaceIndex >= 0 && replaceIndex < pages.length) {
-    pages[replaceIndex] = { grimoireId: pageId, level: lvl };
-  } else {
-    return state;
-  }
-
+  const vault = picked === null ? state.vault : { ...state.vault, [picked]: (state.vault[picked] ?? 0) + 1 };
+  const level = picked === null ? 0 : (vault[picked] as number);
+  const stats =
+    picked === null
+      ? state.stats
+      : { ...state.stats, forbiddenBest: { ...state.stats.forbiddenBest, [picked]: Math.max(state.stats.forbiddenBest[picked] ?? 0, level) } };
   const open = REGIONS.filter((r) => r.unlockedAtCollapse <= k);
   const base: SaveState = {
     ...state,
     collapses: k,
     regionId: (open[open.length - 1] as RegionDef).id,
-    atlas: { slots, pages },
+    vault,
+    seals: state.seals + (picked === null ? 1 : 0),
+    album: picked !== null && !state.album.includes(picked) ? [...state.album, picked] : state.album,
+    stats,
     run: freshRun(state.run.rngState),
     // Cada colapso começa uma vida nova com o tutorial concluído (spec 8.1).
     tutorial: 'done',
   };
-  // A poeira inicial (Titã) depende do Atlas novo, por isso a vida nova é montada depois dele.
+  // A poeira inicial (Holmberg 15A, Titã) depende do Cofre novo, por isso a vida nova é montada depois dele.
   const startDust = effectiveStats(base).startDust;
   return awardAchievements({ ...base, run: { ...base.run, dust: startDust, dustLife: startDust } });
 }

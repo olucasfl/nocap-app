@@ -119,7 +119,7 @@ describe('movimento no CSS do Aperta!', () => {
   it('o movimento reduzido silencia cada loop e cada entrada do polimento', () => {
     const polish = files.find((f) => f.name === 'polish.css')!.css;
     const reduced = polish.slice(polish.indexOf('prefers-reduced-motion'));
-    for (const sel of ['.ap-flash', '.ap-evfx-shower i', '.ap-evfx-storm', '.ap-atlas-pages li.is-full', '.ap-node.is-owned', '.ap-game .ap-region']) {
+    for (const sel of ['.ap-flash', '.ap-evfx-shower i', '.ap-evfx-storm', '.ap-vault-slots li.is-full', '.ap-node.is-owned', '.ap-game .ap-region']) {
       expect(reduced, sel).toContain(sel);
     }
   });

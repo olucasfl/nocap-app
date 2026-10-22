@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { GRIMOIRES, GRIMOIRE_CATEGORIES, RARITIES, UPGRADES, effectDomain, type Effect } from './catalog';
+import { FORBIDDEN } from './forbidden';
 
 // Melhorias x grimórios (spec 038, 5.1 e 5.2): melhoria = poder básico contínuo, grimório = estilo e situação.
 
@@ -50,7 +51,7 @@ describe('melhorias e grimórios não competem', () => {
       if (PERCENT_ALLOWED.has(g.id)) continue;
       expect(g.text, g.id).not.toContain('%');
     }
-    expect(GRIMOIRES.find((g) => g.id === 'm87')!.text).toContain('%');
+    expect(FORBIDDEN.find((f) => f.id === 'm87')!.bonus(1)).toContain('%');
   });
 
   it('o número do texto bate com o número do efeito', () => {
@@ -91,8 +92,8 @@ describe('melhorias e grimórios não competem', () => {
     }
   });
 
-  it('o catálogo tem 58 grimórios e os ids não se repetem', () => {
-    expect(GRIMOIRES).toHaveLength(58);
+  it('o catálogo tem 55 grimórios e os ids não se repetem', () => {
+    expect(GRIMOIRES).toHaveLength(55);
     expect(new Set(GRIMOIRES.map((g) => g.id)).size).toBe(GRIMOIRES.length);
   });
 });

@@ -7,7 +7,8 @@
 // árvore nova, sequência de dias) entra aqui com `needs` e só conta quando `FEATURES[needs]` for verdadeiro: a etapa que
 // entrega a feature liga a chave e o resto já funciona.
 
-import { FAMILIES, GRIMOIRES, RARITIES, REGIONS, TREE, UPGRADES, grimoireById } from './catalog';
+import { GRIMOIRES, RARITIES, REGIONS, TREE, UPGRADES, grimoireById } from './catalog';
+import { FORBIDDEN_MAX_LEVEL } from './forbidden';
 import { GRIMOIRE_MAX_LEVEL } from './economy';
 import type { SaveState } from './engine';
 
@@ -52,7 +53,8 @@ export const ACHIEVEMENT_GROUPS: readonly { id: AchievementGroup; name: string }
 export type Feature = 'forbidden-new' | 'automation' | 'legendary-objects' | 'events-new' | 'tree-v2' | 'daily-streak' | 'regions-more';
 
 export const FEATURES: Record<Feature, boolean> = {
-  'forbidden-new': false,
+  // Ligada na etapa 15: os 10 proibidos existem no Cofre.
+  'forbidden-new': true,
   automation: false,
   'legendary-objects': false,
   'events-new': false,
@@ -88,6 +90,8 @@ export interface AchievementDef {
   hidden?: boolean;
   /** Depende de uma feature que ainda não existe: não conta até `FEATURES[needs]`. */
   needs?: Feature;
+  /** Aposentada (conteúdo que saiu do jogo): nunca é dada de novo, some da tela, mas a recompensa de quem já ganhou fica. */
+  retired?: true;
   progress: (s: SaveState) => number;
 }
 
@@ -101,6 +105,7 @@ const count = (r: (typeof RARITIES)[number]) => GRIMOIRES.filter((g) => g.rarity
 interface Opts {
   hidden?: boolean;
   needs?: Feature;
+  retired?: true;
 }
 
 const def = (
@@ -122,6 +127,7 @@ const def = (
   progress,
   ...(opts.hidden ? { hidden: true } : {}),
   ...(opts.needs ? { needs: opts.needs } : {}),
+  ...(opts.retired ? { retired: true as const } : {}),
 });
 
 const clicks = (s: SaveState) => s.stats.clicks;
@@ -152,7 +158,7 @@ const FORBIDDEN_PLANNED: readonly [string, string][] = [
 
 const forbiddenLadder = (): AchievementDef[] =>
   FORBIDDEN_NOW.flatMap(([id, name]) => [
-    def(`forb-${id}`, 'forbidden', 'M', name, `Pegue o grimório proibido ${name}.`, 1, (s) => (s.album.includes(id) ? 1 : 0)),
+    def(`forb-${id}`, 'forbidden', 'M', name, `Pegue o grimório proibido ${name}.`, 1, (s) => ((s.vault[id] ?? 0) > 0 ? 1 : 0)),
     def(`forb-${id}-3`, 'forbidden', 'L', `${name}, nível 3`, `Leve ${name} ao nível 3.`, 3, (s) => best(s, id)),
     def(`forb-${id}-5`, 'forbidden', 'E', `${name}, nível 5`, `Leve ${name} ao nível 5.`, 5, (s) => best(s, id)),
   ]);
@@ -229,7 +235,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
   def('combo-hits-10k', 'combo', 'L', 'Dez mil no máximo', 'Dê 10.000 toques com o combo no máximo.', 10_000, (s) => s.stats.comboMaxHits),
 
   // --- Colapsos ---
-  def('forbidden', 'collapses', 'M', 'Horizonte de eventos', 'Pegue um grimório proibido.', 1, (s) => albumOf(s).filter((g) => g.rarity === 'forbidden').length),
+  def('forbidden', 'collapses', 'M', 'Horizonte de eventos', 'Pegue um grimório proibido.', 1, (s) => Object.keys(s.vault).length),
   def('collapse-1', 'collapses', 'M', 'Primeira estrela colapsada', 'Colapse a estrela uma vez.', 1, collapses),
   def('collapse-3', 'collapses', 'M', 'Três estrelas', 'Colapse a estrela 3 vezes.', 3, collapses),
   def('collapse-5', 'collapses', 'M', 'Cinco estrelas', 'Colapse a estrela 5 vezes.', 5, collapses),
@@ -241,8 +247,14 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
   def('collapse-50', 'collapses', 'E', 'Lenda de Perigeu', 'Colapse a estrela 50 vezes.', 50, collapses),
   def('collapse-75', 'collapses', 'E', 'Setenta e cinco', 'Colapse a estrela 75 vezes.', 75, collapses),
   def('collapse-100', 'collapses', 'E', 'Cem estrelas', 'Colapse a estrela 100 vezes.', 100, collapses),
-  def('atlas-4', 'collapses', 'M', 'Atlas com 4 páginas', 'Guarde 4 páginas no Atlas.', 4, (s) => s.atlas.pages.length),
-  def('atlas-7', 'collapses', 'L', 'Atlas cheio', 'Guarde 7 páginas no Atlas.', 7, (s) => s.atlas.pages.length),
+  // O Atlas saiu (etapa 15): as três conquistas dele ficam aposentadas (quem já as tem mantém as Cintilas) e entram as do Cofre.
+  def('atlas-4', 'collapses', 'M', 'Atlas com 4 páginas', 'Guarde 4 páginas no Atlas.', 4, () => 0, { retired: true }),
+  def('atlas-7', 'collapses', 'L', 'Atlas cheio', 'Guarde 7 páginas no Atlas.', 7, () => 0, { retired: true }),
+  def('vault-4', 'collapses', 'M', 'Cofre com 4', 'Tenha 4 proibidos no Cofre.', 4, (s) => Object.keys(s.vault).length),
+  def('vault-7', 'collapses', 'L', 'Cofre com 7', 'Tenha 7 proibidos no Cofre.', 7, (s) => Object.keys(s.vault).length),
+  def('vault-10', 'collapses', 'L', 'Cofre completo', 'Tenha os 10 proibidos no Cofre.', 10, (s) => Object.keys(s.vault).length),
+  def('seal-1', 'collapses', 'L', 'Selo Estelar', 'Ganhe seu primeiro Selo Estelar (todos os proibidos no nível 5).', 1, (s) => s.seals),
+  def('seal-10', 'collapses', 'E', 'Dez selos', 'Ganhe 10 Selos Estelares.', 10, (s) => s.seals),
   def(
     'leave-solar',
     'collapses',
@@ -252,15 +264,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
     1,
     regionOpened('alpha-centauri'),
   ),
-  def(
-    'atlas-families',
-    'collapses',
-    'L',
-    'Atlas de todas as famílias',
-    'Guarde no Atlas uma página de cada família.',
-    FAMILIES.length,
-    (s) => new Set(s.atlas.pages.map((p) => grimoireById(p.grimoireId)?.family).filter((f) => f !== undefined)).size,
-  ),
+  def('atlas-families', 'collapses', 'L', 'Atlas de todas as famílias', 'Guarde no Atlas uma página de cada família.', 5, () => 0, { retired: true }),
 
   // --- Proibidos (os 3 de hoje; os 7 novos entram quando o Cofre existir) ---
   ...forbiddenLadder(),
@@ -274,7 +278,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
     'Dez no nível 5',
     'Leve os 10 grimórios proibidos ao nível 5.',
     10,
-    (s) => Object.values(s.stats.forbiddenBest).filter((l) => l >= 5).length,
+    (s) => Object.values(s.vault).filter((l) => l >= FORBIDDEN_MAX_LEVEL).length,
     { needs: 'forbidden-new' },
   ),
 
@@ -402,7 +406,7 @@ export function achievementActive(a: AchievementDef): boolean {
 }
 
 export function achievementViews(state: SaveState): AchievementView[] {
-  return ACHIEVEMENTS.map((a) => {
+  return ACHIEVEMENTS.filter((a) => !a.retired || state.achievements.includes(a.id)).map((a) => {
     const earned = state.achievements.includes(a.id);
     const locked = !achievementActive(a);
     const value = earned ? a.goal : locked ? 0 : Math.min(a.goal, Math.max(0, a.progress(state)));
@@ -413,7 +417,7 @@ export function achievementViews(state: SaveState): AchievementView[] {
 /** Ids que passaram da meta e ainda não estão no save (as que dependem de feature ausente nunca entram). */
 export function newlyEarned(state: SaveState): string[] {
   const have = new Set(state.achievements);
-  return ACHIEVEMENTS.filter((a) => !have.has(a.id) && achievementActive(a) && a.progress(state) >= a.goal).map((a) => a.id);
+  return ACHIEVEMENTS.filter((a) => !a.retired && !have.has(a.id) && achievementActive(a) && a.progress(state) >= a.goal).map((a) => a.id);
 }
 
 /** Guarda no save as conquistas que acabaram de bater a meta. Devolve o mesmo objeto se não há nada novo. */
@@ -429,6 +433,7 @@ export function achievementSparks(state: SaveState): { earned: number; toEarn: n
   let soon = 0;
   for (const a of ACHIEVEMENTS) {
     if (state.achievements.includes(a.id)) earned += a.reward;
+    else if (a.retired) continue;
     else if (achievementActive(a)) toEarn += a.reward;
     else soon += a.reward;
   }

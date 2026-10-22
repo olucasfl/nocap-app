@@ -38,8 +38,8 @@ describe('sorteio por peso (n = escolhas já feitas)', () => {
     expect(rarities(14).has('legendary')).toBe(true);
     expect(rarities(14).has('forbidden')).toBe(false);
   });
-  it('proibido só em n >= 22 e nunca os de colapso futuro', () => {
-    expect(rarities(22, 600).has('forbidden')).toBe(true);
+  it('proibido nunca sai no sorteio: mora no Cofre', () => {
+    expect(rarities(40, 600).has('forbidden')).toBe(false);
     const ids = new Set<string>();
     for (let i = 0; i < 600; i++) drawGrimoires(withPicks(40, `x${i}`)).offers.forEach((id) => ids.add(id));
     expect(ids.has('cygnus-x1')).toBe(false);
@@ -55,20 +55,19 @@ describe('álbum', () => {
     expect(view.discovered).toBe(1);
     expect(view.total).toBe(unlockedContent(s).grimoires.length);
     expect(view.entries[0]).toMatchObject({ id: 'moon', name: 'Lua', discovered: true, level: 3 });
-    const hidden = view.entries.find((e) => e.id === 'sagittarius-a')!;
+    const hidden = view.entries.find((e) => e.id === 'mercury')!;
     expect(hidden).toMatchObject({ name: '???', discovered: false, text: 'Ainda escondido no espaço' });
   });
-  it('a página mostra a contagem, o cadeado e o Atlas', () => {
+  it('a página mostra a contagem e o cadeado', () => {
     const s = newSave('a', 0);
     const markup = html(<GrimoiresPage state={{ ...s, album: ['moon'], run: { ...s.run, build: { moon: 2 } } }} />);
-    expect(markup).toContain('de 35 descobertos');
+    expect(markup).toContain('de 34 descobertos');
     // O descoberto mostra a categoria (Toque); os escondidos não entregam nada.
     expect(markup).toContain('data-cat="touch"');
     expect(markup).toContain('>Toque<');
     expect(markup).toContain('Nível 2');
     expect(markup).toContain('Grimório escondido');
-    expect(markup).toContain('Atlas Eterno');
-    expect(markup).not.toContain('Sagitário');
+    expect(markup).not.toContain('Atlas Eterno');
   });
 });
 

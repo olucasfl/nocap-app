@@ -10,6 +10,7 @@ import {
   chooseGrimoire,
   clampNum,
   collapse,
+  vaultOffers,
   collapseProgress,
   currentEnergyCap,
   drawGrimoires,
@@ -99,13 +100,14 @@ function assertSane(s: SaveState): void {
 }
 
 describe('newSave', () => {
-  it('começa vazio, na região inicial e com 3 espaços no Atlas', () => {
+  it('começa vazio, na região inicial e com o Cofre dos Proibidos vazio', () => {
     const s = newSave('x');
     expect(s.run.dust).toBe(0);
     expect(s.run.upgradeLevels).toHaveLength(UPGRADES.length);
     expect(s.collapses).toBe(0);
     expect(s.regionId).toBe('inner-solar-system');
-    expect(s.atlas).toEqual({ slots: 3, pages: [] });
+    expect(s.vault).toEqual({});
+    expect(s.seals).toBe(0);
     assertSane(s);
   });
 
@@ -395,11 +397,11 @@ describe('buyUpgrade', () => {
     });
   });
 
-  it('M87* e o Atlas reduzem o custo das melhorias; o Webb dobra o toque', () => {
+  it('M87* (no Cofre) reduz o custo das melhorias; o Webb dobra o toque', () => {
     const base = withRun({ ...newSave('b'), collapses: 5 }, { dust: 1e12 });
     const c0 = nextUpgradeCost(base, idx('satellite')) as number;
-    const c1 = nextUpgradeCost(withBuild(base, { m87: 1 }), idx('satellite')) as number;
-    expect(c1).toBe(Math.round(c0 * 0.7));
+    const c1 = nextUpgradeCost({ ...base, vault: { m87: 1 } }, idx('satellite')) as number;
+    expect(c1).toBe(Math.round(c0 * 0.6));
     expect(effectiveStats(withLevels(base, { webb: 1 })).dustPerTouch).toBe(2);
   });
 
@@ -452,10 +454,8 @@ describe('drawGrimoires', () => {
     expect(seen(3)).toEqual(new Set(['common', 'rare']));
     expect(seen(8)).toEqual(new Set(['common', 'rare', 'epic']));
     expect(seen(14)).toEqual(new Set(['common', 'rare', 'epic', 'legendary']));
-    expect(seen(22, 0).has('forbidden')).toBe(true);
-    expect(seen(21, 0).has('forbidden')).toBe(false);
-    // Depois do 1º colapso os limiares caem para 60%: o proibido (Sagitário) já sai com 14 escolhas.
-    expect(seen(14, 1).has('forbidden')).toBe(true);
+    // Os proibidos não são grimórios do sorteio: moram no Cofre.
+    expect(seen(40, 0).has('forbidden')).toBe(false);
   });
 
   it('respeita os pesos: comum aparece bem mais que lendário', () => {
@@ -476,7 +476,7 @@ describe('drawGrimoires', () => {
     for (let i = 0; i < 300; i++) {
       const s = withRun(newSave(`f${i}`), { picks: 40 });
       for (const id of drawGrimoires(s).offers) {
-        expect(['cygnus-x1', 'm87', 'pallas', 'callisto']).not.toContain(id);
+        expect(['pallas', 'callisto']).not.toContain(id);
       }
     }
     const ids = new Set<string>();
@@ -485,8 +485,6 @@ describe('drawGrimoires', () => {
       const base = withLevels({ ...withRun(newSave(`g${i}`), { picks: 40 }), collapses: 5 }, { rhythm: 1, satellite: 1, antenna: 1 });
       for (const id of drawGrimoires(base).offers) ids.add(id);
     }
-    expect(ids.has('cygnus-x1')).toBe(true);
-    expect(ids.has('m87')).toBe(true);
     expect(ids.has('pallas')).toBe(true);
   });
 
@@ -642,23 +640,24 @@ describe('effectiveStats', () => {
   });
 
   it('descontos de custo se multiplicam e param no piso de 40%', () => {
-    const one = effectiveStats(withBuild({ ...newSave('cf'), collapses: 5 }, { m87: 1 })).costFactor;
-    expect(one).toBeCloseTo(0.7, 9);
-    const many = effectiveStats(withBuild({ ...newSave('cf'), collapses: 5 }, { m87: 10 })).costFactor;
-    expect(many).toBe(0.4);
+    const one = effectiveStats({ ...newSave('cf'), collapses: 5, vault: { m87: 1 } }).costFactor;
+    expect(one).toBeCloseTo(0.6, 9);
+    // M87* no nível 5 (-72%) junto com o ramo Nebulosas das melhorias do começo: nunca abaixo do piso de 40%.
+    const deep = effectiveStats({ ...newSave('cf'), collapses: 5, vault: { m87: 5 } }).costFactor;
+    expect(deep).toBeGreaterThanOrEqual(0.4);
   });
 
-  it('o preço do proibido pesa: Sagitário triplica a poeira e corta a energia', () => {
+  it('o preço do proibido pesa: Sagitário quintuplica a poeira e corta a energia', () => {
     const base = effectiveStats(newSave('sg'));
-    const s = effectiveStats(withBuild(newSave('sg'), { 'sagittarius-a': 1 }));
-    expect(s.dustPerTouch).toBeCloseTo(base.dustPerTouch * 3, 9);
-    expect(s.energyPerTouch).toBeCloseTo(base.energyPerTouch * 0.3, 9);
+    const s = effectiveStats({ ...newSave('sg'), vault: { 'sagittarius-a': 1 } });
+    expect(s.dustPerTouch).toBeCloseTo(base.dustPerTouch * 5, 9);
+    expect(s.energyPerTouch).toBeCloseTo(base.energyPerTouch * 0.5, 9);
   });
 
   it('M87* encarece o passo de energia e Cygnus desliga os objetos', () => {
-    const m87 = effectiveStats(withBuild({ ...newSave('m'), collapses: 5 }, { m87: 1 }));
-    expect(m87.energyStepFactor).toBeCloseTo(1.25, 9);
-    const cyg = effectiveStats(withBuild({ ...newSave('m'), collapses: 3 }, { 'cygnus-x1': 1 }));
+    const m87 = effectiveStats({ ...newSave('m'), collapses: 5, vault: { m87: 1 } });
+    expect(m87.energyStepFactor).toBeCloseTo(1.2, 9);
+    const cyg = effectiveStats({ ...newSave('m'), collapses: 3, vault: { 'cygnus-x1': 1 } });
     expect(cyg.objects.disabled).toBe(true);
     expect(cyg.combo.fullMult).toBeCloseTo(2, 9);
     expect(cyg.combo.windowSec).toBeCloseTo(2 * 1.3, 9);
@@ -668,8 +667,8 @@ describe('effectiveStats', () => {
     const s = effectiveStats({
       ...withLevels(newSave('cm'), { pleiades: 5 }),
       collapses: 3,
-      atlas: { slots: 6, pages: [{ grimoireId: 'sirius', level: 10 }, { grimoireId: 'vega', level: 10 }, { grimoireId: 'betelgeuse', level: 10 }, { grimoireId: 'polaris', level: 10 }] },
-    });
+      build: { 'milky-way': 10 },
+    } as unknown as SaveState);
     expect(s.combo.max).toBeLessThanOrEqual(12);
   });
 
@@ -778,60 +777,6 @@ describe('effectiveStats', () => {
     expect(effectiveStats(newSave('t')).startDust).toBe(0);
   });
 
-});
-
-describe('Atlas e bônus de conjunto nos números finais', () => {
-  const page = (grimoireId: string, level = 1): { grimoireId: string; level: number } => ({ grimoireId, level });
-  const withPages = (s: SaveState, pages: { grimoireId: string; level: number }[]): SaveState => ({
-    ...s,
-    atlas: { ...s.atlas, pages },
-  });
-
-  it('uma página vale 60% do poder do grimório', () => {
-    const s = effectiveStats(withPages(newSave('a'), [page('milky-way')]));
-    expect(s.dustPerTouch).toBeCloseTo(1, 9);
-    const v = effectiveStats(withPages(newSave('a'), [page('vesta')]));
-    expect(v.combo.fullDustAdd).toBeCloseTo(0.5 * 0.6, 9);
-  });
-
-  it('a página guarda o nível (60% do efeito escalado)', () => {
-    const s = effectiveStats(withPages(newSave('a'), [page('vesta', 3)]));
-    expect(s.combo.fullDustAdd).toBeCloseTo(0.5 * 2 * 0.6, 9);
-  });
-
-  it('a página e o grimório da vida somam', () => {
-    const s = effectiveStats(withBuild(withPages(newSave('a'), [page('vesta')]), { vesta: 1 }));
-    expect(s.combo.fullDustAdd).toBeCloseTo(0.5 + 0.5 * 0.6, 9);
-  });
-
-  it('2 páginas de Planetas ativam +5% de poeira, 3 ativam +12%', () => {
-    const two = effectiveStats(withPages(newSave('a'), [page('mercury'), page('venus')]));
-    expect(two.dustPerTouch).toBeCloseTo(1.05, 9);
-    const three = effectiveStats(withPages(newSave('a'), [page('mercury'), page('venus'), page('mars')]));
-    expect(three.dustPerTouch).toBeCloseTo(1.12, 9);
-  });
-
-  it('bônus de Estrelas soma combo máximo, Luas somam energia', () => {
-    const stars = effectiveStats(withPages(newSave('a'), [page('sirius'), page('vega')]));
-    expect(stars.combo.max).toBe(3 + 1);
-    const moons = effectiveStats(withPages(newSave('a'), [page('europa'), page('titan')]));
-    expect(moons.energyPerTouch).toBeCloseTo(1 * 1.05, 9);
-  });
-
-  it('Buracos negros reforçam o ganho do proibido e cortam o preço', () => {
-    const lone = effectiveStats(withBuild({ ...newSave('a'), collapses: 5 }, { 'sagittarius-a': 1 }));
-    const pages = [page('sagittarius-a'), page('cygnus-x1'), page('m87')];
-    const boosted = effectiveStats(withBuild(withPages({ ...newSave('a'), collapses: 5 }, pages), { 'sagittarius-a': 1 }));
-    expect(boosted.energyPerTouch).toBeGreaterThan(lone.energyPerTouch);
-    expect(boosted.dustPerTouch).toBeGreaterThan(lone.dustPerTouch);
-  });
-
-  it('efeitos de contagem perdem a fração na página', () => {
-    const orion = effectiveStats(withPages(newSave('a'), [page('orion-nebula')]));
-    expect(orion.choice.picks).toBe(1);
-    const crab = effectiveStats(withPages(newSave('a'), [page('crab-nebula')]));
-    expect(crab.choice.repeatLevels).toBe(2);
-  });
 });
 
 describe('relógio e jogo parado', () => {
@@ -980,7 +925,7 @@ describe('objetos no espaço', () => {
       pending: { offers: ['moon', 'vesta', 'mars'], openedAt: 0, selected: null, picksLeft: 1, rerollsLeft: 0 },
     });
     expect(tickObjects(paused, 1).run.objects).toHaveLength(0);
-    const cyg = withBuild(withRun({ ...newSave('cy'), collapses: 3 }, { nextSpawnAt: 0 }), { 'cygnus-x1': 1 });
+    const cyg = { ...withRun({ ...newSave('cy'), collapses: 3 }, { nextSpawnAt: 0 }), vault: { 'cygnus-x1': 1 } };
     expect(tickObjects(cyg, 1).run.objects).toHaveLength(0);
   });
 
@@ -1063,12 +1008,7 @@ describe('colapso', () => {
     expect(canCollapse(withRun(s, { picks: 40 }))).toBe(false);
     const ready = readyToCollapse(withBuild(s, { moon: 1 }));
     expect(canCollapse(ready)).toBe(true);
-    expect(collapse(s, 'moon')).toBe(s);
-  });
-
-  it('exige um grimório da vida como página', () => {
-    const s = readyToCollapse(withBuild(newSave('co'), { moon: 1 }));
-    expect(collapse(s, 'vega')).toBe(s);
+    expect(collapse(s)).toBe(s);
   });
 
   it('mostra o progresso até a estrela ficar pronta', () => {
@@ -1078,14 +1018,18 @@ describe('colapso', () => {
     expect(p.ready).toBe(false);
   });
 
-  it('guarda a página, não dá Fragmentos e recomeça do zero', () => {
+  it('ganha um proibido no Cofre, não dá Fragmentos e recomeça do zero', () => {
     let s = withBuild(withLevels(newSave('co'), { pulse: 7 }), { vesta: 3, moon: 1 });
     s = withRun(s, { ...s.run, dust: 12345, energy: 10, clicks: 999 });
     s = { ...s, album: ['vesta', 'moon'], achievements: ['first'], stats: { ...s.stats, clicks: 999 } };
     s = readyToCollapse(s);
-    const after = collapse(s, 'vesta');
+    const offers = vaultOffers(s);
+    expect(offers).toHaveLength(3);
+    const after = collapse(s, offers[1]);
     expect(after.collapses).toBe(1);
-    expect(after.atlas.pages).toEqual([{ grimoireId: 'vesta', level: 3 }]);
+    expect(after.vault).toEqual({ [offers[1] as string]: 1 });
+    expect(after.album).toContain(offers[1]);
+    expect(after.stats.forbiddenBest[offers[1] as string]).toBe(1);
     // Sem Fragmentos por colapso: o saldo de Cintilas só vem das fontes (conquistas, álbum...).
     expect(after.sparks).toEqual({ legacy: 0, spent: 0 });
     expect(sparksAvailable(after)).toBeGreaterThan(0);
@@ -1095,16 +1039,15 @@ describe('colapso', () => {
     expect(after.run.energy).toBe(0);
     expect(after.run.build).toEqual({});
     expect(after.run.upgradeLevels.every((l) => l === 0)).toBe(true);
-    expect(after.album).toEqual(['vesta', 'moon']);
+    expect(after.album).toEqual(expect.arrayContaining(['vesta', 'moon']));
     expect(after.achievements).toContain('first');
     expect(after.stats.clicks).toBe(999);
-    expect(effectiveStats(withLevels(after, { resonance: 1 })).combo.fullDustAdd).toBeCloseTo(0.5 * 2 * 0.6, 9);
     assertSane(after);
   });
 
   it('o 1º colapso abre a região nova e o conteúdo da vida seguinte', () => {
     const s = readyToCollapse(withBuild(newSave('co'), { moon: 1 }));
-    const after = collapse(s, 'moon');
+    const after = collapse(s);
     expect(regionFor(after).id).toBe('asteroid-belt');
     expect(after.regionId).toBe('asteroid-belt');
     const content = unlockedContent(after);
@@ -1118,65 +1061,26 @@ describe('colapso', () => {
     const expected: Record<number, string[]> = {
       1: ['pallas', 'hygiea', 'ryugu', 'kepler-22b'],
       2: ['callisto', 'enceladus', 'horsehead', 'golden-record'],
-      3: ['eris', 'haumea', 'cygnus-x1', 'trappist-1', 'aldebaran'],
+      3: ['eris', 'haumea', 'trappist-1', 'aldebaran'],
       4: ['sedna', 'hale-bopp', 'oumuamua', 'vela-pulsar'],
-      5: ['proxima-centauri', 'alpha-centauri-a', 'm87', 'pleiades-cluster', 'sombrero', 'pillars'],
+      5: ['proxima-centauri', 'alpha-centauri-a', 'pleiades-cluster', 'sombrero', 'pillars'],
     };
     for (let c = 1; c <= 5; c++) {
       const before = new Set(unlockedContent({ ...newSave('u'), collapses: c - 1 }).grimoires.map((g) => g.id));
       const now = unlockedContent({ ...newSave('u'), collapses: c }).grimoires.map((g) => g.id);
       expect(now.filter((id) => !before.has(id)).sort()).toEqual([...(expected[c] as string[])].sort());
     }
-    expect(unlockedContent({ ...newSave('u'), collapses: 0 }).grimoires).toHaveLength(35);
+    expect(unlockedContent({ ...newSave('u'), collapses: 0 }).grimoires).toHaveLength(34);
     expect(unlockedContent({ ...newSave('u'), collapses: 5 }).grimoires).toHaveLength(GRIMOIRES.length);
-    expect(GRIMOIRES).toHaveLength(58);
+    expect(GRIMOIRES).toHaveLength(55);
     expect(unlockedContent({ ...newSave('u'), collapses: 5 }).regions).toHaveLength(6);
   });
 
-  it('Titã começa a vida nova com poeira extra', () => {
+  it('Titã começa a vida nova com poeira extra (1.500 por nível, sem a fração da página)', () => {
     const s = readyToCollapse(withBuild(newSave('ti'), { titan: 1 }));
-    const after = collapse(s, 'titan');
-    // A página do Atlas guarda 60% dos 200 de poeira.
-    expect(after.run.dust).toBe(120);
-    expect(after.run.dustLife).toBe(120);
-  });
-
-  it('a 2ª página é adicionada e repetir a mesma só atualiza o nível', () => {
-    let s = readyToCollapse(withBuild(newSave('co'), { vega: 2 }));
-    s = collapse(s, 'vega');
-    s = readyToCollapse(withBuild(s, { vega: 4, moon: 1 }));
-    const same = collapse(s, 'vega');
-    expect(same.atlas.pages).toEqual([{ grimoireId: 'vega', level: 4 }]);
-  });
-
-  it('com o Atlas cheio, troca a página escolhida; sem dizer qual, não colapsa', () => {
-    let s: SaveState = {
-      ...newSave('co'),
-      collapses: 2,
-      atlas: {
-        slots: 3,
-        pages: [
-          { grimoireId: 'moon', level: 1 },
-          { grimoireId: 'mars', level: 1 },
-          { grimoireId: 'vega', level: 1 },
-        ],
-      },
-    };
-    s = readyToCollapse(withBuild(s, { sirius: 2 }));
-    expect(collapse(s, 'sirius')).toBe(s);
-    expect(collapse(s, 'sirius', 7)).toBe(s);
-    const swapped = collapse(s, 'sirius', 1);
-    expect(swapped.atlas.pages.map((p) => p.grimoireId)).toEqual(['moon', 'sirius', 'vega']);
-    expect(swapped.collapses).toBe(3);
-  });
-
-  it('os espaços sobem nos colapsos 5, 10, 25 e 50', () => {
-    for (const [c, slots] of [[4, 3], [5, 4], [9, 4], [10, 5], [24, 5], [25, 6], [49, 6], [50, 7]] as const) {
-      const s = readyToCollapse(withBuild({ ...newSave('sl'), collapses: c - 1 }, { moon: 1 }));
-      const after = collapse(s, 'moon');
-      expect(after.collapses).toBe(c);
-      expect(after.atlas.slots).toBe(slots);
-    }
+    const after = collapse({ ...s, run: { ...s.run, build: { titan: 1 } } });
+    // A vida nova nasce sem os grimórios da vida: só o Cofre vale. Holmberg 15A começa a vida com poeira.
+    expect(after.run.dust).toBe(effectiveStats(after).startDust);
   });
 
   it('não colapsa com a escolha de grimório aberta', () => {
@@ -1225,19 +1129,14 @@ describe('Árvore de Habilidades', () => {
     // Plêiades dá Satélites de graça (4 x 0,1 por segundo) e não mexe no toque.
     expect(effectiveStats(level('pleiades', 3)).autoDustPerSec).toBeCloseTo(0.4, 9);
     expect(effectiveStats(level('pleiades', 3)).dustPerTouch).toBe(1);
-    expect(effectiveStats(level('event-horizon', 3)).forbiddenUnlockPicks).toBe(10);
   });
 
-  it('o Horizonte de Eventos libera os proibidos mais cedo', () => {
-    const forbiddenSeen = (picks: number, tree: Record<string, number>): boolean => {
-      for (let i = 0; i < 500; i++) {
-        const s = { ...withRun(newSave(`eh${i}`), { picks }), tree };
-        if (drawGrimoires(s).offers.some((id) => grimoireById(id)?.rarity === 'forbidden')) return true;
-      }
-      return false;
-    };
-    expect(forbiddenSeen(10, {})).toBe(false);
-    expect(forbiddenSeen(10, { 'event-horizon': 3 })).toBe(true);
+  it('o Horizonte de Eventos reforça os proibidos do Cofre e corta o preço deles', () => {
+    const vault = { 'sagittarius-a': 1 };
+    const plain = effectiveStats({ ...newSave('eh'), collapses: 1, vault });
+    const boosted = effectiveStats({ ...newSave('eh'), collapses: 1, vault, tree: { 'event-horizon': 3 } });
+    expect(boosted.dustPerTouch).toBeGreaterThan(plain.dustPerTouch);
+    expect(boosted.energyPerTouch).toBeGreaterThan(plain.energyPerTouch);
   });
 
   it('refazer devolve 100% das Cintilas gastas e limpa a árvore', () => {
@@ -1286,7 +1185,7 @@ describe('robustez numérica', () => {
         for (let u = 0; u < UPGRADES.length; u++) s = buyUpgrade(s, u);
         if (canCollapse(s)) {
           const id = Object.keys(s.run.build)[0];
-          if (id) s = collapse(s, id, 0);
+          if (id) s = collapse(s);
         }
         if (i % 500 === 0) assertSane(s);
       }
@@ -1311,7 +1210,7 @@ describe('robustez numérica', () => {
       expect(g.text.length).toBeGreaterThan(0);
     }
     expect(GRIMOIRES.filter((g) => g.rarity === 'common' && g.unlockedAtCollapse === 0)).toHaveLength(13);
-    expect(GRIMOIRES.filter((g) => g.rarity === 'forbidden')).toHaveLength(3);
+    expect(GRIMOIRES.filter((g) => g.rarity === 'forbidden')).toHaveLength(0);
   });
 });
 

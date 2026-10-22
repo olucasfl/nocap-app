@@ -33,7 +33,7 @@ async function installSaves(page: Page) {
         slot: 1,
         name: d.name,
         collapses: d.collapses,
-        atlasPages: d.atlas.pages.length,
+        vaultCount: d.atlas.pages.length,
         lastPlayedAt: new Date().toISOString(),
         storySeen: d.storySeen,
         revision: account.rev,

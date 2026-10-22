@@ -47,7 +47,7 @@ export const COLLAPSE_CONTENT: readonly CollapseContent[] = [
       'moon', 'mercury', 'venus', 'mars', 'ceres', 'phobos', 'io', 'vesta', 'halley', 'uranus',
       'europa', 'titan', 'jupiter', 'saturn', 'neptune', 'ganymede', 'pluto', 'triton',
       'sirius', 'vega', 'betelgeuse', 'polaris', 'antares', 'crab-nebula',
-      'orion-nebula', 'milky-way', 'andromeda', 'sagittarius-a',
+      'orion-nebula', 'milky-way', 'andromeda',
       'earth', 'sun', 'deimos', 'charon', 'tethys', 'rigel', 'voyager-1',
     ],
     upgrades: [
@@ -68,7 +68,7 @@ export const COLLAPSE_CONTENT: readonly CollapseContent[] = [
     mechanics: ['favorite'],
     events: ['meteor-shower'],
   },
-  { region: 'kuiper-belt', grimoires: ['eris', 'haumea', 'cygnus-x1', 'trappist-1', 'aldebaran'], upgrades: ['chandra'], objects: [], mechanics: [], events: [] },
+  { region: 'kuiper-belt', grimoires: ['eris', 'haumea', 'trappist-1', 'aldebaran'], upgrades: ['chandra'], objects: [], mechanics: [], events: [] },
   {
     region: 'oort-cloud',
     grimoires: ['sedna', 'hale-bopp', 'oumuamua', 'vela-pulsar'],
@@ -77,7 +77,7 @@ export const COLLAPSE_CONTENT: readonly CollapseContent[] = [
     mechanics: ['missions'],
     events: ['solar-storm'],
   },
-  { region: 'alpha-centauri', grimoires: ['proxima-centauri', 'alpha-centauri-a', 'm87', 'pleiades-cluster', 'sombrero', 'pillars'], upgrades: ['gaia'], objects: [], mechanics: [], events: [] },
+  { region: 'alpha-centauri', grimoires: ['proxima-centauri', 'alpha-centauri-a', 'pleiades-cluster', 'sombrero', 'pillars'], upgrades: ['gaia'], objects: [], mechanics: [], events: [] },
 ];
 
 /** Último colapso com conteúdo nesta versão (v1). */

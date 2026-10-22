@@ -15,10 +15,16 @@ import {
   type Feature,
 } from './achievements';
 import { grimoireById } from './catalog';
+import { dustGoal, minPicks } from './economy';
+import { FORBIDDEN_IDS } from './forbidden';
+import { effectiveStats } from './engine';
+import { meetMilestone } from './milestone';
 import {
   buyUpgrade,
   captureObject,
   chooseGrimoire,
+  collapse,
+  vaultOffers,
   newSave,
   rerollGrimoire,
   selectGrimoire,
@@ -76,6 +82,8 @@ describe('catálogo ampliado', () => {
     for (const id of ['sagittarius-a', 'cygnus-x1', 'm87']) {
       for (const k of [`forb-${id}`, `forb-${id}-3`, `forb-${id}-5`]) expect(achievementById(k)?.needs, k).toBeUndefined();
     }
+    // Etapa 15: os 10 proibidos existem, então a chave está ligada e as conquistas deles contam.
+    expect(FEATURES['forbidden-new']).toBe(true);
     expect(achievementById('forb-all-5')?.needs).toBe('forbidden-new');
     for (const id of ['ton-618', 'phoenix-a', 'gaia-bh3', 'gw150914', 'v404-cygni', 'holmberg-15a', 'ic10-x1']) {
       expect(achievementById(`forb-${id}-3`)?.needs).toBe('forbidden-new');
@@ -100,15 +108,15 @@ describe('catálogo ampliado', () => {
 });
 
 describe('conquistas que esperam conteúdo (`needs`)', () => {
-  const dormant = ACHIEVEMENTS.filter((a) => a.needs);
+  const dormant = ACHIEVEMENTS.filter((a) => a.needs && !FEATURES[a.needs]);
 
   it('há de cada tipo de feature e nenhuma conta enquanto a feature não existe', () => {
     const features = new Set(dormant.map((a) => a.needs));
-    for (const f of ['forbidden-new', 'automation', 'legendary-objects', 'events-new', 'tree-v2', 'daily-streak', 'regions-more'] as Feature[]) {
+    for (const f of ['automation', 'legendary-objects', 'events-new', 'tree-v2', 'daily-streak', 'regions-more'] as Feature[]) {
       expect(features.has(f), f).toBe(true);
       expect(FEATURES[f], f).toBe(false);
     }
-    expect(dormant.length).toBeGreaterThanOrEqual(25);
+    expect(dormant.length).toBeGreaterThanOrEqual(20);
     // Mesmo com tudo no máximo, nenhuma dormente é dada.
     const s = stats(base({ collapses: 30 }), {
       forbiddenBest: { 'cygnus-x1': 5 },
@@ -119,7 +127,7 @@ describe('conquistas que esperam conteúdo (`needs`)', () => {
     });
     const earned = newlyEarned(s);
     for (const a of dormant) expect(earned, a.id).not.toContain(a.id);
-    for (const v of achievementViews(s).filter((x) => x.def.needs)) {
+    for (const v of achievementViews(s).filter((x) => x.def.needs && !FEATURES[x.def.needs])) {
       expect(v.locked).toBe(true);
       expect(v.value).toBe(0);
     }
@@ -152,7 +160,8 @@ describe('conquistas que esperam conteúdo (`needs`)', () => {
     const s = base({ achievements: ['tap-1', 'respec'] });
     const sp = achievementSparks(s);
     expect(sp.earned).toBe(achievementById('tap-1')!.reward + HIDDEN_REWARD);
-    const total = ACHIEVEMENTS.reduce((n, a) => n + a.reward, 0);
+    // As aposentadas (Atlas) não entram no que falta: ninguém mais pode ganhá-las.
+    const total = ACHIEVEMENTS.filter((a) => !a.retired).reduce((n, a) => n + a.reward, 0);
     expect(sp.earned + sp.toEarn + sp.soon).toBe(total);
     expect(sp.soon).toBe(dormant.reduce((n, a) => n + a.reward, 0));
   });
@@ -181,7 +190,7 @@ describe('progresso das famílias', () => {
   });
 
   it('proibidos pelo maior nível já alcançado', () => {
-    const s = stats(base({ album: ['cygnus-x1'] }), { forbiddenBest: { 'cygnus-x1': 5 } });
+    const s = stats(base({ album: ['cygnus-x1'], vault: { 'cygnus-x1': 5 } }), { forbiddenBest: { 'cygnus-x1': 5 } });
     const got = ids(s);
     for (const id of ['forb-cygnus-x1', 'forb-cygnus-x1-3', 'forb-cygnus-x1-5', 'hid-cygnus-5']) expect(got, id).toContain(id);
     expect(got).not.toContain('forb-m87-3');
@@ -214,17 +223,22 @@ describe('contadores do motor que alimentam as conquistas', () => {
     expect(s.stats.rareStreakBest).toBe(3);
   });
 
-  it('o maior nível de um proibido fica guardado e só sobe', () => {
-    let s = base({ collapses: 3 });
-    let t = 0;
-    for (let i = 0; i < 3; i++) {
-      s = choose(offerRun(s, ['cygnus-x1']), 'cygnus-x1', (t += 2));
-      expect(s.stats.forbiddenBest['cygnus-x1']).toBe(Math.min(10, 1 + i * 1));
-    }
-    expect(s.album).toContain('cygnus-x1');
-    // Um grimório que não é proibido não entra.
-    s = choose(offerRun(s, ['moon']), 'moon', (t += 2));
-    expect(s.stats.forbiddenBest.moon).toBeUndefined();
+  it('o maior nível de um proibido fica guardado ao colapsar e só sobe', () => {
+    // Cofre quase todo no nível 5: sobram só 3 proibidos elegíveis, então a oferta é previsível.
+    const maxed = FORBIDDEN_IDS.filter((id) => !['m87', 'gaia-bh3', 'ic10-x1'].includes(id));
+    let s: SaveState = { ...base({ collapses: 20 }), vault: Object.fromEntries(maxed.map((id) => [id, 5])), album: maxed };
+    const ready = (st: SaveState): SaveState => {
+      const k = st.collapses + 1;
+      const r = { ...st, run: { ...st.run, dustLife: dustGoal(k), dust: dustGoal(k), picks: minPicks(k) } };
+      return { ...r, run: { ...r.run, ...meetMilestone(st.collapses, r.run.upgradeLevels, effectiveStats(st).objects.disabled) } };
+    };
+    expect(vaultOffers(s).sort()).toEqual(['gaia-bh3', 'ic10-x1', 'm87']);
+    s = collapse(ready(s), 'm87');
+    expect(s.stats.forbiddenBest.m87).toBe(1);
+    s = collapse(ready(s), 'm87');
+    expect(s.stats.forbiddenBest.m87).toBe(2);
+    expect(s.album).toContain('m87');
+    expect(s.vault.m87).toBe(2);
   });
 
   it('trocar carta conta, e ofertas com lendário ou proibido também (a 1ª oferta do jogo marca a conquista escondida)', () => {
@@ -300,13 +314,12 @@ describe('validação dos totais novos', () => {
     expect(bad({ capturedKinds: ['dragao'] }).ok).toBe(false);
     expect(bad({ eventsSeen: ['gold-rain'] }).ok).toBe(false);
     expect(bad({ forbiddenBest: { moon: 3 } }).ok).toBe(false);
-    expect(bad({ forbiddenBest: { 'cygnus-x1': 3 } }).ok).toBe(false); // colapso 3 ainda não chegou
     expect(bad({ rareStreak: 5, rareStreakBest: 2, picks: 10 }).ok).toBe(false);
     expect(bad({ touchBest: 40 }).ok).toBe(false);
   });
   it('aceita o possível', () => {
     expect(bad({ raresCaptured: 2, objectsCaptured: 5, capturedKinds: ['golden', 'comet'] }).ok).toBe(true);
-    const ok = validateSave({ ...stats(base({ collapses: 3, regionId: 'kuiper-belt', atlas: { slots: 3, pages: [] }, sparks: { legacy: 0, spent: 0 } }), { forbiddenBest: { 'cygnus-x1': 4 }, picks: 10, dustTotal: 2e9 }) });
+    const ok = validateSave({ ...stats(base({ collapses: 3, regionId: 'kuiper-belt', sparks: { legacy: 0, spent: 0 } }), { forbiddenBest: { 'cygnus-x1': 4 }, picks: 10, dustTotal: 2e9 }) });
     expect(ok.ok, ok.ok ? '' : ok.errors.join(' | ')).toBe(true);
   });
 });

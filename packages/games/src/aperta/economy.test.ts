@@ -12,14 +12,12 @@ import {
   MAX_COLLAPSE_COUNT,
   lifeHoursBand,
   MAX_NUMBER,
-  atlasSlots,
   clampCostFactor,
   dustGoal,
   energyCap,
   levelFactor,
   minPicks,
   rarityUnlockPicks,
-  setBonusTier,
   upgradeCost,
 } from './economy';
 
@@ -113,19 +111,11 @@ describe('rarityUnlockPicks', () => {
     expect(rarityUnlockPicks('rare', 0)).toBe(3);
     expect(rarityUnlockPicks('epic', 0)).toBe(8);
     expect(rarityUnlockPicks('legendary', 0)).toBe(14);
-    expect(rarityUnlockPicks('forbidden', 0)).toBe(22);
   });
 
   it('cai para 60% depois do 1º colapso e 40% depois do 5º', () => {
     expect(rarityUnlockPicks('epic', 1)).toBe(5);
-    expect(rarityUnlockPicks('forbidden', 4)).toBe(14);
     expect(rarityUnlockPicks('epic', 5)).toBe(4);
-    expect(rarityUnlockPicks('forbidden', 9)).toBe(9);
-  });
-
-  it('a árvore pode trocar o limiar do proibido', () => {
-    expect(rarityUnlockPicks('forbidden', 0, 10)).toBe(10);
-    expect(rarityUnlockPicks('rare', 0, 10)).toBe(3);
   });
 });
 
@@ -188,20 +178,4 @@ describe('requisitos de colapso (spec 040)', () => {
 });
 
 
-describe('Atlas', () => {
-  it('abre com 3 espaços e ganha 1 nos colapsos 5, 10, 25 e 50', () => {
-    expect(atlasSlots(0)).toBe(3);
-    expect(atlasSlots(4)).toBe(3);
-    expect(atlasSlots(5)).toBe(4);
-    expect(atlasSlots(10)).toBe(5);
-    expect(atlasSlots(24)).toBe(5);
-    expect(atlasSlots(25)).toBe(6);
-    expect(atlasSlots(50)).toBe(7);
-    expect(atlasSlots(500)).toBe(7);
-  });
-
-  it('o bônus de conjunto vem com 2, 3 e 4+ páginas', () => {
-    expect([0, 1, 2, 3, 4, 7].map(setBonusTier)).toEqual([-1, -1, 0, 1, 2, 2]);
-  });
-});
 

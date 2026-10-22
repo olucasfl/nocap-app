@@ -1,11 +1,8 @@
 import {
-  ATLAS_SLOT_COLLAPSES,
   COMBO_BONUS_PER_POINT,
-  FAMILIES,
-  FAMILY_NAMES,
-  GRIMOIRES,
-  SET_BONUS_THRESHOLDS,
-  atlasSlots,
+  FORBIDDEN,
+  FORBIDDEN_MAX_LEVEL,
+  vaultOffers,
   collapseProgress,
   formatDecimal,
   formatDuration,
@@ -19,7 +16,6 @@ import {
   effectiveStats,
   sparksOnCollapse,
   nextUpgradeCost,
-  setBonusTier,
   unlockedContent,
   type Family,
   type SaveState,
@@ -35,7 +31,7 @@ export const ENERGY_HOT_FROM = 0.85;
 /** Quanto tempo a faixa de aviso fica na tela. */
 export const NOTICE_MS = 2300;
 
-export type PageName = 'upgrades' | 'grimoires' | 'achievements' | 'tree';
+export type PageName = 'upgrades' | 'grimoires' | 'achievements' | 'tree' | 'vault';
 
 /** Tocar de novo no mesmo botão da dock fecha a página (spec 3.4). */
 export function togglePage(current: PageName | null, target: PageName): PageName | null {
@@ -155,7 +151,6 @@ const FAMILY_ASTRO: Record<Family, AstroId> = {
   'small-bodies': 'rock',
   stars: 'star',
   nebulae: 'nebula',
-  'black-holes': 'hole',
 };
 
 /** Medalha de um grimório do catálogo; os do catálogo futuro caem na medalha da família. */
@@ -338,86 +333,7 @@ export function signalView(state: SaveState, now: number): SignalView | null {
   return boostMult > 1 && now < boostUntil ? { mult: boostMult, remaining: boostUntil - now } : null;
 }
 
-// --- Colapso e Atlas Eterno (spec 038, seções 8.1 e 8.2) ---
-
-/** Texto do bônus de conjunto de cada família e nível (0, 1, 2 = com 2, 3 e 4+ páginas). */
-const SET_BONUS_TEXT: Record<Family, [string, string, string]> = {
-  planets: ['+5% de poeira por toque', '+12% de poeira por toque', '+25% de poeira por toque'],
-  moons: ['+5% de energia por toque', '+12% de energia por toque', '+25% de energia por toque'],
-  'small-bodies': ['+10% de duração dos objetos', '+20% de duração dos objetos', '+35% de duração dos objetos'],
-  stars: ['+1 de combo máximo', '+2 de combo máximo', '+3 de combo máximo'],
-  nebulae: ['-3% no custo das melhorias', '-6% no custo das melhorias', '-10% no custo das melhorias'],
-  'black-holes': [
-    '+20% de poder dos proibidos e 25% mais baratos',
-    '+40% de poder dos proibidos e 50% mais baratos',
-    '+80% de poder dos proibidos e 75% mais baratos',
-  ],
-};
-
-export interface AtlasPageView {
-  id: string;
-  name: string;
-  family: Family;
-  familyName: string;
-  level: number;
-  astro: AstroId;
-}
-
-export interface SetBonusView {
-  family: Family;
-  familyName: string;
-  count: number;
-  /** -1 = sem bônus ainda. */
-  tier: number;
-  /** Bônus ativo, ou `null`. */
-  active: string | null;
-  /** Quantas páginas faltam para o próximo nível, ou `null` no máximo. */
-  missing: number | null;
-  next: string | null;
-}
-
-export interface AtlasView {
-  slots: number;
-  pages: AtlasPageView[];
-  /** Só as famílias com páginas, mais as que já têm bônus. */
-  bonuses: SetBonusView[];
-  /** Próximo colapso que dá um espaço novo, ou `null` no máximo. */
-  nextSlotAt: number | null;
-}
-
-/** O Atlas como a página mostra: espaços, família de cada página e bônus de conjunto (ativos e a conquistar). */
-export function atlasView(state: SaveState): AtlasView {
-  const pages: AtlasPageView[] = [];
-  for (const p of state.atlas.pages) {
-    const def = GRIMOIRES.find((g) => g.id === p.grimoireId);
-    if (!def) continue;
-    pages.push({
-      id: def.id,
-      name: def.name,
-      family: def.family,
-      familyName: FAMILY_NAMES[def.family],
-      level: p.level,
-      astro: astroFor(def.id, def.family),
-    });
-  }
-  const bonuses = FAMILIES.map((family): SetBonusView => {
-    const count = pages.filter((p) => p.family === family).length;
-    const tier = setBonusTier(count);
-    const nextIdx = tier + 1;
-    const nextNeed = SET_BONUS_THRESHOLDS[nextIdx];
-    return {
-      family,
-      familyName: FAMILY_NAMES[family],
-      count,
-      tier,
-      active: tier >= 0 ? SET_BONUS_TEXT[family][tier]! : null,
-      missing: nextNeed === undefined ? null : nextNeed - count,
-      next: nextNeed === undefined ? null : SET_BONUS_TEXT[family][nextIdx]!,
-    };
-  });
-  const nextSlotAt = ATLAS_SLOT_COLLAPSES.find((c) => c > state.collapses) ?? null;
-  return { slots: state.atlas.slots, pages, bonuses, nextSlotAt };
-}
+// --- Colapso e Cofre dos Proibidos (spec 040, seção 3) ---
 
 /** Um dos três requisitos do colapso (spec 040, seção 2), com a barra pronta para a tela. */
 export interface RequirementView {
@@ -520,39 +436,53 @@ export function collapseView(state: SaveState): CollapseView {
   };
 }
 
-export interface CollapseCandidate {
+/** Um proibido como carta do colapso ou casa do Cofre. */
+export interface VaultCardView {
   id: string;
   name: string;
-  family: Family;
-  familyName: string;
+  /** Nível guardado agora (0 = ainda não tem). */
   level: number;
-  astro: AstroId;
-  /** Já tem página no Atlas: a página só sobe de nível, sem gastar espaço. */
-  inAtlas: boolean;
+  /** Nível depois de escolher este. */
+  nextLevel: number;
+  bonus: string;
+  price: string;
+  /** Texto do selo, ou `null` se ainda não está no nível 5. */
+  seal: string | null;
+  /** O próximo nível é o 5: o selo passa a valer. */
+  sealsNext: boolean;
 }
 
-/** Os grimórios da vida que podem virar página, do maior nível para o menor. */
-export function collapseCandidates(state: SaveState): CollapseCandidate[] {
-  return Object.entries(state.run.build)
-    .map(([id, level]): CollapseCandidate | null => {
-      const def = GRIMOIRES.find((g) => g.id === id);
-      if (!def) return null;
-      return {
-        id,
-        name: def.name,
-        family: def.family,
-        familyName: FAMILY_NAMES[def.family],
-        level,
-        astro: astroFor(id, def.family),
-        inAtlas: state.atlas.pages.some((p) => p.grimoireId === id),
-      };
-    })
-    .filter((c): c is CollapseCandidate => c !== null)
-    .sort((a, b) => b.level - a.level || a.name.localeCompare(b.name, 'pt-BR'));
+function vaultCard(id: string, level: number): VaultCardView {
+  const def = FORBIDDEN.find((f) => f.id === id)!;
+  const next = Math.min(FORBIDDEN_MAX_LEVEL, level + 1);
+  return {
+    id,
+    name: def.name,
+    level,
+    nextLevel: next,
+    bonus: def.bonus(next),
+    price: def.price(next),
+    seal: level >= FORBIDDEN_MAX_LEVEL || next === FORBIDDEN_MAX_LEVEL ? def.sealText : null,
+    sealsNext: next === FORBIDDEN_MAX_LEVEL && level < FORBIDDEN_MAX_LEVEL,
+  };
 }
 
-/** O Atlas está cheio e a página escolhida é nova: a pessoa precisa dizer qual página sai. */
-export function needsReplacement(state: SaveState, pageId: string | null): boolean {
-  if (pageId === null) return false;
-  return !state.atlas.pages.some((p) => p.grimoireId === pageId) && state.atlas.pages.length >= atlasSlots(state.collapses + 1);
+/** As (até) 3 cartas do colapso, com o nível de hoje e o de depois. Vazio = Selo Estelar. */
+export function collapseCards(state: SaveState): VaultCardView[] {
+  return vaultOffers(state).map((id) => vaultCard(id, state.vault[id] ?? 0));
+}
+
+/** A página do Cofre: 10 casas, cada uma com o nível atual (o texto é o do nível guardado, ou do nível 1 se vazia). */
+export function vaultSlots(state: SaveState): (VaultCardView & { owned: boolean; text: string })[] {
+  return FORBIDDEN.map((def) => {
+    const level = state.vault[def.id] ?? 0;
+    const shown = Math.max(1, level);
+    return {
+      ...vaultCard(def.id, level),
+      owned: level > 0,
+      text: def.bonus(shown),
+      price: def.price(shown),
+      seal: level >= FORBIDDEN_MAX_LEVEL ? def.sealText : null,
+    };
+  });
 }

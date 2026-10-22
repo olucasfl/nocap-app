@@ -118,7 +118,7 @@ function summaryOf(slot: SaveSlot, state: SaveState, lastPlayedAt: string): Save
     slot,
     name: state.name,
     collapses: state.collapses,
-    atlasPages: state.atlas.pages.length,
+    vaultCount: Object.keys(state.vault).length,
     lastPlayedAt,
     storySeen: state.storySeen,
   };

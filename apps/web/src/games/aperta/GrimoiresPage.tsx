@@ -1,20 +1,17 @@
 import type { SaveState } from '@nocap/games';
 import { apertaSfx, apertaVibrate } from '@/lib/aperta-audio';
-import { AtlasSection } from './AtlasSection';
 import { favoriteOpen } from './content-logic';
 import { GrimoireBook } from './GrimoireBook';
 import { albumView, astroFor } from './game-logic';
 import { CategoryTag } from './CategoryTag';
 import { RARITY_LABEL } from './rarity';
 
-/** Página de Grimórios (spec 038, 3.5): álbum com os escondidos trancados e o Atlas Eterno. */
+/** Página de Grimórios (spec 038, 3.5): álbum com os escondidos trancados. */
 export function GrimoiresPage({
   state,
-  onCollapse = () => {},
   onFavorite,
 }: {
   state: SaveState;
-  onCollapse?: () => void;
   /** Marca ou desmarca o favorito; sem isto (ou antes do colapso 2) o botão não aparece. */
   onFavorite?: (id: string | null) => void;
 }) {
@@ -68,8 +65,6 @@ export function GrimoiresPage({
           </li>
         ))}
       </ul>
-
-      <AtlasSection state={state} onCollapse={onCollapse} />
     </div>
   );
 }

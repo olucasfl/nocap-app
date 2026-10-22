@@ -3,6 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import { ACHIEVEMENTS } from './achievements';
 import { GRIMOIRES } from './catalog';
+import { FORBIDDEN } from './forbidden';
 import { BALANCE_COLLAPSE, BALANCE_MIN_FINITE, BALANCE_MIN_TOTAL, dustTotalAtCollapse, sparkBalance } from './balance';
 import { ALBUM_SPARKS, RARE_CAPTURE_STEPS, STAR_STEPS, finiteSparksCeiling } from './sparks';
 import { TARGET_BRANCHES, TIER_COST, targetNodeCount, targetTreeCost } from './tree-targets';
@@ -28,9 +29,9 @@ describe('árvore alvo (T)', () => {
 describe('fontes finitas (F), calculadas dos dados', () => {
   it('F = conquistas + álbum + raros e degraus + Estrela dos Proibidos', () => {
     const f = finiteSparksCeiling();
-    const achievements = ACHIEVEMENTS.reduce((n, a) => n + a.reward, 0);
-    const album = GRIMOIRES.reduce((n, g) => n + ALBUM_SPARKS[g.rarity], 0);
-    const forbidden = GRIMOIRES.filter((g) => g.rarity === 'forbidden').length;
+    const achievements = ACHIEVEMENTS.filter((a) => !a.retired).reduce((n, a) => n + a.reward, 0);
+    const album = GRIMOIRES.reduce((n, g) => n + ALBUM_SPARKS[g.rarity], 0) + FORBIDDEN.length * ALBUM_SPARKS.forbidden;
+    const forbidden = FORBIDDEN.length;
     const stars = forbidden * STAR_STEPS.reduce((n, s) => n + s.sparks, 0);
     expect(f.achievements).toBe(achievements);
     expect(f.album).toBe(album);

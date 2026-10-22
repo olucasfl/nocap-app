@@ -12,7 +12,7 @@ export interface SaveSummary {
   slot: number;
   name: string;
   collapses: number;
-  atlasPages: number;
+  vaultCount: number;
   /** ISO da última gravação. */
   lastPlayedAt: string;
   storySeen: boolean;
@@ -56,7 +56,7 @@ const summarize = (row: SaveRow): SaveSummary => {
     slot: row.slot,
     name: row.name,
     collapses: row.collapses,
-    atlasPages: d.atlas?.pages?.length ?? 0,
+    vaultCount: Object.keys((d.vault as Record<string, number> | undefined) ?? {}).length,
     lastPlayedAt: row.updatedAt.toISOString(),
     storySeen: d.storySeen === true,
     revision: row.revision,

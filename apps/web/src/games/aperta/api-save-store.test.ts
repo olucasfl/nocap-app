@@ -21,7 +21,7 @@ function fakeServer() {
           return {
             slot,
             save: live
-              ? { slot, name: live.data.name, collapses: live.data.collapses, atlasPages: 0, lastPlayedAt: 'x', storySeen: live.data.storySeen, revision: live.revision }
+              ? { slot, name: live.data.name, collapses: live.data.collapses, vaultCount: 0, lastPlayedAt: 'x', storySeen: live.data.storySeen, revision: live.revision }
               : null,
             recoverableUntil: null,
           };
@@ -64,7 +64,7 @@ function fakeServer() {
       const r = rows.get(Number(p.split('/')[4]));
       if (!r?.deleted) throw new ApiError(404, 'nada para restaurar');
       r.deleted = false;
-      return { slot: 1, name: r.data.name, collapses: 0, atlasPages: 0, lastPlayedAt: 'x', storySeen: false, revision: r.revision } as T;
+      return { slot: 1, name: r.data.name, collapses: 0, vaultCount: 0, lastPlayedAt: 'x', storySeen: false, revision: r.revision } as T;
     },
     delete: async <T,>(p: string) => {
       calls.push(`DELETE ${p}`);

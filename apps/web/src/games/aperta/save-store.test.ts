@@ -71,8 +71,8 @@ describe('SaveStore', () => {
 describe('textos da lista de saves', () => {
   it('conta colapsos e páginas no singular e no plural', () => {
     const base = { slot: 1 as const, name: 'x', lastPlayedAt: '', storySeen: true };
-    expect(saveStats({ ...base, collapses: 1, atlasPages: 1 })).toBe('1 colapso · 1 página no Atlas');
-    expect(saveStats({ ...base, collapses: 0, atlasPages: 3 })).toBe('0 colapsos · 3 páginas no Atlas');
+    expect(saveStats({ ...base, collapses: 1, vaultCount: 1 })).toBe('1 colapso · 1 proibido no Cofre');
+    expect(saveStats({ ...base, collapses: 0, vaultCount: 3 })).toBe('0 colapsos · 3 proibidos no Cofre');
   });
 
   it('diz há quanto tempo jogou', () => {

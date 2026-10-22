@@ -13,7 +13,7 @@ export interface SaveSummary {
   slot: SaveSlot;
   name: string;
   collapses: number;
-  atlasPages: number;
+  vaultCount: number;
   /** ISO. Quando a pessoa jogou pela última vez. */
   lastPlayedAt: string;
   /** A história só passa no primeiro jogo de cada save. */
@@ -70,7 +70,7 @@ function createStore(
         slot,
         name: DEFAULT_SAVE_NAME,
         collapses: 0,
-        atlasPages: 0,
+        vaultCount: 0,
         lastPlayedAt: new Date(now()).toISOString(),
         storySeen: false,
       };
@@ -156,6 +156,6 @@ export function playedAgo(iso: string, nowMs: number = Date.now()): string {
 
 export function saveStats(s: SaveSummary): string {
   const c = `${s.collapses} ${s.collapses === 1 ? 'colapso' : 'colapsos'}`;
-  const p = `${s.atlasPages} ${s.atlasPages === 1 ? 'página' : 'páginas'} no Atlas`;
+  const p = `${s.vaultCount} ${s.vaultCount === 1 ? 'proibido' : 'proibidos'} no Cofre`;
   return `${c} · ${p}`;
 }

@@ -20,6 +20,7 @@ import { ChoiceModal } from './ChoiceModal';
 import { AchievementsPage } from './AchievementsPage';
 import { achievementCounts } from './achievements-logic';
 import { CollapseModal } from './CollapseModal';
+import { VaultPage } from './VaultPage';
 import { eventView, gaiaPreviews, missionView, newInSpaceView, regionMenuItems } from './content-logic';
 import { FieldObjects, SignalChip } from './FieldObjects';
 import { GamePage, PageIcon, PAGE_TITLE } from './GamePage';
@@ -111,6 +112,8 @@ function pageNotice(page: PageName, affordable: number, albumCount: number, coll
       return `${achievements.earned} de ${achievements.total} conquistas ganhas. Elas contam do primeiro toque em diante.`;
     case 'tree':
       return collapses > 0 ? 'Gaste suas Cintilas nos ramos da árvore.' : 'Os ramos se abrem depois do seu primeiro colapso.';
+    case 'vault':
+      return 'Os proibidos que você guardou valem em todas as vidas.';
   }
 }
 
@@ -216,8 +219,7 @@ export function GameScreen({ controller, onExit }: Props) {
         setNotice({
           id: Date.now(),
           title: 'Estrela colapsada',
-          text: `Página guardada no Atlas: ${e.pageName}.${e.sparks > 0 ? ` +${e.sparks} ${e.sparks === 1 ? 'Cintila' : 'Cintilas'}` : ''}`,
-          astro: astroFor(e.pageId, GRIMOIRES.find((g) => g.id === e.pageId)?.family ?? 'planets'),
+          text: `${e.choice === null ? 'Selo Estelar' : `Cofre: ${e.name}, nível ${e.level}`}.${e.sparks > 0 ? ` +${e.sparks} ${e.sparks === 1 ? 'Cintila' : 'Cintilas'}` : ''}`,
         });
         noticeTimer.current = later(() => setNotice(null), NOTICE_MS * 2);
       } else {
@@ -257,7 +259,7 @@ export function GameScreen({ controller, onExit }: Props) {
 
   const openPage = useCallback((target: PageName) => {
     // Botão ainda escondido pelo tutorial: nem o atalho de teclado abre a página.
-    if (!unlockedRef.current.has(target)) return;
+    if (target !== 'vault' && !unlockedRef.current.has(target)) return;
     setPage((current) => togglePage(current, target));
     if (target === 'grimoires') {
       setFreshGrimoire(false);
@@ -588,6 +590,18 @@ export function GameScreen({ controller, onExit }: Props) {
           )}
         </button>
         )}
+        {state.collapses >= 1 && (
+        <button
+          type="button"
+          data-tut="dock-vault"
+          className={`ap-dockb ap-dock-in${page === 'vault' ? ' on' : ''}`}
+          aria-label={PAGE_TITLE.vault}
+          aria-pressed={page === 'vault'}
+          onClick={() => openPage('vault')}
+        >
+          <PageIcon name="vault" className="ap-dock-i" />
+        </button>
+        )}
         {unlocked.has('upgrades') && (
         <button
           type="button"
@@ -617,8 +631,9 @@ export function GameScreen({ controller, onExit }: Props) {
         >
           {page === 'upgrades' && <UpgradesPage state={state} onBuy={controller.buy} seen={seenUp} onSeen={markSeen} />}
           {page === 'achievements' && <AchievementsPage state={state} />}
+          {page === 'vault' && <VaultPage state={state} onCollapse={() => setCollapseOpen(true)} />}
           {page === 'tree' && <TreePage state={state} onBuy={controller.buyTree} onRespec={controller.respec} />}
-          {page === 'grimoires' ? <GrimoiresPage state={state} onCollapse={() => setCollapseOpen(true)} onFavorite={controller.setFavorite} /> : undefined}
+          {page === 'grimoires' ? <GrimoiresPage state={state} onFavorite={controller.setFavorite} /> : undefined}
         </GamePage>
       )}
 

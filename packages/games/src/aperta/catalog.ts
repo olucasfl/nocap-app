@@ -3,21 +3,21 @@
 // Textos para o jogador ficam em pt-BR; ids e código em inglês.
 
 export type Rarity = 'common' | 'rare' | 'epic' | 'legendary' | 'forbidden';
-export type Family = 'planets' | 'moons' | 'small-bodies' | 'stars' | 'nebulae' | 'black-holes';
+export type Family = 'planets' | 'moons' | 'small-bodies' | 'stars' | 'nebulae';
 export type ObjectKind = 'comet' | 'shooting-star' | 'satellite' | 'asteroid' | 'probe' | 'golden';
 /** O que a Estrela Dourada faz ao ser pega (sorteado quando ela nasce, para a etiqueta mostrar antes). */
 export type RareEffect = 'frenzy' | 'rain' | 'surge';
 export const RARE_EFFECTS: readonly RareEffect[] = ['frenzy', 'rain', 'surge'];
 export type ObjectTarget = ObjectKind | 'all';
 
-export const RARITIES: readonly Rarity[] = ['common', 'rare', 'epic', 'legendary', 'forbidden'];
+/** Raridades dos grimórios comuns do sorteio. Os proibidos moram no Cofre (`forbidden.ts`), não no sorteio. */
+export const RARITIES: readonly Rarity[] = ['common', 'rare', 'epic', 'legendary'];
 export const FAMILIES: readonly Family[] = [
   'planets',
   'moons',
   'small-bodies',
   'stars',
   'nebulae',
-  'black-holes',
 ];
 
 export const FAMILY_NAMES: Record<Family, string> = {
@@ -26,7 +26,6 @@ export const FAMILY_NAMES: Record<Family, string> = {
   'small-bodies': 'Pequenos corpos',
   stars: 'Estrelas',
   nebulae: 'Nebulosas e galáxias',
-  'black-holes': 'Buracos negros',
 };
 
 /** Peso de sorteio por raridade (seção 4.3): sorteia-se a raridade e depois a carta, para o peso não depender de quantas cartas existem. */
@@ -64,7 +63,6 @@ export type Effect = (
   | { kind: 'maxObjects'; add: number }
   | { kind: 'comboMax'; add: number }
   | { kind: 'freeUpgradeLevels'; upgrade: string; levels: number }
-  | { kind: 'forbiddenUnlock'; picks: number }
   | { kind: 'forbiddenPower'; pct: number; priceCutPct: number }
   // Grimórios (e também a árvore, no caso de `comboWindow.pct` e `upgradeCostPct`)
   | { kind: 'comboWindow'; pct?: number; sec?: number; mult?: number }
@@ -82,6 +80,10 @@ export type Effect = (
   /** +`add` toques de recompensa no objeto: poeira (cometa, asteroide, satélite) ou energia (estrela cadente). */
   | { kind: 'objectReward'; target: ObjectTarget; add: number }
   | { kind: 'objectsDisabled' }
+  /** As ofertas de grimório não trazem cartas comuns (Gaia BH3). */
+  | { kind: 'noCommon' }
+  /** +`add` de peso de sorteio nas cartas épicas e lendárias (Gaia BH3). */
+  | { kind: 'rarityBoost'; add: number }
   /** O "Sinal forte" do satélite vale +`add` (x2 vira x2,5). */
   | { kind: 'satelliteMult'; add: number }
   | { kind: 'startDust'; amount: number }
@@ -292,21 +294,6 @@ export const GRIMOIRES: readonly GrimoireDef[] = [
   grim('andromeda', 'Andrômeda', 'legendary', 'nebulae', 'Cada colapso que você já fez soma +1 de poeira por toque.', 'espiral inclinada com núcleo claro', [
     { kind: 'dustPerCollapse', add: 1 },
   ]),
-
-  // Proibidos (o preço vai marcado com `price`)
-  grim('sagittarius-a', 'Sagitário A*', 'forbidden', 'black-holes', 'O toque rende x3 de poeira, mas dá só x0,3 da energia (os grimórios demoram mais para chegar).', 'disco de acreção dourado ao redor de círculo preto', [
-    { kind: 'dustMult', mult: 3 },
-    { kind: 'energyMult', mult: 0.3, price: true },
-  ]),
-  grim('cygnus-x1', 'Cygnus X-1', 'forbidden', 'black-holes', 'Combo (toques em sequência rápida) no máximo: o toque rende x2 e a folga entre toques dobra, mas os objetos param de aparecer.', 'buraco negro com estrela azul companheira', [
-    { kind: 'comboFullMult', mult: 2 },
-    { kind: 'comboWindow', mult: 2 },
-    { kind: 'objectsDisabled', price: true },
-  ], 3),
-  grim('m87', 'M87*', 'forbidden', 'black-holes', 'Melhorias custam 30% menos, mas a barra de energia do próximo grimório fica 25% maior.', 'buraco negro com jato de luz', [
-    { kind: 'upgradeCostPct', pct: -30 },
-    { kind: 'energyStepPct', pct: 25, price: true },
-  ], 5),
 
   // Colapsos 1 a 5 (seção 5.4)
   grim('pallas', 'Palas', 'common', 'small-bodies', 'Os geradores de energia rendem x1,15.', 'rocha acinzentada com sulcos', [
@@ -574,43 +561,6 @@ export const REGIONS: readonly RegionDef[] = [
   { id: 'alpha-centauri', name: 'Alfa Centauro', unlockedAtCollapse: 5 },
 ];
 
-// --- Bônus de conjunto do Atlas por família (seção 8.2): com 2, 3 e 4+ páginas ---
-
-export const SET_BONUS_THRESHOLDS = [2, 3, 4] as const;
-
-export const SET_BONUSES: Record<Family, [Effect, Effect, Effect]> = {
-  planets: [
-    { kind: 'dustPerTouchPct', pct: 5 },
-    { kind: 'dustPerTouchPct', pct: 12 },
-    { kind: 'dustPerTouchPct', pct: 25 },
-  ],
-  moons: [
-    { kind: 'energyPerTouchPct', pct: 5 },
-    { kind: 'energyPerTouchPct', pct: 12 },
-    { kind: 'energyPerTouchPct', pct: 25 },
-  ],
-  'small-bodies': [
-    { kind: 'objectDuration', target: 'all', pct: 10 },
-    { kind: 'objectDuration', target: 'all', pct: 20 },
-    { kind: 'objectDuration', target: 'all', pct: 35 },
-  ],
-  stars: [
-    { kind: 'comboMax', add: 1 },
-    { kind: 'comboMax', add: 2 },
-    { kind: 'comboMax', add: 3 },
-  ],
-  nebulae: [
-    { kind: 'upgradeCostPct', pct: -3 },
-    { kind: 'upgradeCostPct', pct: -6 },
-    { kind: 'upgradeCostPct', pct: -10 },
-  ],
-  'black-holes': [
-    { kind: 'forbiddenPower', pct: 20, priceCutPct: 25 },
-    { kind: 'forbiddenPower', pct: 40, priceCutPct: 50 },
-    { kind: 'forbiddenPower', pct: 80, priceCutPct: 75 },
-  ],
-};
-
 // --- Árvore de Habilidades (seção 8.3): 6 ramos x 3 níveis, custo 1, 2 e 4 Fragmentos ---
 
 export const TREE_COSTS = [1, 2, 4] as const;
@@ -661,11 +611,11 @@ export const TREE: readonly TreeBranchDef[] = [
   {
     id: 'event-horizon',
     name: 'Horizonte de Eventos',
-    text: 'Proibidos liberam com 18 / 14 / 10 escolhas e custam 20% / 40% / 60% menos',
+    text: 'Proibidos do Cofre rendem +10% / +20% / +35% e custam 20% / 40% / 60% menos de preço',
     levels: [
-      [{ kind: 'forbiddenUnlock', picks: 18 }, { kind: 'forbiddenPower', pct: 0, priceCutPct: 20 }],
-      [{ kind: 'forbiddenUnlock', picks: 14 }, { kind: 'forbiddenPower', pct: 0, priceCutPct: 40 }],
-      [{ kind: 'forbiddenUnlock', picks: 10 }, { kind: 'forbiddenPower', pct: 0, priceCutPct: 60 }],
+      [{ kind: 'forbiddenPower', pct: 10, priceCutPct: 20 }],
+      [{ kind: 'forbiddenPower', pct: 20, priceCutPct: 40 }],
+      [{ kind: 'forbiddenPower', pct: 35, priceCutPct: 60 }],
     ],
   },
 ];

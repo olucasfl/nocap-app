@@ -1,5 +1,5 @@
 /* Polimento das telas e eventos novos do Aperta! (spec 038, seção 11, etapa 11b): colapso, regiões,
-   eventos, Atlas e Árvore. Só tokens --space-*; anima só transform e opacity. */
+   eventos, Cofre e Árvore. Só tokens --space-*; anima só transform e opacity. */
 
 /* ---------- colapso: clarão e anel ---------- */
 .ap-flash {
@@ -105,8 +105,8 @@
   stroke-linecap: round;
 }
 
-/* ---------- Atlas: as páginas entram uma a uma ---------- */
-.ap-atlas-pages li.is-full {
+/* ---------- Cofre: as casas entram uma a uma ---------- */
+.ap-vault-slots li.is-full {
   animation: app-card-in 0.35s ease-out backwards;
   animation-delay: calc(var(--i, 0) * 70ms);
 }
@@ -157,7 +157,7 @@
     animation: none;
     opacity: 0.5;
   }
-  .ap-atlas-pages li.is-full,
+  .ap-vault-slots li.is-full,
   .ap-node.is-owned,
   .ap-pickup-ach .ap-pickup-medal {
     animation: none !important;

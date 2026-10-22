@@ -10,6 +10,7 @@ import { meetMilestone } from './milestone';
 import { mergeSaves, validateSave } from './save';
 import { achievementById } from './achievements';
 import { sparksAvailable } from './sparks';
+import { ATLAS_PAGE_SPARKS } from './forbidden';
 
 const dir = join(__dirname, 'fixtures');
 const names = readdirSync(dir).filter((f) => f.startsWith('legacy-') && f.endsWith('.json'));
@@ -47,7 +48,11 @@ describe('saves antigos (anteriores à spec 040)', () => {
     expect(r.save.run.build).toEqual((raw.run as { build: unknown }).build);
     expect(r.save.run.dustLife).toBe((raw.run as { dustLife: number }).dustLife);
     expect(r.save.album).toEqual(raw.album);
-    expect(r.save.atlas.pages).toEqual((raw.atlas as { pages: unknown }).pages);
+    // O Atlas virou Cintilas (valor fixo por página) e o Cofre começa vazio.
+    expect((r.save as unknown as Record<string, unknown>).atlas).toBeUndefined();
+    expect(r.save.version).toBe(3);
+    expect(r.save.vault).toEqual({});
+    expect(r.save.seals).toBe(0);
   });
 
   it.each(names)('%s continua jogando: toca, grava e abre de novo', (name) => {
@@ -68,7 +73,8 @@ describe('saves antigos (anteriores à spec 040)', () => {
     expect(raw.sparks).toBeUndefined();
     const r = validateSave(raw, opts(raw));
     if (!r.ok) throw new Error(r.errors.join(' | '));
-    expect(r.save.sparks).toEqual({ legacy: frag.earned, spent: frag.spent });
+    const pages = (raw.atlas as { pages: unknown[] }).pages.length;
+    expect(r.save.sparks).toEqual({ legacy: frag.earned + pages * ATLAS_PAGE_SPARKS, spent: frag.spent });
     expect((r.save as unknown as Record<string, unknown>).fragments).toBeUndefined();
     // Quem migrou nunca fica com saldo menor que o de antes (as fontes novas só somam).
     expect(sparksAvailable(r.save)).toBeGreaterThanOrEqual(frag.earned - frag.spent);
@@ -101,8 +107,7 @@ describe('saves antigos (anteriores à spec 040)', () => {
       run: { ...r.save.run, picks: Math.max(r.save.run.picks, minPicks(1)), ...meetMilestone(0, r.save.run.upgradeLevels) },
       stats: { ...r.save.stats, picks: Math.max(r.save.stats.picks, minPicks(1)) },
     };
-    const page = Object.keys(ok.run.build)[0] as string;
-    const after = collapse(ok, page);
+    const after = collapse(ok);
     expect(after.collapses).toBe(1);
     expect(collapseProgress(after).dustGoal).toBe(dustGoal(2));
     const v = validateSave(JSON.parse(JSON.stringify(after)));

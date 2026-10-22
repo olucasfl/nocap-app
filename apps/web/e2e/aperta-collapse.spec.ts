@@ -56,7 +56,7 @@ async function installSaves(page: Page, initial: SaveState = readySave()) {
         slot: 1,
         name: d.name,
         collapses: d.collapses,
-        atlasPages: d.atlas.pages.length,
+        vaultCount: d.atlas.pages.length,
         lastPlayedAt: new Date().toISOString(),
         storySeen: true,
         revision: account.rev,

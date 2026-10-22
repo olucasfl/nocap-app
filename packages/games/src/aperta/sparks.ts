@@ -4,6 +4,7 @@
 // pagar uma fonte nem de pagar duas vezes, e o servidor refaz a mesma conta. Só o gasto (`sparks.spent`) é contador.
 
 import { GRIMOIRES, grimoireById, type Rarity } from './catalog';
+import { FORBIDDEN, forbiddenById } from './forbidden';
 import { ACHIEVEMENTS, achievementActive, achievementById } from './achievements';
 import type { SaveState } from './engine';
 
@@ -67,7 +68,7 @@ export interface SparkSources {
 export function starSparks(forbiddenBest: Readonly<Record<string, number>>): number {
   let sum = 0;
   for (const [id, level] of Object.entries(forbiddenBest)) {
-    if (grimoireById(id)?.rarity !== 'forbidden') continue;
+    if (!forbiddenById(id)) continue;
     for (const step of STAR_STEPS) if (level >= step.level) sum += step.sparks;
   }
   return sum;
@@ -80,6 +81,7 @@ export function sparkSources(state: SaveState): SparkSources {
   for (const id of state.album) {
     const g = grimoireById(id);
     if (g) album += ALBUM_SPARKS[g.rarity];
+    else if (forbiddenById(id)) album += ALBUM_SPARKS.forbidden;
   }
   const kinds = new Set(state.stats.capturedKinds);
   const rareFirst = [...RARE_OBJECT_KINDS, ...LEGENDARY_OBJECT_KINDS].filter((k) => kinds.has(k)).length * RARE_FIRST_SPARKS;
@@ -105,11 +107,10 @@ export function sparksAvailable(state: SaveState): number {
 
 /** F: o que as fontes finitas dão no total do jogo (todos os grimórios do catálogo, todas as conquistas, todos os raros e proibidos). */
 export function finiteSparksCeiling(): { achievements: number; album: number; rare: number; stars: number; total: number } {
-  const album = GRIMOIRES.reduce((a, g) => a + ALBUM_SPARKS[g.rarity], 0);
+  const album = GRIMOIRES.reduce((a, g) => a + ALBUM_SPARKS[g.rarity], 0) + FORBIDDEN.length * ALBUM_SPARKS.forbidden;
   const rare = (RARE_OBJECT_KINDS.length + LEGENDARY_OBJECT_KINDS.length) * RARE_FIRST_SPARKS + RARE_CAPTURE_STEPS.reduce((a, s) => a + s.sparks, 0);
-  const forbidden = GRIMOIRES.filter((g) => g.rarity === 'forbidden').length;
-  const stars = forbidden * STAR_STEPS.reduce((a, s) => a + s.sparks, 0);
-  const achievements = ACHIEVEMENTS.reduce((a, d) => a + d.reward, 0);
+  const stars = FORBIDDEN.length * STAR_STEPS.reduce((a, s) => a + s.sparks, 0);
+  const achievements = ACHIEVEMENTS.filter((d) => !d.retired).reduce((a, d) => a + d.reward, 0);
   return { achievements, album, rare, stars, total: achievements + album + rare + stars };
 }
 

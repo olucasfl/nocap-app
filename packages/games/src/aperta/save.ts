@@ -15,14 +15,14 @@ import {
   MAX_COLLAPSE_COUNT,
   MAX_NUMBER,
   MAX_TOUCHES_PER_SEC,
-  atlasSlots,
   dustGoal,
   energyCap,
   upgradeCost,
 } from './economy';
 import { eventsOpen, mechanicOpen, missionById } from './content';
-import { ACHIEVEMENTS, achievementActive, achievementById } from './achievements';
+import { achievementActive, achievementById } from './achievements';
 import { EVENT_IDS_NOW, sparkSources } from './sparks';
+import { ATLAS_PAGE_SPARKS, FORBIDDEN, FORBIDDEN_MAX_LEVEL, forbiddenById } from './forbidden';
 import { SAVE_VERSION, effectiveStats, upgradeLock, type SaveState } from './engine';
 import { TUTORIAL_HINTS, UI_BUTTONS, migrateTutorial } from './tutorial';
 
@@ -112,7 +112,8 @@ const runSchema = z.object({
 
 const saveSchema = z.object({
   // Saves de versões antigas são recusados: a economia v2 (spec 039) zerou todos.
-  version: z.number().int().min(SAVE_VERSION).max(SAVE_VERSION),
+  // A versão 2 (com Atlas) é migrada na leitura (`migrateVault`); a 1 (economia antiga) segue recusada.
+  version: z.number().int().min(2).max(SAVE_VERSION),
   name: z.string().trim().min(1).max(40),
   createdAt: nonNeg,
   playSeconds: z.number().finite().min(0).max(MAX_PLAY_SECONDS),
@@ -127,11 +128,10 @@ const saveSchema = z.object({
     .optional(),
   storySeen: z.boolean(),
   run: runSchema,
-  album: z.array(id).max(GRIMOIRES.length),
-  atlas: z.object({
-    slots: int(20),
-    pages: z.array(z.object({ grimoireId: id, level: z.number().int().min(1).max(GRIMOIRE_MAX_LEVEL) })).max(20),
-  }),
+  album: z.array(id).max(GRIMOIRES.length + FORBIDDEN.length),
+  // Cofre dos Proibidos e Selos Estelares (spec 040, etapa 15): saves de antes entram vazios.
+  vault: z.record(id, int(FORBIDDEN_MAX_LEVEL)).default({}),
+  seals: int(1_000_000).default(0),
   // Sem último colapso (spec 040): o teto é o do guarda de 1e300, onde a meta de poeira deixa de crescer.
   collapses: int(MAX_COLLAPSE_COUNT),
   regionId: id,
@@ -189,6 +189,35 @@ function migrateSparks(raw: unknown): unknown {
   return { ...rest, sparks: { legacy: f.earned, spent: f.spent } };
 }
 
+/**
+ * Saves da versão 2 (com Atlas Eterno) viram a versão 3 (com Cofre dos Proibidos): cada página do Atlas vira
+ * `ATLAS_PAGE_SPARKS` Cintilas em `sparks.legacy` (valor fixo, spec 040 etapa 15), o Atlas some, o Cofre começa vazio e os
+ * proibidos antigos saem da vida em andamento (eles agora só se ganham ao colapsar). Não muta o que recebe.
+ */
+function migrateVault(raw: unknown): unknown {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return raw;
+  const o = raw as Record<string, unknown>;
+  if (o.version !== 2) return raw;
+  const out: Record<string, unknown> = { ...o, version: SAVE_VERSION, vault: {}, seals: 0 };
+  const atlas = o.atlas as { pages?: unknown[] } | undefined;
+  const pages = Array.isArray(atlas?.pages) ? (atlas?.pages as unknown[]).length : 0;
+  delete out.atlas;
+  const sp = out.sparks as { legacy?: number; spent?: number } | undefined;
+  if (sp && typeof sp.legacy === 'number') out.sparks = { ...sp, legacy: sp.legacy + pages * ATLAS_PAGE_SPARKS };
+  const run = o.run as Record<string, unknown> | undefined;
+  if (run && typeof run === 'object') {
+    const old = new Set(['sagittarius-a', 'cygnus-x1', 'm87']);
+    const build = Object.fromEntries(Object.entries((run.build ?? {}) as Record<string, number>).filter(([k]) => !old.has(k)));
+    let pending = run.pending as { offers?: string[]; selected?: string | null } | null | undefined;
+    if (pending && Array.isArray(pending.offers)) {
+      const offers = pending.offers.filter((x) => !old.has(x));
+      pending = offers.length === 0 ? null : { ...pending, offers, selected: pending.selected && old.has(pending.selected) ? null : pending.selected };
+    }
+    out.run = { ...run, build, pending };
+  }
+  return out;
+}
+
 export type SaveValidation =
   | { ok: true; save: SaveState; flagged: string[] }
   | { ok: false; errors: string[] };
@@ -239,7 +268,7 @@ export function validateSave(raw: unknown, opts: ValidateOptions = {}): SaveVali
   }
   if (size > MAX_SAVE_BYTES) return { ok: false, errors: ['Save grande demais'] };
 
-  const parsed = saveSchema.safeParse(migrateSparks(raw));
+  const parsed = saveSchema.safeParse(migrateVault(migrateSparks(raw)));
   if (!parsed.success) {
     const errors = parsed.error.issues.slice(0, 8).map((i) => `${i.path.join('.') || 'save'}: ${i.message}`);
     return { ok: false, errors };
@@ -253,7 +282,7 @@ export function validateSave(raw: unknown, opts: ValidateOptions = {}): SaveVali
 
   // Conteúdo: só do catálogo e só de colapso já alcançado.
   if (!noDupes(save.album) || !noDupes(save.achievements) || !noDupes(save.seenUnlocks)) errors.push('Lista com itens repetidos');
-  for (const gid of save.album) if (!grimoireById(gid)) errors.push(`Grimório desconhecido no álbum: ${gid}`);
+  for (const gid of save.album) if (!grimoireById(gid) && !forbiddenById(gid)) errors.push(`Grimório desconhecido no álbum: ${gid}`);
   for (const [gid, lvl] of Object.entries(run.build)) {
     const g = grimoireById(gid);
     if (!g) errors.push(`Grimório desconhecido: ${gid}`);
@@ -319,17 +348,14 @@ export function validateSave(raw: unknown, opts: ValidateOptions = {}): SaveVali
   if (run.dust > run.dustLife * TOLERANCE + 1) errors.push('Poeira maior que a ganha na vida');
   if (run.dustLife > save.stats.dustTotal * TOLERANCE + 1) errors.push('Poeira da vida maior que o total');
 
-  // Atlas.
-  const slots = atlasSlots(c);
-  if (save.atlas.slots !== slots) errors.push('Espaços do Atlas não batem com os colapsos');
-  if (save.atlas.pages.length > slots) errors.push('Páginas demais no Atlas');
-  if (save.atlas.pages.length > c) errors.push('Páginas no Atlas sem colapso');
-  if (!noDupes(save.atlas.pages.map((p) => p.grimoireId))) errors.push('Página repetida no Atlas');
-  for (const p of save.atlas.pages) {
-    const g = grimoireById(p.grimoireId);
-    if (!g || g.unlockedAtCollapse > c) errors.push(`Página inválida: ${p.grimoireId}`);
-    else if (!save.album.includes(p.grimoireId)) errors.push(`Página fora do álbum: ${p.grimoireId}`);
+  // Cofre dos Proibidos: só proibidos que existem, nível 1 a 5, e cada colapso deu no máximo um nível ou um selo.
+  for (const [vid, lvl] of Object.entries(save.vault)) {
+    if (!forbiddenById(vid) || lvl < 1) errors.push(`Proibido inválido no Cofre: ${vid}`);
+    else if (!save.album.includes(vid)) errors.push(`Proibido fora do álbum: ${vid}`);
   }
+  if (Object.values(save.vault).reduce((a, b) => a + b, 0) + save.seals > c) errors.push('Cofre maior que os colapsos');
+  // Selo Estelar só existe com os 10 proibidos no nível 5.
+  if (save.seals > 0 && !FORBIDDEN.every((f) => (save.vault[f.id] ?? 0) >= FORBIDDEN_MAX_LEVEL)) errors.push('Selos sem o Cofre completo');
 
   // Cintilas: `legacy` só pode valer o que os Fragmentos antigos podiam ter dado (3 + nº do colapso, mais 1 por década
   // de poeira acima de 2 mi e 2 por missão); um save novo tem 0. O gasto cabe no que as fontes já deram.
@@ -337,6 +363,7 @@ export function validateSave(raw: unknown, opts: ValidateOptions = {}): SaveVali
   let legacyMax = 0;
   const bonusCap = Math.max(0, Math.floor(Math.log10(Math.max(1, save.stats.dustTotal / 2e6))));
   for (let k = 1; k <= c; k++) legacyMax += 3 + k + bonusCap + (mechanicOpen('missions', k - 1) ? LEGACY_MISSION_FRAGMENTS : 0);
+  legacyMax += ATLAS_PAGE_SPARKS * 7;
   if (legacy > legacyMax) errors.push('Cintilas migradas não batem com os colapsos');
   const sources = sparkSources(save);
   if (sparkSpent > legacy + sources.total) errors.push('Cintilas gastas maiores que as ganhas');
@@ -353,9 +380,10 @@ export function validateSave(raw: unknown, opts: ValidateOptions = {}): SaveVali
   if (st.capturedKinds.some((k) => !kinds.has(k)) || !noDupes(st.capturedKinds)) errors.push('Tipos de objeto capturados inválidos');
   if (st.eventsSeen.some((e) => !EVENT_IDS_NOW.includes(e) || !eventsOpen(c).includes(e as never)) || !noDupes(st.eventsSeen)) errors.push('Eventos vistos inválidos');
   for (const [gid, lvl] of Object.entries(st.forbiddenBest)) {
-    const g = grimoireById(gid);
-    if (!g || g.rarity !== 'forbidden' || g.unlockedAtCollapse > c || lvl < 1) errors.push(`Nível de proibido inválido: ${gid}`);
+    if (!forbiddenById(gid) || lvl < 1) errors.push(`Nível de proibido inválido: ${gid}`);
   }
+  // O recorde de cada proibido nunca fica abaixo do nível que ele tem no Cofre.
+  for (const [vid, lvl] of Object.entries(save.vault)) st.forbiddenBest[vid] = Math.max(st.forbiddenBest[vid] ?? 0, lvl);
   // Saves de antes da etapa 16 não têm os totais da conta: o que a vida em andamento já fez entra neles.
   st.chainBest = Math.max(st.chainBest, run.chainBest);
   st.missionsDone = Math.max(st.missionsDone, run.missionsDone);
@@ -458,13 +486,9 @@ export function mergeSaves(a: SaveState, b: SaveState): MergeResult {
   const winner = advance(a, b);
   const [top, other] = winner === 'a' ? [a, b] : [b, a];
 
-  const slots = atlasSlots(top.collapses);
-  const pages = top.atlas.pages.map((p) => ({ ...p }));
-  for (const p of [...other.atlas.pages].sort((x, y) => y.level - x.level)) {
-    const have = pages.find((q) => q.grimoireId === p.grimoireId);
-    if (have) have.level = maxNum(have.level, p.level);
-    else if (pages.length < slots) pages.push({ ...p });
-  }
+  // Cofre: o maior nível de cada proibido; se a soma passa do que os colapsos do save mais avançado permitem, fica o dele.
+  const vault = mergeBest(a.vault, b.vault);
+  const vaultOk = Object.values(vault).reduce((x, y) => x + y, 0) + maxNum(a.seals, b.seals) <= top.collapses;
 
   // Árvore: máximo por ramo, só se as Cintilas gastas cobrem; senão fica a da vencedora.
   const tree: Record<string, number> = { ...top.tree };
@@ -490,7 +514,8 @@ export function mergeSaves(a: SaveState, b: SaveState): MergeResult {
     },
     storySeen: a.storySeen || b.storySeen,
     album: union(top.album, other.album),
-    atlas: { slots, pages },
+    vault: vaultOk ? vault : { ...top.vault },
+    seals: vaultOk ? maxNum(a.seals, b.seals) : top.seals,
     seenUnlocks: union(top.seenUnlocks, other.seenUnlocks),
     sparks: { ...top.sparks },
     tree,

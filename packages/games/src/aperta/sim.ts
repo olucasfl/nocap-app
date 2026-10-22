@@ -19,6 +19,7 @@ import {
   sparksAvailable,
   newSave,
   nextUpgradeCost,
+  vaultOffers,
   press,
   selectGrimoire,
   tickObjects,
@@ -67,6 +68,8 @@ export interface LifeResult {
   /** Horas desde o início da vida até cada requisito ficar cumprido (poeira, escolhas, marco) e qual era o marco. */
   reqHours: [number | null, number | null, number | null];
   milestoneKind: string;
+  /** O que a vida tinha no Cofre quando terminou (id para nível). */
+  vault: Record<string, number>;
 }
 
 export interface SimResult {
@@ -135,7 +138,7 @@ function weightOf(kind: ObjectKind): number {
   return { comet: 50, 'shooting-star': 25, satellite: 25, asteroid: 20, probe: 8, golden: 0 }[kind];
 }
 
-function score(state: SaveState, profile: Profile): number {
+export function score(state: SaveState, profile: Profile): number {
   const stats = effectiveStats(state);
   const kinds = OBJECTS.filter((o) => o.unlockedAtCollapse <= state.collapses).map((o) => o.kind);
   const inc = income(stats, profile, kinds);
@@ -209,31 +212,22 @@ function planUpgrade(state: SaveState, profile: Profile): Target | null {
   return best;
 }
 
-function bestPage(state: SaveState, profile: Profile): string {
+/** Proibido do Cofre que mais rende entre as 3 opções do colapso (ou `null` quando só sobra o Selo Estelar). */
+function bestVault(state: SaveState, profile: Profile): string | null {
+  const offers = vaultOffers(state);
+  if (offers.length === 0) return null;
   const base = score(state, profile);
-  let best = Object.keys(state.run.build)[0] as string;
+  let best = offers[0] as string;
   let bestValue = -Infinity;
-  for (const [id, lvl] of Object.entries(state.run.build)) {
-    const hypothetical: SaveState = {
-      ...state,
-      atlas: { ...state.atlas, pages: [...state.atlas.pages, { grimoireId: id, level: lvl }] },
-    };
-    const value = score(hypothetical, profile);
-    if (value - base > bestValue) {
-      bestValue = value - base;
+  for (const id of offers) {
+    const hypothetical: SaveState = { ...state, vault: { ...state.vault, [id]: (state.vault[id] ?? 0) + 1 } };
+    const value = score(hypothetical, profile) - base + extraValue(id);
+    if (value > bestValue) {
+      bestValue = value;
       best = id;
     }
   }
   return best;
-}
-
-/** Atlas cheio: a página nova entra no lugar da mais fraca (a que menos pesa no score). */
-function replaceIndexFor(state: SaveState, pageId: string): number | undefined {
-  const pages = state.atlas.pages;
-  if (pages.some((p) => p.grimoireId === pageId) || pages.length < state.atlas.slots) return undefined;
-  let weakest = 0;
-  for (let i = 1; i < pages.length; i++) if ((pages[i] as { level: number }).level < (pages[weakest] as { level: number }).level) weakest = i;
-  return weakest;
 }
 
 function spendSparks(state: SaveState, profile: Profile): SaveState {
@@ -361,10 +355,10 @@ export function simulate(options: SimOptions): SimResult {
         stalled: false,
         reqHours: req,
         milestoneKind: collapseProgress(state).milestone.kind,
+        vault: state.vault,
       });
       const before = state.collapses;
-      const page = bestPage(state, profile);
-      state = collapse(state, page, replaceIndexFor(state, page));
+      state = collapse(state, bestVault(state, profile));
       if (state.collapses === before) {
         // Sem isto a vida ficava "pronta" para sempre e o laço seguia colapsando no mesmo instante.
         result.alerts.push(`vida ${k} travou (o colapso foi recusado)`);
@@ -388,6 +382,7 @@ export function simulate(options: SimOptions): SimResult {
         stalled: true,
         reqHours: req,
         milestoneKind: collapseProgress(state).milestone.kind,
+        vault: state.vault,
       });
       result.alerts.push(`vida ${state.collapses + 1} travou (passou de ${options.maxHoursPerLife ?? 60} h)`);
       break;

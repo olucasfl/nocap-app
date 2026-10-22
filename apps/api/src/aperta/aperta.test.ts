@@ -99,7 +99,7 @@ describe('lista e leitura', () => {
     expect(r).toMatchObject({ revision: 1, flagged: [] });
     const [one, two] = await service.list('u');
     expect(one!.save).toBeNull();
-    expect(two!.save).toMatchObject({ slot: 2, name: 'Missão Perigeu', collapses: 0, atlasPages: 0, storySeen: false, revision: 1 });
+    expect(two!.save).toMatchObject({ slot: 2, name: 'Missão Perigeu', collapses: 0, vaultCount: 0, storySeen: false, revision: 1 });
     expect((await service.get('u', 2)).data.name).toBe('Missão Perigeu');
     expect(await status(service.get('u', 1))).toBe(404);
   });

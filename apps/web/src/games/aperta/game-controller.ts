@@ -1,5 +1,6 @@
 import {
   GRIMOIRES,
+  forbiddenById,
   achievementById,
   advanceTutorial,
   buyTreeNode,
@@ -47,7 +48,7 @@ export type GameEvent =
   | { type: 'achievement'; id: string; name: string }
   /** Cintilas ganhas nesta ação (conquista, álbum, captura rara, colapso...) e o saldo para gastar. */
   | { type: 'sparks'; amount: number; available: number }
-  | { type: 'collapse'; pageId: string; pageName: string; sparks: number };
+  | { type: 'collapse'; choice: string | null; name: string; level: number; sparks: number };
 
 export interface GameSnapshot {
   state: SaveState;
@@ -229,17 +230,23 @@ export function createGameController({ initial, store, slot, perf = () => perfor
     },
 
     /**
-     * Colapsa a estrela guardando `pageId` no Atlas (spec 8.1). Com o Atlas cheio, `replaceIndex` diz qual
-     * página sai. O motor confere tudo; aqui só o salvamento na hora, porque a vida inteira recomeça.
+     * Colapsa a estrela guardando um proibido no Cofre (spec 040, seção 3); `null` = Selo Estelar, quando todos
+     * já estão no nível 5. O motor confere a escolha; aqui só o salvamento na hora, porque a vida inteira recomeça.
      */
-    collapse(pageId: string, replaceIndex?: number): boolean {
+    collapse(choice: string | null): boolean {
       if (pausedAt !== null || state.tutorial !== 'done' || !canCollapse(state)) return false;
       const before = state;
-      const next = collapse(before, pageId, replaceIndex);
+      const next = collapse(before, choice);
       if (next === before) return false;
       commit(next);
-      const def = GRIMOIRES.find((g) => g.id === pageId);
-      emit({ type: 'collapse', pageId, pageName: def?.name ?? pageId, sparks: Math.max(0, sparksTotal(next) - sparksTotal(before)) });
+      const def = choice === null ? null : forbiddenById(choice);
+      emit({
+        type: 'collapse',
+        choice,
+        name: def?.name ?? 'Selo Estelar',
+        level: choice === null ? 0 : (next.vault[choice] ?? 0),
+        sparks: Math.max(0, sparksTotal(next) - sparksTotal(before)),
+      });
       saveNow();
       return true;
     },

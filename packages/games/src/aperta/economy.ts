@@ -1,7 +1,7 @@
 // Economia do Aperta! (spec 038, seções 6 e 8): custos, passos de energia e metas por colapso.
 // Os números moram aqui (dados) para o simulador ajustar sem mexer no motor.
 
-import { RARITY_UNLOCK_PICKS, SET_BONUS_THRESHOLDS, type Rarity, type UpgradeDef } from './catalog';
+import { RARITY_UNLOCK_PICKS, type Rarity, type UpgradeDef } from './catalog';
 
 /** O motor trava qualquer número aqui (seção 7.5): evita Infinity e NaN em vidas longas. */
 export const MAX_NUMBER = 1e300;
@@ -25,12 +25,6 @@ export const ENERGY_STEP_GROWTH = 1.22;
 /** Grimório repetido: cada nível soma metade do número base (+0,5 vira +0,75, +1...), até o nível 10. */
 export const GRIMOIRE_MAX_LEVEL = 10;
 export const GRIMOIRE_LEVEL_STEP = 0.5;
-/** Uma página do Atlas guarda 60% do poder do grimório. */
-export const ATLAS_PAGE_POWER = 0.6;
-
-export const ATLAS_BASE_SLOTS = 3;
-export const ATLAS_SLOT_COLLAPSES = [5, 10, 25, 50] as const;
-
 export const COMBO_BONUS_PER_POINT = 0.2;
 /** Cada nível da Ressonância depois do 1º soma isto ao valor de cada ponto de combo. */
 export const RESONANCE_POINT_PER_LEVEL = 0.05;
@@ -105,8 +99,8 @@ export function levelFactor(level: number): number {
  * Escolhas que liberam cada raridade nesta vida. Como cada vida zera as escolhas, os limiares caem
  * para 60% depois do 1º colapso e 40% depois do 5º (seção 6.6).
  */
-export function rarityUnlockPicks(rarity: Rarity, collapses: number, forbiddenOverride?: number): number {
-  const base = rarity === 'forbidden' && forbiddenOverride !== undefined ? forbiddenOverride : RARITY_UNLOCK_PICKS[rarity];
+export function rarityUnlockPicks(rarity: Rarity, collapses: number): number {
+  const base = RARITY_UNLOCK_PICKS[rarity];
   if (base <= 0) return 0;
   const scale = collapses >= 5 ? 0.4 : collapses >= 1 ? 0.6 : 1;
   return Math.max(1, Math.ceil(base * scale));
@@ -182,20 +176,6 @@ export function lifeHoursBand(nextCollapse: number, prevHours: number | null): {
   const k = Math.max(1, Math.floor(nextCollapse));
   if (k <= LIFE_BAND_LAST_COLLAPSE || prevHours === null) return { min: LIFE_HOURS_MIN, max: LIFE_HOURS_MAX };
   return { min: LIFE_HOURS_MIN, max: prevHours * (1 + LIFE_GROWTH_MAX) };
-}
-
-/** Espaços do Atlas depois de `collapses` colapsos: 3 mais 1 em cada marco 5, 10, 25 e 50. */
-export function atlasSlots(collapses: number): number {
-  return ATLAS_BASE_SLOTS + ATLAS_SLOT_COLLAPSES.filter((c) => collapses >= c).length;
-}
-
-/** Nível do bônus de conjunto (0, 1 ou 2) para `count` páginas da família, ou -1 sem bônus. */
-export function setBonusTier(count: number): number {
-  let tier = -1;
-  SET_BONUS_THRESHOLDS.forEach((t, i) => {
-    if (count >= t) tier = i;
-  });
-  return tier;
 }
 
 // --- Economia v2 (spec 039) ---

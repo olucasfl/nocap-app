@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { GRIMOIRES, OBJECTS, REGIONS, UPGRADES } from '../catalog';
-import { EVENT_DURATION_SEC, EVENT_INTERVAL_SEC, atlasSlots, dustGoal, minPicks } from '../economy';
+import { EVENT_DURATION_SEC, EVENT_INTERVAL_SEC, dustGoal, minPicks } from '../economy';
 import {
   activeEventId,
   captureObject,
@@ -36,10 +36,8 @@ import {
 function atCollapse(k: number, patch: Partial<SaveState> = {}): SaveState {
   const s = newSave('conteudo', 1);
   const region = [...REGIONS].reverse().find((r) => r.unlockedAtCollapse <= k) ?? REGIONS[0];
-  let earned = 0;
   let dustTotal = 0;
   for (let j = 1; j <= k; j++) {
-    earned += 3 + j;
     dustTotal += dustGoal(j);
   }
   return {
@@ -47,7 +45,6 @@ function atCollapse(k: number, patch: Partial<SaveState> = {}): SaveState {
     collapses: k,
     tutorial: 'done',
     regionId: (region as (typeof REGIONS)[number]).id,
-    atlas: { slots: atlasSlots(k), pages: [] },
     sparks: { legacy: 0, spent: 0 },
     stats: { ...s.stats, picks: k, dustTotal },
     ...patch,
@@ -84,8 +81,8 @@ describe('tabela de conteúdo por colapso (spec 5.4)', () => {
     expect(sorted(inTable)).toEqual(sorted(GRIMOIRES.map((g) => g.id)));
   });
 
-  it('os totais do lançamento batem: 58 grimórios, 6 regiões, 5 objetos, 29 melhorias, 2 eventos', () => {
-    expect(GRIMOIRES).toHaveLength(58);
+  it('os totais do lançamento batem: 55 grimórios comuns (os 10 proibidos moram no Cofre), 6 regiões, 5 objetos, 29 melhorias, 2 eventos', () => {
+    expect(GRIMOIRES).toHaveLength(55);
     expect(REGIONS).toHaveLength(6);
     expect(OBJECTS).toHaveLength(5);
     expect(UPGRADES).toHaveLength(29);
@@ -94,8 +91,8 @@ describe('tabela de conteúdo por colapso (spec 5.4)', () => {
     expect(COLLAPSE_CONTENT.flatMap((r) => r.mechanics)).toEqual(['favorite', 'missions']);
   });
 
-  it('cada colapso novo traz 4 a 6 grimórios (um deles proibido nos colapsos 3 e 5) e uma região', () => {
-    expect(COLLAPSE_CONTENT.slice(1).map((r) => r.grimoires.length)).toEqual([4, 4, 5, 4, 6]);
+  it('cada colapso novo traz 4 ou 5 grimórios comuns e uma região', () => {
+    expect(COLLAPSE_CONTENT.slice(1).map((r) => r.grimoires.length)).toEqual([4, 4, 4, 4, 5]);
     expect(COLLAPSE_CONTENT.slice(1).every((r) => r.region)).toBe(true);
   });
 
@@ -209,7 +206,7 @@ describe('regiões (menu)', () => {
 
   it('colapsar leva à região nova, mesmo se o jogador estava vendo uma antiga', () => {
     const s = run(atCollapse(0, { album: ['moon'] }), { dustLife: dustGoal(1), picks: minPicks(1), build: { moon: 1 }, ...meetMilestone(0, []) });
-    const next = collapse(setRegion({ ...s, collapses: 0 }, 'inner-solar-system'), 'moon');
+    const next = collapse(setRegion({ ...s, collapses: 0 }, 'inner-solar-system'));
     expect(next.collapses).toBe(1);
     expect(next.regionId).toBe('asteroid-belt');
   });
@@ -326,8 +323,8 @@ describe('Missões da estação (colapso 4)', () => {
         ...meetMilestone(4, []),
         mission: { id: 'touch-600', progress: done ? 600 : 10, done, doneAt: -1e9 },
       });
-    const plain = collapse(build(false), 'moon');
-    const bonus = collapse(build(true), 'moon');
+    const plain = collapse(build(false));
+    const bonus = collapse(build(true));
     expect(plain.collapses).toBe(5);
     // Sem Fragmentos por missão: a missão vale pelas conquistas (spec 040).
     expect(bonus.sparks).toEqual(plain.sparks);
@@ -358,8 +355,6 @@ describe('validateSave e o conteúdo dos colapsos 1 a 5', () => {
 
   it.each([
     ['grimório do colapso 4 no colapso 3', holding(3, 'sedna'), 'colapso futuro'],
-    ['Cygnus X-1 antes do colapso 3', holding(2, 'cygnus-x1'), 'colapso futuro'],
-    ['M87* antes do colapso 5', holding(4, 'm87'), 'colapso futuro'],
     ['região fechada', atCollapse(1, { regionId: 'jupiter-saturn' }), 'Região ainda fechada'],
     ['Sonda Voyager no colapso 1', withObject(1, 'probe'), 'Objeto de colapso futuro'],
     ['Asteroide no colapso 0', withObject(0, 'asteroid'), 'Objeto de colapso futuro'],

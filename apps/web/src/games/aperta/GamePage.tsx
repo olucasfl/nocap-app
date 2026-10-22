@@ -6,6 +6,7 @@ export const PAGE_TITLE: Record<PageName, string> = {
   grimoires: 'Grimórios',
   achievements: 'Conquistas',
   tree: 'Árvore de Habilidades',
+  vault: 'Cofre dos Proibidos',
 };
 
 const ICON: Record<PageName, string> = {
@@ -13,6 +14,7 @@ const ICON: Record<PageName, string> = {
   grimoires: 'M4 5h7a3 3 0 0 1 3 3v12a3 3 0 0 0-3-3H4zM20 5h-7a3 3 0 0 0-3 3',
   achievements: 'M8 4h8v5a4 4 0 0 1-8 0zM8 6H4v1a4 4 0 0 0 4 4M16 6h4v1a4 4 0 0 1-4 4M12 13v4M8.5 20h7M10 17h4',
   tree: 'M12 21V9M12 13 7 9M12 16l5-4M12 9V3M7 9V6M17 12V8',
+  vault: 'M5 10h14v10H5zM8 10V7a4 4 0 0 1 8 0v3M12 14v3',
 };
 
 export function PageIcon({ name, className }: { name: PageName; className?: string }) {

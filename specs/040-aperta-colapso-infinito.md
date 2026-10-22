@@ -260,3 +260,32 @@ Leitura: o normal fica em 1,5 a 2,8 h de jogo da vida 1 à 15 (1 a 2 dias de cal
 - As Cintilas das 32 conquistas dormentes só podem ser testadas ligando `FEATURES` num teste; as features reais chegam depois.
 - A página só foi vista no Chromium headless emulando celular, em 320, 390 e 1280 px (ver o relatório); sem aparelho real, sem Safari nem Firefox e sem som (o aviso toca `chime`, que não roda no Chromium headless).
 - A API do Aperta! continua testada só com repositório em memória.
+
+## 12. Etapa 15 pronta: Cofre dos Proibidos no lugar do Atlas (22/10/2026)
+
+### 12.1 Entregue
+
+- `packages/games/src/aperta/forbidden.ts`: 10 proibidos em dados (Sagitário A*, Cygnus X-1, M87*, TON 618, Phoenix A, Gaia BH3, GW150914, V404 Cygni, Holmberg 15A, IC 10 X-1). Cada um tem bônus, preço e selo com números fixos por nível (1 a 5); o selo vale só no nível 5.
+- Colapso: `vaultOffers(state)` dá até 3 proibidos distintos fora do nível 5 (a semente é a da vida); `collapse(state, escolha)` sobe 1 nível (ou guarda um novo no nível 1). Com os 10 no nível 5 a oferta é vazia e o colapso dá um Selo Estelar (+100 de poeira por toque, conta para as conquistas `seal-*`).
+- Atlas removido por inteiro (páginas, espaços, bônus de conjunto, família Buracos Negros, textos e tela). Os 3 grimórios proibidos antigos saíram do sorteio.
+- Save v3: `vault` e `seals`; a migração v2 para v3 apaga o Atlas, converte cada página em `ATLAS_PAGE_SPARKS` (2) Cintilas em `sparks.legacy` e tira os proibidos antigos da vida em andamento (testada com os `fixtures/legacy-*.json`). `validateSave` confere níveis, selos, álbum e `forbiddenBest`.
+- Cintilas dos proibidos (nível 3 e 5, primeira descoberta no álbum) e as conquistas `needs: forbidden-new` ligadas; `vault-4/7/10` e `seal-1/10` novas; `atlas-*` aposentadas (`retired`).
+- Tela: modal de colapso com 3 cartas (nome, nível de hoje para o de depois, bônus, preço, selo) e passo 2; página própria "Cofre dos Proibidos" (10 casas com pontos de nível, descrição e o bloco de colapsar), aberta por um botão novo na dock a partir do 1º colapso.
+- Simulador: `bestVault` escolhe o proibido da oferta; as travas da seção 10 seguem as mesmas.
+
+### 12.2 Desvios do plano
+
+- O passo de tutorial do Cofre é um texto de apresentação dentro do modal do 1º colapso (o tutorial já acabou nesse ponto, então não há cartão de dica novo nem botão novo no `UiState`).
+- Dois bônus levam um efeito extra para não copiar um grimório comum (TON 618: parado, mantém ritmo; Phoenix A: janela do combo maior).
+- `apertaSfx` e a arte não ganharam nada específico do Cofre; o aviso do colapso usa o texto "Cofre: nome, nível N".
+
+### 12.3 Simulador: as travas ainda não fecham (pendência real)
+
+- Depois de duas rodadas de ajuste nos números dos proibidos (soma dos níveis, bônus geométrico por nível, preços mais leves), as vidas 1 a 5 e a maioria das 7 a 15 ficam na faixa de 1 a 3 h, mas **3 testes de `sim.test.ts` seguem vermelhos**: a vida 6 sai em 0,93 h (abaixo de 1 h), a média da vida 16 fica em ~6 h (limite 3,09 h) e algumas sementes travam (40 h) a partir do colapso ~16. A variação entre sementes é grande porque a sorte da oferta (Sagitário A* e GW150914 aceleram muito; Gaia BH3 e Holmberg 15A quase nada) decide a vida.
+- Causa: o Atlas dava poder acumulado (páginas e bônus de conjunto) que o Cofre (no máximo 50 níveis, 1 por colapso) não repõe sozinho depois do colapso ~15. O resto do poder tardio é da árvore grande (etapa 17). Próximo passo: nivelar os 10 proibidos (os fracos sobem, os que aceleram demais descem) e recalibrar junto com a árvore real; as travas não foram mexidas.
+
+### 12.4 O que não foi testado
+
+- Nenhum Playwright nem varredura responsiva (320/390/1280); os specs e2e do colapso, da árvore e do tutorial ainda falam do Atlas e precisam ser atualizados na rodada de telas.
+- Ninguém jogou o Cofre à mão: o equilíbrio dos números de cada proibido vem do simulador, não de sessão real.
+

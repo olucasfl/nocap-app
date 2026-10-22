@@ -2,6 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { ACHIEVEMENTS, achievementById } from './achievements';
 import { GRIMOIRES, TREE, grimoireById } from './catalog';
+import { FORBIDDEN } from './forbidden';
 import { buyTreeNode, newSave, respecTree, type SaveState } from './engine';
 import {
   ALBUM_SPARKS,
@@ -23,7 +24,7 @@ const withStats = (s: SaveState, stats: Partial<SaveState['stats']>): SaveState 
 describe('fonte: álbum (1ª descoberta)', () => {
   it('1 comum ou raro, 2 épico, 3 lendário, 4 proibido', () => {
     expect(ALBUM_SPARKS).toEqual({ common: 1, rare: 1, epic: 2, legendary: 3, forbidden: 4 });
-    const pick = (rarity: string) => GRIMOIRES.find((g) => g.rarity === rarity)!.id;
+    const pick = (rarity: string) => (rarity === 'forbidden' ? FORBIDDEN[0]!.id : GRIMOIRES.find((g) => g.rarity === rarity)!.id);
     for (const [rarity, value] of Object.entries(ALBUM_SPARKS)) {
       expect(sparkSources(base({ album: [pick(rarity)] })).album).toBe(value);
     }
@@ -114,7 +115,7 @@ describe('saldo', () => {
 
 describe('migração dos Fragmentos para Cintilas', () => {
   const old = (fragments: { earned: number; spent: number }, collapses = 2): Record<string, unknown> => {
-    const s = { ...base({ collapses, regionId: 'jupiter-saturn', atlas: { slots: 3, pages: [] } }) } as unknown as Record<string, unknown>;
+    const s = { ...base({ collapses, regionId: 'jupiter-saturn' }) } as unknown as Record<string, unknown>;
     (s.stats as { picks: number; dustTotal: number }).picks = 40;
     (s.stats as { dustTotal: number }).dustTotal = 3e8;
     delete s.sparks;

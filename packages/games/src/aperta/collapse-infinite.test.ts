@@ -51,7 +51,7 @@ describe('o requisito do colapso n cresce sem fim', () => {
     for (const c of [15, 16, 99, 250, 499]) {
       const s = ready(c);
       expect(canCollapse(s), `colapso ${c + 1}`).toBe(true);
-      const after = collapse(s, 'moon', undefined);
+      const after = collapse(s);
       expect(after.collapses, `colapso ${c + 1}`).toBe(c + 1);
       expect(after.run.dustLife).toBe(0);
     }
@@ -85,7 +85,7 @@ describe('o requisito do colapso n cresce sem fim', () => {
 
   it('o marco de cada colapso é o que a spec diz e muda ao colapsar', () => {
     const first = collapseProgress(ready(0)).milestone.kind;
-    const after = collapse(ready(0), 'moon', undefined);
+    const after = collapse(ready(0));
     expect(collapseProgress(after).milestone.kind).not.toBe(first);
     expect(collapseProgress(after).milestone.value).toBe(0);
   });
@@ -138,7 +138,7 @@ describe('contadores da vida (alimentam o marco)', () => {
 
   it('o colapso zera os contadores', () => {
     const s = withRun(ready(2), { captured: 9, rares: 2, chain: 3, chainBest: 12, fullBest: 40, missionsDone: 3 });
-    const after = collapse(s, 'moon', undefined);
+    const after = collapse(s);
     expect(after.run).toMatchObject({ captured: 0, rares: 0, chain: 0, chainBest: 0, fullBest: 0, missionsDone: 0 });
   });
 });
@@ -197,7 +197,6 @@ describe('números grandes', () => {
     const s: SaveState = {
       ...atCollapse(c),
       regionId: 'alpha-centauri',
-      atlas: { slots: 7, pages: [] },
       sparks: { legacy: 0, spent: 0 },
       stats: { ...newSave('inf', 1).stats, picks: c * 12, dustTotal: Math.min(MAX_NUMBER, total * 2) },
     };
