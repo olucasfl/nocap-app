@@ -12,7 +12,7 @@ interface Props {
 }
 
 function nodeLabel(n: TreeNodeRow, branch: string): string {
-  const base = `${branch}, nível ${n.level}: ${n.text}`;
+  const base = `${branch}, ${n.name} (${n.level} de ${n.maxLevel}): ${n.text}`;
   switch (n.status) {
     case 'owned':
       return `${base}. Comprado`;
@@ -21,7 +21,9 @@ function nodeLabel(n: TreeNodeRow, branch: string): string {
     case 'short':
       return `${base}. Falta ${n.missing} Cintilas`;
     case 'blocked':
-      return `${base}. Compre o nível anterior primeiro`;
+      return `${base}. Compre antes: ${n.needs.join(', ')}`;
+    case 'soon':
+      return `${base}. Chega em uma atualização`;
     case 'closed':
       return `${base}. Abre depois do primeiro colapso`;
   }
@@ -35,12 +37,14 @@ function nodeButton(n: TreeNodeRow): string {
       return `Comprar · ${n.cost}`;
     case 'short':
       return `Falta ${n.missing}`;
+    case 'soon':
+      return 'Em breve';
     default:
       return `Custo ${n.cost}`;
   }
 }
 
-/** Corpo da página da Árvore de Habilidades (spec 038, 3.5; moeda da spec 040): 6 ramos de 3 níveis e o refazer em 2 passos. */
+/** Corpo da página da Árvore de Habilidades (spec 038, 3.5; moeda da spec 040): versão provisória em lista (a árvore em grafo é a etapa 18): 5 ramos de 24 nós e o refazer em 2 passos. */
 export function TreePage({ state, onBuy, onRespec }: Props) {
   const view = treeView(state);
   const [confirming, setConfirming] = useState(false);
@@ -68,20 +72,23 @@ export function TreePage({ state, onBuy, onRespec }: Props) {
 
       <ul className="ap-tree-grid" aria-label="Ramos da árvore">
         {view.branches.map((b) => (
-          <li key={b.id} className={`ap-branch${b.level >= 3 ? ' is-full' : ''}${view.open ? '' : ' is-closed'}`}>
+          <li key={b.id} className={`ap-branch${b.owned >= b.total ? ' is-full' : ''}${view.open ? '' : ' is-closed'}`}>
             <header>
               <span className="ap-branch-medal">
                 <AstroMedal astro={b.astro} />
               </span>
               <h3>{b.name}</h3>
-              <small>{b.level} de 3</small>
+              <small>{b.owned} de {b.total}</small>
             </header>
             <ol>
               {b.nodes.map((n) => (
                 <li key={n.id} className={`ap-node is-${n.status}`}>
                   <p>
-                    <b>Nível {n.level}</b>
-                    <span>{n.text}</span>
+                    <b>{n.name}</b>
+                    <span>
+                      {n.maxLevel > 1 ? `Nível ${n.level} de ${n.maxLevel}. ` : ''}
+                      {n.text}
+                    </span>
                   </p>
                   <button
                     type="button"
@@ -117,7 +124,11 @@ export function TreePage({ state, onBuy, onRespec }: Props) {
             limite de vezes.
           </p>
         ) : (
-          <p className="ap-sub">Compre algum nó para poder refazer a árvore depois. Não gasta poeira.</p>
+          <p className="ap-sub">
+            {view.respec.spent > 0
+              ? 'Só dá para refazer a árvore na tela de colapso ou com a vida zerada, nunca no meio de uma vida.'
+              : 'Compre algum nó para poder refazer a árvore depois. Não gasta poeira.'}
+          </p>
         )}
         {!confirming ? (
           <button type="button" className="ap-tbtn" disabled={!view.respec.can} onClick={() => setConfirming(true)}>

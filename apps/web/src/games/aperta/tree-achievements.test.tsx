@@ -27,48 +27,52 @@ describe('visão da árvore', () => {
   it('antes do 1º colapso todos os nós estão fechados', () => {
     const v = treeView(base({ sparks: { legacy: 9, spent: 0 } }));
     expect(v.open).toBe(false);
-    expect(v.branches).toHaveLength(6);
+    expect(v.branches).toHaveLength(5);
     for (const b of v.branches) for (const n of b.nodes) expect(n.status).toBe('closed');
   });
 
-  it('só o próximo nível do ramo pode ser comprado; os outros esperam', () => {
+  it('só o nó com os pais comprados abre; o resto espera, e os de mecânica futura ficam "em breve"', () => {
     const v = treeView(withFragments(1));
-    const alpha = v.branches.find((b) => b.id === 'alpha-centauri')!;
-    expect(alpha.nodes.map((n) => n.status)).toEqual(['buyable', 'blocked', 'blocked']);
-    expect(alpha.nodes.map((n) => n.cost)).toEqual([1, 2, 4]);
-    const broke = treeView(withFragments(0)).branches[0]!;
+    const cosmos = v.branches.find((b) => b.id === 'cosmos')!;
+    const status = (id: string) => cosmos.nodes.find((n) => n.id === id)!.status;
+    expect(status('co-01')).toBe('buyable');
+    expect(status('co-05')).toBe('blocked');
+    expect(cosmos.nodes.find((n) => n.id === 'co-05')!.needs).toEqual(['Sintonia']);
+    const auto = v.branches.find((b) => b.id === 'automation')!;
+    expect(auto.nodes.find((n) => n.id === 'au-01')!.status).toBe('soon');
+    const broke = treeView(withFragments(0)).branches.find((b) => b.id === 'cosmos')!;
     expect(broke.nodes[0]).toMatchObject({ status: 'short', missing: 1 });
   });
 
-  it('refazer devolve 100% do que foi gasto, sem taxa', () => {
-    const s = withFragments(20, { tree: { 'alpha-centauri': 3 }, sparks: { legacy: 20, spent: 7 } });
+  it('refazer devolve 100% do que foi gasto, sem taxa, e só com a vida zerada', () => {
+    const s = withFragments(20, { tree: { 'co-02': 1, 'co-05': 1 }, sparks: { legacy: 20, spent: 3 } });
     const v = treeView(s);
-    expect(v.respec).toEqual({ can: true, refund: 7 });
+    expect(v.respec).toEqual({ can: true, refund: 3, spent: 3 });
     expect(v.earned).toBe(20);
     expect(v.sources.map((x) => x.id)).toContain('legacy');
-    expect(v.branches[0]!.nodes.every((n) => n.status === 'owned')).toBe(true);
     expect(treeView(withFragments(5)).respec.can).toBe(false);
+    const playing = { ...s, run: { ...s.run, clicks: 9, picks: 1 } };
+    expect(treeView(playing).respec).toMatchObject({ can: false, refund: 0, spent: 3 });
   });
 });
 
 describe('controle da árvore', () => {
   it('compra um nó, gasta Cintilas e salva na hora', async () => {
     const t = setup(withFragments(3));
-    expect(t.ctl.buyTree('alpha-centauri:2')).toBe(false);
-    expect(t.ctl.buyTree('alpha-centauri:1')).toBe(true);
-    expect(t.state().tree['alpha-centauri']).toBe(1);
+    expect(t.ctl.buyTree('co-05')).toBe(false);
+    expect(t.ctl.buyTree('co-02')).toBe(true);
+    expect(t.state().tree['co-02']).toBe(1);
     expect(t.state().sparks.spent).toBe(1);
-    expect(t.ctl.buyTree('alpha-centauri:2')).toBe(true);
-    // As conquistas da árvore também rendem Cintilas: o nível 3 (4) cabe se o saldo já passou disso.
-    expect(t.ctl.buyTree('alpha-centauri:3')).toBe(sparksAvailable(t.state()) >= 4 || t.state().tree['alpha-centauri'] === 3);
+    expect(t.ctl.buyTree('co-05')).toBe(true);
+    expect(t.state().sparks.spent).toBe(3);
     expect(t.state().achievements).toContain('tree-1');
   });
 
   it('refazer devolve tudo e não faz nada sem gasto', () => {
     const t = setup(withFragments(10));
     expect(t.ctl.respec()).toBe(false);
-    t.ctl.buyTree('alpha-centauri:1');
-    t.ctl.buyTree('alpha-centauri:2');
+    t.ctl.buyTree('co-02');
+    t.ctl.buyTree('co-05');
     expect(t.ctl.respec()).toBe(true);
     expect(t.state().tree).toEqual({});
     expect(t.state().sparks).toEqual({ legacy: 10, spent: 0 });
@@ -107,10 +111,10 @@ describe('páginas', () => {
       </>,
     );
 
-  it('árvore: 6 ramos, 18 nós, custo e botão de refazer desligado sem gasto', () => {
+  it('árvore: 5 ramos, 120 nós, custo e botão de refazer desligado sem gasto', () => {
     const out = html(<TreePage state={withFragments(1)} onBuy={noop} onRespec={noop} />);
-    expect(out.match(/class="ap-branch[ "]/g)).toHaveLength(6);
-    expect(out.match(/class="ap-node /g)).toHaveLength(18);
+    expect(out.match(/class="ap-branch[ "]/g)).toHaveLength(5);
+    expect(out.match(/class="ap-node /g)).toHaveLength(120);
     expect(out).toContain('Comprar · 1');
     expect(out).toContain('1</b><span>Cintila para gastar');
     expect(out).toContain('De onde vêm as Cintilas');
