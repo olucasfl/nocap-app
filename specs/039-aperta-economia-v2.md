@@ -65,6 +65,20 @@ Marcos de quantidade (10, 25, 50) dobram o gerador. Fora isso, cada uma muda **c
 - **Isca:** o Satélite atrai objetos (encurta a espera do próximo objeto em 1 s por 10 Satélites, com teto).
 - **Revezamento:** o gerador menos comprado rende ×2 (incentiva variar a compra).
 
+### 4.2 Geradores de energia
+Além dos de poeira, a aba Geradores tem uma fileira de **geradores de energia**: em vez de poeira por segundo, enchem a **barra que dá grimórios**. Custam poeira, mesma fórmula de preço (`base × 1,15^n`) e entram na mesma revelação com "???" (seção 6). A produção é medida em **toques equivalentes por segundo** (1 = o que um toque enche hoje), para acompanhar o passo da barra.
+
+| Gerador de energia | Preço base | Energia por segundo (toques equivalentes) |
+|---|---|---|
+| Antena | 400 | 0,02 |
+| Receptor de Sinal | 3.000 | 0,1 |
+| Matriz de Escuta | 30.000 | 0,5 |
+| Rede Profunda | 400.000 | 2,5 |
+
+- Valem as mesmas regras anti-farm da seção 5: 100% tocando, 25% parado, e um **teto de 35%** da energia que os toques enchem a 2,5 toques/s. Sem isso, a pessoa ganharia grimório sem tocar, que é exatamente o que o Lucas não quer.
+- Efeitos de grimório e melhorias de gerador (4.1) podem tocar nesta fileira: +% de energia, Conversão, Rajada de energia.
+- Esta fileira é a forma "comprada" de acelerar grimórios; o passo da barra (`ENERGY_STEPS`) é recalibrado na etapa A para que energia por geradores nunca dispense o toque.
+
 ## 5. Regra anti-farm (ritmo ativo)
 
 - Os geradores rendem **100% enquanto a pessoa toca** (toque nos últimos 4 s) e **25% parada**.
