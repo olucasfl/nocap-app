@@ -1020,7 +1020,7 @@ function offerCandidates(state: SaveState, exclude: readonly string[]): Grimoire
 export function drawGrimoires(state: SaveState, exclude: readonly string[] = [], count?: number): { offers: string[]; rngState: number } {
   const stats = effectiveStats(state);
   // Eclipse (evento da árvore): cada oferta traz uma carta extra enquanto dura.
-  // 4ª carta (árvore): vale em toda 3ª oferta de grimórios (e sempre no Cofre); o Eclipse soma uma carta enquanto dura.
+  // 4ª carta (árvore): vale em toda 6ª oferta de grimórios (e sempre no Cofre); o Eclipse soma uma carta enquanto dura.
   const fourth = stats.luck.fourthCard && (state.stats.offers + 1) % FOURTH_CARD_EVERY === 0 ? 1 : 0;
   const want = count ?? stats.choice.cards + fourth + (activeEventId(state, state.clock) === 'eclipse' ? 1 : 0);
   const candidates = offerCandidates(state, exclude);
@@ -1074,7 +1074,7 @@ export function drawGrimoires(state: SaveState, exclude: readonly string[] = [],
   return { offers, rngState: rng };
 }
 
-export const FOURTH_CARD_EVERY = 3;
+export const FOURTH_CARD_EVERY = 6;
 
 const RARITY_RANK: Record<Rarity, number> = { common: 0, rare: 1, epic: 2, legendary: 3, forbidden: 4 };
 const RARE_STREAK_CAP = 6;
@@ -1134,9 +1134,9 @@ function openChoice(state: SaveState, now: number, picksLeft: number, rerollsLef
     const pity = luck.pityOn && state.stats.sinceLegend + 1 >= Math.max(PITY_MIN, PITY_BASE - luck.pityCut);
     if (pity || (luck.legendEvery > 0 && n % luck.legendEvery === 0)) ({ offers, rngState } = ensureRarity(state, offers, rngState, 'legendary'));
     if (luck.epicEvery > 0 && n % luck.epicEvery === 0) ({ offers, rngState } = ensureRarity(state, offers, rngState, 'epic'));
-    // Destino: uma vez por vida (depois das 3 primeiras escolhas) a oferta inteira vem rara ou melhor.
+    // Destino: uma vez por vida (depois das 3 primeiras escolhas) a oferta traz pelo menos uma carta rara ou melhor.
     if (luck.destiny && !destinyUsed && state.run.picks >= DESTINY_FROM_PICKS) {
-      ({ offers, rngState } = liftCommons(state, offers, rngState));
+      ({ offers, rngState } = ensureRarity(state, offers, rngState, 'rare'));
       destinyUsed = true;
     }
   }
@@ -1170,24 +1170,7 @@ function openChoice(state: SaveState, now: number, picksLeft: number, rerollsLef
   });
 }
 
-const DESTINY_FROM_PICKS = 3;
-
-/** Troca cada carta comum da oferta por uma rara ou melhor que ainda não esteja nela (Destino). */
-function liftCommons(state: SaveState, offers: string[], rng: number): { offers: string[]; rngState: number } {
-  let out = offers;
-  for (let i = 0; i < out.length; i++) {
-    if ((grimoireById(out[i] as string)?.rarity ?? 'common') !== 'common') continue;
-    const pool = offerCandidates(state, out).filter((g) => RARITY_RANK[g.rarity] >= 1 && g.rarity !== 'forbidden');
-    const usable = pool.filter((g) => grimoireUseful(state, g));
-    const from = usable.length > 0 ? usable : pool;
-    if (from.length === 0) break;
-    let roll: number;
-    [roll, rng] = nextRandom(rng);
-    const card = from[Math.min(from.length - 1, Math.floor(roll * from.length))] as GrimoireDef;
-    out = out.map((o, j) => (j === i ? card.id : o));
-  }
-  return { offers: out, rngState: rng };
-}
+const DESTINY_FROM_PICKS = 8;
 
 /** Tempo que ainda falta para as cartas destravarem (0 = livres). */
 export function choiceLockRemaining(state: SaveState, now: number): number {
@@ -1903,8 +1886,8 @@ export function canCollapse(state: SaveState): boolean {
  */
 export function vaultOffers(state: SaveState): string[] {
   const eligible = FORBIDDEN_IDS.filter((id) => (state.vault[id] ?? 0) < FORBIDDEN_MAX_LEVEL);
-  // A 4ª carta da árvore vale também na oferta do Cofre.
-  const size = VAULT_OFFER_SIZE + (effectiveStats(state).luck.fourthCard ? 1 : 0);
+  // A 4ª carta da árvore vale também na oferta do Cofre, a cada 4 colapsos.
+  const size = VAULT_OFFER_SIZE + (effectiveStats(state).luck.fourthCard && (state.collapses + 1) % 4 === 0 ? 1 : 0);
   if (eligible.length <= size) return eligible.slice();
   const pool = eligible.slice();
   const out: string[] = [];

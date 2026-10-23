@@ -70,7 +70,7 @@ export interface ExploreStats {
   horizon: boolean;
 }
 
-export const PITY_BASE = 50;
+export const PITY_BASE = 70;
 export const PITY_MIN = 10;
 export const RADAR_MIN = 25;
 export const OBJECT_SLOTS_CAP = 6;

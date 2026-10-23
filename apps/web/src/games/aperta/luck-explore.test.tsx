@@ -83,9 +83,9 @@ describe('lendários e eventos na tela', () => {
     expect(radarView(s)).toBeNull();
     const withNode = { ...s, tree: { 'ex-01': 1 }, run: { ...s.run, radar: 5 } };
     const view = radarView(withNode)!;
-    expect(view).toMatchObject({ captures: 5, threshold: 20, fill: 0.25 });
+    expect(view).toMatchObject({ captures: 5, threshold: 80, fill: 0.0625 });
     const chip = html(<RadarChip view={view} />);
-    expect(chip).toContain('scaleX(0.250)');
+    expect(chip).toContain('scaleX(0.063)');
   });
 
   it('cada evento da árvore toca um som que já existe', () => {

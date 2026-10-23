@@ -48,14 +48,16 @@ describe('4ª carta', () => {
     expect(open(ready()).run.pending!.offers).toHaveLength(3);
     expect(effectiveStats(ready({ tree: TREE({ 'lu-14': 1 }) })).luck.fourthCard).toBe(true);
     const tree = TREE({ 'lu-01': 1, 'lu-02': 1, 'lu-06': 1, 'lu-05': 1, 'lu-14': 1 });
-    // Toda 3ª oferta (a 3ª, a 6ª...) ganha a 4ª carta; as outras ficam com 3.
-    const third = ready({ tree, stats: { ...newSave('x').stats, offers: 2 } });
+    // Toda 6ª oferta ganha a 4ª carta; as outras ficam com 3.
+    const third = ready({ tree, stats: { ...newSave('x').stats, offers: 5 } });
     expect(open(third).run.pending!.offers).toHaveLength(4);
     expect(open(ready({ tree })).run.pending!.offers).toHaveLength(3);
     const withoutNode = ready();
     expect(vaultOffers(withoutNode)).toHaveLength(3);
-    expect(vaultOffers({ ...withoutNode, tree })).toHaveLength(4);
-    expect(new Set(vaultOffers({ ...withoutNode, tree })).size).toBe(4);
+    // O 4º colapso (com 3 feitos) traz 4 opções no Cofre; o seguinte volta a 3.
+    expect(vaultOffers({ ...withoutNode, collapses: 3, tree })).toHaveLength(4);
+    expect(new Set(vaultOffers({ ...withoutNode, collapses: 3, tree })).size).toBe(4);
+    expect(vaultOffers({ ...withoutNode, tree })).toHaveLength(3);
   });
 });
 
@@ -161,25 +163,25 @@ describe('garantias e pesos em números', () => {
     expect(effectiveStats(ready({ tree: TREE({ 'lu-02': 2, 'lu-08': 1, 'lu-15': 1 }) })).luck).toMatchObject({ rareWeight: 0.5, epicWeight: 0.1, legendWeight: 0.1 });
   });
 
-  it('o Destino deixa a oferta toda rara ou melhor, uma vez por vida', () => {
+  it('o Destino garante uma carta rara ou melhor na oferta, uma vez por vida', () => {
     const tree = TREE({ 'lu-22': 1 });
     const s = ready({ tree });
     const o = open(s);
     expect(o.run.destinyUsed).toBe(true);
-    expect(o.run.pending!.offers.map(rarity)).toEqual(o.run.pending!.offers.map(() => expect.not.stringMatching(/^common$/)));
+    expect(o.run.pending!.offers.some((id) => rarity(id) !== 'common')).toBe(true);
     // Escolhe uma carta, enche a barra de novo e abre outra: a segunda não é mais garantida.
     const picked = chooseGrimoire(selectGrimoire(o, o.run.pending!.offers[0]!, 200), o.run.pending!.offers[0]!, 200);
     expect(picked.run.destinyUsed).toBe(true);
   });
 
   it('as Duas escolhas dão uma escolha a mais a cada N ofertas', () => {
-    const nth = open(ready({ tree: TREE({ 'lu-20': 1 }), stats: { ...newSave('x').stats, offers: 39 } }));
+    const nth = open(ready({ tree: TREE({ 'lu-20': 1 }), stats: { ...newSave('x').stats, offers: 99 } }));
     expect(nth.run.pending!.picksLeft).toBe(2);
   });
 
   it('Repetir em dobro: a cada N escolhas a repetição sobe 1 nível a mais', () => {
     const s = ready({ tree: TREE({ 'lu-13': 2 }) });
-    expect(effectiveStats(s).luck.repeatEvery).toBe(6);
+    expect(effectiveStats(s).luck.repeatEvery).toBe(30);
     const mk = (picks: number): SaveState => {
       const r = ready({ tree: TREE({ 'lu-13': 2 }) }, picks);
       return { ...r, run: { ...r.run, build: { moon: 2 } } };
@@ -190,7 +192,7 @@ describe('garantias e pesos em números', () => {
       const withOffer = { ...o, run: { ...o.run, pending: { ...o.run.pending!, offers: [id, ...o.run.pending!.offers.slice(1)] } } };
       return chooseGrimoire(selectGrimoire(withOffer, id, 102), id, 102).run.build[id]!;
     };
-    expect(lvl(5)).toBe(4);
-    expect(lvl(6)).toBe(3);
+    expect(lvl(29)).toBe(4);
+    expect(lvl(30)).toBe(3);
   });
 });

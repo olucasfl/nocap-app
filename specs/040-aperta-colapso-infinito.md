@@ -323,3 +323,32 @@ F/T = 1,24 (>= 0,80) e (F + R25)/T = 1,27 (>= 1,10). Não precisou ajustar custo
 - Cartas de capa e Largada só têm teste de unidade; o simulador não define favorito, então a capa não entrou na conta das vidas.
 - Os specs e2e da árvore (`aperta-tree`) ainda falam da árvore antiga; sem Playwright nesta etapa.
 
+## 14. Etapa 20 pronta: Sorte e Exploração no jogo (23/10/2026)
+
+### 14.1 Entregue
+
+- **Sorte (24 nós ligados, `TREE_FEATURES.luck`):** `tree-fx.ts` junta os nós em `luckStats`. Rerolls por vida (`rerollsAvailable`, `rerollGrimoire`), descarte de oferta (`discardOffer`, "Segunda chance"), 4ª carta (toda 6ª oferta de grimórios e todo 4º colapso no Cofre), pity de lendário com contador visível (`pityLeft`, `stats.sinceLegend`), Garantia (épica a cada N ofertas), Fortuna e Garantia dupla (lendária a cada N), Destino (uma vez por vida, uma carta rara ou melhor), Duas escolhas, Repetir em dobro e pesos de carta em pontos (a base é 100/24/9/3).
+- **Exploração (24 nós ligados, `TREE_FEATURES.exploration`):** `exploreStats`. Radar de lendários (contador de capturas em `run.radar`; ao encher, um lendário nasce garantido), Mais objetos (teto 6), 4 eventos com chance e duração por nível (Chuva de ouro: ganho x2; Alinhamento: o combo não cai; Maré de energia: barra x2; Eclipse: +1 carta por oferta), Eventos frequentes, Grande evento, Mapa estelar (`starMapView`, na página do Cofre, com detalhe, marco e horizonte).
+- **4 objetos lendários** (`LEGENDARY_OBJECTS`): Grande Cometa, Pulsar, Nebulosa errante e Buraco de minhoca, com arte SVG no kit, vida e recompensa. Só nascem com o Radar, no começo da Chuva de ouro e do Eclipse, e nunca no tutorial; a 1ª captura de cada rende Cintilas.
+- **Tela:** chip de evento com barra de tempo por `transform` (sem número), brilho do evento, chip do Radar, oferta de 4 cartas, botão de descarte, contador do pity, aviso de lendário e de 1º evento (a dica curta de 1ª vez), sons reaproveitados do `aperta-audio`.
+- **Conquistas:** `legendary-objects` e `events-new` ligadas (cada evento, cada lendário, os 4 lendários); `luck-streak` e a oferta lendária na 1ª oferta já contavam. Observatório, Projeção, Mapa do cosmos e Constelação eterna ficam sob a nova chave `observatory` (desligada).
+- **Simulador:** usa rerolls e descartes (só no que não presta) e roda os eventos da árvore.
+- **Save:** `run` ganhou `rerollsUsed`, `discardsUsed`, `radar`, `eventsStarted`, `destinyUsed`; `stats.sinceLegend`; os 4 eventos e os 4 lendários são válidos.
+
+### 14.2 Desvios e o que mudou do plano
+
+- Alguns nós da spec mudaram de efeito para caber no motor sem tela nova (Destino não mostra a próxima oferta; "Mão cheia" e "Troca de reserva" viraram trocas e descartes extras; "Cometa dourado" virou "Lendas generosas"; "Radar certeiro" mantém um quarto do radar).
+- Os números de Sorte e Exploração foram reduzidos várias vezes: com tudo comprado e o jogador simulado escolhendo sempre a melhor carta, as vidas caíam para menos da metade.
+- **A trava "árvore completa não encurta a vida mais de ~25%" não é confiável como medida.** Medi com 16 sementes (vidas 6 a 15, perfil normal): sem árvore 2,31 h; só a base (poder direto e Cosmos) 2,36 h; Sorte 1,80 h; Exploração 2,52 h; tudo junto 1,31 a 1,43 h. Um grupo de nós quase nulo (pesos de carta e Estrela Dourada) também deu 1,80 h, e um sem efeito real subiu para 2,83 h: qualquer mudança embaralha o sorteio das cartas e o resultado oscila em torno de ±20%. A conclusão honesta é que a árvore completa encurta a vida entre ~30% e ~40% no simulador; o teste automático só serve de alarme grosso.
+- O teste automático usa 6 sementes (rápido) e uma folga maior que 25% por causa desse ruído; 16 sementes levariam ~7 min por rodada.
+
+### 14.3 Simulador: estado final
+
+- Última rodada completa (`sim.test.ts`, 17 testes): **16 passam e 1 falha**: a vida 15 sai em 0,94 h (o mínimo é 1 h); as demais vidas de 1 a 14 ficam entre 1 e 3 h, as vidas depois da 15ª não crescem, nada trava, e a árvore completa fica a menos de 25% da vida sem árvore nessa configuração (no teste de 6 sementes).
+- Um ajuste de 1% no crescimento dos proibidos, tentado para subir a vida 15, deslocou a falha para a vida 12 e a medida da árvore para 0,60: o simulador é caótico (qualquer número muda o sorteio das cartas), então a falha de 0,06 h na vida 15 não foi perseguida mais. Próxima sessão: ajustar com mais sementes ou travar o sorteio de cartas do simulador.
+
+### 14.4 O que não foi testado
+
+- Ninguém jogou: o ritmo de eventos, o Radar e os lendários foram só simulados. Sem Playwright e sem varredura responsiva (a oferta de 4 cartas em 320 px nunca foi vista).
+- A Estrela Dourada, o Radar e os eventos juntos ainda podem estar fortes demais para um jogador real; os números em `tree.ts` (Sorte e Exploração) são o lugar de ajustar.
+
