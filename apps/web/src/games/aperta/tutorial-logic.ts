@@ -115,7 +115,7 @@ function collapseHint(state: SaveState): CoachView {
     target: 'goal',
     label: 'Sua meta',
     title: 'O colapso da estrela',
-    text: `Quando a meta for cumprida, a estrela colapsa: você guarda um grimório proibido, ganha Cintilas e recomeça mais forte. A sua meta: ${dust.text.split(' de ')[1]} de poeira, ${picks.text.split(' de ')[1]} escolhas de grimório e um marco da vida. Toque na barra para ver.`,
+    text: `Quando a meta for cumprida, o botão de colapso se libera e só colapsa quando você tocar nele: você guarda um grimório proibido, ganha Cintilas e recomeça mais forte. A sua meta: ${dust.text.split(' de ')[1]} de poeira, ${picks.text.split(' de ')[1]} escolhas de grimório e um marco da vida. Toque na barra para ver.`,
     dismiss: 'collapse',
   };
 }

@@ -227,6 +227,208 @@
 }
 
 /* ---------- Comprar | Comprados, ícones e N/M (spec 041, A5, A6 e A9) ---------- */
+.ap-up-medal {
+  width: 56px;
+  height: 56px;
+  --ap-trim: var(--space-cyan);
+}
+.ap-up.is-locked .ap-up-medal {
+  filter: grayscale(1);
+}
+.ap-up-body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.ap-up-body h3 {
+  margin: 0;
+  font: 700 16px var(--space-font-display);
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+.ap-up-body p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.ap-up-text {
+  font: 400 13px/1.35 var(--space-font-body);
+  color: var(--space-muted);
+}
+.ap-up-gain {
+  font: 600 13px/1.35 var(--space-font-body);
+  color: var(--space-cyan);
+}
+.ap-up-lock {
+  font: 600 12px var(--space-font-display);
+  color: var(--space-gold);
+}
+.ap-up-level {
+  font: 600 11px var(--space-font-display);
+  color: var(--space-gold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  animation: apu-bump 0.25s ease-out;
+}
+.ap-up-buy {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  min-width: 96px;
+  min-height: 52px;
+  padding: 6px 12px;
+  border: 3px solid var(--space-ink);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #58b4ff, #2b86d8);
+  color: #fff;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+  box-shadow:
+    0 5px 0 var(--space-blue-dark),
+    inset 0 2px 0 rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+}
+.ap-up-buy b {
+  font: 700 16px var(--space-font-display);
+  white-space: nowrap;
+}
+.ap-up-buy small {
+  font: 600 10px var(--space-font-display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.ap-up-buy:active {
+  transform: translateY(3px);
+}
+.ap-up-buy[aria-disabled='true'] {
+  background: linear-gradient(180deg, #3a4262, #262c48);
+  color: var(--space-muted);
+  text-shadow: none;
+  box-shadow:
+    0 5px 0 #11152b,
+    inset 0 2px 0 rgba(255, 255, 255, 0.12);
+  cursor: default;
+}
+.ap-up-buy[aria-disabled='true']:active {
+  transform: none;
+}
+
+/* Celular estreito: o botão desce para a linha de baixo e ocupa a largura toda. */
+@media (max-width: 420px) {
+  .ap-up {
+    grid-template-columns: 48px minmax(0, 1fr);
+  }
+  .ap-up-medal {
+    width: 48px;
+    height: 48px;
+  }
+  .ap-up-buy {
+    grid-column: 1 / -1;
+    grid-auto-flow: column;
+    justify-content: center;
+    gap: 8px;
+    min-height: 48px;
+  }
+}
+
+@keyframes apu-bump {
+  from {
+    transform: scale(1.2);
+    opacity: 0.4;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ap-up-level {
+    animation: none;
+  }
+  .ap-up-buy:active {
+    transform: none;
+  }
+}
+
+.ap-up-buy:focus-visible {
+  outline: 3px solid var(--space-gold, #ffc857);
+  outline-offset: 3px;
+}
+
+/* Abas Toque e Geradores (spec 039, seção 6). */
+.ap-upwrap {
+  display: grid;
+  gap: 12px;
+}
+.ap-uptabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.ap-uptab {
+  position: relative;
+  min-height: 48px;
+  padding: 8px 12px;
+  border: 3px solid var(--space-line);
+  border-radius: 12px;
+  background: var(--space-panel);
+  color: var(--space-muted);
+  font: 700 15px var(--space-font-display);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.ap-uptab.on {
+  border-color: var(--space-cyan);
+  color: var(--space-text);
+  background: linear-gradient(180deg, var(--space-panel-2), var(--space-panel));
+}
+.ap-uptab:focus-visible {
+  outline: 3px solid var(--space-gold, #ffc857);
+  outline-offset: 3px;
+}
+.ap-uptab-badge {
+  position: absolute;
+  top: -8px;
+  right: -4px;
+}
+.ap-up-auto {
+  margin: 0;
+  font: 600 13px/1.4 var(--space-font-body);
+  color: var(--space-muted);
+}
+.ap-up-auto b {
+  color: var(--space-cyan);
+}
+/* Escondida: só o preço aparece; nome e efeito vêm quando a poeira chega a 70% do valor. */
+.ap-up.is-mystery {
+  border-style: dashed;
+  opacity: 0.75;
+}
+.ap-up.is-mystery .ap-up-medal {
+  filter: grayscale(1);
+}
+
+/* Fila de pedidos: o botão x10 fica numa linha abaixo do texto, ao lado do preço normal. */
+.ap-up-bulk {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  justify-self: stretch;
+  min-width: 0;
+  min-height: 44px;
+  background: linear-gradient(180deg, #7a6cff, #4a3fc9);
+}
+.ap-up-bulk b {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: center;
+  font-size: 14px;
+}
+
+/* ---------- Comprar | Comprados, ícones e N/M (spec 041, A5, A6 e A9) ---------- */
 .ap-upsections {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -378,4 +580,67 @@
   color: var(--space-ink);
   font: 700 12px var(--space-font-display);
   white-space: nowrap;
+}
+
+/* Barra: abas Toque|Geradores num só bloco, e Comprados como botão à parte. */
+.ap-upbar {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+.ap-upbar .ap-uptabs {
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 0;
+  padding: 4px;
+  border: 3px solid var(--space-line);
+  border-radius: 14px;
+  background: var(--space-ink);
+}
+.ap-upbar .ap-uptab {
+  min-height: 44px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+}
+.ap-upbar .ap-uptab.on {
+  background: linear-gradient(180deg, #4fd8ff, #2a8fd0);
+  color: var(--space-ink);
+}
+.ap-ownbtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 3px solid var(--space-gold);
+  border-radius: 14px;
+  background: rgba(60, 50, 20, 0.6);
+  color: var(--space-gold);
+  font: 700 14px var(--space-font-display);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.ap-ownbtn.on {
+  background: var(--space-gold);
+  color: var(--space-ink);
+}
+.ap-ownbtn small {
+  min-width: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--space-ink);
+  color: var(--space-text);
+  font: 700 12px var(--space-font-display);
+  text-align: center;
+}
+.ap-ownbtn:focus-visible {
+  outline: 3px solid var(--space-text);
+  outline-offset: 2px;
+}
+@media (max-width: 380px) {
+  .ap-ownbtn { padding: 0 8px; font-size: 12px; gap: 4px; }
+  .ap-upbar .ap-uptab { font-size: 13px; padding: 6px; }
 }

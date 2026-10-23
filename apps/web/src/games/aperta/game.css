@@ -1390,3 +1390,74 @@
     animation: none;
   }
 }
+
+/* Escolha de grimório sem rolagem (spec 041): em notebook a altura é pouca, então tudo encolhe com a altura da tela
+   (livro, textos e espaços) até caber; a rolagem só sobra como último recurso em telas minúsculas. */
+@media (min-width: 701px) {
+  .ap-modal-game {
+    padding: clamp(6px, 1.6vh, 14px);
+  }
+  .ap-mcard-game {
+    gap: clamp(4px, 1vh, 12px);
+    padding: clamp(8px, 1.8vh, 18px);
+  }
+  .ap-mcard-game h2 {
+    font-size: clamp(17px, 3vh, 24px);
+  }
+  .ap-modal-intro {
+    display: none;
+  }
+  .ap-picks {
+    gap: clamp(6px, 1.4vh, 12px);
+    padding: 2px;
+  }
+  .ap-pick {
+    gap: clamp(1px, 0.5vh, 4px);
+    padding: clamp(6px, 1.4vh, 12px);
+  }
+  .ap-pick .ap-book {
+    --ap-w: clamp(52px, 11vh, 96px);
+  }
+  .ap-pick-name {
+    font-size: clamp(14px, 2.2vh, 18px);
+  }
+  .ap-pick-fx,
+  .ap-pick-gain {
+    font-size: clamp(11px, 1.7vh, 13px);
+    line-height: 1.25;
+  }
+  .ap-pick-lvl {
+    padding: 2px 8px;
+    font-size: clamp(11px, 1.8vh, 13px);
+  }
+  .ap-reroll {
+    min-height: 40px;
+  }
+}
+@media (min-width: 701px) and (max-height: 820px) {
+  .ap-mcard-game > .ap-sub {
+    display: none;
+  }
+  .ap-mcard-game .ap-tut-inline p,
+  .ap-mcard-game .ap-tut-inline .ap-tut-text {
+    font-size: 12px;
+  }
+}
+
+/* O chip de meta ganha um botão visível "Ver meta" (abre os requisitos). */
+.ap-hudgoal {
+  padding: 4px 6px;
+  border: 2px solid var(--space-gold);
+  border-radius: 12px;
+  background: rgba(60, 50, 20, 0.45);
+}
+.ap-goalcta {
+  flex: 0 0 auto;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--space-gold);
+  color: var(--space-ink);
+  font: 700 12px var(--space-font-display);
+  text-transform: uppercase;
+  white-space: nowrap;
+}

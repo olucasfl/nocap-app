@@ -354,7 +354,7 @@ export function GameScreen({ controller, onExit }: Props) {
   const albumCount = state.album.length;
   const collapse = collapseView(state);
   const starReady = tutorial === null && collapse.ready;
-  const showGoal = unlocked.has('grimoires') && !starReady;
+  const showGoal = unlocked.has('grimoires');
   const fresh = pending || tutorial !== null ? null : newInSpaceView(state);
   const mission = missionView(state);
   const liveEvent = eventView(state, now);
@@ -461,6 +461,9 @@ export function GameScreen({ controller, onExit }: Props) {
               </span>
               <span className="ap-goalbar" aria-hidden="true">
                 <i style={{ transform: `scaleX(${collapse.dustFill})` }} />
+              </span>
+              <span className="ap-goalcta" aria-hidden="true">
+                {starReady ? 'Colapsar' : 'Ver meta'}
               </span>
             </button>
           )}
@@ -749,7 +752,20 @@ export function GameScreen({ controller, onExit }: Props) {
         />
       )}
 
-      {goalOpen && <GoalModal state={state} onClose={() => setGoalOpen(false)} />}
+      {goalOpen && (
+        <GoalModal
+          state={state}
+          onClose={() => setGoalOpen(false)}
+          onCollapse={
+            tutorial === null
+              ? () => {
+                  setGoalOpen(false);
+                  if (starReady && !pending) setCollapseOpen(true);
+                }
+              : undefined
+          }
+        />
+      )}
 
       {collapseOpen && starReady && !pending && (
         <CollapseModal state={state} onCancel={() => setCollapseOpen(false)} onConfirm={controller.collapse} />

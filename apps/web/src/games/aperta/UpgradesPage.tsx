@@ -166,7 +166,7 @@ function AutoSummary({ state }: { state: SaveState }) {
 }
 
 /**
- * Página de Melhorias (spec 041): duas abas, Comprar e Comprados. Em Comprar ficam as melhorias de Toque e de Geradores
+ * Página de Melhorias (spec 041): duas abas, Toque e Geradores, e o botão Comprados. Nas abas ficam as melhorias de Toque e de Geradores
  * (um gerador de poeira e um de energia por vez, com o limite 0/8); o que está completo vai para Comprados.
  */
 export function UpgradesPage({ state, onBuy, onBuyBatch, seen, onSeen }: Props) {
@@ -185,53 +185,48 @@ export function UpgradesPage({ state, onBuy, onBuyBatch, seen, onSeen }: Props) 
 
   return (
     <div className="ap-upwrap">
-      <div className="ap-upsections" role="tablist" aria-label="Comprar ou ver o que já tem">
-        {(
-          [
-            { id: 'buy', label: 'Comprar', count: null },
-            { id: 'owned', label: 'Comprados', count: owned.length },
-          ] as const
-        ).map((sec) => (
-          <button
-            key={sec.id}
-            type="button"
-            role="tab"
-            aria-selected={section === sec.id}
-            className={`ap-upsec${section === sec.id ? ' on' : ''}`}
-            onClick={() => setSection(sec.id)}
-          >
-            {sec.label}
-            {sec.count !== null && <small>{sec.count}</small>}
-          </button>
-        ))}
+      <div className="ap-upbar">
+        <div className="ap-uptabs" role="tablist" aria-label="Tipo de melhoria">
+          {UPGRADE_TABS.map((t) => {
+            const active = section === 'buy' && t.id === tab;
+            const badge = active ? 0 : tabBadge(state, t.id, seen);
+            return (
+              <button
+                key={t.id}
+                type="button"
+                role="tab"
+                id={`ap-uptab-${t.id}`}
+                aria-selected={active}
+                aria-controls="ap-uppanel"
+                className={`ap-uptab${active ? ' on' : ''}`}
+                onClick={() => {
+                  setSection('buy');
+                  setTab(t.id);
+                }}
+              >
+                {t.label}
+                {badge > 0 && (
+                  <span className="ap-badge ap-uptab-badge" aria-label={`${badge} para ver`}>
+                    {badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+        <button
+          type="button"
+          aria-pressed={section === 'owned'}
+          className={`ap-ownbtn${section === 'owned' ? ' on' : ''}`}
+          onClick={() => setSection(section === 'owned' ? 'buy' : 'owned')}
+        >
+          Comprados
+          <small>{owned.length}</small>
+        </button>
       </div>
 
       {section === 'buy' ? (
         <>
-          <div className="ap-uptabs" role="tablist" aria-label="Tipo de melhoria">
-            {UPGRADE_TABS.map((t) => {
-              const badge = t.id === tab ? 0 : tabBadge(state, t.id, seen);
-              return (
-                <button
-                  key={t.id}
-                  type="button"
-                  role="tab"
-                  id={`ap-uptab-${t.id}`}
-                  aria-selected={t.id === tab}
-                  aria-controls="ap-uppanel"
-                  className={`ap-uptab${t.id === tab ? ' on' : ''}`}
-                  onClick={() => setTab(t.id)}
-                >
-                  {t.label}
-                  {badge > 0 && (
-                    <span className="ap-badge ap-uptab-badge" aria-label={`${badge} para ver`}>
-                      {badge}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
           {tab === 'generators' && <AutoSummary state={state} />}
           <ul className="ap-uplist" id="ap-uppanel" role="tabpanel" aria-labelledby={`ap-uptab-${tab}`} aria-label="Melhorias à venda">
             {rows.map((row) => (
