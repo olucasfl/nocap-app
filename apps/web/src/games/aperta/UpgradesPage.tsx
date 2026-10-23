@@ -108,8 +108,10 @@ function UpgradeCard({
             }
           }}
         >
-          <b>x{BULK_LABEL_COUNT}</b>
-          <small>{formatNumber(row.bulkCost)}</small>
+          <b>
+            Comprar {BULK_LABEL_COUNT}: {formatNumber(row.bulkCost)}
+          </b>
+          <small>5% mais barato</small>
         </button>
       )}
     </li>
