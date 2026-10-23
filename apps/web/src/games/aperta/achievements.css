@@ -213,3 +213,44 @@
   opacity: 0.65;
   border-style: dashed;
 }
+
+/* Botão Filtrar e o painel organizado (spec 041, A2). */
+.ap-ach-filterbtn {
+  justify-self: start;
+}
+.ap-ach-filterbtn small {
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--space-gold);
+  color: var(--space-ink);
+  text-align: center;
+}
+.ap-ach-filters {
+  display: grid;
+  gap: 14px;
+  padding: 12px;
+  border: 3px solid var(--space-line);
+  border-radius: 14px;
+  background: rgba(8, 12, 30, 0.9);
+}
+.ap-ach-fgroup {
+  display: grid;
+  gap: 8px;
+}
+.ap-ach-fgroup h4 {
+  margin: 0;
+  font: 700 12px var(--space-font-display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--space-muted);
+}
+.ap-ach-factions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.ap-fchip:disabled {
+  opacity: 0.5;
+}

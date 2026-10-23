@@ -188,8 +188,14 @@ describe('página de Conquistas ampliada', () => {
     expect(t.earned).toBe(2);
     expect(t.toEarn).toBeGreaterThan(100);
     expect(t.soon).toBeGreaterThan(10);
-    const out = renderToStaticMarkup(<AchievementsPage state={s} />);
+    const closed = renderToStaticMarkup(<AchievementsPage state={s} />);
+    // Os filtros ficam atrás do botão Filtrar: fechado, só aparece o botão.
+    expect(closed).toContain('Filtrar');
+    expect(closed).toContain('aria-expanded="false"');
+    expect(closed).not.toContain('class="ap-ach-filters"');
+    const out = renderToStaticMarkup(<AchievementsPage state={s} filtersOpen />);
     expect(out).toContain('Cintilas das conquistas');
+    expect(out).toContain('Limpar filtros');
     expect(out).toContain('em breve');
     expect(out).toMatch(/class="ap-ach-reward"[^>]*>\+\d+/);
     expect(out).toContain('Buscar conquista');

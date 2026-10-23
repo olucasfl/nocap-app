@@ -152,6 +152,9 @@ for (const size of SIZES) {
       await expect(page.locator('.ap-ach-sparks')).toContainText('ganhas');
       await expect(page.locator('.ap-ach-sparks')).toContainText('a ganhar');
       await expect(page.locator('.ap-ach-reward').first()).toContainText('+');
+      // Os filtros moram atrás do botão Filtrar.
+      await tapCenter(page, page.getByRole('button', { name: /^Filtrar/ }), touch);
+      await expect(page.locator('.ap-ach-filters')).toBeVisible();
       const chips = page.locator('.ap-ach-chips');
       await tapCenter(page, chips.getByRole('button', { name: /^Colapsos/ }), touch);
       await expect(page.locator('.ap-ach-group')).toHaveCount(1);

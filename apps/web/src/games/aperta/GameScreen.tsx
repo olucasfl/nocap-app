@@ -17,6 +17,7 @@ import {
   pendingHint,
   TUTORIAL,
   unlockedButtons,
+  unseenAchievements,
 } from '@nocap/games';
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { apertaSfx, apertaVibrate } from '@/lib/aperta-audio';
@@ -147,6 +148,7 @@ export function GameScreen({ controller, onExit }: Props) {
   const [sparkNotice, setSparkNotice] = useState<{ id: number; amount: number; available: number } | null>(null);
   const [captures, setCaptures] = useState<Capture[]>([]);
   const [freshGrimoire, setFreshGrimoire] = useState(false);
+  const unseenAch = unseenAchievements(state);
   const [collapseOpen, setCollapseOpen] = useState(false);
   const [regionsOpen, setRegionsOpen] = useState(false);
   const [flash, setFlash] = useState<number | null>(null);
@@ -180,6 +182,11 @@ export function GameScreen({ controller, onExit }: Props) {
       for (const id of live) window.clearTimeout(id);
     };
   }, []);
+
+  // Com a página de Conquistas aberta, o que foi ganho conta como visto (some o selo da dock).
+  useEffect(() => {
+    if (page === 'achievements' && unseenAch > 0) controller.seeAchievements();
+  }, [page, unseenAch, controller]);
 
   const noticeTimer = useRef<number | null>(null);
   const achTimer = useRef<number | null>(null);
@@ -609,11 +616,16 @@ export function GameScreen({ controller, onExit }: Props) {
           type="button"
           data-tut="dock-achievements"
           className={`ap-dockb ap-dock-in${page === 'achievements' ? ' on' : ''}`}
-          aria-label={PAGE_TITLE.achievements}
+          aria-label={unseenAch > 0 ? `${PAGE_TITLE.achievements}, ${unseenAch} ${unseenAch === 1 ? 'nova' : 'novas'}` : PAGE_TITLE.achievements}
           aria-pressed={page === 'achievements'}
           onClick={() => openPage('achievements')}
         >
           <PageIcon name="achievements" className="ap-dock-i" />
+          {unseenAch > 0 && page !== 'achievements' && (
+            <span className="ap-badge" aria-hidden="true">
+              {unseenAch > 99 ? '99+' : unseenAch}
+            </span>
+          )}
         </button>
         )}
         {unlocked.has('grimoires') && (

@@ -12,6 +12,7 @@ import {
   chooseGrimoire,
   finishTutorial,
   markHintSeen,
+  markAchievementsSeen,
   migrateTutorial,
   newSave,
   objectPreview,
@@ -354,6 +355,14 @@ export function createGameController({ initial, store, slot, perf = () => perfor
     setFavorite(id: string | null) {
       if (pausedAt !== null) return;
       const next = setFavorite(state, id);
+      if (next === state) return;
+      commit(next);
+      saveNow();
+    },
+
+    /** A pessoa abriu a página de Conquistas: as ganhas até agora contam como vistas (zera o selo da dock). */
+    seeAchievements() {
+      const next = markAchievementsSeen(state);
       if (next === state) return;
       commit(next);
       saveNow();

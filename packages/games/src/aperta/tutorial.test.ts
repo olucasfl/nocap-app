@@ -55,7 +55,7 @@ describe('tutorial: passos', () => {
     const s = fresh();
     expect(tutorialActive(s)).toBe(true);
     expect(tutorialStep(s)).toBe(1);
-    expect(s.ui).toEqual({ unlocked: [], hints: [] });
+    expect(s.ui).toMatchObject({ unlocked: [], hints: [] });
     expect([...unlockedButtons(s)]).toEqual([]);
     expect(objectsVisible(s)).toBe(false);
   });
@@ -218,7 +218,7 @@ describe('tutorial: save', () => {
       expect(r.ok, String(t)).toBe(true);
       if (r.ok) {
         expect(r.save.tutorial).toBe(t);
-        expect(r.save.ui).toEqual({ unlocked: ['upgrades'], hints: ['objects'] });
+        expect(r.save.ui).toMatchObject({ unlocked: ['upgrades'], hints: ['objects'] });
       }
     }
     const done = validateSave({ ...fresh(), tutorial: 'done' });
@@ -244,7 +244,7 @@ describe('tutorial: save', () => {
         expect(r.ok, String(t)).toBe(true);
         if (r.ok) {
           expect(r.save.tutorial).toBe('done');
-          expect(r.save.ui).toEqual({ unlocked: [], hints: [] });
+          expect(r.save.ui).toMatchObject({ unlocked: [], hints: [] });
           expect(unlockedButtons(r.save).size).toBe(UI_BUTTONS.length);
         }
       }
@@ -270,5 +270,17 @@ describe('tutorial: save', () => {
     );
     expect(new Set(save.ui.unlocked)).toEqual(new Set(['upgrades', 'grimoires', 'achievements']));
     expect(new Set(save.ui.hints)).toEqual(new Set(['objects', 'achievements']));
+  });
+});
+
+describe('conquistas ainda não vistas (spec 041, A1)', () => {
+  it('conta as ganhas além das vistas e abrir a página zera', async () => {
+    const { markAchievementsSeen, unseenAchievements } = await import('./tutorial');
+    const s = { ...newSave('conq'), achievements: ['tap-1', 'dust-1k', 'tap-100'] };
+    expect(unseenAchievements(s)).toBe(3);
+    const seen = markAchievementsSeen(s);
+    expect(unseenAchievements(seen)).toBe(0);
+    expect(markAchievementsSeen(seen)).toBe(seen);
+    expect(unseenAchievements({ ...seen, achievements: [...seen.achievements, 'tap-1000'] })).toBe(1);
   });
 });

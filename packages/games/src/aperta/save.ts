@@ -139,6 +139,7 @@ const saveSchema = z.object({
     .object({
       unlocked: z.array(z.enum(UI_BUTTONS as [string, ...string[]])).max(UI_BUTTONS.length),
       hints: z.array(z.enum(TUTORIAL_HINTS as [string, ...string[]])).max(TUTORIAL_HINTS.length),
+      achSeen: z.number().int().min(0).max(MAX_ACHIEVEMENTS).default(0),
     })
     .optional(),
   storySeen: z.boolean(),
@@ -541,6 +542,7 @@ export function mergeSaves(a: SaveState, b: SaveState): MergeResult {
     ui: {
       unlocked: union(a.ui.unlocked, b.ui.unlocked) as SaveState['ui']['unlocked'],
       hints: union(a.ui.hints, b.ui.hints) as SaveState['ui']['hints'],
+      achSeen: maxNum(a.ui.achSeen ?? 0, b.ui.achSeen ?? 0),
     },
     storySeen: a.storySeen || b.storySeen,
     album: union(top.album, other.album),

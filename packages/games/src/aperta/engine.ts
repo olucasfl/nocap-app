@@ -429,7 +429,7 @@ export function newSave(seed: string, createdAt = 0, name = 'Missão Perigeu'): 
     playSeconds: 0,
     clock: 0,
     tutorial: 1,
-    ui: { unlocked: [], hints: [] },
+    ui: { unlocked: [], hints: [], achSeen: 0 },
     storySeen: false,
     run: freshRun(hashSeed(seed)),
     album: [],

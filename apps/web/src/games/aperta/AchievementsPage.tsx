@@ -58,13 +58,16 @@ const STATUS: { id: AchievementStatus; name: string }[] = [
  * Página de Conquistas (spec 038, 5.3; ampliada pela spec 040, seção 4): filtro por família, busca, estado, N/M por
  * família, Cintilas ganhas e a ganhar, e a recompensa de cada uma.
  */
-export function AchievementsPage({ state }: { state: SaveState }) {
+export function AchievementsPage({ state, filtersOpen = false }: { state: SaveState; filtersOpen?: boolean }) {
   const [filter, setFilter] = useState<AchievementFilter>(NO_FILTER);
+  const [open, setOpen] = useState(filtersOpen);
   const counts = achievementCounts(state);
   const totals = achievementSparkTotals(state);
   const chips = useMemo(() => achievementChips(state), [state]);
   const groups = achievementGroups(state, filter);
   const shown = groups.reduce((n, g) => n + g.rows.length, 0);
+  // Quantos filtros além da busca estão ligados (o botão mostra o número).
+  const active = (filter.status !== 'all' ? 1 : 0) + (filter.group !== 'all' ? 1 : 0);
   const set = (patch: Partial<AchievementFilter>) => setFilter((f) => ({ ...f, ...patch }));
 
   return (
@@ -99,30 +102,59 @@ export function AchievementsPage({ state }: { state: SaveState }) {
             autoComplete="off"
           />
         </label>
-        <div className="ap-ach-status" role="group" aria-label="Mostrar">
-          {STATUS.map((s) => (
-            <button key={s.id} type="button" className="ap-fchip" aria-pressed={filter.status === s.id} onClick={() => set({ status: s.id })}>
-              {s.name}
-            </button>
-          ))}
-        </div>
-        <div className="ap-ach-chips" role="group" aria-label="Família">
-          {chips.map((c) => (
-            <button
-              key={c.id}
-              type="button"
-              className="ap-fchip"
-              aria-pressed={filter.group === c.id}
-              onClick={() => set({ group: c.id as AchievementGroup | 'all' })}
-            >
-              {c.name}
-              <small>
-                {c.earned}/{c.total}
-              </small>
-            </button>
-          ))}
-        </div>
+        <button
+          type="button"
+          className="ap-fchip ap-ach-filterbtn"
+          aria-expanded={open}
+          aria-controls="ap-ach-filters"
+          onClick={() => setOpen((o) => !o)}
+        >
+          Filtrar
+          {active > 0 && <small aria-label={`${active} filtros ligados`}>{active}</small>}
+        </button>
       </div>
+
+      {open && (
+        <section id="ap-ach-filters" className="ap-ach-filters" aria-label="Filtros de conquistas">
+          <div className="ap-ach-fgroup">
+            <h4>Mostrar</h4>
+            <div className="ap-ach-status" role="group" aria-label="Mostrar">
+              {STATUS.map((st) => (
+                <button key={st.id} type="button" className="ap-fchip" aria-pressed={filter.status === st.id} onClick={() => set({ status: st.id })}>
+                  {st.name}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="ap-ach-fgroup">
+            <h4>Família</h4>
+            <div className="ap-ach-chips" role="group" aria-label="Família">
+              {chips.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  className="ap-fchip"
+                  aria-pressed={filter.group === c.id}
+                  onClick={() => set({ group: c.id as AchievementGroup | 'all' })}
+                >
+                  {c.name}
+                  <small>
+                    {c.earned}/{c.total}
+                  </small>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="ap-ach-factions">
+            <button type="button" className="ap-fchip" disabled={active === 0} onClick={() => setFilter({ ...NO_FILTER, query: filter.query })}>
+              Limpar filtros
+            </button>
+            <button type="button" className="ap-fchip" onClick={() => setOpen(false)}>
+              Fechar
+            </button>
+          </div>
+        </section>
+      )}
 
       <p className="ap-sub" role="status" aria-live="polite">
         {shown === 0 ? 'Nenhuma conquista com esse filtro.' : `${shown} ${shown === 1 ? 'conquista' : 'conquistas'} na lista.`}

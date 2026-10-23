@@ -37,9 +37,11 @@ export interface UiState {
   unlocked: UiButton[];
   /** Cartões do passo 7 já vistos. */
   hints: TutorialHint[];
+  /** Quantas conquistas a pessoa já viu na página (o selo da dock mostra as que passam disso). */
+  achSeen?: number;
 }
 
-export const freshUi = (): UiState => ({ unlocked: [], hints: [] });
+export const freshUi = (): UiState => ({ unlocked: [], hints: [], achSeen: 0 });
 
 export function tutorialActive(state: SaveState): boolean {
   return state.tutorial !== 'done';
@@ -169,4 +171,15 @@ export function migrateTutorial(save: SaveState): SaveState {
   if ((save as Partial<SaveState>).ui !== undefined) return save;
   const played = save.stats.clicks > 0 || save.run.clicks > 0;
   return { ...save, ui: freshUi(), tutorial: save.tutorial === 'done' || played ? 'done' : 1 };
+}
+
+/** Conquistas ganhas que a pessoa ainda não viu na página. */
+export function unseenAchievements(state: SaveState): number {
+  return Math.max(0, state.achievements.length - (state.ui.achSeen ?? 0));
+}
+
+/** A pessoa abriu a página de Conquistas: tudo que foi ganho até agora está visto. */
+export function markAchievementsSeen(state: SaveState): SaveState {
+  if (state.achievements.length <= (state.ui.achSeen ?? 0)) return state;
+  return { ...state, ui: { ...state.ui, achSeen: state.achievements.length } };
 }
