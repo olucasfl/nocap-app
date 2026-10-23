@@ -24,7 +24,7 @@ import { apertaSfx, apertaVibrate } from '@/lib/aperta-audio';
 import { LOW_END } from './perf';
 import { cuesFor, playCue, type CueInput } from './cues';
 import { AstroMedal } from './AstroMedal';
-import { AutoGain, AutoOrbits } from './AutoFarm';
+import { AutoGain, RateTag, AutoOrbits } from './AutoFarm';
 import { BigButton } from './BigButton';
 import { ChoiceModal } from './ChoiceModal';
 import { AchievementsPage } from './AchievementsPage';
@@ -424,6 +424,7 @@ export function GameScreen({ controller, onExit }: Props) {
             </b>
             <small>poeira</small>
             <AutoGain state={state} paused={paused} />
+            <RateTag state={state} kind="dust" />
           </p>
           {!unlocked.has('tree') ? null : regions.length > 1 && tutorial === null ? (
             <button
@@ -625,6 +626,10 @@ export function GameScreen({ controller, onExit }: Props) {
           {energy.hot && <span className="ap-evglow" aria-hidden="true" />}
         </div>
         <b className={energy.hot ? 'is-hot' : undefined}>{energy.label}</b>
+        <span className="ap-evrate">
+          <RateTag state={state} kind="energy" />
+          <AutoGain state={state} paused={paused} kind="energy" />
+        </span>
       </aside>
 
       {tutorial === null && !page && <SkillBar state={state} now={now} onUse={controller.skill} onAutoBuy={controller.autoBuy} />}

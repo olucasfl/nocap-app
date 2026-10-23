@@ -110,3 +110,31 @@
     animation: apo-fade 1.1s ease-out;
   }
 }
+
+/* Taxa real dos geradores (spec 041, A7). */
+.ap-ratetag {
+  margin-left: 8px;
+  padding: 1px 8px;
+  border: 2px solid var(--space-ink);
+  border-radius: 999px;
+  background: rgba(60, 220, 255, 0.18);
+  color: var(--space-cyan);
+  font: 700 12px var(--space-font-display);
+  white-space: nowrap;
+}
+.ap-ratetag.is-energy {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin: 0;
+}
+.ap-evrate {
+  position: relative;
+  display: inline-flex;
+  justify-content: center;
+  min-height: 22px;
+}
+.ap-autogain.is-energy {
+  left: 100%;
+  top: 0;
+}

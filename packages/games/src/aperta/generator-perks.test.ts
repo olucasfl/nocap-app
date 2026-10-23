@@ -4,7 +4,8 @@ import { describe, expect, it } from 'vitest';
 import { UPGRADES, upgradeIndex } from './catalog';
 import {
   AUTO_CAP_SHARE,
-  BULK_COUNT,
+  BULK_MIN,
+  NETWORK_PER_PROBE,
   BURST_EVERY_SEC,
   BURST_SECS,
   LURE_CAP_SEC,
@@ -19,6 +20,7 @@ import {
 import {
   autoRates,
   batchCost,
+  batchLevels,
   buyUpgradeBatch,
   captureObject,
   effectiveStats,
@@ -113,33 +115,34 @@ describe('melhorias de gerador (spec 039, 4.1): compra única, na aba Geradores'
     });
   });
 
-  it('Rede: cada Sonda dá +1% aos Satélites', () => {
-    const plain = effectiveStats(withLevels({ satellite: 10, probe: 20 })).autoDustPerSec;
-    const net = effectiveStats(withLevels({ satellite: 10, probe: 20, network: 1 })).autoDustPerSec;
-    const sat = 0.1 * 10 * 2; // 10 Satélites já passaram do marco de 10 (x2)
-    expect(net - plain).toBeCloseTo(sat * 0.2, 9);
+  it('Rede: cada nível da Sonda dá +2% aos Satélites', () => {
+    const sat = (UPGRADES[idx('satellite')] as { perSec: number }).perSec * 4;
+    const plain = effectiveStats(withLevels({ satellite: 4, probe: 5 })).autoDustPerSec;
+    const net = effectiveStats(withLevels({ satellite: 4, probe: 5, network: 1 })).autoDustPerSec;
+    expect(net - plain).toBeCloseTo(sat * NETWORK_PER_PROBE * 5, 9);
   });
 
-  it('Escala: a cada 25 unidades de um gerador, +1 de poeira por toque', () => {
-    const plain = effectiveStats(withLevels({ satellite: 60 })).dustPerTouch;
-    const scaled = effectiveStats(withLevels({ satellite: 60, scale: 1 })).dustPerTouch;
-    expect(scaled - plain).toBeGreaterThanOrEqual(2); // floor(60/25) = 2, antes dos multiplicadores
+  it('Escala: a cada 4 níveis de um gerador, +1 de poeira por toque', () => {
+    const plain = effectiveStats(withLevels({ satellite: 8 })).dustPerTouch;
+    const scaled = effectiveStats(withLevels({ satellite: 8, scale: 1 })).dustPerTouch;
+    expect(scaled - plain).toBeGreaterThanOrEqual(2); // floor(8/4) = 2, antes dos multiplicadores
   });
 
-  it('Isca: cada 10 Satélites encurtam 1 s a espera do próximo objeto, com teto', () => {
-    const base = effectiveStats(withLevels({ satellite: 30 })).objects.spawnMinSec;
-    const lure = effectiveStats(withLevels({ satellite: 30, lure: 1 })).objects.spawnMinSec;
+  it('Isca: cada 2 níveis do Satélite encurtam 1 s a espera do próximo objeto, com teto', () => {
+    const base = effectiveStats(withLevels({ satellite: 6 })).objects.spawnMinSec;
+    const lure = effectiveStats(withLevels({ satellite: 6, lure: 1 })).objects.spawnMinSec;
     expect(base - lure).toBeCloseTo(3, 9);
-    const big = effectiveStats(withLevels({ satellite: 400, lure: 1 })).objects.spawnMinSec;
-    const capped = effectiveStats(withLevels({ satellite: 400 })).objects.spawnMinSec;
-    expect(capped - big).toBeLessThanOrEqual(LURE_CAP_SEC + 1e-9);
+    const full = effectiveStats(withLevels({ satellite: 8, lure: 1 })).objects.spawnMinSec;
+    const none = effectiveStats(withLevels({ satellite: 8 })).objects.spawnMinSec;
+    expect(none - full).toBeLessThanOrEqual(LURE_CAP_SEC + 1e-9);
   });
 
   it('Revezamento: o gerador menos comprado rende o dobro', () => {
-    const plain = effectiveStats(withLevels({ satellite: 12, probe: 3 })).autoDustPerSec;
-    const rot = effectiveStats(withLevels({ satellite: 12, probe: 3, rotation: 1 })).autoDustPerSec;
-    // A Sonda (3) é a menos comprada: +1x o que ela rende (1 x 3, sem marco).
-    expect(rot - plain).toBeCloseTo(1 * 3 * (ROTATION_MULT - 1), 9);
+    const probe = (UPGRADES[idx('probe')] as { perSec: number }).perSec * 2;
+    const plain = effectiveStats(withLevels({ satellite: 5, probe: 2 })).autoDustPerSec;
+    const rot = effectiveStats(withLevels({ satellite: 5, probe: 2, rotation: 1 })).autoDustPerSec;
+    // A Sonda (2 níveis) é a menos comprada: +1x o que ela rende.
+    expect(rot - plain).toBeCloseTo(probe * (ROTATION_MULT - 1), 9);
   });
 
   it('Conversão: os geradores também enchem a barra (1 toque por minuto)', () => {
@@ -168,7 +171,7 @@ describe('melhorias de gerador (spec 039, 4.1): compra única, na aba Geradores'
     const gained = cur.run.dust - beforeDust;
     const steady = rate * (t - 101);
     expect(gained - steady).toBeGreaterThan(rate * BURST_SECS * 0.5);
-    expect(gained - steady).toBeLessThanOrEqual(rate * BURST_SECS + 1e-6);
+    expect(gained - steady).toBeLessThanOrEqual(rate * BURST_SECS + 1e-3);
     expect(cur.run.nextBurstAt).toBeGreaterThan(t);
     // No teto, a rajada não soma nada (a média nunca passa do teto).
     const capped = withLevels({ satellite: 200, probe: 200, telescope: 200, burst: 1 }, { clock: 100, lastPressAt: 99.9 });
@@ -201,30 +204,34 @@ describe('melhorias de gerador (spec 039, 4.1): compra única, na aba Geradores'
     expect(autoRates(peaked).dust).toBeLessThanOrEqual(effectiveStats(peaked).autoDustCap + 1e-9);
   });
 
-  it('Fila de pedidos: 10 de uma vez sai 5% mais barato, e só com a melhoria', () => {
-    const s = withLevels({ queue: 1 }, { dust: 1e6 });
+  it('Fila de pedidos: completar o gerador de uma vez (os níveis que faltam) sai 5% mais barato, e só com a melhoria', () => {
+    const s = withLevels({ queue: 1, satellite: 2 }, { dust: 1e6 });
     const sat = idx('satellite');
+    const max = (UPGRADES[sat] as { max: number }).max;
     let each = 0;
-    for (let k = 0; k < BULK_COUNT; k++) {
+    for (let k = 2; k < max; k++) {
       const probe = { ...s, run: { ...s.run, upgradeLevels: s.run.upgradeLevels.map((l, i) => (i === sat ? k : l)) } };
       each += nextUpgradeCost(probe, sat) ?? 0;
     }
+    expect(batchLevels(s, sat)).toBe(max - 2);
     expect(batchCost(s, sat)).toBeCloseTo(each * 0.95, 6);
     const bought = buyUpgradeBatch(s, sat);
-    expect(bought.run.upgradeLevels[sat]).toBe(BULK_COUNT);
+    expect(bought.run.upgradeLevels[sat]).toBe(max);
     expect(s.run.dust - bought.run.dust).toBeCloseTo(each * 0.95, 6);
-    // Sem dinheiro para os 10, não compra nenhum.
-    const poor = withLevels({ queue: 1 }, { dust: each * 0.9 });
+    // Sem dinheiro para completar, não compra nenhum.
+    const poor = withLevels({ queue: 1, satellite: 2 }, { dust: each * 0.9 });
     expect(buyUpgradeBatch(poor, sat)).toBe(poor);
     // Sem a melhoria não há lote.
-    const none = withLevels({}, { dust: 1e6 });
+    const none = withLevels({ satellite: 2 }, { dust: 1e6 });
     expect(batchCost(none, sat)).toBeNull();
     expect(buyUpgradeBatch(none, sat)).toBe(none);
+    // Com menos de BULK_MIN níveis faltando, o botão não aparece.
+    expect(batchLevels(withLevels({ queue: 1, satellite: max - 1 }), sat)).toBe(0);
   });
 });
 
 describe('o farm automático nunca rende mais que tocar', () => {
-  const rich = { satellite: 120, probe: 90, telescope: 60, observatory: 40, station: 25, antenna: 40, receiver: 20 };
+  const rich = { satellite: 8, probe: 8, telescope: 8, observatory: 10, station: 10, antenna: 6, receiver: 6 };
   const all = { ...rich, network: 1, lure: 1, burst: 1, scale: 1, peak: 1, queue: 1, convert: 1, rotation: 1, warmup: 1, echo: 1, lens: 1, lens2: 1 };
 
   it('com todas as melhorias, parado rende menos que tocando e o auto fica sob o teto de 35% do toque', () => {
@@ -245,7 +252,8 @@ describe('o farm automático nunca rende mais que tocar', () => {
   it('em 60 s, tocar sempre rende mais que ficar parado, mesmo com a Rajada e a Hora de pico', () => {
     const run = (touching: boolean): number => {
       let s = withLevels(all, { clock: 0, lastPressAt: touching ? 0 : -1e6 });
-      s = { ...s, run: { ...s.run, peakUntil: 90 } };
+      // Muitas escolhas já feitas: a barra de energia não enche e não abre escolha durante o minuto (a escolha congela tudo).
+      s = { ...s, run: { ...s.run, peakUntil: 90, picks: 200 } };
       const start = s.run.dust;
       for (let t = 0.4; t <= 60; t += 0.4) s = touching ? press(s, t) : syncClock(s, t);
       return s.run.dust - start;

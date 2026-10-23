@@ -89,18 +89,16 @@ export function milestoneGoal(kind: MilestoneKind, n: number): MilestoneGoal {
 }
 
 /**
- * `k` geradores no nível `f(n)` ou acima: começa em 2 geradores no nível 7 e sobe um nível por colapso, até 40, com
- * um gerador a mais a cada 12 colapsos, até 4. Os tetos vêm do simulador (spec 040, seção 10): o poder da vida
- * não passa de ~1e9 de poeira, onde só os 4 primeiros geradores chegam ao nível 40; a árvore e os proibidos
- * (etapas 15 a 20) vão pedir uma nova calibragem.
+ * `k` geradores no nível `f(n)` ou acima. Desde a spec 041 cada gerador vai até 8 a 12 níveis e a prateleira mostra um por
+ * vez: o marco começa em 1 gerador no nível 4 e sobe, até 3 geradores no nível 8 (os primeiros completos).
  */
-export const GENERATOR_GOAL_LEVEL_CAP = 40;
-export const GENERATOR_GOAL_COUNT_CAP = 4;
+export const GENERATOR_GOAL_LEVEL_CAP = 8;
+export const GENERATOR_GOAL_COUNT_CAP = 3;
 export function generatorGoal(n: number): { count: number; level: number } {
   const k = Math.max(1, Math.floor(n));
   return {
-    count: Math.min(GENERATOR_COUNT, GENERATOR_GOAL_COUNT_CAP, 2 + Math.floor(k / 12)),
-    level: Math.min(GENERATOR_MAX, GENERATOR_GOAL_LEVEL_CAP, 6 + k),
+    count: Math.min(GENERATOR_COUNT, GENERATOR_GOAL_COUNT_CAP, 1 + Math.floor(k / 10)),
+    level: Math.min(GENERATOR_MAX, GENERATOR_GOAL_LEVEL_CAP, 3 + Math.ceil(k / 3)),
   };
 }
 

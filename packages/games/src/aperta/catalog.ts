@@ -32,18 +32,18 @@ export const FAMILY_NAMES: Record<Family, string> = {
 /** Peso de sorteio por raridade (seção 4.3): sorteia-se a raridade e depois a carta, para o peso não depender de quantas cartas existem. */
 export const RARITY_WEIGHT: Record<Rarity, number> = {
   common: 100,
-  rare: 24,
-  epic: 9,
-  legendary: 3,
+  rare: 40,
+  epic: 22,
+  legendary: 9,
   forbidden: 1,
 };
 
 /** Nº de escolhas já feitas que libera cada raridade na primeira vida (cai com os colapsos, ver economy.ts). */
 export const RARITY_UNLOCK_PICKS: Record<Rarity, number> = {
   common: 0,
-  rare: 3,
-  epic: 8,
-  legendary: 14,
+  rare: 2,
+  epic: 5,
+  legendary: 9,
   forbidden: 22,
 };
 
@@ -430,10 +430,13 @@ export interface UpgradeDef {
   domains: readonly string[];
 }
 
-/** Dobra o gerador com tantas unidades (spec 039, seção 4). */
-export const GENERATOR_MILESTONES = [10, 25, 50] as const;
+/**
+ * Spec 041 (B1): cada gerador tem um limite de níveis (0/8, 0/10...) e a prateleira mostra um por vez; completar um
+ * abre o próximo, mais caro e mais forte. Por isso não há mais os marcos de "dobra com 10, 25, 50 unidades".
+ */
 export const GENERATOR_GROWTH = 1.15;
-export const GENERATOR_MAX = 400;
+/** Maior limite de níveis de um gerador (o teto de validação do save). */
+export const GENERATOR_MAX = 12;
 
 const touch = (
   id: string,
@@ -456,27 +459,27 @@ const perk = (id: string, name: string, base: number, text: string, domains: rea
   domains,
 });
 
-const generator = (id: string, name: string, base: number, perSec: number): UpgradeDef => ({
+const generator = (id: string, name: string, base: number, perSec: number, max: number): UpgradeDef => ({
   id,
   name,
   text: `+${String(perSec).replace('.', ',')} poeira por segundo`,
   kind: 'generator',
   base,
   growth: GENERATOR_GROWTH,
-  max: GENERATOR_MAX,
+  max,
   unlockedAtCollapse: 0,
   perSec,
   domains: ['dustPerSecond'],
 });
 
-const energyGen = (id: string, name: string, base: number, perSec: number): UpgradeDef => ({
+const energyGen = (id: string, name: string, base: number, perSec: number, max: number): UpgradeDef => ({
   id,
   name,
   text: `+${String(perSec).replace('.', ',')} toque de energia por segundo`,
   kind: 'energy',
   base,
   growth: GENERATOR_GROWTH,
-  max: GENERATOR_MAX,
+  max,
   unlockedAtCollapse: 0,
   perSec,
   domains: ['energyPerSecond'],
@@ -488,13 +491,13 @@ const energyGen = (id: string, name: string, base: number, perSec: number): Upgr
  */
 export const UPGRADES: readonly UpgradeDef[] = [
   touch('lens', 'Lente Polida', 100, 'Toque x2', ['touchMult']),
-  touch('gloves', 'Luvas de Astronauta', 225, '+1 poeira por toque', ['touchFlat']),
+  touch('gloves', 'Luvas de Astronauta', 225, '+2 poeira por toque', ['touchFlat']),
   touch('trained', 'Dedo Treinado', 500, 'A cada 25 toques, o 25º rende x5', ['touchNth']),
   touch('rhythm', 'Ritmo Firme', 850, 'Libera o combo: tocar de novo em até 1,3 s mantém a sequência, e cada toque seguido soma 0,2 do toque (até 3 seguidos)', ['comboUnlock', 'comboPoint']),
   touch('magnet', 'Toque Magnético', 1000, 'Cada toque encurta em 0,5 s a espera do próximo objeto', ['objectSpawn']),
-  touch('hands', 'Mãos do Astronauta', 1000, 'A cada 10 geradores comprados, +1 poeira por toque', ['touchPerGenerator']),
-  touch('charged', 'Pulso Carregado', 1500, '+0,25 de energia por toque', ['energyPerTouch']),
-  touch('luck', 'Toque de Sorte', 2000, '4% de chance de o toque render x10', ['touchCrit']),
+  touch('hands', 'Mãos do Astronauta', 1000, 'A cada 6 níveis de gerador comprados, +1 poeira por toque', ['touchPerGenerator']),
+  touch('charged', 'Pulso Carregado', 1500, '+0,5 de energia por toque', ['energyPerTouch']),
+  touch('luck', 'Toque de Sorte', 2000, '6% de chance de o toque render x10', ['touchCrit']),
   touch('cadence', 'Cadência', 3000, 'Combo máximo +1', ['comboMax'], { requiresUpgrade: { id: 'rhythm', level: 1 } }),
   touch('kepler', 'Sonda Kepler', 4000, 'Objetos aparecem 20% mais cedo', ['objectSpawnWindow']),
   touch('voyager', 'Voyager', 12000, 'Satélites duram +4 s', ['signalDuration']),
@@ -505,29 +508,33 @@ export const UPGRADES: readonly UpgradeDef[] = [
   touch('chandra', 'Telescópio Chandra', 300000, 'Objetos ficam 50% mais tempo no campo', ['objectLife'], { unlockedAtCollapse: 3 }),
   touch('gaia', 'Observatório Gaia', 1500000, 'O sorteio mostra o efeito já na carta', ['cardInfo'], { unlockedAtCollapse: 5 }),
 
-  generator('satellite', 'Satélite', 15, 0.1),
-  generator('probe', 'Sonda Voyager', 100, 1),
-  generator('telescope', 'Telescópio', 1100, 8),
-  generator('observatory', 'Observatório', 12000, 47),
-  generator('station', 'Estação Orbital', 130000, 260),
-  generator('colony', 'Colônia Lunar', 1400000, 1400),
-  generator('fleet', 'Frota Estelar', 20000000, 7800),
-  generator('portal', 'Portal', 330000000, 44000),
+  generator('satellite', 'Satélite', 15, 0.2, 8),
+  generator('probe', 'Sonda Voyager', 120, 1.6, 8),
+  generator('telescope', 'Telescópio', 900, 12, 8),
+  generator('observatory', 'Observatório', 8000, 60, 10),
+  generator('station', 'Estação Orbital', 90000, 340, 10),
+  generator('colony', 'Colônia Lunar', 1000000, 1900, 10),
+  generator('fleet', 'Frota Estelar', 14000000, 11000, 12),
+  generator('portal', 'Portal', 250000000, 62000, 12),
+  generator('cluster', 'Aglomerado', 4000000000, 350000, 12),
+  generator('quasar', 'Quasar', 90000000000, 2000000, 12),
+  generator('web', 'Teia Cósmica', 2000000000000, 12000000, 12),
 
-  energyGen('antenna', 'Antena', 400, 0.02),
-  energyGen('receiver', 'Receptor de Sinal', 3000, 0.1),
-  energyGen('matrix', 'Matriz de Escuta', 30000, 0.5),
-  energyGen('deepnet', 'Rede Profunda', 400000, 2.5),
+  energyGen('antenna', 'Antena', 300, 0.04, 6),
+  energyGen('receiver', 'Receptor de Sinal', 2500, 0.2, 6),
+  energyGen('matrix', 'Matriz de Escuta', 25000, 1, 8),
+  energyGen('deepnet', 'Rede Profunda', 300000, 5, 8),
+  energyGen('array', 'Conjunto Interestelar', 4000000, 25, 8),
 
   // Acrescentadas depois (spec 039, 3 e 4.1): ficam no fim do catálogo para os índices dos saves não mudarem;
   // a prateleira ordena cada tipo pelo preço (`shelfOf`).
   touch('warmup', 'Aquecimento', 3000, 'Depois de 5 s tocando sem parar, o toque rende +50% até você soltar por 2 s', ['touchWarm']),
-  perk('network', 'Rede', 1200, 'Cada Sonda Voyager dá +1% de poeira aos Satélites', ['genNetwork']),
-  perk('lure', 'Isca', 2500, 'A cada 10 Satélites, o próximo objeto aparece 1 s mais cedo (até 15 s)', ['genLure']),
+  perk('network', 'Rede', 1200, 'Cada nível da Sonda Voyager dá +2% de poeira aos Satélites', ['genNetwork']),
+  perk('lure', 'Isca', 2500, 'A cada 2 níveis do Satélite, o próximo objeto aparece 1 s mais cedo (até 4 s)', ['genLure']),
   perk('burst', 'Rajada', 6000, 'A cada 60 s, os geradores soltam de uma vez 10 s da própria produção', ['genBurst']),
-  perk('scale', 'Escala', 9000, 'A cada 25 unidades de um gerador, o toque ganha +1 de poeira', ['genScale']),
+  perk('scale', 'Escala', 9000, 'A cada 4 níveis de um gerador, o toque ganha +1 de poeira', ['genScale']),
   perk('peak', 'Hora de pico', 15000, 'Capturar um objeto faz os geradores renderem +50% por 20 s', ['genPeak']),
-  perk('queue', 'Fila de pedidos', 40000, 'Comprar 10 de uma vez sai 5% mais barato', ['genBulk']),
+  perk('queue', 'Fila de pedidos', 40000, 'Completar um gerador de uma vez (todos os níveis que faltam) sai 5% mais barato', ['genBulk']),
   perk('convert', 'Conversão', 80000, 'Os geradores também enchem a barra de energia, o equivalente a 1 toque por minuto', ['genConvert']),
   perk('rotation', 'Revezamento', 200000, 'O gerador que você menos comprou rende o dobro', ['genRotation']),
 

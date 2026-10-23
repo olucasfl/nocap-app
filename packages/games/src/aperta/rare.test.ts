@@ -18,7 +18,8 @@ function open(over: Partial<RunState> = {}): SaveState {
   const s = newSave('rare', 0);
   const upgradeLevels = s.run.upgradeLevels.slice();
   upgradeLevels[upgradeIndex('satellite')] = 1;
-  return { ...s, tutorial: 'done', run: { ...s.run, upgradeLevels, ...over } };
+  // Muitas escolhas já feitas: a barra de energia é grande e não abre escolha (que congelaria o relógio) durante o teste.
+  return { ...s, tutorial: 'done', run: { ...s.run, upgradeLevels, picks: 200, ...over } };
 }
 
 const withBuild = (s: SaveState, build: Record<string, number>): SaveState => ({ ...s, run: { ...s.run, build } });
@@ -191,7 +192,7 @@ describe('save com a Estrela Dourada', () => {
       objects: [{ id: 1, kind: 'golden', bornAt: 0, expiresAt: 10, power: 'rain' }],
       nextObjectId: 2,
     });
-    s.stats = { ...base.stats, dustTotal: 1000 };
+    s.stats = { ...base.stats, dustTotal: 1000, picks: 200 };
     const r = validateSave(JSON.parse(JSON.stringify(s)));
     expect(r.ok, r.ok ? '' : r.errors.join(';')).toBe(true);
     if (r.ok) {

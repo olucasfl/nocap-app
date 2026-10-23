@@ -57,15 +57,15 @@ describe('repetição por tecla', () => {
 
 describe('barra de energia', () => {
   it('começa vazia, com o teto do primeiro passo', () => {
-    expect(energyView(fresh())).toMatchObject({ fill: 0, hot: false, label: '0/38', cap: 38 });
+    expect(energyView(fresh())).toMatchObject({ fill: 0, hot: false, label: '0/19', cap: 19 });
   });
 
   it('mostra inteiros e acende a partir de 85%', () => {
     const s = fresh();
     const at = (energy: number): SaveState => ({ ...s, run: { ...s.run, energy } });
-    expect(energyView(at(12.9)).label).toBe('12/38');
-    expect(energyView(at(38 * ENERGY_HOT_FROM - 0.5)).hot).toBe(false);
-    expect(energyView(at(38 * ENERGY_HOT_FROM)).hot).toBe(true);
+    expect(energyView(at(12.9)).label).toBe('12/19');
+    expect(energyView(at(19 * ENERGY_HOT_FROM - 0.5)).hot).toBe(false);
+    expect(energyView(at(19 * ENERGY_HOT_FROM)).hot).toBe(true);
   });
 });
 

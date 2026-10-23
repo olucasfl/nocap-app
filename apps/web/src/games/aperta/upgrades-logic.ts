@@ -1,8 +1,8 @@
 import {
-  BULK_COUNT,
-  GENERATOR_MILESTONES,
   UPGRADES,
+  autoRates,
   batchCost,
+  batchLevels,
   effectiveStats,
   formatDecimal,
   formatNumber,
@@ -96,9 +96,8 @@ export interface UpgradeRow {
   gain: string | null;
   /** Por que está trancada ("Compre a anterior primeiro"). */
   lockHint: string | null;
-  /** Gerador: quantas unidades faltam para o próximo dobro (10, 25 ou 50), ou `null`. */
-  nextDouble: number | null;
-  /** Fila de pedidos: preço de comprar `BULK_COUNT` de uma vez (com o desconto), ou `null` se não há lote. */
+  /** Fila de pedidos: níveis que o botão "Completar" compra (os que faltam) e o preço com o desconto, ou `null`. */
+  bulkLevels: number;
   bulkCost: number | null;
 }
 
@@ -128,18 +127,6 @@ const PREVIEW: Record<string, Preview> = {
   magnet: { label: 'Cada toque encurta a espera', read: (s) => seconds(s.objects.spawnCutPerTouch) },
   voyager: { label: 'Duração do sinal', read: (s) => seconds(s.objects.signalSec) },
   chandra: { label: 'Objeto no campo', read: (s) => seconds(s.objects.lifeSec.comet) },
-  satellite: dustSec,
-  probe: dustSec,
-  telescope: dustSec,
-  observatory: dustSec,
-  station: dustSec,
-  colony: dustSec,
-  fleet: dustSec,
-  portal: dustSec,
-  antenna: energySec,
-  receiver: energySec,
-  matrix: energySec,
-  deepnet: energySec,
 };
 
 /** Melhorias de toque cujo efeito não mexe num número do `effectiveStats` que valha mostrar antes e depois. */
@@ -159,7 +146,8 @@ function withLevelUp(state: SaveState, index: number): SaveState {
 function gainText(state: SaveState, index: number, id: string): string | null {
   const plain = PLAIN_GAIN[id];
   if (plain) return plain;
-  const preview = PREVIEW[id];
+  const def = UPGRADES[index];
+  const preview = PREVIEW[id] ?? (def?.kind === 'generator' ? dustSec : def?.kind === 'energy' ? energySec : undefined);
   if (!preview) return null;
   const before = preview.read(effectiveStats(state));
   const after = preview.read(effectiveStats(withLevelUp(state, index)));
@@ -182,9 +170,6 @@ export function lockText(lock: UpgradeLock): string {
   }
 }
 
-function nextDouble(level: number): number | null {
-  return GENERATOR_MILESTONES.find((m) => level < m) ?? null;
-}
 
 /**
  * As linhas da página de Melhorias de uma aba (ou das duas): só o que está na prateleira. As escondidas viram
@@ -195,11 +180,14 @@ export function upgradeRows(state: SaveState, tab?: UpgradeTab): UpgradeRow[] {
   UPGRADES.forEach((def, index) => {
     if (tab && tabOf(def.kind) !== tab) return;
     const lock = upgradeLock(state, index);
-    if (lock?.kind === 'collapse' || lock?.kind === 'shelf') return;
     const level = state.run.upgradeLevels[index] ?? 0;
+    // Completa (8/8, ou comprada): vai para a aba Comprados mesmo que já tenha saído da prateleira.
+    const complete = level >= def.max;
+    if (!complete && (lock?.kind === 'collapse' || lock?.kind === 'shelf')) return;
     const cost = lock?.kind === 'mystery' ? lock.cost : nextUpgradeCost(state, index);
     let status: UpgradeStatus;
-    if (lock?.kind === 'mystery') status = 'mystery';
+    if (complete) status = 'maxed';
+    else if (lock?.kind === 'mystery') status = 'mystery';
     else if (lock) status = 'locked';
     else if (cost === null) status = 'maxed';
     else status = state.run.dust >= cost ? 'affordable' : 'short';
@@ -219,7 +207,7 @@ export function upgradeRows(state: SaveState, tab?: UpgradeTab): UpgradeRow[] {
       missing: cost !== null ? Math.max(0, Math.ceil(cost - state.run.dust)) : 0,
       gain: status === 'affordable' || status === 'short' ? gainText(state, index, def.id) : null,
       lockHint: (status === 'locked' || status === 'mystery') && lock ? lockText(lock) : null,
-      nextDouble: def.kind === 'touch' || def.kind === 'perk' ? null : nextDouble(level),
+      bulkLevels: hidden ? 0 : batchLevels(state, index),
       bulkCost: hidden ? null : batchCost(state, index),
     });
   });
@@ -263,12 +251,38 @@ export function buyLabel(row: UpgradeRow): string {
   }
 }
 
-/** Resumo do ganho automático para o alto da aba Geradores: tocando, parado e se o teto do toque já segura. */
-export function autoSummary(state: SaveState): { active: string; idle: string; capped: boolean } {
+/**
+ * Resumo do ganho REAL para o alto da aba Geradores (spec 041, A7): o que cai por segundo de poeira e de energia agora,
+ * já com o limite do toque, e quanto os geradores renderiam sem ele (para explicar por que o número não sobe).
+ */
+export function autoSummary(state: SaveState): { active: string; energy: string; potential: string; capped: boolean } {
   const s = effectiveStats(state);
-  const active = Math.min(s.autoDustPerSec, s.autoDustCap);
-  return { active: formatDecimal(active, 1), idle: formatDecimal(active * 0.25, 1), capped: s.autoDustPerSec > s.autoDustCap };
+  const rates = autoRates(state);
+  return {
+    active: formatRate(rates.dust),
+    energy: formatRate(rates.energy),
+    potential: formatRate(s.autoDustPerSec),
+    capped: s.autoDustPerSec > s.autoDustCap * 1.001,
+  };
 }
 
-/** Quantos níveis o botão de lote compra (Fila de pedidos). */
-export const BULK_LABEL_COUNT = BULK_COUNT;
+/** "8,8/s" com 1 casa quando é pouco, inteiro quando é muito. */
+export function formatRate(perSec: number): string {
+  if (!(perSec > 0)) return '0';
+  if (perSec < 10) return formatDecimal(perSec, 1);
+  return formatNumber(perSec);
+}
+
+/** As duas áreas da página: o que dá para comprar e o que já está completo (spec 041, A5). */
+export type UpgradeSection = 'buy' | 'owned';
+export const isOwnedRow = (r: UpgradeRow): boolean => r.status === 'maxed';
+
+/** Itens completos, na ordem de exibição (toque, poeira, energia, melhorias de gerador), para a aba Comprados. */
+export function ownedRows(state: SaveState): UpgradeRow[] {
+  return upgradeRows(state).filter(isOwnedRow);
+}
+
+/** O que a aba Comprar mostra: tudo que ainda não está completo. */
+export function buyRows(state: SaveState, tab: UpgradeTab): UpgradeRow[] {
+  return upgradeRows(state, tab).filter((r) => !isOwnedRow(r));
+}

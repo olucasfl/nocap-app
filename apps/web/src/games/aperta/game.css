@@ -1364,3 +1364,26 @@
 .ap-hudgoal .ap-goalbar {
   min-width: 48px;
 }
+
+/* Estrela Dourada: raios e brilhos que piscam só em opacity (spec 041, A8). */
+.apg-gold-spark {
+  animation: apg-twinkle 1.8s ease-in-out infinite;
+}
+.apg-gold-rays {
+  animation: apg-twinkle 2.6s ease-in-out infinite reverse;
+}
+@keyframes apg-twinkle {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .apg-gold-spark,
+  .apg-gold-rays {
+    animation: none;
+  }
+}

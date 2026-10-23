@@ -90,9 +90,10 @@ describe('marco da vida: a meta cresce com n', () => {
       expect(goals[i]!.level).toBeGreaterThanOrEqual(goals[i - 1]!.level);
       expect(goals[i]!.count).toBeGreaterThanOrEqual(goals[i - 1]!.count);
     }
-    expect(goals[0]).toEqual({ count: 2, level: 7 });
+    // Spec 041: 1 gerador no nível 4 no começo, até 3 geradores no nível 8 (cada gerador vai de 0 a 8 ou mais).
+    expect(goals[0]).toEqual({ count: 1, level: 4 });
     expect(goals.at(-1)!.count).toBeLessThanOrEqual(GENERATOR_COUNT);
-    expect(generatorGoal(1_000_000).level).toBeLessThanOrEqual(400);
+    expect(generatorGoal(1_000_000)).toEqual({ count: 3, level: 8 });
   });
 
   it('toda meta é um inteiro positivo e nunca decresce com n', () => {

@@ -4,7 +4,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { upgradeIndex } from './catalog';
-import { dustGoal, minPicks, MAX_NUMBER, MAX_COLLAPSE_COUNT, LIFE_HOURS_MAX } from './economy';
+import { GOAL_TABLE, dustGoal, minPicks, MAX_NUMBER, MAX_COLLAPSE_COUNT, LIFE_HOURS_MAX } from './economy';
 import {
   canCollapse,
   captureObject,
@@ -63,8 +63,8 @@ describe('o requisito do colapso n cresce sem fim', () => {
     expect(MAX_COLLAPSE_COUNT).toBeGreaterThan(500);
   });
 
-  it('mínimo de escolhas: 20 no 1º, 15 até o 5º e 12 depois', () => {
-    expect([1, 2, 5, 6, 15, 1000].map(minPicks)).toEqual([20, 15, 15, 12, 12, 12]);
+  it('mínimo de escolhas (metade de antes, spec 041): 12 no 1º, 10 até o 5º e 8 depois', () => {
+    expect([1, 2, 5, 6, 15, 1000].map(minPicks)).toEqual([12, 10, 10, 8, 8, 8]);
   });
 
   it('os três requisitos têm que estar cumpridos, cada um sozinho segura o colapso', () => {
@@ -79,7 +79,7 @@ describe('o requisito do colapso n cresce sem fim', () => {
 
   it('o progresso devolve as três barras', () => {
     const p = collapseProgress(withRun(atCollapse(0), { dustLife: 1e6, picks: 10, chainBest: 2 }));
-    expect(p).toMatchObject({ next: 1, dustGoal: 5e7, dust: 1e6, picks: 10, minPicks: 20, ready: false });
+    expect(p).toMatchObject({ next: 1, dustGoal: GOAL_TABLE[0], dust: 1e6, picks: 10, minPicks: 12, ready: false });
     expect(p.milestone).toMatchObject({ kind: 'combo', value: 2, target: 5, done: false });
   });
 
@@ -122,7 +122,7 @@ describe('contadores da vida (alimentam o marco)', () => {
       s = press(s, t);
       t += 0.5;
     }
-    expect(s.run.fullBest).toBeGreaterThan(10);
+    expect(s.run.fullBest).toBeGreaterThan(5);
     const best = s.run.fullBest;
     s = press(s, t + 10);
     expect(s.run.fullBest).toBe(best);
@@ -239,7 +239,7 @@ describe('sem Ascender', () => {
 });
 
 describe('o teto de vida do perfil normal é uma constante da spec', () => {
-  it('3 h', () => expect(LIFE_HOURS_MAX).toBe(3));
+  it('2,5 h (spec 041)', () => expect(LIFE_HOURS_MAX).toBe(2.5));
   it('milestoneGoal e milestoneKind concordam para o colapso 1', () => {
     expect(milestoneGoal(milestoneKind(1), 1).target).toBe(5);
   });

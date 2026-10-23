@@ -27,16 +27,16 @@ describe('sorteio por peso (n = escolhas já feitas)', () => {
     return seen;
   }
 
-  it('nas 3 primeiras escolhas só saem comuns', () => {
-    for (const n of [0, 1, 2]) expect([...rarities(n)]).toEqual(['common']);
+  it('nas 2 primeiras escolhas só saem comuns', () => {
+    for (const n of [0, 1]) expect([...rarities(n)]).toEqual(['common']);
   });
-  it('raro entra em n >= 3, épico em 8, lendário em 14', () => {
-    expect(rarities(3).has('rare')).toBe(true);
-    expect(rarities(3).has('epic')).toBe(false);
-    expect(rarities(8).has('epic')).toBe(true);
-    expect(rarities(8).has('legendary')).toBe(false);
-    expect(rarities(14).has('legendary')).toBe(true);
-    expect(rarities(14).has('forbidden')).toBe(false);
+  it('raro entra em n >= 2, épico em 5, lendário em 9 (spec 041: mais cedo e com mais chance)', () => {
+    expect(rarities(2).has('rare')).toBe(true);
+    expect(rarities(2).has('epic')).toBe(false);
+    expect(rarities(5).has('epic')).toBe(true);
+    expect(rarities(5).has('legendary')).toBe(false);
+    expect(rarities(9).has('legendary')).toBe(true);
+    expect(rarities(9).has('forbidden')).toBe(false);
   });
   it('proibido nunca sai no sorteio: mora no Cofre', () => {
     expect(rarities(40, 600).has('forbidden')).toBe(false);

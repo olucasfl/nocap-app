@@ -91,17 +91,41 @@ function Shape({ kind }: { kind: SpaceObjectKind }) {
         </>
       );
     case 'golden':
+      // Estrela Dourada premium (spec 041, A8): raios em leque, estrela facetada com degradê, halo duplo e brilhos que piscam.
       return (
         <>
-          <circle cx="32" cy="32" r="27" fill="#ffd447" opacity=".22" />
-          <path
-            d="M32 2l8 19 21 2-16 14 5 20-18-11-18 11 5-20L3 23l21-2z"
-            fill="#ffd447"
-            stroke="#8a5a00"
-            strokeWidth="3"
-            strokeLinejoin="round"
-          />
-          <path d="M32 14l5 12 13 1-10 9 3 13-11-7-11 7 3-13-10-9 13-1z" fill="#fff6c9" />
+          <defs>
+            <radialGradient id="apg-gold-halo" cx="50%" cy="50%" r="50%">
+              <stop offset="0" stopColor="#fff3a8" stopOpacity=".85" />
+              <stop offset="0.55" stopColor="#ffc933" stopOpacity=".35" />
+              <stop offset="1" stopColor="#ffc933" stopOpacity="0" />
+            </radialGradient>
+            <linearGradient id="apg-gold-body" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stopColor="#fff6c2" />
+              <stop offset="0.45" stopColor="#ffd447" />
+              <stop offset="1" stopColor="#c27a00" />
+            </linearGradient>
+            <linearGradient id="apg-gold-dark" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stopColor="#f2a900" />
+              <stop offset="1" stopColor="#8a4f00" />
+            </linearGradient>
+          </defs>
+          <circle cx="32" cy="32" r="31" fill="url(#apg-gold-halo)" />
+          <g className="apg-gold-rays" stroke="#ffe27a" strokeWidth="2.4" strokeLinecap="round" opacity=".85">
+            <path d="M32 0v7M32 57v7M0 32h7M57 32h7M9 9l5 5M50 50l5 5M55 9l-5 5M14 50l-5 5" />
+          </g>
+          <circle cx="32" cy="32" r="22" fill="none" stroke="#fff3a8" strokeWidth="1.6" strokeDasharray="2 4" opacity=".8" />
+          <path d="M32 6l7.5 17.5 19 1.8-14.4 12.6 4.4 18.6L32 46.6 15.5 56.5l4.4-18.6L5.5 25.3l19-1.8z" fill="url(#apg-gold-dark)" stroke="#6b3d00" strokeWidth="2.6" strokeLinejoin="round" />
+          <path d="M32 6l7.5 17.5L32 32l-7.5-8.5z" fill="url(#apg-gold-body)" />
+          <path d="M5.5 25.3l19-1.8L32 32 15.5 37.9z" fill="#ffe27a" opacity=".9" />
+          <path d="M58.5 25.3l-19-1.8L32 32l16.5 5.9z" fill="#ffb81f" />
+          <path d="M32 46.6L19.9 37.9 32 32l12.1 5.9z" fill="#ffcf40" />
+          <path d="M32 11l3.6 8.8" stroke="#fffbe0" strokeWidth="2" strokeLinecap="round" />
+          <circle cx="32" cy="32" r="5" fill="#fffbe0" stroke="#d99200" strokeWidth="1.6" />
+          <g className="apg-gold-spark" fill="#fff">
+            <path d="M54 8l1.6 3.4L59 13l-3.4 1.6L54 18l-1.6-3.4L49 13l3.4-1.6z" />
+            <path d="M9 44l1.2 2.6L13 48l-2.8 1.2L9 52l-1.2-2.8L5 48l2.8-1.4z" />
+          </g>
         </>
       );
     case 'legend-comet':

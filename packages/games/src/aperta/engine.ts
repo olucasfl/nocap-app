@@ -6,7 +6,6 @@ import { hashSeed } from '../core/rng';
 import { awardAchievements } from './achievements';
 import type { UiState } from './tutorial';
 import {
-  GENERATOR_MILESTONES,
   GRIMOIRES,
   OBJECTS,
   OBJECT_REWARD,
@@ -72,9 +71,10 @@ import {
   CHANDRA_LIFE_MULT,
   CHARGED_ENERGY,
   CRIT_CHANCE,
+  GLOVES_FLAT,
   CRIT_MULT,
   ECHO_SHARE_OF_AUTO,
-  BULK_COUNT,
+  BULK_MIN,
   BULK_DISCOUNT,
   BURST_EVERY_SEC,
   BURST_SECS,
@@ -114,7 +114,7 @@ import {
 } from './economy';
 
 /** 3: Cofre dos Proibidos no lugar do Atlas (spec 040, etapa 15). */
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 /** Valor de "nunca tocou": negativo e finito, para o save continuar sendo JSON válido. */
 const NEVER = -1e9;
 
@@ -932,8 +932,7 @@ function computeStats(state: SaveState): EffectiveStats {
     if (n <= 0) continue;
     generators += n;
     scaleBonus += has('scale') ? Math.floor(n / SCALE_EVERY) : 0;
-    const doublings = GENERATOR_MILESTONES.filter((m) => n >= m).length;
-    let rate = (def.perSec ?? 0) * n * 2 ** doublings;
+    let rate = (def.perSec ?? 0) * n;
     if (def.id === 'satellite' && has('network')) rate *= 1 + NETWORK_PER_PROBE * (owned.get('probe') ?? 0);
     if (def.id === rotationId) rate *= ROTATION_MULT;
     if (def.kind === 'generator') autoDust += rate;
@@ -955,7 +954,7 @@ function computeStats(state: SaveState): EffectiveStats {
   if (has('trained')) nth.push({ n: TRAINED_N, mult: TRAINED_MULT, energy: 0 });
   const touchDoublings = ['lens', 'lens2', 'cabin', 'webb'].filter(has).length;
   // Selo Estelar: poeira fixa por toque, por selo (spec 040, seção 3).
-  const flat = (has('gloves') ? 1 : 0) + (has('hands') ? Math.floor(generators / HANDS_GENERATORS_PER_POINT) : 0) + dustFlat + state.seals * SEAL_DUST_PER_TOUCH + treeFlatDust(state, ts) + scaleBonus;
+  const flat = (has('gloves') ? GLOVES_FLAT : 0) + (has('hands') ? Math.floor(generators / HANDS_GENERATORS_PER_POINT) : 0) + dustFlat + state.seals * SEAL_DUST_PER_TOUCH + treeFlatDust(state, ts) + scaleBonus;
   let dustPerTouch = (1 + flat) * 2 ** touchDoublings * Math.max(0, 1 + dustPct / 100) * dustMult;
   // Eco: os geradores alimentam o toque. É o que faz investir neles valer a pena sem o auto passar do teto.
   if (has('echo')) dustPerTouch += autoDust * ECHO_SHARE_OF_AUTO;
@@ -1528,6 +1527,13 @@ export function upgradeOnShelf(state: SaveState, index: number): boolean {
   const same = shelfOf(state, def.kind);
   const pos = same.indexOf(index);
   if (pos < 0) return false;
+  // Geradores (poeira e energia): um por vez. Só o primeiro que ainda não está completo (0/8 -> 8/8) aparece; ao
+  // completar, o próximo toma o lugar dele.
+  if (def.kind === 'generator' || def.kind === 'energy') {
+    const firstOpen = same.find((i) => (state.run.upgradeLevels[i] ?? 0) < (UPGRADES[i] as UpgradeDef).max);
+    // Os completos continuam na prateleira (aba Comprados); um gerador comprado fora da ordem não é válido.
+    return index === firstOpen || (state.run.upgradeLevels[index] ?? 0) >= def.max;
+  }
   const bought = same.filter((i) => (state.run.upgradeLevels[i] ?? 0) > 0).length;
   return pos < bought + SHELF_AHEAD;
 }
@@ -1538,6 +1544,8 @@ export function upgradeRevealed(state: SaveState, index: number): boolean {
   if (!def) return false;
   const lvl = state.run.upgradeLevels[index] ?? 0;
   if (lvl > 0 || state.collapses >= 1 || shelfOf(state, def.kind)[0] === index) return true;
+  // O gerador que a prateleira mostra já tem nome: ele só aparece quando o anterior foi completado.
+  if (def.kind === 'generator' || def.kind === 'energy') return true;
   return state.run.dustLife >= REVEAL_SHARE * upgradeCost(def, lvl, effectiveStats(state).costFactor);
 }
 
@@ -1587,23 +1595,17 @@ export function nextUpgradeCost(state: SaveState, index: number): number | null 
 }
 
 /**
- * Compra `BULK_COUNT` níveis de uma vez (só gerador e só com a Fila de pedidos: sai `BULK_DISCOUNT` mais barato).
- * Se não der para pagar todos, não compra nenhum.
+ * Fila de pedidos: completa o gerador de uma vez (todos os níveis que faltam, no mínimo 2), `BULK_DISCOUNT` mais barato.
+ * Se não der para pagar tudo, não compra nada.
  */
-export function buyUpgradeBatch(state: SaveState, index: number, count = BULK_COUNT): SaveState {
-  const def = UPGRADES[index];
-  const stats = effectiveStats(state);
-  if (!def || (def.kind !== 'generator' && def.kind !== 'energy') || stats.perks.bulkDiscount <= 0 || count < 2) return state;
-  if (!upgradeAvailable(state, index)) return state;
+export function buyUpgradeBatch(state: SaveState, index: number): SaveState {
+  const total = batchCost(state, index);
+  if (total === null || state.run.dust < total) return state;
+  const def = UPGRADES[index] as UpgradeDef;
   const lvl = state.run.upgradeLevels[index] ?? 0;
-  const take = Math.min(count, def.max - lvl);
-  if (take < count) return state;
-  let total = 0;
-  for (let k = 0; k < take; k++) total += upgradeCost(def, lvl + k, stats.costFactor);
-  total *= 1 - stats.perks.bulkDiscount;
-  if (state.run.dust < total) return state;
+  const take = def.max - lvl;
   const upgradeLevels = state.run.upgradeLevels.slice();
-  upgradeLevels[index] = lvl + take;
+  upgradeLevels[index] = def.max;
   return awardAchievements({
     ...state,
     run: { ...state.run, dust: clampNum(state.run.dust - total), upgradeLevels },
@@ -1615,16 +1617,25 @@ export function buyUpgradeBatch(state: SaveState, index: number, count = BULK_CO
   });
 }
 
-/** Custo do lote (com o desconto da Fila de pedidos), ou `null` se não dá para comprar o lote. */
-export function batchCost(state: SaveState, index: number, count = BULK_COUNT): number | null {
+/** Níveis que o lote compra (os que faltam), ou 0 se não há lote. */
+export function batchLevels(state: SaveState, index: number): number {
   const def = UPGRADES[index];
-  const stats = effectiveStats(state);
-  if (!def || (def.kind !== 'generator' && def.kind !== 'energy') || stats.perks.bulkDiscount <= 0 || !upgradeAvailable(state, index)) return null;
+  if (!def || (def.kind !== 'generator' && def.kind !== 'energy') || effectiveStats(state).perks.bulkDiscount <= 0) return 0;
+  if (!upgradeAvailable(state, index)) return 0;
+  const left = def.max - (state.run.upgradeLevels[index] ?? 0);
+  return left >= BULK_MIN ? left : 0;
+}
+
+/** Custo do lote (com o desconto da Fila de pedidos), ou `null` se não há lote. */
+export function batchCost(state: SaveState, index: number): number | null {
+  const take = batchLevels(state, index);
+  if (take === 0) return null;
+  const def = UPGRADES[index] as UpgradeDef;
   const lvl = state.run.upgradeLevels[index] ?? 0;
-  if (lvl + count > def.max) return null;
+  const factor = effectiveStats(state).costFactor;
   let total = 0;
-  for (let k = 0; k < count; k++) total += upgradeCost(def, lvl + k, stats.costFactor);
-  return total * (1 - stats.perks.bulkDiscount);
+  for (let k = 0; k < take; k++) total += upgradeCost(def, lvl + k, factor);
+  return total * (1 - effectiveStats(state).perks.bulkDiscount);
 }
 
 export function buyUpgrade(state: SaveState, index: number): SaveState {

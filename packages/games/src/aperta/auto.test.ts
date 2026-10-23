@@ -17,11 +17,11 @@ describe('autoRates (o que os geradores rendem agora)', () => {
   it('parado rende uma fração; tocando rende cheio', () => {
     const idle = autoRates(owning({ satellite: 4 }));
     expect(idle).toMatchObject({ active: false, surge: false });
-    expect(idle.dust).toBeCloseTo(0.4 * 0.25, 9);
+    expect(idle.dust).toBeCloseTo(0.8 * 0.25, 9);
     const touched = press(owning({ satellite: 4 }), 1);
     const active = autoRates(touched);
     expect(active.active).toBe(true);
-    expect(active.dust).toBeCloseTo(0.4, 9);
+    expect(active.dust).toBeCloseTo(0.8, 9);
     expect(active.dust).toBeGreaterThan(idle.dust);
   });
 

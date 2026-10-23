@@ -1,4 +1,4 @@
-import { GENERATOR_MILESTONES, UPGRADES, autoRates, formatDecimal, formatNumber, type SaveState } from '@nocap/games';
+import { UPGRADES, autoRates, formatDecimal, formatNumber, type SaveState } from '@nocap/games';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { AstroMedal } from './AstroMedal';
 import { upgradeAstro } from './upgrades-logic';
@@ -23,9 +23,10 @@ const POP_MS = 1100;
  * Ao lado do contador de poeira: a cada segundo sobe "+0,1" com o que os geradores renderam, em ciano
  * (o dourado é do toque). Só aparece se há gerador rendendo; com o jogo parado ou a escolha aberta, nada.
  */
-export function AutoGain({ state, paused }: { state: SaveState; paused: boolean }) {
+export function AutoGain({ state, paused, kind = 'dust' }: { state: SaveState; paused: boolean; kind?: 'dust' | 'energy' }) {
   const [pops, setPops] = useState<Pop[]>([]);
-  const rate = autoRates(state).dust;
+  const rates = autoRates(state);
+  const rate = kind === 'energy' ? rates.energy : rates.dust;
   const rateRef = useRef(rate);
   rateRef.current = rate;
   const id = useRef(0);
@@ -44,7 +45,7 @@ export function AutoGain({ state, paused }: { state: SaveState; paused: boolean 
 
   if (pops.length === 0) return null;
   return (
-    <span className="ap-autogain" aria-hidden="true">
+    <span className={`ap-autogain${kind === 'energy' ? ' is-energy' : ''}`} aria-hidden="true">
       {pops.map((p) => (
         <b key={p.id} className="ap-autogain-pop">
           {p.text}
@@ -58,7 +59,7 @@ interface Orbit {
   id: string;
   astro: ReturnType<typeof upgradeAstro>;
   energy: boolean;
-  /** 1 até 4: cresce nos marcos de 10, 25 e 50 unidades. */
+  /** 1 a 3: cresce com os níveis do gerador (metade e completo). */
   tier: number;
 }
 
@@ -69,7 +70,8 @@ export function orbitsOf(state: SaveState): Orbit[] {
     if (def.kind === 'touch' || def.kind === 'perk') return;
     const level = state.run.upgradeLevels[i] ?? 0;
     if (level <= 0) return;
-    const tier = 1 + GENERATOR_MILESTONES.filter((m) => level >= m).length;
+    // O astro cresce com o gerador: 1 até a metade dos níveis, 2 passando dela, 3 completo.
+    const tier = 1 + (level >= def.max ? 2 : level * 2 >= def.max ? 1 : 0);
     orbits.push({ id: def.id, astro: upgradeAstro(def.id), energy: def.kind === 'energy', tier });
   });
   return orbits;
@@ -103,5 +105,26 @@ export function AutoOrbits({ state, paused }: { state: SaveState; paused: boolea
         );
       })}
     </div>
+  );
+}
+
+/**
+ * A taxa real dos geradores, sempre à vista (spec 041, A7): "+8,8/s" ao lado da poeira e "+0,5/s" com um raio ao lado da
+ * barra de energia. Vem de `autoRates`, a mesma conta do motor, já com o limite do toque.
+ */
+export function RateTag({ state, kind }: { state: SaveState; kind: 'dust' | 'energy' }) {
+  const rates = autoRates(state);
+  const rate = kind === 'energy' ? rates.energy : rates.dust;
+  if (!(rate > 0)) return null;
+  const text = rate < 0.1 ? formatDecimal(rate, 2) : rate < 10 ? formatDecimal(rate, 1) : formatNumber(rate);
+  return (
+    <span className={`ap-ratetag${kind === 'energy' ? ' is-energy' : ''}`} aria-label={`${kind === 'energy' ? 'Energia' : 'Poeira'} automática: ${text} por segundo`}>
+      {kind === 'energy' && (
+        <svg viewBox="0 0 16 20" width="11" height="14" aria-hidden="true">
+          <path d="M10 1L2 11h5l-1 8 8-11H9z" fill="currentColor" />
+        </svg>
+      )}
+      +{text}/s
+    </span>
   );
 }

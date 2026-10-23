@@ -30,9 +30,9 @@ describe('tela de jogo', () => {
     const markup = screen();
     expect(markup).toContain('poeira');
     expect(markup).toContain('colapsos');
-    expect(markup).toContain('0/38');
+    expect(markup).toContain('0/19');
     expect(markup).toContain('role="progressbar"');
-    expect(markup).toContain('aria-valuemax="38"');
+    expect(markup).toContain('aria-valuemax="19"');
   });
 
   it('a dock tem Conquistas, Grimórios e Melhorias e o botão da Árvore fica no topo', () => {

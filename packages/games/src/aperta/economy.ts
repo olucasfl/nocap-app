@@ -19,8 +19,9 @@ export const REACTOR_STEP = 0.25;
  * de 2 poeira. As barras seguintes caem no começo (spec 038, 6.2). O crescimento depois da 6ª escolha era x1,35; a spec 040
  * pede 20 escolhas no 1º colapso dentro de 3 h e, com x1,35, o simulador levava ~6,7 h: x1,22 leva ~2,1 h.
  */
-export const ENERGY_STEPS = [38, 80, 150, 260, 420, 640] as const;
-export const ENERGY_STEP_GROWTH = 1.22;
+/** Spec 041 (B4): metade da dificuldade de antes (38, 80, 150...), para o grimório vir mais fácil. */
+export const ENERGY_STEPS = [19, 40, 75, 130, 210, 320] as const;
+export const ENERGY_STEP_GROWTH = 1.16;
 
 /** Grimório repetido: cada nível soma metade do número base (+0,5 vira +0,75, +1...), até o nível 10. */
 export const GRIMOIRE_MAX_LEVEL = 10;
@@ -117,27 +118,27 @@ export function rarityUnlockPicks(rarity: Rarity, collapses: number): number {
  * `upTo` é >= `n`. Os números são o que o simulador calibra; o último trecho vale para sempre.
  */
 export const GOAL_BASE = 5e7;
-export const GOAL_SEGMENTS: { upTo: number; ratio: number }[] = [
-  // 1º -> 2º colapso: de 50 mi a 140 mi (o que a vida 2 rende em ~2 h). Os 3 primeiros passos acompanham o poder que cada colapso acumula (páginas do Atlas e Fragmentos).
-  { upTo: 2, ratio: 2.8 },
-  { upTo: 4, ratio: 1.95 },
-  // Do 5º ao 30º colapso: x1,28 por colapso mantém a vida do perfil normal em ~2 h (calibrado, 12 sementes).
-  { upTo: 30, ratio: 1.28 },
-  // Depois do 30º o poder permanente já encheu (Atlas e árvore): x1,08 dá ~1,4% a mais de horas por colapso (limite: 3%).
-  { upTo: Infinity, ratio: 1.08 },
-];
+/**
+ * Spec 041 (B5): metas de poeira calibradas no simulador para o 1º colapso em ~1 h e cada vida seguinte um pouco
+ * mais longa (até ~1,8 h no 15º), sem saltos. Depois do 15º a meta cresce `GOAL_TAIL_RATIO` por colapso. O
+ * vetor é mutável só para a ferramenta de calibragem (`tmp-calib`); o jogo nunca o altera.
+ */
+export const GOAL_TABLE: number[] = [5e7, 1.4e8, 3.2e8, 6.9e8, 1.4e9, 2.8e9, 5.2e9, 9.4e9, 1.6e10, 2.7e10, 4.2e10, 6.3e10, 9e10, 1.25e11, 1.65e11];
+export const GOAL_TAIL_RATIO = 1.08;
+export const GOAL_SEGMENTS: { upTo: number; ratio: number }[] = [{ upTo: Infinity, ratio: GOAL_TAIL_RATIO }];
 
-/** Escolhas mínimas: 20 no 1º colapso, 15 do 2º ao 5º e 12 a partir do 6º. */
-export const MIN_PICKS_FIRST = 20;
-export const MIN_PICKS_EARLY = 15;
-export const MIN_PICKS_LATE = 12;
+/** Escolhas mínimas (spec 041: metade de antes): 12 no 1º colapso, 10 do 2º ao 5º e 8 a partir do 6º. */
+export const MIN_PICKS_FIRST = 12;
+export const MIN_PICKS_EARLY = 10;
+export const MIN_PICKS_LATE = 8;
 
 /**
  * Travas de duração da vida (perfil normal, 1 a 2 h por dia, spec 040 seção 2): até o 15º colapso cada vida
  * leva de 1 h a 3 h; depois pode crescer no máximo 3% por colapso em relação à anterior.
  */
-export const LIFE_HOURS_MIN = 1;
-export const LIFE_HOURS_MAX = 3;
+/** Spec 041: o 1º colapso em ~1 h e as outras vidas entre 0,7 h e 2,5 h até o 15º (antes 1 h a 3 h). */
+export const LIFE_HOURS_MIN = 0.7;
+export const LIFE_HOURS_MAX = 2.5;
 export const LIFE_BAND_LAST_COLLAPSE = 15;
 export const LIFE_GROWTH_MAX = 0.03;
 
@@ -147,16 +148,9 @@ export const LIFE_GROWTH_MAX = 0.03;
  */
 export function dustGoal(nextCollapse: number): number {
   const k = Math.max(1, Math.floor(nextCollapse));
-  let goal = GOAL_BASE;
-  let lo = 1;
-  for (const seg of GOAL_SEGMENTS) {
-    const steps = Math.max(0, Math.min(k, seg.upTo) - lo);
-    // Potência a potência (e não exp/log): a meta do 1º colapso sai exatamente 50.000.000.
-    if (steps > 0) goal = Math.min(MAX_NUMBER, goal * Math.pow(seg.ratio, steps));
-    lo = Math.max(lo, seg.upTo);
-    if (k <= lo) break;
-  }
-  return Math.min(MAX_NUMBER, goal);
+  if (k <= GOAL_TABLE.length) return GOAL_TABLE[k - 1] as number;
+  const last = GOAL_TABLE[GOAL_TABLE.length - 1] as number;
+  return Math.min(MAX_NUMBER, last * Math.pow(GOAL_TAIL_RATIO, k - GOAL_TABLE.length));
 }
 
 /** Maior colapso cuja meta ainda cabe abaixo do guarda de 1e300: o `validateSave` recusa mais que isto. */
@@ -185,34 +179,37 @@ export const ACTIVE_WINDOW_SEC = 4;
 /** Parado, os geradores rendem esta fração do ritmo ativo. */
 export const IDLE_FACTOR = 0.25;
 /** Teto do ganho automático: fração do que os toques rendem no ritmo normal. */
-export const AUTO_CAP_SHARE = 0.35;
+/** Spec 041 (B2): subiu de 35% para 60% do toque; os geradores seguem sempre abaixo de tocar (e parado rende 25%). */
+export const AUTO_CAP_SHARE = 0.6;
 export const NOMINAL_TOUCHES_PER_SEC = 2.5;
 
-export const CRIT_CHANCE = 0.04;
+export const CRIT_CHANCE = 0.06;
 export const CRIT_MULT = 10;
 export const TRAINED_N = 25;
 export const TRAINED_MULT = 5;
 export const ECHO_SHARE_OF_AUTO = 0.004;
-export const CHARGED_ENERGY = 0.25;
+export const CHARGED_ENERGY = 0.5;
+export const GLOVES_FLAT = 2;
 // Aquecimento (spec 039, 3): depois de `WARM_AFTER_SEC` tocando sem parar, o toque rende x`WARM_MULT` até soltar por `WARM_RELEASE_SEC`.
 export const WARM_AFTER_SEC = 5;
 export const WARM_RELEASE_SEC = 2;
 export const WARM_MULT = 1.5;
 // Melhorias de gerador (spec 039, 4.1). Todas são compra única e nenhuma deixa o auto passar do teto de 35% do toque.
-export const NETWORK_PER_PROBE = 0.01;
+export const NETWORK_PER_PROBE = 0.02;
 export const BURST_EVERY_SEC = 60;
 export const BURST_SECS = 10;
 export const PEAK_MULT = 1.5;
 export const PEAK_SEC = 20;
-export const SCALE_EVERY = 25;
+export const SCALE_EVERY = 4;
 export const BULK_DISCOUNT = 0.05;
-export const BULK_COUNT = 10;
+/** Menos que isto de níveis faltando, completar de uma vez não vale o botão. */
+export const BULK_MIN = 3;
 /** Conversão: toques equivalentes de energia por segundo que os geradores somam à barra (1 por minuto). */
 export const CONVERT_PER_SEC = 1 / 60;
-export const LURE_UNITS_PER_SEC = 10;
-export const LURE_CAP_SEC = 15;
+export const LURE_UNITS_PER_SEC = 2;
+export const LURE_CAP_SEC = 4;
 export const ROTATION_MULT = 2;
-export const HANDS_GENERATORS_PER_POINT = 10;
+export const HANDS_GENERATORS_PER_POINT = 6;
 export const VOYAGER_SEC = 4;
 export const CHANDRA_LIFE_MULT = 1.5;
 

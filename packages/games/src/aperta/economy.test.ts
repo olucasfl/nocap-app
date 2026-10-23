@@ -4,6 +4,8 @@ import {
   COST_FLOOR,
   GOAL_BASE,
   GOAL_SEGMENTS,
+  GOAL_TABLE,
+  GOAL_TAIL_RATIO,
   LIFE_BAND_LAST_COLLAPSE,
   LIFE_GROWTH_MAX,
   LIFE_HOURS_MAX,
@@ -64,16 +66,14 @@ describe('upgradeCost', () => {
 
 describe('energyCap', () => {
   it('usa os seis passos e depois cresce pelo fator da economia', () => {
-    expect([0, 1, 2, 3, 4, 5].map((n) => energyCap(n))).toEqual([38, 80, 150, 260, 420, 640]);
-    expect(energyCap(6)).toBeCloseTo(640 * ENERGY_STEP_GROWTH, 6);
-    expect(energyCap(7)).toBeCloseTo(640 * ENERGY_STEP_GROWTH ** 2, 6);
+    expect([0, 1, 2, 3, 4, 5].map((n) => energyCap(n))).toEqual([19, 40, 75, 130, 210, 320]);
+    expect(energyCap(6)).toBeCloseTo(320 * ENERGY_STEP_GROWTH, 6);
+    expect(energyCap(7)).toBeCloseTo(320 * ENERGY_STEP_GROWTH ** 2, 6);
   });
 
-  it('o 1º passo cabe em ~50 de poeira ganha (25 toques, a 1ª melhoria, mais ~13 toques de 2)', () => {
-    const touches = 25 + (energyCap(0) - 25); // energia 1 por toque
-    const dust = 25 + (touches - 25) * 2;
-    expect(dust).toBeGreaterThanOrEqual(45);
-    expect(dust).toBeLessThanOrEqual(60);
+  it('o 1º grimório sai em ~19 toques (metade da barra de antes, spec 041)', () => {
+    expect(energyCap(0)).toBe(19);
+    expect(energyCap(0)).toBeLessThanOrEqual(20);
   });
 
   it('as barras do começo ficam mais curtas que as da calibragem antiga (60, 90, 130...) em toques', () => {
@@ -83,15 +83,15 @@ describe('energyCap', () => {
   });
 
   it('aplica o fator de passo (M87*) e ignora fator inválido', () => {
-    expect(energyCap(0, 1.25)).toBe(47.5);
-    expect(energyCap(0, Number.NaN)).toBe(38);
-    expect(energyCap(0, -2)).toBe(38);
+    expect(energyCap(0, 1.25)).toBe(23.75);
+    expect(energyCap(0, Number.NaN)).toBe(19);
+    expect(energyCap(0, -2)).toBe(19);
   });
 
   it('fica finito em contagens absurdas', () => {
     expect(Number.isFinite(energyCap(100_000))).toBe(true);
     expect(energyCap(100_000)).toBeLessThanOrEqual(MAX_NUMBER);
-    expect(energyCap(-4)).toBe(38);
+    expect(energyCap(-4)).toBe(19);
   });
 });
 
@@ -108,42 +108,33 @@ describe('levelFactor', () => {
 describe('rarityUnlockPicks', () => {
   it('na 1ª vida usa os limiares da seção 4.3', () => {
     expect(rarityUnlockPicks('common', 0)).toBe(0);
-    expect(rarityUnlockPicks('rare', 0)).toBe(3);
-    expect(rarityUnlockPicks('epic', 0)).toBe(8);
-    expect(rarityUnlockPicks('legendary', 0)).toBe(14);
+    expect(rarityUnlockPicks('rare', 0)).toBe(2);
+    expect(rarityUnlockPicks('epic', 0)).toBe(5);
+    expect(rarityUnlockPicks('legendary', 0)).toBe(9);
   });
 
   it('cai para 60% depois do 1º colapso e 40% depois do 5º', () => {
-    expect(rarityUnlockPicks('epic', 1)).toBe(5);
-    expect(rarityUnlockPicks('epic', 5)).toBe(4);
+    expect(rarityUnlockPicks('epic', 1)).toBe(3);
+    expect(rarityUnlockPicks('epic', 5)).toBe(2);
   });
 });
 
 describe('requisitos de colapso (spec 040)', () => {
   it('a meta do 1º colapso é 50 mi e as metas só crescem', () => {
     expect(GOAL_BASE).toBe(5e7);
-    expect(dustGoal(1)).toBe(5e7);
+    expect(dustGoal(1)).toBe(GOAL_TABLE[0]);
     expect(dustGoal(0)).toBe(dustGoal(1));
     for (let k = 2; k <= 2000; k++) expect(dustGoal(k), `colapso ${k}`).toBeGreaterThan(dustGoal(k - 1));
   });
 
-  it('a razão por trecho vem de GOAL_SEGMENTS e a meta é o produto delas', () => {
-    let expected = GOAL_BASE;
-    let lo = 1;
-    const seen: number[] = [];
-    for (const seg of GOAL_SEGMENTS) {
-      const hi = Math.min(seg.upTo, 40);
-      for (let k = lo + 1; k <= hi; k++) {
-        expected *= seg.ratio;
-        seen[k] = expected;
-      }
-      lo = Math.max(lo, hi);
-    }
-    for (let k = 2; k <= 40; k++) expect(dustGoal(k) / (seen[k] as number)).toBeCloseTo(1, 9);
+  it('as 15 primeiras metas vêm da tabela calibrada e depois cresce GOAL_TAIL_RATIO por colapso', () => {
+    GOAL_TABLE.forEach((g, i) => expect(dustGoal(i + 1)).toBe(g));
+    const last = GOAL_TABLE[GOAL_TABLE.length - 1] as number;
+    expect(dustGoal(GOAL_TABLE.length + 1) / last).toBeCloseTo(GOAL_TAIL_RATIO, 9);
+    expect(dustGoal(GOAL_TABLE.length + 4) / last).toBeCloseTo(GOAL_TAIL_RATIO ** 4, 9);
+    // O 1º colapso pede ~1 h de jogo (50 mi) e a conta cresce sem teto (até o guarda de 1e300).
+    expect(GOAL_TABLE[0]).toBe(5e7);
     expect(GOAL_SEGMENTS.at(-1)!.upTo).toBe(Infinity);
-    // Os trechos estão em ordem.
-    const ups = GOAL_SEGMENTS.map((s) => s.upTo);
-    expect([...ups].sort((a, b) => a - b)).toEqual(ups);
   });
 
   it('trava no guarda de 1e300 e o último colapso aceito é o que ainda cabe', () => {
@@ -154,26 +145,26 @@ describe('requisitos de colapso (spec 040)', () => {
   });
 
   it('pede mais escolhas no 1º colapso', () => {
-    expect(minPicks(1)).toBe(20);
-    expect(minPicks(2)).toBe(15);
-    expect(minPicks(5)).toBe(15);
-    expect(minPicks(6)).toBe(12);
-    expect(minPicks(30)).toBe(12);
-    expect(minPicks(100_000)).toBe(12);
+    expect(minPicks(1)).toBe(12);
+    expect(minPicks(2)).toBe(10);
+    expect(minPicks(5)).toBe(10);
+    expect(minPicks(6)).toBe(8);
+    expect(minPicks(30)).toBe(8);
+    expect(minPicks(100_000)).toBe(8);
   });
 
-  it('a faixa de horas: 1 a 3 h até o 15º e, depois, +3% sobre a vida anterior', () => {
-    expect([LIFE_HOURS_MIN, LIFE_HOURS_MAX, LIFE_BAND_LAST_COLLAPSE, LIFE_GROWTH_MAX]).toEqual([1, 3, 15, 0.03]);
-    expect(lifeHoursBand(1, null)).toEqual({ min: 1, max: 3 });
-    expect(lifeHoursBand(15, 2)).toEqual({ min: 1, max: 3 });
+  it('a faixa de horas (spec 041): 0,7 a 2,5 h até o 15º e, depois, +3% sobre a vida anterior', () => {
+    expect([LIFE_HOURS_MIN, LIFE_HOURS_MAX, LIFE_BAND_LAST_COLLAPSE, LIFE_GROWTH_MAX]).toEqual([0.7, 2.5, 15, 0.03]);
+    expect(lifeHoursBand(1, null)).toEqual({ min: 0.7, max: 2.5 });
+    expect(lifeHoursBand(15, 2)).toEqual({ min: 0.7, max: 2.5 });
     expect(lifeHoursBand(16, 2).max).toBeCloseTo(2.06, 9);
     expect(lifeHoursBand(40, 5).max).toBeCloseTo(5.15, 9);
   });
 
-  it('a energia cresce x1,22 depois da 6ª escolha', () => {
-    expect(ENERGY_STEP_GROWTH).toBe(1.22);
-    expect(energyCap(6)).toBeCloseTo(640 * 1.22, 6);
-    expect(energyCap(7)).toBeCloseTo(640 * 1.22 * 1.22, 6);
+  it('a energia cresce x1,16 depois da 6ª escolha', () => {
+    expect(ENERGY_STEP_GROWTH).toBe(1.16);
+    expect(energyCap(6)).toBeCloseTo(320 * 1.16, 6);
+    expect(energyCap(7)).toBeCloseTo(320 * 1.16 * 1.16, 6);
   });
 });
 

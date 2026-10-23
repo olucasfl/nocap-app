@@ -157,7 +157,7 @@ describe('requisitos do colapso na tela (spec 040)', () => {
     expect(markup).toContain('Poeira da vida');
     expect(markup).toContain('0 de 50 mi');
     expect(markup).toContain('Escolhas de grimório');
-    expect(markup).toContain('0 de 20');
+    expect(markup).toContain('0 de 12');
     expect(markup).toContain('Combo: toques seguidos');
     expect(markup).toContain('0 de 5');
     expect(markup).toContain('scaleX(0)');

@@ -103,7 +103,7 @@ describe('melhorias: prateleira e preço', () => {
     const first = (kind: string) => UPGRADES.find((u) => u.kind === kind && u.unlockedAtCollapse === 0)!;
     expect([first('touch').id, first('touch').base]).toEqual(['lens', 100]);
     expect([first('generator').id, first('generator').base]).toEqual(['satellite', 15]);
-    expect([first('energy').id, first('energy').base]).toEqual(['antenna', 400]);
+    expect([first('energy').id, first('energy').base]).toEqual(['antenna', 300]);
   });
 
   it('dentro de cada tipo a fila segue a ordem do preço', () => {

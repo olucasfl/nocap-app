@@ -153,7 +153,8 @@ describe('validateSave: formato', () => {
 describe('validateSave: coerência', () => {
   it('recusa melhoria que custa mais que a poeira ganha', () => {
     const s = clone(base());
-    s.run.upgradeLevels[UPGRADES.findIndex((u) => u.id === 'satellite')] = 150;
+    s.run.upgradeLevels[UPGRADES.findIndex((u) => u.id === 'satellite')] = 8;
+    s.run.dustLife = 0;
     expect(rejects(s)).toContain('Melhorias custam mais que a poeira ganha');
   });
 

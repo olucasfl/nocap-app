@@ -5,7 +5,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { dustGoal, minPicks } from './economy';
-import { canCollapse, collapse, collapseProgress, press, type SaveState } from './engine';
+import { SAVE_VERSION, canCollapse, collapse, collapseProgress, press, type SaveState } from './engine';
 import { meetMilestone } from './milestone';
 import { mergeSaves, validateSave } from './save';
 import { achievementById } from './achievements';
@@ -38,7 +38,8 @@ describe('saves antigos (anteriores à spec 040)', () => {
     if (!r.ok) return;
     // Só a energia pode ser aparada: a barra do grimório ficou mais curta (passo x1,22 em vez de x1,35), e quem
     // estava com a barra quase cheia passa do teto novo e ganha a escolha na hora. Poeira e o resto ficam como estavam.
-    expect(r.flagged.filter((f) => f !== 'energy')).toEqual([]);
+    // Na migração para a economia v3 os níveis das melhorias zeram: o teto de ritmo (que lê os geradores) fica menor e pode aparar a poeira da vida.
+    expect(r.flagged.filter((f) => f !== 'energy' && f !== 'dustLife')).toEqual([]);
     if (r.flagged.includes('energy')) expect(r.save.run.energy).toBeLessThan(raw.run ? (raw.run as { energy: number }).energy : Infinity);
     // Os campos novos entram zerados.
     const mission = (raw.run as { mission?: { done?: boolean } | null }).mission;
@@ -46,11 +47,14 @@ describe('saves antigos (anteriores à spec 040)', () => {
     // Nada do que a pessoa tem se perdeu.
     expect(r.save.collapses).toBe(raw.collapses);
     expect(r.save.run.build).toEqual((raw.run as { build: unknown }).build);
-    expect(r.save.run.dustLife).toBe((raw.run as { dustLife: number }).dustLife);
+    if (!r.flagged.includes('dustLife')) expect(r.save.run.dustLife).toBe((raw.run as { dustLife: number }).dustLife);
     expect(r.save.album).toEqual(raw.album);
     // O Atlas virou Cintilas (valor fixo por página) e o Cofre começa vazio.
     expect((r.save as unknown as Record<string, unknown>).atlas).toBeUndefined();
-    expect(r.save.version).toBe(4);
+    expect(r.save.version).toBe(SAVE_VERSION);
+    // A economia v3 (spec 041) zerou os níveis das melhorias; a poeira ganha na vida volta como poeira para gastar.
+    expect(r.save.run.upgradeLevels.every((n) => n === 0)).toBe(true);
+    expect(r.save.run.dust).toBeLessThanOrEqual(r.save.run.dustLife);
     expect(r.save.vault).toEqual({});
     expect(r.save.seals).toBe(0);
   });

@@ -31,9 +31,9 @@ describe('órbitas dos geradores', () => {
     expect(ids).toEqual(['satellite', 'probe', 'antenna']);
   });
 
-  it('o astro cresce nos marcos de 10, 25 e 50 unidades', () => {
+  it('o astro cresce com os níveis do gerador: começo, metade e completo (0/8)', () => {
     const tier = (n: number) => orbitsOf(owning({ satellite: n }))[0]!.tier;
-    expect([tier(1), tier(10), tier(25), tier(50)]).toEqual([1, 2, 3, 4]);
+    expect([tier(1), tier(4), tier(8)]).toEqual([1, 2, 3]);
   });
 
   it('os de energia ganham o aro ciano', () => {

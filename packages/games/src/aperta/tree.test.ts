@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { GRIMOIRES, effectDomain } from './catalog';
 import { FORBIDDEN } from './forbidden';
-import { buyNode, canRespec, effectiveStats, newSave, nodeNextCost, respecTree, type SaveState } from './engine';
+import { SAVE_VERSION, buyNode, canRespec, effectiveStats, newSave, nodeNextCost, respecTree, type SaveState } from './engine';
 import { sparksAvailable } from './sparks';
 import { validateSave } from './save';
 import {
@@ -197,7 +197,7 @@ describe('migração da árvore antiga', () => {
     const r = validateSave(v3);
     expect(r.ok, r.ok ? '' : r.errors.join(';')).toBe(true);
     if (r.ok) {
-      expect(r.save.version).toBe(4);
+      expect(r.save.version).toBe(SAVE_VERSION);
       expect(r.save.tree).toEqual({});
       expect(r.save.sparks.spent).toBe(0);
       expect(sparksAvailable(r.save)).toBeGreaterThanOrEqual(15);

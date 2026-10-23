@@ -9,7 +9,7 @@
 import { z } from 'zod';
 import { AUTOCLICK_MAX_CPS } from './tree-skills';
 import { treeErrors, treeSpent, treeStats } from './tree';
-import { GRIMOIRES, LEGENDARY_KINDS, OBJECTS, REGIONS, UPGRADES, grimoireById, RARE_EFFECTS, type ObjectKind, type RareEffect } from './catalog';
+import { GENERATOR_MAX, GRIMOIRES, LEGENDARY_KINDS, OBJECTS, REGIONS, UPGRADES, grimoireById, RARE_EFFECTS, type ObjectKind, type RareEffect } from './catalog';
 import {
   COMBO_HARD_CAP,
   COST_FLOOR,
@@ -244,7 +244,23 @@ function migrateTree(raw: unknown): unknown {
   const o = raw as Record<string, unknown>;
   if (o.version !== 3) return raw;
   const sp = o.sparks as { legacy?: number; spent?: number } | undefined;
-  return { ...o, version: SAVE_VERSION, tree: {}, ...(sp && typeof sp.legacy === 'number' ? { sparks: { ...sp, spent: 0 } } : {}) };
+  return { ...o, version: 4, tree: {}, ...(sp && typeof sp.legacy === 'number' ? { sparks: { ...sp, spent: 0 } } : {}) };
+}
+
+/**
+ * Versão 4 para 5 (spec 041, economia v3): os geradores ganharam limite de níveis e outro preço, então as melhorias
+ * compradas na vida em andamento voltam como poeira (`run.dust` = o que a vida já ganhou). Álbum, Cofre, árvore e
+ * conquistas não mudam.
+ */
+function migrateEconomy(raw: unknown): unknown {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return raw;
+  const o = raw as Record<string, unknown>;
+  if (o.version !== 4) return raw;
+  const run = o.run as Record<string, unknown> | undefined;
+  if (!run || typeof run !== 'object') return { ...o, version: SAVE_VERSION };
+  const life = typeof run.dustLife === 'number' ? run.dustLife : 0;
+  const levels = Array.isArray(run.upgradeLevels) ? (run.upgradeLevels as unknown[]).map(() => 0) : [];
+  return { ...o, version: SAVE_VERSION, run: { ...run, upgradeLevels: levels, dust: life } };
 }
 
 export type SaveValidation =
@@ -302,7 +318,7 @@ export function validateSave(raw: unknown, opts: ValidateOptions = {}): SaveVali
   }
   if (size > MAX_SAVE_BYTES) return { ok: false, errors: ['Save grande demais'] };
 
-  const parsed = saveSchema.safeParse(migrateTree(migrateVault(migrateSparks(raw))));
+  const parsed = saveSchema.safeParse(migrateEconomy(migrateTree(migrateVault(migrateSparks(raw)))));
   if (!parsed.success) {
     const errors = parsed.error.issues.slice(0, 8).map((i) => `${i.path.join('.') || 'save'}: ${i.message}`);
     return { ok: false, errors };
@@ -429,7 +445,7 @@ export function validateSave(raw: unknown, opts: ValidateOptions = {}): SaveVali
   st.objectsCaptured = Math.max(st.objectsCaptured, run.captured);
   if (st.rareStreak > st.rareStreakBest || st.rareStreakBest > st.picks) errors.push('Sequência de raros incoerente');
   if (st.legendaryOffers > st.offers && st.offers > 0) errors.push('Ofertas lendárias maiores que as ofertas');
-  if (st.genBest > 400 || st.touchBest > UPGRADES.filter((u) => u.kind === 'touch').length) errors.push('Recorde de melhorias impossível');
+  if (st.genBest > GENERATOR_MAX || st.touchBest > UPGRADES.filter((u) => u.kind === 'touch').length) errors.push('Recorde de melhorias impossível');
   errors.push(...treeErrors(save.tree));
   const treeCost = treeSpent(save.tree);
   if (Object.keys(save.tree).length > 0 && c < 1) errors.push('Árvore antes do 1º colapso');
