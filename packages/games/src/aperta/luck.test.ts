@@ -164,7 +164,11 @@ describe('garantias e pesos em números', () => {
     };
     // Os pesos são pequenos de propósito: o teste confere o número lido, não uma diferença que cabe no ruído.
     expect(count(TREE({ 'lu-02': 2 }), 'rare')).toBeGreaterThanOrEqual(count({}, 'rare') - 20);
-    expect(effectiveStats(ready({ tree: TREE({ 'lu-02': 2, 'lu-08': 1, 'lu-15': 1 }) })).luck).toMatchObject({ rareWeight: 0.25, epicWeight: 0.05, legendWeight: 0.05 });
+    expect(effectiveStats(ready({ tree: TREE({ 'lu-02': 2, 'lu-08': 1, 'lu-15': 1 }) })).luck).toMatchObject({
+      rareWeight: nodeParam(treeNodeById('lu-02')!, 'add', 2),
+      epicWeight: nodeParam(treeNodeById('lu-08')!, 'add', 1),
+      legendWeight: nodeParam(treeNodeById('lu-15')!, 'add', 1),
+    });
   });
 
   it('o Destino garante uma carta rara ou melhor na oferta, uma vez por vida', () => {
