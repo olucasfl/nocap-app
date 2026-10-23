@@ -17,6 +17,13 @@ interface Props {
   onConfirm: (id: string) => void;
   /** Betelgeuse e Sonda Voyager: troca uma carta por outra. */
   onReroll?: (id: string) => void;
+  /** Trocas que ainda restam (da oferta, a grátis da árvore e a cota da vida). Sem isto vale `pending.rerollsLeft`. */
+  rerollsAvailable?: number;
+  /** Segunda chance (árvore): descartes que restam e a ação de descartar a oferta inteira. */
+  discardsLeft?: number;
+  onDiscard?: () => void;
+  /** Pity de lendário (árvore): ofertas que faltam para o lendário garantido; `null` sem o nó. */
+  pityLeft?: number | null;
   /** Observatório Gaia: o efeito de cada carta com os números da vida (id -> texto). */
   gain?: Record<string, string>;
   /** Dica do tutorial na 1ª escolha: fica acima das cartas, dentro do modal. */
@@ -27,7 +34,8 @@ interface Props {
  * Escolha de 1 entre 3 grimórios (spec 038, 3.6 e 4.7), versão provisória da etapa 4: cartas
  * simples. Cartas bloqueadas por 1,6 s e escolha em dois passos (marcar, depois confirmar).
  */
-export function ChoiceModal({ pending, lockRemaining, build, paused, onSelect, onConfirm, onReroll, gain, coach }: Props) {
+export function ChoiceModal({ pending, lockRemaining, build, paused, onSelect, onConfirm, onReroll, rerollsAvailable, discardsLeft = 0, onDiscard, pityLeft = null, gain, coach }: Props) {
+  const rerolls = rerollsAvailable ?? pending.rerollsLeft;
   const root = useRef<HTMLDivElement>(null);
   // Esc não fecha: a barra cheia obriga a escolher, e o toque acidental não pode escapar dela.
   useDialog(root, () => {});
@@ -78,7 +86,12 @@ export function ChoiceModal({ pending, lockRemaining, build, paused, onSelect, o
             <small>Escolha uma carta</small>
           )}
         </div>
-        <div className="ap-picks">
+        {pityLeft !== null && (
+          <p className="ap-pity" role="status">
+            {pityLeft === 0 ? 'Esta oferta traz um lendário garantido.' : `Lendário garantido em ${pityLeft} ${pityLeft === 1 ? 'oferta' : 'ofertas'}.`}
+          </p>
+        )}
+        <div className={`ap-picks${pending.offers.length > 3 ? ' is-four' : ''}`}>
           {pending.offers.map((id) => {
             const def = GRIMOIRES.find((g) => g.id === id);
             if (!def) return null;
@@ -104,7 +117,7 @@ export function ChoiceModal({ pending, lockRemaining, build, paused, onSelect, o
                 {gain?.[id] && <span className="ap-pick-gain">{gain[id]}</span>}
                 {have > 0 && <span className="ap-pick-lv">Você tem nível {have}: sobe para o {have + 1}</span>}
               </button>
-              {onReroll && pending.rerollsLeft > 0 && (
+              {onReroll && rerolls > 0 && (
                 <button type="button" className="ap-reroll" disabled={locked} onClick={() => !guarded() && onReroll(id)}>
                   Trocar esta carta
                 </button>
@@ -113,7 +126,15 @@ export function ChoiceModal({ pending, lockRemaining, build, paused, onSelect, o
             );
           })}
         </div>
-        <p className="ap-sub">Pegar o mesmo de novo sobe o nível dele.</p>
+        <p className="ap-sub">
+          Pegar o mesmo de novo sobe o nível dele.
+          {rerolls > 0 ? ` Trocas disponíveis: ${rerolls}.` : ''}
+        </p>
+        {onDiscard && discardsLeft > 0 && (
+          <button type="button" className="ap-reroll ap-discard" disabled={locked} onClick={() => !guarded() && onDiscard()}>
+            Descartar a oferta ({discardsLeft})
+          </button>
+        )}
         <button
           type="button"
           className="ap-btn"

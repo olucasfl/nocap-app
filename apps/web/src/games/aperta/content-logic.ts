@@ -83,12 +83,28 @@ export interface EventView {
   id: EventId;
   name: string;
   text: string;
+  /** Segundos que faltam: só alimenta a duração da barra do chip (CSS), nunca é mostrado como número. */
+  remaining: number;
+}
+
+export interface RadarView {
+  captures: number;
+  threshold: number;
+  /** 0 a 1: quanto do radar já encheu. */
+  fill: number;
+}
+
+/** Radar de lendários da árvore: `null` sem o nó. */
+export function radarView(state: SaveState): RadarView | null {
+  const ex = effectiveStats(state).explore;
+  if (!ex.radarOn) return null;
+  return { captures: state.run.radar, threshold: ex.radarThreshold, fill: Math.min(1, state.run.radar / ex.radarThreshold) };
 }
 
 /** Evento em andamento. Sem contagem na tela: só o nome e o que ele faz. */
 export function eventView(state: SaveState, now: number): EventView | null {
   const id = activeEventId(state, now);
-  return id ? { id, name: EVENT_NAMES[id], text: EVENT_TEXT[id] } : null;
+  return id && state.run.event ? { id, name: EVENT_NAMES[id], text: EVENT_TEXT[id], remaining: Math.max(0, state.run.event.until - now) } : null;
 }
 
 // --- Favorito ---

@@ -56,6 +56,10 @@
   --space-obj-asteroid: #c9a27a;
   --space-obj-probe: #9fe8c0;
   --space-obj-golden: #ffd447;
+  --space-obj-legend-comet: #ffb066;
+  --space-obj-legend-pulsar: #9ef0ff;
+  --space-obj-legend-nebula: #c79bff;
+  --space-obj-legend-wormhole: #7fb4ff;
 
   /* Fontes (carregadas por loadSpaceFonts, só quando o jogo abre) */
   --space-font-display: 'Chakra Petch', system-ui, sans-serif;

@@ -1,7 +1,16 @@
-import { FORBIDDEN_MAX_LEVEL, SEAL_DUST_PER_TOUCH, type SaveState } from '@nocap/games';
+import { FORBIDDEN_MAX_LEVEL, SEAL_DUST_PER_TOUCH, starMapView, type SaveState } from '@nocap/games';
 import { RequirementBars } from './Requirements';
 import { collapseView, vaultSlots } from './game-logic';
 import './collapse.css';
+
+const MILESTONE_LABEL: Record<string, string> = {
+  capture: 'capturar objetos',
+  combo: 'combo seguido',
+  generators: 'geradores no nível pedido',
+  missions: 'missões da estação',
+  rares: 'objetos raros',
+  comboFull: 'combo cheio por um tempo',
+};
 
 interface Props {
   state: SaveState;
@@ -14,6 +23,7 @@ export function VaultPage({ state, onCollapse }: Props) {
   const slots = vaultSlots(state);
   const collapse = collapseView(state);
   const owned = slots.filter((s) => s.owned).length;
+  const map = starMapView(state);
   return (
     <div className="ap-vault">
       <p className="ap-sub">
@@ -41,6 +51,29 @@ export function VaultPage({ state, onCollapse }: Props) {
           </li>
         ))}
       </ul>
+
+      {map && (
+        <section className="ap-starmap" aria-labelledby="ap-starmap-title">
+          <h4 id="ap-starmap-title" className="ap-vault-sub">
+            Mapa estelar
+          </h4>
+          {map.regions.length === 0 ? (
+            <p className="ap-sub">Não há mais regiões à frente: esta é a última do mapa.</p>
+          ) : (
+            <ul>
+              {map.regions.map((r) => (
+                <li key={r.collapse}>
+                  <b>
+                    Colapso {r.collapse}: {r.regionName}
+                  </b>
+                  <small>{r.items.map((i) => i.name).join(', ') || 'Sem novidades além da região'}</small>
+                </li>
+              ))}
+            </ul>
+          )}
+          {map.milestone && <p className="ap-sub">Marco da próxima vida: {MILESTONE_LABEL[map.milestone.kind] ?? map.milestone.kind} ({map.milestone.target}).</p>}
+        </section>
+      )}
 
       <div className="ap-collapse-box">
         <h4 className="ap-vault-sub">Colapsar a estrela (colapso {collapse.next})</h4>

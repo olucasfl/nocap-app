@@ -174,3 +174,27 @@
     opacity: 0;
   }
 }
+
+/* Eventos da árvore: um brilho de cor própria sobre o campo (só opacity). */
+.ap-evfx-glow {
+  opacity: 0.3;
+  animation: app-storm 2.8s ease-in-out infinite;
+}
+.ap-evfx-gold-rain {
+  background: radial-gradient(circle at 50% 0%, rgba(255, 210, 74, 0.6), transparent 66%);
+}
+.ap-evfx-alignment {
+  background: linear-gradient(90deg, transparent 30%, rgba(180, 220, 255, 0.35) 50%, transparent 70%);
+}
+.ap-evfx-energy-tide {
+  background: radial-gradient(circle at 20% 100%, rgba(150, 120, 255, 0.55), transparent 62%);
+}
+.ap-evfx-eclipse {
+  background: radial-gradient(circle at 50% 40%, rgba(0, 0, 0, 0.55), transparent 55%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ap-evfx-glow,
+  .ap-chip-bar {
+    animation: none;
+  }
+}

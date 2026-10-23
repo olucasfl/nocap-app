@@ -1760,6 +1760,8 @@ export interface ObjectPreview {
   frenzy: boolean;
   surgeSec: number;
   freeReroll: boolean;
+  /** Buraco de minhoca (lendário): enche a barra de energia na hora. */
+  fillsBar?: boolean;
 }
 
 /** Poeira da Chuva da Estrela Dourada: 5 min do ritmo normal (toque e geradores, já com o teto). */
@@ -1774,14 +1776,16 @@ export function objectPreview(state: SaveState, kind: ObjectKind, power?: RareEf
   const { objects } = all;
   const signal = kind === 'satellite';
   const rare = kind === 'golden';
+  const legend = LEGENDARY_OBJECTS.find((d) => d.kind === kind);
   return {
-    dust: rare && power === 'rain' ? rainAmount(all) : dust,
+    dust: rare && power === 'rain' ? Math.floor(rainAmount(all) * all.luck.goldenMult) : dust,
     energy: energy + objects.onCaptureEnergyTouches * all.energyPerTouch,
-    boostMult: signal ? objects.signalMult : rare && power === 'frenzy' ? FRENZY_MULT : 0,
-    boostSec: signal ? objects.signalSec : rare && power === 'frenzy' ? FRENZY_SEC : 0,
+    boostMult: signal ? objects.signalMult : rare && power === 'frenzy' ? FRENZY_MULT : (legend?.boostMult ?? 0),
+    boostSec: signal ? objects.signalSec : rare && power === 'frenzy' ? FRENZY_SEC * all.luck.goldenMult : (legend?.boostSec ?? 0),
     frenzy: rare && power === 'frenzy',
-    surgeSec: rare && power === 'surge' ? SURGE_SEC : 0,
-    freeReroll: kind === 'probe',
+    surgeSec: rare && power === 'surge' ? SURGE_SEC * all.luck.goldenMult : 0,
+    freeReroll: kind === 'probe' || legend?.fillsBar === true,
+    fillsBar: legend?.fillsBar === true,
   };
 }
 

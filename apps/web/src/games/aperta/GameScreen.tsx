@@ -1,6 +1,13 @@
 import {
+  EVENT_NAMES,
+  EVENT_TEXT,
   GRIMOIRES,
+  LEGENDARY_OBJECTS,
   choiceLockRemaining,
+  discardsLeft,
+  isLegendary,
+  pityLeft,
+  rerollsAvailable,
   formatDecimal,
   formatNumber,
   sparksAvailable,
@@ -21,13 +28,13 @@ import { AchievementsPage } from './AchievementsPage';
 import { achievementCounts } from './achievements-logic';
 import { CollapseModal } from './CollapseModal';
 import { VaultPage } from './VaultPage';
-import { eventView, gaiaPreviews, missionView, newInSpaceView, regionMenuItems } from './content-logic';
+import { eventView, gaiaPreviews, missionView, newInSpaceView, radarView, regionMenuItems } from './content-logic';
 import { FieldObjects, SignalChip } from './FieldObjects';
 import { GamePage, PageIcon, PAGE_TITLE } from './GamePage';
 import { GrimoiresPage } from './GrimoiresPage';
 import { RegionBackdrop } from './regions';
 import { RegionMenu } from './RegionMenu';
-import { EventChip, EventFx, MissionChip, NewInSpace } from './StatusStrips';
+import { EventChip, EventFx, MissionChip, NewInSpace, RadarChip } from './StatusStrips';
 import { RequirementBars } from './Requirements';
 import { SpaceArtSprite } from './SpaceArtSprite';
 import { SpaceObject, type SpaceObjectKind } from './SpaceObject';
@@ -198,7 +205,7 @@ export function GameScreen({ controller, onExit }: Props) {
         apertaSfx.flip();
       } else if (e.type === 'capture') {
         const art = objectArt(e.kind);
-        if (art === 'golden') apertaSfx.win();
+        if (art === 'golden' || isLegendary(e.kind)) apertaSfx.win();
         else apertaSfx.ding(art === 'asteroid' || art === 'probe' ? art : undefined);
         apertaVibrate(14);
         const text = rewardText(e.preview);
@@ -337,6 +344,7 @@ export function GameScreen({ controller, onExit }: Props) {
   const fresh = pending || tutorial !== null ? null : newInSpaceView(state);
   const mission = missionView(state);
   const liveEvent = eventView(state, now);
+  const radar = radarView(state);
   const regions = regionMenuItems(state);
   const coach = coachView(state, page, collapseOpen || regionsOpen);
 
@@ -354,6 +362,32 @@ export function GameScreen({ controller, onExit }: Props) {
     lastCue.current = next;
     cues.forEach((cue, i) => (cue === 'chime' ? later(() => playCue(cue), 700) : i === 0 ? playCue(cue) : later(() => playCue(cue), 250 * i)));
   }, [cReady, cEvent, cMission, cRegion, cFresh, later]);
+
+  // Dicas da 1ª vez (sem mexer no começo do jogo): o primeiro evento raro e o primeiro objeto lendário que aparecem.
+  const seenEvents = useRef<number | null>(null);
+  const seenLegends = useRef<Set<number>>(new Set());
+  const eventsSeen = state.stats.eventsSeen;
+  const legendsOnField = state.run.objects.filter((o) => isLegendary(o.kind));
+  useEffect(() => {
+    if (seenEvents.current !== null && eventsSeen.length > seenEvents.current) {
+      const id = eventsSeen[eventsSeen.length - 1] as keyof typeof EVENT_NAMES;
+      if (noticeTimer.current !== null) window.clearTimeout(noticeTimer.current);
+      setNotice({ id: Date.now(), title: `Novo evento: ${EVENT_NAMES[id] ?? id}`, text: EVENT_TEXT[id] ?? '' });
+      noticeTimer.current = later(() => setNotice(null), NOTICE_MS * 2);
+    }
+    seenEvents.current = eventsSeen.length;
+  }, [eventsSeen, later]);
+  useEffect(() => {
+    const fresh = legendsOnField.filter((o) => !seenLegends.current.has(o.id));
+    if (fresh.length === 0) return;
+    for (const o of fresh) seenLegends.current.add(o.id);
+    const first = fresh[0]!;
+    const def = LEGENDARY_OBJECTS.find((d) => d.kind === first.kind);
+    apertaSfx.chime();
+    if (noticeTimer.current !== null) window.clearTimeout(noticeTimer.current);
+    setNotice({ id: Date.now(), title: `Um lendário apareceu: ${def?.name ?? 'objeto'}`, text: `${def?.text ?? ''} Toque rápido, ele some logo.`, object: objectArt(first.kind) });
+    noticeTimer.current = later(() => setNotice(null), NOTICE_MS * 2);
+  }, [legendsOnField, later]);
 
   function exit() {
     void controller.save(true).then(onExit);
@@ -425,7 +459,8 @@ export function GameScreen({ controller, onExit }: Props) {
 
       <div className="ap-banners">
         {fresh && <NewInSpace view={fresh} onDismiss={() => controller.dismissNew(fresh.key)} />}
-        {liveEvent && <EventChip view={liveEvent} />}
+        {liveEvent && <EventChip key={`${liveEvent.id}-${state.run.event?.until}`} view={liveEvent} />}
+        {radar && tutorial === null && <RadarChip view={radar} />}
         {mission && tutorial === null && <MissionChip view={mission} />}
         {signal && <SignalChip key={state.run.boostUntil} signal={signal} paused={paused} />}
         <div className="ap-pickup-slot" role="status" aria-live="polite">
@@ -647,6 +682,10 @@ export function GameScreen({ controller, onExit }: Props) {
           onSelect={controller.select}
           onConfirm={controller.choose}
           onReroll={controller.reroll}
+          rerollsAvailable={rerollsAvailable(state)}
+          discardsLeft={discardsLeft(state)}
+          onDiscard={controller.discard}
+          pityLeft={pityLeft(state)}
           gain={gaiaPreviews(state, pending.offers)}
           coach={coach?.inline ? <TutorialInline view={coach} onSkip={controller.tutorialSkip} /> : undefined}
         />

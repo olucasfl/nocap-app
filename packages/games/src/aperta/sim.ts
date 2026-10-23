@@ -5,11 +5,16 @@
 import { createRng } from '../core/rng';
 import { OBJECTS, UPGRADES, grimoireById, upgradeIndex, type ObjectKind } from './catalog';
 import { TREE_NODES, nodeLive } from './tree';
+import { TREE_EVENT_IDS } from './tree-fx';
 import { formatDecimal, formatNumber } from './format';
 import { dustGoal, lifeHoursBand } from './economy';
 import { generatorsAtLevel, milestoneGoal, milestoneProgress } from './milestone';
 import {
   buyNode,
+  discardOffer,
+  discardsLeft,
+  rerollGrimoire,
+  rerollsAvailable,
   buyUpgrade,
   canCollapse,
   collapseProgress,
@@ -176,6 +181,34 @@ function extraValue(id: string): number {
   }
 }
 
+/** Valor da melhor carta da oferta (o ganho do `score` ao pegá-la). */
+function offerValue(state: SaveState, profile: Profile, id: string): number {
+  const current = state.run.build[id] ?? 0;
+  const hypothetical: SaveState = { ...state, run: { ...state.run, build: { ...state.run.build, [id]: Math.min(10, current + 1) } } };
+  return score(hypothetical, profile) - score(state, profile) + extraValue(id);
+}
+
+function useLuck(state: SaveState, profile: Profile, t: number): SaveState {
+  let s = state;
+  // Descarta uma oferta em que nenhuma carta rende de fato.
+  if (discardsLeft(s) > 0 && s.run.pending && Math.max(...s.run.pending.offers.map((id) => offerValue(s, profile, id))) < DISCARD_BELOW) {
+    s = discardOffer(s, t);
+  }
+  // Troca a pior carta enquanto houver troca e a pior for fraca.
+  for (let guard = 0; guard < 6 && s.run.pending && rerollsAvailable(s) > 0; guard++) {
+    const offers = s.run.pending.offers;
+    const worst = offers.reduce((a, b) => (offerValue(s, profile, b) < offerValue(s, profile, a) ? b : a));
+    if (offerValue(s, profile, worst) >= REROLL_BELOW) break;
+    const next = rerollGrimoire(s, worst, t);
+    if (next.run.rerollsUsed === s.run.rerollsUsed && next.stats.rerolls === s.stats.rerolls) break;
+    s = next;
+  }
+  return s;
+}
+
+const DISCARD_BELOW = 0.02;
+const REROLL_BELOW = 0.03;
+
 function bestOffer(state: SaveState, profile: Profile): string {
   const pending = state.run.pending;
   if (!pending) throw new Error('no pending choice');
@@ -312,6 +345,8 @@ export function simulate(options: SimOptions): SimResult {
   while (state.collapses < options.collapses) {
     if (state.run.pending) {
       t += PICK_THINK_SEC;
+      // Rerolls e descartes da árvore (Sorte): o jogador troca a pior carta e joga fora a oferta toda se nada presta.
+      state = useLuck(state, profile, t);
       const id = bestOffer(state, profile);
       state = selectGrimoire(state, id, t);
       state = chooseGrimoire(state, id, t);
@@ -324,8 +359,14 @@ export function simulate(options: SimOptions): SimResult {
 
     t += dt;
     state = tickObjects(state, t);
-    // O simulador calibra a economia sem os eventos (bônus de 15 s, calibrados na etapa 13).
-    if (state.run.nextEventAt !== NO_EVENT) state = { ...state, run: { ...state.run, event: null, nextEventAt: NO_EVENT } };
+    // O simulador calibra a economia sem os eventos do colapso (bônus de 15 s, calibrados na etapa 13). Os eventos da árvore
+    // (Chuva de ouro, Alinhamento, Maré de energia, Eclipse) rodam de verdade quando o nó existe.
+    const treeEvents = TREE_EVENT_IDS.some((id) => effectiveStats(state).explore.events[id].chance > 0);
+    if (!treeEvents) {
+      if (state.run.nextEventAt !== NO_EVENT) state = { ...state, run: { ...state.run, event: null, nextEventAt: NO_EVENT } };
+    } else if (state.run.event && !(TREE_EVENT_IDS as readonly string[]).includes(state.run.event.id)) {
+      state = { ...state, run: { ...state.run, event: null } };
+    }
     for (const obj of state.run.objects) {
       if (!decided.has(obj.id)) decided.set(obj.id, rng() < profile.captureChance ? t + 0.5 + rng() * 2.5 : -1);
       const at = decided.get(obj.id) as number;

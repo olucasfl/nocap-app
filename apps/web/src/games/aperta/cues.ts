@@ -12,6 +12,16 @@ export interface CueInput {
 
 export type Cue = 'ready' | 'shower' | 'storm' | 'mission' | 'warp' | 'chime';
 
+/** Cada evento reaproveita uma receita de som que já existe (sem som novo). */
+const EVENT_CUE: Record<string, Cue> = {
+  'meteor-shower': 'shower',
+  'solar-storm': 'storm',
+  'gold-rain': 'chime',
+  alignment: 'warp',
+  'energy-tide': 'storm',
+  eclipse: 'warp',
+};
+
 /**
  * Sons de transição de estado (spec 038, seção 11): só dispara na mudança, nunca ao montar a tela
  * (`prev` nulo), então retomar o save não faz barulho. A região também muda sozinha ao colapsar, e
@@ -21,7 +31,7 @@ export function cuesFor(prev: CueInput | null, next: CueInput): Cue[] {
   if (!prev) return [];
   const out: Cue[] = [];
   if (!prev.starReady && next.starReady) out.push('ready');
-  if (next.eventId && next.eventId !== prev.eventId) out.push(next.eventId === 'meteor-shower' ? 'shower' : 'storm');
+  if (next.eventId && next.eventId !== prev.eventId) out.push(EVENT_CUE[next.eventId] ?? 'storm');
   if (!prev.missionDone && next.missionDone) out.push('mission');
   const freshNew = next.freshKey !== null && next.freshKey !== prev.freshKey;
   if (next.region !== prev.region && !freshNew) out.push('warp');

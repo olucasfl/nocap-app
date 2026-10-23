@@ -1,4 +1,4 @@
-import { CONTENT_KIND_LABEL, type EventView, type MissionView, type NewInSpaceView } from './content-logic';
+import { CONTENT_KIND_LABEL, type EventView, type MissionView, type NewInSpaceView, type RadarView } from './content-logic';
 
 /** Faixa "Novo no espaço": o que o colapso trouxe, até a pessoa dispensar (spec 038, 5.4). */
 export function NewInSpace({ view, onDismiss }: { view: NewInSpaceView; onDismiss: () => void }) {
@@ -23,6 +23,18 @@ export function NewInSpace({ view, onDismiss }: { view: NewInSpaceView; onDismis
 }
 
 /** Missão da estação: uma por vida, com a contagem (a contagem é de progresso, não de tempo). */
+/** Radar de lendários (árvore): uma barra que enche com as capturas; ao encher, o lendário nasce. Sem número. */
+export function RadarChip({ view }: { view: RadarView }) {
+  return (
+    <div className="ap-chip ap-chip-radar" role="status" aria-label={`Radar de lendários: ${view.captures} de ${view.threshold} capturas`}>
+      <small>Radar de lendários</small>
+      <span className="ap-radar-track" aria-hidden="true">
+        <i style={{ transform: `scaleX(${view.fill.toFixed(3)})` }} />
+      </span>
+    </div>
+  );
+}
+
 export function MissionChip({ view }: { view: MissionView }) {
   return (
     <div className={`ap-chip ap-chip-mission${view.done ? ' is-done' : ''}`} role="status">
@@ -34,7 +46,7 @@ export function MissionChip({ view }: { view: MissionView }) {
   );
 }
 
-/** Evento ativo (Chuva de meteoros, Tempestade solar). Sem cronômetro nem barra na tela. */
+/** Evento ativo: o nome, o que faz e uma barra que encolhe (por `transform`) com o tempo que resta; sem número. */
 export function EventChip({ view }: { view: EventView }) {
   return (
     <div className={`ap-chip ap-chip-event ap-chip-${view.id}`} role="status">
@@ -42,6 +54,8 @@ export function EventChip({ view }: { view: EventView }) {
         <EventIcon id={view.id} /> {view.name}
       </b>
       <span>{view.text}</span>
+      {/* Tempo que resta: uma barra que encolhe por `transform` (sem número). Reinicia a cada evento. */}
+      <i className="ap-chip-bar" aria-hidden="true" style={{ animationDuration: `${view.remaining.toFixed(1)}s` }} />
     </div>
   );
 }
@@ -49,6 +63,10 @@ export function EventChip({ view }: { view: EventView }) {
 const EVENT_ICON: Record<string, string> = {
   'meteor-shower': 'M4 4l8 8M9 3l9 9M3 10l7 7M16 14l5 5M13 17l2 2',
   'solar-storm': 'M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zM12 1v3M12 20v3M1 12h3M20 12h3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1',
+  'gold-rain': 'M12 3v4M7 6l2 3M17 6l-2 3M5 14h14M8 18h8M10 21h4',
+  alignment: 'M3 12h18M6 8h12M6 16h12M12 3v18',
+  'energy-tide': 'M3 15c3-4 6-4 9 0s6 4 9 0M3 9c3-4 6-4 9 0s6 4 9 0',
+  eclipse: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM16 6a7 7 0 0 1 0 12',
 };
 
 /** Ícone de traço do evento (sem emoji), decorativo: o nome já está no texto do chip. */
@@ -76,6 +94,9 @@ export function EventFx({ id, lite }: { id: string; lite: boolean }) {
         ))}
       </div>
     );
+  }
+  if (id === 'gold-rain' || id === 'alignment' || id === 'energy-tide' || id === 'eclipse') {
+    return <div className={`ap-evfx ap-evfx-glow ap-evfx-${id}`} aria-hidden="true" />;
   }
   return <div className="ap-evfx ap-evfx-storm" aria-hidden="true" />;
 }

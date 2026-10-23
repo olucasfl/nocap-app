@@ -220,6 +220,10 @@ const OBJECT_ART: Record<ObjectKind, SpaceObjectKind> = {
   asteroid: 'asteroid',
   probe: 'probe',
   golden: 'golden',
+  'legend-comet': 'legend-comet',
+  'legend-pulsar': 'legend-pulsar',
+  'legend-nebula': 'legend-nebula',
+  'legend-wormhole': 'legend-wormhole',
 };
 
 /** O motor chama de `shooting-star`; o kit de arte, de `meteor`. */
@@ -238,6 +242,7 @@ export function rewardText(p: ObjectPreview): string {
   if (p.energy > 0) parts.push(`+${formatDecimal(p.energy, 1)} energia`);
   if (p.boostMult > 0) parts.push(`${p.frenzy ? 'Frenesi' : 'Sinal forte'} x${formatDecimal(p.boostMult, 1)} por ${Math.round(p.boostSec)} s`);
   if (p.surgeSec > 0) parts.push(`Geradores a todo vapor por ${Math.round(p.surgeSec)} s`);
+  if (p.fillsBar) parts.push('Enche a barra de energia');
   if (p.freeReroll) parts.push('1 troca grátis');
   return parts.join(' e ');
 }
@@ -249,7 +254,7 @@ export function floatText(p: ObjectPreview): string {
 
 /** "Cometa capturado", "Estrela cadente capturada". */
 export function capturedTitle(kind: ObjectKind): string {
-  return `${objectName(kind)} ${kind === 'shooting-star' || kind === 'golden' ? 'capturada' : 'capturado'}`;
+  return `${objectName(kind)} ${kind === 'shooting-star' || kind === 'golden' || kind === 'legend-nebula' ? 'capturada' : 'capturado'}`;
 }
 
 export interface ObjectSlot {

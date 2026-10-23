@@ -1235,3 +1235,22 @@
   color: var(--space-text);
   overflow-wrap: anywhere;
 }
+
+/* Oferta com 4 cartas (nó "Quarta carta" ou Eclipse): duas por linha no celular. */
+@media (min-width: 701px) {
+  .ap-picks.is-four {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.ap-pity {
+  margin: 0;
+  padding: 6px 10px;
+  border: 2px solid var(--space-gold);
+  border-radius: 10px;
+  color: var(--space-gold);
+  font: 700 12px var(--space-font-display);
+  text-align: center;
+}
+.ap-discard {
+  align-self: center;
+}

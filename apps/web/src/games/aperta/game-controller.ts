@@ -15,6 +15,7 @@ import {
   newSave,
   objectPreview,
   press,
+  discardOffer,
   rerollGrimoire,
   respecTree,
   resumeClock,
@@ -342,7 +343,12 @@ export function createGameController({ initial, store, slot, perf = () => perfor
       saveNow();
     },
 
-    /** Betelgeuse / Voyager: troca uma carta oferecida. */
+    /** Segunda chance (árvore): joga fora a oferta aberta e sorteia outra. */
+    discard() {
+      if (pausedAt === null) commit(discardOffer(state, now()));
+    },
+
+    /** Betelgeuse / Voyager / Rerolls da árvore: troca uma carta oferecida. */
     reroll(id: string) {
       if (pausedAt === null) commit(rerollGrimoire(state, id, now()));
     },
