@@ -147,13 +147,22 @@
   position: absolute;
   left: 50%;
   top: 76px;
+  /* Os avisos ficam numa faixa só, acima da barra de habilidades e da dock: o que não cabe é cortado pelo fim da
+     faixa, e o botão "Estrela pronta" (order -1) vem primeiro para nunca cobrir os botões de baixo. */
+  bottom: 150px;
+  overflow: hidden;
   z-index: 25;
-  display: grid;
-  justify-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: 8px;
   width: min(94vw, 520px);
   transform: translateX(-50%);
   pointer-events: none;
+}
+.ap-banners > * {
+  flex: none;
+  max-width: 100%;
 }
 .ap-pickup {
   display: flex;
@@ -1255,4 +1264,21 @@
 }
 .ap-discard {
   align-self: center;
+}
+
+/* 320 px: com 4 botões na dock o "Melhorias" precisa caber no botão grande. */
+@media (max-width: 360px) {
+  .ap-dock {
+    gap: 6px;
+  }
+  .ap-dockb {
+    min-width: 52px;
+    padding: 0 8px;
+  }
+  .ap-dockb-big {
+    padding: 0 4px;
+    font-size: 15px;
+    letter-spacing: 0;
+    white-space: nowrap;
+  }
 }

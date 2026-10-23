@@ -179,6 +179,7 @@
   border-width: 2px;
 }
 .ap-ready-wrap {
+  order: -1;
   pointer-events: none;
   display: grid;
   justify-items: center;

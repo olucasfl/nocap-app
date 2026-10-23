@@ -308,3 +308,14 @@
     transition: none;
   }
 }
+
+/* Telas baixas (320 x 640): a faixa "Novo no espaço" encolhe para o cabeçalho; a lista continua no botão de regiões. */
+@media (max-height: 720px) {
+  .ap-newstrip ul {
+    display: none;
+  }
+  .ap-newstrip {
+    max-height: none;
+    overflow: visible;
+  }
+}
