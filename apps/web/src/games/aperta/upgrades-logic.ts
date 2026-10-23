@@ -1,6 +1,8 @@
 import {
+  BULK_COUNT,
   GENERATOR_MILESTONES,
   UPGRADES,
+  batchCost,
   effectiveStats,
   formatDecimal,
   formatNumber,
@@ -56,6 +58,15 @@ const UPGRADE_ASTRO: Record<string, AstroId> = {
   receiver: 'nebula',
   matrix: 'galaxy',
   deepnet: 'hole',
+  warmup: 'redgiant',
+  network: 'mercury',
+  lure: 'ice',
+  burst: 'starb',
+  scale: 'saturn',
+  peak: 'star',
+  queue: 'moon',
+  convert: 'nebula',
+  rotation: 'jupiter',
 };
 
 /** Astro-ícone de uma melhoria (cartões e órbitas dos geradores). */
@@ -87,6 +98,8 @@ export interface UpgradeRow {
   lockHint: string | null;
   /** Gerador: quantas unidades faltam para o próximo dobro (10, 25 ou 50), ou `null`. */
   nextDouble: number | null;
+  /** Fila de pedidos: preço de comprar `BULK_COUNT` de uma vez (com o desconto), ou `null` se não há lote. */
+  bulkCost: number | null;
 }
 
 interface Preview {
@@ -206,10 +219,14 @@ export function upgradeRows(state: SaveState, tab?: UpgradeTab): UpgradeRow[] {
       missing: cost !== null ? Math.max(0, Math.ceil(cost - state.run.dust)) : 0,
       gain: status === 'affordable' || status === 'short' ? gainText(state, index, def.id) : null,
       lockHint: (status === 'locked' || status === 'mystery') && lock ? lockText(lock) : null,
-      nextDouble: def.kind === 'touch' ? null : nextDouble(level),
+      nextDouble: def.kind === 'touch' || def.kind === 'perk' ? null : nextDouble(level),
+      bulkCost: hidden ? null : batchCost(state, index),
     });
   });
-  return rows;
+  // Dentro da aba: poeira, energia e melhorias de gerador em blocos, cada um na fila do preço.
+  const rank = (k: UpgradeKind): number => (k === 'touch' || k === 'generator' ? 0 : k === 'energy' ? 1 : 2);
+  const base = (r: UpgradeRow): number => (UPGRADES[r.index] as { base: number }).base;
+  return rows.sort((a, b) => rank(a.kind) - rank(b.kind) || base(a) - base(b) || a.index - b.index);
 }
 
 /** Ids das melhorias que já mostram nome (compradas, à venda ou trancadas por exigência). */
@@ -252,3 +269,6 @@ export function autoSummary(state: SaveState): { active: string; idle: string; c
   const active = Math.min(s.autoDustPerSec, s.autoDustCap);
   return { active: formatDecimal(active, 1), idle: formatDecimal(active * 0.25, 1), capped: s.autoDustPerSec > s.autoDustCap };
 }
+
+/** Quantos níveis o botão de lote compra (Fila de pedidos). */
+export const BULK_LABEL_COUNT = BULK_COUNT;

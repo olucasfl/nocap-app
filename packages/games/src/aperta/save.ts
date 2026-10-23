@@ -69,6 +69,9 @@ const runSchema = z.object({
   boostUntil: stamp,
   boostMult: z.number().finite().min(1).max(1000),
   afterCapture: z.boolean(),
+  warmSince: stamp.default(-1e9),
+  peakUntil: stamp.default(-1e9),
+  nextBurstAt: stamp.nullable().default(null),
   objects: z
     .array(
       z.object({

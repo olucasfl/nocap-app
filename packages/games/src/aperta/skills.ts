@@ -130,6 +130,9 @@ function noteUse(state: SaveState, id: string, count = true): SaveState {
  * Usa uma habilidade: confere se existe (nó comprado), se há carga e se não há escolha aberta ou jogo parado
  * (quem chama não chama parado). Devolve o mesmo estado se não deu.
  */
+/** Fração do ganho de Pulso e Supernova que entra quando a pessoa está tocando (ritmo ativo). */
+export const SKILL_TOUCHING_SHARE = 0.25;
+
 export function activateSkill(state: SaveState, id: ButtonSkillId, now: number): SaveState {
   const s = syncClock(state, now);
   if (s.run.pending || s.tutorial !== 'done') return state;
@@ -181,7 +184,9 @@ export function activateSkill(state: SaveState, id: ButtonSkillId, now: number):
     default:
   }
 
-  const dust = Math.floor(gain);
+  // Habilidades só poupam toque (decisão do Lucas, 23/10/2026): tocando, o pulso e a supernova rendem só uma fração.
+  const touching = now - s.run.lastPressAt <= stats.activeWindowSec;
+  const dust = Math.floor(gain * (touching ? SKILL_TOUCHING_SHARE : 1));
   run = {
     ...run,
     dust: dust > 0 ? run.dust + dust : run.dust,
@@ -238,7 +243,9 @@ export function tickAutomation(state: SaveState, now: number): SaveState {
     }
   }
 
-  const buying = sk.autoBuy.on && (s.run.autoBuy.on || piloted(s.run, now));
+  // Habilidades só poupam toque: o Piloto compra só com a pessoa parada (tocando, ela mesma compra).
+  const idle = now - s.run.lastPressAt > effectiveStats(s).activeWindowSec;
+  const buying = sk.autoBuy.on && (s.run.autoBuy.on || (piloted(s.run, now) && idle));
   if (buying) {
     const k = s.run.skills['auto-buy'];
     if (!k || now >= k.readyAt) {

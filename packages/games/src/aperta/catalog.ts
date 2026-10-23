@@ -401,8 +401,11 @@ export function grimoireById(id: string): GrimoireDef | undefined {
 
 // --- Melhorias (spec 039: toque conquistado, geradores e geradores de energia) ---
 
-/** `touch`: melhoria de toque (compra única); `generator`: poeira por segundo; `energy`: energia por segundo. */
-export type UpgradeKind = 'touch' | 'generator' | 'energy';
+/**
+ * `touch`: melhoria de toque (compra única); `generator`: poeira por segundo; `energy`: energia por segundo;
+ * `perk`: melhoria de gerador (compra única que muda COMO os geradores funcionam, spec 039, 4.1).
+ */
+export type UpgradeKind = 'touch' | 'generator' | 'energy' | 'perk';
 
 export interface UpgradeDef {
   id: string;
@@ -440,6 +443,18 @@ const touch = (
   domains: readonly string[],
   extra: Partial<UpgradeDef> = {},
 ): UpgradeDef => ({ id, name, text, kind: 'touch', base, growth: 1, max: 1, unlockedAtCollapse: 0, domains, ...extra });
+
+const perk = (id: string, name: string, base: number, text: string, domains: readonly string[]): UpgradeDef => ({
+  id,
+  name,
+  text,
+  kind: 'perk',
+  base,
+  growth: 1,
+  max: 1,
+  unlockedAtCollapse: 0,
+  domains,
+});
 
 const generator = (id: string, name: string, base: number, perSec: number): UpgradeDef => ({
   id,
@@ -503,6 +518,19 @@ export const UPGRADES: readonly UpgradeDef[] = [
   energyGen('receiver', 'Receptor de Sinal', 3000, 0.1),
   energyGen('matrix', 'Matriz de Escuta', 30000, 0.5),
   energyGen('deepnet', 'Rede Profunda', 400000, 2.5),
+
+  // Acrescentadas depois (spec 039, 3 e 4.1): ficam no fim do catálogo para os índices dos saves não mudarem;
+  // a prateleira ordena cada tipo pelo preço (`shelfOf`).
+  touch('warmup', 'Aquecimento', 3000, 'Depois de 5 s tocando sem parar, o toque rende +50% até você soltar por 2 s', ['touchWarm']),
+  perk('network', 'Rede', 1200, 'Cada Sonda Voyager dá +1% de poeira aos Satélites', ['genNetwork']),
+  perk('lure', 'Isca', 2500, 'A cada 10 Satélites, o próximo objeto aparece 1 s mais cedo (até 15 s)', ['genLure']),
+  perk('burst', 'Rajada', 6000, 'A cada 60 s, os geradores soltam de uma vez 10 s da própria produção', ['genBurst']),
+  perk('scale', 'Escala', 9000, 'A cada 25 unidades de um gerador, o toque ganha +1 de poeira', ['genScale']),
+  perk('peak', 'Hora de pico', 15000, 'Capturar um objeto faz os geradores renderem +50% por 20 s', ['genPeak']),
+  perk('queue', 'Fila de pedidos', 40000, 'Comprar 10 de uma vez sai 5% mais barato', ['genBulk']),
+  perk('convert', 'Conversão', 80000, 'Os geradores também enchem a barra de energia, o equivalente a 1 toque por minuto', ['genConvert']),
+  perk('rotation', 'Revezamento', 200000, 'O gerador que você menos comprou rende o dobro', ['genRotation']),
+
 ];
 
 const UPGRADE_INDEX = new Map(UPGRADES.map((u, i) => [u.id, i]));

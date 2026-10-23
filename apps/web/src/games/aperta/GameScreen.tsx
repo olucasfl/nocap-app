@@ -672,7 +672,7 @@ export function GameScreen({ controller, onExit }: Props) {
           notice={pageNotice(page, affordable, albumCount, state.collapses, achievementCounts(state))}
           onClose={() => setPage(null)}
         >
-          {page === 'upgrades' && <UpgradesPage state={state} onBuy={controller.buy} seen={seenUp} onSeen={markSeen} />}
+          {page === 'upgrades' && <UpgradesPage state={state} onBuy={controller.buy} onBuyBatch={controller.buyBatch} seen={seenUp} onSeen={markSeen} />}
           {page === 'achievements' && <AchievementsPage state={state} />}
           {page === 'vault' && <VaultPage state={state} onCollapse={() => setCollapseOpen(true)} />}
           {page === 'tree' && <TreePage state={state} onBuy={controller.buyTree} onRespec={controller.respec} />}

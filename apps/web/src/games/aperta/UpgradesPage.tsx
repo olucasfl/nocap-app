@@ -12,18 +12,33 @@ import {
   upgradeRows,
   type UpgradeRow,
   type UpgradeTab,
+  BULK_LABEL_COUNT,
 } from './upgrades-logic';
 import './upgrades.css';
 
 interface Props {
   state: SaveState;
   onBuy: (index: number) => boolean | void;
+  /** Fila de pedidos: compra 10 níveis de um gerador de uma vez. */
+  onBuyBatch?: (index: number) => boolean | void;
   /** Melhorias que a pessoa já viu (o selo das abas conta as que ela ainda não viu). */
   seen: ReadonlySet<string>;
   onSeen: (ids: string[]) => void;
 }
 
-function UpgradeCard({ row, onBuy, tutorialTarget }: { row: UpgradeRow; onBuy: (index: number) => boolean | void; tutorialTarget: boolean }) {
+function UpgradeCard({
+  row,
+  onBuy,
+  onBuyBatch,
+  dust,
+  tutorialTarget,
+}: {
+  row: UpgradeRow;
+  onBuy: (index: number) => boolean | void;
+  onBuyBatch?: (index: number) => boolean | void;
+  dust: number;
+  tutorialTarget: boolean;
+}) {
   const canBuy = row.status === 'affordable';
   const label =
     row.status === 'affordable'
@@ -35,7 +50,7 @@ function UpgradeCard({ row, onBuy, tutorialTarget }: { row: UpgradeRow; onBuy: (
           : row.status === 'mystery'
             ? `Melhoria escondida, custa ${formatNumber(row.cost ?? 0)} de poeira`
             : `${row.name}: trancada`;
-  const generator = row.kind !== 'touch';
+  const generator = row.kind === 'generator' || row.kind === 'energy';
   return (
     <li className={`ap-up is-${row.status}`}>
       <span className="ap-up-medal">
@@ -75,6 +90,28 @@ function UpgradeCard({ row, onBuy, tutorialTarget }: { row: UpgradeRow; onBuy: (
         <b>{buyLabel(row)}</b>
         {(row.status === 'affordable' || row.status === 'short') && <small>{row.status === 'short' ? `Preço ${formatNumber(row.cost ?? 0)}` : 'poeira'}</small>}
       </button>
+      {row.bulkCost !== null && onBuyBatch && (
+        <button
+          type="button"
+          className="ap-up-buy ap-up-bulk"
+          aria-label={`Comprar ${BULK_LABEL_COUNT} de ${row.name} por ${formatNumber(row.bulkCost)} de poeira, 5% mais barato`}
+          aria-disabled={dust < row.bulkCost}
+          onClick={() => {
+            if (dust >= row.bulkCost!) {
+              if (onBuyBatch(row.index)) {
+                apertaSfx.thunk();
+                apertaVibrate(14);
+              }
+            } else {
+              apertaSfx.boing();
+              apertaVibrate([10, 40, 10]);
+            }
+          }}
+        >
+          <b>x{BULK_LABEL_COUNT}</b>
+          <small>{formatNumber(row.bulkCost)}</small>
+        </button>
+      )}
     </li>
   );
 }
@@ -93,7 +130,7 @@ function AutoSummary({ state }: { state: SaveState }) {
  * Corpo da página de Melhorias (spec 039): duas abas, Toque e Geradores. Cada uma mostra a 1ª melhoria e uma futura
  * escondida ("???" só com o preço); a escondida revela o nome quando a poeira chega perto do valor.
  */
-export function UpgradesPage({ state, onBuy, seen, onSeen }: Props) {
+export function UpgradesPage({ state, onBuy, onBuyBatch, seen, onSeen }: Props) {
   // O tutorial aponta para a melhoria mais barata que já cabe na poeira: a página abre na aba dela.
   const first = affordableUpgradeIndex(state);
   const [tab, setTab] = useState<UpgradeTab>(() => (first === null ? 'touch' : tabOf((UPGRADES[first] as (typeof UPGRADES)[number]).kind)));
@@ -134,7 +171,7 @@ export function UpgradesPage({ state, onBuy, seen, onSeen }: Props) {
       {tab === 'generators' && <AutoSummary state={state} />}
       <ul className="ap-uplist" id="ap-uppanel" role="tabpanel" aria-labelledby={`ap-uptab-${tab}`} aria-label="Melhorias">
         {rows.map((row) => (
-          <UpgradeCard key={row.id} row={row} onBuy={onBuy} tutorialTarget={row.index === first} />
+          <UpgradeCard key={row.id} row={row} onBuy={onBuy} onBuyBatch={onBuyBatch} dust={state.run.dust} tutorialTarget={row.index === first} />
         ))}
       </ul>
     </div>

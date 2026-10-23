@@ -61,7 +61,7 @@ export const COLLAPSE_CONTENT: readonly CollapseContent[] = [
     upgrades: [
       'lens', 'gloves', 'trained', 'rhythm', 'magnet', 'hands', 'charged', 'luck', 'cadence', 'kepler', 'lens2', 'echo',
       'cabin', 'voyager', 'satellite', 'probe', 'telescope', 'observatory', 'station', 'colony', 'fleet', 'portal',
-      'antenna', 'receiver', 'matrix', 'deepnet',
+      'antenna', 'receiver', 'matrix', 'deepnet', 'warmup', 'network', 'lure', 'burst', 'scale', 'peak', 'queue', 'convert', 'rotation',
     ],
     objects: ['comet', 'shooting-star', 'satellite'],
     mechanics: [],

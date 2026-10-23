@@ -8,7 +8,7 @@ import { TREE_NODES, nodeLive } from './tree';
 import { TREE_EVENT_IDS } from './tree-fx';
 import { skillView, skillsAvailable, tickAutomation, activateSkill } from './skills';
 import { formatDecimal, formatNumber } from './format';
-import { dustGoal, energyCap, lifeHoursBand } from './economy';
+import { WARM_MULT, dustGoal, energyCap, lifeHoursBand } from './economy';
 import { generatorsAtLevel, milestoneGoal, milestoneProgress } from './milestone';
 import {
   buyNode,
@@ -114,7 +114,8 @@ function income(stats: EffectiveStats, profile: Profile, objectKinds: readonly O
   const nth = stats.nth.reduce((acc, r) => acc * (1 + (r.mult - 1) / r.n), 1);
   const base = stats.dustPerTouch + (full ? stats.combo.fullDustAdd : 0);
   const crit = 1 + stats.crit.chance * (stats.crit.mult - 1);
-  const perTouch = base * point * (full ? stats.combo.fullMult : 1) * nth * crit;
+  // O jogador simulado toca sem parar, então o Aquecimento vale o tempo todo.
+  const perTouch = base * point * (full ? stats.combo.fullMult : 1) * nth * crit * (stats.perks.warm ? WARM_MULT : 1);
   const touchEnergy =
     stats.energyPerTouch + (full ? stats.combo.fullEnergyAdd : 0) + stats.nth.reduce((acc, r) => acc + r.energy / r.n, 0);
 
@@ -253,6 +254,18 @@ function planUpgrade(state: SaveState, profile: Profile): Target | null {
       best = { index };
     }
   });
+  // Nada que o `score` enxergue rende: compra a mais barata à venda, porque as melhorias de efeito pontual (Aquecimento,
+  // melhorias de gerador) abrem a fila das próximas, como faria uma pessoa.
+  if (best === null) {
+    let cheapest = Infinity;
+    UPGRADES.forEach((_, index) => {
+      const cost = nextUpgradeCost(state, index);
+      if (cost !== null && cost < cheapest) {
+        cheapest = cost;
+        best = { index };
+      }
+    });
+  }
   return best;
 }
 
@@ -315,7 +328,7 @@ function milestoneUpgrade(state: SaveState): number | null {
   if (goal.kind !== 'generators' || generatorsAtLevel(state.run.upgradeLevels, goal.level) >= goal.target) return null;
   let best: number | null = null;
   UPGRADES.forEach((u, i) => {
-    if (u.kind === 'touch' || (state.run.upgradeLevels[i] ?? 0) >= goal.level || nextUpgradeCost(state, i) === null) return;
+    if (u.kind === 'touch' || u.kind === 'perk' || (state.run.upgradeLevels[i] ?? 0) >= goal.level || nextUpgradeCost(state, i) === null) return;
     if (best === null || (state.run.upgradeLevels[i] ?? 0) > (state.run.upgradeLevels[best] ?? 0)) best = i;
   });
   return best;
@@ -391,7 +404,14 @@ export function simulate(options: SimOptions): SimResult {
     if (needed !== null) target = { index: needed };
     while (target) {
       const cost = nextUpgradeCost(state, target.index);
-      if (cost === null || state.run.dust < cost) break;
+      // Alvo que saiu da prateleira (ou ficou sem preço): escolhe outro em vez de esperar por ele para sempre.
+      if (cost === null) {
+        const replan = planUpgrade(state, profile);
+        if (replan === null || replan.index === target.index) break;
+        target = replan;
+        continue;
+      }
+      if (state.run.dust < cost) break;
       state = buyUpgrade(state, target.index);
       mark(0);
       target = planUpgrade(state, profile);

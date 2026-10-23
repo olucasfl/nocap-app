@@ -5,6 +5,7 @@ import {
   advanceTutorial,
   buyTreeNode,
   buyUpgrade,
+  buyUpgradeBatch,
   canCollapse,
   captureObject,
   collapse,
@@ -230,6 +231,20 @@ export function createGameController({ initial, store, slot, perf = () => perfor
       const t = now();
       if (t - lastBuyAt < BUY_GUARD_SEC) return false;
       const next = buyUpgrade(state, index);
+      if (next === state) return false;
+      lastBuyAt = t;
+      commit(next);
+      saveNow();
+      flushAchievements();
+      return true;
+    },
+
+    /** Compra 10 níveis de um gerador de uma vez (Fila de pedidos, 5% mais barato). Mesma trava de toque duplo. */
+    buyBatch(index: number): boolean {
+      if (pausedAt !== null || state.run.pending) return false;
+      const t = now();
+      if (t - lastBuyAt < BUY_GUARD_SEC) return false;
+      const next = buyUpgradeBatch(state, index);
       if (next === state) return false;
       lastBuyAt = t;
       commit(next);

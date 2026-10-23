@@ -66,7 +66,7 @@ interface Orbit {
 export function orbitsOf(state: SaveState): Orbit[] {
   const orbits: Orbit[] = [];
   UPGRADES.forEach((def, i) => {
-    if (def.kind === 'touch') return;
+    if (def.kind === 'touch' || def.kind === 'perk') return;
     const level = state.run.upgradeLevels[i] ?? 0;
     if (level <= 0) return;
     const tier = 1 + GENERATOR_MILESTONES.filter((m) => level >= m).length;

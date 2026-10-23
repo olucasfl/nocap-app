@@ -205,3 +205,11 @@
 .ap-up.is-mystery .ap-up-medal {
   filter: grayscale(1);
 }
+
+/* Fila de pedidos: o botão x10 fica numa linha abaixo do texto, ao lado do preço normal. */
+.ap-up-bulk {
+  grid-column: 2 / -1;
+  justify-self: end;
+  min-height: 44px;
+  background: linear-gradient(180deg, #7a6cff, #4a3fc9);
+}

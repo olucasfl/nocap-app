@@ -74,6 +74,21 @@ import {
   CRIT_CHANCE,
   CRIT_MULT,
   ECHO_SHARE_OF_AUTO,
+  BULK_COUNT,
+  BULK_DISCOUNT,
+  BURST_EVERY_SEC,
+  BURST_SECS,
+  CONVERT_PER_SEC,
+  LURE_CAP_SEC,
+  LURE_UNITS_PER_SEC,
+  NETWORK_PER_PROBE,
+  PEAK_MULT,
+  PEAK_SEC,
+  ROTATION_MULT,
+  SCALE_EVERY,
+  WARM_AFTER_SEC,
+  WARM_MULT,
+  WARM_RELEASE_SEC,
   FIRST_OBJECT_DELAY_SEC,
   HANDS_GENERATORS_PER_POINT,
   IDLE_FACTOR,
@@ -174,6 +189,12 @@ export interface RunState {
   boostMult: number;
   /** Polaris: o próximo toque depois de capturar um objeto vale mais. */
   afterCapture: boolean;
+  /** Aquecimento: desde quando a pessoa toca sem parar (`NEVER` parada). */
+  warmSince: number;
+  /** Hora de pico: os geradores rendem mais até este carimbo. */
+  peakUntil: number;
+  /** Rajada: quando os geradores soltam os próximos segundos de produção (`null` até a 1ª conta). */
+  nextBurstAt: number | null;
   objects: GameObject[];
   nextObjectId: number;
   nextSpawnAt: number | null;
@@ -369,6 +390,9 @@ function freshRun(rngState: number, upgradeCount = UPGRADES.length): RunState {
     boostUntil: NEVER,
     boostMult: 1,
     afterCapture: false,
+    warmSince: NEVER,
+    peakUntil: NEVER,
+    nextBurstAt: null,
     objects: [],
     nextObjectId: 1,
     nextSpawnAt: null,
@@ -455,16 +479,31 @@ export function syncClock(state: SaveState, now: number): SaveState {
     const rates = autoRates(state);
     const sk = effectiveStats(state);
     // Dobra temporal: o relógio dos geradores anda 2x enquanto dura (só a parte do intervalo em que estava ligada).
-    const warp = overlap(state.run.skills['time-warp'], state.clock, state.clock + gap) / gap;
+    // Decisão do Lucas (23/10/2026): habilidades só poupam toque. Enquanto a pessoa toca (ritmo ativo) o Autoclick e a
+    // Dobra não rendem nada a mais; elas valem para quem está parado.
+    const touching = state.clock - state.run.lastPressAt <= effectiveStats(state).activeWindowSec;
+    const warp = touching ? 0 : overlap(state.run.skills['time-warp'], state.clock, state.clock + gap) / gap;
     const gens = 1 + warp;
     // Autoclick (ou Piloto): toques automáticos até o teto de 6/s, só com o jogo aberto e visível (este ramo nunca roda
     // com a aba escondida: o intervalo escondido é `frozen`). Não contam como toques das conquistas.
-    const autoTouches = autoclickTouches(state.run, sk.skills, state.clock, state.clock + gap);
+    const autoTouches = touching ? 0 : autoclickTouches(state.run, sk.skills, state.clock, state.clock + gap);
     const full = (1 + sk.combo.pointValue * sk.combo.max) * sk.combo.fullMult;
     const autoValue =
       sk.dustPerTouch * (sk.skills.autoclick.combo && sk.combo.enabled ? full : 1) * (state.clock < state.run.boostUntil ? state.run.boostMult : 1);
-    const earn = (rates.dust * gens * gap + autoTouches * autoValue) * dustEventMult(state.run, state.clock + gap);
-    const energyEarn = (rates.energy * gens * gap + autoTouches * sk.energyPerTouch) * energyMult(state.run, state.clock + gap);
+    // Rajada: a cada 60 s os geradores soltam 10 s da produção de uma vez, sem levar a média além do teto do ritmo atual.
+    let burstDust = 0;
+    let burstEnergy = 0;
+    if (sk.perks.burst) {
+      const due = run.nextBurstAt ?? state.clock + BURST_EVERY_SEC;
+      if (now >= due) {
+        const factor = rates.active ? 1 : sk.idleFactor;
+        burstDust = Math.min(BURST_SECS * rates.dust, Math.max(0, (sk.autoDustCap * factor - rates.dust) * BURST_EVERY_SEC));
+        burstEnergy = Math.min(BURST_SECS * rates.energy, Math.max(0, (sk.autoEnergyCap * factor - rates.energy) * BURST_EVERY_SEC));
+        run = { ...run, nextBurstAt: due + BURST_EVERY_SEC * (Math.floor((now - due) / BURST_EVERY_SEC) + 1) };
+      } else if (run.nextBurstAt === null) run = { ...run, nextBurstAt: due };
+    }
+    const earn = (rates.dust * gens * gap + burstDust + autoTouches * autoValue) * dustEventMult(state.run, state.clock + gap);
+    const energyEarn = (rates.energy * gens * gap + burstEnergy + autoTouches * sk.energyPerTouch) * energyMult(state.run, state.clock + gap);
     if (earn > 0 || energyEarn > 0) {
       run = {
         ...run,
@@ -495,8 +534,10 @@ export function autoRates(state: SaveState): { dust: number; energy: number; act
   const active = surge || state.clock - run.lastPressAt <= st.activeWindowSec;
   const factor = active ? 1 : st.idleFactor;
   const capMult = surge ? SURGE_CAP_MULT : 1;
-  const dust = Math.min(st.autoDustPerSec, st.autoDustCap * capMult) * factor;
-  const generated = Math.min(st.autoEnergyPerSec, st.autoEnergyCap * capMult) * factor;
+  // Hora de pico: +50% nos geradores por 20 s depois de capturar; o teto de 35% do toque continua valendo.
+  const peak = st.perks.peak && state.clock < run.peakUntil ? PEAK_MULT : 1;
+  const dust = Math.min(st.autoDustPerSec * peak, st.autoDustCap * capMult) * factor;
+  const generated = Math.min(st.autoEnergyPerSec * peak, st.autoEnergyCap * capMult) * factor;
   // A poeira dos geradores também conta para o grimório: como toques, a uma fração da energia do toque.
   const fromDust = st.dustPerTouch > 0 ? (dust / st.dustPerTouch) * st.energyPerTouch * AUTO_ENERGY_SHARE : 0;
   return { dust, energy: generated + fromDust, active, surge };
@@ -508,6 +549,9 @@ function shiftRun(run: RunState, gap: number, shiftPending: boolean): RunState {
     lastPressAt: run.lastPressAt + gap,
     comboFullSince: run.comboFullSince + gap,
     boostUntil: run.boostUntil + gap,
+    warmSince: run.warmSince > NEVER / 2 ? run.warmSince + gap : run.warmSince,
+    peakUntil: run.peakUntil + gap,
+    nextBurstAt: run.nextBurstAt === null ? null : run.nextBurstAt + gap,
     nextSpawnAt: run.nextSpawnAt === null ? null : run.nextSpawnAt + gap,
     nextEventAt: run.nextEventAt === null ? null : run.nextEventAt + gap,
     nextRareAt: run.nextRareAt === null ? null : run.nextRareAt + gap,
@@ -564,6 +608,8 @@ export interface EffectiveStats {
   explore: ExploreStats;
   /** Habilidades ativas e automações da árvore (etapa 19). */
   skills: SkillStats;
+  /** Melhorias de gerador e Aquecimento (spec 039). */
+  perks: { warm: boolean; peak: boolean; burst: boolean; bulkDiscount: number };
   /** Cada melhoria comprada devolve a poeira de tantos toques. */
   buyRefundTouches: number;
   startDust: number;
@@ -862,16 +908,41 @@ function computeStats(state: SaveState): EffectiveStats {
   let generators = 0;
   let autoDust = 0;
   let autoEnergyTouches = 0;
+  let scaleBonus = 0;
+  const owned = new Map<string, number>();
   for (const def of UPGRADES) {
-    if (def.kind === 'touch') continue;
+    if (def.kind !== 'generator' && def.kind !== 'energy') continue;
     const n = level(state, def.id) + (def.id === 'satellite' ? freeSat : 0);
+    if (n > 0) owned.set(def.id, n);
+  }
+  // Revezamento: o gerador de poeira menos comprado (entre os que a pessoa já tem) rende o dobro.
+  let rotationId: string | null = null;
+  if (has('rotation')) {
+    let low = Infinity;
+    for (const def of UPGRADES) {
+      const n = owned.get(def.id) ?? 0;
+      if (def.kind === 'generator' && n > 0 && n < low) {
+        low = n;
+        rotationId = def.id;
+      }
+    }
+  }
+  for (const def of UPGRADES) {
+    const n = owned.get(def.id) ?? 0;
     if (n <= 0) continue;
     generators += n;
+    scaleBonus += has('scale') ? Math.floor(n / SCALE_EVERY) : 0;
     const doublings = GENERATOR_MILESTONES.filter((m) => n >= m).length;
-    const rate = (def.perSec ?? 0) * n * 2 ** doublings;
+    let rate = (def.perSec ?? 0) * n * 2 ** doublings;
+    if (def.id === 'satellite' && has('network')) rate *= 1 + NETWORK_PER_PROBE * (owned.get('probe') ?? 0);
+    if (def.id === rotationId) rate *= ROTATION_MULT;
     if (def.kind === 'generator') autoDust += rate;
     else autoEnergyTouches += rate;
   }
+  // Conversão: os geradores também enchem a barra (1 toque por minuto), só enquanto produzem.
+  if (has('convert') && autoDust > 0) autoEnergyTouches += CONVERT_PER_SEC;
+  // Isca: cada 10 Satélites encurtam em 1 s a espera do próximo objeto, com teto.
+  if (has('lure')) spawnCutSec += Math.min(LURE_CAP_SEC, Math.floor((owned.get('satellite') ?? 0) / LURE_UNITS_PER_SEC));
 
   const costFactor = clampCostFactor(costFactors.reduce((a, b) => a * b, 1));
   const ts = treeStats(state.tree);
@@ -884,7 +955,7 @@ function computeStats(state: SaveState): EffectiveStats {
   if (has('trained')) nth.push({ n: TRAINED_N, mult: TRAINED_MULT, energy: 0 });
   const touchDoublings = ['lens', 'lens2', 'cabin', 'webb'].filter(has).length;
   // Selo Estelar: poeira fixa por toque, por selo (spec 040, seção 3).
-  const flat = (has('gloves') ? 1 : 0) + (has('hands') ? Math.floor(generators / HANDS_GENERATORS_PER_POINT) : 0) + dustFlat + state.seals * SEAL_DUST_PER_TOUCH + treeFlatDust(state, ts);
+  const flat = (has('gloves') ? 1 : 0) + (has('hands') ? Math.floor(generators / HANDS_GENERATORS_PER_POINT) : 0) + dustFlat + state.seals * SEAL_DUST_PER_TOUCH + treeFlatDust(state, ts) + scaleBonus;
   let dustPerTouch = (1 + flat) * 2 ** touchDoublings * Math.max(0, 1 + dustPct / 100) * dustMult;
   // Eco: os geradores alimentam o toque. É o que faz investir neles valer a pena sem o auto passar do teto.
   if (has('echo')) dustPerTouch += autoDust * ECHO_SHARE_OF_AUTO;
@@ -945,6 +1016,7 @@ function computeStats(state: SaveState): EffectiveStats {
     luck,
     explore,
     skills: skillStats(state.tree),
+    perks: { warm: has('warmup'), peak: has('peak'), burst: has('burst'), bulkDiscount: has('queue') ? BULK_DISCOUNT : 0 },
     buyRefundTouches: refund,
     startDust: Math.floor(startDust),
     energyStepFactor: Math.max(0.1, 1 + stepPct / 100),
@@ -1366,7 +1438,10 @@ export function press(state: SaveState, now: number): SaveState {
   const combo = kept ? Math.min(stats.combo.max, run.combo + 1) : 0;
 
   const full = stats.combo.enabled && stats.combo.max > 0 && combo >= stats.combo.max;
-  let value = (stats.dustPerTouch + (full ? stats.combo.fullDustAdd : 0)) * (1 + stats.combo.pointValue * combo);
+  // Aquecimento: tocando sem parar há `WARM_AFTER_SEC`, o toque rende mais; soltar por `WARM_RELEASE_SEC` zera.
+  const warmSince = now - run.lastPressAt > WARM_RELEASE_SEC || run.warmSince < NEVER / 2 ? now : run.warmSince;
+  const warm = stats.perks.warm && now - warmSince >= WARM_AFTER_SEC;
+  let value = (stats.dustPerTouch + (full ? stats.combo.fullDustAdd : 0)) * (1 + stats.combo.pointValue * combo) * (warm ? WARM_MULT : 1);
   if (full) value *= stats.combo.fullMult;
   let bonusEnergy = full ? stats.combo.fullEnergyAdd : 0;
   for (const rule of stats.nth) {
@@ -1403,6 +1478,7 @@ export function press(state: SaveState, now: number): SaveState {
       clicks,
       combo,
       lastPressAt: now,
+      warmSince,
       afterCapture: false,
       lastGain: gain,
       nextSpawnAt:
@@ -1439,13 +1515,16 @@ function shelfOf(state: SaveState, kind: UpgradeKind): number[] {
   UPGRADES.forEach((d, i) => {
     if (d.kind === kind && d.unlockedAtCollapse <= state.collapses) out.push(i);
   });
-  return out;
+  // A fila é a do preço; as acrescentadas depois ficam no fim do catálogo (índices dos saves), então ordena aqui.
+  return out.sort((a, b) => (UPGRADES[a] as UpgradeDef).base - (UPGRADES[b] as UpgradeDef).base || a - b);
 }
 
 /** A prateleira mostra as compradas mais `SHELF_AHEAD` à frente; as outras nem aparecem. */
 export function upgradeOnShelf(state: SaveState, index: number): boolean {
   const def = UPGRADES[index];
   if (!def) return false;
+  // As melhorias de gerador só aparecem depois do 1º gerador: antes disso a aba Geradores é só o Satélite e a "???".
+  if (def.kind === 'perk' && !UPGRADES.some((u, i) => (u.kind === 'generator' || u.kind === 'energy') && (state.run.upgradeLevels[i] ?? 0) > 0)) return false;
   const same = shelfOf(state, def.kind);
   const pos = same.indexOf(index);
   if (pos < 0) return false;
@@ -1507,6 +1586,47 @@ export function nextUpgradeCost(state: SaveState, index: number): number | null 
   return upgradeCost(def, lvl, effectiveStats(state).costFactor);
 }
 
+/**
+ * Compra `BULK_COUNT` níveis de uma vez (só gerador e só com a Fila de pedidos: sai `BULK_DISCOUNT` mais barato).
+ * Se não der para pagar todos, não compra nenhum.
+ */
+export function buyUpgradeBatch(state: SaveState, index: number, count = BULK_COUNT): SaveState {
+  const def = UPGRADES[index];
+  const stats = effectiveStats(state);
+  if (!def || (def.kind !== 'generator' && def.kind !== 'energy') || stats.perks.bulkDiscount <= 0 || count < 2) return state;
+  if (!upgradeAvailable(state, index)) return state;
+  const lvl = state.run.upgradeLevels[index] ?? 0;
+  const take = Math.min(count, def.max - lvl);
+  if (take < count) return state;
+  let total = 0;
+  for (let k = 0; k < take; k++) total += upgradeCost(def, lvl + k, stats.costFactor);
+  total *= 1 - stats.perks.bulkDiscount;
+  if (state.run.dust < total) return state;
+  const upgradeLevels = state.run.upgradeLevels.slice();
+  upgradeLevels[index] = lvl + take;
+  return awardAchievements({
+    ...state,
+    run: { ...state.run, dust: clampNum(state.run.dust - total), upgradeLevels },
+    stats: {
+      ...state.stats,
+      upgradesBought: state.stats.upgradesBought + take,
+      genBest: Math.max(state.stats.genBest, upgradeLevels[index] ?? 0),
+    },
+  });
+}
+
+/** Custo do lote (com o desconto da Fila de pedidos), ou `null` se não dá para comprar o lote. */
+export function batchCost(state: SaveState, index: number, count = BULK_COUNT): number | null {
+  const def = UPGRADES[index];
+  const stats = effectiveStats(state);
+  if (!def || (def.kind !== 'generator' && def.kind !== 'energy') || stats.perks.bulkDiscount <= 0 || !upgradeAvailable(state, index)) return null;
+  const lvl = state.run.upgradeLevels[index] ?? 0;
+  if (lvl + count > def.max) return null;
+  let total = 0;
+  for (let k = 0; k < count; k++) total += upgradeCost(def, lvl + k, stats.costFactor);
+  return total * (1 - stats.perks.bulkDiscount);
+}
+
 export function buyUpgrade(state: SaveState, index: number): SaveState {
   const cost = nextUpgradeCost(state, index);
   if (cost === null || state.run.dust < cost) return state;
@@ -1522,7 +1642,7 @@ export function buyUpgrade(state: SaveState, index: number): SaveState {
     stats: {
       ...state.stats,
       upgradesBought: state.stats.upgradesBought + 1,
-      genBest: def.kind === 'touch' ? state.stats.genBest : Math.max(state.stats.genBest, upgradeLevels[index] ?? 0),
+      genBest: def.kind === 'touch' || def.kind === 'perk' ? state.stats.genBest : Math.max(state.stats.genBest, upgradeLevels[index] ?? 0),
       touchBest: Math.max(state.stats.touchBest, touchOwned),
     },
   });
@@ -1846,6 +1966,7 @@ export function captureObject(state: SaveState, id: number, now: number): SaveSt
     dustLife: clampNum(run.dustLife + reward.dust),
     energy: clampNum(run.energy + (reward.energy + stats.objects.onCaptureEnergyTouches * stats.energyPerTouch) * energyMult(run, now)),
     afterCapture: stats.objects.afterCaptureMult > 1,
+    peakUntil: stats.perks.peak ? now + PEAK_SEC : run.peakUntil,
   };
   if (obj.kind === 'satellite') {
     next.boostUntil = now + stats.objects.signalSec;

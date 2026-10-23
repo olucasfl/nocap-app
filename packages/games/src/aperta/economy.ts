@@ -194,6 +194,24 @@ export const TRAINED_N = 25;
 export const TRAINED_MULT = 5;
 export const ECHO_SHARE_OF_AUTO = 0.004;
 export const CHARGED_ENERGY = 0.25;
+// Aquecimento (spec 039, 3): depois de `WARM_AFTER_SEC` tocando sem parar, o toque rende x`WARM_MULT` até soltar por `WARM_RELEASE_SEC`.
+export const WARM_AFTER_SEC = 5;
+export const WARM_RELEASE_SEC = 2;
+export const WARM_MULT = 1.5;
+// Melhorias de gerador (spec 039, 4.1). Todas são compra única e nenhuma deixa o auto passar do teto de 35% do toque.
+export const NETWORK_PER_PROBE = 0.01;
+export const BURST_EVERY_SEC = 60;
+export const BURST_SECS = 10;
+export const PEAK_MULT = 1.5;
+export const PEAK_SEC = 20;
+export const SCALE_EVERY = 25;
+export const BULK_DISCOUNT = 0.05;
+export const BULK_COUNT = 10;
+/** Conversão: toques equivalentes de energia por segundo que os geradores somam à barra (1 por minuto). */
+export const CONVERT_PER_SEC = 1 / 60;
+export const LURE_UNITS_PER_SEC = 10;
+export const LURE_CAP_SEC = 15;
+export const ROTATION_MULT = 2;
 export const HANDS_GENERATORS_PER_POINT = 10;
 export const VOYAGER_SEC = 4;
 export const CHANDRA_LIFE_MULT = 1.5;

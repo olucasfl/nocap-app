@@ -107,8 +107,9 @@ describe('melhorias: prateleira e preço', () => {
   });
 
   it('dentro de cada tipo a fila segue a ordem do preço', () => {
-    for (const kind of ['touch', 'generator', 'energy']) {
-      const early = UPGRADES.filter((u) => u.kind === kind && u.unlockedAtCollapse === 0);
+    for (const kind of ['touch', 'generator', 'energy', 'perk']) {
+      // O catálogo guarda as acrescentadas no fim (índices dos saves); a prateleira ordena por preço (`shelfOf`).
+      const early = UPGRADES.filter((u) => u.kind === kind && u.unlockedAtCollapse === 0).sort((a, b) => a.base - b.base);
       early.forEach((u, i) => {
         if (i > 0) expect(u.base, u.id).toBeGreaterThanOrEqual((early[i - 1] as typeof u).base);
       });
@@ -117,7 +118,7 @@ describe('melhorias: prateleira e preço', () => {
 
   it('as de toque são únicas, as de gerador crescem 15% por unidade, e toda exigência existe', () => {
     for (const u of UPGRADES) {
-      if (u.kind === 'touch') expect([u.id, u.max, u.growth]).toEqual([u.id, 1, 1]);
+      if (u.kind === 'touch' || u.kind === 'perk') expect([u.id, u.max, u.growth]).toEqual([u.id, 1, 1]);
       else expect(u.growth, u.id).toBe(1.15);
       if (u.requiresUpgrade) {
         const target = UPGRADES.find((x) => x.id === u.requiresUpgrade!.id);

@@ -16,6 +16,7 @@ import {
   vaultOffers,
   type SaveState,
 } from './engine';
+import { nodeParam, treeNodeById } from './tree';
 import { PITY_BASE } from './tree-fx';
 
 const TREE = (nodes: Record<string, number>): Record<string, number> => nodes;
@@ -117,8 +118,9 @@ describe('pity de lendário', () => {
 
   it('cada nível do nó tira ofertas da espera', () => {
     const left = (tree: Record<string, number>) => pityLeft(ready({ tree }))!;
-    expect(left(TREE({ 'lu-06': 1 }))).toBe(PITY_BASE - 1 - 1);
-    expect(left(TREE({ 'lu-06': 2 }))).toBe(PITY_BASE - 2 - 1);
+    const cut = (lvl: number) => nodeParam(treeNodeById('lu-06')!, 'cut', lvl);
+    expect(left(TREE({ 'lu-06': 1 }))).toBe(PITY_BASE - cut(1) - 1);
+    expect(left(TREE({ 'lu-06': 2 }))).toBe(PITY_BASE - cut(2) - 1);
     expect(left(TREE({ 'lu-06': 2, 'lu-11': 2, 'lu-17': 1 }))).toBeLessThan(left(TREE({ 'lu-06': 2 })));
   });
 
@@ -133,17 +135,19 @@ describe('pity de lendário', () => {
 describe('garantias e pesos em números', () => {
   it('a Garantia faz toda N-ésima oferta ter uma carta épica ou melhor', () => {
     const tree = TREE({ 'lu-07': 1 });
+    const every = nodeParam(treeNodeById('lu-07')!, 'every', 1);
     for (let i = 0; i < 12; i++) {
-      const s = ready({ tree, stats: { ...newSave('x').stats, offers: 59 } });
+      const s = ready({ tree, stats: { ...newSave('x').stats, offers: every - 1 } });
       const o = open({ ...s, run: { ...s.run, rngState: 5 + i * 131 } });
       expect(o.run.pending!.offers.some((id) => ['epic', 'legendary'].includes(rarity(id))), `semente ${i}`).toBe(true);
     }
   });
 
-  it('a Fortuna traz um lendário em toda 5ª oferta', () => {
+  it('a Fortuna traz um lendário em toda N-ésima oferta', () => {
     const tree = TREE({ 'lu-24': 1 });
+    const every = nodeParam(treeNodeById('lu-24')!, 'every', 1);
     for (let i = 0; i < 10; i++) {
-      const s = ready({ tree, stats: { ...newSave('x').stats, offers: 59 } });
+      const s = ready({ tree, stats: { ...newSave('x').stats, offers: every - 1 } });
       const o = open({ ...s, run: { ...s.run, rngState: 9 + i * 211 } });
       expect(o.run.pending!.offers.some((id) => rarity(id) === 'legendary'), `semente ${i}`).toBe(true);
     }
@@ -160,7 +164,7 @@ describe('garantias e pesos em números', () => {
     };
     // Os pesos são pequenos de propósito: o teste confere o número lido, não uma diferença que cabe no ruído.
     expect(count(TREE({ 'lu-02': 2 }), 'rare')).toBeGreaterThanOrEqual(count({}, 'rare') - 20);
-    expect(effectiveStats(ready({ tree: TREE({ 'lu-02': 2, 'lu-08': 1, 'lu-15': 1 }) })).luck).toMatchObject({ rareWeight: 0.5, epicWeight: 0.1, legendWeight: 0.1 });
+    expect(effectiveStats(ready({ tree: TREE({ 'lu-02': 2, 'lu-08': 1, 'lu-15': 1 }) })).luck).toMatchObject({ rareWeight: 0.25, epicWeight: 0.05, legendWeight: 0.05 });
   });
 
   it('o Destino garante uma carta rara ou melhor na oferta, uma vez por vida', () => {
@@ -175,13 +179,14 @@ describe('garantias e pesos em números', () => {
   });
 
   it('as Duas escolhas dão uma escolha a mais a cada N ofertas', () => {
-    const nth = open(ready({ tree: TREE({ 'lu-20': 1 }), stats: { ...newSave('x').stats, offers: 99 } }));
+    const nth = open(ready({ tree: TREE({ 'lu-20': 1 }), stats: { ...newSave('x').stats, offers: nodeParam(treeNodeById('lu-20')!, 'every', 1) - 1 } }));
     expect(nth.run.pending!.picksLeft).toBe(2);
   });
 
   it('Repetir em dobro: a cada N escolhas a repetição sobe 1 nível a mais', () => {
     const s = ready({ tree: TREE({ 'lu-13': 2 }) });
-    expect(effectiveStats(s).luck.repeatEvery).toBe(30);
+    const every = nodeParam(treeNodeById('lu-13')!, 'every', 2);
+    expect(effectiveStats(s).luck.repeatEvery).toBe(every);
     const mk = (picks: number): SaveState => {
       const r = ready({ tree: TREE({ 'lu-13': 2 }) }, picks);
       return { ...r, run: { ...r.run, build: { moon: 2 } } };
@@ -192,7 +197,7 @@ describe('garantias e pesos em números', () => {
       const withOffer = { ...o, run: { ...o.run, pending: { ...o.run.pending!, offers: [id, ...o.run.pending!.offers.slice(1)] } } };
       return chooseGrimoire(selectGrimoire(withOffer, id, 102), id, 102).run.build[id]!;
     };
-    expect(lvl(29)).toBe(4);
-    expect(lvl(30)).toBe(3);
+    expect(lvl(every - 1)).toBe(4);
+    expect(lvl(every)).toBe(3);
   });
 });

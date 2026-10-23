@@ -3,7 +3,7 @@ import { UPGRADES } from './catalog';
 import { energyCap } from './economy';
 import { effectiveStats, newSave, press, syncClock, tickObjects, type SaveState } from './engine';
 import { validateSave } from './save';
-import { SKILL_DEFS, setAutoBuy, skillView, skillsAvailable, suggestedOffer, tickAutomation, activateSkill } from './skills';
+import { SKILL_DEFS, SKILL_TOUCHING_SHARE, setAutoBuy, skillView, skillsAvailable, suggestedOffer, tickAutomation, activateSkill } from './skills';
 import { AUTOCLICK_MAX_CPS, skillStats } from './tree-skills';
 
 function base(tree: Record<string, number> = {}, over: Partial<SaveState> = {}): SaveState {
@@ -104,10 +104,30 @@ describe('Pulso, Supernova, Dobra, Lente, Ímã e Piloto', () => {
   it('a Dobra temporal dobra os geradores enquanto dura', () => {
     const gi = UPGRADES.findIndex((u) => u.kind === 'generator');
     const lv = base().run.upgradeLevels.map((_, i) => (i === gi ? 8 : 0));
-    const s = { ...base({ 'sk-03': 1 }, { run: { ...base().run, upgradeLevels: lv, lastPressAt: 99.9 } }), clock: 100 };
+    const s = { ...base({ 'sk-03': 1 }, { run: { ...base().run, upgradeLevels: lv, lastPressAt: 50 } }), clock: 100 };
     const plain = syncClock(s, 101);
     const warped = syncClock(activateSkill(s, 'time-warp', 100), 101);
     expect(warped.run.dust).toBeGreaterThan(plain.run.dust);
+  });
+
+  it('habilidades só poupam toque: tocando, o Autoclick e a Dobra não rendem nada a mais e Pulso e Supernova rendem só uma fração', () => {
+    const gi = UPGRADES.findIndex((u) => u.kind === 'generator');
+    const lv = base().run.upgradeLevels.map((_, i) => (i === gi ? 8 : 0));
+    const mk = (tree: Record<string, number>, last: number) => ({ ...base(tree, { run: { ...base().run, upgradeLevels: lv, lastPressAt: last } }), clock: 100 });
+    // Autoclick e Dobra: tocando (último toque há 0,1 s) a poeira é a mesma de quem não ligou nada; parado rende mais.
+    for (const [tree, id] of [[AUTOCLICK, 'autoclick'], [{ 'sk-03': 1 }, 'time-warp']] as const) {
+      const touching = mk(tree, 99.9);
+      expect(syncClock(activateSkill(touching, id, 100), 101).run.dust).toBeCloseTo(syncClock(touching, 101).run.dust, 9);
+      const idle = mk(tree, 50);
+      expect(syncClock(activateSkill(idle, id, 100), 101).run.dust).toBeGreaterThan(syncClock(idle, 101).run.dust);
+    }
+    // Pulso: parado rende o valor cheio; tocando, a fração combinada.
+    const pulse = { 'sk-01': 1 };
+    const gain = (last: number) => {
+      const s0 = mk(pulse, last);
+      return activateSkill(s0, 'pulse', 100).run.dust - s0.run.dust;
+    };
+    expect(gain(99.9)).toBeCloseTo(gain(50) * SKILL_TOUCHING_SHARE, -1);
   });
 
   it('o Ímã dá mais tempo aos objetos e a Lente chama a Estrela Dourada', () => {

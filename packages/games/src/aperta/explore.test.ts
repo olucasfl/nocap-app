@@ -85,10 +85,10 @@ describe('Radar de lendários', () => {
     expect(worm.run.pending).not.toBeNull();
     expect(worm.stats.capturedKinds).toContain('legend-wormhole');
     expect(worm.stats.raresCaptured).toBe(1);
-    // Lendas generosas dobra o prêmio.
+    // Lendas generosas aumenta o prêmio (x1,25 depois da calibragem final).
     const rich = base({ tree: { 'ex-21': 1 } });
     const doubled = captureObject({ ...rich, run: { ...rich.run, objects: [obj(1, 'legend-comet')], nextObjectId: 2 } }, 1, 1);
-    expect(doubled.run.dust).toBeGreaterThan(comet.run.dust * 1.4);
+    expect(doubled.run.dust).toBeGreaterThan(comet.run.dust * 1.2);
   });
 });
 
@@ -97,15 +97,15 @@ describe('eventos da árvore', () => {
 
   it('chance e duração vêm do nível do nó, e os nós de duração somam', () => {
     const e1 = effectiveStats(base({ tree: open })).explore.events;
-    expect(e1['gold-rain']).toEqual({ chance: 4, sec: 20 });
+    expect(e1['gold-rain']).toEqual({ chance: 2, sec: 14 });
     const e2 = effectiveStats(base({ tree: { ...open, 'ex-02': 2, 'ex-11': 2, 'ex-19': 1 } })).explore.events;
-    expect(e2['gold-rain']).toEqual({ chance: 6, sec: 30 + 20 + 5 });
-    expect(e2.alignment.sec).toBe(20 + 5);
+    expect(e2['gold-rain']).toEqual({ chance: 3, sec: 21 + 20 + 5 });
+    expect(e2.alignment.sec).toBe(14 + 5);
     expect(effectiveStats(base()).explore.events['gold-rain'].chance).toBe(0);
-    expect(eventDuration(base({ tree: open }), 'eclipse', false)).toBe(20);
+    expect(eventDuration(base({ tree: open }), 'eclipse', false)).toBe(14);
     // O 1º evento da vida dura o dobro com o Grande evento.
-    expect(eventDuration(base({ tree: { ...open, 'ex-23': 1 } }), 'eclipse', true)).toBe(40);
-    expect(eventDuration(base({ tree: { ...open, 'ex-23': 1 } }), 'eclipse', false)).toBe(20);
+    expect(eventDuration(base({ tree: { ...open, 'ex-23': 1 } }), 'eclipse', true)).toBe(28);
+    expect(eventDuration(base({ tree: { ...open, 'ex-23': 1 } }), 'eclipse', false)).toBe(14);
   });
 
   it('o sorteio respeita a chance: só sai o que o nó libera e todos os quatro aparecem', () => {
