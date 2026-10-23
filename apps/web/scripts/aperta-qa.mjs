@@ -16,8 +16,8 @@ import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import {
   GRIMOIRES,
-  atlasSlots,
   dustGoal,
+  meetMilestone,
   minPicks,
   newSave,
 } from '@nocap/games';
@@ -92,22 +92,22 @@ function ready(collapses = 0, over = {}) {
     picks: minPicks(k),
     dust: dustGoal(k),
     dustLife: dustGoal(k),
+    ...meetMilestone(collapses, base().run.upgradeLevels),
   });
 }
 
 function late() {
   const collapses = 4;
   const build = Object.fromEntries(ids(collapses, 20).map((id, i) => [id, (i % 7) + 1]));
-  const pages = ids(collapses, 3).map((grimoireId, i) => ({ grimoireId, level: i + 2 }));
   const s = base({
     name: 'Missão com nome bem comprido',
     collapses,
     regionId: 'oort-cloud',
     album: ids(collapses, 40),
-    atlas: { slots: atlasSlots(collapses), pages },
-    fragments: { earned: 120, spent: 30 },
-    tree: { 'tree-1': 1 },
-    achievements: ['first-touch'],
+    vault: { 'sagittarius-a': 2, 'cygnus-x1': 1 },
+    sparks: { legacy: 40, spent: 6 },
+    tree: { 'co-01': 1, 'co-02': 2, 'au-01': 1, 'sk-01': 2 },
+    achievements: ['tap-1', 'collapse-1'],
     favorite: ids(collapses, 1)[0],
   });
   return withRun(s, {
@@ -128,7 +128,7 @@ function late() {
 const lateReady = () => {
   const s = late();
   const k = s.collapses + 1;
-  return withRun(s, { picks: minPicks(k), dust: dustGoal(k), dustLife: dustGoal(k) });
+  return withRun(s, { picks: minPicks(k), dust: dustGoal(k), dustLife: dustGoal(k), ...meetMilestone(s.collapses, s.run.upgradeLevels) });
 };
 
 const tut = (step) => ({ ...base(), tutorial: step, storySeen: true });
@@ -302,7 +302,7 @@ async function installApi(context, account) {
         slot: 1,
         name: d.name,
         collapses: d.collapses,
-        atlasPages: d.atlas.pages.length,
+        vaultCount: Object.keys(d.vault ?? {}).length,
         lastPlayedAt: new Date().toISOString(),
         storySeen: d.storySeen,
         revision: account.rev,
@@ -403,6 +403,7 @@ const SCENARIOS = [
       for (const [btn, name] of [
         [t.page.locator('.ap-dock').getByRole('button', { name: /^Melhorias/ }), 'Melhorias'],
         [t.page.locator('.ap-dock').getByRole('button', { name: /^Grimórios/ }), 'Grimórios'],
+        [t.page.locator('.ap-dock').getByRole('button', { name: /^Cofre dos Proibidos/ }), 'Cofre'],
         [t.page.locator('.ap-dock').getByRole('button', { name: /^Conquistas/ }), 'Conquistas'],
         [t.page.locator('.ap-hbtn-tree'), 'Arvore'],
       ]) {

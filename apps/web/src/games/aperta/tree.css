@@ -138,7 +138,7 @@
   flex: none;
 }
 .ap-chipf {
-  min-height: 36px;
+  min-height: 44px;
   padding: 4px 12px;
   border: 2px solid var(--space-line);
   border-radius: 999px;
