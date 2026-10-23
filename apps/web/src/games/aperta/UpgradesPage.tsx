@@ -1,6 +1,6 @@
 import { apertaSfx, apertaVibrate } from '@/lib/aperta-audio';
 import { UPGRADES, affordableUpgradeIndex, formatNumber, type SaveState } from '@nocap/games';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { UpgradeIcon } from './UpgradeIcon';
 import {
   UPGRADE_TABS,
@@ -16,6 +16,57 @@ import {
   type UpgradeTab,
 } from './upgrades-logic';
 import './upgrades.css';
+
+const GHOST_MS = 950;
+const FX_MS = 1500;
+
+interface ListFx {
+  leaving: { row: UpgradeRow; at: number }[];
+  arrive: ReadonlySet<string>;
+  bought: ReadonlySet<string>;
+}
+const NO_FX: ListFx = { leaving: [], arrive: new Set(), bought: new Set() };
+
+const reducedMotion = (): boolean => typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/**
+ * Compara a lista de melhorias com a anterior e devolve o que mudou: itens que saíram (ficam um instante como
+ * "Comprado" e somem), itens que chegaram (entram depois que o outro sai) e itens que só subiram de nível.
+ * Trocar de aba ou de seção não conta como compra.
+ */
+function useListFx(rows: UpgradeRow[], scope: string): ListFx {
+  const prev = useRef<{ scope: string; rows: UpgradeRow[] } | null>(null);
+  const [fx, setFx] = useState<ListFx>(NO_FX);
+  const sig = `${scope}|${rows.map((r) => `${r.id}:${r.level}`).join(',')}`;
+  const latest = useRef(rows);
+  latest.current = rows;
+
+  useEffect(() => {
+    const now = latest.current;
+    const before = prev.current;
+    prev.current = { scope, rows: now };
+    if (!before || before.scope !== scope || reducedMotion()) {
+      setFx(NO_FX);
+      return undefined;
+    }
+    const ids = new Set(now.map((r) => r.id));
+    const old = new Map(before.rows.map((r) => [r.id, r]));
+    const leaving = before.rows.flatMap((r, at) => (ids.has(r.id) ? [] : [{ row: r, at }]));
+    const arrive = new Set(now.filter((r) => !old.has(r.id)).map((r) => r.id));
+    const bought = new Set(now.filter((r) => (old.get(r.id)?.level ?? Infinity) < r.level).map((r) => r.id));
+    if (leaving.length === 0 && arrive.size === 0 && bought.size === 0) return undefined;
+    setFx({ leaving, arrive, bought });
+    const t1 = window.setTimeout(() => setFx((f) => ({ ...f, leaving: [] })), GHOST_MS);
+    const t2 = window.setTimeout(() => setFx(NO_FX), FX_MS);
+    return () => {
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+    };
+    // sig resume o conteúdo da lista; `rows` muda de identidade a cada render.
+  }, [sig]);
+
+  return fx;
+}
 
 interface Props {
   state: SaveState;
@@ -51,8 +102,10 @@ function UpgradeCard({
   onBuyBatch,
   dust,
   tutorialTarget,
+  fxClass = '',
 }: {
   row: UpgradeRow;
+  fxClass?: string;
   onBuy: (index: number) => boolean | void;
   onBuyBatch?: (index: number) => boolean | void;
   dust: number;
@@ -72,7 +125,7 @@ function UpgradeCard({
             : `${row.name}: trancada`;
   const leveled = row.max > 1 && row.status !== 'mystery';
   return (
-    <li className={`ap-up is-${row.status}`}>
+    <li className={`ap-up is-${row.status}${fxClass}`}>
       <span className="ap-up-medal">{row.status === 'mystery' ? <span className="ap-up-lock" aria-hidden="true">?</span> : <UpgradeIcon id={row.id} size={52} />}</span>
       <div className="ap-up-body">
         <h3>{row.name}</h3>
@@ -132,6 +185,21 @@ function UpgradeCard({
   );
 }
 
+/** O item que acabou de ser completado: mostra o carimbo "Comprado" e some antes de o próximo entrar. */
+function GhostCard({ row }: { row: UpgradeRow }) {
+  return (
+    <li className="ap-up is-leaving" aria-hidden="true">
+      <span className="ap-up-medal">
+        <UpgradeIcon id={row.id} size={52} />
+      </span>
+      <div className="ap-up-body">
+        <h3>{row.name}</h3>
+      </div>
+      <span className="ap-up-stamp">Comprado</span>
+    </li>
+  );
+}
+
 /** Um item já completo: ícone, nome, o que faz e o N/N, sem botão. */
 function OwnedCard({ row }: { row: UpgradeRow }) {
   return (
@@ -175,6 +243,9 @@ export function UpgradesPage({ state, onBuy, onBuyBatch, seen, onSeen }: Props) 
   const [section, setSection] = useState<UpgradeSection>('buy');
   const [tab, setTab] = useState<UpgradeTab>(() => (first === null ? 'touch' : tabOf((UPGRADES[first] as (typeof UPGRADES)[number]).kind)));
   const rows = buyRows(state, tab);
+  const fx = useListFx(rows, `${section}:${tab}`);
+  const shown = rows.slice();
+  for (const g of [...fx.leaving].sort((a, b) => a.at - b.at)) shown.splice(Math.min(g.at, shown.length), 0, g.row);
   const owned = ownedRows(state);
   const visible = revealedIds(state, tab).join(',');
 
@@ -229,9 +300,21 @@ export function UpgradesPage({ state, onBuy, onBuyBatch, seen, onSeen }: Props) 
         <>
           {tab === 'generators' && <AutoSummary state={state} />}
           <ul className="ap-uplist" id="ap-uppanel" role="tabpanel" aria-labelledby={`ap-uptab-${tab}`} aria-label="Melhorias à venda">
-            {rows.map((row) => (
-              <UpgradeCard key={row.id} row={row} onBuy={onBuy} onBuyBatch={onBuyBatch} dust={state.run.dust} tutorialTarget={row.index === first} />
-            ))}
+            {shown.map((row) =>
+              fx.leaving.some((g) => g.row.id === row.id) ? (
+                <GhostCard key={`ghost-${row.id}`} row={row} />
+              ) : (
+                <UpgradeCard
+                  key={row.id}
+                  row={row}
+                  onBuy={onBuy}
+                  onBuyBatch={onBuyBatch}
+                  dust={state.run.dust}
+                  tutorialTarget={row.index === first}
+                  fxClass={`${fx.arrive.has(row.id) ? ' is-arriving' : ''}${fx.bought.has(row.id) ? ' is-bought' : ''}`}
+                />
+              ),
+            )}
             {rows.length === 0 && <li className="ap-up-empty">Nada novo por aqui: veja o que você já tem em Comprados.</li>}
           </ul>
         </>

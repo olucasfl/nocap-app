@@ -1580,17 +1580,14 @@
   justify-items: center;
 }
 .ap-cat-ico {
-  position: absolute;
-  right: 10px;
-  top: 42px;
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  border: 2px solid var(--cat, var(--space-line));
-  border-radius: 50%;
-  background: var(--space-ink);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   color: var(--cat, var(--space-muted));
+  font: 700 11px var(--space-font-display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 .ap-cat-ico[data-cat='touch'],
 .ap-pick-info[data-cat='touch'] {

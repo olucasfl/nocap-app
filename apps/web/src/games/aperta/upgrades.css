@@ -644,3 +644,100 @@
   .ap-ownbtn { padding: 0 8px; font-size: 12px; gap: 4px; }
   .ap-upbar .ap-uptab { font-size: 13px; padding: 6px; }
 }
+
+/* Compra: carimbo "Comprado", saída do item e chegada do próximo (só transform e opacity). */
+.ap-up {
+  position: relative;
+}
+.ap-up.is-leaving {
+  border-color: var(--space-gold);
+  animation: ap-up-leave 0.6s ease-in 0.35s both;
+  pointer-events: none;
+}
+.ap-up-stamp {
+  grid-column: 3;
+  padding: 6px 12px;
+  border: 3px solid var(--space-gold);
+  border-radius: 10px;
+  color: var(--space-gold);
+  font: 700 15px var(--space-font-display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transform: rotate(-6deg);
+  animation: ap-up-stamp 0.35s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+@keyframes ap-up-stamp {
+  from {
+    opacity: 0;
+    transform: rotate(-6deg) scale(1.8);
+  }
+}
+@keyframes ap-up-leave {
+  to {
+    opacity: 0;
+    transform: translateX(48px) scale(0.96);
+  }
+}
+.ap-up.is-arriving {
+  animation: ap-up-arrive 0.5s cubic-bezier(0.2, 1.2, 0.4, 1) 0.95s both;
+}
+@keyframes ap-up-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.96);
+  }
+}
+.ap-up.is-bought {
+  animation: ap-up-bought 0.45s ease-out;
+}
+.ap-up.is-bought::after {
+  content: 'Comprado';
+  position: absolute;
+  right: 10px;
+  top: -10px;
+  padding: 2px 10px;
+  border: 2px solid var(--space-ink);
+  border-radius: 999px;
+  background: var(--space-gold);
+  color: var(--space-ink);
+  font: 700 11px var(--space-font-display);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  pointer-events: none;
+  animation: ap-up-tag 1.2s ease-out both;
+}
+@keyframes ap-up-bought {
+  40% {
+    transform: scale(1.025);
+  }
+}
+@keyframes ap-up-tag {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.8);
+  }
+  20%,
+  70% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ap-up.is-leaving,
+  .ap-up.is-arriving,
+  .ap-up.is-bought,
+  .ap-up.is-bought::after,
+  .ap-up-stamp {
+    animation: none;
+  }
+}
+@media (max-width: 520px) {
+  .ap-up-stamp {
+    grid-column: 1 / -1;
+    justify-self: center;
+  }
+}

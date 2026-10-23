@@ -167,7 +167,17 @@ export function cardGain(state: SaveState, id: string): string | null {
     if (Math.abs(a - b) > 1e-9) lines.push(`${line.label}: ${line.show(a)} -> ${line.show(b)}`);
     if (lines.length === 2) break;
   }
-  return lines.length > 0 ? lines.join(' · ') : null;
+  // Toque especial ("a cada 15 toques"): não está nas linhas acima, então compara regra por regra.
+  const was = new Map(before.nth.map((r) => [r.n, r]));
+  for (const r of after.nth) {
+    if (lines.length >= 2) break;
+    const old = was.get(r.n);
+    const m0 = old?.mult ?? 1;
+    const e0 = old?.energy ?? 0;
+    if (Math.abs(m0 - r.mult) > 1e-9 && r.mult > 1) lines.push(`A cada ${r.n} toques, poeira: x${formatDecimal(m0, 1)} -> x${formatDecimal(r.mult, 1)}`);
+    else if (Math.abs(e0 - r.energy) > 1e-9) lines.push(`A cada ${r.n} toques, energia: +${formatDecimal(e0, 1)} -> +${formatDecimal(r.energy, 1)}`);
+  }
+  return lines.length > 0 ? lines.slice(0, 2).join(' · ') : null;
 }
 
 /**

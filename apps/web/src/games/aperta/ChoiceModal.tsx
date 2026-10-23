@@ -154,7 +154,6 @@ export function ChoiceModal({ pending, lockRemaining, build, paused, onSelect, o
                 </span>
                 <span className="ap-pick-art">
                   <GrimoireBook rarity={rarity} astro={astroFor(id, def.family)} name={def.name} size="sm" still />
-                  <CategoryTag category={def.category} compact />
                 </span>
                 {suggestion?.id === id && (
                   <span className="ap-pick-sug">
@@ -162,9 +161,14 @@ export function ChoiceModal({ pending, lockRemaining, build, paused, onSelect, o
                   </span>
                 )}
                 <span className="ap-pick-name">{def.name}</span>
+                <CategoryTag category={def.category} compact />
                 <span className="ap-pick-info" data-cat={def.category}>
                   <span className="ap-pick-fx">{def.text}</span>
-                  {gain?.[id] && <GainLine label={have > 0 ? 'Vai subir' : 'Você ganha'} text={gain[id]!} />}
+                  {gain?.[id] ? (
+                    <GainLine label={have > 0 ? 'Vai subir' : 'Você ganha'} text={gain[id]!} />
+                  ) : (
+                    have > 0 && <GainLine label="Vai subir" text="O efeito fica mais forte neste nível" />
+                  )}
                 </span>
               </button>
               {onReroll && rerolls > 0 && (

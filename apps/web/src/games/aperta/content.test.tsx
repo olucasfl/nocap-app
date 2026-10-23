@@ -169,13 +169,23 @@ describe('Observatório Gaia: a carta mostra o efeito', () => {
     const p = gaiaPreviews(withGaia(), ['sirius', 'mars', 'moon']);
     expect(p.sirius).toMatch(/^Poeira por toque no combo máximo: \+0 -> \+2/);
     expect(p.mars).toContain('Estrela cadente: 2 toques -> 4 toques');
-    expect(p.moon).toContain('sem mudança');
+    expect(p.moon).toContain('A cada 10 toques, poeira: x1 -> x2');
   });
 
   it('o cálculo vem do motor: pegar de novo sobe o nível', () => {
     const s = withGaia();
     const lv1 = { ...s, run: { ...s.run, build: { sirius: 1 } } };
     expect(cardGain(s, 'sirius')).not.toEqual(cardGain(lv1, 'sirius'));
+  });
+
+  it('toque especial (Deimos) mostra o antes e o depois, também ao subir de nível', () => {
+    const s = withGaia();
+    expect(cardGain(s, 'deimos')).toMatch(/^A cada 15 toques, poeira: x1 -> x/);
+    const lv2 = { ...s, run: { ...s.run, build: { deimos: 2 } } };
+    const g = cardGain(lv2, 'deimos');
+    expect(g).toMatch(/^A cada 15 toques, poeira: x[\d,]+ -> x[\d,]+$/);
+    const [from, to] = g!.match(/x[\d,]+/g)!;
+    expect(to).not.toEqual(from);
   });
 
   it('a escolha mostra a linha extra', () => {
