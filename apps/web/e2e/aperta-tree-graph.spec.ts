@@ -79,6 +79,17 @@ test('árvore em grafo: abre, mostra os nós, arrasta e abre o painel', async ({
   expect(after).not.toBe(before);
   await expect(page.locator('.ap-tg-hint')).toHaveCount(0);
 
+  // A roda do mouse dá zoom (e a página não rola): para cima aproxima, para baixo afasta.
+  const scaleOf = async () =>
+    page.locator('.ap-tg-content').evaluate((el) => Number(/scale\(([\d.]+)\)/.exec((el as unknown as SVGGElement).style.transform)![1]));
+  const k0 = await scaleOf();
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.wheel(0, -300);
+  await expect.poll(scaleOf).toBeGreaterThan(k0);
+  const k1 = await scaleOf();
+  await page.mouse.wheel(0, 600);
+  await expect.poll(scaleOf).toBeLessThan(k1);
+
   // Escolhe um nó pelo teclado (foco + Enter) e confere o painel.
   await page.locator('.ap-chipf', { hasText: 'Cosmos' }).click();
   await page.getByRole('button', { name: /^Sintonia, Cosmos/ }).focus();

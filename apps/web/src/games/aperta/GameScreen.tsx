@@ -18,7 +18,6 @@ import {
   TUTORIAL,
   unlockedButtons,
   unseenAchievements,
-  autoRates,
 } from '@nocap/games';
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { apertaSfx, apertaVibrate } from '@/lib/aperta-audio';
@@ -626,16 +625,17 @@ export function GameScreen({ controller, onExit }: Props) {
             aria-valuenow={energy.value}
           >
             <i className="ap-evfill" style={{ transform: `scaleY(${energy.fill})` }} />
-            {autoRates(state).energy > 0 && <i className="ap-evflow" aria-hidden="true" />}
             <i className="ap-evsegs" />
           </div>
           {energy.hot && <span className="ap-evglow" aria-hidden="true" />}
         </div>
-        <b className={energy.hot ? 'is-hot' : undefined}>{energy.label}</b>
-        <span className="ap-evrate">
-          <RateTag state={state} kind="energy" />
-          <AutoGain state={state} paused={paused} kind="energy" />
-        </span>
+        <div className="ap-evfoot">
+          <b className={energy.hot ? 'is-hot' : undefined}>{energy.label}</b>
+          <span className="ap-evrate">
+            <RateTag state={state} kind="energy" />
+            <AutoGain state={state} paused={paused} kind="energy" />
+          </span>
+        </div>
       </aside>
 
       {tutorial === null && !page && <SkillBar state={state} now={now} onUse={controller.skill} onAutoBuy={controller.autoBuy} />}

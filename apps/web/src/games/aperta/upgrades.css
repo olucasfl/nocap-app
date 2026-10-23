@@ -640,10 +640,6 @@
   outline: 3px solid var(--space-text);
   outline-offset: 2px;
 }
-@media (max-width: 380px) {
-  .ap-ownbtn { padding: 0 8px; font-size: 12px; gap: 4px; }
-  .ap-upbar .ap-uptab { font-size: 13px; padding: 6px; }
-}
 
 /* Compra: carimbo "Comprado", saída do item e chegada do próximo (só transform e opacity). */
 .ap-up {
@@ -739,5 +735,94 @@
   .ap-up-stamp {
     grid-column: 1 / -1;
     justify-self: center;
+  }
+}
+
+/* Comprados em grade: 4, 3, 2 e 1 por linha conforme a largura da página (container query). */
+.ap-ownwrap {
+  container-type: inline-size;
+}
+.ap-ownlist {
+  grid-template-columns: minmax(0, 1fr);
+}
+@container (min-width: 300px) {
+  .ap-ownlist {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@container (min-width: 480px) {
+  .ap-ownlist {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@container (min-width: 660px) {
+  .ap-ownlist {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+.ap-own {
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  align-content: start;
+  gap: 6px;
+  padding: 10px 8px;
+  text-align: center;
+}
+.ap-own-body {
+  min-width: 0;
+}
+.ap-own-body h4 {
+  font-size: 13px;
+}
+.ap-own-body p {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+/* No celular só cabe uma por linha: volta ao formato horizontal. */
+@container (max-width: 299px) {
+  .ap-own {
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+    justify-items: stretch;
+    text-align: left;
+  }
+  .ap-own-icon {
+    justify-self: center;
+  }
+}
+
+/* Barra de abas: em tela estreita o Comprados desce para a própria linha; as abas dividem a largura por igual. */
+.ap-upbar {
+  flex-wrap: wrap;
+}
+.ap-upbar .ap-uptabs {
+  flex: 1 1 150px;
+  grid-template-columns: 1fr 1fr;
+  min-width: 0;
+  background: rgba(8, 12, 32, 0.9);
+}
+.ap-upbar .ap-uptab {
+  min-width: 0;
+  background: rgba(40, 56, 120, 0.35);
+  color: var(--space-text);
+}
+.ap-upbar .ap-uptab + .ap-uptab {
+  margin-left: 4px;
+}
+.ap-upbar .ap-uptab.on {
+  background: linear-gradient(180deg, #4fd8ff, #2a8fd0);
+  color: var(--space-ink);
+}
+.ap-upbar .ap-uptab-badge {
+  top: -12px;
+  right: 6px;
+}
+.ap-ownbtn {
+  flex: 1 1 auto;
+}
+@media (min-width: 521px) {
+  .ap-ownbtn {
+    flex: 0 0 auto;
   }
 }

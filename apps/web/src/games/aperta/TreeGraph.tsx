@@ -3,8 +3,11 @@ import { LOW_END } from './perf';
 import { computeTreeLayout, neighbor } from './tree-layout';
 import type { TreeNodeRow } from './tree-logic';
 
-/** Os dois níveis de zoom: visão geral e de perto (spec 040, 6.1). */
-export const ZOOM_LEVELS = [0.55, 1.1] as const;
+/** Zoom contínuo (roda do mouse, pinça e botões): da visão geral ao de perto (spec 040, 6.1). */
+export const ZOOM_MIN = 0.4;
+export const ZOOM_MAX = 1.8;
+const ZOOM_START = 1.1;
+const ZOOM_STEP = 1.3;
 export const NODE_R = 15;
 /** Quanto o dedo ou o mouse anda antes de a gente tratar como arrastar (e não como toque no nó). */
 const DRAG_PX = 6;
@@ -12,7 +15,7 @@ const DRAG_PX = 6;
 interface View {
   x: number;
   y: number;
-  level: 0 | 1;
+  k: number;
 }
 
 interface Props {
@@ -59,7 +62,7 @@ export function TreeGraph({ rows, selected, onSelect, filter, onFirstDrag }: Pro
   const box = useRef<HTMLDivElement>(null);
   const content = useRef<SVGGElement>(null);
   const [size, setSize] = useState({ w: 360, h: 420 });
-  const [view, setView] = useState<View>({ x: 0, y: 0, level: 1 });
+  const [view, setView] = useState<View>({ x: 0, y: 0, k: ZOOM_START });
   const viewRef = useRef(view);
   viewRef.current = view;
   const [active, setActive] = useState<string>(() => selected ?? 'root');
@@ -81,24 +84,42 @@ export function TreeGraph({ rows, selected, onSelect, filter, onFirstDrag }: Pro
     return () => ro.disconnect();
   }, []);
 
-  const k = ZOOM_LEVELS[view.level];
-  const css = (v: View): string => `translate(${size.w / 2 + v.x}px, ${size.h / 2 + v.y}px) scale(${ZOOM_LEVELS[v.level]})`;
+  const css = (v: View): string => `translate(${size.w / 2 + v.x}px, ${size.h / 2 + v.y}px) scale(${v.k})`;
 
-  const zoom = useCallback((level: 0 | 1) => {
+  /** Muda o zoom mantendo parado o ponto sob `at` (relativo ao centro da área); sem `at`, o centro da tela. */
+  const zoomBy = useCallback((factor: number, at?: { x: number; y: number }) => {
     setView((v) => {
-      if (v.level === level) return v;
-      const ratio = ZOOM_LEVELS[level] / ZOOM_LEVELS[v.level];
-      return { level, x: v.x * ratio, y: v.y * ratio };
+      const k = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, v.k * factor));
+      if (k === v.k) return v;
+      const px = at?.x ?? 0;
+      const py = at?.y ?? 0;
+      const ratio = k / v.k;
+      const next = { k, x: px - (px - v.x) * ratio, y: py - (py - v.y) * ratio };
+      viewRef.current = next;
+      return next;
     });
   }, []);
 
   const centerOn = useCallback((id: string | null) => {
     setView((v) => {
       const n = id && id !== 'root' ? layout.nodes[id] : null;
-      const kk = ZOOM_LEVELS[v.level];
-      return { level: v.level, x: n ? -n.x * kk : 0, y: n ? -n.y * kk : 0 };
+      return { k: v.k, x: n ? -n.x * v.k : 0, y: n ? -n.y * v.k : 0 };
     });
   }, [layout]);
+
+  // A roda do mouse dá zoom na posição do cursor. Precisa ser um listener nativo não passivo para a página não rolar junto.
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const r = el.getBoundingClientRect();
+      const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+      zoomBy(Math.exp(-dy * 0.0015), { x: e.clientX - r.left - r.width / 2, y: e.clientY - r.top - r.height / 2 });
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [zoomBy]);
 
   const onDown = (e: PointerEvent<HTMLDivElement>) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
@@ -158,10 +179,10 @@ export function TreeGraph({ rows, selected, onSelect, filter, onFirstDrag }: Pro
       }
     } else if (e.key === '+' || e.key === '=') {
       e.preventDefault();
-      zoom(1);
+      zoomBy(ZOOM_STEP);
     } else if (e.key === '-' || e.key === '_') {
       e.preventDefault();
-      zoom(0);
+      zoomBy(1 / ZOOM_STEP);
     } else if (e.key === '0' || e.key === 'Home') {
       e.preventDefault();
       centerOn(null);
@@ -183,7 +204,7 @@ export function TreeGraph({ rows, selected, onSelect, filter, onFirstDrag }: Pro
         ref={box}
         className="ap-tg-stage"
         role="group"
-        aria-label="Árvore de Habilidades. Arraste para mover; setas andam entre os nós; mais e menos dão zoom."
+        aria-label="Árvore de Habilidades. Arraste para mover, use a roda do mouse para dar zoom; setas andam entre os nós; mais e menos também dão zoom."
         onPointerDown={onDown}
         onPointerMove={onMove}
         onPointerUp={onUp}
@@ -274,10 +295,10 @@ export function TreeGraph({ rows, selected, onSelect, filter, onFirstDrag }: Pro
           </g>
         </svg>
         <div className="ap-tg-tools" role="group" aria-label="Zoom e centralizar">
-          <button type="button" className="ap-tg-btn" aria-label="Aproximar" disabled={view.level === 1} onClick={() => zoom(1)}>
+          <button type="button" className="ap-tg-btn" aria-label="Aproximar" disabled={view.k >= ZOOM_MAX - 0.001} onClick={() => zoomBy(ZOOM_STEP)}>
             +
           </button>
-          <button type="button" className="ap-tg-btn" aria-label="Afastar" disabled={view.level === 0} onClick={() => zoom(0)}>
+          <button type="button" className="ap-tg-btn" aria-label="Afastar" disabled={view.k <= ZOOM_MIN + 0.001} onClick={() => zoomBy(1 / ZOOM_STEP)}>
             −
           </button>
           <button type="button" className="ap-tg-btn ap-tg-center" onClick={() => centerOn(selected)}>
@@ -285,9 +306,6 @@ export function TreeGraph({ rows, selected, onSelect, filter, onFirstDrag }: Pro
           </button>
         </div>
       </div>
-      <span className="ap-tg-zoomlabel" aria-live="polite">
-        Zoom {k < 1 ? 'visão geral' : 'de perto'}
-      </span>
     </div>
   );
 }
