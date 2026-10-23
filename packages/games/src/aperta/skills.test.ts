@@ -25,10 +25,11 @@ const AUTOCLICK = { 'au-01': 2, 'au-05': 2 };
 describe('Autoclick e o anti-farm', () => {
   it('os nós viram números e o teto é 6 toques por segundo', () => {
     expect(skillStats({}).has.autoclick).toBe(false);
-    expect(skillStats({ 'au-01': 1 }).autoclick.cps).toBe(2);
-    expect(skillStats(AUTOCLICK).autoclick.cps).toBe(AUTOCLICK_MAX_CPS);
-    expect(skillStats({ 'au-01': 1, 'au-06': 2 }).autoclick.durationSec).toBe(120);
-    expect(skillStats({ 'au-01': 1, 'au-11': 2 }).autoclick.cooldownSec).toBe(360);
+    expect(skillStats({ 'au-01': 1 }).autoclick.cps).toBe(0.75);
+    expect(skillStats(AUTOCLICK).autoclick.cps).toBe(2.5);
+    expect(skillStats(AUTOCLICK).autoclick.cps).toBeLessThanOrEqual(AUTOCLICK_MAX_CPS);
+    expect(skillStats({ 'au-01': 1, 'au-06': 2 }).autoclick.durationSec).toBe(80);
+    expect(skillStats({ 'au-01': 1, 'au-11': 2 }).autoclick.cooldownSec).toBe(520);
     expect(skillStats({}).autoclick.cooldownSec).toBe(600);
   });
 
@@ -54,9 +55,9 @@ describe('Autoclick e o anti-farm', () => {
     const idle = syncClock({ ...s, clock: 100 }, 101);
     const auto = syncClock(on, 101);
     const perTouch = effectiveStats(on).dustPerTouch;
-    // 6 toques em 1 s, a poeira de um toque cada (e a poeira da vida acompanha).
-    expect(auto.run.dust - idle.run.dust).toBeGreaterThanOrEqual(Math.floor(6 * perTouch) - 1);
-    expect(auto.run.dust - idle.run.dust).toBeLessThanOrEqual(6 * perTouch + 1);
+    // 2,5 toques em 1 s, a poeira de um toque cada (e a poeira da vida acompanha).
+    expect(auto.run.dust - idle.run.dust).toBeGreaterThanOrEqual(Math.floor(2.5 * perTouch) - 1);
+    expect(auto.run.dust - idle.run.dust).toBeLessThanOrEqual(2.5 * perTouch + 1);
     expect(auto.run.dustLife - idle.run.dustLife).toBeCloseTo(auto.run.dust - idle.run.dust, 6);
     // Passado o fim, para de render.
     const after = syncClock(on, 170);
@@ -117,12 +118,12 @@ describe('Pulso, Supernova, Dobra, Lente, Ímã e Piloto', () => {
     expect(activateSkill(s, 'lens', 100).run.nextRareAt).toBeLessThanOrEqual(103);
   });
 
-  it('o Piloto automático liga o autoclick mesmo sem o botão dele e a recarga dura 15 min', () => {
+  it('o Piloto automático liga o autoclick mesmo sem o botão dele e a recarga dura 25 min', () => {
     const tree = { 'au-01': 1, 'au-14': 1, 'au-15': 1, 'au-20': 1 };
     const s = { ...base(tree), clock: 100 };
     expect(skillsAvailable(s).map((d) => d.id)).toContain('autopilot');
     const on = activateSkill(s, 'autopilot', 100);
-    expect(on.run.skills.autopilot).toMatchObject({ activeUntil: 190, readyAt: 1000 });
+    expect(on.run.skills.autopilot).toMatchObject({ activeUntil: 130, readyAt: 1600 });
     const idle = syncClock(s, 101);
     expect(syncClock(on, 101).run.dust).toBeGreaterThan(idle.run.dust);
   });
@@ -175,8 +176,8 @@ describe('Captura, Compra automática e Escolha sugerida', () => {
     expect(tickAutomation({ ...tight, run: { ...tight.run, dust: 100 } }, 100).run.dust).toBe(100);
     expect(setAutoBuy(s, { on: true }).run.autoBuy.on).toBe(true);
     expect(setAutoBuy(base(), { on: true }).run.autoBuy.on).toBe(false);
-    expect(skillStats({ 'au-03': 1, 'au-08': 2 }).autoBuy.maxLimit).toBe(80);
-    expect(skillStats({ 'au-03': 1, 'au-09': 2 }).autoBuy.batch).toBe(3);
+    expect(skillStats({ 'au-03': 1, 'au-08': 2 }).autoBuy.maxLimit).toBe(50);
+    expect(skillStats({ 'au-03': 1, 'au-09': 2 }).autoBuy.batch).toBe(2);
   });
 
   it('não compra com a escolha aberta nem no tutorial', () => {

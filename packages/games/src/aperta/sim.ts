@@ -8,7 +8,7 @@ import { TREE_NODES, nodeLive } from './tree';
 import { TREE_EVENT_IDS } from './tree-fx';
 import { skillView, skillsAvailable, tickAutomation, activateSkill } from './skills';
 import { formatDecimal, formatNumber } from './format';
-import { dustGoal, lifeHoursBand } from './economy';
+import { dustGoal, energyCap, lifeHoursBand } from './economy';
 import { generatorsAtLevel, milestoneGoal, milestoneProgress } from './milestone';
 import {
   buyNode,
@@ -365,6 +365,8 @@ export function simulate(options: SimOptions): SimResult {
     // fica desligada: ele já compra as melhorias do jeito dele).
     state = tickAutomation(state, t);
     for (const def of skillsAvailable(state)) {
+      // A Supernova gasta a energia da barra: o jogador só a usa com a barra quase vazia, senão nunca escolhe grimório.
+      if (def.id === 'supernova' && state.run.energy > 0.1 * energyCap(state.run.picks)) continue;
       if (skillView(state, def.id, t)?.ready) state = activateSkill(state, def.id, t);
     }
     // O simulador calibra a economia sem os eventos do colapso (bônus de 15 s, calibrados na etapa 13). Os eventos da árvore

@@ -377,3 +377,27 @@ F/T = 1,24 (>= 0,80) e (F + R25)/T = 1,27 (>= 1,10). Não precisou ajustar custo
 - Pulso, Supernova menor, Dobra do tempo, Lente e Ímã de estrelas são botões na barra (`SkillBar`), que só aparece depois do 1º nó que dá botão. Alvo de 48 px, recarga por `scaleX`.
 - O simulador usa as habilidades prontas; a Compra automática fica desligada nele.
 - Sem testar: aparelho real, 320 px da barra. A calibragem dos números desses nós fica para a etapa 21.
+
+## 17. Etapa 21: calibragem final e QA (23/10/2026)
+
+**Calibragem.** O simulador completo (16 sementes x 40 vidas) depois das etapas 19 e 20 deixou duas travas vermelhas. Ajustes feitos só em números de nós (as travas não mudaram):
+
+| Nó (ramo) | Antes | Agora |
+|---|---|---|
+| Autoclick, toques/s (nível 1-2) | 2 a 3 | 0,75 a 1 |
+| Velocidade do autoclick | 4 a 6 | 1,5 a 2,5 |
+| Duração do autoclick | 90 a 120 s | 70 a 80 s |
+| Autoclick eterno | 180 s | 100 s |
+| Recarga do autoclick | 480 a 360 s | 560 a 520 s |
+| Limite / lote da compra automática | 60-80% / 2-3 | 35-40% / 1-2 |
+| Piloto automático: duração / recarga / Piloto total | 90 s / 15 min / x2 | 30 s / 25 min / x1,5 |
+| Recarga de Pulso, Supernova, Dobra, Lente, Ímã | base | x1,6 |
+| Poder direto (poeira/energia por toque), Sintonia, Constelação, Reforço dos proibidos | base | x0,6 |
+
+O Supernova também passou a ser usado pelo jogador simulado só com a barra de energia quase vazia (antes ele zerava a energia o tempo todo e a vida travava em 30 h).
+
+**Estado do simulador (6 sementes, vidas 6 a 12, perfil normal):** sem árvore 1,65 h; árvore completa 0,71 a 0,77 h (razão ~0,45). **Seguem vermelhos dois testes de `sim.test.ts`**: vida 11 com 0,87 h (mínimo 1 h) e "árvore completa <= 25%". Retirar Automação e Habilidades sozinhas leva a razão a ~0,77 (as duas somadas são o principal fator), mas mudar velocidade, recarga e ganho das habilidades isoladamente não mexeu na média: o resultado é dominado pelo ruído do simulador (+-20% por configuração). Falta decidir com o Lucas se a "árvore completa" deve valer menos (por exemplo, poucas pessoas chegam a comprar tudo), em vez de seguir cortando nós.
+
+**QA responsivo (Chromium, 320 a 1920 px, toque e mouse, `aperta-qa.mjs`):** achados e corrigidos: filtros da página de Conquistas escondidos (classe `ap-chip` some nas páginas; virou `ap-fchip`), lista de proibidos do colapso com marcadores e sem estilo, modal escorregando quando o foco rolava o jogo (`.ap-game` agora `overflow: clip`), botões de filtro da árvore com 36 px (agora 44). Sobra: com todos os avisos ao mesmo tempo em 320 x 640 o cartão do evento é cortado embaixo (pior caso do save "late").
+
+**O que o Lucas deve jogar e revisar:** ritmo do começo (vidas 1 a 3); meta do 1º colapso em 50 mi; a 4ª carta de escolha em 320 px; os eventos e os chips; o Radar de lendários; o Autoclick (sensação, teto de 6/s e aba escondida); a barra de habilidades; a árvore (arrastar, painel, refazer); e se a árvore completa deve mesmo encurtar tanto a vida.

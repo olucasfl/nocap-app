@@ -45,14 +45,14 @@ const EMPTY_HAS = (): Record<ButtonSkillId, boolean> => ({ autoclick: false, aut
 export const BASE = {
   autoclickCooldown: 600,
   autoclickDuration: 60,
-  pulseCooldown: 180,
-  supernovaCooldown: 240,
-  warpCooldown: 300,
+  pulseCooldown: 288,
+  supernovaCooldown: 384,
+  warpCooldown: 480,
   warpDuration: 15,
   lensDuration: 30,
-  lensCooldown: 360,
-  magnetCooldown: 240,
-  autopilotCooldown: 900,
+  lensCooldown: 576,
+  magnetCooldown: 384,
+  autopilotCooldown: 1500,
 } as const;
 
 export function skillStats(tree: Tree): SkillStats {
