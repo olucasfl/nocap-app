@@ -1,4 +1,4 @@
-import { REGIONS, atlasSlots, newSave, type SaveState } from '@nocap/games';
+import { REGIONS, newSave, type SaveState } from '@nocap/games';
 import { expect, test, type Page } from '@playwright/test';
 import { installApi } from './mock-api';
 
@@ -16,7 +16,6 @@ function saveAt(k: number): SaveState {
     storySeen: true,
     collapses: k,
     regionId: (REGIONS.filter((r) => r.unlockedAtCollapse <= k).at(-1) ?? REGIONS[0])!.id,
-    atlas: { slots: atlasSlots(k), pages: [] },
     sparks: { legacy: earned, spent: 0 },
     stats: { ...s.stats, picks: k },
   };

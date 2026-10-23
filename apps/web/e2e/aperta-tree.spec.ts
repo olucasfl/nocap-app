@@ -1,4 +1,4 @@
-import { buyTreeNode, newSave, respecTree, sparksAvailable, type SaveState } from '@nocap/games';
+import { buyNode, newSave, respecTree, sparksAvailable, type SaveState } from '@nocap/games';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { installApi } from './mock-api';
 
@@ -14,7 +14,6 @@ function treeSave(): SaveState {
     storySeen: true,
     collapses: 1,
     regionId: 'asteroid-belt',
-    atlas: { slots: 3, pages: [{ grimoireId: 'moon', level: 2 }] },
     album: ['moon'],
     sparks: { legacy: 6, spent: 0 },
     achievements: ['tap-1', 'collapse-1'],
@@ -36,7 +35,7 @@ async function installSaves(page: Page) {
         slot: 1,
         name: d.name,
         collapses: d.collapses,
-        vaultCount: d.atlas.pages.length,
+        vaultCount: Object.keys(d.vault ?? {}).length,
         lastPlayedAt: new Date().toISOString(),
         storySeen: true,
         revision: account.rev,
@@ -60,6 +59,7 @@ const noOverflow = async (page: Page) =>
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth), 'rolagem lateral').toBeLessThanOrEqual(1);
 
 async function tapCenter(page: Page, target: Locator, touch: boolean) {
+  await target.scrollIntoViewIfNeeded();
   await target.scrollIntoViewIfNeeded();
   const box = (await target.boundingBox())!;
   const x = box.x + box.width / 2;
@@ -99,9 +99,9 @@ for (const size of SIZES) {
       if (await skip.isVisible({ timeout: 1500 }).catch(() => false)) await skip.click();
       await expect(page.locator('.ap-game')).toBeVisible();
 
-      // Árvore: 6 ramos e o saldo de Cintilas (as 6 migradas mais o que o álbum e as conquistas do save já rendem).
+      // Árvore em grafo: 120 nós e o saldo de Cintilas (as 6 migradas mais o que o álbum e as conquistas do save já rendem).
       await tapCenter(page, page.getByRole('button', { name: /^Árvore de Habilidades/ }), touch);
-      await expect(page.locator('.ap-branch')).toHaveCount(6);
+      await expect(page.locator('.ap-tg-node')).toHaveCount(120);
       const spark = async () => Number(await page.locator('.ap-tree-frag b').innerText());
       const s0 = sparksAvailable(treeSave());
       await expect(page.locator('.ap-tree-frag b')).toHaveText(String(s0));
@@ -110,33 +110,36 @@ for (const size of SIZES) {
       await shot('1-arvore');
       await noOverflow(page);
 
-      // Compra os níveis 1 e 2 do primeiro ramo (1 + 2 Fragmentos) e o aviso da conquista aparece.
-      const first = page.locator('.ap-branch').first();
-      await tapCenter(page, first.getByRole('button', { name: /nível 1.*Comprar/ }), touch);
-      // Gasta 1 e as conquistas que a ação fecha (a "Primeira habilidade" e as que o save já cumpria) rendem Cintilas:
-      // a conta é a do próprio motor, que é a que o servidor refaz.
-      const afterBuy1 = buyTreeNode(treeSave(), 'alpha-centauri:1');
-      const afterBuy2 = buyTreeNode(afterBuy1, 'alpha-centauri:2');
+      // Compra dois nós de entrada do Cosmos pelo painel; o aviso da conquista aparece.
+      const buyByPanel = async (name: string) => {
+        const node = page.getByRole('button', { name: new RegExp(`^${name}, Cosmos`) });
+        await node.focus();
+        await page.keyboard.press('Enter');
+        await expect(page.locator('.ap-tp h3')).toHaveText(name);
+        await tapCenter(page, page.locator('.ap-tp-buy'), touch);
+      };
+      await tapCenter(page, page.locator('.ap-chipf', { hasText: 'Cosmos' }), touch);
+      const afterBuy1 = buyNode(treeSave(), 'co-02');
+      const afterBuy2 = buyNode(afterBuy1, 'co-01');
+      await buyByPanel('Sintonia');
       await expect(page.locator('.ap-tree-frag b')).toHaveText(String(sparksAvailable(afterBuy1)));
-      await expect(page.locator('.ap-pickup-sparks')).toContainText('+');
-      await expect(page.locator('.ap-pickup-ach')).toContainText('Primeira habilidade');
       await shot('2-comprou');
       await noOverflow(page);
-      await tapCenter(page, first.getByRole('button', { name: /nível 2.*Comprar/ }), touch);
+      await buyByPanel('Cartas de capa');
       await expect(page.locator('.ap-tree-frag b')).toHaveText(String(sparksAvailable(afterBuy2)));
-      await expect(first.locator('.ap-node.is-owned')).toHaveCount(2);
+      await expect(page.locator('.ap-tg-node.has-level')).toHaveCount(2);
 
-      // Refazer em 2 passos: devolve as 3 gastas (100%, sem taxa) e a conquista escondida rende mais 3.
+      // Refazer em 2 passos: devolve o que foi gasto (100%, sem taxa) e a conquista escondida rende mais.
       const respec = page.locator('.ap-respec');
       await respec.scrollIntoViewIfNeeded();
       await tapCenter(page, respec.getByRole('button', { name: 'Refazer árvore' }), touch);
-      await expect(respec.getByRole('button', { name: /Confirmar: devolver 3/ })).toBeVisible();
+      await expect(respec.getByRole('button', { name: /Confirmar: devolver 2/ })).toBeVisible();
       await shot('3-refazer');
       await noOverflow(page);
       await tapCenter(page, respec.getByRole('button', { name: /Confirmar/ }), touch);
       await expect(page.locator('.ap-tree-frag b')).toHaveText(String(sparksAvailable(respecTree(afterBuy2))));
       expect(await spark()).toBeGreaterThan(s0);
-      await expect(page.locator('.ap-node.is-owned')).toHaveCount(0);
+      await expect(page.locator('.ap-tg-node.has-level')).toHaveCount(0);
 
       // Conquistas: ganhas em dourado, progresso N/M e a escondida (agora ganha).
       await tapCenter(page, page.getByRole('button', { name: 'Conquistas' }), touch);

@@ -1,10 +1,10 @@
-import { atlasSlots, dustGoal, meetMilestone, minPicks, newSave, type SaveState } from '@nocap/games';
+import { dustGoal, meetMilestone, minPicks, newSave, type SaveState } from '@nocap/games';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { installApi } from './mock-api';
 
 /**
- * Colapso e Atlas Eterno do Aperta! (spec 038, 8.1 e 8.2; requisitos da spec 040) de ponta a ponta: a estrela pronta, o modal de
- * 2 passos, a vida que recomeça e a página no Atlas. A conta é falsa e já guarda uma vida pronta para colapsar.
+ * Colapso e Cofre dos Proibidos do Aperta! (spec 038, 8.1 e 8.2; requisitos da spec 040) de ponta a ponta: a estrela pronta, o modal de
+ * 2 passos, a vida que recomeça e o Cofre. A conta é falsa e já guarda uma vida pronta para colapsar.
  */
 function readySave(): SaveState {
   const s = newSave('colapso', Date.now() - 3_600_000, 'Missão teste');
@@ -34,7 +34,6 @@ function midLifeSave(): SaveState {
     storySeen: true,
     collapses: c,
     regionId: 'alpha-centauri',
-    atlas: { slots: atlasSlots(c), pages: [] },
     sparks: { legacy: earned, spent: 0 },
     album: ['moon', 'mars'],
     run: { ...s.run, picks: 9, dust: dustGoal(c + 1) * 0.37, dustLife: dustGoal(c + 1) * 0.37, build: { moon: 1, mars: 1 }, captured: 2, chainBest: 4 },
@@ -56,7 +55,7 @@ async function installSaves(page: Page, initial: SaveState = readySave()) {
         slot: 1,
         name: d.name,
         collapses: d.collapses,
-        vaultCount: d.atlas.pages.length,
+        vaultCount: Object.keys(d.vault ?? {}).length,
         lastPlayedAt: new Date().toISOString(),
         storySeen: true,
         revision: account.rev,
@@ -80,6 +79,7 @@ const noOverflow = async (page: Page) =>
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth), 'rolagem lateral').toBeLessThanOrEqual(1);
 
 async function tapCenter(page: Page, target: Locator, touch: boolean) {
+  await target.scrollIntoViewIfNeeded();
   const box = (await target.boundingBox())!;
   const x = box.x + box.width / 2;
   const y = box.y + box.height / 2;
@@ -112,7 +112,7 @@ for (const size of SIZES) {
       deviceScaleFactor: size.touch ? 2 : 1,
     });
 
-    test('estrela pronta, modal em 2 passos, vida nova e Atlas', async ({ page }, info) => {
+    test('estrela pronta, modal em 2 passos, vida nova e Cofre', async ({ page }, info) => {
       test.skip(info.project.name !== 'desktop', 'o tamanho vem do describe; um projeto basta');
       const errors: string[] = [];
       page.on('pageerror', (e) => errors.push(e.message));
@@ -137,7 +137,7 @@ for (const size of SIZES) {
       await shot('1-pronta');
       await noOverflow(page);
 
-      // Passo 1: escolhe a Lua; "Continuar" só liga depois.
+      // Passo 1: escolhe um proibido; "Continuar" só liga depois.
       await tapCenter(page, ready, touch);
       const dialog = page.getByRole('dialog', { name: /A estrela está pronta/ });
       await expect(dialog).toBeVisible();
@@ -145,7 +145,7 @@ for (const size of SIZES) {
       await expect(dialog.locator('.ap-reqs')).toContainText('Combo: toques seguidos');
       await page.waitForTimeout(400); // guarda de 300 ms contra toque acidental
       await expect(page.getByRole('button', { name: 'Continuar' })).toBeDisabled();
-      await tapCenter(page, dialog.getByRole('button', { name: /^Lua/ }), touch);
+      await tapCenter(page, dialog.locator('.ap-cc-vault').first(), touch);
       await shot('2-passo1');
       await insideViewport(page, '.ap-collapse');
       await noOverflow(page);
@@ -159,32 +159,30 @@ for (const size of SIZES) {
       await noOverflow(page);
       await tapCenter(page, page.getByRole('button', { name: 'Colapsar a estrela' }), touch);
 
-      // A vida recomeça: aviso, contador, Cintilas e a página no Atlas.
+      // A vida recomeça: aviso, contador, Cintilas e o Cofre.
       await expect(page.getByRole('dialog')).toHaveCount(0);
       await expect(page.locator('.ap-pickup:not(.ap-pickup-ach):not(.ap-pickup-sparks)')).toContainText('Estrela colapsada');
-      await expect(page.locator('.ap-pickup:not(.ap-pickup-ach):not(.ap-pickup-sparks)')).toContainText('Lua');
+      await expect(page.locator('.ap-pickup:not(.ap-pickup-ach):not(.ap-pickup-sparks)')).toContainText('Cofre:');
       await expect(page.locator('.ap-hudrow-2 b')).toHaveText('1');
       await expect(page.getByRole('button', { name: /Estrela pronta/ })).toHaveCount(0);
       await shot('4-colapsada');
       await noOverflow(page);
 
-      await tapCenter(page, page.getByRole('button', { name: /^Grimórios/ }), touch);
-      await expect(page.locator('.ap-atlas')).toBeVisible();
-      await expect(page.locator('.ap-atlas-pages li.is-full')).toHaveCount(1);
-      await expect(page.locator('.ap-atlas')).toContainText('1 de 3 espaços');
-      await expect(page.locator('.ap-atlas')).toContainText('Luas');
-      await page.locator('.ap-atlas').scrollIntoViewIfNeeded();
-      await shot('5-atlas');
+      await tapCenter(page, page.getByRole('button', { name: /^Cofre dos Proibidos/ }), touch);
+      await expect(page.locator('.ap-vault')).toBeVisible();
+      await expect(page.locator('.ap-vault-slots')).toBeVisible();
+      await page.locator('.ap-vault').scrollIntoViewIfNeeded();
+      await shot('5-cofre');
       await noOverflow(page);
       await expect(page.getByRole('button', { name: 'Estrela ainda não está pronta' })).toBeDisabled();
 
       // O servidor aceitou: o save na conta já é o da vida nova.
       await expect.poll(() => account.data?.collapses, { timeout: 5000 }).toBe(1);
-      expect(account.data?.atlas.pages).toEqual([{ grimoireId: 'moon', level: 2 }]);
+      expect(Object.keys(account.data?.vault ?? {})).toHaveLength(1);
       expect(errors).toEqual([]);
     });
 
-    test('colapso 7: as barras de cada requisito andam no Atlas e não há botão enquanto falta algo', async ({ page }, info) => {
+    test('colapso 7: as barras de cada requisito andam no Cofre e não há botão enquanto falta algo', async ({ page }, info) => {
       test.skip(info.project.name !== 'desktop', 'o tamanho vem do describe; um projeto basta');
       const errors: string[] = [];
       page.on('pageerror', (e) => errors.push(e.message));
@@ -200,7 +198,7 @@ for (const size of SIZES) {
       await expect(page.locator('.ap-game')).toBeVisible();
       await expect(page.getByRole('button', { name: /Estrela pronta/ })).toHaveCount(0);
 
-      await tapCenter(page, page.getByRole('button', { name: /^Grimórios/ }), size.touch);
+      await tapCenter(page, page.getByRole('button', { name: /^Cofre dos Proibidos/ }), size.touch);
       const box = page.locator('.ap-collapse-box');
       await box.scrollIntoViewIfNeeded();
       await expect(box.locator('.ap-reqs li')).toHaveCount(3);

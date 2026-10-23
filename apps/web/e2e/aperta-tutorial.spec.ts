@@ -1,4 +1,4 @@
-import { TUTORIAL, energyCap, newSave, nextUpgradeCost, type SaveState } from '@nocap/games';
+import { TUTORIAL, affordableUpgradeIndex, energyCap, newSave, nextUpgradeCost, type SaveState } from '@nocap/games';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { installApi } from './mock-api';
 
@@ -15,7 +15,7 @@ interface SaveData {
   run: { upgradeLevels: number[]; dust: number; build: Record<string, number> };
   album: string[];
   collapses: number;
-  atlas: { pages: unknown[] };
+  vault?: Record<string, number>;
 }
 
 /** Um servidor de saves mínimo: GET lista, GET save, PUT com revisão. */
@@ -33,7 +33,7 @@ async function installSaves(page: Page) {
         slot: 1,
         name: d.name,
         collapses: d.collapses,
-        vaultCount: d.atlas.pages.length,
+        vaultCount: Object.keys(d.vault ?? {}).length,
         lastPlayedAt: new Date().toISOString(),
         storySeen: d.storySeen,
         revision: account.rev,
@@ -67,6 +67,7 @@ const noOverflow = async (page: Page) =>
 
 /** Toque (celular) ou clique (PC) nas coordenadas do centro do elemento. */
 async function tapCenter(page: Page, target: Locator, touch: boolean) {
+  await target.scrollIntoViewIfNeeded();
   const box = (await target.boundingBox())!;
   const x = box.x + box.width / 2;
   const y = box.y + box.height / 2;
@@ -99,7 +100,9 @@ function saveAt(patch: (s: SaveState) => SaveState): SaveData {
   return patch({ ...base, storySeen: true }) as unknown as SaveData;
 }
 const nearUpgrade = (s: SaveState): SaveState => {
-  const cost = nextUpgradeCost(s, 0) as number;
+  // A melhoria mais barata, não a primeira da lista: é a que o tutorial manda comprar.
+  const rich = { ...s, run: { ...s.run, dust: 1e12 } };
+  const cost = nextUpgradeCost(s, affordableUpgradeIndex(rich)!) as number;
   return { ...s, run: { ...s.run, dust: cost - 1, dustLife: cost - 1 } };
 };
 const nearFull = (s: SaveState): SaveState => ({ ...s, run: { ...s.run, energy: energyCap(s.run.picks) - 0.01 } });
