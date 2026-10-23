@@ -111,21 +111,21 @@ describe('páginas', () => {
     );
 
   it('árvore: grafo com 116 nós, raiz, ligações, filtros por ramo e refazer desligado sem gasto', () => {
-    const out = html(<TreePage state={withFragments(1)} onBuy={noop} onRespec={noop} />);
+    const out = html(<TreePage state={withFragments(1)} onBuy={noop} onRespec={noop} onClose={noop} />);
     expect(out.match(/class="ap-tg-node /g)).toHaveLength(116);
     expect(out).toContain('ap-tg-root');
     expect(out.match(/class="ap-tg-edge/g)!.length).toBeGreaterThanOrEqual(116);
     expect(out.match(/class="ap-chipf/g)).toHaveLength(6);
     expect(out).toContain('Aproximar');
     expect(out).toContain('Centralizar');
-    expect(out).toContain('1</b><span>Cintila para gastar');
+    expect(out).toContain('1</b><span>Cintila</span>');
     expect(out).toContain('De onde vêm as Cintilas');
     expect(out).toMatch(/<button[^>]*disabled[^>]*>Refazer árvore/);
-    expect(out).toContain('Arraste para explorar a árvore');
+    expect(out).toContain('Arraste para explorar');
   });
 
   it('cada nó é um botão com nome e estado; o selecionado mostra o nome', () => {
-    const out = html(<TreePage state={withFragments(1)} onBuy={noop} onRespec={noop} />);
+    const out = html(<TreePage state={withFragments(1)} onBuy={noop} onRespec={noop} onClose={noop} />);
     expect(out.match(/role="button"/g)!.length).toBeGreaterThanOrEqual(116);
     expect(out).toMatch(/aria-label="Cartas de capa, Cosmos, tier 1, nível 0 de 2, dá para comprar. Custa 1 Cintila"/);
   });

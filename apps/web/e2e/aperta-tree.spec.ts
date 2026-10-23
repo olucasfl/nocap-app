@@ -130,8 +130,8 @@ for (const size of SIZES) {
       await expect(page.locator('.ap-tg-node.has-level')).toHaveCount(2);
 
       // Refazer em 2 passos: devolve o que foi gasto (100%, sem taxa) e a conquista escondida rende mais.
+      await tapCenter(page, page.getByRole('button', { name: 'Refazer árvore' }).first(), touch);
       const respec = page.locator('.ap-respec');
-      await respec.scrollIntoViewIfNeeded();
       await tapCenter(page, respec.getByRole('button', { name: 'Refazer árvore' }), touch);
       await expect(respec.getByRole('button', { name: /Confirmar: devolver 2/ })).toBeVisible();
       await shot('3-refazer');
@@ -141,6 +141,7 @@ for (const size of SIZES) {
       expect(await spark()).toBeGreaterThan(s0);
       await expect(page.locator('.ap-tg-node.has-level')).toHaveCount(0);
 
+      await tapCenter(page, page.getByRole('button', { name: 'Fechar Árvore de Habilidades' }), touch);
       // Conquistas: ganhas em dourado, progresso N/M e a escondida (agora ganha).
       await tapCenter(page, page.getByRole('button', { name: 'Conquistas' }), touch);
       await expect(page.locator('.ap-ach.is-earned').first()).toBeVisible();

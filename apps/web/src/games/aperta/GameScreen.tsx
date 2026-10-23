@@ -18,6 +18,7 @@ import {
   TUTORIAL,
   unlockedButtons,
   unseenAchievements,
+  autoRates,
 } from '@nocap/games';
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { apertaSfx, apertaVibrate } from '@/lib/aperta-audio';
@@ -625,6 +626,7 @@ export function GameScreen({ controller, onExit }: Props) {
             aria-valuenow={energy.value}
           >
             <i className="ap-evfill" style={{ transform: `scaleY(${energy.fill})` }} />
+            {autoRates(state).energy > 0 && <i className="ap-evflow" aria-hidden="true" />}
             <i className="ap-evsegs" />
           </div>
           {energy.hot && <span className="ap-evglow" aria-hidden="true" />}
@@ -706,7 +708,9 @@ export function GameScreen({ controller, onExit }: Props) {
       </nav>
       )}
 
-      {page && (
+      {page === 'tree' && <TreePage state={state} onBuy={controller.buyTree} onRespec={controller.respec} onClose={() => setPage(null)} />}
+
+      {page && page !== 'tree' && (
         <GamePage
           key={page}
           name={page}
@@ -716,7 +720,6 @@ export function GameScreen({ controller, onExit }: Props) {
           {page === 'upgrades' && <UpgradesPage state={state} onBuy={controller.buy} onBuyBatch={controller.buyBatch} seen={seenUp} onSeen={markSeen} />}
           {page === 'achievements' && <AchievementsPage state={state} />}
           {page === 'vault' && <VaultPage state={state} onCollapse={() => setCollapseOpen(true)} />}
-          {page === 'tree' && <TreePage state={state} onBuy={controller.buyTree} onRespec={controller.respec} />}
           {page === 'grimoires' ? <GrimoiresPage state={state} onFavorite={controller.setFavorite} /> : undefined}
         </GamePage>
       )}

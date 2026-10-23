@@ -115,11 +115,11 @@ describe('escolha de energia cheia', () => {
       />,
     );
 
-  it('mostra 3 cartas e a dica do nível', () => {
+  it('mostra 3 cartas, sem o texto de dica do nível', () => {
     const markup = modal({});
     expect(markup.match(/<button[^>]*class="ap-pick[ "]/g)).toHaveLength(3);
     expect(markup).toContain('Lua');
-    expect(markup).toContain('Pegar o mesmo de novo sobe o nível dele.');
+    expect(markup).not.toContain('Pegar o mesmo de novo');
   });
 
   it('bloqueada: cartas e confirmar desligados, com a barra de espera', () => {

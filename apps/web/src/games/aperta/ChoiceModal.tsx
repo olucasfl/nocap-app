@@ -150,10 +150,7 @@ export function ChoiceModal({ pending, lockRemaining, build, paused, onSelect, o
             );
           })}
         </div>
-        <p className="ap-sub">
-          Pegar o mesmo de novo sobe o nível dele.
-          {rerolls > 0 ? ` Trocas disponíveis: ${rerolls}.` : ''}
-        </p>
+        {rerolls > 0 && <p className="ap-sub">Trocas disponíveis: {rerolls}.</p>}
         {onDiscard && discardsLeft > 0 && (
           <button type="button" className="ap-reroll ap-discard" disabled={locked} onClick={() => !guarded() && onDiscard()}>
             Descartar a oferta ({discardsLeft})

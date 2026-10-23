@@ -497,3 +497,295 @@
     transition: none !important;
   }
 }
+
+/* ---------- Tela cheia (pedido do Lucas): o grafo é a tela, o resto flutua por cima ---------- */
+.ap-tree {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: block;
+  overflow: hidden;
+  background: var(--space-ink);
+  animation: ap-tree-in 0.28s ease-out;
+}
+@keyframes ap-tree-in {
+  from {
+    opacity: 0;
+    transform: scale(1.03);
+  }
+}
+.ap-tree-bg {
+  position: absolute;
+  inset: -20%;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(138, 108, 255, 0.28), transparent 45%),
+    radial-gradient(circle at 20% 80%, rgba(60, 220, 255, 0.12), transparent 40%),
+    radial-gradient(circle at 85% 15%, rgba(255, 200, 80, 0.1), transparent 35%);
+  animation: ap-tree-breathe 6s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes ap-tree-breathe {
+  50% {
+    opacity: 0.55;
+    transform: scale(1.06);
+  }
+}
+.ap-tree .ap-tree-graph,
+.ap-tree .ap-tg,
+.ap-tree .ap-tg-stage {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+}
+.ap-tree .ap-tg-zoomlabel {
+  display: none;
+}
+.ap-tree .ap-tg-tools {
+  left: 12px;
+  right: auto;
+  top: 50%;
+  bottom: auto;
+  flex-direction: column;
+  transform: translateY(-50%);
+}
+.ap-tree .ap-tg-btn {
+  border-radius: 14px;
+  box-shadow: 0 4px 0 #050818;
+}
+.ap-tree .ap-tg-center {
+  font-size: 11px;
+  padding: 0 6px;
+}
+
+/* Topo */
+.ap-tree .ap-th {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 3;
+  display: grid;
+  gap: 8px;
+  padding: 10px 10px 18px;
+  background: linear-gradient(180deg, rgba(3, 5, 14, 0.92), rgba(3, 5, 14, 0));
+  pointer-events: none;
+}
+.ap-tree .ap-th > * {
+  pointer-events: auto;
+}
+.ap-tr-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.ap-tr-back,
+.ap-tr-ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  flex: none;
+  min-width: 46px;
+  min-height: 46px;
+  padding: 0 12px;
+  border: 3px solid var(--space-ink);
+  border-radius: 14px;
+  background: linear-gradient(180deg, #2c3d86, #1a2658);
+  color: #fff;
+  font: 700 14px var(--space-font-display);
+  text-transform: uppercase;
+  box-shadow:
+    0 4px 0 #0a1030,
+    inset 0 2px 0 rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+}
+.ap-tr-back:active,
+.ap-tr-ico:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #0a1030;
+}
+.ap-tr-ico {
+  padding: 0;
+}
+.ap-tr-ico.is-on {
+  background: linear-gradient(180deg, #ffd24a, #e8a410);
+  color: var(--space-ink);
+}
+.ap-tr-back:focus-visible,
+.ap-tr-ico:focus-visible {
+  outline: 3px solid var(--space-cyan);
+  outline-offset: 2px;
+}
+.ap-tr-acts {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+.ap-tree .ap-tree-frag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 46px;
+  padding: 0 14px;
+  border: 3px solid var(--space-violet);
+  border-radius: 999px;
+  background: rgba(20, 14, 52, 0.92);
+  color: var(--space-violet);
+  font: 700 12px var(--space-font-display);
+  white-space: nowrap;
+  min-width: 0;
+}
+.ap-tree .ap-tree-frag b {
+  display: inline-block;
+  font: 700 24px var(--space-font-display);
+  color: #fff;
+  animation: ap-spark-pop 0.45s ease-out;
+}
+.ap-tree .ap-tree-frag svg {
+  animation: ap-spark-twinkle 2.4s ease-in-out infinite;
+}
+@keyframes ap-spark-pop {
+  0% {
+    transform: scale(1.5);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes ap-spark-twinkle {
+  50% {
+    transform: scale(1.18) rotate(18deg);
+    opacity: 0.7;
+  }
+}
+.ap-tree .ap-th-chips {
+  flex-wrap: wrap;
+  overflow: visible;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+}
+.ap-tree .ap-chipf {
+  min-height: 38px;
+  padding: 2px 12px;
+  background: rgba(10, 14, 40, 0.92);
+}
+.ap-tree .ap-chipf.is-on {
+  background: var(--space-gold);
+  border-color: var(--space-ink);
+  color: var(--space-ink);
+}
+
+/* Popovers: sobem em transform/opacity, só um aberto por vez */
+.ap-tr-pop {
+  position: absolute;
+  right: 10px;
+  top: 66px;
+  z-index: 5;
+  width: min(300px, calc(100% - 20px));
+  max-height: calc(100% - 90px);
+  overflow: auto;
+  margin: 0;
+  padding: 12px;
+  border: 3px solid var(--space-line);
+  border-radius: 14px;
+  background: rgba(8, 12, 32, 0.97);
+  box-shadow: 0 10px 0 rgba(0, 0, 0, 0.35);
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(-8px) scale(0.97);
+  transition:
+    opacity 0.18s ease-out,
+    transform 0.18s ease-out;
+}
+.ap-tr-pop.is-open {
+  visibility: visible;
+  opacity: 1;
+  transform: none;
+}
+.ap-tree-sources h3 {
+  margin: 0;
+  font: 700 14px var(--space-font-display);
+  color: var(--space-cyan);
+  text-transform: uppercase;
+}
+.ap-tr-sum {
+  margin: 2px 0 6px;
+  font: 500 12px var(--space-font-body);
+  color: var(--space-muted);
+}
+.ap-tree .ap-tree-sources {
+  right: 10px;
+  left: auto;
+  margin: 0;
+}
+.ap-tr-pop .ap-respec {
+  padding: 0;
+  border: 0;
+  background: none;
+}
+.ap-tree .ap-tg-hint,
+.ap-tree .ap-tg-closed {
+  top: auto;
+  bottom: 84px;
+}
+
+/* Painel do nó: folha que sobe */
+.ap-tree .ap-tp-wrap {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  z-index: 4;
+  max-height: 52%;
+  overflow: auto;
+  border-radius: 14px;
+  animation: ap-tp-in 0.22s ease-out;
+}
+@keyframes ap-tp-in {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+}
+.ap-tree .ap-tp {
+  box-shadow: 0 8px 0 rgba(0, 0, 0, 0.35);
+}
+@media (min-width: 900px) {
+  .ap-tree .ap-tp-wrap {
+    left: auto;
+    right: 16px;
+    top: 130px;
+    bottom: auto;
+    width: 340px;
+    max-height: calc(100% - 150px);
+  }
+  .ap-tr-back {
+    padding: 0 16px;
+  }
+}
+@media (max-width: 380px) {
+  .ap-tr-back span {
+    display: none;
+  }
+  .ap-tree .ap-tree-frag {
+    padding: 0 10px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ap-tree,
+  .ap-tree-bg,
+  .ap-tp-wrap,
+  .ap-tree .ap-tree-frag b,
+  .ap-tree .ap-tree-frag svg {
+    animation: none !important;
+  }
+  .ap-tr-pop {
+    transition: none;
+  }
+}

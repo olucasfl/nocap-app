@@ -1461,3 +1461,76 @@
   text-transform: uppercase;
   white-space: nowrap;
 }
+
+/* Barra de energia sem cortes: coluna mais larga, brilho com folga e a taxa encaixada logo abaixo do número. */
+.ap-energy {
+  right: 6px;
+  width: 66px;
+  overflow: visible;
+}
+.ap-evwrap {
+  margin: 6px 0;
+}
+.ap-evflow {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 200%;
+  background: repeating-linear-gradient(0deg, transparent 0, transparent 14px, rgba(255, 255, 255, 0.28) 14px, rgba(255, 255, 255, 0.28) 20px);
+  opacity: 0.55;
+  animation: apg-evflow 1.6s linear infinite;
+  will-change: transform;
+}
+@keyframes apg-evflow {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-50%);
+  }
+}
+.ap-evrate {
+  max-width: 100%;
+}
+.ap-ratetag.is-energy {
+  flex-direction: column;
+  gap: 1px;
+  margin: 0;
+  padding: 3px 6px;
+  border-color: var(--space-cyan);
+  font-size: 11px;
+  line-height: 1.1;
+}
+.ap-ratetag.is-energy svg {
+  animation: apg-bolt 1.2s ease-in-out infinite;
+  transform-origin: center;
+}
+@keyframes apg-bolt {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 1;
+  }
+}
+.ap-autogain.is-energy {
+  left: 50%;
+  top: auto;
+  bottom: 100%;
+  transform: translateX(-50%);
+}
+@media (max-width: 720px) {
+  .ap-field {
+    right: 76px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ap-evflow,
+  .ap-ratetag.is-energy svg {
+    animation: none;
+  }
+}
