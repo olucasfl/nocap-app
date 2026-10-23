@@ -170,10 +170,17 @@ export function cardGain(state: SaveState, id: string): string | null {
   return lines.length > 0 ? lines.join(' · ') : null;
 }
 
-/** Texto extra de cada carta oferecida, só com o Observatório Gaia comprado. */
+/**
+ * O que cada carta oferecida faz nos números da vida atual ("Poeira por toque: 12 -> 14"). Desde a spec 041 aparece
+ * para todos; o Observatório Gaia só acrescenta a frase de efeito de ocasião quando os números não mudam.
+ */
 export function gaiaPreviews(state: SaveState, offers: readonly string[]): Record<string, string> {
-  if (!gaiaActive(state)) return {};
   const out: Record<string, string> = {};
-  for (const id of offers) out[id] = cardGain(state, id) ?? 'Efeito de ocasião: sem mudança nos números agora';
+  const gaia = gaiaActive(state);
+  for (const id of offers) {
+    const gain = cardGain(state, id);
+    if (gain) out[id] = gain;
+    else if (gaia) out[id] = 'Efeito de ocasião: sem mudança nos números agora';
+  }
   return out;
 }

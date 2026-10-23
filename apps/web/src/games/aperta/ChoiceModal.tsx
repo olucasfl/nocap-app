@@ -111,6 +111,19 @@ export function ChoiceModal({ pending, lockRemaining, build, paused, onSelect, o
                   if (!guarded()) onSelect(id);
                 }}
               >
+                <span className="ap-pick-lvl" aria-label={have > 0 ? `Nível ${have} para o nível ${have + 1}` : 'Grimório novo, nível 1'}>
+                  {have > 0 ? (
+                    <>
+                      <b>NVL {have}</b>
+                      <svg viewBox="0 0 24 12" width="22" height="11" aria-hidden="true">
+                        <path d="M1 6h19M15 1l6 5-6 5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                      <b className="is-next">NVL {have + 1}</b>
+                    </>
+                  ) : (
+                    <b className="is-next">NOVO · NVL 1</b>
+                  )}
+                </span>
                 <GrimoireBook rarity={rarity} astro={astroFor(id, def.family)} name={def.name} size="sm" still />
                 {suggestion?.id === id && (
                   <span className="ap-pick-sug">
@@ -121,8 +134,12 @@ export function ChoiceModal({ pending, lockRemaining, build, paused, onSelect, o
                 <span className="ap-pick-rar">{RARITY_LABEL[rarity]}</span>
                 <CategoryTag category={def.category} />
                 <span className="ap-pick-fx">{def.text}</span>
-                {gain?.[id] && <span className="ap-pick-gain">{gain[id]}</span>}
-                {have > 0 && <span className="ap-pick-lv">Você tem nível {have}: sobe para o {have + 1}</span>}
+                {gain?.[id] && (
+                  <span className="ap-pick-gain">
+                    <small>{have > 0 ? 'Vai subir' : 'Você ganha'}</small>
+                    {gain[id]}
+                  </span>
+                )}
               </button>
               {onReroll && rerolls > 0 && (
                 <button type="button" className="ap-reroll" disabled={locked} onClick={() => !guarded() && onReroll(id)}>

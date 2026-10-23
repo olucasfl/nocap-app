@@ -142,7 +142,11 @@ describe('escolha de energia cheia', () => {
   });
 
   it('grimório repetido avisa que sobe de nível', () => {
-    expect(modal({ build: { moon: 2 } })).toContain('Você tem nível 2: sobe para o 3');
+    const markup = modal({ build: { moon: 2 } });
+    expect(markup).toContain('NVL 2');
+    expect(markup).toContain('NVL 3');
+    expect(markup).toContain('Nível 2 para o nível 3');
+    expect(modal({ build: {} })).toContain('NOVO · NVL 1');
   });
 });
 

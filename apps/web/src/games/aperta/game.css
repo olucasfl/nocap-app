@@ -1282,3 +1282,24 @@
     white-space: nowrap;
   }
 }
+
+/* Selo de nível no topo da carta de grimório: NVL 1 -> NVL 2 (spec 041, A4). */
+.ap-pick-lvl {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 3px solid var(--space-ink);
+  border-radius: 999px;
+  background: var(--space-gold);
+  color: var(--space-ink);
+  font: 700 13px var(--space-font-display);
+  letter-spacing: 0.04em;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.45);
+}
+.ap-pick-lvl b.is-next {
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--space-ink);
+  color: var(--space-gold);
+}

@@ -160,8 +160,9 @@ describe('Observatório Gaia: a carta mostra o efeito', () => {
     return { ...s, run: { ...s.run, upgradeLevels: levels } };
   };
 
-  it('sem Gaia não há texto extra', () => {
-    expect(gaiaPreviews(atCollapse(5), ['vesta', 'moon'])).toEqual({});
+  it('sem Gaia só aparece o que muda nos números, sem a frase de efeito de ocasião', () => {
+    const p = gaiaPreviews(atCollapse(5), ['vesta', 'moon']);
+    for (const text of Object.values(p)) expect(text).not.toContain('sem mudança');
   });
 
   it('com Gaia, cada carta diz o que muda nos números da vida', () => {
