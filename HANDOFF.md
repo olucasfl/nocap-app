@@ -150,3 +150,7 @@ curva da nota do Tempo (#4). Não decida sozinho: pergunte ao Lucas.
 ## Nota técnica
 
 Esta máquina tinha Node 20.19; o projeto recomenda Node 22 (`.nvmrc`). Funciona nos dois.
+
+## Estado da automação
+
+- **Etapa 18 (tela da árvore em grafo):** concluída em 23/10/2026, commits `94aa08a` e `5872bc8`. Sem testar: 320, 768, 1024, 1280 e 1920 px, aparelho real e pinça (não feita). **Próxima: etapa 19** (habilidades ativas e automações), depois a 21.
