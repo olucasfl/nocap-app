@@ -1534,3 +1534,122 @@
     animation: none;
   }
 }
+
+/* Carta de escolha organizada em 3 faixas: raridade em cima, arte com o ícone da categoria, texto e ganho embaixo. */
+.ap-pick {
+  position: relative;
+  overflow: hidden;
+  padding-top: 34px;
+}
+.ap-pick .ap-pick-rar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  padding: 4px 0;
+  background: #3a4262;
+  color: #dbe3ff;
+  font: 700 11px var(--space-font-display);
+  letter-spacing: 0.18em;
+  text-align: center;
+  text-transform: uppercase;
+}
+.ap-pick .ap-pick-rar[data-rar='rara'],
+.ap-pick .ap-pick-rar[data-rar='raro'] {
+  background: linear-gradient(180deg, #52c8ff, #1f8ae0);
+  color: #04122e;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+  box-shadow: 0 0 14px rgba(82, 200, 255, 0.55);
+}
+.ap-pick .ap-pick-rar[data-rar='epica'],
+.ap-pick .ap-pick-rar[data-rar='epico'] {
+  background: linear-gradient(180deg, #b79bff, #7a56e8);
+  color: #120640;
+}
+.ap-pick .ap-pick-rar[data-rar='lendaria'],
+.ap-pick .ap-pick-rar[data-rar='lendario'] {
+  background: linear-gradient(180deg, #ffd24a, #e8a410);
+  color: #2a1a00;
+}
+.ap-pick .ap-pick-rar[data-rar='proibido'] {
+  background: linear-gradient(180deg, #ff6a5c, #c93a2c);
+  color: #fff;
+}
+.ap-pick-art {
+  display: grid;
+  justify-items: center;
+}
+.ap-cat-ico {
+  position: absolute;
+  right: 10px;
+  top: 42px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--cat, var(--space-line));
+  border-radius: 50%;
+  background: var(--space-ink);
+  color: var(--cat, var(--space-muted));
+}
+.ap-cat-ico[data-cat='touch'],
+.ap-pick-info[data-cat='touch'] {
+  --cat: var(--space-gold);
+}
+.ap-cat-ico[data-cat='objects'],
+.ap-pick-info[data-cat='objects'] {
+  --cat: var(--space-cyan);
+}
+.ap-cat-ico[data-cat='generators'],
+.ap-pick-info[data-cat='generators'] {
+  --cat: var(--space-blue);
+}
+.ap-cat-ico[data-cat='luck'],
+.ap-pick-info[data-cat='luck'] {
+  --cat: var(--space-violet);
+}
+.ap-pick-info {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 10px;
+  border-left: 4px solid var(--cat, var(--space-line));
+  border-radius: 8px;
+  background: rgba(3, 5, 14, 0.45);
+  text-align: left;
+}
+.ap-pick-info .ap-pick-fx {
+  color: var(--space-text);
+}
+.ap-pick-info .ap-pick-gain {
+  gap: 3px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--space-line);
+}
+.ap-gain-name {
+  font: 600 12px/1.2 var(--space-font-body);
+  color: var(--space-muted);
+}
+.ap-gain-vals {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 700 14px var(--space-font-display);
+  color: var(--space-cyan);
+}
+.ap-gain-vals i {
+  font-style: normal;
+  color: var(--space-muted);
+}
+.ap-gain-vals b {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: rgba(60, 220, 255, 0.18);
+}
+.ap-gain-row {
+  display: grid;
+  gap: 1px;
+}
+.ap-gain-vals {
+  flex-wrap: wrap;
+}

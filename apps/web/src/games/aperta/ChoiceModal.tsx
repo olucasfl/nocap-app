@@ -36,6 +36,31 @@ interface Props {
  * Escolha de 1 entre 3 grimórios (spec 038, 3.6 e 4.7), versão provisória da etapa 4: cartas
  * simples. Cartas bloqueadas por 1,6 s e escolha em dois passos (marcar, depois confirmar).
  */
+/** "Sinal forte: x2 -> x3" vira o nome do ganho e dois valores com seta; vários ganhos vêm separados por " · ". */
+function GainLine({ label, text }: { label: string; text: string }) {
+  return (
+    <span className="ap-pick-gain">
+      <small>{label}</small>
+      {text.split(' · ').map((part) => {
+        const m = /^(.*?): (.+?) -> (.+)$/.exec(part);
+        if (!m) return <span key={part}>{part}</span>;
+        return (
+          <span key={part} className="ap-gain-row">
+            <span className="ap-gain-name">{m[1]}</span>
+            <span className="ap-gain-vals">
+              <i>{m[2]}</i>
+              <svg viewBox="0 0 24 12" width="18" height="9" aria-hidden="true">
+                <path d="M1 6h19M15 1l6 5-6 5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <b>{m[3]}</b>
+            </span>
+          </span>
+        );
+      })}
+    </span>
+  );
+}
+
 export function ChoiceModal({ pending, lockRemaining, build, paused, onSelect, onConfirm, onReroll, rerollsAvailable, discardsLeft = 0, onDiscard, pityLeft = null, suggestion = null, gain, coach }: Props) {
   const rerolls = rerollsAvailable ?? pending.rerollsLeft;
   const root = useRef<HTMLDivElement>(null);
@@ -111,6 +136,9 @@ export function ChoiceModal({ pending, lockRemaining, build, paused, onSelect, o
                   if (!guarded()) onSelect(id);
                 }}
               >
+                <span className="ap-pick-rar" data-rar={rarity}>
+                  {RARITY_LABEL[rarity]}
+                </span>
                 <span className="ap-pick-lvl" aria-label={have > 0 ? `Nível ${have} para o nível ${have + 1}` : 'Grimório novo, nível 1'}>
                   {have > 0 ? (
                     <>
@@ -124,22 +152,20 @@ export function ChoiceModal({ pending, lockRemaining, build, paused, onSelect, o
                     <b className="is-next">NOVO · NVL 1</b>
                   )}
                 </span>
-                <GrimoireBook rarity={rarity} astro={astroFor(id, def.family)} name={def.name} size="sm" still />
+                <span className="ap-pick-art">
+                  <GrimoireBook rarity={rarity} astro={astroFor(id, def.family)} name={def.name} size="sm" still />
+                  <CategoryTag category={def.category} compact />
+                </span>
                 {suggestion?.id === id && (
                   <span className="ap-pick-sug">
                     Sugerida{suggestion.gainPct !== null ? `: +${Math.max(1, Math.round(suggestion.gainPct))}% de ganho` : ''}
                   </span>
                 )}
                 <span className="ap-pick-name">{def.name}</span>
-                <span className="ap-pick-rar">{RARITY_LABEL[rarity]}</span>
-                <CategoryTag category={def.category} />
-                <span className="ap-pick-fx">{def.text}</span>
-                {gain?.[id] && (
-                  <span className="ap-pick-gain">
-                    <small>{have > 0 ? 'Vai subir' : 'Você ganha'}</small>
-                    {gain[id]}
-                  </span>
-                )}
+                <span className="ap-pick-info" data-cat={def.category}>
+                  <span className="ap-pick-fx">{def.text}</span>
+                  {gain?.[id] && <GainLine label={have > 0 ? 'Vai subir' : 'Você ganha'} text={gain[id]!} />}
+                </span>
               </button>
               {onReroll && rerolls > 0 && (
                 <button type="button" className="ap-reroll" disabled={locked} onClick={() => !guarded() && onReroll(id)}>
