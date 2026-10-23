@@ -1,7 +1,7 @@
 // Economia do Aperta! (spec 038, seções 6 e 8): custos, passos de energia e metas por colapso.
 // Os números moram aqui (dados) para o simulador ajustar sem mexer no motor.
 
-import { RARITY_UNLOCK_PICKS, type Rarity, type UpgradeDef } from './catalog';
+import { GRIMOIRE_RARITIES, RARITY_LEVEL_CAP, RARITY_STEP, RARITY_UNLOCK_PICKS, type GrimoireRarity, type Rarity, type UpgradeDef } from './catalog';
 
 /** O motor trava qualquer número aqui (seção 7.5): evita Infinity e NaN em vidas longas. */
 export const MAX_NUMBER = 1e300;
@@ -25,7 +25,7 @@ export const ENERGY_STEP_GROWTH = 1.16;
 
 /** Grimório repetido: cada nível soma metade do número base (+0,5 vira +0,75, +1...), até o nível 10. */
 export const GRIMOIRE_MAX_LEVEL = 10;
-export const GRIMOIRE_LEVEL_STEP = 0.5;
+export const GRIMOIRE_LEVEL_STEP = 1;
 export const COMBO_BONUS_PER_POINT = 0.2;
 /** Cada nível da Ressonância depois do 1º soma isto ao valor de cada ponto de combo. */
 export const RESONANCE_POINT_PER_LEVEL = 0.05;
@@ -96,6 +96,75 @@ export function levelFactor(level: number): number {
   return 1 + GRIMOIRE_LEVEL_STEP * (l - 1);
 }
 
+/** Posição da raridade (0 comum a 3 lendário), que é como o save guarda a maior raridade de cada grimório. */
+export function rarityRank(r: GrimoireRarity): number {
+  return GRIMOIRE_RARITIES.indexOf(r);
+}
+
+/** Teto de níveis de um grimório cuja maior raridade é `rank` (spec 042). */
+export function levelCapOfRank(rank: number): number {
+  return RARITY_LEVEL_CAP[GRIMOIRE_RARITIES[Math.min(GRIMOIRE_RARITIES.length - 1, Math.max(0, rank))] as GrimoireRarity];
+}
+
+/**
+ * Quanto o nível de um grimório pego na raridade `rarity` soma ao ganho (o número que escala os efeitos): o 1º nível
+ * vale o passo da raridade inteiro e os seguintes, metade (como era antes da spec 042).
+ */
+export function levelGain(rarity: GrimoireRarity, first: boolean): number {
+  return RARITY_STEP[rarity] * (first ? 1 : GRIMOIRE_LEVEL_STEP);
+}
+
+/** O que o livro da vida guarda de cada grimório: nível, ganho acumulado e maior raridade (posição). */
+export interface GrimoireBook {
+  build: Record<string, number>;
+  buildGain: Record<string, number>;
+  buildRarity: Record<string, number>;
+}
+
+/** Este grimório pode ser oferecido na raridade `rarity`? Nunca em raridade menor que a que já se tem, e só abaixo do teto. */
+export function offerableAt(book: GrimoireBook, id: string, rarity: GrimoireRarity): boolean {
+  const have = book.build[id] ?? 0;
+  if (have === 0) return true;
+  const rank = rarityRank(rarity);
+  if (rank < (book.buildRarity[id] ?? 0)) return false;
+  return have < levelCapOfRank(rank);
+}
+
+/** Pega o grimório na raridade `rarity` e sobe `levels` níveis (o 1º do grimório vale o passo cheio). Respeita o teto. */
+export function pickInto(book: GrimoireBook, id: string, rarity: GrimoireRarity, levels = 1): GrimoireBook {
+  const have = book.build[id] ?? 0;
+  const rank = Math.max(book.buildRarity[id] ?? 0, rarityRank(rarity));
+  const cap = levelCapOfRank(rank);
+  const take = Math.max(0, Math.min(levels, cap - have));
+  if (take === 0) return { ...book, buildRarity: { ...book.buildRarity, [id]: rank } };
+  const gain = (book.buildGain[id] ?? 0) + levelGain(rarity, have === 0) + (take - 1) * levelGain(rarity, false);
+  return {
+    build: { ...book.build, [id]: have + take },
+    buildGain: { ...book.buildGain, [id]: gain },
+    buildRarity: { ...book.buildRarity, [id]: rank },
+  };
+}
+
+/** Chave do álbum para uma versão descoberta: "moon:rare". Proibidos continuam com o id puro. */
+export function albumKey(id: string, rarity: GrimoireRarity): string {
+  return `${id}:${rarity}`;
+}
+
+/** O álbum tem alguma versão deste grimório (ou o id puro, no caso dos proibidos)? */
+export function albumHas(album: readonly string[], id: string): boolean {
+  return album.some((k) => k === id || k.startsWith(`${id}:`));
+}
+
+/** As versões (raridades) já descobertas de um grimório. */
+export function albumVersions(album: readonly string[], id: string): GrimoireRarity[] {
+  return GRIMOIRE_RARITIES.filter((r) => album.includes(albumKey(id, r)));
+}
+
+/** Ganho de um grimório que já estava no save antigo (nível `level` na raridade `rarity`). */
+export function legacyGain(rarity: GrimoireRarity, level: number): number {
+  return RARITY_STEP[rarity] * (1 + GRIMOIRE_LEVEL_STEP * (Math.max(1, level) - 1));
+}
+
 /**
  * Escolhas que liberam cada raridade nesta vida. Como cada vida zera as escolhas, os limiares caem
  * para 60% depois do 1º colapso e 40% depois do 5º (seção 6.6).
@@ -123,7 +192,7 @@ export const GOAL_BASE = 5e7;
  * mais longa (até ~1,8 h no 15º), sem saltos. Depois do 15º a meta cresce `GOAL_TAIL_RATIO` por colapso. O
  * vetor é mutável só para a ferramenta de calibragem (`tmp-calib`); o jogo nunca o altera.
  */
-export const GOAL_TABLE: number[] = [5e7, 1.4e8, 3.2e8, 6.9e8, 1.4e9, 2.8e9, 5.2e9, 9.4e9, 1.6e10, 2.7e10, 4.2e10, 6.3e10, 9e10, 1.25e11, 1.65e11];
+export const GOAL_TABLE: number[] = [5e7, 1.4e8, 3.2e8, 6.9e8, 1.4e9, 2e9, 3.74e9, 4.9e9, 5.8e9, 8.9e9, 1.16e10, 1.56e10, 2.25e10, 2.73e10, 3.7e10];
 export const GOAL_TAIL_RATIO = 1.08;
 export const GOAL_SEGMENTS: { upTo: number; ratio: number }[] = [{ upTo: Infinity, ratio: GOAL_TAIL_RATIO }];
 

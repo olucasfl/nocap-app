@@ -719,14 +719,37 @@
   .ap-picks {
     grid-template-columns: 1fr;
   }
+  /* Celular: o livro à esquerda, selos, nome e categoria à direita, e o texto com o ganho ocupando a largura toda embaixo. */
   .ap-pick {
-    grid-template-columns: 96px 1fr;
+    grid-template-columns: 92px minmax(0, 1fr);
+    grid-template-areas:
+      'art seals'
+      'art name'
+      'art cat'
+      'info info';
+    align-items: center;
     justify-items: start;
     text-align: left;
-    gap: 2px 12px;
+    gap: 4px 12px;
   }
-  .ap-pick .ap-book {
-    grid-row: 1 / span 4;
+  .ap-pick .ap-pick-art {
+    grid-area: art;
+  }
+  .ap-pick .ap-pick-seals {
+    grid-area: seals;
+    justify-items: start;
+  }
+  .ap-pick .ap-pick-name {
+    grid-area: name;
+  }
+  .ap-pick .ap-cat-ico {
+    grid-area: cat;
+  }
+  .ap-pick .ap-pick-info {
+    grid-area: info;
+  }
+  .ap-pick .ap-pick-sug {
+    grid-column: 1 / -1;
   }
   .ap-mcard-game {
     padding: 14px;
@@ -1579,5 +1602,200 @@
 @media (min-width: 721px) {
   .ap-game.has-goal .ap-sheetwrap {
     top: 168px;
+  }
+}
+
+/* Selo de evolução de raridade (spec 042): "RARO -> LENDÁRIO" no topo da carta, com um brilho que corre por ele. */
+.ap-pick-evo {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  padding: 3px 10px;
+  border: 3px solid var(--space-ink);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffe27a, #e8a410);
+  color: var(--space-ink);
+  font: 700 12px var(--space-font-display);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.45), 0 0 14px rgba(255, 210, 74, 0.55);
+}
+.ap-pick-evo b.is-next {
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--space-ink);
+  color: var(--space-gold);
+}
+.ap-pick-evo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.7) 50%, transparent 70%);
+  transform: translateX(-120%);
+  animation: ap-evo-shine 2.2s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes ap-evo-shine {
+  60%,
+  100% {
+    transform: translateX(120%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ap-pick-evo::after {
+    animation: none;
+    display: none;
+  }
+}
+
+/* Os selos de cima da carta (evolução de raridade e nível) empilham e nunca passam da largura da carta. */
+.ap-pick-seals {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  max-width: 100%;
+  min-width: 0;
+}
+.ap-pick-seals > * {
+  max-width: 100%;
+}
+.ap-pick-evo {
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  font-size: clamp(10px, 3.1vw, 12px);
+}
+@media (min-width: 701px) {
+  .ap-pick-evo {
+    font-size: 12px;
+  }
+}
+
+/* Carta de escolha organizada em 3 faixas: raridade em cima, arte com o ícone da categoria, texto e ganho embaixo. */
+.ap-pick {
+  position: relative;
+  overflow: hidden;
+  padding-top: 34px;
+}
+.ap-pick .ap-pick-rar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  padding: 4px 0;
+  background: #3a4262;
+  color: #dbe3ff;
+  font: 700 11px var(--space-font-display);
+  letter-spacing: 0.18em;
+  text-align: center;
+  text-transform: uppercase;
+}
+.ap-pick .ap-pick-rar[data-rar='rara'],
+.ap-pick .ap-pick-rar[data-rar='raro'] {
+  background: linear-gradient(180deg, #52c8ff, #1f8ae0);
+  color: #04122e;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+  box-shadow: 0 0 14px rgba(82, 200, 255, 0.55);
+}
+.ap-pick .ap-pick-rar[data-rar='epica'],
+.ap-pick .ap-pick-rar[data-rar='epico'] {
+  background: linear-gradient(180deg, #b79bff, #7a56e8);
+  color: #120640;
+}
+.ap-pick .ap-pick-rar[data-rar='lendaria'],
+.ap-pick .ap-pick-rar[data-rar='lendario'] {
+  background: linear-gradient(180deg, #ffd24a, #e8a410);
+  color: #2a1a00;
+}
+.ap-pick .ap-pick-rar[data-rar='proibido'] {
+  background: linear-gradient(180deg, #ff6a5c, #c93a2c);
+  color: #fff;
+}
+.ap-pick-art {
+  display: grid;
+  justify-items: center;
+}
+.ap-cat-ico {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--cat, var(--space-muted));
+  font: 700 11px var(--space-font-display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.ap-cat-ico[data-cat='touch'],
+.ap-pick-info[data-cat='touch'] {
+  --cat: var(--space-gold);
+}
+.ap-cat-ico[data-cat='objects'],
+.ap-pick-info[data-cat='objects'] {
+  --cat: var(--space-cyan);
+}
+.ap-cat-ico[data-cat='generators'],
+.ap-pick-info[data-cat='generators'] {
+  --cat: var(--space-blue);
+}
+.ap-cat-ico[data-cat='luck'],
+.ap-pick-info[data-cat='luck'] {
+  --cat: var(--space-violet);
+}
+.ap-pick-info {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 10px;
+  border-left: 4px solid var(--cat, var(--space-line));
+  border-radius: 8px;
+  background: rgba(3, 5, 14, 0.45);
+  text-align: left;
+}
+.ap-pick-info .ap-pick-fx {
+  color: var(--space-text);
+}
+.ap-pick-info .ap-pick-gain {
+  gap: 3px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--space-line);
+}
+.ap-gain-name {
+  font: 600 12px/1.2 var(--space-font-body);
+  color: var(--space-muted);
+}
+.ap-gain-vals {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 700 14px var(--space-font-display);
+  color: var(--space-cyan);
+}
+.ap-gain-vals i {
+  font-style: normal;
+  color: var(--space-muted);
+}
+.ap-gain-vals b {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: rgba(60, 220, 255, 0.18);
+}
+.ap-gain-row {
+  display: grid;
+  gap: 1px;
+}
+.ap-gain-vals {
+  flex-wrap: wrap;
+}
+
+@media (max-width: 720px) {
+  .ap-pick-lvl {
+    gap: 4px;
+    padding: 3px 8px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+  .ap-pick-lvl b {
+    white-space: nowrap;
   }
 }

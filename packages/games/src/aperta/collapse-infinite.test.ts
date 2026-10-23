@@ -27,7 +27,7 @@ const withLevel = (s: SaveState, id: string, level: number): SaveState => {
   return withRun(s, { upgradeLevels: levels });
 };
 /** Um save no colapso `c` com a vida montada (sem ter jogado as anteriores). */
-const atCollapse = (c: number): SaveState => ({ ...newSave('inf', 1), tutorial: 'done', collapses: c, album: ['moon'] });
+const atCollapse = (c: number): SaveState => ({ ...newSave('inf', 1), tutorial: 'done', collapses: c, album: ['moon:common'] });
 const ready = (c: number): SaveState => {
   const s = atCollapse(c);
   const run = { dustLife: dustGoal(c + 1), dust: dustGoal(c + 1), picks: minPicks(c + 1), build: { moon: 1 } };

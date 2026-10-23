@@ -1,5 +1,8 @@
 import {
   GRIMOIRES,
+  GRIMOIRE_RARITIES,
+  rarityRank,
+  type GrimoireRarity,
   forbiddenById,
   achievementById,
   advanceTutorial,
@@ -51,7 +54,7 @@ export const SAVE_FAILURES_BEFORE_WARNING = 3;
 
 export type GameEvent =
   | { type: 'press'; id: number; gain: number; combo: number }
-  | { type: 'grimoire'; id: string; name: string; level: number }
+  | { type: 'grimoire'; id: string; name: string; level: number; rarity: GrimoireRarity; evolvedFrom: GrimoireRarity | null }
   | { type: 'capture'; objectId: number; kind: ObjectKind; preview: ObjectPreview }
   | { type: 'choice-open' }
   | { type: 'achievement'; id: string; name: string }
@@ -218,7 +221,11 @@ export function createGameController({ initial, store, slot, perf = () => perfor
       }
       commit(next);
       const def = GRIMOIRES.find((g) => g.id === id);
-      emit({ type: 'grimoire', id, name: def?.name ?? id, level: next.run.build[id] ?? 1 });
+      const rarity: GrimoireRarity = before.run.pending?.rarities?.[id] ?? 'common';
+      // Evoluiu: o grimório já estava no livro numa raridade menor que a da carta pega.
+      const fromRank = before.run.buildRarity[id] ?? 0;
+      const evolvedFrom = (before.run.build[id] ?? 0) > 0 && rarityRank(rarity) > fromRank ? (GRIMOIRE_RARITIES[fromRank] ?? 'common') : null;
+      emit({ type: 'grimoire', id, name: def?.name ?? id, level: next.run.build[id] ?? 1, rarity, evolvedFrom });
       saveNow();
       return true;
     },

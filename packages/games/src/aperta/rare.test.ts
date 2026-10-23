@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { RARE_EFFECTS, upgradeIndex } from './catalog';
-import { RARE_MIN_INTERVAL_SEC } from './economy';
+import { GRIMOIRES, RARE_EFFECTS, upgradeIndex, type GrimoireRarity } from './catalog';
+import { RARE_MIN_INTERVAL_SEC, pickInto } from './economy';
 import {
   captureObject,
   effectiveStats,
@@ -22,8 +22,6 @@ function open(over: Partial<RunState> = {}): SaveState {
   return { ...s, tutorial: 'done', run: { ...s.run, upgradeLevels, picks: 200, ...over } };
 }
 
-const withBuild = (s: SaveState, build: Record<string, number>): SaveState => ({ ...s, run: { ...s.run, build } });
-
 /** Passa o tempo em passos de 1 s (um salto maior que 5 s seria aba escondida). */
 function tickTo(s: SaveState, to: number): SaveState {
   let state = s;
@@ -31,47 +29,46 @@ function tickTo(s: SaveState, to: number): SaveState {
   return state;
 }
 
-describe('efeitos novos dos grimórios (spec 039, seção 7)', () => {
-  it('os geradores de poeira e de energia rendem mais (multiplicador, não valor por toque)', () => {
+/** O grimório `id` pego `levels` vezes na raridade `rarity` (o 1º vale o passo cheio, os outros metade). */
+const picked = (s: SaveState, id: string, rarity: GrimoireRarity, levels = 1): SaveState => ({
+  ...s,
+  run: { ...s.run, ...pickInto(s.run, id, rarity, levels) },
+});
+
+describe('efeitos dos grimórios de objetos e geradores (spec 042)', () => {
+  it('os grimórios não mexem nos geradores nem no ritmo parado (isso é das Melhorias e da Árvore)', () => {
     const base = open({ upgradeLevels: open().run.upgradeLevels.map((_, i) => (i === upgradeIndex('satellite') ? 10 : 0)) });
-    const plain = effectiveStats(base).autoDustPerSec;
-    expect(effectiveStats(withBuild(base, { hygiea: 1 })).autoDustPerSec).toBeCloseTo(plain * 1.06, 9);
-    expect(effectiveStats(withBuild(base, { 'milky-way': 1 })).autoDustPerSec).toBeCloseTo(plain * 1.3, 9);
-    const energy = open({ upgradeLevels: open().run.upgradeLevels.map((_, i) => (i === upgradeIndex('antenna') ? 10 : 0)) });
-    const e0 = effectiveStats(energy).autoEnergyPerSec;
-    expect(effectiveStats(withBuild(energy, { pallas: 1 })).autoEnergyPerSec).toBeCloseTo(e0 * 1.15, 9);
+    const plain = effectiveStats(base);
+    let loaded = base;
+    for (const g of GRIMOIRES) loaded = picked(loaded, g.id, 'legendary', 10);
+    const full = effectiveStats(loaded);
+    expect(full.autoDustPerSec).toBeCloseTo(plain.autoDustPerSec, 9);
+    expect(full.activeWindowSec).toBe(plain.activeWindowSec);
+    expect(full.idleFactor).toBe(plain.idleFactor);
   });
 
-  it('a janela do toque ativo e o ganho parado crescem, mas parado nunca passa de 50%', () => {
-    const base = effectiveStats(open());
-    expect(base.activeWindowSec).toBe(4);
-    expect(base.idleFactor).toBe(0.25);
-    expect(effectiveStats(withBuild(open(), { haumea: 1 })).activeWindowSec).toBe(6);
-    expect(effectiveStats(withBuild(open(), { ganymede: 1 })).idleFactor).toBeCloseTo(0.35, 9);
-    // Empilhar tudo não passa do teto.
-    const stacked = effectiveStats(withBuild(open(), { ganymede: 10 }));
-    expect(stacked.idleFactor).toBeLessThanOrEqual(0.5);
-    expect(stacked.idleFactor).toBeLessThan(1);
-  });
-
-  it('os objetos comuns aparecem mais cedo, com piso, e a Estrela Dourada fica mais tempo', () => {
+  it('os objetos comuns aparecem mais cedo (com piso) e a Estrela Dourada fica mais tempo', () => {
     const base = effectiveStats(open()).objects;
     expect([base.spawnMinSec, base.spawnMaxSec]).toEqual([60, 90]);
-    const halley = effectiveStats(withBuild(open(), { halley: 1 })).objects;
-    expect([halley.spawnMinSec, halley.spawnMaxSec]).toEqual([56, 86]);
-    const floor = effectiveStats(withBuild(open(), { halley: 10, pluto: 10 })).objects;
+    const halley = effectiveStats(picked(open(), 'halley', 'common')).objects;
+    expect([halley.spawnMinSec, halley.spawnMaxSec]).toEqual([57, 87]);
+    // A raridade multiplica o passo: Raro corta o dobro.
+    const rare = effectiveStats(picked(open(), 'halley', 'rare')).objects;
+    expect([rare.spawnMinSec, rare.spawnMaxSec]).toEqual([54, 84]);
+    const floor = effectiveStats(picked(open(), 'halley', 'legendary', 10)).objects;
     expect(floor.spawnMinSec).toBeGreaterThanOrEqual(30);
     expect(floor.spawnMaxSec).toBeGreaterThanOrEqual(45);
     expect(base.rareLifeSec).toBe(10);
-    expect(effectiveStats(withBuild(open(), { 'proxima-centauri': 1 })).objects.rareLifeSec).toBe(15);
+    expect(effectiveStats(picked(open(), 'antares', 'common')).objects.rareLifeSec).toBe(12);
+    expect(effectiveStats(picked(open(), 'antares', 'rare')).objects.rareLifeSec).toBe(14);
   });
 
-  it('a Estrela Dourada nunca vem em menos de 5 min, por mais grimórios que ajudem', () => {
+  it('a Estrela Dourada nunca vem em menos de 5 min, por mais que o Antares ajude', () => {
     const base = effectiveStats(open()).objects;
     expect([base.rareMinSec, base.rareMaxSec]).toEqual([360, 600]);
-    const one = effectiveStats(withBuild(open(), { antares: 1 })).objects;
-    expect([one.rareMinSec, one.rareMaxSec]).toEqual([315, 555]);
-    const stacked = effectiveStats(withBuild(open(), { antares: 10 })).objects;
+    const one = effectiveStats(picked(open(), 'antares', 'common')).objects;
+    expect([one.rareMinSec, one.rareMaxSec]).toEqual([335, 575]);
+    const stacked = effectiveStats(picked(open(), 'antares', 'legendary', 10)).objects;
     expect(stacked.rareMinSec).toBe(RARE_MIN_INTERVAL_SEC);
     expect(stacked.rareMaxSec).toBeGreaterThanOrEqual(RARE_MIN_INTERVAL_SEC);
   });
@@ -122,7 +119,7 @@ describe('Estrela Dourada: nascimento', () => {
   });
 
   it('não nasce com a escolha aberta nem sem objetos abertos', () => {
-    const pending = { offers: ['moon', 'vesta', 'mars'], openedAt: 0, selected: null, picksLeft: 1, rerollsLeft: 0 };
+    const pending = { offers: ['moon', 'sirius', 'mars'], openedAt: 0, selected: null, picksLeft: 1, rerollsLeft: 0 };
     expect(tickObjects(open({ pending, nextRareAt: 0 }), 5).run.objects).toHaveLength(0);
     const closed = { ...newSave('c', 0), tutorial: 'done' as const };
     expect(tickTo(closed, 2000).run.nextRareAt).toBeNull();

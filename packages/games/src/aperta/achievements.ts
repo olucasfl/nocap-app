@@ -98,16 +98,24 @@ export interface AchievementDef {
   progress: (s: SaveState) => number;
 }
 
-const albumOf = (s: SaveState) => s.album.map((id) => grimoireById(id)).filter((g) => g !== undefined);
-const planetsFound = (s: SaveState) => albumOf(s).filter((g) => g.family === 'planets').length;
+/** Versões descobertas no álbum: [grimório, raridade] (os proibidos, de id puro, ficam de fora). */
+const versionsOf = (s: SaveState): { g: NonNullable<ReturnType<typeof grimoireById>>; r: string }[] =>
+  s.album.flatMap((k) => {
+    const [id, r] = k.split(':');
+    const g = id ? grimoireById(id) : undefined;
+    return g && r ? [{ g, r }] : [];
+  });
+const planetsFound = (s: SaveState) => new Set(versionsOf(s).filter((v) => v.g.family === 'planets').map((v) => v.g.id)).size;
+const PLANETS = GRIMOIRES.filter((g) => g.family === 'planets').length;
 const treeNodes = (s: SaveState) => Object.values(s.tree).reduce((sum, lvl) => sum + lvl, 0);
 const fullBranches = (s: SaveState) =>
   TREE_BRANCHES.filter((b) => {
     const live = TREE_NODES.filter((n) => n.branch === b.id && nodeLive(n));
     return live.length > 0 && live.every((n) => (s.tree[n.id] ?? 0) >= n.maxLevel);
   }).length;
-const albumRarity = (r: (typeof RARITIES)[number]) => (s: SaveState) => albumOf(s).filter((g) => g.rarity === r).length;
-const count = (r: (typeof RARITIES)[number]) => GRIMOIRES.filter((g) => g.rarity === r).length;
+const albumRarity = (r: (typeof RARITIES)[number]) => (s: SaveState) => versionsOf(s).filter((v) => v.r === r).length;
+/** Quantas versões de cada raridade existem (uma por grimório). */
+const count = (_r: (typeof RARITIES)[number]) => GRIMOIRES.length;
 
 interface Opts {
   hidden?: boolean;
@@ -193,12 +201,12 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
 
   // --- Grimórios ---
   def('grim-10', 'grimoires', 'S', 'Colecionador de astros', 'Descubra 10 grimórios.', 10, (s) => s.album.length),
-  def('grim-20', 'grimoires', 'M', 'Biblioteca estelar', 'Descubra 20 grimórios.', 20, (s) => s.album.length),
-  def('grim-all', 'grimoires', 'L', 'Álbum completo', 'Descubra os 30 grimórios do começo.', 30, (s) => s.album.length),
-  def('grim-40', 'grimoires', 'M', 'Quarenta astros', 'Descubra 40 grimórios.', 40, (s) => s.album.length),
-  def('grim-50', 'grimoires', 'L', 'Cinquenta astros', 'Descubra 50 grimórios.', 50, (s) => s.album.length),
-  def('grim-catalog', 'grimoires', 'E', 'Álbum completo', 'Descubra todos os grimórios do álbum.', GRIMOIRES.length, (s) => s.album.length),
-  def('grim-planets', 'grimoires', 'M', 'Colecionador de planetas', 'Descubra os 7 grimórios de Planetas.', 7, planetsFound),
+  def('grim-20', 'grimoires', 'M', 'Biblioteca estelar', 'Descubra 20 versões de grimórios.', 20, (s) => versionsOf(s).length),
+  def('grim-all', 'grimoires', 'L', 'Álbum completo', 'Descubra 30 versões de grimórios.', 30, (s) => versionsOf(s).length),
+  def('grim-40', 'grimoires', 'M', 'Quarenta astros', 'Descubra 40 versões de grimórios.', 40, (s) => versionsOf(s).length),
+  def('grim-50', 'grimoires', 'L', 'Cinquenta astros', 'Descubra 50 versões de grimórios.', 50, (s) => versionsOf(s).length),
+  def('grim-catalog', 'grimoires', 'E', 'Álbum completo', 'Descubra todas as versões de todos os grimórios.', GRIMOIRES.length * RARITIES.length, (s) => versionsOf(s).length),
+  def('grim-planets', 'grimoires', 'M', 'Colecionador de planetas', `Descubra os ${PLANETS} grimórios de Planetas.`, PLANETS, planetsFound),
   def(
     'grim-rarities',
     'grimoires',
@@ -206,12 +214,12 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
     'Um de cada raridade',
     'Descubra um grimório de cada raridade.',
     RARITIES.length,
-    (s) => new Set(albumOf(s).map((g) => g.rarity)).size,
+    (s) => new Set(versionsOf(s).map((v) => v.r)).size,
   ),
-  def('grim-epic-5', 'grimoires', 'M', 'Cinco épicos', 'Descubra 5 grimórios épicos.', 5, albumRarity('epic')),
-  def('grim-epic-all', 'grimoires', 'L', 'Todos os épicos', 'Descubra todos os grimórios épicos.', count('epic'), albumRarity('epic')),
-  def('grim-legend-3', 'grimoires', 'L', 'Três lendas', 'Descubra 3 grimórios lendários.', 3, albumRarity('legendary')),
-  def('grim-legend-all', 'grimoires', 'E', 'Todas as lendas', 'Descubra todos os grimórios lendários.', count('legendary'), albumRarity('legendary')),
+  def('grim-epic-5', 'grimoires', 'M', 'Cinco épicos', 'Descubra 5 versões épicas.', 5, albumRarity('epic')),
+  def('grim-epic-all', 'grimoires', 'L', 'Todos os épicos', 'Descubra todas as versões épicas.', count('epic'), albumRarity('epic')),
+  def('grim-legend-3', 'grimoires', 'L', 'Três lendas', 'Descubra 3 versões lendárias.', 3, albumRarity('legendary')),
+  def('grim-legend-all', 'grimoires', 'E', 'Todas as lendas', 'Descubra todas as versões lendárias.', count('legendary'), albumRarity('legendary')),
   def('grim-lv5', 'grimoires', 'M', 'Brilho crescente', 'Leve um grimório ao nível 5.', 5, (s) => s.stats.bestLevel),
   def('grim-lv10', 'grimoires', 'L', 'Nível máximo', `Leve um grimório ao nível ${GRIMOIRE_MAX_LEVEL}.`, GRIMOIRE_MAX_LEVEL, (s) => s.stats.bestLevel),
 
@@ -385,7 +393,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
   def('hid-chain-200', 'hidden', 'S', 'Dedos de pianista', 'Dê 200 toques seguidos sem deixar o combo cair.', 200, (s) => s.stats.chainBest, { hidden: true }),
   def('hid-cygnus-5', 'hidden', 'S', 'Olho do buraco negro', 'Leve Cygnus X-1 ao nível 5.', 5, (s) => best(s, 'cygnus-x1'), { hidden: true }),
   def('hid-first-legend', 'hidden', 'S', 'Estreia de gala', 'Veja um lendário já na primeira oferta do jogo.', 1, (s) => s.stats.firstOfferLegendary, { hidden: true }),
-  def('hid-pillars', 'hidden', 'S', 'Pilares da Criação', 'Leve os Pilares da Criação ao nível máximo.', 1, (s) => (s.stats.bestLevel >= GRIMOIRE_MAX_LEVEL && s.album.includes('pillars') ? 1 : 0), { hidden: true }),
+  def('hid-pillars', 'hidden', 'S', 'Pilares da Criação', 'Leve os Pilares da Criação ao nível máximo.', 1, () => 0, { hidden: true, retired: true }),
   def('hid-streak-20', 'hidden', 'S', 'Sorte grande', 'Escolha 15 grimórios raros ou melhores em sequência.', 15, (s) => s.stats.rareStreakBest, { hidden: true }),
   def('hid-offers-1000', 'hidden', 'S', 'Leitor voraz', 'Abra 1.000 ofertas de grimório.', 1_000, (s) => s.stats.offers, { hidden: true }),
   def('hid-spent-100', 'hidden', 'S', 'Investidor', 'Gaste 100 Cintilas na árvore.', 100, (s) => s.sparks.spent, { hidden: true, retired: true }),

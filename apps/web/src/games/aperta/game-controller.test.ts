@@ -96,7 +96,7 @@ describe('energia cheia', () => {
     expect(state.run.pending).toBeNull();
     expect(state.run.energy).toBe(0);
     expect(state.run.build[id]).toBe(1);
-    expect(state.album).toContain(id);
+    expect(state.album).toContain(`${id}:common`);
     // O grimório novo rende Cintilas (fonte do álbum): o aviso delas vem logo depois do aviso do grimório.
     expect(t.events.find((e) => e.type === 'grimoire')).toMatchObject({ type: 'grimoire', id });
   });
@@ -109,7 +109,7 @@ describe('energia cheia', () => {
     t.ctl.select(id);
     t.ctl.choose(id);
     await Promise.resolve();
-    expect(t.store.saved[1]?.album).toContain(id);
+    expect(t.store.saved[1]?.album).toContain(`${id}:common`);
   });
 });
 

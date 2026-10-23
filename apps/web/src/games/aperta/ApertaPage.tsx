@@ -1,6 +1,8 @@
 import { LOW_END } from './perf';
 import { useEffect, useMemo, useState } from 'react';
 import { flushSync } from 'react-dom';
+import { useNavigate } from '@tanstack/react-router';
+import { useApertaAllowed } from '@/lib/aperta-access';
 import { useAuth } from '@/lib/auth';
 import { Sky } from './art';
 import { GameScreen } from './GameScreen';
@@ -34,8 +36,22 @@ type Screen =
   | { name: 'story'; save: SaveSummary }
   | { name: 'game'; save: SaveSummary };
 
-/** A rota /arcade/aperta: título, saves, história e a tela de jogo. */
+/**
+ * A rota /arcade/aperta. Em teste, só a conta liberada pelo servidor entra: visitante e outras contas voltam para o início
+ * (e o servidor também recusa os saves com 403).
+ */
 export function ApertaPage() {
+  const allowed = useApertaAllowed();
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (allowed === false) void navigate({ to: '/', replace: true });
+  }, [allowed, navigate]);
+  if (allowed !== true) return <main className="ap space-theme" aria-busy={allowed === null} />;
+  return <ApertaGame />;
+}
+
+/** A rota /arcade/aperta liberada: título, saves, história e a tela de jogo. */
+function ApertaGame() {
   useSpaceFonts();
   const { user, status } = useAuth();
   const access = apertaAccess(status, !!user);

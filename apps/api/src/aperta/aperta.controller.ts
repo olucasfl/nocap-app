@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { AuthGuard, type AuthedRequest } from '../auth/auth.guard';
 import { RateLimit, RateLimitGuard } from '../common/rate-limit';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
+import { ApertaAccessGuard } from './aperta-access';
 import { ApertaService, SLOTS } from './aperta.service';
 
 const putSchema = z.object({
@@ -23,10 +24,10 @@ function slotOf(raw: number): number {
 
 /**
  * Os saves do Aperta! (spec 038, seção 10): exigem conta (sem sessão o `AuthGuard` responde 401) e o servidor
- * é a fonte da verdade. Convidado não joga.
+ * é a fonte da verdade. Convidado não joga, e enquanto o jogo está em teste só as contas liberadas passam (403).
  */
 @Controller('me/aperta/saves')
-@UseGuards(AuthGuard, RateLimitGuard)
+@UseGuards(AuthGuard, ApertaAccessGuard, RateLimitGuard)
 export class ApertaController {
   constructor(private readonly aperta: ApertaService) {}
 

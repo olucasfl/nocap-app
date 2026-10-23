@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { grimoireById } from './catalog';
 import { energyCap } from './economy';
 import {
   chooseGrimoire,
@@ -42,7 +41,8 @@ function open(s: SaveState, t = 100): SaveState {
   return r;
 }
 
-const rarity = (id: string) => grimoireById(id)!.rarity;
+/** Raridade com que a carta `id` veio na escolha aberta de `s`. */
+const rarity = (s: SaveState, id: string) => s.run.pending!.rarities![id];
 
 describe('4ª carta', () => {
   it('a oferta de grimórios e a do Cofre ganham uma carta com o nó', () => {
@@ -111,7 +111,7 @@ describe('pity de lendário', () => {
     expect(pityLeft(s)).toBe(0);
     for (let i = 0; i < 12; i++) {
       const o = open({ ...s, run: { ...s.run, rngState: 1000 + i * 77 } });
-      expect(o.run.pending!.offers.some((id) => rarity(id) === 'legendary'), `semente ${i}`).toBe(true);
+      expect(o.run.pending!.offers.some((id) => rarity(o, id) === 'legendary'), `semente ${i}`).toBe(true);
       expect(o.stats.sinceLegend).toBe(0);
     }
   });
@@ -127,7 +127,7 @@ describe('pity de lendário', () => {
   it('o contador zera sozinho quando um lendário aparece e sobe quando não', () => {
     const s = ready({ stats: { ...newSave('x').stats, sinceLegend: 5 } });
     const o = open(s);
-    const has = o.run.pending!.offers.some((id) => rarity(id) === 'legendary');
+    const has = o.run.pending!.offers.some((id) => rarity(o, id) === 'legendary');
     expect(o.stats.sinceLegend).toBe(has ? 0 : 6);
   });
 });
@@ -139,7 +139,7 @@ describe('garantias e pesos em números', () => {
     for (let i = 0; i < 12; i++) {
       const s = ready({ tree, stats: { ...newSave('x').stats, offers: every - 1 } });
       const o = open({ ...s, run: { ...s.run, rngState: 5 + i * 131 } });
-      expect(o.run.pending!.offers.some((id) => ['epic', 'legendary'].includes(rarity(id))), `semente ${i}`).toBe(true);
+      expect(o.run.pending!.offers.some((id) => ['epic', 'legendary'].includes(rarity(o, id)!)), `semente ${i}`).toBe(true);
     }
   });
 
@@ -149,7 +149,7 @@ describe('garantias e pesos em números', () => {
     for (let i = 0; i < 10; i++) {
       const s = ready({ tree, stats: { ...newSave('x').stats, offers: every - 1 } });
       const o = open({ ...s, run: { ...s.run, rngState: 9 + i * 211 } });
-      expect(o.run.pending!.offers.some((id) => rarity(id) === 'legendary'), `semente ${i}`).toBe(true);
+      expect(o.run.pending!.offers.some((id) => rarity(o, id) === 'legendary'), `semente ${i}`).toBe(true);
     }
   });
 
@@ -158,7 +158,8 @@ describe('garantias e pesos em números', () => {
       let n = 0;
       for (let i = 0; i < 300; i++) {
         const s = ready({ tree }, 40);
-        for (const id of drawGrimoires({ ...s, run: { ...s.run, rngState: 17 + i * 389 } }).offers) if (rarity(id) === which) n++;
+        const d = drawGrimoires({ ...s, run: { ...s.run, rngState: 17 + i * 389 } });
+        for (const id of d.offers) if (d.rarities[id] === which) n++;
       }
       return n;
     };
@@ -176,7 +177,7 @@ describe('garantias e pesos em números', () => {
     const s = ready({ tree });
     const o = open(s);
     expect(o.run.destinyUsed).toBe(true);
-    expect(o.run.pending!.offers.some((id) => rarity(id) !== 'common')).toBe(true);
+    expect(o.run.pending!.offers.some((id) => rarity(o, id) !== 'common')).toBe(true);
     // Escolhe uma carta, enche a barra de novo e abre outra: a segunda não é mais garantida.
     const picked = chooseGrimoire(selectGrimoire(o, o.run.pending!.offers[0]!, 200), o.run.pending!.offers[0]!, 200);
     expect(picked.run.destinyUsed).toBe(true);

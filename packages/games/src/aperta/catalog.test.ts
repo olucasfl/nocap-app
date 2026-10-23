@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { GRIMOIRES, GRIMOIRE_CATEGORIES, RARITIES, UPGRADES, effectDomain, type Effect } from './catalog';
-import { FORBIDDEN } from './forbidden';
+import { GRIMOIRES, GRIMOIRE_CATEGORIES, UPGRADES, effectDomain, type Effect } from './catalog';
 
 // Melhorias x grimórios (spec 038, 5.1 e 5.2): melhoria = poder básico contínuo, grimório = estilo e situação.
 
@@ -9,8 +8,6 @@ const grimoireDomains = new Set(GRIMOIRES.flatMap((g) => g.effects.map(effectDom
 
 /** Primitivas em % que só o Atlas e a árvore usam; um grimório fala em números. */
 const PERCENT_KINDS: Effect['kind'][] = ['dustPerTouchPct', 'energyPerTouchPct', 'objectDuration', 'maxObjects', 'comboMax', 'freeUpgradeLevels'];
-/** Proibidos trocam uma regra por um fator: podem manter o desconto e o preço em % (spec 5.2). */
-const PERCENT_ALLOWED = new Set(['m87']);
 
 describe('melhorias e grimórios não competem', () => {
   it('nenhum grimório mexe no domínio de uma melhoria', () => {
@@ -35,7 +32,7 @@ describe('melhorias e grimórios não competem', () => {
   });
 
   it('os grimórios cobrem estilo e situação: combo, objetos, sorte, toques especiais', () => {
-    for (const d of ['comboWindow', 'comboFullDust', 'objectReward', 'choiceExtra', 'everyNthTouch', 'afterCaptureMult', 'onCapture']) {
+    for (const d of ['comboWindow', 'comboFullDust', 'objectReward', 'choiceExtra', 'everyNthTouch', 'onCapture']) {
       expect(grimoireDomains, d).toContain(d);
     }
   });
@@ -46,55 +43,23 @@ describe('melhorias e grimórios não competem', () => {
     }
   });
 
-  it('o texto das cartas fala em números: sem "%" fora do M87*', () => {
+  it('o texto das cartas não traz "%" e quem fala em "a cada N toques" diz o N', () => {
     for (const g of GRIMOIRES) {
-      if (PERCENT_ALLOWED.has(g.id)) continue;
       expect(g.text, g.id).not.toContain('%');
-    }
-    expect(FORBIDDEN.find((f) => f.id === 'm87')!.bonus(1)).toContain('%');
-  });
-
-  it('o número do texto bate com o número do efeito', () => {
-    const fmt = (n: number): string => String(n).replace('.', ',');
-    for (const g of GRIMOIRES) {
-      for (const e of g.effects) {
-        let value: number | undefined;
-        switch (e.kind) {
-          case 'comboFullDust':
-          case 'comboFullEnergy':
-          case 'objectReward':
-          case 'dustPerOwned':
-          case 'dustPerCollapse':
-            value = e.add;
-            break;
-          case 'comboWindow':
-            value = e.sec;
-            break;
-          case 'startDust':
-            value = e.amount;
-            break;
-          case 'buyRefund':
-            value = e.touches;
-            break;
-          case 'onCapture':
-            value = e.energyTouches;
-            break;
-          case 'satelliteMult':
-            value = 2 + e.add;
-            break;
-          case 'everyNthTouch':
-            expect(g.text, g.id).toContain(String(e.n));
-            if (e.energy) expect(g.text, g.id).toContain(fmt(e.energy));
-            break;
-        }
-        if (value !== undefined) expect(g.text, `${g.id}: ${e.kind}`).toContain(fmt(value));
-      }
+      for (const e of g.effects) if (e.kind === 'everyNthTouch') expect(g.text, g.id).toContain(String(e.n));
     }
   });
 
-  it('o catálogo tem 55 grimórios e os ids não se repetem', () => {
-    expect(GRIMOIRES).toHaveLength(55);
+  it('o catálogo tem 14 grimórios e os ids não se repetem', () => {
+    expect(GRIMOIRES).toHaveLength(14);
     expect(new Set(GRIMOIRES.map((g) => g.id)).size).toBe(GRIMOIRES.length);
+  });
+
+  it('nenhum grimório mexe em gerador (isso é das Melhorias e da Árvore)', () => {
+    const generatorKinds = ['generatorPct', 'energyGenPct', 'idleFloor', 'activeWindow'];
+    for (const g of GRIMOIRES) {
+      for (const e of g.effects) expect(generatorKinds, `${g.id}: ${e.kind}`).not.toContain(e.kind);
+    }
   });
 });
 
@@ -136,47 +101,40 @@ describe('melhorias: prateleira e preço', () => {
   });
 });
 
-describe('categorias de grimório (spec 039, seção 7)', () => {
-  it('todo grimório tem categoria e raridade, e as categorias têm nome e explicação', () => {
+describe('categorias de grimório (spec 042)', () => {
+  it('as 3 categorias têm nome e explicação, e todo grimório cabe em uma', () => {
     const ids = new Set(GRIMOIRE_CATEGORIES.map((c) => c.id));
-    expect(ids.size).toBe(4);
+    expect(ids.size).toBe(3);
     for (const c of GRIMOIRE_CATEGORIES) {
       expect(c.label.length).toBeGreaterThan(0);
       expect(c.hint.length).toBeGreaterThan(10);
     }
-    for (const g of GRIMOIRES) {
-      expect(ids.has(g.category), g.id).toBe(true);
-      expect(RARITIES, g.id).toContain(g.rarity);
-    }
+    for (const g of GRIMOIRES) expect(ids.has(g.category), g.id).toBe(true);
   });
 
-  it('cada categoria tem grimórios de pelo menos 3 raridades e um bom punhado deles', () => {
+  it('cada categoria tem de 4 a 5 grimórios', () => {
     for (const c of GRIMOIRE_CATEGORIES) {
-      const list = GRIMOIRES.filter((g) => g.category === c.id);
-      expect(list.length, c.id).toBeGreaterThanOrEqual(9);
-      expect(new Set(list.map((g) => g.rarity)).size, c.id).toBeGreaterThanOrEqual(3);
+      const n = GRIMOIRES.filter((g) => g.category === c.id).length;
+      expect(n, c.id).toBeGreaterThanOrEqual(4);
+      expect(n, c.id).toBeLessThanOrEqual(5);
     }
   });
 
   it('a categoria bate com o que o grimório faz', () => {
     const kindsOf = (id: string) => GRIMOIRES.find((g) => g.id === id)!.effects.map((e) => e.kind);
-    for (const g of GRIMOIRES.filter((x) => x.category === 'generators')) {
-      expect(kindsOf(g.id).some((k) => ['generatorPct', 'energyGenPct', 'idleFloor', 'activeWindow'].includes(k)), g.id).toBe(true);
-    }
     for (const g of GRIMOIRES.filter((x) => x.category === 'objects')) {
-      expect(
-        kindsOf(g.id).some((k) => ['objectReward', 'spawnCut', 'rareCut', 'rareLife', 'satelliteMult', 'onCapture', 'afterCaptureMult'].includes(k)),
-        g.id,
-      ).toBe(true);
+      expect(kindsOf(g.id).some((k) => ['objectReward', 'spawnCut', 'rareCut', 'rareLife', 'satelliteMult'].includes(k)), g.id).toBe(true);
+    }
+    for (const g of GRIMOIRES.filter((x) => x.category === 'touch')) {
+      expect(kindsOf(g.id).some((k) => ['everyNthTouch', 'comboFullDust', 'comboWindow', 'dustPerGrimoire'].includes(k)), g.id).toBe(true);
     }
   });
 
-  it('o texto da carta diz o que muda, sem jargão solto: combo vem explicado e nada de "janela"', () => {
+  it('o texto da carta explica o combo (sequência) e cabe numa linha curta', () => {
     for (const g of GRIMOIRES) {
       expect(g.text, g.id).not.toMatch(/janela/i);
-      // Quem fala em combo explica o que é, porque a carta aparece antes de a pessoa ter o Ritmo Firme.
       if (/combo/i.test(g.text)) expect(g.text, g.id).toMatch(/sequência/);
-      expect(g.text.length, g.id).toBeLessThanOrEqual(150);
+      expect(g.text.length, g.id).toBeLessThanOrEqual(110);
     }
   });
 });

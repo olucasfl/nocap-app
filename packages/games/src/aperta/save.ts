@@ -9,7 +9,7 @@
 import { z } from 'zod';
 import { AUTOCLICK_MAX_CPS } from './tree-skills';
 import { treeErrors, treeSpent, treeStats } from './tree';
-import { GENERATOR_MAX, GRIMOIRES, LEGENDARY_KINDS, OBJECTS, REGIONS, UPGRADES, grimoireById, RARE_EFFECTS, type ObjectKind, type RareEffect } from './catalog';
+import { GENERATOR_MAX, GRIMOIRES, GRIMOIRE_RARITIES, LEGENDARY_KINDS, OBJECTS, REGIONS, UPGRADES, grimoireById, RARE_EFFECTS, type GrimoireRarity, type ObjectKind, type RareEffect } from './catalog';
 import {
   COMBO_HARD_CAP,
   COST_FLOOR,
@@ -17,14 +17,19 @@ import {
   MAX_COLLAPSE_COUNT,
   MAX_NUMBER,
   MAX_TOUCHES_PER_SEC,
+  albumHas,
+  albumKey,
   dustGoal,
   energyCap,
+  legacyGain,
+  levelCapOfRank,
   upgradeCost,
 } from './economy';
 import { eventsOpen, mechanicOpen, missionById } from './content';
 import { achievementActive, achievementById } from './achievements';
 import { EVENT_IDS_NOW, EVENT_IDS_PLANNED, sparkSources } from './sparks';
 import { ATLAS_PAGE_SPARKS, FORBIDDEN, FORBIDDEN_MAX_LEVEL, forbiddenById } from './forbidden';
+import { migrateGrimoires } from './legacy-grimoires';
 import { SAVE_VERSION, effectiveStats, upgradeLock, type SaveState } from './engine';
 import { TUTORIAL_HINTS, UI_BUTTONS, migrateTutorial } from './tutorial';
 
@@ -62,6 +67,8 @@ const runSchema = z.object({
   picks: int(MAX_PICKS),
   upgradeLevels: z.array(int(1000)).max(64),
   build: z.record(id, int(GRIMOIRE_MAX_LEVEL)),
+  buildGain: z.record(id, nonNeg).default({}),
+  buildRarity: z.record(id, int(3)).default({}),
   clicks: int(Number.MAX_SAFE_INTEGER),
   combo: int(COMBO_HARD_CAP),
   lastPressAt: stamp,
@@ -89,6 +96,7 @@ const runSchema = z.object({
   pending: z
     .object({
       offers: z.array(id).max(8),
+      rarities: z.record(id, z.enum(['common', 'rare', 'epic', 'legendary'])).default({}),
       openedAt: stamp,
       selected: id.nullable(),
       picksLeft: int(10),
@@ -144,7 +152,7 @@ const saveSchema = z.object({
     .optional(),
   storySeen: z.boolean(),
   run: runSchema,
-  album: z.array(id).max(GRIMOIRES.length + FORBIDDEN.length),
+  album: z.array(id).max(GRIMOIRES.length * GRIMOIRE_RARITIES.length + FORBIDDEN.length),
   // Cofre dos Proibidos e Selos Estelares (spec 040, etapa 15): saves de antes entram vazios.
   vault: z.record(id, int(FORBIDDEN_MAX_LEVEL)).default({}),
   seals: int(1_000_000).default(0),
@@ -257,10 +265,10 @@ function migrateEconomy(raw: unknown): unknown {
   const o = raw as Record<string, unknown>;
   if (o.version !== 4) return raw;
   const run = o.run as Record<string, unknown> | undefined;
-  if (!run || typeof run !== 'object') return { ...o, version: SAVE_VERSION };
+  if (!run || typeof run !== 'object') return { ...o, version: 5 };
   const life = typeof run.dustLife === 'number' ? run.dustLife : 0;
   const levels = Array.isArray(run.upgradeLevels) ? (run.upgradeLevels as unknown[]).map(() => 0) : [];
-  return { ...o, version: SAVE_VERSION, run: { ...run, upgradeLevels: levels, dust: life } };
+  return { ...o, version: 5, run: { ...run, upgradeLevels: levels, dust: life } };
 }
 
 export type SaveValidation =
@@ -318,7 +326,7 @@ export function validateSave(raw: unknown, opts: ValidateOptions = {}): SaveVali
   }
   if (size > MAX_SAVE_BYTES) return { ok: false, errors: ['Save grande demais'] };
 
-  const parsed = saveSchema.safeParse(migrateEconomy(migrateTree(migrateVault(migrateSparks(raw)))));
+  const parsed = saveSchema.safeParse(migrateGrimoires(migrateEconomy(migrateTree(migrateVault(migrateSparks(raw)))), SAVE_VERSION));
   if (!parsed.success) {
     const errors = parsed.error.issues.slice(0, 8).map((i) => `${i.path.join('.') || 'save'}: ${i.message}`);
     return { ok: false, errors };
@@ -332,13 +340,22 @@ export function validateSave(raw: unknown, opts: ValidateOptions = {}): SaveVali
 
   // Conteúdo: só do catálogo e só de colapso já alcançado.
   if (!noDupes(save.album) || !noDupes(save.achievements) || !noDupes(save.seenUnlocks)) errors.push('Lista com itens repetidos');
-  for (const gid of save.album) if (!grimoireById(gid) && !forbiddenById(gid)) errors.push(`Grimório desconhecido no álbum: ${gid}`);
+  for (const key of save.album) {
+    const [gid, r] = key.split(':');
+    const ok = r === undefined ? forbiddenById(key) !== undefined : grimoireById(gid ?? '') !== undefined && (GRIMOIRE_RARITIES as readonly string[]).includes(r);
+    if (!ok) errors.push(`Grimório desconhecido no álbum: ${key}`);
+  }
   for (const [gid, lvl] of Object.entries(run.build)) {
     const g = grimoireById(gid);
+    const rank = run.buildRarity[gid] ?? 0;
+    // Save sem os campos novos (criado à mão): o ganho vem do nível na raridade registrada.
+    if (run.buildGain[gid] === undefined) run.buildGain[gid] = legacyGain(GRIMOIRE_RARITIES[rank] as GrimoireRarity, lvl);
     if (!g) errors.push(`Grimório desconhecido: ${gid}`);
     else if (g.unlockedAtCollapse > c) errors.push(`Grimório de colapso futuro: ${gid}`);
     else if (lvl < 1) errors.push(`Nível inválido: ${gid}`);
-    else if (!save.album.includes(gid)) errors.push(`Grimório fora do álbum: ${gid}`);
+    else if (lvl > levelCapOfRank(rank)) errors.push(`Nível acima do teto da raridade: ${gid}`);
+    else if ((run.buildGain[gid] as number) > legacyGain('legendary', lvl) * TOLERANCE) errors.push(`Ganho de grimório alto demais: ${gid}`);
+    else if (!save.album.includes(albumKey(gid, GRIMOIRE_RARITIES[rank] as GrimoireRarity))) errors.push(`Grimório fora do álbum: ${gid}`);
   }
   const region = REGIONS.find((r) => r.id === save.regionId);
   if (!region || region.unlockedAtCollapse > c) errors.push('Região ainda fechada');
@@ -366,12 +383,13 @@ export function validateSave(raw: unknown, opts: ValidateOptions = {}): SaveVali
   }
   if (save.favorite !== null) {
     const fav = grimoireById(save.favorite);
-    if (!fav || fav.unlockedAtCollapse > c || !mechanicOpen('favorite', c) || !save.album.includes(save.favorite)) errors.push('Favorito inválido');
+    if (!fav || fav.unlockedAtCollapse > c || !mechanicOpen('favorite', c) || !albumHas(save.album, save.favorite)) errors.push('Favorito inválido');
   }
   if (run.pending) {
     for (const oid of [...run.pending.offers, ...(run.pending.selected ? [run.pending.selected] : [])]) {
       const g = grimoireById(oid);
       if (!g || g.unlockedAtCollapse > c) errors.push(`Oferta inválida: ${oid}`);
+      if (g) (run.pending.rarities ??= {})[oid] ??= 'common';
     }
   }
 
@@ -524,7 +542,7 @@ function lifeDominated(loser: SaveState, winner: SaveState): boolean {
   const l = loser.run;
   const w = winner.run;
   if (l.picks > w.picks || l.dustLife > w.dustLife) return false;
-  for (const [gid, lvl] of Object.entries(l.build)) if ((w.build[gid] ?? 0) < lvl) return false;
+  for (const [gid, lvl] of Object.entries(l.build)) if ((w.build[gid] ?? 0) < lvl || (w.buildRarity[gid] ?? 0) < (l.buildRarity[gid] ?? 0)) return false;
   return l.upgradeLevels.every((lvl, i) => (w.upgradeLevels[i] ?? 0) >= lvl);
 }
 

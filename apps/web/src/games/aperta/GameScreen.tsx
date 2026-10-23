@@ -27,6 +27,7 @@ import { AstroMedal } from './AstroMedal';
 import { AutoGain, RateTag, AutoOrbits } from './AutoFarm';
 import { BigButton } from './BigButton';
 import { ChoiceModal } from './ChoiceModal';
+import { EvolutionFx } from './EvolutionFx';
 import { AchievementsPage } from './AchievementsPage';
 import { achievementCounts } from './achievements-logic';
 import { CollapseModal } from './CollapseModal';
@@ -48,10 +49,13 @@ import { TreePage } from './TreePage';
 import { UpgradesPage } from './UpgradesPage';
 import { revealedIds, upgradeBadge } from './upgrades-logic';
 import type { GameController, GameEvent } from './game-controller';
+import type { AstroId } from './astros';
+import { RARITY_LABEL, type Rarity } from './rarity';
 import {
   NOTICE_MS,
   affordableCount,
   collapseView,
+  artRarity,
   astroFor,
   comboView,
   createHoldLimiter,
@@ -119,7 +123,7 @@ function pageNotice(page: PageName, affordable: number, albumCount: number, coll
         : 'Junte mais poeira estelar para comprar melhorias.';
     case 'grimoires':
       return albumCount > 0
-        ? `Você já descobriu ${albumCount} ${albumCount === 1 ? 'grimório' : 'grimórios'}.`
+        ? `Você já descobriu ${albumCount} ${albumCount === 1 ? 'versão' : 'versões'} de grimório.`
         : 'Encha a barra de energia para ganhar seu primeiro grimório.';
     case 'achievements':
       return `${achievements.earned} de ${achievements.total} conquistas ganhas. Elas contam do primeiro toque em diante.`;
@@ -149,6 +153,8 @@ export function GameScreen({ controller, onExit }: Props) {
   const [sparkNotice, setSparkNotice] = useState<{ id: number; amount: number; available: number } | null>(null);
   const [captures, setCaptures] = useState<Capture[]>([]);
   const [freshGrimoire, setFreshGrimoire] = useState(false);
+  const [evolution, setEvolution] = useState<{ key: number; name: string; astro: AstroId; from: Rarity; to: Rarity; level: number } | null>(null);
+  const endEvolution = useCallback(() => setEvolution(null), []);
   const unseenAch = unseenAchievements(state);
   const [collapseOpen, setCollapseOpen] = useState(false);
   const [goalOpen, setGoalOpen] = useState(false);
@@ -246,11 +252,14 @@ export function GameScreen({ controller, onExit }: Props) {
         apertaSfx.thunk();
         setFreshGrimoire(true);
         const def = GRIMOIRES.find((g) => g.id === e.id);
+        if (e.evolvedFrom !== null) {
+          setEvolution({ key: Date.now(), name: e.name, astro: astroFor(e.id, def?.family ?? 'planets'), from: artRarity(e.evolvedFrom), to: artRarity(e.rarity), level: e.level });
+        }
         if (noticeTimer.current !== null) window.clearTimeout(noticeTimer.current);
         setNotice({
           id: Date.now(),
-          title: 'Novo grimório',
-          text: e.level > 1 ? `${e.name} subiu para o nível ${e.level}` : e.name,
+          title: e.evolvedFrom !== null ? 'Grimório evoluiu' : 'Novo grimório',
+          text: e.evolvedFrom !== null ? `${e.name} agora é ${RARITY_LABEL[artRarity(e.rarity)]}, nível ${e.level}` : e.level > 1 ? `${e.name} subiu para o nível ${e.level}` : e.name,
           astro: astroFor(e.id, def?.family ?? 'planets'),
         });
         noticeTimer.current = later(() => setNotice(null), NOTICE_MS);
@@ -351,7 +360,7 @@ export function GameScreen({ controller, onExit }: Props) {
   const combo = comboView(state, now);
   const signal = signalView(state, now);
   const sparks = sparksAvailable(state);
-  const albumCount = state.album.length;
+  const albumCount = state.album.filter((k) => k.includes(':')).length;
   const collapse = collapseView(state);
   const starReady = tutorial === null && collapse.ready;
   const showGoal = unlocked.has('grimoires');
@@ -730,6 +739,7 @@ export function GameScreen({ controller, onExit }: Props) {
           pending={pending}
           lockRemaining={choiceLockRemaining(state, now)}
           build={state.run.build}
+          buildRarity={state.run.buildRarity}
           paused={paused}
           onSelect={controller.select}
           onConfirm={controller.choose}
@@ -739,7 +749,7 @@ export function GameScreen({ controller, onExit }: Props) {
           onDiscard={controller.discard}
           pityLeft={pityLeft(state)}
           suggestion={suggestion}
-          gain={gaiaPreviews(state, pending.offers)}
+          gain={gaiaPreviews(state, pending.offers, pending.rarities)}
           coach={coach?.inline ? <TutorialInline view={coach} onSkip={controller.tutorialSkip} /> : undefined}
         />
       )}
@@ -773,6 +783,8 @@ export function GameScreen({ controller, onExit }: Props) {
       {collapseOpen && starReady && !pending && (
         <CollapseModal state={state} onCancel={() => setCollapseOpen(false)} onConfirm={controller.collapse} />
       )}
+
+      {evolution && <EvolutionFx key={evolution.key} name={evolution.name} astro={evolution.astro} from={evolution.from} to={evolution.to} level={evolution.level} onDone={endEvolution} />}
 
       {flash !== null && (
         <div key={flash} className="ap-flash" aria-hidden="true">

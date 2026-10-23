@@ -1,6 +1,6 @@
 # Revisão dos grimórios
 
-Proposta para deixar os grimórios simples e sem repetição. É só proposta: nada foi mudado no código. As decisões marcadas com (D) são do Lucas.
+Proposta para deixar os grimórios simples e sem repetição. Esta era a proposta; o Lucas aprovou e ela foi feita em 23/10/2026 (`specs/042-aperta-grimorios-por-raridade.md`). Diferenças: a Nebulosa do Caranguejo e a escolha dupla da Órion saíram (Órion oferece mais cartas); Geradores saiu de vez.
 
 ## 1. Como é hoje
 

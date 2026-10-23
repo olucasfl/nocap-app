@@ -33,6 +33,8 @@ import {
   nodeNextCost,
   type EffectiveStats,
   type SaveState,
+  withPick,
+  offeredRarity,
 } from './engine';
 
 export interface Profile {
@@ -185,8 +187,7 @@ function extraValue(id: string): number {
 
 /** Valor da melhor carta da oferta (o ganho do `score` ao pegá-la). */
 function offerValue(state: SaveState, profile: Profile, id: string): number {
-  const current = state.run.build[id] ?? 0;
-  const hypothetical: SaveState = { ...state, run: { ...state.run, build: { ...state.run.build, [id]: Math.min(10, current + 1) } } };
+  const hypothetical = withPick(state, id, offeredRarity(state, id));
   return score(hypothetical, profile) - score(state, profile) + extraValue(id);
 }
 
@@ -219,11 +220,7 @@ function bestOffer(state: SaveState, profile: Profile): string {
   let best = pending.offers[0] as string;
   let bestValue = -Infinity;
   for (const id of pending.offers) {
-    const current = state.run.build[id] ?? 0;
-    const hypothetical: SaveState = {
-      ...state,
-      run: { ...state.run, build: { ...state.run.build, [id]: Math.min(10, current + 1) } },
-    };
+    const hypothetical = withPick(state, id, offeredRarity(state, id));
     const value = score(hypothetical, profile) - base + extraValue(id);
     if (value > bestValue) {
       bestValue = value;

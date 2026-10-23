@@ -327,3 +327,39 @@
     overflow: visible;
   }
 }
+
+/* Livro de Grimórios (spec 042): os 4 espaços de cada grimório. */
+.ap-slots {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  width: 100%;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.ap-slot {
+  padding: 2px 4px;
+  border: 2px dashed var(--space-line);
+  border-radius: 8px;
+  color: var(--space-muted);
+  font: 700 10px var(--space-font-display);
+  letter-spacing: 0.06em;
+  text-align: center;
+  text-transform: uppercase;
+}
+.ap-slot.is-found {
+  border-style: solid;
+  border-color: var(--space-text);
+  color: var(--space-ink);
+  background: #8a94c8;
+}
+.ap-slot.is-found[data-rar='raro'] {
+  background: #52c8ff;
+}
+.ap-slot.is-found[data-rar='epico'] {
+  background: #b79bff;
+}
+.ap-slot.is-found[data-rar='lendario'] {
+  background: #ffd24a;
+}

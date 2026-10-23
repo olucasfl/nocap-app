@@ -4,9 +4,11 @@ import { favoriteOpen } from './content-logic';
 import { GrimoireBook } from './GrimoireBook';
 import { albumView, astroFor } from './game-logic';
 import { CategoryTag } from './CategoryTag';
-import { RARITY_LABEL } from './rarity';
 
-/** Página de Grimórios (spec 038, 3.5): álbum com os escondidos trancados. */
+/**
+ * Livro de Grimórios (spec 042): um grimório por astro, cada um com 4 espaços (Comum, Raro, Épico, Lendário) que ficam
+ * "???" até a versão ser pega pela primeira vez. A descoberta vale para sempre; nível e raridade em uso zeram por vida.
+ */
 export function GrimoiresPage({
   state,
   onFavorite,
@@ -20,30 +22,24 @@ export function GrimoiresPage({
   return (
     <div className="ap-album-wrap">
       <p className="ap-album-count">
-        <b>{album.discovered}</b> de {album.total} descobertos
+        <b>{album.discovered}</b> de {album.total} versões descobertas
       </p>
-      {canFavorite && (
-        <p className="ap-sub">Favoritar um grimório descoberto faz ele aparecer o dobro nas escolhas.</p>
-      )}
-      <ul className="ap-album" aria-label="Álbum de grimórios">
+      {canFavorite && <p className="ap-sub">Favoritar um grimório faz ele aparecer o dobro nas escolhas.</p>}
+      <ul className="ap-album" aria-label="Livro de grimórios">
         {album.entries.map((e) => (
-          <li
-            key={e.id}
-            className={`ap-album-item${e.discovered ? '' : ' is-locked'}${e.rarity === 'proibido' ? ' is-forbidden' : ''}`}
-          >
-            <GrimoireBook
-              rarity={e.rarity}
-              astro={astroFor(e.id, e.family)}
-              name={e.name}
-              locked={!e.discovered}
-              size="sm"
-              still
-            />
+          <li key={e.id} className={`ap-album-item${e.discovered ? '' : ' is-locked'}`}>
+            <GrimoireBook rarity={e.rarity} astro={astroFor(e.id, e.family)} name={e.name} locked={!e.discovered} size="sm" still />
             <span className="ap-album-name">{e.name}</span>
-            {e.discovered && <span className="ap-pick-rar">{RARITY_LABEL[e.rarity]}</span>}
-            {e.discovered && <CategoryTag category={e.category} />}
+            {e.discovered && <CategoryTag category={e.category} compact />}
             <span className="ap-album-fx">{e.text}</span>
-            {e.level > 0 && <span className="ap-album-lv">Nível {e.level}</span>}
+            <ul className="ap-slots" aria-label={`Versões de ${e.name}: ${e.found} de ${e.slots.length}`}>
+              {e.slots.map((slot) => (
+                <li key={slot.rarity} className={`ap-slot${slot.found ? ' is-found' : ''}`} data-rar={slot.rarity}>
+                  {slot.found ? slot.label : '???'}
+                </li>
+              ))}
+            </ul>
+            {e.level > 0 && <span className="ap-album-lv">Nível {e.level} nesta vida</span>}
             {canFavorite && e.discovered && (
               <button
                 type="button"

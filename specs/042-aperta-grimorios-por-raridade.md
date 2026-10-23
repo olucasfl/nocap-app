@@ -1,6 +1,6 @@
 # Spec 042: Aperta! grimórios por raridade
 
-Pedido do Lucas em 23/10/2026: os grimórios estão complicados e se repetem entre si (e com Melhorias e Árvore). Proposta, lista atual e sobreposições estão em `docs/REVISAO-GRIMORIOS.md`. Esta spec fixa as decisões e as etapas. Status: aprovada nas regras abaixo; falta implementar.
+Pedido do Lucas em 23/10/2026: os grimórios estão complicados e se repetem entre si (e com Melhorias e Árvore). Proposta, lista atual e sobreposições estão em `docs/REVISAO-GRIMORIOS.md`. Esta spec fixa as decisões e as etapas. Status: implementada em 23/10/2026 (etapas 1 a 4 e 7; ver "Estado final" no fim).
 
 ## Decisões do Lucas (23/10/2026)
 
@@ -34,3 +34,17 @@ Pedido do Lucas em 23/10/2026: os grimórios estão complicados e se repetem ent
 
 - A etapa 6 é a mais pesada: o ganho por grimório muda, então o ritmo pode sair do alvo.
 - A migração do save não pode perder grimórios nem nível; por isso o teste de saves legados vem junto.
+
+## Estado final (23/10/2026)
+
+- **Motor (`packages/games/src/aperta`):** `catalog.ts` tem os 14 grimórios (Lua, Sirius, Urano e Vega em Toque; Vênus, Marte, Io, Halley e Antares em Objetos; Mercúrio, Fobos, Titã, Betelgeuse e Nebulosa de Órion em Energia e sorte; a categoria Geradores acabou) com `RARITY_STEP` 1/2/3/4 e `RARITY_LEVEL_CAP` 5/6/8/10. `economy.ts` ganhou `pickInto` (pega o grimório numa raridade: o 1º nível vale o passo cheio e os outros `GRIMOIRE_LEVEL_STEP` = 1 dele), `offerableAt` (nunca raridade menor, só abaixo do teto), `albumKey`/`albumHas`/`albumVersions`. `RunState` ganhou `buildGain` (o ganho acumulado que escala os efeitos) e `buildRarity`; `PendingChoice.rarities` diz com que raridade cada carta veio. `drawGrimoires` sorteia o grimório primeiro e a raridade depois (pesos 100/40/22/9 e liberação por escolhas, como antes); `ensureRarity` (pity, Garantia, Destino) sobe a raridade da carta mais fraca. O álbum guarda versões ("moon:rare").
+- **Save v6:** `legacy-grimoires.ts` converte os 55 grimórios antigos nos 14 novos (fica o de maior raridade e nível, limitado ao teto), o álbum vira versões, a escolha aberta é descartada e a diferença de Cintilas do álbum volta em `sparks.legacy` (ninguém perde saldo). `validateSave` confere teto, ganho máximo e álbum.
+- **Conteúdo por colapso:** 10 grimórios no colapso 0, Urano e Halley no 1, Antares no 2 e Órion no 3.
+- **Mudanças que a regra pediu:** Nebulosa do Caranguejo (repetir sobe 2 níveis) e a escolha dupla da Órion saíram; Órion agora oferece mais cartas (+1 no Comum, até +2); Betelgeuse dá até 4 trocas. Gerador saiu dos grimórios (nenhum efeito `generatorPct`, `energyGenPct`, `idleFloor` ou `activeWindow`).
+- **Web:** carta de escolha em faixas (raridade no topo, categoria em texto, texto e ganho "antes -> depois"), selo "RARO -> LENDÁRIO" nas cartas que evoluem, `EvolutionFx` (clarão, livro novo, anéis, selo; só `transform`/`opacity`), livro de Grimórios com 4 espaços por astro ("???" até descobrir). Testes: `grimoires.test.tsx` e e2e `aperta-evolution`, `aperta-grimoire-book`, `aperta-choice-fit`.
+- **Calibragem (sim, perfil normal, 6 sementes):** com os 14 grimórios (sem os de gerador) a 1ª vida saiu em 1,7 h e as vidas 6 a 15 em 3 a 4 h. O passo de repetição subiu de 0,5 para 1 (1ª vida ~1,1 h) e as metas do 6º ao 15º colapso caíram (`GOAL_TABLE`: 2e9, 3,74e9, 4,9e9, 5,8e9, 8,9e9, 1,16e10, 1,56e10, 2,25e10, 2,73e10, 3,7e10); as vidas 6 a 15 ficaram em ~1,5 a 2,4 h. **`sim.test.ts` fica com 1 teste vermelho:** "a árvore completa não encurta a vida mais de ~25%" deu 0,70, 0,75 e 0,64 (precisa de 0,75); a medida oscila ±20% com qualquer mudança (spec 040, 14.2) e escalar os nós de poder da árvore não ajudou (desfeito). Para o Lucas decidir depois de jogar.
+- **Acesso:** o Aperta! está liberado só para a conta do Lucas (seção abaixo).
+
+## Acesso restrito (jogo em teste)
+
+Pedido do Lucas em 23/10/2026: o jogo vai para a `main`, mas só ele vê. O servidor decide: `apps/api/src/aperta/aperta-access.ts` (`canPlayAperta`, `ApertaAccessGuard` nas rotas de save, `GET /me/aperta/access`), com a lista em `APERTA_ALLOWED_EMAILS` (sem a variável, só `lucasfariasleandro@gmail.com`). No web, `lib/aperta-access.ts` pergunta ao servidor; o cartão do Hub só aparece para a conta liberada e `/arcade/aperta` manda as outras contas e o visitante para o início. O e-mail nunca vai no código do navegador. Para abrir o jogo para todos, remover o guard, o endpoint e o teste do cartão numa mudança à parte.

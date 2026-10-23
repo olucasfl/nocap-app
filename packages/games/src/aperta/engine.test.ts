@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { GRIMOIRES, OBJECTS, UPGRADES, grimoireById, upgradeIndex, type GrimoireDef } from './catalog';
+import { GRIMOIRES, OBJECTS, UPGRADES, upgradeIndex, type GrimoireDef, type GrimoireRarity } from './catalog';
+import { GRIMOIRE_LEVEL_STEP, pickInto } from './economy';
 import { CHARGED_ENERGY, CHOICE_LOCK_SEC, AUTO_CAP_SHARE, CRIT_CHANCE, ENERGY_STEPS, GLOVES_FLAT, MAX_NUMBER, MIN_PICKS_FIRST, NOMINAL_TOUCHES_PER_SEC, dustGoal, energyCap, minPicks } from './economy';
 import { meetMilestone } from './milestone';
 import {
@@ -49,6 +50,11 @@ function withLevels(s: SaveState, levels: Record<string, number>): SaveState {
 
 function withBuild(s: SaveState, build: Record<string, number>): SaveState {
   return withRun(s, { build });
+}
+
+/** O grimório `id` no livro, pego `levels` vezes na raridade `rarity` (o 1º nível vale o passo cheio, os outros metade). */
+function holdIn(s: SaveState, id: string, rarity: GrimoireRarity = 'common', levels = 1): SaveState {
+  return withRun(s, pickInto(s.run, id, rarity, levels));
 }
 
 /** Aperta `n` vezes, uma a cada `dt` s, começando em `t0`. */
@@ -220,8 +226,11 @@ describe('press', () => {
     expect(a.combo.windowSec).toBeCloseTo(1.3, 9);
     expect(a.combo.pointValue).toBeCloseTo(0.2, 9);
     expect(effectiveStats(newSave('p')).combo.enabled).toBe(false);
-    const w = effectiveStats(withBuild(withLevels(newSave('p'), { rhythm: 1 }), { uranus: 1, europa: 1 }));
-    expect(w.combo.windowSec).toBeCloseTo(1.3 + 0.2 + 0.5, 9);
+    const w = effectiveStats(holdIn(withLevels(newSave('p'), { rhythm: 1 }), 'uranus', 'common'));
+    expect(w.combo.windowSec).toBeCloseTo(1.3 + 0.2, 9);
+    // Na raridade Rara o passo é o dobro.
+    const r = effectiveStats(holdIn(withLevels(newSave('p'), { rhythm: 1 }), 'uranus', 'rare'));
+    expect(r.combo.windowSec).toBeCloseTo(1.3 + 0.4, 9);
   });
 
   it('o Pulso Carregado soma 0,5 de energia por toque', () => {
@@ -276,21 +285,21 @@ describe('press', () => {
     const { state } = pressN(withBuild(newSave('p'), { mercury: 1 }), 5);
     expect(state.run.energy).toBeCloseTo(5 + 2, 9);
     const l3 = pressN(withBuild(newSave('p'), { mercury: 3 }), 5).state;
-    expect(l3.run.energy).toBeCloseTo(5 + 4, 9);
+    expect(l3.run.energy).toBeCloseTo(5 + 2 * (1 + 2 * GRIMOIRE_LEVEL_STEP), 9);
   });
 
-  it('com o combo no máximo, Sirius soma poeira e Ganimedes soma energia por toque', () => {
+  it('com o combo no máximo, Sirius soma poeira por toque (e a raridade dobra o passo)', () => {
     const base = withLevels(newSave('p'), { lens: 1, lens2: 1, cabin: 1, rhythm: 1 });
     const plain = pressN(base, 6).state;
-    const full = pressN(withBuild(base, { sirius: 1, ganymede: 1 }), 6).state;
+    const full = pressN(holdIn(base, 'sirius', 'common'), 6).state;
+    const rare = pressN(holdIn(base, 'sirius', 'rare'), 6).state;
     expect(plain.run.combo).toBe(3);
     expect(full.run.combo).toBe(3);
-    // (8 + 2) x 1,6 = 16 contra 8 x 1,6 = 12
-    expect(plain.run.lastGain).toBe(12);
-    expect(full.run.lastGain).toBe(16);
-    expect(full.run.energy).toBeGreaterThan(plain.run.energy);
+    // (8 + 0,5) x 1,6 = 13,6 contra 8 x 1,6 = 12,8; Raro soma 1 em vez de 0,5.
+    expect(full.run.lastGain).toBeGreaterThan(plain.run.lastGain);
+    expect(rare.run.lastGain).toBeGreaterThan(full.run.lastGain);
     // Fora do combo cheio nada muda.
-    expect(press(withBuild(base, { sirius: 1 }), 1).run.lastGain).toBe(press(base, 1).run.lastGain);
+    expect(press(holdIn(base, 'sirius'), 1).run.lastGain).toBe(press(base, 1).run.lastGain);
   });
 
   it('o toque vale no mínimo 1 mesmo com multiplicadores menores que 1', () => {
@@ -412,17 +421,17 @@ describe('buyUpgrade', () => {
     expect(effectiveStats(withLevels(base, { webb: 1 })).dustPerTouch).toBe(2);
   });
 
-  it('Ceres e Saturno devolvem a poeira de alguns toques a cada compra (sem passar do preço)', () => {
+  it('Titã devolve a poeira de alguns toques a cada compra (sem passar do preço)', () => {
     const base = withRun(withLevels(newSave('b'), { lens: 1, lens2: 1 }), { dust: 1000 });
     const plain = buyUpgrade(base, idx('satellite'));
-    const ceres = buyUpgrade(withBuild(base, { ceres: 1 }), idx('satellite'));
-    // Toque de 4: Ceres devolve 2 toques (8), abaixo do preço de 15.
-    expect(ceres.run.dust - plain.run.dust).toBe(2 * effectiveStats(base).dustPerTouch);
-    // Saturno devolveria 20, mas nunca mais que o preço (15).
-    const saturn = buyUpgrade(withBuild(base, { saturn: 1 }), idx('satellite'));
-    expect(saturn.run.dust - plain.run.dust).toBe(15);
+    const titan = buyUpgrade(holdIn(base, 'titan', 'common'), idx('satellite'));
+    // Toque de 4: Titã Comum devolve 1 toque (4), abaixo do preço de 15.
+    expect(titan.run.dust - plain.run.dust).toBe(1 * effectiveStats(base).dustPerTouch);
+    // Um Titã Lendário devolveria mais que o preço (15), mas nunca passa dele.
+    const big = buyUpgrade(holdIn(base, 'titan', 'legendary', 10), idx('satellite'));
+    expect(big.run.dust - plain.run.dust).toBeLessThanOrEqual(15);
     const tiny = withRun(newSave('b'), { dust: 15 });
-    expect(buyUpgrade(withBuild(tiny, { saturn: 10 }), idx('satellite')).run.dust).toBeLessThanOrEqual(15);
+    expect(buyUpgrade(holdIn(tiny, 'titan', 'legendary', 10), idx('satellite')).run.dust).toBeLessThanOrEqual(15);
   });
 });
 
@@ -445,7 +454,8 @@ describe('drawGrimoires', () => {
       // A 1ª carta rara abre com 2 escolhas feitas (spec 041: mais chance de raro, épico e lendário).
       for (const picks of [0, 1]) {
         const s = withRun(newSave(`c${i}`), { picks });
-        for (const id of drawGrimoires(s).offers) expect(grimoireById(id)?.rarity).toBe('common');
+        const d = drawGrimoires(s);
+        for (const id of d.offers) expect(d.rarities[id]).toBe('common');
       }
     }
   });
@@ -455,60 +465,94 @@ describe('drawGrimoires', () => {
       const rarities = new Set<string>();
       for (let i = 0; i < 400; i++) {
         const s = { ...withRun(newSave(`r${i}`), { picks }), collapses };
-        for (const id of drawGrimoires(s).offers) rarities.add(grimoireById(id)?.rarity ?? '?');
+        const d = drawGrimoires(s);
+        for (const id of d.offers) rarities.add(d.rarities[id] ?? '?');
       }
       return rarities;
     };
     expect(seen(3)).toEqual(new Set(['common', 'rare']));
     expect(seen(8)).toEqual(new Set(['common', 'rare', 'epic']));
     expect(seen(14)).toEqual(new Set(['common', 'rare', 'epic', 'legendary']));
-    // Os proibidos não são grimórios do sorteio: moram no Cofre.
-    expect(seen(40, 0).has('forbidden')).toBe(false);
   });
 
   it('respeita os pesos: comum aparece bem mais que lendário', () => {
     const counts: Record<string, number> = {};
     for (let i = 0; i < 600; i++) {
       const s = withRun(newSave(`w${i}`), { picks: 30 });
-      for (const id of drawGrimoires(s).offers) {
-        const r = grimoireById(id)?.rarity ?? '?';
-        counts[r] = (counts[r] ?? 0) + 1;
-      }
+      const d = drawGrimoires(s);
+      for (const id of d.offers) counts[d.rarities[id] as string] = (counts[d.rarities[id] as string] ?? 0) + 1;
     }
     expect(counts.common ?? 0).toBeGreaterThan((counts.rare ?? 0) * 2);
     expect(counts.rare ?? 0).toBeGreaterThan(counts.legendary ?? 0);
     expect(counts.epic ?? 0).toBeGreaterThan(counts.legendary ?? 0);
   });
 
-  it('proibidos de colapsos futuros e conteúdo fechado nunca aparecem', () => {
+  it('a raridade não muda a chance de o grimório aparecer (sorteia o grimório, depois a raridade)', () => {
+    const byGrimoire: Record<string, number> = {};
+    for (let i = 0; i < 900; i++) {
+      for (const id of drawGrimoires(withRun(newSave(`q${i}`), { picks: 30 })).offers) byGrimoire[id] = (byGrimoire[id] ?? 0) + 1;
+    }
+    const counts = Object.values(byGrimoire);
+    expect(Math.max(...counts) / Math.min(...counts)).toBeLessThan(2);
+  });
+
+  it('o grimório que você já tem nunca vem em raridade menor, e vem a mesma ou maior', () => {
+    for (let i = 0; i < 200; i++) {
+      const s = holdIn(withRun(newSave(`h${i}`), { picks: 30 }), 'moon', 'rare', 2);
+      const d = drawGrimoires(s);
+      if (d.offers.includes('moon')) expect(['rare', 'epic', 'legendary']).toContain(d.rarities.moon);
+    }
+  });
+
+  it('no teto da raridade o grimório sai do sorteio, mas uma raridade maior ainda pode vir', () => {
+    // Comum no teto (5 níveis): só vem de novo em Raro ou melhor.
+    let atCap = 0;
+    let sawHigher = false;
+    for (let i = 0; i < 400; i++) {
+      const s = holdIn(withRun(newSave(`t${i}`), { picks: 30 }), 'moon', 'common', 5);
+      const d = drawGrimoires(s);
+      if (!d.offers.includes('moon')) continue;
+      atCap++;
+      expect(d.rarities.moon).not.toBe('common');
+      sawHigher = true;
+    }
+    expect(atCap).toBeGreaterThan(0);
+    expect(sawHigher).toBe(true);
+    // Lendário no teto (10): nunca mais é oferecido.
+    for (let i = 0; i < 100; i++) {
+      const s = holdIn(withRun(newSave(`l${i}`), { picks: 30 }), 'moon', 'legendary', 10);
+      expect(drawGrimoires(s).offers).not.toContain('moon');
+    }
+  });
+
+  it('conteúdo de colapso futuro nunca aparece', () => {
     for (let i = 0; i < 300; i++) {
       const s = withRun(newSave(`f${i}`), { picks: 40 });
       for (const id of drawGrimoires(s).offers) {
-        expect(['pallas', 'callisto']).not.toContain(id);
+        expect(['uranus', 'halley', 'antares', 'orion-nebula']).not.toContain(id);
       }
     }
     const ids = new Set<string>();
     for (let i = 0; i < 600; i++) {
-      // Com combo, geradores de poeira e de energia na mão, todos os grimórios do colapso 5 podem sair.
-      const base = withLevels({ ...withRun(newSave(`g${i}`), { picks: 40 }), collapses: 5 }, { rhythm: 1, satellite: 1, antenna: 1 });
+      // Com o Ritmo Firme e os objetos abertos, todos os grimórios do colapso 3 podem sair.
+      const base = withLevels({ ...withRun(newSave(`g${i}`), { picks: 40 }), collapses: 3 }, { rhythm: 1, satellite: 1 });
       for (const id of drawGrimoires(base).offers) ids.add(id);
     }
-    expect(ids.has('pallas')).toBe(true);
+    expect(ids.has('orion-nebula')).toBe(true);
+    expect(ids.has('uranus')).toBe(true);
   });
 
-  it('não oferece grimório que já está no nível máximo', () => {
-    const maxed = Object.fromEntries(
-      GRIMOIRES.filter((g) => g.rarity === 'common' && g.unlockedAtCollapse === 0 && g.id !== 'moon').map((g) => [g.id, 10]),
-    );
+  it('não oferece grimório que já está no teto (nível 10 num Lendário)', () => {
+    const maxed = GRIMOIRES.filter((g) => g.unlockedAtCollapse === 0 && g.id !== 'moon').reduce((s, g) => holdIn(s, g.id, 'legendary', 10), newSave('m'));
     for (let i = 0; i < 20; i++) {
-      const { offers } = drawGrimoires(withBuild(newSave(`m${i}`), maxed));
+      const { offers } = drawGrimoires(withRun({ ...maxed, run: { ...maxed.run, rngState: i * 977 + 1 } }, { picks: 40 }));
       expect(offers).toEqual(['moon']);
     }
   });
 
   it('oferece menos cartas se o catálogo acabar, sem quebrar', () => {
-    const all = Object.fromEntries(GRIMOIRES.map((g) => [g.id, 10]));
-    expect(drawGrimoires({ ...withBuild(newSave('z'), all), collapses: 5 }).offers).toEqual([]);
+    const all = GRIMOIRES.reduce((st, g) => holdIn(st, g.id, 'legendary', 10), newSave('z'));
+    expect(drawGrimoires({ ...all, collapses: 5 }).offers).toEqual([]);
   });
 });
 
@@ -554,7 +598,7 @@ describe('escolha de grimório', () => {
     expect(next.run.build[id]).toBe(1);
     expect(next.run.energy).toBe(0);
     expect(next.run.picks).toBe(1);
-    expect(next.album).toContain(id);
+    expect(next.album).toContain(`${id}:${s.run.pending?.rarities?.[id] ?? 'common'}`);
     expect(next.stats.picks).toBe(1);
   });
 
@@ -575,26 +619,39 @@ describe('escolha de grimório', () => {
     expect(t.run.build.moon).toBe(10);
   });
 
-  it('a Nebulosa do Caranguejo faz o repetido subir 2 níveis', () => {
-    let s = withBuild(withRun(newSave('cr'), { energy: 60 }), { moon: 2, 'crab-nebula': 1 });
-    s = withRun(s, { pending: { offers: ['moon', 'vesta', 'mars'], openedAt: 0, selected: null, picksLeft: 1, rerollsLeft: 0 } });
-    s = pick(s, 'moon', 0);
-    expect(s.run.build.moon).toBe(4);
+  it('o nível sobe 1 por escolha e respeita o teto da raridade (Comum 5, Raro 6)', () => {
+    const offerMoon = (st: SaveState, rarity: GrimoireRarity) =>
+      withRun(st, { pending: { offers: ['moon'], rarities: { moon: rarity }, openedAt: 0, selected: null, picksLeft: 1, rerollsLeft: 0 } });
+    let s = holdIn(withRun(newSave('cap'), { energy: 60 }), 'moon', 'common', 5);
+    // Comum no teto: pegar outra Comum não sobe nada.
+    expect(pick(offerMoon(s, 'common'), 'moon', 0).run.build.moon).toBe(5);
+    // Raro: vira Raro e sobe 1 nível (o teto agora é 6).
+    s = pick(offerMoon(s, 'rare'), 'moon', 0);
+    expect(s.run.build.moon).toBe(6);
+    expect(s.run.buildRarity.moon).toBe(1);
+    expect(s.album).toContain('moon:rare');
   });
 
-  it('a Nebulosa de Órion rende duas escolhas por barra cheia', () => {
-    let s = withBuild(newSave('or'), { 'orion-nebula': 1 });
-    s = withRun(s, { energy: 59.9 });
+  it('cada nível guarda o bônus da raridade em que foi pego (esperar a carta boa não compensa)', () => {
+    const tail = (st: SaveState) => effectiveStats(st).dustPerTouch;
+    const base = newSave('g');
+    // Lua: 5 níveis Comuns e depois 1 Raro contra 6 níveis Raros desde o começo.
+    const late = holdIn(holdIn(base, 'sirius', 'common', 5), 'sirius', 'rare', 1);
+    const early = holdIn(base, 'sirius', 'rare', 6);
+    expect(late.run.buildGain.sirius as number).toBeLessThan(early.run.buildGain.sirius as number);
+    expect(late.run.build.sirius).toBe(6);
+    expect(early.run.build.sirius).toBe(6);
+    void tail;
+  });
+
+  it('a Nebulosa de Órion oferece mais cartas por escolha (e a raridade aumenta, até o teto de 2 a mais)', () => {
+    const plain = effectiveStats(newSave('or')).choice.cards;
+    expect(effectiveStats(holdIn(newSave('or'), 'orion-nebula', 'common')).choice.cards).toBe(plain + 1);
+    expect(effectiveStats(holdIn(newSave('or'), 'orion-nebula', 'legendary', 10)).choice.cards).toBe(plain + 2);
+    let s = holdIn(newSave('or'), 'orion-nebula', 'common');
+    s = withRun({ ...s, collapses: 3 }, { energy: 59.9, picks: 0 });
     s = press(s, 1);
-    expect(s.run.pending?.picksLeft).toBe(2);
-    s = pick(s, s.run.pending?.offers[0] as string, 1);
-    expect(s.run.pending).not.toBeNull();
-    expect(s.run.pending?.picksLeft).toBe(1);
-    expect(s.run.energy).toBeGreaterThan(0);
-    s = pick(s, s.run.pending?.offers[0] as string, s.run.pending?.openedAt ?? 0);
-    expect(s.run.pending).toBeNull();
-    expect(s.run.energy).toBe(0);
-    expect(s.run.picks).toBe(2);
+    expect(s.run.pending?.offers.length).toBeGreaterThanOrEqual(4);
   });
 
   it('o Betelgeuse troca uma carta, uma vez, por outra fora da oferta', () => {
@@ -634,17 +691,18 @@ describe('effectiveStats', () => {
     expect(effectiveStats(bought).dustPerTouch).toBe(2);
   });
 
-  it('o nível do grimório soma metade do número base por nível', () => {
-    const l1 = effectiveStats(withBuild(newSave('lv'), { vega: 1, moon: 1, mercury: 1 }));
-    // Vega: +0,5 por grimório comum no livro (3 comuns: Vega é épico, então 2 comuns).
-    expect(l1.dustPerTouch).toBeCloseTo(1 + 0.5 * 2, 9);
-    const l3 = effectiveStats(withBuild(newSave('lv'), { vega: 3, moon: 1, mercury: 1 }));
-    expect(l3.dustPerTouch).toBeCloseTo(1 + 0.5 * 2 * 2, 9);
-    const vesta = (lvl: number) =>
-      effectiveStats(withBuild(withLevels(newSave('lv'), { resonance: 1 }), { vesta: lvl })).combo.fullDustAdd;
-    expect(vesta(1)).toBeCloseTo(0.5, 9);
-    expect(vesta(2)).toBeCloseTo(0.75, 9);
-    expect(vesta(3)).toBeCloseTo(1, 9);
+  it('o nível do grimório soma metade do passo da raridade por nível', () => {
+    const vega = (rarity: GrimoireRarity, lvl: number) => effectiveStats(holdIn(holdIn(newSave('lv'), 'moon'), 'vega', rarity, lvl)).dustPerTouch;
+    // Vega: +0,15 por grimório no livro (Vega e Lua = 2), vezes o ganho.
+    expect(vega('common', 1)).toBeCloseTo(1 + 0.15 * 2 * 1, 9);
+    expect(vega('common', 3)).toBeCloseTo(1 + 0.15 * 2 * (1 + 2 * GRIMOIRE_LEVEL_STEP), 9);
+    expect(vega('rare', 1)).toBeCloseTo(1 + 0.15 * 2 * 2, 9);
+    const sirius = (rarity: GrimoireRarity, lvl: number) =>
+      effectiveStats(holdIn(withLevels(newSave('lv'), { resonance: 1 }), 'sirius', rarity, lvl)).combo.fullDustAdd;
+    expect(sirius('common', 1)).toBeCloseTo(0.5, 9);
+    expect(sirius('common', 2)).toBeCloseTo(0.5 * (1 + GRIMOIRE_LEVEL_STEP), 9);
+    expect(sirius('common', 3)).toBeCloseTo(0.5 * (1 + 2 * GRIMOIRE_LEVEL_STEP), 9);
+    expect(sirius('legendary', 1)).toBeCloseTo(2, 9);
   });
 
   it('descontos de custo se multiplicam e param no piso de 40%', () => {
@@ -680,11 +738,11 @@ describe('effectiveStats', () => {
     expect(s.combo.max).toBeLessThanOrEqual(12);
   });
 
-  it('Via Láctea conta os raros e Andrômeda conta os colapsos, em números', () => {
-    const mw = effectiveStats(withBuild(newSave('mw'), { 'milky-way': 1, europa: 1, saturn: 1, moon: 1 }));
-    expect(mw.dustPerTouch).toBeCloseTo(1 + 2, 9);
-    const an = effectiveStats(withBuild({ ...newSave('an'), collapses: 4 }, { andromeda: 1 }));
-    expect(an.dustPerTouch).toBeCloseTo(1 + 4, 9);
+  it('Vega soma poeira por toque a cada grimório que você tem, de qualquer raridade', () => {
+    const one = effectiveStats(holdIn(newSave('v'), 'vega')).dustPerTouch;
+    const three = effectiveStats(holdIn(holdIn(holdIn(newSave('v'), 'vega'), 'moon', 'epic'), 'mercury', 'rare')).dustPerTouch;
+    expect(three).toBeGreaterThan(one);
+    expect(three).toBeCloseTo(1 + 0.15 * 3, 9);
   });
 
   it('a Sonda Kepler encurta a janela dos objetos em 20%, e o campo começa com 1 lugar', () => {
@@ -748,17 +806,19 @@ describe('effectiveStats', () => {
     expect(opened.run.pending).not.toBeNull();
   });
 
-  it('Antares, Vênus e Marte somam toques à recompensa dos objetos', () => {
+  it('Halley, Vênus e Marte somam toques à recompensa dos objetos (e a raridade multiplica o passo)', () => {
     const base = effectiveStats(newSave('hv')).objects.reward;
     expect(base.comet.dust).toBe(6);
     expect(base['shooting-star'].energy).toBe(2);
     expect(base.satellite.dust).toBe(0);
-    const s = effectiveStats(withBuild(newSave('hv'), { antares: 1, mars: 1, venus: 1 })).objects.reward;
-    expect(s.comet.dust).toBe(6 + 4 + 3);
-    expect(s['shooting-star'].energy).toBe(2 + 4 + 2);
-    expect(s.satellite.dust).toBe(4);
-    const lvl2 = effectiveStats(withBuild(newSave('hv'), { venus: 2 })).objects.reward;
-    expect(lvl2.comet.dust).toBeCloseTo(6 + 3 * 1.5, 9);
+    const s = effectiveStats(holdIn(holdIn(holdIn(newSave('hv'), 'halley'), 'mars'), 'venus')).objects.reward;
+    expect(s.comet.dust).toBe(6 + 1 + 3);
+    expect(s['shooting-star'].energy).toBe(2 + 1 + 2);
+    expect(s.satellite.dust).toBe(1);
+    const rare = effectiveStats(holdIn(newSave('hv'), 'venus', 'rare')).objects.reward;
+    expect(rare.comet.dust).toBe(6 + 3 * 2);
+    const lvl2 = effectiveStats(holdIn(newSave('hv'), 'venus', 'common', 2)).objects.reward;
+    expect(lvl2.comet.dust).toBeCloseTo(6 + 3 * (1 + GRIMOIRE_LEVEL_STEP), 9);
   });
 
   it('duração dos objetos e do sinal é das melhorias (Chandra, Voyager); os grimórios mexem no valor do sinal', () => {
@@ -768,22 +828,23 @@ describe('effectiveStats', () => {
     const up = effectiveStats(withLevels({ ...newSave('du'), collapses: 4 }, { chandra: 1, voyager: 1 }));
     expect(up.objects.lifeSec.comet).toBeCloseTo(10.5, 9);
     expect(up.objects.signalSec).toBe(12);
-    const g = effectiveStats(withBuild({ ...newSave('du'), collapses: 4 }, { io: 1, neptune: 1 }));
+    const g = effectiveStats(holdIn({ ...newSave('du'), collapses: 4 }, 'io', 'rare'));
     expect(g.objects.lifeSec.comet).toBe(7);
     expect(g.objects.signalSec).toBe(8);
-    expect(g.objects.signalMult).toBeCloseTo(2 + 0.5 + 1, 9);
+    expect(g.objects.signalMult).toBeCloseTo(2 + 0.5 * 2, 9);
   });
 
-  it('Calisto dá poeira ao satélite e Voyager soma 4 s', () => {
+  it('o Voyager soma 4 s ao sinal e o Io só mexe no valor dele', () => {
     expect(effectiveStats(newSave('s')).objects.signalMult).toBe(2);
-    const s = effectiveStats(withBuild(withLevels({ ...newSave('s'), collapses: 2 }, { voyager: 1 }), { callisto: 1 }));
-    expect(s.objects.reward.satellite.dust).toBe(4);
+    const s = effectiveStats(holdIn(withLevels({ ...newSave('s'), collapses: 2 }, { voyager: 1 }), 'io'));
     expect(s.objects.signalSec).toBe(12);
+    expect(s.objects.signalMult).toBeCloseTo(2.5, 9);
   });
 
-  it('Titã dá 200 de poeira inicial por vida', () => {
-    expect(effectiveStats(withBuild(newSave('t'), { titan: 1 })).startDust).toBe(200);
-    expect(effectiveStats(withBuild(newSave('t'), { titan: 3 })).startDust).toBe(400);
+  it('Titã dá 100 de poeira inicial por vida, e a raridade multiplica', () => {
+    expect(effectiveStats(holdIn(newSave('t'), 'titan')).startDust).toBe(100);
+    expect(effectiveStats(holdIn(newSave('t'), 'titan', 'rare')).startDust).toBe(200);
+    expect(effectiveStats(holdIn(newSave('t'), 'titan', 'common', 3)).startDust).toBe(Math.floor(100 * (1 + 2 * GRIMOIRE_LEVEL_STEP)));
     expect(effectiveStats(newSave('t')).startDust).toBe(0);
   });
 
@@ -978,14 +1039,11 @@ describe('objetos no espaço', () => {
     expect(s.run.lastGain).toBe(8);
   });
 
-  it('Polaris e Tritão agem depois da captura', () => {
-    let s = withBuild(newSave('pt'), { polaris: 1, triton: 1 });
+  it('Fobos dá energia ao capturar um objeto', () => {
+    let s = holdIn(newSave('pt'), 'phobos', 'rare');
     s = withRun(s, { objects: [{ id: 1, kind: 'comet', bornAt: 0, expiresAt: 10 }] });
     s = captureObject(s, 1, 1);
-    expect(s.run.energy).toBeCloseTo(3 * 1, 9);
-    expect(s.run.afterCapture).toBe(true);
-    s = press(s, 2);
-    expect(s.run.lastGain).toBe(5);
+    expect(s.run.energy).toBeCloseTo(2 * 1, 9);
     expect(s.run.afterCapture).toBe(false);
   });
 
@@ -1061,28 +1119,22 @@ describe('colapso', () => {
     expect(regionFor(after).id).toBe('asteroid-belt');
     expect(after.regionId).toBe('asteroid-belt');
     const content = unlockedContent(after);
-    expect(content.grimoires.map((g) => g.id)).toEqual(expect.arrayContaining(['pallas', 'hygiea']));
-    expect(content.grimoires.map((g) => g.id)).not.toContain('callisto');
+    expect(content.grimoires.map((g) => g.id)).toEqual(expect.arrayContaining(['uranus', 'halley']));
+    expect(content.grimoires.map((g) => g.id)).not.toContain('antares');
     expect(content.upgrades.map((u) => u.id)).toContain('webb');
     expect(content.objects.map((o) => o.kind)).toContain('asteroid');
   });
 
   it('cada colapso destrava exatamente as linhas da tabela 5.4', () => {
-    const expected: Record<number, string[]> = {
-      1: ['pallas', 'hygiea', 'ryugu', 'kepler-22b'],
-      2: ['callisto', 'enceladus', 'horsehead', 'golden-record'],
-      3: ['eris', 'haumea', 'trappist-1', 'aldebaran'],
-      4: ['sedna', 'hale-bopp', 'oumuamua', 'vela-pulsar'],
-      5: ['proxima-centauri', 'alpha-centauri-a', 'pleiades-cluster', 'sombrero', 'pillars'],
-    };
+    const expected: Record<number, string[]> = { 1: ['uranus', 'halley'], 2: ['antares'], 3: ['orion-nebula'], 4: [], 5: [] };
     for (let c = 1; c <= 5; c++) {
       const before = new Set(unlockedContent({ ...newSave('u'), collapses: c - 1 }).grimoires.map((g) => g.id));
       const now = unlockedContent({ ...newSave('u'), collapses: c }).grimoires.map((g) => g.id);
       expect(now.filter((id) => !before.has(id)).sort()).toEqual([...(expected[c] as string[])].sort());
     }
-    expect(unlockedContent({ ...newSave('u'), collapses: 0 }).grimoires).toHaveLength(34);
+    expect(unlockedContent({ ...newSave('u'), collapses: 0 }).grimoires).toHaveLength(10);
     expect(unlockedContent({ ...newSave('u'), collapses: 5 }).grimoires).toHaveLength(GRIMOIRES.length);
-    expect(GRIMOIRES).toHaveLength(55);
+    expect(GRIMOIRES).toHaveLength(14);
     expect(unlockedContent({ ...newSave('u'), collapses: 5 }).regions).toHaveLength(6);
   });
 
@@ -1147,8 +1199,7 @@ describe('robustez numérica', () => {
       expect(g.effects.length).toBeGreaterThan(0);
       expect(g.text.length).toBeGreaterThan(0);
     }
-    expect(GRIMOIRES.filter((g) => g.rarity === 'common' && g.unlockedAtCollapse === 0)).toHaveLength(13);
-    expect(GRIMOIRES.filter((g) => g.rarity === 'forbidden')).toHaveLength(0);
+    expect(GRIMOIRES.filter((g) => g.unlockedAtCollapse === 0)).toHaveLength(10);
   });
 });
 

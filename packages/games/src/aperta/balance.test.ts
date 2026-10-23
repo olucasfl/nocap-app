@@ -29,7 +29,7 @@ describe('fontes finitas (F), calculadas dos dados', () => {
   it('F = conquistas + álbum + raros e degraus + Estrela dos Proibidos', () => {
     const f = finiteSparksCeiling();
     const achievements = ACHIEVEMENTS.filter((a) => !a.retired).reduce((n, a) => n + a.reward, 0);
-    const album = GRIMOIRES.reduce((n, g) => n + ALBUM_SPARKS[g.rarity], 0) + FORBIDDEN.length * ALBUM_SPARKS.forbidden;
+    const album = GRIMOIRES.length * (ALBUM_SPARKS.common + ALBUM_SPARKS.rare + ALBUM_SPARKS.epic + ALBUM_SPARKS.legendary) + FORBIDDEN.length * ALBUM_SPARKS.forbidden;
     const forbidden = FORBIDDEN.length;
     const stars = forbidden * STAR_STEPS.reduce((n, s) => n + s.sparks, 0);
     expect(f.achievements).toBe(achievements);

@@ -68,7 +68,7 @@ describe('validateSave: formato', () => {
       ...fresh,
       tutorial: 'done',
       run: { ...fresh.run, picks: 20, dust: dustGoal(1), dustLife: dustGoal(1), build: { moon: 1 }, ...meetMilestone(0, fresh.run.upgradeLevels) },
-      album: ['moon'],
+      album: ['moon:common'],
       stats: { ...fresh.stats, picks: 20, dustTotal: dustGoal(1) },
     };
     const s = collapse(ready);
@@ -79,7 +79,7 @@ describe('validateSave: formato', () => {
   });
 
   it('uma cadeia de 12 colapsos com o Cofre crescendo passa em cada passo', () => {
-    const pages = ['moon', 'mars', 'venus', 'mercury', 'ceres', 'vesta', 'phobos', 'io', 'europa', 'titan'];
+    const pages = ['moon', 'mars', 'venus', 'mercury', 'sirius', 'vega', 'phobos', 'io', 'betelgeuse', 'titan'];
     let s: SaveState = { ...newSave('chain'), tutorial: 'done' };
     for (let k = 1; k <= 12; k++) {
       const goal = dustGoal(k);
@@ -87,7 +87,7 @@ describe('validateSave: formato', () => {
       s = {
         ...s,
         run: { ...s.run, picks: minPicks(k), dust: goal, dustLife: goal, build: { [id]: 1 }, ...meetMilestone(k - 1, s.run.upgradeLevels, effectiveStats(s).objects.disabled) },
-        album: [...new Set([...s.album, id])],
+        album: [...new Set([...s.album, `${id}:common`])],
         stats: { ...s.stats, picks: s.stats.picks + minPicks(k), dustTotal: s.stats.dustTotal + goal },
       };
       s = collapse(s);
@@ -107,17 +107,17 @@ describe('validateSave: formato', () => {
       collapses: 1,
       sparks: { legacy: 4, spent: 0 },
       stats: { ...fresh.stats, picks: 20, dustTotal: 2e8 },
-      album: ['moon', 'm87'],
+      album: ['moon:common', 'm87'],
       vault: { m87: 1 },
       regionId: 'asteroid-belt',
     };
     const first = validateSave(ok);
     expect(first.ok, first.ok ? '' : first.errors.join(';')).toBe(true);
-    expect(rejects({ ...ok, vault: { 'nao-existe': 1 }, album: ['moon', 'nao-existe'] })).toContain('Proibido inválido no Cofre: nao-existe');
+    expect(rejects({ ...ok, vault: { 'nao-existe': 1 }, album: ['moon:common', 'nao-existe'] })).toContain('Proibido inválido no Cofre: nao-existe');
     expect(rejects({ ...ok, vault: { m87: 6 } })).toBeTruthy();
-    expect(rejects({ ...ok, vault: { m87: 1, 'cygnus-x1': 1 }, album: ['moon', 'm87', 'cygnus-x1'] })).toContain('Cofre maior que os colapsos');
+    expect(rejects({ ...ok, vault: { m87: 1, 'cygnus-x1': 1 }, album: ['moon:common', 'm87', 'cygnus-x1'] })).toContain('Cofre maior que os colapsos');
     expect(rejects({ ...ok, vault: {}, seals: 1 })).toContain('Selos sem o Cofre completo');
-    expect(rejects({ ...ok, vault: { m87: 1 }, album: ['moon'] })).toContain('Proibido fora do álbum: m87');
+    expect(rejects({ ...ok, vault: { m87: 1 }, album: ['moon:common'] })).toContain('Proibido fora do álbum: m87');
   });
 
   it('recusa lixo, campo faltando, tipo errado e versão do futuro', () => {
@@ -173,10 +173,10 @@ describe('validateSave: coerência', () => {
     const future = GRIMOIRES.find((g) => g.unlockedAtCollapse > 0)!;
     const s = clone(base());
     s.run.build[future.id] = 1;
-    s.album.push(future.id);
+    s.album.push(`${future.id}:common`);
     expect(rejects(s)).toContain(`Grimório de colapso futuro: ${future.id}`);
     const t = newSave('x');
-    expect(rejects({ ...t, run: { ...t.run, build: { moon: 1 } }, album: ['moon'] })).toContain('Mais grimórios do que escolhas');
+    expect(rejects({ ...t, run: { ...t.run, build: { moon: 1 } }, album: ['moon:common'] })).toContain('Mais grimórios do que escolhas');
   });
 
   it('recusa poeira maior que a da vida e da vida maior que o total', () => {
@@ -260,28 +260,29 @@ describe('mergeSaves', () => {
   it('vida diferente nos dois aparelhos: junta o permanente e avisa conflito', () => {
     const root = play('m', 120);
     const [x, y] = ['moon', 'mars', 'venus', 'mercury'].filter((g) => !(g in root.run.build));
+    const key = (g: string) => `${g}:common`;
     const a: SaveState = {
       ...root,
       run: { ...root.run, build: { ...root.run.build, [x!]: 1 }, picks: root.run.picks + 3 },
       stats: { ...root.stats, picks: root.stats.picks + 3 },
-      album: [...root.album, x!],
+      album: [...root.album, key(x!)],
     };
     const b: SaveState = {
       ...root,
       run: { ...root.run, build: { ...root.run.build, [y!]: 1 }, picks: root.run.picks + 2 },
       stats: { ...root.stats, picks: root.stats.picks + 2 },
-      album: [...root.album, y!],
+      album: [...root.album, key(y!)],
     };
     const r = mergeSaves(a, b);
     expect(r.winner).toBe('a');
     expect(r.conflict).toBe(true);
-    expect(r.save.album).toEqual(expect.arrayContaining([x!, y!]));
+    expect(r.save.album).toEqual(expect.arrayContaining([key(x!), key(y!)]));
   });
 
   it('mais colapsos vence; álbum, conquistas, Atlas e totais são união', () => {
     const lo: SaveState = {
       ...newSave('x', 5),
-      album: ['moon', 'mars'],
+      album: ['moon:common', 'mars:common'],
       achievements: ['a1'],
       storySeen: true,
       playSeconds: 900,
@@ -292,7 +293,7 @@ describe('mergeSaves', () => {
       collapses: 1,
       tutorial: 'done',
       regionId: 'asteroid-belt',
-      album: ['venus'],
+      album: ['venus:common'],
       achievements: ['b2'],
       sparks: { legacy: 4, spent: 0 },
       stats: { ...FRESH_STATS, clicks: 10, objectsCaptured: 1, picks: 20, dustTotal: 2e8 },
@@ -301,7 +302,7 @@ describe('mergeSaves', () => {
     expect(r.winner).toBe('b');
     expect(r.conflict).toBe(false);
     expect(r.save.collapses).toBe(1);
-    expect(r.save.album).toEqual(['venus', 'moon', 'mars']);
+    expect(r.save.album).toEqual(['venus:common', 'moon:common', 'mars:common']);
     expect(r.save.achievements).toEqual(['b2', 'a1']);
     expect(r.save.storySeen).toBe(true);
     expect(r.save.createdAt).toBe(3);

@@ -100,7 +100,7 @@ describe('combo na tela', () => {
 
 describe('arte dos grimórios', () => {
   it('toda raridade do motor tem raridade no kit', () => {
-    for (const g of GRIMOIRES) expect(RARITIES).toContain(artRarity(g.rarity));
+    for (const r of ['common', 'rare', 'epic', 'legendary', 'forbidden']) expect(RARITIES).toContain(artRarity(r));
   });
 
   it('todo grimório do catálogo tem uma medalha válida', () => {

@@ -9,6 +9,9 @@ import { SAVE_VERSION, canCollapse, collapse, collapseProgress, press, type Save
 import { meetMilestone } from './milestone';
 import { mergeSaves, validateSave } from './save';
 import { achievementById } from './achievements';
+import { grimoireById } from './catalog';
+import { LEGACY_GRIMOIRES } from './legacy-grimoires';
+import { albumKey } from './economy';
 import { sparksAvailable } from './sparks';
 import { ATLAS_PAGE_SPARKS } from './forbidden';
 
@@ -46,9 +49,17 @@ describe('saves antigos (anteriores à spec 040)', () => {
     expect(r.save.run).toMatchObject({ captured: 0, rares: 0, chain: 0, chainBest: 0, fullBest: 0, missionsDone: mission?.done ? 1 : 0 });
     // Nada do que a pessoa tem se perdeu.
     expect(r.save.collapses).toBe(raw.collapses);
-    expect(r.save.run.build).toEqual((raw.run as { build: unknown }).build);
+    // Os grimórios antigos viraram os 14 de hoje: cada um que tinha mapeamento está no livro novo (os que saíram do jogo somem).
+    for (const oid of Object.keys((raw.run as { build: Record<string, number> }).build)) {
+      const to = LEGACY_GRIMOIRES[oid]?.[0];
+      if (to && (grimoireById(to)?.unlockedAtCollapse ?? 0) <= (raw.collapses as number)) expect(r.save.run.build[to], oid).toBeGreaterThan(0);
+    }
+    expect(r.save.run.pending).toBeNull();
     if (!r.flagged.includes('dustLife')) expect(r.save.run.dustLife).toBe((raw.run as { dustLife: number }).dustLife);
-    expect(r.save.album).toEqual(raw.album);
+    for (const oid of raw.album as string[]) {
+      const m = LEGACY_GRIMOIRES[oid];
+      if (m?.[0]) expect(r.save.album, oid).toContain(albumKey(m[0], m[1]));
+    }
     // O Atlas virou Cintilas (valor fixo por página) e o Cofre começa vazio.
     expect((r.save as unknown as Record<string, unknown>).atlas).toBeUndefined();
     expect(r.save.version).toBe(SAVE_VERSION);
@@ -78,7 +89,9 @@ describe('saves antigos (anteriores à spec 040)', () => {
     const r = validateSave(raw, opts(raw));
     if (!r.ok) throw new Error(r.errors.join(' | '));
     const pages = (raw.atlas as { pages: unknown[] }).pages.length;
-    expect(r.save.sparks).toEqual({ legacy: frag.earned + pages * ATLAS_PAGE_SPARKS, spent: 0 });
+    // O álbum novo (versões) pode valer menos que o antigo: a diferença volta em `legacy`, então nunca fica abaixo disto.
+    expect(r.save.sparks.spent).toBe(0);
+    expect(r.save.sparks.legacy).toBeGreaterThanOrEqual(frag.earned + pages * ATLAS_PAGE_SPARKS);
     expect((r.save as unknown as Record<string, unknown>).fragments).toBeUndefined();
     // Quem migrou nunca fica com saldo menor que o de antes (as fontes novas só somam).
     expect(sparksAvailable(r.save)).toBeGreaterThanOrEqual(frag.earned);

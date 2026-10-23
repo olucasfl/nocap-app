@@ -16,6 +16,8 @@ import {
   type RunState,
   type SaveState,
   type SkillRun,
+  withPick,
+  offeredRarity,
 } from './engine';
 import { AUTO_CAPTURE_DELAY_SEC, AUTOBUY_DEFAULT_LIMIT, BASE, type ButtonSkillId, type SkillStats } from './tree-skills';
 
@@ -293,8 +295,7 @@ export function suggestedOffer(state: SaveState): Suggestion | null {
   const base = rate(state);
   let best: Suggestion | null = null;
   for (const id of p.offers) {
-    const level = state.run.build[id] ?? 0;
-    const hypothetical: SaveState = { ...state, run: { ...state.run, build: { ...state.run.build, [id]: Math.min(10, level + 1) } } };
+    const hypothetical = withPick(state, id, offeredRarity(state, id));
     const gainPct = base > 0 ? (rate(hypothetical) / base - 1) * 100 : 0;
     if (!best || gainPct > best.gainPct) best = { id, gainPct };
   }

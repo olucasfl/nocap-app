@@ -1,3 +1,4 @@
+import { useApertaAllowed } from '@/lib/aperta-access';
 import { ApertaArt, AtravessaArt, BlocksArt, ColorArt, EcoArt, TimeArt } from '@/components/HubArt';
 import { Link } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
@@ -115,6 +116,7 @@ function GameCard({
 
 export function Hub() {
   const user = useAuth((s) => s.user);
+  const apertaOk = useApertaAllowed();
   const stats = useQuery({
     queryKey: ['stats'],
     queryFn: fetchStats,
@@ -205,14 +207,8 @@ export function Hub() {
         <div className="hz-grid">
           <GameCard to="/blocks" cls="hub-card-blocks" art={<BlocksArt />} name="Block's" lines={[blocksBestLabel(data)]} />
           <GameCard to="/atravessa" cls="hub-card-atravessa" art={<AtravessaArt />} name="Atravessa!" size="long" lines={[atravessaBestLabel(data)]} />
-          {/* Só quem tem conta joga: o convidado é levado ao login. */}
-          <GameCard
-            to={user ? '/arcade/aperta' : '/entrar'}
-            cls="hub-card-aperta"
-            art={<ApertaArt />}
-            name="Aperta!"
-            lines={[user ? 'CLICKER NO ESPAÇO' : 'ENTRE PARA JOGAR']}
-          />
+          {/* Em teste: o cartão só aparece para a conta liberada pelo servidor (visitante e outras contas não veem). */}
+          {apertaOk === true && <GameCard to="/arcade/aperta" cls="hub-card-aperta" art={<ApertaArt />} name="Aperta!" lines={['CLICKER NO ESPAÇO']} />}
         </div>
       </section>
 

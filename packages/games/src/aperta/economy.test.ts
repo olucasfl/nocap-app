@@ -17,6 +17,7 @@ import {
   clampCostFactor,
   dustGoal,
   energyCap,
+  GRIMOIRE_LEVEL_STEP,
   levelFactor,
   minPicks,
   rarityUnlockPicks,
@@ -96,11 +97,11 @@ describe('energyCap', () => {
 });
 
 describe('levelFactor', () => {
-  it('soma 50% por nível até o 10', () => {
+  it('cada nível soma o passo (80%) até o 10', () => {
     expect(levelFactor(1)).toBe(1);
-    expect(levelFactor(2)).toBe(1.5);
-    expect(levelFactor(10)).toBe(5.5);
-    expect(levelFactor(99)).toBe(5.5);
+    expect(levelFactor(2)).toBeCloseTo(1 + GRIMOIRE_LEVEL_STEP, 9);
+    expect(levelFactor(10)).toBeCloseTo(1 + 9 * GRIMOIRE_LEVEL_STEP, 9);
+    expect(levelFactor(99)).toBeCloseTo(1 + 9 * GRIMOIRE_LEVEL_STEP, 9);
     expect(levelFactor(0)).toBe(1);
   });
 });

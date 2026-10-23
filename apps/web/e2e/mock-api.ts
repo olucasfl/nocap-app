@@ -128,6 +128,8 @@ export async function installApi(page: Page, opts: MockOptions = {}) {
     const body = (req.postData() ? JSON.parse(req.postData()!) : {}) as Record<string, unknown>;
 
     if (path === '/api/auth/get-session') return json(route, { user: USER });
+    // Aperta! em teste: o servidor libera só a conta do Lucas; a conta de teste dos e2e conta como liberada.
+    if (path === '/me/aperta/access') return json(route, { allowed: true });
     if (path === '/me/visit') return json(route, { current: 1, best: 1, visitedToday: true });
     if (path === '/me/stats') {
       const d = { current: 0, best: 0, playedToday: false, totalScore: null };

@@ -81,8 +81,8 @@ describe('tabela de conteúdo por colapso (spec 5.4)', () => {
     expect(sorted(inTable)).toEqual(sorted(GRIMOIRES.map((g) => g.id)));
   });
 
-  it('os totais do lançamento batem: 55 grimórios comuns (os 10 proibidos moram no Cofre), 6 regiões, 5 objetos, 42 melhorias, 2 eventos', () => {
-    expect(GRIMOIRES).toHaveLength(55);
+  it('os totais do lançamento batem: 14 grimórios (os 10 proibidos moram no Cofre), 6 regiões, 5 objetos, 42 melhorias, 2 eventos', () => {
+    expect(GRIMOIRES).toHaveLength(14);
     expect(REGIONS).toHaveLength(6);
     expect(OBJECTS).toHaveLength(5);
     expect(UPGRADES).toHaveLength(42);
@@ -91,8 +91,8 @@ describe('tabela de conteúdo por colapso (spec 5.4)', () => {
     expect(COLLAPSE_CONTENT.flatMap((r) => r.mechanics)).toEqual(['favorite', 'missions']);
   });
 
-  it('cada colapso novo traz 4 ou 5 grimórios comuns e uma região', () => {
-    expect(COLLAPSE_CONTENT.slice(1).map((r) => r.grimoires.length)).toEqual([4, 4, 4, 4, 5]);
+  it('os 14 grimórios chegam aos poucos (10, 2, 1, 1) e cada colapso novo traz uma região', () => {
+    expect(COLLAPSE_CONTENT.map((r) => r.grimoires.length)).toEqual([10, 2, 1, 1, 0, 0]);
     expect(COLLAPSE_CONTENT.slice(1).every((r) => r.region)).toBe(true);
   });
 
@@ -112,10 +112,10 @@ describe('tabela de conteúdo por colapso (spec 5.4)', () => {
     const two = newContentAt(2);
     expect(two[0]).toMatchObject({ kind: 'region', id: 'jupiter-saturn' });
     expect(two.map((i) => i.name)).toEqual(
-      expect.arrayContaining(['Calisto', 'Encélado', 'Sonda Voyager', MECHANIC_NAMES.favorite, EVENT_NAMES['meteor-shower']]),
+      expect.arrayContaining(['Antares', 'Sonda Voyager', MECHANIC_NAMES.favorite, EVENT_NAMES['meteor-shower']]),
     );
     expect(newContentAt(4).map((i) => i.name)).toEqual(
-      expect.arrayContaining(['Sedna', 'Hale-Bopp', MECHANIC_NAMES.missions, EVENT_NAMES['solar-storm']]),
+      expect.arrayContaining([MECHANIC_NAMES.missions, EVENT_NAMES['solar-storm']]),
     );
     expect(newContentAt(99)).toEqual([]);
   });
@@ -316,7 +316,7 @@ describe('Missões da estação (colapso 4)', () => {
 
   it('a missão cumprida conta no total da conta e a vida nova começa sem missão', () => {
     const build = (done: boolean) =>
-      run(atCollapse(4, { album: ['moon'], stats: { ...atCollapse(4).stats, picks: 30 } }), {
+      run(atCollapse(4, { album: ['moon:common'], stats: { ...atCollapse(4).stats, picks: 30 } }), {
         dustLife: dustGoal(5),
         picks: minPicks(5),
         build: { moon: 1 },
@@ -339,7 +339,7 @@ describe('validateSave e o conteúdo dos colapsos 1 a 5', () => {
   };
   /** Um save no colapso `k` que já tem o grimório `id` na vida (e no álbum). */
   const holding = (k: number, id: string) =>
-    run(atCollapse(k, { album: [id], stats: { ...atCollapse(k).stats, picks: 5 } }), { picks: 1, build: { [id]: 1 } });
+    run(atCollapse(k, { album: [`${id}:common`], stats: { ...atCollapse(k).stats, picks: 5 } }), { picks: 1, build: { [id]: 1 } });
   const withUpgrade = (k: number, id: string) => {
     const s = atCollapse(k, { stats: { ...atCollapse(k).stats, dustTotal: 1e9 } });
     const levels = s.run.upgradeLevels.slice();
@@ -354,7 +354,7 @@ describe('validateSave e o conteúdo dos colapsos 1 a 5', () => {
   });
 
   it.each([
-    ['grimório do colapso 4 no colapso 3', holding(3, 'sedna'), 'colapso futuro'],
+    ['grimório do colapso 2 no colapso 1', holding(1, 'antares'), 'colapso futuro'],
     ['região fechada', atCollapse(1, { regionId: 'jupiter-saturn' }), 'Região ainda fechada'],
     ['Sonda Voyager no colapso 1', withObject(1, 'probe'), 'Objeto de colapso futuro'],
     ['Asteroide no colapso 0', withObject(0, 'asteroid'), 'Objeto de colapso futuro'],
@@ -364,16 +364,16 @@ describe('validateSave e o conteúdo dos colapsos 1 a 5', () => {
     ['Chuva de meteoros no colapso 1', run(atCollapse(1), { event: { id: 'meteor-shower', until: 10 }, nextEventAt: 20 }), 'Evento de colapso futuro'],
     ['Tempestade solar no colapso 3', run(atCollapse(3), { event: { id: 'solar-storm', until: 10 }, nextEventAt: 20 }), 'Evento de colapso futuro'],
     ['missão no colapso 3', run(atCollapse(3), { mission: { id: 'touch-600', progress: 0, done: false, doneAt: -1e9 } }), 'Missão de colapso futuro'],
-    ['favorito no colapso 1', atCollapse(1, { album: ['moon'], favorite: 'moon' }), 'Favorito inválido'],
+    ['favorito no colapso 1', atCollapse(1, { album: ['moon:common'], favorite: 'moon' }), 'Favorito inválido'],
     ['missão com progresso incoerente', run(atCollapse(4), { mission: { id: 'touch-600', progress: 10, done: true, doneAt: -1e9 } }), 'Missão incoerente'],
   ])('recusa: %s', (_, save, message) => {
     expect(errorsOf(save)).toContain(message);
   });
 
   it('aceita o conteúdo quando o colapso já chegou', () => {
-    const s = run(atCollapse(4, { album: ['moon', 'sedna'], favorite: 'moon', stats: { ...atCollapse(4).stats, picks: 6 } }), {
+    const s = run(atCollapse(4, { album: ['moon:common', 'antares:common'], favorite: 'moon', stats: { ...atCollapse(4).stats, picks: 6 } }), {
       picks: 2,
-      build: { sedna: 1, moon: 1 },
+      build: { antares: 1, moon: 1 },
       event: { id: 'solar-storm', until: 10 },
       nextEventAt: 500,
       mission: { id: 'touch-600', progress: 10, done: false, doneAt: -1e9 },

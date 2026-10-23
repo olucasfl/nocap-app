@@ -97,7 +97,7 @@ describe('catálogo ampliado', () => {
       expect(a.text.length, a.id).toBeGreaterThan(5);
       expect(a.text, a.id).not.toMatch(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u);
     }
-    expect(grimoireById('pillars')).toBeDefined();
+    expect(grimoireById('titan')).toBeDefined();
   });
 
   it('um save novo não tem nenhuma pronta e todas começam em 0', () => {
@@ -199,24 +199,24 @@ describe('progresso das famílias', () => {
 });
 
 describe('contadores do motor que alimentam as conquistas', () => {
-  const offerRun = (s: SaveState, offers: string[]): SaveState => ({
+  const offerRun = (s: SaveState, offers: string[], rarity: 'common' | 'rare' | 'epic' | 'legendary' = 'common'): SaveState => ({
     ...s,
-    run: { ...s.run, pending: { offers, openedAt: -10, selected: null, picksLeft: 1, rerollsLeft: 3 } as RunState['pending'] },
+    run: {
+      ...s.run,
+      pending: { offers, rarities: Object.fromEntries(offers.map((o) => [o, rarity])), openedAt: -10, selected: null, picksLeft: 1, rerollsLeft: 3 } as RunState['pending'],
+    },
   });
   const choose = (s: SaveState, id: string, t: number) => chooseGrimoire(selectGrimoire(s, id, t), id, t);
 
   it('sequência de raros: escolher comum zera, rara ou melhor soma, o recorde fica', () => {
     let s = base();
-    const rarity = (r: string) => (['moon', 'mercury', 'venus'].map((id) => grimoireById(id)!).find((g) => g.rarity === r) ?? undefined)?.id;
-    const rare = 'europa';
+    const rare = 'uranus';
     const common = 'moon';
-    expect([grimoireById(rare)!.rarity, grimoireById(common)!.rarity]).toEqual(['rare', 'common']);
-    void rarity;
     // O relógio anda de 2 em 2 s: um salto maior que 5 s é aba escondida e o motor refaz a trava da oferta.
     let t = 0;
     for (let i = 0; i < 3; i++) {
-      s = choose(offerRun(s, [rare]), rare, (t += 2));
-      s = { ...s, run: { ...s.run, build: {} } };
+      s = choose(offerRun(s, [rare], 'rare'), rare, (t += 2));
+      s = { ...s, run: { ...s.run, build: {}, buildGain: {}, buildRarity: {} } };
     }
     expect(s.stats.rareStreak).toBe(3);
     s = choose(offerRun(s, [common]), common, (t += 2));
@@ -243,7 +243,7 @@ describe('contadores do motor que alimentam as conquistas', () => {
   });
 
   it('trocar carta conta, e ofertas com lendário ou proibido também (a 1ª oferta do jogo marca a conquista escondida)', () => {
-    const legendary = ['pillars', 'andromeda', 'milky-way'].find((id) => grimoireById(id)!.rarity === 'legendary') ?? 'pillars';
+    const legendary = 'vega';
     let s = base();
     s = { ...s, run: { ...s.run, energy: 1e9 } };
     s = tickObjects(s, 2);

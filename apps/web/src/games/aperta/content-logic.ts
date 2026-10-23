@@ -10,9 +10,11 @@ import {
   missionById,
   newContentAt,
   unlockedContent,
+  withPick,
   type ContentKind,
   type EffectiveStats,
   type EventId,
+  type GrimoireRarity,
   type NewContentItem,
   type SaveState,
 } from '@nocap/games';
@@ -147,19 +149,13 @@ const STAT_LINES: StatLine[] = [
   { label: 'Energia até o próximo', read: (s) => s.energyStepFactor, show: pct },
 ];
 
-/** O mesmo save com o grimório `id` pego (nível 1) ou subindo um nível, só para comparar os números. */
-function withGrimoire(state: SaveState, id: string): SaveState {
-  const level = state.run.build[id] ?? 0;
-  return { ...state, run: { ...state.run, build: { ...state.run.build, [id]: level + 1 } } };
-}
-
 /**
  * "Poeira por toque: 12 -> 14": o que mudaria na vida atual se a carta fosse escolhida (até 2 linhas).
  * Efeitos que não aparecem nesses números (toque especial, captura) devolvem `null`.
  */
-export function cardGain(state: SaveState, id: string): string | null {
+export function cardGain(state: SaveState, id: string, rarity: GrimoireRarity = 'common'): string | null {
   const before = effectiveStats(state);
-  const after = effectiveStats(withGrimoire(state, id));
+  const after = effectiveStats(withPick(state, id, rarity));
   const lines: string[] = [];
   for (const line of STAT_LINES) {
     const a = line.read(before);
@@ -184,11 +180,11 @@ export function cardGain(state: SaveState, id: string): string | null {
  * O que cada carta oferecida faz nos números da vida atual ("Poeira por toque: 12 -> 14"). Desde a spec 041 aparece
  * para todos; o Observatório Gaia só acrescenta a frase de efeito de ocasião quando os números não mudam.
  */
-export function gaiaPreviews(state: SaveState, offers: readonly string[]): Record<string, string> {
+export function gaiaPreviews(state: SaveState, offers: readonly string[], rarities: Readonly<Record<string, GrimoireRarity>> = {}): Record<string, string> {
   const out: Record<string, string> = {};
   const gaia = gaiaActive(state);
   for (const id of offers) {
-    const gain = cardGain(state, id);
+    const gain = cardGain(state, id, rarities[id] ?? 'common');
     if (gain) out[id] = gain;
     else if (gaia) out[id] = 'Efeito de ocasião: sem mudança nos números agora';
   }

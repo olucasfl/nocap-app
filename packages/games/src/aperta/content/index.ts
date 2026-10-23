@@ -51,13 +51,7 @@ export interface CollapseContent {
 export const COLLAPSE_CONTENT: readonly CollapseContent[] = [
   {
     region: 'inner-solar-system',
-    grimoires: [
-      'moon', 'mercury', 'venus', 'mars', 'ceres', 'phobos', 'io', 'vesta', 'halley', 'uranus',
-      'europa', 'titan', 'jupiter', 'saturn', 'neptune', 'ganymede', 'pluto', 'triton',
-      'sirius', 'vega', 'betelgeuse', 'polaris', 'antares', 'crab-nebula',
-      'orion-nebula', 'milky-way', 'andromeda',
-      'earth', 'sun', 'deimos', 'charon', 'tethys', 'rigel', 'voyager-1',
-    ],
+    grimoires: ['moon', 'sirius', 'vega', 'venus', 'mars', 'io', 'mercury', 'phobos', 'titan', 'betelgeuse'],
     upgrades: [
       'lens', 'gloves', 'trained', 'rhythm', 'magnet', 'hands', 'charged', 'luck', 'cadence', 'kepler', 'lens2', 'echo',
       'cabin', 'voyager', 'satellite', 'probe', 'telescope', 'observatory', 'station', 'colony', 'fleet', 'portal',
@@ -67,25 +61,25 @@ export const COLLAPSE_CONTENT: readonly CollapseContent[] = [
     mechanics: [],
     events: [],
   },
-  { region: 'asteroid-belt', grimoires: ['pallas', 'hygiea', 'ryugu', 'kepler-22b'], upgrades: ['webb'], objects: ['asteroid'], mechanics: [], events: [] },
+  { region: 'asteroid-belt', grimoires: ['uranus', 'halley'], upgrades: ['webb'], objects: ['asteroid'], mechanics: [], events: [] },
   {
     region: 'jupiter-saturn',
-    grimoires: ['callisto', 'enceladus', 'horsehead', 'golden-record'],
+    grimoires: ['antares'],
     upgrades: [],
     objects: ['probe'],
     mechanics: ['favorite'],
     events: ['meteor-shower'],
   },
-  { region: 'kuiper-belt', grimoires: ['eris', 'haumea', 'trappist-1', 'aldebaran'], upgrades: ['chandra'], objects: [], mechanics: [], events: [] },
+  { region: 'kuiper-belt', grimoires: ['orion-nebula'], upgrades: ['chandra'], objects: [], mechanics: [], events: [] },
   {
     region: 'oort-cloud',
-    grimoires: ['sedna', 'hale-bopp', 'oumuamua', 'vela-pulsar'],
+    grimoires: [],
     upgrades: [],
     objects: [],
     mechanics: ['missions'],
     events: ['solar-storm'],
   },
-  { region: 'alpha-centauri', grimoires: ['proxima-centauri', 'alpha-centauri-a', 'pleiades-cluster', 'sombrero', 'pillars'], upgrades: ['gaia'], objects: [], mechanics: [], events: [] },
+  { region: 'alpha-centauri', grimoires: [], upgrades: ['gaia'], objects: [], mechanics: [], events: [] },
 ];
 
 /** Último colapso com conteúdo nesta versão (v1). */

@@ -1,4 +1,4 @@
-import { CHOICE_LOCK_SEC, GRIMOIRES, type PendingChoice } from '@nocap/games';
+import { CHOICE_LOCK_SEC, GRIMOIRES, GRIMOIRE_RARITIES, rarityRank, type GrimoireRarity, type PendingChoice } from '@nocap/games';
 import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { GrimoireBook } from './GrimoireBook';
 import { artRarity, astroFor, modalGuarded } from './game-logic';
@@ -12,6 +12,8 @@ interface Props {
   lockRemaining: number;
   /** Nível atual de cada grimório da vida, para "sobe para o nível N". */
   build: Record<string, number>;
+  /** Maior raridade que a vida já tem de cada grimório (0 comum a 3 lendário): a carta mais rara evolui o grimório. */
+  buildRarity?: Record<string, number>;
   paused: boolean;
   onSelect: (id: string) => void;
   onConfirm: (id: string) => void;
@@ -61,7 +63,7 @@ function GainLine({ label, text }: { label: string; text: string }) {
   );
 }
 
-export function ChoiceModal({ pending, lockRemaining, build, paused, onSelect, onConfirm, onReroll, rerollsAvailable, discardsLeft = 0, onDiscard, pityLeft = null, suggestion = null, gain, coach }: Props) {
+export function ChoiceModal({ pending, lockRemaining, build, buildRarity = {}, paused, onSelect, onConfirm, onReroll, rerollsAvailable, discardsLeft = 0, onDiscard, pityLeft = null, suggestion = null, gain, coach }: Props) {
   const rerolls = rerollsAvailable ?? pending.rerollsLeft;
   const root = useRef<HTMLDivElement>(null);
   // Esc não fecha: a barra cheia obriga a escolher, e o toque acidental não pode escapar dela.
@@ -122,8 +124,13 @@ export function ChoiceModal({ pending, lockRemaining, build, paused, onSelect, o
           {pending.offers.map((id) => {
             const def = GRIMOIRES.find((g) => g.id === id);
             if (!def) return null;
-            const rarity = artRarity(def.rarity);
+            const offered: GrimoireRarity = pending.rarities?.[id] ?? 'common';
+            const rarity = artRarity(offered);
             const have = build[id] ?? 0;
+            // Raridade maior que a do livro: o grimório evolui (ex.: Raro -> Lendário).
+            const fromRank = buildRarity[id] ?? 0;
+            const evolves = have > 0 && rarityRank(offered) > fromRank;
+            const fromRarity = artRarity(GRIMOIRE_RARITIES[fromRank] ?? 'common');
             const isSelected = selected === id;
             return (
               <div key={id} className="ap-pickcell">
@@ -139,6 +146,16 @@ export function ChoiceModal({ pending, lockRemaining, build, paused, onSelect, o
                 <span className="ap-pick-rar" data-rar={rarity}>
                   {RARITY_LABEL[rarity]}
                 </span>
+                <span className="ap-pick-seals">
+                {evolves && (
+                  <span className="ap-pick-evo" data-from={fromRarity} data-to={rarity} aria-label={`Evolui de ${RARITY_LABEL[fromRarity]} para ${RARITY_LABEL[rarity]}`}>
+                    <b>{RARITY_LABEL[fromRarity]}</b>
+                    <svg viewBox="0 0 24 12" width="22" height="11" aria-hidden="true">
+                      <path d="M1 6h19M15 1l6 5-6 5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    <b className="is-next">{RARITY_LABEL[rarity]}</b>
+                  </span>
+                )}
                 <span className="ap-pick-lvl" aria-label={have > 0 ? `Nível ${have} para o nível ${have + 1}` : 'Grimório novo, nível 1'}>
                   {have > 0 ? (
                     <>
@@ -151,6 +168,7 @@ export function ChoiceModal({ pending, lockRemaining, build, paused, onSelect, o
                   ) : (
                     <b className="is-next">NOVO · NVL 1</b>
                   )}
+                </span>
                 </span>
                 <span className="ap-pick-art">
                   <GrimoireBook rarity={rarity} astro={astroFor(id, def.family)} name={def.name} size="sm" still />
@@ -165,9 +183,9 @@ export function ChoiceModal({ pending, lockRemaining, build, paused, onSelect, o
                 <span className="ap-pick-info" data-cat={def.category}>
                   <span className="ap-pick-fx">{def.text}</span>
                   {gain?.[id] ? (
-                    <GainLine label={have > 0 ? 'Vai subir' : 'Você ganha'} text={gain[id]!} />
+                    <GainLine label={evolves ? 'Vai evoluir' : have > 0 ? 'Vai subir' : 'Você ganha'} text={gain[id]!} />
                   ) : (
-                    have > 0 && <GainLine label="Vai subir" text="O efeito fica mais forte neste nível" />
+                    have > 0 && <GainLine label={evolves ? 'Vai evoluir' : 'Vai subir'} text="O efeito fica mais forte neste nível" />
                   )}
                 </span>
               </button>

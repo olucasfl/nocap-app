@@ -1,8 +1,9 @@
 import 'reflect-metadata';
-import { BadRequestException, ConflictException, NotFoundException, UnauthorizedException, type ExecutionContext } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, NotFoundException, UnauthorizedException, type ExecutionContext } from '@nestjs/common';
 import { newSave, press, type SaveState } from '@nocap/games';
 import { describe, expect, it } from 'vitest';
 import { AuthGuard } from '../auth/auth.guard';
+import { ApertaAccessController, ApertaAccessGuard, allowedEmails, canPlayAperta } from './aperta-access';
 import { ApertaController } from './aperta.controller';
 import type { ApertaRepository, SaveFields, SaveRow } from './aperta.repository';
 import { ApertaService, RECOVERY_DAYS } from './aperta.service';
@@ -230,13 +231,13 @@ describe('vários aparelhos', () => {
   it('álbum e conquistas só crescem: o servidor une com o que a conta já tem', async () => {
     const { service } = setup();
     const a = played(40);
-    const withMoon: SaveState = { ...a, album: ['moon'], run: { ...a.run, build: { moon: 1 }, picks: 1 }, stats: { ...a.stats, picks: 1 }, achievements: ['tap-1'] };
+    const withMoon: SaveState = { ...a, album: ['moon:common'], run: { ...a.run, build: { moon: 1 }, picks: 1 }, stats: { ...a.stats, picks: 1 }, achievements: ['tap-1'] };
     const b = played(80);
-    const stale: SaveState = { ...b, album: ['mars'], run: { ...b.run, build: { mars: 1 }, picks: 1 }, stats: { ...b.stats, picks: 1 } };
+    const stale: SaveState = { ...b, album: ['mars:common'], run: { ...b.run, build: { mars: 1 }, picks: 1 }, stats: { ...b.stats, picks: 1 } };
     await service.put('u', 1, { data: newSave('a', T0), baseRevision: 0 });
     await service.put('u', 1, { data: withMoon, baseRevision: 1 });
     const r = await service.put('u', 1, { data: stale, baseRevision: 2 });
-    expect(r.data!.album).toEqual(expect.arrayContaining(['moon', 'mars']));
+    expect(r.data!.album).toEqual(expect.arrayContaining(['moon:common', 'mars:common']));
     expect(r.data!.achievements).toEqual(expect.arrayContaining(['tap-1']));
   });
 });
@@ -323,5 +324,44 @@ describe('rotas do controlador', () => {
       Reflect.getMetadata('nocap:rate', ApertaController.prototype[name]) as { limit: number; windowMs: number };
     expect(rule('put')).toEqual({ limit: 2, windowMs: 5_000 });
     for (const name of ['list', 'get', 'remove', 'restore'] as const) expect(rule(name).windowMs).toBe(60_000);
+  });
+});
+
+describe('liberação só para a conta do Lucas (jogo em teste)', () => {
+  const ctxOf = (user: unknown) => ({ switchToHttp: () => ({ getRequest: () => ({ user }) }) }) as unknown as ExecutionContext;
+
+  it('sem a variável vale só a conta do Lucas, sem diferença de caixa ou espaços', () => {
+    expect(allowedEmails(undefined)).toEqual(['lucasfariasleandro@gmail.com']);
+    expect(allowedEmails('  ')).toEqual(['lucasfariasleandro@gmail.com']);
+    expect(canPlayAperta({ email: 'lucasfariasleandro@gmail.com' }, undefined)).toBe(true);
+    expect(canPlayAperta({ email: ' LucasFariasLeandro@Gmail.com ' }, undefined)).toBe(true);
+    expect(canPlayAperta({ email: 'outra@pessoa.com' }, undefined)).toBe(false);
+    expect(canPlayAperta({ email: '' }, undefined)).toBe(false);
+    expect(canPlayAperta(null, undefined)).toBe(false);
+  });
+
+  it('APERTA_ALLOWED_EMAILS troca a lista (vários e-mails, vírgula)', () => {
+    expect(allowedEmails('a@x.com, B@y.com')).toEqual(['a@x.com', 'b@y.com']);
+    expect(canPlayAperta({ email: 'b@y.com' }, 'a@x.com, B@y.com')).toBe(true);
+    expect(canPlayAperta({ email: 'lucasfariasleandro@gmail.com' }, 'a@x.com')).toBe(false);
+  });
+
+  it('as rotas de save passam pelo guard de liberação: conta de fora recebe 403, a liberada passa', () => {
+    const guards = Reflect.getMetadata('__guards__', ApertaController) as unknown[];
+    expect(guards).toContain(ApertaAccessGuard);
+    // O guard de liberação vem depois do AuthGuard (que põe `req.user`) e antes do limite de taxa.
+    expect(guards.indexOf(AuthGuard)).toBeLessThan(guards.indexOf(ApertaAccessGuard));
+    const guard = new ApertaAccessGuard();
+    expect(() => guard.canActivate(ctxOf({ id: 'u', email: 'outra@pessoa.com' }))).toThrow(ForbiddenException);
+    expect(() => guard.canActivate(ctxOf(undefined))).toThrow(ForbiddenException);
+    expect(guard.canActivate(ctxOf({ id: 'u', email: 'lucasfariasleandro@gmail.com' }))).toBe(true);
+  });
+
+  it('GET /me/aperta/access exige conta e responde só sim ou não', () => {
+    const guards = Reflect.getMetadata('__guards__', ApertaAccessController) as unknown[];
+    expect(guards).toEqual([AuthGuard]);
+    const ctl = new ApertaAccessController();
+    expect(ctl.access({ user: { email: 'lucasfariasleandro@gmail.com' } } as never)).toEqual({ allowed: true });
+    expect(ctl.access({ user: { email: 'outra@pessoa.com' } } as never)).toEqual({ allowed: false });
   });
 });

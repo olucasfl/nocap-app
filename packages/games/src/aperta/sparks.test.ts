@@ -24,7 +24,7 @@ const withStats = (s: SaveState, stats: Partial<SaveState['stats']>): SaveState 
 describe('fonte: álbum (1ª descoberta)', () => {
   it('1 comum ou raro, 2 épico, 3 lendário, 4 proibido', () => {
     expect(ALBUM_SPARKS).toEqual({ common: 1, rare: 1, epic: 2, legendary: 3, forbidden: 4 });
-    const pick = (rarity: string) => (rarity === 'forbidden' ? FORBIDDEN[0]!.id : GRIMOIRES.find((g) => g.rarity === rarity)!.id);
+    const pick = (rarity: string) => (rarity === 'forbidden' ? FORBIDDEN[0]!.id : `${GRIMOIRES[0]!.id}:${rarity}`);
     for (const [rarity, value] of Object.entries(ALBUM_SPARKS)) {
       expect(sparkSources(base({ album: [pick(rarity)] })).album).toBe(value);
     }
@@ -75,7 +75,7 @@ describe('Estrela dos Proibidos (gancho pronto, ligado a proibidos que já exist
     expect(starSparks({ 'cygnus-x1': 5 })).toBe(6);
     expect(starSparks({ 'cygnus-x1': 5, m87: 3, 'sagittarius-a': 4 })).toBe(6 + 2 + 2);
     // Grimório que não é proibido nunca conta.
-    expect(grimoireById('moon')?.rarity).not.toBe('forbidden');
+    expect(grimoireById('moon')).toBeDefined();
     expect(starSparks({ moon: 5 })).toBe(0);
   });
 

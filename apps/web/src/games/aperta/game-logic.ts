@@ -2,6 +2,8 @@ import {
   COMBO_BONUS_PER_POINT,
   FORBIDDEN,
   FORBIDDEN_MAX_LEVEL,
+  GRIMOIRE_RARITIES,
+  albumVersions,
   vaultOffers,
   collapseProgress,
   formatDecimal,
@@ -9,6 +11,7 @@ import {
   formatNumber,
   type CollapseProgress,
   type GrimoireCategory,
+  type GrimoireRarity,
   type ObjectKind,
   type ObjectPreview,
   UPGRADES,
@@ -161,16 +164,28 @@ export function astroFor(id: string, family: Family): AstroId {
 /** Toques ignorados nos primeiros ms depois de abrir um modal: o dedo ainda estava no botão (spec 4.7). */
 export const MODAL_OPEN_GUARD_MS = 300;
 
+/** Um dos 4 espaços de um grimório no livro: a versão (raridade) e se já foi descoberta. */
+export interface AlbumSlot {
+  rarity: ArtRarity;
+  label: string;
+  found: boolean;
+}
+
 export interface AlbumEntry {
   id: string;
   name: string;
   text: string;
   family: Family;
-  /** O que o grimório ajuda (toque, objetos, geradores, energia e sorte). */
+  /** O que o grimório ajuda (toque, objetos, energia e sorte). */
   category: GrimoireCategory;
+  /** A maior raridade já descoberta (a cor do livro); `comum` enquanto escondido. */
   rarity: ArtRarity;
-  /** Já descoberto neste save (o álbum guarda para sempre, a vida não). */
+  /** Pelo menos uma versão descoberta (o livro guarda para sempre, a vida não). */
   discovered: boolean;
+  /** Os 4 espaços (Comum, Raro, Épico, Lendário). */
+  slots: AlbumSlot[];
+  /** Versões descobertas (0 a 4). */
+  found: number;
   /** Nível na vida atual (0 = ainda não pego nesta vida). */
   level: number;
   /** É o favorito do sorteio (spec 5.4, colapso 2). */
@@ -179,32 +194,40 @@ export interface AlbumEntry {
 
 export interface AlbumView {
   entries: AlbumEntry[];
+  /** Versões descobertas e total de versões (4 por grimório aberto). */
   discovered: number;
   total: number;
 }
 
 /**
- * Álbum da página de Grimórios: só os grimórios já liberados pelos colapsos, na ordem do catálogo.
- * Os não descobertos viram "???": o nome e o efeito só saem do catálogo depois da primeira escolha.
+ * Livro da página de Grimórios (spec 042): um grimório por astro, só os liberados pelos colapsos, com 4 espaços
+ * (uma versão por raridade) que ficam "???" até a versão ser pega pela primeira vez.
  */
 export function albumView(state: SaveState): AlbumView {
   const open = unlockedContent(state).grimoires;
   const entries = open.map((g): AlbumEntry => {
-    const discovered = state.album.includes(g.id);
+    const versions = albumVersions(state.album, g.id);
+    const slots = GRIMOIRE_RARITIES.map((r): AlbumSlot => ({ rarity: artRarity(r), label: RARITY_LABEL_PT[r], found: versions.includes(r) }));
+    const top = versions.length > 0 ? (versions[versions.length - 1] as string) : 'common';
+    const discovered = versions.length > 0;
     return {
       id: g.id,
       name: discovered ? g.name : '???',
       text: discovered ? g.text : 'Ainda escondido no espaço',
       family: g.family,
       category: g.category,
-      rarity: artRarity(g.rarity),
+      rarity: artRarity(top),
       discovered,
+      slots,
+      found: versions.length,
       level: state.run.build[g.id] ?? 0,
       favorite: state.favorite === g.id,
     };
   });
-  return { entries, discovered: entries.filter((e) => e.discovered).length, total: entries.length };
+  return { entries, discovered: entries.reduce((n, e) => n + e.found, 0), total: entries.length * GRIMOIRE_RARITIES.length };
 }
+
+const RARITY_LABEL_PT: Record<GrimoireRarity, string> = { common: 'Comum', rare: 'Raro', epic: 'Épico', legendary: 'Lendário' };
 
 /** Verdadeiro enquanto o modal acabou de abrir e o toque ainda deve ser ignorado. */
 export function modalGuarded(openedAtMs: number, nowMs: number): boolean {

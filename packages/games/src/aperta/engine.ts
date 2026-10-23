@@ -7,10 +7,10 @@ import { awardAchievements } from './achievements';
 import type { UiState } from './tutorial';
 import {
   GRIMOIRES,
+  GRIMOIRE_RARITIES,
   OBJECTS,
   OBJECT_REWARD,
   RARE_EFFECTS,
-  RARITIES,
   RARITY_WEIGHT,
   REGIONS,
   UPGRADES,
@@ -18,6 +18,7 @@ import {
   upgradeIndex,
   type Effect,
   type GrimoireDef,
+  type GrimoireRarity,
   type ObjectDef,
   type ObjectKind,
   LEGENDARY_KINDS,
@@ -107,14 +108,19 @@ import {
   clampCostFactor,
   dustGoal,
   energyCap,
+  albumHas,
+  albumKey,
   levelFactor,
   minPicks,
+  offerableAt,
+  pickInto,
+  rarityRank,
   rarityUnlockPicks,
   upgradeCost,
 } from './economy';
 
 /** 3: Cofre dos Proibidos no lugar do Atlas (spec 040, etapa 15). */
-export const SAVE_VERSION = 5;
+export const SAVE_VERSION = 6;
 /** Valor de "nunca tocou": negativo e finito, para o save continuar sendo JSON válido. */
 const NEVER = -1e9;
 
@@ -144,6 +150,8 @@ export interface MissionState {
 
 export interface PendingChoice {
   offers: string[];
+  /** Raridade com que cada carta oferecida vem (spec 042); `offers` guarda só o grimório. */
+  rarities?: Record<string, GrimoireRarity>;
   openedAt: number;
   /** 1º passo da escolha em dois passos (seção 4.7): marcar a carta; o 2º passo confirma. */
   selected: string | null;
@@ -180,6 +188,10 @@ export interface RunState {
   upgradeLevels: number[];
   /** Grimório -> nível. */
   build: Record<string, number>;
+  /** Grimório -> ganho acumulado (o número que escala os efeitos; cada nível vale o passo da raridade em que foi pego). */
+  buildGain: Record<string, number>;
+  /** Grimório -> maior raridade que já se tem dele (0 comum a 3 lendário). */
+  buildRarity: Record<string, number>;
   clicks: number;
   combo: number;
   lastPressAt: number;
@@ -383,6 +395,8 @@ function freshRun(rngState: number, upgradeCount = UPGRADES.length): RunState {
     picks: 0,
     upgradeLevels: new Array<number>(upgradeCount).fill(0),
     build: {},
+    buildGain: {},
+    buildRarity: {},
     clicks: 0,
     combo: 0,
     lastPressAt: NEVER,
@@ -669,7 +683,7 @@ function emptyByKind(value: number): Record<ObjectKind, number> {
 
 const statsCache = new WeakMap<
   number[],
-  { build: RunState['build']; vault: SaveState['vault']; seals: number; tree: SaveState['tree']; collapses: number; stats: EffectiveStats }
+  { build: RunState['build']; buildGain: RunState['buildGain']; vault: SaveState['vault']; seals: number; tree: SaveState['tree']; collapses: number; stats: EffectiveStats }
 >();
 
 /** Junta melhorias, grimórios, Cofre dos Proibidos e árvore. Memoizada: o estado é imutável. */
@@ -679,6 +693,7 @@ export function effectiveStats(state: SaveState): EffectiveStats {
   if (
     hit &&
     hit.build === state.run.build &&
+    hit.buildGain === state.run.buildGain &&
     hit.vault === state.vault &&
     hit.seals === state.seals &&
     hit.tree === state.tree &&
@@ -689,6 +704,7 @@ export function effectiveStats(state: SaveState): EffectiveStats {
   const stats = computeStats(state);
   statsCache.set(key, {
     build: state.run.build,
+    buildGain: state.run.buildGain,
     vault: state.vault,
     seals: state.seals,
     tree: state.tree,
@@ -708,7 +724,8 @@ function collectSources(state: SaveState): { sources: Source[] } {
   for (const [id, lvl] of Object.entries(state.run.build)) {
     const g = grimoireById(id);
     if (!g) continue;
-    sources.push({ effects: g.effects, gain: levelFactor(lvl), price: 1, count: 1, forbidden: false });
+    const gain = state.run.buildGain[id] ?? levelFactor(lvl);
+    sources.push({ effects: g.effects, gain, price: 1, count: gain, forbidden: false });
   }
   // Cofre dos Proibidos: todos os que a pessoa tem valem ao mesmo tempo, com os números do nível (já escalados);
   // `forbidden: true` deixa o ramo Horizonte de Eventos da árvore reforçar o ganho e cortar o preço deles.
@@ -745,7 +762,7 @@ function computeStats(state: SaveState): EffectiveStats {
   priceCut = Math.min(90, priceCut);
 
   const ownedOf = (rarity: Rarity): number =>
-    Object.keys(state.run.build).filter((id) => grimoireById(id)?.rarity === rarity).length;
+    rarity === 'forbidden' ? 0 : Object.keys(state.run.build).filter((id) => (state.run.buildRarity[id] ?? 0) === rarityRank(rarity)).length;
 
   let dustPct = 0;
   let dustFlat = 0;
@@ -859,16 +876,20 @@ function computeStats(state: SaveState): EffectiveStats {
         case 'choiceExtra':
           // Efeitos de contagem não crescem com o nível e a página arredonda o poder (60%): Caranguejo e Betelgeuse
           // ficam, mas a escolha dupla de Órion não, porque de graça em toda vida ela dobraria os grimórios.
-          choice.rerolls += Math.round((e.reroll ?? 0) * src.count);
+          // Com a raridade (spec 042) a contagem cresce; os tetos impedem que um Lendário vire 4 trocas ou 5 cartas de graça.
+          choice.rerolls += Math.min(4, Math.round((e.reroll ?? 0) * src.count));
           choice.picks += Math.floor((e.picks ?? 0) * src.count);
           choice.repeatLevels += Math.round((e.repeatLevels ?? 0) * src.count);
-          choice.cards += Math.round((e.cards ?? 0) * src.count);
+          choice.cards += Math.min(2, Math.round((e.cards ?? 0) * src.count));
           break;
         case 'onCapture':
           onCapture += e.energyTouches * s;
           break;
         case 'afterCaptureMult':
           afterCaptureMult *= m(e.mult);
+          break;
+        case 'dustPerGrimoire':
+          dustFlat += Object.keys(state.run.build).length * e.add * s;
           break;
         case 'dustPerOwned':
           dustFlat += ownedOf(e.rarity) * e.add * s;
@@ -1123,21 +1144,23 @@ export function grimoireUseful(state: SaveState, g: GrimoireDef): boolean {
   return g.effects.some((e) => !e.price && useful(e));
 }
 
-/** Sobrou alguma carta acima de comum? (sem isso, `noCommon` nunca deixa a oferta vazia). */
-function hasAbove(pool: Map<Rarity, GrimoireDef[]>): boolean {
-  return RARITIES.some((r) => r !== 'common' && (pool.get(r)?.length ?? 0) > 0);
+/** As raridades em que o grimório pode sair agora: já liberadas pelas escolhas e que ainda cabem no teto e na regra "nunca menor". */
+function offerableRarities(state: SaveState, g: GrimoireDef): GrimoireRarity[] {
+  return GRIMOIRE_RARITIES.filter((r) => state.run.picks >= rarityUnlockPicks(r, state.collapses) && offerableAt(state.run, g.id, r));
 }
 
-/** As cartas que podem sair agora: abertas, abaixo do nível máximo, já liberadas pelas escolhas e fora de `exclude`. */
+/** As cartas que podem sair agora: abertas, com alguma raridade possível e fora de `exclude`. */
 function offerCandidates(state: SaveState, exclude: readonly string[]): GrimoireDef[] {
-  return unlockedContent(state).grimoires.filter((g) => {
-    if (exclude.includes(g.id)) return false;
-    if ((state.run.build[g.id] ?? 0) >= GRIMOIRE_MAX_LEVEL) return false;
-    return state.run.picks >= rarityUnlockPicks(g.rarity, state.collapses);
-  });
+  return unlockedContent(state).grimoires.filter((g) => !exclude.includes(g.id) && offerableRarities(state, g).length > 0);
 }
 
-export function drawGrimoires(state: SaveState, exclude: readonly string[] = [], count?: number): { offers: string[]; rngState: number } {
+export interface Draw {
+  offers: string[];
+  rarities: Record<string, GrimoireRarity>;
+  rngState: number;
+}
+
+export function drawGrimoires(state: SaveState, exclude: readonly string[] = [], count?: number): Draw {
   const stats = effectiveStats(state);
   // Eclipse (evento da árvore): cada oferta traz uma carta extra enquanto dura.
   // 4ª carta (árvore): vale em toda 6ª oferta de grimórios (e sempre no Cofre); o Eclipse soma uma carta enquanto dura.
@@ -1146,79 +1169,76 @@ export function drawGrimoires(state: SaveState, exclude: readonly string[] = [],
   const candidates = offerCandidates(state, exclude);
   // Só o que rende agora; se faltar carta para a escolha, completa com o resto (nunca abre vazia).
   const usable = candidates.filter((g) => grimoireUseful(state, g));
-  const open = usable.length >= want ? usable : [...usable, ...candidates.filter((g) => !usable.includes(g))];
-  const pool = new Map<Rarity, GrimoireDef[]>();
-  for (const g of open) pool.set(g.rarity, [...(pool.get(g.rarity) ?? []), g]);
+  let open = usable.length >= want ? usable : [...usable, ...candidates.filter((g) => !usable.includes(g))];
 
   const favorite = mechanicOpen('favorite', state.collapses) ? state.favorite : null;
   // Sorte (árvore): pesos somados em PONTOS à tabela 100/24/9/3, e cada raro seguido pesa mais no próximo.
   const luck = stats.luck;
   const streakBonus = luck.rareStreak ? Math.min(RARE_STREAK_CAP, state.stats.rareStreak) * RARE_STREAK_STEP : 0;
+  const weightOf = (r: Rarity): number =>
+    RARITY_WEIGHT[r] +
+    (r === 'epic' || r === 'legendary' ? stats.choice.rarityBoost : 0) +
+    (r === 'rare' ? luck.rareWeight + streakBonus : r === 'epic' ? luck.epicWeight : r === 'legendary' ? luck.legendWeight : 0);
   let rng = state.run.rngState;
   const offers: string[] = [];
-  while (offers.length < want) {
-    const rarities = RARITIES.filter((r) => (pool.get(r)?.length ?? 0) > 0 && !(r === 'common' && stats.choice.noCommon && hasAbove(pool)));
-    if (rarities.length === 0) break;
-    const weightOf = (r: Rarity): number =>
-      RARITY_WEIGHT[r] +
-      (r === 'epic' || r === 'legendary' ? stats.choice.rarityBoost : 0) +
-      (r === 'rare' ? luck.rareWeight + streakBonus : r === 'epic' ? luck.epicWeight : r === 'legendary' ? luck.legendWeight : 0);
-    const total = rarities.reduce((sum, r) => sum + weightOf(r), 0);
-    let roll: number;
-    [roll, rng] = nextRandom(rng);
-    let acc = roll * total;
-    let rarity = rarities[rarities.length - 1] as Rarity;
-    for (const r of rarities) {
-      acc -= weightOf(r);
-      if (acc < 0) {
-        rarity = r;
-        break;
-      }
-    }
-    const cards = pool.get(rarity) as GrimoireDef[];
+  const rarities: Record<string, GrimoireRarity> = {};
+  while (offers.length < want && open.length > 0) {
+    // Primeiro o grimório (a raridade não muda a chance de um grimório aparecer), depois a raridade dele.
+    const weight = (c: GrimoireDef) => (c.id === favorite ? FAVORITE_WEIGHT : 1);
     let pick: number;
     [pick, rng] = nextRandom(rng);
-    const weight = (c: GrimoireDef) => (c.id === favorite ? FAVORITE_WEIGHT : 1);
-    let left = pick * cards.reduce((sum, c) => sum + weight(c), 0);
-    let card = cards[cards.length - 1] as GrimoireDef;
-    for (const c of cards) {
+    let left = pick * open.reduce((sum, c) => sum + weight(c), 0);
+    let card = open[open.length - 1] as GrimoireDef;
+    for (const c of open) {
       left -= weight(c);
       if (left < 0) {
         card = c;
         break;
       }
     }
+    let options = offerableRarities(state, card);
+    if (stats.choice.noCommon && options.some((r) => r !== 'common')) options = options.filter((r) => r !== 'common');
+    const total = options.reduce((sum, r) => sum + weightOf(r), 0);
+    let roll: number;
+    [roll, rng] = nextRandom(rng);
+    let acc = roll * total;
+    let rarity = options[options.length - 1] as GrimoireRarity;
+    for (const r of options) {
+      acc -= weightOf(r);
+      if (acc < 0) {
+        rarity = r;
+        break;
+      }
+    }
     offers.push(card.id);
-    pool.set(rarity, cards.filter((c) => c.id !== card.id));
+    rarities[card.id] = rarity;
+    open = open.filter((c) => c.id !== card.id);
   }
-  return { offers, rngState: rng };
+  return { offers, rarities, rngState: rng };
 }
 
 export const FOURTH_CARD_EVERY = 6;
 
-const RARITY_RANK: Record<Rarity, number> = { common: 0, rare: 1, epic: 2, legendary: 3, forbidden: 4 };
 const RARE_STREAK_CAP = 6;
 const RARE_STREAK_STEP = 0.25;
 
 /**
  * Garante que a oferta tenha uma carta de raridade `min` ou melhor (pity, Garantia, Fortuna e Destino da árvore):
- * troca a carta mais comum por uma sorteada entre as que podem sair. Sem candidata, a oferta fica como está.
+ * sobe a raridade da carta mais comum da oferta; se ela não puder, tenta as outras. Raridade que a vida ainda não
+ * liberou nunca é forçada. Sem candidata, a oferta fica como está.
  */
-function ensureRarity(state: SaveState, offers: string[], rng: number, min: Rarity): { offers: string[]; rngState: number } {
-  const rank = (id: string): number => RARITY_RANK[grimoireById(id)?.rarity ?? 'common'];
-  if (offers.some((o) => rank(o) >= RARITY_RANK[min])) return { offers, rngState: rng };
-  const pool = offerCandidates(state, offers).filter((g) => RARITY_RANK[g.rarity] >= RARITY_RANK[min] && g.rarity !== 'forbidden');
-  const usable = pool.filter((g) => grimoireUseful(state, g));
-  const from = usable.length > 0 ? usable : pool;
-  if (from.length === 0) return { offers, rngState: rng };
-  let roll: number;
-  [roll, rng] = nextRandom(rng);
-  const card = from[Math.min(from.length - 1, Math.floor(roll * from.length))] as GrimoireDef;
-  let worst = 0;
-  offers.forEach((o, i) => {
-    if (rank(o) < rank(offers[worst] as string)) worst = i;
-  });
-  return { offers: offers.map((o, i) => (i === worst ? card.id : o)), rngState: rng };
+function ensureRarity(state: SaveState, draw: Draw, min: GrimoireRarity): Draw {
+  const rank = (r: GrimoireRarity): number => rarityRank(r);
+  const { offers, rarities } = draw;
+  if (offers.some((o) => rank(rarities[o] as GrimoireRarity) >= rank(min))) return draw;
+  const byWorst = [...offers].sort((a, b) => rank(rarities[a] as GrimoireRarity) - rank(rarities[b] as GrimoireRarity));
+  for (const id of byWorst) {
+    const def = grimoireById(id);
+    if (!def) continue;
+    const options = offerableRarities(state, def).filter((r) => rank(r) >= rank(min));
+    if (options.length > 0) return { ...draw, rarities: { ...rarities, [id]: options[0] as GrimoireRarity } };
+  }
+  return draw;
 }
 
 /** Ofertas que faltam para o lendário garantido do pity (0 = a próxima oferta traz), ou `null` sem o nó. */
@@ -1226,6 +1246,16 @@ export function pityLeft(state: SaveState): number | null {
   const luck = effectiveStats(state).luck;
   if (!luck.pityOn) return null;
   return Math.max(0, Math.max(PITY_MIN, PITY_BASE - luck.pityCut) - state.stats.sinceLegend - 1);
+}
+
+/** O mesmo save com o grimório `id` pego na raridade `rarity` (a da carta oferecida), só para comparar números. */
+export function withPick(state: SaveState, id: string, rarity: GrimoireRarity = 'common'): SaveState {
+  return { ...state, run: { ...state.run, ...pickInto(state.run, id, rarity) } };
+}
+
+/** Raridade com que a carta `id` está sendo oferecida na escolha aberta (comum se não houver). */
+export function offeredRarity(state: SaveState, id: string): GrimoireRarity {
+  return state.run.pending?.rarities?.[id] ?? 'common';
 }
 
 /** Abre a escolha se a barra encheu. Devolve o estado com `pending` e a energia travada no teto. */
@@ -1245,30 +1275,27 @@ function openChoiceIfFull(state: SaveState, now: number): SaveState {
 function openChoice(state: SaveState, now: number, picksLeft: number, rerollsLeft: number, energy: number, fresh = false): SaveState {
   const stats = effectiveStats(state);
   const luck = stats.luck;
-  const drawn = drawGrimoires(state);
-  let { offers } = drawn;
-  let rngState = drawn.rngState;
+  let drawn = drawGrimoires(state);
+  const rngState = drawn.rngState;
   const n = state.stats.offers + 1;
   let destinyUsed = state.run.destinyUsed;
-  if (fresh && offers.length > 0) {
+  if (fresh && drawn.offers.length > 0) {
     const pity = luck.pityOn && state.stats.sinceLegend + 1 >= Math.max(PITY_MIN, PITY_BASE - luck.pityCut);
-    if (pity || (luck.legendEvery > 0 && n % luck.legendEvery === 0)) ({ offers, rngState } = ensureRarity(state, offers, rngState, 'legendary'));
-    if (luck.epicEvery > 0 && n % luck.epicEvery === 0) ({ offers, rngState } = ensureRarity(state, offers, rngState, 'epic'));
+    if (pity || (luck.legendEvery > 0 && n % luck.legendEvery === 0)) drawn = ensureRarity(state, drawn, 'legendary');
+    if (luck.epicEvery > 0 && n % luck.epicEvery === 0) drawn = ensureRarity(state, drawn, 'epic');
     // Destino: uma vez por vida (depois das 3 primeiras escolhas) a oferta traz pelo menos uma carta rara ou melhor.
     if (luck.destiny && !destinyUsed && state.run.picks >= DESTINY_FROM_PICKS) {
-      ({ offers, rngState } = ensureRarity(state, offers, rngState, 'rare'));
+      drawn = ensureRarity(state, drawn, 'rare');
       destinyUsed = true;
     }
   }
+  const { offers, rarities } = drawn;
   if (offers.length === 0) {
     // Nada para oferecer (tudo no nível máximo): a barra só zera, sem travar o jogo.
     return { ...state, run: { ...state.run, energy: 0, rngState } };
   }
-  const legendary = offers.some((o) => {
-    const r = grimoireById(o)?.rarity;
-    return r === 'legendary' || r === 'forbidden';
-  });
-  const topLegend = offers.some((o) => grimoireById(o)?.rarity === 'legendary');
+  const legendary = offers.some((o) => rarities[o] === 'legendary');
+  const topLegend = legendary;
   const extraPick = fresh && ((luck.handFull && state.run.picks === 0) || (luck.doublePickEvery > 0 && n % luck.doublePickEvery === 0));
   return awardAchievements({
     ...state,
@@ -1278,7 +1305,7 @@ function openChoice(state: SaveState, now: number, picksLeft: number, rerollsLef
       freeRerolls: 0,
       rngState,
       destinyUsed,
-      pending: { offers, openedAt: now, selected: null, picksLeft: picksLeft + (extraPick ? 1 : 0), rerollsLeft, rerolled: 0 },
+      pending: { offers, rarities, openedAt: now, selected: null, picksLeft: picksLeft + (extraPick ? 1 : 0), rerollsLeft, rerolled: 0 },
     },
     stats: {
       ...state.stats,
@@ -1318,24 +1345,24 @@ export function chooseGrimoire(state: SaveState, id: string, now: number): SaveS
   if (!p || p.selected !== id || !p.offers.includes(id) || choiceLockRemaining(s, now) > 0) return s;
   const stats = effectiveStats(s);
   const current = s.run.build[id] ?? 0;
+  const rarity: GrimoireRarity = p.rarities?.[id] ?? 'common';
   // Repetir em dobro (árvore): a cada N escolhas a repetição sobe 1 nível a mais.
   const bonus = stats.luck.repeatEvery > 0 && (s.run.picks + 1) % stats.luck.repeatEvery === 0 ? 1 : 0;
-  const nextLevel = current === 0 ? 1 : Math.min(GRIMOIRE_MAX_LEVEL, current + stats.choice.repeatLevels + bonus);
+  const book = pickInto(s.run, id, rarity, current === 0 ? 1 : stats.choice.repeatLevels + bonus);
+  const nextLevel = book.build[id] ?? current;
   const run: RunState = {
     ...s.run,
-    build: { ...s.run.build, [id]: nextLevel },
+    ...book,
     picks: s.run.picks + 1,
     pending: null,
   };
-  const def = grimoireById(id);
-  const streak = def && def.rarity !== 'common' ? s.stats.rareStreak + 1 : 0;
-  const forbiddenBest =
-    def?.rarity === 'forbidden' && nextLevel > (s.stats.forbiddenBest[id] ?? 0) ? { ...s.stats.forbiddenBest, [id]: nextLevel } : s.stats.forbiddenBest;
+  const streak = rarity !== 'common' ? s.stats.rareStreak + 1 : 0;
+  const forbiddenBest = s.stats.forbiddenBest;
   const next: SaveState = bumpMissionState(
     {
       ...s,
       run,
-      album: s.album.includes(id) ? s.album : [...s.album, id],
+      album: s.album.includes(albumKey(id, rarity)) ? s.album : [...s.album, albumKey(id, rarity)],
       stats: {
         ...s.stats,
         picks: s.stats.picks + 1,
@@ -1376,7 +1403,8 @@ export function rerollGrimoire(state: SaveState, id: string, now: number): SaveS
   const s = syncClock(state, now);
   const p = s.run.pending;
   if (!p || !p.offers.includes(id) || rerollsAvailable(s) <= 0) return s;
-  const { offers, rngState } = drawGrimoires(s, p.offers, 1);
+  const drawn = drawGrimoires(s, p.offers, 1);
+  const { offers, rngState } = drawn;
   const replacement = offers[0];
   if (replacement === undefined) return s;
   const fromOffer = p.rerollsLeft > 0;
@@ -1390,6 +1418,7 @@ export function rerollGrimoire(state: SaveState, id: string, now: number): SaveS
       pending: {
         ...p,
         offers: p.offers.map((o) => (o === id ? replacement : o)),
+        rarities: { ...Object.fromEntries(Object.entries(p.rarities ?? {}).filter(([k]) => k !== id)), [replacement]: drawn.rarities[replacement] as GrimoireRarity },
         selected: p.selected === id ? null : p.selected,
         rerollsLeft: p.rerollsLeft - (fromOffer ? 1 : 0),
         rerolled: (p.rerolled ?? 0) + 1,
@@ -1404,7 +1433,7 @@ export function discardOffer(state: SaveState, now: number): SaveState {
   const s = syncClock(state, now);
   const p = s.run.pending;
   if (!p || discardsLeft(s) <= 0 || choiceLockRemaining(s, now) > 0) return s;
-  const { offers, rngState } = drawGrimoires(s, p.offers);
+  const { offers, rarities, rngState } = drawGrimoires(s, p.offers);
   if (offers.length === 0) return s;
   return {
     ...s,
@@ -1412,7 +1441,7 @@ export function discardOffer(state: SaveState, now: number): SaveState {
       ...s.run,
       rngState,
       discardsUsed: s.run.discardsUsed + 1,
-      pending: { ...p, offers, selected: null, openedAt: now },
+      pending: { ...p, offers, rarities, selected: null, openedAt: now },
     },
   };
 }
@@ -2116,9 +2145,9 @@ export function collapse(state: SaveState, choice?: string | null): SaveState {
   // Cartas de capa (árvore): o favorito comum já começa a vida no nível que o nó dá, sem gastar escolha.
   const ts = treeStats(state.tree);
   const fav = state.favorite !== null ? grimoireById(state.favorite) : undefined;
-  const build: RunState['build'] =
-    ts.coverLevel > 0 && fav && fav.rarity === 'common' && base.album.includes(fav.id) ? { [fav.id]: Math.min(GRIMOIRE_MAX_LEVEL, ts.coverLevel) } : {};
-  const seeded: SaveState = { ...base, run: { ...base.run, build } };
+  const covered = ts.coverLevel > 0 && fav && base.album.includes(albumKey(fav.id, 'common'));
+  const book = covered ? pickInto(base.run, fav.id, 'common', Math.min(GRIMOIRE_MAX_LEVEL, ts.coverLevel)) : null;
+  const seeded: SaveState = { ...base, run: { ...base.run, ...(book ?? {}) } };
   const fx = effectiveStats(seeded);
   // Largada (árvore): a vida começa com um pouco de energia, sempre abaixo de encher a barra.
   const energy = Math.min(fx.tree.warmStartTouches * fx.energyPerTouch, energyCap(0, fx.energyStepFactor) * 0.9);
@@ -2130,7 +2159,7 @@ export function setFavorite(state: SaveState, id: string | null): SaveState {
   if (!mechanicOpen('favorite', state.collapses)) return state;
   if (id !== null) {
     const def = grimoireById(id);
-    if (!def || def.unlockedAtCollapse > state.collapses || !state.album.includes(id)) return state;
+    if (!def || def.unlockedAtCollapse > state.collapses || !albumHas(state.album, id)) return state;
   }
   return state.favorite === id ? state : { ...state, favorite: id };
 }

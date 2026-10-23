@@ -3,7 +3,7 @@
 // mais `sparks.legacy`, que é o que os Fragmentos antigos valiam (migração 1:1). Assim não há como "esquecer" de
 // pagar uma fonte nem de pagar duas vezes, e o servidor refaz a mesma conta. Só o gasto (`sparks.spent`) é contador.
 
-import { GRIMOIRES, grimoireById, type Rarity } from './catalog';
+import { GRIMOIRES, GRIMOIRE_RARITIES, grimoireById, type GrimoireRarity, type Rarity } from './catalog';
 import { FORBIDDEN, forbiddenById } from './forbidden';
 import { ACHIEVEMENTS, achievementActive, achievementById } from './achievements';
 import type { SaveState } from './engine';
@@ -78,10 +78,10 @@ export function sparkSources(state: SaveState): SparkSources {
   let achievements = 0;
   for (const id of state.achievements) achievements += achievementById(id)?.reward ?? 0;
   let album = 0;
-  for (const id of state.album) {
-    const g = grimoireById(id);
-    if (g) album += ALBUM_SPARKS[g.rarity];
-    else if (forbiddenById(id)) album += ALBUM_SPARKS.forbidden;
+  for (const key of state.album) {
+    const [id, r] = key.split(':');
+    if (id && r && grimoireById(id)) album += ALBUM_SPARKS[r as GrimoireRarity] ?? 0;
+    else if (forbiddenById(key)) album += ALBUM_SPARKS.forbidden;
   }
   const kinds = new Set(state.stats.capturedKinds);
   const rareFirst = [...RARE_OBJECT_KINDS, ...LEGENDARY_OBJECT_KINDS].filter((k) => kinds.has(k)).length * RARE_FIRST_SPARKS;
@@ -107,7 +107,7 @@ export function sparksAvailable(state: SaveState): number {
 
 /** F: o que as fontes finitas dão no total do jogo (todos os grimórios do catálogo, todas as conquistas, todos os raros e proibidos). */
 export function finiteSparksCeiling(): { achievements: number; album: number; rare: number; stars: number; total: number } {
-  const album = GRIMOIRES.reduce((a, g) => a + ALBUM_SPARKS[g.rarity], 0) + FORBIDDEN.length * ALBUM_SPARKS.forbidden;
+  const album = GRIMOIRES.length * GRIMOIRE_RARITIES.reduce((a, r) => a + ALBUM_SPARKS[r], 0) + FORBIDDEN.length * ALBUM_SPARKS.forbidden;
   const rare = (RARE_OBJECT_KINDS.length + LEGENDARY_OBJECT_KINDS.length) * RARE_FIRST_SPARKS + RARE_CAPTURE_STEPS.reduce((a, s) => a + s.sparks, 0);
   const stars = FORBIDDEN.length * STAR_STEPS.reduce((a, s) => a + s.sparks, 0);
   const achievements = ACHIEVEMENTS.filter((d) => !d.retired).reduce((a, d) => a + d.reward, 0);

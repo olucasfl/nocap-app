@@ -21,57 +21,43 @@ function seen(base: (i: number) => SaveState, n = 400): Set<string> {
 
 describe('grimório só é oferecido se rende agora (spec 039, seção 7)', () => {
   it('de combo precisa do Ritmo Firme', () => {
-    for (const id of ['uranus', 'europa', 'vesta', 'sirius', 'rigel']) {
-      expect(grimoireUseful(start(), byId(id)), id).toBe(false);
-      expect(grimoireUseful(withLevels(start(), { rhythm: 1 }), byId(id)), id).toBe(true);
+    for (const [id, k] of [['sirius', 0], ['uranus', 1]] as const) {
+      expect(grimoireUseful(start(k), byId(id)), id).toBe(false);
+      expect(grimoireUseful(withLevels(start(k), { rhythm: 1 }), byId(id)), id).toBe(true);
     }
   });
 
-  it('de geradores precisa de gerador do tipo certo', () => {
-    expect(grimoireUseful(start(), byId('earth'))).toBe(false);
-    expect(grimoireUseful(withLevels(start(), { satellite: 1 }), byId('earth'))).toBe(true);
-    // Energia só rende com gerador de energia; poeira, com gerador de poeira.
-    expect(grimoireUseful(withLevels(start(1), { satellite: 1 }), byId('pallas'))).toBe(false);
-    expect(grimoireUseful(withLevels(start(1), { antenna: 1 }), byId('pallas'))).toBe(true);
-    expect(grimoireUseful(withLevels(start(), { antenna: 1 }), byId('earth'))).toBe(false);
-    // O "tocando" e o "parado" valem para qualquer gerador.
-    expect(grimoireUseful(start(), byId('vela-pulsar'))).toBe(false);
-    expect(grimoireUseful(withLevels(start(4), { antenna: 1 }), byId('vela-pulsar'))).toBe(true);
+  it('de objetos precisa dos objetos abertos', () => {
+    for (const id of ['venus', 'mars', 'io', 'phobos']) {
+      expect(grimoireUseful(start(), byId(id)), id).toBe(false);
+      expect(grimoireUseful(withLevels(start(), { satellite: 1 }), byId(id)), id).toBe(true);
+      // Depois do 1º colapso os objetos já abrem sozinhos.
+      expect(grimoireUseful(start(1), byId(id)), id).toBe(true);
+    }
   });
 
-  it('de objetos precisa dos objetos abertos, e o de um tipo precisa daquele tipo', () => {
-    expect(grimoireUseful(start(), byId('venus'))).toBe(false);
-    expect(grimoireUseful(withLevels(start(), { satellite: 1 }), byId('venus'))).toBe(true);
-    // Depois do 1º colapso os objetos já abrem sozinhos.
-    expect(grimoireUseful(start(1), byId('venus'))).toBe(true);
-    // Asteroide só existe a partir do colapso 1.
-    expect(grimoireUseful(withLevels(start(0), { satellite: 1 }), byId('ryugu'))).toBe(false);
-    expect(grimoireUseful(start(1), byId('ryugu'))).toBe(true);
-  });
-
-  it('os que sempre rendem (toque a cada N, energia, poeira de partida) saem desde o começo', () => {
-    for (const id of ['moon', 'mercury', 'jupiter', 'ceres', 'titan', 'betelgeuse']) {
+  it('os que sempre rendem (toque a cada N, energia, poeira de partida, trocas) saem desde o começo', () => {
+    for (const id of ['moon', 'mercury', 'vega', 'titan', 'betelgeuse']) {
       expect(grimoireUseful(start(), byId(id)), id).toBe(true);
     }
   });
 
-  it('no começo do jogo a escolha nunca traz combo, geradores nem objetos', () => {
+  it('no começo do jogo a escolha nunca traz combo nem objetos', () => {
     const ids = seen((i) => ({ ...newSave(`d${i}`, 0), run: { ...newSave(`d${i}`, 0).run, picks: 40 } }));
     for (const id of ids) {
       const g = byId(id);
       expect(grimoireUseful(start(), g), id).toBe(true);
     }
-    for (const id of ['uranus', 'europa', 'earth', 'sun', 'venus', 'mars', 'halley', 'vela-pulsar']) expect(ids.has(id), id).toBe(false);
-    expect(ids.size).toBeGreaterThan(5);
+    for (const id of ['sirius', 'uranus', 'venus', 'mars', 'io', 'phobos', 'halley']) expect(ids.has(id), id).toBe(false);
+    expect(ids.size).toBeGreaterThanOrEqual(3);
   });
 
-  it('com o Ritmo Firme, os de combo passam a sair; com geradores, os de geradores', () => {
+  it('com o Ritmo Firme, os de combo passam a sair; com os objetos, os de objetos', () => {
     const rhythm = seen((i) => withLevels(newSave(`r${i}`, 0), { rhythm: 1 }));
-    expect(rhythm.has('uranus') || rhythm.has('vesta') || rhythm.has('europa')).toBe(true);
-    expect(rhythm.has('earth')).toBe(false);
-    const gens = seen((i) => withLevels(newSave(`g${i}`, 0), { satellite: 2 }));
-    expect(gens.has('earth') || gens.has('sun')).toBe(true);
-    expect(gens.has('uranus')).toBe(false);
+    expect(rhythm.has('sirius')).toBe(true);
+    const objects = seen((i) => withLevels(newSave(`g${i}`, 0), { satellite: 2 }));
+    expect(objects.has('venus') || objects.has('mars')).toBe(true);
+    expect(objects.has('sirius')).toBe(false);
   });
 
   it('a troca de uma carta também só traz o que rende', () => {

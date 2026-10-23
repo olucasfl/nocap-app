@@ -5,7 +5,6 @@ import './category.css';
 const ICON: Record<GrimoireCategory, string> = {
   touch: 'M9 11V5.5a2 2 0 0 1 4 0V10l4 1.2V16l-2.5 4H9.5L6 14.5l3-1.2z',
   objects: 'M12 3l2.6 5.8 6.4.7-4.8 4.3 1.4 6.2L12 16.8 6.4 20l1.4-6.2L3 9.5l6.4-.7z',
-  generators: 'M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7zM12 2v4M12 18v4M2 12h4M18 12h4M5 5l2.8 2.8M16.2 16.2L19 19M19 5l-2.8 2.8M7.8 16.2L5 19',
   luck: 'M13 2L5 13.5h6L10 22l9-12h-6z',
 };
 

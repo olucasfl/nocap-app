@@ -8,9 +8,15 @@ import { artRarity, astroFor } from './game-logic';
 import { STORY, storyButton, storyNext, storySkip, storyStart } from './story';
 
 /** Os livros da última tela: um comum, um raro e um épico do catálogo, os mesmos das cartas de grimório. */
-const STORY_BOOKS = (['common', 'rare', 'epic'] as const).flatMap((rarity) => {
-  const def = rarity === 'common' ? (GRIMOIRES.find((g) => g.id === 'moon') ?? GRIMOIRES.find((g) => g.rarity === rarity)) : GRIMOIRES.find((g) => g.rarity === rarity);
-  return def ? [def] : [];
+const STORY_BOOKS = (
+  [
+    ['moon', 'common'],
+    ['venus', 'rare'],
+    ['sirius', 'epic'],
+  ] as const
+).flatMap(([id, rarity]) => {
+  const def = GRIMOIRES.find((g) => g.id === id);
+  return def ? [{ def, rarity }] : [];
 });
 
 function StoryBooks() {
@@ -18,8 +24,8 @@ function StoryBooks() {
     <div className="ap-scene ap-story-books" aria-hidden="true">
       {/* As medalhas dos livros vêm do sprite de astros, que a tela de jogo monta mas a história não. */}
       <SpaceArtSprite />
-      {STORY_BOOKS.map((g) => (
-        <GrimoireBook key={g.id} rarity={artRarity(g.rarity)} astro={astroFor(g.id, g.family)} name={g.name} size="md" still />
+      {STORY_BOOKS.map(({ def, rarity }) => (
+        <GrimoireBook key={def.id} rarity={artRarity(rarity)} astro={astroFor(def.id, def.family)} name={def.name} size="md" still />
       ))}
     </div>
   );
