@@ -21,154 +21,6 @@
   color: var(--space-violet);
   letter-spacing: 0;
 }
-.ap-tree-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 12px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-@media (min-width: 700px) {
-  .ap-tree-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-.ap-branch {
-  display: grid;
-  gap: 10px;
-  min-width: 0;
-  padding: 12px;
-  border: 3px solid var(--space-line);
-  border-radius: 14px;
-  background: linear-gradient(180deg, var(--space-panel-2), var(--space-panel));
-}
-.ap-branch.is-full {
-  border-color: var(--space-gold);
-}
-.ap-branch.is-closed {
-  opacity: 0.6;
-}
-.ap-branch header {
-  display: grid;
-  grid-template-columns: 44px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 10px;
-}
-.ap-branch-medal {
-  width: 44px;
-  height: 44px;
-  --ap-trim: var(--space-violet);
-}
-.ap-branch.is-closed .ap-branch-medal {
-  filter: grayscale(1);
-}
-.ap-branch h3 {
-  margin: 0;
-  font: 700 16px var(--space-font-display);
-  text-transform: uppercase;
-  overflow-wrap: anywhere;
-}
-.ap-branch header small {
-  font: 600 11px var(--space-font-display);
-  color: var(--space-gold);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-.ap-branch ol {
-  display: grid;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.ap-node {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
-  border: 2px solid var(--space-line);
-  border-radius: 10px;
-  background: rgba(2, 3, 10, 0.35);
-}
-.ap-node p {
-  display: grid;
-  gap: 1px;
-  margin: 0;
-  min-width: 0;
-}
-.ap-node p b {
-  font: 600 11px var(--space-font-display);
-  color: var(--space-gold);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-.ap-node p span {
-  font: 400 13px/1.35 var(--space-font-body);
-  color: var(--space-text);
-  overflow-wrap: anywhere;
-}
-.ap-node.is-owned {
-  border-color: var(--space-gold);
-  background: rgba(255, 200, 87, 0.1);
-}
-.ap-node.is-buyable {
-  border-color: var(--space-cyan);
-}
-.ap-node.is-blocked,
-.ap-node.is-closed {
-  opacity: 0.6;
-}
-.ap-node-buy {
-  min-width: 96px;
-  min-height: 44px;
-  padding: 4px 10px;
-  border: 3px solid var(--space-ink);
-  border-radius: 10px;
-  background: linear-gradient(180deg, #58b4ff, #2b86d8);
-  color: #fff;
-  font: 700 14px var(--space-font-display);
-  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
-  white-space: nowrap;
-  box-shadow:
-    0 4px 0 var(--space-blue-dark),
-    inset 0 2px 0 rgba(255, 255, 255, 0.4);
-  cursor: pointer;
-}
-.ap-node-buy:active {
-  transform: translateY(3px);
-}
-.ap-node-buy[aria-disabled='true'] {
-  background: linear-gradient(180deg, #3a4262, #262c48);
-  color: var(--space-muted);
-  text-shadow: none;
-  box-shadow:
-    0 4px 0 #11152b,
-    inset 0 2px 0 rgba(255, 255, 255, 0.12);
-  cursor: default;
-}
-.ap-node-buy[aria-disabled='true']:active {
-  transform: none;
-}
-.ap-node.is-owned .ap-node-buy {
-  background: linear-gradient(180deg, #ffd978, #c8921c);
-  color: var(--space-ink);
-  text-shadow: none;
-  box-shadow:
-    0 4px 0 #6a460a,
-    inset 0 2px 0 rgba(255, 255, 255, 0.5);
-}
-@media (max-width: 420px) {
-  .ap-node {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .ap-node-buy {
-    min-height: 48px;
-  }
-}
-
 .ap-respec {
   display: grid;
   gap: 8px;
@@ -267,4 +119,373 @@
 }
 .ap-tree-sources b {
   font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Cabeçalho: filtro por ramo ---------- */
+.ap-th {
+  display: grid;
+  gap: 10px;
+}
+.ap-th-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ap-chipf {
+  min-height: 36px;
+  padding: 4px 12px;
+  border: 2px solid var(--space-line);
+  border-radius: 999px;
+  background: rgba(15, 24, 56, 0.7);
+  color: var(--space-text);
+  font: 700 12px var(--space-font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.ap-chipf.is-on {
+  border-color: var(--space-gold);
+  color: var(--space-gold);
+}
+.ap-chipf:focus-visible,
+.ap-tg-btn:focus-visible,
+.ap-tp-buy:focus-visible,
+.ap-tp-close:focus-visible {
+  outline: 3px solid var(--space-cyan);
+  outline-offset: 2px;
+}
+
+/* ---------- Palco: grafo + painel ---------- */
+.ap-tree-stage {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+@media (min-width: 900px) {
+  .ap-tree-stage {
+    grid-template-columns: minmax(0, 1fr) 320px;
+    align-items: start;
+  }
+}
+.ap-tree-graph {
+  position: relative;
+  min-width: 0;
+}
+.ap-tg {
+  position: relative;
+}
+.ap-tg-stage {
+  position: relative;
+  height: min(60vh, 560px);
+  min-height: 320px;
+  overflow: hidden;
+  border: 3px solid var(--space-line);
+  border-radius: 14px;
+  background: radial-gradient(circle at 50% 50%, var(--space-panel-2), var(--space-ink));
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+}
+.ap-tg-stage:active {
+  cursor: grabbing;
+}
+.ap-tg-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.ap-tg-content {
+  will-change: transform;
+  transform-origin: 0 0;
+}
+.ap-tg.is-lite .ap-tg-content {
+  will-change: opacity;
+}
+
+/* Linhas */
+.ap-tg-edge {
+  stroke: var(--space-line);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+  opacity: 0.55;
+}
+.ap-tg-edge.is-open {
+  stroke: var(--space-cyan);
+  opacity: 0.8;
+}
+.ap-tg-edge.is-lit {
+  stroke: var(--space-gold);
+  opacity: 1;
+}
+.ap-tg-edge.is-cross {
+  stroke-dasharray: 5 5;
+}
+.ap-tg-edge.is-dim {
+  opacity: 0.12;
+}
+
+/* Raiz */
+.ap-tg-root circle {
+  fill: var(--space-panel);
+  stroke: var(--space-violet);
+  stroke-width: 3;
+}
+.ap-tg-root .ap-tg-root-core {
+  fill: var(--space-violet);
+  stroke: none;
+}
+
+/* Nós */
+.ap-tg-node {
+  cursor: pointer;
+  outline: none;
+}
+.ap-tg-node.is-dim {
+  opacity: 0.25;
+}
+.ap-tg-hit {
+  fill: transparent;
+}
+.ap-tg-halo {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 2;
+}
+.ap-tg-core {
+  fill: var(--space-panel);
+  stroke: var(--space-line);
+  stroke-width: 3;
+}
+.ap-tg-dot {
+  fill: var(--space-muted);
+}
+.ap-tg-pips {
+  fill: var(--space-text);
+  font: 700 10px var(--space-font-display);
+  pointer-events: none;
+}
+.ap-tg-lock {
+  fill: none;
+  stroke: var(--space-muted);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+.ap-tg-name {
+  fill: var(--space-text);
+  stroke: var(--space-ink);
+  stroke-width: 4px;
+  paint-order: stroke;
+  font: 700 13px var(--space-font-display);
+  pointer-events: none;
+}
+.ap-tg-node.is-owned .ap-tg-core,
+.ap-tg-node.has-level .ap-tg-core {
+  fill: var(--space-gold);
+  stroke: var(--space-ink);
+}
+.ap-tg-node.has-level .ap-tg-pips {
+  fill: var(--space-ink);
+}
+.ap-tg-node.has-level .ap-tg-dot {
+  fill: var(--space-ink);
+}
+.ap-tg-node.is-buyable .ap-tg-core {
+  stroke: var(--space-cyan);
+}
+.ap-tg-node.is-buyable .ap-tg-halo {
+  stroke: var(--space-cyan);
+  opacity: 0.6;
+}
+.ap-tg-node.is-short .ap-tg-core {
+  stroke: var(--space-violet);
+}
+.ap-tg-node.is-blocked,
+.ap-tg-node.is-closed {
+  opacity: 0.7;
+}
+.ap-tg-node.is-soon .ap-tg-core {
+  stroke-dasharray: 4 3;
+}
+.ap-tg-node.is-soon,
+.ap-tg-node.is-closed {
+  opacity: 0.55;
+}
+.ap-tg-node.is-selected .ap-tg-halo,
+.ap-tg-node:focus-visible .ap-tg-halo {
+  stroke: var(--space-text);
+  opacity: 1;
+  stroke-width: 3;
+}
+/* Os que dá para comprar respiram em `opacity` (desligado no modo leve e em movimento reduzido). */
+.ap-tg:not(.is-lite) .ap-tg-node.is-buyable .ap-tg-halo {
+  animation: ap-tg-pulse 2.4s ease-in-out infinite;
+}
+@keyframes ap-tg-pulse {
+  50% {
+    opacity: 0.15;
+  }
+}
+
+/* Ferramentas e dica */
+.ap-tg-tools {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  display: flex;
+  gap: 6px;
+  z-index: 2;
+}
+.ap-tg-btn {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 3px solid var(--space-line);
+  border-radius: 12px;
+  background: rgba(10, 14, 40, 0.92);
+  color: var(--space-text);
+  font: 700 16px var(--space-font-display);
+}
+.ap-tg-btn:disabled {
+  opacity: 0.4;
+}
+.ap-tg-center {
+  font-size: 12px;
+  text-transform: uppercase;
+}
+.ap-tg-zoomlabel {
+  position: absolute;
+  left: 10px;
+  bottom: 12px;
+  font: 600 11px var(--space-font-display);
+  color: var(--space-muted);
+  text-transform: uppercase;
+  pointer-events: none;
+}
+.ap-tg-hint,
+.ap-tg-closed {
+  position: absolute;
+  left: 50%;
+  top: 12px;
+  z-index: 2;
+  max-width: calc(100% - 24px);
+  margin: 0;
+  padding: 6px 12px;
+  border: 2px solid var(--space-gold);
+  border-radius: 999px;
+  background: rgba(10, 14, 40, 0.92);
+  color: var(--space-gold);
+  font: 700 12px var(--space-font-display);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.ap-tg:not(.is-lite) + .ap-tg-hint {
+  animation: ap-tg-hint 2.4s ease-in-out infinite;
+}
+@keyframes ap-tg-hint {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Painel do nó */
+.ap-tp {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 12px;
+  border: 3px solid var(--space-line);
+  border-radius: 14px;
+  background: linear-gradient(180deg, var(--space-panel-2), var(--space-panel));
+}
+.ap-tp.is-empty {
+  opacity: 0.8;
+}
+.ap-tp.is-buyable {
+  border-color: var(--space-cyan);
+}
+.ap-tp header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+.ap-tp header small {
+  font: 600 11px var(--space-font-display);
+  color: var(--space-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.ap-tp h3 {
+  margin: 0;
+  font: 700 18px var(--space-font-display);
+  overflow-wrap: anywhere;
+}
+.ap-tp p {
+  margin: 0;
+  font: 400 13px/1.35 var(--space-font-body);
+  overflow-wrap: anywhere;
+}
+.ap-tp-facts {
+  display: flex;
+  gap: 16px;
+  margin: 0;
+}
+.ap-tp-facts div {
+  display: grid;
+  gap: 2px;
+}
+.ap-tp-facts dt {
+  font: 600 11px var(--space-font-display);
+  color: var(--space-muted);
+  text-transform: uppercase;
+}
+.ap-tp-facts dd {
+  margin: 0;
+  font: 700 15px var(--space-font-display);
+}
+.ap-tp-parents .is-have {
+  color: var(--space-gold);
+}
+.ap-tp-parents .is-miss {
+  color: var(--space-violet);
+}
+.ap-tp-status {
+  color: var(--space-muted);
+}
+.ap-tp-close {
+  min-height: 36px;
+  padding: 0 10px;
+  border: 2px solid var(--space-line);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--space-text);
+  font: 700 12px var(--space-font-display);
+}
+.ap-tp-buy {
+  min-height: 48px;
+  border: 3px solid var(--space-ink);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #ffd24a, #e8a410);
+  color: var(--space-ink);
+  font: 700 16px var(--space-font-display);
+  box-shadow: 0 4px 0 #9a6a05;
+}
+.ap-tp-buy:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #9a6a05;
+}
+.ap-tp-buy:disabled {
+  background: rgba(60, 70, 110, 0.7);
+  color: var(--space-muted);
+  box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ap-tg-node .ap-tg-halo,
+  .ap-tg-hint,
+  .ap-tp-buy {
+    animation: none !important;
+    transition: none !important;
+  }
 }

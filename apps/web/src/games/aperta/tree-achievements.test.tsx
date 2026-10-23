@@ -111,19 +111,25 @@ describe('páginas', () => {
       </>,
     );
 
-  it('árvore: 5 ramos, 120 nós, custo e botão de refazer desligado sem gasto', () => {
+  it('árvore: grafo com 120 nós, raiz, ligações, filtros por ramo e refazer desligado sem gasto', () => {
     const out = html(<TreePage state={withFragments(1)} onBuy={noop} onRespec={noop} />);
-    expect(out.match(/class="ap-branch[ "]/g)).toHaveLength(5);
-    expect(out.match(/class="ap-node /g)).toHaveLength(120);
-    expect(out).toContain('Comprar · 1');
+    expect(out.match(/class="ap-tg-node /g)).toHaveLength(120);
+    expect(out).toContain('ap-tg-root');
+    expect(out.match(/class="ap-tg-edge/g)!.length).toBeGreaterThanOrEqual(120);
+    expect(out.match(/class="ap-chipf/g)).toHaveLength(6);
+    expect(out).toContain('Aproximar');
+    expect(out).toContain('Centralizar');
     expect(out).toContain('1</b><span>Cintila para gastar');
     expect(out).toContain('De onde vêm as Cintilas');
     expect(out).toMatch(/<button[^>]*disabled[^>]*>Refazer árvore/);
+    expect(out).toContain('Arraste para explorar a árvore');
   });
 
-  it('árvore fechada avisa que abre depois do 1º colapso', () => {
-    const out = html(<TreePage state={base()} onBuy={noop} onRespec={noop} />);
-    expect(out).toContain('Abre depois do primeiro colapso');
+  it('cada nó é um botão com nome e estado; o selecionado mostra o nome', () => {
+    const out = html(<TreePage state={withFragments(1)} onBuy={noop} onRespec={noop} />);
+    expect(out.match(/role="button"/g)!.length).toBeGreaterThanOrEqual(120);
+    expect(out).toMatch(/aria-label="Cartas de capa, Cosmos, tier 1, nível 0 de 2, dá para comprar. Custa 1 Cintila"/);
+    expect(out).toMatch(/aria-label="Autoclick, Automação, tier 1, nível 0 de 2, chega em breve\. Chega com as automações"/);
   });
 
   it('conquistas: grupos, barra, N/M e a escondida como ???', () => {

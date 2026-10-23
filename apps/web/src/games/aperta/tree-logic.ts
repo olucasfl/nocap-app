@@ -41,6 +41,17 @@ export interface TreeNodeRow {
   missing: number;
   /** Pré-requisitos que ainda faltam (nomes), no `blocked`. */
   needs: string[];
+  branch: string;
+  branchName: string;
+  /** Todos os pais, com o estado de cada um (a tela mostra o que falta). */
+  parents: { id: string; name: string; owned: boolean }[];
+  /** `soon`: o que traz o nó ("Chega com as habilidades ativas"). */
+  soonHint: string | null;
+  /** Comprou ao menos 1 nível. */
+  owned: boolean;
+  /** Efeito do nível atual e do próximo, em palavras (o painel mostra "o que muda"). */
+  nowText: string | null;
+  nextText: string | null;
 }
 
 export interface TreeBranchRow {
@@ -70,6 +81,57 @@ export interface TreeView {
   };
 }
 
+/** Frase curta com os números de um nível do nó. */
+const PARAM_LABEL: Record<string, string> = {
+  pct: 'bônus',
+  priceCutPct: 'corte do preço',
+  sec: 'segundos',
+  n: 'quantidade',
+  every: 'a cada',
+  chance: 'chance',
+  add: 'soma',
+  touches: 'toques',
+  mult: 'multiplicador',
+  levels: 'níveis',
+  captures: 'capturas',
+  level: 'nível',
+  cps: 'toques por segundo',
+  range: 'alcance',
+  limit: 'limite',
+  cut: 'ofertas a menos',
+};
+
+export function describeLevel(node: { effect: { params: Record<string, number[]> } }, level: number): string {
+  const parts = Object.entries(node.effect.params)
+    .filter(([key]) => key !== 'on')
+    .map(([key, arr]) => {
+      const v = arr[Math.min(level, arr.length) - 1] ?? 0;
+      return `${PARAM_LABEL[key] ?? key} ${String(v).replace('.', ',')}${key.endsWith('Pct') || key === 'pct' || key === 'chance' ? '%' : ''}`;
+    });
+  return parts.length > 0 ? parts.join(', ') : 'ativa o efeito';
+}
+
+const FEATURE_HINT: Record<string, string> = {
+  automation: 'Chega com as automações',
+  skills: 'Chega com as habilidades ativas',
+  luck: 'Chega com a Sorte',
+  exploration: 'Chega com a Exploração',
+  observatory: 'Chega com o Observatório',
+};
+
+/** O que falta existir para o nó abrir: a mecânica dele ou a do primeiro antepassado fechado. */
+function soonHint(id: string, seen = new Set<string>()): string {
+  const n = treeNodeById(id);
+  if (!n || seen.has(id)) return 'Chega em uma atualização';
+  seen.add(id);
+  if (n.needs && !nodeLive({ ...n, parents: [] })) return FEATURE_HINT[n.needs] ?? 'Chega em uma atualização';
+  for (const p of n.parents) {
+    const parent = treeNodeById(p);
+    if (parent && !nodeLive(parent)) return soonHint(p, seen);
+  }
+  return 'Chega em uma atualização';
+}
+
 export function treeView(state: SaveState): TreeView {
   const open = state.collapses >= 1;
   const available = sparksAvailable(state);
@@ -86,7 +148,15 @@ export function treeView(state: SaveState): TreeView {
       else if (!nodeLive(n)) status = 'soon';
       else if (next === null) status = 'blocked';
       else status = available >= next ? 'buyable' : 'short';
+      const maxed = level >= n.maxLevel;
       return {
+        branch: b.id,
+        branchName: b.name,
+        parents: n.parents.map((p) => ({ id: p, name: treeNodeById(p)?.name ?? p, owned: (state.tree[p] ?? 0) >= 1 })),
+        soonHint: status === 'soon' ? soonHint(n.id) : null,
+        owned: level >= 1,
+        nowText: level >= 1 ? describeLevel(n, level) : null,
+        nextText: maxed ? null : describeLevel(n, level + 1),
         id: n.id,
         name: n.name,
         tier: n.tier,
