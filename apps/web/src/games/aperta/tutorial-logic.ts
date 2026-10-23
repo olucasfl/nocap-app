@@ -1,8 +1,8 @@
 import { CHOICE_LOCK_SEC, TUTORIAL, pendingHint, type SaveState, type TutorialHint } from '@nocap/games';
-import type { PageName } from './game-logic';
+import { collapseView, type PageName } from './game-logic';
 
 /** O que o tutorial destaca; cada alvo é um `data-tut` na tela de jogo. */
-export type TutorialTarget = 'press' | 'dock-upgrades' | 'buy-first' | 'page-close' | 'dock-grimoires' | 'dock-achievements' | 'tree' | 'first-object';
+export type TutorialTarget = 'press' | 'dock-upgrades' | 'buy-first' | 'page-close' | 'dock-grimoires' | 'dock-achievements' | 'tree' | 'first-object' | 'goal';
 
 export interface CoachView {
   /** Muda a cada dica nova: refaz o cartão e roda a animação de entrada. */
@@ -99,12 +99,28 @@ export function coachView(state: SaveState, page: PageName | null, busy = false)
       if (page || pending) return null;
       const hint = pendingHint(state);
       if (!hint) return null;
-      return HINTS[hint];
+      return hint === 'collapse' ? collapseHint(state) : HINTS[hint];
     }
   }
 }
 
-const HINTS: Record<TutorialHint, CoachView> = {
+/** O cartão do colapso: explica o que é e já diz a meta do próximo (poeira e escolhas). */
+function collapseHint(state: SaveState): CoachView {
+  const view = collapseView(state);
+  const dust = view.requirements[0]!;
+  const picks = view.requirements[1]!;
+  return {
+    ...NONE,
+    key: 'hint-collapse',
+    target: 'goal',
+    label: 'Sua meta',
+    title: 'O colapso da estrela',
+    text: `Quando a meta for cumprida, a estrela colapsa: você guarda um grimório proibido, ganha Cintilas e recomeça mais forte. A sua meta: ${dust.text.split(' de ')[1]} de poeira, ${picks.text.split(' de ')[1]} escolhas de grimório e um marco da vida. Toque na barra para ver.`,
+    dismiss: 'collapse',
+  };
+}
+
+const HINTS: Record<Exclude<TutorialHint, 'collapse'>, CoachView> = {
   achievements: {
     ...NONE,
     key: 'hint-achievements',

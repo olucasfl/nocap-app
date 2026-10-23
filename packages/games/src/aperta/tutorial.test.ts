@@ -189,6 +189,11 @@ describe('tutorial: cartões do jogo livre', () => {
     s = markHintSeen(withAchievements(s, 2), 'achievements');
     expect(pendingHint(s)).toBeNull();
     s = markHintSeen(s, 'objects');
+    // O colapso é explicado depois de 2 grimórios escolhidos, antes da árvore.
+    expect(pendingHint(s)).toBeNull();
+    s = { ...s, run: { ...s.run, picks: 2 } };
+    expect(pendingHint(s)).toBe('collapse');
+    s = markHintSeen(s, 'collapse');
     expect(pendingHint(s)).toBe('tree');
     expect(unlockedButtons(settleTutorial(s)).has('tree')).toBe(true);
     // Sem nenhuma Cintila o cartão espera: o aviso é "você ganhou sua primeira Cintila".
@@ -198,7 +203,7 @@ describe('tutorial: cartões do jogo livre', () => {
 
   it('ver os três cartões conclui o tutorial e libera tudo', () => {
     let s = free();
-    s = markHintSeen(markHintSeen(markHintSeen(s, 'achievements'), 'objects'), 'tree');
+    s = markHintSeen(markHintSeen(markHintSeen(markHintSeen(s, 'achievements'), 'objects'), 'collapse'), 'tree');
     expect(s.tutorial).toBe('done');
     expect(unlockedButtons(s).size).toBe(UI_BUTTONS.length);
   });

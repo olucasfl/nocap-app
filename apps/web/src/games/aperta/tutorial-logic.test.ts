@@ -53,10 +53,16 @@ describe('dica de cada momento', () => {
     expect(coachView(withObject, null)).toMatchObject({ dismiss: null, target: 'first-object', label: 'Pegue aqui' });
     const twoAch = { ...free, achievements: ['tap-1', 'tap-100'] };
     expect(coachView(twoAch, null)).toMatchObject({ dismiss: 'achievements', target: 'dock-achievements' });
-    const last = { ...free, achievements: ['tap-1', 'tap-100'], ui: { unlocked: [], hints: ['achievements', 'objects'] as SaveState['ui']['hints'] } };
+    const last = { ...free, achievements: ['tap-1', 'tap-100'], ui: { unlocked: [], hints: ['achievements', 'objects', 'collapse'] as SaveState['ui']['hints'] } };
     // Sem Cintila ainda o cartão da árvore espera; com a 1ª Cintila ele diz "Você ganhou sua primeira Cintila".
     expect(coachView({ ...last, achievements: [] }, null)).toBeNull();
     expect(coachView(last, null)).toMatchObject({ dismiss: 'tree', target: 'tree', title: 'Você ganhou sua primeira Cintila!' });
+    // O colapso aparece cedo (2 grimórios) e aponta a meta.
+    const twoPicks = { ...free, run: { ...free.run, picks: 2 }, ui: { unlocked: [], hints: ['achievements', 'objects'] as SaveState['ui']['hints'] } };
+    const goal = coachView(twoPicks, null);
+    expect(goal).toMatchObject({ dismiss: 'collapse', target: 'goal', title: 'O colapso da estrela' });
+    expect(goal!.text).toContain('poeira');
+    expect(goal!.text).toContain('escolhas de grimório');
     expect(HINT_PAGE.tree).toBe('tree');
     expect(HINT_PAGE.achievements).toBe('achievements');
   });

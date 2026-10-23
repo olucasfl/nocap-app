@@ -30,6 +30,7 @@ import { ChoiceModal } from './ChoiceModal';
 import { AchievementsPage } from './AchievementsPage';
 import { achievementCounts } from './achievements-logic';
 import { CollapseModal } from './CollapseModal';
+import { GoalModal } from './GoalModal';
 import { VaultPage } from './VaultPage';
 import { eventView, gaiaPreviews, missionView, newInSpaceView, radarView, regionMenuItems } from './content-logic';
 import { FieldObjects, SignalChip } from './FieldObjects';
@@ -150,6 +151,7 @@ export function GameScreen({ controller, onExit }: Props) {
   const [freshGrimoire, setFreshGrimoire] = useState(false);
   const unseenAch = unseenAchievements(state);
   const [collapseOpen, setCollapseOpen] = useState(false);
+  const [goalOpen, setGoalOpen] = useState(false);
   const [regionsOpen, setRegionsOpen] = useState(false);
   const [flash, setFlash] = useState<number | null>(null);
 
@@ -157,7 +159,7 @@ export function GameScreen({ controller, onExit }: Props) {
   const tutorial = state.tutorial === 'done' ? null : state.tutorial;
   // Os handlers de teclado e toque leem isto sem refazer os listeners a cada render.
   const blocked = useRef(false);
-  blocked.current = page !== null || pending !== null || collapseOpen || regionsOpen;
+  blocked.current = page !== null || pending !== null || collapseOpen || regionsOpen || goalOpen;
   const pageRef = useRef(page);
   pageRef.current = page;
   const tutorialRef = useRef(tutorial);
@@ -352,6 +354,7 @@ export function GameScreen({ controller, onExit }: Props) {
   const albumCount = state.album.length;
   const collapse = collapseView(state);
   const starReady = tutorial === null && collapse.ready;
+  const showGoal = unlocked.has('grimoires') && !starReady;
   const fresh = pending || tutorial !== null ? null : newInSpaceView(state);
   const mission = missionView(state);
   const liveEvent = eventView(state, now);
@@ -359,7 +362,7 @@ export function GameScreen({ controller, onExit }: Props) {
   const suggested = state.run.pending ? suggestedOffer(state) : null;
   const suggestion = suggested ? { id: suggested.id, gainPct: effectiveStats(state).skills.suggest.why ? suggested.gainPct : null } : null;
   const regions = regionMenuItems(state);
-  const coach = coachView(state, page, collapseOpen || regionsOpen);
+  const coach = coachView(state, page, collapseOpen || regionsOpen || goalOpen);
 
   // Sons de transição (estrela pronta, evento, missão, região, faixa nova): só na mudança, nunca ao montar.
   const lastCue = useRef<CueInput | null>(null);
@@ -407,7 +410,7 @@ export function GameScreen({ controller, onExit }: Props) {
   }
 
   return (
-    <section className={`ap-game space-theme ap-screen-in${page ? ' has-page' : ''}${LOW_END ? ' is-lite' : ''}`} aria-label="Jogo">
+    <section className={`ap-game space-theme ap-screen-in${page ? ' has-page' : ''}${LOW_END ? ' is-lite' : ''}${showGoal ? ' has-goal' : ''}`} aria-label="Jogo">
       <SpaceArtSprite />
       <RegionBackdrop key={state.regionId} region={state.regionId} paused={paused} />
       {liveEvent && !paused && <EventFx key={liveEvent.id} id={liveEvent.id} lite={LOW_END} />}
@@ -441,6 +444,23 @@ export function GameScreen({ controller, onExit }: Props) {
               <b>{state.collapses}</b>
               <small>{state.collapses === 1 ? 'colapso' : 'colapsos'}</small>
             </p>
+          )}
+          {showGoal && (
+            <button
+              type="button"
+              data-tut="goal"
+              className="ap-hudgoal"
+              aria-label={`Sua meta: colapso ${collapse.next}. ${collapse.requirements[0]!.text} de poeira. Abrir os requisitos`}
+              onClick={() => setGoalOpen(true)}
+            >
+              <span className="ap-goaltxt">
+                <small>Meta do {collapse.next}º colapso</small>
+                <b>{collapse.requirements[0]!.text}</b>
+              </span>
+              <span className="ap-goalbar" aria-hidden="true">
+                <i style={{ transform: `scaleX(${collapse.dustFill})` }} />
+              </span>
+            </button>
           )}
         </div>
         <button type="button" className="ap-hbtn ap-hbtn-ghost ap-hbtn-exit" onClick={exit}>
@@ -722,6 +742,8 @@ export function GameScreen({ controller, onExit }: Props) {
           onClose={() => setRegionsOpen(false)}
         />
       )}
+
+      {goalOpen && <GoalModal state={state} onClose={() => setGoalOpen(false)} />}
 
       {collapseOpen && starReady && !pending && (
         <CollapseModal state={state} onCancel={() => setCollapseOpen(false)} onConfirm={controller.collapse} />

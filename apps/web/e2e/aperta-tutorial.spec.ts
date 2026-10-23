@@ -252,7 +252,7 @@ for (const size of SIZES) {
       expect(errors).toEqual([]);
     });
 
-    test('a árvore é o último cartão e dispensá-lo conclui o tutorial', async ({ page }, info) => {
+    test('o colapso é explicado cedo e a meta fica à vista no topo', async ({ page }, info) => {
       test.skip(info.project.name !== 'desktop', 'o tamanho vem do describe; um projeto basta');
       const errors = await watch(page);
       await installApi(page);
@@ -261,6 +261,38 @@ for (const size of SIZES) {
         ...s,
         tutorial: TUTORIAL.FREE,
         ui: { unlocked: ['upgrades', 'grimoires', 'achievements'], hints: ['achievements', 'objects'] },
+        album: ['moon', 'mars'],
+        run: { ...s.run, picks: 2, build: { moon: 1, mars: 1 } },
+        stats: { ...s.stats, clicks: 300, picks: 2 },
+        achievements: ['tap-1', 'tap-100'],
+      }));
+      account.rev = 1;
+      await openGame(page, false);
+      await expect(page.locator('.ap-tut-card')).toContainText('O colapso da estrela');
+      await expect(page.locator('.ap-tut-card')).toContainText('A sua meta');
+      await shot(page, '9-colapso');
+      await noOverflow(page);
+      await page.getByRole('button', { name: 'Entendi' }).click();
+      // O chip de meta abre os requisitos.
+      const goal = page.locator('.ap-hudgoal');
+      await expect(goal).toBeVisible();
+      await tapCenter(page, goal, touch);
+      await expect(page.getByRole('dialog', { name: /Sua meta: colapso 1/ })).toBeVisible();
+      await expect(page.locator('.ap-reqs li')).toHaveCount(3);
+      await shot(page, '9b-meta');
+      await noOverflow(page);
+      expect(errors).toEqual([]);
+    });
+
+    test('a árvore é o último cartão e dispensá-lo conclui o tutorial', async ({ page }, info) => {
+      test.skip(info.project.name !== 'desktop', 'o tamanho vem do describe; um projeto basta');
+      const errors = await watch(page);
+      await installApi(page);
+      const account = await installSaves(page);
+      account.data = saveAt((s) => ({
+        ...s,
+        tutorial: TUTORIAL.FREE,
+        ui: { unlocked: ['upgrades', 'grimoires', 'achievements'], hints: ['achievements', 'objects', 'collapse'] },
         album: ['moon'],
         run: { ...s.run, picks: 1, build: { moon: 1 } },
         stats: { ...s.stats, clicks: 300, picks: 1 },

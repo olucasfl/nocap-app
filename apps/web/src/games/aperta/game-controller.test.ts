@@ -354,6 +354,7 @@ describe('tutorial pelo controlador', () => {
     t.ctl.tutorialHint('objects');
     expect(state(t).ui.hints).toEqual(['objects']);
     t.ctl.tutorialHint('achievements');
+    t.ctl.tutorialHint('collapse');
     t.ctl.tutorialHint('tree');
     expect(state(t).tutorial).toBe('done');
   });
