@@ -16,6 +16,12 @@ import {
   objectPreview,
   press,
   discardOffer,
+  noteSuggestionTaken,
+  setAutoBuy,
+  suggestedOffer,
+  tickAutomation,
+  activateSkill,
+  type ButtonSkillId,
   rerollGrimoire,
   respecTree,
   resumeClock,
@@ -201,7 +207,9 @@ export function createGameController({ initial, store, slot, perf = () => perfor
     choose(id: string): boolean {
       if (pausedAt !== null) return false;
       const before = state;
-      const next = chooseGrimoire(state, id, now());
+      const suggested = suggestedOffer(state)?.id === id;
+      let next = chooseGrimoire(state, id, now());
+      if (suggested && next.run.picks !== before.run.picks) next = noteSuggestionTaken(next);
       if (next === before || next.run.picks === before.run.picks) {
         commit(next);
         return false;
@@ -343,6 +351,20 @@ export function createGameController({ initial, store, slot, perf = () => perfor
       saveNow();
     },
 
+    /** Usa uma habilidade ativa da barra (Autoclick, Pulso, Supernova...). O motor confere carga e se há escolha aberta. */
+    skill(id: ButtonSkillId): boolean {
+      if (pausedAt !== null) return false;
+      const next = activateSkill(state, id, now());
+      if (next === state) return false;
+      commit(next);
+      return true;
+    },
+
+    /** Compra automática: liga, desliga e muda o limite de preço. */
+    autoBuy(patch: { on?: boolean; limit?: number }) {
+      commit(setAutoBuy(state, patch));
+    },
+
     /** Segunda chance (árvore): joga fora a oferta aberta e sorteia outra. */
     discard() {
       if (pausedAt === null) commit(discardOffer(state, now()));
@@ -358,7 +380,7 @@ export function createGameController({ initial, store, slot, perf = () => perfor
       if (pausedAt !== null) return;
       const t = now();
       const before = state;
-      const next = settleTutorial(tickObjects(state, t));
+      const next = settleTutorial(tickAutomation(tickObjects(state, t), t));
       if (next !== state) {
         state = next;
         dirty = true;

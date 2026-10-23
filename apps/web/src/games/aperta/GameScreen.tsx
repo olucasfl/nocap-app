@@ -5,6 +5,8 @@ import {
   LEGENDARY_OBJECTS,
   choiceLockRemaining,
   discardsLeft,
+  effectiveStats,
+  suggestedOffer,
   isLegendary,
   pityLeft,
   rerollsAvailable,
@@ -36,6 +38,7 @@ import { RegionBackdrop } from './regions';
 import { RegionMenu } from './RegionMenu';
 import { EventChip, EventFx, MissionChip, NewInSpace, RadarChip } from './StatusStrips';
 import { RequirementBars } from './Requirements';
+import { SkillBar } from './SkillBar';
 import { SpaceArtSprite } from './SpaceArtSprite';
 import { SpaceObject, type SpaceObjectKind } from './SpaceObject';
 import { TutorialCoach, TutorialInline } from './Tutorial';
@@ -66,6 +69,7 @@ import './art.css';
 import './game.css';
 import './content.css';
 import './polish.css';
+import './skillbar.css';
 
 interface Props {
   controller: GameController;
@@ -345,6 +349,8 @@ export function GameScreen({ controller, onExit }: Props) {
   const mission = missionView(state);
   const liveEvent = eventView(state, now);
   const radar = radarView(state);
+  const suggested = state.run.pending ? suggestedOffer(state) : null;
+  const suggestion = suggested ? { id: suggested.id, gainPct: effectiveStats(state).skills.suggest.why ? suggested.gainPct : null } : null;
   const regions = regionMenuItems(state);
   const coach = coachView(state, page, collapseOpen || regionsOpen);
 
@@ -594,6 +600,8 @@ export function GameScreen({ controller, onExit }: Props) {
         <b className={energy.hot ? 'is-hot' : undefined}>{energy.label}</b>
       </aside>
 
+      {tutorial === null && !page && <SkillBar state={state} now={now} onUse={controller.skill} onAutoBuy={controller.autoBuy} />}
+
       {(unlocked.has('achievements') || unlocked.has('grimoires') || unlocked.has('upgrades')) && (
       <nav className="ap-dock" aria-label="Menu do jogo">
         {unlocked.has('achievements') && (
@@ -686,6 +694,7 @@ export function GameScreen({ controller, onExit }: Props) {
           discardsLeft={discardsLeft(state)}
           onDiscard={controller.discard}
           pityLeft={pityLeft(state)}
+          suggestion={suggestion}
           gain={gaiaPreviews(state, pending.offers)}
           coach={coach?.inline ? <TutorialInline view={coach} onSkip={controller.tutorialSkip} /> : undefined}
         />

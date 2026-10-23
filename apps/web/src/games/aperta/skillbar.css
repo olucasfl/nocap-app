@@ -1,0 +1,136 @@
+/* Barra de habilidades do Aperta! (spec 040, etapa 19). Só tokens --space-*; anima só transform e opacity. */
+.ap-skillbar {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 92px;
+  z-index: 11;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  pointer-events: none;
+}
+.ap-skillbar > * {
+  pointer-events: auto;
+}
+.ap-skill {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  overflow: hidden;
+  border: 3px solid var(--space-line);
+  border-radius: 12px;
+  background: rgba(10, 14, 40, 0.92);
+  color: var(--space-text);
+}
+.ap-skill svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ap-skill.is-ready {
+  border-color: var(--space-cyan);
+}
+.ap-skill.is-active {
+  border-color: var(--space-gold);
+  color: var(--space-gold);
+}
+.ap-skill:not(.is-ready) {
+  opacity: 0.7;
+}
+.ap-skill:focus-visible,
+.ap-autobuy-step:focus-visible {
+  outline: 3px solid var(--space-cyan);
+  outline-offset: 2px;
+}
+.ap-skill-n {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  font: 700 11px var(--space-font-display);
+  color: var(--space-gold);
+}
+/* A recarga: uma faixa na base que encolhe por transform. */
+.ap-skill-cd {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 5px;
+  background: var(--space-violet);
+  transform-origin: left center;
+  transition: transform 0.9s linear;
+}
+.ap-skill.is-active::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 9px;
+  box-shadow: inset 0 0 0 2px var(--space-gold);
+  animation: ap-skill-pulse 1.6s ease-in-out infinite;
+}
+@keyframes ap-skill-pulse {
+  50% {
+    opacity: 0.3;
+  }
+}
+.ap-skill-hint {
+  flex-basis: 100%;
+  margin: 0;
+  padding: 4px 10px;
+  border: 2px solid var(--space-gold);
+  border-radius: 999px;
+  background: rgba(10, 14, 40, 0.92);
+  color: var(--space-gold);
+  font: 700 12px var(--space-font-display);
+  text-align: center;
+}
+.ap-autobuy {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.ap-autobuy.is-on .ap-autobuy-toggle {
+  border-color: var(--space-gold);
+  color: var(--space-gold);
+}
+.ap-autobuy-step {
+  width: 44px;
+  height: 44px;
+  border: 3px solid var(--space-line);
+  border-radius: 10px;
+  background: rgba(10, 14, 40, 0.92);
+  color: var(--space-text);
+  font: 700 18px var(--space-font-display);
+}
+.ap-autobuy-limit {
+  min-width: 38px;
+  text-align: center;
+  font: 700 12px var(--space-font-display);
+  color: var(--space-text);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ap-skill.is-active::after {
+    animation: none;
+  }
+  .ap-skill-cd {
+    transition: none;
+  }
+}
+
+/* Carta sugerida pela Escolha sugerida (destaque por borda e etiqueta, sem animação). */
+.ap-pick.is-suggested {
+  border-color: var(--space-cyan);
+}
+.ap-pick-sug {
+  font: 700 11px var(--space-font-display);
+  color: var(--space-cyan);
+  text-transform: uppercase;
+}

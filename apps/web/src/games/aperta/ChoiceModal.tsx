@@ -22,6 +22,8 @@ interface Props {
   /** Segunda chance (árvore): descartes que restam e a ação de descartar a oferta inteira. */
   discardsLeft?: number;
   onDiscard?: () => void;
+  /** Escolha sugerida (nó da Automação): a carta destacada, e `gainPct` quando o nó "Sugestão com motivo" existe. */
+  suggestion?: { id: string; gainPct: number | null } | null;
   /** Pity de lendário (árvore): ofertas que faltam para o lendário garantido; `null` sem o nó. */
   pityLeft?: number | null;
   /** Observatório Gaia: o efeito de cada carta com os números da vida (id -> texto). */
@@ -34,7 +36,7 @@ interface Props {
  * Escolha de 1 entre 3 grimórios (spec 038, 3.6 e 4.7), versão provisória da etapa 4: cartas
  * simples. Cartas bloqueadas por 1,6 s e escolha em dois passos (marcar, depois confirmar).
  */
-export function ChoiceModal({ pending, lockRemaining, build, paused, onSelect, onConfirm, onReroll, rerollsAvailable, discardsLeft = 0, onDiscard, pityLeft = null, gain, coach }: Props) {
+export function ChoiceModal({ pending, lockRemaining, build, paused, onSelect, onConfirm, onReroll, rerollsAvailable, discardsLeft = 0, onDiscard, pityLeft = null, suggestion = null, gain, coach }: Props) {
   const rerolls = rerollsAvailable ?? pending.rerollsLeft;
   const root = useRef<HTMLDivElement>(null);
   // Esc não fecha: a barra cheia obriga a escolher, e o toque acidental não pode escapar dela.
@@ -102,7 +104,7 @@ export function ChoiceModal({ pending, lockRemaining, build, paused, onSelect, o
               <div key={id} className="ap-pickcell">
               <button
                 type="button"
-                className={`ap-pick${isSelected ? ' is-selected' : ''}${rarity === 'proibido' ? ' is-forbidden' : ''}`}
+                className={`ap-pick${isSelected ? ' is-selected' : ''}${rarity === 'proibido' ? ' is-forbidden' : ''}${suggestion?.id === id ? ' is-suggested' : ''}`}
                 aria-pressed={isSelected}
                 disabled={locked}
                 onClick={() => {
@@ -110,6 +112,11 @@ export function ChoiceModal({ pending, lockRemaining, build, paused, onSelect, o
                 }}
               >
                 <GrimoireBook rarity={rarity} astro={astroFor(id, def.family)} name={def.name} size="sm" still />
+                {suggestion?.id === id && (
+                  <span className="ap-pick-sug">
+                    Sugerida{suggestion.gainPct !== null ? `: +${Math.max(1, Math.round(suggestion.gainPct))}% de ganho` : ''}
+                  </span>
+                )}
                 <span className="ap-pick-name">{def.name}</span>
                 <span className="ap-pick-rar">{RARITY_LABEL[rarity]}</span>
                 <CategoryTag category={def.category} />
