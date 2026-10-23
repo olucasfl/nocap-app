@@ -112,11 +112,11 @@ describe('conquistas que esperam conteúdo (`needs`)', () => {
 
   it('há de cada tipo de feature e nenhuma conta enquanto a feature não existe', () => {
     const features = new Set(dormant.map((a) => a.needs));
-    for (const f of ['automation', 'tree-v2', 'daily-streak', 'regions-more'] as Feature[]) {
+    for (const f of ['tree-v2', 'daily-streak', 'regions-more'] as Feature[]) {
       expect(features.has(f), f).toBe(true);
       expect(FEATURES[f], f).toBe(false);
     }
-    expect(dormant.length).toBeGreaterThanOrEqual(15);
+    expect(dormant.length).toBeGreaterThanOrEqual(5);
     // Mesmo com tudo no máximo, nenhuma dormente é dada.
     const s = stats(base({ collapses: 30 }), {
       forbiddenBest: { 'cygnus-x1': 5 },
@@ -134,23 +134,23 @@ describe('conquistas que esperam conteúdo (`needs`)', () => {
   });
 
   it('quando a feature chega, a conquista passa a contar sem mudar mais nada', () => {
-    const s = stats(base(), { skillsUsed: ['autoclick'], skillUses: 120 });
-    expect(newlyEarned(s)).not.toContain('auto-autoclick');
-    FEATURES.automation = true;
+    const s = stats(base(), { dayStreakBest: 7 });
+    expect(newlyEarned(s)).not.toContain('streak-3');
+    FEATURES['daily-streak'] = true;
     try {
-      expect(achievementActive(achievementById('auto-autoclick')!)).toBe(true);
-      expect(newlyEarned(s)).toEqual(expect.arrayContaining(['auto-autoclick', 'skills-100']));
+      expect(achievementActive(achievementById('streak-3')!)).toBe(true);
+      expect(newlyEarned(s)).toEqual(expect.arrayContaining(['streak-3', 'streak-7']));
       const after = awardAchievements(s);
-      expect(after.achievements).toContain('auto-autoclick');
+      expect(after.achievements).toContain('streak-3');
       // E a recompensa já entra nas Cintilas.
-      expect(sparkSources(after).achievements).toBeGreaterThanOrEqual(achievementById('auto-autoclick')!.reward);
+      expect(sparkSources(after).achievements).toBeGreaterThanOrEqual(achievementById('streak-3')!.reward);
     } finally {
-      FEATURES.automation = false;
+      FEATURES['daily-streak'] = false;
     }
   });
 
   it('um save com conquista de feature que não existe é recusado pelo servidor', () => {
-    const r = validateSave({ ...base(), achievements: ['auto-autoclick'] });
+    const r = validateSave({ ...base(), achievements: ['streak-3'] });
     expect(r.ok).toBe(false);
     expect(r.ok ? '' : r.errors.join(' ')).toContain('conteúdo que ainda não existe');
     expect(validateSave({ ...base(), achievements: ['id-inventado'] }).ok).toBe(false);

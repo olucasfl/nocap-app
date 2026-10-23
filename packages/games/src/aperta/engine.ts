@@ -32,6 +32,7 @@ import {
 import { ASSIGNABLE_MISSIONS, eventsOpen, mechanicOpen, missionById, type EventId, type MissionDef } from './content';
 import { MISSION_NEXT_DELAY_SEC, milestoneProgress, type MilestoneProgress } from './milestone';
 import { RARE_OBJECT_KINDS, LEGENDARY_OBJECT_KINDS, sparksAvailable } from './sparks';
+import { AUTOCLICK_MAX_CPS, skillStats, type SkillStats } from './tree-skills';
 import { OBJECT_SLOTS_CAP, PITY_BASE, PITY_MIN, TREE_EVENT_IDS, exploreStats, luckStats, type ExploreStats, type LuckStats, type TreeEventId } from './tree-fx';
 import { CONSTELLATION_MIN_NODES, branchesWith, nodeLevelCost, nodeLive, parentsMet, treeNodeById, treeSourceEffects, treeStats, type TreeStats } from './tree';
 import { FORBIDDEN_IDS, FORBIDDEN_MAX_LEVEL, SEAL_DUST_PER_TOUCH, VAULT_OFFER_SIZE, forbiddenEffects } from './forbidden';
@@ -138,6 +139,22 @@ export interface PendingChoice {
   rerolled?: number;
 }
 
+/** Estado de uma habilidade ativa na vida (tempos no relógio do jogo; zeram ao colapsar). */
+export interface SkillRun {
+  /** Quando volta a ficar pronta (carga cheia). */
+  readyAt: number;
+  /** Até quando está ligada (Autoclick, Dobra, Lente, Ímã, Piloto); 0 se não dura. */
+  activeUntil: number;
+  /** Cargas que restam (Pulso e Autoclick podem ter mais de uma). */
+  charges: number;
+}
+
+/** Compra automática: liga/desliga e o limite de preço (% da poeira por compra). Vale em todas as vidas. */
+export interface AutoBuyState {
+  on: boolean;
+  limit: number;
+}
+
 export interface RunState {
   dust: number;
   /** Poeira ganha na vida (não diminui ao gastar): é o que a meta do colapso mede. */
@@ -196,6 +213,9 @@ export interface RunState {
   eventsStarted: number;
   /** O Destino já foi usado nesta vida. */
   destinyUsed: boolean;
+  /** Habilidades ativas usadas na vida e a Compra automática (etapa 19). */
+  skills: Record<string, SkillRun>;
+  autoBuy: AutoBuyState;
 }
 
 export interface SaveState {
@@ -372,6 +392,8 @@ function freshRun(rngState: number, upgradeCount = UPGRADES.length): RunState {
     radar: 0,
     eventsStarted: 0,
     destinyUsed: false,
+    skills: {},
+    autoBuy: { on: false, limit: 50 },
   };
 }
 
@@ -407,6 +429,19 @@ export function newSave(seed: string, createdAt = 0, name = 'Missão Perigeu'): 
  * conta como jogado e objetos, boost e combo congelam (os carimbos são empurrados pelo salto).
  * Enquanto uma escolha está aberta o campo também congela, mas o tempo de jogo segue contando.
  */
+/** Segundos do intervalo [a, b] em que a habilidade `k` esteve ligada. */
+function overlap(k: SkillRun | undefined, a: number, b: number): number {
+  if (!k || k.activeUntil <= a) return 0;
+  return Math.max(0, Math.min(b, k.activeUntil) - a);
+}
+
+/** Toques automáticos do intervalo: o Autoclick (e o Piloto, que o liga) a `cps` toques por segundo, nunca acima do teto. */
+function autoclickTouches(run: RunState, sk: SkillStats, a: number, b: number): number {
+  const secs = Math.max(overlap(run.skills.autoclick, a, b), overlap(run.skills.autopilot, a, b));
+  if (secs <= 0) return 0;
+  return Math.min(AUTOCLICK_MAX_CPS, sk.autoclick.cps > 0 ? sk.autoclick.cps : 2) * secs;
+}
+
 export function syncClock(state: SaveState, now: number): SaveState {
   const gap = now - state.clock;
   if (!(gap > 0)) return state;
@@ -418,8 +453,18 @@ export function syncClock(state: SaveState, now: number): SaveState {
     // Geradores (spec 039): rendem cheio enquanto a pessoa toca e uma fração parada, nunca acima do teto
     // do toque. O teto vale para o ritmo ativo; parado é uma fração dele, então tocar sempre rende mais.
     const rates = autoRates(state);
-    const earn = rates.dust * gap * dustEventMult(state.run, state.clock + gap);
-    const energyEarn = rates.energy * gap * energyMult(state.run, state.clock + gap);
+    const sk = effectiveStats(state);
+    // Dobra temporal: o relógio dos geradores anda 2x enquanto dura (só a parte do intervalo em que estava ligada).
+    const warp = overlap(state.run.skills['time-warp'], state.clock, state.clock + gap) / gap;
+    const gens = 1 + warp;
+    // Autoclick (ou Piloto): toques automáticos até o teto de 6/s, só com o jogo aberto e visível (este ramo nunca roda
+    // com a aba escondida: o intervalo escondido é `frozen`). Não contam como toques das conquistas.
+    const autoTouches = autoclickTouches(state.run, sk.skills, state.clock, state.clock + gap);
+    const full = (1 + sk.combo.pointValue * sk.combo.max) * sk.combo.fullMult;
+    const autoValue =
+      sk.dustPerTouch * (sk.skills.autoclick.combo && sk.combo.enabled ? full : 1) * (state.clock < state.run.boostUntil ? state.run.boostMult : 1);
+    const earn = (rates.dust * gens * gap + autoTouches * autoValue) * dustEventMult(state.run, state.clock + gap);
+    const energyEarn = (rates.energy * gens * gap + autoTouches * sk.energyPerTouch) * energyMult(state.run, state.clock + gap);
     if (earn > 0 || energyEarn > 0) {
       run = {
         ...run,
@@ -470,6 +515,7 @@ function shiftRun(run: RunState, gap: number, shiftPending: boolean): RunState {
     event: run.event ? { ...run.event, until: run.event.until + gap } : null,
     mission: run.mission && run.mission.done ? { ...run.mission, doneAt: run.mission.doneAt + gap } : run.mission,
     objects: run.objects.map((o) => ({ ...o, bornAt: o.bornAt + gap, expiresAt: o.expiresAt + gap })),
+    skills: Object.fromEntries(Object.entries(run.skills).map(([id, k]) => [id, { ...k, readyAt: k.readyAt + gap, activeUntil: k.activeUntil > 0 ? k.activeUntil + gap : 0 }])),
     pending: run.pending && shiftPending ? { ...run.pending, openedAt: run.pending.openedAt + gap } : run.pending,
   };
 }
@@ -516,6 +562,8 @@ export interface EffectiveStats {
   /** Sorte e Exploração da árvore (etapa 20). */
   luck: LuckStats;
   explore: ExploreStats;
+  /** Habilidades ativas e automações da árvore (etapa 19). */
+  skills: SkillStats;
   /** Cada melhoria comprada devolve a poeira de tantos toques. */
   buyRefundTouches: number;
   startDust: number;
@@ -896,6 +944,7 @@ function computeStats(state: SaveState): EffectiveStats {
     tree: ts,
     luck,
     explore,
+    skills: skillStats(state.tree),
     buyRefundTouches: refund,
     startDust: Math.floor(startDust),
     energyStepFactor: Math.max(0.1, 1 + stepPct / 100),
@@ -1927,7 +1976,7 @@ export function collapse(state: SaveState, choice?: string | null): SaveState {
     seals: state.seals + (picked === null ? 1 : 0),
     album: picked !== null && !state.album.includes(picked) ? [...state.album, picked] : state.album,
     stats,
-    run: freshRun(state.run.rngState),
+    run: { ...freshRun(state.run.rngState), autoBuy: state.run.autoBuy },
     // Cada colapso começa uma vida nova com o tutorial concluído (spec 8.1).
     tutorial: 'done',
   };

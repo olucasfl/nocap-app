@@ -56,7 +56,8 @@ export type Feature = 'forbidden-new' | 'automation' | 'legendary-objects' | 'ev
 export const FEATURES: Record<Feature, boolean> = {
   // Ligada na etapa 15: os 10 proibidos existem no Cofre.
   'forbidden-new': true,
-  automation: false,
+  // Ligada na etapa 19: as automações e as habilidades ativas existem.
+  automation: true,
   // Ligadas na etapa 20: os 4 lendários e os 4 eventos da árvore existem.
   'legendary-objects': true,
   'events-new': true,

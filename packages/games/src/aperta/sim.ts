@@ -6,6 +6,7 @@ import { createRng } from '../core/rng';
 import { OBJECTS, UPGRADES, grimoireById, upgradeIndex, type ObjectKind } from './catalog';
 import { TREE_NODES, nodeLive } from './tree';
 import { TREE_EVENT_IDS } from './tree-fx';
+import { skillView, skillsAvailable, tickAutomation, activateSkill } from './skills';
 import { formatDecimal, formatNumber } from './format';
 import { dustGoal, lifeHoursBand } from './economy';
 import { generatorsAtLevel, milestoneGoal, milestoneProgress } from './milestone';
@@ -360,6 +361,12 @@ export function simulate(options: SimOptions): SimResult {
 
     t += dt;
     state = tickObjects(state, t);
+    // Habilidades e Captura automática da árvore: o jogador simulado usa tudo que está pronto (a Compra automática
+    // fica desligada: ele já compra as melhorias do jeito dele).
+    state = tickAutomation(state, t);
+    for (const def of skillsAvailable(state)) {
+      if (skillView(state, def.id, t)?.ready) state = activateSkill(state, def.id, t);
+    }
     // O simulador calibra a economia sem os eventos do colapso (bônus de 15 s, calibrados na etapa 13). Os eventos da árvore
     // (Chuva de ouro, Alinhamento, Maré de energia, Eclipse) rodam de verdade quando o nó existe.
     const treeEvents = TREE_EVENT_IDS.some((id) => effectiveStats(state).explore.events[id].chance > 0);

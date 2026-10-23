@@ -31,8 +31,9 @@ export const TREE_BRANCHES: readonly TreeBranchDef[] = [
 export type TreeFeature = 'automation' | 'skills' | 'luck' | 'exploration' | 'observatory';
 
 export const TREE_FEATURES: Record<TreeFeature, boolean> = {
-  automation: false,
-  skills: false,
+  // Ligadas na etapa 19: Autoclick, Captura e Compra automáticas, Piloto, Pulso, Supernova, Dobra, Lente e Ímã.
+  automation: true,
+  skills: true,
   luck: true,
   exploration: true,
   // Observatório, Projeção, Mapa do cosmos e a Constelação eterna dependem de telas que a etapa 18/21 entrega.
@@ -84,7 +85,7 @@ const AU: Row[] = [
   ['Ímã automático', 4, 1, [12], 'autoCaptureMagnet', { on: [1] }, 'A captura automática puxa os objetos para perto.', 'automation'],
   ['Reserva de compra', 4, 1, [13], 'autoBuyReserve', { pct: [20] }, 'A compra automática guarda uma reserva para a próxima melhoria grande.', 'automation'],
   ['Piloto automático', 4, 1, [14, 15], 'autopilot', { sec: [90] }, 'Liga autoclick, captura e compra juntos por um tempo.', 'automation'],
-  ['Escolha automática', 4, 1, [16], 'autoPick', { on: [1] }, 'Escolhe a carta sugerida se você demora.', 'automation'],
+  ['Sugestão com motivo', 4, 1, [16], 'suggestWhy', { on: [1] }, 'A carta sugerida mostra quanto rende.', 'automation'],
   ['Autoclick eterno', 5, 1, [17, 18], 'autoclickDuration', { sec: [180] }, 'O autoclick passa a durar 180 s.', 'automation'],
   ['Piloto total', 5, 1, [19, 20], 'autopilotAll', { mult: [2] }, 'O piloto automático dura o dobro.', 'automation'],
   ['Mestre das máquinas', 5, 1, [21, 19], 'generatorPct', { pct: [7.5] }, 'Os geradores de poeira rendem muito mais.'],

@@ -93,11 +93,12 @@ describe('o grafo', () => {
   });
 
   it('nó cuja mecânica ainda não existe fica fechado, e o filho dele também', () => {
-    expect(TREE_FEATURES).toEqual({ automation: false, skills: false, luck: true, exploration: true, observatory: false });
-    expect(nodeLive(treeNodeById('au-01')!)).toBe(false);
-    expect(nodeLive(treeNodeById('au-05')!)).toBe(false);
+    expect(TREE_FEATURES).toEqual({ automation: true, skills: true, luck: true, exploration: true, observatory: false });
+    expect(nodeLive(treeNodeById('au-01')!)).toBe(true);
+    expect(nodeLive(treeNodeById('co-06')!)).toBe(false);
+    expect(nodeLive(treeNodeById('co-14')!)).toBe(false);
     expect(nodeLive(treeNodeById('co-01')!)).toBe(true);
-    expect(nodeLive(treeNodeById('au-24')!)).toBe(false);
+    expect(nodeLive(treeNodeById('au-24')!)).toBe(true);
   });
 });
 
@@ -134,8 +135,8 @@ describe('comprar um nó', () => {
   it('não compra nó que não existe nem nó fechado por mecânica futura', () => {
     const s = open(60);
     expect(buyNode(s, 'nada')).toBe(s);
-    expect(buyNode(s, 'au-01')).toBe(s);
-    expect(nodeNextCost(s, 'au-01')).toBeNull();
+    expect(buyNode(s, 'co-06')).toBe(s);
+    expect(nodeNextCost(s, 'co-06')).toBeNull();
   });
 });
 
@@ -178,7 +179,7 @@ describe('valida o save', () => {
     expect(ok({ ...s, tree: { ...s.tree, 'nada-x': 1 } })).toContain('Nó desconhecido: nada-x');
     expect(ok({ ...s, tree: { ...s.tree, 'co-11': 3 } })).toContain('Nó acima do nível máximo: co-11');
     expect(ok({ ...s, tree: { 'co-11': 1 }, sparks: { legacy: 15, spent: 3 } })).toContain('Nó sem os pré-requisitos: co-11');
-    expect(ok({ ...s, tree: { 'au-01': 1 }, sparks: { legacy: 15, spent: 1 } })).toContain('Nó ainda fechado: au-01');
+    expect(ok({ ...s, tree: { 'co-06': 1 }, sparks: { legacy: 15, spent: 1 } })).toContain('Nó ainda fechado: co-06');
     expect(ok({ ...s, sparks: { legacy: 15, spent: 2 } })).toContain('Árvore custa mais que as Cintilas gastas');
     expect(treeErrors({ 'co-05': 1 })).toEqual(['Nó sem os pré-requisitos: co-05']);
   });

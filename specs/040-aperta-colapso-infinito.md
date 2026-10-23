@@ -369,3 +369,11 @@ F/T = 1,24 (>= 0,80) e (F + R25)/T = 1,27 (>= 1,10). Não precisou ajustar custo
 - No celular o painel fica abaixo do grafo (a página rola até ele ao escolher o nó), não sobre ele.
 - Não conferi 320, 768, 1024, 1280 e 1920 px nem aparelho real; o spec e2e antigo da árvore (`aperta-tree.spec.ts`) ainda fala da lista e da árvore antiga.
 
+
+## 16. Etapa 19 pronta: automações e habilidades ativas (23/10/2026)
+
+- `tree-skills.ts` lê a árvore e devolve os números de cada habilidade; `skills.ts` tem as ações (`activateSkill`, `setAutoBuy`, `tickAutomation`, `suggestedOffer`). Estado por vida em `run.skills` (`readyAt`, `activeUntil`, `charges`) e `run.autoBuy`; saves antigos entram com os padrões.
+- Autoclick: 60 s, recarga de 10 min; conta como toque até 6/s (`AUTOCLICK_MAX_CPS`), só com a aba aberta e visível (aba oculta congela o relógio, como o resto). Auto-captura e Compra automática rodam a cada 1 s e respeitam pausa e a trava de toque duplo. A Escolha sugerida só destaca a carta, nunca escolhe.
+- Pulso, Supernova menor, Dobra do tempo, Lente e Ímã de estrelas são botões na barra (`SkillBar`), que só aparece depois do 1º nó que dá botão. Alvo de 48 px, recarga por `scaleX`.
+- O simulador usa as habilidades prontas; a Compra automática fica desligada nele.
+- Sem testar: aparelho real, 320 px da barra. A calibragem dos números desses nós fica para a etapa 21.

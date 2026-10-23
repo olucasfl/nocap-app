@@ -7,6 +7,7 @@
 // marca `flagged`, sem banir ninguém (seção 10.3).
 
 import { z } from 'zod';
+import { AUTOCLICK_MAX_CPS } from './tree-skills';
 import { treeErrors, treeSpent, treeStats } from './tree';
 import { GRIMOIRES, LEGENDARY_KINDS, OBJECTS, REGIONS, UPGRADES, grimoireById, RARE_EFFECTS, type ObjectKind, type RareEffect } from './catalog';
 import {
@@ -116,6 +117,9 @@ const runSchema = z.object({
   radar: int(1000).default(0),
   eventsStarted: int(Number.MAX_SAFE_INTEGER).default(0),
   destinyUsed: z.boolean().default(false),
+  // Habilidades ativas e Compra automática (etapa 19): saves antigos entram sem nada.
+  skills: z.record(id, z.object({ readyAt: stamp, activeUntil: stamp, charges: int(10) })).default({}),
+  autoBuy: z.object({ on: z.boolean(), limit: int(100) }).default({ on: false, limit: 50 }),
 });
 
 const saveSchema = z.object({
@@ -268,7 +272,12 @@ function dustPerSecondCeiling(save: SaveState): number {
   const perTouch = (Math.max(1, s.dustPerTouch) + s.combo.fullDustAdd) * comboMult * nthMult * burst * crit;
   const bestObject = Math.max(...Object.values(s.objects.reward).map((r) => r.dust));
   const objects = s.objects.disabled ? 0 : (1 / Math.max(0.5, s.objects.spawnMinSec)) * s.dustPerTouch * bestObject;
-  return MAX_TOUCHES_PER_SEC * perTouch + objects + Math.min(s.autoDustPerSec, s.autoDustCap);
+  // Autoclick e Piloto somam até 6 toques/s por cima dos 12 manuais; a Dobra dobra os geradores; a Supernova e o Pulso
+  // são rajadas de até ~15 minutos de toques a cada recarga.
+  const auto = s.skills.has.autoclick || s.skills.has.autopilot ? AUTOCLICK_MAX_CPS * perTouch : 0;
+  const bursts = s.skills.has.pulse || s.skills.has.supernova ? 2 * perTouch * Math.max(s.skills.pulse.touches, s.skills.supernova.touches * s.skills.supernova.big * 3) / 150 : 0;
+  const warp = s.skills.has['time-warp'] ? 2 : 1;
+  return (MAX_TOUCHES_PER_SEC * perTouch + auto + bursts) + objects + warp * Math.min(s.autoDustPerSec, s.autoDustCap);
 }
 
 /** Metas de poeira de antes da spec 040 (economia v2 calibrada, 22/10/2026): só para o piso dos saves antigos. */
