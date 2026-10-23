@@ -35,6 +35,14 @@ O problema que você viu é real. Os grimórios se repetem entre si, e também r
 - Se você já tem a Lua Comum e vem a Lua Rara (D): o grimório passa a valer como Raro e ganha +1 nível. Assim sair raridade melhor é sempre bom e não existe "carta pior que a que eu já tenho".
 - A raridade também continua decidindo **quando** a carta aparece (Raro, Épico e Lendário liberam com mais escolhas feitas na vida).
 
+### Página de Grimórios (o livro): descobrir as versões
+
+- A página mostra **um grimório por astro** (ex.: Lua), e não uma carta por raridade.
+- Cada grimório tem **4 espaços**: Comum, Raro, Épico e Lendário. Um espaço fica como "???" até você pegar aquela versão pela primeira vez; ao pegar, ele se revela com o nome da raridade e o bônus por nível.
+- Cada grimório mostra "2 de 4 versões" e o nível mais alto que você já chegou. O Atlas e os conjuntos por família passam a contar versões descobertas (14 grimórios x 4 = 56 espaços, quase o mesmo número de cartas de hoje).
+- A descoberta é **permanente** (vale entre vidas), como o álbum atual. O nível e a raridade em uso continuam zerando a cada vida.
+- O Cofre dos Proibidos continua separado e não entra nessa conta.
+
 ## 3. Quem mexe em quê (para não competir)
 
 | Fonte | Responsável por | Não mexe em |
@@ -72,7 +80,7 @@ Regra de ouro: um número (ex.: "geradores rendem x") só pode ter **uma casa**.
 2. `economy.ts`: `GRIMOIRE_MAX_LEVEL` deixa de ser um número único e vira o teto por raridade; `levelFactor` passa a usar o bônus da raridade.
 3. `engine.ts`: a oferta sorteia grimório e raridade; guardar no `build` o nível e a maior raridade vista; regra da seção 2 para "vem de novo em outra raridade".
 4. `save.ts`: migração (save v6) para converter os grimórios antigos: cada um vira o grimório novo equivalente, com a raridade antiga e o nível que tinha (limitado ao teto).
-5. Tela de escolha, página de Grimórios, Cofre e Atlas: o Atlas e os conjuntos por família continuam, mas passam a contar os 14 grimórios.
+5. Página de Grimórios: passa de uma lista de cartas para o livro com 4 espaços por grimório (campo novo no save: versões descobertas por grimório, migrado do álbum atual). Tela de escolha, Cofre e Atlas: o Atlas e os conjuntos por família continuam, mas passam a contar os 14 grimórios.
 6. Conquistas e Árvore que citam grimórios específicos (Vega, Via Láctea, "Cartas de capa" etc.) precisam ser revistas.
 7. Simulador e metas de colapso: refazer a calibração, porque o ganho por grimório muda bastante. Esta é a parte mais pesada.
 
@@ -82,7 +90,8 @@ Regra de ouro: um número (ex.: "geradores rendem x") só pode ter **uma casa**.
 2. Nível máximo por raridade (5, 6, 8, 10 como sugestão)?
 3. Grimório que vem em raridade maior: sobe a raridade e ganha +1 nível (sugestão), ou soma como um grimório separado?
 4. Geradores saem dos grimórios de vez, ou fica um só?
-5. Isto muda o que o `PROJECT-BRIEF.md` seção 2 diz sobre grimórios? Se sim, atualizamos junto.
+5. Descobrir uma versão (ex.: Lua Lendária) dá alguma recompensa além de completar o livro, ou só o conjunto/Atlas já basta?
+6. Isto muda o que o `PROJECT-BRIEF.md` seção 2 diz sobre grimórios? Se sim, atualizamos junto.
 
 ## 7. Lista completa de hoje (55 grimórios)
 
