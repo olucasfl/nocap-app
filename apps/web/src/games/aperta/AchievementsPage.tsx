@@ -101,7 +101,7 @@ export function AchievementsPage({ state }: { state: SaveState }) {
         </label>
         <div className="ap-ach-status" role="group" aria-label="Mostrar">
           {STATUS.map((s) => (
-            <button key={s.id} type="button" className="ap-chip" aria-pressed={filter.status === s.id} onClick={() => set({ status: s.id })}>
+            <button key={s.id} type="button" className="ap-fchip" aria-pressed={filter.status === s.id} onClick={() => set({ status: s.id })}>
               {s.name}
             </button>
           ))}
@@ -111,7 +111,7 @@ export function AchievementsPage({ state }: { state: SaveState }) {
             <button
               key={c.id}
               type="button"
-              className="ap-chip"
+              className="ap-fchip"
               aria-pressed={filter.group === c.id}
               onClick={() => set({ group: c.id as AchievementGroup | 'all' })}
             >

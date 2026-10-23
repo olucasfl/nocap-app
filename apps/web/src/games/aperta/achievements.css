@@ -160,7 +160,7 @@
   gap: 8px;
   min-width: 0;
 }
-.ap-chip {
+.ap-fchip {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -173,15 +173,15 @@
   font: 700 13px var(--space-font-display);
   text-transform: uppercase;
 }
-.ap-chip small {
+.ap-fchip small {
   font: 600 11px var(--space-font-body);
   color: var(--space-muted);
 }
-.ap-chip[aria-pressed='true'] {
+.ap-fchip[aria-pressed='true'] {
   border-color: var(--space-gold);
   background: rgba(60, 50, 20, 0.7);
 }
-.ap-chip:focus-visible {
+.ap-fchip:focus-visible {
   outline: 3px solid var(--space-gold);
   outline-offset: 2px;
 }
