@@ -49,20 +49,6 @@ function withLevels(levels: Record<string, number>, over: { dust?: number; clock
   };
 }
 
-/** Toca `n` vezes, uma a cada `step` s, a partir de `from`. */
-function tap(s: SaveState, from: number, n: number, step: number): { s: SaveState; gains: number[]; end: number } {
-  const gains: number[] = [];
-  let cur = s;
-  let t = from;
-  for (let i = 0; i < n; i++) {
-    const before = cur.run.dust;
-    cur = press(cur, t);
-    gains.push(cur.run.dust - before);
-    t += step;
-  }
-  return { s: cur, gains, end: t };
-}
-
 describe('Aquecimento (melhoria de toque, 3.000 de poeira)', () => {
   it('custa 3.000, é de toque e única', () => {
     const def = UPGRADES[idx('warmup')]!;
@@ -226,7 +212,7 @@ describe('melhorias de gerador (spec 039, 4.1): compra única, na aba Geradores'
     expect(batchCost(none, sat)).toBeNull();
     expect(buyUpgradeBatch(none, sat)).toBe(none);
     // Com menos de BULK_MIN níveis faltando, o botão não aparece.
-    expect(batchLevels(withLevels({ queue: 1, satellite: max - 1 }), sat)).toBe(0);
+    expect(batchLevels(withLevels({ queue: 1, satellite: max - (BULK_MIN - 1) }), sat)).toBe(0);
   });
 });
 

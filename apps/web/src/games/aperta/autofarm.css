@@ -113,7 +113,9 @@
 
 /* Taxa real dos geradores (spec 041, A7). */
 .ap-ratetag {
-  margin-left: 8px;
+  text-transform: none;
+  letter-spacing: 0;
+  margin-left: 4px;
   padding: 1px 8px;
   border: 2px solid var(--space-ink);
   border-radius: 999px;

@@ -147,3 +147,9 @@ Total: **58 grimórios** (40 anteriores mais 18 novos, que entram do colapso 0 a
 - **E. Calibragem jogando com o Lucas.**
 
 Riscos: mexe na tabela 6.6 da spec 038 (colapso 1 em ~8 h); tudo passa pelo simulador antes de ir para a tela.
+
+
+## 12. Atualização de 23/10/2026
+
+- O **Aquecimento** e as **8 melhorias de gerador** (seção 4.1) foram implementados (`generator-perks.test.ts`). A Fila de pedidos virou "completar o gerador de uma vez".
+- A spec 041 mudou os geradores: limite de níveis (0/8), um por vez, sem os marcos de 10, 25 e 50, teto do auto em 60% do toque (era 35%). Os números das tabelas das seções 3 e 4 são os da spec 041 e do `catalog.ts`.

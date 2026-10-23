@@ -63,3 +63,14 @@ Testes vermelhos por categoria: (a) os 2 acima; (b) nenhum teste antigo fora do 
 3. "Faça a tela do Observatório/Projeção/Mapa do cosmos (spec 040 seção 6) ou aposente os 4 nós `co-06/14/20/23` e as 5 conquistas `tree-v2`, conforme a minha resposta: ______. Atualize o teste de balanço."
 4. "Limpe as sobras: texto 'Fragmentos extras' em `content/index.ts:20`, comentário do Atlas em `collapse.css:135`, os 2 erros de lint de `api-save-store.ts` e o teste do teto de 6/s do Autoclick; sem mudar números."
 5. "Confirme a migration `0009_aperta.sql` no banco (eu autorizo `pnpm db:migrate` em: ______) e rode as rotas do Aperta! contra o banco real com um save de `fixtures/legacy-life2-1h.json`."
+
+
+---
+
+## Atualização de 23/10/2026: o que foi resolvido
+
+- **Simulador:** `sim.test.ts` 17 de 17 verde (as 2 travas vermelhas fecharam com a decisão C, a calibragem de Sorte, Exploração e Cosmos e a economia v3 da spec 041).
+- **Observatório:** os 4 nós e as 5 conquistas `tree-v2` foram aposentados (116 nós ativos, nenhum fechado por `needs`).
+- **Sobreposição em 320 x 640:** avisos numa faixa só, botão de colapso sem cobrir a dock (a varredura em 320, 390 e 1280 px não achou problema novo; o pior caso com todos os avisos juntos ainda corta um subtítulo).
+- **Sobras e lint:** texto de missão, comentário do Atlas e a conquista Álbum completo; os 2 erros de lint do `api-save-store` saíram (restam os 4 de fora do Aperta!).
+- **Pendente (Lucas):** jogar para sentir o ritmo, nome Cintilas, `daily-streak` e `regions-more` seguem dormentes.

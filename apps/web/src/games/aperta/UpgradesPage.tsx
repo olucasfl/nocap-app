@@ -11,7 +11,6 @@ import {
   revealedIds,
   tabBadge,
   tabOf,
-  upgradeRows,
   type UpgradeRow,
   type UpgradeSection,
   type UpgradeTab,

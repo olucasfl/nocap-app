@@ -36,7 +36,7 @@ function midLifeSave(): SaveState {
     regionId: 'alpha-centauri',
     sparks: { legacy: earned, spent: 0 },
     album: ['moon', 'mars'],
-    run: { ...s.run, picks: 9, dust: dustGoal(c + 1) * 0.37, dustLife: dustGoal(c + 1) * 0.37, build: { moon: 1, mars: 1 }, captured: 2, chainBest: 4 },
+    run: { ...s.run, picks: 4, dust: dustGoal(c + 1) * 0.37, dustLife: dustGoal(c + 1) * 0.37, build: { moon: 1, mars: 1 }, captured: 2, chainBest: 4 },
     stats: { ...s.stats, picks: c * 12 + 9, dustTotal: total + dustGoal(c + 1) * 0.37, objectsCaptured: 2 },
   };
 }

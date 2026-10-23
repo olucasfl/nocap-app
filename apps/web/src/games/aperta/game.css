@@ -663,11 +663,14 @@
     grid-template-columns: 1fr auto;
   }
   .ap-hud .ap-hudp {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 4px 10px;
     min-width: 0;
     padding: 6px 8px;
+  }
+  .ap-hud .ap-hudp .ap-hudgoal {
+    grid-column: 1 / -1;
   }
   /* Com o chip de meta o painel do topo ganha uma linha: o resto da tela desce junto. */
   .ap-game.has-goal {

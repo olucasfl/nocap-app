@@ -401,3 +401,9 @@ O Supernova também passou a ser usado pelo jogador simulado só com a barra de 
 **QA responsivo (Chromium, 320 a 1920 px, toque e mouse, `aperta-qa.mjs`):** achados e corrigidos: filtros da página de Conquistas escondidos (classe `ap-chip` some nas páginas; virou `ap-fchip`), lista de proibidos do colapso com marcadores e sem estilo, modal escorregando quando o foco rolava o jogo (`.ap-game` agora `overflow: clip`), botões de filtro da árvore com 36 px (agora 44). Sobra: com todos os avisos ao mesmo tempo em 320 x 640 o cartão do evento é cortado embaixo (pior caso do save "late").
 
 **O que o Lucas deve jogar e revisar:** ritmo do começo (vidas 1 a 3); meta do 1º colapso em 50 mi; a 4ª carta de escolha em 320 px; os eventos e os chips; o Radar de lendários; o Autoclick (sensação, teto de 6/s e aba escondida); a barra de habilidades; a árvore (arrastar, painel, refazer); e se a árvore completa deve mesmo encurtar tanto a vida.
+
+
+## 18. Atualização de 23/10/2026 (spec 041)
+
+- O Lucas decidiu a opção C: Autoclick, Dobra, Piloto, Pulso e Supernova só poupam toque (tocando, o ganho extra é zero ou uma fração). O Observatório e os 4 nós (`co-06`, `co-14`, `co-20`, `co-23`) e as 5 conquistas `tree-v2` foram aposentados; a árvore tem 116 nós.
+- Sorte, Exploração e Cosmos foram enfraquecidos em 3 rodadas (tabela na seção 17) e as metas e o ritmo foram refeitos na spec 041 (1º colapso em ~1 h). As travas do simulador agora são de 0,7 h a 2,5 h até o 15º colapso; o `sim.test.ts` está 17 de 17 verde.

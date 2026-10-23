@@ -422,9 +422,10 @@ export function GameScreen({ controller, onExit }: Props) {
             <b key={state.stats.clicks} className="ap-bump">
               {formatNumber(state.run.dust)}
             </b>
-            <small>poeira</small>
+            <small>
+              poeira <RateTag state={state} kind="dust" />
+            </small>
             <AutoGain state={state} paused={paused} />
-            <RateTag state={state} kind="dust" />
           </p>
           {!unlocked.has('tree') ? null : regions.length > 1 && tutorial === null ? (
             <button
