@@ -21,6 +21,8 @@ import {
   type GrimoireDef,
   type ObjectDef,
   type ObjectKind,
+  LEGENDARY_KINDS,
+  LEGENDARY_OBJECTS,
   type Rarity,
   type RareEffect,
   type RegionDef,
@@ -30,6 +32,7 @@ import {
 import { ASSIGNABLE_MISSIONS, eventsOpen, mechanicOpen, missionById, type EventId, type MissionDef } from './content';
 import { MISSION_NEXT_DELAY_SEC, milestoneProgress, type MilestoneProgress } from './milestone';
 import { RARE_OBJECT_KINDS, LEGENDARY_OBJECT_KINDS, sparksAvailable } from './sparks';
+import { OBJECT_SLOTS_CAP, PITY_BASE, PITY_MIN, TREE_EVENT_IDS, exploreStats, luckStats, type ExploreStats, type LuckStats, type TreeEventId } from './tree-fx';
 import { CONSTELLATION_MIN_NODES, branchesWith, nodeLevelCost, nodeLive, parentsMet, treeNodeById, treeSourceEffects, treeStats, type TreeStats } from './tree';
 import { FORBIDDEN_IDS, FORBIDDEN_MAX_LEVEL, SEAL_DUST_PER_TOUCH, VAULT_OFFER_SIZE, forbiddenEffects } from './forbidden';
 import {
@@ -131,6 +134,8 @@ export interface PendingChoice {
   /** Quantas escolhas ainda faltam nesta barra cheia (2 com a Nebulosa de Órion). */
   picksLeft: number;
   rerollsLeft: number;
+  /** Trocas já feitas nesta oferta (a "primeira troca grátis" da árvore vale uma por oferta). */
+  rerolled?: number;
 }
 
 export interface RunState {
@@ -181,6 +186,16 @@ export interface RunState {
   fullBest: number;
   /** Missões da estação cumpridas na vida. */
   missionsDone: number;
+  // Contadores da vida que os nós de Sorte e Exploração leem (etapa 20); zeram no colapso.
+  /** Trocas de carta e descartes de oferta já gastos da cota da vida. */
+  rerollsUsed: number;
+  discardsUsed: number;
+  /** Capturas desde que o radar zerou (o lendário nasce ao encher). */
+  radar: number;
+  /** Eventos já começados nesta vida (o "Grande evento" vale para o 1º). */
+  eventsStarted: number;
+  /** O Destino já foi usado nesta vida. */
+  destinyUsed: boolean;
 }
 
 export interface SaveState {
@@ -254,6 +269,8 @@ export interface SaveStats {
   rareStreak: number;
   rareStreakBest: number;
   rerolls: number;
+  /** Ofertas abertas desde a última com carta lendária (o pity de lendário da árvore lê isto). */
+  sinceLegend: number;
   /** Maior nível já alcançado de cada grimório proibido (a Estrela dos Proibidos lê isto). */
   forbiddenBest: Record<string, number>;
   /** Habilidades da etapa 19 e sequência de dias (ainda não existem): ficam prontas para as conquistas. */
@@ -287,6 +304,7 @@ export const FRESH_STATS: SaveStats = {
   rareStreak: 0,
   rareStreakBest: 0,
   rerolls: 0,
+  sinceLegend: 0,
   forbiddenBest: {},
   skillsUsed: [],
   skillUses: 0,
@@ -349,6 +367,11 @@ function freshRun(rngState: number, upgradeCount = UPGRADES.length): RunState {
     chainBest: 0,
     fullBest: 0,
     missionsDone: 0,
+    rerollsUsed: 0,
+    discardsUsed: 0,
+    radar: 0,
+    eventsStarted: 0,
+    destinyUsed: false,
   };
 }
 
@@ -395,8 +418,8 @@ export function syncClock(state: SaveState, now: number): SaveState {
     // Geradores (spec 039): rendem cheio enquanto a pessoa toca e uma fração parada, nunca acima do teto
     // do toque. O teto vale para o ritmo ativo; parado é uma fração dele, então tocar sempre rende mais.
     const rates = autoRates(state);
-    const earn = rates.dust * gap;
-    const energyEarn = rates.energy * gap;
+    const earn = rates.dust * gap * dustEventMult(state.run, state.clock + gap);
+    const energyEarn = rates.energy * gap * energyMult(state.run, state.clock + gap);
     if (earn > 0 || energyEarn > 0) {
       run = {
         ...run,
@@ -490,6 +513,9 @@ export interface EffectiveStats {
   costFactor: number;
   /** Números da árvore que o motor lê fora de `Effect` (eco, capa, largada). */
   tree: TreeStats;
+  /** Sorte e Exploração da árvore (etapa 20). */
+  luck: LuckStats;
+  explore: ExploreStats;
   /** Cada melhoria comprada devolve a poeira de tantos toques. */
   buyRefundTouches: number;
   startDust: number;
@@ -533,7 +559,18 @@ interface Source {
 const OBJECT_KINDS = OBJECTS.map((o) => o.kind);
 
 function emptyByKind(value: number): Record<ObjectKind, number> {
-  return { comet: value, 'shooting-star': value, satellite: value, asteroid: value, probe: value, golden: value };
+  return {
+    comet: value,
+    'shooting-star': value,
+    satellite: value,
+    asteroid: value,
+    probe: value,
+    golden: value,
+    'legend-comet': value,
+    'legend-pulsar': value,
+    'legend-nebula': value,
+    'legend-wormhole': value,
+  };
 }
 
 const statsCache = new WeakMap<
@@ -790,6 +827,8 @@ function computeStats(state: SaveState): EffectiveStats {
 
   const costFactor = clampCostFactor(costFactors.reduce((a, b) => a * b, 1));
   const ts = treeStats(state.tree);
+  const luck = luckStats(state.tree);
+  const explore = exploreStats(state.tree);
 
   const comboMax = Math.min(COMBO_HARD_CAP, Math.max(0, Math.floor(COMBO_BASE_MAX + (has('cadence') ? 1 : 0) + comboMaxAdd)));
   const windowSec = (COMBO_BASE_WINDOW_SEC + windowSecAdd) * (1 + windowPct / 100) * windowMult;
@@ -807,7 +846,7 @@ function computeStats(state: SaveState): EffectiveStats {
 
   const spawnFactor = has('kepler') ? KEPLER_SPAWN_FACTOR : 1;
   const spawnCut = Math.max(0, spawnCutSec);
-  const rareCut = Math.max(0, rareCutSec);
+  const rareCut = Math.max(0, rareCutSec + luck.goldCutSec);
   const autoMult = Math.max(0, 1 + genPct / 100);
   const energyGenMult = Math.max(0, 1 + energyGenPct / 100);
 
@@ -821,6 +860,11 @@ function computeStats(state: SaveState): EffectiveStats {
   // A Estrela Dourada não tem recompensa fixa: o efeito dela vem de `GameObject.power` (ver `objectPreview`).
   life.golden = RARE_LIFE_SEC + Math.max(0, rareLifeAdd);
   reward.golden = { dust: 0, energy: 0 };
+  // Lendários (etapa 20): só nascem pelo Radar ou por evento; a vida e a recompensa vêm do catálogo.
+  for (const def of LEGENDARY_OBJECTS) {
+    life[def.kind] = def.lifeSec;
+    reward[def.kind] = { dust: def.dustTouches * explore.legendRewardMult, energy: def.energyTouches * explore.legendRewardMult };
+  }
   reward.comet.dust = OBJECT_REWARD.cometTouches + rewardAdd.comet;
   reward.asteroid.dust = OBJECT_REWARD.asteroidTouches + rewardAdd.asteroid;
   reward.asteroid.energy = OBJECT_REWARD.asteroidEnergyTouches;
@@ -850,6 +894,8 @@ function computeStats(state: SaveState): EffectiveStats {
     },
     costFactor,
     tree: ts,
+    luck,
+    explore,
     buyRefundTouches: refund,
     startDust: Math.floor(startDust),
     energyStepFactor: Math.max(0.1, 1 + stepPct / 100),
@@ -862,7 +908,7 @@ function computeStats(state: SaveState): EffectiveStats {
       rareMinSec: Math.max(RARE_MIN_INTERVAL_SEC, RARE_INTERVAL_SEC * (1 - RARE_INTERVAL_JITTER) - rareCut),
       rareMaxSec: Math.max(RARE_MIN_INTERVAL_SEC, RARE_INTERVAL_SEC * (1 + RARE_INTERVAL_JITTER) - rareCut),
       rareLifeSec: RARE_LIFE_SEC + Math.max(0, rareLifeAdd),
-      maxOnField: OBJECT_BASE_MAX + maxAdd,
+      maxOnField: explore.objectSlots > 0 ? Math.min(OBJECT_SLOTS_CAP, OBJECT_BASE_MAX + maxAdd + explore.objectSlots) : OBJECT_BASE_MAX + maxAdd,
       lifeSec: life,
       reward,
       signalMult,
@@ -871,10 +917,10 @@ function computeStats(state: SaveState): EffectiveStats {
       afterCaptureMult,
     },
     choice: {
-      cards: 3 + choice.cards,
+      cards: 3 + choice.cards + (luck.fourthCard ? 1 : 0),
       picks: 1 + choice.picks,
       rerolls: choice.rerolls,
-      repeatLevels: 1 + choice.repeatLevels,
+      repeatLevels: 1 + choice.repeatLevels + luck.repeatLevels,
       noCommon: choice.noCommon,
       rarityBoost: choice.rarityBoost,
     },
@@ -962,14 +1008,20 @@ function hasAbove(pool: Map<Rarity, GrimoireDef[]>): boolean {
   return RARITIES.some((r) => r !== 'common' && (pool.get(r)?.length ?? 0) > 0);
 }
 
-export function drawGrimoires(state: SaveState, exclude: readonly string[] = [], count?: number): { offers: string[]; rngState: number } {
-  const stats = effectiveStats(state);
-  const want = count ?? stats.choice.cards;
-  const candidates = unlockedContent(state).grimoires.filter((g) => {
+/** As cartas que podem sair agora: abertas, abaixo do nível máximo, já liberadas pelas escolhas e fora de `exclude`. */
+function offerCandidates(state: SaveState, exclude: readonly string[]): GrimoireDef[] {
+  return unlockedContent(state).grimoires.filter((g) => {
     if (exclude.includes(g.id)) return false;
     if ((state.run.build[g.id] ?? 0) >= GRIMOIRE_MAX_LEVEL) return false;
     return state.run.picks >= rarityUnlockPicks(g.rarity, state.collapses);
   });
+}
+
+export function drawGrimoires(state: SaveState, exclude: readonly string[] = [], count?: number): { offers: string[]; rngState: number } {
+  const stats = effectiveStats(state);
+  // Eclipse (evento da árvore): cada oferta traz uma carta extra enquanto dura.
+  const want = count ?? stats.choice.cards + (activeEventId(state, state.clock) === 'eclipse' ? 1 : 0);
+  const candidates = offerCandidates(state, exclude);
   // Só o que rende agora; se faltar carta para a escolha, completa com o resto (nunca abre vazia).
   const usable = candidates.filter((g) => grimoireUseful(state, g));
   const open = usable.length >= want ? usable : [...usable, ...candidates.filter((g) => !usable.includes(g))];
@@ -977,12 +1029,18 @@ export function drawGrimoires(state: SaveState, exclude: readonly string[] = [],
   for (const g of open) pool.set(g.rarity, [...(pool.get(g.rarity) ?? []), g]);
 
   const favorite = mechanicOpen('favorite', state.collapses) ? state.favorite : null;
+  // Sorte (árvore): pesos somados em PONTOS à tabela 100/24/9/3, e cada raro seguido pesa mais no próximo.
+  const luck = stats.luck;
+  const streakBonus = luck.rareStreak ? Math.min(RARE_STREAK_CAP, state.stats.rareStreak) * RARE_STREAK_STEP : 0;
   let rng = state.run.rngState;
   const offers: string[] = [];
   while (offers.length < want) {
     const rarities = RARITIES.filter((r) => (pool.get(r)?.length ?? 0) > 0 && !(r === 'common' && stats.choice.noCommon && hasAbove(pool)));
     if (rarities.length === 0) break;
-    const weightOf = (r: Rarity): number => RARITY_WEIGHT[r] + (r === 'epic' || r === 'legendary' ? stats.choice.rarityBoost : 0);
+    const weightOf = (r: Rarity): number =>
+      RARITY_WEIGHT[r] +
+      (r === 'epic' || r === 'legendary' ? stats.choice.rarityBoost : 0) +
+      (r === 'rare' ? luck.rareWeight + streakBonus : r === 'epic' ? luck.epicWeight : r === 'legendary' ? luck.legendWeight : 0);
     const total = rarities.reduce((sum, r) => sum + weightOf(r), 0);
     let roll: number;
     [roll, rng] = nextRandom(rng);
@@ -1014,6 +1072,38 @@ export function drawGrimoires(state: SaveState, exclude: readonly string[] = [],
   return { offers, rngState: rng };
 }
 
+const RARITY_RANK: Record<Rarity, number> = { common: 0, rare: 1, epic: 2, legendary: 3, forbidden: 4 };
+const RARE_STREAK_CAP = 6;
+const RARE_STREAK_STEP = 2;
+
+/**
+ * Garante que a oferta tenha uma carta de raridade `min` ou melhor (pity, Garantia, Fortuna e Destino da árvore):
+ * troca a carta mais comum por uma sorteada entre as que podem sair. Sem candidata, a oferta fica como está.
+ */
+function ensureRarity(state: SaveState, offers: string[], rng: number, min: Rarity): { offers: string[]; rngState: number } {
+  const rank = (id: string): number => RARITY_RANK[grimoireById(id)?.rarity ?? 'common'];
+  if (offers.some((o) => rank(o) >= RARITY_RANK[min])) return { offers, rngState: rng };
+  const pool = offerCandidates(state, offers).filter((g) => RARITY_RANK[g.rarity] >= RARITY_RANK[min] && g.rarity !== 'forbidden');
+  const usable = pool.filter((g) => grimoireUseful(state, g));
+  const from = usable.length > 0 ? usable : pool;
+  if (from.length === 0) return { offers, rngState: rng };
+  let roll: number;
+  [roll, rng] = nextRandom(rng);
+  const card = from[Math.min(from.length - 1, Math.floor(roll * from.length))] as GrimoireDef;
+  let worst = 0;
+  offers.forEach((o, i) => {
+    if (rank(o) < rank(offers[worst] as string)) worst = i;
+  });
+  return { offers: offers.map((o, i) => (i === worst ? card.id : o)), rngState: rng };
+}
+
+/** Ofertas que faltam para o lendário garantido do pity (0 = a próxima oferta traz), ou `null` sem o nó. */
+export function pityLeft(state: SaveState): number | null {
+  const luck = effectiveStats(state).luck;
+  if (!luck.pityOn) return null;
+  return Math.max(0, Math.max(PITY_MIN, PITY_BASE - luck.pityCut) - state.stats.sinceLegend - 1);
+}
+
 /** Abre a escolha se a barra encheu. Devolve o estado com `pending` e a energia travada no teto. */
 function openChoiceIfFull(state: SaveState, now: number): SaveState {
   const run = state.run;
@@ -1021,11 +1111,31 @@ function openChoiceIfFull(state: SaveState, now: number): SaveState {
   const stats = effectiveStats(state);
   const cap = energyCap(run.picks, stats.energyStepFactor);
   if (run.energy < cap) return state;
-  return openChoice(state, now, stats.choice.picks, stats.choice.rerolls + run.freeRerolls, cap);
+  return openChoice(state, now, stats.choice.picks, stats.choice.rerolls + run.freeRerolls, cap, true);
 }
 
-function openChoice(state: SaveState, now: number, picksLeft: number, rerollsLeft: number, energy: number): SaveState {
-  const { offers, rngState } = drawGrimoires(state);
+/**
+ * `fresh`: a barra encheu agora (e não é a 2ª escolha da mesma barra). Só aí valem a Mão cheia e as Duas escolhas
+ * da árvore, e a Garantia, o pity, a Fortuna e o Destino mexem na oferta.
+ */
+function openChoice(state: SaveState, now: number, picksLeft: number, rerollsLeft: number, energy: number, fresh = false): SaveState {
+  const stats = effectiveStats(state);
+  const luck = stats.luck;
+  const drawn = drawGrimoires(state);
+  let { offers } = drawn;
+  let rngState = drawn.rngState;
+  const n = state.stats.offers + 1;
+  let destinyUsed = state.run.destinyUsed;
+  if (fresh && offers.length > 0) {
+    const pity = luck.pityOn && state.stats.sinceLegend + 1 >= Math.max(PITY_MIN, PITY_BASE - luck.pityCut);
+    if (pity || (luck.legendEvery > 0 && n % luck.legendEvery === 0)) ({ offers, rngState } = ensureRarity(state, offers, rngState, 'legendary'));
+    if (luck.epicEvery > 0 && n % luck.epicEvery === 0) ({ offers, rngState } = ensureRarity(state, offers, rngState, 'epic'));
+    // Destino: uma vez por vida (depois das 3 primeiras escolhas) a oferta inteira vem rara ou melhor.
+    if (luck.destiny && !destinyUsed && state.run.picks >= DESTINY_FROM_PICKS) {
+      ({ offers, rngState } = liftCommons(state, offers, rngState));
+      destinyUsed = true;
+    }
+  }
   if (offers.length === 0) {
     // Nada para oferecer (tudo no nível máximo): a barra só zera, sem travar o jogo.
     return { ...state, run: { ...state.run, energy: 0, rngState } };
@@ -1034,6 +1144,8 @@ function openChoice(state: SaveState, now: number, picksLeft: number, rerollsLef
     const r = grimoireById(o)?.rarity;
     return r === 'legendary' || r === 'forbidden';
   });
+  const topLegend = offers.some((o) => grimoireById(o)?.rarity === 'legendary');
+  const extraPick = fresh && ((luck.handFull && state.run.picks === 0) || (luck.doublePickEvery > 0 && n % luck.doublePickEvery === 0));
   return awardAchievements({
     ...state,
     run: {
@@ -1041,15 +1153,36 @@ function openChoice(state: SaveState, now: number, picksLeft: number, rerollsLef
       energy,
       freeRerolls: 0,
       rngState,
-      pending: { offers, openedAt: now, selected: null, picksLeft, rerollsLeft },
+      destinyUsed,
+      pending: { offers, openedAt: now, selected: null, picksLeft: picksLeft + (extraPick ? 1 : 0), rerollsLeft, rerolled: 0 },
     },
     stats: {
       ...state.stats,
       offers: state.stats.offers + 1,
+      sinceLegend: topLegend ? 0 : state.stats.sinceLegend + 1,
       legendaryOffers: state.stats.legendaryOffers + (legendary ? 1 : 0),
       firstOfferLegendary: state.stats.firstOfferLegendary || (state.stats.offers === 0 && legendary ? 1 : 0),
     },
   });
+}
+
+const DESTINY_FROM_PICKS = 3;
+
+/** Troca cada carta comum da oferta por uma rara ou melhor que ainda não esteja nela (Destino). */
+function liftCommons(state: SaveState, offers: string[], rng: number): { offers: string[]; rngState: number } {
+  let out = offers;
+  for (let i = 0; i < out.length; i++) {
+    if ((grimoireById(out[i] as string)?.rarity ?? 'common') !== 'common') continue;
+    const pool = offerCandidates(state, out).filter((g) => RARITY_RANK[g.rarity] >= 1 && g.rarity !== 'forbidden');
+    const usable = pool.filter((g) => grimoireUseful(state, g));
+    const from = usable.length > 0 ? usable : pool;
+    if (from.length === 0) break;
+    let roll: number;
+    [roll, rng] = nextRandom(rng);
+    const card = from[Math.min(from.length - 1, Math.floor(roll * from.length))] as GrimoireDef;
+    out = out.map((o, j) => (j === i ? card.id : o));
+  }
+  return { offers: out, rngState: rng };
 }
 
 /** Tempo que ainda falta para as cartas destravarem (0 = livres). */
@@ -1113,28 +1246,69 @@ export function chooseGrimoire(state: SaveState, id: string, now: number): SaveS
   return awardAchievements({ ...next, run: { ...next.run, energy: 0 } });
 }
 
-/** Betelgeuse e a Sonda Voyager: troca uma das cartas oferecidas por outra que não esteja na oferta. */
+/** Trocas que ainda dá para fazer nesta oferta: as da oferta, a grátis da árvore e o que resta da cota da vida. */
+export function rerollsAvailable(state: SaveState): number {
+  const p = state.run.pending;
+  if (!p) return 0;
+  const luck = effectiveStats(state).luck;
+  const free = luck.firstRerollFree && (p.rerolled ?? 0) === 0 ? 1 : 0;
+  return p.rerollsLeft + free + Math.max(0, luck.rerolls - state.run.rerollsUsed);
+}
+
+/** Descartes de oferta que ainda restam na vida (Segunda chance da árvore). */
+export function discardsLeft(state: SaveState): number {
+  return Math.max(0, effectiveStats(state).luck.discards - state.run.discardsUsed);
+}
+
+/**
+ * Betelgeuse, a Sonda Voyager e os Rerolls da árvore: troca uma das cartas oferecidas por outra que não esteja na oferta.
+ * Ordem do gasto: a troca grátis da oferta (árvore), as da própria oferta e, por último, a cota da vida.
+ */
 export function rerollGrimoire(state: SaveState, id: string, now: number): SaveState {
   const s = syncClock(state, now);
   const p = s.run.pending;
-  if (!p || p.rerollsLeft <= 0 || !p.offers.includes(id)) return s;
+  if (!p || !p.offers.includes(id) || rerollsAvailable(s) <= 0) return s;
   const { offers, rngState } = drawGrimoires(s, p.offers, 1);
   const replacement = offers[0];
   if (replacement === undefined) return s;
+  const luck = effectiveStats(s).luck;
+  const free = luck.firstRerollFree && (p.rerolled ?? 0) === 0;
+  const fromOffer = !free && p.rerollsLeft > 0;
+  const fromBank = !free && !fromOffer;
   return awardAchievements({
     ...s,
     run: {
       ...s.run,
       rngState,
+      rerollsUsed: s.run.rerollsUsed + (fromBank ? 1 : 0),
       pending: {
         ...p,
         offers: p.offers.map((o) => (o === id ? replacement : o)),
         selected: p.selected === id ? null : p.selected,
-        rerollsLeft: p.rerollsLeft - 1,
+        rerollsLeft: p.rerollsLeft - (fromOffer ? 1 : 0),
+        rerolled: (p.rerolled ?? 0) + 1,
       },
     },
     stats: { ...s.stats, rerolls: s.stats.rerolls + 1 },
   });
+}
+
+/** Segunda chance (árvore): joga fora a oferta inteira e sorteia outra, sem contar como oferta nova. */
+export function discardOffer(state: SaveState, now: number): SaveState {
+  const s = syncClock(state, now);
+  const p = s.run.pending;
+  if (!p || discardsLeft(s) <= 0 || choiceLockRemaining(s, now) > 0) return s;
+  const { offers, rngState } = drawGrimoires(s, p.offers);
+  if (offers.length === 0) return s;
+  return {
+    ...s,
+    run: {
+      ...s.run,
+      rngState,
+      discardsUsed: s.run.discardsUsed + 1,
+      pending: { ...p, offers, selected: null, openedAt: now },
+    },
+  };
 }
 
 // --- Toque ---
@@ -1152,7 +1326,9 @@ export function press(state: SaveState, now: number): SaveState {
 
   const stats = effectiveStats(s);
   const clicks = run.clicks + 1;
-  const combo = stats.combo.enabled && now - run.lastPressAt <= stats.combo.windowSec ? Math.min(stats.combo.max, run.combo + 1) : 0;
+  // Alinhamento (evento da árvore): o combo não cai enquanto dura.
+  const kept = stats.combo.enabled && (now - run.lastPressAt <= stats.combo.windowSec || (eventOn(run, now, 'alignment') && run.combo > 0));
+  const combo = kept ? Math.min(stats.combo.max, run.combo + 1) : 0;
 
   const full = stats.combo.enabled && stats.combo.max > 0 && combo >= stats.combo.max;
   let value = (stats.dustPerTouch + (full ? stats.combo.fullDustAdd : 0)) * (1 + stats.combo.pointValue * combo);
@@ -1172,11 +1348,12 @@ export function press(state: SaveState, now: number): SaveState {
   if (stats.crit.chance > 0 && nextRandom((run.rngState + Math.imul(clicks, 0x9e3779b1)) | 0)[0] < stats.crit.chance) {
     value *= stats.crit.mult;
   }
+  value *= dustEventMult(run, now);
   const gain = clampNum(Math.max(1, Math.floor(clampNum(value))));
 
   const fullSince = full ? (run.comboFullSince > NEVER / 2 ? run.comboFullSince : now) : NEVER;
   // Sequência do combo (marco da vida): sem teto no nível, ao contrário de `combo`, que para no máximo.
-  const chain = stats.combo.enabled ? (now - run.lastPressAt <= stats.combo.windowSec ? run.chain + 1 : 1) : 0;
+  const chain = stats.combo.enabled ? (kept ? run.chain + 1 : 1) : 0;
   const next: SaveState = {
     ...s,
     run: {
@@ -1330,6 +1507,19 @@ function pickObjectKind(state: SaveState, rngState: number): { kind: ObjectKind;
   return { kind: (open[open.length - 1] as ObjectDef).kind, rngState: next };
 }
 
+const RADAR_KEEP_SHARE = 0.25;
+
+export function isLegendary(kind: ObjectKind): boolean {
+  return (LEGENDARY_KINDS as readonly string[]).includes(kind);
+}
+
+/** O lendário que nasce: prefere um que a pessoa ainda não capturou (as conquistas pedem todos). */
+function pickLegendary(state: SaveState, roll: number): ObjectKind {
+  const fresh = LEGENDARY_KINDS.filter((k) => !state.stats.capturedKinds.includes(k));
+  const from = fresh.length > 0 ? fresh : LEGENDARY_KINDS;
+  return from[Math.min(from.length - 1, Math.floor(roll * from.length))] as ObjectKind;
+}
+
 // --- Eventos e missões (spec 038, 5.4) ---
 
 /** O evento que está valendo agora, ou `null`. */
@@ -1338,9 +1528,20 @@ export function activeEventId(state: SaveState, now: number): EventId | null {
   return e && now < e.until ? e.id : null;
 }
 
-function energyMult(run: RunState, now: number): number {
-  return run.event?.id === 'solar-storm' && now < run.event.until ? SOLAR_STORM_ENERGY_MULT : 1;
+function eventOn(run: RunState, now: number, id: string): boolean {
+  return run.event?.id === id && now < run.event.until;
 }
+
+function energyMult(run: RunState, now: number): number {
+  return (eventOn(run, now, 'solar-storm') ? SOLAR_STORM_ENERGY_MULT : 1) * (eventOn(run, now, 'energy-tide') ? EVENT_DOUBLE : 1);
+}
+
+/** Chuva de ouro: todo ganho de poeira vale o dobro. */
+function dustEventMult(run: RunState, now: number): number {
+  return eventOn(run, now, 'gold-rain') ? EVENT_DOUBLE : 1;
+}
+
+const EVENT_DOUBLE = 2;
 
 /**
  * Sorteio dos eventos e da missão: sai do tempo de jogo e do colapso, não do `rngState` da vida,
@@ -1350,24 +1551,54 @@ function sideRoll(now: number, collapses: number, salt: number): number {
   return nextRandom(Math.floor(now * 1000) * 31 + collapses * 7919 + salt)[0];
 }
 
-/** Próximo início de evento: o intervalo base com ±`EVENT_JITTER`. */
-function nextEventTime(now: number, collapses: number): number {
-  return now + EVENT_INTERVAL_SEC * (1 + (sideRoll(now, collapses, 1) * 2 - 1) * EVENT_JITTER);
+/** Próximo início de evento: o intervalo base com ±`EVENT_JITTER`, encurtado pelos Eventos frequentes da árvore. */
+function nextEventTime(now: number, collapses: number, freq = 0): number {
+  return now + EVENT_INTERVAL_SEC * (1 + (sideRoll(now, collapses, 1) * 2 - 1) * EVENT_JITTER) * (1 - Math.min(0.6, freq));
 }
 
-/** Encerra o evento vencido, marca o próximo e, na hora, começa um dos eventos abertos. */
+/** Duração de um evento que começa agora (o 1º da vida vale mais com o Grande evento). */
+export function eventDuration(state: SaveState, id: EventId, first: boolean): number {
+  const ex = effectiveStats(state).explore;
+  const treeId = (TREE_EVENT_IDS as readonly string[]).includes(id) ? (id as TreeEventId) : null;
+  const base = treeId ? ex.events[treeId].sec : EVENT_DURATION_SEC + ex.eventDurationAdd;
+  return base * (first ? ex.grandMult : 1);
+}
+
+/**
+ * Encerra o evento vencido, marca o próximo e, na hora, começa um evento. Os eventos da árvore (Chuva de ouro,
+ * Alinhamento, Maré de energia e Eclipse) entram no sorteio com a chance do nó; o resto vai para os eventos do colapso.
+ */
 function tickEvents(state: SaveState, run: RunState, now: number): RunState {
   const open = eventsOpen(state.collapses);
-  if (open.length === 0) return run;
+  const ex = effectiveStats(state).explore;
+  const treeEvents = TREE_EVENT_IDS.filter((id) => ex.events[id].chance > 0);
+  if (open.length === 0 && treeEvents.length === 0) return run;
   let next = run;
   if (next.event && now >= next.event.until) next = { ...next, event: null };
-  if (next.nextEventAt === null) return { ...next, nextEventAt: nextEventTime(now, state.collapses) };
+  if (next.nextEventAt === null) return { ...next, nextEventAt: nextEventTime(now, state.collapses, ex.eventFreq) };
   if (next.event === null && now >= next.nextEventAt) {
-    const id = open[Math.min(open.length - 1, Math.floor(sideRoll(now, state.collapses, 2) * open.length))] as EventId;
+    const total = treeEvents.reduce((sum, id) => sum + ex.events[id].chance, 0);
+    const roll = sideRoll(now, state.collapses, 2);
+    let chosen: EventId | null = null;
+    let acc = 0;
+    for (const id of treeEvents) {
+      acc += ex.events[id].chance;
+      if (roll * Math.max(100, total) < acc) {
+        chosen = id;
+        break;
+      }
+    }
+    if (chosen === null && open.length > 0) {
+      const baseRoll = treeEvents.length === 0 ? roll : sideRoll(now, state.collapses, 4);
+      chosen = open[Math.min(open.length - 1, Math.floor(baseRoll * open.length))] as EventId;
+    }
+    if (chosen === null) return { ...next, nextEventAt: nextEventTime(now, state.collapses, ex.eventFreq) };
+    const dur = eventDuration(state, chosen, next.eventsStarted === 0);
     return {
       ...next,
-      event: { id, until: now + EVENT_DURATION_SEC },
-      nextEventAt: nextEventTime(now + EVENT_DURATION_SEC, state.collapses),
+      event: { id: chosen, until: now + dur },
+      eventsStarted: next.eventsStarted + 1,
+      nextEventAt: nextEventTime(now + dur, state.collapses, ex.eventFreq),
     };
   }
   return next;
@@ -1434,10 +1665,30 @@ function tickObjectsCore(state: SaveState, now: number): SaveState {
   let next: RunState = alive.length === run.objects.length ? run : { ...run, objects: alive };
   if (run.pending) return next === run ? s : { ...s, run: next };
 
-  next = assignMission(s, tickEvents(s, next, now), now);
+  const afterEvents = tickEvents(s, next, now);
+  const eventStarted = afterEvents.event !== null && next.event === null;
+  next = assignMission(s, afterEvents, now);
   const stats = effectiveStats(s);
   // Nada de objeto antes da 1ª melhoria (spec 038, 4.5): o começo é só toque, melhoria e grimório.
   if (stats.objects.disabled || !objectsOpen(s)) return next === run ? s : { ...s, run: next };
+  // Lendários (etapa 20): só com o Radar da árvore, e só depois do tutorial. Nascem quando o contador de capturas
+  // enche, ou no começo da Chuva de ouro e do Eclipse.
+  const ex = stats.explore;
+  if (ex.radarOn && s.tutorial === 'done') {
+    const onField = next.objects.filter((o) => isLegendary(o.kind)).length;
+    const full = next.radar >= ex.radarThreshold;
+    const byEvent = eventStarted && (next.event?.id === 'gold-rain' || next.event?.id === 'eclipse');
+    if ((full || byEvent) && onField < ex.legendMax) {
+      const roll = nextRandom((next.rngState + Math.imul(next.nextObjectId + 5, 0xc2b2ae35)) | 0)[0];
+      const kind = pickLegendary(s, roll);
+      next = {
+        ...next,
+        objects: [...next.objects, { id: next.nextObjectId, kind, bornAt: now, expiresAt: now + stats.objects.lifeSec[kind] }],
+        nextObjectId: next.nextObjectId + 1,
+        radar: full ? (ex.radarKeep ? Math.ceil(ex.radarThreshold * RADAR_KEEP_SHARE) : 0) : next.radar,
+      };
+    }
+  }
   // Estrela Dourada (spec 039, seção 8): bem mais rara que os comuns, só fora do tutorial e com o jogo aberto.
   if (s.tutorial === 'done') {
     const rareRoll = (salt: number) => nextRandom((next.rngState + Math.imul(next.nextObjectId + salt, 0x85ebca6b)) | 0)[0];
@@ -1462,7 +1713,7 @@ function tickObjectsCore(state: SaveState, now: number): SaveState {
   } else if (shower && next.nextSpawnAt > now + interval) {
     // A chuva começa na hora, sem esperar o intervalo normal que já estava marcado.
     next = { ...next, nextSpawnAt: now };
-  } else if (now >= next.nextSpawnAt && next.objects.filter((o) => o.kind !== 'golden').length < room) {
+  } else if (now >= next.nextSpawnAt && next.objects.filter((o) => o.kind !== 'golden' && !isLegendary(o.kind)).length < room) {
     const picked = shower ? { kind: 'shooting-star' as const, rngState: next.rngState } : pickObjectKind(s, next.rngState);
     const { kind, rngState } = picked;
     const object: GameObject = { id: next.nextObjectId, kind, bornAt: now, expiresAt: now + stats.objects.lifeSec[kind] };
@@ -1542,11 +1793,16 @@ export function captureObject(state: SaveState, id: number, now: number): SaveSt
   if (!obj || (obj.expiresAt <= now && !pinsFirstObject(s))) return s;
 
   const stats = effectiveStats(s);
-  const reward = objectReward(s, obj.kind);
+  const base = objectReward(s, obj.kind);
+  // Chuva de ouro: todo ganho de poeira vale o dobro, inclusive o dos objetos.
+  const reward = { dust: base.dust * dustEventMult(run, now), energy: base.energy };
+  const legend = LEGENDARY_OBJECTS.find((d) => d.kind === obj.kind);
   let rainDust = 0;
   const next: RunState = {
     ...run,
     objects: run.objects.filter((o) => o.id !== id),
+    // O radar de lendários conta as capturas de objetos comuns e raros (o lendário em si não conta).
+    radar: legend ? run.radar : run.radar + 1,
     dust: clampNum(run.dust + reward.dust),
     dustLife: clampNum(run.dustLife + reward.dust),
     energy: clampNum(run.energy + (reward.energy + stats.objects.onCaptureEnergyTouches * stats.energyPerTouch) * energyMult(run, now)),
@@ -1557,14 +1813,23 @@ export function captureObject(state: SaveState, id: number, now: number): SaveSt
     next.boostMult = stats.objects.signalMult;
   } else if (obj.kind === 'probe') {
     next.freeRerolls = run.freeRerolls + 1;
+  } else if (legend) {
+    if (legend.boostMult && legend.boostSec) {
+      next.boostUntil = Math.max(next.boostUntil, now + legend.boostSec);
+      next.boostMult = Math.max(next.boostMult, legend.boostMult);
+    }
+    if (legend.fillsBar) {
+      next.energy = energyCap(run.picks, stats.energyStepFactor);
+      next.freeRerolls = run.freeRerolls + 1;
+    }
   } else if (obj.kind === 'golden') {
     if (obj.power === 'frenzy') {
-      next.boostUntil = Math.max(next.boostUntil, now + FRENZY_SEC);
+      next.boostUntil = Math.max(next.boostUntil, now + FRENZY_SEC * stats.luck.goldenMult);
       next.boostMult = Math.max(next.boostMult, FRENZY_MULT);
     } else if (obj.power === 'surge') {
-      next.surgeUntil = now + SURGE_SEC;
+      next.surgeUntil = now + SURGE_SEC * stats.luck.goldenMult;
     } else if (obj.power === 'rain') {
-      const rain = rainAmount(stats);
+      const rain = Math.floor(rainAmount(stats) * stats.luck.goldenMult * dustEventMult(run, now));
       next.dust = clampNum(next.dust + rain);
       next.dustLife = clampNum(next.dustLife + rain);
       rainDust = rain;
@@ -1631,11 +1896,13 @@ export function canCollapse(state: SaveState): boolean {
  */
 export function vaultOffers(state: SaveState): string[] {
   const eligible = FORBIDDEN_IDS.filter((id) => (state.vault[id] ?? 0) < FORBIDDEN_MAX_LEVEL);
-  if (eligible.length <= VAULT_OFFER_SIZE) return eligible.slice();
+  // A 4ª carta da árvore vale também na oferta do Cofre.
+  const size = VAULT_OFFER_SIZE + (effectiveStats(state).luck.fourthCard ? 1 : 0);
+  if (eligible.length <= size) return eligible.slice();
   const pool = eligible.slice();
   const out: string[] = [];
   let rng = state.run.rngState ^ Math.imul(state.collapses + 1, 0x9e3779b1);
-  while (out.length < VAULT_OFFER_SIZE) {
+  while (out.length < size) {
     let roll: number;
     [roll, rng] = nextRandom(rng);
     out.push(pool.splice(Math.floor(roll * pool.length), 1)[0] as string);

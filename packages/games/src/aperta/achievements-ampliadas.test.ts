@@ -112,11 +112,11 @@ describe('conquistas que esperam conteúdo (`needs`)', () => {
 
   it('há de cada tipo de feature e nenhuma conta enquanto a feature não existe', () => {
     const features = new Set(dormant.map((a) => a.needs));
-    for (const f of ['automation', 'legendary-objects', 'events-new', 'tree-v2', 'daily-streak', 'regions-more'] as Feature[]) {
+    for (const f of ['automation', 'tree-v2', 'daily-streak', 'regions-more'] as Feature[]) {
       expect(features.has(f), f).toBe(true);
       expect(FEATURES[f], f).toBe(false);
     }
-    expect(dormant.length).toBeGreaterThanOrEqual(20);
+    expect(dormant.length).toBeGreaterThanOrEqual(15);
     // Mesmo com tudo no máximo, nenhuma dormente é dada.
     const s = stats(base({ collapses: 30 }), {
       forbiddenBest: { 'cygnus-x1': 5 },
@@ -312,7 +312,7 @@ describe('validação dos totais novos', () => {
   it('recusa o impossível', () => {
     expect(bad({ raresCaptured: 5, objectsCaptured: 2 }).ok).toBe(false);
     expect(bad({ capturedKinds: ['dragao'] }).ok).toBe(false);
-    expect(bad({ eventsSeen: ['gold-rain'] }).ok).toBe(false);
+    expect(bad({ eventsSeen: ['nao-existe'] }).ok).toBe(false);
     expect(bad({ forbiddenBest: { moon: 3 } }).ok).toBe(false);
     expect(bad({ rareStreak: 5, rareStreakBest: 2, picks: 10 }).ok).toBe(false);
     expect(bad({ touchBest: 40 }).ok).toBe(false);

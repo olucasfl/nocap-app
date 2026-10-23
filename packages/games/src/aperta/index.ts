@@ -12,3 +12,5 @@ export * from './sparks';
 export * from './balance';
 export * from './tree';
 export * from './forbidden';
+export * from './tree-fx';
+export * from './starmap';

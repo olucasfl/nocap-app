@@ -144,7 +144,7 @@ function income(stats: EffectiveStats, profile: Profile, objectKinds: readonly O
 }
 
 function weightOf(kind: ObjectKind): number {
-  return { comet: 50, 'shooting-star': 25, satellite: 25, asteroid: 20, probe: 8, golden: 0 }[kind];
+  return ({ comet: 50, 'shooting-star': 25, satellite: 25, asteroid: 20, probe: 8, golden: 0 } as Partial<Record<ObjectKind, number>>)[kind] ?? 0;
 }
 
 export function score(state: SaveState, profile: Profile): number {

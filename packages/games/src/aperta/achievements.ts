@@ -57,8 +57,9 @@ export const FEATURES: Record<Feature, boolean> = {
   // Ligada na etapa 15: os 10 proibidos existem no Cofre.
   'forbidden-new': true,
   automation: false,
-  'legendary-objects': false,
-  'events-new': false,
+  // Ligadas na etapa 20: os 4 lendários e os 4 eventos da árvore existem.
+  'legendary-objects': true,
+  'events-new': true,
   'tree-v2': false,
   'daily-streak': false,
   'regions-more': false,
@@ -326,7 +327,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
   ).map(([id, name]) => def(`explore-${id}`, 'explore', 'M', name, `Veja o evento ${name}.`, 1, (s) => (s.stats.eventsSeen.includes(id) ? 1 : 0), { needs: 'events-new' })),
   def('explore-events', 'explore', 'L', 'Todos os eventos', 'Veja todos os eventos raros do espaço.', 6, (s) => s.stats.eventsSeen.length, { needs: 'events-new' }),
   def('explore-legend-1', 'explore', 'M', 'Lenda no espaço', 'Capture um objeto lendário.', 1, (s) => s.stats.capturedKinds.filter((k) => k.startsWith('legend')).length, { needs: 'legendary-objects' }),
-  def('explore-legend-all', 'explore', 'E', 'Todas as lendas do espaço', 'Capture todos os tipos de objeto lendário.', 3, (s) => s.stats.capturedKinds.filter((k) => k.startsWith('legend')).length, { needs: 'legendary-objects' }),
+  def('explore-legend-all', 'explore', 'E', 'Todas as lendas do espaço', 'Capture todos os tipos de objeto lendário.', 4, (s) => s.stats.capturedKinds.filter((k) => k.startsWith('legend')).length, { needs: 'legendary-objects' }),
 
   // --- Árvore ---
   def('tree-1', 'tree', 'S', 'Primeira habilidade', 'Compre o primeiro nó da árvore.', 1, treeNodes),

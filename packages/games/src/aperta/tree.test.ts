@@ -93,7 +93,7 @@ describe('o grafo', () => {
   });
 
   it('nó cuja mecânica ainda não existe fica fechado, e o filho dele também', () => {
-    expect(TREE_FEATURES).toEqual({ automation: false, skills: false, luck: false, exploration: false });
+    expect(TREE_FEATURES).toEqual({ automation: false, skills: false, luck: true, exploration: true, observatory: false });
     expect(nodeLive(treeNodeById('au-01')!)).toBe(false);
     expect(nodeLive(treeNodeById('au-05')!)).toBe(false);
     expect(nodeLive(treeNodeById('co-01')!)).toBe(true);

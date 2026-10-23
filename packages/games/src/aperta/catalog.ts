@@ -4,7 +4,8 @@
 
 export type Rarity = 'common' | 'rare' | 'epic' | 'legendary' | 'forbidden';
 export type Family = 'planets' | 'moons' | 'small-bodies' | 'stars' | 'nebulae';
-export type ObjectKind = 'comet' | 'shooting-star' | 'satellite' | 'asteroid' | 'probe' | 'golden';
+export type LegendaryKind = 'legend-comet' | 'legend-pulsar' | 'legend-nebula' | 'legend-wormhole';
+export type ObjectKind = 'comet' | 'shooting-star' | 'satellite' | 'asteroid' | 'probe' | 'golden' | LegendaryKind;
 /** O que a Estrela Dourada faz ao ser pega (sorteado quando ela nasce, para a etiqueta mostrar antes). */
 export type RareEffect = 'frenzy' | 'rain' | 'surge';
 export const RARE_EFFECTS: readonly RareEffect[] = ['frenzy', 'rain', 'surge'];
@@ -528,6 +529,35 @@ export const OBJECTS: readonly ObjectDef[] = [
   { kind: 'asteroid', name: 'Asteroide', unlockedAtCollapse: 1, weight: 20, lifeSec: 11 },
   { kind: 'probe', name: 'Sonda Voyager', unlockedAtCollapse: 2, weight: 8, lifeSec: 6 },
 ];
+
+/**
+ * Objetos lendários (spec 040, etapa 20): nunca nascem sozinhos nem no começo do jogo. Só vêm com o Radar de lendários
+ * da árvore (um contador de capturas que, ao encher, faz um nascer garantido) ou no começo de certos eventos.
+ * Recompensas em unidades de toque, como as dos objetos comuns.
+ */
+export interface LegendaryDef {
+  kind: LegendaryKind;
+  name: string;
+  lifeSec: number;
+  /** Poeira e energia de toque ao capturar. */
+  dustTouches: number;
+  energyTouches: number;
+  /** Nebulosa errante: multiplicador do toque e duração (s). */
+  boostMult?: number;
+  boostSec?: number;
+  /** Buraco de minhoca: enche a barra de energia na hora (abre uma oferta) e dá uma troca grátis. */
+  fillsBar?: boolean;
+  text: string;
+}
+
+export const LEGENDARY_OBJECTS: readonly LegendaryDef[] = [
+  { kind: 'legend-comet', name: 'Grande Cometa', lifeSec: 9, dustTouches: 120, energyTouches: 0, text: 'Poeira de 120 toques.' },
+  { kind: 'legend-pulsar', name: 'Pulsar', lifeSec: 8, dustTouches: 40, energyTouches: 40, text: 'Poeira e energia de 40 toques.' },
+  { kind: 'legend-nebula', name: 'Nebulosa errante', lifeSec: 10, dustTouches: 20, energyTouches: 0, boostMult: 4, boostSec: 20, text: 'O toque rende x4 por 20 s.' },
+  { kind: 'legend-wormhole', name: 'Buraco de minhoca', lifeSec: 7, dustTouches: 0, energyTouches: 0, fillsBar: true, text: 'Enche a barra de energia e dá uma troca grátis.' },
+];
+
+export const LEGENDARY_KINDS: readonly LegendaryKind[] = LEGENDARY_OBJECTS.map((o) => o.kind);
 
 /**
  * Recompensas base, em unidades de toque (poeira de toque e energia de toque). A energia dos objetos

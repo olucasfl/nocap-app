@@ -11,9 +11,9 @@ import type { SaveState } from './engine';
 /** Cintilas pela 1ª descoberta de cada grimório, por raridade (5.1, fonte 2). */
 export const ALBUM_SPARKS: Record<Rarity, number> = { common: 1, rare: 1, epic: 2, legendary: 3, forbidden: 4 };
 
-/** Objetos raros e lendários: a 1ª captura de cada um rende `RARE_FIRST_SPARKS` (5.1, fonte 3). Lendários chegam na etapa 20. */
+/** Objetos raros e lendários: a 1ª captura de cada um rende `RARE_FIRST_SPARKS` (5.1, fonte 3). Os 4 lendários chegam com o Radar (etapa 20). */
 export const RARE_OBJECT_KINDS: readonly string[] = ['probe', 'golden'];
-export const LEGENDARY_OBJECT_KINDS: readonly string[] = [];
+export const LEGENDARY_OBJECT_KINDS: readonly string[] = ['legend-comet', 'legend-pulsar', 'legend-nebula', 'legend-wormhole'];
 export const RARE_FIRST_SPARKS = 3;
 /** Degraus de capturas raras totais. */
 export const RARE_CAPTURE_STEPS: readonly { at: number; sparks: number }[] = [

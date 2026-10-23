@@ -8,7 +8,7 @@ export type ContentKind = 'region' | 'grimoire' | 'upgrade' | 'object' | 'mechan
 
 /** Mecânicas e eventos não têm registro no catálogo: o motor os conhece pelo id. */
 export type MechanicId = 'favorite' | 'missions';
-export type EventId = 'meteor-shower' | 'solar-storm';
+export type EventId = 'meteor-shower' | 'solar-storm' | 'gold-rain' | 'alignment' | 'energy-tide' | 'eclipse';
 
 export const MECHANIC_NAMES: Record<MechanicId, string> = {
   favorite: 'Favorito',
@@ -23,11 +23,19 @@ export const MECHANIC_TEXT: Record<MechanicId, string> = {
 export const EVENT_NAMES: Record<EventId, string> = {
   'meteor-shower': 'Chuva de meteoros',
   'solar-storm': 'Tempestade solar',
+  'gold-rain': 'Chuva de ouro',
+  alignment: 'Alinhamento',
+  'energy-tide': 'Maré de energia',
+  eclipse: 'Eclipse',
 };
 
 export const EVENT_TEXT: Record<EventId, string> = {
   'meteor-shower': 'Por 15 s, estrelas cadentes cruzam o espaço.',
   'solar-storm': 'Por 15 s, a energia por toque vale o dobro.',
+  'gold-rain': 'Todo ganho de poeira vale o dobro enquanto durar.',
+  alignment: 'O combo não cai enquanto durar.',
+  'energy-tide': 'A barra de energia enche em dobro enquanto durar.',
+  eclipse: 'Cada oferta de grimório traz uma carta extra enquanto durar.',
 };
 
 export interface CollapseContent {

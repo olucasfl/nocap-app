@@ -8,7 +8,7 @@
 
 import { z } from 'zod';
 import { treeErrors, treeSpent, treeStats } from './tree';
-import { GRIMOIRES, OBJECTS, REGIONS, UPGRADES, grimoireById, RARE_EFFECTS, type ObjectKind, type RareEffect } from './catalog';
+import { GRIMOIRES, LEGENDARY_KINDS, OBJECTS, REGIONS, UPGRADES, grimoireById, RARE_EFFECTS, type ObjectKind, type RareEffect } from './catalog';
 import {
   COMBO_HARD_CAP,
   COST_FLOOR,
@@ -22,7 +22,7 @@ import {
 } from './economy';
 import { eventsOpen, mechanicOpen, missionById } from './content';
 import { achievementActive, achievementById } from './achievements';
-import { EVENT_IDS_NOW, sparkSources } from './sparks';
+import { EVENT_IDS_NOW, EVENT_IDS_PLANNED, sparkSources } from './sparks';
 import { ATLAS_PAGE_SPARKS, FORBIDDEN, FORBIDDEN_MAX_LEVEL, forbiddenById } from './forbidden';
 import { SAVE_VERSION, effectiveStats, upgradeLock, type SaveState } from './engine';
 import { TUTORIAL_HINTS, UI_BUTTONS, migrateTutorial } from './tutorial';
@@ -43,8 +43,8 @@ const TOLERANCE = 1.000001;
 /** Fragmentos extras por missão no tempo em que os Fragmentos existiam (só para o teto de `sparks.legacy`). */
 const LEGACY_MISSION_FRAGMENTS = 2;
 
-const EVENT_IDS = ['meteor-shower', 'solar-storm'] as const;
-const OBJECT_KINDS = [...OBJECTS.map((o) => o.kind), 'golden'] as unknown as [ObjectKind, ...ObjectKind[]];
+const EVENT_IDS = ['meteor-shower', 'solar-storm', 'gold-rain', 'alignment', 'energy-tide', 'eclipse'] as const;
+const OBJECT_KINDS = [...OBJECTS.map((o) => o.kind), 'golden', ...LEGENDARY_KINDS] as unknown as [ObjectKind, ...ObjectKind[]];
 
 // --- Formato ---
 
@@ -89,6 +89,7 @@ const runSchema = z.object({
       selected: id.nullable(),
       picksLeft: int(10),
       rerollsLeft: int(100),
+      rerolled: int(100).default(0),
     })
     .nullable(),
   rngState: z.number().int().min(-2147483648).max(4294967295),
@@ -109,6 +110,12 @@ const runSchema = z.object({
   chainBest: int(1e6).default(0),
   fullBest: nonNeg.default(0),
   missionsDone: int(Number.MAX_SAFE_INTEGER).default(0),
+  // Sorte e Exploração (etapa 20): saves antigos entram zerados.
+  rerollsUsed: int(1000).default(0),
+  discardsUsed: int(1000).default(0),
+  radar: int(1000).default(0),
+  eventsStarted: int(Number.MAX_SAFE_INTEGER).default(0),
+  destinyUsed: z.boolean().default(false),
 });
 
 const saveSchema = z.object({
@@ -169,6 +176,7 @@ const saveSchema = z.object({
     rareStreak: int(Number.MAX_SAFE_INTEGER).default(0),
     rareStreakBest: int(Number.MAX_SAFE_INTEGER).default(0),
     rerolls: int(Number.MAX_SAFE_INTEGER).default(0),
+    sinceLegend: int(Number.MAX_SAFE_INTEGER).default(0),
     forbiddenBest: z.record(id, int(GRIMOIRE_MAX_LEVEL)).default({}),
     skillsUsed: z.array(id).max(32).default([]),
     skillUses: int(Number.MAX_SAFE_INTEGER).default(0),
@@ -307,6 +315,8 @@ export function validateSave(raw: unknown, opts: ValidateOptions = {}): SaveVali
   if (!region || region.unlockedAtCollapse > c) errors.push('Região ainda fechada');
   for (const o of run.objects) {
     if (o.kind === 'golden') continue;
+    // Lendário só com o Radar (ou num evento que o Radar libera); a árvore pode ter sido refeita depois, mas o objeto vive segundos.
+    if ((LEGENDARY_KINDS as readonly string[]).includes(o.kind)) continue;
     const def = OBJECTS.find((d) => d.kind === o.kind);
     if (!def || def.unlockedAtCollapse > c) errors.push(`Objeto de colapso futuro: ${o.kind}`);
   }
@@ -391,9 +401,9 @@ export function validateSave(raw: unknown, opts: ValidateOptions = {}): SaveVali
   }
   const st = save.stats;
   if (st.raresCaptured > st.objectsCaptured) errors.push('Raros capturados maiores que as capturas');
-  const kinds = new Set<string>([...OBJECTS.map((o) => o.kind as string), 'golden']);
+  const kinds = new Set<string>([...OBJECTS.map((o) => o.kind as string), 'golden', ...LEGENDARY_KINDS]);
   if (st.capturedKinds.some((k) => !kinds.has(k)) || !noDupes(st.capturedKinds)) errors.push('Tipos de objeto capturados inválidos');
-  if (st.eventsSeen.some((e) => !EVENT_IDS_NOW.includes(e) || !eventsOpen(c).includes(e as never)) || !noDupes(st.eventsSeen)) errors.push('Eventos vistos inválidos');
+  if (st.eventsSeen.some((e) => !(EVENT_IDS_NOW.includes(e) ? eventsOpen(c).includes(e as never) : EVENT_IDS_PLANNED.includes(e))) || !noDupes(st.eventsSeen)) errors.push('Eventos vistos inválidos');
   for (const [gid, lvl] of Object.entries(st.forbiddenBest)) {
     if (!forbiddenById(gid) || lvl < 1) errors.push(`Nível de proibido inválido: ${gid}`);
   }
@@ -553,6 +563,7 @@ export function mergeSaves(a: SaveState, b: SaveState): MergeResult {
       rareStreak: top.stats.rareStreak,
       rareStreakBest: maxNum(a.stats.rareStreakBest, b.stats.rareStreakBest),
       rerolls: maxNum(a.stats.rerolls, b.stats.rerolls),
+      sinceLegend: maxNum(a.stats.sinceLegend, b.stats.sinceLegend),
       forbiddenBest: mergeBest(a.stats.forbiddenBest, b.stats.forbiddenBest),
       skillsUsed: union(a.stats.skillsUsed, b.stats.skillsUsed),
       skillUses: maxNum(a.stats.skillUses, b.stats.skillUses),

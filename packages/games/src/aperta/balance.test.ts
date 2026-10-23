@@ -5,7 +5,7 @@ import { ACHIEVEMENTS } from './achievements';
 import { GRIMOIRES } from './catalog';
 import { FORBIDDEN } from './forbidden';
 import { BALANCE_COLLAPSE, BALANCE_MIN_FINITE, BALANCE_MIN_TOTAL, dustTotalAtCollapse, sparkBalance } from './balance';
-import { ALBUM_SPARKS, RARE_CAPTURE_STEPS, STAR_STEPS, finiteSparksCeiling } from './sparks';
+import { ALBUM_SPARKS, LEGENDARY_OBJECT_KINDS, RARE_CAPTURE_STEPS, STAR_STEPS, finiteSparksCeiling } from './sparks';
 import { TREE_BRANCHES, TREE_NODES, TREE_TIER_COST, TREE_TOTAL_COST } from './tree';
 
 describe('a árvore real (T)', () => {
@@ -35,7 +35,7 @@ describe('fontes finitas (F), calculadas dos dados', () => {
     expect(f.achievements).toBe(achievements);
     expect(f.album).toBe(album);
     expect(f.stars).toBe(stars);
-    expect(f.rare).toBe(2 * 3 + RARE_CAPTURE_STEPS.reduce((n, s) => n + s.sparks, 0));
+    expect(f.rare).toBe((2 + LEGENDARY_OBJECT_KINDS.length) * 3 + RARE_CAPTURE_STEPS.reduce((n, s) => n + s.sparks, 0));
     expect(f.total).toBe(achievements + album + f.rare + stars);
   });
 });
