@@ -47,12 +47,10 @@ describe('painel do nó', () => {
     expect(poor).toMatch(/>Falta 1</);
   });
 
-  it('nó de mecânica futura fica fechado e diz o que traz', () => {
-    const out = html(<TreePanel row={rowOf(open(), 'co-06')} onBuy={noop} onClose={noop} />);
-    expect(out).toContain('Chega com o Observatório.');
-    expect(out).toMatch(/class="ap-tp-buy"[^>]*disabled[^>]*>Em breve/);
-    const child = html(<TreePanel row={rowOf(open(), 'co-14')} onBuy={noop} onClose={noop} />);
-    expect(child).toContain('Chega com o Observatório.');
+  it('nenhum nó espera mecânica futura (o Observatório foi aposentado), então nenhum painel diz "Em breve"', () => {
+    const rows = treeView(open()).branches.flatMap((b) => b.nodes);
+    expect(rows.some((n) => n.status === 'soon')).toBe(false);
+    expect(html(<TreePanel row={rowOf(open(), 'ex-01')} onBuy={noop} onClose={noop} />)).not.toContain('Chega com');
   });
 
   it('estado de cada nó da página: abertura, bloqueio, falta e fechado até o 1º colapso', () => {
@@ -60,7 +58,7 @@ describe('painel do nó', () => {
     const st = (id: string) => v.branches.flatMap((b) => b.nodes).find((n) => n.id === id)!.status;
     expect(st('co-01')).toBe('buyable');
     expect(st('co-05')).toBe('blocked');
-    expect(st('co-06')).toBe('soon');
+    expect(v.branches.flatMap((b) => b.nodes).some((n) => n.status === 'soon')).toBe(false);
     expect(st('au-01')).toBe('buyable');
     expect(treeView(open({}, 0)).branches.flatMap((b) => b.nodes).find((n) => n.id === 'co-01')!.status).toBe('short');
     expect(treeView({ ...open(), collapses: 0 }).branches.flatMap((b) => b.nodes).every((n) => n.status === 'closed' || n.status === 'soon')).toBe(true);

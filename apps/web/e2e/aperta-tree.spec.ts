@@ -101,7 +101,7 @@ for (const size of SIZES) {
 
       // Árvore em grafo: 120 nós e o saldo de Cintilas (as 6 migradas mais o que o álbum e as conquistas do save já rendem).
       await tapCenter(page, page.getByRole('button', { name: /^Árvore de Habilidades/ }), touch);
-      await expect(page.locator('.ap-tg-node')).toHaveCount(120);
+      await expect(page.locator('.ap-tg-node')).toHaveCount(116);
       const spark = async () => Number(await page.locator('.ap-tree-frag b').innerText());
       const s0 = sparksAvailable(treeSave());
       await expect(page.locator('.ap-tree-frag b')).toHaveText(String(s0));

@@ -38,7 +38,7 @@ describe('visão da árvore', () => {
     expect(status('co-01')).toBe('buyable');
     expect(status('co-05')).toBe('blocked');
     expect(cosmos.nodes.find((n) => n.id === 'co-05')!.needs).toEqual(['Sintonia']);
-    expect(cosmos.nodes.find((n) => n.id === 'co-06')!.status).toBe('soon');
+    expect(cosmos.nodes.find((n) => n.id === 'co-06')).toBeUndefined(); // aposentado
     const broke = treeView(withFragments(0)).branches.find((b) => b.id === 'cosmos')!;
     expect(broke.nodes[0]).toMatchObject({ status: 'short', missing: 1 });
   });
@@ -110,11 +110,11 @@ describe('páginas', () => {
       </>,
     );
 
-  it('árvore: grafo com 120 nós, raiz, ligações, filtros por ramo e refazer desligado sem gasto', () => {
+  it('árvore: grafo com 116 nós, raiz, ligações, filtros por ramo e refazer desligado sem gasto', () => {
     const out = html(<TreePage state={withFragments(1)} onBuy={noop} onRespec={noop} />);
-    expect(out.match(/class="ap-tg-node /g)).toHaveLength(120);
+    expect(out.match(/class="ap-tg-node /g)).toHaveLength(116);
     expect(out).toContain('ap-tg-root');
-    expect(out.match(/class="ap-tg-edge/g)!.length).toBeGreaterThanOrEqual(120);
+    expect(out.match(/class="ap-tg-edge/g)!.length).toBeGreaterThanOrEqual(116);
     expect(out.match(/class="ap-chipf/g)).toHaveLength(6);
     expect(out).toContain('Aproximar');
     expect(out).toContain('Centralizar');
@@ -126,9 +126,8 @@ describe('páginas', () => {
 
   it('cada nó é um botão com nome e estado; o selecionado mostra o nome', () => {
     const out = html(<TreePage state={withFragments(1)} onBuy={noop} onRespec={noop} />);
-    expect(out.match(/role="button"/g)!.length).toBeGreaterThanOrEqual(120);
+    expect(out.match(/role="button"/g)!.length).toBeGreaterThanOrEqual(116);
     expect(out).toMatch(/aria-label="Cartas de capa, Cosmos, tier 1, nível 0 de 2, dá para comprar. Custa 1 Cintila"/);
-    expect(out).toMatch(/aria-label="Observatório, Cosmos, tier 2, nível 0 de 2, chega em breve\. Chega com o Observatório"/);
   });
 
   it('conquistas: grupos, barra, N/M e a escondida como ???', () => {
@@ -188,7 +187,7 @@ describe('página de Conquistas ampliada', () => {
     const t = achievementSparkTotals(s);
     expect(t.earned).toBe(2);
     expect(t.toEarn).toBeGreaterThan(100);
-    expect(t.soon).toBeGreaterThan(20);
+    expect(t.soon).toBeGreaterThan(10);
     const out = renderToStaticMarkup(<AchievementsPage state={s} />);
     expect(out).toContain('Cintilas das conquistas');
     expect(out).toContain('em breve');

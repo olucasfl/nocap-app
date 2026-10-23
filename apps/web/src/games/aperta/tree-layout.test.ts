@@ -6,8 +6,8 @@ describe('layout da árvore', () => {
   const layout = computeTreeLayout();
   const nodes = Object.values(layout.nodes);
 
-  it('posiciona os 120 nós e uma linha por pré-requisito (inclui as ligações cruzadas)', () => {
-    expect(nodes).toHaveLength(120);
+  it('posiciona os 116 nós e uma linha por pré-requisito (inclui as ligações cruzadas)', () => {
+    expect(nodes).toHaveLength(116);
     for (const n of TREE_NODES) expect(layout.nodes[n.id], n.id).toBeDefined();
     expect(layout.edges).toHaveLength(TREE_NODES.reduce((s, n) => s + n.parents.length, 0));
     const cross = layout.edges.filter((e) => e.cross);

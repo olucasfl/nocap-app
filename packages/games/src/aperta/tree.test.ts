@@ -20,6 +20,7 @@ import {
   treeSpent,
   treeStats,
   type TreeNodeDef,
+  RETIRED_NODE_IDS,
 } from './tree';
 
 const open = (sparks = 40, over: Partial<SaveState> = {}): SaveState => ({
@@ -46,10 +47,11 @@ const valid = (over: Partial<SaveState> = {}): SaveState => {
 };
 
 describe('o grafo', () => {
-  it('120 nós, ids únicos, 24 por ramo, níveis 1 a 2 e tiers 1 a 5', () => {
-    expect(TREE_NODES).toHaveLength(120);
-    expect(new Set(TREE_NODES.map((n) => n.id)).size).toBe(120);
-    for (const b of TREE_BRANCHES) expect(TREE_NODES.filter((n) => n.branch === b.id)).toHaveLength(24);
+  it('116 nós (4 do Observatório aposentados), ids únicos, 24 por ramo menos os aposentados, níveis 1 a 2 e tiers 1 a 5', () => {
+    expect(TREE_NODES).toHaveLength(116);
+    expect(new Set(TREE_NODES.map((n) => n.id)).size).toBe(116);
+    for (const id of RETIRED_NODE_IDS) expect(treeNodeById(id)).toBeUndefined();
+    for (const b of TREE_BRANCHES) expect(TREE_NODES.filter((n) => n.branch === b.id)).toHaveLength(b.id === 'cosmos' ? 20 : 24);
     for (const n of TREE_NODES) {
       expect(n.maxLevel, n.id).toBeGreaterThanOrEqual(1);
       expect(n.maxLevel, n.id).toBeLessThanOrEqual(5);
@@ -83,7 +85,7 @@ describe('o grafo', () => {
           changed = true;
         }
     }
-    expect(reach.size).toBe(120);
+    expect(reach.size).toBe(116);
   });
 
   it('o custo por nível vem do tier (1, 2, 3, 5, 8) e T é a soma', () => {
@@ -95,8 +97,8 @@ describe('o grafo', () => {
   it('nó cuja mecânica ainda não existe fica fechado, e o filho dele também', () => {
     expect(TREE_FEATURES).toEqual({ automation: true, skills: true, luck: true, exploration: true, observatory: false });
     expect(nodeLive(treeNodeById('au-01')!)).toBe(true);
-    expect(nodeLive(treeNodeById('co-06')!)).toBe(false);
-    expect(nodeLive(treeNodeById('co-14')!)).toBe(false);
+    expect([...RETIRED_NODE_IDS].map((id) => treeNodeById(id))).toEqual([undefined, undefined, undefined, undefined]);
+    expect(TREE_NODES.every((n) => nodeLive(n))).toBe(true);
     expect(nodeLive(treeNodeById('co-01')!)).toBe(true);
     expect(nodeLive(treeNodeById('au-24')!)).toBe(true);
   });
@@ -179,7 +181,7 @@ describe('valida o save', () => {
     expect(ok({ ...s, tree: { ...s.tree, 'nada-x': 1 } })).toContain('Nó desconhecido: nada-x');
     expect(ok({ ...s, tree: { ...s.tree, 'co-11': 3 } })).toContain('Nó acima do nível máximo: co-11');
     expect(ok({ ...s, tree: { 'co-11': 1 }, sparks: { legacy: 15, spent: 3 } })).toContain('Nó sem os pré-requisitos: co-11');
-    expect(ok({ ...s, tree: { 'co-06': 1 }, sparks: { legacy: 15, spent: 1 } })).toContain('Nó ainda fechado: co-06');
+    expect(ok({ ...s, tree: { 'co-06': 1 }, sparks: { legacy: 15, spent: 1 } })).toContain('Nó desconhecido: co-06');
     expect(ok({ ...s, sparks: { legacy: 15, spent: 2 } })).toContain('Árvore custa mais que as Cintilas gastas');
     expect(treeErrors({ 'co-05': 1 })).toEqual(['Nó sem os pré-requisitos: co-05']);
   });

@@ -9,11 +9,11 @@ import { ALBUM_SPARKS, LEGENDARY_OBJECT_KINDS, RARE_CAPTURE_STEPS, STAR_STEPS, f
 import { TREE_BRANCHES, TREE_NODES, TREE_TIER_COST, TREE_TOTAL_COST } from './tree';
 
 describe('a árvore real (T)', () => {
-  it('5 ramos de 24 nós, 120 nós, custo por tier 1, 2, 3, 5 e 8', () => {
+  it('5 ramos (cosmos com 20 nós, os outros com 24), 116 nós, custo por tier 1, 2, 3, 5 e 8', () => {
     expect(TREE_TIER_COST).toEqual([1, 2, 3, 5, 8]);
     expect(TREE_BRANCHES).toHaveLength(5);
-    for (const b of TREE_BRANCHES) expect(TREE_NODES.filter((n) => n.branch === b.id)).toHaveLength(24);
-    expect(TREE_NODES).toHaveLength(120);
+    for (const b of TREE_BRANCHES) expect(TREE_NODES.filter((n) => n.branch === b.id)).toHaveLength(b.id === 'cosmos' ? 20 : 24);
+    expect(TREE_NODES).toHaveLength(116);
   });
 
   it('T bate com a soma dos níveis x custo do tier e fica entre 500 e 600', () => {

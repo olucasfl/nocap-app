@@ -216,12 +216,12 @@ describe('mais objetos e Mapa estelar', () => {
 });
 
 describe('o que ainda não existe', () => {
-  it('os nós de Sorte e Exploração estão ligados e o Observatório continua fechado', async () => {
+  it('os nós de Sorte e Exploração estão ligados e o Observatório foi aposentado', async () => {
     const { TREE_FEATURES, TREE_NODES, nodeLive } = await import('./tree');
     expect(TREE_FEATURES.luck && TREE_FEATURES.exploration).toBe(true);
     const live = (branch: string) => TREE_NODES.filter((n) => n.branch === branch && nodeLive(n)).length;
     expect(live('luck')).toBe(24);
     expect(live('exploration')).toBe(24);
-    expect(nodeLive(TREE_NODES.find((n) => n.id === 'co-06')!)).toBe(false);
+    expect(TREE_NODES.find((n) => n.id === 'co-06')).toBeUndefined();
   });
 });

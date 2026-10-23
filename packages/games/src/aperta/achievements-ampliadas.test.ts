@@ -112,11 +112,12 @@ describe('conquistas que esperam conteúdo (`needs`)', () => {
 
   it('há de cada tipo de feature e nenhuma conta enquanto a feature não existe', () => {
     const features = new Set(dormant.map((a) => a.needs));
-    for (const f of ['tree-v2', 'daily-streak', 'regions-more'] as Feature[]) {
+    for (const f of ['daily-streak', 'regions-more'] as Feature[]) {
       expect(features.has(f), f).toBe(true);
       expect(FEATURES[f], f).toBe(false);
     }
-    expect(dormant.length).toBeGreaterThanOrEqual(5);
+    expect(features.has('tree-v2')).toBe(false); // as conquistas de árvore nova foram aposentadas com o Observatório
+    expect(dormant.length).toBeGreaterThanOrEqual(4);
     // Mesmo com tudo no máximo, nenhuma dormente é dada.
     const s = stats(base({ collapses: 30 }), {
       forbiddenBest: { 'cygnus-x1': 5 },

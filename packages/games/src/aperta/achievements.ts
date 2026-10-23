@@ -194,7 +194,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
   // --- Grimórios ---
   def('grim-10', 'grimoires', 'S', 'Colecionador de astros', 'Descubra 10 grimórios.', 10, (s) => s.album.length),
   def('grim-20', 'grimoires', 'M', 'Biblioteca estelar', 'Descubra 20 grimórios.', 20, (s) => s.album.length),
-  def('grim-all', 'grimoires', 'L', 'Atlas completo', 'Descubra os 30 grimórios do começo.', 30, (s) => s.album.length),
+  def('grim-all', 'grimoires', 'L', 'Álbum completo', 'Descubra os 30 grimórios do começo.', 30, (s) => s.album.length),
   def('grim-40', 'grimoires', 'M', 'Quarenta astros', 'Descubra 40 grimórios.', 40, (s) => s.album.length),
   def('grim-50', 'grimoires', 'L', 'Cinquenta astros', 'Descubra 50 grimórios.', 50, (s) => s.album.length),
   def('grim-catalog', 'grimoires', 'E', 'Álbum completo', 'Descubra todos os grimórios do álbum.', GRIMOIRES.length, (s) => s.album.length),
@@ -338,7 +338,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
   def('tree-branch-3', 'tree', 'M', 'Três ramos', 'Complete 3 ramos da árvore.', 3, fullBranches),
   def('tree-all', 'tree', 'L', 'Árvore completa', 'Complete todos os ramos da árvore.', TREE_BRANCHES.length, fullBranches),
   ...([25, 50, 100, 120] as const).map((n) =>
-    def(`tree-nodes-${n}`, 'tree', n >= 50 ? 'E' : 'L', `${n} nós`, `Compre ${n} nós na árvore nova.`, n, (s) => Object.keys(s.tree).length, { needs: 'tree-v2' }),
+    def(`tree-nodes-${n}`, 'tree', n >= 50 ? 'E' : 'L', `${n} nós`, `Compre ${n} nós na árvore nova.`, n, (s) => Object.keys(s.tree).length, { retired: true }),
   ),
 
   // --- Geradores e toque ---
@@ -388,7 +388,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
   def('hid-pillars', 'hidden', 'S', 'Pilares da Criação', 'Leve os Pilares da Criação ao nível máximo.', 1, (s) => (s.stats.bestLevel >= GRIMOIRE_MAX_LEVEL && s.album.includes('pillars') ? 1 : 0), { hidden: true }),
   def('hid-streak-20', 'hidden', 'S', 'Sorte grande', 'Escolha 15 grimórios raros ou melhores em sequência.', 15, (s) => s.stats.rareStreakBest, { hidden: true }),
   def('hid-offers-1000', 'hidden', 'S', 'Leitor voraz', 'Abra 1.000 ofertas de grimório.', 1_000, (s) => s.stats.offers, { hidden: true }),
-  def('hid-spent-100', 'hidden', 'S', 'Investidor', 'Gaste 100 Cintilas na árvore.', 100, (s) => s.sparks.spent, { hidden: true, needs: 'tree-v2' }),
+  def('hid-spent-100', 'hidden', 'S', 'Investidor', 'Gaste 100 Cintilas na árvore.', 100, (s) => s.sparks.spent, { hidden: true, retired: true }),
 ];
 
 export const ACHIEVEMENT_COUNT = ACHIEVEMENTS.length;

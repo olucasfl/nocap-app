@@ -61,7 +61,7 @@ test('árvore em grafo: abre, mostra os nós, arrasta e abre o painel', async ({
   await expect(page.locator('.ap-game')).toBeVisible();
 
   await page.getByRole('button', { name: /^Árvore de Habilidades/ }).click();
-  await expect(page.locator('.ap-tg-node')).toHaveCount(120);
+  await expect(page.locator('.ap-tg-node')).toHaveCount(116);
   await expect(page.locator('.ap-tg-hint')).toBeVisible();
   await shot('1-aberta');
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(1);

@@ -236,7 +236,13 @@ function build(): TreeNodeDef[] {
   return out;
 }
 
-export const TREE_NODES: readonly TreeNodeDef[] = build();
+/**
+ * Nós aposentados (decisão do Lucas, 23/10/2026): o Observatório e o que dependia dele não terão tela. As linhas
+ * seguem em `TABLES` só para os ids (posicionais) não mudarem; o grafo, o custo total e o balanço não os veem.
+ */
+export const RETIRED_NODE_IDS: ReadonlySet<string> = new Set(['co-06', 'co-14', 'co-20', 'co-23']);
+
+export const TREE_NODES: readonly TreeNodeDef[] = build().filter((n) => !RETIRED_NODE_IDS.has(n.id));
 const BY_ID = new Map(TREE_NODES.map((n) => [n.id, n]));
 
 export function treeNodeById(id: string): TreeNodeDef | undefined {
