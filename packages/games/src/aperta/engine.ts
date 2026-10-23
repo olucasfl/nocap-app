@@ -917,10 +917,10 @@ function computeStats(state: SaveState): EffectiveStats {
       afterCaptureMult,
     },
     choice: {
-      cards: 3 + choice.cards + (luck.fourthCard ? 1 : 0),
+      cards: 3 + choice.cards,
       picks: 1 + choice.picks,
       rerolls: choice.rerolls,
-      repeatLevels: 1 + choice.repeatLevels + luck.repeatLevels,
+      repeatLevels: 1 + choice.repeatLevels,
       noCommon: choice.noCommon,
       rarityBoost: choice.rarityBoost,
     },
@@ -1020,7 +1020,9 @@ function offerCandidates(state: SaveState, exclude: readonly string[]): Grimoire
 export function drawGrimoires(state: SaveState, exclude: readonly string[] = [], count?: number): { offers: string[]; rngState: number } {
   const stats = effectiveStats(state);
   // Eclipse (evento da árvore): cada oferta traz uma carta extra enquanto dura.
-  const want = count ?? stats.choice.cards + (activeEventId(state, state.clock) === 'eclipse' ? 1 : 0);
+  // 4ª carta (árvore): vale em toda 3ª oferta de grimórios (e sempre no Cofre); o Eclipse soma uma carta enquanto dura.
+  const fourth = stats.luck.fourthCard && (state.stats.offers + 1) % FOURTH_CARD_EVERY === 0 ? 1 : 0;
+  const want = count ?? stats.choice.cards + fourth + (activeEventId(state, state.clock) === 'eclipse' ? 1 : 0);
   const candidates = offerCandidates(state, exclude);
   // Só o que rende agora; se faltar carta para a escolha, completa com o resto (nunca abre vazia).
   const usable = candidates.filter((g) => grimoireUseful(state, g));
@@ -1072,9 +1074,11 @@ export function drawGrimoires(state: SaveState, exclude: readonly string[] = [],
   return { offers, rngState: rng };
 }
 
+export const FOURTH_CARD_EVERY = 3;
+
 const RARITY_RANK: Record<Rarity, number> = { common: 0, rare: 1, epic: 2, legendary: 3, forbidden: 4 };
 const RARE_STREAK_CAP = 6;
-const RARE_STREAK_STEP = 2;
+const RARE_STREAK_STEP = 0.25;
 
 /**
  * Garante que a oferta tenha uma carta de raridade `min` ou melhor (pity, Garantia, Fortuna e Destino da árvore):
@@ -1211,7 +1215,9 @@ export function chooseGrimoire(state: SaveState, id: string, now: number): SaveS
   if (!p || p.selected !== id || !p.offers.includes(id) || choiceLockRemaining(s, now) > 0) return s;
   const stats = effectiveStats(s);
   const current = s.run.build[id] ?? 0;
-  const nextLevel = current === 0 ? 1 : Math.min(GRIMOIRE_MAX_LEVEL, current + stats.choice.repeatLevels);
+  // Repetir em dobro (árvore): a cada N escolhas a repetição sobe 1 nível a mais.
+  const bonus = stats.luck.repeatEvery > 0 && (s.run.picks + 1) % stats.luck.repeatEvery === 0 ? 1 : 0;
+  const nextLevel = current === 0 ? 1 : Math.min(GRIMOIRE_MAX_LEVEL, current + stats.choice.repeatLevels + bonus);
   const run: RunState = {
     ...s.run,
     build: { ...s.run.build, [id]: nextLevel },
@@ -1246,13 +1252,12 @@ export function chooseGrimoire(state: SaveState, id: string, now: number): SaveS
   return awardAchievements({ ...next, run: { ...next.run, energy: 0 } });
 }
 
-/** Trocas que ainda dá para fazer nesta oferta: as da oferta, a grátis da árvore e o que resta da cota da vida. */
+/** Trocas que ainda dá para fazer nesta oferta: as da oferta e o que resta da cota da vida. */
 export function rerollsAvailable(state: SaveState): number {
   const p = state.run.pending;
   if (!p) return 0;
   const luck = effectiveStats(state).luck;
-  const free = luck.firstRerollFree && (p.rerolled ?? 0) === 0 ? 1 : 0;
-  return p.rerollsLeft + free + Math.max(0, luck.rerolls - state.run.rerollsUsed);
+  return p.rerollsLeft + Math.max(0, luck.rerolls - state.run.rerollsUsed);
 }
 
 /** Descartes de oferta que ainda restam na vida (Segunda chance da árvore). */
@@ -1262,7 +1267,7 @@ export function discardsLeft(state: SaveState): number {
 
 /**
  * Betelgeuse, a Sonda Voyager e os Rerolls da árvore: troca uma das cartas oferecidas por outra que não esteja na oferta.
- * Ordem do gasto: a troca grátis da oferta (árvore), as da própria oferta e, por último, a cota da vida.
+ * Ordem do gasto: as trocas da própria oferta e, por último, a cota da vida.
  */
 export function rerollGrimoire(state: SaveState, id: string, now: number): SaveState {
   const s = syncClock(state, now);
@@ -1271,10 +1276,8 @@ export function rerollGrimoire(state: SaveState, id: string, now: number): SaveS
   const { offers, rngState } = drawGrimoires(s, p.offers, 1);
   const replacement = offers[0];
   if (replacement === undefined) return s;
-  const luck = effectiveStats(s).luck;
-  const free = luck.firstRerollFree && (p.rerolled ?? 0) === 0;
-  const fromOffer = !free && p.rerollsLeft > 0;
-  const fromBank = !free && !fromOffer;
+  const fromOffer = p.rerollsLeft > 0;
+  const fromBank = !fromOffer;
   return awardAchievements({
     ...s,
     run: {

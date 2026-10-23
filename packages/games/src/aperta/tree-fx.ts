@@ -31,9 +31,9 @@ export interface LuckStats {
   epicEvery: number;
   legendEvery: number;
   fourthCard: boolean;
-  repeatLevels: number;
+  /** A cada N escolhas, repetir um grimório sobe 1 nível extra (0 = desligado). */
+  repeatEvery: number;
   handFull: boolean;
-  firstRerollFree: boolean;
   /** A cada N ofertas escolhe-se 2 cartas (0 = desligado). */
   doublePickEvery: number;
   rareStreak: boolean;
@@ -70,9 +70,9 @@ export interface ExploreStats {
   horizon: boolean;
 }
 
-export const PITY_BASE = 30;
+export const PITY_BASE = 50;
 export const PITY_MIN = 10;
-export const RADAR_MIN = 6;
+export const RADAR_MIN = 25;
 export const OBJECT_SLOTS_CAP = 6;
 
 function owned(tree: Tree): { n: TreeNodeDef; lvl: number }[] {
@@ -98,9 +98,8 @@ export function luckStats(tree: Tree): LuckStats {
     epicEvery: 0,
     legendEvery: 0,
     fourthCard: false,
-    repeatLevels: 0,
+    repeatEvery: 0,
     handFull: false,
-    firstRerollFree: false,
     doublePickEvery: 0,
     rareStreak: false,
     destiny: false,
@@ -143,13 +142,10 @@ export function luckStats(tree: Tree): LuckStats {
         s.fourthCard = true;
         break;
       case 'repeatBonus':
-        s.repeatLevels += p('levels');
+        s.repeatEvery = minPositive(s.repeatEvery, p('every'));
         break;
       case 'handFull':
         s.handFull = true;
-        break;
-      case 'firstRerollFree':
-        s.firstRerollFree = true;
         break;
       case 'doublePick':
         s.doublePickEvery = minPositive(s.doublePickEvery, p('every'));

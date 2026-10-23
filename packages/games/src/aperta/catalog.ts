@@ -551,9 +551,9 @@ export interface LegendaryDef {
 }
 
 export const LEGENDARY_OBJECTS: readonly LegendaryDef[] = [
-  { kind: 'legend-comet', name: 'Grande Cometa', lifeSec: 9, dustTouches: 120, energyTouches: 0, text: 'Poeira de 120 toques.' },
-  { kind: 'legend-pulsar', name: 'Pulsar', lifeSec: 8, dustTouches: 40, energyTouches: 40, text: 'Poeira e energia de 40 toques.' },
-  { kind: 'legend-nebula', name: 'Nebulosa errante', lifeSec: 10, dustTouches: 20, energyTouches: 0, boostMult: 4, boostSec: 20, text: 'O toque rende x4 por 20 s.' },
+  { kind: 'legend-comet', name: 'Grande Cometa', lifeSec: 9, dustTouches: 40, energyTouches: 0, text: 'Poeira de 40 toques.' },
+  { kind: 'legend-pulsar', name: 'Pulsar', lifeSec: 8, dustTouches: 15, energyTouches: 15, text: 'Poeira e energia de 15 toques.' },
+  { kind: 'legend-nebula', name: 'Nebulosa errante', lifeSec: 10, dustTouches: 10, energyTouches: 0, boostMult: 2, boostSec: 10, text: 'O toque rende x2 por 10 s.' },
   { kind: 'legend-wormhole', name: 'Buraco de minhoca', lifeSec: 7, dustTouches: 0, energyTouches: 0, fillsBar: true, text: 'Enche a barra de energia e dá uma troca grátis.' },
 ];
 

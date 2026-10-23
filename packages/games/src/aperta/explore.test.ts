@@ -25,9 +25,10 @@ describe('Radar de lendários', () => {
   const tree = { 'ex-01': 1 };
 
   it('o limite sai do nó, cai com o Radar rápido e nunca passa do piso', () => {
-    expect(effectiveStats(base({ tree })).explore.radarThreshold).toBe(20);
-    expect(effectiveStats(base({ tree: { 'ex-01': 2 } })).explore.radarThreshold).toBe(14);
-    expect(effectiveStats(base({ tree: { 'ex-01': 2, 'ex-07': 2 } })).explore.radarThreshold).toBe(9);
+    expect(effectiveStats(base({ tree })).explore.radarThreshold).toBe(60);
+    expect(effectiveStats(base({ tree: { 'ex-01': 2 } })).explore.radarThreshold).toBe(45);
+    expect(effectiveStats(base({ tree: { 'ex-01': 2, 'ex-07': 2 } })).explore.radarThreshold).toBe(39);
+    expect(effectiveStats(base({ tree: { 'ex-01': 2, 'ex-07': 2, 'ex-13': 2 } })).explore.radarThreshold).toBeGreaterThanOrEqual(15);
     expect(effectiveStats(base()).explore.radarOn).toBe(false);
   });
 
@@ -43,21 +44,21 @@ describe('Radar de lendários', () => {
     s = { ...s, run: { ...s.run, objects: [obj(1, 'comet', 5)], nextObjectId: 2, nextSpawnAt: 1e6 } };
     s = captureObject(s, 1, 6);
     expect(s.run.radar).toBe(1);
-    s = { ...s, run: { ...s.run, radar: 20 } };
+    s = { ...s, run: { ...s.run, radar: 60 } };
     const t = tickObjects(s, 7);
     const legends = t.run.objects.filter((o) => o.kind.startsWith('legend'));
     expect(legends).toHaveLength(1);
     expect(LEGENDARY_OBJECTS.map((d) => d.kind)).toContain(legends[0]!.kind);
     expect(t.run.radar).toBe(0);
     // Não nasce outro enquanto o primeiro está no campo (legendMax 1).
-    const again = tickObjects({ ...t, run: { ...t.run, radar: 20 } }, 8);
+    const again = tickObjects({ ...t, run: { ...t.run, radar: 60 } }, 8);
     expect(again.run.objects.filter((o) => o.kind.startsWith('legend'))).toHaveLength(1);
   });
 
   it('o Radar certeiro devolve o radar com um quarto cheio; Lendários em dobro deixa 2 no campo', () => {
-    let s = base({ tree: { ...tree, 'ex-17': 1 }, run: { ...base().run, radar: 20 } });
+    let s = base({ tree: { ...tree, 'ex-17': 1 }, run: { ...base().run, radar: 60 } });
     s = tickObjects(s, 10);
-    expect(s.run.radar).toBe(5);
+    expect(s.run.radar).toBe(15);
     expect(effectiveStats(base({ tree: { ...tree, 'ex-22': 1 } })).explore.legendMax).toBe(2);
   });
 
@@ -76,10 +77,10 @@ describe('Radar de lendários', () => {
     const s = base();
     const stats = effectiveStats(s);
     const comet = captureObject({ ...s, run: { ...s.run, objects: [obj(1, 'legend-comet')], nextObjectId: 2 } }, 1, 1);
-    expect(comet.run.dust).toBeGreaterThanOrEqual(Math.floor(stats.dustPerTouch * 120));
+    expect(comet.run.dust).toBeGreaterThanOrEqual(Math.floor(stats.dustPerTouch * 40));
     const nebula = captureObject({ ...s, run: { ...s.run, objects: [obj(1, 'legend-nebula')], nextObjectId: 2 } }, 1, 1);
-    expect(nebula.run.boostMult).toBe(4);
-    expect(nebula.run.boostUntil).toBeCloseTo(21, 5);
+    expect(nebula.run.boostMult).toBe(2);
+    expect(nebula.run.boostUntil).toBeCloseTo(11, 5);
     const worm = captureObject({ ...s, run: { ...s.run, objects: [obj(1, 'legend-wormhole')], nextObjectId: 2 } }, 1, 1);
     expect(worm.run.pending).not.toBeNull();
     expect(worm.stats.capturedKinds).toContain('legend-wormhole');
@@ -96,9 +97,9 @@ describe('eventos da árvore', () => {
 
   it('chance e duração vêm do nível do nó, e os nós de duração somam', () => {
     const e1 = effectiveStats(base({ tree: open })).explore.events;
-    expect(e1['gold-rain']).toEqual({ chance: 20, sec: 30 });
+    expect(e1['gold-rain']).toEqual({ chance: 10, sec: 30 });
     const e2 = effectiveStats(base({ tree: { ...open, 'ex-02': 2, 'ex-11': 2, 'ex-19': 1 } })).explore.events;
-    expect(e2['gold-rain']).toEqual({ chance: 30, sec: 40 + 20 + 5 });
+    expect(e2['gold-rain']).toEqual({ chance: 15, sec: 40 + 20 + 5 });
     expect(e2.alignment.sec).toBe(30 + 5);
     expect(effectiveStats(base()).explore.events['gold-rain'].chance).toBe(0);
     expect(eventDuration(base({ tree: open }), 'eclipse', false)).toBe(30);
@@ -193,10 +194,10 @@ describe('eventos da árvore', () => {
 });
 
 describe('mais objetos e Mapa estelar', () => {
-  it('Mais objetos soma 1 e 2 vagas, com teto 6', () => {
+  it('Mais objetos soma 1 vaga (e os dois níveis não passam do teto 6)', () => {
     const none = effectiveStats(base()).objects.maxOnField;
     expect(effectiveStats(base({ tree: { 'ex-13': 1 } })).objects.maxOnField).toBe(none + 1);
-    expect(effectiveStats(base({ tree: { 'ex-13': 2 } })).objects.maxOnField).toBe(none + 2);
+    expect(effectiveStats(base({ tree: { 'ex-13': 2 } })).objects.maxOnField).toBe(none + 1);
     expect(effectiveStats(base({ tree: { 'ex-13': 2 } })).objects.maxOnField).toBeLessThanOrEqual(6);
   });
 

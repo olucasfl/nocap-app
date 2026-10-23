@@ -46,9 +46,12 @@ const rarity = (id: string) => grimoireById(id)!.rarity;
 describe('4ª carta', () => {
   it('a oferta de grimórios e a do Cofre ganham uma carta com o nó', () => {
     expect(open(ready()).run.pending!.offers).toHaveLength(3);
-    expect(effectiveStats(ready({ tree: TREE({ 'lu-14': 1 }) })).choice.cards).toBe(4);
+    expect(effectiveStats(ready({ tree: TREE({ 'lu-14': 1 }) })).luck.fourthCard).toBe(true);
     const tree = TREE({ 'lu-01': 1, 'lu-02': 1, 'lu-06': 1, 'lu-05': 1, 'lu-14': 1 });
-    expect(open(ready({ tree })).run.pending!.offers).toHaveLength(4);
+    // Toda 3ª oferta (a 3ª, a 6ª...) ganha a 4ª carta; as outras ficam com 3.
+    const third = ready({ tree, stats: { ...newSave('x').stats, offers: 2 } });
+    expect(open(third).run.pending!.offers).toHaveLength(4);
+    expect(open(ready({ tree })).run.pending!.offers).toHaveLength(3);
     const withoutNode = ready();
     expect(vaultOffers(withoutNode)).toHaveLength(3);
     expect(vaultOffers({ ...withoutNode, tree })).toHaveLength(4);
@@ -62,7 +65,7 @@ describe('rerolls e descartes', () => {
     expect(rerollsAvailable(none)).toBe(0);
     const one = open(ready({ tree: TREE({ 'lu-01': 1 }) }));
     expect(rerollsAvailable(one)).toBe(1);
-    const three = ready({ tree: TREE({ 'lu-01': 2, 'lu-05': 1 }) });
+    const three = ready({ tree: TREE({ 'lu-01': 1, 'lu-05': 1, 'lu-18': 1 }) });
     expect(effectiveStats(three).luck.rerolls).toBe(3);
     let s = open(three);
     expect(rerollsAvailable(s)).toBe(3);
@@ -76,16 +79,6 @@ describe('rerolls e descartes', () => {
     expect(s.run.rerollsUsed).toBe(3);
     expect(rerollsAvailable(s)).toBe(0);
     expect(rerollGrimoire(s, s.run.pending!.offers[0]!, 110).run.pending!.offers).toEqual(s.run.pending!.offers);
-  });
-
-  it('a primeira troca de cada oferta é grátis e não gasta a cota', () => {
-    const s = open(ready({ tree: TREE({ 'lu-01': 1, 'lu-02': 1, 'lu-06': 1, 'lu-05': 1, 'lu-14': 1, 'lu-09': 1, 'lu-13': 1, 'lu-19': 1 }) }));
-    // lu-19 exige os nós de cima; o teste monta a árvore direto (o save válido é assunto de tree.test).
-    expect(effectiveStats(s).luck.firstRerollFree).toBe(true);
-    const first = rerollGrimoire(s, s.run.pending!.offers[0]!, 101);
-    expect(first.run.rerollsUsed).toBe(0);
-    const second = rerollGrimoire(first, first.run.pending!.offers[0]!, 102);
-    expect(second.run.rerollsUsed).toBe(1);
   });
 
   it('descartar a oferta sorteia outra sem contar como oferta nova, uma vez por vida (2 com o nível 2)', () => {
@@ -109,9 +102,9 @@ describe('pity de lendário', () => {
     expect(pityLeft(ready())).toBeNull();
     const tree = TREE({ 'lu-06': 1 });
     let s = ready({ tree });
-    expect(pityLeft(s)).toBe(PITY_BASE - 2 - 1);
+    expect(pityLeft(s)).toBe(PITY_BASE - 1 - 1);
     // Perto do fim: a próxima oferta é a garantida.
-    s = { ...s, stats: { ...s.stats, sinceLegend: PITY_BASE - 2 - 1 } };
+    s = { ...s, stats: { ...s.stats, sinceLegend: PITY_BASE - 1 - 1 } };
     expect(pityLeft(s)).toBe(0);
     for (let i = 0; i < 12; i++) {
       const o = open({ ...s, run: { ...s.run, rngState: 1000 + i * 77 } });
@@ -122,8 +115,8 @@ describe('pity de lendário', () => {
 
   it('cada nível do nó tira ofertas da espera', () => {
     const left = (tree: Record<string, number>) => pityLeft(ready({ tree }))!;
-    expect(left(TREE({ 'lu-06': 1 }))).toBe(PITY_BASE - 2 - 1);
-    expect(left(TREE({ 'lu-06': 2 }))).toBe(PITY_BASE - 4 - 1);
+    expect(left(TREE({ 'lu-06': 1 }))).toBe(PITY_BASE - 1 - 1);
+    expect(left(TREE({ 'lu-06': 2 }))).toBe(PITY_BASE - 2 - 1);
     expect(left(TREE({ 'lu-06': 2, 'lu-11': 2, 'lu-17': 1 }))).toBeLessThan(left(TREE({ 'lu-06': 2 })));
   });
 
@@ -139,7 +132,7 @@ describe('garantias e pesos em números', () => {
   it('a Garantia faz toda N-ésima oferta ter uma carta épica ou melhor', () => {
     const tree = TREE({ 'lu-07': 1 });
     for (let i = 0; i < 12; i++) {
-      const s = ready({ tree, stats: { ...newSave('x').stats, offers: 11 } });
+      const s = ready({ tree, stats: { ...newSave('x').stats, offers: 59 } });
       const o = open({ ...s, run: { ...s.run, rngState: 5 + i * 131 } });
       expect(o.run.pending!.offers.some((id) => ['epic', 'legendary'].includes(rarity(id))), `semente ${i}`).toBe(true);
     }
@@ -148,7 +141,7 @@ describe('garantias e pesos em números', () => {
   it('a Fortuna traz um lendário em toda 5ª oferta', () => {
     const tree = TREE({ 'lu-24': 1 });
     for (let i = 0; i < 10; i++) {
-      const s = ready({ tree, stats: { ...newSave('x').stats, offers: 4 } });
+      const s = ready({ tree, stats: { ...newSave('x').stats, offers: 59 } });
       const o = open({ ...s, run: { ...s.run, rngState: 9 + i * 211 } });
       expect(o.run.pending!.offers.some((id) => rarity(id) === 'legendary'), `semente ${i}`).toBe(true);
     }
@@ -163,9 +156,9 @@ describe('garantias e pesos em números', () => {
       }
       return n;
     };
-    expect(count(TREE({ 'lu-02': 2 }), 'rare')).toBeGreaterThan(count({}, 'rare'));
-    expect(count(TREE({ 'lu-08': 2 }), 'epic')).toBeGreaterThan(count({}, 'epic'));
-    expect(effectiveStats(ready({ tree: TREE({ 'lu-02': 2, 'lu-08': 1, 'lu-15': 1 }) })).luck).toMatchObject({ rareWeight: 4, epicWeight: 2, legendWeight: 6 });
+    // Os pesos são pequenos de propósito: o teste confere o número lido, não uma diferença que cabe no ruído.
+    expect(count(TREE({ 'lu-02': 2 }), 'rare')).toBeGreaterThanOrEqual(count({}, 'rare') - 20);
+    expect(effectiveStats(ready({ tree: TREE({ 'lu-02': 2, 'lu-08': 1, 'lu-15': 1 }) })).luck).toMatchObject({ rareWeight: 0.5, epicWeight: 0.1, legendWeight: 0.1 });
   });
 
   it('o Destino deixa a oferta toda rara ou melhor, uma vez por vida', () => {
@@ -179,17 +172,25 @@ describe('garantias e pesos em números', () => {
     expect(picked.run.destinyUsed).toBe(true);
   });
 
-  it('a Mão cheia e as Duas escolhas dão uma escolha a mais', () => {
-    const first = open(ready({ tree: TREE({ 'lu-18': 1 }) }, 0));
-    expect(first.run.pending!.picksLeft).toBe(2);
-    const later = open(ready({ tree: TREE({ 'lu-18': 1 }) }, 20));
-    expect(later.run.pending!.picksLeft).toBe(1);
-    const tenth = open(ready({ tree: TREE({ 'lu-20': 1 }), stats: { ...newSave('x').stats, offers: 9 } }));
-    expect(tenth.run.pending!.picksLeft).toBe(2);
+  it('as Duas escolhas dão uma escolha a mais a cada N ofertas', () => {
+    const nth = open(ready({ tree: TREE({ 'lu-20': 1 }), stats: { ...newSave('x').stats, offers: 39 } }));
+    expect(nth.run.pending!.picksLeft).toBe(2);
   });
 
-  it('Repetir em dobro sobe níveis extra', () => {
+  it('Repetir em dobro: a cada N escolhas a repetição sobe 1 nível a mais', () => {
     const s = ready({ tree: TREE({ 'lu-13': 2 }) });
-    expect(effectiveStats(s).choice.repeatLevels).toBe(3);
+    expect(effectiveStats(s).luck.repeatEvery).toBe(6);
+    const mk = (picks: number): SaveState => {
+      const r = ready({ tree: TREE({ 'lu-13': 2 }) }, picks);
+      return { ...r, run: { ...r.run, build: { moon: 2 } } };
+    };
+    const lvl = (picks: number): number => {
+      const o = open(mk(picks));
+      const id = 'moon';
+      const withOffer = { ...o, run: { ...o.run, pending: { ...o.run.pending!, offers: [id, ...o.run.pending!.offers.slice(1)] } } };
+      return chooseGrimoire(selectGrimoire(withOffer, id, 102), id, 102).run.build[id]!;
+    };
+    expect(lvl(5)).toBe(4);
+    expect(lvl(6)).toBe(3);
   });
 });

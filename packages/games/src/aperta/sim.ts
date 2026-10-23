@@ -206,8 +206,9 @@ function useLuck(state: SaveState, profile: Profile, t: number): SaveState {
   return s;
 }
 
-const DISCARD_BELOW = 0.02;
-const REROLL_BELOW = 0.03;
+// O jogador simulado só troca o que não presta de verdade (quase ninguém joga as trocas no ponto ótimo).
+const DISCARD_BELOW = 0.005;
+const REROLL_BELOW = 0.005;
 
 function bestOffer(state: SaveState, profile: Profile): string {
   const pending = state.run.pending;
