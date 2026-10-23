@@ -132,7 +132,7 @@
   }
 }
 
-/* Requisitos do colapso (spec 040): uma barra por requisito, no Atlas, no modal e sob o botão "Estrela pronta". */
+/* Requisitos do colapso (spec 040): uma barra por requisito, na página do Cofre, no modal e sob o botão "Estrela pronta". */
 .ap-reqs {
   display: grid;
   gap: 8px;

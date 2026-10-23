@@ -17,7 +17,7 @@ export const MECHANIC_NAMES: Record<MechanicId, string> = {
 
 export const MECHANIC_TEXT: Record<MechanicId, string> = {
   favorite: 'Marque um grimório como favorito: ele pesa o dobro no sorteio.',
-  missions: 'Um objetivo por vida; cumprir dá Fragmentos extras ao colapsar.',
+  missions: 'Um objetivo por vida; cumprir várias na mesma vida conta para o marco do colapso.',
 };
 
 export const EVENT_NAMES: Record<EventId, string> = {

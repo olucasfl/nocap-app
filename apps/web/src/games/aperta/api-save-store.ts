@@ -303,7 +303,8 @@ export function createApiSaveStore(userId: string, env: Env = realEnv()): Synced
 
   const toSummary = (info: SlotInfo): SaveSummary | null => {
     if (!info.save) return null;
-    const { revision: _revision, ...summary } = info.save;
+    const { revision, ...summary } = info.save;
+    void revision;
     return summary;
   };
 
@@ -354,7 +355,8 @@ export function createApiSaveStore(userId: string, env: Env = realEnv()): Synced
     async restore(slot) {
       try {
         const summary = await api.post<SaveSummary & { revision: number }>(`${path(slot)}/restore`, {});
-        const { revision: _revision, ...rest } = summary;
+        const { revision, ...rest } = summary;
+        void revision;
         return rest;
       } catch (e) {
         if (e instanceof ApiError && e.status === 404) return null;
