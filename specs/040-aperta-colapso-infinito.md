@@ -352,3 +352,20 @@ F/T = 1,24 (>= 0,80) e (F + R25)/T = 1,27 (>= 1,10). Não precisou ajustar custo
 - Ninguém jogou: o ritmo de eventos, o Radar e os lendários foram só simulados. Sem Playwright e sem varredura responsiva (a oferta de 4 cartas em 320 px nunca foi vista).
 - A Estrela Dourada, o Radar e os eventos juntos ainda podem estar fortes demais para um jogador real; os números em `tree.ts` (Sorte e Exploração) são o lugar de ajustar.
 
+## 15. Etapa 18 pronta: tela da árvore em forma de grafo (23/10/2026)
+
+### 15.1 Entregue
+
+- `tree-layout.ts`: layout radial calculado do grafo (a raiz no centro, cada ramo numa fatia de 72 graus, o tier define o raio, o ângulo vem da média dos pais e um passe separa os vizinhos; nenhuma posição escrita à mão). Testado: 120 nós sem encostar (distância >= 52), uma linha por pré-requisito (6 ligações cruzadas tracejadas), setas do teclado.
+- `TreeGraph.tsx`: SVG com o grupo que arrasta (`will-change: transform` só nele; o arrasto escreve `transform` direto no DOM), zoom em 2 níveis (visão geral e de perto) com `+`/`-` e o teclado, "Centralizar", nós como botões (`role="button"`, nome e estado lidos, setas andam entre os nós, foco visível, movimento reduzido sem animação) e modo leve (`is-lite`).
+- `TreePanel.tsx`: nome, ramo, tier, o que faz, nível atual e próximo ("Agora" e "No próximo nível"), pré-requisitos com ok/falta, custo e o botão Comprar (48 px). Mostra o que falta quando bloqueado ou sem Cintilas e o que traz quando o nó ainda não existe.
+- Cabeçalho: saldo, ganhas e gastas, filtros por ramo em chips (os outros esmaecem em `opacity`), "De onde vêm as Cintilas" e "Refazer árvore" em 2 passos (só com `canRespec`, senão explica por quê). A página é separada do Cofre.
+- Tutorial: o cartão da árvore agora entra com a 1ª Cintila ("Você ganhou sua primeira Cintila!") e a dica "Arraste para explorar a árvore" aparece na 1ª abertura (some ao arrastar; guardada no aparelho).
+- Conferido uma vez no Chromium emulando celular (390 px, toque, DPR 2): o grafo, o painel e o cabeçalho não se sobrepõem, sem rolagem lateral; spec `e2e/aperta-tree-graph.spec.ts`.
+
+### 15.2 Desvios e o que não foi testado
+
+- Zoom por pinça não foi feito (era opcional); só botões e teclado.
+- No celular o painel fica abaixo do grafo (a página rola até ele ao escolher o nó), não sobre ele.
+- Não conferi 320, 768, 1024, 1280 e 1920 px nem aparelho real; o spec e2e antigo da árvore (`aperta-tree.spec.ts`) ainda fala da lista e da árvore antiga.
+

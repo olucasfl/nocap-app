@@ -128,8 +128,14 @@
 }
 .ap-th-chips {
   display: flex;
-  flex-wrap: wrap;
   gap: 6px;
+  margin: 0 -2px;
+  padding: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.ap-chipf {
+  flex: none;
 }
 .ap-chipf {
   min-height: 36px;
@@ -175,8 +181,8 @@
 }
 .ap-tg-stage {
   position: relative;
-  height: min(60vh, 560px);
-  min-height: 320px;
+  height: min(50vh, 560px);
+  min-height: 300px;
   overflow: hidden;
   border: 3px solid var(--space-line);
   border-radius: 14px;
@@ -235,7 +241,9 @@
 }
 
 /* Nós */
-.ap-tg-node {
+.ap-tg-node,
+.ap-tg-node:focus,
+.ap-tg-node:focus-visible {
   cursor: pointer;
   outline: none;
 }

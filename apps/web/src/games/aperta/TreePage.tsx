@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { apertaSfx, apertaVibrate } from '@/lib/aperta-audio';
 import { TREE_BRANCHES, formatNumber, type SaveState } from '@nocap/games';
 import { TreeGraph } from './TreeGraph';
@@ -40,6 +40,11 @@ export function TreePage({ state, onBuy, onRespec }: Props) {
   const [selected, setSelected] = useState<string | null>(null);
   const [filter, setFilter] = useState<string>('all');
   const [hint, setHint] = useState(() => !hintSeen());
+  const panelBox = useRef<HTMLDivElement>(null);
+  // No celular o painel fica embaixo do grafo: ao escolher um nó ele entra na tela.
+  useEffect(() => {
+    if (selected) panelBox.current?.scrollIntoView?.({ block: 'nearest' });
+  }, [selected]);
 
   const rows = useMemo(() => new Map(view.branches.flatMap((b) => b.nodes).map((n) => [n.id, n])), [view]);
   const row = selected ? (rows.get(selected) ?? null) : null;
@@ -100,7 +105,9 @@ export function TreePage({ state, onBuy, onRespec }: Props) {
           )}
           {!view.open && <p className="ap-tg-closed">Os ramos se abrem depois do seu primeiro colapso.</p>}
         </div>
-        <TreePanel row={row} onBuy={buy} onClose={() => setSelected(null)} />
+        <div ref={panelBox} className="ap-tp-wrap">
+          <TreePanel row={row} onBuy={buy} onClose={() => setSelected(null)} />
+        </div>
       </div>
 
       <details className="ap-tree-sources">

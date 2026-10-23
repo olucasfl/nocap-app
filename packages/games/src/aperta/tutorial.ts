@@ -1,5 +1,6 @@
 import { UPGRADES } from './catalog';
 import { nextUpgradeCost, type SaveState } from './engine';
+import { sparksTotal } from './sparks';
 
 /**
  * Tutorial dinâmico do Aperta! (spec 038, seção 4.6): o jogador age, a tela reage e o passo só avança por
@@ -93,7 +94,8 @@ export function pendingHint(state: SaveState): TutorialHint | null {
   const seen = state.ui.hints;
   if (!seen.includes('achievements') && state.achievements.length >= ACHIEVEMENT_HINT_AT) return 'achievements';
   if (!seen.includes('objects') && state.run.objects.length > 0) return 'objects';
-  if (!seen.includes('tree') && seen.includes('achievements') && seen.includes('objects')) return 'tree';
+  // A Árvore entra com a 1ª Cintila ganha (as conquistas pagam), depois dos outros dois cartões.
+  if (!seen.includes('tree') && seen.includes('achievements') && seen.includes('objects') && sparksTotal(state) >= 1) return 'tree';
   return null;
 }
 

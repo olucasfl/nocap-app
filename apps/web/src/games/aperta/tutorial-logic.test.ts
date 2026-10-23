@@ -53,8 +53,10 @@ describe('dica de cada momento', () => {
     expect(coachView(withObject, null)).toMatchObject({ dismiss: null, target: 'first-object', label: 'Pegue aqui' });
     const twoAch = { ...free, achievements: ['tap-1', 'tap-100'] };
     expect(coachView(twoAch, null)).toMatchObject({ dismiss: 'achievements', target: 'dock-achievements' });
-    const last = { ...free, ui: { unlocked: [], hints: ['achievements', 'objects'] as SaveState['ui']['hints'] } };
-    expect(coachView(last, null)).toMatchObject({ dismiss: 'tree', target: 'tree' });
+    const last = { ...free, achievements: ['tap-1', 'tap-100'], ui: { unlocked: [], hints: ['achievements', 'objects'] as SaveState['ui']['hints'] } };
+    // Sem Cintila ainda o cartão da árvore espera; com a 1ª Cintila ele diz "Você ganhou sua primeira Cintila".
+    expect(coachView({ ...last, achievements: [] }, null)).toBeNull();
+    expect(coachView(last, null)).toMatchObject({ dismiss: 'tree', target: 'tree', title: 'Você ganhou sua primeira Cintila!' });
     expect(HINT_PAGE.tree).toBe('tree');
     expect(HINT_PAGE.achievements).toBe('achievements');
   });

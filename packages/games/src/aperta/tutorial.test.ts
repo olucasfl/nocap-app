@@ -183,7 +183,7 @@ describe('tutorial: cartões do jogo livre', () => {
     expect(pendingHint(withObject(withAchievements(free(), 2)))).toBe('achievements');
   });
 
-  it('a árvore é o último: só depois dos outros dois, sem gatilho próprio', () => {
+  it('a árvore é o último: só depois dos outros dois e da 1ª Cintila ganha', () => {
     let s = free();
     expect(pendingHint(s)).toBeNull();
     s = markHintSeen(withAchievements(s, 2), 'achievements');
@@ -191,6 +191,9 @@ describe('tutorial: cartões do jogo livre', () => {
     s = markHintSeen(s, 'objects');
     expect(pendingHint(s)).toBe('tree');
     expect(unlockedButtons(settleTutorial(s)).has('tree')).toBe(true);
+    // Sem nenhuma Cintila o cartão espera: o aviso é "você ganhou sua primeira Cintila".
+    const broke = { ...s, achievements: [], album: [], stats: { ...s.stats, eventsSeen: [] } };
+    expect(pendingHint(broke)).toBeNull();
   });
 
   it('ver os três cartões conclui o tutorial e libera tudo', () => {
