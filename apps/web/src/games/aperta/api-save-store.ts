@@ -369,7 +369,8 @@ export function createApiSaveStore(userId: string, env: Env = realEnv()): Synced
       const rt = runtimes.get(slot);
       if (!rt || rt.state.storySeen) return;
       this.update(slot, { ...rt.state, storySeen: true });
-      await this.flush(slot);
+      // Só a marca local é esperada (a tela de jogo abre em seguida e lê a cópia do aparelho); a subida segue sozinha.
+      void this.flush(slot).catch(() => undefined);
     },
 
     // --- Jogo ---

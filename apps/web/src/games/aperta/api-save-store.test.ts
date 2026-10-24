@@ -456,4 +456,16 @@ describe('história vista', () => {
     expect(server.rows.get(1)?.data.storySeen).toBe(true);
     expect((await store.list())[0]?.storySeen).toBe(true);
   });
+
+  it('abrir a partida logo depois de marcar não perde a marca (a história não volta)', async () => {
+    const { store, server } = setup();
+    await store.create(1);
+    await store.markStorySeen(1);
+    // A subida ainda não terminou quando a partida abre: vale a cópia do aparelho, que já tem a marca.
+    const opened = await store.open(1);
+    expect(opened.state.storySeen).toBe(true);
+    await vi.advanceTimersByTimeAsync(MIN_UPLOAD_GAP_MS);
+    await store.flush(1);
+    expect(server.rows.get(1)?.data.storySeen).toBe(true);
+  });
 });

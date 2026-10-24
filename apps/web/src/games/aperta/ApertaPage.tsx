@@ -95,8 +95,10 @@ function ApertaGame() {
       {screen.name === 'story' && (
         <StoryScreen
           onDone={() => {
-            void store?.markStorySeen(screen.save.slot);
-            setScreen({ name: 'game', save: { ...screen.save, storySeen: true } });
+            // A partida só abre depois da marca: se abrisse junto, leria a conta antes de a marca subir e a apagaria.
+            const next = { name: 'game', save: { ...screen.save, storySeen: true } } as const;
+            const marked = store?.markStorySeen(screen.save.slot) ?? Promise.resolve();
+            void marked.catch(() => undefined).then(() => setScreen(next));
           }}
         />
       )}
