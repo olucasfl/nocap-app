@@ -51,7 +51,7 @@ export interface CollapseContent {
 export const COLLAPSE_CONTENT: readonly CollapseContent[] = [
   {
     region: 'inner-solar-system',
-    grimoires: ['moon', 'sirius', 'vega', 'venus', 'mars', 'io', 'mercury', 'phobos', 'titan', 'betelgeuse'],
+    grimoires: ['moon', 'sirius', 'vega', 'venus', 'mars', 'io', 'mercury', 'phobos', 'titan', 'betelgeuse', 'jupiter', 'saturn', 'europa', 'polaris', 'proxima'],
     upgrades: [
       'lens', 'gloves', 'trained', 'rhythm', 'magnet', 'hands', 'charged', 'luck', 'cadence', 'kepler', 'lens2', 'echo',
       'cabin', 'voyager', 'satellite', 'probe', 'telescope', 'observatory', 'station', 'colony', 'fleet', 'portal',
@@ -61,10 +61,10 @@ export const COLLAPSE_CONTENT: readonly CollapseContent[] = [
     mechanics: [],
     events: [],
   },
-  { region: 'asteroid-belt', grimoires: ['uranus', 'halley'], upgrades: ['webb'], objects: ['asteroid'], mechanics: [], events: [] },
+  { region: 'asteroid-belt', grimoires: ['uranus', 'halley', 'capella', 'ganymede'], upgrades: ['webb'], objects: ['asteroid'], mechanics: [], events: [] },
   {
     region: 'jupiter-saturn',
-    grimoires: ['antares'],
+    grimoires: ['antares', 'cassiopeia'],
     upgrades: [],
     objects: ['probe'],
     mechanics: ['favorite'],

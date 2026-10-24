@@ -425,8 +425,8 @@ describe('buyUpgrade', () => {
     const base = withRun(withLevels(newSave('b'), { lens: 1, lens2: 1 }), { dust: 1000 });
     const plain = buyUpgrade(base, idx('satellite'));
     const titan = buyUpgrade(holdIn(base, 'titan', 'common'), idx('satellite'));
-    // Toque de 4: Titã Comum devolve 1 toque (4), abaixo do preço de 15.
-    expect(titan.run.dust - plain.run.dust).toBe(1 * effectiveStats(base).dustPerTouch);
+    // Toque de 4: Titã Comum devolve 2 toques (8), abaixo do preço de 15.
+    expect(titan.run.dust - plain.run.dust).toBe(2 * effectiveStats(base).dustPerTouch);
     // Um Titã Lendário devolveria mais que o preço (15), mas nunca passa dele.
     const big = buyUpgrade(holdIn(base, 'titan', 'legendary', 10), idx('satellite'));
     expect(big.run.dust - plain.run.dust).toBeLessThanOrEqual(15);
@@ -841,11 +841,11 @@ describe('effectiveStats', () => {
     expect(s.objects.signalMult).toBeCloseTo(2.5, 9);
   });
 
-  it('Titã dá 100 de poeira inicial por vida, e a raridade multiplica', () => {
-    expect(effectiveStats(holdIn(newSave('t'), 'titan')).startDust).toBe(100);
-    expect(effectiveStats(holdIn(newSave('t'), 'titan', 'rare')).startDust).toBe(200);
-    expect(effectiveStats(holdIn(newSave('t'), 'titan', 'common', 3)).startDust).toBe(Math.floor(100 * (1 + 2 * GRIMOIRE_LEVEL_STEP)));
-    expect(effectiveStats(newSave('t')).startDust).toBe(0);
+  it('Titã não dá poeira no começo da vida: ele devolve poeira nas compras, e a raridade multiplica', () => {
+    expect(effectiveStats(holdIn(newSave('t'), 'titan')).startDust).toBe(0);
+    expect(effectiveStats(holdIn(newSave('t'), 'titan')).buyRefundTouches).toBe(2);
+    expect(effectiveStats(holdIn(newSave('t'), 'titan', 'rare')).buyRefundTouches).toBe(4);
+    expect(effectiveStats(newSave('t')).buyRefundTouches).toBe(0);
   });
 
 });
@@ -1126,19 +1126,19 @@ describe('colapso', () => {
   });
 
   it('cada colapso destrava exatamente as linhas da tabela 5.4', () => {
-    const expected: Record<number, string[]> = { 1: ['uranus', 'halley'], 2: ['antares'], 3: ['orion-nebula'], 4: [], 5: [] };
+    const expected: Record<number, string[]> = { 1: ['uranus', 'halley', 'capella', 'ganymede'], 2: ['antares', 'cassiopeia'], 3: ['orion-nebula'], 4: [], 5: [] };
     for (let c = 1; c <= 5; c++) {
       const before = new Set(unlockedContent({ ...newSave('u'), collapses: c - 1 }).grimoires.map((g) => g.id));
       const now = unlockedContent({ ...newSave('u'), collapses: c }).grimoires.map((g) => g.id);
       expect(now.filter((id) => !before.has(id)).sort()).toEqual([...(expected[c] as string[])].sort());
     }
-    expect(unlockedContent({ ...newSave('u'), collapses: 0 }).grimoires).toHaveLength(10);
+    expect(unlockedContent({ ...newSave('u'), collapses: 0 }).grimoires).toHaveLength(15);
     expect(unlockedContent({ ...newSave('u'), collapses: 5 }).grimoires).toHaveLength(GRIMOIRES.length);
-    expect(GRIMOIRES).toHaveLength(14);
+    expect(GRIMOIRES).toHaveLength(22);
     expect(unlockedContent({ ...newSave('u'), collapses: 5 }).regions).toHaveLength(6);
   });
 
-  it('Titã começa a vida nova com poeira extra (1.500 por nível, sem a fração da página)', () => {
+  it('a vida nova nasce com a poeira inicial do Cofre (nenhum grimório comum dá poeira de largada)', () => {
     const s = readyToCollapse(withBuild(newSave('ti'), { titan: 1 }));
     const after = collapse({ ...s, run: { ...s.run, build: { titan: 1 } } });
     // A vida nova nasce sem os grimórios da vida: só o Cofre vale. Holmberg 15A começa a vida com poeira.
@@ -1199,7 +1199,7 @@ describe('robustez numérica', () => {
       expect(g.effects.length).toBeGreaterThan(0);
       expect(g.text.length).toBeGreaterThan(0);
     }
-    expect(GRIMOIRES.filter((g) => g.unlockedAtCollapse === 0)).toHaveLength(10);
+    expect(GRIMOIRES.filter((g) => g.unlockedAtCollapse === 0)).toHaveLength(15);
   });
 });
 

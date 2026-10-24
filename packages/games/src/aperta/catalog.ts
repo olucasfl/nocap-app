@@ -191,7 +191,7 @@ function grim(
   return { id, name, family, category, text, art, effects, unlockedAtCollapse };
 }
 
-/** Os 14 grimórios (spec 042). Cada um faz uma coisa só; nenhum mexe em geradores (isso é das Melhorias e da Árvore). */
+/** Os 22 grimórios (spec 042 e adendo). Cada um faz uma coisa só; nenhum mexe em geradores (isso é das Melhorias e da Árvore). */
 export const GRIMOIRES: readonly GrimoireDef[] = [
   // Toque
   grim('moon', 'Lua', 'moons', 'touch', 'A cada 10 toques, o 10º toque rende mais poeira.', 'esfera cinza clara com crateras', [
@@ -206,6 +206,15 @@ export const GRIMOIRES: readonly GrimoireDef[] = [
   grim('vega', 'Vega', 'stars', 'touch', 'Cada grimório que você tem soma poeira por toque.', 'estrela branco-azulada de 8 raios', [
     { kind: 'dustPerGrimoire', add: 0.15 },
   ]),
+  grim('jupiter', 'Júpiter', 'planets', 'touch', 'Combo (toques em sequência rápida) cheio: o toque rende bem mais poeira.', 'gigante listrada com a Grande Mancha', [
+    { kind: 'comboFullMult', mult: 1.25 },
+  ]),
+  grim('saturn', 'Saturno', 'planets', 'touch', 'Cada grimório raro que você tem soma poeira por toque.', 'esfera dourada com anéis largos', [
+    { kind: 'dustPerOwned', rarity: 'rare', add: 0.6 },
+  ]),
+  grim('capella', 'Capela', 'stars', 'touch', 'Cada colapso que você já fez soma poeira por toque.', 'estrela amarela dupla com halo quente', [
+    { kind: 'dustPerCollapse', add: 0.4 },
+  ], 1),
   // Objetos
   grim('venus', 'Vênus', 'planets', 'objects', 'Cometas e asteroides capturados rendem mais poeira.', 'esfera creme-dourada com faixas de nuvem', [
     { kind: 'objectReward', target: 'comet', add: 3 },
@@ -217,9 +226,15 @@ export const GRIMOIRES: readonly GrimoireDef[] = [
   grim('io', 'Io', 'moons', 'objects', 'O sinal forte do satélite fica mais forte.', 'esfera amarelo-enxofre com manchas vermelhas', [
     { kind: 'satelliteMult', add: 0.5 },
   ]),
+  grim('europa', 'Europa', 'moons', 'objects', 'Satélites capturados rendem mais poeira.', 'esfera de gelo rachada com linhas ocre', [
+    { kind: 'objectReward', target: 'satellite', add: 4 },
+  ]),
   grim('halley', 'Halley', 'small-bodies', 'objects', 'Todos os objetos rendem mais e aparecem mais cedo.', 'núcleo claro com cauda azul', [
     { kind: 'objectReward', target: 'all', add: 1 },
     { kind: 'spawnCut', sec: 3 },
+  ], 1),
+  grim('ganymede', 'Ganimedes', 'moons', 'objects', 'Os objetos comuns aparecem bem mais cedo.', 'esfera cinza-marrom com sulcos claros', [
+    { kind: 'spawnCut', sec: 8 },
   ], 1),
   grim('antares', 'Antares', 'stars', 'objects', 'A Estrela Dourada vem mais cedo e fica mais tempo.', 'gigante vermelha com brilho', [
     { kind: 'rareCut', sec: 25 },
@@ -232,10 +247,18 @@ export const GRIMOIRES: readonly GrimoireDef[] = [
   grim('phobos', 'Fobos', 'moons', 'luck', 'Capturar um objeto dá energia.', 'rocha irregular com uma cratera grande', [
     { kind: 'onCapture', energyTouches: 1 },
   ]),
-  grim('titan', 'Titã', 'moons', 'luck', 'Cada vida começa com poeira e cada compra devolve um pouco.', 'esfera laranja com névoa', [
-    { kind: 'startDust', amount: 100 },
-    { kind: 'buyRefund', touches: 1 },
+  grim('titan', 'Titã', 'moons', 'luck', 'Cada melhoria que você compra devolve um pouco da poeira gasta.', 'esfera laranja com névoa', [
+    { kind: 'buyRefund', touches: 2 },
   ]),
+  grim('polaris', 'Polaris', 'stars', 'luck', 'Combo (toques em sequência rápida) cheio: cada toque dá um pouco de energia a mais.', 'estrela branca fixa com cruz de luz', [
+    { kind: 'comboFullEnergy', add: 0.3 },
+  ]),
+  grim('proxima', 'Proxima', 'stars', 'luck', 'A barra de energia do próximo grimório fica menor.', 'anã vermelha pequena com chama', [
+    { kind: 'energyStepPct', pct: -3 },
+  ]),
+  grim('cassiopeia', 'Cassiopeia', 'stars', 'luck', 'Cartas épicas e lendárias aparecem mais nas escolhas.', 'cinco estrelas em W com poeira violeta', [
+    { kind: 'rarityBoost', add: 2 },
+  ], 2),
   grim('betelgeuse', 'Betelgeuse', 'stars', 'luck', 'Dá trocas de carta a mais em cada escolha.', 'gigante laranja com manchas', [
     { kind: 'choiceExtra', reroll: 1 },
   ]),

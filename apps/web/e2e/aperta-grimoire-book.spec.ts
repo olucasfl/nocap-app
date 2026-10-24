@@ -63,9 +63,9 @@ for (const size of SIZES) {
       const skip = page.getByRole('button', { name: 'Pular história' });
       if (await skip.isVisible({ timeout: 1500 }).catch(() => false)) await skip.click();
       await page.getByRole('button', { name: /^Grimórios/ }).click();
-      await expect(page.locator('.ap-album-count')).toContainText('de 56 versões descobertas');
+      await expect(page.locator('.ap-album-count')).toContainText('de 88 versões descobertas');
       await expect(page.locator('.ap-album-count')).toContainText('5');
-      await expect(page.locator('.ap-album > li')).toHaveCount(14);
+      await expect(page.locator('.ap-album > li')).toHaveCount(22);
       // A Lua tem Comum e Raro; os outros dois espaços ficam ???.
       const moon = page.locator('.ap-album > li', { hasText: 'Lua' });
       await expect(moon.locator('.ap-slot.is-found')).toHaveCount(2);

@@ -50,8 +50,8 @@ describe('melhorias e grimórios não competem', () => {
     }
   });
 
-  it('o catálogo tem 14 grimórios e os ids não se repetem', () => {
-    expect(GRIMOIRES).toHaveLength(14);
+  it('o catálogo tem 22 grimórios e os ids não se repetem', () => {
+    expect(GRIMOIRES).toHaveLength(22);
     expect(new Set(GRIMOIRES.map((g) => g.id)).size).toBe(GRIMOIRES.length);
   });
 
@@ -112,12 +112,23 @@ describe('categorias de grimório (spec 042)', () => {
     for (const g of GRIMOIRES) expect(ids.has(g.category), g.id).toBe(true);
   });
 
-  it('cada categoria tem de 4 a 5 grimórios', () => {
+  it('cada categoria tem de 6 a 9 grimórios', () => {
     for (const c of GRIMOIRE_CATEGORIES) {
       const n = GRIMOIRES.filter((g) => g.category === c.id).length;
-      expect(n, c.id).toBeGreaterThanOrEqual(4);
-      expect(n, c.id).toBeLessThanOrEqual(5);
+      expect(n, c.id).toBeGreaterThanOrEqual(6);
+      expect(n, c.id).toBeLessThanOrEqual(9);
     }
+  });
+
+  it('nenhum grimório dá algo "no começo da vida": o que vale é o que se faz durante a rodada', () => {
+    for (const g of GRIMOIRES) expect(g.effects.map((e) => e.kind), g.id).not.toContain('startDust');
+    expect(GRIMOIRES.some((g) => /começa/i.test(g.text))).toBe(false);
+  });
+
+  it('o jogador tem de 12 a 20 grimórios para sortear já na primeira vida', () => {
+    const first = GRIMOIRES.filter((g) => g.unlockedAtCollapse === 0).length;
+    expect(first).toBeGreaterThanOrEqual(12);
+    expect(first).toBeLessThanOrEqual(20);
   });
 
   it('a categoria bate com o que o grimório faz', () => {
@@ -126,7 +137,7 @@ describe('categorias de grimório (spec 042)', () => {
       expect(kindsOf(g.id).some((k) => ['objectReward', 'spawnCut', 'rareCut', 'rareLife', 'satelliteMult'].includes(k)), g.id).toBe(true);
     }
     for (const g of GRIMOIRES.filter((x) => x.category === 'touch')) {
-      expect(kindsOf(g.id).some((k) => ['everyNthTouch', 'comboFullDust', 'comboWindow', 'dustPerGrimoire'].includes(k)), g.id).toBe(true);
+      expect(kindsOf(g.id).some((k) => ['everyNthTouch', 'comboFullDust', 'comboFullMult', 'comboWindow', 'dustPerGrimoire', 'dustPerOwned', 'dustPerCollapse'].includes(k)), g.id).toBe(true);
     }
   });
 

@@ -1,4 +1,4 @@
-import { UPGRADES, newSave, pickInto, type SaveState } from '@nocap/games';
+import { GRIMOIRES, UPGRADES, newSave, pickInto, upgradeIndex, type SaveState } from '@nocap/games';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { ChoiceModal } from './ChoiceModal';
@@ -77,6 +77,30 @@ describe('menu de regiões', () => {
     expect(ctl.getSnapshot().state.regionId).toBe('asteroid-belt');
     await ctl.save(true);
     expect((await store.load(1))?.regionId).toBe('asteroid-belt');
+  });
+});
+
+describe('"Você ganha" dos grimórios novos', () => {
+  // Com o Ritmo Firme (combo) comprado e 3 colapsos, todo grimório tem um número que muda e aparece na carta.
+  const ready = (): SaveState => {
+    const s = newSave('novos', 0);
+    const levels = s.run.upgradeLevels.slice();
+    levels[upgradeIndex('rhythm')] = 1;
+    return { ...s, tutorial: 'done', collapses: 3, run: { ...s.run, upgradeLevels: levels } };
+  };
+
+  it.each(['jupiter', 'polaris', 'europa', 'ganymede', 'proxima', 'cassiopeia', 'titan', 'capella'])('%s mostra o que muda', (id) => {
+    expect(cardGain(ready(), id), id).not.toBeNull();
+  });
+
+  it('Saturno mostra ganho quando já há um grimório raro no livro', () => {
+    const s = ready();
+    const withRare = { ...s, run: { ...s.run, ...pickInto(s.run, 'moon', 'rare') } };
+    expect(cardGain(withRare, 'saturn')).toMatch(/Poeira por toque/);
+  });
+
+  it('o texto da carta do Titã não promete poeira no começo da vida', () => {
+    expect(GRIMOIRES.find((g) => g.id === 'titan')!.text).not.toMatch(/começa|inicial/i);
   });
 });
 

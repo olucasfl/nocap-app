@@ -83,3 +83,12 @@ Pedido do Lucas depois de testar no iPhone: coisas cortadas na borda, o aviso de
 - **Aviso de rede:** um ícone pequeno enquanto não há conexão; o texto aparece num balão que some sozinho (5 s) e volta ao tocar no ícone; ao voltar a internet, um aviso curto de 3,5 s. Conflito de save continua sendo um diálogo.
 - **Tamanhos:** fontes do HUD, botões e dock um pouco menores no celular; o painel do topo é uma coluna estreita.
 
+## Mais grimórios e Titã (adendo, 24/10/2026)
+
+Pedido do Lucas: grimório que dá algo no começo de cada vida é ruim; e queria de 12 a 20 grimórios ou mais (só havia 10 na primeira vida).
+
+- **Titã:** perdeu a poeira inicial. Agora "cada melhoria que você compra devolve um pouco da poeira gasta" (2 toques por nível Comum).
+- **22 grimórios no total, 15 na primeira vida.** Novos: Júpiter, Saturno, Europa, Polaris e Proxima (colapso 0); Capela e Ganimedes (colapso 1); Cassiopeia (colapso 2). Categorias: Toque 7, Objetos 7, Energia e sorte 8. Nenhum mexe em gerador nem usa efeito de largada.
+- **Regra de teste:** nenhum grimório pode ter `startDust` nem texto de "começa"; a primeira vida precisa de 12 a 20 grimórios.
+- **Balanço:** os efeitos usam primitivas que o motor já tinha, com números parecidos com os dos grimórios existentes. O simulador oficial foi rodado depois da mudança e passou inteiro (17 de 17, 14 min), inclusive o guard da árvore que estava vermelho.
+

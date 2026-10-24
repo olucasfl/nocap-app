@@ -146,6 +146,10 @@ const STAT_LINES: StatLine[] = [
   { label: 'Sinal forte', read: (s) => s.objects.signalMult, show: (v) => `x${formatDecimal(v, 1)}` },
   { label: 'Energia ao capturar', read: (s) => s.objects.onCaptureEnergyTouches, show: touches },
   { label: 'Poeira inicial', read: (s) => s.startDust, show: (v) => formatNumber(v) },
+  { label: 'Toque no combo máximo', read: (s) => s.combo.fullMult, show: (v) => `x${formatDecimal(v, 2)}` },
+  { label: 'Devolução ao comprar', read: (s) => s.buyRefundTouches, show: touches },
+  { label: 'Espera pelo próximo objeto', read: (s) => s.objects.spawnMaxSec, show: secs },
+  { label: 'Peso das cartas épicas e lendárias', read: (s) => s.choice.rarityBoost, show: (v) => `+${formatDecimal(v, 0)}` },
   { label: 'Energia até o próximo', read: (s) => s.energyStepFactor, show: pct },
 ];
 
