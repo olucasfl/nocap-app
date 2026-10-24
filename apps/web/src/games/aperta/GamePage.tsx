@@ -47,7 +47,15 @@ export function GamePage({ name, notice, onClose, children }: Props) {
           </span>
           <h2 id={`ap-sheet-${name}`}>{PAGE_TITLE[name]}</h2>
           <button type="button" className="ap-x" data-tut="page-close" aria-label={`Fechar ${PAGE_TITLE[name]}`} onClick={onClose}>
-            X
+            <span className="ap-x-x" aria-hidden="true">
+              X
+            </span>
+            <span className="ap-x-back" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path d="M15 5l-7 7 7 7" />
+              </svg>
+              <b>Voltar</b>
+            </span>
           </button>
         </header>
         <div className="ap-sbody" data-tut={`${name}-page`}>

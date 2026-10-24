@@ -74,3 +74,12 @@ Pedido do Lucas: tutorial de jogo grande, com bloqueios que forcem a pessoa a fa
 - **Passos:** 1 toque (cartão de boas-vindas; nos toques 3 a 5 o contador de poeira acende), 2 abrir Melhorias e comprar, 3 fechar a página, 4 barra de energia acesa, 5 escolher o grimório, 6 abrir Grimórios (explica as 4 raridades). Jogo livre: conquistas, objetos, **geradores (novo)**, colapso e árvore. Ao ver todas as dicas aparece "Tutorial concluído".
 - **Apresentação:** anel com ondas, mão que toca, seta que escolhe o lado com espaço, chip do passo, cartão posicionado onde não cobre nada. Só `transform`/`opacity` animam; movimento reduzido tira as ondas, a mão e as entradas.
 
+## Celular: margens, abas em tela cheia e aviso de rede (adendo, 24/10/2026)
+
+Pedido do Lucas depois de testar no iPhone: coisas cortadas na borda, o aviso de offline que não saía, abas em tela inteira e UI um pouco menor.
+
+- **Margens de segurança:** nada fica rente à borda (16 px mais `safe-area-inset`, remapeado quando o jogo gira 90°).
+- **Abas em tela cheia:** Melhorias, Grimórios, Conquistas e Cofre abrem cobrindo o jogo, com `Voltar` no canto superior esquerdo (a Árvore já era assim).
+- **Aviso de rede:** um ícone pequeno enquanto não há conexão; o texto aparece num balão que some sozinho (5 s) e volta ao tocar no ícone; ao voltar a internet, um aviso curto de 3,5 s. Conflito de save continua sendo um diálogo.
+- **Tamanhos:** fontes do HUD, botões e dock um pouco menores no celular; o painel do topo é uma coluna estreita.
+

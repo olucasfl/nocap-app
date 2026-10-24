@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import type { Conflict } from './api-save-store';
-import { SYNC_STRIP, SyncView } from './SyncNotice';
+import { SYNC_BACK, SYNC_STRIP, SyncView } from './SyncNotice';
 
 const noop = () => {};
 const base = newSave('a', 0);
@@ -25,13 +25,28 @@ describe('aviso de sincronização', () => {
     expect(view({ sync: 'saving' })).toBe('');
   });
 
-  it('avisa offline, erro e sessão encerrada sem travar o jogo', () => {
+  it('avisa offline, erro e sessão encerrada com um ícone e um balão, sem travar o jogo', () => {
     for (const sync of ['offline', 'error', 'signed-out'] as const) {
       const html = view({ sync });
       expect(html).toContain('role="status"');
       expect(html).toContain(SYNC_STRIP[sync]!.slice(0, 20));
+      expect(html).toContain('ap-net-ic');
       expect(html).not.toContain('dialog');
     }
+  });
+
+  it('depois de alguns segundos só o ícone fica; o texto continua no rótulo dele', () => {
+    const html = view({ sync: 'offline', showToast: false });
+    expect(html).toContain('ap-net-ic');
+    expect(html).not.toContain('ap-net-toast');
+    expect(html).toContain(`aria-label="${SYNC_STRIP.offline}"`);
+  });
+
+  it('com a internet de volta avisa uma vez, sem ícone', () => {
+    const html = view({ sync: 'saved', recovered: true });
+    expect(html).toContain(SYNC_BACK);
+    expect(html).not.toContain('ap-net-ic');
+    expect(view({ sync: 'saved', recovered: true, showToast: false })).toBe('');
   });
 
   it('conflito abre o diálogo com as 3 escolhas e os colapsos de cada lado', () => {
@@ -57,9 +72,13 @@ describe('aviso de sincronização', () => {
     expect(view({ sync: 'conflict', conflict, failed: true })).toContain('role="alert"');
   });
 
-  it('o CSS não anima nem transita e dá foco visível', () => {
+  it('o CSS só anima transform e opacity (e respeita movimento reduzido) e dá foco visível', () => {
     const css = readFileSync(join(__dirname, 'sync-notice.css'), 'utf8');
-    expect(css).not.toMatch(/transition\s*:|@keyframes/);
+    expect(css).not.toMatch(/transition\s*:/);
+    for (const [, body] of css.matchAll(/@keyframes [\w-]+ \{([\s\S]*?)\n\}/g)) {
+      for (const [, prop] of body!.matchAll(/([a-z-]+)\s*:/g)) expect(['transform', 'opacity']).toContain(prop);
+    }
+    expect(css).toMatch(/prefers-reduced-motion:\s*reduce/);
     expect(css).toMatch(/\.ap-sync-btn:focus-visible/);
     expect(css).toMatch(/min-height:\s*48px/);
   });

@@ -16,45 +16,62 @@ body:has(.ap) {
 @container ap (max-height: 520px) and (orientation: landscape) {
   /* ---------- HUD (canto de cima à esquerda) e botões do topo ---------- */
   .ap .ap-hud {
-    left: 8px;
-    right: 8px;
-    top: 8px;
+    left: var(--eL);
+    right: var(--eR);
+    top: var(--eT);
     grid-template-columns: auto 1fr auto auto;
     gap: 6px;
   }
+  /* Painel do topo em coluna estreita: nunca invade a área do botão central (o campo começa logo depois dele). */
   .ap .ap-hud .ap-hudp {
-    grid-template-columns: auto auto;
-    gap: 2px 14px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+    width: min(224px, 40cqw);
     min-width: 0;
-    padding: 5px 9px;
+    padding: 4px 8px;
   }
   .ap .ap-hudrow {
     display: flex;
     gap: 6px;
   }
   .ap .ap-hudrow b {
-    font-size: 19px;
+    font-size: 17px;
   }
   .ap .ap-hudrow-2 b {
-    font-size: 16px;
+    font-size: 14px;
   }
   .ap .ap-hudrow small {
     font-size: 9px;
     letter-spacing: 0.08em;
   }
   .ap .ap-ico {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     border-width: 2px;
   }
   .ap .ap-hud .ap-hudp .ap-hudgoal {
     grid-column: 1 / -1;
     padding: 3px 6px;
+    gap: 3px 6px;
+  }
+  .ap .ap-hudgoal .ap-goaltxt small {
+    font-size: 8.5px;
+    letter-spacing: 0.02em;
+  }
+  .ap .ap-hudgoal .ap-goaltxt b {
+    font-size: 12px;
+  }
+  .ap .ap-hudgoal .ap-goalcta {
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+  .ap .ap-hudgoal .ap-goalbar {
+    height: 7px;
   }
   .ap .ap-hbtn {
-    min-height: 38px;
-    padding: 0 12px;
-    font-size: 12px;
+    min-height: 34px;
+    padding: 0 10px;
+    font-size: 11px;
     border-width: 2px;
     box-shadow: 0 4px 0 var(--space-blue-dark), inset 0 2px 0 rgba(255, 255, 255, 0.4);
   }
@@ -71,40 +88,40 @@ body:has(.ap) {
 
   /* ---------- campo, energia, dock ---------- */
   .ap .ap-field {
-    left: 236px;
-    right: 112px;
-    top: 52px;
-    bottom: 62px;
+    left: calc(228px + var(--eL));
+    right: calc(104px + var(--eR));
+    top: calc(44px + var(--eT));
+    bottom: calc(54px + var(--eB));
   }
   .ap .ap-energy {
-    right: 6px;
-    top: 52px;
-    bottom: 62px;
+    right: var(--eR);
+    top: calc(44px + var(--eT));
+    bottom: calc(54px + var(--eB));
     gap: 3px;
   }
   .ap .ap-dock {
-    left: 8px;
-    right: 8px;
-    bottom: 8px;
+    left: var(--eL);
+    right: var(--eR);
+    bottom: var(--eB);
     gap: 8px;
   }
   .ap .ap-dockb {
-    height: 48px;
-    min-width: 48px;
-    padding: 0 10px;
+    height: 44px;
+    min-width: 44px;
+    padding: 0 9px;
     border-width: 2px;
-    font-size: 14px;
+    font-size: 13px;
     box-shadow: 0 4px 0 #0a1030, inset 0 2px 0 rgba(255, 255, 255, 0.2);
   }
   .ap .ap-dock-i {
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
   }
   .ap .ap-dockb-big {
     flex: none;
-    min-width: 150px;
+    min-width: 132px;
     margin-left: auto;
-    font-size: 15px;
+    font-size: 14px;
   }
   .ap .ap-badge {
     top: -9px;
@@ -115,9 +132,9 @@ body:has(.ap) {
     line-height: 16px;
   }
   .ap .ap-skillbar {
-    left: 8px;
+    left: var(--eL);
     right: auto;
-    bottom: 62px;
+    bottom: calc(54px + var(--eB));
     justify-content: flex-start;
     max-width: 224px;
   }
@@ -128,14 +145,17 @@ body:has(.ap) {
 
   /* ---------- avisos: uma coluna estreita à esquerda, entre o HUD e a barra de habilidades ---------- */
   .ap .ap-banners {
-    left: 8px;
+    left: var(--eL);
     right: auto;
-    top: 112px;
-    bottom: 112px;
+    top: calc(112px + var(--eT));
+    bottom: calc(60px + var(--eB));
     width: 224px;
     transform: none;
     align-items: stretch;
     gap: 6px;
+  }
+  .ap .ap-game:has(.ap-skillbar) .ap-banners {
+    bottom: calc(108px + var(--eB));
   }
   .ap .ap-pickup {
     padding: 5px 10px 5px 6px;
@@ -156,17 +176,46 @@ body:has(.ap) {
   }
 
   /* ---------- páginas (Melhorias, Grimórios, Conquistas, Cofre): tela inteira, com o X no cabeçalho ---------- */
-  .ap .ap-sheetwrap {
-    inset: 6px;
+  /* No celular toda aba abre em tela cheia, com Voltar no canto: o conteúdo ganha a tela inteira para se encaixar. */
+  .ap .ap-sheetwrap,
+  .ap .ap-game .ap-sheetwrap,
+  .ap .ap-game.has-goal .ap-sheetwrap {
+    inset: 0;
     z-index: 36;
   }
   .ap .ap-sheet {
     width: 100%;
-    border-radius: 14px;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    /* Opaco: a página cobre o jogo inteiro e nada dele deve aparecer por trás do cabeçalho. */
+    background: linear-gradient(180deg, #0e1638, #070b1e);
   }
   .ap .ap-shead {
     gap: 10px;
-    padding: 6px 12px;
+    padding: calc(var(--sa-t) + 8px) var(--eR) 8px var(--eL);
+  }
+  .ap .ap-x-x {
+    display: none;
+  }
+  .ap .ap-x-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .ap .ap-x-back svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .ap .ap-x-back b {
+    font: 700 14px/1 var(--space-font-display);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
   }
   .ap .ap-shead-icon {
     width: 30px;
@@ -176,17 +225,20 @@ body:has(.ap) {
     font-size: 17px;
   }
   .ap .ap-x {
-    width: 38px;
-    height: 38px;
+    order: -1;
+    width: auto;
+    min-width: 44px;
+    height: 40px;
+    padding: 0 14px 0 8px;
   }
   .ap .ap-sbody {
     gap: 10px;
-    padding: 10px 12px 14px;
+    padding: 10px var(--eR) calc(var(--sa-b) + 16px) var(--eL);
   }
 
   /* ---------- modais (escolha, meta, colapso, regiões) ---------- */
   .ap .ap-modal-game {
-    padding: 6px;
+    padding: max(8px, var(--sa-t)) max(8px, var(--sa-r)) max(8px, var(--sa-b)) max(8px, var(--sa-l));
   }
   .ap .ap-mcard-game {
     gap: 6px;
@@ -386,7 +438,7 @@ body:has(.ap) {
   /* ---------- árvore: cabeçalho mais baixo e o detalhe do nó num cartão à direita ---------- */
   .ap .ap-tree .ap-th {
     gap: 5px;
-    padding: 6px 8px 12px;
+    padding: calc(var(--sa-t) + 10px) var(--eR) 12px var(--eL);
   }
   .ap .ap-tr-back,
   .ap .ap-tr-ico {
@@ -400,7 +452,13 @@ body:has(.ap) {
   .ap .ap-tree .ap-tree-frag b {
     font-size: 20px;
   }
+  .ap .ap-tree .ap-th-chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding: 2px;
+  }
   .ap .ap-tree .ap-chipf {
+    flex: none;
     min-height: 30px;
     padding: 0 10px;
     font-size: 11px;
@@ -410,18 +468,18 @@ body:has(.ap) {
   }
   .ap .ap-tree .ap-tp-wrap {
     left: auto;
-    right: 8px;
-    top: 90px;
-    bottom: 8px;
+    right: var(--eR);
+    top: calc(var(--sa-t) + 92px);
+    bottom: var(--eB);
     width: min(300px, 46cqw);
     max-height: none;
   }
   .ap .ap-tree .ap-tg-tools {
-    left: 8px;
+    left: var(--eL);
   }
   .ap .ap-tree .ap-tg-hint,
   .ap .ap-tree .ap-tg-closed {
-    bottom: 12px;
+    bottom: var(--eB);
   }
 
   /* ---------- evolução de raridade ---------- */
@@ -457,7 +515,7 @@ body:has(.ap) {
 /* ---------- título e saves em celular deitado ---------- */
 @container ap (max-height: 520px) and (orientation: landscape) {
   .ap .ap-title {
-    padding: 10px 5cqw;
+    padding: var(--eT) max(5cqw, var(--eR)) var(--eB) max(5cqw, var(--eL));
   }
   .ap .ap-titlebox {
     width: min(300px, 56cqw);
@@ -530,8 +588,8 @@ body:has(.ap) {
     display: none;
   }
   .ap .ap-banners {
-    top: 102px;
-    bottom: 70px;
+    top: calc(112px + var(--eT));
+    bottom: calc(60px + var(--eB));
   }
   .ap .ap-newstrip {
     padding: 6px 8px;
@@ -555,5 +613,14 @@ body:has(.ap) {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+}
+
+/* Celular largo (844 px ou mais): sobra espaço, o painel do topo volta a ter duas colunas. */
+@container ap (max-height: 520px) and (orientation: landscape) and (min-width: 800px) {
+  .ap .ap-hud .ap-hudp {
+    grid-template-columns: auto auto;
+    gap: 2px 14px;
+    width: auto;
   }
 }

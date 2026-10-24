@@ -127,7 +127,7 @@ export function TutorialCoach({ view, onDismiss, onSkip, skipInCard }: Props) {
         if (rowRect) avoid.push(rowRect);
         const lowTarget = !!hole && hole.y + hole.h / 2 > bounds.h * 0.5;
         const anchor = { x: (bounds.w - cw) / 2, y: lowTarget ? Math.min(96, bounds.h * 0.28) : bounds.h - ch - 10 };
-        const pos = placeCard({ w: cw, h: ch }, bounds, avoid, anchor, 8, 8);
+        const pos = placeCard({ w: cw, h: ch }, bounds, avoid, anchor, 14, 8);
         card = { x: pos.x, y: pos.y, w: cw, h: ch };
       }
       const next: Geo = { hole, glow, pass, keep, w: box.width, h: box.height, card };

@@ -94,5 +94,40 @@ for (const size of sizes) {
       expect(b.x + b.width).toBeLessThanOrEqual(size.w + 1);
       expect(b.y + b.height).toBeLessThanOrEqual(size.h + 1);
     });
+
+    test('toda aba abre em tela cheia, com Voltar, e fecha', async ({ page }, info) => {
+      test.skip(info.project.name !== 'desktop', 'um projeto basta');
+      await installAccount(page, midSave());
+      await page.goto('/arcade/aperta');
+      await enterGame(page);
+      for (const name of [/Melhorias/, /Grimórios/, /Conquistas/, /Cofre/]) {
+        await page.getByRole('button', { name }).first().click({ force: true });
+        const wrap = page.locator('.ap-sheetwrap');
+        await expect(wrap).toBeVisible();
+        // Mesmas dimensões do jogo (layout, sem a rotação do celular em pé): a aba cobre a tela toda.
+        const full = await page.evaluate(() => {
+          const ap = document.querySelector<HTMLElement>('.ap')!;
+          const w = document.querySelector<HTMLElement>('.ap-sheetwrap')!;
+          return { same: w.offsetWidth === ap.clientWidth && w.offsetHeight === ap.clientHeight, back: !!document.querySelector('.ap-x-back') && getComputedStyle(document.querySelector('.ap-x-back')!).display !== 'none' };
+        });
+        expect(full.same, String(name)).toBe(true);
+        expect(full.back, String(name)).toBe(true);
+        await expect(page.locator('.ap-x-back')).toContainText('Voltar');
+        await page.locator('.ap-x').click();
+        await expect(wrap).toHaveCount(0);
+      }
+    });
+
+    test('nada fica rente à borda: HUD, dock e energia respeitam a margem de segurança', async ({ page }, info) => {
+      test.skip(info.project.name !== 'desktop', 'um projeto basta');
+      await installAccount(page, midSave());
+      await page.goto('/arcade/aperta');
+      await enterGame(page);
+      const edges = await page.evaluate(() => {
+        const px = (sel: string, prop: string) => parseFloat(getComputedStyle(document.querySelector(sel)!).getPropertyValue(prop));
+        return { hudL: px('.ap-hud', 'left'), hudT: px('.ap-hud', 'top'), hudR: px('.ap-hud', 'right'), dockL: px('.ap-dock', 'left'), dockB: px('.ap-dock', 'bottom'), enR: px('.ap-energy', 'right') };
+      });
+      for (const [k, v] of Object.entries(edges)) expect(v, k).toBeGreaterThanOrEqual(14);
+    });
   });
 }

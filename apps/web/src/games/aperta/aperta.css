@@ -15,6 +15,17 @@
   background: var(--space-bg);
   color: var(--space-text);
   font-family: var(--space-font-text);
+  /* Margens de segurança do celular: cantos arredondados e entalhe cortam o que fica rente à borda. Os quatro lados são do
+     jogo (não da janela): em pé a tela gira, então cada lado do jogo olha para outro lado do aparelho (ver abaixo). */
+  --ap-edge: 16px;
+  --sa-t: env(safe-area-inset-top, 0px);
+  --sa-r: env(safe-area-inset-right, 0px);
+  --sa-b: env(safe-area-inset-bottom, 0px);
+  --sa-l: env(safe-area-inset-left, 0px);
+  --eT: calc(var(--ap-edge) + var(--sa-t));
+  --eR: calc(var(--ap-edge) + var(--sa-r));
+  --eB: calc(var(--ap-edge) + var(--sa-b));
+  --eL: calc(var(--ap-edge) + var(--sa-l));
 }
 /*
  * Celular em pé: o jogo só existe de lado (pedido do Lucas). Sem travar a orientação do aparelho (iOS não deixa), a tela inteira
@@ -30,6 +41,11 @@
     height: 100vw;
     transform-origin: 0 0;
     transform: translateX(100vw) rotate(90deg);
+    /* Girado 90° no sentido horário: a esquerda do jogo é o topo do aparelho, o topo do jogo é a direita, etc. */
+    --sa-l: env(safe-area-inset-top, 0px);
+    --sa-t: env(safe-area-inset-right, 0px);
+    --sa-r: env(safe-area-inset-bottom, 0px);
+    --sa-b: env(safe-area-inset-left, 0px);
   }
 }
 .ap *,

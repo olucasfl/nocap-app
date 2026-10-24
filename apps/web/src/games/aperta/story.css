@@ -364,7 +364,7 @@
 /* Celular deitado (e qualquer tela baixa): a cena à esquerda, o texto à direita. */
 @container ap (max-height: 520px) and (orientation: landscape) {
   .ap-story {
-    padding: 8px 14px;
+    padding: var(--eT) var(--eR) var(--eB) var(--eL);
   }
   .ap-story-box {
     width: min(100%, 940px);
@@ -375,7 +375,7 @@
   }
   .st-stage {
     width: 100%;
-    max-height: calc(100cqh - 24px);
+    max-height: calc(100cqh - var(--eT) - var(--eB));
     border-radius: 14px;
   }
   .st-copy {

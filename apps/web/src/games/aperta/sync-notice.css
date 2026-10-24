@@ -1,18 +1,69 @@
 /* Avisos de sincronização do Aperta! (spec 038, 10.4). Só tokens --space-*; sem animação. */
-.ap-sync-strip {
+/* Aviso de rede: só um ícone pequeno fica na tela; o texto aparece num balão que some sozinho (e volta ao tocar no ícone). */
+.ap-net {
   position: fixed;
-  top: 8px;
+  top: var(--eT, 12px);
   left: 50%;
   z-index: 35;
-  width: min(560px, calc(100% - 24px));
-  padding: 8px 12px;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
   transform: translateX(-50%);
+  pointer-events: none;
+}
+.ap-net-ic {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 2px solid var(--space-ink);
+  border-radius: 50%;
+  background: var(--space-panel-2);
+  color: var(--space-gold);
+  box-shadow: 0 3px 0 var(--space-ink);
+  pointer-events: auto;
+}
+.ap-net-ic svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ap-net-ic.is-error {
+  color: #ff8d83;
+}
+.ap-net-toast {
+  width: min(340px, 70cqw);
+  padding: 8px 12px;
   border: 3px solid var(--space-ink);
   border-radius: 12px;
   background: var(--space-panel-2);
   color: var(--space-text);
-  font: 500 13px/1.35 var(--space-font-body);
+  font: 500 12.5px/1.35 var(--space-font-body);
   text-align: center;
+  animation: ap-net-in 0.3s ease-out both;
+}
+.ap-net-toast.is-ok {
+  border-color: var(--space-cyan);
+}
+@keyframes ap-net-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ap-net-toast {
+    animation: none;
+  }
 }
 .ap-sync-wrap {
   position: fixed;
