@@ -24,7 +24,7 @@
   aspect-ratio: 1;
   margin-left: calc(var(--z) / -2);
   margin-top: calc(var(--z) / -2);
-  opacity: 0.45;
+  opacity: 1;
   /* Contra-gira para o astro ficar de pé enquanto a órbita roda. */
   animation: apo-spin var(--d) linear infinite reverse;
   animation-delay: calc(var(--d) * var(--phase) * -1);

@@ -131,3 +131,74 @@ for (const size of sizes) {
     });
   });
 }
+
+/**
+ * Virar o aparelho (iPhone 17: 402x874 em pé, 874x402 deitado) não pode mudar nada no jogo: o layout dentro da raiz `.ap`
+ * é o mesmo nos dois sentidos e, depois de a medida assentar, não sobra estado intermediário.
+ */
+test.describe('virar o aparelho', () => {
+  test.use({ viewport: { width: 402, height: 874 }, isMobile: true, hasTouch: true, deviceScaleFactor: 3 });
+
+  const layout = (page: Page) =>
+    page.evaluate(() => {
+      const ap = document.querySelector<HTMLElement>('.ap')!;
+      const box = (sel: string) => {
+        const e = document.querySelector<HTMLElement>(sel);
+        return e ? [e.offsetLeft, e.offsetTop, e.offsetWidth, e.offsetHeight] : null;
+      };
+      return {
+        frame: ap.dataset.frame,
+        size: [ap.clientWidth, ap.clientHeight],
+        transform: getComputedStyle(ap).transform,
+        parts: { hud: box('.ap-hud'), hudp: box('.ap-hudp'), field: box('.ap-field'), energy: box('.ap-energy'), dock: box('.ap-dock') },
+      };
+    });
+
+  test('o layout é o mesmo em pé e deitado, vire quantas vezes virar', async ({ page }, info) => {
+    test.skip(info.project.name !== 'desktop', 'um projeto basta');
+    await installAccount(page, midSave());
+    await enterGame(page);
+    const settle = () => page.waitForTimeout(900);
+    await settle();
+    const reference = await layout(page);
+    expect(reference.frame).toBe('rotated');
+    expect(reference.size).toEqual([874, 402]);
+    expect(reference.transform).not.toBe('none');
+
+    for (let i = 0; i < 4; i++) {
+      await page.setViewportSize({ width: 874, height: 402 });
+      await settle();
+      const flat = await layout(page);
+      expect(flat.frame, `deitado ${i}`).toBe('landscape');
+      expect(flat.size, `deitado ${i}`).toEqual([874, 402]);
+      expect(flat.transform, `deitado ${i}`).toBe('none');
+      // Mesmo layout dentro da raiz, em pé ou deitado.
+      expect(flat.parts, `deitado ${i}`).toEqual(reference.parts);
+
+      await page.setViewportSize({ width: 402, height: 874 });
+      await settle();
+      const upright = await layout(page);
+      expect(upright.frame, `em pé ${i}`).toBe('rotated');
+      expect(upright.size, `em pé ${i}`).toEqual([874, 402]);
+      expect(upright.parts, `em pé ${i}`).toEqual(reference.parts);
+    }
+  });
+
+  test('virar depressa, várias vezes seguidas, termina no modo certo e sem restos', async ({ page }, info) => {
+    test.skip(info.project.name !== 'desktop', 'um projeto basta');
+    await installAccount(page, midSave());
+    await enterGame(page);
+    for (let i = 0; i < 7; i++) {
+      await page.setViewportSize(i % 2 === 0 ? { width: 874, height: 402 } : { width: 402, height: 874 });
+      await page.waitForTimeout(30);
+    }
+    // O último foi 874x402 (deitado): depois de assentar não pode haver giro nenhum.
+    await page.waitForTimeout(1000);
+    const end = await layout(page);
+    expect(end.frame).toBe('landscape');
+    expect(end.size).toEqual([874, 402]);
+    expect(end.transform).toBe('none');
+    // E o jogo segue de pé na tela: o botão central responde ao toque.
+    await expect(page.getByRole('button', { name: 'Apertar o botão' })).toBeVisible();
+  });
+});

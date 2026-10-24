@@ -9,6 +9,13 @@ body:has(.ap) {
   overflow: hidden;
   overscroll-behavior: none;
 }
+/* O jogo é fixo na janela: a página atrás nunca rola nem estica (no iOS isso faz a barra do Safari subir e descer e o tamanho oscilar). */
+body:has(.ap) {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
 .ap {
   touch-action: manipulation;
 }
@@ -21,52 +28,6 @@ body:has(.ap) {
     top: var(--eT);
     grid-template-columns: auto 1fr auto auto;
     gap: 6px;
-  }
-  /* Painel do topo em coluna estreita: nunca invade a área do botão central (o campo começa logo depois dele). */
-  .ap .ap-hud .ap-hudp {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 2px;
-    width: min(224px, 40cqw);
-    min-width: 0;
-    padding: 4px 8px;
-  }
-  .ap .ap-hudrow {
-    display: flex;
-    gap: 6px;
-  }
-  .ap .ap-hudrow b {
-    font-size: 17px;
-  }
-  .ap .ap-hudrow-2 b {
-    font-size: 14px;
-  }
-  .ap .ap-hudrow small {
-    font-size: 9px;
-    letter-spacing: 0.08em;
-  }
-  .ap .ap-ico {
-    width: 18px;
-    height: 18px;
-    border-width: 2px;
-  }
-  .ap .ap-hud .ap-hudp .ap-hudgoal {
-    grid-column: 1 / -1;
-    padding: 3px 6px;
-    gap: 3px 6px;
-  }
-  .ap .ap-hudgoal .ap-goaltxt small {
-    font-size: 8.5px;
-    letter-spacing: 0.02em;
-  }
-  .ap .ap-hudgoal .ap-goaltxt b {
-    font-size: 12px;
-  }
-  .ap .ap-hudgoal .ap-goalcta {
-    padding: 4px 8px;
-    font-size: 10px;
-  }
-  .ap .ap-hudgoal .ap-goalbar {
-    height: 7px;
   }
   .ap .ap-hbtn {
     min-height: 34px;
@@ -683,14 +644,5 @@ body:has(.ap) {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-  }
-}
-
-/* Celular largo (844 px ou mais): sobra espaço, o painel do topo volta a ter duas colunas. */
-@container ap (max-height: 520px) and (orientation: landscape) and (min-width: 800px) {
-  .ap .ap-hud .ap-hudp {
-    grid-template-columns: auto auto;
-    gap: 2px 14px;
-    width: auto;
   }
 }

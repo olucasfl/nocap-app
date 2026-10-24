@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { useNavigate } from '@tanstack/react-router';
 import { useApertaAllowed } from '@/lib/aperta-access';
+import { useApertaFrame } from '@/lib/aperta-frame';
 import { releaseOrientation, tryLockLandscape } from '@/lib/aperta-orientation';
 import { useAuth } from '@/lib/auth';
 import { Sky } from './art';
@@ -18,6 +19,7 @@ import { TitleScreen } from './TitleScreen';
 import { useApertaGame } from './useApertaGame';
 import './aperta.css';
 import './story.css';
+import './hud.css';
 import './landscape.css';
 
 const FONTS_HREF =
@@ -49,7 +51,8 @@ export function ApertaPage() {
   useEffect(() => {
     if (allowed === false) void navigate({ to: '/', replace: true });
   }, [allowed, navigate]);
-  if (allowed !== true) return <main className="ap space-theme" aria-busy={allowed === null} />;
+  const frame = useApertaFrame();
+  if (allowed !== true) return <main className="ap space-theme" aria-busy={allowed === null} {...frame} />;
   return <ApertaGame />;
 }
 
@@ -65,6 +68,7 @@ function ApertaGame() {
   const store = useMemo(() => (userId ? createApiSaveStore(userId) : null), [userId]);
   const gameStore = useMemo(() => (store ? createSyncedGameStore(store) : null), [store]);
   const [screen, setScreen] = useState<Screen>({ name: 'title', saves: false });
+  const frame = useApertaFrame();
 
   function pick(save: SaveSummary) {
     setScreen(
@@ -73,7 +77,7 @@ function ApertaGame() {
   }
 
   return (
-    <main className={`ap space-theme${LOW_END ? ' is-lite' : ''}`}>
+    <main className={`ap space-theme${LOW_END ? ' is-lite' : ''}`} {...frame}>
       <Sky />
       {screen.name === 'title' && (
         <>

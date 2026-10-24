@@ -148,16 +148,16 @@ describe('Estrela Dourada: efeitos', () => {
     const st = effectiveStats(base);
     // 20 Satélites: 4/s de potencial contra um teto de 0,875/s.
     const idle = syncClock(base, 2).run.dust;
-    expect(idle).toBeCloseTo(st.autoDustCap * 0.25 * 2, 9);
+    expect(idle).toBeCloseTo(st.autoDustCap * 2, 9);
     let s = captureObject(gold('surge', base), 1, 2);
     expect(s.run.surgeUntil).toBe(47);
     const before = s.run.dust;
     s = syncClock(s, 4);
     expect(s.run.dust - before).toBeCloseTo(Math.min(st.autoDustPerSec, st.autoDustCap * 3) * 2, 9);
-    expect(s.run.dust - before).toBeGreaterThan(idle * 4);
+    expect(s.run.dust - before).toBeGreaterThan(idle);
     // Depois dos 45 s volta ao normal.
     const after = syncClock({ ...s, run: { ...s.run, surgeUntil: 4 } }, 6);
-    expect(after.run.dust - s.run.dust).toBeCloseTo(st.autoDustCap * 0.25 * 2, 9);
+    expect(after.run.dust - s.run.dust).toBeCloseTo(st.autoDustCap * 2, 9);
   });
 
   it('a Chuva entrega 5 min do ritmo normal, e a etiqueta mostra o mesmo valor', () => {

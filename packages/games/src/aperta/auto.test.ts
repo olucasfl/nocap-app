@@ -14,22 +14,23 @@ describe('autoRates (o que os geradores rendem agora)', () => {
     expect(autoRates(newSave('a', 0))).toMatchObject({ dust: 0, energy: 0 });
   });
 
-  it('parado rende uma fração; tocando rende cheio', () => {
+  it('os geradores rendem o máximo sempre: parado rende o mesmo que tocando (pedido do Lucas)', () => {
     const idle = autoRates(owning({ satellite: 4 }));
     expect(idle).toMatchObject({ active: false, surge: false });
-    expect(idle.dust).toBeCloseTo(0.8 * 0.25, 9);
+    expect(idle.dust).toBeCloseTo(0.8, 9);
     const touched = press(owning({ satellite: 4 }), 1);
     const active = autoRates(touched);
     expect(active.active).toBe(true);
     expect(active.dust).toBeCloseTo(0.8, 9);
-    expect(active.dust).toBeGreaterThan(idle.dust);
+    expect(active.dust).toBeCloseTo(idle.dust, 9);
+    expect(active.energy).toBeCloseTo(idle.energy, 9);
   });
 
   it('a poeira dos geradores também enche a barra de grimórios (como toques, a 1/4 da energia)', () => {
     const s = owning({ satellite: 4 });
     const st = effectiveStats(s);
     const r = autoRates(s);
-    // 0,1 de poeira por segundo parado = 0,1 toque; vale 1/4 da energia de um toque.
+    // 0,8 de poeira por segundo parado = 0,8 toque; vale 1/4 da energia de um toque.
     expect(r.energy).toBeCloseTo((r.dust / st.dustPerTouch) * st.energyPerTouch * 0.25, 9);
     expect(r.energy).toBeGreaterThan(0);
     const after = syncClock(s, 4);

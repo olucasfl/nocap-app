@@ -220,7 +220,7 @@ describe('o farm automático nunca rende mais que tocar', () => {
   const rich = { satellite: 8, probe: 8, telescope: 8, observatory: 10, station: 10, antenna: 6, receiver: 6 };
   const all = { ...rich, network: 1, lure: 1, burst: 1, scale: 1, peak: 1, queue: 1, convert: 1, rotation: 1, warmup: 1, echo: 1, lens: 1, lens2: 1 };
 
-  it('com todas as melhorias, parado rende menos que tocando e o auto fica sob o teto de 35% do toque', () => {
+  it('com todas as melhorias, parado rende o mesmo que tocando e o auto fica sob o teto do toque', () => {
     for (const levels of [rich, all]) {
       const active = withLevels(levels, { clock: 100, lastPressAt: 99.9 });
       const idle = withLevels(levels, { clock: 100, lastPressAt: 0 });
@@ -228,7 +228,7 @@ describe('o farm automático nunca rende mais que tocar', () => {
       const a = autoRates(active);
       const i = autoRates(idle);
       expect(a.active && !i.active).toBe(true);
-      expect(i.dust).toBeLessThan(a.dust);
+      expect(i.dust).toBeCloseTo(a.dust, 9);
       expect(a.dust).toBeLessThanOrEqual(st.autoDustCap + 1e-9);
       expect(a.dust).toBeLessThanOrEqual(st.dustPerTouch * NOMINAL_TOUCHES_PER_SEC * AUTO_CAP_SHARE + 1e-9);
       expect(a.energy).toBeLessThanOrEqual(st.autoEnergyCap + st.dustPerTouch > 0 ? a.energy : 0);

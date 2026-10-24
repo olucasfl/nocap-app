@@ -477,7 +477,7 @@ export function GameScreen({ controller, onExit }: Props) {
             <button
               type="button"
               data-tut="goal"
-              className="ap-hudgoal"
+              className={`ap-hudgoal${starReady ? ' is-ready' : ''}`}
               aria-label={`Sua meta: colapso ${collapse.next}. ${collapse.requirements[0]!.text} de poeira. Abrir os requisitos`}
               onClick={() => setGoalOpen(true)}
             >

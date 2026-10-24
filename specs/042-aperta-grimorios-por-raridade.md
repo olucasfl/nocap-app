@@ -92,3 +92,9 @@ Pedido do Lucas: grimório que dá algo no começo de cada vida é ruim; e queri
 - **Regra de teste:** nenhum grimório pode ter `startDust` nem texto de "começa"; a primeira vida precisa de 12 a 20 grimórios.
 - **Balanço:** os efeitos usam primitivas que o motor já tinha, com números parecidos com os dos grimórios existentes. O simulador oficial foi rodado depois da mudança e passou inteiro (17 de 17, 14 min), inclusive o guard da árvore que estava vermelho.
 
+## Geradores no máximo, HUD premium e giro estável (adendo, 24/10/2026)
+
+- **Geradores:** rendem o máximo sempre, tocando ou parado (antes parado rendia 25%). O teto do ganho automático (60% do toque) continua. Autoclick e Dobra seguem valendo só para quem está parado.
+- **HUD:** moedas, colapsos e meta redesenhados (vidro, moeda dourada, meta limpa com barra fina e botão que vira ouro quando a estrela está pronta).
+- **Giro do aparelho:** o modo (livre, deitado, girado) e o tamanho da raiz vêm de uma medida única em JS, repetida depois de cada evento de tamanho; o layout dentro do jogo não depende da orientação física, então virar o celular não muda nada.
+

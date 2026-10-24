@@ -42,9 +42,9 @@ describe('órbitas dos geradores', () => {
     expect(markup).toContain('aria-hidden="true"');
   });
 
-  it('tocando as órbitas acendem; parado, apagam', () => {
+  it('as órbitas ficam acesas tocando ou parado (os geradores rendem o máximo sempre)', () => {
     const idle = renderToStaticMarkup(<AutoOrbits state={owning({ satellite: 3 })} paused={false} />);
-    expect(idle).not.toContain('is-active');
+    expect(idle).toContain('is-active');
     const touched = renderToStaticMarkup(<AutoOrbits state={press(owning({ satellite: 3 }), 1)} paused={false} />);
     expect(touched).toContain('is-active');
     expect(renderToStaticMarkup(<AutoOrbits state={owning({ satellite: 3 })} paused />)).toContain('is-paused');

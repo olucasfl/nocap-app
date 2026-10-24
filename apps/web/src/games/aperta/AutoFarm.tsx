@@ -79,14 +79,14 @@ export function orbitsOf(state: SaveState): Orbit[] {
 
 /**
  * O farm automático à vista: cada tipo de gerador vira um astro que gira em volta do botão. Gira sempre na
- * mesma velocidade; tocando, os corpos brilham cheios, e parado ficam apagados (é o que o ganho faz). Só
+ * mesma velocidade e sempre brilham cheios: os geradores rendem o máximo com ou sem toque (24/10/2026). Só
  * `transform` e `opacity` animam, e sem movimento (reduced-motion) os corpos ficam parados.
  */
 export function AutoOrbits({ state, paused }: { state: SaveState; paused: boolean }) {
   const orbits = orbitsOf(state);
   if (orbits.length === 0) return null;
   const rates = autoRates(state);
-  const cls = `ap-orbits${rates.active ? ' is-active' : ''}${rates.surge ? ' is-surge' : ''}${paused ? ' is-paused' : ''}`;
+  const cls = `ap-orbits is-active${rates.surge ? ' is-surge' : ''}${paused ? ' is-paused' : ''}`;
   return (
     <div className={cls} aria-hidden="true">
       {orbits.map((o, i) => {

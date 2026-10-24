@@ -27,27 +27,17 @@
   --eB: calc(var(--ap-edge) + var(--sa-b));
   --eL: calc(var(--ap-edge) + var(--sa-l));
 }
-/*
- * Celular em pé: o jogo só existe de lado (pedido do Lucas). Sem travar a orientação do aparelho (iOS não deixa), a tela inteira
- * gira 90 graus: largura = altura real, altura = largura real. Ao deitar o aparelho a regra desliga sozinha.
- */
-@media (orientation: portrait) and (pointer: coarse) and (max-width: 599px) {
-  .ap {
-    inset: auto;
-    top: 0;
-    left: 0;
-    width: 100vh;
-    width: 100dvh;
-    height: 100vw;
-    transform-origin: 0 0;
-    transform: translateX(100vw) rotate(90deg);
-    /* Girado 90° no sentido horário: a esquerda do jogo é o topo do aparelho, o topo do jogo é a direita, etc. */
-    --sa-l: env(safe-area-inset-top, 0px);
-    --sa-t: env(safe-area-inset-right, 0px);
-    --sa-r: env(safe-area-inset-bottom, 0px);
-    --sa-b: env(safe-area-inset-left, 0px);
-  }
+/* Celular em pé: o jogo só existe de lado (pedido do Lucas) e a tela inteira gira 90 graus (iOS não deixa travar a orientação). */
+/* O giro e o tamanho do modo girado vêm do JS (`lib/aperta-frame.ts`, atributo `data-frame` e estilo na raiz): o `@media (orientation)`
+   chegava com o tamanho velho durante a virada do iPhone e o layout piscava. Aqui só o remapeamento das margens de segurança. */
+.ap[data-frame='rotated'] {
+  /* Girado 90° no sentido horário: a esquerda do jogo é o topo do aparelho, o topo do jogo é a direita, etc. */
+  --sa-l: env(safe-area-inset-top, 0px);
+  --sa-t: env(safe-area-inset-right, 0px);
+  --sa-r: env(safe-area-inset-bottom, 0px);
+  --sa-b: env(safe-area-inset-left, 0px);
 }
+
 .ap *,
 .ap *::before,
 .ap *::after {

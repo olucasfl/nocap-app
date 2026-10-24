@@ -755,28 +755,28 @@ describe('effectiveStats', () => {
     expect(s1.maxOnField).toBe(1);
   });
 
-  it('os geradores rendem cheio tocando e 25% parado, nunca acima do teto, e só com a escolha fechada', () => {
+  it('os geradores rendem cheio tocando ou parado, nunca acima do teto, e só com a escolha fechada', () => {
     const s = withLevels(newSave('hb'), { satellite: 4 });
     const st = effectiveStats(s);
     const per = (UPGRADES[idx('satellite')] as { perSec: number }).perSec * 4; // 4 níveis: 0,8/s
     expect(st.autoDustPerSec).toBeCloseTo(per, 9);
     expect(st.autoDustCap).toBeCloseTo(NOMINAL_TOUCHES_PER_SEC * AUTO_CAP_SHARE, 9);
-    // Parado: 25% do ritmo ativo (por baixo do teto).
+    // Parado: o ritmo cheio, igual a tocar (por baixo do teto).
     const idle = syncClock(s, 2);
-    expect(idle.run.dust).toBeCloseTo(per * 0.25 * 2, 9);
-    expect(idle.run.dustLife).toBeCloseTo(per * 0.25 * 2, 9);
-    expect(idle.stats.dustTotal).toBeCloseTo(per * 0.25 * 2, 9);
-    // Tocando: o toque rende 1 e os geradores 100% por 2 s (mais o 1 s parado antes do toque).
+    expect(idle.run.dust).toBeCloseTo(per * 2, 9);
+    expect(idle.run.dustLife).toBeCloseTo(per * 2, 9);
+    expect(idle.stats.dustTotal).toBeCloseTo(per * 2, 9);
+    // Tocando: o toque rende 1 e os geradores seguem no mesmo ritmo (1 s antes do toque e 2 s depois).
     const touched = syncClock(press(s, 1), 3);
-    expect(touched.run.dust).toBeCloseTo(per * 0.25 + 1 + per * 2, 9);
+    expect(touched.run.dust).toBeCloseTo(per + 1 + per * 2, 9);
     // Aba escondida e escolha aberta não rendem.
     const hidden = syncClock(idle, 60);
-    expect(hidden.run.dust).toBeCloseTo(per * 0.25 * 2, 9);
+    expect(hidden.run.dust).toBeCloseTo(per * 2, 9);
     const pending = syncClock(withRun(idle, { pending: { offers: ['moon'], openedAt: 2, selected: null, picksLeft: 1, rerollsLeft: 0 } }), 4);
-    expect(pending.run.dust).toBeCloseTo(per * 0.25 * 2, 9);
+    expect(pending.run.dust).toBeCloseTo(per * 2, 9);
   });
 
-  it('o teto do ganho automático é 60% do toque no ritmo normal, e parado rende menos que tocando', () => {
+  it('o teto do ganho automático é 60% do toque no ritmo normal, tocando ou parado', () => {
     // Vários geradores completos: o potencial passa do teto.
     const s = withLevels(newSave('cap'), { satellite: 8, probe: 8, telescope: 8 });
     const st = effectiveStats(s);
@@ -785,8 +785,8 @@ describe('effectiveStats', () => {
     const active = syncClock(press(s, 1), 3).run.dust - press(s, 1).run.dust;
     const idle = syncClock(s, 2).run.dust;
     expect(active).toBeCloseTo(cap * 2, 9);
-    expect(idle).toBeCloseTo(cap * 0.25 * 2, 9);
-    expect(idle / 2).toBeLessThan(active / 2);
+    expect(idle).toBeCloseTo(cap * 2, 9);
+    expect(idle / 2).toBeCloseTo(active / 2, 9);
   });
 
   it('o gerador rende de forma linear até o limite de níveis (0/8) e não há mais marcos que dobram', () => {
@@ -800,7 +800,7 @@ describe('effectiveStats', () => {
     const s = withLevels(newSave('en'), { antenna: 5 });
     const per = (UPGRADES[idx('antenna')] as { perSec: number }).perSec * 5;
     expect(effectiveStats(s).autoEnergyPerSec).toBeCloseTo(per, 9);
-    expect(syncClock(s, 4).run.energy).toBeCloseTo(per * 0.25 * 4, 9);
+    expect(syncClock(s, 4).run.energy).toBeCloseTo(per * 4, 9);
     const nearly = withRun(s, { energy: ENERGY_STEPS[0] - 0.01 });
     const opened = tickObjects(nearly, 4);
     expect(opened.run.pending).not.toBeNull();

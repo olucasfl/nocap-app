@@ -243,12 +243,15 @@ export function lifeHoursBand(nextCollapse: number, prevHours: number | null): {
 
 // --- Economia v2 (spec 039) ---
 
-/** Toque nos últimos tantos segundos conta como "tocando": os geradores rendem 100%. */
+/** Toque nos últimos tantos segundos conta como "tocando" (só as habilidades olham isto: Autoclick e Dobra valem para quem está parado). */
 export const ACTIVE_WINDOW_SEC = 4;
-/** Parado, os geradores rendem esta fração do ritmo ativo. */
-export const IDLE_FACTOR = 0.25;
+/**
+ * Pedido do Lucas (24/10/2026): os geradores rendem o máximo SEMPRE, tocando ou não. Antes, parado rendia 25% do ritmo
+ * ativo; agora é 1 (e o teto também), então não há mais "ritmo parado" nem efeito que o melhore.
+ */
+export const IDLE_FACTOR = 1;
 /** Teto do ganho automático: fração do que os toques rendem no ritmo normal. */
-/** Spec 041 (B2): subiu de 35% para 60% do toque; os geradores seguem sempre abaixo de tocar (e parado rende 25%). */
+/** Spec 041 (B2): subiu de 35% para 60% do toque; os geradores seguem sempre abaixo de tocar (e rendem igual parados). */
 export const AUTO_CAP_SHARE = 0.6;
 export const NOMINAL_TOUCHES_PER_SEC = 2.5;
 
@@ -310,7 +313,6 @@ export const FRENZY_SEC = 30;
 export const RAIN_SEC = 300;
 export const SURGE_SEC = 45;
 export const SURGE_CAP_MULT = 3;
-/** O parado nunca passa de 50% do ritmo ativo, por mais grimórios que se empilhem. */
 /** A poeira dos geradores também enche a barra de grimórios: conta como toques, a esta fração da energia do toque. */
 export const AUTO_ENERGY_SHARE = 0.25;
-export const IDLE_FACTOR_MAX = 0.5;
+export const IDLE_FACTOR_MAX = 1;

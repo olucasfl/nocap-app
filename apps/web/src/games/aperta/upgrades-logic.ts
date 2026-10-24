@@ -108,8 +108,8 @@ interface Preview {
 
 const seconds = (x: number) => `${formatDecimal(x, 1)} s`;
 const perTouch: Preview = { label: 'Poeira por toque', read: (s) => formatDecimal(s.dustPerTouch, 0) };
-const dustSec: Preview = { label: 'Poeira por segundo (tocando)', read: (s) => formatDecimal(s.autoDustPerSec, 1) };
-const energySec: Preview = { label: 'Energia por segundo (tocando)', read: (s) => formatDecimal(s.autoEnergyPerSec, 2) };
+const dustSec: Preview = { label: 'Poeira por segundo', read: (s) => formatDecimal(s.autoDustPerSec, 1) };
+const energySec: Preview = { label: 'Energia por segundo', read: (s) => formatDecimal(s.autoEnergyPerSec, 2) };
 
 /** O que cada melhoria muda, lido do próprio `effectiveStats` (a regra continua no motor). */
 const PREVIEW: Record<string, Preview> = {
