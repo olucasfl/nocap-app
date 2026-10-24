@@ -99,11 +99,12 @@ describe('peças do tutorial', () => {
 });
 
 describe('história', () => {
-  it('as 3 primeiras telas seguem com a ilustração', () => {
+  it('abre na primeira cena, com a ilustração e o progresso de 4 registros', () => {
     const markup = html(<StoryScreen onDone={noop} />);
     expect(markup).toContain('Registro 1 de 4');
     expect(markup).toContain('ap-scene');
-    expect(markup).not.toContain('ap-story-books');
+    expect(markup).toContain('Ano 2187');
+    expect(markup).not.toContain('st-books');
   });
 });
 

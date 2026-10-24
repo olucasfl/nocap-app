@@ -332,83 +332,6 @@
   gap: 10px;
 }
 
-/* ---------- história ---------- */
-.ap-story {
-  position: relative;
-  z-index: 2;
-  min-height: 100cqh;
-  display: grid;
-  place-items: center;
-  padding: 20px;
-  background: rgba(3, 5, 14, 0.5);
-}
-.ap-story-box {
-  width: min(640px, 100%);
-  display: grid;
-  gap: 16px;
-  text-align: center;
-  justify-items: center;
-}
-.ap-scene {
-  width: min(440px, 86cqw);
-  height: auto;
-  filter: drop-shadow(0 10px 30px rgba(60, 156, 240, 0.25));
-}
-.ap-story-books {
-  display: flex;
-  justify-content: center;
-  align-items: flex-end;
-  gap: 10px;
-  height: 190px;
-}
-/* Três livros de 150 px não cabem em 320 px: encolhem juntos (só tamanho, sem animar). */
-.ap-story-books .ap-book {
-  --ap-w: clamp(78px, 24cqw, 130px);
-}
-.ap-story-k {
-  font: 600 12px var(--space-font-display);
-  color: var(--space-cyan);
-  letter-spacing: 0.26em;
-  text-transform: uppercase;
-}
-.ap-story-t {
-  font: 500 clamp(18px, 2.8cqw, 26px) / 1.4 var(--space-font-text);
-  color: #fff;
-  min-height: 5.6em;
-  animation: ap-rise 0.7s ease-out both;
-}
-@keyframes ap-rise {
-  from {
-    transform: translateY(14px);
-    opacity: 0;
-  }
-  to {
-    transform: none;
-    opacity: 1;
-  }
-}
-.ap-dots {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  padding: 0;
-  margin: 0;
-  list-style: none;
-}
-.ap-dots li {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--space-panel-2);
-  border: 2px solid var(--space-line);
-}
-.ap-dots li.on {
-  background: var(--space-cyan);
-  border-color: var(--space-cyan);
-}
-.ap-story .ap-btn {
-  min-width: 190px;
-}
 .ap-blink {
   animation: ap-tw 1.4s ease-in-out infinite;
 }
@@ -611,7 +534,6 @@
   .ap-floaty,
   .ap-glow,
   .ap-logo b,
-  .ap-story-t,
   .ap-mcard,
   .ap-blink,
   .ap-pulse {

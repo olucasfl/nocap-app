@@ -1,9 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { STORY, storyButton, storyNext, storySkip, storyStart } from './story';
+import { STORY, STORY_KICKER, STORY_SUB, storyButton, storyNext, storySkip, storyStart } from './story';
 
 describe('história', () => {
   it('tem 4 telas', () => {
     expect(STORY).toHaveLength(4);
+  });
+
+  it('cada tela tem tema, frase e apoio, e a história é curta', () => {
+    expect(STORY_KICKER).toHaveLength(STORY.length);
+    expect(STORY_SUB).toHaveLength(STORY.length);
+    const words = [...STORY, ...STORY_SUB].join(' ').split(/\s+/).length;
+    expect(words).toBeLessThan(90);
   });
 
   it('avança tela a tela e só termina depois da quarta', () => {

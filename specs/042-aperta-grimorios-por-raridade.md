@@ -58,3 +58,11 @@ Decisão do Lucas: no celular o Aperta! só existe de lado, da tela inicial em d
 - **Layout:** media queries de tamanho viraram `@container ap`; `landscape.css` compacta HUD, campo, dock, páginas, cartas de escolha, modal de colapso, árvore, título e saves para alturas de 320 a 520 px.
 - **Conferido:** 568x320, 667x375, 844x390, 932x430 e os mesmos em pé (girados). Rolagem das páginas por dentro, janela sem rolagem.
 
+## História premium (adendo, 24/10/2026)
+
+Pedido do Lucas: a abertura só aparece na primeira vez de cada save e fica mais impactante, sem ficar longa.
+
+- **Só uma vez:** corrigida a corrida em que a partida abria antes de a marca `storySeen` subir e a apagava (`ApertaPage` espera `markStorySeen`).
+- **4 cenas, ~50 palavras:** "A Perigeu perdeu o Sistema Solar" (janelas apagando), "Todos se apagaram. Menos um." (botão no escuro), "Aperte. Uma estrela acende." (onda de choque, estrela, poeira), "Os grimórios ainda estão lá." (órbitas e livros).
+- **Arte:** SVG próprio em `StoryArt.tsx`; movimento só em `transform`/`opacity`; movimento reduzido mostra o estado final.
+

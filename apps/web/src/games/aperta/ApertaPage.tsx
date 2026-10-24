@@ -17,6 +17,7 @@ import { SyncNotice } from './SyncNotice';
 import { TitleScreen } from './TitleScreen';
 import { useApertaGame } from './useApertaGame';
 import './aperta.css';
+import './story.css';
 import './landscape.css';
 
 const FONTS_HREF =

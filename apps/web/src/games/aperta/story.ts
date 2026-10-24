@@ -1,8 +1,18 @@
+/** As 4 telas da abertura: tema (kicker), frase de impacto e uma linha de apoio. Curta de propósito. */
 export const STORY = [
-  'Ano 2187. A estação Perigeu perdeu contato com o Sistema Solar e todos os instrumentos se apagaram.',
-  'Todos, menos um: um botão vermelho no centro da cabine, ainda aceso, esperando alguém.',
-  'Cada vez que você o aperta, uma estrela distante acende de volta e deixa cair poeira estelar.',
-  'Os grimórios, registros de quem apertou antes de você, estão espalhados pelos planetas. Aperte, e reencontre todos.',
+  'A Perigeu perdeu o Sistema Solar.',
+  'Todos se apagaram. Menos um.',
+  'Aperte. Uma estrela acende.',
+  'Os grimórios ainda estão lá.',
+] as const;
+
+export const STORY_KICKER = ['Ano 2187', 'Cabine central', 'Primeiro toque', 'Atlas'] as const;
+
+export const STORY_SUB = [
+  'Um a um, os instrumentos da estação foram morrendo no escuro.',
+  'Um botão vermelho, ainda aceso, esperando alguém.',
+  'A cada toque ela devolve poeira estelar, e o céu volta a existir.',
+  'Registros de quem apertou antes de você, espalhados pelos planetas. Reencontre todos.',
 ] as const;
 
 export interface StoryState {

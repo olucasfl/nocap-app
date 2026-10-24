@@ -29,6 +29,11 @@ for (const size of sizes) {
       await snap(page, size.name, '02-espacos');
       await page.getByRole('button', { name: /Novo jogo|Começar|Criar/ }).first().click();
       await snap(page, size.name, '03-historia');
+      for (const n of ['3b', '3c', '3d']) {
+        await page.getByRole('button', { name: /Continuar/ }).click();
+        await page.waitForTimeout(2600);
+        await snap(page, size.name, `0${n}-historia`);
+      }
       const skip = page.getByRole('button', { name: 'Pular história' });
       await skip.click();
       await page.locator('.ap-game').waitFor();

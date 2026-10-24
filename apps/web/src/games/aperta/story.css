@@ -1,0 +1,449 @@
+/* ---------- história: 4 cenas em SVG (spec 042, adendo). Só transform e opacity animam. ---------- */
+.ap-story {
+  position: relative;
+  z-index: 2;
+  min-height: 100cqh;
+  display: grid;
+  place-items: center;
+  padding: 16px 20px;
+  background: radial-gradient(120% 90% at 50% 40%, rgba(8, 14, 44, 0.2), rgba(2, 3, 10, 0.78));
+}
+.ap-story-box {
+  width: min(680px, 100%);
+  display: grid;
+  gap: 14px;
+  justify-items: center;
+  text-align: center;
+}
+.st-stage {
+  position: relative;
+  width: min(640px, 100%);
+  aspect-ratio: 2 / 1;
+  border: 3px solid var(--space-line);
+  border-radius: 18px;
+  overflow: hidden;
+  background: #03050e;
+  box-shadow:
+    0 0 0 3px var(--space-ink),
+    0 18px 50px rgba(0, 0, 0, 0.55),
+    0 0 60px rgba(60, 156, 240, 0.18);
+  animation: st-fade 0.7s ease-out both;
+}
+.ap-scene {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.st-copy {
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  width: 100%;
+}
+.ap-story-k {
+  font: 700 12px var(--space-font-display);
+  color: var(--space-cyan);
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  animation: st-rise 0.6s ease-out both;
+}
+.ap-story-t {
+  font: 700 clamp(22px, 4cqw, 34px) / 1.12 var(--space-font-display);
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  text-shadow: 0 3px 0 #0a1a48;
+  animation: st-rise 0.7s 0.12s ease-out both;
+}
+.ap-story-u {
+  max-width: 34em;
+  font: 500 clamp(14px, 2.1cqw, 18px) / 1.4 var(--space-font-text);
+  color: var(--space-muted);
+  animation: st-rise 0.7s 0.4s ease-out both;
+}
+.st-prog {
+  display: flex;
+  gap: 6px;
+  margin: 2px 0;
+  padding: 0;
+  list-style: none;
+}
+.st-prog li {
+  width: 34px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--space-line);
+}
+.st-prog li.done {
+  background: #4d8fe0;
+}
+.st-prog li.on {
+  background: var(--space-cyan);
+  box-shadow: 0 0 10px rgba(78, 220, 255, 0.7);
+}
+.st-actions {
+  display: grid;
+  gap: 4px;
+  justify-items: center;
+  animation: st-rise 0.7s 0.6s ease-out both;
+}
+.ap-story .ap-btn {
+  min-width: 190px;
+}
+
+@keyframes st-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes st-rise {
+  from {
+    transform: translateY(14px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* Câmera: um empurrão lento, como se a cena respirasse. */
+.st-cam {
+  animation: st-zoom 12s ease-out both;
+  transform-origin: 50% 55%;
+}
+@keyframes st-zoom {
+  from {
+    transform: scale(1.08);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+/* Estrelas em duas camadas, derivando devagar. */
+.st-drift-a {
+  animation: st-drift 26s ease-in-out infinite alternate;
+}
+.st-drift-b {
+  animation: st-drift 40s ease-in-out infinite alternate-reverse;
+}
+@keyframes st-drift {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-26px);
+  }
+}
+
+/* Cena 1: a estação flutua, as janelas apagam em sequência, o planeta gira de leve. */
+.st-station {
+  animation: st-bob 7s ease-in-out infinite alternate;
+  transform-origin: 300px 160px;
+  transform-box: view-box;
+}
+@keyframes st-bob {
+  from {
+    transform: translateY(-5px) rotate(-1.2deg);
+  }
+  to {
+    transform: translateY(6px) rotate(1.2deg);
+  }
+}
+.st-win {
+  animation: st-off 0.5s ease-in forwards;
+  animation-delay: calc(1s + var(--i) * 0.55s);
+}
+@keyframes st-off {
+  to {
+    opacity: 0.08;
+  }
+}
+.st-beacon {
+  animation: st-blink 1.1s 4.4s ease-in-out infinite both;
+  opacity: 0;
+}
+@keyframes st-blink {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.st-lost {
+  animation: st-blink 1.8s 4.6s ease-in-out infinite both;
+  opacity: 0;
+}
+.st-planet {
+  animation: st-bob 14s ease-in-out infinite alternate-reverse;
+}
+
+/* Cena 2: o cone de luz e o halo do botão pulsam; poeira sobe. */
+.st-cone {
+  animation: st-glow 2.6s ease-in-out infinite;
+}
+.st-halo,
+.st-btn {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.st-halo {
+  animation: st-throb 2.6s ease-in-out infinite;
+}
+@keyframes st-glow {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+@keyframes st-throb {
+  0%,
+  100% {
+    transform: scale(0.85);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+}
+.st-mote {
+  animation: st-float 4.5s ease-in-out infinite;
+  animation-delay: calc(var(--i) * -0.55s);
+  opacity: 0;
+}
+@keyframes st-float {
+  0% {
+    transform: translateY(18px);
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(-46px);
+    opacity: 0;
+  }
+}
+
+/* Cena 3: o toque (botão afunda), a onda de choque, a estrela acende e cai poeira. */
+.st-press {
+  animation: st-press 0.5s 0.5s ease-in-out both;
+}
+@keyframes st-press {
+  40% {
+    transform: translateY(7px);
+  }
+  100% {
+    transform: none;
+  }
+}
+.st-wave {
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0;
+  animation: st-wave 3s ease-out infinite;
+  animation-delay: calc(0.55s + var(--i) * 0.9s);
+}
+@keyframes st-wave {
+  0% {
+    transform: scale(0.3);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(5);
+    opacity: 0;
+  }
+}
+.st-sunwrap {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: st-ignite 1.4s 0.8s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+@keyframes st-ignite {
+  from {
+    transform: scale(0.1);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+.st-rays {
+  transform-box: view-box;
+  transform-origin: 320px 96px;
+  animation: st-spin 36s linear infinite;
+}
+@keyframes st-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.st-beam {
+  animation: st-glow 1.6s 0.8s ease-in-out infinite both;
+}
+.st-fall {
+  opacity: 0;
+  animation: st-fall 3.2s ease-in infinite;
+  animation-delay: calc(1.6s + var(--i) * 0.32s);
+}
+@keyframes st-fall {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(130px);
+    opacity: 0;
+  }
+}
+
+/* Cena 4: planetas em órbita e livros flutuando à frente. */
+.st-books-stage {
+  position: relative;
+}
+.st-orbits {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.st-orb-a,
+.st-orb-b,
+.st-orb-c {
+  transform-box: view-box;
+  transform-origin: 320px 160px;
+  animation: st-spin 14s linear infinite;
+}
+.st-orb-b {
+  animation-duration: 24s;
+  animation-direction: reverse;
+}
+.st-orb-c {
+  animation-duration: 38s;
+}
+.st-books {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+.st-books .ap-book {
+  --ap-w: clamp(64px, 11cqw, 96px);
+}
+.st-book {
+  animation:
+    st-rise 0.8s ease-out both,
+    st-hover 4s ease-in-out infinite alternate;
+  animation-delay: calc(0.3s + var(--i) * 0.22s), calc(1.1s + var(--i) * 0.4s);
+}
+@keyframes st-hover {
+  from {
+    transform: translateY(-5px);
+  }
+  to {
+    transform: translateY(6px);
+  }
+}
+
+/* Celular deitado (e qualquer tela baixa): a cena à esquerda, o texto à direita. */
+@container ap (max-height: 520px) and (orientation: landscape) {
+  .ap-story {
+    padding: 8px 14px;
+  }
+  .ap-story-box {
+    width: min(100%, 940px);
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    gap: 16px;
+    align-items: center;
+    text-align: left;
+  }
+  .st-stage {
+    width: 100%;
+    max-height: calc(100cqh - 24px);
+    border-radius: 14px;
+  }
+  .st-copy {
+    justify-items: start;
+    gap: 6px;
+  }
+  .ap-story-t {
+    font-size: clamp(18px, 3.4cqw, 28px);
+  }
+  .ap-story-u {
+    font-size: clamp(12px, 1.9cqw, 15px);
+  }
+  .st-actions {
+    justify-items: start;
+  }
+  .ap-story .ap-btn {
+    min-width: 160px;
+    min-height: 42px;
+    font-size: 15px;
+  }
+}
+
+.is-lite .st-rays,
+.is-lite .st-drift-a,
+.is-lite .st-drift-b,
+.is-lite .st-mote {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .st-stage,
+  .st-cam,
+  .st-drift-a,
+  .st-drift-b,
+  .st-station,
+  .st-planet,
+  .st-cone,
+  .st-halo,
+  .st-mote,
+  .st-press,
+  .st-wave,
+  .st-sunwrap,
+  .st-rays,
+  .st-beam,
+  .st-fall,
+  .st-orb-a,
+  .st-orb-b,
+  .st-orb-c,
+  .st-book,
+  .ap-story-k,
+  .ap-story-t,
+  .ap-story-u,
+  .st-actions {
+    animation: none !important;
+  }
+  /* Sem movimento a história aparece já no estado final: janelas apagadas, estrela acesa, poeira parada. */
+  .st-win {
+    animation: none;
+    opacity: 0.08;
+  }
+  .st-mote,
+  .st-wave,
+  .st-fall {
+    opacity: 0;
+  }
+  .st-beacon,
+  .st-lost {
+    animation: none;
+    opacity: 1;
+  }
+}

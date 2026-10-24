@@ -319,7 +319,7 @@ for (const size of SIZES) {
       await page.getByRole('button', { name: 'Jogar' }).first().click();
       await page.getByRole('button', { name: 'Novo jogo' }).first().click();
       for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'Continuar' }).click();
-      await expect(page.locator('.ap-story-books .ap-book')).toHaveCount(3);
+      await expect(page.locator('.st-books .ap-book')).toHaveCount(3);
       await expect(page.locator('svg.ap-scene')).toHaveCount(0);
       await shot(page, '0-historia');
       await noOverflow(page);
