@@ -1,4 +1,4 @@
-import { TUTORIAL, affordableUpgradeIndex, dustGoal, energyCap, meetMilestone, minPicks, newSave, nextUpgradeCost, pickInto, tickObjects, upgradeIndex, type SaveState } from '@nocap/games';
+import { TUTORIAL, settleTutorial, affordableUpgradeIndex, dustGoal, energyCap, meetMilestone, minPicks, newSave, nextUpgradeCost, pickInto, tickObjects, upgradeIndex, type SaveState } from '@nocap/games';
 import type { Page } from '@playwright/test';
 import { installApi } from './mock-api';
 
@@ -116,6 +116,12 @@ export const tutorialSaves = {
   fill: (): SaveState => {
     const s = tutorialSaves.upgrade();
     return { ...s, tutorial: TUTORIAL.FILL, run: { ...s.run, upgradeLevels: s.run.upgradeLevels.map((n, i) => (i === affordableUpgradeIndex({ ...s, run: { ...s.run, dust: 1e12 } }) ? 1 : n)) } };
+  },
+  /** Barra cheia no passo 4: a escolha do 1º grimório abre sozinha (3 cartas comuns), com o cartão do tutorial dentro. */
+  choose: (): SaveState => {
+    const s = tutorialSaves.fill();
+    const full = { ...s, run: { ...s.run, energy: energyCap(s.run.picks) + 1 } };
+    return settleTutorial(tickObjects(full, 1));
   },
   grimoires: (): SaveState => {
     const s = tutorialSaves.fill();

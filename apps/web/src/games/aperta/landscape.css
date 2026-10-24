@@ -236,6 +236,40 @@ body:has(.ap) {
     padding: 10px var(--eR) calc(var(--sa-b) + 16px) var(--eL);
   }
 
+  /* ---------- cartão do tutorial dentro da escolha: uma faixa fina, para as cartas ficarem à vista ---------- */
+  .ap .ap-tut-inline {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 2px 10px;
+    padding: 5px 10px;
+    border-width: 2px;
+    border-radius: 10px;
+    box-shadow: 0 3px 0 var(--space-ink);
+  }
+  .ap .ap-tut-inline h2 {
+    display: inline;
+    font-size: 13px;
+  }
+  .ap .ap-tut-inline .ap-tut-step {
+    margin: 0 6px 0 0;
+    padding: 1px 6px;
+    font-size: 8.5px;
+    vertical-align: 1px;
+  }
+  .ap .ap-tut-inline p {
+    margin-top: 1px;
+    font-size: 11px;
+    line-height: 1.25;
+  }
+  .ap .ap-tut-inline .ap-tut-actions {
+    margin: 0;
+  }
+  .ap .ap-tut-inline .ap-tut-skip {
+    min-height: 30px;
+    padding: 0 2px;
+    font-size: 11px;
+  }
+
   /* ---------- modais (escolha, meta, colapso, regiões) ---------- */
   .ap .ap-modal-game {
     padding: max(8px, var(--sa-t)) max(8px, var(--sa-r)) max(8px, var(--sa-b)) max(8px, var(--sa-l));
@@ -586,6 +620,42 @@ body:has(.ap) {
 @container ap (max-height: 340px) and (orientation: landscape) {
   .ap .ap-pick-fx {
     display: none;
+  }
+  /* Escolha de grimório em 320 px de altura: o título só fica para leitor de tela e o aviso de "escolha uma carta" some
+     (a trava de 1,6 s continua à vista); o espaço vai para as cartas e para o cartão do tutorial. */
+  .ap .ap-mcard-game > h2 {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .ap .ap-lockrow:not(:has(.ap-lockbar)) {
+    display: none;
+  }
+  .ap .ap-lockrow small {
+    display: none;
+  }
+  .ap .ap-tut-inline {
+    position: relative;
+    display: block;
+    padding: 4px 10px 5px;
+  }
+  .ap .ap-tut-inline h2 {
+    font-size: 12px;
+  }
+  .ap .ap-tut-inline p {
+    font-size: 10.5px;
+    line-height: 1.2;
+  }
+  /* "Pular tutorial" sobe para o canto: o texto usa a largura toda e o cartão perde uma linha. */
+  .ap .ap-tut-inline .ap-tut-actions {
+    position: absolute;
+    top: 2px;
+    right: 8px;
+  }
+  .ap .ap-mcard-game .ap-btn {
+    min-height: 40px;
   }
   .ap .ap-banners {
     top: calc(112px + var(--eT));

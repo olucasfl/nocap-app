@@ -100,6 +100,7 @@ for (const size of sizes) {
       ['41-tut-poeira', () => tutorialSaves.touch(3)],
       ['42-tut-melhoria', () => tutorialSaves.upgrade()],
       ['44-tut-barra', () => tutorialSaves.fill()],
+      ['44b-tut-escolha', () => tutorialSaves.choose()],
       ['45-tut-grimorios', () => tutorialSaves.grimoires()],
       ['46-tut-geradores', () => tutorialSaves.free(['achievements', 'objects'], (s) => ({ ...s, run: { ...s.run, dust: 1e12, dustLife: 1e12 } }))],
       ['47-tut-colapso', () => tutorialSaves.free(['achievements', 'objects', 'generators'])],
