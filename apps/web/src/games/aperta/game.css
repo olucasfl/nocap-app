@@ -156,7 +156,7 @@
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  width: min(94vw, 520px);
+  width: min(94cqw, 520px);
   transform: translateX(-50%);
   pointer-events: none;
 }
@@ -233,7 +233,7 @@
 }
 .ap-stage {
   position: relative;
-  width: min(54vmin, 330px);
+  width: min(54cqmin, 330px);
   width: min(330px, 80cqmin);
   aspect-ratio: 1;
 }
@@ -639,7 +639,7 @@
 }
 
 /* ---------- celular ---------- */
-@media (max-width: 720px) {
+@container ap (max-width: 720px) and (orientation: portrait) {
   .ap-field,
   .ap-energy {
     top: calc(140px + var(--ap-hud-extra, 0px));
@@ -762,7 +762,7 @@
   }
 }
 /* Celular deitado: pouca altura, então o HUD cabe numa linha e o campo ganha espaço. */
-@media (max-height: 480px) and (min-width: 480px) {
+@container ap (max-height: 480px) and (min-width: 480px)  {
   .ap-field,
   .ap-energy {
     top: 78px;
@@ -1234,7 +1234,7 @@
   border-color: var(--space-gold);
   color: var(--space-text);
 }
-@media (min-width: 1000px) {
+@container ap (min-width: 1000px)  {
   .ap-album {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
@@ -1279,7 +1279,7 @@
 }
 
 /* Oferta com 4 cartas (nó "Quarta carta" ou Eclipse): duas por linha no celular. */
-@media (min-width: 701px) {
+@container ap (min-width: 701px)  {
   .ap-picks.is-four {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1298,7 +1298,7 @@
 }
 
 /* 320 px: com 4 botões na dock o "Melhorias" precisa caber no botão grande. */
-@media (max-width: 360px) {
+@container ap (max-width: 360px)  {
   .ap-dock {
     gap: 6px;
   }
@@ -1416,48 +1416,48 @@
 
 /* Escolha de grimório sem rolagem (spec 041): em notebook a altura é pouca, então tudo encolhe com a altura da tela
    (livro, textos e espaços) até caber; a rolagem só sobra como último recurso em telas minúsculas. */
-@media (min-width: 701px) {
+@container ap (min-width: 701px)  {
   .ap-modal-game {
-    padding: clamp(6px, 1.6vh, 14px);
+    padding: clamp(6px, 1.6cqh, 14px);
   }
   .ap-mcard-game {
-    gap: clamp(4px, 1vh, 12px);
-    padding: clamp(8px, 1.8vh, 18px);
+    gap: clamp(4px, 1cqh, 12px);
+    padding: clamp(8px, 1.8cqh, 18px);
   }
   .ap-mcard-game h2 {
-    font-size: clamp(17px, 3vh, 24px);
+    font-size: clamp(17px, 3cqh, 24px);
   }
   .ap-modal-intro {
     display: none;
   }
   .ap-picks {
-    gap: clamp(6px, 1.4vh, 12px);
+    gap: clamp(6px, 1.4cqh, 12px);
     padding: 2px;
   }
   .ap-pick {
-    gap: clamp(1px, 0.5vh, 4px);
-    padding: clamp(6px, 1.4vh, 12px);
+    gap: clamp(1px, 0.5cqh, 4px);
+    padding: clamp(6px, 1.4cqh, 12px);
   }
   .ap-pick .ap-book {
-    --ap-w: clamp(52px, 11vh, 96px);
+    --ap-w: clamp(52px, 11cqh, 96px);
   }
   .ap-pick-name {
-    font-size: clamp(14px, 2.2vh, 18px);
+    font-size: clamp(14px, 2.2cqh, 18px);
   }
   .ap-pick-fx,
   .ap-pick-gain {
-    font-size: clamp(11px, 1.7vh, 13px);
+    font-size: clamp(11px, 1.7cqh, 13px);
     line-height: 1.25;
   }
   .ap-pick-lvl {
     padding: 2px 8px;
-    font-size: clamp(11px, 1.8vh, 13px);
+    font-size: clamp(11px, 1.8cqh, 13px);
   }
   .ap-reroll {
     min-height: 40px;
   }
 }
-@media (min-width: 701px) and (max-height: 820px) {
+@container ap (min-width: 701px) and (max-height: 820px)  {
   .ap-mcard-game > .ap-sub {
     display: none;
   }
@@ -1526,7 +1526,7 @@
   bottom: 100%;
   transform: translateX(-50%);
 }
-@media (max-width: 720px) {
+@container ap (max-width: 720px) and (orientation: portrait) {
   .ap-field {
     right: 108px;
   }
@@ -1560,7 +1560,7 @@
 .ap-hudgoal .ap-goaltxt b {
   font-size: 13px;
 }
-@media (max-width: 720px) {
+@container ap (max-width: 720px) and (orientation: portrait) {
   .ap-game.has-goal {
     --ap-hud-extra: 56px;
   }
@@ -1584,7 +1584,7 @@
   text-overflow: ellipsis;
   letter-spacing: 0.04em;
 }
-@media (max-width: 360px) {
+@container ap (max-width: 360px)  {
   .ap-hudgoal .ap-goalcta {
     padding: 5px 8px;
     font-size: 10px;
@@ -1599,7 +1599,7 @@
 }
 
 /* No PC o painel do topo (com o chip de meta) vai até ~160 px: as páginas começam abaixo dele, sem cobrir a meta. */
-@media (min-width: 721px) {
+@container ap (min-width: 721px)  {
   .ap-game.has-goal .ap-sheetwrap {
     top: 168px;
   }
@@ -1664,9 +1664,9 @@
 .ap-pick-evo {
   flex-wrap: nowrap;
   white-space: nowrap;
-  font-size: clamp(10px, 3.1vw, 12px);
+  font-size: clamp(10px, 3.1cqw, 12px);
 }
-@media (min-width: 701px) {
+@container ap (min-width: 701px)  {
   .ap-pick-evo {
     font-size: 12px;
   }
@@ -1788,7 +1788,7 @@
   flex-wrap: wrap;
 }
 
-@media (max-width: 720px) {
+@container ap (max-width: 720px) and (orientation: portrait) {
   .ap-pick-lvl {
     gap: 4px;
     padding: 3px 8px;

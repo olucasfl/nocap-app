@@ -14,9 +14,9 @@
   position: absolute;
   left: 50%;
   top: 46%;
-  width: 40vmin;
-  height: 40vmin;
-  margin: -20vmin 0 0 -20vmin;
+  width: 40cqmin;
+  height: 40cqmin;
+  margin: -20cqmin 0 0 -20cqmin;
   border: 4px solid var(--space-gold);
   border-radius: 50%;
   animation: app-flash-ring 1.1s ease-out both;
@@ -65,7 +65,7 @@
   position: absolute;
   top: -12%;
   width: 3px;
-  height: 18vmin;
+  height: 18cqmin;
   border-radius: 3px;
   background: linear-gradient(180deg, transparent, var(--space-cyan));
   opacity: 0;
@@ -82,7 +82,7 @@
   }
   100% {
     opacity: 0;
-    transform: translate(-30vmin, 130vh) rotate(-18deg);
+    transform: translate(-30cqmin, 130cqh) rotate(-18deg);
   }
 }
 .ap-evfx-storm {

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { useNavigate } from '@tanstack/react-router';
 import { useApertaAllowed } from '@/lib/aperta-access';
+import { releaseOrientation, tryLockLandscape } from '@/lib/aperta-orientation';
 import { useAuth } from '@/lib/auth';
 import { Sky } from './art';
 import { GameScreen } from './GameScreen';
@@ -16,6 +17,7 @@ import { SyncNotice } from './SyncNotice';
 import { TitleScreen } from './TitleScreen';
 import { useApertaGame } from './useApertaGame';
 import './aperta.css';
+import './landscape.css';
 
 const FONTS_HREF =
   'https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Space+Grotesk:wght@400;500;700&display=swap';
@@ -53,6 +55,8 @@ export function ApertaPage() {
 /** A rota /arcade/aperta liberada: título, saves, história e a tela de jogo. */
 function ApertaGame() {
   useSpaceFonts();
+  // Ao sair do Aperta! solta a trava de orientação (e a tela cheia, se o jogo a pediu).
+  useEffect(() => releaseOrientation, []);
   const { user, status } = useAuth();
   const access = apertaAccess(status, !!user);
   const userId = user?.id;
@@ -72,7 +76,13 @@ function ApertaGame() {
       <Sky />
       {screen.name === 'title' && (
         <>
-          <TitleScreen access={access} onPlay={() => setScreen({ name: 'title', saves: true })} />
+          <TitleScreen
+            access={access}
+            onPlay={() => {
+              void tryLockLandscape();
+              setScreen({ name: 'title', saves: true });
+            }}
+          />
           {screen.saves && store && (
             <SavesModal
               store={store}

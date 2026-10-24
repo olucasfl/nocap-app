@@ -6,7 +6,7 @@
   display: grid;
   gap: 6px;
   width: 100%;
-  max-height: 42vh;
+  max-height: 42cqh;
   padding: 8px 10px;
   overflow-y: auto;
   border: 3px solid var(--space-violet);
@@ -170,7 +170,7 @@
   padding: 0;
   list-style: none;
   overflow-y: auto;
-  max-height: 52vh;
+  max-height: 52cqh;
 }
 .ap-rm {
   display: flex;
@@ -318,7 +318,7 @@
 }
 
 /* Telas baixas (320 x 640): a faixa "Novo no espaço" encolhe para o cabeçalho; a lista continua no botão de regiões. */
-@media (max-height: 720px) {
+@container ap (max-height: 720px)  {
   .ap-newstrip ul {
     display: none;
   }

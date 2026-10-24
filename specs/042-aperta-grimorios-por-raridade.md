@@ -48,3 +48,13 @@ Pedido do Lucas em 23/10/2026: os grimórios estão complicados e se repetem ent
 ## Acesso restrito (jogo em teste)
 
 Pedido do Lucas em 23/10/2026: o jogo vai para a `main`, mas só ele vê. O servidor decide: `apps/api/src/aperta/aperta-access.ts` (`canPlayAperta`, `ApertaAccessGuard` nas rotas de save, `GET /me/aperta/access`), com a lista em `APERTA_ALLOWED_EMAILS` (sem a variável, só `lucasfariasleandro@gmail.com`). No web, `lib/aperta-access.ts` pergunta ao servidor; o cartão do Hub só aparece para a conta liberada e `/arcade/aperta` manda as outras contas e o visitante para o início. O e-mail nunca vai no código do navegador. Para abrir o jogo para todos, remover o guard, o endpoint e o teste do cartão numa mudança à parte.
+
+## Celular deitado (adendo, 24/10/2026)
+
+Decisão do Lucas: no celular o Aperta! só existe de lado, da tela inicial em diante.
+
+- **Em pé:** em tela de toque até 599 px o contêiner `.ap` gira 90° por CSS e ocupa a tela inteira. Sem JavaScript de medida, então funciona igual no iOS.
+- **Travar a orientação:** no Android o clique em Jogar tenta `screen.orientation.lock('landscape')` (com tela cheia se o navegador exigir) e solta ao sair; falha em silêncio.
+- **Layout:** media queries de tamanho viraram `@container ap`; `landscape.css` compacta HUD, campo, dock, páginas, cartas de escolha, modal de colapso, árvore, título e saves para alturas de 320 a 520 px.
+- **Conferido:** 568x320, 667x375, 844x390, 932x430 e os mesmos em pé (girados). Rolagem das páginas por dentro, janela sem rolagem.
+

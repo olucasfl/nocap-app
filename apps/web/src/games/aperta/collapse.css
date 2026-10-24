@@ -117,7 +117,7 @@
     opacity: 0.85;
   }
 }
-@media (max-width: 480px) {
+@container ap (max-width: 480px)  {
   .ap-cc-cols {
     grid-template-columns: 1fr;
   }

@@ -111,7 +111,7 @@
 }
 
 /* Celular estreito: o botão desce para a linha de baixo e ocupa a largura toda. */
-@media (max-width: 420px) {
+@container ap (max-width: 420px)  {
   .ap-up {
     grid-template-columns: 48px minmax(0, 1fr);
   }
@@ -313,7 +313,7 @@
 }
 
 /* Celular estreito: o botão desce para a linha de baixo e ocupa a largura toda. */
-@media (max-width: 420px) {
+@container ap (max-width: 420px)  {
   .ap-up {
     grid-template-columns: 48px minmax(0, 1fr);
   }
@@ -731,7 +731,7 @@
     animation: none;
   }
 }
-@media (max-width: 520px) {
+@container ap (max-width: 520px)  {
   .ap-up-stamp {
     grid-column: 1 / -1;
     justify-self: center;
@@ -821,7 +821,7 @@
 .ap-ownbtn {
   flex: 1 1 auto;
 }
-@media (min-width: 521px) {
+@container ap (min-width: 521px)  {
   .ap-ownbtn {
     flex: 0 0 auto;
   }

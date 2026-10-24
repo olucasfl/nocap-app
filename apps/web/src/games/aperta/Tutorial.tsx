@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { localRect } from './ap-geometry';
 import { arrowSide, arrowX, padRect, type CoachView, type Rect } from './tutorial-logic';
 import './tutorial.css';
 
@@ -43,16 +44,17 @@ export function TutorialCoach({ view, onDismiss, onSkip, skipInCard }: Props) {
     const measure = () => {
       const el = root.current;
       if (!el) return;
-      const box = el.getBoundingClientRect();
+      const box = localRect(el);
       const target = selector ? document.querySelector<HTMLElement>(selector) : null;
       let hole: Rect | null = null;
       if (target) {
-        const r = target.getBoundingClientRect();
+        const r = localRect(target);
         if (r.width > 0 && r.height > 0) {
           hole = padRect({ x: r.left - box.left, y: r.top - box.top, w: r.width, h: r.height }, PAD, { w: box.width, h: box.height });
         }
       }
-      const cardBox = el.querySelector('.ap-tut-card')?.getBoundingClientRect();
+      const cardEl = el.querySelector('.ap-tut-card');
+      const cardBox = cardEl ? localRect(cardEl) : undefined;
       const onTop = !cardBox || cardBox.top - box.top < box.height / 2;
       const topBlock = cardBox && onTop ? Math.round(cardBox.bottom - box.top) : 0;
       const bottomBlock = cardBox && !onTop ? Math.round(box.bottom - cardBox.top) : 0;

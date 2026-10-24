@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
+import { localDelta, localPoint, localRect } from './ap-geometry';
 import { LOW_END } from './perf';
 import { computeTreeLayout, neighbor } from './tree-layout';
 import type { TreeNodeRow } from './tree-logic';
@@ -74,7 +75,7 @@ export function TreeGraph({ rows, selected, onSelect, filter, onFirstDrag }: Pro
     const el = box.current;
     if (!el) return;
     const measure = () => {
-      const r = el.getBoundingClientRect();
+      const r = localRect(el);
       if (r.width > 0 && r.height > 0) setSize({ w: Math.round(r.width), h: Math.round(r.height) });
     };
     measure();
@@ -113,9 +114,10 @@ export function TreeGraph({ rows, selected, onSelect, filter, onFirstDrag }: Pro
     if (!el) return;
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
-      const r = el.getBoundingClientRect();
+      const r = localRect(el);
+      const p = localPoint(el, e.clientX, e.clientY);
       const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
-      zoomBy(Math.exp(-dy * 0.0015), { x: e.clientX - r.left - r.width / 2, y: e.clientY - r.top - r.height / 2 });
+      zoomBy(Math.exp(-dy * 0.0015), { x: p.x - r.left - r.width / 2, y: p.y - r.top - r.height / 2 });
     };
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => el.removeEventListener('wheel', onWheel);
@@ -128,8 +130,8 @@ export function TreeGraph({ rows, selected, onSelect, filter, onFirstDrag }: Pro
   const onMove = (e: PointerEvent<HTMLDivElement>) => {
     const d = drag.current;
     if (!d || d.id !== e.pointerId) return;
-    const dx = e.clientX - d.sx;
-    const dy = e.clientY - d.sy;
+    // Com o jogo girado (celular em pé) o arrasto da tela precisa virar arrasto do jogo.
+    const { x: dx, y: dy } = localDelta(e.currentTarget, e.clientX - d.sx, e.clientY - d.sy);
     if (!d.moved) {
       if (Math.hypot(dx, dy) < DRAG_PX) return;
       d.moved = true;

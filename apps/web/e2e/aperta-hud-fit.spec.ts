@@ -36,8 +36,9 @@ async function installSaves(page: Page) {
 }
 
 const SIZES = [
-  { width: 320, height: 640, mobile: true },
-  { width: 390, height: 844, mobile: true },
+  // Celular só joga deitado (spec 042 adendo): tamanhos de celular são paisagem.
+  { width: 568, height: 320, mobile: true },
+  { width: 844, height: 390, mobile: true },
   { width: 1280, height: 720, mobile: false },
   { width: 1366, height: 768, mobile: false },
 ];
@@ -70,7 +71,7 @@ for (const size of SIZES) {
       const foot = (await page.locator('.ap-evfoot').boundingBox())!;
       expect(foot.x).toBeGreaterThanOrEqual(energy.x - 1);
       expect(foot.x + foot.width).toBeLessThanOrEqual(energy.x + energy.width + 1);
-      if (size.width <= 720) {
+      if (size.width <= 900) {
         const field = (await page.locator('.ap-field').first().boundingBox())!;
         expect(field.x + field.width).toBeLessThanOrEqual(energy.x + 1);
       }

@@ -31,7 +31,7 @@ describe('CSS da tela de jogo', () => {
 
   it('a tela não rola na horizontal e tem ajuste para celular', () => {
     expect(css).toMatch(/\.ap-game \{[^}]*overflow:\s*hidden/);
-    expect(css).toMatch(/@media \(max-width:\s*720px\)/);
+    expect(css).toMatch(/@container ap \(max-width:\s*720px\)/);
   });
 
   it('os botões têm foco visível para teclado', () => {

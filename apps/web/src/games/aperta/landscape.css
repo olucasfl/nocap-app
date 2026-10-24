@@ -1,0 +1,559 @@
+/*
+ * Aperta! no celular de lado (pedido do Lucas: o jogo só existe de lado no celular). A raiz `.ap` é o container `ap`, então
+ * estas regras valem tanto para o aparelho deitado de verdade quanto para o celular em pé, em que o jogo inteiro gira 90 graus
+ * (aperta.css) e a "tela" que o CSS enxerga é de lado. Altura até 520 px = celular de lado (de 320 a 430 de altura);
+ * as telas maiores seguem o layout normal. Este arquivo é importado por último e prefixa tudo com `.ap` para vencer o resto.
+ */
+html:has(.ap),
+body:has(.ap) {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+.ap {
+  touch-action: manipulation;
+}
+
+@container ap (max-height: 520px) and (orientation: landscape) {
+  /* ---------- HUD (canto de cima à esquerda) e botões do topo ---------- */
+  .ap .ap-hud {
+    left: 8px;
+    right: 8px;
+    top: 8px;
+    grid-template-columns: auto 1fr auto auto;
+    gap: 6px;
+  }
+  .ap .ap-hud .ap-hudp {
+    grid-template-columns: auto auto;
+    gap: 2px 14px;
+    min-width: 0;
+    padding: 5px 9px;
+  }
+  .ap .ap-hudrow {
+    display: flex;
+    gap: 6px;
+  }
+  .ap .ap-hudrow b {
+    font-size: 19px;
+  }
+  .ap .ap-hudrow-2 b {
+    font-size: 16px;
+  }
+  .ap .ap-hudrow small {
+    font-size: 9px;
+    letter-spacing: 0.08em;
+  }
+  .ap .ap-ico {
+    width: 20px;
+    height: 20px;
+    border-width: 2px;
+  }
+  .ap .ap-hud .ap-hudp .ap-hudgoal {
+    grid-column: 1 / -1;
+    padding: 3px 6px;
+  }
+  .ap .ap-hbtn {
+    min-height: 38px;
+    padding: 0 12px;
+    font-size: 12px;
+    border-width: 2px;
+    box-shadow: 0 4px 0 var(--space-blue-dark), inset 0 2px 0 rgba(255, 255, 255, 0.4);
+  }
+  .ap .ap-hbtn-exit {
+    grid-column: 3;
+  }
+  .ap .ap-hbtn-tree,
+  .ap .ap-hbtn-skip {
+    grid-column: 4;
+  }
+  .ap .ap-game.has-goal {
+    --ap-hud-extra: 0px;
+  }
+
+  /* ---------- campo, energia, dock ---------- */
+  .ap .ap-field {
+    left: 236px;
+    right: 112px;
+    top: 52px;
+    bottom: 62px;
+  }
+  .ap .ap-energy {
+    right: 6px;
+    top: 52px;
+    bottom: 62px;
+    gap: 3px;
+  }
+  .ap .ap-dock {
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    gap: 8px;
+  }
+  .ap .ap-dockb {
+    height: 48px;
+    min-width: 48px;
+    padding: 0 10px;
+    border-width: 2px;
+    font-size: 14px;
+    box-shadow: 0 4px 0 #0a1030, inset 0 2px 0 rgba(255, 255, 255, 0.2);
+  }
+  .ap .ap-dock-i {
+    width: 24px;
+    height: 24px;
+  }
+  .ap .ap-dockb-big {
+    flex: none;
+    min-width: 150px;
+    margin-left: auto;
+    font-size: 15px;
+  }
+  .ap .ap-badge {
+    top: -9px;
+    right: -8px;
+    min-width: 22px;
+    height: 22px;
+    font-size: 11px;
+    line-height: 16px;
+  }
+  .ap .ap-skillbar {
+    left: 8px;
+    right: auto;
+    bottom: 62px;
+    justify-content: flex-start;
+    max-width: 224px;
+  }
+  .ap .ap-skill {
+    width: 42px;
+    height: 42px;
+  }
+
+  /* ---------- avisos: uma coluna estreita à esquerda, entre o HUD e a barra de habilidades ---------- */
+  .ap .ap-banners {
+    left: 8px;
+    right: auto;
+    top: 112px;
+    bottom: 112px;
+    width: 224px;
+    transform: none;
+    align-items: stretch;
+    gap: 6px;
+  }
+  .ap .ap-pickup {
+    padding: 5px 10px 5px 6px;
+    gap: 8px;
+  }
+  .ap .ap-pickup-medal {
+    width: 30px;
+    height: 30px;
+  }
+  .ap .ap-pickup b {
+    font-size: 12px;
+  }
+  .ap .ap-pickup small {
+    font-size: 11px;
+  }
+  .ap .ap-ready-wrap .ap-reqs {
+    display: none;
+  }
+
+  /* ---------- páginas (Melhorias, Grimórios, Conquistas, Cofre): tela inteira, com o X no cabeçalho ---------- */
+  .ap .ap-sheetwrap {
+    inset: 6px;
+    z-index: 36;
+  }
+  .ap .ap-sheet {
+    width: 100%;
+    border-radius: 14px;
+  }
+  .ap .ap-shead {
+    gap: 10px;
+    padding: 6px 12px;
+  }
+  .ap .ap-shead-icon {
+    width: 30px;
+    height: 30px;
+  }
+  .ap .ap-shead h2 {
+    font-size: 17px;
+  }
+  .ap .ap-x {
+    width: 38px;
+    height: 38px;
+  }
+  .ap .ap-sbody {
+    gap: 10px;
+    padding: 10px 12px 14px;
+  }
+
+  /* ---------- modais (escolha, meta, colapso, regiões) ---------- */
+  .ap .ap-modal-game {
+    padding: 6px;
+  }
+  .ap .ap-mcard-game {
+    gap: 6px;
+    padding: 10px 12px;
+    border-radius: 14px;
+  }
+  .ap .ap-mcard-game h2 {
+    font-size: 17px;
+  }
+  .ap .ap-modal-intro {
+    display: none;
+  }
+}
+
+@container ap (max-height: 520px) and (orientation: landscape) {
+  /* ---------- páginas: o aviso do topo some (a lista é o que importa) e as listas ganham 2 colunas ---------- */
+  .ap .ap-pnotice {
+    display: none;
+  }
+  .ap .ap-upwrap {
+    gap: 8px;
+  }
+  .ap .ap-upbar .ap-uptabs {
+    padding: 3px;
+  }
+  .ap .ap-upbar .ap-uptab {
+    min-height: 34px;
+    font-size: 13px;
+  }
+  .ap .ap-ownbtn {
+    min-height: 40px;
+    font-size: 13px;
+  }
+  .ap .ap-up-auto {
+    font-size: 12px;
+  }
+  .ap .ap-uplist {
+    gap: 8px;
+  }
+  .ap .ap-up {
+    padding: 8px 10px;
+  }
+  .ap .ap-ownlist {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .ap .ap-album {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .ap .ap-ach-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ap .ap-ach-total b {
+    font-size: 22px;
+  }
+  .ap .ap-achpage {
+    gap: 8px;
+  }
+  .ap .ap-ach-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 18px;
+  }
+  .ap .ap-ach-tools {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 8px;
+  }
+  .ap .ap-ach-search > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .ap .ap-ach-search input {
+    min-height: 38px;
+  }
+
+  /* ---------- escolha de grimório: 3 cartas lado a lado, livro à esquerda e texto à direita ---------- */
+  .ap .ap-mcard-game > .ap-sub {
+    display: none;
+  }
+  .ap .ap-lockrow {
+    min-height: 0;
+  }
+  .ap .ap-picks {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    padding: 2px;
+  }
+  .ap .ap-picks.is-four {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .ap .ap-pick {
+    grid-template-columns: 54px minmax(0, 1fr);
+    grid-template-areas:
+      'art seals'
+      'art name'
+      'art cat'
+      'info info';
+    align-items: center;
+    justify-items: start;
+    gap: 2px 6px;
+    padding: 24px 6px 6px;
+    text-align: left;
+  }
+  .ap .ap-pick .ap-pick-art {
+    grid-area: art;
+  }
+  .ap .ap-pick .ap-pick-seals {
+    grid-area: seals;
+    justify-items: start;
+    gap: 2px;
+  }
+  .ap .ap-pick .ap-pick-name {
+    grid-area: name;
+    font-size: 13px;
+  }
+  .ap .ap-pick .ap-cat-ico {
+    grid-area: cat;
+    font-size: 9px;
+  }
+  .ap .ap-pick .ap-pick-info {
+    grid-area: info;
+    gap: 3px;
+    padding: 4px 6px;
+  }
+  .ap .ap-pick .ap-pick-sug {
+    grid-column: 1 / -1;
+  }
+  .ap .ap-pick .ap-book {
+    --ap-w: 46px;
+  }
+  .ap .ap-pick .ap-pick-rar {
+    padding: 2px 0;
+    font-size: 10px;
+  }
+  .ap .ap-pick .ap-pick-lvl,
+  .ap .ap-pick .ap-pick-evo {
+    padding: 1px 6px;
+    font-size: 10px;
+    gap: 3px;
+    border-width: 2px;
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.45);
+  }
+  .ap .ap-pick .ap-pick-fx {
+    font-size: 10.5px;
+    line-height: 1.25;
+  }
+  .ap .ap-pick .ap-pick-gain small {
+    font-size: 9px;
+  }
+  .ap .ap-pick .ap-gain-name {
+    font-size: 10px;
+  }
+  .ap .ap-pick .ap-gain-vals {
+    font-size: 12px;
+  }
+  .ap .ap-pick-lvl svg,
+  .ap .ap-pick-evo svg {
+    width: 14px;
+    height: 7px;
+  }
+  .ap .ap-reroll {
+    min-height: 32px;
+    font-size: 11px;
+  }
+
+  /* ---------- colapso ---------- */
+  .ap .ap-collapse {
+    width: min(760px, 100%);
+  }
+  .ap .ap-collapse-step {
+    font-size: 10px;
+  }
+  .ap .ap-collapse .ap-reqs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .ap .ap-cc-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .ap .ap-cc-actions {
+    position: sticky;
+    bottom: -10px;
+    margin: 0 -12px -10px;
+    padding: 6px 12px 8px;
+    background: linear-gradient(180deg, rgba(10, 16, 48, 0), #0a1030 28%);
+  }
+  .ap .ap-cc-cols ul {
+    font-size: 12px;
+  }
+
+  /* ---------- árvore: cabeçalho mais baixo e o detalhe do nó num cartão à direita ---------- */
+  .ap .ap-tree .ap-th {
+    gap: 5px;
+    padding: 6px 8px 12px;
+  }
+  .ap .ap-tr-back,
+  .ap .ap-tr-ico {
+    min-height: 38px;
+    min-width: 40px;
+  }
+  .ap .ap-tree .ap-tree-frag {
+    min-height: 38px;
+    padding: 0 12px;
+  }
+  .ap .ap-tree .ap-tree-frag b {
+    font-size: 20px;
+  }
+  .ap .ap-tree .ap-chipf {
+    min-height: 30px;
+    padding: 0 10px;
+    font-size: 11px;
+  }
+  .ap .ap-tree .ap-tr-pop {
+    top: 52px;
+  }
+  .ap .ap-tree .ap-tp-wrap {
+    left: auto;
+    right: 8px;
+    top: 90px;
+    bottom: 8px;
+    width: min(300px, 46cqw);
+    max-height: none;
+  }
+  .ap .ap-tree .ap-tg-tools {
+    left: 8px;
+  }
+  .ap .ap-tree .ap-tg-hint,
+  .ap .ap-tree .ap-tg-closed {
+    bottom: 12px;
+  }
+
+  /* ---------- evolução de raridade ---------- */
+  .ap .ap-evo-stage {
+    width: 120px;
+    height: 140px;
+  }
+  .ap .ap-evo-fx {
+    gap: 6px;
+  }
+  .ap .ap-evo-seal {
+    font-size: 15px;
+    padding: 4px 12px;
+  }
+  .ap .ap-evo-name {
+    font-size: 16px;
+  }
+}
+
+/* Celular de lado mais largo (844 e 932): as listas de melhorias cabem em 2 colunas. */
+@container ap (max-height: 520px) and (orientation: landscape) and (min-width: 800px) {
+  .ap .ap-uplist {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ap .ap-ownlist {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+  .ap .ap-album {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+/* ---------- título e saves em celular deitado ---------- */
+@container ap (max-height: 520px) and (orientation: landscape) {
+  .ap .ap-title {
+    padding: 10px 5cqw;
+  }
+  .ap .ap-titlebox {
+    width: min(300px, 56cqw);
+    gap: 4px;
+  }
+  .ap .ap-tag {
+    font-size: 11px;
+  }
+  .ap .ap-logo {
+    font-size: clamp(44px, 16cqh, 76px);
+  }
+  .ap .ap-menu {
+    gap: 7px;
+    margin-top: 4px;
+  }
+  .ap .ap-title .ap-btn {
+    min-height: 40px;
+    font-size: 15px;
+    padding-block: 5px;
+  }
+  .ap .ap-invite {
+    padding: 10px;
+    gap: 6px;
+  }
+  .ap .ap-invite h2 {
+    font-size: 16px;
+  }
+  .ap .ap-invite p {
+    font-size: 12px;
+    line-height: 1.3;
+  }
+  .ap .ap-art {
+    width: min(70cqh, 34cqw);
+    right: 1cqw;
+    bottom: -2cqh;
+  }
+  .ap .ap-mcard {
+    padding: 10px 14px;
+    gap: 8px;
+    border-radius: 14px;
+  }
+  .ap .ap-mcard h2 {
+    font-size: 18px;
+  }
+  .ap .ap-mcard .ap-sub {
+    display: none;
+  }
+  .ap .ap-slots {
+    gap: 8px;
+  }
+  .ap .ap-slot {
+    padding: 8px 10px;
+    gap: 4px;
+  }
+  .ap .ap-slot h3 {
+    font-size: 15px;
+  }
+  .ap .ap-slot p {
+    font-size: 12px;
+  }
+  .ap .ap-mcard .ap-btn {
+    min-height: 38px;
+    font-size: 14px;
+  }
+}
+
+/* telas muito baixas (568x320): selos em linha própria na carta de escolha */
+@container ap (max-height: 340px) and (orientation: landscape) {
+  .ap .ap-pick-fx {
+    display: none;
+  }
+  .ap .ap-banners {
+    top: 102px;
+    bottom: 70px;
+  }
+  .ap .ap-newstrip {
+    padding: 6px 8px;
+    gap: 4px;
+  }
+  .ap .ap-pick {
+    grid-template-areas:
+      'seals seals'
+      'art name'
+      'art cat'
+      'info info';
+    padding-top: 22px;
+  }
+  .ap .ap-pick .ap-pick-seals {
+    justify-self: stretch;
+    grid-auto-flow: column;
+    justify-content: start;
+  }
+  .ap .ap-pick .ap-cat-ico {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

@@ -30,9 +30,9 @@
   position: absolute;
   left: 50%;
   top: 50%;
-  width: min(120vw, 900px);
-  height: min(120vw, 900px);
-  margin: calc(min(120vw, 900px) / -2) 0 0 calc(min(120vw, 900px) / -2);
+  width: min(120cqw, 900px);
+  height: min(120cqw, 900px);
+  margin: calc(min(120cqw, 900px) / -2) 0 0 calc(min(120cqw, 900px) / -2);
   background: radial-gradient(circle, var(--evo) 0%, transparent 55%);
   opacity: 0;
   animation: ap-evo-glow 2.4s ease-out both;

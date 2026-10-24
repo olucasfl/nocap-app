@@ -43,8 +43,9 @@ async function installSaves(page: Page) {
 }
 
 const SIZES = [
-  { width: 320, height: 640, mobile: true },
-  { width: 390, height: 844, mobile: true },
+  // Celular só joga deitado: tamanhos de celular são paisagem.
+  { width: 568, height: 320, mobile: true },
+  { width: 844, height: 390, mobile: true },
   { width: 1366, height: 768, mobile: false },
 ];
 

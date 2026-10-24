@@ -302,8 +302,8 @@
   opacity: 0.5;
 }
 /* Gradiente radial em vez de blur(): o mesmo véu de cor sem custo de filtro. */
-.ap-region-glow--a { width: 62vmax; height: 42vmax; left: -16vmax; top: 34%; background: radial-gradient(closest-side, var(--ap-glow-a), transparent); }
-.ap-region-glow--b { width: 52vmax; height: 36vmax; right: -14vmax; top: -14%; background: radial-gradient(closest-side, var(--ap-glow-b), transparent); }
+.ap-region-glow--a { width: 62cqmax; height: 42cqmax; left: -16cqmax; top: 34%; background: radial-gradient(closest-side, var(--ap-glow-a), transparent); }
+.ap-region-glow--b { width: 52cqmax; height: 36cqmax; right: -14cqmax; top: -14%; background: radial-gradient(closest-side, var(--ap-glow-b), transparent); }
 .ap-stars {
   position: absolute;
   left: -10%;

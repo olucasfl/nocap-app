@@ -1,13 +1,36 @@
 @import './space-tokens.css';
 
 /* Telas de título, saves e história do Aperta! (spec 038, 3.1 a 3.3). Só transform e opacity animam. */
+/*
+ * A raiz é a tela inteira e também o "container" de todas as consultas de tamanho do jogo (`@container ap`, unidades `cq*`):
+ * por isso o jogo pode girar de lado no celular em pé sem que o CSS enxergue o tamanho errado.
+ */
 .ap {
-  position: relative;
-  min-height: 100dvh;
+  position: fixed;
+  inset: 0;
+  container: ap / size;
   overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   background: var(--space-bg);
   color: var(--space-text);
   font-family: var(--space-font-text);
+}
+/*
+ * Celular em pé: o jogo só existe de lado (pedido do Lucas). Sem travar a orientação do aparelho (iOS não deixa), a tela inteira
+ * gira 90 graus: largura = altura real, altura = largura real. Ao deitar o aparelho a regra desliga sozinha.
+ */
+@media (orientation: portrait) and (pointer: coarse) and (max-width: 599px) {
+  .ap {
+    inset: auto;
+    top: 0;
+    left: 0;
+    width: 100vh;
+    width: 100dvh;
+    height: 100vw;
+    transform-origin: 0 0;
+    transform: translateX(100vw) rotate(90deg);
+  }
 }
 .ap *,
 .ap *::before,
@@ -44,16 +67,16 @@
   opacity: 0.38;
 }
 .ap-n1 {
-  width: 62vmax;
-  height: 42vmax;
-  left: -16vmax;
+  width: 62cqmax;
+  height: 42cqmax;
+  left: -16cqmax;
   top: 34%;
   background: #5b2e91;
 }
 .ap-n2 {
-  width: 52vmax;
-  height: 36vmax;
-  right: -14vmax;
+  width: 52cqmax;
+  height: 36cqmax;
+  right: -14cqmax;
   top: -14%;
   background: #1b4f9c;
 }
@@ -205,16 +228,16 @@
 /* ---------- título ---------- */
 .ap-title {
   position: relative;
-  min-height: 100dvh;
+  min-height: 100cqh;
   display: flex;
   align-items: center;
-  padding: 32px 5vw;
+  padding: 32px 5cqw;
 }
 .ap-art {
   position: absolute;
-  right: -4vw;
-  bottom: -6vh;
-  width: min(80vh, 58vw);
+  right: -4cqw;
+  bottom: -6cqh;
+  width: min(80cqh, 58cqw);
   height: auto;
   max-width: none;
   pointer-events: none;
@@ -251,7 +274,7 @@
   width: min(430px, 100%);
 }
 .ap-logo {
-  font: 700 clamp(58px, 11vw, 112px) / 0.95 var(--space-font-display);
+  font: 700 clamp(58px, 11cqw, 112px) / 0.95 var(--space-font-display);
   color: #fff;
   text-shadow:
     0 6px 0 #0a1a48,
@@ -313,7 +336,7 @@
 .ap-story {
   position: relative;
   z-index: 2;
-  min-height: 100dvh;
+  min-height: 100cqh;
   display: grid;
   place-items: center;
   padding: 20px;
@@ -327,7 +350,7 @@
   justify-items: center;
 }
 .ap-scene {
-  width: min(440px, 86vw);
+  width: min(440px, 86cqw);
   height: auto;
   filter: drop-shadow(0 10px 30px rgba(60, 156, 240, 0.25));
 }
@@ -340,7 +363,7 @@
 }
 /* Três livros de 150 px não cabem em 320 px: encolhem juntos (só tamanho, sem animar). */
 .ap-story-books .ap-book {
-  --ap-w: clamp(78px, 24vw, 130px);
+  --ap-w: clamp(78px, 24cqw, 130px);
 }
 .ap-story-k {
   font: 600 12px var(--space-font-display);
@@ -349,7 +372,7 @@
   text-transform: uppercase;
 }
 .ap-story-t {
-  font: 500 clamp(18px, 2.8vw, 26px) / 1.4 var(--space-font-text);
+  font: 500 clamp(18px, 2.8cqw, 26px) / 1.4 var(--space-font-text);
   color: #fff;
   min-height: 5.6em;
   animation: ap-rise 0.7s ease-out both;
@@ -510,7 +533,7 @@
 .ap-wip {
   position: relative;
   z-index: 2;
-  min-height: 100dvh;
+  min-height: 100cqh;
   display: grid;
   place-items: center;
   align-content: center;
@@ -519,19 +542,19 @@
   text-align: center;
 }
 .ap-wip h1 {
-  font: 700 clamp(32px, 7vw, 56px) / 1 var(--space-font-display);
+  font: 700 clamp(32px, 7cqw, 56px) / 1 var(--space-font-display);
   text-transform: uppercase;
 }
 
-@media (max-width: 720px) {
+@container ap (max-width: 720px) and (orientation: portrait) {
   .ap-title {
     align-items: flex-start;
-    padding-top: 10vh;
+    padding-top: 10cqh;
   }
   .ap-art {
-    right: -34vw;
-    bottom: -4vh;
-    width: 132vw;
+    right: -34cqw;
+    bottom: -4cqh;
+    width: 132cqw;
     opacity: 0.85;
   }
   .ap-titlebox {
