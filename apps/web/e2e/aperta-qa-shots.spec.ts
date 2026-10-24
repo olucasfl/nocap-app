@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { PHONES_LANDSCAPE, PHONES_PORTRAIT, choiceSave, enterGame, freshSave, installAccount, midSave, readySave } from './aperta-fixtures';
+import { PHONES_LANDSCAPE, PHONES_PORTRAIT, choiceSave, enterGame, freshSave, installAccount, midSave, readySave, tutorialSaves } from './aperta-fixtures';
 
 /**
  * Tira as fotos de todas as telas do Aperta! nos tamanhos de celular (de lado e em pé) para a revisão visual. Só roda com
@@ -7,7 +7,7 @@ import { PHONES_LANDSCAPE, PHONES_PORTRAIT, choiceSave, enterGame, freshSave, in
  */
 test.skip(!process.env.E2E_QA, 'revisão visual manual (E2E_QA=1)');
 
-const sizes = [...PHONES_LANDSCAPE, ...PHONES_PORTRAIT];
+const sizes = [...PHONES_LANDSCAPE, ...PHONES_PORTRAIT, { name: '1280x720', w: 1280, h: 720 }];
 const dir = process.env.E2E_SHOTS ?? 'test-results';
 
 async function snap(page: Page, size: string, name: string) {
@@ -94,6 +94,32 @@ for (const size of sizes) {
       await installAccount(page, freshSave());
       await enterGame(page);
       await snap(page, size.name, '40-tutorial');
+    });
+
+    for (const [name, make] of [
+      ['41-tut-poeira', () => tutorialSaves.touch(3)],
+      ['42-tut-melhoria', () => tutorialSaves.upgrade()],
+      ['44-tut-barra', () => tutorialSaves.fill()],
+      ['45-tut-grimorios', () => tutorialSaves.grimoires()],
+      ['46-tut-geradores', () => tutorialSaves.free(['achievements', 'objects'], (s) => ({ ...s, run: { ...s.run, dust: 1e12, dustLife: 1e12 } }))],
+      ['47-tut-colapso', () => tutorialSaves.free(['achievements', 'objects', 'generators'])],
+      ['48-tut-arvore', () => tutorialSaves.free(['achievements', 'objects', 'generators', 'collapse'], (s) => ({ ...s, collapses: 1 }))],
+    ] as const) {
+      test(`tutorial ${name}`, async ({ page }, info) => {
+        test.skip(info.project.name !== 'desktop', 'um projeto basta');
+        await installAccount(page, make());
+        await enterGame(page);
+        await page.waitForTimeout(900);
+        await snap(page, size.name, name);
+      });
+    }
+    test('tutorial 43-tut-pagina (Melhorias aberta)', async ({ page }, info) => {
+      test.skip(info.project.name !== 'desktop', 'um projeto basta');
+      await installAccount(page, tutorialSaves.upgrade());
+      await enterGame(page);
+      await page.locator('[data-tut="dock-upgrades"]').click();
+      await page.waitForTimeout(900);
+      await snap(page, size.name, '43-tut-pagina');
     });
   });
 }

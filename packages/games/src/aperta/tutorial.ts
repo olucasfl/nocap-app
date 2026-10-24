@@ -23,8 +23,8 @@ export type UiButton = 'upgrades' | 'grimoires' | 'achievements' | 'tree';
 export const UI_BUTTONS: readonly UiButton[] = ['upgrades', 'grimoires', 'achievements', 'tree'];
 
 /** Cartões do passo 7: cada um tem um gatilho, menos a árvore, que vem por último. */
-export type TutorialHint = 'achievements' | 'objects' | 'collapse' | 'tree';
-export const TUTORIAL_HINTS: readonly TutorialHint[] = ['achievements', 'objects', 'collapse', 'tree'];
+export type TutorialHint = 'achievements' | 'objects' | 'generators' | 'collapse' | 'tree';
+export const TUTORIAL_HINTS: readonly TutorialHint[] = ['achievements', 'objects', 'generators', 'collapse', 'tree'];
 
 /**
  * A 1ª conquista ("Primeiro toque") cai no 1º toque, no meio do passo 1, e ninguém a vê. O cartão de
@@ -90,22 +90,34 @@ export function affordableUpgradeIndex(state: SaveState): number | null {
   return best;
 }
 
+/** Algum gerador de poeira já cabe na poeira de agora? (o gatilho do cartão de Geradores) */
+export function canAffordGenerator(state: SaveState): boolean {
+  for (let i = 0; i < UPGRADES.length; i++) {
+    if (UPGRADES[i]!.kind !== 'generator') continue;
+    const cost = nextUpgradeCost(state, i);
+    if (cost !== null && state.run.dust >= cost) return true;
+  }
+  return false;
+}
+
 /** O cartão do passo 7 que está na vez (ou `null`): conquista e objeto por gatilho, a árvore por último. */
 export function pendingHint(state: SaveState): TutorialHint | null {
   if (state.tutorial !== TUTORIAL.FREE) return null;
   const seen = state.ui.hints;
   if (!seen.includes('achievements') && state.achievements.length >= ACHIEVEMENT_HINT_AT) return 'achievements';
   if (!seen.includes('objects') && state.run.objects.length > 0) return 'objects';
+  // Geradores: o primeiro que cabe na poeira. A pessoa precisa saber que existe renda sem tocar.
+  if (!seen.includes('generators') && canAffordGenerator(state)) return 'generators';
   // O colapso é explicado cedo (2 grimórios escolhidos), com a meta à vista: a pessoa precisa saber para onde está indo.
   if (!seen.includes('collapse') && state.run.picks >= 2) return 'collapse';
   // A Árvore entra com a 1ª Cintila ganha (as conquistas pagam), depois dos outros dois cartões.
-  if (!seen.includes('tree') && seen.includes('achievements') && seen.includes('objects') && seen.includes('collapse') && sparksTotal(state) >= 1) return 'tree';
+  if (!seen.includes('tree') && seen.includes('achievements') && seen.includes('objects') && seen.includes('generators') && seen.includes('collapse') && sparksTotal(state) >= 1) return 'tree';
   return null;
 }
 
-/** Botão que o cartão `hint` apresenta (o de objetos não tem botão). */
+/** Botão que o cartão `hint` apresenta (os de objetos, geradores e colapso não liberam botão novo). */
 export function hintButton(hint: TutorialHint): UiButton | null {
-  return hint === 'objects' || hint === 'collapse' ? null : hint;
+  return hint === 'objects' || hint === 'generators' || hint === 'collapse' ? null : hint;
 }
 
 /** Marca um cartão como visto; com os três vistos, o tutorial termina. */

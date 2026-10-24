@@ -1,13 +1,20 @@
-import { CHOICE_LOCK_SEC, TUTORIAL, pendingHint, type SaveState, type TutorialHint } from '@nocap/games';
+import { CHOICE_LOCK_SEC, TUTORIAL, TUTORIAL_STEPS, pendingHint, type SaveState, type TutorialHint } from '@nocap/games';
 import { collapseView, type PageName } from './game-logic';
 
 /** O que o tutorial destaca; cada alvo é um `data-tut` na tela de jogo. */
-export type TutorialTarget = 'press' | 'dock-upgrades' | 'buy-first' | 'page-close' | 'dock-grimoires' | 'dock-achievements' | 'tree' | 'first-object' | 'goal';
+export type TutorialTarget = 'press' | 'dock-upgrades' | 'buy-first' | 'page-close' | 'dock-grimoires' | 'dock-achievements' | 'tree' | 'first-object' | 'goal' | 'dust' | 'energy';
 
 export interface CoachView {
   /** Muda a cada dica nova: refaz o cartão e roda a animação de entrada. */
   key: string;
+  /** O que o jogador deve tocar: só ele fica livre; o resto da tela escurece e não responde (ver `Tutorial.tsx`). */
   target: TutorialTarget | null;
+  /** Algo para olhar, sem tocar: fica iluminado, mas não responde ao toque. */
+  glow: TutorialTarget | null;
+  /** A seta aponta para o alvo ou para o que só ilumina. */
+  arrowOn: 'target' | 'glow';
+  /** "Passo 2 de 6" nos passos guiados, "Dica" nos cartões do jogo livre. */
+  step: string | null;
   /** Etiqueta da seta ("Toque aqui..."); `null` sem seta. */
   label: string | null;
   title: string | null;
@@ -21,9 +28,11 @@ export interface CoachView {
 }
 
 /** A página que cada cartão do jogo livre apresenta: abri-la já conta como visto. */
-export const HINT_PAGE: Partial<Record<TutorialHint, PageName>> = { achievements: 'achievements', tree: 'tree' };
+export const HINT_PAGE: Partial<Record<TutorialHint, PageName>> = { achievements: 'achievements', tree: 'tree', generators: 'upgrades' };
 
-const NONE = { label: null, title: null, text: null, dismiss: null, inline: false, place: 'top' } as const;
+const NONE = { glow: null, arrowOn: 'target', step: null, label: null, title: null, text: null, dismiss: null, inline: false, place: 'top' } as const;
+
+const stepName = (n: number) => `Passo ${n} de ${TUTORIAL_STEPS}`;
 
 /**
  * Dica do momento (spec 038, 4.6), ou `null` se o tutorial acabou ou o momento não é para ela (página de outro
@@ -36,12 +45,39 @@ export function coachView(state: SaveState, page: PageName | null, busy = false)
   const pending = state.run.pending !== null;
   switch (step) {
     case TUTORIAL.TOUCH:
-      return page ? null : { ...NONE, key: 'touch', target: 'press', label: 'Toque aqui para ganhar poeira' };
+      if (page) return null;
+      if (state.run.clicks < 3) {
+        return {
+          ...NONE,
+          key: 'touch',
+          step: stepName(1),
+          target: 'press',
+          label: 'Toque aqui para ganhar poeira',
+          title: 'Bem-vindo à Perigeu',
+          text: 'Cada toque no botão rende poeira estelar. Comece por ele.',
+        };
+      }
+      // A poeira é o dinheiro do jogo: o contador acende uma vez, logo nos primeiros toques.
+      if (state.run.clicks < 6) {
+        return {
+          ...NONE,
+          key: 'touch-dust',
+          step: stepName(1),
+          target: 'press',
+          glow: 'dust',
+          arrowOn: 'glow',
+          label: 'Sua poeira',
+          title: 'Esta é a sua poeira',
+          text: 'É o dinheiro do jogo: com ela você compra melhorias. Continue tocando.',
+        };
+      }
+      return { ...NONE, key: 'touch-more', step: stepName(1), target: 'press', label: 'Continue tocando', title: 'Junte poeira', text: 'Quando juntar o bastante, a primeira melhoria é liberada.' };
     case TUTORIAL.UPGRADE:
       if (page === 'upgrades') {
         return {
           ...NONE,
           key: 'upgrade-buy',
+          step: stepName(2),
           target: 'buy-first',
           title: 'Sua primeira melhoria',
           text: 'Melhorias fazem a poeira render mais. Toque no preço para comprar.',
@@ -53,6 +89,7 @@ export function coachView(state: SaveState, page: PageName | null, busy = false)
         : {
             ...NONE,
             key: 'upgrade-open',
+            step: stepName(2),
             target: 'dock-upgrades',
             label: 'Toque aqui',
             title: 'Parabéns!',
@@ -60,7 +97,7 @@ export function coachView(state: SaveState, page: PageName | null, busy = false)
           };
     case TUTORIAL.BACK:
       return page === 'upgrades'
-        ? { ...NONE, key: 'back', target: 'page-close', title: 'Comprado!', text: 'Feche a página e volte a tocar no botão.', place: 'bottom' }
+        ? { ...NONE, key: 'back', step: stepName(3), target: 'page-close', title: 'Comprado!', text: 'Feche a página e volte a tocar no botão.', place: 'bottom' }
         : null;
     case TUTORIAL.FILL:
       return page
@@ -68,16 +105,19 @@ export function coachView(state: SaveState, page: PageName | null, busy = false)
         : {
             ...NONE,
             key: 'fill',
+            step: stepName(4),
             target: 'press',
-            label: 'Continue tocando',
+            glow: 'energy',
+            // Sem etiqueta: ao lado da barra não cabe nenhuma sem cobrir o botão; o brilho e o cartão bastam.
             title: 'Encha a barra de energia',
-            text: 'A cada toque a barra sobe. Quando encher, você ganha um grimório.',
+            text: 'A cada toque a barra sobe. Quando encher, você ganha um grimório: um poder permanente.',
           };
     case TUTORIAL.CHOOSE:
       return pending
         ? {
             ...NONE,
             key: 'choose',
+            step: stepName(5),
             target: null,
             title: 'Você ganhou seu primeiro grimório!',
             text: `Escolha um: toque numa carta para marcá-la (ela destrava em ${String(CHOICE_LOCK_SEC).replace('.', ',')} s) e depois toque em Escolher.`,
@@ -90,10 +130,11 @@ export function coachView(state: SaveState, page: PageName | null, busy = false)
         : {
             ...NONE,
             key: 'grimoires',
+            step: stepName(6),
             target: 'dock-grimoires',
             label: 'Toque aqui',
             title: 'Seus grimórios',
-            text: 'Os que você escolher ficam guardados nesta página, junto com os que ainda faltam descobrir.',
+            text: 'Os que você escolher ficam guardados aqui. Cada um existe em 4 raridades: pegar o mesmo de novo sobe o nível e, mais para a frente, evolui para uma raridade maior.',
           };
     default: {
       if (page || pending) return null;
@@ -112,6 +153,7 @@ function collapseHint(state: SaveState): CoachView {
   return {
     ...NONE,
     key: 'hint-collapse',
+    step: 'Dica',
     target: 'goal',
     label: 'Sua meta',
     title: 'O colapso da estrela',
@@ -121,9 +163,20 @@ function collapseHint(state: SaveState): CoachView {
 }
 
 const HINTS: Record<Exclude<TutorialHint, 'collapse'>, CoachView> = {
+  generators: {
+    ...NONE,
+    key: 'hint-generators',
+    step: 'Dica',
+    target: 'dock-upgrades',
+    label: 'Geradores',
+    title: 'Poeira sem tocar',
+    text: 'Geradores ganham poeira por você, o tempo todo, até com o jogo parado. Abra Melhorias e escolha a aba Geradores.',
+    dismiss: 'generators',
+  },
   achievements: {
     ...NONE,
     key: 'hint-achievements',
+    step: 'Dica',
     target: 'dock-achievements',
     label: 'Conquistas',
     title: 'Sua primeira conquista!',
@@ -133,6 +186,7 @@ const HINTS: Record<Exclude<TutorialHint, 'collapse'>, CoachView> = {
   objects: {
     ...NONE,
     key: 'hint-objects',
+    step: 'Dica',
     target: 'first-object',
     label: 'Pegue aqui',
     title: 'Objetos no espaço',
@@ -142,6 +196,7 @@ const HINTS: Record<Exclude<TutorialHint, 'collapse'>, CoachView> = {
   tree: {
     ...NONE,
     key: 'hint-tree',
+    step: 'Dica',
     target: 'tree',
     label: 'Árvore',
     title: 'Você ganhou sua primeira Cintila!',
@@ -187,4 +242,67 @@ export function arrowSide(hole: Rect, viewH: number, topBlock = 0, bottomBlock =
 /** Centro horizontal da seta, mantido dentro da tela. */
 export function arrowX(hole: Rect, viewW: number, halfWidth: number): number {
   return Math.min(viewW - halfWidth - 8, Math.max(halfWidth + 8, hole.x + hole.w / 2));
+}
+
+const overlap = (a: Rect, b: Rect): number => {
+  const w = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+  const h = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+  return w > 0 && h > 0 ? w * h : 0;
+};
+
+export const inflate = (r: Rect, by: number): Rect => ({ x: r.x - by, y: r.y - by, w: r.w + by * 2, h: r.h + by * 2 });
+
+/**
+ * Onde pôr o cartão: varre a tela em passos e fica com o ponto que não cobre nada de `avoid` (alvo, seta, botão do
+ * jogo) mais perto de `anchor`; se nenhum escapa, o que cobre menos. Serve igual para celular deitado, em pé e PC.
+ */
+export function placeCard(card: { w: number; h: number }, bounds: { w: number; h: number }, avoid: Rect[], anchor: { x: number; y: number }, margin = 8, step = 8): { x: number; y: number } {
+  const maxX = Math.max(margin, bounds.w - card.w - margin);
+  const maxY = Math.max(margin, bounds.h - card.h - margin);
+  let best = { x: Math.min(maxX, Math.max(margin, anchor.x)), y: Math.min(maxY, Math.max(margin, anchor.y)) };
+  let bestScore = Infinity;
+  const xs: number[] = [];
+  const ys: number[] = [];
+  for (let x = margin; x <= maxX; x += step) xs.push(x);
+  for (let y = margin; y <= maxY; y += step) ys.push(y);
+  if (xs[xs.length - 1] !== maxX) xs.push(maxX);
+  if (ys[ys.length - 1] !== maxY) ys.push(maxY);
+  // A âncora exata também é candidata: o passo da grade não a deve arredondar quando está livre.
+  if (!xs.includes(best.x)) xs.push(best.x);
+  if (!ys.includes(best.y)) ys.push(best.y);
+  for (const y of ys) {
+    for (const x of xs) {
+      const r = { x, y, w: card.w, h: card.h };
+      const covered = avoid.reduce((sum, a) => sum + overlap(r, a), 0);
+      // O que cobre algo pesa muito mais que a distância; entre os livres vale o mais perto da âncora.
+      const score = covered * 1000 + Math.hypot(x - anchor.x, y - anchor.y);
+      if (score < bestScore) {
+        bestScore = score;
+        best = { x, y };
+      }
+    }
+  }
+  return best;
+}
+
+export type ArrowPlacement = 'above' | 'below' | 'left' | 'right';
+
+/**
+ * Onde a seta fica em volta do alvo: acima ou abaixo, e ao lado quando o alvo é uma coluna alta e estreita (a barra de
+ * energia) ou quando não sobra altura. Do lado de dentro da tela com mais espaço livre.
+ */
+export function arrowPlacement(hole: Rect, bounds: { w: number; h: number }): ArrowPlacement {
+  const tall = hole.h > bounds.h * 0.4 && hole.w < bounds.w * 0.25;
+  const roomAbove = hole.y >= ARROW_SPACE;
+  const roomBelow = bounds.h - (hole.y + hole.h) >= ARROW_SPACE;
+  if (tall || (!roomAbove && !roomBelow)) return hole.x + hole.w / 2 > bounds.w / 2 ? 'left' : 'right';
+  return arrowSide(hole, bounds.h);
+}
+
+/** Retângulo que a seta e a etiqueta ocupam (o cartão e a mão fogem dele). */
+export function arrowBox(hole: Rect, bounds: { w: number; h: number }, side: ArrowPlacement, labelW = 220, h = ARROW_SPACE + 2): Rect {
+  if (side === 'left') return { x: hole.x - labelW, y: hole.y + hole.h / 2 - h / 2, w: labelW, h };
+  if (side === 'right') return { x: hole.x + hole.w, y: hole.y + hole.h / 2 - h / 2, w: labelW, h };
+  const cx = arrowX(hole, bounds.w, labelW / 2);
+  return { x: cx - labelW / 2, y: side === 'above' ? hole.y - h : hole.y + hole.h, w: labelW, h };
 }

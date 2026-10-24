@@ -66,3 +66,11 @@ Pedido do Lucas: a abertura só aparece na primeira vez de cada save e fica mais
 - **4 cenas, ~50 palavras:** "A Perigeu perdeu o Sistema Solar" (janelas apagando), "Todos se apagaram. Menos um." (botão no escuro), "Aperte. Uma estrela acende." (onda de choque, estrela, poeira), "Os grimórios ainda estão lá." (órbitas e livros).
 - **Arte:** SVG próprio em `StoryArt.tsx`; movimento só em `transform`/`opacity`; movimento reduzido mostra o estado final.
 
+## Tutorial premium (adendo, 24/10/2026)
+
+Pedido do Lucas: tutorial de jogo grande, com bloqueios que forcem a pessoa a fazer, iluminação, setas e animações, tudo sincronizado, e que ensine o necessário. Reverte a decisão "sem véu e sem travar toque" da seção 4.6 da spec 038.
+
+- **Bloqueio com spotlight:** a tela escurece e só o alvo do passo (mais Sair e Pular tutorial) responde ao toque. Tocar fora balança o anel. Se o alvo não aparece, nada bloqueia (falha aberta), e "Pular tutorial" está sempre acessível.
+- **Passos:** 1 toque (cartão de boas-vindas; nos toques 3 a 5 o contador de poeira acende), 2 abrir Melhorias e comprar, 3 fechar a página, 4 barra de energia acesa, 5 escolher o grimório, 6 abrir Grimórios (explica as 4 raridades). Jogo livre: conquistas, objetos, **geradores (novo)**, colapso e árvore. Ao ver todas as dicas aparece "Tutorial concluído".
+- **Apresentação:** anel com ondas, mão que toca, seta que escolhe o lado com espaço, chip do passo, cartão posicionado onde não cobre nada. Só `transform`/`opacity` animam; movimento reduzido tira as ondas, a mão e as entradas.
+

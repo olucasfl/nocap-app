@@ -16,6 +16,7 @@ import {
   objectsVisible,
   pendingHint,
   TUTORIAL,
+  TUTORIAL_HINTS,
   unlockedButtons,
   unseenAchievements,
 } from '@nocap/games';
@@ -163,6 +164,22 @@ export function GameScreen({ controller, onExit }: Props) {
 
   const pending = state.run.pending;
   const tutorial = state.tutorial === 'done' ? null : state.tutorial;
+  // Fim do tutorial por ter visto tudo (pular não comemora): um aviso curto de conclusão.
+  const [tutDone, setTutDone] = useState(false);
+  const wasTutorial = useRef(tutorial !== null);
+  useEffect(() => {
+    const finishedAll = TUTORIAL_HINTS.every((h) => state.ui.hints.includes(h));
+    if (wasTutorial.current && tutorial === null && finishedAll) {
+      setTutDone(true);
+      apertaSfx.win();
+    }
+    wasTutorial.current = tutorial !== null;
+  }, [tutorial, state.ui.hints]);
+  useEffect(() => {
+    if (!tutDone) return;
+    const id = window.setTimeout(() => setTutDone(false), 5200);
+    return () => window.clearTimeout(id);
+  }, [tutDone]);
   // Os handlers de teclado e toque leem isto sem refazer os listeners a cada render.
   const blocked = useRef(false);
   blocked.current = page !== null || pending !== null || collapseOpen || regionsOpen || goalOpen;
@@ -426,7 +443,7 @@ export function GameScreen({ controller, onExit }: Props) {
 
       <header className="ap-hud">
         <div className="ap-panel ap-hudp">
-          <p className="ap-hudrow">
+          <p className="ap-hudrow" data-tut="dust">
             <i className="ap-ico ap-ico-coin" aria-hidden="true" />
             <b key={state.stats.clicks} className="ap-bump">
               {formatNumber(state.run.dust)}
@@ -477,11 +494,11 @@ export function GameScreen({ controller, onExit }: Props) {
             </button>
           )}
         </div>
-        <button type="button" className="ap-hbtn ap-hbtn-ghost ap-hbtn-exit" onClick={exit}>
+        <button type="button" className="ap-hbtn ap-hbtn-ghost ap-hbtn-exit" data-tut-pass onClick={exit}>
           Sair
         </button>
         {tutorial !== null && !unlocked.has('tree') && (
-          <button type="button" className="ap-hbtn ap-hbtn-ghost ap-hbtn-skip" onClick={controller.tutorialSkip}>
+          <button type="button" className="ap-hbtn ap-hbtn-ghost ap-hbtn-skip" data-tut-pass onClick={controller.tutorialSkip}>
             Pular tutorial
           </button>
         )}
@@ -622,7 +639,7 @@ export function GameScreen({ controller, onExit }: Props) {
         </div>
       </div>
 
-      <aside className="ap-energy" aria-label="Energia">
+      <aside className="ap-energy" aria-label="Energia" data-tut="energy">
         <small>Energia</small>
         <div className="ap-evwrap">
           <div
@@ -789,6 +806,14 @@ export function GameScreen({ controller, onExit }: Props) {
       {flash !== null && (
         <div key={flash} className="ap-flash" aria-hidden="true">
           <i />
+        </div>
+      )}
+
+      {tutDone && (
+        <div className="ap-tutdone" role="status">
+          <i aria-hidden="true" />
+          <b>Tutorial concluído</b>
+          <span>Você já sabe o essencial. O resto da Perigeu é com você, comandante.</span>
         </div>
       )}
 

@@ -3,17 +3,138 @@
  * e um cartão pequeno. Só `transform` e `opacity` animam; as posições do anel e da seta são estáticas
  * (recalculadas quando o alvo muda de lugar). O contêiner não pega toque: só o cartão.
  */
+/*
+ * Tutorial do Aperta! (spec 038, 4.6; versão premium na spec 042, adendo): a tela escurece com um buraco iluminado no
+ * alvo; só o alvo (e Sair/Pular) responde ao toque. Só `transform` e `opacity` animam; posição e tamanho do anel, da
+ * mão, da seta e do cartão são recalculados pelo `Tutorial.tsx`, nunca animados. O contêiner não pega toque: só o
+ * bloqueio (com um buraco no alvo), o cartão e os botões dele.
+ */
 .ap-tut {
   position: absolute;
   inset: 0;
   z-index: 60;
   pointer-events: none;
 }
+.ap-tut-dim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  fill: rgba(2, 3, 12, 0.74);
+  animation: ap-tut-fade 0.35s ease-out both;
+}
+@keyframes ap-tut-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+/* Pega o toque em toda a tela, menos no buraco do alvo (clip-path evenodd, posto pelo componente). */
+.ap-tut-block {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+  touch-action: none;
+}
 .ap-tut-ring {
   position: absolute;
   border: 3px solid var(--space-gold);
   border-radius: 16px;
   pointer-events: none;
+  animation: ap-tut-pop 0.45s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+.ap-tut-ring.is-glow {
+  border-color: var(--space-cyan);
+  animation-delay: 0.1s;
+}
+.ap-tut-ring.is-glow .ap-tut-glow {
+  box-shadow:
+    0 0 0 2px rgba(78, 220, 255, 0.55),
+    0 0 26px 6px rgba(78, 220, 255, 0.65);
+}
+/* Tocou fora do alvo: o anel balança. */
+.ap-tut-ring.is-nudge {
+  animation: ap-tut-shake 0.4s ease-in-out both;
+}
+@keyframes ap-tut-pop {
+  from {
+    opacity: 0;
+    transform: scale(1.35);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes ap-tut-shake {
+  0%,
+  100% {
+    transform: translateX(0) scale(1);
+  }
+  20% {
+    transform: translateX(-7px) scale(1.04);
+  }
+  40% {
+    transform: translateX(6px) scale(1.04);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+  80% {
+    transform: translateX(3px);
+  }
+}
+/* Ondas que saem do anel: chamam o olho para o alvo sem mexer em layout. */
+.ap-tut-ripple {
+  position: absolute;
+  inset: -3px;
+  border: 2px solid var(--space-gold);
+  border-radius: 18px;
+  opacity: 0;
+  animation: ap-tut-ripple 2s ease-out infinite;
+}
+.ap-tut-ripple.is-late {
+  animation-delay: 1s;
+}
+@keyframes ap-tut-ripple {
+  from {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.28);
+  }
+}
+/* Mão que toca: sobe e desce com um leve encolher, no ritmo do anel. */
+.ap-tut-hand {
+  position: absolute;
+  width: 38px;
+  height: 42px;
+  margin: -6px 0 0 -10px;
+  pointer-events: none;
+  filter: drop-shadow(0 3px 0 rgba(2, 3, 12, 0.6));
+}
+.ap-tut-hand svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  animation: ap-tut-tap 1.3s ease-in-out infinite;
+  transform-origin: 30% 10%;
+}
+@keyframes ap-tut-tap {
+  0%,
+  55%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  30% {
+    transform: translate(-3px, -5px) scale(1.06);
+  }
+  42% {
+    transform: translate(2px, 3px) scale(0.9);
+  }
 }
 .ap-tut-glow {
   position: absolute;
@@ -43,6 +164,41 @@
 }
 .ap-tut-arrowpos.is-below {
   transform: translate(-50%, 0);
+}
+.ap-tut-arrowpos.is-left {
+  transform: translate(-100%, -50%);
+}
+.ap-tut-arrowpos.is-right {
+  transform: translate(0, -50%);
+}
+.is-left .ap-tut-arrow {
+  flex-direction: row;
+  animation-name: ap-tut-bob-left;
+}
+.is-right .ap-tut-arrow {
+  flex-direction: row-reverse;
+  animation-name: ap-tut-bob-right;
+}
+.is-left .ap-tut-arrow svg,
+.is-right .ap-tut-arrow svg {
+  width: 20px;
+  height: 26px;
+}
+@keyframes ap-tut-bob-left {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-8px);
+  }
+}
+@keyframes ap-tut-bob-right {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(8px);
+  }
 }
 .ap-tut-arrow {
   display: flex;
@@ -96,37 +252,47 @@
 .ap-tut-card,
 .ap-tut-inline {
   display: grid;
-  gap: 6px;
+  gap: 8px;
   padding: 12px 14px;
   border: 3px solid var(--space-gold);
   border-radius: 14px;
-  background: var(--space-panel);
-  box-shadow: 0 6px 0 var(--space-ink);
+  background: linear-gradient(180deg, var(--space-panel-2), var(--space-panel));
+  box-shadow:
+    0 6px 0 var(--space-ink),
+    0 14px 34px rgba(0, 0, 0, 0.5);
 }
 .ap-tut-card {
   position: absolute;
-  left: 12px;
-  right: 12px;
-  max-width: 460px;
-  margin: 0 auto;
+  left: 0;
+  top: 0;
+  width: min(420px, calc(100% - 16px));
   pointer-events: auto;
-  animation: ap-tut-in 0.28s ease-out both;
+  animation: ap-tut-in 0.32s ease-out both;
 }
-/* Abaixo do HUD (poeira, Sair): a dica não esconde o que o jogador está acompanhando. */
-.ap-tut-card.is-top {
-  top: 96px;
+/* Antes de medir: fora de vista, mas com o tamanho real, para a posição ser calculada. */
+.ap-tut-card.is-measuring {
+  visibility: hidden;
+  animation: none;
 }
-.ap-tut-card.is-bottom {
-  bottom: 10px;
+.ap-tut-step {
+  display: inline-block;
+  margin-bottom: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 200, 87, 0.16);
+  color: var(--space-gold);
+  font: 700 10px/1.4 var(--space-font-display);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 @keyframes ap-tut-in {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(10px) scale(0.97);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: none;
   }
 }
 /* "Pular tutorial" do topo: sempre à mão, mas só texto, para nunca pesar mais que o alvo da dica. */
@@ -202,10 +368,6 @@
 }
 
 @container ap (max-width: 720px) and (orientation: portrait) {
-  /* No celular o HUD tem duas linhas (poeira + Sair, depois Pular tutorial): a dica começa abaixo delas. */
-  .ap-tut-card.is-top {
-    top: 144px;
-  }
   .ap-tut-card h2,
   .ap-tut-inline h2 {
     font-size: 16px;
@@ -215,19 +377,32 @@
     font-size: 13px;
   }
 }
-@container ap (max-height: 560px)  {
+/* Celular deitado e telas baixas: cartão mais estreito (o componente o põe onde não cobre nada) e texto à mostra. */
+@container ap (max-height: 520px) {
   .ap-tut-card {
-    padding: 8px 12px;
-    gap: 3px;
+    width: min(250px, 46cqw);
+    padding: 8px 10px;
+    gap: 5px;
   }
   .ap-tut-card h2 {
-    font-size: 15px;
+    font-size: 14px;
   }
   .ap-tut-card p {
-    display: none;
+    margin-top: 2px;
+    font-size: 12px;
+    line-height: 1.3;
   }
-  .ap-tut-card.is-top {
-    top: 70px;
+  .ap-tut-step {
+    margin-bottom: 2px;
+    font-size: 9px;
+  }
+  .ap-tut-arrow b {
+    padding: 4px 9px;
+    font-size: 12px;
+  }
+  .ap-tut-hand {
+    width: 30px;
+    height: 33px;
   }
 }
 
@@ -236,10 +411,17 @@
     animation: none;
     opacity: 0.8;
   }
+  .ap-tut-dim,
+  .ap-tut-ring,
+  .ap-tut-ripple,
+  .ap-tut-hand svg,
   .ap-tut-arrow,
   .ap-tut-card,
   .ap-dock-in {
     animation: none;
+  }
+  .ap-tut-ripple {
+    display: none;
   }
 }
 
@@ -256,5 +438,81 @@
     margin-top: 0;
     font-size: 12px;
     line-height: 1.25;
+  }
+}
+
+/* Conclusão: um aviso que entra de cima, com faíscas que sobem e somem. */
+.ap-tutdone {
+  position: absolute;
+  left: 50%;
+  top: 14px;
+  z-index: 61;
+  width: min(380px, calc(100% - 24px));
+  display: grid;
+  gap: 3px;
+  justify-items: center;
+  padding: 12px 16px;
+  border: 3px solid var(--space-gold);
+  border-radius: 16px;
+  background: linear-gradient(180deg, var(--space-panel-2), var(--space-panel));
+  box-shadow:
+    0 6px 0 var(--space-ink),
+    0 0 40px rgba(255, 200, 87, 0.35);
+  text-align: center;
+  pointer-events: none;
+  transform: translateX(-50%);
+  animation: ap-tutdone 5.2s ease-in-out both;
+}
+.ap-tutdone b {
+  font: 700 17px var(--space-font-display);
+  color: var(--space-gold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.ap-tutdone span {
+  font: 500 13px/1.35 var(--space-font-body);
+  color: var(--space-text);
+}
+.ap-tutdone i {
+  position: absolute;
+  left: 50%;
+  top: -6px;
+  width: 10px;
+  height: 10px;
+  background: var(--space-text);
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+  animation: ap-tutdone-spark 1.6s ease-out 0.2s 3 both;
+}
+@keyframes ap-tutdone {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -24px);
+  }
+  8%,
+  88% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -12px);
+  }
+}
+@keyframes ap-tutdone-spark {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(0.6);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-26px) scale(1.5);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ap-tutdone {
+    animation: none;
+  }
+  .ap-tutdone i {
+    display: none;
   }
 }

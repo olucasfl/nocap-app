@@ -348,12 +348,13 @@ describe('tutorial pelo controlador', () => {
     expect(free.events.map((e) => e.type)).toEqual(['press', 'achievement', 'sparks']);
   });
 
-  it('cartões do jogo livre: cada um marcado uma vez; os três concluem o tutorial', () => {
+  it('cartões do jogo livre: cada um marcado uma vez; todos concluem o tutorial', () => {
     const t = setup({ ...newSave('teste', 0), tutorial: TUTORIAL.FREE });
     t.ctl.tutorialHint('objects');
     t.ctl.tutorialHint('objects');
     expect(state(t).ui.hints).toEqual(['objects']);
     t.ctl.tutorialHint('achievements');
+    t.ctl.tutorialHint('generators');
     t.ctl.tutorialHint('collapse');
     t.ctl.tutorialHint('tree');
     expect(state(t).tutorial).toBe('done');

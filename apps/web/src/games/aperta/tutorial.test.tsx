@@ -81,10 +81,16 @@ describe('peças do tutorial', () => {
     expect(guidedMarkup).toContain('Pular tutorial');
   });
 
-  it('a dica do passo 1 (só etiqueta) é lida pelo leitor de tela', () => {
+  it('a dica do passo 1 tem cartão com o passo e o texto, e sem alvo medido não escurece nem bloqueia', () => {
     const view = coachView(newSave('t', 0), null)!;
     const markup = html(<TutorialCoach view={view} onDismiss={noop} onSkip={noop} skipInCard={false} />);
-    expect(markup).not.toContain('ap-tut-card');
+    expect(markup).toContain('ap-tut-card');
+    expect(markup).toContain('Passo 1 de 6');
+    expect(markup).toContain('Bem-vindo à Perigeu');
+    // Falha aberta: o alvo ainda não foi medido (render de servidor), então nada bloqueia a tela.
+    expect(markup).toContain('data-blocking="false"');
+    expect(markup).not.toContain('ap-tut-block');
+    expect(markup).not.toContain('ap-tut-dim');
   });
 
   it('o cartão da escolha explica carta, bloqueio e confirmar', () => {

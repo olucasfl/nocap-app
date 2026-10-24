@@ -8,6 +8,7 @@ import {
   UI_BUTTONS,
   advanceTutorial,
   affordableUpgradeIndex,
+  canAffordGenerator,
   canAffordUpgrade,
   finishTutorial,
   markHintSeen,
@@ -135,7 +136,11 @@ describe('tutorial: do primeiro toque ao jogo livre', () => {
 });
 
 describe('tutorial: cartões do jogo livre', () => {
-  const free = () => reach(TUTORIAL.FREE);
+  /** Jogo livre sem poeira sobrando: o cartão de Geradores (que espera poeira) não entra no meio das outras conferências. */
+  const free = () => {
+    const s = reach(TUTORIAL.FREE);
+    return { ...s, run: { ...s.run, dust: 0 } };
+  };
   const withAchievements = (s: SaveState, n: number) => ({ ...s, achievements: ['tap-1', 'tap-100', 'dust-1k'].slice(0, n) });
   const withObject = (s: SaveState) => ({
     ...s,
@@ -189,6 +194,7 @@ describe('tutorial: cartões do jogo livre', () => {
     s = markHintSeen(withAchievements(s, 2), 'achievements');
     expect(pendingHint(s)).toBeNull();
     s = markHintSeen(s, 'objects');
+    s = markHintSeen(s, 'generators');
     // O colapso é explicado depois de 2 grimórios escolhidos, antes da árvore.
     expect(pendingHint(s)).toBeNull();
     s = { ...s, run: { ...s.run, picks: 2 } };
@@ -201,9 +207,20 @@ describe('tutorial: cartões do jogo livre', () => {
     expect(pendingHint(broke)).toBeNull();
   });
 
-  it('ver os três cartões conclui o tutorial e libera tudo', () => {
+  it('o primeiro gerador que cabe na poeira dispara o cartão de Geradores (sem botão novo)', () => {
     let s = free();
-    s = markHintSeen(markHintSeen(markHintSeen(markHintSeen(s, 'achievements'), 'objects'), 'collapse'), 'tree');
+    expect(pendingHint(s)).toBeNull();
+    expect(canAffordGenerator(s)).toBe(false);
+    s = { ...s, run: { ...s.run, dust: 1e9, dustLife: 1e9 } };
+    expect(canAffordGenerator(s)).toBe(true);
+    expect(pendingHint(s)).toBe('generators');
+    expect(settleTutorial(s).ui.unlocked).toEqual(['upgrades', 'grimoires']);
+    expect(pendingHint(markHintSeen(s, 'generators'))).toBeNull();
+  });
+
+  it('ver todos os cartões conclui o tutorial e libera tudo', () => {
+    let s = free();
+    s = markHintSeen(markHintSeen(markHintSeen(markHintSeen(markHintSeen(s, 'achievements'), 'objects'), 'generators'), 'collapse'), 'tree');
     expect(s.tutorial).toBe('done');
     expect(unlockedButtons(s).size).toBe(UI_BUTTONS.length);
   });

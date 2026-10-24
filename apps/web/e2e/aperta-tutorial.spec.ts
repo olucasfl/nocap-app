@@ -252,6 +252,111 @@ for (const size of SIZES) {
       expect(errors).toEqual([]);
     });
 
+    /** Quem está no ponto central do elemento: o bloqueio do tutorial (bloqueado) ou o próprio elemento (livre). */
+    const hitsBlock = (page: Page, target: Locator) =>
+      target.evaluate((el) => {
+        const r = el.getBoundingClientRect();
+        const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+        return !!hit?.closest('.ap-tut-block');
+      });
+
+    test('o tutorial escurece a tela e só o alvo, Sair e Pular respondem ao toque', async ({ page }, info) => {
+      test.skip(info.project.name !== 'desktop', 'o tamanho vem do describe; um projeto basta');
+      const errors = await watch(page);
+      await installApi(page);
+      await installSaves(page);
+      await openGame(page, true);
+      await expect(page.locator('.ap-tut')).toHaveAttribute('data-blocking', 'true');
+      await expect(page.locator('.ap-tut-dim')).toBeVisible();
+      await expect(page.locator('.ap-tut-hand')).toBeVisible();
+      await expect(page.locator('.ap-tut-card')).toContainText('Passo 1 de 6');
+      // O botão central está livre; o HUD de poeira e o resto estão sob o bloqueio; Sair e Pular passam.
+      expect(await hitsBlock(page, page.locator('[data-tut="press"]'))).toBe(false);
+      expect(await hitsBlock(page, page.locator('[data-tut="dust"]'))).toBe(true);
+      expect(await hitsBlock(page, page.locator('.ap-hbtn-exit'))).toBe(false);
+      expect(await hitsBlock(page, page.getByRole('button', { name: 'Pular tutorial' }))).toBe(false);
+      // Tocar fora balança o anel e não faz nada no jogo.
+      await page.locator('.ap-tut-block').dispatchEvent('pointerdown');
+      await expect(page.locator('.ap-tut-ring.is-nudge')).toBeVisible();
+      await expect(page.locator('.ap-hudrow b').first()).toHaveText('0');
+      await press(page);
+      await expect(page.locator('.ap-hudrow b').first()).toHaveText('1');
+      await shot(page, '1c-bloqueio');
+      expect(errors).toEqual([]);
+    });
+
+    test('nos primeiros toques a poeira acende e o botão continua livre', async ({ page }, info) => {
+      test.skip(info.project.name !== 'desktop', 'o tamanho vem do describe; um projeto basta');
+      const errors = await watch(page);
+      await installApi(page);
+      const account = await installSaves(page);
+      account.data = saveAt((s) => ({ ...s, run: { ...s.run, clicks: 3, dust: 3, dustLife: 3 } }));
+      account.rev = 1;
+      await openGame(page, false);
+      await expect(page.locator('.ap-tut-ring.is-glow')).toBeVisible();
+      await expect(page.locator('.ap-tut-card')).toContainText('Esta é a sua poeira');
+      await expect(page.locator('.ap-tut-arrow')).toContainText('Sua poeira');
+      expect(await hitsBlock(page, page.locator('[data-tut="press"]'))).toBe(false);
+      // O que só acende não responde: o contador de poeira está sob o bloqueio.
+      expect(await hitsBlock(page, page.locator('[data-tut="dust"]'))).toBe(true);
+      await shot(page, '1d-poeira');
+      await noOverflow(page);
+      expect(errors).toEqual([]);
+    });
+
+    test('na página de Melhorias o único toque livre é o preço da melhoria; o resto da página não responde', async ({ page }, info) => {
+      test.skip(info.project.name !== 'desktop', 'o tamanho vem do describe; um projeto basta');
+      const errors = await watch(page);
+      await installApi(page);
+      const account = await installSaves(page);
+      account.data = saveAt(nearUpgrade);
+      account.rev = 1;
+      await openGame(page, false);
+      await press(page);
+      await expect(coach(page)).toContainText('Você já pode comprar sua primeira melhoria.');
+      await tapCenter(page, dock(page, 'Melhorias'), touch);
+      await expect(page.locator('.ap-sheet')).toBeVisible();
+      await expect(page.locator('.ap-tut')).toHaveAttribute('data-blocking', 'true');
+      expect(await hitsBlock(page, page.locator('[data-tut="buy-first"]'))).toBe(false);
+      expect(await hitsBlock(page, page.locator('.ap-sheet .ap-x'))).toBe(true);
+      // Tentar fechar sem comprar não fecha.
+      await page.locator('.ap-tut-block').dispatchEvent('pointerdown');
+      await expect(page.locator('.ap-sheet')).toBeVisible();
+      await tapCenter(page, page.locator('[data-tut="buy-first"]'), touch);
+      // Comprou: agora o X é o alvo e fica livre.
+      await expect(coach(page)).toContainText('Feche a página e volte a tocar');
+      expect(await hitsBlock(page, page.locator('.ap-sheet .ap-x'))).toBe(false);
+      await shot(page, '4b-bloqueio-pagina');
+      expect(errors).toEqual([]);
+    });
+
+    test('jogo livre: com poeira de sobra o cartão de Geradores aponta para Melhorias e abrir a página conta como visto', async ({ page }, info) => {
+      test.skip(info.project.name !== 'desktop', 'o tamanho vem do describe; um projeto basta');
+      const errors = await watch(page);
+      await installApi(page);
+      const account = await installSaves(page);
+      account.data = saveAt((s) => ({
+        ...s,
+        tutorial: TUTORIAL.FREE,
+        ui: { unlocked: ['upgrades', 'grimoires', 'achievements'], hints: ['achievements', 'objects'] },
+        album: ['moon'],
+        run: { ...s.run, picks: 1, build: { moon: 1 }, dust: 1e12, dustLife: 1e12 },
+        stats: { ...s.stats, clicks: 300, picks: 1 },
+        achievements: ['tap-1', 'tap-100'],
+      }));
+      account.rev = 1;
+      await openGame(page, false);
+      await expect(page.locator('.ap-tut-card')).toContainText('Poeira sem tocar');
+      await expect(page.locator('.ap-tut-card')).toContainText('Dica');
+      expect(await hitsBlock(page, dock(page, 'Melhorias'))).toBe(false);
+      expect(await hitsBlock(page, dock(page, 'Conquistas'))).toBe(true);
+      await shot(page, '9c-geradores');
+      await tapCenter(page, dock(page, 'Melhorias'), touch);
+      await expect(page.locator('.ap-sheet')).toBeVisible();
+      await expect.poll(() => (account.data as unknown as { ui: { hints: string[] } }).ui.hints).toContain('generators');
+      expect(errors).toEqual([]);
+    });
+
     test('o colapso é explicado cedo e a meta fica à vista no topo', async ({ page }, info) => {
       test.skip(info.project.name !== 'desktop', 'o tamanho vem do describe; um projeto basta');
       const errors = await watch(page);
@@ -292,7 +397,7 @@ for (const size of SIZES) {
       account.data = saveAt((s) => ({
         ...s,
         tutorial: TUTORIAL.FREE,
-        ui: { unlocked: ['upgrades', 'grimoires', 'achievements'], hints: ['achievements', 'objects', 'collapse'] },
+        ui: { unlocked: ['upgrades', 'grimoires', 'achievements'], hints: ['achievements', 'objects', 'generators', 'collapse'] },
         album: ['moon'],
         run: { ...s.run, picks: 1, build: { moon: 1 } },
         stats: { ...s.stats, clicks: 300, picks: 1 },
@@ -306,6 +411,7 @@ for (const size of SIZES) {
       await noOverflow(page);
       await page.getByRole('button', { name: 'Entendi' }).click();
       await expect(coach(page)).toHaveCount(0);
+      await expect(page.locator('.ap-tutdone')).toContainText('Tutorial concluído');
       await expect.poll(() => account.data?.tutorial).toBe('done');
       expect(errors).toEqual([]);
     });

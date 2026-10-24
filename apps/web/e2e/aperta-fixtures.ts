@@ -1,4 +1,4 @@
-import { dustGoal, energyCap, meetMilestone, minPicks, newSave, pickInto, tickObjects, upgradeIndex, type SaveState } from '@nocap/games';
+import { TUTORIAL, affordableUpgradeIndex, dustGoal, energyCap, meetMilestone, minPicks, newSave, nextUpgradeCost, pickInto, tickObjects, upgradeIndex, type SaveState } from '@nocap/games';
 import type { Page } from '@playwright/test';
 import { installApi } from './mock-api';
 
@@ -103,3 +103,27 @@ export const PHONES_PORTRAIT = [
   { name: '390x844', w: 390, h: 844 },
   { name: '430x932', w: 430, h: 932 },
 ];
+
+/** Saves de cada momento do tutorial, montados pelo motor (revisão visual e testes de bloqueio). */
+export const tutorialSaves = {
+  touch: (clicks = 0): SaveState => ({ ...freshSave(), run: { ...freshSave().run, clicks, dust: clicks, dustLife: clicks } }),
+  upgrade: (): SaveState => {
+    const s = freshSave();
+    const rich = { ...s, run: { ...s.run, dust: 1e12 } };
+    const cost = nextUpgradeCost(s, affordableUpgradeIndex(rich)!) as number;
+    return { ...s, tutorial: TUTORIAL.UPGRADE, ui: { ...s.ui, unlocked: ['upgrades'] }, run: { ...s.run, dust: cost, dustLife: cost, clicks: 30 } };
+  },
+  fill: (): SaveState => {
+    const s = tutorialSaves.upgrade();
+    return { ...s, tutorial: TUTORIAL.FILL, run: { ...s.run, upgradeLevels: s.run.upgradeLevels.map((n, i) => (i === affordableUpgradeIndex({ ...s, run: { ...s.run, dust: 1e12 } }) ? 1 : n)) } };
+  },
+  grimoires: (): SaveState => {
+    const s = tutorialSaves.fill();
+    const run = { ...s.run, ...pickInto(s.run, 'moon', 'common', 1), picks: 1 };
+    return { ...s, tutorial: TUTORIAL.GRIMOIRES, ui: { ...s.ui, unlocked: ['upgrades', 'grimoires'] }, album: ['moon:common'], run };
+  },
+  free: (hints: SaveState['ui']['hints'], patch: (s: SaveState) => SaveState = (s) => s): SaveState => {
+    const s = tutorialSaves.grimoires();
+    return patch({ ...s, tutorial: TUTORIAL.FREE, ui: { ...s.ui, unlocked: ['upgrades', 'grimoires', 'achievements'], hints }, achievements: ['tap-1', 'tap-100'], stats: { ...s.stats, clicks: 300, picks: 2 }, run: { ...s.run, picks: 2 } });
+  },
+};
