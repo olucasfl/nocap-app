@@ -68,6 +68,8 @@ const noOverflow = async (page: Page) =>
 /** Toque (celular) ou clique (PC) nas coordenadas do centro do elemento. */
 async function tapCenter(page: Page, target: Locator, touch: boolean) {
   await target.scrollIntoViewIfNeeded();
+  // O anel do tutorial se remede a cada MEASURE_MS: sem esperar, o toque cai no bloqueio da posição antiga.
+  await page.waitForTimeout(400);
   const box = (await target.boundingBox())!;
   const x = box.x + box.width / 2;
   const y = box.y + box.height / 2;

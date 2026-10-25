@@ -1,5 +1,5 @@
 import { UPGRADES } from './catalog';
-import { nextUpgradeCost, type SaveState } from './engine';
+import { nextItemIndex, nextUpgradeCost, type SaveState } from './engine';
 import { sparksTotal } from './sparks';
 
 /**
@@ -76,18 +76,12 @@ export function canAffordUpgrade(state: SaveState): boolean {
   return affordableUpgradeIndex(state) !== null;
 }
 
-/** A melhoria mais barata que já dá para comprar: a que o tutorial manda comprar. */
+/** O item da vez (o 1º da fila) se já cabe na poeira: é o que o tutorial manda comprar. */
 export function affordableUpgradeIndex(state: SaveState): number | null {
-  let best: number | null = null;
-  let bestCost = Infinity;
-  for (let i = 0; i < UPGRADES.length; i++) {
-    const cost = nextUpgradeCost(state, i);
-    if (cost !== null && state.run.dust >= cost && cost < bestCost) {
-      best = i;
-      bestCost = cost;
-    }
-  }
-  return best;
+  const next = nextItemIndex(state);
+  if (next === null) return null;
+  const cost = nextUpgradeCost(state, next);
+  return cost !== null && state.run.dust >= cost ? next : null;
 }
 
 /** Algum gerador de poeira já cabe na poeira de agora? (o gatilho do cartão de Geradores) */

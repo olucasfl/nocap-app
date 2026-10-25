@@ -1025,3 +1025,60 @@
   font: 600 12px var(--space-font-body);
   color: var(--space-gold);
 }
+
+/* Celular deitado (pouca altura): o item em destaque cabe sem rolar, com o botão à vista. */
+@container ap (max-height: 520px) {
+  .ap-powers {
+    margin-bottom: 6px;
+  }
+  .ap-powers > div {
+    padding: 4px;
+  }
+  .ap-up-intro {
+    display: none;
+  }
+  .ap-next {
+    gap: 6px;
+    padding: 8px 10px;
+  }
+  .ap-next-head {
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 8px;
+  }
+  .ap-next-head .ap-itemicon {
+    width: 44px;
+    height: 44px;
+  }
+  .ap-next-text,
+  .ap-next-tag {
+    display: none;
+  }
+  .ap-eff.is-big .ap-eff-nums {
+    font-size: 18px;
+  }
+  .ap-next-buy {
+    min-height: 48px;
+  }
+}
+
+/* Nada vaza em celular estreito: os quatro poderes e o botão Completar quebram em vez de estourar a largura. */
+.ap-powers > div {
+  min-width: 0;
+  overflow: hidden;
+}
+.ap-powers dt {
+  font-size: 9px;
+  overflow-wrap: anywhere;
+}
+.ap-powers dd {
+  font-size: 14px;
+}
+.ap-up-bulk {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.ap-up-bulk b {
+  white-space: normal;
+  text-align: center;
+}

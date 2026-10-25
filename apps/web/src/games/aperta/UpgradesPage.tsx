@@ -138,49 +138,71 @@ function UpcomingItem({ row }: { row: ItemRow }) {
   );
 }
 
+function OwnedItem({ row }: { row: ItemRow }) {
+  return (
+    <li className="ap-own" data-era={row.era}>
+      <span className="ap-own-icon">
+        <ItemIcon id={row.id} size={40} />
+      </span>
+      <div className="ap-own-body">
+        <h4>{row.name}</h4>
+        <p>{row.text}</p>
+      </div>
+    </li>
+  );
+}
+
 function ItemsPanel({ state, onBuy }: { state: SaveState; onBuy: Props['onBuy'] }) {
   const view = itemsView(state);
   return (
-    <div className="ap-itemspanel" id="ap-uppanel" role="tabpanel" aria-labelledby="ap-uptab-items">
-      <p className="ap-up-intro">
-        Itens são compras únicas: você paga uma vez e o ganho vale até o próximo colapso.
-        <b className="ap-up-count2">
-          {view.bought}/{view.total}
-        </b>
-      </p>
-      {view.next ? (
-        <NextItem row={view.next} onBuy={onBuy} />
-      ) : (
-        <p className="ap-up-empty">
-          Você comprou todos os itens desta vida.
-          {view.moreAt !== null && ` O colapso ${view.moreAt} libera mais itens.`}
-        </p>
-      )}
-      {view.upcoming.length > 0 && (
-        <>
-          <h3 className="ap-sub">Em seguida</h3>
-          <ul className="ap-soonlist" aria-label="Próximos itens">
-            {view.upcoming.map((r) => (
-              <UpcomingItem key={r.id} row={r} />
-            ))}
-          </ul>
-        </>
-      )}
-      {view.owned.length > 0 && (
-        <>
-          <h3 className="ap-sub">
-            Comprados <small>{view.owned.length}</small>
-          </h3>
-          <ul className="ap-ownstrip" aria-label="Itens comprados">
+    <div className="ap-cols" id="ap-uppanel" role="tabpanel" aria-labelledby="ap-uptab-items">
+      <section className="ap-col" aria-label="Para comprar">
+        <h3 className="ap-colhead">
+          Para comprar
+          <small>
+            {view.bought}/{view.total}
+          </small>
+        </h3>
+        <p className="ap-up-intro">Itens são compras únicas: pague uma vez e o ganho vale até o próximo colapso.</p>
+        {view.next ? (
+          <NextItem row={view.next} onBuy={onBuy} />
+        ) : (
+          <p className="ap-up-empty">
+            Você comprou todos os itens desta vida.
+            {view.moreAt !== null && ` O colapso ${view.moreAt} libera mais itens.`}
+          </p>
+        )}
+        {view.upcoming.length > 0 && (
+          <>
+            <h4 className="ap-sub">Em seguida</h4>
+            <ul className="ap-soonlist" aria-label="Próximos itens">
+              {view.upcoming.map((r) => (
+                <UpcomingItem key={r.id} row={r} />
+              ))}
+            </ul>
+          </>
+        )}
+        {view.later > 0 && view.next !== null && (
+          <p className="ap-later">
+            <b>+{view.later}</b> itens mais fortes liberam nos próximos colapsos
+          </p>
+        )}
+      </section>
+      <section className="ap-col" aria-label="Comprados">
+        <h3 className="ap-colhead">
+          Comprados
+          <small>{view.owned.length}</small>
+        </h3>
+        {view.owned.length === 0 ? (
+          <p className="ap-up-empty">Os itens que você comprar aparecem aqui.</p>
+        ) : (
+          <ul className="ap-ownlist" aria-label="Itens comprados">
             {view.owned.map((r) => (
-              <li key={r.id} title={`${r.name}: ${r.text}`}>
-                <ItemIcon id={r.id} size={38} />
-                <span>{r.name}</span>
-              </li>
+              <OwnedItem key={r.id} row={r} />
             ))}
           </ul>
-        </>
-      )}
+        )}
+      </section>
     </div>
   );
 }
@@ -263,32 +285,69 @@ function GeneratorCard({ row, onBuy, onBuyBatch, dust }: { row: GeneratorRow; on
   );
 }
 
+function OwnedGenerator({ row }: { row: GeneratorRow }) {
+  return (
+    <li className={`ap-own is-gen${row.energy ? ' is-energy' : ''}`}>
+      <span className="ap-own-icon">
+        <UpgradeIcon id={row.id} size={40} />
+      </span>
+      <div className="ap-own-body">
+        <h4>{row.name}</h4>
+        <p>{row.total ?? row.text}</p>
+        <Pips level={row.level} max={row.max} />
+      </div>
+    </li>
+  );
+}
+
 function GeneratorsPanel({ state, onBuy, onBuyBatch }: { state: SaveState; onBuy: Props['onBuy']; onBuyBatch?: Props['onBuyBatch'] }) {
   const rows = generatorRows(state);
-  const dustRows = rows.filter((r) => !r.energy);
-  const energyRows = rows.filter((r) => r.energy);
+  const buy = rows.filter((r) => r.status !== 'maxed');
+  const owned = rows.filter((r) => r.level > 0);
+  const buyDust = buy.filter((r) => !r.energy);
+  const buyEnergy = buy.filter((r) => r.energy);
   return (
-    <div className="ap-genpanel" id="ap-uppanel" role="tabpanel" aria-labelledby="ap-uptab-generators">
-      <p className="ap-up-intro">
-        Geradores trabalham sozinhos, até quando você não toca. Cada nível rende poeira (ou energia) por segundo, e os itens multiplicam isso.
-      </p>
-      <h3 className="ap-sub">Geradores de poeira</h3>
-      <ul className="ap-uplist" aria-label="Geradores de poeira">
-        {dustRows.map((r) => (
-          <GeneratorCard key={r.id} row={r} onBuy={onBuy} onBuyBatch={onBuyBatch} dust={state.run.dust} />
-        ))}
-      </ul>
-      {energyRows.length > 0 && (
-        <>
-          <h3 className="ap-sub">Geradores de energia</h3>
-          <p className="ap-up-intro">A energia enche a barra do próximo grimório.</p>
-          <ul className="ap-uplist" aria-label="Geradores de energia">
-            {energyRows.map((r) => (
-              <GeneratorCard key={r.id} row={r} onBuy={onBuy} onBuyBatch={onBuyBatch} dust={state.run.dust} />
+    <div className="ap-cols" id="ap-uppanel" role="tabpanel" aria-labelledby="ap-uptab-generators">
+      <section className="ap-col" aria-label="Para comprar">
+        <h3 className="ap-colhead">Para comprar</h3>
+        <p className="ap-up-intro">Geradores trabalham sozinhos, até quando você não toca. Cada nível rende por segundo, e os itens multiplicam isso.</p>
+        {buyDust.length > 0 && (
+          <>
+            <h4 className="ap-sub">De poeira</h4>
+            <ul className="ap-uplist" aria-label="Geradores de poeira">
+              {buyDust.map((r) => (
+                <GeneratorCard key={r.id} row={r} onBuy={onBuy} onBuyBatch={onBuyBatch} dust={state.run.dust} />
+              ))}
+            </ul>
+          </>
+        )}
+        {buyEnergy.length > 0 && (
+          <>
+            <h4 className="ap-sub">De energia (enchem a barra de grimórios)</h4>
+            <ul className="ap-uplist" aria-label="Geradores de energia">
+              {buyEnergy.map((r) => (
+                <GeneratorCard key={r.id} row={r} onBuy={onBuy} onBuyBatch={onBuyBatch} dust={state.run.dust} />
+              ))}
+            </ul>
+          </>
+        )}
+        {buy.length === 0 && <p className="ap-up-empty">Todos os geradores disponíveis estão no máximo.</p>}
+      </section>
+      <section className="ap-col" aria-label="Comprados">
+        <h3 className="ap-colhead">
+          Comprados
+          <small>{owned.length}</small>
+        </h3>
+        {owned.length === 0 ? (
+          <p className="ap-up-empty">Os geradores que você comprar aparecem aqui, com o quanto rendem.</p>
+        ) : (
+          <ul className="ap-ownlist" aria-label="Geradores comprados">
+            {owned.map((r) => (
+              <OwnedGenerator key={r.id} row={r} />
             ))}
           </ul>
-        </>
-      )}
+        )}
+      </section>
     </div>
   );
 }

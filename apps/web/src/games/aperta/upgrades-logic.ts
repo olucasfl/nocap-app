@@ -151,6 +151,8 @@ export interface ItemsView {
   owned: ItemRow[];
   /** O primeiro colapso que traz itens novos, quando a fila daqui acabou. */
   moreAt: number | null;
+  /** Quantos itens ainda esperam por um colapso (o cartão "mais itens depois"). */
+  later: number;
 }
 
 function itemRow(state: SaveState, index: number): ItemRow {
@@ -192,6 +194,7 @@ export function itemsView(state: SaveState): ItemsView {
     total: here.length,
     owned: owned.slice().reverse().map(({ index }) => itemRow(state, index)),
     moreAt: nextIdx === null && future ? future.u.unlockedAtCollapse : null,
+    later: items.filter(({ u }) => u.unlockedAtCollapse > state.collapses).length,
   };
 }
 

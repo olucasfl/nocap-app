@@ -30,8 +30,8 @@ const ready = (c: number): SaveState => {
 };
 
 describe('o requisito do colapso n cresce sem fim', () => {
-  it('a meta de poeira nunca decresce, começa em 220 bi e é estritamente maior a cada colapso', () => {
-    expect(dustGoal(1)).toBe(2.2e11);
+  it('a meta de poeira nunca decresce, começa em 500 bi e é estritamente maior a cada colapso', () => {
+    expect(dustGoal(1)).toBe(5e11);
     let prev = 0;
     for (let n = 1; n <= 700; n++) {
       const g = dustGoal(n);

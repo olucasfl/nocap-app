@@ -71,7 +71,7 @@ describe('itens: a escada (spec 043)', () => {
     expect(items.length).toBeGreaterThanOrEqual(40);
     for (const u of items) {
       expect([u.id, u.max, u.growth]).toEqual([u.id, 1, 1]);
-      expect(['touchAdd', 'touchMult', 'energyMult', 'genMult', 'energyGenMult'], u.id).toContain(u.item!.type);
+      expect(['touchMult', 'energyMult', 'genMult', 'energyGenMult'], u.id).toContain(u.item!.type);
       expect(u.text, u.id).toBe(itemText(u.item!));
       expect(u.text, u.id).not.toContain('%');
       expect(u.era, u.id).toBeDefined();
@@ -97,10 +97,10 @@ describe('itens: a escada (spec 043)', () => {
     });
   });
 
-  it('a 1ª de cada tipo é a Lente Polida (100), o Satélite (200) e a Antena (300)', () => {
+  it('a 1ª de cada tipo é a Lente Polida (100), o Satélite (50) e a Antena (300)', () => {
     const first = (kind: string) => UPGRADES.filter((u) => u.kind === kind && u.unlockedAtCollapse === 0).sort((a, b) => a.base - b.base)[0]!;
     expect([first('item').id, first('item').base]).toEqual(['lens', 100]);
-    expect([first('generator').id, first('generator').base]).toEqual(['satellite', 200]);
+    expect([first('generator').id, first('generator').base]).toEqual(['satellite', 50]);
     expect([first('energy').id, first('energy').base]).toEqual(['antenna', 300]);
   });
 

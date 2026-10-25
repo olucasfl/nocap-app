@@ -27,10 +27,10 @@ import {
 const pulse = UPGRADES.find((u) => u.id === 'satellite')!;
 
 describe('upgradeCost', () => {
-  it('o 1º Satélite custa 200 e o preço sobe 15% a cada compra (200, 230, 264...)', () => {
-    expect(upgradeCost(pulse, 0)).toBe(200);
-    expect(upgradeCost(pulse, 1)).toBe(230);
-    expect(upgradeCost(pulse, 2)).toBe(264);
+  it('o 1º Satélite custa 50 e o preço sobe 15% a cada compra (50, 57, 66...)', () => {
+    expect(upgradeCost(pulse, 0)).toBe(50);
+    expect(upgradeCost(pulse, 1)).toBe(57);
+    expect(upgradeCost(pulse, 2)).toBe(66);
     for (let l = 1; l < 60; l++) expect(upgradeCost(pulse, l)).toBeGreaterThan(upgradeCost(pulse, l - 1));
   });
 
@@ -58,7 +58,7 @@ describe('upgradeCost', () => {
   });
 
   it('nunca devolve NaN, zero nem infinito', () => {
-    expect(upgradeCost(pulse, -3)).toBe(200);
+    expect(upgradeCost(pulse, -3)).toBe(50);
     expect(upgradeCost(pulse, 5000)).toBe(MAX_NUMBER);
     expect(upgradeCost(pulse, 2, Number.NaN)).toBe(upgradeCost(pulse, 2));
     expect(upgradeCost(pulse, 2, Infinity)).toBe(upgradeCost(pulse, 2));
@@ -68,9 +68,11 @@ describe('upgradeCost', () => {
 describe('energyCap', () => {
   it('usa os seis passos e depois cresce pelo fator da economia', () => {
     expect([0, 1, 2, 3, 4, 5].map((n) => energyCap(n))).toEqual([19, 40, 75, 130, 210, 320]);
-    // Da 7ª escolha em diante a barra pesa 10x mais (spec 043).
-    expect(energyCap(6)).toBeCloseTo(3200 * ENERGY_STEP_GROWTH, 6);
-    expect(energyCap(7)).toBeCloseTo(3200 * ENERGY_STEP_GROWTH ** 2, 6);
+    // Da 7ª escolha em diante a barra pesa cada vez mais (rampa 1,35x até 10x), mas a 7ª continua leve (spec 043).
+    expect(energyCap(6)).toBeCloseTo(320 * 1.3 * 1.35, 6);
+    expect(energyCap(7)).toBeCloseTo(320 * 1.3 ** 2 * 1.35 ** 2, 6);
+    expect(energyCap(6)).toBeLessThan(700);
+    expect(energyCap(40) / energyCap(39)).toBeCloseTo(1.3, 6);
   });
 
   it('o 1º grimório sai em ~19 toques (metade da barra de antes, spec 041)', () => {
@@ -134,8 +136,8 @@ describe('requisitos de colapso (spec 040)', () => {
     const last = GOAL_TABLE[GOAL_TABLE.length - 1] as number;
     expect(dustGoal(GOAL_TABLE.length + 1) / last).toBeCloseTo(GOAL_TAIL_RATIO, 9);
     expect(dustGoal(GOAL_TABLE.length + 4) / last).toBeCloseTo(GOAL_TAIL_RATIO ** 4, 9);
-    // O 1º colapso pede ~1 h de jogo (220 bi) e a conta cresce sem teto (até o guarda de 1e300).
-    expect(GOAL_TABLE[0]).toBe(2.2e11);
+    // O 1º colapso pede ~1 h de jogo (500 bi) e a conta cresce sem teto (até o guarda de 1e300).
+    expect(GOAL_TABLE[0]).toBe(5e11);
     expect(GOAL_SEGMENTS.at(-1)!.upTo).toBe(Infinity);
   });
 
@@ -155,18 +157,18 @@ describe('requisitos de colapso (spec 040)', () => {
     expect(minPicks(100_000)).toBe(8);
   });
 
-  it('a faixa de horas (spec 041): 0,7 a 2,5 h até o 15º e, depois, +3% sobre a vida anterior', () => {
-    expect([LIFE_HOURS_MIN, LIFE_HOURS_MAX, LIFE_BAND_LAST_COLLAPSE, LIFE_GROWTH_MAX]).toEqual([0.7, 2.5, 15, 0.03]);
-    expect(lifeHoursBand(1, null)).toEqual({ min: 0.7, max: 2.5 });
-    expect(lifeHoursBand(15, 2)).toEqual({ min: 0.7, max: 2.5 });
+  it('a faixa de horas (spec 041): 0,6 a 2,5 h até o 15º e, depois, +3% sobre a vida anterior', () => {
+    expect([LIFE_HOURS_MIN, LIFE_HOURS_MAX, LIFE_BAND_LAST_COLLAPSE, LIFE_GROWTH_MAX]).toEqual([0.6, 2.5, 15, 0.03]);
+    expect(lifeHoursBand(1, null)).toEqual({ min: 0.6, max: 2.5 });
+    expect(lifeHoursBand(15, 2)).toEqual({ min: 0.6, max: 2.5 });
     expect(lifeHoursBand(16, 2).max).toBeCloseTo(2.06, 9);
     expect(lifeHoursBand(40, 5).max).toBeCloseTo(5.15, 9);
   });
 
   it('a energia cresce x1,3 depois da 6ª escolha', () => {
     expect(ENERGY_STEP_GROWTH).toBe(1.3);
-    expect(energyCap(6)).toBeCloseTo(3200 * 1.3, 6);
-    expect(energyCap(7)).toBeCloseTo(3200 * 1.3 * 1.3, 6);
+    expect(energyCap(8) / energyCap(7)).toBeGreaterThan(1.3);
+    expect(energyCap(30) / energyCap(29)).toBeCloseTo(1.3, 6);
   });
 });
 

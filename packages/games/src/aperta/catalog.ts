@@ -279,7 +279,6 @@ export type UpgradeKind = 'item' | 'generator' | 'energy';
  * TOTAL de antes e depois ("Seu toque: 40 -> 80"), nunca só o que o item dá.
  */
 export type ItemEffect =
-  | { type: 'touchAdd'; value: number }
   | { type: 'touchMult'; value: number }
   | { type: 'energyMult'; value: number }
   | { type: 'genMult'; value: number }
@@ -338,7 +337,6 @@ export const GENERATOR_GROWTH = 1.15;
 export const GENERATOR_MAX = 12;
 
 const ITEM_DOMAIN: Record<ItemEffectType, string> = {
-  touchAdd: 'touchFlat',
   touchMult: 'touchMult',
   energyMult: 'energyPerTouch',
   genMult: 'dustPerSecond',
@@ -349,17 +347,17 @@ const fmt = (n: number): string => (Number.isInteger(n) ? String(n) : String(n).
 
 /** O texto do item vem do efeito: não há como descrever uma coisa e fazer outra. */
 export function itemText(e: ItemEffect): string {
+  // Todo item é uma multiplicação: vale o mesmo (dobrar é dobrar) em qualquer hora do jogo.
+  const times = (v: number): string => (v === 2 ? 'Dobra' : v === 3 ? 'Triplica' : `Multiplica por ${fmt(v)}`);
   switch (e.type) {
-    case 'touchAdd':
-      return `+${fmt(e.value)} poeira por toque`;
     case 'touchMult':
-      return `Toque x${fmt(e.value)}`;
+      return `${times(e.value)} a poeira de cada toque`;
     case 'energyMult':
-      return `Energia por toque x${fmt(e.value)}`;
+      return `${times(e.value)} a energia de cada toque`;
     case 'genMult':
-      return `Geradores de poeira x${fmt(e.value)}`;
+      return `${times(e.value)} a poeira de todos os geradores`;
     case 'energyGenMult':
-      return `Geradores de energia x${fmt(e.value)}`;
+      return `${times(e.value)} a energia de todos os geradores`;
   }
 }
 
@@ -378,7 +376,6 @@ const item = (id: string, name: string, price: number, effect: ItemEffect, unloc
 });
 
 const touchMult = (value: number): ItemEffect => ({ type: 'touchMult', value });
-const touchAdd = (value: number): ItemEffect => ({ type: 'touchAdd', value });
 const energyMult = (value: number): ItemEffect => ({ type: 'energyMult', value });
 const genMult = (value: number): ItemEffect => ({ type: 'genMult', value });
 const energyGenMult = (value: number): ItemEffect => ({ type: 'energyGenMult', value });
@@ -419,23 +416,23 @@ const energyGen = (id: string, name: string, base: number, perSec: number, max: 
 export const UPGRADES: readonly UpgradeDef[] = [
   // Era Poeira (até 10 mil)
   item('lens', 'Lente Polida', 100, touchMult(2)),
-  item('gloves', 'Luvas de Astronauta', 170, touchAdd(2)),
+  item('gloves', 'Luvas de Astronauta', 170, touchMult(3)),
   item('charged', 'Pulso Carregado', 300, energyMult(2)),
   item('solar', 'Painéis Solares', 520, genMult(2)),
   item('lens2', 'Lente Dupla', 800, touchMult(2)),
-  item('steel', 'Mãos de Aço', 1300, touchAdd(8)),
+  item('steel', 'Mãos de Aço', 1300, touchMult(2)),
   item('motor', 'Motor Iônico', 2200, genMult(2)),
   item('antenna2', 'Antena Dupla', 3600, energyGenMult(2)),
   // Era Mil (10 mil a 1 milhão)
   item('cabin', 'Cabine Reforçada', 9400, touchMult(2)),
   item('compact', 'Reator Compacto', 24000, genMult(2)),
   item('pulse2', 'Pulso Estelar', 63000, energyMult(2)),
-  item('titan', 'Mãos de Titânio', 160000, touchAdd(40)),
+  item('titan', 'Mãos de Titânio', 160000, touchMult(2)),
   item('lens3', 'Lente Tripla', 430000, touchMult(3)),
   item('plant', 'Usina Orbital', 1100000, genMult(3)),
   item('receiver2', 'Receptor Ampliado', 2900000, energyGenMult(3)),
   item('webb', 'Observatório Webb', 7500000, touchMult(2)),
-  item('diamond', 'Mãos de Diamante', 20000000, touchAdd(1000)),
+  item('diamond', 'Mãos de Diamante', 20000000, touchMult(2)),
   // Era Milhões (1 milhão a 1 bilhão)
   item('fusion', 'Reator de Fusão', 51000000, genMult(2)),
   item('quantum', 'Pulso Quântico', 130000000, energyMult(2)),
@@ -443,40 +440,40 @@ export const UPGRADES: readonly UpgradeDef[] = [
   item('forge', 'Fornalha Estelar', 890000000, genMult(3)),
   item('chandra', 'Telescópio Chandra', 2300000000, touchMult(2)),
   item('mesh', 'Malha de Escuta', 6000000000, energyGenMult(3)),
-  item('starhand', 'Mãos de Estrela', 16000000000, touchAdd(6000)),
+  item('starhand', 'Mãos de Estrela', 16000000000, touchMult(2)),
   // Colapso 1: milhões a centenas de milhões
   item('deep', 'Sonda Profunda', 41000000000, genMult(3), 1),
   item('cosmic', 'Lente Cósmica', 110000000000, touchMult(3), 1),
   item('pulsar', 'Núcleo Pulsar', 280000000000, energyMult(3), 1),
-  item('solarhand', 'Mãos Solares', 720000000000, touchAdd(40000), 1),
+  item('solarhand', 'Mãos Solares', 720000000000, touchMult(2), 1),
   item('qheart', 'Coração de Quasar', 1900000000000, genMult(3), 1),
   item('galnet', 'Rede Galáctica', 4800000000000, energyGenMult(3), 1),
   // Colapso 2: bilhões
   item('galens', 'Lente Galáctica', 13000000000000, touchMult(3), 2),
   item('antimatter', 'Reator de Antimatéria', 33000000000000, genMult(3), 2),
   item('cosmicpulse', 'Pulso Cósmico', 85000000000000, energyMult(3), 2),
-  item('nebhand', 'Mãos de Nebulosa', 220000000000000, touchAdd(250000), 2),
+  item('nebhand', 'Mãos de Nebulosa', 220000000000000, touchMult(2), 2),
   item('qforge', 'Forja de Quasar', 580000000000000, genMult(3), 2),
   item('galecho', 'Eco Galáctico', 1500000000000000, energyGenMult(3), 2),
   // Colapso 3: dezenas de bilhões
   item('horizon', 'Lente do Horizonte', 3900000000000000, touchMult(5), 3),
   item('warp', 'Motor de Dobra', 10000000000000000, genMult(5), 3),
   item('singpulse', 'Pulso de Singularidade', 26000000000000000, energyMult(3), 3),
-  item('cosmoshand', 'Mãos do Cosmos', 68000000000000000, touchAdd(2000000), 3),
+  item('cosmoshand', 'Mãos do Cosmos', 68000000000000000, touchMult(2), 3),
   item('galheart', 'Coração Galáctico', 180000000000000000, genMult(5), 3),
   item('universe', 'Matriz do Universo', 460000000000000000, energyGenMult(5), 3),
 
-  generator('satellite', 'Satélite', 200, 0.2, 8),
-  generator('probe', 'Sonda Voyager', 1600, 1.6, 8),
-  generator('telescope', 'Telescópio', 27000, 12, 8),
-  generator('observatory', 'Observatório', 240000, 60, 10),
-  generator('station', 'Estação Orbital', 2700000, 340, 10),
-  generator('colony', 'Colônia Lunar', 30000000, 1900, 10),
-  generator('fleet', 'Frota Estelar', 420000000, 11000, 12),
-  generator('portal', 'Portal', 7500000000, 62000, 12),
-  generator('cluster', 'Aglomerado', 120000000000, 350000, 12),
-  generator('quasar', 'Quasar', 2700000000000, 2000000, 12),
-  generator('web', 'Teia Cósmica', 60000000000000, 12000000, 12),
+  generator('satellite', 'Satélite', 50, 0.2, 8),
+  generator('probe', 'Sonda Voyager', 400, 1.6, 8),
+  generator('telescope', 'Telescópio', 3500, 12, 8),
+  generator('observatory', 'Observatório', 30000, 60, 10),
+  generator('station', 'Estação Orbital', 300000, 340, 10),
+  generator('colony', 'Colônia Lunar', 3000000, 1900, 10),
+  generator('fleet', 'Frota Estelar', 40000000, 11000, 12),
+  generator('portal', 'Portal', 600000000, 62000, 12),
+  generator('cluster', 'Aglomerado', 10000000000, 350000, 12),
+  generator('quasar', 'Quasar', 200000000000, 2000000, 12),
+  generator('web', 'Teia Cósmica', 5000000000000, 12000000, 12),
 
   energyGen('antenna', 'Antena', 300, 0.004, 6),
   energyGen('receiver', 'Receptor de Sinal', 2500, 0.02, 6),

@@ -179,8 +179,8 @@ describe('A carta mostra o efeito nos números da vida', () => {
   it('cada carta diz o que muda: o total antes e depois', () => {
     const p = cardPreviews(atCollapse(5), ['sirius', 'moon', 'saturn']);
     expect(p.sirius).toMatch(/^A cada 10 toques, poeira: x1 -> x2/);
-    expect(p.moon).toBe('Seu toque: 1 -> 4');
-    expect(p.saturn).toBe('Seu toque: 1 -> 1,5');
+    expect(p.moon).toMatch(/^Seu toque: 1 -> 4/);
+    expect(p.saturn).toMatch(/^Seu toque: 1 -> 1,5/);
   });
 
   it('o cálculo vem do motor: pegar de novo sobe o nível, e a raridade maior sobe mais', () => {

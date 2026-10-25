@@ -224,16 +224,16 @@ describe('buyUpgrade', () => {
   it('desconta o custo e sobe o nível', () => {
     const s = buyUpgrade(withRun(newSave('b'), { dust: 300 }), idx('satellite'));
     expect(s.run.upgradeLevels[idx('satellite')]).toBe(1);
-    expect(s.run.dust).toBe(100);
+    expect(s.run.dust).toBe(250);
   });
 
-  it('o preço do gerador sobe 15% a cada compra: 200, 230, 264...', () => {
+  it('o preço do gerador sobe 15% a cada compra: 50, 57, 66...', () => {
     let s = withRun(newSave('b'), { dust: 1e6 });
-    expect(nextUpgradeCost(s, idx('satellite'))).toBe(200);
+    expect(nextUpgradeCost(s, idx('satellite'))).toBe(50);
     s = buyUpgrade(s, idx('satellite'));
-    expect(nextUpgradeCost(s, idx('satellite'))).toBe(230);
+    expect(nextUpgradeCost(s, idx('satellite'))).toBe(57);
     s = buyUpgrade(s, idx('satellite'));
-    expect(nextUpgradeCost(s, idx('satellite'))).toBe(264);
+    expect(nextUpgradeCost(s, idx('satellite'))).toBe(66);
     let last = 0;
     // O Satélite vai até 8 níveis (0/8); depois some da prateleira e o próximo gerador aparece.
     for (let i = 0; i < 5; i++) {

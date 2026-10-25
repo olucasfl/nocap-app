@@ -125,7 +125,8 @@ interface StatLine {
 const pct = (v: number) => `${formatDecimal(v * 100, 0)}%`;
 const secs = (v: number) => `${formatDecimal(v, 1)} s`;
 
-const touches = (v: number) => `${formatDecimal(v, v % 1 === 0 ? 0 : 1)} toques`;
+const dustAmt = (v: number) => `${v >= 100 ? formatNumber(Math.floor(v)) : formatDecimal(v, 1)} poeira`;
+const energyAmt = (v: number) => `${formatDecimal(v, v >= 10 ? 0 : 1)} energia`;
 
 const STAT_LINES: StatLine[] = [
   { label: 'Seu toque', read: (s) => s.dustPerTouch, show: (v) => (v >= 100 ? formatNumber(Math.floor(v)) : formatDecimal(v, 1)) },
@@ -135,16 +136,16 @@ const STAT_LINES: StatLine[] = [
   { label: 'Descartes por escolha', read: (s) => s.choice.discards, show: (v) => formatDecimal(v, 0) },
   { label: 'Cartas por escolha', read: (s) => s.choice.cards, show: (v) => formatDecimal(v, 0) },
   { label: 'Peso das cartas épicas e lendárias', read: (s) => s.choice.rarityBoost, show: (v) => `+${formatDecimal(v, 0)}` },
-  { label: 'Devolução ao comprar', read: (s) => s.buyRefundTouches, show: touches },
+  { label: 'Devolução ao comprar', read: (s) => s.buyRefundTouches * s.dustPerTouch, show: dustAmt },
   { label: 'Poeira inicial', read: (s) => s.startDust, show: (v) => formatNumber(v) },
   { label: 'Custo dos itens', read: (s) => s.costFactor, show: pct },
-  { label: 'Cometa', read: (s) => s.objects.reward.comet.dust, show: touches },
-  { label: 'Estrela cadente', read: (s) => s.objects.reward['shooting-star'].energy, show: touches },
-  { label: 'Satélite (poeira)', read: (s) => s.objects.reward.satellite.dust, show: touches },
+  { label: 'Ao pegar um cometa', read: (s) => s.objects.reward.comet.dust * s.dustPerTouch, show: dustAmt },
+  { label: 'Ao pegar uma estrela cadente', read: (s) => s.objects.reward['shooting-star'].energy * s.energyPerTouch, show: energyAmt },
+  { label: 'Ao pegar um satélite', read: (s) => s.objects.reward.satellite.dust * s.dustPerTouch, show: dustAmt },
   { label: 'Espera pelo próximo objeto', read: (s) => s.objects.spawnMaxSec, show: secs },
   { label: 'Tempo do objeto na tela', read: (s) => s.objects.lifeSec.comet, show: secs },
   { label: 'Objetos ao mesmo tempo', read: (s) => s.objects.maxOnField, show: (v) => formatDecimal(v, 0) },
-  { label: 'Energia ao capturar', read: (s) => s.objects.onCaptureEnergyTouches, show: touches },
+  { label: 'Ao pegar qualquer objeto, energia extra', read: (s) => s.objects.onCaptureEnergyTouches * s.energyPerTouch, show: energyAmt },
   { label: 'Toque depois de capturar', read: (s) => s.objects.afterCaptureMult, show: (v) => `x${formatDecimal(v, 1)}` },
 ];
 

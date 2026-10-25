@@ -481,14 +481,43 @@
 }
 .ap-x {
   flex: none;
-  width: 44px;
+  order: -1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
   height: 44px;
+  padding: 0 14px 0 8px;
   border: 3px solid var(--space-ink);
   border-radius: 10px;
   background: linear-gradient(180deg, #ff6a5c, #d92a20);
   color: #fff;
   font: 700 18px/1 var(--space-font-display);
   box-shadow: 0 3px 0 #8e1514;
+  cursor: pointer;
+}
+/* Um só botão em toda tela: "‹ Voltar" (o X antigo some; o aria-label continua "Fechar"). */
+.ap-x-x {
+  display: none;
+}
+.ap-x-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.ap-x-back svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ap-x-back b {
+  font: 700 14px/1 var(--space-font-display);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 .ap-sbody {
   flex: 1;

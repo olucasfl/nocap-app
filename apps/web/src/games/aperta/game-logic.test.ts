@@ -76,9 +76,9 @@ describe('selo de Melhorias', () => {
   it('conta quantas dá para comprar com a poeira atual', () => {
     const s = fresh();
     expect(affordableCount(s)).toBe(0);
-    const rich: SaveState = { ...s, run: { ...s.run, dust: 100, dustLife: 100 } };
+    const rich: SaveState = { ...s, run: { ...s.run, dust: 50, dustLife: 50 } };
     expect(affordableCount(rich)).toBe(1);
-    expect(affordableCount(buyUpgrade(rich, UPGRADES.findIndex((u) => u.id === 'lens')))).toBe(0);
+    expect(affordableCount(buyUpgrade(rich, UPGRADES.findIndex((u) => u.id === 'satellite')))).toBe(0);
   });
 });
 

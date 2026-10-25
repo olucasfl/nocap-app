@@ -897,8 +897,7 @@ function computeStats(state: SaveState): EffectiveStats {
     }
   }
 
-  // Itens (spec 043): só 5 efeitos simples. Todos os comprados valem ao mesmo tempo.
-  let itemTouchAdd = 0;
+  // Itens (spec 043): só 4 efeitos, todos multiplicações. Todos os comprados valem ao mesmo tempo.
   let itemTouchMult = 1;
   let itemEnergyMult = 1;
   let itemGenMult = 1;
@@ -906,9 +905,6 @@ function computeStats(state: SaveState): EffectiveStats {
   for (const def of UPGRADES) {
     if (def.kind !== 'item' || !def.item || level(state, def.id) <= 0) continue;
     switch (def.item.type) {
-      case 'touchAdd':
-        itemTouchAdd += def.item.value;
-        break;
       case 'touchMult':
         itemTouchMult *= def.item.value;
         break;
@@ -946,7 +942,7 @@ function computeStats(state: SaveState): EffectiveStats {
   const windowSec = (COMBO_BASE_WINDOW_SEC + windowSecAdd) * (1 + windowPct / 100) * windowMult;
 
   // Selo Estelar: poeira fixa por toque, por selo (spec 040, seção 3).
-  const flat = itemTouchAdd + dustFlat + state.seals * SEAL_DUST_PER_TOUCH + treeFlatDust(state, ts);
+  const flat = dustFlat + state.seals * SEAL_DUST_PER_TOUCH + treeFlatDust(state, ts);
   const dustPerTouch = (1 + flat) * itemTouchMult * Math.max(0, 1 + dustPct / 100) * dustMult;
 
   const energyPerTouch = (BASE_ENERGY_PER_TOUCH + energyFlat) * itemEnergyMult * Math.max(0, 1 + energyPct / 100) * energyMult;
@@ -1028,7 +1024,7 @@ function computeStats(state: SaveState): EffectiveStats {
     choice: {
       cards: 3 + choice.cards,
       picks: 1 + choice.picks,
-      rerolls: choice.rerolls,
+      rerolls: Math.min(MAX_REROLLS_PER_CHOICE, choice.rerolls),
       repeatLevels: 1 + choice.repeatLevels,
       noCommon: choice.noCommon,
       rarityBoost: choice.rarityBoost,
@@ -1227,7 +1223,7 @@ function openChoiceIfFull(state: SaveState, now: number): SaveState {
   const stats = effectiveStats(state);
   const cap = energyCap(run.picks, stats.energyStepFactor);
   if (run.energy < cap) return state;
-  return openChoice(state, now, stats.choice.picks, stats.choice.rerolls + run.freeRerolls, cap, true);
+  return openChoice(state, now, stats.choice.picks, Math.min(MAX_REROLLS_PER_CHOICE, stats.choice.rerolls + run.freeRerolls), cap, true);
 }
 
 /**
@@ -1344,12 +1340,15 @@ export function chooseGrimoire(state: SaveState, id: string, now: number): SaveS
   return awardAchievements({ ...next, run: { ...next.run, energy: 0 } });
 }
 
+/** Teto de trocas de carta por escolha, somando grimórios e Árvore (pedido do Lucas, 25/10/2026: mais que isso é apelão). */
+export const MAX_REROLLS_PER_CHOICE = 3;
+
 /** Trocas que ainda dá para fazer nesta oferta: as da oferta e o que resta da cota da vida. */
 export function rerollsAvailable(state: SaveState): number {
   const p = state.run.pending;
   if (!p) return 0;
   const luck = effectiveStats(state).luck;
-  return p.rerollsLeft + Math.max(0, luck.rerolls - state.run.rerollsUsed);
+  return Math.min(MAX_REROLLS_PER_CHOICE, p.rerollsLeft + Math.max(0, luck.rerolls - state.run.rerollsUsed));
 }
 
 /** Descartes de oferta que ainda restam na vida (Segunda chance da árvore). */

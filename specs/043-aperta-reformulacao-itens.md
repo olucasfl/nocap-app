@@ -25,7 +25,7 @@ Hoje há **42 melhorias** (16 de toque, 11 geradores de poeira, 5 de energia, 8 
 
 ## 3. Princípios do novo desenho
 
-1. **Um item, um efeito, um número.** "+2 poeira por toque", "Toque x2", "Geradores de poeira x2". Só 5 tipos de efeito (seção 4).
+1. **Um item, um efeito, um número.** "+2 poeira por toque", "Toque x2", "Geradores de poeira x2". Só 4 tipos de efeito (seção 4).
 2. **Sem porcentagem, sem condição, sem cenário.** Se precisa de "quando" ou "a cada", não é item.
 3. **Um item por vez na vitrine.** Como já é nos geradores: aparece o **próximo** em destaque, com preço e o que muda ("Toque: 4 -> 8"). Os seguintes aparecem esmaecidos com o preço (o objetivo), os comprados ficam num resumo.
 4. **Preço que dá vontade, nunca impossível.** Cada item é calibrado para ser comprado de **2 a 6 minutos** depois de aparecer (simulador), com o jogador tocando e comprando geradores.
@@ -133,6 +133,11 @@ Em ordem de valor para "a pessoa entende e quer continuar":
 
 Outros pontos fechados na implementação:
 
+- **Todo item é uma multiplicação** (pedido do Lucas, 25/10/2026): "+8 poeira por toque" virava +64 quando o toque já era multiplicado, então os itens de soma saíram. Hoje há 4 tipos (toque x, energia por toque x, geradores de poeira x, geradores de energia x) e o texto diz "Dobra...", "Triplica...". Dobrar vale o mesmo em qualquer hora do jogo.
+- **Barra de energia suave:** da 7ª escolha em diante o custo cresce 1,3x por escolha e, em cima, uma rampa de 1,35x por escolha até 10x, para o começo continuar leve (7ª escolha = 562 de energia, não 4 mil).
+- **Geradores:** Satélite 50, Sonda 400, Telescópio 3,5 mil, Observatório 30 mil, e assim por diante (proporcionais).
+- **1º colapso em ~40 min:** `GOAL_TABLE[0]` = 500 bi (a escala dos números é a mesma dos itens e geradores); `LIFE_HOURS_MIN` caiu para 0,6 h.
+- **Páginas em tela cheia:** Melhorias, Grimórios, Conquistas e Cofre abrem em tela cheia em qualquer tamanho (`fullpage.css`), e Itens e Geradores têm duas colunas (para comprar | comprados).
 - **Geradores sem teto** (`autoDustCap` e `autoEnergyCap` viraram infinito) e sem a fração parada: um item "Geradores x2" tem que dobrar de verdade. Os geradores de poeira não enchem mais a barra de grimórios; só os de energia enchem.
 - **Surto** da Estrela Dourada passou a ser "geradores x3 por 45 s".
 - **Custo dos geradores** x30 e geradores de energia ÷10 (calibração): sem isso os geradores viravam a única fonte de renda.
@@ -141,7 +146,7 @@ Outros pontos fechados na implementação:
 
 ## 9. O que foi feito
 
-1. **Motor** (`packages/games`): 42 itens em 5 tipos de efeito (`ItemEffect`, `itemText`, eras por preço), escada de preços com `nextItemIndex` e janela de 3 (`ITEM_PREVIEW_AHEAD`), trava `order` e `shelf`; 20 grimórios em 4 categorias; save v7 com `migrateFresh`; `validateSave` recusa item comprado fora da ordem.
+1. **Motor** (`packages/games`): 42 itens em 4 tipos de efeito (`ItemEffect`, `itemText`, eras por preço), escada de preços com `nextItemIndex` e janela de 3 (`ITEM_PREVIEW_AHEAD`), trava `order` e `shelf`; 20 grimórios em 4 categorias; save v7 com `migrateFresh`; `validateSave` recusa item comprado fora da ordem.
 2. **Simulador:** o jogador simulado compra o próximo item assim que dá; metas de colapso e preços calibrados (ver `GOAL_TABLE` e os preços em `catalog.ts`).
 3. **Interface** (`apps/web`): aba **Itens** (próximo item em cartão grande com o total antes → depois, barra de poeira, dois seguintes esmaecidos, tira de Comprados), aba **Geradores** explicada (o que rende agora, em quanto tempo se paga, Completar), quadro **Seus poderes**, ícones SVG por tipo de efeito com moldura da era (`ItemIcon`).
 4. **Grimórios:** quatro categorias com selo próprio; a carta mostra o total antes → depois para todos (o Observatório Gaia saiu).

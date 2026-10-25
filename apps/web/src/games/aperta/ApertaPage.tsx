@@ -21,6 +21,7 @@ import './aperta.css';
 import './story.css';
 import './hud.css';
 import './landscape.css';
+import './fullpage.css';
 
 const FONTS_HREF =
   'https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Space+Grotesk:wght@400;500;700&display=swap';

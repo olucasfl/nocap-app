@@ -22,8 +22,9 @@ export const REACTOR_STEP = 0.25;
 /** Spec 041 (B4): metade da dificuldade de antes (38, 80, 150...), para o grimório vir mais fácil. */
 export const ENERGY_STEPS = [19, 40, 75, 130, 210, 320] as const;
 export const ENERGY_STEP_GROWTH = 1.3;
-/** Da 7ª escolha em diante a barra pesa 10x mais: os itens de energia e os geradores enchem rápido, e o jogo quer uma escolha a cada poucos minutos. */
+/** A partir da 7ª escolha a barra pesa cada vez mais (até 10x): os itens de energia e os geradores enchem rápido, e o jogo quer uma escolha a cada poucos minutos. */
 const ENERGY_STEP_LATE = 10;
+const ENERGY_RAMP = 1.35;
 
 /** Grimório repetido: cada nível soma metade do número base (+0,5 vira +0,75, +1...), até o nível 10. */
 export const GRIMOIRE_MAX_LEVEL = 10;
@@ -83,11 +84,13 @@ export function clampCostFactor(factor: number): number {
 /** Energia necessária para a escolha número `picks` (0 = a primeira). */
 export function energyCap(picks: number, stepFactor = 1): number {
   const n = Math.max(0, Math.floor(picks));
+  const last = ENERGY_STEPS.length - 1;
+  // Depois da 6ª escolha a barra cresce 1,3x por escolha e, em cima disso, pesa cada vez mais (até 10x): os itens de
+  // energia e os geradores enchem rápido mais para a frente, mas o começo do jogo continua leve.
   const base =
     n < ENERGY_STEPS.length
       ? (ENERGY_STEPS[n] as number)
-      : (ENERGY_STEPS[ENERGY_STEPS.length - 1] as number) * ENERGY_STEP_LATE *
-        Math.pow(ENERGY_STEP_GROWTH, n - (ENERGY_STEPS.length - 1));
+      : (ENERGY_STEPS[last] as number) * Math.pow(ENERGY_STEP_GROWTH, n - last) * Math.min(ENERGY_STEP_LATE, Math.pow(ENERGY_RAMP, n - last));
   const value = base * (Number.isFinite(stepFactor) && stepFactor > 0 ? stepFactor : 1);
   return Math.min(MAX_NUMBER, value);
 }
@@ -194,7 +197,7 @@ export const GOAL_BASE = 5e7;
  * mais longa (até ~1,8 h no 15º), sem saltos. Depois do 15º a meta cresce `GOAL_TAIL_RATIO` por colapso. O
  * vetor é mutável só para a ferramenta de calibragem (`tmp-calib`); o jogo nunca o altera.
  */
-export const GOAL_TABLE: number[] = [2.2e11, 4.7e13, 8e14, 8.9e16, 3.8e17, 8.1e17, 1.8e18, 3.6e18, 7.5e18, 1.5e19, 3.5e19, 7e19, 1.4e20, 2.8e20, 5.5e20];
+export const GOAL_TABLE: number[] = [5e11, 1.3e14, 1.3e15, 2.2e16, 9.5e16, 2e17, 4.5e17, 6e17, 7.5e17, 1e18, 1.4e18, 3e18, 4e18, 5e18, 6e18];
 export const GOAL_TAIL_RATIO = 1.08;
 export const GOAL_SEGMENTS: { upTo: number; ratio: number }[] = [{ upTo: Infinity, ratio: GOAL_TAIL_RATIO }];
 
@@ -208,7 +211,7 @@ export const MIN_PICKS_LATE = 8;
  * leva de 1 h a 3 h; depois pode crescer no máximo 3% por colapso em relação à anterior.
  */
 /** Spec 041: o 1º colapso em ~1 h e as outras vidas entre 0,7 h e 2,5 h até o 15º (antes 1 h a 3 h). */
-export const LIFE_HOURS_MIN = 0.7;
+export const LIFE_HOURS_MIN = 0.6;
 export const LIFE_HOURS_MAX = 2.5;
 export const LIFE_BAND_LAST_COLLAPSE = 15;
 export const LIFE_GROWTH_MAX = 0.03;

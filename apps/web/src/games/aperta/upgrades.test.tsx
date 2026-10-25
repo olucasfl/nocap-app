@@ -147,7 +147,7 @@ describe('página renderizada', () => {
     expect(markup).toContain('Luvas de Astronauta');
     expect(markup).toContain('Pulso Carregado');
     expect(markup).toContain('role="tablist"');
-    expect(markup).not.toContain('Comprados');
+    expect(markup).toContain('Os itens que você comprar aparecem aqui');
   });
 
   it('sem poeira suficiente o botão diz quanto falta, sem comprar', () => {
