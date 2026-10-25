@@ -1,5 +1,5 @@
 /**
- * Desmorona! (spec 044): arena de hexágonos em 5 camadas. Todos os números do jogo estão aqui; o motor
+ * Desmorona! (spec 044): arena de hexágonos em 7 camadas. Todos os números do jogo estão aqui; o motor
  * (`world.ts`) não tem número solto. Unidades de mundo: 1 = tamanho de um ladrilho aproximado.
  */
 
@@ -8,10 +8,17 @@
  * jogadores (cada um gasta chão andando), para a partida durar de 3 a 4 minutos com 2 ou com 8.
  */
 export function dsmLayerRadii(players: number): readonly number[] {
-  const top = 9 + Math.max(2, Math.min(8, Math.round(players)));
-  return [top, Math.round(top * 0.75), Math.round(top * 0.55), Math.round(top * 0.33), 2];
+  const top = 11 + Math.max(2, Math.min(8, Math.round(players)));
+  const out: number[] = [];
+  DSM_LAYER_SCALE.forEach((f, i) => {
+    const r = Math.max(5, Math.round(top * f));
+    out.push(i === 0 ? r : Math.min(r, (out[i - 1] as number) - 0));
+  });
+  return out;
 }
-export const DSM_LAYERS = 5;
+/** Tamanho de cada camada em relação à de cima: as de baixo continuam grandes o bastante para jogar. */
+const DSM_LAYER_SCALE = [1, 0.88, 0.76, 0.65, 0.55, 0.46, 0.38] as const;
+export const DSM_LAYERS = 7;
 /** Distância do centro de um hexágono até o canto (hexágono "pointy-top"). */
 export const DSM_HEX_SIZE = 1.15;
 /** Altura entre uma camada e a de baixo. */
@@ -20,9 +27,9 @@ export const DSM_LAYER_GAP = 6;
 export const DSM_TILE_THICK = 0.5;
 
 /** Quanto tempo um ladrilho pisado aguenta (s), por camada: cada uma de baixo é um pouco mais rápida. */
-export const DSM_TILE_LIFE = [3, 2.6, 2.2, 1.8, 1.4] as const;
+export const DSM_TILE_LIFE = [1.8, 1.7, 1.5, 1.4, 1.2, 1.1, 1] as const;
 /** Nos últimos tantos segundos o ladrilho "racha" (treme e muda de cor): é o aviso. */
-export const DSM_CRACK_SEC = 0.5;
+export const DSM_CRACK_SEC = 0.45;
 
 /** Movimento da raposa. */
 export const DSM_SPEED = 6.2;
@@ -33,8 +40,8 @@ export const DSM_MAX_FALL = 38;
 export const DSM_RADIUS = 0.34;
 /** Altura de onde todo mundo cai no começo, acima da primeira camada. */
 export const DSM_SPAWN_Y = 13;
-/** Até aqui nenhum ladrilho quebra: dá tempo de pousar e olhar em volta. */
-export const DSM_GRACE_SEC = 3.2;
+/** Só vale pisar depois de pousar; a queda inicial (~1 s) já protege, então isto é só uma folga mínima. */
+export const DSM_GRACE_SEC = 0.4;
 /** Abaixo da última camada por tanto, a lava pega a raposa e ela é eliminada. */
 export const DSM_LAVA_DEPTH = 6;
 

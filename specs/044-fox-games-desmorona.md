@@ -5,7 +5,7 @@ Pedido do Lucas em 25/10/2026. Status: **aprovada nas decisões da seção 9; fa
 ## 1. O que o Lucas pediu
 
 1. Um jogo **estilo Fall Guys**, competitivo com amigos, em 3D com as **raposas de boné**: **Desmorona!**
-2. A arena é de **ladrilhos hexagonais** em **5 camadas** empilhadas. A de cima é a maior, e cada uma de baixo é menor.
+2. A arena é de **ladrilhos hexagonais** em **7 camadas** empilhadas. A de cima é a maior, e cada uma de baixo é menor.
 3. Todos **caem do ar** na primeira camada, ao mesmo tempo. Quando alguém **anda** num ladrilho, ele aguenta um tempo e **quebra**. Quem está em cima cai para a camada de baixo. Quem cai da **última** camada **morre**, fica **assistindo** os outros, e vence o **último vivo**.
 4. **Câmera individual** (cada um vê a sua). No celular, **joystick** bem feito, sem atrapalhar a visão. No computador, **W, A, S, D**.
 5. **Sem ranking e sem histórico** neste jogo.
@@ -29,7 +29,7 @@ Movimento livre significa mandar posições, mas dá para fazer bem sem colisão
 ## 3. Regras do jogo
 
 ### Arena
-- **5 camadas** de hexágonos, de cima para baixo, com raios de **8, 6, 5, 3 e 2** ladrilhos (217, 127, 91, 37 e 19 ladrilhos; valores provisórios). Cada camada fica a **6 unidades** abaixo da anterior, centrada.
+- **7 camadas** de hexágonos, de cima para baixo, com raios de **8, 6, 5, 3 e 2** ladrilhos (217, 127, 91, 37 e 19 ladrilhos; valores provisórios). Cada camada fica a **6 unidades** abaixo da anterior, centrada.
 - Cada camada tem cor própria (roxa, rosa, laranja, amarela, azul gelo). As camadas de baixo aparecem **por baixo** das de cima (dá para ver a queda vindo).
 - Embaixo da última camada há **lava** (a "coisa que mata"): tocar nela elimina.
 - Cenário em volta: colinas e céu coloridos como na referência (Fall Guys), na paleta das raposas.

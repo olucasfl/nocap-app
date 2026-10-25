@@ -14,7 +14,7 @@ import {
 import { buildHero } from '../atravessa/models';
 
 /** Cores das camadas, de cima para baixo (a de cima é a maior). */
-const LAYER_COLORS = [0x9a5cff, 0xff7ab8, 0xffa24d, 0xffd84d, 0x55d9ff];
+const LAYER_COLORS = [0x9a5cff, 0xff7ab8, 0xffa24d, 0xffd84d, 0x8be36b, 0x55d9ff, 0x6b7bff];
 const CRACK_COLOR = new THREE.Color(0xff4d4d);
 const WAVE_COLOR = new THREE.Color(0xff9d2e);
 const STEP_MIX = 0.35;

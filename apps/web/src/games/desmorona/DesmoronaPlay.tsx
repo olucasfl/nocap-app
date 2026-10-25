@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   DSM_DT,
+  DSM_LAYERS,
   DsmWorld,
   botInput,
   newBotMemory,
@@ -231,7 +232,7 @@ export function DesmoronaPlay({ bots, onExit, onAgain }: { bots: number; onExit:
           Vivos <b>{hud.alive}</b>/{hud.total}
         </div>
         <div className="dsm-pill is-layer">
-          Camada <b>{hud.layer}</b>/5
+          Camada <b>{hud.layer}</b>/{DSM_LAYERS}
         </div>
         <button type="button" className="dsm-exit" onClick={onExit}>
           Sair
