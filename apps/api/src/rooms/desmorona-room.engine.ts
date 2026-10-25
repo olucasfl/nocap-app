@@ -1,6 +1,8 @@
 import {
   DSM_LAYERS,
   DSM_MAX_PLAYERS,
+  DSM_PUSH_CD,
+  DSM_PUSH_MAX,
   DSM_ROOM_COLORS,
   DSM_ROOM_COUNTDOWN_MS,
   DSM_ROOM_MAX_SEC,
@@ -54,6 +56,9 @@ export class DesmoronaRoomEngine extends ColorRoomEngine {
   private deathCount = 0;
   private dirty = false;
   private winnerId: string | null = null;
+  /** Empurrões a entregar (esvaziado por `drainPushes`). */
+  private pushes: { to: string; from: number; kx: number; kz: number }[] = [];
+  private pushAt = new Map<string, number>();
   /** Passos novos para transmitir (esvaziado por `drainSteps`). */
   private outbox: number[][] = [];
 
@@ -84,6 +89,8 @@ export class DesmoronaRoomEngine extends ColorRoomEngine {
     this.startAt = this.now() + DSM_ROOM_COUNTDOWN_MS;
     this.steps.clear();
     this.outbox = [];
+    this.pushes = [];
+    this.pushAt.clear();
     this.deathCount = 0;
     this.winnerId = null;
     this.racers.clear();
@@ -133,6 +140,29 @@ export class DesmoronaRoomEngine extends ColorRoomEngine {
     const at = Math.max(0, this.clock());
     this.steps.set(key, at);
     this.outbox.push([l, q, rr, Math.round(at * 1000)]);
+  }
+
+  /** "Empurrei esta raposa": a sala confere e entrega só a ela, que aplica o impulso em si. */
+  push(id: string, v: unknown): void {
+    if (!this.racing) return;
+    const from = this.racers.get(id);
+    const m = v as { to?: unknown; kx?: unknown; kz?: unknown } | null;
+    if (!from || !from.alive || !m || typeof m.to !== 'string' || !finite(m.kx) || !finite(m.kz)) return;
+    const to = this.racers.get(m.to);
+    if (!to || !to.alive || to.id === id) return;
+    const t = this.now();
+    const key = `${id}>${to.id}`;
+    if (t - (this.pushAt.get(key) ?? 0) < DSM_PUSH_CD * 1000 * 0.8) return;
+    this.pushAt.set(key, t);
+    const len = Math.hypot(m.kx, m.kz);
+    const k = len > DSM_PUSH_MAX ? DSM_PUSH_MAX / len : 1;
+    this.pushes.push({ to: to.id, from: from.slot, kx: r2(m.kx * k), kz: r2(m.kz * k) });
+  }
+
+  drainPushes() {
+    const out = this.pushes;
+    this.pushes = [];
+    return out;
   }
 
   /** "Caí na lava": vale depois da queda inicial. */

@@ -286,6 +286,11 @@ export class DsmScene {
     this.renderer.render(this.scene, this.camera);
   }
 
+  /** Sacode a câmera (empurrão sofrido). */
+  shakeNow(amount: number) {
+    this.shake = Math.max(this.shake, amount);
+  }
+
   /** As camadas acima de quem a câmera segue ficam quase transparentes: nada tapa a raposa depois de uma queda. */
   private fadeUpperLayers(dt: number, focusY: number) {
     const k = 1 - Math.exp(-dt * 9);

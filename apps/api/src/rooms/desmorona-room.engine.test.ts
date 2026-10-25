@@ -140,4 +140,20 @@ describe('sala do Desmorona!', () => {
     expect(snap(room).dead).toEqual({});
     expect(room.drainSteps()).toEqual([]);
   });
+
+  it('o empurrão vai só para quem foi empurrado, limitado e com espera entre dois', () => {
+    const { room, clock } = racing();
+    room.push('ana', { to: 'bia', kx: 100, kz: 0 });
+    room.push('ana', { to: 'bia', kx: 5, kz: 0 });
+    room.push('ana', { to: 'ana', kx: 5, kz: 0 });
+    room.push('ana', { to: 'zzz', kx: 5, kz: 0 });
+    room.push('ana', { to: 'bia', kx: 'x', kz: 0 });
+    const out = room.drainPushes();
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({ to: 'bia', from: 0 });
+    expect(Math.hypot(out[0]!.kx, out[0]!.kz)).toBeLessThanOrEqual(13.01);
+    clock.advance(1000);
+    room.push('ana', { to: 'bia', kx: 5, kz: 0 });
+    expect(room.drainPushes()).toHaveLength(1);
+  });
 });

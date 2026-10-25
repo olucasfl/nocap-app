@@ -239,8 +239,8 @@ async function client() {
 let room: Room | null = null;
 
 /** Mensagens frequentes da sala (as posições do Atravessa!) não passam pelo estado: quem quer, assina. */
-type LiveType = 'pos' | 'ack' | 'dsteps';
-const live: Record<LiveType, Set<(m: unknown) => void>> = { pos: new Set(), ack: new Set(), dsteps: new Set() };
+type LiveType = 'pos' | 'ack' | 'dsteps' | 'dpushed';
+const live: Record<LiveType, Set<(m: unknown) => void>> = { pos: new Set(), ack: new Set(), dsteps: new Set(), dpushed: new Set() };
 export function subscribeRoom(type: LiveType, fn: (m: unknown) => void): () => void {
   live[type].add(fn);
   return () => void live[type].delete(fn);
@@ -338,7 +338,7 @@ function attach(r: Room) {
     r.send('ping', { t0: Date.now(), rtt: lastRtt });
   }, 20_000);
 
-  for (const type of ['pos', 'ack', 'dsteps'] as const) r.onMessage(type, (m: unknown) => live[type].forEach((fn) => fn(m)));
+  for (const type of ['pos', 'ack', 'dsteps', 'dpushed'] as const) r.onMessage(type, (m: unknown) => live[type].forEach((fn) => fn(m)));
   r.onMessage('chat', (m: ChatMessage) =>
     useRoom.setState((s) => ({
       chat: [...s.chat, m].slice(-50),

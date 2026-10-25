@@ -573,6 +573,10 @@ export class DesmoronaRoom extends ColorRoom {
       const id = idOf(c);
       if (id) engine().step(id, m);
     });
+    this.onMessage('dpush', (c, m) => {
+      const id = idOf(c);
+      if (id) engine().push(id, m);
+    });
     this.onMessage('ddead', (c) => {
       const id = idOf(c);
       if (id) engine().die(id);
@@ -587,5 +591,9 @@ export class DesmoronaRoom extends ColorRoom {
     this.broadcast('pos', engine.positions());
     const steps = engine.drainSteps();
     if (steps.length > 0) this.broadcast('dsteps', steps);
+    for (const p of engine.drainPushes()) {
+      const target = this.clients.find((c) => (c.userData as AuthData | undefined)?.id === p.to);
+      target?.send('dpushed', { from: p.from, kx: p.kx, kz: p.kz });
+    }
   }
 }

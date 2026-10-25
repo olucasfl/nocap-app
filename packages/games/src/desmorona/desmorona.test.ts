@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { createRng } from '../core/rng';
 import { newBotMemory, botInput } from './bots';
-import { DSM_DT, DSM_GRACE_SEC, DSM_LAYERS, DSM_TILE_LIFE, dsmLayerRadii } from './constants';
+import { DSM_BODY_R, DSM_DT, DSM_GRACE_SEC, DSM_LAYERS, DSM_TILE_LIFE, dsmLayerRadii } from './constants';
 import { hexCount, hexToWorld, layerY, worldToHex } from './hex';
-import { DsmWorld, type DsmInput, type DsmPlayerInfo } from './world';
+import { DsmWorld, type DsmInput, type DsmPlayer, type DsmPlayerInfo } from './world';
 
 const infos = (n: number): DsmPlayerInfo[] => Array.from({ length: n }, (_, i) => ({ id: `p${i}`, name: `P${i}`, color: 0xff7d26, bot: true }));
 
@@ -11,7 +11,7 @@ const infos = (n: number): DsmPlayerInfo[] => Array.from({ length: n }, (_, i) =
 function playBots(seed: string, n: number, maxSec = 360): DsmWorld {
   const w = new DsmWorld(seed, infos(n));
   let i = 0;
-  const mem = new Map(w.players.map((p) => [p.id, newBotMemory((i++ % 4) * 0.15)]));
+  const mem = new Map(w.players.map((p) => [p.id, newBotMemory((i % 4) * 0.15, i++ % 3 === 0 ? 0.5 : 0)]));
   const rng = createRng(`${seed}:bots`);
   while (!w.ended && w.t < maxSec) {
     const inputs: Record<string, DsmInput> = {};
@@ -136,5 +136,67 @@ describe('modo online', () => {
     w.finish('p0');
     expect(w.ended).toBe(true);
     expect(w.winnerId).toBe('p0');
+  });
+});
+
+describe('colisão e empurrão (fase 3)', () => {
+  const duel = () => {
+    const w = new DsmWorld('push', infos(2));
+    for (let i = 0; i < 150; i++) w.step(DSM_DT);
+    const [a, b] = w.players as [DsmPlayer, DsmPlayer];
+    // alinha os dois no chão firme: a corre para a direita contra b parada
+    a.x = -1;
+    a.z = 0;
+    b.x = 0.2;
+    b.z = 0;
+    for (const p of [a, b]) {
+      p.vx = 0;
+      p.vz = 0;
+      p.kx = 0;
+      p.kz = 0;
+    }
+    return { w, a, b };
+  };
+
+  it('os corpos não se atravessam', () => {
+    const { w, a, b } = duel();
+    for (let i = 0; i < 20; i++) w.step(DSM_DT, { p0: { mx: 0.3, mz: 0, jump: false } });
+    expect(Math.hypot(a.x - b.x, a.z - b.z)).toBeGreaterThanOrEqual(DSM_BODY_R * 1.5);
+  });
+
+  it('quem corre contra o outro o empurra, com recuo, e só uma vez por tempo de espera', () => {
+    const { w, a, b } = duel();
+    let pushes = 0;
+    for (let i = 0; i < 60; i++) {
+      w.step(DSM_DT, { p0: { mx: 1, mz: 0, jump: false } });
+      pushes += w.drainEvents().filter((e) => e.type === 'push').length;
+    }
+    expect(pushes).toBeGreaterThanOrEqual(1);
+    expect(b.x).toBeGreaterThan(0.2 + 0.5);
+    expect(pushes).toBeLessThan(8);
+    void a;
+  });
+
+  it('devagar não empurra', () => {
+    const { w, b } = duel();
+    for (let i = 0; i < 40; i++) w.step(DSM_DT, { p0: { mx: 0.2, mz: 0, jump: false } });
+    expect(w.drainEvents().some((e) => e.type === 'push')).toBe(false);
+    expect(b.kx).toBe(0);
+  });
+
+  it('online o empurrão em outra raposa vira evento e quem leva aplica o impulso em si', () => {
+    const w = new DsmWorld('push', infos(2));
+    w.goOnline('p0');
+    const [a, b] = w.players as [DsmPlayer, DsmPlayer];
+    for (let i = 0; i < 120; i++) w.step(DSM_DT);
+    a.x = -1; a.z = 0; a.y = 0; a.grounded = true; a.layer = 0; a.vx = 6; a.vz = 0;
+    w.setRemote('p1', { x: -0.3, y: 0, z: 0, vx: 0, vz: 0, heading: 0, grounded: true, layer: 0 });
+    w.step(DSM_DT, { p0: { mx: 1, mz: 0, jump: false } });
+    const ev = w.drainEvents().find((e) => e.type === 'push');
+    expect(ev).toMatchObject({ from: 'p0', to: 'p1' });
+    expect(b.kx).toBe(0); // o impulso é aplicado na tela de quem leva
+    w.goOnline('p1');
+    w.applyKnock('p1', 8, 0);
+    expect(b.kx).toBe(8);
   });
 });

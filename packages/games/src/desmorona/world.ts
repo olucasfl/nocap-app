@@ -1,6 +1,14 @@
 import { createRng } from '../core/rng';
 import {
   DSM_ACCEL,
+  DSM_BODY_R,
+  DSM_KNOCK_DECAY,
+  DSM_PUSH,
+  DSM_PUSH_CD,
+  DSM_PUSH_GAIN,
+  DSM_PUSH_MAX,
+  DSM_PUSH_MIN_SPEED,
+  DSM_RECOIL,
   DSM_CRACK_SEC,
   DSM_GRACE_SEC,
   DSM_GRAVITY,
@@ -72,6 +80,9 @@ export interface DsmPlayer extends DsmPlayerInfo {
   deadAt: number;
   /** 1 = primeiro a morrer; 0 enquanto vivo. */
   deathOrder: number;
+  /** Impulso de empurrão em andamento (m/s); se apaga sozinho. */
+  kx: number;
+  kz: number;
   /** Online: raposa de outra pessoa. Quem manda é o relato dela, o mundo não simula o corpo. */
   remote?: boolean;
 }
@@ -83,6 +94,7 @@ export type DsmEvent =
   | { type: 'wave'; layer: number; index: number }
   | { type: 'fall'; id: string; layer: number }
   | { type: 'dead'; id: string }
+  | { type: 'push'; from: string; to: string; kx: number; kz: number }
   | { type: 'win'; id: string };
 
 const NO_INPUT: DsmInput = { mx: 0, mz: 0, jump: false };
@@ -111,6 +123,8 @@ export class DsmWorld {
   private events: DsmEvent[] = [];
   /** Online: o fim da partida e as mortes das outras raposas vêm da sala, não desta conta. */
   private external = false;
+  /** Quando cada par pode empurrar de novo (hora do jogo). */
+  private pushReady = new Map<string, number>();
 
   constructor(seed: string, infos: readonly DsmPlayerInfo[]) {
     this.seed = seed;
@@ -144,6 +158,8 @@ export class DsmWorld {
         alive: true,
         deadAt: 0,
         deathOrder: 0,
+        kx: 0,
+        kz: 0,
       });
     });
   }
@@ -240,6 +256,7 @@ export class DsmWorld {
       prevY.set(p.id, p.y);
       this.movePlayer(p, inputs[p.id] ?? NO_INPUT, dt);
     }
+    this.collide();
     this.landPlayers(prevY);
     this.updateTiles();
     this.updateWaves();
@@ -269,8 +286,13 @@ export class DsmWorld {
       p.vy = DSM_JUMP;
       p.grounded = false;
     }
-    p.x += p.vx * dt;
-    p.z += p.vz * dt;
+    p.x += (p.vx + p.kx) * dt;
+    p.z += (p.vz + p.kz) * dt;
+    const decay = Math.exp(-DSM_KNOCK_DECAY * dt);
+    p.kx *= decay;
+    p.kz *= decay;
+    if (Math.abs(p.kx) < 0.01) p.kx = 0;
+    if (Math.abs(p.kz) < 0.01) p.kz = 0;
     if (!p.grounded) {
       p.vy = Math.max(-DSM_MAX_FALL, p.vy - DSM_GRAVITY * dt);
       p.y += p.vy * dt;
@@ -279,6 +301,75 @@ export class DsmWorld {
       p.grounded = false;
       p.vy = 0;
     }
+  }
+
+  /** Online: me empurraram (a tela de quem empurrou avisou a sala, que avisou esta). */
+  applyKnock(id: string, kx: number, kz: number): void {
+    const p = this.players.find((q) => q.id === id);
+    if (!p || !p.alive || p.remote) return;
+    const len = Math.hypot(kx, kz);
+    const k = len > DSM_PUSH_MAX ? DSM_PUSH_MAX / len : 1;
+    p.kx += kx * k;
+    p.kz += kz * k;
+  }
+
+  /**
+   * Corpos não se atravessam, e quem corre contra o outro o empurra. Só vale entre raposas vivas na mesma altura.
+   * Online só se move a raposa desta tela; o empurrão em outra vira o evento `push`, que a sala entrega a ela.
+   */
+  private collide(): void {
+    const ps = this.players;
+    for (let i = 0; i < ps.length; i++) {
+      const a = ps[i] as DsmPlayer;
+      if (!a.alive) continue;
+      for (let j = i + 1; j < ps.length; j++) {
+        const b = ps[j] as DsmPlayer;
+        if (!b.alive || (a.remote && b.remote) || Math.abs(a.y - b.y) > 1.1) continue;
+        const dx = b.x - a.x;
+        const dz = b.z - a.z;
+        const d = Math.hypot(dx, dz);
+        const min = DSM_BODY_R * 2;
+        if (d >= min) continue;
+        const nx = d > 1e-4 ? dx / d : 1;
+        const nz = d > 1e-4 ? dz / d : 0;
+        const over = min - d;
+        // separação: quem é simulado aqui se afasta (inteiro se o outro é só um reflexo da rede)
+        if (!a.remote && !b.remote) {
+          a.x -= nx * over * 0.5;
+          a.z -= nz * over * 0.5;
+          b.x += nx * over * 0.5;
+          b.z += nz * over * 0.5;
+        } else if (!a.remote) {
+          a.x -= nx * over * 0.7;
+          a.z -= nz * over * 0.7;
+        } else {
+          b.x += nx * over * 0.7;
+          b.z += nz * over * 0.7;
+        }
+        this.tryPush(a, b, nx, nz);
+        this.tryPush(b, a, -nx, -nz);
+      }
+    }
+  }
+
+  /** `from` empurra `to` (n aponta de um para o outro) se vier rápido o bastante e o par não estiver em espera. */
+  private tryPush(from: DsmPlayer, to: DsmPlayer, nx: number, nz: number): void {
+    if (from.remote) return; // quem decide é a tela de quem corre
+    const closing = (from.vx + from.kx) * nx + (from.vz + from.kz) * nz;
+    if (closing < DSM_PUSH_MIN_SPEED) return;
+    const key = `${from.id}>${to.id}`;
+    if ((this.pushReady.get(key) ?? 0) > this.t) return;
+    this.pushReady.set(key, this.t + DSM_PUSH_CD);
+    const force = Math.min(DSM_PUSH_MAX, DSM_PUSH + closing * DSM_PUSH_GAIN);
+    const kx = nx * force;
+    const kz = nz * force;
+    if (!to.remote) {
+      to.kx += kx;
+      to.kz += kz;
+    }
+    from.kx -= nx * force * DSM_RECOIL;
+    from.kz -= nz * force * DSM_RECOIL;
+    this.events.push({ type: 'push', from: from.id, to: to.id, kx, kz });
   }
 
   private landPlayers(prevY: Map<string, number>): void {

@@ -68,3 +68,18 @@ export const DSM_ROOM_MAX_SEC = 300;
 export const DSM_ROOM_STALL_MS = 12_000;
 /** Cor do pelo de cada vaga da sala (0xRRGGBB). */
 export const DSM_ROOM_COLORS = [0xff7d26, 0x4d8dff, 0x34c759, 0xff5fa2, 0xffd23f, 0x9a5cff, 0x2fd6d0, 0xf2f2f2] as const;
+
+/** Colisão entre raposas (spec 044, fase 3): o corpo ocupa espaço e quem corre contra o outro o empurra. */
+export const DSM_BODY_R = 0.42;
+/** Só empurra quem chega com pelo menos esta velocidade (m/s) em direção ao outro. */
+export const DSM_PUSH_MIN_SPEED = 2.4;
+/** Força do empurrão: base + parte da velocidade de quem empurra (m/s). */
+export const DSM_PUSH = 6.5;
+export const DSM_PUSH_GAIN = 0.55;
+export const DSM_PUSH_MAX = 13;
+/** Tempo mínimo entre dois empurrões do mesmo par (s). */
+export const DSM_PUSH_CD = 0.7;
+/** Quão rápido o impulso do empurrão se apaga (por segundo). */
+export const DSM_KNOCK_DECAY = 5.5;
+/** Quanto de empurrão volta para quem empurrou (recuo). */
+export const DSM_RECOIL = 0.25;

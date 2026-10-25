@@ -11,9 +11,11 @@ export interface DsmBotMemory {
   until: number;
   /** Quanto cada bot espera antes de saltar (s): uns são mais nervosos que outros. */
   patience: number;
+  /** 0 a 1: a chance de este bot correr atrás de alguém para empurrar (a colisão da fase 3). */
+  aggro: number;
 }
 
-export const newBotMemory = (patience = 0): DsmBotMemory => ({ layer: 0, q: 0, r: 0, has: false, until: 0, patience });
+export const newBotMemory = (patience = 0, aggro = 0): DsmBotMemory => ({ layer: 0, q: 0, r: 0, has: false, until: 0, patience, aggro });
 
 const STOP: DsmInput = { mx: 0, mz: 0, jump: false };
 
@@ -34,6 +36,23 @@ export function botInput(world: DsmWorld, p: DsmPlayer, mem: DsmBotMemory, rng: 
   const bad = !target || target.status === 'caiu' || (target.status === 'pisado' && target.breakAt - world.t < 0.9) || target.layer !== p.layer;
   // como uma pessoa esperta: fica no ladrilho até ele estar quase quebrando e só então salta para um firme
   const hereLeft = here ? (here.status === 'pisado' ? here.breakAt - world.t : 99) : 0;
+  // bot valente: com o chão firme debaixo dos pés, corre contra a raposa mais perto para empurrar
+  if (mem.aggro > 0 && hereLeft > 1.2) {
+    let foe: DsmPlayer | undefined;
+    let foeD = 4.5;
+    for (const o of world.players) {
+      if (o === p || !o.alive || Math.abs(o.y - p.y) > 1.1) continue;
+      const od = Math.hypot(o.x - p.x, o.z - p.z);
+      if (od < foeD) {
+        foe = o;
+        foeD = od;
+      }
+    }
+    if (foe && foeD > 0.5 && rng() < mem.aggro) {
+      mem.has = false;
+      return { mx: (foe.x - p.x) / foeD, mz: (foe.z - p.z) / foeD, jump: false };
+    }
+  }
   const waiting = reached && here !== undefined && hereLeft > 0.75 + mem.patience;
   if (waiting) {
     mem.has = false;

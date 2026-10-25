@@ -92,7 +92,7 @@ export function DesmoronaPlay({
     if (online) world.goOnline(meId);
     const reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
     const scene = new DsmScene(el, world, reduced);
-    const mem = new Map(world.players.filter((p) => p.bot).map((p, i) => [p.id, newBotMemory((i % 4) * 0.15)]));
+    const mem = new Map(world.players.filter((p) => p.bot).map((p, i) => [p.id, newBotMemory((i % 4) * 0.15, i % 3 === 0 ? 0.5 : 0)]));
     const rng = createRng(`${seed}:bots`);
     controls.attach(zoneEl, setStick);
 
@@ -147,6 +147,14 @@ export function DesmoronaPlay({
             if (!id || id === meId) continue;
             const flags = row[7] as number;
             targets.set(id, { x: row[1]!, y: row[2]!, z: row[3]!, vx: row[4]!, vz: row[5]!, heading: row[6]!, grounded: (flags & 1) === 1, layer: flags >> 1, at: performance.now() });
+          }
+        }),
+        subscribeRoom('dpushed', (m) => {
+          const k = m as { kx?: number; kz?: number } | null;
+          if (k && typeof k.kx === 'number' && typeof k.kz === 'number') {
+            world.applyKnock(meId, k.kx, k.kz);
+            dsmSfx.bump(true);
+            scene.shakeNow(0.5);
           }
         }),
         subscribeRoom('dsteps', (m) => {
@@ -237,6 +245,12 @@ export function DesmoronaPlay({
             else if (e.type === 'fall' && e.id === meId) {
               dsmSfx.fall();
               say(`Você caiu para a camada ${e.layer + 1}`);
+            } else if (e.type === 'push') {
+              if (online && e.from === meId) sendRoomQuiet('dpush', { to: e.to, kx: e.kx, kz: e.kz });
+              if (e.from === meId || e.to === meId) {
+                dsmSfx.bump(e.from === meId);
+                if (e.to === meId) scene.shakeNow(0.5);
+              } else dsmSfx.bump(false);
             } else if (e.type === 'wave') {
               dsmSfx.wave();
               say('Onda de queda!');

@@ -85,7 +85,7 @@ Reaproveita o sistema de salas do Atravessa (host, pronto, convite, revanche por
    - **Treino contra bots** (2 a 8): os bots andam e quebram o chão. Serve para acertar o ritmo e a sensação.
    - Tela **Fox Cap!** e a troca do cartão no Hub.
 2. **Fase 2: salas online.** Motor de sala, sincronização do relógio, mensagens `pos`/`step`/`fell`/`dead`, espectador online, revanche por votação, e um teste que atrasa as mensagens em 300 ms para provar que o resultado não muda.
-3. **Fase 3: colisão e empurrão** entre raposas, mais modos (rodada rápida, melhor de 3) e itens.
+3. **Fase 3: colisão e empurrão** (feita): corpos não se atravessam (`DSM_BODY_R`), e quem corre contra outro a pelo menos `DSM_PUSH_MIN_SPEED` o empurra (impulso que se apaga, recuo pequeno, espera de 0,7 s por par). Online só se move a própria raposa: quem empurra manda `dpush`, a sala confere e entrega `dpushed` a quem levou, que aplica o impulso em si. Bots valentes correm atrás de alguém. Modos extras (rodada rápida, melhor de 3) e itens ficam para depois.
 
 ## 8. Testes
 

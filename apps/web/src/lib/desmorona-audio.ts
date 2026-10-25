@@ -90,6 +90,10 @@ export const dsmSfx = {
     tone('sine', 110, 55, 0.18, v * 0.8);
   },
   /** você caiu para a camada de baixo */
+  bump(strong = true) {
+    noise(260, 90, 1.2, 0.12, strong ? 0.5 : 0.28);
+    tone('triangle', strong ? 190 : 260, 80, 0.14, strong ? 0.4 : 0.22);
+  },
   fall() {
     noise(1800, 220, 0.7, 0.42, 0.2);
   },
