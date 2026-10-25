@@ -87,20 +87,20 @@ describe('itens: a escada (spec 043)', () => {
     }
   });
 
-  it('os preços crescem por degraus pequenos (cada item custa até 2,2x o anterior): nada de salto impossível', () => {
+  it('os preços crescem por degraus pequenos (cada item custa até 3x o anterior): nada de salto impossível', () => {
     const sorted = [...items].sort((a, b) => a.base - b.base);
     sorted.forEach((u, i) => {
       if (i === 0) return;
       const ratio = u.base / sorted[i - 1]!.base;
-      expect(ratio, `${sorted[i - 1]!.id} -> ${u.id}`).toBeLessThanOrEqual(2.2);
+      expect(ratio, `${sorted[i - 1]!.id} -> ${u.id}`).toBeLessThanOrEqual(3);
       expect(ratio, `${sorted[i - 1]!.id} -> ${u.id}`).toBeGreaterThanOrEqual(1);
     });
   });
 
-  it('a 1ª de cada tipo é a Lente Polida (100), o Satélite (15) e a Antena (300)', () => {
+  it('a 1ª de cada tipo é a Lente Polida (100), o Satélite (200) e a Antena (300)', () => {
     const first = (kind: string) => UPGRADES.filter((u) => u.kind === kind && u.unlockedAtCollapse === 0).sort((a, b) => a.base - b.base)[0]!;
     expect([first('item').id, first('item').base]).toEqual(['lens', 100]);
-    expect([first('generator').id, first('generator').base]).toEqual(['satellite', 15]);
+    expect([first('generator').id, first('generator').base]).toEqual(['satellite', 200]);
     expect([first('energy').id, first('energy').base]).toEqual(['antenna', 300]);
   });
 

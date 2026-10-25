@@ -1,4 +1,4 @@
-import { FORBIDDEN_IDS, MILESTONE_ORDER, dustGoal, effectiveStats, meetMilestone, milestoneKind, minPicks, newSave, type SaveState } from '@nocap/games';
+import { FORBIDDEN_IDS, MILESTONE_ORDER, dustGoal, effectiveStats, meetMilestone, minPicks, newSave, type SaveState } from '@nocap/games';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { VaultPage } from './VaultPage';
@@ -101,7 +101,7 @@ describe('tela de jogo com a estrela pronta', () => {
     // O botão traz a barra de cada requisito.
     expect(markup).toContain('Poeira da vida');
     expect(markup).toContain('Escolhas de grimório');
-    expect(markup).toContain('Combo: toques seguidos');
+    expect(markup).toContain('Geradores no nível');
     expect(screen({ ...newSave('c', 0), tutorial: 'done' })).not.toContain('Estrela pronta');
   });
 
@@ -155,11 +155,11 @@ describe('requisitos do colapso na tela (spec 040)', () => {
     const markup = html(<RequirementBars view={collapseView(s)} />);
     expect(markup.match(/role="progressbar"/g)).toHaveLength(3);
     expect(markup).toContain('Poeira da vida');
-    expect(markup).toContain('0 de 50 mi');
+    expect(markup).toContain('0 de 220 bi');
     expect(markup).toContain('Escolhas de grimório');
     expect(markup).toContain('0 de 12');
-    expect(markup).toContain('Combo: toques seguidos');
-    expect(markup).toContain('0 de 5');
+    expect(markup).toContain('Geradores no nível');
+    expect(markup).toContain('0 de 1');
     expect(markup).toContain('scaleX(0)');
   });
 
@@ -181,8 +181,8 @@ describe('requisitos do colapso na tela (spec 040)', () => {
       expect(m.missing).not.toBe('');
       expect(m.text).toContain(' de ');
     }
-    expect(labels.size).toBe(MILESTONE_ORDER.length);
-    expect(milestoneKind(7, 6)).not.toBe(milestoneKind(8, 7));
+    // O combo saiu do jogo (spec 043): sobram 4 tipos de marco.
+    expect(labels.size).toBe(MILESTONE_ORDER.length - 2);
   });
 
   it('o Cofre mostra as três barras e o número do colapso', () => {

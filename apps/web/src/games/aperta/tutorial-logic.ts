@@ -68,10 +68,10 @@ export function coachView(state: SaveState, page: PageName | null, busy = false)
           arrowOn: 'glow',
           label: 'Sua poeira',
           title: 'Esta é a sua poeira',
-          text: 'É o dinheiro do jogo: com ela você compra melhorias. Continue tocando.',
+          text: 'É o dinheiro do jogo: com ela você compra itens. Continue tocando.',
         };
       }
-      return { ...NONE, key: 'touch-more', step: stepName(1), target: 'press', label: 'Continue tocando', title: 'Junte poeira', text: 'Quando juntar o bastante, a primeira melhoria é liberada.' };
+      return { ...NONE, key: 'touch-more', step: stepName(1), target: 'press', label: 'Continue tocando', title: 'Junte poeira', text: 'Quando juntar o bastante, o primeiro item é liberado.' };
     case TUTORIAL.UPGRADE:
       if (page === 'upgrades') {
         return {
@@ -79,8 +79,8 @@ export function coachView(state: SaveState, page: PageName | null, busy = false)
           key: 'upgrade-buy',
           step: stepName(2),
           target: 'buy-first',
-          title: 'Sua primeira melhoria',
-          text: 'Melhorias fazem a poeira render mais. Toque no preço para comprar.',
+          title: 'Seu primeiro item',
+          text: 'Itens fazem o seu toque render mais: este dobra a poeira de cada toque. Toque no preço para comprar.',
           place: 'bottom',
         };
       }
@@ -93,7 +93,7 @@ export function coachView(state: SaveState, page: PageName | null, busy = false)
             target: 'dock-upgrades',
             label: 'Toque aqui',
             title: 'Parabéns!',
-            text: 'Você já pode comprar sua primeira melhoria.',
+            text: 'Você já pode comprar seu primeiro item.',
           };
     case TUTORIAL.BACK:
       return page === 'upgrades'

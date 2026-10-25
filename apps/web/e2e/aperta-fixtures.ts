@@ -8,7 +8,7 @@ import { installApi } from './mock-api';
 export function midSave(): SaveState {
   const s = newSave('layout-meio', Date.now() - 3_600_000, 'Missão meio');
   const lv = s.run.upgradeLevels.slice();
-  for (const [id, n] of Object.entries({ lens: 1, gloves: 1, trained: 1, rhythm: 1, satellite: 5, probe: 2, antenna: 2, queue: 1 })) lv[upgradeIndex(id)] = n;
+  for (const [id, n] of Object.entries({ lens: 1, gloves: 1, satellite: 5, probe: 2, antenna: 2 })) lv[upgradeIndex(id)] = n;
   let run = { ...s.run, upgradeLevels: lv, dust: 3e6, dustLife: 6e6, picks: 9 };
   for (const [id, r, n] of [['moon', 'rare', 3], ['sirius', 'common', 2], ['mercury', 'epic', 2], ['vega', 'common', 1], ['titan', 'legendary', 1]] as const) run = { ...run, ...pickInto(run, id, r, n) };
   return {

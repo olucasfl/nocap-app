@@ -1,85 +1,189 @@
 import { apertaSfx, apertaVibrate } from '@/lib/aperta-audio';
-import { UPGRADES, affordableUpgradeIndex, formatNumber, type SaveState } from '@nocap/games';
-import { useEffect, useRef, useState } from 'react';
+import { formatNumber, type SaveState } from '@nocap/games';
+import { useEffect, useState } from 'react';
+import { ItemIcon } from './ItemIcon';
 import { UpgradeIcon } from './UpgradeIcon';
 import {
   UPGRADE_TABS,
-  autoSummary,
-  buyRows,
   buyLabel,
-  ownedRows,
+  generatorRows,
+  itemsView,
+  powers,
   revealedIds,
   tabBadge,
-  tabOf,
-  type UpgradeRow,
-  type UpgradeSection,
+  type EffectLine,
+  type GeneratorRow,
+  type ItemRow,
   type UpgradeTab,
 } from './upgrades-logic';
 import './upgrades.css';
 
-const GHOST_MS = 950;
-const FX_MS = 1500;
-
-interface ListFx {
-  leaving: { row: UpgradeRow; at: number }[];
-  arrive: ReadonlySet<string>;
-  bought: ReadonlySet<string>;
-}
-const NO_FX: ListFx = { leaving: [], arrive: new Set(), bought: new Set() };
-
-const reducedMotion = (): boolean => typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-/**
- * Compara a lista de melhorias com a anterior e devolve o que mudou: itens que saíram (ficam um instante como
- * "Comprado" e somem), itens que chegaram (entram depois que o outro sai) e itens que só subiram de nível.
- * Trocar de aba ou de seção não conta como compra.
- */
-function useListFx(rows: UpgradeRow[], scope: string): ListFx {
-  const prev = useRef<{ scope: string; rows: UpgradeRow[] } | null>(null);
-  const [fx, setFx] = useState<ListFx>(NO_FX);
-  const sig = `${scope}|${rows.map((r) => `${r.id}:${r.level}`).join(',')}`;
-  const latest = useRef(rows);
-  latest.current = rows;
-
-  useEffect(() => {
-    const now = latest.current;
-    const before = prev.current;
-    prev.current = { scope, rows: now };
-    if (!before || before.scope !== scope || reducedMotion()) {
-      setFx(NO_FX);
-      return undefined;
-    }
-    const ids = new Set(now.map((r) => r.id));
-    const old = new Map(before.rows.map((r) => [r.id, r]));
-    const leaving = before.rows.flatMap((r, at) => (ids.has(r.id) ? [] : [{ row: r, at }]));
-    const arrive = new Set(now.filter((r) => !old.has(r.id)).map((r) => r.id));
-    const bought = new Set(now.filter((r) => (old.get(r.id)?.level ?? Infinity) < r.level).map((r) => r.id));
-    if (leaving.length === 0 && arrive.size === 0 && bought.size === 0) return undefined;
-    setFx({ leaving, arrive, bought });
-    const t1 = window.setTimeout(() => setFx((f) => ({ ...f, leaving: [] })), GHOST_MS);
-    const t2 = window.setTimeout(() => setFx(NO_FX), FX_MS);
-    return () => {
-      window.clearTimeout(t1);
-      window.clearTimeout(t2);
-    };
-    // sig resume o conteúdo da lista; `rows` muda de identidade a cada render.
-  }, [sig]);
-
-  return fx;
-}
-
 interface Props {
   state: SaveState;
   onBuy: (index: number) => boolean | void;
-  /** Fila de pedidos: completa um gerador de uma vez. */
+  /** Completa um gerador de uma vez. */
   onBuyBatch?: (index: number) => boolean | void;
-  /** Melhorias que a pessoa já viu (o selo das abas conta as que ela ainda não viu). */
+  /** Geradores que a pessoa já viu (o selo da aba conta os novos). */
   seen: ReadonlySet<string>;
   onSeen: (ids: string[]) => void;
 }
 
-/** "Melhorar" para o que tem níveis (0/8) e "Comprar" para o que se compra uma vez (spec 041, A6). */
-const verbOf = (row: UpgradeRow): string => (row.max > 1 ? 'Melhorar' : 'Comprar');
+/** "Seu toque 40 -> 80": o total real, nunca só o "+4". */
+function Effect({ line, big = false }: { line: EffectLine | null; big?: boolean }) {
+  if (!line) return null;
+  if (line.idle) {
+    return (
+      <p className="ap-eff is-idle">
+        {line.label}: <b>{line.before}</b>
+        <span> (vale quando você tiver um)</span>
+      </p>
+    );
+  }
+  return (
+    <p className={`ap-eff${big ? ' is-big' : ''}`} aria-label={`${line.label}: de ${line.before} para ${line.after}`}>
+      <small>{line.label}</small>
+      <span className="ap-eff-nums">
+        <b>{line.before}</b>
+        <i aria-hidden="true">{'→'}</i>
+        <b className="ap-eff-after">{line.after}</b>
+      </span>
+    </p>
+  );
+}
+
+function Powers({ state }: { state: SaveState }) {
+  const p = powers(state);
+  return (
+    <dl className="ap-powers" aria-label="Seus poderes">
+      <div>
+        <dt>Toque</dt>
+        <dd>{p.touch}</dd>
+      </div>
+      <div>
+        <dt>Energia por toque</dt>
+        <dd>{p.energy}</dd>
+      </div>
+      <div>
+        <dt>Poeira por segundo</dt>
+        <dd>{p.dustSec}</dd>
+      </div>
+      <div>
+        <dt>Energia por segundo</dt>
+        <dd>{p.energySec}</dd>
+      </div>
+    </dl>
+  );
+}
+
+function buyFeedback(ok: boolean | void): void {
+  if (ok) {
+    apertaSfx.thunk();
+    apertaVibrate(14);
+  }
+}
+
+function NextItem({ row, onBuy }: { row: ItemRow; onBuy: Props['onBuy'] }) {
+  return (
+    <section className={`ap-next${row.affordable ? ' is-ready' : ''}`} aria-label="Próximo item">
+      <p className="ap-next-tag">Próximo item</p>
+      <div className="ap-next-head">
+        <span className="ap-next-icon">
+          <ItemIcon id={row.id} size={64} />
+        </span>
+        <div>
+          <h3>{row.name}</h3>
+          <p className="ap-next-text">{row.text}</p>
+        </div>
+      </div>
+      <Effect line={row.line} big />
+      <div className="ap-next-bar" role="progressbar" aria-label="Poeira para este item" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.floor(row.fill * 100)}>
+        <i style={{ transform: `scaleX(${row.fill})` }} />
+      </div>
+      <button
+        type="button"
+        className="ap-up-buy ap-next-buy"
+        data-tut="buy-first"
+        aria-label={row.affordable ? `Comprar ${row.name} por ${formatNumber(row.cost)} de poeira` : `${row.name}: falta ${formatNumber(row.missing)} de poeira`}
+        aria-disabled={!row.affordable}
+        onClick={() => {
+          if (row.affordable) buyFeedback(onBuy(row.index));
+          else {
+            apertaSfx.boing();
+            apertaVibrate([10, 40, 10]);
+          }
+        }}
+      >
+        <small className="ap-up-verb">{row.affordable ? 'Comprar' : 'Falta'}</small>
+        <b>{row.affordable ? formatNumber(row.cost) : formatNumber(row.missing)}</b>
+        <small>{row.affordable ? 'poeira' : `Preço ${formatNumber(row.cost)}`}</small>
+      </button>
+    </section>
+  );
+}
+
+function UpcomingItem({ row }: { row: ItemRow }) {
+  return (
+    <li className="ap-soon">
+      <span className="ap-soon-icon">
+        <ItemIcon id={row.id} size={40} />
+      </span>
+      <div className="ap-soon-body">
+        <h4>{row.name}</h4>
+        <p>{row.line && !row.line.idle ? `${row.line.label}: ${row.line.before} → ${row.line.after}` : row.text}</p>
+      </div>
+      <span className="ap-soon-price" aria-label={`Preço ${formatNumber(row.cost)}`}>
+        {formatNumber(row.cost)}
+      </span>
+    </li>
+  );
+}
+
+function ItemsPanel({ state, onBuy }: { state: SaveState; onBuy: Props['onBuy'] }) {
+  const view = itemsView(state);
+  return (
+    <div className="ap-itemspanel" id="ap-uppanel" role="tabpanel" aria-labelledby="ap-uptab-items">
+      <p className="ap-up-intro">
+        Itens são compras únicas: você paga uma vez e o ganho vale até o próximo colapso.
+        <b className="ap-up-count2">
+          {view.bought}/{view.total}
+        </b>
+      </p>
+      {view.next ? (
+        <NextItem row={view.next} onBuy={onBuy} />
+      ) : (
+        <p className="ap-up-empty">
+          Você comprou todos os itens desta vida.
+          {view.moreAt !== null && ` O colapso ${view.moreAt} libera mais itens.`}
+        </p>
+      )}
+      {view.upcoming.length > 0 && (
+        <>
+          <h3 className="ap-sub">Em seguida</h3>
+          <ul className="ap-soonlist" aria-label="Próximos itens">
+            {view.upcoming.map((r) => (
+              <UpcomingItem key={r.id} row={r} />
+            ))}
+          </ul>
+        </>
+      )}
+      {view.owned.length > 0 && (
+        <>
+          <h3 className="ap-sub">
+            Comprados <small>{view.owned.length}</small>
+          </h3>
+          <ul className="ap-ownstrip" aria-label="Itens comprados">
+            {view.owned.map((r) => (
+              <li key={r.id} title={`${r.name}: ${r.text}`}>
+                <ItemIcon id={r.id} size={38} />
+                <span>{r.name}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
+  );
+}
 
 function Pips({ level, max }: { level: number; max: number }) {
   return (
@@ -96,64 +200,43 @@ function Pips({ level, max }: { level: number; max: number }) {
   );
 }
 
-function UpgradeCard({
-  row,
-  onBuy,
-  onBuyBatch,
-  dust,
-  tutorialTarget,
-  fxClass = '',
-}: {
-  row: UpgradeRow;
-  fxClass?: string;
-  onBuy: (index: number) => boolean | void;
-  onBuyBatch?: (index: number) => boolean | void;
-  dust: number;
-  tutorialTarget: boolean;
-}) {
+function GeneratorCard({ row, onBuy, onBuyBatch, dust }: { row: GeneratorRow; onBuy: Props['onBuy']; onBuyBatch?: Props['onBuyBatch']; dust: number }) {
   const canBuy = row.status === 'affordable';
-  const verb = verbOf(row);
-  const label =
-    row.status === 'affordable'
-      ? `${verb} ${row.name} por ${formatNumber(row.cost ?? 0)} de poeira`
-      : row.status === 'short'
-        ? `${row.name}: falta ${formatNumber(row.missing)} de poeira`
-        : row.status === 'maxed'
-          ? `${row.name}: completo`
-          : row.status === 'mystery'
-            ? `Melhoria escondida, custa ${formatNumber(row.cost ?? 0)} de poeira`
-            : `${row.name}: trancada`;
-  const leveled = row.max > 1 && row.status !== 'mystery';
+  const label = canBuy
+    ? `Melhorar ${row.name} por ${formatNumber(row.cost ?? 0)} de poeira`
+    : row.status === 'short'
+      ? `${row.name}: falta ${formatNumber(row.missing)} de poeira`
+      : row.status === 'maxed'
+        ? `${row.name}: no máximo`
+        : `${row.name}: trancado`;
   return (
-    <li className={`ap-up is-${row.status}${fxClass}`}>
-      <span className="ap-up-medal">{row.status === 'mystery' ? <span className="ap-up-lock" aria-hidden="true">?</span> : <UpgradeIcon id={row.id} size={52} />}</span>
+    <li className={`ap-up is-${row.status}`}>
+      <span className="ap-up-medal">
+        <UpgradeIcon id={row.id} size={52} />
+      </span>
       <div className="ap-up-body">
         <h3>{row.name}</h3>
-        <p className="ap-up-text">{row.text}</p>
-        {row.gain && row.status !== 'maxed' && <p className="ap-up-gain">{row.gain}</p>}
+        <p className="ap-up-text">{row.text} por nível</p>
+        {row.gain && <p className="ap-up-gain">{row.gain}</p>}
+        {row.payback && <p className="ap-up-payback">{row.payback}</p>}
+        {row.total && row.status === 'maxed' && <p className="ap-up-text">{row.total}</p>}
         {row.lockHint && <p className="ap-up-lock">{row.lockHint}</p>}
-        {leveled && <Pips level={row.level} max={row.max} />}
+        <Pips level={row.level} max={row.max} />
       </div>
       <button
         type="button"
         className="ap-up-buy"
-        data-tut={tutorialTarget ? 'buy-first' : undefined}
         aria-label={label}
         aria-disabled={!canBuy}
         onClick={() => {
-          if (canBuy) {
-            // Só soa se o controller comprou de fato (a trava de toque duplo recusa sem barulho).
-            if (onBuy(row.index)) {
-              apertaSfx.thunk();
-              apertaVibrate(14);
-            }
-          } else if (row.status === 'short' || row.status === 'mystery') {
+          if (canBuy) buyFeedback(onBuy(row.index));
+          else if (row.status === 'short') {
             apertaSfx.boing();
             apertaVibrate([10, 40, 10]);
           }
         }}
       >
-        {row.status === 'affordable' || row.status === 'short' ? <small className="ap-up-verb">{row.status === 'short' ? 'Falta' : verb}</small> : null}
+        {(row.status === 'affordable' || row.status === 'short') && <small className="ap-up-verb">{row.status === 'short' ? 'Falta' : 'Melhorar'}</small>}
         <b>{buyLabel(row)}</b>
         {(row.status === 'affordable' || row.status === 'short') && <small>{row.status === 'short' ? `Preço ${formatNumber(row.cost ?? 0)}` : 'poeira'}</small>}
       </button>
@@ -161,15 +244,11 @@ function UpgradeCard({
         <button
           type="button"
           className="ap-up-buy ap-up-bulk"
-          aria-label={`Completar ${row.name}: mais ${row.bulkLevels} níveis por ${formatNumber(row.bulkCost)} de poeira, 5% mais barato`}
+          aria-label={`Completar ${row.name}: mais ${row.bulkLevels} níveis por ${formatNumber(row.bulkCost)} de poeira`}
           aria-disabled={dust < row.bulkCost}
           onClick={() => {
-            if (dust >= row.bulkCost!) {
-              if (onBuyBatch(row.index)) {
-                apertaSfx.thunk();
-                apertaVibrate(14);
-              }
-            } else {
+            if (dust >= row.bulkCost!) buyFeedback(onBuyBatch(row.index));
+            else {
               apertaSfx.boing();
               apertaVibrate([10, 40, 10]);
             }
@@ -178,88 +257,59 @@ function UpgradeCard({
           <b>
             Completar (+{row.bulkLevels}): {formatNumber(row.bulkCost)}
           </b>
-          <small>5% mais barato</small>
         </button>
       )}
     </li>
   );
 }
 
-/** O item que acabou de ser completado: mostra o carimbo "Comprado" e some antes de o próximo entrar. */
-function GhostCard({ row }: { row: UpgradeRow }) {
+function GeneratorsPanel({ state, onBuy, onBuyBatch }: { state: SaveState; onBuy: Props['onBuy']; onBuyBatch?: Props['onBuyBatch'] }) {
+  const rows = generatorRows(state);
+  const dustRows = rows.filter((r) => !r.energy);
+  const energyRows = rows.filter((r) => r.energy);
   return (
-    <li className="ap-up is-leaving" aria-hidden="true">
-      <span className="ap-up-medal">
-        <UpgradeIcon id={row.id} size={52} />
-      </span>
-      <div className="ap-up-body">
-        <h3>{row.name}</h3>
-      </div>
-      <span className="ap-up-stamp">Comprado</span>
-    </li>
+    <div className="ap-genpanel" id="ap-uppanel" role="tabpanel" aria-labelledby="ap-uptab-generators">
+      <p className="ap-up-intro">
+        Geradores trabalham sozinhos, até quando você não toca. Cada nível rende poeira (ou energia) por segundo, e os itens multiplicam isso.
+      </p>
+      <h3 className="ap-sub">Geradores de poeira</h3>
+      <ul className="ap-uplist" aria-label="Geradores de poeira">
+        {dustRows.map((r) => (
+          <GeneratorCard key={r.id} row={r} onBuy={onBuy} onBuyBatch={onBuyBatch} dust={state.run.dust} />
+        ))}
+      </ul>
+      {energyRows.length > 0 && (
+        <>
+          <h3 className="ap-sub">Geradores de energia</h3>
+          <p className="ap-up-intro">A energia enche a barra do próximo grimório.</p>
+          <ul className="ap-uplist" aria-label="Geradores de energia">
+            {energyRows.map((r) => (
+              <GeneratorCard key={r.id} row={r} onBuy={onBuy} onBuyBatch={onBuyBatch} dust={state.run.dust} />
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
   );
 }
 
-/** Um item já completo: ícone, nome, o que faz e o N/N, sem botão. */
-function OwnedCard({ row }: { row: UpgradeRow }) {
-  return (
-    <li className="ap-own">
-      <span className="ap-own-icon">
-        <UpgradeIcon id={row.id} size={40} />
-      </span>
-      <div className="ap-own-body">
-        <h4>{row.name}</h4>
-        <p>{row.text}</p>
-      </div>
-      <span className="ap-own-tag">{row.max > 1 ? `${row.max}/${row.max}` : 'Comprada'}</span>
-    </li>
-  );
-}
-
-const OWNED_GROUPS: { title: string; match: (r: UpgradeRow) => boolean }[] = [
-  { title: 'Toque', match: (r) => r.kind === 'touch' },
-  { title: 'Geradores de poeira', match: (r) => r.kind === 'generator' },
-  { title: 'Geradores de energia', match: (r) => r.kind === 'energy' },
-  { title: 'Melhorias de gerador', match: (r) => r.kind === 'perk' },
-];
-
-function AutoSummary({ state }: { state: SaveState }) {
-  const s = autoSummary(state);
-  return (
-    <p className="ap-up-auto">
-      Você ganha <b>{s.active}</b> de poeira e <b>{s.energy}</b> de energia por segundo, de verdade.
-      {s.capped && ` Os geradores renderiam ${s.potential} de poeira por segundo, mas o limite do seu toque segura: melhore o toque.`}
-    </p>
-  );
-}
-
-/**
- * Página de Melhorias (spec 041): duas abas, Toque e Geradores, e o botão Comprados. Nas abas ficam as melhorias de Toque e de Geradores
- * (um gerador de poeira e um de energia por vez, com o limite 0/8); o que está completo vai para Comprados.
- */
+/** Página de Melhorias (spec 043): "Seus poderes" no alto e duas abas, Itens (em fila) e Geradores (que trabalham sozinhos). */
 export function UpgradesPage({ state, onBuy, onBuyBatch, seen, onSeen }: Props) {
-  // O tutorial aponta para a melhoria mais barata que já cabe na poeira: a página abre na aba dela.
-  const first = affordableUpgradeIndex(state);
-  const [section, setSection] = useState<UpgradeSection>('buy');
-  const [tab, setTab] = useState<UpgradeTab>(() => (first === null ? 'touch' : tabOf((UPGRADES[first] as (typeof UPGRADES)[number]).kind)));
-  const rows = buyRows(state, tab);
-  const fx = useListFx(rows, `${section}:${tab}`);
-  const shown = rows.slice();
-  for (const g of [...fx.leaving].sort((a, b) => a.at - b.at)) shown.splice(Math.min(g.at, shown.length), 0, g.row);
-  const owned = ownedRows(state);
-  const visible = revealedIds(state, tab).join(',');
+  const [tab, setTab] = useState<UpgradeTab>('items');
+  const visible = revealedIds(state).join(',');
 
-  // Abrir a aba conta como ver o que há nela: o selo some, e só volta com uma descoberta nova.
+  // Abrir a aba dos geradores conta como ver o que há nela: o selo some, e só volta com um gerador novo.
   useEffect(() => {
-    onSeen(visible === '' ? [] : visible.split(','));
-  }, [visible, onSeen]);
+    if (tab === 'generators') onSeen(visible === '' ? [] : visible.split(','));
+  }, [tab, visible, onSeen]);
 
   return (
     <div className="ap-upwrap">
+      <Powers state={state} />
       <div className="ap-upbar">
         <div className="ap-uptabs" role="tablist" aria-label="Tipo de melhoria">
           {UPGRADE_TABS.map((t) => {
-            const active = section === 'buy' && t.id === tab;
+            const active = t.id === tab;
             const badge = active ? 0 : tabBadge(state, t.id, seen);
             return (
               <button
@@ -270,10 +320,7 @@ export function UpgradesPage({ state, onBuy, onBuyBatch, seen, onSeen }: Props) 
                 aria-selected={active}
                 aria-controls="ap-uppanel"
                 className={`ap-uptab${active ? ' on' : ''}`}
-                onClick={() => {
-                  setSection('buy');
-                  setTab(t.id);
-                }}
+                onClick={() => setTab(t.id)}
               >
                 {t.label}
                 {badge > 0 && (
@@ -285,61 +332,8 @@ export function UpgradesPage({ state, onBuy, onBuyBatch, seen, onSeen }: Props) 
             );
           })}
         </div>
-        <button
-          type="button"
-          aria-pressed={section === 'owned'}
-          className={`ap-ownbtn${section === 'owned' ? ' on' : ''}`}
-          onClick={() => setSection(section === 'owned' ? 'buy' : 'owned')}
-        >
-          Comprados
-          <small>{owned.length}</small>
-        </button>
       </div>
-
-      {section === 'buy' ? (
-        <>
-          {tab === 'generators' && <AutoSummary state={state} />}
-          <ul className="ap-uplist" id="ap-uppanel" role="tabpanel" aria-labelledby={`ap-uptab-${tab}`} aria-label="Melhorias à venda">
-            {shown.map((row) =>
-              fx.leaving.some((g) => g.row.id === row.id) ? (
-                <GhostCard key={`ghost-${row.id}`} row={row} />
-              ) : (
-                <UpgradeCard
-                  key={row.id}
-                  row={row}
-                  onBuy={onBuy}
-                  onBuyBatch={onBuyBatch}
-                  dust={state.run.dust}
-                  tutorialTarget={row.index === first}
-                  fxClass={`${fx.arrive.has(row.id) ? ' is-arriving' : ''}${fx.bought.has(row.id) ? ' is-bought' : ''}`}
-                />
-              ),
-            )}
-            {rows.length === 0 && <li className="ap-up-empty">Nada novo por aqui: veja o que você já tem em Comprados.</li>}
-          </ul>
-        </>
-      ) : (
-        <div className="ap-ownwrap" role="tabpanel" aria-label="Melhorias compradas">
-          {owned.length === 0 && <p className="ap-up-empty">Você ainda não completou nenhuma melhoria.</p>}
-          {OWNED_GROUPS.map((g) => {
-            const list = owned.filter(g.match);
-            if (list.length === 0) return null;
-            return (
-              <section key={g.title} aria-label={g.title}>
-                <h3 className="ap-own-group">
-                  {g.title}
-                  <small>{list.length}</small>
-                </h3>
-                <ul className="ap-ownlist">
-                  {list.map((r) => (
-                    <OwnedCard key={r.id} row={r} />
-                  ))}
-                </ul>
-              </section>
-            );
-          })}
-        </div>
-      )}
+      {tab === 'items' ? <ItemsPanel state={state} onBuy={onBuy} /> : <GeneratorsPanel state={state} onBuy={onBuy} onBuyBatch={onBuyBatch} />}
     </div>
   );
 }

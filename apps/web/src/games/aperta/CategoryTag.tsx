@@ -5,7 +5,8 @@ import './category.css';
 const ICON: Record<GrimoireCategory, string> = {
   touch: 'M9 11V5.5a2 2 0 0 1 4 0V10l4 1.2V16l-2.5 4H9.5L6 14.5l3-1.2z',
   objects: 'M12 3l2.6 5.8 6.4.7-4.8 4.3 1.4 6.2L12 16.8 6.4 20l1.4-6.2L3 9.5l6.4-.7z',
-  luck: 'M13 2L5 13.5h6L10 22l9-12h-6z',
+  luck: 'M12 3l2.4 5 5.6.8-4 3.9.9 5.6L12 15.6 7.1 18.3l.9-5.6-4-3.9 5.6-.8z',
+  energy: 'M13 2L5 13.5h6L10 22l9-12h-6z',
 };
 
 /** Com `compact` a categoria vira ícone + nome em texto simples, na cor dela, sem borda. */

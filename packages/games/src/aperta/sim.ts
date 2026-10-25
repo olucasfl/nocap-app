@@ -34,6 +34,7 @@ import {
   type EffectiveStats,
   type SaveState,
   withPick,
+  nextItemIndex,
   offeredRarity,
 } from './engine';
 
@@ -111,22 +112,16 @@ export interface SimOptions {
 /** Renda estimada por segundo, só para o jogador decidir o que comprar (não é regra do jogo). */
 function income(stats: EffectiveStats, profile: Profile, objectKinds: readonly ObjectKind[]): { dust: number; energy: number } {
   const tps = profile.touchesPerSec;
-  const full = stats.combo.enabled && 1 / tps <= stats.combo.windowSec;
-  const point = full ? 1 + stats.combo.pointValue * stats.combo.max : 1;
   const nth = stats.nth.reduce((acc, r) => acc * (1 + (r.mult - 1) / r.n), 1);
-  const base = stats.dustPerTouch + (full ? stats.combo.fullDustAdd : 0);
-  const crit = 1 + stats.crit.chance * (stats.crit.mult - 1);
-  // O jogador simulado toca sem parar, então o Aquecimento vale o tempo todo.
-  const perTouch = base * point * (full ? stats.combo.fullMult : 1) * nth * crit * (stats.perks.warm ? WARM_MULT : 1);
-  const touchEnergy =
-    stats.energyPerTouch + (full ? stats.combo.fullEnergyAdd : 0) + stats.nth.reduce((acc, r) => acc + r.energy / r.n, 0);
+  const perTouch = stats.dustPerTouch * nth;
+  const touchEnergy = stats.energyPerTouch + stats.nth.reduce((acc, r) => acc + r.energy / r.n, 0);
 
   let objectDust = 0;
   let objectEnergy = 0;
   if (!stats.objects.disabled) {
     const totalWeight = objectKinds.reduce((sum, k) => sum + weightOf(k), 0);
     // Cada toque encurta a espera (Toque Magnético): T = I / (1 + toques/s * corte).
-    const interval = (stats.objects.spawnMinSec + stats.objects.spawnMaxSec) / 2 / (1 + tps * stats.objects.spawnCutPerTouch);
+    const interval = (stats.objects.spawnMinSec + stats.objects.spawnMaxSec) / 2;
     const rate = (1 / interval) * profile.captureChance;
     for (const k of objectKinds) {
       const share = weightOf(k) / totalWeight;
@@ -138,7 +133,7 @@ function income(stats: EffectiveStats, profile: Profile, objectKinds: readonly O
   // Estrela Dourada (a cada ~6,5 min): em média, por captura, ~160 s da renda dos toques e ~120 s da dos geradores
   // (Frenesi x7 por 30 s, Chuva de 5 min e Surto dos geradores). Sem isto o jogador simulado acha que desligar os
   // objetos (Cygnus X-1) não custa nada.
-  const autoDust = Math.min(stats.autoDustPerSec, stats.autoDustCap);
+  const autoDust = stats.autoDustPerSec;
   const goldenDust = stats.objects.disabled ? 0 : (profile.captureChance / ((stats.objects.rareMinSec + stats.objects.rareMaxSec) / 2)) * (160 * tps * perTouch + 120 * autoDust);
   return {
     // O simulador toca sem parar, então os geradores rendem no ritmo ativo (com o teto).
@@ -146,9 +141,7 @@ function income(stats: EffectiveStats, profile: Profile, objectKinds: readonly O
     energy:
       tps * touchEnergy * 1 +
       objectEnergy +
-      Math.min(stats.autoEnergyPerSec, stats.autoEnergyCap) +
-      // A poeira dos geradores também enche a barra (como toques, a uma fração da energia do toque).
-      (Math.min(stats.autoDustPerSec, stats.autoDustCap) / Math.max(1, stats.dustPerTouch)) * stats.energyPerTouch * 0.25,
+      stats.autoEnergyPerSec,
   };
 }
 
@@ -244,7 +237,8 @@ function planUpgrade(state: SaveState, profile: Profile): Target | null {
     if (cost === null) return;
     const levels = state.run.upgradeLevels.slice();
     levels[index] = (levels[index] ?? 0) + 1;
-    const gain = score({ ...state, run: { ...state.run, upgradeLevels: levels } }, profile) - base;
+    // Item da escada sem efeito agora (ex.: bônus de geradores sem gerador) vale um tiquinho: ele destrava o próximo.
+    const gain = Math.max(UPGRADES[index]?.kind === 'item' ? 1e-4 : 0, score({ ...state, run: { ...state.run, upgradeLevels: levels } }, profile) - base);
     const ratio = gain / cost;
     if (ratio > bestRatio) {
       bestRatio = ratio;
@@ -392,6 +386,17 @@ export function simulate(options: SimOptions): SimResult {
       }
     }
     state = press(state, t);
+
+    // Quem joga compra o próximo item da escada assim que dá: é o objetivo visível na tela.
+    for (;;) {
+      const nextItem = nextItemIndex(state);
+      if (nextItem === null) break;
+      const cost = nextUpgradeCost(state, nextItem);
+      if (cost === null || state.run.dust < cost) break;
+      state = buyUpgrade(state, nextItem);
+      mark(0);
+      target = planUpgrade(state, profile);
+    }
 
     const needed = milestoneUpgrade(state);
     if (needed !== null) target = { index: needed };

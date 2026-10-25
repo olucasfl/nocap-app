@@ -2,11 +2,11 @@ import { newSave, upgradeIndex, type SaveState } from '@nocap/games';
 import { expect, test, type Page } from '@playwright/test';
 import { installApi } from './mock-api';
 
-/** QA visual da página de Melhorias: abas Toque/Geradores, botão Comprados e selos, sem cortes em larguras de celular a PC. */
+/** QA visual da página de Melhorias: Seus poderes, abas Itens/Geradores e selos, sem cortes em larguras de celular a PC. */
 function treeSave(): SaveState {
   const s = newSave('lote', Date.now() - 3_600_000, 'Missão lote');
   const lv = s.run.upgradeLevels.slice();
-  for (const [id, n] of Object.entries({ lens: 1, gloves: 1, satellite: 3, queue: 1 })) lv[upgradeIndex(id)] = n;
+  for (const [id, n] of Object.entries({ lens: 1, gloves: 1, satellite: 3 })) lv[upgradeIndex(id)] = n;
   return { ...s, tutorial: 'done', storySeen: true, collapses: 2, regionId: 'jupiter-saturn', run: { ...s.run, upgradeLevels: lv, dust: 5e5, dustLife: 5e5 } };
 }
 
@@ -46,7 +46,7 @@ for (const size of SIZES) {
   test.describe(`melhorias em ${size.width} px`, () => {
     test.use({ viewport: { width: size.width, height: size.height }, isMobile: size.mobile, hasTouch: size.mobile });
 
-    test('barra de abas e Comprados cabem, sem corte', async ({ page }, info) => {
+    test('barra de abas e Seus poderes cabem, sem corte', async ({ page }, info) => {
       test.skip(info.project.name !== 'desktop', 'um projeto basta');
       await installApi(page);
       await installSaves(page);
@@ -58,16 +58,13 @@ for (const size of SIZES) {
       await expect(page.locator('.ap-game')).toBeVisible();
       await page.locator('.ap-dockb-big').click();
       const shots = process.env.E2E_SHOTS ?? 'test-results';
-      for (const tab of ['Toque', 'Geradores']) {
+      for (const tab of ['Itens', 'Geradores']) {
         await page.getByRole('tab', { name: new RegExp(`^${tab}`) }).click();
         await page.waitForTimeout(300);
         await page.screenshot({ path: `${shots}/up-${size.width}-${tab}.png` });
       }
-      await page.getByRole('button', { name: /^Comprados/ }).click();
-      await page.waitForTimeout(300);
-      await page.screenshot({ path: `${shots}/up-${size.width}-comprados.png` });
       // Cada peça da barra fica inteira dentro da janela.
-      for (const sel of ['.ap-upbar', '.ap-uptab >> nth=0', '.ap-uptab >> nth=1', '.ap-ownbtn']) {
+      for (const sel of ['.ap-upbar', '.ap-uptab >> nth=0', '.ap-uptab >> nth=1', '.ap-powers']) {
         const box = (await page.locator(sel).first().boundingBox())!;
         expect(box.x, sel).toBeGreaterThanOrEqual(0);
         expect(box.x + box.width, sel).toBeLessThanOrEqual(size.width);

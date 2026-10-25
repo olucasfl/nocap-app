@@ -1735,6 +1735,8 @@
   --cat: var(--space-cyan);
 }
 .ap-cat-ico[data-cat='generators'],
+.ap-cat-ico[data-cat='energy'],
+.ap-pick-info[data-cat='energy'],
 .ap-pick-info[data-cat='generators'] {
   --cat: var(--space-blue);
 }

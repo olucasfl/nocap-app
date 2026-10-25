@@ -39,7 +39,7 @@ describe('tela de jogo no tutorial', () => {
     expect(markup).not.toContain('data-tut="dock-grimoires"');
     expect(markup).not.toContain('data-tut="dock-achievements"');
     expect(markup).toContain('Parabéns!');
-    expect(markup).toContain('Você já pode comprar sua primeira melhoria.');
+    expect(markup).toContain('Você já pode comprar seu primeiro item.');
     expect(markup).toContain('Pular tutorial');
   });
 

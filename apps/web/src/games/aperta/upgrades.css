@@ -826,3 +826,202 @@
     flex: 0 0 auto;
   }
 }
+
+/* --- Reformulação (spec 043): Seus poderes, Itens em fila e Geradores explicados --- */
+.ap-powers {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0 0 10px;
+}
+.ap-powers > div {
+  display: grid;
+  gap: 2px;
+  padding: 8px 6px;
+  border: 2px solid var(--space-line);
+  border-radius: 10px;
+  background: var(--space-panel);
+  text-align: center;
+  min-width: 0;
+}
+.ap-powers dt {
+  font: 600 10px/1.2 var(--space-font-display);
+  text-transform: uppercase;
+  color: var(--space-muted);
+}
+.ap-powers dd {
+  margin: 0;
+  font: 700 16px var(--space-font-display);
+  color: var(--space-cyan);
+  overflow-wrap: anywhere;
+}
+.ap-upbar {
+  margin-bottom: 10px;
+}
+.ap-up-intro {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 10px;
+  font: 400 13px/1.4 var(--space-font-body);
+  color: var(--space-muted);
+}
+.ap-up-count2 {
+  flex: none;
+  font: 700 14px var(--space-font-display);
+  color: var(--space-gold);
+}
+.ap-sub {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 16px 0 8px;
+  font: 700 13px var(--space-font-display);
+  text-transform: uppercase;
+  color: var(--space-muted);
+}
+.ap-sub small {
+  color: var(--space-gold);
+}
+.ap-next {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 3px solid var(--space-line);
+  border-radius: 16px;
+  background: linear-gradient(180deg, var(--space-panel-2), var(--space-panel));
+}
+.ap-next.is-ready {
+  border-color: var(--space-cyan);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--space-cyan) 35%, transparent);
+}
+.ap-next-tag {
+  margin: 0;
+  font: 700 11px var(--space-font-display);
+  text-transform: uppercase;
+  color: var(--space-gold);
+}
+.ap-next-head {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+.ap-next-head h3 {
+  margin: 0;
+  font: 700 18px var(--space-font-display);
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+.ap-next-text {
+  margin: 2px 0 0;
+  font: 400 13px/1.35 var(--space-font-body);
+  color: var(--space-muted);
+}
+.ap-eff {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--space-cyan) 10%, transparent);
+  font: 600 13px var(--space-font-body);
+}
+.ap-eff small {
+  font: 600 12px var(--space-font-body);
+  color: var(--space-muted);
+}
+.ap-eff-nums {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  font: 700 15px var(--space-font-display);
+}
+.ap-eff-nums i {
+  font-style: normal;
+  color: var(--space-muted);
+}
+.ap-eff-after {
+  color: var(--space-cyan);
+}
+.ap-eff.is-big .ap-eff-nums {
+  font-size: 22px;
+}
+.ap-eff.is-idle {
+  color: var(--space-muted);
+  background: transparent;
+  padding: 0;
+}
+.ap-eff.is-idle span {
+  font-weight: 400;
+}
+.ap-next-bar {
+  height: 8px;
+  border-radius: 99px;
+  background: var(--space-line);
+  overflow: hidden;
+}
+.ap-next-bar i {
+  display: block;
+  height: 100%;
+  background: var(--space-cyan);
+  transform-origin: left center;
+}
+.ap-next-buy {
+  width: 100%;
+  min-height: 54px;
+}
+.ap-soonlist,
+.ap-ownstrip {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ap-soonlist {
+  display: grid;
+  gap: 8px;
+}
+.ap-soon {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 10px;
+  border: 2px dashed var(--space-line);
+  border-radius: 12px;
+  opacity: 0.6;
+}
+.ap-soon h4 {
+  margin: 0;
+  font: 700 13px var(--space-font-display);
+  text-transform: uppercase;
+}
+.ap-soon p {
+  margin: 0;
+  font: 400 12px/1.3 var(--space-font-body);
+  color: var(--space-muted);
+}
+.ap-soon-price {
+  font: 700 14px var(--space-font-display);
+  color: var(--space-gold);
+}
+.ap-ownstrip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ap-ownstrip li {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  width: 64px;
+  font: 600 9px/1.2 var(--space-font-display);
+  text-align: center;
+  color: var(--space-muted);
+}
+.ap-up-payback {
+  font: 600 12px var(--space-font-body);
+  color: var(--space-gold);
+}

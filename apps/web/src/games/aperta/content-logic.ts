@@ -1,7 +1,6 @@
 import {
   EVENT_NAMES,
   EVENT_TEXT,
-  UPGRADES,
   activeEventId,
   effectiveStats,
   formatDecimal,
@@ -115,12 +114,7 @@ export function favoriteOpen(state: SaveState): boolean {
   return mechanicOpen('favorite', state.collapses);
 }
 
-// --- Observatório Gaia: a carta mostra o efeito já com os números da vida ---
-
-export function gaiaActive(state: SaveState): boolean {
-  const i = UPGRADES.findIndex((u) => u.id === 'gaia');
-  return i >= 0 && (state.run.upgradeLevels[i] ?? 0) > 0;
-}
+// --- O que a carta muda nos números da vida ---
 
 interface StatLine {
   label: string;
@@ -134,23 +128,24 @@ const secs = (v: number) => `${formatDecimal(v, 1)} s`;
 const touches = (v: number) => `${formatDecimal(v, v % 1 === 0 ? 0 : 1)} toques`;
 
 const STAT_LINES: StatLine[] = [
-  { label: 'Poeira por toque', read: (s) => s.dustPerTouch, show: (v) => (v >= 100 ? formatNumber(Math.floor(v)) : formatDecimal(v, 1)) },
-  { label: 'Poeira por toque no combo máximo', read: (s) => s.combo.fullDustAdd, show: (v) => `+${formatDecimal(v, 2)}` },
+  { label: 'Seu toque', read: (s) => s.dustPerTouch, show: (v) => (v >= 100 ? formatNumber(Math.floor(v)) : formatDecimal(v, 1)) },
   { label: 'Energia por toque', read: (s) => s.energyPerTouch, show: (v) => formatDecimal(v, 2) },
-  { label: 'Energia por toque no combo máximo', read: (s) => s.combo.fullEnergyAdd, show: (v) => `+${formatDecimal(v, 2)}` },
-  { label: 'Janela do combo', read: (s) => s.combo.windowSec, show: secs },
-  { label: 'Custo das melhorias', read: (s) => s.costFactor, show: pct },
+  { label: 'Energia até o próximo grimório', read: (s) => s.energyStepFactor, show: pct },
+  { label: 'Trocas de carta por escolha', read: (s) => s.choice.rerolls, show: (v) => formatDecimal(v, 0) },
+  { label: 'Descartes por escolha', read: (s) => s.choice.discards, show: (v) => formatDecimal(v, 0) },
+  { label: 'Cartas por escolha', read: (s) => s.choice.cards, show: (v) => formatDecimal(v, 0) },
+  { label: 'Peso das cartas épicas e lendárias', read: (s) => s.choice.rarityBoost, show: (v) => `+${formatDecimal(v, 0)}` },
+  { label: 'Devolução ao comprar', read: (s) => s.buyRefundTouches, show: touches },
+  { label: 'Poeira inicial', read: (s) => s.startDust, show: (v) => formatNumber(v) },
+  { label: 'Custo dos itens', read: (s) => s.costFactor, show: pct },
   { label: 'Cometa', read: (s) => s.objects.reward.comet.dust, show: touches },
   { label: 'Estrela cadente', read: (s) => s.objects.reward['shooting-star'].energy, show: touches },
   { label: 'Satélite (poeira)', read: (s) => s.objects.reward.satellite.dust, show: touches },
-  { label: 'Sinal forte', read: (s) => s.objects.signalMult, show: (v) => `x${formatDecimal(v, 1)}` },
-  { label: 'Energia ao capturar', read: (s) => s.objects.onCaptureEnergyTouches, show: touches },
-  { label: 'Poeira inicial', read: (s) => s.startDust, show: (v) => formatNumber(v) },
-  { label: 'Toque no combo máximo', read: (s) => s.combo.fullMult, show: (v) => `x${formatDecimal(v, 2)}` },
-  { label: 'Devolução ao comprar', read: (s) => s.buyRefundTouches, show: touches },
   { label: 'Espera pelo próximo objeto', read: (s) => s.objects.spawnMaxSec, show: secs },
-  { label: 'Peso das cartas épicas e lendárias', read: (s) => s.choice.rarityBoost, show: (v) => `+${formatDecimal(v, 0)}` },
-  { label: 'Energia até o próximo', read: (s) => s.energyStepFactor, show: pct },
+  { label: 'Tempo do objeto na tela', read: (s) => s.objects.lifeSec.comet, show: secs },
+  { label: 'Objetos ao mesmo tempo', read: (s) => s.objects.maxOnField, show: (v) => formatDecimal(v, 0) },
+  { label: 'Energia ao capturar', read: (s) => s.objects.onCaptureEnergyTouches, show: touches },
+  { label: 'Toque depois de capturar', read: (s) => s.objects.afterCaptureMult, show: (v) => `x${formatDecimal(v, 1)}` },
 ];
 
 /**
@@ -180,17 +175,12 @@ export function cardGain(state: SaveState, id: string, rarity: GrimoireRarity = 
   return lines.length > 0 ? lines.slice(0, 2).join(' · ') : null;
 }
 
-/**
- * O que cada carta oferecida faz nos números da vida atual ("Poeira por toque: 12 -> 14"). Desde a spec 041 aparece
- * para todos; o Observatório Gaia só acrescenta a frase de efeito de ocasião quando os números não mudam.
- */
-export function gaiaPreviews(state: SaveState, offers: readonly string[], rarities: Readonly<Record<string, GrimoireRarity>> = {}): Record<string, string> {
+/** O que cada carta oferecida faz nos números da vida atual ("Seu toque: 12 -> 14"). */
+export function cardPreviews(state: SaveState, offers: readonly string[], rarities: Readonly<Record<string, GrimoireRarity>> = {}): Record<string, string> {
   const out: Record<string, string> = {};
-  const gaia = gaiaActive(state);
   for (const id of offers) {
     const gain = cardGain(state, id, rarities[id] ?? 'common');
     if (gain) out[id] = gain;
-    else if (gaia) out[id] = 'Efeito de ocasião: sem mudança nos números agora';
   }
   return out;
 }

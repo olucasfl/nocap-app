@@ -46,7 +46,7 @@ describe('sorteio por peso (n = escolhas já feitas)', () => {
     for (let i = 0; i < 600; i++) drawGrimoires(withPicks(40, `x${i}`)).offers.forEach((id) => ids.add(id));
     expect(ids.has('cygnus-x1')).toBe(false);
     expect(ids.has('m87')).toBe(false);
-    expect(GRIMOIRES).toHaveLength(22);
+    expect(GRIMOIRES).toHaveLength(20);
   });
 });
 
@@ -66,7 +66,7 @@ describe('livro de grimórios (4 versões por astro)', () => {
   it('a página mostra a contagem e o cadeado', () => {
     const s = newSave('a', 0);
     const markup = html(<GrimoiresPage state={{ ...s, album: ['moon:common', 'moon:epic'], run: { ...s.run, build: { moon: 2 } } }} />);
-    expect(markup).toContain('de 60 versões descobertas');
+    expect(markup).toContain('de 56 versões descobertas');
     // Os espaços não descobertos viram ??? e os achados mostram a raridade.
     expect(markup).toContain('???');
     expect(markup).toContain('Épico');

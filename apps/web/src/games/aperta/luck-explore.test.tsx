@@ -16,7 +16,7 @@ function pending(offers: string[], over: Partial<PendingChoice> = {}): PendingCh
 }
 
 describe('oferta com 4 cartas, trocas, descarte e pity', () => {
-  const four = pending(['moon', 'mercury', 'venus', 'mars']);
+  const four = pending(['moon', 'mercury', 'venus', 'saturn']);
 
   it('mostra as 4 cartas em duas colunas', () => {
     const out = html(<ChoiceModal pending={four} lockRemaining={0} build={{}} paused={false} onSelect={noop} onConfirm={noop} />);

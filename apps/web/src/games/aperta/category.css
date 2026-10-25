@@ -22,3 +22,6 @@
 .ap-cat[data-cat='luck'] {
   --cat: var(--space-violet);
 }
+.ap-cat[data-cat='energy'] {
+  --cat: var(--space-blue);
+}

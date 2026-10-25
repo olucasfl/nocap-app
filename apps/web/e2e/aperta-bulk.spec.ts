@@ -6,7 +6,7 @@ import { installApi } from './mock-api';
 function treeSave(): SaveState {
   const s = newSave('lote', Date.now() - 3_600_000, 'Missão lote');
   const lv = s.run.upgradeLevels.slice();
-  for (const [id, n] of Object.entries({ lens: 1, gloves: 1, satellite: 3, queue: 1 })) lv[upgradeIndex(id)] = n;
+  for (const [id, n] of Object.entries({ lens: 1, gloves: 1, satellite: 3 })) lv[upgradeIndex(id)] = n;
   return { ...s, tutorial: 'done', storySeen: true, collapses: 2, regionId: 'jupiter-saturn', run: { ...s.run, upgradeLevels: lv, dust: 5e5, dustLife: 5e5 } };
 }
 
@@ -44,7 +44,7 @@ for (const size of SIZES) {
   test.describe(`completar gerador em ${size.name}`, () => {
     test.use({ viewport: { width: size.width, height: size.height }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
 
-    test('o botão Completar mostra o preço total e os 5% de desconto, e cabe na tela', async ({ page }, info) => {
+    test('o botão Completar mostra o preço total, e cabe na tela', async ({ page }, info) => {
       test.skip(info.project.name !== 'desktop', 'um projeto basta');
       await installApi(page);
       await installSaves(page);
@@ -59,7 +59,7 @@ for (const size of SIZES) {
       const bulk = page.locator('.ap-up-bulk').first();
       await bulk.scrollIntoViewIfNeeded();
       await expect(bulk).toContainText('Completar');
-      await expect(bulk).toContainText('5% mais barato');
+      
       const box = (await bulk.boundingBox())!;
       expect(box.x).toBeGreaterThanOrEqual(0);
       expect(box.x + box.width).toBeLessThanOrEqual(size.width);

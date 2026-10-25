@@ -161,7 +161,7 @@ for (const size of SIZES) {
       await openGame(page, false);
       await expect(dock(page, 'Melhorias')).toHaveCount(0);
       await press(page);
-      await expect(coach(page)).toContainText('Você já pode comprar sua primeira melhoria.');
+      await expect(coach(page)).toContainText('Você já pode comprar seu primeiro item.');
       await expect(dock(page, 'Melhorias')).toBeVisible();
       await expect(dock(page, 'Grimórios')).toHaveCount(0);
       await expect(dock(page, 'Conquistas')).toHaveCount(0);
@@ -172,7 +172,7 @@ for (const size of SIZES) {
       await expect.poll(() => account.data?.tutorial).toBe(TUTORIAL.UPGRADE);
       await page.reload();
       await openGame(page, false);
-      await expect(coach(page)).toContainText('Você já pode comprar sua primeira melhoria.');
+      await expect(coach(page)).toContainText('Você já pode comprar seu primeiro item.');
 
       await tapCenter(page, dock(page, 'Melhorias'), touch);
       await expect(page.locator('.ap-sheet')).toBeVisible();
@@ -313,7 +313,7 @@ for (const size of SIZES) {
       account.rev = 1;
       await openGame(page, false);
       await press(page);
-      await expect(coach(page)).toContainText('Você já pode comprar sua primeira melhoria.');
+      await expect(coach(page)).toContainText('Você já pode comprar seu primeiro item.');
       await tapCenter(page, dock(page, 'Melhorias'), touch);
       await expect(page.locator('.ap-sheet')).toBeVisible();
       await expect(page.locator('.ap-tut')).toHaveAttribute('data-blocking', 'true');

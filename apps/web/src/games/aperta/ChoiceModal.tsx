@@ -28,7 +28,7 @@ interface Props {
   suggestion?: { id: string; gainPct: number | null } | null;
   /** Pity de lendário (árvore): ofertas que faltam para o lendário garantido; `null` sem o nó. */
   pityLeft?: number | null;
-  /** Observatório Gaia: o efeito de cada carta com os números da vida (id -> texto). */
+  /** O efeito de cada carta com os números da vida (id -> texto). */
   gain?: Record<string, string>;
   /** Dica do tutorial na 1ª escolha: fica acima das cartas, dentro do modal. */
   coach?: ReactNode;

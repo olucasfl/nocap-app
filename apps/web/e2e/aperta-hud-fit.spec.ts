@@ -6,7 +6,7 @@ import { installApi } from './mock-api';
 function treeSave(): SaveState {
   const s = newSave('lote', Date.now() - 3_600_000, 'Missão lote');
   const lv = s.run.upgradeLevels.slice();
-  for (const [id, n] of Object.entries({ lens: 1, gloves: 1, satellite: 3, queue: 1 })) lv[upgradeIndex(id)] = n;
+  for (const [id, n] of Object.entries({ lens: 1, gloves: 1, satellite: 3, antenna: 2 })) lv[upgradeIndex(id)] = n;
   return { ...s, tutorial: 'done', storySeen: true, collapses: 2, regionId: 'jupiter-saturn', run: { ...s.run, upgradeLevels: lv, dust: 5e5, dustLife: 5e5 } };
 }
 

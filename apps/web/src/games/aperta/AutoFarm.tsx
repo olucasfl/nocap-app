@@ -67,7 +67,7 @@ interface Orbit {
 export function orbitsOf(state: SaveState): Orbit[] {
   const orbits: Orbit[] = [];
   UPGRADES.forEach((def, i) => {
-    if (def.kind === 'touch' || def.kind === 'perk') return;
+    if (def.kind === 'item') return;
     const level = state.run.upgradeLevels[i] ?? 0;
     if (level <= 0) return;
     // O astro cresce com o gerador: 1 até a metade dos níveis, 2 passando dela, 3 completo.

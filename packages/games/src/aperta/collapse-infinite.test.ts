@@ -36,8 +36,8 @@ const ready = (c: number): SaveState => {
 };
 
 describe('o requisito do colapso n cresce sem fim', () => {
-  it('a meta de poeira nunca decresce, começa em 50 mi e é estritamente maior a cada colapso', () => {
-    expect(dustGoal(1)).toBe(5e7);
+  it('a meta de poeira nunca decresce, começa em 220 bi e é estritamente maior a cada colapso', () => {
+    expect(dustGoal(1)).toBe(2.2e11);
     let prev = 0;
     for (let n = 1; n <= 700; n++) {
       const g = dustGoal(n);
@@ -70,9 +70,9 @@ describe('o requisito do colapso n cresce sem fim', () => {
   it('os três requisitos têm que estar cumpridos, cada um sozinho segura o colapso', () => {
     const ok = ready(3);
     expect(canCollapse(ok)).toBe(true);
-    expect(canCollapse(withRun(ok, { dustLife: dustGoal(4) - 1 }))).toBe(false);
+    expect(canCollapse(withRun(ok, { dustLife: dustGoal(4) * 0.99 }))).toBe(false);
     expect(canCollapse(withRun(ok, { picks: minPicks(4) - 1 }))).toBe(false);
-    const noMilestone = withRun(ok, { captured: 0, rares: 0, chainBest: 0, fullBest: 0, missionsDone: 0 });
+    const noMilestone = withRun(ok, { captured: 0, rares: 0, chainBest: 0, fullBest: 0, missionsDone: 0, upgradeLevels: ok.run.upgradeLevels.map(() => 0) });
     expect(collapseProgress(noMilestone).milestone.done).toBe(false);
     expect(canCollapse(noMilestone)).toBe(false);
   });

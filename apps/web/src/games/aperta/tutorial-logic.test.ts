@@ -25,7 +25,7 @@ describe('dica de cada momento', () => {
 
   it('passo 2: aponta para Melhorias; com a página aberta, para o preço', () => {
     expect(coachView(at(TUTORIAL.UPGRADE), null)).toMatchObject({ target: 'dock-upgrades', title: 'Parabéns!' });
-    expect(coachView(at(TUTORIAL.UPGRADE), null)?.text).toMatch(/primeira melhoria/);
+    expect(coachView(at(TUTORIAL.UPGRADE), null)?.text).toMatch(/primeiro item/);
     expect(coachView(at(TUTORIAL.UPGRADE), 'upgrades')).toMatchObject({ target: 'buy-first', place: 'bottom' });
   });
 

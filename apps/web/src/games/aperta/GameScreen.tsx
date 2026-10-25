@@ -34,7 +34,7 @@ import { achievementCounts } from './achievements-logic';
 import { CollapseModal } from './CollapseModal';
 import { GoalModal } from './GoalModal';
 import { VaultPage } from './VaultPage';
-import { eventView, gaiaPreviews, missionView, newInSpaceView, radarView, regionMenuItems } from './content-logic';
+import { eventView, cardPreviews, missionView, newInSpaceView, radarView, regionMenuItems } from './content-logic';
 import { FieldObjects, SignalChip } from './FieldObjects';
 import { GamePage, PageIcon, PAGE_TITLE } from './GamePage';
 import { GrimoiresPage } from './GrimoiresPage';
@@ -763,7 +763,7 @@ export function GameScreen({ controller, onExit }: Props) {
           onDiscard={controller.discard}
           pityLeft={pityLeft(state)}
           suggestion={suggestion}
-          gain={gaiaPreviews(state, pending.offers, pending.rarities)}
+          gain={cardPreviews(state, pending.offers, pending.rarities)}
           coach={coach?.inline ? <TutorialInline view={coach} onSkip={controller.tutorialSkip} /> : undefined}
         />
       )}

@@ -199,7 +199,7 @@ describe('página de Conquistas ampliada', () => {
     expect(out).toContain('em breve');
     expect(out).toMatch(/class="ap-ach-reward"[^>]*>\+\d+/);
     expect(out).toContain('Buscar conquista');
-    expect(out.match(/aria-pressed/g)!.length).toBeGreaterThanOrEqual(1 + 3 + 17 - 1);
+    expect(out.match(/aria-pressed/g)!.length).toBeGreaterThanOrEqual(1 + 3 + 16 - 1);
   });
 
   it('conquistas que esperam conteúdo aparecem como "em breve", sem barra e sem número', () => {

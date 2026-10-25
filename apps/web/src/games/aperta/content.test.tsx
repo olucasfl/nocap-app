@@ -10,7 +10,7 @@ import { createMemoryGameStore } from './game-store';
 import {
   cardGain,
   eventView,
-  gaiaPreviews,
+  cardPreviews,
   missionView,
   newInSpaceKey,
   newInSpaceView,
@@ -85,18 +85,17 @@ describe('"Você ganha" dos grimórios novos', () => {
   const ready = (): SaveState => {
     const s = newSave('novos', 0);
     const levels = s.run.upgradeLevels.slice();
-    levels[upgradeIndex('rhythm')] = 1;
     return { ...s, tutorial: 'done', collapses: 3, run: { ...s.run, upgradeLevels: levels } };
   };
 
-  it.each(['jupiter', 'polaris', 'europa', 'ganymede', 'proxima', 'cassiopeia', 'titan', 'capella'])('%s mostra o que muda', (id) => {
+  it.each(['polaris', 'europa', 'ganymede', 'proxima', 'cassiopeia', 'titan', 'capella'])('%s mostra o que muda', (id) => {
     expect(cardGain(ready(), id), id).not.toBeNull();
   });
 
   it('Saturno mostra ganho quando já há um grimório raro no livro', () => {
     const s = ready();
     const withRare = { ...s, run: { ...s.run, ...pickInto(s.run, 'moon', 'rare') } };
-    expect(cardGain(withRare, 'saturn')).toMatch(/Poeira por toque/);
+    expect(cardGain(withRare, 'saturn')).toMatch(/Seu toque/);
   });
 
   it('o texto da carta do Titã não promete poeira no começo da vida', () => {
@@ -154,13 +153,13 @@ describe('missão e evento na tela', () => {
 });
 
 describe('Favorito no álbum', () => {
-  const s = atCollapse(2, { album: ['moon:common', 'mars:common'], favorite: 'mars' });
+  const s = atCollapse(2, { album: ['moon:common', 'saturn:common'], favorite: 'saturn' });
 
   it('mostra o botão só depois do colapso 2 e só nos descobertos', () => {
     const open = html(<GrimoiresPage state={s} onFavorite={() => {}} />);
     expect(open.match(/class="ap-fav"/g)).toHaveLength(2);
     expect(open).toContain('Marcar Lua como favorito');
-    expect(open).toContain('Tirar Marte dos favoritos');
+    expect(open).toContain('Tirar Saturno dos favoritos');
     expect(html(<GrimoiresPage state={{ ...s, collapses: 1 }} onFavorite={() => {}} />)).not.toContain('ap-fav');
     expect(html(<GrimoiresPage state={s} />)).not.toContain('ap-fav');
   });
@@ -176,59 +175,28 @@ describe('Favorito no álbum', () => {
   });
 });
 
-describe('Observatório Gaia: a carta mostra o efeito', () => {
-  const withGaia = (k = 5) => {
-    const s = atCollapse(k);
-    const levels = s.run.upgradeLevels.slice();
-    levels[UPGRADES.findIndex((u) => u.id === 'gaia')] = 1;
-    return { ...s, run: { ...s.run, upgradeLevels: levels } };
-  };
-
-  it('sem Gaia só aparece o que muda nos números, sem a frase de efeito de ocasião', () => {
-    const p = gaiaPreviews(atCollapse(5), ['sirius', 'moon']);
-    for (const text of Object.values(p)) expect(text).not.toContain('sem mudança');
+describe('A carta mostra o efeito nos números da vida', () => {
+  it('cada carta diz o que muda: o total antes e depois', () => {
+    const p = cardPreviews(atCollapse(5), ['sirius', 'moon', 'saturn']);
+    expect(p.sirius).toMatch(/^A cada 10 toques, poeira: x1 -> x2/);
+    expect(p.moon).toBe('Seu toque: 1 -> 4');
+    expect(p.saturn).toBe('Seu toque: 1 -> 1,5');
   });
 
-  it('com Gaia, cada carta diz o que muda nos números da vida', () => {
-    const p = gaiaPreviews(withGaia(), ['sirius', 'mars', 'moon']);
-    expect(p.sirius).toMatch(/^Poeira por toque no combo máximo: \+0 -> \+0,5/);
-    expect(p.mars).toContain('Estrela cadente: 2 toques -> 4 toques');
-    expect(p.moon).toContain('A cada 10 toques, poeira: x1 -> x2');
-  });
-
-  it('o cálculo vem do motor: pegar de novo sobe o nível', () => {
-    const s = withGaia();
-    const lv1 = { ...s, run: { ...s.run, ...pickInto(s.run, 'sirius', 'common', 1) } };
-    expect(cardGain(s, 'sirius')).not.toEqual(cardGain(lv1, 'sirius'));
-    // Em raridade maior o mesmo grimório sobe mais: Raro dobra o passo.
-    expect(cardGain(s, 'sirius', 'rare')).not.toEqual(cardGain(s, 'sirius', 'common'));
-  });
-
-  it('toque especial (Lua) mostra o antes e o depois, também ao subir de nível e de raridade', () => {
-    const s = withGaia();
-    expect(cardGain(s, 'moon')).toMatch(/^A cada 10 toques, poeira: x1 -> x/);
-    const lv2 = { ...s, run: { ...s.run, ...pickInto(s.run, 'moon', 'common', 1) } };
-    const g = cardGain(lv2, 'moon');
-    expect(g).toMatch(/^A cada 10 toques, poeira: x[\d,]+ -> x[\d,]+$/);
-    const [from, to] = g!.match(/x[\d,]+/g)!;
-    expect(to).not.toEqual(from);
+  it('o cálculo vem do motor: pegar de novo sobe o nível, e a raridade maior sobe mais', () => {
+    const s = atCollapse(5);
+    const lv1 = { ...s, run: { ...s.run, ...pickInto(s.run, 'moon', 'common', 1) } };
+    expect(cardGain(s, 'moon')).not.toEqual(cardGain(lv1, 'moon'));
+    expect(cardGain(s, 'moon', 'rare')).not.toEqual(cardGain(s, 'moon', 'common'));
   });
 
   it('a escolha mostra a linha extra', () => {
-    const s = withGaia();
-    const pending = { offers: ['sirius'], openedAt: 0, selected: null, picksLeft: 1, rerollsLeft: 0 };
+    const s = atCollapse(5);
+    const pending = { offers: ['moon'], openedAt: 0, selected: null, picksLeft: 1, rerollsLeft: 0 };
     const markup = html(
-      <ChoiceModal
-        pending={pending}
-        lockRemaining={0}
-        build={{}}
-        paused={false}
-        onSelect={() => {}}
-        onConfirm={() => {}}
-        gain={gaiaPreviews(s, pending.offers)}
-      />,
+      <ChoiceModal pending={pending} lockRemaining={0} build={{}} paused={false} onSelect={() => {}} onConfirm={() => {}} gain={cardPreviews(s, pending.offers)} />,
     );
     expect(markup).toContain('ap-pick-gain');
-    expect(markup).toContain('Poeira por toque no combo máximo');
+    expect(markup).toContain('Seu toque');
   });
 });

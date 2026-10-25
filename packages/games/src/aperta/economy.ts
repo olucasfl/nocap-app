@@ -21,7 +21,9 @@ export const REACTOR_STEP = 0.25;
  */
 /** Spec 041 (B4): metade da dificuldade de antes (38, 80, 150...), para o grimório vir mais fácil. */
 export const ENERGY_STEPS = [19, 40, 75, 130, 210, 320] as const;
-export const ENERGY_STEP_GROWTH = 1.16;
+export const ENERGY_STEP_GROWTH = 1.3;
+/** Da 7ª escolha em diante a barra pesa 10x mais: os itens de energia e os geradores enchem rápido, e o jogo quer uma escolha a cada poucos minutos. */
+const ENERGY_STEP_LATE = 10;
 
 /** Grimório repetido: cada nível soma metade do número base (+0,5 vira +0,75, +1...), até o nível 10. */
 export const GRIMOIRE_MAX_LEVEL = 10;
@@ -84,7 +86,7 @@ export function energyCap(picks: number, stepFactor = 1): number {
   const base =
     n < ENERGY_STEPS.length
       ? (ENERGY_STEPS[n] as number)
-      : (ENERGY_STEPS[ENERGY_STEPS.length - 1] as number) *
+      : (ENERGY_STEPS[ENERGY_STEPS.length - 1] as number) * ENERGY_STEP_LATE *
         Math.pow(ENERGY_STEP_GROWTH, n - (ENERGY_STEPS.length - 1));
   const value = base * (Number.isFinite(stepFactor) && stepFactor > 0 ? stepFactor : 1);
   return Math.min(MAX_NUMBER, value);
@@ -192,7 +194,7 @@ export const GOAL_BASE = 5e7;
  * mais longa (até ~1,8 h no 15º), sem saltos. Depois do 15º a meta cresce `GOAL_TAIL_RATIO` por colapso. O
  * vetor é mutável só para a ferramenta de calibragem (`tmp-calib`); o jogo nunca o altera.
  */
-export const GOAL_TABLE: number[] = [5e7, 1.4e8, 3.2e8, 6.9e8, 1.4e9, 2e9, 3.74e9, 4.9e9, 5.8e9, 8.9e9, 1.16e10, 1.56e10, 2.25e10, 2.73e10, 3.7e10];
+export const GOAL_TABLE: number[] = [2.2e11, 4.7e13, 8e14, 8.9e16, 3.8e17, 8.1e17, 1.8e18, 3.6e18, 7.5e18, 1.5e19, 3.5e19, 7e19, 1.4e20, 2.8e20, 5.5e20];
 export const GOAL_TAIL_RATIO = 1.08;
 export const GOAL_SEGMENTS: { upTo: number; ratio: number }[] = [{ upTo: Infinity, ratio: GOAL_TAIL_RATIO }];
 

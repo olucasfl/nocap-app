@@ -142,7 +142,7 @@ for (const size of SIZES) {
       const dialog = page.getByRole('dialog', { name: /A estrela está pronta/ });
       await expect(dialog).toBeVisible();
       await expect(dialog.locator('.ap-reqs li')).toHaveCount(3);
-      await expect(dialog.locator('.ap-reqs')).toContainText('Combo: toques seguidos');
+      await expect(dialog.locator('.ap-reqs')).toContainText('Geradores no nível');
       await page.waitForTimeout(400); // guarda de 300 ms contra toque acidental
       await expect(page.getByRole('button', { name: 'Continuar' })).toBeDisabled();
       await tapCenter(page, dialog.locator('.ap-cc-vault').first(), touch);

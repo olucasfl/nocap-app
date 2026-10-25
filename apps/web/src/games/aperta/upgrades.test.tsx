@@ -1,4 +1,4 @@
-import { UPGRADES, effectiveStats, newSave, nextUpgradeCost, upgradeCost, type SaveState } from '@nocap/games';
+import { UPGRADES, effectiveStats, newSave, upgradeCost, type SaveState } from '@nocap/games';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -8,13 +8,12 @@ import { GameScreen } from './GameScreen';
 import { UpgradesPage } from './UpgradesPage';
 import { createGameController } from './game-controller';
 import { createMemoryGameStore } from './game-store';
-import { buyLabel, buyRows, ownedRows, tabBadge, upgradeBadge, upgradeRows } from './upgrades-logic';
+import { effectLine, generatorRows, itemsView, powers, tabBadge, upgradeBadge } from './upgrades-logic';
 
 const noop = () => {};
 const idx = (id: string) => UPGRADES.findIndex((u) => u.id === id);
 const rich = (dust: number, over: Partial<SaveState['run']> = {}): SaveState => {
   const s = newSave('teste', 0);
-  // A poeira da vida nunca é menor que a que sobra: é ela que revela as melhorias escondidas.
   return { ...s, tutorial: 'done', run: { ...s.run, dust, dustLife: dust, ...over } };
 };
 const owning = (s: SaveState, ids: string[]): SaveState => {
@@ -22,7 +21,6 @@ const owning = (s: SaveState, ids: string[]): SaveState => {
   for (const id of ids) upgradeLevels[idx(id)] = 1;
   return { ...s, run: { ...s.run, upgradeLevels } };
 };
-const row = (state: SaveState, id: string) => upgradeRows(state).find((r) => r.id === id)!;
 
 function setup(initial: SaveState) {
   const clock = { ms: 1000 };
@@ -30,171 +28,72 @@ function setup(initial: SaveState) {
   return { clock, ctl, state: () => ctl.getSnapshot().state };
 }
 
-describe('linhas da página de Melhorias', () => {
-  it('no começo cada aba mostra a 1ª melhoria e uma escondida', () => {
-    const s = newSave('teste', 0);
-    expect(upgradeRows(s, 'touch').map((r) => r.id)).toEqual(['lens', 'gloves']);
-    // Geradores: um de poeira e um de energia por vez (spec 041); o próximo só depois de completar o atual.
-    expect(upgradeRows(s, 'generators').map((r) => r.id)).toEqual(['satellite', 'antenna']);
-    expect(row(s, 'lens').status).toBe('short');
-    expect(row(s, 'gloves').status).toBe('mystery');
-    expect(row(s, 'trained')).toBeUndefined();
+describe('Itens: a fila', () => {
+  it('no começo o próximo é a Lente Polida, com os dois seguintes esmaecidos e nenhum comprado', () => {
+    const v = itemsView(newSave('teste', 0));
+    expect(v.next?.id).toBe('lens');
+    expect(v.upcoming.map((r) => r.id)).toEqual(['gloves', 'charged']);
+    expect(v.bought).toBe(0);
+    expect(v.total).toBe(24);
+    expect(v.owned).toEqual([]);
   });
 
-  it('a escondida mostra "???" e só o preço', () => {
-    const r = row(newSave('teste', 0), 'gloves');
-    expect(r).toMatchObject({ name: '???', text: 'Ainda não descoberta', status: 'mystery', cost: 225, gain: null, astro: 'lock' });
-    expect(r.lockHint).toBe('Descubra juntando 70% do preço');
-    expect(buyLabel(r)).toBe('225');
+  it('comprar o de cima anda a fila e o item vai para Comprados (o mais novo primeiro)', () => {
+    const v = itemsView(owning(newSave('teste', 0), ['lens', 'gloves']));
+    expect(v.next?.id).toBe('charged');
+    expect(v.upcoming[0]?.id).toBe('solar');
+    expect(v.owned.map((r) => r.id)).toEqual(['gloves', 'lens']);
+    expect(v.bought).toBe(2);
   });
 
-  it('revela nome e efeito com 70% do preço juntado na vida', () => {
-    expect(row(rich(0, { dustLife: 157 }), 'gloves').status).toBe('mystery');
-    expect(row(rich(0, { dustLife: 158 }), 'gloves')).toMatchObject({ status: 'short', name: 'Luvas de Astronauta' });
+  it('quando acaba a fila da vida, avisa em que colapso vêm mais itens', () => {
+    const all = UPGRADES.filter((u) => u.kind === 'item' && u.unlockedAtCollapse === 0).map((u) => u.id);
+    const v = itemsView(owning(newSave('teste', 0), all));
+    expect(v.next).toBeNull();
+    expect(v.moreAt).toBe(1);
   });
 
-  it('comprar uma traz a próxima escondida, só com o valor', () => {
-    const s = owning(rich(0), ['lens']);
-    expect(upgradeRows(s, 'touch').map((r) => r.id)).toEqual(['lens', 'gloves', 'trained']);
-    expect(row(s, 'trained')).toMatchObject({ status: 'mystery', cost: 500, name: '???' });
-    expect(row(s, 'lens')).toMatchObject({ status: 'maxed' });
-    expect(buyLabel(row(s, 'lens'))).toBe('Comprada');
+  it('o efeito mostra o TOTAL de quem joga, antes e depois (nunca só o "+4")', () => {
+    const base = newSave('teste', 0);
+    expect(effectLine(base, idx('lens'))).toMatchObject({ label: 'Seu toque', before: '1', after: '2', idle: false });
+    const withLens = owning(base, ['lens']);
+    // Luvas somam +2 antes de multiplicar: (1 + 2) x 2 = 6.
+    expect(effectLine(withLens, idx('gloves'))).toMatchObject({ label: 'Seu toque', before: '2', after: '6' });
+    const energy = effectLine(base, idx('charged'))!;
+    expect(energy.label).toBe('Energia por toque');
+    expect(Number(energy.after.replace(',', '.'))).toBeCloseTo(Number(energy.before.replace(',', '.')) * 2, 5);
   });
 
-  it('uma melhoria à vista pode estar cara: mostra o quanto falta', () => {
-    const poor = rich(0, { dust: 5, dustLife: 100 });
-    expect(row(poor, 'satellite')).toMatchObject({ status: 'short', cost: 15, missing: 10 });
-    expect(buyLabel(row(poor, 'satellite'))).toBe('Falta 10');
+  it('bônus de gerador sem gerador não muda nada ainda e a tela diz isso', () => {
+    const line = effectLine(newSave('teste', 0), idx('solar'))!;
+    expect(line.idle).toBe(true);
+    const withGen = owning(newSave('teste', 0), ['satellite']);
+    const withLevels = { ...withGen, run: { ...withGen.run, upgradeLevels: withGen.run.upgradeLevels.map((l, i) => (i === idx('satellite') ? 4 : l)) } };
+    const after = effectLine(withLevels, idx('solar'))!;
+    expect(after.idle).toBe(false);
+    expect(after.label).toBe('Geradores de poeira');
   });
 
-  it('Webb e as de colapso futuro só entram depois do colapso e com a fila andada', () => {
-    const early = ['lens', 'gloves', 'trained', 'rhythm', 'magnet', 'hands', 'charged', 'luck', 'cadence', 'kepler', 'voyager', 'echo', 'lens2'];
-    const s = { ...owning(newSave('teste', 0), early), collapses: 1 };
-    const ids = upgradeRows(s).map((r) => r.id);
-    expect(ids).toContain('webb');
-    expect(ids).not.toContain('chandra');
-    expect(upgradeRows({ ...s, collapses: 0 }).map((r) => r.id)).not.toContain('webb');
-  });
-
-  it('o preço do gerador é o do motor e sobe a cada compra: 15, 17, 20...', () => {
-    const costs: number[] = [];
-    for (let level = 0; level < 6; level++) {
-      const levels = UPGRADES.map(() => 0);
-      levels[idx('satellite')] = level;
-      const s = rich(0, { upgradeLevels: levels });
-      costs.push(row(s, 'satellite').cost as number);
-      expect(row(s, 'satellite').cost).toBe(upgradeCost(UPGRADES[idx('satellite')]!, level));
-      expect(row(s, 'satellite').cost).toBe(nextUpgradeCost(s, idx('satellite')));
-    }
-    expect(costs.slice(0, 3)).toEqual([15, 17, 20]);
-    expect([...costs].sort((a, b) => a - b)).toEqual(costs);
-  });
-
-  it('sem saldo mostra "Falta N"; com saldo mostra o preço', () => {
-    expect(buyLabel(row(rich(10), 'satellite'))).toBe('Falta 5');
-    expect(buyLabel(row(rich(15), 'satellite'))).toBe('15');
-  });
-
-  it('mostra o ganho da próxima compra lendo o motor', () => {
-    expect(row(rich(0), 'lens').gain).toBe('Poeira por toque: 1 -> 2');
-    expect(row(rich(0), 'satellite').gain).toBe('Poeira por segundo: 0 -> 0,2');
-    expect(row(rich(0), 'antenna').gain).toBe('Energia por segundo: 0 -> 0,04');
-    const open = owning(rich(0, { dustLife: 1e6 }), ['lens', 'gloves']);
-    expect(row(open, 'trained').gain).toBe('A cada 25 toques, o toque rende x5');
-    expect(row(open, 'rhythm').gain).toMatch(/^Combo: tocar de novo em até 1,3 s/);
-    // Escondida não promete ganho.
-    expect(row(rich(0), 'gloves').gain).toBeNull();
-  });
-
-  it('o gerador mostra N/M (0/8) e vai para Comprados quando completa', () => {
-    const r0 = row(rich(0), 'satellite');
-    expect([r0.level, r0.max]).toEqual([0, 8]);
-    const levels = UPGRADES.map(() => 0);
-    levels[idx('satellite')] = 8;
-    const done = rich(0, { upgradeLevels: levels });
-    // Completou o 1º gerador: o próximo aparece e as melhorias de gerador (a 1ª e uma escondida) entram na fila.
-    expect(buyRows(done, 'generators').map((r) => r.id)).toEqual(['probe', 'antenna', 'network', 'lure']);
-    expect(ownedRows(done).map((r) => r.id)).toEqual(['satellite']);
-    expect(row(done, 'satellite').status).toBe('maxed');
-    // Toque: comprada vai para Comprados também.
-    const bought = owning(rich(0), ['lens']);
-    expect(ownedRows(bought).map((r) => r.id)).toContain('lens');
-    expect(buyRows(bought, 'touch').map((r) => r.id)).not.toContain('lens');
-  });
-
-  it('o selo conta o que dá para comprar e o que foi descoberto e ainda não visto', () => {
-    const s = rich(0);
-    expect(tabBadge(s, 'touch', new Set())).toBe(1);
-    expect(tabBadge(s, 'touch', new Set(['lens']))).toBe(0);
-    // Ao juntar 70% do preço da escondida, ela aparece e vira "coisa para ver".
-    const found = rich(0, { dustLife: 158 });
-    expect(tabBadge(found, 'touch', new Set(['lens']))).toBe(1);
-    expect(upgradeBadge(rich(6000), new Set())).toBeGreaterThan(0);
+  it('Seus poderes lê o motor: toque, energia por toque e o que cai por segundo', () => {
+    const p = powers(newSave('teste', 0));
+    expect(p.touch).toBe('1');
+    expect(p.dustSec).toBe('0');
+    expect(effectiveStats(newSave('teste', 0)).energyPerTouch).toBeGreaterThan(0);
   });
 });
 
-describe('página renderizada', () => {
-  const html = (state: SaveState, seen: ReadonlySet<string> = new Set()) =>
-    renderToStaticMarkup(<UpgradesPage state={state} onBuy={noop} seen={seen} onSeen={noop} />);
-
-  it('abre na aba da melhoria mais barata que cabe na poeira, com um cartão por melhoria', () => {
-    const markup = html(rich(2000));
-    // Um gerador de poeira e um de energia por vez (spec 041), com o limite 0/8 e o botão "Melhorar".
-    expect(markup.match(/class="ap-up /g)).toHaveLength(2);
-    expect(markup).toContain('Satélite');
-    expect(markup).toContain('0/8');
-    expect(markup).not.toContain('dobra com');
-    expect(markup).toContain('Melhorar Satélite por 15 de poeira');
-    expect(markup).toContain('Comprados');
-    expect(markup).toContain('role="tablist"');
-    expect(markup).toContain('Geradores por segundo'.slice(0, 9));
+describe('Geradores: explicados', () => {
+  it('no começo há um gerador de poeira e um de energia, com o que rendem', () => {
+    const rows = generatorRows(rich(5000));
+    expect(rows.map((r) => r.id)).toEqual(['satellite', 'antenna']);
+    const sat = rows[0]!;
+    expect(sat.status).toBe('affordable');
+    expect(sat.gain).toMatch(/^Seus geradores de poeira: 0\/s -> 0,2\/s$/);
+    expect(sat.payback).toMatch(/^se paga em/);
+    expect(rows[1]!.gain).toContain('Seus geradores de energia');
   });
 
-  it('o que não dá para comprar fica com aria-disabled, "Falta N" e a escondida em "???"', () => {
-    const markup = html(rich(0));
-    expect(markup).toContain('aria-disabled="true"');
-    expect(markup).toContain('Falta 100');
-    expect(markup).toContain('???');
-    expect(markup).toContain('Descubra juntando 70% do preço');
-  });
-
-  it('a tela de jogo mostra o selo de Melhorias com o que há para ver', () => {
-    const initial = rich(6000);
-    const ctl = createGameController({ initial, store: createMemoryGameStore(), slot: 1 });
-    const markup = renderToStaticMarkup(<GameScreen controller={ctl} onExit={noop} />);
-    // Lente, Luvas, Satélite e Antena cabem em 6000.
-    expect(markup).toContain('Melhorias, 4 para ver');
-  });
-});
-
-describe('compra pelo controlador', () => {
-  it('desconta o preço do motor e sobe o nível', () => {
-    const t = setup(rich(2000));
-    expect(t.ctl.buy(idx('satellite'))).toBe(true);
-    expect(t.state().run.upgradeLevels[idx('satellite')]).toBe(1);
-    expect(t.state().run.dust).toBe(1985);
-  });
-
-  it('sem saldo, escondida ou índice inválido não compra', () => {
-    const t = setup(rich(10));
-    expect(t.ctl.buy(idx('satellite'))).toBe(false);
-    expect(t.ctl.buy(idx('gloves'))).toBe(false);
-    expect(t.ctl.buy(99)).toBe(false);
-    expect(t.state().run.dust).toBe(10);
-  });
-
-  it('toque duplo em 250 ms compra uma vez só; depois do intervalo compra de novo', () => {
-    const t = setup(rich(1e6));
-    expect(t.ctl.buy(idx('satellite'))).toBe(true);
-    t.clock.ms += 100;
-    expect(t.ctl.buy(idx('satellite'))).toBe(false);
-    expect(t.state().run.upgradeLevels[idx('satellite')]).toBe(1);
-    t.clock.ms += 200;
-    expect(t.ctl.buy(idx('satellite'))).toBe(true);
-    expect(t.state().run.upgradeLevels[idx('satellite')]).toBe(2);
-  });
-
-  it('custos seguidos batem com a tabela do motor (15, 17, 20...)', () => {
+  it('o preço do gerador é o do motor e sobe a cada compra', () => {
     const t = setup(rich(1e9));
     let spent = 0;
     for (let n = 0; n < 4; n++) {
@@ -208,44 +107,98 @@ describe('compra pelo controlador', () => {
     expect(1e9 - t.state().run.dust).toBe(spent);
   });
 
+  it('o Completar compra os níveis que faltam pelo preço cheio, sem desconto', () => {
+    const rows = generatorRows(rich(1e9));
+    const sat = rows[0]!;
+    expect(sat.bulkLevels).toBe(8);
+    let sum = 0;
+    for (let n = 0; n < 8; n++) sum += upgradeCost(UPGRADES[idx('satellite')]!, n);
+    expect(sat.bulkCost).toBeCloseTo(sum, 6);
+  });
+});
+
+describe('selo de Melhorias', () => {
+  it('conta o próximo item quando dá para comprar e os geradores que dá para melhorar', () => {
+    const s = rich(6000);
+    expect(tabBadge(s, 'items', new Set())).toBe(1);
+    expect(tabBadge(rich(10), 'items', new Set())).toBe(0);
+    expect(upgradeBadge(s, new Set(['satellite', 'antenna']))).toBe(3);
+  });
+
+  it('a tela de jogo mostra o selo com o que há para ver', () => {
+    const ctl = createGameController({ initial: rich(6000), store: createMemoryGameStore(), slot: 1 });
+    const markup = renderToStaticMarkup(<GameScreen controller={ctl} onExit={noop} />);
+    expect(markup).toContain('Melhorias, 3 para ver');
+  });
+});
+
+describe('página renderizada', () => {
+  const html = (state: SaveState, seen: ReadonlySet<string> = new Set()) =>
+    renderToStaticMarkup(<UpgradesPage state={state} onBuy={noop} seen={seen} onSeen={noop} />);
+
+  it('abre em Itens com Seus poderes, o próximo item com o total antes e depois e os dois seguintes', () => {
+    const markup = html(rich(150));
+    expect(markup).toContain('Seus poderes');
+    expect(markup).toContain('Próximo item');
+    expect(markup).toContain('Lente Polida');
+    expect(markup).toContain('Seu toque');
+    expect(markup).toContain('Comprar Lente Polida por 100 de poeira');
+    expect(markup).toContain('Em seguida');
+    expect(markup).toContain('Luvas de Astronauta');
+    expect(markup).toContain('Pulso Carregado');
+    expect(markup).toContain('role="tablist"');
+    expect(markup).not.toContain('Comprados');
+  });
+
+  it('sem poeira suficiente o botão diz quanto falta, sem comprar', () => {
+    const markup = html(rich(40));
+    expect(markup).toContain('aria-disabled="true"');
+    expect(markup).toContain('falta 60 de poeira');
+  });
+
+  it('depois de comprar aparece a tira de Comprados', () => {
+    expect(html(owning(rich(150), ['lens']))).toContain('Itens comprados');
+  });
+});
+
+describe('compra pelo controlador', () => {
+  it('compra o item da vez, desconta o preço e a poeira por toque dobra', () => {
+    const t = setup(rich(1000));
+    t.clock.ms += 300;
+    t.ctl.press();
+    expect(t.state().run.lastGain).toBe(1);
+    const before = t.state().run.dust;
+    t.clock.ms += 300;
+    expect(t.ctl.buy(idx('lens'))).toBe(true);
+    expect(before - t.state().run.dust).toBe(100);
+    t.clock.ms += 300;
+    t.ctl.press();
+    expect(t.state().run.lastGain).toBe(2);
+  });
+
+  it('item fora da ordem, sem saldo ou índice inválido não compra', () => {
+    const t = setup(rich(1e9));
+    expect(t.ctl.buy(idx('solar'))).toBe(false);
+    expect(t.ctl.buy(99999)).toBe(false);
+    const poor = setup(rich(10));
+    expect(poor.ctl.buy(idx('lens'))).toBe(false);
+    expect(poor.state().run.dust).toBe(10);
+  });
+
+  it('toque duplo em 250 ms compra uma vez só; depois do intervalo compra o seguinte', () => {
+    const t = setup(rich(1e6));
+    expect(t.ctl.buy(idx('lens'))).toBe(true);
+    t.clock.ms += 100;
+    expect(t.ctl.buy(idx('gloves'))).toBe(false);
+    t.clock.ms += 200;
+    expect(t.ctl.buy(idx('gloves'))).toBe(true);
+  });
+
   it('com a escolha de grimório aberta não compra', () => {
     const base = rich(1e6);
     const pending = { offers: ['moon', 'mercury', 'venus'], openedAt: 0, selected: null, picksLeft: 1, rerollsLeft: 0 };
     const t = setup({ ...base, run: { ...base.run, pending } });
-    expect(t.ctl.buy(idx('satellite'))).toBe(false);
-  });
-
-  it('o combo só liga depois de comprar o Ritmo Firme', () => {
-    const t = setup(rich(1e6));
-    expect(effectiveStats(t.state()).combo.enabled).toBe(false);
-    for (const id of ['lens', 'gloves']) {
-      t.clock.ms += 300;
-      expect(t.ctl.buy(idx(id))).toBe(true);
-    }
-    for (let i = 0; i < 6; i++) {
-      t.clock.ms += 300;
-      t.ctl.press();
-    }
-    expect(t.state().run.combo).toBe(0);
-    t.clock.ms += 300;
-    expect(t.ctl.buy(idx('rhythm'))).toBe(true);
-    expect(effectiveStats(t.state()).combo.enabled).toBe(true);
-    for (let i = 0; i < 3; i++) {
-      t.clock.ms += 300;
-      t.ctl.press();
-    }
-    expect(t.state().run.combo).toBeGreaterThan(0);
-  });
-
-  it('comprar a Lente Polida dobra a poeira por toque', () => {
-    const t = setup(rich(1e6));
-    t.clock.ms += 300;
-    t.ctl.press();
-    expect(t.state().run.lastGain).toBe(1);
-    t.ctl.buy(idx('lens'));
-    t.clock.ms += 300;
-    t.ctl.press();
-    expect(t.state().run.lastGain).toBe(2);
+    expect(t.ctl.buy(idx('lens'))).toBe(false);
   });
 });
 

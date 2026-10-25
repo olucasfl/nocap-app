@@ -159,12 +159,13 @@ describe('press', () => {
     expect(s.stats.clicks).toBe(1);
   });
 
-  it('15 toques pagam o 1º Satélite e o 1º grimório sai aos 19 toques (o 1º passo da barra)', () => {
+  it('a Lente Polida paga com 100 toques e o 1º grimório sai aos 19 toques (o 1º passo da barra)', () => {
     let { state, t } = pressN(newSave('flow'), 15);
     expect(state.run.dust).toBe(15);
-    expect(nextUpgradeCost(state, idx('satellite'))).toBe(15);
+    state = withRun(state, { dust: 15 + 85 });
+    expect(nextUpgradeCost(state, idx('lens'))).toBe(100);
     expect(state.run.pending).toBeNull();
-    state = buyUpgrade(state, idx('satellite'));
+    state = buyUpgrade(state, idx('lens'));
     expect(state.run.dust).toBe(0);
     let touches = 15;
     while (!state.run.pending && touches < 100) {
@@ -221,18 +222,18 @@ describe('press', () => {
 
 describe('buyUpgrade', () => {
   it('desconta o custo e sobe o nível', () => {
-    const s = buyUpgrade(withRun(newSave('b'), { dust: 100 }), idx('satellite'));
+    const s = buyUpgrade(withRun(newSave('b'), { dust: 300 }), idx('satellite'));
     expect(s.run.upgradeLevels[idx('satellite')]).toBe(1);
-    expect(s.run.dust).toBe(85);
+    expect(s.run.dust).toBe(100);
   });
 
-  it('o preço do gerador sobe 15% a cada compra: 15, 17, 20...', () => {
+  it('o preço do gerador sobe 15% a cada compra: 200, 230, 264...', () => {
     let s = withRun(newSave('b'), { dust: 1e6 });
-    expect(nextUpgradeCost(s, idx('satellite'))).toBe(15);
+    expect(nextUpgradeCost(s, idx('satellite'))).toBe(200);
     s = buyUpgrade(s, idx('satellite'));
-    expect(nextUpgradeCost(s, idx('satellite'))).toBe(17);
+    expect(nextUpgradeCost(s, idx('satellite'))).toBe(230);
     s = buyUpgrade(s, idx('satellite'));
-    expect(nextUpgradeCost(s, idx('satellite'))).toBe(20);
+    expect(nextUpgradeCost(s, idx('satellite'))).toBe(264);
     let last = 0;
     // O Satélite vai até 8 níveis (0/8); depois some da prateleira e o próximo gerador aparece.
     for (let i = 0; i < 5; i++) {
@@ -265,9 +266,9 @@ describe('buyUpgrade', () => {
     expect(open(s)).toEqual(['lens', 'satellite', 'antenna']);
     // Os 2 seguintes já aparecem (nome, efeito e preço), mas esperam o de antes: é o objetivo que dá vontade.
     expect(upgradeLock(s, idx('gloves'))).toEqual({ kind: 'order', before: 'lens' });
-    expect(upgradeLock(s, idx('solar'))).toEqual({ kind: 'order', before: 'lens' });
+    expect(upgradeLock(s, idx('charged'))).toEqual({ kind: 'order', before: 'lens' });
     // O 4º item ainda nem aparece.
-    expect(upgradeLock(s, idx('charged'))).toEqual({ kind: 'shelf' });
+    expect(upgradeLock(s, idx('solar'))).toEqual({ kind: 'shelf' });
     expect(nextUpgradeCost(s, idx('gloves'))).toBeNull();
     // Geradores (poeira e energia): um por vez. O próximo só aparece depois de completar o atual (8/8).
     expect(upgradeLock(s, idx('probe'))).toEqual({ kind: 'shelf' });
@@ -282,12 +283,12 @@ describe('buyUpgrade', () => {
     s = buyUpgrade(s, idx('lens'));
     expect(nextItemIndex(s)).toBe(idx('gloves'));
     expect(upgradeLock(s, idx('gloves'))).toBeNull();
-    expect(upgradeLock(s, idx('charged'))).toEqual({ kind: 'order', before: 'gloves' });
+    expect(upgradeLock(s, idx('solar'))).toEqual({ kind: 'order', before: 'gloves' });
     // Um item de trás não pode ser comprado fora da ordem.
     expect(buyUpgrade(s, idx('solar'))).toBe(s);
-    s = buyUpgrade(buyUpgrade(s, idx('gloves')), idx('solar'));
-    expect(s.run.upgradeLevels[idx('solar')]).toBe(1);
-    expect(nextItemIndex(s)).toBe(idx('charged'));
+    s = buyUpgrade(buyUpgrade(s, idx('gloves')), idx('charged'));
+    expect(s.run.upgradeLevels[idx('charged')]).toBe(1);
+    expect(nextItemIndex(s)).toBe(idx('solar'));
   });
 
   it('o item de outro colapso espera o colapso e aparece no fim da escada', () => {
@@ -331,16 +332,16 @@ describe('buyUpgrade', () => {
   });
 
   it('Titã devolve a poeira de alguns toques a cada compra (sem passar do preço)', () => {
-    const base = withRun(withLevels(newSave('b'), { lens: 1, lens2: 1 }), { dust: 1000 });
+    const base = withRun(withLevels(newSave('b'), { lens: 1 }), { dust: 1000 });
     const plain = buyUpgrade(base, idx('satellite'));
     const titan = buyUpgrade(holdIn(base, 'titan', 'common'), idx('satellite'));
-    // Toque de 4: Titã Comum devolve 2 toques (8), abaixo do preço de 15.
+    // Toque de 2: Titã Comum devolve 2 toques (4), abaixo do preço de 200.
     expect(titan.run.dust - plain.run.dust).toBe(2 * effectiveStats(base).dustPerTouch);
     // Um Titã Lendário devolveria mais que o preço (15), mas nunca passa dele.
     const big = buyUpgrade(holdIn(base, 'titan', 'legendary', 10), idx('satellite'));
-    expect(big.run.dust - plain.run.dust).toBeLessThanOrEqual(15);
-    const tiny = withRun(newSave('b'), { dust: 15 });
-    expect(buyUpgrade(holdIn(tiny, 'titan', 'legendary', 10), idx('satellite')).run.dust).toBeLessThanOrEqual(15);
+    expect(big.run.dust - plain.run.dust).toBeLessThanOrEqual(200);
+    const tiny = withRun(newSave('b'), { dust: 200 });
+    expect(buyUpgrade(holdIn(tiny, 'titan', 'legendary', 10), idx('satellite')).run.dust).toBeLessThanOrEqual(200);
   });
 });
 

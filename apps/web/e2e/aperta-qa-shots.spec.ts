@@ -53,8 +53,8 @@ for (const size of sizes) {
       await snap(page, size.name, '12-melhorias');
       await page.getByRole('tab', { name: /^Geradores/ }).click();
       await snap(page, size.name, '13-geradores');
-      await page.getByRole('button', { name: /^Comprados/ }).click();
-      await snap(page, size.name, '14-comprados');
+      await page.getByRole('tab', { name: /^Itens/ }).click();
+      await snap(page, size.name, '14-itens');
       await page.getByRole('button', { name: /Fechar Melhorias/ }).click();
       await page.getByRole('button', { name: /^Grimórios/ }).click();
       await snap(page, size.name, '15-grimorios');

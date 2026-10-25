@@ -14,7 +14,6 @@ const GROUP_ASTRO: Record<AchievementGroup, AstroId> = {
   dust: 'rock',
   grimoires: 'moon',
   objects: 'ice',
-  combo: 'venus',
   collapses: 'hole',
   forbidden: 'hole',
   automation: 'saturn',

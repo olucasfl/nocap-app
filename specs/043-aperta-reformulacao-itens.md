@@ -1,6 +1,6 @@
-# Spec 043: Aperta! reformulação dos itens, geradores e grimórios (rascunho)
+# Spec 043: Aperta! reformulação dos itens, geradores e grimórios
 
-Pedido do Lucas em 25/10/2026. O jogo está bem feito, mas tem itens demais e itens complicados (efeitos específicos, em cenários específicos, com porcentagens). A pessoa compra, compra e compra sem saber o que está comprando. Esta spec é a **proposta**; nada foi mexido no código. As decisões abertas estão na seção 8.
+Pedido do Lucas em 25/10/2026. O jogo está bem feito, mas tem itens demais e itens complicados (efeitos específicos, em cenários específicos, com porcentagens). A pessoa compra, compra e compra sem saber o que está comprando. As decisões do Lucas estão na seção 8 e o que foi feito, na seção 9. Os preços e valores da seção 4 eram um rascunho: os números finais estão em `catalog.ts` (calibrados pelo simulador).
 
 ## 1. O que o Lucas pediu (resumo)
 
@@ -120,19 +120,31 @@ Em ordem de valor para "a pessoa entende e quer continuar":
 9. **Sons por era:** o "comprou" ganha timbre mais rico a cada era (bronze, prata, ouro).
 10. **Modo "poucos minutos":** o jogo fica agradável em sessões curtas de celular (já sem Ritmo e combo, o toque é mais simples).
 
-## 8. Decisões do Lucas (preciso das respostas antes de codar)
+## 8. Decisões do Lucas (25/10/2026)
 
-1. **Combo, crítico, "a cada N toques" e itens de objeto:** somem de vez (recomendo, é o que mais confunde), ou voltam depois como **habilidades** da Árvore (para quem já aprendeu o jogo)?
-2. **Itens zeram a cada colapso** (como as melhorias de hoje; recomendo) ou passam a ser permanentes?
-3. **Geradores x2/x3/x5 como itens** (recomendo): a vitrine de Itens mexe nos geradores, mas só multiplicando; quem cria e melhora o gerador continua sendo a aba Geradores.
-4. **Saves antigos:** só o save do Lucas existe. Proposta: converter as compras antigas para o item novo mais parecido e **devolver em poeira** o que não tem equivalente, para ninguém perder progresso. Pode?
-5. **Quantidade:** 19 itens na primeira vida e uns 30 no total é um bom número, ou quer menos?
-6. **Grimórios:** 20 no total (5 por categoria) está bom?
+1. **Combo, crítico, "a cada N toques" nos itens e itens de objeto: somem de vez.** O combo era sempre o máximo depois de poucos toques, então não ensinava nada. (O "a cada 10 toques" continua só como grimório, Sirius.)
+2. **Itens zeram a cada colapso.**
+3. **Geradores x2/x3/x5 são itens.** A aba Geradores só compra e melhora geradores.
+4. **Saves antigos podem ser zerados.** O save v6 vira um save novo v7 e só guarda nome, data de criação e a história já vista.
+5. **Mais itens na primeira vida, proporcionais à duração dela:** 24 itens na primeira vida (um a cada 2 a 3 minutos), mais 6 por colapso (colapsos 1, 2 e 3), 42 no total.
+6. **20 grimórios** em 4 categorias (Toque, Energia, Sorte, Objetos).
 
-## 9. Etapas (depois da aprovação)
+**Regra nova, vale para todo o jogo:** a tela **sempre mostra o total real, nunca só o ganho**. O item não diz "+4": diz "Seu toque: 40 → 80". Vale para itens, geradores ("Seus geradores de poeira: 12/s → 24/s") e para as cartas de grimório ("Seu toque: 12 → 15"). O cálculo vem do `effectiveStats` do motor (antes e depois de um nível a mais), então a tela nunca contradiz a regra.
 
-1. **Motor:** catálogo novo de itens (5 tipos de efeito), geradores sem as melhorias de gerador, grimórios em 4 categorias, save v7 com migração, testes por efeito.
-2. **Simulador:** recalibrar preços (cada item de 2 a 6 minutos depois de aparecer) e as metas de colapso; `sim.test.ts` verde.
-3. **Interface:** aba Itens (próximo item em cartão grande, esmaecidos, "Seus poderes"), aba Geradores explicada, ícones SVG por item, objetivo fixado no HUD.
-4. **Grimórios:** textos e categorias novas, página do livro com 4 categorias.
-5. **Tutorial e docs:** o tutorial passa a ensinar o novo desenho (compra um item, vê o antes -> depois), e `HANDOFF.md`, `ARCHITECTURE.md` e `ROADMAP.md` são atualizados.
+Outros pontos fechados na implementação:
+
+- **Geradores sem teto** (`autoDustCap` e `autoEnergyCap` viraram infinito) e sem a fração parada: um item "Geradores x2" tem que dobrar de verdade. Os geradores de poeira não enchem mais a barra de grimórios; só os de energia enchem.
+- **Surto** da Estrela Dourada passou a ser "geradores x3 por 45 s".
+- **Custo dos geradores** x30 e geradores de energia ÷10 (calibração): sem isso os geradores viravam a única fonte de renda.
+- **Barra de energia** a partir da 7ª escolha pesa 10x mais e cresce 1,3x por escolha (antes 1,16x), porque os itens de energia e os geradores a enchiam rápido demais.
+- Combo e Alinhamento ficam dormentes no motor (`combo.enabled = false`); as 11 conquistas de combo foram removidas; marcos de vida só de 4 tipos.
+
+## 9. O que foi feito
+
+1. **Motor** (`packages/games`): 42 itens em 5 tipos de efeito (`ItemEffect`, `itemText`, eras por preço), escada de preços com `nextItemIndex` e janela de 3 (`ITEM_PREVIEW_AHEAD`), trava `order` e `shelf`; 20 grimórios em 4 categorias; save v7 com `migrateFresh`; `validateSave` recusa item comprado fora da ordem.
+2. **Simulador:** o jogador simulado compra o próximo item assim que dá; metas de colapso e preços calibrados (ver `GOAL_TABLE` e os preços em `catalog.ts`).
+3. **Interface** (`apps/web`): aba **Itens** (próximo item em cartão grande com o total antes → depois, barra de poeira, dois seguintes esmaecidos, tira de Comprados), aba **Geradores** explicada (o que rende agora, em quanto tempo se paga, Completar), quadro **Seus poderes**, ícones SVG por tipo de efeito com moldura da era (`ItemIcon`).
+4. **Grimórios:** quatro categorias com selo próprio; a carta mostra o total antes → depois para todos (o Observatório Gaia saiu).
+5. **Tutorial e docs:** o tutorial fala em "item"; `HANDOFF.md`, `ARCHITECTURE.md` e `docs/ROADMAP.md` atualizados.
+
+Fica para depois (ideias da seção 7): objetivo fixado no HUD, "bem-vindo de volta" com os geradores, estação que cresce com os itens, coleção de itens.

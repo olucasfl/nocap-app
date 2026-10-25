@@ -76,9 +76,9 @@ describe('selo de Melhorias', () => {
   it('conta quantas dá para comprar com a poeira atual', () => {
     const s = fresh();
     expect(affordableCount(s)).toBe(0);
-    const rich: SaveState = { ...s, run: { ...s.run, dust: 15, dustLife: 15 } };
+    const rich: SaveState = { ...s, run: { ...s.run, dust: 100, dustLife: 100 } };
     expect(affordableCount(rich)).toBe(1);
-    expect(affordableCount(buyUpgrade(rich, UPGRADES.findIndex((u) => u.id === 'satellite')))).toBe(0);
+    expect(affordableCount(buyUpgrade(rich, UPGRADES.findIndex((u) => u.id === 'lens')))).toBe(0);
   });
 });
 
@@ -87,17 +87,6 @@ describe('combo na tela', () => {
     let s = fresh();
     for (let i = 0; i < 6; i++) s = press(s, i * 0.2);
     expect(comboView(s, 1.2).points).toBe(0);
-  });
-
-  it('depois da melhoria aparece e some quando a janela passa', () => {
-    let s: SaveState = fresh();
-    const rhythm = UPGRADES.findIndex((u) => u.id === 'rhythm');
-    s = { ...s, run: { ...s.run, upgradeLevels: s.run.upgradeLevels.map((l, i) => (i === rhythm ? 1 : l)) } };
-    for (let i = 0; i < 4; i++) s = press(s, 1 + i * 0.2);
-    const live = comboView(s, 1.8);
-    expect(live.points).toBeGreaterThan(0);
-    expect(live.mult).toBeCloseTo(1 + 0.2 * live.points);
-    expect(comboView(s, 30).points).toBe(0);
   });
 });
 

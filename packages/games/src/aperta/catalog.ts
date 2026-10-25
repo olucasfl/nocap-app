@@ -383,7 +383,8 @@ const energyMult = (value: number): ItemEffect => ({ type: 'energyMult', value }
 const genMult = (value: number): ItemEffect => ({ type: 'genMult', value });
 const energyGenMult = (value: number): ItemEffect => ({ type: 'energyGenMult', value });
 
-const generator = (id: string, name: string, base: number, perSec: number, max: number): UpgradeDef => ({
+const generator = (id: string, name: string, base: number, perSec: number, max: number): UpgradeDef => {
+  return {
   id,
   name,
   text: `+${fmt(perSec)} poeira por segundo`,
@@ -394,9 +395,10 @@ const generator = (id: string, name: string, base: number, perSec: number, max: 
   unlockedAtCollapse: 0,
   perSec,
   domains: ['dustPerSecond'],
-});
+  };
+};
 
-const energyGen = (id: string, name: string, base: number, perSec: number, max: number): UpgradeDef => ({
+const energyGen = (id: string, name: string, base: number, perSec: number, max: number): UpgradeDef => { return ({
   id,
   name,
   text: `+${fmt(perSec)} toque de energia por segundo`,
@@ -407,7 +409,7 @@ const energyGen = (id: string, name: string, base: number, perSec: number, max: 
   unlockedAtCollapse: 0,
   perSec,
   domains: ['energyPerSecond'],
-});
+}); };
 
 /**
  * A ordem dos itens é a do preço: a prateleira mostra o próximo e os dois seguintes. Os 24 primeiros abrem na primeira
@@ -418,69 +420,69 @@ export const UPGRADES: readonly UpgradeDef[] = [
   // Era Poeira (até 10 mil)
   item('lens', 'Lente Polida', 100, touchMult(2)),
   item('gloves', 'Luvas de Astronauta', 170, touchAdd(2)),
-  item('solar', 'Painéis Solares', 290, genMult(2)),
-  item('charged', 'Pulso Carregado', 480, energyMult(2)),
+  item('charged', 'Pulso Carregado', 300, energyMult(2)),
+  item('solar', 'Painéis Solares', 520, genMult(2)),
   item('lens2', 'Lente Dupla', 800, touchMult(2)),
   item('steel', 'Mãos de Aço', 1300, touchAdd(8)),
   item('motor', 'Motor Iônico', 2200, genMult(2)),
   item('antenna2', 'Antena Dupla', 3600, energyGenMult(2)),
   // Era Mil (10 mil a 1 milhão)
-  item('cabin', 'Cabine Reforçada', 6_000, touchMult(2)),
-  item('compact', 'Reator Compacto', 10_000, genMult(2)),
-  item('pulse2', 'Pulso Estelar', 17_000, energyMult(2)),
-  item('titan', 'Mãos de Titânio', 29_000, touchAdd(40)),
-  item('lens3', 'Lente Tripla', 49_000, touchMult(3)),
-  item('plant', 'Usina Orbital', 82_000, genMult(3)),
-  item('receiver2', 'Receptor Ampliado', 135_000, energyGenMult(3)),
-  item('webb', 'Observatório Webb', 225_000, touchMult(2)),
-  item('diamond', 'Mãos de Diamante', 370_000, touchAdd(200)),
+  item('cabin', 'Cabine Reforçada', 9400, touchMult(2)),
+  item('compact', 'Reator Compacto', 24000, genMult(2)),
+  item('pulse2', 'Pulso Estelar', 63000, energyMult(2)),
+  item('titan', 'Mãos de Titânio', 160000, touchAdd(40)),
+  item('lens3', 'Lente Tripla', 430000, touchMult(3)),
+  item('plant', 'Usina Orbital', 1100000, genMult(3)),
+  item('receiver2', 'Receptor Ampliado', 2900000, energyGenMult(3)),
+  item('webb', 'Observatório Webb', 7500000, touchMult(2)),
+  item('diamond', 'Mãos de Diamante', 20000000, touchAdd(1000)),
   // Era Milhões (1 milhão a 1 bilhão)
-  item('fusion', 'Reator de Fusão', 610_000, genMult(2)),
-  item('quantum', 'Pulso Quântico', 1_000_000, energyMult(2)),
-  item('stellar', 'Lente Estelar', 1_650_000, touchMult(3)),
-  item('forge', 'Fornalha Estelar', 2_700_000, genMult(3)),
-  item('chandra', 'Telescópio Chandra', 4_500_000, touchMult(2)),
-  item('mesh', 'Malha de Escuta', 7_400_000, energyGenMult(3)),
-  item('starhand', 'Mãos de Estrela', 12_000_000, touchAdd(1000)),
+  item('fusion', 'Reator de Fusão', 51000000, genMult(2)),
+  item('quantum', 'Pulso Quântico', 130000000, energyMult(2)),
+  item('stellar', 'Lente Estelar', 340000000, touchMult(3)),
+  item('forge', 'Fornalha Estelar', 890000000, genMult(3)),
+  item('chandra', 'Telescópio Chandra', 2300000000, touchMult(2)),
+  item('mesh', 'Malha de Escuta', 6000000000, energyGenMult(3)),
+  item('starhand', 'Mãos de Estrela', 16000000000, touchAdd(6000)),
   // Colapso 1: milhões a centenas de milhões
-  item('deep', 'Sonda Profunda', 20_000_000, genMult(3), 1),
-  item('cosmic', 'Lente Cósmica', 33_000_000, touchMult(3), 1),
-  item('pulsar', 'Núcleo Pulsar', 55_000_000, energyMult(3), 1),
-  item('solarhand', 'Mãos Solares', 90_000_000, touchAdd(6000), 1),
-  item('qheart', 'Coração de Quasar', 150_000_000, genMult(3), 1),
-  item('galnet', 'Rede Galáctica', 250_000_000, energyGenMult(3), 1),
+  item('deep', 'Sonda Profunda', 41000000000, genMult(3), 1),
+  item('cosmic', 'Lente Cósmica', 110000000000, touchMult(3), 1),
+  item('pulsar', 'Núcleo Pulsar', 280000000000, energyMult(3), 1),
+  item('solarhand', 'Mãos Solares', 720000000000, touchAdd(40000), 1),
+  item('qheart', 'Coração de Quasar', 1900000000000, genMult(3), 1),
+  item('galnet', 'Rede Galáctica', 4800000000000, energyGenMult(3), 1),
   // Colapso 2: bilhões
-  item('galens', 'Lente Galáctica', 420_000_000, touchMult(3), 2),
-  item('antimatter', 'Reator de Antimatéria', 700_000_000, genMult(3), 2),
-  item('cosmicpulse', 'Pulso Cósmico', 1_200_000_000, energyMult(3), 2),
-  item('nebhand', 'Mãos de Nebulosa', 2_000_000_000, touchAdd(35000), 2),
-  item('qforge', 'Forja de Quasar', 3_300_000_000, genMult(3), 2),
-  item('galecho', 'Eco Galáctico', 5_500_000_000, energyGenMult(3), 2),
+  item('galens', 'Lente Galáctica', 13000000000000, touchMult(3), 2),
+  item('antimatter', 'Reator de Antimatéria', 33000000000000, genMult(3), 2),
+  item('cosmicpulse', 'Pulso Cósmico', 85000000000000, energyMult(3), 2),
+  item('nebhand', 'Mãos de Nebulosa', 220000000000000, touchAdd(250000), 2),
+  item('qforge', 'Forja de Quasar', 580000000000000, genMult(3), 2),
+  item('galecho', 'Eco Galáctico', 1500000000000000, energyGenMult(3), 2),
   // Colapso 3: dezenas de bilhões
-  item('horizon', 'Lente do Horizonte', 9_000_000_000, touchMult(5), 3),
-  item('warp', 'Motor de Dobra', 15_000_000_000, genMult(5), 3),
-  item('singpulse', 'Pulso de Singularidade', 25_000_000_000, energyMult(3), 3),
-  item('cosmoshand', 'Mãos do Cosmos', 42_000_000_000, touchAdd(250000), 3),
-  item('galheart', 'Coração Galáctico', 70_000_000_000, genMult(5), 3),
-  item('universe', 'Matriz do Universo', 115_000_000_000, energyGenMult(5), 3),
+  item('horizon', 'Lente do Horizonte', 3900000000000000, touchMult(5), 3),
+  item('warp', 'Motor de Dobra', 10000000000000000, genMult(5), 3),
+  item('singpulse', 'Pulso de Singularidade', 26000000000000000, energyMult(3), 3),
+  item('cosmoshand', 'Mãos do Cosmos', 68000000000000000, touchAdd(2000000), 3),
+  item('galheart', 'Coração Galáctico', 180000000000000000, genMult(5), 3),
+  item('universe', 'Matriz do Universo', 460000000000000000, energyGenMult(5), 3),
 
-  generator('satellite', 'Satélite', 15, 0.2, 8),
-  generator('probe', 'Sonda Voyager', 120, 1.6, 8),
-  generator('telescope', 'Telescópio', 900, 12, 8),
-  generator('observatory', 'Observatório', 8000, 60, 10),
-  generator('station', 'Estação Orbital', 90000, 340, 10),
-  generator('colony', 'Colônia Lunar', 1000000, 1900, 10),
-  generator('fleet', 'Frota Estelar', 14000000, 11000, 12),
-  generator('portal', 'Portal', 250000000, 62000, 12),
-  generator('cluster', 'Aglomerado', 4000000000, 350000, 12),
-  generator('quasar', 'Quasar', 90000000000, 2000000, 12),
-  generator('web', 'Teia Cósmica', 2000000000000, 12000000, 12),
+  generator('satellite', 'Satélite', 200, 0.2, 8),
+  generator('probe', 'Sonda Voyager', 1600, 1.6, 8),
+  generator('telescope', 'Telescópio', 27000, 12, 8),
+  generator('observatory', 'Observatório', 240000, 60, 10),
+  generator('station', 'Estação Orbital', 2700000, 340, 10),
+  generator('colony', 'Colônia Lunar', 30000000, 1900, 10),
+  generator('fleet', 'Frota Estelar', 420000000, 11000, 12),
+  generator('portal', 'Portal', 7500000000, 62000, 12),
+  generator('cluster', 'Aglomerado', 120000000000, 350000, 12),
+  generator('quasar', 'Quasar', 2700000000000, 2000000, 12),
+  generator('web', 'Teia Cósmica', 60000000000000, 12000000, 12),
 
-  energyGen('antenna', 'Antena', 300, 0.04, 6),
-  energyGen('receiver', 'Receptor de Sinal', 2500, 0.2, 6),
-  energyGen('matrix', 'Matriz de Escuta', 25000, 1, 8),
-  energyGen('deepnet', 'Rede Profunda', 300000, 5, 8),
-  energyGen('array', 'Conjunto Interestelar', 4000000, 25, 8),
+  energyGen('antenna', 'Antena', 300, 0.004, 6),
+  energyGen('receiver', 'Receptor de Sinal', 2500, 0.02, 6),
+  energyGen('matrix', 'Matriz de Escuta', 25000, 0.1, 8),
+  energyGen('deepnet', 'Rede Profunda', 300000, 0.5, 8),
+  energyGen('array', 'Conjunto Interestelar', 4000000, 2.5, 8),
 ];
 
 const UPGRADE_INDEX = new Map(UPGRADES.map((u, i) => [u.id, i]));
