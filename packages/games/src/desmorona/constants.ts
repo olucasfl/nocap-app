@@ -5,13 +5,13 @@
 
 /**
  * Raio (em ladrilhos) de cada camada, de cima para baixo: a de cima é a maior. A arena cresce com o número de
- * jogadores (cada um gasta chão andando), para a partida durar de 3 a 4 minutos com 2 ou com 8.
+ * jogadores (cada um gasta chão andando), em tamanho parecido com o do Fall Guys (hex-a-gone): arena pequena, partida de cerca de 1 minuto com bots.
  */
 export function dsmLayerRadii(players: number): readonly number[] {
-  const top = 14 + 2 * Math.max(2, Math.min(8, Math.round(players)));
+  const top = 6 + Math.max(2, Math.min(8, Math.round(players)));
   const out: number[] = [];
   DSM_LAYER_SCALE.forEach((f, i) => {
-    const r = Math.max(5, Math.round(top * f));
+    const r = Math.max(3, Math.round(top * f));
     out.push(i === 0 ? r : Math.min(r, (out[i - 1] as number) - 0));
   });
   return out;
