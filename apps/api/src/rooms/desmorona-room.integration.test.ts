@@ -57,11 +57,13 @@ interface Seen {
   snap: Snap | null;
   steps: number[][][];
   pos: number[][][];
+  pushed: { from: number; kx: number; kz: number }[];
 }
 
 function watch(room: ClientRoom): Seen {
-  const seen: Seen = { room, snap: null, steps: [], pos: [] };
+  const seen: Seen = { room, snap: null, steps: [], pos: [], pushed: [] };
   room.onMessage('snapshot', ((s: Snap) => (seen.snap = s)) as never);
+  room.onMessage('dpushed', ((m: { from: number; kx: number; kz: number }) => seen.pushed.push(m)) as never);
   room.onMessage('dsteps', ((m: number[][]) => seen.steps.push(m)) as never);
   room.onMessage('pos', ((m: number[][]) => seen.pos.push(m)) as never);
   room.onMessage('*' as never, (() => undefined) as never);
@@ -113,6 +115,12 @@ describe('sala do Desmorona! com servidor de verdade', () => {
     ana.room.send('dstep', { l: 0, q: 1, r: 0 });
     await wait(400);
     expect(ana.steps).toHaveLength(1);
+
+    // a ana empurra a bia: só a bia recebe o impulso
+    ana.room.send('dpush', { to: 'bia', kx: 7, kz: -2 });
+    await until(() => bia.pushed.length === 1);
+    expect(bia.pushed[0]).toMatchObject({ from: 0, kx: 7, kz: -2 });
+    expect(ana.pushed).toEqual([]);
 
     // a bia cai na lava: a sala dá a vitória à ana
     bia.room.send('ddead');
