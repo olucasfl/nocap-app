@@ -295,7 +295,8 @@ export class DsmWorld {
     } else if (!p.grounded && input.jump && !p.airJumped) {
       // pulo duplo: sempre dá a altura inteira, mesmo no meio de uma queda
       p.airJumped = true;
-      p.vy = DSM_AIR_JUMP;
+      // soma uma parte da subida que ainda tem: o pulo duplo logo depois de sair do chão também se nota
+      p.vy = DSM_AIR_JUMP + Math.max(0, p.vy) * 0.5;
       this.events.push({ type: 'airjump', id: p.id });
     }
     p.x += (p.vx + p.kx) * dt;

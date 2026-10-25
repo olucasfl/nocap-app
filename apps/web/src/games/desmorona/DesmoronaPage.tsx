@@ -82,7 +82,7 @@ export function DesmoronaPage() {
               testId="dsm-friends"
             />
           </div>
-          <HubNote>Computador: W A S D (ou setas) e Espaço. Celular: joystick na esquerda e botão Pular na direita.</HubNote>
+          <HubNote>Computador: W A S D (ou setas) e Espaço; arraste o mouse (ou Q e E) para girar a câmera. Celular: joystick na esquerda, arraste o dedo na direita para girar a câmera e use o botão Pular.</HubNote>
         </>
       ) : (
         <HubSteps title="Como jogar" steps={HOW} />

@@ -77,7 +77,8 @@ export class DsmScene {
   /** Ladrilhos pisados (precisam ser reatualizados a cada quadro por causa da tremida). */
   private hot = new Set<string>();
   private lava: THREE.Mesh;
-  private camPos = new THREE.Vector3(0, 10, 12);
+  /** Giro da câmera em volta da raposa (rad); 0 = atrás, olhando para -Z. */
+  private yaw = 0;
   private camFocus = new THREE.Vector3();
   private shake = 0;
   private size = { w: 0, h: 0 };
@@ -366,16 +367,25 @@ export class DsmScene {
     const target = this.world.players.find((p) => p.id === focusId);
     if (target) {
       this.camFocus.lerp(tmpP.set(target.x, target.y, target.z), 1 - Math.exp(-dt * 7));
-      const want = tmpP.set(this.camFocus.x, this.camFocus.y + CAM_UP, this.camFocus.z + CAM_BACK);
-      this.camPos.lerp(want, 1 - Math.exp(-dt * 6));
+
       this.shake = Math.max(0, this.shake - dt * 2.4);
       const sh = this.reduced ? 0 : this.shake * 0.35;
-      this.camera.position.set(this.camPos.x + (Math.random() - 0.5) * sh, this.camPos.y + (Math.random() - 0.5) * sh, this.camPos.z);
-      this.camera.lookAt(this.camFocus.x, this.camFocus.y + CAM_LOOK_UP, this.camFocus.z - 1.5);
+      const sy = Math.sin(this.yaw);
+      const cy = Math.cos(this.yaw);
+      this.camera.position.set(
+        this.camFocus.x + sy * CAM_BACK + (Math.random() - 0.5) * sh,
+        this.camFocus.y + CAM_UP + (Math.random() - 0.5) * sh,
+        this.camFocus.z + cy * CAM_BACK,
+      );
+      this.camera.lookAt(this.camFocus.x - sy * 1.5, this.camFocus.y + CAM_LOOK_UP, this.camFocus.z - cy * 1.5);
       this.fadeUpperLayers(dt, target.y);
     }
     this.lava.position.y += Math.sin(this.world.t * 1.6) * 0.002;
     this.renderer.render(this.scene, this.camera);
+  }
+
+  setYaw(yaw: number) {
+    this.yaw = yaw;
   }
 
   /** Sacode a câmera (empurrão sofrido). */

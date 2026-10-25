@@ -72,6 +72,7 @@ export function DesmoronaPlay({
   const total = online ? online.infos.length : bots + 1;
   const canvas = useRef<HTMLCanvasElement>(null);
   const zone = useRef<HTMLDivElement>(null);
+  const root = useRef<HTMLDivElement>(null);
   const [hud, setHud] = useState<Hud>({ alive: total, total, layer: 1, phase: 'ready', count: 3, note: '', dead: false, watching: '' });
   const [stick, setStick] = useState<{ ox: number; oy: number; x: number; y: number } | null>(null);
   const [result, setResult] = useState<DsmResult | null>(null);
@@ -92,11 +93,15 @@ export function DesmoronaPlay({
     const seed = online?.seed ?? seedOf();
     const world = new DsmWorld(seed, infos);
     if (online) world.goOnline(meId);
+    // só no desenvolvimento: os testes de ponta a ponta leem o mundo para conferir o pulo
+    if (import.meta.env.DEV) (window as unknown as { __dsm?: DsmWorld }).__dsm = world;
     const reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
     const scene = new DsmScene(el, world, reduced);
     const mem = new Map(world.players.filter((p) => p.bot).map((p, i) => [p.id, newBotMemory((i % 4) * 0.15, i % 3 === 0 ? 0.5 : 0)]));
     const rng = createRng(`${seed}:bots`);
     controls.attach(zoneEl, setStick);
+    if (root.current) controls.attachLook(root.current);
+    let yaw = 0;
 
     let phase: Hud['phase'] = 'ready';
     const readyAt = performance.now();
@@ -219,6 +224,18 @@ export function DesmoronaPlay({
         // o toque fica guardado por um instante: um quadro sem passo da simulação não pode engolir o pulo
         if (input.jump) jumpUntil = now + JUMP_BUFFER_MS;
         input.jump = false;
+        // a câmera gira com o mouse, o dedo (metade direita) ou Q e E; o movimento é sempre relativo a ela
+        yaw += controls.takeYaw(dt);
+        scene.setYaw(yaw);
+        if (import.meta.env.DEV) (window as unknown as { __dsmYaw?: number }).__dsmYaw = yaw;
+        if (input.mx !== 0 || input.mz !== 0) {
+          const sy = Math.sin(yaw);
+          const cy = Math.cos(yaw);
+          const mx = input.mx * cy + input.mz * sy;
+          const mz = -input.mx * sy + input.mz * cy;
+          input.mx = mx;
+          input.mz = mz;
+        }
         if (online) {
           // o relógio do jogo é o da sala: todo mundo vê o chão cair na mesma hora
           const target = (serverNow() - online.startAt) / 1000;
@@ -334,7 +351,7 @@ export function DesmoronaPlay({
     : null;
 
   return (
-    <div className="dsm-play" data-testid="dsm-play">
+    <div ref={root} className="dsm-play" data-testid="dsm-play">
       <canvas ref={canvas} className="dsm-canvas" aria-label="Arena do Desmorona!" />
       <div ref={zone} className="dsm-zone" aria-hidden="true">
         {stick && knob && (

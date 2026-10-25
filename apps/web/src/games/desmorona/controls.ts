@@ -1,6 +1,11 @@
 import type { DsmInput } from '@nocap/games';
 
-/** Teclas de movimento: W A S D e setas. A câmera não gira, então "cima" na tela é sempre -Z. */
+/** Teclas de movimento: W A S D e setas ("cima" é para onde a câmera olha). */
+/** Q e E giram a câmera (no computador, além de arrastar o mouse). */
+const TURN_RATE = 2.2;
+/** Radianos de giro por pixel arrastado. */
+const DRAG_YAW = 0.0055;
+
 const KEYS: Record<string, 'up' | 'down' | 'left' | 'right'> = {
   KeyW: 'up',
   ArrowUp: 'up',
@@ -40,6 +45,10 @@ export class DsmControls {
   private jumpQueued = false;
   private onStick: ((s: { ox: number; oy: number; x: number; y: number } | null) => void) | null = null;
   private zone: HTMLElement | null = null;
+  private look: HTMLElement | null = null;
+  private lookPtr: { id: number; x: number } | null = null;
+  private yawAcc = 0;
+  private turn = 0;
 
   /** `zone`: onde o polegar do joystick pode tocar; `onStick` avisa a tela para desenhar o joystick. */
   attach(zone: HTMLElement, onStick?: (s: { ox: number; oy: number; x: number; y: number } | null) => void) {
@@ -54,7 +63,52 @@ export class DsmControls {
     zone.addEventListener('pointercancel', this.up);
   }
 
+  /**
+   * Girar a câmera arrastando: o mouse arrasta em qualquer lugar da tela; no celular o dedo arrasta na metade direita
+   * (a esquerda é do joystick). Botões não giram.
+   */
+  attachLook(el: HTMLElement) {
+    this.look = el;
+    el.addEventListener('pointerdown', this.lookDown);
+    el.addEventListener('pointermove', this.lookMove);
+    el.addEventListener('pointerup', this.lookUp);
+    el.addEventListener('pointercancel', this.lookUp);
+  }
+
+  /** Quanto a câmera girou desde a última chamada (rad), somando arrasto e as teclas Q e E. */
+  takeYaw(dt: number): number {
+    const d = this.yawAcc + this.turn * TURN_RATE * dt;
+    this.yawAcc = 0;
+    return d;
+  }
+
+  private lookDown = (e: PointerEvent) => {
+    if ((e.target as HTMLElement).closest('button')) return;
+    const rect = this.look?.getBoundingClientRect();
+    if (!rect) return;
+    // no toque, a metade esquerda é do joystick
+    if (e.pointerType !== 'mouse' && e.clientX - rect.left < rect.width * 0.55) return;
+    if (this.lookPtr) return;
+    this.lookPtr = { id: e.pointerId, x: e.clientX };
+    this.look?.setPointerCapture(e.pointerId);
+  };
+
+  private lookMove = (e: PointerEvent) => {
+    if (!this.lookPtr || e.pointerId !== this.lookPtr.id) return;
+    this.yawAcc -= (e.clientX - this.lookPtr.x) * DRAG_YAW;
+    this.lookPtr.x = e.clientX;
+  };
+
+  private lookUp = (e: PointerEvent) => {
+    if (this.lookPtr && e.pointerId === this.lookPtr.id) this.lookPtr = null;
+  };
+
   detach() {
+    this.look?.removeEventListener('pointerdown', this.lookDown);
+    this.look?.removeEventListener('pointermove', this.lookMove);
+    this.look?.removeEventListener('pointerup', this.lookUp);
+    this.look?.removeEventListener('pointercancel', this.lookUp);
+    this.look = null;
     window.removeEventListener('keydown', this.keyDown);
     window.removeEventListener('keyup', this.keyUp);
     window.removeEventListener('blur', this.reset);
@@ -71,6 +125,8 @@ export class DsmControls {
 
   private reset = () => {
     this.keys = { up: false, down: false, left: false, right: false };
+    this.turn = 0;
+    this.lookPtr = null;
     this.stick = null;
     this.onStick?.(null);
   };
@@ -78,7 +134,9 @@ export class DsmControls {
   private keyDown = (e: KeyboardEvent) => {
     if (e.repeat && e.code !== 'Space') return;
     const k = KEYS[e.code];
-    if (k) {
+    if (e.code === 'KeyQ') this.turn = -1;
+    else if (e.code === 'KeyE') this.turn = 1;
+    else if (k) {
       this.keys[k] = true;
       e.preventDefault();
     } else if (e.code === 'Space') {
@@ -90,7 +148,8 @@ export class DsmControls {
 
   private keyUp = (e: KeyboardEvent) => {
     const k = KEYS[e.code];
-    if (k) this.keys[k] = false;
+    if (e.code === 'KeyQ' || e.code === 'KeyE') this.turn = 0;
+    else if (k) this.keys[k] = false;
   };
 
   private down = (e: PointerEvent) => {

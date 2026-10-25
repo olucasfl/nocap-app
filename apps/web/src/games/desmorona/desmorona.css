@@ -6,6 +6,7 @@
   background: #7fd3ff;
 }
 .dsm-play {
+  touch-action: none;
   position: absolute;
   inset: 0;
   overflow: hidden;
@@ -132,6 +133,12 @@
   text-transform: uppercase;
   touch-action: none;
   cursor: pointer;
+}
+/* No computador o pulo é a barra de espaço: o botão só existe em telas de toque. */
+@media (hover: hover) and (pointer: fine) {
+  .dsm-jump {
+    display: none;
+  }
 }
 .dsm-jump:active {
   transform: scale(0.94);

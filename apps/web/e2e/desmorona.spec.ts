@@ -27,6 +27,24 @@ for (const size of sizes) {
       await expect(page.locator('.dsm-hud')).toBeVisible();
       if (process.env.E2E_SHOTS) await page.screenshot({ path: `${process.env.E2E_SHOTS}/dsm-${size.touch ? 'phone' : 'pc'}.png` });
       if (size.touch) await expect(page.locator('.dsm-jump')).toBeVisible();
+      else await expect(page.locator('.dsm-jump')).toBeHidden();
+      // a câmera gira: arrastando o mouse (computador) ou o dedo na metade direita (celular)
+      const yaw = () => page.evaluate(() => (window as unknown as { __dsmYaw?: number }).__dsmYaw ?? 0);
+      const before = await yaw();
+      if (size.touch) {
+        const cdp = await page.context().newCDPSession(page);
+        const pt = (x: number) => [{ x, y: 150, id: 1 }];
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: pt(600) });
+        for (let x = 600; x <= 760; x += 20) await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: pt(x) });
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      } else {
+        await page.mouse.move(400, 300);
+        await page.mouse.down();
+        await page.mouse.move(600, 300, { steps: 6 });
+        await page.mouse.up();
+      }
+      await page.waitForTimeout(300);
+      expect(Math.abs((await yaw()) - before)).toBeGreaterThan(0.3);
       const over = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
       expect(over).toBeLessThanOrEqual(0);
     });
