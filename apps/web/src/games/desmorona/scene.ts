@@ -65,6 +65,7 @@ export class DsmScene {
   private layers: LayerMesh[] = [];
   private foxes = new Map<string, Fox>();
   private falling: Falling[] = [];
+  private tags: THREE.Sprite[] = [];
   /** Ladrilhos pisados (precisam ser reatualizados a cada quadro por causa da tremida). */
   private hot = new Set<string>();
   private lava: THREE.Mesh;
@@ -166,8 +167,39 @@ export class DsmScene {
     const hero = buildHero({ fur: p.color, own: true });
     group.add(hero);
     const body = hero;
+    group.add(this.nameTag(p.name));
     this.scene.add(group);
     this.foxes.set(p.id, { group, body, id: p.id });
+  }
+
+  /** O nome em cima da cabeça: um cartaz que sempre olha para a câmera e aparece mesmo atrás de um ladrilho. */
+  private nameTag(name: string): THREE.Sprite {
+    const cv = document.createElement('canvas');
+    cv.width = 256;
+    cv.height = 64;
+    const g = cv.getContext('2d');
+    if (g) {
+      g.font = '800 30px system-ui, sans-serif';
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      const text = name.length > 14 ? `${name.slice(0, 13)}…` : name;
+      const w = Math.min(244, g.measureText(text).width + 28);
+      g.fillStyle = 'rgba(27,21,53,0.82)';
+      g.beginPath();
+      g.roundRect(128 - w / 2, 8, w, 48, 16);
+      g.fill();
+      g.fillStyle = '#ffffff';
+      g.fillText(text, 128, 33);
+    }
+    const tex = new THREE.CanvasTexture(cv);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    const mat = new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true, fog: false });
+    const sprite = new THREE.Sprite(mat);
+    sprite.scale.set(2.8, 0.7, 1);
+    sprite.position.y = 2.05;
+    sprite.renderOrder = 10;
+    this.tags.push(sprite);
+    return sprite;
   }
 
   resize(w: number, h: number) {
@@ -312,6 +344,10 @@ export class DsmScene {
 
   dispose() {
     this.disposed = true;
+    for (const t of this.tags) {
+      t.material.map?.dispose();
+      t.material.dispose();
+    }
     for (const lm of this.layers) {
       lm.mesh.geometry.dispose();
       (lm.mesh.material as THREE.Material).dispose();
