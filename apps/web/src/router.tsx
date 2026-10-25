@@ -151,6 +151,18 @@ const atravessaRoute = createRoute({
   component: lazyRouteComponent(() => import('@/games/atravessa/AtravessaPage'), 'AtravessaPage'),
 });
 
+const foxCapRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/fox-cap',
+  component: lazyRouteComponent(() => import('@/games/desmorona/FoxCapPage'), 'FoxCapPage'),
+});
+
+const desmoronaRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/fox-cap/desmorona',
+  component: lazyRouteComponent(() => import('@/games/desmorona/DesmoronaPage'), 'DesmoronaPage'),
+});
+
 const apertaRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/arcade/aperta',
@@ -241,6 +253,8 @@ const routeTree = rootRoute.addChildren([
   timeRoute,
   ecoRoute,
   atravessaRoute,
+  foxCapRoute,
+  desmoronaRoute,
   apertaRoute,
   blocksRoute,
   wordsRoute,

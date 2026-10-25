@@ -1,0 +1,239 @@
+/* Desmorona! (spec 044): tela cheia do jogo, HUD, joystick e resultado. Só transform e opacity animam. */
+.dsm-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: #7fd3ff;
+}
+.dsm-play {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.dsm-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.dsm-zone {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 55%;
+  touch-action: none;
+}
+.dsm-stick {
+  position: fixed;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.dsm-stick::before {
+  content: '';
+  position: absolute;
+  left: -56px;
+  top: -56px;
+  width: 112px;
+  height: 112px;
+  border: 3px solid rgba(255, 255, 255, 0.55);
+  border-radius: 50%;
+  background: rgba(20, 30, 60, 0.18);
+}
+.dsm-knob {
+  position: absolute;
+  left: -26px;
+  top: -26px;
+  width: 52px;
+  height: 52px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+}
+.dsm-hud {
+  position: absolute;
+  top: max(10px, env(safe-area-inset-top));
+  left: max(10px, env(safe-area-inset-left));
+  right: max(10px, env(safe-area-inset-right));
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  pointer-events: none;
+}
+.dsm-pill {
+  padding: 6px 12px;
+  border: 3px solid #1b1535;
+  border-radius: 999px;
+  background: #fff;
+  color: #1b1535;
+  font: 700 14px/1 var(--font-display, system-ui);
+  text-transform: uppercase;
+}
+.dsm-pill b {
+  font-size: 18px;
+}
+.dsm-pill.is-layer {
+  background: #ffe27a;
+}
+.dsm-exit {
+  margin-left: auto;
+  padding: 8px 14px;
+  min-height: 40px;
+  border: 3px solid #1b1535;
+  border-radius: 12px;
+  background: #ff6a5c;
+  color: #fff;
+  font: 700 14px var(--font-display, system-ui);
+  text-transform: uppercase;
+  pointer-events: auto;
+  cursor: pointer;
+}
+.dsm-count {
+  position: absolute;
+  left: 50%;
+  top: 38%;
+  transform: translate(-50%, -50%);
+  color: #fff;
+  font: 900 min(26vw, 150px) / 1 var(--font-display, system-ui);
+  text-shadow: 0 6px 0 #1b1535, 0 0 24px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
+.dsm-note {
+  position: absolute;
+  left: 50%;
+  top: 74px;
+  transform: translateX(-50%);
+  max-width: 90%;
+  padding: 8px 16px;
+  border: 3px solid #1b1535;
+  border-radius: 12px;
+  background: #fff;
+  color: #1b1535;
+  font: 700 15px var(--font-display, system-ui);
+  text-align: center;
+  pointer-events: none;
+}
+.dsm-jump {
+  position: absolute;
+  right: max(22px, env(safe-area-inset-right));
+  bottom: max(22px, env(safe-area-inset-bottom));
+  width: 84px;
+  height: 84px;
+  border: 4px solid rgba(27, 21, 53, 0.9);
+  border-radius: 50%;
+  background: rgba(255, 226, 122, 0.75);
+  color: #1b1535;
+  font: 800 14px var(--font-display, system-ui);
+  text-transform: uppercase;
+  touch-action: none;
+  cursor: pointer;
+}
+.dsm-jump:active {
+  transform: scale(0.94);
+}
+.dsm-spec {
+  position: absolute;
+  left: 50%;
+  bottom: max(18px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  border: 3px solid #1b1535;
+  border-radius: 999px;
+  background: #fff;
+  color: #1b1535;
+  font: 700 15px var(--font-display, system-ui);
+}
+.dsm-spec button {
+  width: 44px;
+  height: 44px;
+  border: 3px solid #1b1535;
+  border-radius: 50%;
+  background: #ffe27a;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+.dsm-over {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(10, 14, 36, 0.55);
+}
+.dsm-over-card {
+  width: min(420px, 92vw);
+  padding: 18px;
+  border: 4px solid #1b1535;
+  border-radius: 18px;
+  background: #fff;
+  color: #1b1535;
+}
+.dsm-over-card h2 {
+  margin: 0 0 8px;
+  font: 800 26px var(--font-display, system-ui);
+  text-transform: uppercase;
+}
+.dsm-over-card ol {
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+  max-height: 40vh;
+  overflow: auto;
+}
+.dsm-over-card li {
+  display: flex;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: #f1f1fa;
+  font: 600 16px var(--font-body, system-ui);
+}
+.dsm-over-card li.is-you {
+  background: #ffe27a;
+}
+.dsm-over-card li span {
+  width: 32px;
+  font-weight: 800;
+}
+.dsm-over-btns {
+  display: flex;
+  gap: 10px;
+}
+.dsm-btn {
+  flex: 1;
+  min-height: 48px;
+  border: 3px solid #1b1535;
+  border-radius: 12px;
+  background: #ff9d2e;
+  color: #1b1535;
+  font: 800 16px var(--font-display, system-ui);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.dsm-btn.is-ghost {
+  background: #fff;
+}
+.dsm-bots label {
+  display: grid;
+  gap: 8px;
+  font-weight: 600;
+}
+.dsm-bots input[type='range'] {
+  width: 100%;
+  accent-color: #ff9d2e;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dsm-jump:active {
+    transform: none;
+  }
+}

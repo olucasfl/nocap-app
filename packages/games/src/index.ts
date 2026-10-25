@@ -14,3 +14,4 @@ export * from './towers';
 export * from './atravessa';
 export * from './words';
 export * from './aperta';
+export * from './desmorona';

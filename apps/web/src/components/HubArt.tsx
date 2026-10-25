@@ -236,3 +236,35 @@ export function ApertaArt() {
     </svg>
   );
 }
+
+/** Desmorona!: hexágonos coloridos em camadas, com um buraco onde o chão já caiu. */
+export function DesmoronaArt() {
+  const hex = (cx: number, cy: number, r: number, fill: string, key: string) => {
+    const pts = Array.from({ length: 6 }, (_, i) => {
+      const a = (Math.PI / 3) * i + Math.PI / 6;
+      return `${(cx + r * Math.cos(a)).toFixed(1)},${(cy + r * Math.sin(a)).toFixed(1)}`;
+    }).join(' ');
+    return <polygon key={key} points={pts} fill={fill} {...stroke} strokeWidth={3} />;
+  };
+  const top = [
+    [60, 52, '#9a5cff'],
+    [100, 52, '#a96bff'],
+    [140, 52, '#9a5cff'],
+    [80, 86, '#a96bff'],
+    [120, 86, '#9a5cff'],
+    [160, 86, '#a96bff'],
+  ] as const;
+  return (
+    <svg className="ha ha-desmorona" viewBox="0 0 200 150" aria-hidden="true">
+      <rect x="0" y="0" width="200" height="150" rx="16" fill="#7fd3ff" />
+      <ellipse cx="100" cy="132" rx="70" ry="10" fill="#ff5a1f" opacity="0.85" />
+      {hex(100, 112, 24, '#ffa24d', 'low')}
+      {top.map(([x, y, f], i) => hex(x, y, 21, f, `t${i}`))}
+      <g transform="translate(88 28)">
+        <ellipse cx="12" cy="30" rx="12" ry="4" fill="rgba(0,0,0,.25)" />
+        <rect x="2" y="12" width="20" height="16" rx="5" fill="#ff7d26" {...stroke} strokeWidth={3} />
+        <rect x="3" y="2" width="18" height="12" rx="4" fill="#2f5bff" {...stroke} strokeWidth={3} />
+      </g>
+    </svg>
+  );
+}
