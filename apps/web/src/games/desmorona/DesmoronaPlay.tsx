@@ -49,6 +49,8 @@ export interface DsmOnline {
 /** Quanto tempo as raposas dos outros ficam "atrasadas" na tela para o movimento sair liso. */
 const SMOOTH = 14;
 const POS_EVERY_MS = 66;
+/** Quanto tempo um toque de pulo espera uma chance de valer (pousar, ou o pulo duplo estar livre). */
+const JUMP_BUFFER_MS = 140;
 
 /** Uma partida do Desmorona! (treino contra bots). Solta a raposa do ar, roda o motor e desenha a cena. */
 export function DesmoronaPlay({
@@ -103,6 +105,7 @@ export function DesmoronaPlay({
     let acc = 0;
     let last = performance.now();
     let hudAt = 0;
+    let jumpUntil = 0;
     let raf = 0;
     let note = '';
     const say = (text: string) => {
@@ -213,8 +216,9 @@ export function DesmoronaPlay({
         if (!online) acc += dt;
         const m = me();
         const input = m.alive ? controls.read() : { mx: 0, mz: 0, jump: false };
-        const wasJump = input.jump && m.grounded && m.alive;
-        if (wasJump) dsmSfx.jump();
+        // o toque fica guardado por um instante: um quadro sem passo da simulação não pode engolir o pulo
+        if (input.jump) jumpUntil = now + JUMP_BUFFER_MS;
+        input.jump = false;
         if (online) {
           // o relógio do jogo é o da sala: todo mundo vê o chão cair na mesma hora
           const target = (serverNow() - online.startAt) / 1000;
@@ -224,6 +228,12 @@ export function DesmoronaPlay({
         }
         while (acc >= DSM_DT) {
           acc -= DSM_DT;
+          const mm = me();
+          if (jumpUntil > now && mm.alive && (mm.grounded || !mm.airJumped)) {
+            input.jump = true;
+            jumpUntil = 0;
+            if (mm.grounded) dsmSfx.jump();
+          }
           const inputs: Record<string, DsmInput> = { [meId]: input };
           for (const p of world.players) if (p.bot) inputs[p.id] = botInput(world, p, mem.get(p.id)!, rng);
           world.step(DSM_DT, inputs);
