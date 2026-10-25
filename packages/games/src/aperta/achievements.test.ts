@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { ACHIEVEMENTS, achievementViews, awardAchievements, newlyEarned } from './achievements';
-import { upgradeIndex } from './catalog';
 import { TREE_NODES, nodeLive } from './tree';
 import {
   buyTreeNode,
@@ -28,12 +27,6 @@ function withObjects(s: SaveState, kinds: GameObject['kind'][]): SaveState {
     objects: kinds.map((kind, i) => ({ id: i + 1, kind, bornAt: 0, expiresAt: 1000 })),
     nextObjectId: kinds.length + 1,
   });
-}
-
-function withResonance(s: SaveState): SaveState {
-  const upgradeLevels = s.run.upgradeLevels.slice();
-  upgradeLevels[upgradeIndex('rhythm')] = 1;
-  return withRun(s, { upgradeLevels });
 }
 
 describe('catálogo de conquistas', () => {

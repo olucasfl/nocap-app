@@ -3,7 +3,6 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { upgradeIndex } from './catalog';
 import { GOAL_TABLE, dustGoal, minPicks, MAX_NUMBER, MAX_COLLAPSE_COUNT, LIFE_HOURS_MAX } from './economy';
 import {
   canCollapse,
@@ -21,11 +20,6 @@ import { MISSIONS } from './content';
 import { validateSave } from './save';
 
 const withRun = (s: SaveState, patch: Partial<RunState>): SaveState => ({ ...s, run: { ...s.run, ...patch } });
-const withLevel = (s: SaveState, id: string, level: number): SaveState => {
-  const levels = s.run.upgradeLevels.slice();
-  levels[upgradeIndex(id)] = level;
-  return withRun(s, { upgradeLevels: levels });
-};
 /** Um save no colapso `c` com a vida montada (sem ter jogado as anteriores). */
 const atCollapse = (c: number): SaveState => ({ ...newSave('inf', 1), tutorial: 'done', collapses: c, album: ['moon:common'] });
 const ready = (c: number): SaveState => {

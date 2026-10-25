@@ -233,11 +233,11 @@ describe('vários aparelhos', () => {
     const a = played(40);
     const withMoon: SaveState = { ...a, album: ['moon:common'], run: { ...a.run, build: { moon: 1 }, picks: 1 }, stats: { ...a.stats, picks: 1 }, achievements: ['tap-1'] };
     const b = played(80);
-    const stale: SaveState = { ...b, album: ['mars:common'], run: { ...b.run, build: { mars: 1 }, picks: 1 }, stats: { ...b.stats, picks: 1 } };
+    const stale: SaveState = { ...b, album: ['saturn:common'], run: { ...b.run, build: { saturn: 1 }, picks: 1 }, stats: { ...b.stats, picks: 1 } };
     await service.put('u', 1, { data: newSave('a', T0), baseRevision: 0 });
     await service.put('u', 1, { data: withMoon, baseRevision: 1 });
     const r = await service.put('u', 1, { data: stale, baseRevision: 2 });
-    expect(r.data!.album).toEqual(expect.arrayContaining(['moon:common', 'mars:common']));
+    expect(r.data!.album).toEqual(expect.arrayContaining(['moon:common', 'saturn:common']));
     expect(r.data!.achievements).toEqual(expect.arrayContaining(['tap-1']));
   });
 });
@@ -327,41 +327,37 @@ describe('rotas do controlador', () => {
   });
 });
 
-describe('liberação só para a conta do Lucas (jogo em teste)', () => {
+describe('liberação do Aperta! (aberto a todos desde 25/10/2026)', () => {
   const ctxOf = (user: unknown) => ({ switchToHttp: () => ({ getRequest: () => ({ user }) }) }) as unknown as ExecutionContext;
 
-  it('sem a variável vale só a conta do Lucas, sem diferença de caixa ou espaços', () => {
-    expect(allowedEmails(undefined)).toEqual(['lucasfariasleandro@gmail.com']);
-    expect(allowedEmails('  ')).toEqual(['lucasfariasleandro@gmail.com']);
+  it('sem a variável qualquer conta logada entra; sem conta não', () => {
+    expect(allowedEmails(undefined)).toEqual([]);
+    expect(allowedEmails('  ')).toEqual([]);
+    expect(canPlayAperta({ email: 'outra@pessoa.com' }, undefined)).toBe(true);
     expect(canPlayAperta({ email: 'lucasfariasleandro@gmail.com' }, undefined)).toBe(true);
-    expect(canPlayAperta({ email: ' LucasFariasLeandro@Gmail.com ' }, undefined)).toBe(true);
-    expect(canPlayAperta({ email: 'outra@pessoa.com' }, undefined)).toBe(false);
-    expect(canPlayAperta({ email: '' }, undefined)).toBe(false);
     expect(canPlayAperta(null, undefined)).toBe(false);
   });
 
-  it('APERTA_ALLOWED_EMAILS troca a lista (vários e-mails, vírgula)', () => {
+  it('APERTA_ALLOWED_EMAILS volta ao modo teste: só os e-mails da lista, sem diferença de caixa', () => {
     expect(allowedEmails('a@x.com, B@y.com')).toEqual(['a@x.com', 'b@y.com']);
-    expect(canPlayAperta({ email: 'b@y.com' }, 'a@x.com, B@y.com')).toBe(true);
-    expect(canPlayAperta({ email: 'lucasfariasleandro@gmail.com' }, 'a@x.com')).toBe(false);
+    expect(canPlayAperta({ email: ' B@Y.com ' }, 'a@x.com, B@y.com')).toBe(true);
+    expect(canPlayAperta({ email: 'outra@pessoa.com' }, 'a@x.com')).toBe(false);
+    expect(canPlayAperta({ email: '' }, 'a@x.com')).toBe(false);
   });
 
-  it('as rotas de save passam pelo guard de liberação: conta de fora recebe 403, a liberada passa', () => {
+  it('as rotas de save passam pelo guard de liberação: sem conta recebe 403, com conta passa', () => {
     const guards = Reflect.getMetadata('__guards__', ApertaController) as unknown[];
     expect(guards).toContain(ApertaAccessGuard);
-    // O guard de liberação vem depois do AuthGuard (que põe `req.user`) e antes do limite de taxa.
     expect(guards.indexOf(AuthGuard)).toBeLessThan(guards.indexOf(ApertaAccessGuard));
     const guard = new ApertaAccessGuard();
-    expect(() => guard.canActivate(ctxOf({ id: 'u', email: 'outra@pessoa.com' }))).toThrow(ForbiddenException);
     expect(() => guard.canActivate(ctxOf(undefined))).toThrow(ForbiddenException);
-    expect(guard.canActivate(ctxOf({ id: 'u', email: 'lucasfariasleandro@gmail.com' }))).toBe(true);
+    expect(guard.canActivate(ctxOf({ id: 'u', email: 'outra@pessoa.com' }))).toBe(true);
   });
 
   it('GET /me/aperta/access exige conta e responde só sim ou não', () => {
     const guards = Reflect.getMetadata('__guards__', ApertaAccessController) as unknown[];
     expect(guards).toEqual([AuthGuard]);
     const ctl = new ApertaAccessController();
-    expect(ctl.access({ user: { email: 'lucasfariasleandro@gmail.com' } } as never)).toEqual({ allowed: true });
-    expect(ctl.access({ user: { email: 'outra@pessoa.com' } } as never)).toEqual({ allowed: false });
+    expect(ctl.access({ user: { email: 'outra@pessoa.com' } } as never)).toEqual({ allowed: true });
   });
 });

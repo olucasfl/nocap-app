@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { upgradeIndex } from './catalog';
-import { autoRates, effectiveStats, newSave, press, syncClock, type SaveState } from './engine';
+import { autoRates, newSave, press, syncClock, type SaveState } from './engine';
 
 const owning = (levels: Record<string, number>): SaveState => {
   const s = newSave('auto', 0);

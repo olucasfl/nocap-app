@@ -18,7 +18,7 @@ Plano escolhido pelo Lucas (2026-10-06). O Fly.io deixou de ter plano grátis pa
   - `BETTER_AUTH_SECRET` (obrigatória em produção; assina o login **e** as sessões do Tempo: trocar invalida partidas do Tempo em andamento)
   - `API_URL` = URL pública da própria API
   - `WEB_ORIGIN` = URL da Vercel (uma só; previews da Vercel não passam no CORS)
-  - `APERTA_ALLOWED_EMAILS` (opcional): e-mails das contas que veem e jogam o Aperta! enquanto ele está em teste, separados por vírgula. Sem a variável vale só a conta do Lucas. Para liberar o jogo para todo mundo, o guard `ApertaAccessGuard` (`apps/api/src/aperta/aperta-access.ts`) e o cartão do Hub saem de uma vez, numa mudança à parte.
+  - `APERTA_ALLOWED_EMAILS` (opcional): e-mails das contas que veem e jogam o Aperta! enquanto ele está em teste, separados por vírgula. Sem a variável o Aperta! está liberado para qualquer conta logada (desde 25/10/2026); defina a variável para voltar ao modo teste. Para liberar o jogo para todo mundo, o guard `ApertaAccessGuard` (`apps/api/src/aperta/aperta-access.ts`) e o cartão do Hub saem de uma vez, numa mudança à parte.
 - **Uma instância só.** As salas moram na memória do processo.
 - **Salas somem quando o serviço reinicia** (deploy, queda, plano grátis dormindo). Quem estava numa sala volta ao início.
 

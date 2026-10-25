@@ -3,12 +3,12 @@
 // qual carta pegar. As horas que ele devolve são de jogo aberto, não de relógio de parede.
 
 import { createRng } from '../core/rng';
-import { OBJECTS, UPGRADES, grimoireById, upgradeIndex, type ObjectKind } from './catalog';
+import { OBJECTS, UPGRADES, grimoireById, type ObjectKind } from './catalog';
 import { TREE_NODES, nodeLive } from './tree';
 import { TREE_EVENT_IDS } from './tree-fx';
 import { skillView, skillsAvailable, tickAutomation, activateSkill } from './skills';
 import { formatDecimal, formatNumber } from './format';
-import { WARM_MULT, dustGoal, energyCap, lifeHoursBand } from './economy';
+import { dustGoal, energyCap, lifeHoursBand } from './economy';
 import { generatorsAtLevel, milestoneGoal, milestoneProgress } from './milestone';
 import {
   buyNode,

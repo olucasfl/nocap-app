@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { GRIMOIRES, OBJECTS, UPGRADES, upgradeIndex, type GrimoireDef, type GrimoireRarity } from './catalog';
 import { GRIMOIRE_LEVEL_STEP, pickInto } from './economy';
-import { CHARGED_ENERGY, CHOICE_LOCK_SEC, AUTO_CAP_SHARE, CRIT_CHANCE, ENERGY_STEPS, GLOVES_FLAT, MAX_NUMBER, MIN_PICKS_FIRST, NOMINAL_TOUCHES_PER_SEC, dustGoal, energyCap, minPicks } from './economy';
+import { CHOICE_LOCK_SEC, ENERGY_STEPS, GLOVES_FLAT, MAX_NUMBER, MIN_PICKS_FIRST, dustGoal, energyCap, minPicks } from './economy';
 import { meetMilestone } from './milestone';
 import {
   buyUpgrade,
