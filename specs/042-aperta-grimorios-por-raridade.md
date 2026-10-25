@@ -98,3 +98,11 @@ Pedido do Lucas: grimório que dá algo no começo de cada vida é ruim; e queri
 - **HUD:** moedas, colapsos e meta redesenhados (vidro, moeda dourada, meta limpa com barra fina e botão que vira ouro quando a estrela está pronta).
 - **Giro do aparelho:** o modo (livre, deitado, girado) e o tamanho da raiz vêm de uma medida única em JS, repetida depois de cada evento de tamanho; o layout dentro do jogo não depende da orientação física, então virar o celular não muda nada.
 
+## HUD minimalista (adendo, 25/10/2026)
+
+Pedido do Lucas: o painel de poeira e a meta não ficaram bons; mais minimalista, o "+x por segundo" estava preto e feio, e a meta deve ser só um botão simples com o que falta.
+
+- **Poeira:** moeda, número em ouro, taxa por segundo numa pílula ciano clara; o "+x" que sobe a cada segundo é uma pílula escura com contorno e brilho ciano (aparece em qualquer fundo).
+- **Colapsos:** só o número num cantinho.
+- **Meta:** um botão "Meta" com a quantidade de poeira que falta (sem barra nem texto extra); pronta, vira ouro e diz "Colapsar".
+

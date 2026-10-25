@@ -1,286 +1,249 @@
 /*
- * Painel do topo do Aperta! (poeira, colapsos e meta), versão premium (spec 042, adendo "HUD premium"): vidro azul-noite com
- * brilho no topo, moeda dourada com reflexo, número em degradê de ouro, meta limpa (legenda, valor e uma barra fina) e um
- * botão discreto que vira dourado quando a estrela está pronta. Só `transform` e `opacity` animam. Importado depois do
- * game.css e antes do landscape.css; as regras de tela baixa (celular deitado) ficam no fim, neste mesmo arquivo.
+ * Painel do topo do Aperta! (poeira, colapsos e meta), versão minimalista (spec 042, adendo "HUD minimalista"): vidro escuro
+ * e fino, moeda, número em ouro, taxa em pílula ciano bem visível, o número de colapsos num cantinho e a meta reduzida a UM
+ * botão ("Meta" + o que falta de poeira). Só `transform` e `opacity` animam. Importado depois do game.css e antes do
+ * landscape.css; as regras de tela baixa (celular deitado) ficam no fim, neste mesmo arquivo.
  */
 .ap .ap-hud .ap-hudp {
   display: grid;
-  gap: 8px;
-  min-width: 236px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'dust col'
+    'goal goal';
+  gap: 10px 14px;
+  align-items: center;
+  width: min(300px, 100%);
+  min-width: 250px;
   padding: 11px 14px 12px;
-  border: 2px solid rgba(132, 160, 255, 0.4);
+  border: 1px solid rgba(160, 182, 255, 0.28);
   border-radius: 18px;
   background:
-    radial-gradient(120% 90% at 0% 0%, rgba(86, 120, 255, 0.22), rgba(86, 120, 255, 0) 60%),
-    linear-gradient(165deg, rgba(32, 47, 108, 0.96), rgba(8, 13, 38, 0.97));
+    radial-gradient(120% 100% at 0% 0%, rgba(86, 120, 255, 0.16), rgba(86, 120, 255, 0) 60%),
+    rgba(9, 14, 40, 0.82);
   box-shadow:
-    0 0 0 2px var(--space-ink),
-    0 12px 28px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2),
-    inset 0 -16px 26px rgba(40, 70, 200, 0.1);
+    0 10px 26px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
 /* ---------- poeira: moeda, número e taxa ---------- */
 .ap .ap-hudp > .ap-hudrow:first-child {
+  grid-area: dust;
   position: relative;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   grid-template-areas:
     'ico num'
     'ico lab';
-  column-gap: 11px;
-  row-gap: 1px;
+  column-gap: 10px;
+  row-gap: 2px;
   align-items: center;
 }
 .ap .ap-hudrow .ap-ico-coin {
   grid-area: ico;
   position: relative;
-  width: 36px;
-  height: 36px;
-  border: 2px solid rgba(2, 3, 10, 0.9);
+  width: 34px;
+  height: 34px;
+  border: 2px solid rgba(2, 3, 10, 0.85);
   background: radial-gradient(circle at 34% 28%, #fff8d2 0, #ffd566 36%, #e29a14 80%);
   box-shadow:
-    0 0 0 2px rgba(255, 200, 87, 0.4),
-    0 0 18px rgba(255, 200, 87, 0.5),
-    inset 0 -5px 7px rgba(150, 80, 0, 0.45);
+    0 0 0 2px rgba(255, 200, 87, 0.35),
+    0 0 16px rgba(255, 200, 87, 0.45),
+    inset 0 -5px 7px rgba(150, 80, 0, 0.4);
 }
 .ap .ap-hudrow .ap-ico-coin::after {
   content: '';
   position: absolute;
   inset: 7px;
-  border: 2px solid rgba(160, 90, 0, 0.5);
+  border: 2px solid rgba(160, 90, 0, 0.45);
   border-radius: 50%;
 }
-.ap .ap-hudp > .ap-hudrow:first-child b {
+/* `>` de propósito: o "+x" que sobe a cada segundo também é um <b> dentro da linha e não herda o degradê. */
+.ap .ap-hudp > .ap-hudrow:first-child > b {
   grid-area: num;
-  font: 700 28px/1.05 var(--space-font-display);
+  font: 700 27px/1.05 var(--space-font-display);
   letter-spacing: 0.01em;
   background: linear-gradient(180deg, #fffbe6 0%, #ffd56a 55%, #f0a21c 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  filter: drop-shadow(0 2px 0 rgba(60, 30, 0, 0.55));
 }
-.ap .ap-hudp > .ap-hudrow:first-child small {
+.ap .ap-hudp > .ap-hudrow:first-child > small {
   grid-area: lab;
   display: flex;
   align-items: center;
   gap: 8px;
   font: 600 10px var(--space-font-display);
-  letter-spacing: 0.18em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--space-muted);
 }
+/* Taxa dos geradores: pílula ciano clara, para ler de relance. */
 .ap .ap-hudrow .ap-ratetag {
-  padding: 1px 8px;
-  border: 1px solid rgba(78, 220, 255, 0.55);
+  margin: 0;
+  padding: 1px 9px;
+  border: 1px solid rgba(110, 235, 255, 0.85);
   border-radius: 999px;
-  background: rgba(78, 220, 255, 0.12);
-  color: var(--space-cyan);
-  font: 700 10px/1.5 var(--space-font-display);
-  letter-spacing: 0.04em;
+  background: rgba(40, 200, 240, 0.26);
+  box-shadow: 0 0 12px rgba(78, 220, 255, 0.35);
+  color: #d4fbff;
+  font: 700 11px/1.5 var(--space-font-display);
+  letter-spacing: 0.03em;
+  text-shadow: 0 0 8px rgba(78, 220, 255, 0.7);
+}
+/* O "+x" que sobe a cada segundo: brilhante, em pílula escura com contorno ciano, para aparecer em qualquer fundo. */
+.ap .ap-hudrow > .ap-autogain:not(.is-energy) {
+  left: auto;
+  right: 0;
+  top: -12px;
+  margin: 0;
+}
+.ap .ap-autogain-pop {
+  padding: 1px 10px;
+  border: 1px solid rgba(110, 235, 255, 0.9);
+  border-radius: 999px;
+  background: rgba(6, 20, 52, 0.9);
+  box-shadow: 0 0 14px rgba(78, 220, 255, 0.6);
+  color: #d4fbff;
+  font: 700 15px/1.4 var(--space-font-display);
+  text-shadow: 0 0 10px rgba(78, 220, 255, 0.95);
 }
 
-/* ---------- colapsos e regiões ---------- */
-.ap .ap-hudrow-2 {
-  display: flex;
+/* ---------- colapsos: só o número num cantinho (com a seta quando abre as regiões) ---------- */
+.ap .ap-hudp > .ap-hudrow-2 {
+  grid-area: col;
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-areas:
+    'ico num'
+    'lab lab';
+  justify-content: start;
+  align-content: center;
   align-items: center;
-  gap: 9px;
-  padding-top: 8px;
-  border-top: 1px solid rgba(132, 160, 255, 0.18);
+  gap: 3px 7px;
+  min-width: 0;
+  padding: 0 0 0 14px;
+  border: 0;
+  border-left: 1px solid rgba(160, 182, 255, 0.2);
+  border-radius: 0;
+  background: none;
+  text-align: left;
 }
-.ap .ap-hudrow-2 .ap-ico-swirl {
-  width: 24px;
-  height: 24px;
+.ap .ap-hudp > .ap-hudrow-2 .ap-ico-swirl {
+  grid-area: ico;
+  width: 22px;
+  height: 22px;
   border: 2px solid rgba(2, 3, 10, 0.9);
   box-shadow:
-    0 0 0 2px rgba(123, 92, 255, 0.4),
-    0 0 14px rgba(123, 92, 255, 0.55);
+    0 0 0 2px rgba(123, 92, 255, 0.35),
+    0 0 12px rgba(123, 92, 255, 0.5);
 }
-.ap .ap-hudrow-2 b {
+.ap .ap-hudp > .ap-hudrow-2 b {
+  grid-area: num;
   font: 700 19px/1 var(--space-font-display);
   color: #e3dcff;
 }
-.ap .ap-hudrow-2 small {
+.ap .ap-hudp > .ap-hudrow-2 small {
+  grid-area: lab;
   display: flex;
   align-items: center;
-  gap: 8px;
-  font: 600 10px var(--space-font-display);
-  letter-spacing: 0.14em;
+  gap: 4px;
+  font: 600 9px var(--space-font-display);
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--space-muted);
 }
+/* Com o botão de regiões: o rótulo ganha só uma setinha (o resto da frase fica para leitor de tela). */
 .ap .ap-hudrow-btn {
-  width: 100%;
-  padding: 8px 0 0;
-  border: 0;
-  border-top: 1px solid rgba(132, 160, 255, 0.18);
-  background: none;
   cursor: pointer;
-  text-align: left;
 }
 .ap .ap-hudrow-btn small em {
-  margin-left: auto;
-  padding: 1px 9px;
-  border: 1px solid rgba(160, 138, 255, 0.55);
-  border-radius: 999px;
-  background: rgba(123, 92, 255, 0.18);
-  color: #d8ceff;
-  font-style: normal;
-  letter-spacing: 0.08em;
+  display: none;
 }
-.ap .ap-hudrow-btn small em::after {
-  content: ' ›';
+.ap .ap-hudrow-btn small::after {
+  content: '›';
+  color: #d8ceff;
+  font-size: 13px;
+  line-height: 1;
 }
 
-/* ---------- meta do colapso: limpa, com legenda, valor e uma barra fina ---------- */
+/* ---------- meta: um botão simples, "Meta" e o que falta ---------- */
 .ap .ap-hud .ap-hudp .ap-hudgoal {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas:
-    'txt cta'
-    'bar bar';
+  grid-area: goal;
+  display: flex;
   align-items: center;
-  gap: 7px 10px;
+  gap: 8px;
   width: 100%;
   min-height: 0;
-  padding: 9px 11px 10px;
-  border: 1px solid rgba(255, 200, 87, 0.4);
-  border-radius: 13px;
-  background: linear-gradient(180deg, rgba(255, 200, 87, 0.1), rgba(255, 200, 87, 0.03));
-  box-shadow: inset 0 1px 0 rgba(255, 236, 170, 0.14);
+  padding: 7px 12px;
+  border: 1px solid rgba(255, 200, 87, 0.5);
+  border-radius: 999px;
+  background: rgba(255, 200, 87, 0.09);
+  color: var(--space-text);
+  cursor: pointer;
 }
-.ap .ap-hudgoal .ap-goaltxt {
-  grid-area: txt;
-  display: grid;
-  gap: 2px;
+.ap .ap-goalflag {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: var(--space-gold);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ap .ap-goalname {
+  font: 700 11px var(--space-font-display);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--space-gold);
+}
+.ap .ap-goalmiss {
   min-width: 0;
-}
-.ap .ap-hudgoal .ap-goaltxt small {
+  margin-left: auto;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font: 700 9.5px var(--space-font-display);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: rgba(255, 214, 120, 0.85);
-}
-.ap .ap-hudgoal .ap-goaltxt b {
-  font: 700 15px/1.1 var(--space-font-display);
+  font: 700 12.5px var(--space-font-display);
   color: var(--space-text);
-  white-space: nowrap;
 }
-.ap .ap-hudgoal .ap-goalbar {
-  grid-area: bar;
-  height: 7px;
-  min-width: 0;
-  border: 0;
-  border-radius: 999px;
-  background: rgba(3, 5, 14, 0.75);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6);
-}
-.ap .ap-hudgoal .ap-goalbar i {
-  background: linear-gradient(90deg, #ffb13b, #ffe08a);
-  box-shadow: 0 0 10px rgba(255, 200, 87, 0.7);
-}
-.ap .ap-hudgoal .ap-goalcta {
-  grid-area: cta;
-  padding: 4px 10px;
-  border: 1px solid rgba(255, 200, 87, 0.55);
-  border-radius: 999px;
-  background: rgba(255, 200, 87, 0.1);
-  color: var(--space-gold);
-  font: 700 10px/1.3 var(--space-font-display);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-.ap .ap-hudgoal .ap-goalcta::after {
+.ap .ap-goalmiss::after {
   content: ' ›';
+  color: var(--space-gold);
 }
-/* Estrela pronta: o chip inteiro vira ouro e brilha (o brilho é um irmão que só muda a opacidade). */
-.ap .ap-hudgoal.is-ready {
-  border-color: rgba(255, 220, 130, 0.95);
-  background: linear-gradient(180deg, rgba(255, 200, 87, 0.34), rgba(255, 160, 40, 0.14));
-  animation: ap-hud-ready 1.8s ease-in-out infinite alternate;
-}
-.ap .ap-hudgoal.is-ready .ap-goalcta {
+/* Estrela pronta: o botão vira ouro (um brilho leve, só em opacidade). */
+.ap .ap-hud .ap-hudp .ap-hudgoal.is-ready {
   border-color: transparent;
   background: linear-gradient(180deg, #ffe08a, #f2a21f);
+  animation: ap-hud-ready 1.6s ease-in-out infinite alternate;
+}
+.ap .ap-hudgoal.is-ready .ap-goalflag {
+  stroke: var(--space-ink);
+}
+.ap .ap-hudgoal.is-ready .ap-goalname,
+.ap .ap-hudgoal.is-ready .ap-goalmiss,
+.ap .ap-hudgoal.is-ready .ap-goalmiss::after {
   color: var(--space-ink);
 }
 @keyframes ap-hud-ready {
   from {
-    opacity: 0.88;
+    opacity: 0.86;
   }
   to {
     opacity: 1;
   }
 }
 
-/* ---------- celular deitado e janelas baixas: o painel vira uma coluna estreita que não invade o botão central ---------- */
+/* ---------- celular deitado e janelas baixas: coluna estreita que não invade o botão central ---------- */
 @container ap (max-height: 520px) and (orientation: landscape) {
   .ap .ap-hud .ap-hudp {
     width: min(232px, 41cqw);
     min-width: 0;
-    gap: 5px;
+    gap: 7px 10px;
     padding: 7px 10px 8px;
     border-radius: 15px;
   }
-  /* Duas colunas: poeira à esquerda, colapsos e regiões à direita; a meta ocupa a linha de baixo. Poupa uma linha de altura. */
-  .ap .ap-hud .ap-hudp {
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas:
-      'dust col'
-      'goal goal';
-    column-gap: 10px;
-  }
   .ap .ap-hudp > .ap-hudrow:first-child {
-    grid-area: dust;
     column-gap: 8px;
-  }
-  .ap .ap-hudp > .ap-hudrow-2 {
-    grid-area: col;
-    display: grid;
-    grid-template-columns: auto auto;
-    grid-template-areas:
-      'ico num'
-      'lab lab';
-    justify-content: start;
-    align-content: center;
-    align-items: center;
-    gap: 2px 6px;
-    min-width: 0;
-    padding: 0 0 0 10px;
-    border-top: 0;
-    border-left: 1px solid rgba(132, 160, 255, 0.2);
-  }
-  .ap .ap-hudp > .ap-hudrow-2 .ap-ico-swirl {
-    grid-area: ico;
-  }
-  .ap .ap-hudp > .ap-hudrow-2 b {
-    grid-area: num;
-  }
-  .ap .ap-hudp > .ap-hudrow-2 small {
-    grid-area: lab;
-    flex-wrap: wrap;
-    gap: 3px;
-  }
-  .ap .ap-hudp > .ap-hudrow-btn {
-    padding: 0 0 0 10px;
-  }
-  /* Sem espaço para o botão "Regiões": o rótulo ganha uma setinha e o bloco todo segue tocável. */
-  .ap .ap-hudrow-btn small em {
-    display: none;
-  }
-  .ap .ap-hudrow-btn small::after {
-    content: '›';
-    color: #d8ceff;
-    font-size: 13px;
-    line-height: 1;
-  }
-  .ap .ap-hud .ap-hudp .ap-hudgoal {
-    grid-area: goal;
   }
   .ap .ap-hudrow .ap-ico-coin {
     width: 28px;
@@ -289,55 +252,48 @@
   .ap .ap-hudrow .ap-ico-coin::after {
     inset: 5px;
   }
-  .ap .ap-hudp > .ap-hudrow:first-child b {
+  .ap .ap-hudp > .ap-hudrow:first-child > b {
     font-size: 22px;
   }
-  .ap .ap-hudp > .ap-hudrow:first-child small {
+  .ap .ap-hudp > .ap-hudrow:first-child > small {
     gap: 6px;
     font-size: 8.5px;
     letter-spacing: 0.14em;
   }
   .ap .ap-hudrow .ap-ratetag {
-    padding: 0 6px;
-    font-size: 9.5px;
+    padding: 0 7px;
+    font-size: 10px;
   }
-  .ap .ap-hudrow-2 {
-    gap: 7px;
-    padding-top: 5px;
+  .ap .ap-hudp > .ap-hudrow-2 {
+    padding-left: 10px;
   }
-  .ap .ap-hudrow-2 .ap-ico-swirl {
-    width: 19px;
-    height: 19px;
+  .ap .ap-hudp > .ap-hudrow-2 .ap-ico-swirl {
+    width: 18px;
+    height: 18px;
   }
-  .ap .ap-hudrow-2 b {
+  .ap .ap-hudp > .ap-hudrow-2 b {
     font-size: 15px;
   }
-  .ap .ap-hudrow-2 small {
-    gap: 6px;
-    font-size: 8.5px;
-    letter-spacing: 0.1em;
-  }
-  .ap .ap-hudrow-btn small em {
-    padding: 0 7px;
+  .ap .ap-hudp > .ap-hudrow-2 small {
+    font-size: 8px;
   }
   .ap .ap-hud .ap-hudp .ap-hudgoal {
-    gap: 4px 8px;
-    padding: 5px 8px 6px;
-    border-radius: 11px;
+    gap: 6px;
+    padding: 5px 10px;
   }
-  .ap .ap-hudgoal .ap-goaltxt small {
-    font-size: 8px;
-    letter-spacing: 0.08em;
+  .ap .ap-goalflag {
+    width: 13px;
+    height: 13px;
   }
-  .ap .ap-hudgoal .ap-goaltxt b {
-    font-size: 12.5px;
+  .ap .ap-goalname {
+    font-size: 9.5px;
   }
-  .ap .ap-hudgoal .ap-goalbar {
-    height: 5px;
+  .ap .ap-goalmiss {
+    font-size: 11px;
   }
-  .ap .ap-hudgoal .ap-goalcta {
-    padding: 3px 8px;
-    font-size: 9px;
+  .ap .ap-autogain-pop {
+    padding: 0 8px;
+    font-size: 13px;
   }
 }
 

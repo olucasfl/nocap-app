@@ -9,8 +9,10 @@ import {
   capturedTitle,
   floatText,
   astroFor,
+  collapseView,
   comboView,
   createHoldLimiter,
+  goalMissing,
   energyView,
   objectArt,
   createLaneBook,
@@ -20,6 +22,7 @@ import {
   togglePage,
 } from './game-logic';
 import { RARITIES } from './rarity';
+import { formatNumber } from '@nocap/games';
 
 const fresh = () => newSave('teste', 0);
 
@@ -198,5 +201,27 @@ describe('objetos no espaço', () => {
     const boosted = { ...s, run: { ...s.run, boostMult: 2, boostUntil: 10 } };
     expect(signalView(boosted, 4)).toEqual({ mult: 2, remaining: 6 });
     expect(signalView(boosted, 10)).toBeNull();
+  });
+});
+
+describe('botão de meta do HUD (só o que falta)', () => {
+  const base = newSave('meta', 0);
+
+  it('mostra só a poeira que falta, sem mais nada', () => {
+    const view = collapseView(base);
+    expect(goalMissing(view)).toBe(`faltam ${formatNumber(view.dustMissing)}`);
+    expect(goalMissing(view)).not.toMatch(/meta|colapso|%/i);
+  });
+
+  it('com a poeira cumprida passa a dizer o que ainda falta (escolhas)', () => {
+    const view = collapseView(base);
+    const dustDone = { ...view, dustMissing: 0, requirements: view.requirements.map((r) => (r.id === 'dust' ? { ...r, done: true } : r)) };
+    expect(goalMissing(dustDone)).toMatch(/^faltam .*escolha/);
+  });
+
+  it('pronta não mostra texto de falta (o botão vira Colapsar) e com a escolha aberta pede para terminá-la', () => {
+    const view = collapseView(base);
+    expect(goalMissing({ ...view, ready: true })).toBeNull();
+    expect(goalMissing({ ...view, waitingChoice: true })).toBe('termine a escolha');
   });
 });

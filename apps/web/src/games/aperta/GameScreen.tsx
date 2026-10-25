@@ -56,6 +56,7 @@ import {
   NOTICE_MS,
   affordableCount,
   collapseView,
+  goalMissing,
   artRarity,
   astroFor,
   comboView,
@@ -478,19 +479,14 @@ export function GameScreen({ controller, onExit }: Props) {
               type="button"
               data-tut="goal"
               className={`ap-hudgoal${starReady ? ' is-ready' : ''}`}
-              aria-label={`Sua meta: colapso ${collapse.next}. ${collapse.requirements[0]!.text} de poeira. Abrir os requisitos`}
+              aria-label={`Meta do colapso ${collapse.next}: ${starReady ? 'a estrela está pronta' : goalMissing(collapse)}. Abrir os requisitos`}
               onClick={() => setGoalOpen(true)}
             >
-              <span className="ap-goaltxt">
-                <small>Meta do {collapse.next}º colapso</small>
-                <b>{collapse.requirements[0]!.text}</b>
-              </span>
-              <span className="ap-goalbar" aria-hidden="true">
-                <i style={{ transform: `scaleX(${collapse.dustFill})` }} />
-              </span>
-              <span className="ap-goalcta" aria-hidden="true">
-                {starReady ? 'Colapsar' : 'Ver meta'}
-              </span>
+              <svg className="ap-goalflag" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M6 21V4M6 5h11l-2.5 4L17 13H6" />
+              </svg>
+              <span className="ap-goalname">Meta</span>
+              <span className="ap-goalmiss">{starReady ? 'Colapsar' : goalMissing(collapse)}</span>
             </button>
           )}
         </div>

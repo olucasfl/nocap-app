@@ -467,6 +467,18 @@ export function collapseView(state: SaveState): CollapseView {
   };
 }
 
+/**
+ * Botão de meta do HUD (minimalista): só o que falta, a poeira primeiro. `null` quando a estrela está pronta (o botão vira
+ * "Colapsar"). Ex.: "faltam 684 mi", "faltam 2 escolhas", "termine a escolha".
+ */
+export function goalMissing(view: CollapseView): string | null {
+  if (view.ready) return null;
+  if (view.waitingChoice) return 'termine a escolha';
+  const pending = view.requirements.find((r) => !r.done);
+  if (!pending) return 'quase lá';
+  return pending.id === 'dust' ? `faltam ${formatNumber(view.dustMissing)}` : `faltam ${pending.missing}`;
+}
+
 /** Um proibido como carta do colapso ou casa do Cofre. */
 export interface VaultCardView {
   id: string;
