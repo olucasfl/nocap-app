@@ -76,31 +76,23 @@ function noise(f0: number, f1: number, q: number, dur: number, peak: number, del
 }
 
 let recentClicks: number[] = [];
-let streak = 0;
-let lastClickAt = -1e9;
 
 export const apertaSfx = {
   /**
-   * Toque no astro: um "tic" satisfatório em três camadas, curtas e sempre no mesmo instante do toque.
-   * (1) estalo de ar agudo, (2) corpo que cai rápido (o "pop"), (3) brilho na nota da pentatônica, que sobe com o combo.
-   * Com muitos toques seguidos (mais de 8 em 100 ms) só o estalo e o corpo tocam, para não pesar.
+   * Toque no astro: um "tec" seco e firme, sempre o mesmo som (nada de nota que sobe). Três camadas curtas tocadas no
+   * instante do toque: estalo de ar, corpo grave que cai rápido e um brilho leve. Só a afinação varia uns 1% de um toque
+   * para outro, para não cansar. Com muitos toques em 100 ms (mais de 8), só tocam o estalo e o corpo, para não pesar.
+   * O parâmetro `combo` fica por compatibilidade e não muda o som.
    */
-  clack(combo = 0) {
-    // Sem combo no jogo, a nota sobe sozinha a cada toque seguido (até 450 ms entre eles) e recomeça depois da pausa.
-    const t0 = typeof performance !== 'undefined' ? performance.now() : 0;
-    streak = t0 - lastClickAt < 450 ? streak + 1 : 0;
-    lastClickAt = t0;
-    const f = clackFrequency(combo > 0 ? combo : streak % PENTA.length);
-    const cents = 1 + (Math.random() - 0.5) * 0.012;
+  clack(_combo = 0) {
+    void _combo;
     const now = typeof performance !== 'undefined' ? performance.now() : 0;
     recentClicks = recentClicks.filter((t) => now - t < 100);
     recentClicks.push(now);
-    noise(5200, 5200, 0.7, 0.014, 0.2, 0, 'highpass');
-    tone('sine', f * 1.9 * cents, f * 0.75 * cents, 0.07, 0.34);
-    if (recentClicks.length <= 8) {
-      tone('triangle', f * 2 * cents, f * 2 * cents, 0.11, 0.11);
-      tone('sine', f * 4 * cents, f * 4 * cents, 0.07, 0.04, 0.004);
-    }
+    const v = 1 + (Math.random() - 0.5) * 0.02;
+    noise(4200, 4200, 0.8, 0.012, 0.22, 0, 'highpass');
+    tone('sine', 230 * v, 105 * v, 0.06, 0.42);
+    if (recentClicks.length <= 8) tone('triangle', 920 * v, 880 * v, 0.05, 0.07);
   },
   /** comprou um item ou gerador: baque de moeda e dois brilhos que sobem (sinal de "ganhei algo") */
   buy() {
