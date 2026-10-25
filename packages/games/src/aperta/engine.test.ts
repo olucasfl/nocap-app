@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { GRIMOIRES, OBJECTS, UPGRADES, upgradeIndex, type GrimoireDef, type GrimoireRarity } from './catalog';
 import { GRIMOIRE_LEVEL_STEP, pickInto } from './economy';
-import { CHOICE_LOCK_SEC, ENERGY_STEPS, GLOVES_FLAT, MAX_NUMBER, MIN_PICKS_FIRST, dustGoal, energyCap, minPicks } from './economy';
+import { CHOICE_LOCK_SEC, ENERGY_STEPS, MAX_NUMBER, MIN_PICKS_FIRST, dustGoal, energyCap, minPicks } from './economy';
 import { meetMilestone } from './milestone';
 import {
   buyUpgrade,
@@ -176,10 +176,10 @@ describe('press', () => {
     expect(touches).toBe(ENERGY_STEPS[0]);
   });
 
-  it('as Luvas somam 2 por toque e a Lente Polida dobra', () => {
-    expect(press(withLevels(newSave('p'), { gloves: 1 }), 1).run.dust).toBe(1 + GLOVES_FLAT);
+  it('as Luvas e a Lente Polida dobram o toque, e juntas quadruplicam', () => {
+    expect(press(withLevels(newSave('p'), { gloves: 1 }), 1).run.dust).toBe(2);
     expect(press(withLevels(newSave('p'), { lens: 1 }), 1).run.dust).toBe(2);
-    expect(press(withLevels(newSave('p'), { gloves: 1, lens: 1 }), 1).run.dust).toBe((1 + GLOVES_FLAT) * 2);
+    expect(press(withLevels(newSave('p'), { gloves: 1, lens: 1 }), 1).run.dust).toBe(4);
   });
 
   it('ignora toques mais rápidos que 12 por segundo', () => {
@@ -304,17 +304,17 @@ describe('buyUpgrade', () => {
   it('o item comprado muda o total: o efeito é o que a tela diz', () => {
     const base = effectiveStats(newSave('b'));
     expect(base.dustPerTouch).toBe(1);
-    // Lente Polida: Toque x2. Luvas: +2 poeira por toque (soma antes de multiplicar): (1 + 2) x 2 = 6.
+    // Lente Polida: Toque x2. Luvas: Toque x2. Juntas: x4.
     expect(effectiveStats(withLevels(newSave('b'), { lens: 1 })).dustPerTouch).toBe(2);
-    expect(effectiveStats(withLevels(newSave('b'), { lens: 1, gloves: 1 })).dustPerTouch).toBe(6);
+    expect(effectiveStats(withLevels(newSave('b'), { lens: 1, gloves: 1 })).dustPerTouch).toBe(4);
     // Pulso Carregado: energia por toque x2.
     expect(effectiveStats(withLevels(newSave('b'), { charged: 1 })).energyPerTouch).toBe(base.energyPerTouch * 2);
-    // Painéis Solares: geradores de poeira x2; Antena Dupla: geradores de energia x2.
+    // Painéis Solares: geradores de poeira x2; Antena Dupla: geradores de energia x1,5.
     const gens = withLevels(newSave('b'), { satellite: 4, antenna: 2 });
     const solar = effectiveStats(withLevels(gens, { solar: 1 }));
     expect(solar.autoDustPerSec).toBeCloseTo(effectiveStats(gens).autoDustPerSec * 2, 9);
     const ant = effectiveStats(withLevels(gens, { antenna2: 1 }));
-    expect(ant.autoEnergyPerSec).toBeCloseTo(effectiveStats(gens).autoEnergyPerSec * 2, 9);
+    expect(ant.autoEnergyPerSec).toBeCloseTo(effectiveStats(gens).autoEnergyPerSec * 1.5, 9);
   });
 
   it('cada gerador custa bem mais que o anterior e sobe a cada compra', () => {
@@ -908,11 +908,11 @@ describe('objetos no espaço', () => {
     s = captureObject(s, 1, 1);
     expect(s.run.boostUntil).toBe(9);
     s = press(s, 2);
-    expect(s.run.lastGain).toBe(16);
+    expect(s.run.lastGain).toBe(10);
     s = press(s, 6);
-    expect(s.run.lastGain).toBe(16);
+    expect(s.run.lastGain).toBe(10);
     s = press(s, 9.5);
-    expect(s.run.lastGain).toBe(8);
+    expect(s.run.lastGain).toBe(5);
   });
 
   it('Fobos dá energia ao capturar um objeto', () => {

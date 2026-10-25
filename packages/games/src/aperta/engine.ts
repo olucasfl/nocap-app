@@ -721,14 +721,15 @@ function computeStats(state: SaveState): EffectiveStats {
 
   let dustPct = 0;
   let dustFlat = 0;
-  let dustMult = 1;
+  // Multiplicadores de grimório SOMAM entre si (1 + soma dos bônus), não se multiplicam: senão o toque explode.
+  let dustMultBonus = 0;
   let comboFullDust = 0;
   let comboFullEnergy = 0;
   let comboFullMult = 1;
   let energyPct = 0;
   let energyFlat = 0;
   let lifeAdd = 0;
-  let energyMult = 1;
+  let energyMultBonus = 0;
   let maxAdd = 0;
   let satAdd = 0;
   let comboMaxAdd = 0;
@@ -766,7 +767,7 @@ function computeStats(state: SaveState): EffectiveStats {
           dustPct += e.pct * s;
           break;
         case 'dustMult':
-          dustMult *= m(e.mult);
+          dustMultBonus += m(e.mult) - 1;
           break;
         case 'dustFlat':
           dustFlat += e.add * s;
@@ -796,7 +797,7 @@ function computeStats(state: SaveState): EffectiveStats {
           energyPct += e.pct * s;
           break;
         case 'energyMult':
-          energyMult *= Math.max(0.05, m(e.mult));
+          energyMultBonus += m(e.mult) - 1;
           break;
         case 'everyNthTouch':
           nth.push({ n: e.n, mult: m(e.mult), energy: (e.energy ?? 0) * s });
@@ -942,6 +943,8 @@ function computeStats(state: SaveState): EffectiveStats {
   const windowSec = (COMBO_BASE_WINDOW_SEC + windowSecAdd) * (1 + windowPct / 100) * windowMult;
 
   // Selo Estelar: poeira fixa por toque, por selo (spec 040, seção 3).
+  const dustMult = Math.max(0.05, 1 + dustMultBonus);
+  const energyMult = Math.max(0.05, 1 + energyMultBonus);
   const flat = dustFlat + state.seals * SEAL_DUST_PER_TOUCH + treeFlatDust(state, ts);
   const dustPerTouch = (1 + flat) * itemTouchMult * Math.max(0, 1 + dustPct / 100) * dustMult;
 

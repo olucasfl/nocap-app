@@ -58,7 +58,7 @@ describe('Itens: a fila', () => {
     expect(effectLine(base, idx('lens'))).toMatchObject({ label: 'Seu toque', before: '1', after: '2', idle: false });
     const withLens = owning(base, ['lens']);
     // Luvas somam +2 antes de multiplicar: (1 + 2) x 2 = 6.
-    expect(effectLine(withLens, idx('gloves'))).toMatchObject({ label: 'Seu toque', before: '2', after: '6' });
+    expect(effectLine(withLens, idx('gloves'))).toMatchObject({ label: 'Seu toque', before: '2', after: '4' });
     const energy = effectLine(base, idx('charged'))!;
     expect(energy.label).toBe('Energia por toque');
     expect(Number(energy.after.replace(',', '.'))).toBeCloseTo(Number(energy.before.replace(',', '.')) * 2, 5);

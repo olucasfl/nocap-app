@@ -136,8 +136,8 @@ describe('requisitos de colapso (spec 040)', () => {
     const last = GOAL_TABLE[GOAL_TABLE.length - 1] as number;
     expect(dustGoal(GOAL_TABLE.length + 1) / last).toBeCloseTo(GOAL_TAIL_RATIO, 9);
     expect(dustGoal(GOAL_TABLE.length + 4) / last).toBeCloseTo(GOAL_TAIL_RATIO ** 4, 9);
-    // O 1º colapso pede ~1 h de jogo (500 bi) e a conta cresce sem teto (até o guarda de 1e300).
-    expect(GOAL_TABLE[0]).toBe(5e11);
+    // O 1º colapso pede ~1 h de jogo (170 mi) e a conta cresce sem teto (até o guarda de 1e300).
+    expect(GOAL_TABLE[0]).toBe(1.7e8);
     expect(GOAL_SEGMENTS.at(-1)!.upTo).toBe(Infinity);
   });
 

@@ -155,7 +155,7 @@ describe('requisitos do colapso na tela (spec 040)', () => {
     const markup = html(<RequirementBars view={collapseView(s)} />);
     expect(markup.match(/role="progressbar"/g)).toHaveLength(3);
     expect(markup).toContain('Poeira da vida');
-    expect(markup).toContain('0 de 500 bi');
+    expect(markup).toContain('0 de 170 mi');
     expect(markup).toContain('Escolhas de grimório');
     expect(markup).toContain('0 de 12');
     expect(markup).toContain('Geradores no nível');

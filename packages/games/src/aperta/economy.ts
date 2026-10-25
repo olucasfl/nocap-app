@@ -197,7 +197,7 @@ export const GOAL_BASE = 5e7;
  * mais longa (até ~1,8 h no 15º), sem saltos. Depois do 15º a meta cresce `GOAL_TAIL_RATIO` por colapso. O
  * vetor é mutável só para a ferramenta de calibragem (`tmp-calib`); o jogo nunca o altera.
  */
-export const GOAL_TABLE: number[] = [5e11, 1.3e14, 1.3e15, 2.2e16, 9.5e16, 2e17, 4.5e17, 6e17, 7.5e17, 1e18, 1.4e18, 3e18, 4e18, 5e18, 6e18];
+export const GOAL_TABLE: number[] = [1.7e8, 6.5e8, 3.5e9, 2.6e10, 9e10, 2.7e11, 7e11, 2e12, 9e12, 2.6e13, 7e13, 1.7e14, 2.9e14, 3.8e14, 4.7e14];
 export const GOAL_TAIL_RATIO = 1.08;
 export const GOAL_SEGMENTS: { upTo: number; ratio: number }[] = [{ upTo: Infinity, ratio: GOAL_TAIL_RATIO }];
 

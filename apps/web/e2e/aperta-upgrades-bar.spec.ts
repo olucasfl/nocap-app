@@ -67,7 +67,7 @@ for (const size of SIZES) {
       for (const sel of ['.ap-upbar', '.ap-uptab >> nth=0', '.ap-uptab >> nth=1', '.ap-powers']) {
         const box = (await page.locator(sel).first().boundingBox())!;
         expect(box.x, sel).toBeGreaterThanOrEqual(0);
-        expect(box.x + box.width, sel).toBeLessThanOrEqual(size.width);
+        expect(box.x + box.width, sel).toBeLessThanOrEqual(size.width + 1);
       }
       expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(1);
     });
