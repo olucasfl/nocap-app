@@ -45,5 +45,6 @@
 | 039 | [Aperta!: economia v2 (toque conquistado, geradores e raros)](039-aperta-economia-v2.md) | 8 | rascunho (aguarda decisões do Lucas) |
 | 040 | [Aperta!: colapso infinito, Cofre dos Proibidos e árvore grande](040-aperta-colapso-infinito.md) | 8 | plano escrito em 22/10/2026 (etapas 14 a 21); **etapas 14 (colapso infinito e requisitos), 15 (Cofre dos Proibidos), 16 (Cintilas e conquistas ampliadas) e 17 (Árvore: motor e dados) prontas em 22/10/2026 e as 18 (tela da árvore), 19 (automações e habilidades), 20 (Sorte e Exploração) e 21 (calibragem e QA, com 2 testes do simulador ainda vermelhos, seção 17) em 23/10/2026**; substitui o Atlas, os Fragmentos e a camada 2 da 038 |
 | 042 | [Aperta!: grimórios por raridade](042-aperta-grimorios-por-raridade.md) | 8 | implementada em 23/10/2026 (14 grimórios x 4 raridades, save v6, livro com 4 espaços); jogo liberado só para a conta do Lucas |
+| 043 | [Aperta!: reformulação dos itens, geradores e grimórios](043-aperta-reformulacao-itens.md) | 8 | rascunho (25/10/2026, aguarda as 6 decisões da seção 8) |
 
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.
