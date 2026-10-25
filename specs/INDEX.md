@@ -46,6 +46,6 @@
 | 040 | [Aperta!: colapso infinito, Cofre dos Proibidos e árvore grande](040-aperta-colapso-infinito.md) | 8 | plano escrito em 22/10/2026 (etapas 14 a 21); **etapas 14 (colapso infinito e requisitos), 15 (Cofre dos Proibidos), 16 (Cintilas e conquistas ampliadas) e 17 (Árvore: motor e dados) prontas em 22/10/2026 e as 18 (tela da árvore), 19 (automações e habilidades), 20 (Sorte e Exploração) e 21 (calibragem e QA, com 2 testes do simulador ainda vermelhos, seção 17) em 23/10/2026**; substitui o Atlas, os Fragmentos e a camada 2 da 038 |
 | 042 | [Aperta!: grimórios por raridade](042-aperta-grimorios-por-raridade.md) | 8 | implementada em 23/10/2026 (14 grimórios x 4 raridades, save v6, livro com 4 espaços); jogo liberado só para a conta do Lucas |
 | 043 | [Aperta!: reformulação dos itens, geradores e grimórios](043-aperta-reformulacao-itens.md) | 8 | implementada (25/10/2026; decisões do Lucas na seção 8) |
-| 044 | [Fox Games e jogo de arena que desmorona](044-fox-games-desmorona.md) | 9 | rascunho (25/10/2026, aguarda as decisões da seção 9) |
+| 044 | [Fox Cap! e Desmorona! (jogo de arena que desmorona)](044-fox-games-desmorona.md) | 9 | aprovada nas decisões (25/10/2026); falta o "pode começar" para a Fase 1 |
 
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.
