@@ -737,6 +737,7 @@ export function GameScreen({ controller, onExit }: Props) {
           key={page}
           name={page}
           notice={pageNotice(page, affordable, albumCount, state.collapses, achievementCounts(state))}
+          dust={page === 'upgrades' ? formatNumber(state.run.dust) : undefined}
           onClose={() => setPage(null)}
         >
           {page === 'upgrades' && <UpgradesPage state={state} onBuy={controller.buy} onBuyBatch={controller.buyBatch} seen={seenUp} onSeen={markSeen} />}

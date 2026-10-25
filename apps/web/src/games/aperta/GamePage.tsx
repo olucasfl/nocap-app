@@ -30,6 +30,8 @@ interface Props {
   /** Faixa de aviso do topo da página. */
   notice: string;
   onClose: () => void;
+  /** Poeira que a pessoa tem agora, já formatada: aparece no cabeçalho (Melhorias precisa dela para decidir a compra). */
+  dust?: string;
   children?: ReactNode;
 }
 
@@ -37,7 +39,7 @@ interface Props {
  * Página temática do jogo (spec 038, 3.5): abre entre o HUD e a dock, com cabeçalho, X e uma faixa
  * de aviso. O conteúdo de cada página chega nas etapas seguintes; por enquanto o corpo é provisório.
  */
-export function GamePage({ name, notice, onClose, children }: Props) {
+export function GamePage({ name, notice, onClose, dust, children }: Props) {
   return (
     <div className="ap-sheetwrap">
       <section className="ap-sheet" aria-labelledby={`ap-sheet-${name}`}>
@@ -46,6 +48,13 @@ export function GamePage({ name, notice, onClose, children }: Props) {
             <PageIcon name={name} />
           </span>
           <h2 id={`ap-sheet-${name}`}>{PAGE_TITLE[name]}</h2>
+          {dust !== undefined && (
+            <p className="ap-shead-dust" role="status" aria-label={`Você tem ${dust} de poeira`}>
+              <i className="ap-ico ap-ico-coin" aria-hidden="true" />
+              <b>{dust}</b>
+              <small>poeira</small>
+            </p>
+          )}
           <button type="button" className="ap-x" data-tut="page-close" aria-label={`Fechar ${PAGE_TITLE[name]}`} onClick={onClose}>
             <span className="ap-x-x" aria-hidden="true">
               X

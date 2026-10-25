@@ -309,3 +309,47 @@
     animation: none;
   }
 }
+
+/* ---------- poeira no cabeçalho das Melhorias: o saldo à vista na hora de comprar ---------- */
+.ap .ap-shead-dust {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 12px 0 auto;
+  padding: 4px 12px 4px 6px;
+  border: 1px solid rgba(255, 200, 87, 0.45);
+  border-radius: 999px;
+  background: rgba(255, 200, 87, 0.08);
+}
+.ap .ap-shead-dust .ap-ico-coin {
+  width: 24px;
+  height: 24px;
+  border: 2px solid rgba(2, 3, 10, 0.85);
+  background: radial-gradient(circle at 34% 28%, #fff8d2 0, #ffd566 36%, #e29a14 80%);
+  box-shadow: 0 0 10px rgba(255, 200, 87, 0.45);
+}
+.ap .ap-shead-dust b {
+  font: 700 19px/1 var(--space-font-display);
+  background: linear-gradient(180deg, #fffbe6 0%, #ffd56a 55%, #f0a21c 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  white-space: nowrap;
+}
+.ap .ap-shead-dust small {
+  font: 600 9px var(--space-font-display);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--space-muted);
+}
+.ap .ap-shead h2:has(+ .ap-shead-dust) {
+  margin-right: 0;
+}
+@container ap (max-height: 520px) and (orientation: landscape) {
+  .ap .ap-shead-dust {
+    padding: 3px 10px 3px 5px;
+  }
+  .ap .ap-shead-dust b {
+    font-size: 16px;
+  }
+}

@@ -202,3 +202,26 @@ test.describe('virar o aparelho', () => {
     await expect(page.getByRole('button', { name: 'Apertar o botão' })).toBeVisible();
   });
 });
+
+test.describe('poeira nas Melhorias', () => {
+  test.use({ viewport: { width: 667, height: 375 }, isMobile: true, hasTouch: true });
+
+  test('o cabeçalho das Melhorias mostra o saldo de poeira e acompanha as compras', async ({ page }, info) => {
+    test.skip(info.project.name !== 'desktop', 'um projeto basta');
+    await installAccount(page, midSave());
+    await enterGame(page);
+    await page.getByRole('button', { name: /Melhorias/ }).first().click({ force: true });
+    const dust = page.locator('.ap-shead-dust');
+    await expect(dust).toBeVisible();
+    await expect(dust).toContainText('poeira');
+    const before = await dust.locator('b').innerText();
+    expect(before).toMatch(/\d/);
+    // Inteiro dentro da tela, sem passar do cabeçalho.
+    const inside = await dust.evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      const h = document.querySelector('.ap-shead')!.getBoundingClientRect();
+      return r.left >= h.left && r.right <= h.right + 0.5 && r.top >= h.top && r.bottom <= h.bottom + 0.5;
+    });
+    expect(inside).toBe(true);
+  });
+});

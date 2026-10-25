@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
+import { GamePage } from './GamePage';
 import { GameScreen } from './GameScreen';
 import { UpgradesPage } from './UpgradesPage';
 import { createGameController } from './game-controller';
@@ -264,5 +265,15 @@ describe('CSS das Melhorias', () => {
     expect(css).toMatch(/\.ap-uptab \{[^}]*min-height:\s*(4[4-9]|[5-9]\d)px/);
     expect(css).toMatch(/\.ap-up-body p \{[^}]*overflow-wrap:\s*anywhere/);
     expect(css).toMatch(/minmax\(0, 1fr\)/);
+  });
+});
+
+describe('poeira no cabeçalho das Melhorias', () => {
+  it('a página mostra quanta poeira a pessoa tem (e só a página que decide compra)', () => {
+    const withDust = renderToStaticMarkup(<GamePage name="upgrades" notice="x" onClose={() => {}} dust="1,5 mil" />);
+    expect(withDust).toContain('ap-shead-dust');
+    expect(withDust).toContain('1,5 mil');
+    expect(withDust).toContain('Você tem 1,5 mil de poeira');
+    expect(renderToStaticMarkup(<GamePage name="grimoires" notice="x" onClose={() => {}} />)).not.toContain('ap-shead-dust');
   });
 });
