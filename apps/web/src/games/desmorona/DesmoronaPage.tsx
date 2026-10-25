@@ -10,6 +10,7 @@ const HOW = [
   'Todo mundo cai do céu na camada de cima. Cada ladrilho que você pisa aguenta um instante e some.',
   'Fique sempre em movimento: ladrilho que racha (treme e fica vermelho) vai cair com você em cima.',
   'Se o chão acabar, você cai para a camada de baixo, que é menor. Cair da última camada é o fim.',
+  'Toque em pular de novo no ar para o pulo duplo: um por voo, ajuda a atravessar buracos e a fugir de uma queda.',
   'Vence o último que ficar de pé. Quem cai assiste os outros.',
 ];
 

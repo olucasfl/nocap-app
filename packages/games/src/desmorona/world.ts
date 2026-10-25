@@ -1,6 +1,7 @@
 import { createRng } from '../core/rng';
 import {
   DSM_ACCEL,
+  DSM_AIR_JUMP,
   DSM_BODY_R,
   DSM_KNOCK_DECAY,
   DSM_PUSH,
@@ -83,6 +84,8 @@ export interface DsmPlayer extends DsmPlayerInfo {
   /** Impulso de empurrão em andamento (m/s); se apaga sozinho. */
   kx: number;
   kz: number;
+  /** Já usou o pulo duplo neste voo. */
+  airJumped: boolean;
   /** Online: raposa de outra pessoa. Quem manda é o relato dela, o mundo não simula o corpo. */
   remote?: boolean;
 }
@@ -94,6 +97,7 @@ export type DsmEvent =
   | { type: 'wave'; layer: number; index: number }
   | { type: 'fall'; id: string; layer: number }
   | { type: 'dead'; id: string }
+  | { type: 'airjump'; id: string }
   | { type: 'push'; from: string; to: string; kx: number; kz: number }
   | { type: 'win'; id: string };
 
@@ -160,6 +164,7 @@ export class DsmWorld {
         deathOrder: 0,
         kx: 0,
         kz: 0,
+        airJumped: false,
       });
     });
   }
@@ -171,7 +176,7 @@ export class DsmWorld {
   }
 
   /** Online: a posição relatada de outra raposa. */
-  setRemote(id: string, s: { x: number; y: number; z: number; vx: number; vz: number; heading: number; grounded: boolean; layer: number }): void {
+  setRemote(id: string, s: { x: number; y: number; z: number; vx: number; vz: number; heading: number; grounded: boolean; layer: number; airJumped?: boolean }): void {
     const p = this.players.find((q) => q.id === id);
     if (!p || !p.remote || !p.alive) return;
     p.x = s.x;
@@ -182,6 +187,8 @@ export class DsmWorld {
     p.heading = s.heading;
     if (s.grounded && !p.grounded) this.events.push({ type: 'land', id, layer: s.layer });
     if (s.layer > p.deepest && p.deepest >= 0) this.events.push({ type: 'fall', id, layer: s.layer });
+    if (s.airJumped && !p.airJumped && !s.grounded) this.events.push({ type: 'airjump', id });
+    p.airJumped = !!s.airJumped && !s.grounded;
     p.grounded = s.grounded;
     p.layer = s.layer;
     if (s.layer > p.deepest) p.deepest = s.layer;
@@ -285,6 +292,11 @@ export class DsmWorld {
     if (p.grounded && input.jump) {
       p.vy = DSM_JUMP;
       p.grounded = false;
+    } else if (!p.grounded && input.jump && !p.airJumped) {
+      // pulo duplo: sempre dá a altura inteira, mesmo no meio de uma queda
+      p.airJumped = true;
+      p.vy = DSM_AIR_JUMP;
+      this.events.push({ type: 'airjump', id: p.id });
     }
     p.x += (p.vx + p.kx) * dt;
     p.z += (p.vz + p.kz) * dt;
@@ -383,6 +395,7 @@ export class DsmWorld {
           p.y = sy;
           p.vy = 0;
           p.grounded = true;
+          p.airJumped = false;
           p.layer = layer;
           if (layer > p.deepest) {
             if (p.deepest >= 0) this.events.push({ type: 'fall', id: p.id, layer });

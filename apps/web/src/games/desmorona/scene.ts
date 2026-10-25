@@ -44,6 +44,13 @@ interface Fox {
   group: THREE.Group;
   body: THREE.Object3D;
   id: string;
+  /** Pulo duplo: 0 a 1 enquanto a pirueta roda; -1 parado. */
+  flip: number;
+}
+
+interface Ring {
+  mesh: THREE.Mesh;
+  age: number;
 }
 
 const tmpM = new THREE.Matrix4();
@@ -66,6 +73,7 @@ export class DsmScene {
   private foxes = new Map<string, Fox>();
   private falling: Falling[] = [];
   private tags: THREE.Sprite[] = [];
+  private rings: Ring[] = [];
   /** Ladrilhos pisados (precisam ser reatualizados a cada quadro por causa da tremida). */
   private hot = new Set<string>();
   private lava: THREE.Mesh;
@@ -165,11 +173,32 @@ export class DsmScene {
   private addFox(p: DsmPlayer) {
     const group = new THREE.Group();
     const hero = buildHero({ fur: p.color, own: true });
-    group.add(hero);
-    const body = hero;
+    // a pirueta do pulo duplo gira em volta do meio do corpo, não dos pés
+    const body = new THREE.Group();
+    body.position.y = 0.6;
+    hero.position.y = -0.6;
+    body.add(hero);
+    group.add(body);
     group.add(this.nameTag(p.name));
     this.scene.add(group);
-    this.foxes.set(p.id, { group, body, id: p.id });
+    this.foxes.set(p.id, { group, body, id: p.id, flip: -1 });
+  }
+
+  /** O anel de ar que abre sob a raposa no pulo duplo (só escala e opacidade). */
+  private spawnRing(x: number, y: number, z: number) {
+    let ring = this.rings.find((r) => r.age >= 0.45);
+    if (!ring) {
+      const mat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide, fog: false });
+      const mesh = new THREE.Mesh(new THREE.RingGeometry(0.62, 0.8, 40), mat);
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.renderOrder = 9;
+      this.scene.add(mesh);
+      ring = { mesh, age: 1 };
+      this.rings.push(ring);
+    }
+    ring.age = 0;
+    ring.mesh.position.set(x, y + 0.08, z);
+    ring.mesh.visible = true;
   }
 
   /** O nome em cima da cabeça: um cartaz que sempre olha para a câmera e aparece mesmo atrás de um ladrilho. */
@@ -215,7 +244,14 @@ export class DsmScene {
   /** Reage aos eventos do motor (tremida, queda de ladrilho, tremor da câmera). */
   handle(events: readonly DsmEvent[], focusId: string) {
     for (const e of events) {
-      if (e.type === 'step') {
+      if (e.type === 'airjump') {
+        const fox = this.foxes.get(e.id);
+        const p = this.world.players.find((q) => q.id === e.id);
+        if (fox && p) {
+          fox.flip = this.reduced ? -1 : 0;
+          this.spawnRing(p.x, p.y, p.z);
+        }
+      } else if (e.type === 'step') {
         const lm = this.layers[e.layer];
         const i = lm?.index.get(hexKey(e.layer, e.q, e.r));
         if (lm && i !== undefined) {
@@ -300,7 +336,31 @@ export class DsmScene {
       const speed = Math.hypot(p.vx, p.vz);
       const squash = p.grounded ? 1 + Math.sin(this.world.t * 18) * 0.04 * Math.min(1, speed / 3) : 1.08;
       fox.body.scale.set(1 / Math.sqrt(squash), squash, 1 / Math.sqrt(squash));
-      fox.body.rotation.x = p.grounded ? Math.min(0.18, speed * 0.03) : 0.25;
+      const pitch = p.grounded ? Math.min(0.18, speed * 0.03) : 0.25;
+      if (fox.flip >= 0) {
+        fox.flip += dt / 0.55;
+        if (fox.flip >= 1) fox.flip = -1;
+      }
+      if (fox.flip >= 0) {
+        // pirueta para a frente com saída suave, esticando no impulso e encolhendo na volta
+        const e = 1 - Math.pow(1 - fox.flip, 3);
+        fox.body.rotation.x = pitch + e * Math.PI * 2;
+        const stretch = 1 + 0.22 * Math.sin(Math.PI * Math.min(1, fox.flip * 1.6));
+        fox.body.scale.set(1 / Math.sqrt(stretch), stretch, 1 / Math.sqrt(stretch));
+      } else {
+        fox.body.rotation.x = pitch;
+      }
+    }
+    // anéis do pulo duplo
+    for (const r of this.rings) {
+      if (r.age >= 0.45) {
+        r.mesh.visible = false;
+        continue;
+      }
+      r.age += dt;
+      const k = Math.min(1, r.age / 0.45);
+      r.mesh.scale.setScalar(1 + k * 3.2);
+      (r.mesh.material as THREE.MeshBasicMaterial).opacity = 0.85 * (1 - k) * (1 - k);
     }
     // câmera
     const target = this.world.players.find((p) => p.id === focusId);
@@ -344,6 +404,10 @@ export class DsmScene {
 
   dispose() {
     this.disposed = true;
+    for (const r of this.rings) {
+      r.mesh.geometry.dispose();
+      (r.mesh.material as THREE.Material).dispose();
+    }
     for (const t of this.tags) {
       t.material.map?.dispose();
       t.material.dispose();

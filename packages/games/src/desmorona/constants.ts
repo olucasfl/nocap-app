@@ -35,6 +35,8 @@ export const DSM_CRACK_SEC = 0.4;
 export const DSM_SPEED = 6.2;
 export const DSM_ACCEL = 46;
 export const DSM_JUMP = 8.2;
+/** Pulo duplo: um por voo, no ar, logo depois de sair do chão ou durante a queda. */
+export const DSM_AIR_JUMP = 8.4;
 export const DSM_GRAVITY = 26;
 export const DSM_MAX_FALL = 38;
 export const DSM_RADIUS = 0.34;

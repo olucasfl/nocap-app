@@ -200,3 +200,56 @@ describe('colisão e empurrão (fase 3)', () => {
     expect(b.kx).toBe(8);
   });
 });
+
+describe('pulo duplo', () => {
+  const landed = () => {
+    const w = new DsmWorld('dj', infos(2));
+    // para assim que pousa: o chão debaixo dela ainda não quebrou
+    for (let i = 0; i < 150 && !(w.players[0] as DsmPlayer).grounded; i++) w.step(DSM_DT);
+    w.drainEvents();
+    return { w, p: w.players[0] as DsmPlayer };
+  };
+  const jump: DsmInput = { mx: 0, mz: 0, jump: true };
+  const none: DsmInput = { mx: 0, mz: 0, jump: false };
+
+  it('dá um segundo impulso no ar, só um por voo, e volta com o pouso', () => {
+    const { w, p } = landed();
+    w.step(DSM_DT, { p0: jump });
+    expect(p.grounded).toBe(false);
+    for (let i = 0; i < 12; i++) w.step(DSM_DT, { p0: none });
+    const vyBefore = p.vy;
+    w.step(DSM_DT, { p0: jump });
+    expect(p.vy).toBeGreaterThan(vyBefore);
+    expect(w.drainEvents().filter((e) => e.type === 'airjump')).toHaveLength(1);
+    const vyAfter = p.vy;
+    w.step(DSM_DT, { p0: jump });
+    expect(p.vy).toBeLessThan(vyAfter); // o terceiro toque não faz nada
+    expect(w.drainEvents().some((e) => e.type === 'airjump')).toBe(false);
+    for (let i = 0; i < 180 && !p.grounded; i++) w.step(DSM_DT, { p0: none });
+    expect(p.airJumped).toBe(false);
+  });
+
+  it('chega mais alto e mais longe que um pulo só', () => {
+    const peak = (double: boolean) => {
+      const { w, p } = landed();
+      const y0 = p.y;
+      let top = y0;
+      w.step(DSM_DT, { p0: jump });
+      for (let i = 0; i < 90; i++) {
+        w.step(DSM_DT, { p0: double && i === 14 ? jump : none });
+        top = Math.max(top, p.y);
+      }
+      return top - y0;
+    };
+    expect(peak(true)).toBeGreaterThan(peak(false) + 1);
+  });
+
+  it('online a raposa dos outros mostra o pulo duplo na borda de subida', () => {
+    const w = new DsmWorld('dj', infos(2));
+    w.goOnline('p0');
+    const s = { x: 0, y: 3, z: 0, vx: 0, vz: 0, heading: 0, grounded: false, layer: 0 };
+    w.setRemote('p1', { ...s, airJumped: true });
+    w.setRemote('p1', { ...s, airJumped: true });
+    expect(w.drainEvents().filter((e) => e.type === 'airjump')).toHaveLength(1);
+  });
+});

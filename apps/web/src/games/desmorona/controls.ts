@@ -38,7 +38,6 @@ export class DsmControls {
   private keys = { up: false, down: false, left: false, right: false };
   private stick: { id: number; ox: number; oy: number; x: number; y: number } | null = null;
   private jumpQueued = false;
-  private jumpHeld = false;
   private onStick: ((s: { ox: number; oy: number; x: number; y: number } | null) => void) | null = null;
   private zone: HTMLElement | null = null;
 
@@ -72,7 +71,6 @@ export class DsmControls {
 
   private reset = () => {
     this.keys = { up: false, down: false, left: false, right: false };
-    this.jumpHeld = false;
     this.stick = null;
     this.onStick?.(null);
   };
@@ -84,8 +82,8 @@ export class DsmControls {
       this.keys[k] = true;
       e.preventDefault();
     } else if (e.code === 'Space') {
-      this.jumpHeld = true;
-      this.jumpQueued = true;
+      // um toque por pulo: segurar não repete (senão o pulo duplo sairia sozinho)
+      if (!e.repeat) this.jumpQueued = true;
       e.preventDefault();
     }
   };
@@ -93,7 +91,6 @@ export class DsmControls {
   private keyUp = (e: KeyboardEvent) => {
     const k = KEYS[e.code];
     if (k) this.keys[k] = false;
-    else if (e.code === 'Space') this.jumpHeld = false;
   };
 
   private down = (e: PointerEvent) => {
@@ -127,7 +124,7 @@ export class DsmControls {
         mz = v.mz;
       }
     }
-    const jump = this.jumpQueued || this.jumpHeld;
+    const jump = this.jumpQueued;
     this.jumpQueued = false;
     return { mx, mz, jump };
   }

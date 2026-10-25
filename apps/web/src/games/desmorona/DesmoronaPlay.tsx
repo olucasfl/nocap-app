@@ -134,7 +134,7 @@ export function DesmoronaPlay({
     const me = () => world.players.find((p) => p.id === meId)!;
 
     // ---- online: posições dos outros, ladrilhos pisados e quem caiu ----
-    const targets = new Map<string, { x: number; y: number; z: number; vx: number; vz: number; heading: number; grounded: boolean; layer: number; at: number }>();
+    const targets = new Map<string, { x: number; y: number; z: number; vx: number; vz: number; heading: number; grounded: boolean; layer: number; air: boolean; at: number }>();
     const unsubs: (() => void)[] = [];
     let posTimer = 0;
     if (online) {
@@ -146,7 +146,7 @@ export function DesmoronaPlay({
             const id = idOfSlot.get(row[0] as number);
             if (!id || id === meId) continue;
             const flags = row[7] as number;
-            targets.set(id, { x: row[1]!, y: row[2]!, z: row[3]!, vx: row[4]!, vz: row[5]!, heading: row[6]!, grounded: (flags & 1) === 1, layer: flags >> 1, at: performance.now() });
+            targets.set(id, { x: row[1]!, y: row[2]!, z: row[3]!, vx: row[4]!, vz: row[5]!, heading: row[6]!, grounded: (flags & 1) === 1, layer: (flags >> 1) & 15, air: (flags & 32) !== 0, at: performance.now() });
           }
         }),
         subscribeRoom('dpushed', (m) => {
@@ -167,7 +167,7 @@ export function DesmoronaPlay({
         const m = me();
         if (!m.alive || phase !== 'play') return;
         const layer = Math.max(0, m.grounded ? m.layer : m.deepest);
-        sendRoomQuiet('dpos', [m.x, m.y, m.z, m.vx, m.vz, m.heading, (m.grounded ? 1 : 0) + layer * 2]);
+        sendRoomQuiet('dpos', [m.x, m.y, m.z, m.vx, m.vz, m.heading, (m.grounded ? 1 : 0) + layer * 2 + (m.airJumped ? 32 : 0)]);
       }, POS_EVERY_MS);
     }
     /** Suaviza as raposas dos outros em direção ao último relato (com um pouco de extrapolação). */
@@ -183,7 +183,7 @@ export function DesmoronaPlay({
         const first = p.deepest < 0 && !p.grounded && p.y > 12;
         const far = Math.hypot(p.x - tx, p.z - tz) > 6;
         const f = first || far ? 1 : k;
-        world.setRemote(p.id, { x: p.x + (tx - p.x) * f, y: p.y + (t.y - p.y) * Math.max(f, 0.5), z: p.z + (tz - p.z) * f, vx: t.vx, vz: t.vz, heading: t.heading, grounded: t.grounded, layer: t.layer });
+        world.setRemote(p.id, { x: p.x + (tx - p.x) * f, y: p.y + (t.y - p.y) * Math.max(f, 0.5), z: p.z + (tz - p.z) * f, vx: t.vx, vz: t.vz, heading: t.heading, grounded: t.grounded, layer: t.layer, airJumped: t.air });
       }
     };
 
@@ -245,6 +245,8 @@ export function DesmoronaPlay({
             else if (e.type === 'fall' && e.id === meId) {
               dsmSfx.fall();
               say(`Você caiu para a camada ${e.layer + 1}`);
+            } else if (e.type === 'airjump') {
+              dsmSfx.airJump(e.id === meId);
             } else if (e.type === 'push') {
               if (online && e.from === meId) sendRoomQuiet('dpush', { to: e.to, kx: e.kx, kz: e.kz });
               if (e.from === meId || e.to === meId) {
