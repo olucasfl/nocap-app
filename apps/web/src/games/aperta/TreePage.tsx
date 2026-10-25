@@ -58,7 +58,7 @@ export function TreePage({ state, onBuy, onRespec, onClose }: Props) {
 
   const buy = (id: string) => {
     if (onBuy(id)) {
-      apertaSfx.thunk();
+      apertaSfx.buy();
       apertaVibrate(14);
     }
   };

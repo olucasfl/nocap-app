@@ -26,7 +26,7 @@ const POP_MS = 1100;
 export function AutoGain({ state, paused, kind = 'dust' }: { state: SaveState; paused: boolean; kind?: 'dust' | 'energy' }) {
   const [pops, setPops] = useState<Pop[]>([]);
   const rates = autoRates(state);
-  const rate = kind === 'energy' ? rates.energy : rates.dust;
+  const rate = kind === 'energy' ? rates.energy * 60 : rates.dust;
   const rateRef = useRef(rate);
   rateRef.current = rate;
   const id = useRef(0);
@@ -114,17 +114,17 @@ export function AutoOrbits({ state, paused }: { state: SaveState; paused: boolea
  */
 export function RateTag({ state, kind }: { state: SaveState; kind: 'dust' | 'energy' }) {
   const rates = autoRates(state);
-  const rate = kind === 'energy' ? rates.energy : rates.dust;
+  const rate = kind === 'energy' ? rates.energy * 60 : rates.dust;
   if (!(rate > 0)) return null;
   const text = rate < 0.1 ? formatDecimal(rate, 2) : rate < 10 ? formatDecimal(rate, 1) : formatNumber(rate);
   return (
-    <span className={`ap-ratetag${kind === 'energy' ? ' is-energy' : ''}`} aria-label={`${kind === 'energy' ? 'Energia' : 'Poeira'} automática: ${text} por segundo`}>
+    <span className={`ap-ratetag${kind === 'energy' ? ' is-energy' : ''}`} aria-label={`${kind === 'energy' ? 'Energia' : 'Poeira'} automática: ${text} por ${kind === 'energy' ? 'minuto' : 'segundo'}`}>
       {kind === 'energy' && (
         <svg viewBox="0 0 16 20" width="11" height="14" aria-hidden="true">
           <path d="M10 1L2 11h5l-1 8 8-11H9z" fill="currentColor" />
         </svg>
       )}
-      +{text}/s
+      +{text}/{kind === 'energy' ? 'min' : 's'}
     </span>
   );
 }

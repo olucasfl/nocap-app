@@ -68,7 +68,7 @@ function Powers({ state }: { state: SaveState }) {
         <dd>{p.dustSec}</dd>
       </div>
       <div>
-        <dt>Energia por segundo</dt>
+        <dt>Energia por minuto</dt>
         <dd>{p.energySec}</dd>
       </div>
     </dl>
@@ -77,7 +77,7 @@ function Powers({ state }: { state: SaveState }) {
 
 function buyFeedback(ok: boolean | void): void {
   if (ok) {
-    apertaSfx.thunk();
+    apertaSfx.buy();
     apertaVibrate(14);
   }
 }
@@ -258,7 +258,7 @@ function GeneratorCard({ row, onBuy, onBuyBatch, dust }: { row: GeneratorRow; on
           }
         }}
       >
-        {(row.status === 'affordable' || row.status === 'short') && <small className="ap-up-verb">{row.status === 'short' ? 'Falta' : 'Melhorar'}</small>}
+        {row.status === 'affordable' && <small className="ap-up-verb">Melhorar</small>}
         <b>{buyLabel(row)}</b>
         {(row.status === 'affordable' || row.status === 'short') && <small>{row.status === 'short' ? `Preço ${formatNumber(row.cost ?? 0)}` : 'poeira'}</small>}
       </button>

@@ -202,13 +202,15 @@ export function itemsView(state: SaveState): ItemsView {
 export function powers(state: SaveState): { touch: string; energy: string; dustSec: string; energySec: string } {
   const s = effectiveStats(state);
   const rates = autoRates(state);
-  return { touch: amount(s.dustPerTouch), energy: amount(s.energyPerTouch), dustSec: formatRate(rates.dust), energySec: formatRate(rates.energy) };
+  return { touch: amount(s.dustPerTouch), energy: amount(s.energyPerTouch), dustSec: formatRate(rates.dust), energySec: formatRate(rates.energy * 60) };
 }
 
 /** Quanto tempo o gerador leva para pagar o que custou, em palavras ("cerca de 12 min"); `null` se não rende nada. */
 export function paybackText(cost: number, gainPerSec: number): string | null {
   if (!(gainPerSec > 0)) return null;
   const sec = cost / gainPerSec;
+  // Mais de 2 h para se pagar não é um bom conselho: a tela não mostra.
+  if (sec > 7200) return null;
   if (sec < 90) return `se paga em ${Math.max(1, Math.round(sec))} s`;
   if (sec < 5400) return `se paga em ${Math.round(sec / 60)} min`;
   return `se paga em ${formatDecimal(sec / 3600, 1)} h`;
@@ -272,9 +274,9 @@ export function generatorRows(state: SaveState): GeneratorRow[] {
       status,
       cost,
       missing: cost !== null ? Math.max(0, Math.ceil(cost - state.run.dust)) : 0,
-      gain: shown ? `Seus geradores de ${unit}: ${amount(now)}/s -> ${amount(next)}/s` : null,
-      total: level > 0 ? `Este gerador rende ${amount(((def.perSec ?? 0) * level * (read(stats) / Math.max(1e-12, rawSum(state, energy)))) )}/s no total` : null,
-      payback: shown && cost !== null ? paybackText(cost, next - now) : null,
+      gain: shown ? (energy ? `Seus geradores de energia: ${amount(now * 60)}/min -> ${amount(next * 60)}/min` : `Seus geradores de ${unit}: ${amount(now)}/s -> ${amount(next)}/s`) : null,
+      total: level > 0 ? `Este gerador rende ${amount(((def.perSec ?? 0) * level * (read(stats) / Math.max(1e-12, rawSum(state, energy)))) * (energy ? 60 : 1))}${energy ? '/min' : '/s'} no total` : null,
+      payback: shown && cost !== null && !energy ? paybackText(cost, next - now) : null,
       lockHint: status === 'locked' && lock ? lockText(lock) : null,
       bulkLevels: batchLevels(state, index),
       bulkCost: batchCost(state, index),

@@ -140,3 +140,10 @@
   left: 100%;
   top: 0;
 }
+
+/* "+0,6/min" é um pouco mais comprido que "+0,6/s": aperta o espaçamento para caber no canto da barra. */
+.ap-ratetag.is-energy {
+  letter-spacing: -0.03em;
+  gap: 2px;
+  padding-inline: 6px;
+}

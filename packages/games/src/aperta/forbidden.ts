@@ -66,7 +66,7 @@ export const FORBIDDEN: readonly ForbiddenDef[] = [
     art: 'buraco negro com jato de luz',
     effects: (l) => [{ kind: 'upgradeCostPct', pct: -lin(40, 8, l) }, { kind: 'dustMult', mult: geo(1.3, 1.27, l) }, priced({ kind: 'energyStepPct', pct: lin(20, 2, l) })],
     seal: [{ kind: 'buyRefund', touches: 10 }],
-    bonus: (l) => `As melhorias custam ${n(lin(40, 8, l))}% menos e o toque rende x${n(geo(1.3, 1.27, l))} de poeira.`,
+    bonus: (l) => `Os itens e geradores custam ${n(lin(40, 8, l))}% menos e o toque rende x${n(geo(1.3, 1.27, l))} de poeira.`,
     price: (l) => `A barra de energia do próximo grimório fica ${n(lin(20, 2, l))}% maior.`,
     sealText: 'Cada melhoria devolve a poeira de 10 toques.',
   },
@@ -136,7 +136,7 @@ export const FORBIDDEN: readonly ForbiddenDef[] = [
     effects: (l) => [{ kind: 'startDust', amount: geo(5e6, 2.2, l) }, { kind: 'dustMult', mult: geo(1.3, 1.3, l) }, priced({ kind: 'upgradeCostPct', pct: lin(10, 2, l) })],
     seal: [{ kind: 'freeUpgradeLevels', upgrade: 'satellite', levels: 5 }],
     bonus: (l) => `Cada vida começa com ${n(geo(5, 2.2, l))} mi de poeira e o toque rende x${n(geo(1.3, 1.3, l))}.`,
-    price: (l) => `As melhorias custam ${n(lin(10, 2, l))}% mais.`,
+    price: (l) => `Os itens e geradores custam ${n(lin(10, 2, l))}% mais.`,
     sealText: 'Cada vida começa com 5 níveis de Satélite de graça.',
   },
   {

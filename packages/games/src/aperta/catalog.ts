@@ -398,7 +398,7 @@ const generator = (id: string, name: string, base: number, perSec: number, max: 
 const energyGen = (id: string, name: string, base: number, perSec: number, max: number): UpgradeDef => { return ({
   id,
   name,
-  text: `+${fmt(perSec)} toque de energia por segundo`,
+  text: `+${fmt(Math.round(perSec * 600) / 10)} de energia por minuto`,
   kind: 'energy',
   base,
   growth: GENERATOR_GROWTH,
@@ -475,11 +475,11 @@ export const UPGRADES: readonly UpgradeDef[] = [
   generator('quasar', 'Quasar', 200000000000, 900000, 12),
   generator('web', 'Teia Cósmica', 5000000000000, 5000000, 12),
 
-  energyGen('antenna', 'Antena', 300, 0.004, 6),
-  energyGen('receiver', 'Receptor de Sinal', 2500, 0.02, 6),
-  energyGen('matrix', 'Matriz de Escuta', 25000, 0.1, 8),
-  energyGen('deepnet', 'Rede Profunda', 300000, 0.5, 8),
-  energyGen('array', 'Conjunto Interestelar', 4000000, 2.5, 8),
+  energyGen('antenna', 'Antena', 300, 0.005, 6),
+  energyGen('receiver', 'Receptor de Sinal', 2500, 0.025, 6),
+  energyGen('matrix', 'Matriz de Escuta', 25000, 0.12, 8),
+  energyGen('deepnet', 'Rede Profunda', 300000, 0.6, 8),
+  energyGen('array', 'Conjunto Interestelar', 4000000, 3, 8),
 ];
 
 const UPGRADE_INDEX = new Map(UPGRADES.map((u, i) => [u.id, i]));

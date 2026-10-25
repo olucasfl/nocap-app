@@ -15,10 +15,30 @@ export function clackFrequency(combo: number): number {
   return PENTA[Math.min(PENTA.length - 1, Math.max(0, i))]!;
 }
 
+/**
+ * Barramento do Aperta!: um compressor entre os sons e a saída. Toques seguidos e sons juntos (captura + clique) nunca
+ * estouram nem "travam" o áudio, e o volume fica parelho.
+ */
+let bus: { ctx: AudioContext; node: AudioNode } | null = null;
+function busFor(kit: NonNullable<ReturnType<typeof audioKit>>): AudioNode {
+  if (!bus || bus.ctx !== kit.ctx) {
+    const comp = kit.ctx.createDynamicsCompressor();
+    comp.threshold.value = -14;
+    comp.knee.value = 12;
+    comp.ratio.value = 6;
+    comp.attack.value = 0.002;
+    comp.release.value = 0.12;
+    comp.connect(kit.out);
+    bus = { ctx: kit.ctx, node: comp };
+  }
+  return bus.node;
+}
+
 function tone(type: OscillatorType, f0: number, f1: number, dur: number, peak: number, delay = 0) {
   const kit = audioKit();
   if (!kit || kit.muted()) return;
-  const { ctx, out } = kit;
+  const { ctx } = kit;
+  const out = busFor(kit);
   const t = ctx.currentTime + delay;
   const o = ctx.createOscillator();
   const g = ctx.createGain();
@@ -33,16 +53,17 @@ function tone(type: OscillatorType, f0: number, f1: number, dur: number, peak: n
   o.stop(t + dur + 0.05);
 }
 
-function noise(f0: number, f1: number, q: number, dur: number, peak: number, delay = 0) {
+function noise(f0: number, f1: number, q: number, dur: number, peak: number, delay = 0, type: BiquadFilterType = 'bandpass') {
   const kit = audioKit();
   if (!kit || kit.muted()) return;
-  const { ctx, out, noise: buf } = kit;
+  const { ctx, noise: buf } = kit;
+  const out = busFor(kit);
   const t = ctx.currentTime + delay;
   const src = ctx.createBufferSource();
   const fl = ctx.createBiquadFilter();
   const g = ctx.createGain();
   src.buffer = buf;
-  fl.type = 'bandpass';
+  fl.type = type;
   fl.Q.value = q;
   fl.frequency.setValueAtTime(f0, t);
   if (f1 !== f0) fl.frequency.exponentialRampToValueAtTime(f1, t + dur);
@@ -54,12 +75,39 @@ function noise(f0: number, f1: number, q: number, dur: number, peak: number, del
   src.stop(t + dur + 0.05);
 }
 
+let recentClicks: number[] = [];
+let streak = 0;
+let lastClickAt = -1e9;
+
 export const apertaSfx = {
-  /** toque no astro; `combo` sobe o tom pela pentatônica */
+  /**
+   * Toque no astro: um "tic" satisfatório em três camadas, curtas e sempre no mesmo instante do toque.
+   * (1) estalo de ar agudo, (2) corpo que cai rápido (o "pop"), (3) brilho na nota da pentatônica, que sobe com o combo.
+   * Com muitos toques seguidos (mais de 8 em 100 ms) só o estalo e o corpo tocam, para não pesar.
+   */
   clack(combo = 0) {
-    const f = clackFrequency(combo);
-    tone('triangle', f, f, 0.05, 0.16);
-    noise(2400, 2400, 1.2, 0.02, 0.12);
+    // Sem combo no jogo, a nota sobe sozinha a cada toque seguido (até 450 ms entre eles) e recomeça depois da pausa.
+    const t0 = typeof performance !== 'undefined' ? performance.now() : 0;
+    streak = t0 - lastClickAt < 450 ? streak + 1 : 0;
+    lastClickAt = t0;
+    const f = clackFrequency(combo > 0 ? combo : streak % PENTA.length);
+    const cents = 1 + (Math.random() - 0.5) * 0.012;
+    const now = typeof performance !== 'undefined' ? performance.now() : 0;
+    recentClicks = recentClicks.filter((t) => now - t < 100);
+    recentClicks.push(now);
+    noise(5200, 5200, 0.7, 0.014, 0.2, 0, 'highpass');
+    tone('sine', f * 1.9 * cents, f * 0.75 * cents, 0.07, 0.34);
+    if (recentClicks.length <= 8) {
+      tone('triangle', f * 2 * cents, f * 2 * cents, 0.11, 0.11);
+      tone('sine', f * 4 * cents, f * 4 * cents, 0.07, 0.04, 0.004);
+    }
+  },
+  /** comprou um item ou gerador: baque de moeda e dois brilhos que sobem (sinal de "ganhei algo") */
+  buy() {
+    tone('sine', 190, 60, 0.16, 0.55);
+    noise(1200, 400, 0.7, 0.05, 0.25);
+    tone('triangle', 988, 988, 0.12, 0.16, 0.05);
+    tone('triangle', 1319, 1319, 0.2, 0.16, 0.12);
   },
   /** objeto aparecendo na tela; o asteroide passa grave e a sonda deixa um bipe */
   whoosh(kind?: 'asteroid' | 'probe') {
@@ -139,10 +187,10 @@ export const apertaSfx = {
   win() {
     [523, 659, 784, 1047].forEach((f, i) => tone('triangle', f, f, 0.16, 0.22, 0.09 * i));
   },
-  /** erro ou bloqueado (sem saldo) */
+  /** erro ou bloqueado (sem saldo): duas notas que descem, curtas e macias, sem susto */
   boing() {
-    tone('sine', 420, 140, 0.3, 0.3);
-    tone('sine', 300, 110, 0.28, 0.1, 0.05);
+    tone('triangle', 330, 262, 0.1, 0.22);
+    tone('triangle', 247, 196, 0.16, 0.22, 0.09);
   },
 };
 
