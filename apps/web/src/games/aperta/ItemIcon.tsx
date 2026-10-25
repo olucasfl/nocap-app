@@ -22,6 +22,9 @@ const FRAME: Record<ItemEra, { a: string; b: string }> = {
 
 const stroke = { fill: 'none', stroke: INK, strokeWidth: 2.5, strokeLinecap: 'round', strokeLinejoin: 'round' } as const;
 
+/** Itens de "mãos" (luvas, aço, titânio...) usam a mão com o sinal de mais; o resto do toque usa a lente. */
+const HAND_ITEMS = new Set(['gloves', 'steel', 'titan', 'diamond', 'starhand', 'solarhand', 'nebhand', 'cosmoshand']);
+
 const GLYPH: Record<string, ReactNode> = {
   touchMult: (
     <>
@@ -81,7 +84,7 @@ export function ItemIcon({ id, size = 52 }: { id: string; size?: number }) {
       </defs>
       <rect x="2" y="2" width="44" height="44" rx="12" fill={`url(#${grad})`} stroke={INK} strokeWidth="2.5" />
       <rect x="6" y="6" width="36" height="36" rx="9" fill="#101936" fillOpacity="0.88" />
-      <g transform="translate(6 4) scale(0.75)">{GLYPH[type]}</g>
+      <g transform="translate(6 4) scale(0.75)">{GLYPH[HAND_ITEMS.has(id) ? 'touchAdd' : type]}</g>
       {Array.from({ length: rank }, (_, i) => (
         <circle key={i} cx={24 + (i - (rank - 1) / 2) * 5} cy="40" r="1.7" fill={frame.a} />
       ))}

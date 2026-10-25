@@ -140,11 +140,11 @@ function UpcomingItem({ row }: { row: ItemRow }) {
 
 function OwnedItem({ row }: { row: ItemRow }) {
   return (
-    <li className="ap-own" data-era={row.era}>
-      <span className="ap-own-icon">
+    <li className="ap-bought" data-era={row.era}>
+      <span className="ap-bought-icon">
         <ItemIcon id={row.id} size={40} />
       </span>
-      <div className="ap-own-body">
+      <div className="ap-bought-body">
         <h4>{row.name}</h4>
         <p>{row.text}</p>
       </div>
@@ -196,7 +196,7 @@ function ItemsPanel({ state, onBuy }: { state: SaveState; onBuy: Props['onBuy'] 
         {view.owned.length === 0 ? (
           <p className="ap-up-empty">Os itens que você comprar aparecem aqui.</p>
         ) : (
-          <ul className="ap-ownlist" aria-label="Itens comprados">
+          <ul className="ap-boughtlist" aria-label="Itens comprados">
             {view.owned.map((r) => (
               <OwnedItem key={r.id} row={r} />
             ))}
@@ -287,11 +287,11 @@ function GeneratorCard({ row, onBuy, onBuyBatch, dust }: { row: GeneratorRow; on
 
 function OwnedGenerator({ row }: { row: GeneratorRow }) {
   return (
-    <li className={`ap-own is-gen${row.energy ? ' is-energy' : ''}`}>
-      <span className="ap-own-icon">
+    <li className={`ap-bought is-gen${row.energy ? ' is-energy' : ''}`}>
+      <span className="ap-bought-icon">
         <UpgradeIcon id={row.id} size={40} />
       </span>
-      <div className="ap-own-body">
+      <div className="ap-bought-body">
         <h4>{row.name}</h4>
         <p>{row.total ?? row.text}</p>
         <Pips level={row.level} max={row.max} />
@@ -341,7 +341,7 @@ function GeneratorsPanel({ state, onBuy, onBuyBatch }: { state: SaveState; onBuy
         {owned.length === 0 ? (
           <p className="ap-up-empty">Os geradores que você comprar aparecem aqui, com o quanto rendem.</p>
         ) : (
-          <ul className="ap-ownlist" aria-label="Geradores comprados">
+          <ul className="ap-boughtlist" aria-label="Geradores comprados">
             {owned.map((r) => (
               <OwnedGenerator key={r.id} row={r} />
             ))}
