@@ -280,9 +280,29 @@ export class DsmScene {
       const sh = this.reduced ? 0 : this.shake * 0.35;
       this.camera.position.set(this.camPos.x + (Math.random() - 0.5) * sh, this.camPos.y + (Math.random() - 0.5) * sh, this.camPos.z);
       this.camera.lookAt(this.camFocus.x, this.camFocus.y + CAM_LOOK_UP, this.camFocus.z - 1.5);
+      this.fadeUpperLayers(dt, target.y);
     }
     this.lava.position.y += Math.sin(this.world.t * 1.6) * 0.002;
     this.renderer.render(this.scene, this.camera);
+  }
+
+  /** As camadas acima de quem a câmera segue ficam quase transparentes: nada tapa a raposa depois de uma queda. */
+  private fadeUpperLayers(dt: number, focusY: number) {
+    const k = 1 - Math.exp(-dt * 9);
+    for (let l = 0; l < this.layers.length; l++) {
+      const lm = this.layers[l] as LayerMesh;
+      const mat = lm.mesh.material as THREE.MeshLambertMaterial;
+      const want = layerY(l) > focusY + 1.2 ? 0.07 : 1;
+      const cur = mat.opacity + (want - mat.opacity) * k;
+      mat.opacity = Math.abs(cur - want) < 0.01 ? want : cur;
+      const solid = mat.opacity >= 0.99;
+      if (mat.transparent === solid) {
+        mat.transparent = !solid;
+        mat.depthWrite = solid;
+        mat.needsUpdate = true;
+      }
+      lm.mesh.visible = mat.opacity > 0.02;
+    }
   }
 
   dispose() {
