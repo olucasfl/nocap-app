@@ -10,6 +10,7 @@ import {
   type DsmPlayerInfo,
 } from '@nocap/games';
 import { dsmSfx } from '@/lib/desmorona-audio';
+import { sendRoomQuiet, serverNow, subscribeRoom } from '@/lib/rooms';
 import { DsmControls, STICK_RADIUS } from './controls';
 import { DsmScene } from './scene';
 
@@ -37,11 +38,39 @@ interface Hud {
 
 const seedOf = () => crypto.randomUUID().replace(/-/g, '').slice(0, 12);
 
+/** Partida em sala: a seed, a hora da largada (relógio do servidor) e as raposas na ordem das vagas. */
+export interface DsmOnline {
+  seed: string;
+  startAt: number;
+  meId: string;
+  infos: DsmPlayerInfo[];
+}
+
+/** Quanto tempo as raposas dos outros ficam "atrasadas" na tela para o movimento sair liso. */
+const SMOOTH = 14;
+const POS_EVERY_MS = 66;
+
 /** Uma partida do Desmorona! (treino contra bots). Solta a raposa do ar, roda o motor e desenha a cena. */
-export function DesmoronaPlay({ bots, onExit, onAgain }: { bots: number; onExit: () => void; onAgain: () => void }) {
+export function DesmoronaPlay({
+  bots = 0,
+  online,
+  dead,
+  onExit,
+  onAgain,
+}: {
+  bots?: number;
+  online?: DsmOnline;
+  /** Online: quem a sala já deu como caído (vem do estado da sala). */
+  dead?: string[];
+  onExit: () => void;
+  onAgain?: () => void;
+}) {
+  const deadRef = useRef<string[]>([]);
+  deadRef.current = dead ?? [];
+  const total = online ? online.infos.length : bots + 1;
   const canvas = useRef<HTMLCanvasElement>(null);
   const zone = useRef<HTMLDivElement>(null);
-  const [hud, setHud] = useState<Hud>({ alive: bots + 1, total: bots + 1, layer: 1, phase: 'ready', count: 3, note: '', dead: false, watching: '' });
+  const [hud, setHud] = useState<Hud>({ alive: total, total, layer: 1, phase: 'ready', count: 3, note: '', dead: false, watching: '' });
   const [stick, setStick] = useState<{ ox: number; oy: number; x: number; y: number } | null>(null);
   const [result, setResult] = useState<DsmResult | null>(null);
   const controls = useMemo(() => new DsmControls(), []);
@@ -53,12 +82,14 @@ export function DesmoronaPlay({ bots, onExit, onAgain }: { bots: number; onExit:
     const el = canvas.current;
     const zoneEl = zone.current;
     if (!el || !zoneEl) return undefined;
-    const infos: DsmPlayerInfo[] = [
+    const meId = online?.meId ?? 'me';
+    const infos: DsmPlayerInfo[] = online?.infos ?? [
       { id: 'me', name: 'Você', color: FURS[0] as number },
       ...Array.from({ length: bots }, (_, i) => ({ id: `bot${i}`, name: BOT_NAMES[i] ?? `Raposa ${i + 1}`, color: FURS[(i + 1) % FURS.length] as number, bot: true })),
     ];
-    const seed = seedOf();
+    const seed = online?.seed ?? seedOf();
     const world = new DsmWorld(seed, infos);
+    if (online) world.goOnline(meId);
     const reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
     const scene = new DsmScene(el, world, reduced);
     const mem = new Map(world.players.filter((p) => p.bot).map((p, i) => [p.id, newBotMemory((i % 4) * 0.15)]));
@@ -68,7 +99,7 @@ export function DesmoronaPlay({ bots, onExit, onAgain }: { bots: number; onExit:
     let phase: Hud['phase'] = 'ready';
     const readyAt = performance.now();
     let lastCount = 4;
-    let focus = 'me';
+    let focus = meId;
     let acc = 0;
     let last = performance.now();
     let hudAt = 0;
@@ -82,7 +113,7 @@ export function DesmoronaPlay({ bots, onExit, onAgain }: { bots: number; onExit:
       }, 2600);
     };
 
-    const focusList = () => world.players.filter((p) => p.alive && p.id !== 'me');
+    const focusList = () => world.players.filter((p) => p.alive && p.id !== meId);
     api.current = {
       next: (d) => {
         const list = focusList();
@@ -100,13 +131,59 @@ export function DesmoronaPlay({ bots, onExit, onAgain }: { bots: number; onExit:
     const ro = new ResizeObserver(resize);
     ro.observe(el);
 
-    const me = () => world.players.find((p) => p.id === 'me')!;
+    const me = () => world.players.find((p) => p.id === meId)!;
+
+    // ---- online: posições dos outros, ladrilhos pisados e quem caiu ----
+    const targets = new Map<string, { x: number; y: number; z: number; vx: number; vz: number; heading: number; grounded: boolean; layer: number; at: number }>();
+    const unsubs: (() => void)[] = [];
+    let posTimer = 0;
+    if (online) {
+      const idOfSlot = new Map(infos.map((p, i) => [i, p.id]));
+      unsubs.push(
+        subscribeRoom('pos', (m) => {
+          if (!Array.isArray(m)) return;
+          for (const row of m as number[][]) {
+            const id = idOfSlot.get(row[0] as number);
+            if (!id || id === meId) continue;
+            const flags = row[7] as number;
+            targets.set(id, { x: row[1]!, y: row[2]!, z: row[3]!, vx: row[4]!, vz: row[5]!, heading: row[6]!, grounded: (flags & 1) === 1, layer: flags >> 1, at: performance.now() });
+          }
+        }),
+        subscribeRoom('dsteps', (m) => {
+          if (!Array.isArray(m)) return;
+          for (const row of m as number[][]) world.applyStep(row[0]!, row[1]!, row[2]!, row[3]! / 1000);
+        }),
+      );
+      sendRoomQuiet('dsync');
+      posTimer = window.setInterval(() => {
+        const m = me();
+        if (!m.alive || phase !== 'play') return;
+        const layer = Math.max(0, m.grounded ? m.layer : m.deepest);
+        sendRoomQuiet('dpos', [m.x, m.y, m.z, m.vx, m.vz, m.heading, (m.grounded ? 1 : 0) + layer * 2]);
+      }, POS_EVERY_MS);
+    }
+    /** Suaviza as raposas dos outros em direção ao último relato (com um pouco de extrapolação). */
+    const driveRemotes = (dt: number, now: number) => {
+      const k = 1 - Math.exp(-dt * SMOOTH);
+      for (const p of world.players) {
+        if (!p.remote || !p.alive) continue;
+        const t = targets.get(p.id);
+        if (!t) continue;
+        const age = Math.min(0.15, (now - t.at) / 1000);
+        const tx = t.x + t.vx * age;
+        const tz = t.z + t.vz * age;
+        const first = p.deepest < 0 && !p.grounded && p.y > 12;
+        const far = Math.hypot(p.x - tx, p.z - tz) > 6;
+        const f = first || far ? 1 : k;
+        world.setRemote(p.id, { x: p.x + (tx - p.x) * f, y: p.y + (t.y - p.y) * Math.max(f, 0.5), z: p.z + (tz - p.z) * f, vx: t.vx, vz: t.vz, heading: t.heading, grounded: t.grounded, layer: t.layer });
+      }
+    };
 
     const frame = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
       if (phase === 'ready') {
-        const left = COUNTDOWN - (now - readyAt) / 1000;
+        const left = online ? (online.startAt - serverNow()) / 1000 : COUNTDOWN - (now - readyAt) / 1000;
         const n = Math.ceil(left - 0.4);
         if (n !== lastCount && n >= 0 && n <= 3) {
           lastCount = n;
@@ -125,14 +202,21 @@ export function DesmoronaPlay({ bots, onExit, onAgain }: { bots: number; onExit:
         }
       }
       if (!document.hidden && !world.ended) {
-        acc += dt;
+        if (!online) acc += dt;
         const m = me();
         const input = m.alive ? controls.read() : { mx: 0, mz: 0, jump: false };
         const wasJump = input.jump && m.grounded && m.alive;
         if (wasJump) dsmSfx.jump();
+        if (online) {
+          // o relógio do jogo é o da sala: todo mundo vê o chão cair na mesma hora
+          const target = (serverNow() - online.startAt) / 1000;
+          acc = Math.min(Math.max(0, target - world.t), 1);
+          driveRemotes(dt, now);
+          for (const id of deadRef.current) if (id !== meId || m.alive) world.markDead(id);
+        }
         while (acc >= DSM_DT) {
           acc -= DSM_DT;
-          const inputs: Record<string, DsmInput> = { me: input };
+          const inputs: Record<string, DsmInput> = { [meId]: input };
           for (const p of world.players) if (p.bot) inputs[p.id] = botInput(world, p, mem.get(p.id)!, rng);
           world.step(DSM_DT, inputs);
           input.jump = false;
@@ -142,27 +226,31 @@ export function DesmoronaPlay({ bots, onExit, onAgain }: { bots: number; onExit:
           scene.handle(events, focus);
           const mp = me();
           for (const e of events) {
-            if (e.type === 'step' && e.id === 'me') dsmSfx.step();
+            if (e.type === 'step' && e.id === meId) {
+              dsmSfx.step();
+              if (online) sendRoomQuiet('dstep', { l: e.layer, q: e.q, r: e.r });
+            }
             else if (e.type === 'break') {
               const t = world.tile(e.layer, e.q, e.r);
               if (t) dsmSfx.crumble(Math.max(0, 1 - Math.hypot(t.x - mp.x, t.z - mp.z) / 22));
-            } else if (e.type === 'land' && e.id === 'me') dsmSfx.land(e.layer > 0);
-            else if (e.type === 'fall' && e.id === 'me') {
+            } else if (e.type === 'land' && e.id === meId) dsmSfx.land(e.layer > 0);
+            else if (e.type === 'fall' && e.id === meId) {
               dsmSfx.fall();
               say(`Você caiu para a camada ${e.layer + 1}`);
             } else if (e.type === 'wave') {
               dsmSfx.wave();
               say('Onda de queda!');
             } else if (e.type === 'dead') {
-              dsmSfx.dead(e.id === 'me');
-              if (e.id === 'me') {
+              dsmSfx.dead(e.id === meId);
+              if (e.id === meId) {
+                if (online) sendRoomQuiet('ddead');
                 say('Você foi eliminado. Assista os outros!');
                 const list = focusList();
-                focus = (list[0] as { id: string } | undefined)?.id ?? 'me';
+                focus = (list[0] as { id: string } | undefined)?.id ?? meId;
                 spectate.current.index = 0;
               } else if (e.id === focus) {
                 const list = focusList();
-                focus = (list[0] as { id: string } | undefined)?.id ?? 'me';
+                focus = (list[0] as { id: string } | undefined)?.id ?? meId;
               }
             }
           }
@@ -172,10 +260,10 @@ export function DesmoronaPlay({ bots, onExit, onAgain }: { bots: number; onExit:
       if (world.ended && phase !== 'over') {
         phase = 'over';
         const st = world.standings();
-        dsmSfx.win(world.winnerId === 'me');
+        dsmSfx.win(world.winnerId === meId);
         setResult({
           winnerId: world.winnerId ?? '',
-          standings: st.map((p) => ({ id: p.id, name: p.name, you: p.id === 'me' })),
+          standings: st.map((p) => ({ id: p.id, name: p.name, you: p.id === meId })),
           seconds: world.t,
         });
       }
@@ -200,12 +288,14 @@ export function DesmoronaPlay({ bots, onExit, onAgain }: { bots: number; onExit:
 
     return () => {
       cancelAnimationFrame(raf);
+      window.clearInterval(posTimer);
+      for (const off of unsubs) off();
       ro.disconnect();
       controls.detach();
       scene.dispose();
       if (noteTimer.current !== null) window.clearTimeout(noteTimer.current);
     };
-  }, [bots, controls]);
+  }, [bots, controls, online]);
 
   const knob = stick
     ? (() => {
@@ -283,9 +373,11 @@ export function DesmoronaPlay({ bots, onExit, onAgain }: { bots: number; onExit:
               ))}
             </ol>
             <div className="dsm-over-btns">
-              <button type="button" className="dsm-btn" onClick={onAgain} data-testid="dsm-again">
-                Jogar de novo
-              </button>
+              {onAgain && (
+                <button type="button" className="dsm-btn" onClick={onAgain} data-testid="dsm-again">
+                  Jogar de novo
+                </button>
+              )}
               <button type="button" className="dsm-btn is-ghost" onClick={onExit}>
                 Voltar
               </button>

@@ -61,3 +61,10 @@ export const DSM_MIN_PLAYERS = 2;
 export const DSM_MAX_PLAYERS = 8;
 /** Passo fixo da simulação (s). */
 export const DSM_DT = 1 / 60;
+
+/** Sala online: contagem da largada, tempo máximo e quanto tempo sem relato conta como desconectado. */
+export const DSM_ROOM_COUNTDOWN_MS = 4500;
+export const DSM_ROOM_MAX_SEC = 300;
+export const DSM_ROOM_STALL_MS = 12_000;
+/** Cor do pelo de cada vaga da sala (0xRRGGBB). */
+export const DSM_ROOM_COLORS = [0xff7d26, 0x4d8dff, 0x34c759, 0xff5fa2, 0xffd23f, 0x9a5cff, 0x2fd6d0, 0xf2f2f2] as const;

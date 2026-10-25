@@ -116,3 +116,25 @@ describe('partidas com bots', () => {
     }
   });
 });
+
+describe('modo online', () => {
+  it('só simula a raposa local; passo, morte e fim vêm da sala', () => {
+    const w = new DsmWorld('on', infos(3));
+    w.goOnline('p0');
+    for (let i = 0; i < 90; i++) w.step(DSM_DT);
+    const remote = w.players[1]!;
+    expect(remote.grounded).toBe(false); // a raposa dos outros não cai sozinha
+    w.setRemote(remote.id, { x: 0, y: 0, z: 0, vx: 0, vz: 0, heading: 0, grounded: true, layer: 0 });
+    expect(remote.y).toBe(0);
+    w.applyStep(0, 0, 0, w.t);
+    const tile = w.tile(0, 0, 0)!;
+    expect(tile.status).toBe('pisado');
+    expect(tile.breakAt).toBeCloseTo(w.t + (DSM_TILE_LIFE[0] as number), 9);
+    w.markDead(remote.id);
+    expect(remote.alive).toBe(false);
+    expect(w.ended).toBe(false); // quem decide o fim é a sala
+    w.finish('p0');
+    expect(w.ended).toBe(true);
+    expect(w.winnerId).toBe('p0');
+  });
+});

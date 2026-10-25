@@ -43,10 +43,12 @@ export const MIN_PLAYERS: Record<RoomGame, number> = {
   impostor: 3,
   eco: 2,
   atravessa: 2,
+  desmorona: 2,
 };
 
 export const GAME_NAME: Record<RoomGame, string> = {
   atravessa: 'Atravessa!',
+  desmorona: 'Desmorona!',
   color: 'Mesmíssima',
   time: 'Já Deu?',
   impostor: 'Intruso',
@@ -60,6 +62,7 @@ export const GAME_OF: Record<RoomGame, string> = {
   impostor: 'do Intruso',
   eco: 'do Ecooo',
   atravessa: 'do Atravessa!',
+  desmorona: 'do Desmorona!',
 };
 
 /** Tamanhos do mapa do Checkpoint, em metros (o servidor tem a mesma tabela). */
@@ -72,6 +75,13 @@ const SIZE_NAME: Record<string, string> = {
 
 /** Modos de cada jogo na sala, com uma linha que explica cada um. */
 export const MODES: Record<RoomGame, { id: string; label: string; note: string }[]> = {
+  desmorona: [
+    {
+      id: 'classico',
+      label: 'Último de pé',
+      note: 'Todo mundo cai do céu na camada de cima. O ladrilho que você pisa racha e some; quando o chão acaba você cai para a camada de baixo, e da última camada cai na lava. Vence o último vivo. Sem ranking.',
+    },
+  ],
   eco: [
     {
       id: 'classic',
@@ -140,6 +150,7 @@ export const modeOf = (s: RoomSnapshot) => MODES[s.game].find((m) => m.id === s.
 
 /** Uma linha: "Cor · Clássico · 3 rodadas". */
 export function rulesSummary(s: RoomSnapshot): string {
+  if (s.game === 'desmorona') return 'Desmorona! · Último de pé';
   const rounds = s.settings.rounds;
   // O Intruso só tem um modo, com o mesmo nome do jogo: não repete.
   const mode = modeOf(s)?.label;
@@ -157,6 +168,7 @@ export function rulesSummary(s: RoomSnapshot): string {
 }
 
 export function rulesFor(s: RoomSnapshot): RuleDef[] {
+  if (s.game === 'desmorona') return [];
   const out: RuleDef[] = [];
   const cfg = s.settings;
 

@@ -74,9 +74,10 @@ export function DesmoronaPage() {
                 </svg>
               }
               name="Com amigos"
-              desc="Em breve · até 8 jogadores"
-              cta="Em breve"
-              disabled
+              desc="Sala com código · de 2 a 8 jogadores"
+              cta="Jogar com amigos"
+              to="/sala"
+              search={{ jogo: 'desmorona' }}
               testId="dsm-friends"
             />
           </div>

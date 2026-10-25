@@ -4,7 +4,7 @@ import { create } from 'zustand';
 import { ApiError, apiBase, apiClient } from './api-client';
 import { getToken, useAuth } from './auth';
 
-export type RoomGame = 'color' | 'time' | 'impostor' | 'eco' | 'atravessa';
+export type RoomGame = 'color' | 'time' | 'impostor' | 'eco' | 'atravessa' | 'desmorona';
 export type Phase =
   | 'lobby'
   | 'intro'
@@ -132,6 +132,17 @@ export interface AtravessaRoomState {
   results: Record<string, { meters: number; ms: number | null; deaths: number; finished: boolean }> | null;
 }
 
+/** O Desmorona! em sala (spec 044): vagas, cores, hora da largada e quem já caiu. As posições vêm no fluxo "pos". */
+export interface DesmoronaRoomState {
+  me: string | null;
+  startAt: number | null;
+  slots: Record<string, number>;
+  colors: Record<string, number>;
+  /** Quem já caiu (id → hora da queda em ms de jogo). */
+  dead: Record<string, number>;
+  winnerId: string | null;
+}
+
 export interface RoomSnapshot {
   code: string;
   game: RoomGame;
@@ -155,6 +166,7 @@ export interface RoomSnapshot {
   impostor?: ImpostorState;
   eco?: EcoRoomState;
   atravessa?: AtravessaRoomState;
+  desmorona?: DesmoronaRoomState;
 }
 
 /** Estado do Intruso, por pessoa: cor, dica e papéis só chegam a quem pode vê-los. */
@@ -227,8 +239,8 @@ async function client() {
 let room: Room | null = null;
 
 /** Mensagens frequentes da sala (as posições do Atravessa!) não passam pelo estado: quem quer, assina. */
-type LiveType = 'pos' | 'ack';
-const live: Record<LiveType, Set<(m: unknown) => void>> = { pos: new Set(), ack: new Set() };
+type LiveType = 'pos' | 'ack' | 'dsteps';
+const live: Record<LiveType, Set<(m: unknown) => void>> = { pos: new Set(), ack: new Set(), dsteps: new Set() };
 export function subscribeRoom(type: LiveType, fn: (m: unknown) => void): () => void {
   live[type].add(fn);
   return () => void live[type].delete(fn);
@@ -326,7 +338,7 @@ function attach(r: Room) {
     r.send('ping', { t0: Date.now(), rtt: lastRtt });
   }, 20_000);
 
-  for (const type of ['pos', 'ack'] as const) r.onMessage(type, (m: unknown) => live[type].forEach((fn) => fn(m)));
+  for (const type of ['pos', 'ack', 'dsteps'] as const) r.onMessage(type, (m: unknown) => live[type].forEach((fn) => fn(m)));
   r.onMessage('chat', (m: ChatMessage) =>
     useRoom.setState((s) => ({
       chat: [...s.chat, m].slice(-50),

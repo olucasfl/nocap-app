@@ -72,6 +72,8 @@ export interface DsmPlayer extends DsmPlayerInfo {
   deadAt: number;
   /** 1 = primeiro a morrer; 0 enquanto vivo. */
   deathOrder: number;
+  /** Online: raposa de outra pessoa. Quem manda é o relato dela, o mundo não simula o corpo. */
+  remote?: boolean;
 }
 
 export type DsmEvent =
@@ -107,6 +109,8 @@ export class DsmWorld {
   private waveEvery = DSM_WAVE_EVERY;
   private rng: () => number;
   private events: DsmEvent[] = [];
+  /** Online: o fim da partida e as mortes das outras raposas vêm da sala, não desta conta. */
+  private external = false;
 
   constructor(seed: string, infos: readonly DsmPlayerInfo[]) {
     this.seed = seed;
@@ -142,6 +146,52 @@ export class DsmWorld {
         deathOrder: 0,
       });
     });
+  }
+
+  /** Liga o modo online: `localId` é a única raposa simulada aqui; o fim da partida vem da sala (`finish`). */
+  goOnline(localId: string): void {
+    this.external = true;
+    for (const p of this.players) p.remote = p.id !== localId;
+  }
+
+  /** Online: a posição relatada de outra raposa. */
+  setRemote(id: string, s: { x: number; y: number; z: number; vx: number; vz: number; heading: number; grounded: boolean; layer: number }): void {
+    const p = this.players.find((q) => q.id === id);
+    if (!p || !p.remote || !p.alive) return;
+    p.x = s.x;
+    p.y = s.y;
+    p.z = s.z;
+    p.vx = s.vx;
+    p.vz = s.vz;
+    p.heading = s.heading;
+    if (s.grounded && !p.grounded) this.events.push({ type: 'land', id, layer: s.layer });
+    if (s.layer > p.deepest && p.deepest >= 0) this.events.push({ type: 'fall', id, layer: s.layer });
+    p.grounded = s.grounded;
+    p.layer = s.layer;
+    if (s.layer > p.deepest) p.deepest = s.layer;
+  }
+
+  /** Online: a sala confirmou que alguém pisou neste ladrilho em `at` (s do jogo). Vale a hora da sala. */
+  applyStep(layer: number, q: number, r: number, at: number): void {
+    const tile = this.tile(layer, q, r);
+    if (!tile || tile.status === 'caiu') return;
+    if (tile.status === 'firme') this.events.push({ type: 'step', id: '', layer, q, r });
+    tile.status = 'pisado';
+    tile.breakAt = at + (DSM_TILE_LIFE[layer] ?? 1);
+  }
+
+  /** Online: a sala disse que esta raposa caiu na lava. */
+  markDead(id: string): void {
+    const p = this.players.find((q) => q.id === id);
+    if (p?.alive) this.kill(p);
+  }
+
+  /** Online: a sala decidiu o vencedor. */
+  finish(winnerId: string | null): void {
+    if (this.ended) return;
+    this.ended = true;
+    this.winnerId = winnerId;
+    if (winnerId) this.events.push({ type: 'win', id: winnerId });
   }
 
   tile(layer: number, q: number, r: number): DsmTile | undefined {
@@ -186,6 +236,7 @@ export class DsmWorld {
     const prevY = new Map<string, number>();
     for (const p of this.players) {
       if (!p.alive) continue;
+      if (p.remote) continue;
       prevY.set(p.id, p.y);
       this.movePlayer(p, inputs[p.id] ?? NO_INPUT, dt);
     }
@@ -255,7 +306,7 @@ export class DsmWorld {
 
   private updateTiles(): void {
     for (const p of this.players) {
-      if (!p.alive || !p.grounded || this.t < DSM_GRACE_SEC) continue;
+      if (!p.alive || p.remote || !p.grounded || this.t < DSM_GRACE_SEC) continue;
       const tile = this.standingTile(p.layer, p.x, p.z);
       if (tile && tile.status === 'firme') {
         tile.status = 'pisado';
@@ -301,7 +352,7 @@ export class DsmWorld {
   private checkLava(): void {
     const floor = layerY(DSM_LAYERS - 1) - DSM_LAVA_DEPTH;
     for (const p of this.players) {
-      if (p.alive && p.y < floor) this.kill(p);
+      if (p.alive && !p.remote && p.y < floor) this.kill(p);
     }
   }
 
@@ -314,6 +365,7 @@ export class DsmWorld {
   }
 
   private checkEnd(): void {
+    if (this.external) return;
     const alive = this.alivePlayers();
     if (alive.length > 1 || this.players.length < 2) return;
     this.ended = true;

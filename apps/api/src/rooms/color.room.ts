@@ -7,7 +7,8 @@ import { ImpostorRoomEngine } from './impostor/impostor-room.engine';
 import { EcoRoomEngine } from './eco-room.engine';
 import { EcoLeaderRoomEngine } from './eco-leader-room.engine';
 import { AtravessaRoomEngine } from './atravessa-room.engine';
-import { ATR_ROOM_MAX_PLAYERS, IMPOSTOR_MAX_PLAYERS } from '@nocap/games';
+import { DesmoronaRoomEngine } from './desmorona-room.engine';
+import { ATR_ROOM_MAX_PLAYERS, DSM_MAX_PLAYERS, IMPOSTOR_MAX_PLAYERS } from '@nocap/games';
 import { GUEST_PREFIX, cleanNickname, createGuestLimiter, isGuestId, usernameLookalikes } from './guest-nick';
 import type { InvitesService } from './invites.service';
 import type { RoomsRepository } from './rooms.repository';
@@ -435,7 +436,7 @@ export class ColorRoom extends Room {
       // O Intruso é a Cor: entra na aba da Mesmíssima do histórico, com o modo dele.
       const game = this.engine.game;
       await roomDeps.repo?.saveRoomMatch({
-        game: game === 'impostor' || game === 'atravessa' ? 'color' : game,
+        game: game === 'impostor' || game === 'atravessa' || game === 'desmorona' ? 'color' : game,
         mode: this.engine.historyMode,
         seed: this.engine.currentSeed,
         settings: this.engine.currentSettings,
@@ -546,5 +547,45 @@ export class AtravessaRoom extends ColorRoom {
   protected override afterTick() {
     const engine = this.engine as AtravessaRoomEngine;
     if (engine.currentPhase === 'play') this.broadcast('pos', engine.positions());
+  }
+}
+
+/**
+ * Sala do Desmorona! (spec 044, fase 2). Cada aparelho simula a sua raposa e manda "dpos" (posição) e "dstep"
+ * (pisei neste ladrilho); a sala transmite "pos" 10 vezes por segundo e "dstep" na hora, com a hora oficial.
+ */
+export class DesmoronaRoom extends ColorRoom {
+  override maxClients = DSM_MAX_PLAYERS;
+  protected override tickMs = 100;
+
+  protected override makeEngine(opts: ConstructorParameters<typeof ColorRoomEngine>[0]) {
+    return new DesmoronaRoomEngine(opts);
+  }
+
+  protected override registerGameMessages() {
+    const engine = () => this.engine as DesmoronaRoomEngine;
+    const idOf = (c: Client) => (c.userData as AuthData | undefined)?.id;
+    this.onMessage('dpos', (c, m) => {
+      const id = idOf(c);
+      if (id) engine().report(id, m);
+    });
+    this.onMessage('dstep', (c, m) => {
+      const id = idOf(c);
+      if (id) engine().step(id, m);
+    });
+    this.onMessage('ddead', (c) => {
+      const id = idOf(c);
+      if (id) engine().die(id);
+    });
+    // quem entra (ou volta) no meio da partida pede os ladrilhos que já foram pisados
+    this.onMessage('dsync', (c) => c.send('dsteps', engine().allSteps()));
+  }
+
+  protected override afterTick() {
+    const engine = this.engine as DesmoronaRoomEngine;
+    if (engine.currentPhase !== 'play') return;
+    this.broadcast('pos', engine.positions());
+    const steps = engine.drainSteps();
+    if (steps.length > 0) this.broadcast('dsteps', steps);
   }
 }

@@ -11,6 +11,7 @@ import { AUTH } from './auth/auth.constants';
 import type { Auth } from './auth/auth';
 import {
   AtravessaRoom,
+  DesmoronaRoom,
   ColorRoom,
   EcoRoom,
   ImpostorRoom,
@@ -50,6 +51,7 @@ async function bootstrap() {
   rooms.define('impostor', ImpostorRoom);
   rooms.define('eco', EcoRoom);
   rooms.define('atravessa', AtravessaRoom);
+  rooms.define('desmorona', DesmoronaRoom);
   const port = Number(process.env.PORT ?? 3333);
   await app.listen(port);
   console.log(`api no ar em http://localhost:${port}`);
