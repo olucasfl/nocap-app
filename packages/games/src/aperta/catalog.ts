@@ -76,6 +76,16 @@ export type Effect = (
   | { kind: 'dustPerGrimoire'; add: number }
   /** Com o combo no máximo: +`add` de energia por toque. */
   | { kind: 'comboFullEnergy'; add: number }
+  /** +`add` de poeira por toque, simples (spec 043). */
+  | { kind: 'dustFlat'; add: number }
+  /** +`add` de energia por toque, simples (spec 043). */
+  | { kind: 'energyFlat'; add: number }
+  /** +`add` de energia por toque por colapso já feito. */
+  | { kind: 'energyPerCollapse'; add: number }
+  /** Todos os objetos ficam +`sec` segundos na tela. */
+  | { kind: 'objectLife'; sec: number }
+  /** +`add` objeto(s) na tela ao mesmo tempo. */
+  | { kind: 'fieldSlots'; add: number }
   /** Com o combo no máximo: poeira do toque x`mult`. */
   | { kind: 'comboFullMult'; mult: number }
   | { kind: 'dustMult'; mult: number }
@@ -90,7 +100,7 @@ export type Effect = (
   /** O "Sinal forte" do satélite vale +`add` (x2 vira x2,5). */
   | { kind: 'satelliteMult'; add: number }
   | { kind: 'startDust'; amount: number }
-  | { kind: 'choiceExtra'; reroll?: number; picks?: number; repeatLevels?: number; cards?: number }
+  | { kind: 'choiceExtra'; reroll?: number; picks?: number; repeatLevels?: number; cards?: number; discard?: number }
   /** Energia de `energyTouches` toques por objeto capturado. */
   | { kind: 'onCapture'; energyTouches: number }
   | { kind: 'afterCaptureMult'; mult: number }
@@ -143,12 +153,13 @@ export function effectDomain(e: Effect): string {
  * Categoria de um grimório: o que ele ajuda, visível na carta (a família é a do astro e conta para o conjunto
  * do Atlas; a categoria é a função). Todo grimório tem categoria e raridade.
  */
-export type GrimoireCategory = 'touch' | 'objects' | 'luck';
+export type GrimoireCategory = 'touch' | 'energy' | 'luck' | 'objects';
 
 export const GRIMOIRE_CATEGORIES: readonly { id: GrimoireCategory; label: string; hint: string }[] = [
-  { id: 'touch', label: 'Toque', hint: 'Faz cada toque render mais.' },
-  { id: 'objects', label: 'Objetos', hint: 'Melhora os cometas, satélites e a Estrela Dourada.' },
-  { id: 'luck', label: 'Energia e sorte', hint: 'Enche a barra e ajuda nas escolhas e na economia.' },
+  { id: 'touch', label: 'Toque', hint: 'Faz cada toque render mais poeira.' },
+  { id: 'energy', label: 'Energia', hint: 'Enche a barra de grimórios mais rápido.' },
+  { id: 'luck', label: 'Sorte', hint: 'Mais cartas, trocas e cartas melhores nas escolhas.' },
+  { id: 'objects', label: 'Objetos', hint: 'Cometas, satélites e estrelas: mais cedo, mais tempo, mais recompensa.' },
 ];
 
 /** Raridades em que um grimório pode vir (os proibidos moram no Cofre). */
@@ -191,80 +202,63 @@ function grim(
   return { id, name, family, category, text, art, effects, unlockedAtCollapse };
 }
 
-/** Os 22 grimórios (spec 042 e adendo). Cada um faz uma coisa só; nenhum mexe em geradores (isso é das Melhorias e da Árvore). */
+/**
+ * Os 20 grimórios (spec 043): 4 categorias simples (Toque, Energia, Sorte, Objetos), cada um com UM efeito em número, sem
+ * porcentagem e sem depender de mecânica que o iniciante não viu. Nenhum mexe em gerador (isso é dos itens e da Árvore).
+ */
 export const GRIMOIRES: readonly GrimoireDef[] = [
   // Toque
-  grim('moon', 'Lua', 'moons', 'touch', 'A cada 10 toques, o 10º toque rende mais poeira.', 'esfera cinza clara com crateras', [
+  grim('moon', 'Lua', 'moons', 'touch', 'Cada toque rende +3 poeira.', 'esfera cinza clara com crateras', [{ kind: 'dustFlat', add: 3 }]),
+  grim('sirius', 'Sirius', 'stars', 'touch', 'A cada 10 toques, o 10º toque rende o dobro.', 'estrela branca de 4 pontas com halo azul', [
     { kind: 'everyNthTouch', n: 10, mult: 2 },
   ]),
-  grim('sirius', 'Sirius', 'stars', 'touch', 'Combo (toques em sequência rápida) cheio: cada toque rende mais poeira.', 'estrela branca de 4 pontas com halo azul', [
-    { kind: 'comboFullDust', add: 0.5 },
+  grim('vega', 'Vega', 'stars', 'touch', 'Cada grimório que você tem soma +0,5 poeira por toque.', 'estrela branco-azulada de 8 raios', [
+    { kind: 'dustPerGrimoire', add: 0.5 },
   ]),
-  grim('uranus', 'Urano', 'planets', 'touch', 'Combo (toques em sequência rápida): mais folga entre os toques para não cair.', 'esfera ciano-gelo com anel inclinado', [
-    { kind: 'comboWindow', sec: 0.2 },
+  grim('saturn', 'Saturno', 'planets', 'touch', 'O toque rende x1,5 de poeira.', 'esfera dourada com anéis largos', [{ kind: 'dustMult', mult: 1.5 }]),
+  grim('capella', 'Capela', 'stars', 'touch', 'Cada colapso que você já fez soma +1 poeira por toque.', 'estrela amarela dupla com halo quente', [
+    { kind: 'dustPerCollapse', add: 1 },
   ], 1),
-  grim('vega', 'Vega', 'stars', 'touch', 'Cada grimório que você tem soma poeira por toque.', 'estrela branco-azulada de 8 raios', [
-    { kind: 'dustPerGrimoire', add: 0.15 },
-  ]),
-  grim('jupiter', 'Júpiter', 'planets', 'touch', 'Combo (toques em sequência rápida) cheio: o toque rende bem mais poeira.', 'gigante listrada com a Grande Mancha', [
-    { kind: 'comboFullMult', mult: 1.25 },
-  ]),
-  grim('saturn', 'Saturno', 'planets', 'touch', 'Cada grimório raro que você tem soma poeira por toque.', 'esfera dourada com anéis largos', [
-    { kind: 'dustPerOwned', rarity: 'rare', add: 0.6 },
-  ]),
-  grim('capella', 'Capela', 'stars', 'touch', 'Cada colapso que você já fez soma poeira por toque.', 'estrela amarela dupla com halo quente', [
-    { kind: 'dustPerCollapse', add: 0.4 },
-  ], 1),
-  // Objetos
-  grim('venus', 'Vênus', 'planets', 'objects', 'Cometas e asteroides capturados rendem mais poeira.', 'esfera creme-dourada com faixas de nuvem', [
-    { kind: 'objectReward', target: 'comet', add: 3 },
-    { kind: 'objectReward', target: 'asteroid', add: 2 },
-  ]),
-  grim('mars', 'Marte', 'planets', 'objects', 'Estrelas cadentes capturadas rendem mais energia.', 'esfera ferrugem com calota polar branca', [
-    { kind: 'objectReward', target: 'shooting-star', add: 2 },
-  ]),
-  grim('io', 'Io', 'moons', 'objects', 'O sinal forte do satélite fica mais forte.', 'esfera amarelo-enxofre com manchas vermelhas', [
-    { kind: 'satelliteMult', add: 0.5 },
-  ]),
-  grim('europa', 'Europa', 'moons', 'objects', 'Satélites capturados rendem mais poeira.', 'esfera de gelo rachada com linhas ocre', [
-    { kind: 'objectReward', target: 'satellite', add: 4 },
-  ]),
-  grim('halley', 'Halley', 'small-bodies', 'objects', 'Todos os objetos rendem mais e aparecem mais cedo.', 'núcleo claro com cauda azul', [
-    { kind: 'objectReward', target: 'all', add: 1 },
-    { kind: 'spawnCut', sec: 3 },
-  ], 1),
-  grim('ganymede', 'Ganimedes', 'moons', 'objects', 'Os objetos comuns aparecem bem mais cedo.', 'esfera cinza-marrom com sulcos claros', [
-    { kind: 'spawnCut', sec: 8 },
-  ], 1),
-  grim('antares', 'Antares', 'stars', 'objects', 'A Estrela Dourada vem mais cedo e fica mais tempo.', 'gigante vermelha com brilho', [
-    { kind: 'rareCut', sec: 25 },
-    { kind: 'rareLife', sec: 2 },
-  ], 2),
-  // Energia e sorte
-  grim('mercury', 'Mercúrio', 'planets', 'luck', 'A cada 5 toques, o 5º toque dá energia (enche a barra de grimórios).', 'esfera marrom-cinza, crateras pequenas', [
-    { kind: 'everyNthTouch', n: 5, mult: 1, energy: 2 },
-  ]),
-  grim('phobos', 'Fobos', 'moons', 'luck', 'Capturar um objeto dá energia.', 'rocha irregular com uma cratera grande', [
-    { kind: 'onCapture', energyTouches: 1 },
-  ]),
-  grim('titan', 'Titã', 'moons', 'luck', 'Cada melhoria que você compra devolve um pouco da poeira gasta.', 'esfera laranja com névoa', [
-    { kind: 'buyRefund', touches: 2 },
-  ]),
-  grim('polaris', 'Polaris', 'stars', 'luck', 'Combo (toques em sequência rápida) cheio: cada toque dá um pouco de energia a mais.', 'estrela branca fixa com cruz de luz', [
-    { kind: 'comboFullEnergy', add: 0.3 },
-  ]),
-  grim('proxima', 'Proxima', 'stars', 'luck', 'A barra de energia do próximo grimório fica menor.', 'anã vermelha pequena com chama', [
+  // Energia
+  grim('mercury', 'Mercúrio', 'planets', 'energy', 'A energia de cada toque rende x1,5.', 'esfera marrom-cinza, crateras pequenas', [{ kind: 'energyMult', mult: 1.5 }]),
+  grim('polaris', 'Polaris', 'stars', 'energy', 'Cada toque dá +0,5 de energia.', 'estrela branca fixa com cruz de luz', [{ kind: 'energyFlat', add: 0.5 }]),
+  grim('proxima', 'Proxima', 'stars', 'energy', 'A barra de energia do próximo grimório enche mais rápido.', 'anã vermelha pequena com chama', [
     { kind: 'energyStepPct', pct: -3 },
   ]),
+  grim('antares', 'Antares', 'stars', 'energy', 'Cada colapso que você já fez soma +0,25 de energia por toque.', 'gigante vermelha com brilho', [
+    { kind: 'energyPerCollapse', add: 0.25 },
+  ], 2),
+  // Sorte
+  grim('betelgeuse', 'Betelgeuse', 'stars', 'luck', 'Mais 1 troca de carta em cada escolha.', 'gigante laranja com manchas', [{ kind: 'choiceExtra', reroll: 1 }]),
+  grim('orion-nebula', 'Nebulosa de Órion', 'nebulae', 'luck', 'Cada escolha oferece 1 carta a mais.', 'nuvem rosa, turquesa e violeta com estrelas', [
+    { kind: 'choiceExtra', cards: 1 },
+  ], 3),
   grim('cassiopeia', 'Cassiopeia', 'stars', 'luck', 'Cartas épicas e lendárias aparecem mais nas escolhas.', 'cinco estrelas em W com poeira violeta', [
     { kind: 'rarityBoost', add: 2 },
   ], 2),
-  grim('betelgeuse', 'Betelgeuse', 'stars', 'luck', 'Dá trocas de carta a mais em cada escolha.', 'gigante laranja com manchas', [
-    { kind: 'choiceExtra', reroll: 1 },
+  grim('titan', 'Titã', 'moons', 'luck', 'Cada item que você compra devolve um pouco da poeira gasta.', 'esfera laranja com névoa', [
+    { kind: 'buyRefund', touches: 2 },
   ]),
-  grim('orion-nebula', 'Nebulosa de Órion', 'nebulae', 'luck', 'Cada escolha oferece mais cartas.', 'nuvem rosa, turquesa e violeta com estrelas', [
-    { kind: 'choiceExtra', cards: 1 },
-  ], 3),
+  grim('uranus', 'Urano', 'planets', 'luck', 'Você pode descartar uma oferta e ver cartas novas.', 'esfera ciano-gelo com anel inclinado', [
+    { kind: 'choiceExtra', discard: 1 },
+  ], 1),
+  // Objetos (todos os objetos, nunca um específico)
+  grim('venus', 'Vênus', 'planets', 'objects', 'Todo objeto capturado rende mais.', 'esfera creme-dourada com faixas de nuvem', [
+    { kind: 'objectReward', target: 'all', add: 3 },
+  ]),
+  grim('halley', 'Halley', 'small-bodies', 'objects', 'Os objetos aparecem mais cedo.', 'núcleo claro com cauda azul', [{ kind: 'spawnCut', sec: 4 }]),
+  grim('ganymede', 'Ganimedes', 'moons', 'objects', 'Os objetos ficam mais tempo na tela.', 'esfera cinza-marrom com sulcos claros', [
+    { kind: 'objectLife', sec: 2 },
+  ], 1),
+  grim('europa', 'Europa', 'moons', 'objects', 'Pode haver 1 objeto a mais na tela ao mesmo tempo.', 'esfera de gelo rachada com linhas ocre', [
+    { kind: 'fieldSlots', add: 1 },
+  ]),
+  grim('io', 'Io', 'moons', 'objects', 'Depois de capturar um objeto, o próximo toque rende o dobro.', 'esfera amarelo-enxofre com manchas vermelhas', [
+    { kind: 'afterCaptureMult', mult: 2 },
+  ]),
+  grim('phobos', 'Fobos', 'moons', 'objects', 'Capturar um objeto dá energia.', 'rocha irregular com uma cratera grande', [
+    { kind: 'onCapture', energyTouches: 1 },
+  ]),
 ];
 
 const GRIMOIRE_BY_ID = new Map(GRIMOIRES.map((g) => [g.id, g]));
@@ -272,20 +266,51 @@ export function grimoireById(id: string): GrimoireDef | undefined {
   return GRIMOIRE_BY_ID.get(id);
 }
 
-// --- Melhorias (spec 039: toque conquistado, geradores e geradores de energia) ---
+// --- Itens e geradores (spec 043: itens de compra única, simples e diretos; geradores à parte) ---
 
 /**
- * `touch`: melhoria de toque (compra única); `generator`: poeira por segundo; `energy`: energia por segundo;
- * `perk`: melhoria de gerador (compra única que muda COMO os geradores funcionam, spec 039, 4.1).
+ * `item`: compra única, com UM efeito simples (ver `ItemEffect`); `generator`: poeira por segundo; `energy`: energia por
+ * segundo. Itens e geradores zeram a cada colapso (são da vida).
  */
-export type UpgradeKind = 'touch' | 'generator' | 'energy' | 'perk';
+export type UpgradeKind = 'item' | 'generator' | 'energy';
+
+/**
+ * Os 5 únicos efeitos de um item (spec 043, seção 4): sem porcentagem, sem condição, sem cenário. A tela mostra sempre o
+ * TOTAL de antes e depois ("Seu toque: 40 -> 80"), nunca só o que o item dá.
+ */
+export type ItemEffect =
+  | { type: 'touchAdd'; value: number }
+  | { type: 'touchMult'; value: number }
+  | { type: 'energyMult'; value: number }
+  | { type: 'genMult'; value: number }
+  | { type: 'energyGenMult'; value: number };
+
+export type ItemEffectType = ItemEffect['type'];
+
+/** Era de um item: define o acabamento do ícone (bronze, prata, ouro, plasma, cósmico) e a faixa de preço. */
+export type ItemEra = 'poeira' | 'mil' | 'milhoes' | 'bilhoes' | 'trilhoes';
+export const ITEM_ERAS: readonly { id: ItemEra; label: string; from: number }[] = [
+  { id: 'poeira', label: 'Poeira', from: 0 },
+  { id: 'mil', label: 'Mil', from: 1e4 },
+  { id: 'milhoes', label: 'Milhões', from: 1e6 },
+  { id: 'bilhoes', label: 'Bilhões', from: 1e9 },
+  { id: 'trilhoes', label: 'Trilhões', from: 1e12 },
+];
+
+/** A era de um item pelo preço. */
+export function eraOfPrice(price: number): ItemEra {
+  let era: ItemEra = 'poeira';
+  for (const e of ITEM_ERAS) if (price >= e.from) era = e.id;
+  return era;
+}
 
 export interface UpgradeDef {
   id: string;
   name: string;
+  /** Uma frase curta do efeito, sem % e sem condição ("Toque x2", "+2 poeira por toque"). */
   text: string;
   kind: UpgradeKind;
-  /** Custo do nível 0; cada nível multiplica por `growth` (1,15 nos geradores; 1 nas de toque, que são únicas). */
+  /** Custo do nível 0; cada nível multiplica por `growth` (1,15 nos geradores; 1 nos itens, que são únicos). */
   base: number;
   growth: number;
   /** Depois de `from` níveis o fator por nível passa a `growth` de cá: o custo sobe mais que o ganho. */
@@ -294,48 +319,74 @@ export interface UpgradeDef {
   unlockedAtCollapse: number;
   /** Gerador: poeira por segundo por unidade. Gerador de energia: toques equivalentes por segundo. */
   perSec?: number;
-  /** Exige a outra comprada ("Cadência exige o Ritmo Firme"). */
-  requiresUpgrade?: { id: string; level: number };
+  /** Só nos itens: o efeito e a era (ícone). */
+  item?: ItemEffect;
+  era?: ItemEra;
   /**
    * Domínios de efeito que a melhoria controla (ver `effectDomain`). Nenhum grimório pode usá-los:
-   * melhoria é poder básico contínuo, grimório é estilo e situação.
+   * item e gerador são poder básico, grimório é estilo e situação.
    */
   domains: readonly string[];
 }
 
 /**
- * Spec 041 (B1): cada gerador tem um limite de níveis (0/8, 0/10...) e a prateleira mostra um por vez; completar um
- * abre o próximo, mais caro e mais forte. Por isso não há mais os marcos de "dobra com 10, 25, 50 unidades".
+ * Cada gerador tem um limite de níveis (0/8, 0/10...) e a prateleira mostra um por vez; completar um abre o próximo,
+ * mais caro e mais forte.
  */
 export const GENERATOR_GROWTH = 1.15;
 /** Maior limite de níveis de um gerador (o teto de validação do save). */
 export const GENERATOR_MAX = 12;
 
-const touch = (
-  id: string,
-  name: string,
-  base: number,
-  text: string,
-  domains: readonly string[],
-  extra: Partial<UpgradeDef> = {},
-): UpgradeDef => ({ id, name, text, kind: 'touch', base, growth: 1, max: 1, unlockedAtCollapse: 0, domains, ...extra });
+const ITEM_DOMAIN: Record<ItemEffectType, string> = {
+  touchAdd: 'touchFlat',
+  touchMult: 'touchMult',
+  energyMult: 'energyPerTouch',
+  genMult: 'dustPerSecond',
+  energyGenMult: 'energyPerSecond',
+};
 
-const perk = (id: string, name: string, base: number, text: string, domains: readonly string[]): UpgradeDef => ({
+const fmt = (n: number): string => (Number.isInteger(n) ? String(n) : String(n).replace('.', ','));
+
+/** O texto do item vem do efeito: não há como descrever uma coisa e fazer outra. */
+export function itemText(e: ItemEffect): string {
+  switch (e.type) {
+    case 'touchAdd':
+      return `+${fmt(e.value)} poeira por toque`;
+    case 'touchMult':
+      return `Toque x${fmt(e.value)}`;
+    case 'energyMult':
+      return `Energia por toque x${fmt(e.value)}`;
+    case 'genMult':
+      return `Geradores de poeira x${fmt(e.value)}`;
+    case 'energyGenMult':
+      return `Geradores de energia x${fmt(e.value)}`;
+  }
+}
+
+const item = (id: string, name: string, price: number, effect: ItemEffect, unlockedAtCollapse = 0): UpgradeDef => ({
   id,
   name,
-  text,
-  kind: 'perk',
-  base,
+  text: itemText(effect),
+  kind: 'item',
+  base: price,
   growth: 1,
   max: 1,
-  unlockedAtCollapse: 0,
-  domains,
+  unlockedAtCollapse,
+  item: effect,
+  era: eraOfPrice(price),
+  domains: [ITEM_DOMAIN[effect.type]],
 });
+
+const touchMult = (value: number): ItemEffect => ({ type: 'touchMult', value });
+const touchAdd = (value: number): ItemEffect => ({ type: 'touchAdd', value });
+const energyMult = (value: number): ItemEffect => ({ type: 'energyMult', value });
+const genMult = (value: number): ItemEffect => ({ type: 'genMult', value });
+const energyGenMult = (value: number): ItemEffect => ({ type: 'energyGenMult', value });
 
 const generator = (id: string, name: string, base: number, perSec: number, max: number): UpgradeDef => ({
   id,
   name,
-  text: `+${String(perSec).replace('.', ',')} poeira por segundo`,
+  text: `+${fmt(perSec)} poeira por segundo`,
   kind: 'generator',
   base,
   growth: GENERATOR_GROWTH,
@@ -348,7 +399,7 @@ const generator = (id: string, name: string, base: number, perSec: number, max: 
 const energyGen = (id: string, name: string, base: number, perSec: number, max: number): UpgradeDef => ({
   id,
   name,
-  text: `+${String(perSec).replace('.', ',')} toque de energia por segundo`,
+  text: `+${fmt(perSec)} toque de energia por segundo`,
   kind: 'energy',
   base,
   growth: GENERATOR_GROWTH,
@@ -359,27 +410,59 @@ const energyGen = (id: string, name: string, base: number, perSec: number, max: 
 });
 
 /**
- * A ordem é a do preço dentro de cada tipo: a prateleira (`upgradeShelf`) mostra os primeiros e deixa o resto
- * escondido. Os números são os iniciais da spec 039 e passam pelo simulador antes de valerem.
+ * A ordem dos itens é a do preço: a prateleira mostra o próximo e os dois seguintes. Os 24 primeiros abrem na primeira
+ * vida (um a cada poucos minutos); os outros 18 entram, 6 por colapso, com valores de milhões e bilhões. Os números são
+ * um primeiro rascunho: o simulador acerta preço e valor (spec 043, etapa 3).
  */
 export const UPGRADES: readonly UpgradeDef[] = [
-  touch('lens', 'Lente Polida', 100, 'Toque x2', ['touchMult']),
-  touch('gloves', 'Luvas de Astronauta', 225, '+2 poeira por toque', ['touchFlat']),
-  touch('trained', 'Dedo Treinado', 500, 'A cada 25 toques, o 25º rende x5', ['touchNth']),
-  touch('rhythm', 'Ritmo Firme', 850, 'Libera o combo: tocar de novo em até 1,3 s mantém a sequência, e cada toque seguido soma 0,2 do toque (até 3 seguidos)', ['comboUnlock', 'comboPoint']),
-  touch('magnet', 'Toque Magnético', 1000, 'Cada toque encurta em 0,5 s a espera do próximo objeto', ['objectSpawn']),
-  touch('hands', 'Mãos do Astronauta', 1000, 'A cada 6 níveis de gerador comprados, +1 poeira por toque', ['touchPerGenerator']),
-  touch('charged', 'Pulso Carregado', 1500, '+0,5 de energia por toque', ['energyPerTouch']),
-  touch('luck', 'Toque de Sorte', 2000, '6% de chance de o toque render x10', ['touchCrit']),
-  touch('cadence', 'Cadência', 3000, 'Combo máximo +1', ['comboMax'], { requiresUpgrade: { id: 'rhythm', level: 1 } }),
-  touch('kepler', 'Sonda Kepler', 4000, 'Objetos aparecem 20% mais cedo', ['objectSpawnWindow']),
-  touch('voyager', 'Voyager', 12000, 'Satélites duram +4 s', ['signalDuration']),
-  touch('echo', 'Eco', 20000, 'Cada toque rende +0,4% da produção por segundo dos geradores', ['touchEcho']),
-  touch('lens2', 'Lente Dupla', 25000, 'Toque x2', ['touchMult']),
-  touch('webb', 'Observatório James Webb', 120000, 'Toque x2', ['touchMult'], { unlockedAtCollapse: 1 }),
-  touch('cabin', 'Cabine Reforçada', 150000, 'Toque x2', ['touchMult']),
-  touch('chandra', 'Telescópio Chandra', 300000, 'Objetos ficam 50% mais tempo no campo', ['objectLife'], { unlockedAtCollapse: 3 }),
-  touch('gaia', 'Observatório Gaia', 1500000, 'O sorteio mostra o efeito já na carta', ['cardInfo'], { unlockedAtCollapse: 5 }),
+  // Era Poeira (até 10 mil)
+  item('lens', 'Lente Polida', 100, touchMult(2)),
+  item('gloves', 'Luvas de Astronauta', 170, touchAdd(2)),
+  item('solar', 'Painéis Solares', 290, genMult(2)),
+  item('charged', 'Pulso Carregado', 480, energyMult(2)),
+  item('lens2', 'Lente Dupla', 800, touchMult(2)),
+  item('steel', 'Mãos de Aço', 1300, touchAdd(8)),
+  item('motor', 'Motor Iônico', 2200, genMult(2)),
+  item('antenna2', 'Antena Dupla', 3600, energyGenMult(2)),
+  // Era Mil (10 mil a 1 milhão)
+  item('cabin', 'Cabine Reforçada', 6_000, touchMult(2)),
+  item('compact', 'Reator Compacto', 10_000, genMult(2)),
+  item('pulse2', 'Pulso Estelar', 17_000, energyMult(2)),
+  item('titan', 'Mãos de Titânio', 29_000, touchAdd(40)),
+  item('lens3', 'Lente Tripla', 49_000, touchMult(3)),
+  item('plant', 'Usina Orbital', 82_000, genMult(3)),
+  item('receiver2', 'Receptor Ampliado', 135_000, energyGenMult(3)),
+  item('webb', 'Observatório Webb', 225_000, touchMult(2)),
+  item('diamond', 'Mãos de Diamante', 370_000, touchAdd(200)),
+  // Era Milhões (1 milhão a 1 bilhão)
+  item('fusion', 'Reator de Fusão', 610_000, genMult(2)),
+  item('quantum', 'Pulso Quântico', 1_000_000, energyMult(2)),
+  item('stellar', 'Lente Estelar', 1_650_000, touchMult(3)),
+  item('forge', 'Fornalha Estelar', 2_700_000, genMult(3)),
+  item('chandra', 'Telescópio Chandra', 4_500_000, touchMult(2)),
+  item('mesh', 'Malha de Escuta', 7_400_000, energyGenMult(3)),
+  item('starhand', 'Mãos de Estrela', 12_000_000, touchAdd(1000)),
+  // Colapso 1: milhões a centenas de milhões
+  item('deep', 'Sonda Profunda', 20_000_000, genMult(3), 1),
+  item('cosmic', 'Lente Cósmica', 33_000_000, touchMult(3), 1),
+  item('pulsar', 'Núcleo Pulsar', 55_000_000, energyMult(3), 1),
+  item('solarhand', 'Mãos Solares', 90_000_000, touchAdd(6000), 1),
+  item('qheart', 'Coração de Quasar', 150_000_000, genMult(3), 1),
+  item('galnet', 'Rede Galáctica', 250_000_000, energyGenMult(3), 1),
+  // Colapso 2: bilhões
+  item('galens', 'Lente Galáctica', 420_000_000, touchMult(3), 2),
+  item('antimatter', 'Reator de Antimatéria', 700_000_000, genMult(3), 2),
+  item('cosmicpulse', 'Pulso Cósmico', 1_200_000_000, energyMult(3), 2),
+  item('nebhand', 'Mãos de Nebulosa', 2_000_000_000, touchAdd(35000), 2),
+  item('qforge', 'Forja de Quasar', 3_300_000_000, genMult(3), 2),
+  item('galecho', 'Eco Galáctico', 5_500_000_000, energyGenMult(3), 2),
+  // Colapso 3: dezenas de bilhões
+  item('horizon', 'Lente do Horizonte', 9_000_000_000, touchMult(5), 3),
+  item('warp', 'Motor de Dobra', 15_000_000_000, genMult(5), 3),
+  item('singpulse', 'Pulso de Singularidade', 25_000_000_000, energyMult(3), 3),
+  item('cosmoshand', 'Mãos do Cosmos', 42_000_000_000, touchAdd(250000), 3),
+  item('galheart', 'Coração Galáctico', 70_000_000_000, genMult(5), 3),
+  item('universe', 'Matriz do Universo', 115_000_000_000, energyGenMult(5), 3),
 
   generator('satellite', 'Satélite', 15, 0.2, 8),
   generator('probe', 'Sonda Voyager', 120, 1.6, 8),
@@ -398,19 +481,6 @@ export const UPGRADES: readonly UpgradeDef[] = [
   energyGen('matrix', 'Matriz de Escuta', 25000, 1, 8),
   energyGen('deepnet', 'Rede Profunda', 300000, 5, 8),
   energyGen('array', 'Conjunto Interestelar', 4000000, 25, 8),
-
-  // Acrescentadas depois (spec 039, 3 e 4.1): ficam no fim do catálogo para os índices dos saves não mudarem;
-  // a prateleira ordena cada tipo pelo preço (`shelfOf`).
-  touch('warmup', 'Aquecimento', 3000, 'Depois de 5 s tocando sem parar, o toque rende +50% até você soltar por 2 s', ['touchWarm']),
-  perk('network', 'Rede', 1200, 'Cada nível da Sonda Voyager dá +2% de poeira aos Satélites', ['genNetwork']),
-  perk('lure', 'Isca', 2500, 'A cada 2 níveis do Satélite, o próximo objeto aparece 1 s mais cedo (até 4 s)', ['genLure']),
-  perk('burst', 'Rajada', 6000, 'A cada 60 s, os geradores soltam de uma vez 10 s da própria produção', ['genBurst']),
-  perk('scale', 'Escala', 9000, 'A cada 4 níveis de um gerador, o toque ganha +1 de poeira', ['genScale']),
-  perk('peak', 'Hora de pico', 15000, 'Capturar um objeto faz os geradores renderem +50% por 20 s', ['genPeak']),
-  perk('queue', 'Fila de pedidos', 40000, 'Completar um gerador de uma vez (todos os níveis que faltam) sai 5% mais barato', ['genBulk']),
-  perk('convert', 'Conversão', 80000, 'Os geradores também enchem a barra de energia, o equivalente a 1 toque por minuto', ['genConvert']),
-  perk('rotation', 'Revezamento', 200000, 'O gerador que você menos comprou rende o dobro', ['genRotation']),
-
 ];
 
 const UPGRADE_INDEX = new Map(UPGRADES.map((u, i) => [u.id, i]));

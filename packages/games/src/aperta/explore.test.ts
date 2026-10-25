@@ -148,22 +148,6 @@ describe('eventos da árvore', () => {
     expect(done.run.dust).toBe(plain.run.dust);
   });
 
-  it('Alinhamento: o combo não cai com a pausa longa; sem o evento cai', () => {
-    const lv = base().run.upgradeLevels;
-    // Liga o combo (Ritmo Firme) para o teste.
-    const rhythm = (s: SaveState): SaveState => ({ ...s, run: { ...s.run, upgradeLevels: s.run.upgradeLevels.map((_, i) => (i === 3 ? 1 : s.run.upgradeLevels[i]!)) } });
-    expect(lv.length).toBeGreaterThan(3);
-    let a = { ...rhythm(base({ tree: open })), clock: 9.9 };
-    a = press(a, 10);
-    a = press(a, 10.3);
-    const combo = a.run.combo;
-    expect(combo).toBeGreaterThanOrEqual(1);
-    const falls = press({ ...a, clock: 29.9 }, 30);
-    expect(falls.run.combo).toBe(0);
-    const kept = press({ ...a, clock: 29.9, run: { ...a.run, event: { id: 'alignment', until: 100 } } }, 30);
-    expect(kept.run.combo).toBe(combo + 1);
-  });
-
   it('Maré de energia: a barra enche em dobro', () => {
     const s = base({ tree: open });
     const plain = press(s, 10).run.energy;

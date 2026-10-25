@@ -78,56 +78,18 @@ describe('o requisito do colapso n cresce sem fim', () => {
   });
 
   it('o progresso devolve as três barras', () => {
-    const p = collapseProgress(withRun(atCollapse(0), { dustLife: 1e6, picks: 10, chainBest: 2 }));
+    const p = collapseProgress(withRun(atCollapse(0), { dustLife: 1e6, picks: 10, captured: 0 }));
     expect(p).toMatchObject({ next: 1, dustGoal: GOAL_TABLE[0], dust: 1e6, picks: 10, minPicks: 12, ready: false });
-    expect(p.milestone).toMatchObject({ kind: 'combo', value: 2, target: 5, done: false });
+    expect(p.milestone).toMatchObject({ kind: 'generators', value: 0, done: false });
   });
 
   it('o marco de cada colapso é o que a spec diz e muda ao colapsar', () => {
-    const first = collapseProgress(ready(0)).milestone.kind;
     const after = collapse(ready(0));
-    expect(collapseProgress(after).milestone.kind).not.toBe(first);
     expect(collapseProgress(after).milestone.value).toBe(0);
   });
 });
 
 describe('contadores da vida (alimentam o marco)', () => {
-  it('a sequência do combo conta toques seguidos e zera quando passa da janela', () => {
-    let s = withLevel(withRun(atCollapse(2), {}), 'rhythm', 1);
-    let t = 10;
-    for (let i = 0; i < 8; i++) {
-      s = press(s, t);
-      t += 0.5;
-    }
-    expect(s.run.chain).toBe(8);
-    expect(s.run.chainBest).toBe(8);
-    // Pausa maior que a janela: a sequência recomeça, o melhor fica.
-    s = press(s, t + 3);
-    expect(s.run.chain).toBe(1);
-    expect(s.run.chainBest).toBe(8);
-    // A sequência passa do combo máximo (o combo para em 3 ou 4, a sequência segue).
-    expect(s.run.combo).toBeLessThanOrEqual(4);
-  });
-
-  it('sem Ritmo Firme não há combo, então a sequência não conta', () => {
-    let s = atCollapse(2);
-    for (let i = 0; i < 6; i++) s = press(s, 10 + i * 0.5);
-    expect(s.run.chainBest).toBe(0);
-  });
-
-  it('o combo cheio guarda o maior tempo seguido', () => {
-    let s = withLevel(atCollapse(2), 'rhythm', 1);
-    let t = 10;
-    for (let i = 0; i < 40; i++) {
-      s = press(s, t);
-      t += 0.5;
-    }
-    expect(s.run.fullBest).toBeGreaterThan(5);
-    const best = s.run.fullBest;
-    s = press(s, t + 10);
-    expect(s.run.fullBest).toBe(best);
-  });
-
   it('capturar conta nos objetos e, na Estrela Dourada, também nos raros', () => {
     const field = (kind: 'comet' | 'golden') => ({ objects: [{ id: 1, kind, bornAt: 0, expiresAt: 100, power: kind === 'golden' ? ('rain' as const) : undefined }], nextObjectId: 2 });
     const a = captureObject(withRun(atCollapse(2), field('comet')), 1, 2);
@@ -241,6 +203,6 @@ describe('sem Ascender', () => {
 describe('o teto de vida do perfil normal é uma constante da spec', () => {
   it('2,5 h (spec 041)', () => expect(LIFE_HOURS_MAX).toBe(2.5));
   it('milestoneGoal e milestoneKind concordam para o colapso 1', () => {
-    expect(milestoneGoal(milestoneKind(1), 1).target).toBe(5);
+    expect(milestoneGoal(milestoneKind(1), 1).target).toBe(1);
   });
 });

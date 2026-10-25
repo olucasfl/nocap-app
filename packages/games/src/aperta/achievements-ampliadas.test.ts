@@ -44,8 +44,7 @@ const ids = (s: SaveState) => newlyEarned(s);
 /** Os 31 ids da v1 (spec 038, 5.3): continuam, com os mesmos nomes de id. */
 const V1 = [
   'tap-1', 'tap-100', 'tap-1k', 'tap-10k', 'tap-100k', 'dust-1k', 'dust-1m', 'dust-1b', 'grim-10', 'grim-20', 'grim-all',
-  'grim-planets', 'grim-rarities', 'grim-lv5', 'grim-lv10', 'obj-20', 'obj-100', 'obj-500', 'obj-sats', 'combo-max',
-  'combo-30', 'forbidden', 'collapse-1', 'collapse-5', 'collapse-10', 'collapse-25', 'collapse-50', 'atlas-4',
+  'grim-planets', 'grim-rarities', 'grim-lv5', 'grim-lv10', 'obj-20', 'obj-100', 'obj-500', 'obj-sats', 'forbidden', 'collapse-1', 'collapse-5', 'collapse-10', 'collapse-25', 'collapse-50', 'atlas-4',
   'leave-solar', 'atlas-families', 'tree-1', 'tree-branch', 'respec',
 ];
 
@@ -59,7 +58,7 @@ describe('catálogo ampliado', () => {
 
   it('todas as famílias da seção 4 existem e têm conquistas', () => {
     const names = ACHIEVEMENT_GROUPS.map((g) => g.name);
-    for (const n of ['Colapsos', 'Proibidos', 'Automação', 'Sorte', 'Exploração', 'Árvore', 'Geradores e toque', 'Combo e ritmo', 'Missões da estação', 'Regiões', 'Tempo', 'Escondidas']) {
+    for (const n of ['Colapsos', 'Proibidos', 'Automação', 'Sorte', 'Exploração', 'Árvore', 'Geradores e toque', 'Missões da estação', 'Regiões', 'Tempo', 'Escondidas']) {
       expect(names, n).toContain(n);
     }
     for (const g of ACHIEVEMENT_GROUPS) expect(ACHIEVEMENTS.some((a) => a.group === g.id), g.id).toBe(true);
@@ -71,7 +70,7 @@ describe('catálogo ampliado', () => {
       else expect(Object.values(TIER_REWARD), a.id).toContain(a.reward);
     }
     expect(TIER_REWARD).toEqual({ S: 1, M: 2, L: 3, E: 5 });
-    expect(ACHIEVEMENTS.filter((a) => a.hidden)).toHaveLength(10);
+    expect(ACHIEVEMENTS.filter((a) => a.hidden)).toHaveLength(9);
   });
 
   it('colapsos 1, 3, 5, 10, 15, 20, 30, 50, 75 e 100 existem', () => {
@@ -176,10 +175,10 @@ describe('progresso das famílias', () => {
     expect(got).not.toContain('time-25h');
   });
 
-  it('missões, combo e sequência', () => {
-    const s = stats(base(), { missionsDone: 50, chainBest: 100, comboFullBest: 300.4, comboMaxHits: 10_000 });
+  it('missões', () => {
+    const s = stats(base(), { missionsDone: 50 });
     const got = ids(s);
-    for (const id of ['miss-50', 'chain-100', 'combo-300', 'combo-hits-10k']) expect(got, id).toContain(id);
+    for (const id of ['miss-50']) expect(got, id).toContain(id);
     expect(got).not.toContain('miss-100');
   });
 
@@ -316,7 +315,7 @@ describe('validação dos totais novos', () => {
     expect(bad({ eventsSeen: ['nao-existe'] }).ok).toBe(false);
     expect(bad({ forbiddenBest: { moon: 3 } }).ok).toBe(false);
     expect(bad({ rareStreak: 5, rareStreakBest: 2, picks: 10 }).ok).toBe(false);
-    expect(bad({ touchBest: 40 }).ok).toBe(false);
+    expect(bad({ touchBest: 60 }).ok).toBe(false);
   });
   it('aceita o possível', () => {
     expect(bad({ raresCaptured: 2, objectsCaptured: 5, capturedKinds: ['golden', 'comet'] }).ok).toBe(true);

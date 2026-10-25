@@ -318,14 +318,10 @@ function milestoneUpgrade(state: SaveState): number | null {
   const n = state.collapses + 1;
   if (state.run.dustLife < 0.5 * dustGoal(n)) return null;
   const goal = milestoneGoal(milestoneProgress(n, state.collapses, state.run, effectiveStats(state).objects.disabled).kind, n);
-  if (goal.kind === 'combo' && !effectiveStats(state).combo.enabled) {
-    const i = upgradeIndex('rhythm');
-    return nextUpgradeCost(state, i) === null ? null : i;
-  }
   if (goal.kind !== 'generators' || generatorsAtLevel(state.run.upgradeLevels, goal.level) >= goal.target) return null;
   let best: number | null = null;
   UPGRADES.forEach((u, i) => {
-    if (u.kind === 'touch' || u.kind === 'perk' || (state.run.upgradeLevels[i] ?? 0) >= goal.level || nextUpgradeCost(state, i) === null) return;
+    if (u.kind === 'item' || (state.run.upgradeLevels[i] ?? 0) >= goal.level || nextUpgradeCost(state, i) === null) return;
     if (best === null || (state.run.upgradeLevels[i] ?? 0) > (state.run.upgradeLevels[best] ?? 0)) best = i;
   });
   return best;

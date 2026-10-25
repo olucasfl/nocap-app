@@ -79,7 +79,7 @@ describe('validateSave: formato', () => {
   });
 
   it('uma cadeia de 12 colapsos com o Cofre crescendo passa em cada passo', () => {
-    const pages = ['moon', 'mars', 'venus', 'mercury', 'sirius', 'vega', 'phobos', 'io', 'betelgeuse', 'titan'];
+    const pages = ['moon', 'saturn', 'venus', 'mercury', 'sirius', 'vega', 'phobos', 'io', 'betelgeuse', 'titan'];
     let s: SaveState = { ...newSave('chain'), tutorial: 'done' };
     for (let k = 1; k <= 12; k++) {
       const goal = dustGoal(k);
@@ -165,8 +165,8 @@ describe('validateSave: coerência', () => {
     expect(rejects(s)).toContain('Nível acima do máximo: lens');
     const f = clone(base());
     f.run.dustLife = f.stats.dustTotal = 1e30;
-    f.run.upgradeLevels[UPGRADES.findIndex((u) => u.id === 'webb')] = 1;
-    expect(rejects(f)).toContain('Melhoria de colapso futuro: webb');
+    f.run.upgradeLevels[UPGRADES.findIndex((u) => u.id === 'deep')] = 1;
+    expect(rejects(f)).toContain('Melhoria de colapso futuro: deep');
   });
 
   it('recusa grimório de colapso futuro e mais grimórios que escolhas', () => {
@@ -391,21 +391,14 @@ describe('validateSave: economia v2 (spec 039)', () => {
 
   it('recusa melhoria fora da prateleira (comprou a 5ª sem as de antes)', () => {
     const s = clone(newSave('fila', NOW));
-    s.run.upgradeLevels[upg('hands')] = 1;
+    s.run.upgradeLevels[upg('charged')] = 1;
     s.run.dustLife = s.stats.dustTotal = 5000;
-    expect(rejects(s)).toContain('Melhoria trancada: hands');
+    expect(rejects(s)).toContain('Melhoria trancada: charged');
     // Com as de antes compradas, a mesma compra é válida.
     const ok = clone(s);
-    for (const id of ['lens', 'gloves', 'trained', 'rhythm']) ok.run.upgradeLevels[upg(id)] = 1;
+    for (const id of ['lens', 'gloves', 'solar']) ok.run.upgradeLevels[upg(id)] = 1;
     ok.run.dustLife = ok.stats.dustTotal = 50000;
     expect(validateSave(ok).ok).toBe(true);
-  });
-
-  it('recusa a Cadência sem o Ritmo Firme', () => {
-    const s = clone(newSave('req', NOW));
-    for (const id of ['lens', 'gloves', 'trained', 'magnet', 'hands', 'charged', 'luck', 'cadence']) s.run.upgradeLevels[upg(id)] = 1;
-    s.run.dustLife = s.stats.dustTotal = 100000;
-    expect(rejects(s)).toContain('Melhoria trancada: cadence');
   });
 
   it('poeira acima do teto é cortada e marcada, sem recusar o save', () => {

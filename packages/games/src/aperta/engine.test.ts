@@ -18,6 +18,7 @@ import {
   sparksAvailable,
   newSave,
   nextRandom,
+  nextItemIndex,
   nextUpgradeCost,
   objectReward,
   objectsOpen,
@@ -188,81 +189,6 @@ describe('press', () => {
     expect(s.run.clicks).toBe(2);
   });
 
-  it('o combo só existe depois do Ritmo Firme', () => {
-    const noCombo = pressN(withLevels(newSave('p'), { lens: 1 }), 5).state;
-    expect(noCombo.run.combo).toBe(0);
-    expect(noCombo.run.lastGain).toBe(2);
-
-    let s = withLevels(newSave('p'), { lens: 1, rhythm: 1 });
-    s = pressN(s, 5).state;
-    expect(s.run.combo).toBe(3);
-    expect(s.run.lastGain).toBe(3);
-  });
-
-  it('o combo cai quando passa a janela e respeita o máximo', () => {
-    let s = withLevels(newSave('p'), { lens: 1, rhythm: 1 });
-    s = pressN(s, 3).state;
-    expect(s.run.combo).toBe(2);
-    s = press(s, 5);
-    expect(s.run.combo).toBe(0);
-    s = withLevels(newSave('p'), { rhythm: 1, cadence: 1 });
-    expect(effectiveStats(s).combo.max).toBe(4);
-    s = pressN(s, 12).state;
-    expect(s.run.combo).toBe(4);
-  });
-
-  it('a Cadência só compra com o Ritmo Firme', () => {
-    const open = { lens: 1, gloves: 1, trained: 1, magnet: 1, hands: 1, charged: 1, luck: 1 };
-    let s = withRun(withLevels(newSave('p'), open), { dust: 1e6, dustLife: 1e6 });
-    expect(upgradeLock(s, idx('cadence'))).toEqual({ kind: 'requires', upgrade: 'rhythm', level: 1 });
-    expect(nextUpgradeCost(s, idx('cadence'))).toBeNull();
-    s = withLevels(s, { rhythm: 1 });
-    expect(nextUpgradeCost(s, idx('cadence'))).not.toBeNull();
-  });
-
-  it('o Ritmo Firme só liga o combo (ponto vale 0,2) e a janela é dos grimórios', () => {
-    const a = effectiveStats(withLevels(newSave('p'), { rhythm: 1 }));
-    expect(a.combo.enabled).toBe(true);
-    expect(a.combo.windowSec).toBeCloseTo(1.3, 9);
-    expect(a.combo.pointValue).toBeCloseTo(0.2, 9);
-    expect(effectiveStats(newSave('p')).combo.enabled).toBe(false);
-    const w = effectiveStats(holdIn(withLevels(newSave('p'), { rhythm: 1 }), 'uranus', 'common'));
-    expect(w.combo.windowSec).toBeCloseTo(1.3 + 0.2, 9);
-    // Na raridade Rara o passo é o dobro.
-    const r = effectiveStats(holdIn(withLevels(newSave('p'), { rhythm: 1 }), 'uranus', 'rare'));
-    expect(r.combo.windowSec).toBeCloseTo(1.3 + 0.4, 9);
-  });
-
-  it('o Pulso Carregado soma 0,5 de energia por toque', () => {
-    const s = press(withLevels(newSave('p'), { charged: 1 }), 1);
-    expect(s.run.energy).toBeCloseTo(1 + CHARGED_ENERGY, 9);
-  });
-
-  it('o Dedo Treinado faz o 25º toque render x5 e o Toque de Sorte nunca passa de x10', () => {
-    // A barra de energia (19) enche antes do 25º toque: dá bastante energia de folga para o teste.
-    const rich = withRun(withLevels(newSave('p'), { trained: 1 }), { picks: 30 });
-    const { state } = pressN(rich, 25, 1, 0.4);
-    expect(state.run.lastGain).toBe(5);
-    const luck = effectiveStats(withLevels(newSave('p'), { luck: 1 }));
-    expect(luck.crit).toEqual({ chance: CRIT_CHANCE, mult: 10 });
-    let crits = 0;
-    let s = withLevels(newSave('p'), { luck: 1 });
-    for (let i = 0; i < 400; i++) {
-      s = withRun(press(s, 1 + i * 0.4), { energy: 0, pending: null });
-      if (s.run.lastGain === 10) crits++;
-      else expect(s.run.lastGain).toBe(1);
-    }
-    expect(crits).toBeGreaterThan(5);
-    expect(crits).toBeLessThan(60);
-  });
-
-  it('o Toque Magnético encurta a espera do próximo objeto a cada toque', () => {
-    const s0 = withRun(withLevels(newSave('p'), { magnet: 1 }), { nextSpawnAt: 100 });
-    const s1 = press(s0, 1);
-    expect(s1.run.nextSpawnAt).toBeCloseTo(99.5, 9);
-    expect(press(withRun(newSave('p'), { nextSpawnAt: 100 }), 1).run.nextSpawnAt).toBe(100);
-  });
-
   it('a energia cheia abre a escolha e os toques seguintes não contam', () => {
     const { state, t } = pressN(newSave('p'), ENERGY_STEPS[0]);
     expect(state.run.pending).not.toBeNull();
@@ -272,34 +198,6 @@ describe('press', () => {
     const after = press(state, t + 1);
     expect(after.run.clicks).toBe(before);
     expect(after.run.dust).toBe(state.run.dust);
-  });
-
-  it('a Lua dá o bônus no 10º toque', () => {
-    const s = withBuild(newSave('p'), { moon: 1 });
-    const { state } = pressN(s, 10);
-    expect(state.run.lastGain).toBe(2);
-    expect(state.run.dust).toBe(9 + 2);
-  });
-
-  it('Mercúrio soma 2 de energia a cada 5 toques (número, não % da barra)', () => {
-    const { state } = pressN(withBuild(newSave('p'), { mercury: 1 }), 5);
-    expect(state.run.energy).toBeCloseTo(5 + 2, 9);
-    const l3 = pressN(withBuild(newSave('p'), { mercury: 3 }), 5).state;
-    expect(l3.run.energy).toBeCloseTo(5 + 2 * (1 + 2 * GRIMOIRE_LEVEL_STEP), 9);
-  });
-
-  it('com o combo no máximo, Sirius soma poeira por toque (e a raridade dobra o passo)', () => {
-    const base = withLevels(newSave('p'), { lens: 1, lens2: 1, cabin: 1, rhythm: 1 });
-    const plain = pressN(base, 6).state;
-    const full = pressN(holdIn(base, 'sirius', 'common'), 6).state;
-    const rare = pressN(holdIn(base, 'sirius', 'rare'), 6).state;
-    expect(plain.run.combo).toBe(3);
-    expect(full.run.combo).toBe(3);
-    // (8 + 0,5) x 1,6 = 13,6 contra 8 x 1,6 = 12,8; Raro soma 1 em vez de 0,5.
-    expect(full.run.lastGain).toBeGreaterThan(plain.run.lastGain);
-    expect(rare.run.lastGain).toBeGreaterThan(full.run.lastGain);
-    // Fora do combo cheio nada muda.
-    expect(press(holdIn(base, 'sirius'), 1).run.lastGain).toBe(press(base, 1).run.lastGain);
   });
 
   it('o toque vale no mínimo 1 mesmo com multiplicadores menores que 1', () => {
@@ -360,43 +258,62 @@ describe('buyUpgrade', () => {
     expect(buyUpgrade(bought, idx('lens'))).toBe(bought);
   });
 
-  it('a prateleira começa com a 1ª de cada tipo e uma escondida ("???" só com o preço)', () => {
+  it('a escada de itens mostra o próximo e os 2 seguintes (esmaecidos), na ordem do preço, e os geradores um por vez', () => {
     const s = withRun(newSave('b'), { dust: 1e12 });
     const open = (st: SaveState) => upgradeUnlocks(st).filter((u) => u.unlocked).map((u) => u.id);
+    // Só o 1º item e o 1º gerador de cada tipo estão à venda.
     expect(open(s)).toEqual(['lens', 'satellite', 'antenna']);
-    expect(upgradeLock(s, idx('gloves'))).toEqual({ kind: 'mystery', cost: 225 });
+    // Os 2 seguintes já aparecem (nome, efeito e preço), mas esperam o de antes: é o objetivo que dá vontade.
+    expect(upgradeLock(s, idx('gloves'))).toEqual({ kind: 'order', before: 'lens' });
+    expect(upgradeLock(s, idx('solar'))).toEqual({ kind: 'order', before: 'lens' });
+    // O 4º item ainda nem aparece.
+    expect(upgradeLock(s, idx('charged'))).toEqual({ kind: 'shelf' });
+    expect(nextUpgradeCost(s, idx('gloves'))).toBeNull();
     // Geradores (poeira e energia): um por vez. O próximo só aparece depois de completar o atual (8/8).
     expect(upgradeLock(s, idx('probe'))).toEqual({ kind: 'shelf' });
     expect(upgradeLock(s, idx('receiver'))).toEqual({ kind: 'shelf' });
     expect(upgradeLock(withLevels(s, { satellite: 8 }), idx('probe'))).toBeNull();
     expect(upgradeLock(withLevels(s, { antenna: 6 }), idx('receiver'))).toBeNull();
-    // As de trás nem aparecem.
-    expect(upgradeLock(s, idx('trained'))).toEqual({ kind: 'shelf' });
-    expect(upgradeUnlocks(s).find((u) => u.id === 'trained')?.hidden).toBe(true);
-    expect(nextUpgradeCost(s, idx('gloves'))).toBeNull();
   });
 
-  it('a escondida revela nome e efeito com 70% do preço, e comprar uma traz a próxima', () => {
-    const s = withRun(newSave('b'), { dust: 100, dustLife: 157 });
-    expect(upgradeLock(s, idx('gloves'))).toEqual({ kind: 'mystery', cost: 225 });
-    expect(upgradeLock(withRun(s, { dustLife: 158 }), idx('gloves'))).toBeNull();
-    const bought = buyUpgrade(s, idx('lens'));
-    expect(bought.run.upgradeLevels[idx('lens')]).toBe(1);
-    expect(upgradeUnlocks(bought).find((u) => u.id === 'trained')?.lock).toEqual({ kind: 'mystery', cost: 500 });
+  it('comprar o item de cima libera o próximo e a escada anda (a janela de 3 desliza)', () => {
+    let s = withRun(newSave('b'), { dust: 1e12, dustLife: 1e12 });
+    expect(nextItemIndex(s)).toBe(idx('lens'));
+    s = buyUpgrade(s, idx('lens'));
+    expect(nextItemIndex(s)).toBe(idx('gloves'));
+    expect(upgradeLock(s, idx('gloves'))).toBeNull();
+    expect(upgradeLock(s, idx('charged'))).toEqual({ kind: 'order', before: 'gloves' });
+    // Um item de trás não pode ser comprado fora da ordem.
+    expect(buyUpgrade(s, idx('solar'))).toBe(s);
+    s = buyUpgrade(buyUpgrade(s, idx('gloves')), idx('solar'));
+    expect(s.run.upgradeLevels[idx('solar')]).toBe(1);
+    expect(nextItemIndex(s)).toBe(idx('charged'));
   });
 
-  it('exige os colapsos: Webb, Chandra e Gaia esperam, e aparecem no fim da fila de toque', () => {
+  it('o item de outro colapso espera o colapso e aparece no fim da escada', () => {
     const s = withRun(newSave('b'), { dust: 1e12, dustLife: 1e12 });
-    expect(upgradeLock(s, idx('webb'))).toEqual({ kind: 'collapse', collapse: 1 });
-    expect(upgradeUnlocks(s).find((u) => u.id === 'webb')?.hidden).toBe(true);
-    expect(upgradeLock({ ...s, collapses: 1 }, idx('webb'))).toEqual({ kind: 'shelf' });
+    expect(upgradeLock(s, idx('deep'))).toEqual({ kind: 'collapse', collapse: 1 });
+    expect(upgradeUnlocks(s).find((u) => u.id === 'deep')?.hidden).toBe(true);
+    // Com o colapso aberto ele fica depois dos 24 da primeira vida: só aparece quando os de antes foram comprados.
+    expect(upgradeLock({ ...s, collapses: 1 }, idx('deep'))).toEqual({ kind: 'shelf' });
+    const all24 = Object.fromEntries(UPGRADES.filter((u) => u.kind === 'item' && u.unlockedAtCollapse === 0).map((u) => [u.id, 1]));
+    expect(upgradeLock(withLevels({ ...s, collapses: 1 }, all24), idx('deep'))).toBeNull();
   });
 
-  it('depois do 1º colapso os nomes já aparecem (sem "???"), mas a fila é a mesma', () => {
-    const s = { ...newSave('b'), collapses: 1 };
-    const open = upgradeUnlocks(s).filter((u) => u.unlocked).map((u) => u.id);
-    expect(open).toEqual(['lens', 'gloves', 'satellite', 'antenna']);
-    expect(upgradeUnlocks(s).some((u) => u.lock?.kind === 'mystery')).toBe(false);
+  it('o item comprado muda o total: o efeito é o que a tela diz', () => {
+    const base = effectiveStats(newSave('b'));
+    expect(base.dustPerTouch).toBe(1);
+    // Lente Polida: Toque x2. Luvas: +2 poeira por toque (soma antes de multiplicar): (1 + 2) x 2 = 6.
+    expect(effectiveStats(withLevels(newSave('b'), { lens: 1 })).dustPerTouch).toBe(2);
+    expect(effectiveStats(withLevels(newSave('b'), { lens: 1, gloves: 1 })).dustPerTouch).toBe(6);
+    // Pulso Carregado: energia por toque x2.
+    expect(effectiveStats(withLevels(newSave('b'), { charged: 1 })).energyPerTouch).toBe(base.energyPerTouch * 2);
+    // Painéis Solares: geradores de poeira x2; Antena Dupla: geradores de energia x2.
+    const gens = withLevels(newSave('b'), { satellite: 4, antenna: 2 });
+    const solar = effectiveStats(withLevels(gens, { solar: 1 }));
+    expect(solar.autoDustPerSec).toBeCloseTo(effectiveStats(gens).autoDustPerSec * 2, 9);
+    const ant = effectiveStats(withLevels(gens, { antenna2: 1 }));
+    expect(ant.autoEnergyPerSec).toBeCloseTo(effectiveStats(gens).autoEnergyPerSec * 2, 9);
   });
 
   it('cada gerador custa bem mais que o anterior e sobe a cada compra', () => {
@@ -411,14 +328,6 @@ describe('buyUpgrade', () => {
       expect(nextUpgradeCost(lvl1, idx(def.id)) as number, def.id).toBeGreaterThan(def.base);
       if (i > 0) expect(def.base).toBeGreaterThanOrEqual((gens[i - 1] as typeof def).base * 5);
     });
-  });
-
-  it('M87* (no Cofre) reduz o custo das melhorias; o Webb dobra o toque', () => {
-    const base = withRun({ ...newSave('b'), collapses: 5 }, { dust: 1e12 });
-    const c0 = nextUpgradeCost(base, idx('satellite')) as number;
-    const c1 = nextUpgradeCost({ ...base, vault: { m87: 1 } }, idx('satellite')) as number;
-    expect(c1).toBe(Math.round(c0 * 0.6));
-    expect(effectiveStats(withLevels(base, { webb: 1 })).dustPerTouch).toBe(2);
   });
 
   it('Titã devolve a poeira de alguns toques a cada compra (sem passar do preço)', () => {
@@ -584,9 +493,10 @@ describe('escolha de grimório', () => {
   });
 
   it('não escolhe carta que não foi oferecida', () => {
-    const { s } = opened();
+    const { s, offers } = opened();
     const at = (s.run.pending?.openedAt ?? 0) + 2;
-    const sel = selectGrimoire(s, 'sirius', at);
+    const other = GRIMOIRES.find((g) => g.unlockedAtCollapse === 0 && !offers.includes(g.id))?.id as string;
+    const sel = selectGrimoire(s, other, at);
     expect(sel.run.pending?.selected).toBeNull();
   });
 
@@ -692,17 +602,10 @@ describe('effectiveStats', () => {
   });
 
   it('o nível do grimório soma metade do passo da raridade por nível', () => {
-    const vega = (rarity: GrimoireRarity, lvl: number) => effectiveStats(holdIn(holdIn(newSave('lv'), 'moon'), 'vega', rarity, lvl)).dustPerTouch;
-    // Vega: +0,15 por grimório no livro (Vega e Lua = 2), vezes o ganho.
-    expect(vega('common', 1)).toBeCloseTo(1 + 0.15 * 2 * 1, 9);
-    expect(vega('common', 3)).toBeCloseTo(1 + 0.15 * 2 * (1 + 2 * GRIMOIRE_LEVEL_STEP), 9);
-    expect(vega('rare', 1)).toBeCloseTo(1 + 0.15 * 2 * 2, 9);
-    const sirius = (rarity: GrimoireRarity, lvl: number) =>
-      effectiveStats(holdIn(withLevels(newSave('lv'), { resonance: 1 }), 'sirius', rarity, lvl)).combo.fullDustAdd;
-    expect(sirius('common', 1)).toBeCloseTo(0.5, 9);
-    expect(sirius('common', 2)).toBeCloseTo(0.5 * (1 + GRIMOIRE_LEVEL_STEP), 9);
-    expect(sirius('common', 3)).toBeCloseTo(0.5 * (1 + 2 * GRIMOIRE_LEVEL_STEP), 9);
-    expect(sirius('legendary', 1)).toBeCloseTo(2, 9);
+    const vega = (rarity: GrimoireRarity, lvl: number) => effectiveStats(holdIn(newSave('lv'), 'vega', rarity, lvl)).dustPerTouch;
+    expect(vega('common', 1)).toBeCloseTo(1 + 0.5, 9);
+    expect(vega('common', 3)).toBeCloseTo(1 + 0.5 * (1 + 2 * GRIMOIRE_LEVEL_STEP), 9);
+    expect(vega('rare', 1)).toBeCloseTo(1 + 0.5 * 2, 9);
   });
 
   it('descontos de custo se multiplicam e param no piso de 40%', () => {
@@ -720,73 +623,54 @@ describe('effectiveStats', () => {
     expect(s.energyPerTouch).toBeCloseTo(base.energyPerTouch * 0.5, 9);
   });
 
-  it('M87* encarece o passo de energia e Cygnus desliga os objetos', () => {
+  it('M87* encarece o passo de energia e Cygnus desliga os objetos e multiplica a poeira', () => {
+    const base = effectiveStats(newSave('m'));
     const m87 = effectiveStats({ ...newSave('m'), collapses: 5, vault: { m87: 1 } });
     expect(m87.energyStepFactor).toBeCloseTo(1.2, 9);
     const cyg = effectiveStats({ ...newSave('m'), collapses: 3, vault: { 'cygnus-x1': 1 } });
     expect(cyg.objects.disabled).toBe(true);
-    expect(cyg.combo.fullMult).toBeCloseTo(2, 9);
-    expect(cyg.combo.windowSec).toBeCloseTo(2 * 1.3, 9);
-  });
-
-  it('o teto do combo é duro', () => {
-    const s = effectiveStats({
-      ...withLevels(newSave('cm'), { pleiades: 5 }),
-      collapses: 3,
-      build: { 'milky-way': 10 },
-    } as unknown as SaveState);
-    expect(s.combo.max).toBeLessThanOrEqual(12);
+    expect(cyg.dustPerTouch).toBeCloseTo(base.dustPerTouch * 2, 9);
   });
 
   it('Vega soma poeira por toque a cada grimório que você tem, de qualquer raridade', () => {
     const one = effectiveStats(holdIn(newSave('v'), 'vega')).dustPerTouch;
-    const three = effectiveStats(holdIn(holdIn(holdIn(newSave('v'), 'vega'), 'moon', 'epic'), 'mercury', 'rare')).dustPerTouch;
+    const three = effectiveStats(holdIn(holdIn(holdIn(newSave('v'), 'vega'), 'mercury', 'epic'), 'polaris', 'rare')).dustPerTouch;
     expect(three).toBeGreaterThan(one);
-    expect(three).toBeCloseTo(1 + 0.15 * 3, 9);
+    expect(three).toBeCloseTo(1 + 0.5 * 3, 9);
   });
 
-  it('a Sonda Kepler encurta a janela dos objetos em 20%, e o campo começa com 1 lugar', () => {
+  it('Halley antecipa os objetos em 4 s e Europa abre 1 lugar a mais no campo', () => {
     const s0 = effectiveStats(newSave('k')).objects;
-    const s1 = effectiveStats(withLevels(newSave('k'), { kepler: 1 })).objects;
+    const halley = effectiveStats(holdIn(newSave('k'), 'halley')).objects;
     expect([s0.spawnMinSec, s0.spawnMaxSec]).toEqual([60, 90]);
     expect(s0.maxOnField).toBe(1);
-    expect(s1.spawnMinSec).toBeCloseTo(48, 9);
-    expect(s1.spawnMaxSec).toBeCloseTo(72, 9);
-    expect(s1.maxOnField).toBe(1);
+    expect(halley.spawnMinSec).toBeCloseTo(56, 9);
+    expect(halley.spawnMaxSec).toBeCloseTo(86, 9);
+    expect(effectiveStats(holdIn(newSave('k'), 'europa')).objects.maxOnField).toBe(2);
   });
 
-  it('os geradores rendem cheio tocando ou parado, nunca acima do teto, e só com a escolha fechada', () => {
+  it('os geradores rendem cheio tocando ou parado, sem teto, e só com a escolha fechada', () => {
     const s = withLevels(newSave('hb'), { satellite: 4 });
     const st = effectiveStats(s);
-    const per = (UPGRADES[idx('satellite')] as { perSec: number }).perSec * 4; // 4 níveis: 0,8/s
+    const per = (UPGRADES[idx('satellite')] as { perSec: number }).perSec * 4;
     expect(st.autoDustPerSec).toBeCloseTo(per, 9);
-    expect(st.autoDustCap).toBeCloseTo(NOMINAL_TOUCHES_PER_SEC * AUTO_CAP_SHARE, 9);
-    // Parado: o ritmo cheio, igual a tocar (por baixo do teto).
     const idle = syncClock(s, 2);
     expect(idle.run.dust).toBeCloseTo(per * 2, 9);
     expect(idle.run.dustLife).toBeCloseTo(per * 2, 9);
     expect(idle.stats.dustTotal).toBeCloseTo(per * 2, 9);
-    // Tocando: o toque rende 1 e os geradores seguem no mesmo ritmo (1 s antes do toque e 2 s depois).
     const touched = syncClock(press(s, 1), 3);
     expect(touched.run.dust).toBeCloseTo(per + 1 + per * 2, 9);
-    // Aba escondida e escolha aberta não rendem.
     const hidden = syncClock(idle, 60);
     expect(hidden.run.dust).toBeCloseTo(per * 2, 9);
     const pending = syncClock(withRun(idle, { pending: { offers: ['moon'], openedAt: 2, selected: null, picksLeft: 1, rerollsLeft: 0 } }), 4);
     expect(pending.run.dust).toBeCloseTo(per * 2, 9);
   });
 
-  it('o teto do ganho automático é 60% do toque no ritmo normal, tocando ou parado', () => {
-    // Vários geradores completos: o potencial passa do teto.
+  it('não há teto no ganho automático: vários geradores completos somam tudo', () => {
     const s = withLevels(newSave('cap'), { satellite: 8, probe: 8, telescope: 8 });
-    const st = effectiveStats(s);
-    const cap = NOMINAL_TOUCHES_PER_SEC * AUTO_CAP_SHARE;
-    expect(st.autoDustPerSec).toBeGreaterThan(cap);
-    const active = syncClock(press(s, 1), 3).run.dust - press(s, 1).run.dust;
-    const idle = syncClock(s, 2).run.dust;
-    expect(active).toBeCloseTo(cap * 2, 9);
-    expect(idle).toBeCloseTo(cap * 2, 9);
-    expect(idle / 2).toBeCloseTo(active / 2, 9);
+    const sum = ['satellite', 'probe', 'telescope'].reduce((a, id) => a + (UPGRADES[idx(id)] as { perSec: number }).perSec * 8, 0);
+    expect(effectiveStats(s).autoDustPerSec).toBeCloseTo(sum, 9);
+    expect(syncClock(s, 2).run.dust).toBeCloseTo(sum * 2, 9);
   });
 
   it('o gerador rende de forma linear até o limite de níveis (0/8) e não há mais marcos que dobram', () => {
@@ -806,39 +690,30 @@ describe('effectiveStats', () => {
     expect(opened.run.pending).not.toBeNull();
   });
 
-  it('Halley, Vênus e Marte somam toques à recompensa dos objetos (e a raridade multiplica o passo)', () => {
+  it('Vênus soma toques à recompensa de todo objeto (e a raridade e o nível multiplicam o passo)', () => {
     const base = effectiveStats(newSave('hv')).objects.reward;
     expect(base.comet.dust).toBe(6);
     expect(base['shooting-star'].energy).toBe(2);
     expect(base.satellite.dust).toBe(0);
-    const s = effectiveStats(holdIn(holdIn(holdIn(newSave('hv'), 'halley'), 'mars'), 'venus')).objects.reward;
-    expect(s.comet.dust).toBe(6 + 1 + 3);
-    expect(s['shooting-star'].energy).toBe(2 + 1 + 2);
-    expect(s.satellite.dust).toBe(1);
+    const s = effectiveStats(holdIn(newSave('hv'), 'venus')).objects.reward;
+    expect(s.comet.dust).toBe(6 + 3);
+    expect(s['shooting-star'].energy).toBe(2 + 3);
+    expect(s.satellite.dust).toBe(3);
     const rare = effectiveStats(holdIn(newSave('hv'), 'venus', 'rare')).objects.reward;
     expect(rare.comet.dust).toBe(6 + 3 * 2);
     const lvl2 = effectiveStats(holdIn(newSave('hv'), 'venus', 'common', 2)).objects.reward;
     expect(lvl2.comet.dust).toBeCloseTo(6 + 3 * (1 + GRIMOIRE_LEVEL_STEP), 9);
   });
 
-  it('duração dos objetos e do sinal é das melhorias (Chandra, Voyager); os grimórios mexem no valor do sinal', () => {
-    const base = effectiveStats({ ...newSave('du'), collapses: 4 });
-    expect(base.objects.lifeSec.comet).toBe(7);
-    expect(base.objects.signalSec).toBe(8);
-    const up = effectiveStats(withLevels({ ...newSave('du'), collapses: 4 }, { chandra: 1, voyager: 1 }));
-    expect(up.objects.lifeSec.comet).toBeCloseTo(10.5, 9);
-    expect(up.objects.signalSec).toBe(12);
-    const g = effectiveStats(holdIn({ ...newSave('du'), collapses: 4 }, 'io', 'rare'));
-    expect(g.objects.lifeSec.comet).toBe(7);
-    expect(g.objects.signalSec).toBe(8);
-    expect(g.objects.signalMult).toBeCloseTo(2 + 0.5 * 2, 9);
+  it('Ganimedes alonga a vida de todos os objetos', () => {
+    const base = effectiveStats(newSave('du'));
+    const g = effectiveStats(holdIn({ ...newSave('du'), collapses: 1 }, 'ganymede'));
+    expect(g.objects.lifeSec.comet).toBeCloseTo(base.objects.lifeSec.comet + 2, 9);
+    expect(g.objects.lifeSec['shooting-star']).toBeCloseTo(base.objects.lifeSec['shooting-star'] + 2, 9);
   });
 
-  it('o Voyager soma 4 s ao sinal e o Io só mexe no valor dele', () => {
+  it('Io só mexe no próximo toque depois de capturar um objeto', () => {
     expect(effectiveStats(newSave('s')).objects.signalMult).toBe(2);
-    const s = effectiveStats(holdIn(withLevels({ ...newSave('s'), collapses: 2 }, { voyager: 1 }), 'io'));
-    expect(s.objects.signalSec).toBe(12);
-    expect(s.objects.signalMult).toBeCloseTo(2.5, 9);
   });
 
   it('Titã não dá poeira no começo da vida: ele devolve poeira nas compras, e a raridade multiplica', () => {
@@ -1126,15 +1001,15 @@ describe('colapso', () => {
   });
 
   it('cada colapso destrava exatamente as linhas da tabela 5.4', () => {
-    const expected: Record<number, string[]> = { 1: ['uranus', 'halley', 'capella', 'ganymede'], 2: ['antares', 'cassiopeia'], 3: ['orion-nebula'], 4: [], 5: [] };
+    const expected: Record<number, string[]> = { 1: ['uranus', 'capella', 'ganymede'], 2: ['antares', 'cassiopeia'], 3: ['orion-nebula'], 4: [], 5: [] };
     for (let c = 1; c <= 5; c++) {
       const before = new Set(unlockedContent({ ...newSave('u'), collapses: c - 1 }).grimoires.map((g) => g.id));
       const now = unlockedContent({ ...newSave('u'), collapses: c }).grimoires.map((g) => g.id);
       expect(now.filter((id) => !before.has(id)).sort()).toEqual([...(expected[c] as string[])].sort());
     }
-    expect(unlockedContent({ ...newSave('u'), collapses: 0 }).grimoires).toHaveLength(15);
+    expect(unlockedContent({ ...newSave('u'), collapses: 0 }).grimoires).toHaveLength(14);
     expect(unlockedContent({ ...newSave('u'), collapses: 5 }).grimoires).toHaveLength(GRIMOIRES.length);
-    expect(GRIMOIRES).toHaveLength(22);
+    expect(GRIMOIRES).toHaveLength(20);
     expect(unlockedContent({ ...newSave('u'), collapses: 5 }).regions).toHaveLength(6);
   });
 
@@ -1185,7 +1060,7 @@ describe('robustez numérica', () => {
 
   it('com valores perto do teto continua finito', () => {
     let s = withRun(newSave('big'), { dust: 1e299, dustLife: 1e299 });
-    s = withLevels(s, { lens: 1, lens2: 1, cabin: 1, rhythm: 1, cadence: 1, charged: 1, satellite: 400, antenna: 400 });
+    s = withLevels(s, { lens: 1, lens2: 1, cabin: 1, charged: 1, satellite: 400, antenna: 400 });
     s = withBuild(s, { vega: 10, 'sagittarius-a': 10 });
     for (let i = 0; i < 50; i++) s = press(s, 1 + i);
     assertSane(s);
@@ -1199,7 +1074,7 @@ describe('robustez numérica', () => {
       expect(g.effects.length).toBeGreaterThan(0);
       expect(g.text.length).toBeGreaterThan(0);
     }
-    expect(GRIMOIRES.filter((g) => g.unlockedAtCollapse === 0)).toHaveLength(15);
+    expect(GRIMOIRES.filter((g) => g.unlockedAtCollapse === 0)).toHaveLength(14);
   });
 });
 

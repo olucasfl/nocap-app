@@ -51,26 +51,41 @@ export interface CollapseContent {
 export const COLLAPSE_CONTENT: readonly CollapseContent[] = [
   {
     region: 'inner-solar-system',
-    grimoires: ['moon', 'sirius', 'vega', 'venus', 'mars', 'io', 'mercury', 'phobos', 'titan', 'betelgeuse', 'jupiter', 'saturn', 'europa', 'polaris', 'proxima'],
+    grimoires: ['moon', 'sirius', 'vega', 'saturn', 'mercury', 'polaris', 'proxima', 'betelgeuse', 'titan', 'venus', 'halley', 'europa', 'io', 'phobos'],
     upgrades: [
-      'lens', 'gloves', 'trained', 'rhythm', 'magnet', 'hands', 'charged', 'luck', 'cadence', 'kepler', 'lens2', 'echo',
-      'cabin', 'voyager', 'satellite', 'probe', 'telescope', 'observatory', 'station', 'colony', 'fleet', 'portal',
-      'cluster', 'quasar', 'web', 'antenna', 'receiver', 'matrix', 'deepnet', 'array', 'warmup', 'network', 'lure', 'burst', 'scale', 'peak', 'queue', 'convert', 'rotation',
+      'lens', 'gloves', 'solar', 'charged', 'lens2', 'steel', 'motor', 'antenna2', 'cabin', 'compact', 'pulse2', 'titan', 'lens3', 'plant',
+      'receiver2', 'webb', 'diamond', 'fusion', 'quantum', 'stellar', 'forge', 'chandra', 'mesh', 'starhand',
+      'satellite', 'probe', 'telescope', 'observatory', 'station', 'colony', 'fleet', 'portal', 'cluster', 'quasar', 'web',
+      'antenna', 'receiver', 'matrix', 'deepnet', 'array',
     ],
     objects: ['comet', 'shooting-star', 'satellite'],
     mechanics: [],
     events: [],
   },
-  { region: 'asteroid-belt', grimoires: ['uranus', 'halley', 'capella', 'ganymede'], upgrades: ['webb'], objects: ['asteroid'], mechanics: [], events: [] },
+  {
+    region: 'asteroid-belt',
+    grimoires: ['capella', 'uranus', 'ganymede'],
+    upgrades: ['deep', 'cosmic', 'pulsar', 'solarhand', 'qheart', 'galnet'],
+    objects: ['asteroid'],
+    mechanics: [],
+    events: [],
+  },
   {
     region: 'jupiter-saturn',
     grimoires: ['antares', 'cassiopeia'],
-    upgrades: [],
+    upgrades: ['galens', 'antimatter', 'cosmicpulse', 'nebhand', 'qforge', 'galecho'],
     objects: ['probe'],
     mechanics: ['favorite'],
     events: ['meteor-shower'],
   },
-  { region: 'kuiper-belt', grimoires: ['orion-nebula'], upgrades: ['chandra'], objects: [], mechanics: [], events: [] },
+  {
+    region: 'kuiper-belt',
+    grimoires: ['orion-nebula'],
+    upgrades: ['horizon', 'warp', 'singpulse', 'cosmoshand', 'galheart', 'universe'],
+    objects: [],
+    mechanics: [],
+    events: [],
+  },
   {
     region: 'oort-cloud',
     grimoires: [],
@@ -79,7 +94,7 @@ export const COLLAPSE_CONTENT: readonly CollapseContent[] = [
     mechanics: ['missions'],
     events: ['solar-storm'],
   },
-  { region: 'alpha-centauri', grimoires: [], upgrades: ['gaia'], objects: [], mechanics: [], events: [] },
+  { region: 'alpha-centauri', grimoires: [], upgrades: [], objects: [], mechanics: [], events: [] },
 ];
 
 /** Último colapso com conteúdo nesta versão (v1). */

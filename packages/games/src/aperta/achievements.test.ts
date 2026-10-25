@@ -44,7 +44,7 @@ describe('catálogo de conquistas', () => {
       expect(a.name.length).toBeGreaterThan(0);
     }
     const hidden = ACHIEVEMENTS.filter((a) => a.hidden);
-    expect(hidden.length).toBe(10);
+    expect(hidden.length).toBe(9);
     expect(hidden.map((a) => a.id)).toContain('respec');
     expect(ACHIEVEMENTS.length).toBeGreaterThanOrEqual(140);
   });
@@ -114,29 +114,6 @@ describe('objetos', () => {
     const s = awardAchievements({ ...base, stats: { ...base.stats, objectsCaptured: 20 } });
     expect(has(s, 'obj-20')).toBe(true);
     expect(has(s, 'obj-100')).toBe(false);
-  });
-});
-
-describe('combo', () => {
-  it('chegar ao máximo e mantê-lo por 30 s', () => {
-    let s = withResonance(newSave('a'));
-    let t = 1;
-    while (!has(s, 'combo-max') && t < 60) s = press(withRun(s, { energy: 0 }), (t += 0.4));
-    expect(has(s, 'combo-max')).toBe(true);
-    expect(has(s, 'combo-30')).toBe(false);
-    for (let i = 0; i < 120 && !has(s, 'combo-30'); i++) s = press(withRun(s, { energy: 0 }), (t += 0.4));
-    expect(has(s, 'combo-30')).toBe(true);
-    expect(s.stats.comboFullBest).toBeGreaterThanOrEqual(30);
-  });
-
-  it('um toque tardio derruba o combo e a contagem recomeça', () => {
-    let s = withResonance(newSave('a'));
-    let t = 1;
-    for (let i = 0; i < 30; i++) s = press(withRun(s, { energy: 0 }), (t += 0.4));
-    expect(s.run.comboFullSince).toBeGreaterThan(0);
-    s = press(withRun(s, { energy: 0 }), t + 2);
-    expect(s.run.combo).toBe(0);
-    expect(s.run.comboFullSince).toBeLessThan(0);
   });
 });
 

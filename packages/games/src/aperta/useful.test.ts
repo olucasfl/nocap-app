@@ -20,15 +20,8 @@ function seen(base: (i: number) => SaveState, n = 400): Set<string> {
 }
 
 describe('grimório só é oferecido se rende agora (spec 039, seção 7)', () => {
-  it('de combo precisa do Ritmo Firme', () => {
-    for (const [id, k] of [['sirius', 0], ['uranus', 1]] as const) {
-      expect(grimoireUseful(start(k), byId(id)), id).toBe(false);
-      expect(grimoireUseful(withLevels(start(k), { rhythm: 1 }), byId(id)), id).toBe(true);
-    }
-  });
-
   it('de objetos precisa dos objetos abertos', () => {
-    for (const id of ['venus', 'mars', 'io', 'phobos']) {
+    for (const id of ['venus', 'halley', 'europa', 'io', 'phobos']) {
       expect(grimoireUseful(start(), byId(id)), id).toBe(false);
       expect(grimoireUseful(withLevels(start(), { satellite: 1 }), byId(id)), id).toBe(true);
       // Depois do 1º colapso os objetos já abrem sozinhos.
@@ -36,28 +29,25 @@ describe('grimório só é oferecido se rende agora (spec 039, seção 7)', () =
     }
   });
 
-  it('os que sempre rendem (toque a cada N, energia, poeira de partida, trocas) saem desde o começo', () => {
-    for (const id of ['moon', 'mercury', 'vega', 'titan', 'betelgeuse']) {
+  it('os que sempre rendem (toque, energia, sorte) saem desde o começo', () => {
+    for (const id of ['moon', 'sirius', 'mercury', 'vega', 'titan', 'betelgeuse']) {
       expect(grimoireUseful(start(), byId(id)), id).toBe(true);
     }
   });
 
-  it('no começo do jogo a escolha nunca traz combo nem objetos', () => {
+  it('no começo do jogo a escolha nunca traz grimório de objetos', () => {
     const ids = seen((i) => ({ ...newSave(`d${i}`, 0), run: { ...newSave(`d${i}`, 0).run, picks: 40 } }));
     for (const id of ids) {
       const g = byId(id);
       expect(grimoireUseful(start(), g), id).toBe(true);
     }
-    for (const id of ['sirius', 'uranus', 'venus', 'mars', 'io', 'phobos', 'halley']) expect(ids.has(id), id).toBe(false);
+    for (const id of ['venus', 'halley', 'europa', 'io', 'phobos']) expect(ids.has(id), id).toBe(false);
     expect(ids.size).toBeGreaterThanOrEqual(3);
   });
 
-  it('com o Ritmo Firme, os de combo passam a sair; com os objetos, os de objetos', () => {
-    const rhythm = seen((i) => withLevels(newSave(`r${i}`, 0), { rhythm: 1 }));
-    expect(rhythm.has('sirius')).toBe(true);
+  it('com os objetos abertos, os de objetos passam a sair', () => {
     const objects = seen((i) => withLevels(newSave(`g${i}`, 0), { satellite: 2 }));
-    expect(objects.has('venus') || objects.has('mars')).toBe(true);
-    expect(objects.has('sirius')).toBe(false);
+    expect(['venus', 'halley', 'europa', 'io', 'phobos'].some((id) => objects.has(id))).toBe(true);
   });
 
   it('a troca de uma carta também só traz o que rende', () => {

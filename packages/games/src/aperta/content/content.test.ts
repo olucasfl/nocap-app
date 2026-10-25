@@ -81,18 +81,18 @@ describe('tabela de conteúdo por colapso (spec 5.4)', () => {
     expect(sorted(inTable)).toEqual(sorted(GRIMOIRES.map((g) => g.id)));
   });
 
-  it('os totais do lançamento batem: 22 grimórios (os 10 proibidos moram no Cofre), 6 regiões, 5 objetos, 42 melhorias, 2 eventos', () => {
-    expect(GRIMOIRES).toHaveLength(22);
+  it('os totais do lançamento batem: 20 grimórios (os 10 proibidos moram no Cofre), 6 regiões, 5 objetos, 42 itens e 16 geradores, 2 eventos', () => {
+    expect(GRIMOIRES).toHaveLength(20);
     expect(REGIONS).toHaveLength(6);
     expect(OBJECTS).toHaveLength(5);
-    expect(UPGRADES).toHaveLength(42);
+    expect(UPGRADES).toHaveLength(58);
     expect(COLLAPSE_CONTENT.flatMap((r) => r.events)).toHaveLength(2);
     // As mecânicas novas da v1; o Combo já existe desde o início.
     expect(COLLAPSE_CONTENT.flatMap((r) => r.mechanics)).toEqual(['favorite', 'missions']);
   });
 
-  it('os 22 grimórios chegam aos poucos (15, 4, 2, 1) e cada colapso novo traz uma região', () => {
-    expect(COLLAPSE_CONTENT.map((r) => r.grimoires.length)).toEqual([15, 4, 2, 1, 0, 0]);
+  it('os 20 grimórios chegam aos poucos (14, 3, 2, 1) e cada colapso novo traz uma região', () => {
+    expect(COLLAPSE_CONTENT.map((r) => r.grimoires.length)).toEqual([14, 3, 2, 1, 0, 0]);
     expect(COLLAPSE_CONTENT.slice(1).every((r) => r.region)).toBe(true);
   });
 
@@ -358,9 +358,9 @@ describe('validateSave e o conteúdo dos colapsos 1 a 5', () => {
     ['região fechada', atCollapse(1, { regionId: 'jupiter-saturn' }), 'Região ainda fechada'],
     ['Sonda Voyager no colapso 1', withObject(1, 'probe'), 'Objeto de colapso futuro'],
     ['Asteroide no colapso 0', withObject(0, 'asteroid'), 'Objeto de colapso futuro'],
-    ['James Webb no colapso 0', withUpgrade(0, 'webb'), 'Melhoria de colapso futuro'],
-    ['Chandra no colapso 2', withUpgrade(2, 'chandra'), 'Melhoria de colapso futuro'],
-    ['Gaia no colapso 4', withUpgrade(4, 'gaia'), 'Melhoria de colapso futuro'],
+    ['Sonda Profunda (colapso 1) no colapso 0', withUpgrade(0, 'deep'), 'Melhoria de colapso futuro'],
+    ['Lente Galáctica (colapso 2) no colapso 1', withUpgrade(1, 'galens'), 'Melhoria de colapso futuro'],
+    ['Lente do Horizonte (colapso 3) no colapso 2', withUpgrade(2, 'horizon'), 'Melhoria de colapso futuro'],
     ['Chuva de meteoros no colapso 1', run(atCollapse(1), { event: { id: 'meteor-shower', until: 10 }, nextEventAt: 20 }), 'Evento de colapso futuro'],
     ['Tempestade solar no colapso 3', run(atCollapse(3), { event: { id: 'solar-storm', until: 10 }, nextEventAt: 20 }), 'Evento de colapso futuro'],
     ['missão no colapso 3', run(atCollapse(3), { mission: { id: 'touch-600', progress: 0, done: false, doneAt: -1e9 } }), 'Missão de colapso futuro'],

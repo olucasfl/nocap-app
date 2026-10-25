@@ -48,6 +48,8 @@ export const GENERATOR_COUNT = GENERATOR_INDEXES.length;
  * vida ficaria impossível de colapsar.
  */
 export function milestoneAvailable(kind: MilestoneKind, collapses: number, objectsDisabled = false): boolean {
+  // O combo saiu do jogo (spec 043): os dois marcos de combo nunca valem; o ciclo pula para o próximo.
+  if (kind === 'combo' || kind === 'comboFull') return false;
   if (objectsDisabled && (kind === 'capture' || kind === 'rares' || kind === 'missions')) return false;
   if (kind === 'missions') return mechanicOpen('missions', collapses);
   return true;

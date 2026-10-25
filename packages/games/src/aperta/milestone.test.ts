@@ -31,13 +31,13 @@ describe('marco da vida: o tipo gira entre 6', () => {
   it('é o de índice n mod 6 do ciclo (quando o conteúdo existe)', () => {
     // Com tudo aberto (muitos colapsos): n mod 6 escolhe direto.
     const kinds = Array.from({ length: 12 }, (_, i) => milestoneKind(i + 1, 40));
-    expect(kinds.slice(0, 6)).toEqual(['combo', 'generators', 'missions', 'rares', 'comboFull', 'capture']);
     expect(kinds.slice(6)).toEqual(kinds.slice(0, 6));
-    for (const k of MILESTONE_ORDER) expect(kinds).toContain(k);
+    // O combo saiu do jogo (spec 043): só sobram 4 tipos.
+    expect(new Set(kinds)).toEqual(new Set(['capture', 'generators', 'missions', 'rares']));
   });
 
-  it('o 1º colapso pede combo; o 6º, objetos capturados', () => {
-    expect(milestoneKind(1)).toBe('combo');
+  it('o 1º colapso pede geradores; o 6º, objetos capturados', () => {
+    expect(milestoneKind(1)).toBe('generators');
     expect(milestoneKind(6, 5)).toBe('capture');
   });
 
@@ -120,17 +120,18 @@ describe('marco da vida: progresso', () => {
   });
 
   it('zero é zero; metade é metade', () => {
-    const none = milestoneProgress(1, 0, counters());
-    expect(none).toMatchObject({ kind: 'combo', value: 0, target: 5, done: false, fill: 0 });
-    const half = milestoneProgress(1, 0, counters({ chainBest: 2 }));
-    expect(half.fill).toBeCloseTo(0.4, 6);
-    expect(milestoneProgress(1, 0, counters({ chainBest: 5 })).done).toBe(true);
+    const n = Array.from({ length: 12 }, (_, i) => i + 1).find((i) => milestoneKind(i, 40) === 'capture') as number;
+    const none = milestoneProgress(n, 40, counters());
+    expect(none).toMatchObject({ kind: 'capture', value: 0, done: false, fill: 0 });
+    const half = milestoneProgress(n, 40, counters({ captured: none.target / 2 }));
+    expect(half.fill).toBeCloseTo(0.5, 6);
+    expect(milestoneProgress(n, 40, counters({ captured: none.target })).done).toBe(true);
   });
 
   it('geradores contam os que passam do nível pedido', () => {
     const goal = generatorGoal(2);
     const levels = new Array<number>(UPGRADES.length).fill(0);
-    const gens = UPGRADES.map((u, i) => (u.kind === 'touch' ? -1 : i)).filter((i) => i >= 0);
+    const gens = UPGRADES.map((u, i) => (u.kind === 'item' ? -1 : i)).filter((i) => i >= 0);
     levels[gens[0]!] = goal.level;
     expect(generatorsAtLevel(levels, goal.level)).toBe(1);
     levels[gens[1]!] = goal.level - 1;
@@ -153,9 +154,9 @@ describe('marco da vida: progresso', () => {
     }
   });
 
-  it('as 6 metas possíveis são todas distintas em tipo', () => {
+  it('as metas disponíveis são todas distintas em tipo', () => {
     const seen = new Set<MilestoneKind>();
     for (let n = 1; n <= 6; n++) seen.add(milestoneKind(n, 40));
-    expect(seen.size).toBe(6);
+    expect(seen.size).toBe(4);
   });
 });

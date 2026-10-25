@@ -18,7 +18,6 @@ export type AchievementGroup =
   | 'dust'
   | 'grimoires'
   | 'objects'
-  | 'combo'
   | 'collapses'
   | 'forbidden'
   | 'automation'
@@ -36,7 +35,6 @@ export const ACHIEVEMENT_GROUPS: readonly { id: AchievementGroup; name: string }
   { id: 'dust', name: 'Poeira' },
   { id: 'grimoires', name: 'Grimórios' },
   { id: 'objects', name: 'Objetos' },
-  { id: 'combo', name: 'Combo e ritmo' },
   { id: 'collapses', name: 'Colapsos' },
   { id: 'forbidden', name: 'Proibidos' },
   { id: 'automation', name: 'Automação' },
@@ -151,7 +149,7 @@ const captured = (s: SaveState) => s.stats.objectsCaptured;
 const collapses = (s: SaveState) => s.collapses;
 const hours = (s: SaveState) => s.playSeconds / 3600;
 const best = (s: SaveState, id: string) => s.stats.forbiddenBest[id] ?? 0;
-const touchUpgradeCount = UPGRADES.filter((u) => u.kind === 'touch').length;
+const touchUpgradeCount = UPGRADES.filter((u) => u.kind === 'item').length;
 const regionOpened = (id: string) => (s: SaveState) =>
   s.collapses >= (REGIONS.find((r) => r.id === id)?.unlockedAtCollapse ?? Infinity) ? 1 : 0;
 
@@ -237,17 +235,6 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
   def('rare-200', 'objects', 'E', 'Mestre dos raros', 'Capture 200 objetos raros.', 200, (s) => s.stats.raresCaptured),
   def('obj-kinds', 'objects', 'M', 'Um de cada', 'Capture um objeto de cada tipo que já apareceu no espaço.', 5, (s) => s.stats.capturedKinds.filter((k) => k !== 'golden').length),
 
-  // --- Combo e ritmo ---
-  def('combo-max', 'combo', 'S', 'Ressonância total', 'Chegue ao combo máximo.', 1, (s) => s.stats.comboMaxHits),
-  def('combo-30', 'combo', 'M', 'Pulso constante', 'Mantenha o combo máximo por 30 segundos.', 30, (s) => Math.floor(s.stats.comboFullBest)),
-  def('combo-60', 'combo', 'M', 'Um minuto cheio', 'Mantenha o combo máximo por 60 segundos.', 60, (s) => Math.floor(s.stats.comboFullBest)),
-  def('combo-120', 'combo', 'L', 'Dois minutos cheios', 'Mantenha o combo máximo por 120 segundos.', 120, (s) => Math.floor(s.stats.comboFullBest)),
-  def('combo-300', 'combo', 'E', 'Cinco minutos cheios', 'Mantenha o combo máximo por 300 segundos.', 300, (s) => Math.floor(s.stats.comboFullBest)),
-  def('chain-10', 'combo', 'S', 'Sequência de 10', 'Dê 10 toques seguidos sem deixar o combo cair.', 10, (s) => s.stats.chainBest),
-  def('chain-25', 'combo', 'M', 'Sequência de 25', 'Dê 25 toques seguidos sem deixar o combo cair.', 25, (s) => s.stats.chainBest),
-  def('chain-50', 'combo', 'L', 'Sequência de 50', 'Dê 50 toques seguidos sem deixar o combo cair.', 50, (s) => s.stats.chainBest),
-  def('chain-100', 'combo', 'E', 'Sequência de 100', 'Dê 100 toques seguidos sem deixar o combo cair.', 100, (s) => s.stats.chainBest),
-  def('combo-hits-10k', 'combo', 'L', 'Dez mil no máximo', 'Dê 10.000 toques com o combo no máximo.', 10_000, (s) => s.stats.comboMaxHits),
 
   // --- Colapsos ---
   def('forbidden', 'collapses', 'M', 'Horizonte de eventos', 'Pegue um grimório proibido.', 1, (s) => Object.keys(s.vault).length),
@@ -390,7 +377,6 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
   def('respec', 'hidden', 'S', 'Mudei de ideia', 'Refaça a árvore de habilidades.', 1, (s) => s.stats.respecs, { hidden: true }),
   def('hid-respec-3', 'hidden', 'S', 'Perfeccionista', 'Refaça a árvore 3 vezes.', 3, (s) => s.stats.respecs, { hidden: true }),
   def('hid-sats-20', 'hidden', 'S', 'Enxame', 'Capture 20 satélites em sequência.', 20, (s) => s.stats.satelliteBest, { hidden: true }),
-  def('hid-chain-200', 'hidden', 'S', 'Dedos de pianista', 'Dê 200 toques seguidos sem deixar o combo cair.', 200, (s) => s.stats.chainBest, { hidden: true }),
   def('hid-cygnus-5', 'hidden', 'S', 'Olho do buraco negro', 'Leve Cygnus X-1 ao nível 5.', 5, (s) => best(s, 'cygnus-x1'), { hidden: true }),
   def('hid-first-legend', 'hidden', 'S', 'Estreia de gala', 'Veja um lendário já na primeira oferta do jogo.', 1, (s) => s.stats.firstOfferLegendary, { hidden: true }),
   def('hid-pillars', 'hidden', 'S', 'Pilares da Criação', 'Leve os Pilares da Criação ao nível máximo.', 1, () => 0, { hidden: true, retired: true }),

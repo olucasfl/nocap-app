@@ -51,25 +51,21 @@ describe('efeitos dos grimórios de objetos e geradores (spec 042)', () => {
     const base = effectiveStats(open()).objects;
     expect([base.spawnMinSec, base.spawnMaxSec]).toEqual([60, 90]);
     const halley = effectiveStats(picked(open(), 'halley', 'common')).objects;
-    expect([halley.spawnMinSec, halley.spawnMaxSec]).toEqual([57, 87]);
+    expect([halley.spawnMinSec, halley.spawnMaxSec]).toEqual([56, 86]);
     // A raridade multiplica o passo: Raro corta o dobro.
     const rare = effectiveStats(picked(open(), 'halley', 'rare')).objects;
-    expect([rare.spawnMinSec, rare.spawnMaxSec]).toEqual([54, 84]);
+    expect([rare.spawnMinSec, rare.spawnMaxSec]).toEqual([52, 82]);
     const floor = effectiveStats(picked(open(), 'halley', 'legendary', 10)).objects;
     expect(floor.spawnMinSec).toBeGreaterThanOrEqual(30);
     expect(floor.spawnMaxSec).toBeGreaterThanOrEqual(45);
     expect(base.rareLifeSec).toBe(10);
-    expect(effectiveStats(picked(open(), 'antares', 'common')).objects.rareLifeSec).toBe(12);
-    expect(effectiveStats(picked(open(), 'antares', 'rare')).objects.rareLifeSec).toBe(14);
   });
 
   it('a Estrela Dourada nunca vem em menos de 5 min, por mais que o Antares ajude', () => {
     const base = effectiveStats(open()).objects;
     expect([base.rareMinSec, base.rareMaxSec]).toEqual([360, 600]);
-    const one = effectiveStats(picked(open(), 'antares', 'common')).objects;
-    expect([one.rareMinSec, one.rareMaxSec]).toEqual([335, 575]);
-    const stacked = effectiveStats(picked(open(), 'antares', 'legendary', 10)).objects;
-    expect(stacked.rareMinSec).toBe(RARE_MIN_INTERVAL_SEC);
+    const stacked = effectiveStats(picked(open(), 'halley', 'legendary', 10)).objects;
+    expect(stacked.rareMinSec).toBeGreaterThanOrEqual(RARE_MIN_INTERVAL_SEC);
     expect(stacked.rareMaxSec).toBeGreaterThanOrEqual(RARE_MIN_INTERVAL_SEC);
   });
 });
@@ -146,25 +142,25 @@ describe('Estrela Dourada: efeitos', () => {
     const levels = open().run.upgradeLevels.map((_, i) => (i === upgradeIndex('satellite') ? 20 : 0));
     const base = open({ upgradeLevels: levels });
     const st = effectiveStats(base);
-    // 20 Satélites: 4/s de potencial contra um teto de 0,875/s.
+    // 20 Satélites: sem teto, rendem o potencial cheio parados.
     const idle = syncClock(base, 2).run.dust;
-    expect(idle).toBeCloseTo(st.autoDustCap * 2, 9);
+    expect(idle).toBeCloseTo(st.autoDustPerSec * 2, 9);
     let s = captureObject(gold('surge', base), 1, 2);
     expect(s.run.surgeUntil).toBe(47);
     const before = s.run.dust;
     s = syncClock(s, 4);
-    expect(s.run.dust - before).toBeCloseTo(Math.min(st.autoDustPerSec, st.autoDustCap * 3) * 2, 9);
+    expect(s.run.dust - before).toBeCloseTo(st.autoDustPerSec * 3 * 2, 9);
     expect(s.run.dust - before).toBeGreaterThan(idle);
     // Depois dos 45 s volta ao normal.
     const after = syncClock({ ...s, run: { ...s.run, surgeUntil: 4 } }, 6);
-    expect(after.run.dust - s.run.dust).toBeCloseTo(st.autoDustCap * 2, 9);
+    expect(after.run.dust - s.run.dust).toBeCloseTo(st.autoDustPerSec * 2, 9);
   });
 
   it('a Chuva entrega 5 min do ritmo normal, e a etiqueta mostra o mesmo valor', () => {
     const base = open();
     const st = effectiveStats(base);
     const p = objectPreview(base, 'golden', 'rain');
-    expect(p.dust).toBe(Math.floor((st.dustPerTouch * 2.5 + Math.min(st.autoDustPerSec, st.autoDustCap)) * 300));
+    expect(p.dust).toBe(Math.floor((st.dustPerTouch * 2.5 + st.autoDustPerSec) * 300));
     const s = captureObject(gold('rain', base), 1, 1);
     // O 1 s até a captura também rende o gerador parado; a Chuva é o que sobra.
     const idle = syncClock(base, 1);

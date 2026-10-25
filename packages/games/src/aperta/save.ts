@@ -30,7 +30,7 @@ import { achievementActive, achievementById } from './achievements';
 import { EVENT_IDS_NOW, EVENT_IDS_PLANNED, sparkSources } from './sparks';
 import { ATLAS_PAGE_SPARKS, FORBIDDEN, FORBIDDEN_MAX_LEVEL, forbiddenById } from './forbidden';
 import { migrateGrimoires } from './legacy-grimoires';
-import { SAVE_VERSION, effectiveStats, upgradeLock, type SaveState } from './engine';
+import { SAVE_VERSION, effectiveStats, newSave, upgradeLock, type SaveState } from './engine';
 import { TUTORIAL_HINTS, UI_BUTTONS, migrateTutorial } from './tutorial';
 
 /** Tamanho máximo do save em JSON (o real fica em poucos KB). */
@@ -271,6 +271,21 @@ function migrateEconomy(raw: unknown): unknown {
   return { ...o, version: 5, run: { ...run, upgradeLevels: levels, dust: life } };
 }
 
+/**
+ * Versão 6 para 7 (spec 043, reformulação dos itens): os itens, os geradores, os grimórios e o ritmo mudaram por completo,
+ * então o progresso antigo não vale e o save recomeça do zero. Pedido do Lucas ("pode zerar tudo"): só o nome do espaço e
+ * "a história já foi vista" ficam; o tutorial recomeça.
+ */
+function migrateFresh(raw: unknown): unknown {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return raw;
+  const o = raw as Record<string, unknown>;
+  if (o.version !== 6) return raw;
+  const name = typeof o.name === 'string' && o.name.length > 0 ? o.name : 'Missão Perigeu';
+  const createdAt = typeof o.createdAt === 'number' && Number.isFinite(o.createdAt) ? o.createdAt : 0;
+  const seed = `${name}:${createdAt}:v7`;
+  return { ...newSave(seed, createdAt, name), storySeen: o.storySeen === true };
+}
+
 export type SaveValidation =
   | { ok: true; save: SaveState; flagged: string[] }
   | { ok: false; errors: string[] };
@@ -326,7 +341,7 @@ export function validateSave(raw: unknown, opts: ValidateOptions = {}): SaveVali
   }
   if (size > MAX_SAVE_BYTES) return { ok: false, errors: ['Save grande demais'] };
 
-  const parsed = saveSchema.safeParse(migrateGrimoires(migrateEconomy(migrateTree(migrateVault(migrateSparks(raw)))), SAVE_VERSION));
+  const parsed = saveSchema.safeParse(migrateFresh(migrateGrimoires(migrateEconomy(migrateTree(migrateVault(migrateSparks(raw)))), 6)));
   if (!parsed.success) {
     const errors = parsed.error.issues.slice(0, 8).map((i) => `${i.path.join('.') || 'save'}: ${i.message}`);
     return { ok: false, errors };
@@ -406,8 +421,14 @@ export function validateSave(raw: unknown, opts: ValidateOptions = {}): SaveVali
   if (run.upgradeLevels.length > UPGRADES.length) errors.push('Melhorias demais');
   while (run.upgradeLevels.length < UPGRADES.length) run.upgradeLevels.push(0);
   let spent = 0;
+  // Os itens se compram em ordem: um item comprado com um anterior (já aberto) em falta é fraude ou save quebrado.
+  let missingItem: string | null = null;
   UPGRADES.forEach((def, i) => {
     const lvl = run.upgradeLevels[i] ?? 0;
+    if (def.kind === 'item' && def.unlockedAtCollapse <= c) {
+      if (lvl === 0) missingItem ??= def.id;
+      else if (missingItem !== null) errors.push(`Melhoria trancada: ${def.id}`);
+    }
     if (lvl === 0) return;
     if (lvl > def.max) errors.push(`Nível acima do máximo: ${def.id}`);
     // Liberação progressiva: o marco (poeira da vida ou nível de outra melhoria) e a exigência precisam estar cumpridos.
@@ -463,7 +484,7 @@ export function validateSave(raw: unknown, opts: ValidateOptions = {}): SaveVali
   st.objectsCaptured = Math.max(st.objectsCaptured, run.captured);
   if (st.rareStreak > st.rareStreakBest || st.rareStreakBest > st.picks) errors.push('Sequência de raros incoerente');
   if (st.legendaryOffers > st.offers && st.offers > 0) errors.push('Ofertas lendárias maiores que as ofertas');
-  if (st.genBest > GENERATOR_MAX || st.touchBest > UPGRADES.filter((u) => u.kind === 'touch').length) errors.push('Recorde de melhorias impossível');
+  if (st.genBest > GENERATOR_MAX || st.touchBest > UPGRADES.filter((u) => u.kind === 'item').length) errors.push('Recorde de melhorias impossível');
   errors.push(...treeErrors(save.tree));
   const treeCost = treeSpent(save.tree);
   if (Object.keys(save.tree).length > 0 && c < 1) errors.push('Árvore antes do 1º colapso');

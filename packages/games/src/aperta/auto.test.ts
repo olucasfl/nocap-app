@@ -26,12 +26,11 @@ describe('autoRates (o que os geradores rendem agora)', () => {
     expect(active.energy).toBeCloseTo(idle.energy, 9);
   });
 
-  it('a poeira dos geradores também enche a barra de grimórios (como toques, a 1/4 da energia)', () => {
-    const s = owning({ satellite: 4 });
-    const st = effectiveStats(s);
+  it('só os geradores de energia enchem a barra de grimórios; os de poeira não', () => {
+    const dustOnly = autoRates(owning({ satellite: 4 }));
+    expect(dustOnly.energy).toBe(0);
+    const s = owning({ antenna: 5 });
     const r = autoRates(s);
-    // 0,8 de poeira por segundo parado = 0,8 toque; vale 1/4 da energia de um toque.
-    expect(r.energy).toBeCloseTo((r.dust / st.dustPerTouch) * st.energyPerTouch * 0.25, 9);
     expect(r.energy).toBeGreaterThan(0);
     const after = syncClock(s, 4);
     expect(after.run.energy).toBeCloseTo(r.energy * 4, 9);
@@ -42,6 +41,7 @@ describe('autoRates (o que os geradores rendem agora)', () => {
     const onlyDust = autoRates(owning({ satellite: 4 }));
     const onlyEnergy = autoRates(owning({ antenna: 5 }));
     expect(both.energy).toBeCloseTo(onlyDust.energy + onlyEnergy.energy, 9);
+    expect(onlyDust.energy).toBe(0);
   });
 
   it('o motor usa a mesma conta do número que a tela mostra', () => {
