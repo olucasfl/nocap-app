@@ -108,10 +108,10 @@ describe('partidas com bots', () => {
     expect(new Set(w.standings().map((p) => p.id)).size).toBe(n);
   });
 
-  it('as partidas de 8 bots duram de 2 a 4 minutos em várias sementes (a arena cresce com os jogadores)', () => {
+  it('as partidas de 8 bots duram de 1 a 4 minutos em várias sementes (a arena cresce com os jogadores)', () => {
     for (let i = 0; i < 4; i++) {
       const t = playBots(`dur-${i}`, 8).t;
-      expect(t).toBeGreaterThan(110);
+      expect(t).toBeGreaterThan(55);
       expect(t).toBeLessThanOrEqual(240);
     }
   });

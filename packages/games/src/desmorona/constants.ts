@@ -8,7 +8,7 @@
  * jogadores (cada um gasta chão andando), para a partida durar de 3 a 4 minutos com 2 ou com 8.
  */
 export function dsmLayerRadii(players: number): readonly number[] {
-  const top = 11 + Math.max(2, Math.min(8, Math.round(players)));
+  const top = 14 + 2 * Math.max(2, Math.min(8, Math.round(players)));
   const out: number[] = [];
   DSM_LAYER_SCALE.forEach((f, i) => {
     const r = Math.max(5, Math.round(top * f));
@@ -26,10 +26,10 @@ export const DSM_LAYER_GAP = 6;
 /** Espessura visual de um ladrilho (só desenho; a física usa a superfície). */
 export const DSM_TILE_THICK = 0.5;
 
-/** Quanto tempo um ladrilho pisado aguenta (s), por camada: cada uma de baixo é um pouco mais rápida. */
-export const DSM_TILE_LIFE = [1.8, 1.7, 1.5, 1.4, 1.2, 1.1, 1] as const;
+/** Quanto tempo um ladrilho pisado aguenta (s), por camada: cada uma de baixo é um pouco mais rápida (curto de propósito: o chão some quase na hora, 25/10). */
+export const DSM_TILE_LIFE = [1.1, 1.05, 1, 0.95, 0.9, 0.85, 0.8] as const;
 /** Nos últimos tantos segundos o ladrilho "racha" (treme e muda de cor): é o aviso. */
-export const DSM_CRACK_SEC = 0.45;
+export const DSM_CRACK_SEC = 0.4;
 
 /** Movimento da raposa. */
 export const DSM_SPEED = 6.2;
