@@ -219,7 +219,7 @@ export function MembersPanel({
     (snapshot.game === 'desmorona' ? snapshot.desmorona?.colors : snapshot.atravessa?.colors) ?? {};
   const free = snapshot.maxPlayers - snapshot.members.length;
   // poucas vagas livres à vista: nada de uma fileira de 10 quadrados vazios
-  const emptyShown = Math.min(free, snapshot.members.length < 4 ? 4 - snapshot.members.length : 1);
+  const emptyShown = Math.min(free, snapshot.members.length < 3 ? 2 : 1);
   return (
     <div className="lb3-players">
       <ul className="lb3-grid">

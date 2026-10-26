@@ -26,9 +26,14 @@ export function MemberLobby({
       invite={<InvitePanel snapshot={snapshot} />}
       footer={
         <>
+          <div className="lb3-leave">
+            <button type="button" className="lb-textbtn" data-sfx="back" onClick={leaveRoom}>
+              Sair
+            </button>
+          </div>
           {mine?.committed ? (
-            <p className="mono lb3-why ok">
-              Você topou jogar de novo. Aguardando o líder iniciar...
+            <p className="mono lb3-why ok lb3-committed">
+              Você topou jogar de novo. Aguardando o líder...
             </p>
           ) : (
             <>
@@ -39,7 +44,7 @@ export function MemberLobby({
                 aria-pressed={!!mine?.ready}
                 onClick={() => sendRoom('ready', { ready: !mine?.ready })}
               >
-                {mine?.ready ? 'Cancelar: não estou pronto' : 'Estou pronto'}
+                {mine?.ready ? 'Cancelar' : 'Estou pronto'}
               </button>
               <p className={`mono lb3-why${mine?.ready ? ' ok' : ''}`}>
                 {mine?.ready
@@ -48,11 +53,6 @@ export function MemberLobby({
               </p>
             </>
           )}
-          <div className="lb3-leave">
-            <button type="button" className="lb-textbtn" data-sfx="back" onClick={leaveRoom}>
-              Sair da sala
-            </button>
-          </div>
         </>
       }
     />

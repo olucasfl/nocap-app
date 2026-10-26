@@ -1222,30 +1222,186 @@
   }
 }
 
-
-/* Barra de ação enxuta no celular: não cobre a lista */
+/* Barra de ação mínima (spec 045): uma linha só no celular, com Sair/Encerrar à esquerda e o botão compacto à direita */
+.lb3-foot {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 -16px;
+  padding: 6px 14px calc(6px + env(safe-area-inset-bottom));
+}
 .lb3-foot .lb3-leave {
-  gap: 20px;
+  gap: 4px;
+  justify-content: flex-start;
+  padding: 0;
 }
 .lb3-foot .lb-textbtn {
-  min-height: 30px;
+  min-height: 36px;
+  padding: 0 8px;
   font-size: 12px;
 }
-.lb3-foot .btn {
-  border-width: 2.5px;
+.lb3-foot .lb3-main {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 132px;
+  min-height: 38px;
+  padding: 0 20px;
+  font-size: 14px;
+  border-radius: 12px;
+  box-shadow: 2px 2px 0 var(--ink);
 }
-@media (pointer: coarse) {
+.lb3-foot .lb3-why {
+  display: none;
+}
+.lb3-foot .lb3-committed {
+  display: block;
+  margin: 0;
+  flex: 1;
+  text-align: right;
+}
+.app:has(.lb3) .ch-fab {
+  bottom: calc(66px + env(safe-area-inset-bottom));
+  height: 44px;
+  padding: 0 16px 0 12px;
+  font-size: 14px;
+}
+.lb3-bar-code b {
+  font-size: 30px;
+}
+.lb3-bar {
+  padding: 8px 12px;
+}
+.lb3-tile.empty button {
+  min-height: 84px;
+}
+.lb3-tile {
+  padding: 10px 6px 8px;
+}
+.lb3-plus {
+  font-size: 24px;
+}
+@media (min-width: 1024px) {
+  .lb3-foot {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    margin: 0;
+    padding: 0;
+    gap: 6px;
+  }
+  .lb3-foot .lb3-main {
+    order: 1;
+    width: 100%;
+    min-height: 48px;
+    font-size: 16px;
+  }
+  .lb3-foot .lb3-why {
+    display: block;
+    order: 2;
+    font-size: 12px;
+  }
+  .lb3-foot .lb3-leave {
+    order: 3;
+    justify-content: center;
+    gap: 20px;
+  }
   .lb3-foot .lb-textbtn {
-    min-height: 32px;
+    font-size: 13px;
+  }
+  .app:has(.lb3) .ch-fab {
+    bottom: 24px;
+    height: 52px;
+    font-size: 16px;
+  }
+}
+
+/* a barra de ação fica sempre no pé da tela (o botão do chat flutua logo acima dela) */
+.lb3 {
+  flex: 1;
+}
+.lb3-foot {
+  margin-top: auto;
+}
+@media (min-width: 1024px) {
+  .lb3-foot {
+    margin-top: 0;
+  }
+}
+
+/* o lobby não deixa folga embaixo do app: a barra de ação encosta no pé da tela */
+.app:has(.lb3) {
+  padding-bottom: 0;
+}
+.app:has(.lb3) .ch-fab {
+  bottom: calc(62px + env(safe-area-inset-bottom));
+}
+@media (min-width: 768px) {
+  .app.has-rail:has(.lb3) {
+    padding-bottom: 32px;
   }
 }
 @media (min-width: 1024px) {
-  .lb3-main {
-    min-height: 52px;
-    font-size: 16px;
+  .app:has(.lb3) .ch-fab {
+    bottom: 24px;
+  }
+}
+
+/* Barra de ação pequena e discreta (spec 045): botão no centro, Sair à esquerda e Encerrar à direita, tudo numa linha só colada no pé */
+@media (max-width: 1023px) {
+  .lb3-foot {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 0 8px;
+    padding: 4px 12px calc(4px + env(safe-area-inset-bottom));
+  }
+  .lb3-foot .lb3-leave {
+    display: contents;
   }
   .lb3-foot .lb-textbtn {
-    min-height: 36px;
+    min-height: 32px;
+    padding: 0 6px;
+    font-size: 11px;
+    font-weight: 700;
+    opacity: 0.75;
+  }
+  .lb3-foot .lb-textbtn:first-child {
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: start;
+  }
+  .lb3-foot .lb-textbtn.danger {
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
+  }
+  .lb3-foot .lb3-main {
+    grid-column: 2;
+    grid-row: 1;
+    width: auto;
+    min-width: 112px;
+    min-height: 34px;
+    padding: 0 16px;
     font-size: 13px;
+    border-radius: 10px;
+    box-shadow: none;
+  }
+  .lb3-foot .lb3-committed {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    text-align: center;
+    font-size: 10px;
+  }
+  .app:has(.lb3) .ch-fab {
+    bottom: calc(50px + env(safe-area-inset-bottom));
+    height: 36px;
+    padding: 0 12px 0 10px;
+    font-size: 12px;
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+  .app:has(.lb3) .ch-fab svg {
+    width: 16px;
+    height: 16px;
   }
 }

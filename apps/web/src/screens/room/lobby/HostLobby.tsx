@@ -28,21 +28,9 @@ export function HostLobby({ snapshot, me }: { snapshot: RoomSnapshot; me: string
       invite={<InvitePanel snapshot={snapshot} />}
       footer={
         <>
-          <button
-            type="button"
-            className="btn alt lb3-main"
-            data-sfx="start"
-            disabled={!canStart}
-            onClick={() => sendRoom('start')}
-          >
-            Começar partida
-          </button>
-          <p className={`mono lb3-why${canStart ? ' ok' : ''}`}>
-            {rematch ? 'Todo mundo topou jogar de novo. Ajuste as regras, se quiser.' : hint.text}
-          </p>
           <div className="lb3-leave">
             <button type="button" className="lb-textbtn" data-sfx="back" onClick={leaveRoom}>
-              Sair da sala
+              Sair
             </button>
             <button
               type="button"
@@ -50,9 +38,21 @@ export function HostLobby({ snapshot, me }: { snapshot: RoomSnapshot; me: string
               data-sfx="remove"
               onClick={() => setClosing(true)}
             >
-              Encerrar sala
+              Encerrar
             </button>
           </div>
+          <button
+            type="button"
+            className="btn alt lb3-main"
+            data-sfx="start"
+            disabled={!canStart}
+            onClick={() => sendRoom('start')}
+          >
+            Começar
+          </button>
+          <p className={`mono lb3-why${canStart ? ' ok' : ''}`}>
+            {rematch ? 'Todo mundo topou jogar de novo. Ajuste as regras, se quiser.' : hint.text}
+          </p>
           <ConfirmDialog
             open={closing}
             title="Encerrar a sala?"
