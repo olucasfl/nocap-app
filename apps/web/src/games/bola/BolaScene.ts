@@ -857,8 +857,11 @@ export class BolaScene {
     }
     this.kickTrail = 0.9;
     this.kickColor = team;
-    this.fovKick = Math.max(this.fovKick, mine ? 1 : 0.5);
-    this.shake = Math.max(this.shake, mine ? 0.22 : 0.1);
+    // a câmera só reage ao seu chute: o dos outros, lá longe, não pode mexer na sua tela
+    if (mine) {
+      this.fovKick = Math.max(this.fovKick, 1);
+      this.shake = Math.max(this.shake, 0.22);
+    }
   }
 
   shakeNow(amount: number) {

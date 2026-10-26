@@ -112,7 +112,7 @@ export class DsmControls {
   private lockedMove = (e: MouseEvent) => {
     if (document.pointerLockElement !== this.look) return;
     // alguns navegadores mandam um movimento gigante isolado com o ponteiro preso: é defeito, não mão (um giro real nunca passa disso num evento)
-    if (Math.abs(e.movementX) > 220 || Math.abs(e.movementY) > 220) return;
+    if (Math.abs(e.movementX) > 120 || Math.abs(e.movementY) > 120) return;
     this.yawAcc -= e.movementX * DRAG_YAW * 0.8;
     this.pitchAcc += e.movementY * DRAG_YAW * 0.6;
   };

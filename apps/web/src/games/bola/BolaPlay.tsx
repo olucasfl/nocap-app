@@ -865,9 +865,11 @@ export function BolaPlay({
         if (input.jump) jumpUntil = now + JUMP_BUFFER_MS;
         input.jump = false;
         // a câmera começa solta (mouse gira); F prende na bola
-        const manual = controls.takeYaw(dt) + turnKick;
+        // um quadro nunca gira a câmera mais que isso (um pico do mouse ou um engasgo não vira um giro seco)
+        const cap = 0.3 * Math.max(1, dt * 60);
+        const manual = Math.max(-cap, Math.min(cap, controls.takeYaw(dt))) + turnKick;
         turnKick = 0;
-        const manualPitch = controls.takePitch();
+        const manualPitch = Math.max(-0.2, Math.min(0.2, controls.takePitch()));
         if (!aimed && me) {
           // começa olhando da raposa para a bola, em vez de uma direção qualquer
           aimed = true;
