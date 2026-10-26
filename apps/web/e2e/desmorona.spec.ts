@@ -16,6 +16,8 @@ for (const size of sizes) {
       await page.getByRole('button', { name: 'Agora não' }).click();
       await page.getByRole('link', { name: /Desmorona!/ }).click();
       await page.getByTestId('dsm-play-btn').click();
+      await page.getByRole('radio', { name: '3' }).click();
+      await page.getByTestId('dsm-start').click();
       await expect(page.getByTestId('dsm-play')).toBeVisible();
       await page.waitForTimeout(4500);
       if (!size.touch) {

@@ -15,23 +15,22 @@ const HOW = [
   'Vence o último que ficar de pé. Quem cai assiste os outros.',
 ];
 
-type Phase = 'menu' | 'play';
+type Phase = 'menu' | 'pick' | 'play';
 
 /** O Desmorona! (spec 044): menu e treino contra bots. As salas com amigos entram na Fase 2. */
 export function DesmoronaPage() {
   const [phase, setPhase] = useState<Phase>('menu');
   const [tab, setTab] = useState<'jogar' | 'como'>('jogar');
   const [bots, setBots] = useState(5);
-  const [round, setRound] = useState(0);
 
   if (phase === 'play') {
     return (
       <div className="dsm-screen">
         <DesmoronaPlay
-          key={round}
           bots={bots}
           onExit={() => setPhase('menu')}
-          onAgain={() => setRound((r) => r + 1)}
+          // cada partida pergunta de novo contra quantas raposas jogar
+          onAgain={() => setPhase('pick')}
         />
       </div>
     );
@@ -62,26 +61,6 @@ export function DesmoronaPage() {
         />
         {tab === 'jogar' ? (
           <>
-            <section className="dsm-bots" aria-label="Treino contra raposas">
-              <div className="dsm-bots-head">
-                <h3>Raposas no treino</h3>
-                <span className="mono">VOCÊ + {bots}</span>
-              </div>
-              <div className="dsm-chips" role="radiogroup" aria-label="Quantidade de adversários">
-                {[1, 2, 3, 4, 5, 6, 7].map((n) => (
-                  <button
-                    key={n}
-                    type="button"
-                    role="radio"
-                    aria-checked={bots === n}
-                    className={`dsm-chip${bots === n ? ' is-on' : ''}`}
-                    onClick={() => setBots(n)}
-                  >
-                    {n}
-                  </button>
-                ))}
-              </div>
-            </section>
             <div className="gh-modes">
               <HubCard
                 tone="orange"
@@ -99,9 +78,9 @@ export function DesmoronaPage() {
                   </svg>
                 }
                 name="Treino"
-                desc={`Você contra ${bots} raposa${bots > 1 ? 's' : ''} · uns 1 minuto`}
+                desc="Você contra raposas · você escolhe quantas"
                 cta="Jogar"
-                onClick={() => setPhase('play')}
+                onClick={() => setPhase('pick')}
                 testId="dsm-play-btn"
               />
               <HubCard
@@ -130,11 +109,52 @@ export function DesmoronaPage() {
               />
             </div>
             <HubNote>
-              Computador: W A S D e Espaço; o mouse gira a câmera. Celular: joystick à esquerda e dedo à direita para girar.
+              Computador: W A S D e Espaço; o mouse gira a câmera. Celular: joystick à esquerda e
+              dedo à direita para girar.
             </HubNote>
           </>
         ) : (
           <HubSteps title="Como jogar" steps={HOW} />
+        )}
+        {phase === 'pick' && (
+          <div
+            className="dsm-pick"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Quantas raposas no treino"
+          >
+            <div className="dsm-pick-card">
+              <h2>Contra quantas raposas?</h2>
+              <p className="mono">VOCÊ + {bots}</p>
+              <div className="dsm-chips" role="radiogroup" aria-label="Quantidade de adversários">
+                {[1, 2, 3, 4, 5, 6, 7].map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    role="radio"
+                    aria-checked={bots === n}
+                    className={`dsm-chip${bots === n ? ' is-on' : ''}`}
+                    onClick={() => setBots(n)}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+              <div className="dsm-over-btns">
+                <button
+                  type="button"
+                  className="dsm-btn"
+                  onClick={() => setPhase('play')}
+                  data-testid="dsm-start"
+                >
+                  Começar
+                </button>
+                <button type="button" className="dsm-btn is-ghost" onClick={() => setPhase('menu')}>
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
         )}
         <MuteButton />
       </section>

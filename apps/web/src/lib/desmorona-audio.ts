@@ -83,11 +83,12 @@ export const dsmSfx = {
   /** um ladrilho perto de você quebrou */
   crumble(near: number) {
     const now = performance.now();
-    if (now - lastBreak < 55) return;
+    // calmo: um farfalhar grave e curto, bem baixo, no máximo de tempos em tempos (muitos ladrilhos juntos não viram ruído)
+    if (now - lastBreak < 140) return;
     lastBreak = now;
-    const v = Math.max(0.04, 0.2 * near);
-    noise(1400, 260, 0.8, 0.22, v);
-    tone('sine', 110, 55, 0.18, v * 0.8);
+    const v = 0.012 + 0.05 * near;
+    noise(650, 180, 0.5, 0.2, v, 0, 'lowpass');
+    tone('sine', 95, 60, 0.16, v * 0.9);
   },
   /** você caiu para a camada de baixo */
   airJump(you = true) {
