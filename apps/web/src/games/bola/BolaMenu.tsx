@@ -90,7 +90,7 @@ export function BolaMenu({
         {onEnd && (
           <button
             type="button"
-            className="bola-item"
+            className={`bola-item${confirmEnd ? ' is-sure' : ''}`}
             onClick={() => (confirmEnd ? onEnd() : setConfirmEnd(true))}
             onBlur={() => setConfirmEnd(false)}
             data-testid="bola-menu-end"

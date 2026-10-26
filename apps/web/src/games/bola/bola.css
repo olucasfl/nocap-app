@@ -235,8 +235,10 @@
   color: #7a271a;
   font: 700 14px var(--font-display, system-ui);
 }
-.bola-leave.is-sure {
-  background: #ff6a5c;
+.bola-menu .bola-leave.is-sure,
+.bola-menu .bola-item.is-sure {
+  background: #dc2b36;
+  border-color: #1b1535;
   color: #fff;
 }
 .bola-stats {

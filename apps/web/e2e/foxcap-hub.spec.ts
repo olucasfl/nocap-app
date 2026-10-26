@@ -65,3 +65,17 @@ test('Atravessa! Infinito entra na partida sem menu no meio', async ({ page }) =
   await expect(page.locator('canvas')).toBeVisible({ timeout: 8000 });
   expect(seen).toEqual([]);
 });
+
+test('Fut Fox: Sair da partida fica vermelho ao primeiro toque, pedindo confirmação', async ({
+  page,
+}) => {
+  await page.getByTestId('foxcap-bola').click();
+  await page.getByTestId('bola-fmt-2x2').click();
+  await page.getByTestId('bola-start').click();
+  await expect(page.getByTestId('bola-play')).toBeVisible();
+  await page.getByTestId('bola-gear').click();
+  const exit = page.getByTestId('bola-menu-exit');
+  await exit.click();
+  await expect(exit).toHaveCSS('background-color', 'rgb(220, 43, 54)');
+  await expect(exit).toContainText('Toque de novo');
+});
