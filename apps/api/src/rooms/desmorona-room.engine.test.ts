@@ -156,4 +156,20 @@ describe('sala do Desmorona!', () => {
     room.push('ana', { to: 'bia', kx: 5, kz: 0 });
     expect(room.drainPushes()).toHaveLength(1);
   });
+
+  it('cada pessoa entra com uma cor diferente, escolhe outra e não repete a de ninguém', () => {
+    const room = new DesmoronaRoomEngine({ code: 'ABCD', now: () => T0, newSeed: () => 's' });
+    room.join('ana', 'ana');
+    room.join('bia', 'bia');
+    const colors = () => (room.snapshot('ana') as unknown as { desmorona: { colors: Record<string, string> } }).desmorona.colors;
+    expect(new Set(Object.values(colors())).size).toBe(2);
+    const biaColor = colors().bia!;
+    expect(() => room.setColor('ana', biaColor)).toThrow(RoomError);
+    expect(() => room.setColor('ana', '#123456')).toThrow(RoomError);
+    room.clearColor('ana');
+    expect(() => room.setReady('ana', true)).toThrow(RoomError);
+    room.setColor('ana', '#e5303a');
+    expect(colors().ana).toBe('#e5303a');
+    room.setReady('ana', true);
+  });
 });

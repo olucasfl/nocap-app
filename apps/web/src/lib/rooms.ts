@@ -137,7 +137,8 @@ export interface DesmoronaRoomState {
   me: string | null;
   startAt: number | null;
   slots: Record<string, number>;
-  colors: Record<string, number>;
+  /** A cor de cada pessoa (hex da paleta do Atravessa!). */
+  colors: Record<string, string>;
   /** Quem já caiu (id → hora da queda em ms de jogo). */
   dead: Record<string, number>;
   winnerId: string | null;

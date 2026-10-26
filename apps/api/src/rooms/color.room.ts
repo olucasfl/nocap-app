@@ -577,6 +577,8 @@ export class DesmoronaRoom extends ColorRoom {
       const id = idOf(c);
       if (id) engine().push(id, m);
     });
+    this.onMessage('color', (c, m: { hex?: string }) => this.act(c, (id) => engine().setColor(id, String(m?.hex ?? ''))));
+    this.onMessage('uncolor', (c) => this.act(c, (id) => engine().clearColor(id)));
     this.onMessage('ddead', (c) => {
       const id = idOf(c);
       if (id) engine().die(id);

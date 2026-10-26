@@ -3,7 +3,7 @@ import {
   DSM_MAX_PLAYERS,
   DSM_PUSH_CD,
   DSM_PUSH_MAX,
-  DSM_ROOM_COLORS,
+  ATR_ROOM_COLORS,
   DSM_ROOM_COUNTDOWN_MS,
   DSM_ROOM_MAX_SEC,
   DSM_ROOM_STALL_MS,
@@ -48,6 +48,8 @@ export class DesmoronaRoomEngine extends ColorRoomEngine {
   protected override readonly answerPhase = 'play' as const;
   protected override readonly modes: readonly string[] = ['classico'];
 
+  /** A cor de cada pessoa (fica entre uma partida e a revanche). A paleta é a mesma do Atravessa!. */
+  private colors = new Map<string, string>();
   private racers = new Map<string, Racer>();
   /** `camada:q:r` → hora (s do jogo) em que o primeiro pisou. */
   private steps = new Map<string, number>();
@@ -75,6 +77,53 @@ export class DesmoronaRoomEngine extends ColorRoomEngine {
   /** Durante a partida o celular é todo do jogo. */
   protected override chatOpen(): boolean {
     return this.phase !== 'show' && this.phase !== 'play';
+  }
+
+  // ---- pessoas e cores ----
+
+  override join(id: string, username: string) {
+    super.join(id, username);
+    if (!this.colors.has(id)) {
+      const taken = new Set(this.colors.values());
+      this.colors.set(id, (ATR_ROOM_COLORS.find((c) => !taken.has(c.hex)) ?? ATR_ROOM_COLORS[0]!).hex);
+    }
+  }
+
+  /** Escolhe a cor da raposa no lobby: nenhuma cor é de duas pessoas. */
+  setColor(id: string, hex: string) {
+    this.requirePhase('lobby');
+    if (!this.members.has(id)) throw new RoomError('Você não está na sala');
+    if (!ATR_ROOM_COLORS.some((c) => c.hex === hex)) throw new RoomError('Cor inválida');
+    for (const [other, taken] of this.colors) {
+      if (other !== id && taken === hex) throw new RoomError('Essa cor já é de outra pessoa');
+    }
+    this.colors.set(id, hex);
+    this.members.get(id)!.ready = false;
+  }
+
+  /** Tira a sua cor (fica sem cor até escolher outra): quem estava pronto deixa de estar. */
+  clearColor(id: string) {
+    this.requirePhase('lobby');
+    const m = this.members.get(id);
+    if (!m) throw new RoomError('Você não está na sala');
+    this.colors.delete(id);
+    m.ready = false;
+  }
+
+  /** Só marca pronto quem tem cor. */
+  override setReady(id: string, ready: boolean) {
+    if (ready && this.members.has(id) && !this.colors.has(id)) throw new RoomError('Escolha a sua cor');
+    super.setReady(id, ready);
+  }
+
+  override start(id: string) {
+    const without = [...this.members.values()].filter((m) => m.connected && !this.colors.has(m.id));
+    if (this.phase === 'lobby' && without.length > 0) {
+      throw new RoomError(
+        without.length === 1 ? `${without[0]!.username} ainda não escolheu a cor` : 'Todo mundo precisa escolher uma cor',
+      );
+    }
+    super.start(id);
   }
 
   // ---- partida ----
@@ -182,6 +231,7 @@ export class DesmoronaRoomEngine extends ColorRoomEngine {
 
   /** Alguém saiu no meio da partida: conta como queda. */
   override leave(id: string) {
+    this.colors.delete(id);
     if (this.phase === 'show' || this.phase === 'play') this.kill(id);
     super.leave(id);
   }
@@ -276,11 +326,9 @@ export class DesmoronaRoomEngine extends ColorRoomEngine {
   protected override extraSnapshot(viewerId?: string): Record<string, unknown> {
     const started = this.phase !== 'lobby';
     const slots: Record<string, number> = {};
-    const colors: Record<string, number> = {};
     const dead: Record<string, number> = {};
     for (const r of this.racers.values()) {
       slots[r.id] = r.slot;
-      colors[r.id] = DSM_ROOM_COLORS[r.slot % DSM_ROOM_COLORS.length] as number;
       if (!r.alive) dead[r.id] = Math.round(r.deadAt * 1000);
     }
     return {
@@ -288,7 +336,7 @@ export class DesmoronaRoomEngine extends ColorRoomEngine {
         me: viewerId ?? null,
         startAt: started ? this.startAt : null,
         slots: started ? slots : {},
-        colors: started ? colors : {},
+        colors: Object.fromEntries(this.colors),
         dead: started ? dead : {},
         winnerId: this.phase === 'final' ? this.winnerId : null,
       },

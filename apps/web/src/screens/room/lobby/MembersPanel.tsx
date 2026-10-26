@@ -123,11 +123,11 @@ function Kick({ m }: { m: RoomMember }) {
 }
 
 /**
- * Atravessa!: a cor da sua raposa. Cada cor é de uma pessoa só; as já escolhidas por outras ficam
+ * Atravessa! e Desmorona!: a cor da sua raposa. Cada cor é de uma pessoa só; as já escolhidas por outras ficam
  * apagadas, com o nome de quem as pegou.
  */
 function AtravessaColors({ snapshot, me }: { snapshot: RoomSnapshot; me: string | undefined }) {
-  const colors = snapshot.atravessa?.colors ?? {};
+  const colors = (snapshot.game === 'desmorona' ? snapshot.desmorona?.colors : snapshot.atravessa?.colors) ?? {};
   const owner = (hex: string) => Object.entries(colors).find(([, h]) => h === hex)?.[0];
   const nameOf = (id?: string) => snapshot.members.find((m) => m.id === id)?.username;
   const mineHex = me ? colors[me] : undefined;
@@ -205,7 +205,7 @@ export function MembersPanel({
 
   return (
     <div className="lb-members">
-      {snapshot.game === 'atravessa' && <AtravessaColors snapshot={snapshot} me={me} />}
+      {(snapshot.game === 'atravessa' || snapshot.game === 'desmorona') && <AtravessaColors snapshot={snapshot} me={me} />}
       {leader && (
         <div>
           <div className="mono rm-label">LÍDER</div>
