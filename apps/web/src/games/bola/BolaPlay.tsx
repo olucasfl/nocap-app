@@ -28,7 +28,7 @@ import '../desmorona/desmorona.css';
 import './bola.css';
 import { BolaMenu } from './BolaMenu';
 import { BolaTips } from './BolaTips';
-import { IcBall, IcCamera, IcEye, IcGear, IcJump, IcTable, Key } from './BolaIcons';
+import { IcBall, IcCamera, IcEye, IcGear, IcJump, Key } from './BolaIcons';
 import { BolaTeams } from './BolaTeams';
 import { BolaScene } from './BolaScene';
 import { BolaStats, type StatRow } from './BolaStats';
@@ -1106,18 +1106,6 @@ export function BolaPlay({
           {hud.golden && <small>Prorrogação · gol de ouro</small>}
         </div>
         <div className="bola-tools">
-          <button
-            type="button"
-            className="bola-tool"
-            onClick={() => setPinned((v) => !v)}
-            aria-label="Tabela de estatísticas"
-            aria-pressed={pinned}
-            data-testid="bola-table"
-          >
-            <IcTable size={20} />
-            <span>Tabela</span>
-            <Key k="Tab" className="bola-hide-touch" />
-          </button>
           <button
             type="button"
             className="bola-tool bola-gear"
