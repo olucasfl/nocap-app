@@ -47,6 +47,6 @@
 | 042 | [Aperta!: grimórios por raridade](042-aperta-grimorios-por-raridade.md) | 8 | implementada em 23/10/2026 (14 grimórios x 4 raridades, save v6, livro com 4 espaços); jogo liberado só para a conta do Lucas |
 | 043 | [Aperta!: reformulação dos itens, geradores e grimórios](043-aperta-reformulacao-itens.md) | 8 | implementada (25/10/2026; decisões do Lucas na seção 8) |
 | 044 | [Fox Cap! e Desmorona! (jogo de arena que desmorona)](044-fox-games-desmorona.md) | 9 | em andamento: Fases 1 (treino com bots) e 2 (salas online) no ar; Fase 3 (colisão) a seguir |
+| 045 | [Telas fora do jogo, responsivas e mais claras](045-redesign-telas-fora-do-jogo.md) | 9 | plano para aprovação do Lucas (26/10/2026) |
 
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.
-| 045 | [Telas fora do jogo, responsivas e mais claras](045-redesign-telas-fora-do-jogo.md) | 9 | plano para aprovação do Lucas (26/10/2026) |
