@@ -266,6 +266,24 @@ describe('sala do Fut Fox: partida', () => {
     expect(Object.keys(snap(s.room).teamOf).sort()).toEqual(['ana', 'bia']);
   });
 
+  it('o contador de pulos que volta atrás (aparelho recarregou) não trava os pulos seguintes', () => {
+    const s = playing();
+    run(s, 3.3);
+    s.room.input('ana', [0, 0, 9, 1]);
+    s.room.input('ana', [0, 0, 0, 2]);
+    s.room.input('ana', [0, 0, 1, 3]);
+    run(s, 0.2);
+    const f = s.room.drainFrame() as { p: number[][] };
+    expect(f.p.find((r) => r[0] === 0)![2]).toBeGreaterThan(0.2);
+  });
+
+  it('cada quadro leva a hora do servidor', () => {
+    const s = playing();
+    run(s, 1);
+    const f = s.room.drainFrame() as { t: number };
+    expect(f.t).toBe(s.clock.now);
+  });
+
   it('o fluxo de quadros traz bola, corpos e estatísticas, e os gols viram evento com vagas', () => {
     const s = playing();
     run(s, 3.3);

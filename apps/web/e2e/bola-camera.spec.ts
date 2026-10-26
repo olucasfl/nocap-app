@@ -64,11 +64,13 @@ test('câmera na bola mantém a bola no quadro; câmera livre gira sem saltos', 
     cancelAnimationFrame((window as any).__raf);
     const l = (window as any).__camLog as { x: number; y: number; z: number; ph: string }[];
     let max = 0;
+    // gol e saída de bola teleportam a câmera de propósito: só conta quadros seguidos em jogo
     for (let i = 1; i < l.length; i++)
-      max = Math.max(
-        max,
-        Math.hypot(l[i].x - l[i - 1].x, l[i].y - l[i - 1].y, l[i].z - l[i - 1].z),
-      );
+      if (l[i].ph === 'play' && l[i - 1].ph === 'play')
+        max = Math.max(
+          max,
+          Math.hypot(l[i].x - l[i - 1].x, l[i].y - l[i - 1].y, l[i].z - l[i - 1].z),
+        );
     return { max, n: l.length };
   });
   console.log('SALTO MAXIMO DA CAMERA', JSON.stringify(jump));

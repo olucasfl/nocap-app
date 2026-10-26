@@ -1,11 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  BOL_ACCEL,
-  BOL_AIR_ACCEL,
   BOL_DT,
-  BOL_SPEED,
   BOL_TEAM_COLORS,
   BOL_TEAM_NAMES,
+  BolPredictor,
   BolWorld,
   bolBotInput,
   createRng,
@@ -15,7 +13,7 @@ import {
   type BolInput,
 } from '@nocap/games';
 import { bolaGain, bolaSfx, crowdStart, crowdStop, crowdSwell } from '@/lib/bola-audio';
-import { sendRoom, sendRoomQuiet, subscribeRoom, useRoom } from '@/lib/rooms';
+import { sendRoom, sendRoomQuiet, serverNow, subscribeRoom, useRoom } from '@/lib/rooms';
 import { DsmControls, STICK_RADIUS } from '../desmorona/controls';
 import '../desmorona/desmorona.css';
 import './bola.css';
@@ -65,6 +63,8 @@ export interface BolaOnline {
 
 /** Um quadro do fluxo "bs" da sala (ver `BolaRoomEngine.drainFrame`). */
 interface NetFrame {
+  /** Hora do servidor (ms) do estado. */
+  t?: number;
   ph: 'c' | 'p' | 'g' | 'o';
   tm: number;
   ck: number;
@@ -298,6 +298,7 @@ export function BolaPlay({
           if (!(online && e.id === meId)) {
             const p = world.player(e.id);
             bolaSfx.airjump(e.flip, p ? gainAt(p.x, p.z) * (e.id === meId ? 1 : 0.6) : 0.5);
+            scene.jumpFx(e.id, e.flip);
           }
           break;
         case 'goal':
@@ -439,19 +440,27 @@ export function BolaPlay({
       at: number;
     }
     const unsubs: (() => void)[] = [];
-    const targets = new Map<number, Tgt>();
+    /** Estados recentes do servidor: os outros e a bola são desenhados um instante no passado, entre dois deles. */
+    interface NetSnap {
+      t: number;
+      ball: Tgt;
+      rows: Map<number, Tgt>;
+    }
+    const snaps: NetSnap[] = [];
     let ballT: Tgt | null = null;
     let slotId = new Map<number, string>();
+    let slotOf = new Map<string, number>();
     let rosterKey = '';
-    const placed = new Set<string>();
+    let rosterSeen: unknown = null;
     let jumps = 0;
     let seq = 0;
     let sentInput = { mx: 0, mz: 0 };
-    let pvx = 0;
-    let pvz = 0;
     const idOfSlot = (s: unknown) => (typeof s === 'number' ? (slotId.get(s) ?? null) : null);
     const syncRoster = () => {
       const roster = rosterRef.current;
+      // a lista só muda quando chega um estado novo da sala: o mesmo objeto não precisa ser comparado de novo
+      if (roster === rosterSeen) return;
+      rosterSeen = roster;
       const key = JSON.stringify(roster.map((r) => [r.slot, r.id, r.team, r.bot]));
       if (key === rosterKey) return;
       rosterKey = key;
@@ -478,9 +487,9 @@ export function BolaPlay({
       for (const p of world.players) {
         const pos = saved.get(p.id);
         if (pos) [p.x, p.y, p.z] = pos;
-        else placed.delete(p.id);
       }
       slotId = new Map(roster.map((r) => [r.slot, r.id]));
+      slotOf = new Map(roster.map((r) => [r.id, r.slot]));
       scene.sync();
     };
     const toEvent = (e: Record<string, unknown>): BolEvent | null => {
@@ -542,7 +551,7 @@ export function BolaPlay({
           world.golden = f.gd === 1;
           world.goldenStart = f.gs ?? 0;
           world.scores.splice(0, world.scores.length, ...f.sc);
-          ballT = {
+          const ball: Tgt = {
             x: f.b[0]!,
             y: f.b[1]!,
             z: f.b[2]!,
@@ -553,8 +562,10 @@ export function BolaPlay({
             fl: 0,
             at,
           };
+          ballT = ball;
+          const rows = new Map<number, Tgt>();
           for (const r of f.p) {
-            targets.set(r[0]!, {
+            rows.set(r[0]!, {
               x: r[1]!,
               y: r[2]!,
               z: r[3]!,
@@ -566,6 +577,8 @@ export function BolaPlay({
               at,
             });
           }
+          snaps.push({ t: typeof f.t === 'number' ? f.t : serverNow(), ball, rows });
+          if (snaps.length > 24) snaps.shift();
           if (f.st) {
             world.celebrating = f.st.ce;
             world.possession.splice(0, world.possession.length, ...f.st.po);
@@ -610,84 +623,136 @@ export function BolaPlay({
         ++seq,
       ]);
     };
-    const inputTimer = online ? window.setInterval(sendInput, 33) : 0;
-    const smoothOnline = (dt: number, input: { mx: number; mz: number }) => {
+    const inputTimer = online ? window.setInterval(sendInput, 25) : 0;
+    /** Atraso de desenho dos outros e da bola (ms): com um estado a cada 16 ms sobram sempre dois para interpolar. */
+    const INTERP_MS = 70;
+    const pred = new BolPredictor(world.field);
+    let predReady = false;
+    let predAcc = 0;
+    const lerp = (a: number, b: number, u: number) => a + (b - a) * u;
+    const smoothOnline = (dt: number, input: { mx: number; mz: number }, pressed: boolean) => {
       syncRoster();
-      const now = performance.now();
-      const k = 1 - Math.exp(-dt * 16);
-      const bySlot = new Map<string, number>();
-      for (const [slot, id] of slotId) bySlot.set(id, slot);
+      const last = snaps[snaps.length - 1];
+      if (!last) return;
+      const rt = serverNow() - INTERP_MS;
+      // entre quais dois estados estamos (ou, se faltar estado novo, o último com um pouco de extrapolação)
+      let a = last;
+      let b = last;
+      let u = 0;
+      let extra = 0;
+      if (rt >= last.t) extra = Math.min(0.12, (rt - last.t) / 1000);
+      else {
+        a = b = snaps[0] as NetSnap;
+        for (let i = snaps.length - 1; i >= 1; i--) {
+          const lo = snaps[i - 1] as NetSnap;
+          const hi = snaps[i] as NetSnap;
+          if (lo.t <= rt) {
+            a = lo;
+            b = hi;
+            u = hi.t > lo.t ? Math.min(1, (rt - lo.t) / (hi.t - lo.t)) : 0;
+            break;
+          }
+        }
+      }
       for (const p of world.players) {
-        const t = targets.get(bySlot.get(p.id) ?? -1);
-        if (!t) continue;
-        const age = Math.min(0.12, (now - t.at) / 1000);
-        const tx = t.x + t.vx * age;
-        const ty = Math.max(0, t.y + t.vy * age);
-        const tz = t.z + t.vz * age;
-        const grounded = (t.fl & 1) === 1;
-        const flipping = (t.fl & 2) === 2;
-        if (!placed.has(p.id) || Math.hypot(p.x - tx, p.z - tz) > 6) {
-          Object.assign(p, { x: tx, y: ty, z: tz });
-          placed.add(p.id);
-          if (p.id === meId) {
-            pvx = t.vx;
-            pvz = t.vz;
-          }
-        } else if (p.id === meId && grounded && !flipping && world.phase === 'play') {
-          // a própria raposa se mexe na hora (com a mesma aceleração do servidor) e é puxada de volta se o servidor discordar
-          const a = (grounded ? BOL_ACCEL : BOL_AIR_ACCEL) * dt;
-          const wx = input.mx * BOL_SPEED - pvx;
-          const wz = input.mz * BOL_SPEED - pvz;
-          const d = Math.hypot(wx, wz);
-          if (d <= a) {
-            pvx = input.mx * BOL_SPEED;
-            pvz = input.mz * BOL_SPEED;
-          } else {
-            pvx += (wx / d) * a;
-            pvz += (wz / d) * a;
-          }
-          p.x += pvx * dt;
-          p.z += pvz * dt;
-          const kc = 1 - Math.exp(-dt * 6);
-          p.x += (tx - p.x) * kc;
-          p.z += (tz - p.z) * kc;
-          p.y += (ty - p.y) * k;
-        } else {
-          p.x += (tx - p.x) * k;
-          p.y += (ty - p.y) * k;
-          p.z += (tz - p.z) * k;
-          if (p.id === meId) {
-            pvx = t.vx;
-            pvz = t.vz;
-          }
-        }
-        p.vx = t.vx;
-        p.vy = t.vy;
-        p.vz = t.vz;
-        let dh = t.h - p.heading;
+        if (p.id === meId && predReady && world.phase !== 'countdown') continue;
+        const slot = slotOf.get(p.id);
+        const ra = slot === undefined ? undefined : a.rows.get(slot);
+        if (!ra) continue;
+        const rb = b.rows.get(slot as number) ?? ra;
+        p.x = lerp(ra.x, rb.x, u) + ra.vx * extra;
+        p.y = Math.max(0, lerp(ra.y, rb.y, u) + ra.vy * extra);
+        p.z = lerp(ra.z, rb.z, u) + ra.vz * extra;
+        p.vx = ra.vx;
+        p.vy = ra.vy;
+        p.vz = ra.vz;
+        let dh = rb.h - ra.h;
         dh = Math.atan2(Math.sin(dh), Math.cos(dh));
-        p.heading += dh * Math.min(1, dt * 14);
-        p.grounded = grounded;
-        p.flipT = flipping ? 0.3 : 0;
-        p.airJumped = (t.fl & 4) === 4;
+        p.heading = ra.h + dh * u;
+        p.grounded = (ra.fl & 1) === 1;
+        p.flipT = (ra.fl & 2) === 2 ? 0.3 : 0;
+        p.airJumped = (ra.fl & 4) === 4;
       }
-      if (ballT) {
-        const age = Math.min(0.1, (now - ballT.at) / 1000);
-        const tx = ballT.x + ballT.vx * age;
-        const ty = Math.max(0.9, ballT.y + ballT.vy * age);
-        const tz = ballT.z + ballT.vz * age;
-        const b = world.ball;
-        const kb = 1 - Math.exp(-dt * 24);
-        if (Math.hypot(b.x - tx, b.z - tz) > 6) Object.assign(b, { x: tx, y: ty, z: tz });
-        else {
-          b.x += (tx - b.x) * kb;
-          b.y += (ty - b.y) * kb;
-          b.z += (tz - b.z) * kb;
-        }
-        b.vx = ballT.vx;
-        b.vy = ballT.vy;
-        b.vz = ballT.vz;
+      const ball = world.ball;
+      ball.x = lerp(a.ball.x, b.ball.x, u) + a.ball.vx * extra;
+      ball.y = Math.max(0.9, lerp(a.ball.y, b.ball.y, u) + a.ball.vy * extra);
+      ball.z = lerp(a.ball.z, b.ball.z, u) + a.ball.vz * extra;
+      ball.vx = a.ball.vx;
+      ball.vy = a.ball.vy;
+      ball.vz = a.ball.vz;
+
+      // a própria raposa: roda a mesma conta do servidor aqui (responde na hora) e é puxada de volta se o servidor discordar
+      const me = world.player(meId);
+      const slot = slotOf.get(meId);
+      const row = slot === undefined ? undefined : last.rows.get(slot);
+      if (!me || !row) {
+        predReady = false;
+        return;
       }
+      const lead = Math.min(0.25, Math.max(0, (serverNow() - last.t) / 1000));
+      const sx = row.x + row.vx * lead;
+      const sy = Math.max(0, row.y + row.vy * lead);
+      const sz = row.z + row.vz * lead;
+      const flags = {
+        grounded: (row.fl & 1) === 1,
+        flipT: (row.fl & 2) === 2 ? 0.3 : 0,
+        airJumped: (row.fl & 4) === 4,
+      };
+      if (!predReady || world.phase === 'countdown') {
+        pred.reset({
+          x: row.x,
+          y: row.y,
+          z: row.z,
+          vx: row.vx,
+          vy: row.vy,
+          vz: row.vz,
+          heading: row.h,
+          ...flags,
+        });
+        predReady = world.phase !== 'countdown';
+        predAcc = 0;
+        return;
+      }
+      predAcc += dt;
+      let press = pressed;
+      while (predAcc >= BOL_DT) {
+        predAcc -= BOL_DT;
+        pred.step(BOL_DT, { mx: input.mx, mz: input.mz, jump: press }, (e) => {
+          if (e === 'jump') bolaSfx.jump();
+          else if (e === 'airjump' || e === 'flip') {
+            bolaSfx.airjump(e === 'flip');
+            scene.jumpFx(meId, e === 'flip');
+          }
+        });
+        press = false;
+      }
+      const body = pred.body;
+      const ex = sx - body.x;
+      const ez = sz - body.z;
+      const ey = sy - body.y;
+      if (Math.hypot(ex, ez) > 3 || Math.abs(ey) > 1.6) {
+        pred.reset({ x: row.x, y: row.y, z: row.z, vx: row.vx, vy: row.vy, vz: row.vz, ...flags });
+      } else {
+        // correção suave: mais firme durante o mortal, quando o servidor manda mais
+        const k = 1 - Math.exp(-dt * (flags.flipT > 0 ? 14 : 6));
+        body.x += ex * k;
+        body.z += ez * k;
+        body.y += ey * k * 0.7;
+        const kv = 1 - Math.exp(-dt * 3);
+        body.vx += (row.vx - body.vx) * kv;
+        body.vz += (row.vz - body.vz) * kv;
+        if (flags.airJumped) body.airJumped = true;
+      }
+      me.x = body.x;
+      me.y = body.y;
+      me.z = body.z;
+      me.vx = body.vx;
+      me.vy = body.vy;
+      me.vz = body.vz;
+      me.heading = body.heading;
+      me.grounded = body.grounded;
+      me.airJumped = body.airJumped;
+      me.flipT = body.flipT;
     };
 
     let last = performance.now();
@@ -704,15 +769,7 @@ export function BolaPlay({
       if (!document.hidden) {
         if (!online) acc += dt;
         const input = me ? controls.read() : { mx: 0, mz: 0, jump: false };
-        if (online && input.jump) {
-          jumps++;
-          sendInput();
-          // o som do seu pulo sai na hora, sem esperar o servidor
-          if (me && (me.grounded || !me.airJumped)) {
-            if (me.grounded) bolaSfx.jump();
-            else bolaSfx.airjump(Math.hypot(input.mx, input.mz) > 0.3);
-          }
-        }
+        const pressed = input.jump;
         if (input.jump) jumpUntil = now + JUMP_BUFFER_MS;
         input.jump = false;
         // a câmera segue a bola por padrão (E troca para câmera livre com o mouse)
@@ -759,7 +816,12 @@ export function BolaPlay({
         }
         if (online) {
           sentInput = { mx: input.mx, mz: input.mz };
-          smoothOnline(dt, input);
+          if (pressed) {
+            // o aperto sai na hora, já com a direção desta tela (o mortal usa a direção no instante do pulo)
+            jumps++;
+            sendInput();
+          }
+          smoothOnline(dt, input, pressed);
         }
         while (!online && acc >= BOL_DT) {
           acc -= BOL_DT;

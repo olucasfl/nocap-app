@@ -1619,3 +1619,14 @@
     font-size: 14px;
   }
 }
+
+/*
+ * Botão do chat na sala: no computador ele fica no canto direito da janela, ACIMA da barra de ação (antes aparecia no
+ * meio da tela, por cima do botão Começar).
+ */
+@media (min-width: 768px) {
+  .app:has(.lb3) .ch-fab {
+    right: 24px;
+    bottom: 104px;
+  }
+}

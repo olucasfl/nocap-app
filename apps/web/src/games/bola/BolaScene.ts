@@ -788,6 +788,32 @@ export class BolaScene {
     });
   }
 
+  /** Segundo pulo: anel no ponto do impulso e, no mortal, poeira na cor do time atrás da raposa. */
+  jumpFx(id: string, flip: boolean) {
+    const p = this.world.players.find((q) => q.id === id);
+    if (!p) return;
+    const team = BOL_TEAM_COLORS[p.team] ?? 0xffffff;
+    this.addRing(p.x, Math.max(0.06, p.y), p.z, team, flip ? 2.4 : 1.8, 0.35, {
+      flat: true,
+      opacity: 0.8,
+    });
+    if (this.reduced || !flip) return;
+    const dx = Math.sin(p.heading);
+    const dz = Math.cos(p.heading);
+    for (let i = 1; i <= 5; i++) {
+      this.addGlow(
+        p.x - dx * i * 0.5,
+        p.y + 0.5,
+        p.z - dz * i * 0.5,
+        i % 2 ? 0xffffff : team,
+        1.2 - i * 0.12,
+        0.28,
+        0.8,
+        false,
+      );
+    }
+  }
+
   /**
    * O chute pegou: um clarão, dois anéis finos que se abrem (um branco, um na cor do time), um anel deitado no chão, uma
    * cauda de cometa apontando para onde a bola foi e um rastro na cor do time. Limpo, mas dá para ler de longe de

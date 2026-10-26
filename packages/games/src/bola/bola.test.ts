@@ -180,6 +180,19 @@ describe('bola e toque', () => {
     expect(p.airJumped).toBe(true);
   });
 
+  it('o mortal sobe forte mesmo na queda e vira a raposa na direção apertada', () => {
+    const w = new BolWorld(roster(2, 1), { teams: 2, perTeam: 1 });
+    startPlay(w);
+    const p = w.players[0]!;
+    w.step(BOL_DT, { [p.id]: { mx: 0, mz: 0, jump: true } });
+    run(w, 0.45);
+    expect(p.vy).toBeLessThan(0);
+    w.step(BOL_DT, { [p.id]: { mx: 1, mz: 0, jump: true } });
+    expect(p.flipT).toBeGreaterThan(0);
+    expect(p.vy).toBeGreaterThanOrEqual(6);
+    expect(p.vx).toBeGreaterThan(5);
+  });
+
   it('a bola nunca sai do campo (chutes em todas as direções)', () => {
     for (const teams of [2, 3, 4]) {
       const w = new BolWorld(roster(teams, 1), { teams, perTeam: 1 });

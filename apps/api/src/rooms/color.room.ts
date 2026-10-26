@@ -621,7 +621,8 @@ export class DesmoronaRoom extends ColorRoom {
  */
 export class BolaRoom extends ColorRoom {
   override maxClients = BOL_ROOM_MAX;
-  protected override tickMs = 33;
+  /** 60 passos por segundo, um estado enviado por passo: a entrada vira movimento em no máximo 16 ms. */
+  protected override tickMs = 16;
 
   protected override makeEngine(opts: ConstructorParameters<typeof ColorRoomEngine>[0]) {
     return new BolaRoomEngine(opts);

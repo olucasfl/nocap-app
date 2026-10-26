@@ -1,8 +1,5 @@
 import {
-  BOL_ACCEL,
-  BOL_AIR_ACCEL,
   BOL_AIR_DRAG,
-  BOL_AIR_JUMP,
   BOL_BALL_MAX,
   BOL_BALL_R,
   BOL_BAR_R,
@@ -14,31 +11,27 @@ import {
   BOL_BOUNCE_GRIP,
   BOL_ROLL_DECEL,
   BOL_FLIP_KICK_LIFT,
-  BOL_FLIP_LIFT,
   BOL_FLIP_REACH,
   BOL_FLIP_SEC,
-  BOL_FLIP_SPEED,
   BOL_FLIP_WINDOW,
   BOL_FLOOR_E,
   BOL_FOX_E,
-  BOL_FOX_GRAVITY,
   BOL_FOX_H,
   BOL_FOX_R,
   BOL_GOAL_H,
   BOL_GOAL_PAUSE,
   BOL_GOLDEN_MAX,
   BOL_GRAVITY,
-  BOL_JUMP,
   BOL_POST_R,
   BOL_REST_SPEED,
   BOL_ROLL_DRAG,
-  BOL_SPEED,
   BOL_STILL_SEC,
   BOL_SUBSTEPS,
   BOL_TOUCH_MIN,
   BOL_WALL_E,
   BOL_WARN_LEFT,
 } from './constants';
+import { controlBody, moveBody } from './body';
 import { buildField, type BolField } from './field';
 
 export interface BolInfo {
@@ -416,80 +409,18 @@ export class BolWorld {
     }
   }
 
-  /** Aperto de pulo, mortal e aceleração. */
+  /** Aperto de pulo, mortal e aceleração (a mesma conta do preditor do aparelho: ver `body.ts`). */
   private control(p: BolPlayer, input: BolInput, dt: number): void {
-    const mag = Math.hypot(input.mx, input.mz);
-    const ix = mag > 1 ? input.mx / mag : input.mx;
-    const iz = mag > 1 ? input.mz / mag : input.mz;
-    if (input.jump) {
-      if (p.grounded) {
-        p.vy = BOL_JUMP;
-        p.grounded = false;
-        this.events.push({ type: 'jump', id: p.id });
-      } else if (!p.airJumped) {
-        p.airJumped = true;
-        if (mag > 0.3) {
-          p.flipT = BOL_FLIP_SEC;
-          p.flipHit = false;
-          p.flipDx = input.mx / mag;
-          p.flipDz = input.mz / mag;
-          p.vx = p.flipDx * BOL_FLIP_SPEED;
-          p.vz = p.flipDz * BOL_FLIP_SPEED;
-          p.vy = BOL_FLIP_LIFT;
-          p.heading = Math.atan2(p.flipDx, p.flipDz);
-          this.events.push({ type: 'airjump', id: p.id, flip: true });
-        } else {
-          p.vy = BOL_AIR_JUMP;
-          this.events.push({ type: 'airjump', id: p.id, flip: false });
-        }
-      }
-    }
-    if (p.flipT > 0) {
-      p.flipT = Math.max(0, p.flipT - dt);
-      return;
-    }
-    const a = (p.grounded ? BOL_ACCEL : BOL_AIR_ACCEL) * dt;
-    const dx = ix * BOL_SPEED - p.vx;
-    const dz = iz * BOL_SPEED - p.vz;
-    const d = Math.hypot(dx, dz);
-    if (d <= a) {
-      p.vx = ix * BOL_SPEED;
-      p.vz = iz * BOL_SPEED;
-    } else {
-      p.vx += (dx / d) * a;
-      p.vz += (dz / d) * a;
-    }
-    if (mag > 0.1) p.heading = Math.atan2(ix, iz);
+    controlBody(p, input, dt, (e) => {
+      if (e === 'jump') this.events.push({ type: 'jump', id: p.id });
+      else this.events.push({ type: 'airjump', id: p.id, flip: e === 'flip' });
+    });
   }
 
   private moveFox(p: BolPlayer, h: number): void {
-    p.vy -= BOL_FOX_GRAVITY * h;
-    p.x += p.vx * h;
-    p.y += p.vy * h;
-    p.z += p.vz * h;
-    if (p.y <= 0) {
-      p.y = 0;
-      p.vy = 0;
-      if (!p.grounded) {
-        p.grounded = true;
-        p.airJumped = false;
-        p.flipT = 0;
-        this.events.push({ type: 'land', id: p.id });
-      }
-    } else {
-      p.grounded = false;
-    }
-    for (const e of this.field.edges) {
-      const d = (p.x - e.ax) * e.nx + (p.z - e.az) * e.nz;
-      if (d >= BOL_FOX_R) continue;
-      p.x += e.nx * (BOL_FOX_R - d);
-      p.z += e.nz * (BOL_FOX_R - d);
-      const vn = p.vx * e.nx + p.vz * e.nz;
-      if (vn < 0) {
-        p.vx -= vn * e.nx;
-        p.vz -= vn * e.nz;
-      }
-    }
+    moveBody(p, h, this.field, (e) => {
+      if (e === 'land') this.events.push({ type: 'land', id: p.id });
+    });
   }
 
   /** Raposas não se atravessam: empurram-se de leve para os lados. */

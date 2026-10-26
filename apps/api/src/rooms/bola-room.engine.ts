@@ -418,7 +418,7 @@ export class BolaRoomEngine extends ColorRoomEngine {
     pilot.mz = mz! * k;
     const j = Math.trunc(jumps!);
     // o primeiro relato só combina o contador; depois, cada aumento é um aperto (no máximo 3 por vez)
-    if (pilot.seen === null) pilot.seen = j;
+    if (pilot.seen === null || j < pilot.seen) pilot.seen = j;
     else if (j > pilot.seen) {
       pilot.pending = Math.min(3, pilot.pending + (j - pilot.seen));
       pilot.seen = j;
@@ -620,6 +620,8 @@ export class BolaRoomEngine extends ColorRoomEngine {
     const codes = { countdown: 'c', play: 'p', goal: 'g', over: 'o' } as const;
     const b = w.ball;
     const frame: Record<string, unknown> = {
+      /** Hora do servidor (ms) deste estado: o aparelho interpola pela hora, não pela chegada. */
+      t: this.now(),
       ph: codes[w.phase],
       tm: r2(w.timer),
       ck: Math.round(w.clock * 10) / 10,

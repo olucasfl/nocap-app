@@ -183,3 +183,5 @@ MVP offline do Fut Fox (26/10/2026): `pnpm dev` e abra `http://localhost:5173/fo
 Fut Fox Fase 2 (sala online) pronta em 26/10/2026: `apps/api/src/rooms/bola-room.engine.ts` + `BolaRoom` em `color.room.ts` (registrada como `bola` no `main.ts`), 18 testes do motor da sala e 1 de integração com Colyseus. Próximo: web online (cena lendo `bs`, previsão da própria raposa, lobby de times, espectador).
 
 Fut Fox web online pronta em 26/10/2026: criar sala em Fox Cap! > Fut Fox > Com amigos (`/sala?jogo=bola`). Testado com 2 navegadores contra a sala real. Em dev o web lê `@nocap/games` do código-fonte (alias no `vite.config.ts`). Falta: som, previsão do pulo/mortal, teste em celular real.
+
+Fut Fox fluidez online (26/10/2026): mortal com impulso 6,4 (`Math.max` com a velocidade atual) e efeito `jumpFx`; online, os outros e a bola são interpolados ~70 ms atrás entre estados do servidor (`t`), a própria raposa usa `BolPredictor` (`packages/games/src/bola/body.ts`) com correção suave, pulo enviado com a direção do quadro e entrada a cada 25 ms. Falta: teste com 3+ jogadores online e em celular real.

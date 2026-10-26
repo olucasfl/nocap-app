@@ -107,34 +107,6 @@ export function InvitePanel({ snapshot }: { snapshot: RoomSnapshot }) {
 
       {user ? (
         <>
-          <section className="lb3-sec" aria-label="Amigos">
-            <h3>Seus amigos</h3>
-            {all.length >= SEARCH_FROM && (
-              <input
-                className="ch-input"
-                value={filter}
-                onChange={(e) => setFilter(e.target.value)}
-                placeholder="Buscar amigo"
-                aria-label="Buscar amigo"
-                autoCapitalize="none"
-                autoCorrect="off"
-              />
-            )}
-            {friends.isPending ? (
-              <p className="mono lb3-hint">Carregando...</p>
-            ) : list.length === 0 ? (
-              <p className="mono lb3-hint">
-                {all.length === 0
-                  ? 'Você ainda não tem amigos no NoCap. Use o link acima.'
-                  : filter
-                    ? 'Ninguém com esse nome.'
-                    : 'Todos os seus amigos já estão na sala.'}
-              </p>
-            ) : (
-              <ul className="lb3-inv-list">{list.map((f) => row(f.username))}</ul>
-            )}
-          </section>
-
           <section className="lb3-sec" aria-label="Procurar pessoa">
             <h3>Procurar por @usuário</h3>
             <form
@@ -173,6 +145,34 @@ export function InvitePanel({ snapshot }: { snapshot: RoomSnapshot }) {
               <ul className="lb3-inv-list">
                 {results.map((u) => row(u.username, u.state === 'friends' ? 'amigo' : undefined))}
               </ul>
+            )}
+          </section>
+
+          <section className="lb3-sec" aria-label="Amigos">
+            <h3>Seus amigos</h3>
+            {all.length >= SEARCH_FROM && (
+              <input
+                className="ch-input"
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+                placeholder="Buscar amigo"
+                aria-label="Buscar amigo"
+                autoCapitalize="none"
+                autoCorrect="off"
+              />
+            )}
+            {friends.isPending ? (
+              <p className="mono lb3-hint">Carregando...</p>
+            ) : list.length === 0 ? (
+              <p className="mono lb3-hint">
+                {all.length === 0
+                  ? 'Você ainda não tem amigos no NoCap. Use o link acima.'
+                  : filter
+                    ? 'Ninguém com esse nome.'
+                    : 'Todos os seus amigos já estão na sala.'}
+              </p>
+            ) : (
+              <ul className="lb3-inv-list">{list.map((f) => row(f.username))}</ul>
             )}
           </section>
         </>

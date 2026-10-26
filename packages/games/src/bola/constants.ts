@@ -46,7 +46,7 @@ export const BOL_FOX_GRAVITY = 24;
 export const BOL_FLIP_SEC = 0.5;
 export const BOL_FLIP_WINDOW = 0.4;
 export const BOL_FLIP_SPEED = 11;
-export const BOL_FLIP_LIFT = 4.2;
+export const BOL_FLIP_LIFT = 6.4;
 export const BOL_FLIP_REACH = 0.35;
 /** Velocidade mínima da bola, na direção do mortal, logo após o chute (m/s), mais esta fração da velocidade da raposa. */
 export const BOL_FLIP_KICK = 14;
