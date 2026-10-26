@@ -95,3 +95,16 @@
   font: 800 13px var(--font-display, system-ui);
   text-transform: uppercase;
 }
+
+.bola-pick {
+  width: min(520px, 100%);
+}
+.bola-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.bola-chips .dsm-chip {
+  min-width: 64px;
+  padding: 0 14px;
+}

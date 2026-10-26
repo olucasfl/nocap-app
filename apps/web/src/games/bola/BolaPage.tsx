@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { BOL_TEAM_NAMES, bolFormatLabel, bolFormats } from '@nocap/games';
 import { BackButton } from '@/components/BackButton';
 import { HubCard, HubHero, HubNote, HubSteps, HubTabs } from '@/components/GameHub';
@@ -77,66 +78,79 @@ export function BolaPage() {
               />
             </div>
             <HubNote>
-              Computador: W A S D, Espaço para pular (duas vezes para o mortal) e C para trocar a
-              câmera. Celular: joystick e botão Pular.
+              Computador: W A S D, Espaço para pular (duas vezes para o mortal) e E para trocar a
+              câmera (na bola ou livre). Celular: joystick, botão Pular e botão da câmera.
             </HubNote>
           </>
         ) : (
           <HubSteps title="Como jogar" steps={HOW} />
         )}
-        {phase === 'pick' && (
-          <div className="dsm-pick" role="dialog" aria-modal="true" aria-label="Formato do treino">
-            <div className="dsm-pick-card bola-pick">
-              <h2>Formato</h2>
-              <p className="mono">
-                {bolFormatLabel(setup)} · você no time {BOL_TEAM_NAMES[0]}, o resto são bots
-              </p>
-              <div className="dsm-chips" role="radiogroup" aria-label="Formato">
-                {formats.map((f) => (
+        {phase === 'pick' &&
+          createPortal(
+            <div
+              className="dsm-pick"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Formato do treino"
+            >
+              <div className="dsm-pick-card bola-pick">
+                <h2>Formato</h2>
+                <p className="mono">
+                  {bolFormatLabel(setup)} · você no time {BOL_TEAM_NAMES[0]}, o resto são bots
+                </p>
+                <div className="bola-chips" role="radiogroup" aria-label="Formato">
+                  {formats.map((f) => (
+                    <button
+                      key={bolFormatLabel(f)}
+                      type="button"
+                      role="radio"
+                      aria-checked={setup.teams === f.teams && setup.perTeam === f.perTeam}
+                      className={`dsm-chip${setup.teams === f.teams && setup.perTeam === f.perTeam ? ' is-on' : ''}`}
+                      onClick={() =>
+                        setSetup((s) => ({ ...s, teams: f.teams, perTeam: f.perTeam }))
+                      }
+                      data-testid={`bola-fmt-${bolFormatLabel(f)}`}
+                    >
+                      {bolFormatLabel(f)}
+                    </button>
+                  ))}
+                </div>
+                <h3>Duração</h3>
+                <div className="bola-chips" role="radiogroup" aria-label="Duração">
+                  {[1, 3, 5, 10].map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      role="radio"
+                      aria-checked={setup.minutes === m}
+                      className={`dsm-chip${setup.minutes === m ? ' is-on' : ''}`}
+                      onClick={() => setSetup((s) => ({ ...s, minutes: m }))}
+                    >
+                      {m} min
+                    </button>
+                  ))}
+                </div>
+                <div className="dsm-over-btns">
                   <button
-                    key={bolFormatLabel(f)}
                     type="button"
-                    role="radio"
-                    aria-checked={setup.teams === f.teams && setup.perTeam === f.perTeam}
-                    className={`dsm-chip${setup.teams === f.teams && setup.perTeam === f.perTeam ? ' is-on' : ''}`}
-                    onClick={() => setSetup((s) => ({ ...s, teams: f.teams, perTeam: f.perTeam }))}
-                    data-testid={`bola-fmt-${bolFormatLabel(f)}`}
+                    className="dsm-btn"
+                    onClick={() => setPhase('play')}
+                    data-testid="bola-start"
                   >
-                    {bolFormatLabel(f)}
+                    Começar
                   </button>
-                ))}
-              </div>
-              <h3>Duração</h3>
-              <div className="dsm-chips" role="radiogroup" aria-label="Duração">
-                {[1, 3, 5, 10].map((m) => (
                   <button
-                    key={m}
                     type="button"
-                    role="radio"
-                    aria-checked={setup.minutes === m}
-                    className={`dsm-chip${setup.minutes === m ? ' is-on' : ''}`}
-                    onClick={() => setSetup((s) => ({ ...s, minutes: m }))}
+                    className="dsm-btn is-ghost"
+                    onClick={() => setPhase('menu')}
                   >
-                    {m} min
+                    Cancelar
                   </button>
-                ))}
+                </div>
               </div>
-              <div className="dsm-over-btns">
-                <button
-                  type="button"
-                  className="dsm-btn"
-                  onClick={() => setPhase('play')}
-                  data-testid="bola-start"
-                >
-                  Começar
-                </button>
-                <button type="button" className="dsm-btn is-ghost" onClick={() => setPhase('menu')}>
-                  Cancelar
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+            </div>,
+            document.body,
+          )}
         <MuteButton />
       </section>
     </Page>
