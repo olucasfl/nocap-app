@@ -59,6 +59,18 @@ export default defineConfig(({ mode, command }) => {
     plugins: [
       react(),
       {
+        // `/version.json`: o app compara com o próprio commit antes de entrar numa sala (ver `lib/app-version.ts`)
+        name: 'nocap-version',
+        apply: 'build',
+        generateBundle() {
+          this.emitFile({
+            type: 'asset',
+            fileName: 'version.json',
+            source: JSON.stringify({ id: buildId() }),
+          });
+        },
+      },
+      {
         name: 'nocap-social-url',
         transformIndexHtml: () => socialUrlTags(env.VITE_SITE_URL),
       },

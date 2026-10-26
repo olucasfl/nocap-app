@@ -177,7 +177,8 @@ export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomG
   const { status: authStatus } = useAuth();
   const { status, snapshot, lastGame, message } = useRoom();
   const navigate = useNavigate();
-  const entry = useRoomEntry();
+  // com código no endereço a entrada automática já continua depois de atualizar; sem código, retoma o que a pessoa pediu
+  const entry = useRoomEntry({ resume: !code });
   const [resuming, setResuming] = useState(true);
   const autoJoined = useRef(false);
   /** A entrada automática pelo link já foi tentada (até lá a tela mostra só o carregando, sem piscar a entrada). */

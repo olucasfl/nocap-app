@@ -39,7 +39,7 @@ export function FoxCapPage() {
   const [bots, setBots] = useState(5);
   const [round, setRound] = useState(0);
   const [code, setCode] = useState('');
-  const entry = useRoomEntry();
+  const entry = useRoomEntry({ resume: true });
 
   if (flow === 'bola-play') {
     return (

@@ -18,7 +18,8 @@ import {
   type RoomSnapshot,
   type RoomStatus,
 } from './rooms';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { appOutdated, takeResume, useEnterGate } from './app-version';
 
 /** O que o servidor diz sobre a sala da conta (`GET /me/room`). */
 export interface MyRoom {
@@ -111,12 +112,14 @@ export function useLeaveRoom() {
 }
 
 type Attempt = { kind: 'create'; game: RoomGame } | { kind: 'join'; code: string };
+/** A retomada pós-atualização roda uma vez por carregamento do app. */
+let resumed = false;
 
 /**
  * Criar ou entrar numa sala num toque só: faz a conexão, abre o lobby e, se a conta já está em
  * outra sala, devolve `conflict` para a tela perguntar o que fazer (voltar a ela ou sair dela).
  */
-export function useRoomEntry() {
+export function useRoomEntry(opts: { resume?: boolean } = {}) {
   const navigate = useNavigate();
   const leave = useLeaveRoom();
   const queryClient = useQueryClient();
@@ -130,6 +133,11 @@ export function useRoomEntry() {
 
   const run = useCallback(
     async (attempt: Attempt): Promise<boolean> => {
+      // versão velha do app: não entra (nem cria) sala; o aviso leva a atualizar e a entrada continua depois
+      if (await appOutdated()) {
+        useEnterGate.setState({ pending: attempt });
+        return false;
+      }
       if (!useAuth.getState().user && !getGuestNickname()) {
         setAskNick(attempt);
         return false;
@@ -167,6 +175,15 @@ export function useRoomEntry() {
     },
     [navigate, queryClient],
   );
+
+  // depois de atualizar pelo aviso, continua o que a pessoa estava fazendo (uma vez por carregamento do app)
+  // (só nas telas que têm o diálogo de apelido e de conflito: quem pede `resume`)
+  useEffect(() => {
+    if (!opts.resume || resumed) return;
+    resumed = true;
+    const again = takeResume();
+    if (again) void run(again as Attempt);
+  }, [run, opts.resume]);
 
   return {
     busy,

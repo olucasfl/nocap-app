@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider } from '@tanstack/react-router';
 import { ApiError } from '@/lib/api-client';
 import { router } from '@/router';
+import { UpdateBeforeEnter } from '@/components/UpdateBeforeEnter';
 import { UpdatePrompt } from '@/components/UpdatePrompt';
 import { flushQueuedMatches } from '@/games/color/submit';
 import { installGlobalSounds } from '@/lib/sfx';
@@ -62,6 +63,7 @@ if (import.meta.env.DEV && window.location.pathname === '/dev/sons') {
       <QueryClientProvider client={queryClient}>
         <RouterProvider router={router} />
         <UpdatePrompt />
+        <UpdateBeforeEnter />
       </QueryClientProvider>
     </StrictMode>,
   );
