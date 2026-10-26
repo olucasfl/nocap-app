@@ -488,7 +488,6 @@ describe('gol', () => {
     expect(w.players).toHaveLength(4);
   });
 
-
   it('sem toque e com 2 times: gol contra do dono do gol, ponto para o outro time', () => {
     const w = new BolWorld(roster(2, 1), { teams: 2, perTeam: 1 });
     startPlay(w);

@@ -24,6 +24,7 @@ type In =
   | { t: 'rate'; everyPeerFrame: boolean }
   | { t: 'input'; id: string; v: unknown }
   | { t: 'toBot'; id: string }
+  | { t: 'switch'; id: string; name: string; team: number; bot: string | null }
   | { t: 'end' }
   | { t: 'stop' };
 
@@ -105,6 +106,23 @@ self.onmessage = (ev: MessageEvent<In>) => {
       if (match && !finished) {
         match.toBot(msg.id);
         post({ t: 'roster', rows: match.roster() });
+      }
+      break;
+    case 'switch':
+      if (match && !finished) {
+        try {
+          match.switchTeam(msg.id, msg.name, msg.team, msg.bot);
+          post({ t: 'switched', id: msg.id, team: msg.team, ok: true });
+          post({ t: 'roster', rows: match.roster() });
+        } catch (e) {
+          post({
+            t: 'switched',
+            id: msg.id,
+            team: msg.team,
+            ok: false,
+            error: e instanceof Error ? e.message : 'Não deu para trocar de time',
+          });
+        }
       }
       break;
     case 'end':

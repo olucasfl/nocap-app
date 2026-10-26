@@ -125,6 +125,17 @@ describe('BolaMatch', () => {
     expect(s.m.world.clock - t0).toBeLessThanOrEqual(8 * BOL_DT + 1e-6);
   });
 
+  it('o quadro leva o vencedor quando a partida acaba (o aparelho online não tem outro jeito de saber)', () => {
+    const s = make();
+    s.m.world.scores.splice(0, 2, 1, 3);
+    s.m.endNow();
+    s.clock.advance(16);
+    s.m.tick();
+    const f = s.m.drainFrame(true) as { ph: string; wn: number };
+    expect(f.ph).toBe('o');
+    expect(f.wn).toBe(1);
+  });
+
   it('bolPlacements divide a posição no empate', () => {
     const p = bolPlacements([2, 2, 0]);
     expect(p.get(0)).toBe(1);

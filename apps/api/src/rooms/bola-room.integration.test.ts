@@ -137,4 +137,36 @@ describe('sala do Fut Fox com servidor de verdade', () => {
     ana.room.send('bend');
     await until(() => ana.snap?.phase === 'final' && bia.snap?.phase === 'final');
   }, 40_000);
+
+  it('ponto a ponto: o pedido de troca de time vai ao líder pelo servidor e a resposta dele vale', async () => {
+    const created = await new Client(url).create('bola', { token: 'cai' });
+    const cai = watch(created);
+    const duda = watch(await new Client(url).joinById(created.roomId, { token: 'duda' }));
+    const asked: unknown[] = [];
+    cai.room.onMessage('bswitch', ((m: unknown) => asked.push(m)) as never);
+    await until(() => cai.snap?.bola.teamOf.duda !== undefined);
+    duda.room.send('ready', { ready: true });
+    await wait(100);
+    cai.room.send('start');
+    await until(() => cai.snap?.phase === 'play');
+    // o líder e a duda conectam: a partida vira ponto a ponto
+    duda.room.send('bp2p', { ok: true });
+    await until(() => (cai.snap as unknown as { bola: { net: string } }).bola.net === 'p2p');
+    duda.room.send('bteam', { team: -1 });
+    await until(() => asked.length > 0);
+    expect(asked[0]).toMatchObject({ id: 'duda', team: -1 });
+    // o líder aplica na partida dele e confirma: a sala atualiza quem está em campo
+    cai.room.send('bswitched', { id: 'duda', team: -1, ok: true });
+    await until(() => cai.snap?.bola.teamOf.duda === undefined);
+    // erro do líder volta como aviso para quem pediu
+    duda.room.send('bteam', { team: 0 });
+    await until(() => asked.length > 1);
+    cai.room.send('bswitched', {
+      id: 'duda',
+      team: 0,
+      ok: false,
+      error: 'O time Vermelho está cheio',
+    });
+    await until(() => duda.errors.includes('O time Vermelho está cheio'));
+  }, 30_000);
 });

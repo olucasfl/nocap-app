@@ -75,6 +75,8 @@ interface NetFrame {
   ck: number;
   sc: number[];
   gd: number;
+  /** Quem venceu (-1 = empate): vale no fim da partida. */
+  wn?: number;
   /** Prorrogação: times que ficaram de fora. */
   go?: number[];
   gs?: number;
@@ -659,6 +661,7 @@ export function BolaPlay({
           world.timer = f.tm;
           world.clock = f.ck;
           world.golden = f.gd === 1;
+          if (typeof f.wn === 'number') world.winner = f.wn;
           {
             const out = f.go ?? [];
             let changed = false;

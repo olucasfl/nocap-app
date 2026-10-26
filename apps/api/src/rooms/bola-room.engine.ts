@@ -61,6 +61,10 @@ export class BolaRoomEngine extends ColorRoomEngine {
   private net: 'server' | 'pending' | 'p2p' = 'server';
   /** O aparelho que simula no modo ponto a ponto (o líder no começo da partida). */
   private p2pHost = '';
+  /** Pedidos de troca de time para o líder aplicar na partida dele (esvaziado por `drainP2pOut`). */
+  private switchOut: { id: string; name: string; team: number; bot: string | null }[] = [];
+  /** Respostas de erro para quem pediu a troca. */
+  private noticeOut: { to: string; message: string }[] = [];
   private p2pDeadline = 0;
   private p2pOk = new Set<string>();
   private p2pFinal: { scores: number[]; winner: number } | null = null;
@@ -284,16 +288,25 @@ export class BolaRoomEngine extends ColorRoomEngine {
     this.requirePhase('lobby', 'play');
     const m = this.members.get(id);
     if (!m) throw new RoomError('Você não está na sala');
-    if (this.phase === 'play' && this.net !== 'server') {
-      throw new RoomError(
-        'Nesta partida (ponto a ponto) não dá para trocar de time durante o jogo',
-      );
+    if (this.phase === 'play' && this.net === 'pending') {
+      throw new RoomError('A partida está conectando: tente de novo em alguns segundos');
     }
     if (!Number.isInteger(team) || (team as number) < -1 || (team as number) >= this.format.teams) {
       throw new RoomError('Esse time não existe neste formato');
     }
     const to = team as number;
     const cur = this.teamOf.get(id) ?? -1;
+    if (this.phase === 'play' && this.net === 'p2p') {
+      // quem simula é o aparelho do líder: o pedido vai para ele, que decide (time cheio, bot que já saiu) e responde
+      if (cur === to) return;
+      this.switchOut.push({
+        id,
+        name: m.username,
+        team: to,
+        bot: typeof botId === 'string' ? botId : null,
+      });
+      return;
+    }
     if (cur === to) {
       // quem já está de fora e pede para assistir não volta a ser colocado num time sozinho
       if (to < 0) this.chose.add(id);
@@ -415,6 +428,33 @@ export class BolaRoomEngine extends ColorRoomEngine {
     this.dirty = true;
   }
 
+  /** O líder respondeu a um pedido de troca de time: vale (ou volta o erro para quem pediu). */
+  p2pSwitched(hostId: string, v: { id?: unknown; team?: unknown; ok?: unknown; error?: unknown }) {
+    if (this.net !== 'p2p' || hostId !== this.p2pHost || typeof v.id !== 'string') return;
+    if (!this.members.has(v.id)) return;
+    if (v.ok === true && Number.isInteger(v.team)) {
+      const to = v.team as number;
+      if (to < 0) {
+        this.teamOf.delete(v.id);
+        this.chose.add(v.id);
+      } else if (to < this.format.teams) {
+        this.teamOf.set(v.id, to);
+        this.chose.delete(v.id);
+      }
+      this.dirty = true;
+    } else if (typeof v.error === 'string') {
+      this.noticeOut.push({ to: v.id, message: v.error.slice(0, 200) });
+    }
+  }
+
+  /** Pedidos para o líder e avisos para quem pediu (a sala entrega e esvazia). */
+  drainP2pOut() {
+    const out = { host: this.p2pHost, switches: this.switchOut, notices: this.noticeOut };
+    this.switchOut = [];
+    this.noticeOut = [];
+    return out;
+  }
+
   /** O líder manda o resultado da partida que ele simulou. */
   p2pResult(id: string, v: { scores?: unknown; winner?: unknown }) {
     if (this.net !== 'p2p' || id !== this.p2pHost || this.phase !== 'play') return;
@@ -422,7 +462,7 @@ export class BolaRoomEngine extends ColorRoomEngine {
     const scores = Array.isArray(v.scores) ? v.scores.slice(0, teams) : [];
     if (
       scores.length !== teams ||
-      !scores.every((n) => Number.isInteger(n) && n >= 0 && n < 1000)
+      !scores.every((n) => Number.isInteger(n) && n > -1000 && n < 1000)
     ) {
       return;
     }
@@ -510,6 +550,8 @@ export class BolaRoomEngine extends ColorRoomEngine {
     this.p2pSetup = null;
     this.p2pFinal = null;
     this.p2pOk.clear();
+    this.switchOut = [];
+    this.noticeOut = [];
     // os times ficam como estavam, mas quem saiu da sala já foi tirado em `leave`
     this.refresh();
   }

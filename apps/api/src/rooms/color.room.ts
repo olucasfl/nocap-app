@@ -662,6 +662,10 @@ export class BolaRoom extends ColorRoom {
       const id = idOf(c);
       if (id) engine().p2pResult(id, m ?? {});
     });
+    this.onMessage('bswitched', (c, m) => {
+      const id = idOf(c);
+      if (id) engine().p2pSwitched(id, (m ?? {}) as Parameters<BolaRoomEngine['p2pSwitched']>[1]);
+    });
     this.onMessage('rtc', (c, m: { to?: unknown; data?: unknown }) => {
       const from = idOf(c);
       if (!from || typeof m?.to !== 'string' || typeof m.data !== 'object' || m.data === null)
@@ -673,8 +677,20 @@ export class BolaRoom extends ColorRoom {
   }
 
   protected override afterTick() {
-    const frame = (this.engine as BolaRoomEngine).drainFrame();
+    const engine = this.engine as BolaRoomEngine;
+    const frame = engine.drainFrame();
     if (frame) this.broadcast('bs', frame);
+    const out = engine.drainP2pOut();
+    for (const sw of out.switches) {
+      this.clients
+        .find((x) => (x.userData as AuthData | undefined)?.id === out.host)
+        ?.send('bswitch', sw);
+    }
+    for (const n of out.notices) {
+      this.clients
+        .find((x) => (x.userData as AuthData | undefined)?.id === n.to)
+        ?.send('error', n.message);
+    }
   }
 }
 

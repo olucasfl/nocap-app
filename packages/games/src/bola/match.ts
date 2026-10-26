@@ -350,6 +350,8 @@ export class BolaMatch {
       ck: Math.round(w.clock * 10) / 10,
       sc: w.scores,
       gd: w.golden ? 1 : 0,
+      /** Quem venceu (-1 = empate); só vale quando a fase é `o` (fim). */
+      wn: w.winner,
       /** Prorrogação: os times que ficaram de fora (o gol deles fecha). */
       go: w.out.flatMap((o, t) => (o ? [t] : [])),
       gs: Math.round(w.goldenStart * 10) / 10,

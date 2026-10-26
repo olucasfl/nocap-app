@@ -343,7 +343,7 @@ describe('sala do Fut Fox: partida ponto a ponto (spec 048)', () => {
     s.room.p2pReport('bia', true);
     s.room.tick();
     s.room.p2pResult('ana', { scores: [3], winner: 0 });
-    s.room.p2pResult('ana', { scores: [3, -1], winner: 0 });
+    s.room.p2pResult('ana', { scores: [3, -2000], winner: 0 });
     s.room.p2pResult('ana', { scores: [3, 1.5], winner: 0 });
     expect(s.room.snapshot('ana').phase).toBe('play');
   });
@@ -363,11 +363,31 @@ describe('sala do Fut Fox: partida ponto a ponto (spec 048)', () => {
     expect(net(s.room).net).toBe('server');
   });
 
-  it('no ponto a ponto não troca de time no meio da partida', () => {
+  it('no ponto a ponto a troca de time vai para o líder, que aplica e responde', () => {
     const s = p2p();
+    // ainda conectando: espere
+    expect(() => s.room.setTeam('bia', -1)).toThrow('conectando');
     s.room.p2pReport('bia', true);
     s.room.tick();
-    expect(() => s.room.setTeam('bia', -1)).toThrow('ponto a ponto');
+    s.room.setTeam('bia', -1);
+    const out = s.room.drainP2pOut();
+    expect(out.host).toBe('ana');
+    expect(out.switches).toEqual([{ id: 'bia', name: 'bia', team: -1, bot: null }]);
+    // quem não é o líder não confirma nada
+    s.room.p2pSwitched('bia', { id: 'bia', team: -1, ok: true });
+    s.room.p2pSwitched('ana', { id: 'bia', team: -1, ok: true });
+    s.room.setTeam('bia', 0);
+    s.room.drainP2pOut();
+    // erro do líder volta como aviso para quem pediu
+    s.room.p2pSwitched('ana', {
+      id: 'bia',
+      team: 0,
+      ok: false,
+      error: 'O time Vermelho está cheio',
+    });
+    expect(s.room.drainP2pOut().notices).toEqual([
+      { to: 'bia', message: 'O time Vermelho está cheio' },
+    ]);
   });
 
   it('o líder sozinho com bots joga direto no aparelho dele, sem esperar ninguém', () => {

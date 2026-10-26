@@ -283,7 +283,7 @@ async function client() {
 let room: Room | null = null;
 
 /** Mensagens frequentes da sala (as posições do Atravessa!) não passam pelo estado: quem quer, assina. */
-type LiveType = 'pos' | 'ack' | 'dsteps' | 'dpushed' | 'bs' | 'rtc';
+type LiveType = 'pos' | 'ack' | 'dsteps' | 'dpushed' | 'bs' | 'rtc' | 'bswitch';
 const live: Record<LiveType, Set<(m: unknown) => void>> = {
   pos: new Set(),
   ack: new Set(),
@@ -291,6 +291,7 @@ const live: Record<LiveType, Set<(m: unknown) => void>> = {
   dpushed: new Set(),
   bs: new Set(),
   rtc: new Set(),
+  bswitch: new Set(),
 };
 export function subscribeRoom(type: LiveType, fn: (m: unknown) => void): () => void {
   live[type].add(fn);
@@ -393,7 +394,7 @@ function attach(r: Room) {
     r.send('ping', { t0: Date.now(), rtt: lastRtt });
   }, 20_000);
 
-  for (const type of ['pos', 'ack', 'dsteps', 'dpushed', 'bs', 'rtc'] as const)
+  for (const type of ['pos', 'ack', 'dsteps', 'dpushed', 'bs', 'rtc', 'bswitch'] as const)
     r.onMessage(type, (m: unknown) => live[type].forEach((fn) => fn(m)));
   r.onMessage('chat', (m: ChatMessage) =>
     useRoom.setState((s) => ({

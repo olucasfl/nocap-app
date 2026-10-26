@@ -109,3 +109,29 @@ export function Key({
     </kbd>
   );
 }
+
+export const IcInvite = (p: P) => (
+  <Ico {...p}>
+    <circle cx="10" cy="8.5" r="3.2" />
+    <path d="M3.8 19c.7-3.5 3-5.3 6.2-5.3 1.4 0 2.6.3 3.6 1" />
+    <path d="M18 12.5v6M15 15.5h6" />
+  </Ico>
+);
+export const IcKeyboard = (p: P) => (
+  <Ico {...p}>
+    <rect x="2.8" y="6.5" width="18.4" height="11" rx="2.5" />
+    <path d="M6.5 10.2h.01M10 10.2h.01M13.5 10.2h.01M17 10.2h.01M7.5 14h9" />
+  </Ico>
+);
+export const IcRestart = (p: P) => (
+  <Ico {...p}>
+    <path d="M4.5 12a7.5 7.5 0 1 0 2.4-5.5" />
+    <path d="M4.2 4.5v4.2h4.2" />
+  </Ico>
+);
+export const IcSound = ({ size = 20, off = false }: P & { off?: boolean }) => (
+  <Ico size={size}>
+    <path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" />
+    {off ? <path d="m16 9.5 5 5m0-5-5 5" /> : <path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" />}
+  </Ico>
+);

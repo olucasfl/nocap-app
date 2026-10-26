@@ -43,3 +43,9 @@ Medido (saltos = bola que anda mais do que a velocidade desenhada explica, por m
 | internet ruim | 19,4 / 5,7 (até 22 m) | 13 / 0,2 (até 2,5 m) | 2,28 -> 0,53 m |
 
 Modelo novo: a bola anda sempre numa física própria (todas as raposas como desenhadas) e é puxada, com velocidade limitada, para onde o líder diz que ela está agora (estado + tempo desde a chegada + metade do RTT, andado pela mesma física). Depois de um toque próprio a correção quase para por 0,35 s. O teste falha se a bola local passar de 1 salto grande por minuto em qualquer perfil.
+
+## Troca de time no meio da partida ponto a ponto (26/10/2026)
+
+O pedido (`bteam`) vai ao servidor, que valida o básico e o repassa ao líder (`bswitch`). O aparelho do líder aplica na partida dele (`BolaMatch.switchTeam`, no worker), manda a lista nova a todos (canal `ctl`) e responde ao servidor (`bswitched`); o servidor só então atualiza os times da sala. Erro (time cheio, bot que já saiu) volta como aviso a quem pediu. Enquanto a partida ainda conecta, o pedido é recusado.
+
+Também: o quadro do fluxo passa a levar o vencedor (`wn`), senão o aparelho online mostrava sempre "Empate" no fim (placar com Azul na frente e "Empate" na tela). E o resultado do líder aceita placar negativo (regra de 3 ou 4 times): antes o servidor o recusava e a partida não fechava.

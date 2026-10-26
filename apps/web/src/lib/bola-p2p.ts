@@ -44,6 +44,7 @@ export class BolaHostSession {
   private peers = new Map<string, HostPeer>();
   private worker: Worker | null = null;
   private unsub: () => void;
+  private unsubSwitch: () => void;
   private frameCbs = new Set<(f: BolaFrame) => void>();
   private rosterCbs = new Set<(rows: BolaRosterRow[]) => void>();
   private finished = false;
@@ -56,6 +57,18 @@ export class BolaHostSession {
     private readonly onOver: (r: HostResult) => void,
   ) {
     this.unsub = subscribeRoom('rtc', (m) => void this.onSignal(m as SignalIn));
+    // pedido de troca de time vindo da sala: este aparelho simula, então é ele quem aplica e responde
+    this.unsubSwitch = subscribeRoom('bswitch', (m) => {
+      const r = m as { id?: string; name?: string; team?: number; bot?: string | null };
+      if (typeof r?.id !== 'string' || typeof r.team !== 'number') return;
+      this.worker?.postMessage({
+        t: 'switch',
+        id: r.id,
+        name: String(r.name ?? ''),
+        team: r.team,
+        bot: typeof r.bot === 'string' ? r.bot : null,
+      });
+    });
     this.link = {
       local: true,
       minDelay: 25,
@@ -172,6 +185,8 @@ export class BolaHostSession {
       for (const cb of this.rosterCbs) cb(m.rows);
       const msg = JSON.stringify({ t: 'roster', rows: m.rows });
       for (const p of this.peers.values()) if (p.ctl?.readyState === 'open') p.ctl.send(msg);
+    } else if (m.t === 'switched') {
+      sendRoomQuiet('bswitched', { id: m.id, team: m.team, ok: m.ok, error: m.error });
     } else if (m.t === 'over') {
       this.finished = true;
       // o último quadro vai mais algumas vezes: o canal não garante entrega
@@ -200,6 +215,7 @@ export class BolaHostSession {
     this.worker?.terminate();
     this.worker = null;
     this.unsub();
+    this.unsubSwitch();
     for (const p of this.peers.values()) {
       if (p.ctl?.readyState === 'open') p.ctl.send(JSON.stringify({ t: 'bye' }));
       p.pc.close();
@@ -213,6 +229,7 @@ export class BolaHostSession {
 type WorkerOut =
   | { t: 'frame'; local: string; peer: string | null }
   | { t: 'roster'; rows: BolaRosterRow[] }
+  | { t: 'switched'; id: string; team: number; ok: boolean; error?: string }
   | { t: 'over'; scores: number[]; winner: number };
 
 export interface PeerHandlers {
