@@ -11,14 +11,7 @@ import { ApiError, apiBase, apiClient } from './api-client';
 import { getToken, useAuth } from './auth';
 
 export type RoomGame =
-  | 'color'
-  | 'time'
-  | 'impostor'
-  | 'eco'
-  | 'atravessa'
-  | 'desmorona'
-  | 'bola'
-  | 'foxcap';
+  'color' | 'time' | 'impostor' | 'eco' | 'atravessa' | 'desmorona' | 'bola' | 'foxcap';
 export type Phase =
   | 'lobby'
   | 'intro'

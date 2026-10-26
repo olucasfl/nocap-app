@@ -1,3 +1,4 @@
+import { execSync } from 'node:child_process';
 import { fileURLToPath, URL } from 'node:url';
 import react from '@vitejs/plugin-react';
 import { defineConfig, loadEnv, type HtmlTagDescriptor } from 'vite';
@@ -23,9 +24,23 @@ function socialUrlTags(site: string | undefined): HtmlTagDescriptor[] {
   ];
 }
 
+/** O identificador desta versão (commit): aparece no painel de rede para saber qual versão cada aparelho está rodando. */
+function buildId(): string {
+  const fromHost = process.env.VERCEL_GIT_COMMIT_SHA;
+  if (fromHost) return fromHost.slice(0, 7);
+  try {
+    return execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] })
+      .toString()
+      .trim();
+  } catch {
+    return 'dev';
+  }
+}
+
 export default defineConfig(({ mode, command }) => {
   const env = loadEnv(mode, '../..', 'VITE_');
   return {
+    define: { __BUILD_ID__: JSON.stringify(buildId()) },
     // O .env fica na raiz do monorepo (VITE_API_URL etc.).
     envDir: '../..',
     resolve: {

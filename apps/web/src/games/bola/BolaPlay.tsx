@@ -20,6 +20,7 @@ import { DsmControls, STICK_RADIUS } from '../desmorona/controls';
 import '../desmorona/desmorona.css';
 import './bola.css';
 import { roomLink, type BolaLink } from '@/lib/bola-link';
+import { BUILD_ID } from '@/lib/build-id';
 import { BolaMenu } from './BolaMenu';
 import { BolaTips } from './BolaTips';
 import { IcBall, IcCamera, IcEye, IcGear, IcJump, Key } from './BolaIcons';
@@ -172,7 +173,9 @@ export function BolaPlay({
       return false;
     }
   });
-  const [net, setNet] = useState<{ ping: number; fps: number; delay: number } | null>(null);
+  const [net, setNet] = useState<{ ping: number; fps: number; delay: number; draw: number } | null>(
+    null,
+  );
   const toggleNet = () =>
     setShowNet((v) => {
       try {
@@ -492,11 +495,18 @@ export function BolaPlay({
     const link = online?.link ?? roomLink;
     let lastEv = 0;
     let frames = 0;
+    let draws = 0;
     let netTimer = 0;
     if (online) {
       netTimer = window.setInterval(() => {
-        setNet({ ping: Math.round(link.rtt()), fps: frames, delay: Math.round(interpMs) });
+        setNet({
+          ping: Math.round(link.rtt()),
+          fps: frames,
+          delay: Math.round(interpMs),
+          draw: draws,
+        });
         frames = 0;
+        draws = 0;
       }, 1000);
     }
     /** Estados recentes do servidor: os outros e a bola são desenhados um instante no passado, entre dois deles. */
@@ -934,6 +944,7 @@ export function BolaPlay({
     let jumpUntil = 0;
     let raf = 0;
     const tick = (now: number) => {
+      draws++;
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
       const me = world.player(meId);
@@ -1164,6 +1175,8 @@ export function BolaPlay({
           {!online.link?.local && <span>{net.ping} ms</span>}
           <span>{net.fps}/s</span>
           <span title="atraso de desenho dos outros jogadores">{net.delay} ms</span>
+          <span title="quadros desenhados por segundo neste aparelho">{net.draw} fps</span>
+          <span title="versão do app">v{BUILD_ID}</span>
         </div>
       )}
       {crash && (
