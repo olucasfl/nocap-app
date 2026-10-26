@@ -8,13 +8,15 @@ export interface BolFormat {
 }
 
 /** Texto do formato, como "2x2x2". */
-export const bolFormatLabel = (f: BolFormat): string => Array.from({ length: f.teams }, () => String(f.perTeam)).join('x');
+export const bolFormatLabel = (f: BolFormat): string =>
+  Array.from({ length: f.teams }, () => String(f.perTeam)).join('x');
 
 /** Todos os formatos possíveis (até 12 jogadores). */
 export function bolFormats(): BolFormat[] {
   const out: BolFormat[] = [];
   for (let teams = 2; teams <= 4; teams++) {
-    for (let perTeam = 1; perTeam <= 3; perTeam++) if (teams * perTeam <= BOL_MAX_PLAYERS) out.push({ teams, perTeam });
+    for (let perTeam = 1; perTeam <= 3; perTeam++)
+      if (teams * perTeam <= BOL_MAX_PLAYERS) out.push({ teams, perTeam });
   }
   return out;
 }

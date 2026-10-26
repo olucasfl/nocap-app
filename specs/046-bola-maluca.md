@@ -52,6 +52,7 @@ Se algum dia a física ficar complexa demais (rampas, vários objetos), reavalia
 ### 4.2 Pontuação
 
 - **Quem tocou por último** na bola leva o crédito. O gol sempre conta **para o time dele**, **inclusive se a bola entrou no gol do próprio time** (decisão do Lucas: "se for contra também, o último a tocar que conta").
+- **Sem toque** (decisão do Lucas em 26/10/2026): com 2 times, o gol vira **gol contra do dono do gol** e o ponto vai para o outro time; com 3 ou 4 times não há como decidir, então **ninguém pontua** e a bola volta ao centro com a contagem. A tela mostra "GOL CONTRA DO TIME X" ou "SEM GOL".
 - Vence quem tiver **mais gols** quando o relógio de 30 min acabar ou quando o **líder encerrar**. Empate: gol de ouro (seção 2).
 - Os gols de cada time aparecem no HUD, com o nome de quem marcou (**feed de gols**, texto, sem emoji).
 
@@ -94,7 +95,7 @@ Se algum dia a física ficar complexa demais (rampas, vários objetos), reavalia
   - 2 times: retângulo, gols nas pontas.
   - 3 times: **hexágono** (ou triângulo largo), um gol em três lados alternados.
   - 4 times: **quadrado**, um gol em cada lado.
-- O **tamanho** cresce com a quantidade de jogadores (1x1 menor, 3x3x3x3 maior).
+- O **tamanho** cresce com a quantidade de jogadores (1x1 menor, 3x3x3x3 maior). Campo ampliado em 26/10/2026 (2 times: de 31x20 m a 59x38 m; arquibancada, vidro, holofotes e redes).
 - **Mapa personalizável** (só em sala personalizada, **fora de ranking**, o que aqui já é verdade para todos): tamanho do campo, tamanho da bola, tamanho do gol, tempo máximo e gols para ganhar, com limites seguros para não quebrar a física.
 - Posições padrão: cada raposa tem um ponto inicial no seu lado.
 

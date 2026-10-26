@@ -48,6 +48,7 @@ interface Hud {
   warn: string;
   winner: number;
   ballCam: boolean;
+  banner: { title: string; sub: string; team: number; id: number } | null;
 }
 
 const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
@@ -101,6 +102,7 @@ export function BolaPlay({
     warn: '',
     winner: -1,
     ballCam: true,
+    banner: null,
   });
 
   useEffect(() => {
@@ -148,6 +150,8 @@ export function BolaPlay({
     let feed: Hud['feed'] = [];
     let warn = '';
     let warnTimer = 0;
+    let bannerTimer = 0;
+    let banner: Hud['banner'] = null;
     const push = (text: string, team: number) => {
       feed = [...feed.slice(-3), { id: feedId++, text, team }];
       window.setTimeout(() => {
@@ -220,13 +224,34 @@ export function BolaPlay({
           for (const e of world.drainEvents()) {
             if (e.type === 'goal') {
               const who = nameOf(e.scorerId);
-              push(
-                e.own
-                  ? `Gol contra: ${who} (${BOL_TEAM_NAMES[e.scorerTeam] ?? ''})`
-                  : `Gol! ${who} (${BOL_TEAM_NAMES[e.scorerTeam] ?? ''})`,
-                e.scorerTeam,
-              );
+              const tn = (t: number) => BOL_TEAM_NAMES[t] ?? '';
+              let title = 'GOL!';
+              let sub = `${who} · time ${tn(e.scorerTeam)}`;
+              if (e.noTouch) {
+                title = `GOL CONTRA DO TIME ${tn(e.goalTeam).toUpperCase()}`;
+                sub = `Ninguém tocou na bola · ponto para o time ${tn(e.scorerTeam)}`;
+              } else if (e.own) {
+                title = 'GOL CONTRA';
+                sub = `${who} (${tn(e.scorerTeam)}) · ponto para o time ${tn(e.scorerTeam)}`;
+              }
+              push(`${title} · ${sub}`, e.scorerTeam);
+              banner = { title, sub, team: e.scorerTeam, id: feedId++ };
+              window.clearTimeout(bannerTimer);
+              bannerTimer = window.setTimeout(() => {
+                banner = null;
+              }, 2800);
               scene.shakeNow(0.6);
+            } else if (e.type === 'nogoal') {
+              banner = {
+                title: 'SEM GOL',
+                sub: 'Ninguém tocou na bola: a bola volta ao centro',
+                team: -1,
+                id: feedId++,
+              };
+              window.clearTimeout(bannerTimer);
+              bannerTimer = window.setTimeout(() => {
+                banner = null;
+              }, 2800);
             } else if (e.type === 'warn') {
               warn = e.left >= 60 ? `Faltam ${Math.round(e.left / 60)} min` : 'Falta 1 minuto';
               window.clearTimeout(warnTimer);
@@ -258,6 +283,7 @@ export function BolaPlay({
           warn,
           winner: world.winner,
           ballCam,
+          banner,
         });
       }
       raf = requestAnimationFrame(frame);
@@ -266,6 +292,7 @@ export function BolaPlay({
     return () => {
       cancelAnimationFrame(raf);
       window.clearTimeout(warnTimer);
+      window.clearTimeout(bannerTimer);
       window.removeEventListener('keydown', onKey);
       ro.disconnect();
       controls.detach();
@@ -308,12 +335,31 @@ export function BolaPlay({
             </span>
           ))}
         </div>
-        <div className="dsm-pill bola-clock">{hud.golden ? 'Gol de ouro' : fmt(hud.clock)}</div>
+        <div className="bola-clock" role="timer" aria-label="Tempo de jogo">
+          {fmt(hud.clock)}
+          {hud.golden && <small>Gol de ouro</small>}
+        </div>
         <button type="button" className="dsm-exit" onClick={onExit}>
           Sair
         </button>
       </div>
-      {hud.warn && <div className="dsm-note">{hud.warn}</div>}
+      {hud.banner && (
+        <div
+          key={hud.banner.id}
+          className="bola-banner"
+          role="status"
+          style={{
+            borderColor:
+              hud.banner.team >= 0
+                ? `#${(BOL_TEAM_COLORS[hud.banner.team] as number).toString(16).padStart(6, '0')}`
+                : '#1b1535',
+          }}
+        >
+          <strong>{hud.banner.title}</strong>
+          <span>{hud.banner.sub}</span>
+        </div>
+      )}
+      {hud.warn && <div className="dsm-note bola-warn">{hud.warn}</div>}
       <ul className="bola-feed" aria-live="polite">
         {hud.feed.map((f) => (
           <li

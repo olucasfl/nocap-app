@@ -86,7 +86,7 @@ export function buildField(teams: number, perTeam: number): BolField {
   let pts: Pt[];
   let goalOf: (i: number) => number;
   if (n === 3) {
-    const apothem = 10 + 2.6 * k;
+    const apothem = 14 + 3.4 * k;
     const radius = apothem / Math.cos(Math.PI / 6);
     pts = Array.from({ length: 6 }, (_, i) => {
       const a = Math.PI / 6 + (i * Math.PI) / 3;
@@ -94,9 +94,9 @@ export function buildField(teams: number, perTeam: number): BolField {
     });
     goalOf = (i) => (i % 2 === 0 ? i / 2 : -1);
   } else {
-    const hx = n === 2 ? 11 + 3.6 * k : 11 + 2.4 * k;
-    const hz = n === 2 ? 7.5 + 2.4 * k : hx;
-    const c = n === 2 ? 3.2 : 4.5;
+    const hx = n === 2 ? 16 + 4.5 * k : 15 + 3.2 * k;
+    const hz = n === 2 ? 10 + 3 * k : hx;
+    const c = n === 2 ? 4.5 : 6;
     pts = [
       [hx, -(hz - c)],
       [hx, hz - c],
@@ -115,7 +115,7 @@ export function buildField(teams: number, perTeam: number): BolField {
   const goals: BolGoal[] = [];
   for (const e of edges) {
     if (e.goal < 0) continue;
-    const width = Math.min(6 + 0.8 * k, 0.62 * e.len);
+    const width = Math.min(7 + 1 * k, 0.62 * e.len);
     goals[e.goal] = {
       team: e.goal,
       edge: e,

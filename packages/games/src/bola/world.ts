@@ -9,6 +9,9 @@ import {
   BOL_COUNTDOWN,
   BOL_DURATION,
   BOL_FLIP_KICK,
+  BOL_FLIP_KICK_CARRY,
+  BOL_BOUNCE_GRIP,
+  BOL_ROLL_DECEL,
   BOL_FLIP_KICK_LIFT,
   BOL_FLIP_LIFT,
   BOL_FLIP_REACH,
@@ -99,7 +102,17 @@ export type BolEvent =
   | { type: 'kick'; id: string }
   | { type: 'bounce'; power: number }
   | { type: 'wall'; power: number }
-  | { type: 'goal'; goalTeam: number; scorerId: string | null; scorerTeam: number; own: boolean }
+  /** `noTouch`: ninguém tocou na bola; com 2 times o gol vai para o outro time (gol contra do dono do gol). */
+  | {
+      type: 'goal';
+      goalTeam: number;
+      scorerId: string | null;
+      scorerTeam: number;
+      own: boolean;
+      noTouch: boolean;
+    }
+  /** Sem toque e com 3 ou 4 times não há como decidir: ninguém pontua e a bola volta ao centro. */
+  | { type: 'nogoal'; goalTeam: number }
   | { type: 'start'; golden: boolean }
   | { type: 'warn'; left: number }
   | { type: 'golden' }
@@ -454,10 +467,20 @@ export class BolWorld {
 
   private moveBall(h: number): void {
     const b = this.ball;
-    const onGround = b.y <= BOL_BALL_R + 0.02;
-    const drag = Math.exp(-(onGround ? BOL_ROLL_DRAG : BOL_AIR_DRAG) * h);
-    b.vx *= drag;
-    b.vz *= drag;
+    const rolling = b.y <= BOL_BALL_R + 0.02 && Math.abs(b.vy) < 0.5;
+    if (rolling) {
+      // rolando no chão: freio proporcional mais um freio fixo, para a bola parar de verdade
+      const sp = Math.hypot(b.vx, b.vz);
+      if (sp > 0) {
+        const k = Math.max(0, sp - (BOL_ROLL_DRAG * sp + BOL_ROLL_DECEL) * h) / sp;
+        b.vx *= k;
+        b.vz *= k;
+      }
+    } else {
+      const drag = Math.exp(-BOL_AIR_DRAG * h);
+      b.vx *= drag;
+      b.vz *= drag;
+    }
     b.vy -= BOL_GRAVITY * h;
     b.x += b.vx * h;
     b.y += b.vy * h;
@@ -465,7 +488,11 @@ export class BolWorld {
     if (b.y < BOL_BALL_R) {
       b.y = BOL_BALL_R;
       if (b.vy < 0) {
-        if (-b.vy > 4) this.events.push({ type: 'bounce', power: -b.vy });
+        if (-b.vy > 4) {
+          this.events.push({ type: 'bounce', power: -b.vy });
+          b.vx *= BOL_BOUNCE_GRIP;
+          b.vz *= BOL_BOUNCE_GRIP;
+        }
         b.vy = -b.vy * BOL_FLOOR_E;
         if (b.vy < 1.2) b.vy = 0;
       }
@@ -538,17 +565,32 @@ export class BolWorld {
     return false;
   }
 
-  /** O gol vale para o time de quem tocou por último, mesmo se a bola entrou no gol dele (spec 046, seção 4.2). */
+  /**
+   * O gol vale para o time de quem tocou por último, mesmo se a bola entrou no gol dele (spec 046, seção 4.2). Sem toque:
+   * com 2 times o gol vai para o outro time (gol contra do dono do gol); com 3 ou 4 não dá para decidir, então ninguém
+   * pontua e a bola volta ao centro com a contagem.
+   */
   private scoreGoal(goalTeam: number): void {
     const t = this.lastTouch;
-    const scorerTeam = t ? t.team : -1;
-    if (scorerTeam >= 0) this.scores[scorerTeam] = (this.scores[scorerTeam] ?? 0) + 1;
+    let scorerTeam = t ? t.team : -1;
+    let noTouch = false;
+    if (!t) {
+      if (this.field.teams > 2) {
+        this.events.push({ type: 'nogoal', goalTeam });
+        this.kickoff();
+        return;
+      }
+      scorerTeam = 1 - goalTeam;
+      noTouch = true;
+    }
+    this.scores[scorerTeam] = (this.scores[scorerTeam] ?? 0) + 1;
     this.events.push({
       type: 'goal',
       goalTeam,
       scorerId: t ? t.id : null,
       scorerTeam,
-      own: scorerTeam === goalTeam,
+      own: scorerTeam === goalTeam || noTouch,
+      noTouch,
     });
     if (this.golden) {
       this.finish(scorerTeam);
@@ -596,9 +638,14 @@ export class BolWorld {
     if (flipping) {
       // o mortal que encosta na bola chuta: uma vez por mortal
       p.flipHit = true;
-      b.vx += p.flipDx * BOL_FLIP_KICK;
-      b.vz += p.flipDz * BOL_FLIP_KICK;
-      b.vy += BOL_FLIP_KICK_LIFT;
+      // o chute leva a bola, no mínimo, à velocidade do mortal (sem somar em cima de um contato já forte)
+      const along = b.vx * p.flipDx + b.vz * p.flipDz;
+      const want = BOL_FLIP_KICK + Math.hypot(p.vx, p.vz) * BOL_FLIP_KICK_CARRY;
+      if (along < want) {
+        b.vx += p.flipDx * (want - along);
+        b.vz += p.flipDz * (want - along);
+      }
+      b.vy = Math.max(b.vy, BOL_FLIP_KICK_LIFT);
       touched = true;
       power = Math.max(power, BOL_FLIP_KICK);
       this.events.push({ type: 'kick', id: p.id });

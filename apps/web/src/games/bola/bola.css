@@ -17,12 +17,67 @@
   text-shadow: 0 2px 0 #1b1535;
 }
 .bola-clock {
-  margin: 0 auto;
+  position: absolute;
+  left: 50%;
+  top: max(8px, env(safe-area-inset-top));
+  transform: translateX(-50%);
+  padding: 6px 28px;
+  border: 4px solid #1b1535;
+  border-radius: 16px;
+  background: #fff;
+  color: #1b1535;
+  box-shadow: 0 4px 0 #1b1535;
+  font: 900 40px/1 var(--font-display, system-ui);
+  letter-spacing: 0.02em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+.bola-clock small {
+  display: block;
+  margin-top: 4px;
+  color: #c2410c;
+  font: 800 12px var(--font-display, system-ui);
+  text-transform: uppercase;
+}
+.bola-banner {
+  position: absolute;
+  left: 50%;
+  top: 24%;
+  transform: translateX(-50%);
+  display: grid;
+  gap: 6px;
+  max-width: 92%;
+  padding: 14px 28px;
+  border: 5px solid #1b1535;
+  border-radius: 18px;
+  background: #fff;
+  color: #1b1535;
+  text-align: center;
+  box-shadow: 0 6px 0 #1b1535;
+  pointer-events: none;
+  animation: bola-pop 0.35s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+.bola-banner strong {
+  font: 900 clamp(26px, 6vw, 48px) / 1 var(--font-display, system-ui);
+  text-transform: uppercase;
+}
+.bola-banner span {
+  font: 700 clamp(13px, 2.4vw, 18px) var(--font-display, system-ui);
+}
+@keyframes bola-pop {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.7);
+  }
+}
+.bola-warn {
+  top: 76px;
 }
 .bola-feed {
   position: absolute;
   left: 50%;
-  top: 64px;
+  top: 78px;
   transform: translateX(-50%);
   display: grid;
   gap: 6px;
@@ -81,7 +136,8 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .bola-feed li {
+  .bola-feed li,
+  .bola-banner {
     animation: none;
   }
 }

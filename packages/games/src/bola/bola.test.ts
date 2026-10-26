@@ -210,6 +210,50 @@ describe('bola e toque', () => {
   });
 });
 
+describe('física da bola', () => {
+  it('rolando no chão ela desacelera até parar, sem rolar para sempre', () => {
+    const w = new BolWorld(roster(2, 1), { teams: 2, perTeam: 1 });
+    startPlay(w);
+    Object.assign(w.ball, { x: -5, z: 0, vx: 10, vy: 0, vz: 0 });
+    const v = [] as number[];
+    for (let i = 0; i < 60 * 12; i++) {
+      w.step(BOL_DT);
+      if (i % 60 === 59) v.push(Math.hypot(w.ball.vx, w.ball.vz));
+    }
+    expect(v[1]!).toBeLessThan(v[0]!);
+    expect(v[2]!).toBeLessThan(v[1]!);
+    expect(v[11]!).toBeLessThan(0.5);
+  });
+
+  it('quica cada vez menos até assentar no chão', () => {
+    const w = new BolWorld(roster(2, 1), { teams: 2, perTeam: 1 });
+    startPlay(w);
+    Object.assign(w.ball, { x: 0, y: 8, z: 0, vx: 0, vy: 0, vz: 0 });
+    let top = 0;
+    let bounces = 0;
+    let prev = 0;
+    for (let i = 0; i < 60 * 8; i++) {
+      w.step(BOL_DT);
+      if (w.ball.vy > 0 && prev <= 0) bounces++;
+      prev = w.ball.vy;
+      if (i > 60 * 6) top = Math.max(top, w.ball.y);
+    }
+    expect(bounces).toBeGreaterThan(1);
+    expect(top).toBeLessThan(BOL_BALL_R + 0.2);
+  });
+
+  it('andar na bola a empurra um pouco à frente da raposa, sem disparar', () => {
+    const w = new BolWorld(roster(2, 1), { teams: 2, perTeam: 1 });
+    startPlay(w);
+    const p = w.players[0]!;
+    Object.assign(p, { x: -3, z: 0 });
+    Object.assign(w.ball, { x: 0, y: BOL_BALL_R, z: 0, vx: 0, vy: 0, vz: 0 });
+    run(w, 0.8, { [p.id]: { mx: 1, mz: 0, jump: false } });
+    expect(w.ball.vx).toBeGreaterThan(7);
+    expect(w.ball.vx).toBeLessThan(12);
+  });
+});
+
 describe('gol', () => {
   const shoot = (w: BolWorld, team: number) => {
     const g = w.field.goals[team]!;
@@ -248,12 +292,32 @@ describe('gol', () => {
     });
   });
 
-  it('sem toque ninguém pontua', () => {
+  it('sem toque e com 2 times: gol contra do dono do gol, ponto para o outro time', () => {
     const w = new BolWorld(roster(2, 1), { teams: 2, perTeam: 1 });
     startPlay(w);
     shoot(w, 1);
     run(w, 0.5);
-    expect(w.scores).toEqual([0, 0]);
+    expect(w.scores).toEqual([1, 0]);
+    expect(w.drainEvents().find((e) => e.type === 'goal')).toMatchObject({
+      goalTeam: 1,
+      scorerTeam: 0,
+      scorerId: null,
+      own: true,
+      noTouch: true,
+    });
+  });
+
+  it('sem toque e com 3 ou 4 times: ninguém pontua e a bola volta ao centro com contagem', () => {
+    for (const teams of [3, 4]) {
+      const w = new BolWorld(roster(teams, 1), { teams, perTeam: 1 });
+      startPlay(w);
+      shoot(w, 1);
+      run(w, 0.3);
+      expect(w.scores.every((s) => s === 0)).toBe(true);
+      expect(w.drainEvents().some((e) => e.type === 'nogoal')).toBe(true);
+      expect(w.phase).toBe('countdown');
+      expect(w.ball.x).toBe(0);
+    }
   });
 
   it('acima do travessão a bola quica e não é gol', () => {
