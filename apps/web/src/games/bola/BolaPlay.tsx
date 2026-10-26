@@ -237,7 +237,7 @@ export function BolaPlay({
         if (!locked && !uiOpenRef.current) setMenu(true);
       });
     }
-    // a partida começa com a câmera solta; quem quiser prende na bola (E ou o botão)
+    // a partida começa com a câmera solta; quem quiser prende na bola (F ou o botão)
     let ballCam = false;
     let aimed = false;
     let yaw = 0;
@@ -264,10 +264,10 @@ export function BolaPlay({
       if (!ballCam) yaw = camYaw;
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.code === 'KeyE' && !e.repeat) camToggle.current();
+      if (e.code === 'KeyF' && !e.repeat) camToggle.current();
       if (!e.repeat && !world.player(meId)) {
         if (e.code === 'KeyQ' || e.code === 'ArrowLeft') specNav.current(-1);
-        if (e.code === 'KeyR' || e.code === 'ArrowRight') specNav.current(1);
+        if (e.code === 'KeyE' || e.code === 'ArrowRight') specNav.current(1);
         if (e.code === 'KeyB') specNav.current('ball');
       }
       if (e.code === 'Tab') {
@@ -864,7 +864,7 @@ export function BolaPlay({
         const pressed = input.jump;
         if (input.jump) jumpUntil = now + JUMP_BUFFER_MS;
         input.jump = false;
-        // a câmera começa solta (mouse gira); E prende na bola
+        // a câmera começa solta (mouse gira); F prende na bola
         const manual = controls.takeYaw(dt) + turnKick;
         turnKick = 0;
         const manualPitch = controls.takePitch();
@@ -1137,7 +1137,7 @@ export function BolaPlay({
           </button>
           <span className="bola-spec-name">
             {spec.id === 'ball' ? 'Bola' : spec.name}
-            <kbd aria-hidden="true">Q / R</kbd>
+            <kbd aria-hidden="true">Q / E</kbd>
           </span>
           <button type="button" onClick={() => specNav.current(1)} aria-label="Próximo jogador">
             ›
@@ -1172,7 +1172,7 @@ export function BolaPlay({
             onClick={() => camToggle.current()}
             aria-pressed={!hud.ballCam}
           >
-            <kbd aria-hidden="true">E</kbd>
+            <kbd aria-hidden="true">F</kbd>
             {hud.ballCam ? 'Câmera na bola' : 'Câmera livre'}
           </button>
         </>

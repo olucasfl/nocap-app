@@ -50,7 +50,7 @@ export function BolaMenu({
         </button>
         <button type="button" className="bola-item" onClick={onCam} disabled={spectating}>
           <span>Câmera: {spectating || !ballCam ? 'livre' : 'na bola'}</span>
-          <kbd className="bola-key">E</kbd>
+          <kbd className="bola-key">F</kbd>
         </button>
         <button type="button" className="bola-item" onClick={onTeams} data-testid="bola-menu-teams">
           <span>Trocar de time</span>

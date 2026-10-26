@@ -178,7 +178,7 @@ Motor em `packages/games/src/desmorona` (mundo determinístico, bots, 11 testes)
 ## Fut Fox (spec 046)
 Fase 1 (motor) pronta em `packages/games/src/bola` (36 testes). Próximo: Fase 2, sala online (`BolaRoomEngine` sobre `ColorRoomEngine`, 15 pessoas, times/espectador, tick de 30 Hz). Física própria, sem biblioteca. Sem ranking.
 
-MVP offline do Fut Fox (26/10/2026): `pnpm dev` e abra `http://localhost:5173/fox-cap/bola` (Fox Cap! > Fut Fox > Treino). Web em `apps/web/src/games/bola` (`BolaScene` three, `BolaPlay` roda o `BolWorld` no aparelho, `BolaPage` menu). Você é o time vermelho, o resto são bots; E troca a câmera (na bola/livre). Falta: sala online (Fase 2), lobby de times, som, mortal mais visível.
+MVP offline do Fut Fox (26/10/2026): `pnpm dev` e abra `http://localhost:5173/fox-cap/bola` (Fox Cap! > Fut Fox > Treino). Web em `apps/web/src/games/bola` (`BolaScene` three, `BolaPlay` roda o `BolWorld` no aparelho, `BolaPage` menu). Você é o time vermelho, o resto são bots; F prende ou solta a câmera (na bola/livre); espectador troca com Q e E. Falta: sala online (Fase 2), lobby de times, som, mortal mais visível.
 
 Fut Fox Fase 2 (sala online) pronta em 26/10/2026: `apps/api/src/rooms/bola-room.engine.ts` + `BolaRoom` em `color.room.ts` (registrada como `bola` no `main.ts`), 18 testes do motor da sala e 1 de integração com Colyseus. Próximo: web online (cena lendo `bs`, previsão da própria raposa, lobby de times, espectador).
 

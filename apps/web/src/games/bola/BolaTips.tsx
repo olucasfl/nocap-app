@@ -39,7 +39,7 @@ export function BolaTips({ touch }: { touch: boolean }) {
         ['W A S D', 'Mover a raposa'],
         ['Espaço', 'Pular; de novo no ar, pulo duplo'],
         ['Espaço 2x', 'Com uma direção apertada vira o mortal que chuta a bola'],
-        ['E', 'Prende a câmera na bola ou solta'],
+        ['F', 'Prende a câmera na bola ou solta'],
         ['Tab', 'Segure para ver as estatísticas'],
         ['Esc', 'Configurações (times, espectar, sair)'],
       ];

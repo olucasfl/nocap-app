@@ -89,8 +89,9 @@ export function BolaPage() {
               />
             </div>
             <HubNote>
-              Computador: W A S D, Espaço para pular (duas vezes para o mortal) e E para trocar a
-              câmera (na bola ou livre). Celular: joystick, botão Pular e botão da câmera.
+              Computador: W A S D, Espaço para pular (duas vezes para o mortal) e F para prender ou
+              soltar a câmera na bola. Espectando: Q e E trocam quem acompanhar e B segue a bola.
+              Celular: joystick, botão Pular e botão da câmera.
             </HubNote>
           </>
         ) : (
