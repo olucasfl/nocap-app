@@ -4,11 +4,8 @@ import {
   createRouter,
   lazyRouteComponent,
   Outlet,
-  useRouterState,
 } from '@tanstack/react-router';
-import { useEffect } from 'react';
 import { BottomNav } from '@/components/BottomNav';
-import { rememberGame } from '@/lib/last-game';
 import type { GameTab } from '@/components/GameTabs';
 import { LoadFailed } from '@/components/LoadFailed';
 import { PageLoader } from '@/components/Loader';
@@ -30,17 +27,9 @@ import { Profile } from '@/screens/Profile';
 import { Rankings } from '@/screens/Rankings';
 import { Register } from '@/screens/Register';
 
-/** Guarda o último jogo aberto, para o "Continuar" do Hub. */
-function RememberGame() {
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
-  useEffect(() => rememberGame(pathname), [pathname]);
-  return null;
-}
-
 const rootRoute = createRootRoute({
   component: () => (
     <>
-      <RememberGame />
       <NetworkStatus />
       <Outlet />
       <InviteBanner />

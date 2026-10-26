@@ -56,7 +56,11 @@ function Podium({ top, ...score }: { top: RankingEntry[] } & ScoreProps) {
     <ol className="rkp-podium" aria-label="Pódio">
       {order.map((e, i) =>
         e ? (
-          <li key={e.username} className={`rkp-pod p${e.rank}${e.isMe ? ' me' : ''}`} style={{ '--i': i } as React.CSSProperties}>
+          <li
+            key={e.username}
+            className={`rkp-pod p${e.rank}${e.isMe ? ' me' : ''}`}
+            style={{ '--i': i } as React.CSSProperties}
+          >
             {e.rank === 1 && <Crown size={28} aria-hidden="true" />}
             <span className="rkp-avatar" aria-hidden="true">
               {e.username.charAt(0).toUpperCase()}
@@ -83,7 +87,11 @@ function Rows({ rows, ...score }: { rows: RankingEntry[] } & ScoreProps) {
   return (
     <ol className="rkp-list" start={4}>
       {rows.map((e, i) => (
-        <li key={e.username} className={`rkp-row${e.isMe ? ' me' : ''}`} style={{ '--i': Math.min(i, 12) } as React.CSSProperties}>
+        <li
+          key={e.username}
+          className={`rkp-row${e.isMe ? ' me' : ''}`}
+          style={{ '--i': Math.min(i, 12) } as React.CSSProperties}
+        >
           <span className="rkp-pos">{e.rank}</span>
           <span className="rkp-avatar sm" aria-hidden="true">
             {e.username.charAt(0).toUpperCase()}
@@ -153,7 +161,16 @@ export function Rankings() {
   const search = route.useSearch();
   const navigate = useNavigate();
   if (!search.jogo) {
-    return <GamePicker onPick={(g) => void navigate({ to: '/ranking', search: { ...search, jogo: g, modo: undefined, periodo: undefined } })} />;
+    return (
+      <GamePicker
+        onPick={(g) =>
+          void navigate({
+            to: '/ranking',
+            search: { ...search, jogo: g, modo: undefined, periodo: undefined },
+          })
+        }
+      />
+    );
   }
   return <RankingView game={search.jogo} />;
 }
@@ -162,6 +179,7 @@ function RankingView({ game }: { game: Game }) {
   const search = route.useSearch();
   const navigate = useNavigate();
   const user = useAuth((s) => s.user);
+  const authStatus = useAuth((s) => s.status);
 
   const board: Board = search.modo ?? boardChoices(game)[0]!.id;
   const period: Period = search.periodo ?? defaultPeriod(board);
@@ -173,7 +191,10 @@ function RankingView({ game }: { game: Game }) {
     void navigate({ to: '/ranking', search: { ...search, ...patch }, replace: true });
 
   const changeGame = () =>
-    void navigate({ to: '/ranking', search: { ...search, jogo: undefined, modo: undefined, periodo: undefined, quem: undefined } });
+    void navigate({
+      to: '/ranking',
+      search: { ...search, jogo: undefined, modo: undefined, periodo: undefined, quem: undefined },
+    });
 
   const query = useQuery({
     queryKey: ['ranking', game, board, period, scope, user?.id ?? null],
@@ -230,7 +251,13 @@ function RankingView({ game }: { game: Game }) {
           <b>{GAME_LABEL[game]}</b>
           <span className="rkp-chip mono">{boardLabel}</span>
         </div>
-        <button type="button" className="rkp-switch" data-sfx="select" data-testid="change-game" onClick={changeGame}>
+        <button
+          type="button"
+          className="rkp-switch"
+          data-sfx="select"
+          data-testid="change-game"
+          onClick={changeGame}
+        >
           <span aria-hidden="true">‹</span> Trocar de jogo
         </button>
       </section>
@@ -288,10 +315,22 @@ function RankingView({ game }: { game: Game }) {
           </div>
           {user && (
             <div className="rkp-seg who" role="radiogroup" aria-label="Quem aparece">
-              <button type="button" role="radio" data-sfx="select" aria-checked={scope === 'all'} onClick={() => go({ quem: undefined })}>
+              <button
+                type="button"
+                role="radio"
+                data-sfx="select"
+                aria-checked={scope === 'all'}
+                onClick={() => go({ quem: undefined })}
+              >
                 Todos
               </button>
-              <button type="button" role="radio" data-sfx="select" aria-checked={scope === 'friends'} onClick={() => go({ quem: 'friends' })}>
+              <button
+                type="button"
+                role="radio"
+                data-sfx="select"
+                aria-checked={scope === 'friends'}
+                onClick={() => go({ quem: 'friends' })}
+              >
                 Amigos
               </button>
             </div>
@@ -328,14 +367,15 @@ function RankingView({ game }: { game: Game }) {
       {entries.length > 0 && (
         <section className="rkp-board" aria-label="Classificação">
           <h2 className="rkp-h">
-            Classificação <small className="mono">{query.data?.total ?? entries.length} NO TOTAL</small>
+            Classificação{' '}
+            <small className="mono">{query.data?.total ?? entries.length} NO TOTAL</small>
           </h2>
           <Podium top={entries.slice(0, 3)} {...score} />
           {rest.length > 0 && <Rows rows={rest} {...score} />}
         </section>
       )}
 
-      {query.isSuccess && !user && (
+      {query.isSuccess && !user && authStatus === 'ready' && (
         <p className="rkp-guest">
           O ranking é só de quem tem conta.{' '}
           <Link to="/criar-conta" className="rp-link">
@@ -347,7 +387,11 @@ function RankingView({ game }: { game: Game }) {
 
       {/* 4. Sua posição, fixa embaixo */}
       {user && query.isSuccess && me && (
-        <aside className={`rkp-me${me.rank === 1 ? ' first' : ''}`} aria-label="Sua posição" data-testid="my-rank">
+        <aside
+          className={`rkp-me${me.rank === 1 ? ' first' : ''}`}
+          aria-label="Sua posição"
+          data-testid="my-rank"
+        >
           <span className="rkp-me-pos">{me.rank}º</span>
           <span className="rkp-me-body">
             <b>
@@ -371,7 +415,6 @@ function RankingView({ game }: { game: Game }) {
           </Link>
         </aside>
       )}
-
     </main>
   );
 }

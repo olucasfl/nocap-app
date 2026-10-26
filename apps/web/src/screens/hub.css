@@ -306,382 +306,84 @@ a.hub-daily {
   color: var(--muted);
 }
 
-/* chips dos Dailys de hoje */
-.hz-chips {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-.hz-chip {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 10px;
-  padding: 10px 12px;
-  border: var(--border);
-  border-radius: 14px;
-  background: var(--white);
-  color: var(--ink);
-  box-shadow: 3px 3px 0 var(--ink);
-  text-decoration: none;
-  transition:
-    transform 0.08s ease-out,
-    box-shadow 0.08s ease-out;
-  animation: hub-in 0.38s cubic-bezier(0.2, 1.3, 0.4, 1) 0.12s both;
-}
-.hz-chip:active {
-  transform: translate(3px, 3px);
-  box-shadow: 0 0 0 var(--ink);
-}
-.hz-prog {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 1fr;
-  gap: 6px;
-}
-.hz-prog i {
-  height: 10px;
-  border: 2.5px solid var(--ink);
-  border-radius: 999px;
-  background: var(--white);
-}
-.hz-prog i.on {
-  background: var(--green);
-}
-.hz-chip-mark {
-  position: relative;
-  flex: none;
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  border: 2.5px solid var(--ink);
-  border-radius: 50%;
-  background: var(--orange);
-  color: var(--on-accent);
-}
-.hz-chip-mark svg {
-  width: 14px;
-  height: 14px;
-}
-.hz-chip.todo .hz-chip-mark::after {
-  content: '';
-  position: absolute;
-  inset: -6px;
-  border: 2px solid var(--orange);
-  border-radius: 50%;
-  animation: hz-ping 1.8s ease-out infinite;
-}
-.hz-chip.done .hz-chip-mark {
-  background: var(--green);
-}
-.hz-chip-body {
-  display: grid;
-  gap: 2px;
-  min-width: 0;
-  flex: 1 1 calc(100% - 44px);
-}
-.hz-chip-body b {
-  font: 900 15px var(--font-display);
-  text-transform: uppercase;
-  letter-spacing: -0.02em;
-}
-.hz-chip-body small {
-  font-size: 9.5px;
-  color: var(--muted);
-  text-transform: uppercase;
-}
-.hz-chip-go {
-  flex: none;
-  order: 3;
-  padding: 3px 8px;
-  border-radius: 999px;
-  background: var(--party-bg);
-  color: var(--party-fg);
-  font-size: 10px;
-  font-weight: 700;
-}
-.hz-chip.todo {
-  background: var(--yellow);
-  color: var(--on-accent);
-}
-.hz-chip.todo small {
-  color: var(--on-accent);
-}
-.hz-chip.done {
-  background: var(--paper);
-  box-shadow: 2px 2px 0 var(--ink);
-}
-.hz-chip.done b {
-  opacity: 0.7;
-}
-@keyframes hz-ping {
-  0% {
-    transform: scale(0.6);
-    opacity: 0.9;
-  }
-  100% {
-    transform: scale(1.4);
-    opacity: 0;
-  }
-}
-
-/* continuar */
-.hz-resume {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  border: var(--border);
-  border-radius: 18px;
-  background: var(--party-bg);
-  color: var(--party-fg);
-  box-shadow: 5px 5px 0 var(--orange);
-  text-decoration: none;
-  transition:
-    transform 0.08s ease-out,
-    box-shadow 0.08s ease-out;
-  animation: hub-in 0.38s cubic-bezier(0.2, 1.3, 0.4, 1) 0.18s both;
-}
-.hz-resume:active {
-  transform: translate(5px, 5px);
-  box-shadow: 0 0 0 var(--orange);
-}
-.hz-resume b {
-  display: block;
-  font: 900 18px var(--font-display);
-  text-transform: uppercase;
-}
-.hz-resume small {
-  font-size: 10.5px;
-  opacity: 0.8;
-}
-.hz-resume i {
-  font: 900 20px var(--font-display);
-  font-style: normal;
-}
-.hz-resume-icon {
-  width: 40px;
-  height: 40px;
-  display: grid;
-  place-items: center;
-  border: 2.5px solid var(--party-fg);
-  border-radius: 50%;
-  background: var(--orange);
-  color: var(--on-accent);
-  font-size: 14px;
-}
-
-/* grades dos jogos */
-.hz-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-.hz-grid.one {
-  grid-template-columns: 1fr;
-}
-/* O cartão é uma coluna: a arte pega o espaço que sobra e o rodapé (nome + linhas) fica no fluxo, embaixo.
-   Assim, nome ou linha que quebra em tela estreita empurra a arte em vez de ficar por cima dela. */
-.hz .hub-card {
-  display: flex;
-  flex-direction: column;
+/* Dailys de hoje, discretos (spec 045): quatro pílulas pequenas, sem cartões amarelos nem barra de progresso. */
+.hz-daily {
   gap: 8px;
-  height: auto;
-  min-height: 206px;
-  padding: 12px;
 }
-.hz .hub-card .hub-card-foot {
-  position: static;
-  flex: none;
-  min-width: 0;
-  transform: none;
+.hz-daily .hz-h {
+  font-size: 15px;
 }
-.hz .hub-card .hub-art {
-  position: relative;
-  inset: auto;
-  flex: 1 1 auto;
-  min-height: 96px;
-  width: auto;
+.hz-pills {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
 }
-.hz .hub-card .hub-art .ha {
-  transform: none;
-}
-.hz .hub-card-name {
-  font-size: clamp(22px, 6vw, 28px);
-}
-.hz .hub-card-name.mid {
-  font-size: clamp(21px, 5.6vw, 25px);
-}
-.hz .hub-card-name.long {
-  font-size: clamp(18px, 4.8vw, 21px);
-}
-.hz .hub-card-meta {
-  font-size: 10.5px;
-}
-/* cartão largo: arte à esquerda, texto à direita (o selo NOVO tem espaço próprio no topo) */
-.hz .hub-card.wide {
-  flex-direction: row;
+.hz-pill {
+  display: flex;
   align-items: center;
-  gap: 12px;
-  min-height: 168px;
-  padding: 14px;
-}
-.hz .hub-card.wide .hub-art {
-  flex: 0 0 42%;
-  align-self: stretch;
-  min-height: 120px;
-}
-.hz .hub-card.wide .hub-card-foot {
-  flex: 1 1 0;
-  padding-top: 18px;
-}
-.hz .hub-card.wide .hub-card-name {
-  font-size: clamp(26px, 7vw, 36px);
-}
-.hz-badge {
-  position: absolute;
-  right: 12px;
-  top: 12px;
-  z-index: 2;
-  padding: 3px 9px;
-  border: 2.5px solid var(--ink);
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 2px solid var(--ink);
   border-radius: 999px;
-  background: var(--paper);
+  background: transparent;
   color: var(--ink);
-  font-size: 9.5px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  font: 800 13px var(--font-display);
+  text-decoration: none;
 }
-.hz .hub-card,
-.hz .hub-more {
-  animation-delay: 0.24s;
+.hz-pill:active {
+  transform: translateY(1px);
 }
-
-@media (min-width: 768px) {
-  .hz {
-    gap: 28px;
-  }
-  .hz-chips {
+.hz-pill-dot {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+}
+.hz-pill-dot svg {
+  width: 12px;
+  height: 12px;
+}
+.hz-pill.done {
+  opacity: 0.6;
+}
+.hz-pill.done .hz-pill-dot {
+  background: var(--green);
+  color: var(--on-accent);
+}
+.hz-pill.loading .hz-pill-dot {
+  border-style: dashed;
+  opacity: 0.4;
+}
+@media (min-width: 640px) {
+  .hz-pills {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
-  .hz-grid {
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 16px;
-  }
-  .hz .hub-card {
-    min-height: 250px;
-    padding: 16px;
-  }
-  .hz .hub-card.wide {
-    min-height: 200px;
-  }
 }
-@media (min-width: 1100px) {
-  .hz .hub-card {
-    min-height: 270px;
+
+/* Carregando a conta: uma barrinha apagada no lugar do recorde (nunca o aviso "só com conta") */
+.hub-card-meta.skel {
+  width: 70%;
+  height: 10px;
+  margin-top: 4px;
+  border-radius: 5px;
+  background: currentColor;
+  opacity: 0.22;
+  animation: hz-skel 1.1s ease-in-out infinite alternate;
+}
+@keyframes hz-skel {
+  from {
+    opacity: 0.12;
   }
-  .hz .hub-card-name {
-    font-size: 28px;
-  }
-  .hz .hub-card-name.long {
-    font-size: 22px;
-  }
-  .hz .hub-card.wide {
-    min-height: 210px;
-  }
-  .hz .hub-card.wide .hub-card-name {
-    font-size: 40px;
+  to {
+    opacity: 0.3;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .hz-hello,
-  .hz-chip,
-  .hz-resume,
-  .hz-chip-mark::after {
-    animation: none !important;
+  .hub-card-meta.skel {
+    animation: none;
   }
-}
-
-/* Celular: o primeiro cartão de uma faixa de 3 ocupa a linha toda (assim não sobra um cartão sozinho) */
-@media (max-width: 767px) {
-  .hz-grid:not(.one) > .hub-card:first-child:nth-last-child(3) {
-    grid-column: 1 / -1;
-    flex-direction: row;
-    align-items: center;
-    gap: 12px;
-    min-height: 160px;
-  }
-  .hz-grid:not(.one) > .hub-card:first-child:nth-last-child(3) .hub-art {
-    flex: 0 0 46%;
-    align-self: stretch;
-    min-height: 110px;
-  }
-  .hz-grid:not(.one) > .hub-card:first-child:nth-last-child(3) .hub-card-foot {
-    flex: 1 1 0;
-  }
-}
-
-/* O botão JOGAR fica numa linha própria, alinhado ao texto (cabe em qualquer largura de cartão). */
-.hz-chip-go {
-  margin-left: 36px;
-}
-
-
-/* Celular estreito: o nome do daily (Mesmíssima) encolhe para caber no cartão em vez de ser cortado */
-.hz-chip-body b {
-  font-size: clamp(11.5px, 3.9vw, 15px);
-  overflow-wrap: anywhere;
-}
-@media (max-width: 340px) {
-  .hz-chip {
-    gap: 6px;
-    padding-left: 8px;
-    padding-right: 8px;
-  }
-  .hz-chip-go {
-    margin-left: 32px;
-  }
-}
-
-
-/* "Continuar de onde parou" (spec 045): um atalho para o último jogo aberto. */
-.hz-resume {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  grid-template-areas: 'label go' 'name go';
-  align-items: center;
-  gap: 2px 12px;
-  padding: 12px 16px;
-  border: var(--border);
-  border-radius: var(--radius-lg);
-  background: var(--ink);
-  color: var(--paper);
-  box-shadow: 4px 4px 0 var(--orange);
-  text-decoration: none;
-}
-.hz-resume .mono {
-  grid-area: label;
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  opacity: 0.75;
-}
-.hz-resume b {
-  grid-area: name;
-  font: 900 24px/1.1 var(--font-display);
-  text-transform: uppercase;
-}
-.hz-resume-go {
-  grid-area: go;
-  padding: 10px 18px;
-  border-radius: 10px;
-  background: var(--orange);
-  color: var(--on-accent);
-  font: 900 15px var(--font-display);
-  text-transform: uppercase;
-}
-.hz-resume:focus-visible {
-  outline: 3px solid var(--blue);
-  outline-offset: 3px;
 }

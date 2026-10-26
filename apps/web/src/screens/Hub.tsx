@@ -1,5 +1,4 @@
 import { useApertaAllowed } from '@/lib/aperta-access';
-import { lastGame } from '@/lib/last-game';
 import { ApertaArt, FoxCapArt, BlocksArt, ColorArt, EcoArt, TimeArt } from '@/components/HubArt';
 import { Link } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
@@ -11,7 +10,6 @@ import { ThemeButton } from '@/components/ThemeButton';
 import { useAuth } from '@/lib/auth';
 import {
   bestTenths,
-  dailyScoreText,
   fetchStats,
   formatBest,
   streakLabel,
@@ -21,23 +19,23 @@ import {
 import './hub.css';
 
 /** Recorde do modo Clássico do jogo (os outros modos mostram o recorde na ficha de cada um). */
-function bestLabel(stats: Stats | undefined, game: GameId): string {
-  if (!stats) return 'JOGUE SEM CONTA';
+function bestLabel(stats: Stats | undefined, game: GameId): string | null {
+  if (!stats) return null;
   const best = bestTenths(stats, game, 'classic');
   if (best <= 0) return 'SEM RECORDE NO CLÁSSICO';
   return `RECORDE CLÁSSICO ${formatBest(game, 'classic', best)}`;
 }
 
 /** O recorde do Atravessa!: o da conta (sem conta não há recorde). */
-function atravessaBestLabel(stats: Stats | undefined): string {
-  if (!stats) return 'JOGUE SEM CONTA';
+function atravessaBestLabel(stats: Stats | undefined): string | null {
+  if (!stats) return null;
   const rows = Math.floor(bestTenths(stats, 'atravessa', 'infinito') / 10);
   return rows > 0 ? `RECORDE ${rows} LINHAS` : 'SEM RECORDE AINDA';
 }
 
 /** O recorde do Block's: o da conta (sem conta não há recorde). */
-function blocksBestLabel(stats: Stats | undefined): string {
-  if (!stats) return 'JOGUE SEM CONTA';
+function blocksBestLabel(stats: Stats | undefined): string | null {
+  if (!stats) return null;
   const points = Math.floor(bestTenths(stats, 'blocks', 'classic') / 10);
   return points > 0 ? `RECORDE ${points} PTS` : 'SEM RECORDE AINDA';
 }
@@ -55,31 +53,32 @@ function DailyChip({
   name,
   to,
   stats,
+  loading,
 }: {
   game: GameId;
   name: string;
   to: string;
   stats: Stats | undefined;
+  loading: boolean;
 }) {
-  const info = stats?.daily[game];
-  const done = !!info?.playedToday;
-  const result = done ? dailyScoreText(game, info!.totalScore ?? 0) : null;
-  const state = !stats ? 'guest' : done ? 'done' : 'todo';
+  const done = !!stats?.daily[game]?.playedToday;
+  const state = loading ? 'loading' : !stats ? 'plain' : done ? 'done' : 'todo';
   return (
     <Link
       to={to as '/'}
       search={game === 'wclassic' ? undefined : ({ modo: 'daily' } as never)}
-      className={`hz-chip ${game} ${state}`}
+      className={`hz-pill ${state}`}
       data-sfx="start"
       data-testid={`daily-${game}`}
+      aria-label={`Daily de ${name}${done ? ', feito hoje' : ''}`}
     >
-      <span className="hz-chip-mark" aria-hidden="true">
+      <span className="hz-pill-dot" aria-hidden="true">
         {done && (
           <svg
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            strokeWidth="4"
+            strokeWidth="4.5"
             strokeLinecap="round"
             strokeLinejoin="round"
           >
@@ -87,15 +86,7 @@ function DailyChip({
           </svg>
         )}
       </span>
-      <span className="hz-chip-body">
-        <b>{name}</b>
-        <small className="mono">
-          {state === 'guest' ? 'SÓ COM CONTA' : done ? `FEITO · ${result}` : 'AINDA NÃO FEZ HOJE'}
-        </small>
-      </span>
-      {state !== 'done' && (
-        <span className="hz-chip-go mono">{state === 'todo' ? 'JOGAR' : 'ABRIR'}</span>
-      )}
+      {name}
     </Link>
   );
 }
@@ -110,15 +101,18 @@ function GameCard({
   lines,
   wide = false,
   badge,
+  loading = false,
 }: {
   to: string;
   cls: string;
   art: ReactNode;
   name: string;
   size?: 'mid' | 'long';
-  lines: string[];
+  lines: (string | null)[];
   wide?: boolean;
   badge?: string;
+  /** A conta ainda carrega: no lugar do recorde vai uma barrinha apagada. */
+  loading?: boolean;
 }) {
   return (
     <Link
@@ -131,11 +125,17 @@ function GameCard({
       <div className="hub-art">{art}</div>
       <div className="hub-card-foot">
         <div className={`hub-card-name${size ? ` ${size}` : ''}`}>{name}</div>
-        {lines.map((l) => (
-          <div key={l} className="mono hub-card-meta">
-            {l}
-          </div>
-        ))}
+        {loading ? (
+          <div className="hub-card-meta skel" aria-hidden="true" />
+        ) : (
+          lines
+            .filter((l): l is string => !!l)
+            .map((l) => (
+              <div key={l} className="mono hub-card-meta">
+                {l}
+              </div>
+            ))
+        )}
       </div>
     </Link>
   );
@@ -150,13 +150,13 @@ export function Hub() {
     enabled: !!user,
     retry: false,
   });
+  const authStatus = useAuth((s) => s.status);
   const data = user ? stats.data : undefined;
-  const doneToday = DAILIES.filter((d) => data?.daily[d.game]?.playedToday).length;
+  // a conta (e os números dela) ainda carregando: mostra um carregando, nunca "só com conta"
+  const loading = authStatus === 'loading' || (!!user && stats.isPending);
   const streak = data?.visit.current ?? 0;
   const rawName = user?.name?.trim().split(/\s+/)[0] || user?.username || '';
   const firstName = rawName ? rawName.charAt(0).toUpperCase() + rawName.slice(1).toLowerCase() : '';
-
-  const resume = lastGame();
 
   return (
     <main className="hub hz">
@@ -175,7 +175,9 @@ export function Hub() {
       <section className="hz-hello" aria-label="Resumo">
         <div>
           <h1>{firstName ? `Olá, ${firstName}!` : 'Bora jogar?'}</h1>
-          {!user && <p className="mono">ENTRE PARA GUARDAR RECORDES E DAILYS</p>}
+          {!user && authStatus === 'ready' && (
+            <p className="mono">ENTRE PARA GUARDAR RECORDES E DAILYS</p>
+          )}
         </div>
         {streak > 0 && (
           <span className="hz-streak mono" title="Dias seguidos entrando no NoCap">
@@ -184,44 +186,20 @@ export function Hub() {
         )}
       </section>
 
-      {resume && (
-        <Link to={resume.to} className="hz-resume" data-sfx="start" data-testid="hub-resume">
-          <span className="mono">CONTINUAR DE ONDE PAROU</span>
-          <b>{resume.name}</b>
-          <span className="hz-resume-go" aria-hidden="true">
-            Jogar
-          </span>
-        </Link>
-      )}
-
-      <section className="hz-sec" aria-label="Dailys de hoje">
+      <section className="hz-sec hz-daily" aria-label="Dailys de hoje">
         <h2 className="hz-h">
-          Dailys de hoje{' '}
-          <small className="mono">
-            {data
-              ? doneToday === DAILIES.length
-                ? 'TUDO FEITO. VOLTE AMANHÃ'
-                : `FALTAM ${DAILIES.length - doneToday} DE ${DAILIES.length}`
-              : 'UM POR JOGO, TODO DIA'}
-          </small>
+          Dailys <small className="mono">1 POR JOGO, POR DIA</small>
         </h2>
-        {data && (
-          <div
-            className="hz-prog"
-            role="progressbar"
-            aria-valuemin={0}
-            aria-valuemax={DAILIES.length}
-            aria-valuenow={doneToday}
-            aria-label="Dailys feitos hoje"
-          >
-            {DAILIES.map((d) => (
-              <i key={d.game} className={data.daily[d.game]?.playedToday ? 'on' : ''} />
-            ))}
-          </div>
-        )}
-        <div className="hz-chips">
+        <div className="hz-pills">
           {DAILIES.map((d) => (
-            <DailyChip key={d.game} game={d.game} name={d.name} to={d.to} stats={data} />
+            <DailyChip
+              key={d.game}
+              game={d.game}
+              name={d.name}
+              to={d.to}
+              stats={data}
+              loading={loading}
+            />
           ))}
         </div>
       </section>
@@ -253,6 +231,7 @@ export function Hub() {
             art={<BlocksArt />}
             name="Block's"
             lines={[blocksBestLabel(data)]}
+            loading={loading}
           />
           <GameCard
             to="/fox-cap"
@@ -261,6 +240,7 @@ export function Hub() {
             name="Fox Cap!"
             size="long"
             lines={[atravessaBestLabel(data)]}
+            loading={loading}
             badge="NOVO"
           />
           {/* Em teste: o cartão só aparece para a conta liberada pelo servidor (visitante e outras contas não veem). */}
@@ -288,6 +268,7 @@ export function Hub() {
             name="Mesmíssima"
             size="long"
             lines={[bestLabel(data, 'color')]}
+            loading={loading}
           />
           <GameCard
             to="/tempo"
@@ -296,6 +277,7 @@ export function Hub() {
             name="Já Deu?"
             size="mid"
             lines={[bestLabel(data, 'time')]}
+            loading={loading}
           />
           <GameCard
             to="/eco"
@@ -303,6 +285,7 @@ export function Hub() {
             art={<EcoArt />}
             name="Ecooo"
             lines={[bestLabel(data, 'eco')]}
+            loading={loading}
           />
         </div>
       </section>
