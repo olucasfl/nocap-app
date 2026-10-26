@@ -10,7 +10,8 @@ type Props = {
 };
 
 type LayerVars = CSSProperties & { '--dx': string; '--dy': string; '--dur': string };
-type SkyVars = CSSProperties & Record<'--ap-sky-a' | '--ap-sky-b' | '--ap-sky-c' | '--ap-glow-a' | '--ap-glow-b', string>;
+type SkyVars = CSSProperties &
+  Record<'--ap-sky-a' | '--ap-sky-b' | '--ap-sky-c' | '--ap-glow-a' | '--ap-glow-b', string>;
 
 /** Pontos de uma faixa de rochas/gelo/bolhas, sem aleatoriedade (o render é estável). */
 function scatter(n: number, seed: number) {
@@ -31,10 +32,22 @@ function Node({ node }: { node: RegionNode }) {
   switch (node.t) {
     case 'orb': {
       const { art, x, y, r, o = 1 } = node;
-      return <use href={`#ap-art-${art}`} x={x - r} y={y - r} width={r * 2} height={r * 2} opacity={o} />;
+      return (
+        <use href={`#ap-art-${art}`} x={x - r} y={y - r} width={r * 2} height={r * 2} opacity={o} />
+      );
     }
     case 'circle':
-      return <circle cx={node.cx} cy={node.cy} r={node.r} fill={node.fill} opacity={node.o} stroke={node.stroke} strokeWidth={node.sw} />;
+      return (
+        <circle
+          cx={node.cx}
+          cy={node.cy}
+          r={node.r}
+          fill={node.fill}
+          opacity={node.o}
+          stroke={node.stroke}
+          strokeWidth={node.sw}
+        />
+      );
     case 'ellipse':
       return (
         <ellipse
@@ -55,7 +68,17 @@ function Node({ node }: { node: RegionNode }) {
         <>
           {scatter(node.n, node.seed).map((p, i) => {
             const r = node.r[0] + p.k * node.r[1];
-            return <use key={i} href={`#ap-art-${node.art}`} x={p.x - r} y={p.y - r} width={r * 2} height={r * 2} opacity={node.o} />;
+            return (
+              <use
+                key={i}
+                href={`#ap-art-${node.art}`}
+                x={p.x - r}
+                y={p.y - r}
+                width={r * 2}
+                height={r * 2}
+                opacity={node.o}
+              />
+            );
           })}
         </>
       );
@@ -66,8 +89,17 @@ function Node({ node }: { node: RegionNode }) {
             const r = node.r[0] + p.k * node.r[1];
             return (
               <g key={i} opacity={node.o}>
-                <circle cx={p.x} cy={p.y} r={r} fill="url(#ap-g-bubble)" stroke={node.stroke} strokeWidth={node.sw} />
-                {node.shine && <ellipse cx={p.x - 16} cy={p.y - 18} rx="10" ry="6" fill="#fff" opacity=".45" />}
+                <circle
+                  cx={p.x}
+                  cy={p.y}
+                  r={r}
+                  fill="url(#ap-g-bubble)"
+                  stroke={node.stroke}
+                  strokeWidth={node.sw}
+                />
+                {node.shine && (
+                  <ellipse cx={p.x - 16} cy={p.y - 18} rx="10" ry="6" fill="#fff" opacity=".45" />
+                )}
               </g>
             );
           })}
@@ -77,7 +109,11 @@ function Node({ node }: { node: RegionNode }) {
 }
 
 function Layer({ layer }: { layer: RegionLayer }) {
-  const style: LayerVars = { '--dx': `${layer.dx}px`, '--dy': `${layer.dy}px`, '--dur': `${layer.dur}s` };
+  const style: LayerVars = {
+    '--dx': `${layer.dx}px`,
+    '--dy': `${layer.dy}px`,
+    '--dur': `${layer.dur}s`,
+  };
   return (
     <div className={`ap-layer ap-layer--${layer.depth}`} style={style}>
       <svg viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid slice" focusable="false">

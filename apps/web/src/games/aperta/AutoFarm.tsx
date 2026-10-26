@@ -23,7 +23,15 @@ const POP_MS = 1100;
  * Ao lado do contador de poeira: a cada segundo sobe "+0,1" com o que os geradores renderam, em ciano
  * (o dourado é do toque). Só aparece se há gerador rendendo; com o jogo parado ou a escolha aberta, nada.
  */
-export function AutoGain({ state, paused, kind = 'dust' }: { state: SaveState; paused: boolean; kind?: 'dust' | 'energy' }) {
+export function AutoGain({
+  state,
+  paused,
+  kind = 'dust',
+}: {
+  state: SaveState;
+  paused: boolean;
+  kind?: 'dust' | 'energy';
+}) {
   const [pops, setPops] = useState<Pop[]>([]);
   const rates = autoRates(state);
   const rate = kind === 'energy' ? rates.energy * 60 : rates.dust;
@@ -116,9 +124,13 @@ export function RateTag({ state, kind }: { state: SaveState; kind: 'dust' | 'ene
   const rates = autoRates(state);
   const rate = kind === 'energy' ? rates.energy * 60 : rates.dust;
   if (!(rate > 0)) return null;
-  const text = rate < 0.1 ? formatDecimal(rate, 2) : rate < 10 ? formatDecimal(rate, 1) : formatNumber(rate);
+  const text =
+    rate < 0.1 ? formatDecimal(rate, 2) : rate < 10 ? formatDecimal(rate, 1) : formatNumber(rate);
   return (
-    <span className={`ap-ratetag${kind === 'energy' ? ' is-energy' : ''}`} aria-label={`${kind === 'energy' ? 'Energia' : 'Poeira'} automática: ${text} por ${kind === 'energy' ? 'minuto' : 'segundo'}`}>
+    <span
+      className={`ap-ratetag${kind === 'energy' ? ' is-energy' : ''}`}
+      aria-label={`${kind === 'energy' ? 'Energia' : 'Poeira'} automática: ${text} por ${kind === 'energy' ? 'minuto' : 'segundo'}`}
+    >
       {kind === 'energy' && (
         <svg viewBox="0 0 16 20" width="11" height="14" aria-hidden="true">
           <path d="M10 1L2 11h5l-1 8 8-11H9z" fill="currentColor" />

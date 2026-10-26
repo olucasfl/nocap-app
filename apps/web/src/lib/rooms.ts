@@ -1,10 +1,16 @@
 import type { Room } from 'colyseus.js';
-import type { AtravessaRoomMode, AtravessaRoomSize, Hsb, LeaderRule, TimeSettings } from '@nocap/games';
+import type {
+  AtravessaRoomMode,
+  AtravessaRoomSize,
+  Hsb,
+  LeaderRule,
+  TimeSettings,
+} from '@nocap/games';
 import { create } from 'zustand';
 import { ApiError, apiBase, apiClient } from './api-client';
 import { getToken, useAuth } from './auth';
 
-export type RoomGame = 'color' | 'time' | 'impostor' | 'eco' | 'atravessa' | 'desmorona';
+export type RoomGame = 'color' | 'time' | 'impostor' | 'eco' | 'atravessa' | 'desmorona' | 'bola';
 export type Phase =
   | 'lobby'
   | 'intro'
@@ -129,7 +135,10 @@ export interface AtravessaRoomState {
   /** Placar da rodada e soma até agora (placar da rodada e pódio). */
   roundMeters: Record<string, number> | null;
   totals: Record<string, number> | null;
-  results: Record<string, { meters: number; ms: number | null; deaths: number; finished: boolean }> | null;
+  results: Record<
+    string,
+    { meters: number; ms: number | null; deaths: number; finished: boolean }
+  > | null;
 }
 
 /** O Desmorona! em sala (spec 044): vagas, cores, hora da largada e quem já caiu. As posições vêm no fluxo "pos". */
@@ -142,6 +151,22 @@ export interface DesmoronaRoomState {
   /** Quem já caiu (id → hora da queda em ms de jogo). */
   dead: Record<string, number>;
   winnerId: string | null;
+}
+
+/** O Bola Maluca! em sala (spec 046): formato, times, bots e quem está em campo. O fluxo da partida vem em "bs". */
+export interface BolaRoomState {
+  me: string | null;
+  format: { teams: number; perTeam: number; auto: boolean; minutes: number };
+  /** O formato que combina com a quantidade de pessoas da sala. */
+  suggested: { teams: number; perTeam: number };
+  /** Time de cada pessoa; quem não está aqui é espectador. */
+  teamOf: Record<string, number>;
+  /** Bots pedidos por time (lobby). */
+  bots: number[];
+  roster: { slot: number; id: string; name: string; team: number; bot: boolean; away: boolean }[];
+  scores: number[];
+  winner: number | null;
+  durationSec: number;
 }
 
 export interface RoomSnapshot {
@@ -168,6 +193,7 @@ export interface RoomSnapshot {
   eco?: EcoRoomState;
   atravessa?: AtravessaRoomState;
   desmorona?: DesmoronaRoomState;
+  bola?: BolaRoomState;
 }
 
 /** Estado do Intruso, por pessoa: cor, dica e papéis só chegam a quem pode vê-los. */
@@ -240,8 +266,14 @@ async function client() {
 let room: Room | null = null;
 
 /** Mensagens frequentes da sala (as posições do Atravessa!) não passam pelo estado: quem quer, assina. */
-type LiveType = 'pos' | 'ack' | 'dsteps' | 'dpushed';
-const live: Record<LiveType, Set<(m: unknown) => void>> = { pos: new Set(), ack: new Set(), dsteps: new Set(), dpushed: new Set() };
+type LiveType = 'pos' | 'ack' | 'dsteps' | 'dpushed' | 'bs';
+const live: Record<LiveType, Set<(m: unknown) => void>> = {
+  pos: new Set(),
+  ack: new Set(),
+  dsteps: new Set(),
+  dpushed: new Set(),
+  bs: new Set(),
+};
 export function subscribeRoom(type: LiveType, fn: (m: unknown) => void): () => void {
   live[type].add(fn);
   return () => void live[type].delete(fn);
@@ -339,7 +371,8 @@ function attach(r: Room) {
     r.send('ping', { t0: Date.now(), rtt: lastRtt });
   }, 20_000);
 
-  for (const type of ['pos', 'ack', 'dsteps', 'dpushed'] as const) r.onMessage(type, (m: unknown) => live[type].forEach((fn) => fn(m)));
+  for (const type of ['pos', 'ack', 'dsteps', 'dpushed', 'bs'] as const)
+    r.onMessage(type, (m: unknown) => live[type].forEach((fn) => fn(m)));
   r.onMessage('chat', (m: ChatMessage) =>
     useRoom.setState((s) => ({
       chat: [...s.chat, m].slice(-50),

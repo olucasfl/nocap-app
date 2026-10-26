@@ -426,7 +426,7 @@
 }
 
 /* Telas baixas (notebook): o cartão do tutorial dentro da escolha de grimório encolhe para não empurrar as cartas. */
-@container ap (min-width: 701px) and (max-height: 900px)  {
+@container ap (min-width: 701px) and (max-height: 900px) {
   .ap-mcard-game .ap-tut-inline {
     gap: 2px;
     padding: 6px 10px;

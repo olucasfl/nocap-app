@@ -19,7 +19,12 @@ const TILES: [string, string][] = [
 /** O grupo Word's. O Classic tem o Daily (com ranking) e fases offline; o Bee e o Connect são fases offline, salvas no aparelho. */
 export function WordsPage() {
   const user = useAuth((s) => s.user);
-  const classic = useQuery({ queryKey: ['words', 'daily'], queryFn: fetchDaily, enabled: !!user, retry: false });
+  const classic = useQuery({
+    queryKey: ['words', 'daily'],
+    queryFn: fetchDaily,
+    enabled: !!user,
+    retry: false,
+  });
   const bee = useProgress(beeProgress);
   const connect = useProgress(connectProgress);
   const beeDone = Object.values(bee).filter((p) => p.closed).length;
@@ -79,12 +84,22 @@ export function WordsPage() {
           ))}
         </div>
         <h2>Jogos de palavras</h2>
-        <p>Classic, Connect e Bee têm centenas de fases para jogar quando quiser. O Daily do Classic tem ranking.</p>
+        <p>
+          Classic, Connect e Bee têm centenas de fases para jogar quando quiser. O Daily do Classic
+          tem ranking.
+        </p>
       </section>
 
       <div className="wd-games">
         {games.map((g, i) => (
-          <Link key={g.key} to={g.to} className={`wd-card ${g.key}`} style={{ '--i': i } as CSSProperties} data-sfx="start" data-testid={`game-${g.key}`}>
+          <Link
+            key={g.key}
+            to={g.to}
+            className={`wd-card ${g.key}`}
+            style={{ '--i': i } as CSSProperties}
+            data-sfx="start"
+            data-testid={`game-${g.key}`}
+          >
             <div className="wd-card-art">{g.art}</div>
             <div className="wd-card-body">
               <div className="wd-card-name">{g.name}</div>

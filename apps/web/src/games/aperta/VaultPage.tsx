@@ -1,4 +1,9 @@
-import { FORBIDDEN_MAX_LEVEL, SEAL_DUST_PER_TOUCH, starMapView, type SaveState } from '@nocap/games';
+import {
+  FORBIDDEN_MAX_LEVEL,
+  SEAL_DUST_PER_TOUCH,
+  starMapView,
+  type SaveState,
+} from '@nocap/games';
 import { RequirementBars } from './Requirements';
 import { collapseView, vaultSlots } from './game-logic';
 import './collapse.css';
@@ -27,8 +32,11 @@ export function VaultPage({ state, onCollapse }: Props) {
   return (
     <div className="ap-vault">
       <p className="ap-sub">
-        {owned} de {slots.length} proibidos no Cofre. Cada colapso guarda um, ou sobe o nível de um que você já tem, até o 5.
-        {state.seals > 0 ? ` Selos Estelares: ${state.seals} (+${state.seals * SEAL_DUST_PER_TOUCH} de poeira por toque).` : ''}
+        {owned} de {slots.length} proibidos no Cofre. Cada colapso guarda um, ou sobe o nível de um
+        que você já tem, até o 5.
+        {state.seals > 0
+          ? ` Selos Estelares: ${state.seals} (+${state.seals * SEAL_DUST_PER_TOUCH} de poeira por toque).`
+          : ''}
       </p>
       <ul className="ap-vault-slots" aria-label="Proibidos do Cofre">
         {slots.map((s) => (
@@ -36,7 +44,11 @@ export function VaultPage({ state, onCollapse }: Props) {
             <b>{s.owned ? s.name : '???'}</b>
             {s.owned ? (
               <>
-                <span className="ap-vault-dots" role="img" aria-label={`Nível ${s.level} de ${FORBIDDEN_MAX_LEVEL}`}>
+                <span
+                  className="ap-vault-dots"
+                  role="img"
+                  aria-label={`Nível ${s.level} de ${FORBIDDEN_MAX_LEVEL}`}
+                >
                   {Array.from({ length: FORBIDDEN_MAX_LEVEL }, (_, i) => (
                     <i key={i} className={i < s.level ? 'on' : undefined} />
                   ))}
@@ -66,12 +78,19 @@ export function VaultPage({ state, onCollapse }: Props) {
                   <b>
                     Colapso {r.collapse}: {r.regionName}
                   </b>
-                  <small>{r.items.map((i) => i.name).join(', ') || 'Sem novidades além da região'}</small>
+                  <small>
+                    {r.items.map((i) => i.name).join(', ') || 'Sem novidades além da região'}
+                  </small>
                 </li>
               ))}
             </ul>
           )}
-          {map.milestone && <p className="ap-sub">Marco da próxima vida: {MILESTONE_LABEL[map.milestone.kind] ?? map.milestone.kind} ({map.milestone.target}).</p>}
+          {map.milestone && (
+            <p className="ap-sub">
+              Marco da próxima vida: {MILESTONE_LABEL[map.milestone.kind] ?? map.milestone.kind} (
+              {map.milestone.target}).
+            </p>
+          )}
         </section>
       )}
 
@@ -79,11 +98,22 @@ export function VaultPage({ state, onCollapse }: Props) {
         <h4 className="ap-vault-sub">Colapsar a estrela (colapso {collapse.next})</h4>
         <RequirementBars view={collapse} />
         {collapse.ready ? (
-          <p className="ap-sub">A estrela está pronta. Ao colapsar você {collapse.sparks > 0 ? `ganha ${collapse.sparks} ${collapse.sparks === 1 ? 'Cintila' : 'Cintilas'} e ` : ''}guarda um proibido no Cofre e começa uma vida nova.</p>
+          <p className="ap-sub">
+            A estrela está pronta. Ao colapsar você{' '}
+            {collapse.sparks > 0
+              ? `ganha ${collapse.sparks} ${collapse.sparks === 1 ? 'Cintila' : 'Cintilas'} e `
+              : ''}
+            guarda um proibido no Cofre e começa uma vida nova.
+          </p>
         ) : (
           <p className="ap-sub">{collapse.hint}</p>
         )}
-        <button type="button" className="ap-hbtn ap-hbtn-go" disabled={!collapse.ready} onClick={onCollapse}>
+        <button
+          type="button"
+          className="ap-hbtn ap-hbtn-go"
+          disabled={!collapse.ready}
+          onClick={onCollapse}
+        >
           {collapse.ready ? 'Colapsar a estrela' : 'Estrela ainda não está pronta'}
         </button>
       </div>

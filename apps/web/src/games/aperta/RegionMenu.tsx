@@ -18,7 +18,13 @@ export function RegionMenu({ items, onPick, onClose }: Props) {
   }, []);
   return (
     <div className="ap-modal-game">
-      <div ref={root} className="ap-mcard-game ap-regionmenu" role="dialog" aria-modal="true" aria-labelledby="ap-region-title">
+      <div
+        ref={root}
+        className="ap-mcard-game ap-regionmenu"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="ap-region-title"
+      >
         <h2 id="ap-region-title">Regiões do espaço</h2>
         <p className="ap-sub">Escolha qual região aparece ao fundo. Só muda o cenário.</p>
         <ul className="ap-rm-list">
@@ -28,7 +34,13 @@ export function RegionMenu({ items, onPick, onClose }: Props) {
                 type="button"
                 className={`ap-rm${current ? ' is-current' : ''}`}
                 aria-pressed={current}
-                style={{ '--rm-a': art.sky.a, '--rm-b': art.sky.glowA, '--rm-c': art.sky.c } as CSSProperties}
+                style={
+                  {
+                    '--rm-a': art.sky.a,
+                    '--rm-b': art.sky.glowA,
+                    '--rm-c': art.sky.c,
+                  } as CSSProperties
+                }
                 onClick={() => onPick(art.id)}
               >
                 <i className="ap-rm-swatch" aria-hidden="true" />

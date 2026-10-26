@@ -20,6 +20,7 @@ import { Lobby } from './room/Lobby';
 import { Play } from './room/Play';
 import { AtravessaRoomPlay } from '@/games/atravessa/AtravessaRoomPlay';
 import { DesmoronaRoomPlay } from '@/games/desmorona/DesmoronaRoomPlay';
+import { BolaRoomPlay } from '@/games/bola/BolaRoomPlay';
 import './account.css';
 import './friends.css';
 import './room.css';
@@ -49,7 +50,7 @@ function Header({ round }: { round?: string }) {
 
 /** A página de cada jogo (o Intruso é jogado a partir da Mesmíssima). */
 const GAME_PAGE: Record<
-  Exclude<RoomGame, 'desmorona'>,
+  Exclude<RoomGame, 'desmorona' | 'bola'>,
   '/cor' | '/tempo' | '/eco' | '/atravessa'
 > = {
   color: '/cor',
@@ -61,6 +62,7 @@ const GAME_PAGE: Record<
 
 const GAME_NAME: Record<RoomGame, string> = {
   desmorona: 'Desmorona!',
+  bola: 'Bola Maluca!',
   color: 'Mesmíssima',
   time: 'Já Deu?',
   impostor: 'Intruso',
@@ -69,6 +71,7 @@ const GAME_NAME: Record<RoomGame, string> = {
 };
 
 const ENTRY_LEAD: Record<RoomGame, string> = {
+  bola: 'Bola Maluca! com os amigos: futebol de raposas com 2, 3 ou 4 times, até 15 pessoas na sala (12 jogam e o resto assiste). Você escolhe o formato e completa os times com bots dentro da sala.',
   desmorona:
     'Desmorona! com os amigos: todo mundo cai do céu, o chão some a cada passo e vence o último de pé. De 2 a 8 pessoas.',
   eco: 'Jogue o Ecooo com amigos: Corrida (todo mundo repete a mesma sequência e quem errar sai) ou Siga o Líder (um cria, os outros repetem). Você escolhe dentro da sala.',
@@ -109,7 +112,9 @@ function Entry({
                 ? '/atravessa'
                 : game === 'desmorona'
                   ? '/fox-cap/desmorona'
-                  : '/cor'
+                  : game === 'bola'
+                    ? '/fox-cap/bola'
+                    : '/cor'
         }
         label="Voltar ao jogo"
       />
@@ -182,6 +187,7 @@ export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomG
     if (status !== 'closed' && status !== 'idle') return;
     clearLastGame();
     if (lastGame === 'desmorona') void navigate({ to: '/fox-cap/desmorona' });
+    else if (lastGame === 'bola') void navigate({ to: '/fox-cap/bola' });
     else void navigate({ to: GAME_PAGE[lastGame], search: { aba: 'friends' } });
   }, [snapshot, lastGame, message, status, navigate]);
   // Dentro da sala o endereço é sempre o link dela (/sala/ABCD), para copiar do navegador e mandar.
@@ -255,6 +261,10 @@ export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomG
     return <DesmoronaRoomPlay snapshot={snapshot} />;
   }
 
+  if (snapshot?.game === 'bola' && snapshot.phase === 'play') {
+    return <BolaRoomPlay snapshot={snapshot} />;
+  }
+
   return (
     <Page rail={!snapshot || snapshot.phase === 'lobby' || snapshot.phase === 'final'}>
       <Header
@@ -262,6 +272,7 @@ export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomG
           snapshot &&
           snapshot.game !== 'atravessa' &&
           snapshot.game !== 'desmorona' &&
+          snapshot.game !== 'bola' &&
           snapshot?.round &&
           snapshot.phase !== 'lobby' &&
           snapshot.phase !== 'final'

@@ -151,10 +151,7 @@ export function SpaceArtSprite() {
           <circle cx="32" cy="32" r="24" fill="url(#ap-g-shade)" />
         </symbol>
         <symbol id="ap-art-rock" viewBox="0 0 64 64">
-          <path
-            d="M14 30c0-10 8-18 18-18s20 6 18 18c2 10-6 20-18 20S12 42 14 30z"
-            fill="#8a8f99"
-          />
+          <path d="M14 30c0-10 8-18 18-18s20 6 18 18c2 10-6 20-18 20S12 42 14 30z" fill="#8a8f99" />
           <circle cx="26" cy="26" r="5" fill="#5d626d" opacity=".7" />
           <circle cx="40" cy="36" r="6" fill="#5d626d" opacity=".7" />
           <circle cx="34" cy="20" r="3" fill="#5d626d" opacity=".7" />
@@ -166,14 +163,27 @@ export function SpaceArtSprite() {
         <symbol id="ap-art-jupiter" viewBox="0 0 64 64">
           <circle cx="32" cy="32" r="25" fill="url(#ap-g-jup)" />
           <g clipPath="url(#ap-c-jup)">
-            <path d="M4 22h56M4 30h56M4 40h56M4 47h56" stroke="#8a4f2a" strokeWidth="3.5" opacity=".55" />
+            <path
+              d="M4 22h56M4 30h56M4 40h56M4 47h56"
+              stroke="#8a4f2a"
+              strokeWidth="3.5"
+              opacity=".55"
+            />
             <ellipse cx="42" cy="37" rx="7" ry="4" fill="#c4452f" />
           </g>
           <circle cx="32" cy="32" r="25" fill="url(#ap-g-shade)" />
         </symbol>
         <symbol id="ap-art-saturn" viewBox="0 0 64 64">
           <g transform="rotate(-18 32 32)">
-            <ellipse cx="32" cy="32" rx="30" ry="9" fill="none" stroke="url(#ap-g-ring)" strokeWidth="5" />
+            <ellipse
+              cx="32"
+              cy="32"
+              rx="30"
+              ry="9"
+              fill="none"
+              stroke="url(#ap-g-ring)"
+              strokeWidth="5"
+            />
             <circle cx="32" cy="32" r="15" fill="url(#ap-g-sat)" />
             <circle cx="32" cy="32" r="15" fill="url(#ap-g-shade)" />
             <ellipse
@@ -191,7 +201,13 @@ export function SpaceArtSprite() {
         <symbol id="ap-art-titan" viewBox="0 0 64 64">
           <circle cx="32" cy="32" r="28" fill="#ffb24d" opacity=".25" />
           <circle cx="32" cy="32" r="23" fill="url(#ap-g-tit)" />
-          <path d="M12 30c10-5 28 5 40-1" stroke="#7a3d0e" strokeWidth="3" fill="none" opacity=".5" />
+          <path
+            d="M12 30c10-5 28 5 40-1"
+            stroke="#7a3d0e"
+            strokeWidth="3"
+            fill="none"
+            opacity=".5"
+          />
           <circle cx="32" cy="32" r="23" fill="url(#ap-g-shade)" />
         </symbol>
         <symbol id="ap-art-ice" viewBox="0 0 64 64">
@@ -219,10 +235,7 @@ export function SpaceArtSprite() {
         </symbol>
         <symbol id="ap-art-starb" viewBox="0 0 64 64">
           <circle cx="32" cy="32" r="30" fill="url(#ap-g-starb)" opacity=".7" />
-          <path
-            d="M32 4l2.6 25.4L60 32l-25.4 2.6L32 60l-2.6-25.4L4 32l25.4-2.6z"
-            fill="#dfe6ff"
-          />
+          <path d="M32 4l2.6 25.4L60 32l-25.4 2.6L32 60l-2.6-25.4L4 32l25.4-2.6z" fill="#dfe6ff" />
           <path
             d="M12 12l16 18M52 12L36 30M12 52l16-18M52 52L36 34"
             stroke="#c9d6ff"
@@ -268,7 +281,16 @@ export function SpaceArtSprite() {
         </symbol>
         <symbol id="ap-art-hole" viewBox="0 0 64 64">
           <circle cx="32" cy="32" r="30" fill="url(#ap-g-hole)" />
-          <ellipse cx="32" cy="32" rx="30" ry="8" fill="none" stroke="#ffcf70" strokeWidth="3" opacity=".9" />
+          <ellipse
+            cx="32"
+            cy="32"
+            rx="30"
+            ry="8"
+            fill="none"
+            stroke="#ffcf70"
+            strokeWidth="3"
+            opacity=".9"
+          />
           <circle cx="32" cy="32" r="13" fill="#000" stroke="#ff9d3a" strokeWidth="2" />
         </symbol>
         <symbol id="ap-art-lock" viewBox="0 0 64 64">

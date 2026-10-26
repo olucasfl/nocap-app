@@ -48,8 +48,12 @@ describe('kit de arte do Aperta!', () => {
   });
 
   it('só o proibido tem rachaduras', () => {
-    expect(html(<GrimoireBook rarity="proibido" astro="hole" name="Sgr A*" />)).toContain('ap-book-cracks');
-    expect(html(<GrimoireBook rarity="epico" astro="starb" name="Vega" />)).not.toContain('ap-book-cracks');
+    expect(html(<GrimoireBook rarity="proibido" astro="hole" name="Sgr A*" />)).toContain(
+      'ap-book-cracks',
+    );
+    expect(html(<GrimoireBook rarity="epico" astro="starb" name="Vega" />)).not.toContain(
+      'ap-book-cracks',
+    );
   });
 
   it.each(SPACE_OBJECTS)('SpaceObject %s é decorativo por padrão', (k) => {
@@ -67,13 +71,16 @@ describe('kit de arte do Aperta!', () => {
     expect(html(<BigButton highlight />)).toContain('ap-bigbtn-halo');
   });
 
-  it.each(REGION_ART.map((r) => r.id))('RegionBackdrop %s renderiza céu, estrelas e camadas', (id) => {
-    const markup = html(<RegionBackdrop region={id} />);
-    expect(markup).toContain(`ap-region--${id}`);
-    expect(markup).toContain('aria-hidden="true"');
-    expect(markup).toContain('ap-stars');
-    expect(markup.match(/class="ap-layer /g)?.length).toBe(2);
-  });
+  it.each(REGION_ART.map((r) => r.id))(
+    'RegionBackdrop %s renderiza céu, estrelas e camadas',
+    (id) => {
+      const markup = html(<RegionBackdrop region={id} />);
+      expect(markup).toContain(`ap-region--${id}`);
+      expect(markup).toContain('aria-hidden="true"');
+      expect(markup).toContain('ap-stars');
+      expect(markup.match(/class="ap-layer /g)?.length).toBe(2);
+    },
+  );
 
   it('RegionBackdrop pausa quando pedido', () => {
     expect(html(<RegionBackdrop region="inner-solar-system" paused />)).toContain('is-paused');

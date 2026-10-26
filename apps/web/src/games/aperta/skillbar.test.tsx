@@ -9,7 +9,16 @@ const noop = () => {};
 
 function save(tree: Record<string, number>): SaveState {
   const s = newSave('b');
-  return { ...s, tutorial: 'done', collapses: 4, regionId: 'oort-cloud', clock: 100, tree, sparks: { legacy: 50, spent: 0 }, run: { ...s.run, picks: 5, dust: 1e6, dustLife: 1e6 } };
+  return {
+    ...s,
+    tutorial: 'done',
+    collapses: 4,
+    regionId: 'oort-cloud',
+    clock: 100,
+    tree,
+    sparks: { legacy: 50, spent: 0 },
+    run: { ...s.run, picks: 5, dust: 1e6, dustLife: 1e6 },
+  };
 }
 
 describe('barra de habilidades', () => {
@@ -36,20 +45,67 @@ describe('barra de habilidades', () => {
   });
 
   it('a Compra automática mostra o liga/desliga e o limite', () => {
-    const out = html(<SkillBar state={{ ...save({ 'au-03': 1 }), run: { ...save({}).run, autoBuy: { on: true, limit: 40 } } }} now={100} onUse={noop} onAutoBuy={noop} />);
+    const out = html(
+      <SkillBar
+        state={{
+          ...save({ 'au-03': 1 }),
+          run: { ...save({}).run, autoBuy: { on: true, limit: 40 } },
+        }}
+        now={100}
+        onUse={noop}
+        onAutoBuy={noop}
+      />,
+    );
     expect(out).toContain('Compra automática: ligada');
     expect(out).toContain('40%');
     expect(out).toContain('Diminuir o limite de preço');
   });
 
   it('a Escolha sugerida destaca a carta, com o motivo só quando o nó existe', () => {
-    const pending = { offers: ['moon', 'mercury', 'venus'], openedAt: 0, selected: null, picksLeft: 1, rerollsLeft: 0 };
-    const plain = html(<ChoiceModal pending={pending} lockRemaining={0} build={{}} paused={false} onSelect={noop} onConfirm={noop} suggestion={{ id: 'mercury', gainPct: null }} />);
+    const pending = {
+      offers: ['moon', 'mercury', 'venus'],
+      openedAt: 0,
+      selected: null,
+      picksLeft: 1,
+      rerollsLeft: 0,
+    };
+    const plain = html(
+      <ChoiceModal
+        pending={pending}
+        lockRemaining={0}
+        build={{}}
+        paused={false}
+        onSelect={noop}
+        onConfirm={noop}
+        suggestion={{ id: 'mercury', gainPct: null }}
+      />,
+    );
     expect(plain.match(/is-suggested/g)).toHaveLength(1);
     expect(plain).toContain('Sugerida');
     expect(plain).not.toContain('de ganho');
-    const why = html(<ChoiceModal pending={pending} lockRemaining={0} build={{}} paused={false} onSelect={noop} onConfirm={noop} suggestion={{ id: 'mercury', gainPct: 12.4 }} />);
+    const why = html(
+      <ChoiceModal
+        pending={pending}
+        lockRemaining={0}
+        build={{}}
+        paused={false}
+        onSelect={noop}
+        onConfirm={noop}
+        suggestion={{ id: 'mercury', gainPct: 12.4 }}
+      />,
+    );
     expect(why).toContain('Sugerida: +12% de ganho');
-    expect(html(<ChoiceModal pending={pending} lockRemaining={0} build={{}} paused={false} onSelect={noop} onConfirm={noop} />)).not.toContain('Sugerida');
+    expect(
+      html(
+        <ChoiceModal
+          pending={pending}
+          lockRemaining={0}
+          build={{}}
+          paused={false}
+          onSelect={noop}
+          onConfirm={noop}
+        />,
+      ),
+    ).not.toContain('Sugerida');
   });
 });

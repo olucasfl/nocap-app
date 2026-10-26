@@ -389,21 +389,6 @@
     transform: scale(1);
   }
 }
-.bola-flash {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  pointer-events: none;
-  animation: bola-flash 1.4s ease-out;
-}
-@keyframes bola-flash {
-  0% {
-    opacity: 0.55;
-  }
-  100% {
-    opacity: 0;
-  }
-}
 .bola-banner {
   animation:
     bola-pop 0.45s cubic-bezier(0.2, 1.4, 0.4, 1),
@@ -416,12 +401,8 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .bola-team.bump,
-  .bola-flash,
   .bola-banner {
     animation: none;
-  }
-  .bola-flash {
-    display: none;
   }
 }
 

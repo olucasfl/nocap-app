@@ -35,14 +35,21 @@ describe('sincronização do progresso com a conta', () => {
 
   it('o que o aparelho já tinha sobe para a conta e o que a conta tinha desce para o aparelho', async () => {
     beeProgress.set(1, { found: ['casa', 'mesa'], closed: false, at: 5 });
-    api.get.mockResolvedValue({ bee: { '2': { found: ['rosa'], closed: true, at: 3 } }, 'classic-c': { '7': { guesses: ['casas'], at: 4, done: true } } });
+    api.get.mockResolvedValue({
+      bee: { '2': { found: ['rosa'], closed: true, at: 3 } },
+      'classic-c': { '7': { guesses: ['casas'], at: 4, done: true } },
+    });
     await syncNow('conta-a');
     // desceu
     expect(beeProgress.get(2)).toMatchObject({ found: ['rosa'], closed: true });
     expect(classicProgress.classic.get(7)).toMatchObject({ guesses: ['casas'], done: true });
     // subiu só o que o servidor não tinha
-    const sent = api.put.mock.calls.flatMap((c) => (c[1] as { entries: { game: string; level: number }[] }).entries);
-    expect(sent).toEqual([{ game: 'bee', level: 1, data: { found: ['casa', 'mesa'], closed: false, at: 5 } }]);
+    const sent = api.put.mock.calls.flatMap(
+      (c) => (c[1] as { entries: { game: string; level: number }[] }).entries,
+    );
+    expect(sent).toEqual([
+      { game: 'bee', level: 1, data: { found: ['casa', 'mesa'], closed: false, at: 5 } },
+    ]);
     expect(pending()).toHaveLength(0);
   });
 
@@ -71,7 +78,9 @@ describe('sincronização do progresso com a conta', () => {
     await syncNow('conta-b');
     expect(beeProgress.get(1)).toBeUndefined();
     expect(beeProgress.get(9)?.found).toEqual(['rosa']);
-    const sent = api.put.mock.calls.flatMap((c) => (c[1] as { entries: { level: number }[] }).entries).map((e) => e.level);
+    const sent = api.put.mock.calls
+      .flatMap((c) => (c[1] as { entries: { level: number }[] }).entries)
+      .map((e) => e.level);
     expect(sent).not.toContain(9);
     // a conta A volta: o progresso dela reaparece
     stopSync();

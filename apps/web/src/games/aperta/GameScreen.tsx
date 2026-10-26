@@ -34,7 +34,14 @@ import { achievementCounts } from './achievements-logic';
 import { CollapseModal } from './CollapseModal';
 import { GoalModal } from './GoalModal';
 import { VaultPage } from './VaultPage';
-import { eventView, cardPreviews, missionView, newInSpaceView, radarView, regionMenuItems } from './content-logic';
+import {
+  eventView,
+  cardPreviews,
+  missionView,
+  newInSpaceView,
+  radarView,
+  regionMenuItems,
+} from './content-logic';
 import { FieldObjects, SignalChip } from './FieldObjects';
 import { GamePage, PageIcon, PAGE_TITLE } from './GamePage';
 import { GrimoiresPage } from './GrimoiresPage';
@@ -115,9 +122,18 @@ const BURST_MS = 900;
 const CAPTURE_MS = 1000;
 const MAX_BURSTS = 5;
 const SPARKS = 8;
-const SPARK_ANGLES = Array.from({ length: LOW_END ? 4 : SPARKS }, (_, i) => (360 / (LOW_END ? 4 : SPARKS)) * i);
+const SPARK_ANGLES = Array.from(
+  { length: LOW_END ? 4 : SPARKS },
+  (_, i) => (360 / (LOW_END ? 4 : SPARKS)) * i,
+);
 
-function pageNotice(page: PageName, affordable: number, albumCount: number, collapses: number, achievements: { earned: number; total: number }): string {
+function pageNotice(
+  page: PageName,
+  affordable: number,
+  albumCount: number,
+  collapses: number,
+  achievements: { earned: number; total: number },
+): string {
   switch (page) {
     case 'upgrades':
       return affordable > 0
@@ -130,7 +146,9 @@ function pageNotice(page: PageName, affordable: number, albumCount: number, coll
     case 'achievements':
       return `${achievements.earned} de ${achievements.total} conquistas ganhas. Elas contam do primeiro toque em diante.`;
     case 'tree':
-      return collapses > 0 ? 'Gaste suas Cintilas nos ramos da árvore.' : 'Os ramos se abrem depois do seu primeiro colapso.';
+      return collapses > 0
+        ? 'Gaste suas Cintilas nos ramos da árvore.'
+        : 'Os ramos se abrem depois do seu primeiro colapso.';
     case 'vault':
       return 'Os proibidos que você guardou valem em todas as vidas.';
   }
@@ -151,11 +169,24 @@ export function GameScreen({ controller, onExit }: Props) {
   const [pressed, setPressed] = useState(false);
   const [bursts, setBursts] = useState<Burst[]>([]);
   const [notice, setNotice] = useState<Notice | null>(null);
-  const [achNotice, setAchNotice] = useState<{ id: number; title: string; text: string } | null>(null);
-  const [sparkNotice, setSparkNotice] = useState<{ id: number; amount: number; available: number } | null>(null);
+  const [achNotice, setAchNotice] = useState<{ id: number; title: string; text: string } | null>(
+    null,
+  );
+  const [sparkNotice, setSparkNotice] = useState<{
+    id: number;
+    amount: number;
+    available: number;
+  } | null>(null);
   const [captures, setCaptures] = useState<Capture[]>([]);
   const [freshGrimoire, setFreshGrimoire] = useState(false);
-  const [evolution, setEvolution] = useState<{ key: number; name: string; astro: AstroId; from: Rarity; to: Rarity; level: number } | null>(null);
+  const [evolution, setEvolution] = useState<{
+    key: number;
+    name: string;
+    astro: AstroId;
+    from: Rarity;
+    to: Rarity;
+    level: number;
+  } | null>(null);
   const endEvolution = useCallback(() => setEvolution(null), []);
   const unseenAch = unseenAchievements(state);
   const [collapseOpen, setCollapseOpen] = useState(false);
@@ -247,7 +278,10 @@ export function GameScreen({ controller, onExit }: Props) {
         apertaVibrate(14);
         const text = rewardText(e.preview);
         const slot = lanes.current.slot(e.objectId);
-        setCaptures((list) => [...list.slice(-3), { id: e.objectId, x: slot.x, y: slot.y, kind: art, text: floatText(e.preview) }]);
+        setCaptures((list) => [
+          ...list.slice(-3),
+          { id: e.objectId, x: slot.x, y: slot.y, kind: art, text: floatText(e.preview) },
+        ]);
         later(() => setCaptures((list) => list.filter((c) => c.id !== e.objectId)), CAPTURE_MS);
         if (noticeTimer.current !== null) window.clearTimeout(noticeTimer.current);
         setNotice({ id: Date.now(), title: capturedTitle(e.kind), text, object: art });
@@ -271,13 +305,25 @@ export function GameScreen({ controller, onExit }: Props) {
         setFreshGrimoire(true);
         const def = GRIMOIRES.find((g) => g.id === e.id);
         if (e.evolvedFrom !== null) {
-          setEvolution({ key: Date.now(), name: e.name, astro: astroFor(e.id, def?.family ?? 'planets'), from: artRarity(e.evolvedFrom), to: artRarity(e.rarity), level: e.level });
+          setEvolution({
+            key: Date.now(),
+            name: e.name,
+            astro: astroFor(e.id, def?.family ?? 'planets'),
+            from: artRarity(e.evolvedFrom),
+            to: artRarity(e.rarity),
+            level: e.level,
+          });
         }
         if (noticeTimer.current !== null) window.clearTimeout(noticeTimer.current);
         setNotice({
           id: Date.now(),
           title: e.evolvedFrom !== null ? 'Grimório evoluiu' : 'Novo grimório',
-          text: e.evolvedFrom !== null ? `${e.name} agora é ${RARITY_LABEL[artRarity(e.rarity)]}, nível ${e.level}` : e.level > 1 ? `${e.name} subiu para o nível ${e.level}` : e.name,
+          text:
+            e.evolvedFrom !== null
+              ? `${e.name} agora é ${RARITY_LABEL[artRarity(e.rarity)]}, nível ${e.level}`
+              : e.level > 1
+                ? `${e.name} subiu para o nível ${e.level}`
+                : e.name,
           astro: astroFor(e.id, def?.family ?? 'planets'),
         });
         noticeTimer.current = later(() => setNotice(null), NOTICE_MS);
@@ -323,7 +369,8 @@ export function GameScreen({ controller, onExit }: Props) {
       t instanceof Element &&
       !!t.closest('button, a, input, select, textarea, [role="button"]') &&
       !t.closest('.ap-bigbtn');
-    const isPressKey = (e: KeyboardEvent) => e.code === 'Space' || e.key === ' ' || e.key === 'Enter';
+    const isPressKey = (e: KeyboardEvent) =>
+      e.code === 'Space' || e.key === ' ' || e.key === 'Enter';
     let flash: number | null = null;
 
     const onDown = (e: KeyboardEvent) => {
@@ -362,13 +409,16 @@ export function GameScreen({ controller, onExit }: Props) {
 
   // Passos do tutorial que dependem de uma página (o resto anda sozinho pelo progresso do save).
   useEffect(() => {
-    if (tutorial === TUTORIAL.BACK && page === null) controller.tutorialStep(TUTORIAL.BACK, TUTORIAL.FILL);
-    else if (tutorial === TUTORIAL.GRIMOIRES && page === 'grimoires') controller.tutorialStep(TUTORIAL.GRIMOIRES, TUTORIAL.FREE);
+    if (tutorial === TUTORIAL.BACK && page === null)
+      controller.tutorialStep(TUTORIAL.BACK, TUTORIAL.FILL);
+    else if (tutorial === TUTORIAL.GRIMOIRES && page === 'grimoires')
+      controller.tutorialStep(TUTORIAL.GRIMOIRES, TUTORIAL.FREE);
   }, [tutorial, page, controller]);
   // Cartão do jogo livre que apresenta uma página: abrir a página já conta como visto.
   const pendingHintId = pendingHint(state);
   useEffect(() => {
-    if (pendingHintId && page !== null && HINT_PAGE[pendingHintId] === page) controller.tutorialHint(pendingHintId);
+    if (pendingHintId && page !== null && HINT_PAGE[pendingHintId] === page)
+      controller.tutorialHint(pendingHintId);
   }, [pendingHintId, page, controller]);
 
   const energy = energyView(state);
@@ -387,7 +437,12 @@ export function GameScreen({ controller, onExit }: Props) {
   const liveEvent = eventView(state, now);
   const radar = radarView(state);
   const suggested = state.run.pending ? suggestedOffer(state) : null;
-  const suggestion = suggested ? { id: suggested.id, gainPct: effectiveStats(state).skills.suggest.why ? suggested.gainPct : null } : null;
+  const suggestion = suggested
+    ? {
+        id: suggested.id,
+        gainPct: effectiveStats(state).skills.suggest.why ? suggested.gainPct : null,
+      }
+    : null;
   const regions = regionMenuItems(state);
   const coach = coachView(state, page, collapseOpen || regionsOpen || goalOpen);
 
@@ -400,10 +455,22 @@ export function GameScreen({ controller, onExit }: Props) {
   // Sem olhar o modal de escolha aberto: a faixa some e volta, e isso não é novidade.
   const cFresh = newInSpaceView(state)?.key ?? null;
   useEffect(() => {
-    const next: CueInput = { starReady: cReady, eventId: cEvent, missionDone: cMission, region: cRegion, freshKey: cFresh };
+    const next: CueInput = {
+      starReady: cReady,
+      eventId: cEvent,
+      missionDone: cMission,
+      region: cRegion,
+      freshKey: cFresh,
+    };
     const cues = cuesFor(lastCue.current, next);
     lastCue.current = next;
-    cues.forEach((cue, i) => (cue === 'chime' ? later(() => playCue(cue), 700) : i === 0 ? playCue(cue) : later(() => playCue(cue), 250 * i)));
+    cues.forEach((cue, i) =>
+      cue === 'chime'
+        ? later(() => playCue(cue), 700)
+        : i === 0
+          ? playCue(cue)
+          : later(() => playCue(cue), 250 * i),
+    );
   }, [cReady, cEvent, cMission, cRegion, cFresh, later]);
 
   // Dicas da 1ª vez (sem mexer no começo do jogo): o primeiro evento raro e o primeiro objeto lendário que aparecem.
@@ -415,7 +482,11 @@ export function GameScreen({ controller, onExit }: Props) {
     if (seenEvents.current !== null && eventsSeen.length > seenEvents.current) {
       const id = eventsSeen[eventsSeen.length - 1] as keyof typeof EVENT_NAMES;
       if (noticeTimer.current !== null) window.clearTimeout(noticeTimer.current);
-      setNotice({ id: Date.now(), title: `Novo evento: ${EVENT_NAMES[id] ?? id}`, text: EVENT_TEXT[id] ?? '' });
+      setNotice({
+        id: Date.now(),
+        title: `Novo evento: ${EVENT_NAMES[id] ?? id}`,
+        text: EVENT_TEXT[id] ?? '',
+      });
       noticeTimer.current = later(() => setNotice(null), NOTICE_MS * 2);
     }
     seenEvents.current = eventsSeen.length;
@@ -428,7 +499,12 @@ export function GameScreen({ controller, onExit }: Props) {
     const def = LEGENDARY_OBJECTS.find((d) => d.kind === first.kind);
     apertaSfx.chime();
     if (noticeTimer.current !== null) window.clearTimeout(noticeTimer.current);
-    setNotice({ id: Date.now(), title: `Um lendário apareceu: ${def?.name ?? 'objeto'}`, text: `${def?.text ?? ''} Toque rápido, ele some logo.`, object: objectArt(first.kind) });
+    setNotice({
+      id: Date.now(),
+      title: `Um lendário apareceu: ${def?.name ?? 'objeto'}`,
+      text: `${def?.text ?? ''} Toque rápido, ele some logo.`,
+      object: objectArt(first.kind),
+    });
     noticeTimer.current = later(() => setNotice(null), NOTICE_MS * 2);
   }, [legendsOnField, later]);
 
@@ -437,7 +513,10 @@ export function GameScreen({ controller, onExit }: Props) {
   }
 
   return (
-    <section className={`ap-game space-theme ap-screen-in${page ? ' has-page' : ''}${LOW_END ? ' is-lite' : ''}${showGoal ? ' has-goal' : ''}`} aria-label="Jogo">
+    <section
+      className={`ap-game space-theme ap-screen-in${page ? ' has-page' : ''}${LOW_END ? ' is-lite' : ''}${showGoal ? ' has-goal' : ''}`}
+      aria-label="Jogo"
+    >
       <SpaceArtSprite />
       <RegionBackdrop key={state.regionId} region={state.regionId} paused={paused} />
       {liveEvent && !paused && <EventFx key={liveEvent.id} id={liveEvent.id} lite={LOW_END} />}
@@ -490,36 +569,52 @@ export function GameScreen({ controller, onExit }: Props) {
             </button>
           )}
         </div>
-        <button type="button" className="ap-hbtn ap-hbtn-ghost ap-hbtn-exit" data-tut-pass onClick={exit}>
+        <button
+          type="button"
+          className="ap-hbtn ap-hbtn-ghost ap-hbtn-exit"
+          data-tut-pass
+          onClick={exit}
+        >
           Sair
         </button>
         {tutorial !== null && !unlocked.has('tree') && (
-          <button type="button" className="ap-hbtn ap-hbtn-ghost ap-hbtn-skip" data-tut-pass onClick={controller.tutorialSkip}>
+          <button
+            type="button"
+            className="ap-hbtn ap-hbtn-ghost ap-hbtn-skip"
+            data-tut-pass
+            onClick={controller.tutorialSkip}
+          >
             Pular tutorial
           </button>
         )}
         {unlocked.has('tree') && (
-        <button
-          type="button"
-          data-tut="tree"
-          className={`ap-hbtn ap-hbtn-tree${state.collapses < 1 ? ' is-dim' : ''}`}
-          aria-pressed={page === 'tree'}
-          aria-label={sparks > 0 ? `Árvore de Habilidades, ${sparks} ${sparks === 1 ? 'Cintila' : 'Cintilas'}` : 'Árvore de Habilidades'}
-          onClick={() => openPage('tree')}
-        >
-          Árvore de Habilidades
-          {sparks > 0 && (
-            <span className="ap-badge" aria-hidden="true">
-              {sparks}
-            </span>
-          )}
-        </button>
+          <button
+            type="button"
+            data-tut="tree"
+            className={`ap-hbtn ap-hbtn-tree${state.collapses < 1 ? ' is-dim' : ''}`}
+            aria-pressed={page === 'tree'}
+            aria-label={
+              sparks > 0
+                ? `Árvore de Habilidades, ${sparks} ${sparks === 1 ? 'Cintila' : 'Cintilas'}`
+                : 'Árvore de Habilidades'
+            }
+            onClick={() => openPage('tree')}
+          >
+            Árvore de Habilidades
+            {sparks > 0 && (
+              <span className="ap-badge" aria-hidden="true">
+                {sparks}
+              </span>
+            )}
+          </button>
         )}
       </header>
 
       <div className="ap-banners">
         {fresh && <NewInSpace view={fresh} onDismiss={() => controller.dismissNew(fresh.key)} />}
-        {liveEvent && <EventChip key={`${liveEvent.id}-${state.run.event?.until}`} view={liveEvent} />}
+        {liveEvent && (
+          <EventChip key={`${liveEvent.id}-${state.run.event?.until}`} view={liveEvent} />
+        )}
         {radar && tutorial === null && <RadarChip view={radar} />}
         {mission && tutorial === null && <MissionChip view={mission} />}
         {signal && <SignalChip key={state.run.boostUntil} signal={signal} paused={paused} />}
@@ -527,7 +622,11 @@ export function GameScreen({ controller, onExit }: Props) {
           {notice && (
             <div key={notice.id} className="ap-pickup">
               <span className="ap-pickup-medal">
-                {notice.object ? <SpaceObject kind={notice.object} size={40} /> : notice.astro && <AstroMedal astro={notice.astro} />}
+                {notice.object ? (
+                  <SpaceObject kind={notice.object} size={40} />
+                ) : (
+                  notice.astro && <AstroMedal astro={notice.astro} />
+                )}
               </span>
               <span>
                 <b>{notice.title}</b>
@@ -560,7 +659,8 @@ export function GameScreen({ controller, onExit }: Props) {
                   +{sparkNotice.amount} {sparkNotice.amount === 1 ? 'Cintila' : 'Cintilas'}
                 </b>
                 <small>
-                  {sparkNotice.available} {sparkNotice.available === 1 ? 'para gastar' : 'para gastar'} na árvore
+                  {sparkNotice.available}{' '}
+                  {sparkNotice.available === 1 ? 'para gastar' : 'para gastar'} na árvore
                 </small>
               </span>
             </div>
@@ -568,7 +668,11 @@ export function GameScreen({ controller, onExit }: Props) {
         </div>
         {starReady && !pending && (
           <div className="ap-ready-wrap">
-            <button type="button" className="ap-hbtn ap-hbtn-go ap-ready" onClick={() => setCollapseOpen(true)}>
+            <button
+              type="button"
+              className="ap-hbtn ap-hbtn-go ap-ready"
+              onClick={() => setCollapseOpen(true)}
+            >
               Estrela pronta: colapso {collapse.next}
             </button>
             <RequirementBars view={collapse} compact />
@@ -606,7 +710,11 @@ export function GameScreen({ controller, onExit }: Props) {
           />
           <div className="ap-fx" aria-hidden="true">
             {bursts.map((b) => (
-              <span key={b.id} className="ap-burst" style={{ '--turn': `${b.turn}deg`, '--drift': `${b.drift}px` } as CSSProperties}>
+              <span
+                key={b.id}
+                className="ap-burst"
+                style={{ '--turn': `${b.turn}deg`, '--drift': `${b.drift}px` } as CSSProperties}
+              >
                 <i className="ap-ring" />
                 {SPARK_ANGLES.map((a) => (
                   <i key={a} className="ap-spark" style={{ '--a': `${a}deg` } as CSSProperties} />
@@ -624,10 +732,21 @@ export function GameScreen({ controller, onExit }: Props) {
       </div>
 
       <div className="ap-field ap-field-over" style={showObjects ? undefined : { display: 'none' }}>
-        <FieldObjects state={state} now={now} paused={paused} lanes={lanes.current} onCapture={controller.capture} />
+        <FieldObjects
+          state={state}
+          now={now}
+          paused={paused}
+          lanes={lanes.current}
+          onCapture={controller.capture}
+        />
         <div className="ap-capfx" aria-hidden="true">
           {captures.map((c) => (
-            <span key={c.id} className="ap-cap" style={{ left: `${c.x}%`, top: `${c.y}%` }} data-kind={c.kind}>
+            <span
+              key={c.id}
+              className="ap-cap"
+              style={{ left: `${c.x}%`, top: `${c.y}%` }}
+              data-kind={c.kind}
+            >
               <i className="ap-cap-ring" />
               <b>{c.text}</b>
             </span>
@@ -660,90 +779,119 @@ export function GameScreen({ controller, onExit }: Props) {
         </div>
       </aside>
 
-      {tutorial === null && !page && <SkillBar state={state} now={now} onUse={controller.skill} onAutoBuy={controller.autoBuy} />}
-
-      {(unlocked.has('achievements') || unlocked.has('grimoires') || unlocked.has('upgrades')) && (
-      <nav className="ap-dock" aria-label="Menu do jogo">
-        {unlocked.has('achievements') && (
-        <button
-          type="button"
-          data-tut="dock-achievements"
-          className={`ap-dockb ap-dock-in${page === 'achievements' ? ' on' : ''}`}
-          aria-label={unseenAch > 0 ? `${PAGE_TITLE.achievements}, ${unseenAch} ${unseenAch === 1 ? 'nova' : 'novas'}` : PAGE_TITLE.achievements}
-          aria-pressed={page === 'achievements'}
-          onClick={() => openPage('achievements')}
-        >
-          <PageIcon name="achievements" className="ap-dock-i" />
-          {unseenAch > 0 && page !== 'achievements' && (
-            <span className="ap-badge" aria-hidden="true">
-              {unseenAch > 99 ? '99+' : unseenAch}
-            </span>
-          )}
-        </button>
-        )}
-        {unlocked.has('grimoires') && (
-        <button
-          type="button"
-          data-tut="dock-grimoires"
-          className={`ap-dockb ap-dock-in${page === 'grimoires' ? ' on' : ''}`}
-          aria-label={freshGrimoire ? 'Grimórios, tem novidade' : PAGE_TITLE.grimoires}
-          aria-pressed={page === 'grimoires'}
-          onClick={() => openPage('grimoires')}
-        >
-          <PageIcon name="grimoires" className="ap-dock-i" />
-          {freshGrimoire && (
-            <span className="ap-badge" aria-hidden="true">
-              !
-            </span>
-          )}
-        </button>
-        )}
-        {state.collapses >= 1 && (
-        <button
-          type="button"
-          data-tut="dock-vault"
-          className={`ap-dockb ap-dock-in${page === 'vault' ? ' on' : ''}`}
-          aria-label={PAGE_TITLE.vault}
-          aria-pressed={page === 'vault'}
-          onClick={() => openPage('vault')}
-        >
-          <PageIcon name="vault" className="ap-dock-i" />
-        </button>
-        )}
-        {unlocked.has('upgrades') && (
-        <button
-          type="button"
-          data-tut="dock-upgrades"
-          className={`ap-dockb ap-dockb-big ap-dock-in${page === 'upgrades' ? ' on' : ''}`}
-          aria-label={upBadge > 0 ? `Melhorias, ${upBadge} para ver` : PAGE_TITLE.upgrades}
-          aria-pressed={page === 'upgrades'}
-          onClick={() => openPage('upgrades')}
-        >
-          Melhorias
-          {upBadge > 0 && (
-            <span className="ap-badge" aria-hidden="true">
-              {upBadge}
-            </span>
-          )}
-        </button>
-        )}
-      </nav>
+      {tutorial === null && !page && (
+        <SkillBar state={state} now={now} onUse={controller.skill} onAutoBuy={controller.autoBuy} />
       )}
 
-      {page === 'tree' && <TreePage state={state} onBuy={controller.buyTree} onRespec={controller.respec} onClose={() => setPage(null)} />}
+      {(unlocked.has('achievements') || unlocked.has('grimoires') || unlocked.has('upgrades')) && (
+        <nav className="ap-dock" aria-label="Menu do jogo">
+          {unlocked.has('achievements') && (
+            <button
+              type="button"
+              data-tut="dock-achievements"
+              className={`ap-dockb ap-dock-in${page === 'achievements' ? ' on' : ''}`}
+              aria-label={
+                unseenAch > 0
+                  ? `${PAGE_TITLE.achievements}, ${unseenAch} ${unseenAch === 1 ? 'nova' : 'novas'}`
+                  : PAGE_TITLE.achievements
+              }
+              aria-pressed={page === 'achievements'}
+              onClick={() => openPage('achievements')}
+            >
+              <PageIcon name="achievements" className="ap-dock-i" />
+              {unseenAch > 0 && page !== 'achievements' && (
+                <span className="ap-badge" aria-hidden="true">
+                  {unseenAch > 99 ? '99+' : unseenAch}
+                </span>
+              )}
+            </button>
+          )}
+          {unlocked.has('grimoires') && (
+            <button
+              type="button"
+              data-tut="dock-grimoires"
+              className={`ap-dockb ap-dock-in${page === 'grimoires' ? ' on' : ''}`}
+              aria-label={freshGrimoire ? 'Grimórios, tem novidade' : PAGE_TITLE.grimoires}
+              aria-pressed={page === 'grimoires'}
+              onClick={() => openPage('grimoires')}
+            >
+              <PageIcon name="grimoires" className="ap-dock-i" />
+              {freshGrimoire && (
+                <span className="ap-badge" aria-hidden="true">
+                  !
+                </span>
+              )}
+            </button>
+          )}
+          {state.collapses >= 1 && (
+            <button
+              type="button"
+              data-tut="dock-vault"
+              className={`ap-dockb ap-dock-in${page === 'vault' ? ' on' : ''}`}
+              aria-label={PAGE_TITLE.vault}
+              aria-pressed={page === 'vault'}
+              onClick={() => openPage('vault')}
+            >
+              <PageIcon name="vault" className="ap-dock-i" />
+            </button>
+          )}
+          {unlocked.has('upgrades') && (
+            <button
+              type="button"
+              data-tut="dock-upgrades"
+              className={`ap-dockb ap-dockb-big ap-dock-in${page === 'upgrades' ? ' on' : ''}`}
+              aria-label={upBadge > 0 ? `Melhorias, ${upBadge} para ver` : PAGE_TITLE.upgrades}
+              aria-pressed={page === 'upgrades'}
+              onClick={() => openPage('upgrades')}
+            >
+              Melhorias
+              {upBadge > 0 && (
+                <span className="ap-badge" aria-hidden="true">
+                  {upBadge}
+                </span>
+              )}
+            </button>
+          )}
+        </nav>
+      )}
+
+      {page === 'tree' && (
+        <TreePage
+          state={state}
+          onBuy={controller.buyTree}
+          onRespec={controller.respec}
+          onClose={() => setPage(null)}
+        />
+      )}
 
       {page && page !== 'tree' && (
         <GamePage
           key={page}
           name={page}
-          notice={pageNotice(page, affordable, albumCount, state.collapses, achievementCounts(state))}
+          notice={pageNotice(
+            page,
+            affordable,
+            albumCount,
+            state.collapses,
+            achievementCounts(state),
+          )}
           dust={page === 'upgrades' ? formatNumber(state.run.dust) : undefined}
           onClose={() => setPage(null)}
         >
-          {page === 'upgrades' && <UpgradesPage state={state} onBuy={controller.buy} onBuyBatch={controller.buyBatch} seen={seenUp} onSeen={markSeen} />}
+          {page === 'upgrades' && (
+            <UpgradesPage
+              state={state}
+              onBuy={controller.buy}
+              onBuyBatch={controller.buyBatch}
+              seen={seenUp}
+              onSeen={markSeen}
+            />
+          )}
           {page === 'achievements' && <AchievementsPage state={state} />}
           {page === 'vault' && <VaultPage state={state} onCollapse={() => setCollapseOpen(true)} />}
-          {page === 'grimoires' ? <GrimoiresPage state={state} onFavorite={controller.setFavorite} /> : undefined}
+          {page === 'grimoires' ? (
+            <GrimoiresPage state={state} onFavorite={controller.setFavorite} />
+          ) : undefined}
         </GamePage>
       )}
 
@@ -764,7 +912,11 @@ export function GameScreen({ controller, onExit }: Props) {
           pityLeft={pityLeft(state)}
           suggestion={suggestion}
           gain={cardPreviews(state, pending.offers, pending.rarities)}
-          coach={coach?.inline ? <TutorialInline view={coach} onSkip={controller.tutorialSkip} /> : undefined}
+          coach={
+            coach?.inline ? (
+              <TutorialInline view={coach} onSkip={controller.tutorialSkip} />
+            ) : undefined
+          }
         />
       )}
 
@@ -795,10 +947,24 @@ export function GameScreen({ controller, onExit }: Props) {
       )}
 
       {collapseOpen && starReady && !pending && (
-        <CollapseModal state={state} onCancel={() => setCollapseOpen(false)} onConfirm={controller.collapse} />
+        <CollapseModal
+          state={state}
+          onCancel={() => setCollapseOpen(false)}
+          onConfirm={controller.collapse}
+        />
       )}
 
-      {evolution && <EvolutionFx key={evolution.key} name={evolution.name} astro={evolution.astro} from={evolution.from} to={evolution.to} level={evolution.level} onDone={endEvolution} />}
+      {evolution && (
+        <EvolutionFx
+          key={evolution.key}
+          name={evolution.name}
+          astro={evolution.astro}
+          from={evolution.from}
+          to={evolution.to}
+          level={evolution.level}
+          onDone={endEvolution}
+        />
+      )}
 
       {flash !== null && (
         <div key={flash} className="ap-flash" aria-hidden="true">

@@ -101,7 +101,9 @@
   transform: translate(-50%, -50%);
   color: #fff;
   font: 900 min(26vw, 150px) / 1 var(--font-display, system-ui);
-  text-shadow: 0 6px 0 #1b1535, 0 0 24px rgba(0, 0, 0, 0.35);
+  text-shadow:
+    0 6px 0 #1b1535,
+    0 0 24px rgba(0, 0, 0, 0.35);
   pointer-events: none;
 }
 .dsm-note {

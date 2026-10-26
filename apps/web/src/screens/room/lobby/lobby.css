@@ -572,7 +572,6 @@
   border-radius: 999px;
 }
 
-
 /* ---------- Lobby sem abas (spec 045) ---------- */
 .lb-code {
   flex-wrap: wrap;
@@ -1407,4 +1406,116 @@
     width: 16px;
     height: 16px;
   }
+}
+
+/* Bola Maluca!: times, vagas e espectadores */
+.bola-lobby-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px;
+}
+.bola-lobby-team {
+  border: 3px solid var(--tc);
+  border-radius: 14px;
+  background: var(--card, #fff);
+  overflow: hidden;
+}
+.bola-lobby-team h3,
+.bola-lobby-spec h3 {
+  display: flex;
+  justify-content: space-between;
+  margin: 0;
+  padding: 6px 12px;
+  font: 800 14px var(--font-display, system-ui);
+  text-transform: uppercase;
+}
+.bola-lobby-team h3 {
+  background: var(--tc);
+  color: #fff;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+}
+.bola-lobby-team ul,
+.bola-lobby-spec ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.bola-lobby-team li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 44px;
+  padding: 4px 12px;
+  font: 700 14px var(--font-display, system-ui);
+}
+.bola-lobby-team li + li {
+  border-top: 1px solid rgba(127, 127, 127, 0.25);
+}
+.bola-lobby-team li.is-me {
+  background: rgba(255, 226, 122, 0.3);
+}
+.bola-lobby-team li.is-free,
+.bola-lobby-team li.is-full {
+  opacity: 0.85;
+  font-style: italic;
+}
+.bola-lobby-team em {
+  font: 700 11px var(--font-mono, monospace);
+  font-style: normal;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+.bola-lobby-team em.ok {
+  color: #0b6b3a;
+  opacity: 1;
+}
+.bola-lobby-team small,
+.bola-lobby-spec small {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+.bola-acts {
+  display: inline-flex;
+  gap: 6px;
+}
+.bola-mini {
+  min-height: 34px;
+  padding: 0 10px;
+  border: 2px solid var(--ink, #1b1535);
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font: 800 12px var(--font-display, system-ui);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.bola-mini.on {
+  background: #ff9d2e;
+  color: #1b1535;
+}
+.bola-lobby-spec {
+  margin-top: 10px;
+  padding-bottom: 10px;
+  border: 2px dashed rgba(127, 127, 127, 0.5);
+  border-radius: 14px;
+}
+.bola-lobby-spec li {
+  padding: 4px 12px;
+  font: 700 14px var(--font-display, system-ui);
+}
+.bola-lobby-spec .mono,
+.bola-lobby-spec .bola-mini {
+  margin: 6px 12px 0;
+}
+.bola-format {
+  display: grid;
+  gap: 10px;
+}
+.bola-seg {
+  flex-wrap: wrap;
 }

@@ -7,7 +7,12 @@ const GREEN = '#33c27f';
 const YELLOW = '#ffd23f';
 const BLUE = '#2f5bff';
 const PURPLE = '#7a3cff';
-const stroke = { stroke: INK, strokeWidth: 3, strokeLinejoin: 'round' as const, strokeLinecap: 'round' as const };
+const stroke = {
+  stroke: INK,
+  strokeWidth: 3,
+  strokeLinejoin: 'round' as const,
+  strokeLinecap: 'round' as const,
+};
 
 function hexPoints(cx: number, cy: number, r: number): string {
   return Array.from({ length: 6 }, (_, i) => {
@@ -17,13 +22,49 @@ function hexPoints(cx: number, cy: number, r: number): string {
 }
 
 /** Uma casa de letra, com sombra dura. `delay` escalona a virada. */
-function Tile({ x, y, s = 30, fill, letter, delay = 0, flip = true }: { x: number; y: number; s?: number; fill: string; letter?: string; delay?: number; flip?: boolean }) {
+function Tile({
+  x,
+  y,
+  s = 30,
+  fill,
+  letter,
+  delay = 0,
+  flip = true,
+}: {
+  x: number;
+  y: number;
+  s?: number;
+  fill: string;
+  letter?: string;
+  delay?: number;
+  flip?: boolean;
+}) {
   return (
-    <g className={flip ? 'wa-flip' : undefined} style={{ animationDelay: `${delay}s`, transformOrigin: `${x + s / 2}px ${y + s / 2}px` }}>
+    <g
+      className={flip ? 'wa-flip' : undefined}
+      style={{ animationDelay: `${delay}s`, transformOrigin: `${x + s / 2}px ${y + s / 2}px` }}
+    >
       <rect x={x + 3} y={y + 3} width={s} height={s} rx={s * 0.2} fill={INK} />
-      <rect x={x} y={y} width={s} height={s} rx={s * 0.2} fill={fill} {...stroke} strokeWidth={s > 26 ? 3 : 2.4} />
+      <rect
+        x={x}
+        y={y}
+        width={s}
+        height={s}
+        rx={s * 0.2}
+        fill={fill}
+        {...stroke}
+        strokeWidth={s > 26 ? 3 : 2.4}
+      />
       {letter && (
-        <text x={x + s / 2} y={y + s * 0.7} textAnchor="middle" fontFamily="Archivo, Arial Black, sans-serif" fontWeight="900" fontSize={s * 0.58} fill={INK}>
+        <text
+          x={x + s / 2}
+          y={y + s * 0.7}
+          textAnchor="middle"
+          fontFamily="Archivo, Arial Black, sans-serif"
+          fontWeight="900"
+          fontSize={s * 0.58}
+          fill={INK}
+        >
           {letter}
         </text>
       )}
@@ -54,8 +95,24 @@ export function WordsHubArt() {
           [54, 106, PURPLE],
         ].map(([x, y, c]) => (
           <g key={`${x}${y}`}>
-            <rect x={(x as number) + 2} y={(y as number) + 2} width="22" height="22" rx="5" fill={INK} />
-            <rect x={x as number} y={y as number} width="22" height="22" rx="5" fill={c as string} {...stroke} strokeWidth={2.2} />
+            <rect
+              x={(x as number) + 2}
+              y={(y as number) + 2}
+              width="22"
+              height="22"
+              rx="5"
+              fill={INK}
+            />
+            <rect
+              x={x as number}
+              y={y as number}
+              width="22"
+              height="22"
+              rx="5"
+              fill={c as string}
+              {...stroke}
+              strokeWidth={2.2}
+            />
           </g>
         ))}
       </g>
@@ -79,7 +136,14 @@ export function ClassicArt() {
     <svg className="wa-art" viewBox="0 0 140 110" aria-hidden="true">
       {rows.map((row, r) =>
         [...row].map((c, i) => (
-          <Tile key={`${r}${i}`} x={8 + i * 26} y={6 + r * 32} s={22} fill={color[c as keyof typeof color]} delay={(r * 5 + i) * 0.1} />
+          <Tile
+            key={`${r}${i}`}
+            x={8 + i * 26}
+            y={6 + r * 32}
+            s={22}
+            fill={color[c as keyof typeof color]}
+            delay={(r * 5 + i) * 0.1}
+          />
         )),
       )}
     </svg>
@@ -94,9 +158,27 @@ export function ConnectArt() {
       {bands.map((c, i) => (
         <g key={c} className="wa-slide" style={{ animationDelay: `${i * 0.25}s` }}>
           <rect x="10" y={10 + i * 25 + 3} width="124" height="20" rx="6" fill={INK} />
-          <rect x="8" y={10 + i * 25} width="124" height="20" rx="6" fill={c} {...stroke} strokeWidth={2.4} />
+          <rect
+            x="8"
+            y={10 + i * 25}
+            width="124"
+            height="20"
+            rx="6"
+            fill={c}
+            {...stroke}
+            strokeWidth={2.4}
+          />
           {[0, 1, 2, 3].map((k) => (
-            <rect key={k} x={18 + k * 28} y={10 + i * 25 + 6} width="20" height="8" rx="3" fill={INK} opacity="0.85" />
+            <rect
+              key={k}
+              x={18 + k * 28}
+              y={10 + i * 25 + 6}
+              width="20"
+              height="8"
+              rx="3"
+              fill={INK}
+              opacity="0.85"
+            />
           ))}
         </g>
       ))}
@@ -114,17 +196,37 @@ export function BeeArt() {
   return (
     <svg className="wa-art" viewBox="0 0 140 110" aria-hidden="true">
       {pts.map(([x, y], i) => (
-        <g key={i} className="wa-pop" style={{ animationDelay: `${i * 0.12}s`, transformOrigin: `${x}px ${y}px` }}>
+        <g
+          key={i}
+          className="wa-pop"
+          style={{ animationDelay: `${i * 0.12}s`, transformOrigin: `${x}px ${y}px` }}
+        >
           <polygon points={hexPoints(x + 2, y + 2, 19)} fill={INK} />
           <polygon points={hexPoints(x, y, 19)} fill={PAPER} {...stroke} strokeWidth={2.4} />
-          <text x={x} y={y + 6} textAnchor="middle" fontFamily="Archivo, Arial Black, sans-serif" fontWeight="900" fontSize="17" fill={INK}>
+          <text
+            x={x}
+            y={y + 6}
+            textAnchor="middle"
+            fontFamily="Archivo, Arial Black, sans-serif"
+            fontWeight="900"
+            fontSize="17"
+            fill={INK}
+          >
             {letters[i]}
           </text>
         </g>
       ))}
       <polygon points={hexPoints(72, 57, 21)} fill={INK} />
       <polygon points={hexPoints(70, 55, 21)} fill={YELLOW} {...stroke} />
-      <text x="70" y="62" textAnchor="middle" fontFamily="Archivo, Arial Black, sans-serif" fontWeight="900" fontSize="19" fill={INK}>
+      <text
+        x="70"
+        y="62"
+        textAnchor="middle"
+        fontFamily="Archivo, Arial Black, sans-serif"
+        fontWeight="900"
+        fontSize="19"
+        fill={INK}
+      >
         U
       </text>
     </svg>
@@ -155,7 +257,19 @@ export function MiniBoards({ count }: { count: 1 | 2 | 4 }) {
   const w = count === 1 ? 11 : count === 2 ? 8 : 6;
   const size = 3 * w + 4;
   const origins: [number, number][] =
-    count === 1 ? [[0, 0]] : count === 2 ? [[0, 0], [size + 8, 0]] : [[0, 0], [size + 6, 0], [0, size + 6], [size + 6, size + 6]];
+    count === 1
+      ? [[0, 0]]
+      : count === 2
+        ? [
+            [0, 0],
+            [size + 8, 0],
+          ]
+        : [
+            [0, 0],
+            [size + 6, 0],
+            [0, size + 6],
+            [size + 6, size + 6],
+          ];
   const width = count === 1 ? size : size * 2 + 8;
   const height = count === 4 ? size * 2 + 6 : size;
   return (

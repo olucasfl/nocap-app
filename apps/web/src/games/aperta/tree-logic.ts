@@ -101,7 +101,10 @@ const PARAM_LABEL: Record<string, string> = {
   cut: 'ofertas a menos',
 };
 
-export function describeLevel(node: { effect: { params: Record<string, number[]> } }, level: number): string {
+export function describeLevel(
+  node: { effect: { params: Record<string, number[]> } },
+  level: number,
+): string {
   const parts = Object.entries(node.effect.params)
     .filter(([key]) => key !== 'on')
     .map(([key, arr]) => {
@@ -124,7 +127,8 @@ function soonHint(id: string, seen = new Set<string>()): string {
   const n = treeNodeById(id);
   if (!n || seen.has(id)) return 'Chega em uma atualização';
   seen.add(id);
-  if (n.needs && !nodeLive({ ...n, parents: [] })) return FEATURE_HINT[n.needs] ?? 'Chega em uma atualização';
+  if (n.needs && !nodeLive({ ...n, parents: [] }))
+    return FEATURE_HINT[n.needs] ?? 'Chega em uma atualização';
   for (const p of n.parents) {
     const parent = treeNodeById(p);
     if (parent && !nodeLive(parent)) return soonHint(p, seen);
@@ -141,7 +145,9 @@ export function treeView(state: SaveState): TreeView {
       const level = state.tree[n.id] ?? 0;
       const cost = nodeLevelCost(n);
       const next = nodeNextCost(state, n.id);
-      const missingParents = n.parents.filter((p) => (state.tree[p] ?? 0) < 1).map((p) => treeNodeById(p)?.name ?? p);
+      const missingParents = n.parents
+        .filter((p) => (state.tree[p] ?? 0) < 1)
+        .map((p) => treeNodeById(p)?.name ?? p);
       let status: TreeNodeStatus;
       if (level >= n.maxLevel) status = 'owned';
       else if (!open) status = 'closed';
@@ -152,7 +158,11 @@ export function treeView(state: SaveState): TreeView {
       return {
         branch: b.id,
         branchName: b.name,
-        parents: n.parents.map((p) => ({ id: p, name: treeNodeById(p)?.name ?? p, owned: (state.tree[p] ?? 0) >= 1 })),
+        parents: n.parents.map((p) => ({
+          id: p,
+          name: treeNodeById(p)?.name ?? p,
+          owned: (state.tree[p] ?? 0) >= 1,
+        })),
         soonHint: status === 'soon' ? soonHint(n.id) : null,
         owned: level >= 1,
         nowText: level >= 1 ? describeLevel(n, level) : null,
@@ -169,7 +179,14 @@ export function treeView(state: SaveState): TreeView {
         needs: status === 'blocked' ? missingParents : [],
       };
     });
-    return { id: b.id, name: b.name, astro: BRANCH_ASTRO[b.id] ?? 'star', owned: nodes.filter((n) => n.level >= 1).length, total: nodes.length, nodes };
+    return {
+      id: b.id,
+      name: b.name,
+      astro: BRANCH_ASTRO[b.id] ?? 'star',
+      owned: nodes.filter((n) => n.level >= 1).length,
+      total: nodes.length,
+      nodes,
+    };
   });
   const can = canRespec(state);
   const src = sparkSources(state);
@@ -180,7 +197,9 @@ export function treeView(state: SaveState): TreeView {
     { id: 'stars', label: 'Estrela dos Proibidos', value: src.stars },
     { id: 'collapses', label: 'Colapsos e poeira total', value: src.collapseMarks + src.dustMarks },
     { id: 'events', label: 'Eventos raros', value: src.eventFirst },
-    ...(state.sparks.legacy > 0 ? [{ id: 'legacy', label: 'Fragmentos de antes', value: state.sparks.legacy }] : []),
+    ...(state.sparks.legacy > 0
+      ? [{ id: 'legacy', label: 'Fragmentos de antes', value: state.sparks.legacy }]
+      : []),
   ];
   return {
     open,

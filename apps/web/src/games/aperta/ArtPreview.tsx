@@ -52,7 +52,10 @@ export function ArtPreview() {
       <SpaceArtSprite />
       <header className="ap-pv-head">
         <h1>Kit de arte do Aperta!</h1>
-        <p>Pré-visualização de desenvolvimento. Cada seção mostra um componente em todas as variações.</p>
+        <p>
+          Pré-visualização de desenvolvimento. Cada seção mostra um componente em todas as
+          variações.
+        </p>
       </header>
 
       <section className="ap-pv-sec">
@@ -115,7 +118,9 @@ export function ArtPreview() {
                 <SpaceObject kind={k} size={62} glow />
                 <SpaceObject kind={k} size={96} glow />
               </div>
-              <figcaption style={{ color: SPACE_OBJECT_COLOR[k] }}>{SPACE_OBJECT_LABEL[k]}</figcaption>
+              <figcaption style={{ color: SPACE_OBJECT_COLOR[k] }}>
+                {SPACE_OBJECT_LABEL[k]}
+              </figcaption>
             </figure>
           ))}
         </div>

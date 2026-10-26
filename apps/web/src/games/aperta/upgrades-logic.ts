@@ -87,8 +87,16 @@ interface Reading {
 
 const READ_TOUCH: Reading = { label: 'Seu toque', read: (s) => s.dustPerTouch };
 const READ_ENERGY: Reading = { label: 'Energia por toque', read: (s) => s.energyPerTouch };
-const READ_GEN: Reading = { label: 'Geradores de poeira', read: (s) => s.autoDustPerSec, unit: '/s' };
-const READ_ENERGY_GEN: Reading = { label: 'Geradores de energia', read: (s) => s.autoEnergyPerSec, unit: '/s' };
+const READ_GEN: Reading = {
+  label: 'Geradores de poeira',
+  read: (s) => s.autoDustPerSec,
+  unit: '/s',
+};
+const READ_ENERGY_GEN: Reading = {
+  label: 'Geradores de energia',
+  read: (s) => s.autoEnergyPerSec,
+  unit: '/s',
+};
 
 const READING_OF: Record<string, Reading> = {
   touchAdd: READ_TOUCH,
@@ -107,7 +115,12 @@ export function effectLine(state: SaveState, index: number): EffectLine | null {
   const before = reading.read(effectiveStats(state));
   const after = reading.read(effectiveStats(withLevelUp(state, index)));
   const unit = reading.unit ?? '';
-  return { label: reading.label, before: `${amount(before)}${unit}`, after: `${amount(after)}${unit}`, idle: !(after > before) };
+  return {
+    label: reading.label,
+    before: `${amount(before)}${unit}`,
+    after: `${amount(after)}${unit}`,
+    idle: !(after > before),
+  };
 }
 
 /** A condição que falta, em palavras. */
@@ -192,17 +205,30 @@ export function itemsView(state: SaveState): ItemsView {
     upcoming,
     bought: owned.length,
     total: here.length,
-    owned: owned.slice().reverse().map(({ index }) => itemRow(state, index)),
+    owned: owned
+      .slice()
+      .reverse()
+      .map(({ index }) => itemRow(state, index)),
     moreAt: nextIdx === null && future ? future.u.unlockedAtCollapse : null,
     later: items.filter(({ u }) => u.unlockedAtCollapse > state.collapses).length,
   };
 }
 
 /** "Seus poderes": o que a pessoa tem de verdade agora, para o alto da página. */
-export function powers(state: SaveState): { touch: string; energy: string; dustSec: string; energySec: string } {
+export function powers(state: SaveState): {
+  touch: string;
+  energy: string;
+  dustSec: string;
+  energySec: string;
+} {
   const s = effectiveStats(state);
   const rates = autoRates(state);
-  return { touch: amount(s.dustPerTouch), energy: amount(s.energyPerTouch), dustSec: formatRate(rates.dust), energySec: formatRate(rates.energy * 60) };
+  return {
+    touch: amount(s.dustPerTouch),
+    energy: amount(s.energyPerTouch),
+    dustSec: formatRate(rates.dust),
+    energySec: formatRate(rates.energy * 60),
+  };
 }
 
 /** Quanto tempo o gerador leva para pagar o que custou, em palavras ("cerca de 12 min"); `null` se não rende nada. */
@@ -274,8 +300,15 @@ export function generatorRows(state: SaveState): GeneratorRow[] {
       status,
       cost,
       missing: cost !== null ? Math.max(0, Math.ceil(cost - state.run.dust)) : 0,
-      gain: shown ? (energy ? `Seus geradores de energia: ${amount(now * 60)}/min -> ${amount(next * 60)}/min` : `Seus geradores de ${unit}: ${amount(now)}/s -> ${amount(next)}/s`) : null,
-      total: level > 0 ? `Este gerador rende ${amount(((def.perSec ?? 0) * level * (read(stats) / Math.max(1e-12, rawSum(state, energy)))) * (energy ? 60 : 1))}${energy ? '/min' : '/s'} no total` : null,
+      gain: shown
+        ? energy
+          ? `Seus geradores de energia: ${amount(now * 60)}/min -> ${amount(next * 60)}/min`
+          : `Seus geradores de ${unit}: ${amount(now)}/s -> ${amount(next)}/s`
+        : null,
+      total:
+        level > 0
+          ? `Este gerador rende ${amount((def.perSec ?? 0) * level * (read(stats) / Math.max(1e-12, rawSum(state, energy))) * (energy ? 60 : 1))}${energy ? '/min' : '/s'} no total`
+          : null,
       payback: shown && cost !== null && !energy ? paybackText(cost, next - now) : null,
       lockHint: status === 'locked' && lock ? lockText(lock) : null,
       bulkLevels: batchLevels(state, index),
@@ -299,7 +332,9 @@ export function tabBadge(state: SaveState, tab: UpgradeTab, seen: ReadonlySet<st
     const v = itemsView(state);
     return v.next?.affordable ? 1 : 0;
   }
-  return generatorRows(state).filter((r) => r.status === 'affordable' || (r.status !== 'maxed' && !seen.has(r.id))).length;
+  return generatorRows(state).filter(
+    (r) => r.status === 'affordable' || (r.status !== 'maxed' && !seen.has(r.id)),
+  ).length;
 }
 
 /** Selo do botão Melhorias: a soma do que há para ver nas duas abas. */
@@ -320,7 +355,12 @@ export function formatRate(perSec: number): string {
 }
 
 /** Texto do botão de compra: preço, "falta N" ou "No máximo". */
-export function buyLabel(row: { status: UpgradeStatus; cost: number | null; missing: number; max?: number }): string {
+export function buyLabel(row: {
+  status: UpgradeStatus;
+  cost: number | null;
+  missing: number;
+  max?: number;
+}): string {
   switch (row.status) {
     case 'maxed':
       return 'No máximo';

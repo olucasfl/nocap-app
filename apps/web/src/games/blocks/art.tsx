@@ -36,11 +36,27 @@ function BlockArt({ color }: { color: BlockColor }) {
   const dark = shade(face, -0.35);
   return (
     <>
-      <rect x="0.05" y="0.05" width="0.9" height="0.9" rx="0.17" fill={dark} stroke={INK} strokeWidth="0.075" />
+      <rect
+        x="0.05"
+        y="0.05"
+        width="0.9"
+        height="0.9"
+        rx="0.17"
+        fill={dark}
+        stroke={INK}
+        strokeWidth="0.075"
+      />
       <rect x="0.14" y="0.12" width="0.72" height="0.66" rx="0.11" fill={face} />
       <rect x="0.14" y="0.12" width="0.72" height="0.2" rx="0.1" fill="#ffffff" opacity="0.38" />
       <rect x="0.14" y="0.58" width="0.72" height="0.2" rx="0.1" fill={dark} opacity="0.28" />
-      <path d="M0.22 0.27Q0.22 0.2 0.3 0.2H0.52" fill="none" stroke="#ffffff" strokeOpacity="0.85" strokeWidth="0.08" strokeLinecap="round" />
+      <path
+        d="M0.22 0.27Q0.22 0.2 0.3 0.2H0.52"
+        fill="none"
+        stroke="#ffffff"
+        strokeOpacity="0.85"
+        strokeWidth="0.08"
+        strokeLinecap="round"
+      />
     </>
   );
 }
@@ -118,7 +134,16 @@ export function ThumbSeal({ size = 96 }: { size?: number }) {
     <svg viewBox="0 0 100 100" width={size} height={size} aria-hidden="true">
       <circle cx="54" cy="54" r="42" fill={INK} />
       <circle cx="50" cy="50" r="42" fill="#ffd23f" stroke={INK} strokeWidth="4" />
-      <circle cx="50" cy="50" r="33" fill="none" stroke={INK} strokeWidth="2" strokeDasharray="3 5" opacity="0.5" />
+      <circle
+        cx="50"
+        cy="50"
+        r="33"
+        fill="none"
+        stroke={INK}
+        strokeWidth="2"
+        strokeDasharray="3 5"
+        opacity="0.5"
+      />
       <g transform="translate(26 24) scale(2)">
         <Thumb fill="#ffffff" />
       </g>
@@ -143,8 +168,28 @@ export function PerfectStamp({ width = 280 }: { width?: number }) {
     <svg viewBox="0 0 280 120" width={width} height={(width * 120) / 280} aria-hidden="true">
       <g transform="rotate(-5 140 62)">
         <rect x="16" y="26" width="256" height="84" rx="18" fill={INK} />
-        <rect x="10" y="20" width="256" height="84" rx="18" fill="#ff6a2b" stroke={INK} strokeWidth="5" />
-        <rect x="20" y="30" width="236" height="64" rx="12" fill="none" stroke={INK} strokeWidth="2.5" strokeDasharray="2 7" strokeLinecap="round" />
+        <rect
+          x="10"
+          y="20"
+          width="256"
+          height="84"
+          rx="18"
+          fill="#ff6a2b"
+          stroke={INK}
+          strokeWidth="5"
+        />
+        <rect
+          x="20"
+          y="30"
+          width="236"
+          height="64"
+          rx="12"
+          fill="none"
+          stroke={INK}
+          strokeWidth="2.5"
+          strokeDasharray="2 7"
+          strokeLinecap="round"
+        />
         <text
           x="138"
           y="80"
@@ -169,8 +214,25 @@ export function PerfectStamp({ width = 280 }: { width?: number }) {
 export function HintSeal({ full, size = 22 }: { full: boolean; size?: number }) {
   return (
     <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true">
-      <circle cx="12" cy="12" r="9.5" fill={full ? '#ffd23f' : 'none'} stroke={INK} strokeWidth="2.4" opacity={full ? 1 : 0.35} />
-      {full && <path d="M12 6.5a4.2 4.2 0 0 0-2.2 7.8c.4.3.7.7.7 1.2h3c0-.5.3-.9.7-1.2A4.2 4.2 0 0 0 12 6.5zM10.6 17.4h2.8" fill="none" stroke={INK} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />}
+      <circle
+        cx="12"
+        cy="12"
+        r="9.5"
+        fill={full ? '#ffd23f' : 'none'}
+        stroke={INK}
+        strokeWidth="2.4"
+        opacity={full ? 1 : 0.35}
+      />
+      {full && (
+        <path
+          d="M12 6.5a4.2 4.2 0 0 0-2.2 7.8c.4.3.7.7.7 1.2h3c0-.5.3-.9.7-1.2A4.2 4.2 0 0 0 12 6.5zM10.6 17.4h2.8"
+          fill="none"
+          stroke={INK}
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      )}
     </svg>
   );
 }
@@ -178,7 +240,17 @@ export function HintSeal({ full, size = 22 }: { full: boolean; size?: number }) 
 /** A lâmpada do botão de dica. */
 export function Bulb({ size = 22 }: { size?: number }) {
   return (
-    <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      aria-hidden="true"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M12 3a6 6 0 0 0-3.4 10.9c.6.5.9 1.1.9 1.8V16h5v-.3c0-.7.3-1.3.9-1.8A6 6 0 0 0 12 3z" />
       <path d="M9.8 19h4.4M10.6 21.5h2.8" />
     </svg>

@@ -61,7 +61,10 @@ export interface RegionMenuItem {
 /** As regiões já abertas, na ordem da viagem. Só vale ter menu quando há mais de uma. */
 export function regionMenuItems(state: SaveState): RegionMenuItem[] {
   const open = new Set(unlockedContent(state).regions.map((r) => r.id));
-  return REGION_ART.filter((a) => open.has(a.id)).map((art) => ({ art, current: art.id === state.regionId }));
+  return REGION_ART.filter((a) => open.has(a.id)).map((art) => ({
+    art,
+    current: art.id === state.regionId,
+  }));
 }
 
 // --- Missão da estação e eventos ---
@@ -99,13 +102,24 @@ export interface RadarView {
 export function radarView(state: SaveState): RadarView | null {
   const ex = effectiveStats(state).explore;
   if (!ex.radarOn) return null;
-  return { captures: state.run.radar, threshold: ex.radarThreshold, fill: Math.min(1, state.run.radar / ex.radarThreshold) };
+  return {
+    captures: state.run.radar,
+    threshold: ex.radarThreshold,
+    fill: Math.min(1, state.run.radar / ex.radarThreshold),
+  };
 }
 
 /** Evento em andamento. Sem contagem na tela: só o nome e o que ele faz. */
 export function eventView(state: SaveState, now: number): EventView | null {
   const id = activeEventId(state, now);
-  return id && state.run.event ? { id, name: EVENT_NAMES[id], text: EVENT_TEXT[id], remaining: Math.max(0, state.run.event.until - now) } : null;
+  return id && state.run.event
+    ? {
+        id,
+        name: EVENT_NAMES[id],
+        text: EVENT_TEXT[id],
+        remaining: Math.max(0, state.run.event.until - now),
+      }
+    : null;
 }
 
 // --- Favorito ---
@@ -125,35 +139,84 @@ interface StatLine {
 const pct = (v: number) => `${formatDecimal(v * 100, 0)}%`;
 const secs = (v: number) => `${formatDecimal(v, 1)} s`;
 
-const dustAmt = (v: number) => `${v >= 100 ? formatNumber(Math.floor(v)) : formatDecimal(v, 1)} poeira`;
+const dustAmt = (v: number) =>
+  `${v >= 100 ? formatNumber(Math.floor(v)) : formatDecimal(v, 1)} poeira`;
 const energyAmt = (v: number) => `${formatDecimal(v, v >= 10 ? 0 : 1)} energia`;
 
 const STAT_LINES: StatLine[] = [
-  { label: 'Seu toque', read: (s) => s.dustPerTouch, show: (v) => (v >= 100 ? formatNumber(Math.floor(v)) : formatDecimal(v, 1)) },
+  {
+    label: 'Seu toque',
+    read: (s) => s.dustPerTouch,
+    show: (v) => (v >= 100 ? formatNumber(Math.floor(v)) : formatDecimal(v, 1)),
+  },
   { label: 'Energia por toque', read: (s) => s.energyPerTouch, show: (v) => formatDecimal(v, 2) },
   { label: 'Energia até o próximo grimório', read: (s) => s.energyStepFactor, show: pct },
-  { label: 'Trocas de carta por escolha', read: (s) => s.choice.rerolls, show: (v) => formatDecimal(v, 0) },
-  { label: 'Descartes por escolha', read: (s) => s.choice.discards, show: (v) => formatDecimal(v, 0) },
+  {
+    label: 'Trocas de carta por escolha',
+    read: (s) => s.choice.rerolls,
+    show: (v) => formatDecimal(v, 0),
+  },
+  {
+    label: 'Descartes por escolha',
+    read: (s) => s.choice.discards,
+    show: (v) => formatDecimal(v, 0),
+  },
   { label: 'Cartas por escolha', read: (s) => s.choice.cards, show: (v) => formatDecimal(v, 0) },
-  { label: 'Peso das cartas épicas e lendárias', read: (s) => s.choice.rarityBoost, show: (v) => `+${formatDecimal(v, 0)}` },
-  { label: 'Devolução ao comprar', read: (s) => s.buyRefundTouches * s.dustPerTouch, show: dustAmt },
+  {
+    label: 'Peso das cartas épicas e lendárias',
+    read: (s) => s.choice.rarityBoost,
+    show: (v) => `+${formatDecimal(v, 0)}`,
+  },
+  {
+    label: 'Devolução ao comprar',
+    read: (s) => s.buyRefundTouches * s.dustPerTouch,
+    show: dustAmt,
+  },
   { label: 'Poeira inicial', read: (s) => s.startDust, show: (v) => formatNumber(v) },
   { label: 'Custo dos itens', read: (s) => s.costFactor, show: pct },
-  { label: 'Ao pegar um cometa', read: (s) => s.objects.reward.comet.dust * s.dustPerTouch, show: dustAmt },
-  { label: 'Ao pegar uma estrela cadente', read: (s) => s.objects.reward['shooting-star'].energy * s.energyPerTouch, show: energyAmt },
-  { label: 'Ao pegar um satélite', read: (s) => s.objects.reward.satellite.dust * s.dustPerTouch, show: dustAmt },
+  {
+    label: 'Ao pegar um cometa',
+    read: (s) => s.objects.reward.comet.dust * s.dustPerTouch,
+    show: dustAmt,
+  },
+  {
+    label: 'Ao pegar uma estrela cadente',
+    read: (s) => s.objects.reward['shooting-star'].energy * s.energyPerTouch,
+    show: energyAmt,
+  },
+  {
+    label: 'Ao pegar um satélite',
+    read: (s) => s.objects.reward.satellite.dust * s.dustPerTouch,
+    show: dustAmt,
+  },
   { label: 'Espera pelo próximo objeto', read: (s) => s.objects.spawnMaxSec, show: secs },
   { label: 'Tempo do objeto na tela', read: (s) => s.objects.lifeSec.comet, show: secs },
-  { label: 'Objetos ao mesmo tempo', read: (s) => s.objects.maxOnField, show: (v) => formatDecimal(v, 0) },
-  { label: 'Ao pegar qualquer objeto, energia extra', read: (s) => s.objects.onCaptureEnergyTouches * s.energyPerTouch, show: energyAmt },
-  { label: 'Toque depois de capturar', read: (s) => s.objects.afterCaptureMult, show: (v) => `x${formatDecimal(v, 1)}` },
+  {
+    label: 'Objetos ao mesmo tempo',
+    read: (s) => s.objects.maxOnField,
+    show: (v) => formatDecimal(v, 0),
+  },
+  {
+    label: 'Ao pegar qualquer objeto, energia extra',
+    read: (s) => s.objects.onCaptureEnergyTouches * s.energyPerTouch,
+    show: energyAmt,
+  },
+  {
+    label: 'Toque depois de capturar',
+    read: (s) => s.objects.afterCaptureMult,
+    show: (v) => `x${formatDecimal(v, 1)}`,
+  },
 ];
 
 /**
  * "Poeira por toque: 12 -> 14": o que mudaria na vida atual se a carta fosse escolhida (até 2 linhas).
  * Efeitos que não aparecem nesses números (toque especial, captura) devolvem `null`.
  */
-export function cardGain(state: SaveState, id: string, rarity: GrimoireRarity = 'common'): string | null {
+export function cardGain(
+  state: SaveState,
+  id: string,
+  rarity: GrimoireRarity = 'common',
+): string | null {
   const before = effectiveStats(state);
   const after = effectiveStats(withPick(state, id, rarity));
   const lines: string[] = [];
@@ -170,14 +233,24 @@ export function cardGain(state: SaveState, id: string, rarity: GrimoireRarity = 
     const old = was.get(r.n);
     const m0 = old?.mult ?? 1;
     const e0 = old?.energy ?? 0;
-    if (Math.abs(m0 - r.mult) > 1e-9 && r.mult > 1) lines.push(`A cada ${r.n} toques, poeira: x${formatDecimal(m0, 1)} -> x${formatDecimal(r.mult, 1)}`);
-    else if (Math.abs(e0 - r.energy) > 1e-9) lines.push(`A cada ${r.n} toques, energia: +${formatDecimal(e0, 1)} -> +${formatDecimal(r.energy, 1)}`);
+    if (Math.abs(m0 - r.mult) > 1e-9 && r.mult > 1)
+      lines.push(
+        `A cada ${r.n} toques, poeira: x${formatDecimal(m0, 1)} -> x${formatDecimal(r.mult, 1)}`,
+      );
+    else if (Math.abs(e0 - r.energy) > 1e-9)
+      lines.push(
+        `A cada ${r.n} toques, energia: +${formatDecimal(e0, 1)} -> +${formatDecimal(r.energy, 1)}`,
+      );
   }
   return lines.length > 0 ? lines.slice(0, 2).join(' · ') : null;
 }
 
 /** O que cada carta oferecida faz nos números da vida atual ("Seu toque: 12 -> 14"). */
-export function cardPreviews(state: SaveState, offers: readonly string[], rarities: Readonly<Record<string, GrimoireRarity>> = {}): Record<string, string> {
+export function cardPreviews(
+  state: SaveState,
+  offers: readonly string[],
+  rarities: Readonly<Record<string, GrimoireRarity>> = {},
+): Record<string, string> {
   const out: Record<string, string> = {};
   for (const id of offers) {
     const gain = cardGain(state, id, rarities[id] ?? 'common');

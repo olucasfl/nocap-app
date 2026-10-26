@@ -125,7 +125,9 @@ function summaryOf(slot: SaveSlot, state: SaveState, lastPlayedAt: string): Save
 }
 
 const seedOf = (now: number): string =>
-  typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${now}-${Math.random().toString(36).slice(2)}`;
+  typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : `${now}-${Math.random().toString(36).slice(2)}`;
 
 export function createApiSaveStore(userId: string, env: Env = realEnv()): SyncedSaveStore {
   const { api, storage, now } = env;
@@ -134,7 +136,8 @@ export function createApiSaveStore(userId: string, env: Env = realEnv()): Synced
   let interval: ReturnType<typeof setInterval> | undefined;
   let attached = false;
 
-  const key = (what: string, slot?: SaveSlot) => `nocap-aperta:${userId}:${what}${slot ? `:${slot}` : ''}`;
+  const key = (what: string, slot?: SaveSlot) =>
+    `nocap-aperta:${userId}:${what}${slot ? `:${slot}` : ''}`;
   const read = <T>(k: string): T | null => {
     try {
       const raw = storage.getItem(k);
@@ -161,7 +164,12 @@ export function createApiSaveStore(userId: string, env: Env = realEnv()): Synced
     const c = read<LocalCopy>(key('save', slot));
     return c && typeof c.revision === 'number' && c.state && typeof c.state === 'object' ? c : null;
   };
-  const persist = (slot: SaveSlot, rt: Runtime) => write(key('save', slot), { revision: rt.revision, state: rt.state, dirty: rt.dirty } satisfies LocalCopy);
+  const persist = (slot: SaveSlot, rt: Runtime) =>
+    write(key('save', slot), {
+      revision: rt.revision,
+      state: rt.state,
+      dirty: rt.dirty,
+    } satisfies LocalCopy);
   const emit = (slot: SaveSlot, rt: Runtime, game?: SaveState) => {
     const e: SyncEvent = game ? { slot, sync: rt.sync, game } : { slot, sync: rt.sync };
     listeners.forEach((l) => l(e));
@@ -178,7 +186,11 @@ export function createApiSaveStore(userId: string, env: Env = realEnv()): Synced
     if (rt.inflight) return rt.inflight;
     if (!rt.dirty || rt.conflict || rt.sync === 'signed-out' || rt.rejected === rt.version) return;
     const sentVersion = rt.version;
-    const body = { data: rt.state, baseRevision: rt.revision, ...(rt.overwrite ? { overwrite: true } : {}) };
+    const body = {
+      data: rt.state,
+      baseRevision: rt.revision,
+      ...(rt.overwrite ? { overwrite: true } : {}),
+    };
     setSync(slot, rt, 'saving');
     rt.lastPut = now();
     rt.inflight = (async () => {
@@ -228,7 +240,12 @@ export function createApiSaveStore(userId: string, env: Env = realEnv()): Synced
         scheduleUpload(slot, rt);
         return;
       }
-      rt.conflict = { account: current.data, accountRevision: current.revision, local: rt.state, merged: body.merged.data };
+      rt.conflict = {
+        account: current.data,
+        accountRevision: current.revision,
+        local: rt.state,
+        merged: body.merged.data,
+      };
       persist(slot, rt);
       setSync(slot, rt, 'conflict');
       return;
@@ -276,7 +293,14 @@ export function createApiSaveStore(userId: string, env: Env = realEnv()): Synced
     window.removeEventListener('online', flushAll);
   }
 
-  function start(slot: SaveSlot, state: SaveState, revision: number, dirty: boolean, sync: SyncState, conflict: Conflict | null = null): OpenedSave {
+  function start(
+    slot: SaveSlot,
+    state: SaveState,
+    revision: number,
+    dirty: boolean,
+    sync: SyncState,
+    conflict: Conflict | null = null,
+  ): OpenedSave {
     const old = runtimes.get(slot);
     if (old?.timer) clearTimeout(old.timer);
     const rt: Runtime = {
@@ -335,7 +359,11 @@ export function createApiSaveStore(userId: string, env: Env = realEnv()): Synced
       try {
         const r = await api.put<PutResult>(path(slot), { data: state, baseRevision: 0 });
         const saved = r.data ?? state;
-        write(key('save', slot), { revision: r.revision, state: saved, dirty: false } satisfies LocalCopy);
+        write(key('save', slot), {
+          revision: r.revision,
+          state: saved,
+          dirty: false,
+        } satisfies LocalCopy);
         return summaryOf(slot, saved, new Date(now()).toISOString());
       } catch (e) {
         if (e instanceof ApiError && e.status === 409) throw new Error('slot-taken');
@@ -354,7 +382,10 @@ export function createApiSaveStore(userId: string, env: Env = realEnv()): Synced
 
     async restore(slot) {
       try {
-        const summary = await api.post<SaveSummary & { revision: number }>(`${path(slot)}/restore`, {});
+        const summary = await api.post<SaveSummary & { revision: number }>(
+          `${path(slot)}/restore`,
+          {},
+        );
         const { revision, ...rest } = summary;
         void revision;
         return rest;
@@ -393,7 +424,8 @@ export function createApiSaveStore(userId: string, env: Env = realEnv()): Synced
       }
       // Vale o de maior revisão: a cópia local só ganha se foi mexida e a conta não mudou desde então.
       if (!local || !local.dirty) return start(slot, remote.data, remote.revision, false, 'saved');
-      if (local.revision === remote.revision) return start(slot, local.state, remote.revision, true, 'saving');
+      if (local.revision === remote.revision)
+        return start(slot, local.state, remote.revision, true, 'saving');
       const merged = mergeSaves(local.state, remote.data);
       if (!merged.conflict) return start(slot, merged.save, remote.revision, true, 'saving');
       return start(slot, merged.save, remote.revision, true, 'conflict', {

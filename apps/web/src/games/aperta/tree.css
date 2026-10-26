@@ -166,7 +166,7 @@
   gap: 12px;
   min-width: 0;
 }
-@container ap (min-width: 900px)  {
+@container ap (min-width: 900px) {
   .ap-tree-stage {
     grid-template-columns: minmax(0, 1fr) 320px;
     align-items: start;
@@ -756,7 +756,7 @@
 .ap-tree .ap-tp {
   box-shadow: 0 8px 0 rgba(0, 0, 0, 0.35);
 }
-@container ap (min-width: 900px)  {
+@container ap (min-width: 900px) {
   .ap-tree .ap-tp-wrap {
     left: auto;
     right: 16px;
@@ -769,7 +769,7 @@
     padding: 0 16px;
   }
 }
-@container ap (max-width: 380px)  {
+@container ap (max-width: 380px) {
   .ap-tr-back span {
     display: none;
   }

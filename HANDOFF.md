@@ -181,3 +181,5 @@ Fase 1 (motor) pronta em `packages/games/src/bola` (36 testes). Próximo: Fase 2
 MVP offline do Bola Maluca! (26/10/2026): `pnpm dev` e abra `http://localhost:5173/fox-cap/bola` (Fox Cap! > Bola Maluca! > Treino). Web em `apps/web/src/games/bola` (`BolaScene` three, `BolaPlay` roda o `BolWorld` no aparelho, `BolaPage` menu). Você é o time vermelho, o resto são bots; E troca a câmera (na bola/livre). Falta: sala online (Fase 2), lobby de times, som, mortal mais visível.
 
 Bola Maluca! Fase 2 (sala online) pronta em 26/10/2026: `apps/api/src/rooms/bola-room.engine.ts` + `BolaRoom` em `color.room.ts` (registrada como `bola` no `main.ts`), 18 testes do motor da sala e 1 de integração com Colyseus. Próximo: web online (cena lendo `bs`, previsão da própria raposa, lobby de times, espectador).
+
+Bola Maluca! web online pronta em 26/10/2026: criar sala em Fox Cap! > Bola Maluca! > Com amigos (`/sala?jogo=bola`). Testado com 2 navegadores contra a sala real. Em dev o web lê `@nocap/games` do código-fonte (alias no `vite.config.ts`). Falta: som, previsão do pulo/mortal, teste em celular real.

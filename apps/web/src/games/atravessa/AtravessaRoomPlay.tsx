@@ -75,7 +75,8 @@ function sampleAt(list: Sample[] | undefined, t: number) {
     const b = list[i]!;
     if (t > b.tick) continue;
     const cur = t >= b.tick ? b : a;
-    const bothAlive = a.flags & F_ALIVE && b.flags & F_ALIVE && Math.hypot(b.x - a.x, b.y - a.y) < 4;
+    const bothAlive =
+      a.flags & F_ALIVE && b.flags & F_ALIVE && Math.hypot(b.x - a.x, b.y - a.y) < 4;
     if (!bothAlive || b.tick === a.tick) return { ...cur, alive: !!(cur.flags & F_ALIVE) };
     const k = (t - a.tick) / (b.tick - a.tick);
     return {
@@ -187,7 +188,9 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
       milestones: cfg.mode === 'infinito',
     });
     scene.setHeroColor(colorOf(meId));
-    scene.setRemotes(first.members.filter((m) => m.id !== meId).map((m) => ({ id: m.id, color: colorOf(m.id) })));
+    scene.setRemotes(
+      first.members.filter((m) => m.id !== meId).map((m) => ({ id: m.id, color: colorOf(m.id) })),
+    );
 
     const world = atravessaRoomWorld(seed, cfg.mode, cfg.size);
     const sim = new AtravessaSim(seed, world, atravessaRoomRules(cfg.mode, cfg.size, slotOf(meId)));
@@ -198,7 +201,9 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
 
     // ---- o que chega do servidor ----
     const samples = new Map<string, Sample[]>();
-    const idOfSlot = new Map<number, string>(Object.entries(cfg.slots).map(([id, slot]) => [slot, id]));
+    const idOfSlot = new Map<number, string>(
+      Object.entries(cfg.slots).map(([id, slot]) => [slot, id]),
+    );
     const unsubPos = subscribeRoom('pos', (m) => {
       if (!Array.isArray(m)) return;
       for (const row of m as number[][]) {
@@ -281,7 +286,15 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
       const nextStop = cfg.checkpoints.find((c) => c > sim.checkpointRow) ?? cfg.length ?? 0;
       const rows: RankRow[] = snap.members.map((m) => {
         if (m.id === meId) {
-          return { id: m.id, name: nameOf(m.id), color: colorOf(m.id), meters: myRow, finished: sim.finished, alive: sim.alive, me: true };
+          return {
+            id: m.id,
+            name: nameOf(m.id),
+            color: colorOf(m.id),
+            meters: myRow,
+            finished: sim.finished,
+            alive: sim.alive,
+            me: true,
+          };
         }
         const s = samples.get(m.id)?.at(-1);
         return {
@@ -297,12 +310,16 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
       rows.sort((a, b) => Number(b.finished) - Number(a.finished) || b.meters - a.meters);
       let over: Ui['over'] = null;
       if (late) over = { kind: 'late' };
-      else if (sim.finished) over = { kind: 'finished', ms: Math.round((sim.finishTick * 1000) / ATR_TPS) };
+      else if (sim.finished)
+        over = { kind: 'finished', ms: Math.round((sim.finishTick * 1000) / ATR_TPS) };
       else if (!sim.alive && cfg.mode === 'checkpoint') over = { kind: 'respawn', end: sim.end! };
       else if (!sim.alive) over = { kind: 'dead', end: sim.end! };
-      const spectating = over?.kind === 'late' || over?.kind === 'finished' || over?.kind === 'dead';
+      const spectating =
+        over?.kind === 'late' || over?.kind === 'finished' || over?.kind === 'dead';
       const watched = spectating && watch ? rows.find((r) => r.id === watch) : undefined;
-      const clockMs = sim.finished ? (sim.finishTick * 1000) / ATR_TPS : Math.max(0, serverNow() - startAt);
+      const clockMs = sim.finished
+        ? (sim.finishTick * 1000) / ATR_TPS
+        : Math.max(0, serverNow() - startAt);
       const next: Ui = {
         count: wt < 0 ? Math.ceil(-wt / ATR_TPS) : wt < 45 ? 'go' : null,
         meters: myRow,
@@ -407,18 +424,30 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
         if (s) {
           cur.set(m.id, { x: s.x, y: s.y });
           if (s.alive && !(s.flags & (F_STALLED | F_FINISHED))) candidates.push(m.id);
-          scene.placeRemote(m.id, world, { x: s.x, y: s.y, hop: s.hop, facing: s.facing, hide: !s.alive }, dt);
+          scene.placeRemote(
+            m.id,
+            world,
+            { x: s.x, y: s.y, hop: s.hop, facing: s.facing, hide: !s.alive },
+            dt,
+          );
         } else {
           // ainda não largou: parada na coluna de largada
-          scene.placeRemote(m.id, world, { x: atravessaStartCol(slotOf(m.id)), y: 0, hop: 0, facing: 0, hide: false }, dt);
+          scene.placeRemote(
+            m.id,
+            world,
+            { x: atravessaStartCol(slotOf(m.id)), y: 0, hop: 0, facing: 0, hide: false },
+            dt,
+          );
           cur.set(m.id, { x: atravessaStartCol(slotOf(m.id)), y: 0 });
         }
       }
 
       // quem assiste: o Infinito depois de morrer, quem chegou ao fim e quem entrou com a rodada rolando
       const dying = !sim.alive && !sim.finished && cfg.mode === 'infinito';
-      const spectating = late || sim.finished || (dying && deathWall > 0 && now - deathWall > SPECTATE_AFTER_MS);
-      if (!watch || !candidates.includes(watch)) watch = spectating ? (candidates[0] ?? null) : watch;
+      const spectating =
+        late || sim.finished || (dying && deathWall > 0 && now - deathWall > SPECTATE_AFTER_MS);
+      if (!watch || !candidates.includes(watch))
+        watch = spectating ? (candidates[0] ?? null) : watch;
       if (watch && !candidates.includes(watch)) watch = null;
       const target = spectating && watch ? cur.get(watch) : undefined;
 
@@ -427,8 +456,14 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
         sim,
         dt,
         now / 1000,
-        !sim.alive && !sim.finished && deathWall > 0 ? { end: sim.end!, age: (now - deathWall) / 1000 } : null,
-        { follow: target ?? null, hideHero: late || (spectating && !!target && !sim.finished), tick },
+        !sim.alive && !sim.finished && deathWall > 0
+          ? { end: sim.end!, age: (now - deathWall) / 1000 }
+          : null,
+        {
+          follow: target ?? null,
+          hideHero: late || (spectating && !!target && !sim.finished),
+          tick,
+        },
       );
 
       // os nomes em cima das raposas
@@ -437,7 +472,10 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
         if (!tag) continue;
         let pos: { x: number; y: number; visible: boolean } | null = null;
         if (m.id === meId) {
-          pos = late || (spectating && !!target && !sim.finished) ? null : scene.screenOf(null, v.x, v.y, 0.3 + v.hop);
+          pos =
+            late || (spectating && !!target && !sim.finished)
+              ? null
+              : scene.screenOf(null, v.x, v.y, 0.3 + v.hop);
           if (!sim.alive && !sim.finished) pos = null;
         } else {
           const c = cur.get(m.id);
@@ -475,7 +513,12 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
   const members = snapshot.members;
 
   return (
-    <div className="at-play" ref={wrap} role="application" aria-label="Partida do Atravessa! em sala">
+    <div
+      className="at-play"
+      ref={wrap}
+      role="application"
+      aria-label="Partida do Atravessa! em sala"
+    >
       <canvas ref={canvas} className="at-canvas" />
 
       {/* nomes em cima das raposas */}
@@ -506,8 +549,7 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
           {ui.clock}
           {info.length && (
             <small>
-              {ui.meters}/{info.length} m
-              {ui.checkpoint > 0 ? ` · CHECKPOINT ${ui.checkpoint}` : ''}
+              {ui.meters}/{info.length} m{ui.checkpoint > 0 ? ` · CHECKPOINT ${ui.checkpoint}` : ''}
             </small>
           )}
         </div>
@@ -542,7 +584,11 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
             sendRoom('endround');
           }}
         >
-          {confirmEnd ? 'TOQUE DE NOVO PARA ENCERRAR' : checkpointMode ? 'ENCERRAR CORRIDA' : 'ENCERRAR RODADA'}
+          {confirmEnd
+            ? 'TOQUE DE NOVO PARA ENCERRAR'
+            : checkpointMode
+              ? 'ENCERRAR CORRIDA'
+              : 'ENCERRAR RODADA'}
         </button>
       )}
 
@@ -553,7 +599,9 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
       )}
 
       {hint && ui.count === null && !ui.over && !failed && (
-        <p className="at-hint mono">{touch ? 'TOQUE PARA PULAR · DESLIZE PARA O LADO' : 'W A S D OU AS SETAS'}</p>
+        <p className="at-hint mono">
+          {touch ? 'TOQUE PARA PULAR · DESLIZE PARA O LADO' : 'W A S D OU AS SETAS'}
+        </p>
       )}
 
       {pulse > 0 && <div className="atr-flash" key={pulse} aria-hidden="true" />}
@@ -567,7 +615,9 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
       {ui.over?.kind === 'respawn' && (
         <div className="at-over atr-over" role="status">
           <b>{OVER_TEXT[ui.over.end!]}</b>
-          <span className="mono">VOLTANDO AO {ui.checkpoint > 0 ? `CHECKPOINT ${ui.checkpoint}` : 'INÍCIO'}</span>
+          <span className="mono">
+            VOLTANDO AO {ui.checkpoint > 0 ? `CHECKPOINT ${ui.checkpoint}` : 'INÍCIO'}
+          </span>
         </div>
       )}
       {ui.over?.kind === 'finished' && (
@@ -593,7 +643,17 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
             disabled={ui.spectators < 2}
             onClick={() => ctl.current?.cycle(-1)}
           >
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <svg
+              viewBox="0 0 24 24"
+              width="22"
+              height="22"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="3.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
               <path d="M15 5 8 12l7 7" />
             </svg>
           </button>
@@ -618,7 +678,17 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
             disabled={ui.spectators < 2}
             onClick={() => ctl.current?.cycle(1)}
           >
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <svg
+              viewBox="0 0 24 24"
+              width="22"
+              height="22"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="3.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
               <path d="m9 5 7 7-7 7" />
             </svg>
           </button>

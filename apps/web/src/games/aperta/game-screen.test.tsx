@@ -151,11 +151,17 @@ describe('escolha de energia cheia', () => {
 });
 
 describe('objetos no espaço', () => {
-  const withObject = (kind: 'comet' | 'shooting-star' | 'satellite') => (s: ReturnType<typeof newSave>) => ({
-    ...s,
-    clock: 3,
-    run: { ...s.run, objects: [{ id: 7, kind, bornAt: 0, expiresAt: 7 }], nextObjectId: 8, nextSpawnAt: 1e6 },
-  });
+  const withObject =
+    (kind: 'comet' | 'shooting-star' | 'satellite') => (s: ReturnType<typeof newSave>) => ({
+      ...s,
+      clock: 3,
+      run: {
+        ...s.run,
+        objects: [{ id: 7, kind, bornAt: 0, expiresAt: 7 }],
+        nextObjectId: 8,
+        nextSpawnAt: 1e6,
+      },
+    });
 
   it('sem objetos, a camada fica escondida', () => {
     expect(screen()).toMatch(/class="ap-objs"[^>]*hidden/);
@@ -164,7 +170,9 @@ describe('objetos no espaço', () => {
 
   it('cada objeto é um botão com nome e recompensa antes de tocar, e barra de vida', () => {
     const markup = screen(withObject('comet'));
-    expect(markup).toMatch(/<button[^>]*class="ap-obj[^"]*"[^>]*aria-label="Cometa: \+\d+ poeira\. Capturar"/);
+    expect(markup).toMatch(
+      /<button[^>]*class="ap-obj[^"]*"[^>]*aria-label="Cometa: \+\d+ poeira\. Capturar"/,
+    );
     expect(markup).toContain('ap-obj-tag');
     expect(markup).toContain('ap-obj-life');
     expect(markup).toContain('ap-obj-pulse');
@@ -177,7 +185,11 @@ describe('objetos no espaço', () => {
 
   it('o chip Sinal forte aparece no HUD só com o boost ativo', () => {
     expect(screen()).not.toContain('ap-signal');
-    const markup = screen((s) => ({ ...s, clock: 0, run: { ...s.run, boostMult: 2, boostUntil: 50 } }));
+    const markup = screen((s) => ({
+      ...s,
+      clock: 0,
+      run: { ...s.run, boostMult: 2, boostUntil: 50 },
+    }));
     expect(markup).toContain('ap-signal');
     expect(markup).toContain('Sinal forte x2');
   });

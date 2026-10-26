@@ -34,7 +34,10 @@ describe('tela de jogo no tutorial', () => {
   });
 
   it('o passo 2 mostra só o botão Melhorias, com o cartão de parabéns', () => {
-    const markup = screen({ tutorial: TUTORIAL.UPGRADE, ui: { unlocked: ['upgrades'], hints: [] } });
+    const markup = screen({
+      tutorial: TUTORIAL.UPGRADE,
+      ui: { unlocked: ['upgrades'], hints: [] },
+    });
     expect(markup).toContain('data-tut="dock-upgrades"');
     expect(markup).not.toContain('data-tut="dock-grimoires"');
     expect(markup).not.toContain('data-tut="dock-achievements"');
@@ -45,13 +48,17 @@ describe('tela de jogo no tutorial', () => {
 
   it('com o tutorial concluído aparecem todos os botões e nenhuma dica', () => {
     const markup = screen({ tutorial: 'done' });
-    for (const target of ['press', 'dock-upgrades', 'dock-grimoires', 'dock-achievements', 'tree']) expect(markup).toContain(`data-tut="${target}"`);
+    for (const target of ['press', 'dock-upgrades', 'dock-grimoires', 'dock-achievements', 'tree'])
+      expect(markup).toContain(`data-tut="${target}"`);
     expect(markup).not.toContain('ap-tut');
     expect(markup).not.toContain('Pular tutorial');
   });
 
   it('retomar no jogo livre sem gatilho: sem dica, e só o que já foi liberado', () => {
-    const markup = screen({ tutorial: TUTORIAL.FREE, ui: { unlocked: ['upgrades', 'grimoires'], hints: [] } });
+    const markup = screen({
+      tutorial: TUTORIAL.FREE,
+      ui: { unlocked: ['upgrades', 'grimoires'], hints: [] },
+    });
     expect(markup).toContain('data-tut="dock-grimoires"');
     expect(markup).not.toContain('data-tut="dock-achievements"');
     expect(markup).not.toContain('ap-tut-card');
@@ -59,8 +66,18 @@ describe('tela de jogo no tutorial', () => {
 
   it('a escolha do 1º grimório leva o cartão dentro do modal', () => {
     const base = newSave('teste', 0);
-    const pending = { offers: ['moon', 'mercury', 'venus'], openedAt: 0, selected: null, picksLeft: 1, rerollsLeft: 0 };
-    const markup = screen({ tutorial: TUTORIAL.CHOOSE, run: { ...base.run, pending }, ui: { unlocked: ['upgrades', 'grimoires'], hints: [] } });
+    const pending = {
+      offers: ['moon', 'mercury', 'venus'],
+      openedAt: 0,
+      selected: null,
+      picksLeft: 1,
+      rerollsLeft: 0,
+    };
+    const markup = screen({
+      tutorial: TUTORIAL.CHOOSE,
+      run: { ...base.run, pending },
+      ui: { unlocked: ['upgrades', 'grimoires'], hints: [] },
+    });
     expect(markup).toContain('ap-tut-inline');
     expect(markup).toContain('Você ganhou seu primeiro grimório!');
     expect(markup).toContain('Pular tutorial');
@@ -69,21 +86,31 @@ describe('tela de jogo no tutorial', () => {
 
 describe('peças do tutorial', () => {
   it('o cartão do jogo livre tem Entendi discreto e o do roteiro não tem', () => {
-    const free = { ...newSave('t', 0), tutorial: TUTORIAL.FREE, achievements: ['tap-1', 'tap-100'] };
+    const free = {
+      ...newSave('t', 0),
+      tutorial: TUTORIAL.FREE,
+      achievements: ['tap-1', 'tap-100'],
+    };
     const view = coachView(free, null);
     expect(view).not.toBeNull();
-    const markup = html(<TutorialCoach view={view!} onDismiss={noop} onSkip={noop} skipInCard={false} />);
+    const markup = html(
+      <TutorialCoach view={view!} onDismiss={noop} onSkip={noop} skipInCard={false} />,
+    );
     expect(markup).toContain('Entendi');
     expect(markup).not.toContain('Pular tutorial');
     const guided = coachView({ ...newSave('t', 0), tutorial: TUTORIAL.UPGRADE }, null);
-    const guidedMarkup = html(<TutorialCoach view={guided!} onDismiss={noop} onSkip={noop} skipInCard={true} />);
+    const guidedMarkup = html(
+      <TutorialCoach view={guided!} onDismiss={noop} onSkip={noop} skipInCard={true} />,
+    );
     expect(guidedMarkup).not.toContain('Entendi');
     expect(guidedMarkup).toContain('Pular tutorial');
   });
 
   it('a dica do passo 1 tem cartão com o passo e o texto, e sem alvo medido não escurece nem bloqueia', () => {
     const view = coachView(newSave('t', 0), null)!;
-    const markup = html(<TutorialCoach view={view} onDismiss={noop} onSkip={noop} skipInCard={false} />);
+    const markup = html(
+      <TutorialCoach view={view} onDismiss={noop} onSkip={noop} skipInCard={false} />,
+    );
     expect(markup).toContain('ap-tut-card');
     expect(markup).toContain('Passo 1 de 6');
     expect(markup).toContain('Bem-vindo à Perigeu');
@@ -96,7 +123,10 @@ describe('peças do tutorial', () => {
   it('o cartão da escolha explica carta, bloqueio e confirmar', () => {
     const pending = { offers: ['moon'], openedAt: 0, selected: null, picksLeft: 1, rerollsLeft: 0 };
     const base = newSave('t', 0);
-    const view = coachView({ ...base, tutorial: TUTORIAL.CHOOSE, run: { ...base.run, pending } }, null)!;
+    const view = coachView(
+      { ...base, tutorial: TUTORIAL.CHOOSE, run: { ...base.run, pending } },
+      null,
+    )!;
     const markup = html(<TutorialInline view={view} onSkip={noop} />);
     expect(markup).toContain('marcá-la');
     expect(markup).toContain('1,6 s');
@@ -121,7 +151,8 @@ describe('CSS do tutorial', () => {
     const blocks = [...css.matchAll(/@keyframes [\w-]+ \{([\s\S]*?)\n\}/g)];
     expect(blocks.length).toBeGreaterThanOrEqual(3);
     for (const [, body] of blocks) {
-      for (const [, p] of body!.matchAll(/([a-z-]+)\s*:/g)) expect(['transform', 'opacity'], `propriedade ${p}`).toContain(p);
+      for (const [, p] of body!.matchAll(/([a-z-]+)\s*:/g))
+        expect(['transform', 'opacity'], `propriedade ${p}`).toContain(p);
     }
     expect(css).not.toMatch(/transition\s*:/);
   });
@@ -141,7 +172,9 @@ describe('CSS do tutorial', () => {
   });
 
   it('os botões do cartão têm alvo de toque de pelo menos 44 px e são discretos (sem fundo cheio)', () => {
-    expect(css).toMatch(/\.ap-tut-ok,\s*\.ap-tut-skip \{[^}]*min-height:\s*(4[4-9]|[5-9]\d)px[^}]*background:\s*transparent/);
+    expect(css).toMatch(
+      /\.ap-tut-ok,\s*\.ap-tut-skip \{[^}]*min-height:\s*(4[4-9]|[5-9]\d)px[^}]*background:\s*transparent/,
+    );
   });
 
   it('usa só os tokens do tema espaço (sem cor solta)', () => {

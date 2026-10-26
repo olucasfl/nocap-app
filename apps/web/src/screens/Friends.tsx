@@ -391,7 +391,11 @@ export function Friends() {
               ].map(
                 ([label, group]) =>
                   (group as typeof shown).length > 0 && (
-                    <section key={label as string} className="fr-group" aria-label={label as string}>
+                    <section
+                      key={label as string}
+                      className="fr-group"
+                      aria-label={label as string}
+                    >
                       <h3 className={`mono fr-group-title${label === 'ONLINE' ? ' on' : ''}`}>
                         {label as string} · {(group as typeof shown).length}
                       </h3>
@@ -411,7 +415,11 @@ export function Friends() {
                               <span className="fr-fcard-body">
                                 <b className="fr-name">@{p.username}</b>
                                 <span className={`mono fr-row2-sub${p.online ? ' on' : ''}`}>
-                                  {p.online ? 'ONLINE AGORA' : presenceText(p).replace('Ainda não entrou', 'Nunca entrou').toUpperCase()}
+                                  {p.online
+                                    ? 'ONLINE AGORA'
+                                    : presenceText(p)
+                                        .replace('Ainda não entrou', 'Nunca entrou')
+                                        .toUpperCase()}
                                 </span>
                                 {p.lastPlayed && (
                                   <span className="fr-tag mono">

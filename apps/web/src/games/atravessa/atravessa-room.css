@@ -275,7 +275,12 @@
   position: absolute;
   inset: -20%;
   pointer-events: none;
-  background: radial-gradient(circle at 50% 55%, rgba(125, 255, 180, 0) 28%, rgba(51, 194, 127, 0.55) 62%, rgba(255, 255, 255, 0.35) 100%);
+  background: radial-gradient(
+    circle at 50% 55%,
+    rgba(125, 255, 180, 0) 28%,
+    rgba(51, 194, 127, 0.55) 62%,
+    rgba(255, 255, 255, 0.35) 100%
+  );
   transform-origin: 50% 55%;
   animation: atr-flash 0.85s ease-out both;
 }

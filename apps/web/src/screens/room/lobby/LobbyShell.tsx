@@ -1,6 +1,7 @@
 import { useId, useState, type KeyboardEvent, type ReactNode } from 'react';
 import type { RoomSnapshot } from '@/lib/rooms';
 import { useRoom } from '@/lib/rooms';
+import { bolaHint } from './bola-hint';
 import { MIN_PLAYERS, rulesSummary } from './rules';
 import './lobby.css';
 
@@ -8,6 +9,7 @@ export type LobbyTab = 'members' | 'rules' | 'invite';
 
 /** Uma linha só com o que falta para começar. */
 export function startHint(snapshot: RoomSnapshot): { text: string; ok: boolean } {
+  if (snapshot.game === 'bola') return bolaHint(snapshot);
   const connected = snapshot.members.filter((m) => m.connected);
   const needed = MIN_PLAYERS[snapshot.game];
   if (connected.length < needed) {

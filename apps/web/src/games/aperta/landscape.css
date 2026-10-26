@@ -34,7 +34,9 @@ body:has(.ap) {
     padding: 0 10px;
     font-size: 11px;
     border-width: 2px;
-    box-shadow: 0 4px 0 var(--space-blue-dark), inset 0 2px 0 rgba(255, 255, 255, 0.4);
+    box-shadow:
+      0 4px 0 var(--space-blue-dark),
+      inset 0 2px 0 rgba(255, 255, 255, 0.4);
   }
   .ap .ap-hbtn-exit {
     grid-column: 3;
@@ -72,7 +74,9 @@ body:has(.ap) {
     padding: 0 9px;
     border-width: 2px;
     font-size: 13px;
-    box-shadow: 0 4px 0 #0a1030, inset 0 2px 0 rgba(255, 255, 255, 0.2);
+    box-shadow:
+      0 4px 0 #0a1030,
+      inset 0 2px 0 rgba(255, 255, 255, 0.2);
   }
   .ap .ap-dock-i {
     width: 22px;

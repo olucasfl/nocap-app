@@ -1,4 +1,10 @@
-import { buildDictionary, encodePattern, playClassic, wordKey, type ClassicMode } from '@nocap/games';
+import {
+  buildDictionary,
+  encodePattern,
+  playClassic,
+  wordKey,
+  type ClassicMode,
+} from '@nocap/games';
 import { ApiError } from '@/lib/api-client';
 import { classicProgress, type ClassicProgress } from './levels/progress';
 import { loadClassicAccepted, type ClassicLevel } from './levels/levels';
@@ -32,7 +38,13 @@ export { classicProgress };
 export const CLASSIC_KEYS = { classic: 'c', dueto: 'd', quarteto: 'q' } as const;
 
 /** A partida de uma fase, montada só com as palavras da fase, os palpites e se desistiu. */
-export function levelView(mode: ClassicMode, level: ClassicLevel, num: number, guesses: readonly string[], gaveUp: boolean): RunView {
+export function levelView(
+  mode: ClassicMode,
+  level: ClassicLevel,
+  num: number,
+  guesses: readonly string[],
+  gaveUp: boolean,
+): RunView {
   const state = playClassic(mode, level.w, guesses);
   const over = state.over || gaveUp;
   return {
@@ -63,7 +75,12 @@ export function levelEngine(mode: ClassicMode, level: ClassicLevel, num: number)
   const store = classicProgress[mode];
   const save = (guesses: string[], gaveUp: boolean): ClassicProgress => {
     const done = levelView(mode, level, num, guesses, gaveUp).state !== 'open';
-    const value: ClassicProgress = { guesses, at: Date.now(), ...(gaveUp ? { gaveUp: true } : {}), ...(done ? { done: true } : {}) };
+    const value: ClassicProgress = {
+      guesses,
+      at: Date.now(),
+      ...(gaveUp ? { gaveUp: true } : {}),
+      ...(done ? { done: true } : {}),
+    };
     store.set(num, value);
     return value;
   };
@@ -75,7 +92,9 @@ export function levelEngine(mode: ClassicMode, level: ClassicLevel, num: number)
     },
     send: async (run, guess) => {
       // se o palpite é uma das palavras da fase, mostra com a grafia dela (com acento)
-      const form = level.w.find((w) => wordKey(w) === wordKey(guess)) ?? (await loadDictionary()).get(wordKey(guess));
+      const form =
+        level.w.find((w) => wordKey(w) === wordKey(guess)) ??
+        (await loadDictionary()).get(wordKey(guess));
       if (!form) throw new ApiError(400, 'Palavra não aceita');
       const saved = save([...run.guesses, form], false);
       return levelView(mode, level, num, saved.guesses, false);

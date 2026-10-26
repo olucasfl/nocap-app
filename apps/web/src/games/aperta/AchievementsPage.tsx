@@ -36,7 +36,9 @@ function Card({ row }: { row: AchievementRow }) {
             <span className="ap-ach-bar" aria-hidden="true">
               <i style={{ transform: `scaleX(${row.fraction})` }} />
             </span>
-            <p className="ap-ach-count">{row.earned ? 'Ganha' : `${formatNumber(row.value)}/${formatNumber(row.goal)}`}</p>
+            <p className="ap-ach-count">
+              {row.earned ? 'Ganha' : `${formatNumber(row.value)}/${formatNumber(row.goal)}`}
+            </p>
           </>
         )}
         {row.soon && <p className="ap-ach-count">{row.soonText}</p>}
@@ -58,7 +60,13 @@ const STATUS: { id: AchievementStatus; name: string }[] = [
  * Página de Conquistas (spec 038, 5.3; ampliada pela spec 040, seção 4): filtro por família, busca, estado, N/M por
  * família, Cintilas ganhas e a ganhar, e a recompensa de cada uma.
  */
-export function AchievementsPage({ state, filtersOpen = false }: { state: SaveState; filtersOpen?: boolean }) {
+export function AchievementsPage({
+  state,
+  filtersOpen = false,
+}: {
+  state: SaveState;
+  filtersOpen?: boolean;
+}) {
   const [filter, setFilter] = useState<AchievementFilter>(NO_FILTER);
   const [open, setOpen] = useState(filtersOpen);
   const counts = achievementCounts(state);
@@ -120,7 +128,13 @@ export function AchievementsPage({ state, filtersOpen = false }: { state: SaveSt
             <h4>Mostrar</h4>
             <div className="ap-ach-status" role="group" aria-label="Mostrar">
               {STATUS.map((st) => (
-                <button key={st.id} type="button" className="ap-fchip" aria-pressed={filter.status === st.id} onClick={() => set({ status: st.id })}>
+                <button
+                  key={st.id}
+                  type="button"
+                  className="ap-fchip"
+                  aria-pressed={filter.status === st.id}
+                  onClick={() => set({ status: st.id })}
+                >
                   {st.name}
                 </button>
               ))}
@@ -146,7 +160,12 @@ export function AchievementsPage({ state, filtersOpen = false }: { state: SaveSt
             </div>
           </div>
           <div className="ap-ach-factions">
-            <button type="button" className="ap-fchip" disabled={active === 0} onClick={() => setFilter({ ...NO_FILTER, query: filter.query })}>
+            <button
+              type="button"
+              className="ap-fchip"
+              disabled={active === 0}
+              onClick={() => setFilter({ ...NO_FILTER, query: filter.query })}
+            >
               Limpar filtros
             </button>
             <button type="button" className="ap-fchip" onClick={() => setOpen(false)}>
@@ -157,7 +176,9 @@ export function AchievementsPage({ state, filtersOpen = false }: { state: SaveSt
       )}
 
       <p className="ap-sub" role="status" aria-live="polite">
-        {shown === 0 ? 'Nenhuma conquista com esse filtro.' : `${shown} ${shown === 1 ? 'conquista' : 'conquistas'} na lista.`}
+        {shown === 0
+          ? 'Nenhuma conquista com esse filtro.'
+          : `${shown} ${shown === 1 ? 'conquista' : 'conquistas'} na lista.`}
       </p>
 
       {groups.map((g) => (

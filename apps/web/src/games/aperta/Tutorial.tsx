@@ -1,7 +1,16 @@
 import { apertaSfx } from '@/lib/aperta-audio';
 import { useEffect, useRef, useState } from 'react';
 import { localRect } from './ap-geometry';
-import { arrowBox, arrowPlacement, arrowX, inflate, padRect, placeCard, type CoachView, type Rect } from './tutorial-logic';
+import {
+  arrowBox,
+  arrowPlacement,
+  arrowX,
+  inflate,
+  padRect,
+  placeCard,
+  type CoachView,
+  type Rect,
+} from './tutorial-logic';
 import './tutorial.css';
 
 /** Folga entre o alvo e o anel. */
@@ -28,7 +37,8 @@ const EMPTY: Geo = { hole: null, glow: null, pass: [], keep: [], w: 0, h: 0, car
 
 const sameRect = (a: Rect | null, b: Rect | null) =>
   a === b || (!!a && !!b && a.x === b.x && a.y === b.y && a.w === b.w && a.h === b.h);
-const sameRects = (a: Rect[], b: Rect[]) => a.length === b.length && a.every((r, i) => sameRect(r, b[i]!));
+const sameRects = (a: Rect[], b: Rect[]) =>
+  a.length === b.length && a.every((r, i) => sameRect(r, b[i]!));
 const sameGeo = (a: Geo, b: Geo) =>
   a.w === b.w &&
   a.h === b.h &&
@@ -38,7 +48,12 @@ const sameGeo = (a: Geo, b: Geo) =>
   sameRects(a.keep, b.keep) &&
   sameRect(a.card, b.card);
 
-const ARROW_PATH = { above: 'M12 20 3 8h18z', below: 'M12 4 3 16h18z', left: 'M20 12 8 3v18z', right: 'M4 12 16 3v18z' } as const;
+const ARROW_PATH = {
+  above: 'M12 20 3 8h18z',
+  below: 'M12 4 3 16h18z',
+  left: 'M20 12 8 3v18z',
+  right: 'M4 12 16 3v18z',
+} as const;
 
 function arrowStyle(r: Rect, side: 'above' | 'below' | 'left' | 'right', w: number) {
   if (side === 'left') return { left: r.x - 4, top: r.y + r.h / 2 };
@@ -91,7 +106,9 @@ export function TutorialCoach({ view, onDismiss, onSkip, skipInCard }: Props) {
       const box = localRect(el);
       const rel = (e: Element): Rect | null => {
         const r = localRect(e);
-        return r.width > 0 && r.height > 0 ? { x: r.left - box.left, y: r.top - box.top, w: r.width, h: r.height } : null;
+        return r.width > 0 && r.height > 0
+          ? { x: r.left - box.left, y: r.top - box.top, w: r.width, h: r.height }
+          : null;
       };
       const bounds = { w: box.width, h: box.height };
       const find = (sel: string | null, pad: number): Rect | null => {
@@ -105,7 +122,9 @@ export function TutorialCoach({ view, onDismiss, onSkip, skipInCard }: Props) {
         const r = rel(e);
         return r ? [padRect(r, 2, bounds)] : [];
       });
-      const keep = [...document.querySelectorAll('[data-tut="press"], [data-tut^="dock-"]')].flatMap((e) => {
+      const keep = [
+        ...document.querySelectorAll('[data-tut="press"], [data-tut^="dock-"]'),
+      ].flatMap((e) => {
         const r = rel(e);
         return r ? [r] : [];
       });
@@ -120,13 +139,19 @@ export function TutorialCoach({ view, onDismiss, onSkip, skipInCard }: Props) {
         for (const r of [hole, glow]) if (r) avoid.push(inflate(r, 8));
         for (const r of keep) avoid.push(r);
         for (const r of pass) avoid.push(r);
-        if (arrowTarget && view.label) avoid.push(inflate(arrowBox(arrowTarget, bounds, arrowPlacement(arrowTarget, bounds)), 8));
+        if (arrowTarget && view.label)
+          avoid.push(
+            inflate(arrowBox(arrowTarget, bounds, arrowPlacement(arrowTarget, bounds)), 8),
+          );
         // O cartão também não cobre a linha da lista onde está o alvo (página de Melhorias).
         const row = selector ? document.querySelector(selector)?.closest('li, article') : null;
         const rowRect = row ? rel(row) : null;
         if (rowRect) avoid.push(rowRect);
         const lowTarget = !!hole && hole.y + hole.h / 2 > bounds.h * 0.5;
-        const anchor = { x: (bounds.w - cw) / 2, y: lowTarget ? Math.min(96, bounds.h * 0.28) : bounds.h - ch - 10 };
+        const anchor = {
+          x: (bounds.w - cw) / 2,
+          y: lowTarget ? Math.min(96, bounds.h * 0.28) : bounds.h - ch - 10,
+        };
         const pos = placeCard({ w: cw, h: ch }, bounds, avoid, anchor, 14, 8);
         card = { x: pos.x, y: pos.y, w: cw, h: ch };
       }
@@ -156,10 +181,18 @@ export function TutorialCoach({ view, onDismiss, onSkip, skipInCard }: Props) {
     : undefined;
 
   return (
-    <div ref={root} className="ap-tut" data-target={view.target ?? 'none'} data-blocking={blocking ? 'true' : 'false'}>
+    <div
+      ref={root}
+      className="ap-tut"
+      data-target={view.target ?? 'none'}
+      data-blocking={blocking ? 'true' : 'false'}
+    >
       {dimmed && (
         <svg key={`dim-${view.key}`} className="ap-tut-dim" width={w} height={h} aria-hidden="true">
-          <path fillRule="evenodd" d={`M0 0H${w}V${h}H0Z ${lit.map((r) => roundedPath(r, 16)).join(' ')}`} />
+          <path
+            fillRule="evenodd"
+            d={`M0 0H${w}V${h}H0Z ${lit.map((r) => roundedPath(r, 16)).join(' ')}`}
+          />
         </svg>
       )}
       {blocking && (
@@ -175,12 +208,22 @@ export function TutorialCoach({ view, onDismiss, onSkip, skipInCard }: Props) {
         />
       )}
       {glow && (
-        <div key={`glow-${view.key}`} className="ap-tut-ring is-glow" style={{ left: glow.x, top: glow.y, width: glow.w, height: glow.h }} aria-hidden="true">
+        <div
+          key={`glow-${view.key}`}
+          className="ap-tut-ring is-glow"
+          style={{ left: glow.x, top: glow.y, width: glow.w, height: glow.h }}
+          aria-hidden="true"
+        >
           <i className="ap-tut-glow" />
         </div>
       )}
       {hole && (
-        <div key={`ring-${view.key}-${nudge}`} className={`ap-tut-ring${nudge > 0 ? ' is-nudge' : ''}`} style={{ left: hole.x, top: hole.y, width: hole.w, height: hole.h }} aria-hidden="true">
+        <div
+          key={`ring-${view.key}-${nudge}`}
+          className={`ap-tut-ring${nudge > 0 ? ' is-nudge' : ''}`}
+          style={{ left: hole.x, top: hole.y, width: hole.w, height: hole.h }}
+          aria-hidden="true"
+        >
           <i className="ap-tut-glow" />
           <i className="ap-tut-ripple" />
           <i className="ap-tut-ripple is-late" />
@@ -190,11 +233,20 @@ export function TutorialCoach({ view, onDismiss, onSkip, skipInCard }: Props) {
         <div
           key={`hand-${view.key}`}
           className="ap-tut-hand"
-          style={{ left: hole.x + hole.w * (hole.w > 140 ? 0.62 : 0.8), top: hole.y + hole.h * (hole.h > 140 ? 0.64 : 0.62) }}
+          style={{
+            left: hole.x + hole.w * (hole.w > 140 ? 0.62 : 0.8),
+            top: hole.y + hole.h * (hole.h > 140 ? 0.64 : 0.62),
+          }}
           aria-hidden="true"
         >
           <svg viewBox="0 0 40 44" focusable="false">
-            <path d="M14 4c2 0 4 1.6 4 4v14l2-1c2-1 4 0 4.6 1.6l1.4-.6c2-.8 4 .2 4.6 2l.4 1c2-.6 4 .6 4.4 2.6.8 4 .4 8-1.4 11.6L32 40c-.8 1.6-2.4 2.6-4.2 2.6H20c-2 0-3.6-1-4.6-2.6L8 28.6c-1-1.8-.4-3.8 1.2-4.8 1-.6 2.2-.6 3.2-.2L12 24V8c0-2.4 .8-4 2-4Z" fill="#fff" stroke="#02030a" strokeWidth="2.4" strokeLinejoin="round" />
+            <path
+              d="M14 4c2 0 4 1.6 4 4v14l2-1c2-1 4 0 4.6 1.6l1.4-.6c2-.8 4 .2 4.6 2l.4 1c2-.6 4 .6 4.4 2.6.8 4 .4 8-1.4 11.6L32 40c-.8 1.6-2.4 2.6-4.2 2.6H20c-2 0-3.6-1-4.6-2.6L8 28.6c-1-1.8-.4-3.8 1.2-4.8 1-.6 2.2-.6 3.2-.2L12 24V8c0-2.4 .8-4 2-4Z"
+              fill="#fff"
+              stroke="#02030a"
+              strokeWidth="2.4"
+              strokeLinejoin="round"
+            />
           </svg>
         </div>
       )}
@@ -228,7 +280,17 @@ export function TutorialCoach({ view, onDismiss, onSkip, skipInCard }: Props) {
   );
 }
 
-function CoachBody({ view, onDismiss, onSkip, showSkip }: { view: CoachView; onDismiss: () => void; onSkip: () => void; showSkip: boolean }) {
+function CoachBody({
+  view,
+  onDismiss,
+  onSkip,
+  showSkip,
+}: {
+  view: CoachView;
+  onDismiss: () => void;
+  onSkip: () => void;
+  showSkip: boolean;
+}) {
   return (
     <>
       <div aria-live="polite">

@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { BOL_TEAM_NAMES, bolFormatLabel, bolFormats } from '@nocap/games';
 import { BackButton } from '@/components/BackButton';
 import { HubCard, HubHero, HubNote, HubSteps, HubTabs } from '@/components/GameHub';
-import { BolaArt } from '@/components/HubArt';
+import { BolaArt, FriendsArt } from '@/components/HubArt';
 import { MuteButton } from '@/components/MuteButton';
 import { Page } from '@/components/Page';
 import { BolaPlay, type BolaSetup } from './BolaPlay';
@@ -75,6 +75,17 @@ export function BolaPage() {
                 cta="Escolher formato"
                 onClick={() => setPhase('pick')}
                 testId="bola-play-btn"
+              />
+              <HubCard
+                tone="blue"
+                art={<FriendsArt />}
+                name="Com amigos"
+                desc="Crie uma sala, escolha o formato e os times, complete com bots e chame a galera."
+                tags={['2 a 12 jogadores', 'Até 15 na sala']}
+                cta="Jogar com amigos"
+                to="/sala"
+                search={{ jogo: 'bola' }}
+                testId="bola-friends"
               />
             </div>
             <HubNote>

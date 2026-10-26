@@ -8,14 +8,26 @@ const html = (el: React.ReactElement) => renderToStaticMarkup(el);
 const noop = () => {};
 
 function open(over: Partial<SaveState> = {}, sparks = 10): SaveState {
-  return { ...newSave('p'), tutorial: 'done', collapses: 1, regionId: 'asteroid-belt', sparks: { legacy: sparks, spent: 0 }, ...over };
+  return {
+    ...newSave('p'),
+    tutorial: 'done',
+    collapses: 1,
+    regionId: 'asteroid-belt',
+    sparks: { legacy: sparks, spent: 0 },
+    ...over,
+  };
 }
 
-const rowOf = (s: SaveState, id: string) => treeView(s).branches.flatMap((b) => b.nodes).find((n) => n.id === id)!;
+const rowOf = (s: SaveState, id: string) =>
+  treeView(s)
+    .branches.flatMap((b) => b.nodes)
+    .find((n) => n.id === id)!;
 
 describe('painel do nó', () => {
   it('sem nó escolhido, convida a tocar numa estrela', () => {
-    expect(html(<TreePanel row={null} onBuy={noop} onClose={noop} />)).toContain('Toque numa estrela');
+    expect(html(<TreePanel row={null} onBuy={noop} onClose={noop} />)).toContain(
+      'Toque numa estrela',
+    );
   });
 
   it('nó comprável: nome, ramo, tier, custo, efeito e botão Comprar ligado', () => {
@@ -50,7 +62,9 @@ describe('painel do nó', () => {
   it('nenhum nó espera mecânica futura (o Observatório foi aposentado), então nenhum painel diz "Em breve"', () => {
     const rows = treeView(open()).branches.flatMap((b) => b.nodes);
     expect(rows.some((n) => n.status === 'soon')).toBe(false);
-    expect(html(<TreePanel row={rowOf(open(), 'ex-01')} onBuy={noop} onClose={noop} />)).not.toContain('Chega com');
+    expect(
+      html(<TreePanel row={rowOf(open(), 'ex-01')} onBuy={noop} onClose={noop} />),
+    ).not.toContain('Chega com');
   });
 
   it('estado de cada nó da página: abertura, bloqueio, falta e fechado até o 1º colapso', () => {
@@ -60,8 +74,16 @@ describe('painel do nó', () => {
     expect(st('co-05')).toBe('blocked');
     expect(v.branches.flatMap((b) => b.nodes).some((n) => n.status === 'soon')).toBe(false);
     expect(st('au-01')).toBe('buyable');
-    expect(treeView(open({}, 0)).branches.flatMap((b) => b.nodes).find((n) => n.id === 'co-01')!.status).toBe('short');
-    expect(treeView({ ...open(), collapses: 0 }).branches.flatMap((b) => b.nodes).every((n) => n.status === 'closed' || n.status === 'soon')).toBe(true);
+    expect(
+      treeView(open({}, 0))
+        .branches.flatMap((b) => b.nodes)
+        .find((n) => n.id === 'co-01')!.status,
+    ).toBe('short');
+    expect(
+      treeView({ ...open(), collapses: 0 })
+        .branches.flatMap((b) => b.nodes)
+        .every((n) => n.status === 'closed' || n.status === 'soon'),
+    ).toBe(true);
   });
 
   it('refazer só liga fora de uma vida em andamento', () => {

@@ -20,10 +20,25 @@ const FRAME: Record<ItemEra, { a: string; b: string }> = {
   trilhoes: { a: '#d9a6ff', b: '#6b3ad6' },
 };
 
-const stroke = { fill: 'none', stroke: INK, strokeWidth: 2.5, strokeLinecap: 'round', strokeLinejoin: 'round' } as const;
+const stroke = {
+  fill: 'none',
+  stroke: INK,
+  strokeWidth: 2.5,
+  strokeLinecap: 'round',
+  strokeLinejoin: 'round',
+} as const;
 
 /** Itens de "mãos" (luvas, aço, titânio...) usam a mão com o sinal de mais; o resto do toque usa a lente. */
-const HAND_ITEMS = new Set(['gloves', 'steel', 'titan', 'diamond', 'starhand', 'solarhand', 'nebhand', 'cosmoshand']);
+const HAND_ITEMS = new Set([
+  'gloves',
+  'steel',
+  'titan',
+  'diamond',
+  'starhand',
+  'solarhand',
+  'nebhand',
+  'cosmoshand',
+]);
 
 const GLYPH: Record<string, ReactNode> = {
   touchMult: (
@@ -36,16 +51,41 @@ const GLYPH: Record<string, ReactNode> = {
   ),
   touchAdd: (
     <>
-      <path d="M14 36V24l-2-6a2 2 0 0 1 4-1l2 4V10a2 2 0 0 1 4 0v10V9a2 2 0 0 1 4 0v11V11a2 2 0 0 1 4 0v14l2-3a2 2 0 0 1 3 2l-5 9v6z" fill={LIGHT} stroke={INK} strokeWidth="2.2" strokeLinejoin="round" />
+      <path
+        d="M14 36V24l-2-6a2 2 0 0 1 4-1l2 4V10a2 2 0 0 1 4 0v10V9a2 2 0 0 1 4 0v11V11a2 2 0 0 1 4 0v14l2-3a2 2 0 0 1 3 2l-5 9v6z"
+        fill={LIGHT}
+        stroke={INK}
+        strokeWidth="2.2"
+        strokeLinejoin="round"
+      />
       <path d="M36 6v10M31 11h10" {...stroke} stroke={GOLD} strokeWidth="3.5" />
     </>
   ),
-  energyMult: <path d="M27 6L12 26h9l-3 16 18-23h-10z" fill={GOLD} stroke={INK} strokeWidth="2.5" strokeLinejoin="round" />,
+  energyMult: (
+    <path
+      d="M27 6L12 26h9l-3 16 18-23h-10z"
+      fill={GOLD}
+      stroke={INK}
+      strokeWidth="2.5"
+      strokeLinejoin="round"
+    />
+  ),
   genMult: (
     <>
       <circle cx="24" cy="24" r="11" fill={LIGHT} stroke={INK} strokeWidth="2.5" />
       {Array.from({ length: 8 }, (_, i) => (
-        <rect key={i} x="21.5" y="4" width="5" height="8" rx="1.5" fill={LIGHT} stroke={INK} strokeWidth="2" transform={`rotate(${i * 45} 24 24)`} />
+        <rect
+          key={i}
+          x="21.5"
+          y="4"
+          width="5"
+          height="8"
+          rx="1.5"
+          fill={LIGHT}
+          stroke={INK}
+          strokeWidth="2"
+          transform={`rotate(${i * 45} 24 24)`}
+        />
       ))}
       <circle cx="24" cy="24" r="4.5" fill={CYAN} stroke={INK} strokeWidth="2.5" />
     </>
@@ -55,7 +95,13 @@ const GLYPH: Record<string, ReactNode> = {
       <path d="M24 42V20" {...stroke} strokeWidth="3.5" />
       <path d="M12 20a12 12 0 0 1 24 0" {...stroke} stroke={CYAN} strokeWidth="3.5" />
       <path d="M17 20a7 7 0 0 1 14 0" {...stroke} stroke={LIGHT} strokeWidth="3" />
-      <path d="M26 6l-5 8h5l-2 7 7-10h-5z" fill={GOLD} stroke={INK} strokeWidth="2" strokeLinejoin="round" />
+      <path
+        d="M26 6l-5 8h5l-2 7 7-10h-5z"
+        fill={GOLD}
+        stroke={INK}
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
     </>
   ),
 };
@@ -75,14 +121,33 @@ export function ItemIcon({ id, size = 52 }: { id: string; size?: number }) {
   const rank = rankOf(id);
   const grad = `ap-item-grad-${def?.era ?? 'poeira'}`;
   return (
-    <svg className="ap-itemicon" viewBox="0 0 48 48" width={size} height={size} role="img" aria-hidden="true" focusable="false" data-era={def?.era ?? 'poeira'} data-type={type}>
+    <svg
+      className="ap-itemicon"
+      viewBox="0 0 48 48"
+      width={size}
+      height={size}
+      role="img"
+      aria-hidden="true"
+      focusable="false"
+      data-era={def?.era ?? 'poeira'}
+      data-type={type}
+    >
       <defs>
         <linearGradient id={grad} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor={frame.a} />
           <stop offset="1" stopColor={frame.b} />
         </linearGradient>
       </defs>
-      <rect x="2" y="2" width="44" height="44" rx="12" fill={`url(#${grad})`} stroke={INK} strokeWidth="2.5" />
+      <rect
+        x="2"
+        y="2"
+        width="44"
+        height="44"
+        rx="12"
+        fill={`url(#${grad})`}
+        stroke={INK}
+        strokeWidth="2.5"
+      />
       <rect x="6" y="6" width="36" height="36" rx="9" fill="#101936" fillOpacity="0.88" />
       <g transform="translate(6 4) scale(0.75)">{GLYPH[HAND_ITEMS.has(id) ? 'touchAdd' : type]}</g>
       {Array.from({ length: rank }, (_, i) => (

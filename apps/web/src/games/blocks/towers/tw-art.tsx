@@ -14,7 +14,13 @@ export function TinyPiece({ kind, unit = 14 }: { kind: number; unit?: number }) 
     h = Math.max(h, y + 1);
   }
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} width={w * unit} height={h * unit} aria-hidden="true" style={{ display: 'block', overflow: 'visible' }}>
+    <svg
+      viewBox={`0 0 ${w} ${h}`}
+      width={w * unit}
+      height={h * unit}
+      aria-hidden="true"
+      style={{ display: 'block', overflow: 'visible' }}
+    >
       {def.cells.map(([x, y]) => (
         <use key={`${x}-${y}`} href={`#bk-${def.color}`} x={x} y={y} width="1" height="1" />
       ))}
@@ -23,8 +29,14 @@ export function TinyPiece({ kind, unit = 14 }: { kind: number; unit?: number }) 
 }
 
 export const SPELL_LABEL: Record<GoodSpell | BadSpell, { name: string; text: string }> = {
-  vinha: { name: 'VINHA', text: 'A peça gruda no que encostar. Bata de lado numa peça e ela cola no ar' },
-  cimento: { name: 'CIMENTO', text: 'A peça vira pedra. Bata de lado numa peça e ela fica presa no ar' },
+  vinha: {
+    name: 'VINHA',
+    text: 'A peça gruda no que encostar. Bata de lado numa peça e ela cola no ar',
+  },
+  cimento: {
+    name: 'CIMENTO',
+    text: 'A peça vira pedra. Bata de lado numa peça e ela fica presa no ar',
+  },
   desfazer: { name: 'DESFAZER', text: 'Tira a última peça, sem perder vida' },
   vida: { name: 'VIDA EXTRA', text: 'Devolve uma vida' },
   gelo: { name: 'GELO', text: 'As próximas peças escorregam' },
@@ -38,7 +50,13 @@ export const SPELL_LABEL: Record<GoodSpell | BadSpell, { name: string; text: str
 /** O ícone de cada magia (traço grosso, cores do Pop Brutal). */
 export function SpellIcon({ name, size = 28 }: { name: GoodSpell | BadSpell; size?: number }) {
   const common = { width: size, height: size, viewBox: '0 0 32 32', 'aria-hidden': true } as const;
-  const line = { fill: 'none', stroke: INK, strokeWidth: 2.6, strokeLinecap: 'round', strokeLinejoin: 'round' } as const;
+  const line = {
+    fill: 'none',
+    stroke: INK,
+    strokeWidth: 2.6,
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+  } as const;
   switch (name) {
     case 'vinha':
       return (
@@ -64,7 +82,11 @@ export function SpellIcon({ name, size = 28 }: { name: GoodSpell | BadSpell; siz
     case 'vida':
       return (
         <svg {...common}>
-          <path d="M16 27C4 18 5 8 11 7c3-.5 4.5 1.8 5 3 .5-1.2 2-3.5 5-3 6 1 7 11-5 20z" {...line} fill="#e5303a" />
+          <path
+            d="M16 27C4 18 5 8 11 7c3-.5 4.5 1.8 5 3 .5-1.2 2-3.5 5-3 6 1 7 11-5 20z"
+            {...line}
+            fill="#e5303a"
+          />
         </svg>
       );
     case 'gelo':
@@ -90,7 +112,11 @@ export function SpellIcon({ name, size = 28 }: { name: GoodSpell | BadSpell; siz
     case 'nevoa':
       return (
         <svg {...common}>
-          <path d="M7 22a5 5 0 0 1 1-9.8A7 7 0 0 1 21 11a5 5 0 0 1 3 11z" {...line} fill="#ffffff" />
+          <path
+            d="M7 22a5 5 0 0 1 1-9.8A7 7 0 0 1 21 11a5 5 0 0 1 3 11z"
+            {...line}
+            fill="#ffffff"
+          />
           <path d="M8 27h16" {...line} />
         </svg>
       );
@@ -111,11 +137,42 @@ export function SpellIcon({ name, size = 28 }: { name: GoodSpell | BadSpell; siz
   }
 }
 
-export function ArrowIcon({ dir, size = 26 }: { dir: 'left' | 'right' | 'down' | 'rotate'; size?: number }) {
-  const common = { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 3, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true } as const;
-  if (dir === 'left') return <svg {...common}><path d="M15 5l-7 7 7 7" /></svg>;
-  if (dir === 'right') return <svg {...common}><path d="M9 5l7 7-7 7" /></svg>;
-  if (dir === 'down') return <svg {...common}><path d="M5 9l7 7 7-7M12 3v12" /></svg>;
+export function ArrowIcon({
+  dir,
+  size = 26,
+}: {
+  dir: 'left' | 'right' | 'down' | 'rotate';
+  size?: number;
+}) {
+  const common = {
+    width: size,
+    height: size,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 3,
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+    'aria-hidden': true,
+  } as const;
+  if (dir === 'left')
+    return (
+      <svg {...common}>
+        <path d="M15 5l-7 7 7 7" />
+      </svg>
+    );
+  if (dir === 'right')
+    return (
+      <svg {...common}>
+        <path d="M9 5l7 7-7 7" />
+      </svg>
+    );
+  if (dir === 'down')
+    return (
+      <svg {...common}>
+        <path d="M5 9l7 7 7-7M12 3v12" />
+      </svg>
+    );
   return (
     <svg {...common}>
       <path d="M20 12a8 8 0 1 1-2.5-5.8" />

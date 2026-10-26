@@ -156,12 +156,15 @@ export function SavesModal({ store, onClose, onPick }: Props) {
             }
             if (flow.confirmingDelete === slot) {
               return (
-                <div key={slot} className="ap-slot confirm" role="group" aria-label={`Apagar save ${slot}`}>
+                <div
+                  key={slot}
+                  className="ap-slot confirm"
+                  role="group"
+                  aria-label={`Apagar save ${slot}`}
+                >
                   <p className="ap-slot-n">Save {slot}</p>
                   <h3>Apagar {save.name}?</h3>
-                  <p>
-                    Todo o progresso some, mas você pode recuperar em até {RECOVERY_DAYS} dias.
-                  </p>
+                  <p>Todo o progresso some, mas você pode recuperar em até {RECOVERY_DAYS} dias.</p>
                   <div className="ap-row">
                     <button
                       type="button"

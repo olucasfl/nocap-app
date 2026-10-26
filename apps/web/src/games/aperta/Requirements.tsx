@@ -14,7 +14,10 @@ interface Props {
  */
 export function RequirementBars({ view, compact = false }: Props) {
   return (
-    <ul className={`ap-reqs${compact ? ' is-compact' : ''}`} aria-label={`Requisitos do colapso ${view.next}`}>
+    <ul
+      className={`ap-reqs${compact ? ' is-compact' : ''}`}
+      aria-label={`Requisitos do colapso ${view.next}`}
+    >
       {view.requirements.map((r) => (
         <li key={r.id} className={r.done ? 'is-done' : ''} data-req={r.id}>
           <div className="ap-req-head">

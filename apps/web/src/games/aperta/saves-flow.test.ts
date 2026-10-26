@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { afterPick, apertaAccess, askDelete, backOrClose, cancelDelete, savesModalStart } from './saves-flow';
+import {
+  afterPick,
+  apertaAccess,
+  askDelete,
+  backOrClose,
+  cancelDelete,
+  savesModalStart,
+} from './saves-flow';
 
 describe('modal de saves: apagar em 2 passos', () => {
   it('o primeiro toque só pede confirmação, não apaga', () => {

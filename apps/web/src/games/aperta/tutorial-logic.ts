@@ -1,8 +1,26 @@
-import { CHOICE_LOCK_SEC, TUTORIAL, TUTORIAL_STEPS, pendingHint, type SaveState, type TutorialHint } from '@nocap/games';
+import {
+  CHOICE_LOCK_SEC,
+  TUTORIAL,
+  TUTORIAL_STEPS,
+  pendingHint,
+  type SaveState,
+  type TutorialHint,
+} from '@nocap/games';
 import { collapseView, type PageName } from './game-logic';
 
 /** O que o tutorial destaca; cada alvo é um `data-tut` na tela de jogo. */
-export type TutorialTarget = 'press' | 'dock-upgrades' | 'buy-first' | 'page-close' | 'dock-grimoires' | 'dock-achievements' | 'tree' | 'first-object' | 'goal' | 'dust' | 'energy';
+export type TutorialTarget =
+  | 'press'
+  | 'dock-upgrades'
+  | 'buy-first'
+  | 'page-close'
+  | 'dock-grimoires'
+  | 'dock-achievements'
+  | 'tree'
+  | 'first-object'
+  | 'goal'
+  | 'dust'
+  | 'energy';
 
 export interface CoachView {
   /** Muda a cada dica nova: refaz o cartão e roda a animação de entrada. */
@@ -28,9 +46,23 @@ export interface CoachView {
 }
 
 /** A página que cada cartão do jogo livre apresenta: abri-la já conta como visto. */
-export const HINT_PAGE: Partial<Record<TutorialHint, PageName>> = { achievements: 'achievements', tree: 'tree', generators: 'upgrades' };
+export const HINT_PAGE: Partial<Record<TutorialHint, PageName>> = {
+  achievements: 'achievements',
+  tree: 'tree',
+  generators: 'upgrades',
+};
 
-const NONE = { glow: null, arrowOn: 'target', step: null, label: null, title: null, text: null, dismiss: null, inline: false, place: 'top' } as const;
+const NONE = {
+  glow: null,
+  arrowOn: 'target',
+  step: null,
+  label: null,
+  title: null,
+  text: null,
+  dismiss: null,
+  inline: false,
+  place: 'top',
+} as const;
 
 const stepName = (n: number) => `Passo ${n} de ${TUTORIAL_STEPS}`;
 
@@ -71,7 +103,15 @@ export function coachView(state: SaveState, page: PageName | null, busy = false)
           text: 'É o dinheiro do jogo: com ela você compra itens. Continue tocando.',
         };
       }
-      return { ...NONE, key: 'touch-more', step: stepName(1), target: 'press', label: 'Continue tocando', title: 'Junte poeira', text: 'Quando juntar o bastante, o primeiro item é liberado.' };
+      return {
+        ...NONE,
+        key: 'touch-more',
+        step: stepName(1),
+        target: 'press',
+        label: 'Continue tocando',
+        title: 'Junte poeira',
+        text: 'Quando juntar o bastante, o primeiro item é liberado.',
+      };
     case TUTORIAL.UPGRADE:
       if (page === 'upgrades') {
         return {
@@ -97,7 +137,15 @@ export function coachView(state: SaveState, page: PageName | null, busy = false)
           };
     case TUTORIAL.BACK:
       return page === 'upgrades'
-        ? { ...NONE, key: 'back', step: stepName(3), target: 'page-close', title: 'Comprado!', text: 'Feche a página e volte a tocar no botão.', place: 'bottom' }
+        ? {
+            ...NONE,
+            key: 'back',
+            step: stepName(3),
+            target: 'page-close',
+            title: 'Comprado!',
+            text: 'Feche a página e volte a tocar no botão.',
+            place: 'bottom',
+          }
         : null;
     case TUTORIAL.FILL:
       return page
@@ -215,7 +263,12 @@ export interface Rect {
 export function padRect(r: Rect, pad: number, bounds: { w: number; h: number }): Rect {
   const x = Math.max(0, r.x - pad);
   const y = Math.max(0, r.y - pad);
-  return { x, y, w: Math.min(bounds.w, r.x + r.w + pad) - x, h: Math.min(bounds.h, r.y + r.h + pad) - y };
+  return {
+    x,
+    y,
+    w: Math.min(bounds.w, r.x + r.w + pad) - x,
+    h: Math.min(bounds.h, r.y + r.h + pad) - y,
+  };
 }
 
 /** O cartão fica no topo, a não ser que o alvo esteja na metade de cima (aí vai para baixo e não cobre o alvo). */
@@ -231,7 +284,12 @@ export const ARROW_SPACE = 56;
  * A seta fica do lado do alvo que tem espaço livre: o cartão cobre `topBlock` px no alto e `bottomBlock` embaixo.
  * Com espaço nos dois lados, vai acima quando o alvo está na metade de baixo.
  */
-export function arrowSide(hole: Rect, viewH: number, topBlock = 0, bottomBlock = 0): 'above' | 'below' {
+export function arrowSide(
+  hole: Rect,
+  viewH: number,
+  topBlock = 0,
+  bottomBlock = 0,
+): 'above' | 'below' {
   const above = hole.y - topBlock;
   const below = viewH - (hole.y + hole.h) - bottomBlock;
   if (above < ARROW_SPACE) return 'below';
@@ -250,16 +308,31 @@ const overlap = (a: Rect, b: Rect): number => {
   return w > 0 && h > 0 ? w * h : 0;
 };
 
-export const inflate = (r: Rect, by: number): Rect => ({ x: r.x - by, y: r.y - by, w: r.w + by * 2, h: r.h + by * 2 });
+export const inflate = (r: Rect, by: number): Rect => ({
+  x: r.x - by,
+  y: r.y - by,
+  w: r.w + by * 2,
+  h: r.h + by * 2,
+});
 
 /**
  * Onde pôr o cartão: varre a tela em passos e fica com o ponto que não cobre nada de `avoid` (alvo, seta, botão do
  * jogo) mais perto de `anchor`; se nenhum escapa, o que cobre menos. Serve igual para celular deitado, em pé e PC.
  */
-export function placeCard(card: { w: number; h: number }, bounds: { w: number; h: number }, avoid: Rect[], anchor: { x: number; y: number }, margin = 8, step = 8): { x: number; y: number } {
+export function placeCard(
+  card: { w: number; h: number },
+  bounds: { w: number; h: number },
+  avoid: Rect[],
+  anchor: { x: number; y: number },
+  margin = 8,
+  step = 8,
+): { x: number; y: number } {
   const maxX = Math.max(margin, bounds.w - card.w - margin);
   const maxY = Math.max(margin, bounds.h - card.h - margin);
-  let best = { x: Math.min(maxX, Math.max(margin, anchor.x)), y: Math.min(maxY, Math.max(margin, anchor.y)) };
+  let best = {
+    x: Math.min(maxX, Math.max(margin, anchor.x)),
+    y: Math.min(maxY, Math.max(margin, anchor.y)),
+  };
   let bestScore = Infinity;
   const xs: number[] = [];
   const ys: number[] = [];
@@ -295,12 +368,19 @@ export function arrowPlacement(hole: Rect, bounds: { w: number; h: number }): Ar
   const tall = hole.h > bounds.h * 0.4 && hole.w < bounds.w * 0.25;
   const roomAbove = hole.y >= ARROW_SPACE;
   const roomBelow = bounds.h - (hole.y + hole.h) >= ARROW_SPACE;
-  if (tall || (!roomAbove && !roomBelow)) return hole.x + hole.w / 2 > bounds.w / 2 ? 'left' : 'right';
+  if (tall || (!roomAbove && !roomBelow))
+    return hole.x + hole.w / 2 > bounds.w / 2 ? 'left' : 'right';
   return arrowSide(hole, bounds.h);
 }
 
 /** Retângulo que a seta e a etiqueta ocupam (o cartão e a mão fogem dele). */
-export function arrowBox(hole: Rect, bounds: { w: number; h: number }, side: ArrowPlacement, labelW = 220, h = ARROW_SPACE + 2): Rect {
+export function arrowBox(
+  hole: Rect,
+  bounds: { w: number; h: number },
+  side: ArrowPlacement,
+  labelW = 220,
+  h = ARROW_SPACE + 2,
+): Rect {
   if (side === 'left') return { x: hole.x - labelW, y: hole.y + hole.h / 2 - h / 2, w: labelW, h };
   if (side === 'right') return { x: hole.x + hole.w, y: hole.y + hole.h / 2 - h / 2, w: labelW, h };
   const cx = arrowX(hole, bounds.w, labelW / 2);

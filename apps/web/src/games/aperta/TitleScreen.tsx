@@ -45,12 +45,7 @@ export function TitleScreen({ access, onPlay }: Props) {
               Jogar
             </button>
           )}
-          <button
-            type="button"
-            className="ap-btn ghost"
-            aria-pressed={!muted}
-            onClick={toggleMute}
-          >
+          <button type="button" className="ap-btn ghost" aria-pressed={!muted} onClick={toggleMute}>
             Som: {muted ? 'desligado' : 'ligado'}
           </button>
           <Link to="/" className="ap-btn red" data-sfx="cancel">

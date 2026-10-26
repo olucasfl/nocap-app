@@ -34,7 +34,10 @@ function markHintSeen(): void {
 
 const BoltIcon = () => (
   <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
-    <path d="M12 2l2.6 6.4L21 9l-5 4.4L17.5 20 12 16.6 6.5 20 8 13.4 3 9l6.4-.6z" fill="currentColor" />
+    <path
+      d="M12 2l2.6 6.4L21 9l-5 4.4L17.5 20 12 16.6 6.5 20 8 13.4 3 9l6.4-.6z"
+      fill="currentColor"
+    />
   </svg>
 );
 
@@ -53,7 +56,10 @@ export function TreePage({ state, onBuy, onRespec, onClose }: Props) {
   const root = useRef<HTMLDivElement>(null);
   useDialog(root, () => (pop ? setPop(null) : onClose()));
 
-  const rows = useMemo(() => new Map(view.branches.flatMap((b) => b.nodes).map((n) => [n.id, n])), [view]);
+  const rows = useMemo(
+    () => new Map(view.branches.flatMap((b) => b.nodes).map((n) => [n.id, n])),
+    [view],
+  );
   const row = selected ? (rows.get(selected) ?? null) : null;
 
   const buy = (id: string) => {
@@ -68,7 +74,14 @@ export function TreePage({ state, onBuy, onRespec, onClose }: Props) {
   };
 
   return (
-    <div ref={root} className="ap-tree" data-tut="tree-page" role="dialog" aria-label="Árvore de Habilidades" tabIndex={-1}>
+    <div
+      ref={root}
+      className="ap-tree"
+      data-tut="tree-page"
+      role="dialog"
+      aria-label="Árvore de Habilidades"
+      tabIndex={-1}
+    >
       <div className="ap-tree-bg" aria-hidden="true" />
       <div className="ap-tree-graph">
         <TreeGraph
@@ -96,9 +109,22 @@ export function TreePage({ state, onBuy, onRespec, onClose }: Props) {
 
       <header className="ap-th">
         <div className="ap-tr-bar">
-          <button type="button" className="ap-tr-back" data-tut="page-close" aria-label="Fechar Árvore de Habilidades" onClick={onClose}>
+          <button
+            type="button"
+            className="ap-tr-back"
+            data-tut="page-close"
+            aria-label="Fechar Árvore de Habilidades"
+            onClick={onClose}
+          >
             <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
-              <path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+              <path
+                d="M15 5l-7 7 7 7"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             </svg>
             <span>Voltar</span>
           </button>
@@ -116,7 +142,14 @@ export function TreePage({ state, onBuy, onRespec, onClose }: Props) {
               onClick={() => toggle('sources')}
             >
               <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
-                <path d="M12 3v12M7 10l5 5 5-5M5 20h14" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+                <path
+                  d="M12 3v12M7 10l5 5 5-5M5 20h14"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             </button>
             <button
@@ -127,13 +160,25 @@ export function TreePage({ state, onBuy, onRespec, onClose }: Props) {
               onClick={() => toggle('respec')}
             >
               <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
-                <path d="M4 12a8 8 0 1 0 3-6.2M4 4v5h5" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+                <path
+                  d="M4 12a8 8 0 1 0 3-6.2M4 4v5h5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             </button>
           </div>
         </div>
         <div className="ap-th-chips" role="group" aria-label="Filtrar por ramo">
-          <button type="button" className={`ap-chipf${filter === 'all' ? ' is-on' : ''}`} aria-pressed={filter === 'all'} onClick={() => setFilter('all')}>
+          <button
+            type="button"
+            className={`ap-chipf${filter === 'all' ? ' is-on' : ''}`}
+            aria-pressed={filter === 'all'}
+            onClick={() => setFilter('all')}
+          >
             Tudo
           </button>
           {TREE_BRANCHES.map((b) => (
@@ -150,7 +195,10 @@ export function TreePage({ state, onBuy, onRespec, onClose }: Props) {
         </div>
       </header>
 
-      <div className={`ap-tree-sources ap-tr-pop${pop === 'sources' ? ' is-open' : ''}`} inert={pop !== 'sources'}>
+      <div
+        className={`ap-tree-sources ap-tr-pop${pop === 'sources' ? ' is-open' : ''}`}
+        inert={pop !== 'sources'}
+      >
         <h3>De onde vêm as Cintilas</h3>
         <p className="ap-tr-sum">
           {formatNumber(view.earned)} ganhas · {formatNumber(view.spent)} gastas
@@ -165,7 +213,10 @@ export function TreePage({ state, onBuy, onRespec, onClose }: Props) {
         </ul>
       </div>
 
-      <div className={`ap-tr-pop ap-tr-pop-respec${pop === 'respec' ? ' is-open' : ''}`} inert={pop !== 'respec'}>
+      <div
+        className={`ap-tr-pop ap-tr-pop-respec${pop === 'respec' ? ' is-open' : ''}`}
+        inert={pop !== 'respec'}
+      >
         <section className="ap-respec" aria-labelledby="ap-respec-title">
           <h3 id="ap-respec-title">Refazer árvore</h3>
           <p className="ap-sub">
@@ -176,7 +227,12 @@ export function TreePage({ state, onBuy, onRespec, onClose }: Props) {
                 : 'Compre um nó para poder refazer.'}
           </p>
           {!confirming ? (
-            <button type="button" className="ap-tbtn" disabled={!view.respec.can} onClick={() => setConfirming(true)}>
+            <button
+              type="button"
+              className="ap-tbtn"
+              disabled={!view.respec.can}
+              onClick={() => setConfirming(true)}
+            >
               Refazer árvore
             </button>
           ) : (
@@ -194,7 +250,11 @@ export function TreePage({ state, onBuy, onRespec, onClose }: Props) {
               >
                 Confirmar: devolver {view.respec.refund}
               </button>
-              <button type="button" className="ap-tbtn is-ghost" onClick={() => setConfirming(false)}>
+              <button
+                type="button"
+                className="ap-tbtn is-ghost"
+                onClick={() => setConfirming(false)}
+              >
                 Cancelar
               </button>
             </div>

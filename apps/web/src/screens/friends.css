@@ -519,7 +519,9 @@
   color: var(--ink);
   box-shadow: 3px 3px 0 var(--ink);
   text-decoration: none;
-  transition: transform 0.08s ease-out, box-shadow 0.08s ease-out;
+  transition:
+    transform 0.08s ease-out,
+    box-shadow 0.08s ease-out;
 }
 .fr-fcard.on {
   background: color-mix(in srgb, var(--green) 16%, var(--white));

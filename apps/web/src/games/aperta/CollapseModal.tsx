@@ -13,7 +13,8 @@ interface Props {
   onConfirm: (choice: string | null) => void;
 }
 
-const levelText = (c: VaultCardView) => (c.level === 0 ? `novo, nível ${c.nextLevel}` : `nível ${c.level} para ${c.nextLevel}`);
+const levelText = (c: VaultCardView) =>
+  c.level === 0 ? `novo, nível ${c.nextLevel}` : `nível ${c.level} para ${c.nextLevel}`;
 
 /**
  * Colapso em 2 passos (spec 040, seção 3). Passo 1: escolher um de até 3 proibidos do Cofre (ou receber o Selo
@@ -51,7 +52,9 @@ export function CollapseModal({ state, onCancel, onConfirm }: Props) {
         aria-labelledby="ap-collapse-title"
         tabIndex={-1}
       >
-        <h2 id="ap-collapse-title">{step === 1 ? `A estrela está pronta (colapso ${view.next})` : 'Colapsar a estrela?'}</h2>
+        <h2 id="ap-collapse-title">
+          {step === 1 ? `A estrela está pronta (colapso ${view.next})` : 'Colapsar a estrela?'}
+        </h2>
         <p className="ap-collapse-step" aria-live="polite">
           Passo {step} de 2
         </p>
@@ -61,7 +64,8 @@ export function CollapseModal({ state, onCancel, onConfirm }: Props) {
             <RequirementBars view={view} />
             {seal ? (
               <p className="ap-sub">
-                Todos os proibidos do Cofre estão no nível 5. Este colapso dá um Selo Estelar: +{SEAL_DUST_PER_TOUCH} de poeira em cada toque, para sempre.
+                Todos os proibidos do Cofre estão no nível 5. Este colapso dá um Selo Estelar: +
+                {SEAL_DUST_PER_TOUCH} de poeira em cada toque, para sempre.
               </p>
             ) : (
               <>
@@ -101,7 +105,12 @@ export function CollapseModal({ state, onCancel, onConfirm }: Props) {
               <button type="button" className="ap-hbtn ap-hbtn-ghost" onClick={onCancel}>
                 Agora não
               </button>
-              <button type="button" className="ap-hbtn" disabled={!canContinue} onClick={() => !guarded() && goStep(2)}>
+              <button
+                type="button"
+                className="ap-hbtn"
+                disabled={!canContinue}
+                onClick={() => !guarded() && goStep(2)}
+              >
                 Continuar
               </button>
             </div>

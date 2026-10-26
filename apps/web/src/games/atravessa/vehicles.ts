@@ -25,10 +25,16 @@ const GLASS = 0x1b2230;
  * Um veículo pronto e juntado em poucas malhas. A cor vem de 5 faixas de `variant`, então cada
  * (tipo, bioma, cor) é montado uma vez e todas as cópias dividem a geometria.
  */
-export function buildVehicle(kind: VehicleKind, biome: AtravessaBiome, variant: number): THREE.Group {
+export function buildVehicle(
+  kind: VehicleKind,
+  biome: AtravessaBiome,
+  variant: number,
+): THREE.Group {
   const bucket = Math.min(4, Math.floor(variant * 5));
   const animated = kind === 'ambulancia' || kind === 'drone';
-  return model(animated ? null : `veh|${kind}|${biome}|${bucket}`, () => rawVehicle(kind, biome, (bucket + 0.5) / 5));
+  return model(animated ? null : `veh|${kind}|${biome}|${bucket}`, () =>
+    rawVehicle(kind, biome, (bucket + 0.5) / 5),
+  );
 }
 
 function rawVehicle(kind: VehicleKind, biome: AtravessaBiome, variant: number): THREE.Group {

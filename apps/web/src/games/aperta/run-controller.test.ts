@@ -43,7 +43,12 @@ describe('runController: aba escondida', () => {
   function setup() {
     const browser = fakeBrowser();
     const store = createMemoryGameStore();
-    const ctl = createGameController({ initial: newSave('teste', 0), store, slot: 1, perf: () => clock.ms });
+    const ctl = createGameController({
+      initial: newSave('teste', 0),
+      store,
+      slot: 1,
+      perf: () => clock.ms,
+    });
     const stop = runController(ctl);
     return { browser, store, ctl, stop };
   }

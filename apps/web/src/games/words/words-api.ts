@@ -35,7 +35,8 @@ export const startRun = (mode: ClassicMode, kind: 'daily' | 'solo') =>
   apiClient.post<RunView>('/words/wclassic/runs', { mode, kind });
 export const sendGuess = (id: string, guess: string) =>
   apiClient.post<RunView>(`/words/wclassic/runs/${id}/moves`, { guess });
-export const giveUpRun = (id: string) => apiClient.post<RunView>(`/words/wclassic/runs/${id}/finish`, {});
+export const giveUpRun = (id: string) =>
+  apiClient.post<RunView>(`/words/wclassic/runs/${id}/finish`, {});
 
 let acceptedCache: Promise<Set<string>> | null = null;
 /**

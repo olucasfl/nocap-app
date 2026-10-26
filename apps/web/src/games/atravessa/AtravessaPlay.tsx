@@ -59,7 +59,9 @@ export function AtravessaPlay({ seed, record, onEnd, onQuit, onRestart }: Props)
   const [over, setOver] = useState<{ end: AtravessaEnd; score: number } | null>(null);
   const [hint, setHint] = useState(true);
   const [failed, setFailed] = useState(false);
-  const [toast, setToast] = useState<{ text: string; kind: 'record' | 'marco'; n: number } | null>(null);
+  const [toast, setToast] = useState<{ text: string; kind: 'record' | 'marco'; n: number } | null>(
+    null,
+  );
   const ctl = useRef<{ pause: () => void; resume: () => void } | null>(null);
   const onEndRef = useRef(onEnd);
   onEndRef.current = onEnd;
@@ -226,11 +228,11 @@ export function AtravessaPlay({ seed, record, onEnd, onQuit, onRestart }: Props)
           const to = Math.floor(v.y) + 8;
           for (let r = Math.max(0, from); r <= to; r++) {
             const lane = sim.world.lane(r);
-            if (lane.kind === "trilho" && !warning) warning = trainState(lane, sim.tick).warning;
-            if (lane.kind !== "estrada" || !lane.flow) continue;
+            if (lane.kind === 'trilho' && !warning) warning = trainState(lane, sim.tick).warning;
+            if (lane.kind !== 'estrada' || !lane.flow) continue;
             const rowDist = Math.abs(r - v.y);
             for (const it of laneItems(lane, sim.tick)) {
-              if (it.kind === "ambulancia") {
+              if (it.kind === 'ambulancia') {
                 const near = clamp01(1 - Math.abs(it.x) / 17) ** 0.7 * clamp01(1 - rowDist / 9);
                 siren = Math.max(siren, near);
               }
@@ -241,12 +243,13 @@ export function AtravessaPlay({ seed, record, onEnd, onQuit, onRestart }: Props)
                 if (!revved.has(rk) && Math.abs(it.x) > 5) audio?.rev();
               }
               // o som de passagem: só das faixas bem perto, no instante em que cruza a coluna do herói
-              if (rowDist <= 3.2 && it.kind !== "ambulancia") {
-                const key = r + ":" + it.id;
+              if (rowDist <= 3.2 && it.kind !== 'ambulancia') {
+                const key = r + ':' + it.id;
                 const side = it.x < v.x ? -1 : 1;
                 next.set(key, side);
                 const was = sides.get(key);
-                if (was !== undefined && was !== side) audio?.pass(it.speed, it.len, clamp01(1 - rowDist / 3.4));
+                if (was !== undefined && was !== side)
+                  audio?.pass(it.speed, it.len, clamp01(1 - rowDist / 3.4));
               }
             }
           }
@@ -297,7 +300,12 @@ export function AtravessaPlay({ seed, record, onEnd, onQuit, onRestart }: Props)
           onEndRef.current({ score: sim.score, ticks: sim.tick, end: sim.end }, steps);
         }, END_DELAY_MS);
       }
-      scene.render(sim, paused ? 0 : dt, now / 1000, finished ? { end: sim.end!, age: (now - deathAt) / 1000 } : null);
+      scene.render(
+        sim,
+        paused ? 0 : dt,
+        now / 1000,
+        finished ? { end: sim.end!, age: (now - deathAt) / 1000 } : null,
+      );
     };
     raf = requestAnimationFrame(frame);
 
@@ -347,7 +355,9 @@ export function AtravessaPlay({ seed, record, onEnd, onQuit, onRestart }: Props)
         </div>
       )}
       {hint && !over && !failed && (
-        <p className="at-hint mono">{touch ? 'TOQUE PARA PULAR · DESLIZE PARA IR PARA O LADO' : 'W A S D OU AS SETAS'}</p>
+        <p className="at-hint mono">
+          {touch ? 'TOQUE PARA PULAR · DESLIZE PARA IR PARA O LADO' : 'W A S D OU AS SETAS'}
+        </p>
       )}
       {failed && (
         <div className="at-over" role="alert">
@@ -373,7 +383,12 @@ export function AtravessaPlay({ seed, record, onEnd, onQuit, onRestart }: Props)
             <div className="at-pause-card">
               <h2>Pausado</h2>
               <div className="stack">
-                <button type="button" className="btn alt" data-sfx="start" onClick={() => ctl.current?.resume()}>
+                <button
+                  type="button"
+                  className="btn alt"
+                  data-sfx="start"
+                  onClick={() => ctl.current?.resume()}
+                >
                   Voltar ao jogo
                 </button>
                 <button type="button" className="btn" data-sfx="start" onClick={onRestart}>

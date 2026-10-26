@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+} from 'react';
 import { useIsGuest } from '@/lib/auth';
 import {
   MAX_LIVES,
@@ -15,7 +21,17 @@ import { buzz } from '@/lib/sfx';
 import { createTowersAudio, type TowersAudio } from '@/lib/towers-audio';
 import { BlockDefs } from '../art';
 import { ArrowIcon, SPELL_LABEL, SpellIcon, TinyPiece } from './tw-art';
-import { FINALE_SECONDS, burst, createFx, drawFrame, finaleMoves, startFinale, stepFx, type Fx, type View } from './draw';
+import {
+  FINALE_SECONDS,
+  burst,
+  createFx,
+  drawFrame,
+  finaleMoves,
+  startFinale,
+  stepFx,
+  type Fx,
+  type View,
+} from './draw';
 import './towers.css';
 
 export interface TowersEnd {
@@ -124,11 +140,14 @@ export function TowersPlay({ seed, best, onEnd, onQuit, onRestart }: Props) {
   const [over, setOver] = useState(false);
   const menuRef = useRef(false);
 
-  const say = useCallback((tone: Banner['tone'], title: string, sub: string | null = null, ms = 1500) => {
-    const key = ++bannerKey.current;
-    setBanner({ key, tone, title, sub });
-    window.setTimeout(() => setBanner((b) => (b?.key === key ? null : b)), ms);
-  }, []);
+  const say = useCallback(
+    (tone: Banner['tone'], title: string, sub: string | null = null, ms = 1500) => {
+      const key = ++bannerKey.current;
+      setBanner({ key, tone, title, sub });
+      window.setTimeout(() => setBanner((b) => (b?.key === key ? null : b)), ms);
+    },
+    [],
+  );
 
   const tell = useCallback((n: Omit<Notice, 'key'>) => {
     const key = ++bannerKey.current;
@@ -183,7 +202,18 @@ export function TowersPlay({ seed, best, onEnd, onQuit, onRestart }: Props) {
 
     const dust = (x: number, y: number, n: number, spread: number) => {
       if (calm) return;
-      burst(fx, n, { x, y }, { kind: 'dust', color: DUST[Math.floor(Math.random() * DUST.length)]!, size: 0.2, gravity: 1.5 }, spread);
+      burst(
+        fx,
+        n,
+        { x, y },
+        {
+          kind: 'dust',
+          color: DUST[Math.floor(Math.random() * DUST.length)]!,
+          size: 0.2,
+          gravity: 1.5,
+        },
+        spread,
+      );
     };
     const sparkle = (x: number, y: number, n: number, color = '#ffd23f') => {
       if (calm) return;
@@ -229,14 +259,37 @@ export function TowersPlay({ seed, best, onEnd, onQuit, onRestart }: Props) {
         case 'settle':
           audio?.settle(e.stacked);
           sparkle(e.x, e.y - 0.6, 5);
-          fx.popups.push({ x: e.x, y: e.y - 1, text: `+1`, color: '#ffd23f', life: 1.1, max: 1.1, size: 1.2, space: 'world' });
+          fx.popups.push({
+            x: e.x,
+            y: e.y - 1,
+            text: `+1`,
+            color: '#ffd23f',
+            life: 1.1,
+            max: 1.1,
+            size: 1.2,
+            space: 'world',
+          });
           if (fx.mood === 'idle') mood('cheer');
           break;
         case 'fall': {
           audio?.fall();
           stats.current.falls++;
           const by = view ? view.bottomY - 1.6 : 12;
-          fx.particles.push({ space: 'world', kind: 'x', x: e.x, y: by, vx: 0, vy: 0, life: 1.1, max: 1.1, size: 0.7, color: '#e5303a', rot: 0, vr: 0, gravity: 0 });
+          fx.particles.push({
+            space: 'world',
+            kind: 'x',
+            x: e.x,
+            y: by,
+            vx: 0,
+            vy: 0,
+            life: 1.1,
+            max: 1.1,
+            size: 0.7,
+            color: '#e5303a',
+            rot: 0,
+            vr: 0,
+            gravity: 0,
+          });
           fx.hurt = Math.max(fx.hurt, 0.5);
           mood('scared');
           break;
@@ -267,13 +320,28 @@ export function TowersPlay({ seed, best, onEnd, onQuit, onRestart }: Props) {
                   gravity: 700,
                 });
               }
-              fx.popups.push({ x: h.x, y: h.y + 4, text: '-1', color: '#e5303a', life: 1.2, max: 1.2, size: 1.1, space: 'screen' });
+              fx.popups.push({
+                x: h.x,
+                y: h.y + 4,
+                text: '-1',
+                color: '#e5303a',
+                life: 1.2,
+                max: 1.2,
+                size: 1.1,
+                space: 'screen',
+              });
             }
-            say('bad', e.lives > 0 ? 'PERDEU UMA VIDA' : 'SEM VIDAS', e.lives > 0 ? `${e.lives} ${e.lives === 1 ? 'vida' : 'vidas'}` : null, 1400);
+            say(
+              'bad',
+              e.lives > 0 ? 'PERDEU UMA VIDA' : 'SEM VIDAS',
+              e.lives > 0 ? `${e.lives} ${e.lives === 1 ? 'vida' : 'vidas'}` : null,
+              1400,
+            );
             mood('scared');
           } else {
             audio?.lifeUp();
-            for (let i = 0; i < MAX_LIVES; i++) fx.heartGain[i] = i === e.lives - 1 ? fx.time : fx.heartGain[i]!;
+            for (let i = 0; i < MAX_LIVES; i++)
+              fx.heartGain[i] = i === e.lives - 1 ? fx.time : fx.heartGain[i]!;
             const h = heartAt(e.lives - 1);
             for (let n = 0; n < 6; n++) {
               fx.particles.push({
@@ -302,7 +370,9 @@ export function TowersPlay({ seed, best, onEnd, onQuit, onRestart }: Props) {
           if (!calm) fx.shake = Math.max(fx.shake, 13);
           buzz(120);
           say('warn', 'CAIU TUDO!', null, 1700);
-          if (view) for (let n = 0; n < 4; n++) dust((Math.random() - 0.5) * 8, 2 + Math.random() * 3, 8, 5);
+          if (view)
+            for (let n = 0; n < 4; n++)
+              dust((Math.random() - 0.5) * 8, 2 + Math.random() * 3, 8, 5);
           mood('scared');
           break;
         case 'spell':
@@ -331,37 +401,103 @@ export function TowersPlay({ seed, best, onEnd, onQuit, onRestart }: Props) {
             ms: CAST_NOTICE_MS,
           });
           if (e.name === 'vinha') {
-            if (!calm) burst(fx, 8, { x: e.x, y: e.y }, { kind: 'leaf', color: '#33c27f', size: 0.3, gravity: 3 }, 3);
+            if (!calm)
+              burst(
+                fx,
+                8,
+                { x: e.x, y: e.y },
+                { kind: 'leaf', color: '#33c27f', size: 0.3, gravity: 3 },
+                3,
+              );
           } else if (e.name === 'cimento') {
             dust(e.x, e.y, 10, 3);
           } else if (e.name === 'desfazer') {
-            fx.particles.push({ space: 'world', kind: 'ring', x: e.x, y: e.y, vx: 0, vy: 0, life: 0.7, max: 0.7, size: 0.6, color: '#7a3cff', rot: 0, vr: 0, gravity: 0 });
-            fx.particles.push({ space: 'world', kind: 'swirl', x: e.x, y: e.y, vx: 0, vy: -2, life: 0.8, max: 0.8, size: 0.5, color: '#25c7e8', rot: 0, vr: 9, gravity: 0 });
+            fx.particles.push({
+              space: 'world',
+              kind: 'ring',
+              x: e.x,
+              y: e.y,
+              vx: 0,
+              vy: 0,
+              life: 0.7,
+              max: 0.7,
+              size: 0.6,
+              color: '#7a3cff',
+              rot: 0,
+              vr: 0,
+              gravity: 0,
+            });
+            fx.particles.push({
+              space: 'world',
+              kind: 'swirl',
+              x: e.x,
+              y: e.y,
+              vx: 0,
+              vy: -2,
+              life: 0.8,
+              max: 0.8,
+              size: 0.5,
+              color: '#25c7e8',
+              rot: 0,
+              vr: 9,
+              gravity: 0,
+            });
           }
           fx.glow = 0.7;
           fx.glowColor = '#33c27f';
           break;
         case 'ivy':
-          if (!calm) burst(fx, 12, { x: e.x, y: e.y }, { kind: 'leaf', color: '#33c27f', size: 0.3, gravity: 2 }, 4);
-          tell({ tone: 'good', kicker: 'DEU CERTO', title: 'COLOU!', text: 'A peça e as vizinhas viraram um bloco só', icon: 'vinha', ms: CAST_NOTICE_MS });
+          if (!calm)
+            burst(
+              fx,
+              12,
+              { x: e.x, y: e.y },
+              { kind: 'leaf', color: '#33c27f', size: 0.3, gravity: 2 },
+              4,
+            );
+          tell({
+            tone: 'good',
+            kicker: 'DEU CERTO',
+            title: 'COLOU!',
+            text: 'A peça e as vizinhas viraram um bloco só',
+            icon: 'vinha',
+            ms: CAST_NOTICE_MS,
+          });
           break;
         case 'anchor':
           dust(e.x, e.y, 10, 3);
-          if (e.name === 'vinha' && !calm) burst(fx, 8, { x: e.x, y: e.y }, { kind: 'leaf', color: '#33c27f', size: 0.3, gravity: 2 }, 3);
+          if (e.name === 'vinha' && !calm)
+            burst(
+              fx,
+              8,
+              { x: e.x, y: e.y },
+              { kind: 'leaf', color: '#33c27f', size: 0.3, gravity: 2 },
+              3,
+            );
           fx.glow = 0.5;
           fx.glowColor = e.name === 'cimento' ? '#d0d0dc' : '#33c27f';
           tell({
             tone: 'good',
             kicker: 'ENCOSTOU DE LADO',
             title: 'PRESA NO AR!',
-            text: e.name === 'cimento' ? 'A pedra ficou presa na lateral e agora ajuda a torre' : 'A vinha colou a peça na lateral da outra',
+            text:
+              e.name === 'cimento'
+                ? 'A pedra ficou presa na lateral e agora ajuda a torre'
+                : 'A vinha colou a peça na lateral da outra',
             icon: e.name,
             ms: CAST_NOTICE_MS,
           });
           break;
         case 'petrify':
           dust(e.x, e.y, 14, 4);
-          tell({ tone: 'info', kicker: 'DEU CERTO', title: 'PEDRA!', text: 'Essa peça não se mexe mais', icon: 'cimento', ms: CAST_NOTICE_MS });
+          tell({
+            tone: 'info',
+            kicker: 'DEU CERTO',
+            title: 'PEDRA!',
+            text: 'Essa peça não se mexe mais',
+            icon: 'cimento',
+            ms: CAST_NOTICE_MS,
+          });
           break;
         case 'over': {
           audio?.over();
@@ -371,17 +507,20 @@ export function TowersPlay({ seed, best, onEnd, onQuit, onRestart }: Props) {
           // A câmera só se afasta e desce quando a torre é alta; torre baixa já cabe na tela.
           const moves = finaleMoves(game, W, H);
           if (moves) startFinale(fx);
-          endTimer = window.setTimeout(() => {
-            onEndRef.current({
-              score: game.peak,
-              pieces: game.releasedCount,
-              time: game.time,
-              spells: stats.current.spells,
-              falls: stats.current.falls,
-              collapses: stats.current.collapses,
-              moves: game.log.slice(),
-            });
-          }, moves ? FINALE_SECONDS * 1000 + 700 : 2100);
+          endTimer = window.setTimeout(
+            () => {
+              onEndRef.current({
+                score: game.peak,
+                pieces: game.releasedCount,
+                time: game.time,
+                spells: stats.current.spells,
+                falls: stats.current.falls,
+                collapses: stats.current.collapses,
+                moves: game.log.slice(),
+              });
+            },
+            moves ? FINALE_SECONDS * 1000 + 700 : 2100,
+          );
           break;
         }
       }
@@ -431,9 +570,9 @@ export function TowersPlay({ seed, best, onEnd, onQuit, onRestart }: Props) {
       } else if (k === 'arrowright' || k === 'd') {
         input.current.right = down;
         if (down && !e.repeat) game.press(1);
-      }
-      else if (k === 'arrowdown' || k === 's') input.current.down = down;
-      else if (down && !e.repeat && (k === 'arrowup' || k === 'w' || k === ' ')) rotateRef.current();
+      } else if (k === 'arrowdown' || k === 's') input.current.down = down;
+      else if (down && !e.repeat && (k === 'arrowup' || k === 'w' || k === ' '))
+        rotateRef.current();
       else if (down && !e.repeat && (k === 'e' || k === 'enter')) castRef.current();
       else if (down && !e.repeat && k === 'escape') {
         if (menuRef.current) {
@@ -511,7 +650,14 @@ export function TowersPlay({ seed, best, onEnd, onQuit, onRestart }: Props) {
       <canvas ref={canvas} className="tw-canvas" />
 
       <header className="tw-top">
-        <button type="button" className="tw-iconbtn" aria-label="Pausar" data-sfx="select" disabled={over} onClick={openMenu}>
+        <button
+          type="button"
+          className="tw-iconbtn"
+          aria-label="Pausar"
+          data-sfx="select"
+          disabled={over}
+          onClick={openMenu}
+        >
           <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
             <rect x="6" y="4" width="4" height="16" rx="1" />
             <rect x="14" y="4" width="4" height="16" rx="1" />
@@ -520,8 +666,20 @@ export function TowersPlay({ seed, best, onEnd, onQuit, onRestart }: Props) {
         <div className={`tw-next${hud.fog ? ' fog' : ''}`} aria-label="Próximas peças">
           <span className="mono tw-next-label">PRÓXIMA</span>
           <div className="tw-next-row">
-            <div className="tw-next-main">{hud.fog ? <b>?</b> : hud.queue[0] !== undefined && <TinyPiece kind={hud.queue[0]} unit={15} />}</div>
-            <div className="tw-next-sub">{hud.fog ? <b>?</b> : hud.queue[1] !== undefined && <TinyPiece kind={hud.queue[1]} unit={10} />}</div>
+            <div className="tw-next-main">
+              {hud.fog ? (
+                <b>?</b>
+              ) : (
+                hud.queue[0] !== undefined && <TinyPiece kind={hud.queue[0]} unit={15} />
+              )}
+            </div>
+            <div className="tw-next-sub">
+              {hud.fog ? (
+                <b>?</b>
+              ) : (
+                hud.queue[1] !== undefined && <TinyPiece kind={hud.queue[1]} unit={10} />
+              )}
+            </div>
           </div>
         </div>
         <MuteButton />
@@ -551,7 +709,12 @@ export function TowersPlay({ seed, best, onEnd, onQuit, onRestart }: Props) {
       )}
 
       {notice && (
-        <div key={notice.key} className={`tw-notice ${notice.tone}`} role="status" aria-live="polite">
+        <div
+          key={notice.key}
+          className={`tw-notice ${notice.tone}`}
+          role="status"
+          aria-live="polite"
+        >
           <span className="tw-notice-icon">
             <SpellIcon name={notice.icon} size={30} />
           </span>
@@ -580,10 +743,20 @@ export function TowersPlay({ seed, best, onEnd, onQuit, onRestart }: Props) {
 
       <footer className="tw-controls">
         <div className="tw-cluster">
-          <button type="button" className="tw-btn" aria-label="Mover para a esquerda" {...hold('left')}>
+          <button
+            type="button"
+            className="tw-btn"
+            aria-label="Mover para a esquerda"
+            {...hold('left')}
+          >
             <ArrowIcon dir="left" />
           </button>
-          <button type="button" className="tw-btn" aria-label="Mover para a direita" {...hold('right')}>
+          <button
+            type="button"
+            className="tw-btn"
+            aria-label="Mover para a direita"
+            {...hold('right')}
+          >
             <ArrowIcon dir="right" />
           </button>
         </div>
@@ -600,20 +773,31 @@ export function TowersPlay({ seed, best, onEnd, onQuit, onRestart }: Props) {
             <ArrowIcon dir="rotate" size={26} />
             <span className="mono">GIRAR</span>
           </button>
-          <button type="button" className="tw-btn down" aria-label="Descer mais rápido" {...hold('down')}>
+          <button
+            type="button"
+            className="tw-btn down"
+            aria-label="Descer mais rápido"
+            {...hold('down')}
+          >
             <ArrowIcon dir="down" />
           </button>
           <button
             type="button"
             className={`tw-btn spell${heldFirst ? ' ready' : ''}`}
-            aria-label={heldFirst ? `Usar magia: ${SPELL_LABEL[heldFirst].name}` : 'Sem magia guardada'}
+            aria-label={
+              heldFirst ? `Usar magia: ${SPELL_LABEL[heldFirst].name}` : 'Sem magia guardada'
+            }
             disabled={!heldFirst}
             onPointerDown={(e) => {
               e.preventDefault();
               castRef.current();
             }}
           >
-            {heldFirst ? <SpellIcon name={heldFirst} size={30} /> : <span className="tw-nospell" aria-hidden="true" />}
+            {heldFirst ? (
+              <SpellIcon name={heldFirst} size={30} />
+            ) : (
+              <span className="tw-nospell" aria-hidden="true" />
+            )}
             {hud.held.length > 1 && <i className="tw-count mono">{hud.held.length}</i>}
           </button>
         </div>
@@ -642,11 +826,12 @@ export function TowersPlay({ seed, best, onEnd, onQuit, onRestart }: Props) {
                 Sair da partida
               </button>
             </div>
-            <p className="mono tw-pause-hint">REINICIAR OU SAIR PERDE A PARTIDA EM ANDAMENTO. ESC TAMBÉM PAUSA E VOLTA.</p>
+            <p className="mono tw-pause-hint">
+              REINICIAR OU SAIR PERDE A PARTIDA EM ANDAMENTO. ESC TAMBÉM PAUSA E VOLTA.
+            </p>
           </div>
         </div>
       )}
     </div>
   );
 }
-

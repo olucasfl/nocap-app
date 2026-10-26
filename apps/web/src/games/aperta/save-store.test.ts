@@ -23,7 +23,12 @@ describe('SaveStore', () => {
   it('cria um novo jogo no espaço pedido, sem história vista', async () => {
     const { store } = setup();
     const save = await store.create(2);
-    expect(save).toMatchObject({ slot: 2, name: DEFAULT_SAVE_NAME, collapses: 0, storySeen: false });
+    expect(save).toMatchObject({
+      slot: 2,
+      name: DEFAULT_SAVE_NAME,
+      collapses: 0,
+      storySeen: false,
+    });
     const list = await store.list();
     expect(list[0]).toBeNull();
     expect(list[1]?.slot).toBe(2);
@@ -71,8 +76,12 @@ describe('SaveStore', () => {
 describe('textos da lista de saves', () => {
   it('conta colapsos e páginas no singular e no plural', () => {
     const base = { slot: 1 as const, name: 'x', lastPlayedAt: '', storySeen: true };
-    expect(saveStats({ ...base, collapses: 1, vaultCount: 1 })).toBe('1 colapso · 1 proibido no Cofre');
-    expect(saveStats({ ...base, collapses: 0, vaultCount: 3 })).toBe('0 colapsos · 3 proibidos no Cofre');
+    expect(saveStats({ ...base, collapses: 1, vaultCount: 1 })).toBe(
+      '1 colapso · 1 proibido no Cofre',
+    );
+    expect(saveStats({ ...base, collapses: 0, vaultCount: 3 })).toBe(
+      '0 colapsos · 3 proibidos no Cofre',
+    );
   });
 
   it('diz há quanto tempo jogou', () => {

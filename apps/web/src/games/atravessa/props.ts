@@ -18,7 +18,8 @@ function rawCroc(len: number, biome: AtravessaBiome): THREE.Group {
   const headX = len / 2 - 0.6;
   g.add(box(len - 1.2, 0.26, 0.72, skin, -0.6, 0.15, 0));
   g.add(box(len - 1.4, 0.1, 0.5, dark, -0.7, 0.33, 0, { cast: false }));
-  for (let i = 0; i < 5; i++) g.add(box(0.16, 0.12, 0.16, dark, -len / 2 + 0.5 + i * 0.5, 0.42, 0, { cast: false }));
+  for (let i = 0; i < 5; i++)
+    g.add(box(0.16, 0.12, 0.16, dark, -len / 2 + 0.5 + i * 0.5, 0.42, 0, { cast: false }));
   g.add(box(0.7, 0.18, 0.4, skin, -len / 2 + 0.3, 0.12, 0)); // a cauda
   g.add(box(len * 0.5, 0.08, 0.7, belly, -0.4, 0.05, 0, { cast: false }));
   // a cabeça: o maxilar de baixo fica parado, o de cima gira no fundo dele
@@ -26,8 +27,12 @@ function rawCroc(len: number, biome: AtravessaBiome): THREE.Group {
   const jaw = new THREE.Group();
   jaw.position.set(headX - 0.6, 0.24, 0);
   jaw.add(box(1.2, 0.16, 0.6, skin, 0.6, 0.08, 0));
-  for (const z of [-0.25, 0.25]) jaw.add(box(0.14, 0.14, 0.14, 0xffe45a, 0.7, 0.22, z, { cast: false })); // os olhos
-  for (let i = 0; i < 4; i++) jaw.add(box(0.07, 0.08, 0.07, 0xffffff, 0.35 + i * 0.22, -0.02, i % 2 ? 0.2 : -0.2, { cast: false }));
+  for (const z of [-0.25, 0.25])
+    jaw.add(box(0.14, 0.14, 0.14, 0xffe45a, 0.7, 0.22, z, { cast: false })); // os olhos
+  for (let i = 0; i < 4; i++)
+    jaw.add(
+      box(0.07, 0.08, 0.07, 0xffffff, 0.35 + i * 0.22, -0.02, i % 2 ? 0.2 : -0.2, { cast: false }),
+    );
   bakeChildren(jaw);
   jaw.userData.keep = true;
   g.add(jaw);
@@ -63,7 +68,8 @@ function rawTurtles(len: number, biome: AtravessaBiome): THREE.Group {
     // as placas do casco: uma no meio e quatro em volta, mais claras
     t.add(box(0.22, 0.03, 0.2, plate, 0, 0.45, 0, { cast: false, emissive: glow }));
     for (const dx of [-0.2, 0.2]) {
-      for (const dz of [-0.17, 0.17]) t.add(box(0.14, 0.03, 0.12, plate, dx, 0.37, dz, { cast: false, emissive: glow }));
+      for (const dz of [-0.17, 0.17])
+        t.add(box(0.14, 0.03, 0.12, plate, dx, 0.37, dz, { cast: false, emissive: glow }));
     }
     for (const dz of [-0.31, 0.31]) t.add(box(0.5, 0.03, 0.06, rim, 0, 0.27, dz * 1.02, k));
     // a cabeça redonda na frente, com pescoço, olhos e sorriso
@@ -72,7 +78,9 @@ function rawTurtles(len: number, biome: AtravessaBiome): THREE.Group {
     t.add(box(0.2, 0.05, 0.22, skinDark, 0.62, 0.11, 0, k));
     for (const dz of [-0.1, 0.1]) {
       t.add(box(0.07, 0.07, 0.06, 0x14100c, 0.66, 0.31, dz, k));
-      t.add(box(0.025, 0.025, 0.02, 0xffffff, 0.685, 0.335, dz * 1.1, { cast: false, emissive: 0.6 }));
+      t.add(
+        box(0.025, 0.025, 0.02, 0xffffff, 0.685, 0.335, dz * 1.1, { cast: false, emissive: 0.6 }),
+      );
     }
     t.add(box(0.03, 0.025, 0.12, 0x2a3a1a, 0.74, 0.2, 0, k)); // o sorriso
     // quatro nadadeiras grandes e achatadas, abertas para fora, e um rabinho
@@ -140,7 +148,12 @@ const warnColor = 0xff4a3d;
 
 /** A linha: uma caixa fina e comprida ao longo de Z, de `len` casas, com o centro na origem. */
 export function buildSweepLine(len: number): THREE.Mesh {
-  const mat3 = new THREE.MeshBasicMaterial({ color: warnColor, transparent: true, opacity: 0.9, depthWrite: false });
+  const mat3 = new THREE.MeshBasicMaterial({
+    color: warnColor,
+    transparent: true,
+    opacity: 0.9,
+    depthWrite: false,
+  });
   const m = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.04, len), mat3);
   m.renderOrder = 5;
   return m;
@@ -168,7 +181,9 @@ export function buildBang(): THREE.Sprite {
   c.fill();
   const tex = new THREE.CanvasTexture(cv);
   tex.colorSpace = THREE.SRGBColorSpace;
-  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, depthTest: false }));
+  const sp = new THREE.Sprite(
+    new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, depthTest: false }),
+  );
   sp.scale.set(1.0, 1.0, 1);
   sp.renderOrder = 10;
   return sp;
@@ -177,7 +192,12 @@ export function buildBang(): THREE.Sprite {
 /** O anel no chão do alvo: um quadrado vazado de linhas finas. */
 export function buildTargetRing(): THREE.Group {
   const g = new THREE.Group();
-  const m = new THREE.MeshBasicMaterial({ color: warnColor, transparent: true, opacity: 0.95, depthWrite: false });
+  const m = new THREE.MeshBasicMaterial({
+    color: warnColor,
+    transparent: true,
+    opacity: 0.95,
+    depthWrite: false,
+  });
   const geoLong = new THREE.BoxGeometry(1.0, 0.04, 0.07);
   const geoSide = new THREE.BoxGeometry(0.07, 0.04, 1.0);
   for (const z of [-0.5, 0.5]) {
@@ -226,7 +246,9 @@ export function makeLabel(text: string, fg: string, bg: string): THREE.Sprite {
   c.fillText(text, 256, 68);
   const tex = new THREE.CanvasTexture(cv);
   tex.colorSpace = THREE.SRGBColorSpace;
-  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
+  const sp = new THREE.Sprite(
+    new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }),
+  );
   sp.scale.set(3.6, 0.9, 1);
   return sp;
 }
@@ -249,16 +271,30 @@ export function buildGate(kind: GateKind, label: string, floorTop: number): THRE
   // a faixa quadriculada fica só nas duas bordas da pista: o meio fica livre, e dá para ver a água, a
   // estrada e tudo que passa por baixo (tora, carro, trem)
   for (let i = -ATR_HALF_COLS; i <= ATR_HALF_COLS; i++) {
-    g.add(box(1, 0.03, 0.12, (i + ATR_HALF_COLS) % 2 === 0 ? main : alt, i, floorTop + 0.02, -0.44, { cast: false }));
-    g.add(box(1, 0.03, 0.12, (i + ATR_HALF_COLS) % 2 === 0 ? alt : main, i, floorTop + 0.02, 0.44, { cast: false }));
+    g.add(
+      box(1, 0.03, 0.12, (i + ATR_HALF_COLS) % 2 === 0 ? main : alt, i, floorTop + 0.02, -0.44, {
+        cast: false,
+      }),
+    );
+    g.add(
+      box(1, 0.03, 0.12, (i + ATR_HALF_COLS) % 2 === 0 ? alt : main, i, floorTop + 0.02, 0.44, {
+        cast: false,
+      }),
+    );
   }
   // o checkpoint é minimalista: só a faixa no chão, sem postes, placa nem viga (não tapa a visão)
   if (kind === 'checkpoint') return model(null, () => g);
   for (const x of [-(ATR_HALF_COLS + 1.1), ATR_HALF_COLS + 1.1]) {
     g.add(box(0.2, 2.6, 0.2, 0x2a2a30, x, floorTop + 1.3, 0));
-    g.add(box(0.5, 0.34, 0.06, main, x + (x < 0 ? 0.3 : -0.3), floorTop + 2.35, 0, { cast: false }));
+    g.add(
+      box(0.5, 0.34, 0.06, main, x + (x < 0 ? 0.3 : -0.3), floorTop + 2.35, 0, { cast: false }),
+    );
   }
-  const label3d = makeLabel(label, '#111111', kind === 'recorde' ? '#ffd23f' : kind === 'chegada' ? '#ffb3b8' : '#f4f4ef');
+  const label3d = makeLabel(
+    label,
+    '#111111',
+    kind === 'recorde' ? '#ffd23f' : kind === 'chegada' ? '#ffb3b8' : '#f4f4ef',
+  );
   label3d.position.set(0, floorTop + 3.1, 0);
   g.add(label3d);
   g.add(box(ATR_HALF_COLS * 2 + 2.4, 0.16, 0.12, main, 0, floorTop + 2.6, 0, { cast: false }));
@@ -287,7 +323,11 @@ export class Burst {
       b.m.material = mat(colors[i % colors.length]!);
       b.m.position.copy(origin);
       b.m.scale.setScalar(0.6 + ((i * 37) % 10) / 12);
-      b.v.set(dir * (1 + (i % 5) * 0.7) * power + ((i % 3) - 1) * 0.8, (2.4 + (i % 4) * 1.1) * power, ((i % 7) - 3) * 0.4);
+      b.v.set(
+        dir * (1 + (i % 5) * 0.7) * power + ((i % 3) - 1) * 0.8,
+        (2.4 + (i % 4) * 1.1) * power,
+        ((i % 7) - 3) * 0.4,
+      );
       b.spin.set(((i * 13) % 7) - 3, ((i * 17) % 5) - 2, ((i * 11) % 9) - 4);
       b.life = 0.7 + ((i * 29) % 10) / 20;
       b.m.visible = true;

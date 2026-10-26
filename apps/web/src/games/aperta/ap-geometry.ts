@@ -32,7 +32,15 @@ function inverseOf(ap: HTMLElement | null): DOMMatrix | null {
 export function localRect(el: Element): LocalRect {
   const r = el.getBoundingClientRect();
   const inv = inverseOf(root(el));
-  if (!inv) return { left: r.left, top: r.top, right: r.right, bottom: r.bottom, width: r.width, height: r.height };
+  if (!inv)
+    return {
+      left: r.left,
+      top: r.top,
+      right: r.right,
+      bottom: r.bottom,
+      width: r.width,
+      height: r.height,
+    };
   const a = inv.transformPoint({ x: r.left, y: r.top });
   const b = inv.transformPoint({ x: r.right, y: r.bottom });
   const left = Math.min(a.x, b.x);

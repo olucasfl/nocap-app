@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { TowersGame, type TowersInput } from '@nocap/games';
-import { FINALE_SECONDS, burst, createFx, drawFrame, finaleMoves, startFinale, stepFx } from './draw';
+import {
+  FINALE_SECONDS,
+  burst,
+  createFx,
+  drawFrame,
+  finaleMoves,
+  startFinale,
+  stepFx,
+} from './draw';
 
 /** Um contexto de Canvas de mentira: aceita qualquer chamada, para pegar erros no desenho. */
 function fakeCtx() {

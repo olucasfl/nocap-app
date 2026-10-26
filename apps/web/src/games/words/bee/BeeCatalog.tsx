@@ -32,7 +32,13 @@ export function BeeCatalog() {
     if (!levels) return null;
     return levels.map((lv, i) => {
       const p = prog[String(i + 1)];
-      const status: LevelStatus = !p ? 'new' : p.closed ? 'done' : p.found.length > 0 ? 'open' : 'new';
+      const status: LevelStatus = !p
+        ? 'new'
+        : p.closed
+          ? 'done'
+          : p.found.length > 0
+            ? 'open'
+            : 'new';
       const puzzle = toBeePuzzle(lv);
       const max = beeMaxPoints(puzzle);
       const pts = p ? beeScore(puzzle, p.found) : 0;
@@ -56,7 +62,16 @@ export function BeeCatalog() {
   const pct = Math.round((done / info.length) * 100);
 
   return (
-    <WordsShell title="Bee Word's" accent="yellow" className="bee-theme" right={<Pill tone="paper">{done}/{info.length}</Pill>}>
+    <WordsShell
+      title="Bee Word's"
+      accent="yellow"
+      className="bee-theme"
+      right={
+        <Pill tone="paper">
+          {done}/{info.length}
+        </Pill>
+      }
+    >
       <section className="bz-hero" data-testid="bee-hero">
         <BeeMascot className="bz-hero-bee" />
         <div className="bz-hero-text">
@@ -93,7 +108,9 @@ export function BeeCatalog() {
           <span>
             <b>{last ? 'Continuar' : 'Começar'}</b>
             <small>
-              {last ? `Fase ${last.n} · ${last.pts}/${last.max} pontos` : `Fase ${nextNew!.n} · ${tierOf(levels[nextNew!.n - 1]!)}`}
+              {last
+                ? `Fase ${last.n} · ${last.pts}/${last.max} pontos`
+                : `Fase ${nextNew!.n} · ${tierOf(levels[nextNew!.n - 1]!)}`}
             </small>
           </span>
           <i>→</i>
@@ -117,10 +134,21 @@ export function BeeCatalog() {
         </section>
       ) : (
         <>
-          <FilterBar value={filter} onChange={setFilter} counts={{ all: info.length, new: info.filter((x) => x.status === 'new').length, open: info.filter((x) => x.status === 'open').length, done: info.filter((x) => x.status === 'done').length }} />
+          <FilterBar
+            value={filter}
+            onChange={setFilter}
+            counts={{
+              all: info.length,
+              new: info.filter((x) => x.status === 'new').length,
+              open: info.filter((x) => x.status === 'open').length,
+              done: info.filter((x) => x.status === 'done').length,
+            }}
+          />
 
           {tierRanges(levels).map(({ tier, from, to }) => {
-            const cells = info.filter((x) => x.n >= from && x.n <= to && (filter === 'all' || x.status === filter));
+            const cells = info.filter(
+              (x) => x.n >= from && x.n <= to && (filter === 'all' || x.status === filter),
+            );
             if (cells.length === 0) return null;
             return (
               <section className="bz-tier" key={tier} aria-label={tier}>
@@ -144,7 +172,14 @@ export function BeeCatalog() {
                         {x.status === 'done' ? (
                           <>
                             <svg viewBox="0 0 16 16" aria-hidden="true">
-                              <path d="M3 8.5l3.2 3.2L13 4.8" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+                              <path
+                                d="M3 8.5l3.2 3.2L13 4.8"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2.6"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
                             </svg>
                             <small className="done-word">completo</small>
                           </>

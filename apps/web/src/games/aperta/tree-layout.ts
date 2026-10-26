@@ -42,7 +42,8 @@ const BRANCH_STEP = 360 / TREE_BRANCHES.length;
 const BRANCH_START = -90;
 
 const rad = (deg: number): number => (deg * Math.PI) / 180;
-export const tierRadius = (tier: number): number => TIER_RADIUS_BASE + (tier - 1) * TIER_RADIUS_STEP;
+export const tierRadius = (tier: number): number =>
+  TIER_RADIUS_BASE + (tier - 1) * TIER_RADIUS_STEP;
 
 /** Ângulo central de um ramo: o primeiro sobe, os outros seguem no sentido horário. */
 export function branchAngle(branch: TreeBranchId): number {
@@ -65,22 +66,36 @@ export function computeTreeLayout(): TreeLayout {
       const minGap = 2 * Math.asin(NODE_GAP / (2 * r)) * (180 / Math.PI);
       // Ângulo desejado: média dos pais do ramo já posicionados; sem pais (tier 1), espalha pela fatia.
       const wanted = row.map((n, i) => {
-        const parents = n.parents.map((p) => nodes[p]).filter((p): p is LayoutNode => !!p && p.branch === b.id);
+        const parents = n.parents
+          .map((p) => nodes[p])
+          .filter((p): p is LayoutNode => !!p && p.branch === b.id);
         if (parents.length > 0) return parents.reduce((s, p) => s + p.angle, 0) / parents.length;
         return row.length === 1 ? center : lo + 4 + ((hi - lo - 8) * i) / (row.length - 1);
       });
-      const order = row.map((_, i) => i).sort((a, b2) => (wanted[a] as number) - (wanted[b2] as number) || a - b2);
+      const order = row
+        .map((_, i) => i)
+        .sort((a, b2) => (wanted[a] as number) - (wanted[b2] as number) || a - b2);
       const angles = order.map((i) => wanted[i] as number);
-      for (let i = 1; i < angles.length; i++) angles[i] = Math.max(angles[i] as number, (angles[i - 1] as number) + minGap);
+      for (let i = 1; i < angles.length; i++)
+        angles[i] = Math.max(angles[i] as number, (angles[i - 1] as number) + minGap);
       const over = (angles[angles.length - 1] as number) - hi;
       if (over > 0) {
         angles[angles.length - 1] = hi;
-        for (let i = angles.length - 2; i >= 0; i--) angles[i] = Math.min(angles[i] as number, (angles[i + 1] as number) - minGap);
+        for (let i = angles.length - 2; i >= 0; i--)
+          angles[i] = Math.min(angles[i] as number, (angles[i + 1] as number) - minGap);
       }
       order.forEach((idx, k) => {
         const n = row[idx]!;
         const angle = angles[k] as number;
-        nodes[n.id] = { id: n.id, branch: n.branch, tier, angle, radius: r, x: Math.cos(rad(angle)) * r, y: Math.sin(rad(angle)) * r };
+        nodes[n.id] = {
+          id: n.id,
+          branch: n.branch,
+          tier,
+          angle,
+          radius: r,
+          x: Math.cos(rad(angle)) * r,
+          y: Math.sin(rad(angle)) * r,
+        };
       });
     }
   }
@@ -97,7 +112,12 @@ export function computeTreeLayout(): TreeLayout {
   cached = {
     nodes,
     edges,
-    bounds: { minX: Math.min(...xs) - pad, maxX: Math.max(...xs) + pad, minY: Math.min(...ys) - pad, maxY: Math.max(...ys) + pad },
+    bounds: {
+      minX: Math.min(...xs) - pad,
+      maxX: Math.max(...xs) + pad,
+      minY: Math.min(...ys) - pad,
+      maxY: Math.max(...ys) + pad,
+    },
   };
   return cached;
 }
@@ -106,7 +126,11 @@ export function computeTreeLayout(): TreeLayout {
  * O vizinho de `id` na direção `dir` (para as setas do teclado): entre os nós que ficam naquele lado, o mais perto,
  * pesando mais o desvio lateral. `null` se não há ninguém daquele lado.
  */
-export function neighbor(layout: TreeLayout, id: string, dir: 'up' | 'down' | 'left' | 'right'): string | null {
+export function neighbor(
+  layout: TreeLayout,
+  id: string,
+  dir: 'up' | 'down' | 'left' | 'right',
+): string | null {
   const from = id === 'root' ? { x: 0, y: 0 } : layout.nodes[id];
   if (!from) return null;
   const vx = dir === 'left' ? -1 : dir === 'right' ? 1 : 0;

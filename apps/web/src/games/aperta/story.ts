@@ -24,7 +24,9 @@ export const storyStart: StoryState = { index: 0, done: false };
 
 export function storyNext(s: StoryState): StoryState {
   if (s.done) return s;
-  return s.index >= STORY.length - 1 ? { index: s.index, done: true } : { index: s.index + 1, done: false };
+  return s.index >= STORY.length - 1
+    ? { index: s.index, done: true }
+    : { index: s.index + 1, done: false };
 }
 
 export function storySkip(s: StoryState): StoryState {

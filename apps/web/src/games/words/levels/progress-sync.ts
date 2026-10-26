@@ -1,4 +1,10 @@
-import { mergeProgress, PROGRESS_GAMES, sameProgress, sanitizeProgress, type ProgressGame } from '@nocap/games';
+import {
+  mergeProgress,
+  PROGRESS_GAMES,
+  sameProgress,
+  sanitizeProgress,
+  type ProgressGame,
+} from '@nocap/games';
 import { apiClient } from '@/lib/api-client';
 import { beeProgress, classicProgress, connectProgress, type ProgressStore } from './progress';
 
@@ -40,11 +46,17 @@ const writeLocal = (key: string, value: string | null) => {
   }
 };
 
-const emptySnapshot = (): Snapshot => Object.fromEntries(PROGRESS_GAMES.map((g) => [g, {}])) as Snapshot;
-const copyAll = (): Snapshot => Object.fromEntries(PROGRESS_GAMES.map((g) => [g, { ...STORES[g].all() }])) as Snapshot;
+const emptySnapshot = (): Snapshot =>
+  Object.fromEntries(PROGRESS_GAMES.map((g) => [g, {}])) as Snapshot;
+const copyAll = (): Snapshot =>
+  Object.fromEntries(PROGRESS_GAMES.map((g) => [g, { ...STORES[g].all() }])) as Snapshot;
 
 /** Junta duas listas de fases de um jogo (`a` e `b` por número da fase). */
-function mergeLevels(game: ProgressGame, a: Record<string, unknown>, b: Record<string, unknown>): Record<string, unknown> {
+function mergeLevels(
+  game: ProgressGame,
+  a: Record<string, unknown>,
+  b: Record<string, unknown>,
+): Record<string, unknown> {
   const out: Record<string, unknown> = { ...a };
   for (const [level, raw] of Object.entries(b)) {
     const incoming = sanitizeProgress(game, raw);
@@ -75,7 +87,8 @@ export const subscribeSyncStatus = (fn: () => void): (() => void) => {
   listeners.add(fn);
   return () => listeners.delete(fn);
 };
-const countServer = (): number => PROGRESS_GAMES.reduce((n, g) => n + Object.keys(state.server[g]).length, 0);
+const countServer = (): number =>
+  PROGRESS_GAMES.reduce((n, g) => n + Object.keys(state.server[g]).length, 0);
 
 export interface SyncState {
   userId: string | null;
@@ -84,14 +97,20 @@ export interface SyncState {
   timer: ReturnType<typeof setTimeout> | undefined;
   running: Promise<void> | null;
 }
-export const state: SyncState = { userId: null, server: emptySnapshot(), timer: undefined, running: null };
+export const state: SyncState = {
+  userId: null,
+  server: emptySnapshot(),
+  timer: undefined,
+  running: null,
+};
 
 /** O que falta enviar: fases do aparelho que o servidor não tem igual. */
 export function pending(): { game: ProgressGame; level: number; data: unknown }[] {
   const out: { game: ProgressGame; level: number; data: unknown }[] = [];
   for (const game of PROGRESS_GAMES) {
     for (const [level, data] of Object.entries(STORES[game].all())) {
-      if (!sameProgress(state.server[game][level], data)) out.push({ game, level: Number(level), data });
+      if (!sameProgress(state.server[game][level], data))
+        out.push({ game, level: Number(level), data });
     }
   }
   return out;
@@ -132,7 +151,8 @@ function switchOwner(userId: string): void {
   if (backup) {
     try {
       const saved = JSON.parse(backup) as Partial<Snapshot>;
-      for (const g of PROGRESS_GAMES) STORES[g].replaceAll(mergeLevels(g, STORES[g].all(), saved[g] ?? {}));
+      for (const g of PROGRESS_GAMES)
+        STORES[g].replaceAll(mergeLevels(g, STORES[g].all(), saved[g] ?? {}));
     } catch {
       /* backup ilegível: ignora */
     }
@@ -157,10 +177,21 @@ export async function syncNow(userId: string): Promise<void> {
       STORES[game].replaceAll(mergeLevels(game, STORES[game].all(), theirs));
     }
     await push();
-    setStatus({ phase: 'ok', at: Date.now(), levels: countServer(), waiting: pending().length, error: null });
+    setStatus({
+      phase: 'ok',
+      at: Date.now(),
+      levels: countServer(),
+      waiting: pending().length,
+      error: null,
+    });
   })()
     .catch((e: unknown) => {
-      setStatus({ phase: 'error', at: Date.now(), waiting: pending().length, error: e instanceof Error ? e.message : 'Falha desconhecida' });
+      setStatus({
+        phase: 'error',
+        at: Date.now(),
+        waiting: pending().length,
+        error: e instanceof Error ? e.message : 'Falha desconhecida',
+      });
       throw e;
     })
     .finally(() => {

@@ -33,7 +33,9 @@ describe('swipeDir', () => {
   });
   it('W A S D e as setas', () => {
     expect([KEY_DIR.w, KEY_DIR.s, KEY_DIR.a, KEY_DIR.d]).toEqual([0, 1, 2, 3]);
-    expect([KEY_DIR.arrowup, KEY_DIR.arrowdown, KEY_DIR.arrowleft, KEY_DIR.arrowright]).toEqual([0, 1, 2, 3]);
+    expect([KEY_DIR.arrowup, KEY_DIR.arrowdown, KEY_DIR.arrowleft, KEY_DIR.arrowright]).toEqual([
+      0, 1, 2, 3,
+    ]);
   });
 });
 

@@ -41,6 +41,7 @@ export function Final({ snapshot }: { snapshot: RoomSnapshot }) {
     snapshot.game === 'impostor' || (snapshot.game === 'eco' && snapshot.mode === 'leader');
   const eco = snapshot.game === 'eco';
   const desmorona = snapshot.game === 'desmorona';
+  const bola = snapshot.game === 'bola';
   const atravessa = snapshot.game === 'atravessa' ? snapshot.atravessa : undefined;
   /** Siga o Líder: no pódio entra a porcentagem (média das rodadas) e a soma de acertos; as notas de cada rodada não aparecem antes. */
   const hits = snapshot.eco?.hits;
@@ -61,6 +62,11 @@ export function Final({ snapshot }: { snapshot: RoomSnapshot }) {
   const score = (r: (typeof rows)[number]) =>
     desmorona ? (
       <small className="mono">{r.placement === 1 ? 'VENCEU' : 'CAIU'}</small>
+    ) : bola ? (
+      <small className="mono">
+        {Math.round(r.totalTenths / 10)} {Math.round(r.totalTenths / 10) === 1 ? 'gol' : 'gols'} do
+        time
+      </small>
     ) : atravessa ? (
       <AtravessaScore info={atravessa} id={r.userId} />
     ) : (

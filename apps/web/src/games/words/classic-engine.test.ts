@@ -8,7 +8,14 @@ const two: ClassicLevel = { id: 'd-test', t: 0, w: ['amigo', 'folha'] };
 describe('motor local das fases do Classic', () => {
   it('começa aberta, com as cores certas e sem revelar a resposta', () => {
     const v = levelView('classic', level, 3, ['casas'], false);
-    expect(v).toMatchObject({ state: 'open', used: 1, tries: 6, answers: null, nota: null, number: 3 });
+    expect(v).toMatchObject({
+      state: 'open',
+      used: 1,
+      tries: 6,
+      answers: null,
+      nota: null,
+      number: 3,
+    });
     expect(v.boards[0]!.rows[0]).toBe('mnmmm');
   });
 
@@ -20,7 +27,13 @@ describe('motor local das fases do Classic', () => {
   });
 
   it('gastar as tentativas fecha como derrota; desistir também', () => {
-    const lost = levelView('classic', level, 1, ['casas', 'casas', 'casas', 'casas', 'casas', 'casas'], false);
+    const lost = levelView(
+      'classic',
+      level,
+      1,
+      ['casas', 'casas', 'casas', 'casas', 'casas', 'casas'],
+      false,
+    );
     expect(lost.state).toBe('lost');
     expect(lost.answers).toEqual(['amigo']);
     const quit = levelView('classic', level, 1, ['casas'], true);

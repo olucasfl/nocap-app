@@ -442,7 +442,11 @@
   align-items: start;
 }
 .wd-app.fit [data-testid='grid'].cx-grid {
-  --h: min(calc((100cqw - 24px) / 4 * 0.9), calc((100cqh - (var(--rows, 4) - 1) * 8px) / var(--rows, 4)), 96px);
+  --h: min(
+    calc((100cqw - 24px) / 4 * 0.9),
+    calc((100cqh - (var(--rows, 4) - 1) * 8px) / var(--rows, 4)),
+    96px
+  );
   grid-auto-rows: var(--h);
   align-content: start;
 }

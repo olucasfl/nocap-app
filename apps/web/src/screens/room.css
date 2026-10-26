@@ -233,7 +233,6 @@
   color: var(--muted);
 }
 
-
 /* Entrada da sala (spec 045): criar e entrar lado a lado quando há espaço. */
 .rm-choices {
   display: grid;
@@ -276,7 +275,6 @@
     align-items: stretch;
   }
 }
-
 
 /* Pódio (spec 045): o vencedor em destaque, os outros em linhas e a votação num bloco só. */
 .rm-final-cols {

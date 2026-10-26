@@ -4,7 +4,10 @@ import { aimAt, LIFT_GAP, SNAP } from './aim';
 
 const shape = (name: string) => BLOCK_SHAPES.find((s) => s.name === name)!;
 const RECT = { left: 100, top: 200, width: 400 }; // cada casa tem 50 px
-const open = () => (row: number, col: number, s = shape('quadrado2')) => fits(emptyRows(), s, row, col);
+const open =
+  () =>
+  (row: number, col: number, s = shape('quadrado2')) =>
+    fits(emptyRows(), s, row, col);
 
 describe('aimAt (pontaria da peça arrastada)', () => {
   it('no mouse a peça fica quase embaixo da seta e cai na casa certa', () => {
@@ -38,7 +41,9 @@ describe('aimAt (pontaria da peça arrastada)', () => {
 
   it('respeita as bordas: peça larga não encaixa saindo pela direita', () => {
     const bar = BLOCK_SHAPES.find((s) => s.name === 'barra5' && s.w === 5)!;
-    const a = aimAt(100 + 8 * 50 - 10, 200 + 25, RECT, bar, false, (r, c) => fits(emptyRows(), bar, r, c));
+    const a = aimAt(100 + 8 * 50 - 10, 200 + 25, RECT, bar, false, (r, c) =>
+      fits(emptyRows(), bar, r, c),
+    );
     if (a.target) expect(a.target.col + bar.w).toBeLessThanOrEqual(8);
   });
 });
@@ -49,7 +54,9 @@ describe('a peça fica visível acima do dedo no celular', () => {
     for (const s of BLOCK_SHAPES) {
       const a = aimAt(300, 560, RECT, s, true, () => false);
       const bottom = a.top + s.h * cell;
-      expect(560 - bottom, `${s.name} ${s.w}x${s.h}`).toBeGreaterThanOrEqual(LIFT_GAP * cell - 0.001);
+      expect(560 - bottom, `${s.name} ${s.w}x${s.h}`).toBeGreaterThanOrEqual(
+        LIFT_GAP * cell - 0.001,
+      );
     }
   });
 

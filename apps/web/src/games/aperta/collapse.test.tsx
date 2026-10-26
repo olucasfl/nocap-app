@@ -1,4 +1,13 @@
-import { FORBIDDEN_IDS, MILESTONE_ORDER, dustGoal, effectiveStats, meetMilestone, minPicks, newSave, type SaveState } from '@nocap/games';
+import {
+  FORBIDDEN_IDS,
+  MILESTONE_ORDER,
+  dustGoal,
+  effectiveStats,
+  meetMilestone,
+  minPicks,
+  newSave,
+  type SaveState,
+} from '@nocap/games';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { VaultPage } from './VaultPage';
@@ -12,10 +21,27 @@ import { collapseCards, collapseView, vaultSlots } from './game-logic';
 const html = (el: React.ReactElement) => renderToStaticMarkup(el);
 const noop = () => {};
 
-function ready(over: Partial<SaveState> = {}, build: Record<string, number> = { moon: 2, mars: 1 }): SaveState {
+function ready(
+  over: Partial<SaveState> = {},
+  build: Record<string, number> = { moon: 2, mars: 1 },
+): SaveState {
   const base = { ...newSave('c', 0), tutorial: 'done' as const, ...over };
   const k = base.collapses + 1;
-  return { ...base, run: { ...base.run, build, picks: minPicks(k), dustLife: dustGoal(k), dust: dustGoal(k), ...meetMilestone(base.collapses, base.run.upgradeLevels, effectiveStats(base).objects.disabled) } };
+  return {
+    ...base,
+    run: {
+      ...base.run,
+      build,
+      picks: minPicks(k),
+      dustLife: dustGoal(k),
+      dust: dustGoal(k),
+      ...meetMilestone(
+        base.collapses,
+        base.run.upgradeLevels,
+        effectiveStats(base).objects.disabled,
+      ),
+    },
+  };
 }
 
 describe('visão do colapso', () => {
@@ -38,7 +64,19 @@ describe('visão do colapso', () => {
 
   it('com a escolha de grimório aberta, espera ela', () => {
     const s = ready();
-    const open = { ...s, run: { ...s.run, pending: { offers: ['moon', 'vesta', 'mars'], openedAt: 0, selected: null, picksLeft: 1, rerollsLeft: 0 } } };
+    const open = {
+      ...s,
+      run: {
+        ...s.run,
+        pending: {
+          offers: ['moon', 'vesta', 'mars'],
+          openedAt: 0,
+          selected: null,
+          picksLeft: 1,
+          rerollsLeft: 0,
+        },
+      },
+    };
     expect(collapseView(open)).toMatchObject({ ready: false, waitingChoice: true });
   });
 
@@ -56,10 +94,15 @@ describe('visão do colapso', () => {
 
 describe('Cofre na tela', () => {
   it('mostra as 10 casas: as vazias escondem o nome e as cheias mostram o nível', () => {
-    const s = ready({ collapses: 3, vault: { 'm87': 2, 'ton-618': 1 } });
+    const s = ready({ collapses: 3, vault: { m87: 2, 'ton-618': 1 } });
     const slots = vaultSlots(s);
     expect(slots).toHaveLength(FORBIDDEN_IDS.length);
-    expect(slots.filter((x) => x.owned).map((x) => x.id).sort()).toEqual(['m87', 'ton-618']);
+    expect(
+      slots
+        .filter((x) => x.owned)
+        .map((x) => x.id)
+        .sort(),
+    ).toEqual(['m87', 'ton-618']);
     const markup = html(<VaultPage state={s} onCollapse={noop} />);
     expect(markup).toContain('2 de 10 proibidos no Cofre');
     expect(markup).toContain('Nível 2 de 5');
@@ -67,8 +110,12 @@ describe('Cofre na tela', () => {
   });
 
   it('o botão de colapsar só liga com a estrela pronta', () => {
-    expect(html(<VaultPage state={ready()} onCollapse={noop} />)).toMatch(/<button[^>]*class="ap-hbtn ap-hbtn-go"[^>]*>Colapsar a estrela/);
-    const idle = html(<VaultPage state={{ ...newSave('c', 0), tutorial: 'done' }} onCollapse={noop} />);
+    expect(html(<VaultPage state={ready()} onCollapse={noop} />)).toMatch(
+      /<button[^>]*class="ap-hbtn ap-hbtn-go"[^>]*>Colapsar a estrela/,
+    );
+    const idle = html(
+      <VaultPage state={{ ...newSave('c', 0), tutorial: 'done' }} onCollapse={noop} />,
+    );
     expect(idle).toMatch(/disabled=""[^>]*>Estrela ainda não está pronta/);
     expect(idle).toContain('para a estrela colapsar');
   });
@@ -85,7 +132,13 @@ describe('modal de colapso', () => {
 
   it('com o Cofre todo no nível 5 oferece o Selo Estelar e libera o "Continuar"', () => {
     const all = Object.fromEntries(FORBIDDEN_IDS.map((id) => [id, 5]));
-    const markup = html(<CollapseModal state={ready({ collapses: 40, vault: all })} onCancel={noop} onConfirm={noop} />);
+    const markup = html(
+      <CollapseModal
+        state={ready({ collapses: 40, vault: all })}
+        onCancel={noop}
+        onConfirm={noop}
+      />,
+    );
     expect(markup).toContain('Selo Estelar');
     expect(markup).not.toContain('ap-cc-vault');
     expect(markup).not.toMatch(/disabled=""[^>]*>Continuar/);
@@ -93,7 +146,13 @@ describe('modal de colapso', () => {
 });
 
 describe('tela de jogo com a estrela pronta', () => {
-  const screen = (s: SaveState) => html(<GameScreen controller={createGameController({ initial: s, store: createMemoryGameStore(), slot: 1 })} onExit={noop} />);
+  const screen = (s: SaveState) =>
+    html(
+      <GameScreen
+        controller={createGameController({ initial: s, store: createMemoryGameStore(), slot: 1 })}
+        onExit={noop}
+      />,
+    );
 
   it('mostra o botão "Estrela pronta"', () => {
     const markup = screen(ready());
@@ -186,19 +245,30 @@ describe('requisitos do colapso na tela (spec 040)', () => {
   });
 
   it('o Cofre mostra as três barras e o número do colapso', () => {
-    const markup = html(<VaultPage state={{ ...newSave('c', 0), tutorial: 'done' }} onCollapse={noop} />);
+    const markup = html(
+      <VaultPage state={{ ...newSave('c', 0), tutorial: 'done' }} onCollapse={noop} />,
+    );
     expect(markup.match(/role="progressbar"/g)).toHaveLength(3);
     expect(markup).toContain('Colapsar a estrela (colapso 1)');
   });
 
   it('números enormes saem em notação científica e sem rolar a tela (colapso 300)', () => {
     const base = { ...newSave('c', 0), tutorial: 'done' as const, collapses: 300 };
-    const s = { ...base, run: { ...base.run, dust: 4.2e250, dustLife: 4.2e250, picks: 30 }, stats: { ...base.stats, dustTotal: 1e280 } };
+    const s = {
+      ...base,
+      run: { ...base.run, dust: 4.2e250, dustLife: 4.2e250, picks: 30 },
+      stats: { ...base.stats, dustTotal: 1e280 },
+    };
     const view = collapseView(s);
     expect(view.requirements[0]!.text).toMatch(/e\d+ de \S+e\d+$/);
     expect(view.requirements[0]!.text).not.toMatch(/NaN|Infinity|undefined/);
     expect(view.next).toBe(301);
-    const screen = html(<GameScreen controller={createGameController({ initial: s, store: createMemoryGameStore(), slot: 1 })} onExit={noop} />);
+    const screen = html(
+      <GameScreen
+        controller={createGameController({ initial: s, store: createMemoryGameStore(), slot: 1 })}
+        onExit={noop}
+      />,
+    );
     expect(screen).toContain('4,2e250');
   });
 

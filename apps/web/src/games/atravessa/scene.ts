@@ -217,12 +217,27 @@ class LaneView {
         }
       }
     } else if (lane.kind === 'estrada' || lane.kind === 'trilho') {
-      st.add(box(FLOOR_W, 0.12, 1, lane.kind === 'trilho' ? pal.groundB : pal.road, 0, 0.06, 0, { cast: false }));
+      st.add(
+        box(FLOOR_W, 0.12, 1, lane.kind === 'trilho' ? pal.groundB : pal.road, 0, 0.06, 0, {
+          cast: false,
+        }),
+      );
       if (lane.kind === 'estrada') {
-        st.add(box(FLOOR_W, 0.02, 0.06, pal.roadEdge, 0, 0.13, 0.46, { cast: false, emissive: b === 'neon' ? 0.9 : 0 }));
-        st.add(box(FLOOR_W, 0.02, 0.06, pal.roadEdge, 0, 0.13, -0.46, { cast: false, emissive: b === 'neon' ? 0.9 : 0 }));
+        st.add(
+          box(FLOOR_W, 0.02, 0.06, pal.roadEdge, 0, 0.13, 0.46, {
+            cast: false,
+            emissive: b === 'neon' ? 0.9 : 0,
+          }),
+        );
+        st.add(
+          box(FLOOR_W, 0.02, 0.06, pal.roadEdge, 0, 0.13, -0.46, {
+            cast: false,
+            emissive: b === 'neon' ? 0.9 : 0,
+          }),
+        );
       } else {
-        for (let x = -FLOOR_W / 2; x < FLOOR_W / 2; x += 0.9) st.add(box(0.28, 0.06, 0.78, 0x6b5b4a, x, 0.15, 0, { cast: false }));
+        for (let x = -FLOOR_W / 2; x < FLOOR_W / 2; x += 0.9)
+          st.add(box(0.28, 0.06, 0.78, 0x6b5b4a, x, 0.15, 0, { cast: false }));
         st.add(box(FLOOR_W, 0.05, 0.08, 0xb8bcc8, 0, 0.17, 0.2, { cast: false }));
         st.add(box(FLOOR_W, 0.05, 0.08, 0xb8bcc8, 0, 0.17, -0.2, { cast: false }));
         const tr = buildTrain(ATR_TRAIN_LEN);
@@ -257,7 +272,8 @@ class LaneView {
     // a faixa do recorde tem prioridade sobre o arco do marco (os dois na mesma linha: só o recorde)
     const gateTop = lane.kind === 'rio' ? 0.1 : top;
     const gate = (kind: GateKind, label: string) => g.add(buildGate(kind, label, gateTop));
-    if (marks.finish !== null && lane.row === marks.finish) gate('chegada', `CHEGADA · ${lane.row} m`);
+    if (marks.finish !== null && lane.row === marks.finish)
+      gate('chegada', `CHEGADA · ${lane.row} m`);
     else if (marks.checkpoints.has(lane.row)) gate('checkpoint', `CHECKPOINT · ${lane.row} m`);
     else if (record !== null && lane.row === record) gate('recorde', `SEU RECORDE · ${record}`);
     else if (marks.milestones && atravessaMilestone(lane.row)) gate('marco', `${lane.row}`);
@@ -320,7 +336,9 @@ class LaneView {
       const on = st.warning && Math.floor(now * 4) % 2 === 0;
       this.trainLights.forEach((l, i) => {
         const isLit = st.warning && (i % 2 === 0 ? on : !on);
-        l.material = isLit ? cached('trainOn', () => mat(0xff2a2a, 1)) : cached('trainOff', () => mat(0x3a1010));
+        l.material = isLit
+          ? cached('trainOn', () => mat(0xff2a2a, 1))
+          : cached('trainOff', () => mat(0x3a1010));
       });
     }
     if (this.pads.size && sim.row === this.row) {
@@ -345,8 +363,12 @@ class LaneView {
     if (item.kind === 'ambulancia') {
       const lights = obj.userData.lights as THREE.Mesh[];
       const flip = Math.floor(now * 7) % 2 === 0;
-      lights[0]!.material = flip ? cached('ambRedOn', () => mat(0xff2a2a, 1.4)) : cached('ambRedOff', () => mat(0x4a1010));
-      lights[1]!.material = flip ? cached('ambBlueOff', () => mat(0x10204a)) : cached('ambBlueOn', () => mat(0x2a6aff, 1.4));
+      lights[0]!.material = flip
+        ? cached('ambRedOn', () => mat(0xff2a2a, 1.4))
+        : cached('ambRedOff', () => mat(0x4a1010));
+      lights[1]!.material = flip
+        ? cached('ambBlueOff', () => mat(0x10204a))
+        : cached('ambBlueOn', () => mat(0x2a6aff, 1.4));
     } else if (item.kind === 'drone') {
       for (const p of obj.userData.props as THREE.Object3D[]) p.rotation.y = now * 40;
       obj.position.y = TOP.estrada + Math.sin(now * 3 + item.id) * 0.04;
@@ -354,7 +376,8 @@ class LaneView {
       const jaw = obj.userData.jaw as THREE.Object3D;
       const st = crocState(item, tick);
       // avisa estremecendo e abrindo uma fresta; depois abre bem
-      jaw.rotation.z = st === 'open' ? 0.72 : st === 'warn' ? 0.12 + Math.abs(Math.sin(now * 36)) * 0.1 : 0.02;
+      jaw.rotation.z =
+        st === 'open' ? 0.72 : st === 'warn' ? 0.12 + Math.abs(Math.sin(now * 36)) * 0.1 : 0.02;
     } else if (item.kind === 'tartaruga') {
       const st = turtleState(item, tick);
       const shells = obj.userData.shells as THREE.Group[];
@@ -454,7 +477,12 @@ export class AtravessaScene {
 
   constructor(canvas: HTMLCanvasElement, reducedMotion = false) {
     this.reduced = reducedMotion;
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: quality.antialias, alpha: false, powerPreference: 'high-performance' });
+    this.renderer = new THREE.WebGLRenderer({
+      canvas,
+      antialias: quality.antialias,
+      alpha: false,
+      powerPreference: 'high-performance',
+    });
     // a qualidade é decidida uma vez, ao abrir, pelo tipo de aparelho (celular fraco = menos pixels e sem
     // sombras). Mexer nisso durante a partida faz o canvas redimensionar e a imagem piscar.
     this.renderer.setPixelRatio(quality.ratio);
@@ -478,7 +506,14 @@ export class AtravessaScene {
     sc.far = 60;
     this.sun.shadow.bias = -0.0006;
     this.sun.shadow.normalBias = 0.03;
-    this.scene.add(this.sun, this.sun.target, this.hemi, this.heroLight, this.burst.group, this.confetti.group);
+    this.scene.add(
+      this.sun,
+      this.sun.target,
+      this.hemi,
+      this.heroLight,
+      this.burst.group,
+      this.confetti.group,
+    );
 
     this.heroBody = this.hero.getObjectByName('body')!;
     this.scene.add(this.hero);
@@ -496,12 +531,20 @@ export class AtravessaScene {
 
   /** Passou por um checkpoint: confete para o alto e um anel verde que se abre no chão ao redor do herói. */
   celebrate(x: number, y: number, topY = 0.3) {
-    this.confetti.fire(new THREE.Vector3(x, topY + 0.5, -y), [0x33c27f, 0xffd23f, 0xffffff, 0xff9ecf, 0x25c7e8, 0xff6a2b], 0, 1.7);
+    this.confetti.fire(
+      new THREE.Vector3(x, topY + 0.5, -y),
+      [0x33c27f, 0xffd23f, 0xffffff, 0xff9ecf, 0x25c7e8, 0xff6a2b],
+      0,
+      1.7,
+    );
     if (this.reduced) return;
     if (!this.ring) {
       const geo = new THREE.RingGeometry(0.62, 0.86, 40);
       geo.rotateX(-Math.PI / 2);
-      this.ring = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0x7dffb4, transparent: true, depthWrite: false }));
+      this.ring = new THREE.Mesh(
+        geo,
+        new THREE.MeshBasicMaterial({ color: 0x7dffb4, transparent: true, depthWrite: false }),
+      );
       this.scene.add(this.ring);
     }
     this.ring.position.set(x, topY + 0.06, -y);
@@ -531,7 +574,13 @@ export class AtravessaScene {
       const group = buildHero({ fur: new THREE.Color(color).getHex(), own: true });
       group.visible = false;
       this.scene.add(group);
-      this.remotes.set(id, { group, body: group.getObjectByName('body')!, color, angle: 0, top: 0.3 });
+      this.remotes.set(id, {
+        group,
+        body: group.getObjectByName('body')!,
+        color,
+        angle: 0,
+        top: 0.3,
+      });
     }
   }
 
@@ -560,7 +609,12 @@ export class AtravessaScene {
   }
 
   /** Onde está na tela (px do canvas) o alto da raposa de alguém, ou de mim (`id` = null). */
-  screenOf(id: string | null, x: number, y: number, top = 0.3): { x: number; y: number; visible: boolean } {
+  screenOf(
+    id: string | null,
+    x: number,
+    y: number,
+    top = 0.3,
+  ): { x: number; y: number; visible: boolean } {
     const r = id ? this.remotes.get(id) : null;
     const v = new THREE.Vector3(x, (r ? r.top : top) + 1.9, -y).project(this.camera);
     return {
@@ -743,7 +797,12 @@ export class AtravessaScene {
     this.camX += (targetX - this.camX) * (this.reduced ? 1 : 1 - Math.exp(-dt * 4));
 
     this.ensureLanes(sim, this.camRow);
-    const cam: CamInfo = { x: this.camX, row: this.camRow, halfW: this.halfW, reach: Math.max(16, Math.ceil(this.halfH * 2.4)) };
+    const cam: CamInfo = {
+      x: this.camX,
+      row: this.camRow,
+      halfW: this.halfW,
+      reach: Math.max(16, Math.ceil(this.halfH * 2.4)),
+    };
     for (const lv of this.lanes.values()) lv.update(opts.tick ?? sim.tick, sim, now, cam);
     waterTime.value = now;
     this.updateSweep(v.sweep, now);
@@ -766,7 +825,12 @@ export class AtravessaScene {
       if (!this.burstFired) {
         this.burstFired = true;
         const o = new THREE.Vector3(v.x, top + 0.4, -v.y);
-        this.burst.fire(o, BURST_COLORS[death.end], v.killer === 0 ? 0 : v.killer, death.end === 'trem' ? 1.4 : 1);
+        this.burst.fire(
+          o,
+          BURST_COLORS[death.end],
+          v.killer === 0 ? 0 : v.killer,
+          death.end === 'trem' ? 1.4 : 1,
+        );
       }
       if (!this.reduced && death.age < 0.35 && death.end !== 'parado') {
         const a = Math.sin(death.age * 75) * 0.2 * (1 - death.age / 0.35);
@@ -805,7 +869,11 @@ export class AtravessaScene {
     // (as faixas descem da esquerda para a direita e o avanço vai para cima e para a direita)
     const tx = this.camX;
     const tz = -this.camRow;
-    this.camera.position.set(tx + 4.6 + shakeX * RIGHT.x, 9.4 + shakeY, tz + 7.2 + shakeX * RIGHT.z);
+    this.camera.position.set(
+      tx + 4.6 + shakeX * RIGHT.x,
+      9.4 + shakeY,
+      tz + 7.2 + shakeX * RIGHT.z,
+    );
     this.camera.lookAt(tx, 0, tz);
     // o sol anda em passos do tamanho de um pixel da sombra: assim a sombra não "nada" nem pisca ao andar
     const snap = (n: number) => Math.round(n / SHADOW_TEXEL) * SHADOW_TEXEL;

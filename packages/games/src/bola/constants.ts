@@ -58,7 +58,7 @@ export const BOL_FOX_E = 0.2;
 export const BOL_TOUCH_MIN = 0.4;
 
 /** Gol. */
-export const BOL_GOAL_H = 3.4;
+export const BOL_GOAL_H = 4;
 export const BOL_POST_R = 0.15;
 /** Raio do travessão. */
 export const BOL_BAR_R = 0.22;

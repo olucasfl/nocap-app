@@ -63,9 +63,7 @@ function Tune() {
           +10
         </button>
       </div>
-      <p className="mono bt-pause-hint">
-        Tocou no molde e deu TARDE? Aumente. Deu CEDO? Diminua.
-      </p>
+      <p className="mono bt-pause-hint">Tocou no molde e deu TARDE? Aumente. Deu CEDO? Diminua.</p>
     </div>
   );
 }

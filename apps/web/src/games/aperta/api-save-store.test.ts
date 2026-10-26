@@ -1,7 +1,13 @@
 import { mergeSaves, newSave, press, type SaveState } from '@nocap/games';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '@/lib/api-client';
-import { AUTOSAVE_MS, createApiSaveStore, MIN_UPLOAD_GAP_MS, type Env, type SyncEvent } from './api-save-store';
+import {
+  AUTOSAVE_MS,
+  createApiSaveStore,
+  MIN_UPLOAD_GAP_MS,
+  type Env,
+  type SyncEvent,
+} from './api-save-store';
 
 const NOW = Date.parse('2026-10-21T12:00:00Z');
 
@@ -11,7 +17,7 @@ function fakeServer() {
   const calls: string[] = [];
   const down = { network: false, status: 0 };
   const api: Env['api'] = {
-    get: async <T,>(p: string) => {
+    get: async <T>(p: string) => {
       calls.push(`GET ${p}`);
       if (down.network) throw new TypeError('Failed to fetch');
       if (p === '/me/aperta/saves') {
@@ -21,7 +27,15 @@ function fakeServer() {
           return {
             slot,
             save: live
-              ? { slot, name: live.data.name, collapses: live.data.collapses, vaultCount: 0, lastPlayedAt: 'x', storySeen: live.data.storySeen, revision: live.revision }
+              ? {
+                  slot,
+                  name: live.data.name,
+                  collapses: live.data.collapses,
+                  vaultCount: 0,
+                  lastPlayedAt: 'x',
+                  storySeen: live.data.storySeen,
+                  revision: live.revision,
+                }
               : null,
             recoverableUntil: null,
           };
@@ -32,15 +46,20 @@ function fakeServer() {
       if (!r || r.deleted) throw new ApiError(404, 'Save não encontrado');
       return { slot: 1, revision: r.revision, data: r.data } as T;
     },
-    put: async <T,>(p: string, body: unknown) => {
+    put: async <T>(p: string, body: unknown) => {
       calls.push(`PUT ${p}`);
       if (down.network) throw new TypeError('Failed to fetch');
       if (down.status) throw new ApiError(down.status, 'falhou', { code: 'invalid-save' });
       const slot = Number(p.split('/').pop());
-      const { data, baseRevision, overwrite } = body as { data: SaveState; baseRevision: number; overwrite?: boolean };
+      const { data, baseRevision, overwrite } = body as {
+        data: SaveState;
+        baseRevision: number;
+        overwrite?: boolean;
+      };
       const r = rows.get(slot);
       if (baseRevision === 0) {
-        if (r && !r.deleted) throw new ApiError(409, 'ocupado', { code: 'conflict', reason: 'slot-taken' });
+        if (r && !r.deleted)
+          throw new ApiError(409, 'ocupado', { code: 'conflict', reason: 'slot-taken' });
         rows.set(slot, { revision: 1, data, deleted: false });
         return { revision: 1, flagged: [] } as T;
       }
@@ -59,14 +78,22 @@ function fakeServer() {
       void overwrite;
       return { revision: r.revision, flagged: [] } as T;
     },
-    post: async <T,>(p: string) => {
+    post: async <T>(p: string) => {
       calls.push(`POST ${p}`);
       const r = rows.get(Number(p.split('/')[4]));
       if (!r?.deleted) throw new ApiError(404, 'nada para restaurar');
       r.deleted = false;
-      return { slot: 1, name: r.data.name, collapses: 0, vaultCount: 0, lastPlayedAt: 'x', storySeen: false, revision: r.revision } as T;
+      return {
+        slot: 1,
+        name: r.data.name,
+        collapses: 0,
+        vaultCount: 0,
+        lastPlayedAt: 'x',
+        storySeen: false,
+        revision: r.revision,
+      } as T;
     },
-    delete: async <T,>(p: string) => {
+    delete: async <T>(p: string) => {
       calls.push(`DELETE ${p}`);
       const r = rows.get(Number(p.split('/').pop()));
       if (r) r.deleted = true;
@@ -90,7 +117,8 @@ function memoryStorage(): Env['storage'] & { data: Map<string, string> } {
 function fakeBrowser() {
   const handlers = new Map<string, Set<() => void>>();
   const target = {
-    addEventListener: (type: string, fn: () => void) => void (handlers.get(type) ?? handlers.set(type, new Set()).get(type)!).add(fn),
+    addEventListener: (type: string, fn: () => void) =>
+      void (handlers.get(type) ?? handlers.set(type, new Set()).get(type)!).add(fn),
     removeEventListener: (type: string, fn: () => void) => void handlers.get(type)?.delete(fn),
   };
   const doc = { ...target, visibilityState: 'visible' };
@@ -251,7 +279,10 @@ describe('autosave', () => {
     await store.create(1);
     await store.open(1);
     store.update(1, played(10));
-    const copy = JSON.parse(storage.data.get('nocap-aperta:u1:save:1')!) as { dirty: boolean; state: SaveState };
+    const copy = JSON.parse(storage.data.get('nocap-aperta:u1:save:1')!) as {
+      dirty: boolean;
+      state: SaveState;
+    };
     expect(copy.dirty).toBe(true);
     expect(copy.state.run.clicks).toBeGreaterThan(0);
   });
@@ -331,11 +362,13 @@ describe('vários aparelhos', () => {
     row.data = patch(row.data);
     row.revision++;
   }
-  const diverge = (extra: string) => (s: SaveState): SaveState => ({
-    ...s,
-    run: { ...s.run, picks: s.run.picks + 2, build: { ...s.run.build, [extra]: 1 } },
-    album: [...s.album, extra],
-  });
+  const diverge =
+    (extra: string) =>
+    (s: SaveState): SaveState => ({
+      ...s,
+      run: { ...s.run, picks: s.run.picks + 2, build: { ...s.run.build, [extra]: 1 } },
+      album: [...s.album, extra],
+    });
 
   it('quem só estava atrasado junta sozinho e avisa o jogo com o estado novo', async () => {
     const { store, server } = setup();
@@ -423,7 +456,10 @@ describe('vários aparelhos', () => {
     await store.close(1).catch(() => undefined);
     // o close sobe; simula o aparelho que não conseguiu subir: volta a cópia local a "suja" na revisão antiga
     const key = 'nocap-aperta:u1:save:1';
-    storage.data.set(key, JSON.stringify({ revision: 1, state: diverge('moon')(root), dirty: true }));
+    storage.data.set(
+      key,
+      JSON.stringify({ revision: 1, state: diverge('moon')(root), dirty: true }),
+    );
     otherDevice(server, () => diverge('mars')(root));
     server.rows.get(1)!.revision = 3;
     const opened = await store.open(1);
@@ -437,7 +473,10 @@ describe('vários aparelhos', () => {
     await store.create(1);
     const root = (await store.open(1)).state;
     await store.close(1);
-    storage.data.set('nocap-aperta:u1:save:1', JSON.stringify({ revision: 1, state: played(5, root), dirty: true }));
+    storage.data.set(
+      'nocap-aperta:u1:save:1',
+      JSON.stringify({ revision: 1, state: played(5, root), dirty: true }),
+    );
     server.rows.get(1)!.data = played(90, root);
     server.rows.get(1)!.revision = 4;
     const opened = await store.open(1);

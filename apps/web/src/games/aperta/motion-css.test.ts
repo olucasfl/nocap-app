@@ -10,7 +10,10 @@ import { describe, expect, it } from 'vitest';
 const ALLOWED = ['transform', 'opacity'];
 const files = readdirSync(__dirname)
   .filter((f) => f.endsWith('.css'))
-  .map((f) => ({ name: f, css: readFileSync(join(__dirname, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '') }));
+  .map((f) => ({
+    name: f,
+    css: readFileSync(join(__dirname, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, ''),
+  }));
 
 /** Corpo de cada `@keyframes`, contando as chaves (os quadros têm chaves aninhadas). */
 function keyframes(css: string): { name: string; body: string }[] {
@@ -78,7 +81,10 @@ describe('movimento no CSS do Aperta!', () => {
     for (const { name, css } of files) {
       for (const m of css.matchAll(/animation\s*:\s*([^;]+);/g)) {
         for (const part of m[1]!.split(',')) {
-          const used = part.trim().split(/\s+/).find((t) => /^[a-z][\w-]*$/i.test(t) && /^(ap|apg|art)/.test(t));
+          const used = part
+            .trim()
+            .split(/\s+/)
+            .find((t) => /^[a-z][\w-]*$/i.test(t) && /^(ap|apg|art)/.test(t));
           if (used) expect(names.has(used), `${name}: ${used}`).toBe(true);
         }
       }
@@ -101,7 +107,15 @@ describe('movimento no CSS do Aperta!', () => {
     expect(polish, 'polish.css').toBeDefined();
     const names = keyframes(polish!.css).map((k) => k.name);
     expect(names).toEqual(
-      expect.arrayContaining(['app-flash', 'app-flash-ring', 'app-region-in', 'app-streak', 'app-storm', 'app-card-in', 'app-node-pop']),
+      expect.arrayContaining([
+        'app-flash',
+        'app-flash-ring',
+        'app-region-in',
+        'app-streak',
+        'app-storm',
+        'app-card-in',
+        'app-node-pop',
+      ]),
     );
   });
 
@@ -119,7 +133,14 @@ describe('movimento no CSS do Aperta!', () => {
   it('o movimento reduzido silencia cada loop e cada entrada do polimento', () => {
     const polish = files.find((f) => f.name === 'polish.css')!.css;
     const reduced = polish.slice(polish.indexOf('prefers-reduced-motion'));
-    for (const sel of ['.ap-flash', '.ap-evfx-shower i', '.ap-evfx-storm', '.ap-vault-slots li.is-full', '.ap-node.is-owned', '.ap-game .ap-region']) {
+    for (const sel of [
+      '.ap-flash',
+      '.ap-evfx-shower i',
+      '.ap-evfx-storm',
+      '.ap-vault-slots li.is-full',
+      '.ap-node.is-owned',
+      '.ap-game .ap-region',
+    ]) {
       expect(reduced, sel).toContain(sel);
     }
   });
@@ -127,6 +148,7 @@ describe('movimento no CSS do Aperta!', () => {
   it('os loops de evento não pedem desfoque nem sombra animada', () => {
     const polish = files.find((f) => f.name === 'polish.css')!.css;
     expect(polish).not.toMatch(/filter/);
-    for (const k of keyframes(polish)) expect(k.body, k.name).not.toMatch(/box-shadow|filter|width|height|left|top/);
+    for (const k of keyframes(polish))
+      expect(k.body, k.name).not.toMatch(/box-shadow|filter|width|height|left|top/);
   });
 });

@@ -4,6 +4,7 @@ import {
   BOL_FLIP_SEC,
   BOL_GOAL_H,
   BOL_TEAM_COLORS,
+  BOL_TEAM_NAMES,
   type BolPlayer,
   type BolWorld,
 } from '@nocap/games';
@@ -14,13 +15,15 @@ const CAM_BACK = 7.6;
 const CAM_UP = 4.7;
 const WALL_H = 1.3;
 const GLASS_H = 4.2;
-const NET_DEPTH = 3.2;
+const NET_DEPTH = 3.8;
 const PHI = (1 + Math.sqrt(5)) / 2;
 
 interface Fox {
   group: THREE.Group;
   body: THREE.Object3D;
   shadow: THREE.Mesh;
+  /** Nome, cor e time com que foi desenhada. */
+  sig: string;
 }
 
 const tmp = new THREE.Vector3();
@@ -243,17 +246,17 @@ export class BolaScene {
         );
       // piso colorido do gol
       const zone = new THREE.Mesh(
-        new THREE.PlaneGeometry(g.halfW * 2 + 1.5, 4.2),
+        new THREE.PlaneGeometry(g.halfW * 2 + 3, 7),
         new THREE.MeshBasicMaterial({
           color: BOL_TEAM_COLORS[g.team] ?? 0xffffff,
           transparent: true,
-          opacity: 0.4,
+          opacity: 0.55,
           depthWrite: false,
         }),
       );
       zone.rotation.x = -Math.PI / 2;
       zone.rotation.z = ang;
-      zone.position.set(e.mx + e.nx * 2.1, 0.025, e.mz + e.nz * 2.1);
+      zone.position.set(e.mx + e.nx * 3.5, 0.025, e.mz + e.nz * 3.5);
       this.scene.add(zone);
     }
 
@@ -277,9 +280,14 @@ export class BolaScene {
         const grp = new THREE.Group();
         grp.position.set(cx - e.nx * 0.35, 0, cz - e.nz * 0.35);
         grp.rotation.y = -ang;
-        const body = new THREE.Mesh(new THREE.BoxGeometry(len, WALL_H, 0.7), wallBody);
+        // nas paredes ao lado do gol o muro inteiro tem a cor do time dono dele
+        const bodyMat = goal
+          ? new THREE.MeshLambertMaterial({ color: hex(teamCol).multiplyScalar(0.7) })
+          : wallBody;
+        const capMat = goal ? new THREE.MeshLambertMaterial({ color: hex(teamCol) }) : wallCap;
+        const body = new THREE.Mesh(new THREE.BoxGeometry(len, WALL_H, 0.7), bodyMat);
         body.position.y = WALL_H / 2;
-        const cap = new THREE.Mesh(new THREE.BoxGeometry(len, 0.18, 0.9), wallCap);
+        const cap = new THREE.Mesh(new THREE.BoxGeometry(len, 0.18, 0.9), capMat);
         cap.position.y = WALL_H + 0.09;
         const stripe = new THREE.Mesh(
           new THREE.BoxGeometry(len, 0.22, 0.72),
@@ -338,7 +346,12 @@ export class BolaScene {
     // o eixo +z do grupo aponta para fora do campo
     g.rotation.y = Math.atan2(-nx, -nz);
     const col = BOL_TEAM_COLORS[team] ?? 0xffffff;
-    const post = new THREE.MeshLambertMaterial({ color: 0xffffff });
+    // traves e travessão na cor do time: dá para saber de quem é o gol de longe
+    const post = new THREE.MeshLambertMaterial({
+      color: col,
+      emissive: col,
+      emissiveIntensity: 0.25,
+    });
     const tube = (r: number, len: number, mat: THREE.Material) =>
       new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, 12), mat);
     for (const s of [-1, 1]) {
@@ -373,6 +386,7 @@ export class BolaScene {
           side: THREE.DoubleSide,
           depthWrite: false,
           opacity: 0.85,
+          color: new THREE.Color(col).lerp(new THREE.Color(0xffffff), 0.35),
         }),
       );
       setup(m);
@@ -389,7 +403,45 @@ export class BolaScene {
       m.rotation.x = Math.PI / 2;
       m.position.set(0, BOL_GOAL_H, NET_DEPTH / 2);
     });
+    // placa com o nome do time em cima do gol, virada para o campo
+    const sign = this.teamSign(team);
+    sign.position.set(0, BOL_GOAL_H + 1.5, 0.2);
+    sign.rotation.y = Math.PI;
+    g.add(sign);
     this.scene.add(g);
+  }
+
+  /** Placa do time: o nome em letras grandes sobre a cor dele. */
+  private teamSign(team: number): THREE.Mesh {
+    const cv = document.createElement('canvas');
+    cv.width = 512;
+    cv.height = 128;
+    const g = cv.getContext('2d');
+    const col = `#${(BOL_TEAM_COLORS[team] ?? 0xffffff).toString(16).padStart(6, '0')}`;
+    if (g) {
+      g.fillStyle = col;
+      g.beginPath();
+      g.roundRect(6, 6, 500, 116, 22);
+      g.fill();
+      g.lineWidth = 8;
+      g.strokeStyle = '#1b1535';
+      g.stroke();
+      g.font = '900 64px system-ui, sans-serif';
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      g.lineWidth = 10;
+      g.strokeStyle = '#1b1535';
+      g.fillStyle = '#ffffff';
+      const text = (BOL_TEAM_NAMES[team] ?? '').toUpperCase();
+      g.strokeText(text, 256, 68);
+      g.fillText(text, 256, 68);
+    }
+    const tex = new THREE.CanvasTexture(cv);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return new THREE.Mesh(
+      new THREE.PlaneGeometry(6.4, 1.6),
+      new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide }),
+    );
   }
 
   /** Bola de futebol: 12 pentágonos escuros e 20 hexágonos brancos, desenhados pixel a pixel numa textura. */
@@ -473,13 +525,26 @@ export class BolaScene {
     group.add(body);
     group.add(this.nameTag(p.name, BOL_TEAM_COLORS[p.team] ?? 0xffffff));
     this.scene.add(group);
-    this.foxes.set(p.id, { group, body, shadow: this.blob(0.55) });
+    this.foxes.set(p.id, {
+      group,
+      body,
+      shadow: this.blob(0.55),
+      sig: `${p.name}|${p.color}|${p.team}`,
+    });
   }
 
   /** Quem entra no meio da partida (ou muda de nome ao virar bot) ganha o corpo sem refazer o campo. */
   sync() {
     const ids = new Set(this.world.players.map((p) => p.id));
-    for (const p of this.world.players) if (!this.foxes.has(p.id)) this.addFox(p);
+    for (const p of this.world.players) {
+      const old = this.foxes.get(p.id);
+      // o mesmo id pode virar outro corpo (troca de time): se a cor ou o nome mudou, refaz a raposa
+      if (old && old.sig !== `${p.name}|${p.color}|${p.team}`) {
+        this.scene.remove(old.group, old.shadow);
+        this.foxes.delete(p.id);
+      }
+      if (!this.foxes.has(p.id)) this.addFox(p);
+    }
     for (const [id, f] of this.foxes) {
       if (ids.has(id)) continue;
       this.scene.remove(f.group, f.shadow);
@@ -573,7 +638,8 @@ export class BolaScene {
       const pts = new THREE.Points(
         geo,
         new THREE.PointsMaterial({
-          size: 0.42,
+          size: 7,
+          sizeAttenuation: false,
           vertexColors: true,
           transparent: true,
           depthWrite: false,

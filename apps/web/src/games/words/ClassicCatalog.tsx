@@ -10,7 +10,8 @@ import { MODE_LABEL } from './words-api';
 import './connect/connect.css';
 import './classic-levels.css';
 
-const isMode = (m: string | undefined): m is ClassicMode => m === 'classic' || m === 'dueto' || m === 'quarteto';
+const isMode = (m: string | undefined): m is ClassicMode =>
+  m === 'classic' || m === 'dueto' || m === 'quarteto';
 
 interface Cell {
   n: number;
@@ -39,15 +40,28 @@ export function ClassicCatalog() {
     if (!levels) return null;
     return levels.map((lv, i) => {
       const p = prog[String(i + 1)];
-      if (!p || (p.guesses.length === 0 && !p.gaveUp)) return { n: i + 1, status: 'new', won: false, used: 0, tries: info.tries };
+      if (!p || (p.guesses.length === 0 && !p.gaveUp))
+        return { n: i + 1, status: 'new', won: false, used: 0, tries: info.tries };
       const v = levelView(mode, lv, i + 1, p.guesses, p.gaveUp ?? false);
-      return { n: i + 1, status: v.state === 'open' ? 'open' : 'done', won: v.state === 'won', used: v.used, tries: v.tries, at: p.at };
+      return {
+        n: i + 1,
+        status: v.state === 'open' ? 'open' : 'done',
+        won: v.state === 'won',
+        used: v.used,
+        tries: v.tries,
+        at: p.at,
+      };
     });
   }, [levels, prog, mode, info.tries]);
 
   if (!levels || !cells) {
     return (
-      <WordsShell title={info.name} back="/words/classic" accent="green" className="cx-theme cl-theme">
+      <WordsShell
+        title={info.name}
+        back="/words/classic"
+        accent="green"
+        className="cx-theme cl-theme"
+      >
         <GridLoader />
       </WordsShell>
     );
@@ -55,13 +69,25 @@ export function ClassicCatalog() {
 
   const done = cells.filter((x) => x.status === 'done').length;
   const open = cells.filter((x) => x.status === 'open').length;
-  const last = cells.filter((x) => x.status === 'open').sort((a, b) => (b.at ?? 0) - (a.at ?? 0))[0];
+  const last = cells
+    .filter((x) => x.status === 'open')
+    .sort((a, b) => (b.at ?? 0) - (a.at ?? 0))[0];
   const nextNew = cells.find((x) => x.status === 'new');
   const pct = Math.round((done / cells.length) * 100);
   const counts = { all: cells.length, new: cells.length - done - open, open, done };
 
   return (
-    <WordsShell title={info.name} back="/words/classic" accent="green" className="cx-theme cl-theme" right={<Pill tone="paper">{done}/{cells.length}</Pill>}>
+    <WordsShell
+      title={info.name}
+      back="/words/classic"
+      accent="green"
+      className="cx-theme cl-theme"
+      right={
+        <Pill tone="paper">
+          {done}/{cells.length}
+        </Pill>
+      }
+    >
       <section className="cx-hero" data-testid="classic-hero">
         <div className="cx-hero-art">
           <MiniBoards count={info.words as 1 | 2 | 4} />
@@ -100,7 +126,9 @@ export function ClassicCatalog() {
           <span>
             <b>{last ? 'Continuar' : 'Começar'}</b>
             <small>
-              {last ? `Fase ${last.n} · ${last.used} de ${last.tries} tentativas` : `Fase ${nextNew!.n} · ${tierOf(levels[nextNew!.n - 1]!)}`}
+              {last
+                ? `Fase ${last.n} · ${last.used} de ${last.tries} tentativas`
+                : `Fase ${nextNew!.n} · ${tierOf(levels[nextNew!.n - 1]!)}`}
             </small>
           </span>
           <i>→</i>
@@ -110,7 +138,9 @@ export function ClassicCatalog() {
       <FilterBar value={filter} onChange={setFilter} counts={counts} />
 
       {tierRanges(levels).map(({ tier, from, to }) => {
-        const shown = cells.filter((x) => x.n >= from && x.n <= to && (filter === 'all' || x.status === filter));
+        const shown = cells.filter(
+          (x) => x.n >= from && x.n <= to && (filter === 'all' || x.status === filter),
+        );
         if (shown.length === 0) return null;
         return (
           <section className="cx-tier" key={tier} aria-label={tier}>
@@ -130,7 +160,11 @@ export function ClassicCatalog() {
                   aria-label={`Fase ${x.n}: ${x.status === 'done' ? (x.won ? `completa em ${x.used} de ${x.tries}` : 'não resolvida') : x.status === 'open' ? `em andamento, ${x.used} de ${x.tries}` : 'nova'}`}
                 >
                   <b>{x.n}</b>
-                  {x.status !== 'new' && <small>{x.status === 'done' && !x.won ? 'perdeu' : `${x.used}/${x.tries}`}</small>}
+                  {x.status !== 'new' && (
+                    <small>
+                      {x.status === 'done' && !x.won ? 'perdeu' : `${x.used}/${x.tries}`}
+                    </small>
+                  )}
                 </Link>
               ))}
             </div>

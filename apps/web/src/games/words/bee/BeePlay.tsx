@@ -12,7 +12,15 @@ import {
   type BeeReject,
 } from '@nocap/games';
 import { wordsAudio } from '@/lib/words-audio';
-import { Celebrate, HexLoader, Pill, ResultSheet, RulesList, useTyped, WordsShell } from '../words-kit';
+import {
+  Celebrate,
+  HexLoader,
+  Pill,
+  ResultSheet,
+  RulesList,
+  useTyped,
+  WordsShell,
+} from '../words-kit';
 import { loadBeeLevels, tierOf, toBeePuzzle, type BeeLevel } from '../levels/levels';
 import { beeProgress, useProgress } from '../levels/progress';
 import { BeeMascot, hexPoints } from './BeeArt';
@@ -32,7 +40,19 @@ const OUTER: [number, number][] = Array.from({ length: 6 }, (_, i) => {
   return [150 + 84 * Math.cos(a), 140 + 84 * Math.sin(a)];
 });
 
-function Hex({ x, y, letter, center, onPress }: { x: number; y: number; letter: string; center?: boolean; onPress: () => void }) {
+function Hex({
+  x,
+  y,
+  letter,
+  center,
+  onPress,
+}: {
+  x: number;
+  y: number;
+  letter: string;
+  center?: boolean;
+  onPress: () => void;
+}) {
   return (
     <g
       className={`bz-hex${center ? ' center' : ''}`}
@@ -65,16 +85,28 @@ interface Float {
 type HintId = 'sizes' | 'map' | 'pairs';
 
 /** Os 3 blocos de dicas, do mais fraco ao mais forte (os dois últimos abrem conforme a pessoa acha palavras). */
-const HINT_CARDS: { id: HintId; title: 'Quantas letras' | 'Por letra e tamanho' | 'Duas primeiras letras'; desc: string }[] = [
+const HINT_CARDS: {
+  id: HintId;
+  title: 'Quantas letras' | 'Por letra e tamanho' | 'Duas primeiras letras';
+  desc: string;
+}[] = [
   { id: 'sizes', title: 'Quantas letras', desc: 'Quantas palavras faltam de cada tamanho' },
   { id: 'map', title: 'Por letra e tamanho', desc: 'Começa com qual letra e tem quantas letras' },
-  { id: 'pairs', title: 'Duas primeiras letras', desc: 'Como as palavras começam (por exemplo FA ou ME)' },
+  {
+    id: 'pairs',
+    title: 'Duas primeiras letras',
+    desc: 'Como as palavras começam (por exemplo FA ou ME)',
+  },
 ];
 
 /** A página de uma dica ainda bloqueada: quanto falta para abrir. */
 function HintLocked({ title, need, total }: { title: string; need: number; total: number }) {
   return (
-    <section className="bz-hint-block bz-locked" aria-label={`${title} bloqueada`} data-testid="hint-locked">
+    <section
+      className="bz-hint-block bz-locked"
+      aria-label={`${title} bloqueada`}
+      data-testid="hint-locked"
+    >
       <span className="bz-locked-ico" aria-hidden="true">
         <svg viewBox="0 0 24 24">
           <path d="M7 11V8a5 5 0 0 1 10 0v3M5 11h14v9H5z" />
@@ -189,7 +221,8 @@ export function BeePlay() {
       setShake(true);
       later(() => setShake(false), 420);
       // uma palavra que existe no favo mas ficou fora desta fase (as fases fáceis só usam palavras comuns)
-      const outside = check.reason === 'notlisted' && (level?.x ?? []).some((w) => wordKey(w) === wordKey(word));
+      const outside =
+        check.reason === 'notlisted' && (level?.x ?? []).some((w) => wordKey(w) === wordKey(word));
       say(outside ? 'Existe, mas não vale nesta fase' : REJECT_TEXT[check.reason], 'bad');
       setTyped(() => '');
       return;
@@ -200,10 +233,13 @@ export function BeePlay() {
     const complete = next.length === puzzle.words.length;
     beeProgress.set(num, { found: next, closed: complete, at: Date.now() });
     // uma dica nova abriu? avisa na tela (a mais forte primeiro)
-    const need = (pct: number, count: number) => Math.max(0, Math.ceil(puzzle.words.length * pct) - count);
+    const need = (pct: number, count: number) =>
+      Math.max(0, Math.ceil(puzzle.words.length * pct) - count);
     const crossed = (pct: number) => need(pct, found.length) > 0 && need(pct, next.length) === 0;
-    if (!complete && crossed(BEE_HINT_UNLOCK.pairs)) setUnlockMsg({ id: 'pairs', text: 'Duas primeiras letras' });
-    else if (!complete && crossed(BEE_HINT_UNLOCK.map)) setUnlockMsg({ id: 'map', text: 'Por letra e tamanho' });
+    if (!complete && crossed(BEE_HINT_UNLOCK.pairs))
+      setUnlockMsg({ id: 'pairs', text: 'Duas primeiras letras' });
+    else if (!complete && crossed(BEE_HINT_UNLOCK.map))
+      setUnlockMsg({ id: 'map', text: 'Por letra e tamanho' });
     setLatest(check.shown);
     if (unlockTimer.current) window.clearTimeout(unlockTimer.current);
     unlockTimer.current = window.setTimeout(() => setUnlockMsg(null), 6000);
@@ -274,7 +310,11 @@ export function BeePlay() {
   const genius = Math.min(1, points / (0.7 * max));
   const hints = beeHints(puzzle, found);
   const maxSize = Math.max(1, ...hints.sizes.map((x) => x.count));
-  const unlockedIds: HintId[] = ['sizes', ...(hints.needMap === 0 ? (['map'] as HintId[]) : []), ...(hints.needPairs === 0 ? (['pairs'] as HintId[]) : [])];
+  const unlockedIds: HintId[] = [
+    'sizes',
+    ...(hints.needMap === 0 ? (['map'] as HintId[]) : []),
+    ...(hints.needPairs === 0 ? (['pairs'] as HintId[]) : []),
+  ];
   const unseenCount = unlockedIds.filter((id) => id !== 'sizes' && !seen.includes(id)).length;
   const sorted = [...found].sort((a, b) => a.localeCompare(b, 'pt'));
   const tier = tierOf(level);
@@ -290,7 +330,6 @@ export function BeePlay() {
       return next;
     });
 
-
   return (
     <WordsShell
       title={`Fase ${num}`}
@@ -302,7 +341,11 @@ export function BeePlay() {
     >
       <Celebrate burst={fx.n} kind={fx.kind} />
 
-      <section className={`bz-rankcard${buzz ? ' buzz' : ''}`} aria-label={`Patente: ${rank.name}`} data-testid="rank">
+      <section
+        className={`bz-rankcard${buzz ? ' buzz' : ''}`}
+        aria-label={`Patente: ${rank.name}`}
+        data-testid="rank"
+      >
         <BeeMascot className="bz-rank-bee" flying={buzz || open} />
         <div className="bz-rank-body">
           <div className="bz-rankrow">
@@ -354,7 +397,11 @@ export function BeePlay() {
       )}
 
       {banner && (
-        <div className={`bz-banner${banner === 'Pangrama!' ? ' gold' : ''}`} role="status" key={banner}>
+        <div
+          className={`bz-banner${banner === 'Pangrama!' ? ' gold' : ''}`}
+          role="status"
+          key={banner}
+        >
           <i className="bz-banner-star" aria-hidden="true" />
           {banner}
           <i className="bz-banner-star r" aria-hidden="true" />
@@ -370,7 +417,10 @@ export function BeePlay() {
               </span>
             ))}
             {[...typed].map((ch, i) => (
-              <span key={`${i}-${ch}`} className={`bz-letter ${ch === level.c ? 'center' : allowed.has(ch) ? '' : 'out'}`}>
+              <span
+                key={`${i}-${ch}`}
+                className={`bz-letter ${ch === level.c ? 'center' : allowed.has(ch) ? '' : 'out'}`}
+              >
                 {ch.toUpperCase()}
               </span>
             ))}
@@ -379,7 +429,12 @@ export function BeePlay() {
           </div>
 
           <div className="bz-hive-wrap">
-            <svg className={`bz-hive${wave ? ' wave' : ''}`} viewBox="0 0 300 280" role="group" aria-label="Letras do favo">
+            <svg
+              className={`bz-hive${wave ? ' wave' : ''}`}
+              viewBox="0 0 300 280"
+              role="group"
+              aria-label="Letras do favo"
+            >
               <Hex x={150} y={140} letter={level.c} center onPress={() => add(level.c)} />
               {order.map((l, i) => (
                 <Hex key={l} x={OUTER[i]![0]} y={OUTER[i]![1]} letter={l} onPress={() => add(l)} />
@@ -388,7 +443,13 @@ export function BeePlay() {
           </div>
 
           <div className="bz-actions">
-            <button type="button" className="bz-act mix" onClick={shuffle} data-testid="shuffle" aria-label="Embaralhar">
+            <button
+              type="button"
+              className="bz-act mix"
+              onClick={shuffle}
+              data-testid="shuffle"
+              aria-label="Embaralhar"
+            >
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M3 7h3.5c3.5 0 5 10 8.5 10H21M3 17h3.5c1.4 0 2.4-1.5 3.3-3.2M21 7h-6c-1.4 0-2.4 1.5-3.3 3.2" />
                 <path d="M18 4l3 3-3 3M18 14l3 3-3 3" />
@@ -401,7 +462,13 @@ export function BeePlay() {
                 <path d="M4 12.5l5 5L20 6.5" />
               </svg>
             </button>
-            <button type="button" className="bz-act del" onClick={() => setTyped((t) => t.slice(0, -1))} data-testid="delete" aria-label="Apagar">
+            <button
+              type="button"
+              className="bz-act del"
+              onClick={() => setTyped((t) => t.slice(0, -1))}
+              data-testid="delete"
+              aria-label="Apagar"
+            >
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M9 5h11a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H9l-6-7z" />
                 <path d="M12.5 9.5l5 5M17.5 9.5l-5 5" />
@@ -409,12 +476,24 @@ export function BeePlay() {
               <span>Apagar</span>
             </button>
           </div>
-
         </>
       ) : (
-        <ResultSheet won epic={genius >= 1} stamp={rank.name} label="PONTOS" value={points} decimals={0} detail={`${found.length} de ${hints.total} palavras · fase ${num}`}>
+        <ResultSheet
+          won
+          epic={genius >= 1}
+          stamp={rank.name}
+          label="PONTOS"
+          value={points}
+          decimals={0}
+          detail={`${found.length} de ${hints.total} palavras · fase ${num}`}
+        >
           {hasNext ? (
-            <Link to="/words/bee/fase/$n" params={{ n: String(num + 1) }} className="btn alt" data-testid="next">
+            <Link
+              to="/words/bee/fase/$n"
+              params={{ n: String(num + 1) }}
+              className="btn alt"
+              data-testid="next"
+            >
               Próxima fase
             </Link>
           ) : null}
@@ -425,7 +504,14 @@ export function BeePlay() {
       )}
 
       <div className="bz-tabs" role="tablist" aria-label="Informações da fase">
-        <button type="button" role="tab" aria-selected={tab === 'words'} className="bz-tab words" data-testid="tab-words" onClick={() => setTab('words')}>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'words'}
+          className="bz-tab words"
+          data-testid="tab-words"
+          onClick={() => setTab('words')}
+        >
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01" />
           </svg>
@@ -434,18 +520,34 @@ export function BeePlay() {
             {found.length}/{hints.total}
           </small>
         </button>
-        <button type="button" role="tab" aria-selected={tab === 'hints'} className="bz-tab hints" data-testid="tab-hints" onClick={() => setTab('hints')}>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'hints'}
+          className="bz-tab hints"
+          data-testid="tab-hints"
+          onClick={() => setTab('hints')}
+        >
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z" />
           </svg>
           <span>{closed ? 'Todas' : 'Dicas'}</span>
           {!closed && (
             <small className={unseenCount > 0 ? 'new' : ''}>
-              {unseenCount > 0 ? 'nova' : `${1 + (hints.needMap === 0 ? 1 : 0) + (hints.needPairs === 0 ? 1 : 0)}/3`}
+              {unseenCount > 0
+                ? 'nova'
+                : `${1 + (hints.needMap === 0 ? 1 : 0) + (hints.needPairs === 0 ? 1 : 0)}/3`}
             </small>
           )}
         </button>
-        <button type="button" role="tab" aria-selected={tab === 'rules'} className="bz-tab rules" data-testid="tab-rules" onClick={() => setTab('rules')}>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'rules'}
+          className="bz-tab rules"
+          data-testid="tab-rules"
+          onClick={() => setTab('rules')}
+        >
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h11" />
           </svg>
@@ -468,11 +570,16 @@ export function BeePlay() {
           </div>
           <div className="bz-found" data-testid="found">
             {sorted.map((w) => (
-              <span key={w} className={`${w === latest ? 'latest' : ''}${level.p.includes(w) ? ' pangram' : ''}`}>
+              <span
+                key={w}
+                className={`${w === latest ? 'latest' : ''}${level.p.includes(w) ? ' pangram' : ''}`}
+              >
                 {w}
               </span>
             ))}
-            {sorted.length === 0 && <span className="empty">Nenhuma ainda. Toque nas letras do favo e envie.</span>}
+            {sorted.length === 0 && (
+              <span className="empty">Nenhuma ainda. Toque nas letras do favo e envie.</span>
+            )}
           </div>
         </section>
       )}
@@ -482,7 +589,10 @@ export function BeePlay() {
             {[...level.w]
               .sort((a, b) => a.localeCompare(b, 'pt'))
               .map((w) => (
-                <span key={w} className={`${found.includes(w) ? 'got' : ''}${level.p.includes(w) ? ' pangram' : ''}`}>
+                <span
+                  key={w}
+                  className={`${found.includes(w) ? 'got' : ''}${level.p.includes(w) ? ' pangram' : ''}`}
+                >
                   {w}
                 </span>
               ))}
@@ -491,7 +601,8 @@ export function BeePlay() {
           <div className="bz-hints" data-testid="hints">
             <div className="bz-hsw" role="tablist" aria-label="Tipo de dica">
               {HINT_CARDS.map((c) => {
-                const need = c.id === 'map' ? hints.needMap : c.id === 'pairs' ? hints.needPairs : 0;
+                const need =
+                  c.id === 'map' ? hints.needMap : c.id === 'pairs' ? hints.needPairs : 0;
                 const locked = need > 0;
                 const isNew = !locked && c.id !== 'sizes' && !seen.includes(c.id);
                 return (
@@ -546,7 +657,11 @@ export function BeePlay() {
             )}
             {hintView === 'map' &&
               (hints.needMap > 0 ? (
-                <HintLocked title="Por letra e tamanho" need={hints.needMap} total={Math.ceil(hints.total * BEE_HINT_UNLOCK.map)} />
+                <HintLocked
+                  title="Por letra e tamanho"
+                  need={hints.needMap}
+                  total={Math.ceil(hints.total * BEE_HINT_UNLOCK.map)}
+                />
               ) : (
                 <section className="bz-hint-block" aria-label="Por letra e tamanho">
                   <h4>Por letra e tamanho</h4>
@@ -585,7 +700,11 @@ export function BeePlay() {
               ))}
             {hintView === 'pairs' &&
               (hints.needPairs > 0 ? (
-                <HintLocked title="Duas primeiras letras" need={hints.needPairs} total={Math.ceil(hints.total * BEE_HINT_UNLOCK.pairs)} />
+                <HintLocked
+                  title="Duas primeiras letras"
+                  need={hints.needPairs}
+                  total={Math.ceil(hints.total * BEE_HINT_UNLOCK.pairs)}
+                />
               ) : (
                 <section className="bz-hint-block" aria-label="Começo das palavras">
                   <h4>Duas primeiras letras</h4>

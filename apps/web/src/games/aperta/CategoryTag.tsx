@@ -10,14 +10,33 @@ const ICON: Record<GrimoireCategory, string> = {
 };
 
 /** Com `compact` a categoria vira ícone + nome em texto simples, na cor dela, sem borda. */
-export function CategoryTag({ category, compact = false }: { category: GrimoireCategory; compact?: boolean }) {
+export function CategoryTag({
+  category,
+  compact = false,
+}: {
+  category: GrimoireCategory;
+  compact?: boolean;
+}) {
   const def = GRIMOIRE_CATEGORIES.find((c) => c.id === category);
   if (!def) return null;
   if (compact) {
     return (
-      <span className="ap-cat-ico" data-cat={category} title={`${def.label}: ${def.hint}`} role="img" aria-label={`Categoria: ${def.label}`}>
+      <span
+        className="ap-cat-ico"
+        data-cat={category}
+        title={`${def.label}: ${def.hint}`}
+        role="img"
+        aria-label={`Categoria: ${def.label}`}
+      >
         <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false">
-          <path d={ICON[category]} fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+          <path
+            d={ICON[category]}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </svg>
         {def.label}
       </span>

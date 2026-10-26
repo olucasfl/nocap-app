@@ -47,11 +47,7 @@ export interface BlocksPayload extends BasePayload {
 }
 
 export type SubmitPayload =
-  | ColorPayload
-  | TimePayload
-  | EcoPayload
-  | BlocksPayload
-  | AtravessaPayload;
+  ColorPayload | TimePayload | EcoPayload | BlocksPayload | AtravessaPayload;
 
 interface SubmitResponse {
   matchId: string;

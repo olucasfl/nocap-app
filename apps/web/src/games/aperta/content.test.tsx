@@ -55,12 +55,19 @@ describe('menu de regiões', () => {
   it('lista só as regiões já abertas, marcando a atual', () => {
     expect(regionMenuItems(atCollapse(0)).map((i) => i.art.id)).toEqual(['inner-solar-system']);
     const items = regionMenuItems(atCollapse(3, { regionId: 'asteroid-belt' }));
-    expect(items.map((i) => i.art.id)).toEqual(['inner-solar-system', 'asteroid-belt', 'jupiter-saturn', 'kuiper-belt']);
+    expect(items.map((i) => i.art.id)).toEqual([
+      'inner-solar-system',
+      'asteroid-belt',
+      'jupiter-saturn',
+      'kuiper-belt',
+    ]);
     expect(items.filter((i) => i.current).map((i) => i.art.id)).toEqual(['asteroid-belt']);
   });
 
   it('renderiza um botão por região e marca a atual', () => {
-    const markup = html(<RegionMenu items={regionMenuItems(atCollapse(2))} onPick={() => {}} onClose={() => {}} />);
+    const markup = html(
+      <RegionMenu items={regionMenuItems(atCollapse(2))} onPick={() => {}} onClose={() => {}} />,
+    );
     expect(markup).toContain('role="dialog"');
     expect(markup).toContain('Cinturão de Asteroides');
     expect(markup).toContain('Júpiter e Saturno');
@@ -88,9 +95,12 @@ describe('"Você ganha" dos grimórios novos', () => {
     return { ...s, tutorial: 'done', collapses: 3, run: { ...s.run, upgradeLevels: levels } };
   };
 
-  it.each(['polaris', 'europa', 'ganymede', 'proxima', 'cassiopeia', 'titan', 'capella'])('%s mostra o que muda', (id) => {
-    expect(cardGain(ready(), id), id).not.toBeNull();
-  });
+  it.each(['polaris', 'europa', 'ganymede', 'proxima', 'cassiopeia', 'titan', 'capella'])(
+    '%s mostra o que muda',
+    (id) => {
+      expect(cardGain(ready(), id), id).not.toBeNull();
+    },
+  );
 
   it('Saturno mostra ganho quando já há um grimório raro no livro', () => {
     const s = ready();
@@ -110,7 +120,8 @@ describe('faixa "Novo no espaço"', () => {
     expect(view.key).toBe(newInSpaceKey(2));
     expect(view.items[0]).toMatchObject({ kind: 'region', name: 'Júpiter e Saturno' });
     const markup = html(<NewInSpace view={view} onDismiss={() => {}} />);
-    for (const name of ['Antares', 'Sonda Voyager', 'Favorito', 'Chuva de meteoros']) expect(markup).toContain(name);
+    for (const name of ['Antares', 'Sonda Voyager', 'Favorito', 'Chuva de meteoros'])
+      expect(markup).toContain(name);
     expect(newInSpaceView({ ...s, seenUnlocks: [view.key] })).toBeNull();
   });
 
@@ -132,10 +143,16 @@ describe('faixa "Novo no espaço"', () => {
 describe('missão e evento na tela', () => {
   it('a missão mostra o progresso; cumprida, mostra o prêmio', () => {
     const s = atCollapse(4);
-    const open = { ...s, run: { ...s.run, mission: { id: 'capture-10', progress: 3, done: false, doneAt: -1e9 } } };
+    const open = {
+      ...s,
+      run: { ...s.run, mission: { id: 'capture-10', progress: 3, done: false, doneAt: -1e9 } },
+    };
     expect(missionView(open)).toMatchObject({ progress: 3, target: 10, done: false });
     expect(html(<MissionChip view={missionView(open)!} />)).toContain('(3/10)');
-    const done = { ...s, run: { ...s.run, mission: { id: 'capture-10', progress: 10, done: true, doneAt: -1e9 } } };
+    const done = {
+      ...s,
+      run: { ...s.run, mission: { id: 'capture-10', progress: 10, done: true, doneAt: -1e9 } },
+    };
     expect(html(<MissionChip view={missionView(done)!} />)).toContain('Missão cumprida');
     expect(missionView(s)).toBeNull();
   });
@@ -160,12 +177,19 @@ describe('Favorito no álbum', () => {
     expect(open.match(/class="ap-fav"/g)).toHaveLength(2);
     expect(open).toContain('Marcar Lua como favorito');
     expect(open).toContain('Tirar Saturno dos favoritos');
-    expect(html(<GrimoiresPage state={{ ...s, collapses: 1 }} onFavorite={() => {}} />)).not.toContain('ap-fav');
+    expect(
+      html(<GrimoiresPage state={{ ...s, collapses: 1 }} onFavorite={() => {}} />),
+    ).not.toContain('ap-fav');
     expect(html(<GrimoiresPage state={s} />)).not.toContain('ap-fav');
   });
 
   it('o controlador marca e desmarca', () => {
-    const ctl = createGameController({ initial: s, store: createMemoryGameStore(), slot: 1, perf: () => 1000 });
+    const ctl = createGameController({
+      initial: s,
+      store: createMemoryGameStore(),
+      slot: 1,
+      perf: () => 1000,
+    });
     ctl.setFavorite('moon');
     expect(ctl.getSnapshot().state.favorite).toBe('moon');
     ctl.setFavorite('venus');
@@ -194,7 +218,15 @@ describe('A carta mostra o efeito nos números da vida', () => {
     const s = atCollapse(5);
     const pending = { offers: ['moon'], openedAt: 0, selected: null, picksLeft: 1, rerollsLeft: 0 };
     const markup = html(
-      <ChoiceModal pending={pending} lockRemaining={0} build={{}} paused={false} onSelect={() => {}} onConfirm={() => {}} gain={cardPreviews(s, pending.offers)} />,
+      <ChoiceModal
+        pending={pending}
+        lockRemaining={0}
+        build={{}}
+        paused={false}
+        onSelect={() => {}}
+        onConfirm={() => {}}
+        gain={cardPreviews(s, pending.offers)}
+      />,
     );
     expect(markup).toContain('ap-pick-gain');
     expect(markup).toContain('Seu toque');

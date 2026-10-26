@@ -30,7 +30,17 @@ import { MuteButton } from '@/components/MuteButton';
 import { createBlocksAudio, type BlocksAudio } from '@/lib/blocks-audio';
 import { buzz } from '@/lib/sfx';
 import { aimAt } from './aim';
-import { BLOCK_HEX, BlockDefs, Bulb, Cell, FitPiece, HintSeal, PerfectStamp, PieceArt, ThumbSeal } from './art';
+import {
+  BLOCK_HEX,
+  BlockDefs,
+  Bulb,
+  Cell,
+  FitPiece,
+  HintSeal,
+  PerfectStamp,
+  PieceArt,
+  ThumbSeal,
+} from './art';
 import './blocks.css';
 
 /** O que a partida entrega ao acabar: o resultado e as jogadas (que o servidor vai refazer). */
@@ -181,8 +191,7 @@ export function BlocksPlay({ seed, resume, onProgress, best, onEnd, onQuit, onRe
   });
   const onProgressRef = useRef(onProgress);
   onProgressRef.current = onProgress;
-  const progress = () =>
-    onProgressRef.current?.({ moves: g.moves.slice(), ...stats.current });
+  const progress = () => onProgressRef.current?.({ moves: g.moves.slice(), ...stats.current });
   const keyN = useRef(0);
   const endedRef = useRef(false);
   const onEndRef = useRef(onEnd);
@@ -220,7 +229,8 @@ export function BlocksPlay({ seed, resume, onProgress, best, onEnd, onQuit, onRe
 
   /** A análise da rodada atual: roda uma vez por rodada e alimenta o joinha, o PERFECT e a dica. */
   const ensureCoach = useCallback((): Coach => {
-    if (!coachRef.current) coachRef.current = new Coach(analyze(g.rows, g.slots, g.streak, g.drought));
+    if (!coachRef.current)
+      coachRef.current = new Coach(analyze(g.rows, g.slots, g.streak, g.drought));
     return coachRef.current;
   }, [g]);
 
@@ -312,9 +322,14 @@ export function BlocksPlay({ seed, resume, onProgress, best, onEnd, onQuit, onRe
 
       if (gone.length) {
         const big = res.lines >= 3 || res.boardClear;
-        setBursts((b) => [...b, { key, cells: gone, rows: res.clearedRows, cols: res.clearedCols, big }]);
+        setBursts((b) => [
+          ...b,
+          { key, cells: gone, rows: res.clearedRows, cols: res.clearedCols, big },
+        ]);
         window.setTimeout(() => setBursts((b) => b.filter((x) => x.key !== key)), 1300);
-        const word = res.boardClear ? 'TABULEIRO LIMPO!' : (CLEAR_WORDS[Math.min(res.lines, 5)] ?? '');
+        const word = res.boardClear
+          ? 'TABULEIRO LIMPO!'
+          : (CLEAR_WORDS[Math.min(res.lines, 5)] ?? '');
         const sub = res.streak >= 2 ? `COMBO x${Math.min(res.streak, 6)}` : null;
         if (word || sub) {
           setBanner({ key, title: word || 'COMBO!', sub: word ? sub : null });
@@ -377,8 +392,13 @@ export function BlocksPlay({ seed, resume, onProgress, best, onEnd, onQuit, onRe
       const id = g.slots[d.slot];
       if (!svg || id === null || id === undefined) return null;
       const r = svg.getBoundingClientRect();
-      return aimAt(x, y, { left: r.left, top: r.top, width: r.width }, shapeOf(id), d.touch, (row, col) =>
-        g.canPlace(d.slot, row, col),
+      return aimAt(
+        x,
+        y,
+        { left: r.left, top: r.top, width: r.width },
+        shapeOf(id),
+        d.touch,
+        (row, col) => g.canPlace(d.slot, row, col),
       );
     },
     [g],
@@ -451,10 +471,7 @@ export function BlocksPlay({ seed, resume, onProgress, best, onEnd, onQuit, onRe
   const askHint = useCallback(() => {
     if (endedRef.current || ui.hints <= 0) return;
     const coach = ensureCoach();
-    const m =
-      hintFor(coach, g.rows, g.slots, g.streak, g.drought) ??
-      g.legalMoves()[0] ??
-      null;
+    const m = hintFor(coach, g.rows, g.slots, g.streak, g.drought) ?? g.legalMoves()[0] ?? null;
     if (!m) return;
     stats.current.hintsUsed++;
     progress();
@@ -496,7 +513,11 @@ export function BlocksPlay({ seed, resume, onProgress, best, onEnd, onQuit, onRe
       const d = dir[e.key];
       if (d) {
         e.preventDefault();
-        setKb({ ...kb, row: Math.max(0, Math.min(SIZE - 1, kb.row + d[0])), col: Math.max(0, Math.min(SIZE - 1, kb.col + d[1])) });
+        setKb({
+          ...kb,
+          row: Math.max(0, Math.min(SIZE - 1, kb.row + d[0])),
+          col: Math.max(0, Math.min(SIZE - 1, kb.col + d[1])),
+        });
       } else if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         if (g.canPlace(kb.slot, kb.row, kb.col)) commit(kb.slot, kb.row, kb.col);
@@ -514,7 +535,15 @@ export function BlocksPlay({ seed, resume, onProgress, best, onEnd, onQuit, onRe
   }, [note]);
 
   // --- Pré-visualização: onde a peça cai e quais linhas somem -------------------------------
-  const active = drag ?? (kb ? { slot: kb.slot, touch: false, target: g.canPlace(kb.slot, kb.row, kb.col) ? { row: kb.row, col: kb.col } : null } : null);
+  const active =
+    drag ??
+    (kb
+      ? {
+          slot: kb.slot,
+          touch: false,
+          target: g.canPlace(kb.slot, kb.row, kb.col) ? { row: kb.row, col: kb.col } : null,
+        }
+      : null);
   const preview = useMemo(() => {
     if (!active?.target) return null;
     const id = ui.slots[active.slot];
@@ -545,7 +574,16 @@ export function BlocksPlay({ seed, resume, onProgress, best, onEnd, onQuit, onRe
           data-sfx="select"
           onClick={() => setMenu(true)}
         >
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden="true">
+          <svg
+            viewBox="0 0 24 24"
+            width="22"
+            height="22"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3"
+            strokeLinecap="round"
+            aria-hidden="true"
+          >
             <path d="M5 7h14M5 12h14M5 17h14" />
           </svg>
         </button>
@@ -580,7 +618,13 @@ export function BlocksPlay({ seed, resume, onProgress, best, onEnd, onQuit, onRe
 
       <div className="bk-boardwrap">
         <div className={`bk-board${ui.over ? ' over' : ''}`} ref={boardRef}>
-          <svg className="bk-grid" viewBox={`0 0 ${SIZE} ${SIZE}`} ref={svgRef} role="img" aria-label="Tabuleiro 8 por 8">
+          <svg
+            className="bk-grid"
+            viewBox={`0 0 ${SIZE} ${SIZE}`}
+            ref={svgRef}
+            role="img"
+            aria-label="Tabuleiro 8 por 8"
+          >
             {Array.from({ length: SIZE * SIZE }, (_, i) => (
               <rect
                 key={i}
@@ -597,7 +641,11 @@ export function BlocksPlay({ seed, resume, onProgress, best, onEnd, onQuit, onRe
                 <g
                   key={i}
                   className={ui.over ? 'bk-fall' : fresh.includes(i) ? 'bk-pop' : undefined}
-                  style={ui.over ? { animationDelay: `${(Math.floor(i / SIZE) + (i % SIZE)) * 45}ms` } : undefined}
+                  style={
+                    ui.over
+                      ? { animationDelay: `${(Math.floor(i / SIZE) + (i % SIZE)) * 45}ms` }
+                      : undefined
+                  }
                 >
                   <Cell color={color} row={Math.floor(i / SIZE)} col={i % SIZE} />
                 </g>
@@ -631,7 +679,12 @@ export function BlocksPlay({ seed, resume, onProgress, best, onEnd, onQuit, onRe
             {preview && (
               <g className="bk-ghost" key={`${preview.row}-${preview.col}`}>
                 {preview.shape.cells.map(([r, c]) => (
-                  <Cell key={`${r}-${c}`} color={preview.shape.color} row={preview.row + r} col={preview.col + c} />
+                  <Cell
+                    key={`${r}-${c}`}
+                    color={preview.shape.color}
+                    row={preview.row + r}
+                    col={preview.col + c}
+                  />
                 ))}
               </g>
             )}
@@ -657,10 +710,18 @@ export function BlocksPlay({ seed, resume, onProgress, best, onEnd, onQuit, onRe
           <div className="bk-fx" aria-hidden="true">
             {bursts.map((b) => [
               ...b.rows.map((r) => (
-                <i key={`${b.key}-r${r}`} className="bk-sweep row" style={{ top: `${r * (100 / SIZE)}%` }} />
+                <i
+                  key={`${b.key}-r${r}`}
+                  className="bk-sweep row"
+                  style={{ top: `${r * (100 / SIZE)}%` }}
+                />
               )),
               ...b.cols.map((c) => (
-                <i key={`${b.key}-c${c}`} className="bk-sweep col" style={{ left: `${c * (100 / SIZE)}%` }} />
+                <i
+                  key={`${b.key}-c${c}`}
+                  className="bk-sweep col"
+                  style={{ left: `${c * (100 / SIZE)}%` }}
+                />
               )),
               ...(b.big ? [<i key={`${b.key}-f`} className="bk-flashfx" />] : []),
               ...b.cells.map((cell) => (
@@ -687,7 +748,11 @@ export function BlocksPlay({ seed, resume, onProgress, best, onEnd, onQuit, onRe
               )),
             ])}
             {pops.map((p) => (
-              <span key={p.key} className={`bk-pts mono${p.big ? ' big' : ''}`} style={{ left: `${p.x}%`, top: `${p.y}%` }}>
+              <span
+                key={p.key}
+                className={`bk-pts mono${p.big ? ' big' : ''}`}
+                style={{ left: `${p.x}%`, top: `${p.y}%` }}
+              >
                 {p.text}
               </span>
             ))}
@@ -706,7 +771,12 @@ export function BlocksPlay({ seed, resume, onProgress, best, onEnd, onQuit, onRe
           </div>
         )}
         {praise && (
-          <div key={praise.key} className={`bk-praise ${praise.kind}`} role="status" aria-label={praise.kind === 'perfect' ? 'Perfeito' : 'Joinha'}>
+          <div
+            key={praise.key}
+            className={`bk-praise ${praise.kind}`}
+            role="status"
+            aria-label={praise.kind === 'perfect' ? 'Perfeito' : 'Joinha'}
+          >
             {praise.kind === 'perfect' ? <PerfectStamp width={300} /> : <ThumbSeal size={104} />}
           </div>
         )}
@@ -768,11 +838,23 @@ export function BlocksPlay({ seed, resume, onProgress, best, onEnd, onQuit, onRe
       )}
 
       {menu && (
-        <div className="bk-menu" role="dialog" aria-modal="true" aria-label="Menu da partida" onClick={() => setMenu(false)}>
+        <div
+          className="bk-menu"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Menu da partida"
+          onClick={() => setMenu(false)}
+        >
           <div className="bk-menu-card" onClick={(e) => e.stopPropagation()}>
             <h2>Menu</h2>
             <div className="stack">
-              <button type="button" className="btn alt" data-sfx="start" autoFocus onClick={() => setMenu(false)}>
+              <button
+                type="button"
+                className="btn alt"
+                data-sfx="start"
+                autoFocus
+                onClick={() => setMenu(false)}
+              >
                 Continuar
               </button>
               <button

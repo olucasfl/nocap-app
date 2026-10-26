@@ -354,8 +354,8 @@ export function BatidaIntro({ onBegin }: { onBegin: (song: SongId) => void }) {
           <b>1</b>
           <span>
             As notas vêm do fundo da pista e encaixam nos moldes coloridos. Toque na pista quando a
-            nota chegar no molde: cada acerto toca uma nota e, juntas, elas formam a música. Tocar quando não há nota não
-            custa nada: o molde só acende para você sentir.
+            nota chegar no molde: cada acerto toca uma nota e, juntas, elas formam a música. Tocar
+            quando não há nota não custa nada: o molde só acende para você sentir.
           </span>
         </li>
         <li>
@@ -375,8 +375,8 @@ export function BatidaIntro({ onBegin }: { onBegin: (song: SongId) => void }) {
         <li>
           <b>4</b>
           <span>
-            Com o tempo vêm notas juntas (use dois dedos) e barras compridas: aperte e
-            segure até o fim. Ligue o som.
+            Com o tempo vêm notas juntas (use dois dedos) e barras compridas: aperte e segure até o
+            fim. Ligue o som.
           </span>
         </li>
       </ol>
@@ -384,14 +384,23 @@ export function BatidaIntro({ onBegin }: { onBegin: (song: SongId) => void }) {
         <button type="button" className="btn" data-sfx="start" onClick={() => onBegin(song!)}>
           Jogar <ArrowRight />
         </button>
-        <button type="button" className="btn alt" data-sfx="select" onClick={() => setStep('config')}>
+        <button
+          type="button"
+          className="btn alt"
+          data-sfx="select"
+          onClick={() => setStep('config')}
+        >
           Configurar
         </button>
-        <button type="button" className="btn ghost" data-sfx="back" onClick={() => setStep('songs')}>
+        <button
+          type="button"
+          className="btn ghost"
+          data-sfx="back"
+          onClick={() => setStep('songs')}
+        >
           Trocar de música
         </button>
       </div>
     </section>
   );
 }
-

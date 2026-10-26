@@ -2,7 +2,13 @@ import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { Link } from '@tanstack/react-router';
 import { FilterBar, GridLoader, Pill, RulesList, Tabs, WordsShell } from '../words-kit';
 import { connectClass, playConnect } from '@nocap/games';
-import { loadConnectLevels, tierOf, tierRanges, toConnectPuzzle, type ConnectLevel } from '../levels/levels';
+import {
+  loadConnectLevels,
+  tierOf,
+  tierRanges,
+  toConnectPuzzle,
+  type ConnectLevel,
+} from '../levels/levels';
 import { connectProgress, useProgress, type LevelStatus } from '../levels/progress';
 import { ConnectArt } from '../words-art';
 import './connect.css';
@@ -33,7 +39,16 @@ export function ConnectCatalog() {
     if (!levels) return null;
     return levels.map((lv, i) => {
       const p = prog[String(i + 1)];
-      if (!p || (p.guesses.length === 0 && !p.gaveUp)) return { n: i + 1, status: 'new' as LevelStatus, groups: [] as number[], won: false, errors: 0, at: 0, klass: '' };
+      if (!p || (p.guesses.length === 0 && !p.gaveUp))
+        return {
+          n: i + 1,
+          status: 'new' as LevelStatus,
+          groups: [] as number[],
+          won: false,
+          errors: 0,
+          at: 0,
+          klass: '',
+        };
       const state = playConnect(toConnectPuzzle(lv), p.guesses, { gaveUp: p.gaveUp });
       return {
         n: i + 1,
@@ -62,7 +77,16 @@ export function ConnectCatalog() {
   const pct = Math.round((done / info.length) * 100);
 
   return (
-    <WordsShell title="Connect Word's" accent="blue" className="cx-theme" right={<Pill tone="paper">{done}/{info.length}</Pill>}>
+    <WordsShell
+      title="Connect Word's"
+      accent="blue"
+      className="cx-theme"
+      right={
+        <Pill tone="paper">
+          {done}/{info.length}
+        </Pill>
+      }
+    >
       <section className="cx-hero" data-testid="connect-hero">
         <div className="cx-hero-art">
           <ConnectArt />
@@ -99,7 +123,9 @@ export function ConnectCatalog() {
           <span>
             <b>{last ? 'Continuar' : 'Começar'}</b>
             <small>
-              {last ? `Fase ${last.n} · ${last.groups.length} de 4 grupos` : `Fase ${nextNew!.n} · ${tierOf(levels[nextNew!.n - 1]!)}`}
+              {last
+                ? `Fase ${last.n} · ${last.groups.length} de 4 grupos`
+                : `Fase ${nextNew!.n} · ${tierOf(levels[nextNew!.n - 1]!)}`}
             </small>
           </span>
           <i>→</i>
@@ -123,10 +149,21 @@ export function ConnectCatalog() {
         </section>
       ) : (
         <>
-          <FilterBar value={filter} onChange={setFilter} counts={{ all: info.length, new: info.filter((x) => x.status === 'new').length, open: info.filter((x) => x.status === 'open').length, done: info.filter((x) => x.status === 'done').length }} />
+          <FilterBar
+            value={filter}
+            onChange={setFilter}
+            counts={{
+              all: info.length,
+              new: info.filter((x) => x.status === 'new').length,
+              open: info.filter((x) => x.status === 'open').length,
+              done: info.filter((x) => x.status === 'done').length,
+            }}
+          />
 
           {tierRanges(levels).map(({ tier, from, to }) => {
-            const cells = info.filter((x) => x.n >= from && x.n <= to && (filter === 'all' || x.status === filter));
+            const cells = info.filter(
+              (x) => x.n >= from && x.n <= to && (filter === 'all' || x.status === filter),
+            );
             if (cells.length === 0) return null;
             return (
               <section className="cx-tier" key={tier} aria-label={tier}>
@@ -151,7 +188,15 @@ export function ConnectCatalog() {
                           <i key={l} className={x.groups.includes(l) ? `l${l}` : ''} />
                         ))}
                       </span>
-                      {x.status === 'done' && <small>{x.won ? (x.errors === 0 ? 'perfeita' : `${x.errors} erro${x.errors > 1 ? 's' : ''}`) : 'desistiu'}</small>}
+                      {x.status === 'done' && (
+                        <small>
+                          {x.won
+                            ? x.errors === 0
+                              ? 'perfeita'
+                              : `${x.errors} erro${x.errors > 1 ? 's' : ''}`
+                            : 'desistiu'}
+                        </small>
+                      )}
                       {x.status === 'open' && <small>{x.groups.length}/4</small>}
                     </Link>
                   ))}

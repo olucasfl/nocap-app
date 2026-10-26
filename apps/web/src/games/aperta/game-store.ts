@@ -16,7 +16,9 @@ export interface GameStore {
 }
 
 /** Só em memória: testes. */
-export function createMemoryGameStore(initial: Partial<Record<SaveSlot, SaveState>> = {}): GameStore & {
+export function createMemoryGameStore(
+  initial: Partial<Record<SaveSlot, SaveState>> = {},
+): GameStore & {
   saved: Partial<Record<SaveSlot, SaveState>>;
   saves: number;
   failNext: boolean;

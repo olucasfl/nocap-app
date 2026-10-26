@@ -1,4 +1,10 @@
-import { effectiveStats, skillView, skillsAvailable, type ButtonSkillId, type SaveState } from '@nocap/games';
+import {
+  effectiveStats,
+  skillView,
+  skillsAvailable,
+  type ButtonSkillId,
+  type SaveState,
+} from '@nocap/games';
 
 interface Props {
   state: SaveState;
@@ -42,7 +48,13 @@ export function SkillBar({ state, now, onUse, onAutoBuy }: Props) {
         const v = skillView(state, def.id, now);
         if (!v) return null;
         const label = `${def.name}. ${def.text} ${
-          v.activeLeft > 0 ? 'Ligada agora.' : v.ready ? (v.maxCharges > 1 ? `${v.charges} de ${v.maxCharges} cargas.` : 'Pronta.') : `Recarregando, volta em ${Math.ceil(v.cooldownLeft)} segundos.`
+          v.activeLeft > 0
+            ? 'Ligada agora.'
+            : v.ready
+              ? v.maxCharges > 1
+                ? `${v.charges} de ${v.maxCharges} cargas.`
+                : 'Pronta.'
+              : `Recarregando, volta em ${Math.ceil(v.cooldownLeft)} segundos.`
         }`;
         return (
           <button
@@ -58,24 +70,51 @@ export function SkillBar({ state, now, onUse, onAutoBuy }: Props) {
               <path d={ICON[def.id]} />
             </svg>
             {v.maxCharges > 1 && <b className="ap-skill-n">{v.charges}</b>}
-            <i className="ap-skill-cd" aria-hidden="true" style={{ transform: `scaleX(${(1 - v.recharge).toFixed(3)})` }} />
+            <i
+              className="ap-skill-cd"
+              aria-hidden="true"
+              style={{ transform: `scaleX(${(1 - v.recharge).toFixed(3)})` }}
+            />
           </button>
         );
       })}
       {sk.autoBuy.on && (
-        <div className={`ap-autobuy${ab.on ? ' is-on' : ''}`} role="group" aria-label="Compra automática">
-          <button type="button" className="ap-skill ap-autobuy-toggle" aria-pressed={ab.on} aria-label={`Compra automática: ${ab.on ? 'ligada' : 'desligada'}`} onClick={() => onAutoBuy({ on: !ab.on })}>
+        <div
+          className={`ap-autobuy${ab.on ? ' is-on' : ''}`}
+          role="group"
+          aria-label="Compra automática"
+        >
+          <button
+            type="button"
+            className="ap-skill ap-autobuy-toggle"
+            aria-pressed={ab.on}
+            aria-label={`Compra automática: ${ab.on ? 'ligada' : 'desligada'}`}
+            onClick={() => onAutoBuy({ on: !ab.on })}
+          >
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
               <path d="M4 6h3l2 9h9l2-6H8M10 19h.01M17 19h.01" />
             </svg>
           </button>
-          <button type="button" className="ap-autobuy-step" aria-label="Diminuir o limite de preço" onClick={() => onAutoBuy({ limit: ab.limit - AUTOBUY_STEP })}>
+          <button
+            type="button"
+            className="ap-autobuy-step"
+            aria-label="Diminuir o limite de preço"
+            onClick={() => onAutoBuy({ limit: ab.limit - AUTOBUY_STEP })}
+          >
             −
           </button>
-          <span className="ap-autobuy-limit" aria-label={`Limite: ${ab.limit}% da poeira por compra`}>
+          <span
+            className="ap-autobuy-limit"
+            aria-label={`Limite: ${ab.limit}% da poeira por compra`}
+          >
             {ab.limit}%
           </span>
-          <button type="button" className="ap-autobuy-step" aria-label="Aumentar o limite de preço" onClick={() => onAutoBuy({ limit: ab.limit + AUTOBUY_STEP })}>
+          <button
+            type="button"
+            className="ap-autobuy-step"
+            aria-label="Aumentar o limite de preço"
+            onClick={() => onAutoBuy({ limit: ab.limit + AUTOBUY_STEP })}
+          >
             +
           </button>
         </div>

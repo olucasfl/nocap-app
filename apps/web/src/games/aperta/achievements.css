@@ -33,7 +33,7 @@
   padding: 0;
   list-style: none;
 }
-@container ap (min-width: 700px)  {
+@container ap (min-width: 700px) {
   .ap-ach-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

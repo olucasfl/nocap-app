@@ -65,7 +65,9 @@ export type Tier = (typeof TIERS)[number];
 export const tierOf = (level: { t: number }): Tier => TIERS[Math.min(3, Math.max(0, level.t))]!;
 
 /** De que fase a que fase vai cada faixa (1 a N), para o catálogo. */
-export function tierRanges(levels: readonly { t: number }[]): { tier: Tier; from: number; to: number }[] {
+export function tierRanges(
+  levels: readonly { t: number }[],
+): { tier: Tier; from: number; to: number }[] {
   return TIERS.map((tier, t) => {
     const idx = levels.map((l, i) => (l.t === t ? i + 1 : 0)).filter(Boolean);
     return { tier, from: idx[0] ?? 0, to: idx[idx.length - 1] ?? 0 };

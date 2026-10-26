@@ -37,23 +37,33 @@ describe('órbitas dos geradores', () => {
   });
 
   it('os de energia ganham o aro ciano', () => {
-    const markup = renderToStaticMarkup(<AutoOrbits state={owning({ antenna: 1 })} paused={false} />);
+    const markup = renderToStaticMarkup(
+      <AutoOrbits state={owning({ antenna: 1 })} paused={false} />,
+    );
     expect(markup).toContain('is-energy');
     expect(markup).toContain('aria-hidden="true"');
   });
 
   it('as órbitas ficam acesas tocando ou parado (os geradores rendem o máximo sempre)', () => {
-    const idle = renderToStaticMarkup(<AutoOrbits state={owning({ satellite: 3 })} paused={false} />);
+    const idle = renderToStaticMarkup(
+      <AutoOrbits state={owning({ satellite: 3 })} paused={false} />,
+    );
     expect(idle).toContain('is-active');
-    const touched = renderToStaticMarkup(<AutoOrbits state={press(owning({ satellite: 3 }), 1)} paused={false} />);
+    const touched = renderToStaticMarkup(
+      <AutoOrbits state={press(owning({ satellite: 3 }), 1)} paused={false} />,
+    );
     expect(touched).toContain('is-active');
-    expect(renderToStaticMarkup(<AutoOrbits state={owning({ satellite: 3 })} paused />)).toContain('is-paused');
+    expect(renderToStaticMarkup(<AutoOrbits state={owning({ satellite: 3 })} paused />)).toContain(
+      'is-paused',
+    );
   });
 });
 
 describe('número que sobe', () => {
   it('não mostra nada até o primeiro segundo passar', () => {
-    expect(renderToStaticMarkup(<AutoGain state={owning({ satellite: 3 })} paused={false} />)).toBe('');
+    expect(renderToStaticMarkup(<AutoGain state={owning({ satellite: 3 })} paused={false} />)).toBe(
+      '',
+    );
   });
 });
 
@@ -62,7 +72,8 @@ describe('CSS do farm automático', () => {
 
   it('só anima transform e opacity, sem transition, e respeita reduced-motion', () => {
     for (const [, body] of css.matchAll(/@keyframes [\w-]+ \{([\s\S]*?)\n\}/g)) {
-      for (const [, p] of body!.matchAll(/([a-z-]+)\s*:/g)) expect(['transform', 'opacity']).toContain(p);
+      for (const [, p] of body!.matchAll(/([a-z-]+)\s*:/g))
+        expect(['transform', 'opacity']).toContain(p);
     }
     expect(css).not.toMatch(/transition\s*:/);
     expect(css).toMatch(/prefers-reduced-motion:\s*reduce/);

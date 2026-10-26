@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { STORY, STORY_KICKER, STORY_SUB, storyButton, storyNext, storySkip, storyStart } from './story';
+import {
+  STORY,
+  STORY_KICKER,
+  STORY_SUB,
+  storyButton,
+  storyNext,
+  storySkip,
+  storyStart,
+} from './story';
 
 describe('história', () => {
   it('tem 4 telas', () => {

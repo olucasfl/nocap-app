@@ -186,7 +186,10 @@ describe('objetos no espaço', () => {
   /** Uma vida com a 1ª melhoria comprada: antes dela nenhum objeto aparece (spec 038, 4.5). */
   const afterFirstUpgrade = (): SaveState => {
     const s = { ...newSave('teste', 0), tutorial: 'done' as const };
-    return { ...s, run: { ...s.run, upgradeLevels: s.run.upgradeLevels.map((l, i) => (i === 0 ? 1 : l)) } };
+    return {
+      ...s,
+      run: { ...s.run, upgradeLevels: s.run.upgradeLevels.map((l, i) => (i === 0 ? 1 : l)) },
+    };
   };
 
   /** Passa o tempo do aparelho em passos de 1 s, como o relógio da tela. */
@@ -261,7 +264,12 @@ describe('objetos no espaço', () => {
     const base = newSave('teste', 0);
     const t = setup({
       ...base,
-      run: { ...base.run, objects: [{ id: 1, kind: 'satellite', bornAt: 0, expiresAt: 100 }], nextObjectId: 2, nextSpawnAt: 1e6 },
+      run: {
+        ...base.run,
+        objects: [{ id: 1, kind: 'satellite', bornAt: 0, expiresAt: 100 }],
+        nextObjectId: 2,
+        nextSpawnAt: 1e6,
+      },
     });
     expect(t.ctl.capture(1)).toBe(true);
     const { run } = t.ctl.getSnapshot().state;
@@ -305,7 +313,12 @@ describe('tutorial pelo controlador', () => {
     const t = nearFirstUpgrade();
     const staged: unknown[] = [];
     const store = { ...t.store, stage: (_slot: 1 | 2, s: SaveState) => staged.push(s.tutorial) };
-    const ctl = createGameController({ initial: t.ctl.getSnapshot().state, store, slot: 1, perf: () => t.clock.ms });
+    const ctl = createGameController({
+      initial: t.ctl.getSnapshot().state,
+      store,
+      slot: 1,
+      perf: () => t.clock.ms,
+    });
     t.clock.ms += 200;
     ctl.press();
     expect(ctl.getSnapshot().state.tutorial).toBe(TUTORIAL.UPGRADE);
@@ -397,13 +410,25 @@ describe('tutorial pelo controlador', () => {
     };
     const played = { ...newSave('x', 0), stats: { ...newSave('x', 0).stats, clicks: 40 } };
     for (const tutorial of [1, 3, 5, 'done'] as const) {
-      const loaded = await loadOrCreate(createMemoryGameStore({ 1: strip({ ...played, tutorial }) }), 1, 's', 'n', 0);
+      const loaded = await loadOrCreate(
+        createMemoryGameStore({ 1: strip({ ...played, tutorial }) }),
+        1,
+        's',
+        'n',
+        0,
+      );
       expect(loaded.tutorial, String(tutorial)).toBe('done');
       expect(unlockedButtons(loaded).size).toBe(UI_BUTTONS.length);
     }
     expect((await loadOrCreate(createMemoryGameStore(), 1, 's', 'n', 0)).tutorial).toBe(1);
     // Save já no formato novo, no meio do roteiro, continua de onde parou.
-    const mid = { ...newSave('x', 0), tutorial: TUTORIAL.BACK, stats: { ...newSave('x', 0).stats, clicks: 60 } };
-    expect((await loadOrCreate(createMemoryGameStore({ 1: mid }), 1, 's', 'n', 0)).tutorial).toBe(TUTORIAL.BACK);
+    const mid = {
+      ...newSave('x', 0),
+      tutorial: TUTORIAL.BACK,
+      stats: { ...newSave('x', 0).stats, clicks: 60 },
+    };
+    expect((await loadOrCreate(createMemoryGameStore({ 1: mid }), 1, 's', 'n', 0)).tutorial).toBe(
+      TUTORIAL.BACK,
+    );
   });
 });

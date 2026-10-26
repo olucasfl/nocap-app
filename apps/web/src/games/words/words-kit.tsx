@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from 'react';
 import { BackButton } from '@/components/BackButton';
 import './words.css';
 import { Page } from '@/components/Page';
@@ -53,7 +61,13 @@ export function useTyped() {
 }
 
 /** Uma etiqueta pequena (mono) para estados: "DAILY FEITO", "5 VIDAS". */
-export function Pill({ children, tone = 'ink' }: { children: ReactNode; tone?: 'ink' | 'paper' | 'good' }) {
+export function Pill({
+  children,
+  tone = 'ink',
+}: {
+  children: ReactNode;
+  tone?: 'ink' | 'paper' | 'good';
+}) {
   return <span className={`wd-pill ${tone}`}>{children}</span>;
 }
 
@@ -70,9 +84,21 @@ export function Tabs<T extends string>({
   label: string;
 }) {
   return (
-    <div className="wd-tabs" role="tablist" aria-label={label} style={{ '--n': tabs.length } as CSSProperties}>
+    <div
+      className="wd-tabs"
+      role="tablist"
+      aria-label={label}
+      style={{ '--n': tabs.length } as CSSProperties}
+    >
       {tabs.map((t) => (
-        <button key={t.id} type="button" role="tab" aria-selected={value === t.id} data-testid={`tab-${t.id}`} onClick={() => onChange(t.id)}>
+        <button
+          key={t.id}
+          type="button"
+          role="tab"
+          aria-selected={value === t.id}
+          data-testid={`tab-${t.id}`}
+          onClick={() => onChange(t.id)}
+        >
           {t.label}
         </button>
       ))}
@@ -148,7 +174,13 @@ export function TileLoader({ label = 'Sorteando a palavra...' }: { label?: strin
   );
 }
 
-const CONFETTI_COLORS = ['var(--yellow)', 'var(--orange)', 'var(--green)', 'var(--blue)', 'var(--eco-purple)'];
+const CONFETTI_COLORS = [
+  'var(--yellow)',
+  'var(--orange)',
+  'var(--green)',
+  'var(--blue)',
+  'var(--eco-purple)',
+];
 
 /** O que cada cor das casas quer dizer (usado na tela de regras e dentro do jogo). */
 export function ColorLegend({ big = false }: { big?: boolean }) {
@@ -333,7 +365,18 @@ export function Confetti({ burst, count = 22 }: { burst: number; count?: number 
   return (
     <div className="wd-confetti" key={burst} aria-hidden="true">
       {pieces.map((p, i) => (
-        <i key={i} style={{ '--dx': `${p.dx}px`, '--dy': `${p.dy}px`, '--r': `${p.r}deg`, background: p.c, animationDelay: `${p.d}s` } as CSSProperties} />
+        <i
+          key={i}
+          style={
+            {
+              '--dx': `${p.dx}px`,
+              '--dy': `${p.dy}px`,
+              '--r': `${p.r}deg`,
+              background: p.c,
+              animationDelay: `${p.d}s`,
+            } as CSSProperties
+          }
+        />
       ))}
     </div>
   );
@@ -343,7 +386,10 @@ export function Confetti({ burst, count = 22 }: { burst: number; count?: number 
 export function useCountUp(target: number, ms = 900): number {
   const [value, setValue] = useState(0);
   useEffect(() => {
-    if (typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    ) {
       setValue(target);
       return;
     }

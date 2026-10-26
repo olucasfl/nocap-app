@@ -24,16 +24,41 @@ const totalMatches = (stats: Stats | undefined): number | null =>
 
 function Icon({ d }: { d: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <path d={d} />
     </svg>
   );
 }
 
 /** Uma linha de ação das configurações: ícone, título, explicação e a seta. */
-function Row({ icon, title, hint, onClick, tone }: { icon: string; title: string; hint: string; onClick: () => void; tone?: 'danger' }) {
+function Row({
+  icon,
+  title,
+  hint,
+  onClick,
+  tone,
+}: {
+  icon: string;
+  title: string;
+  hint: string;
+  onClick: () => void;
+  tone?: 'danger';
+}) {
   return (
-    <button type="button" className={`pf2-row${tone ? ` ${tone}` : ''}`} data-sfx="select" onClick={onClick}>
+    <button
+      type="button"
+      className={`pf2-row${tone ? ` ${tone}` : ''}`}
+      data-sfx="select"
+      onClick={onClick}
+    >
       <span className="pf2-row-ico">
         <Icon d={icon} />
       </span>
@@ -136,7 +161,12 @@ export function Profile() {
         <>
           <section className="pf2-group" aria-label="Conta">
             <h2 className="mono">Conta</h2>
-            <Row icon="M4 20h4L19 9l-4-4L4 16zM14 6l4 4" title="Editar perfil" hint="Nome e @usuário" onClick={() => setEditing('menu')} />
+            <Row
+              icon="M4 20h4L19 9l-4-4L4 16zM14 6l4 4"
+              title="Editar perfil"
+              hint="Nome e @usuário"
+              onClick={() => setEditing('menu')}
+            />
           </section>
           <ProfileEdit
             step={editing}
@@ -148,7 +178,13 @@ export function Profile() {
             <InstallApp />
           </section>
           <section className="pf2-group" aria-label="Sessão">
-            <Row icon="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 8l-4 4 4 4M6 12h10" title="Sair da conta" hint="Seu progresso e seus recordes ficam guardados" tone="danger" onClick={() => setConfirming(true)} />
+            <Row
+              icon="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 8l-4 4 4 4M6 12h10"
+              title="Sair da conta"
+              hint="Seu progresso e seus recordes ficam guardados"
+              tone="danger"
+              onClick={() => setConfirming(true)}
+            />
           </section>
         </>
       ) : (

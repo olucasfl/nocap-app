@@ -48,7 +48,14 @@ export function EvolutionFx({ name, astro, from, to, level, onDone }: Props) {
       <p className="ap-evo-seal">
         <b>{RARITY_LABEL[from]}</b>
         <svg viewBox="0 0 24 12" width="26" height="13" aria-hidden="true">
-          <path d="M1 6h19M15 1l6 5-6 5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+          <path
+            d="M1 6h19M15 1l6 5-6 5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </svg>
         <b className="is-next">{RARITY_LABEL[to]}</b>
       </p>

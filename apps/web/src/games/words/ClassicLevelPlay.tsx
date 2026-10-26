@@ -7,7 +7,8 @@ import { loadClassicLevels, type ClassicLevel } from './levels/levels';
 import { GridLoader, WordsShell } from './words-kit';
 import { MODE_LABEL } from './words-api';
 
-const isMode = (m: string | undefined): m is ClassicMode => m === 'classic' || m === 'dueto' || m === 'quarteto';
+const isMode = (m: string | undefined): m is ClassicMode =>
+  m === 'classic' || m === 'dueto' || m === 'quarteto';
 
 /** Uma fase do Classic: as palavras vêm do aparelho e o progresso fica salvo a cada palpite. */
 export function ClassicLevelPlay() {
@@ -54,11 +55,21 @@ export function ClassicLevelPlay() {
       endActions={() => (
         <>
           {hasNext ? (
-            <Link to="/words/classic/fase/$modo/$n" params={{ modo: mode, n: String(num + 1) }} className="btn alt" data-testid="next">
+            <Link
+              to="/words/classic/fase/$modo/$n"
+              params={{ modo: mode, n: String(num + 1) }}
+              className="btn alt"
+              data-testid="next"
+            >
               Próxima fase
             </Link>
           ) : null}
-          <Link to="/words/classic/fases/$modo" params={{ modo: mode }} className="btn ghost" data-testid="back-catalog">
+          <Link
+            to="/words/classic/fases/$modo"
+            params={{ modo: mode }}
+            className="btn ghost"
+            data-testid="back-catalog"
+          >
             Ver todas as fases
           </Link>
         </>

@@ -171,11 +171,20 @@ float sd = smoothstep(uEdge, uEdge + uEdgeSoft, abs(vWx));`,
  * estão, os filhos diretos marcados com `userData.keep` (as partes que a cena anima) e o que não é
  * malha (placas de texto). `own`: as geometrias são só deste lote (a cena as descarta depois).
  */
-export function bakeInto(target: THREE.Object3D, source: THREE.Object3D, own = false, material?: THREE.Material): void {
+export function bakeInto(
+  target: THREE.Object3D,
+  source: THREE.Object3D,
+  own = false,
+  material?: THREE.Material,
+): void {
   source.updateMatrixWorld(true);
   const inv = new THREE.Matrix4().copy(source.matrixWorld).invert();
   const rel = new THREE.Matrix4();
-  const buckets: Record<'cast' | 'plain' | 'glow', THREE.BufferGeometry[]> = { cast: [], plain: [], glow: [] };
+  const buckets: Record<'cast' | 'plain' | 'glow', THREE.BufferGeometry[]> = {
+    cast: [],
+    plain: [],
+    glow: [],
+  };
   const kept: THREE.Object3D[] = [];
 
   const visit = (o: THREE.Object3D, top: boolean) => {
@@ -200,7 +209,9 @@ export function bakeInto(target: THREE.Object3D, source: THREE.Object3D, own = f
           }
           g.setAttribute('color', new THREE.BufferAttribute(col, 3));
         }
-        const glow = (material as THREE.MeshLambertMaterial).emissiveIntensity > 0 && (material as THREE.MeshLambertMaterial).emissive?.getHex() !== 0;
+        const glow =
+          (material as THREE.MeshLambertMaterial).emissiveIntensity > 0 &&
+          (material as THREE.MeshLambertMaterial).emissive?.getHex() !== 0;
         buckets[glow ? 'glow' : m.castShadow ? 'cast' : 'plain'].push(g);
       } else if (c.children.length) {
         visit(c, false);
@@ -216,7 +227,10 @@ export function bakeInto(target: THREE.Object3D, source: THREE.Object3D, own = f
     if (!list.length) continue;
     const merged = list.length === 1 ? list[0]! : mergeGeometries(list, false)!;
     merged.computeBoundingSphere();
-    const mesh = new THREE.Mesh(merged, material ?? (kind === 'glow' ? glowMaterial() : vertexMaterial()));
+    const mesh = new THREE.Mesh(
+      merged,
+      material ?? (kind === 'glow' ? glowMaterial() : vertexMaterial()),
+    );
     mesh.castShadow = kind === 'cast';
     mesh.receiveShadow = kind !== 'glow';
     mesh.userData.own = own;
@@ -282,7 +296,12 @@ export function model(key: string | null, build: () => THREE.Group): THREE.Group
       key,
       out.children.map((c) => {
         const m = c as THREE.Mesh;
-        return { geometry: m.geometry, material: m.material as THREE.Material, cast: m.castShadow, receive: m.receiveShadow };
+        return {
+          geometry: m.geometry,
+          material: m.material as THREE.Material,
+          cast: m.castShadow,
+          receive: m.receiveShadow,
+        };
       }),
     );
   }
@@ -347,7 +366,12 @@ export function buildHero(opts: { fur?: number; own?: boolean } = {}): THREE.Gro
   body.add(box(0.13, 0.02, 0.04, SOCK, 0, 0.56, -0.77, k)); // a boca
   for (const x of [-0.17, 0.17]) {
     body.add(box(0.09, 0.1, 0.05, 0x15100c, x, 0.77, -0.5, k)); // os olhos
-    body.add(box(0.032, 0.032, 0.02, 0xffffff, x + (x < 0 ? -0.014 : 0.014), 0.805, -0.528, { cast: false, emissive: 0.6 }));
+    body.add(
+      box(0.032, 0.032, 0.02, 0xffffff, x + (x < 0 ? -0.014 : 0.014), 0.805, -0.528, {
+        cast: false,
+        emissive: 0.6,
+      }),
+    );
   }
 
   // o boné: justo na cabeça, em duas camadas, com listra branca, botão, aba curva e o emblema com "!"
@@ -409,7 +433,11 @@ export function buildTree(biome: AtravessaBiome, variant: number): THREE.Group {
     const h = 1 + variant * 0.9;
     g.add(box(0.6, 0.2, 0.6, 0x232a5c, 0, 0.1, 0));
     g.add(box(0.22, h, 0.22, 0x2c3470, 0, 0.2 + h / 2, 0));
-    g.add(box(0.3, 0.3, 0.3, variant > 0.5 ? 0xff2fb3 : 0x19d3ff, 0, 0.2 + h + 0.15, 0, { emissive: 0.9 }));
+    g.add(
+      box(0.3, 0.3, 0.3, variant > 0.5 ? 0xff2fb3 : 0x19d3ff, 0, 0.2 + h + 0.15, 0, {
+        emissive: 0.9,
+      }),
+    );
   }
   return g;
 }
@@ -439,7 +467,9 @@ function rawPad(biome: AtravessaBiome, sinks: boolean, variant: number): THREE.G
   const g = new THREE.Group();
   if (biome === 'horta') {
     g.add(box(0.8, 0.1, 0.8, 0x47b04a, 0, 0.05, 0));
-    g.add(box(0.2, 0.12, 0.2, variant > 0.5 ? 0xff9ecf : 0xfff1a8, 0.15, 0.08, -0.1, { cast: false }));
+    g.add(
+      box(0.2, 0.12, 0.2, variant > 0.5 ? 0xff9ecf : 0xfff1a8, 0.15, 0.08, -0.1, { cast: false }),
+    );
   } else if (biome === 'deserto') {
     g.add(box(0.82, 0.22, 0.82, sinks ? 0xb58b5a : 0x9a8f86, 0, 0.11, 0));
     g.add(box(0.5, 0.06, 0.5, sinks ? 0xc99c68 : 0xb3a89f, 0, 0.24, 0, { cast: false }));
@@ -458,7 +488,8 @@ function rawTrain(len: number): THREE.Group {
   const g = new THREE.Group();
   g.add(box(len, 0.86, 0.9, 0x2b4d8f, 0, 0.52, 0));
   g.add(box(len + 0.02, 0.14, 0.94, 0xffd23f, 0, 0.3, 0));
-  for (let i = -len / 2 + 1; i < len / 2 - 1; i += 1.4) g.add(box(0.7, 0.3, 0.92, 0xcfe3ff, i, 0.72, 0, { cast: false }));
+  for (let i = -len / 2 + 1; i < len / 2 - 1; i += 1.4)
+    g.add(box(0.7, 0.3, 0.92, 0xcfe3ff, i, 0.72, 0, { cast: false }));
   g.add(box(0.9, 0.9, 0.92, 0x1e3566, len / 2 - 0.45, 0.55, 0));
   g.add(box(0.1, 0.18, 0.5, 0xfff6c2, len / 2 + 0.02, 0.6, 0, { cast: false, emissive: 1 }));
   g.add(box(0.9, 0.9, 0.92, 0x1e3566, -len / 2 + 0.45, 0.55, 0));

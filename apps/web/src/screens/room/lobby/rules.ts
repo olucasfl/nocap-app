@@ -44,11 +44,14 @@ export const MIN_PLAYERS: Record<RoomGame, number> = {
   eco: 2,
   atravessa: 2,
   desmorona: 2,
+  // com bots, uma pessoa só já joga
+  bola: 1,
 };
 
 export const GAME_NAME: Record<RoomGame, string> = {
   atravessa: 'Atravessa!',
   desmorona: 'Desmorona!',
+  bola: 'Bola Maluca!',
   color: 'Mesmíssima',
   time: 'Já Deu?',
   impostor: 'Intruso',
@@ -63,6 +66,7 @@ export const GAME_OF: Record<RoomGame, string> = {
   eco: 'do Ecooo',
   atravessa: 'do Atravessa!',
   desmorona: 'do Desmorona!',
+  bola: 'do Bola Maluca!',
 };
 
 /** Tamanhos do mapa do Checkpoint, em metros (o servidor tem a mesma tabela). */
@@ -75,6 +79,13 @@ const SIZE_NAME: Record<string, string> = {
 
 /** Modos de cada jogo na sala, com uma linha que explica cada um. */
 export const MODES: Record<RoomGame, { id: string; label: string; note: string }[]> = {
+  bola: [
+    {
+      id: 'classico',
+      label: 'Futebol',
+      note: 'Futebol de raposas com 2 a 4 times. Vale o gol do time de quem tocou por último na bola. Sem ranking.',
+    },
+  ],
   desmorona: [
     {
       id: 'classico',
@@ -151,6 +162,10 @@ export const modeOf = (s: RoomSnapshot) => MODES[s.game].find((m) => m.id === s.
 /** Uma linha: "Cor · Clássico · 3 rodadas". */
 export function rulesSummary(s: RoomSnapshot): string {
   if (s.game === 'desmorona') return 'Desmorona! · Último de pé';
+  if (s.game === 'bola' && s.bola) {
+    const f = s.bola.format;
+    return `Bola Maluca! · ${Array.from({ length: f.teams }, () => f.perTeam).join('x')} · ${f.minutes} min`;
+  }
   const rounds = s.settings.rounds;
   // O Intruso só tem um modo, com o mesmo nome do jogo: não repete.
   const mode = modeOf(s)?.label;
@@ -168,7 +183,7 @@ export function rulesSummary(s: RoomSnapshot): string {
 }
 
 export function rulesFor(s: RoomSnapshot): RuleDef[] {
-  if (s.game === 'desmorona') return [];
+  if (s.game === 'desmorona' || s.game === 'bola') return [];
   const out: RuleDef[] = [];
   const cfg = s.settings;
 

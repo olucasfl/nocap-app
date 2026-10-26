@@ -16,9 +16,7 @@ interface Options {
 }
 
 export type GameLoad =
-  | { status: 'loading' }
-  | { status: 'error' }
-  | { status: 'ready'; controller: GameController };
+  { status: 'loading' } | { status: 'error' } | { status: 'ready'; controller: GameController };
 
 /** Carrega o save do espaço (ou cria a partida) e entrega o controlador já ligado ao relógio. */
 export function useApertaGame({ store, slot, seed, name }: Options): GameLoad {
@@ -29,7 +27,8 @@ export function useApertaGame({ store, slot, seed, name }: Options): GameLoad {
     setLoad({ status: 'loading' });
     loadOrCreate(store, slot, seed, name)
       .then((initial) => {
-        if (alive) setLoad({ status: 'ready', controller: createGameController({ initial, store, slot }) });
+        if (alive)
+          setLoad({ status: 'ready', controller: createGameController({ initial, store, slot }) });
       })
       .catch(() => {
         if (alive) setLoad({ status: 'error' });

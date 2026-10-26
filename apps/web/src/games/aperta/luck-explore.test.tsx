@@ -19,7 +19,16 @@ describe('oferta com 4 cartas, trocas, descarte e pity', () => {
   const four = pending(['moon', 'mercury', 'venus', 'saturn']);
 
   it('mostra as 4 cartas em duas colunas', () => {
-    const out = html(<ChoiceModal pending={four} lockRemaining={0} build={{}} paused={false} onSelect={noop} onConfirm={noop} />);
+    const out = html(
+      <ChoiceModal
+        pending={four}
+        lockRemaining={0}
+        build={{}}
+        paused={false}
+        onSelect={noop}
+        onConfirm={noop}
+      />,
+    );
     expect(out.match(/class="ap-pickcell"/g)).toHaveLength(4);
     expect(out).toContain('ap-picks is-four');
   });
@@ -44,9 +53,28 @@ describe('oferta com 4 cartas, trocas, descarte e pity', () => {
     expect(out).toContain('Trocas disponíveis: 2');
     expect(out).toContain('Descartar a oferta (1)');
     expect(out).toContain('Lendário garantido em 3 ofertas.');
-    const zero = html(<ChoiceModal pending={four} lockRemaining={0} build={{}} paused={false} onSelect={noop} onConfirm={noop} pityLeft={0} />);
+    const zero = html(
+      <ChoiceModal
+        pending={four}
+        lockRemaining={0}
+        build={{}}
+        paused={false}
+        onSelect={noop}
+        onConfirm={noop}
+        pityLeft={0}
+      />,
+    );
     expect(zero).toContain('Esta oferta traz um lendário garantido.');
-    const none = html(<ChoiceModal pending={four} lockRemaining={0} build={{}} paused={false} onSelect={noop} onConfirm={noop} />);
+    const none = html(
+      <ChoiceModal
+        pending={four}
+        lockRemaining={0}
+        build={{}}
+        paused={false}
+        onSelect={noop}
+        onConfirm={noop}
+      />,
+    );
     expect(none).not.toContain('garantido');
     expect(none).not.toContain('Descartar');
   });
@@ -66,7 +94,12 @@ describe('lendários e eventos na tela', () => {
   });
 
   it('o chip do evento tem a barra de tempo por transform (duração em CSS, sem número) e o brilho próprio', () => {
-    const s: SaveState = { ...newSave('e'), tutorial: 'done', collapses: 4, regionId: 'oort-cloud' };
+    const s: SaveState = {
+      ...newSave('e'),
+      tutorial: 'done',
+      collapses: 4,
+      regionId: 'oort-cloud',
+    };
     const live = { ...s, run: { ...s.run, event: { id: 'gold-rain' as const, until: 40 } } };
     const view = eventView(live, 10)!;
     expect(view).toMatchObject({ id: 'gold-rain', name: 'Chuva de ouro', remaining: 30 });
@@ -79,7 +112,12 @@ describe('lendários e eventos na tela', () => {
   });
 
   it('o radar só aparece com o nó e enche sem mostrar número solto', () => {
-    const s: SaveState = { ...newSave('r'), tutorial: 'done', collapses: 4, regionId: 'oort-cloud' };
+    const s: SaveState = {
+      ...newSave('r'),
+      tutorial: 'done',
+      collapses: 4,
+      regionId: 'oort-cloud',
+    };
     expect(radarView(s)).toBeNull();
     const withNode = { ...s, tree: { 'ex-01': 1 }, run: { ...s.run, radar: 5 } };
     const view = radarView(withNode)!;
@@ -89,7 +127,13 @@ describe('lendários e eventos na tela', () => {
   });
 
   it('cada evento da árvore toca um som que já existe', () => {
-    const base: CueInput = { starReady: false, eventId: null, missionDone: false, region: 'a', freshKey: null };
+    const base: CueInput = {
+      starReady: false,
+      eventId: null,
+      missionDone: false,
+      region: 'a',
+      freshKey: null,
+    };
     const cue = (id: string) => cuesFor(base, { ...base, eventId: id });
     expect(cue('gold-rain')).toEqual(['chime']);
     expect(cue('energy-tide')).toEqual(['storm']);

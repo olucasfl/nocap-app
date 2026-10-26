@@ -8,7 +8,14 @@ import { GameScreen } from './GameScreen';
 import { UpgradesPage } from './UpgradesPage';
 import { createGameController } from './game-controller';
 import { createMemoryGameStore } from './game-store';
-import { effectLine, generatorRows, itemsView, powers, tabBadge, upgradeBadge } from './upgrades-logic';
+import {
+  effectLine,
+  generatorRows,
+  itemsView,
+  powers,
+  tabBadge,
+  upgradeBadge,
+} from './upgrades-logic';
 
 const noop = () => {};
 const idx = (id: string) => UPGRADES.findIndex((u) => u.id === id);
@@ -24,7 +31,12 @@ const owning = (s: SaveState, ids: string[]): SaveState => {
 
 function setup(initial: SaveState) {
   const clock = { ms: 1000 };
-  const ctl = createGameController({ initial, store: createMemoryGameStore(), slot: 1, perf: () => clock.ms });
+  const ctl = createGameController({
+    initial,
+    store: createMemoryGameStore(),
+    slot: 1,
+    perf: () => clock.ms,
+  });
   return { clock, ctl, state: () => ctl.getSnapshot().state };
 }
 
@@ -47,7 +59,9 @@ describe('Itens: a fila', () => {
   });
 
   it('quando acaba a fila da vida, avisa em que colapso vêm mais itens', () => {
-    const all = UPGRADES.filter((u) => u.kind === 'item' && u.unlockedAtCollapse === 0).map((u) => u.id);
+    const all = UPGRADES.filter((u) => u.kind === 'item' && u.unlockedAtCollapse === 0).map(
+      (u) => u.id,
+    );
     const v = itemsView(owning(newSave('teste', 0), all));
     expect(v.next).toBeNull();
     expect(v.moreAt).toBe(1);
@@ -55,20 +69,38 @@ describe('Itens: a fila', () => {
 
   it('o efeito mostra o TOTAL de quem joga, antes e depois (nunca só o "+4")', () => {
     const base = newSave('teste', 0);
-    expect(effectLine(base, idx('lens'))).toMatchObject({ label: 'Seu toque', before: '1', after: '2', idle: false });
+    expect(effectLine(base, idx('lens'))).toMatchObject({
+      label: 'Seu toque',
+      before: '1',
+      after: '2',
+      idle: false,
+    });
     const withLens = owning(base, ['lens']);
     // Luvas somam +2 antes de multiplicar: (1 + 2) x 2 = 6.
-    expect(effectLine(withLens, idx('gloves'))).toMatchObject({ label: 'Seu toque', before: '2', after: '4' });
+    expect(effectLine(withLens, idx('gloves'))).toMatchObject({
+      label: 'Seu toque',
+      before: '2',
+      after: '4',
+    });
     const energy = effectLine(base, idx('charged'))!;
     expect(energy.label).toBe('Energia por toque');
-    expect(Number(energy.after.replace(',', '.'))).toBeCloseTo(Number(energy.before.replace(',', '.')) * 2, 5);
+    expect(Number(energy.after.replace(',', '.'))).toBeCloseTo(
+      Number(energy.before.replace(',', '.')) * 2,
+      5,
+    );
   });
 
   it('bônus de gerador sem gerador não muda nada ainda e a tela diz isso', () => {
     const line = effectLine(newSave('teste', 0), idx('solar'))!;
     expect(line.idle).toBe(true);
     const withGen = owning(newSave('teste', 0), ['satellite']);
-    const withLevels = { ...withGen, run: { ...withGen.run, upgradeLevels: withGen.run.upgradeLevels.map((l, i) => (i === idx('satellite') ? 4 : l)) } };
+    const withLevels = {
+      ...withGen,
+      run: {
+        ...withGen.run,
+        upgradeLevels: withGen.run.upgradeLevels.map((l, i) => (i === idx('satellite') ? 4 : l)),
+      },
+    };
     const after = effectLine(withLevels, idx('solar'))!;
     expect(after.idle).toBe(false);
     expect(after.label).toBe('Geradores de poeira');
@@ -126,7 +158,11 @@ describe('selo de Melhorias', () => {
   });
 
   it('a tela de jogo mostra o selo com o que há para ver', () => {
-    const ctl = createGameController({ initial: rich(6000), store: createMemoryGameStore(), slot: 1 });
+    const ctl = createGameController({
+      initial: rich(6000),
+      store: createMemoryGameStore(),
+      slot: 1,
+    });
     const markup = renderToStaticMarkup(<GameScreen controller={ctl} onExit={noop} />);
     expect(markup).toContain('Melhorias, 3 para ver');
   });
@@ -196,7 +232,13 @@ describe('compra pelo controlador', () => {
 
   it('com a escolha de grimório aberta não compra', () => {
     const base = rich(1e6);
-    const pending = { offers: ['moon', 'mercury', 'venus'], openedAt: 0, selected: null, picksLeft: 1, rerollsLeft: 0 };
+    const pending = {
+      offers: ['moon', 'mercury', 'venus'],
+      openedAt: 0,
+      selected: null,
+      picksLeft: 1,
+      rerollsLeft: 0,
+    };
     const t = setup({ ...base, run: { ...base.run, pending } });
     expect(t.ctl.buy(idx('lens'))).toBe(false);
   });
@@ -207,7 +249,8 @@ describe('CSS das Melhorias', () => {
 
   it('só anima transform e opacity, sem transition, e respeita reduced-motion', () => {
     for (const [, body] of css.matchAll(/@keyframes [\w-]+ \{([\s\S]*?)\n\}/g)) {
-      for (const [, p] of body!.matchAll(/([a-z-]+)\s*:/g)) expect(['transform', 'opacity']).toContain(p);
+      for (const [, p] of body!.matchAll(/([a-z-]+)\s*:/g))
+        expect(['transform', 'opacity']).toContain(p);
     }
     expect(css).not.toMatch(/transition\s*:/);
     expect(css).toMatch(/prefers-reduced-motion:\s*reduce/);
@@ -223,10 +266,14 @@ describe('CSS das Melhorias', () => {
 
 describe('poeira no cabeçalho das Melhorias', () => {
   it('a página mostra quanta poeira a pessoa tem (e só a página que decide compra)', () => {
-    const withDust = renderToStaticMarkup(<GamePage name="upgrades" notice="x" onClose={() => {}} dust="1,5 mil" />);
+    const withDust = renderToStaticMarkup(
+      <GamePage name="upgrades" notice="x" onClose={() => {}} dust="1,5 mil" />,
+    );
     expect(withDust).toContain('ap-shead-dust');
     expect(withDust).toContain('1,5 mil');
     expect(withDust).toContain('Você tem 1,5 mil de poeira');
-    expect(renderToStaticMarkup(<GamePage name="grimoires" notice="x" onClose={() => {}} />)).not.toContain('ap-shead-dust');
+    expect(
+      renderToStaticMarkup(<GamePage name="grimoires" notice="x" onClose={() => {}} />),
+    ).not.toContain('ap-shead-dust');
   });
 });

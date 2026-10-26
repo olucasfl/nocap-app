@@ -56,7 +56,9 @@ export function ClassicPlay({
     engine
       .start()
       .then(setRun)
-      .catch((e: unknown) => setError(e instanceof ApiError ? e.message : 'Não deu para começar a partida'));
+      .catch((e: unknown) =>
+        setError(e instanceof ApiError ? e.message : 'Não deu para começar a partida'),
+      );
   }, [engine]);
 
   useEffect(begin, [begin]);
@@ -75,11 +77,14 @@ export function ClassicPlay({
   const open = run?.state === 'open';
 
   const busyRef = useRef(false);
-  const type = useCallback((l: string) => {
-    if (busyRef.current) return;
-    wordsAudio.key();
-    setTyped((t) => ([...t].length < LENGTH ? t + l : t));
-  }, [setTyped]);
+  const type = useCallback(
+    (l: string) => {
+      if (busyRef.current) return;
+      wordsAudio.key();
+      setTyped((t) => ([...t].length < LENGTH ? t + l : t));
+    },
+    [setTyped],
+  );
   const erase = useCallback(() => {
     if (!busyRef.current) setTyped((t) => [...t].slice(0, -1).join(''));
   }, [setTyped]);
@@ -108,7 +113,9 @@ export function ClassicPlay({
     try {
       const next = await engine.send(run, word);
       setFlipRow(next.used - 1);
-      const fresh = next.boards.find((b) => b.rows[next.used - 1] !== undefined)?.rows[next.used - 1];
+      const fresh = next.boards.find((b) => b.rows[next.used - 1] !== undefined)?.rows[
+        next.used - 1
+      ];
       if (fresh) wordsAudio.row(fresh);
       if (next.state !== 'open') {
         // espera as casas virarem (e a dancinha da vitória) antes de dizer se acertou ou perdeu
@@ -130,7 +137,11 @@ export function ClassicPlay({
     } catch (e) {
       setShake(true);
       wordsAudio.invalid();
-      say(e instanceof ApiError && e.status === 400 ? 'Palavra não aceita' : 'Sem conexão. Tente de novo');
+      say(
+        e instanceof ApiError && e.status === 400
+          ? 'Palavra não aceita'
+          : 'Sem conexão. Tente de novo',
+      );
       window.setTimeout(() => setShake(false), 420);
     } finally {
       busyRef.current = false;
@@ -162,14 +173,21 @@ export function ClassicPlay({
   }
   if (!run) {
     return (
-      <WordsShell title={fixedTitle ?? MODE_LABEL[mode].name} back={back} accent="green" className="cw-theme">
+      <WordsShell
+        title={fixedTitle ?? MODE_LABEL[mode].name}
+        back={back}
+        accent="green"
+        className="cw-theme"
+      >
         <TileLoader label={loading} />
       </WordsShell>
     );
   }
 
   const decoded: Cell[][][] = run.boards.map((b) => b.rows.map(decodePattern));
-  const keys = run.boards.map((b, i) => keyboardState(run.guesses.slice(0, b.rows.length), decoded[i]!));
+  const keys = run.boards.map((b, i) =>
+    keyboardState(run.guesses.slice(0, b.rows.length), decoded[i]!),
+  );
   // letras que já sabemos que não existem (cinza em todos os tabuleiros ainda abertos): ficam marcadas como
   // "já foi", mas continuam clicáveis (a pessoa pode testar palavras só para eliminar letras)
   const open0 = run.boards.map((b, i) => (b.solvedAt === null ? i : -1)).filter((i) => i >= 0);
@@ -188,7 +206,13 @@ export function ClassicPlay({
       accent="green"
       fit
       className={`cw-${run.mode}`}
-      right={open ? <Pill tone="paper">{left} {left === 1 ? 'resta' : 'restam'}</Pill> : undefined}
+      right={
+        open ? (
+          <Pill tone="paper">
+            {left} {left === 1 ? 'resta' : 'restam'}
+          </Pill>
+        ) : undefined
+      }
     >
       <div className="wd-toast-slot" aria-live="polite">
         {toast && (
@@ -199,14 +223,27 @@ export function ClassicPlay({
       </div>
 
       <div className="cw-stage">
-        <div className="cw-boards" style={{ '--rows': run.tries } as CSSProperties} data-testid="boards">
+        <div
+          className="cw-boards"
+          style={{ '--rows': run.tries } as CSSProperties}
+          data-testid="boards"
+        >
           {run.boards.map((board, b) => (
-            <div className="cw-board" key={b} data-solved={board.solvedAt !== null} data-testid={`board-${b}`}>
+            <div
+              className="cw-board"
+              key={b}
+              data-solved={board.solvedAt !== null}
+              data-testid={`board-${b}`}
+            >
               {Array.from({ length: run.tries }, (_, r) => {
                 const row = decoded[b]![r];
                 const word = run.guesses[r];
                 const typingHere = open && !row && board.solvedAt === null && r === run.used;
-                const letters = row ? [...word!] : typingHere ? [...typed].concat(Array(LENGTH).fill('')).slice(0, LENGTH) : Array<string>(LENGTH).fill('');
+                const letters = row
+                  ? [...word!]
+                  : typingHere
+                    ? [...typed].concat(Array(LENGTH).fill('')).slice(0, LENGTH)
+                    : Array<string>(LENGTH).fill('');
                 const animating = flipRow === r && !!row;
                 return (
                   <div
@@ -222,7 +259,10 @@ export function ClassicPlay({
                       >
                         <div className="cw-card">
                           <div className="cw-face front">{ch}</div>
-                          <div className={`cw-face back ${row ? row[c] : ''}`} data-cell={row ? row[c] : undefined}>
+                          <div
+                            className={`cw-face back ${row ? row[c] : ''}`}
+                            data-cell={row ? row[c] : undefined}
+                          >
                             {row ? ch : ''}
                           </div>
                         </div>
@@ -238,57 +278,79 @@ export function ClassicPlay({
 
       {open || !resultReady ? (
         <>
-        <ColorLegend />
-        <div className={`cw-dock${open ? '' : ' locked'}`}>
-          {ROWS.map((letters, ri) => (
-            <div className="cw-krow" key={ri}>
-              {ri === 2 && (
-                <button type="button" className="cw-key wide" aria-label="Enviar" onClick={() => void submit()} data-testid="enter">
-                  <svg viewBox="0 0 24 24" className="cw-ico" aria-hidden="true">
-                    <path d="M20 5v6a3 3 0 0 1-3 3H5" />
-                    <path d="M9 9l-4 5 4 5" />
-                  </svg>
-                </button>
-              )}
-              {[...letters].map((l) => {
-                const colored = keys.some((k) => k.has(l));
-                return (
+          <ColorLegend />
+          <div className={`cw-dock${open ? '' : ' locked'}`}>
+            {ROWS.map((letters, ri) => (
+              <div className="cw-krow" key={ri}>
+                {ri === 2 && (
                   <button
                     type="button"
-                    key={l}
-                    className={`cw-key${colored ? ' has-color' : ''}${used.has(l) ? ' used' : ''}`}
-                    aria-label={used.has(l) ? `${l} (já foi: não tem na palavra)` : l}
-                    data-testid={`key-${l}`}
-                    onClick={() => type(l)}
+                    className="cw-key wide"
+                    aria-label="Enviar"
+                    onClick={() => void submit()}
+                    data-testid="enter"
                   >
-                    <span className="cw-key-bg" aria-hidden="true">
-                      {keys.map((k, i) => (
-                        <i key={i} className={k.get(l) ?? ''} />
-                      ))}
-                    </span>
-                    <span className="cw-key-l">{l.toUpperCase()}</span>
+                    <svg viewBox="0 0 24 24" className="cw-ico" aria-hidden="true">
+                      <path d="M20 5v6a3 3 0 0 1-3 3H5" />
+                      <path d="M9 9l-4 5 4 5" />
+                    </svg>
                   </button>
-                );
-              })}
-              {ri === 2 && (
-                <button type="button" className="cw-key wide" aria-label="Apagar" onClick={erase} data-testid="backspace">
-                  <svg viewBox="0 0 24 24" className="cw-ico" aria-hidden="true">
-                    <path d="M9 5h11a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H9l-6-7z" />
-                    <path d="M12.5 9.5l5 5M17.5 9.5l-5 5" />
-                  </svg>
-                </button>
-              )}
-            </div>
-          ))}
-          {engine.canGiveUp && (
-            <button type="button" className="cw-giveup" onClick={() => setAskGiveUp(true)} data-testid="giveup">
-              Desistir
-            </button>
-          )}
-        </div>
+                )}
+                {[...letters].map((l) => {
+                  const colored = keys.some((k) => k.has(l));
+                  return (
+                    <button
+                      type="button"
+                      key={l}
+                      className={`cw-key${colored ? ' has-color' : ''}${used.has(l) ? ' used' : ''}`}
+                      aria-label={used.has(l) ? `${l} (já foi: não tem na palavra)` : l}
+                      data-testid={`key-${l}`}
+                      onClick={() => type(l)}
+                    >
+                      <span className="cw-key-bg" aria-hidden="true">
+                        {keys.map((k, i) => (
+                          <i key={i} className={k.get(l) ?? ''} />
+                        ))}
+                      </span>
+                      <span className="cw-key-l">{l.toUpperCase()}</span>
+                    </button>
+                  );
+                })}
+                {ri === 2 && (
+                  <button
+                    type="button"
+                    className="cw-key wide"
+                    aria-label="Apagar"
+                    onClick={erase}
+                    data-testid="backspace"
+                  >
+                    <svg viewBox="0 0 24 24" className="cw-ico" aria-hidden="true">
+                      <path d="M9 5h11a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H9l-6-7z" />
+                      <path d="M12.5 9.5l5 5M17.5 9.5l-5 5" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            ))}
+            {engine.canGiveUp && (
+              <button
+                type="button"
+                className="cw-giveup"
+                onClick={() => setAskGiveUp(true)}
+                data-testid="giveup"
+              >
+                Desistir
+              </button>
+            )}
+          </div>
         </>
       ) : (
-        <ClassicEnd run={run} collapsed={endCollapsed} onToggle={() => setEndCollapsed((c) => !c)} actions={endActions(run)} />
+        <ClassicEnd
+          run={run}
+          collapsed={endCollapsed}
+          onToggle={() => setEndCollapsed((c) => !c)}
+          actions={endActions(run)}
+        />
       )}
 
       <ConfirmDialog

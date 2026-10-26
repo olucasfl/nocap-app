@@ -54,7 +54,14 @@ export const SAVE_FAILURES_BEFORE_WARNING = 3;
 
 export type GameEvent =
   | { type: 'press'; id: number; gain: number; combo: number }
-  | { type: 'grimoire'; id: string; name: string; level: number; rarity: GrimoireRarity; evolvedFrom: GrimoireRarity | null }
+  | {
+      type: 'grimoire';
+      id: string;
+      name: string;
+      level: number;
+      rarity: GrimoireRarity;
+      evolvedFrom: GrimoireRarity | null;
+    }
   | { type: 'capture'; objectId: number; kind: ObjectKind; preview: ObjectPreview }
   | { type: 'choice-open' }
   | { type: 'achievement'; id: string; name: string }
@@ -83,7 +90,12 @@ interface Options {
  * O relógio do jogo parte do `clock` guardado no save e só avança com o jogo visível (spec 7.4):
  * enquanto `paused`, `now()` fica parado, e ao voltar o motor ainda congela objetos e combo.
  */
-export function createGameController({ initial, store, slot, perf = () => performance.now() }: Options) {
+export function createGameController({
+  initial,
+  store,
+  slot,
+  perf = () => performance.now(),
+}: Options) {
   let state = initial;
   const origin = initial.clock;
   const startedAt = perf();
@@ -102,7 +114,12 @@ export function createGameController({ initial, store, slot, perf = () => perfor
   const eventListeners = new Set<(e: GameEvent) => void>();
 
   const now = () => origin + ((pausedAt ?? perf()) - startedAt - hiddenMs) / 1000;
-  const snapshot = (): GameSnapshot => ({ state, now: now(), paused: pausedAt !== null, saveFailures });
+  const snapshot = (): GameSnapshot => ({
+    state,
+    now: now(),
+    paused: pausedAt !== null,
+    saveFailures,
+  });
   let current = snapshot();
 
   function notify() {
@@ -130,7 +147,8 @@ export function createGameController({ initial, store, slot, perf = () => perfor
     dirty = true;
     notify();
     if (announce) {
-      for (const id of gained) announced.push({ type: 'achievement', id, name: achievementById(id)?.name ?? id });
+      for (const id of gained)
+        announced.push({ type: 'achievement', id, name: achievementById(id)?.name ?? id });
       const amount = prevSparks === null ? 0 : sparksTotal(next) - prevSparks;
       if (amount > 0) announced.push({ type: 'sparks', amount, available: sparksAvailable(next) });
     }
@@ -224,8 +242,18 @@ export function createGameController({ initial, store, slot, perf = () => perfor
       const rarity: GrimoireRarity = before.run.pending?.rarities?.[id] ?? 'common';
       // Evoluiu: o grimório já estava no livro numa raridade menor que a da carta pega.
       const fromRank = before.run.buildRarity[id] ?? 0;
-      const evolvedFrom = (before.run.build[id] ?? 0) > 0 && rarityRank(rarity) > fromRank ? (GRIMOIRE_RARITIES[fromRank] ?? 'common') : null;
-      emit({ type: 'grimoire', id, name: def?.name ?? id, level: next.run.build[id] ?? 1, rarity, evolvedFrom });
+      const evolvedFrom =
+        (before.run.build[id] ?? 0) > 0 && rarityRank(rarity) > fromRank
+          ? (GRIMOIRE_RARITIES[fromRank] ?? 'common')
+          : null;
+      emit({
+        type: 'grimoire',
+        id,
+        name: def?.name ?? id,
+        level: next.run.build[id] ?? 1,
+        rarity,
+        evolvedFrom,
+      });
       saveNow();
       return true;
     },

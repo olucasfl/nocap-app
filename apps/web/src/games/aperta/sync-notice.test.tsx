@@ -16,7 +16,16 @@ const conflict: Conflict = {
 };
 const view = (p: Partial<Parameters<typeof SyncView>[0]>) =>
   renderToStaticMarkup(
-    <SyncView sync="saved" conflict={null} confirming={null} busy={false} failed={false} onChoose={noop} onCancel={noop} {...p} />,
+    <SyncView
+      sync="saved"
+      conflict={null}
+      confirming={null}
+      busy={false}
+      failed={false}
+      onChoose={noop}
+      onCancel={noop}
+      {...p}
+    />,
   );
 
 describe('aviso de sincronização', () => {
@@ -76,7 +85,8 @@ describe('aviso de sincronização', () => {
     const css = readFileSync(join(__dirname, 'sync-notice.css'), 'utf8');
     expect(css).not.toMatch(/transition\s*:/);
     for (const [, body] of css.matchAll(/@keyframes [\w-]+ \{([\s\S]*?)\n\}/g)) {
-      for (const [, prop] of body!.matchAll(/([a-z-]+)\s*:/g)) expect(['transform', 'opacity']).toContain(prop);
+      for (const [, prop] of body!.matchAll(/([a-z-]+)\s*:/g))
+        expect(['transform', 'opacity']).toContain(prop);
     }
     expect(css).toMatch(/prefers-reduced-motion:\s*reduce/);
     expect(css).toMatch(/\.ap-sync-btn:focus-visible/);

@@ -1,11 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { cuesFor, type CueInput } from './cues';
 
-const base: CueInput = { starReady: false, eventId: null, missionDone: false, region: 'solar', freshKey: null };
+const base: CueInput = {
+  starReady: false,
+  eventId: null,
+  missionDone: false,
+  region: 'solar',
+  freshKey: null,
+};
 
 describe('sons de transição do Aperta!', () => {
   it('montar a tela (sem estado anterior) não faz barulho, mesmo com tudo ligado', () => {
-    expect(cuesFor(null, { ...base, starReady: true, eventId: 'solar-storm', missionDone: true })).toEqual([]);
+    expect(
+      cuesFor(null, { ...base, starReady: true, eventId: 'solar-storm', missionDone: true }),
+    ).toEqual([]);
   });
 
   it('só dispara na borda de subida e não repete enquanto o estado fica igual', () => {

@@ -115,7 +115,7 @@ export function buildField(teams: number, perTeam: number): BolField {
   const goals: BolGoal[] = [];
   for (const e of edges) {
     if (e.goal < 0) continue;
-    const width = Math.min(7 + 1 * k, 0.62 * e.len);
+    const width = Math.min((7 + 1 * k) * 1.18, 0.62 * e.len);
     goals[e.goal] = {
       team: e.goal,
       edge: e,

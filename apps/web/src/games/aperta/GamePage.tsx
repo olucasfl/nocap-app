@@ -12,7 +12,8 @@ export const PAGE_TITLE: Record<PageName, string> = {
 const ICON: Record<PageName, string> = {
   upgrades: 'M12 19V5M5 12l7-7 7 7',
   grimoires: 'M4 5h7a3 3 0 0 1 3 3v12a3 3 0 0 0-3-3H4zM20 5h-7a3 3 0 0 0-3 3',
-  achievements: 'M8 4h8v5a4 4 0 0 1-8 0zM8 6H4v1a4 4 0 0 0 4 4M16 6h4v1a4 4 0 0 1-4 4M12 13v4M8.5 20h7M10 17h4',
+  achievements:
+    'M8 4h8v5a4 4 0 0 1-8 0zM8 6H4v1a4 4 0 0 0 4 4M16 6h4v1a4 4 0 0 1-4 4M12 13v4M8.5 20h7M10 17h4',
   tree: 'M12 21V9M12 13 7 9M12 16l5-4M12 9V3M7 9V6M17 12V8',
   vault: 'M5 10h14v10H5zM8 10V7a4 4 0 0 1 8 0v3M12 14v3',
 };
@@ -55,7 +56,13 @@ export function GamePage({ name, notice, onClose, dust, children }: Props) {
               <small>poeira</small>
             </p>
           )}
-          <button type="button" className="ap-x" data-tut="page-close" aria-label={`Fechar ${PAGE_TITLE[name]}`} onClick={onClose}>
+          <button
+            type="button"
+            className="ap-x"
+            data-tut="page-close"
+            aria-label={`Fechar ${PAGE_TITLE[name]}`}
+            onClick={onClose}
+          >
             <span className="ap-x-x" aria-hidden="true">
               X
             </span>

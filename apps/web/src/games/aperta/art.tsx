@@ -47,7 +47,16 @@ export function TitleArt() {
       </defs>
       <circle className="ap-glow" cx="380" cy="300" r="250" fill="url(#ap-atm)" />
       <g transform="rotate(-18 380 300)">
-        <ellipse cx="380" cy="300" rx="320" ry="72" fill="none" stroke="#b9c6ff" strokeOpacity=".5" strokeWidth="12" />
+        <ellipse
+          cx="380"
+          cy="300"
+          rx="320"
+          ry="72"
+          fill="none"
+          stroke="#b9c6ff"
+          strokeOpacity=".5"
+          strokeWidth="12"
+        />
         <circle cx="380" cy="300" r="200" fill="url(#ap-pl)" />
         <g clipPath="url(#ap-pc)">
           <ellipse cx="380" cy="250" rx="220" ry="14" fill="#fff" opacity=".1" />
@@ -55,7 +64,17 @@ export function TitleArt() {
           <ellipse cx="380" cy="380" rx="220" ry="16" fill="#9fb4ff" opacity=".1" />
           <circle cx="480" cy="430" r="270" fill="#000" opacity=".32" />
         </g>
-        <ellipse cx="380" cy="300" rx="320" ry="72" fill="none" stroke="#b9c6ff" strokeOpacity=".9" strokeWidth="12" clipPath="url(#ap-front)" />
+        <ellipse
+          cx="380"
+          cy="300"
+          rx="320"
+          ry="72"
+          fill="none"
+          stroke="#b9c6ff"
+          strokeOpacity=".9"
+          strokeWidth="12"
+          clipPath="url(#ap-front)"
+        />
       </g>
       <circle cx="110" cy="140" r="28" fill="url(#ap-mn)" />
       <circle cx="100" cy="132" r="6" fill="#8f97ab" opacity=".7" />
@@ -71,4 +90,3 @@ export function TitleArt() {
     </svg>
   );
 }
-

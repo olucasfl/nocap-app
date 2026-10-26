@@ -570,7 +570,11 @@ a.wd-card:hover .wd-card-go {
     grid-template-columns: repeat(4, auto);
     --w: var(--size);
     --h: var(--size);
-    --size: min(44px, calc((100cqh - 16px) / var(--rows) - 6px), calc((min(100cqw, 900px) - 100px) / 22));
+    --size: min(
+      44px,
+      calc((100cqh - 16px) / var(--rows) - 6px),
+      calc((min(100cqw, 900px) - 100px) / 22)
+    );
   }
 }
 .cw-board {
@@ -771,7 +775,9 @@ a.wd-card:hover .wd-card-go {
   text-transform: uppercase;
   cursor: pointer;
   opacity: 0.85;
-  transition: transform 0.08s ease, background 0.15s ease;
+  transition:
+    transform 0.08s ease,
+    background 0.15s ease;
 }
 .cw-giveup:active {
   transform: scale(0.95);
@@ -1779,7 +1785,8 @@ a.wd-card:hover .wd-card-go {
     opacity: 1;
   }
   100% {
-    transform: translate(calc(var(--x) * 1.15), calc(var(--y) + 150px)) rotate(calc(var(--r) * 1.6)) scale(var(--s));
+    transform: translate(calc(var(--x) * 1.15), calc(var(--y) + 150px)) rotate(calc(var(--r) * 1.6))
+      scale(var(--s));
     opacity: 0;
   }
 }

@@ -3,11 +3,46 @@ import type { AstroId } from '../astros';
 /** Um elemento de uma camada, em coordenadas do viewBox 1000x1000. */
 export type RegionNode =
   | { t: 'orb'; art: AstroId; x: number; y: number; r: number; o?: number }
-  | { t: 'circle'; cx: number; cy: number; r: number; fill: string; o?: number; stroke?: string; sw?: number }
-  | { t: 'ellipse'; cx: number; cy: number; rx: number; ry: number; stroke: string; sw: number; o?: number; dash?: string }
+  | {
+      t: 'circle';
+      cx: number;
+      cy: number;
+      r: number;
+      fill: string;
+      o?: number;
+      stroke?: string;
+      sw?: number;
+    }
+  | {
+      t: 'ellipse';
+      cx: number;
+      cy: number;
+      rx: number;
+      ry: number;
+      stroke: string;
+      sw: number;
+      o?: number;
+      dash?: string;
+    }
   /** Astros espalhados com posição derivada da semente (o render é estável, sem aleatoriedade). */
-  | { t: 'scatter'; n: number; seed: number; art: AstroId; r: [min: number, span: number]; o: number }
-  | { t: 'bubbles'; n: number; seed: number; r: [min: number, span: number]; o: number; stroke: string; sw: number; shine?: boolean };
+  | {
+      t: 'scatter';
+      n: number;
+      seed: number;
+      art: AstroId;
+      r: [min: number, span: number];
+      o: number;
+    }
+  | {
+      t: 'bubbles';
+      n: number;
+      seed: number;
+      r: [min: number, span: number];
+      o: number;
+      stroke: string;
+      sw: number;
+      shine?: boolean;
+    };
 
 export interface RegionLayer {
   depth: 'mid' | 'near';
@@ -73,8 +108,20 @@ export const REGION_ART: readonly RegionArt[] = [
     sky: { a: '#3a2518', b: '#1c110c', c: '#070408', glowA: '#8a5a2a', glowB: '#5a3a22' },
     buttonGlow: '#ffb86b',
     layers: [
-      { depth: 'mid', dx: -40, dy: 10, dur: 85, nodes: [{ t: 'scatter', n: 16, seed: 11, art: 'rock', r: [14, 20], o: 0.55 }] },
-      { depth: 'near', dx: 46, dy: -22, dur: 60, nodes: [{ t: 'scatter', n: 6, seed: 77, art: 'rock', r: [34, 40], o: 0.9 }] },
+      {
+        depth: 'mid',
+        dx: -40,
+        dy: 10,
+        dur: 85,
+        nodes: [{ t: 'scatter', n: 16, seed: 11, art: 'rock', r: [14, 20], o: 0.55 }],
+      },
+      {
+        depth: 'near',
+        dx: 46,
+        dy: -22,
+        dur: 60,
+        nodes: [{ t: 'scatter', n: 6, seed: 77, art: 'rock', r: [34, 40], o: 0.9 }],
+      },
     ],
   },
   {
@@ -119,13 +166,38 @@ export const REGION_ART: readonly RegionArt[] = [
         dy: 12,
         dur: 95,
         nodes: [
-          { t: 'ellipse', cx: 500, cy: 500, rx: 560, ry: 150, stroke: '#9fe0ff', sw: 26, o: 0.35, dash: '2 18' },
+          {
+            t: 'ellipse',
+            cx: 500,
+            cy: 500,
+            rx: 560,
+            ry: 150,
+            stroke: '#9fe0ff',
+            sw: 26,
+            o: 0.35,
+            dash: '2 18',
+          },
           { t: 'orb', art: 'ice', x: 780, y: 260, r: 26, o: 0.8 },
-          { t: 'circle', cx: 780, cy: 260, r: 44, fill: 'none', stroke: '#9fe0ff', sw: 1.5, o: 0.3 },
+          {
+            t: 'circle',
+            cx: 780,
+            cy: 260,
+            r: 44,
+            fill: 'none',
+            stroke: '#9fe0ff',
+            sw: 1.5,
+            o: 0.3,
+          },
           { t: 'scatter', n: 10, seed: 5, art: 'ice', r: [10, 14], o: 0.55 },
         ],
       },
-      { depth: 'near', dx: 38, dy: -20, dur: 62, nodes: [{ t: 'scatter', n: 5, seed: 91, art: 'ice', r: [30, 36], o: 0.85 }] },
+      {
+        depth: 'near',
+        dx: 38,
+        dy: -20,
+        dur: 62,
+        nodes: [{ t: 'scatter', n: 5, seed: 91, art: 'ice', r: [30, 36], o: 0.85 }],
+      },
     ],
   },
   {
@@ -145,7 +217,24 @@ export const REGION_ART: readonly RegionArt[] = [
           { t: 'bubbles', n: 14, seed: 23, r: [12, 22], o: 0.6, stroke: '#cdb8ff', sw: 1.5 },
         ],
       },
-      { depth: 'near', dx: 36, dy: -24, dur: 68, nodes: [{ t: 'bubbles', n: 6, seed: 58, r: [40, 50], o: 0.85, stroke: '#e6dcff', sw: 2.5, shine: true }] },
+      {
+        depth: 'near',
+        dx: 36,
+        dy: -24,
+        dur: 68,
+        nodes: [
+          {
+            t: 'bubbles',
+            n: 6,
+            seed: 58,
+            r: [40, 50],
+            o: 0.85,
+            stroke: '#e6dcff',
+            sw: 2.5,
+            shine: true,
+          },
+        ],
+      },
     ],
   },
   {

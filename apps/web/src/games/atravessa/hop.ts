@@ -38,14 +38,27 @@ const STRETCH = 0.12;
 const LAND = 0.17;
 
 /** Uma lombada suave de 0 a 1 e de volta, entre `a` e `b`. */
-const hump = (x: number, a: number, b: number) => (x <= a || x >= b ? 0 : Math.sin(((x - a) / (b - a)) * Math.PI));
+const hump = (x: number, a: number, b: number) =>
+  x <= a || x >= b ? 0 : Math.sin(((x - a) / (b - a)) * Math.PI);
 
 const volume = (sy: number) => {
   const w = 1 / Math.sqrt(sy);
   return { sx: w, sy, sz: w };
 };
 
-export const REST: Pose = { lift: 0, sx: 1, sy: 1, sz: 1, pitch: 0, roll: 0, alpha: 1, dx: 0, rz: 0, ry: 0, dz: 0 };
+export const REST: Pose = {
+  lift: 0,
+  sx: 1,
+  sy: 1,
+  sz: 1,
+  pitch: 0,
+  roll: 0,
+  alpha: 1,
+  dx: 0,
+  rz: 0,
+  ry: 0,
+  dz: 0,
+};
 
 export function heroPose(view: AtravessaView, now = 0): Pose {
   if (!view.alive) return REST;
@@ -137,7 +150,15 @@ export function deathPose(end: AtravessaEnd, age: number, killer: -1 | 0 | 1 = 0
     case 'mordido': {
       const shake = age < 0.2 ? Math.sin(age * 90) * 0.12 : 0;
       const e = smooth((age - 0.18) / 0.35);
-      return { ...REST, ...volume(1 - 0.55 * e), sx: 1 - 0.55 * e, sz: 1 - 0.55 * e, lift: 0.3 * Math.sin(Math.PI * clamp01(age / 0.5)), alpha: 1 - e, rz: shake };
+      return {
+        ...REST,
+        ...volume(1 - 0.55 * e),
+        sx: 1 - 0.55 * e,
+        sz: 1 - 0.55 * e,
+        lift: 0.3 * Math.sin(Math.PI * clamp01(age / 0.5)),
+        alpha: 1 - e,
+        rz: shake,
+      };
     }
     default: {
       // parado demais: o herói vai ficando sem luz e some devagar

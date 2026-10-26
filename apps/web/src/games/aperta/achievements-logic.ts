@@ -65,7 +65,10 @@ function row(v: AchievementView): AchievementRow {
     earned: v.earned,
     secret,
     soon: v.locked && !v.earned,
-    soonText: v.locked && v.def.needs ? `Em breve: precisa d${v.def.needs === 'daily-streak' || v.def.needs === 'tree-v2' ? 'a' : 'os'} ${FEATURE_NAMES[v.def.needs]}` : '',
+    soonText:
+      v.locked && v.def.needs
+        ? `Em breve: precisa d${v.def.needs === 'daily-streak' || v.def.needs === 'tree-v2' ? 'a' : 'os'} ${FEATURE_NAMES[v.def.needs]}`
+        : '',
     value: v.value,
     goal: v.def.goal,
     fraction: v.def.goal > 0 ? Math.min(1, v.value / v.def.goal) : 0,
@@ -89,7 +92,10 @@ export interface AchievementFilter {
 export const NO_FILTER: AchievementFilter = { group: 'all', query: '', status: 'all' };
 
 /** Linhas por família, já filtradas por família, texto e estado. A escondida só aparece pelo nome real depois de ganha. */
-export function achievementGroups(state: SaveState, filter: AchievementFilter = NO_FILTER): AchievementGroupRows[] {
+export function achievementGroups(
+  state: SaveState,
+  filter: AchievementFilter = NO_FILTER,
+): AchievementGroupRows[] {
   const q = fold(filter.query);
   return ACHIEVEMENT_GROUPS.filter((g) => filter.group === 'all' || filter.group === g.id)
     .map((g) => ({
@@ -98,8 +104,15 @@ export function achievementGroups(state: SaveState, filter: AchievementFilter = 
       rows: achievementViews(state)
         .filter((v) => v.def.group === g.id)
         .map(row)
-        .filter((r) => (filter.status === 'all' ? true : filter.status === 'earned' ? r.earned : !r.earned))
-        .filter((r) => q === '' || fold(`${r.name} ${r.text}`).includes(q) || (r.secret && 'escondida'.includes(q))),
+        .filter((r) =>
+          filter.status === 'all' ? true : filter.status === 'earned' ? r.earned : !r.earned,
+        )
+        .filter(
+          (r) =>
+            q === '' ||
+            fold(`${r.name} ${r.text}`).includes(q) ||
+            (r.secret && 'escondida'.includes(q)),
+        ),
     }))
     .filter((g) => g.rows.length > 0);
 }
@@ -118,7 +131,12 @@ export function achievementChips(state: SaveState): AchievementChip[] {
     { id: 'all', name: 'Todas', earned: views.filter((v) => v.earned).length, total: views.length },
     ...ACHIEVEMENT_GROUPS.map((g) => {
       const mine = views.filter((v) => v.def.group === g.id);
-      return { id: g.id, name: g.name, earned: mine.filter((v) => v.earned).length, total: mine.length };
+      return {
+        id: g.id,
+        name: g.name,
+        earned: mine.filter((v) => v.earned).length,
+        total: mine.length,
+      };
     }),
   ];
 }
@@ -129,6 +147,10 @@ export function achievementCounts(state: SaveState): { earned: number; total: nu
 }
 
 /** Cintilas das conquistas: já ganhas, as que ainda dá para ganhar agora e as que esperam conteúdo novo. */
-export function achievementSparkTotals(state: SaveState): { earned: number; toEarn: number; soon: number } {
+export function achievementSparkTotals(state: SaveState): {
+  earned: number;
+  toEarn: number;
+  soon: number;
+} {
   return achievementSparks(state);
 }

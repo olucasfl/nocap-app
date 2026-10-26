@@ -1,6 +1,7 @@
 import { useAuth } from '@/lib/auth';
 import type { RoomSnapshot } from '@/lib/rooms';
 import { HostLobby } from './lobby/HostLobby';
+import { BolaLobby } from './lobby/BolaLobby';
 import { MemberLobby } from './lobby/MemberLobby';
 
 /**
@@ -12,6 +13,7 @@ export function Lobby({ snapshot }: { snapshot: RoomSnapshot }) {
   const me = useAuth((s) => s.user?.id);
   const leader = snapshot.members.find((m) => m.id === snapshot.hostId);
 
+  if (snapshot.game === 'bola') return <BolaLobby snapshot={snapshot} me={me} />;
   if (snapshot.hostId === me) return <HostLobby snapshot={snapshot} me={me} />;
   return <MemberLobby snapshot={snapshot} me={me} leaderName={leader?.username ?? 'líder'} />;
 }

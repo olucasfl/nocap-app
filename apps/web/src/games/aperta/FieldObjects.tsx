@@ -1,4 +1,10 @@
-import { formatDecimal, objectPreview, pinsFirstObject, type GameObject, type SaveState } from '@nocap/games';
+import {
+  formatDecimal,
+  objectPreview,
+  pinsFirstObject,
+  type GameObject,
+  type SaveState,
+} from '@nocap/games';
 import { useRef, type CSSProperties } from 'react';
 import { SpaceObject, SPACE_OBJECT_COLOR } from './SpaceObject';
 import { objectArt, objectName, rewardText, type LaneBook, type SignalView } from './game-logic';
@@ -78,9 +84,22 @@ export function FieldObjects({ state, now, paused, lanes, onCapture }: Props) {
   const { objects, pending } = state.run;
   lanes.sync(objects.map((o) => o.id));
   return (
-    <div className="ap-objs" role="group" aria-label="Objetos no espaço" hidden={objects.length === 0 || pending !== null}>
+    <div
+      className="ap-objs"
+      role="group"
+      aria-label="Objetos no espaço"
+      hidden={objects.length === 0 || pending !== null}
+    >
       {objects.map((o) => (
-        <FieldObject key={o.id} object={o} state={state} now={now} paused={paused} lanes={lanes} onCapture={onCapture} />
+        <FieldObject
+          key={o.id}
+          object={o}
+          state={state}
+          now={now}
+          paused={paused}
+          lanes={lanes}
+          onCapture={onCapture}
+        />
       ))}
     </div>
   );
@@ -94,10 +113,19 @@ export function SignalChip({ signal, paused }: { signal: SignalView; paused: boo
   const total = useRef(Math.max(signal.remaining, 0.1));
   const mult = formatDecimal(signal.mult, 1);
   return (
-    <div className="ap-signal" role="status" aria-label={`${signal.mult >= 5 ? 'Frenesi' : 'Sinal forte'} x${mult} ativo`}>
-      <b>{signal.mult >= 5 ? 'Frenesi' : 'Sinal forte'} x{mult}</b>
+    <div
+      className="ap-signal"
+      role="status"
+      aria-label={`${signal.mult >= 5 ? 'Frenesi' : 'Sinal forte'} x${mult} ativo`}
+    >
+      <b>
+        {signal.mult >= 5 ? 'Frenesi' : 'Sinal forte'} x{mult}
+      </b>
       <span className="ap-signal-bar" aria-hidden="true">
-        <i className={paused ? 'is-paused' : undefined} style={{ '--sg-total': `${total.current}s` } as CSSProperties} />
+        <i
+          className={paused ? 'is-paused' : undefined}
+          style={{ '--sg-total': `${total.current}s` } as CSSProperties}
+        />
       </span>
     </div>
   );

@@ -1,4 +1,11 @@
-import { MAX_LIVES, PLATFORM_H, PLATFORM_W, SPAWN_GAP, TOWER_KINDS, type TowersGame } from '@nocap/games';
+import {
+  MAX_LIVES,
+  PLATFORM_H,
+  PLATFORM_W,
+  SPAWN_GAP,
+  TOWER_KINDS,
+  type TowersGame,
+} from '@nocap/games';
 import { BLOCK_HEX, INK, shade } from '../art';
 
 /**
@@ -11,7 +18,8 @@ import { BLOCK_HEX, INK, shade } from '../art';
 export type Space = 'world' | 'screen';
 export interface Particle {
   space: Space;
-  kind: 'dust' | 'spark' | 'shard' | 'leaf' | 'star' | 'ring' | 'heart' | 'halfheart' | 'x' | 'swirl';
+  kind:
+    'dust' | 'spark' | 'shard' | 'leaf' | 'star' | 'ring' | 'heart' | 'halfheart' | 'x' | 'swirl';
   x: number;
   y: number;
   vx: number;
@@ -126,7 +134,9 @@ const DUSK = ['#ff9a6b', '#ff7f7f', '#ec6a9c', '#c25db0', '#8456b8', '#5f4cab', 
 const NIGHT = ['#1b1740', '#241a58', '#2f2174', '#3d2a8a', '#4f379f', '#6446b3', '#7a58c4'];
 
 function skyColors(p: number): string[] {
-  return DAY.map((_, i) => (p < 0.5 ? mix(DAY[i]!, DUSK[i]!, p * 2) : mix(DUSK[i]!, NIGHT[i]!, (p - 0.5) * 2)));
+  return DAY.map((_, i) =>
+    p < 0.5 ? mix(DAY[i]!, DUSK[i]!, p * 2) : mix(DUSK[i]!, NIGHT[i]!, (p - 0.5) * 2),
+  );
 }
 
 // --- Cenário --------------------------------------------------------------------------------
@@ -173,7 +183,11 @@ function drawSky(ctx: CanvasRenderingContext2D, W: number, H: number, p: number,
     const sx = W * 0.7;
     const sy = H * 0.2 + p * H * 0.28;
     ctx.globalAlpha = sunA;
-    for (const [k, al] of [[2.1, 0.12], [1.6, 0.2], [1.25, 0.3]] as const) {
+    for (const [k, al] of [
+      [2.1, 0.12],
+      [1.6, 0.2],
+      [1.25, 0.3],
+    ] as const) {
       ctx.fillStyle = `rgba(255,244,190,${al})`;
       ctx.beginPath();
       ctx.arc(sx, sy, R * k, 0, Math.PI * 2);
@@ -209,7 +223,11 @@ function drawSky(ctx: CanvasRenderingContext2D, W: number, H: number, p: number,
     ctx.fill();
     ctx.stroke();
     ctx.fillStyle = 'rgba(180,160,120,.45)';
-    for (const [dx, dy, r] of [[-0.3, -0.2, 0.18], [0.25, 0.1, 0.24], [-0.1, 0.35, 0.12]] as const) {
+    for (const [dx, dy, r] of [
+      [-0.3, -0.2, 0.18],
+      [0.25, 0.1, 0.24],
+      [-0.1, 0.35, 0.12],
+    ] as const) {
       ctx.beginPath();
       ctx.arc(mx + dx * R, my + dy * R, r * R, 0, Math.PI * 2);
       ctx.fill();
@@ -237,7 +255,15 @@ function cloud(ctx: CanvasRenderingContext2D, x: number, y: number, s: number, f
   ctx.stroke();
 }
 
-function drawBackdrop(ctx: CanvasRenderingContext2D, W: number, H: number, p: number, camY: number, ppu: number, fx: Fx) {
+function drawBackdrop(
+  ctx: CanvasRenderingContext2D,
+  W: number,
+  H: number,
+  p: number,
+  camY: number,
+  ppu: number,
+  fx: Fx,
+) {
   const cols = skyColors(p);
   const horizon = H * 0.68;
   const cloudFill = mix('#fff4e0', '#8a78cf', p);
@@ -248,8 +274,14 @@ function drawBackdrop(ctx: CanvasRenderingContext2D, W: number, H: number, p: nu
   // rochas flutuantes ao longe
   for (let i = 0; i < 6; i++) {
     const par = 0.18 + hash(i + 5) * 0.12;
-    const x = ((hash(i) * 1.4 - 0.2) * W + Math.sin(fx.time * 0.3 + i) * 6 + W * 2) % (W * 1.3) - W * 0.15;
-    const y = horizon - (1.5 + hash(i + 40) * 9) * ppu - camY * ppu * par + Math.sin(fx.time * 0.6 + i * 2) * 4;
+    const x =
+      (((hash(i) * 1.4 - 0.2) * W + Math.sin(fx.time * 0.3 + i) * 6 + W * 2) % (W * 1.3)) -
+      W * 0.15;
+    const y =
+      horizon -
+      (1.5 + hash(i + 40) * 9) * ppu -
+      camY * ppu * par +
+      Math.sin(fx.time * 0.6 + i * 2) * 4;
     const s = (0.8 + hash(i + 12) * 1.3) * ppu * 0.7;
     ctx.fillStyle = rockFill;
     ctx.strokeStyle = INK;
@@ -307,7 +339,13 @@ function drawBackdrop(ctx: CanvasRenderingContext2D, W: number, H: number, p: nu
 }
 
 // --- Ilha da plataforma ---------------------------------------------------------------------
-function drawIsland(ctx: CanvasRenderingContext2D, X: (x: number) => number, Y: (y: number) => number, ppu: number, p: number) {
+function drawIsland(
+  ctx: CanvasRenderingContext2D,
+  X: (x: number) => number,
+  Y: (y: number) => number,
+  ppu: number,
+  p: number,
+) {
   const left = X(-PLATFORM_W / 2);
   const right = X(PLATFORM_W / 2);
   const top = Y(0);
@@ -499,7 +537,13 @@ function drawBodies(
     const ice = b.friction < 0.1;
     const stone = b.isStatic;
     const isActive = game.active?.body === b;
-    const glow = isActive ? (game.active!.ivy ? '#33c27f' : game.active!.stone ? '#d0d0dc' : null) : null;
+    const glow = isActive
+      ? game.active!.ivy
+        ? '#33c27f'
+        : game.active!.stone
+          ? '#d0d0dc'
+          : null
+      : null;
     // A peça que a pessoa segura anda de casa em casa na hora; aqui ela só desliza até lá no desenho.
     const off = isActive ? slide : 0;
     for (const box of b.boxes) {
@@ -511,7 +555,12 @@ function drawBodies(
       ctx.save();
       ctx.translate(X(wx), Y(wy));
       ctx.rotate(Math.atan2(rs, rc));
-      drawBlock(ctx, box.hw * 2 * ppu, box.hh * 2 * ppu, BLOCK_HEX[kind.color], { ice, stone, glow, time });
+      drawBlock(ctx, box.hw * 2 * ppu, box.hh * 2 * ppu, BLOCK_HEX[kind.color], {
+        ice,
+        stone,
+        glow,
+        time,
+      });
       ctx.restore();
     }
     if (b.data.ivy) {
@@ -595,7 +644,14 @@ function heartPath(ctx: CanvasRenderingContext2D, x: number, y: number, s: numbe
   ctx.closePath();
 }
 
-export function drawHeart(ctx: CanvasRenderingContext2D, x: number, y: number, s: number, full: boolean, alpha = 1) {
+export function drawHeart(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  s: number,
+  full: boolean,
+  alpha = 1,
+) {
   ctx.globalAlpha = alpha;
   heartPath(ctx, x, y, s);
   ctx.fillStyle = full ? '#e5303a' : 'rgba(17,17,17,.18)';
@@ -613,7 +669,14 @@ export function drawHeart(ctx: CanvasRenderingContext2D, x: number, y: number, s
   ctx.globalAlpha = 1;
 }
 
-function drawWizard(ctx: CanvasRenderingContext2D, x: number, y: number, u: number, fx: Fx, lives: number) {
+function drawWizard(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  u: number,
+  fx: Fx,
+  lives: number,
+) {
   const t = fx.time;
   const mood = fx.mood;
   const fainted = mood === 'faint';
@@ -849,7 +912,13 @@ export function burst(
   }
 }
 
-function drawParticles(ctx: CanvasRenderingContext2D, fx: Fx, X: (x: number) => number, Y: (y: number) => number, ppu: number) {
+function drawParticles(
+  ctx: CanvasRenderingContext2D,
+  fx: Fx,
+  X: (x: number) => number,
+  Y: (y: number) => number,
+  ppu: number,
+) {
   for (const p of fx.particles) {
     const a = clamp01(p.life / (p.max > 1 ? p.max : 0.5));
     const px = p.space === 'world' ? X(p.x) : p.x;
@@ -965,7 +1034,8 @@ function drawFog(ctx: CanvasRenderingContext2D, W: number, H: number, fx: Fx, am
   ctx.save();
   ctx.globalAlpha = 0.9 * amount;
   for (let i = 0; i < 9; i++) {
-    const x = (hash(i + 200) * W * 1.3 + Math.sin(fx.time * 0.4 + i) * 26 + W) % (W * 1.3) - W * 0.15;
+    const x =
+      ((hash(i + 200) * W * 1.3 + Math.sin(fx.time * 0.4 + i) * 26 + W) % (W * 1.3)) - W * 0.15;
     const y = H * (0.04 + hash(i + 220) * 0.46);
     cloud(ctx, x, y, Math.min(W, H) * (0.15 + hash(i + 240) * 0.1), '#e8e8f0');
   }
@@ -1018,7 +1088,14 @@ export function startFinale(fx: Fx) {
 }
 
 /** Desenha um quadro inteiro. `dt` anima a câmera. */
-export function drawFrame(ctx: CanvasRenderingContext2D, W: number, H: number, game: TowersGame, fx: Fx, dt: number): View {
+export function drawFrame(
+  ctx: CanvasRenderingContext2D,
+  W: number,
+  H: number,
+  game: TowersGame,
+  fx: Fx,
+  dt: number,
+): View {
   const normal = layout(W, H);
   let { baseY, ppu } = normal;
   let camY: number;
@@ -1045,7 +1122,8 @@ export function drawFrame(ctx: CanvasRenderingContext2D, W: number, H: number, g
   const p = clamp01(-camY / 48);
 
   ctx.save();
-  if (fx.shake > 0) ctx.translate((Math.random() - 0.5) * fx.shake * 2, (Math.random() - 0.5) * fx.shake * 2);
+  if (fx.shake > 0)
+    ctx.translate((Math.random() - 0.5) * fx.shake * 2, (Math.random() - 0.5) * fx.shake * 2);
   drawSky(ctx, W, H, p, fx);
   drawBackdrop(ctx, W, H, p, camY, ppu, fx);
   drawIsland(ctx, X, Y, ppu, p);
@@ -1097,4 +1175,3 @@ export function drawFrame(ctx: CanvasRenderingContext2D, W: number, H: number, g
   }
   return { ppu, X, Y, wizard: wiz, bottomY: camY + (H - baseY) / ppu };
 }
-

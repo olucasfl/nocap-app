@@ -38,7 +38,11 @@ function Details({ data: raw }: { data: FriendProfileData }) {
     lastPlayed: raw.lastPlayed ?? null,
   };
   const { total, favorite } = playSummary(data.stats);
-  const words = useQuery({ queryKey: ['friend-words', data.username], queryFn: () => fetchFriendWords(data.username), retry: false });
+  const words = useQuery({
+    queryKey: ['friend-words', data.username],
+    queryFn: () => fetchFriendWords(data.username),
+    retry: false,
+  });
   return (
     <>
       <section className={`pfx-hero${data.online ? ' on' : ''}`}>
@@ -48,7 +52,9 @@ function Details({ data: raw }: { data: FriendProfileData }) {
         </div>
         <div className="pfx-id">
           <h1 className="pfx-name">@{data.username}</h1>
-          <span className={`pfx-pill mono${data.online ? ' on' : ''}`}>{presenceText(data).toUpperCase()}</span>
+          <span className={`pfx-pill mono${data.online ? ' on' : ''}`}>
+            {presenceText(data).toUpperCase()}
+          </span>
         </div>
         <Link to="/ranking" search={{ quem: 'friends' }} className="pfx-rank" data-sfx="select">
           Ver ranking entre amigos

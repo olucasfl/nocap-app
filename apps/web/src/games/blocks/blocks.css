@@ -339,7 +339,9 @@
 .bk-ghost {
   transform-box: fill-box;
   transform-origin: center;
-  animation: bk-ghostin 0.14s ease-out both, bk-breathe 0.9s ease-in-out 0.14s infinite alternate;
+  animation:
+    bk-ghostin 0.14s ease-out both,
+    bk-breathe 0.9s ease-in-out 0.14s infinite alternate;
 }
 @keyframes bk-ghostin {
   from {
@@ -582,7 +584,8 @@
     opacity: 1;
   }
   100% {
-    transform: translate(calc(var(--a) * var(--x)), calc(var(--b) * var(--y))) rotate(var(--r)) scale(0.2);
+    transform: translate(calc(var(--a) * var(--x)), calc(var(--b) * var(--y))) rotate(var(--r))
+      scale(0.2);
     opacity: 0;
   }
 }

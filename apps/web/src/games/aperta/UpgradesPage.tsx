@@ -40,7 +40,10 @@ function Effect({ line, big = false }: { line: EffectLine | null; big?: boolean 
     );
   }
   return (
-    <p className={`ap-eff${big ? ' is-big' : ''}`} aria-label={`${line.label}: de ${line.before} para ${line.after}`}>
+    <p
+      className={`ap-eff${big ? ' is-big' : ''}`}
+      aria-label={`${line.label}: de ${line.before} para ${line.after}`}
+    >
       <small>{line.label}</small>
       <span className="ap-eff-nums">
         <b>{line.before}</b>
@@ -96,14 +99,25 @@ function NextItem({ row, onBuy }: { row: ItemRow; onBuy: Props['onBuy'] }) {
         </div>
       </div>
       <Effect line={row.line} big />
-      <div className="ap-next-bar" role="progressbar" aria-label="Poeira para este item" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.floor(row.fill * 100)}>
+      <div
+        className="ap-next-bar"
+        role="progressbar"
+        aria-label="Poeira para este item"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.floor(row.fill * 100)}
+      >
         <i style={{ transform: `scaleX(${row.fill})` }} />
       </div>
       <button
         type="button"
         className="ap-up-buy ap-next-buy"
         data-tut="buy-first"
-        aria-label={row.affordable ? `Comprar ${row.name} por ${formatNumber(row.cost)} de poeira` : `${row.name}: falta ${formatNumber(row.missing)} de poeira`}
+        aria-label={
+          row.affordable
+            ? `Comprar ${row.name} por ${formatNumber(row.cost)} de poeira`
+            : `${row.name}: falta ${formatNumber(row.missing)} de poeira`
+        }
         aria-disabled={!row.affordable}
         onClick={() => {
           if (row.affordable) buyFeedback(onBuy(row.index));
@@ -129,7 +143,11 @@ function UpcomingItem({ row }: { row: ItemRow }) {
       </span>
       <div className="ap-soon-body">
         <h4>{row.name}</h4>
-        <p>{row.line && !row.line.idle ? `${row.line.label}: ${row.line.before} → ${row.line.after}` : row.text}</p>
+        <p>
+          {row.line && !row.line.idle
+            ? `${row.line.label}: ${row.line.before} → ${row.line.after}`
+            : row.text}
+        </p>
       </div>
       <span className="ap-soon-price" aria-label={`Preço ${formatNumber(row.cost)}`}>
         {formatNumber(row.cost)}
@@ -163,7 +181,9 @@ function ItemsPanel({ state, onBuy }: { state: SaveState; onBuy: Props['onBuy'] 
             {view.bought}/{view.total}
           </small>
         </h3>
-        <p className="ap-up-intro">Itens são compras únicas: pague uma vez e o ganho vale até o próximo colapso.</p>
+        <p className="ap-up-intro">
+          Itens são compras únicas: pague uma vez e o ganho vale até o próximo colapso.
+        </p>
         {view.next ? (
           <NextItem row={view.next} onBuy={onBuy} />
         ) : (
@@ -222,7 +242,17 @@ function Pips({ level, max }: { level: number; max: number }) {
   );
 }
 
-function GeneratorCard({ row, onBuy, onBuyBatch, dust }: { row: GeneratorRow; onBuy: Props['onBuy']; onBuyBatch?: Props['onBuyBatch']; dust: number }) {
+function GeneratorCard({
+  row,
+  onBuy,
+  onBuyBatch,
+  dust,
+}: {
+  row: GeneratorRow;
+  onBuy: Props['onBuy'];
+  onBuyBatch?: Props['onBuyBatch'];
+  dust: number;
+}) {
   const canBuy = row.status === 'affordable';
   const label = canBuy
     ? `Melhorar ${row.name} por ${formatNumber(row.cost ?? 0)} de poeira`
@@ -260,7 +290,11 @@ function GeneratorCard({ row, onBuy, onBuyBatch, dust }: { row: GeneratorRow; on
       >
         {row.status === 'affordable' && <small className="ap-up-verb">Melhorar</small>}
         <b>{buyLabel(row)}</b>
-        {(row.status === 'affordable' || row.status === 'short') && <small>{row.status === 'short' ? `Preço ${formatNumber(row.cost ?? 0)}` : 'poeira'}</small>}
+        {(row.status === 'affordable' || row.status === 'short') && (
+          <small>
+            {row.status === 'short' ? `Preço ${formatNumber(row.cost ?? 0)}` : 'poeira'}
+          </small>
+        )}
       </button>
       {row.bulkCost !== null && onBuyBatch && (
         <button
@@ -300,7 +334,15 @@ function OwnedGenerator({ row }: { row: GeneratorRow }) {
   );
 }
 
-function GeneratorsPanel({ state, onBuy, onBuyBatch }: { state: SaveState; onBuy: Props['onBuy']; onBuyBatch?: Props['onBuyBatch'] }) {
+function GeneratorsPanel({
+  state,
+  onBuy,
+  onBuyBatch,
+}: {
+  state: SaveState;
+  onBuy: Props['onBuy'];
+  onBuyBatch?: Props['onBuyBatch'];
+}) {
   const rows = generatorRows(state);
   const buy = rows.filter((r) => r.status !== 'maxed');
   const owned = rows.filter((r) => r.level > 0);
@@ -310,13 +352,22 @@ function GeneratorsPanel({ state, onBuy, onBuyBatch }: { state: SaveState; onBuy
     <div className="ap-cols" id="ap-uppanel" role="tabpanel" aria-labelledby="ap-uptab-generators">
       <section className="ap-col" aria-label="Para comprar">
         <h3 className="ap-colhead">Para comprar</h3>
-        <p className="ap-up-intro">Geradores trabalham sozinhos, até quando você não toca. Cada nível rende por segundo, e os itens multiplicam isso.</p>
+        <p className="ap-up-intro">
+          Geradores trabalham sozinhos, até quando você não toca. Cada nível rende por segundo, e os
+          itens multiplicam isso.
+        </p>
         {buyDust.length > 0 && (
           <>
             <h4 className="ap-sub">De poeira</h4>
             <ul className="ap-uplist" aria-label="Geradores de poeira">
               {buyDust.map((r) => (
-                <GeneratorCard key={r.id} row={r} onBuy={onBuy} onBuyBatch={onBuyBatch} dust={state.run.dust} />
+                <GeneratorCard
+                  key={r.id}
+                  row={r}
+                  onBuy={onBuy}
+                  onBuyBatch={onBuyBatch}
+                  dust={state.run.dust}
+                />
               ))}
             </ul>
           </>
@@ -326,12 +377,20 @@ function GeneratorsPanel({ state, onBuy, onBuyBatch }: { state: SaveState; onBuy
             <h4 className="ap-sub">De energia (enchem a barra de grimórios)</h4>
             <ul className="ap-uplist" aria-label="Geradores de energia">
               {buyEnergy.map((r) => (
-                <GeneratorCard key={r.id} row={r} onBuy={onBuy} onBuyBatch={onBuyBatch} dust={state.run.dust} />
+                <GeneratorCard
+                  key={r.id}
+                  row={r}
+                  onBuy={onBuy}
+                  onBuyBatch={onBuyBatch}
+                  dust={state.run.dust}
+                />
               ))}
             </ul>
           </>
         )}
-        {buy.length === 0 && <p className="ap-up-empty">Todos os geradores disponíveis estão no máximo.</p>}
+        {buy.length === 0 && (
+          <p className="ap-up-empty">Todos os geradores disponíveis estão no máximo.</p>
+        )}
       </section>
       <section className="ap-col" aria-label="Comprados">
         <h3 className="ap-colhead">
@@ -339,7 +398,9 @@ function GeneratorsPanel({ state, onBuy, onBuyBatch }: { state: SaveState; onBuy
           <small>{owned.length}</small>
         </h3>
         {owned.length === 0 ? (
-          <p className="ap-up-empty">Os geradores que você comprar aparecem aqui, com o quanto rendem.</p>
+          <p className="ap-up-empty">
+            Os geradores que você comprar aparecem aqui, com o quanto rendem.
+          </p>
         ) : (
           <ul className="ap-boughtlist" aria-label="Geradores comprados">
             {owned.map((r) => (
@@ -392,7 +453,11 @@ export function UpgradesPage({ state, onBuy, onBuyBatch, seen, onSeen }: Props) 
           })}
         </div>
       </div>
-      {tab === 'items' ? <ItemsPanel state={state} onBuy={onBuy} /> : <GeneratorsPanel state={state} onBuy={onBuy} onBuyBatch={onBuyBatch} />}
+      {tab === 'items' ? (
+        <ItemsPanel state={state} onBuy={onBuy} />
+      ) : (
+        <GeneratorsPanel state={state} onBuy={onBuy} onBuyBatch={onBuyBatch} />
+      )}
     </div>
   );
 }

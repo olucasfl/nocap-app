@@ -6,7 +6,15 @@ import bee from './bee-levels.json';
 import connect from './connect-levels.json';
 import classicLevels from './classic-levels.json';
 import classicAccepted from './classic-accepted.json';
-import { tierOf, tierRanges, toBeePuzzle, toConnectPuzzle, type BeeLevel, type ClassicLevel, type ConnectLevel } from './levels';
+import {
+  tierOf,
+  tierRanges,
+  toBeePuzzle,
+  toConnectPuzzle,
+  type BeeLevel,
+  type ClassicLevel,
+  type ConnectLevel,
+} from './levels';
 
 const BEE = bee as BeeLevel[];
 const CONNECT = connect as ConnectLevel[];
@@ -80,7 +88,11 @@ describe('fases do Connect', () => {
 });
 
 describe('fases do Classic', () => {
-  const classic = classicLevels as unknown as { c: ClassicLevel[]; d: ClassicLevel[]; q: ClassicLevel[] };
+  const classic = classicLevels as unknown as {
+    c: ClassicLevel[];
+    d: ClassicLevel[];
+    q: ClassicLevel[];
+  };
   const daily = new Set(
     readFileSync(join(__dirname, '../../../../../api/data/words/ordem5.txt'), 'utf8')
       .split(/\r?\n/)
@@ -116,6 +128,7 @@ describe('fases do Classic', () => {
 
   it('o dicionário aceita todas as respostas das fases', () => {
     const accepted = new Set((classicAccepted as string[]).map(wordKey));
-    for (const w of [...classic.c, ...classic.d, ...classic.q].flatMap((l) => l.w)) expect(accepted.has(wordKey(w))).toBe(true);
+    for (const w of [...classic.c, ...classic.d, ...classic.q].flatMap((l) => l.w))
+      expect(accepted.has(wordKey(w))).toBe(true);
   });
 });

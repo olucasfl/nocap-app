@@ -1,7 +1,15 @@
 import { apertaSfx } from '@/lib/aperta-audio';
 import { useState } from 'react';
 import { StoryArt } from './StoryArt';
-import { STORY, STORY_KICKER, STORY_SUB, storyButton, storyNext, storySkip, storyStart } from './story';
+import {
+  STORY,
+  STORY_KICKER,
+  STORY_SUB,
+  storyButton,
+  storyNext,
+  storySkip,
+  storyStart,
+} from './story';
 
 /** A abertura de 4 cenas, só no primeiro jogo de cada save (spec 038, 3.3; cenas novas na spec 042, adendo). */
 export function StoryScreen({ onDone }: { onDone: () => void }) {
@@ -40,7 +48,12 @@ export function StoryScreen({ onDone }: { onDone: () => void }) {
             ))}
           </ol>
           <div className="st-actions">
-            <button type="button" className="ap-btn" autoFocus onClick={() => apply(storyNext(state))}>
+            <button
+              type="button"
+              className="ap-btn"
+              autoFocus
+              onClick={() => apply(storyNext(state))}
+            >
               {storyButton(state)}
             </button>
             <button type="button" className="ap-link" onClick={() => apply(storySkip(state))}>

@@ -147,7 +147,8 @@
   font: 900 18px var(--font-display);
   overflow-wrap: anywhere;
 }
-.pf-fact-label, .pf-fact small {
+.pf-fact-label,
+.pf-fact small {
   font-size: 10px;
   font-weight: 700;
   color: var(--muted);
@@ -169,7 +170,8 @@
   border: var(--border);
   border-radius: var(--radius-sm);
 }
-.pf-recent-main, .pf-recent-side {
+.pf-recent-main,
+.pf-recent-side {
   display: flex;
   flex-direction: column;
   gap: 2px;

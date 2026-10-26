@@ -53,7 +53,8 @@ export function ApertaPage() {
     if (allowed === false) void navigate({ to: '/', replace: true });
   }, [allowed, navigate]);
   const frame = useApertaFrame();
-  if (allowed !== true) return <main className="ap space-theme" aria-busy={allowed === null} {...frame} />;
+  if (allowed !== true)
+    return <main className="ap space-theme" aria-busy={allowed === null} {...frame} />;
   return <ApertaGame />;
 }
 
@@ -143,7 +144,9 @@ function GameLoader({
   const [epoch, setEpoch] = useState(0);
   return (
     <>
-      {playing && <GamePlay key={epoch} store={store} save={save} userId={userId} onExit={onExit} />}
+      {playing && (
+        <GamePlay key={epoch} store={store} save={save} userId={userId} onExit={onExit} />
+      )}
       <SyncNotice
         saves={saves}
         slot={save.slot}
@@ -172,7 +175,10 @@ function GamePlay({
   const load = useApertaGame({ store, slot: save.slot, seed, name: save.name });
   if (load.status === 'ready') return <GameScreen controller={load.controller} onExit={onExit} />;
   return (
-    <section className="ap-wip" aria-label={load.status === 'error' ? 'Erro ao carregar' : 'Carregando'}>
+    <section
+      className="ap-wip"
+      aria-label={load.status === 'error' ? 'Erro ao carregar' : 'Carregando'}
+    >
       <h1>{load.status === 'error' ? 'Não carregou' : 'Carregando'}</h1>
       {load.status === 'error' && (
         <>

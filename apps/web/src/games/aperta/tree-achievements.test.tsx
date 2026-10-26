@@ -4,13 +4,24 @@ import { describe, expect, it } from 'vitest';
 import { AchievementsPage } from './AchievementsPage';
 import { SpaceArtSprite } from './SpaceArtSprite';
 import { TreePage } from './TreePage';
-import { NO_FILTER, achievementChips, achievementCounts, achievementGroups, achievementSparkTotals, fold } from './achievements-logic';
+import {
+  NO_FILTER,
+  achievementChips,
+  achievementCounts,
+  achievementGroups,
+  achievementSparkTotals,
+  fold,
+} from './achievements-logic';
 import { createGameController, type GameEvent } from './game-controller';
 import { createMemoryGameStore } from './game-store';
 import { treeView } from './tree-logic';
 
 const noop = () => {};
-const base = (over: Partial<SaveState> = {}): SaveState => ({ ...newSave('arv', 0), tutorial: 'done', ...over });
+const base = (over: Partial<SaveState> = {}): SaveState => ({
+  ...newSave('arv', 0),
+  tutorial: 'done',
+  ...over,
+});
 const withFragments = (n: number, over: Partial<SaveState> = {}): SaveState =>
   base({ collapses: 1, sparks: { legacy: n, spent: 0 }, ...over });
 
@@ -44,7 +55,10 @@ describe('visão da árvore', () => {
   });
 
   it('refazer devolve 100% do que foi gasto, sem taxa, e só com a vida zerada', () => {
-    const s = withFragments(20, { tree: { 'co-02': 1, 'co-05': 1 }, sparks: { legacy: 20, spent: 3 } });
+    const s = withFragments(20, {
+      tree: { 'co-02': 1, 'co-05': 1 },
+      sparks: { legacy: 20, spent: 3 },
+    });
     const v = treeView(s);
     expect(v.respec).toEqual({ can: true, refund: 3, spent: 3 });
     expect(v.earned).toBe(20);
@@ -89,7 +103,9 @@ describe('avisos de conquista', () => {
     const got = t.events.filter((e) => e.type === 'achievement');
     expect(got).toEqual([{ type: 'achievement', id: 'tap-1', name: 'Primeiro toque' }]);
     // E a Cintila da conquista também é avisada, com o saldo.
-    expect(t.events.filter((e) => e.type === 'sparks')).toEqual([{ type: 'sparks', amount: 1, available: 1 }]);
+    expect(t.events.filter((e) => e.type === 'sparks')).toEqual([
+      { type: 'sparks', amount: 1, available: 1 },
+    ]);
   });
 
   it('durante o tutorial a conquista é guardada, mas o aviso espera', () => {
@@ -111,7 +127,9 @@ describe('páginas', () => {
     );
 
   it('árvore: grafo com 116 nós, raiz, ligações, filtros por ramo e refazer desligado sem gasto', () => {
-    const out = html(<TreePage state={withFragments(1)} onBuy={noop} onRespec={noop} onClose={noop} />);
+    const out = html(
+      <TreePage state={withFragments(1)} onBuy={noop} onRespec={noop} onClose={noop} />,
+    );
     expect(out.match(/class="ap-tg-node /g)).toHaveLength(116);
     expect(out).toContain('ap-tg-root');
     expect(out.match(/class="ap-tg-edge/g)!.length).toBeGreaterThanOrEqual(116);
@@ -125,9 +143,13 @@ describe('páginas', () => {
   });
 
   it('cada nó é um botão com nome e estado; o selecionado mostra o nome', () => {
-    const out = html(<TreePage state={withFragments(1)} onBuy={noop} onRespec={noop} onClose={noop} />);
+    const out = html(
+      <TreePage state={withFragments(1)} onBuy={noop} onRespec={noop} onClose={noop} />,
+    );
     expect(out.match(/role="button"/g)!.length).toBeGreaterThanOrEqual(116);
-    expect(out).toMatch(/aria-label="Cartas de capa, Cosmos, tier 1, nível 0 de 2, dá para comprar. Custa 1 Cintila"/);
+    expect(out).toMatch(
+      /aria-label="Cartas de capa, Cosmos, tier 1, nível 0 de 2, dá para comprar. Custa 1 Cintila"/,
+    );
   });
 
   it('conquistas: grupos, barra, N/M e a escondida como ???', () => {
@@ -155,25 +177,40 @@ describe('páginas', () => {
 });
 
 describe('página de Conquistas ampliada', () => {
-  const s = base({ stats: { ...newSave('x').stats, clicks: 40, dustTotal: 5e6 }, achievements: ['tap-1', 'dust-1k'] });
+  const s = base({
+    stats: { ...newSave('x').stats, clicks: 40, dustTotal: 5e6 },
+    achievements: ['tap-1', 'dust-1k'],
+  });
 
   it('filtra por família, por busca (sem acento) e por estado', () => {
-    expect(achievementGroups(s, { ...NO_FILTER, group: 'taps' }).map((g) => g.id)).toEqual(['taps']);
-    const found = achievementGroups(s, { ...NO_FILTER, query: 'POEIRA' }).flatMap((g) => g.rows.map((r) => r.id));
+    expect(achievementGroups(s, { ...NO_FILTER, group: 'taps' }).map((g) => g.id)).toEqual([
+      'taps',
+    ]);
+    const found = achievementGroups(s, { ...NO_FILTER, query: 'POEIRA' }).flatMap((g) =>
+      g.rows.map((r) => r.id),
+    );
     expect(found).toContain('dust-1m');
     expect(found).not.toContain('tap-100');
     expect(fold('Poeíra Cósmica')).toBe('poeira cosmica');
     const todo = achievementGroups(s, { ...NO_FILTER, status: 'todo' }).flatMap((g) => g.rows);
     expect(todo.some((r) => r.earned)).toBe(false);
-    const done = achievementGroups(s, { ...NO_FILTER, status: 'earned' }).flatMap((g) => g.rows.map((r) => r.id));
+    const done = achievementGroups(s, { ...NO_FILTER, status: 'earned' }).flatMap((g) =>
+      g.rows.map((r) => r.id),
+    );
     expect(done.sort()).toEqual(['dust-1k', 'tap-1']);
     expect(achievementGroups(s, { ...NO_FILTER, query: 'zzzz' })).toEqual([]);
   });
 
   it('a escondida não vaza pela busca enquanto não for ganha', () => {
-    const q = achievementGroups(s, { ...NO_FILTER, query: 'refaca a arvore' }).flatMap((g) => g.rows);
+    const q = achievementGroups(s, { ...NO_FILTER, query: 'refaca a arvore' }).flatMap(
+      (g) => g.rows,
+    );
     expect(q).toEqual([]);
-    expect(achievementGroups(s, { ...NO_FILTER, query: 'escondida' }).flatMap((g) => g.rows).every((r) => r.secret)).toBe(true);
+    expect(
+      achievementGroups(s, { ...NO_FILTER, query: 'escondida' })
+        .flatMap((g) => g.rows)
+        .every((r) => r.secret),
+    ).toBe(true);
   });
 
   it('os botões de família trazem N/M e somam o total', () => {

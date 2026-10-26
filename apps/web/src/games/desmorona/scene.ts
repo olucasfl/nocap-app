@@ -109,7 +109,12 @@ export class DsmScene {
     private reduced = false,
   ) {
     const touch = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: !touch, alpha: false, powerPreference: 'high-performance' });
+    this.renderer = new THREE.WebGLRenderer({
+      canvas,
+      antialias: !touch,
+      alpha: false,
+      powerPreference: 'high-performance',
+    });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, touch ? 1.6 : 2));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.scene.background = new THREE.Color(0x7fd3ff);
@@ -126,7 +131,13 @@ export class DsmScene {
   }
 
   private buildLayers() {
-    const geo = new THREE.CylinderGeometry(DSM_HEX_SIZE * 0.97, DSM_HEX_SIZE * 0.97, DSM_TILE_THICK, 6, 1);
+    const geo = new THREE.CylinderGeometry(
+      DSM_HEX_SIZE * 0.97,
+      DSM_HEX_SIZE * 0.97,
+      DSM_TILE_THICK,
+      6,
+      1,
+    );
     for (let l = 0; l < DSM_LAYERS; l++) {
       const tiles = [...this.world.tiles.values()].filter((t) => t.layer === l);
       const mat = new THREE.MeshLambertMaterial({ color: 0xffffff });
@@ -149,7 +160,16 @@ export class DsmScene {
     }
   }
 
-  private setTileMatrix(mesh: THREE.InstancedMesh, i: number, t: DsmTile, dy: number, scale: number, rot = 0, rx = 0, rz = 0) {
+  private setTileMatrix(
+    mesh: THREE.InstancedMesh,
+    i: number,
+    t: DsmTile,
+    dy: number,
+    scale: number,
+    rot = 0,
+    rx = 0,
+    rz = 0,
+  ) {
     tmpP.set(t.x, layerY(t.layer) - DSM_TILE_THICK / 2 + dy, t.z);
     if (rx === 0 && rz === 0) tmpQ.setFromAxisAngle(UP, rot);
     else tmpQ.setFromEuler(tmpE.set(rx, rot, rz));
@@ -165,7 +185,10 @@ export class DsmScene {
     for (let i = 0; i < 12; i++) {
       const a = (i / 12) * Math.PI * 2;
       const r = 78 + (i % 3) * 8;
-      const m = new THREE.Mesh(hill, new THREE.MeshLambertMaterial({ color: colors[i % colors.length] }));
+      const m = new THREE.Mesh(
+        hill,
+        new THREE.MeshLambertMaterial({ color: colors[i % colors.length] }),
+      );
       m.position.set(Math.cos(a) * r, layerY(DSM_LAYERS - 1) - 8 + (i % 2) * 3, Math.sin(a) * r);
       m.scale.set(1 + (i % 4) * 0.25, 1 + (i % 3) * 0.3, 1);
       this.scene.add(m);
@@ -209,7 +232,14 @@ export class DsmScene {
   private spawnRing(x: number, y: number, z: number) {
     let ring = this.rings.find((r) => r.age >= 0.45);
     if (!ring) {
-      const mat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide, fog: false });
+      const mat = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+        fog: false,
+      });
       const mesh = new THREE.Mesh(new THREE.RingGeometry(0.62, 0.8, 40), mat);
       mesh.rotation.x = -Math.PI / 2;
       mesh.renderOrder = 9;
@@ -243,7 +273,12 @@ export class DsmScene {
     }
     const tex = new THREE.CanvasTexture(cv);
     tex.colorSpace = THREE.SRGBColorSpace;
-    const mat = new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true, fog: false });
+    const mat = new THREE.SpriteMaterial({
+      map: tex,
+      depthTest: false,
+      transparent: true,
+      fog: false,
+    });
     const sprite = new THREE.Sprite(mat);
     sprite.scale.set(2.8, 0.7, 1);
     sprite.position.y = 2.05;
@@ -295,7 +330,7 @@ export class DsmScene {
             x: t.x,
             y: 0,
             z: t.z,
-            spin: (((h % 7) - 3) * 0.12) || 0.2,
+            spin: ((h % 7) - 3) * 0.12 || 0.2,
             tx: ((h >>> 3) % 9) / 8 - 0.5,
             tz: ((h >>> 7) % 9) / 8 - 0.5,
           });
@@ -380,7 +415,13 @@ export class DsmScene {
       let puff = this.puffs.find((q) => q.age >= q.life);
       if (!puff) {
         if (this.puffs.length >= 40) return;
-        const mat = new THREE.SpriteMaterial({ map: this.puffTex, transparent: true, depthWrite: false, opacity: 0, fog: false });
+        const mat = new THREE.SpriteMaterial({
+          map: this.puffTex,
+          transparent: true,
+          depthWrite: false,
+          opacity: 0,
+          fog: false,
+        });
         const sprite = new THREE.Sprite(mat);
         sprite.renderOrder = 8;
         this.scene.add(sprite);
@@ -394,9 +435,15 @@ export class DsmScene {
       puff.vx = Math.cos(ang) * 0.9;
       puff.vz = Math.sin(ang) * 0.9;
       puff.vy = 0.9 + Math.random() * 0.5;
-      puff.sprite.position.set(t.x + Math.cos(ang) * r, layerY(t.layer) + 0.15, t.z + Math.sin(ang) * r);
+      puff.sprite.position.set(
+        t.x + Math.cos(ang) * r,
+        layerY(t.layer) + 0.15,
+        t.z + Math.sin(ang) * r,
+      );
       puff.sprite.visible = true;
-      (puff.sprite.material as THREE.SpriteMaterial).color.set(LAYER_COLORS[t.layer] as number).lerp(tmpC2.set(0xffffff), 0.55);
+      (puff.sprite.material as THREE.SpriteMaterial).color
+        .set(LAYER_COLORS[t.layer] as number)
+        .lerp(tmpC2.set(0xffffff), 0.55);
     }
   }
 
@@ -442,7 +489,9 @@ export class DsmScene {
       fox.group.position.set(p.x, p.y, p.z);
       fox.group.rotation.y = p.heading + Math.PI;
       const speed = Math.hypot(p.vx, p.vz);
-      const squash = p.grounded ? 1 + Math.sin(this.world.t * 18) * 0.04 * Math.min(1, speed / 3) : 1.08;
+      const squash = p.grounded
+        ? 1 + Math.sin(this.world.t * 18) * 0.04 * Math.min(1, speed / 3)
+        : 1.08;
       fox.body.scale.set(1 / Math.sqrt(squash), squash, 1 / Math.sqrt(squash));
       const pitch = p.grounded ? Math.min(0.18, speed * 0.03) : 0.25;
       if (fox.flip >= 0) {
@@ -471,7 +520,8 @@ export class DsmScene {
       q.sprite.position.y += q.vy * dt * (1 - k);
       q.sprite.position.z += q.vz * dt * (1 - k);
       q.sprite.scale.setScalar(0.5 + k * 1.1);
-      (q.sprite.material as THREE.SpriteMaterial).opacity = 0.5 * (1 - k) * Math.min(1, q.age / 0.05);
+      (q.sprite.material as THREE.SpriteMaterial).opacity =
+        0.5 * (1 - k) * Math.min(1, q.age / 0.05);
     }
     // anéis do pulo duplo
     for (const r of this.rings) {
@@ -498,7 +548,11 @@ export class DsmScene {
         this.camFocus.y + CAM_UP + (Math.random() - 0.5) * sh,
         this.camFocus.z + cy * CAM_BACK,
       );
-      this.camera.lookAt(this.camFocus.x - sy * 1.5, this.camFocus.y + CAM_LOOK_UP, this.camFocus.z - cy * 1.5);
+      this.camera.lookAt(
+        this.camFocus.x - sy * 1.5,
+        this.camFocus.y + CAM_LOOK_UP,
+        this.camFocus.z - cy * 1.5,
+      );
       this.fadeUpperLayers(dt, target.y);
     }
     this.lava.position.y += Math.sin(this.world.t * 1.6) * 0.002;
@@ -551,7 +605,8 @@ export class DsmScene {
     }
     this.scene.traverse((o) => {
       const m = o as THREE.Mesh;
-      if (m.geometry && !this.layers.some((l) => l.mesh === (m as unknown as THREE.InstancedMesh))) m.geometry.dispose?.();
+      if (m.geometry && !this.layers.some((l) => l.mesh === (m as unknown as THREE.InstancedMesh)))
+        m.geometry.dispose?.();
     });
     this.renderer.dispose();
   }

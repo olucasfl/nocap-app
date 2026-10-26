@@ -116,7 +116,9 @@
   font: 900 14px var(--font-display);
   text-transform: uppercase;
   cursor: pointer;
-  transition: transform 0.08s ease-out, box-shadow 0.08s ease-out;
+  transition:
+    transform 0.08s ease-out,
+    box-shadow 0.08s ease-out;
 }
 .rkp-switch span {
   margin-right: 4px;
@@ -278,7 +280,9 @@
   height: 62px;
   background: var(--yellow);
   color: var(--on-accent);
-  box-shadow: 0 0 0 3px var(--paper), 0 0 0 5.5px var(--ink);
+  box-shadow:
+    0 0 0 3px var(--paper),
+    0 0 0 5.5px var(--ink);
 }
 .rkp-pod.p3 .rkp-avatar {
   background: var(--orange);
@@ -529,18 +533,38 @@
   box-shadow: 5px 5px 0 var(--ink);
   text-align: left;
   cursor: pointer;
-  transition: transform 0.08s ease-out, box-shadow 0.08s ease-out;
+  transition:
+    transform 0.08s ease-out,
+    box-shadow 0.08s ease-out;
 }
 .rkp-pick:active {
   transform: translate(4px, 4px);
   box-shadow: 1px 1px 0 var(--ink);
 }
-.rkp-pick.time { --accent: var(--blue); --on: var(--on-blue); }
-.rkp-pick.eco { --accent: var(--green); --on: var(--on-accent); }
-.rkp-pick.atravessa { --accent: var(--eco-red); --on: var(--on-blue); }
-.rkp-pick.blocks { --accent: var(--yellow); --on: var(--on-accent); }
-.rkp-pick.wclassic { --accent: var(--eco-cyan); --on: var(--on-accent); }
-.rkp-pick.color { --accent: var(--orange); --on: var(--on-accent); }
+.rkp-pick.time {
+  --accent: var(--blue);
+  --on: var(--on-blue);
+}
+.rkp-pick.eco {
+  --accent: var(--green);
+  --on: var(--on-accent);
+}
+.rkp-pick.atravessa {
+  --accent: var(--eco-red);
+  --on: var(--on-blue);
+}
+.rkp-pick.blocks {
+  --accent: var(--yellow);
+  --on: var(--on-accent);
+}
+.rkp-pick.wclassic {
+  --accent: var(--eco-cyan);
+  --on: var(--on-accent);
+}
+.rkp-pick.color {
+  --accent: var(--orange);
+  --on: var(--on-accent);
+}
 .rkp-pick-art {
   width: 76px;
   height: 76px;
@@ -626,7 +650,6 @@
     animation: none !important;
   }
 }
-
 
 /* Troca rápida de jogo (spec 045): uma fileira que rola de lado no celular e quebra linha em tela grande. */
 .rkp-games {

@@ -42,7 +42,7 @@ export function FoxCapPage() {
             art={<BolaArt />}
             name="Bola Maluca!"
             desc="Futebol de raposas com 2 a 4 times e bola de verdade."
-            tags={['Treino com bots', 'Em teste']}
+            tags={['Com amigos', 'Treino com bots']}
             cta="Jogar"
             to="/fox-cap/bola"
             testId="foxcap-bola"

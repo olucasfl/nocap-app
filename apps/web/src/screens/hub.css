@@ -628,7 +628,6 @@ a.hub-daily {
   margin-left: 36px;
 }
 
-
 /* Celular estreito: o nome do daily (Mesmíssima) encolhe para caber no cartão em vez de ser cortado */
 .hz-chip-body b {
   font-size: clamp(11.5px, 3.9vw, 15px);

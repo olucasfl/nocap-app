@@ -1,4 +1,11 @@
-import { CHOICE_LOCK_SEC, GRIMOIRES, GRIMOIRE_RARITIES, rarityRank, type GrimoireRarity, type PendingChoice } from '@nocap/games';
+import {
+  CHOICE_LOCK_SEC,
+  GRIMOIRES,
+  GRIMOIRE_RARITIES,
+  rarityRank,
+  type GrimoireRarity,
+  type PendingChoice,
+} from '@nocap/games';
 import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { GrimoireBook } from './GrimoireBook';
 import { artRarity, astroFor, modalGuarded } from './game-logic';
@@ -52,7 +59,14 @@ function GainLine({ label, text }: { label: string; text: string }) {
             <span className="ap-gain-vals">
               <i>{m[2]}</i>
               <svg viewBox="0 0 24 12" width="18" height="9" aria-hidden="true">
-                <path d="M1 6h19M15 1l6 5-6 5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                <path
+                  d="M1 6h19M15 1l6 5-6 5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
               <b>{m[3]}</b>
             </span>
@@ -63,7 +77,23 @@ function GainLine({ label, text }: { label: string; text: string }) {
   );
 }
 
-export function ChoiceModal({ pending, lockRemaining, build, buildRarity = {}, paused, onSelect, onConfirm, onReroll, rerollsAvailable, discardsLeft = 0, onDiscard, pityLeft = null, suggestion = null, gain, coach }: Props) {
+export function ChoiceModal({
+  pending,
+  lockRemaining,
+  build,
+  buildRarity = {},
+  paused,
+  onSelect,
+  onConfirm,
+  onReroll,
+  rerollsAvailable,
+  discardsLeft = 0,
+  onDiscard,
+  pityLeft = null,
+  suggestion = null,
+  gain,
+  coach,
+}: Props) {
   const rerolls = rerollsAvailable ?? pending.rerollsLeft;
   const root = useRef<HTMLDivElement>(null);
   // Esc não fecha: a barra cheia obriga a escolher, e o toque acidental não pode escapar dela.
@@ -117,7 +147,9 @@ export function ChoiceModal({ pending, lockRemaining, build, buildRarity = {}, p
         </div>
         {pityLeft !== null && (
           <p className="ap-pity" role="status">
-            {pityLeft === 0 ? 'Esta oferta traz um lendário garantido.' : `Lendário garantido em ${pityLeft} ${pityLeft === 1 ? 'oferta' : 'ofertas'}.`}
+            {pityLeft === 0
+              ? 'Esta oferta traz um lendário garantido.'
+              : `Lendário garantido em ${pityLeft} ${pityLeft === 1 ? 'oferta' : 'ofertas'}.`}
           </p>
         )}
         <div className={`ap-picks${pending.offers.length > 3 ? ' is-four' : ''}`}>
@@ -134,73 +166,126 @@ export function ChoiceModal({ pending, lockRemaining, build, buildRarity = {}, p
             const isSelected = selected === id;
             return (
               <div key={id} className="ap-pickcell">
-              <button
-                type="button"
-                className={`ap-pick${isSelected ? ' is-selected' : ''}${rarity === 'proibido' ? ' is-forbidden' : ''}${suggestion?.id === id ? ' is-suggested' : ''}`}
-                aria-pressed={isSelected}
-                disabled={locked}
-                onClick={() => {
-                  if (!guarded()) onSelect(id);
-                }}
-              >
-                <span className="ap-pick-rar" data-rar={rarity}>
-                  {RARITY_LABEL[rarity]}
-                </span>
-                <span className="ap-pick-seals">
-                {evolves && (
-                  <span className="ap-pick-evo" data-from={fromRarity} data-to={rarity} aria-label={`Evolui de ${RARITY_LABEL[fromRarity]} para ${RARITY_LABEL[rarity]}`}>
-                    <b>{RARITY_LABEL[fromRarity]}</b>
-                    <svg viewBox="0 0 24 12" width="22" height="11" aria-hidden="true">
-                      <path d="M1 6h19M15 1l6 5-6 5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                    <b className="is-next">{RARITY_LABEL[rarity]}</b>
+                <button
+                  type="button"
+                  className={`ap-pick${isSelected ? ' is-selected' : ''}${rarity === 'proibido' ? ' is-forbidden' : ''}${suggestion?.id === id ? ' is-suggested' : ''}`}
+                  aria-pressed={isSelected}
+                  disabled={locked}
+                  onClick={() => {
+                    if (!guarded()) onSelect(id);
+                  }}
+                >
+                  <span className="ap-pick-rar" data-rar={rarity}>
+                    {RARITY_LABEL[rarity]}
                   </span>
-                )}
-                <span className="ap-pick-lvl" aria-label={have > 0 ? `Nível ${have} para o nível ${have + 1}` : 'Grimório novo, nível 1'}>
-                  {have > 0 ? (
-                    <>
-                      <b>NVL {have}</b>
-                      <svg viewBox="0 0 24 12" width="22" height="11" aria-hidden="true">
-                        <path d="M1 6h19M15 1l6 5-6 5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                      <b className="is-next">NVL {have + 1}</b>
-                    </>
-                  ) : (
-                    <b className="is-next">NOVO · NVL 1</b>
-                  )}
-                </span>
-                </span>
-                <span className="ap-pick-art">
-                  <GrimoireBook rarity={rarity} astro={astroFor(id, def.family)} name={def.name} size="sm" still />
-                </span>
-                {suggestion?.id === id && (
-                  <span className="ap-pick-sug">
-                    Sugerida{suggestion.gainPct !== null ? `: +${Math.max(1, Math.round(suggestion.gainPct))}% de ganho` : ''}
+                  <span className="ap-pick-seals">
+                    {evolves && (
+                      <span
+                        className="ap-pick-evo"
+                        data-from={fromRarity}
+                        data-to={rarity}
+                        aria-label={`Evolui de ${RARITY_LABEL[fromRarity]} para ${RARITY_LABEL[rarity]}`}
+                      >
+                        <b>{RARITY_LABEL[fromRarity]}</b>
+                        <svg viewBox="0 0 24 12" width="22" height="11" aria-hidden="true">
+                          <path
+                            d="M1 6h19M15 1l6 5-6 5"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="3"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                        <b className="is-next">{RARITY_LABEL[rarity]}</b>
+                      </span>
+                    )}
+                    <span
+                      className="ap-pick-lvl"
+                      aria-label={
+                        have > 0
+                          ? `Nível ${have} para o nível ${have + 1}`
+                          : 'Grimório novo, nível 1'
+                      }
+                    >
+                      {have > 0 ? (
+                        <>
+                          <b>NVL {have}</b>
+                          <svg viewBox="0 0 24 12" width="22" height="11" aria-hidden="true">
+                            <path
+                              d="M1 6h19M15 1l6 5-6 5"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="3"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                          <b className="is-next">NVL {have + 1}</b>
+                        </>
+                      ) : (
+                        <b className="is-next">NOVO · NVL 1</b>
+                      )}
+                    </span>
                   </span>
-                )}
-                <span className="ap-pick-name">{def.name}</span>
-                <CategoryTag category={def.category} compact />
-                <span className="ap-pick-info" data-cat={def.category}>
-                  <span className="ap-pick-fx">{def.text}</span>
-                  {gain?.[id] ? (
-                    <GainLine label={evolves ? 'Vai evoluir' : have > 0 ? 'Vai subir' : 'Você ganha'} text={gain[id]!} />
-                  ) : (
-                    have > 0 && <GainLine label={evolves ? 'Vai evoluir' : 'Vai subir'} text="O efeito fica mais forte neste nível" />
+                  <span className="ap-pick-art">
+                    <GrimoireBook
+                      rarity={rarity}
+                      astro={astroFor(id, def.family)}
+                      name={def.name}
+                      size="sm"
+                      still
+                    />
+                  </span>
+                  {suggestion?.id === id && (
+                    <span className="ap-pick-sug">
+                      Sugerida
+                      {suggestion.gainPct !== null
+                        ? `: +${Math.max(1, Math.round(suggestion.gainPct))}% de ganho`
+                        : ''}
+                    </span>
                   )}
-                </span>
-              </button>
-              {onReroll && rerolls > 0 && (
-                <button type="button" className="ap-reroll" disabled={locked} onClick={() => !guarded() && onReroll(id)}>
-                  Trocar esta carta
+                  <span className="ap-pick-name">{def.name}</span>
+                  <CategoryTag category={def.category} compact />
+                  <span className="ap-pick-info" data-cat={def.category}>
+                    <span className="ap-pick-fx">{def.text}</span>
+                    {gain?.[id] ? (
+                      <GainLine
+                        label={evolves ? 'Vai evoluir' : have > 0 ? 'Vai subir' : 'Você ganha'}
+                        text={gain[id]!}
+                      />
+                    ) : (
+                      have > 0 && (
+                        <GainLine
+                          label={evolves ? 'Vai evoluir' : 'Vai subir'}
+                          text="O efeito fica mais forte neste nível"
+                        />
+                      )
+                    )}
+                  </span>
                 </button>
-              )}
+                {onReroll && rerolls > 0 && (
+                  <button
+                    type="button"
+                    className="ap-reroll"
+                    disabled={locked}
+                    onClick={() => !guarded() && onReroll(id)}
+                  >
+                    Trocar esta carta
+                  </button>
+                )}
               </div>
             );
           })}
         </div>
         {rerolls > 0 && <p className="ap-sub">Trocas disponíveis: {rerolls}.</p>}
         {onDiscard && discardsLeft > 0 && (
-          <button type="button" className="ap-reroll ap-discard" disabled={locked} onClick={() => !guarded() && onDiscard()}>
+          <button
+            type="button"
+            className="ap-reroll ap-discard"
+            disabled={locked}
+            onClick={() => !guarded() && onDiscard()}
+          >
             Descartar a oferta ({discardsLeft})
           </button>
         )}
@@ -210,7 +295,9 @@ export function ChoiceModal({ pending, lockRemaining, build, buildRarity = {}, p
           disabled={locked || selected === null}
           onClick={() => selected && !guarded() && onConfirm(selected)}
         >
-          {pending.picksLeft > 1 ? `Escolher este grimório (faltam ${pending.picksLeft})` : 'Escolher este grimório'}
+          {pending.picksLeft > 1
+            ? `Escolher este grimório (faltam ${pending.picksLeft})`
+            : 'Escolher este grimório'}
         </button>
       </div>
     </div>

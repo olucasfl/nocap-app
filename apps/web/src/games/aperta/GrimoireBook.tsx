@@ -30,7 +30,9 @@ export function GrimoireBook({
   className,
 }: Props) {
   const gems = locked ? 0 : RARITY_GEMS[rarity];
-  const label = locked ? 'Grimório escondido' : `Grimório ${name}, ${RARITY_LABEL[rarity].toLowerCase()}`;
+  const label = locked
+    ? 'Grimório escondido'
+    : `Grimório ${name}, ${RARITY_LABEL[rarity].toLowerCase()}`;
   const cls = [
     'ap-book',
     `ap-book--${locked ? 'locked' : rarity}`,
@@ -51,7 +53,12 @@ export function GrimoireBook({
         <AstroMedal astro={locked ? 'lock' : astro} />
       </span>
       {rarity === 'proibido' && !locked && (
-        <svg className="ap-book-cracks" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        <svg
+          className="ap-book-cracks"
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+          aria-hidden="true"
+        >
           <path d="M70 0l-8 18 10 8-12 16 8 10-6 22" />
           <path d="M18 100l10-22-8-10 14-12-6-14" />
         </svg>

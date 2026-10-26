@@ -24,17 +24,33 @@ export function GrimoiresPage({
       <p className="ap-album-count">
         <b>{album.discovered}</b> de {album.total} versões descobertas
       </p>
-      {canFavorite && <p className="ap-sub">Favoritar um grimório faz ele aparecer o dobro nas escolhas.</p>}
+      {canFavorite && (
+        <p className="ap-sub">Favoritar um grimório faz ele aparecer o dobro nas escolhas.</p>
+      )}
       <ul className="ap-album" aria-label="Livro de grimórios">
         {album.entries.map((e) => (
           <li key={e.id} className={`ap-album-item${e.discovered ? '' : ' is-locked'}`}>
-            <GrimoireBook rarity={e.rarity} astro={astroFor(e.id, e.family)} name={e.name} locked={!e.discovered} size="sm" still />
+            <GrimoireBook
+              rarity={e.rarity}
+              astro={astroFor(e.id, e.family)}
+              name={e.name}
+              locked={!e.discovered}
+              size="sm"
+              still
+            />
             <span className="ap-album-name">{e.name}</span>
             {e.discovered && <CategoryTag category={e.category} compact />}
             <span className="ap-album-fx">{e.text}</span>
-            <ul className="ap-slots" aria-label={`Versões de ${e.name}: ${e.found} de ${e.slots.length}`}>
+            <ul
+              className="ap-slots"
+              aria-label={`Versões de ${e.name}: ${e.found} de ${e.slots.length}`}
+            >
               {e.slots.map((slot) => (
-                <li key={slot.rarity} className={`ap-slot${slot.found ? ' is-found' : ''}`} data-rar={slot.rarity}>
+                <li
+                  key={slot.rarity}
+                  className={`ap-slot${slot.found ? ' is-found' : ''}`}
+                  data-rar={slot.rarity}
+                >
                   {slot.found ? slot.label : '???'}
                 </li>
               ))}
@@ -45,7 +61,9 @@ export function GrimoiresPage({
                 type="button"
                 className="ap-fav"
                 aria-pressed={e.favorite}
-                aria-label={e.favorite ? `Tirar ${e.name} dos favoritos` : `Marcar ${e.name} como favorito`}
+                aria-label={
+                  e.favorite ? `Tirar ${e.name} dos favoritos` : `Marcar ${e.name} como favorito`
+                }
                 onClick={() => {
                   if (e.favorite) apertaSfx.clack(0);
                   else {

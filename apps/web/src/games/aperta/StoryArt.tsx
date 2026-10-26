@@ -13,8 +13,12 @@ const INK = '#02030a';
 /** Estrelas determinísticas (a mesma cena sempre desenha o mesmo céu). */
 function stars(seed: number, n: number): [number, number, number][] {
   let s = seed;
-  const next = () => ((s = (s * 1664525 + 1013904223) % 4294967296) / 4294967296);
-  return Array.from({ length: n }, () => [Math.round(next() * 640), Math.round(next() * 320), 0.6 + next() * 1.4]);
+  const next = () => (s = (s * 1664525 + 1013904223) % 4294967296) / 4294967296;
+  return Array.from({ length: n }, () => [
+    Math.round(next() * 640),
+    Math.round(next() * 320),
+    0.6 + next() * 1.4,
+  ]);
 }
 
 function Stars({ seed, n, className }: { seed: number; n: number; className: string }) {
@@ -64,29 +68,123 @@ function SceneStation() {
       <Stars seed={19} n={26} className="st-drift-b" />
       <g className="st-planet">
         <circle cx="520" cy="236" r="132" fill="url(#st-planet)" />
-        <circle cx="520" cy="236" r="132" fill="none" stroke="#7fb2ff" strokeWidth="2" opacity=".45" />
-        <path d="M410 214c40 26 120 30 220 4" fill="none" stroke="#9db6ff" strokeWidth="2" opacity=".25" />
-        <path d="M402 250c50 24 140 26 230-6" fill="none" stroke="#9db6ff" strokeWidth="2" opacity=".18" />
+        <circle
+          cx="520"
+          cy="236"
+          r="132"
+          fill="none"
+          stroke="#7fb2ff"
+          strokeWidth="2"
+          opacity=".45"
+        />
+        <path
+          d="M410 214c40 26 120 30 220 4"
+          fill="none"
+          stroke="#9db6ff"
+          strokeWidth="2"
+          opacity=".25"
+        />
+        <path
+          d="M402 250c50 24 140 26 230-6"
+          fill="none"
+          stroke="#9db6ff"
+          strokeWidth="2"
+          opacity=".18"
+        />
       </g>
       <g className="st-station">
         <path d="M120 164h330" stroke="#5a648a" strokeWidth="5" />
-        <rect x="140" y="112" width="74" height="104" rx="4" fill="url(#st-panel)" stroke={INK} strokeWidth="3" />
-        <path d="M140 138h74M140 164h74M140 190h74M177 112v104" stroke={INK} strokeWidth="1.5" opacity=".5" />
-        <rect x="356" y="112" width="74" height="104" rx="4" fill="url(#st-panel)" stroke={INK} strokeWidth="3" />
-        <path d="M356 138h74M356 164h74M356 190h74M393 112v104" stroke={INK} strokeWidth="1.5" opacity=".5" />
-        <rect x="236" y="130" width="130" height="68" rx="14" fill="url(#st-hull)" stroke={INK} strokeWidth="4" />
-        <rect x="262" y="104" width="78" height="30" rx="8" fill="#c7cede" stroke={INK} strokeWidth="4" />
+        <rect
+          x="140"
+          y="112"
+          width="74"
+          height="104"
+          rx="4"
+          fill="url(#st-panel)"
+          stroke={INK}
+          strokeWidth="3"
+        />
+        <path
+          d="M140 138h74M140 164h74M140 190h74M177 112v104"
+          stroke={INK}
+          strokeWidth="1.5"
+          opacity=".5"
+        />
+        <rect
+          x="356"
+          y="112"
+          width="74"
+          height="104"
+          rx="4"
+          fill="url(#st-panel)"
+          stroke={INK}
+          strokeWidth="3"
+        />
+        <path
+          d="M356 138h74M356 164h74M356 190h74M393 112v104"
+          stroke={INK}
+          strokeWidth="1.5"
+          opacity=".5"
+        />
+        <rect
+          x="236"
+          y="130"
+          width="130"
+          height="68"
+          rx="14"
+          fill="url(#st-hull)"
+          stroke={INK}
+          strokeWidth="4"
+        />
+        <rect
+          x="262"
+          y="104"
+          width="78"
+          height="30"
+          rx="8"
+          fill="#c7cede"
+          stroke={INK}
+          strokeWidth="4"
+        />
         {windows.map((i) => (
-          <rect key={i} className="st-win" style={{ ['--i' as string]: i }} x={246 + i * 20} y={152} width="13" height="18" rx="3" fill="#ffd98a" />
+          <rect
+            key={i}
+            className="st-win"
+            style={{ ['--i' as string]: i }}
+            x={246 + i * 20}
+            y={152}
+            width="13"
+            height="18"
+            rx="3"
+            fill="#ffd98a"
+          />
         ))}
         <path d="M300 104V84" stroke="#5a648a" strokeWidth="3" />
         <path d="M284 84a16 16 0 0 1 32 0z" fill="#aeb7cc" stroke={INK} strokeWidth="3" />
         <circle className="st-beacon" cx="301" cy="119" r="4" fill="#ff5a4d" />
       </g>
       <g className="st-lost">
-        <rect x="26" y="26" width="132" height="26" rx="13" fill="#02030a" opacity=".7" stroke="#ff5a4d" strokeWidth="2" />
+        <rect
+          x="26"
+          y="26"
+          width="132"
+          height="26"
+          rx="13"
+          fill="#02030a"
+          opacity=".7"
+          stroke="#ff5a4d"
+          strokeWidth="2"
+        />
         <circle cx="46" cy="39" r="5" fill="#ff5a4d" />
-        <text x="62" y="44" fill="#ffb4ac" fontSize="13" fontWeight="700" letterSpacing="2" fontFamily="var(--space-font-display)">
+        <text
+          x="62"
+          y="44"
+          fill="#ffb4ac"
+          fontSize="13"
+          fontWeight="700"
+          letterSpacing="2"
+          fontFamily="var(--space-font-display)"
+        >
           SEM SINAL
         </text>
       </g>
@@ -113,9 +211,23 @@ function SceneButton() {
         </linearGradient>
       </defs>
       <rect width="640" height="320" fill="#03050e" />
-      <rect x="150" y="26" width="340" height="104" rx="52" fill="#050a22" stroke="#243477" strokeWidth="4" />
+      <rect
+        x="150"
+        y="26"
+        width="340"
+        height="104"
+        rx="52"
+        fill="#050a22"
+        stroke="#243477"
+        strokeWidth="4"
+      />
       <Stars seed={3} n={22} className="st-drift-b" />
-      <path d="M0 320V236c60-24 140-36 320-36s260 12 320 36v84z" fill="url(#st-console)" stroke="#2c3d8f" strokeWidth="3" />
+      <path
+        d="M0 320V236c60-24 140-36 320-36s260 12 320 36v84z"
+        fill="url(#st-console)"
+        stroke="#2c3d8f"
+        strokeWidth="3"
+      />
       {[70, 104, 138, 502, 536, 570].map((x, i) => (
         <circle key={x} cx={x} cy={252 + (i % 3) * 8} r="5" fill="#2c3558" />
       ))}
@@ -135,7 +247,14 @@ function SceneButton() {
           [312, 96],
           [236, 110],
         ].map(([x, y], i) => (
-          <circle key={i} className="st-mote" style={{ ['--i' as string]: i }} cx={x} cy={y} r="2.4" />
+          <circle
+            key={i}
+            className="st-mote"
+            style={{ ['--i' as string]: i }}
+            cx={x}
+            cy={y}
+            r="2.4"
+          />
         ))}
       </g>
       <circle className="st-halo" cx="320" cy="214" r="86" fill="url(#st-halo)" />
@@ -172,7 +291,12 @@ function SceneIgnite() {
         <circle cx="320" cy="96" r="112" fill="url(#st-sun)" />
         <g className="st-rays" fill="#ffe29a" opacity=".9">
           {Array.from({ length: 8 }, (_, i) => (
-            <path key={i} d="M320 96l-5-86h10z" transform={`rotate(${i * 45} 320 96)`} opacity={i % 2 ? 0.45 : 0.85} />
+            <path
+              key={i}
+              d="M320 96l-5-86h10z"
+              transform={`rotate(${i * 45} 320 96)`}
+              opacity={i % 2 ? 0.45 : 0.85}
+            />
           ))}
         </g>
         <path d="M320 54l9 33 33 9-33 9-9 33-9-33-33-9 33-9z" fill="#fff6d4" />
@@ -180,10 +304,29 @@ function SceneIgnite() {
       </g>
       <rect className="st-beam" x="316" y="110" width="8" height="150" fill="url(#st-beam)" />
       {dust.map((x, i) => (
-        <circle key={x} className="st-fall" style={{ ['--i' as string]: i }} cx={x} cy={118 + (i % 3) * 8} r={2 + (i % 3)} fill="#ffd166" />
+        <circle
+          key={x}
+          className="st-fall"
+          style={{ ['--i' as string]: i }}
+          cx={x}
+          cy={118 + (i % 3) * 8}
+          r={2 + (i % 3)}
+          fill="#ffd166"
+        />
       ))}
       {[0, 1, 2].map((i) => (
-        <ellipse key={i} className="st-wave" style={{ ['--i' as string]: i }} cx="320" cy="268" rx="46" ry="12" fill="none" stroke="#ff8d83" strokeWidth="3" />
+        <ellipse
+          key={i}
+          className="st-wave"
+          style={{ ['--i' as string]: i }}
+          cx="320"
+          cy="268"
+          rx="46"
+          ry="12"
+          fill="none"
+          stroke="#ff8d83"
+          strokeWidth="3"
+        />
       ))}
       <ellipse cx="320" cy="290" rx="60" ry="13" fill="#2b3552" />
       <ellipse cx="320" cy="283" rx="60" ry="13" fill="#c7cede" stroke={INK} strokeWidth="3" />
@@ -230,9 +373,25 @@ function SceneBooks() {
         <circle cx="320" cy="160" r="46" fill="url(#st-core)" />
         {PLANETS.map((p) => (
           <g key={p.r}>
-            <circle cx="320" cy="160" r={p.r} fill="none" stroke="#5b73d6" strokeWidth="2" opacity=".8" strokeDasharray="3 7" />
+            <circle
+              cx="320"
+              cy="160"
+              r={p.r}
+              fill="none"
+              stroke="#5b73d6"
+              strokeWidth="2"
+              opacity=".8"
+              strokeDasharray="3 7"
+            />
             <g className={p.cls}>
-              <circle cx={320 + p.r} cy="160" r={p.size} fill={p.color} stroke={INK} strokeWidth="2" />
+              <circle
+                cx={320 + p.r}
+                cy="160"
+                r={p.size}
+                fill={p.color}
+                stroke={INK}
+                strokeWidth="2"
+              />
             </g>
           </g>
         ))}
@@ -242,7 +401,13 @@ function SceneBooks() {
         <SpaceArtSprite />
         {BOOKS.map(({ def, rarity }, i) => (
           <div key={def.id} className="st-book" style={{ ['--i' as string]: i }}>
-            <GrimoireBook rarity={artRarity(rarity)} astro={astroFor(def.id, def.family)} name={def.name} size="md" still />
+            <GrimoireBook
+              rarity={artRarity(rarity)}
+              astro={astroFor(def.id, def.family)}
+              name={def.name}
+              size="md"
+              still
+            />
           </div>
         ))}
       </div>

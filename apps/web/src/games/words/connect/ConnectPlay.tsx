@@ -3,8 +3,22 @@ import { Link, useParams } from '@tanstack/react-router';
 import { connectClass, connectHint, playConnect, type ConnectGroup } from '@nocap/games';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { wordsAudio } from '@/lib/words-audio';
-import { Celebrate, GridLoader, Pill, ResultSheet, RulesList, Tabs, WordsShell } from '../words-kit';
-import { loadConnectLevels, seededShuffle, tierOf, toConnectPuzzle, type ConnectLevel } from '../levels/levels';
+import {
+  Celebrate,
+  GridLoader,
+  Pill,
+  ResultSheet,
+  RulesList,
+  Tabs,
+  WordsShell,
+} from '../words-kit';
+import {
+  loadConnectLevels,
+  seededShuffle,
+  tierOf,
+  toConnectPuzzle,
+  type ConnectLevel,
+} from '../levels/levels';
 import { connectProgress, useProgress } from '../levels/progress';
 import { CONNECT_RULES } from './ConnectCatalog';
 import './connect.css';
@@ -22,17 +36,36 @@ function softBreak(word: string): string {
   const mid = Math.round(word.length / 2);
   for (const d of [0, 1, -1, 2, -2]) {
     const i = mid + d;
-    if (i >= 3 && i <= word.length - 3 && Math.max(i, word.length - i) <= Math.ceil(word.length / 2) + 1 && VOWELS.includes(word[i - 1]!.toLowerCase()) && !VOWELS.includes(word[i]!.toLowerCase())) {
+    if (
+      i >= 3 &&
+      i <= word.length - 3 &&
+      Math.max(i, word.length - i) <= Math.ceil(word.length / 2) + 1 &&
+      VOWELS.includes(word[i - 1]!.toLowerCase()) &&
+      !VOWELS.includes(word[i]!.toLowerCase())
+    ) {
       return `${word.slice(0, i)}\u00ad${word.slice(i)}`;
     }
   }
   return `${word.slice(0, mid)}\u00ad${word.slice(mid)}`;
 }
 /** O tamanho da letra pede o maior pedaço que cabe numa linha (já contando o hífen). */
-const longest = (w: string) => (w.includes(' ') || w.length <= 8 ? Math.max(...w.split(' ').map((x) => x.length)) : Math.ceil(w.length / 2) + 1);
+const longest = (w: string) =>
+  w.includes(' ') || w.length <= 8
+    ? Math.max(...w.split(' ').map((x) => x.length))
+    : Math.ceil(w.length / 2) + 1;
 
 /** O popup da dica: o nome de um conjunto que falta, num cartão especial. Dá para abrir de novo quando quiser. */
-function HintPopup({ group, found, fancy, onClose }: { group: ConnectGroup; found: boolean; fancy: boolean; onClose: () => void }) {
+function HintPopup({
+  group,
+  found,
+  fancy,
+  onClose,
+}: {
+  group: ConnectGroup;
+  found: boolean;
+  fancy: boolean;
+  onClose: () => void;
+}) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
@@ -72,7 +105,10 @@ function HintPopup({ group, found, fancy, onClose }: { group: ConnectGroup; foun
 
 function Band({ group, missed = false }: { group: ConnectGroup; missed?: boolean }) {
   return (
-    <div className={`cx-band l${group.level}${missed ? ' missed' : ''}`} data-testid={`band-${group.level}`}>
+    <div
+      className={`cx-band l${group.level}${missed ? ' missed' : ''}`}
+      data-testid={`band-${group.level}`}
+    >
       <span className="cx-badge" aria-label={`Nível ${group.level}`}>
         {group.level}
       </span>
@@ -112,10 +148,19 @@ export function ConnectPlay() {
   const saved = progress[String(num)];
   const guesses = saved?.guesses ?? [];
   const gaveUp = saved?.gaveUp ?? false;
-  const state = useMemo(() => (puzzle ? playConnect(puzzle, guesses, { gaveUp }) : null), [puzzle, guesses, gaveUp]);
+  const state = useMemo(
+    () => (puzzle ? playConnect(puzzle, guesses, { gaveUp }) : null),
+    [puzzle, guesses, gaveUp],
+  );
 
   useEffect(() => {
-    if (level) setOrder(seededShuffle(level.g.flatMap((g) => g.w), level.id));
+    if (level)
+      setOrder(
+        seededShuffle(
+          level.g.flatMap((g) => g.w),
+          level.id,
+        ),
+      );
     setPicked([]);
     setTab('game');
     setAskGiveUp(false);
@@ -135,7 +180,9 @@ export function ConnectPlay() {
   const toggle = (w: string) => {
     if (picked.includes(w)) wordsAudio.deselect();
     else wordsAudio.select();
-    setPicked((p) => (p.includes(w) ? p.filter((x) => x !== w) : p.length >= 4 ? [...p.slice(1), w] : [...p, w]));
+    setPicked((p) =>
+      p.includes(w) ? p.filter((x) => x !== w) : p.length >= 4 ? [...p.slice(1), w] : [...p, w],
+    );
   };
 
   const submit = () => {
@@ -230,7 +277,8 @@ export function ConnectPlay() {
   const reveal = state.over ? puzzle.groups.filter((g) => !state.found.includes(g)) : [];
   const hasNext = num < levels.length;
   const tier = tierOf(level);
-  const hintGroup = saved?.hint !== undefined ? puzzle.groups.find((g) => g.level === saved.hint) : undefined;
+  const hintGroup =
+    saved?.hint !== undefined ? puzzle.groups.find((g) => g.level === saved.hint) : undefined;
   const hintFound = !!hintGroup && state.found.includes(hintGroup);
   const hintUsed = saved?.hint !== undefined;
   const klass = connectClass(state.won, state.errors, state.gaveUp);
@@ -263,7 +311,8 @@ export function ConnectPlay() {
           <section className="cx-status" aria-label="Progresso e erros">
             <div className="cx-progress">
               <span className="mono">
-                {state.found.length} de 4 grupos{!state.over && missing > 0 ? ` · faltam ${missing}` : ''}
+                {state.found.length} de 4 grupos
+                {!state.over && missing > 0 ? ` · faltam ${missing}` : ''}
               </span>
               <div className="cx-dots" aria-hidden="true">
                 {levelsFound.map((g, i) => (
@@ -271,9 +320,17 @@ export function ConnectPlay() {
                 ))}
               </div>
             </div>
-            <div className="cx-errors" data-testid="errors" aria-label={`${state.errors} ${state.errors === 1 ? 'erro' : 'erros'}`}>
+            <div
+              className="cx-errors"
+              data-testid="errors"
+              aria-label={`${state.errors} ${state.errors === 1 ? 'erro' : 'erros'}`}
+            >
               <span className="mono">Erros</span>
-              <b key={state.errors} className={state.errors > 0 ? 'bump' : ''} data-testid="error-count">
+              <b
+                key={state.errors}
+                className={state.errors > 0 ? 'bump' : ''}
+                data-testid="error-count"
+              >
                 {state.errors}
               </b>
             </div>
@@ -300,48 +357,64 @@ export function ConnectPlay() {
           {!state.over && (
             <>
               <div className="cx-gridwrap">
-              <div
-                className={`cx-grid${shake ? ' shake' : ''}`}
-                style={{ '--rows': Math.ceil(words.length / 4) } as CSSProperties}
-                role="group"
-                aria-label="Palavras"
-                data-testid="grid"
-              >
-                {words.map((w, i) => {
-                  const at = picked.indexOf(w);
-                  return (
-                    <button
-                      key={w}
-                      type="button"
-                      data-word={w}
-                      className={`cx-word${at >= 0 ? ' on' : ''}`}
-                      style={{ '--i': i, '--len': bucket(longest(w)) } as CSSProperties}
-                      aria-pressed={at >= 0}
-                      onClick={() => toggle(w)}
-                    >
-                      {at >= 0 && <span className="order">{at + 1}</span>}
-                      {softBreak(w)}
-                    </button>
-                  );
-                })}
-              </div>
+                <div
+                  className={`cx-grid${shake ? ' shake' : ''}`}
+                  style={{ '--rows': Math.ceil(words.length / 4) } as CSSProperties}
+                  role="group"
+                  aria-label="Palavras"
+                  data-testid="grid"
+                >
+                  {words.map((w, i) => {
+                    const at = picked.indexOf(w);
+                    return (
+                      <button
+                        key={w}
+                        type="button"
+                        data-word={w}
+                        className={`cx-word${at >= 0 ? ' on' : ''}`}
+                        style={{ '--i': i, '--len': bucket(longest(w)) } as CSSProperties}
+                        aria-pressed={at >= 0}
+                        onClick={() => toggle(w)}
+                      >
+                        {at >= 0 && <span className="order">{at + 1}</span>}
+                        {softBreak(w)}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
               <div className="cx-controls">
                 <div className="cx-actions">
-                  <button type="button" className="cx-btn shuffle" onClick={shuffle} data-testid="shuffle">
+                  <button
+                    type="button"
+                    className="cx-btn shuffle"
+                    onClick={shuffle}
+                    data-testid="shuffle"
+                  >
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                       <path d="M3 7h3.5c3.5 0 5 10 8.5 10H21M3 17h3.5c1.4 0 2.4-1.5 3.3-3.2M21 7h-6c-1.4 0-2.4 1.5-3.3 3.2" />
                       <path d="M18 4l3 3-3 3M18 14l3 3-3 3" />
                     </svg>
                     Embaralhar
                   </button>
-                  <button type="button" className="cx-btn clear" onClick={() => setPicked([])} data-testid="clear">
+                  <button
+                    type="button"
+                    className="cx-btn clear"
+                    onClick={() => setPicked([])}
+                    data-testid="clear"
+                  >
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                       <path d="M6 6l12 12M18 6L6 18" />
                     </svg>
                     Limpar
                   </button>
-                  <button type="button" className="cx-btn send" disabled={picked.length !== 4} onClick={submit} data-testid="submit">
+                  <button
+                    type="button"
+                    className="cx-btn send"
+                    disabled={picked.length !== 4}
+                    onClick={submit}
+                    data-testid="submit"
+                  >
                     Enviar {picked.length}/4
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                       <path d="M4 12.5l5 5L20 6.5" />
@@ -368,7 +441,12 @@ export function ConnectPlay() {
                     )}
                     {hintUsed ? 'Ver dica' : 'Dica'}
                   </button>
-                  <button type="button" className="cx-btn giveup" onClick={() => setAskGiveUp(true)} data-testid="giveup">
+                  <button
+                    type="button"
+                    className="cx-btn giveup"
+                    onClick={() => setAskGiveUp(true)}
+                    data-testid="giveup"
+                  >
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                       <path d="M5 21V4M5 4h11l-2 4 2 4H5" />
                     </svg>
@@ -394,7 +472,12 @@ export function ConnectPlay() {
               }
             >
               {hasNext && (
-                <Link to="/words/connect/fase/$n" params={{ n: String(num + 1) }} className="btn alt" data-testid="next">
+                <Link
+                  to="/words/connect/fase/$n"
+                  params={{ n: String(num + 1) }}
+                  className="btn alt"
+                  data-testid="next"
+                >
                   Próxima fase
                 </Link>
               )}
@@ -407,7 +490,12 @@ export function ConnectPlay() {
       )}
 
       {hintOpen && hintGroup && (
-        <HintPopup group={hintGroup} found={hintFound} fancy={hintOpen === 'first'} onClose={() => setHintOpen(false)} />
+        <HintPopup
+          group={hintGroup}
+          found={hintFound}
+          fancy={hintOpen === 'first'}
+          onClose={() => setHintOpen(false)}
+        />
       )}
 
       <ConfirmDialog

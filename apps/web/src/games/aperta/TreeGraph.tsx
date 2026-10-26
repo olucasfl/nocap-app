@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type PointerEvent,
+} from 'react';
 import { localDelta, localPoint, localRect } from './ap-geometry';
 import { LOW_END } from './perf';
 import { computeTreeLayout, neighbor } from './tree-layout';
@@ -68,7 +76,14 @@ export function TreeGraph({ rows, selected, onSelect, filter, onFirstDrag }: Pro
   viewRef.current = view;
   const [active, setActive] = useState<string>(() => selected ?? 'root');
   const nodeEls = useRef(new Map<string, SVGGElement>());
-  const drag = useRef<{ id: number; sx: number; sy: number; ox: number; oy: number; moved: boolean } | null>(null);
+  const drag = useRef<{
+    id: number;
+    sx: number;
+    sy: number;
+    ox: number;
+    oy: number;
+    moved: boolean;
+  } | null>(null);
   const suppressClick = useRef(false);
 
   useEffect(() => {
@@ -85,7 +100,8 @@ export function TreeGraph({ rows, selected, onSelect, filter, onFirstDrag }: Pro
     return () => ro.disconnect();
   }, []);
 
-  const css = (v: View): string => `translate(${size.w / 2 + v.x}px, ${size.h / 2 + v.y}px) scale(${v.k})`;
+  const css = (v: View): string =>
+    `translate(${size.w / 2 + v.x}px, ${size.h / 2 + v.y}px) scale(${v.k})`;
 
   /** Muda o zoom mantendo parado o ponto sob `at` (relativo ao centro da área); sem `at`, o centro da tela. */
   const zoomBy = useCallback((factor: number, at?: { x: number; y: number }) => {
@@ -101,12 +117,15 @@ export function TreeGraph({ rows, selected, onSelect, filter, onFirstDrag }: Pro
     });
   }, []);
 
-  const centerOn = useCallback((id: string | null) => {
-    setView((v) => {
-      const n = id && id !== 'root' ? layout.nodes[id] : null;
-      return { k: v.k, x: n ? -n.x * v.k : 0, y: n ? -n.y * v.k : 0 };
-    });
-  }, [layout]);
+  const centerOn = useCallback(
+    (id: string | null) => {
+      setView((v) => {
+        const n = id && id !== 'root' ? layout.nodes[id] : null;
+        return { k: v.k, x: n ? -n.x * v.k : 0, y: n ? -n.y * v.k : 0 };
+      });
+    },
+    [layout],
+  );
 
   // A roda do mouse dá zoom na posição do cursor. Precisa ser um listener nativo não passivo para a página não rolar junto.
   useEffect(() => {
@@ -117,7 +136,10 @@ export function TreeGraph({ rows, selected, onSelect, filter, onFirstDrag }: Pro
       const r = localRect(el);
       const p = localPoint(el, e.clientX, e.clientY);
       const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
-      zoomBy(Math.exp(-dy * 0.0015), { x: p.x - r.left - r.width / 2, y: p.y - r.top - r.height / 2 });
+      zoomBy(Math.exp(-dy * 0.0015), {
+        x: p.x - r.left - r.width / 2,
+        y: p.y - r.top - r.height / 2,
+      });
     };
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => el.removeEventListener('wheel', onWheel);
@@ -125,7 +147,14 @@ export function TreeGraph({ rows, selected, onSelect, filter, onFirstDrag }: Pro
 
   const onDown = (e: PointerEvent<HTMLDivElement>) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
-    drag.current = { id: e.pointerId, sx: e.clientX, sy: e.clientY, ox: viewRef.current.x, oy: viewRef.current.y, moved: false };
+    drag.current = {
+      id: e.pointerId,
+      sx: e.clientX,
+      sy: e.clientY,
+      ox: viewRef.current.x,
+      oy: viewRef.current.y,
+      moved: false,
+    };
   };
   const onMove = (e: PointerEvent<HTMLDivElement>) => {
     const d = drag.current;
@@ -170,7 +199,9 @@ export function TreeGraph({ rows, selected, onSelect, filter, onFirstDrag }: Pro
   };
 
   const onKey = (e: KeyboardEvent<HTMLDivElement>) => {
-    const dir = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' }[e.key] as 'up' | 'down' | 'left' | 'right' | undefined;
+    const dir = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' }[
+      e.key
+    ] as 'up' | 'down' | 'left' | 'right' | undefined;
     if (dir) {
       e.preventDefault();
       const next = neighbor(layout, active, dir);
@@ -213,7 +244,14 @@ export function TreeGraph({ rows, selected, onSelect, filter, onFirstDrag }: Pro
         onPointerCancel={onUp}
         onKeyDown={onKey}
       >
-        <svg className="ap-tg-svg" width={size.w} height={size.h} viewBox={`0 0 ${size.w} ${size.h}`} aria-hidden={false} focusable="false">
+        <svg
+          className="ap-tg-svg"
+          width={size.w}
+          height={size.h}
+          viewBox={`0 0 ${size.w} ${size.h}`}
+          aria-hidden={false}
+          focusable="false"
+        >
           <g ref={content} className="ap-tg-content" style={{ transform: css(view) }}>
             <g className="ap-tg-edges" aria-hidden="true">
               {roots.map((n) => {
@@ -297,13 +335,29 @@ export function TreeGraph({ rows, selected, onSelect, filter, onFirstDrag }: Pro
           </g>
         </svg>
         <div className="ap-tg-tools" role="group" aria-label="Zoom e centralizar">
-          <button type="button" className="ap-tg-btn" aria-label="Aproximar" disabled={view.k >= ZOOM_MAX - 0.001} onClick={() => zoomBy(ZOOM_STEP)}>
+          <button
+            type="button"
+            className="ap-tg-btn"
+            aria-label="Aproximar"
+            disabled={view.k >= ZOOM_MAX - 0.001}
+            onClick={() => zoomBy(ZOOM_STEP)}
+          >
             +
           </button>
-          <button type="button" className="ap-tg-btn" aria-label="Afastar" disabled={view.k <= ZOOM_MIN + 0.001} onClick={() => zoomBy(1 / ZOOM_STEP)}>
+          <button
+            type="button"
+            className="ap-tg-btn"
+            aria-label="Afastar"
+            disabled={view.k <= ZOOM_MIN + 0.001}
+            onClick={() => zoomBy(1 / ZOOM_STEP)}
+          >
             −
           </button>
-          <button type="button" className="ap-tg-btn ap-tg-center" onClick={() => centerOn(selected)}>
+          <button
+            type="button"
+            className="ap-tg-btn ap-tg-center"
+            onClick={() => centerOn(selected)}
+          >
             Centralizar
           </button>
         </div>

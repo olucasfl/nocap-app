@@ -42,7 +42,11 @@ export function AtravessaReveal({ snapshot }: { snapshot: RoomSnapshot }) {
       <ul className="rm-results">
         {rows.map(({ m, round: r, total }) => (
           <li key={m.id} className={`rm-result${m.id === me ? ' me' : ''}`}>
-            <span className="rm-swatch" style={{ background: roomColor(snapshot, m.id) }} aria-hidden="true" />
+            <span
+              className="rm-swatch"
+              style={{ background: roomColor(snapshot, m.id) }}
+              aria-hidden="true"
+            />
             <span className="rm-result-name">{at(m.username)}</span>
             <span className="rm-result-score">
               {meters(r)}
@@ -51,7 +55,14 @@ export function AtravessaReveal({ snapshot }: { snapshot: RoomSnapshot }) {
           </li>
         ))}
       </ul>
-      {round.endsAt && <Countdown endsAt={toLocal(round.endsAt)} totalMs={8000} warnMs={0} label="PRÓXIMA RODADA" />}
+      {round.endsAt && (
+        <Countdown
+          endsAt={toLocal(round.endsAt)}
+          totalMs={8000}
+          warnMs={0}
+          label="PRÓXIMA RODADA"
+        />
+      )}
       <div className="stack">
         {isHost ? (
           <button type="button" className="btn" onClick={() => sendRoom('next')}>

@@ -97,7 +97,8 @@ export interface ComboView {
  */
 export function comboView(state: SaveState, now: number): ComboView {
   const combo = effectiveStats(state).combo;
-  const alive = combo.enabled && state.run.combo > 0 && now - state.run.lastPressAt <= combo.windowSec;
+  const alive =
+    combo.enabled && state.run.combo > 0 && now - state.run.lastPressAt <= combo.windowSec;
   const points = alive ? state.run.combo : 0;
   return { points, mult: 1 + COMBO_BONUS_PER_POINT * points };
 }
@@ -210,7 +211,11 @@ export function albumView(state: SaveState): AlbumView {
   const open = unlockedContent(state).grimoires;
   const entries = open.map((g): AlbumEntry => {
     const versions = albumVersions(state.album, g.id);
-    const slots = GRIMOIRE_RARITIES.map((r): AlbumSlot => ({ rarity: artRarity(r), label: RARITY_LABEL_PT[r], found: versions.includes(r) }));
+    const slots = GRIMOIRE_RARITIES.map((r): AlbumSlot => ({
+      rarity: artRarity(r),
+      label: RARITY_LABEL_PT[r],
+      found: versions.includes(r),
+    }));
     const top = versions.length > 0 ? (versions[versions.length - 1] as string) : 'common';
     const discovered = versions.length > 0;
     return {
@@ -227,10 +232,19 @@ export function albumView(state: SaveState): AlbumView {
       favorite: state.favorite === g.id,
     };
   });
-  return { entries, discovered: entries.reduce((n, e) => n + e.found, 0), total: entries.length * GRIMOIRE_RARITIES.length };
+  return {
+    entries,
+    discovered: entries.reduce((n, e) => n + e.found, 0),
+    total: entries.length * GRIMOIRE_RARITIES.length,
+  };
 }
 
-const RARITY_LABEL_PT: Record<GrimoireRarity, string> = { common: 'Comum', rare: 'Raro', epic: 'Épico', legendary: 'Lendário' };
+const RARITY_LABEL_PT: Record<GrimoireRarity, string> = {
+  common: 'Comum',
+  rare: 'Raro',
+  epic: 'Épico',
+  legendary: 'Lendário',
+};
 
 /** Verdadeiro enquanto o modal acabou de abrir e o toque ainda deve ser ignorado. */
 export function modalGuarded(openedAtMs: number, nowMs: number): boolean {
@@ -266,7 +280,10 @@ export function rewardText(p: ObjectPreview): string {
   const parts: string[] = [];
   if (p.dust > 0) parts.push(`+${formatNumber(p.dust)} poeira`);
   if (p.energy > 0) parts.push(`+${formatDecimal(p.energy, 1)} energia`);
-  if (p.boostMult > 0) parts.push(`${p.frenzy ? 'Frenesi' : 'Sinal forte'} x${formatDecimal(p.boostMult, 1)} por ${Math.round(p.boostSec)} s`);
+  if (p.boostMult > 0)
+    parts.push(
+      `${p.frenzy ? 'Frenesi' : 'Sinal forte'} x${formatDecimal(p.boostMult, 1)} por ${Math.round(p.boostSec)} s`,
+    );
   if (p.surgeSec > 0) parts.push(`Geradores a todo vapor por ${Math.round(p.surgeSec)} s`);
   if (p.fillsBar) parts.push('Enche a barra de energia');
   if (p.freeReroll) parts.push('1 troca grátis');
@@ -361,7 +378,9 @@ export interface SignalView {
 /** O chip "Sinal forte" do HUD: só existe enquanto o boost do satélite corre. */
 export function signalView(state: SaveState, now: number): SignalView | null {
   const { boostUntil, boostMult } = state.run;
-  return boostMult > 1 && now < boostUntil ? { mult: boostMult, remaining: boostUntil - now } : null;
+  return boostMult > 1 && now < boostUntil
+    ? { mult: boostMult, remaining: boostUntil - now }
+    : null;
 }
 
 // --- Colapso e Cofre dos Proibidos (spec 040, seção 3) ---
@@ -398,33 +417,64 @@ export interface CollapseView {
 }
 
 /** "a, b e c". */
-const joinList = (items: string[]) => (items.length < 2 ? (items[0] ?? '') : `${items.slice(0, -1).join(', ')} e ${items[items.length - 1]}`);
+const joinList = (items: string[]) =>
+  items.length < 2
+    ? (items[0] ?? '')
+    : `${items.slice(0, -1).join(', ')} e ${items[items.length - 1]}`;
 
-const plural = (n: number, one: string, many: string) => `${formatNumber(n)} ${n === 1 ? one : many}`;
+const plural = (n: number, one: string, many: string) =>
+  `${formatNumber(n)} ${n === 1 ? one : many}`;
 
 /** Nome e texto da barra do marco da vida, por tipo (o tipo gira a cada colapso). */
 export function milestoneView(m: CollapseProgress['milestone']): RequirementView {
   const value = m.kind === 'comboFull' ? formatDuration(m.value) : formatNumber(m.value);
   const target = m.kind === 'comboFull' ? formatDuration(m.target) : formatNumber(m.target);
   const left = m.target - m.value;
-  const base = { id: 'milestone' as const, text: `${value} de ${target}`, fill: m.fill, done: m.done };
+  const base = {
+    id: 'milestone' as const,
+    text: `${value} de ${target}`,
+    fill: m.fill,
+    done: m.done,
+  };
   switch (m.kind) {
     case 'capture':
-      return { ...base, label: 'Objetos capturados', missing: m.done ? '' : plural(left, 'objeto', 'objetos') };
+      return {
+        ...base,
+        label: 'Objetos capturados',
+        missing: m.done ? '' : plural(left, 'objeto', 'objetos'),
+      };
     case 'combo':
-      return { ...base, label: 'Combo: toques seguidos', missing: m.done ? '' : plural(left, 'toque seguido', 'toques seguidos') };
+      return {
+        ...base,
+        label: 'Combo: toques seguidos',
+        missing: m.done ? '' : plural(left, 'toque seguido', 'toques seguidos'),
+      };
     case 'generators':
       return {
         ...base,
         label: `Geradores no nível ${m.level}`,
-        missing: m.done ? '' : plural(left, 'gerador no nível', 'geradores no nível') + ` ${m.level}`,
+        missing: m.done
+          ? ''
+          : plural(left, 'gerador no nível', 'geradores no nível') + ` ${m.level}`,
       };
     case 'missions':
-      return { ...base, label: 'Missões da estação', missing: m.done ? '' : plural(left, 'missão', 'missões') };
+      return {
+        ...base,
+        label: 'Missões da estação',
+        missing: m.done ? '' : plural(left, 'missão', 'missões'),
+      };
     case 'rares':
-      return { ...base, label: 'Estrelas Douradas capturadas', missing: m.done ? '' : plural(left, 'Estrela Dourada', 'Estrelas Douradas') };
+      return {
+        ...base,
+        label: 'Estrelas Douradas capturadas',
+        missing: m.done ? '' : plural(left, 'Estrela Dourada', 'Estrelas Douradas'),
+      };
     case 'comboFull':
-      return { ...base, label: 'Combo cheio sem parar', missing: m.done ? '' : `${formatDuration(left)} de combo cheio` };
+      return {
+        ...base,
+        label: 'Combo cheio sem parar',
+        missing: m.done ? '' : `${formatDuration(left)} de combo cheio`,
+      };
   }
 }
 
@@ -461,7 +511,11 @@ export function collapseView(state: SaveState): CollapseView {
     dustMissing,
     picksMissing,
     requirements,
-    hint: waitingChoice ? 'Termine a escolha de grimório' : parts.length ? `Falta ${joinList(parts)} para a estrela colapsar` : '',
+    hint: waitingChoice
+      ? 'Termine a escolha de grimório'
+      : parts.length
+        ? `Falta ${joinList(parts)} para a estrela colapsar`
+        : '',
     sparks: sparksOnCollapse(state),
     waitingChoice,
   };
@@ -476,7 +530,9 @@ export function goalMissing(view: CollapseView): string | null {
   if (view.waitingChoice) return 'termine a escolha';
   const pending = view.requirements.find((r) => !r.done);
   if (!pending) return 'quase lá';
-  return pending.id === 'dust' ? `faltam ${formatNumber(view.dustMissing)}` : `faltam ${pending.missing}`;
+  return pending.id === 'dust'
+    ? `faltam ${formatNumber(view.dustMissing)}`
+    : `faltam ${pending.missing}`;
 }
 
 /** Um proibido como carta do colapso ou casa do Cofre. */

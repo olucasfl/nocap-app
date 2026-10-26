@@ -9,7 +9,8 @@ import './sync-notice.css';
  * curto que some sozinho; o que fica na tela é só um ícone pequeno (ver `SyncView`).
  */
 export const SYNC_STRIP: Partial<Record<SyncState, string>> = {
-  offline: 'Sem conexão com a conta. Você segue jogando e o progresso sobe quando a internet voltar.',
+  offline:
+    'Sem conexão com a conta. Você segue jogando e o progresso sobe quando a internet voltar.',
   error: 'Não deu para salvar na conta. O progresso fica neste aparelho e a gente tenta de novo.',
   'signed-out': 'Sua sessão acabou. Entre de novo para continuar salvando na conta.',
 };
@@ -22,7 +23,8 @@ export const TOAST_MS = { problem: 5000, back: 3500 } as const;
 
 const NET_ICON: Record<'offline' | 'error' | 'signed-out', string> = {
   // Wi-Fi riscado, nuvem com exclamação, cadeado.
-  offline: 'M2 8.8a15 15 0 0 1 20 0M5.5 12.5a10 10 0 0 1 13 0M9 16a5 5 0 0 1 6 0M12 19.5h.01M3 3l18 18',
+  offline:
+    'M2 8.8a15 15 0 0 1 20 0M5.5 12.5a10 10 0 0 1 13 0M9 16a5 5 0 0 1 6 0M12 19.5h.01M3 3l18 18',
   error: 'M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 9.5 4 4 0 0 1 17.5 18zM12 9v4M12 15.5h.01',
   'signed-out': 'M5 11h14v9H5zM8 11V8a4 4 0 0 1 8 0v3',
 };
@@ -58,40 +60,83 @@ interface ViewProps {
 }
 
 /** Só a aparência: faixa de aviso ou o diálogo "Este save mudou em outro aparelho". */
-export function SyncView({ sync, conflict, confirming, busy, failed, onChoose, onCancel, showToast = true, recovered = false, onReveal }: ViewProps) {
+export function SyncView({
+  sync,
+  conflict,
+  confirming,
+  busy,
+  failed,
+  onChoose,
+  onCancel,
+  showToast = true,
+  recovered = false,
+  onReveal,
+}: ViewProps) {
   const root = useRef<HTMLDivElement>(null);
   useDialog(root, () => {});
   if (conflict) {
     const needsConfirm = confirming && confirming !== 'merge' ? confirming : null;
     return (
       <div className="ap-sync-wrap">
-        <div ref={root} className="ap-sync-card" role="alertdialog" aria-modal="true" aria-labelledby="ap-sync-title" tabIndex={-1}>
+        <div
+          ref={root}
+          className="ap-sync-card"
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="ap-sync-title"
+          tabIndex={-1}
+        >
           <h2 id="ap-sync-title">Este save mudou em outro aparelho</h2>
           <p className="ap-sync-sub">
-            Na conta: {lives(conflict.account.collapses)}. Neste aparelho: {lives(conflict.local.collapses)}. Nada foi
-            sobrescrito. Escolha como seguir.
+            Na conta: {lives(conflict.account.collapses)}. Neste aparelho:{' '}
+            {lives(conflict.local.collapses)}. Nada foi sobrescrito. Escolha como seguir.
           </p>
           {needsConfirm ? (
             <>
               <p className="ap-sync-warn">{CONFIRM_TEXT[needsConfirm]}</p>
               <div className="ap-sync-row">
-                <button type="button" className="ap-sync-btn danger" disabled={busy} onClick={() => onChoose(needsConfirm)}>
+                <button
+                  type="button"
+                  className="ap-sync-btn danger"
+                  disabled={busy}
+                  onClick={() => onChoose(needsConfirm)}
+                >
                   Sim, {CHOICE_LABEL[needsConfirm].toLowerCase()}
                 </button>
-                <button type="button" className="ap-sync-btn ghost" disabled={busy} onClick={onCancel}>
+                <button
+                  type="button"
+                  className="ap-sync-btn ghost"
+                  disabled={busy}
+                  onClick={onCancel}
+                >
                   Voltar
                 </button>
               </div>
             </>
           ) : (
             <div className="ap-sync-col">
-              <button type="button" className="ap-sync-btn" disabled={busy} onClick={() => onChoose('merge')}>
+              <button
+                type="button"
+                className="ap-sync-btn"
+                disabled={busy}
+                onClick={() => onChoose('merge')}
+              >
                 {CHOICE_LABEL.merge}
               </button>
-              <button type="button" className="ap-sync-btn ghost" disabled={busy} onClick={() => onChoose('account')}>
+              <button
+                type="button"
+                className="ap-sync-btn ghost"
+                disabled={busy}
+                onClick={() => onChoose('account')}
+              >
                 {CHOICE_LABEL.account}
               </button>
-              <button type="button" className="ap-sync-btn ghost" disabled={busy} onClick={() => onChoose('device')}>
+              <button
+                type="button"
+                className="ap-sync-btn ghost"
+                disabled={busy}
+                onClick={() => onChoose('device')}
+              >
                 {CHOICE_LABEL.device}
               </button>
             </div>
@@ -172,10 +217,13 @@ export function SyncNotice({ saves, slot, onBeforeResolve, onResolved }: Props) 
     if (!showToast) return;
     const bad = SYNC_STRIP[sync] !== undefined;
     if (!bad && !recovered) return;
-    const id = window.setTimeout(() => {
-      setShowToast(false);
-      if (!bad) setRecovered(false);
-    }, bad ? TOAST_MS.problem : TOAST_MS.back);
+    const id = window.setTimeout(
+      () => {
+        setShowToast(false);
+        if (!bad) setRecovered(false);
+      },
+      bad ? TOAST_MS.problem : TOAST_MS.back,
+    );
     return () => window.clearTimeout(id);
   }, [showToast, sync, recovered]);
 

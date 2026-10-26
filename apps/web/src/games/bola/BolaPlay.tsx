@@ -1,15 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  BOL_ACCEL,
+  BOL_AIR_ACCEL,
   BOL_DT,
+  BOL_SPEED,
   BOL_TEAM_COLORS,
   BOL_TEAM_NAMES,
   BolWorld,
   bolBotInput,
   createRng,
   newBolBotMemory,
+  type BolEvent,
   type BolInfo,
   type BolInput,
 } from '@nocap/games';
+import { sendRoom, sendRoomQuiet, subscribeRoom, useRoom } from '@/lib/rooms';
 import { DsmControls, STICK_RADIUS } from '../desmorona/controls';
 import '../desmorona/desmorona.css';
 import './bola.css';
@@ -39,6 +44,34 @@ export interface BolaSetup {
   perTeam: number;
   /** Minutos de partida no treino. */
   minutes: number;
+}
+
+/** Quem está em campo (vem do estado da sala): a vaga no fluxo, o corpo e o time. */
+export interface BolaRosterRow {
+  slot: number;
+  id: string;
+  name: string;
+  team: number;
+  bot: boolean;
+  away: boolean;
+}
+
+export interface BolaOnline {
+  meId: string;
+  roster: BolaRosterRow[];
+}
+
+/** Um quadro do fluxo "bs" da sala (ver `BolaRoomEngine.drainFrame`). */
+interface NetFrame {
+  ph: 'c' | 'p' | 'g' | 'o';
+  tm: number;
+  ck: number;
+  sc: number[];
+  gd: number;
+  b: number[];
+  p: number[][];
+  ev: Record<string, unknown>[];
+  st?: { r: number[][]; po: number[]; ce: number };
 }
 
 interface Hud {
@@ -87,13 +120,22 @@ export function bolaRoster(setup: BolaSetup): BolInfo[] {
 /** Treino do Bola Maluca!: você contra bots. O motor roda no aparelho; a sala online usa o mesmo motor no servidor. */
 export function BolaPlay({
   setup,
+  online,
   onExit,
   onAgain,
+  onEnd,
 }: {
   setup: BolaSetup;
+  /** Partida em sala: o servidor simula; aqui só desenha e manda a entrada. */
+  online?: BolaOnline;
   onExit: () => void;
-  onAgain: () => void;
+  onAgain?: () => void;
+  /** Só o líder da sala: encerra a partida. */
+  onEnd?: () => void;
 }) {
+  const rosterRef = useRef<BolaRosterRow[]>(online?.roster ?? []);
+  rosterRef.current = online?.roster ?? rosterRef.current;
+  const meId = online?.meId ?? 'me';
   const canvas = useRef<HTMLCanvasElement>(null);
   const zone = useRef<HTMLDivElement>(null);
   const root = useRef<HTMLDivElement>(null);
@@ -130,7 +172,15 @@ export function BolaPlay({
     const el = canvas.current;
     const zoneEl = zone.current;
     if (!el || !zoneEl) return undefined;
-    const infos = bolaRoster(setup);
+    const infos: BolInfo[] = online
+      ? rosterRef.current.map((r) => ({
+          id: r.id,
+          name: r.name,
+          color: BOL_TEAM_COLORS[r.team] as number,
+          team: r.team,
+          bot: r.bot || undefined,
+        }))
+      : bolaRoster(setup);
     const world = new BolWorld(infos, {
       teams: setup.teams,
       perTeam: setup.perTeam,
@@ -203,6 +253,57 @@ export function BolaPlay({
     };
     const nameOf = (id: string | null) => world.players.find((p) => p.id === id)?.name ?? 'Alguém';
 
+    const onEvent = (e: BolEvent) => {
+      if (e.type === 'goal') {
+        const tn = (t: number) => BOL_TEAM_NAMES[t] ?? '';
+        let title = 'GOL!';
+        let sub = `${nameOf(e.scorerId)} · time ${tn(e.scorerTeam)}`;
+        if (e.noTouch) {
+          title = `GOL CONTRA DO TIME ${tn(e.goalTeam).toUpperCase()}`;
+          sub = `Ninguém tocou na bola · ponto para o time ${tn(e.scorerTeam)}`;
+        } else if (e.own) {
+          title = 'GOL CONTRA';
+          sub = `${nameOf(e.ownerId)} (${tn(e.goalTeam)}) · ponto para o time ${tn(e.scorerTeam)}`;
+        }
+        push(`${title} · ${sub}`, e.scorerTeam);
+        banner = { title, sub, team: e.scorerTeam, id: feedId++ };
+        window.clearTimeout(bannerTimer);
+        bannerTimer = window.setTimeout(() => {
+          banner = null;
+        }, 4800);
+        scene.shakeNow(0.6);
+        scene.celebrate(e.goalTeam, BOL_TEAM_COLORS[e.scorerTeam] as number);
+        flashId++;
+      } else if (e.type === 'nogoal') {
+        banner = {
+          title: 'SEM GOL',
+          sub: e.ownerId
+            ? `Gol contra de ${nameOf(e.ownerId)} e ninguém de outro time tocou na bola: a bola volta ao centro`
+            : 'Ninguém tocou na bola: a bola volta ao centro',
+          team: -1,
+          id: feedId++,
+        };
+        window.clearTimeout(bannerTimer);
+        bannerTimer = window.setTimeout(() => {
+          banner = null;
+        }, 3500);
+      } else if (e.type === 'warn') {
+        warn = e.left >= 60 ? `Faltam ${Math.round(e.left / 60)} min` : 'Falta 1 minuto';
+        window.clearTimeout(warnTimer);
+        warnTimer = window.setTimeout(() => {
+          warn = '';
+        }, 3500);
+      } else if (e.type === 'golden') {
+        warn = 'Gol de ouro! Quem marcar ganha';
+      } else if (e.type === 'ballreset') {
+        warn = 'Bola parada: de volta ao centro';
+        window.clearTimeout(warnTimer);
+        warnTimer = window.setTimeout(() => {
+          warn = '';
+        }, 3000);
+      }
+    };
+
     let botN = world.players.length;
     const botMemory = (p: { team: number }, i: number) =>
       newBolBotMemory(
@@ -211,7 +312,12 @@ export function BolaPlay({
       );
     /** Troca de time (ou vira espectador): o corpo antigo vira bot e, no time novo, você assume o lugar de um bot. */
     switchTeam.current = (team, botId = null) => {
-      const cur = world.player('me');
+      if (online) {
+        // a sala decide; erros (time cheio, bot que já saiu) voltam como aviso
+        sendRoom('bteam', { team, bot: botId ?? undefined });
+        return null;
+      }
+      const cur = world.player(meId);
       if (cur && cur.team === team) return null;
       if (!cur && team < 0) return null;
       if (team >= 0) {
@@ -224,13 +330,13 @@ export function BolaPlay({
       }
       if (cur) {
         const id = `bot${botN}`;
-        world.becomeBot('me', id, BOT_NAMES[botN % BOT_NAMES.length] as string);
+        world.becomeBot(meId, id, BOT_NAMES[botN % BOT_NAMES.length] as string);
         mem.set(id, botMemory(cur, botN));
         botN++;
       }
       if (team >= 0) {
         const info: BolInfo = {
-          id: 'me',
+          id: meId,
           name: 'Você',
           color: BOL_TEAM_COLORS[team] as number,
           team,
@@ -255,6 +361,250 @@ export function BolaPlay({
     const ro = new ResizeObserver(resize);
     ro.observe(el);
 
+    // ---- online: o servidor simula; aqui o estado dele é suavizado e a entrada é enviada ----
+    interface Tgt {
+      x: number;
+      y: number;
+      z: number;
+      vx: number;
+      vy: number;
+      vz: number;
+      h: number;
+      fl: number;
+      at: number;
+    }
+    const unsubs: (() => void)[] = [];
+    const targets = new Map<number, Tgt>();
+    let ballT: Tgt | null = null;
+    let slotId = new Map<number, string>();
+    let rosterKey = '';
+    const placed = new Set<string>();
+    let jumps = 0;
+    let seq = 0;
+    let sentInput = { mx: 0, mz: 0 };
+    let pvx = 0;
+    let pvz = 0;
+    const idOfSlot = (s: unknown) => (typeof s === 'number' ? (slotId.get(s) ?? null) : null);
+    const syncRoster = () => {
+      const roster = rosterRef.current;
+      const key = JSON.stringify(roster.map((r) => [r.slot, r.id, r.team, r.bot]));
+      if (key === rosterKey) return;
+      rosterKey = key;
+      const saved = new Map(world.players.map((p) => [p.id, [p.x, p.y, p.z] as const]));
+      const ids = new Set(roster.map((r) => r.id));
+      for (const p of [...world.players]) if (!ids.has(p.id)) world.removePlayer(p.id);
+      for (const r of roster) {
+        const cur = world.player(r.id);
+        if (cur) {
+          cur.name = r.name;
+          cur.team = r.team;
+          cur.bot = r.bot;
+        } else {
+          world.addPlayer({
+            id: r.id,
+            name: r.name,
+            color: BOL_TEAM_COLORS[r.team] as number,
+            team: r.team,
+            bot: r.bot || undefined,
+          });
+        }
+      }
+      // entrar na lista reposiciona o time no motor: devolve cada corpo onde estava
+      for (const p of world.players) {
+        const pos = saved.get(p.id);
+        if (pos) [p.x, p.y, p.z] = pos;
+        else placed.delete(p.id);
+      }
+      slotId = new Map(roster.map((r) => [r.slot, r.id]));
+      scene.sync();
+    };
+    const toEvent = (e: Record<string, unknown>): BolEvent | null => {
+      switch (e.t) {
+        case 'goal':
+          return {
+            type: 'goal',
+            goalTeam: e.gt as number,
+            scorerId: idOfSlot(e.sc),
+            scorerTeam: e.st as number,
+            own: !!e.own,
+            ownerId: idOfSlot(e.ow),
+            noTouch: !!e.nt,
+            assistId: idOfSlot(e.as),
+          };
+        case 'nogoal':
+          return { type: 'nogoal', goalTeam: e.gt as number, ownerId: idOfSlot(e.ow) };
+        case 'warn':
+          return { type: 'warn', left: e.l as number };
+        case 'golden':
+          return { type: 'golden' };
+        case 'ballreset':
+          return { type: 'ballreset' };
+        default:
+          return null;
+      }
+    };
+    if (online) {
+      syncRoster();
+      unsubs.push(
+        subscribeRoom('bs', (m) => {
+          const f = m as NetFrame;
+          if (!f || !Array.isArray(f.p)) return;
+          syncRoster();
+          const at = performance.now();
+          const phases = { c: 'countdown', p: 'play', g: 'goal', o: 'over' } as const;
+          world.phase = phases[f.ph] ?? world.phase;
+          world.timer = f.tm;
+          world.clock = f.ck;
+          world.golden = f.gd === 1;
+          world.scores.splice(0, world.scores.length, ...f.sc);
+          ballT = {
+            x: f.b[0]!,
+            y: f.b[1]!,
+            z: f.b[2]!,
+            vx: f.b[3]!,
+            vy: f.b[4]!,
+            vz: f.b[5]!,
+            h: 0,
+            fl: 0,
+            at,
+          };
+          for (const r of f.p) {
+            targets.set(r[0]!, {
+              x: r[1]!,
+              y: r[2]!,
+              z: r[3]!,
+              vx: r[4]!,
+              vy: r[5]!,
+              vz: r[6]!,
+              h: r[7]!,
+              fl: r[8]!,
+              at,
+            });
+          }
+          if (f.st) {
+            world.celebrating = f.st.ce;
+            world.possession.splice(0, world.possession.length, ...f.st.po);
+            for (const r of f.st.r) {
+              const p = world.player(idOfSlot(r[0]) ?? '');
+              if (p)
+                p.stats = {
+                  goals: r[1]!,
+                  assists: r[2]!,
+                  ownGoals: r[3]!,
+                  touches: r[4]!,
+                  kicks: r[5]!,
+                };
+            }
+          }
+          for (const raw of f.ev) {
+            const e = toEvent(raw);
+            if (e) onEvent(e);
+          }
+        }),
+      );
+      // erros do servidor (time cheio, bot que já saiu...) viram aviso na tela
+      unsubs.push(
+        useRoom.subscribe((st, prev) => {
+          if (st.message && st.message !== prev.message) {
+            warn = st.message;
+            window.clearTimeout(warnTimer);
+            warnTimer = window.setTimeout(() => {
+              warn = '';
+            }, 3500);
+            useRoom.setState({ message: '' });
+          }
+        }),
+      );
+    }
+    const sendInput = () => {
+      if (!online || !world.player(meId)) return;
+      sendRoomQuiet('bin', [
+        Math.round(sentInput.mx * 100) / 100,
+        Math.round(sentInput.mz * 100) / 100,
+        jumps,
+        ++seq,
+      ]);
+    };
+    const inputTimer = online ? window.setInterval(sendInput, 33) : 0;
+    const smoothOnline = (dt: number, input: { mx: number; mz: number }) => {
+      syncRoster();
+      const now = performance.now();
+      const k = 1 - Math.exp(-dt * 16);
+      const bySlot = new Map<string, number>();
+      for (const [slot, id] of slotId) bySlot.set(id, slot);
+      for (const p of world.players) {
+        const t = targets.get(bySlot.get(p.id) ?? -1);
+        if (!t) continue;
+        const age = Math.min(0.12, (now - t.at) / 1000);
+        const tx = t.x + t.vx * age;
+        const ty = Math.max(0, t.y + t.vy * age);
+        const tz = t.z + t.vz * age;
+        const grounded = (t.fl & 1) === 1;
+        const flipping = (t.fl & 2) === 2;
+        if (!placed.has(p.id) || Math.hypot(p.x - tx, p.z - tz) > 6) {
+          Object.assign(p, { x: tx, y: ty, z: tz });
+          placed.add(p.id);
+          if (p.id === meId) {
+            pvx = t.vx;
+            pvz = t.vz;
+          }
+        } else if (p.id === meId && grounded && !flipping && world.phase === 'play') {
+          // a própria raposa se mexe na hora (com a mesma aceleração do servidor) e é puxada de volta se o servidor discordar
+          const a = (grounded ? BOL_ACCEL : BOL_AIR_ACCEL) * dt;
+          const wx = input.mx * BOL_SPEED - pvx;
+          const wz = input.mz * BOL_SPEED - pvz;
+          const d = Math.hypot(wx, wz);
+          if (d <= a) {
+            pvx = input.mx * BOL_SPEED;
+            pvz = input.mz * BOL_SPEED;
+          } else {
+            pvx += (wx / d) * a;
+            pvz += (wz / d) * a;
+          }
+          p.x += pvx * dt;
+          p.z += pvz * dt;
+          const kc = 1 - Math.exp(-dt * 6);
+          p.x += (tx - p.x) * kc;
+          p.z += (tz - p.z) * kc;
+          p.y += (ty - p.y) * k;
+        } else {
+          p.x += (tx - p.x) * k;
+          p.y += (ty - p.y) * k;
+          p.z += (tz - p.z) * k;
+          if (p.id === meId) {
+            pvx = t.vx;
+            pvz = t.vz;
+          }
+        }
+        p.vx = t.vx;
+        p.vy = t.vy;
+        p.vz = t.vz;
+        let dh = t.h - p.heading;
+        dh = Math.atan2(Math.sin(dh), Math.cos(dh));
+        p.heading += dh * Math.min(1, dt * 14);
+        p.grounded = grounded;
+        p.flipT = flipping ? 0.3 : 0;
+        p.airJumped = (t.fl & 4) === 4;
+      }
+      if (ballT) {
+        const age = Math.min(0.1, (now - ballT.at) / 1000);
+        const tx = ballT.x + ballT.vx * age;
+        const ty = Math.max(0.9, ballT.y + ballT.vy * age);
+        const tz = ballT.z + ballT.vz * age;
+        const b = world.ball;
+        const kb = 1 - Math.exp(-dt * 24);
+        if (Math.hypot(b.x - tx, b.z - tz) > 6) Object.assign(b, { x: tx, y: ty, z: tz });
+        else {
+          b.x += (tx - b.x) * kb;
+          b.y += (ty - b.y) * kb;
+          b.z += (tz - b.z) * kb;
+        }
+        b.vx = ballT.vx;
+        b.vy = ballT.vy;
+        b.vz = ballT.vz;
+      }
+    };
+
     let last = performance.now();
     let acc = 0;
     let hudAt = 0;
@@ -263,10 +613,14 @@ export function BolaPlay({
     const tick = (now: number) => {
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
-      const me = world.player('me');
+      const me = world.player(meId);
       if (!document.hidden) {
-        acc += dt;
+        if (!online) acc += dt;
         const input = me ? controls.read() : { mx: 0, mz: 0, jump: false };
+        if (online && input.jump) {
+          jumps++;
+          sendInput();
+        }
         if (input.jump) jumpUntil = now + JUMP_BUFFER_MS;
         input.jump = false;
         // a câmera segue a bola por padrão (E troca para câmera livre com o mouse)
@@ -298,7 +652,11 @@ export function BolaPlay({
           input.mx = mx;
           input.mz = mz;
         }
-        while (acc >= BOL_DT) {
+        if (online) {
+          sentInput = { mx: input.mx, mz: input.mz };
+          smoothOnline(dt, input);
+        }
+        while (!online && acc >= BOL_DT) {
           acc -= BOL_DT;
           const inputs: Record<string, BolInput> = {};
           for (const p of world.players) {
@@ -312,61 +670,12 @@ export function BolaPlay({
           }
           const jumpNow = !!me && jumpUntil > now && (me.grounded || !me.airJumped);
           if (jumpNow) jumpUntil = 0;
-          inputs.me = { mx: input.mx, mz: input.mz, jump: jumpNow };
+          inputs[meId] = { mx: input.mx, mz: input.mz, jump: jumpNow };
           world.step(BOL_DT, inputs);
-          for (const e of world.drainEvents()) {
-            if (e.type === 'goal') {
-              const tn = (t: number) => BOL_TEAM_NAMES[t] ?? '';
-              let title = 'GOL!';
-              let sub = `${nameOf(e.scorerId)} · time ${tn(e.scorerTeam)}`;
-              if (e.noTouch) {
-                title = `GOL CONTRA DO TIME ${tn(e.goalTeam).toUpperCase()}`;
-                sub = `Ninguém tocou na bola · ponto para o time ${tn(e.scorerTeam)}`;
-              } else if (e.own) {
-                title = 'GOL CONTRA';
-                sub = `${nameOf(e.ownerId)} (${tn(e.goalTeam)}) · ponto para o time ${tn(e.scorerTeam)}`;
-              }
-              push(`${title} · ${sub}`, e.scorerTeam);
-              banner = { title, sub, team: e.scorerTeam, id: feedId++ };
-              window.clearTimeout(bannerTimer);
-              bannerTimer = window.setTimeout(() => {
-                banner = null;
-              }, 4800);
-              scene.shakeNow(0.6);
-              scene.celebrate(e.goalTeam, BOL_TEAM_COLORS[e.scorerTeam] as number);
-              flashId++;
-            } else if (e.type === 'nogoal') {
-              banner = {
-                title: 'SEM GOL',
-                sub: e.ownerId
-                  ? `Gol contra de ${nameOf(e.ownerId)} e ninguém de outro time tocou na bola: a bola volta ao centro`
-                  : 'Ninguém tocou na bola: a bola volta ao centro',
-                team: -1,
-                id: feedId++,
-              };
-              window.clearTimeout(bannerTimer);
-              bannerTimer = window.setTimeout(() => {
-                banner = null;
-              }, 3500);
-            } else if (e.type === 'warn') {
-              warn = e.left >= 60 ? `Faltam ${Math.round(e.left / 60)} min` : 'Falta 1 minuto';
-              window.clearTimeout(warnTimer);
-              warnTimer = window.setTimeout(() => {
-                warn = '';
-              }, 3500);
-            } else if (e.type === 'golden') {
-              warn = 'Gol de ouro! Quem marcar ganha';
-            } else if (e.type === 'ballreset') {
-              warn = 'Bola parada: de volta ao centro';
-              window.clearTimeout(warnTimer);
-              warnTimer = window.setTimeout(() => {
-                warn = '';
-              }, 3000);
-            }
-          }
+          for (const e of world.drainEvents()) onEvent(e);
         }
       }
-      scene.render(dt, 'me');
+      scene.render(dt, meId);
       if (now - hudAt > 100) {
         hudAt = now;
         setHud({
@@ -381,7 +690,7 @@ export function BolaPlay({
           ballCam,
           banner,
           flash: flashId,
-          myTeam: world.player('me')?.team ?? -1,
+          myTeam: world.player(meId)?.team ?? -1,
           // a tabela só é montada quando aparece: sem custo no resto da partida
           rows: statsOn.current
             ? world.players.map((p) => ({
@@ -412,6 +721,8 @@ export function BolaPlay({
       cancelAnimationFrame(raf);
       window.clearTimeout(warnTimer);
       window.clearTimeout(bannerTimer);
+      window.clearInterval(inputTimer);
+      for (const off of unsubs) off();
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('keyup', onKeyUp);
       window.removeEventListener('blur', onBlur);
@@ -419,7 +730,7 @@ export function BolaPlay({
       controls.detach();
       scene.dispose();
     };
-  }, [setup, controls]);
+  }, [setup, controls, online?.meId]);
 
   // o mouse só fica preso à câmera durante a partida: tabela, configurações e fim de jogo soltam o cursor
   const finished = hud.phase === 'over';
@@ -498,18 +809,6 @@ export function BolaPlay({
           </div>
         </div>
       )}
-      {hud.flash > 0 && hud.phase === 'goal' && (
-        <div
-          key={hud.flash}
-          className="bola-flash"
-          aria-hidden="true"
-          style={{
-            background: hud.banner
-              ? `#${(hud.banner.team >= 0 ? (BOL_TEAM_COLORS[hud.banner.team] as number) : 0xffffff).toString(16).padStart(6, '0')}`
-              : '#fff',
-          }}
-        />
-      )}
       {hud.banner && (
         <div
           key={hud.banner.id}
@@ -574,7 +873,7 @@ export function BolaPlay({
           scores={hud.scores}
           possession={hud.possession}
           clock={fmt(hud.clock)}
-          meId="me"
+          meId={meId}
           pinned={pinned}
           onClose={() => setPinned(false)}
         />
@@ -593,6 +892,7 @@ export function BolaPlay({
           }}
           onCam={() => camToggle.current()}
           onTeams={() => setTeamsOpen(true)}
+          onEnd={onEnd}
           onExit={onExit}
         />
       )}
@@ -601,7 +901,7 @@ export function BolaPlay({
           teams={setup.teams}
           perTeam={setup.perTeam}
           rows={hud.rows}
-          meId="me"
+          meId={meId}
           spectating={hud.myTeam < 0}
           onTake={(t, botId) => {
             const err = switchTeam.current(t, botId);

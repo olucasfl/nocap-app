@@ -78,7 +78,14 @@ describe('selo de Melhorias', () => {
     expect(affordableCount(s)).toBe(0);
     const rich: SaveState = { ...s, run: { ...s.run, dust: 50, dustLife: 50 } };
     expect(affordableCount(rich)).toBe(1);
-    expect(affordableCount(buyUpgrade(rich, UPGRADES.findIndex((u) => u.id === 'satellite')))).toBe(0);
+    expect(
+      affordableCount(
+        buyUpgrade(
+          rich,
+          UPGRADES.findIndex((u) => u.id === 'satellite'),
+        ),
+      ),
+    ).toBe(0);
   });
 });
 
@@ -92,7 +99,8 @@ describe('combo na tela', () => {
 
 describe('arte dos grimórios', () => {
   it('toda raridade do motor tem raridade no kit', () => {
-    for (const r of ['common', 'rare', 'epic', 'legendary', 'forbidden']) expect(RARITIES).toContain(artRarity(r));
+    for (const r of ['common', 'rare', 'epic', 'legendary', 'forbidden'])
+      expect(RARITIES).toContain(artRarity(r));
   });
 
   it('todo grimório do catálogo tem uma medalha válida', () => {
@@ -111,20 +119,40 @@ describe('objetos no espaço', () => {
   });
 
   it('a etiqueta diz a recompensa de cada objeto', () => {
-    const none = { dust: 0, energy: 0, boostMult: 0, boostSec: 0, frenzy: false, surgeSec: 0, freeReroll: false };
+    const none = {
+      dust: 0,
+      energy: 0,
+      boostMult: 0,
+      boostSec: 0,
+      frenzy: false,
+      surgeSec: 0,
+      freeReroll: false,
+    };
     expect(rewardText({ ...none, dust: 1200 })).toContain('poeira');
     expect(rewardText({ ...none, energy: 2 })).toBe('+2 energia');
     expect(rewardText({ ...none, boostMult: 2, boostSec: 8 })).toBe('Sinal forte x2 por 8 s');
     expect(rewardText({ ...none, freeReroll: true })).toBe('1 troca grátis');
     // Estrela Dourada: Frenesi, Chuva (poeira) e Surto dos geradores.
-    expect(rewardText({ ...none, boostMult: 7, boostSec: 30, frenzy: true })).toBe('Frenesi x7 por 30 s');
+    expect(rewardText({ ...none, boostMult: 7, boostSec: 30, frenzy: true })).toBe(
+      'Frenesi x7 por 30 s',
+    );
     expect(rewardText({ ...none, surgeSec: 45 })).toBe('Geradores a todo vapor por 45 s');
   });
 
   it('o aviso concorda em gênero e o texto flutuante é curto', () => {
     expect(capturedTitle('comet')).toBe('Cometa capturado');
     expect(capturedTitle('shooting-star')).toBe('Estrela cadente capturada');
-    expect(floatText({ dust: 0, energy: 0, boostMult: 2, boostSec: 8, frenzy: false, surgeSec: 0, freeReroll: false })).toBe('Sinal forte x2');
+    expect(
+      floatText({
+        dust: 0,
+        energy: 0,
+        boostMult: 2,
+        boostSec: 8,
+        frenzy: false,
+        surgeSec: 0,
+        freeReroll: false,
+      }),
+    ).toBe('Sinal forte x2');
     expect(capturedTitle('golden')).toBe('Estrela Dourada capturada');
     expect(objectArt('golden')).toBe('golden');
   });
@@ -147,7 +175,7 @@ describe('objetos no espaço', () => {
         for (let j = i + 1; j < 4; j++) {
           const a = slots[i]!;
           const b = slots[j]!;
-          const sameBand = (a.y > 50) === (b.y > 50);
+          const sameBand = a.y > 50 === b.y > 50;
           // Na mesma faixa (cima ou baixo) um fica à esquerda e o outro à direita.
           if (sameBand) expect(Math.abs(a.x - b.x)).toBeGreaterThanOrEqual(40);
           else expect(Math.abs(a.y - b.y)).toBeGreaterThan(40);
@@ -180,7 +208,7 @@ describe('objetos no espaço', () => {
     book.sync([1, 2, 3, 4, 5]);
     const outer = [1, 2, 3, 4].map((id) => book.slot(id));
     const fifth = book.slot(5);
-    const sameCorner = outer.find((o) => (o.y > 50) === (fifth.y > 50) && (o.x > 50) === (fifth.x > 50))!;
+    const sameCorner = outer.find((o) => o.y > 50 === fifth.y > 50 && o.x > 50 === fifth.x > 50)!;
     expect(Math.abs(sameCorner.y - fifth.y)).toBeGreaterThanOrEqual(8);
   });
 
@@ -204,7 +232,11 @@ describe('botão de meta do HUD (só o que falta)', () => {
 
   it('com a poeira cumprida passa a dizer o que ainda falta (escolhas)', () => {
     const view = collapseView(base);
-    const dustDone = { ...view, dustMissing: 0, requirements: view.requirements.map((r) => (r.id === 'dust' ? { ...r, done: true } : r)) };
+    const dustDone = {
+      ...view,
+      dustMissing: 0,
+      requirements: view.requirements.map((r) => (r.id === 'dust' ? { ...r, done: true } : r)),
+    };
     expect(goalMissing(dustDone)).toMatch(/^faltam .*escolha/);
   });
 

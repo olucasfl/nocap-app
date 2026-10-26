@@ -35,7 +35,12 @@ export function TreePanel({ row, onBuy, onClose }: Props) {
           </small>
           <h3>{row.name}</h3>
         </div>
-        <button type="button" className="ap-tp-close" onClick={onClose} aria-label="Fechar o detalhe do nó">
+        <button
+          type="button"
+          className="ap-tp-close"
+          onClick={onClose}
+          aria-label="Fechar o detalhe do nó"
+        >
           Fechar
         </button>
       </header>
@@ -83,8 +88,19 @@ export function TreePanel({ row, onBuy, onClose }: Props) {
               : STATUS_TEXT[row.status]}
       </p>
       {!maxed && (
-        <button type="button" className="ap-tp-buy" disabled={!can} onClick={() => can && onBuy(row.id)}>
-          {can ? `Comprar · ${row.cost}` : row.status === 'short' ? `Falta ${row.missing}` : row.status === 'soon' ? 'Em breve' : 'Indisponível'}
+        <button
+          type="button"
+          className="ap-tp-buy"
+          disabled={!can}
+          onClick={() => can && onBuy(row.id)}
+        >
+          {can
+            ? `Comprar · ${row.cost}`
+            : row.status === 'short'
+              ? `Falta ${row.missing}`
+              : row.status === 'soon'
+                ? 'Em breve'
+                : 'Indisponível'}
         </button>
       )}
     </aside>

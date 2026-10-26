@@ -9,6 +9,7 @@ export function BolaMenu({
   onStats,
   onCam,
   onTeams,
+  onEnd,
   onExit,
 }: {
   /** Time de quem joga; -1 = espectador. */
@@ -18,9 +19,12 @@ export function BolaMenu({
   onStats: () => void;
   onCam: () => void;
   onTeams: () => void;
+  /** Só o líder da sala: encerra a partida com o placar de agora. */
+  onEnd?: () => void;
   onExit: () => void;
 }) {
   const [sure, setSure] = useState(false);
+  const [confirmEnd, setConfirmEnd] = useState(false);
   const spectating = myTeam < 0;
   return (
     <div
@@ -54,6 +58,17 @@ export function BolaMenu({
             {spectating ? 'Espectando' : `Time ${BOL_TEAM_NAMES[myTeam] ?? ''}`}
           </span>
         </button>
+        {onEnd && (
+          <button
+            type="button"
+            className="bola-item"
+            onClick={() => (confirmEnd ? onEnd() : setConfirmEnd(true))}
+            onBlur={() => setConfirmEnd(false)}
+            data-testid="bola-menu-end"
+          >
+            <span>{confirmEnd ? 'Toque de novo para encerrar' : 'Encerrar a partida'}</span>
+          </button>
+        )}
         <button
           type="button"
           className={`dsm-btn is-ghost bola-leave${sure ? ' is-sure' : ''}`}
