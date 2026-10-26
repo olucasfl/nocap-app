@@ -18,7 +18,6 @@ import {
 } from '@nocap/games';
 import { createAtravessaAudio } from '@/lib/atravessa-audio';
 import { buzz, holdAudio } from '@/lib/sfx';
-import { DirPad } from './DirPad';
 import { attachControls } from './input';
 import { AtravessaScene } from './scene';
 import './atravessa.css';
@@ -98,7 +97,6 @@ export function AtravessaPlay({ seed, record, onEnd, onQuit, onRestart, onOfflin
     null,
   );
   const ctl = useRef<{ pause: () => void; resume: () => void } | null>(null);
-  const dirRef = useRef<(d: Dir) => void>(() => undefined);
   // o recorde pode chegar do servidor depois da partida começar: ele não refaz a cena
   const recordRef = useRef(record);
   recordRef.current = record;
@@ -135,7 +133,6 @@ export function AtravessaPlay({ seed, record, onEnd, onQuit, onRestart, onOfflin
       pending.push(d);
       setHint(false);
     };
-    dirRef.current = onDir;
     const controls = attachControls(el, onDir);
 
     const resize = () => scene.resize(el.clientWidth || 360, el.clientHeight || 640);
@@ -397,7 +394,6 @@ export function AtravessaPlay({ seed, record, onEnd, onQuit, onRestart, onOfflin
         <b>{score}</b>
         {record > 0 && <small className="mono">REC {record}</small>}
       </div>
-      {!over && !failed && <DirPad onDir={(d) => dirRef.current(d)} />}
       {!over && (
         <div className="at-tools">
           <GearButton onClick={() => ctl.current?.pause()} testId="atr-menu-btn" />
@@ -414,7 +410,7 @@ export function AtravessaPlay({ seed, record, onEnd, onQuit, onRestart, onOfflin
       {hint && !over && !failed && (
         <p className="at-hint mono">
           {touch ? (
-            'TOQUE PARA PULAR · SETAS OU DESLIZE PARA O LADO'
+            'TOQUE PARA PULAR · DESLIZE PARA IR PARA O LADO'
           ) : (
             <>
               <Keycap k="W" touchHide={false} />

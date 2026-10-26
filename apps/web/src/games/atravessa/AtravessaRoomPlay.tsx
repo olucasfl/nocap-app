@@ -26,7 +26,6 @@ import {
   type RoomSnapshot,
 } from '@/lib/rooms';
 import { buzz } from '@/lib/sfx';
-import { DirPad } from './DirPad';
 import { attachControls } from './input';
 import { meters, raceTime } from './AtravessaReveal';
 import { atravessaTipRows } from './AtravessaPlay';
@@ -171,7 +170,6 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
     window.addEventListener('keydown', key);
     return () => window.removeEventListener('keydown', key);
   }, []);
-  const dirRef = useRef<(d: Dir) => void>(() => undefined);
   const wrap = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const tags = useRef(new Map<string, HTMLDivElement>());
@@ -272,7 +270,6 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
       pending.push(d);
       setHint(false);
     };
-    dirRef.current = onDir;
     const controls = attachControls(el, onDir);
     let lastSent = -1;
     const sender = window.setInterval(() => {
@@ -552,8 +549,6 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
       aria-label="Partida do Atravessa! em sala"
     >
       <canvas ref={canvas} className="at-canvas" />
-
-      <DirPad onDir={(d) => dirRef.current(d)} />
       <div className="at-tools is-left">
         <GearButton onClick={() => setMenu(true)} testId="atr-menu-btn" />
       </div>
@@ -664,7 +659,7 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
 
       {hint && ui.count === null && !ui.over && !failed && (
         <p className="at-hint mono">
-          {touch ? 'TOQUE PARA PULAR · SETAS OU DESLIZE PARA O LADO' : 'W A S D OU AS SETAS'}
+          {touch ? 'TOQUE PARA PULAR · DESLIZE PARA IR PARA O LADO' : 'W A S D OU AS SETAS'}
         </p>
       )}
 
