@@ -27,7 +27,7 @@ export const HOW_TO_PLAY = {
     points: [
       'Futebol de raposas com 2 a 4 times. O gol vale para quem tocou na bola por último.',
       'Pule duas vezes com uma direção apertada para dar o mortal: ele chuta a bola.',
-      'Vence quem fizer mais gols; empate vai para o gol de ouro.',
+      'Vence quem fizer mais gols; empate vai para o gol de ouro. Com 3 ou 4 times, quem leva o gol perde 1 ponto e, no empate, só os empatados seguem na prorrogação.',
     ],
     keys: 'Computador: W A S D, Espaço pula, F prende ou solta a câmera. Celular: joystick e botão Pular.',
   },

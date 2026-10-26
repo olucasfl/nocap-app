@@ -374,7 +374,7 @@ describe('gol', () => {
     w.lastByTeam[0] = w.lastTouch;
     shoot(w, 0);
     run(w, 0.5);
-    expect(w.scores).toEqual([0, 0, 1]);
+    expect(w.scores).toEqual([-1, 0, 1]);
     expect(w.drainEvents().find((e) => e.type === 'goal')).toMatchObject({
       goalTeam: 0,
       scorerTeam: 2,
@@ -420,9 +420,74 @@ describe('gol', () => {
     w.lastByTeam[1] = w.lastTouch;
     shoot(w, 0);
     run(w, 0.5);
-    expect(w.scores).toEqual([0, 1, 0]);
+    expect(w.scores).toEqual([-1, 1, 0]);
     expect(w.player('t1p0')!.stats.goals).toBe(1);
   });
+
+  it('com 3 ou 4 times quem leva o gol perde 1 ponto (e pode ficar negativo); com 2 times não há perda', () => {
+    const w = new BolWorld(roster(4, 1), { teams: 4, perTeam: 1 });
+    startPlay(w);
+    w.lastTouch = { id: 't1p0', team: 1, t: 1 };
+    w.lastByTeam[1] = w.lastTouch;
+    shoot(w, 0);
+    run(w, 0.5);
+    expect(w.scores).toEqual([-1, 1, 0, 0]);
+    const two = new BolWorld(roster(2, 1), { teams: 2, perTeam: 1 });
+    startPlay(two);
+    two.lastTouch = { id: 't1p0', team: 1, t: 1 };
+    two.lastByTeam[1] = two.lastTouch;
+    shoot(two, 0);
+    run(two, 0.5);
+    expect(two.scores).toEqual([0, 1]);
+  });
+
+  it('empate no topo com 3 times: só os empatados seguem na prorrogação; o outro vira espectador e o gol dele fecha', () => {
+    const w = new BolWorld(roster(3, 1), { teams: 3, perTeam: 1, durationSec: 60 });
+    startPlay(w);
+    w.scores.splice(0, 3, 2, 2, 0);
+    w.clock = 60;
+    run(w, 0.1);
+    expect(w.golden).toBe(true);
+    expect(w.out).toEqual([false, false, true]);
+    expect(w.players.map((p) => p.team).sort()).toEqual([0, 1]);
+    expect(w.drainEvents().find((e) => e.type === 'golden')).toMatchObject({ out: [2] });
+    // o gol do time 2 está fechado: a bola bate nele como numa parede
+    startPlay(w);
+    w.lastTouch = { id: 't0p0', team: 0, t: 1 };
+    w.lastByTeam[0] = w.lastTouch;
+    shoot(w, 2);
+    run(w, 1);
+    expect(w.phase).toBe('play');
+    expect(w.scores).toEqual([2, 2, 0]);
+  });
+
+  it('na prorrogação quem faz gol no gol aberto ganha, sem perder pontos de ninguém', () => {
+    const w = new BolWorld(roster(3, 1), { teams: 3, perTeam: 1, durationSec: 60 });
+    startPlay(w);
+    w.scores.splice(0, 3, 2, 2, 0);
+    w.clock = 60;
+    run(w, 0.1);
+    w.drainEvents();
+    startPlay(w);
+    w.lastTouch = { id: 't1p0', team: 1, t: 1 };
+    w.lastByTeam[1] = w.lastTouch;
+    shoot(w, 0);
+    run(w, 0.5);
+    expect(w.phase).toBe('over');
+    expect(w.winner).toBe(1);
+    expect(w.scores).toEqual([2, 3, 0]);
+  });
+
+  it('empate de todos os times com 3 ou 4 times: todos vão para a prorrogação', () => {
+    const w = new BolWorld(roster(4, 1), { teams: 4, perTeam: 1, durationSec: 60 });
+    startPlay(w);
+    w.clock = 60;
+    run(w, 0.1);
+    expect(w.golden).toBe(true);
+    expect(w.out.every((o) => !o)).toBe(true);
+    expect(w.players).toHaveLength(4);
+  });
+
 
   it('sem toque e com 2 times: gol contra do dono do gol, ponto para o outro time', () => {
     const w = new BolWorld(roster(2, 1), { teams: 2, perTeam: 1 });

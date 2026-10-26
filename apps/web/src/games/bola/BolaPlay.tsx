@@ -75,6 +75,8 @@ interface NetFrame {
   ck: number;
   sc: number[];
   gd: number;
+  /** Prorrogação: times que ficaram de fora. */
+  go?: number[];
   gs?: number;
   b: number[];
   p: number[][];
@@ -93,7 +95,15 @@ interface Hud {
   warn: string;
   winner: number;
   ballCam: boolean;
-  banner: { title: string; sub: string; team: number; id: number } | null;
+  banner: {
+    title: string;
+    sub: string;
+    team: number;
+    id: number;
+    /** Prorrogação com times de fora: quem segue e quem vira espectador. */
+    stay?: number[];
+    out?: number[];
+  } | null;
   /** Sobe a cada gol: reinicia o brilho da tela. */
   flash: number;
   myTeam: number;
@@ -128,6 +138,8 @@ export function bolaRoster(setup: BolaSetup): BolInfo[] {
 
 /** Treino do Fut Fox: você contra bots. O motor roda no aparelho; a sala online usa o mesmo motor no servidor. */
 /** O placar de um time: a cor, o número e o nome pequeno (some no celular). O número dá um pulinho quando muda. */
+const hexOf = (t: number) => `#${(BOL_TEAM_COLORS[t] as number).toString(16).padStart(6, '0')}`;
+
 function ScoreChip({ team, score }: { team: number; score: number }) {
   const name = BOL_TEAM_NAMES[team] ?? '';
   return (
@@ -428,7 +440,22 @@ export function BolaPlay({
           warn = '';
         }, 3500);
       } else if (e.type === 'golden') {
-        warn = 'Gol de ouro! Quem marcar ganha';
+        scene.setClosedGoals(world.out);
+        if (e.out.length > 0) {
+          const stay = world.scores.map((_, t) => t).filter((t) => !e.out.includes(t));
+          banner = {
+            title: 'Prorrogação',
+            sub: 'Só os gols de quem empatou continuam abertos. Quem marcar ganha',
+            team: -1,
+            id: feedId++,
+            stay,
+            out: e.out,
+          };
+          window.clearTimeout(bannerTimer);
+          bannerTimer = window.setTimeout(() => {
+            banner = null;
+          }, 5200);
+        } else warn = 'Gol de ouro! Quem marcar ganha';
       } else if (e.type === 'ballreset') {
         warn = 'Bola parada: de volta ao centro';
         window.clearTimeout(warnTimer);
@@ -593,7 +620,7 @@ export function BolaPlay({
         case 'warn':
           return { type: 'warn', left: e.l as number };
         case 'golden':
-          return { type: 'golden' };
+          return { type: 'golden', out: Array.isArray(e.out) ? (e.out as number[]) : [] };
         case 'ballreset':
           return { type: 'ballreset' };
         case 'kick': {
@@ -632,6 +659,18 @@ export function BolaPlay({
           world.timer = f.tm;
           world.clock = f.ck;
           world.golden = f.gd === 1;
+          {
+            const out = f.go ?? [];
+            let changed = false;
+            for (let t = 0; t < world.out.length; t++) {
+              const o = out.includes(t);
+              if (world.out[t] !== o) {
+                world.out[t] = o;
+                changed = true;
+              }
+            }
+            if (changed) scene.setClosedGoals(world.out);
+          }
           world.goldenStart = f.gs ?? 0;
           world.scores.splice(0, world.scores.length, ...f.sc);
           sync.push(f);
@@ -962,6 +1001,34 @@ export function BolaPlay({
         >
           <strong>{hud.banner.title}</strong>
           <span>{hud.banner.sub}</span>
+          {hud.banner.stay && hud.banner.out && (
+            <div className="bola-ot" aria-label="Quem continua e quem espectou">
+              <div className="bola-ot-row">
+                <small>Continuam</small>
+                {hud.banner.stay.map((t, i) => (
+                  <i
+                    key={t}
+                    className="bola-ot-chip is-stay"
+                    style={{ background: hexOf(t), animationDelay: `${0.25 + i * 0.12}s` }}
+                  >
+                    {BOL_TEAM_NAMES[t]}
+                  </i>
+                ))}
+              </div>
+              <div className="bola-ot-row">
+                <small>Espectam</small>
+                {hud.banner.out.map((t, i) => (
+                  <i
+                    key={t}
+                    className="bola-ot-chip is-out"
+                    style={{ background: hexOf(t), animationDelay: `${0.25 + i * 0.12}s` }}
+                  >
+                    {BOL_TEAM_NAMES[t]}
+                  </i>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
       {hud.warn && <div className="dsm-note bola-warn">{hud.warn}</div>}

@@ -96,6 +96,8 @@ export class BolaNetSync {
   private readonly pred: BolPredictor;
   private predReady = false;
   private predAcc = 0;
+  /** Um aperto de pulo que ainda não coube em um passo de física (com tela de 120/144 Hz o quadro é menor que o passo). */
+  private pressLatch = false;
   private readonly lb: BolBall = { x: 0, y: 1, z: 0, vx: 0, vy: 0, vz: 0 };
   private readonly probe: BolBall = { x: 0, y: 1, z: 0, vx: 0, vy: 0, vz: 0 };
   private touchHold = 0;
@@ -296,13 +298,13 @@ export class BolaNetSync {
       return;
     }
     this.predAcc += dt;
-    let press = pressed;
+    if (pressed) this.pressLatch = true;
     while (this.predAcc >= BOL_DT) {
       this.predAcc -= BOL_DT;
-      pred.step(BOL_DT, { mx: input.mx, mz: input.mz, jump: press }, (e) => {
+      pred.step(BOL_DT, { mx: input.mx, mz: input.mz, jump: this.pressLatch }, (e) => {
         if (e === 'jump' || e === 'airjump' || e === 'flip') this.o.onMove?.(e);
       });
-      press = false;
+      this.pressLatch = false;
       syncMe();
       // não atravessa as outras raposas: o corpo previsto sai de dentro delas já neste passo
       world.pushOutOfFoxes(me);

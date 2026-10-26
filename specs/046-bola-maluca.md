@@ -53,6 +53,8 @@ Se algum dia a física ficar complexa demais (rampas, vários objetos), reavalia
 
 - **Quem tocou por último** na bola leva o crédito, **desde que não seja do time que levou o gol**. Gol contra (último toque do time que levou o gol): o ponto vai para o time que tocou na bola por último entre os outros (decisão do Lucas, 26/10/2026: "quem tocou por último sem ser o time que levou o gol"); o autor do gol contra ganha um gol contra nas estatísticas.
 - **Sem ninguém de fora que tenha tocado** (decisão do Lucas em 26/10/2026): com 2 times, o gol vira **gol contra do dono do gol** e o ponto vai para o outro time; com 3 ou 4 times não há como decidir, então **ninguém pontua** e a bola volta ao centro com a contagem. A tela mostra "GOL CONTRA DO TIME X" ou "SEM GOL".
+- **Com 3 ou 4 times** (decisão do Lucas em 26/10/2026): quem leva o gol **perde 1 ponto** (o placar pode ficar negativo) e quem pontua ganha 1, para valer mirar em quem está na frente. "Sem gol" não muda ninguém. Com 2 times não há perda. 
+- **Prorrogação com 3 ou 4 times** (decisão do Lucas em 26/10/2026): se todos os times empatam, todos seguem. Se só alguns empatam no topo (e outros ficaram com menos), só os empatados seguem: os outros viram espectadores, uma animação mostra quem continua e quem espectou, e o **gol dos times de fora fica cinza e fechado** (a bola bate nele como numa parede). Na prorrogação, quem marcar num gol aberto ganha e ninguém perde ponto.
 - Vence quem tiver **mais gols** quando o relógio de 30 min acabar ou quando o **líder encerrar**. Empate: gol de ouro (seção 2).
 - Os gols de cada time aparecem no HUD, com o nome de quem marcou (**feed de gols**, texto, sem emoji).
 

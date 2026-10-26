@@ -173,6 +173,7 @@ export class BolaMatch {
     const w = this.world;
     const perTeam = w.field.perTeam;
     if (to >= 0) {
+      if (w.out[to]) throw new BolaMatchError('Esse time ficou fora da prorrogação');
       const humans = w.players.filter((p) => !p.bot && p.team === to && p.id !== id).length;
       if (humans >= perTeam) throw new BolaMatchError(`O time ${BOL_TEAM_NAMES[to]} está cheio`);
       if (botId) {
@@ -308,8 +309,11 @@ export class BolaMatch {
       case 'warn':
         this.push({ t: 'warn', l: e.left });
         break;
-      case 'start':
       case 'golden':
+        this.push({ t: 'golden', out: e.out });
+        this.dirty = true;
+        break;
+      case 'start':
       case 'ballreset':
         this.push({ t: e.type });
         this.dirty = true;
@@ -346,6 +350,8 @@ export class BolaMatch {
       ck: Math.round(w.clock * 10) / 10,
       sc: w.scores,
       gd: w.golden ? 1 : 0,
+      /** Prorrogação: os times que ficaram de fora (o gol deles fecha). */
+      go: w.out.flatMap((o, t) => (o ? [t] : [])),
       gs: Math.round(w.goldenStart * 10) / 10,
       b: [r2(b.x), r2(b.y), r2(b.z), r2(b.vx), r2(b.vy), r2(b.vz)],
       p: w.players.map((p) => [

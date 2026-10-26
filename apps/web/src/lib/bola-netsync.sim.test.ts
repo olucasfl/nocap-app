@@ -312,3 +312,63 @@ describe('Fut Fox online: bola desenhada no aparelho do outro jogador', () => {
     }
   });
 });
+
+describe('pulo no online', () => {
+  it.each([60, 144, 240])(
+    'o aperto de pulo não se perde com tela de %i Hz (pulo e pulo duplo)',
+    (hz) => {
+      let T = 1_000_000;
+      const humans: BolInfo[] = [
+        { id: 'ana', name: 'Ana', color: BOL_TEAM_COLORS[0] as number, team: 0 },
+        { id: 'bia', name: 'Bia', color: BOL_TEAM_COLORS[1] as number, team: 1 },
+      ];
+      const match = new BolaMatch({
+        teams: 2,
+        perTeam: 1,
+        durationSec: 60,
+        seed: 'j',
+        humans,
+        bots: [0, 0],
+        now: () => T,
+      });
+      const infos: BolInfo[] = match.world.players.map((q) => ({
+        id: q.id,
+        name: q.name,
+        color: q.color,
+        team: q.team,
+      }));
+      const world = new BolWorld(infos, { teams: 2, perTeam: 1, durationSec: 60 });
+      const slotOf = new Map(match.world.players.map((q) => [q.id, match.slotOf(q.id)]));
+      const sync = new BolaNetSync(world, {
+        meId: 'bia',
+        minDelay: 45,
+        rtt: () => 20,
+        now: () => T,
+        slotOf: () => slotOf,
+      });
+      const moves: string[] = [];
+      (sync as unknown as { o: { onMove: (e: string) => void } }).o.onMove = (e) => moves.push(e);
+      const frame = () => {
+        match.tick();
+        const f = match.drainFrame(true);
+        if (f) sync.push(f as unknown as { t?: number; b: number[]; p: number[][] }, T);
+      };
+      for (let i = 0; i < 400; i++) {
+        T += 16;
+        frame();
+      }
+      world.phase = 'play';
+      let maxY = 0;
+      const dt = 1 / hz;
+      const press = new Set([Math.round(hz * 0.2), Math.round(hz * 0.55)]);
+      for (let i = 0; i < hz * 1.5; i++) {
+        T += 1000 * dt;
+        if (Math.floor(T / 16) !== Math.floor((T - 1000 * dt) / 16)) frame();
+        sync.update(dt, { mx: 0, mz: 0 }, press.has(i));
+        maxY = Math.max(maxY, world.player('bia')!.y);
+      }
+      expect(moves).toEqual(['jump', 'airjump']);
+      expect(maxY).toBeGreaterThan(1);
+    },
+  );
+});

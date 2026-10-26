@@ -37,6 +37,9 @@ export class BolaScene {
   private scene = new THREE.Scene();
   private camera = new THREE.PerspectiveCamera(60, 1, 0.1, 260);
   private foxes = new Map<string, Fox>();
+  /** Os gols por time, para fechar (cinza) os dos times que ficaram fora da prorrogação. */
+  private goalGroups = new Map<number, THREE.Group>();
+  private closedKey = '';
   private ball: THREE.Mesh;
   private ballShadow: THREE.Mesh;
   private yaw = 0;
@@ -440,7 +443,53 @@ export class BolaScene {
     sign.position.set(0, BOL_GOAL_H + 1.5, 0.2);
     sign.rotation.y = Math.PI;
     g.add(sign);
+    // tampa cinza que aparece quando o gol é fechado (time fora da prorrogação)
+    const lid = new THREE.Mesh(
+      new THREE.PlaneGeometry(halfW * 2, BOL_GOAL_H),
+      new THREE.MeshBasicMaterial({
+        color: 0x6f6f78,
+        transparent: true,
+        opacity: 0.8,
+        side: THREE.DoubleSide,
+        depthWrite: false,
+      }),
+    );
+    lid.position.set(0, BOL_GOAL_H / 2, 0.05);
+    lid.name = 'goal-lid';
+    lid.visible = false;
+    g.add(lid);
+    this.goalGroups.set(team, g);
     this.scene.add(g);
+  }
+
+  /** Fecha (cinza) o gol dos times que ficaram de fora da prorrogação e reabre os outros. */
+  setClosedGoals(out: readonly boolean[]) {
+    const key = out.map((o) => (o ? 1 : 0)).join('');
+    if (key === this.closedKey) return;
+    this.closedKey = key;
+    for (const [team, g] of this.goalGroups) {
+      const closed = !!out[team];
+      g.traverse((o) => {
+        if (!(o instanceof THREE.Mesh)) return;
+        if (o.name === 'goal-lid') {
+          o.visible = closed;
+          return;
+        }
+        const mat = o.material as THREE.Material & {
+          color?: THREE.Color;
+          emissive?: THREE.Color;
+        };
+        if (!mat.color) return;
+        const store = (o.userData.orig ??= {
+          color: mat.color.getHex(),
+          emissive: mat.emissive?.getHex(),
+        }) as { color: number; emissive?: number };
+        mat.color.setHex(closed ? 0x6f6f78 : store.color);
+        if (mat.emissive && store.emissive !== undefined) {
+          mat.emissive.setHex(closed ? 0x000000 : store.emissive);
+        }
+      });
+    }
   }
 
   /** Placa do time: o nome em letras grandes sobre a cor dele. */

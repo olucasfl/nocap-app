@@ -79,3 +79,22 @@ test('Fut Fox: Sair da partida fica vermelho ao primeiro toque, pedindo confirma
   await expect(exit).toHaveCSS('background-color', 'rgb(220, 43, 54)');
   await expect(exit).toContainText('Toque de novo');
 });
+
+test('Fut Fox 3 times: empate de dois no topo manda só eles para a prorrogação, com animação', async ({
+  page,
+}) => {
+  await page.getByTestId('foxcap-bola').click();
+  await page.getByTestId('bola-fmt-1x1x1').click();
+  await page.getByTestId('bola-start').click();
+  await expect(page.getByTestId('bola-play')).toBeVisible();
+  await page.evaluate(() => {
+    const w = (
+      window as unknown as { __bola: { scores: number[]; clock: number; durationSec: number } }
+    ).__bola;
+    w.scores.splice(0, 3, 2, 2, 0);
+    w.clock = w.durationSec;
+  });
+  await expect(page.locator('.bola-ot')).toBeVisible({ timeout: 8000 });
+  await expect(page.locator('.bola-ot-chip.is-out')).toHaveCount(1);
+  await expect(page.locator('.bola-ot-chip.is-stay')).toHaveCount(2);
+});

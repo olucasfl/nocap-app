@@ -139,7 +139,8 @@ export type BolEvent =
   | { type: 'nogoal'; goalTeam: number; ownerId: string | null }
   | { type: 'start'; golden: boolean }
   | { type: 'warn'; left: number }
-  | { type: 'golden' }
+  /** Prorrogação. `out` = times que ficaram de fora (têm menos pontos que o empate do topo); os outros seguem. */
+  | { type: 'golden'; out: number[] }
   | { type: 'ballreset' }
   | { type: 'over'; winner: number };
 
@@ -167,6 +168,8 @@ export class BolWorld {
   /** Relógio da partida, só anda em jogo (cresce). */
   clock = 0;
   golden = false;
+  /** Na prorrogação com 3 ou 4 times: quem ficou de fora (sem corpos em campo e com o gol fechado). */
+  readonly out: boolean[];
   /** Último toque real na bola desde o último recomeço. */
   lastTouch: BolTouch | null = null;
   /** O toque mais recente de cada time desde o recomeço (decide o ponto do gol contra). */
@@ -190,6 +193,7 @@ export class BolWorld {
   constructor(infos: readonly BolInfo[], opts: BolOptions) {
     this.field = buildField(opts.teams, opts.perTeam);
     this.scores = Array.from({ length: this.field.teams }, () => 0);
+    this.out = Array.from({ length: this.field.teams }, () => false);
     this.possession = Array.from({ length: this.field.teams }, () => 0);
     this.durationSec = opts.durationSec ?? BOL_DURATION;
     for (const info of infos) this.players.push(this.spawnBody(info));
@@ -401,9 +405,17 @@ export class BolWorld {
       const w = this.leader();
       if (w >= 0) this.finish(w);
       else {
+        // empate no topo: só os times empatados seguem para a prorrogação; quem ficou com menos vira espectador
+        const top = Math.max(...this.scores);
+        const out: number[] = [];
+        this.scores.forEach((sc, t) => {
+          if (sc < top) out.push(t);
+        });
+        for (const t of out) this.out[t] = true;
+        for (const p of [...this.players]) if (this.out[p.team]) this.removePlayer(p.id);
         this.golden = true;
         this.goldenStart = this.clock;
-        this.events.push({ type: 'golden' });
+        this.events.push({ type: 'golden', out });
         this.kickoff();
       }
     } else if (this.golden && this.clock - this.goldenStart >= BOL_GOLDEN_MAX) {
@@ -553,7 +565,8 @@ export class BolWorld {
         const g = this.field.goals[e.goal];
         if (g) {
           const t = (b.x - e.mx) * e.tx + (b.z - e.mz) * e.tz;
-          if (Math.abs(t) <= g.halfW && b.y < BOL_GOAL_H) {
+          // gol fechado (time fora da prorrogação): a boca vira parede
+          if (!this.out[g.team] && Math.abs(t) <= g.halfW && b.y < BOL_GOAL_H) {
             // só é gol com a bola inteira para lá da linha (o centro precisa passar do raio)
             if (d < -BOL_BALL_R) {
               this.scoreGoal(e.goal);
@@ -644,7 +657,11 @@ export class BolWorld {
     }
     let scorerTeam = credit ? credit.team : -1;
     if (scorerTeam < 0) {
-      if (this.field.teams > 2) {
+      // só sobra um outro time em jogo (2 times, ou prorrogação entre 2): o ponto é dele
+      const others: number[] = [];
+      for (let t = 0; t < this.field.teams; t++) if (t !== goalTeam && !this.out[t]) others.push(t);
+      if (others.length === 1) scorerTeam = others[0] as number;
+      else if (this.field.teams > 2) {
         if (ownerId) {
           const owner = this.player(ownerId);
           if (owner) owner.stats.ownGoals += 1;
@@ -653,9 +670,12 @@ export class BolWorld {
         this.kickoff();
         return;
       }
-      scorerTeam = 1 - goalTeam;
     }
     this.scores[scorerTeam] = (this.scores[scorerTeam] ?? 0) + 1;
+    // com 3 ou 4 times quem leva o gol perde 1 ponto (pode ficar negativo): sem isso, fazer gol em qualquer gol dava no mesmo;
+    // assim vale mirar em quem está na frente. Com 2 times o ponto de um já é o prejuízo do outro.
+    if (this.field.teams > 2 && !this.golden)
+      this.scores[goalTeam] = (this.scores[goalTeam] ?? 0) - 1;
     const noTouch = !last;
     const own = ownerId !== null || noTouch;
     let assistId: string | null = null;
