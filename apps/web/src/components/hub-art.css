@@ -194,61 +194,111 @@
   }
 }
 
-/* Fox Cap!: a raposa salta do primeiro para o segundo hexágono, que racha, cai e volta. Só transform e opacity. */
-.ha-hop {
-  animation: ha-hop 3.4s ease-in-out infinite;
+/* Fox Cap!: a mascote faz graça (só transform e opacity). */
+.ha-rays {
+  transform-origin: 100px 75px;
+  animation: ha-rays 24s linear infinite;
 }
-@keyframes ha-hop {
+@keyframes ha-rays {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.ha-bob {
+  transform-origin: 100px 150px;
+  animation: ha-bob 2.6s ease-in-out infinite;
+}
+@keyframes ha-bob {
   0%,
-  12% {
-    transform: translate(0, 0);
-  }
-  30% {
-    transform: translate(20px, -26px);
-  }
-  44%,
-  62% {
-    transform: translate(40px, 0);
-  }
-  80% {
-    transform: translate(20px, -26px);
-  }
-  94%,
   100% {
-    transform: translate(0, 0);
+    transform: translateY(0) scale(1, 1);
+  }
+  50% {
+    transform: translateY(-3px) scale(0.99, 1.015);
   }
 }
-.ha-tilefall {
-  animation: ha-tilefall 3.4s ease-in infinite;
+.ha-cap {
   transform-box: fill-box;
   transform-origin: center;
+  animation: ha-cap 5.2s ease-in-out infinite;
 }
-@keyframes ha-tilefall {
+@keyframes ha-cap {
   0%,
-  46% {
-    transform: translateY(0) rotate(0);
-    opacity: 1;
+  50% {
+    transform: translateY(0) rotate(0) scale(1, 1);
   }
-  52% {
-    transform: translateY(2px) rotate(-1.5deg);
-    opacity: 1;
+  56% {
+    transform: translateY(2px) rotate(0) scale(1.06, 0.92);
   }
-  58% {
-    transform: translateY(-1px) rotate(1.5deg);
-    opacity: 1;
+  70% {
+    transform: translateY(-26px) rotate(200deg) scale(1, 1);
   }
   80% {
-    transform: translateY(46px) rotate(14deg);
-    opacity: 0;
+    transform: translateY(-24px) rotate(360deg) scale(1, 1);
   }
-  81%,
   90% {
-    transform: translateY(0) rotate(0);
-    opacity: 0;
+    transform: translateY(2px) rotate(360deg) scale(1.06, 0.92);
+  }
+  95% {
+    transform: translateY(-3px) rotate(360deg) scale(0.99, 1.02);
   }
   100% {
-    transform: translateY(0) rotate(0);
+    transform: translateY(0) rotate(360deg) scale(1, 1);
+  }
+}
+.ha-blink {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ha-blink 4s ease-in-out infinite;
+}
+@keyframes ha-blink {
+  0%,
+  44%,
+  50%,
+  100% {
+    transform: scaleY(1);
+  }
+  47% {
+    transform: scaleY(0.08);
+  }
+}
+.ha-ear {
+  transform-box: fill-box;
+  transform-origin: 85% 90%;
+  animation: ha-ear 5.2s ease-in-out infinite;
+}
+@keyframes ha-ear {
+  0%,
+  30%,
+  44%,
+  100% {
+    transform: rotate(0);
+  }
+  35% {
+    transform: rotate(-9deg);
+  }
+  40% {
+    transform: rotate(3deg);
+  }
+}
+.ha-spark {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ha-spark 2.8s ease-in-out infinite;
+}
+@keyframes ha-spark {
+  0%,
+  100% {
+    transform: scale(0.2) rotate(0);
+    opacity: 0;
+  }
+  45% {
+    transform: scale(1) rotate(45deg);
     opacity: 1;
+  }
+  70% {
+    transform: scale(0.5) rotate(90deg);
+    opacity: 0.4;
   }
 }
 
@@ -262,8 +312,12 @@
   .ha-glow,
   .ha-waves,
   .ha-run,
-  .ha-hop,
-  .ha-tilefall,
+  .ha-rays,
+  .ha-bob,
+  .ha-cap,
+  .ha-blink,
+  .ha-ear,
+  .ha-spark,
   .ha-road,
   .ha-clearcell {
     animation: none !important;

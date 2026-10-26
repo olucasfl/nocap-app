@@ -1,6 +1,6 @@
 import { BackButton } from '@/components/BackButton';
 import { HubCard, HubHero, HubNote } from '@/components/GameHub';
-import { AtravessaArt } from '@/components/HubArt';
+import { FoxCapArt } from '@/components/HubArt';
 import { MuteButton } from '@/components/MuteButton';
 
 const ICON = {
@@ -31,7 +31,7 @@ export function FoxCapPage() {
         <BackButton to="/" label="Jogos" />
         <HubHero
           accent="orange"
-          art={<AtravessaArt />}
+          art={<FoxCapArt />}
           title="Fox Cap!"
           text="Jogos com as raposas de boné. Sozinho ou com os amigos."
         />

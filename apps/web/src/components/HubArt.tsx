@@ -278,28 +278,62 @@ export function DesmoronaArt() {
   );
 }
 
-/** Fox Cap!: hexágonos no ar, a raposa pulando de um para o outro e o ladrilho do destino se soltando. */
+/**
+ * Fox Cap!: só a mascote, sem jogo nenhum (a área reúne vários). A raposa de boné faz graça: o boné salta, gira no ar e
+ * volta à cabeça, ela pisca, mexe a orelha e brilha em volta, sobre raios de sol que giram devagar.
+ */
 export function FoxCapArt() {
-  const hex = (cx: number, cy: number, r: number, fill: string) => {
-    const pts = Array.from({ length: 6 }, (_, i) => {
-      const a = (Math.PI / 3) * i + Math.PI / 6;
-      return `${(cx + r * Math.cos(a)).toFixed(1)},${(cy + r * Math.sin(a)).toFixed(1)}`;
-    }).join(' ');
-    return <polygon points={pts} fill={fill} {...stroke} strokeWidth={3} />;
-  };
+  const ray = (a: number) => (
+    <path key={a} d="M100 75L90 -80L110 -80Z" transform={`rotate(${a} 100 75)`} fill="#ffd9a0" />
+  );
+  const spark = (x: number, y: number, d: number) => (
+    <g key={`${x}-${y}`} transform={`translate(${x} ${y})`}>
+      <path className="ha-spark" style={{ animationDelay: `${d}s` }} d="M0-9C1-3 3-1 9 0 3 1 1 3 0 9-1 3-3 1-9 0-3-1-1-3 0-9Z" fill="#fff" {...stroke} strokeWidth={1.8} />
+    </g>
+  );
   return (
     <svg className="ha ha-foxcap" viewBox="0 0 200 150" aria-hidden="true">
-      <rect x="0" y="0" width="200" height="150" rx="16" fill="#7fd3ff" />
-      <ellipse cx="100" cy="138" rx="78" ry="9" fill="#ff5a1f" opacity="0.85" />
-      {[50, 90, 130, 170].map((x) => (
-        <g key={`b${x}`}>{hex(x, 70, 21, '#9a5cff')}</g>
-      ))}
-      <g>{hex(70, 100, 21, '#a96bff')}</g>
-      <g className="ha-tilefall">{hex(110, 100, 21, '#ff7ab8')}</g>
-      <g>{hex(150, 100, 21, '#a96bff')}</g>
-      <g className="ha-hop">
-        <g transform="translate(40 40) scale(0.56)">
-          <FoxBody />
+      <defs>
+        <clipPath id="ha-fc-clip">
+          <rect x="0" y="0" width="200" height="150" rx="16" />
+        </clipPath>
+      </defs>
+      <g clipPath="url(#ha-fc-clip)">
+        <rect x="0" y="0" width="200" height="150" fill="#ffe9c7" />
+        <g className="ha-rays">{Array.from({ length: 12 }, (_, i) => ray(i * 30))}</g>
+        {spark(30, 38, 0)}
+        {spark(172, 52, 0.7)}
+        {spark(160, 118, 1.4)}
+        <g className="ha-bob">
+          {/* os ombros e o peito */}
+          <path d="M44 150C44 124 70 116 100 116S156 124 156 150Z" fill="#ff7d26" {...stroke} strokeWidth={3.5} />
+          <path d="M82 150C84 134 92 126 100 126S116 134 118 150Z" fill="#fff3e2" />
+          {/* as orelhas (a esquerda se mexe) */}
+          <g className="ha-ear">
+            <path d="M64 74L56 36L90 60Z" fill="#ff7d26" {...stroke} strokeWidth={3.5} />
+            <path d="M65 64L61 46L78 58Z" fill="#35211a" />
+          </g>
+          <path d="M136 74L144 36L110 60Z" fill="#ff7d26" {...stroke} strokeWidth={3.5} />
+          <path d="M135 64L139 46L122 58Z" fill="#35211a" />
+          {/* a cabeça e as bochechas brancas */}
+          <ellipse cx="100" cy="92" rx="40" ry="31" fill="#ff7d26" {...stroke} strokeWidth={3.5} />
+          <path d="M62 98C70 94 80 100 82 112 72 112 64 108 62 98Z" fill="#fff3e2" {...stroke} strokeWidth={2.6} />
+          <path d="M138 98C130 94 120 100 118 112 128 112 136 108 138 98Z" fill="#fff3e2" {...stroke} strokeWidth={2.6} />
+          <ellipse cx="100" cy="106" rx="16" ry="11" fill="#fff3e2" />
+          <ellipse cx="100" cy="100" rx="5" ry="3.6" fill="#35211a" />
+          <path d="M92 109Q100 116 108 109" fill="none" stroke="#35211a" strokeWidth="2.8" strokeLinecap="round" />
+          {/* os olhos piscam */}
+          <ellipse className="ha-blink" cx="84" cy="90" rx="4.6" ry="6.4" fill={INK} />
+          <ellipse className="ha-blink" cx="116" cy="90" rx="4.6" ry="6.4" fill={INK} />
+          <circle cx="85.6" cy="87.6" r="1.6" fill="#fff" />
+          <circle cx="117.6" cy="87.6" r="1.6" fill="#fff" />
+          {/* o boné: salta, gira no ar e volta */}
+          <g className="ha-cap">
+            <path d="M62 76C62 40 138 40 138 76Z" fill="#2f5bff" {...stroke} strokeWidth={3.5} />
+            <path d="M62 70H138" stroke="#fff" strokeWidth="5" />
+            <path d="M138 70L162 76Q168 82 160 83L70 83L70 76Z" fill="#2347c9" {...stroke} strokeWidth={3} />
+            <circle cx="100" cy="46" r="4" fill="#fff" {...stroke} strokeWidth={2.4} />
+          </g>
         </g>
       </g>
     </svg>
