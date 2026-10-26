@@ -4,13 +4,7 @@ import { BackButton } from '@/components/BackButton';
 import { Field } from '@/components/Field';
 import { HubHero, HubModeCard, HubNote, HubTabs } from '@/components/GameHub';
 import { HowToPlay, type HowGame } from '@/components/HowToPlay';
-import {
-  AtravessaArt,
-  BolaArt,
-  DesmoronaTrainingArt,
-  FoxCapArt,
-  FriendsArt,
-} from '@/components/HubArt';
+import { AtravessaArt, BolaArt, DesmoronaTrainingArt, FoxCapArt } from '@/components/HubArt';
 import { Loader } from '@/components/Loader';
 import { MuteButton } from '@/components/MuteButton';
 import { NicknameDialog } from '@/components/NicknameDialog';
@@ -187,9 +181,6 @@ export function FoxCapPage() {
                   {entry.busy ? 'Entrando...' : 'Entrar'}
                 </button>
               </form>
-            </div>
-            <div className="gh-friends-art" aria-hidden="true">
-              <FriendsArt />
             </div>
           </>
         )}
