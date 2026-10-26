@@ -7,7 +7,7 @@ const PHONES = [
   { name: 'deitado-568', w: 568, h: 320 },
 ];
 
-test.beforeEach(async ({}, info) => {
+test.beforeEach((_args, info) => {
   test.skip(info.project.name !== 'desktop', 'um projeto basta');
 });
 
