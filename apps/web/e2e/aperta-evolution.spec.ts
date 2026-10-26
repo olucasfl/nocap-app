@@ -22,7 +22,11 @@ function evoSave(): SaveState {
     ...opened,
     run: {
       ...opened.run,
-      pending: { ...p, offers: ['moon', 'mercury', 'titan'], rarities: { moon: 'legendary', mercury: 'common', titan: 'common' } },
+      pending: {
+        ...p,
+        offers: ['moon', 'mercury', 'titan'],
+        rarities: { moon: 'legendary', mercury: 'common', titan: 'common' },
+      },
     },
   };
 }
@@ -32,16 +36,40 @@ async function installSaves(page: Page) {
   await page.route(/localhost:3333\/me\/aperta\/saves/, async (route) => {
     const req = route.request();
     const path = new URL(req.url()).pathname;
-    const headers = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' };
-    const json = (body: unknown, status = 200) => route.fulfill({ status, contentType: 'application/json', headers, body: JSON.stringify(body) });
+    const headers = {
+      'access-control-allow-origin': '*',
+      'access-control-allow-headers': '*',
+      'access-control-allow-methods': '*',
+    };
+    const json = (body: unknown, status = 200) =>
+      route.fulfill({
+        status,
+        contentType: 'application/json',
+        headers,
+        body: JSON.stringify(body),
+      });
     if (req.method() === 'OPTIONS') return json({});
     if (path === '/me/aperta/saves') {
       const d = account.data;
-      const one = { slot: 1, name: d.name, collapses: d.collapses, vaultCount: 0, lastPlayedAt: new Date().toISOString(), storySeen: true, revision: account.rev };
-      return json({ slots: [{ slot: 1, save: one, recoverableUntil: null }, { slot: 2, save: null, recoverableUntil: null }] });
+      const one = {
+        slot: 1,
+        name: d.name,
+        collapses: d.collapses,
+        vaultCount: 0,
+        lastPlayedAt: new Date().toISOString(),
+        storySeen: true,
+        revision: account.rev,
+      };
+      return json({
+        slots: [
+          { slot: 1, save: one, recoverableUntil: null },
+          { slot: 2, save: null, recoverableUntil: null },
+        ],
+      });
     }
     if (path === '/me/aperta/saves/1') {
-      if (req.method() === 'GET') return json({ slot: 1, revision: account.rev, data: account.data });
+      if (req.method() === 'GET')
+        return json({ slot: 1, revision: account.rev, data: account.data });
       if (req.method() === 'PUT') {
         account.data = (req.postDataJSON() as { data: SaveState }).data;
         account.rev += 1;
@@ -60,15 +88,24 @@ const SIZES = [
 
 for (const size of SIZES) {
   test.describe(`evolução de grimório em ${size.width} px`, () => {
-    test.use({ viewport: { width: size.width, height: size.height }, isMobile: size.mobile, hasTouch: size.mobile });
+    test.use({
+      viewport: { width: size.width, height: size.height },
+      isMobile: size.mobile,
+      hasTouch: size.mobile,
+    });
 
-    test('a carta mostra RARO -> LENDÁRIO e a animação aparece inteira ao escolher', async ({ page }, info) => {
+    test('a carta mostra RARO -> LENDÁRIO e a animação aparece inteira ao escolher', async ({
+      page,
+    }, info) => {
       test.skip(info.project.name !== 'desktop', 'um projeto basta');
       await installApi(page);
       await installSaves(page);
       await page.goto('/arcade/aperta');
       await page.getByRole('button', { name: 'Jogar' }).first().click();
-      await page.getByRole('button', { name: /Continuar/ }).first().click();
+      await page
+        .getByRole('button', { name: /Continuar/ })
+        .first()
+        .click();
       const skip = page.getByRole('button', { name: 'Pular história' });
       if (await skip.isVisible({ timeout: 1500 }).catch(() => false)) await skip.click();
       const shots = process.env.E2E_SHOTS ?? 'test-results';
@@ -95,7 +132,9 @@ for (const size of SIZES) {
       expect(seal2.x).toBeGreaterThanOrEqual(0);
       expect(seal2.x + seal2.width).toBeLessThanOrEqual(size.width);
       await expect(fx).toHaveCount(0, { timeout: 5000 });
-      expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(1);
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth),
+      ).toBeLessThanOrEqual(1);
     });
   });
 }

@@ -1,17 +1,27 @@
 import { describe, expect, it } from 'vitest';
 import { createRng } from '../core/rng';
 import { newBotMemory, botInput } from './bots';
-import { DSM_BODY_R, DSM_DT, DSM_GRACE_SEC, DSM_LAYERS, DSM_TILE_LIFE, dsmLayerRadii } from './constants';
+import {
+  DSM_BODY_R,
+  DSM_DT,
+  DSM_GRACE_SEC,
+  DSM_LAYERS,
+  DSM_TILE_LIFE,
+  dsmLayerRadii,
+} from './constants';
 import { hexCount, hexToWorld, layerY, worldToHex } from './hex';
 import { DsmWorld, type DsmInput, type DsmPlayer, type DsmPlayerInfo, type DsmTile } from './world';
 
-const infos = (n: number): DsmPlayerInfo[] => Array.from({ length: n }, (_, i) => ({ id: `p${i}`, name: `P${i}`, color: 0xff7d26, bot: true }));
+const infos = (n: number): DsmPlayerInfo[] =>
+  Array.from({ length: n }, (_, i) => ({ id: `p${i}`, name: `P${i}`, color: 0xff7d26, bot: true }));
 
 /** Roda o jogo inteiro com bots e devolve o mundo no fim (com trava de segurança de 6 minutos). */
 function playBots(seed: string, n: number, maxSec = 360): DsmWorld {
   const w = new DsmWorld(seed, infos(n));
   let i = 0;
-  const mem = new Map(w.players.map((p) => [p.id, newBotMemory((i % 4) * 0.15, i++ % 3 === 0 ? 0.5 : 0)]));
+  const mem = new Map(
+    w.players.map((p) => [p.id, newBotMemory((i % 4) * 0.15, i++ % 3 === 0 ? 0.5 : 0)]),
+  );
   const rng = createRng(`${seed}:bots`);
   while (!w.ended && w.t < maxSec) {
     const inputs: Record<string, DsmInput> = {};
@@ -22,19 +32,32 @@ function playBots(seed: string, n: number, maxSec = 360): DsmWorld {
 }
 
 describe('hexágonos', () => {
-  it('são 7 camadas, cada uma menor que a de cima, e a arena cresce com os jogadores', () => {
+  it('são 7 camadas em losango: a de cima é menor, crescem até a do meio e diminuem até a última, a menor', () => {
     for (const n of [2, 5, 8]) {
       const r = dsmLayerRadii(n);
       expect(r).toHaveLength(DSM_LAYERS);
-      for (let i = 1; i < DSM_LAYERS; i++) expect(r[i]).toBeLessThanOrEqual(r[i - 1] as number);
+      const mid = Math.floor(DSM_LAYERS / 2);
+      for (let i = 1; i <= mid; i++) expect(r[i]).toBeGreaterThanOrEqual(r[i - 1] as number);
+      for (let i = mid + 1; i < DSM_LAYERS; i++)
+        expect(r[i]).toBeLessThanOrEqual(r[i - 1] as number);
+      expect(r[0]).toBeLessThan(r[mid] as number);
+      expect(r[DSM_LAYERS - 1]).toBeLessThan(r[0] as number);
+      expect(Math.max(...r)).toBe(r[mid]);
     }
     expect(hexCount(2)).toBe(19);
-    expect(hexCount(dsmLayerRadii(8)[0] as number)).toBeGreaterThan(hexCount(dsmLayerRadii(2)[0] as number));
+    expect(hexCount(dsmLayerRadii(8)[3] as number)).toBeGreaterThan(
+      hexCount(dsmLayerRadii(2)[3] as number),
+    );
     expect(new DsmWorld('s', infos(2)).radii).toEqual(dsmLayerRadii(2));
   });
 
   it('ida e volta entre hexágono e mundo', () => {
-    for (const [q, r] of [[0, 0], [3, -2], [-5, 4], [8, -8]] as const) {
+    for (const [q, r] of [
+      [0, 0],
+      [3, -2],
+      [-5, 4],
+      [8, -8],
+    ] as const) {
       const p = hexToWorld(q, r);
       expect(worldToHex(p.x, p.z)).toEqual({ q, r });
     }
@@ -78,7 +101,7 @@ describe('mundo', () => {
 
   it('cair da última camada elimina, e o último vivo vence', () => {
     const w = new DsmWorld('s', infos(2));
-    const [a, b] = w.players as [typeof w.players[0], typeof w.players[0]];
+    const [a, b] = w.players as [(typeof w.players)[0], (typeof w.players)[0]];
     a.x = 40; // longe da arena inteira: cai direto até a lava
     a.z = 40;
     for (let i = 0; i < 600 && !w.ended; i++) w.step(DSM_DT);
@@ -99,14 +122,17 @@ describe('mundo', () => {
 });
 
 describe('partidas com bots', () => {
-  it.each([2, 4, 8])('com %i jogadores a partida termina, com um vencedor, em até 4 minutos', (n) => {
-    const w = playBots(`fim-${n}`, n);
-    expect(w.ended).toBe(true);
-    expect(w.winnerId).not.toBeNull();
-    expect(w.t).toBeLessThanOrEqual(240);
-    expect(w.standings()).toHaveLength(n);
-    expect(new Set(w.standings().map((p) => p.id)).size).toBe(n);
-  });
+  it.each([2, 4, 8])(
+    'com %i jogadores a partida termina, com um vencedor, em até 4 minutos',
+    (n) => {
+      const w = playBots(`fim-${n}`, n);
+      expect(w.ended).toBe(true);
+      expect(w.winnerId).not.toBeNull();
+      expect(w.t).toBeLessThanOrEqual(240);
+      expect(w.standings()).toHaveLength(n);
+      expect(new Set(w.standings().map((p) => p.id)).size).toBe(n);
+    },
+  );
 
   it('as partidas de 8 bots duram de meio minuto a 4 minutos em várias sementes (a arena cresce com os jogadores)', () => {
     for (let i = 0; i < 4; i++) {
@@ -124,7 +150,16 @@ describe('modo online', () => {
     for (let i = 0; i < 90; i++) w.step(DSM_DT);
     const remote = w.players[1]!;
     expect(remote.grounded).toBe(false); // a raposa dos outros não cai sozinha
-    w.setRemote(remote.id, { x: 0, y: 0, z: 0, vx: 0, vz: 0, heading: 0, grounded: true, layer: 0 });
+    w.setRemote(remote.id, {
+      x: 0,
+      y: 0,
+      z: 0,
+      vx: 0,
+      vz: 0,
+      heading: 0,
+      grounded: true,
+      layer: 0,
+    });
     expect(remote.y).toBe(0);
     w.applyStep(0, 0, 0, w.t);
     const tile = w.tile(0, 0, 0)!;
@@ -189,7 +224,13 @@ describe('colisão e empurrão (fase 3)', () => {
     w.goOnline('p0');
     const [a, b] = w.players as [DsmPlayer, DsmPlayer];
     for (let i = 0; i < 120; i++) w.step(DSM_DT);
-    a.x = -1; a.z = 0; a.y = 0; a.grounded = true; a.layer = 0; a.vx = 6; a.vz = 0;
+    a.x = -1;
+    a.z = 0;
+    a.y = 0;
+    a.grounded = true;
+    a.layer = 0;
+    a.vx = 6;
+    a.vz = 0;
     w.setRemote('p1', { x: -0.3, y: 0, z: 0, vx: 0, vz: 0, heading: 0, grounded: true, layer: 0 });
     w.step(DSM_DT, { p0: { mx: 1, mz: 0, jump: false } });
     const ev = w.drainEvents().find((e) => e.type === 'push');

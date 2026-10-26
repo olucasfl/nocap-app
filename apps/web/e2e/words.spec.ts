@@ -15,11 +15,25 @@ interface ConnectLevel {
   id: string;
   g: { l: number; t: string; w: string[] }[];
 }
-const levelsDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'games', 'words', 'levels');
+const levelsDir = join(
+  dirname(fileURLToPath(import.meta.url)),
+  '..',
+  'src',
+  'games',
+  'words',
+  'levels',
+);
 const BEE = JSON.parse(readFileSync(join(levelsDir, 'bee-levels.json'), 'utf8')) as BeeLevel[];
-const CONNECT = JSON.parse(readFileSync(join(levelsDir, 'connect-levels.json'), 'utf8')) as ConnectLevel[];
-const CLASSIC = JSON.parse(readFileSync(join(levelsDir, 'classic-levels.json'), 'utf8')) as Record<'c' | 'd' | 'q', { id: string; w: string[] }[]>;
-const ACCEPTED = JSON.parse(readFileSync(join(levelsDir, 'classic-accepted.json'), 'utf8')) as string[];
+const CONNECT = JSON.parse(
+  readFileSync(join(levelsDir, 'connect-levels.json'), 'utf8'),
+) as ConnectLevel[];
+const CLASSIC = JSON.parse(readFileSync(join(levelsDir, 'classic-levels.json'), 'utf8')) as Record<
+  'c' | 'd' | 'q',
+  { id: string; w: string[] }[]
+>;
+const ACCEPTED = JSON.parse(
+  readFileSync(join(levelsDir, 'classic-accepted.json'), 'utf8'),
+) as string[];
 
 const key = (w: string) => w.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
@@ -28,7 +42,8 @@ function watch(page: Page) {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => {
-    if (m.type() === 'error' && !m.text().includes('Failed to load resource')) errors.push(m.text());
+    if (m.type() === 'error' && !m.text().includes('Failed to load resource'))
+      errors.push(m.text());
   });
   return errors;
 }
@@ -53,14 +68,15 @@ test.beforeEach(async ({ page }) => {
 });
 
 test.describe("Hub do Word's", () => {
-  test('a Home tem o cartão do Word\'s e a página mostra os três jogos', async ({ page }) => {
+  test("a Home tem o cartão do Word's e a página mostra os três jogos", async ({ page }) => {
     const errors = watch(page);
     await page.goto('/');
     const card = page.locator('.hub-card-words');
     await expect(card).toBeVisible();
     await card.click();
     await expect(page).toHaveURL(/\/words$/);
-    for (const id of ['classic', 'connect', 'bee']) await expect(page.getByTestId(`game-${id}`)).toBeVisible();
+    for (const id of ['classic', 'connect', 'bee'])
+      await expect(page.getByTestId(`game-${id}`)).toBeVisible();
     await expect(page.getByTestId('game-bee')).toContainText('200 fases');
     await expect(page.getByTestId('game-connect')).toContainText('166 fases');
     await noOverflow(page);
@@ -101,15 +117,23 @@ test.describe("Classic Word's", () => {
   // uma palavra válida que não tem nenhuma letra em comum com a resposta (linha toda cinza)
   const noMatch = (answers: string[]) => {
     const used = new Set(answers.flatMap((w) => [...key(w)]));
-    return ACCEPTED.find((w) => key(w).length === 5 && new Set(key(w)).size === 5 && [...key(w)].every((c) => !used.has(c)))!;
+    return ACCEPTED.find(
+      (w) =>
+        key(w).length === 5 && new Set(key(w)).size === 5 && [...key(w)].every((c) => !used.has(c)),
+    )!;
   };
   const WRONG = noMatch([W]);
-  const level = (mode: 'classic' | 'dueto' | 'quarteto', n = 1) => `/words/classic/fase/${mode}/${n}`;
+  const level = (mode: 'classic' | 'dueto' | 'quarteto', n = 1) =>
+    `/words/classic/fase/${mode}/${n}`;
 
   test('a página tem o Daily e os 3 modos de fases', async ({ page }) => {
     await page.goto('/words/classic');
     await expect(page.getByTestId('play-daily')).toContainText('Jogar o Daily');
-    for (const [m, label, total] of [['classic', '1 palavra', 400], ['dueto', '2 palavras', 150], ['quarteto', '4 palavras', 66]] as const) {
+    for (const [m, label, total] of [
+      ['classic', '1 palavra', 400],
+      ['dueto', '2 palavras', 150],
+      ['quarteto', '4 palavras', 66],
+    ] as const) {
       await expect(page.getByTestId(`mode-${m}`)).toBeVisible();
       await expect(page.getByTestId(`mode-card-${m}`)).toContainText(label);
       await expect(page.getByTestId(`mode-card-${m}`)).toContainText(`${total} fases`);
@@ -136,14 +160,18 @@ test.describe("Classic Word's", () => {
     expect(errors).toEqual([]);
   });
 
-  test('as cores do palpite aparecem na linha e no teclado (verde, amarelo, cinza)', async ({ page }) => {
+  test('as cores do palpite aparecem na linha e no teclado (verde, amarelo, cinza)', async ({
+    page,
+  }) => {
     const errors = watch(page);
     await openPlay(page, level('classic'));
     await type(page, key(WRONG));
     await page.keyboard.press('Enter');
     const row = page.getByTestId('row-0-0');
     await expect(row).toBeVisible();
-    const states = await row.locator('.cw-face.back').evaluateAll((els) => els.map((e) => e.getAttribute('data-cell')));
+    const states = await row
+      .locator('.cw-face.back')
+      .evaluateAll((els) => els.map((e) => e.getAttribute('data-cell')));
     expect(states).toEqual(['miss', 'miss', 'miss', 'miss', 'miss']);
     await page.waitForTimeout(1900);
     await expect(page.getByTestId(`key-${key(WRONG)[0]}`).locator('i.miss')).toHaveCount(1);
@@ -161,7 +189,9 @@ test.describe("Classic Word's", () => {
     await expect(page.locator('.cw-tile.filled')).toHaveCount(1);
   });
 
-  test('o resultado só aparece depois da última linha virar, e mostra a palavra', async ({ page }) => {
+  test('o resultado só aparece depois da última linha virar, e mostra a palavra', async ({
+    page,
+  }) => {
     await openPlay(page, level('classic'));
     await type(page, key(W));
     await page.keyboard.press('Enter');
@@ -187,7 +217,9 @@ test.describe("Classic Word's", () => {
     await expect(page.locator('.cw-row[data-testid]')).toHaveCount(0);
   });
 
-  test('a fase fica salva: sair e voltar continua de onde parou e o catálogo mostra o andamento', async ({ page }) => {
+  test('a fase fica salva: sair e voltar continua de onde parou e o catálogo mostra o andamento', async ({
+    page,
+  }) => {
     await openPlay(page, level('classic'));
     await type(page, key(WRONG));
     await page.keyboard.press('Enter');
@@ -202,7 +234,8 @@ test.describe("Classic Word's", () => {
   test('o teclado da tela funciona (letras, apagar e enter)', async ({ page }) => {
     await openPlay(page, level('classic'));
     const w = key(W);
-    for (const l of w.slice(0, 4) + (w[4] === 'z' ? 'y' : 'z')) await page.getByTestId(`key-${l}`).click();
+    for (const l of w.slice(0, 4) + (w[4] === 'z' ? 'y' : 'z'))
+      await page.getByTestId(`key-${l}`).click();
     await page.getByTestId('backspace').click();
     await page.getByTestId(`key-${w[4]}`).click();
     await page.getByTestId('enter').click();
@@ -235,7 +268,9 @@ test.describe("Classic Word's", () => {
     expect(tile!.width).toBeGreaterThanOrEqual(24);
   });
 
-  test('desistir pede confirmação, mostra a palavra e marca a fase como completa', async ({ page }) => {
+  test('desistir pede confirmação, mostra a palavra e marca a fase como completa', async ({
+    page,
+  }) => {
     await openPlay(page, level('classic'));
     await page.getByTestId('giveup').click();
     await page.getByRole('button', { name: 'Continuar jogando' }).click();
@@ -274,7 +309,8 @@ test.describe("Classic Word's", () => {
 
 test.describe("Bee Word's (fases offline)", () => {
   const first = BEE[0]!;
-  const letter = (page: Page, l: string) => page.getByTestId(l === first.c ? 'hex-center' : `hex-${l}`);
+  const letter = (page: Page, l: string) =>
+    page.getByTestId(l === first.c ? 'hex-center' : `hex-${l}`);
   const typeWord = async (page: Page, w: string) => {
     for (const ch of key(w)) await letter(page, ch).click();
   };
@@ -295,7 +331,9 @@ test.describe("Bee Word's (fases offline)", () => {
     expect(errors).toEqual([]);
   });
 
-  test('jogar uma fase: acertos pontuam, erros mostram o motivo, e tudo fica salvo', async ({ page }) => {
+  test('jogar uma fase: acertos pontuam, erros mostram o motivo, e tudo fica salvo', async ({
+    page,
+  }) => {
     const errors = watch(page);
     await page.goto('/words/bee');
     await page.getByTestId('level-1').click();
@@ -326,7 +364,9 @@ test.describe("Bee Word's (fases offline)", () => {
     expect(errors).toEqual([]);
   });
 
-  test('o pangrama mostra o banner e as dicas contam o que falta sem mostrar palavras', async ({ page }) => {
+  test('o pangrama mostra o banner e as dicas contam o que falta sem mostrar palavras', async ({
+    page,
+  }) => {
     await page.goto('/words/bee/fase/1');
     await page.getByTestId('tab-hints').click();
     const hints = page.getByTestId('hints');
@@ -337,7 +377,9 @@ test.describe("Bee Word's (fases offline)", () => {
     await expect(page.getByText('Pangrama!').first()).toBeVisible();
   });
 
-  test('achar todas as palavras conclui a fase, mostra o resultado e libera a próxima', async ({ page }) => {
+  test('achar todas as palavras conclui a fase, mostra o resultado e libera a próxima', async ({
+    page,
+  }) => {
     await page.goto('/words/bee/fase/1');
     await expect(page.getByTestId('hex-center')).toBeVisible();
     for (const w of first.w) {
@@ -402,7 +444,9 @@ test.describe("Connect Word's (fases offline)", () => {
     expect(errors).toEqual([]);
   });
 
-  test('acertar trava o grupo; "falta uma" e erro somam erro; repetido não custa; tudo salvo', async ({ page }) => {
+  test('acertar trava o grupo; "falta uma" e erro somam erro; repetido não custa; tudo salvo', async ({
+    page,
+  }) => {
     await page.goto('/words/connect/fase/1');
     const [g1, g2, g3] = first.g;
     await pick(page, g1!.w);
@@ -474,14 +518,18 @@ test.describe("Connect Word's (fases offline)", () => {
   test('a dica mostra o nome de um conjunto que falta, uma vez por fase', async ({ page }) => {
     await page.goto('/words/connect/fase/1');
     await page.getByTestId('hint').click();
-    await expect(page.getByTestId('hint-text')).toContainText(first.g.slice().sort((x, y) => x.l - y.l)[0]!.t);
+    await expect(page.getByTestId('hint-text')).toContainText(
+      first.g.slice().sort((x, y) => x.l - y.l)[0]!.t,
+    );
     await page.getByRole('button', { name: 'Entendi' }).click();
     // a dica pode ser vista de novo, sempre que quiser
     await page.getByTestId('hint').click();
     await expect(page.getByTestId('hint-text')).toBeVisible();
   });
 
-  test('desistir pede confirmação, classifica como Desistência e revela os grupos', async ({ page }) => {
+  test('desistir pede confirmação, classifica como Desistência e revela os grupos', async ({
+    page,
+  }) => {
     await page.goto('/words/connect/fase/1');
     await page.getByTestId('giveup').click();
     await page.getByRole('button', { name: 'Continuar jogando' }).click();
@@ -530,7 +578,9 @@ test.describe("Connect Word's (fases offline)", () => {
     expect(errors).toEqual([]);
   });
 
-  test('acertar trava o grupo; "falta uma" e erro somam erro; repetido não custa; tudo salvo', async ({ page }) => {
+  test('acertar trava o grupo; "falta uma" e erro somam erro; repetido não custa; tudo salvo', async ({
+    page,
+  }) => {
     await page.goto('/words/connect/fase/1');
     const [g1, g2, g3] = first.g;
     await pick(page, g1!.w);

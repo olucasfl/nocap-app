@@ -40,7 +40,7 @@ export function FoxCapPage() {
           <HubCard
             tone="green"
             art={<BolaArt />}
-            name="Bola Maluca!"
+            name="Fut Fox"
             desc="Futebol de raposas com 2 a 4 times e bola de verdade."
             tags={['Com amigos', 'Treino com bots']}
             cta="Jogar"
@@ -49,7 +49,7 @@ export function FoxCapPage() {
           />
         </div>
         <HubNote>
-          O Atravessa! guarda recorde e ranking. O Desmorona! e o Bola Maluca! são só diversão: sem
+          O Atravessa! guarda recorde e ranking. O Desmorona! e o Fut Fox são só diversão: sem
           ranking nem histórico.
         </HubNote>
         <MuteButton />

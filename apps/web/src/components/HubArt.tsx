@@ -851,7 +851,7 @@ export function DesmoronaTrainingArt() {
   );
 }
 
-/** Bola Maluca!: campo verde visto de cima, bola e uma raposa. */
+/** Fut Fox: campo verde visto de cima, bola e uma raposa. */
 export function BolaArt() {
   return (
     <svg className="ha ha-bola" viewBox="0 0 200 150" aria-hidden="true">

@@ -62,7 +62,7 @@ const GAME_PAGE: Record<
 
 const GAME_NAME: Record<RoomGame, string> = {
   desmorona: 'Desmorona!',
-  bola: 'Bola Maluca!',
+  bola: 'Fut Fox',
   color: 'Mesmíssima',
   time: 'Já Deu?',
   impostor: 'Intruso',
@@ -71,7 +71,7 @@ const GAME_NAME: Record<RoomGame, string> = {
 };
 
 const ENTRY_LEAD: Record<RoomGame, string> = {
-  bola: 'Bola Maluca! com os amigos: futebol de raposas com 2, 3 ou 4 times, até 15 pessoas na sala (12 jogam e o resto assiste). Você escolhe o formato e completa os times com bots dentro da sala.',
+  bola: 'Fut Fox com os amigos: futebol de raposas com 2, 3 ou 4 times, até 15 pessoas na sala (12 jogam e o resto assiste). Você escolhe o formato e completa os times com bots dentro da sala.',
   desmorona:
     'Desmorona! com os amigos: todo mundo cai do céu, o chão some a cada passo e vence o último de pé. De 2 a 8 pessoas.',
   eco: 'Jogue o Ecooo com amigos: Corrida (todo mundo repete a mesma sequência e quem errar sai) ou Siga o Líder (um cria, os outros repetem). Você escolhe dentro da sala.',

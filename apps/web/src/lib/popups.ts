@@ -22,7 +22,12 @@ export function nextPopup(wants: Record<string, Want>): string | null {
   let best: [string, Want] | null = null;
   for (const entry of Object.entries(wants)) {
     const [, w] = entry;
-    if (!best || w.priority < best[1].priority || (w.priority === best[1].priority && w.at < best[1].at)) best = entry;
+    if (
+      !best ||
+      w.priority < best[1].priority ||
+      (w.priority === best[1].priority && w.at < best[1].at)
+    )
+      best = entry;
   }
   return best ? best[0] : null;
 }

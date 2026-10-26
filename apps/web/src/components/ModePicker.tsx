@@ -49,7 +49,10 @@ export function modeArt(id: string): ReactNode {
     case 'infinito':
       return (
         <svg viewBox="0 0 32 32" aria-hidden="true">
-          <path d="M16 16c-3-5-5.5-7-8-7a7 7 0 0 0 0 14c2.5 0 5-2 8-7zm0 0c3 5 5.5 7 8 7a7 7 0 0 0 0-14c-2.5 0-5 2-8 7z" {...p} />
+          <path
+            d="M16 16c-3-5-5.5-7-8-7a7 7 0 0 0 0 14c2.5 0 5-2 8-7zm0 0c3 5 5.5 7 8 7a7 7 0 0 0 0-14c-2.5 0-5 2-8 7z"
+            {...p}
+          />
         </svg>
       );
     case 'impostor':

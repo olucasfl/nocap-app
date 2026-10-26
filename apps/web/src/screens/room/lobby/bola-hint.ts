@@ -1,7 +1,7 @@
 import { BOL_TEAM_NAMES } from '@nocap/games';
 import type { RoomSnapshot } from '@/lib/rooms';
 
-/** O que falta para o Bola Maluca! começar (o mesmo cálculo da sala: time vazio, gente sem marcar pronto). */
+/** O que falta para o Fut Fox começar (o mesmo cálculo da sala: time vazio, gente sem marcar pronto). */
 export function bolaHint(snapshot: RoomSnapshot): { text: string; ok: boolean } {
   const b = snapshot.bola;
   if (!b) return { text: '', ok: false };

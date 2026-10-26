@@ -7,7 +7,14 @@ import { audioKit } from './sfx';
  */
 type Wave = OscillatorType;
 
-function tone(freq: number, at: number, dur: number, type: Wave = 'triangle', vol = 0.18, slideTo?: number) {
+function tone(
+  freq: number,
+  at: number,
+  dur: number,
+  type: Wave = 'triangle',
+  vol = 0.18,
+  slideTo?: number,
+) {
   const kit = audioKit();
   if (!kit || kit.muted()) return;
   const { ctx, out } = kit;
@@ -57,7 +64,9 @@ export const wordsAudio = {
   // ----- Classic -----
   /** As cores de um palpite, uma por casa, no ritmo da virada. */
   row(pattern: string) {
-    [...pattern].forEach((c, i) => tone(CELL_FREQ[c as keyof typeof CELL_FREQ] ?? 196, i * 0.26 + 0.1, 0.16));
+    [...pattern].forEach((c, i) =>
+      tone(CELL_FREQ[c as keyof typeof CELL_FREQ] ?? 196, i * 0.26 + 0.1, 0.16),
+    );
   },
 
   // ----- Bee -----

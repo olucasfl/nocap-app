@@ -1,4 +1,11 @@
-import { TUTORIAL, affordableUpgradeIndex, energyCap, newSave, nextUpgradeCost, type SaveState } from '@nocap/games';
+import {
+  TUTORIAL,
+  affordableUpgradeIndex,
+  energyCap,
+  newSave,
+  nextUpgradeCost,
+  type SaveState,
+} from '@nocap/games';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { installApi } from './mock-api';
 
@@ -24,8 +31,18 @@ async function installSaves(page: Page) {
   await page.route(/localhost:3333\/me\/aperta\/saves/, async (route) => {
     const req = route.request();
     const path = new URL(req.url()).pathname;
-    const headers = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' };
-    const json = (body: unknown, status = 200) => route.fulfill({ status, contentType: 'application/json', headers, body: JSON.stringify(body) });
+    const headers = {
+      'access-control-allow-origin': '*',
+      'access-control-allow-headers': '*',
+      'access-control-allow-methods': '*',
+    };
+    const json = (body: unknown, status = 200) =>
+      route.fulfill({
+        status,
+        contentType: 'application/json',
+        headers,
+        body: JSON.stringify(body),
+      });
     if (req.method() === 'OPTIONS') return json({});
     if (path === '/me/aperta/saves') {
       const d = account.data;
@@ -38,10 +55,18 @@ async function installSaves(page: Page) {
         storySeen: d.storySeen,
         revision: account.rev,
       };
-      return json({ slots: [{ slot: 1, save: one, recoverableUntil: null }, { slot: 2, save: null, recoverableUntil: null }] });
+      return json({
+        slots: [
+          { slot: 1, save: one, recoverableUntil: null },
+          { slot: 2, save: null, recoverableUntil: null },
+        ],
+      });
     }
     if (path === '/me/aperta/saves/1') {
-      if (req.method() === 'GET') return account.data ? json({ slot: 1, revision: account.rev, data: account.data }) : json({ message: 'sem save' }, 404);
+      if (req.method() === 'GET')
+        return account.data
+          ? json({ slot: 1, revision: account.rev, data: account.data })
+          : json({ message: 'sem save' }, 404);
       if (req.method() === 'PUT') {
         account.data = (req.postDataJSON() as { data: SaveData }).data;
         account.rev += 1;
@@ -57,13 +82,17 @@ async function watch(page: Page) {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => {
-    if (m.type() === 'error' && !/Failed to load resource|fonts\.g/.test(m.text())) errors.push(m.text());
+    if (m.type() === 'error' && !/Failed to load resource|fonts\.g/.test(m.text()))
+      errors.push(m.text());
   });
   return errors;
 }
 
 const noOverflow = async (page: Page) =>
-  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth), 'rolagem lateral').toBeLessThanOrEqual(1);
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth),
+    'rolagem lateral',
+  ).toBeLessThanOrEqual(1);
 
 /** Toque (celular) ou clique (PC) nas coordenadas do centro do elemento. */
 async function tapCenter(page: Page, target: Locator, touch: boolean) {
@@ -84,7 +113,10 @@ async function openGame(page: Page, fresh: boolean) {
     await page.getByRole('button', { name: 'Novo jogo' }).first().click();
     await page.getByRole('button', { name: 'Pular história' }).click();
   } else {
-    await page.getByRole('button', { name: /Continuar/ }).first().click();
+    await page
+      .getByRole('button', { name: /Continuar/ })
+      .first()
+      .click();
     // O mock não guarda "história vista" entre as telas; se ela reaparecer, pula como a pessoa faria.
     const skip = page.getByRole('button', { name: 'Pular história' });
     if (await skip.isVisible({ timeout: 1500 }).catch(() => false)) await skip.click();
@@ -92,7 +124,8 @@ async function openGame(page: Page, fresh: boolean) {
   await expect(page.locator('.ap-game')).toBeVisible();
 }
 
-const dock = (page: Page, name: string) => page.locator('.ap-dock').getByRole('button', { name: new RegExp(`^${name}`) });
+const dock = (page: Page, name: string) =>
+  page.locator('.ap-dock').getByRole('button', { name: new RegExp(`^${name}`) });
 const coach = (page: Page) => page.locator('.ap-tut');
 const card = (page: Page) => page.locator('.ap-tut-card, .ap-tut-inline');
 
@@ -107,7 +140,10 @@ const nearUpgrade = (s: SaveState): SaveState => {
   const cost = nextUpgradeCost(s, affordableUpgradeIndex(rich)!) as number;
   return { ...s, run: { ...s.run, dust: cost - 1, dustLife: cost - 1 } };
 };
-const nearFull = (s: SaveState): SaveState => ({ ...s, run: { ...s.run, energy: energyCap(s.run.picks) - 0.01 } });
+const nearFull = (s: SaveState): SaveState => ({
+  ...s,
+  run: { ...s.run, energy: energyCap(s.run.picks) - 0.01 },
+});
 
 const SIZES = [
   { name: '320 px', viewport: { width: 320, height: 640 }, touch: true },
@@ -125,10 +161,14 @@ for (const size of SIZES) {
     });
     const touch = size.touch;
     const shotDir = process.env.E2E_SHOTS ?? 'test-results';
-    const shot = (page: Page, n: string) => page.screenshot({ path: `${shotDir}/ftue-${size.viewport.width}-${n}.png` });
-    const press = (page: Page) => tapCenter(page, page.getByRole('button', { name: 'Apertar o botão' }), touch);
+    const shot = (page: Page, n: string) =>
+      page.screenshot({ path: `${shotDir}/ftue-${size.viewport.width}-${n}.png` });
+    const press = (page: Page) =>
+      tapCenter(page, page.getByRole('button', { name: 'Apertar o botão' }), touch);
 
-    test('começa só com o botão: poeira sobe de 1 em 1 e nada mais aparece', async ({ page }, info) => {
+    test('começa só com o botão: poeira sobe de 1 em 1 e nada mais aparece', async ({
+      page,
+    }, info) => {
       test.skip(info.project.name !== 'desktop', 'o tamanho vem do describe; um projeto basta');
       const errors = await watch(page);
       await installApi(page);
@@ -153,7 +193,9 @@ for (const size of SIZES) {
       expect(errors).toEqual([]);
     });
 
-    test('poeira da 1ª melhoria: surge Melhorias, compra, volta e a barra sobe; recarregar retoma', async ({ page }, info) => {
+    test('poeira da 1ª melhoria: surge Melhorias, compra, volta e a barra sobe; recarregar retoma', async ({
+      page,
+    }, info) => {
       test.skip(info.project.name !== 'desktop', 'o tamanho vem do describe; um projeto basta');
       const errors = await watch(page);
       await installApi(page);
@@ -194,17 +236,23 @@ for (const size of SIZES) {
       expect(errors).toEqual([]);
     });
 
-    test('barra cheia: escolha do 1º grimório com o cartão, surge Grimórios, depois o jogo livre', async ({ page }, info) => {
+    test('barra cheia: escolha do 1º grimório com o cartão, surge Grimórios, depois o jogo livre', async ({
+      page,
+    }, info) => {
       test.skip(info.project.name !== 'desktop', 'o tamanho vem do describe; um projeto basta');
       const errors = await watch(page);
       await installApi(page);
       const account = await installSaves(page);
-      account.data = saveAt((s) => nearFull({ ...s, tutorial: TUTORIAL.FILL, ui: { unlocked: ['upgrades'], hints: [] } }));
+      account.data = saveAt((s) =>
+        nearFull({ ...s, tutorial: TUTORIAL.FILL, ui: { unlocked: ['upgrades'], hints: [] } }),
+      );
       account.rev = 1;
       await openGame(page, false);
       await expect(dock(page, 'Grimórios')).toHaveCount(0);
       await press(page);
-      await expect(page.locator('.ap-tut-inline')).toContainText('Você ganhou seu primeiro grimório!');
+      await expect(page.locator('.ap-tut-inline')).toContainText(
+        'Você ganhou seu primeiro grimório!',
+      );
       await expect(page.locator('.ap-tut-inline')).toContainText('1,6 s');
       await expect(page.getByRole('dialog')).toBeVisible();
       await shot(page, '6-escolha');
@@ -226,7 +274,9 @@ for (const size of SIZES) {
       expect(errors).toEqual([]);
     });
 
-    test('jogo livre: o cartão de conquistas vem com a conquista e libera o botão', async ({ page }, info) => {
+    test('jogo livre: o cartão de conquistas vem com a conquista e libera o botão', async ({
+      page,
+    }, info) => {
       test.skip(info.project.name !== 'desktop', 'o tamanho vem do describe; um projeto basta');
       const errors = await watch(page);
       await installApi(page);
@@ -262,7 +312,9 @@ for (const size of SIZES) {
         return !!hit?.closest('.ap-tut-block');
       });
 
-    test('o tutorial escurece a tela e só o alvo, Sair e Pular respondem ao toque', async ({ page }, info) => {
+    test('o tutorial escurece a tela e só o alvo, Sair e Pular respondem ao toque', async ({
+      page,
+    }, info) => {
       test.skip(info.project.name !== 'desktop', 'o tamanho vem do describe; um projeto basta');
       const errors = await watch(page);
       await installApi(page);
@@ -276,7 +328,9 @@ for (const size of SIZES) {
       expect(await hitsBlock(page, page.locator('[data-tut="press"]'))).toBe(false);
       expect(await hitsBlock(page, page.locator('[data-tut="dust"]'))).toBe(true);
       expect(await hitsBlock(page, page.locator('.ap-hbtn-exit'))).toBe(false);
-      expect(await hitsBlock(page, page.getByRole('button', { name: 'Pular tutorial' }))).toBe(false);
+      expect(await hitsBlock(page, page.getByRole('button', { name: 'Pular tutorial' }))).toBe(
+        false,
+      );
       // Tocar fora balança o anel e não faz nada no jogo.
       await page.locator('.ap-tut-block').dispatchEvent('pointerdown');
       await expect(page.locator('.ap-tut-ring.is-nudge')).toBeVisible();
@@ -287,7 +341,9 @@ for (const size of SIZES) {
       expect(errors).toEqual([]);
     });
 
-    test('nos primeiros toques a poeira acende e o botão continua livre', async ({ page }, info) => {
+    test('nos primeiros toques a poeira acende e o botão continua livre', async ({
+      page,
+    }, info) => {
       test.skip(info.project.name !== 'desktop', 'o tamanho vem do describe; um projeto basta');
       const errors = await watch(page);
       await installApi(page);
@@ -306,7 +362,9 @@ for (const size of SIZES) {
       expect(errors).toEqual([]);
     });
 
-    test('na página de Melhorias o único toque livre é o preço da melhoria; o resto da página não responde', async ({ page }, info) => {
+    test('na página de Melhorias o único toque livre é o preço da melhoria; o resto da página não responde', async ({
+      page,
+    }, info) => {
       test.skip(info.project.name !== 'desktop', 'o tamanho vem do describe; um projeto basta');
       const errors = await watch(page);
       await installApi(page);
@@ -332,7 +390,9 @@ for (const size of SIZES) {
       expect(errors).toEqual([]);
     });
 
-    test('jogo livre: com poeira de sobra o cartão de Geradores aponta para Melhorias e abrir a página conta como visto', async ({ page }, info) => {
+    test('jogo livre: com poeira de sobra o cartão de Geradores aponta para Melhorias e abrir a página conta como visto', async ({
+      page,
+    }, info) => {
       test.skip(info.project.name !== 'desktop', 'o tamanho vem do describe; um projeto basta');
       const errors = await watch(page);
       await installApi(page);
@@ -340,7 +400,10 @@ for (const size of SIZES) {
       account.data = saveAt((s) => ({
         ...s,
         tutorial: TUTORIAL.FREE,
-        ui: { unlocked: ['upgrades', 'grimoires', 'achievements'], hints: ['achievements', 'objects'] },
+        ui: {
+          unlocked: ['upgrades', 'grimoires', 'achievements'],
+          hints: ['achievements', 'objects'],
+        },
         album: ['moon'],
         run: { ...s.run, picks: 1, build: { moon: 1 }, dust: 1e12, dustLife: 1e12 },
         stats: { ...s.stats, clicks: 300, picks: 1 },
@@ -355,7 +418,9 @@ for (const size of SIZES) {
       await shot(page, '9c-geradores');
       await tapCenter(page, dock(page, 'Melhorias'), touch);
       await expect(page.locator('.ap-sheet')).toBeVisible();
-      await expect.poll(() => (account.data as unknown as { ui: { hints: string[] } }).ui.hints).toContain('generators');
+      await expect
+        .poll(() => (account.data as unknown as { ui: { hints: string[] } }).ui.hints)
+        .toContain('generators');
       expect(errors).toEqual([]);
     });
 
@@ -367,7 +432,10 @@ for (const size of SIZES) {
       account.data = saveAt((s) => ({
         ...s,
         tutorial: TUTORIAL.FREE,
-        ui: { unlocked: ['upgrades', 'grimoires', 'achievements'], hints: ['achievements', 'objects'] },
+        ui: {
+          unlocked: ['upgrades', 'grimoires', 'achievements'],
+          hints: ['achievements', 'objects'],
+        },
         album: ['moon', 'mars'],
         run: { ...s.run, picks: 2, build: { moon: 1, mars: 1 } },
         stats: { ...s.stats, clicks: 300, picks: 2 },
@@ -399,7 +467,10 @@ for (const size of SIZES) {
       account.data = saveAt((s) => ({
         ...s,
         tutorial: TUTORIAL.FREE,
-        ui: { unlocked: ['upgrades', 'grimoires', 'achievements'], hints: ['achievements', 'objects', 'generators', 'collapse'] },
+        ui: {
+          unlocked: ['upgrades', 'grimoires', 'achievements'],
+          hints: ['achievements', 'objects', 'generators', 'collapse'],
+        },
         album: ['moon'],
         run: { ...s.run, picks: 1, build: { moon: 1 } },
         stats: { ...s.stats, clicks: 300, picks: 1 },
@@ -418,7 +489,9 @@ for (const size of SIZES) {
       expect(errors).toEqual([]);
     });
 
-    test('história: a última tela mostra livros de grimório, não planetas', async ({ page }, info) => {
+    test('história: a última tela mostra livros de grimório, não planetas', async ({
+      page,
+    }, info) => {
       test.skip(info.project.name !== 'desktop', 'o tamanho vem do describe; um projeto basta');
       const errors = await watch(page);
       await installApi(page);
@@ -436,7 +509,9 @@ for (const size of SIZES) {
       expect(errors).toEqual([]);
     });
 
-    test('pular libera tudo de uma vez e não volta depois de recarregar', async ({ page }, info) => {
+    test('pular libera tudo de uma vez e não volta depois de recarregar', async ({
+      page,
+    }, info) => {
       test.skip(info.project.name !== 'desktop', 'o tamanho vem do describe; um projeto basta');
       const errors = await watch(page);
       await installApi(page);
@@ -444,7 +519,8 @@ for (const size of SIZES) {
       await openGame(page, true);
       await page.getByRole('button', { name: 'Pular tutorial' }).click();
       await expect(coach(page)).toHaveCount(0);
-      for (const name of ['Conquistas', 'Grimórios', 'Melhorias']) await expect(dock(page, name)).toBeVisible();
+      for (const name of ['Conquistas', 'Grimórios', 'Melhorias'])
+        await expect(dock(page, name)).toBeVisible();
       await expect(page.getByRole('button', { name: /Árvore/ })).toBeVisible();
       await shot(page, '11-pulou');
       await noOverflow(page);

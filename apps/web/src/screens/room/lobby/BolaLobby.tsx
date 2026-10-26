@@ -206,7 +206,7 @@ function FormatPanel({ snapshot, me }: { snapshot: RoomSnapshot; me: string | un
   );
 }
 
-/** A sala do Bola Maluca!: times e vagas no lugar da lista de jogadores, formato e bots no lugar das regras. */
+/** A sala do Fut Fox: times e vagas no lugar da lista de jogadores, formato e bots no lugar das regras. */
 export function BolaLobby({ snapshot, me }: { snapshot: RoomSnapshot; me: string | undefined }) {
   const [closing, setClosing] = useState(false);
   const isHost = snapshot.hostId === me;

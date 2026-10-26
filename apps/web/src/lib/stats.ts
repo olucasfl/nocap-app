@@ -78,18 +78,18 @@ export const countUnit = (game: string, mode?: string): CountUnit | null =>
   game === 'wclassic'
     ? 'tentativas'
     : game === 'atravessa'
-    ? 'linhas'
-    : game === 'blocks'
-      ? mode === 'towers'
-        ? 'peças'
-        : 'pontos'
-      : game === 'eco'
-      ? mode?.startsWith('batida-')
-        ? 'pontos'
-        : 'passos'
-      : mode === 'survival'
-        ? 'rodadas'
-        : null;
+      ? 'linhas'
+      : game === 'blocks'
+        ? mode === 'towers'
+          ? 'peças'
+          : 'pontos'
+        : game === 'eco'
+          ? mode?.startsWith('batida-')
+            ? 'pontos'
+            : 'passos'
+          : mode === 'survival'
+            ? 'rodadas'
+            : null;
 
 /** "7 rodadas", "12 passos" (e o singular com 1). `tenths` é a nota guardada (7 = 70). */
 export function formatCount(tenths: number, unit: CountUnit): string {

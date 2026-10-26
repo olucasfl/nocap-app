@@ -10,7 +10,12 @@ describe('moldura do Aperta! no celular', () => {
   it('celular em pé: troca largura e altura e gira 90 graus para o canto certo', () => {
     const f = frameFor(402, 874, true);
     expect(f.mode).toBe('rotated');
-    expect(frameStyle(f)).toMatchObject({ width: 874, height: 402, transform: 'translateX(402px) rotate(90deg)', transformOrigin: '0 0' });
+    expect(frameStyle(f)).toMatchObject({
+      width: 874,
+      height: 402,
+      transform: 'translateX(402px) rotate(90deg)',
+      transformOrigin: '0 0',
+    });
   });
 
   it('virar o aparelho várias vezes sempre dá a mesma moldura para o mesmo tamanho (sem estado escondido)', () => {

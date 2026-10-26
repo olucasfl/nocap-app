@@ -5,7 +5,7 @@ import { BolaPlay, type BolaSetup } from './BolaPlay';
 import '../desmorona/desmorona.css';
 import './bola.css';
 
-/** A partida do Bola Maluca! em sala (spec 046): o servidor simula; esta tela desenha, manda a entrada e mostra o HUD. */
+/** A partida do Fut Fox em sala (spec 046): o servidor simula; esta tela desenha, manda a entrada e mostra o HUD. */
 export function BolaRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
   const b = snapshot.bola;
   const navigate = useNavigate();

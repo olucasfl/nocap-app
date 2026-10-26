@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- os testes leem o mundo do jogo exposto só em desenvolvimento */
 import { expect, test } from '@playwright/test';
 
-/** Câmera do Bola Maluca!: a bola fica no quadro e a câmera livre gira sem saltos, mesmo perto da parede. */
+/** Câmera do Fut Fox: a bola fica no quadro e a câmera livre gira sem saltos, mesmo perto da parede. */
 test.use({ viewport: { width: 1280, height: 720 } });
 
 test('câmera na bola mantém a bola no quadro; câmera livre gira sem saltos', async ({

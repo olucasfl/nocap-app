@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import {
   BOL_BALL_R,
-  BOL_FLIP_SEC,
   BOL_GOAL_H,
   BOL_TEAM_COLORS,
   BOL_TEAM_NAMES,
@@ -24,13 +23,11 @@ interface Fox {
   shadow: THREE.Mesh;
   /** Nome, cor e time com que foi desenhada. */
   sig: string;
-  /** Tempo até o próximo ponto do rastro do mortal. */
-  trailT: number;
 }
 
 const tmp = new THREE.Vector3();
 
-/** O campo, a bola e as raposas do Bola Maluca!. Só desenha: quem manda é o `BolWorld`. */
+/** O campo, a bola e as raposas do Fut Fox. Só desenha: quem manda é o `BolWorld`. */
 export class BolaScene {
   private renderer: THREE.WebGLRenderer;
   private scene = new THREE.Scene();
@@ -57,7 +54,13 @@ export class BolaScene {
     s1: number;
     o0: number;
     ring: boolean;
+    /** Anel deitado no chão (não vira para a câmera). */
+    flat: boolean;
   }[] = [];
+  private kickTrail = 0;
+  private kickColor = 0xffffff;
+  private fovKick = 0;
+  private baseFov = 60;
   private glowTex: THREE.Texture | null = null;
   private ballTrailT = 0;
   private bursts: {
@@ -548,7 +551,6 @@ export class BolaScene {
       body,
       shadow: this.blob(0.55),
       sig: `${p.name}|${p.color}|${p.team}`,
-      trailT: 0,
     });
   }
 
@@ -612,7 +614,8 @@ export class BolaScene {
     this.size = { w, h };
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / Math.max(1, h);
-    this.camera.fov = this.camera.aspect < 1 ? 78 : 60;
+    this.baseFov = this.camera.aspect < 1 ? 78 : 60;
+    this.camera.fov = this.baseFov;
     this.camera.updateProjectionMatrix();
   }
 
@@ -717,13 +720,14 @@ export class BolaScene {
     size: number,
     life: number,
     opacity = 0.85,
+    additive = true,
   ) {
     const mat = new THREE.SpriteMaterial({
       map: this.glow(),
       color,
       transparent: true,
       depthWrite: false,
-      blending: THREE.AdditiveBlending,
+      blending: additive ? THREE.AdditiveBlending : THREE.NormalBlending,
       fog: false,
       opacity,
     });
@@ -740,45 +744,88 @@ export class BolaScene {
       s1: size * 0.3,
       o0: opacity,
       ring: false,
+      flat: false,
     });
   }
 
-  private addRing(x: number, y: number, z: number, color: number, delay = 0) {
+  /** Anel fino que se abre e some. `flat`: deitado no chão; senão, sempre de frente para a câmera. */
+  private addRing(
+    x: number,
+    y: number,
+    z: number,
+    color: number,
+    to: number,
+    life: number,
+    opts: { delay?: number; flat?: boolean; opacity?: number } = {},
+  ) {
+    const { delay = 0, flat = false, opacity = 0.9 } = opts;
     const mat = new THREE.MeshBasicMaterial({
       color,
       transparent: true,
       depthWrite: false,
       side: THREE.DoubleSide,
       fog: false,
-      opacity: 0.9,
+      opacity,
     });
-    const m = new THREE.Mesh(new THREE.RingGeometry(0.82, 1, 44), mat);
+    // sem teste de profundidade: o anel aparece inteiro, mesmo a parte que passaria por baixo do gramado
+    mat.depthTest = !!flat;
+    const m = new THREE.Mesh(new THREE.RingGeometry(0.9, 1, 64), mat);
+    m.renderOrder = flat ? 1 : 12;
     m.position.set(x, y, z);
+    if (flat) m.rotation.x = -Math.PI / 2;
     m.visible = delay <= 0;
     this.scene.add(m);
-    this.fx.push({ obj: m, mat, age: -delay, life: 0.5, s0: 1, s1: 7, o0: 0.9, ring: true });
+    this.fx.push({
+      obj: m,
+      mat,
+      age: -delay,
+      life,
+      s0: 0.6,
+      s1: to,
+      o0: opacity,
+      ring: true,
+      flat,
+    });
   }
 
-  /** O chute pegou: dois anéis abrindo no ponto da bola e uma chuva de faíscas. */
-  kickFx(id: string) {
+  /**
+   * O chute pegou: um clarão, dois anéis finos que se abrem (um branco, um na cor do time), um anel deitado no chão, uma
+   * cauda de cometa apontando para onde a bola foi e um rastro na cor do time. Limpo, mas dá para ler de longe de
+   * quem foi o chute, para onde ele vai e com que força.
+   */
+  kickFx(id: string, vel?: { vx: number; vy: number; vz: number }, mine = false) {
     const b = this.world.ball;
     const p = this.world.players.find((q) => q.id === id);
     const team = p ? (BOL_TEAM_COLORS[p.team] ?? 0xffffff) : 0xffffff;
-    this.addRing(b.x, b.y, b.z, 0xffffff);
-    this.addRing(b.x, b.y, b.z, team, 0.07);
-    this.addGlow(b.x, b.y, b.z, 0xfff0a0, 4.5, 0.3, 0.95);
+    const v = vel ?? b;
+    const sp = Math.hypot(v.vx, v.vy, v.vz) || 1;
+    const power = Math.min(1, Math.max(0.4, sp / 28));
+    this.addGlow(b.x, b.y, b.z, 0xffffff, 3.4 + power * 1.8, 0.2, 1, false);
+    this.addRing(b.x, b.y, b.z, 0xffffff, 3 + power * 2, 0.4);
+    this.addRing(b.x, b.y, b.z, team, 3.8 + power * 2.6, 0.48, { delay: 0.05 });
+    this.addRing(b.x, 0.06, b.z, team, 4 + power * 2.6, 0.5, { flat: true, opacity: 0.7 });
     if (this.reduced) return;
-    for (let i = 0; i < 10; i++) {
+    // cauda de cometa: pontos que ficam no ar atrás da bola, na direção contrária à do chute
+    const dx = v.vx / sp;
+    const dy = v.vy / sp;
+    const dz = v.vz / sp;
+    for (let i = 1; i <= 14; i++) {
+      const t = i * 0.45;
       this.addGlow(
-        b.x + (Math.random() - 0.5) * 1.6,
-        b.y + (Math.random() - 0.2) * 1.6,
-        b.z + (Math.random() - 0.5) * 1.6,
-        i % 2 ? team : 0xffffff,
-        0.9,
-        0.45,
+        b.x - dx * t,
+        Math.max(0.2, b.y - dy * t),
+        b.z - dz * t,
+        i % 2 ? 0xffffff : team,
+        1.7 - i * 0.1,
+        0.3 + i * 0.02,
+        0.85 - i * 0.04,
+        false,
       );
     }
-    this.shake = Math.max(this.shake, 0.25);
+    this.kickTrail = 0.9;
+    this.kickColor = team;
+    this.fovKick = Math.max(this.fovKick, mine ? 1 : 0.5);
+    this.shake = Math.max(this.shake, mine ? 0.22 : 0.1);
   }
 
   shakeNow(amount: number) {
@@ -810,34 +857,41 @@ export class BolaScene {
         : 1.08;
       fox.body.scale.set(1 / Math.sqrt(squash), squash, 1 / Math.sqrt(squash));
       const pitch = p.grounded ? Math.min(0.18, speed * 0.03) : 0.25;
-      if (p.flipT > 0 && !this.reduced) {
-        // mortal para a frente (a raposa já olha para onde vai), com saída suave
-        const k = 1 - p.flipT / BOL_FLIP_SEC;
-        const e = 1 - Math.pow(1 - Math.min(1, k * 1.15), 3);
-        fox.body.rotation.x = pitch + e * Math.PI * 2;
-      } else {
-        fox.body.rotation.x = pitch;
-      }
+      // o mortal não muda o corpo da raposa: o que mostra o chute é o efeito na bola
+      fox.body.rotation.x = pitch;
     }
-    // rastro do mortal, rastro da bola rápida e efeitos do chute
+    // rastro da bola: discreto quando rápida; na cor do time logo depois de um chute
     if (!this.reduced) {
-      for (const p of this.world.players) {
-        const fox = this.foxes.get(p.id);
-        if (!fox) continue;
-        if (p.flipT > 0) {
-          fox.trailT -= dt;
-          if (fox.trailT <= 0) {
-            fox.trailT = 0.025;
-            this.addGlow(p.x, p.y + 0.6, p.z, BOL_TEAM_COLORS[p.team] ?? 0xffffff, 1.7, 0.4, 0.7);
-          }
-        } else fox.trailT = 0;
-      }
       const sp = Math.hypot(b.vx, b.vy, b.vz);
       this.ballTrailT -= dt;
-      if (sp > 15 && this.ballTrailT <= 0) {
-        this.ballTrailT = 0.02;
-        this.addGlow(b.x, b.y, b.z, sp > 24 ? 0xffd23f : 0xffffff, 1.5, 0.28, 0.55);
+      this.kickTrail = Math.max(0, this.kickTrail - dt);
+      if (this.ballTrailT <= 0) {
+        if (this.kickTrail > 0) {
+          this.ballTrailT = 0.016;
+          this.addGlow(
+            b.x,
+            b.y,
+            b.z,
+            this.kickColor,
+            1.7 + this.kickTrail * 1.2,
+            0.34,
+            0.5 + this.kickTrail * 0.4,
+          );
+        } else if (sp > 16) {
+          this.ballTrailT = 0.03;
+          this.addGlow(b.x, b.y, b.z, 0xffffff, 1.2, 0.22, 0.3);
+        }
       }
+    }
+    // pulo de zoom do chute: a câmera abre um pouco e volta
+    if (this.fovKick > 0.002) {
+      this.fovKick *= Math.exp(-dt * 7);
+      this.camera.fov = this.baseFov + this.fovKick * 5;
+      this.camera.updateProjectionMatrix();
+    } else if (this.camera.fov !== this.baseFov) {
+      this.camera.fov = this.baseFov;
+      this.camera.updateProjectionMatrix();
+      this.fovKick = 0;
     }
     for (let i = this.fx.length - 1; i >= 0; i--) {
       const f = this.fx[i]!;
@@ -847,7 +901,7 @@ export class BolaScene {
       const k = Math.min(1, f.age / f.life);
       if (f.ring) {
         f.obj.scale.setScalar(f.s0 + (f.s1 - f.s0) * (1 - Math.pow(1 - k, 2)));
-        f.obj.lookAt(this.camera.position);
+        if (!f.flat) f.obj.lookAt(this.camera.position);
       } else f.obj.scale.setScalar(f.s0 + (f.s1 - f.s0) * k);
       f.mat.opacity = f.o0 * (1 - k) * (1 - k);
       if (f.age >= f.life) {

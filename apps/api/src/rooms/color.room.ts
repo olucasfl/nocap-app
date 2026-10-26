@@ -616,7 +616,7 @@ export class DesmoronaRoom extends ColorRoom {
 }
 
 /**
- * Sala do Bola Maluca! (spec 046, fase 2). O servidor simula tudo; os aparelhos mandam só a entrada ("bin") e recebem o
+ * Sala do Fut Fox (spec 046, fase 2). O servidor simula tudo; os aparelhos mandam só a entrada ("bin") e recebem o
  * estado ("bs") a cada tick. Times, formato e bots no lobby: "bteam", "bformat", "bbots"; "bend" encerra a partida.
  */
 export class BolaRoom extends ColorRoom {

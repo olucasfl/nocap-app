@@ -6,10 +6,24 @@ import { installApi } from './mock-api';
  * conteúdo fora da janela. Com `SWEEP_DIR=/pasta` também salva uma captura de cada uma para revisar à mão.
  */
 const ROUTES: [string, string][] = [
-  ['hub', '/'], ['cor', '/cor'], ['tempo', '/tempo'], ['eco', '/eco'], ['atravessa', '/atravessa'], ['blocks', '/blocks'],
-  ['words', '/words'], ['classic', '/words/classic'], ['bee', '/words/bee'], ['connect', '/words/connect'],
-  ['amigos', '/amigos'], ['ranking', '/ranking'], ['perfil', '/perfil'], ['entrar', '/entrar'], ['criar', '/criar-conta'],
-  ['sala', '/sala?jogo=color'], ['foxcap', '/fox-cap'], ['dsm', '/fox-cap/desmorona'],
+  ['hub', '/'],
+  ['cor', '/cor'],
+  ['tempo', '/tempo'],
+  ['eco', '/eco'],
+  ['atravessa', '/atravessa'],
+  ['blocks', '/blocks'],
+  ['words', '/words'],
+  ['classic', '/words/classic'],
+  ['bee', '/words/bee'],
+  ['connect', '/words/connect'],
+  ['amigos', '/amigos'],
+  ['ranking', '/ranking'],
+  ['perfil', '/perfil'],
+  ['entrar', '/entrar'],
+  ['criar', '/criar-conta'],
+  ['sala', '/sala?jogo=color'],
+  ['foxcap', '/fox-cap'],
+  ['dsm', '/fox-cap/desmorona'],
 ];
 const SIZES: [string, number, number][] = [
   ['phone', 390, 844],
@@ -26,11 +40,20 @@ for (const [name, url] of ROUTES) {
     for (const [size, w, h] of SIZES) {
       await page.setViewportSize({ width: w, height: h });
       await page.goto(url);
-      await page.getByRole('button', { name: 'Agora não' }).click({ timeout: 800 }).catch(() => undefined);
+      await page
+        .getByRole('button', { name: 'Agora não' })
+        .click({ timeout: 800 })
+        .catch(() => undefined);
       await page.waitForTimeout(500);
-      const over = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      const over = await page.evaluate(
+        () => document.documentElement.scrollWidth - window.innerWidth,
+      );
       expect(over, `${name} em ${size}: rolagem horizontal`).toBeLessThanOrEqual(0);
-      if (process.env.SWEEP_DIR) await page.screenshot({ path: `${process.env.SWEEP_DIR}/${name}-${size}.png`, fullPage: size !== 'land' });
+      if (process.env.SWEEP_DIR)
+        await page.screenshot({
+          path: `${process.env.SWEEP_DIR}/${name}-${size}.png`,
+          fullPage: size !== 'land',
+        });
     }
   });
 }

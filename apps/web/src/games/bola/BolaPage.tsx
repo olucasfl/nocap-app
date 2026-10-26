@@ -20,7 +20,7 @@ const HOW = [
 
 type Phase = 'menu' | 'pick' | 'play';
 
-/** O Bola Maluca! (spec 046): menu e treino contra bots. As salas com amigos vêm na Fase 2. */
+/** O Fut Fox (spec 046): menu e treino contra bots. As salas com amigos vêm na Fase 2. */
 export function BolaPage() {
   const [phase, setPhase] = useState<Phase>('menu');
   const [tab, setTab] = useState<'jogar' | 'como'>('jogar');
@@ -47,7 +47,7 @@ export function BolaPage() {
         <HubHero
           accent="green"
           art={<BolaArt />}
-          title="Bola Maluca!"
+          title="Fut Fox"
           text="Futebol de raposas com 2, 3 ou 4 times. Quem tocou por último, marca."
           stats={[
             { label: 'Times', value: '2 a 4' },

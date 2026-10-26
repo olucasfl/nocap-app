@@ -1,6 +1,11 @@
 import { summarizeProgress, type ProgressGame, type ProgressSummary } from '@nocap/games';
 import meta from '@/games/words/levels/meta.json';
-import { beeProgress, classicProgress, connectProgress, useProgress } from '@/games/words/levels/progress';
+import {
+  beeProgress,
+  classicProgress,
+  connectProgress,
+  useProgress,
+} from '@/games/words/levels/progress';
 import './words-progress.css';
 
 export type WordsSummary = Record<ProgressGame, ProgressSummary>;
@@ -25,7 +30,8 @@ export function useMyWordsSummary(): WordsSummary {
 
 /** As fases de cada jogo do Word's: a fase em que a pessoa está e quantas já fez. `null` = não deu para carregar. */
 export function WordsRows({ summary }: { summary: WordsSummary | null | undefined }) {
-  if (summary === null) return <p className="mono wp-fail">Não deu para carregar as fases agora.</p>;
+  if (summary === null)
+    return <p className="mono wp-fail">Não deu para carregar as fases agora.</p>;
   return (
     <ul className="wp-list" data-testid="words-progress">
       {ROWS.map((r) => {
@@ -35,12 +41,16 @@ export function WordsRows({ summary }: { summary: WordsSummary | null | undefine
           <li key={r.game} className={`wp-row ${r.game}`}>
             <div className="wp-top">
               <b>{r.name}</b>
-              <span className="mono wp-at">{!s ? '...' : s.furthest > 0 ? `FASE ${s.furthest}` : 'NÃO COMEÇOU'}</span>
+              <span className="mono wp-at">
+                {!s ? '...' : s.furthest > 0 ? `FASE ${s.furthest}` : 'NÃO COMEÇOU'}
+              </span>
             </div>
             <div className="wp-bar" aria-hidden="true">
               <i style={{ transform: `scaleX(${Math.min(1, count / r.total)})` }} />
             </div>
-            <span className="mono wp-sub">{s ? `${count} DE ${r.total} ${s.done === null ? 'JOGADAS' : 'CONCLUÍDAS'}` : ''}</span>
+            <span className="mono wp-sub">
+              {s ? `${count} DE ${r.total} ${s.done === null ? 'JOGADAS' : 'CONCLUÍDAS'}` : ''}
+            </span>
           </li>
         );
       })}

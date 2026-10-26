@@ -23,16 +23,40 @@ async function installSaves(page: Page) {
   await page.route(/localhost:3333\/me\/aperta\/saves/, async (route) => {
     const req = route.request();
     const path = new URL(req.url()).pathname;
-    const headers = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' };
-    const json = (body: unknown, status = 200) => route.fulfill({ status, contentType: 'application/json', headers, body: JSON.stringify(body) });
+    const headers = {
+      'access-control-allow-origin': '*',
+      'access-control-allow-headers': '*',
+      'access-control-allow-methods': '*',
+    };
+    const json = (body: unknown, status = 200) =>
+      route.fulfill({
+        status,
+        contentType: 'application/json',
+        headers,
+        body: JSON.stringify(body),
+      });
     if (req.method() === 'OPTIONS') return json({});
     if (path === '/me/aperta/saves') {
       const d = account.data;
-      const one = { slot: 1, name: d.name, collapses: d.collapses, vaultCount: 0, lastPlayedAt: new Date().toISOString(), storySeen: true, revision: account.rev };
-      return json({ slots: [{ slot: 1, save: one, recoverableUntil: null }, { slot: 2, save: null, recoverableUntil: null }] });
+      const one = {
+        slot: 1,
+        name: d.name,
+        collapses: d.collapses,
+        vaultCount: 0,
+        lastPlayedAt: new Date().toISOString(),
+        storySeen: true,
+        revision: account.rev,
+      };
+      return json({
+        slots: [
+          { slot: 1, save: one, recoverableUntil: null },
+          { slot: 2, save: null, recoverableUntil: null },
+        ],
+      });
     }
     if (path === '/me/aperta/saves/1') {
-      if (req.method() === 'GET') return json({ slot: 1, revision: account.rev, data: account.data });
+      if (req.method() === 'GET')
+        return json({ slot: 1, revision: account.rev, data: account.data });
       if (req.method() === 'PUT') {
         account.data = (req.postDataJSON() as { data: SaveState }).data;
         account.rev += 1;
@@ -43,7 +67,12 @@ async function installSaves(page: Page) {
   });
 }
 
-test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
+test.use({
+  viewport: { width: 390, height: 844 },
+  isMobile: true,
+  hasTouch: true,
+  deviceScaleFactor: 2,
+});
 
 test('árvore em grafo: abre, mostra os nós, arrasta e abre o painel', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop', 'um projeto basta');
@@ -51,11 +80,15 @@ test('árvore em grafo: abre, mostra os nós, arrasta e abre o painel', async ({
   page.on('pageerror', (e) => errors.push(e.message));
   await installApi(page);
   await installSaves(page);
-  const shot = (n: string) => page.screenshot({ path: `${process.env.E2E_SHOTS ?? 'test-results'}/tree-390-${n}.png` });
+  const shot = (n: string) =>
+    page.screenshot({ path: `${process.env.E2E_SHOTS ?? 'test-results'}/tree-390-${n}.png` });
 
   await page.goto('/arcade/aperta');
   await page.getByRole('button', { name: 'Jogar' }).first().click();
-  await page.getByRole('button', { name: /Continuar/ }).first().click();
+  await page
+    .getByRole('button', { name: /Continuar/ })
+    .first()
+    .click();
   const skip = page.getByRole('button', { name: 'Pular história' });
   if (await skip.isVisible({ timeout: 1500 }).catch(() => false)) await skip.click();
   await expect(page.locator('.ap-game')).toBeVisible();
@@ -64,24 +97,34 @@ test('árvore em grafo: abre, mostra os nós, arrasta e abre o painel', async ({
   await expect(page.locator('.ap-tg-node')).toHaveCount(116);
   await expect(page.locator('.ap-tg-hint')).toBeVisible();
   await shot('1-aberta');
-  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(1);
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth),
+  ).toBeLessThanOrEqual(1);
 
   // Arrasta a área: a dica some e o conteúdo se move.
   const stage = page.locator('.ap-tg-stage');
-  const before = await page.locator('.ap-tg-content').evaluate((el) => (el as unknown as SVGGElement).style.transform);
+  const before = await page
+    .locator('.ap-tg-content')
+    .evaluate((el) => (el as unknown as SVGGElement).style.transform);
   await stage.scrollIntoViewIfNeeded();
   const box = (await stage.boundingBox())!;
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
   await page.mouse.move(box.x + box.width / 2 + 80, box.y + box.height / 2 + 40, { steps: 6 });
   await page.mouse.up();
-  const after = await page.locator('.ap-tg-content').evaluate((el) => (el as unknown as SVGGElement).style.transform);
+  const after = await page
+    .locator('.ap-tg-content')
+    .evaluate((el) => (el as unknown as SVGGElement).style.transform);
   expect(after).not.toBe(before);
   await expect(page.locator('.ap-tg-hint')).toHaveCount(0);
 
   // A roda do mouse dá zoom (e a página não rola): para cima aproxima, para baixo afasta.
   const scaleOf = async () =>
-    page.locator('.ap-tg-content').evaluate((el) => Number(/scale\(([\d.]+)\)/.exec((el as unknown as SVGGElement).style.transform)![1]));
+    page
+      .locator('.ap-tg-content')
+      .evaluate((el) =>
+        Number(/scale\(([\d.]+)\)/.exec((el as unknown as SVGGElement).style.transform)![1]),
+      );
   const k0 = await scaleOf();
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.wheel(0, -300);

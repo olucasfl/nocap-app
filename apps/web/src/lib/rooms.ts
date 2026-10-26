@@ -153,7 +153,7 @@ export interface DesmoronaRoomState {
   winnerId: string | null;
 }
 
-/** O Bola Maluca! em sala (spec 046): formato, times, bots e quem está em campo. O fluxo da partida vem em "bs". */
+/** O Fut Fox em sala (spec 046): formato, times, bots e quem está em campo. O fluxo da partida vem em "bs". */
 export interface BolaRoomState {
   me: string | null;
   format: { teams: number; perTeam: number; auto: boolean; minutes: number };

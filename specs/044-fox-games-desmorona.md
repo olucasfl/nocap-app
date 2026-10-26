@@ -109,3 +109,8 @@ Reaproveita o sistema de salas do Atravessa (host, pronto, convite, revanche por
 - **Botão de pulo no celular?** Padrão: sim, pequeno, no canto direito. O pulo ajuda a atravessar buracos de 1 ladrilho.
 - **Raposa com cores:** cada jogador tem uma cor de boné diferente (8 cores). Padrão: sorteadas na largada.
 - **Tempo de quebra:** 1500 ms na camada de cima, reduzindo 150 ms por camada. Padrão: manter, e ajustar jogando o treino.
+
+
+## Ajuste de 26/10/2026: camadas em losango
+
+Decisão do Lucas: a camada de cima é um pouco menor, as camadas crescem até a do meio (a maior) e depois diminuem até a última, que é a menor. Escalas em relação à maior: 0,72 / 0,86 / 0,95 / 1 / 0,88 / 0,7 / 0,5 (`DSM_LAYER_SCALE` em `packages/games/src/desmorona/constants.ts`).

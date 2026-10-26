@@ -1,9 +1,9 @@
 import { expect, test } from '@playwright/test';
 
-/** Bola Maluca! (spec 046): o menu abre, o treino roda com bots e o jogador consegue mover e pular. */
+/** Fut Fox (spec 046): o menu abre, o treino roda com bots e o jogador consegue mover e pular. */
 test.use({ viewport: { width: 1280, height: 720 } });
 
-test('Fox Cap! leva ao Bola Maluca!, a partida roda e a bola é tocada', async ({ page }, info) => {
+test('Fox Cap! leva ao Fut Fox, a partida roda e a bola é tocada', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop', 'um projeto basta');
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));

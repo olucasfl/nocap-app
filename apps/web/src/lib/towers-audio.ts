@@ -28,14 +28,24 @@ export interface TowersAudio {
 }
 
 /** Escala pentatônica de dó maior em duas oitavas: assentar cada peça é uma nota que sobe. */
-const SCALE = [261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 587.33, 659.25, 783.99, 880.0, 1046.5, 1174.66, 1318.51];
+const SCALE = [
+  261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 587.33, 659.25, 783.99, 880.0, 1046.5, 1174.66,
+  1318.51,
+];
 
 export function createTowersAudio(): TowersAudio | null {
   const kit = audioKit();
   if (!kit) return null;
   const { ctx, out, noise, muted } = kit;
 
-  function tone(type: OscillatorType, f0: number, f1: number, dur: number, peak: number, delay = 0) {
+  function tone(
+    type: OscillatorType,
+    f0: number,
+    f1: number,
+    dur: number,
+    peak: number,
+    delay = 0,
+  ) {
     if (muted()) return;
     const when = ctx.currentTime + delay;
     const o = ctx.createOscillator();
@@ -51,7 +61,15 @@ export function createTowersAudio(): TowersAudio | null {
     o.stop(when + dur + 0.05);
   }
 
-  function hiss(filter: BiquadFilterType, f0: number, f1: number, dur: number, peak: number, delay = 0, q = 1) {
+  function hiss(
+    filter: BiquadFilterType,
+    f0: number,
+    f1: number,
+    dur: number,
+    peak: number,
+    delay = 0,
+    q = 1,
+  ) {
     if (muted()) return;
     const when = ctx.currentTime + delay;
     const src = ctx.createBufferSource();
@@ -117,7 +135,9 @@ export function createTowersAudio(): TowersAudio | null {
     lifeUp() {
       tone('sine', 140, 140, 0.1, 0.16);
       tone('sine', 140, 140, 0.1, 0.16, 0.14);
-      [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone('triangle', f, f, 0.3, 0.1, 0.3 + i * 0.07));
+      [523.25, 659.25, 783.99, 1046.5].forEach((f, i) =>
+        tone('triangle', f, f, 0.3, 0.1, 0.3 + i * 0.07),
+      );
     },
     collapse() {
       hiss('lowpass', 500, 70, 1.3, 0.3, 0, 0.8);
@@ -126,7 +146,9 @@ export function createTowersAudio(): TowersAudio | null {
     },
     spell(good) {
       if (good) {
-        [1046.5, 1318.51, 1567.98, 2093].forEach((f, i) => tone('triangle', f, f, 0.2, 0.08, i * 0.06));
+        [1046.5, 1318.51, 1567.98, 2093].forEach((f, i) =>
+          tone('triangle', f, f, 0.2, 0.08, i * 0.06),
+        );
         hiss('highpass', 6000, 9000, 0.35, 0.03, 0, 0.7);
       } else {
         tone('sawtooth', 233, 110, 0.55, 0.09);
@@ -156,7 +178,9 @@ export function createTowersAudio(): TowersAudio | null {
       }
     },
     over() {
-      [392, 349.23, 311.13, 261.63, 196].forEach((f, i) => tone('triangle', f, f * 0.97, 0.34, 0.13, i * 0.2));
+      [392, 349.23, 311.13, 261.63, 196].forEach((f, i) =>
+        tone('triangle', f, f * 0.97, 0.34, 0.13, i * 0.2),
+      );
       tone('sawtooth', 98, 49, 0.9, 0.08, 0.6);
     },
     count(n) {
@@ -170,7 +194,9 @@ export function createTowersAudio(): TowersAudio | null {
       }
     },
     win() {
-      [523.25, 659.25, 783.99, 1046.5, 1318.51].forEach((f, i) => tone('triangle', f, f, 0.4, 0.12, i * 0.09));
+      [523.25, 659.25, 783.99, 1046.5, 1318.51].forEach((f, i) =>
+        tone('triangle', f, f, 0.4, 0.12, i * 0.09),
+      );
     },
   };
 }

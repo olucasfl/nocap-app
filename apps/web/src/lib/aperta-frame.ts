@@ -49,7 +49,8 @@ export function frameStyle(f: Frame): CSSProperties | undefined {
 export const MEASURE_DELAYS_MS = [0, 80, 250, 600];
 
 function measure(): Frame {
-  const coarse = typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches;
+  const coarse =
+    typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches;
   const vv = window.visualViewport;
   // `visualViewport` acompanha a janela de verdade (barra do Safari); sem ele vale `innerWidth/innerHeight`.
   const iw = Math.round(vv?.width ?? window.innerWidth);
@@ -61,7 +62,9 @@ const same = (a: Frame, b: Frame) => a.mode === b.mode && a.iw === b.iw && a.ih 
 
 /** Moldura do jogo: atributo `data-frame` e estilo para pôr na raiz `.ap`. */
 export function useApertaFrame(): { 'data-frame': FrameMode; style: CSSProperties | undefined } {
-  const [frame, setFrame] = useState<Frame>(() => (typeof window === 'undefined' ? { mode: 'free', iw: 0, ih: 0 } : measure()));
+  const [frame, setFrame] = useState<Frame>(() =>
+    typeof window === 'undefined' ? { mode: 'free', iw: 0, ih: 0 } : measure(),
+  );
 
   useEffect(() => {
     let timers: number[] = [];

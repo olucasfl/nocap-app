@@ -1,5 +1,5 @@
 /**
- * Bola Maluca! (spec 046): futebol de raposas para 2, 3 ou 4 times. Todos os números do jogo estão aqui; o motor
+ * Fut Fox (spec 046): futebol de raposas para 2, 3 ou 4 times. Todos os números do jogo estão aqui; o motor
  * (`world.ts`) não tem número solto. Unidades de mundo: metros. Eixos: x e z no chão, y para cima.
  */
 

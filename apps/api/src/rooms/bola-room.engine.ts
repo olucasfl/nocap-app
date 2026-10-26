@@ -59,7 +59,7 @@ const finite = (n: unknown): n is number => typeof n === 'number' && Number.isFi
 const r2 = (n: number) => Math.round(n * 100) / 100;
 
 /**
- * O Bola Maluca! em sala (spec 046, fase 2). Diferente do Desmorona!, aqui o SERVIDOR simula tudo (bola, raposas e
+ * O Fut Fox em sala (spec 046, fase 2). Diferente do Desmorona!, aqui o SERVIDOR simula tudo (bola, raposas e
  * gols) a 60 passos por segundo e manda o estado a cada tick: cada aparelho só envia a entrada (direção e pulos) e
  * desenha o que recebe. Sem ranking nem histórico. A sala aceita até 15 pessoas; até 12 jogam (3x3x3x3) e o resto
  * assiste. Times vazios podem ser completados com bots, e quem sai no meio deixa um bot no lugar.

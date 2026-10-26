@@ -25,8 +25,18 @@ async function installSaves(page: Page, data: SaveState) {
   await page.route(/localhost:3333\/me\/aperta\/saves/, async (route) => {
     const req = route.request();
     const path = new URL(req.url()).pathname;
-    const headers = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' };
-    const json = (body: unknown, status = 200) => route.fulfill({ status, contentType: 'application/json', headers, body: JSON.stringify(body) });
+    const headers = {
+      'access-control-allow-origin': '*',
+      'access-control-allow-headers': '*',
+      'access-control-allow-methods': '*',
+    };
+    const json = (body: unknown, status = 200) =>
+      route.fulfill({
+        status,
+        contentType: 'application/json',
+        headers,
+        body: JSON.stringify(body),
+      });
     if (req.method() === 'OPTIONS') return json({});
     if (path === '/me/aperta/saves') {
       const one = {
@@ -38,7 +48,12 @@ async function installSaves(page: Page, data: SaveState) {
         storySeen: true,
         revision: 1,
       };
-      return json({ slots: [{ slot: 1, save: one, recoverableUntil: null }, { slot: 2, save: null, recoverableUntil: null }] });
+      return json({
+        slots: [
+          { slot: 1, save: one, recoverableUntil: null },
+          { slot: 2, save: null, recoverableUntil: null },
+        ],
+      });
     }
     if (path === '/me/aperta/saves/1') {
       if (req.method() === 'GET') return json({ slot: 1, revision: 1, data });
@@ -49,12 +64,18 @@ async function installSaves(page: Page, data: SaveState) {
 }
 
 const noOverflow = async (page: Page) =>
-  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth), 'rolagem lateral').toBeLessThanOrEqual(1);
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth),
+    'rolagem lateral',
+  ).toBeLessThanOrEqual(1);
 
 async function openGame(page: Page) {
   await page.goto('/arcade/aperta');
   await page.getByRole('button', { name: 'Jogar' }).first().click();
-  await page.getByRole('button', { name: /Continuar/ }).first().click();
+  await page
+    .getByRole('button', { name: /Continuar/ })
+    .first()
+    .click();
   const skip = page.getByRole('button', { name: 'Pular história' });
   if (await skip.isVisible({ timeout: 1500 }).catch(() => false)) await skip.click();
   await expect(page.locator('.ap-game')).toBeVisible();
@@ -76,7 +97,9 @@ for (const size of SIZES) {
       deviceScaleFactor: size.touch ? 2 : 1,
     });
 
-    test('cada região renderiza, a faixa aparece e o menu troca o fundo', async ({ page }, info) => {
+    test('cada região renderiza, a faixa aparece e o menu troca o fundo', async ({
+      page,
+    }, info) => {
       test.skip(info.project.name !== 'desktop', 'o tamanho vem do describe; um projeto basta');
       const errors: string[] = [];
       page.on('pageerror', (e) => errors.push(e.message));
@@ -97,11 +120,15 @@ for (const size of SIZES) {
         await expect(region).toHaveAttribute('data-region', save.regionId);
         await expect(region.locator('.ap-layer')).toHaveCount(2);
         await noOverflow(page);
-        await page.screenshot({ path: `${process.env.E2E_SHOTS ?? 'test-results'}/reg-${size.width}-${k}.png` });
+        await page.screenshot({
+          path: `${process.env.E2E_SHOTS ?? 'test-results'}/reg-${size.width}-${k}.png`,
+        });
 
         if (k === 0) {
           await expect(page.locator('.ap-newstrip')).toHaveCount(0);
-          await expect(page.getByRole('button', { name: /Abrir o menu de regiões/ })).toHaveCount(0);
+          await expect(page.getByRole('button', { name: /Abrir o menu de regiões/ })).toHaveCount(
+            0,
+          );
           continue;
         }
 
@@ -112,7 +139,9 @@ for (const size of SIZES) {
         const box = (await strip.boundingBox())!;
         expect(box.x).toBeGreaterThanOrEqual(-1);
         expect(box.x + box.width).toBeLessThanOrEqual(size.width + 1);
-        await page.screenshot({ path: `${process.env.E2E_SHOTS ?? 'test-results'}/reg-${size.width}-${k}-novo.png` });
+        await page.screenshot({
+          path: `${process.env.E2E_SHOTS ?? 'test-results'}/reg-${size.width}-${k}-novo.png`,
+        });
         await strip.getByRole('button', { name: 'Entendi' }).click();
         await expect(strip).toHaveCount(0);
 

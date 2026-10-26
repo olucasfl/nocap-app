@@ -179,7 +179,8 @@ export function neighborsOf(entries: RankingEntry[], lowerWins = false): Neighbo
   const me = entries[i]!;
   const up = entries[i - 1];
   const down = entries[i + 1];
-  const gap = (better: RankingEntry, worse: RankingEntry) => (lowerWins ? worse.score - better.score : better.score - worse.score);
+  const gap = (better: RankingEntry, worse: RankingEntry) =>
+    lowerWins ? worse.score - better.score : better.score - worse.score;
   return {
     above: up ? { username: up.username, gap: gap(up, me) } : null,
     below: down ? { username: down.username, gap: gap(me, down) } : null,

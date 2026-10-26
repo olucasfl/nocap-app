@@ -15,7 +15,15 @@ export interface DsmBotMemory {
   aggro: number;
 }
 
-export const newBotMemory = (patience = 0, aggro = 0): DsmBotMemory => ({ layer: 0, q: 0, r: 0, has: false, until: 0, patience, aggro });
+export const newBotMemory = (patience = 0, aggro = 0): DsmBotMemory => ({
+  layer: 0,
+  q: 0,
+  r: 0,
+  has: false,
+  until: 0,
+  patience,
+  aggro,
+});
 
 const STOP: DsmInput = { mx: 0, mz: 0, jump: false };
 
@@ -23,7 +31,12 @@ const STOP: DsmInput = { mx: 0, mz: 0, jump: false };
  * Bot do treino: anda sempre para um ladrilho firme perto (andar é o que quebra o chão, então parar é morrer), foge dos
  * que racham e pula os buracos. Usa a mesma regra do mundo que uma pessoa; o `rng` só dá variedade.
  */
-export function botInput(world: DsmWorld, p: DsmPlayer, mem: DsmBotMemory, rng: () => number): DsmInput {
+export function botInput(
+  world: DsmWorld,
+  p: DsmPlayer,
+  mem: DsmBotMemory,
+  rng: () => number,
+): DsmInput {
   if (!p.alive) return STOP;
   if (!p.grounded) {
     // no ar: puxa para o meio da arena (as camadas de baixo são menores)
@@ -33,7 +46,11 @@ export function botInput(world: DsmWorld, p: DsmPlayer, mem: DsmBotMemory, rng: 
   const here = world.standingTile(p.layer, p.x, p.z);
   const target = mem.has ? world.tile(mem.layer, mem.q, mem.r) : undefined;
   const reached = target ? Math.hypot(target.x - p.x, target.z - p.z) < DSM_HEX_SIZE * 0.45 : true;
-  const bad = !target || target.status === 'caiu' || (target.status === 'pisado' && target.breakAt - world.t < 0.9) || target.layer !== p.layer;
+  const bad =
+    !target ||
+    target.status === 'caiu' ||
+    (target.status === 'pisado' && target.breakAt - world.t < 0.9) ||
+    target.layer !== p.layer;
   // como uma pessoa esperta: fica no ladrilho até ele estar quase quebrando e só então salta para um firme
   const hereLeft = here ? (here.status === 'pisado' ? here.breakAt - world.t : 99) : 0;
   // bot valente: com o chão firme debaixo dos pés, corre contra a raposa mais perto para empurrar
@@ -82,7 +99,12 @@ export function botInput(world: DsmWorld, p: DsmPlayer, mem: DsmBotMemory, rng: 
   return { mx, mz, jump: !ahead && d > 1.6 };
 }
 
-function pickTarget(world: DsmWorld, p: DsmPlayer, here: DsmTile | undefined, rng: () => number): DsmTile | undefined {
+function pickTarget(
+  world: DsmWorld,
+  p: DsmPlayer,
+  here: DsmTile | undefined,
+  rng: () => number,
+): DsmTile | undefined {
   let best: DsmTile | undefined;
   let bestScore = -Infinity;
   for (const t of world.tiles.values()) {
@@ -96,7 +118,12 @@ function pickTarget(world: DsmWorld, p: DsmPlayer, here: DsmTile | undefined, rn
     // ladrilhos cercados de buracos são armadilha
     let holes = 0;
     for (const n of world.tiles.values()) {
-      if (n.layer === t.layer && n.status === 'caiu' && Math.hypot(n.x - t.x, n.z - t.z) < DSM_HEX_SIZE * 2.1) holes++;
+      if (
+        n.layer === t.layer &&
+        n.status === 'caiu' &&
+        Math.hypot(n.x - t.x, n.z - t.z) < DSM_HEX_SIZE * 2.1
+      )
+        holes++;
     }
     score -= holes * 0.35;
     if (score > bestScore) {

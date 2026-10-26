@@ -50,7 +50,9 @@ export function Score({
     return (
       <>
         {formatAttempts(entry.score, true)}
-        {entry.score <= 60 && <small className="mono">{entry.score === 10 ? 'tentativa' : 'tentativas'}</small>}
+        {entry.score <= 60 && (
+          <small className="mono">{entry.score === 10 ? 'tentativa' : 'tentativas'}</small>
+        )}
       </>
     );
   }

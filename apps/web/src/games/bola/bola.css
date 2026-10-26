@@ -1,4 +1,4 @@
-/* Bola Maluca! (spec 046): placar e avisos. Reaproveita a tela cheia, o joystick e o resultado do Desmorona!. Só transform e opacity animam. */
+/* Fut Fox (spec 046): placar e avisos. Reaproveita a tela cheia, o joystick e o resultado do Desmorona!. Só transform e opacity animam. */
 .bola-hud {
   justify-content: space-between;
 }

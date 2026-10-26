@@ -12,7 +12,14 @@ function readySave(): SaveState {
     ...s,
     tutorial: 'done',
     storySeen: true,
-    run: { ...s.run, picks: minPicks(1), dust: dustGoal(1), dustLife: dustGoal(1), build: { moon: 2, mars: 1, vesta: 1 }, ...meetMilestone(0, s.run.upgradeLevels) },
+    run: {
+      ...s.run,
+      picks: minPicks(1),
+      dust: dustGoal(1),
+      dustLife: dustGoal(1),
+      build: { moon: 2, mars: 1, vesta: 1 },
+      ...meetMilestone(0, s.run.upgradeLevels),
+    },
     album: ['moon', 'mars', 'vesta'],
     stats: { ...s.stats, picks: minPicks(1), dustTotal: dustGoal(1) },
   };
@@ -36,8 +43,21 @@ function midLifeSave(): SaveState {
     regionId: 'alpha-centauri',
     sparks: { legacy: earned, spent: 0 },
     album: ['moon', 'mars'],
-    run: { ...s.run, picks: 4, dust: dustGoal(c + 1) * 0.37, dustLife: dustGoal(c + 1) * 0.37, build: { moon: 1, mars: 1 }, captured: 2, chainBest: 4 },
-    stats: { ...s.stats, picks: c * 12 + 9, dustTotal: total + dustGoal(c + 1) * 0.37, objectsCaptured: 2 },
+    run: {
+      ...s.run,
+      picks: 4,
+      dust: dustGoal(c + 1) * 0.37,
+      dustLife: dustGoal(c + 1) * 0.37,
+      build: { moon: 1, mars: 1 },
+      captured: 2,
+      chainBest: 4,
+    },
+    stats: {
+      ...s.stats,
+      picks: c * 12 + 9,
+      dustTotal: total + dustGoal(c + 1) * 0.37,
+      objectsCaptured: 2,
+    },
   };
 }
 
@@ -46,8 +66,18 @@ async function installSaves(page: Page, initial: SaveState = readySave()) {
   await page.route(/localhost:3333\/me\/aperta\/saves/, async (route) => {
     const req = route.request();
     const path = new URL(req.url()).pathname;
-    const headers = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' };
-    const json = (body: unknown, status = 200) => route.fulfill({ status, contentType: 'application/json', headers, body: JSON.stringify(body) });
+    const headers = {
+      'access-control-allow-origin': '*',
+      'access-control-allow-headers': '*',
+      'access-control-allow-methods': '*',
+    };
+    const json = (body: unknown, status = 200) =>
+      route.fulfill({
+        status,
+        contentType: 'application/json',
+        headers,
+        body: JSON.stringify(body),
+      });
     if (req.method() === 'OPTIONS') return json({});
     if (path === '/me/aperta/saves') {
       const d = account.data;
@@ -60,10 +90,16 @@ async function installSaves(page: Page, initial: SaveState = readySave()) {
         storySeen: true,
         revision: account.rev,
       };
-      return json({ slots: [{ slot: 1, save: one, recoverableUntil: null }, { slot: 2, save: null, recoverableUntil: null }] });
+      return json({
+        slots: [
+          { slot: 1, save: one, recoverableUntil: null },
+          { slot: 2, save: null, recoverableUntil: null },
+        ],
+      });
     }
     if (path === '/me/aperta/saves/1') {
-      if (req.method() === 'GET') return json({ slot: 1, revision: account.rev, data: account.data });
+      if (req.method() === 'GET')
+        return json({ slot: 1, revision: account.rev, data: account.data });
       if (req.method() === 'PUT') {
         account.data = (req.postDataJSON() as { data: SaveState }).data;
         account.rev += 1;
@@ -76,7 +112,10 @@ async function installSaves(page: Page, initial: SaveState = readySave()) {
 }
 
 const noOverflow = async (page: Page) =>
-  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth), 'rolagem lateral').toBeLessThanOrEqual(1);
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth),
+    'rolagem lateral',
+  ).toBeLessThanOrEqual(1);
 
 async function tapCenter(page: Page, target: Locator, touch: boolean) {
   await target.scrollIntoViewIfNeeded();
@@ -119,11 +158,17 @@ for (const size of SIZES) {
       await installApi(page);
       const account = await installSaves(page);
       const touch = size.touch;
-      const shot = (n: string) => page.screenshot({ path: `${process.env.E2E_SHOTS ?? 'test-results'}/col-${size.viewport.width}-${n}.png` });
+      const shot = (n: string) =>
+        page.screenshot({
+          path: `${process.env.E2E_SHOTS ?? 'test-results'}/col-${size.viewport.width}-${n}.png`,
+        });
 
       await page.goto('/arcade/aperta');
       await page.getByRole('button', { name: 'Jogar' }).first().click();
-      await page.getByRole('button', { name: /Continuar/ }).first().click();
+      await page
+        .getByRole('button', { name: /Continuar/ })
+        .first()
+        .click();
       const skip = page.getByRole('button', { name: 'Pular história' });
       if (await skip.isVisible({ timeout: 1500 }).catch(() => false)) await skip.click();
       await expect(page.locator('.ap-game')).toBeVisible();
@@ -161,8 +206,12 @@ for (const size of SIZES) {
 
       // A vida recomeça: aviso, contador, Cintilas e o Cofre.
       await expect(page.getByRole('dialog')).toHaveCount(0);
-      await expect(page.locator('.ap-pickup:not(.ap-pickup-ach):not(.ap-pickup-sparks)')).toContainText('Estrela colapsada');
-      await expect(page.locator('.ap-pickup:not(.ap-pickup-ach):not(.ap-pickup-sparks)')).toContainText('Cofre:');
+      await expect(
+        page.locator('.ap-pickup:not(.ap-pickup-ach):not(.ap-pickup-sparks)'),
+      ).toContainText('Estrela colapsada');
+      await expect(
+        page.locator('.ap-pickup:not(.ap-pickup-ach):not(.ap-pickup-sparks)'),
+      ).toContainText('Cofre:');
       await expect(page.locator('.ap-hudrow-2 b')).toHaveText('1');
       await expect(page.getByRole('button', { name: /Estrela pronta/ })).toHaveCount(0);
       await shot('4-colapsada');
@@ -174,7 +223,9 @@ for (const size of SIZES) {
       await page.locator('.ap-vault').scrollIntoViewIfNeeded();
       await shot('5-cofre');
       await noOverflow(page);
-      await expect(page.getByRole('button', { name: 'Estrela ainda não está pronta' })).toBeDisabled();
+      await expect(
+        page.getByRole('button', { name: 'Estrela ainda não está pronta' }),
+      ).toBeDisabled();
 
       // O servidor aceitou: o save na conta já é o da vida nova.
       await expect.poll(() => account.data?.collapses, { timeout: 5000 }).toBe(1);
@@ -182,17 +233,25 @@ for (const size of SIZES) {
       expect(errors).toEqual([]);
     });
 
-    test('colapso 7: as barras de cada requisito andam no Cofre e não há botão enquanto falta algo', async ({ page }, info) => {
+    test('colapso 7: as barras de cada requisito andam no Cofre e não há botão enquanto falta algo', async ({
+      page,
+    }, info) => {
       test.skip(info.project.name !== 'desktop', 'o tamanho vem do describe; um projeto basta');
       const errors: string[] = [];
       page.on('pageerror', (e) => errors.push(e.message));
       await installApi(page);
       await installSaves(page, midLifeSave());
-      const shot = (n: string) => page.screenshot({ path: `${process.env.E2E_SHOTS ?? 'test-results'}/col-${size.viewport.width}-${n}.png` });
+      const shot = (n: string) =>
+        page.screenshot({
+          path: `${process.env.E2E_SHOTS ?? 'test-results'}/col-${size.viewport.width}-${n}.png`,
+        });
 
       await page.goto('/arcade/aperta');
       await page.getByRole('button', { name: 'Jogar' }).first().click();
-      await page.getByRole('button', { name: /Continuar/ }).first().click();
+      await page
+        .getByRole('button', { name: /Continuar/ })
+        .first()
+        .click();
       const skip = page.getByRole('button', { name: 'Pular história' });
       if (await skip.isVisible({ timeout: 1500 }).catch(() => false)) await skip.click();
       await expect(page.locator('.ap-game')).toBeVisible();
@@ -206,9 +265,13 @@ for (const size of SIZES) {
       await expect(box).toContainText('Poeira da vida');
       await expect(box).toContainText('Escolhas de grimório');
       await expect(box).toContainText('Falta');
-      await expect(box.getByRole('button', { name: 'Estrela ainda não está pronta' })).toBeDisabled();
+      await expect(
+        box.getByRole('button', { name: 'Estrela ainda não está pronta' }),
+      ).toBeDisabled();
       // A barra de poeira está em ~37%: anda por transform, sem largura.
-      const fill = await box.locator('.ap-reqs li[data-req="dust"] .ap-cbar i').evaluate((el) => (el as HTMLElement).style.transform);
+      const fill = await box
+        .locator('.ap-reqs li[data-req="dust"] .ap-cbar i')
+        .evaluate((el) => (el as HTMLElement).style.transform);
       expect(fill).toMatch(/scaleX\(0\.3[67]/);
       await shot('6-barras');
       await noOverflow(page);

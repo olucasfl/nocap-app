@@ -40,7 +40,13 @@ export function GameArt({ game, size = 'md' }: { game: GameId; size?: 'sm' | 'md
   if (game === 'blocks') {
     return (
       <div className={`ga ga-blocks ${size}`} aria-hidden="true">
-        <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="4" strokeLinejoin="round">
+        <svg
+          viewBox="0 0 64 64"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="4"
+          strokeLinejoin="round"
+        >
           <rect x="8" y="8" width="20" height="20" rx="4" />
           <rect x="36" y="8" width="20" height="20" rx="4" fill="currentColor" />
           <rect x="8" y="36" width="20" height="20" rx="4" fill="currentColor" />
@@ -53,7 +59,14 @@ export function GameArt({ game, size = 'md' }: { game: GameId; size?: 'sm' | 'md
     // Pista com um carro passando e a seta de quem atravessa para cima.
     return (
       <div className={`ga ga-atravessa ${size}`} aria-hidden="true">
-        <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+        <svg
+          viewBox="0 0 64 64"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="3.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
           <path d="M6 14h52M6 50h52" />
           <path d="M6 32h6M20 32h6M34 32h6M48 32h6" strokeWidth="2.5" />
           <rect x="8" y="35" width="24" height="10" rx="3" fill="currentColor" />
@@ -75,12 +88,27 @@ export function GameArt({ game, size = 'md' }: { game: GameId; size?: 'sm' | 'md
     ];
     return (
       <div className={`ga ga-blocks ${size}`} aria-hidden="true">
-        <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="3" strokeLinejoin="round">
+        <svg
+          viewBox="0 0 64 64"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="3"
+          strokeLinejoin="round"
+        >
           {tiles.map(([x, y, l, fill]) => (
             <g key={`${x}-${y}`}>
               <rect x={x} y={y} width="16" height="16" rx="3" fill={fill ?? 'none'} />
               {l && (
-                <text x={x + 8} y={y + 12.5} textAnchor="middle" fontSize="12" fontWeight="900" fill="var(--party-bg)" stroke="none" style={{ fontFamily: 'var(--font-display)' }}>
+                <text
+                  x={x + 8}
+                  y={y + 12.5}
+                  textAnchor="middle"
+                  fontSize="12"
+                  fontWeight="900"
+                  fill="var(--party-bg)"
+                  stroke="none"
+                  style={{ fontFamily: 'var(--font-display)' }}
+                >
                   {l}
                 </text>
               )}

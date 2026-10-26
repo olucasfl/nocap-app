@@ -1,4 +1,4 @@
-# Spec 046: Bola Maluca! (futebol de raposas, 2 a 4 times)
+# Spec 046: Fut Fox (futebol de raposas, 2 a 4 times)
 
 Pedido do Lucas em 26/10/2026. Status: **rascunho; aguarda o "pode começar" da Fase 1.** Mira Maluca! (jogo de sniper) fica para a spec 047, depois deste.
 

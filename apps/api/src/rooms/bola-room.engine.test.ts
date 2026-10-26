@@ -61,7 +61,7 @@ function playing(names = ['ana', 'bia']) {
   return s;
 }
 
-describe('sala do Bola Maluca: lobby', () => {
+describe('sala do Fut Fox: lobby', () => {
   it('sugere o formato pelas pessoas e coloca cada uma num time', () => {
     const { room } = lobby(['ana', 'bia', 'caio', 'duda']);
     expect(snap(room).format).toMatchObject({ teams: 2, perTeam: 2, auto: true });
@@ -138,7 +138,7 @@ describe('sala do Bola Maluca: lobby', () => {
   });
 });
 
-describe('sala do Bola Maluca: partida', () => {
+describe('sala do Fut Fox: partida', () => {
   it('começa em jogo, com a contagem do motor, e o relógio só anda depois dela', () => {
     const s = playing();
     expect(s.room.currentPhase).toBe('play');

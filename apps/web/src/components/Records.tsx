@@ -110,7 +110,11 @@ function RecordsView({ stats, words }: { stats: Stats; words?: WordsSummary | nu
           <div>
             <b>{tab === 'words' ? "Word's" : GAME_LABEL[game]}</b>
             <span className="mono">
-              {tab === 'words' ? 'Em que fase você está em cada jogo' : total > 0 ? `${total} ${total === 1 ? 'partida jogada' : 'partidas jogadas'}` : 'Nenhuma partida ainda'}
+              {tab === 'words'
+                ? 'Em que fase você está em cada jogo'
+                : total > 0
+                  ? `${total} ${total === 1 ? 'partida jogada' : 'partidas jogadas'}`
+                  : 'Nenhuma partida ainda'}
             </span>
           </div>
         </header>
@@ -118,31 +122,35 @@ function RecordsView({ stats, words }: { stats: Stats; words?: WordsSummary | nu
           <WordsRows summary={words} />
         ) : (
           <>
-        <ul className="rc-grid">
-          {knownModes(game).map((mode) => (
-            <ModeTile
-              key={`${game}-${mode}`}
-              game={game}
-              mode={mode}
-              stat={stats.modes.find((m) => m.game === game && m.mode === mode)}
-            />
-          ))}
-          <li className="rc-tile daily">
-            <div className="rc-tile-btn static">
-              <span className="mono rc-tile-name">DAILY</span>
-              <span className="rc-daily-line">
-                <b>{streakLabel(daily.current)}</b> seguidos
-              </span>
-              <span className="mono rc-tile-hint">
-                MELHOR SEQUÊNCIA {streakLabel(daily.best).toUpperCase()}
-              </span>
-              {game === 'wclassic' && daily.playedToday && (
-                <span className="mono rc-tile-hint">HOJE: {formatAttempts(daily.totalScore ?? 0).toUpperCase()}</span>
-              )}
-            </div>
-          </li>
-        </ul>
-        {total === 0 && <p className="mono rc-empty">Jogue uma partida para criar o seu primeiro recorde.</p>}
+            <ul className="rc-grid">
+              {knownModes(game).map((mode) => (
+                <ModeTile
+                  key={`${game}-${mode}`}
+                  game={game}
+                  mode={mode}
+                  stat={stats.modes.find((m) => m.game === game && m.mode === mode)}
+                />
+              ))}
+              <li className="rc-tile daily">
+                <div className="rc-tile-btn static">
+                  <span className="mono rc-tile-name">DAILY</span>
+                  <span className="rc-daily-line">
+                    <b>{streakLabel(daily.current)}</b> seguidos
+                  </span>
+                  <span className="mono rc-tile-hint">
+                    MELHOR SEQUÊNCIA {streakLabel(daily.best).toUpperCase()}
+                  </span>
+                  {game === 'wclassic' && daily.playedToday && (
+                    <span className="mono rc-tile-hint">
+                      HOJE: {formatAttempts(daily.totalScore ?? 0).toUpperCase()}
+                    </span>
+                  )}
+                </div>
+              </li>
+            </ul>
+            {total === 0 && (
+              <p className="mono rc-empty">Jogue uma partida para criar o seu primeiro recorde.</p>
+            )}
           </>
         )}
       </section>

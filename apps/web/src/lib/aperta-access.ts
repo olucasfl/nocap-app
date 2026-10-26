@@ -61,7 +61,8 @@ export function useApertaAllowed(): boolean | null {
   const userId = user?.id ?? null;
   useEffect(() => {
     if (!userId) return;
-    if (useApertaAccess.getState().forUser !== userId) useApertaAccess.setState({ forUser: userId, allowed: cached(userId) });
+    if (useApertaAccess.getState().forUser !== userId)
+      useApertaAccess.setState({ forUser: userId, allowed: cached(userId) });
     void refreshApertaAccess(userId);
   }, [userId]);
   if (status === 'loading') return null;

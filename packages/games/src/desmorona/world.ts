@@ -141,7 +141,16 @@ export class DsmWorld {
     for (let layer = 0; layer < DSM_LAYERS; layer++) {
       for (const h of hexesOfRadius(this.radii[layer] as number)) {
         const p = hexToWorld(h.q, h.r);
-        this.tiles.set(hexKey(layer, h.q, h.r), { layer, q: h.q, r: h.r, x: p.x, z: p.z, status: 'firme', breakAt: 0, wave: false });
+        this.tiles.set(hexKey(layer, h.q, h.r), {
+          layer,
+          q: h.q,
+          r: h.r,
+          x: p.x,
+          z: p.z,
+          status: 'firme',
+          breakAt: 0,
+          wave: false,
+        });
       }
     }
     // largada: cada raposa cai de um ponto espalhado em volta do centro (ordem fixa pela seed)
@@ -181,7 +190,20 @@ export class DsmWorld {
   }
 
   /** Online: a posição relatada de outra raposa. */
-  setRemote(id: string, s: { x: number; y: number; z: number; vx: number; vz: number; heading: number; grounded: boolean; layer: number; airJumped?: boolean }): void {
+  setRemote(
+    id: string,
+    s: {
+      x: number;
+      y: number;
+      z: number;
+      vx: number;
+      vz: number;
+      heading: number;
+      grounded: boolean;
+      layer: number;
+      airJumped?: boolean;
+    },
+  ): void {
     const p = this.players.find((q) => q.id === id);
     if (!p || !p.remote || !p.alive) return;
     p.x = s.x;
@@ -191,7 +213,8 @@ export class DsmWorld {
     p.vz = s.vz;
     p.heading = s.heading;
     if (s.grounded && !p.grounded) this.events.push({ type: 'land', id, layer: s.layer });
-    if (s.layer > p.deepest && p.deepest >= 0) this.events.push({ type: 'fall', id, layer: s.layer });
+    if (s.layer > p.deepest && p.deepest >= 0)
+      this.events.push({ type: 'fall', id, layer: s.layer });
     if (s.airJumped && !p.airJumped && !s.grounded) this.events.push({ type: 'airjump', id });
     p.airJumped = !!s.airJumped && !s.grounded;
     p.grounded = s.grounded;
@@ -240,7 +263,12 @@ export class DsmWorld {
     const g = DSM_EDGE_GRACE;
     let best: DsmTile | undefined;
     let bestD = Infinity;
-    for (const [dx, dz] of [[g, 0], [-g, 0], [0, g], [0, -g]] as const) {
+    for (const [dx, dz] of [
+      [g, 0],
+      [-g, 0],
+      [0, g],
+      [0, -g],
+    ] as const) {
       const t = this.standingTile(layer, x + dx, z + dz);
       if (!t) continue;
       const d = Math.hypot(t.x - x, t.z - z);
@@ -470,7 +498,10 @@ export class DsmWorld {
     let layer = 0;
     while (layer < DSM_LAYERS && this.tilesLeft(layer).length === 0) layer++;
     if (layer >= DSM_LAYERS) return;
-    const arc = this.t > DSM_WAVE_ALL_AFTER ? 360 : Math.min(360, DSM_WAVE_ARC0 + (this.waves - 1) * DSM_WAVE_ARC_GROW);
+    const arc =
+      this.t > DSM_WAVE_ALL_AFTER
+        ? 360
+        : Math.min(360, DSM_WAVE_ARC0 + (this.waves - 1) * DSM_WAVE_ARC_GROW);
     const start = this.rng() * 360;
     for (const t of this.tilesLeft(layer)) {
       if (t.status === 'caiu') continue;
@@ -512,7 +543,9 @@ export class DsmWorld {
       this.winnerId = (alive[0] as DsmPlayer).id;
     } else {
       // todos caíram juntos: vence quem morreu por último (e, no empate, a camada mais funda)
-      const last = [...this.players].sort((a, b) => b.deadAt - a.deadAt || b.deepest - a.deepest)[0] as DsmPlayer;
+      const last = [...this.players].sort(
+        (a, b) => b.deadAt - a.deadAt || b.deepest - a.deepest,
+      )[0] as DsmPlayer;
       this.winnerId = last.id;
     }
     this.events.push({ type: 'win', id: this.winnerId });
@@ -520,7 +553,9 @@ export class DsmWorld {
 
   /** A colocação final (1º = vencedor), na ordem. Vale depois do fim. */
   standings(): DsmPlayer[] {
-    const dead = [...this.deaths].reverse().map((id) => this.players.find((p) => p.id === id) as DsmPlayer);
+    const dead = [...this.deaths]
+      .reverse()
+      .map((id) => this.players.find((p) => p.id === id) as DsmPlayer);
     const alive = this.players.filter((p) => p.alive);
     const winner = alive.length > 0 ? alive : [];
     const order = [...winner, ...dead];

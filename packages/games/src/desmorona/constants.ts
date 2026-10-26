@@ -4,20 +4,17 @@
  */
 
 /**
- * Raio (em ladrilhos) de cada camada, de cima para baixo: a de cima é a maior. A arena cresce com o número de
- * jogadores (cada um gasta chão andando), em tamanho parecido com o do Fall Guys (hex-a-gone): arena pequena, partida de cerca de 1 minuto com bots.
+ * Raio (em ladrilhos) de cada camada, de cima para baixo. O formato é de losango (decisão do Lucas, 26/10/2026): a de
+ * cima é um pouco menor, as camadas crescem até a do meio, que é a maior, e depois diminuem até a última, a menor. A
+ * arena cresce com o número de jogadores (cada um gasta chão andando), em tamanho parecido com o do Fall Guys
+ * (hex-a-gone): arena pequena, partida de cerca de 1 minuto com bots.
  */
 export function dsmLayerRadii(players: number): readonly number[] {
-  const top = 6 + Math.max(2, Math.min(8, Math.round(players)));
-  const out: number[] = [];
-  DSM_LAYER_SCALE.forEach((f, i) => {
-    const r = Math.max(3, Math.round(top * f));
-    out.push(i === 0 ? r : Math.min(r, (out[i - 1] as number) - 0));
-  });
-  return out;
+  const big = 6 + Math.max(2, Math.min(8, Math.round(players)));
+  return DSM_LAYER_SCALE.map((f) => Math.max(3, Math.round(big * f)));
 }
-/** Tamanho de cada camada em relação à de cima: as de baixo continuam grandes o bastante para jogar. */
-const DSM_LAYER_SCALE = [1, 0.88, 0.76, 0.65, 0.55, 0.46, 0.38] as const;
+/** Tamanho de cada camada em relação à maior (a do meio): sobe até a metade e desce até a última, que é a menor. */
+const DSM_LAYER_SCALE = [0.72, 0.86, 0.95, 1, 0.88, 0.7, 0.5] as const;
 export const DSM_LAYERS = 7;
 /** Distância do centro de um hexágono até o canto (hexágono "pointy-top"). */
 export const DSM_HEX_SIZE = 1.15;

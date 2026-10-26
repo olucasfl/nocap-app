@@ -84,7 +84,17 @@ describe('vibração e mudo', () => {
 });
 
 describe('sons das telas novas', () => {
-  const names = ['page', 'ready', 'collapse', 'warp', 'chime', 'shower', 'storm', 'mission', 'star'] as const;
+  const names = [
+    'page',
+    'ready',
+    'collapse',
+    'warp',
+    'chime',
+    'shower',
+    'storm',
+    'mission',
+    'star',
+  ] as const;
 
   it('existem e não quebram sem Web Audio', () => {
     vi.stubGlobal('window', {});

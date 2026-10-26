@@ -51,7 +51,7 @@ export const MIN_PLAYERS: Record<RoomGame, number> = {
 export const GAME_NAME: Record<RoomGame, string> = {
   atravessa: 'Atravessa!',
   desmorona: 'Desmorona!',
-  bola: 'Bola Maluca!',
+  bola: 'Fut Fox',
   color: 'Mesmíssima',
   time: 'Já Deu?',
   impostor: 'Intruso',
@@ -66,7 +66,7 @@ export const GAME_OF: Record<RoomGame, string> = {
   eco: 'do Ecooo',
   atravessa: 'do Atravessa!',
   desmorona: 'do Desmorona!',
-  bola: 'do Bola Maluca!',
+  bola: 'do Fut Fox',
 };
 
 /** Tamanhos do mapa do Checkpoint, em metros (o servidor tem a mesma tabela). */
@@ -164,7 +164,7 @@ export function rulesSummary(s: RoomSnapshot): string {
   if (s.game === 'desmorona') return 'Desmorona! · Último de pé';
   if (s.game === 'bola' && s.bola) {
     const f = s.bola.format;
-    return `Bola Maluca! · ${Array.from({ length: f.teams }, () => f.perTeam).join('x')} · ${f.minutes} min`;
+    return `Fut Fox · ${Array.from({ length: f.teams }, () => f.perTeam).join('x')} · ${f.minutes} min`;
   }
   const rounds = s.settings.rounds;
   // O Intruso só tem um modo, com o mesmo nome do jogo: não repete.

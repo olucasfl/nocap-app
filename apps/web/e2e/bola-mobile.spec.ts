@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- os testes leem o mundo do jogo exposto só em desenvolvimento */
 import { expect, test, type Page } from '@playwright/test';
 
-/** Bola Maluca! no celular (spec 046): o HUD não pode ter nada por cima de nada, em pé e deitado, nos tamanhos mais comuns. */
+/** Fut Fox no celular (spec 046): o HUD não pode ter nada por cima de nada, em pé e deitado, nos tamanhos mais comuns. */
 const phones = [
   { name: 'iphone-se', w: 320, h: 568 },
   { name: 'android-pequeno', w: 360, h: 640 },
@@ -22,18 +22,26 @@ async function box(page: Page, sel: string): Promise<Box | null> {
     return { x: r.x, y: r.y, w: r.width, h: r.height };
   }, sel);
 }
-const hit = (a: Box, b: Box) => a.x < b.x + b.w - 1 && b.x < a.x + a.w - 1 && a.y < b.y + b.h - 1 && b.y < a.y + a.h - 1;
+const hit = (a: Box, b: Box) =>
+  a.x < b.x + b.w - 1 && b.x < a.x + a.w - 1 && a.y < b.y + b.h - 1 && b.y < a.y + a.h - 1;
 
 for (const ph of phones) {
-  test(`HUD do Bola Maluca no celular ${ph.name} (${ph.w}x${ph.h})`, async ({ browser }, info) => {
+  test(`HUD do Fut Fox no celular ${ph.name} (${ph.w}x${ph.h})`, async ({ browser }, info) => {
     test.skip(info.project.name !== 'desktop', 'um projeto basta');
     test.setTimeout(120_000);
-    const ctx = await browser.newContext({ viewport: { width: ph.w, height: ph.h }, isMobile: true, hasTouch: true });
+    const ctx = await browser.newContext({
+      viewport: { width: ph.w, height: ph.h },
+      isMobile: true,
+      hasTouch: true,
+    });
     const page = await ctx.newPage();
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
     await page.goto('/fox-cap/bola');
-    await page.getByRole('button', { name: 'Agora não' }).click({ timeout: 1500 }).catch(() => undefined);
+    await page
+      .getByRole('button', { name: 'Agora não' })
+      .click({ timeout: 1500 })
+      .catch(() => undefined);
     await page.getByTestId('bola-play-btn').click();
     await page.getByTestId('bola-fmt-2x2x2x2').click();
     await page.getByTestId('bola-start').click();
@@ -53,7 +61,14 @@ for (const ph of phones) {
       const g = w.field.goals[1].edge;
       w.lastTouch = { id: 'bot0', team: 0, t: 1 };
       w.lastByTeam[0] = w.lastTouch;
-      Object.assign(w.ball, { x: g.mx + g.nx * 6, y: 0.9, z: g.mz + g.nz * 6, vx: -g.nx * 20, vy: 0, vz: -g.nz * 20 });
+      Object.assign(w.ball, {
+        x: g.mx + g.nx * 6,
+        y: 0.9,
+        z: g.mz + g.nz * 6,
+        vx: -g.nx * 20,
+        vy: 0,
+        vz: -g.nz * 20,
+      });
     });
     await page.waitForTimeout(1400);
     await page.screenshot({ path: `test-results/mob-${ph.name}-goal.png` });
@@ -76,7 +91,8 @@ for (const ph of phones) {
         if (a && b && hit(a, b)) clashes.push(`${names[i]} x ${names[j]}`);
       }
       const a = hud[names[i]!];
-      if (a && (a.x < -1 || a.y < -1 || a.x + a.w > ph.w + 1 || a.y + a.h > ph.h + 1)) clashes.push(`${names[i]} fora da tela`);
+      if (a && (a.x < -1 || a.y < -1 || a.x + a.w > ph.w + 1 || a.y + a.h > ph.h + 1))
+        clashes.push(`${names[i]} fora da tela`);
     }
     expect(clashes, JSON.stringify(hud)).toEqual([]);
     // menu, times e estatísticas cabem na tela (ou rolam dentro dela)
@@ -101,7 +117,9 @@ for (const ph of phones) {
     expect(stats!.x).toBeGreaterThanOrEqual(-1);
     expect(stats!.x + stats!.w).toBeLessThanOrEqual(ph.w + 1);
     expect(stats!.y + stats!.h).toBeLessThanOrEqual(ph.h + 1);
-    const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth > window.innerWidth + 1,
+    );
     expect(overflow).toBe(false);
     expect(errors).toEqual([]);
     await ctx.close();

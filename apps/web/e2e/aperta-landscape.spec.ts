@@ -1,5 +1,12 @@
 import { expect, test, type Page } from '@playwright/test';
-import { PHONES_LANDSCAPE, PHONES_PORTRAIT, enterGame, installAccount, midSave, readySave } from './aperta-fixtures';
+import {
+  PHONES_LANDSCAPE,
+  PHONES_PORTRAIT,
+  enterGame,
+  installAccount,
+  midSave,
+  readySave,
+} from './aperta-fixtures';
 
 /**
  * Celular só joga deitado: em pé, o Aperta! gira 90° por CSS e ocupa a tela toda (spec 042, adendo). Aqui o jogo é medido
@@ -14,7 +21,15 @@ async function frame(page: Page) {
     const w = ap.clientWidth;
     const h = ap.clientHeight;
     const rect = ap.getBoundingClientRect();
-    return { w, h, rw: rect.width, rh: rect.height, sw: ap.scrollWidth, innerW: window.innerWidth, innerH: window.innerHeight };
+    return {
+      w,
+      h,
+      rw: rect.width,
+      rh: rect.height,
+      sw: ap.scrollWidth,
+      innerW: window.innerWidth,
+      innerH: window.innerHeight,
+    };
   });
 }
 
@@ -35,7 +50,9 @@ for (const size of sizes) {
       expect(Math.round(f.rw)).toBe(size.w);
       expect(Math.round(f.rh)).toBe(size.h);
       expect(f.sw).toBeLessThanOrEqual(f.w + 1);
-      expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(1);
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth),
+      ).toBeLessThanOrEqual(1);
 
       await enterGame(page);
       await page.locator('.ap-game').waitFor();
@@ -50,12 +67,20 @@ for (const size of sizes) {
         const boxes: Record<string, { x: number; y: number; w: number; h: number } | null> = {};
         for (const sel of ['.ap-hud .ap-hudp', '.ap-energy', '.ap-dock']) {
           const el = document.querySelector(sel);
-          if (!el) { boxes[sel] = null; continue; }
+          if (!el) {
+            boxes[sel] = null;
+            continue;
+          }
           const r = el.getBoundingClientRect();
           const p1 = inv.transformPoint(new DOMPoint(r.left - a.left, r.top - a.top));
           const p2 = inv.transformPoint(new DOMPoint(r.right - a.left, r.bottom - a.top));
           // Em pé o ponto (0,0) do contêiner está no canto superior direito da janela: o espelhamento do rotate já vem na matriz.
-          boxes[sel] = { x: Math.min(p1.x, p2.x), y: Math.min(p1.y, p2.y), w: Math.abs(p2.x - p1.x), h: Math.abs(p2.y - p1.y) };
+          boxes[sel] = {
+            x: Math.min(p1.x, p2.x),
+            y: Math.min(p1.y, p2.y),
+            w: Math.abs(p2.x - p1.x),
+            h: Math.abs(p2.y - p1.y),
+          };
         }
         return boxes;
       });
@@ -72,13 +97,22 @@ for (const size of sizes) {
       await page.goto('/arcade/aperta');
       await enterGame(page);
       await page.locator('.ap-game').waitFor();
-      await page.getByRole('button', { name: /Melhorias/ }).first().click({ force: true });
+      await page
+        .getByRole('button', { name: /Melhorias/ })
+        .first()
+        .click({ force: true });
       const body = page.locator('.ap-sbody').first();
       await expect(body).toBeVisible();
-      const info2 = await body.evaluate((el) => ({ sh: el.scrollHeight, ch: el.clientHeight, oy: getComputedStyle(el).overflowY }));
+      const info2 = await body.evaluate((el) => ({
+        sh: el.scrollHeight,
+        ch: el.clientHeight,
+        oy: getComputedStyle(el).overflowY,
+      }));
       expect(['auto', 'scroll']).toContain(info2.oy);
       expect(info2.ch).toBeGreaterThan(80);
-      expect(await page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight)).toBeLessThanOrEqual(1);
+      expect(
+        await page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight),
+      ).toBeLessThanOrEqual(1);
     });
 
     test('o botão da estrela pronta fica dentro da tela', async ({ page }, info) => {
@@ -108,7 +142,12 @@ for (const size of sizes) {
         const full = await page.evaluate(() => {
           const ap = document.querySelector<HTMLElement>('.ap')!;
           const w = document.querySelector<HTMLElement>('.ap-sheetwrap')!;
-          return { same: w.offsetWidth === ap.clientWidth && w.offsetHeight === ap.clientHeight, back: !!document.querySelector('.ap-x-back') && getComputedStyle(document.querySelector('.ap-x-back')!).display !== 'none' };
+          return {
+            same: w.offsetWidth === ap.clientWidth && w.offsetHeight === ap.clientHeight,
+            back:
+              !!document.querySelector('.ap-x-back') &&
+              getComputedStyle(document.querySelector('.ap-x-back')!).display !== 'none',
+          };
         });
         expect(full.same, String(name)).toBe(true);
         expect(full.back, String(name)).toBe(true);
@@ -118,14 +157,24 @@ for (const size of sizes) {
       }
     });
 
-    test('nada fica rente à borda: HUD, dock e energia respeitam a margem de segurança', async ({ page }, info) => {
+    test('nada fica rente à borda: HUD, dock e energia respeitam a margem de segurança', async ({
+      page,
+    }, info) => {
       test.skip(info.project.name !== 'desktop', 'um projeto basta');
       await installAccount(page, midSave());
       await page.goto('/arcade/aperta');
       await enterGame(page);
       const edges = await page.evaluate(() => {
-        const px = (sel: string, prop: string) => parseFloat(getComputedStyle(document.querySelector(sel)!).getPropertyValue(prop));
-        return { hudL: px('.ap-hud', 'left'), hudT: px('.ap-hud', 'top'), hudR: px('.ap-hud', 'right'), dockL: px('.ap-dock', 'left'), dockB: px('.ap-dock', 'bottom'), enR: px('.ap-energy', 'right') };
+        const px = (sel: string, prop: string) =>
+          parseFloat(getComputedStyle(document.querySelector(sel)!).getPropertyValue(prop));
+        return {
+          hudL: px('.ap-hud', 'left'),
+          hudT: px('.ap-hud', 'top'),
+          hudR: px('.ap-hud', 'right'),
+          dockL: px('.ap-dock', 'left'),
+          dockB: px('.ap-dock', 'bottom'),
+          enR: px('.ap-energy', 'right'),
+        };
       });
       for (const [k, v] of Object.entries(edges)) expect(v, k).toBeGreaterThanOrEqual(14);
     });
@@ -137,7 +186,12 @@ for (const size of sizes) {
  * é o mesmo nos dois sentidos e, depois de a medida assentar, não sobra estado intermediário.
  */
 test.describe('virar o aparelho', () => {
-  test.use({ viewport: { width: 402, height: 874 }, isMobile: true, hasTouch: true, deviceScaleFactor: 3 });
+  test.use({
+    viewport: { width: 402, height: 874 },
+    isMobile: true,
+    hasTouch: true,
+    deviceScaleFactor: 3,
+  });
 
   const layout = (page: Page) =>
     page.evaluate(() => {
@@ -150,7 +204,13 @@ test.describe('virar o aparelho', () => {
         frame: ap.dataset.frame,
         size: [ap.clientWidth, ap.clientHeight],
         transform: getComputedStyle(ap).transform,
-        parts: { hud: box('.ap-hud'), hudp: box('.ap-hudp'), field: box('.ap-field'), energy: box('.ap-energy'), dock: box('.ap-dock') },
+        parts: {
+          hud: box('.ap-hud'),
+          hudp: box('.ap-hudp'),
+          field: box('.ap-field'),
+          energy: box('.ap-energy'),
+          dock: box('.ap-dock'),
+        },
       };
     });
 
@@ -184,12 +244,16 @@ test.describe('virar o aparelho', () => {
     }
   });
 
-  test('virar depressa, várias vezes seguidas, termina no modo certo e sem restos', async ({ page }, info) => {
+  test('virar depressa, várias vezes seguidas, termina no modo certo e sem restos', async ({
+    page,
+  }, info) => {
     test.skip(info.project.name !== 'desktop', 'um projeto basta');
     await installAccount(page, midSave());
     await enterGame(page);
     for (let i = 0; i < 7; i++) {
-      await page.setViewportSize(i % 2 === 0 ? { width: 874, height: 402 } : { width: 402, height: 874 });
+      await page.setViewportSize(
+        i % 2 === 0 ? { width: 874, height: 402 } : { width: 402, height: 874 },
+      );
       await page.waitForTimeout(30);
     }
     // O último foi 874x402 (deitado): depois de assentar não pode haver giro nenhum.
@@ -206,11 +270,16 @@ test.describe('virar o aparelho', () => {
 test.describe('poeira nas Melhorias', () => {
   test.use({ viewport: { width: 667, height: 375 }, isMobile: true, hasTouch: true });
 
-  test('o cabeçalho das Melhorias mostra o saldo de poeira e acompanha as compras', async ({ page }, info) => {
+  test('o cabeçalho das Melhorias mostra o saldo de poeira e acompanha as compras', async ({
+    page,
+  }, info) => {
     test.skip(info.project.name !== 'desktop', 'um projeto basta');
     await installAccount(page, midSave());
     await enterGame(page);
-    await page.getByRole('button', { name: /Melhorias/ }).first().click({ force: true });
+    await page
+      .getByRole('button', { name: /Melhorias/ })
+      .first()
+      .click({ force: true });
     const dust = page.locator('.ap-shead-dust');
     await expect(dust).toBeVisible();
     await expect(dust).toContainText('poeira');
@@ -220,7 +289,9 @@ test.describe('poeira nas Melhorias', () => {
     const inside = await dust.evaluate((el) => {
       const r = el.getBoundingClientRect();
       const h = document.querySelector('.ap-shead')!.getBoundingClientRect();
-      return r.left >= h.left && r.right <= h.right + 0.5 && r.top >= h.top && r.bottom <= h.bottom + 0.5;
+      return (
+        r.left >= h.left && r.right <= h.right + 0.5 && r.top >= h.top && r.bottom <= h.bottom + 0.5
+      );
     });
     expect(inside).toBe(true);
   });

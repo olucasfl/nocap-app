@@ -30,13 +30,15 @@ export function worldToHex(x: number, z: number, size = DSM_HEX_SIZE): Hex {
 export const hexKey = (layer: number, q: number, r: number): string => `${layer}:${q},${r}`;
 
 /** Distância (em ladrilhos) de um hexágono ao centro da arena. */
-export const hexRing = (q: number, r: number): number => Math.max(Math.abs(q), Math.abs(r), Math.abs(-q - r));
+export const hexRing = (q: number, r: number): number =>
+  Math.max(Math.abs(q), Math.abs(r), Math.abs(-q - r));
 
 /** Todos os hexágonos de um raio, do centro para fora. */
 export function hexesOfRadius(radius: number): Hex[] {
   const out: Hex[] = [];
   for (let q = -radius; q <= radius; q++) {
-    for (let r = Math.max(-radius, -q - radius); r <= Math.min(radius, -q + radius); r++) out.push({ q, r });
+    for (let r = Math.max(-radius, -q - radius); r <= Math.min(radius, -q + radius); r++)
+      out.push({ q, r });
   }
   return out;
 }

@@ -7,12 +7,18 @@ interface LockableOrientation extends ScreenOrientation {
   lock?: (orientation: 'landscape') => Promise<void>;
 }
 
-const isTouch = (): boolean => typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches;
+const isTouch = (): boolean =>
+  typeof window !== 'undefined' &&
+  typeof window.matchMedia === 'function' &&
+  window.matchMedia('(pointer: coarse)').matches;
 
 /** Tenta travar em paisagem; precisa ser chamado dentro de um toque do jogador (por isso sai do botão Jogar). Falha em silêncio. */
 export async function tryLockLandscape(): Promise<void> {
   if (!isTouch()) return;
-  const o = typeof screen !== 'undefined' ? (screen.orientation as LockableOrientation | undefined) : undefined;
+  const o =
+    typeof screen !== 'undefined'
+      ? (screen.orientation as LockableOrientation | undefined)
+      : undefined;
   if (!o?.lock) return;
   try {
     await o.lock('landscape');
@@ -21,7 +27,8 @@ export async function tryLockLandscape(): Promise<void> {
     /* sem tela cheia o Chrome recusa: tenta de novo entrando nela */
   }
   try {
-    if (!document.fullscreenElement) await document.documentElement.requestFullscreen({ navigationUI: 'hide' });
+    if (!document.fullscreenElement)
+      await document.documentElement.requestFullscreen({ navigationUI: 'hide' });
     await o.lock('landscape');
   } catch {
     /* não deu: o CSS cuida de girar a tela */
@@ -35,5 +42,6 @@ export function releaseOrientation(): void {
   } catch {
     /* sem suporte */
   }
-  if (typeof document !== 'undefined' && document.fullscreenElement) void document.exitFullscreen().catch(() => undefined);
+  if (typeof document !== 'undefined' && document.fullscreenElement)
+    void document.exitFullscreen().catch(() => undefined);
 }

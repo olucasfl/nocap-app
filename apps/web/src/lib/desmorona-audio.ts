@@ -35,7 +35,15 @@ function tone(type: OscillatorType, f0: number, f1: number, dur: number, peak: n
   o.stop(t + dur + 0.05);
 }
 
-function noise(f0: number, f1: number, q: number, dur: number, peak: number, delay = 0, type: BiquadFilterType = 'bandpass') {
+function noise(
+  f0: number,
+  f1: number,
+  q: number,
+  dur: number,
+  peak: number,
+  delay = 0,
+  type: BiquadFilterType = 'bandpass',
+) {
   const kit = audioKit();
   if (!kit || kit.muted()) return;
   const { ctx, noise: buf } = kit;

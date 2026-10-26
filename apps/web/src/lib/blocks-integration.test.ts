@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { gameLabel } from './labels';
 import { boardChoices, boardMax, parseRankingsSearch, rankingLink } from './ranking';
-import { countUnit, formatBest, formatCount, gameModes, knownModes, modeMax, type Stats } from './stats';
+import {
+  countUnit,
+  formatBest,
+  formatCount,
+  gameModes,
+  knownModes,
+  modeMax,
+  type Stats,
+} from './stats';
 
 describe("Block's no ranking, histórico e recordes", () => {
   it('tem o quadro classic, sem Daily, e o link do ranking leva a ele', () => {

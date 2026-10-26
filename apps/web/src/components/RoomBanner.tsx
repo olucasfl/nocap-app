@@ -13,7 +13,7 @@ const GAME_NAME: Record<RoomGame, string> = {
   eco: 'Ecooo',
   atravessa: 'Atravessa!',
   desmorona: 'Desmorona!',
-  bola: 'Bola Maluca!',
+  bola: 'Fut Fox',
 };
 
 const phaseText = (phase: Phase) =>

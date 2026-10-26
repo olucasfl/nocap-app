@@ -1,7 +1,7 @@
 import { audioKit } from './sfx';
 
 /**
- * Sons do Bola Maluca!, sintetizados em Web Audio como os do Desmorona! (sem arquivos), respeitando o mudo do `sfx`.
+ * Sons do Fut Fox, sintetizados em Web Audio como os do Desmorona! (sem arquivos), respeitando o mudo do `sfx`.
  * Um compressor no meio evita estouro quando muita coisa soa junta (gol com torcida, fogos e apito).
  */
 let bus: { ctx: AudioContext; node: AudioNode } | null = null;

@@ -1,8 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { releaseOrientation, tryLockLandscape } from './aperta-orientation';
 
-function env(opts: { coarse: boolean; lock?: () => Promise<void>; fullscreen?: () => Promise<void> }) {
-  vi.stubGlobal('window', { matchMedia: (q: string) => ({ matches: opts.coarse && q.includes('coarse') }) });
+function env(opts: {
+  coarse: boolean;
+  lock?: () => Promise<void>;
+  fullscreen?: () => Promise<void>;
+}) {
+  vi.stubGlobal('window', {
+    matchMedia: (q: string) => ({ matches: opts.coarse && q.includes('coarse') }),
+  });
   vi.stubGlobal('screen', { orientation: { lock: opts.lock, unlock: vi.fn() } });
   vi.stubGlobal('document', {
     fullscreenElement: null,
@@ -28,7 +34,10 @@ describe('travar em paisagem (Aperta!)', () => {
   });
 
   it('se o navegador recusa, entra em tela cheia, tenta de novo e nunca lança', async () => {
-    const lock = vi.fn().mockRejectedValueOnce(new Error('NotSupported')).mockResolvedValue(undefined);
+    const lock = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('NotSupported'))
+      .mockResolvedValue(undefined);
     const fullscreen = vi.fn().mockResolvedValue(undefined);
     env({ coarse: true, lock, fullscreen });
     await expect(tryLockLandscape()).resolves.toBeUndefined();

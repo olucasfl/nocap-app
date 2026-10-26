@@ -9,7 +9,7 @@ import type { Auth } from '../auth/auth';
 import { BolaRoom, roomDeps } from './color.room';
 
 /**
- * A sala do Bola Maluca! com o servidor Colyseus de verdade e dois aparelhos (o mesmo cliente do app):
+ * A sala do Fut Fox com o servidor Colyseus de verdade e dois aparelhos (o mesmo cliente do app):
  * prova o caminho completo das mensagens de times, `bin` e do fluxo `bs` (spec 046), que os testes do motor não alcançam.
  */
 const webRequire = createRequire(resolve(__dirname, '../../../web/package.json'));
@@ -98,7 +98,7 @@ afterAll(async () => {
   http.close();
 }, 15_000);
 
-describe('sala do Bola Maluca! com servidor de verdade', () => {
+describe('sala do Fut Fox com servidor de verdade', () => {
   it('times, começo, entrada que move a raposa, fluxo de estado e encerramento', async () => {
     const created = await new Client(url).create('bola', { token: 'ana' });
     const ana = watch(created);

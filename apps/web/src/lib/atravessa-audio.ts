@@ -58,21 +58,33 @@ const VOICES: Record<AtravessaBiome, Voice> = {
   horta: {
     root: 392,
     scale: [0, 2, 4, 7, 9],
-    partials: [[1, 1, 1], [4, 0.2, 0.35], [10.3, 0.08, 0.15]],
+    partials: [
+      [1, 1, 1],
+      [4, 0.2, 0.35],
+      [10.3, 0.08, 0.15],
+    ],
     wave: 'sine',
     decay: 0.45,
   },
   deserto: {
     root: 330,
     scale: [0, 1, 5, 7, 8],
-    partials: [[1, 1, 1], [2.01, 0.45, 0.55], [5.2, 0.1, 0.2]],
+    partials: [
+      [1, 1, 1],
+      [2.01, 0.45, 0.55],
+      [5.2, 0.1, 0.2],
+    ],
     wave: 'triangle',
     decay: 0.4,
   },
   neon: {
     root: 440,
     scale: [0, 3, 5, 7, 10],
-    partials: [[1, 1, 1], [2, 0.38, 0.65], [3.5, 0.25, 0.3]],
+    partials: [
+      [1, 1, 1],
+      [2, 0.38, 0.65],
+      [3.5, 0.25, 0.3],
+    ],
     wave: 'triangle',
     decay: 0.55,
   },
@@ -134,7 +146,14 @@ export function createAtravessaAudio(): AtravessaAudio | null {
     }
   }
 
-  function tone(type: OscillatorType, f0: number, f1: number, dur: number, peak: number, when = ctx.currentTime) {
+  function tone(
+    type: OscillatorType,
+    f0: number,
+    f1: number,
+    dur: number,
+    peak: number,
+    when = ctx.currentTime,
+  ) {
     if (quiet()) return;
     const o = track(ctx.createOscillator());
     const g = ctx.createGain();
@@ -149,7 +168,15 @@ export function createAtravessaAudio(): AtravessaAudio | null {
     o.stop(when + dur + 0.05);
   }
 
-  function hiss(filter: BiquadFilterType, f0: number, f1: number, dur: number, peak: number, when = ctx.currentTime, q = 0.9) {
+  function hiss(
+    filter: BiquadFilterType,
+    f0: number,
+    f1: number,
+    dur: number,
+    peak: number,
+    when = ctx.currentTime,
+    q = 0.9,
+  ) {
     if (quiet()) return;
     const src = track(ctx.createBufferSource());
     const f = ctx.createBiquadFilter();
@@ -386,7 +413,8 @@ export function createAtravessaAudio(): AtravessaAudio | null {
         // água, tora que levou ou pedra que afundou: um mergulho
         hiss('bandpass', 900, 2600, 0.35, 0.16, t, 0.8);
         hiss('lowpass', 1800, 220, 0.5, 0.18, t + 0.04);
-        for (let i = 0; i < 3; i++) tone('sine', 520 + i * 90, 900 + i * 120, 0.07, 0.045, t + 0.18 + i * 0.1);
+        for (let i = 0; i < 3; i++)
+          tone('sine', 520 + i * 90, 900 + i * 120, 0.07, 0.045, t + 0.18 + i * 0.1);
       }
       if (siren) siren.gain.gain.setTargetAtTime(0.0001, t, 0.05);
     },

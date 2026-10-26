@@ -7,7 +7,11 @@ async function answer(page: Page, allowed: boolean) {
     route.fulfill({
       status: 200,
       contentType: 'application/json',
-      headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' },
+      headers: {
+        'access-control-allow-origin': '*',
+        'access-control-allow-headers': '*',
+        'access-control-allow-methods': '*',
+      },
       body: JSON.stringify({ allowed }),
     }),
   );
@@ -44,7 +48,11 @@ test.describe('Aperta! liberado só para uma conta', () => {
       route.fulfill({
         status: 401,
         contentType: 'application/json',
-        headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' },
+        headers: {
+          'access-control-allow-origin': '*',
+          'access-control-allow-headers': '*',
+          'access-control-allow-methods': '*',
+        },
         body: JSON.stringify({ message: 'Entre na sua conta' }),
       }),
     );

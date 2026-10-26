@@ -1,5 +1,15 @@
 import { expect, test, type Page } from '@playwright/test';
-import { PHONES_LANDSCAPE, PHONES_PORTRAIT, choiceSave, enterGame, freshSave, installAccount, midSave, readySave, tutorialSaves } from './aperta-fixtures';
+import {
+  PHONES_LANDSCAPE,
+  PHONES_PORTRAIT,
+  choiceSave,
+  enterGame,
+  freshSave,
+  installAccount,
+  midSave,
+  readySave,
+  tutorialSaves,
+} from './aperta-fixtures';
 
 /**
  * Tira as fotos de todas as telas do Aperta! nos tamanhos de celular (de lado e em pé) para a revisão visual. Só roda com
@@ -17,7 +27,12 @@ async function snap(page: Page, size: string, name: string) {
 
 for (const size of sizes) {
   test.describe(`QA ${size.name}`, () => {
-    test.use({ viewport: { width: size.w, height: size.h }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
+    test.use({
+      viewport: { width: size.w, height: size.h },
+      isMobile: true,
+      hasTouch: true,
+      deviceScaleFactor: 2,
+    });
 
     test('título, espaços, história e começo do jogo', async ({ page }, info) => {
       test.skip(info.project.name !== 'desktop', 'um projeto basta');
@@ -27,7 +42,10 @@ for (const size of sizes) {
       await snap(page, size.name, '01-titulo');
       await page.getByRole('button', { name: 'Jogar' }).first().click();
       await snap(page, size.name, '02-espacos');
-      await page.getByRole('button', { name: /Novo jogo|Começar|Criar/ }).first().click();
+      await page
+        .getByRole('button', { name: /Novo jogo|Começar|Criar/ })
+        .first()
+        .click();
       await snap(page, size.name, '03-historia');
       for (const n of ['3b', '3c', '3d']) {
         await page.getByRole('button', { name: /Continuar/ }).click();
@@ -45,7 +63,10 @@ for (const size of sizes) {
       await installAccount(page, midSave());
       await enterGame(page);
       await snap(page, size.name, '10-jogo');
-      await page.getByRole('button', { name: 'Entendi' }).click({ force: true }).catch(() => undefined);
+      await page
+        .getByRole('button', { name: 'Entendi' })
+        .click({ force: true })
+        .catch(() => undefined);
       await page.locator('.ap-hudgoal').click({ force: true });
       await snap(page, size.name, '11-meta');
       await page.keyboard.press('Escape');
@@ -85,7 +106,10 @@ for (const size of sizes) {
       await installAccount(page, readySave());
       await enterGame(page);
       await snap(page, size.name, '30-pronta');
-      await page.getByRole('button', { name: /Estrela pronta/ }).first().click();
+      await page
+        .getByRole('button', { name: /Estrela pronta/ })
+        .first()
+        .click();
       await snap(page, size.name, '31-modal-colapso');
     });
 
@@ -102,9 +126,23 @@ for (const size of sizes) {
       ['44-tut-barra', () => tutorialSaves.fill()],
       ['44b-tut-escolha', () => tutorialSaves.choose()],
       ['45-tut-grimorios', () => tutorialSaves.grimoires()],
-      ['46-tut-geradores', () => tutorialSaves.free(['achievements', 'objects'], (s) => ({ ...s, run: { ...s.run, dust: 1e12, dustLife: 1e12 } }))],
+      [
+        '46-tut-geradores',
+        () =>
+          tutorialSaves.free(['achievements', 'objects'], (s) => ({
+            ...s,
+            run: { ...s.run, dust: 1e12, dustLife: 1e12 },
+          })),
+      ],
       ['47-tut-colapso', () => tutorialSaves.free(['achievements', 'objects', 'generators'])],
-      ['48-tut-arvore', () => tutorialSaves.free(['achievements', 'objects', 'generators', 'collapse'], (s) => ({ ...s, collapses: 1 }))],
+      [
+        '48-tut-arvore',
+        () =>
+          tutorialSaves.free(['achievements', 'objects', 'generators', 'collapse'], (s) => ({
+            ...s,
+            collapses: 1,
+          })),
+      ],
     ] as const) {
       test(`tutorial ${name}`, async ({ page }, info) => {
         test.skip(info.project.name !== 'desktop', 'um projeto basta');

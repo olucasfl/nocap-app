@@ -148,7 +148,11 @@ export function createBatidaAudio(song: Song): BatidaAudio | null {
     let ms = raw;
     if (ctx.state === 'running' && typeof ctx.getOutputTimestamp === 'function') {
       const ts = ctx.getOutputTimestamp();
-      if (ts.contextTime !== undefined && ts.performanceTime !== undefined && ts.performanceTime > 0) {
+      if (
+        ts.contextTime !== undefined &&
+        ts.performanceTime !== undefined &&
+        ts.performanceTime > 0
+      ) {
         const smooth = (ts.contextTime - t0) * 1000 + (performance.now() - ts.performanceTime);
         // Só vale se for coerente (nunca mais de meio segundo atrás nem à frente do relógio simples).
         if (smooth <= raw + 20 && smooth >= raw - 500) ms = smooth;

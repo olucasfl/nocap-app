@@ -24,7 +24,14 @@ export function createBlocksAudio(): BlocksAudio | null {
   if (!kit) return null;
   const { ctx, out, noise, muted } = kit;
 
-  function tone(type: OscillatorType, f0: number, f1: number, dur: number, peak: number, delay = 0) {
+  function tone(
+    type: OscillatorType,
+    f0: number,
+    f1: number,
+    dur: number,
+    peak: number,
+    delay = 0,
+  ) {
     if (muted()) return;
     const when = ctx.currentTime + delay;
     const o = ctx.createOscillator();
@@ -101,7 +108,9 @@ export function createBlocksAudio(): BlocksAudio | null {
       tone('sine', 1174.66, 1174.66, 0.16, 0.09, 0.1);
     },
     over() {
-      [392, 329.63, 261.63, 196].forEach((f, i) => tone('triangle', f, f * 0.96, 0.28, 0.13, i * 0.16));
+      [392, 329.63, 261.63, 196].forEach((f, i) =>
+        tone('triangle', f, f * 0.96, 0.28, 0.13, i * 0.16),
+      );
       tone('sawtooth', 110, 55, 0.7, 0.07, 0.4);
     },
   };

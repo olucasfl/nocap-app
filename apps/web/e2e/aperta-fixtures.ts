@@ -1,4 +1,18 @@
-import { TUTORIAL, settleTutorial, affordableUpgradeIndex, dustGoal, energyCap, meetMilestone, minPicks, newSave, nextUpgradeCost, pickInto, tickObjects, upgradeIndex, type SaveState } from '@nocap/games';
+import {
+  TUTORIAL,
+  settleTutorial,
+  affordableUpgradeIndex,
+  dustGoal,
+  energyCap,
+  meetMilestone,
+  minPicks,
+  newSave,
+  nextUpgradeCost,
+  pickInto,
+  tickObjects,
+  upgradeIndex,
+  type SaveState,
+} from '@nocap/games';
 import type { Page } from '@playwright/test';
 import { installApi } from './mock-api';
 
@@ -8,9 +22,17 @@ import { installApi } from './mock-api';
 export function midSave(): SaveState {
   const s = newSave('layout-meio', Date.now() - 3_600_000, 'Missão meio');
   const lv = s.run.upgradeLevels.slice();
-  for (const [id, n] of Object.entries({ lens: 1, gloves: 1, satellite: 5, probe: 2, antenna: 2 })) lv[upgradeIndex(id)] = n;
+  for (const [id, n] of Object.entries({ lens: 1, gloves: 1, satellite: 5, probe: 2, antenna: 2 }))
+    lv[upgradeIndex(id)] = n;
   let run = { ...s.run, upgradeLevels: lv, dust: 3e6, dustLife: 6e6, picks: 9 };
-  for (const [id, r, n] of [['moon', 'rare', 3], ['sirius', 'common', 2], ['mercury', 'epic', 2], ['vega', 'common', 1], ['titan', 'legendary', 1]] as const) run = { ...run, ...pickInto(run, id, r, n) };
+  for (const [id, r, n] of [
+    ['moon', 'rare', 3],
+    ['sirius', 'common', 2],
+    ['mercury', 'epic', 2],
+    ['vega', 'common', 1],
+    ['titan', 'legendary', 1],
+  ] as const)
+    run = { ...run, ...pickInto(run, id, r, n) };
   return {
     ...s,
     tutorial: 'done',
@@ -20,7 +42,16 @@ export function midSave(): SaveState {
     vault: { 'sagittarius-a': 1, m87: 2 },
     seals: 0,
     sparks: { legacy: 14, spent: 0 },
-    album: ['moon:common', 'moon:rare', 'sirius:common', 'mercury:epic', 'vega:common', 'titan:legendary', 'sagittarius-a', 'm87'],
+    album: [
+      'moon:common',
+      'moon:rare',
+      'sirius:common',
+      'mercury:epic',
+      'vega:common',
+      'titan:legendary',
+      'sagittarius-a',
+      'm87',
+    ],
     run,
     stats: { ...s.stats, picks: 40, dustTotal: 4e8, objectsCaptured: 30, clicks: 800 },
   };
@@ -33,14 +64,34 @@ export function choiceSave(four = false): SaveState {
   const opened = tickObjects(full, 1);
   const p = opened.run.pending!;
   const offers = four ? ['moon', 'mercury', 'titan', 'vega'] : ['moon', 'mercury', 'titan'];
-  return { ...opened, run: { ...opened.run, pending: { ...p, offers, rarities: { moon: 'legendary', mercury: 'common', titan: 'rare', vega: 'epic' } } } };
+  return {
+    ...opened,
+    run: {
+      ...opened.run,
+      pending: {
+        ...p,
+        offers,
+        rarities: { moon: 'legendary', mercury: 'common', titan: 'rare', vega: 'epic' },
+      },
+    },
+  };
 }
 
 /** Estrela pronta para colapsar. */
 export function readySave(): SaveState {
   const s = midSave();
   const k = s.collapses + 1;
-  return { ...s, run: { ...s.run, picks: minPicks(k), dust: dustGoal(k), dustLife: dustGoal(k), ...meetMilestone(s.collapses, s.run.upgradeLevels) }, stats: { ...s.stats, dustTotal: s.stats.dustTotal + dustGoal(k) } };
+  return {
+    ...s,
+    run: {
+      ...s.run,
+      picks: minPicks(k),
+      dust: dustGoal(k),
+      dustLife: dustGoal(k),
+      ...meetMilestone(s.collapses, s.run.upgradeLevels),
+    },
+    stats: { ...s.stats, dustTotal: s.stats.dustTotal + dustGoal(k) },
+  };
 }
 
 /** Começo do tutorial. */
@@ -59,16 +110,40 @@ export async function installAccount(page: Page, initial: SaveState | null): Pro
   await page.route(/localhost:3333\/me\/aperta\/saves/, async (route) => {
     const req = route.request();
     const path = new URL(req.url()).pathname;
-    const headers = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' };
-    const json = (body: unknown, status = 200) => route.fulfill({ status, contentType: 'application/json', headers, body: JSON.stringify(body) });
+    const headers = {
+      'access-control-allow-origin': '*',
+      'access-control-allow-headers': '*',
+      'access-control-allow-methods': '*',
+    };
+    const json = (body: unknown, status = 200) =>
+      route.fulfill({
+        status,
+        contentType: 'application/json',
+        headers,
+        body: JSON.stringify(body),
+      });
     if (req.method() === 'OPTIONS') return json({});
     if (path === '/me/aperta/saves') {
       const d = account.data;
-      const one = d && { slot: 1, name: d.name, collapses: d.collapses, vaultCount: Object.keys(d.vault ?? {}).length, lastPlayedAt: new Date().toISOString(), storySeen: d.storySeen, revision: account.rev };
-      return json({ slots: [{ slot: 1, save: one, recoverableUntil: null }, { slot: 2, save: null, recoverableUntil: null }] });
+      const one = d && {
+        slot: 1,
+        name: d.name,
+        collapses: d.collapses,
+        vaultCount: Object.keys(d.vault ?? {}).length,
+        lastPlayedAt: new Date().toISOString(),
+        storySeen: d.storySeen,
+        revision: account.rev,
+      };
+      return json({
+        slots: [
+          { slot: 1, save: one, recoverableUntil: null },
+          { slot: 2, save: null, recoverableUntil: null },
+        ],
+      });
     }
     if (path === '/me/aperta/saves/1') {
-      if (req.method() === 'GET') return json({ slot: 1, revision: account.rev, data: account.data });
+      if (req.method() === 'GET')
+        return json({ slot: 1, revision: account.rev, data: account.data });
       if (req.method() === 'PUT') {
         account.data = (req.postDataJSON() as { data: SaveState }).data;
         account.rev += 1;
@@ -84,7 +159,10 @@ export async function installAccount(page: Page, initial: SaveState | null): Pro
 export async function enterGame(page: Page): Promise<void> {
   await page.goto('/arcade/aperta');
   await page.getByRole('button', { name: 'Jogar' }).first().click();
-  await page.getByRole('button', { name: /Continuar/ }).first().click();
+  await page
+    .getByRole('button', { name: /Continuar/ })
+    .first()
+    .click();
   const skip = page.getByRole('button', { name: 'Pular história' });
   if (await skip.isVisible({ timeout: 1500 }).catch(() => false)) await skip.click();
   await page.locator('.ap-game').waitFor();
@@ -106,16 +184,33 @@ export const PHONES_PORTRAIT = [
 
 /** Saves de cada momento do tutorial, montados pelo motor (revisão visual e testes de bloqueio). */
 export const tutorialSaves = {
-  touch: (clicks = 0): SaveState => ({ ...freshSave(), run: { ...freshSave().run, clicks, dust: clicks, dustLife: clicks } }),
+  touch: (clicks = 0): SaveState => ({
+    ...freshSave(),
+    run: { ...freshSave().run, clicks, dust: clicks, dustLife: clicks },
+  }),
   upgrade: (): SaveState => {
     const s = freshSave();
     const rich = { ...s, run: { ...s.run, dust: 1e12 } };
     const cost = nextUpgradeCost(s, affordableUpgradeIndex(rich)!) as number;
-    return { ...s, tutorial: TUTORIAL.UPGRADE, ui: { ...s.ui, unlocked: ['upgrades'] }, run: { ...s.run, dust: cost, dustLife: cost, clicks: 30 } };
+    return {
+      ...s,
+      tutorial: TUTORIAL.UPGRADE,
+      ui: { ...s.ui, unlocked: ['upgrades'] },
+      run: { ...s.run, dust: cost, dustLife: cost, clicks: 30 },
+    };
   },
   fill: (): SaveState => {
     const s = tutorialSaves.upgrade();
-    return { ...s, tutorial: TUTORIAL.FILL, run: { ...s.run, upgradeLevels: s.run.upgradeLevels.map((n, i) => (i === affordableUpgradeIndex({ ...s, run: { ...s.run, dust: 1e12 } }) ? 1 : n)) } };
+    return {
+      ...s,
+      tutorial: TUTORIAL.FILL,
+      run: {
+        ...s.run,
+        upgradeLevels: s.run.upgradeLevels.map((n, i) =>
+          i === affordableUpgradeIndex({ ...s, run: { ...s.run, dust: 1e12 } }) ? 1 : n,
+        ),
+      },
+    };
   },
   /** Barra cheia no passo 4: a escolha do 1º grimório abre sozinha (3 cartas comuns), com o cartão do tutorial dentro. */
   choose: (): SaveState => {
@@ -126,10 +221,26 @@ export const tutorialSaves = {
   grimoires: (): SaveState => {
     const s = tutorialSaves.fill();
     const run = { ...s.run, ...pickInto(s.run, 'moon', 'common', 1), picks: 1 };
-    return { ...s, tutorial: TUTORIAL.GRIMOIRES, ui: { ...s.ui, unlocked: ['upgrades', 'grimoires'] }, album: ['moon:common'], run };
+    return {
+      ...s,
+      tutorial: TUTORIAL.GRIMOIRES,
+      ui: { ...s.ui, unlocked: ['upgrades', 'grimoires'] },
+      album: ['moon:common'],
+      run,
+    };
   },
-  free: (hints: SaveState['ui']['hints'], patch: (s: SaveState) => SaveState = (s) => s): SaveState => {
+  free: (
+    hints: SaveState['ui']['hints'],
+    patch: (s: SaveState) => SaveState = (s) => s,
+  ): SaveState => {
     const s = tutorialSaves.grimoires();
-    return patch({ ...s, tutorial: TUTORIAL.FREE, ui: { ...s.ui, unlocked: ['upgrades', 'grimoires', 'achievements'], hints }, achievements: ['tap-1', 'tap-100'], stats: { ...s.stats, clicks: 300, picks: 2 }, run: { ...s.run, picks: 2 } });
+    return patch({
+      ...s,
+      tutorial: TUTORIAL.FREE,
+      ui: { ...s.ui, unlocked: ['upgrades', 'grimoires', 'achievements'], hints },
+      achievements: ['tap-1', 'tap-100'],
+      stats: { ...s.stats, clicks: 300, picks: 2 },
+      run: { ...s.run, picks: 2 },
+    });
   },
 };

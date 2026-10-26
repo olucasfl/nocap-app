@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { gameLabel, modeLabel } from './labels';
 import { boardChoices, boardMax, parseRankingsSearch, rankingLink } from './ranking';
-import { countUnit, formatBest, formatCount, gameModes, knownModes, modeMax, type Stats } from './stats';
+import {
+  countUnit,
+  formatBest,
+  formatCount,
+  gameModes,
+  knownModes,
+  modeMax,
+  type Stats,
+} from './stats';
 
 describe('Atravessa! no ranking, histórico e recordes', () => {
   it('tem só o Infinito, sem Daily, e o link do ranking leva a ele', () => {
@@ -13,7 +21,9 @@ describe('Atravessa! no ranking, histórico e recordes', () => {
       modo: 'infinito',
       quem: 'friends',
     });
-    expect(parseRankingsSearch({ jogo: 'atravessa', modo: 'daily' })).toEqual({ jogo: 'atravessa' });
+    expect(parseRankingsSearch({ jogo: 'atravessa', modo: 'daily' })).toEqual({
+      jogo: 'atravessa',
+    });
     expect(boardMax('atravessa', 'infinito')).toBe(0);
   });
 

@@ -1408,7 +1408,7 @@
   }
 }
 
-/* Bola Maluca!: times, vagas e espectadores */
+/* Fut Fox: times, vagas e espectadores */
 .bola-lobby-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));

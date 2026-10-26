@@ -121,7 +121,7 @@ export function bolaRoster(setup: BolaSetup): BolInfo[] {
   return out;
 }
 
-/** Treino do Bola Maluca!: você contra bots. O motor roda no aparelho; a sala online usa o mesmo motor no servidor. */
+/** Treino do Fut Fox: você contra bots. O motor roda no aparelho; a sala online usa o mesmo motor no servidor. */
 export function BolaPlay({
   setup,
   online,
@@ -275,8 +275,7 @@ export function BolaPlay({
         case 'kick': {
           const g = gainAt(world.ball.x, world.ball.z);
           bolaSfx.kick(g);
-          scene.kickFx(e.id);
-          if (e.id === meId) scene.shakeNow(0.3);
+          scene.kickFx(e.id, online ? (ballT ?? undefined) : undefined, e.id === meId);
           break;
         }
         case 'touch':
@@ -876,7 +875,7 @@ export function BolaPlay({
 
   return (
     <div ref={root} className="dsm-play" data-testid="bola-play">
-      <canvas ref={canvas} className="dsm-canvas" aria-label="Campo do Bola Maluca!" />
+      <canvas ref={canvas} className="dsm-canvas" aria-label="Campo do Fut Fox" />
       <div ref={zone} className="dsm-zone" aria-hidden="true">
         {stick && knob && (
           <div className="dsm-stick" style={{ left: stick.ox, top: stick.oy }}>

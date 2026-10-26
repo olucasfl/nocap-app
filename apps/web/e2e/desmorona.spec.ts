@@ -8,9 +8,15 @@ const sizes = [
 
 for (const size of sizes) {
   test.describe(`Desmorona! em ${size.name}`, () => {
-    test.use({ viewport: { width: size.w, height: size.h }, isMobile: size.touch, hasTouch: size.touch });
+    test.use({
+      viewport: { width: size.w, height: size.h },
+      isMobile: size.touch,
+      hasTouch: size.touch,
+    });
 
-    test('Fox Cap! leva ao jogo, a partida roda e a tela não rola de lado', async ({ page }, info) => {
+    test('Fox Cap! leva ao jogo, a partida roda e a tela não rola de lado', async ({
+      page,
+    }, info) => {
       test.skip(info.project.name !== 'desktop', 'um projeto basta');
       await page.goto('/fox-cap');
       await page.getByRole('button', { name: 'Agora não' }).click();
@@ -27,17 +33,22 @@ for (const size of sizes) {
         await page.keyboard.up('KeyW');
       }
       await expect(page.locator('.dsm-hud')).toBeVisible();
-      if (process.env.E2E_SHOTS) await page.screenshot({ path: `${process.env.E2E_SHOTS}/dsm-${size.touch ? 'phone' : 'pc'}.png` });
+      if (process.env.E2E_SHOTS)
+        await page.screenshot({
+          path: `${process.env.E2E_SHOTS}/dsm-${size.touch ? 'phone' : 'pc'}.png`,
+        });
       if (size.touch) await expect(page.locator('.dsm-jump')).toBeVisible();
       else await expect(page.locator('.dsm-jump')).toBeHidden();
       // a câmera gira: arrastando o mouse (computador) ou o dedo na metade direita (celular)
-      const yaw = () => page.evaluate(() => (window as unknown as { __dsmYaw?: number }).__dsmYaw ?? 0);
+      const yaw = () =>
+        page.evaluate(() => (window as unknown as { __dsmYaw?: number }).__dsmYaw ?? 0);
       const before = await yaw();
       if (size.touch) {
         const cdp = await page.context().newCDPSession(page);
         const pt = (x: number) => [{ x, y: 150, id: 1 }];
         await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: pt(600) });
-        for (let x = 600; x <= 760; x += 20) await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: pt(x) });
+        for (let x = 600; x <= 760; x += 20)
+          await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: pt(x) });
         await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
       } else {
         await page.mouse.move(400, 300);
@@ -47,7 +58,9 @@ for (const size of sizes) {
       }
       await page.waitForTimeout(300);
       expect(Math.abs((await yaw()) - before)).toBeGreaterThan(0.1);
-      const over = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      const over = await page.evaluate(
+        () => document.documentElement.scrollWidth - window.innerWidth,
+      );
       expect(over).toBeLessThanOrEqual(0);
     });
   });

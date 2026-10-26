@@ -67,7 +67,13 @@ export function GuestWelcome() {
         </ul>
         <p className="mono gw-note">Sem conta você joga tudo, mas nenhuma partida fica salva.</p>
         <div className="stack">
-          <Link ref={primary} to="/criar-conta" className="btn alt" data-sfx="select" onClick={close}>
+          <Link
+            ref={primary}
+            to="/criar-conta"
+            className="btn alt"
+            data-sfx="select"
+            onClick={close}
+          >
             Criar conta
           </Link>
           <Link to="/entrar" className="btn" data-sfx="select" onClick={close}>

@@ -175,11 +175,11 @@ Esta máquina tinha Node 20.19; o projeto recomenda Node 22 (`.nvmrc`). Funciona
 ## Desmorona! (spec 044), Fase 1
 Motor em `packages/games/src/desmorona` (mundo determinístico, bots, 11 testes); web em `apps/web/src/games/desmorona` (cena three, controles WASD/joystick, treino contra bots) e área Fox Cap! em `/fox-cap` (Atravessa! + Desmorona!). Fase 2 (salas online, 2 a 8): `apps/api/src/rooms/desmorona-room.engine.ts` + `DesmoronaRoom` em `color.room.ts`; cada aparelho simula a própria raposa, a sala decide quem pisou primeiro em cada ladrilho (`dstep`), quem caiu (`ddead`) e o fim; posições em `dpos`/`pos` (10 Hz); relógio do jogo = relógio da sala. Web: `DesmoronaRoomPlay` reaproveita `DesmoronaPlay` com `online`. Sem ranking/histórico. Fase 3 (colisão e empurrão) feita: ver spec 044 §7. Falta só: modos extras e itens, se o Lucas quiser.
 
-## Bola Maluca! (spec 046)
+## Fut Fox (spec 046)
 Fase 1 (motor) pronta em `packages/games/src/bola` (36 testes). Próximo: Fase 2, sala online (`BolaRoomEngine` sobre `ColorRoomEngine`, 15 pessoas, times/espectador, tick de 30 Hz). Física própria, sem biblioteca. Sem ranking.
 
-MVP offline do Bola Maluca! (26/10/2026): `pnpm dev` e abra `http://localhost:5173/fox-cap/bola` (Fox Cap! > Bola Maluca! > Treino). Web em `apps/web/src/games/bola` (`BolaScene` three, `BolaPlay` roda o `BolWorld` no aparelho, `BolaPage` menu). Você é o time vermelho, o resto são bots; E troca a câmera (na bola/livre). Falta: sala online (Fase 2), lobby de times, som, mortal mais visível.
+MVP offline do Fut Fox (26/10/2026): `pnpm dev` e abra `http://localhost:5173/fox-cap/bola` (Fox Cap! > Fut Fox > Treino). Web em `apps/web/src/games/bola` (`BolaScene` three, `BolaPlay` roda o `BolWorld` no aparelho, `BolaPage` menu). Você é o time vermelho, o resto são bots; E troca a câmera (na bola/livre). Falta: sala online (Fase 2), lobby de times, som, mortal mais visível.
 
-Bola Maluca! Fase 2 (sala online) pronta em 26/10/2026: `apps/api/src/rooms/bola-room.engine.ts` + `BolaRoom` em `color.room.ts` (registrada como `bola` no `main.ts`), 18 testes do motor da sala e 1 de integração com Colyseus. Próximo: web online (cena lendo `bs`, previsão da própria raposa, lobby de times, espectador).
+Fut Fox Fase 2 (sala online) pronta em 26/10/2026: `apps/api/src/rooms/bola-room.engine.ts` + `BolaRoom` em `color.room.ts` (registrada como `bola` no `main.ts`), 18 testes do motor da sala e 1 de integração com Colyseus. Próximo: web online (cena lendo `bs`, previsão da própria raposa, lobby de times, espectador).
 
-Bola Maluca! web online pronta em 26/10/2026: criar sala em Fox Cap! > Bola Maluca! > Com amigos (`/sala?jogo=bola`). Testado com 2 navegadores contra a sala real. Em dev o web lê `@nocap/games` do código-fonte (alias no `vite.config.ts`). Falta: som, previsão do pulo/mortal, teste em celular real.
+Fut Fox web online pronta em 26/10/2026: criar sala em Fox Cap! > Fut Fox > Com amigos (`/sala?jogo=bola`). Testado com 2 navegadores contra a sala real. Em dev o web lê `@nocap/games` do código-fonte (alias no `vite.config.ts`). Falta: som, previsão do pulo/mortal, teste em celular real.

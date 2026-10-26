@@ -26,8 +26,18 @@ async function installSaves(page: Page) {
   await page.route(/localhost:3333\/me\/aperta\/saves/, async (route) => {
     const req = route.request();
     const path = new URL(req.url()).pathname;
-    const headers = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' };
-    const json = (body: unknown, status = 200) => route.fulfill({ status, contentType: 'application/json', headers, body: JSON.stringify(body) });
+    const headers = {
+      'access-control-allow-origin': '*',
+      'access-control-allow-headers': '*',
+      'access-control-allow-methods': '*',
+    };
+    const json = (body: unknown, status = 200) =>
+      route.fulfill({
+        status,
+        contentType: 'application/json',
+        headers,
+        body: JSON.stringify(body),
+      });
     if (req.method() === 'OPTIONS') return json({});
     if (path === '/me/aperta/saves') {
       const d = account.data;
@@ -40,10 +50,16 @@ async function installSaves(page: Page) {
         storySeen: true,
         revision: account.rev,
       };
-      return json({ slots: [{ slot: 1, save: one, recoverableUntil: null }, { slot: 2, save: null, recoverableUntil: null }] });
+      return json({
+        slots: [
+          { slot: 1, save: one, recoverableUntil: null },
+          { slot: 2, save: null, recoverableUntil: null },
+        ],
+      });
     }
     if (path === '/me/aperta/saves/1') {
-      if (req.method() === 'GET') return json({ slot: 1, revision: account.rev, data: account.data });
+      if (req.method() === 'GET')
+        return json({ slot: 1, revision: account.rev, data: account.data });
       if (req.method() === 'PUT') {
         account.data = (req.postDataJSON() as { data: SaveState }).data;
         account.rev += 1;
@@ -56,7 +72,10 @@ async function installSaves(page: Page) {
 }
 
 const noOverflow = async (page: Page) =>
-  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth), 'rolagem lateral').toBeLessThanOrEqual(1);
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth),
+    'rolagem lateral',
+  ).toBeLessThanOrEqual(1);
 
 async function tapCenter(page: Page, target: Locator, touch: boolean) {
   await target.scrollIntoViewIfNeeded();
@@ -90,11 +109,17 @@ for (const size of SIZES) {
       await installApi(page);
       const account = await installSaves(page);
       const touch = size.touch;
-      const shot = (n: string) => page.screenshot({ path: `${process.env.E2E_SHOTS ?? 'test-results'}/tree-${size.viewport.width}-${n}.png` });
+      const shot = (n: string) =>
+        page.screenshot({
+          path: `${process.env.E2E_SHOTS ?? 'test-results'}/tree-${size.viewport.width}-${n}.png`,
+        });
 
       await page.goto('/arcade/aperta');
       await page.getByRole('button', { name: 'Jogar' }).first().click();
-      await page.getByRole('button', { name: /Continuar/ }).first().click();
+      await page
+        .getByRole('button', { name: /Continuar/ })
+        .first()
+        .click();
       const skip = page.getByRole('button', { name: 'Pular história' });
       if (await skip.isVisible({ timeout: 1500 }).catch(() => false)) await skip.click();
       await expect(page.locator('.ap-game')).toBeVisible();
@@ -137,11 +162,17 @@ for (const size of SIZES) {
       await shot('3-refazer');
       await noOverflow(page);
       await tapCenter(page, respec.getByRole('button', { name: /Confirmar/ }), touch);
-      await expect(page.locator('.ap-tree-frag b')).toHaveText(String(sparksAvailable(respecTree(afterBuy2))));
+      await expect(page.locator('.ap-tree-frag b')).toHaveText(
+        String(sparksAvailable(respecTree(afterBuy2))),
+      );
       expect(await spark()).toBeGreaterThan(s0);
       await expect(page.locator('.ap-tg-node.has-level')).toHaveCount(0);
 
-      await tapCenter(page, page.getByRole('button', { name: 'Fechar Árvore de Habilidades' }), touch);
+      await tapCenter(
+        page,
+        page.getByRole('button', { name: 'Fechar Árvore de Habilidades' }),
+        touch,
+      );
       // Conquistas: ganhas em dourado, progresso N/M e a escondida (agora ganha).
       await tapCenter(page, page.getByRole('button', { name: 'Conquistas' }), touch);
       await expect(page.locator('.ap-ach.is-earned').first()).toBeVisible();
@@ -168,18 +199,30 @@ for (const size of SIZES) {
       await page.getByLabel('Buscar conquista').fill('zzzz');
       await expect(page.locator('.ap-achpage')).toContainText('Nenhuma conquista com esse filtro');
       await page.getByLabel('Buscar conquista').fill('');
-      await tapCenter(page, page.locator('.ap-ach-status').getByRole('button', { name: 'Ganhas' }), touch);
+      await tapCenter(
+        page,
+        page.locator('.ap-ach-status').getByRole('button', { name: 'Ganhas' }),
+        touch,
+      );
       await expect(page.locator('.ap-ach:not(.is-earned)')).toHaveCount(0);
-      await tapCenter(page, page.locator('.ap-ach-status').getByRole('button', { name: 'Todas' }), touch);
+      await tapCenter(
+        page,
+        page.locator('.ap-ach-status').getByRole('button', { name: 'Todas' }),
+        touch,
+      );
       await page.locator('.ap-sbody').evaluate((el) => el.scrollTo(0, el.scrollHeight));
       await shot('5-conquistas-fim');
       await noOverflow(page);
 
       // O servidor aceitou o save com as conquistas e a árvore refeita.
-      await expect.poll(() => account.data?.achievements.includes('respec'), { timeout: 5000 }).toBe(true);
+      await expect
+        .poll(() => account.data?.achievements.includes('respec'), { timeout: 5000 })
+        .toBe(true);
       expect(account.data?.sparks.spent).toBe(0);
       expect(account.data?.tree).toEqual({});
-      expect(account.data?.achievements).toEqual(expect.arrayContaining(['tap-1', 'collapse-1', 'tree-1', 'respec']));
+      expect(account.data?.achievements).toEqual(
+        expect.arrayContaining(['tap-1', 'collapse-1', 'tree-1', 'respec']),
+      );
       expect(errors).toEqual([]);
     });
   });
