@@ -896,7 +896,7 @@ export class BolaScene {
       if (fox.flipAge >= 0) {
         const k = fox.flipAge / BOL_FLIP_SEC;
         const e = 1 - Math.pow(1 - Math.min(1, k * 1.15), 3);
-        fox.body.rotation.x = pitch + e * Math.PI * 2;
+        fox.body.rotation.x = pitch - e * Math.PI * 2;
       } else {
         fox.body.rotation.x = pitch;
       }
