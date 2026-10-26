@@ -48,5 +48,6 @@
 | 043 | [Aperta!: reformulação dos itens, geradores e grimórios](043-aperta-reformulacao-itens.md) | 8 | implementada (25/10/2026; decisões do Lucas na seção 8) |
 | 044 | [Fox Cap! e Desmorona! (jogo de arena que desmorona)](044-fox-games-desmorona.md) | 9 | em andamento: Fases 1 (treino com bots) e 2 (salas online) no ar; Fase 3 (colisão) a seguir |
 | 045 | [Telas fora do jogo, responsivas e mais claras](045-redesign-telas-fora-do-jogo.md) | 9 | plano para aprovação do Lucas (26/10/2026) |
+| 046 | [Bola Maluca! (futebol de raposas, 2 a 4 times)](046-bola-maluca.md) | 9 | rascunho (26/10/2026); aguarda o "pode começar" da Fase 1 |
 
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.
