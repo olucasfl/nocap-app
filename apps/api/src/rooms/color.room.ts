@@ -7,9 +7,21 @@ import { ImpostorRoomEngine } from './impostor/impostor-room.engine';
 import { EcoRoomEngine } from './eco-room.engine';
 import { EcoLeaderRoomEngine } from './eco-leader-room.engine';
 import { AtravessaRoomEngine } from './atravessa-room.engine';
+import { BolaRoomEngine } from './bola-room.engine';
 import { DesmoronaRoomEngine } from './desmorona-room.engine';
-import { ATR_ROOM_MAX_PLAYERS, DSM_MAX_PLAYERS, IMPOSTOR_MAX_PLAYERS } from '@nocap/games';
-import { GUEST_PREFIX, cleanNickname, createGuestLimiter, isGuestId, usernameLookalikes } from './guest-nick';
+import {
+  ATR_ROOM_MAX_PLAYERS,
+  BOL_ROOM_MAX,
+  DSM_MAX_PLAYERS,
+  IMPOSTOR_MAX_PLAYERS,
+} from '@nocap/games';
+import {
+  GUEST_PREFIX,
+  cleanNickname,
+  createGuestLimiter,
+  isGuestId,
+  usernameLookalikes,
+} from './guest-nick';
 import type { InvitesService } from './invites.service';
 import type { RoomsRepository } from './rooms.repository';
 
@@ -232,7 +244,8 @@ export class ColorRoom extends Room {
     const fwd = request?.headers?.['x-forwarded-for'];
     const first = (Array.isArray(fwd) ? fwd[0] : fwd)?.split(',')[0]?.trim();
     const origin = first || request?.socket?.remoteAddress || 'local';
-    if (!guestLimit(origin)) throw new ServerError(429, 'Muitas tentativas. Espere um pouco e tente de novo.');
+    if (!guestLimit(origin))
+      throw new ServerError(429, 'Muitas tentativas. Espere um pouco e tente de novo.');
     const checked = cleanNickname(nickname);
     if (!checked.ok) throw new ServerError(400, checked.error);
     if (this.engine.hasName(checked.nick)) {
@@ -404,11 +417,8 @@ export class ColorRoom extends Room {
       if (this.engine.currentPhase !== 'lobby') {
         throw new RoomError('Só dá para convidar no lobby');
       }
-      const sent = await roomDeps.invites.send(
-        me,
-        String(username ?? ''),
-        this.roomId,
-        (id) => this.engine.has(id),
+      const sent = await roomDeps.invites.send(me, String(username ?? ''), this.roomId, (id) =>
+        this.engine.has(id),
       );
       client.send('invited', { username: sent.username });
     } catch (e) {
@@ -436,7 +446,10 @@ export class ColorRoom extends Room {
       // O Intruso é a Cor: entra na aba da Mesmíssima do histórico, com o modo dele.
       const game = this.engine.game;
       await roomDeps.repo?.saveRoomMatch({
-        game: game === 'impostor' || game === 'atravessa' || game === 'desmorona' ? 'color' : game,
+        game:
+          game === 'impostor' || game === 'atravessa' || game === 'desmorona' || game === 'bola'
+            ? 'color'
+            : game,
         mode: this.engine.historyMode,
         seed: this.engine.currentSeed,
         settings: this.engine.currentSettings,
@@ -577,7 +590,9 @@ export class DesmoronaRoom extends ColorRoom {
       const id = idOf(c);
       if (id) engine().push(id, m);
     });
-    this.onMessage('color', (c, m: { hex?: string }) => this.act(c, (id) => engine().setColor(id, String(m?.hex ?? ''))));
+    this.onMessage('color', (c, m: { hex?: string }) =>
+      this.act(c, (id) => engine().setColor(id, String(m?.hex ?? ''))),
+    );
     this.onMessage('uncolor', (c) => this.act(c, (id) => engine().clearColor(id)));
     this.onMessage('ddead', (c) => {
       const id = idOf(c);
@@ -597,5 +612,40 @@ export class DesmoronaRoom extends ColorRoom {
       const target = this.clients.find((c) => (c.userData as AuthData | undefined)?.id === p.to);
       target?.send('dpushed', { from: p.from, kx: p.kx, kz: p.kz });
     }
+  }
+}
+
+/**
+ * Sala do Bola Maluca! (spec 046, fase 2). O servidor simula tudo; os aparelhos mandam só a entrada ("bin") e recebem o
+ * estado ("bs") a cada tick. Times, formato e bots no lobby: "bteam", "bformat", "bbots"; "bend" encerra a partida.
+ */
+export class BolaRoom extends ColorRoom {
+  override maxClients = BOL_ROOM_MAX;
+  protected override tickMs = 33;
+
+  protected override makeEngine(opts: ConstructorParameters<typeof ColorRoomEngine>[0]) {
+    return new BolaRoomEngine(opts);
+  }
+
+  protected override registerGameMessages() {
+    const engine = () => this.engine as BolaRoomEngine;
+    const idOf = (c: Client) => (c.userData as AuthData | undefined)?.id;
+    this.onMessage('bin', (c, m) => {
+      const id = idOf(c);
+      if (id) engine().input(id, m);
+    });
+    this.onMessage('bteam', (c, m: { team?: unknown; bot?: unknown }) =>
+      this.act(c, (id) => engine().setTeam(id, m?.team, m?.bot)),
+    );
+    this.onMessage('bformat', (c, m) => this.act(c, (id) => engine().setFormat(id, m ?? {})));
+    this.onMessage('bbots', (c, m: { team?: unknown; delta?: unknown }) =>
+      this.act(c, (id) => engine().setBots(id, m?.team, m?.delta)),
+    );
+    this.onMessage('bend', (c) => this.act(c, (id) => engine().endNow(id)));
+  }
+
+  protected override afterTick() {
+    const frame = (this.engine as BolaRoomEngine).drainFrame();
+    if (frame) this.broadcast('bs', frame);
   }
 }
