@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { BOL_TEAM_NAMES } from '@nocap/games';
-import { IcCamera, IcEye, IcFlag, IcExit, IcPlay, IcTable, IcTeams, Key } from './BolaIcons';
+import { IcCamera, IcEye, IcFlag, IcExit, IcNet, IcPlay, IcTable, IcTeams, Key } from './BolaIcons';
 
 /** Configurações da partida: continuar, estatísticas, câmera, trocar de time ou espectar e sair. */
 export function BolaMenu({
@@ -9,6 +9,7 @@ export function BolaMenu({
   onClose,
   onStats,
   onCam,
+  netPanel,
   onTeams,
   onEnd,
   onExit,
@@ -19,6 +20,8 @@ export function BolaMenu({
   onClose: () => void;
   onStats: () => void;
   onCam: () => void;
+  /** Só online: liga e desliga o painel de rede (ping e estados por segundo). */
+  netPanel?: { on: boolean; toggle: () => void };
   onTeams: () => void;
   /** Só o líder da sala: encerra a partida com o placar de agora. */
   onEnd?: () => void;
@@ -60,6 +63,21 @@ export function BolaMenu({
           </span>
           <Key k="F" className="bola-hide-touch" />
         </button>
+        {netPanel && (
+          <button
+            type="button"
+            className="bola-item"
+            onClick={netPanel.toggle}
+            aria-pressed={netPanel.on}
+            data-testid="bola-menu-net"
+          >
+            <span className="bola-item-main">
+              <IcNet size={20} />
+              Painel de rede
+            </span>
+            <span className="bola-cur">{netPanel.on ? 'Ligado' : 'Desligado'}</span>
+          </button>
+        )}
         <button type="button" className="bola-item" onClick={onTeams} data-testid="bola-menu-teams">
           <span className="bola-item-main">
             {spectating ? <IcEye size={20} /> : <IcTeams size={20} />}

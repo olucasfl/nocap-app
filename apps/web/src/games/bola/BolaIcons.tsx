@@ -62,6 +62,12 @@ export const IcExit = (p: P) => (
     <path d="M10 4H5.5A1.5 1.5 0 0 0 4 5.5v13A1.5 1.5 0 0 0 5.5 20H10M14.5 8l4 4-4 4M18.5 12H9.5" />
   </Ico>
 );
+export const IcNet = (p: P) => (
+  <Ico {...p}>
+    <path d="M3 9.5a14 14 0 0 1 18 0M6 13a9 9 0 0 1 12 0M9.2 16.4a4.4 4.4 0 0 1 5.6 0" />
+    <circle cx="12" cy="19.6" r="1" fill="currentColor" />
+  </Ico>
+);
 export const IcPlay = (p: P) => (
   <Ico {...p}>
     <path d="M8 5.5v13l10.5-6.5L8 5.5Z" fill="currentColor" />

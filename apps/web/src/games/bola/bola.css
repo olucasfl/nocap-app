@@ -869,3 +869,36 @@
     transition: none;
   }
 }
+
+/* painel de rede: uma linha pequena, só quando ligado nas configurações */
+.bola-net {
+  position: absolute;
+  top: max(58px, calc(env(safe-area-inset-top) + 50px));
+  left: max(12px, env(safe-area-inset-left));
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  padding: 3px 9px;
+  border: 2px solid #1b1535;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  color: #1b1535;
+  font: 700 11px/1.4 var(--font-mono, ui-monospace, monospace);
+  pointer-events: none;
+  z-index: 5;
+}
+.bola-net b {
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.bola-net span + span::before {
+  content: '·';
+  margin-right: 8px;
+  opacity: 0.5;
+}
+@media (max-width: 560px) {
+  .bola-net {
+    top: max(86px, calc(env(safe-area-inset-top) + 78px));
+  }
+}

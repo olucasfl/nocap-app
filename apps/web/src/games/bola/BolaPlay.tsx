@@ -164,6 +164,24 @@ export function BolaPlay({
   const [crash, setCrash] = useState<string | null>(null);
   const [tabHeld, setTabHeld] = useState(false);
   const [pinned, setPinned] = useState(false);
+  /** Painel de rede (ping e estados por segundo): só online, ligado e desligado nas configurações. */
+  const [showNet, setShowNet] = useState(() => {
+    try {
+      return localStorage.getItem('nocap-bola-net') === '1';
+    } catch {
+      return false;
+    }
+  });
+  const [net, setNet] = useState<{ ping: number; fps: number; delay: number } | null>(null);
+  const toggleNet = () =>
+    setShowNet((v) => {
+      try {
+        localStorage.setItem('nocap-bola-net', v ? '0' : '1');
+      } catch {
+        /* sem armazenamento: vale só nesta partida */
+      }
+      return !v;
+    });
   const statsOn = useRef(false);
   statsOn.current = tabHeld || pinned || menu || teamsOpen;
   const uiOpenRef = useRef(false);
@@ -473,6 +491,14 @@ export function BolaPlay({
     const unsubs: (() => void)[] = [];
     const link = online?.link ?? roomLink;
     let lastEv = 0;
+    let frames = 0;
+    let netTimer = 0;
+    if (online) {
+      netTimer = window.setInterval(() => {
+        setNet({ ping: Math.round(link.rtt()), fps: frames, delay: Math.round(interpMs) });
+        frames = 0;
+      }, 1000);
+    }
     /** Estados recentes do servidor: os outros e a bola são desenhados um instante no passado, entre dois deles. */
     interface NetSnap {
       t: number;
@@ -575,6 +601,7 @@ export function BolaPlay({
         link.onFrame((m) => {
           const f = m as unknown as NetFrame;
           if (!f || !Array.isArray(f.p)) return;
+          frames++;
           syncRoster();
           const at = performance.now();
           const phases = { c: 'countdown', p: 'play', g: 'goal', o: 'over' } as const;
@@ -1044,6 +1071,7 @@ export function BolaPlay({
       window.clearTimeout(warnTimer);
       window.clearTimeout(bannerTimer);
       window.clearInterval(inputTimer);
+      window.clearInterval(netTimer);
       crowdStop();
       for (const off of unsubs) off();
       window.removeEventListener('keydown', onKey);
@@ -1125,6 +1153,14 @@ export function BolaPlay({
           </button>
         </div>
       </div>
+      {online && showNet && net && !over && (
+        <div className="bola-net" data-testid="bola-net" aria-label="Rede">
+          <b>{online.link?.local ? 'líder' : online.link ? 'p2p' : 'servidor'}</b>
+          {!online.link?.local && <span>{net.ping} ms</span>}
+          <span>{net.fps}/s</span>
+          <span title="atraso de desenho dos outros jogadores">{net.delay} ms</span>
+        </div>
+      )}
       {crash && (
         <div className="dsm-over" role="alert">
           <div className="dsm-over-card">
@@ -1271,6 +1307,7 @@ export function BolaPlay({
             setPinned(true);
           }}
           onCam={() => camToggle.current()}
+          netPanel={online ? { on: showNet, toggle: toggleNet } : undefined}
           onTeams={() => setTeamsOpen(true)}
           onEnd={onEnd}
           onExit={onExit}
