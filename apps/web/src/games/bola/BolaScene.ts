@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import {
   BOL_BALL_R,
+  BOL_FLIP_SEC,
   BOL_GOAL_H,
   BOL_TEAM_COLORS,
   BOL_TEAM_NAMES,
@@ -23,6 +24,8 @@ interface Fox {
   shadow: THREE.Mesh;
   /** Nome, cor e time com que foi desenhada. */
   sig: string;
+  /** Há quanto tempo o mortal começou (s); -1 fora dele. Local, para valer também para quem vem da rede. */
+  flipAge: number;
 }
 
 const tmp = new THREE.Vector3();
@@ -87,9 +90,10 @@ export class BolaScene {
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.scene.background = this.skyTexture();
     this.scene.fog = new THREE.Fog(0xcdeeff, 90, 220);
-    const sun = new THREE.DirectionalLight(0xffffff, 2.1);
-    sun.position.set(14, 30, 10);
-    this.scene.add(sun, new THREE.HemisphereLight(0xffffff, 0xd6e4c8, 2.1));
+    // sempre sol: luz branca de todos os lados, sem lado escuro
+    const sun = new THREE.DirectionalLight(0xffffff, 1.2);
+    sun.position.set(0, 40, 0);
+    this.scene.add(sun, new THREE.HemisphereLight(0xffffff, 0xffffff, 2.6));
     this.buildField();
     this.ball = this.buildBall();
     this.ballShadow = this.blob(BOL_BALL_R * 1.1);
@@ -551,6 +555,7 @@ export class BolaScene {
       body,
       shadow: this.blob(0.55),
       sig: `${p.name}|${p.color}|${p.team}`,
+      flipAge: -1,
     });
   }
 
@@ -868,23 +873,33 @@ export class BolaScene {
       this.ball.rotation.x += (b.vz * dt) / BOL_BALL_R;
       this.ball.rotation.z -= (b.vx * dt) / BOL_BALL_R;
     }
-    this.ballShadow.position.set(b.x, 0.03, b.z);
-    this.ballShadow.scale.setScalar(Math.max(0.4, 1 - (b.y - BOL_BALL_R) * 0.08));
+    this.ballShadow.visible = false;
     for (const p of this.world.players) {
       const fox = this.foxes.get(p.id);
       if (!fox) continue;
       fox.group.position.set(p.x, p.y, p.z);
       fox.group.rotation.y = p.heading + Math.PI;
-      fox.shadow.position.set(p.x, 0.03, p.z);
-      fox.shadow.scale.setScalar(Math.max(0.4, 1 - p.y * 0.1));
+      // sem sombra no chão: sempre sol
+      fox.shadow.visible = false;
       const speed = Math.hypot(p.vx, p.vz);
       const squash = p.grounded
         ? 1 + Math.sin(this.world.clock * 18 + p.x) * 0.04 * Math.min(1, speed / 3)
         : 1.08;
       fox.body.scale.set(1 / Math.sqrt(squash), squash, 1 / Math.sqrt(squash));
       const pitch = p.grounded ? Math.min(0.18, speed * 0.03) : 0.25;
-      // o mortal não muda o corpo da raposa: o que mostra o chute é o efeito na bola
-      fox.body.rotation.x = pitch;
+      // o mortal: uma volta completa para a frente (a raposa já olha para onde vai), com saída suave
+      if (p.flipT > 0 && fox.flipAge < 0) fox.flipAge = 0;
+      if (fox.flipAge >= 0) {
+        fox.flipAge += dt;
+        if (fox.flipAge >= BOL_FLIP_SEC || this.reduced) fox.flipAge = -1;
+      }
+      if (fox.flipAge >= 0) {
+        const k = fox.flipAge / BOL_FLIP_SEC;
+        const e = 1 - Math.pow(1 - Math.min(1, k * 1.15), 3);
+        fox.body.rotation.x = pitch + e * Math.PI * 2;
+      } else {
+        fox.body.rotation.x = pitch;
+      }
     }
     // rastro da bola: discreto quando rápida; na cor do time logo depois de um chute
     if (!this.reduced) {

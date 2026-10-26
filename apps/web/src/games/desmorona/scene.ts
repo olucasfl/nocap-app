@@ -120,9 +120,10 @@ export class DsmScene {
     this.scene.background = new THREE.Color(0x7fd3ff);
     this.scene.fog = new THREE.Fog(0x9fdcff, 45, 120);
 
-    const sun = new THREE.DirectionalLight(0xffffff, 2.2);
-    sun.position.set(14, 30, 10);
-    this.scene.add(sun, new THREE.HemisphereLight(0xffffff, 0x8fa2c8, 1.25));
+    // sempre sol: luz branca de todos os lados, sem lado escuro
+    const sun = new THREE.DirectionalLight(0xffffff, 1.2);
+    sun.position.set(0, 40, 0);
+    this.scene.add(sun, new THREE.HemisphereLight(0xffffff, 0xffffff, 2.4));
 
     this.buildLayers();
     this.buildScenery();
