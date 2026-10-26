@@ -3,7 +3,7 @@ import { createRng } from '../core/rng';
 import { newBotMemory, botInput } from './bots';
 import { DSM_BODY_R, DSM_DT, DSM_GRACE_SEC, DSM_LAYERS, DSM_TILE_LIFE, dsmLayerRadii } from './constants';
 import { hexCount, hexToWorld, layerY, worldToHex } from './hex';
-import { DsmWorld, type DsmInput, type DsmPlayer, type DsmPlayerInfo } from './world';
+import { DsmWorld, type DsmInput, type DsmPlayer, type DsmPlayerInfo, type DsmTile } from './world';
 
 const infos = (n: number): DsmPlayerInfo[] => Array.from({ length: n }, (_, i) => ({ id: `p${i}`, name: `P${i}`, color: 0xff7d26, bot: true }));
 
@@ -251,5 +251,47 @@ describe('pulo duplo', () => {
     w.setRemote('p1', { ...s, airJumped: true });
     w.setRemote('p1', { ...s, airJumped: true });
     expect(w.drainEvents().filter((e) => e.type === 'airjump')).toHaveLength(1);
+  });
+});
+
+describe('borda e tempo de coiote', () => {
+  const grounded = () => {
+    const w = new DsmWorld('edge', infos(2));
+    for (let i = 0; i < 150 && !(w.players[0] as DsmPlayer).grounded; i++) w.step(DSM_DT);
+    return { w, p: w.players[0] as DsmPlayer };
+  };
+  const jump: DsmInput = { mx: 0, mz: 0, jump: true };
+
+  it('logo depois de sair do chão, o pulo ainda é o primeiro (não o duplo)', () => {
+    const { w, p } = grounded();
+    // some o chão debaixo dela
+    for (const t of w.tiles.values()) if (t.layer === p.layer) t.status = 'caiu';
+    w.step(DSM_DT);
+    expect(p.grounded).toBe(false);
+    w.step(DSM_DT, { p0: jump });
+    expect(p.airJumped).toBe(false);
+    expect(p.vy).toBeGreaterThan(7);
+    w.step(DSM_DT, { p0: jump });
+    expect(p.airJumped).toBe(true); // o segundo toque é o pulo duplo
+  });
+
+  it('passado o tempo de coiote o toque vira pulo duplo', () => {
+    const { w, p } = grounded();
+    for (const t of w.tiles.values()) if (t.layer === p.layer) t.status = 'caiu';
+    for (let i = 0; i < 12; i++) w.step(DSM_DT);
+    w.step(DSM_DT, { p0: jump });
+    expect(p.airJumped).toBe(true);
+  });
+
+  it('a borda perdoa: com o centro um pouco fora do ladrilho, ainda está no chão', () => {
+    const { w, p } = grounded();
+    const t = w.standingTile(p.layer, p.x, p.z) as DsmTile;
+    // deixa só o ladrilho dela e anda até logo além da borda dele
+    for (const o of w.tiles.values()) if (o.layer === p.layer && o !== t) o.status = 'caiu';
+    p.x = t.x + 1.0 * Math.cos(0);
+    p.z = t.z;
+    for (let i = 0; i < 3; i++) w.step(DSM_DT);
+    expect(w.standingTile(p.layer, p.x, p.z)).toBeUndefined();
+    expect(w.supported(p.layer, p.x, p.z)).toBe(true);
   });
 });

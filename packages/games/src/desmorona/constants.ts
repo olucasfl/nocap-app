@@ -37,6 +37,10 @@ export const DSM_ACCEL = 46;
 export const DSM_JUMP = 8.2;
 /** Pulo duplo: um por voo, no ar, logo depois de sair do chão ou durante a queda. */
 export const DSM_AIR_JUMP = 8.4;
+/** Tolerância de borda: o corpo ainda se apoia em um ladrilho até esta distância do centro dele ao lado (mundo). */
+export const DSM_EDGE_GRACE = 0.3;
+/** "Tempo de coiote": logo depois de andar para fora do chão ainda vale o pulo normal (s). */
+export const DSM_COYOTE_SEC = 0.12;
 export const DSM_GRAVITY = 26;
 export const DSM_MAX_FALL = 38;
 export const DSM_RADIUS = 0.34;

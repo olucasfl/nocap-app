@@ -1,6 +1,8 @@
 import { createRng } from '../core/rng';
 import {
   DSM_ACCEL,
+  DSM_COYOTE_SEC,
+  DSM_EDGE_GRACE,
   DSM_AIR_JUMP,
   DSM_BODY_R,
   DSM_KNOCK_DECAY,
@@ -86,6 +88,8 @@ export interface DsmPlayer extends DsmPlayerInfo {
   kz: number;
   /** Já usou o pulo duplo neste voo. */
   airJumped: boolean;
+  /** Segundos que ainda valem como "quase no chão" depois de andar para fora dele. */
+  coyote: number;
   /** Online: raposa de outra pessoa. Quem manda é o relato dela, o mundo não simula o corpo. */
   remote?: boolean;
 }
@@ -165,6 +169,7 @@ export class DsmWorld {
         kx: 0,
         kz: 0,
         airJumped: false,
+        coyote: 0,
       });
     });
   }
@@ -228,6 +233,18 @@ export class DsmWorld {
     return t && t.status !== 'caiu' ? t : undefined;
   }
 
+  /** O corpo se apoia aqui? Vale o ladrilho sob o centro ou um logo ao lado, para a borda não ser traiçoeira. */
+  supported(layer: number, x: number, z: number): boolean {
+    if (this.standingTile(layer, x, z)) return true;
+    const g = DSM_EDGE_GRACE;
+    return (
+      !!this.standingTile(layer, x + g, z) ||
+      !!this.standingTile(layer, x - g, z) ||
+      !!this.standingTile(layer, x, z + g) ||
+      !!this.standingTile(layer, x, z - g)
+    );
+  }
+
   /** O quanto o ladrilho está perto de quebrar (0 = firme, 1 = quebrando agora). */
   crack(t: DsmTile): number {
     if (t.status !== 'pisado') return 0;
@@ -289,9 +306,10 @@ export class DsmWorld {
       p.vz += (az / al) * maxD;
     }
     if (len > 0.1) p.heading = Math.atan2(input.mx, input.mz);
-    if (p.grounded && input.jump) {
+    if ((p.grounded || p.coyote > 0) && input.jump) {
       p.vy = DSM_JUMP;
       p.grounded = false;
+      p.coyote = 0;
     } else if (!p.grounded && input.jump && !p.airJumped) {
       // pulo duplo: sempre dá a altura inteira, mesmo no meio de uma queda
       p.airJumped = true;
@@ -309,11 +327,13 @@ export class DsmWorld {
     if (!p.grounded) {
       p.vy = Math.max(-DSM_MAX_FALL, p.vy - DSM_GRAVITY * dt);
       p.y += p.vy * dt;
-    } else if (!this.standingTile(p.layer, p.x, p.z)) {
-      // o chão acabou debaixo dos pés (andou para fora ou o ladrilho quebrou)
+    } else if (!this.supported(p.layer, p.x, p.z)) {
+      // o chão acabou debaixo dos pés (andou para fora ou o ladrilho quebrou): ainda dá para pular como no chão por um instante
       p.grounded = false;
       p.vy = 0;
+      p.coyote = DSM_COYOTE_SEC;
     }
+    if (!p.grounded && p.coyote > 0) p.coyote = Math.max(0, p.coyote - dt);
   }
 
   /** Online: me empurraram (a tela de quem empurrou avisou a sala, que avisou esta). */
@@ -392,11 +412,12 @@ export class DsmWorld {
       if (p.vy > 0) continue;
       for (let layer = 0; layer < DSM_LAYERS; layer++) {
         const sy = layerY(layer);
-        if (before >= sy - 1e-6 && p.y <= sy && this.standingTile(layer, p.x, p.z)) {
+        if (before >= sy - 1e-6 && p.y <= sy && this.supported(layer, p.x, p.z)) {
           p.y = sy;
           p.vy = 0;
           p.grounded = true;
           p.airJumped = false;
+          p.coyote = 0;
           p.layer = layer;
           if (layer > p.deepest) {
             if (p.deepest >= 0) this.events.push({ type: 'fall', id: p.id, layer });

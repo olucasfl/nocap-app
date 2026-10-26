@@ -252,7 +252,7 @@ export function DesmoronaPlay({
           if (jumpUntil > now && mm.alive && (mm.grounded || !mm.airJumped)) {
             input.jump = true;
             jumpUntil = 0;
-            if (mm.grounded) dsmSfx.jump();
+            if (mm.grounded || mm.coyote > 0) dsmSfx.jump();
           }
           const inputs: Record<string, DsmInput> = { [meId]: input };
           for (const p of world.players) if (p.bot) inputs[p.id] = botInput(world, p, mem.get(p.id)!, rng);
