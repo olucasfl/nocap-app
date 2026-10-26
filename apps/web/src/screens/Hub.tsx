@@ -1,4 +1,5 @@
 import { useApertaAllowed } from '@/lib/aperta-access';
+import { lastGame } from '@/lib/last-game';
 import { ApertaArt, FoxCapArt, BlocksArt, ColorArt, EcoArt, TimeArt } from '@/components/HubArt';
 import { Link } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
@@ -49,7 +50,17 @@ const DAILIES = [
   { game: 'wclassic', name: "Word's", to: '/words/classic' },
 ] as const;
 
-function DailyChip({ game, name, to, stats }: { game: GameId; name: string; to: string; stats: Stats | undefined }) {
+function DailyChip({
+  game,
+  name,
+  to,
+  stats,
+}: {
+  game: GameId;
+  name: string;
+  to: string;
+  stats: Stats | undefined;
+}) {
   const info = stats?.daily[game];
   const done = !!info?.playedToday;
   const result = done ? dailyScoreText(game, info!.totalScore ?? 0) : null;
@@ -64,16 +75,27 @@ function DailyChip({ game, name, to, stats }: { game: GameId; name: string; to: 
     >
       <span className="hz-chip-mark" aria-hidden="true">
         {done && (
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <path d="M5 12.5l4.5 4.5L19 7" />
           </svg>
         )}
       </span>
       <span className="hz-chip-body">
         <b>{name}</b>
-        <small className="mono">{state === 'guest' ? 'SÓ COM CONTA' : done ? `FEITO · ${result}` : 'AINDA NÃO FEZ HOJE'}</small>
+        <small className="mono">
+          {state === 'guest' ? 'SÓ COM CONTA' : done ? `FEITO · ${result}` : 'AINDA NÃO FEZ HOJE'}
+        </small>
       </span>
-      {state !== 'done' && <span className="hz-chip-go mono">{state === 'todo' ? 'JOGAR' : 'ABRIR'}</span>}
+      {state !== 'done' && (
+        <span className="hz-chip-go mono">{state === 'todo' ? 'JOGAR' : 'ABRIR'}</span>
+      )}
     </Link>
   );
 }
@@ -99,7 +121,12 @@ function GameCard({
   badge?: string;
 }) {
   return (
-    <Link to={to as '/'} className={`hub-card ${cls}${wide ? ' wide' : ''}`} data-sfx="start" data-testid={`card-${cls.replace('hub-card-', '')}`}>
+    <Link
+      to={to as '/'}
+      className={`hub-card ${cls}${wide ? ' wide' : ''}`}
+      data-sfx="start"
+      data-testid={`card-${cls.replace('hub-card-', '')}`}
+    >
       {badge && <span className="hz-badge mono">{badge}</span>}
       <div className="hub-art">{art}</div>
       <div className="hub-card-foot">
@@ -129,6 +156,8 @@ export function Hub() {
   const rawName = user?.name?.trim().split(/\s+/)[0] || user?.username || '';
   const firstName = rawName ? rawName.charAt(0).toUpperCase() + rawName.slice(1).toLowerCase() : '';
 
+  const resume = lastGame();
+
   return (
     <main className="hub hz">
       <header className="top">
@@ -155,11 +184,25 @@ export function Hub() {
         )}
       </section>
 
+      {resume && (
+        <Link to={resume.to} className="hz-resume" data-sfx="start" data-testid="hub-resume">
+          <span className="mono">CONTINUAR DE ONDE PAROU</span>
+          <b>{resume.name}</b>
+          <span className="hz-resume-go" aria-hidden="true">
+            Jogar
+          </span>
+        </Link>
+      )}
+
       <section className="hz-sec" aria-label="Dailys de hoje">
         <h2 className="hz-h">
           Dailys de hoje{' '}
           <small className="mono">
-            {data ? (doneToday === DAILIES.length ? 'TUDO FEITO. VOLTE AMANHÃ' : `FALTAM ${DAILIES.length - doneToday} DE ${DAILIES.length}`) : 'UM POR JOGO, TODO DIA'}
+            {data
+              ? doneToday === DAILIES.length
+                ? 'TUDO FEITO. VOLTE AMANHÃ'
+                : `FALTAM ${DAILIES.length - doneToday} DE ${DAILIES.length}`
+              : 'UM POR JOGO, TODO DIA'}
           </small>
         </h2>
         {data && (
@@ -205,10 +248,32 @@ export function Hub() {
           Arcade <small className="mono">BATA SEU RECORDE</small>
         </h2>
         <div className="hz-grid">
-          <GameCard to="/blocks" cls="hub-card-blocks" art={<BlocksArt />} name="Block's" lines={[blocksBestLabel(data)]} />
-          <GameCard to="/fox-cap" cls="hub-card-atravessa" art={<FoxCapArt />} name="Fox Cap!" size="long" lines={[atravessaBestLabel(data)]} badge="NOVO" />
+          <GameCard
+            to="/blocks"
+            cls="hub-card-blocks"
+            art={<BlocksArt />}
+            name="Block's"
+            lines={[blocksBestLabel(data)]}
+          />
+          <GameCard
+            to="/fox-cap"
+            cls="hub-card-atravessa"
+            art={<FoxCapArt />}
+            name="Fox Cap!"
+            size="long"
+            lines={[atravessaBestLabel(data)]}
+            badge="NOVO"
+          />
           {/* Em teste: o cartão só aparece para a conta liberada pelo servidor (visitante e outras contas não veem). */}
-          {apertaOk === true && <GameCard to="/arcade/aperta" cls="hub-card-aperta" art={<ApertaArt />} name="Aperta!" lines={['CLICKER NO ESPAÇO']} />}
+          {apertaOk === true && (
+            <GameCard
+              to="/arcade/aperta"
+              cls="hub-card-aperta"
+              art={<ApertaArt />}
+              name="Aperta!"
+              lines={['CLICKER NO ESPAÇO']}
+            />
+          )}
         </div>
       </section>
 
@@ -217,9 +282,29 @@ export function Hub() {
           Reflexo e precisão <small className="mono">COR, TEMPO E RITMO</small>
         </h2>
         <div className="hz-grid">
-          <GameCard to="/cor" cls="hub-card-color" art={<ColorArt />} name="Mesmíssima" size="long" lines={[bestLabel(data, 'color')]} />
-          <GameCard to="/tempo" cls="hub-card-time" art={<TimeArt />} name="Já Deu?" size="mid" lines={[bestLabel(data, 'time')]} />
-          <GameCard to="/eco" cls="hub-card-eco" art={<EcoArt />} name="Ecooo" lines={[bestLabel(data, 'eco')]} />
+          <GameCard
+            to="/cor"
+            cls="hub-card-color"
+            art={<ColorArt />}
+            name="Mesmíssima"
+            size="long"
+            lines={[bestLabel(data, 'color')]}
+          />
+          <GameCard
+            to="/tempo"
+            cls="hub-card-time"
+            art={<TimeArt />}
+            name="Já Deu?"
+            size="mid"
+            lines={[bestLabel(data, 'time')]}
+          />
+          <GameCard
+            to="/eco"
+            cls="hub-card-eco"
+            art={<EcoArt />}
+            name="Ecooo"
+            lines={[bestLabel(data, 'eco')]}
+          />
         </div>
       </section>
 

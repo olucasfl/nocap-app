@@ -644,3 +644,44 @@ a.hub-daily {
     margin-left: 32px;
   }
 }
+
+
+/* "Continuar de onde parou" (spec 045): um atalho para o último jogo aberto. */
+.hz-resume {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas: 'label go' 'name go';
+  align-items: center;
+  gap: 2px 12px;
+  padding: 12px 16px;
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--ink);
+  color: var(--paper);
+  box-shadow: 4px 4px 0 var(--orange);
+  text-decoration: none;
+}
+.hz-resume .mono {
+  grid-area: label;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  opacity: 0.75;
+}
+.hz-resume b {
+  grid-area: name;
+  font: 900 24px/1.1 var(--font-display);
+  text-transform: uppercase;
+}
+.hz-resume-go {
+  grid-area: go;
+  padding: 10px 18px;
+  border-radius: 10px;
+  background: var(--orange);
+  color: var(--on-accent);
+  font: 900 15px var(--font-display);
+  text-transform: uppercase;
+}
+.hz-resume:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 3px;
+}
