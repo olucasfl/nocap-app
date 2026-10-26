@@ -3,7 +3,9 @@ import {
   DSM_HEX_SIZE,
   DSM_LAYERS,
   DSM_LAVA_DEPTH,
+  DSM_TILE_LIFE,
   DSM_TILE_THICK,
+  DSM_WAVE_LIFE,
   hexKey,
   layerY,
   type DsmEvent,
@@ -38,6 +40,9 @@ interface Falling {
   y: number;
   z: number;
   spin: number;
+  /** Inclinação de cada ladrilho ao cair (varia de um para outro). */
+  tx: number;
+  tz: number;
 }
 
 interface Fox {
@@ -46,6 +51,15 @@ interface Fox {
   id: string;
   /** Pulo duplo: 0 a 1 enquanto a pirueta roda; -1 parado. */
   flip: number;
+}
+
+interface Puff {
+  sprite: THREE.Sprite;
+  age: number;
+  life: number;
+  vx: number;
+  vy: number;
+  vz: number;
 }
 
 interface Ring {
@@ -60,6 +74,7 @@ const tmpQ = new THREE.Quaternion();
 const tmpS = new THREE.Vector3();
 const tmpP = new THREE.Vector3();
 const UP = new THREE.Vector3(0, 1, 0);
+const tmpE = new THREE.Euler();
 
 /**
  * A cena 3D do Desmorona!: ladrilhos hexagonais (um InstancedMesh por camada), raposas de boné, lava embaixo e a câmera
@@ -76,6 +91,10 @@ export class DsmScene {
   private rings: Ring[] = [];
   /** Ladrilhos pisados (precisam ser reatualizados a cada quadro por causa da tremida). */
   private hot = new Set<string>();
+  /** Hora do jogo em que cada ladrilho foi pisado (para o apertão, o brilho e o tremor crescente). */
+  private stepAt = new Map<string, number>();
+  private puffs: Puff[] = [];
+  private puffTex: THREE.Texture | null = null;
   private lava: THREE.Mesh;
   /** Giro da câmera em volta da raposa (rad); 0 = atrás, olhando para -Z. */
   private yaw = 0;
@@ -130,9 +149,10 @@ export class DsmScene {
     }
   }
 
-  private setTileMatrix(mesh: THREE.InstancedMesh, i: number, t: DsmTile, dy: number, scale: number, rot = 0) {
+  private setTileMatrix(mesh: THREE.InstancedMesh, i: number, t: DsmTile, dy: number, scale: number, rot = 0, rx = 0, rz = 0) {
     tmpP.set(t.x, layerY(t.layer) - DSM_TILE_THICK / 2 + dy, t.z);
-    tmpQ.setFromAxisAngle(UP, rot);
+    if (rx === 0 && rz === 0) tmpQ.setFromAxisAngle(UP, rot);
+    else tmpQ.setFromEuler(tmpE.set(rx, rot, rz));
     tmpS.set(scale, scale, scale);
     tmpM.compose(tmpP, tmpQ, tmpS);
     mesh.setMatrixAt(i, tmpM);
@@ -257,6 +277,7 @@ export class DsmScene {
         const i = lm?.index.get(hexKey(e.layer, e.q, e.r));
         if (lm && i !== undefined) {
           this.hot.add(`${e.layer}:${i}`);
+          this.stepAt.set(`${e.layer}:${i}`, this.world.t);
           this.paintTile(lm, i, lm.tiles[i] as DsmTile);
         }
       } else if (e.type === 'break') {
@@ -265,7 +286,20 @@ export class DsmScene {
         if (lm && i !== undefined) {
           const t = lm.tiles[i] as DsmTile;
           this.hot.delete(`${e.layer}:${i}`);
-          this.falling.push({ layer: e.layer, i, age: 0, x: t.x, y: 0, z: t.z, spin: ((i % 7) - 3) * 0.5 });
+          this.stepAt.delete(`${e.layer}:${i}`);
+          const h = Math.imul(i * 2654435761, 40503) >>> 0;
+          this.falling.push({
+            layer: e.layer,
+            i,
+            age: 0,
+            x: t.x,
+            y: 0,
+            z: t.z,
+            spin: (((h % 7) - 3) * 0.12) || 0.2,
+            tx: ((h >>> 3) % 9) / 8 - 0.5,
+            tz: ((h >>> 7) % 9) / 8 - 0.5,
+          });
+          this.dust(t);
         }
       } else if (e.type === 'wave') {
         // a onda avisa: marca os ladrilhos da camada que já estão quebrando
@@ -286,11 +320,84 @@ export class DsmScene {
     if (t.status === 'pisado') {
       const crack = this.world.crack(t);
       if (t.wave) base.lerp(WAVE_COLOR, 0.65);
-      else base.lerp(tmpC2.set(0xffffff), STEP_MIX * (1 - crack));
+      else {
+        // um clarão curto ao pisar, que assenta num tom mais claro do que o ladrilho firme
+        const s = Math.max(0, this.world.t - (this.stepAt.get(`${t.layer}:${i}`) ?? this.world.t));
+        const flash = this.reduced ? 0 : 0.45 * Math.exp(-s * 10);
+        base.lerp(tmpC2.set(0xffffff), Math.min(1, STEP_MIX * (1 - crack) + flash));
+      }
       base.lerp(CRACK_COLOR, crack * 0.85);
     }
     lm.mesh.setColorAt(i, base);
     if (lm.mesh.instanceColor) lm.mesh.instanceColor.needsUpdate = true;
+  }
+
+  /**
+   * O ladrilho pisado conta uma pequena história: afunda um tiquinho ao ser pisado (e volta), brilha de leve, treme cada
+   * vez mais até rachar e, no fim, balança e fica vermelho. Só mexe em posição, inclinação e cor, e em pouca quantidade.
+   */
+  private animateTile(lm: LayerMesh, i: number, t: DsmTile, key: string) {
+    const now = this.world.t;
+    const s = Math.max(0, now - (this.stepAt.get(key) ?? now));
+    const total = t.wave ? DSM_WAVE_LIFE : (DSM_TILE_LIFE[t.layer] ?? 1);
+    const prog = Math.min(1, Math.max(0, 1 - (t.breakAt - now) / total));
+    const crack = this.world.crack(t);
+    let dy = -0.04 * prog - crack * 0.05;
+    let rx = 0;
+    let rz = 0;
+    if (!this.reduced) {
+      // apertão: afunda e devolve com uma mola curta
+      dy += -0.1 * Math.exp(-s * 9) * Math.cos(s * 15);
+      // tremor suave que cresce com o tempo; começa depois do apertão para ele aparecer primeiro
+      const ramp = Math.min(1, Math.max(0, (s - 0.1) / 0.15));
+      const a = ramp * (0.006 + 0.03 * prog * prog) + crack * 0.04;
+      dy += a * Math.sin(now * 46 + i * 1.7);
+      rx = a * 1.1 * Math.sin(now * 33 + i * 0.9);
+      rz = a * 1.1 * Math.cos(now * 29 + i * 2.3);
+    }
+    this.setTileMatrix(lm.mesh, i, t, dy, 1, 0, rx, rz);
+    lm.mesh.instanceMatrix.needsUpdate = true;
+  }
+
+  /** Poeira discreta quando o ladrilho se solta: poucas nuvens claras que sobem e somem. */
+  private dust(t: DsmTile) {
+    if (this.reduced) return;
+    if (!this.puffTex) {
+      const cv = document.createElement('canvas');
+      cv.width = 64;
+      cv.height = 64;
+      const g = cv.getContext('2d');
+      if (g) {
+        const grad = g.createRadialGradient(32, 32, 2, 32, 32, 30);
+        grad.addColorStop(0, 'rgba(255,255,255,0.9)');
+        grad.addColorStop(1, 'rgba(255,255,255,0)');
+        g.fillStyle = grad;
+        g.fillRect(0, 0, 64, 64);
+      }
+      this.puffTex = new THREE.CanvasTexture(cv);
+    }
+    for (let n = 0; n < 4; n++) {
+      let puff = this.puffs.find((q) => q.age >= q.life);
+      if (!puff) {
+        if (this.puffs.length >= 40) return;
+        const mat = new THREE.SpriteMaterial({ map: this.puffTex, transparent: true, depthWrite: false, opacity: 0, fog: false });
+        const sprite = new THREE.Sprite(mat);
+        sprite.renderOrder = 8;
+        this.scene.add(sprite);
+        puff = { sprite, age: 1, life: 1, vx: 0, vy: 0, vz: 0 };
+        this.puffs.push(puff);
+      }
+      const ang = Math.random() * Math.PI * 2;
+      const r = DSM_HEX_SIZE * (0.4 + Math.random() * 0.6);
+      puff.age = 0;
+      puff.life = 0.55 + Math.random() * 0.25;
+      puff.vx = Math.cos(ang) * 0.9;
+      puff.vz = Math.sin(ang) * 0.9;
+      puff.vy = 0.9 + Math.random() * 0.5;
+      puff.sprite.position.set(t.x + Math.cos(ang) * r, layerY(t.layer) + 0.15, t.z + Math.sin(ang) * r);
+      puff.sprite.visible = true;
+      (puff.sprite.material as THREE.SpriteMaterial).color.set(LAYER_COLORS[t.layer] as number).lerp(tmpC2.set(0xffffff), 0.55);
+    }
   }
 
   /** O que a câmera segue: uma raposa (a sua, ou a que você assiste). */
@@ -307,20 +414,20 @@ export class DsmScene {
         continue;
       }
       this.paintTile(lm, i, t);
-      const crack = this.world.crack(t);
-      const jitter = this.reduced ? 0 : crack * 0.07 * Math.sin(this.world.t * 90 + i);
-      this.setTileMatrix(lm.mesh, i, t, jitter - crack * 0.05, 1);
-      lm.mesh.instanceMatrix.needsUpdate = true;
+      this.animateTile(lm, i, t, key);
     }
     // ladrilhos caindo: afundam girando e somem
     for (let k = this.falling.length - 1; k >= 0; k--) {
       const f = this.falling[k] as Falling;
       f.age += dt;
-      f.y -= (6 + f.age * 22) * dt;
+      // solta com um tranco para cima, e aí acelera caindo, inclinando para um lado e encolhendo no fim
+      f.y -= (3 + f.age * 26) * dt;
       const lm = this.layers[f.layer] as LayerMesh;
       const t = lm.tiles[f.i] as DsmTile;
-      const s = Math.max(0, 1 - f.age / 1.1);
-      this.setTileMatrix(lm.mesh, f.i, t, f.y, s, f.age * f.spin);
+      const pop = this.reduced ? 0 : 0.07 * Math.sin(Math.min(1, f.age / 0.12) * Math.PI);
+      const s = f.age < 0.5 ? 1 : Math.max(0, 1 - (f.age - 0.5) / 0.6);
+      const tilt = this.reduced ? 0 : Math.min(1.1, f.age * 1.6);
+      this.setTileMatrix(lm.mesh, f.i, t, f.y + pop, s, f.age * f.spin, f.tx * tilt, f.tz * tilt);
       lm.mesh.instanceMatrix.needsUpdate = true;
       if (f.age > 1.1) {
         this.setTileMatrix(lm.mesh, f.i, t, -50, 0);
@@ -351,6 +458,20 @@ export class DsmScene {
       } else {
         fox.body.rotation.x = pitch;
       }
+    }
+    // poeira
+    for (const q of this.puffs) {
+      if (q.age >= q.life) {
+        q.sprite.visible = false;
+        continue;
+      }
+      q.age += dt;
+      const k = Math.min(1, q.age / q.life);
+      q.sprite.position.x += q.vx * dt * (1 - k);
+      q.sprite.position.y += q.vy * dt * (1 - k);
+      q.sprite.position.z += q.vz * dt * (1 - k);
+      q.sprite.scale.setScalar(0.5 + k * 1.1);
+      (q.sprite.material as THREE.SpriteMaterial).opacity = 0.5 * (1 - k) * Math.min(1, q.age / 0.05);
     }
     // anéis do pulo duplo
     for (const r of this.rings) {
@@ -414,6 +535,8 @@ export class DsmScene {
 
   dispose() {
     this.disposed = true;
+    for (const q of this.puffs) (q.sprite.material as THREE.Material).dispose();
+    this.puffTex?.dispose();
     for (const r of this.rings) {
       r.mesh.geometry.dispose();
       (r.mesh.material as THREE.Material).dispose();

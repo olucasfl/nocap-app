@@ -320,11 +320,13 @@ export function DesmoronaPlay({
       if (now - hudAt > 120) {
         hudAt = now;
         const m = me();
+        // morto, a camada mostrada é a de quem você está assistindo
+        const seen = !m.alive ? (world.players.find((p) => p.id === focus) ?? m) : m;
         const watching = !m.alive ? (world.players.find((p) => p.id === focus)?.name ?? '') : '';
         setHud({
           alive: world.alivePlayers().length,
           total: world.players.length,
-          layer: Math.max(1, (m.grounded ? m.layer : Math.max(0, m.deepest)) + 1),
+          layer: Math.max(1, (seen.grounded ? seen.layer : Math.max(0, seen.deepest)) + 1),
           phase,
           count: 0,
           note,
