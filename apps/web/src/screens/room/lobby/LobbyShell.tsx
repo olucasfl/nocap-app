@@ -1,12 +1,12 @@
-import { useState, type ReactNode } from 'react';
-import { Crown, Lock } from '@/components/icons';
+import { useId, useState, type KeyboardEvent, type ReactNode } from 'react';
 import type { RoomSnapshot } from '@/lib/rooms';
-import { useRoom, at } from '@/lib/rooms';
-import { InvitePanel } from './InvitePanel';
+import { useRoom } from '@/lib/rooms';
 import { MIN_PLAYERS, rulesSummary } from './rules';
 import './lobby.css';
 
-/** Uma linha só com o que falta para começar (antes eram cinco avisos espalhados). */
+export type LobbyTab = 'members' | 'rules' | 'invite';
+
+/** Uma linha só com o que falta para começar. */
 export function startHint(snapshot: RoomSnapshot): { text: string; ok: boolean } {
   const connected = snapshot.members.filter((m) => m.connected);
   const needed = MIN_PLAYERS[snapshot.game];
@@ -23,133 +23,127 @@ export function startHint(snapshot: RoomSnapshot): { text: string; ok: boolean }
   return { text: 'Todo mundo pronto', ok: true };
 }
 
-/** O cabeçalho da sala: o código grande, convidar com um toque e quem manda aqui. */
-function Head({
-  snapshot,
-  role,
-  leaderName,
-}: {
-  snapshot: RoomSnapshot;
-  role: 'leader' | 'member';
-  leaderName?: string;
-}) {
-  const hint = startHint(snapshot);
-  return (
-    <div className="lb-code">
-      <div className="lb-code-main">
-        <div className="mono rm-label">CÓDIGO DA SALA</div>
-        <b>{snapshot.code}</b>
-        <div className="mono lb-summary">{rulesSummary(snapshot)}</div>
-        <div className="mono lb-stat2">
-          <span>
-            {snapshot.members.length}/{snapshot.maxPlayers} na sala
-          </span>
-          <span className={hint.ok ? 'ok' : ''}>{hint.text}</span>
-        </div>
-        <div className={`lb-role-chip ${role}`}>
-          {role === 'leader' ? <Crown size={16} /> : <Lock size={16} />}
-          <span>{role === 'leader' ? 'Você é o líder' : `Líder: ${at(leaderName)}`}</span>
-        </div>
-      </div>
-      <InvitePanel snapshot={snapshot} section="quick" />
-    </div>
-  );
-}
-
-/** Um bloco que abre e fecha: o resumo fica sempre à vista e o detalhe só quando a pessoa quer. */
-function Fold({
-  title,
-  summary,
-  action,
-  children,
-  defaultOpen = false,
-}: {
-  title: string;
-  summary?: string;
-  action: [string, string];
-  children: ReactNode;
-  defaultOpen?: boolean;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <section className={`lb-fold${open ? ' open' : ''}`}>
-      <div className="lb-fold-head">
-        <div>
-          <div className="mono rm-label">{title}</div>
-          {summary && <div className="lb-fold-sum">{summary}</div>}
-        </div>
-        <button
-          type="button"
-          className="fr-btn"
-          data-sfx="tab"
-          aria-expanded={open}
-          onClick={() => setOpen((o) => !o)}
-        >
-          {open ? action[1] : action[0]}
-        </button>
-      </div>
-      {open && <div className="lb-fold-body">{children}</div>}
-    </section>
-  );
-}
-
 /**
- * A moldura comum das duas visões do lobby (líder e membro) (spec 045): código e convite no topo, jogadores num bloco,
- * regras e "mais formas de convidar" recolhidas, e a ação principal no rodapé. Sem abas: no desktop vira duas colunas.
+ * A moldura do lobby (spec 045, segunda versão): uma barra com o código e o estado, três abas (Jogadores, Regras,
+ * Convidar), cada uma só com o seu assunto, e uma barra de ação fixa embaixo com UMA ação principal. No computador a
+ * aba Jogadores fica sempre à esquerda e Regras e Convidar dividem o painel da direita.
  */
 export function LobbyShell({
   snapshot,
-  role,
-  leaderName = '',
+  me,
   members,
   rules,
+  invite,
   footer,
 }: {
   snapshot: RoomSnapshot;
-  role: 'leader' | 'member';
-  leaderName?: string;
-  members: ReactNode;
+  me: string | undefined;
+  members: (goInvite: () => void) => ReactNode;
   rules: ReactNode;
+  invite: ReactNode;
   footer: ReactNode;
 }) {
   const message = useRoom((s) => s.message);
-  const alone = snapshot.members.length < 2;
+  const [tab, setTab] = useState<LobbyTab>('members');
+  const uid = useId();
+  const hint = startHint(snapshot);
+  const meIsLeader = snapshot.hostId === me;
+  const tabs: { id: LobbyTab; label: string; count?: string }[] = [
+    {
+      id: 'members',
+      label: 'Jogadores',
+      count: `${snapshot.members.length}/${snapshot.maxPlayers}`,
+    },
+    { id: 'rules', label: 'Regras' },
+    { id: 'invite', label: 'Convidar' },
+  ];
+
+  const onKey = (e: KeyboardEvent<HTMLDivElement>) => {
+    const i = tabs.findIndex((t) => t.id === tab);
+    const next =
+      e.key === 'ArrowRight'
+        ? tabs[(i + 1) % tabs.length]
+        : e.key === 'ArrowLeft'
+          ? tabs[(i + tabs.length - 1) % tabs.length]
+          : null;
+    if (!next) return;
+    e.preventDefault();
+    setTab(next.id);
+    document.getElementById(`${uid}-tab-${next.id}`)?.focus();
+  };
+
   return (
-    <section className="screen rm lb">
-      <Head snapshot={snapshot} role={role} leaderName={leaderName} />
-
-      <div className="lb-cols">
-        <div className="lb-col">
-          <section className="lb-card" aria-label="Jogadores">
-            {members}
-          </section>
+    <section className="screen rm lb3" data-tab={tab}>
+      <header className="lb3-bar">
+        <div className="lb3-bar-code">
+          <span className="mono">SALA</span>
+          <b>{snapshot.code}</b>
         </div>
-        <div className="lb-col">
-          <Fold
-            title="REGRAS"
-            summary={rulesSummary(snapshot)}
-            action={[role === 'leader' ? 'Mudar' : 'Ver', 'Fechar']}
+        <div className="lb3-bar-info">
+          <span className="lb3-bar-rules mono">{rulesSummary(snapshot)}</span>
+          <span className={`lb3-bar-hint mono${hint.ok ? ' ok' : ''}`}>{hint.text}</span>
+        </div>
+        <span className="lb3-role mono">{meIsLeader ? 'Você é o líder' : 'Convidado'}</span>
+      </header>
+
+      <div className="lb3-tabs" role="tablist" aria-label="Seções da sala" onKeyDown={onKey}>
+        {tabs.map((t) => (
+          <button
+            key={t.id}
+            id={`${uid}-tab-${t.id}`}
+            type="button"
+            role="tab"
+            data-sfx="tab"
+            data-tab={t.id}
+            aria-selected={tab === t.id || (tab === 'members' && t.id === 'rules' && false)}
+            aria-controls={`${uid}-panel-${t.id}`}
+            tabIndex={tab === t.id ? 0 : -1}
+            onClick={() => setTab(t.id)}
           >
+            {t.label}
+            {t.count && <small className="mono">{t.count}</small>}
+          </button>
+        ))}
+      </div>
+
+      <div className="lb3-body">
+        <div
+          id={`${uid}-panel-members`}
+          role="tabpanel"
+          aria-labelledby={`${uid}-tab-members`}
+          className={`lb3-pane pane-members${tab === 'members' ? ' on' : ''}`}
+        >
+          {members(() => setTab('invite'))}
+        </div>
+        <div className="lb3-side">
+          <div
+            id={`${uid}-panel-rules`}
+            role="tabpanel"
+            aria-labelledby={`${uid}-tab-rules`}
+            className={`lb3-pane pane-rules${tab === 'rules' ? ' on' : ''}`}
+          >
+            <h2 className="lb3-h">Regras</h2>
             {rules}
-          </Fold>
-          <Fold
-            title="MAIS FORMAS DE CONVIDAR"
-            summary="Procurar pessoa ou chamar amigos do NoCap"
-            action={['Abrir', 'Fechar']}
-            defaultOpen={alone && role === 'leader'}
+          </div>
+          <div
+            id={`${uid}-panel-invite`}
+            role="tabpanel"
+            aria-labelledby={`${uid}-tab-invite`}
+            className={`lb3-pane pane-invite${tab === 'invite' ? ' on' : ''}`}
           >
-            <InvitePanel snapshot={snapshot} section="more" />
-          </Fold>
-
-          {message && (
-            <p className="acc-failure mono" role="alert">
-              {message}
-            </p>
-          )}
-
-          <div className="stack lb-foot">{footer}</div>
+            <h2 className="lb3-h">Convidar</h2>
+            {invite}
+          </div>
         </div>
       </div>
+
+      {message && (
+        <p className="acc-failure mono" role="alert">
+          {message}
+        </p>
+      )}
+
+      <div className="lb3-foot">{footer}</div>
     </section>
   );
 }

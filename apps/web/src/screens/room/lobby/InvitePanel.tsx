@@ -11,13 +11,7 @@ const SEARCH_FROM = 8;
 type Done = 'share' | 'link' | 'code' | null;
 
 /** Convidar: enviar o link, copiar o link ou o código e, embaixo, chamar amigos do NoCap. */
-export function InvitePanel({
-  snapshot,
-  section = 'all',
-}: {
-  snapshot: RoomSnapshot;
-  section?: 'quick' | 'more' | 'all';
-}) {
+export function InvitePanel({ snapshot }: { snapshot: RoomSnapshot }) {
   const invited = useRoom((s) => s.invited);
   const invitedEver = useRoom((s) => s.invitedEver);
   const user = useAuth((st) => st.user);
@@ -67,149 +61,123 @@ export function InvitePanel({
     }
   };
 
+  const row = (username: string, badge?: string) => (
+    <li key={username} className="lb3-inv-row">
+      <span className="lb3-inv-name">
+        @{username}
+        {badge && <small className="mono">{badge}</small>}
+      </span>
+      {invited.includes(username) ? (
+        <span className="mono lb3-inv-sent">Enviado</span>
+      ) : (
+        <button
+          type="button"
+          className="fr-btn"
+          data-sfx="send"
+          onClick={() => inviteFriend(username)}
+        >
+          {invitedEver.includes(username) ? 'Chamar de novo' : 'Chamar'}
+        </button>
+      )}
+    </li>
+  );
+
   return (
-    <div className={`lb-invite lb-invite-${section}`}>
-      {section !== 'more' && (
-        <div className="lb-quick">
+    <div className="lb3-invite">
+      <section className="lb3-share" aria-label="Link da sala">
+        <div className="lb3-share-code">
+          <span className="mono">CÓDIGO</span>
+          <b>{snapshot.code}</b>
+        </div>
+        <div className="lb3-share-btns">
           <button type="button" className="btn alt" data-sfx="send" onClick={() => void share()}>
-            {done === 'share' ? 'Mensagem copiada' : 'Convidar'}
+            {done === 'share' ? 'Mensagem copiada' : 'Enviar convite'}
           </button>
           <button
             type="button"
-            className="fr-btn ghost"
+            className="btn ghost"
             data-sfx="send"
             onClick={() => void copy(link, 'link')}
           >
             {done === 'link' ? 'Link copiado' : 'Copiar link'}
           </button>
-          <button
-            type="button"
-            className="fr-btn ghost"
-            data-sfx="send"
-            onClick={() => void copy(snapshot.code, 'code')}
-          >
-            {done === 'code' ? 'Código copiado' : 'Copiar código'}
-          </button>
         </div>
-      )}
+        <p className="mono lb3-hint">Quem recebe o link entra direto, mesmo sem conta.</p>
+      </section>
 
-      {section !== 'quick' && !user && (
-        <p className="mono lb-hint">
-          Crie uma conta para chamar amigos do NoCap direto daqui. Sem conta, use o link ou o
-          código.
-        </p>
-      )}
+      {user ? (
+        <>
+          <section className="lb3-sec" aria-label="Amigos">
+            <h3>Seus amigos</h3>
+            {all.length >= SEARCH_FROM && (
+              <input
+                className="ch-input"
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+                placeholder="Buscar amigo"
+                aria-label="Buscar amigo"
+                autoCapitalize="none"
+                autoCorrect="off"
+              />
+            )}
+            {friends.isPending ? (
+              <p className="mono lb3-hint">Carregando...</p>
+            ) : list.length === 0 ? (
+              <p className="mono lb3-hint">
+                {all.length === 0
+                  ? 'Você ainda não tem amigos no NoCap. Use o link acima.'
+                  : filter
+                    ? 'Ninguém com esse nome.'
+                    : 'Todos os seus amigos já estão na sala.'}
+              </p>
+            ) : (
+              <ul className="lb3-inv-list">{list.map((f) => row(f.username))}</ul>
+            )}
+          </section>
 
-      {section !== 'quick' && user && (
-        <section className="lb-block" aria-label="Procurar pessoa">
-          <div className="mono rm-label">PROCURAR PESSOA (NÃO PRECISA SER AMIGO)</div>
-          <form
-            className="ch-form"
-            onSubmit={(e) => {
-              e.preventDefault();
-              setTerm(handle.trim().replace(/^@/, '').toLowerCase());
-            }}
-          >
-            <input
-              className="ch-input"
-              value={handle}
-              onChange={(e) => setHandle(e.target.value)}
-              placeholder={`@usuário (ao menos ${MIN_SEARCH} letras)`}
-              aria-label="Procurar pelo @usuário"
-              autoCapitalize="none"
-              autoCorrect="off"
-            />
-            <button
-              type="submit"
-              className="ch-send"
-              data-sfx="send"
-              disabled={handle.trim().replace(/^@/, '').length < MIN_SEARCH}
+          <section className="lb3-sec" aria-label="Procurar pessoa">
+            <h3>Procurar por @usuário</h3>
+            <form
+              className="ch-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                setTerm(handle.trim().replace(/^@/, '').toLowerCase());
+              }}
             >
-              Pesquisar
-            </button>
-          </form>
-          {found.isFetching && <p className="mono lb-hint">Procurando...</p>}
-          {found.isError && <p className="mono lb-hint">Não deu para pesquisar. Tente de novo.</p>}
-          {found.isSuccess && results.length === 0 && (
-            <p className="mono lb-hint">Ninguém com esse começo de @usuário.</p>
-          )}
-          {results.length > 0 && (
-            <ul className="fr-list">
-              {results.map((u) => (
-                <li key={u.username} className="fr-row">
-                  <span className="fr-name">
-                    @{u.username}
-                    {u.state === 'friends' && <span className="mono rm-badge">AMIGO</span>}
-                  </span>
-                  {invited.includes(u.username) ? (
-                    <span className="mono fr-state">CONVITE ENVIADO</span>
-                  ) : (
-                    <button
-                      type="button"
-                      className="fr-btn"
-                      data-sfx="send"
-                      onClick={() => inviteFriend(u.username)}
-                    >
-                      {invitedEver.includes(u.username) ? 'Convidar de novo' : 'Convidar'}
-                    </button>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-          <p className="mono rm-mode-note">
-            Ache a pessoa e toque em Convidar. Quando ela entrar, você pode pedir amizade pela aba
-            Membros.
-          </p>
-        </section>
-      )}
-
-      {section !== 'quick' && user && (
-        <section className="lb-block" aria-label="Chamar amigos">
-          <div className="mono rm-label">CHAMAR AMIGOS DO NOCAP</div>
-          {all.length >= SEARCH_FROM && (
-            <input
-              className="ch-input"
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              placeholder="Buscar pelo @usuário"
-              aria-label="Buscar amigo"
-              autoCapitalize="none"
-              autoCorrect="off"
-            />
-          )}
-          {friends.isPending ? (
-            <p className="mono lb-hint">Carregando seus amigos...</p>
-          ) : list.length === 0 ? (
-            <p className="mono lb-hint">
-              {all.length === 0
-                ? 'Você ainda não tem amigos no NoCap. Use o link ou o código.'
-                : filter
-                  ? 'Ninguém com esse @usuário.'
-                  : 'Todos os seus amigos já estão na sala.'}
-            </p>
-          ) : (
-            <ul className="fr-list">
-              {list.map((f) => (
-                <li key={f.username} className="fr-row">
-                  <span className="fr-name">@{f.username}</span>
-                  {invited.includes(f.username) ? (
-                    <span className="mono fr-state">CONVITE ENVIADO</span>
-                  ) : (
-                    <button
-                      type="button"
-                      className="fr-btn"
-                      data-sfx="send"
-                      onClick={() => inviteFriend(f.username)}
-                    >
-                      {invitedEver.includes(f.username) ? 'Convidar de novo' : 'Convidar'}
-                    </button>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+              <input
+                className="ch-input"
+                value={handle}
+                onChange={(e) => setHandle(e.target.value)}
+                placeholder={`@usuário (mín. ${MIN_SEARCH} letras)`}
+                aria-label="Procurar pelo @usuário"
+                autoCapitalize="none"
+                autoCorrect="off"
+              />
+              <button
+                type="submit"
+                className="ch-send"
+                data-sfx="send"
+                disabled={handle.trim().replace(/^@/, '').length < MIN_SEARCH}
+              >
+                Buscar
+              </button>
+            </form>
+            {found.isFetching && <p className="mono lb3-hint">Procurando...</p>}
+            {found.isError && (
+              <p className="mono lb3-hint">Não deu para pesquisar. Tente de novo.</p>
+            )}
+            {found.isSuccess && results.length === 0 && (
+              <p className="mono lb3-hint">Ninguém encontrado.</p>
+            )}
+            {results.length > 0 && (
+              <ul className="lb3-inv-list">
+                {results.map((u) => row(u.username, u.state === 'friends' ? 'amigo' : undefined))}
+              </ul>
+            )}
+          </section>
+        </>
+      ) : (
+        <p className="mono lb3-hint">Crie uma conta para chamar amigos do NoCap direto daqui.</p>
       )}
     </div>
   );

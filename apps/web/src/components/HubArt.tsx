@@ -9,7 +9,12 @@ import './hub-art.css';
 /** A arte é a mesma nos dois temas: o fundo do cartão é uma cor viva, então o contorno é sempre tinta escura. */
 const INK = '#111111';
 const PAPER = '#f4f4ef';
-const stroke = { stroke: INK, strokeWidth: 3.5, strokeLinejoin: 'round' as const, strokeLinecap: 'round' as const };
+const stroke = {
+  stroke: INK,
+  strokeWidth: 3.5,
+  strokeLinejoin: 'round' as const,
+  strokeLinecap: 'round' as const,
+};
 const hard = { fill: INK, opacity: 1 };
 
 /** Mesmíssima: a cor alvo, a que você fez quase igual, e a nota que sai da diferença. */
@@ -18,18 +23,52 @@ export function ColorArt() {
     <svg className="ha ha-color" viewBox="0 0 200 150" aria-hidden="true">
       <g className="ha-float a">
         <g transform="rotate(-9 62 72)">
-          <rect x="22" y="22" width="84" height="104" rx="14" {...hard} transform="translate(5 5)" />
+          <rect
+            x="22"
+            y="22"
+            width="84"
+            height="104"
+            rx="14"
+            {...hard}
+            transform="translate(5 5)"
+          />
           <rect x="22" y="22" width="84" height="104" rx="14" fill="#b6e83a" {...stroke} />
-          <rect x="30" y="30" width="68" height="62" rx="9" fill="#c7f04f" {...stroke} strokeWidth={2.5} />
+          <rect
+            x="30"
+            y="30"
+            width="68"
+            height="62"
+            rx="9"
+            fill="#c7f04f"
+            {...stroke}
+            strokeWidth={2.5}
+          />
           <rect x="30" y="98" width="42" height="9" rx="4.5" fill={INK} />
           <rect x="30" y="111" width="28" height="7" rx="3.5" fill={INK} opacity="0.45" />
         </g>
       </g>
       <g className="ha-float b">
         <g transform="rotate(8 140 78)">
-          <rect x="98" y="30" width="84" height="104" rx="14" {...hard} transform="translate(5 5)" />
+          <rect
+            x="98"
+            y="30"
+            width="84"
+            height="104"
+            rx="14"
+            {...hard}
+            transform="translate(5 5)"
+          />
           <rect x="98" y="30" width="84" height="104" rx="14" fill="#9ed64a" {...stroke} />
-          <rect x="106" y="38" width="68" height="62" rx="9" fill="#8fcb3f" {...stroke} strokeWidth={2.5} />
+          <rect
+            x="106"
+            y="38"
+            width="68"
+            height="62"
+            rx="9"
+            fill="#8fcb3f"
+            {...stroke}
+            strokeWidth={2.5}
+          />
           <rect x="106" y="106" width="42" height="9" rx="4.5" fill={INK} />
           <rect x="106" y="119" width="28" height="7" rx="3.5" fill={INK} opacity="0.45" />
         </g>
@@ -45,7 +84,15 @@ export function ColorArt() {
         <g transform="rotate(-10 100 78)">
           <circle cx="105" cy="83" r="23" {...hard} />
           <circle cx="100" cy="78" r="23" fill="var(--yellow)" {...stroke} />
-          <text x="100" y="86" textAnchor="middle" fontFamily="Archivo, Arial Black, sans-serif" fontWeight="900" fontSize="23" fill={INK}>
+          <text
+            x="100"
+            y="86"
+            textAnchor="middle"
+            fontFamily="Archivo, Arial Black, sans-serif"
+            fontWeight="900"
+            fontSize="23"
+            fill={INK}
+          >
             98
           </text>
         </g>
@@ -60,11 +107,29 @@ export function TimeArt() {
   return (
     <svg className="ha ha-time" viewBox="0 0 200 150" aria-hidden="true">
       {/* botão de cima e coroa */}
-      <rect x="90" y="4" width="20" height="14" rx="4" fill="var(--yellow)" {...stroke} strokeWidth={3} />
+      <rect
+        x="90"
+        y="4"
+        width="20"
+        height="14"
+        rx="4"
+        fill="var(--yellow)"
+        {...stroke}
+        strokeWidth={3}
+      />
       <rect x="84" y="14" width="32" height="10" rx="4" fill={INK} />
       {/* botão do lado */}
       <g transform="rotate(42 100 80)">
-        <rect x="92" y="10" width="16" height="12" rx="4" fill="var(--yellow)" {...stroke} strokeWidth={3} />
+        <rect
+          x="92"
+          y="10"
+          width="16"
+          height="12"
+          rx="4"
+          fill="var(--yellow)"
+          {...stroke}
+          strokeWidth={3}
+        />
       </g>
       <circle cx="105" cy="85" r="58" {...hard} />
       <circle cx="100" cy="80" r="58" fill={PAPER} {...stroke} strokeWidth={4.5} />
@@ -85,7 +150,15 @@ export function TimeArt() {
       {/* o pedaço que já passou */}
       <path d="M100 80L100 38A42 42 0 0 1 135 56Z" fill="var(--orange)" opacity="0.9" />
       <g className="ha-sweep">
-        <line x1="100" y1="80" x2="100" y2="36" stroke={INK} strokeWidth="4.5" strokeLinecap="round" />
+        <line
+          x1="100"
+          y1="80"
+          x2="100"
+          y2="36"
+          stroke={INK}
+          strokeWidth="4.5"
+          strokeLinecap="round"
+        />
         <circle cx="100" cy="36" r="4.5" fill="var(--yellow)" {...stroke} strokeWidth={2.5} />
       </g>
       <circle cx="100" cy="80" r="7" fill={INK} />
@@ -101,9 +174,23 @@ export function TimeArt() {
 export function EcoArt() {
   const pads = [
     { x: 24, y: 18, color: 'var(--orange)', d: 0, shape: <circle cx="0" cy="0" r="13" /> },
-    { x: 104, y: 18, color: 'var(--blue)', d: 0.8, shape: <rect x="-12" y="-12" width="24" height="24" rx="3" /> },
+    {
+      x: 104,
+      y: 18,
+      color: 'var(--blue)',
+      d: 0.8,
+      shape: <rect x="-12" y="-12" width="24" height="24" rx="3" />,
+    },
     { x: 24, y: 80, color: 'var(--yellow)', d: 2.4, shape: <path d="M0 -14l14 24h-28z" /> },
-    { x: 104, y: 80, color: 'var(--eco-purple)', d: 1.6, shape: <path d="M0 -14l4.2 9.4 10.3 1.3-7.5 7.2 1.9 10.1L0 8.5l-8.9 4.5 1.9-10.1-7.5-7.2 10.3-1.3z" /> },
+    {
+      x: 104,
+      y: 80,
+      color: 'var(--eco-purple)',
+      d: 1.6,
+      shape: (
+        <path d="M0 -14l4.2 9.4 10.3 1.3-7.5 7.2 1.9 10.1L0 8.5l-8.9 4.5 1.9-10.1-7.5-7.2 10.3-1.3z" />
+      ),
+    },
   ];
   return (
     <svg className="ha ha-eco" viewBox="0 0 200 150" aria-hidden="true">
@@ -115,7 +202,16 @@ export function EcoArt() {
             <g transform="translate(36 28)" fill={INK} opacity="0.85">
               {p.shape}
             </g>
-            <rect className="ha-glow" x="0" y="0" width="72" height="56" rx="14" fill="#fff" style={{ animationDelay: `${p.d}s` }} />
+            <rect
+              className="ha-glow"
+              x="0"
+              y="0"
+              width="72"
+              height="56"
+              rx="14"
+              fill="#fff"
+              style={{ animationDelay: `${p.d}s` }}
+            />
           </g>
         </g>
       ))}
@@ -131,27 +227,77 @@ export function EcoArt() {
 export function FoxBody() {
   return (
     <>
-        <ellipse cx="88" cy="128" rx="20" ry="5" fill="rgba(0,0,0,.3)" />
-        {/* a cauda grande, com a ponta branca */}
-        <path d="M70 118c-18 2-24-16-12-28 4 10 12 14 20 14z" fill="#ff7d26" {...stroke} strokeWidth={3} />
-        <path d="M58 90c4 2 6 6 5 11-5-1-8-5-5-11z" fill="#fff3e2" {...stroke} strokeWidth={2.4} />
-        {/* o corpo e as patas escuras */}
-        <rect x="72" y="96" width="30" height="26" rx="6" fill="#ff7d26" {...stroke} strokeWidth={3.5} />
-        <rect x="76" y="116" width="8" height="10" rx="2" fill="#35211a" {...stroke} strokeWidth={2.4} />
-        <rect x="92" y="116" width="8" height="10" rx="2" fill="#35211a" {...stroke} strokeWidth={2.4} />
-        <rect x="80" y="104" width="14" height="14" rx="4" fill="#fff3e2" />
-        {/* as orelhas saindo do boné */}
-        <path d="M76 82l-3-14 11 8z" fill="#ff7d26" {...stroke} strokeWidth={2.6} />
-        <path d="M98 82l3-14-11 8z" fill="#ff7d26" {...stroke} strokeWidth={2.6} />
-        {/* o boné azul com a aba */}
-        <rect x="72" y="76" width="30" height="12" rx="5" fill="#2f5bff" {...stroke} strokeWidth={3} />
-        <rect x="72" y="83" width="30" height="3" fill="#fff" />
-        <path d="M70 90l-12 4 2 5 14-4z" fill="#2347c9" {...stroke} strokeWidth={2.6} />
-        {/* o rosto */}
-        <rect x="70" y="88" width="32" height="14" rx="4" fill="#ff7d26" {...stroke} strokeWidth={3} />
-        <rect x="76" y="92" width="4" height="5" fill={INK} />
-        <rect x="90" y="92" width="4" height="5" fill={INK} />
-        <rect x="82" y="96" width="6" height="5" rx="1.5" fill="#35211a" />
+      <ellipse cx="88" cy="128" rx="20" ry="5" fill="rgba(0,0,0,.3)" />
+      {/* a cauda grande, com a ponta branca */}
+      <path
+        d="M70 118c-18 2-24-16-12-28 4 10 12 14 20 14z"
+        fill="#ff7d26"
+        {...stroke}
+        strokeWidth={3}
+      />
+      <path d="M58 90c4 2 6 6 5 11-5-1-8-5-5-11z" fill="#fff3e2" {...stroke} strokeWidth={2.4} />
+      {/* o corpo e as patas escuras */}
+      <rect
+        x="72"
+        y="96"
+        width="30"
+        height="26"
+        rx="6"
+        fill="#ff7d26"
+        {...stroke}
+        strokeWidth={3.5}
+      />
+      <rect
+        x="76"
+        y="116"
+        width="8"
+        height="10"
+        rx="2"
+        fill="#35211a"
+        {...stroke}
+        strokeWidth={2.4}
+      />
+      <rect
+        x="92"
+        y="116"
+        width="8"
+        height="10"
+        rx="2"
+        fill="#35211a"
+        {...stroke}
+        strokeWidth={2.4}
+      />
+      <rect x="80" y="104" width="14" height="14" rx="4" fill="#fff3e2" />
+      {/* as orelhas saindo do boné */}
+      <path d="M76 82l-3-14 11 8z" fill="#ff7d26" {...stroke} strokeWidth={2.6} />
+      <path d="M98 82l3-14-11 8z" fill="#ff7d26" {...stroke} strokeWidth={2.6} />
+      {/* o boné azul com a aba */}
+      <rect
+        x="72"
+        y="76"
+        width="30"
+        height="12"
+        rx="5"
+        fill="#2f5bff"
+        {...stroke}
+        strokeWidth={3}
+      />
+      <rect x="72" y="83" width="30" height="3" fill="#fff" />
+      <path d="M70 90l-12 4 2 5 14-4z" fill="#2347c9" {...stroke} strokeWidth={2.6} />
+      {/* o rosto */}
+      <rect
+        x="70"
+        y="88"
+        width="32"
+        height="14"
+        rx="4"
+        fill="#ff7d26"
+        {...stroke}
+        strokeWidth={3}
+      />
+      <rect x="76" y="92" width="4" height="5" fill={INK} />
+      <rect x="90" y="92" width="4" height="5" fill={INK} />
+      <rect x="82" y="96" width="6" height="5" rx="1.5" fill="#35211a" />
     </>
   );
 }
@@ -167,14 +313,53 @@ export function AtravessaArt() {
         </clipPath>
       </defs>
       <g clipPath="url(#ha-atr-clip)">
-      <g transform="translate(0 -52) skewY(26)">
-        <rect x="-10" y="70" width="220" height="30" fill="#8dd252" {...stroke} strokeWidth={3} />
-        <rect x="-10" y="100" width="220" height="30" fill="#3a3d4a" {...stroke} strokeWidth={3} />
-        <path d="M-10 115H210" stroke="#f4f4ef" strokeWidth="3" strokeDasharray="12 10" className="ha-road" />
-        <rect x="-10" y="130" width="220" height="30" fill="#58bdf2" {...stroke} strokeWidth={3} />
-        <rect x="120" y="136" width="52" height="18" rx="3" fill="#8a5a34" {...stroke} strokeWidth={3} />
-        <rect x="-10" y="160" width="220" height="40" fill="#8dd252" {...stroke} strokeWidth={3} />
-      </g>
+        <g transform="translate(0 -52) skewY(26)">
+          <rect x="-10" y="70" width="220" height="30" fill="#8dd252" {...stroke} strokeWidth={3} />
+          <rect
+            x="-10"
+            y="100"
+            width="220"
+            height="30"
+            fill="#3a3d4a"
+            {...stroke}
+            strokeWidth={3}
+          />
+          <path
+            d="M-10 115H210"
+            stroke="#f4f4ef"
+            strokeWidth="3"
+            strokeDasharray="12 10"
+            className="ha-road"
+          />
+          <rect
+            x="-10"
+            y="130"
+            width="220"
+            height="30"
+            fill="#58bdf2"
+            {...stroke}
+            strokeWidth={3}
+          />
+          <rect
+            x="120"
+            y="136"
+            width="52"
+            height="18"
+            rx="3"
+            fill="#8a5a34"
+            {...stroke}
+            strokeWidth={3}
+          />
+          <rect
+            x="-10"
+            y="160"
+            width="220"
+            height="40"
+            fill="#8dd252"
+            {...stroke}
+            strokeWidth={3}
+          />
+        </g>
       </g>
       <g className="ha-run">
         <FoxBody />
@@ -185,24 +370,75 @@ export function AtravessaArt() {
 
 /** Block's: o tabuleiro com uma linha completa que estoura, a peça que vai cair e o selo dos pontos. */
 export function BlocksArt() {
-  const face: Record<string, string> = { o: '#ff6a2b', b: '#2f5bff', p: '#ff9ecf', g: '#33c27f', v: '#7a3cff' };
+  const face: Record<string, string> = {
+    o: '#ff6a2b',
+    b: '#2f5bff',
+    p: '#ff9ecf',
+    g: '#33c27f',
+    v: '#7a3cff',
+  };
   const U = 21;
   const X0 = 38;
   const Y0 = 26;
   // linha 4 é a que completa e some; as de cima ficam
   const grid = ['.....', '.....', 'o....', 'bb.pp', 'obgvb'];
   const block = (c: string, r: number, k: number, clear: boolean) => (
-    <g key={`${r}-${k}`} className={clear ? 'ha-clearcell' : undefined} style={{ animationDelay: `${k * 0.06}s` }}>
-      <rect x={X0 + k * U + 1.5} y={Y0 + r * U + 1.5} width={U - 3} height={U - 3} rx="4.5" fill={face[c]} {...stroke} strokeWidth={2.4} />
-      <rect x={X0 + k * U + 4} y={Y0 + r * U + 4} width={U - 8} height="4.5" rx="2.2" fill="#fff" opacity="0.5" />
+    <g
+      key={`${r}-${k}`}
+      className={clear ? 'ha-clearcell' : undefined}
+      style={{ animationDelay: `${k * 0.06}s` }}
+    >
+      <rect
+        x={X0 + k * U + 1.5}
+        y={Y0 + r * U + 1.5}
+        width={U - 3}
+        height={U - 3}
+        rx="4.5"
+        fill={face[c]}
+        {...stroke}
+        strokeWidth={2.4}
+      />
+      <rect
+        x={X0 + k * U + 4}
+        y={Y0 + r * U + 4}
+        width={U - 8}
+        height="4.5"
+        rx="2.2"
+        fill="#fff"
+        opacity="0.5"
+      />
     </g>
   );
   return (
     <svg className="ha ha-blocks" viewBox="0 0 200 150" aria-hidden="true">
-      <rect x={X0 - 6 + 6} y={Y0 - 6 + 6} width={5 * U + 12} height={5 * U + 12} rx="14" {...hard} />
-      <rect x={X0 - 6} y={Y0 - 6} width={5 * U + 12} height={5 * U + 12} rx="14" fill={PAPER} {...stroke} />
+      <rect
+        x={X0 - 6 + 6}
+        y={Y0 - 6 + 6}
+        width={5 * U + 12}
+        height={5 * U + 12}
+        rx="14"
+        {...hard}
+      />
+      <rect
+        x={X0 - 6}
+        y={Y0 - 6}
+        width={5 * U + 12}
+        height={5 * U + 12}
+        rx="14"
+        fill={PAPER}
+        {...stroke}
+      />
       {Array.from({ length: 25 }, (_, i) => (
-        <rect key={i} x={X0 + (i % 5) * U + 2} y={Y0 + Math.floor(i / 5) * U + 2} width={U - 4} height={U - 4} rx="4" fill={INK} opacity="0.1" />
+        <rect
+          key={i}
+          x={X0 + (i % 5) * U + 2}
+          y={Y0 + Math.floor(i / 5) * U + 2}
+          width={U - 4}
+          height={U - 4}
+          rx="4"
+          fill={INK}
+          opacity="0.1"
+        />
       ))}
       {grid.map((row, r) => [...row].map((c, k) => (c === '.' ? null : block(c, r, k, r === 4))))}
       <g className="ha-float a">
@@ -210,16 +446,68 @@ export function BlocksArt() {
           <rect x="4" y="4" width="22" height="22" rx="5" {...hard} />
           <rect x="4" y="26" width="22" height="22" rx="5" {...hard} />
           <rect x="26" y="26" width="22" height="22" rx="5" {...hard} />
-          <rect x="0" y="0" width="22" height="22" rx="5" fill="#ffd23f" {...stroke} strokeWidth={2.6} />
-          <rect x="0" y="22" width="22" height="22" rx="5" fill="#ffd23f" {...stroke} strokeWidth={2.6} />
-          <rect x="22" y="22" width="22" height="22" rx="5" fill="#ffd23f" {...stroke} strokeWidth={2.6} />
+          <rect
+            x="0"
+            y="0"
+            width="22"
+            height="22"
+            rx="5"
+            fill="#ffd23f"
+            {...stroke}
+            strokeWidth={2.6}
+          />
+          <rect
+            x="0"
+            y="22"
+            width="22"
+            height="22"
+            rx="5"
+            fill="#ffd23f"
+            {...stroke}
+            strokeWidth={2.6}
+          />
+          <rect
+            x="22"
+            y="22"
+            width="22"
+            height="22"
+            rx="5"
+            fill="#ffd23f"
+            {...stroke}
+            strokeWidth={2.6}
+          />
         </g>
       </g>
       <g className="ha-stamp">
         <g transform="rotate(-8 100 75)">
-          <rect x="132" y="104" width="52" height="28" rx="14" {...hard} transform="translate(3 3)" />
-          <rect x="132" y="104" width="52" height="28" rx="14" fill="#ff6a2b" {...stroke} strokeWidth={3} />
-          <text x="158" y="124" textAnchor="middle" fontFamily="Archivo, Arial Black, sans-serif" fontWeight="900" fontSize="17" fill={INK}>
+          <rect
+            x="132"
+            y="104"
+            width="52"
+            height="28"
+            rx="14"
+            {...hard}
+            transform="translate(3 3)"
+          />
+          <rect
+            x="132"
+            y="104"
+            width="52"
+            height="28"
+            rx="14"
+            fill="#ff6a2b"
+            {...stroke}
+            strokeWidth={3}
+          />
+          <text
+            x="158"
+            y="124"
+            textAnchor="middle"
+            fontFamily="Archivo, Arial Black, sans-serif"
+            fontWeight="900"
+            fontSize="17"
+            fill={INK}
+          >
             +60
           </text>
         </g>
@@ -228,14 +516,17 @@ export function BlocksArt() {
   );
 }
 
-
-
 /** Aperta!: o botão vermelho sobre a base e a estrela que acende. Sem tema espaço aqui: o Hub é Pop Brutal. */
 export function ApertaArt() {
   return (
     <svg className="ha ha-aperta" viewBox="0 0 200 150" aria-hidden="true">
       <g className="ha-float a">
-        <path d="M150 22l5 16 16 5-16 5-5 16-5-16-16-5 16-5z" fill={PAPER} {...stroke} strokeWidth={2.6} />
+        <path
+          d="M150 22l5 16 16 5-16 5-5 16-5-16-16-5 16-5z"
+          fill={PAPER}
+          {...stroke}
+          strokeWidth={2.6}
+        />
       </g>
       <ellipse cx="104" cy="122" rx="62" ry="17" {...hard} />
       <ellipse cx="100" cy="116" rx="62" ry="17" fill="#c7cede" {...stroke} strokeWidth={3} />
@@ -271,8 +562,26 @@ export function DesmoronaArt() {
       {top.map(([x, y, f], i) => hex(x, y, 21, f, `t${i}`))}
       <g transform="translate(88 28)">
         <ellipse cx="12" cy="30" rx="12" ry="4" fill="rgba(0,0,0,.25)" />
-        <rect x="2" y="12" width="20" height="16" rx="5" fill="#ff7d26" {...stroke} strokeWidth={3} />
-        <rect x="3" y="2" width="18" height="12" rx="4" fill="#2f5bff" {...stroke} strokeWidth={3} />
+        <rect
+          x="2"
+          y="12"
+          width="20"
+          height="16"
+          rx="5"
+          fill="#ff7d26"
+          {...stroke}
+          strokeWidth={3}
+        />
+        <rect
+          x="3"
+          y="2"
+          width="18"
+          height="12"
+          rx="4"
+          fill="#2f5bff"
+          {...stroke}
+          strokeWidth={3}
+        />
       </g>
     </svg>
   );
@@ -288,7 +597,14 @@ export function FoxCapArt() {
   );
   const spark = (x: number, y: number, d: number) => (
     <g key={`${x}-${y}`} transform={`translate(${x} ${y})`}>
-      <path className="ha-spark" style={{ animationDelay: `${d}s` }} d="M0-9C1-3 3-1 9 0 3 1 1 3 0 9-1 3-3 1-9 0-3-1-1-3 0-9Z" fill="#fff" {...stroke} strokeWidth={1.8} />
+      <path
+        className="ha-spark"
+        style={{ animationDelay: `${d}s` }}
+        d="M0-9C1-3 3-1 9 0 3 1 1 3 0 9-1 3-3 1-9 0-3-1-1-3 0-9Z"
+        fill="#fff"
+        {...stroke}
+        strokeWidth={1.8}
+      />
     </g>
   );
   return (
@@ -306,7 +622,12 @@ export function FoxCapArt() {
         {spark(160, 118, 1.4)}
         <g className="ha-bob">
           {/* os ombros e o peito */}
-          <path d="M44 150C44 124 70 116 100 116S156 124 156 150Z" fill="#ff7d26" {...stroke} strokeWidth={3.5} />
+          <path
+            d="M44 150C44 124 70 116 100 116S156 124 156 150Z"
+            fill="#ff7d26"
+            {...stroke}
+            strokeWidth={3.5}
+          />
           <path d="M82 150C84 134 92 126 100 126S116 134 118 150Z" fill="#fff3e2" />
           {/* as orelhas (a esquerda se mexe) */}
           <g className="ha-ear">
@@ -317,11 +638,27 @@ export function FoxCapArt() {
           <path d="M135 64L139 46L122 58Z" fill="#35211a" />
           {/* a cabeça e as bochechas brancas */}
           <ellipse cx="100" cy="92" rx="40" ry="31" fill="#ff7d26" {...stroke} strokeWidth={3.5} />
-          <path d="M62 98C70 94 80 100 82 112 72 112 64 108 62 98Z" fill="#fff3e2" {...stroke} strokeWidth={2.6} />
-          <path d="M138 98C130 94 120 100 118 112 128 112 136 108 138 98Z" fill="#fff3e2" {...stroke} strokeWidth={2.6} />
+          <path
+            d="M62 98C70 94 80 100 82 112 72 112 64 108 62 98Z"
+            fill="#fff3e2"
+            {...stroke}
+            strokeWidth={2.6}
+          />
+          <path
+            d="M138 98C130 94 120 100 118 112 128 112 136 108 138 98Z"
+            fill="#fff3e2"
+            {...stroke}
+            strokeWidth={2.6}
+          />
           <ellipse cx="100" cy="106" rx="16" ry="11" fill="#fff3e2" />
           <ellipse cx="100" cy="100" rx="5" ry="3.6" fill="#35211a" />
-          <path d="M92 109Q100 116 108 109" fill="none" stroke="#35211a" strokeWidth="2.8" strokeLinecap="round" />
+          <path
+            d="M92 109Q100 116 108 109"
+            fill="none"
+            stroke="#35211a"
+            strokeWidth="2.8"
+            strokeLinecap="round"
+          />
           {/* os olhos piscam */}
           <ellipse className="ha-blink" cx="84" cy="90" rx="4.6" ry="6.4" fill={INK} />
           <ellipse className="ha-blink" cx="116" cy="90" rx="4.6" ry="6.4" fill={INK} />
@@ -331,7 +668,12 @@ export function FoxCapArt() {
           <g className="ha-cap">
             <path d="M62 76C62 40 138 40 138 76Z" fill="#2f5bff" {...stroke} strokeWidth={3.5} />
             <path d="M62 70H138" stroke="#fff" strokeWidth="5" />
-            <path d="M138 70L162 76Q168 82 160 83L70 83L70 76Z" fill="#2347c9" {...stroke} strokeWidth={3} />
+            <path
+              d="M138 70L162 76Q168 82 160 83L70 83L70 76Z"
+              fill="#2347c9"
+              {...stroke}
+              strokeWidth={3}
+            />
             <circle cx="100" cy="46" r="4" fill="#fff" {...stroke} strokeWidth={2.4} />
           </g>
         </g>
@@ -341,7 +683,19 @@ export function FoxCapArt() {
 }
 
 /** Uma raposinha de frente (cabeça, orelhas, boné), para as artes de grupo. */
-function MiniFox({ x, y, fur, cap, s = 1 }: { x: number; y: number; fur: string; cap: string; s?: number }) {
+function MiniFox({
+  x,
+  y,
+  fur,
+  cap,
+  s = 1,
+}: {
+  x: number;
+  y: number;
+  fur: string;
+  cap: string;
+  s?: number;
+}) {
   return (
     <g transform={`translate(${x} ${y}) scale(${s})`}>
       <path d="M-24 -6L-30 -34L-8 -18Z" fill={fur} {...stroke} strokeWidth={3} />
@@ -374,7 +728,14 @@ export function FriendsArt() {
 
 /** Block Classic: o tabuleiro 8x8 com peças e uma linha prestes a fechar. */
 export function BlocksClassicArt() {
-  const face: Record<string, string> = { o: '#ff6a2b', b: '#2f5bff', p: '#ff9ecf', g: '#33c27f', v: '#7a3cff', y: '#ffd23f' };
+  const face: Record<string, string> = {
+    o: '#ff6a2b',
+    b: '#2f5bff',
+    p: '#ff9ecf',
+    g: '#33c27f',
+    v: '#7a3cff',
+    y: '#ffd23f',
+  };
   const rows = ['........', '........', '..y.....', '.yyo....', '.bgo.pp.', 'obgvvppb'];
   const U = 17;
   const X0 = 32;
@@ -382,7 +743,16 @@ export function BlocksClassicArt() {
   return (
     <svg className="ha ha-bclassic" viewBox="0 0 200 150" aria-hidden="true">
       <rect width="200" height="150" fill="#ffe2c4" />
-      <rect x={X0 - 5} y={Y0 - 5} width={8 * U + 10} height={6 * U + 10} rx="10" fill="#fff" {...stroke} strokeWidth={3} />
+      <rect
+        x={X0 - 5}
+        y={Y0 - 5}
+        width={8 * U + 10}
+        height={6 * U + 10}
+        rx="10"
+        fill="#fff"
+        {...stroke}
+        strokeWidth={3}
+      />
       {rows.map((row, r) =>
         [...row].map((c, k) => (
           <rect
@@ -399,7 +769,15 @@ export function BlocksClassicArt() {
           />
         )),
       )}
-      <text x="100" y="140" textAnchor="middle" fontFamily="Archivo, Arial Black, sans-serif" fontWeight="900" fontSize="15" fill={INK}>
+      <text
+        x="100"
+        y="140"
+        textAnchor="middle"
+        fontFamily="Archivo, Arial Black, sans-serif"
+        fontWeight="900"
+        fontSize="15"
+        fill={INK}
+      >
         8 × 8
       </text>
     </svg>
@@ -409,7 +787,17 @@ export function BlocksClassicArt() {
 /** Block Towers: uma torre de blocos empilhados num guindaste. */
 export function BlocksTowersArt() {
   const blk = (x: number, y: number, w: number, fill: string) => (
-    <rect key={`${x}-${y}`} x={x} y={y} width={w} height="18" rx="3.5" fill={fill} {...stroke} strokeWidth={2.6} />
+    <rect
+      key={`${x}-${y}`}
+      x={x}
+      y={y}
+      width={w}
+      height="18"
+      rx="3.5"
+      fill={fill}
+      {...stroke}
+      strokeWidth={2.6}
+    />
   );
   return (
     <svg className="ha ha-btowers" viewBox="0 0 200 150" aria-hidden="true">
@@ -421,7 +809,16 @@ export function BlocksTowersArt() {
       {blk(80, 58, 46, '#33c27f')}
       {blk(78, 40, 50, '#7a3cff')}
       <path d="M100 8V24" stroke={INK} strokeWidth="3.5" strokeLinecap="round" />
-      <rect x="86" y="22" width="28" height="12" rx="3.5" fill="#ff9ecf" {...stroke} strokeWidth={2.6} />
+      <rect
+        x="86"
+        y="22"
+        width="28"
+        height="12"
+        rx="3.5"
+        fill="#ff9ecf"
+        {...stroke}
+        strokeWidth={2.6}
+      />
       <path d="M150 20h36M168 20v-12" stroke={INK} strokeWidth="3.5" strokeLinecap="round" />
     </svg>
   );
@@ -434,7 +831,9 @@ export function DesmoronaTrainingArt() {
       const a = (Math.PI / 3) * i + Math.PI / 6;
       return `${(cx + 22 * Math.cos(a)).toFixed(1)},${(cy + 22 * Math.sin(a)).toFixed(1)}`;
     }).join(' ');
-    return <polygon key={k} points={pts} fill={fill} className={extra} {...stroke} strokeWidth={3} />;
+    return (
+      <polygon key={k} points={pts} fill={fill} className={extra} {...stroke} strokeWidth={3} />
+    );
   };
   return (
     <svg className="ha ha-dsmtrain" viewBox="0 0 200 150" aria-hidden="true">
@@ -448,6 +847,15 @@ export function DesmoronaTrainingArt() {
       <g transform="translate(60 32) scale(0.55)">
         <FoxBody />
       </g>
+    </svg>
+  );
+}
+
+/** Avatar de jogador: a cabeça da raposa de boné na cor escolhida (usado na sala). */
+export function FoxAvatar({ fur, cap = '#2f5bff' }: { fur: string; cap?: string }) {
+  return (
+    <svg viewBox="-50 -44 100 82" aria-hidden="true" className="fox-avatar">
+      <MiniFox x={0} y={0} fur={fur} cap={cap} />
     </svg>
   );
 }

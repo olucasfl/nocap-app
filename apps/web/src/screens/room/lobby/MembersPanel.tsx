@@ -1,17 +1,17 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ATR_ROOM_COLORS } from '@nocap/games';
 import { acceptRequest, fetchFriends, sendRequest, type RelationState } from '@/lib/friends';
-import { Crown } from '@/components/icons';
+import { Check, Crown } from '@/components/icons';
+import { FoxAvatar } from '@/components/HubArt';
 import { useAuth } from '@/lib/auth';
 import { sendRoom, type RoomMember, type RoomSnapshot, at } from '@/lib/rooms';
-import { ATR_ROOM_COLORS } from '@nocap/games';
-import { MIN_PLAYERS } from './rules';
 
 /** Como eu me relaciono com quem está na sala: amigo, pedido enviado/recebido ou ninguém. */
-function useRelation(username: string, isMe: boolean): RelationState | 'me' {
+function useRelation(username: string, skip: boolean): RelationState | 'me' {
   const signedIn = useAuth((s) => s.user !== null);
   const list = useQuery({ queryKey: ['friends'], queryFn: fetchFriends, enabled: signedIn });
-  if (isMe) return 'me';
+  if (skip) return 'me';
   const d = list.data;
   if (d?.friends.some((f) => f.username === username)) return 'friends';
   if (d?.incoming.some((f) => f.username === username)) return 'incoming';
@@ -19,259 +19,235 @@ function useRelation(username: string, isMe: boolean): RelationState | 'me' {
   return 'none';
 }
 
-/** Pedir amizade (ou aceitar) a quem está na sala e ainda não é amigo. */
-function FriendAction({ username, relation }: { username: string; relation: RelationState }) {
+/** Cores de pelo para quem ainda não escolheu (nos jogos sem cor da raposa, só enfeite): estável por posição. */
+const FALLBACK_FUR = [
+  '#ff7d26',
+  '#4d8dff',
+  '#33c27f',
+  '#ff9ecf',
+  '#ffd23f',
+  '#9a5cff',
+  '#2fd6d0',
+  '#e5303a',
+];
+
+/** Opções de uma pessoa (menu "..."): pedir amizade e, para o líder, expulsar. Só aparece quando há o que fazer. */
+function PlayerMenu({
+  m,
+  relation,
+  canKick,
+}: {
+  m: RoomMember;
+  relation: RelationState;
+  canKick: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [sure, setSure] = useState(false);
   const queryClient = useQueryClient();
-  const act = useMutation({
-    mutationFn: () => (relation === 'incoming' ? acceptRequest(username) : sendRequest(username)),
+  const friend = useMutation({
+    mutationFn: () =>
+      relation === 'incoming' ? acceptRequest(m.username) : sendRequest(m.username),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['friends'] });
       void queryClient.invalidateQueries({ queryKey: ['ranking'] });
+      setOpen(false);
     },
   });
-  if (relation === 'friends') return <span className="mono lb-pill friend">AMIGO</span>;
-  if (relation === 'outgoing') return <span className="mono lb-pill">PEDIDO ENVIADO</span>;
+  const canFriend = relation === 'none' || relation === 'incoming';
+  if (!canFriend && !canKick) return null;
   return (
-    <button
-      type="button"
-      className="fr-btn"
-      data-sfx={relation === 'incoming' ? 'success' : 'send'}
-      disabled={act.isPending}
-      onClick={() => act.mutate()}
-    >
-      {act.isPending
-        ? 'Enviando...'
-        : relation === 'incoming'
-          ? 'Aceitar amizade'
-          : 'Pedir amizade'}
-    </button>
-  );
-}
-
-function Person({
-  m,
-  me,
-  children,
-}: {
-  m: RoomMember;
-  me: string | undefined;
-  children?: React.ReactNode;
-}) {
-  const guestMember = !!m.guest;
-  const viewerIsGuest = useAuth((s) => s.user === null);
-  const relation = useRelation(m.username, m.id === me || guestMember || viewerIsGuest);
-  return (
-    <>
-      <span
-        className={`lb-avatar${relation === 'friends' ? ' friend' : relation === 'me' ? '' : ' stranger'}`}
-      >
-        {m.username.slice(0, 1).toUpperCase()}
-      </span>
-      <span className="lb-who">
-        <b>
-          {guestMember ? m.username : `${at(m.username)}`}
-          {guestMember && <span className="mono rm-badge">VISITANTE</span>}
-          {m.id === me && <span className="mono rm-badge you">VOCÊ</span>}
-        </b>
-        {relation !== 'me' && relation !== 'friends' && (
-          <small className="mono">Ainda não é seu amigo</small>
-        )}
-      </span>
-      <span className="lb-side">
-        {children}
-        {relation !== 'me' && <FriendAction username={m.username} relation={relation} />}
-      </span>
-    </>
-  );
-}
-
-function LeaderFriend({ username, isMe }: { username: string; isMe: boolean }) {
-  const relation = useRelation(username, isMe);
-  return relation === 'me' ? null : <FriendAction username={username} relation={relation} />;
-}
-
-function Status({ m }: { m: RoomMember }) {
-  if (!m.connected) return <span className="mono lb-pill off">SEM CONEXÃO</span>;
-  return (
-    <span className={`mono lb-pill${m.ready ? ' on' : ''}`}>
-      {m.ready ? 'PRONTO' : 'ESPERANDO'}
-    </span>
-  );
-}
-
-function Kick({ m }: { m: RoomMember }) {
-  const [sure, setSure] = useState(false);
-  return sure ? (
-    <span className="lb-kick">
+    <div className="lb3-menu">
       <button
         type="button"
-        className="fr-btn"
-        data-sfx="remove"
-        onClick={() => sendRoom('kick', { id: m.id })}
+        className="lb3-more"
+        aria-label={`Opções de ${m.username}`}
+        aria-expanded={open}
+        data-sfx="tab"
+        onClick={() => {
+          setOpen((o) => !o);
+          setSure(false);
+        }}
       >
-        Confirmar
+        <span aria-hidden="true">•••</span>
       </button>
-      <button type="button" className="fr-btn ghost" onClick={() => setSure(false)}>
-        Não
-      </button>
-    </span>
-  ) : (
-    <button type="button" className="fr-btn ghost" onClick={() => setSure(true)}>
-      Expulsar
-    </button>
-  );
-}
-
-/**
- * Atravessa! e Desmorona!: a cor da sua raposa. Cada cor é de uma pessoa só; as já escolhidas por outras ficam
- * apagadas, com o nome de quem as pegou.
- */
-function AtravessaColors({ snapshot, me }: { snapshot: RoomSnapshot; me: string | undefined }) {
-  const colors =
-    (snapshot.game === 'desmorona' ? snapshot.desmorona?.colors : snapshot.atravessa?.colors) ?? {};
-  const owner = (hex: string) => Object.entries(colors).find(([, h]) => h === hex)?.[0];
-  const nameOf = (id?: string) => snapshot.members.find((m) => m.id === id)?.username;
-  const mineHex = me ? colors[me] : undefined;
-  const missing = snapshot.members.filter((m) => !colors[m.id]);
-  return (
-    <div>
-      <div className="mono rm-label">A COR DA SUA RAPOSA</div>
-      <div className="lb-colors" role="radiogroup" aria-label="Cor da raposa">
-        {ATR_ROOM_COLORS.map((c) => {
-          const by = owner(c.hex);
-          const mine = by === me;
-          return (
-            <div key={c.hex} className="lb-colorcell">
+      {open && (
+        <div className="lb3-pop" role="menu">
+          {canFriend && (
+            <button
+              type="button"
+              role="menuitem"
+              disabled={friend.isPending}
+              onClick={() => friend.mutate()}
+            >
+              {relation === 'incoming' ? 'Aceitar amizade' : 'Pedir amizade'}
+            </button>
+          )}
+          {canKick &&
+            (sure ? (
               <button
                 type="button"
-                role="radio"
-                aria-checked={mine}
-                aria-label={`${c.name}${by ? ` (de ${mine ? 'você' : at(nameOf(by))})` : ''}`}
-                title={by && !mine ? `Já é de ${at(nameOf(by))}` : c.name}
-                className={`lb-color${mine ? ' on' : ''}${by && !mine ? ' taken' : ''}`}
-                style={{ background: c.hex }}
-                disabled={!!by && !mine}
-                data-sfx="select"
-                onClick={() => sendRoom('color', { hex: c.hex })}
-              />
-              <span className={`lb-colorowner mono${mine ? ' me' : ''}${by ? '' : ' free'}`}>
-                {by ? (mine ? 'VOCÊ' : at(nameOf(by))) : 'LIVRE'}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-      {mineHex ? (
-        <button
-          type="button"
-          className="lb-uncolor mono"
-          data-sfx="remove"
-          onClick={() => sendRoom('uncolor')}
-        >
-          <span aria-hidden="true">×</span> TIRAR MINHA COR
-        </button>
-      ) : (
-        <p className="lb-colorwarn mono" role="alert">
-          Escolha a sua cor para marcar pronto.
-        </p>
-      )}
-      {missing.length > 0 && mineHex && (
-        <p className="lb-colorwarn mono">
-          Falta escolher a cor: {missing.map((m) => at(m.username)).join(', ')}.
-        </p>
+                role="menuitem"
+                className="danger"
+                onClick={() => sendRoom('kick', { id: m.id })}
+              >
+                Confirmar: expulsar
+              </button>
+            ) : (
+              <button
+                type="button"
+                role="menuitem"
+                className="danger"
+                onClick={() => setSure(true)}
+              >
+                Expulsar da sala
+              </button>
+            ))}
+        </div>
       )}
     </div>
   );
 }
 
+/** Uma vaga ocupada: a raposa, o nome e UM estado (líder, pronto ou esperando). */
+function PlayerTile({
+  m,
+  index,
+  me,
+  fur,
+  canKick,
+}: {
+  m: RoomMember;
+  index: number;
+  me: string | undefined;
+  fur: string | undefined;
+  canKick: boolean;
+}) {
+  const isMe = m.id === me;
+  const viewerIsGuest = useAuth((s) => s.user === null);
+  const relation = useRelation(m.username, isMe || !!m.guest || viewerIsGuest);
+  const state = !m.connected ? 'off' : m.isHost ? 'host' : m.ready ? 'ready' : 'wait';
+  return (
+    <li className={`lb3-tile ${state}${isMe ? ' me' : ''}`}>
+      <div className="lb3-fox">
+        <FoxAvatar fur={fur ?? FALLBACK_FUR[index % FALLBACK_FUR.length]!} />
+        {state === 'ready' && (
+          <span className="lb3-badge ok" aria-hidden="true">
+            <Check size={14} />
+          </span>
+        )}
+        {state === 'host' && (
+          <span className="lb3-badge crown" aria-hidden="true">
+            <Crown size={14} />
+          </span>
+        )}
+      </div>
+      <b className="lb3-name">{m.guest ? m.username : at(m.username)}</b>
+      <span className="mono lb3-state">
+        {state === 'off'
+          ? 'Sem conexão'
+          : state === 'host'
+            ? 'Líder'
+            : state === 'ready'
+              ? 'Pronto'
+              : 'Esperando'}
+        {isMe && ' · você'}
+      </span>
+      {!isMe && (
+        <PlayerMenu m={m} relation={relation === 'me' ? 'friends' : relation} canKick={canKick} />
+      )}
+    </li>
+  );
+}
+
+/** Escolher a cor da raposa (Atravessa! e Desmorona!): só bolinhas; as já escolhidas por outros ficam apagadas. */
+function ColorPicker({ snapshot, me }: { snapshot: RoomSnapshot; me: string | undefined }) {
+  const colors =
+    (snapshot.game === 'desmorona' ? snapshot.desmorona?.colors : snapshot.atravessa?.colors) ?? {};
+  const owner = (hex: string) => Object.entries(colors).find(([, h]) => h === hex)?.[0];
+  const nameOf = (id?: string) => snapshot.members.find((m) => m.id === id)?.username;
+  const mine = me ? colors[me] : undefined;
+  return (
+    <section className="lb3-colors" aria-label="Cor da sua raposa">
+      <div className="lb3-colors-head">
+        <h3>Sua cor</h3>
+        {!mine && <span className="mono warn">Escolha uma para ficar pronto</span>}
+      </div>
+      <div className="lb3-dots" role="radiogroup" aria-label="Cor da raposa">
+        {ATR_ROOM_COLORS.map((c) => {
+          const by = owner(c.hex);
+          const isMine = by === me;
+          return (
+            <button
+              key={c.hex}
+              type="button"
+              role="radio"
+              aria-checked={isMine}
+              aria-label={`${c.name}${by && !isMine ? ` (de ${at(nameOf(by))})` : ''}`}
+              title={by && !isMine ? `Já é de ${at(nameOf(by))}` : c.name}
+              className={`lb3-dot${isMine ? ' on' : ''}${by && !isMine ? ' taken' : ''}`}
+              style={{ background: c.hex }}
+              disabled={!!by && !isMine}
+              data-sfx="select"
+              onClick={() => sendRoom('color', { hex: c.hex })}
+            >
+              {isMine && <Check size={16} />}
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 /**
- * Quem está na sala: o líder em destaque no topo e, abaixo, os jogadores com o estado de cada
- * um. Só o líder vê o botão de expulsar (`canKick`).
+ * A aba "Jogadores" (spec 045): as vagas da sala como cartões de raposa, cada um com um estado só. Os detalhes (pedir
+ * amizade, expulsar) ficam num menu "..." de cada cartão. Nas vagas livres, um atalho para convidar.
  */
 export function MembersPanel({
   snapshot,
   me,
   canKick,
+  onInvite,
 }: {
   snapshot: RoomSnapshot;
   me: string | undefined;
   canKick: boolean;
+  onInvite: () => void;
 }) {
-  const leader = snapshot.members.find((m) => m.isHost);
-  const players = snapshot.members.filter((m) => !m.isHost);
-  const connected = snapshot.members.filter((m) => m.connected).length;
-  const readyCount = players.filter((m) => m.connected && m.ready).length;
-  const waiting = players.filter((m) => m.connected).length;
-  const needed = MIN_PLAYERS[snapshot.game];
-
+  const colored = snapshot.game === 'atravessa' || snapshot.game === 'desmorona';
+  const colors =
+    (snapshot.game === 'desmorona' ? snapshot.desmorona?.colors : snapshot.atravessa?.colors) ?? {};
+  const free = snapshot.maxPlayers - snapshot.members.length;
+  // poucas vagas livres à vista: nada de uma fileira de 10 quadrados vazios
+  const emptyShown = Math.min(free, snapshot.members.length < 4 ? 4 - snapshot.members.length : 1);
   return (
-    <div className="lb-members">
-      {(snapshot.game === 'atravessa' || snapshot.game === 'desmorona') && (
-        <AtravessaColors snapshot={snapshot} me={me} />
-      )}
-      {leader && (
-        <div>
-          <div className="mono rm-label">LÍDER</div>
-          <div className="lb-leader">
-            <span className="lb-avatar">
-              <Crown size={22} />
-            </span>
-            <span className="lb-who">
-              <b>
-                {at(leader.username)}
-                {leader.id === me && <span className="mono rm-badge you">VOCÊ</span>}
-              </b>
-              <small className="mono">Define as regras e começa a partida</small>
-            </span>
-            <span className="lb-side">
-              <LeaderFriend username={leader.username} isMe={leader.id === me} />
-              <span className={`mono lb-pill${leader.connected ? ' on' : ' off'}`}>
-                {leader.connected ? 'NA SALA' : 'SEM CONEXÃO'}
+    <div className="lb3-players">
+      <ul className="lb3-grid">
+        {snapshot.members.map((m, i) => (
+          <PlayerTile
+            key={m.id}
+            m={m}
+            index={i}
+            me={me}
+            fur={colored ? colors[m.id] : undefined}
+            canKick={canKick}
+          />
+        ))}
+        {Array.from({ length: emptyShown }, (_, i) => (
+          <li key={`empty-${i}`} className="lb3-tile empty">
+            <button type="button" onClick={onInvite} data-sfx="tab">
+              <span className="lb3-plus" aria-hidden="true">
+                +
               </span>
-            </span>
-          </div>
-        </div>
+              <span className="mono">Convidar</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      {free > emptyShown && (
+        <p className="mono lb3-more-slots">+{free - emptyShown} vagas livres</p>
       )}
-
-      <div>
-        <div className="lb-sec-head">
-          <div className="mono rm-label">JOGADORES · {players.length}</div>
-          {waiting > 0 && (
-            <div className="mono lb-count">
-              {readyCount} DE {waiting} PRONTOS
-            </div>
-          )}
-        </div>
-        {waiting > 0 && (
-          <div
-            className="lb-bar"
-            role="progressbar"
-            aria-label="Jogadores prontos"
-            aria-valuemin={0}
-            aria-valuemax={waiting}
-            aria-valuenow={readyCount}
-          >
-            <i style={{ transform: `scaleX(${readyCount / waiting})` }} />
-          </div>
-        )}
-        <ul className="lb-list">
-          {players.map((m) => (
-            <li key={m.id} className={`lb-row${m.id === me ? ' me' : ''}`}>
-              <Person m={m} me={me}>
-                <Status m={m} />
-                {canKick && <Kick m={m} />}
-              </Person>
-            </li>
-          ))}
-          {connected < needed && (
-            <li className="lb-empty mono">
-              Falta{needed - connected === 1 ? '' : 'm'} {needed - connected}{' '}
-              {needed - connected === 1 ? 'pessoa' : 'pessoas'} para poder começar. Use o botão
-              Convidar.
-            </li>
-          )}
-        </ul>
-      </div>
+      {colored && <ColorPicker snapshot={snapshot} me={me} />}
     </div>
   );
 }

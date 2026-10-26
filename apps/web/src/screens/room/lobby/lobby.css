@@ -721,3 +721,500 @@
     padding-bottom: 24px;
   }
 }
+
+/* ---------- Lobby em três abas, versão 2 (spec 045) ---------- */
+.lb3 {
+  gap: 14px;
+  padding-bottom: 8px;
+}
+.lb3-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 12px 14px;
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--yellow);
+  color: var(--on-accent);
+  box-shadow: var(--shadow);
+}
+.lb3-bar-code {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+}
+.lb3-bar-code span {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+.lb3-bar-code b {
+  font: 900 40px/1 var(--font-display);
+  letter-spacing: 0.08em;
+}
+.lb3-bar-info {
+  flex: 1 1 160px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.lb3-bar-hint.ok {
+  color: #0b6b3a;
+}
+.lb3-role {
+  padding: 3px 10px;
+  border: 2px solid var(--on-accent);
+  border-radius: 999px;
+  background: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.lb3-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border: var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--white);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.lb3-tabs button {
+  min-height: 48px;
+  padding: 0 6px;
+  border: 0;
+  border-left: 2.5px solid var(--ink);
+  background: var(--white);
+  color: var(--ink);
+  font: 900 13px var(--font-display);
+  text-transform: uppercase;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.lb3-tabs button:first-child {
+  border-left: 0;
+}
+.lb3-tabs button small {
+  font-size: 11px;
+  opacity: 0.8;
+}
+.lb3-tabs button[aria-selected='true'] {
+  background: var(--ink);
+  color: var(--paper);
+}
+.lb3-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.lb3-side {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.lb3-pane {
+  display: none;
+}
+.lb3-pane.on {
+  display: block;
+}
+
+/* Jogadores */
+.lb3-players {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.lb3-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.lb3-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 8px 12px;
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--white);
+  box-shadow: 3px 3px 0 var(--ink);
+  text-align: center;
+}
+.lb3-tile.me {
+  background: var(--yellow);
+  color: var(--on-accent);
+}
+.lb3-tile.ready {
+  box-shadow: 3px 3px 0 var(--green);
+}
+.lb3-tile.off {
+  opacity: 0.55;
+}
+.lb3-fox {
+  position: relative;
+  width: 72px;
+  height: 60px;
+}
+.fox-avatar {
+  width: 100%;
+  height: 100%;
+}
+.lb3-badge {
+  position: absolute;
+  right: -6px;
+  bottom: -4px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 2.5px solid var(--ink);
+  border-radius: 50%;
+  color: var(--on-accent);
+}
+.lb3-badge.ok {
+  background: var(--green);
+}
+.lb3-badge.crown {
+  background: var(--yellow);
+}
+.lb3-name {
+  max-width: 100%;
+  font: 900 15px/1.15 var(--font-display);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lb3-state {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.lb3-tile.me .lb3-state,
+.lb3-tile.ready .lb3-state {
+  color: inherit;
+}
+.lb3-tile.ready .lb3-state {
+  color: #0b6b3a;
+}
+.lb3-tile.empty {
+  padding: 0;
+  border-style: dashed;
+  background: transparent;
+  box-shadow: none;
+}
+.lb3-tile.empty button {
+  width: 100%;
+  min-height: 118px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  border-radius: var(--radius-lg);
+}
+.lb3-plus {
+  font: 900 30px/1 var(--font-display);
+}
+.lb3-more-slots {
+  margin: -6px 0 0;
+  font-size: 11px;
+  color: var(--muted);
+  text-align: center;
+}
+.lb3-menu {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+.lb3-more {
+  min-width: 40px;
+  min-height: 32px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  font: 900 13px var(--font-display);
+  letter-spacing: 0.1em;
+  cursor: pointer;
+}
+.lb3-more[aria-expanded='true'] {
+  background: var(--ink);
+  color: var(--paper);
+}
+.lb3-pop {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 5;
+  min-width: 170px;
+  display: flex;
+  flex-direction: column;
+  border: var(--border);
+  border-radius: 12px;
+  background: var(--white);
+  color: var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+  overflow: hidden;
+}
+.lb3-pop button {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-top: 2px solid var(--ink);
+  background: transparent;
+  color: inherit;
+  font: 800 13px var(--font-display);
+  text-align: left;
+  cursor: pointer;
+}
+.lb3-pop button:first-child {
+  border-top: 0;
+}
+.lb3-pop button.danger {
+  color: var(--eco-red, #dc2b36);
+}
+
+/* Cor da raposa */
+.lb3-colors {
+  padding: 12px 14px;
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--white);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.lb3-colors-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.lb3-colors-head h3 {
+  margin: 0;
+  font: 900 15px var(--font-display);
+  text-transform: uppercase;
+}
+.lb3-colors-head .warn {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--eco-red, #dc2b36);
+}
+.lb3-dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.lb3-dot {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: var(--border);
+  border-radius: 50%;
+  color: #fff;
+  cursor: pointer;
+}
+.lb3-dot.on {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}
+.lb3-dot.taken {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
+/* Convidar */
+.lb3-invite {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.lb3-share {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--white);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.lb3-share-code {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.lb3-share-code span {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+.lb3-share-code b {
+  font: 900 34px/1 var(--font-display);
+  letter-spacing: 0.1em;
+}
+.lb3-share-btns {
+  display: grid;
+  gap: 8px;
+}
+.lb3-hint {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+.lb3-sec {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.lb3-sec h3 {
+  margin: 0;
+  font: 900 15px var(--font-display);
+  text-transform: uppercase;
+}
+.lb3-inv-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.lb3-inv-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 8px 8px 14px;
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+}
+.lb3-inv-name {
+  min-width: 0;
+  font: 800 15px var(--font-display);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lb3-inv-name small {
+  margin-left: 8px;
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.lb3-inv-sent {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+/* Barra de ação fixa */
+.lb3-foot {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 -16px;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  border-top: var(--border);
+  background: var(--paper);
+}
+.lb3-main {
+  width: 100%;
+  min-height: 56px;
+  font-size: 18px;
+}
+.lb3-why {
+  margin: 0;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.lb3-why.ok {
+  color: #0b6b3a;
+}
+.lb3-leave {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+}
+
+/* Títulos dos painéis: só no computador, onde Regras e Convidar aparecem juntos (no celular são abas) */
+.lb3-h {
+  display: none;
+  margin: 0 0 10px;
+  font: 900 18px var(--font-display);
+  text-transform: uppercase;
+}
+/* O botão do chat fica acima da barra de ação, não em cima dela */
+.app:has(.lb3) .ch-fab {
+  bottom: calc(150px + env(safe-area-inset-bottom));
+}
+
+/* Computador: Jogadores à esquerda; Regras e Convidar empilhados à direita, sem abas */
+@media (min-width: 1024px) {
+  .app.has-rail:has(.lb3) {
+    --page-max: 1040px;
+  }
+  .app:has(.lb3) .ch-fab {
+    bottom: 24px;
+  }
+  .lb3-tabs {
+    display: none;
+  }
+  .lb3-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    align-items: start;
+    gap: 20px;
+  }
+  .lb3-pane,
+  .lb3-pane.on {
+    display: block;
+  }
+  .lb3-h {
+    display: block;
+  }
+  .lb3-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .lb3-foot {
+    position: static;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    max-width: 520px;
+  }
+}
+@media (min-width: 640px) and (max-width: 1023px) {
+  .lb3-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

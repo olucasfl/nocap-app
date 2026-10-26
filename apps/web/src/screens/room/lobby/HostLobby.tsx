@@ -1,49 +1,46 @@
 import { useState } from 'react';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { closeRoom, leaveRoom, sendRoom, type RoomSnapshot } from '@/lib/rooms';
+import { InvitePanel } from './InvitePanel';
 import { LobbyShell, startHint } from './LobbyShell';
 import { MembersPanel } from './MembersPanel';
 import { RulesEditor } from './RulesPanel';
 import { MIN_PLAYERS } from './rules';
 
-/**
- * A tela do líder da sala: edita as regras, expulsa e começa a partida. Abre direto nas regras,
- * que é a primeira coisa que o líder precisa acertar.
- */
+/** A tela do líder: edita as regras, convida, expulsa e começa a partida. */
 export function HostLobby({ snapshot, me }: { snapshot: RoomSnapshot; me: string | undefined }) {
   const [closing, setClosing] = useState(false);
   const others = snapshot.members.filter((m) => m.connected && !m.isHost);
   const connected = snapshot.members.filter((m) => m.connected).length;
   const needed = MIN_PLAYERS[snapshot.game];
-  const enough = connected >= needed;
-  const allReady = others.every((m) => m.ready);
-  const canStart = enough && allReady;
+  const canStart = connected >= needed && others.every((m) => m.ready);
   const rematch = canStart && others.length > 0 && others.every((m) => m.committed);
+  const hint = startHint(snapshot);
 
   return (
     <LobbyShell
       snapshot={snapshot}
-      role="leader"
-      members={<MembersPanel snapshot={snapshot} me={me} canKick />}
+      me={me}
+      members={(goInvite) => (
+        <MembersPanel snapshot={snapshot} me={me} canKick onInvite={goInvite} />
+      )}
       rules={<RulesEditor snapshot={snapshot} />}
+      invite={<InvitePanel snapshot={snapshot} />}
       footer={
         <>
           <button
             type="button"
-            className="btn alt"
+            className="btn alt lb3-main"
             data-sfx="start"
             disabled={!canStart}
             onClick={() => sendRoom('start')}
           >
-            Começar
+            Começar partida
           </button>
-          {rematch && (
-            <p className="mono rm-hint">
-              Todo mundo topou jogar de novo. Ajuste as regras, se quiser, e comece.
-            </p>
-          )}
-          {!canStart && <p className="mono rm-hint lb-why">{startHint(snapshot).text}</p>}
-          <div className="lb-leave">
+          <p className={`mono lb3-why${canStart ? ' ok' : ''}`}>
+            {rematch ? 'Todo mundo topou jogar de novo. Ajuste as regras, se quiser.' : hint.text}
+          </p>
+          <div className="lb3-leave">
             <button type="button" className="lb-textbtn" data-sfx="back" onClick={leaveRoom}>
               Sair da sala
             </button>

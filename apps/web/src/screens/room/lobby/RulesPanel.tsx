@@ -51,9 +51,6 @@ function ModeNote({ snapshot }: { snapshot: RoomSnapshot }) {
 export function RulesEditor({ snapshot }: { snapshot: RoomSnapshot }) {
   return (
     <div className="lb-rules">
-      <p className="lb-hint mono">
-        Só você altera as regras. Quem está na sala vê a mudança na hora.
-      </p>
       <ModeNote snapshot={snapshot} />
       {rulesFor(snapshot).map((r) => (
         <div key={r.id}>

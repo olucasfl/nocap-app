@@ -1,12 +1,10 @@
 import { leaveRoom, sendRoom, type RoomSnapshot, at } from '@/lib/rooms';
+import { InvitePanel } from './InvitePanel';
 import { LobbyShell } from './LobbyShell';
 import { MembersPanel } from './MembersPanel';
 import { RulesReadOnly } from './RulesPanel';
 
-/**
- * A tela de quem não é o líder: vê quem está na sala e as regras (só para ler) e marca quando
- * estiver pronto. Não há nada aqui que mude a sala; o líder decide.
- */
+/** A tela de quem não é o líder: vê quem está na sala e as regras (só para ler) e marca quando estiver pronto. */
 export function MemberLobby({
   snapshot,
   me,
@@ -17,37 +15,40 @@ export function MemberLobby({
   leaderName: string;
 }) {
   const mine = snapshot.members.find((m) => m.id === me);
-
   return (
     <LobbyShell
       snapshot={snapshot}
-      role="member"
-      leaderName={leaderName}
-      members={<MembersPanel snapshot={snapshot} me={me} canKick={false} />}
+      me={me}
+      members={(goInvite) => (
+        <MembersPanel snapshot={snapshot} me={me} canKick={false} onInvite={goInvite} />
+      )}
       rules={<RulesReadOnly snapshot={snapshot} leaderName={leaderName} />}
+      invite={<InvitePanel snapshot={snapshot} />}
       footer={
         <>
           {mine?.committed ? (
-            <p className="mono rm-hint">Você topou jogar de novo. Aguardando o líder iniciar...</p>
+            <p className="mono lb3-why ok">
+              Você topou jogar de novo. Aguardando o líder iniciar...
+            </p>
           ) : (
             <>
               <button
                 type="button"
-                className={mine?.ready ? 'btn ghost' : 'btn alt'}
+                className={`btn lb3-main ${mine?.ready ? 'ghost' : 'alt'}`}
                 data-sfx="toggle"
                 aria-pressed={!!mine?.ready}
                 onClick={() => sendRoom('ready', { ready: !mine?.ready })}
               >
-                {mine?.ready ? 'Não estou pronto' : 'Estou pronto'}
+                {mine?.ready ? 'Cancelar: não estou pronto' : 'Estou pronto'}
               </button>
-              <p className="mono rm-hint">
+              <p className={`mono lb3-why${mine?.ready ? ' ok' : ''}`}>
                 {mine?.ready
-                  ? `Você está pronto. Aguardando ${at(leaderName)} começar.`
-                  : 'Marque "pronto" quando quiser jogar. O líder começa a partida.'}
+                  ? `Aguardando ${at(leaderName)} começar`
+                  : 'Marque quando quiser jogar'}
               </p>
             </>
           )}
-          <div className="lb-leave">
+          <div className="lb3-leave">
             <button type="button" className="lb-textbtn" data-sfx="back" onClick={leaveRoom}>
               Sair da sala
             </button>
