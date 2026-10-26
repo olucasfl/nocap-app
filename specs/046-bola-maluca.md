@@ -146,3 +146,5 @@ Ranking (online ou offline), histórico, estatísticas gravadas, boost, power-up
 - Comemoração de **5 s** depois do gol (confete, fogos, câmera girando), depois a contagem de 3 s.
 - **Tab** mostra as estatísticas (gols, assistências, gols contra, toques, mortais e posse); **Configurações** (celular e computador) tem continuar, estatísticas, câmera, trocar de time ou espectar e sair. O cursor só fica preso à câmera durante a partida.
 - Campos de 3 e 4 times bem maiores.
+
+- **Relógio regressivo** (decisão do Lucas, 26/10/2026): o tempo mostrado **desce** até 0:00. Na prorrogação (gol de ouro) ele passa a **subir** a partir de 0:00, com o aviso "Prorrogação · gol de ouro" e outra cor. Câmera na bola reescrita (bola sempre no quadro, giro mais firme, sem saltos perto da parede) e câmera livre com altura (mouse ou dedo). Sons, efeito do chute (anéis e faíscas), rastro do mortal e dicas da primeira partida adicionados; HUD revisado em celulares de 320 a 412 px de largura e deitados.

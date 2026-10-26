@@ -625,6 +625,7 @@ export class BolaRoomEngine extends ColorRoomEngine {
       ck: Math.round(w.clock * 10) / 10,
       sc: w.scores,
       gd: w.golden ? 1 : 0,
+      gs: Math.round(w.goldenStart * 10) / 10,
       b: [r2(b.x), r2(b.y), r2(b.z), r2(b.vx), r2(b.vy), r2(b.vz)],
       p: w.players.map((p) => [
         this.slots.get(p.id) ?? -1,

@@ -11,8 +11,8 @@ import {
 import { buildHero } from '../atravessa/models';
 
 /** Câmera de perseguição: atrás da raposa, olhando por cima do ombro para a bola. */
-const CAM_BACK = 7.6;
-const CAM_UP = 4.7;
+/** Distância da câmera até a raposa (m). */
+const CAM_DIST = 8.6;
 const WALL_H = 1.3;
 const GLASS_H = 4.2;
 const NET_DEPTH = 3.8;
@@ -24,6 +24,8 @@ interface Fox {
   shadow: THREE.Mesh;
   /** Nome, cor e time com que foi desenhada. */
   sig: string;
+  /** Tempo até o próximo ponto do rastro do mortal. */
+  trailT: number;
 }
 
 const tmp = new THREE.Vector3();
@@ -37,11 +39,27 @@ export class BolaScene {
   private ball: THREE.Mesh;
   private ballShadow: THREE.Mesh;
   private yaw = 0;
+  /** Altura da câmera em radianos; `null` = automática (câmera na bola). */
+  private pitch: number | null = null;
+  private camDist = CAM_DIST;
   private camFocus = new THREE.Vector3();
   private size = { w: 0, h: 0 };
   private disposed = false;
   private tags: THREE.Sprite[] = [];
   private shake = 0;
+  /** Efeitos curtos (anéis do chute, rastro do mortal e da bola): só escala e opacidade. */
+  private fx: {
+    obj: THREE.Object3D;
+    mat: THREE.Material & { opacity: number };
+    age: number;
+    life: number;
+    s0: number;
+    s1: number;
+    o0: number;
+    ring: boolean;
+  }[] = [];
+  private glowTex: THREE.Texture | null = null;
+  private ballTrailT = 0;
   private bursts: {
     pts: THREE.Points;
     vel: Float32Array;
@@ -530,6 +548,7 @@ export class BolaScene {
       body,
       shadow: this.blob(0.55),
       sig: `${p.name}|${p.color}|${p.team}`,
+      trailT: 0,
     });
   }
 
@@ -597,6 +616,18 @@ export class BolaScene {
     this.camera.updateProjectionMatrix();
   }
 
+  /** Para os testes: onde a câmera está e onde a bola aparece na tela (-1 a 1). */
+  debugCamera() {
+    const b = this.world.ball;
+    const v = new THREE.Vector3(b.x, b.y, b.z).project(this.camera);
+    const c = this.camera.position;
+    return { x: c.x, y: c.y, z: c.z, ndc: [v.x, v.y, v.z] };
+  }
+
+  setPitch(p: number | null) {
+    this.pitch = p;
+  }
+
   setYaw(yaw: number) {
     this.yaw = yaw;
   }
@@ -660,6 +691,96 @@ export class BolaScene {
     }
   }
 
+  private glow(): THREE.Texture {
+    if (this.glowTex) return this.glowTex;
+    const cv = document.createElement('canvas');
+    cv.width = 64;
+    cv.height = 64;
+    const g = cv.getContext('2d');
+    if (g) {
+      const grad = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+      grad.addColorStop(0, 'rgba(255,255,255,1)');
+      grad.addColorStop(0.4, 'rgba(255,255,255,0.55)');
+      grad.addColorStop(1, 'rgba(255,255,255,0)');
+      g.fillStyle = grad;
+      g.fillRect(0, 0, 64, 64);
+    }
+    this.glowTex = new THREE.CanvasTexture(cv);
+    return this.glowTex;
+  }
+
+  private addGlow(
+    x: number,
+    y: number,
+    z: number,
+    color: number,
+    size: number,
+    life: number,
+    opacity = 0.85,
+  ) {
+    const mat = new THREE.SpriteMaterial({
+      map: this.glow(),
+      color,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      fog: false,
+      opacity,
+    });
+    const sp = new THREE.Sprite(mat);
+    sp.position.set(x, y, z);
+    sp.scale.setScalar(size);
+    this.scene.add(sp);
+    this.fx.push({
+      obj: sp,
+      mat,
+      age: 0,
+      life,
+      s0: size,
+      s1: size * 0.3,
+      o0: opacity,
+      ring: false,
+    });
+  }
+
+  private addRing(x: number, y: number, z: number, color: number, delay = 0) {
+    const mat = new THREE.MeshBasicMaterial({
+      color,
+      transparent: true,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+      fog: false,
+      opacity: 0.9,
+    });
+    const m = new THREE.Mesh(new THREE.RingGeometry(0.82, 1, 44), mat);
+    m.position.set(x, y, z);
+    m.visible = delay <= 0;
+    this.scene.add(m);
+    this.fx.push({ obj: m, mat, age: -delay, life: 0.5, s0: 1, s1: 7, o0: 0.9, ring: true });
+  }
+
+  /** O chute pegou: dois anéis abrindo no ponto da bola e uma chuva de faíscas. */
+  kickFx(id: string) {
+    const b = this.world.ball;
+    const p = this.world.players.find((q) => q.id === id);
+    const team = p ? (BOL_TEAM_COLORS[p.team] ?? 0xffffff) : 0xffffff;
+    this.addRing(b.x, b.y, b.z, 0xffffff);
+    this.addRing(b.x, b.y, b.z, team, 0.07);
+    this.addGlow(b.x, b.y, b.z, 0xfff0a0, 4.5, 0.3, 0.95);
+    if (this.reduced) return;
+    for (let i = 0; i < 10; i++) {
+      this.addGlow(
+        b.x + (Math.random() - 0.5) * 1.6,
+        b.y + (Math.random() - 0.2) * 1.6,
+        b.z + (Math.random() - 0.5) * 1.6,
+        i % 2 ? team : 0xffffff,
+        0.9,
+        0.45,
+      );
+    }
+    this.shake = Math.max(this.shake, 0.25);
+  }
+
   shakeNow(amount: number) {
     this.shake = Math.max(this.shake, amount);
   }
@@ -698,6 +819,44 @@ export class BolaScene {
         fox.body.rotation.x = pitch;
       }
     }
+    // rastro do mortal, rastro da bola rápida e efeitos do chute
+    if (!this.reduced) {
+      for (const p of this.world.players) {
+        const fox = this.foxes.get(p.id);
+        if (!fox) continue;
+        if (p.flipT > 0) {
+          fox.trailT -= dt;
+          if (fox.trailT <= 0) {
+            fox.trailT = 0.025;
+            this.addGlow(p.x, p.y + 0.6, p.z, BOL_TEAM_COLORS[p.team] ?? 0xffffff, 1.7, 0.4, 0.7);
+          }
+        } else fox.trailT = 0;
+      }
+      const sp = Math.hypot(b.vx, b.vy, b.vz);
+      this.ballTrailT -= dt;
+      if (sp > 15 && this.ballTrailT <= 0) {
+        this.ballTrailT = 0.02;
+        this.addGlow(b.x, b.y, b.z, sp > 24 ? 0xffd23f : 0xffffff, 1.5, 0.28, 0.55);
+      }
+    }
+    for (let i = this.fx.length - 1; i >= 0; i--) {
+      const f = this.fx[i]!;
+      f.age += dt;
+      if (f.age < 0) continue;
+      f.obj.visible = true;
+      const k = Math.min(1, f.age / f.life);
+      if (f.ring) {
+        f.obj.scale.setScalar(f.s0 + (f.s1 - f.s0) * (1 - Math.pow(1 - k, 2)));
+        f.obj.lookAt(this.camera.position);
+      } else f.obj.scale.setScalar(f.s0 + (f.s1 - f.s0) * k);
+      f.mat.opacity = f.o0 * (1 - k) * (1 - k);
+      if (f.age >= f.life) {
+        this.scene.remove(f.obj);
+        f.mat.dispose();
+        if (f.ring) (f.obj as THREE.Mesh).geometry.dispose();
+        this.fx.splice(i, 1);
+      }
+    }
     // confete e fogos
     for (let i = this.bursts.length - 1; i >= 0; i--) {
       const bst = this.bursts[i]!;
@@ -729,37 +888,54 @@ export class BolaScene {
         this.bursts.splice(i, 1);
       }
     }
-    // câmera
-    // sem corpo (espectador), a câmera segue a bola
+    // câmera: orbita a raposa (ou a bola, se você só assiste) com ângulo de giro e de altura
     const target = this.world.players.find((p) => p.id === focusId) ?? { x: b.x, y: 0, z: b.z };
-    if (target) {
-      this.camFocus.lerp(tmp.set(target.x, target.y, target.z), 1 - Math.exp(-dt * 8));
-      this.shake = Math.max(0, this.shake - dt * 2.4);
-      const sh = this.reduced ? 0 : this.shake * 0.3;
-      const sy = Math.sin(this.yaw);
-      const cy = Math.cos(this.yaw);
-      this.camera.position.set(
-        this.camFocus.x + sy * CAM_BACK + (Math.random() - 0.5) * sh,
-        this.camFocus.y + CAM_UP + (Math.random() - 0.5) * sh,
-        this.camFocus.z + cy * CAM_BACK,
+    this.camFocus.lerp(tmp.set(target.x, target.y, target.z), 1 - Math.exp(-dt * 10));
+    this.shake = Math.max(0, this.shake - dt * 2.4);
+    const sh = this.reduced ? 0 : this.shake * 0.3;
+    const auto = this.pitch === null;
+    const toBall = Math.hypot(b.x - this.camFocus.x, b.z - this.camFocus.z);
+    // câmera na bola: sobe quando a bola está longe ou alta, para o campo e a bola caberem no quadro
+    const elev = auto
+      ? 0.46 + Math.min(0.3, toBall / 70) + Math.min(0.15, Math.max(0, b.y - 1) / 25)
+      : (this.pitch as number);
+    let lookT = auto ? Math.min(0.7, Math.max(0.2, 0.2 + toBall / 45)) : 0;
+    const sy = Math.sin(this.yaw);
+    const cy = Math.cos(this.yaw);
+    const ce = Math.cos(elev);
+    const se = Math.sin(elev);
+    // quanto dá para afastar sem passar da parede: a distância encurta aos poucos (nunca "pula" como um corte seco)
+    let allowed = CAM_DIST * ce;
+    for (const e of this.world.field.edges) {
+      const d0 = (this.camFocus.x - e.ax) * e.nx + (this.camFocus.z - e.az) * e.nz;
+      const h = sy * e.nx + cy * e.nz;
+      if (h < -1e-4) allowed = Math.min(allowed, Math.max(0, (d0 - 1.2) / -h));
+    }
+    const want = CAM_DIST * Math.max(0.38, Math.min(1, allowed / (CAM_DIST * ce)));
+    this.camDist += (want - this.camDist) * (1 - Math.exp(-dt * (want < this.camDist ? 14 : 3)));
+    const D = this.camDist;
+    this.camera.position.set(
+      this.camFocus.x + sy * ce * D + (Math.random() - 0.5) * sh,
+      this.camFocus.y + se * D + 0.7 + (CAM_DIST - D) * 0.45 + (Math.random() - 0.5) * sh,
+      this.camFocus.z + cy * ce * D,
+    );
+    const aim = () => {
+      this.camera.lookAt(
+        this.camFocus.x + (b.x - this.camFocus.x) * lookT - sy * 1.2,
+        1 + Math.max(0, b.y - 1) * lookT * 0.5,
+        this.camFocus.z + (b.z - this.camFocus.z) * lookT - cy * 1.2,
       );
-      // olha um pouco em direção à bola, para ela nunca sair do quadro
-      const lx = this.camFocus.x + (b.x - this.camFocus.x) * 0.25 - sy * 1.5;
-      const lz = this.camFocus.z + (b.z - this.camFocus.z) * 0.25 - cy * 1.5;
-      // a câmera nunca passa das paredes: sem isso o muro tapa a raposa quando ela está na borda
-      const cp = this.camera.position;
-      let pushed = 0;
-      for (const e of this.world.field.edges) {
-        const d = (cp.x - e.ax) * e.nx + (cp.z - e.az) * e.nz;
-        if (d < 1.2) {
-          cp.x += e.nx * (1.2 - d);
-          cp.z += e.nz * (1.2 - d);
-          pushed += 1.2 - d;
-        }
+      this.camera.updateMatrixWorld();
+    };
+    aim();
+    if (auto) {
+      // a bola nunca sai do quadro: se estiver perto da borda, a câmera olha mais para ela
+      for (let i = 0; i < 4 && lookT < 0.95; i++) {
+        tmp.set(b.x, b.y, b.z).project(this.camera);
+        if (Math.abs(tmp.x) < 0.78 && tmp.y < 0.78 && tmp.y > -0.8 && tmp.z < 1) break;
+        lookT += 0.2;
+        aim();
       }
-      // encostada na parede, a câmera sobe para ainda enquadrar a raposa e a bola
-      cp.y += Math.min(4, pushed * 0.8);
-      this.camera.lookAt(lx, 1 + Math.max(0, b.y - 1) * 0.2, lz);
     }
     this.renderer.render(this.scene, this.camera);
   }

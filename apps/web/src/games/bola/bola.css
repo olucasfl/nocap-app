@@ -129,10 +129,11 @@
   .bola-cam kbd {
     display: none;
   }
+  /* ao lado do botão de pular (à esquerda dele, na mesma altura): nunca por cima */
   .bola-cam {
     left: auto;
-    right: max(12px, env(safe-area-inset-right));
-    bottom: calc(max(14px, env(safe-area-inset-bottom)) + 90px);
+    right: calc(max(22px, env(safe-area-inset-right)) + 84px + 10px);
+    bottom: calc(max(22px, env(safe-area-inset-bottom)) + 23px);
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -487,4 +488,186 @@
   font: 800 12px var(--font-display, system-ui);
   text-transform: uppercase;
   cursor: pointer;
+}
+
+/* Dicas da primeira partida */
+.bola-tips {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 25;
+  display: grid;
+  gap: 10px;
+  width: min(480px, calc(100% - 24px));
+  max-height: calc(100% - 24px);
+  overflow: auto;
+  padding: 14px 16px;
+  border: 4px solid #1b1535;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.96);
+  color: #1b1535;
+}
+.bola-tips h2 {
+  margin: 0;
+  font: 900 20px var(--font-display, system-ui);
+  text-transform: uppercase;
+}
+.bola-tips ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.bola-tips li {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 10px;
+  align-items: center;
+  font: 700 13px/1.25 var(--font-display, system-ui);
+}
+.bola-tips kbd {
+  justify-self: start;
+  padding: 3px 8px;
+  border: 2px solid #1b1535;
+  border-radius: 8px;
+  background: #ffe27a;
+  font: 900 12px var(--font-display, system-ui);
+  white-space: nowrap;
+}
+
+/* Celular em pé: o relógio desce para a segunda linha e nada fica por cima do botão de configurações */
+@media (max-width: 560px) {
+  .bola-hud {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas: 'score gear' 'clock clock';
+    row-gap: 6px;
+    align-items: start;
+  }
+  .bola-score {
+    grid-area: score;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .bola-gear {
+    grid-area: gear;
+    min-height: 38px;
+    padding: 4px 10px;
+  }
+  .bola-clock {
+    position: static;
+    grid-area: clock;
+    justify-self: center;
+    transform: none;
+    padding: 3px 18px;
+    border-width: 3px;
+    border-radius: 12px;
+    box-shadow: 0 3px 0 #1b1535;
+    font-size: 26px;
+  }
+  .bola-team {
+    min-width: 30px;
+    padding: 4px 6px;
+    border-width: 2px;
+    border-radius: 10px;
+    font-size: 16px;
+  }
+  /* o cartaz de gol já diz tudo: a lista some para não repetir o texto */
+  .bola-feed {
+    display: none;
+  }
+  .bola-warn {
+    top: 112px;
+  }
+  .bola-banner {
+    top: 30%;
+  }
+  /* a tabela fica abaixo do placar e do relógio, com o cabeçalho quebrando linha em vez de cortar o botão */
+  .bola-stats {
+    top: 100px;
+    max-height: calc(100% - 112px);
+    padding: 10px;
+    transform: translateX(-50%);
+  }
+  .bola-stats header {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+  .bola-stats h2 {
+    font-size: 18px;
+  }
+  .bola-stat-team th,
+  .bola-stat-team td {
+    padding: 4px 4px;
+    font-size: 13px;
+  }
+  .bola-tips li {
+    grid-template-columns: 78px 1fr;
+  }
+}
+
+/* Celular deitado (pouca altura): tudo mais compacto e o cartaz de gol não cobre o campo */
+@media (max-height: 460px) {
+  .bola-clock {
+    padding: 3px 18px;
+    font-size: 26px;
+    border-width: 3px;
+  }
+  /* o cartaz de gol já diz tudo: a lista some para não brigar por espaço */
+  .bola-feed {
+    display: none;
+  }
+  .bola-warn {
+    top: 58px;
+  }
+  .bola-banner {
+    top: max(70px, 16%);
+    padding: 8px 18px;
+    gap: 2px;
+  }
+  .bola-banner strong {
+    font-size: clamp(20px, 3.4vw, 30px);
+  }
+  .bola-banner span {
+    font-size: 12px;
+  }
+  .bola-tips {
+    gap: 6px;
+    padding: 8px 12px;
+  }
+  .bola-tips li {
+    font-size: 11.5px;
+  }
+  .bola-tips h2 {
+    font-size: 16px;
+  }
+  .dsm-count {
+    top: 46%;
+    font-size: min(22vh, 110px);
+  }
+}
+
+/* menus de escolha em tela pequena: o cartão rola dentro da tela */
+.dsm-pick-card {
+  max-height: calc(100dvh - 24px);
+  overflow: auto;
+}
+
+/* Prorrogação: o relógio muda de cor e passa a contar para cima */
+.bola-clock.is-ot {
+  background: #ff9d2e;
+}
+.bola-clock.is-ot small {
+  color: #1b1535;
+  letter-spacing: 0.02em;
+}
+
+@media (max-height: 460px) {
+  .bola-stats {
+    top: 60px;
+    max-height: calc(100% - 68px);
+    transform: translateX(-50%);
+  }
 }

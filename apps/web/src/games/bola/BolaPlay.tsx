@@ -14,11 +14,13 @@ import {
   type BolInfo,
   type BolInput,
 } from '@nocap/games';
+import { bolaGain, bolaSfx, crowdStart, crowdStop, crowdSwell } from '@/lib/bola-audio';
 import { sendRoom, sendRoomQuiet, subscribeRoom, useRoom } from '@/lib/rooms';
 import { DsmControls, STICK_RADIUS } from '../desmorona/controls';
 import '../desmorona/desmorona.css';
 import './bola.css';
 import { BolaMenu } from './BolaMenu';
+import { BolaTips } from './BolaTips';
 import { BolaTeams } from './BolaTeams';
 import { BolaScene } from './BolaScene';
 import { BolaStats, type StatRow } from './BolaStats';
@@ -68,6 +70,7 @@ interface NetFrame {
   ck: number;
   sc: number[];
   gd: number;
+  gs?: number;
   b: number[];
   p: number[][];
   ev: Record<string, unknown>[];
@@ -77,6 +80,7 @@ interface NetFrame {
 interface Hud {
   phase: 'countdown' | 'play' | 'goal' | 'over';
   count: number;
+  /** Segundos mostrados: o que falta (regressivo) ou, na prorrogação, o tempo desde o início dela. */
   clock: number;
   scores: number[];
   golden: boolean;
@@ -195,7 +199,9 @@ export function BolaPlay({
     const reduced =
       typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
     const scene = new BolaScene(el, world, reduced);
+    if (import.meta.env.DEV) (window as unknown as { __bolaScene?: BolaScene }).__bolaScene = scene;
     const rng = createRng(`bola:${Math.random()}`);
+    crowdStart();
     const mem = new Map(
       world.players
         .filter((p) => p.bot)
@@ -218,6 +224,11 @@ export function BolaPlay({
     let ballCam = true;
     let yaw = 0;
     let camYaw = 0;
+    let pitch = 0.5;
+    let turnKick = 0;
+    if (import.meta.env.DEV)
+      (window as unknown as { __bolaTurn?: (d: number) => void }).__bolaTurn = (d) =>
+        (turnKick += d);
     camToggle.current = () => {
       ballCam = !ballCam;
       if (!ballCam) yaw = camYaw;
@@ -253,7 +264,62 @@ export function BolaPlay({
     };
     const nameOf = (id: string | null) => world.players.find((p) => p.id === id)?.name ?? 'Alguém';
 
+    /** Volume de um som pela distância até a sua raposa (ou até a bola, se você só assiste). */
+    const gainAt = (x: number, z: number) => {
+      const m = world.player(meId);
+      const ref = m ?? world.ball;
+      return bolaGain(Math.hypot(x - ref.x, z - ref.z));
+    };
     const onEvent = (e: BolEvent) => {
+      switch (e.type) {
+        case 'kick': {
+          const g = gainAt(world.ball.x, world.ball.z);
+          bolaSfx.kick(g);
+          scene.kickFx(e.id);
+          if (e.id === meId) scene.shakeNow(0.3);
+          break;
+        }
+        case 'touch':
+          if (e.power >= 3) bolaSfx.touch(e.power, gainAt(world.ball.x, world.ball.z));
+          break;
+        case 'bounce':
+          bolaSfx.bounce(e.power, gainAt(world.ball.x, world.ball.z));
+          break;
+        case 'wall':
+          bolaSfx.wall(e.power, gainAt(world.ball.x, world.ball.z));
+          break;
+        case 'jump':
+          // online, o seu próprio pulo já soou na hora em que você apertou
+          if (!(online && e.id === meId)) {
+            const p = world.player(e.id);
+            bolaSfx.jump(p ? gainAt(p.x, p.z) * (e.id === meId ? 1 : 0.6) : 0.5);
+          }
+          break;
+        case 'airjump':
+          if (!(online && e.id === meId)) {
+            const p = world.player(e.id);
+            bolaSfx.airjump(e.flip, p ? gainAt(p.x, p.z) * (e.id === meId ? 1 : 0.6) : 0.5);
+          }
+          break;
+        case 'goal':
+          bolaSfx.goal(e.own);
+          crowdSwell(e.own ? 0.1 : 0.3);
+          break;
+        case 'nogoal':
+          bolaSfx.noGoal();
+          break;
+        case 'warn':
+          bolaSfx.warn();
+          break;
+        case 'golden':
+          bolaSfx.golden();
+          break;
+        case 'ballreset':
+          bolaSfx.reset();
+          break;
+        default:
+          break;
+      }
       if (e.type === 'goal') {
         const tn = (t: number) => BOL_TEAM_NAMES[t] ?? '';
         let title = 'GOL!';
@@ -439,6 +505,25 @@ export function BolaPlay({
           return { type: 'golden' };
         case 'ballreset':
           return { type: 'ballreset' };
+        case 'kick': {
+          const id = idOfSlot(e.s);
+          return id ? { type: 'kick', id } : null;
+        }
+        case 'touch': {
+          const id = idOfSlot(e.s);
+          return id ? { type: 'touch', id, power: e.p as number } : null;
+        }
+        case 'bounce':
+        case 'wall':
+          return { type: e.t, power: e.p as number };
+        case 'jump': {
+          const id = idOfSlot(e.s);
+          return id ? { type: 'jump', id } : null;
+        }
+        case 'airjump': {
+          const id = idOfSlot(e.s);
+          return id ? { type: 'airjump', id, flip: !!e.f } : null;
+        }
         default:
           return null;
       }
@@ -456,6 +541,7 @@ export function BolaPlay({
           world.timer = f.tm;
           world.clock = f.ck;
           world.golden = f.gd === 1;
+          world.goldenStart = f.gs ?? 0;
           world.scores.splice(0, world.scores.length, ...f.sc);
           ballT = {
             x: f.b[0]!,
@@ -608,6 +694,8 @@ export function BolaPlay({
     let last = performance.now();
     let acc = 0;
     let hudAt = 0;
+    let lastCountN = 0;
+    let prevPhase: string = world.phase;
     let jumpUntil = 0;
     let raf = 0;
     const tick = (now: number) => {
@@ -620,24 +708,42 @@ export function BolaPlay({
         if (online && input.jump) {
           jumps++;
           sendInput();
+          // o som do seu pulo sai na hora, sem esperar o servidor
+          if (me && (me.grounded || !me.airJumped)) {
+            if (me.grounded) bolaSfx.jump();
+            else bolaSfx.airjump(Math.hypot(input.mx, input.mz) > 0.3);
+          }
         }
         if (input.jump) jumpUntil = now + JUMP_BUFFER_MS;
         input.jump = false;
         // a câmera segue a bola por padrão (E troca para câmera livre com o mouse)
-        const manual = controls.takeYaw(dt);
-        if (!ballCam || !me) yaw += manual;
-        else {
+        const manual = controls.takeYaw(dt) + turnKick;
+        turnKick = 0;
+        const manualPitch = controls.takePitch();
+        const free = !ballCam || !me;
+        if (free) {
+          yaw += manual;
+          // altura da câmera livre: do quase rente ao chão até quase de cima
+          pitch = Math.min(1.25, Math.max(0.12, pitch + manualPitch));
+        } else {
           const dx = world.ball.x - me.x;
           const dz = world.ball.z - me.z;
-          if (Math.hypot(dx, dz) > 1.2) {
+          const dist = Math.hypot(dx, dz);
+          // com a bola colada na raposa o giro quase para (senão a câmera rodopia ao driblar)
+          if (dist > 1.4) {
             const want = Math.atan2(-dx, -dz);
             let d = want - camYaw;
             d = Math.atan2(Math.sin(d), Math.cos(d));
-            camYaw += d * (1 - Math.exp(-dt * 4));
+            // giro mais rápido quanto maior o desvio, e mais calmo quando a bola está perto
+            const rate =
+              (6 + 9 * Math.min(1, Math.abs(d) / 1.4)) *
+              Math.min(1, Math.max(0.25, (dist - 1.4) / 4));
+            camYaw += d * (1 - Math.exp(-dt * rate));
           }
           yaw = camYaw;
         }
-        if (!ballCam) camYaw = yaw;
+        if (free) camYaw = yaw;
+        scene.setPitch(free ? pitch : null);
         if (world.phase === 'goal') {
           // na comemoração a câmera gira devagar em volta da raposa
           yaw += dt * 0.5;
@@ -675,13 +781,24 @@ export function BolaPlay({
           for (const e of world.drainEvents()) onEvent(e);
         }
       }
+      // apitos e contagem
+      if (world.phase === 'countdown') {
+        const n = Math.ceil(world.timer);
+        if (n !== lastCountN && n >= 1 && n <= 3) bolaSfx.count(n);
+        lastCountN = n;
+      } else lastCountN = 0;
+      if (prevPhase === 'countdown' && world.phase === 'play') bolaSfx.whistle();
+      if (prevPhase !== 'over' && world.phase === 'over') bolaSfx.fullTime();
+      prevPhase = world.phase;
       scene.render(dt, meId);
       if (now - hudAt > 100) {
         hudAt = now;
         setHud({
           phase: world.phase,
           count: Math.max(0, Math.ceil(world.timer)),
-          clock: world.clock,
+          clock: world.golden
+            ? Math.max(0, world.clock - world.goldenStart)
+            : Math.max(0, world.durationSec - world.clock),
           scores: [...world.scores],
           golden: world.golden,
           feed,
@@ -722,6 +839,7 @@ export function BolaPlay({
       window.clearTimeout(warnTimer);
       window.clearTimeout(bannerTimer);
       window.clearInterval(inputTimer);
+      crowdStop();
       for (const off of unsubs) off();
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('keyup', onKeyUp);
@@ -751,6 +869,10 @@ export function BolaPlay({
       })()
     : null;
   const over = hud.phase === 'over';
+  const touchDevice = useMemo(
+    () => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches,
+    [],
+  );
 
   return (
     <div ref={root} className="dsm-play" data-testid="bola-play">
@@ -776,9 +898,13 @@ export function BolaPlay({
             </span>
           ))}
         </div>
-        <div className="bola-clock" role="timer" aria-label="Tempo de jogo">
+        <div
+          className={`bola-clock${hud.golden ? ' is-ot' : ''}`}
+          role="timer"
+          aria-label={hud.golden ? 'Tempo da prorrogação' : 'Tempo que falta'}
+        >
           {fmt(hud.clock)}
-          {hud.golden && <small>Gol de ouro</small>}
+          {hud.golden && <small>Prorrogação · gol de ouro</small>}
         </div>
         <button
           type="button"
@@ -843,6 +969,7 @@ export function BolaPlay({
           {hud.count > 0 ? hud.count : 'Já!'}
         </div>
       )}
+      {hud.myTeam >= 0 && !over && <BolaTips touch={touchDevice} />}
       {!over && hud.myTeam >= 0 && (
         <>
           <button

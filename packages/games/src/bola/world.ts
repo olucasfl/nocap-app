@@ -189,7 +189,8 @@ export class BolWorld {
   private events: BolEvent[] = [];
   private still = 0;
   private warned = new Set<number>();
-  private goldenStart = 0;
+  /** Relógio da partida (s) em que a prorrogação começou. */
+  goldenStart = 0;
 
   constructor(infos: readonly BolInfo[], opts: BolOptions) {
     this.field = buildField(opts.teams, opts.perTeam);

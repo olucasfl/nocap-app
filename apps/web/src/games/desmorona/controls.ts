@@ -51,7 +51,7 @@ export class DsmControls {
     null;
   private zone: HTMLElement | null = null;
   private look: HTMLElement | null = null;
-  private lookPtr: { id: number; x: number } | null = null;
+  private lookPtr: { id: number; x: number; y: number } | null = null;
   /** Falso depois da queda ou do fim: aí a pessoa precisa do cursor para os botões. */
   allowLock = true;
   /** Q e E giram a câmera; um jogo que usa essas teclas para outra coisa desliga. */
@@ -59,6 +59,7 @@ export class DsmControls {
   /** A pessoa soltou o mouse com Esc: não prende de novo sozinho, só com um clique. */
   private escaped = false;
   private yawAcc = 0;
+  private pitchAcc = 0;
   private onLock: ((locked: boolean) => void) | null = null;
   private turn = 0;
 
@@ -100,10 +101,18 @@ export class DsmControls {
     return d;
   }
 
+  /** Quanto a câmera subiu ou desceu desde a última chamada (rad), pelo mouse ou pelo dedo. */
+  takePitch(): number {
+    const d = this.pitchAcc;
+    this.pitchAcc = 0;
+    return d;
+  }
+
   /** Com o ponteiro preso à tela, o mouse gira a câmera sem precisar clicar nem arrastar (como nos jogos). */
   private lockedMove = (e: MouseEvent) => {
     if (document.pointerLockElement !== this.look) return;
     this.yawAcc -= e.movementX * DRAG_YAW * 0.8;
+    this.pitchAcc += e.movementY * DRAG_YAW * 0.6;
   };
 
   private lockChange = () => {
@@ -136,14 +145,16 @@ export class DsmControls {
     // no toque, a metade esquerda é do joystick
     if (e.pointerType !== 'mouse' && e.clientX - rect.left < rect.width * 0.55) return;
     if (this.lookPtr) return;
-    this.lookPtr = { id: e.pointerId, x: e.clientX };
+    this.lookPtr = { id: e.pointerId, x: e.clientX, y: e.clientY };
     this.look?.setPointerCapture(e.pointerId);
   };
 
   private lookMove = (e: PointerEvent) => {
     if (!this.lookPtr || e.pointerId !== this.lookPtr.id) return;
     this.yawAcc -= (e.clientX - this.lookPtr.x) * DRAG_YAW;
+    this.pitchAcc += (e.clientY - this.lookPtr.y) * DRAG_YAW * 0.6;
     this.lookPtr.x = e.clientX;
+    this.lookPtr.y = e.clientY;
   };
 
   private lookUp = (e: PointerEvent) => {
