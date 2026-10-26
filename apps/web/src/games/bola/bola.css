@@ -117,14 +117,6 @@
   text-transform: uppercase;
   cursor: pointer;
 }
-.bola-cam kbd {
-  margin-right: 8px;
-  padding: 2px 7px;
-  border: 2px solid #1b1535;
-  border-radius: 6px;
-  background: #ffe27a;
-  font: 900 12px var(--font-display, system-ui);
-}
 @media (pointer: coarse) {
   .bola-cam kbd {
     display: none;
@@ -522,19 +514,10 @@
 }
 .bola-tips li {
   display: grid;
-  grid-template-columns: 92px 1fr;
+  grid-template-columns: 150px 1fr;
   gap: 10px;
   align-items: center;
   font: 700 13px/1.25 var(--font-display, system-ui);
-}
-.bola-tips kbd {
-  justify-self: start;
-  padding: 3px 8px;
-  border: 2px solid #1b1535;
-  border-radius: 8px;
-  background: #ffe27a;
-  font: 900 12px var(--font-display, system-ui);
-  white-space: nowrap;
 }
 
 /* Celular em pé: o relógio desce para a segunda linha e nada fica por cima do botão de configurações */
@@ -672,52 +655,217 @@
   }
 }
 
-/* espectador: escolhe quem acompanhar (jogadores ou a bola) */
-.bola-spec {
-  position: absolute;
-  left: 50%;
-  bottom: max(14px, env(safe-area-inset-bottom));
-  transform: translateX(-50%);
-  display: flex;
+/* ---- Botões e teclas (Pop Brutal): um só jeito de desenhar tudo que se aperta ---- */
+.bola-keycap {
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  z-index: 6;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 7px;
+  border: 2px solid #1b1535;
+  border-bottom-width: 4px;
+  border-radius: 7px;
+  background: #ffe27a;
+  color: #1b1535;
+  font: 900 12px/1 var(--font-display, system-ui);
+  white-space: nowrap;
 }
-.bola-spec button,
-.bola-spec-name {
-  min-height: 40px;
-  padding: 6px 12px;
+.bola-keycap.is-wide {
+  padding: 0 14px;
+}
+@media (pointer: coarse) {
+  .bola-hide-touch {
+    display: none !important;
+  }
+}
+.bola-tools {
+  display: flex;
+  gap: 8px;
+  pointer-events: auto;
+}
+.bola-tool,
+.bola-gear {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 42px;
+  padding: 6px 10px 6px 12px;
   border: 3px solid #1b1535;
   border-radius: 12px;
   background: #fff;
   color: #1b1535;
   font: 800 13px var(--font-display, system-ui);
   text-transform: uppercase;
-}
-.bola-spec button {
+  box-shadow: 0 3px 0 #1b1535;
   cursor: pointer;
-  min-width: 40px;
-  touch-action: manipulation;
+  transition:
+    transform 0.08s,
+    box-shadow 0.08s;
 }
-.bola-spec button[aria-pressed='true'] {
-  background: #ffd23f;
+.bola-tool:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 0 #1b1535;
 }
-.bola-spec-name {
+.bola-tool:active,
+.bola-tool[aria-pressed='true'] {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #1b1535;
+}
+.bola-tool[aria-pressed='true'] {
+  background: #ffe27a;
+}
+.bola-tool:focus-visible,
+.bola-spec-step:focus-visible {
+  outline: 3px solid #5b8cff;
+  outline-offset: 2px;
+}
+.bola-cam {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  min-width: 120px;
-  justify-content: center;
+  box-shadow: 0 3px 0 #1b1535;
 }
-.bola-spec-name kbd {
-  font: 700 10px system-ui;
+.bola-item {
+  box-shadow: 0 3px 0 #1b1535;
+  gap: 10px;
+}
+.bola-item-main {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.bola-menu .dsm-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.bola-tips {
+  gap: 12px;
+  box-shadow: 0 6px 0 #1b1535;
+}
+.bola-tips li {
+  padding: 6px 0;
+}
+.bola-tips li + li {
+  border-top: 2px dashed rgba(27, 21, 53, 0.18);
+}
+.bola-tip-keys {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.bola-tip-tag,
+.bola-tip-plus {
+  font: 900 12px var(--font-display, system-ui);
+  text-transform: uppercase;
+}
+.bola-tip-tag {
+  padding: 4px 9px;
   border: 2px solid #1b1535;
-  border-radius: 6px;
-  padding: 1px 5px;
-  opacity: 0.7;
+  border-radius: 999px;
+  background: #ffe27a;
+}
+
+/* Espectador: [Q] ‹  quem você acompanha  › [E] */
+.bola-spec {
+  position: absolute;
+  left: 50%;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  z-index: 6;
+}
+.bola-spec-step,
+.bola-spec-now {
+  display: inline-flex;
+  align-items: center;
+  border: 3px solid #1b1535;
+  border-radius: 14px;
+  background: #fff;
+  color: #1b1535;
+  box-shadow: 0 3px 0 #1b1535;
+}
+.bola-spec-step {
+  gap: 8px;
+  padding: 6px 12px;
+  min-height: 52px;
+  cursor: pointer;
+  touch-action: manipulation;
+  font: 900 26px/1 var(--font-display, system-ui);
+  transition:
+    transform 0.08s,
+    box-shadow 0.08s;
+}
+.bola-spec-step:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 0 #1b1535;
+}
+.bola-spec-step:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #1b1535;
+}
+.bola-spec-now {
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-width: 170px;
+  padding: 6px 18px;
+  text-align: center;
+}
+.bola-spec-now small {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font: 800 10px var(--font-display, system-ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.65;
+}
+.bola-spec-now strong {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font: 900 17px var(--font-display, system-ui);
+  text-transform: uppercase;
+}
+.bola-spec-now strong i {
+  width: 14px;
+  height: 14px;
+  border: 2px solid #1b1535;
+  border-radius: 50%;
 }
 @media (max-width: 560px) {
-  .bola-spec-name kbd {
+  .bola-tool span,
+  .bola-gear span {
     display: none;
+  }
+  .bola-tool,
+  .bola-gear {
+    padding: 6px 10px;
+  }
+  .bola-tools {
+    grid-area: gear;
+    justify-self: end;
+  }
+  .bola-spec-now {
+    min-width: 120px;
+    padding: 6px 12px;
+  }
+  .bola-tips li {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bola-tool,
+  .bola-spec-step {
+    transition: none;
   }
 }

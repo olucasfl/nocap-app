@@ -28,6 +28,7 @@ import '../desmorona/desmorona.css';
 import './bola.css';
 import { BolaMenu } from './BolaMenu';
 import { BolaTips } from './BolaTips';
+import { IcBall, IcCamera, IcEye, IcGear, IcJump, IcTable, Key } from './BolaIcons';
 import { BolaTeams } from './BolaTeams';
 import { BolaScene } from './BolaScene';
 import { BolaStats, type StatRow } from './BolaStats';
@@ -268,7 +269,6 @@ export function BolaPlay({
       if (!e.repeat && !world.player(meId)) {
         if (e.code === 'KeyQ' || e.code === 'ArrowLeft') specNav.current(-1);
         if (e.code === 'KeyE' || e.code === 'ArrowRight') specNav.current(1);
-        if (e.code === 'KeyB') specNav.current('ball');
       }
       if (e.code === 'Tab') {
         // Tab mostra as estatísticas enquanto estiver apertado
@@ -612,6 +612,12 @@ export function BolaPlay({
               at,
             });
           }
+          if (prevAt > 0) {
+            // o maior intervalo recente entre estados diz quanto de atraso é preciso para nunca faltar dado
+            jitter = Math.max(jitter - 0.3, at - prevAt);
+            interpMs += (Math.min(260, Math.max(INTERP_MIN_MS, 60 + jitter)) - interpMs) * 0.1;
+          }
+          prevAt = at;
           snaps.push({ t: typeof f.t === 'number' ? f.t : serverNow(), ball, rows });
           if (snaps.length > 24) snaps.shift();
           if (f.st) {
@@ -660,7 +666,13 @@ export function BolaPlay({
     };
     const inputTimer = online ? window.setInterval(sendInput, 25) : 0;
     /** Atraso de desenho dos outros e da bola (ms): cobre a variação (jitter) da rede sem engasgar. */
-    const INTERP_MS = 100;
+    /** Atraso mínimo; sobe sozinho quando a rede ou o aparelho entregam os estados em rajadas. */
+    const INTERP_MIN_MS = 100;
+    let interpMs = INTERP_MIN_MS;
+    let jitter = 0;
+    let prevAt = 0;
+    /** A bola é desenhada este tanto (ms) mais perto do presente que as outras raposas. */
+    const BALL_AHEAD_MS = 55;
     /** Relógio de desenho no tempo do servidor: anda com o relógio local e só é ajustado devagar, então a rede irregular não vira tranco. */
     let renderT = 0;
     const pred = new BolPredictor(world.field);
@@ -669,37 +681,41 @@ export function BolaPlay({
     const lerp = (a: number, b: number, u: number) => a + (b - a) * u;
     /** A bola "de mentira" perto da própria raposa: o contato aparece na hora, sem esperar a ida e volta do servidor. */
     const lb: BolBall = { x: 0, y: 1, z: 0, vx: 0, vy: 0, vz: 0 };
-    let lbReady = false;
+    const probe: BolBall = { x: 0, y: 1, z: 0, vx: 0, vy: 0, vz: 0 };
     let touchHold = 0;
-    let lbW = 0;
+    let lbFade = 0;
     const smoothOnline = (dt: number, input: { mx: number; mz: number }, pressed: boolean) => {
       syncRoster();
       const last = snaps[snaps.length - 1];
       if (!last) return;
       // alvo: o último estado + o que passou desde que chegou - o atraso; o relógio de desenho o persegue suave
-      const target = last.t + (performance.now() - last.ball.at) - INTERP_MS;
+      const target = last.t + (performance.now() - last.ball.at) - interpMs;
       if (renderT === 0 || Math.abs(target - renderT) > 400) renderT = target;
       else renderT += dt * 1000 + (target - renderT) * (1 - Math.exp(-dt * 2.5));
       const rt = renderT;
       // entre quais dois estados estamos (ou, se faltar estado novo, o último com um pouco de extrapolação)
-      let a = last;
-      let b = last;
-      let u = 0;
-      let extra = 0;
-      if (rt >= last.t) extra = Math.min(0.12, (rt - last.t) / 1000);
-      else {
-        a = b = snaps[0] as NetSnap;
-        for (let i = snaps.length - 1; i >= 1; i--) {
-          const lo = snaps[i - 1] as NetSnap;
-          const hi = snaps[i] as NetSnap;
-          if (lo.t <= rt) {
-            a = lo;
-            b = hi;
-            u = hi.t > lo.t ? Math.min(1, (rt - lo.t) / (hi.t - lo.t)) : 0;
-            break;
+      const bracket = (t: number) => {
+        let lo = last;
+        let hi = last;
+        let k = 0;
+        let ex = 0;
+        if (t >= last.t) ex = Math.min(0.05, (t - last.t) / 1000);
+        else {
+          lo = hi = snaps[0] as NetSnap;
+          for (let i = snaps.length - 1; i >= 1; i--) {
+            const l2 = snaps[i - 1] as NetSnap;
+            const h2 = snaps[i] as NetSnap;
+            if (l2.t <= t) {
+              lo = l2;
+              hi = h2;
+              k = h2.t > l2.t ? Math.min(1, (t - l2.t) / (h2.t - l2.t)) : 0;
+              break;
+            }
           }
         }
-      }
+        return { a: lo, b: hi, u: k, extra: ex };
+      };
+      const { a, b, u, extra } = bracket(rt);
       for (const p of world.players) {
         if (p.id === meId && predReady && world.phase !== 'countdown') continue;
         const slot = slotOf.get(p.id);
@@ -719,13 +735,15 @@ export function BolaPlay({
         p.flipT = (ra.fl & 2) === 2 ? 0.3 : 0;
         p.airJumped = (ra.fl & 4) === 4;
       }
+      // a bola é desenhada mais perto do "agora" que as outras raposas: é nela que a sua raposa (já no presente) encosta
+      const bb = bracket(rt + BALL_AHEAD_MS);
       const ball = world.ball;
-      ball.x = lerp(a.ball.x, b.ball.x, u) + a.ball.vx * extra;
-      ball.y = Math.max(0.9, lerp(a.ball.y, b.ball.y, u) + a.ball.vy * extra);
-      ball.z = lerp(a.ball.z, b.ball.z, u) + a.ball.vz * extra;
-      ball.vx = a.ball.vx;
-      ball.vy = a.ball.vy;
-      ball.vz = a.ball.vz;
+      ball.x = lerp(bb.a.ball.x, bb.b.ball.x, bb.u) + bb.a.ball.vx * bb.extra;
+      ball.y = Math.max(0.9, lerp(bb.a.ball.y, bb.b.ball.y, bb.u) + bb.a.ball.vy * bb.extra);
+      ball.z = lerp(bb.a.ball.z, bb.b.ball.z, bb.u) + bb.a.ball.vz * bb.extra;
+      ball.vx = bb.a.ball.vx;
+      ball.vy = bb.a.ball.vy;
+      ball.vz = bb.a.ball.vz;
 
       // a própria raposa: roda a mesma conta do servidor aqui (responde na hora) e é puxada de volta se o servidor discordar
       const me = world.player(meId);
@@ -795,8 +813,24 @@ export function BolaPlay({
         world.pushOutOfFoxes(me);
         pred.body.x = me.x;
         pred.body.z = me.z;
-        for (let i = 0; i < BOL_SUBSTEPS; i++) {
-          if (world.ghostBall(lb, me, BOL_DT / BOL_SUBSTEPS)) touchHold = 0.7;
+        if (world.phase === 'play') {
+          if (touchHold <= 0 && lbFade <= 0) {
+            // sem toque recente só se testa o contato: a bola desenhada não anda um passo à frente, e só vira "de mentira" se foi tocada
+            Object.assign(probe, ball);
+            let hit = false;
+            for (let i = 0; i < BOL_SUBSTEPS; i++) {
+              if (world.ghostBall(probe, me, BOL_DT / BOL_SUBSTEPS)) hit = true;
+            }
+            if (hit) {
+              Object.assign(lb, probe);
+              touchHold = 0.35;
+              lbFade = 1;
+            }
+          } else {
+            for (let i = 0; i < BOL_SUBSTEPS; i++) {
+              if (world.ghostBall(lb, me, BOL_DT / BOL_SUBSTEPS)) touchHold = 0.35;
+            }
+          }
         }
         pred.body.flipHit = me.flipHit;
       }
@@ -814,40 +848,43 @@ export function BolaPlay({
       }
       syncMe();
       // a bola de mentira volta ao que o servidor diz (devagar logo depois de um toque, para o chute não ser desfeito) e aparece perto da raposa
-      const e = Math.min(0.35, (performance.now() - last.ball.at + currentRtt() / 2) / 1000);
-      const ex2 = last.ball.x + last.ball.vx * e;
-      const ey2 = Math.max(0.9, last.ball.y + last.ball.vy * e);
-      const ez2 = last.ball.z + last.ball.vz * e;
-      if (!lbReady || Math.hypot(lb.x - ex2, lb.z - ez2) > 6) {
-        Object.assign(lb, {
-          x: ex2,
-          y: ey2,
-          z: ez2,
-          vx: last.ball.vx,
-          vy: last.ball.vy,
-          vz: last.ball.vz,
-        });
-        lbReady = true;
-      } else {
-        const kb = 1 - Math.exp(-dt * (touchHold > 0 ? 1.2 : 9));
-        lb.x += (ex2 - lb.x) * kb;
-        lb.y += (ey2 - lb.y) * kb;
-        lb.z += (ez2 - lb.z) * kb;
-        lb.vx += (last.ball.vx - lb.vx) * kb;
-        lb.vy += (last.ball.vy - lb.vy) * kb;
-        lb.vz += (last.ball.vz - lb.vz) * kb;
-      }
-      touchHold = Math.max(0, touchHold - dt);
-      const near = Math.hypot(me.x - ball.x, me.z - ball.z);
-      const wantW = touchHold > 0 ? 1 : Math.min(1, Math.max(0, (7 - near) / 3));
-      lbW += (wantW - lbW) * (1 - Math.exp(-dt * 12));
-      if (lbW > 0.01) {
-        ball.x = lerp(ball.x, lb.x, lbW);
-        ball.y = lerp(ball.y, lb.y, lbW);
-        ball.z = lerp(ball.z, lb.z, lbW);
-        ball.vx = lerp(ball.vx, lb.vx, lbW);
-        ball.vy = lerp(ball.vy, lb.vy, lbW);
-        ball.vz = lerp(ball.vz, lb.vz, lbW);
+      if (world.phase !== 'play') {
+        touchHold = 0;
+        lbFade = 0;
+      } else if (lbFade > 0) {
+        // logo depois do toque a bola desenhada é a de mentira; ela volta à do servidor aos poucos, sem salto
+        if (touchHold > 0) touchHold = Math.max(0, touchHold - dt);
+        else {
+          // passada a espera, a bola de mentira desliza até a do servidor (se o servidor tocou igual, quase não se mexe).
+          // A velocidade do deslize é limitada: um erro grande vira um movimento rápido, nunca um teletransporte.
+          lbFade = Math.max(0, lbFade - dt / 1.2);
+          const kb = 1 - Math.exp(-dt * 8);
+          let sx = (ball.x - lb.x) * kb;
+          let sy = (ball.y - lb.y) * kb;
+          let sz = (ball.z - lb.z) * kb;
+          const len = Math.hypot(sx, sy, sz);
+          const cap = 22 * dt;
+          if (len > cap) {
+            sx *= cap / len;
+            sy *= cap / len;
+            sz *= cap / len;
+          }
+          lb.x += sx;
+          lb.y += sy;
+          lb.z += sz;
+          lb.vx += (ball.vx - lb.vx) * kb;
+          lb.vy += (ball.vy - lb.vy) * kb;
+          lb.vz += (ball.vz - lb.vz) * kb;
+          // chegou perto: acabou, a bola desenhada volta a ser a do servidor
+          if (Math.hypot(ball.x - lb.x, ball.y - lb.y, ball.z - lb.z) < 0.25) lbFade = 0;
+        }
+        const w = lbFade > 0 ? 1 : 0;
+        ball.x = lerp(ball.x, lb.x, w);
+        ball.y = lerp(ball.y, lb.y, w);
+        ball.z = lerp(ball.z, lb.z, w);
+        ball.vx = lerp(ball.vx, lb.vx, w);
+        ball.vy = lerp(ball.vy, lb.vy, w);
+        ball.vz = lerp(ball.vz, lb.vz, w);
       }
     };
 
@@ -906,11 +943,6 @@ export function BolaPlay({
         }
         if (free) camYaw = yaw;
         scene.setPitch(free ? pitch : null);
-        if (world.phase === 'goal') {
-          // na comemoração a câmera gira devagar em volta da raposa
-          yaw += dt * 0.5;
-          camYaw = yaw;
-        }
         scene.setYaw(yaw);
         if (input.mx !== 0 || input.mz !== 0) {
           const sy = Math.sin(yaw);
@@ -1073,21 +1105,31 @@ export function BolaPlay({
           {fmt(hud.clock)}
           {hud.golden && <small>Prorrogação · gol de ouro</small>}
         </div>
-        <button
-          type="button"
-          className="bola-gear"
-          onClick={() => setMenu(true)}
-          aria-label="Configurações"
-          data-testid="bola-gear"
-        >
-          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-            <path
-              fill="currentColor"
-              d="M19.4 13a7.7 7.7 0 0 0 0-2l2.1-1.6a.5.5 0 0 0 .1-.6l-2-3.4a.5.5 0 0 0-.6-.2l-2.5 1a7.6 7.6 0 0 0-1.7-1l-.4-2.6a.5.5 0 0 0-.5-.4h-4a.5.5 0 0 0-.5.4l-.4 2.6c-.6.3-1.2.6-1.7 1l-2.5-1a.5.5 0 0 0-.6.2l-2 3.4a.5.5 0 0 0 .1.6L4.6 11a7.7 7.7 0 0 0 0 2l-2.1 1.6a.5.5 0 0 0-.1.6l2 3.4c.1.2.4.3.6.2l2.5-1c.5.4 1.1.7 1.7 1l.4 2.6c0 .2.2.4.5.4h4c.3 0 .5-.2.5-.4l.4-2.6c.6-.3 1.2-.6 1.7-1l2.5 1c.2.1.5 0 .6-.2l2-3.4a.5.5 0 0 0-.1-.6L19.4 13ZM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7Z"
-            />
-          </svg>
-          <span>Config.</span>
-        </button>
+        <div className="bola-tools">
+          <button
+            type="button"
+            className="bola-tool"
+            onClick={() => setPinned((v) => !v)}
+            aria-label="Tabela de estatísticas"
+            aria-pressed={pinned}
+            data-testid="bola-table"
+          >
+            <IcTable size={20} />
+            <span>Tabela</span>
+            <Key k="Tab" className="bola-hide-touch" />
+          </button>
+          <button
+            type="button"
+            className="bola-tool bola-gear"
+            onClick={() => setMenu(true)}
+            aria-label="Configurações"
+            data-testid="bola-gear"
+          >
+            <IcGear size={20} />
+            <span>Config.</span>
+            <Key k="Esc" className="bola-hide-touch" />
+          </button>
+        </div>
       </div>
       {crash && (
         <div className="dsm-over" role="alert">
@@ -1137,24 +1179,50 @@ export function BolaPlay({
         </div>
       )}
       {hud.myTeam < 0 && !over && (
-        <div className="bola-spec" data-testid="bola-spec">
-          <button type="button" onClick={() => specNav.current(-1)} aria-label="Jogador anterior">
-            ‹
-          </button>
-          <span className="bola-spec-name">
-            {spec.id === 'ball' ? 'Bola' : spec.name}
-            <kbd aria-hidden="true">Q / E</kbd>
-          </span>
-          <button type="button" onClick={() => specNav.current(1)} aria-label="Próximo jogador">
-            ›
-          </button>
+        <div
+          className="bola-spec"
+          data-testid="bola-spec"
+          role="group"
+          aria-label="Quem acompanhar"
+        >
           <button
             type="button"
-            className="bola-spec-ball"
-            aria-pressed={spec.id === 'ball'}
-            onClick={() => specNav.current('ball')}
+            className="bola-spec-step"
+            onClick={() => specNav.current(-1)}
+            aria-label="Anterior"
           >
-            Bola
+            <Key k="Q" className="bola-hide-touch" />
+            <span aria-hidden="true">‹</span>
+          </button>
+          <div className="bola-spec-now" aria-live="polite">
+            <small>
+              <IcEye size={14} /> Espectando
+            </small>
+            <strong>
+              {spec.id === 'ball' ? (
+                <>
+                  <IcBall size={16} /> Bola
+                </>
+              ) : (
+                <>
+                  <i
+                    style={{
+                      background: `#${(BOL_TEAM_COLORS[spec.team] ?? 0xffffff).toString(16).padStart(6, '0')}`,
+                    }}
+                  />
+                  {spec.name}
+                </>
+              )}
+            </strong>
+          </div>
+          <button
+            type="button"
+            className="bola-spec-step"
+            onClick={() => specNav.current(1)}
+            aria-label="Próximo"
+          >
+            <span aria-hidden="true">›</span>
+            <Key k="E" className="bola-hide-touch" />
           </button>
         </div>
       )}
@@ -1170,6 +1238,7 @@ export function BolaPlay({
               controls.pressJump();
             }}
           >
+            <IcJump size={22} />
             Pular
           </button>
           <button
@@ -1178,7 +1247,8 @@ export function BolaPlay({
             onClick={() => camToggle.current()}
             aria-pressed={!hud.ballCam}
           >
-            <kbd aria-hidden="true">F</kbd>
+            <Key k="F" className="bola-hide-touch" />
+            <IcCamera size={18} />
             {hud.ballCam ? 'Câmera na bola' : 'Câmera livre'}
           </button>
         </>

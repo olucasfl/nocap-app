@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { BOL_TEAM_NAMES } from '@nocap/games';
+import { IcCamera, IcEye, IcFlag, IcExit, IcPlay, IcTable, IcTeams, Key } from './BolaIcons';
 
 /** Configurações da partida: continuar, estatísticas, câmera, trocar de time ou espectar e sair. */
 export function BolaMenu({
@@ -42,18 +43,28 @@ export function BolaMenu({
           onClick={onClose}
           data-testid="bola-menu-continue"
         >
+          <IcPlay size={18} />
           Continuar jogando
         </button>
         <button type="button" className="bola-item" onClick={onStats} data-testid="bola-menu-stats">
-          <span>Estatísticas</span>
-          <kbd className="bola-key">Tab</kbd>
+          <span className="bola-item-main">
+            <IcTable size={20} />
+            Tabela de estatísticas
+          </span>
+          <Key k="Tab" className="bola-hide-touch" />
         </button>
         <button type="button" className="bola-item" onClick={onCam} disabled={spectating}>
-          <span>Câmera: {spectating || !ballCam ? 'livre' : 'na bola'}</span>
-          <kbd className="bola-key">F</kbd>
+          <span className="bola-item-main">
+            <IcCamera size={20} />
+            Câmera: {spectating || !ballCam ? 'livre' : 'na bola'}
+          </span>
+          <Key k="F" className="bola-hide-touch" />
         </button>
         <button type="button" className="bola-item" onClick={onTeams} data-testid="bola-menu-teams">
-          <span>Trocar de time</span>
+          <span className="bola-item-main">
+            {spectating ? <IcEye size={20} /> : <IcTeams size={20} />}
+            {spectating ? 'Entrar em um time' : 'Time ou espectar'}
+          </span>
           <span className="bola-cur">
             {spectating ? 'Espectando' : `Time ${BOL_TEAM_NAMES[myTeam] ?? ''}`}
           </span>
@@ -66,7 +77,10 @@ export function BolaMenu({
             onBlur={() => setConfirmEnd(false)}
             data-testid="bola-menu-end"
           >
-            <span>{confirmEnd ? 'Toque de novo para encerrar' : 'Encerrar a partida'}</span>
+            <span className="bola-item-main">
+              <IcFlag size={20} />
+              {confirmEnd ? 'Toque de novo para encerrar' : 'Encerrar a partida'}
+            </span>
           </button>
         )}
         <button
@@ -76,6 +90,7 @@ export function BolaMenu({
           onBlur={() => setSure(false)}
           data-testid="bola-menu-exit"
         >
+          <IcExit size={18} />
           {sure ? 'Toque de novo para sair' : 'Sair da partida'}
         </button>
       </div>

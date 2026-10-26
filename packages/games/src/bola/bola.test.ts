@@ -189,7 +189,7 @@ describe('bola e toque', () => {
     expect(p.vy).toBeLessThan(0);
     w.step(BOL_DT, { [p.id]: { mx: 1, mz: 0, jump: true } });
     expect(p.flipT).toBeGreaterThan(0);
-    expect(p.vy).toBeGreaterThanOrEqual(6);
+    expect(p.vy).toBeGreaterThanOrEqual(5);
     expect(p.vx).toBeGreaterThan(5);
   });
 

@@ -38,15 +38,15 @@ export const BOL_FOX_H = 1.3;
 export const BOL_SPEED = 8;
 export const BOL_ACCEL = 40;
 export const BOL_AIR_ACCEL = 9;
-export const BOL_JUMP = 8.6;
-export const BOL_AIR_JUMP = 8.2;
+export const BOL_JUMP = 7;
+export const BOL_AIR_JUMP = 6.6;
 export const BOL_FOX_GRAVITY = 24;
 
 /** Mortal (pulo duplo com direção): impulso da raposa, janela em que o chute vale e alcance extra. */
 export const BOL_FLIP_SEC = 0.5;
 export const BOL_FLIP_WINDOW = 0.4;
 export const BOL_FLIP_SPEED = 11;
-export const BOL_FLIP_LIFT = 6.4;
+export const BOL_FLIP_LIFT = 5.4;
 export const BOL_FLIP_REACH = 0.35;
 /** Velocidade mínima da bola, na direção do mortal, logo após o chute (m/s), mais esta fração da velocidade da raposa. */
 export const BOL_FLIP_KICK = 14;

@@ -51,6 +51,8 @@ export class BolaScene {
   private fx: {
     obj: THREE.Object3D;
     mat: THREE.Material & { opacity: number };
+    /** Só nos clarões (sprites reaproveitados): se é aditivo, para devolver ao grupo certo. */
+    glowAdd?: boolean;
     age: number;
     life: number;
     s0: number;
@@ -66,6 +68,8 @@ export class BolaScene {
   private baseFov = 60;
   private glowTex: THREE.Texture | null = null;
   private ballTrailT = 0;
+  private glowPoolAdd: THREE.Sprite[] = [];
+  private glowPoolNorm: THREE.Sprite[] = [];
   private bursts: {
     pts: THREE.Points;
     vel: Float32Array;
@@ -729,22 +733,30 @@ export class BolaScene {
     opacity = 0.85,
     additive = true,
   ) {
-    const mat = new THREE.SpriteMaterial({
-      map: this.glow(),
-      color,
-      transparent: true,
-      depthWrite: false,
-      blending: additive ? THREE.AdditiveBlending : THREE.NormalBlending,
-      fog: false,
-      opacity,
-    });
-    const sp = new THREE.Sprite(mat);
+    // clarões são muitos e curtos: reaproveita sprite e material em vez de criar (e descartar) um por quadro
+    const pool = additive ? this.glowPoolAdd : this.glowPoolNorm;
+    let sp = pool.pop();
+    if (!sp) {
+      sp = new THREE.Sprite(
+        new THREE.SpriteMaterial({
+          map: this.glow(),
+          transparent: true,
+          depthWrite: false,
+          blending: additive ? THREE.AdditiveBlending : THREE.NormalBlending,
+          fog: false,
+        }),
+      );
+    }
+    const mat = sp.material;
+    mat.color.setHex(color);
+    mat.opacity = opacity;
     sp.position.set(x, y, z);
     sp.scale.setScalar(size);
     this.scene.add(sp);
     this.fx.push({
       obj: sp,
       mat,
+      glowAdd: additive,
       age: 0,
       life,
       s0: size,
@@ -952,8 +964,12 @@ export class BolaScene {
       f.mat.opacity = f.o0 * (1 - k) * (1 - k);
       if (f.age >= f.life) {
         this.scene.remove(f.obj);
-        f.mat.dispose();
-        if (f.ring) (f.obj as THREE.Mesh).geometry.dispose();
+        if (f.glowAdd !== undefined && this.glowPoolAdd.length + this.glowPoolNorm.length < 80) {
+          (f.glowAdd ? this.glowPoolAdd : this.glowPoolNorm).push(f.obj as THREE.Sprite);
+        } else {
+          f.mat.dispose();
+          if (f.ring) (f.obj as THREE.Mesh).geometry.dispose();
+        }
         this.fx.splice(i, 1);
       }
     }
