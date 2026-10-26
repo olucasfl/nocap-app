@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { useSearch } from '@tanstack/react-router';
 import { BackButton } from '@/components/BackButton';
 import { HubCard, HubHero, HubNote, HubSteps, HubTabs } from '@/components/GameHub';
 import { DesmoronaArt, DesmoronaTrainingArt, FriendsArt } from '@/components/HubArt';
 import { MuteButton } from '@/components/MuteButton';
 import { RoomBanner } from '@/components/RoomBanner';
+import { DesmoronaPicker } from './DesmoronaPicker';
 import { DesmoronaPlay } from './DesmoronaPlay';
 import './desmorona.css';
 import { Page } from '@/components/Page';
@@ -21,9 +21,7 @@ type Phase = 'menu' | 'pick' | 'play';
 
 /** O Desmorona! (spec 044): menu e treino contra bots. As salas com amigos entram na Fase 2. */
 export function DesmoronaPage() {
-  // vindo do Fox Cap! pelo atalho "Desmorona! Treino": já abre a escolha de quantas raposas (spec 049)
-  const direct = useSearch({ strict: false }) as { treino?: number };
-  const [phase, setPhase] = useState<Phase>(direct.treino ? 'pick' : 'menu');
+  const [phase, setPhase] = useState<Phase>('menu');
   const [tab, setTab] = useState<'jogar' | 'como'>('jogar');
   const [bots, setBots] = useState(5);
 
@@ -97,44 +95,12 @@ export function DesmoronaPage() {
           <HubSteps title="Como jogar" steps={HOW} />
         )}
         {phase === 'pick' && (
-          <div
-            className="dsm-pick"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Quantas raposas no treino"
-          >
-            <div className="dsm-pick-card">
-              <h2>Contra quantas raposas?</h2>
-              <p className="mono">VOCÊ + {bots}</p>
-              <div className="dsm-chips" role="radiogroup" aria-label="Quantidade de adversários">
-                {[1, 2, 3, 4, 5, 6, 7].map((n) => (
-                  <button
-                    key={n}
-                    type="button"
-                    role="radio"
-                    aria-checked={bots === n}
-                    className={`dsm-chip${bots === n ? ' is-on' : ''}`}
-                    onClick={() => setBots(n)}
-                  >
-                    {n}
-                  </button>
-                ))}
-              </div>
-              <div className="dsm-over-btns">
-                <button
-                  type="button"
-                  className="dsm-btn"
-                  onClick={() => setPhase('play')}
-                  data-testid="dsm-start"
-                >
-                  Começar
-                </button>
-                <button type="button" className="dsm-btn is-ghost" onClick={() => setPhase('menu')}>
-                  Cancelar
-                </button>
-              </div>
-            </div>
-          </div>
+          <DesmoronaPicker
+            bots={bots}
+            onChange={setBots}
+            onStart={() => setPhase('play')}
+            onCancel={() => setPhase('menu')}
+          />
         )}
         <MuteButton />
       </section>

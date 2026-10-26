@@ -639,8 +639,12 @@ export function BolaPlay({
           }
           if (prevAt > 0) {
             // o maior intervalo recente entre estados diz quanto de atraso é preciso para nunca faltar dado
-            jitter = Math.max(jitter - 0.3, at - prevAt);
-            interpMs += (Math.min(260, Math.max(INTERP_MIN_MS, 60 + jitter)) - interpMs) * 0.1;
+            const gap = at - prevAt;
+            gapAvg += (gap - gapAvg) * 0.05;
+            gapDev += (Math.abs(gap - gapAvg) - gapDev) * 0.08;
+            // atraso = dois estados de folga + a variação medida; sobe depressa quando a rede piora e desce devagar
+            const want = Math.min(260, Math.max(INTERP_MIN_MS, gapAvg * 2 + gapDev * 3.5 + 10));
+            interpMs += (want - interpMs) * (want > interpMs ? 0.2 : 0.015);
           }
           prevAt = at;
           snaps.push({ t: typeof f.t === 'number' ? f.t : Date.now(), ball, rows });
@@ -698,9 +702,10 @@ export function BolaPlay({
     const inputTimer = online ? window.setInterval(sendInput, 25) : 0;
     /** Atraso de desenho dos outros e da bola (ms): cobre a variação (jitter) da rede sem engasgar. */
     /** Atraso mínimo; sobe sozinho quando a rede ou o aparelho entregam os estados em rajadas. */
-    const INTERP_MIN_MS = link.local ? 40 : 100;
-    let interpMs = INTERP_MIN_MS;
-    let jitter = 0;
+    const INTERP_MIN_MS = link.minDelay;
+    let interpMs = Math.max(INTERP_MIN_MS, 80);
+    let gapAvg = 16;
+    let gapDev = 0;
     let prevAt = 0;
     /** A bola é desenhada este tanto (ms) mais perto do presente que as outras raposas. */
     const BALL_AHEAD_MS = 55;
@@ -805,7 +810,7 @@ export function BolaPlay({
       };
       const lead = Math.min(
         0.35,
-        Math.max(0, (performance.now() - last.ball.at + link.rtt() / 2) / 1000),
+        Math.max(0, (performance.now() - last.ball.at + Math.min(40, link.rtt() / 2)) / 1000),
       );
       const sx = row.x + row.vx * lead;
       const sz = row.z + row.vz * lead;

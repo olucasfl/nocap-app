@@ -100,6 +100,12 @@ export class BolaRoomEngine extends ColorRoomEngine {
     this.finalize();
   }
 
+  /** Vindo de outro jogo (sala do Fox Cap!, spec 049): leva as pessoas e já as distribui nos times. */
+  override adoptFrom(other: ColorRoomEngine) {
+    super.adoptFrom(other);
+    this.refresh();
+  }
+
   // ---- pessoas ----
 
   override join(id: string, username: string) {

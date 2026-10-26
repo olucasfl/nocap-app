@@ -340,3 +340,69 @@
     grid-template-columns: 200px minmax(0, 1fr);
   }
 }
+
+/* cartão de modo com "Jogar" e "Como jogar?" lado a lado (Fox Cap!) */
+.gh-card.gh-mode {
+  cursor: default;
+}
+.gh-card.gh-mode:active {
+  transform: none;
+  box-shadow: 5px 5px 0 var(--ink);
+}
+.gh-mode-go {
+  grid-area: go;
+  align-self: start;
+  display: grid;
+  gap: 8px;
+}
+.gh-mode-play,
+.gh-mode-help {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  border: var(--border);
+  border-radius: 14px;
+  font: 900 16px var(--font-display);
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    transform 0.08s ease-out,
+    box-shadow 0.08s ease-out;
+}
+.gh-mode-play {
+  background: var(--ink);
+  color: var(--paper);
+}
+.gh-mode-play svg {
+  animation: gh-nudge 1.4s ease-in-out infinite;
+}
+.gh-mode-help {
+  min-height: 38px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 13px;
+}
+.gh-mode-play:active,
+.gh-mode-help:active {
+  transform: translateY(2px);
+}
+@media (max-width: 380px) {
+  .gh-card.gh-mode {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'art'
+      'body'
+      'go';
+  }
+  .gh-card.gh-mode .gh-card-art {
+    max-width: 220px;
+    justify-self: center;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gh-mode-play svg {
+    animation: none;
+  }
+}

@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-/** Fox Cap! (spec 049): a aba Offline abre cada modo direto e a aba Com amigos leva à sala sem jogo escolhido. */
+/** Fox Cap! (spec 049): cada modo offline entra na partida sem trocar de tela; "Como jogar?" abre um popup. */
 test.use({ viewport: { width: 1100, height: 700 } });
 
 test.beforeEach(async ({ page }, info) => {
@@ -12,20 +12,39 @@ test.beforeEach(async ({ page }, info) => {
     .catch(() => undefined);
 });
 
-test('a aba Offline lista os modos e cada um abre direto', async ({ page }) => {
-  await expect(page.getByTestId('foxcap-atravessa')).toBeVisible();
-  await expect(page.getByTestId('foxcap-desmorona')).toBeVisible();
-  await expect(page.getByTestId('foxcap-bola')).toBeVisible();
+test('Jogar abre a escolha ali mesmo, sem mudar de endereço, e a partida começa', async ({
+  page,
+}) => {
   await page.getByTestId('foxcap-bola').click();
-  await expect(page.getByTestId('bola-fmt-2x2')).toBeVisible();
-  await page.goBack();
-  await page.getByTestId('foxcap-desmorona').click();
-  await expect(page.getByTestId('dsm-start')).toBeVisible();
+  await expect(page).toHaveURL(/\/fox-cap$/);
+  await page.getByTestId('bola-fmt-2x2').click();
+  await page.getByTestId('bola-start').click();
+  await expect(page.getByTestId('bola-play')).toBeVisible();
+  await expect(page).toHaveURL(/\/fox-cap$/);
 });
 
-test('a aba Com amigos leva à criação de sala do Fox Cap!', async ({ page }) => {
+test('Desmorona! Treino também escolhe e joga ali mesmo', async ({ page }) => {
+  await page.getByTestId('foxcap-desmorona').click();
+  await expect(page).toHaveURL(/\/fox-cap$/);
+  await page.getByTestId('dsm-start').click();
+  await expect(page.getByTestId('dsm-play')).toBeVisible();
+});
+
+test('Como jogar? abre o popup de cada jogo e fecha com Entendi ou Esc', async ({ page }) => {
+  for (const g of ['atravessa', 'desmorona', 'bola']) {
+    await page.getByTestId(`help-${g}`).click();
+    await expect(page.getByTestId('how-to-play')).toBeVisible();
+    await page.getByTestId('htp-ok').click();
+    await expect(page.getByTestId('how-to-play')).toBeHidden();
+  }
+  await page.getByTestId('help-bola').click();
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('how-to-play')).toBeHidden();
+});
+
+test('Com amigos mostra Criar sala e Entrar com código na própria tela', async ({ page }) => {
   await page.getByTestId('tab-amigos').click();
-  await page.getByTestId('foxcap-friends').click();
-  await expect(page).toHaveURL(/\/sala\?jogo=foxcap/);
-  await expect(page.getByRole('button', { name: /Criar sala de Fox Cap!/i })).toBeVisible();
+  await expect(page.getByTestId('foxcap-friends')).toBeVisible();
+  await expect(page.getByLabel(/código da sala/i)).toBeVisible();
+  await expect(page).toHaveURL(/\/fox-cap$/);
 });

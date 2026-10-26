@@ -156,6 +156,75 @@ export function HubCard({
   );
 }
 
+/**
+ * Cartão de modo com duas ações: o botão principal (jogar) e um "Como jogar?" que abre as regras. Sem navegar: quem usa
+ * decide o que o "jogar" faz.
+ */
+export function HubModeCard({
+  tone,
+  art,
+  name,
+  desc,
+  tags,
+  cta = 'Jogar',
+  onPlay,
+  onHelp,
+  testId,
+  helpTestId,
+}: {
+  tone: HubAccent;
+  art: ReactNode;
+  name: string;
+  desc: string;
+  tags?: string[];
+  cta?: string;
+  onPlay: () => void;
+  onHelp: () => void;
+  testId?: string;
+  helpTestId?: string;
+}) {
+  return (
+    <article className={`gh-card gh-mode ${tone}`}>
+      <span className="gh-card-art" aria-hidden="true">
+        {art}
+      </span>
+      <span className="gh-card-body">
+        <b>{name}</b>
+        <span className="mono">{desc}</span>
+        {tags && tags.length > 0 && (
+          <span className="gh-card-tags">
+            {tags.map((t) => (
+              <span key={t} className="gh-card-tag mono">
+                {t}
+              </span>
+            ))}
+          </span>
+        )}
+      </span>
+      <span className="gh-mode-go">
+        <button
+          type="button"
+          className="gh-mode-play"
+          data-sfx="start"
+          onClick={onPlay}
+          data-testid={testId}
+        >
+          {cta} <ArrowRight />
+        </button>
+        <button
+          type="button"
+          className="gh-mode-help"
+          data-sfx="select"
+          onClick={onHelp}
+          data-testid={helpTestId}
+        >
+          Como jogar?
+        </button>
+      </span>
+    </article>
+  );
+}
+
 /** Regras em passos numerados. */
 export function HubSteps({ steps, title }: { steps: string[]; title?: string }) {
   return (

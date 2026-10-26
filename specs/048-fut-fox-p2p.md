@@ -17,6 +17,8 @@ O online do Fut Fox trava mesmo com internet boa e cabeada. A causa mais prováv
 - **Fim:** o líder manda o resultado (`bres`) ao servidor, que mostra a tela final. Se o líder sair no meio, a partida termina e a sala volta ao lobby.
 - **Sem ranking** (já era regra). Por isso confiar no líder não abre trapaça que valha.
 
+- **Thread própria:** a partida do líder roda num Worker (`bola-host.worker.ts`), então a simulação não espera a tela desenhar. O atraso de desenho dos outros aparelhos se adapta ao intervalo medido entre quadros (mínimo de 45 ms ponto a ponto e 25 ms no líder; 100 ms pelo servidor). Até 4 aparelhos recebem o estado a 60/s; com mais gente, 30/s.
+
 ## 3. Limites aceitos nesta fase
 
 - Troca de time e entrada de espectador no meio da partida só no modo servidor (no ponto a ponto, o menu avisa).

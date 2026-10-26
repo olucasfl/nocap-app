@@ -20,7 +20,7 @@ for (const size of sizes) {
       test.skip(info.project.name !== 'desktop', 'um projeto basta');
       await page.goto('/fox-cap');
       await page.getByRole('button', { name: 'Agora não' }).click();
-      await page.getByRole('link', { name: /Desmorona!/ }).click();
+      await page.getByTestId('foxcap-desmorona').click();
       await page.getByRole('radio', { name: '3' }).click();
       await page.getByTestId('dsm-start').click();
       await expect(page.getByTestId('dsm-play')).toBeVisible();

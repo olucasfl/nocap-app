@@ -1,4 +1,3 @@
-import { BOL_TEAM_COLORS, BolaMatch, type BolInfo } from '@nocap/games';
 import type { BolaFrame, BolaLink, BolaRosterRow } from './bola-link';
 import { sendRoomQuiet, subscribeRoom, type BolaRoomState } from './rooms';
 
@@ -23,28 +22,8 @@ interface SignalIn {
 
 const signal = (to: string, data: object) => sendRoomQuiet('rtc', { to, data });
 
-/** Eventos ficam neste tempo (ms) em todo quadro enviado: um quadro perdido não perde o gol nem o som. */
-const EVENT_KEEP_MS = 600;
-/** Aparelhos que não estão no líder recebem este tanto de quadros por segundo. */
-const PEER_FPS = 30;
-
-/** Um relógio que não é desacelerado quando a aba está em segundo plano (o líder precisa continuar simulando). */
-function makeTicker(fn: () => void, ms: number): () => void {
-  try {
-    const url = URL.createObjectURL(
-      new Blob([`setInterval(()=>postMessage(0),${ms})`], { type: 'text/javascript' }),
-    );
-    const w = new Worker(url);
-    w.onmessage = fn;
-    return () => {
-      w.terminate();
-      URL.revokeObjectURL(url);
-    };
-  } catch {
-    const id = window.setInterval(fn, ms);
-    return () => window.clearInterval(id);
-  }
-}
+/** Até este número de aparelhos conectados, todos recebem o estado a cada passo (60/s). */
+const PEERS_FULL_RATE = 4;
 
 interface HostPeer {
   id: string;
@@ -60,18 +39,15 @@ export interface HostResult {
   winner: number;
 }
 
-/** O lado do líder: aceita as conexões, simula a partida e manda o fluxo. */
+/** O lado do líder: aceita as conexões e põe a partida para rodar numa thread própria (`bola-host.worker.ts`). */
 export class BolaHostSession {
   private peers = new Map<string, HostPeer>();
-  private match: BolaMatch | null = null;
-  private stopTicker: (() => void) | null = null;
+  private worker: Worker | null = null;
   private unsub: () => void;
   private frameCbs = new Set<(f: BolaFrame) => void>();
   private rosterCbs = new Set<(rows: BolaRosterRow[]) => void>();
-  private evBuf: { at: number; e: Record<string, unknown> }[] = [];
-  private pendingSt: unknown = null;
-  private tickN = 0;
   private finished = false;
+  private lastPeerText = '';
   readonly link: BolaLink;
 
   constructor(
@@ -82,8 +58,9 @@ export class BolaHostSession {
     this.unsub = subscribeRoom('rtc', (m) => void this.onSignal(m as SignalIn));
     this.link = {
       local: true,
+      minDelay: 25,
       rtt: () => 0,
-      sendInput: (v) => this.match?.input(this.meId, v),
+      sendInput: (v) => this.worker?.postMessage({ t: 'input', id: this.meId, v }),
       onFrame: (cb) => {
         this.frameCbs.add(cb);
         return () => void this.frameCbs.delete(cb);
@@ -138,9 +115,9 @@ export class BolaHostSession {
   }
 
   private onInput(id: string, data: unknown) {
-    if (typeof data !== 'string' || !this.match) return;
+    if (typeof data !== 'string') return;
     try {
-      this.match.input(id, JSON.parse(data));
+      this.worker?.postMessage({ t: 'input', id, v: JSON.parse(data) });
     } catch {
       /* entrada ilegível: ignora */
     }
@@ -158,87 +135,59 @@ export class BolaHostSession {
     }
   }
 
-  /** Quem saiu (ou perdeu a conexão) vira bot no lugar e todos recebem a lista nova. */
+  /** Quem saiu (ou perdeu a conexão) vira bot no lugar; a lista nova volta do worker e vai a todos. */
   private peerGone(id: string) {
     const peer = this.peers.get(id);
     if (!peer) return;
     this.peers.delete(id);
     peer.pc.close();
-    if (this.match && !this.finished) {
-      this.match.toBot(id);
-      this.broadcastRoster();
-    }
-  }
-
-  private broadcastRoster() {
-    const m = this.match;
-    if (!m) return;
-    const rows = m.roster();
-    for (const cb of this.rosterCbs) cb(rows);
-    const msg = JSON.stringify({ t: 'roster', rows });
-    for (const p of this.peers.values()) if (p.ctl?.readyState === 'open') p.ctl.send(msg);
+    if (this.worker && !this.finished) this.worker.postMessage({ t: 'toBot', id });
+    this.worker?.postMessage({ t: 'rate', everyPeerFrame: this.peers.size <= PEERS_FULL_RATE });
   }
 
   /** Começa a simular (todos os aparelhos já conectaram, ou o líder está sozinho). */
   start() {
-    if (this.match) return;
-    const s = this.setup;
-    const humans: BolInfo[] = s.humans.map((h) => ({
-      id: h.id,
-      name: h.name,
-      color: BOL_TEAM_COLORS[h.team] as number,
-      team: h.team,
-    }));
-    this.match = new BolaMatch({
-      teams: s.teams,
-      perTeam: s.perTeam,
-      durationSec: s.durationSec,
-      seed: s.seed,
-      humans,
-      bots: s.bots,
-      away: s.away,
-      now: () => Date.now(),
+    if (this.worker) return;
+    const w = new Worker(new URL('./bola-host.worker.ts', import.meta.url), { type: 'module' });
+    this.worker = w;
+    w.onmessage = (ev: MessageEvent) => this.onWorker(ev.data as WorkerOut);
+    w.postMessage({
+      t: 'init',
+      setup: this.setup,
+      everyPeerFrame: this.peers.size <= PEERS_FULL_RATE,
     });
-    this.stopTicker = makeTicker(() => this.loop(), 16);
+  }
+
+  private onWorker(m: WorkerOut) {
+    if (m.t === 'frame') {
+      if (this.frameCbs.size > 0) {
+        const f = JSON.parse(m.local) as BolaFrame;
+        for (const cb of this.frameCbs) cb(f);
+      }
+      if (m.peer) {
+        this.lastPeerText = m.peer;
+        this.sendPeers(m.peer);
+      }
+    } else if (m.t === 'roster') {
+      for (const cb of this.rosterCbs) cb(m.rows);
+      const msg = JSON.stringify({ t: 'roster', rows: m.rows });
+      for (const p of this.peers.values()) if (p.ctl?.readyState === 'open') p.ctl.send(msg);
+    } else if (m.t === 'over') {
+      this.finished = true;
+      // o último quadro vai mais algumas vezes: o canal não garante entrega
+      for (let i = 1; i <= 4; i++)
+        window.setTimeout(() => this.sendPeers(this.lastPeerText), i * 120);
+      this.onOver({ scores: m.scores, winner: m.winner });
+    }
   }
 
   /** O líder encerra a partida com o placar de agora. */
   endNow() {
-    this.match?.endNow();
+    this.worker?.postMessage({ t: 'end' });
   }
 
-  private loop() {
-    const m = this.match;
-    if (!m || this.finished) return;
-    m.tick();
-    const frame = m.drainFrame(true);
-    if (!frame) return;
-    const now = Date.now();
-    for (const e of frame.ev as Record<string, unknown>[]) this.evBuf.push({ at: now, e });
-    while (this.evBuf.length > 0 && now - (this.evBuf[0] as { at: number }).at > EVENT_KEEP_MS) {
-      this.evBuf.shift();
-    }
-    if (frame.st) this.pendingSt = frame.st;
-    for (const cb of this.frameCbs) cb(frame);
-    const every = Math.max(1, Math.round(60 / PEER_FPS));
-    if (this.tickN++ % every === 0 || m.over) this.sendPeers(frame);
-    if (m.over) {
-      this.finished = true;
-      // o último quadro vai mais algumas vezes: o canal não garante entrega
-      for (let i = 1; i <= 4; i++) window.setTimeout(() => this.sendPeers(frame), i * 120);
-      this.onOver({ scores: [...m.world.scores], winner: m.world.winner });
-      this.stopTicker?.();
-      this.stopTicker = null;
-    }
-  }
-
-  private sendPeers(frame: BolaFrame) {
-    const out: BolaFrame = { ...frame, ev: this.evBuf.map((x) => x.e) };
-    if (this.pendingSt) {
-      out.st = this.pendingSt;
-      this.pendingSt = null;
-    }
-    const text = JSON.stringify(out);
+  private sendPeers(text: string) {
+    if (!text) return;
     for (const p of this.peers.values()) {
       const ch = p.game;
       // canal entupido (rede ruim): pula o quadro em vez de empilhar atraso
@@ -247,8 +196,9 @@ export class BolaHostSession {
   }
 
   dispose() {
-    this.stopTicker?.();
-    this.stopTicker = null;
+    this.worker?.postMessage({ t: 'stop' });
+    this.worker?.terminate();
+    this.worker = null;
     this.unsub();
     for (const p of this.peers.values()) {
       if (p.ctl?.readyState === 'open') p.ctl.send(JSON.stringify({ t: 'bye' }));
@@ -259,6 +209,11 @@ export class BolaHostSession {
     this.rosterCbs.clear();
   }
 }
+
+type WorkerOut =
+  | { t: 'frame'; local: string; peer: string | null }
+  | { t: 'roster'; rows: BolaRosterRow[] }
+  | { t: 'over'; scores: number[]; winner: number };
 
 export interface PeerHandlers {
   /** Os dois canais abriram: dá para jogar por aqui. */
@@ -282,6 +237,7 @@ export class BolaPeerSession {
   private open = false;
   private ended = false;
   private rttMs = 0;
+  private pings: number[] = [];
   private pingTimer = 0;
   private failTimer = 0;
   readonly link: BolaLink;
@@ -297,6 +253,7 @@ export class BolaPeerSession {
     this.unsub = subscribeRoom('rtc', (m) => void this.onSignal(m as SignalIn));
     this.link = {
       local: false,
+      minDelay: 45,
       rtt: () => this.rttMs,
       sendInput: (v) => {
         if (this.game.readyState === 'open') this.game.send(JSON.stringify(v));
@@ -324,7 +281,7 @@ export class BolaPeerSession {
       if (this.open || this.game.readyState !== 'open' || this.ctl.readyState !== 'open') return;
       this.open = true;
       window.clearTimeout(this.failTimer);
-      this.pingTimer = window.setInterval(() => this.ping(), 1000);
+      this.pingTimer = window.setInterval(() => this.ping(), 500);
       this.ping();
       this.h.onOpen();
     };
@@ -373,8 +330,9 @@ export class BolaPeerSession {
     try {
       const m = JSON.parse(data) as { t?: string; ts?: number; rows?: BolaRosterRow[] };
       if (m.t === 'pong' && typeof m.ts === 'number') {
-        const rtt = Math.max(0, Date.now() - m.ts);
-        this.rttMs = this.rttMs === 0 ? rtt : this.rttMs * 0.7 + rtt * 0.3;
+        // a resposta passa pela fila do aparelho do líder (que também desenha): vale o menor dos últimos, que é a rede de verdade
+        this.pings = [...this.pings, Math.max(0, Date.now() - m.ts)].slice(-6);
+        this.rttMs = Math.min(...this.pings);
       } else if (m.t === 'roster' && Array.isArray(m.rows)) {
         for (const cb of this.rosterCbs) cb(m.rows);
       } else if (m.t === 'bye') this.end(false);

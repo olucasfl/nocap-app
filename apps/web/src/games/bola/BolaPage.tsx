@@ -1,12 +1,11 @@
 import { useState } from 'react';
-import { useSearch } from '@tanstack/react-router';
-import { createPortal } from 'react-dom';
-import { BOL_TEAM_NAMES, bolFormatLabel, bolFormats } from '@nocap/games';
+
 import { BackButton } from '@/components/BackButton';
 import { HubCard, HubHero, HubNote, HubSteps, HubTabs } from '@/components/GameHub';
 import { BolaArt, FriendsArt } from '@/components/HubArt';
 import { MuteButton } from '@/components/MuteButton';
 import { Page } from '@/components/Page';
+import { BolaPicker } from './BolaPicker';
 import { BolaPlay, type BolaSetup } from './BolaPlay';
 import '../desmorona/desmorona.css';
 import './bola.css';
@@ -23,9 +22,7 @@ type Phase = 'menu' | 'pick' | 'play';
 
 /** O Fut Fox (spec 046): menu e treino contra bots. As salas com amigos vêm na Fase 2. */
 export function BolaPage() {
-  // vindo do Fox Cap! pelo atalho "Fut Fox Treino": já abre a escolha do formato (spec 049)
-  const direct = useSearch({ strict: false }) as { treino?: number };
-  const [phase, setPhase] = useState<Phase>(direct.treino ? 'pick' : 'menu');
+  const [phase, setPhase] = useState<Phase>('menu');
   const [tab, setTab] = useState<'jogar' | 'como'>('jogar');
   const [setup, setSetup] = useState<BolaSetup>({ teams: 2, perTeam: 2, minutes: 3 });
   const [round, setRound] = useState(0);
@@ -42,7 +39,6 @@ export function BolaPage() {
       </div>
     );
   }
-  const formats = bolFormats();
   return (
     <Page>
       <section className="screen gh">
@@ -100,72 +96,14 @@ export function BolaPage() {
         ) : (
           <HubSteps title="Como jogar" steps={HOW} />
         )}
-        {phase === 'pick' &&
-          createPortal(
-            <div
-              className="dsm-pick"
-              role="dialog"
-              aria-modal="true"
-              aria-label="Formato do treino"
-            >
-              <div className="dsm-pick-card bola-pick">
-                <h2>Formato</h2>
-                <p className="mono">
-                  {bolFormatLabel(setup)} · você no time {BOL_TEAM_NAMES[0]}, o resto são bots
-                </p>
-                <div className="bola-chips" role="radiogroup" aria-label="Formato">
-                  {formats.map((f) => (
-                    <button
-                      key={bolFormatLabel(f)}
-                      type="button"
-                      role="radio"
-                      aria-checked={setup.teams === f.teams && setup.perTeam === f.perTeam}
-                      className={`dsm-chip${setup.teams === f.teams && setup.perTeam === f.perTeam ? ' is-on' : ''}`}
-                      onClick={() =>
-                        setSetup((s) => ({ ...s, teams: f.teams, perTeam: f.perTeam }))
-                      }
-                      data-testid={`bola-fmt-${bolFormatLabel(f)}`}
-                    >
-                      {bolFormatLabel(f)}
-                    </button>
-                  ))}
-                </div>
-                <h3>Duração</h3>
-                <div className="bola-chips" role="radiogroup" aria-label="Duração">
-                  {[1, 2, 3, 5, 8, 10, 15, 30].map((m) => (
-                    <button
-                      key={m}
-                      type="button"
-                      role="radio"
-                      aria-checked={setup.minutes === m}
-                      className={`dsm-chip${setup.minutes === m ? ' is-on' : ''}`}
-                      onClick={() => setSetup((s) => ({ ...s, minutes: m }))}
-                    >
-                      {m} min
-                    </button>
-                  ))}
-                </div>
-                <div className="dsm-over-btns">
-                  <button
-                    type="button"
-                    className="dsm-btn"
-                    onClick={() => setPhase('play')}
-                    data-testid="bola-start"
-                  >
-                    Começar
-                  </button>
-                  <button
-                    type="button"
-                    className="dsm-btn is-ghost"
-                    onClick={() => setPhase('menu')}
-                  >
-                    Cancelar
-                  </button>
-                </div>
-              </div>
-            </div>,
-            document.body,
-          )}
+        {phase === 'pick' && (
+          <BolaPicker
+            setup={setup}
+            onChange={setSetup}
+            onStart={() => setPhase('play')}
+            onCancel={() => setPhase('menu')}
+          />
+        )}
         <MuteButton />
       </section>
     </Page>

@@ -27,6 +27,8 @@ export interface BolaLink {
   rtt(): number;
   /** Sem rede nenhuma (o aparelho do líder): pede menos atraso de desenho. */
   local: boolean;
+  /** O menor atraso de desenho (ms) que o caminho aguenta: o servidor precisa de mais que a conexão direta. */
+  minDelay: number;
 }
 
 /** O jeito de sempre: o servidor da sala simula e manda o fluxo `bs`. */
@@ -35,4 +37,5 @@ export const roomLink: BolaLink = {
   onFrame: (cb) => subscribeRoom('bs', (m) => cb(m as BolaFrame)),
   rtt: () => currentRtt(),
   local: false,
+  minDelay: 100,
 };

@@ -250,8 +250,8 @@ export class BolaMatch {
     for (const e of w.drainEvents()) this.collect(e);
   }
 
-  /** Avança a partida até o relógio de agora (no máximo 8 passos por chamada). */
-  tick(): void {
+  /** Avança a partida até o relógio de agora (no máximo 8 passos por chamada). Devolve quantos passos andou. */
+  tick(): number {
     const t = this.now();
     this.acc += Math.min(MAX_CATCHUP, Math.max(0, (t - this.last) / 1000));
     this.last = t;
@@ -261,6 +261,7 @@ export class BolaMatch {
       this.acc -= BOL_DT;
       steps++;
     }
+    return steps;
   }
 
   private push(e: Record<string, unknown>) {

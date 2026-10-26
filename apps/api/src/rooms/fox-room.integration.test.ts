@@ -113,6 +113,10 @@ describe('sala do Fox Cap! com servidor de verdade', () => {
     expect(ana.snap!.flex).toBe(true);
     expect(ana.snap!.members).toHaveLength(2);
     expect(ana.snap!.hostId).toBe('ana');
+    // as pessoas já entram nos times do Fut Fox (1x1 automático)
+    expect(
+      Object.keys((ana.snap as unknown as { bola: { teamOf: object } }).bola.teamOf),
+    ).toHaveLength(2);
     // a mensagem do Fut Fox vale agora
     ana.room.send('bformat', { teams: 2, perTeam: 2 });
     await wait(150);

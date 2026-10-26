@@ -324,3 +324,26 @@
 .dsm-pick-card .dsm-chip {
   border-color: #1b1535;
 }
+
+/* escolhas e menus sobre a partida: nunca passam da tela (celular deitado), rolam por dentro */
+.dsm-pick-card {
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+@media (max-height: 460px) {
+  .dsm-pick {
+    padding: 8px;
+  }
+  .dsm-pick-card {
+    max-height: calc(100dvh - 16px);
+    padding: 10px 14px;
+    gap: 8px;
+  }
+  .dsm-pick-card h2 {
+    font-size: 18px;
+  }
+  .bola-chips {
+    gap: 6px;
+  }
+}

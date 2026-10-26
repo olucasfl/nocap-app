@@ -1,0 +1,56 @@
+/* popup "Como jogar?": uma caixa só, curta, que cabe em celular em pé e deitado */
+.htp {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
+    max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  background: rgba(17, 17, 17, 0.55);
+}
+.htp-card {
+  display: grid;
+  gap: 12px;
+  width: min(460px, 100%);
+  max-height: 100%;
+  overflow: auto;
+  padding: 18px 18px 16px;
+  border: var(--border);
+  border-radius: 20px;
+  background: var(--white);
+  color: var(--ink);
+  box-shadow: 6px 6px 0 var(--ink);
+}
+.htp-card h2 {
+  margin: 0;
+  font: 900 clamp(22px, 6vw, 28px) var(--font-display);
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+}
+.htp-card ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0 0 0 18px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.htp-keys {
+  margin: 0;
+  padding: 8px 10px;
+  border: 2px dashed var(--ink);
+  border-radius: 12px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+@media (max-height: 460px) {
+  .htp-card {
+    padding: 12px 14px;
+    gap: 8px;
+  }
+  .htp-card ul {
+    font-size: 13px;
+    gap: 4px;
+  }
+}
