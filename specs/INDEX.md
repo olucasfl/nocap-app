@@ -49,3 +49,4 @@
 | 044 | [Fox Cap! e Desmorona! (jogo de arena que desmorona)](044-fox-games-desmorona.md) | 9 | em andamento: Fases 1 (treino com bots) e 2 (salas online) no ar; Fase 3 (colisão) a seguir |
 
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.
+| 045 | [Telas fora do jogo, responsivas e mais claras](045-redesign-telas-fora-do-jogo.md) | 9 | plano para aprovação do Lucas (26/10/2026) |
