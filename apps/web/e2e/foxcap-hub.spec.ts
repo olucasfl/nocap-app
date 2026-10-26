@@ -49,18 +49,13 @@ test('Com amigos mostra Criar sala e Entrar com código na própria tela', async
   await expect(page).toHaveURL(/\/fox-cap$/);
 });
 
-test('Atravessa! Infinito entra na partida sem tela de carregamento nem menu no meio', async ({
-  page,
-}) => {
+test('Atravessa! Infinito entra na partida sem menu no meio', async ({ page }) => {
   // o pacote do jogo já foi baixado em segundo plano quando o hub abre
   await page.waitForTimeout(2500);
   const seen: string[] = [];
   await page.exposeFunction('__seen', (t: string) => seen.push(t));
   await page.evaluate(() => {
     new MutationObserver(() => {
-      const t = document.body.innerText;
-      if (/Carregando/.test(t))
-        (window as unknown as { __seen: (s: string) => void }).__seen('loading');
       if (document.querySelector('.hub-hero, .gh-hero') && location.pathname === '/atravessa')
         (window as unknown as { __seen: (s: string) => void }).__seen('menu');
     }).observe(document.body, { childList: true, subtree: true, characterData: true });

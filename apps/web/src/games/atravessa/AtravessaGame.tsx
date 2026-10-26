@@ -5,6 +5,7 @@ import type { AtravessaInput, AtravessaResult } from '@nocap/games';
 import { BackButton } from '@/components/BackButton';
 import { HubCard, HubHero, HubNote, HubSteps, HubTabs } from '@/components/GameHub';
 import { AtravessaArt, FriendsArt } from '@/components/HubArt';
+import { Loader } from '@/components/Loader';
 import { MuteButton } from '@/components/MuteButton';
 import { SaveNote } from '@/components/GuestNotice';
 import { RoomBanner } from '@/components/RoomBanner';
@@ -267,7 +268,12 @@ export function AtravessaGame() {
   }, []);
 
   // vindo do Fox Cap!: nada de menu enquanto a partida é preparada
-  if (direct.treino && phase === 'menu') return null;
+  if (direct.treino && phase === 'menu')
+    return (
+      <div className="at-boot at-boot-fixed">
+        <Loader />
+      </div>
+    );
 
   if (phase === 'play') {
     return (

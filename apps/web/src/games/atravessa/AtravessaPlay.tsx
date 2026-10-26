@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Loader } from '@/components/Loader';
 import {
   ATR_DT,
   ATR_STEP_TICKS,
@@ -63,6 +64,12 @@ export function AtravessaPlay({ seed, record, onEnd, onQuit, onRestart }: Props)
     null,
   );
   const ctl = useRef<{ pause: () => void; resume: () => void } | null>(null);
+  // o recorde pode chegar do servidor depois da partida começar: ele não refaz a cena
+  const recordRef = useRef(record);
+  recordRef.current = record;
+  const sceneRef = useRef<AtravessaScene | null>(null);
+  // a cena (Three.js) leva um instante para desenhar o primeiro quadro: até lá aparece o Carregando, nunca uma tela preta
+  const [ready, setReady] = useState(false);
   const onEndRef = useRef(onEnd);
   onEndRef.current = onEnd;
 
@@ -76,7 +83,8 @@ export function AtravessaPlay({ seed, record, onEnd, onQuit, onRestart }: Props)
       setFailed(true);
       return;
     }
-    scene.setRecord(record);
+    sceneRef.current = scene;
+    scene.setRecord(recordRef.current);
     const sim = new AtravessaSim(seed);
     const audio = createAtravessaAudio();
     // só em desenvolvimento: deixa mexer no herói pelo console para ver os biomas sem jogar até lá
@@ -175,6 +183,7 @@ export function AtravessaPlay({ seed, record, onEnd, onQuit, onRestart }: Props)
     document.addEventListener('visibilitychange', onHide);
     window.addEventListener('blur', doPause);
 
+    let shown = false;
     const frame = (now: number) => {
       raf = requestAnimationFrame(frame);
       const dt = Math.min(0.1, (now - last) / 1000);
@@ -280,6 +289,7 @@ export function AtravessaPlay({ seed, record, onEnd, onQuit, onRestart }: Props)
         shownScore = sim.score;
         setScore(shownScore);
         buzz(6);
+        const record = recordRef.current;
         if (record > 0 && !passedRecord && prev <= record && shownScore > record) {
           passedRecord = true;
           audio?.record();
@@ -306,6 +316,10 @@ export function AtravessaPlay({ seed, record, onEnd, onQuit, onRestart }: Props)
         now / 1000,
         finished ? { end: sim.end!, age: (now - deathAt) / 1000 } : null,
       );
+      if (!shown) {
+        shown = true;
+        setReady(true);
+      }
     };
     raf = requestAnimationFrame(frame);
 
@@ -318,13 +332,18 @@ export function AtravessaPlay({ seed, record, onEnd, onQuit, onRestart }: Props)
       document.removeEventListener('visibilitychange', onHide);
       window.removeEventListener('blur', doPause);
       ctl.current = null;
+      sceneRef.current = null;
       holdAudio(false);
       ro.disconnect();
       controls.dispose();
       scene.dispose();
       audio?.stop();
     };
-  }, [seed, record]);
+  }, [seed]);
+
+  useEffect(() => {
+    sceneRef.current?.setRecord(record);
+  }, [record]);
 
   const paused = pause.kind !== 'none';
   const touch = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
@@ -332,6 +351,11 @@ export function AtravessaPlay({ seed, record, onEnd, onQuit, onRestart }: Props)
   return (
     <div className="at-play" ref={wrap} role="application" aria-label="Partida do Atravessa!">
       <canvas ref={canvas} className="at-canvas" />
+      {!ready && !failed && (
+        <div className="at-boot">
+          <Loader />
+        </div>
+      )}
       <div className="at-score" aria-live="off">
         <b>{score}</b>
         {record > 0 && <small className="mono">REC {record}</small>}

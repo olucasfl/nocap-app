@@ -9,6 +9,18 @@
   user-select: none;
   overflow: hidden;
 }
+.at-boot {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  background: var(--paper);
+}
+.at-boot-fixed {
+  position: fixed;
+  z-index: 50;
+}
 .at-canvas {
   display: block;
   width: 100%;
