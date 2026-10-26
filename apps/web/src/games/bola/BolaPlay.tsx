@@ -629,6 +629,8 @@ export function BolaPlay({
     const pred = new BolPredictor(world.field);
     let predReady = false;
     let predAcc = 0;
+    /** Depois de um aperto o servidor ainda não sabe do pulo: nesse tempo ele não corrige a altura (senão cancelaria o pulo e o mortal). */
+    let jumpHold = 0;
     const lerp = (a: number, b: number, u: number) => a + (b - a) * u;
     const smoothOnline = (dt: number, input: { mx: number; mz: number }, pressed: boolean) => {
       syncRoster();
@@ -714,6 +716,7 @@ export function BolaPlay({
         return;
       }
       predAcc += dt;
+      jumpHold = pressed ? 0.7 : Math.max(0, jumpHold - dt);
       let press = pressed;
       while (predAcc >= BOL_DT) {
         predAcc -= BOL_DT;
@@ -730,18 +733,20 @@ export function BolaPlay({
       const ex = sx - body.x;
       const ez = sz - body.z;
       const ey = sy - body.y;
-      if (Math.hypot(ex, ez) > 3 || Math.abs(ey) > 1.6) {
+      if (Math.hypot(ex, ez) > 3 || (jumpHold <= 0 && Math.abs(ey) > 1.6)) {
         pred.reset({ x: row.x, y: row.y, z: row.z, vx: row.vx, vy: row.vy, vz: row.vz, ...flags });
       } else {
-        // correção suave: mais firme durante o mortal, quando o servidor manda mais
-        const k = 1 - Math.exp(-dt * (flags.flipT > 0 ? 14 : 6));
+        // correção suave; logo depois de um pulo só a posição no chão é puxada, e devagar
+        const k = 1 - Math.exp(-dt * (jumpHold > 0 ? 2 : 6));
         body.x += ex * k;
         body.z += ez * k;
-        body.y += ey * k * 0.7;
-        const kv = 1 - Math.exp(-dt * 3);
-        body.vx += (row.vx - body.vx) * kv;
-        body.vz += (row.vz - body.vz) * kv;
-        if (flags.airJumped) body.airJumped = true;
+        if (jumpHold <= 0) {
+          body.y += ey * k * 0.7;
+          const kv = 1 - Math.exp(-dt * 3);
+          body.vx += (row.vx - body.vx) * kv;
+          body.vz += (row.vz - body.vz) * kv;
+          if (flags.airJumped) body.airJumped = true;
+        }
       }
       me.x = body.x;
       me.y = body.y;
