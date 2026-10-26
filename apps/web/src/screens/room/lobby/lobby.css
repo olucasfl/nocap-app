@@ -1417,7 +1417,9 @@
 .bola-lobby-team {
   border: 3px solid var(--tc);
   border-radius: 14px;
-  background: var(--card, #fff);
+  /* superfície e texto do tema (claro e escuro) */
+  background: var(--white);
+  color: var(--ink);
   overflow: hidden;
 }
 .bola-lobby-team h3,
@@ -1453,7 +1455,7 @@
   border-top: 1px solid rgba(127, 127, 127, 0.25);
 }
 .bola-lobby-team li.is-me {
-  background: rgba(255, 226, 122, 0.3);
+  background: color-mix(in srgb, #ffd23f 30%, var(--white));
 }
 .bola-lobby-team li.is-free,
 .bola-lobby-team li.is-full {
@@ -1467,7 +1469,7 @@
   opacity: 0.7;
 }
 .bola-lobby-team em.ok {
-  color: #0b6b3a;
+  color: #1fa35f;
   opacity: 1;
 }
 .bola-lobby-team small,
@@ -1500,6 +1502,7 @@
 }
 .bola-lobby-spec {
   margin-top: 10px;
+  color: var(--ink);
   padding-bottom: 10px;
   border: 2px dashed rgba(127, 127, 127, 0.5);
   border-radius: 14px;

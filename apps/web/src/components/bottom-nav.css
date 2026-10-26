@@ -49,6 +49,8 @@
 }
 .tab.room:not(.on) {
   background: var(--yellow, #ffd23f);
+  /* texto escuro fixo: no tema escuro o texto padrão é claro e sumiria no amarelo */
+  color: #111;
 }
 .tab-dot {
   position: absolute;
