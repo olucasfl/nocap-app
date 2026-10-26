@@ -59,6 +59,8 @@ export const BOL_TOUCH_MIN = 0.4;
 
 /** Gol. */
 export const BOL_GOAL_H = 4;
+/** Quanto o gol se estende para trás da linha: a raposa pode entrar até aqui (e a rede é desenhada com esta fundura). */
+export const BOL_GOAL_DEPTH = 3.8;
 export const BOL_POST_R = 0.15;
 /** Raio do travessão. */
 export const BOL_BAR_R = 0.22;

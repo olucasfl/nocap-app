@@ -3,6 +3,7 @@ import { createRng } from '../core/rng';
 import { bolBotInput, newBolBotMemory } from './bots';
 import {
   BOL_BALL_R,
+  BOL_GOAL_DEPTH,
   BOL_GOAL_H,
   BOL_COUNTDOWN,
   BOL_DT,
@@ -222,6 +223,47 @@ describe('bola e toque', () => {
     w.pushOutOfFoxes(a);
     expect(Math.hypot(a.x - b.x, a.z - b.z)).toBeGreaterThanOrEqual(BOL_FOX_R * 2 - 1e-6);
     expect(b.x).toBe(bx);
+  });
+
+  it('a raposa entra no gol pela boca e para nas traves e no fundo da rede', () => {
+    for (const teams of [2, 3, 4]) {
+      const w = new BolWorld(roster(teams, 1), { teams, perTeam: 1 });
+      startPlay(w);
+      const g = w.field.goals[1]!;
+      const e = g.edge;
+      const p = w.players[0]!;
+      // parte do campo, em frente ao gol, e corre para dentro
+      p.x = e.mx + e.nx * 3;
+      p.z = e.mz + e.nz * 3;
+      p.vx = p.vz = 0;
+      for (let i = 0; i < 60 * 3; i++) {
+        w.step(BOL_DT, { [p.id]: { mx: -e.nx, mz: -e.nz, jump: false } });
+      }
+      const d = (p.x - e.ax) * e.nx + (p.z - e.az) * e.nz;
+      expect(d).toBeLessThan(-1);
+      expect(d).toBeGreaterThan(-BOL_GOAL_DEPTH);
+      // empurra para o lado: para na trave
+      for (let i = 0; i < 60 * 3; i++) {
+        w.step(BOL_DT, { [p.id]: { mx: e.tx, mz: e.tz, jump: false } });
+      }
+      const t = (p.x - e.mx) * e.tx + (p.z - e.mz) * e.tz;
+      expect(Math.abs(t)).toBeLessThanOrEqual(g.halfW - BOL_FOX_R + 1e-6);
+    }
+  });
+
+  it('fora da boca a parede continua firme', () => {
+    const w = new BolWorld(roster(2, 1), { teams: 2, perTeam: 1 });
+    startPlay(w);
+    const g = w.field.goals[1]!;
+    const e = g.edge;
+    const p = w.players[0]!;
+    p.x = e.mx + e.tx * (g.halfW + 3) + e.nx * 3;
+    p.z = e.mz + e.tz * (g.halfW + 3) + e.nz * 3;
+    for (let i = 0; i < 60 * 3; i++) {
+      w.step(BOL_DT, { [p.id]: { mx: -e.nx, mz: -e.nz, jump: false } });
+    }
+    const d = (p.x - e.ax) * e.nx + (p.z - e.az) * e.nz;
+    expect(d).toBeGreaterThanOrEqual(BOL_FOX_R - 1e-6);
   });
 
   it('a bola nunca sai do campo (chutes em todas as direções)', () => {

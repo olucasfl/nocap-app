@@ -1,6 +1,5 @@
 import {
   BOL_DT,
-  BOL_DURATION,
   BOL_MAX_PLAYERS,
   BOL_ROOM_MAX,
   BOL_TEAM_COLORS,
@@ -75,7 +74,7 @@ export class BolaRoomEngine extends ColorRoomEngine {
     teams: 2,
     perTeam: 1,
     auto: true,
-    minutes: BOL_DURATION / 60,
+    minutes: 3,
   };
   /** Time de cada pessoa; quem não está aqui é espectador. */
   private teamOf = new Map<string, number>();

@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import {
   BOL_BALL_R,
   BOL_FLIP_SEC,
+  BOL_GOAL_DEPTH,
   BOL_GOAL_H,
   BOL_TEAM_COLORS,
   BOL_TEAM_NAMES,
@@ -15,7 +16,7 @@ import { buildHero, mapEdge } from '../atravessa/models';
 const CAM_DIST = 8.6;
 const WALL_H = 1.3;
 const GLASS_H = 4.2;
-const NET_DEPTH = 3.8;
+const NET_DEPTH = BOL_GOAL_DEPTH;
 const PHI = (1 + Math.sqrt(5)) / 2;
 
 interface Fox {

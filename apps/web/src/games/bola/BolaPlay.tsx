@@ -690,8 +690,10 @@ export function BolaPlay({
       if (!last) return;
       // alvo: o último estado + o que passou desde que chegou - o atraso; o relógio de desenho o persegue suave
       const target = last.t + (performance.now() - last.ball.at) - interpMs;
-      if (renderT === 0 || Math.abs(target - renderT) > 400) renderT = target;
-      else renderT += dt * 1000 + (target - renderT) * (1 - Math.exp(-dt * 2.5));
+      // o relógio de desenho nunca volta para trás: se está adiantado só anda mais devagar, se atrasado anda mais rápido
+      // (mexer no atraso de uma vez faria a bola "voltar" no tempo e parecer um teletransporte)
+      if (renderT === 0 || Math.abs(target - renderT) > 700) renderT = target;
+      else renderT += dt * 1000 * Math.min(1.35, Math.max(0.6, 1 + (target - renderT) / 400));
       const rt = renderT;
       // entre quais dois estados estamos (ou, se faltar estado novo, o último com um pouco de extrapolação)
       const bracket = (t: number) => {

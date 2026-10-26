@@ -24,7 +24,7 @@ type Phase = 'menu' | 'pick' | 'play';
 export function BolaPage() {
   const [phase, setPhase] = useState<Phase>('menu');
   const [tab, setTab] = useState<'jogar' | 'como'>('jogar');
-  const [setup, setSetup] = useState<BolaSetup>({ teams: 2, perTeam: 2, minutes: 5 });
+  const [setup, setSetup] = useState<BolaSetup>({ teams: 2, perTeam: 2, minutes: 3 });
   const [round, setRound] = useState(0);
 
   if (phase === 'play') {

@@ -7,6 +7,7 @@ import {
   BOL_FLIP_SPEED,
   BOL_FOX_GRAVITY,
   BOL_FOX_R,
+  BOL_GOAL_DEPTH,
   BOL_JUMP,
   BOL_SPEED,
   BOL_SUBSTEPS,
@@ -107,6 +108,34 @@ export function moveBody(
     }
   } else {
     p.grounded = false;
+  }
+  // a boca do gol está aberta: a raposa entra, com as traves dos lados e o fundo da rede como limite
+  for (const e of field.edges) {
+    if (e.goal < 0) continue;
+    const g = field.goals[e.goal];
+    if (!g) continue;
+    const d = (p.x - e.ax) * e.nx + (p.z - e.az) * e.nz;
+    const t = (p.x - e.mx) * e.tx + (p.z - e.mz) * e.tz;
+    // só conta como "dentro do gol" quem já está passando da linha (ou chegando nela) pelo meio da boca
+    const lim = g.halfW - BOL_FOX_R;
+    if (d < BOL_FOX_R && d > -BOL_GOAL_DEPTH && (Math.abs(t) <= lim || d < 0)) {
+      if (d < 0) {
+        const ct = Math.max(-lim, Math.min(lim, t));
+        p.x += e.tx * (ct - t);
+        p.z += e.tz * (ct - t);
+      }
+      const back = -(BOL_GOAL_DEPTH - BOL_FOX_R);
+      if (d < back) {
+        p.x += e.nx * (back - d);
+        p.z += e.nz * (back - d);
+        const vn = p.vx * e.nx + p.vz * e.nz;
+        if (vn < 0) {
+          p.vx -= vn * e.nx;
+          p.vz -= vn * e.nz;
+        }
+      }
+      return;
+    }
   }
   for (const e of field.edges) {
     const d = (p.x - e.ax) * e.nx + (p.z - e.az) * e.nz;

@@ -11,7 +11,7 @@ export function BolaRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
   const navigate = useNavigate();
   const teams = b?.format.teams ?? 2;
   const perTeam = b?.format.perTeam ?? 1;
-  const minutes = b?.format.minutes ?? 30;
+  const minutes = b?.format.minutes ?? 3;
   const setup = useMemo<BolaSetup>(() => ({ teams, perTeam, minutes }), [teams, perTeam, minutes]);
   if (!b) return null;
   const isHost = snapshot.hostId === b.me;
