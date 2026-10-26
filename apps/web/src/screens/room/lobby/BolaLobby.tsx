@@ -187,7 +187,7 @@ function FormatPanel({ snapshot, me }: { snapshot: RoomSnapshot; me: string | un
       </div>
       <div className="mono rm-label">DURAÇÃO</div>
       <div className="rm-seg" role="radiogroup" aria-label="Duração">
-        {[3, 5, 10, 20, 30].map((m) => (
+        {[1, 2, 3, 5, 8, 10, 15, 30].map((m) => (
           <button
             key={m}
             type="button"

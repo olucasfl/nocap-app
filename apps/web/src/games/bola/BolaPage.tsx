@@ -128,7 +128,7 @@ export function BolaPage() {
                 </div>
                 <h3>Duração</h3>
                 <div className="bola-chips" role="radiogroup" aria-label="Duração">
-                  {[1, 3, 5, 10].map((m) => (
+                  {[1, 2, 3, 5, 8, 10, 15, 30].map((m) => (
                     <button
                       key={m}
                       type="button"
