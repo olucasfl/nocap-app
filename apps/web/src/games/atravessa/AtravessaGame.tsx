@@ -290,6 +290,7 @@ export function AtravessaGame() {
         // vindo do Fox Cap!: sair da partida volta para lá
         onQuit={() => (direct.treino ? void navigate({ to: '/fox-cap' }) : setPhase('menu'))}
         onRestart={() => void begin()}
+        onOfflineInvite={() => void navigate({ to: '/fox-cap', search: { aba: 'amigos' } })}
       />
     );
   }

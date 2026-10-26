@@ -49,7 +49,7 @@ for (const ph of phones) {
     await page.waitForTimeout(1200);
     await expect(page.getByTestId('bola-tips')).toBeVisible();
     await page.screenshot({ path: `test-results/mob-${ph.name}-tips.png` });
-    const tips = await box(page, '.bola-tips');
+    const tips = await box(page, '.gm-tips');
     expect(tips!.x).toBeGreaterThanOrEqual(0);
     expect(tips!.x + tips!.w).toBeLessThanOrEqual(ph.w + 1);
     expect(tips!.y + tips!.h).toBeLessThanOrEqual(ph.h + 1);
@@ -100,7 +100,7 @@ for (const ph of phones) {
     await page.getByTestId('bola-gear').click();
     await page.waitForTimeout(300);
     await page.screenshot({ path: `test-results/mob-${ph.name}-menu.png` });
-    const menu = await box(page, '.bola-menu');
+    const menu = await box(page, '.gm-card');
     expect(menu!.y).toBeGreaterThanOrEqual(-1);
     expect(menu!.y + menu!.h).toBeLessThanOrEqual(ph.h + 1);
     await page.getByTestId('bola-menu-teams').click();

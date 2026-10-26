@@ -295,3 +295,18 @@
     animation: none;
   }
 }
+
+.at-tools {
+  position: absolute;
+  top: max(14px, env(safe-area-inset-top));
+  right: max(14px, env(safe-area-inset-right));
+  z-index: 6;
+}
+.at-hint .gm-keycap {
+  margin: 0 1px;
+}
+
+.at-tools.is-left {
+  right: auto;
+  left: max(14px, env(safe-area-inset-left));
+}

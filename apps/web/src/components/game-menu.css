@@ -165,3 +165,122 @@
   margin-right: 8px;
   opacity: 0.5;
 }
+
+/* controles na primeira partida e a partir do menu */
+.gm-tips {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 65;
+  width: min(480px, calc(100% - 24px));
+  max-height: calc(100% - 24px);
+  overflow-y: auto;
+  display: grid;
+  gap: 10px;
+  padding: 16px 18px;
+  border: 4px solid #1b1535;
+  border-radius: 18px;
+  background: #fff;
+  color: #1b1535;
+  box-shadow: 0 6px 0 #1b1535;
+}
+.gm-tips h2 {
+  margin: 0;
+  font: 800 22px var(--font-display, system-ui);
+  text-transform: uppercase;
+}
+.gm-tips ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.gm-tips li {
+  display: grid;
+  grid-template-columns: minmax(96px, auto) 1fr;
+  align-items: center;
+  gap: 12px;
+  font: 700 14px/1.3 var(--font-display, system-ui);
+}
+.gm-tip-keys {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+.gm-tag {
+  padding: 2px 8px;
+  border: 2px solid #1b1535;
+  border-radius: 6px;
+  background: #cfe7ff;
+  font: 900 12px var(--font-display, system-ui);
+  text-transform: uppercase;
+}
+@media (max-height: 460px) {
+  .gm-tips {
+    padding: 10px 14px;
+    gap: 6px;
+  }
+  .gm-tips li {
+    font-size: 12px;
+  }
+}
+
+/* teclas e botões de tela (os mesmos em todos os jogos) */
+.gm-keycap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 7px;
+  border: 2px solid #1b1535;
+  border-bottom-width: 4px;
+  border-radius: 7px;
+  background: #ffe27a;
+  color: #1b1535;
+  font: 900 12px/1 var(--font-display, system-ui);
+  white-space: nowrap;
+}
+.gm-keycap.is-wide {
+  padding: 0 14px;
+}
+.gm-tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 42px;
+  padding: 6px 10px 6px 12px;
+  border: 3px solid #1b1535;
+  border-radius: 12px;
+  background: #fff;
+  color: #1b1535;
+  font: 800 13px var(--font-display, system-ui);
+  text-transform: uppercase;
+  box-shadow: 0 3px 0 #1b1535;
+  cursor: pointer;
+  pointer-events: auto;
+  transition:
+    transform 0.08s,
+    box-shadow 0.08s;
+}
+.gm-tool:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 0 #1b1535;
+}
+.gm-tool:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #1b1535;
+}
+.gm-tool:focus-visible,
+.gm-item:focus-visible,
+.gm-main:focus-visible {
+  outline: 3px solid #5b8cff;
+  outline-offset: 2px;
+}
+.gm-tool:disabled {
+  opacity: 0.45;
+  cursor: default;
+}

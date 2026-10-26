@@ -9,8 +9,11 @@ import {
   type DsmInput,
   type DsmPlayerInfo,
 } from '@nocap/games';
+import { GameMenu, GearButton, Keycap, NetBadge } from '@/components/GameMenu';
+import { GameTips, type TipRow } from '@/components/GameTips';
+import { IcCamera, IcJump } from '@/games/bola/BolaIcons';
 import { dsmSfx } from '@/lib/desmorona-audio';
-import { sendRoomQuiet, serverNow, subscribeRoom } from '@/lib/rooms';
+import { currentRtt, sendRoomQuiet, serverNow, subscribeRoom } from '@/lib/rooms';
 import { DsmControls, STICK_RADIUS } from './controls';
 import { DsmScene } from './scene';
 
@@ -18,6 +21,41 @@ import { DsmScene } from './scene';
 const FURS = [0xff7d26, 0xb98cff, 0x4fc3f7, 0x7be07b, 0xffd23f, 0xff6f91, 0xf5f5f5, 0x8d6e63];
 const BOT_NAMES = ['Faísca', 'Pipoca', 'Trufa', 'Ruivo', 'Brisa', 'Nuvem', 'Cacau'];
 const COUNTDOWN = 3.4;
+const TIPS_KEY = 'nocap-dsm-tips';
+
+/** Os controles do Desmorona!: a primeira partida e o item "Controles" do menu mostram estes. */
+const tipRows = (touch: boolean): TipRow[] =>
+  touch
+    ? [
+        { keys: <b className="gm-tag">Joystick</b>, text: 'Arraste na metade esquerda para andar' },
+        { keys: <IcJump size={20} />, text: 'Toque em Pular; de novo no ar, pulo duplo' },
+        {
+          keys: <b className="gm-tag">Corra</b>,
+          text: 'Andar quebra o chão: não pare, e pule os buracos',
+        },
+      ]
+    : [
+        {
+          keys: (
+            <>
+              <Keycap k="W" touchHide={false} />
+              <Keycap k="A" touchHide={false} />
+              <Keycap k="S" touchHide={false} />
+              <Keycap k="D" touchHide={false} />
+            </>
+          ),
+          text: 'Andar (o chão quebra por onde você passa)',
+        },
+        {
+          keys: <Keycap k="Espaço" wide touchHide={false} />,
+          text: 'Pular; de novo no ar, pulo duplo',
+        },
+        { keys: <IcCamera size={20} />, text: 'O mouse gira a câmera (clique para prender)' },
+        {
+          keys: <Keycap k="Esc" touchHide={false} />,
+          text: 'Menu: convidar, controles, som e sair',
+        },
+      ];
 
 export interface DsmResult {
   winnerId: string;
@@ -59,6 +97,7 @@ export function DesmoronaPlay({
   dead,
   onExit,
   onAgain,
+  onOfflineInvite,
 }: {
   bots?: number;
   online?: DsmOnline;
@@ -66,6 +105,8 @@ export function DesmoronaPlay({
   dead?: string[];
   onExit: () => void;
   onAgain?: () => void;
+  /** Partida offline: "Convidar" leva para criar uma sala com amigos. */
+  onOfflineInvite?: () => void;
 }) {
   const deadRef = useRef<string[]>([]);
   deadRef.current = dead ?? [];
@@ -95,6 +136,39 @@ export function DesmoronaPlay({
   const spectate = useRef({ index: 0 });
   const api = useRef<{ next: (d: number) => void } | null>(null);
   const noteTimer = useRef<number | null>(null);
+  const [menu, setMenu] = useState(false);
+  const menuRef = useRef(false);
+  menuRef.current = menu;
+  const [showNet, setShowNet] = useState(() => {
+    try {
+      return localStorage.getItem('nocap-dsm-net') === '1';
+    } catch {
+      return false;
+    }
+  });
+  const [ping, setPing] = useState(0);
+  const touchDevice = useMemo(
+    () => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches,
+    [],
+  );
+  useEffect(() => {
+    if (!online || !showNet) return undefined;
+    const t = window.setInterval(() => setPing(Math.round(currentRtt())), 1000);
+    return () => window.clearInterval(t);
+  }, [online, showNet]);
+  // sem o mouse preso, o Esc do teclado abre o menu (com ele preso, o navegador o consome e soltar o mouse já abre)
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => {
+      if (e.code === 'Escape' && !menuRef.current && controls.allowLock) setMenu(true);
+    };
+    window.addEventListener('keydown', key);
+    return () => window.removeEventListener('keydown', key);
+  }, [controls]);
+  const closeMenu = () => {
+    setMenu(false);
+    // o clique em "Continuar" é um gesto: dá para prender o mouse de novo
+    if (mouseUser) controls.requestLock();
+  };
 
   useEffect(() => {
     const el = canvas.current;
@@ -126,7 +200,11 @@ export function DesmoronaPlay({
     const rng = createRng(`${seed}:bots`);
     controls.attach(zoneEl, setStick);
     if (root.current) {
-      controls.attachLook(root.current, setLocked);
+      controls.attachLook(root.current, (l) => {
+        setLocked(l);
+        // Esc solta o mouse: abre o menu (menos quando a partida acabou de soltar por conta própria)
+        if (!l && controls.allowLock && !menuRef.current) setMenu(true);
+      });
       // o clique em Jogar/Começar acabou de acontecer: o navegador ainda aceita prender o mouse
       if (mouseUser) controls.requestLock();
     }
@@ -294,7 +372,7 @@ export function DesmoronaPlay({
         }
       }
       if (!document.hidden && !world.ended) {
-        if (!online) acc += dt;
+        if (!online && !menuRef.current) acc += dt;
         const m = me();
         const input = m.alive ? controls.read() : { mx: 0, mz: 0, jump: false };
         // o toque fica guardado por um instante: um quadro sem passo da simulação não pode engolir o pulo
@@ -450,9 +528,9 @@ export function DesmoronaPlay({
         <div className="dsm-pill is-layer">
           Camada <b>{hud.layer}</b>/{DSM_LAYERS}
         </div>
-        <button type="button" className="dsm-exit" onClick={onExit}>
-          Sair
-        </button>
+        <div className="dsm-hud-end">
+          <GearButton onClick={() => setMenu(true)} testId="dsm-menu-btn" />
+        </div>
       </div>
       {hud.phase === 'ready' && (
         <div className="dsm-count" aria-live="assertive">
@@ -490,6 +568,60 @@ export function DesmoronaPlay({
         >
           Pular
         </button>
+      )}
+      {!touchDevice && !result && hud.phase !== 'over' && (
+        <div className="dsm-keys" aria-hidden="true">
+          <span>
+            <Keycap k="W" />
+            <Keycap k="A" />
+            <Keycap k="S" />
+            <Keycap k="D" /> andar
+          </span>
+          <span>
+            <Keycap k="Espaço" wide /> pular
+          </span>
+          <span>
+            <Keycap k="Esc" /> menu
+          </span>
+        </div>
+      )}
+      {online && showNet && !result && (
+        <NetBadge
+          mode="servidor"
+          items={[{ text: `${ping} ms`, title: 'ida e volta até o servidor' }]}
+        />
+      )}
+      {hud.phase === 'ready' && !result && (
+        <GameTips storageKey={TIPS_KEY} rows={tipRows(touchDevice)} testId="dsm-tips" />
+      )}
+      {menu && !result && (
+        <GameMenu
+          title="Menu"
+          testPrefix="dsm-menu"
+          tipsKey={TIPS_KEY}
+          tips={tipRows(touchDevice)}
+          online={!!online}
+          net={
+            online
+              ? {
+                  on: showNet,
+                  toggle: () =>
+                    setShowNet((v) => {
+                      try {
+                        localStorage.setItem('nocap-dsm-net', v ? '0' : '1');
+                      } catch {
+                        /* sem armazenamento: vale só nesta partida */
+                      }
+                      return !v;
+                    }),
+                }
+              : undefined
+          }
+          onClose={closeMenu}
+          onExit={onExit}
+          onOfflineInvite={onOfflineInvite}
+          actions={[]}
+        />
       )}
       {result && (
         <div className="dsm-over" role="dialog" aria-modal="true" aria-label="Resultado">

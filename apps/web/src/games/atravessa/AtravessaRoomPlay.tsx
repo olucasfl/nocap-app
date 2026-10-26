@@ -11,10 +11,14 @@ import {
   type AtravessaInput,
   type Dir,
 } from '@nocap/games';
+import { useNavigate } from '@tanstack/react-router';
+import { GameMenu, GearButton, NetBadge } from '@/components/GameMenu';
 import { createAtravessaAudio } from '@/lib/atravessa-audio';
 import { useAuth } from '@/lib/auth';
 import {
   at,
+  currentRtt,
+  leaveRoom,
   sendRoom,
   sendRoomQuiet,
   serverNow,
@@ -24,6 +28,7 @@ import {
 import { buzz } from '@/lib/sfx';
 import { attachControls } from './input';
 import { meters, raceTime } from './AtravessaReveal';
+import { atravessaTipRows } from './AtravessaPlay';
 import { AtravessaScene } from './scene';
 import './atravessa.css';
 import './atravessa-room.css';
@@ -142,6 +147,29 @@ export function AtravessaRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
 }
 
 function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
+  const navigate = useNavigate();
+  const [menu, setMenu] = useState(false);
+  const [showNet, setShowNet] = useState(() => {
+    try {
+      return localStorage.getItem('nocap-atr-net') === '1';
+    } catch {
+      return false;
+    }
+  });
+  const [ping, setPing] = useState(0);
+  useEffect(() => {
+    if (!showNet) return undefined;
+    const t = window.setInterval(() => setPing(Math.round(currentRtt())), 1000);
+    return () => window.clearInterval(t);
+  }, [showNet]);
+  // a corrida não para: o menu abre por cima e o herói continua (como numa sala de verdade)
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => {
+      if (e.code === 'Escape' && !e.repeat) setMenu(true);
+    };
+    window.addEventListener('keydown', key);
+    return () => window.removeEventListener('keydown', key);
+  }, []);
   const wrap = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const tags = useRef(new Map<string, HTMLDivElement>());
@@ -520,6 +548,37 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
       aria-label="Partida do Atravessa! em sala"
     >
       <canvas ref={canvas} className="at-canvas" />
+
+      <div className="at-tools is-left">
+        <GearButton onClick={() => setMenu(true)} testId="atr-menu-btn" />
+      </div>
+      {showNet && <NetBadge mode="servidor" items={[{ text: `${ping} ms` }]} />}
+      {menu && (
+        <GameMenu
+          title="Menu"
+          testPrefix="atr-menu"
+          tipsKey="nocap-atr-tips"
+          tips={atravessaTipRows(touch)}
+          online
+          net={{
+            on: showNet,
+            toggle: () =>
+              setShowNet((v) => {
+                try {
+                  localStorage.setItem('nocap-atr-net', v ? '0' : '1');
+                } catch {
+                  /* sem armazenamento: vale só nesta partida */
+                }
+                return !v;
+              }),
+          }}
+          onClose={() => setMenu(false)}
+          onExit={() => {
+            void leaveRoom().then(() => navigate({ to: '/fox-cap' }));
+          }}
+          actions={[]}
+        />
+      )}
 
       {/* nomes em cima das raposas */}
       <div className="atr-tags" aria-hidden="true">

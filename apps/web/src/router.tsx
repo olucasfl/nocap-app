@@ -161,6 +161,8 @@ const atravessaRoute = createRoute({
 const foxCapRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/fox-cap',
+  validateSearch: (search: Record<string, unknown>): { aba?: 'amigos' } =>
+    search.aba === 'amigos' ? { aba: 'amigos' } : {},
   component: lazyRouteComponent(() => import('@/games/desmorona/FoxCapPage'), 'FoxCapPage'),
 });
 

@@ -1081,3 +1081,27 @@
     opacity: 0.55;
   }
 }
+
+/* mensagens sempre abaixo do placar e do tempo (a altura dele muda com 3 ou 4 times e no celular) */
+.dsm-note.bola-warn {
+  top: calc(var(--bola-board-bottom, 70px) + 10px);
+}
+.bola-feed {
+  top: calc(var(--bola-board-bottom, 70px) + 12px);
+}
+.bola-banner {
+  top: max(24%, calc(var(--bola-board-bottom, 70px) + 16px));
+}
+.bola-net {
+  top: calc(var(--bola-board-bottom, 70px) + 10px);
+}
+@media (max-width: 560px) {
+  .bola-banner {
+    top: max(30%, calc(var(--bola-board-bottom, 70px) + 16px));
+  }
+}
+@media (max-height: 460px) {
+  .bola-banner {
+    top: max(16%, calc(var(--bola-board-bottom, 70px) + 8px));
+  }
+}

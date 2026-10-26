@@ -51,5 +51,6 @@
 | 046 | [Fut Fox (futebol de raposas, 2 a 4 times)](046-bola-maluca.md) | 9 | em andamento: Fase 1 (motor e bots) pronta e MVP offline jogável em `/fox-cap/bola` (26/10/2026); fases 1 a 4 prontas (motor, sala online, web e lobby); faltam som e testes em celular real |
 | 048 | [Fut Fox online ponto a ponto (o líder simula)](048-fut-fox-p2p.md) | 9 | implementada (26/10/2026): lobby no Colyseus, partida no aparelho do líder por WebRTC, reserva no servidor; falta validar em aparelhos reais |
 | 049 | [Fox Cap! com modos offline e sala de jogos trocáveis](049-fox-cap-hub-salas.md) | 9 | implementada (26/10/2026); falta jogar com amigos reais |
+| 050 | [Menu (Esc) unificado, convite no meio da partida e controles na tela](050-menu-do-jogo-e-convite.md) | 9 | em andamento (26/10/2026): Fut Fox, Desmorona! e Atravessa! com o menu novo |
 
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.

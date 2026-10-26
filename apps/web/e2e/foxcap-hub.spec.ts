@@ -97,4 +97,40 @@ test('Fut Fox 3 times: empate de dois no topo manda só eles para a prorrogaçã
   await expect(page.locator('.bola-ot')).toBeVisible({ timeout: 8000 });
   await expect(page.locator('.bola-ot-chip.is-out')).toHaveCount(1);
   await expect(page.locator('.bola-ot-chip.is-stay')).toHaveCount(2);
+  // as raposas dos times que ficaram de fora saem do campo (no mundo e na cena)
+  const counts = await page.evaluate(() => {
+    const w = window as unknown as {
+      __bola: { players: unknown[] };
+      __bolaScene: { foxes: Map<string, unknown> };
+    };
+    return { world: w.__bola.players.length, scene: w.__bolaScene.foxes.size };
+  });
+  expect(counts).toEqual({ world: 2, scene: 2 });
+});
+
+test('Fut Fox 4 times: avisos e cartaz ficam abaixo do placar e do tempo, nunca por cima', async ({
+  page,
+}) => {
+  await page.getByTestId('foxcap-bola').click();
+  await page.getByTestId('bola-fmt-1x1x1x1').click();
+  await page.getByTestId('bola-start').click();
+  await expect(page.getByTestId('bola-play')).toBeVisible();
+  await page.getByTestId('bola-tips-ok').click();
+  await page.evaluate(() => {
+    const w = (
+      window as unknown as { __bola: { scores: number[]; clock: number; durationSec: number } }
+    ).__bola;
+    w.scores.splice(0, 4, 1, 1, 1, 1);
+    w.clock = w.durationSec;
+  });
+  await expect(page.locator('.bola-warn, .bola-banner').first()).toBeVisible({ timeout: 10_000 });
+  const board = await page.locator('.bola-board').boundingBox();
+  for (const sel of ['.bola-warn', '.bola-banner']) {
+    const box = await page
+      .locator(sel)
+      .first()
+      .boundingBox()
+      .catch(() => null);
+    if (box && board) expect(box.y).toBeGreaterThanOrEqual(board.y + board.height - 1);
+  }
 });

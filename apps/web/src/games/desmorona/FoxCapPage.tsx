@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState, type FormEvent } from 'react';
-import { useNavigate } from '@tanstack/react-router';
+import { useNavigate, useSearch } from '@tanstack/react-router';
 import { BackButton } from '@/components/BackButton';
 import { Field } from '@/components/Field';
 import { HubHero, HubModeCard, HubNote, HubTabs } from '@/components/GameHub';
@@ -32,7 +32,10 @@ type Flow = 'bola-pick' | 'bola-play' | 'dsm-pick' | 'dsm-play' | null;
  */
 export function FoxCapPage() {
   const navigate = useNavigate();
-  const [tab, setTab] = useState<'offline' | 'amigos'>('offline');
+  const wanted = useSearch({ strict: false }) as { aba?: string };
+  const [tab, setTab] = useState<'offline' | 'amigos'>(
+    wanted.aba === 'amigos' ? 'amigos' : 'offline',
+  );
   const [flow, setFlow] = useState<Flow>(null);
   const [help, setHelp] = useState<HowGame | null>(null);
   const [bola, setBola] = useState<BolaSetup>({ teams: 2, perTeam: 2, minutes: 3 });
@@ -40,6 +43,11 @@ export function FoxCapPage() {
   const [round, setRound] = useState(0);
   const [code, setCode] = useState('');
   const entry = useRoomEntry({ resume: true });
+  /** "Convidar" numa partida offline: sai dela e abre "Com amigos", onde se cria a sala. */
+  const goFriends = () => {
+    setFlow(null);
+    setTab('amigos');
+  };
   // o Atravessa! baixa em segundo plano: ao clicar em Jogar a partida abre na hora, sem tela de carregamento
   useEffect(() => {
     void import('../atravessa/AtravessaPage');
@@ -55,6 +63,7 @@ export function FoxCapPage() {
             setup={bola}
             onExit={() => setFlow(null)}
             onAgain={() => setRound((r) => r + 1)}
+            onOfflineInvite={goFriends}
           />
         </Suspense>
       </div>

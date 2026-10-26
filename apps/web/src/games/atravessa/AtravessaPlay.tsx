@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
+import { GameMenu, GearButton, Keycap } from '@/components/GameMenu';
+import { GameTips, type TipRow } from '@/components/GameTips';
 import { Loader } from '@/components/Loader';
+import { IcRestart } from '@/games/bola/BolaIcons';
 import {
   ATR_DT,
   ATR_STEP_TICKS,
@@ -28,6 +31,8 @@ interface Props {
   onEnd: (result: AtravessaResult, steps: AtravessaInput[]) => void;
   onQuit: () => void;
   onRestart: () => void;
+  /** Partida offline: "Convidar" leva para criar uma sala com amigos. */
+  onOfflineInvite?: () => void;
 }
 
 const OVER_TEXT: Record<AtravessaEnd, string> = {
@@ -44,6 +49,34 @@ const OVER_TEXT: Record<AtravessaEnd, string> = {
 /** Depois de morrer, a tela espera um pouco para o fim da partida ser visto. */
 const END_DELAY_MS = 1500;
 const TOAST_MS = 1700;
+const TIPS_KEY = 'nocap-atr-tips';
+
+/** Os controles do Atravessa!: a primeira partida e o item "Controles" do menu mostram estes. */
+export const atravessaTipRows = (touch: boolean): TipRow[] =>
+  touch
+    ? [
+        { keys: <b className="gm-tag">Toque</b>, text: 'Toque na tela para pular para a frente' },
+        { keys: <b className="gm-tag">Deslize</b>, text: 'Deslize para os lados para desviar' },
+        {
+          keys: <b className="gm-tag">Corra</b>,
+          text: 'Parar demais derruba você: continue avançando',
+        },
+      ]
+    : [
+        {
+          keys: (
+            <>
+              <Keycap k="W" touchHide={false} />
+              <Keycap k="A" touchHide={false} />
+              <Keycap k="S" touchHide={false} />
+              <Keycap k="D" touchHide={false} />
+            </>
+          ),
+          text: 'Pular para a frente, para os lados e para trás',
+        },
+        { keys: <b className="gm-tag">Setas</b>, text: 'Fazem o mesmo que W A S D' },
+        { keys: <Keycap k="Esc" touchHide={false} />, text: 'Pausa e abre o menu (P também)' },
+      ];
 
 const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
 
@@ -52,7 +85,7 @@ const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
  * O relógio é de passo fixo (60 por segundo), o mesmo que o servidor usa para refazer a partida a
  * partir dos passos gravados aqui.
  */
-export function AtravessaPlay({ seed, record, onEnd, onQuit, onRestart }: Props) {
+export function AtravessaPlay({ seed, record, onEnd, onQuit, onRestart, onOfflineInvite }: Props) {
   const wrap = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const [pause, setPause] = useState<Pause>({ kind: 'none' });
@@ -360,27 +393,32 @@ export function AtravessaPlay({ seed, record, onEnd, onQuit, onRestart }: Props)
         <b>{score}</b>
         {record > 0 && <small className="mono">REC {record}</small>}
       </div>
-      <button
-        type="button"
-        className="at-pausebtn"
-        aria-label="Pausar"
-        data-sfx="select"
-        disabled={!!over}
-        onClick={() => ctl.current?.pause()}
-      >
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
-          <rect x="6" y="4" width="4" height="16" rx="1" />
-          <rect x="14" y="4" width="4" height="16" rx="1" />
-        </svg>
-      </button>
+      {!over && (
+        <div className="at-tools">
+          <GearButton onClick={() => ctl.current?.pause()} testId="atr-menu-btn" />
+        </div>
+      )}
       {toast && !over && (
         <div key={toast.n} className={`at-toast ${toast.kind}`} role="status">
           {toast.text}
         </div>
       )}
+      {!over && !failed && ready && (
+        <GameTips storageKey={TIPS_KEY} rows={atravessaTipRows(touch)} testId="atr-tips" />
+      )}
       {hint && !over && !failed && (
         <p className="at-hint mono">
-          {touch ? 'TOQUE PARA PULAR · DESLIZE PARA IR PARA O LADO' : 'W A S D OU AS SETAS'}
+          {touch ? (
+            'TOQUE PARA PULAR · DESLIZE PARA IR PARA O LADO'
+          ) : (
+            <>
+              <Keycap k="W" touchHide={false} />
+              <Keycap k="A" touchHide={false} />
+              <Keycap k="S" touchHide={false} />
+              <Keycap k="D" touchHide={false} /> OU AS SETAS · <Keycap k="Esc" touchHide={false} />{' '}
+              MENU
+            </>
+          )}
         </p>
       )}
       {failed && (
@@ -404,26 +442,28 @@ export function AtravessaPlay({ seed, record, onEnd, onQuit, onRestart }: Props)
               {pause.n}
             </div>
           ) : (
-            <div className="at-pause-card">
-              <h2>Pausado</h2>
-              <div className="stack">
-                <button
-                  type="button"
-                  className="btn alt"
-                  data-sfx="start"
-                  onClick={() => ctl.current?.resume()}
-                >
-                  Voltar ao jogo
-                </button>
-                <button type="button" className="btn" data-sfx="start" onClick={onRestart}>
-                  Reiniciar partida
-                </button>
-                <button type="button" className="btn ghost" data-sfx="back" onClick={onQuit}>
-                  Sair da partida
-                </button>
-              </div>
-              <p className="mono at-pause-hint">Esc ou P também pausam e voltam.</p>
-            </div>
+            <GameMenu
+              title="Pausado"
+              testPrefix="atr-menu"
+              continueLabel="Voltar ao jogo"
+              tipsKey={TIPS_KEY}
+              tips={atravessaTipRows(touch)}
+              online={false}
+              escCloses={false}
+              onClose={() => ctl.current?.resume()}
+              onExit={onQuit}
+              onOfflineInvite={onOfflineInvite}
+              actions={[
+                {
+                  id: 'restart',
+                  icon: <IcRestart size={20} />,
+                  label: 'Reiniciar partida',
+                  armed: 'Toque de novo para reiniciar',
+                  onClick: onRestart,
+                  testId: 'atr-menu-restart',
+                },
+              ]}
+            />
           )}
         </div>
       )}

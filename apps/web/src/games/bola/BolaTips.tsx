@@ -1,34 +1,11 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { GameTips, type TipRow } from '@/components/GameTips';
 import { IcCamera, IcGear, IcJump, Key } from './BolaIcons';
 
-const KEY = 'nocap-bola-tips';
-const seen = () => {
-  try {
-    return localStorage.getItem(KEY) === '1';
-  } catch {
-    return false;
-  }
-};
+export const BOLA_TIPS_KEY = 'nocap-bola-tips';
 
-/** Controles do jogo, mostrados uma vez só (na primeira partida) por cima da contagem. */
-export function BolaTips({ touch }: { touch: boolean }) {
-  const [open, setOpen] = useState(() => !seen());
-  useEffect(() => {
-    if (!open) return undefined;
-    // some sozinha depois de um tempo, mas só "vale como vista" quando a pessoa toca em Entendi
-    const t = window.setTimeout(() => setOpen(false), 20_000);
-    return () => window.clearTimeout(t);
-  }, [open]);
-  if (!open) return null;
-  const done = () => {
-    try {
-      localStorage.setItem(KEY, '1');
-    } catch {
-      /* sem armazenamento: aparece de novo na próxima, sem problema */
-    }
-    setOpen(false);
-  };
-  const rows: { keys: ReactNode; text: string }[] = touch
+/** Os controles do Fut Fox (no celular e no teclado): a primeira partida e o item "Controles" do menu mostram estes. */
+export function bolaTipRows(touch: boolean): TipRow[] {
+  return touch
     ? [
         {
           keys: <b className="bola-tip-tag">Joystick</b>,
@@ -43,7 +20,10 @@ export function BolaTips({ touch }: { touch: boolean }) {
           keys: <IcCamera size={20} />,
           text: 'A câmera começa solta; o botão prende na bola e solta de novo',
         },
-        { keys: <IcGear size={20} />, text: 'Config.: tabela, trocar de time, espectar e sair' },
+        {
+          keys: <IcGear size={20} />,
+          text: 'Menu: convidar, tabela, trocar de time, espectar e sair',
+        },
       ]
     : [
         {
@@ -69,7 +49,7 @@ export function BolaTips({ touch }: { touch: boolean }) {
         },
         { keys: <Key k="F" />, text: 'Prende a câmera na bola ou solta' },
         { keys: <Key k="Tab" />, text: 'Segure para ver a tabela de estatísticas' },
-        { keys: <Key k="Esc" />, text: 'Configurações (times, espectar, sair)' },
+        { keys: <Key k="Esc" />, text: 'Menu (convidar, times, espectar, rede, sair)' },
         {
           keys: (
             <>
@@ -80,20 +60,16 @@ export function BolaTips({ touch }: { touch: boolean }) {
           text: 'Espectando: troca quem você acompanha (jogadores e a bola)',
         },
       ];
+}
+
+/** Controles do jogo, mostrados uma vez só (na primeira partida) por cima da contagem. */
+export function BolaTips({ touch }: { touch: boolean }) {
   return (
-    <div className="bola-tips" role="dialog" aria-label="Como jogar" data-testid="bola-tips">
-      <h2>Como jogar</h2>
-      <ul>
-        {rows.map((r, i) => (
-          <li key={i}>
-            <span className="bola-tip-keys">{r.keys}</span>
-            <span>{r.text}</span>
-          </li>
-        ))}
-      </ul>
-      <button type="button" className="dsm-btn" onClick={done} data-testid="bola-tips-ok">
-        Entendi
-      </button>
-    </div>
+    <GameTips
+      storageKey={BOLA_TIPS_KEY}
+      rows={bolaTipRows(touch)}
+      testId="bola-tips"
+      okTestId="bola-tips-ok"
+    />
   );
 }

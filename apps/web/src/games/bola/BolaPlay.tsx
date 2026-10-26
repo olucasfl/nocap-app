@@ -165,6 +165,7 @@ export function BolaPlay({
   onExit,
   onAgain,
   onEnd,
+  onOfflineInvite,
 }: {
   setup: BolaSetup;
   /** Partida em sala: o servidor simula; aqui só desenha e manda a entrada. */
@@ -173,6 +174,8 @@ export function BolaPlay({
   onAgain?: () => void;
   /** Só o líder da sala: encerra a partida. */
   onEnd?: () => void;
+  /** Partida offline: "Convidar" leva para criar uma sala com amigos. */
+  onOfflineInvite?: () => void;
 }) {
   const rosterRef = useRef<BolaRosterRow[]>(online?.roster ?? []);
   rosterRef.current = online?.roster ?? rosterRef.current;
@@ -192,6 +195,7 @@ export function BolaPlay({
   const switchTeam = useRef<(team: number, botId?: string | null) => string | null>(() => null);
   const [teamsOpen, setTeamsOpen] = useState(false);
   const [menu, setMenu] = useState(false);
+  const boardEl = useRef<HTMLDivElement>(null);
   const [crash, setCrash] = useState<string | null>(null);
   const [tabHeld, setTabHeld] = useState(false);
   const [pinned, setPinned] = useState(false);
@@ -443,6 +447,8 @@ export function BolaPlay({
         }, 3500);
       } else if (e.type === 'golden') {
         scene.setClosedGoals(world.out);
+        // o mundo já tirou os corpos dos times de fora: a cena também precisa tirar as raposas
+        scene.sync();
         if (e.out.length > 0) {
           const stay = world.scores.map((_, t) => t).filter((t) => !e.out.includes(t));
           banner = {
@@ -569,10 +575,12 @@ export function BolaPlay({
     });
     const idOfSlot = (s: unknown) => (typeof s === 'number' ? (slotId.get(s) ?? null) : null);
     const syncRoster = () => {
-      const roster = rosterRef.current;
+      const all = rosterRef.current;
       // a lista só muda quando chega um estado novo da sala: o mesmo objeto não precisa ser comparado de novo
-      if (roster === rosterSeen) return;
-      rosterSeen = roster;
+      if (all === rosterSeen) return;
+      rosterSeen = all;
+      // times que ficaram de fora da prorrogação não têm corpo em campo (a lista da sala pode ainda trazê-los)
+      const roster = all.filter((r) => !world.out[r.team]);
       const key = JSON.stringify(roster.map((r) => [r.slot, r.id, r.team, r.bot]));
       if (key === rosterKey) return;
       rosterKey = key;
@@ -672,7 +680,12 @@ export function BolaPlay({
                 changed = true;
               }
             }
-            if (changed) scene.setClosedGoals(world.out);
+            if (changed) {
+              scene.setClosedGoals(world.out);
+              // os times de fora saem do campo: tira os corpos deles e refaz a lista
+              rosterSeen = null;
+              syncRoster();
+            }
           }
           world.goldenStart = f.gs ?? 0;
           world.scores.splice(0, world.scores.length, ...f.sc);
@@ -898,6 +911,25 @@ export function BolaPlay({
   }, [setup, controls, online?.meId]);
 
   // o mouse só fica preso à câmera durante a partida: tabela, configurações e fim de jogo soltam o cursor
+  // avisos, cartaz de gol e placar de rede ficam sempre abaixo do placar, qualquer que seja a altura dele (2 a 4 times)
+  useEffect(() => {
+    const board = boardEl.current;
+    const rootEl = root.current;
+    if (!board || !rootEl) return undefined;
+    const measure = () => {
+      const b = board.getBoundingClientRect();
+      const r = rootEl.getBoundingClientRect();
+      rootEl.style.setProperty('--bola-board-bottom', `${Math.ceil(b.bottom - r.top)}px`);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(board);
+    window.addEventListener('resize', measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, []);
   const finished = hud.phase === 'over';
   const uiOpen = menu || pinned || tabHeld || finished;
   uiOpenRef.current = uiOpen;
@@ -932,7 +964,7 @@ export function BolaPlay({
         )}
       </div>
       <div className="dsm-hud bola-hud">
-        <div className="bola-board" role="status" aria-label="Placar e tempo">
+        <div ref={boardEl} className="bola-board" role="status" aria-label="Placar e tempo">
           <div className="bola-board-row">
             <ScoreChip team={0} score={hud.scores[0] ?? 0} />
             <div
@@ -1151,6 +1183,9 @@ export function BolaPlay({
             setPinned(true);
           }}
           onCam={() => camToggle.current()}
+          online={!!online}
+          touch={touchDevice}
+          onOfflineInvite={onOfflineInvite}
           netPanel={online ? { on: showNet, toggle: toggleNet } : undefined}
           onTeams={() => setTeamsOpen(true)}
           onEnd={onEnd}
