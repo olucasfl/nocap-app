@@ -215,19 +215,19 @@ describe('Classic Word\'s no servidor', () => {
     expect(keys.length).toBeGreaterThan(service.lists.answers.length * 3);
   });
 
-  it('o ç é uma letra à parte: o amarelo de um ç só vale quando a resposta tem ç', async () => {
+  it('c e ç são a mesma letra nas cores: o c acerta onde a resposta tem ç, e não vira "eliminado"', async () => {
     const { service, rows } = setup();
     const run = await service.start('wclassic', 'u1', 'classic', 'solo');
-    // resposta com ç e palpite "barco": o c do palpite não é o ç da resposta
+    // resposta com ç e palpite "barco": o c do palpite acerta o lugar do ç
     rows.set(run.id, { ...rows.get(run.id)!, answers: ['braço'] });
     const view = await service.move('u1', run.id, 'barco');
     const row = view.boards[0]!.rows[0]!;
-    expect(row[3]).toBe('m');
-    // resposta com c comum e palpite com ç ("braço"): o ç fica cinza
+    expect(row[3]).toBe('h');
+    // resposta com c comum e palpite com ç ("braço"): também acerta
     const run2 = await service.start('wclassic', 'u1', 'dueto', 'solo');
     rows.set(run2.id, { ...rows.get(run2.id)!, answers: ['barco', 'zebra'] });
     const v2 = await service.move('u1', run2.id, 'braco');
     expect(service.lists.canonical('braco')).toBe('braço');
-    expect(v2.boards[0]!.rows[0]![3]).toBe('m');
+    expect(v2.boards[0]!.rows[0]![3]).toBe('h');
   });
 });
