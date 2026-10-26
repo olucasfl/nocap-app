@@ -193,6 +193,24 @@ describe('bola e toque', () => {
     expect(p.vx).toBeGreaterThan(5);
   });
 
+  it('a bola de mentira do cliente reage ao toque da raposa sem mexer na partida', () => {
+    const w = new BolWorld(roster(2, 1), { teams: 2, perTeam: 1 });
+    startPlay(w);
+    const p = w.players[0]!;
+    w.drainEvents();
+    const real = { ...w.ball };
+    const g = { x: p.x + 0.9, y: 0.5, z: p.z, vx: 0, vy: 0, vz: 0 };
+    p.vx = 8;
+    let hit = false;
+    for (let i = 0; i < 8; i++) hit = w.ghostBall(g, p, BOL_DT / 4) || hit;
+    expect(hit).toBe(true);
+    expect(g.vx).toBeGreaterThan(1);
+    expect(w.ball).toEqual(real);
+    expect(w.drainEvents()).toEqual([]);
+    expect(p.stats.touches).toBe(0);
+    expect(w.lastTouch).toBeNull();
+  });
+
   it('a bola nunca sai do campo (chutes em todas as direções)', () => {
     for (const teams of [2, 3, 4]) {
       const w = new BolWorld(roster(teams, 1), { teams, perTeam: 1 });

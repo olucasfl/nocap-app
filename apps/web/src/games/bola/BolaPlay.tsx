@@ -4,6 +4,8 @@ import {
   BOL_TEAM_COLORS,
   BOL_TEAM_NAMES,
   BolPredictor,
+  BOL_SUBSTEPS,
+  type BolBall,
   BolWorld,
   bolBotInput,
   createRng,
@@ -641,6 +643,11 @@ export function BolaPlay({
     let predReady = false;
     let predAcc = 0;
     const lerp = (a: number, b: number, u: number) => a + (b - a) * u;
+    /** A bola "de mentira" perto da própria raposa: o contato aparece na hora, sem esperar a ida e volta do servidor. */
+    const lb: BolBall = { x: 0, y: 1, z: 0, vx: 0, vy: 0, vz: 0 };
+    let lbReady = false;
+    let touchHold = 0;
+    let lbW = 0;
     const smoothOnline = (dt: number, input: { mx: number; mz: number }, pressed: boolean) => {
       syncRoster();
       const last = snaps[snaps.length - 1];
@@ -705,6 +712,22 @@ export function BolaPlay({
         return;
       }
       // onde o servidor deve estar agora: o estado + o tempo desde que chegou + a ida da rede (metade do RTT)
+      const syncMe = () => {
+        const bd = pred.body;
+        me.x = bd.x;
+        me.y = bd.y;
+        me.z = bd.z;
+        me.vx = bd.vx;
+        me.vy = bd.vy;
+        me.vz = bd.vz;
+        me.heading = bd.heading;
+        me.grounded = bd.grounded;
+        me.airJumped = bd.airJumped;
+        me.flipT = bd.flipT;
+        me.flipDx = bd.flipDx;
+        me.flipDz = bd.flipDz;
+        me.flipHit = bd.flipHit;
+      };
       const lead = Math.min(
         0.35,
         Math.max(0, (performance.now() - last.ball.at + currentRtt() / 2) / 1000),
@@ -743,6 +766,11 @@ export function BolaPlay({
           }
         });
         press = false;
+        syncMe();
+        for (let i = 0; i < BOL_SUBSTEPS; i++) {
+          if (world.ghostBall(lb, me, BOL_DT / BOL_SUBSTEPS)) touchHold = 0.7;
+        }
+        pred.body.flipHit = me.flipHit;
       }
       const body = pred.body;
       const ex = sx - body.x;
@@ -756,16 +784,43 @@ export function BolaPlay({
         body.x += ex * k;
         body.z += ez * k;
       }
-      me.x = body.x;
-      me.y = body.y;
-      me.z = body.z;
-      me.vx = body.vx;
-      me.vy = body.vy;
-      me.vz = body.vz;
-      me.heading = body.heading;
-      me.grounded = body.grounded;
-      me.airJumped = body.airJumped;
-      me.flipT = body.flipT;
+      syncMe();
+      // a bola de mentira volta ao que o servidor diz (devagar logo depois de um toque, para o chute não ser desfeito) e aparece perto da raposa
+      const e = Math.min(0.35, (performance.now() - last.ball.at + currentRtt() / 2) / 1000);
+      const ex2 = last.ball.x + last.ball.vx * e;
+      const ey2 = Math.max(0.9, last.ball.y + last.ball.vy * e);
+      const ez2 = last.ball.z + last.ball.vz * e;
+      if (!lbReady || Math.hypot(lb.x - ex2, lb.z - ez2) > 6) {
+        Object.assign(lb, {
+          x: ex2,
+          y: ey2,
+          z: ez2,
+          vx: last.ball.vx,
+          vy: last.ball.vy,
+          vz: last.ball.vz,
+        });
+        lbReady = true;
+      } else {
+        const kb = 1 - Math.exp(-dt * (touchHold > 0 ? 1.2 : 9));
+        lb.x += (ex2 - lb.x) * kb;
+        lb.y += (ey2 - lb.y) * kb;
+        lb.z += (ez2 - lb.z) * kb;
+        lb.vx += (last.ball.vx - lb.vx) * kb;
+        lb.vy += (last.ball.vy - lb.vy) * kb;
+        lb.vz += (last.ball.vz - lb.vz) * kb;
+      }
+      touchHold = Math.max(0, touchHold - dt);
+      const near = Math.hypot(me.x - ball.x, me.z - ball.z);
+      const wantW = touchHold > 0 ? 1 : Math.min(1, Math.max(0, (7 - near) / 3));
+      lbW += (wantW - lbW) * (1 - Math.exp(-dt * 12));
+      if (lbW > 0.01) {
+        ball.x = lerp(ball.x, lb.x, lbW);
+        ball.y = lerp(ball.y, lb.y, lbW);
+        ball.z = lerp(ball.z, lb.z, lbW);
+        ball.vx = lerp(ball.vx, lb.vx, lbW);
+        ball.vy = lerp(ball.vy, lb.vy, lbW);
+        ball.vz = lerp(ball.vz, lb.vz, lbW);
+      }
     };
 
     let last = performance.now();

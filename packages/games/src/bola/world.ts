@@ -181,6 +181,8 @@ export class BolWorld {
   winner = -1;
   private events: BolEvent[] = [];
   private still = 0;
+  /** Só no cliente: a bola está sendo simulada de mentira (previsão do contato), sem gol, toque nem estatística. */
+  private ghost = false;
   private warned = new Set<number>();
   /** Relógio da partida (s) em que a prorrogação começou. */
   goldenStart = 0;
@@ -450,7 +452,29 @@ export class BolWorld {
     }
   }
 
-  private moveBall(h: number): void {
+  /**
+   * Cliente online: anda uma bola de mentira `g` um passo, tocada só por `fox`. Mostra o contato da própria raposa na hora,
+   * sem esperar o servidor; o servidor continua mandando no gol, no toque e na nota.
+   * Devolve `true` se a raposa encostou na bola neste passo.
+   */
+  ghostBall(g: BolBall, fox: BolPlayer, h: number): boolean {
+    const real = { ...this.ball };
+    const evs = this.events.length;
+    Object.assign(this.ball, g);
+    this.ghost = true;
+    try {
+      this.moveBall(h, fox);
+    } finally {
+      this.ghost = false;
+    }
+    const hit = Math.hypot(this.ball.vx - g.vx, this.ball.vy - g.vy, this.ball.vz - g.vz) > 0.5;
+    Object.assign(g, this.ball);
+    Object.assign(this.ball, real);
+    this.events.length = evs;
+    return hit;
+  }
+
+  private moveBall(h: number, only?: BolPlayer): void {
     const b = this.ball;
     const rolling = b.y <= BOL_BALL_R + 0.02 && Math.abs(b.vy) < 0.5;
     if (rolling) {
@@ -487,7 +511,8 @@ export class BolWorld {
       if (b.vy > 0) b.vy = -b.vy * BOL_WALL_E;
     }
     if (this.wallsAndGoals()) return;
-    for (const p of this.players) this.touchFox(p);
+    if (only) this.touchFox(only);
+    else for (const p of this.players) this.touchFox(p);
     const sp = Math.hypot(b.vx, b.vy, b.vz);
     if (sp > BOL_BALL_MAX) {
       const k = BOL_BALL_MAX / sp;
@@ -584,6 +609,7 @@ export class BolWorld {
    * para decidir, então ninguém pontua e a bola volta ao centro com a contagem.
    */
   private scoreGoal(goalTeam: number): void {
+    if (this.ghost) return;
     const last = this.lastTouch;
     // gol contra: o último toque foi do time que levou o gol
     const ownerId = last && last.team === goalTeam ? last.id : null;
@@ -698,10 +724,12 @@ export class BolWorld {
       b.vy = Math.max(b.vy, BOL_FLIP_KICK_LIFT);
       touched = true;
       power = Math.max(power, BOL_FLIP_KICK);
-      p.stats.kicks += 1;
-      this.events.push({ type: 'kick', id: p.id });
+      if (!this.ghost) {
+        p.stats.kicks += 1;
+        this.events.push({ type: 'kick', id: p.id });
+      }
     }
-    if (touched) {
+    if (touched && !this.ghost) {
       const last = this.lastTouch;
       if (!last || last.id !== p.id) {
         this.prevTouch = last;
