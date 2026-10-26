@@ -382,3 +382,24 @@
   outline: 3px solid var(--blue);
   outline-offset: 3px;
 }
+
+/* Menu com o item "Sala" (5 itens): mais uma linha no menu lateral */
+@media (min-width: 768px) {
+  .bottom-nav[data-n='5'] {
+    grid-template-rows: auto repeat(5, 84px) 1fr auto;
+    grid-template-columns: 1fr;
+  }
+  .bottom-nav[data-n='5'] .rail-foot {
+    grid-row: 7;
+  }
+}
+@media (min-width: 1100px) {
+  .bottom-nav[data-n='5'] {
+    grid-template-rows: auto repeat(5, 58px) 1fr auto;
+  }
+}
+@media (min-width: 768px) and (max-height: 520px) {
+  .bottom-nav[data-n='5'] {
+    grid-template-rows: repeat(5, minmax(0, 1fr));
+  }
+}

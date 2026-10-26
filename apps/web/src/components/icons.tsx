@@ -79,6 +79,15 @@ export const Friends = (p: IconProps) => (
   </Svg>
 );
 
+/** Sala: uma porta aberta (voltar para a sala em que você está). */
+export const Door = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M6 21V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v17" />
+    <path d="M3 21h18" />
+    <circle cx="14.5" cy="12.5" r="0.9" fill="currentColor" />
+  </Svg>
+);
+
 export const User = (p: IconProps) => (
   <Svg {...p}>
     <circle cx="12" cy="8" r="4" />

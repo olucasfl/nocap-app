@@ -39,3 +39,48 @@
   background: var(--ink);
   color: var(--paper);
 }
+
+/* Item "Sala": aparece só quando a conta está numa sala */
+.bottom-nav[data-n='5'] {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+.tab {
+  position: relative;
+}
+.tab.room:not(.on) {
+  background: var(--yellow, #ffd23f);
+}
+.tab-dot {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  width: 9px;
+  height: 9px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: #9aa0a6;
+}
+.tab.room[data-state='live'] .tab-dot {
+  background: #1fbf6a;
+}
+.tab.room[data-state='wait'] .tab-dot {
+  background: #ff9d2e;
+}
+.tab-badge {
+  position: absolute;
+  top: 2px;
+  left: 8px;
+  min-width: 18px;
+  padding: 1px 5px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: #ff6a5c;
+  color: #fff;
+  font: 900 10px/1.2 var(--font-display);
+  text-align: center;
+}
+@media (max-width: 400px) {
+  .bottom-nav[data-n='5'] .tab {
+    font-size: 9.5px;
+  }
+}
