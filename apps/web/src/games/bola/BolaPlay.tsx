@@ -1279,7 +1279,7 @@ export function BolaPlay({
           >
             <Key k="F" className="bola-hide-touch" />
             <IcCamera size={18} />
-            {hud.ballCam ? 'Câmera na bola' : 'Câmera livre'}
+            {hud.ballCam ? 'Câmera solta' : 'Câmera na bola'}
           </button>
         </>
       )}

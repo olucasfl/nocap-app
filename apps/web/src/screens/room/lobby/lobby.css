@@ -1630,3 +1630,70 @@
     bottom: 104px;
   }
 }
+
+/* Fox Cap!: escolha do jogo da sala (spec 049) */
+.lb-games {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.lb-games-h {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.lb-games-lead {
+  margin: 0;
+}
+.lb-games-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+.lb-game {
+  display: grid;
+  gap: 4px;
+  align-content: start;
+  min-height: 92px;
+  padding: 10px 12px;
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+  background: var(--white);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 3px 0 var(--ink);
+  transition:
+    transform 0.08s,
+    box-shadow 0.08s;
+}
+.lb-game b {
+  font: 900 16px var(--font-display, inherit);
+  text-transform: uppercase;
+}
+.lb-game small {
+  font-size: 12px;
+  line-height: 1.3;
+  opacity: 0.8;
+}
+.lb-game span {
+  font-size: 11px;
+  opacity: 0.65;
+}
+.lb-game.is-on {
+  background: #ffd23f;
+  color: #111;
+}
+.lb-game:disabled {
+  cursor: default;
+}
+.lb-game:not(:disabled):not(.is-on):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 0 var(--ink);
+}
+@media (prefers-reduced-motion: reduce) {
+  .lb-game {
+    transition: none;
+  }
+}

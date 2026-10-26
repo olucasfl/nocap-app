@@ -2,13 +2,18 @@ import { useId, useState, type KeyboardEvent, type ReactNode } from 'react';
 import type { RoomSnapshot } from '@/lib/rooms';
 import { useRoom } from '@/lib/rooms';
 import { bolaHint } from './bola-hint';
+import { GamePicker } from './GamePicker';
 import { MIN_PLAYERS, rulesSummary } from './rules';
 import './lobby.css';
 
 export type LobbyTab = 'members' | 'rules' | 'invite';
 
+/** A aba aberta de cada sala: na sala do Fox Cap! trocar de jogo troca a tela do lobby, e a aba tem que ficar onde estava. */
+const tabMemo = new Map<string, LobbyTab>();
+
 /** Uma linha só com o que falta para começar. */
 export function startHint(snapshot: RoomSnapshot): { text: string; ok: boolean } {
+  if (snapshot.game === 'foxcap') return { text: 'Escolha o jogo para começar', ok: false };
   if (snapshot.game === 'bola') return bolaHint(snapshot);
   const connected = snapshot.members.filter((m) => m.connected);
   const needed = MIN_PLAYERS[snapshot.game];
@@ -46,7 +51,11 @@ export function LobbyShell({
   footer: ReactNode;
 }) {
   const message = useRoom((s) => s.message);
-  const [tab, setTab] = useState<LobbyTab>('members');
+  const [tab, setTabState] = useState<LobbyTab>(() => tabMemo.get(snapshot.code) ?? 'members');
+  const setTab = (t: LobbyTab) => {
+    tabMemo.set(snapshot.code, t);
+    setTabState(t);
+  };
   const uid = useId();
   const hint = startHint(snapshot);
   const meIsLeader = snapshot.hostId === me;
@@ -125,6 +134,7 @@ export function LobbyShell({
             className={`lb3-pane pane-rules${tab === 'rules' ? ' on' : ''}`}
           >
             <h2 className="lb3-h">Regras</h2>
+            {snapshot.flex && <GamePicker snapshot={snapshot} me={me} />}
             {rules}
           </div>
           <div

@@ -165,6 +165,7 @@ export const modeOf = (s: RoomSnapshot) => MODES[s.game].find((m) => m.id === s.
 
 /** Uma linha: "Cor · Clássico · 3 rodadas". */
 export function rulesSummary(s: RoomSnapshot): string {
+  if (s.game === 'foxcap') return 'Fox Cap! · sem jogo escolhido';
   if (s.game === 'desmorona') return 'Desmorona! · Último de pé';
   if (s.game === 'bola' && s.bola) {
     const f = s.bola.format;
@@ -187,7 +188,7 @@ export function rulesSummary(s: RoomSnapshot): string {
 }
 
 export function rulesFor(s: RoomSnapshot): RuleDef[] {
-  if (s.game === 'desmorona' || s.game === 'bola') return [];
+  if (s.game === 'desmorona' || s.game === 'bola' || s.game === 'foxcap') return [];
   const out: RuleDef[] = [];
   const cfg = s.settings;
 

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSearch } from '@tanstack/react-router';
 import { createPortal } from 'react-dom';
 import { BOL_TEAM_NAMES, bolFormatLabel, bolFormats } from '@nocap/games';
 import { BackButton } from '@/components/BackButton';
@@ -22,7 +23,9 @@ type Phase = 'menu' | 'pick' | 'play';
 
 /** O Fut Fox (spec 046): menu e treino contra bots. As salas com amigos vêm na Fase 2. */
 export function BolaPage() {
-  const [phase, setPhase] = useState<Phase>('menu');
+  // vindo do Fox Cap! pelo atalho "Fut Fox Treino": já abre a escolha do formato (spec 049)
+  const direct = useSearch({ strict: false }) as { treino?: number };
+  const [phase, setPhase] = useState<Phase>(direct.treino ? 'pick' : 'menu');
   const [tab, setTab] = useState<'jogar' | 'como'>('jogar');
   const [setup, setSetup] = useState<BolaSetup>({ teams: 2, perTeam: 2, minutes: 3 });
   const [round, setRound] = useState(0);

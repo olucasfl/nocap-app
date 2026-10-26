@@ -153,6 +153,8 @@ const ecoRoute = createRoute({
 const atravessaRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/atravessa',
+  validateSearch: (search: Record<string, unknown>): { treino?: 1 } =>
+    search.treino === 1 || search.treino === '1' ? { treino: 1 } : {},
   component: lazyRouteComponent(() => import('@/games/atravessa/AtravessaPage'), 'AtravessaPage'),
 });
 
@@ -165,12 +167,16 @@ const foxCapRoute = createRoute({
 const desmoronaRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/fox-cap/desmorona',
+  validateSearch: (search: Record<string, unknown>): { treino?: 1 } =>
+    search.treino === 1 || search.treino === '1' ? { treino: 1 } : {},
   component: lazyRouteComponent(() => import('@/games/desmorona/DesmoronaPage'), 'DesmoronaPage'),
 });
 
 const bolaRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/fox-cap/bola',
+  validateSearch: (search: Record<string, unknown>): { treino?: 1 } =>
+    search.treino === 1 || search.treino === '1' ? { treino: 1 } : {},
   component: lazyRouteComponent(() => import('@/games/bola/BolaPage'), 'BolaPage'),
 });
 

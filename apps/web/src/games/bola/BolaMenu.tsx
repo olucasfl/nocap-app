@@ -59,7 +59,7 @@ export function BolaMenu({
         <button type="button" className="bola-item" onClick={onCam} disabled={spectating}>
           <span className="bola-item-main">
             <IcCamera size={20} />
-            Câmera: {spectating || !ballCam ? 'livre' : 'na bola'}
+            {ballCam && !spectating ? 'Soltar a câmera' : 'Prender a câmera na bola'}
           </span>
           <Key k="F" className="bola-hide-touch" />
         </button>

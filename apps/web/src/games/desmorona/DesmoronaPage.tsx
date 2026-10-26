@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSearch } from '@tanstack/react-router';
 import { BackButton } from '@/components/BackButton';
 import { HubCard, HubHero, HubNote, HubSteps, HubTabs } from '@/components/GameHub';
 import { DesmoronaArt, DesmoronaTrainingArt, FriendsArt } from '@/components/HubArt';
@@ -20,7 +21,9 @@ type Phase = 'menu' | 'pick' | 'play';
 
 /** O Desmorona! (spec 044): menu e treino contra bots. As salas com amigos entram na Fase 2. */
 export function DesmoronaPage() {
-  const [phase, setPhase] = useState<Phase>('menu');
+  // vindo do Fox Cap! pelo atalho "Desmorona! Treino": já abre a escolha de quantas raposas (spec 049)
+  const direct = useSearch({ strict: false }) as { treino?: number };
+  const [phase, setPhase] = useState<Phase>(direct.treino ? 'pick' : 'menu');
   const [tab, setTab] = useState<'jogar' | 'como'>('jogar');
   const [bots, setBots] = useState(5);
 

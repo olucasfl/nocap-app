@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link } from '@tanstack/react-router';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useSearch } from '@tanstack/react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { AtravessaInput, AtravessaResult } from '@nocap/games';
 import { BackButton } from '@/components/BackButton';
@@ -225,6 +225,9 @@ export function AtravessaGame() {
   const [record, setRecord] = useState(0);
   const [busy, setBusy] = useState(false);
   const queryClient = useQueryClient();
+  // vindo do Fox Cap! pelo atalho "Atravessa! Infinito": já começa a partida (spec 049)
+  const direct = useSearch({ strict: false }) as { treino?: number };
+  const started = useRef(false);
 
   /** O servidor sorteia a seed e assina o início; sem conta ou sem internet vira treino. */
   const begin = async () => {
@@ -250,6 +253,14 @@ export function AtravessaGame() {
     setBusy(false);
     setPhase('play');
   };
+
+  useEffect(() => {
+    if (direct.treino && !started.current) {
+      started.current = true;
+      void begin();
+    }
+    // só na primeira vez que a página abre
+  }, []);
 
   if (phase === 'play') {
     return (
