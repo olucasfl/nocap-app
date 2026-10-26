@@ -244,14 +244,46 @@
 .dsm-btn.is-ghost {
   background: #fff;
 }
-.dsm-bots label {
+.dsm-bots {
+  padding: 14px;
+  border: 3px solid var(--ink, #1b1535);
+  border-radius: 14px;
+  background: var(--card, #fff);
+  color: var(--text, #1b1535);
   display: grid;
-  gap: 8px;
-  font-weight: 600;
+  gap: 12px;
 }
-.dsm-bots input[type='range'] {
-  width: 100%;
-  accent-color: #ff9d2e;
+.dsm-bots-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.dsm-bots-head h3 {
+  margin: 0;
+  font-size: 18px;
+}
+.dsm-chips {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+.dsm-chip {
+  min-height: 48px;
+  border: 3px solid var(--ink, #1b1535);
+  border-radius: 12px;
+  background: transparent;
+  color: inherit;
+  font: 800 18px var(--font-display, system-ui);
+  cursor: pointer;
+}
+.dsm-chip.is-on {
+  background: #ff9d2e;
+  color: #1b1535;
+}
+.dsm-chip:focus-visible {
+  outline: 3px solid #ffd23f;
+  outline-offset: 2px;
 }
 @media (prefers-reduced-motion: reduce) {
   .dsm-jump:active {
