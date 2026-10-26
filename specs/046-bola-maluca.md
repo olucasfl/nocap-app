@@ -150,3 +150,7 @@ Ranking (online ou offline), histórico, estatísticas gravadas, boost, power-up
 - Campos de 3 e 4 times bem maiores.
 
 - **Relógio regressivo** (decisão do Lucas, 26/10/2026): o tempo mostrado **desce** até 0:00. Na prorrogação (gol de ouro) ele passa a **subir** a partir de 0:00, com o aviso "Prorrogação · gol de ouro" e outra cor. Câmera na bola reescrita (bola sempre no quadro, giro mais firme, sem saltos perto da parede) e câmera livre com altura (mouse ou dedo). Sons, efeito do chute (anéis e faíscas), rastro do mortal e dicas da primeira partida adicionados; HUD revisado em celulares de 320 a 412 px de largura e deitados.
+
+## Bots mais humanos (26/10/2026)
+
+Os bots preveem a bola (a mesma física do jogo), dividem papéis por time (quem vai na bola, apoio e goleiro), chegam por trás da bola para chutar num canto do gol e viram a direção aos poucos, com reação e erros. Em 3 ou 4 times miram no gol do líder (com a perda de ponto vale mirar nele) e nunca num gol fechado. Medido em 2 min, 3x3 entre bots: gols 1,6 -> 4,2; giro de direção 131 -> ~100 graus/s (`bots.test.ts`).

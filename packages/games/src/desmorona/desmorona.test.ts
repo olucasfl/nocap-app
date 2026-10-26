@@ -353,3 +353,40 @@ describe('borda e tempo de coiote', () => {
     expect(t.status).toBe('pisado');
   });
 });
+
+describe('bots inteligentes', () => {
+  it('pulam, usam o pulo duplo para se salvar e duram bem mais que o bot antigo (que durava ~33 s até a 1ª morte e nunca usava o pulo duplo)', () => {
+    let airJumps = 0;
+    let firstDeath = 0;
+    let deaths = 0;
+    let withSpare = 0;
+    for (const seed of ['ia1', 'ia2', 'ia3']) {
+      const w = new DsmWorld(seed, infos(6));
+      let i = 0;
+      const mem = new Map(
+        w.players.map((p) => [p.id, newBotMemory((i % 4) * 0.15, i++ % 3 === 0 ? 0.5 : 0)]),
+      );
+      const rng = createRng(`${seed}:bots`);
+      let first = 0;
+      while (!w.ended && w.t < 240) {
+        const inputs: Record<string, DsmInput> = {};
+        for (const p of w.players) inputs[p.id] = botInput(w, p, mem.get(p.id)!, rng);
+        const spare = new Map(w.players.map((p) => [p.id, !p.airJumped]));
+        w.step(DSM_DT, inputs);
+        for (const e of w.drainEvents()) {
+          if (e.type === 'airjump') airJumps++;
+          if (e.type === 'dead') {
+            deaths++;
+            if (first === 0) first = w.t;
+            if (spare.get(e.id)) withSpare++;
+          }
+        }
+      }
+      firstDeath += first;
+    }
+    expect(airJumps).toBeGreaterThan(20);
+    expect(firstDeath / 3).toBeGreaterThan(38);
+    // quase nunca morre com o pulo duplo guardado
+    expect(withSpare / Math.max(1, deaths)).toBeLessThan(0.2);
+  }, 60_000);
+});

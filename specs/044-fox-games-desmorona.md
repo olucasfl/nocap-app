@@ -114,3 +114,7 @@ Reaproveita o sistema de salas do Atravessa (host, pronto, convite, revanche por
 ## Ajuste de 26/10/2026: camadas em losango
 
 Decisão do Lucas: a camada de cima é um pouco menor, as camadas crescem até a do meio (a maior) e depois diminuem até a última, que é a menor. Escalas em relação à maior: 0,72 / 0,86 / 0,95 / 1 / 0,88 / 0,7 / 0,5 (`DSM_LAYER_SCALE` em `packages/games/src/desmorona/constants.ts`).
+
+## Bots que planejam (26/10/2026)
+
+Cada bot ensaia ~150 planos curtos (16 direções ou parar, quando pular, pulo duplo) na mesma física da raposa e segue o que deixa mais chão firme sem cair na lava; pula buracos, usa o pulo duplo para se salvar e evita gastar o chão por onde precisa voltar. Erra de propósito (reação 0,1 a 0,4 s, pontaria, 2ª melhor escolha) conforme a habilidade. Medido em 6 bots: 1ª morte aos 33 s -> 42 s, partida 47 -> 72 s, pulo duplo usado 0 -> ~150 vezes por partida e morte com pulo duplo guardado 100% -> 0% (`desmorona.test.ts`). Custo: cerca de 55 ms de CPU por segundo de jogo com 6 bots.
