@@ -3,9 +3,6 @@ import {
   BOL_DT,
   BOL_TEAM_COLORS,
   BOL_TEAM_NAMES,
-  BolPredictor,
-  BOL_SUBSTEPS,
-  type BolBall,
   BolWorld,
   bolBotInput,
   createRng,
@@ -20,6 +17,7 @@ import { DsmControls, STICK_RADIUS } from '../desmorona/controls';
 import '../desmorona/desmorona.css';
 import './bola.css';
 import { roomLink, type BolaLink } from '@/lib/bola-link';
+import { BolaNetSync } from '@/lib/bola-netsync';
 import { BUILD_ID } from '@/lib/build-id';
 import { BolaMenu } from './BolaMenu';
 import { BolaTips } from './BolaTips';
@@ -498,17 +496,6 @@ export function BolaPlay({
     ro.observe(el);
 
     // ---- online: o servidor simula; aqui o estado dele é suavizado e a entrada é enviada ----
-    interface Tgt {
-      x: number;
-      y: number;
-      z: number;
-      vx: number;
-      vy: number;
-      vz: number;
-      h: number;
-      fl: number;
-      at: number;
-    }
     const unsubs: (() => void)[] = [];
     const link = online?.link ?? roomLink;
     let lastEv = 0;
@@ -520,21 +507,15 @@ export function BolaPlay({
         setNet({
           ping: Math.round(link.rtt()),
           fps: frames,
-          delay: Math.round(interpMs),
+          delay: Math.round(sync.interpMs),
           draw: draws,
         });
         frames = 0;
         draws = 0;
       }, 1000);
     }
-    /** Estados recentes do servidor: os outros e a bola são desenhados um instante no passado, entre dois deles. */
-    interface NetSnap {
-      t: number;
-      ball: Tgt;
-      rows: Map<number, Tgt>;
-    }
-    const snaps: NetSnap[] = [];
-    let ballT: Tgt | null = null;
+    let ballT: { x: number; y: number; z: number; vx: number; vy: number; vz: number } | null =
+      null;
     let slotId = new Map<number, string>();
     let slotOf = new Map<string, number>();
     let rosterKey = '';
@@ -542,6 +523,21 @@ export function BolaPlay({
     let jumps = 0;
     let seq = 0;
     let sentInput = { mx: 0, mz: 0 };
+    const sync = new BolaNetSync(world, {
+      meId,
+      minDelay: link.minDelay,
+      ballModel: 'local',
+      rtt: () => link.rtt(),
+      now: () => performance.now(),
+      slotOf: () => slotOf,
+      onMove: (e) => {
+        if (e === 'jump') bolaSfx.jump();
+        else {
+          bolaSfx.airjump(e === 'flip');
+          scene.jumpFx(meId, e === 'flip');
+        }
+      },
+    });
     const idOfSlot = (s: unknown) => (typeof s === 'number' ? (slotId.get(s) ?? null) : null);
     const syncRoster = () => {
       const roster = rosterRef.current;
@@ -631,7 +627,6 @@ export function BolaPlay({
           if (!f || !Array.isArray(f.p)) return;
           frames++;
           syncRoster();
-          const at = performance.now();
           const phases = { c: 'countdown', p: 'play', g: 'goal', o: 'over' } as const;
           world.phase = phases[f.ph] ?? world.phase;
           world.timer = f.tm;
@@ -639,44 +634,8 @@ export function BolaPlay({
           world.golden = f.gd === 1;
           world.goldenStart = f.gs ?? 0;
           world.scores.splice(0, world.scores.length, ...f.sc);
-          const ball: Tgt = {
-            x: f.b[0]!,
-            y: f.b[1]!,
-            z: f.b[2]!,
-            vx: f.b[3]!,
-            vy: f.b[4]!,
-            vz: f.b[5]!,
-            h: 0,
-            fl: 0,
-            at,
-          };
-          ballT = ball;
-          const rows = new Map<number, Tgt>();
-          for (const r of f.p) {
-            rows.set(r[0]!, {
-              x: r[1]!,
-              y: r[2]!,
-              z: r[3]!,
-              vx: r[4]!,
-              vy: r[5]!,
-              vz: r[6]!,
-              h: r[7]!,
-              fl: r[8]!,
-              at,
-            });
-          }
-          if (prevAt > 0) {
-            // o maior intervalo recente entre estados diz quanto de atraso é preciso para nunca faltar dado
-            const gap = at - prevAt;
-            gapAvg += (gap - gapAvg) * 0.05;
-            gapDev += (Math.abs(gap - gapAvg) - gapDev) * 0.08;
-            // atraso = dois estados de folga + a variação medida; sobe depressa quando a rede piora e desce devagar
-            const want = Math.min(260, Math.max(INTERP_MIN_MS, gapAvg * 2 + gapDev * 3.5 + 10));
-            interpMs += (want - interpMs) * (want > interpMs ? 0.2 : 0.015);
-          }
-          prevAt = at;
-          snaps.push({ t: typeof f.t === 'number' ? f.t : Date.now(), ball, rows });
-          if (snaps.length > 24) snaps.shift();
+          sync.push(f);
+          ballT = sync.lastBall;
           if (f.st) {
             world.celebrating = f.st.ce;
             world.possession.splice(0, world.possession.length, ...f.st.po);
@@ -728,230 +687,9 @@ export function BolaPlay({
       ]);
     };
     const inputTimer = online ? window.setInterval(sendInput, 25) : 0;
-    /** Atraso de desenho dos outros e da bola (ms): cobre a variação (jitter) da rede sem engasgar. */
-    /** Atraso mínimo; sobe sozinho quando a rede ou o aparelho entregam os estados em rajadas. */
-    const INTERP_MIN_MS = link.minDelay;
-    let interpMs = Math.max(INTERP_MIN_MS, 80);
-    let gapAvg = 16;
-    let gapDev = 0;
-    let prevAt = 0;
-    /** A bola é desenhada este tanto (ms) mais perto do presente que as outras raposas. */
-    const BALL_AHEAD_MS = 55;
-    /** Relógio de desenho no tempo do servidor: anda com o relógio local e só é ajustado devagar, então a rede irregular não vira tranco. */
-    let renderT = 0;
-    const pred = new BolPredictor(world.field);
-    let predReady = false;
-    let predAcc = 0;
-    const lerp = (a: number, b: number, u: number) => a + (b - a) * u;
-    /** A bola "de mentira" perto da própria raposa: o contato aparece na hora, sem esperar a ida e volta do servidor. */
-    const lb: BolBall = { x: 0, y: 1, z: 0, vx: 0, vy: 0, vz: 0 };
-    const probe: BolBall = { x: 0, y: 1, z: 0, vx: 0, vy: 0, vz: 0 };
-    let touchHold = 0;
-    let lbFade = 0;
     const smoothOnline = (dt: number, input: { mx: number; mz: number }, pressed: boolean) => {
       syncRoster();
-      const last = snaps[snaps.length - 1];
-      if (!last) return;
-      // alvo: o último estado + o que passou desde que chegou - o atraso; o relógio de desenho o persegue suave
-      const target = last.t + (performance.now() - last.ball.at) - interpMs;
-      // o relógio de desenho nunca volta para trás: se está adiantado só anda mais devagar, se atrasado anda mais rápido
-      // (mexer no atraso de uma vez faria a bola "voltar" no tempo e parecer um teletransporte)
-      if (renderT === 0 || Math.abs(target - renderT) > 700) renderT = target;
-      else renderT += dt * 1000 * Math.min(1.35, Math.max(0.6, 1 + (target - renderT) / 400));
-      const rt = renderT;
-      // entre quais dois estados estamos (ou, se faltar estado novo, o último com um pouco de extrapolação)
-      const bracket = (t: number) => {
-        let lo = last;
-        let hi = last;
-        let k = 0;
-        let ex = 0;
-        if (t >= last.t) ex = Math.min(0.05, (t - last.t) / 1000);
-        else {
-          lo = hi = snaps[0] as NetSnap;
-          for (let i = snaps.length - 1; i >= 1; i--) {
-            const l2 = snaps[i - 1] as NetSnap;
-            const h2 = snaps[i] as NetSnap;
-            if (l2.t <= t) {
-              lo = l2;
-              hi = h2;
-              k = h2.t > l2.t ? Math.min(1, (t - l2.t) / (h2.t - l2.t)) : 0;
-              break;
-            }
-          }
-        }
-        return { a: lo, b: hi, u: k, extra: ex };
-      };
-      const { a, b, u, extra } = bracket(rt);
-      for (const p of world.players) {
-        if (p.id === meId && predReady && world.phase !== 'countdown') continue;
-        const slot = slotOf.get(p.id);
-        const ra = slot === undefined ? undefined : a.rows.get(slot);
-        if (!ra) continue;
-        const rb = b.rows.get(slot as number) ?? ra;
-        p.x = lerp(ra.x, rb.x, u) + ra.vx * extra;
-        p.y = Math.max(0, lerp(ra.y, rb.y, u) + ra.vy * extra);
-        p.z = lerp(ra.z, rb.z, u) + ra.vz * extra;
-        p.vx = ra.vx;
-        p.vy = ra.vy;
-        p.vz = ra.vz;
-        let dh = rb.h - ra.h;
-        dh = Math.atan2(Math.sin(dh), Math.cos(dh));
-        p.heading = ra.h + dh * u;
-        p.grounded = (ra.fl & 1) === 1;
-        p.flipT = (ra.fl & 2) === 2 ? 0.3 : 0;
-        p.airJumped = (ra.fl & 4) === 4;
-      }
-      // a bola é desenhada mais perto do "agora" que as outras raposas: é nela que a sua raposa (já no presente) encosta
-      const bb = bracket(rt + BALL_AHEAD_MS);
-      const ball = world.ball;
-      ball.x = lerp(bb.a.ball.x, bb.b.ball.x, bb.u) + bb.a.ball.vx * bb.extra;
-      ball.y = Math.max(0.9, lerp(bb.a.ball.y, bb.b.ball.y, bb.u) + bb.a.ball.vy * bb.extra);
-      ball.z = lerp(bb.a.ball.z, bb.b.ball.z, bb.u) + bb.a.ball.vz * bb.extra;
-      ball.vx = bb.a.ball.vx;
-      ball.vy = bb.a.ball.vy;
-      ball.vz = bb.a.ball.vz;
-
-      // a própria raposa: roda a mesma conta do servidor aqui (responde na hora) e é puxada de volta se o servidor discordar
-      const me = world.player(meId);
-      const slot = slotOf.get(meId);
-      const row = slot === undefined ? undefined : last.rows.get(slot);
-      if (!me || !row) {
-        predReady = false;
-        return;
-      }
-      // onde o servidor deve estar agora: o estado + o tempo desde que chegou + a ida da rede (metade do RTT)
-      const syncMe = () => {
-        const bd = pred.body;
-        me.x = bd.x;
-        me.y = bd.y;
-        me.z = bd.z;
-        me.vx = bd.vx;
-        me.vy = bd.vy;
-        me.vz = bd.vz;
-        me.heading = bd.heading;
-        me.grounded = bd.grounded;
-        me.airJumped = bd.airJumped;
-        me.flipT = bd.flipT;
-        me.flipDx = bd.flipDx;
-        me.flipDz = bd.flipDz;
-        me.flipHit = bd.flipHit;
-      };
-      const lead = Math.min(
-        0.35,
-        Math.max(0, (performance.now() - last.ball.at + Math.min(40, link.rtt() / 2)) / 1000),
-      );
-      const sx = row.x + row.vx * lead;
-      const sz = row.z + row.vz * lead;
-      const flags = {
-        grounded: (row.fl & 1) === 1,
-        flipT: (row.fl & 2) === 2 ? 0.3 : 0,
-        airJumped: (row.fl & 4) === 4,
-      };
-      if (!predReady || world.phase === 'countdown') {
-        pred.reset({
-          x: row.x,
-          y: row.y,
-          z: row.z,
-          vx: row.vx,
-          vy: row.vy,
-          vz: row.vz,
-          heading: row.h,
-          ...flags,
-        });
-        predReady = world.phase !== 'countdown';
-        predAcc = 0;
-        return;
-      }
-      predAcc += dt;
-      let press = pressed;
-      while (predAcc >= BOL_DT) {
-        predAcc -= BOL_DT;
-        pred.step(BOL_DT, { mx: input.mx, mz: input.mz, jump: press }, (e) => {
-          if (e === 'jump') bolaSfx.jump();
-          else if (e === 'airjump' || e === 'flip') {
-            bolaSfx.airjump(e === 'flip');
-            scene.jumpFx(meId, e === 'flip');
-          }
-        });
-        press = false;
-        syncMe();
-        // não atravessa as outras raposas: o corpo previsto sai de dentro delas já neste passo
-        world.pushOutOfFoxes(me);
-        pred.body.x = me.x;
-        pred.body.z = me.z;
-        if (world.phase === 'play') {
-          if (touchHold <= 0 && lbFade <= 0) {
-            // sem toque recente só se testa o contato: a bola desenhada não anda um passo à frente, e só vira "de mentira" se foi tocada
-            Object.assign(probe, ball);
-            let hit = false;
-            for (let i = 0; i < BOL_SUBSTEPS; i++) {
-              if (world.ghostBall(probe, me, BOL_DT / BOL_SUBSTEPS)) hit = true;
-            }
-            if (hit) {
-              Object.assign(lb, probe);
-              touchHold = 0.35;
-              lbFade = 1;
-            }
-          } else {
-            for (let i = 0; i < BOL_SUBSTEPS; i++) {
-              if (world.ghostBall(lb, me, BOL_DT / BOL_SUBSTEPS)) touchHold = 0.35;
-            }
-          }
-        }
-        pred.body.flipHit = me.flipHit;
-      }
-      const body = pred.body;
-      const ex = sx - body.x;
-      const ez = sz - body.z;
-      const err = Math.hypot(ex, ez);
-      if (err > 3.5) {
-        pred.reset({ x: row.x, y: row.y, z: row.z, vx: row.vx, vy: row.vy, vz: row.vz, ...flags });
-      } else if (err > 0.7) {
-        // dentro de 0,7 m é só atraso da rede e a raposa responde como no offline; passando disso (empurrão, bola, parede) volta devagar
-        const k = 1 - Math.exp(-dt * 3);
-        body.x += ex * k;
-        body.z += ez * k;
-      }
-      syncMe();
-      // a bola de mentira volta ao que o servidor diz (devagar logo depois de um toque, para o chute não ser desfeito) e aparece perto da raposa
-      if (world.phase !== 'play') {
-        touchHold = 0;
-        lbFade = 0;
-      } else if (lbFade > 0) {
-        // logo depois do toque a bola desenhada é a de mentira; ela volta à do servidor aos poucos, sem salto
-        if (touchHold > 0) touchHold = Math.max(0, touchHold - dt);
-        else {
-          // passada a espera, a bola de mentira desliza até a do servidor (se o servidor tocou igual, quase não se mexe).
-          // A velocidade do deslize é limitada: um erro grande vira um movimento rápido, nunca um teletransporte.
-          lbFade = Math.max(0, lbFade - dt / 1.2);
-          const kb = 1 - Math.exp(-dt * 8);
-          let sx = (ball.x - lb.x) * kb;
-          let sy = (ball.y - lb.y) * kb;
-          let sz = (ball.z - lb.z) * kb;
-          const len = Math.hypot(sx, sy, sz);
-          const cap = 22 * dt;
-          if (len > cap) {
-            sx *= cap / len;
-            sy *= cap / len;
-            sz *= cap / len;
-          }
-          lb.x += sx;
-          lb.y += sy;
-          lb.z += sz;
-          lb.vx += (ball.vx - lb.vx) * kb;
-          lb.vy += (ball.vy - lb.vy) * kb;
-          lb.vz += (ball.vz - lb.vz) * kb;
-          // chegou perto: acabou, a bola desenhada volta a ser a do servidor
-          if (Math.hypot(ball.x - lb.x, ball.y - lb.y, ball.z - lb.z) < 0.25) lbFade = 0;
-        }
-        const w = lbFade > 0 ? 1 : 0;
-        ball.x = lerp(ball.x, lb.x, w);
-        ball.y = lerp(ball.y, lb.y, w);
-        ball.z = lerp(ball.z, lb.z, w);
-        ball.vx = lerp(ball.vx, lb.vx, w);
-        ball.vy = lerp(ball.vy, lb.vy, w);
-        ball.vz = lerp(ball.vz, lb.vz, w);
-      }
+      sync.update(dt, input, pressed);
     };
 
     let last = performance.now();

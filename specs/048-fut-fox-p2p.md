@@ -28,3 +28,18 @@ O online do Fut Fox trava mesmo com internet boa e cabeada. A causa mais prováv
 ## 4. Testes
 
 - `match.test.ts` (núcleo), testes do motor da sala e de integração (modo servidor continua igual), teste do protocolo de sinalização e e2e com dois navegadores reais em WebRTC local.
+
+## Bola local contínua e medição (26/10/2026)
+
+O desenho online saiu de `BolaPlay.tsx` para `apps/web/src/lib/bola-netsync.ts` (`BolaNetSync`), o mesmo código no jogo e na simulação `bola-netsync.sim.test.ts` (líder real com `BolaMatch`, rede virtual com atraso/variação/perda, 5 sementes x 120 s por perfil).
+
+Medido (saltos = bola que anda mais do que a velocidade desenhada explica, por minuto):
+
+| rede | modelo antigo (>0,4 m / >1 m) | bola local (>0,4 m / >1 m) | erro médio vs líder |
+|---|---|---|---|
+| LAN | 1,9 / 0 | 3,7 / 0 | 0,83 -> 0,33 m |
+| Wi-Fi bom | 1,8 / 0,2 | 3,3 / 0 | 1,13 -> 0,39 m |
+| internet boa | 6,7 / 0,7 | 9,5 / 0 | 1,65 -> 0,42 m |
+| internet ruim | 19,4 / 5,7 (até 22 m) | 13 / 0,2 (até 2,5 m) | 2,28 -> 0,53 m |
+
+Modelo novo: a bola anda sempre numa física própria (todas as raposas como desenhadas) e é puxada, com velocidade limitada, para onde o líder diz que ela está agora (estado + tempo desde a chegada + metade do RTT, andado pela mesma física). Depois de um toque próprio a correção quase para por 0,35 s. O teste falha se a bola local passar de 1 salto grande por minuto em qualquer perfil.

@@ -475,11 +475,11 @@ export class BolWorld {
   }
 
   /**
-   * Cliente online: anda uma bola de mentira `g` um passo, tocada só por `fox`. Mostra o contato da própria raposa na hora,
+   * Cliente online: anda uma bola de mentira `g` um passo, tocada só por `fox` (`null` = só física, sem raposa; `undefined` = todas as raposas). Mostra o contato da própria raposa na hora,
    * sem esperar o servidor; o servidor continua mandando no gol, no toque e na nota.
    * Devolve `true` se a raposa encostou na bola neste passo.
    */
-  ghostBall(g: BolBall, fox: BolPlayer, h: number): boolean {
+  ghostBall(g: BolBall, fox: BolPlayer | null | undefined, h: number): boolean {
     const real = { ...this.ball };
     const evs = this.events.length;
     Object.assign(this.ball, g);
@@ -496,7 +496,7 @@ export class BolWorld {
     return hit;
   }
 
-  private moveBall(h: number, only?: BolPlayer): void {
+  private moveBall(h: number, only?: BolPlayer | null): void {
     const b = this.ball;
     const rolling = b.y <= BOL_BALL_R + 0.02 && Math.abs(b.vy) < 0.5;
     if (rolling) {
@@ -534,7 +534,7 @@ export class BolWorld {
     }
     if (this.wallsAndGoals()) return;
     if (only) this.touchFox(only);
-    else for (const p of this.players) this.touchFox(p);
+    else if (only === undefined) for (const p of this.players) this.touchFox(p);
     const sp = Math.hypot(b.vx, b.vy, b.vz);
     if (sp > BOL_BALL_MAX) {
       const k = BOL_BALL_MAX / sp;
