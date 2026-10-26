@@ -48,6 +48,7 @@ export class DsmControls {
   private look: HTMLElement | null = null;
   private lookPtr: { id: number; x: number } | null = null;
   private yawAcc = 0;
+  private onLock: ((locked: boolean) => void) | null = null;
   private turn = 0;
 
   /** `zone`: onde o polegar do joystick pode tocar; `onStick` avisa a tela para desenhar o joystick. */
@@ -67,8 +68,11 @@ export class DsmControls {
    * Girar a câmera arrastando: o mouse arrasta em qualquer lugar da tela; no celular o dedo arrasta na metade direita
    * (a esquerda é do joystick). Botões não giram.
    */
-  attachLook(el: HTMLElement) {
+  attachLook(el: HTMLElement, onLock?: (locked: boolean) => void) {
     this.look = el;
+    this.onLock = onLock ?? null;
+    document.addEventListener('mousemove', this.lockedMove);
+    document.addEventListener('pointerlockchange', this.lockChange);
     el.addEventListener('pointerdown', this.lookDown);
     el.addEventListener('pointermove', this.lookMove);
     el.addEventListener('pointerup', this.lookUp);
@@ -82,8 +86,26 @@ export class DsmControls {
     return d;
   }
 
+  /** Com o ponteiro preso à tela, o mouse gira a câmera sem precisar clicar nem arrastar (como nos jogos). */
+  private lockedMove = (e: MouseEvent) => {
+    if (document.pointerLockElement !== this.look) return;
+    this.yawAcc -= e.movementX * DRAG_YAW * 0.8;
+  };
+
+  private lockChange = () => this.onLock?.(document.pointerLockElement === this.look);
+
+  /** Prende o ponteiro (precisa de um clique ou toque da pessoa). Esc solta. */
+  requestLock() {
+    try {
+      void (this.look?.requestPointerLock() as Promise<void> | undefined)?.catch?.(() => undefined);
+    } catch {
+      /* navegador sem suporte: o arrasto continua valendo */
+    }
+  }
+
   private lookDown = (e: PointerEvent) => {
     if ((e.target as HTMLElement).closest('button')) return;
+    if (e.pointerType === 'mouse' && document.pointerLockElement !== this.look) this.requestLock();
     const rect = this.look?.getBoundingClientRect();
     if (!rect) return;
     // no toque, a metade esquerda é do joystick
@@ -104,6 +126,9 @@ export class DsmControls {
   };
 
   detach() {
+    document.removeEventListener('mousemove', this.lockedMove);
+    document.removeEventListener('pointerlockchange', this.lockChange);
+    if (document.pointerLockElement === this.look) document.exitPointerLock();
     this.look?.removeEventListener('pointerdown', this.lookDown);
     this.look?.removeEventListener('pointermove', this.lookMove);
     this.look?.removeEventListener('pointerup', this.lookUp);

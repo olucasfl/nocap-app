@@ -27,9 +27,9 @@ export const DSM_LAYER_GAP = 6;
 export const DSM_TILE_THICK = 0.5;
 
 /** Quanto tempo um ladrilho pisado aguenta (s), por camada: cada uma de baixo é um pouco mais rápida (curto de propósito: o chão some quase na hora, 25/10). */
-export const DSM_TILE_LIFE = [1.1, 1.05, 1, 0.95, 0.9, 0.85, 0.8] as const;
+export const DSM_TILE_LIFE = [0.85, 0.8, 0.76, 0.72, 0.68, 0.64, 0.6] as const;
 /** Nos últimos tantos segundos o ladrilho "racha" (treme e muda de cor): é o aviso. */
-export const DSM_CRACK_SEC = 0.4;
+export const DSM_CRACK_SEC = 0.35;
 
 /** Movimento da raposa. */
 export const DSM_SPEED = 6.2;

@@ -75,6 +75,8 @@ export function DesmoronaPlay({
   const root = useRef<HTMLDivElement>(null);
   const [hud, setHud] = useState<Hud>({ alive: total, total, layer: 1, phase: 'ready', count: 3, note: '', dead: false, watching: '' });
   const [stick, setStick] = useState<{ ox: number; oy: number; x: number; y: number } | null>(null);
+  const [locked, setLocked] = useState(false);
+  const mouseUser = useMemo(() => typeof matchMedia === 'function' && matchMedia('(hover: hover) and (pointer: fine)').matches, []);
   const [result, setResult] = useState<DsmResult | null>(null);
   const controls = useMemo(() => new DsmControls(), []);
   const spectate = useRef({ index: 0 });
@@ -100,7 +102,7 @@ export function DesmoronaPlay({
     const mem = new Map(world.players.filter((p) => p.bot).map((p, i) => [p.id, newBotMemory((i % 4) * 0.15, i % 3 === 0 ? 0.5 : 0)]));
     const rng = createRng(`${seed}:bots`);
     controls.attach(zoneEl, setStick);
-    if (root.current) controls.attachLook(root.current);
+    if (root.current) controls.attachLook(root.current, setLocked);
     let yaw = 0;
 
     let phase: Hud['phase'] = 'ready';
@@ -375,6 +377,9 @@ export function DesmoronaPlay({
         <div className="dsm-count" aria-live="assertive">
           {hud.count > 0 ? hud.count : 'Já!'}
         </div>
+      )}
+      {mouseUser && !locked && hud.phase === 'play' && !hud.dead && !result && (
+        <div className="dsm-lockhint">Clique na tela para girar a câmera com o mouse (Esc solta)</div>
       )}
       {hud.note && hud.phase !== 'ready' && <div className="dsm-note">{hud.note}</div>}
       {hud.dead && !result && (
