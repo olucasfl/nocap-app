@@ -154,6 +154,13 @@ export function BolaPlay({
   const root = useRef<HTMLDivElement>(null);
   const controls = useMemo(() => new DsmControls(), []);
   const camToggle = useRef<() => void>(() => undefined);
+  /** Espectador: -1 / 1 troca de jogador, 'ball' segue a bola. */
+  const specNav = useRef<(to: number | 'ball') => void>(() => undefined);
+  const [spec, setSpec] = useState<{ id: string; name: string; team: number }>({
+    id: 'ball',
+    name: 'Bola',
+    team: -1,
+  });
   const switchTeam = useRef<(team: number, botId?: string | null) => string | null>(() => null);
   const [teamsOpen, setTeamsOpen] = useState(false);
   const [menu, setMenu] = useState(false);
@@ -240,12 +247,29 @@ export function BolaPlay({
     if (import.meta.env.DEV)
       (window as unknown as { __bolaTurn?: (d: number) => void }).__bolaTurn = (d) =>
         (turnKick += d);
+    let specId = 'ball';
+    specNav.current = (to) => {
+      if (to === 'ball') specId = 'ball';
+      else {
+        // a volta passa pela bola e por todos os jogadores, na ordem da lista
+        const ids = ['ball', ...world.players.map((p) => p.id)];
+        const at = Math.max(0, ids.indexOf(specId));
+        specId = ids[(at + to + ids.length) % ids.length] as string;
+      }
+      const p = world.player(specId);
+      setSpec({ id: specId, name: p ? p.name : 'Bola', team: p ? p.team : -1 });
+    };
     camToggle.current = () => {
       ballCam = !ballCam;
       if (!ballCam) yaw = camYaw;
     };
     const onKey = (e: KeyboardEvent) => {
       if (e.code === 'KeyE' && !e.repeat) camToggle.current();
+      if (!e.repeat && !world.player(meId)) {
+        if (e.code === 'KeyQ' || e.code === 'ArrowLeft') specNav.current(-1);
+        if (e.code === 'KeyR' || e.code === 'ArrowRight') specNav.current(1);
+        if (e.code === 'KeyB') specNav.current('ball');
+      }
       if (e.code === 'Tab') {
         // Tab mostra as estatísticas enquanto estiver apertado
         e.preventDefault();
@@ -867,7 +891,10 @@ export function BolaPlay({
             const rate =
               (6 + 9 * Math.min(1, Math.abs(d) / 1.4)) *
               Math.min(1, Math.max(0.25, (dist - 1.4) / 4));
-            camYaw += d * (1 - Math.exp(-dt * rate));
+            // nunca gira mais rápido que isso: a bola cruzando perto da raposa não vira a câmera de repente
+            const step = d * (1 - Math.exp(-dt * rate));
+            const cap = 2.2 * dt;
+            camYaw += Math.max(-cap, Math.min(cap, step));
           }
           yaw = camYaw;
         }
@@ -924,7 +951,7 @@ export function BolaPlay({
       if (prevPhase === 'countdown' && world.phase === 'play') bolaSfx.whistle();
       if (prevPhase !== 'over' && world.phase === 'over') bolaSfx.fullTime();
       prevPhase = world.phase;
-      scene.render(dt, meId);
+      scene.render(dt, me ? meId : specId);
       if (now - hudAt > 100) {
         hudAt = now;
         setHud({
@@ -1101,6 +1128,28 @@ export function BolaPlay({
       {hud.phase === 'countdown' && (
         <div className="dsm-count" aria-live="assertive">
           {hud.count > 0 ? hud.count : 'Já!'}
+        </div>
+      )}
+      {hud.myTeam < 0 && !over && (
+        <div className="bola-spec" data-testid="bola-spec">
+          <button type="button" onClick={() => specNav.current(-1)} aria-label="Jogador anterior">
+            ‹
+          </button>
+          <span className="bola-spec-name">
+            {spec.id === 'ball' ? 'Bola' : spec.name}
+            <kbd aria-hidden="true">Q / R</kbd>
+          </span>
+          <button type="button" onClick={() => specNav.current(1)} aria-label="Próximo jogador">
+            ›
+          </button>
+          <button
+            type="button"
+            className="bola-spec-ball"
+            aria-pressed={spec.id === 'ball'}
+            onClick={() => specNav.current('ball')}
+          >
+            Bola
+          </button>
         </div>
       )}
       {hud.myTeam >= 0 && !over && <BolaTips touch={touchDevice} />}
