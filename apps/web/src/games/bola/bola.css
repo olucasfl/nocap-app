@@ -62,7 +62,18 @@
   text-transform: uppercase;
   cursor: pointer;
 }
+.bola-cam kbd {
+  margin-right: 8px;
+  padding: 2px 7px;
+  border: 2px solid #1b1535;
+  border-radius: 6px;
+  background: #ffe27a;
+  font: 900 12px var(--font-display, system-ui);
+}
 @media (pointer: coarse) {
+  .bola-cam kbd {
+    display: none;
+  }
   .bola-cam {
     left: auto;
     right: max(12px, env(safe-area-inset-right));

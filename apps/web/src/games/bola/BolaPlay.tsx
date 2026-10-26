@@ -129,6 +129,7 @@ export function BolaPlay({
           ),
         ]),
     );
+    controls.turnKeys = false;
     controls.attach(zoneEl, setStick);
     if (root.current) controls.attachLook(root.current);
     let ballCam = true;
@@ -139,7 +140,7 @@ export function BolaPlay({
       if (!ballCam) yaw = camYaw;
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.code === 'KeyC') camToggle.current();
+      if (e.code === 'KeyE' && !e.repeat) camToggle.current();
     };
     window.addEventListener('keydown', onKey);
 
@@ -177,7 +178,7 @@ export function BolaPlay({
         const input = controls.read();
         if (input.jump) jumpUntil = now + JUMP_BUFFER_MS;
         input.jump = false;
-        // a câmera segue a bola por padrão (C troca para câmera livre com o mouse)
+        // a câmera segue a bola por padrão (E troca para câmera livre com o mouse)
         const manual = controls.takeYaw(dt);
         if (!ballCam) yaw += manual;
         else {
@@ -349,6 +350,7 @@ export function BolaPlay({
             onClick={() => camToggle.current()}
             aria-pressed={!hud.ballCam}
           >
+            <kbd aria-hidden="true">E</kbd>
             {hud.ballCam ? 'Câmera na bola' : 'Câmera livre'}
           </button>
         </>

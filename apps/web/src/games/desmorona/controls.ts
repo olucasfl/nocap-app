@@ -26,7 +26,11 @@ export const STICK_RADIUS = 56;
  * Converte o arrasto do joystick em direção: zona morta, curva suave (pequenos desvios andam devagar, o máximo é 1) e
  * eixos separados (cima na tela = -Z).
  */
-export function stickVector(dx: number, dy: number, radius = STICK_RADIUS): { mx: number; mz: number } {
+export function stickVector(
+  dx: number,
+  dy: number,
+  radius = STICK_RADIUS,
+): { mx: number; mz: number } {
   const len = Math.hypot(dx, dy);
   if (len < 1e-6) return { mx: 0, mz: 0 };
   const mag = Math.min(1, len / radius);
@@ -43,12 +47,15 @@ export class DsmControls {
   private keys = { up: false, down: false, left: false, right: false };
   private stick: { id: number; ox: number; oy: number; x: number; y: number } | null = null;
   private jumpQueued = false;
-  private onStick: ((s: { ox: number; oy: number; x: number; y: number } | null) => void) | null = null;
+  private onStick: ((s: { ox: number; oy: number; x: number; y: number } | null) => void) | null =
+    null;
   private zone: HTMLElement | null = null;
   private look: HTMLElement | null = null;
   private lookPtr: { id: number; x: number } | null = null;
   /** Falso depois da queda ou do fim: aí a pessoa precisa do cursor para os botões. */
   allowLock = true;
+  /** Q e E giram a câmera; um jogo que usa essas teclas para outra coisa desliga. */
+  turnKeys = true;
   /** A pessoa soltou o mouse com Esc: não prende de novo sozinho, só com um clique. */
   private escaped = false;
   private yawAcc = 0;
@@ -56,7 +63,10 @@ export class DsmControls {
   private turn = 0;
 
   /** `zone`: onde o polegar do joystick pode tocar; `onStick` avisa a tela para desenhar o joystick. */
-  attach(zone: HTMLElement, onStick?: (s: { ox: number; oy: number; x: number; y: number } | null) => void) {
+  attach(
+    zone: HTMLElement,
+    onStick?: (s: { ox: number; oy: number; x: number; y: number } | null) => void,
+  ) {
     this.zone = zone;
     this.onStick = onStick ?? null;
     window.addEventListener('keydown', this.keyDown);
@@ -174,10 +184,16 @@ export class DsmControls {
   private keyDown = (e: KeyboardEvent) => {
     if (e.repeat && e.code !== 'Space') return;
     // a primeira tecla (que conta como gesto da pessoa) já prende o mouse, sem precisar clicar
-    if (!this.escaped && e.code !== 'Escape' && document.pointerLockElement !== this.look && this.look) this.requestLock();
+    if (
+      !this.escaped &&
+      e.code !== 'Escape' &&
+      document.pointerLockElement !== this.look &&
+      this.look
+    )
+      this.requestLock();
     const k = KEYS[e.code];
-    if (e.code === 'KeyQ') this.turn = -1;
-    else if (e.code === 'KeyE') this.turn = 1;
+    if (this.turnKeys && e.code === 'KeyQ') this.turn = -1;
+    else if (this.turnKeys && e.code === 'KeyE') this.turn = 1;
     else if (k) {
       this.keys[k] = true;
       e.preventDefault();
