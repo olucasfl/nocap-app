@@ -13,7 +13,7 @@ import {
   type DsmTile,
   type DsmWorld,
 } from '@nocap/games';
-import { buildHero } from '../atravessa/models';
+import { buildHero, mapEdge } from '../atravessa/models';
 
 /** Cores das camadas, de cima para baixo (a de cima é a maior). */
 const LAYER_COLORS = [0x9a5cff, 0xff7ab8, 0xffa24d, 0xffd84d, 0x8be36b, 0x55d9ff, 0x6b7bff];
@@ -120,6 +120,8 @@ export class DsmScene {
     this.scene.background = new THREE.Color(0x7fd3ff);
     this.scene.fog = new THREE.Fog(0x9fdcff, 45, 120);
 
+    // o escurecimento lateral é do Atravessa e vale para todos os materiais das raposas: aqui é tudo sol
+    mapEdge.uEdge.value = 1e6;
     // sempre sol: luz branca de todos os lados, sem lado escuro
     const sun = new THREE.DirectionalLight(0xffffff, 1.2);
     sun.position.set(0, 40, 0);

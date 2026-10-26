@@ -8,7 +8,7 @@ import {
   type BolPlayer,
   type BolWorld,
 } from '@nocap/games';
-import { buildHero } from '../atravessa/models';
+import { buildHero, mapEdge } from '../atravessa/models';
 
 /** Câmera de perseguição: atrás da raposa, olhando por cima do ombro para a bola. */
 /** Distância da câmera até a raposa (m). */
@@ -90,6 +90,8 @@ export class BolaScene {
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.scene.background = this.skyTexture();
     this.scene.fog = new THREE.Fog(0xcdeeff, 90, 220);
+    // o escurecimento lateral é do Atravessa e vale para todos os materiais das raposas: aqui é tudo sol
+    mapEdge.uEdge.value = 1e6;
     // sempre sol: luz branca de todos os lados, sem lado escuro
     const sun = new THREE.DirectionalLight(0xffffff, 1.2);
     sun.position.set(0, 40, 0);
