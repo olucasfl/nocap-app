@@ -119,7 +119,9 @@ describe('sala do Atravessa! com servidor de verdade', () => {
 
     // a ana vê a bia na coluna -2 (largou em -1 e andou uma casa), viva
     await until(() => ana.pos.some((frame) => frame.some((row) => row[0] === 1 && row[2] === -2)));
-    const frame = [...ana.pos].reverse().find((f) => f.some((row) => row[0] === 1 && row[2] === -2))!;
+    const frame = [...ana.pos]
+      .reverse()
+      .find((f) => f.some((row) => row[0] === 1 && row[2] === -2))!;
     const row = frame.find((r) => r[0] === 1)!;
     expect(row[1]).toBe(40);
     expect(row[6]! & 1).toBe(1);

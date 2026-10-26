@@ -1,49 +1,19 @@
 import {
-  BOL_DT,
   BOL_MAX_PLAYERS,
   BOL_ROOM_MAX,
   BOL_TEAM_COLORS,
   BOL_TEAM_NAMES,
-  BolWorld,
-  bolBotInput,
+  BolaMatch,
+  BolaMatchError,
+  bolPlacements,
   bolSuggestFormat,
-  createRng,
-  newBolBotMemory,
-  type BolBotMemory,
-  type BolEvent,
   type BolInfo,
-  type BolInput,
+  type BolWorld,
 } from '@nocap/games';
 import { ColorRoomEngine, RoomError, type EngineOptions, type FinalRow } from './color-room.engine';
 
-const BOT_NAMES = [
-  'Faísca',
-  'Pipoca',
-  'Trufa',
-  'Ruivo',
-  'Brisa',
-  'Nuvem',
-  'Cacau',
-  'Fumaça',
-  'Jujuba',
-  'Mingau',
-  'Biscoito',
-  'Pimenta',
-];
-/** Quanto tempo de jogo o servidor aceita recuperar de uma vez (s): se ficar para trás além disto, pula. */
-const MAX_CATCHUP = 0.1;
-/** De quanto em quanto tempo as estatísticas vão junto com o fluxo (s). */
-const STATS_EVERY = 1;
-
-/** Entrada de uma pessoa: direção, pulos pendentes e o último número de sequência recebido. */
-interface Pilot {
-  mx: number;
-  mz: number;
-  /** Contador de pulos do cliente; o servidor vê quando sobe. */
-  seen: number | null;
-  pending: number;
-  ack: number;
-}
+/** Quanto tempo (ms) os aparelhos têm para conectar ao do líder antes de a partida cair no servidor. */
+const P2P_WINDOW_MS = 7000;
 
 export interface BolaFormatState {
   teams: number;
@@ -53,9 +23,6 @@ export interface BolaFormatState {
   /** Duração da partida (min). */
   minutes: number;
 }
-
-const finite = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n);
-const r2 = (n: number) => Math.round(n * 100) / 100;
 
 /**
  * O Fut Fox em sala (spec 046, fase 2). Diferente do Desmorona!, aqui o SERVIDOR simula tudo (bola, raposas e
@@ -82,22 +49,35 @@ export class BolaRoomEngine extends ColorRoomEngine {
   private chose = new Set<string>();
   /** Bots pedidos pelo líder por time (só vale no lobby). */
   private bots: number[] = [0, 0, 0, 0];
-  private world: BolWorld | null = null;
-  /** Vaga numérica de cada corpo no fluxo (id do corpo → vaga). Estável mesmo quando o dono do corpo muda. */
-  private slots = new Map<string, number>();
-  private nextSlot = 0;
-  private pilots = new Map<string, Pilot>();
-  private brains = new Map<string, BolBotMemory>();
-  /** Gente sem conexão: o corpo continua em campo, controlado por bot. */
-  private away = new Set<string>();
-  private rng: () => number = createRng('bola');
-  private last = 0;
-  private acc = 0;
-  private botSeq = 0;
+  /** A partida em andamento (o mundo, as entradas, os bots e o fluxo). Só existe de `play` até o fim. */
+  private match: BolaMatch | null = null;
   private dirty = false;
-  private out: Record<string, unknown>[] = [];
-  private statsAt = 0;
-  private sendStats = false;
+  /**
+   * Quem simula a partida (spec 048): `pending` = aparelhos tentando conectar ao do líder; `p2p` = o aparelho do líder
+   * simula e o servidor só espera o resultado; `server` = o servidor simula (reserva, e o jeito antigo).
+   */
+  /** Liga a partida ponto a ponto (a sala de verdade liga; os testes do motor ficam no jeito do servidor). */
+  p2pEnabled = false;
+  private net: 'server' | 'pending' | 'p2p' = 'server';
+  /** O aparelho que simula no modo ponto a ponto (o líder no começo da partida). */
+  private p2pHost = '';
+  private p2pDeadline = 0;
+  private p2pOk = new Set<string>();
+  private p2pFinal: { scores: number[]; winner: number } | null = null;
+  /** O que o aparelho do líder precisa para montar a mesma partida. */
+  private p2pSetup: {
+    teams: number;
+    perTeam: number;
+    durationSec: number;
+    seed: string;
+    humans: { id: string; name: string; team: number }[];
+    bots: number[];
+    away: string[];
+  } | null = null;
+
+  private get world(): BolWorld | null {
+    return this.match?.world ?? null;
+  }
 
   constructor(opts: EngineOptions) {
     super({ ...opts, maxPlayers: BOL_ROOM_MAX });
@@ -127,7 +107,7 @@ export class BolaRoomEngine extends ColorRoomEngine {
     if (existing) {
       existing.connected = true;
       existing.username = username;
-      this.away.delete(id);
+      this.match?.setAway(id, false);
       this.ensureHost();
       this.dirty = true;
       return;
@@ -142,20 +122,33 @@ export class BolaRoomEngine extends ColorRoomEngine {
 
   override disconnect(id: string) {
     super.disconnect(id);
-    if (this.world?.player(id)) this.away.add(id);
+    this.hostGone(id);
+    this.match?.setAway(id, true);
     if (this.phase === 'lobby') this.refresh();
     this.dirty = true;
   }
 
   override leave(id: string) {
-    if (this.world?.player(id)) this.toBot(id);
-    this.pilots.delete(id);
+    this.hostGone(id);
+    this.match?.toBot(id);
     this.teamOf.delete(id);
     this.chose.delete(id);
-    this.away.delete(id);
     super.leave(id);
     if (this.phase === 'lobby') this.refresh();
     this.dirty = true;
+  }
+
+  /** Quem simula saiu: antes de começar vale o servidor; no meio da partida ela termina (o estado estava só com ele). */
+  private hostGone(id: string) {
+    if (id !== this.p2pHost) return;
+    if (this.net === 'pending') this.toServerMode();
+    else if (this.net === 'p2p' && this.phase === 'play') {
+      this.p2pFinal = {
+        scores: Array.from({ length: this.format.teams }, () => 0),
+        winner: -1,
+      };
+      this.finalize();
+    }
   }
 
   // ---- times e formato (lobby) ----
@@ -285,6 +278,11 @@ export class BolaRoomEngine extends ColorRoomEngine {
     this.requirePhase('lobby', 'play');
     const m = this.members.get(id);
     if (!m) throw new RoomError('Você não está na sala');
+    if (this.phase === 'play' && this.net !== 'server') {
+      throw new RoomError(
+        'Nesta partida (ponto a ponto) não dá para trocar de time durante o jogo',
+      );
+    }
     if (!Number.isInteger(team) || (team as number) < -1 || (team as number) >= this.format.teams) {
       throw new RoomError('Esse time não existe neste formato');
     }
@@ -346,246 +344,147 @@ export class BolaRoomEngine extends ColorRoomEngine {
     const { teams, perTeam, minutes } = this.format;
     this.roundIndex = 0;
     this.rounds[0] = {};
-    this.slots.clear();
-    this.pilots.clear();
-    this.brains.clear();
-    this.away.clear();
-    this.nextSlot = 0;
-    this.botSeq = 0;
-    this.out = [];
-    this.rng = createRng(`${this.seed}:bola`);
-    const infos: BolInfo[] = [];
+    const humans: BolInfo[] = [];
+    const away: string[] = [];
     const ordered = [...this.members.values()].sort((a, b) => a.joinedAt - b.joinedAt);
     for (let t = 0; t < teams; t++) {
       for (const m of ordered) {
         if (this.teamOf.get(m.id) !== t) continue;
-        infos.push({ id: m.id, name: m.username, color: BOL_TEAM_COLORS[t] as number, team: t });
-        if (!m.connected) this.away.add(m.id);
-      }
-      for (let i = 0; i < (this.bots[t] ?? 0); i++) {
-        infos.push({
-          id: this.botId(),
-          name: this.botName(),
-          color: BOL_TEAM_COLORS[t] as number,
-          team: t,
-          bot: true,
-        });
+        humans.push({ id: m.id, name: m.username, color: BOL_TEAM_COLORS[t] as number, team: t });
+        if (!m.connected) away.push(m.id);
       }
     }
-    this.world = new BolWorld(infos, { teams, perTeam, durationSec: minutes * 60 });
-    for (const p of this.world.players) {
-      this.slots.set(p.id, this.nextSlot++);
-      if (!p.bot) this.pilots.set(p.id, this.newPilot());
-      else this.brains.set(p.id, this.newBrain(p.team, this.slots.get(p.id) ?? 0));
-    }
+    this.match = new BolaMatch({
+      teams,
+      perTeam,
+      durationSec: minutes * 60,
+      seed: this.seed,
+      humans,
+      bots: this.bots,
+      away,
+      now: () => this.now(),
+    });
     this.phase = 'play';
     this.phaseEndsAt = null;
-    this.last = this.now();
-    this.acc = 0;
-    this.statsAt = 0;
-    this.sendStats = true;
+    this.dirty = true;
+    this.beginNet(humans, away);
+  }
+
+  /** Decide quem simula: ponto a ponto no aparelho do líder, se todos conectarem a ele; senão o servidor. */
+  private beginNet(humans: BolInfo[], away: string[]) {
+    const { teams, perTeam, minutes } = this.format;
+    this.p2pFinal = null;
+    this.p2pOk.clear();
+    this.p2pHost = this.hostId ?? '';
+    this.p2pSetup = {
+      teams,
+      perTeam,
+      durationSec: minutes * 60,
+      seed: this.seed,
+      humans: humans.map((h) => ({ id: h.id, name: h.name, team: h.team })),
+      bots: this.bots.slice(0, teams),
+      away,
+    };
+    const host = this.members.get(this.p2pHost);
+    if (!this.p2pEnabled || !host?.connected) {
+      this.net = 'server';
+      return;
+    }
+    this.net = 'pending';
+    this.p2pDeadline = this.now() + P2P_WINDOW_MS;
+  }
+
+  /** Quem precisa conectar ao aparelho do líder: todo mundo que está na sala agora, menos ele. */
+  private p2pPeers(): string[] {
+    return [...this.members.values()]
+      .filter((m) => m.connected && m.id !== this.p2pHost)
+      .map((m) => m.id);
+  }
+
+  /** Um aparelho avisa que conectou ao líder (`ok`) ou que não conseguiu. */
+  p2pReport(id: string, ok: unknown) {
+    if (this.net !== 'pending' || !this.members.has(id)) return;
+    if (ok === true) this.p2pOk.add(id);
+    else this.toServerMode();
     this.dirty = true;
   }
 
-  private botId() {
-    return `bot${this.botSeq++}`;
-  }
-
-  private botName() {
-    return BOT_NAMES[this.botSeq % BOT_NAMES.length] as string;
-  }
-
-  private newPilot(): Pilot {
-    return { mx: 0, mz: 0, seen: null, pending: 0, ack: 0 };
-  }
-
-  private newBrain(team: number, i: number): BolBotMemory {
+  /** O líder manda o resultado da partida que ele simulou. */
+  p2pResult(id: string, v: { scores?: unknown; winner?: unknown }) {
+    if (this.net !== 'p2p' || id !== this.p2pHost || this.phase !== 'play') return;
     const teams = this.format.teams;
-    return newBolBotMemory((team + 1 + (i % Math.max(1, teams - 1))) % teams, 0.2 + (i % 3) * 0.05);
+    const scores = Array.isArray(v.scores) ? v.scores.slice(0, teams) : [];
+    if (
+      scores.length !== teams ||
+      !scores.every((n) => Number.isInteger(n) && n >= 0 && n < 1000)
+    ) {
+      return;
+    }
+    const winner =
+      Number.isInteger(v.winner) && (v.winner as number) < teams ? (v.winner as number) : -1;
+    this.p2pFinal = { scores: scores as number[], winner };
+    this.finalize();
+  }
+
+  /** Volta ao jeito antigo: o servidor simula (alguém não conseguiu conectar, ou o líder sumiu na conexão). */
+  private toServerMode() {
+    if (this.net === 'server') return;
+    this.net = 'server';
+    this.dirty = true;
+  }
+
+  /** Só diz que o servidor está simulando (o quadro `bs` sai da sala). */
+  get serverSimulates(): boolean {
+    return this.net === 'server';
   }
 
   // ---- durante a partida ----
 
   /** A entrada da própria raposa: [mx, mz, contador de pulos, número de sequência]. Inválido é ignorado. */
   input(id: string, v: unknown): void {
-    const pilot = this.pilots.get(id);
-    if (!this.world || !pilot || !Array.isArray(v) || v.length !== 4 || !v.every(finite)) return;
-    const [mx, mz, jumps, seq] = v as number[];
-    const mag = Math.hypot(mx!, mz!);
-    const k = mag > 1 ? 1 / mag : 1;
-    pilot.mx = mx! * k;
-    pilot.mz = mz! * k;
-    const j = Math.trunc(jumps!);
-    // o primeiro relato só combina o contador; depois, cada aumento é um aperto (no máximo 3 por vez)
-    if (pilot.seen === null || j < pilot.seen) pilot.seen = j;
-    else if (j > pilot.seen) {
-      pilot.pending = Math.min(3, pilot.pending + (j - pilot.seen));
-      pilot.seen = j;
-    }
-    pilot.ack = Math.max(pilot.ack, Math.trunc(seq!));
+    this.match?.input(id, v);
   }
 
   /** Troca de time no meio da partida: o corpo antigo vira bot; no time novo, assume um bot ou ocupa uma vaga livre. */
   private moveLive(id: string, to: number, botId: string | null) {
-    const w = this.world as BolWorld;
     const m = this.members.get(id) as { username: string };
-    const perTeam = this.format.perTeam;
-    if (to >= 0) {
-      if (this.humansIn(to) >= perTeam)
-        throw new RoomError(`O time ${BOL_TEAM_NAMES[to]} está cheio`);
-      if (botId) {
-        if (!w.players.some((p) => p.bot && p.team === to && p.id === botId)) {
-          throw new RoomError('Esse bot já saiu do lugar: escolha outro');
-        }
-      } else if (w.players.filter((p) => p.team === to).length >= perTeam) {
-        throw new RoomError(
-          `O time ${BOL_TEAM_NAMES[to]} não tem vaga livre: entre no lugar de um bot`,
-        );
-      }
+    try {
+      (this.match as BolaMatch).switchTeam(id, m.username, to, botId);
+    } catch (e) {
+      if (e instanceof BolaMatchError) throw new RoomError(e.message);
+      throw e;
     }
-    if (w.player(id)) this.toBot(id);
-    this.away.delete(id);
     if (to < 0) {
       this.teamOf.delete(id);
       this.chose.add(id);
       return;
     }
-    const info: BolInfo = { id, name: m.username, color: BOL_TEAM_COLORS[to] as number, team: to };
-    if (botId) {
-      const slot = this.slots.get(botId) ?? this.nextSlot++;
-      this.brains.delete(botId);
-      this.slots.delete(botId);
-      w.takeOver(botId, info);
-      this.slots.set(id, slot);
-    } else {
-      w.addPlayer(info);
-      this.slots.set(id, this.nextSlot++);
-    }
-    this.pilots.set(id, this.newPilot());
     this.teamOf.set(id, to);
     this.chose.delete(id);
-  }
-
-  /** O corpo de uma pessoa passa a ser de um bot (ela saiu, mudou de time ou virou espectadora). */
-  private toBot(id: string) {
-    const w = this.world;
-    const p = w?.player(id);
-    if (!w || !p) return;
-    const slot = this.slots.get(id) ?? this.nextSlot++;
-    const newId = this.botId();
-    w.becomeBot(id, newId, this.botName());
-    this.slots.delete(id);
-    this.slots.set(newId, slot);
-    this.pilots.delete(id);
-    this.brains.set(newId, this.newBrain(p.team, slot));
   }
 
   /** O líder encerra a partida com o placar de agora. */
   endNow(id: string) {
     this.requireHost(id);
     this.requirePhase('play');
-    this.world?.endNow();
+    this.match?.endNow();
     this.dirty = true;
   }
 
-  private stepOnce() {
-    const w = this.world as BolWorld;
-    const inputs: Record<string, BolInput> = {};
-    for (const p of w.players) {
-      const pilot = this.pilots.get(p.id);
-      if (pilot && !p.bot && !this.away.has(p.id)) {
-        const jump = pilot.pending > 0;
-        if (jump) pilot.pending -= 1;
-        inputs[p.id] = { mx: pilot.mx, mz: pilot.mz, jump };
-      } else {
-        let brain = this.brains.get(p.id);
-        if (!brain) {
-          brain = this.newBrain(p.team, this.slots.get(p.id) ?? 0);
-          this.brains.set(p.id, brain);
-        }
-        inputs[p.id] = bolBotInput(w, p, brain, this.rng);
-      }
-    }
-    w.step(BOL_DT, inputs);
-    for (const e of w.drainEvents()) this.collect(e);
-  }
-
-  private slotOf(id: string | null): number {
-    return id === null ? -1 : (this.slots.get(id) ?? -1);
-  }
-
-  /** Eventos para o fluxo (com vagas no lugar de ids) e quais pedem um estado completo para todos. */
-  private collect(e: BolEvent) {
-    switch (e.type) {
-      case 'goal':
-        this.out.push({
-          t: 'goal',
-          gt: e.goalTeam,
-          sc: this.slotOf(e.scorerId),
-          st: e.scorerTeam,
-          own: e.own,
-          ow: this.slotOf(e.ownerId),
-          nt: e.noTouch,
-          as: this.slotOf(e.assistId),
-        });
-        this.dirty = true;
-        this.sendStats = true;
-        break;
-      case 'nogoal':
-        this.out.push({ t: 'nogoal', gt: e.goalTeam, ow: this.slotOf(e.ownerId) });
-        this.sendStats = true;
-        this.dirty = true;
-        break;
-      case 'touch':
-        if (e.power > 3)
-          this.out.push({ t: 'touch', s: this.slotOf(e.id), p: Math.round(e.power) });
-        break;
-      case 'kick':
-        this.out.push({ t: 'kick', s: this.slotOf(e.id) });
-        break;
-      case 'bounce':
-      case 'wall':
-        this.out.push({ t: e.type, p: Math.round(e.power) });
-        break;
-      case 'jump':
-        this.out.push({ t: 'jump', s: this.slotOf(e.id) });
-        break;
-      case 'airjump':
-        this.out.push({ t: 'airjump', s: this.slotOf(e.id), f: e.flip });
-        break;
-      case 'warn':
-        this.out.push({ t: 'warn', l: e.left });
-        break;
-      case 'start':
-      case 'golden':
-      case 'ballreset':
-        this.out.push({ t: e.type });
-        this.dirty = true;
-        break;
-      case 'over':
-        this.out.push({ t: 'over', w: e.winner });
-        this.dirty = true;
-        break;
-      default:
-        break;
-    }
-  }
-
   override tick(): boolean {
-    const w = this.world;
-    if (this.phase === 'play' && w) {
-      const t = this.now();
-      this.acc += Math.min(MAX_CATCHUP, Math.max(0, (t - this.last) / 1000));
-      this.last = t;
-      let steps = 0;
-      while (this.acc >= BOL_DT && steps < 8) {
-        this.stepOnce();
-        this.acc -= BOL_DT;
-        steps++;
-      }
-      if (w.phase === 'over') this.finalize();
+    const m = this.match;
+    if (this.phase === 'play' && this.net === 'pending') {
+      const peers = this.p2pPeers();
+      if (peers.every((id) => this.p2pOk.has(id))) {
+        this.net = 'p2p';
+        this.dirty = true;
+      } else if (this.now() >= this.p2pDeadline) this.toServerMode();
     }
-    const changed = this.dirty;
+    if (this.phase === 'play' && m && this.net === 'server') {
+      m.tick();
+      if (m.over) this.finalize();
+    }
+    const changed = this.dirty || (m?.takeDirty() ?? false);
     this.dirty = false;
     return changed;
   }
@@ -594,87 +493,47 @@ export class BolaRoomEngine extends ColorRoomEngine {
     if (this.phase === 'final') return;
     this.phase = 'final';
     this.phaseEndsAt = null;
-    this.sendStats = true;
+    this.match?.wantStats();
     this.dirty = true;
   }
 
   protected override reset() {
     super.reset();
-    this.world = null;
-    this.slots.clear();
-    this.pilots.clear();
-    this.brains.clear();
-    this.away.clear();
-    this.out = [];
+    this.match = null;
+    this.net = 'server';
+    this.p2pSetup = null;
+    this.p2pFinal = null;
+    this.p2pOk.clear();
     // os times ficam como estavam, mas quem saiu da sala já foi tirado em `leave`
     this.refresh();
   }
 
   // ---- o que vai para os aparelhos ----
 
-  /** O quadro do fluxo (10 a 30 vezes por segundo): bola, corpos, placar, relógio e os eventos desde o último. */
+  /** O quadro do fluxo (a cada tick): bola, corpos, placar, relógio e os eventos desde o último. */
   drainFrame(): Record<string, unknown> | null {
-    const w = this.world;
-    if (!w || (this.phase !== 'play' && this.out.length === 0 && !this.sendStats)) return null;
-    const codes = { countdown: 'c', play: 'p', goal: 'g', over: 'o' } as const;
-    const b = w.ball;
-    const frame: Record<string, unknown> = {
-      /** Hora do servidor (ms) deste estado: o aparelho interpola pela hora, não pela chegada. */
-      t: this.now(),
-      ph: codes[w.phase],
-      tm: r2(w.timer),
-      ck: Math.round(w.clock * 10) / 10,
-      sc: w.scores,
-      gd: w.golden ? 1 : 0,
-      gs: Math.round(w.goldenStart * 10) / 10,
-      b: [r2(b.x), r2(b.y), r2(b.z), r2(b.vx), r2(b.vy), r2(b.vz)],
-      p: w.players.map((p) => [
-        this.slots.get(p.id) ?? -1,
-        r2(p.x),
-        r2(p.y),
-        r2(p.z),
-        r2(p.vx),
-        r2(p.vy),
-        r2(p.vz),
-        r2(p.heading),
-        (p.grounded ? 1 : 0) + (p.flipT > 0 ? 2 : 0) + (p.airJumped ? 4 : 0),
-        this.pilots.get(p.id)?.ack ?? 0,
-      ]),
-      ev: this.out,
-    };
-    this.out = [];
-    const t = this.now();
-    if (this.sendStats || t - this.statsAt >= STATS_EVERY * 1000) {
-      this.sendStats = false;
-      this.statsAt = t;
-      frame.st = {
-        r: w.players.map((p) => [
-          this.slots.get(p.id) ?? -1,
-          p.stats.goals,
-          p.stats.assists,
-          p.stats.ownGoals,
-          p.stats.touches,
-          p.stats.kicks,
-        ]),
-        po: w.possession.map(r2),
-        ce: w.celebrating,
-      };
-    }
-    return frame;
+    if (this.net !== 'server') return null;
+    return this.match?.drainFrame(this.phase === 'play') ?? null;
   }
 
   /** Colocação por time (empate divide a posição). Só vale em `final`. */
   override finalRows(): FinalRow[] {
-    const w = this.world;
-    if (!w) return [];
-    const order = w.scores.map((s, t) => ({ s, t })).sort((a, b) => b.s - a.s);
-    const place = new Map<number, number>();
-    order.forEach((o, i) =>
-      place.set(
-        o.t,
-        i > 0 && order[i - 1]!.s === o.s ? (place.get(order[i - 1]!.t) as number) : i + 1,
-      ),
-    );
+    const f = this.p2pFinal;
+    if (f && this.p2pSetup) {
+      // partida simulada no aparelho do líder: o placar veio dele
+      const place = bolPlacements(f.scores);
+      return this.p2pSetup.humans.map((h) => ({
+        userId: h.id,
+        username: h.name,
+        totalTenths: (f.scores[h.team] ?? 0) * 10,
+        placement: place.get(h.team) ?? 1,
+        answers: [],
+      }));
+    }
+    const m = this.match;
+    if (!m) return [];
+    const w = m.world;
+    const place = m.placements();
     return w.players
       .filter((p) => !p.bot)
       .map((p) => ({
@@ -696,19 +555,21 @@ export class BolaRoomEngine extends ColorRoomEngine {
         suggested: this.suggestedFormat,
         teamOf: members,
         bots: this.bots.slice(0, this.format.teams),
-        roster: w
-          ? w.players.map((p) => ({
-              slot: this.slots.get(p.id) ?? -1,
-              id: p.id,
-              name: p.name,
-              team: p.team,
-              bot: !!p.bot,
-              away: this.away.has(p.id),
-            }))
-          : [],
-        scores: w ? w.scores : [],
-        winner: this.phase === 'final' && w ? w.winner : null,
+        roster: this.match ? this.match.roster() : [],
+        scores: this.p2pFinal ? this.p2pFinal.scores : w ? w.scores : [],
+        winner:
+          this.phase !== 'final'
+            ? null
+            : this.p2pFinal
+              ? this.p2pFinal.winner
+              : w
+                ? w.winner
+                : null,
         durationSec: this.format.minutes * 60,
+        /** Quem simula a partida: o servidor, o aparelho do líder, ou "pending" enquanto os aparelhos conectam. */
+        net: this.phase === 'lobby' ? 'server' : this.net,
+        p2pHost: this.net === 'server' ? null : this.p2pHost,
+        setup: this.net === 'server' ? null : this.p2pSetup,
       },
     };
   }

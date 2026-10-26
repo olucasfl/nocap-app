@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { cleanNickname, createGuestLimiter, isGuestId, nickKey, usernameLookalikes } from './guest-nick';
+import {
+  cleanNickname,
+  createGuestLimiter,
+  isGuestId,
+  nickKey,
+  usernameLookalikes,
+} from './guest-nick';
 
 describe('apelido de convidado', () => {
   it('aceita apelidos comuns e arruma os espaços', () => {

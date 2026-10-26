@@ -126,7 +126,10 @@ export class AtravessaRoomEngine extends ColorRoomEngine {
     super.join(id, username);
     if (!this.colors.has(id)) {
       const taken = new Set(this.colors.values());
-      this.colors.set(id, (ATR_ROOM_COLORS.find((c) => !taken.has(c.hex)) ?? ATR_ROOM_COLORS[0]!).hex);
+      this.colors.set(
+        id,
+        (ATR_ROOM_COLORS.find((c) => !taken.has(c.hex)) ?? ATR_ROOM_COLORS[0]!).hex,
+      );
     }
   }
 
@@ -160,7 +163,8 @@ export class AtravessaRoomEngine extends ColorRoomEngine {
 
   /** Só marca pronto quem tem cor. */
   override setReady(id: string, ready: boolean) {
-    if (ready && this.members.has(id) && !this.colors.has(id)) throw new RoomError('Escolha a sua cor');
+    if (ready && this.members.has(id) && !this.colors.has(id))
+      throw new RoomError('Escolha a sua cor');
     super.setReady(id, ready);
   }
 
@@ -202,7 +206,11 @@ export class AtravessaRoomEngine extends ColorRoomEngine {
     ordered.forEach((m, i) => {
       this.slots.set(m.id, i);
       this.runs.set(m.id, {
-        mirror: new AtravessaMirror(seed, atravessaRoomRules(this.roomMode, this.cfg.size, i), this.world!),
+        mirror: new AtravessaMirror(
+          seed,
+          atravessaRoomRules(this.roomMode, this.cfg.size, i),
+          this.world!,
+        ),
         lastReportAt: this.startAt,
       });
     });
@@ -389,7 +397,10 @@ export class AtravessaRoomEngine extends ColorRoomEngine {
 
   /** O resultado de cada um para o pódio: metros, tempo de chegada (Checkpoint) e mortes. */
   private results() {
-    const out: Record<string, { meters: number; ms: number | null; deaths: number; finished: boolean }> = {};
+    const out: Record<
+      string,
+      { meters: number; ms: number | null; deaths: number; finished: boolean }
+    > = {};
     for (const m of this.members.values()) {
       const sim = this.runs.get(m.id)?.mirror.sim;
       out[m.id] = {

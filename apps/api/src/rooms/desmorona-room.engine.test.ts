@@ -7,7 +7,12 @@ const T0 = 1_000_000;
 
 function started(names = ['ana', 'bia', 'caio']) {
   let t = T0;
-  const clock = { advance: (ms: number) => (t += ms), get now() { return t; } };
+  const clock = {
+    advance: (ms: number) => (t += ms),
+    get now() {
+      return t;
+    },
+  };
   const room = new DesmoronaRoomEngine({ code: 'ABCD', now: () => t, newSeed: () => 'seed' });
   for (const n of names) room.join(n, n);
   for (const n of names.slice(1)) room.setReady(n, true);
@@ -23,7 +28,17 @@ function racing(names?: string[]) {
   return s;
 }
 
-const snap = (room: DesmoronaRoomEngine, id = 'ana') => (room.snapshot(id) as unknown as { desmorona: { dead: Record<string, number>; slots: Record<string, number>; startAt: number | null; winnerId: string | null } }).desmorona;
+const snap = (room: DesmoronaRoomEngine, id = 'ana') =>
+  (
+    room.snapshot(id) as unknown as {
+      desmorona: {
+        dead: Record<string, number>;
+        slots: Record<string, number>;
+        startAt: number | null;
+        winnerId: string | null;
+      };
+    }
+  ).desmorona;
 
 describe('sala do Desmorona!', () => {
   it('aceita de 2 a 8 pessoas e começa pela contagem, com vagas por ordem de entrada', () => {
@@ -161,7 +176,9 @@ describe('sala do Desmorona!', () => {
     const room = new DesmoronaRoomEngine({ code: 'ABCD', now: () => T0, newSeed: () => 's' });
     room.join('ana', 'ana');
     room.join('bia', 'bia');
-    const colors = () => (room.snapshot('ana') as unknown as { desmorona: { colors: Record<string, string> } }).desmorona.colors;
+    const colors = () =>
+      (room.snapshot('ana') as unknown as { desmorona: { colors: Record<string, string> } })
+        .desmorona.colors;
     expect(new Set(Object.values(colors())).size).toBe(2);
     const biaColor = colors().bia!;
     expect(() => room.setColor('ana', biaColor)).toThrow(RoomError);

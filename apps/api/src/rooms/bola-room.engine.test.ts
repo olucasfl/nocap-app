@@ -293,3 +293,98 @@ describe('sala do Fut Fox: partida', () => {
     expect(f.p[0]).toHaveLength(10);
   });
 });
+
+describe('sala do Fut Fox: partida ponto a ponto (spec 048)', () => {
+  const net = (room: BolaRoomEngine, id = 'ana') =>
+    (
+      room.snapshot(id) as unknown as {
+        bola: { net: string; p2pHost: string | null; setup: unknown };
+      }
+    ).bola;
+
+  function p2p(names = ['ana', 'bia']) {
+    const s = lobby(names);
+    s.room.p2pEnabled = true;
+    for (const n of names.slice(1)) s.room.setReady(n, true);
+    s.room.start(names[0]!);
+    return s;
+  }
+
+  it('ao começar, os aparelhos tentam conectar ao do líder e o servidor não simula', () => {
+    const s = p2p();
+    const b = net(s.room);
+    expect(b.net).toBe('pending');
+    expect(b.p2pHost).toBe('ana');
+    expect(b.setup).toMatchObject({ teams: 2, perTeam: 1, seed: 'seed' });
+    run(s, 1);
+    expect(s.room.serverSimulates).toBe(false);
+    expect(s.room.drainFrame()).toBeNull();
+  });
+
+  it('todos conectaram: vira ponto a ponto e o líder entrega o resultado', () => {
+    const s = p2p();
+    s.room.p2pReport('bia', true);
+    s.room.tick();
+    expect(net(s.room).net).toBe('p2p');
+    expect(s.room.drainFrame()).toBeNull();
+    // quem não é o líder não decide o resultado
+    s.room.p2pResult('bia', { scores: [0, 9], winner: 1 });
+    expect(s.room.snapshot('ana').phase).toBe('play');
+    s.room.p2pResult('ana', { scores: [3, 1], winner: 0 });
+    expect(s.room.snapshot('ana').phase).toBe('final');
+    const rows = s.room.finalRows();
+    expect(rows.find((r) => r.userId === 'ana')).toMatchObject({ placement: 1, totalTenths: 30 });
+    expect(rows.find((r) => r.userId === 'bia')).toMatchObject({ placement: 2, totalTenths: 10 });
+    expect(snap(s.room).winner).toBe(0);
+  });
+
+  it('resultado inválido é ignorado', () => {
+    const s = p2p();
+    s.room.p2pReport('bia', true);
+    s.room.tick();
+    s.room.p2pResult('ana', { scores: [3], winner: 0 });
+    s.room.p2pResult('ana', { scores: [3, -1], winner: 0 });
+    s.room.p2pResult('ana', { scores: [3, 1.5], winner: 0 });
+    expect(s.room.snapshot('ana').phase).toBe('play');
+  });
+
+  it('se alguém não conseguir conectar, o servidor passa a simular (reserva)', () => {
+    const s = p2p();
+    s.room.p2pReport('bia', false);
+    expect(net(s.room).net).toBe('server');
+    run(s, 4);
+    expect(snap(s.room).roster.length).toBe(2);
+    expect(s.room.serverSimulates).toBe(true);
+  });
+
+  it('se o tempo de conexão acabar, o servidor passa a simular', () => {
+    const s = p2p();
+    run(s, 9);
+    expect(net(s.room).net).toBe('server');
+  });
+
+  it('no ponto a ponto não troca de time no meio da partida', () => {
+    const s = p2p();
+    s.room.p2pReport('bia', true);
+    s.room.tick();
+    expect(() => s.room.setTeam('bia', -1)).toThrow('ponto a ponto');
+  });
+
+  it('o líder sozinho com bots joga direto no aparelho dele, sem esperar ninguém', () => {
+    const s = lobby(['ana']);
+    s.room.p2pEnabled = true;
+    s.room.setBots('ana', 1, 1);
+    s.room.start('ana');
+    s.room.tick();
+    expect(net(s.room).net).toBe('p2p');
+  });
+
+  it('se o líder sai no meio da partida ponto a ponto, ela termina sem vencedor', () => {
+    const s = p2p();
+    s.room.p2pReport('bia', true);
+    s.room.tick();
+    s.room.leave('ana');
+    expect(s.room.snapshot('bia').phase).toBe('final');
+    expect(snap(s.room, 'bia').winner).toBe(-1);
+  });
+});

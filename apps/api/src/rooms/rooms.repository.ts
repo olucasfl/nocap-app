@@ -31,7 +31,9 @@ export class RoomsRepository {
     const [held] = await this.db
       .select({ username: reservedUsernames.username })
       .from(reservedUsernames)
-      .where(and(inArray(reservedUsernames.username, names), gt(reservedUsernames.until, new Date())))
+      .where(
+        and(inArray(reservedUsernames.username, names), gt(reservedUsernames.until, new Date())),
+      )
       .limit(1);
     return !!held;
   }

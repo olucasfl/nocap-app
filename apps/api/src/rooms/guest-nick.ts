@@ -12,11 +12,14 @@ export type NickCheck = { ok: true; nick: string } | { ok: false; error: string 
  * sublinhado; de 2 a 16 caracteres. O servidor confere (o app só ajuda a digitar).
  */
 export function cleanNickname(raw: unknown): NickCheck {
-  if (typeof raw !== 'string') return { ok: false, error: 'Coloque um apelido para entrar na sala.' };
+  if (typeof raw !== 'string')
+    return { ok: false, error: 'Coloque um apelido para entrar na sala.' };
   const nick = raw.normalize('NFC').trim().replace(/\s+/g, ' ');
   const size = [...nick].length;
-  if (size < NICK_MIN) return { ok: false, error: `O apelido precisa de pelo menos ${NICK_MIN} caracteres.` };
-  if (size > NICK_MAX) return { ok: false, error: `O apelido tem no máximo ${NICK_MAX} caracteres.` };
+  if (size < NICK_MIN)
+    return { ok: false, error: `O apelido precisa de pelo menos ${NICK_MIN} caracteres.` };
+  if (size > NICK_MAX)
+    return { ok: false, error: `O apelido tem no máximo ${NICK_MAX} caracteres.` };
   if (!/^[\p{L}\p{N} ._-]+$/u.test(nick) || !/[\p{L}\p{N}]/u.test(nick)) {
     return { ok: false, error: 'Use só letras, números, espaço, ponto, traço e sublinhado.' };
   }

@@ -85,7 +85,10 @@ export class DesmoronaRoomEngine extends ColorRoomEngine {
     super.join(id, username);
     if (!this.colors.has(id)) {
       const taken = new Set(this.colors.values());
-      this.colors.set(id, (ATR_ROOM_COLORS.find((c) => !taken.has(c.hex)) ?? ATR_ROOM_COLORS[0]!).hex);
+      this.colors.set(
+        id,
+        (ATR_ROOM_COLORS.find((c) => !taken.has(c.hex)) ?? ATR_ROOM_COLORS[0]!).hex,
+      );
     }
   }
 
@@ -112,7 +115,8 @@ export class DesmoronaRoomEngine extends ColorRoomEngine {
 
   /** Só marca pronto quem tem cor. */
   override setReady(id: string, ready: boolean) {
-    if (ready && this.members.has(id) && !this.colors.has(id)) throw new RoomError('Escolha a sua cor');
+    if (ready && this.members.has(id) && !this.colors.has(id))
+      throw new RoomError('Escolha a sua cor');
     super.setReady(id, ready);
   }
 
@@ -120,7 +124,9 @@ export class DesmoronaRoomEngine extends ColorRoomEngine {
     const without = [...this.members.values()].filter((m) => m.connected && !this.colors.has(m.id));
     if (this.phase === 'lobby' && without.length > 0) {
       throw new RoomError(
-        without.length === 1 ? `${without[0]!.username} ainda não escolheu a cor` : 'Todo mundo precisa escolher uma cor',
+        without.length === 1
+          ? `${without[0]!.username} ainda não escolheu a cor`
+          : 'Todo mundo precisa escolher uma cor',
       );
     }
     super.start(id);
@@ -146,7 +152,15 @@ export class DesmoronaRoomEngine extends ColorRoomEngine {
     const ordered = [...this.members.values()].sort((a, b) => a.joinedAt - b.joinedAt);
     this.radii = dsmLayerRadii(ordered.length);
     ordered.forEach((m, slot) =>
-      this.racers.set(m.id, { id: m.id, username: m.username, slot, alive: true, deadAt: 0, lastPosAt: this.startAt, pos: null }),
+      this.racers.set(m.id, {
+        id: m.id,
+        username: m.username,
+        slot,
+        alive: true,
+        deadAt: 0,
+        lastPosAt: this.startAt,
+        pos: null,
+      }),
     );
     this.phase = 'show';
     this.phaseEndsAt = this.startAt;
@@ -179,7 +193,15 @@ export class DesmoronaRoomEngine extends ColorRoomEngine {
     if (!this.racing) return;
     const r = this.racers.get(id);
     const m = v as { l?: unknown; q?: unknown; r?: unknown } | null;
-    if (!r || !r.alive || !m || !Number.isInteger(m.l) || !Number.isInteger(m.q) || !Number.isInteger(m.r)) return;
+    if (
+      !r ||
+      !r.alive ||
+      !m ||
+      !Number.isInteger(m.l) ||
+      !Number.isInteger(m.q) ||
+      !Number.isInteger(m.r)
+    )
+      return;
     const l = m.l as number;
     const q = m.q as number;
     const rr = m.r as number;
@@ -196,7 +218,8 @@ export class DesmoronaRoomEngine extends ColorRoomEngine {
     if (!this.racing) return;
     const from = this.racers.get(id);
     const m = v as { to?: unknown; kx?: unknown; kz?: unknown } | null;
-    if (!from || !from.alive || !m || typeof m.to !== 'string' || !finite(m.kx) || !finite(m.kz)) return;
+    if (!from || !from.alive || !m || typeof m.to !== 'string' || !finite(m.kx) || !finite(m.kz))
+      return;
     const to = this.racers.get(m.to);
     if (!to || !to.alive || to.id === id) return;
     const t = this.now();
@@ -284,7 +307,9 @@ export class DesmoronaRoomEngine extends ColorRoomEngine {
     const alive = [...this.racers.values()].filter((r) => r.alive);
     if (alive.length === 1) this.winnerId = alive[0]!.id;
     else if (alive.length === 0) {
-      this.winnerId = [...this.racers.values()].sort((a, b) => b.deadAt - a.deadAt || a.slot - b.slot)[0]?.id ?? null;
+      this.winnerId =
+        [...this.racers.values()].sort((a, b) => b.deadAt - a.deadAt || a.slot - b.slot)[0]?.id ??
+        null;
     }
     this.phase = 'final';
     this.phaseEndsAt = null;
@@ -308,7 +333,9 @@ export class DesmoronaRoomEngine extends ColorRoomEngine {
 
   /** Todos os passos já dados (quem volta à sala no meio da partida refaz o chão). */
   allSteps(): number[][] {
-    return [...this.steps].map(([k, at]) => [...k.split(':').map(Number), Math.round(at * 1000)] as number[]);
+    return [...this.steps].map(
+      ([k, at]) => [...k.split(':').map(Number), Math.round(at * 1000)] as number[],
+    );
   }
 
   /** Colocação: vencedor, depois quem caiu por último. Os vivos no limite de tempo dividem o 1º lugar. */

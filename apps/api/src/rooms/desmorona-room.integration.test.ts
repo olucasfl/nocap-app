@@ -50,7 +50,13 @@ const until = async (check: () => boolean, ms = 8000) => {
 
 interface Snap {
   phase: string;
-  desmorona: { startAt: number | null; slots: Record<string, number>; me: string | null; dead: Record<string, number>; winnerId: string | null };
+  desmorona: {
+    startAt: number | null;
+    slots: Record<string, number>;
+    me: string | null;
+    dead: Record<string, number>;
+    winnerId: string | null;
+  };
 }
 interface Seen {
   room: ClientRoom;
@@ -63,7 +69,8 @@ interface Seen {
 function watch(room: ClientRoom): Seen {
   const seen: Seen = { room, snap: null, steps: [], pos: [], pushed: [] };
   room.onMessage('snapshot', ((s: Snap) => (seen.snap = s)) as never);
-  room.onMessage('dpushed', ((m: { from: number; kx: number; kz: number }) => seen.pushed.push(m)) as never);
+  room.onMessage('dpushed', ((m: { from: number; kx: number; kz: number }) =>
+    seen.pushed.push(m)) as never);
   room.onMessage('dsteps', ((m: number[][]) => seen.steps.push(m)) as never);
   room.onMessage('pos', ((m: number[][]) => seen.pos.push(m)) as never);
   room.onMessage('*' as never, (() => undefined) as never);

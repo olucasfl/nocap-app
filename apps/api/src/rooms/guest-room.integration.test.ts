@@ -44,7 +44,8 @@ const track = (r: ClientRoom) => {
   return r;
 };
 const asGuest = (nickname: unknown) => ({ guest: true, nickname });
-const guestCreate = async (nickname: unknown) => track(await new Client(url).create('color', asGuest(nickname)));
+const guestCreate = async (nickname: unknown) =>
+  track(await new Client(url).create('color', asGuest(nickname)));
 const guestJoin = async (code: string, nickname: unknown) =>
   track(await new Client(url).joinById(code, asGuest(nickname)));
 const userJoin = async (code: string, token: string) =>
@@ -59,7 +60,8 @@ const until = async (check: () => boolean, ms = 3000) => {
 };
 const serverRoom = (code: string) => matchMaker.getLocalRoomById(code) as ColorRoom;
 
-const engineOf = (code: string) => (serverRoom(code) as unknown as { engine: ColorRoomEngine }).engine;
+const engineOf = (code: string) =>
+  (serverRoom(code) as unknown as { engine: ColorRoomEngine }).engine;
 
 beforeAll(async () => {
   http = createServer();

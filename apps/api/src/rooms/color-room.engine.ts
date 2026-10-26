@@ -46,11 +46,7 @@ export interface AtravessaRoomSettings {
 }
 
 export type AnySettings =
-  | RoomSettings
-  | TimeRoomSettings
-  | ImpostorRoomSettings
-  | EcoRoomSettings
-  | AtravessaRoomSettings;
+  RoomSettings | TimeRoomSettings | ImpostorRoomSettings | EcoRoomSettings | AtravessaRoomSettings;
 
 /**
  * `play` é a fase de resposta do Tempo (cada um começa e para o seu relógio); `vote` é a votação
@@ -115,7 +111,8 @@ export class ColorRoomEngine {
   protected readonly newSeed: () => string;
   protected readonly maxPlayers: number;
   /** Qual jogo esta sala joga; o `TimeRoomEngine` troca. */
-  readonly game: 'color' | 'time' | 'impostor' | 'eco' | 'atravessa' | 'desmorona' | 'bola' = 'color';
+  readonly game: 'color' | 'time' | 'impostor' | 'eco' | 'atravessa' | 'desmorona' | 'bola' =
+    'color';
   /** Menos gente que isto não joga (o Intruso precisa de 3 para votar). */
   protected readonly minPlayers: number = MIN_PLAYERS;
   /** Salvar o pódio como partida de sala (o Intruso não salva). */

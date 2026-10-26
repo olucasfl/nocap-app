@@ -15,17 +15,11 @@ import {
   type BolInput,
 } from '@nocap/games';
 import { bolaGain, bolaSfx, crowdStart, crowdStop, crowdSwell } from '@/lib/bola-audio';
-import {
-  currentRtt,
-  sendRoom,
-  sendRoomQuiet,
-  serverNow,
-  subscribeRoom,
-  useRoom,
-} from '@/lib/rooms';
+import { sendRoom, useRoom } from '@/lib/rooms';
 import { DsmControls, STICK_RADIUS } from '../desmorona/controls';
 import '../desmorona/desmorona.css';
 import './bola.css';
+import { roomLink, type BolaLink } from '@/lib/bola-link';
 import { BolaMenu } from './BolaMenu';
 import { BolaTips } from './BolaTips';
 import { IcBall, IcCamera, IcEye, IcGear, IcJump, Key } from './BolaIcons';
@@ -69,6 +63,8 @@ export interface BolaRosterRow {
 export interface BolaOnline {
   meId: string;
   roster: BolaRosterRow[];
+  /** Por onde a partida chega e a entrada sai; sem isto, o servidor da sala (o jeito de sempre). */
+  link?: BolaLink;
 }
 
 /** Um quadro do fluxo "bs" da sala (ver `BolaRoomEngine.drainFrame`). */
@@ -475,6 +471,8 @@ export function BolaPlay({
       at: number;
     }
     const unsubs: (() => void)[] = [];
+    const link = online?.link ?? roomLink;
+    let lastEv = 0;
     /** Estados recentes do servidor: os outros e a bola são desenhados um instante no passado, entre dois deles. */
     interface NetSnap {
       t: number;
@@ -574,8 +572,8 @@ export function BolaPlay({
     if (online) {
       syncRoster();
       unsubs.push(
-        subscribeRoom('bs', (m) => {
-          const f = m as NetFrame;
+        link.onFrame((m) => {
+          const f = m as unknown as NetFrame;
           if (!f || !Array.isArray(f.p)) return;
           syncRoster();
           const at = performance.now();
@@ -618,7 +616,7 @@ export function BolaPlay({
             interpMs += (Math.min(260, Math.max(INTERP_MIN_MS, 60 + jitter)) - interpMs) * 0.1;
           }
           prevAt = at;
-          snaps.push({ t: typeof f.t === 'number' ? f.t : serverNow(), ball, rows });
+          snaps.push({ t: typeof f.t === 'number' ? f.t : Date.now(), ball, rows });
           if (snaps.length > 24) snaps.shift();
           if (f.st) {
             world.celebrating = f.st.ce;
@@ -636,6 +634,12 @@ export function BolaPlay({
             }
           }
           for (const raw of f.ev) {
+            // o canal pode repetir eventos (e o quadro perdido não pode perdê-los): cada um vale uma vez só
+            const n = (raw as { n?: number }).n;
+            if (typeof n === 'number') {
+              if (n <= lastEv) continue;
+              lastEv = n;
+            }
             const e = toEvent(raw);
             if (e) onEvent(e);
           }
@@ -657,7 +661,7 @@ export function BolaPlay({
     }
     const sendInput = () => {
       if (!online || !world.player(meId)) return;
-      sendRoomQuiet('bin', [
+      link.sendInput([
         Math.round(sentInput.mx * 100) / 100,
         Math.round(sentInput.mz * 100) / 100,
         jumps,
@@ -667,7 +671,7 @@ export function BolaPlay({
     const inputTimer = online ? window.setInterval(sendInput, 25) : 0;
     /** Atraso de desenho dos outros e da bola (ms): cobre a variação (jitter) da rede sem engasgar. */
     /** Atraso mínimo; sobe sozinho quando a rede ou o aparelho entregam os estados em rajadas. */
-    const INTERP_MIN_MS = 100;
+    const INTERP_MIN_MS = link.local ? 40 : 100;
     let interpMs = INTERP_MIN_MS;
     let jitter = 0;
     let prevAt = 0;
@@ -774,7 +778,7 @@ export function BolaPlay({
       };
       const lead = Math.min(
         0.35,
-        Math.max(0, (performance.now() - last.ball.at + currentRtt() / 2) / 1000),
+        Math.max(0, (performance.now() - last.ball.at + link.rtt() / 2) / 1000),
       );
       const sx = row.x + row.vx * lead;
       const sz = row.z + row.vz * lead;

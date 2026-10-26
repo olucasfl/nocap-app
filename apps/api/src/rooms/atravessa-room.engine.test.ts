@@ -35,7 +35,9 @@ function lobby(names = ['ana', 'bia']) {
   return { room, clock };
 }
 
-function started(opts: { names?: string[]; mode?: AtravessaRoomMode; rounds?: number; size?: string } = {}) {
+function started(
+  opts: { names?: string[]; mode?: AtravessaRoomMode; rounds?: number; size?: string } = {},
+) {
   const { room, clock } = lobby(opts.names);
   // os testes de rodadas usam o Infinito; o modo padrão da sala é o Checkpoint
   const cfg: Record<string, unknown> = { mode: opts.mode ?? 'infinito' };
@@ -51,7 +53,13 @@ const startAt = () => T0 + ATR_ROOM_COUNTDOWN_MS;
 const msAt = (tick: number) => startAt() + Math.ceil((tick * 1000) / 60);
 
 /** Um jogador simples: pula para a frente de tempos em tempos e de lado de vez em quando. */
-function plan(seed: string, mode: AtravessaRoomMode, ticks: number, every: number, slot = 0): AtravessaInput[] {
+function plan(
+  seed: string,
+  mode: AtravessaRoomMode,
+  ticks: number,
+  every: number,
+  slot = 0,
+): AtravessaInput[] {
   const sim = new AtravessaSim(seed, undefined, atravessaRoomRules(mode, 'pequeno', slot));
   const inputs: AtravessaInput[] = [];
   while (!sim.halted && sim.tick < ticks) {
@@ -109,7 +117,9 @@ describe('AtravessaRoomEngine · lobby', () => {
     expect(s.settings).toMatchObject({ rounds: 1, size: 'medio' });
     expect(s.maxPlayers).toBe(8);
     expect(room.persistable).toBe(false);
-    const extra = (s as unknown as { atravessa: { mode: string; length: number; checkpoints: number[] } }).atravessa;
+    const extra = (
+      s as unknown as { atravessa: { mode: string; length: number; checkpoints: number[] } }
+    ).atravessa;
     expect(extra).toMatchObject({ mode: 'checkpoint', length: 100, checkpoints: [25, 50] });
   });
 
@@ -126,15 +136,23 @@ describe('AtravessaRoomEngine · lobby', () => {
 
   it('o Checkpoint é uma corrida só, com o tamanho do mapa; voltar ao Infinito volta às 3 rodadas', () => {
     const { room } = lobby();
-    const sizes = { pequeno: [50, [25]], medio: [100, [25, 50]], grande: [250, [25, 50, 100, 150, 200]] } as const;
+    const sizes = {
+      pequeno: [50, [25]],
+      medio: [100, [25, 50]],
+      grande: [250, [25, 50, 100, 150, 200]],
+    } as const;
     for (const [size, [length, cps]] of Object.entries(sizes)) {
       room.configure('ana', { size } as never);
-      const e = (room.snapshot() as unknown as { atravessa: { length: number; checkpoints: number[] } }).atravessa;
+      const e = (
+        room.snapshot() as unknown as { atravessa: { length: number; checkpoints: number[] } }
+      ).atravessa;
       expect([e.length, e.checkpoints]).toEqual([length, cps]);
     }
     room.configure('ana', { mode: 'checkpoint', size: 'gigante' } as never);
     expect(room.snapshot().settings).toMatchObject({ rounds: 1, size: 'gigante' });
-    const extra = (room.snapshot() as unknown as { atravessa: { length: number; checkpoints: number[] } }).atravessa;
+    const extra = (
+      room.snapshot() as unknown as { atravessa: { length: number; checkpoints: number[] } }
+    ).atravessa;
     expect(extra.length).toBe(500);
     expect(extra.checkpoints).toEqual([25, 50, 100, 150, 200, 250, 300, 350, 400]);
     expect(() => room.configure('ana', { rounds: 3 })).toThrow(RoomError);
@@ -149,7 +167,8 @@ describe('AtravessaRoomEngine · lobby', () => {
 
   it('cada pessoa recebe uma cor diferente e pode trocar por uma livre', () => {
     const { room } = lobby(['ana', 'bia', 'caio']);
-    const colors = (room.snapshot() as unknown as { atravessa: { colors: Record<string, string> } }).atravessa.colors;
+    const colors = (room.snapshot() as unknown as { atravessa: { colors: Record<string, string> } })
+      .atravessa.colors;
     expect(new Set(Object.values(colors)).size).toBe(3);
     const free = ATR_ROOM_COLORS.find((c) => !Object.values(colors).includes(c.hex))!;
     room.setReady('bia', true);
@@ -162,7 +181,8 @@ describe('AtravessaRoomEngine · lobby', () => {
   it('dá para tirar a cor: o pronto sai, não dá para marcar pronto sem cor e o líder só inicia com todos coloridos', () => {
     const { room } = lobby(['ana', 'bia']);
     const colors = () =>
-      (room.snapshot() as unknown as { atravessa: { colors: Record<string, string> } }).atravessa.colors;
+      (room.snapshot() as unknown as { atravessa: { colors: Record<string, string> } }).atravessa
+        .colors;
     room.setReady('bia', true);
     expect(room.snapshot().members.find((m) => m.id === 'bia')!.ready).toBe(true);
 
@@ -187,7 +207,8 @@ describe('AtravessaRoomEngine · lobby', () => {
     const names = ['a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7', 'a8'];
     const { room } = lobby(names);
     const colors = () =>
-      (room.snapshot() as unknown as { atravessa: { colors: Record<string, string> } }).atravessa.colors;
+      (room.snapshot() as unknown as { atravessa: { colors: Record<string, string> } }).atravessa
+        .colors;
     expect(new Set(Object.values(colors())).size).toBe(8);
     const freed = colors().a8!;
     expect(() => room.setColor('a1', freed)).toThrow(RoomError);
@@ -254,9 +275,30 @@ describe('AtravessaRoomEngine · relatos', () => {
     const { room, clock } = playing();
     clock.set(msAt(60));
     // dois passos de lado, na primeira linha (sem tráfego)
-    expect(room.report('ana', 30, [{ t: 10, d: 2 }, { t: 20, d: 3 }], 0)).toBe(2);
+    expect(
+      room.report(
+        'ana',
+        30,
+        [
+          { t: 10, d: 2 },
+          { t: 20, d: 3 },
+        ],
+        0,
+      ),
+    ).toBe(2);
     // o aparelho não viu a confirmação e reenvia tudo, com mais um passo
-    expect(room.report('ana', 50, [{ t: 10, d: 2 }, { t: 20, d: 3 }, { t: 40, d: 2 }], 0)).toBe(3);
+    expect(
+      room.report(
+        'ana',
+        50,
+        [
+          { t: 10, d: 2 },
+          { t: 20, d: 3 },
+          { t: 40, d: 2 },
+        ],
+        0,
+      ),
+    ).toBe(3);
     // pulou um número: recusa e continua esperando o passo certo
     expect(room.report('ana', 55, [{ t: 52, d: 3 }], 5)).toBeNull();
     expect(room.report('ana', 55, [{ t: 52, d: 3 }], 3)).toBe(4);
@@ -329,11 +371,12 @@ describe('AtravessaRoomEngine · Infinito', () => {
     expect(rows).toHaveLength(2);
     expect(rows[0]!.totalTenths).toBeGreaterThanOrEqual(rows[1]!.totalTenths);
     expect(rows[0]!.placement).toBe(1);
-    const fin = (room.snapshot() as unknown as {
+    const fin = room.snapshot() as unknown as {
       final: { userId: string; totalTenths: number }[];
       atravessa: { results: Record<string, { meters: number }> };
-    });
-    for (const r of fin.final) expect(fin.atravessa.results[r.userId]!.meters * 10).toBe(r.totalTenths);
+    };
+    for (const r of fin.final)
+      expect(fin.atravessa.results[r.userId]!.meters * 10).toBe(r.totalTenths);
   });
 
   it('quem some não segura a rodada: depois de 8 s sem relato ela fecha com a distância que tinha', () => {
@@ -380,7 +423,8 @@ describe('AtravessaRoomEngine · Infinito', () => {
 
   it('a revanche volta ao lobby mantendo as cores', () => {
     const { room, clock } = started({ rounds: 1 });
-    const before = (room.snapshot() as unknown as { atravessa: { colors: Record<string, string> } }).atravessa.colors;
+    const before = (room.snapshot() as unknown as { atravessa: { colors: Record<string, string> } })
+      .atravessa.colors;
     clock.set(startAt() + ATRAVESSA_STALL_MS + 1000);
     room.tick();
     room.tick();
@@ -388,7 +432,10 @@ describe('AtravessaRoomEngine · Infinito', () => {
     room.voteRematch('ana', true);
     room.voteRematch('bia', true);
     expect(room.currentPhase).toBe('lobby');
-    expect((room.snapshot() as unknown as { atravessa: { colors: Record<string, string> } }).atravessa.colors).toEqual(before);
+    expect(
+      (room.snapshot() as unknown as { atravessa: { colors: Record<string, string> } }).atravessa
+        .colors,
+    ).toEqual(before);
   });
 });
 
@@ -397,9 +444,14 @@ describe('AtravessaRoomEngine · Checkpoint', () => {
     const { room, clock } = started({ mode: 'checkpoint', size: 'pequeno' });
     clock.set(startAt());
     room.tick();
-    const sims = (room as unknown as {
-      runs: Map<string, { mirror: { sim: { finished: boolean; finishTick: number; best: number } } }>;
-    }).runs;
+    const sims = (
+      room as unknown as {
+        runs: Map<
+          string,
+          { mirror: { sim: { finished: boolean; finishTick: number; best: number } } }
+        >;
+      }
+    ).runs;
     // ana chegou ao fim; bia continua jogando
     const ana = sims.get('ana')!.mirror.sim;
     ana.finished = true;
@@ -426,14 +478,29 @@ describe('AtravessaRoomEngine · Checkpoint', () => {
   });
 
   it('o pódio põe quem chegou por tempo e depois os outros por distância', () => {
-    const { room, clock } = started({ names: ['ana', 'bia', 'caio', 'duda'], mode: 'checkpoint', size: 'pequeno' });
+    const { room, clock } = started({
+      names: ['ana', 'bia', 'caio', 'duda'],
+      mode: 'checkpoint',
+      size: 'pequeno',
+    });
     clock.set(startAt());
     room.tick();
-    const runs = (room as unknown as {
-      runs: Map<string, { mirror: { sim: { finished: boolean; finishTick: number; best: number; deaths: number } } }>;
-    }).runs;
-    const set = (id: string, v: { finished?: boolean; finishTick?: number; best: number; deaths?: number }) =>
-      Object.assign(runs.get(id)!.mirror.sim, v);
+    const runs = (
+      room as unknown as {
+        runs: Map<
+          string,
+          {
+            mirror: {
+              sim: { finished: boolean; finishTick: number; best: number; deaths: number };
+            };
+          }
+        >;
+      }
+    ).runs;
+    const set = (
+      id: string,
+      v: { finished?: boolean; finishTick?: number; best: number; deaths?: number },
+    ) => Object.assign(runs.get(id)!.mirror.sim, v);
     set('ana', { best: 100, finished: true, finishTick: 4000 });
     set('bia', { best: 100, finished: true, finishTick: 3500 });
     set('caio', { best: 60, deaths: 3 });
@@ -448,9 +515,11 @@ describe('AtravessaRoomEngine · Checkpoint', () => {
       ['duda', 3],
       ['caio', 4],
     ]);
-    const results = (room.snapshot() as unknown as {
-      atravessa: { results: Record<string, { ms: number | null; finished: boolean }> };
-    }).atravessa.results;
+    const results = (
+      room.snapshot() as unknown as {
+        atravessa: { results: Record<string, { ms: number | null; finished: boolean }> };
+      }
+    ).atravessa.results;
     expect(results.bia).toMatchObject({ finished: true, ms: Math.round((3500 * 1000) / 60) });
     expect(results.caio).toMatchObject({ finished: false, ms: null });
   });
@@ -459,9 +528,14 @@ describe('AtravessaRoomEngine · Checkpoint', () => {
     const { room, clock } = started({ mode: 'checkpoint', size: 'pequeno' });
     clock.set(startAt());
     room.tick();
-    const ana = (room as unknown as {
-      runs: Map<string, { mirror: { sim: { row: number; best: number; die: (e: string) => void; tick: number } } }>;
-    }).runs.get('ana')!.mirror.sim;
+    const ana = (
+      room as unknown as {
+        runs: Map<
+          string,
+          { mirror: { sim: { row: number; best: number; die: (e: string) => void; tick: number } } }
+        >;
+      }
+    ).runs.get('ana')!.mirror.sim;
     ana.row = 40;
     ana.best = 40;
     const row = () => room.positions().find((p) => p[0] === 0)!;
@@ -479,9 +553,14 @@ describe('AtravessaRoomEngine · Checkpoint', () => {
     const { room, clock } = started({ mode: 'checkpoint', size: 'pequeno' });
     clock.set(startAt());
     room.tick();
-    const ana = (room as unknown as {
-      runs: Map<string, { mirror: { sim: { finished: boolean; finishTick: number; checkpointRow: number } } }>;
-    }).runs.get('ana')!.mirror.sim;
+    const ana = (
+      room as unknown as {
+        runs: Map<
+          string,
+          { mirror: { sim: { finished: boolean; finishTick: number; checkpointRow: number } } }
+        >;
+      }
+    ).runs.get('ana')!.mirror.sim;
     ana.finished = true;
     ana.finishTick = 777;
     ana.checkpointRow = 50;

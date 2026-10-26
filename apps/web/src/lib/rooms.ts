@@ -167,6 +167,20 @@ export interface BolaRoomState {
   scores: number[];
   winner: number | null;
   durationSec: number;
+  /** Quem simula a partida: o servidor, o aparelho do líder (`p2p`), ou `pending` enquanto os aparelhos conectam (spec 048). */
+  net: 'server' | 'pending' | 'p2p';
+  /** O aparelho que simula no modo ponto a ponto. */
+  p2pHost: string | null;
+  /** O que o aparelho que simula precisa para montar a partida. */
+  setup: {
+    teams: number;
+    perTeam: number;
+    durationSec: number;
+    seed: string;
+    humans: { id: string; name: string; team: number }[];
+    bots: number[];
+    away: string[];
+  } | null;
 }
 
 export interface RoomSnapshot {
@@ -266,13 +280,14 @@ async function client() {
 let room: Room | null = null;
 
 /** Mensagens frequentes da sala (as posições do Atravessa!) não passam pelo estado: quem quer, assina. */
-type LiveType = 'pos' | 'ack' | 'dsteps' | 'dpushed' | 'bs';
+type LiveType = 'pos' | 'ack' | 'dsteps' | 'dpushed' | 'bs' | 'rtc';
 const live: Record<LiveType, Set<(m: unknown) => void>> = {
   pos: new Set(),
   ack: new Set(),
   dsteps: new Set(),
   dpushed: new Set(),
   bs: new Set(),
+  rtc: new Set(),
 };
 export function subscribeRoom(type: LiveType, fn: (m: unknown) => void): () => void {
   live[type].add(fn);
@@ -374,7 +389,7 @@ function attach(r: Room) {
     r.send('ping', { t0: Date.now(), rtt: lastRtt });
   }, 20_000);
 
-  for (const type of ['pos', 'ack', 'dsteps', 'dpushed', 'bs'] as const)
+  for (const type of ['pos', 'ack', 'dsteps', 'dpushed', 'bs', 'rtc'] as const)
     r.onMessage(type, (m: unknown) => live[type].forEach((fn) => fn(m)));
   r.onMessage('chat', (m: ChatMessage) =>
     useRoom.setState((s) => ({

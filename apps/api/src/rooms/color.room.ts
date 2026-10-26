@@ -625,7 +625,9 @@ export class BolaRoom extends ColorRoom {
   protected override tickMs = 16;
 
   protected override makeEngine(opts: ConstructorParameters<typeof ColorRoomEngine>[0]) {
-    return new BolaRoomEngine(opts);
+    const engine = new BolaRoomEngine(opts);
+    engine.p2pEnabled = true;
+    return engine;
   }
 
   protected override registerGameMessages() {
@@ -643,6 +645,23 @@ export class BolaRoom extends ColorRoom {
       this.act(c, (id) => engine().setBots(id, m?.team, m?.delta)),
     );
     this.onMessage('bend', (c) => this.act(c, (id) => engine().endNow(id)));
+    // partida ponto a ponto (spec 048): o servidor só repassa a sinalização WebRTC e recebe o resultado
+    this.onMessage('bp2p', (c, m: { ok?: unknown }) => {
+      const id = idOf(c);
+      if (id) engine().p2pReport(id, m?.ok);
+    });
+    this.onMessage('bres', (c, m: { scores?: unknown; winner?: unknown }) => {
+      const id = idOf(c);
+      if (id) engine().p2pResult(id, m ?? {});
+    });
+    this.onMessage('rtc', (c, m: { to?: unknown; data?: unknown }) => {
+      const from = idOf(c);
+      if (!from || typeof m?.to !== 'string' || typeof m.data !== 'object' || m.data === null)
+        return;
+      if (JSON.stringify(m.data).length > 12_000) return;
+      const target = this.clients.find((x) => idOf(x) === m.to);
+      target?.send('rtc', { from, data: m.data });
+    });
   }
 
   protected override afterTick() {
