@@ -49,6 +49,8 @@ export class DsmControls {
   private lookPtr: { id: number; x: number } | null = null;
   /** Falso depois da queda ou do fim: aí a pessoa precisa do cursor para os botões. */
   allowLock = true;
+  /** A pessoa soltou o mouse com Esc: não prende de novo sozinho, só com um clique. */
+  private escaped = false;
   private yawAcc = 0;
   private onLock: ((locked: boolean) => void) | null = null;
   private turn = 0;
@@ -94,7 +96,12 @@ export class DsmControls {
     this.yawAcc -= e.movementX * DRAG_YAW * 0.8;
   };
 
-  private lockChange = () => this.onLock?.(document.pointerLockElement === this.look);
+  private lockChange = () => {
+    const locked = document.pointerLockElement === this.look;
+    if (!locked && this.allowLock) this.escaped = true;
+    if (locked) this.escaped = false;
+    this.onLock?.(locked);
+  };
 
   /** Devolve o mouse (fim da partida, queda, saída): sem isso a pessoa não consegue clicar nos botões. */
   releaseLock() {
@@ -166,6 +173,8 @@ export class DsmControls {
 
   private keyDown = (e: KeyboardEvent) => {
     if (e.repeat && e.code !== 'Space') return;
+    // a primeira tecla (que conta como gesto da pessoa) já prende o mouse, sem precisar clicar
+    if (!this.escaped && e.code !== 'Escape' && document.pointerLockElement !== this.look && this.look) this.requestLock();
     const k = KEYS[e.code];
     if (e.code === 'KeyQ') this.turn = -1;
     else if (e.code === 'KeyE') this.turn = 1;

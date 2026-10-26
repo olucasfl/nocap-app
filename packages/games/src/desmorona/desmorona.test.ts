@@ -294,4 +294,20 @@ describe('borda e tempo de coiote', () => {
     expect(w.standingTile(p.layer, p.x, p.z)).toBeUndefined();
     expect(w.supported(p.layer, p.x, p.z)).toBe(true);
   });
+
+  it('na borda, o ladrilho que sustenta também quebra (a borda não é esconderijo)', () => {
+    const { w, p } = grounded();
+    const t = w.standingTile(p.layer, p.x, p.z) as DsmTile;
+    for (const o of w.tiles.values()) if (o.layer === p.layer && o !== t) o.status = 'caiu';
+    t.status = 'firme';
+    p.x = t.x + 1.0;
+    p.z = t.z;
+    p.vx = 0;
+    p.vz = 0;
+    p.kx = 0;
+    p.kz = 0;
+    for (let i = 0; i < 4; i++) w.step(DSM_DT);
+    expect(w.standingTile(p.layer, p.x, p.z)).toBeUndefined();
+    expect(t.status).toBe('pisado');
+  });
 });

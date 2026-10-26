@@ -102,7 +102,11 @@ export function DesmoronaPlay({
     const mem = new Map(world.players.filter((p) => p.bot).map((p, i) => [p.id, newBotMemory((i % 4) * 0.15, i % 3 === 0 ? 0.5 : 0)]));
     const rng = createRng(`${seed}:bots`);
     controls.attach(zoneEl, setStick);
-    if (root.current) controls.attachLook(root.current, setLocked);
+    if (root.current) {
+      controls.attachLook(root.current, setLocked);
+      // o clique em Jogar/Começar acabou de acontecer: o navegador ainda aceita prender o mouse
+      if (mouseUser) controls.requestLock();
+    }
     let yaw = 0;
     controls.allowLock = true;
 
@@ -386,7 +390,7 @@ export function DesmoronaPlay({
         </div>
       )}
       {mouseUser && !locked && hud.phase === 'play' && !hud.dead && !result && (
-        <div className="dsm-lockhint">Clique na tela para girar a câmera com o mouse (Esc solta)</div>
+        <div className="dsm-lockhint">Aperte uma tecla ou clique para a câmera seguir o mouse (Esc solta)</div>
       )}
       {hud.note && hud.phase !== 'ready' && <div className="dsm-note">{hud.note}</div>}
       {hud.dead && !result && (

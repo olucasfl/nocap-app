@@ -233,16 +233,28 @@ export class DsmWorld {
     return t && t.status !== 'caiu' ? t : undefined;
   }
 
+  /** O ladrilho que sustenta o corpo: o de baixo do centro ou, na borda, o mais perto entre os vizinhos que ainda o seguram. */
+  supportTile(layer: number, x: number, z: number): DsmTile | undefined {
+    const center = this.standingTile(layer, x, z);
+    if (center) return center;
+    const g = DSM_EDGE_GRACE;
+    let best: DsmTile | undefined;
+    let bestD = Infinity;
+    for (const [dx, dz] of [[g, 0], [-g, 0], [0, g], [0, -g]] as const) {
+      const t = this.standingTile(layer, x + dx, z + dz);
+      if (!t) continue;
+      const d = Math.hypot(t.x - x, t.z - z);
+      if (d < bestD) {
+        bestD = d;
+        best = t;
+      }
+    }
+    return best;
+  }
+
   /** O corpo se apoia aqui? Vale o ladrilho sob o centro ou um logo ao lado, para a borda não ser traiçoeira. */
   supported(layer: number, x: number, z: number): boolean {
-    if (this.standingTile(layer, x, z)) return true;
-    const g = DSM_EDGE_GRACE;
-    return (
-      !!this.standingTile(layer, x + g, z) ||
-      !!this.standingTile(layer, x - g, z) ||
-      !!this.standingTile(layer, x, z + g) ||
-      !!this.standingTile(layer, x, z - g)
-    );
+    return !!this.supportTile(layer, x, z);
   }
 
   /** O quanto o ladrilho está perto de quebrar (0 = firme, 1 = quebrando agora). */
@@ -433,7 +445,8 @@ export class DsmWorld {
   private updateTiles(): void {
     for (const p of this.players) {
       if (!p.alive || p.remote || !p.grounded || this.t < DSM_GRACE_SEC) continue;
-      const tile = this.standingTile(p.layer, p.x, p.z);
+      // na borda quem sustenta é o ladrilho ao lado: ele também quebra (senão a borda seria um esconderijo)
+      const tile = this.supportTile(p.layer, p.x, p.z);
       if (tile && tile.status === 'firme') {
         tile.status = 'pisado';
         tile.breakAt = this.t + (DSM_TILE_LIFE[tile.layer] ?? 1);
