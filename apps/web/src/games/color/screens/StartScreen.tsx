@@ -1,3 +1,5 @@
+import { ColorArt } from '@/components/HubArt';
+import { HubHero } from '@/components/GameHub';
 import { useCallback, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { SURVIVAL_MAX_ROUNDS, colorDailySettings, colorPresets } from '@nocap/games';
@@ -95,10 +97,15 @@ export function StartScreen({ initialTab = 'modes', onMode, onStart }: Props) {
   }
 
   return (
-    <section className="screen">
+    <section className="screen gh">
       <PullToRefresh />
       <BackButton to="/" label="Jogos" />
-      <h1 className="title-long">Mesmíssima</h1>
+      <HubHero
+        accent="orange"
+        art={<ColorArt />}
+        title="Mesmíssima"
+        text="Uma cor aparece e some. Recrie de memória."
+      />
       <GameTabs game="color" tab={tab} onTab={setTab} />
       {tab === 'modes' && (
         <>

@@ -4,7 +4,8 @@ Status: **em andamento** (aprovada pelo Lucas em 26/10/2026 com todas as recomen
 
 Feito: etapa 1 (moldura `Page` com menu lateral em todas as telas fora do jogo, escala em telas grandes, varredura de layout em `e2e/layout-sweep.spec.ts`); etapa 3 (entrada da sala e lobby sem abas, convite com um toque, regras e convites recolhidos, duas colunas no desktop); etapa 4 (pódio com vencedor em destaque e votação compacta); etapa 5 (entrar e criar conta em cartão); etapa 6 parcial (menu enxuto no celular deitado, alvos de toque de 44 px).
 Feito também: "Continuar de onde parou" no Hub (último jogo aberto, guardado no aparelho).
-Falta: etapa 2 (modelo único de menu de jogo e detalhe do modo no desktop), ranking com seletor de jogo, amigos em duas colunas no desktop, e revisão de foco/contraste.
+Feito também: etapa 2 em parte (Mesmíssima, Já Deu? e Ecooo agora têm o mesmo banner e as mesmas abas dos outros menus; foco visível global).
+Falta: painel de detalhe do modo no desktop, seletor de jogo no ranking, revisão de contraste e teste em aparelho de verdade.
 
 ## 1. O que foi analisado
 

@@ -4,45 +4,29 @@
   grid-auto-flow: column;
   grid-auto-columns: minmax(0, 1fr);
   border: var(--border);
-  border-radius: var(--radius-sm);
+  border-radius: 14px;
   background: var(--white);
-  box-shadow: 4px 4px 0 var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
   overflow: hidden;
 }
 .gt button {
-  min-height: 52px;
+  min-height: 44px;
   padding: 6px 8px;
   border: 0;
-  border-right: 3px solid var(--ink);
-  background: transparent;
+  border-right: 2.5px solid var(--ink);
+  background: var(--white);
   color: var(--ink);
-  font: 900 12px/1.1 var(--font-display);
-  letter-spacing: 0.01em;
+  font: 900 13px/1.1 var(--font-display);
   text-transform: uppercase;
   cursor: pointer;
 }
 .gt button:last-child {
   border-right: 0;
 }
-.gt.color button[aria-selected='true'] {
-  background: var(--orange);
-  color: var(--on-accent);
-}
-.gt.time button[aria-selected='true'] {
-  background: var(--blue);
-  color: var(--on-blue);
-}
-.gt.eco button[aria-selected='true'] {
-  background: var(--green);
-  color: var(--on-accent);
-}
-.gt.atravessa button[aria-selected='true'] {
-  background: var(--eco-red);
-  color: var(--on-blue);
-}
-.gt.blocks button[aria-selected='true'] {
-  background: var(--yellow);
-  color: var(--on-accent);
+/* a aba ativa é sempre preta, como nas abas dos outros menus (spec 045); a cor do jogo fica no banner */
+.gt button[aria-selected='true'] {
+  background: var(--ink);
+  color: var(--paper);
 }
 .gt button:focus-visible {
   outline: 3px solid var(--blue);

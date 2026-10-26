@@ -1,3 +1,5 @@
+import { TimeArt } from '@/components/HubArt';
+import { HubHero } from '@/components/GameHub';
 import { useCallback, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { SURVIVAL_MAX_ROUNDS, timePresets } from '@nocap/games';
@@ -76,10 +78,15 @@ export function StartScreen({ initialTab = 'modes', onMode, onStart, busy, error
   }
 
   return (
-    <section className="screen">
+    <section className="screen gh">
       <PullToRefresh />
       <BackButton to="/" label="Jogos" />
-      <h1>Já Deu?</h1>
+      <HubHero
+        accent="blue"
+        art={<TimeArt />}
+        title="Já Deu?"
+        text="Conte o tempo de cabeça e pare na hora certa."
+      />
       <GameTabs game="time" tab={tab} onTab={setTab} />
       {tab === 'modes' && (
         <>

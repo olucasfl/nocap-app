@@ -376,3 +376,9 @@
     min-height: 44px;
   }
 }
+
+/* Foco visível em tudo que se clica (spec 045): quem navega pelo teclado sempre vê onde está. */
+:where(a, button, [role='tab'], [role='radio'], summary):focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 3px;
+}

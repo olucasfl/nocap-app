@@ -1,3 +1,5 @@
+import { EcoArt } from '@/components/HubArt';
+import { HubHero } from '@/components/GameHub';
 import { useCallback, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ECO_MAX_PADS, ecoPresets } from '@nocap/games';
@@ -78,10 +80,15 @@ export function StartScreen({ initialTab = 'modes', onMode, onStart, busy, error
   }
 
   return (
-    <section className="screen">
+    <section className="screen gh">
       <PullToRefresh />
       <BackButton to="/" label="Jogos" />
-      <h1>Ecooo</h1>
+      <HubHero
+        accent="green"
+        art={<EcoArt />}
+        title="Ecooo"
+        text="Repita a sequência de sons e luzes sem errar."
+      />
       <GameTabs game="eco" tab={tab} onTab={setTab} />
       {tab === 'modes' && (
         <>
