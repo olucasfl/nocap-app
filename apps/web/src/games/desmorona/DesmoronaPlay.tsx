@@ -104,6 +104,7 @@ export function DesmoronaPlay({
     controls.attach(zoneEl, setStick);
     if (root.current) controls.attachLook(root.current, setLocked);
     let yaw = 0;
+    controls.allowLock = true;
 
     let phase: Hud['phase'] = 'ready';
     const readyAt = performance.now();
@@ -289,6 +290,8 @@ export function DesmoronaPlay({
               dsmSfx.dead(e.id === meId);
               if (e.id === meId) {
                 if (online) sendRoomQuiet('ddead');
+                controls.allowLock = false;
+                controls.releaseLock();
                 say('Você foi eliminado. Assista os outros!');
                 const list = focusList();
                 focus = (list[0] as { id: string } | undefined)?.id ?? meId;
@@ -306,6 +309,8 @@ export function DesmoronaPlay({
         phase = 'over';
         const st = world.standings();
         dsmSfx.win(world.winnerId === meId);
+        controls.allowLock = false;
+        controls.releaseLock();
         setResult({
           winnerId: world.winnerId ?? '',
           standings: st.map((p) => ({ id: p.id, name: p.name, you: p.id === meId })),

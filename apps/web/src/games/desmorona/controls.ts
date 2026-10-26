@@ -47,6 +47,8 @@ export class DsmControls {
   private zone: HTMLElement | null = null;
   private look: HTMLElement | null = null;
   private lookPtr: { id: number; x: number } | null = null;
+  /** Falso depois da queda ou do fim: aí a pessoa precisa do cursor para os botões. */
+  allowLock = true;
   private yawAcc = 0;
   private onLock: ((locked: boolean) => void) | null = null;
   private turn = 0;
@@ -94,8 +96,14 @@ export class DsmControls {
 
   private lockChange = () => this.onLock?.(document.pointerLockElement === this.look);
 
+  /** Devolve o mouse (fim da partida, queda, saída): sem isso a pessoa não consegue clicar nos botões. */
+  releaseLock() {
+    if (document.pointerLockElement) document.exitPointerLock();
+  }
+
   /** Prende o ponteiro (precisa de um clique ou toque da pessoa). Esc solta. */
   requestLock() {
+    if (!this.allowLock) return;
     try {
       void (this.look?.requestPointerLock() as Promise<void> | undefined)?.catch?.(() => undefined);
     } catch {
@@ -128,7 +136,7 @@ export class DsmControls {
   detach() {
     document.removeEventListener('mousemove', this.lockedMove);
     document.removeEventListener('pointerlockchange', this.lockChange);
-    if (document.pointerLockElement === this.look) document.exitPointerLock();
+    this.releaseLock();
     this.look?.removeEventListener('pointerdown', this.lookDown);
     this.look?.removeEventListener('pointermove', this.lookMove);
     this.look?.removeEventListener('pointerup', this.lookUp);
