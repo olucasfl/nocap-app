@@ -190,31 +190,24 @@ describe('partida do Classic', () => {
   });
 });
 
-describe('o ç é uma letra à parte nas cores', () => {
-  it('um ç no palpite só pinta quando a resposta tem ç; um c comum não pinta o ç', () => {
-    // resposta com ç: o ç do palpite acerta, e o c de outra palavra não conta
-    expect(row('braço', 'braço')).toBe('hhhhh');
-    const barcoVsBraco = scoreGuess('braço', 'barco');
-    // o c de "barco" (posição 4) NÃO é o ç da resposta: cinza
-    expect(barcoVsBraco[3]).toBe('miss');
-    // resposta com c comum: o ç do palpite fica cinza, mesmo havendo um c na resposta
-    const bracoVsBarco = scoreGuess('barco', 'braço');
-    expect(bracoVsBarco[3]).toBe('miss');
-    // c com c continua normal (amarelo quando está em outro lugar)
-    expect(scoreGuess('cacho', 'chaco')[0]).toBe('hit');
+describe('c e ç são a mesma letra nas cores', () => {
+  it('um c no palpite acerta onde a resposta tem ç (e o contrário), em vez de ficar cinza', () => {
+    // o ç da resposta e o c do palpite (e o contrário) valem a mesma letra
+    expect(row('braço', 'braco')).toBe('hhhhh');
+    expect(row('braco', 'braço')).toBe('hhhhh');
+    // um c em outro lugar vira amarelo (a palavra TEM essa letra), nunca "eliminado"
+    expect(scoreGuess('braço', 'cacho')[0]).toBe('near');
   });
 
-  it('o ç do palpite não pinta a tecla do c (o teclado não tem ç)', () => {
-    const rows = [scoreGuess('barco', 'braço')];
-    const kb = keyboardState(['braço'], rows);
-    expect(kb.has('c')).toBe(false);
-    expect(kb.get('ç')).toBe('miss');
-    expect(kb.get('b')).toBe('hit');
+  it('o teclado pinta o c quando a resposta tem ç, não o elimina', () => {
+    const rows = [scoreGuess('braço', 'cacho')];
+    const kb = keyboardState(['cacho'], rows);
+    expect(kb.get('c')).toBe('near');
   });
 
-  it('só o ç é especial: os outros acentos continuam sem importar', () => {
+  it('os outros acentos também não importam', () => {
     expect(scoreGuess('avião', 'aviao')).toEqual(['hit', 'hit', 'hit', 'hit', 'hit']);
-    expect(colorKey('Coração')).toBe('coraçao');
+    expect(colorKey('Coração')).toBe('coracao');
     expect(wordKey('Coração')).toBe('coracao');
   });
 });

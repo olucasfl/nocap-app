@@ -21,8 +21,7 @@ export function decodePattern(text: string): Cell[] {
  * 2) marca os **amarelos** só com o que sobrou; o resto fica cinza.
  * Assim uma letra repetida só é pintada tantas vezes quanto aparece na resposta
  * (resposta `amigo`, palpite `mamae`: o 1º `m` amarelo, o 2º `m` cinza).
- * Compara pela chave sem acento (`aviao` e `avião` são a mesma coisa), mas o `ç` é uma letra à parte:
- * `ç` só combina com `ç` (ver `colorKey`).
+ * Compara pela chave sem acento (`aviao` e `avião` são a mesma coisa, e `c` e `ç` também: ver `colorKey`).
  */
 export function scoreGuess(answer: string, guess: string): Cell[] {
   const a = [...colorKey(answer)];

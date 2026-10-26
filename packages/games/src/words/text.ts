@@ -13,15 +13,11 @@ export function wordKey(word: string): string {
 }
 
 /**
- * A chave que as cores usam (Classic): igual à `wordKey`, mas o `ç` continua sendo `ç`. Assim `c` e `ç`
- * nunca se confundem: o amarelo ou o verde num `ç` só aparecem quando a palavra certa tem `ç` mesmo
- * (e, no sentido contrário, um `c` comum nunca pinta um `ç`). Os outros acentos não importam.
+ * A chave que as cores usam (Classic): igual à `wordKey`, então `c` e `ç` são a mesma letra nas cores. A pessoa digita
+ * sem acento e o teclado não tem `ç`: se um `c` fosse cinza numa palavra com `ç`, ela concluiria que a palavra não tem
+ * `c` e nunca entenderia que é um `ç`. Assim o `c` acerta (verde ou amarelo) onde a resposta tem `ç`.
  */
-export function colorKey(word: string): string {
-  let out = '';
-  for (const ch of word.toLowerCase().normalize('NFC')) out += ch === 'ç' ? 'ç' : wordKey(ch);
-  return out;
-}
+export const colorKey = (word: string): string => wordKey(word);
 
 /** O texto digitado já é só letras (com ou sem acento), sem espaço nem número? */
 export const isWordText = (text: string): boolean => /^[a-zà-üç]+$/i.test(text.normalize('NFC'));
