@@ -366,3 +366,13 @@
     height: 200px;
   }
 }
+
+/* Alvos de toque de pelo menos 44 px em telas de toque (spec 045). */
+@media (pointer: coarse) {
+  .fr-btn,
+  .lb-textbtn,
+  .ch-send,
+  .ch-close {
+    min-height: 44px;
+  }
+}
