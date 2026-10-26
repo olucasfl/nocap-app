@@ -1,42 +1,29 @@
-import { useId, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Crown, Lock } from '@/components/icons';
 import type { RoomSnapshot } from '@/lib/rooms';
 import { useRoom, at } from '@/lib/rooms';
+import { InvitePanel } from './InvitePanel';
 import { MIN_PLAYERS, rulesSummary } from './rules';
 import './lobby.css';
 
-export type LobbyTab = 'members' | 'rules' | 'invite';
-
-const TABS: { id: LobbyTab; label: string }[] = [
-  { id: 'members', label: 'Membros' },
-  { id: 'rules', label: 'Regras' },
-  { id: 'invite', label: 'Convidar' },
-];
-
-/** Vagas e o que falta para começar: fica no topo, em todas as abas. */
-function Status({ snapshot }: { snapshot: RoomSnapshot }) {
-  const free = snapshot.maxPlayers - snapshot.members.length;
+/** Uma linha só com o que falta para começar (antes eram cinco avisos espalhados). */
+export function startHint(snapshot: RoomSnapshot): { text: string; ok: boolean } {
   const connected = snapshot.members.filter((m) => m.connected);
   const needed = MIN_PLAYERS[snapshot.game];
+  if (connected.length < needed) {
+    const n = needed - connected.length;
+    return {
+      text: `Falta${n > 1 ? 'm' : ''} ${n} pessoa${n > 1 ? 's' : ''} para começar`,
+      ok: false,
+    };
+  }
   const waiting = connected.filter((m) => !m.isHost && !m.ready && !m.committed).length;
-  const missing =
-    connected.length < needed
-      ? `FALTAM ${needed - connected.length} PESSOA${needed - connected.length > 1 ? 'S' : ''}`
-      : waiting > 0
-        ? `FALTAM ${waiting} MARCAR PRONTO`
-        : 'TUDO PRONTO PARA COMEÇAR';
-  return (
-    <div className="lb-stat mono">
-      <b>
-        {snapshot.members.length}/{snapshot.maxPlayers} NA SALA
-      </b>
-      <span>{free > 0 ? `${free} ${free === 1 ? 'VAGA' : 'VAGAS'}` : 'SALA CHEIA'}</span>
-      <span className={missing.startsWith('TUDO') ? 'ok' : ''}>{missing}</span>
-    </div>
-  );
+  if (waiting > 0)
+    return { text: `Falta${waiting > 1 ? 'm' : ''} ${waiting} marcar "pronto"`, ok: false };
+  return { text: 'Todo mundo pronto', ok: true };
 }
 
-/** O cabeçalho da sala: código, convite e quem manda aqui. */
+/** O cabeçalho da sala: o código grande, convidar com um toque e quem manda aqui. */
 function Head({
   snapshot,
   role,
@@ -46,112 +33,123 @@ function Head({
   role: 'leader' | 'member';
   leaderName?: string;
 }) {
+  const hint = startHint(snapshot);
   return (
-    <>
-      <div className="lb-code">
-        <div>
-          <div className="mono rm-label">CÓDIGO DA SALA</div>
-          <b>{snapshot.code}</b>
-          <div className="mono lb-summary">{rulesSummary(snapshot)}</div>
-        </div>
-        <Status snapshot={snapshot} />
-      </div>
-
-      <div className={`lb-role ${role}`}>
-        {role === 'leader' ? <Crown size={22} /> : <Lock size={22} />}
-        <div>
-          <b>{role === 'leader' ? 'Você é o líder da sala' : `Líder da sala: ${at(leaderName)}`}</b>
+    <div className="lb-code">
+      <div className="lb-code-main">
+        <div className="mono rm-label">CÓDIGO DA SALA</div>
+        <b>{snapshot.code}</b>
+        <div className="mono lb-summary">{rulesSummary(snapshot)}</div>
+        <div className="mono lb-stat2">
           <span>
-            {role === 'leader'
-              ? 'Só você muda as regras e começa a partida.'
-              : 'Só o líder muda as regras e começa a partida. Você marca quando estiver pronto.'}
+            {snapshot.members.length}/{snapshot.maxPlayers} na sala
           </span>
+          <span className={hint.ok ? 'ok' : ''}>{hint.text}</span>
+        </div>
+        <div className={`lb-role-chip ${role}`}>
+          {role === 'leader' ? <Crown size={16} /> : <Lock size={16} />}
+          <span>{role === 'leader' ? 'Você é o líder' : `Líder: ${at(leaderName)}`}</span>
         </div>
       </div>
-    </>
+      <InvitePanel snapshot={snapshot} section="quick" />
+    </div>
+  );
+}
+
+/** Um bloco que abre e fecha: o resumo fica sempre à vista e o detalhe só quando a pessoa quer. */
+function Fold({
+  title,
+  summary,
+  action,
+  children,
+  defaultOpen = false,
+}: {
+  title: string;
+  summary?: string;
+  action: [string, string];
+  children: ReactNode;
+  defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <section className={`lb-fold${open ? ' open' : ''}`}>
+      <div className="lb-fold-head">
+        <div>
+          <div className="mono rm-label">{title}</div>
+          {summary && <div className="lb-fold-sum">{summary}</div>}
+        </div>
+        <button
+          type="button"
+          className="fr-btn"
+          data-sfx="tab"
+          aria-expanded={open}
+          onClick={() => setOpen((o) => !o)}
+        >
+          {open ? action[1] : action[0]}
+        </button>
+      </div>
+      {open && <div className="lb-fold-body">{children}</div>}
+    </section>
   );
 }
 
 /**
- * A moldura comum das duas visões do lobby (líder e membro): cabeçalho, abas e rodapé. O que
- * muda entre as visões vem de fora (painéis e ações).
+ * A moldura comum das duas visões do lobby (líder e membro) (spec 045): código e convite no topo, jogadores num bloco,
+ * regras e "mais formas de convidar" recolhidas, e a ação principal no rodapé. Sem abas: no desktop vira duas colunas.
  */
 export function LobbyShell({
   snapshot,
   role,
   leaderName = '',
-  initialTab,
-  panels,
+  members,
+  rules,
   footer,
 }: {
   snapshot: RoomSnapshot;
   role: 'leader' | 'member';
   leaderName?: string;
-  initialTab: LobbyTab;
-  panels: Record<LobbyTab, ReactNode>;
+  members: ReactNode;
+  rules: ReactNode;
   footer: ReactNode;
 }) {
   const message = useRoom((s) => s.message);
-  const [tab, setTab] = useState<LobbyTab>(initialTab);
-  const uid = useId();
-
-  const onKey = (e: KeyboardEvent<HTMLDivElement>) => {
-    const i = TABS.findIndex((t) => t.id === tab);
-    const next =
-      e.key === 'ArrowRight'
-        ? TABS[(i + 1) % TABS.length]
-        : e.key === 'ArrowLeft'
-          ? TABS[(i + TABS.length - 1) % TABS.length]
-          : null;
-    if (!next) return;
-    e.preventDefault();
-    setTab(next.id);
-    document.getElementById(`${uid}-tab-${next.id}`)?.focus();
-  };
-
+  const alone = snapshot.members.length < 2;
   return (
     <section className="screen rm lb">
       <Head snapshot={snapshot} role={role} leaderName={leaderName} />
 
-      <div className="lb-tabs" role="tablist" aria-label="Seções da sala" onKeyDown={onKey}>
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            id={`${uid}-tab-${t.id}`}
-            type="button"
-            role="tab"
-            data-sfx="tab"
-            aria-selected={tab === t.id}
-            aria-controls={`${uid}-panel-${t.id}`}
-            tabIndex={tab === t.id ? 0 : -1}
-            onClick={() => setTab(t.id)}
+      <div className="lb-cols">
+        <div className="lb-col">
+          <section className="lb-card" aria-label="Jogadores">
+            {members}
+          </section>
+        </div>
+        <div className="lb-col">
+          <Fold
+            title="REGRAS"
+            summary={rulesSummary(snapshot)}
+            action={[role === 'leader' ? 'Mudar' : 'Ver', 'Fechar']}
           >
-            {t.label}
-            {t.id === 'members' && (
-              <small>
-                {snapshot.members.length}/{snapshot.maxPlayers}
-              </small>
-            )}
-          </button>
-        ))}
+            {rules}
+          </Fold>
+          <Fold
+            title="MAIS FORMAS DE CONVIDAR"
+            summary="Procurar pessoa ou chamar amigos do NoCap"
+            action={['Abrir', 'Fechar']}
+            defaultOpen={alone && role === 'leader'}
+          >
+            <InvitePanel snapshot={snapshot} section="more" />
+          </Fold>
+
+          {message && (
+            <p className="acc-failure mono" role="alert">
+              {message}
+            </p>
+          )}
+
+          <div className="stack lb-foot">{footer}</div>
+        </div>
       </div>
-
-      <div
-        id={`${uid}-panel-${tab}`}
-        role="tabpanel"
-        aria-labelledby={`${uid}-tab-${tab}`}
-        className="lb-panel"
-      >
-        {panels[tab]}
-      </div>
-
-      {message && (
-        <p className="acc-failure mono" role="alert">
-          {message}
-        </p>
-      )}
-
-      <div className="stack lb-foot">{footer}</div>
     </section>
   );
 }

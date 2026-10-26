@@ -1,5 +1,4 @@
 import { leaveRoom, sendRoom, type RoomSnapshot, at } from '@/lib/rooms';
-import { InvitePanel } from './InvitePanel';
 import { LobbyShell } from './LobbyShell';
 import { MembersPanel } from './MembersPanel';
 import { RulesReadOnly } from './RulesPanel';
@@ -24,12 +23,8 @@ export function MemberLobby({
       snapshot={snapshot}
       role="member"
       leaderName={leaderName}
-      initialTab="members"
-      panels={{
-        members: <MembersPanel snapshot={snapshot} me={me} canKick={false} />,
-        rules: <RulesReadOnly snapshot={snapshot} leaderName={leaderName} />,
-        invite: <InvitePanel snapshot={snapshot} />,
-      }}
+      members={<MembersPanel snapshot={snapshot} me={me} canKick={false} />}
+      rules={<RulesReadOnly snapshot={snapshot} leaderName={leaderName} />}
       footer={
         <>
           {mine?.committed ? (
@@ -52,9 +47,11 @@ export function MemberLobby({
               </p>
             </>
           )}
-          <button type="button" className="btn ghost" data-sfx="back" onClick={leaveRoom}>
-            Sair da sala
-          </button>
+          <div className="lb-leave">
+            <button type="button" className="lb-textbtn" data-sfx="back" onClick={leaveRoom}>
+              Sair da sala
+            </button>
+          </div>
         </>
       }
     />

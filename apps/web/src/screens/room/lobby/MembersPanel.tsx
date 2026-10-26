@@ -127,7 +127,8 @@ function Kick({ m }: { m: RoomMember }) {
  * apagadas, com o nome de quem as pegou.
  */
 function AtravessaColors({ snapshot, me }: { snapshot: RoomSnapshot; me: string | undefined }) {
-  const colors = (snapshot.game === 'desmorona' ? snapshot.desmorona?.colors : snapshot.atravessa?.colors) ?? {};
+  const colors =
+    (snapshot.game === 'desmorona' ? snapshot.desmorona?.colors : snapshot.atravessa?.colors) ?? {};
   const owner = (hex: string) => Object.entries(colors).find(([, h]) => h === hex)?.[0];
   const nameOf = (id?: string) => snapshot.members.find((m) => m.id === id)?.username;
   const mineHex = me ? colors[me] : undefined;
@@ -205,7 +206,9 @@ export function MembersPanel({
 
   return (
     <div className="lb-members">
-      {(snapshot.game === 'atravessa' || snapshot.game === 'desmorona') && <AtravessaColors snapshot={snapshot} me={me} />}
+      {(snapshot.game === 'atravessa' || snapshot.game === 'desmorona') && (
+        <AtravessaColors snapshot={snapshot} me={me} />
+      )}
       {leader && (
         <div>
           <div className="mono rm-label">LÍDER</div>
@@ -263,7 +266,7 @@ export function MembersPanel({
           {connected < needed && (
             <li className="lb-empty mono">
               Falta{needed - connected === 1 ? '' : 'm'} {needed - connected}{' '}
-              {needed - connected === 1 ? 'pessoa' : 'pessoas'} para poder começar. Use a aba
+              {needed - connected === 1 ? 'pessoa' : 'pessoas'} para poder começar. Use o botão
               Convidar.
             </li>
           )}

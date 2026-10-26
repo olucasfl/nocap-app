@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { closeRoom, leaveRoom, sendRoom, type RoomSnapshot } from '@/lib/rooms';
-import { InvitePanel } from './InvitePanel';
-import { LobbyShell } from './LobbyShell';
+import { LobbyShell, startHint } from './LobbyShell';
 import { MembersPanel } from './MembersPanel';
 import { RulesEditor } from './RulesPanel';
 import { MIN_PLAYERS } from './rules';
@@ -25,12 +24,8 @@ export function HostLobby({ snapshot, me }: { snapshot: RoomSnapshot; me: string
     <LobbyShell
       snapshot={snapshot}
       role="leader"
-      initialTab={snapshot.members.length < 2 ? 'invite' : 'rules'}
-      panels={{
-        members: <MembersPanel snapshot={snapshot} me={me} canKick />,
-        rules: <RulesEditor snapshot={snapshot} />,
-        invite: <InvitePanel snapshot={snapshot} />,
-      }}
+      members={<MembersPanel snapshot={snapshot} me={me} canKick />}
+      rules={<RulesEditor snapshot={snapshot} />}
       footer={
         <>
           <button
@@ -47,17 +42,20 @@ export function HostLobby({ snapshot, me }: { snapshot: RoomSnapshot; me: string
               Todo mundo topou jogar de novo. Ajuste as regras, se quiser, e comece.
             </p>
           )}
-          <button type="button" className="btn ghost" data-sfx="back" onClick={leaveRoom}>
-            Sair da sala
-          </button>
-          <button
-            type="button"
-            className="btn ghost"
-            data-sfx="remove"
-            onClick={() => setClosing(true)}
-          >
-            Encerrar sala
-          </button>
+          {!canStart && <p className="mono rm-hint lb-why">{startHint(snapshot).text}</p>}
+          <div className="lb-leave">
+            <button type="button" className="lb-textbtn" data-sfx="back" onClick={leaveRoom}>
+              Sair da sala
+            </button>
+            <button
+              type="button"
+              className="lb-textbtn danger"
+              data-sfx="remove"
+              onClick={() => setClosing(true)}
+            >
+              Encerrar sala
+            </button>
+          </div>
           <ConfirmDialog
             open={closing}
             title="Encerrar a sala?"

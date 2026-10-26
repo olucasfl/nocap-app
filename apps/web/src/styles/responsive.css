@@ -266,7 +266,7 @@
     padding-right: 32px;
     padding-bottom: 32px;
   }
-  .app.has-rail > :not(.bottom-nav) {
+  .app.has-rail > :where(header, section, main, nav:not(.bottom-nav), .screen, .ld) {
     width: 100%;
     max-width: var(--page-max, 760px);
     margin-inline: auto;
@@ -306,5 +306,13 @@
   .tabs-app {
     zoom: var(--ui-zoom);
     min-height: calc(100dvh / var(--ui-zoom));
+  }
+}
+
+/* O botão do chat fica no canto da janela: com o menu lateral a coluna não é mais o centro da tela. */
+@media (min-width: 768px) {
+  .ch-fab {
+    right: 24px;
+    bottom: 24px;
   }
 }

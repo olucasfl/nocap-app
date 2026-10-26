@@ -11,7 +11,13 @@ const SEARCH_FROM = 8;
 type Done = 'share' | 'link' | 'code' | null;
 
 /** Convidar: enviar o link, copiar o link ou o código e, embaixo, chamar amigos do NoCap. */
-export function InvitePanel({ snapshot }: { snapshot: RoomSnapshot }) {
+export function InvitePanel({
+  snapshot,
+  section = 'all',
+}: {
+  snapshot: RoomSnapshot;
+  section?: 'quick' | 'more' | 'all';
+}) {
   const invited = useRoom((s) => s.invited);
   const invitedEver = useRoom((s) => s.invitedEver);
   const user = useAuth((st) => st.user);
@@ -62,13 +68,12 @@ export function InvitePanel({ snapshot }: { snapshot: RoomSnapshot }) {
   };
 
   return (
-    <div className="lb-invite">
-      <section className="lb-block" aria-label="Convidar">
-        <div className="mono rm-label">CONVIDAR</div>
-        <button type="button" className="btn alt" data-sfx="send" onClick={() => void share()}>
-          {done === 'share' ? 'Mensagem copiada' : 'Enviar o link por...'}
-        </button>
-        <div className="lb-shortcuts">
+    <div className={`lb-invite lb-invite-${section}`}>
+      {section !== 'more' && (
+        <div className="lb-quick">
+          <button type="button" className="btn alt" data-sfx="send" onClick={() => void share()}>
+            {done === 'share' ? 'Mensagem copiada' : 'Convidar'}
+          </button>
           <button
             type="button"
             className="fr-btn ghost"
@@ -86,21 +91,16 @@ export function InvitePanel({ snapshot }: { snapshot: RoomSnapshot }) {
             {done === 'code' ? 'Código copiado' : 'Copiar código'}
           </button>
         </div>
-        <p className="mono rm-mode-note">
-          {canShare
-            ? 'Quem entra pode usar só um apelido, não precisa de conta.'
-            : 'Este aparelho não abre a lista de apps: o botão de cima copia a mensagem pronta.'}
-        </p>
-      </section>
+      )}
 
-      {!user && (
+      {section !== 'quick' && !user && (
         <p className="mono lb-hint">
           Crie uma conta para chamar amigos do NoCap direto daqui. Sem conta, use o link ou o
           código.
         </p>
       )}
 
-      {user && (
+      {section !== 'quick' && user && (
         <section className="lb-block" aria-label="Procurar pessoa">
           <div className="mono rm-label">PROCURAR PESSOA (NÃO PRECISA SER AMIGO)</div>
           <form
@@ -164,7 +164,7 @@ export function InvitePanel({ snapshot }: { snapshot: RoomSnapshot }) {
         </section>
       )}
 
-      {user && (
+      {section !== 'quick' && user && (
         <section className="lb-block" aria-label="Chamar amigos">
           <div className="mono rm-label">CHAMAR AMIGOS DO NOCAP</div>
           {all.length >= SEARCH_FROM && (
