@@ -316,3 +316,53 @@
     bottom: 24px;
   }
 }
+
+/*
+ * Celular deitado e telas baixas (spec 045): com menos de 520 px de altura o menu lateral e os títulos grandes não cabem.
+ * O menu vira uma coluna enxuta (só ícone e nome pequeno, sem logo) e os títulos encolhem.
+ */
+@media (max-height: 520px) {
+  h1,
+  .rm h1,
+  .hub-title {
+    font-size: clamp(28px, 9vh, 40px);
+  }
+  .app {
+    padding-top: calc(10px + env(safe-area-inset-top));
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  }
+}
+@media (min-width: 768px) and (max-height: 520px) {
+  :root {
+    --rail: 76px;
+  }
+  .tabs-app,
+  .app.has-rail {
+    padding-left: calc(var(--rail) + 28px);
+    padding-right: 20px;
+  }
+  .bottom-nav {
+    top: 8px;
+    bottom: 8px;
+    left: 8px;
+    padding: 6px;
+    grid-template-rows: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+    border-radius: 16px;
+  }
+  .rail-logo,
+  .rail-foot {
+    display: none;
+  }
+  .tab {
+    font-size: 9px;
+    gap: 2px;
+  }
+  .tab svg {
+    width: 20px;
+    height: 20px;
+  }
+  .hub-card {
+    height: 200px;
+  }
+}

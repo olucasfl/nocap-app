@@ -61,3 +61,21 @@
   gap: 14px;
   margin-top: auto;
 }
+
+/* Entrar e criar conta em tela maior (spec 045): um cartão centralizado com os botões logo abaixo dos campos. */
+@media (min-width: 640px) {
+  .app > form.acc {
+    flex: none;
+    width: 100%;
+    max-width: 480px;
+    margin: 24px auto 0;
+    padding: 24px;
+    border: var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--white);
+    box-shadow: var(--shadow);
+  }
+  .app > form.acc .stack {
+    margin-top: 8px;
+  }
+}
