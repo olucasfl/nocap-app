@@ -232,3 +232,141 @@
   font-size: 11px;
   color: var(--muted);
 }
+
+
+/* Entrada da sala (spec 045): criar e entrar lado a lado quando há espaço. */
+.rm-choices {
+  display: grid;
+  gap: 16px;
+}
+.rm-choice {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--white);
+  box-shadow: var(--shadow);
+}
+.rm-choice h2 {
+  margin: 0;
+  font: 900 22px/1.1 var(--font-display);
+  text-transform: uppercase;
+}
+.rm-choice p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+.rm-choice .btn {
+  margin-top: auto;
+}
+.rm-choice input {
+  letter-spacing: 0.4em;
+  text-align: center;
+  font-weight: 900;
+  font-size: 22px;
+  text-transform: uppercase;
+}
+@media (min-width: 640px) {
+  .rm-choices {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+  }
+}
+
+
+/* Pódio (spec 045): o vencedor em destaque, os outros em linhas e a votação num bloco só. */
+.rm-final-cols {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.rm-final-main,
+.rm-final-side {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+.rm-winner {
+  padding: 16px;
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--yellow);
+  color: var(--on-accent);
+  box-shadow: 6px 6px 0 var(--orange);
+}
+.rm-winner .rm-label {
+  margin: 0 0 6px;
+}
+.rm-winner-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.rm-winner-row b {
+  flex: 1;
+  min-width: 0;
+  font: 900 clamp(26px, 6vw, 38px)/1.05 var(--font-display);
+  letter-spacing: -0.03em;
+  overflow-wrap: anywhere;
+}
+.rm-winner-me {
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.rm-vote-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.rm-vote-head h2 {
+  margin: 0;
+  font: 900 20px/1.1 var(--font-display);
+  text-transform: uppercase;
+}
+.rm-chips {
+  list-style: none;
+  margin: 10px 0 8px;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.rm-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: var(--border);
+  border-radius: 999px;
+  background: var(--white);
+  font: 800 14px var(--font-display);
+}
+.rm-chip small {
+  font-size: 10px;
+  color: var(--muted);
+}
+.rm-chip.on {
+  background: var(--green);
+  color: var(--on-accent);
+}
+.rm-chip.on small {
+  color: inherit;
+}
+.rm-chip.off {
+  opacity: 0.55;
+}
+@media (min-width: 900px) {
+  .rm-final-cols {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    align-items: start;
+    gap: 24px;
+  }
+}

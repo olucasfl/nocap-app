@@ -7,7 +7,13 @@ import { closeRoom, leaveRoom, sendRoom, useRoom, type RoomSnapshot, at } from '
 import { meters, raceTime, roomColor } from '@/games/atravessa/AtravessaReveal';
 
 /** Atravessa!: o que cada um fez. Infinito = metros somados; Checkpoint = tempo da chegada, ou a distância de quem não chegou. */
-function AtravessaScore({ info, id }: { info: NonNullable<RoomSnapshot['atravessa']>; id: string }) {
+function AtravessaScore({
+  info,
+  id,
+}: {
+  info: NonNullable<RoomSnapshot['atravessa']>;
+  id: string;
+}) {
   const r = info.results?.[id];
   if (!r) return null;
   if (info.mode === 'infinito') return <>{meters(r.meters)}</>;
@@ -45,117 +51,155 @@ export function Final({ snapshot }: { snapshot: RoomSnapshot }) {
   const here = snapshot.members.filter((m) => m.connected);
   const votes = here.filter((m) => m.rematch).length;
 
+  const rows = snapshot.final ?? [];
+  const winner = rows[0];
+  const myRow = rows.find((r) => r.userId === me);
+  const nameOf = (r: { userId: string; username: string }) =>
+    r.userId.startsWith('guest:') ? r.username : at(r.username);
+
+  /** O resultado de cada um, no formato do jogo. */
+  const score = (r: (typeof rows)[number]) =>
+    desmorona ? (
+      <small className="mono">{r.placement === 1 ? 'VENCEU' : 'CAIU'}</small>
+    ) : atravessa ? (
+      <AtravessaScore info={atravessa} id={r.userId} />
+    ) : (
+      <>
+        {hits || !eco ? (r.totalTenths / 10).toFixed(1) : Math.round(r.totalTenths / 10)}
+        <small className="mono">
+          {hits
+            ? `% · ${hits[r.userId] ?? 0} ${(hits[r.userId] ?? 0) === 1 ? 'acerto' : 'acertos'}`
+            : eco
+              ? ' passos'
+              : impostor
+                ? ' pts'
+                : `/${max}`}
+        </small>
+      </>
+    );
+
   return (
-    <section className="screen rm">
+    <section className="screen rm rm-final">
       <h1>Pódio</h1>
-      <ol className="rm-podium">
-        {(snapshot.final ?? []).map((r) => (
-          <li
-            key={r.userId}
-            className={`rm-pod${r.placement === 1 ? ' first' : ''}${r.userId === me ? ' me' : ''}`}
-          >
-            <span className="mono rm-pos">{r.placement}º</span>
-            {atravessa && (
-              <span className="rm-swatch" style={{ background: roomColor(snapshot, r.userId) }} aria-hidden="true" />
-            )}
-            <span className="rm-result-name">
-              {r.userId.startsWith('guest:') ? r.username : `${at(r.username)}`}
-            </span>
-            <span className="rm-result-score">
-              {desmorona ? (
-                <small className="mono">{r.placement === 1 ? 'VENCEU' : 'CAIU'}</small>
-              ) : atravessa ? (
-                <AtravessaScore info={atravessa} id={r.userId} />
-              ) : (
-                <>
-              {hits
-                ? (r.totalTenths / 10).toFixed(1)
-                : eco
-                  ? Math.round(r.totalTenths / 10)
-                  : (r.totalTenths / 10).toFixed(1)}
-              <small className="mono">
-                {hits
-                  ? `% · ${hits[r.userId] ?? 0} ${(hits[r.userId] ?? 0) === 1 ? 'acerto' : 'acertos'}`
-                  : eco
-                    ? ' passos'
-                    : impostor
-                      ? ' pts'
-                      : `/${max}`}
-              </small>
-                </>
+      <div className="rm-final-cols">
+        <div className="rm-final-main">
+          {winner && (
+            <div className={`rm-winner${winner.userId === me ? ' me' : ''}`}>
+              <div className="mono rm-label">
+                {winner.userId === me ? 'VOCÊ VENCEU' : 'VENCEDOR'}
+              </div>
+              <div className="rm-winner-row">
+                {atravessa && (
+                  <span
+                    className="rm-swatch"
+                    style={{ background: roomColor(snapshot, winner.userId) }}
+                    aria-hidden="true"
+                  />
+                )}
+                <b>{nameOf(winner)}</b>
+                <span className="rm-result-score">{score(winner)}</span>
+              </div>
+              {winner.userId !== me && myRow && (
+                <div className="mono rm-winner-me">Você ficou em {myRow.placement}º lugar</div>
               )}
-            </span>
-          </li>
-        ))}
-      </ol>
-      {guest && <GuestNotice />}
-      <p className="mono rm-hint">Partida de sala: não entra no ranking.</p>
-
-      <div className="rm-vote">
-        <div className="mono rm-label">
-          JOGAR DE NOVO? · {votes} DE {here.length}
+            </div>
+          )}
+          {rows.length > 1 && (
+            <ol className="rm-podium" start={2}>
+              {rows
+                .filter((r) => r !== winner)
+                .map((r) => (
+                  <li key={r.userId} className={`rm-pod${r.userId === me ? ' me' : ''}`}>
+                    <span className="mono rm-pos">{r.placement}º</span>
+                    {atravessa && (
+                      <span
+                        className="rm-swatch"
+                        style={{ background: roomColor(snapshot, r.userId) }}
+                        aria-hidden="true"
+                      />
+                    )}
+                    <span className="rm-result-name">{nameOf(r)}</span>
+                    <span className="rm-result-score">{score(r)}</span>
+                  </li>
+                ))}
+            </ol>
+          )}
+          {guest && <GuestNotice />}
+          <p className="mono rm-hint">Partida de sala: não entra no ranking.</p>
         </div>
-        <ul className="fr-list">
-          {snapshot.members.map((m) => (
-            <li key={m.id} className="fr-row">
-              <span className="fr-name">
-                {at(m.username)}
-                {m.id === me && <span className="mono rm-badge you">VOCÊ</span>}
-                {m.isHost && <span className="mono rm-badge">LÍDER</span>}
-              </span>
-              <span className={`mono rm-ready${m.rematch ? ' on' : ''}`}>
-                {!m.connected ? 'SEM CONEXÃO' : m.rematch ? 'QUER JOGAR' : 'PENSANDO'}
-              </span>
-            </li>
-          ))}
-        </ul>
-        <p className="mono rm-hint">
-          {voted
-            ? 'Seu voto foi enviado. Quando todo mundo votar, o líder libera o começo.'
-            : 'Quando todo mundo votar em jogar de novo, o líder libera o começo. Quem não quer, sai.'}
-        </p>
-      </div>
 
-      {message && (
-        <p className="acc-failure mono" role="alert">
-          {message}
-        </p>
-      )}
-      <div className="stack">
-        <button
-          type="button"
-          className={voted ? 'btn ghost' : 'btn alt'}
-          data-sfx="toggle"
-          aria-checked={voted}
-          onClick={() => sendRoom('vote', { again: !voted })}
-        >
-          {voted ? 'Mudei de ideia' : 'Jogar de novo'}
-        </button>
-        <button type="button" className="btn ghost" data-sfx="back" onClick={leaveRoom}>
-          Sair da sala
-        </button>
-        {mine?.isHost && (
-          <button
-            type="button"
-            className="btn ghost"
-            data-sfx="remove"
-            onClick={() => setClosing(true)}
-          >
-            Encerrar sala
-          </button>
-        )}
-        <ConfirmDialog
-          open={closing}
-          title="Encerrar a sala?"
-          text="Todo mundo que está na sala será removido e a sala deixa de existir."
-          confirmLabel="Encerrar"
-          confirmSfx="remove"
-          onConfirm={() => {
-            setClosing(false);
-            closeRoom();
-          }}
-          onCancel={() => setClosing(false)}
-        />
+        <div className="rm-final-side">
+          <section className="rm-vote" aria-label="Jogar de novo">
+            <div className="rm-vote-head">
+              <h2>Jogar de novo?</h2>
+              <span className="mono">
+                {votes} de {here.length}
+              </span>
+            </div>
+            <ul className="rm-chips">
+              {snapshot.members.map((m) => (
+                <li
+                  key={m.id}
+                  className={`rm-chip${m.rematch ? ' on' : ''}${m.connected ? '' : ' off'}`}
+                >
+                  {at(m.username)}
+                  <small className="mono">
+                    {!m.connected ? 'SEM CONEXÃO' : m.rematch ? 'QUER' : 'PENSANDO'}
+                  </small>
+                </li>
+              ))}
+            </ul>
+            <p className="mono rm-hint">
+              {voted
+                ? 'Seu voto foi enviado. Quando todo mundo votar, o líder libera o começo.'
+                : 'Quando todo mundo votar, o líder libera o começo. Quem não quer, sai.'}
+            </p>
+          </section>
+
+          {message && (
+            <p className="acc-failure mono" role="alert">
+              {message}
+            </p>
+          )}
+          <div className="stack">
+            <button
+              type="button"
+              className={voted ? 'btn ghost' : 'btn alt'}
+              data-sfx="toggle"
+              aria-checked={voted}
+              onClick={() => sendRoom('vote', { again: !voted })}
+            >
+              {voted ? 'Mudei de ideia' : 'Jogar de novo'}
+            </button>
+            <div className="lb-leave">
+              <button type="button" className="lb-textbtn" data-sfx="back" onClick={leaveRoom}>
+                Sair da sala
+              </button>
+              {mine?.isHost && (
+                <button
+                  type="button"
+                  className="lb-textbtn danger"
+                  data-sfx="remove"
+                  onClick={() => setClosing(true)}
+                >
+                  Encerrar sala
+                </button>
+              )}
+            </div>
+            <ConfirmDialog
+              open={closing}
+              title="Encerrar a sala?"
+              text="Todo mundo que está na sala será removido e a sala deixa de existir."
+              confirmLabel="Encerrar"
+              confirmSfx="remove"
+              onConfirm={() => {
+                setClosing(false);
+                closeRoom();
+              }}
+              onCancel={() => setClosing(false)}
+            />
+          </div>
+        </div>
       </div>
     </section>
   );

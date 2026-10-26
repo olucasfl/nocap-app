@@ -48,7 +48,10 @@ function Header({ round }: { round?: string }) {
 }
 
 /** A página de cada jogo (o Intruso é jogado a partir da Mesmíssima). */
-const GAME_PAGE: Record<Exclude<RoomGame, 'desmorona'>, '/cor' | '/tempo' | '/eco' | '/atravessa'> = {
+const GAME_PAGE: Record<
+  Exclude<RoomGame, 'desmorona'>,
+  '/cor' | '/tempo' | '/eco' | '/atravessa'
+> = {
   color: '/cor',
   time: '/tempo',
   impostor: '/cor',
@@ -118,32 +121,42 @@ function Entry({
           {entry.error || message}
         </p>
       )}
-      <button
-        type="button"
-        className="btn alt"
-        disabled={entry.busy}
-        onClick={() => void entry.create(game)}
-      >
-        {entry.busy ? 'Criando...' : `Criar sala de ${GAME_NAME[game]}`}
-      </button>
-      <form className="rm-join" onSubmit={join} noValidate>
-        <Field
-          label="Entrar com código"
-          value={code}
-          onChange={(e) => {
-            setCode(e.target.value.toUpperCase());
-            entry.clearError();
-          }}
-          maxLength={4}
-          autoCapitalize="characters"
-          autoCorrect="off"
-          autoComplete="off"
-          hint="4 letras, como ABCD"
-        />
-        <button type="submit" className="btn ghost" disabled={entry.busy}>
-          {entry.busy ? 'Entrando...' : initialCode && entry.error ? 'Tentar de novo' : 'Entrar'}
-        </button>
-      </form>
+      <div className="rm-choices">
+        <section className="rm-choice">
+          <h2>Criar uma sala</h2>
+          <p className="mono">Você é o líder: escolhe as regras, convida a galera e começa.</p>
+          <button
+            type="button"
+            className="btn alt"
+            disabled={entry.busy}
+            onClick={() => void entry.create(game)}
+          >
+            {entry.busy ? 'Criando...' : `Criar sala de ${GAME_NAME[game]}`}
+          </button>
+        </section>
+        <form className="rm-choice rm-join" onSubmit={join} noValidate>
+          <h2>Entrar com código</h2>
+          <p className="mono">
+            Peça ao líder o código de 4 letras (ou abra o link que ele mandou).
+          </p>
+          <Field
+            label="Código da sala"
+            value={code}
+            onChange={(e) => {
+              setCode(e.target.value.toUpperCase());
+              entry.clearError();
+            }}
+            maxLength={4}
+            autoCapitalize="characters"
+            autoCorrect="off"
+            autoComplete="off"
+            hint="4 letras, como ABCD"
+          />
+          <button type="submit" className="btn ghost" disabled={entry.busy}>
+            {entry.busy ? 'Entrando...' : initialCode && entry.error ? 'Tentar de novo' : 'Entrar'}
+          </button>
+        </form>
+      </div>
     </section>
   );
 }
@@ -173,7 +186,8 @@ export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomG
   }, [snapshot, lastGame, message, status, navigate]);
   // Dentro da sala o endereço é sempre o link dela (/sala/ABCD), para copiar do navegador e mandar.
   useEffect(() => {
-    if (snapshot && !code) void navigate({ to: '/sala/$code', params: { code: snapshot.code }, replace: true });
+    if (snapshot && !code)
+      void navigate({ to: '/sala/$code', params: { code: snapshot.code }, replace: true });
   }, [snapshot, code, navigate]);
   useEffect(() => {
     if (inRoom) sfx.roomJoin();
