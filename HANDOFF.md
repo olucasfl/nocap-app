@@ -177,3 +177,5 @@ Motor em `packages/games/src/desmorona` (mundo determinístico, bots, 11 testes)
 
 ## Bola Maluca! (spec 046)
 Fase 1 (motor) pronta em `packages/games/src/bola` (36 testes). Próximo: Fase 2, sala online (`BolaRoomEngine` sobre `ColorRoomEngine`, 15 pessoas, times/espectador, tick de 30 Hz). Física própria, sem biblioteca. Sem ranking.
+
+MVP offline do Bola Maluca! (26/10/2026): `pnpm dev` e abra `http://localhost:5173/fox-cap/bola` (Fox Cap! > Bola Maluca! > Treino). Web em `apps/web/src/games/bola` (`BolaScene` three, `BolaPlay` roda o `BolWorld` no aparelho, `BolaPage` menu). Você é o time vermelho, o resto são bots; C troca a câmera (na bola/livre). Falta: sala online (Fase 2), lobby de times, som, mortal mais visível.

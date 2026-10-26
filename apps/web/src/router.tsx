@@ -164,6 +164,12 @@ const desmoronaRoute = createRoute({
   component: lazyRouteComponent(() => import('@/games/desmorona/DesmoronaPage'), 'DesmoronaPage'),
 });
 
+const bolaRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/fox-cap/bola',
+  component: lazyRouteComponent(() => import('@/games/bola/BolaPage'), 'BolaPage'),
+});
+
 const apertaRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/arcade/aperta',
@@ -253,6 +259,7 @@ const routeTree = rootRoute.addChildren([
   atravessaRoute,
   foxCapRoute,
   desmoronaRoute,
+  bolaRoute,
   apertaRoute,
   blocksRoute,
   wordsRoute,

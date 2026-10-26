@@ -1,6 +1,6 @@
 import { BackButton } from '@/components/BackButton';
 import { HubCard, HubHero, HubNote } from '@/components/GameHub';
-import { AtravessaArt, DesmoronaArt, FoxCapArt } from '@/components/HubArt';
+import { AtravessaArt, BolaArt, DesmoronaArt, FoxCapArt } from '@/components/HubArt';
 import { MuteButton } from '@/components/MuteButton';
 import { Page } from '@/components/Page';
 
@@ -37,10 +37,20 @@ export function FoxCapPage() {
             to="/fox-cap/desmorona"
             testId="foxcap-desmorona"
           />
+          <HubCard
+            tone="green"
+            art={<BolaArt />}
+            name="Bola Maluca!"
+            desc="Futebol de raposas com 2 a 4 times e bola de verdade."
+            tags={['Treino com bots', 'Em teste']}
+            cta="Jogar"
+            to="/fox-cap/bola"
+            testId="foxcap-bola"
+          />
         </div>
         <HubNote>
-          O Atravessa! guarda recorde e ranking. O Desmorona! é só diversão: sem ranking nem
-          histórico.
+          O Atravessa! guarda recorde e ranking. O Desmorona! e o Bola Maluca! são só diversão: sem
+          ranking nem histórico.
         </HubNote>
         <MuteButton />
       </section>

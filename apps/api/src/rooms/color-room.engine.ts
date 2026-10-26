@@ -115,7 +115,7 @@ export class ColorRoomEngine {
   protected readonly newSeed: () => string;
   protected readonly maxPlayers: number;
   /** Qual jogo esta sala joga; o `TimeRoomEngine` troca. */
-  readonly game: 'color' | 'time' | 'impostor' | 'eco' | 'atravessa' | 'desmorona' = 'color';
+  readonly game: 'color' | 'time' | 'impostor' | 'eco' | 'atravessa' | 'desmorona' | 'bola' = 'color';
   /** Menos gente que isto não joga (o Intruso precisa de 3 para votar). */
   protected readonly minPlayers: number = MIN_PLAYERS;
   /** Salvar o pódio como partida de sala (o Intruso não salva). */
@@ -199,7 +199,7 @@ export class ColorRoomEngine {
   }
 
   /** O host é sempre alguém conectado; sem ninguém conectado, ninguém. */
-  private ensureHost() {
+  protected ensureHost() {
     const current = this.hostId ? this.members.get(this.hostId) : undefined;
     if (current?.connected) return;
     const next = [...this.members.values()]

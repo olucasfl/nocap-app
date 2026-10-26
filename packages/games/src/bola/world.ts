@@ -209,6 +209,17 @@ export class BolWorld {
     return true;
   }
 
+  /** Quem sai (ou cai) deixa o corpo para um bot: o corpo fica onde está, com outro id. */
+  becomeBot(id: string, newId: string, name: string): boolean {
+    const p = this.player(id);
+    if (!p) return false;
+    p.id = newId;
+    p.name = name;
+    p.bot = true;
+    if (this.lastTouch?.id === id) this.lastTouch = { ...this.lastTouch, id: newId };
+    return true;
+  }
+
   /** Troca de time no meio da partida: vai para o ponto do novo time. */
   setTeam(id: string, team: number): void {
     const p = this.player(id);

@@ -851,6 +851,28 @@ export function DesmoronaTrainingArt() {
   );
 }
 
+/** Bola Maluca!: campo verde visto de cima, bola e uma raposa. */
+export function BolaArt() {
+  return (
+    <svg className="ha ha-bola" viewBox="0 0 200 150" aria-hidden="true">
+      <rect width="200" height="150" fill="#58c46a" />
+      <rect x="0" y="0" width="200" height="150" fill="#4aae5c" opacity="0.5" />
+      <g fill="none" stroke="#fff" strokeWidth="3" opacity="0.85">
+        <rect x="10" y="12" width="180" height="126" rx="10" />
+        <line x1="100" y1="12" x2="100" y2="138" />
+        <circle cx="100" cy="75" r="22" />
+      </g>
+      <rect x="2" y="55" width="12" height="40" fill="#e5484d" {...stroke} strokeWidth={3} />
+      <rect x="186" y="55" width="12" height="40" fill="#3e7bfa" {...stroke} strokeWidth={3} />
+      <g transform="translate(46 54) scale(0.5)">
+        <FoxBody />
+      </g>
+      <circle cx="116" cy="92" r="17" fill="#fff" {...stroke} strokeWidth={3} />
+      <path d="M116 80 l8 6 -3 10 h-10 l-3 -10z" fill="#1b1535" />
+    </svg>
+  );
+}
+
 /** Avatar de jogador: a cabeça da raposa de boné na cor escolhida (usado na sala). */
 export function FoxAvatar({ fur, cap = '#2f5bff' }: { fur: string; cap?: string }) {
   return (
