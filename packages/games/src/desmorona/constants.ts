@@ -1,5 +1,5 @@
 /**
- * Desmorona! (spec 044): arena de hexágonos em 7 camadas. Todos os números do jogo estão aqui; o motor
+ * Desmorona! (spec 044): arena de hexágonos em 6 camadas. Todos os números do jogo estão aqui; o motor
  * (`world.ts`) não tem número solto. Unidades de mundo: 1 = tamanho de um ladrilho aproximado.
  */
 
@@ -14,8 +14,9 @@ export function dsmLayerRadii(players: number): readonly number[] {
   return DSM_LAYER_SCALE.map((f) => Math.max(3, Math.round(big * f)));
 }
 /** Tamanho de cada camada em relação à maior (a do meio): sobe até a metade e desce até a última, que é a menor. */
-const DSM_LAYER_SCALE = [0.72, 0.86, 0.95, 1, 0.88, 0.7, 0.5] as const;
-export const DSM_LAYERS = 7;
+/** Seis camadas (uma a menos que antes, 26/10/2026): o mesmo losango, refeito em proporção com uma camada a menos. */
+const DSM_LAYER_SCALE = [0.72, 0.88, 1, 0.92, 0.72, 0.5] as const;
+export const DSM_LAYERS = 6;
 /** Distância do centro de um hexágono até o canto (hexágono "pointy-top"). */
 export const DSM_HEX_SIZE = 1.15;
 /** Altura entre uma camada e a de baixo. */
@@ -24,7 +25,7 @@ export const DSM_LAYER_GAP = 6;
 export const DSM_TILE_THICK = 0.5;
 
 /** Quanto tempo um ladrilho pisado aguenta (s), por camada: cada uma de baixo é um pouco mais rápida (curto de propósito: o chão some quase na hora, 25/10). */
-export const DSM_TILE_LIFE = [0.85, 0.8, 0.76, 0.72, 0.68, 0.64, 0.6] as const;
+export const DSM_TILE_LIFE = [0.85, 0.79, 0.74, 0.7, 0.65, 0.6] as const;
 /** Nos últimos tantos segundos o ladrilho "racha" (treme e muda de cor): é o aviso. */
 export const DSM_CRACK_SEC = 0.35;
 

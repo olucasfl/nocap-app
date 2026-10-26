@@ -129,6 +129,24 @@ export function bolaRoster(setup: BolaSetup): BolInfo[] {
 }
 
 /** Treino do Fut Fox: você contra bots. O motor roda no aparelho; a sala online usa o mesmo motor no servidor. */
+/** O placar de um time: a cor, o número e o nome pequeno (some no celular). O número dá um pulinho quando muda. */
+function ScoreChip({ team, score }: { team: number; score: number }) {
+  const name = BOL_TEAM_NAMES[team] ?? '';
+  return (
+    <span
+      key={`${team}-${score}`}
+      className={score > 0 ? 'bola-team bump' : 'bola-team'}
+      style={{
+        background: `#${(BOL_TEAM_COLORS[team] as number).toString(16).padStart(6, '0')}`,
+      }}
+      aria-label={`${name}: ${score}`}
+    >
+      <b>{score}</b>
+      <small>{name}</small>
+    </span>
+  );
+}
+
 export function BolaPlay({
   setup,
   online,
@@ -1134,26 +1152,26 @@ export function BolaPlay({
         )}
       </div>
       <div className="dsm-hud bola-hud">
-        <div className="bola-score" role="status" aria-label="Placar">
-          {hud.scores.map((s, i) => (
-            <span
-              key={`${i}-${s}`}
-              className={s > 0 ? 'bola-team bump' : 'bola-team'}
-              style={{
-                background: `#${(BOL_TEAM_COLORS[i] as number).toString(16).padStart(6, '0')}`,
-              }}
+        <div className="bola-board" role="status" aria-label="Placar e tempo">
+          <div className="bola-board-row">
+            <ScoreChip team={0} score={hud.scores[0] ?? 0} />
+            <div
+              className={`bola-clock${hud.golden ? ' is-ot' : ''}`}
+              role="timer"
+              aria-label={hud.golden ? 'Tempo da prorrogação' : 'Tempo que falta'}
             >
-              {s}
-            </span>
-          ))}
-        </div>
-        <div
-          className={`bola-clock${hud.golden ? ' is-ot' : ''}`}
-          role="timer"
-          aria-label={hud.golden ? 'Tempo da prorrogação' : 'Tempo que falta'}
-        >
-          {fmt(hud.clock)}
-          {hud.golden && <small>Prorrogação · gol de ouro</small>}
+              {fmt(hud.clock)}
+              {hud.golden && <small>Prorrogação · gol de ouro</small>}
+            </div>
+            <ScoreChip team={1} score={hud.scores[1] ?? 0} />
+          </div>
+          {hud.scores.length > 2 && (
+            <div className="bola-board-extra">
+              {hud.scores.slice(2).map((sc, i) => (
+                <ScoreChip key={i + 2} team={i + 2} score={sc} />
+              ))}
+            </div>
+          )}
         </div>
         <div className="bola-tools">
           <button

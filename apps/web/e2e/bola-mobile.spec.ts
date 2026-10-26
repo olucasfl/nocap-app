@@ -75,7 +75,7 @@ for (const ph of phones) {
     const hud = {
       clock: await box(page, '.bola-clock'),
       gear: await box(page, '.bola-gear'),
-      score: await box(page, '.bola-score'),
+      score: await box(page, '.bola-board-row .bola-team'),
       banner: await box(page, '.bola-banner'),
       feed: await box(page, '.bola-feed li'),
       jump: await box(page, '.dsm-jump'),

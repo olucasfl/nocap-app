@@ -32,17 +32,18 @@ function playBots(seed: string, n: number, maxSec = 360): DsmWorld {
 }
 
 describe('hexágonos', () => {
-  it('são 7 camadas em losango: a de cima é menor, crescem até a do meio e diminuem até a última, a menor', () => {
+  it('são 6 camadas em losango: a de cima é menor, crescem até a maior e diminuem até a última, a menor', () => {
     for (const n of [2, 5, 8]) {
       const r = dsmLayerRadii(n);
       expect(r).toHaveLength(DSM_LAYERS);
-      const mid = Math.floor(DSM_LAYERS / 2);
+      // o pico fica no meio (com seis camadas, na terceira)
+      const mid = r.indexOf(Math.max(...r));
+      expect(mid).toBe(Math.floor(DSM_LAYERS / 2) - 1);
       for (let i = 1; i <= mid; i++) expect(r[i]).toBeGreaterThanOrEqual(r[i - 1] as number);
       for (let i = mid + 1; i < DSM_LAYERS; i++)
         expect(r[i]).toBeLessThanOrEqual(r[i - 1] as number);
       expect(r[0]).toBeLessThan(r[mid] as number);
       expect(r[DSM_LAYERS - 1]).toBeLessThan(r[0] as number);
-      expect(Math.max(...r)).toBe(r[mid]);
     }
     expect(hexCount(2)).toBe(19);
     expect(hexCount(dsmLayerRadii(8)[3] as number)).toBeGreaterThan(

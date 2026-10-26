@@ -29,7 +29,7 @@ Movimento livre significa mandar posições, mas dá para fazer bem sem colisão
 ## 3. Regras do jogo
 
 ### Arena
-- **7 camadas** de hexágonos, de cima para baixo, com raios de **8, 6, 5, 3 e 2** ladrilhos (217, 127, 91, 37 e 19 ladrilhos; valores provisórios). Cada camada fica a **6 unidades** abaixo da anterior, centrada.
+- **6 camadas** (eram 7; uma a menos em 26/10/2026, refeitas em proporção, em losango) de hexágonos, de cima para baixo, com raios de **8, 6, 5, 3 e 2** ladrilhos (217, 127, 91, 37 e 19 ladrilhos; valores provisórios). Cada camada fica a **6 unidades** abaixo da anterior, centrada.
 - Cada camada tem cor própria (roxa, rosa, laranja, amarela, azul gelo). As camadas de baixo aparecem **por baixo** das de cima (dá para ver a queda vindo).
 - Embaixo da última camada há **lava** (a "coisa que mata"): tocar nela elimina.
 - Cenário em volta: colinas e céu coloridos como na referência (Fall Guys), na paleta das raposas.
