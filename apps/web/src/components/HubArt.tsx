@@ -127,27 +127,10 @@ export function EcoArt() {
   );
 }
 
-/** Atravessa!: faixas em diagonal (grama, estrada, rio), uma tora e o bichinho de blocos pulando. */
-export function AtravessaArt() {
+/** A raposa de boné de perfil (a mesma do Atravessa!), desenhada com os pés em (88, 128). */
+function FoxBody() {
   return (
-    <svg className="ha ha-atravessa" viewBox="0 0 200 150" aria-hidden="true">
-      {/* as faixas inclinadas passam do desenho: o recorte mantém tudo dentro do cartão */}
-      <defs>
-        <clipPath id="ha-atr-clip">
-          <rect x="0" y="0" width="200" height="150" rx="16" />
-        </clipPath>
-      </defs>
-      <g clipPath="url(#ha-atr-clip)">
-      <g transform="translate(0 -52) skewY(26)">
-        <rect x="-10" y="70" width="220" height="30" fill="#8dd252" {...stroke} strokeWidth={3} />
-        <rect x="-10" y="100" width="220" height="30" fill="#3a3d4a" {...stroke} strokeWidth={3} />
-        <path d="M-10 115H210" stroke="#f4f4ef" strokeWidth="3" strokeDasharray="12 10" className="ha-road" />
-        <rect x="-10" y="130" width="220" height="30" fill="#58bdf2" {...stroke} strokeWidth={3} />
-        <rect x="120" y="136" width="52" height="18" rx="3" fill="#8a5a34" {...stroke} strokeWidth={3} />
-        <rect x="-10" y="160" width="220" height="40" fill="#8dd252" {...stroke} strokeWidth={3} />
-      </g>
-      </g>
-      <g className="ha-run">
+    <>
         <ellipse cx="88" cy="128" rx="20" ry="5" fill="rgba(0,0,0,.3)" />
         {/* a cauda grande, com a ponta branca */}
         <path d="M70 118c-18 2-24-16-12-28 4 10 12 14 20 14z" fill="#ff7d26" {...stroke} strokeWidth={3} />
@@ -169,6 +152,32 @@ export function AtravessaArt() {
         <rect x="76" y="92" width="4" height="5" fill={INK} />
         <rect x="90" y="92" width="4" height="5" fill={INK} />
         <rect x="82" y="96" width="6" height="5" rx="1.5" fill="#35211a" />
+    </>
+  );
+}
+
+/** Atravessa!: faixas em diagonal (grama, estrada, rio), uma tora e o bichinho de blocos pulando. */
+export function AtravessaArt() {
+  return (
+    <svg className="ha ha-atravessa" viewBox="0 0 200 150" aria-hidden="true">
+      {/* as faixas inclinadas passam do desenho: o recorte mantém tudo dentro do cartão */}
+      <defs>
+        <clipPath id="ha-atr-clip">
+          <rect x="0" y="0" width="200" height="150" rx="16" />
+        </clipPath>
+      </defs>
+      <g clipPath="url(#ha-atr-clip)">
+      <g transform="translate(0 -52) skewY(26)">
+        <rect x="-10" y="70" width="220" height="30" fill="#8dd252" {...stroke} strokeWidth={3} />
+        <rect x="-10" y="100" width="220" height="30" fill="#3a3d4a" {...stroke} strokeWidth={3} />
+        <path d="M-10 115H210" stroke="#f4f4ef" strokeWidth="3" strokeDasharray="12 10" className="ha-road" />
+        <rect x="-10" y="130" width="220" height="30" fill="#58bdf2" {...stroke} strokeWidth={3} />
+        <rect x="120" y="136" width="52" height="18" rx="3" fill="#8a5a34" {...stroke} strokeWidth={3} />
+        <rect x="-10" y="160" width="220" height="40" fill="#8dd252" {...stroke} strokeWidth={3} />
+      </g>
+      </g>
+      <g className="ha-run">
+        <FoxBody />
       </g>
     </svg>
   );
@@ -264,6 +273,34 @@ export function DesmoronaArt() {
         <ellipse cx="12" cy="30" rx="12" ry="4" fill="rgba(0,0,0,.25)" />
         <rect x="2" y="12" width="20" height="16" rx="5" fill="#ff7d26" {...stroke} strokeWidth={3} />
         <rect x="3" y="2" width="18" height="12" rx="4" fill="#2f5bff" {...stroke} strokeWidth={3} />
+      </g>
+    </svg>
+  );
+}
+
+/** Fox Cap!: hexágonos no ar, a raposa pulando de um para o outro e o ladrilho do destino se soltando. */
+export function FoxCapArt() {
+  const hex = (cx: number, cy: number, r: number, fill: string) => {
+    const pts = Array.from({ length: 6 }, (_, i) => {
+      const a = (Math.PI / 3) * i + Math.PI / 6;
+      return `${(cx + r * Math.cos(a)).toFixed(1)},${(cy + r * Math.sin(a)).toFixed(1)}`;
+    }).join(' ');
+    return <polygon points={pts} fill={fill} {...stroke} strokeWidth={3} />;
+  };
+  return (
+    <svg className="ha ha-foxcap" viewBox="0 0 200 150" aria-hidden="true">
+      <rect x="0" y="0" width="200" height="150" rx="16" fill="#7fd3ff" />
+      <ellipse cx="100" cy="138" rx="78" ry="9" fill="#ff5a1f" opacity="0.85" />
+      {[50, 90, 130, 170].map((x) => (
+        <g key={`b${x}`}>{hex(x, 70, 21, '#9a5cff')}</g>
+      ))}
+      <g>{hex(70, 100, 21, '#a96bff')}</g>
+      <g className="ha-tilefall">{hex(110, 100, 21, '#ff7ab8')}</g>
+      <g>{hex(150, 100, 21, '#a96bff')}</g>
+      <g className="ha-hop">
+        <g transform="translate(40 40) scale(0.56)">
+          <FoxBody />
+        </g>
       </g>
     </svg>
   );

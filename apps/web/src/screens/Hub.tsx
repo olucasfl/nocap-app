@@ -1,5 +1,5 @@
 import { useApertaAllowed } from '@/lib/aperta-access';
-import { ApertaArt, AtravessaArt, BlocksArt, ColorArt, EcoArt, TimeArt } from '@/components/HubArt';
+import { ApertaArt, FoxCapArt, BlocksArt, ColorArt, EcoArt, TimeArt } from '@/components/HubArt';
 import { Link } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { WordsHubArt } from '@/games/words/words-art';
@@ -206,7 +206,7 @@ export function Hub() {
         </h2>
         <div className="hz-grid">
           <GameCard to="/blocks" cls="hub-card-blocks" art={<BlocksArt />} name="Block's" lines={[blocksBestLabel(data)]} />
-          <GameCard to="/fox-cap" cls="hub-card-atravessa" art={<AtravessaArt />} name="Fox Cap!" size="long" lines={[atravessaBestLabel(data)]} badge="NOVO" />
+          <GameCard to="/fox-cap" cls="hub-card-atravessa" art={<FoxCapArt />} name="Fox Cap!" size="long" lines={[atravessaBestLabel(data)]} badge="NOVO" />
           {/* Em teste: o cartão só aparece para a conta liberada pelo servidor (visitante e outras contas não veem). */}
           {apertaOk === true && <GameCard to="/arcade/aperta" cls="hub-card-aperta" art={<ApertaArt />} name="Aperta!" lines={['CLICKER NO ESPAÇO']} />}
         </div>

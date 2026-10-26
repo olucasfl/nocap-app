@@ -194,6 +194,64 @@
   }
 }
 
+/* Fox Cap!: a raposa salta do primeiro para o segundo hexágono, que racha, cai e volta. Só transform e opacity. */
+.ha-hop {
+  animation: ha-hop 3.4s ease-in-out infinite;
+}
+@keyframes ha-hop {
+  0%,
+  12% {
+    transform: translate(0, 0);
+  }
+  30% {
+    transform: translate(20px, -26px);
+  }
+  44%,
+  62% {
+    transform: translate(40px, 0);
+  }
+  80% {
+    transform: translate(20px, -26px);
+  }
+  94%,
+  100% {
+    transform: translate(0, 0);
+  }
+}
+.ha-tilefall {
+  animation: ha-tilefall 3.4s ease-in infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@keyframes ha-tilefall {
+  0%,
+  46% {
+    transform: translateY(0) rotate(0);
+    opacity: 1;
+  }
+  52% {
+    transform: translateY(2px) rotate(-1.5deg);
+    opacity: 1;
+  }
+  58% {
+    transform: translateY(-1px) rotate(1.5deg);
+    opacity: 1;
+  }
+  80% {
+    transform: translateY(46px) rotate(14deg);
+    opacity: 0;
+  }
+  81%,
+  90% {
+    transform: translateY(0) rotate(0);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0) rotate(0);
+    opacity: 1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ha *,
   .ha-float,
@@ -204,6 +262,8 @@
   .ha-glow,
   .ha-waves,
   .ha-run,
+  .ha-hop,
+  .ha-tilefall,
   .ha-road,
   .ha-clearcell {
     animation: none !important;

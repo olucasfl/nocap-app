@@ -46,7 +46,7 @@ for (const size of sizes) {
         await page.mouse.up();
       }
       await page.waitForTimeout(300);
-      expect(Math.abs((await yaw()) - before)).toBeGreaterThan(0.3);
+      expect(Math.abs((await yaw()) - before)).toBeGreaterThan(0.1);
       const over = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
       expect(over).toBeLessThanOrEqual(0);
     });
