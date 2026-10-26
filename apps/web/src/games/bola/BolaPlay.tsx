@@ -131,16 +131,16 @@ export function BolaPlay({
     const zoneEl = zone.current;
     if (!el || !zoneEl) return undefined;
     const infos = bolaRoster(setup);
-    // pacote de jogos antigo (sem o motor novo): avisa em vez de travar
-    if (typeof (BolWorld.prototype as { becomeBot?: unknown }).becomeBot !== 'function') {
-      setCrash('O pacote de jogos está desatualizado. Rode pnpm build e reinicie o pnpm dev.');
-      return undefined;
-    }
     const world = new BolWorld(infos, {
       teams: setup.teams,
       perTeam: setup.perTeam,
       durationSec: setup.minutes * 60,
     });
+    // pacote de jogos antigo (sem o motor novo): avisa em vez de travar
+    if (!Array.isArray(world.possession) || typeof world.becomeBot !== 'function') {
+      setCrash('O pacote de jogos está desatualizado. Rode pnpm build e reinicie o pnpm dev.');
+      return undefined;
+    }
     if (import.meta.env.DEV) (window as unknown as { __bola?: BolWorld }).__bola = world;
     const reduced =
       typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;

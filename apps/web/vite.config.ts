@@ -23,12 +23,24 @@ function socialUrlTags(site: string | undefined): HtmlTagDescriptor[] {
   ];
 }
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ mode, command }) => {
   const env = loadEnv(mode, '../..', 'VITE_');
   return {
     // O .env fica na raiz do monorepo (VITE_API_URL etc.).
     envDir: '../..',
-    resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
+    resolve: {
+      alias: {
+        '@': fileURLToPath(new URL('./src', import.meta.url)),
+        // em desenvolvimento o jogo lê o motor direto do código-fonte: nunca fica com o pacote compilado desatualizado
+        ...(command === 'serve'
+          ? {
+              '@nocap/games': fileURLToPath(
+                new URL('../../packages/games/src/index.ts', import.meta.url),
+              ),
+            }
+          : {}),
+      },
+    },
     plugins: [
       react(),
       {
