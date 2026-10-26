@@ -8,6 +8,7 @@ import { EcoRoomEngine } from './eco-room.engine';
 import { EcoLeaderRoomEngine } from './eco-leader-room.engine';
 import { AtravessaRoomEngine } from './atravessa-room.engine';
 import { BolaRoomEngine } from './bola-room.engine';
+import { FoxLobbyEngine } from './fox-lobby.engine';
 import { DesmoronaRoomEngine } from './desmorona-room.engine';
 import {
   ATR_ROOM_MAX_PLAYERS,
@@ -182,10 +183,13 @@ export class ColorRoom extends Room {
       this.act(c, (id) => void this.engine.muteMember(id, String(m?.id ?? ''))),
     );
 
-    this.setSimulationInterval(() => {
-      if (this.engine.tick()) this.publish();
-      this.afterTick();
-    }, this.tickMs);
+    this.setSimulationInterval(() => this.step(), this.tickMs);
+  }
+
+  /** Um passo da sala: avança o motor, publica o estado se mudou e deixa o jogo transmitir o que é dele. */
+  protected step() {
+    if (this.engine.tick()) this.publish();
+    this.afterTick();
   }
 
   protected makeEngine(opts: ConstructorParameters<typeof ColorRoomEngine>[0]): ColorRoomEngine {
@@ -426,7 +430,7 @@ export class ColorRoom extends Room {
     }
   }
 
-  private publish() {
+  protected publish() {
     // A fase vai nos metadados da sala: é como o serviço de convites sabe se ela ainda está no lobby.
     void this.setMetadata({ phase: this.engine.currentPhase });
     // Cada pessoa recebe o próprio estado: no Intruso, papel, cor e dica são secretos.
@@ -447,7 +451,11 @@ export class ColorRoom extends Room {
       const game = this.engine.game;
       await roomDeps.repo?.saveRoomMatch({
         game:
-          game === 'impostor' || game === 'atravessa' || game === 'desmorona' || game === 'bola'
+          game === 'impostor' ||
+          game === 'atravessa' ||
+          game === 'desmorona' ||
+          game === 'bola' ||
+          game === 'foxcap'
             ? 'color'
             : game,
         mode: this.engine.historyMode,
@@ -667,5 +675,103 @@ export class BolaRoom extends ColorRoom {
   protected override afterTick() {
     const frame = (this.engine as BolaRoomEngine).drainFrame();
     if (frame) this.broadcast('bs', frame);
+  }
+}
+
+/** Nomes e limites dos jogos que a sala do Fox Cap! pode jogar. */
+const FOX_GAMES = {
+  atravessa: { name: 'Atravessa!', make: (o: EngineOpts) => new AtravessaRoomEngine(o) },
+  desmorona: { name: 'Desmorona!', make: (o: EngineOpts) => new DesmoronaRoomEngine(o) },
+  bola: {
+    name: 'Fut Fox',
+    make: (o: EngineOpts) => {
+      const e = new BolaRoomEngine(o);
+      e.p2pEnabled = true;
+      return e;
+    },
+  },
+} as const;
+type EngineOpts = ConstructorParameters<typeof ColorRoomEngine>[0];
+type FoxGame = keyof typeof FOX_GAMES;
+
+/**
+ * Sala do Fox Cap! (spec 049): nasce sem jogo; o líder escolhe (e pode trocar) entre Atravessa!, Desmorona! e Fut Fox
+ * no lobby. Trocar de jogo é trocar o motor da sala (como o Ecooo faz entre Corrida e Siga o Líder): as pessoas, o
+ * líder e o chat vão junto. As mensagens de cada jogo valem só enquanto o motor é daquele jogo.
+ */
+export class FoxRoom extends ColorRoom {
+  override maxClients = BOL_ROOM_MAX;
+  /** O passo mais fino (Fut Fox); os jogos de 10 passos por segundo rodam a cada ~100 ms por dentro de `step`. */
+  protected override tickMs = 16;
+  private handlers = new Map<string, Map<string, (c: Client, m: unknown) => void>>();
+  private lastStep = 0;
+
+  protected override makeEngine(opts: EngineOpts) {
+    const e = new FoxLobbyEngine(opts);
+    e.flex = true;
+    return e;
+  }
+
+  protected override registerGameMessages() {
+    // Cada jogo registra as suas mensagens como se a sala fosse dele (por um "sósia" que repassa tudo à sala). Aqui cada
+    // tipo vira um só despachante que olha de quem é o motor de agora (o Atravessa! e o Desmorona! usam o mesmo "color").
+    for (const [game, room] of [
+      ['atravessa', AtravessaRoom],
+      ['desmorona', DesmoronaRoom],
+      ['bola', BolaRoom],
+    ] as const) {
+      const twin = Object.create(this) as { onMessage: unknown };
+      twin.onMessage = (type: string | number, cb: (c: Client, m: unknown) => void) => {
+        const key = String(type);
+        let per = this.handlers.get(key);
+        if (!per) {
+          const table = new Map<string, (c: Client, m: unknown) => void>();
+          per = table;
+          this.handlers.set(key, table);
+          this.onMessage(type, (c: Client, m: unknown) => table.get(this.engine.game)?.(c, m));
+        }
+        per.set(game, cb);
+      };
+      (room.prototype as unknown as { registerGameMessages(): void }).registerGameMessages.call(
+        twin,
+      );
+    }
+    this.onMessage('pickgame', (c: Client, m: { game?: unknown }) =>
+      this.act(c, (id) => this.pickGame(id, m?.game)),
+    );
+  }
+
+  /** O líder escolhe ou troca o jogo da sala (só no lobby). */
+  private pickGame(id: string, game: unknown) {
+    if (!this.engine.isHost(id)) throw new RoomError('Só o líder escolhe o jogo');
+    if (this.engine.currentPhase !== 'lobby')
+      throw new RoomError('Agora não dá para trocar o jogo');
+    if (typeof game !== 'string' || !(game in FOX_GAMES)) throw new RoomError('Jogo inválido');
+    const g = game as FoxGame;
+    if (this.engine.game === g) return;
+    const next = FOX_GAMES[g].make(this.engineOpts);
+    if (this.engine.memberCount > next.capacity) {
+      throw new RoomError(
+        `${FOX_GAMES[g].name} aceita até ${next.capacity} pessoas e a sala tem ${this.engine.memberCount}`,
+      );
+    }
+    next.adoptFrom(this.engine);
+    this.engine = next;
+    this.publish();
+  }
+
+  protected override step() {
+    const now = Date.now();
+    // o Fut Fox roda a cada passo de 16 ms; os outros jogos, a cada 100 ms (como as salas deles)
+    if (this.engine.game !== 'bola' && now - this.lastStep < 92) return;
+    this.lastStep = now;
+    super.step();
+  }
+
+  protected override afterTick() {
+    const proto = { atravessa: AtravessaRoom, desmorona: DesmoronaRoom, bola: BolaRoom }[
+      this.engine.game as FoxGame
+    ]?.prototype as unknown as { afterTick?: () => void } | undefined;
+    proto?.afterTick?.call(this);
   }
 }

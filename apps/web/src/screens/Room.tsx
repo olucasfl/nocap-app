@@ -50,7 +50,7 @@ function Header({ round }: { round?: string }) {
 
 /** A página de cada jogo (o Intruso é jogado a partir da Mesmíssima). */
 const GAME_PAGE: Record<
-  Exclude<RoomGame, 'desmorona' | 'bola'>,
+  Exclude<RoomGame, 'desmorona' | 'bola' | 'foxcap'>,
   '/cor' | '/tempo' | '/eco' | '/atravessa'
 > = {
   color: '/cor',
@@ -63,6 +63,7 @@ const GAME_PAGE: Record<
 const GAME_NAME: Record<RoomGame, string> = {
   desmorona: 'Desmorona!',
   bola: 'Fut Fox',
+  foxcap: 'Fox Cap!',
   color: 'Mesmíssima',
   time: 'Já Deu?',
   impostor: 'Intruso',
@@ -71,6 +72,8 @@ const GAME_NAME: Record<RoomGame, string> = {
 };
 
 const ENTRY_LEAD: Record<RoomGame, string> = {
+  foxcap:
+    'Sala do Fox Cap!: a sala nasce sem jogo. Dentro dela você convida a galera e escolhe (e troca) o jogo: Fut Fox, Atravessa! ou Desmorona!.',
   bola: 'Fut Fox com os amigos: futebol de raposas com 2, 3 ou 4 times, até 15 pessoas na sala (12 jogam e o resto assiste). Você escolhe o formato e completa os times com bots dentro da sala.',
   desmorona:
     'Desmorona! com os amigos: todo mundo cai do céu, o chão some a cada passo e vence o último de pé. De 2 a 8 pessoas.',
@@ -114,7 +117,9 @@ function Entry({
                   ? '/fox-cap/desmorona'
                   : game === 'bola'
                     ? '/fox-cap/bola'
-                    : '/cor'
+                    : game === 'foxcap'
+                      ? '/fox-cap'
+                      : '/cor'
         }
         label="Voltar ao jogo"
       />
@@ -188,6 +193,7 @@ export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomG
     clearLastGame();
     if (lastGame === 'desmorona') void navigate({ to: '/fox-cap/desmorona' });
     else if (lastGame === 'bola') void navigate({ to: '/fox-cap/bola' });
+    else if (lastGame === 'foxcap') void navigate({ to: '/fox-cap' });
     else void navigate({ to: GAME_PAGE[lastGame], search: { aba: 'friends' } });
   }, [snapshot, lastGame, message, status, navigate]);
   // Dentro da sala o endereço é sempre o link dela (/sala/ABCD), para copiar do navegador e mandar.

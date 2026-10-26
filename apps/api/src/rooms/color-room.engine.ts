@@ -111,7 +111,15 @@ export class ColorRoomEngine {
   protected readonly newSeed: () => string;
   protected readonly maxPlayers: number;
   /** Qual jogo esta sala joga; o `TimeRoomEngine` troca. */
-  readonly game: 'color' | 'time' | 'impostor' | 'eco' | 'atravessa' | 'desmorona' | 'bola' =
+  readonly game:
+    | 'color'
+    | 'time'
+    | 'impostor'
+    | 'eco'
+    | 'atravessa'
+    | 'desmorona'
+    | 'bola'
+    | 'foxcap' =
     'color';
   /** Menos gente que isto não joga (o Intruso precisa de 3 para votar). */
   protected readonly minPlayers: number = MIN_PLAYERS;
@@ -119,6 +127,9 @@ export class ColorRoomEngine {
   readonly persistable: boolean = true;
   /** Fase em que as pessoas respondem (a Cor trava um HSB; o Tempo, um relógio). */
   protected readonly answerPhase: Phase = 'pick';
+
+  /** Sala de jogos trocáveis (Fox Cap!): o líder escolhe e troca o jogo no lobby (spec 049). */
+  flex = false;
 
   protected members = new Map<string, Member>();
   protected hostId: string | null = null;
@@ -222,6 +233,7 @@ export class ColorRoomEngine {
     this.members = other.members;
     this.hostId = other.hostId;
     this.chat = other.chat;
+    this.flex = other.flex;
     for (const m of this.members.values()) m.ready = false;
   }
 
@@ -559,6 +571,7 @@ export class ColorRoomEngine {
     return {
       code: this.code,
       game: this.game,
+      flex: this.flex,
       mode: this.mode,
       phase: this.phase,
       hostId: this.hostId,

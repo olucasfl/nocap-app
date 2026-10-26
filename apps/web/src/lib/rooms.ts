@@ -10,7 +10,15 @@ import { create } from 'zustand';
 import { ApiError, apiBase, apiClient } from './api-client';
 import { getToken, useAuth } from './auth';
 
-export type RoomGame = 'color' | 'time' | 'impostor' | 'eco' | 'atravessa' | 'desmorona' | 'bola';
+export type RoomGame =
+  | 'color'
+  | 'time'
+  | 'impostor'
+  | 'eco'
+  | 'atravessa'
+  | 'desmorona'
+  | 'bola'
+  | 'foxcap';
 export type Phase =
   | 'lobby'
   | 'intro'
@@ -186,6 +194,8 @@ export interface BolaRoomState {
 export interface RoomSnapshot {
   code: string;
   game: RoomGame;
+  /** Sala do Fox Cap!: o líder escolhe e troca o jogo no lobby (spec 049). */
+  flex: boolean;
   /** Modo da sala (Cor: classic, flash, blind; Tempo: classic, strict, sequence). */
   mode: string;
   phase: Phase;
@@ -367,7 +377,8 @@ function attach(r: Room) {
 
   r.onMessage('snapshot', (s: RoomSnapshot) => {
     for (const m of s.members) if (m.guest) guestNames.add(m.username);
-    set({ snapshot: s, status: 'connected', lastGame: s.game });
+    // sala do Fox Cap!: ao sair, a pessoa volta ao Fox Cap! (e não à página do jogo que estava no lobby)
+    set({ snapshot: s, status: 'connected', lastGame: s.flex ? 'foxcap' : s.game });
   });
   r.onMessage('pong', (m: { t0?: number; ts?: number }) => {
     if (typeof m?.t0 === 'number' && typeof m?.ts === 'number') {

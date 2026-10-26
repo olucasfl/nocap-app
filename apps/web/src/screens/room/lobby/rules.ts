@@ -46,12 +46,14 @@ export const MIN_PLAYERS: Record<RoomGame, number> = {
   desmorona: 2,
   // com bots, uma pessoa só já joga
   bola: 1,
+  foxcap: 1,
 };
 
 export const GAME_NAME: Record<RoomGame, string> = {
   atravessa: 'Atravessa!',
   desmorona: 'Desmorona!',
   bola: 'Fut Fox',
+  foxcap: 'Fox Cap!',
   color: 'Mesmíssima',
   time: 'Já Deu?',
   impostor: 'Intruso',
@@ -67,6 +69,7 @@ export const GAME_OF: Record<RoomGame, string> = {
   atravessa: 'do Atravessa!',
   desmorona: 'do Desmorona!',
   bola: 'do Fut Fox',
+  foxcap: 'do Fox Cap!',
 };
 
 /** Tamanhos do mapa do Checkpoint, em metros (o servidor tem a mesma tabela). */
@@ -79,6 +82,7 @@ const SIZE_NAME: Record<string, string> = {
 
 /** Modos de cada jogo na sala, com uma linha que explica cada um. */
 export const MODES: Record<RoomGame, { id: string; label: string; note: string }[]> = {
+  foxcap: [],
   bola: [
     {
       id: 'classico',
