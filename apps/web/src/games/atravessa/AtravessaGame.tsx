@@ -236,23 +236,26 @@ export function AtravessaGame() {
     setBusy(true);
     const { seed, session } = await soloSession('/games/atravessa/session');
     const signedIn = useAuth.getState().user !== null;
-    let best = signedIn ? localBest() : 0;
+    const local = signedIn ? localBest() : 0;
+    setBefore(local);
+    setRecord(Math.max(localBest(), local));
+    setRun({ matchId: crypto.randomUUID(), seed, session });
+    setBusy(false);
+    setPhase('play');
+    // o recorde do servidor chega depois: a partida não espera por ele para começar
+    if (!signedIn) return;
     try {
-      if (!signedIn) throw new Error('guest');
       const stats = await queryClient.fetchQuery({
         queryKey: ['stats'],
         queryFn: fetchStats,
         staleTime: 0,
       });
-      best = Math.max(best, serverBest(stats));
+      const best = Math.max(local, serverBest(stats));
+      setBefore(best);
+      setRecord(Math.max(localBest(), best));
     } catch {
-      /* convidado: vale o recorde deste aparelho */
+      /* sem rede: vale o recorde deste aparelho */
     }
-    setBefore(best);
-    setRecord(Math.max(localBest(), best));
-    setRun({ matchId: crypto.randomUUID(), seed, session });
-    setBusy(false);
-    setPhase('play');
   };
 
   useEffect(() => {
@@ -262,6 +265,9 @@ export function AtravessaGame() {
     }
     // só na primeira vez que a página abre
   }, []);
+
+  // vindo do Fox Cap!: nada de menu enquanto a partida é preparada
+  if (direct.treino && phase === 'menu') return null;
 
   if (phase === 'play') {
     return (

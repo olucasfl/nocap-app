@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState, type FormEvent } from 'react';
+import { lazy, Suspense, useEffect, useState, type FormEvent } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { BackButton } from '@/components/BackButton';
 import { Field } from '@/components/Field';
@@ -40,6 +40,11 @@ export function FoxCapPage() {
   const [round, setRound] = useState(0);
   const [code, setCode] = useState('');
   const entry = useRoomEntry({ resume: true });
+  // o Atravessa! baixa em segundo plano: ao clicar em Jogar a partida abre na hora, sem tela de carregamento
+  useEffect(() => {
+    void import('../atravessa/AtravessaPage');
+    void import('../atravessa/AtravessaPlay');
+  }, []);
 
   if (flow === 'bola-play') {
     return (
