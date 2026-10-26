@@ -13,7 +13,14 @@ import {
   type BolInput,
 } from '@nocap/games';
 import { bolaGain, bolaSfx, crowdStart, crowdStop, crowdSwell } from '@/lib/bola-audio';
-import { sendRoom, sendRoomQuiet, serverNow, subscribeRoom, useRoom } from '@/lib/rooms';
+import {
+  currentRtt,
+  sendRoom,
+  sendRoomQuiet,
+  serverNow,
+  subscribeRoom,
+  useRoom,
+} from '@/lib/rooms';
 import { DsmControls, STICK_RADIUS } from '../desmorona/controls';
 import '../desmorona/desmorona.css';
 import './bola.css';
@@ -164,7 +171,7 @@ export function BolaPlay({
     feed: [],
     warn: '',
     winner: -1,
-    ballCam: true,
+    ballCam: false,
     banner: null,
     flash: 0,
     myTeam: 0,
@@ -221,7 +228,9 @@ export function BolaPlay({
         if (!locked && !uiOpenRef.current) setMenu(true);
       });
     }
-    let ballCam = true;
+    // a partida começa com a câmera solta; quem quiser prende na bola (E ou o botão)
+    let ballCam = false;
+    let aimed = false;
     let yaw = 0;
     let camYaw = 0;
     let pitch = 0.5;
@@ -624,19 +633,23 @@ export function BolaPlay({
       ]);
     };
     const inputTimer = online ? window.setInterval(sendInput, 25) : 0;
-    /** Atraso de desenho dos outros e da bola (ms): com um estado a cada 16 ms sobram sempre dois para interpolar. */
-    const INTERP_MS = 70;
+    /** Atraso de desenho dos outros e da bola (ms): cobre a variação (jitter) da rede sem engasgar. */
+    const INTERP_MS = 100;
+    /** Relógio de desenho no tempo do servidor: anda com o relógio local e só é ajustado devagar, então a rede irregular não vira tranco. */
+    let renderT = 0;
     const pred = new BolPredictor(world.field);
     let predReady = false;
     let predAcc = 0;
-    /** Depois de um aperto o servidor ainda não sabe do pulo: nesse tempo ele não corrige a altura (senão cancelaria o pulo e o mortal). */
-    let jumpHold = 0;
     const lerp = (a: number, b: number, u: number) => a + (b - a) * u;
     const smoothOnline = (dt: number, input: { mx: number; mz: number }, pressed: boolean) => {
       syncRoster();
       const last = snaps[snaps.length - 1];
       if (!last) return;
-      const rt = serverNow() - INTERP_MS;
+      // alvo: o último estado + o que passou desde que chegou - o atraso; o relógio de desenho o persegue suave
+      const target = last.t + (performance.now() - last.ball.at) - INTERP_MS;
+      if (renderT === 0 || Math.abs(target - renderT) > 400) renderT = target;
+      else renderT += dt * 1000 + (target - renderT) * (1 - Math.exp(-dt * 2.5));
+      const rt = renderT;
       // entre quais dois estados estamos (ou, se faltar estado novo, o último com um pouco de extrapolação)
       let a = last;
       let b = last;
@@ -691,9 +704,12 @@ export function BolaPlay({
         predReady = false;
         return;
       }
-      const lead = Math.min(0.25, Math.max(0, (serverNow() - last.t) / 1000));
+      // onde o servidor deve estar agora: o estado + o tempo desde que chegou + a ida da rede (metade do RTT)
+      const lead = Math.min(
+        0.35,
+        Math.max(0, (performance.now() - last.ball.at + currentRtt() / 2) / 1000),
+      );
       const sx = row.x + row.vx * lead;
-      const sy = Math.max(0, row.y + row.vy * lead);
       const sz = row.z + row.vz * lead;
       const flags = {
         grounded: (row.fl & 1) === 1,
@@ -716,7 +732,6 @@ export function BolaPlay({
         return;
       }
       predAcc += dt;
-      jumpHold = pressed ? 0.7 : Math.max(0, jumpHold - dt);
       let press = pressed;
       while (predAcc >= BOL_DT) {
         predAcc -= BOL_DT;
@@ -732,21 +747,14 @@ export function BolaPlay({
       const body = pred.body;
       const ex = sx - body.x;
       const ez = sz - body.z;
-      const ey = sy - body.y;
-      if (Math.hypot(ex, ez) > 3 || (jumpHold <= 0 && Math.abs(ey) > 1.6)) {
+      const err = Math.hypot(ex, ez);
+      if (err > 3.5) {
         pred.reset({ x: row.x, y: row.y, z: row.z, vx: row.vx, vy: row.vy, vz: row.vz, ...flags });
-      } else {
-        // correção suave; logo depois de um pulo só a posição no chão é puxada, e devagar
-        const k = 1 - Math.exp(-dt * (jumpHold > 0 ? 2 : 6));
+      } else if (err > 0.7) {
+        // dentro de 0,7 m é só atraso da rede e a raposa responde como no offline; passando disso (empurrão, bola, parede) volta devagar
+        const k = 1 - Math.exp(-dt * 3);
         body.x += ex * k;
         body.z += ez * k;
-        if (jumpHold <= 0) {
-          body.y += ey * k * 0.7;
-          const kv = 1 - Math.exp(-dt * 3);
-          body.vx += (row.vx - body.vx) * kv;
-          body.vz += (row.vz - body.vz) * kv;
-          if (flags.airJumped) body.airJumped = true;
-        }
       }
       me.x = body.x;
       me.y = body.y;
@@ -777,10 +785,15 @@ export function BolaPlay({
         const pressed = input.jump;
         if (input.jump) jumpUntil = now + JUMP_BUFFER_MS;
         input.jump = false;
-        // a câmera segue a bola por padrão (E troca para câmera livre com o mouse)
+        // a câmera começa solta (mouse gira); E prende na bola
         const manual = controls.takeYaw(dt) + turnKick;
         turnKick = 0;
         const manualPitch = controls.takePitch();
+        if (!aimed && me) {
+          // começa olhando da raposa para a bola, em vez de uma direção qualquer
+          aimed = true;
+          camYaw = yaw = Math.atan2(-(world.ball.x - me.x), -(world.ball.z - me.z));
+        }
         const free = !ballCam || !me;
         if (free) {
           yaw += manual;

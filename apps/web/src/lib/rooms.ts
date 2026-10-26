@@ -286,6 +286,9 @@ let epoch = 0;
 let offsets: number[] = [];
 let lastRtt = 0;
 
+/** Última ida e volta medida até o servidor (ms). */
+export const currentRtt = (): number => lastRtt;
+
 export function serverNow(): number {
   const median =
     offsets.length > 0 ? [...offsets].sort((a, b) => a - b)[Math.floor(offsets.length / 2)]! : 0;

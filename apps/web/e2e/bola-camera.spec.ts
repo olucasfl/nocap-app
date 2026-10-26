@@ -23,6 +23,8 @@ test('câmera na bola mantém a bola no quadro; câmera livre gira sem saltos', 
     .click({ timeout: 3000 })
     .catch(() => undefined);
   await page.waitForTimeout(3500);
+  // a partida começa com a câmera solta: E prende na bola
+  await page.keyboard.press('KeyE');
   // câmera na bola: amostra 40 vezes enquanto a bola e a raposa andam
   await page.keyboard.down('KeyW');
   let inside = 0;

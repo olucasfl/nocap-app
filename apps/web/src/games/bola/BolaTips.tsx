@@ -32,14 +32,14 @@ export function BolaTips({ touch }: { touch: boolean }) {
         ['Joystick', 'Arraste na metade esquerda para mover'],
         ['Pular', 'Toque no botão; toque de novo no ar para o pulo duplo'],
         ['Mortal', 'Pule duas vezes mexendo o joystick: o mortal chuta a bola'],
-        ['Câmera', 'O botão troca entre câmera na bola e livre'],
+        ['Câmera', 'A câmera começa solta; o botão prende na bola e solta de novo'],
         ['Config.', 'Estatísticas, trocar de time, espectar e sair'],
       ]
     : [
         ['W A S D', 'Mover a raposa'],
         ['Espaço', 'Pular; de novo no ar, pulo duplo'],
         ['Espaço 2x', 'Com uma direção apertada vira o mortal que chuta a bola'],
-        ['E', 'Câmera na bola ou livre'],
+        ['E', 'Prende a câmera na bola ou solta'],
         ['Tab', 'Segure para ver as estatísticas'],
         ['Esc', 'Configurações (times, espectar, sair)'],
       ];
