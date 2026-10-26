@@ -424,3 +424,86 @@
     display: none;
   }
 }
+
+.bola-cur {
+  font: 700 13px var(--font-display, system-ui);
+  opacity: 0.7;
+}
+.bola-teams {
+  width: min(720px, 100%);
+  max-height: calc(100% - 24px);
+  overflow: auto;
+}
+.bola-teams-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.bola-x.dark {
+  border-color: #1b1535;
+  color: #1b1535;
+}
+.bola-teams-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+.bola-team-card {
+  border: 3px solid var(--tc);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.bola-team-card h3 {
+  display: flex;
+  justify-content: space-between;
+  margin: 0;
+  padding: 6px 10px;
+  background: var(--tc);
+  color: #fff;
+  font: 800 14px var(--font-display, system-ui);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+}
+.bola-team-card ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.bola-team-card li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 42px;
+  padding: 4px 10px;
+  font: 700 14px var(--font-display, system-ui);
+}
+.bola-team-card li + li {
+  border-top: 1px solid rgba(27, 21, 53, 0.15);
+}
+.bola-team-card li.is-me {
+  background: #fff3c4;
+}
+.bola-team-card li.is-free {
+  color: #4b5563;
+  font-style: italic;
+}
+.bola-team-card small {
+  margin-left: 6px;
+  padding: 1px 5px;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  font-size: 10px;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+.bola-take {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 3px solid #1b1535;
+  border-radius: 10px;
+  background: #ff9d2e;
+  color: #1b1535;
+  font: 800 12px var(--font-display, system-ui);
+  text-transform: uppercase;
+  cursor: pointer;
+}

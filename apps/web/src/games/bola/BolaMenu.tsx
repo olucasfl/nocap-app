@@ -1,33 +1,26 @@
 import { useState } from 'react';
-import { BOL_TEAM_COLORS, BOL_TEAM_NAMES } from '@nocap/games';
-
-const css = (n: number) => `#${n.toString(16).padStart(6, '0')}`;
+import { BOL_TEAM_NAMES } from '@nocap/games';
 
 /** Configurações da partida: continuar, estatísticas, câmera, trocar de time ou espectar e sair. */
 export function BolaMenu({
-  teams,
   myTeam,
   ballCam,
   onClose,
   onStats,
   onCam,
-  onSwitch,
+  onTeams,
   onExit,
 }: {
-  teams: number;
   /** Time de quem joga; -1 = espectador. */
   myTeam: number;
   ballCam: boolean;
   onClose: () => void;
   onStats: () => void;
   onCam: () => void;
-  /** Devolve a mensagem de erro (ex.: "Time cheio"), ou null se deu certo. */
-  onSwitch: (team: number) => string | null;
+  onTeams: () => void;
   onExit: () => void;
 }) {
-  const [error, setError] = useState<string | null>(null);
   const [sure, setSure] = useState(false);
-  const pick = (t: number) => setError(onSwitch(t));
   const spectating = myTeam < 0;
   return (
     <div
@@ -55,39 +48,12 @@ export function BolaMenu({
           <span>Câmera: {spectating || !ballCam ? 'livre' : 'na bola'}</span>
           <kbd className="bola-key">E</kbd>
         </button>
-        <h3>{spectating ? 'Você está espectando' : 'Seu time'}</h3>
-        <div className="bola-chips" role="radiogroup" aria-label="Time">
-          {Array.from({ length: teams }, (_, t) => (
-            <button
-              key={t}
-              type="button"
-              role="radio"
-              aria-checked={myTeam === t}
-              className={`dsm-chip bola-team-chip${myTeam === t ? ' is-on' : ''}`}
-              style={{ ['--tc' as string]: css(BOL_TEAM_COLORS[t] as number) }}
-              onClick={() => pick(t)}
-              data-testid={`bola-team-${t}`}
-            >
-              <i aria-hidden="true" />
-              {BOL_TEAM_NAMES[t]}
-            </button>
-          ))}
-          <button
-            type="button"
-            role="radio"
-            aria-checked={spectating}
-            className={`dsm-chip bola-team-chip${spectating ? ' is-on' : ''}`}
-            onClick={() => pick(-1)}
-            data-testid="bola-team-spec"
-          >
-            Espectador
-          </button>
-        </div>
-        {error && (
-          <p className="bola-error" role="alert">
-            {error}
-          </p>
-        )}
+        <button type="button" className="bola-item" onClick={onTeams} data-testid="bola-menu-teams">
+          <span>Trocar de time</span>
+          <span className="bola-cur">
+            {spectating ? 'Espectando' : `Time ${BOL_TEAM_NAMES[myTeam] ?? ''}`}
+          </span>
+        </button>
         <button
           type="button"
           className={`dsm-btn is-ghost bola-leave${sure ? ' is-sure' : ''}`}

@@ -14,6 +14,7 @@ import { DsmControls, STICK_RADIUS } from '../desmorona/controls';
 import '../desmorona/desmorona.css';
 import './bola.css';
 import { BolaMenu } from './BolaMenu';
+import { BolaTeams } from './BolaTeams';
 import { BolaScene } from './BolaScene';
 import { BolaStats, type StatRow } from './BolaStats';
 
@@ -98,12 +99,14 @@ export function BolaPlay({
   const root = useRef<HTMLDivElement>(null);
   const controls = useMemo(() => new DsmControls(), []);
   const camToggle = useRef<() => void>(() => undefined);
-  const switchTeam = useRef<(team: number) => string | null>(() => null);
+  const switchTeam = useRef<(team: number, botId?: string | null) => string | null>(() => null);
+  const [teamsOpen, setTeamsOpen] = useState(false);
   const [menu, setMenu] = useState(false);
+  const [crash, setCrash] = useState<string | null>(null);
   const [tabHeld, setTabHeld] = useState(false);
   const [pinned, setPinned] = useState(false);
   const statsOn = useRef(false);
-  statsOn.current = tabHeld || pinned;
+  statsOn.current = tabHeld || pinned || menu || teamsOpen;
   const uiOpenRef = useRef(false);
   const [stick, setStick] = useState<{ ox: number; oy: number; x: number; y: number } | null>(null);
   const [hud, setHud] = useState<Hud>({
@@ -128,6 +131,11 @@ export function BolaPlay({
     const zoneEl = zone.current;
     if (!el || !zoneEl) return undefined;
     const infos = bolaRoster(setup);
+    // pacote de jogos antigo (sem o motor novo): avisa em vez de travar
+    if (typeof (BolWorld.prototype as { becomeBot?: unknown }).becomeBot !== 'function') {
+      setCrash('O pacote de jogos está desatualizado. Rode pnpm build e reinicie o pnpm dev.');
+      return undefined;
+    }
     const world = new BolWorld(infos, {
       teams: setup.teams,
       perTeam: setup.perTeam,
@@ -202,14 +210,17 @@ export function BolaPlay({
         0.2 + (i % 3) * 0.05,
       );
     /** Troca de time (ou vira espectador): o corpo antigo vira bot e, no time novo, você assume o lugar de um bot. */
-    switchTeam.current = (team) => {
+    switchTeam.current = (team, botId = null) => {
       const cur = world.player('me');
       if (cur && cur.team === team) return null;
       if (!cur && team < 0) return null;
       if (team >= 0) {
-        const bot = world.players.find((p) => p.bot && p.team === team);
-        if (!bot && world.players.filter((p) => p.team === team).length >= setup.perTeam)
-          return `Time ${BOL_TEAM_NAMES[team]} cheio`;
+        if (botId) {
+          if (!world.players.some((p) => p.bot && p.team === team && p.id === botId))
+            return 'Esse bot já saiu do lugar: escolha outro';
+        } else if (world.players.filter((p) => p.team === team).length >= setup.perTeam) {
+          return `O time ${BOL_TEAM_NAMES[team]} não tem vaga livre: entre no lugar de um bot`;
+        }
       }
       if (cur) {
         const id = `bot${botN}`;
@@ -224,7 +235,9 @@ export function BolaPlay({
           color: BOL_TEAM_COLORS[team] as number,
           team,
         };
-        const bot = world.players.find((p) => p.bot && p.team === team);
+        const bot = botId
+          ? world.players.find((p) => p.bot && p.team === team && p.id === botId)
+          : undefined;
         if (bot) {
           mem.delete(bot.id);
           world.takeOver(bot.id, info);
@@ -247,7 +260,7 @@ export function BolaPlay({
     let hudAt = 0;
     let jumpUntil = 0;
     let raf = 0;
-    const frame = (now: number) => {
+    const tick = (now: number) => {
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
       const me = world.player('me');
@@ -382,6 +395,16 @@ export function BolaPlay({
           possession: [...world.possession],
         });
       }
+    };
+    const frame = (now: number) => {
+      try {
+        tick(now);
+      } catch (err) {
+        // um erro no quadro não pode deixar a tela parada sem explicação
+        console.error(err);
+        setCrash(`Algo deu errado no jogo: ${err instanceof Error ? err.message : String(err)}`);
+        return;
+      }
       raf = requestAnimationFrame(frame);
     };
     raf = requestAnimationFrame(frame);
@@ -462,6 +485,19 @@ export function BolaPlay({
           <span>Config.</span>
         </button>
       </div>
+      {crash && (
+        <div className="dsm-over" role="alert">
+          <div className="dsm-over-card">
+            <h2>Não deu para continuar</h2>
+            <p>{crash}</p>
+            <div className="dsm-over-btns">
+              <button type="button" className="dsm-btn is-ghost" onClick={onExit}>
+                Voltar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {hud.flash > 0 && hud.phase === 'goal' && (
         <div
           key={hud.flash}
@@ -543,23 +579,49 @@ export function BolaPlay({
           onClose={() => setPinned(false)}
         />
       )}
-      {menu && !over && (
+      {menu && !over && !teamsOpen && (
         <BolaMenu
-          teams={setup.teams}
           myTeam={hud.myTeam}
           ballCam={hud.ballCam}
-          onClose={() => setMenu(false)}
+          onClose={() => {
+            setMenu(false);
+            setTeamsOpen(false);
+          }}
           onStats={() => {
             setMenu(false);
             setPinned(true);
           }}
           onCam={() => camToggle.current()}
-          onSwitch={(t) => {
-            const err = switchTeam.current(t);
-            if (!err) setHud((h) => ({ ...h, myTeam: t }));
+          onTeams={() => setTeamsOpen(true)}
+          onExit={onExit}
+        />
+      )}
+      {menu && !over && teamsOpen && (
+        <BolaTeams
+          teams={setup.teams}
+          perTeam={setup.perTeam}
+          rows={hud.rows}
+          meId="me"
+          spectating={hud.myTeam < 0}
+          onTake={(t, botId) => {
+            const err = switchTeam.current(t, botId);
+            if (!err) {
+              setHud((h) => ({ ...h, myTeam: t }));
+              setTeamsOpen(false);
+              setMenu(false);
+            }
             return err;
           }}
-          onExit={onExit}
+          onSpectate={() => {
+            const err = switchTeam.current(-1);
+            if (!err) {
+              setHud((h) => ({ ...h, myTeam: -1 }));
+              setTeamsOpen(false);
+              setMenu(false);
+            }
+            return err;
+          }}
+          onBack={() => setTeamsOpen(false)}
         />
       )}
       {over && (
