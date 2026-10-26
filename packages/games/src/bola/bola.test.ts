@@ -11,7 +11,7 @@ import {
   BOL_STILL_SEC,
 } from './constants';
 import { buildField } from './field';
-import { BolWorld, type BolInfo, type BolInput } from './world';
+import { BolWorld, type BolInfo, type BolInput, type BolPlayer } from './world';
 
 const mk = (team: number, i: number, bot = false): BolInfo => ({
   id: `t${team}p${i}`,
@@ -209,6 +209,19 @@ describe('bola e toque', () => {
     expect(w.drainEvents()).toEqual([]);
     expect(p.stats.touches).toBe(0);
     expect(w.lastTouch).toBeNull();
+  });
+
+  it('pushOutOfFoxes afasta só a raposa de quem ela atravessa', () => {
+    const w = new BolWorld(roster(2, 1), { teams: 2, perTeam: 1 });
+    startPlay(w);
+    const [a, b] = w.players as [BolPlayer, BolPlayer];
+    b.x = a.x + 0.2;
+    b.z = a.z;
+    b.y = a.y;
+    const bx = b.x;
+    w.pushOutOfFoxes(a);
+    expect(Math.hypot(a.x - b.x, a.z - b.z)).toBeGreaterThanOrEqual(BOL_FOX_R * 2 - 1e-6);
+    expect(b.x).toBe(bx);
   });
 
   it('a bola nunca sai do campo (chutes em todas as direções)', () => {

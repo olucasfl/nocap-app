@@ -791,6 +791,10 @@ export function BolaPlay({
         });
         press = false;
         syncMe();
+        // não atravessa as outras raposas: o corpo previsto sai de dentro delas já neste passo
+        world.pushOutOfFoxes(me);
+        pred.body.x = me.x;
+        pred.body.z = me.z;
         for (let i = 0; i < BOL_SUBSTEPS; i++) {
           if (world.ghostBall(lb, me, BOL_DT / BOL_SUBSTEPS)) touchHold = 0.7;
         }

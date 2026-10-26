@@ -425,6 +425,28 @@ export class BolWorld {
     });
   }
 
+  /**
+   * Cliente online: afasta só `p` das outras raposas (como estão desenhadas), para a própria raposa não atravessar
+   * ninguém enquanto o servidor não responde. O servidor continua decidindo o empurrão de verdade.
+   */
+  pushOutOfFoxes(p: BolPlayer): void {
+    for (const q of this.players) {
+      if (q === p || Math.abs(q.y - p.y) >= BOL_FOX_H) continue;
+      let dx = p.x - q.x;
+      let dz = p.z - q.z;
+      let d = Math.hypot(dx, dz);
+      const min = BOL_FOX_R * 2;
+      if (d >= min) continue;
+      if (d < 1e-4) {
+        dx = Math.sin(p.heading);
+        dz = Math.cos(p.heading);
+        d = 1;
+      }
+      p.x += (dx / d) * (min - d);
+      p.z += (dz / d) * (min - d);
+    }
+  }
+
   /** Raposas não se atravessam: empurram-se de leve para os lados. */
   private separateFoxes(): void {
     const ps = this.players;
