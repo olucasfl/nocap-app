@@ -235,6 +235,23 @@ function RankingView({ game }: { game: Game }) {
         </button>
       </section>
 
+      {/* Troca rápida de jogo, sem voltar à lista */}
+      <div className="rkp-games" role="tablist" aria-label="Jogo do ranking">
+        {GAMES.map((g) => (
+          <button
+            key={g.id}
+            type="button"
+            role="tab"
+            data-sfx="select"
+            data-testid={`quick-${g.id}`}
+            aria-selected={g.id === game}
+            onClick={() => go({ jogo: g.id, modo: undefined, periodo: undefined })}
+          >
+            {GAME_LABEL[g.id]}
+          </button>
+        ))}
+      </div>
+
       {/* 2. Os filtros */}
       <section className="rkp-filters" aria-label="Filtros do ranking">
         {choices.length > 1 && (

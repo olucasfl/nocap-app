@@ -15,7 +15,7 @@
   /* Botões 6 a 9 do Eco: cores de jogo, iguais nos dois temas. */
   --eco-purple: #7a3cff;
   --eco-cyan: #25c7e8;
-  --eco-red: #e5303a;
+  --eco-red: #dc2b36; /* texto branco sobre ele passa de 4,5:1 */
   --eco-graphite: #3a3a36;
 
   --border: 2.5px solid var(--ink);

@@ -626,3 +626,38 @@
     animation: none !important;
   }
 }
+
+
+/* Troca rápida de jogo (spec 045): uma fileira que rola de lado no celular e quebra linha em tela grande. */
+.rkp-games {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 2px 8px;
+  scrollbar-width: none;
+}
+.rkp-games::-webkit-scrollbar {
+  display: none;
+}
+.rkp-games button {
+  flex: none;
+  min-height: 40px;
+  padding: 0 14px;
+  border: var(--border);
+  border-radius: 999px;
+  background: var(--white);
+  color: var(--ink);
+  font: 800 13px var(--font-display);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.rkp-games button[aria-selected='true'] {
+  background: var(--ink);
+  color: var(--paper);
+}
+@media (min-width: 768px) {
+  .rkp-games {
+    flex-wrap: wrap;
+    overflow: visible;
+  }
+}
