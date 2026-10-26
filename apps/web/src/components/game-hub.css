@@ -116,14 +116,14 @@
 .gh-card {
   position: relative;
   display: grid;
-  grid-template-columns: 72px minmax(0, 1fr);
+  grid-template-columns: minmax(120px, 44%) minmax(0, 1fr);
   grid-template-areas:
     'art body'
-    'go go';
+    'art go';
   align-items: center;
-  gap: 10px 12px;
+  gap: 10px 14px;
   width: 100%;
-  padding: 14px;
+  padding: 12px;
   border: var(--border);
   border-radius: 20px;
   box-shadow: 5px 5px 0 var(--ink);
@@ -168,22 +168,30 @@
 }
 .gh-card-art {
   grid-area: art;
-  display: grid;
-  place-items: center;
-  height: 72px;
+  align-self: center;
+  display: block;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
   border: 2.5px solid var(--ink);
-  border-radius: 16px;
+  border-radius: 14px;
   background: var(--paper);
   color: var(--ink);
+  overflow: hidden;
 }
 .gh-card-art svg {
-  width: 44px;
-  height: 44px;
+  display: block;
+}
+/* a arte é um quadro de 4:3 centralizado no espaço dela */
+.gh-card-art .ha {
+  max-width: none;
+  max-height: none;
 }
 .gh-card-body {
   grid-area: body;
+  align-self: end;
   display: grid;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
 }
 .gh-card-body b {
@@ -193,21 +201,33 @@
   text-transform: uppercase;
 }
 .gh-card-body .mono {
-  font-size: 10.5px;
-  text-transform: uppercase;
+  font-size: 11px;
+  line-height: 1.35;
+  text-transform: none;
+}
+.gh-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 2px;
 }
 .gh-card-tag {
-  justify-self: start;
-  margin-top: 2px;
-  padding: 2px 9px;
-  border: 2.5px solid var(--ink);
+  padding: 2px 8px;
+  border: 2px solid var(--ink);
   border-radius: 999px;
   background: var(--paper);
   color: var(--ink);
+  font-size: 10px;
   font-weight: 800;
+  text-transform: uppercase;
+}
+.gh-card-tag.hot {
+  background: var(--ink);
+  color: var(--paper);
 }
 .gh-card-go {
   grid-area: go;
+  align-self: start;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -311,5 +331,12 @@
   }
   50% {
     transform: translateX(3px);
+  }
+}
+
+/* Em tela grande a arte do cartão tem tamanho fixo, para o cartão não virar um bloco gigante. */
+@media (min-width: 768px) {
+  .gh-card {
+    grid-template-columns: 200px minmax(0, 1fr);
   }
 }

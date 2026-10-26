@@ -5,8 +5,7 @@ import { Link } from '@tanstack/react-router';
 import { BlocksGame as Engine, HINTS_PER_GAME, decodeMove, type BlocksMode } from '@nocap/games';
 import { BackButton } from '@/components/BackButton';
 import { HubCard, HubHero, HubNote, HubSteps, HubTabs } from '@/components/GameHub';
-import { BlocksArt } from '@/components/HubArt';
-import { modeArt } from '@/components/ModePicker';
+import { BlocksArt, BlocksClassicArt, BlocksTowersArt } from '@/components/HubArt';
 import { ModeSheet } from '@/components/ModeSheet';
 import { MuteButton } from '@/components/MuteButton';
 import { ArrowRight } from '@/components/icons';
@@ -122,10 +121,18 @@ function BlocksStart({
 
   // Recorde de cada modo (da conta; sem conta não há recorde)
   const recordOf = (mode: UiMode): number =>
-    !user ? 0 : stats.data ? Math.floor(bestTenths(stats.data, 'blocks', mode) / 10) : mode === 'towers' ? getTowersBest() : getBlocksBest();
+    !user
+      ? 0
+      : stats.data
+        ? Math.floor(bestTenths(stats.data, 'blocks', mode) / 10)
+        : mode === 'towers'
+          ? getTowersBest()
+          : getBlocksBest();
   const recordTag = (mode: UiMode): string => {
     const r = recordOf(mode);
-    return r > 0 ? `Recorde ${r.toLocaleString('pt-BR')} ${mode === 'towers' ? 'peças' : 'pts'}` : 'Sem recorde ainda';
+    return r > 0
+      ? `Recorde ${r.toLocaleString('pt-BR')} ${mode === 'towers' ? 'peças' : 'pts'}`
+      : 'Sem recorde ainda';
   };
 
   return (
@@ -156,9 +163,14 @@ function BlocksStart({
               <HubCard
                 key={m.id}
                 tone={i === 0 ? 'orange' : 'blue'}
-                art={modeArt(m.id)}
+                art={m.id === 'classic' ? <BlocksClassicArt /> : <BlocksTowersArt />}
                 name={m.label}
-                desc={m.desc}
+                desc={
+                  m.id === 'classic'
+                    ? 'Encaixe as peças na grade e feche linhas.'
+                    : 'Empilhe uma torre que balança de verdade.'
+                }
+                tags={m.desc.split(' · ')}
                 tag={recordTag(m.id)}
                 cta={m.id === 'classic' && saved && savedInfo ? 'Continuar ou jogar' : 'Jogar'}
                 onClick={() => setOpen(m.id)}
@@ -174,7 +186,8 @@ function BlocksStart({
             <HubSteps key={m.id} title={m.label} steps={HOW[m.id]} />
           ))}
           <HubNote>
-            Block Towers: no celular use os botões; no computador, setas ou A/D, cima para girar, baixo para descer e E para a magia.
+            Block Towers: no celular use os botões; no computador, setas ou A/D, cima para girar,
+            baixo para descer e E para a magia.
           </HubNote>
         </>
       )}
@@ -219,7 +232,9 @@ function BlocksStart({
                 </div>
                 <div>
                   <dt className="mono">DICAS</dt>
-                  <dd>{HINTS_PER_GAME - saved.hintsUsed}/{HINTS_PER_GAME}</dd>
+                  <dd>
+                    {HINTS_PER_GAME - saved.hintsUsed}/{HINTS_PER_GAME}
+                  </dd>
                 </div>
               </dl>
               <button
@@ -664,7 +679,9 @@ export function BlocksGame() {
           <MuteButton />
         </div>
       </header>
-      {phase === 'menu' && <BlocksStart onStart={(m) => void begin(m)} onResume={resumeRun} busy={busy} />}
+      {phase === 'menu' && (
+        <BlocksStart onStart={(m) => void begin(m)} onResume={resumeRun} busy={busy} />
+      )}
       {phase === 'final' && mode === 'towers' && towersEnd && (
         <TowersFinal
           end={towersEnd}

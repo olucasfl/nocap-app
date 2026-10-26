@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { BackButton } from '@/components/BackButton';
 import { HubCard, HubHero, HubNote, HubSteps, HubTabs } from '@/components/GameHub';
-import { DesmoronaArt } from '@/components/HubArt';
+import { DesmoronaArt, DesmoronaTrainingArt, FriendsArt } from '@/components/HubArt';
 import { MuteButton } from '@/components/MuteButton';
 import { RoomBanner } from '@/components/RoomBanner';
 import { DesmoronaPlay } from './DesmoronaPlay';
@@ -65,44 +65,20 @@ export function DesmoronaPage() {
             <div className="gh-modes">
               <HubCard
                 tone="orange"
-                art={
-                  <svg
-                    viewBox="0 0 32 32"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.6"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
-                  >
-                    <path d="M16 4 26 10v12l-10 6-10-6V10z" />
-                  </svg>
-                }
+                art={<DesmoronaTrainingArt />}
                 name="Treino"
-                desc="Você contra raposas · você escolhe quantas"
+                desc="Jogue sozinho contra raposas controladas pelo jogo."
+                tags={['1 a 7 raposas', 'Offline']}
                 cta="Jogar"
                 onClick={() => setPhase('pick')}
                 testId="dsm-play-btn"
               />
               <HubCard
                 tone="blue"
-                art={
-                  <svg
-                    viewBox="0 0 32 32"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.6"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
-                  >
-                    <circle cx="11" cy="12" r="4" />
-                    <circle cx="22" cy="13" r="3.2" />
-                    <path d="M3 26c0-4 3.6-7 8-7s8 3 8 7M18 26c.4-3 2.4-5 5-5 3 0 5 2 5 5" />
-                  </svg>
-                }
+                art={<FriendsArt />}
                 name="Com amigos"
-                desc="Sala com código · de 2 a 8 jogadores"
+                desc="Crie uma sala e chame a galera."
+                tags={['2 a 8 jogadores', 'Sala com código']}
                 cta="Jogar com amigos"
                 to="/sala"
                 search={{ jogo: 'desmorona' }}

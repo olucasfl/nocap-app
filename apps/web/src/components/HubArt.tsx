@@ -128,7 +128,7 @@ export function EcoArt() {
 }
 
 /** A raposa de boné de perfil (a mesma do Atravessa!), desenhada com os pés em (88, 128). */
-function FoxBody() {
+export function FoxBody() {
   return (
     <>
         <ellipse cx="88" cy="128" rx="20" ry="5" fill="rgba(0,0,0,.3)" />
@@ -335,6 +335,118 @@ export function FoxCapArt() {
             <circle cx="100" cy="46" r="4" fill="#fff" {...stroke} strokeWidth={2.4} />
           </g>
         </g>
+      </g>
+    </svg>
+  );
+}
+
+/** Uma raposinha de frente (cabeça, orelhas, boné), para as artes de grupo. */
+function MiniFox({ x, y, fur, cap, s = 1 }: { x: number; y: number; fur: string; cap: string; s?: number }) {
+  return (
+    <g transform={`translate(${x} ${y}) scale(${s})`}>
+      <path d="M-24 -6L-30 -34L-8 -18Z" fill={fur} {...stroke} strokeWidth={3} />
+      <path d="M24 -6L30 -34L8 -18Z" fill={fur} {...stroke} strokeWidth={3} />
+      <ellipse cx="0" cy="4" rx="28" ry="23" fill={fur} {...stroke} strokeWidth={3.2} />
+      <ellipse cx="0" cy="14" rx="12" ry="8" fill="#fff3e2" />
+      <ellipse cx="0" cy="10" rx="3.6" ry="2.6" fill="#35211a" />
+      <ellipse cx="-10" cy="1" rx="3" ry="4.2" fill={INK} />
+      <ellipse cx="10" cy="1" rx="3" ry="4.2" fill={INK} />
+      <path d="M-27 -4C-27 -30 27 -30 27 -4Z" fill={cap} {...stroke} strokeWidth={3} />
+      <path d="M-27 -8H27" stroke="#fff" strokeWidth="3.5" />
+      <path d="M27 -6L44 -2Q48 2 42 3L-4 3L-4 -2Z" fill={cap} {...stroke} strokeWidth={2.6} />
+    </g>
+  );
+}
+
+/** Jogar com amigos: três raposas de boné lado a lado. */
+export function FriendsArt() {
+  return (
+    <svg className="ha ha-friends" viewBox="0 0 200 150" aria-hidden="true">
+      <rect width="200" height="150" fill="#ffd23f" />
+      <circle cx="40" cy="30" r="18" fill="#fff" opacity="0.35" />
+      <circle cx="170" cy="120" r="26" fill="#fff" opacity="0.3" />
+      <MiniFox x={52} y={92} fur="#ff7d26" cap="#2f5bff" s={0.95} />
+      <MiniFox x={148} y={92} fur="#ff9ecf" cap="#33c27f" s={0.95} />
+      <MiniFox x={100} y={70} fur="#ff7d26" cap="#e5303a" s={1.15} />
+    </svg>
+  );
+}
+
+/** Block Classic: o tabuleiro 8x8 com peças e uma linha prestes a fechar. */
+export function BlocksClassicArt() {
+  const face: Record<string, string> = { o: '#ff6a2b', b: '#2f5bff', p: '#ff9ecf', g: '#33c27f', v: '#7a3cff', y: '#ffd23f' };
+  const rows = ['........', '........', '..y.....', '.yyo....', '.bgo.pp.', 'obgvvppb'];
+  const U = 17;
+  const X0 = 32;
+  const Y0 = 18;
+  return (
+    <svg className="ha ha-bclassic" viewBox="0 0 200 150" aria-hidden="true">
+      <rect width="200" height="150" fill="#ffe2c4" />
+      <rect x={X0 - 5} y={Y0 - 5} width={8 * U + 10} height={6 * U + 10} rx="10" fill="#fff" {...stroke} strokeWidth={3} />
+      {rows.map((row, r) =>
+        [...row].map((c, k) => (
+          <rect
+            key={`${r}-${k}`}
+            x={X0 + k * U + 1}
+            y={Y0 + r * U + 1}
+            width={U - 2}
+            height={U - 2}
+            rx="3.5"
+            fill={c === '.' ? '#111' : face[c]}
+            opacity={c === '.' ? 0.09 : 1}
+            stroke={c === '.' ? 'none' : INK}
+            strokeWidth="2"
+          />
+        )),
+      )}
+      <text x="100" y="140" textAnchor="middle" fontFamily="Archivo, Arial Black, sans-serif" fontWeight="900" fontSize="15" fill={INK}>
+        8 × 8
+      </text>
+    </svg>
+  );
+}
+
+/** Block Towers: uma torre de blocos empilhados num guindaste. */
+export function BlocksTowersArt() {
+  const blk = (x: number, y: number, w: number, fill: string) => (
+    <rect key={`${x}-${y}`} x={x} y={y} width={w} height="18" rx="3.5" fill={fill} {...stroke} strokeWidth={2.6} />
+  );
+  return (
+    <svg className="ha ha-btowers" viewBox="0 0 200 150" aria-hidden="true">
+      <rect width="200" height="150" fill="#bfe6ff" />
+      <path d="M0 132H200V150H0Z" fill="#8dd252" {...stroke} strokeWidth={3} />
+      {blk(66, 112, 68, '#ff6a2b')}
+      {blk(74, 94, 56, '#2f5bff')}
+      {blk(70, 76, 62, '#ffd23f')}
+      {blk(80, 58, 46, '#33c27f')}
+      {blk(78, 40, 50, '#7a3cff')}
+      <path d="M100 8V24" stroke={INK} strokeWidth="3.5" strokeLinecap="round" />
+      <rect x="86" y="22" width="28" height="12" rx="3.5" fill="#ff9ecf" {...stroke} strokeWidth={2.6} />
+      <path d="M150 20h36M168 20v-12" stroke={INK} strokeWidth="3.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/** Desmorona! treino: hexágonos com a raposa no meio e um deles rachando. */
+export function DesmoronaTrainingArt() {
+  const hex = (cx: number, cy: number, fill: string, k: string, extra?: string) => {
+    const pts = Array.from({ length: 6 }, (_, i) => {
+      const a = (Math.PI / 3) * i + Math.PI / 6;
+      return `${(cx + 22 * Math.cos(a)).toFixed(1)},${(cy + 22 * Math.sin(a)).toFixed(1)}`;
+    }).join(' ');
+    return <polygon key={k} points={pts} fill={fill} className={extra} {...stroke} strokeWidth={3} />;
+  };
+  return (
+    <svg className="ha ha-dsmtrain" viewBox="0 0 200 150" aria-hidden="true">
+      <rect width="200" height="150" fill="#7fd3ff" />
+      <ellipse cx="100" cy="140" rx="82" ry="9" fill="#ff5a1f" opacity="0.85" />
+      {hex(62, 88, '#a96bff', 'a')}
+      {hex(100, 88, '#9a5cff', 'b')}
+      {hex(138, 88, '#ff7ab8', 'c')}
+      {hex(81, 118, '#9a5cff', 'd')}
+      {hex(119, 118, '#a96bff', 'e')}
+      <g transform="translate(60 32) scale(0.55)">
+        <FoxBody />
       </g>
     </svg>
   );

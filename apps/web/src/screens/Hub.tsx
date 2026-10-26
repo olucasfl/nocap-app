@@ -238,7 +238,6 @@ export function Hub() {
             name="Word's"
             lines={['JOGOS DE PALAVRAS', 'DAILY COM RANKING E CENTENAS DE FASES']}
             wide
-            badge="NOVO"
           />
         </div>
       </section>

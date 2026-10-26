@@ -53,9 +53,22 @@ export function HubTabs<T extends string>({
   tabs: { id: T; label: string }[];
 }) {
   return (
-    <div className="gh-tabs" role="tablist" aria-label="Seções" style={{ '--n': tabs.length } as CSSProperties}>
+    <div
+      className="gh-tabs"
+      role="tablist"
+      aria-label="Seções"
+      style={{ '--n': tabs.length } as CSSProperties}
+    >
       {tabs.map((t) => (
-        <button key={t.id} type="button" role="tab" aria-selected={value === t.id} data-testid={`tab-${t.id}`} data-sfx="select" onClick={() => onChange(t.id)}>
+        <button
+          key={t.id}
+          type="button"
+          role="tab"
+          aria-selected={value === t.id}
+          data-testid={`tab-${t.id}`}
+          data-sfx="select"
+          onClick={() => onChange(t.id)}
+        >
           {t.label}
         </button>
       ))}
@@ -70,6 +83,7 @@ export function HubCard({
   name,
   desc,
   tag,
+  tags,
   cta,
   onClick,
   to,
@@ -82,6 +96,8 @@ export function HubCard({
   name: string;
   desc: string;
   tag?: string;
+  /** Etiquetas curtas do modo (tamanho, tempo, offline...). */
+  tags?: string[];
   cta: string;
   onClick?: () => void;
   to?: string;
@@ -97,7 +113,16 @@ export function HubCard({
       <span className="gh-card-body">
         <b>{name}</b>
         <span className="mono">{desc}</span>
-        {tag && <span className="gh-card-tag mono">{tag}</span>}
+        {(tags?.length || tag) && (
+          <span className="gh-card-tags">
+            {tags?.map((t) => (
+              <span key={t} className="gh-card-tag mono">
+                {t}
+              </span>
+            ))}
+            {tag && <span className="gh-card-tag mono hot">{tag}</span>}
+          </span>
+        )}
       </span>
       <span className="gh-card-go">
         {cta} <ArrowRight />
@@ -106,13 +131,26 @@ export function HubCard({
   );
   if (to) {
     return (
-      <Link to={to} search={search} className={`gh-card ${tone}`} data-sfx="start" data-testid={testId}>
+      <Link
+        to={to}
+        search={search}
+        className={`gh-card ${tone}`}
+        data-sfx="start"
+        data-testid={testId}
+      >
         {body}
       </Link>
     );
   }
   return (
-    <button type="button" className={`gh-card ${tone}`} data-sfx="start" disabled={disabled} onClick={onClick} data-testid={testId}>
+    <button
+      type="button"
+      className={`gh-card ${tone}`}
+      data-sfx="start"
+      disabled={disabled}
+      onClick={onClick}
+      data-testid={testId}
+    >
       {body}
     </button>
   );

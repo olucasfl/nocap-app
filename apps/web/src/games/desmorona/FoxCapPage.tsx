@@ -1,28 +1,8 @@
 import { BackButton } from '@/components/BackButton';
 import { HubCard, HubHero, HubNote } from '@/components/GameHub';
-import { FoxCapArt } from '@/components/HubArt';
+import { AtravessaArt, DesmoronaArt, FoxCapArt } from '@/components/HubArt';
 import { MuteButton } from '@/components/MuteButton';
 import { Page } from '@/components/Page';
-
-const ICON = {
-  viewBox: '0 0 32 32',
-  fill: 'none',
-  stroke: 'currentColor',
-  strokeWidth: 2.6,
-  strokeLinecap: 'round',
-  strokeLinejoin: 'round',
-  'aria-hidden': true,
-} as const;
-const IconHop = () => (
-  <svg {...ICON}>
-    <path d="M16 27V8M8 15l8-8 8 8" />
-  </svg>
-);
-const IconHex = () => (
-  <svg {...ICON}>
-    <path d="M16 4 26 10v12l-10 6-10-6V10z" />
-  </svg>
-);
 
 /** Fox Cap!: a área das raposas de boné. Aqui moram o Atravessa! e o Desmorona!. */
 export function FoxCapPage() {
@@ -39,18 +19,20 @@ export function FoxCapPage() {
         <div className="gh-modes">
           <HubCard
             tone="red"
-            art={<IconHop />}
+            art={<AtravessaArt />}
             name="Atravessa!"
-            desc="Pule, desvie e atravesse · offline e com amigos"
+            desc="Pule, desvie e atravesse a estrada e o rio."
+            tags={['Offline', 'Com amigos', 'Ranking']}
             cta="Jogar"
             to="/atravessa"
             testId="foxcap-atravessa"
           />
           <HubCard
             tone="orange"
-            art={<IconHex />}
+            art={<DesmoronaArt />}
             name="Desmorona!"
-            desc="O chão some · último de pé vence"
+            desc="O chão some debaixo dos pés. Vence o último de pé."
+            tags={['2 a 8 jogadores', 'Treino com bots']}
             cta="Jogar"
             to="/fox-cap/desmorona"
             testId="foxcap-desmorona"

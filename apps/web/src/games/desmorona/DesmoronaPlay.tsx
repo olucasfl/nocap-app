@@ -73,10 +73,23 @@ export function DesmoronaPlay({
   const canvas = useRef<HTMLCanvasElement>(null);
   const zone = useRef<HTMLDivElement>(null);
   const root = useRef<HTMLDivElement>(null);
-  const [hud, setHud] = useState<Hud>({ alive: total, total, layer: 1, phase: 'ready', count: 3, note: '', dead: false, watching: '' });
+  const [hud, setHud] = useState<Hud>({
+    alive: total,
+    total,
+    layer: 1,
+    phase: 'ready',
+    count: 3,
+    note: '',
+    dead: false,
+    watching: '',
+  });
   const [stick, setStick] = useState<{ ox: number; oy: number; x: number; y: number } | null>(null);
   const [locked, setLocked] = useState(false);
-  const mouseUser = useMemo(() => typeof matchMedia === 'function' && matchMedia('(hover: hover) and (pointer: fine)').matches, []);
+  const mouseUser = useMemo(
+    () =>
+      typeof matchMedia === 'function' && matchMedia('(hover: hover) and (pointer: fine)').matches,
+    [],
+  );
   const [result, setResult] = useState<DsmResult | null>(null);
   const controls = useMemo(() => new DsmControls(), []);
   const spectate = useRef({ index: 0 });
@@ -90,16 +103,26 @@ export function DesmoronaPlay({
     const meId = online?.meId ?? 'me';
     const infos: DsmPlayerInfo[] = online?.infos ?? [
       { id: 'me', name: 'Você', color: FURS[0] as number },
-      ...Array.from({ length: bots }, (_, i) => ({ id: `bot${i}`, name: BOT_NAMES[i] ?? `Raposa ${i + 1}`, color: FURS[(i + 1) % FURS.length] as number, bot: true })),
+      ...Array.from({ length: bots }, (_, i) => ({
+        id: `bot${i}`,
+        name: BOT_NAMES[i] ?? `Raposa ${i + 1}`,
+        color: FURS[(i + 1) % FURS.length] as number,
+        bot: true,
+      })),
     ];
     const seed = online?.seed ?? seedOf();
     const world = new DsmWorld(seed, infos);
     if (online) world.goOnline(meId);
     // só no desenvolvimento: os testes de ponta a ponta leem o mundo para conferir o pulo
     if (import.meta.env.DEV) (window as unknown as { __dsm?: DsmWorld }).__dsm = world;
-    const reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const reduced =
+      typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
     const scene = new DsmScene(el, world, reduced);
-    const mem = new Map(world.players.filter((p) => p.bot).map((p, i) => [p.id, newBotMemory((i % 4) * 0.15, i % 3 === 0 ? 0.5 : 0)]));
+    const mem = new Map(
+      world.players
+        .filter((p) => p.bot)
+        .map((p, i) => [p.id, newBotMemory((i % 4) * 0.15, i % 3 === 0 ? 0.5 : 0)]),
+    );
     const rng = createRng(`${seed}:bots`);
     controls.attach(zoneEl, setStick);
     if (root.current) {
@@ -149,7 +172,21 @@ export function DesmoronaPlay({
     const me = () => world.players.find((p) => p.id === meId)!;
 
     // ---- online: posições dos outros, ladrilhos pisados e quem caiu ----
-    const targets = new Map<string, { x: number; y: number; z: number; vx: number; vz: number; heading: number; grounded: boolean; layer: number; air: boolean; at: number }>();
+    const targets = new Map<
+      string,
+      {
+        x: number;
+        y: number;
+        z: number;
+        vx: number;
+        vz: number;
+        heading: number;
+        grounded: boolean;
+        layer: number;
+        air: boolean;
+        at: number;
+      }
+    >();
     const unsubs: (() => void)[] = [];
     let posTimer = 0;
     if (online) {
@@ -161,7 +198,18 @@ export function DesmoronaPlay({
             const id = idOfSlot.get(row[0] as number);
             if (!id || id === meId) continue;
             const flags = row[7] as number;
-            targets.set(id, { x: row[1]!, y: row[2]!, z: row[3]!, vx: row[4]!, vz: row[5]!, heading: row[6]!, grounded: (flags & 1) === 1, layer: (flags >> 1) & 15, air: (flags & 32) !== 0, at: performance.now() });
+            targets.set(id, {
+              x: row[1]!,
+              y: row[2]!,
+              z: row[3]!,
+              vx: row[4]!,
+              vz: row[5]!,
+              heading: row[6]!,
+              grounded: (flags & 1) === 1,
+              layer: (flags >> 1) & 15,
+              air: (flags & 32) !== 0,
+              at: performance.now(),
+            });
           }
         }),
         subscribeRoom('dpushed', (m) => {
@@ -174,7 +222,8 @@ export function DesmoronaPlay({
         }),
         subscribeRoom('dsteps', (m) => {
           if (!Array.isArray(m)) return;
-          for (const row of m as number[][]) world.applyStep(row[0]!, row[1]!, row[2]!, row[3]! / 1000);
+          for (const row of m as number[][])
+            world.applyStep(row[0]!, row[1]!, row[2]!, row[3]! / 1000);
         }),
       );
       sendRoomQuiet('dsync');
@@ -182,7 +231,15 @@ export function DesmoronaPlay({
         const m = me();
         if (!m.alive || phase !== 'play') return;
         const layer = Math.max(0, m.grounded ? m.layer : m.deepest);
-        sendRoomQuiet('dpos', [m.x, m.y, m.z, m.vx, m.vz, m.heading, (m.grounded ? 1 : 0) + layer * 2 + (m.airJumped ? 32 : 0)]);
+        sendRoomQuiet('dpos', [
+          m.x,
+          m.y,
+          m.z,
+          m.vx,
+          m.vz,
+          m.heading,
+          (m.grounded ? 1 : 0) + layer * 2 + (m.airJumped ? 32 : 0),
+        ]);
       }, POS_EVERY_MS);
     }
     /** Suaviza as raposas dos outros em direção ao último relato (com um pouco de extrapolação). */
@@ -198,7 +255,17 @@ export function DesmoronaPlay({
         const first = p.deepest < 0 && !p.grounded && p.y > 12;
         const far = Math.hypot(p.x - tx, p.z - tz) > 6;
         const f = first || far ? 1 : k;
-        world.setRemote(p.id, { x: p.x + (tx - p.x) * f, y: p.y + (t.y - p.y) * Math.max(f, 0.5), z: p.z + (tz - p.z) * f, vx: t.vx, vz: t.vz, heading: t.heading, grounded: t.grounded, layer: t.layer, airJumped: t.air });
+        world.setRemote(p.id, {
+          x: p.x + (tx - p.x) * f,
+          y: p.y + (t.y - p.y) * Math.max(f, 0.5),
+          z: p.z + (tz - p.z) * f,
+          vx: t.vx,
+          vz: t.vz,
+          heading: t.heading,
+          grounded: t.grounded,
+          layer: t.layer,
+          airJumped: t.air,
+        });
       }
     };
 
@@ -206,7 +273,9 @@ export function DesmoronaPlay({
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
       if (phase === 'ready') {
-        const left = online ? (online.startAt - serverNow()) / 1000 : COUNTDOWN - (now - readyAt) / 1000;
+        const left = online
+          ? (online.startAt - serverNow()) / 1000
+          : COUNTDOWN - (now - readyAt) / 1000;
         const n = Math.ceil(left - 0.4);
         if (n !== lastCount && n >= 0 && n <= 3) {
           lastCount = n;
@@ -259,7 +328,8 @@ export function DesmoronaPlay({
             if (mm.grounded || mm.coyote > 0) dsmSfx.jump();
           }
           const inputs: Record<string, DsmInput> = { [meId]: input };
-          for (const p of world.players) if (p.bot) inputs[p.id] = botInput(world, p, mem.get(p.id)!, rng);
+          for (const p of world.players)
+            if (p.bot) inputs[p.id] = botInput(world, p, mem.get(p.id)!, rng);
           world.step(DSM_DT, inputs);
           input.jump = false;
         }
@@ -271,8 +341,7 @@ export function DesmoronaPlay({
             if (e.type === 'step' && e.id === meId) {
               dsmSfx.step();
               if (online) sendRoomQuiet('dstep', { l: e.layer, q: e.q, r: e.r });
-            }
-            else if (e.type === 'break') {
+            } else if (e.type === 'break') {
               const t = world.tile(e.layer, e.q, e.r);
               if (t) dsmSfx.crumble(Math.max(0, 1 - Math.hypot(t.x - mp.x, t.z - mp.z) / 22));
             } else if (e.type === 'land' && e.id === meId) dsmSfx.land(e.layer > 0);
@@ -282,7 +351,8 @@ export function DesmoronaPlay({
             } else if (e.type === 'airjump') {
               dsmSfx.airJump(e.id === meId);
             } else if (e.type === 'push') {
-              if (online && e.from === meId) sendRoomQuiet('dpush', { to: e.to, kx: e.kx, kz: e.kz });
+              if (online && e.from === meId)
+                sendRoomQuiet('dpush', { to: e.to, kx: e.kx, kz: e.kz });
               if (e.from === meId || e.to === meId) {
                 dsmSfx.bump(e.from === meId);
                 if (e.to === meId) scene.shakeNow(0.5);
@@ -390,7 +460,9 @@ export function DesmoronaPlay({
         </div>
       )}
       {mouseUser && !locked && hud.phase === 'play' && !hud.dead && !result && (
-        <div className="dsm-lockhint">Aperte uma tecla ou clique para a câmera seguir o mouse (Esc solta)</div>
+        <div className="dsm-lockhint">
+          Aperte uma tecla ou clique para a câmera seguir o mouse (Esc solta)
+        </div>
       )}
       {hud.note && hud.phase !== 'ready' && <div className="dsm-note">{hud.note}</div>}
       {hud.dead && !result && (
@@ -422,7 +494,11 @@ export function DesmoronaPlay({
       {result && (
         <div className="dsm-over" role="dialog" aria-modal="true" aria-label="Resultado">
           <div className="dsm-over-card">
-            <h2>{result.winnerId === 'me' ? 'Você venceu!' : `${result.standings[0]?.name ?? 'Alguém'} venceu`}</h2>
+            <h2>
+              {result.winnerId === 'me'
+                ? 'Você venceu!'
+                : `${result.standings[0]?.name ?? 'Alguém'} venceu`}
+            </h2>
             <ol>
               {result.standings.map((s, i) => (
                 <li key={s.id} className={s.you ? 'is-you' : ''}>

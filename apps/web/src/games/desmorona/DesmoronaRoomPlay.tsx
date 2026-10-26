@@ -18,7 +18,11 @@ export function DesmoronaRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
     if (!info || startAt === null || !seed) return null;
     const list: DsmPlayerInfo[] = Object.entries(info.slots)
       .sort((a, b) => a[1] - b[1])
-      .map(([id]) => ({ id, name: at(members.find((m) => m.id === id)?.username), color: Number.parseInt((info.colors[id] ?? '#ff7d26').replace('#', ''), 16) }));
+      .map(([id]) => ({
+        id,
+        name: at(members.find((m) => m.id === id)?.username),
+        color: Number.parseInt((info.colors[id] ?? '#ff7d26').replace('#', ''), 16),
+      }));
     return { seed, startAt, meId, infos: list };
     // a lista só muda se mudarem as vagas: nomes novos no meio da partida não recriam a cena
   }, [seed, startAt, meId, slotKey]);

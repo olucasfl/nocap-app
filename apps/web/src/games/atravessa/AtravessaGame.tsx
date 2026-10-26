@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { AtravessaInput, AtravessaResult } from '@nocap/games';
 import { BackButton } from '@/components/BackButton';
 import { HubCard, HubHero, HubNote, HubSteps, HubTabs } from '@/components/GameHub';
-import { AtravessaArt } from '@/components/HubArt';
+import { AtravessaArt, FriendsArt } from '@/components/HubArt';
 import { MuteButton } from '@/components/MuteButton';
 import { SaveNote } from '@/components/GuestNotice';
 import { RoomBanner } from '@/components/RoomBanner';
@@ -38,7 +38,9 @@ function saveLocalBest(rows: number) {
 }
 /** O recorde da conta, em linhas (o servidor guarda em décimos). */
 const serverBest = (stats: Stats | undefined) =>
-  Math.floor((stats?.modes.find((m) => m.game === 'atravessa' && m.mode === 'infinito')?.best ?? 0) / 10);
+  Math.floor(
+    (stats?.modes.find((m) => m.game === 'atravessa' && m.mode === 'infinito')?.best ?? 0) / 10,
+  );
 
 const HOW = [
   'Pule de faixa em faixa e chegue o mais longe que der. Cada linha nova vale um ponto.',
@@ -78,13 +80,10 @@ function AtravessaMenu({ onStart, busy }: { onStart: () => void; busy: boolean }
           <div className="gh-modes">
             <HubCard
               tone="red"
-              art={
-                <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M16 27V8M8 15l8-8 8 8" />
-                </svg>
-              }
+              art={<AtravessaArt />}
               name="Infinito"
-              desc="Sem fim · vale a distância"
+              desc="Pule sem parar: vale a distância que você alcançar."
+              tags={['Sem fim', 'Offline']}
               tag={best > 0 ? `Recorde ${best} linhas` : 'Sem recorde ainda'}
               cta={busy ? 'Preparando...' : 'Jogar'}
               disabled={busy}
@@ -93,28 +92,28 @@ function AtravessaMenu({ onStart, busy }: { onStart: () => void; busy: boolean }
             />
             <HubCard
               tone="blue"
-              art={
-                <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <circle cx="11" cy="12" r="4" />
-                  <circle cx="22" cy="13" r="3.2" />
-                  <path d="M3 26c0-4 3.6-7 8-7s8 3 8 7M18 26c.4-3 2.4-5 5-5 3 0 5 2 5 5" />
-                </svg>
-              }
+              art={<FriendsArt />}
               name="Com amigos"
-              desc="Corrida em sala · até 8 jogadores"
+              desc="Cada um com a sua cor, no mesmo mapa."
+              tags={['2 a 8 jogadores', 'Sala com código']}
               cta="Jogar com amigos"
               to="/sala"
               search={{ jogo: 'atravessa' }}
               testId="atravessa-friends"
             />
           </div>
-          {!user && <HubNote>Entre na sua conta para salvar no ranking, no histórico e nos recordes.</HubNote>}
+          {!user && (
+            <HubNote>
+              Entre na sua conta para salvar no ranking, no histórico e nos recordes.
+            </HubNote>
+          )}
         </>
       ) : (
         <>
           <HubSteps title="Como jogar" steps={HOW} />
           <HubNote>
-            No celular: toque pula para a frente e deslizar vai para o lado ou para trás. No computador: W A S D.
+            No celular: toque pula para a frente e deslizar vai para o lado ou para trás. No
+            computador: W A S D.
           </HubNote>
         </>
       )}
@@ -162,7 +161,9 @@ function AtravessaFinal({
         <h1>{VERDICT[result.end ?? 'parado']}</h1>
       </div>
       <div className="atf-score">
-        {isRecord && <span className="atf-badge mono">{before > 0 ? 'NOVO RECORDE' : 'PRIMEIRO RECORDE'}</span>}
+        {isRecord && (
+          <span className="atf-badge mono">{before > 0 ? 'NOVO RECORDE' : 'PRIMEIRO RECORDE'}</span>
+        )}
         <span className="mono atf-label">LINHAS</span>
         <div className="atf-big">
           <b>{rows}</b>
@@ -179,7 +180,13 @@ function AtravessaFinal({
       </div>
       <SaveNote className="mono atf-note" save={save} />
       <div className="stack atf-actions">
-        <button type="button" className="btn alt" data-sfx="start" disabled={busy} onClick={onAgain}>
+        <button
+          type="button"
+          className="btn alt"
+          data-sfx="start"
+          disabled={busy}
+          onClick={onAgain}
+        >
           {busy ? 'Preparando...' : 'Jogar de novo'}
         </button>
         {!guest && (
@@ -228,7 +235,11 @@ export function AtravessaGame() {
     let best = signedIn ? localBest() : 0;
     try {
       if (!signedIn) throw new Error('guest');
-      const stats = await queryClient.fetchQuery({ queryKey: ['stats'], queryFn: fetchStats, staleTime: 0 });
+      const stats = await queryClient.fetchQuery({
+        queryKey: ['stats'],
+        queryFn: fetchStats,
+        staleTime: 0,
+      });
       best = Math.max(best, serverBest(stats));
     } catch {
       /* convidado: vale o recorde deste aparelho */
