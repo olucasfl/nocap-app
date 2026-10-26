@@ -28,6 +28,7 @@ import { RoundScreen } from './screens/RoundScreen';
 import type { Mode, RoundResult, Run } from './types';
 import './time.css';
 import './result.css';
+import { Page } from '@/components/Page';
 
 type Phase = 'start' | 'intro' | 'target' | 'counting' | 'result' | 'final';
 
@@ -176,7 +177,7 @@ export function TimeGame({
   const last = results[results.length - 1];
 
   return (
-    <div className={`app${counting ? ' tm-silent' : ''}`}>
+    <Page rail={!playing} className={counting ? 'tm-silent' : ''}>
       <header className="top">
         <Link to="/" className="logo" aria-label="Voltar aos jogos">
           no cap<span>!</span>
@@ -270,7 +271,7 @@ export function TimeGame({
           onRematch={() => void start(run.mode === 'daily' ? 'classic' : run.mode)}
         />
       )}
-    </div>
+    </Page>
   );
 }
 

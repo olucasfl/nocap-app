@@ -10,9 +10,9 @@ const tabs = [
   { to: '/perfil', label: 'Perfil', Icon: User, sfx: 'navFriends' },
 ] as const;
 
-export function BottomNav() {
+export function BottomNav({ railOnly = false }: { railOnly?: boolean }) {
   return (
-    <nav className="bottom-nav" aria-label="Navegação principal">
+    <nav className={`bottom-nav${railOnly ? ' rail-only' : ''}`} aria-label="Navegação principal">
       {/* Só aparece no menu lateral (tablet e computador). */}
       <div className="rail-logo" aria-hidden="true">
         no cap<span>!</span>

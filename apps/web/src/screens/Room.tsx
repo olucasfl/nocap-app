@@ -23,6 +23,7 @@ import { DesmoronaRoomPlay } from '@/games/desmorona/DesmoronaRoomPlay';
 import './account.css';
 import './friends.css';
 import './room.css';
+import { Page } from '@/components/Page';
 
 /**
  * O logo leva ao início sem tirar a pessoa da sala: lá em cima aparece "Você está na sala" com o
@@ -207,16 +208,16 @@ export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomG
 
   if (authStatus === 'loading' || resuming) {
     return (
-      <div className="app">
+      <Page>
         <Header />
         <Loader />
-      </div>
+      </Page>
     );
   }
 
   if (!online && !snapshot) {
     return (
-      <div className="app">
+      <Page>
         <Header />
         <section className="screen rm">
           <LoadFailed
@@ -227,7 +228,7 @@ export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomG
             Voltar aos jogos
           </Link>
         </section>
-      </div>
+      </Page>
     );
   }
 
@@ -241,7 +242,7 @@ export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomG
   }
 
   return (
-    <div className="app">
+    <Page rail={!snapshot || snapshot.phase === 'lobby' || snapshot.phase === 'final'}>
       <Header
         round={
           snapshot &&
@@ -286,7 +287,7 @@ export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomG
         ].includes(snapshot.phase) && <Play snapshot={snapshot} />}
       {snapshot?.phase === 'final' && <Final snapshot={snapshot} />}
       {snapshot && <ChatDock snapshot={snapshot} />}
-    </div>
+    </Page>
   );
 }
 

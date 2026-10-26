@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { BackButton } from '@/components/BackButton';
 import './words.css';
+import { Page } from '@/components/Page';
 
 export type Accent = 'green' | 'blue' | 'yellow';
 
@@ -24,7 +25,7 @@ export function WordsShell({
   fit?: boolean;
 }) {
   return (
-    <div className={`app wd-app${fit ? ' fit' : ''}`}>
+    <Page rail={!fit} className={`wd-app${fit ? ' fit' : ''}`}>
       <main className={`screen wd ${accent ? `wd-${accent}` : ''} ${className}`}>
         <header className="wd-top">
           <BackButton to={back} />
@@ -33,7 +34,7 @@ export function WordsShell({
         </header>
         {children}
       </main>
-    </div>
+    </Page>
   );
 }
 

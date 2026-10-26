@@ -2,6 +2,7 @@ import { BackButton } from '@/components/BackButton';
 import { HubCard, HubHero, HubNote } from '@/components/GameHub';
 import { FoxCapArt } from '@/components/HubArt';
 import { MuteButton } from '@/components/MuteButton';
+import { Page } from '@/components/Page';
 
 const ICON = {
   viewBox: '0 0 32 32',
@@ -26,7 +27,7 @@ const IconHex = () => (
 /** Fox Cap!: a área das raposas de boné. Aqui moram o Atravessa! e o Desmorona!. */
 export function FoxCapPage() {
   return (
-    <div className="app">
+    <Page>
       <section className="screen gh">
         <BackButton to="/" label="Jogos" />
         <HubHero
@@ -61,6 +62,6 @@ export function FoxCapPage() {
         </HubNote>
         <MuteButton />
       </section>
-    </div>
+    </Page>
   );
 }

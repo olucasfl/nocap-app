@@ -14,6 +14,7 @@ import { fetchStats, type Stats } from '@/lib/stats';
 import { AtravessaPlay } from './AtravessaPlay';
 import { useSaveAtravessa, type AtravessaRunInfo } from './useSaveAtravessa';
 import './atravessa.css';
+import { Page } from '@/components/Page';
 
 type Phase = 'menu' | 'play' | 'final';
 
@@ -258,7 +259,7 @@ export function AtravessaGame() {
   }
 
   return (
-    <div className="app">
+    <Page>
       <header className="top">
         <Link to="/" className="logo" aria-label="Voltar aos jogos">
           no cap<span>!</span>
@@ -279,6 +280,6 @@ export function AtravessaGame() {
           onMenu={() => setPhase('menu')}
         />
       )}
-    </div>
+    </Page>
   );
 }

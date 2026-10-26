@@ -17,6 +17,7 @@ import { IntroScreen } from './screens/IntroScreen';
 import { StartScreen } from './screens/StartScreen';
 import type { BatidaRunInfo, EndReason, Mode, Run } from './types';
 import './eco.css';
+import { Page } from '@/components/Page';
 
 type Phase = 'start' | 'intro' | 'play' | 'final';
 
@@ -125,7 +126,7 @@ export function EcoGame({
   const playing = phase === 'play';
 
   return (
-    <div className="app">
+    <Page rail={!playing}>
       <header className="top">
         <Link to="/" className="logo" aria-label="Voltar aos jogos">
           no cap<span>!</span>
@@ -210,6 +211,6 @@ export function EcoGame({
           onRematch={() => void start(run.mode === 'daily' ? 'classic' : run.mode)}
         />
       )}
-    </div>
+    </Page>
   );
 }

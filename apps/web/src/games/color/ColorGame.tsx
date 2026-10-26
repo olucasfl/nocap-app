@@ -31,6 +31,7 @@ import { StartScreen } from './screens/StartScreen';
 import { useSaveMatch } from './useSaveMatch';
 import type { Mode, RoundResult, Run } from './types';
 import './color.css';
+import { Page } from '@/components/Page';
 
 type Phase = 'start' | 'show' | 'pick' | 'result' | 'final';
 
@@ -140,7 +141,7 @@ export function ColorGame({
   const lives = sv?.lives ?? 0;
 
   return (
-    <div className="app">
+    <Page rail={!playing}>
       <header className="top">
         <Link to="/" className="logo" aria-label="Voltar aos jogos">
           no cap<span>!</span>
@@ -231,7 +232,7 @@ export function ColorGame({
           onRematch={() => start(run.mode === 'daily' ? 'classic' : run.mode)}
         />
       )}
-    </div>
+    </Page>
   );
 }
 

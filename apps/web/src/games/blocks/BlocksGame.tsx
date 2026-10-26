@@ -28,6 +28,7 @@ import { TowersPlay, type TowersEnd } from './towers/TowersPlay';
 import { SaveNote } from '@/components/GuestNotice';
 import { useSaveBlocks, type BlocksRunInfo } from './useSaveBlocks';
 import './blocks.css';
+import { Page } from '@/components/Page';
 
 type Phase = 'menu' | 'play' | 'final';
 
@@ -654,7 +655,7 @@ export function BlocksGame() {
   }
 
   return (
-    <div className="app">
+    <Page>
       <header className="top">
         <Link to="/" className="logo" aria-label="Voltar aos jogos">
           no cap<span>!</span>
@@ -685,6 +686,6 @@ export function BlocksGame() {
           onMenu={() => setPhase('menu')}
         />
       )}
-    </div>
+    </Page>
   );
 }

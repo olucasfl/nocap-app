@@ -14,6 +14,7 @@ import {
 } from '@/lib/account-form';
 import { register } from '@/lib/auth';
 import './account.css';
+import { Page } from '@/components/Page';
 
 const EMPTY: RegisterForm = { username: '', name: '', email: '', password: '', confirm: '' };
 
@@ -46,7 +47,7 @@ export function Register() {
   };
 
   return (
-    <div className="app">
+    <Page>
       <header className="top">
         <Link to="/" className="logo" aria-label="Voltar aos jogos">
           no cap<span>!</span>
@@ -119,6 +120,6 @@ export function Register() {
           </Link>
         </div>
       </form>
-    </div>
+    </Page>
   );
 }

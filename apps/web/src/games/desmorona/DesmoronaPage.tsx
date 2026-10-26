@@ -6,6 +6,7 @@ import { MuteButton } from '@/components/MuteButton';
 import { RoomBanner } from '@/components/RoomBanner';
 import { DesmoronaPlay } from './DesmoronaPlay';
 import './desmorona.css';
+import { Page } from '@/components/Page';
 
 const HOW = [
   'Todo mundo cai do céu na camada de cima. Cada ladrilho que você pisa aguenta um instante e some.',
@@ -36,7 +37,7 @@ export function DesmoronaPage() {
     );
   }
   return (
-    <div className="app">
+    <Page>
       <section className="screen gh">
         <BackButton to="/fox-cap" label="Fox Cap!" />
         <HubHero
@@ -158,6 +159,6 @@ export function DesmoronaPage() {
         )}
         <MuteButton />
       </section>
-    </div>
+    </Page>
   );
 }

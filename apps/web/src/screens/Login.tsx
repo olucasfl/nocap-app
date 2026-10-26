@@ -6,6 +6,7 @@ import { Field } from '@/components/Field';
 import { validateLogin } from '@/lib/account-form';
 import { login } from '@/lib/auth';
 import './account.css';
+import { Page } from '@/components/Page';
 
 export function Login() {
   const navigate = useNavigate();
@@ -34,7 +35,7 @@ export function Login() {
   };
 
   return (
-    <div className="app">
+    <Page>
       <header className="top">
         <Link to="/" className="logo" aria-label="Voltar aos jogos">
           no cap<span>!</span>
@@ -74,6 +75,6 @@ export function Login() {
           </Link>
         </div>
       </form>
-    </div>
+    </Page>
   );
 }
