@@ -39,6 +39,13 @@ export class BolaScene {
   private disposed = false;
   private tags: THREE.Sprite[] = [];
   private shake = 0;
+  private bursts: {
+    pts: THREE.Points;
+    vel: Float32Array;
+    age: number;
+    life: number;
+    delay: number;
+  }[] = [];
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -533,6 +540,60 @@ export class BolaScene {
     return this.yaw;
   }
 
+  /** Comemoração: confete na boca do gol e fogos sobre o campo, só partículas (nada de DOM). */
+  celebrate(goalTeam: number, color: number) {
+    const f = this.world.field;
+    const g = f.goals[goalTeam];
+    const palette = [color, 0xffffff, 0xffd23f, color, 0xff6a5c, 0x4fc3f7];
+    const make = (
+      x: number,
+      y: number,
+      z: number,
+      n: number,
+      speed: number,
+      up: number,
+      delay: number,
+      life: number,
+    ) => {
+      const pos = new Float32Array(n * 3);
+      const col = new Float32Array(n * 3);
+      const vel = new Float32Array(n * 3);
+      const c = new THREE.Color();
+      for (let i = 0; i < n; i++) {
+        pos.set([x, y, z], i * 3);
+        const a = Math.random() * Math.PI * 2;
+        const r = Math.random() * speed;
+        vel.set([Math.cos(a) * r, up * (0.5 + Math.random()), Math.sin(a) * r], i * 3);
+        c.set(palette[Math.floor(Math.random() * palette.length)] as number);
+        col.set([c.r, c.g, c.b], i * 3);
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+      const pts = new THREE.Points(
+        geo,
+        new THREE.PointsMaterial({
+          size: 0.42,
+          vertexColors: true,
+          transparent: true,
+          depthWrite: false,
+          fog: false,
+        }),
+      );
+      pts.visible = delay <= 0;
+      pts.frustumCulled = false;
+      this.scene.add(pts);
+      this.bursts.push({ pts, vel, age: 0, life, delay });
+    };
+    if (g) make(g.edge.mx + g.edge.nx * 1.5, 1.6, g.edge.mz + g.edge.nz * 1.5, 220, 7, 11, 0, 4.2);
+    // fogos sobre o meio do campo, escalonados
+    for (let i = 0; i < 4; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const r = 3 + Math.random() * 7;
+      make(Math.cos(a) * r, 9 + Math.random() * 4, Math.sin(a) * r, 140, 8, 3, 0.5 + i * 0.7, 2.6);
+    }
+  }
+
   shakeNow(amount: number) {
     this.shake = Math.max(this.shake, amount);
   }
@@ -547,7 +608,6 @@ export class BolaScene {
       this.ball.rotation.x += (b.vz * dt) / BOL_BALL_R;
       this.ball.rotation.z -= (b.vx * dt) / BOL_BALL_R;
     }
-    this.ball.visible = this.world.phase !== 'goal';
     this.ballShadow.position.set(b.x, 0.03, b.z);
     this.ballShadow.scale.setScalar(Math.max(0.4, 1 - (b.y - BOL_BALL_R) * 0.08));
     for (const p of this.world.players) {
@@ -572,8 +632,40 @@ export class BolaScene {
         fox.body.rotation.x = pitch;
       }
     }
+    // confete e fogos
+    for (let i = this.bursts.length - 1; i >= 0; i--) {
+      const bst = this.bursts[i]!;
+      if (bst.delay > 0) {
+        bst.delay -= dt;
+        if (bst.delay <= 0) bst.pts.visible = true;
+        continue;
+      }
+      bst.age += dt;
+      const attr = bst.pts.geometry.getAttribute('position') as THREE.BufferAttribute;
+      const arr = attr.array as Float32Array;
+      for (let k = 0; k < arr.length; k += 3) {
+        bst.vel[k + 1]! -= 9 * dt;
+        bst.vel[k]! *= 1 - 0.6 * dt;
+        bst.vel[k + 2]! *= 1 - 0.6 * dt;
+        arr[k]! += bst.vel[k]! * dt;
+        arr[k + 1]! = Math.max(0.05, arr[k + 1]! + bst.vel[k + 1]! * dt);
+        arr[k + 2]! += bst.vel[k + 2]! * dt;
+      }
+      attr.needsUpdate = true;
+      (bst.pts.material as THREE.PointsMaterial).opacity = Math.max(
+        0,
+        Math.min(1, (bst.life - bst.age) / 0.8),
+      );
+      if (bst.age >= bst.life) {
+        this.scene.remove(bst.pts);
+        bst.pts.geometry.dispose();
+        (bst.pts.material as THREE.Material).dispose();
+        this.bursts.splice(i, 1);
+      }
+    }
     // câmera
-    const target = this.world.players.find((p) => p.id === focusId);
+    // sem corpo (espectador), a câmera segue a bola
+    const target = this.world.players.find((p) => p.id === focusId) ?? { x: b.x, y: 0, z: b.z };
     if (target) {
       this.camFocus.lerp(tmp.set(target.x, target.y, target.z), 1 - Math.exp(-dt * 8));
       this.shake = Math.max(0, this.shake - dt * 2.4);

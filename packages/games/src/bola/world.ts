@@ -5,6 +5,7 @@ import {
   BOL_AIR_JUMP,
   BOL_BALL_MAX,
   BOL_BALL_R,
+  BOL_BAR_R,
   BOL_CEILING,
   BOL_COUNTDOWN,
   BOL_DURATION,
@@ -57,7 +58,31 @@ export interface BolInput {
   jump: boolean;
 }
 
+/** O que cada raposa fez na partida (aparece na tabela do Tab). */
+export interface BolStats {
+  goals: number;
+  assists: number;
+  /** Gols contra (a bola entrou no gol do próprio time depois de um toque seu). */
+  ownGoals: number;
+  /** Toques na bola (uma sequência de contatos seguidos conta uma vez). */
+  touches: number;
+  /** Mortais que chutaram a bola. */
+  kicks: number;
+}
+
+export const emptyBolStats = (): BolStats => ({
+  goals: 0,
+  assists: 0,
+  ownGoals: 0,
+  touches: 0,
+  kicks: 0,
+});
+
+/** Passe para gol: o toque anterior de um companheiro vale assistência se veio até tanto tempo antes do gol (s). */
+export const BOL_ASSIST_WINDOW = 6;
+
 export interface BolPlayer extends BolInfo {
+  stats: BolStats;
   x: number;
   y: number;
   z: number;
@@ -106,13 +131,19 @@ export type BolEvent =
   | {
       type: 'goal';
       goalTeam: number;
+      /** Quem marcou (gol normal); nulo no gol contra e sem toque. */
       scorerId: string | null;
+      /** Time que leva o ponto. */
       scorerTeam: number;
+      /** Gol contra: o último toque foi do time que levou o gol (ou ninguém tocou). */
       own: boolean;
+      /** Quem fez o gol contra (último toque do time que levou o gol). */
+      ownerId: string | null;
       noTouch: boolean;
+      assistId: string | null;
     }
   /** Sem toque e com 3 ou 4 times não há como decidir: ninguém pontua e a bola volta ao centro. */
-  | { type: 'nogoal'; goalTeam: number }
+  | { type: 'nogoal'; goalTeam: number; ownerId: string | null }
   | { type: 'start'; golden: boolean }
   | { type: 'warn'; left: number }
   | { type: 'golden' }
@@ -145,6 +176,14 @@ export class BolWorld {
   golden = false;
   /** Último toque real na bola desde o último recomeço. */
   lastTouch: BolTouch | null = null;
+  /** O toque mais recente de cada time desde o recomeço (decide o ponto do gol contra). */
+  lastByTeam: (BolTouch | null)[] = [];
+  /** Time que comemora na pausa depois do gol (-1 = ninguém). */
+  celebrating = -1;
+  /** O toque anterior, de outra raposa (para a assistência). */
+  prevTouch: BolTouch | null = null;
+  /** Segundos de posse de bola por time (o time do último toque). */
+  readonly possession: number[];
   /** Time vencedor; -1 = empate; só vale com `phase === 'over'`. */
   winner = -1;
   private events: BolEvent[] = [];
@@ -155,6 +194,7 @@ export class BolWorld {
   constructor(infos: readonly BolInfo[], opts: BolOptions) {
     this.field = buildField(opts.teams, opts.perTeam);
     this.scores = Array.from({ length: this.field.teams }, () => 0);
+    this.possession = Array.from({ length: this.field.teams }, () => 0);
     this.durationSec = opts.durationSec ?? BOL_DURATION;
     for (const info of infos) this.players.push(this.spawnBody(info));
     this.kickoff();
@@ -175,6 +215,7 @@ export class BolWorld {
     const s = this.field.spawn(info.team, idx, Math.max(idx + 1, this.field.perTeam));
     return {
       ...info,
+      stats: emptyBolStats(),
       x: s.x,
       y: 0,
       z: s.z,
@@ -218,7 +259,13 @@ export class BolWorld {
     p.color = info.color;
     p.bot = info.bot;
     p.team = info.team;
-    if (this.lastTouch?.id === botId) this.lastTouch = { ...this.lastTouch, id: info.id };
+    if (this.lastTouch?.id === botId)
+      this.lastTouch = { ...this.lastTouch, id: info.id, team: info.team };
+    if (this.prevTouch?.id === botId)
+      this.prevTouch = { ...this.prevTouch, id: info.id, team: info.team };
+    this.lastByTeam = this.lastByTeam.map((c) =>
+      c?.id === botId ? { ...c, id: info.id, team: info.team } : c,
+    );
     return true;
   }
 
@@ -230,6 +277,8 @@ export class BolWorld {
     p.name = name;
     p.bot = true;
     if (this.lastTouch?.id === id) this.lastTouch = { ...this.lastTouch, id: newId };
+    if (this.prevTouch?.id === id) this.prevTouch = { ...this.prevTouch, id: newId };
+    this.lastByTeam = this.lastByTeam.map((c) => (c?.id === id ? { ...c, id: newId } : c));
     return true;
   }
 
@@ -284,6 +333,8 @@ export class BolWorld {
     Object.assign(this.ball, { x: 0, y: BOL_BALL_R, z: 0, vx: 0, vy: 0, vz: 0 });
     for (let t = 0; t < this.field.teams; t++) this.layoutTeam(t);
     this.lastTouch = null;
+    this.prevTouch = null;
+    this.lastByTeam = Array.from({ length: this.field.teams }, () => null);
     this.still = 0;
     this.phase = 'countdown';
     this.timer = BOL_COUNTDOWN;
@@ -333,6 +384,8 @@ export class BolWorld {
 
   private tickMatch(dt: number): void {
     this.clock += dt;
+    if (this.lastTouch)
+      this.possession[this.lastTouch.team] = (this.possession[this.lastTouch.team] ?? 0) + dt;
     const left = this.durationSec - this.clock;
     for (const w of BOL_WARN_LEFT) {
       if (!this.golden && this.durationSec > w * 2 && left <= w && !this.warned.has(w)) {
@@ -522,7 +575,8 @@ export class BolWorld {
         if (g) {
           const t = (b.x - e.mx) * e.tx + (b.z - e.mz) * e.tz;
           if (Math.abs(t) <= g.halfW && b.y < BOL_GOAL_H) {
-            if (d < 0) {
+            // só é gol com a bola inteira para lá da linha (o centro precisa passar do raio)
+            if (d < -BOL_BALL_R) {
               this.scoreGoal(e.goal);
               return true;
             }
@@ -562,40 +616,104 @@ export class BolWorld {
         }
       }
     }
+    // travessão: cilindro na altura do gol; a bola quica nele
+    for (const g of this.field.goals) {
+      const e = g.edge;
+      const t = (b.x - e.mx) * e.tx + (b.z - e.mz) * e.tz;
+      if (Math.abs(t) > g.halfW + BOL_BALL_R) continue;
+      const d = (b.x - e.mx) * e.nx + (b.z - e.mz) * e.nz;
+      const dy = b.y - BOL_GOAL_H;
+      const dist = Math.hypot(d, dy);
+      const min = BOL_BALL_R + BOL_BAR_R;
+      if (dist >= min || dist < 1e-6) continue;
+      const nd = d / dist;
+      const ny = dy / dist;
+      const push = min - dist;
+      b.x += e.nx * nd * push;
+      b.z += e.nz * nd * push;
+      b.y += ny * push;
+      const vd = b.vx * e.nx + b.vz * e.nz;
+      const vn = vd * nd + b.vy * ny;
+      if (vn < 0) {
+        const j = (1 + BOL_WALL_E) * vn;
+        b.vx -= j * nd * e.nx;
+        b.vz -= j * nd * e.nz;
+        b.vy -= j * ny;
+        this.events.push({ type: 'wall', power: -vn });
+      }
+    }
     return false;
   }
 
   /**
-   * O gol vale para o time de quem tocou por último, mesmo se a bola entrou no gol dele (spec 046, seção 4.2). Sem toque:
-   * com 2 times o gol vai para o outro time (gol contra do dono do gol); com 3 ou 4 não dá para decidir, então ninguém
-   * pontua e a bola volta ao centro com a contagem.
+   * Quem leva o ponto (spec 046, seção 4.2): o time de quem tocou por último na bola, desde que não seja o time que
+   * levou o gol. Se quem tocou por último foi do time que levou o gol (gol contra), o ponto vai para o time que tocou
+   * na bola por último entre os outros. Sem ninguém assim: com 2 times o ponto vai para o outro time; com 3 ou 4 não dá
+   * para decidir, então ninguém pontua e a bola volta ao centro com a contagem.
    */
   private scoreGoal(goalTeam: number): void {
-    const t = this.lastTouch;
-    let scorerTeam = t ? t.team : -1;
-    let noTouch = false;
-    if (!t) {
+    const last = this.lastTouch;
+    // gol contra: o último toque foi do time que levou o gol
+    const ownerId = last && last.team === goalTeam ? last.id : null;
+    let credit: BolTouch | null = last && last.team !== goalTeam ? last : null;
+    if (!credit) {
+      for (let t = 0; t < this.lastByTeam.length; t++) {
+        const c = this.lastByTeam[t];
+        if (t !== goalTeam && c && (!credit || c.t > credit.t)) credit = c;
+      }
+    }
+    let scorerTeam = credit ? credit.team : -1;
+    if (scorerTeam < 0) {
       if (this.field.teams > 2) {
-        this.events.push({ type: 'nogoal', goalTeam });
+        if (ownerId) {
+          const owner = this.player(ownerId);
+          if (owner) owner.stats.ownGoals += 1;
+        }
+        this.events.push({ type: 'nogoal', goalTeam, ownerId });
         this.kickoff();
         return;
       }
       scorerTeam = 1 - goalTeam;
-      noTouch = true;
     }
     this.scores[scorerTeam] = (this.scores[scorerTeam] ?? 0) + 1;
+    const noTouch = !last;
+    const own = ownerId !== null || noTouch;
+    let assistId: string | null = null;
+    if (ownerId) {
+      const owner = this.player(ownerId);
+      if (owner) owner.stats.ownGoals += 1;
+    } else if (last) {
+      const who = this.player(last.id);
+      if (who) who.stats.goals += 1;
+      const prev = this.prevTouch;
+      if (
+        prev &&
+        prev.team === last.team &&
+        prev.id !== last.id &&
+        last.t - prev.t <= BOL_ASSIST_WINDOW
+      ) {
+        const mate = this.player(prev.id);
+        if (mate) {
+          mate.stats.assists += 1;
+          assistId = mate.id;
+        }
+      }
+    }
     this.events.push({
       type: 'goal',
       goalTeam,
-      scorerId: t ? t.id : null,
+      scorerId: ownerId ? null : (last?.id ?? null),
       scorerTeam,
-      own: scorerTeam === goalTeam || noTouch,
+      own,
+      ownerId,
       noTouch,
+      assistId,
     });
     if (this.golden) {
       this.finish(scorerTeam);
       return;
     }
+    this.celebrating = scorerTeam;
     this.phase = 'goal';
     this.timer = BOL_GOAL_PAUSE;
   }
@@ -648,10 +766,17 @@ export class BolWorld {
       b.vy = Math.max(b.vy, BOL_FLIP_KICK_LIFT);
       touched = true;
       power = Math.max(power, BOL_FLIP_KICK);
+      p.stats.kicks += 1;
       this.events.push({ type: 'kick', id: p.id });
     }
     if (touched) {
+      const last = this.lastTouch;
+      if (!last || last.id !== p.id) {
+        this.prevTouch = last;
+        p.stats.touches += 1;
+      } else if (this.clock - last.t > 0.4) p.stats.touches += 1;
       this.lastTouch = { id: p.id, team: p.team, t: this.clock };
+      this.lastByTeam[p.team] = this.lastTouch;
       this.events.push({ type: 'touch', id: p.id, power });
     }
   }

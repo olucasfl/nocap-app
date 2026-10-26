@@ -60,10 +60,13 @@ export const BOL_TOUCH_MIN = 0.4;
 /** Gol. */
 export const BOL_GOAL_H = 3.4;
 export const BOL_POST_R = 0.15;
+/** Raio do travessão. */
+export const BOL_BAR_R = 0.22;
 
 /** Partida. */
 export const BOL_COUNTDOWN = 3;
-export const BOL_GOAL_PAUSE = 1.6;
+/** Pausa depois do gol, para comemorar (s); depois vem a contagem de 3 s. */
+export const BOL_GOAL_PAUSE = 5;
 export const BOL_DURATION = 30 * 60;
 /** Quanto falta para cada aviso de fim (s). */
 export const BOL_WARN_LEFT = [300, 60] as const;

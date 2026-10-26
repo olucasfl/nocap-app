@@ -51,8 +51,8 @@ Se algum dia a física ficar complexa demais (rampas, vários objetos), reavalia
 
 ### 4.2 Pontuação
 
-- **Quem tocou por último** na bola leva o crédito. O gol sempre conta **para o time dele**, **inclusive se a bola entrou no gol do próprio time** (decisão do Lucas: "se for contra também, o último a tocar que conta").
-- **Sem toque** (decisão do Lucas em 26/10/2026): com 2 times, o gol vira **gol contra do dono do gol** e o ponto vai para o outro time; com 3 ou 4 times não há como decidir, então **ninguém pontua** e a bola volta ao centro com a contagem. A tela mostra "GOL CONTRA DO TIME X" ou "SEM GOL".
+- **Quem tocou por último** na bola leva o crédito, **desde que não seja do time que levou o gol**. Gol contra (último toque do time que levou o gol): o ponto vai para o time que tocou na bola por último entre os outros (decisão do Lucas, 26/10/2026: "quem tocou por último sem ser o time que levou o gol"); o autor do gol contra ganha um gol contra nas estatísticas.
+- **Sem ninguém de fora que tenha tocado** (decisão do Lucas em 26/10/2026): com 2 times, o gol vira **gol contra do dono do gol** e o ponto vai para o outro time; com 3 ou 4 times não há como decidir, então **ninguém pontua** e a bola volta ao centro com a contagem. A tela mostra "GOL CONTRA DO TIME X" ou "SEM GOL".
 - Vence quem tiver **mais gols** quando o relógio de 30 min acabar ou quando o **líder encerrar**. Empate: gol de ouro (seção 2).
 - Os gols de cada time aparecem no HUD, com o nome de quem marcou (**feed de gols**, texto, sem emoji).
 
@@ -139,3 +139,10 @@ Se algum dia a física ficar complexa demais (rampas, vários objetos), reavalia
 ## 11. Fora de escopo
 
 Ranking (online ou offline), histórico, estatísticas gravadas, boost, power-ups, espectadores com chat próprio, campeonato.
+
+## 12. Ajustes de 26/10/2026
+
+- Gol só vale com a **bola inteira** para lá da linha; trave e travessão devolvem a bola.
+- Comemoração de **5 s** depois do gol (confete, fogos, câmera girando), depois a contagem de 3 s.
+- **Tab** mostra as estatísticas (gols, assistências, gols contra, toques, mortais e posse); **Configurações** (celular e computador) tem continuar, estatísticas, câmera, trocar de time ou espectar e sair. O cursor só fica preso à câmera durante a partida.
+- Campos de 3 e 4 times bem maiores.

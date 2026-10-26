@@ -39,6 +39,18 @@ export function bolBotInput(
   mem: BolBotMemory,
   rng: () => number,
 ): BolInput {
+  if (world.phase === 'goal' && p.team === world.celebrating) {
+    // comemora o gol: pula e anda de leve, de vez em quando um mortal
+    if (p.grounded && rng() < 0.04)
+      return {
+        mx: rng() < 0.4 ? Math.cos(rng() * 6.28) : 0,
+        mz: rng() < 0.4 ? Math.sin(rng() * 6.28) : 0,
+        jump: true,
+      };
+    if (!p.grounded && !p.airJumped && rng() < 0.05)
+      return { mx: Math.cos(rng() * 6.28), mz: Math.sin(rng() * 6.28), jump: true };
+    return STOP;
+  }
   if (world.phase !== 'play') {
     mem.mx = 0;
     mem.mz = 0;

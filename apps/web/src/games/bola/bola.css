@@ -164,3 +164,263 @@
   min-width: 64px;
   padding: 0 14px;
 }
+
+/* Configurações e estatísticas */
+.bola-gear {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 6px 12px;
+  border: 3px solid #1b1535;
+  border-radius: 12px;
+  background: #fff;
+  color: #1b1535;
+  font: 800 13px var(--font-display, system-ui);
+  text-transform: uppercase;
+  pointer-events: auto;
+  cursor: pointer;
+}
+.bola-score {
+  opacity: 0.88;
+}
+.bola-menu {
+  width: min(420px, 100%);
+}
+.bola-menu h3 {
+  margin: 4px 0 0;
+  font: 800 13px var(--font-display, system-ui);
+  text-transform: uppercase;
+}
+.bola-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 46px;
+  padding: 0 14px;
+  border: 3px solid #1b1535;
+  border-radius: 12px;
+  background: #fff;
+  color: #1b1535;
+  font: 800 15px var(--font-display, system-ui);
+  cursor: pointer;
+}
+.bola-item:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.bola-key {
+  padding: 2px 8px;
+  border: 2px solid #1b1535;
+  border-radius: 6px;
+  background: #ffe27a;
+  font: 900 12px var(--font-display, system-ui);
+}
+@media (pointer: coarse) {
+  .bola-key {
+    display: none;
+  }
+}
+.bola-team-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.bola-team-chip i {
+  width: 14px;
+  height: 14px;
+  border: 2px solid #1b1535;
+  border-radius: 50%;
+  background: var(--tc);
+}
+.bola-error {
+  margin: 0;
+  padding: 8px 12px;
+  border: 3px solid #b42318;
+  border-radius: 10px;
+  background: #fee4e2;
+  color: #7a271a;
+  font: 700 14px var(--font-display, system-ui);
+}
+.bola-leave.is-sure {
+  background: #ff6a5c;
+  color: #fff;
+}
+.bola-stats {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(640px, calc(100% - 20px));
+  max-height: calc(100% - 90px);
+  overflow: auto;
+  padding: 12px 14px;
+  border: 3px solid rgba(255, 255, 255, 0.85);
+  border-radius: 16px;
+  background: rgba(18, 16, 44, 0.72);
+  color: #fff;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  z-index: 30;
+}
+.bola-stats header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.bola-stats h2 {
+  margin: 0;
+  font: 900 22px var(--font-display, system-ui);
+  text-transform: uppercase;
+}
+.bola-x {
+  margin-left: auto;
+  padding: 6px 12px;
+  border: 3px solid #fff;
+  border-radius: 10px;
+  background: transparent;
+  color: #fff;
+  font: 800 13px var(--font-display, system-ui);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.bola-poss {
+  display: flex;
+  height: 22px;
+  margin-top: 10px;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.bola-poss i {
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font: 900 12px var(--font-display, system-ui);
+  font-style: normal;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
+}
+.bola-poss-label,
+.bola-legend {
+  margin: 4px 0 8px;
+  font: 700 11px var(--font-display, system-ui);
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+.bola-stat-team {
+  margin-top: 8px;
+  border: 2px solid;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.bola-stat-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 12px;
+  border: 0;
+  color: #fff;
+  font: 800 14px var(--font-display, system-ui);
+  text-align: left;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55);
+  cursor: pointer;
+}
+.bola-stat-head span {
+  margin-left: auto;
+  font-weight: 700;
+  font-size: 12px;
+}
+.bola-stat-team table {
+  width: 100%;
+  border-collapse: collapse;
+  font: 700 14px var(--font-display, system-ui);
+}
+.bola-stat-team th,
+.bola-stat-team td {
+  padding: 5px 8px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.bola-stat-team thead th {
+  font-size: 12px;
+  opacity: 0.85;
+}
+.bola-stat-team th:first-child {
+  text-align: left;
+}
+.bola-stat-team thead button {
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.bola-stat-team tbody tr + tr {
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+.bola-stat-team tr.is-me {
+  background: rgba(255, 226, 122, 0.22);
+}
+.bola-stat-team small {
+  margin-left: 6px;
+  padding: 1px 5px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 6px;
+  font-size: 10px;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+.bola-menu-wrap {
+  z-index: 60;
+}
+
+.bola-team.bump {
+  animation: bola-bump 0.9s cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+@keyframes bola-bump {
+  0% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(1.5);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.bola-flash {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  animation: bola-flash 1.4s ease-out;
+}
+@keyframes bola-flash {
+  0% {
+    opacity: 0.55;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+.bola-banner {
+  animation:
+    bola-pop 0.45s cubic-bezier(0.2, 1.4, 0.4, 1),
+    bola-float 1.6s ease-in-out 0.45s infinite alternate;
+}
+@keyframes bola-float {
+  to {
+    transform: translateX(-50%) translateY(-6px) scale(1.03);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bola-team.bump,
+  .bola-flash,
+  .bola-banner {
+    animation: none;
+  }
+  .bola-flash {
+    display: none;
+  }
+}

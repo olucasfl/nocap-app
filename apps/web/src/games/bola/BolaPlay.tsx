@@ -13,7 +13,9 @@ import {
 import { DsmControls, STICK_RADIUS } from '../desmorona/controls';
 import '../desmorona/desmorona.css';
 import './bola.css';
+import { BolaMenu } from './BolaMenu';
 import { BolaScene } from './BolaScene';
+import { BolaStats, type StatRow } from './BolaStats';
 
 const BOT_NAMES = [
   'Faísca',
@@ -49,6 +51,11 @@ interface Hud {
   winner: number;
   ballCam: boolean;
   banner: { title: string; sub: string; team: number; id: number } | null;
+  /** Sobe a cada gol: reinicia o brilho da tela. */
+  flash: number;
+  myTeam: number;
+  rows: StatRow[];
+  possession: number[];
 }
 
 const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
@@ -91,6 +98,13 @@ export function BolaPlay({
   const root = useRef<HTMLDivElement>(null);
   const controls = useMemo(() => new DsmControls(), []);
   const camToggle = useRef<() => void>(() => undefined);
+  const switchTeam = useRef<(team: number) => string | null>(() => null);
+  const [menu, setMenu] = useState(false);
+  const [tabHeld, setTabHeld] = useState(false);
+  const [pinned, setPinned] = useState(false);
+  const statsOn = useRef(false);
+  statsOn.current = tabHeld || pinned;
+  const uiOpenRef = useRef(false);
   const [stick, setStick] = useState<{ ox: number; oy: number; x: number; y: number } | null>(null);
   const [hud, setHud] = useState<Hud>({
     phase: 'countdown',
@@ -103,6 +117,10 @@ export function BolaPlay({
     winner: -1,
     ballCam: true,
     banner: null,
+    flash: 0,
+    myTeam: 0,
+    rows: [],
+    possession: [],
   });
 
   useEffect(() => {
@@ -133,7 +151,12 @@ export function BolaPlay({
     );
     controls.turnKeys = false;
     controls.attach(zoneEl, setStick);
-    if (root.current) controls.attachLook(root.current);
+    if (root.current) {
+      // Esc solta o mouse: abre as configurações, onde ficam os botões
+      controls.attachLook(root.current, (locked) => {
+        if (!locked && !uiOpenRef.current) setMenu(true);
+      });
+    }
     let ballCam = true;
     let yaw = 0;
     let camYaw = 0;
@@ -143,14 +166,26 @@ export function BolaPlay({
     };
     const onKey = (e: KeyboardEvent) => {
       if (e.code === 'KeyE' && !e.repeat) camToggle.current();
+      if (e.code === 'Tab') {
+        // Tab mostra as estatísticas enquanto estiver apertado
+        e.preventDefault();
+        if (!e.repeat) setTabHeld(true);
+      }
     };
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.code === 'Tab') setTabHeld(false);
+    };
+    const onBlur = () => setTabHeld(false);
     window.addEventListener('keydown', onKey);
+    window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('blur', onBlur);
 
     let feedId = 0;
     let feed: Hud['feed'] = [];
     let warn = '';
     let warnTimer = 0;
     let bannerTimer = 0;
+    let flashId = 0;
     let banner: Hud['banner'] = null;
     const push = (text: string, team: number) => {
       feed = [...feed.slice(-3), { id: feedId++, text, team }];
@@ -159,6 +194,45 @@ export function BolaPlay({
       }, 4200);
     };
     const nameOf = (id: string | null) => world.players.find((p) => p.id === id)?.name ?? 'Alguém';
+
+    let botN = world.players.length;
+    const botMemory = (p: { team: number }, i: number) =>
+      newBolBotMemory(
+        (p.team + 1 + (i % Math.max(1, setup.teams - 1))) % setup.teams,
+        0.2 + (i % 3) * 0.05,
+      );
+    /** Troca de time (ou vira espectador): o corpo antigo vira bot e, no time novo, você assume o lugar de um bot. */
+    switchTeam.current = (team) => {
+      const cur = world.player('me');
+      if (cur && cur.team === team) return null;
+      if (!cur && team < 0) return null;
+      if (team >= 0) {
+        const bot = world.players.find((p) => p.bot && p.team === team);
+        if (!bot && world.players.filter((p) => p.team === team).length >= setup.perTeam)
+          return `Time ${BOL_TEAM_NAMES[team]} cheio`;
+      }
+      if (cur) {
+        const id = `bot${botN}`;
+        world.becomeBot('me', id, BOT_NAMES[botN % BOT_NAMES.length] as string);
+        mem.set(id, botMemory(cur, botN));
+        botN++;
+      }
+      if (team >= 0) {
+        const info: BolInfo = {
+          id: 'me',
+          name: 'Você',
+          color: BOL_TEAM_COLORS[team] as number,
+          team,
+        };
+        const bot = world.players.find((p) => p.bot && p.team === team);
+        if (bot) {
+          mem.delete(bot.id);
+          world.takeOver(bot.id, info);
+        } else world.addPlayer(info);
+      }
+      scene.sync();
+      return null;
+    };
 
     const resize = () => {
       const r = el.getBoundingClientRect();
@@ -177,14 +251,14 @@ export function BolaPlay({
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
       const me = world.player('me');
-      if (!document.hidden && me) {
+      if (!document.hidden) {
         acc += dt;
-        const input = controls.read();
+        const input = me ? controls.read() : { mx: 0, mz: 0, jump: false };
         if (input.jump) jumpUntil = now + JUMP_BUFFER_MS;
         input.jump = false;
         // a câmera segue a bola por padrão (E troca para câmera livre com o mouse)
         const manual = controls.takeYaw(dt);
-        if (!ballCam) yaw += manual;
+        if (!ballCam || !me) yaw += manual;
         else {
           const dx = world.ball.x - me.x;
           const dz = world.ball.z - me.z;
@@ -197,6 +271,11 @@ export function BolaPlay({
           yaw = camYaw;
         }
         if (!ballCam) camYaw = yaw;
+        if (world.phase === 'goal') {
+          // na comemoração a câmera gira devagar em volta da raposa
+          yaw += dt * 0.5;
+          camYaw = yaw;
+        }
         scene.setYaw(yaw);
         if (input.mx !== 0 || input.mz !== 0) {
           const sy = Math.sin(yaw);
@@ -209,49 +288,53 @@ export function BolaPlay({
         while (acc >= BOL_DT) {
           acc -= BOL_DT;
           const inputs: Record<string, BolInput> = {};
-          for (const p of world.players)
-            if (p.bot)
-              inputs[p.id] = bolBotInput(
-                world,
-                p,
-                mem.get(p.id) as ReturnType<typeof newBolBotMemory>,
-                rng,
-              );
-          const jumpNow = jumpUntil > now && (me.grounded || !me.airJumped);
+          for (const p of world.players) {
+            if (!p.bot) continue;
+            let m = mem.get(p.id);
+            if (!m) {
+              m = botMemory(p, botN++);
+              mem.set(p.id, m);
+            }
+            inputs[p.id] = bolBotInput(world, p, m, rng);
+          }
+          const jumpNow = !!me && jumpUntil > now && (me.grounded || !me.airJumped);
           if (jumpNow) jumpUntil = 0;
           inputs.me = { mx: input.mx, mz: input.mz, jump: jumpNow };
           world.step(BOL_DT, inputs);
           for (const e of world.drainEvents()) {
             if (e.type === 'goal') {
-              const who = nameOf(e.scorerId);
               const tn = (t: number) => BOL_TEAM_NAMES[t] ?? '';
               let title = 'GOL!';
-              let sub = `${who} · time ${tn(e.scorerTeam)}`;
+              let sub = `${nameOf(e.scorerId)} · time ${tn(e.scorerTeam)}`;
               if (e.noTouch) {
                 title = `GOL CONTRA DO TIME ${tn(e.goalTeam).toUpperCase()}`;
                 sub = `Ninguém tocou na bola · ponto para o time ${tn(e.scorerTeam)}`;
               } else if (e.own) {
                 title = 'GOL CONTRA';
-                sub = `${who} (${tn(e.scorerTeam)}) · ponto para o time ${tn(e.scorerTeam)}`;
+                sub = `${nameOf(e.ownerId)} (${tn(e.goalTeam)}) · ponto para o time ${tn(e.scorerTeam)}`;
               }
               push(`${title} · ${sub}`, e.scorerTeam);
               banner = { title, sub, team: e.scorerTeam, id: feedId++ };
               window.clearTimeout(bannerTimer);
               bannerTimer = window.setTimeout(() => {
                 banner = null;
-              }, 2800);
+              }, 4800);
               scene.shakeNow(0.6);
+              scene.celebrate(e.goalTeam, BOL_TEAM_COLORS[e.scorerTeam] as number);
+              flashId++;
             } else if (e.type === 'nogoal') {
               banner = {
                 title: 'SEM GOL',
-                sub: 'Ninguém tocou na bola: a bola volta ao centro',
+                sub: e.ownerId
+                  ? `Gol contra de ${nameOf(e.ownerId)} e ninguém de outro time tocou na bola: a bola volta ao centro`
+                  : 'Ninguém tocou na bola: a bola volta ao centro',
                 team: -1,
                 id: feedId++,
               };
               window.clearTimeout(bannerTimer);
               bannerTimer = window.setTimeout(() => {
                 banner = null;
-              }, 2800);
+              }, 3500);
             } else if (e.type === 'warn') {
               warn = e.left >= 60 ? `Faltam ${Math.round(e.left / 60)} min` : 'Falta 1 minuto';
               window.clearTimeout(warnTimer);
@@ -284,6 +367,19 @@ export function BolaPlay({
           winner: world.winner,
           ballCam,
           banner,
+          flash: flashId,
+          myTeam: world.player('me')?.team ?? -1,
+          // a tabela só é montada quando aparece: sem custo no resto da partida
+          rows: statsOn.current
+            ? world.players.map((p) => ({
+                id: p.id,
+                name: p.name,
+                team: p.team,
+                bot: !!p.bot,
+                ...p.stats,
+              }))
+            : [],
+          possession: [...world.possession],
         });
       }
       raf = requestAnimationFrame(frame);
@@ -294,11 +390,22 @@ export function BolaPlay({
       window.clearTimeout(warnTimer);
       window.clearTimeout(bannerTimer);
       window.removeEventListener('keydown', onKey);
+      window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('blur', onBlur);
       ro.disconnect();
       controls.detach();
       scene.dispose();
     };
   }, [setup, controls]);
+
+  // o mouse só fica preso à câmera durante a partida: tabela, configurações e fim de jogo soltam o cursor
+  const finished = hud.phase === 'over';
+  const uiOpen = menu || pinned || tabHeld || finished;
+  uiOpenRef.current = uiOpen;
+  useEffect(() => {
+    controls.allowLock = !uiOpen;
+    if (uiOpen) controls.releaseLock();
+  }, [uiOpen, controls]);
 
   const knob = stick
     ? (() => {
@@ -325,8 +432,8 @@ export function BolaPlay({
         <div className="bola-score" role="status" aria-label="Placar">
           {hud.scores.map((s, i) => (
             <span
-              key={i}
-              className="bola-team"
+              key={`${i}-${s}`}
+              className={s > 0 ? 'bola-team bump' : 'bola-team'}
               style={{
                 background: `#${(BOL_TEAM_COLORS[i] as number).toString(16).padStart(6, '0')}`,
               }}
@@ -339,10 +446,34 @@ export function BolaPlay({
           {fmt(hud.clock)}
           {hud.golden && <small>Gol de ouro</small>}
         </div>
-        <button type="button" className="dsm-exit" onClick={onExit}>
-          Sair
+        <button
+          type="button"
+          className="bola-gear"
+          onClick={() => setMenu(true)}
+          aria-label="Configurações"
+          data-testid="bola-gear"
+        >
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+            <path
+              fill="currentColor"
+              d="M19.4 13a7.7 7.7 0 0 0 0-2l2.1-1.6a.5.5 0 0 0 .1-.6l-2-3.4a.5.5 0 0 0-.6-.2l-2.5 1a7.6 7.6 0 0 0-1.7-1l-.4-2.6a.5.5 0 0 0-.5-.4h-4a.5.5 0 0 0-.5.4l-.4 2.6c-.6.3-1.2.6-1.7 1l-2.5-1a.5.5 0 0 0-.6.2l-2 3.4a.5.5 0 0 0 .1.6L4.6 11a7.7 7.7 0 0 0 0 2l-2.1 1.6a.5.5 0 0 0-.1.6l2 3.4c.1.2.4.3.6.2l2.5-1c.5.4 1.1.7 1.7 1l.4 2.6c0 .2.2.4.5.4h4c.3 0 .5-.2.5-.4l.4-2.6c.6-.3 1.2-.6 1.7-1l2.5 1c.2.1.5 0 .6-.2l2-3.4a.5.5 0 0 0-.1-.6L19.4 13ZM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7Z"
+            />
+          </svg>
+          <span>Config.</span>
         </button>
       </div>
+      {hud.flash > 0 && hud.phase === 'goal' && (
+        <div
+          key={hud.flash}
+          className="bola-flash"
+          aria-hidden="true"
+          style={{
+            background: hud.banner
+              ? `#${(hud.banner.team >= 0 ? (BOL_TEAM_COLORS[hud.banner.team] as number) : 0xffffff).toString(16).padStart(6, '0')}`
+              : '#fff',
+          }}
+        />
+      )}
       {hud.banner && (
         <div
           key={hud.banner.id}
@@ -377,7 +508,7 @@ export function BolaPlay({
           {hud.count > 0 ? hud.count : 'Já!'}
         </div>
       )}
-      {!over && (
+      {!over && hud.myTeam >= 0 && (
         <>
           <button
             type="button"
@@ -400,6 +531,36 @@ export function BolaPlay({
             {hud.ballCam ? 'Câmera na bola' : 'Câmera livre'}
           </button>
         </>
+      )}
+      {(tabHeld || pinned) && !menu && (
+        <BolaStats
+          rows={hud.rows}
+          scores={hud.scores}
+          possession={hud.possession}
+          clock={fmt(hud.clock)}
+          meId="me"
+          pinned={pinned}
+          onClose={() => setPinned(false)}
+        />
+      )}
+      {menu && !over && (
+        <BolaMenu
+          teams={setup.teams}
+          myTeam={hud.myTeam}
+          ballCam={hud.ballCam}
+          onClose={() => setMenu(false)}
+          onStats={() => {
+            setMenu(false);
+            setPinned(true);
+          }}
+          onCam={() => camToggle.current()}
+          onSwitch={(t) => {
+            const err = switchTeam.current(t);
+            if (!err) setHud((h) => ({ ...h, myTeam: t }));
+            return err;
+          }}
+          onExit={onExit}
+        />
       )}
       {over && (
         <div className="dsm-over" role="dialog" aria-modal="true" aria-label="Resultado">

@@ -3,6 +3,7 @@ import { createRng } from '../core/rng';
 import { bolBotInput, newBolBotMemory } from './bots';
 import {
   BOL_BALL_R,
+  BOL_GOAL_H,
   BOL_COUNTDOWN,
   BOL_DT,
   BOL_FOX_R,
@@ -278,18 +279,63 @@ describe('gol', () => {
     expect(goal).toMatchObject({ goalTeam: 1, scorerId: 't0p0', scorerTeam: 0, own: false });
   });
 
-  it('gol contra: quem tocou por último leva o ponto para o próprio time', () => {
+  it('gol contra: o ponto vai para o último time de fora que tocou na bola, nunca para o time que levou o gol', () => {
+    const w = new BolWorld(roster(3, 1), { teams: 3, perTeam: 1 });
+    startPlay(w);
+    w.clock = 10;
+    w.lastByTeam[2] = { id: 't2p0', team: 2, t: 8 };
+    w.lastTouch = { id: 't0p0', team: 0, t: 9 };
+    w.lastByTeam[0] = w.lastTouch;
+    shoot(w, 0);
+    run(w, 0.5);
+    expect(w.scores).toEqual([0, 0, 1]);
+    expect(w.drainEvents().find((e) => e.type === 'goal')).toMatchObject({
+      goalTeam: 0,
+      scorerTeam: 2,
+      scorerId: null,
+      ownerId: 't0p0',
+      own: true,
+    });
+    expect(w.player('t0p0')!.stats.ownGoals).toBe(1);
+  });
+
+  it('gol contra com 2 times e sem toque do outro time: o ponto vai para o outro time', () => {
     const w = new BolWorld(roster(2, 1), { teams: 2, perTeam: 1 });
     startPlay(w);
     w.lastTouch = { id: 't0p0', team: 0, t: 0 };
+    w.lastByTeam[0] = w.lastTouch;
     shoot(w, 0);
     run(w, 0.5);
-    expect(w.scores).toEqual([1, 0]);
+    expect(w.scores).toEqual([0, 1]);
     expect(w.drainEvents().find((e) => e.type === 'goal')).toMatchObject({
       goalTeam: 0,
-      scorerTeam: 0,
+      scorerTeam: 1,
+      ownerId: 't0p0',
       own: true,
     });
+  });
+
+  it('gol contra com 3 times e ninguém de fora tocou: sem gol, bola ao centro', () => {
+    const w = new BolWorld(roster(3, 1), { teams: 3, perTeam: 1 });
+    startPlay(w);
+    w.lastTouch = { id: 't0p0', team: 0, t: 0 };
+    w.lastByTeam[0] = w.lastTouch;
+    shoot(w, 0);
+    run(w, 0.3);
+    expect(w.scores.every((x) => x === 0)).toBe(true);
+    expect(w.drainEvents().find((e) => e.type === 'nogoal')).toMatchObject({ ownerId: 't0p0' });
+    expect(w.phase).toBe('countdown');
+  });
+
+  it('o último toque de outro time vale gol normal para ele', () => {
+    const w = new BolWorld(roster(3, 1), { teams: 3, perTeam: 1 });
+    startPlay(w);
+    w.lastTouch = { id: 't1p0', team: 1, t: 1 };
+    w.lastByTeam[1] = w.lastTouch;
+    shoot(w, 0);
+    run(w, 0.5);
+    expect(w.scores).toEqual([0, 1, 0]);
+    expect(w.player('t1p0')!.stats.goals).toBe(1);
   });
 
   it('sem toque e com 2 times: gol contra do dono do gol, ponto para o outro time', () => {
@@ -318,6 +364,70 @@ describe('gol', () => {
       expect(w.phase).toBe('countdown');
       expect(w.ball.x).toBe(0);
     }
+  });
+
+  it('encostar na beirada não é gol: a bola precisa passar inteira da linha', () => {
+    const w = new BolWorld(roster(2, 1), { teams: 2, perTeam: 1 });
+    startPlay(w);
+    w.lastTouch = { id: 't0p0', team: 0, t: 0 };
+    const g = w.field.goals[1]!;
+    const e = g.edge;
+    // centro da bola passou da linha, mas a bola ainda está meio para fora
+    Object.assign(w.ball, {
+      x: e.mx - e.nx * (BOL_BALL_R * 0.5),
+      y: BOL_BALL_R,
+      z: e.mz - e.nz * (BOL_BALL_R * 0.5),
+      vx: 0,
+      vy: 0,
+      vz: 0,
+    });
+    run(w, 0.1);
+    expect(w.scores).toEqual([0, 0]);
+    // inteira para lá da linha: gol
+    Object.assign(w.ball, {
+      x: e.mx - e.nx * (BOL_BALL_R * 1.2),
+      z: e.mz - e.nz * (BOL_BALL_R * 1.2),
+      vx: 0,
+      vz: 0,
+    });
+    run(w, 0.1);
+    expect(w.scores).toEqual([1, 0]);
+  });
+
+  it('a bola na trave volta para o campo, sem gol', () => {
+    const w = new BolWorld(roster(2, 1), { teams: 2, perTeam: 1 });
+    startPlay(w);
+    w.lastTouch = { id: 't0p0', team: 0, t: 0 };
+    const g = w.field.goals[1]!;
+    const e = g.edge;
+    // mirada na trave: o centro da bola está na linha da trave
+    Object.assign(w.ball, {
+      x: e.mx + e.nx * 4 + e.tx * g.halfW,
+      y: BOL_BALL_R,
+      z: e.mz + e.nz * 4 + e.tz * g.halfW,
+      vx: -e.nx * 20,
+      vy: 0,
+      vz: -e.nz * 20,
+    });
+    run(w, 1);
+    expect(w.scores).toEqual([0, 0]);
+  });
+
+  it('a bola no travessão volta, sem gol', () => {
+    const w = new BolWorld(roster(2, 1), { teams: 2, perTeam: 1 });
+    startPlay(w);
+    w.lastTouch = { id: 't0p0', team: 0, t: 0 };
+    const e = w.field.goals[1]!.edge;
+    Object.assign(w.ball, {
+      x: e.mx + e.nx * 4,
+      y: BOL_GOAL_H,
+      z: e.mz + e.nz * 4,
+      vx: -e.nx * 20,
+      vy: 0,
+      vz: -e.nz * 20,
+    });
+    run(w, 0.5);
+    expect(w.scores).toEqual([0, 0]);
   });
 
   it('acima do travessão a bola quica e não é gol', () => {
@@ -357,6 +467,78 @@ describe('gol', () => {
     expect(w.clock).toBe(clock);
     run(w, 2.2);
     expect(w.phase).toBe('play');
+  });
+});
+
+describe('estatísticas', () => {
+  const shootInto = (w: BolWorld, team: number) => {
+    const g = w.field.goals[team]!;
+    Object.assign(w.ball, {
+      x: g.edge.mx + g.edge.nx * 3,
+      y: BOL_BALL_R,
+      z: g.edge.mz + g.edge.nz * 3,
+      vx: -g.edge.nx * 20,
+      vy: 0,
+      vz: -g.edge.nz * 20,
+    });
+  };
+
+  it('gol conta para quem tocou por último e a assistência vai para o toque anterior do mesmo time', () => {
+    const w = new BolWorld(roster(2, 2), { teams: 2, perTeam: 2 });
+    startPlay(w);
+    w.clock = 20;
+    w.prevTouch = { id: 't0p1', team: 0, t: 18 };
+    w.lastTouch = { id: 't0p0', team: 0, t: 19 };
+    shootInto(w, 1);
+    run(w, 0.4);
+    expect(w.player('t0p0')!.stats.goals).toBe(1);
+    expect(w.player('t0p1')!.stats.assists).toBe(1);
+    expect(w.drainEvents().find((e) => e.type === 'goal')).toMatchObject({ assistId: 't0p1' });
+  });
+
+  it('sem assistência: toque anterior do outro time, antigo demais ou do próprio autor', () => {
+    for (const prev of [
+      { id: 't1p0', team: 1, t: 18 },
+      { id: 't0p1', team: 0, t: 5 },
+      { id: 't0p0', team: 0, t: 18 },
+    ]) {
+      const w = new BolWorld(roster(2, 2), { teams: 2, perTeam: 2 });
+      startPlay(w);
+      w.clock = 20;
+      w.prevTouch = prev;
+      w.lastTouch = { id: 't0p0', team: 0, t: 19 };
+      shootInto(w, 1);
+      run(w, 0.4);
+      expect(w.players.every((p) => p.stats.assists === 0)).toBe(true);
+    }
+  });
+
+  it('gol contra vai para os gols contra de quem tocou, sem assistência', () => {
+    const w = new BolWorld(roster(2, 2), { teams: 2, perTeam: 2 });
+    startPlay(w);
+    w.clock = 20;
+    w.prevTouch = { id: 't0p1', team: 0, t: 18 };
+    w.lastTouch = { id: 't0p0', team: 0, t: 19 };
+    shootInto(w, 0);
+    run(w, 0.4);
+    const p = w.player('t0p0')!;
+    expect(p.stats.ownGoals).toBe(1);
+    expect(p.stats.goals).toBe(0);
+    expect(w.player('t0p1')!.stats.assists).toBe(0);
+  });
+
+  it('toques seguidos na mesma bola contam uma vez e a posse soma para o time do último toque', () => {
+    const w = new BolWorld(roster(2, 1), { teams: 2, perTeam: 1 });
+    startPlay(w);
+    const p = w.players[0]!;
+    Object.assign(p, { x: -3, z: 0 });
+    Object.assign(w.ball, { x: 0, y: BOL_BALL_R, z: 0, vx: 0, vy: 0, vz: 0 });
+    run(w, 1, { [p.id]: { mx: 1, mz: 0, jump: false } });
+    expect(p.stats.touches).toBeGreaterThanOrEqual(1);
+    expect(p.stats.touches).toBeLessThan(6);
+    run(w, 2);
+    expect(w.possession[0]!).toBeGreaterThan(0.5);
+    expect(w.possession[0]! + w.possession[1]!).toBeGreaterThan(1.5);
   });
 });
 
