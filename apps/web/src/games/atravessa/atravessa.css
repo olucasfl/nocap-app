@@ -310,3 +310,63 @@
   right: auto;
   left: max(14px, env(safe-area-inset-left));
 }
+
+/* setas na tela: só no celular deitado (polegar direito nas setas; o esquerdo toca ou desliza) */
+.at-pad {
+  display: none;
+}
+@media (pointer: coarse) and (orientation: landscape) {
+  .at-pad {
+    position: absolute;
+    right: max(18px, env(safe-area-inset-right));
+    bottom: max(14px, env(safe-area-inset-bottom));
+    z-index: 6;
+    display: grid;
+    grid-template-columns: repeat(3, 58px);
+    grid-template-rows: repeat(2, 58px);
+    gap: 6px;
+    touch-action: none;
+  }
+  .at-pad-btn {
+    display: grid;
+    place-items: center;
+    border: 3px solid #1b1535;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #1b1535;
+    box-shadow: 0 3px 0 #1b1535;
+    touch-action: none;
+  }
+  .at-pad-btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 #1b1535;
+    background: #ffe27a;
+  }
+  .at-pad-btn.d0 {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .at-pad-btn.d2 {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .at-pad-btn.d1 {
+    grid-column: 2;
+    grid-row: 2;
+  }
+  .at-pad-btn.d3 {
+    grid-column: 3;
+    grid-row: 2;
+  }
+  .at-hint {
+    left: 38%;
+    bottom: 14px;
+    max-width: 52vw;
+  }
+}
+@media (pointer: coarse) and (orientation: landscape) and (max-height: 340px) {
+  .at-pad {
+    grid-template-columns: repeat(3, 50px);
+    grid-template-rows: repeat(2, 50px);
+  }
+}

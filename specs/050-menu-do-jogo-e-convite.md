@@ -24,3 +24,7 @@ Pedido do Lucas em 26/10/2026. Status: **em andamento (Fut Fox, Desmorona! e Atr
 
 - Entrar numa sala do Desmorona! ou do Atravessa! no meio da rodada ainda não é possível (a sala recusa: "A partida já começou"); o convite serve para o convidado já estar no lobby quando a rodada acabar. No Fut Fox já é possível (entra como espectador).
 - O painel de rede dessas duas salas mostra só o ping até o servidor.
+
+## 4. Celular deitado (26/10/2026)
+
+Os três jogos jogam de lado: menu em duas colunas sem rolar (altura até 460 px), botão de menu com ícone e a tecla Esc só no teclado, e no Atravessa! **setas na tela** (`DirPad`, só em tela de toque deitada) com o polegar direito, enquanto o esquerdo toca (frente) ou desliza. Desmorona!: joystick flutuante na metade esquerda e Pular grande no canto direito. Fut Fox já tinha o HUD compacto para altura baixa. Testado em 844x390, 667x375 e 568x320 (`e2e/landscape-games.spec.ts`, `e2e/bola-mobile.spec.ts`).

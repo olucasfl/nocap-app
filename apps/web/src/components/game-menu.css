@@ -284,3 +284,37 @@
   opacity: 0.45;
   cursor: default;
 }
+
+/* celular deitado: o menu vira duas colunas para caber sem rolar */
+@media (max-height: 460px) and (orientation: landscape) {
+  .gm-card {
+    width: min(660px, 100%);
+    grid-template-columns: 1fr 1fr;
+    align-content: start;
+  }
+  .gm-card > h2,
+  .gm-card > .gm-main,
+  .gm-card > .gm-sep,
+  .gm-card > .gm-item.is-danger {
+    grid-column: 1 / -1;
+  }
+  .gm-card > .gm-sep {
+    display: none;
+  }
+  .gm-item {
+    min-height: 38px;
+    padding: 0 10px;
+    font-size: 13px;
+    box-shadow: 0 2px 0 #1b1535;
+  }
+  .gm-main {
+    min-height: 40px;
+    font-size: 15px;
+  }
+  .gm-cur {
+    font-size: 11px;
+  }
+  .gm-card.is-wide {
+    grid-template-columns: 1fr;
+  }
+}
