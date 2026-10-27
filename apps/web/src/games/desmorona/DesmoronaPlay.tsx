@@ -593,22 +593,6 @@ export function DesmoronaPlay({
           Pular
         </button>
       )}
-      {!touchDevice && !result && hud.phase !== 'over' && (
-        <div className="dsm-keys" aria-hidden="true">
-          <span>
-            <Keycap k="W" />
-            <Keycap k="A" />
-            <Keycap k="S" />
-            <Keycap k="D" /> andar
-          </span>
-          <span>
-            <Keycap k="Espaço" wide /> pular
-          </span>
-          <span>
-            <Keycap k="Esc" /> menu
-          </span>
-        </div>
-      )}
       {online && showNet && !result && (
         <NetBadge
           mode="servidor"
@@ -616,7 +600,7 @@ export function DesmoronaPlay({
         />
       )}
       {hud.phase === 'ready' && !result && (
-        <GameTips storageKey={TIPS_KEY} rows={tipRows(touchDevice)} testId="dsm-tips" />
+        <GameTips storageKey={TIPS_KEY} rows={tipRows(touchDevice)} testId="dsm-tips" markOnShow />
       )}
       <GameChat enabled={!!online && !result} onClosed={(was) => was && controls.resumeLock()} />
       {menu && !result && (

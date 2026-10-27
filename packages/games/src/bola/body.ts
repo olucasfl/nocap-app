@@ -66,8 +66,9 @@ export interface BolBody {
   running: boolean;
   /** Estava pedindo para correr no passo anterior (acha o aperto novo, para o "não" de quando falta fôlego). Não vai pela rede. */
   runKey: boolean;
-  /** Bot não cola na parede. */
+  /** Bot só cola na parede quando pede (`input.climb`); quem não é bot cola sempre. */
   bot?: boolean;
+  climb?: boolean;
 }
 
 /** O fôlego de quem acabou de nascer. */
@@ -131,6 +132,7 @@ export function controlBody(
   const iz = mag > 1 ? input.mz / mag : input.mz;
   p.ix = ix;
   p.iz = iz;
+  p.climb = !!input.climb;
   // na parede e no teto não corre; no meio do mortal também não
   const running = updateStamina(p, input, mag, dt, p.surf === 0 && p.flipT <= 0, emit);
   if (p.surf !== 0) {
@@ -315,10 +317,10 @@ function clampWalls(p: BolBody, field: BolField, allowAttach: boolean): void {
     p.z += e.nz * (BOL_FOX_R - d);
     const vn = p.vx * e.nx + p.vz * e.nz;
     if (vn < 0) {
-      // correndo contra a parede, apertando para ela, com grude sobrando: cola e sobe (bot não)
+      // correndo contra a parede, apertando para ela, com grude sobrando: cola e sobe (bot só quando decidiu subir)
       if (
         allowAttach &&
-        !p.bot &&
+        (!p.bot || p.climb) &&
         p.stick >= BOL_STICK_MIN &&
         p.flipT <= 0 &&
         -vn >= BOL_STICK_ENTRY_SPEED &&

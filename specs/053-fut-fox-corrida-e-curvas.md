@@ -11,7 +11,7 @@ Pedido do Lucas em 27/10/2026. Status: **em andamento (motor, rede e tela feitos
 
 ## 2. Como ficou
 
-- **Corrida** (`body.ts`, `constants.ts`): 11,5 m/s correndo (o mortal é 11), aceleração 18 contra 40 andando. Fôlego 100, gasta 100 em 2,8 s, congela 2 s ao parar de correr, recarrega 12 por segundo. Esgotou: volta a andar, espera 2,5 s e só corre de novo com 20 ou mais (sem isso a pessoa corria "picotado" com 1 de fôlego). Só corre com direção, e não na parede, no teto nem no mortal.
+- **Corrida** (`body.ts`, `constants.ts`): 11,5 m/s correndo (o mortal é 11), aceleração 18 contra 40 andando. Fôlego 100, gasta 100 em 2,8 s, congela 2 s ao parar de correr, recarrega 16 por segundo. Esgotou: volta a andar, espera 2,5 s e só corre de novo com 20 ou mais (sem isso a pessoa corria "picotado" com 1 de fôlego). Só corre com direção, e não na parede, no teto nem no mortal.
 - **Rede**: o terceiro número de cada passo da entrada é um conjunto de bits (1 pulo, 2 correr; o formato antigo mandava 0 ou 1, então segue valendo). O quadro leva o fôlego (coluna 18, inteiro) e os bits 64 (correndo) e 128 (esgotada) nos flags. A previsão com rollback e o preditor simples rodam a mesma conta; as outras raposas são previstas correndo pelo bit 64.
 - **Tela**: `controls.ts` tem Shift (segurar) e o botão do celular (liga e desliga, desliga sozinho ao esgotar). O "não" sai na hora do aperto, no aparelho (barra treme, som `nope`), sem esperar o servidor. Barra e botão animam só `transform` e `opacity`.
 - **Atrito da bola**: Coulomb na parede (`BOL_WALL_MU` 0,3: a batida de lado perde parte da velocidade que corre ao longo dela) e freio de rolagem na rampa (`BOL_RAMP_DRAG` 0,5, `BOL_RAMP_DECEL` 0,8). Com 0,45 os bots faziam quase metade dos gols; 0,3 manteve o ritmo.
@@ -24,10 +24,20 @@ Pedido do Lucas em 27/10/2026. Status: **em andamento (motor, rede e tela feitos
 - **Rastro:** enquanto corre, a raposa deixa um fio de luz na cor do time (brilhos que somem em 0,5 s); as outras raposas aparecem correndo pelo bit 64 do quadro. Desligado com movimento reduzido.
 - Corrida a 11,5 m/s (o Lucas pediu "um pouco mais rápido, mas não muito"; o mortal fica em 11 e vale pelo chute).
 
+## 2c. Bots (27/10/2026)
+
+- **Boost:** o bot corre quando está longe do ponto aonde vai (6,5 m para quem vai na bola, 11 m para o apoio, só com tiro vindo para o goleiro), só com fôlego de sobra (28 para quem vai na bola, 60 para o apoio) e para ao chegar perto ou no fim dele. A previsão de quem chega primeiro conta a corrida. Medido em 4 partidas de 2 min no 3x3: correm ~16% do tempo e só ~5% do tempo ficam esgotados.
+- **Parede:** `BolInput.climb` libera o bot a colar (uma pessoa cola sempre que corre contra o muro; o bot só quando decidiu). Quem vai na bola planeja subir (`planWall`) quando a bola vai passar alta (3,6 a 7,2 m) a menos de 3,2 m de uma parede e dá tempo de chegar; corre contra a parede, sobe até a altura da bola, anda ao longo dela até ficar de frente e pula, tentando o mortal. Se o plano vence, solta e cai. Um plano a cada 4 s no máximo.
+- Os gols dos bots caíram (a bola freia na parede e eles gastam fôlego), mas seguem acima do bot antigo (~1,6 por partida de 2 min).
+
+## 2d. Desmorona!: comandos só na primeira vez (27/10/2026)
+
+Os comandos antes apareciam o jogo todo (uma caixa de teclas fixa) e voltavam a cada partida (a dica só valia como vista ao tocar em "Entendi"). Agora a dica aparece só na primeira partida da pessoa, durante a contagem de 3 s, e vale como vista assim que aparece (`GameTips markOnShow`); a caixa fixa foi removida. Para rever: Config. (Esc) e Controles.
+
 ## 3. Limites e riscos
 
 - Cinco toques no Shift abrem as "Teclas de Aderência" do Windows; está avisado em Comandos, mas não há tecla alternativa.
-- Bots não correm.
+- Os bots só sobem na parede atrás de bola alta junto dela; ainda não usam o teto.
 - Os valores (10,5, 2,8 s, 2 s, 12 por segundo, 20) são palpite: ajustar jogando, tudo em `constants.ts`.
 - A raposa no teto junto da parede ainda não inclina com a curva (fica de cabeça para baixo, reta).
 - O servidor sobe antes (Render) e o web depois; quem ainda tem a versão antiga só não corre.

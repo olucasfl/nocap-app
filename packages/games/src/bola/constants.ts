@@ -58,7 +58,7 @@ export const BOL_RUN_ACCEL = 18;
 export const BOL_STAM_MAX = 100;
 export const BOL_STAM_DRAIN = 100 / 2.8;
 export const BOL_STAM_HOLD = 2;
-export const BOL_STAM_REGEN = 12;
+export const BOL_STAM_REGEN = 16;
 /** Esgotou: só volta a correr com este tanto (senão a pessoa picotaria a corrida com 1 de fôlego) e demora a recarregar. */
 export const BOL_STAM_MIN = 20;
 export const BOL_STAM_TIRED_HOLD = 2.5;

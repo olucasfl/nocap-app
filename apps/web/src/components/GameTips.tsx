@@ -26,6 +26,7 @@ export function GameTips({
   onDone,
   testId,
   okTestId = 'game-tips-ok',
+  markOnShow = false,
 }: {
   storageKey: string;
   title?: string;
@@ -34,8 +35,18 @@ export function GameTips({
   onDone?: () => void;
   testId?: string;
   okTestId?: string;
+  /** Vale como vista assim que aparece (não precisa tocar em Entendi): quem a mostra só durante uma contagem. */
+  markOnShow?: boolean;
 }) {
   const [open, setOpen] = useState(() => forced || !seen(storageKey));
+  useEffect(() => {
+    if (!open || forced || !markOnShow) return;
+    try {
+      localStorage.setItem(storageKey, '1');
+    } catch {
+      /* sem armazenamento: aparece de novo na próxima, sem problema */
+    }
+  }, [open, forced, markOnShow, storageKey]);
   useEffect(() => {
     if (!open || forced) return undefined;
     // some sozinha depois de um tempo, mas só "vale como vista" quando a pessoa toca em Entendi

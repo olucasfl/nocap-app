@@ -1,5 +1,5 @@
-import { BOL_BALL_R, BOL_FOX_R, BOL_SPEED } from './constants';
-import type { BolGoal } from './field';
+import { BOL_BALL_R, BOL_FOX_R, BOL_RUN_SPEED, BOL_SPEED, BOL_STICK_MIN } from './constants';
+import type { BolEdge, BolGoal } from './field';
 import type { BolBall, BolInput, BolPlayer, BolWorld } from './world';
 
 /** Papel do bot no time agora: quem vai na bola, quem apoia e quem guarda o gol. */
@@ -28,6 +28,12 @@ export interface BolBotMemory {
   wakeAt: number;
   /** Aperto de pulo agendado para daqui a pouco (hora do relógio); 0 = nenhum. */
   jumpAt: number;
+  /** Está segurando correr (com histerese: começa com fôlego de sobra e só para quando ele está no fim ou chegou). */
+  run: boolean;
+  /** Subida na parede para pegar uma bola alta: onde e a que altura ela vai passar, e até quando o plano vale. */
+  plan: { x: number; z: number; y: number; until: number } | null;
+  /** Hora a partir da qual pode planejar outra subida (não vive pendurado na parede). */
+  planCool: number;
 }
 
 export const newBolBotMemory = (target = 0, miss = 0.2): BolBotMemory => ({
@@ -43,6 +49,9 @@ export const newBolBotMemory = (target = 0, miss = 0.2): BolBotMemory => ({
   side: 1,
   wakeAt: 0,
   jumpAt: 0,
+  run: false,
+  plan: null,
+  planCool: 0,
 });
 
 const STOP: BolInput = { mx: 0, mz: 0, jump: false };
@@ -77,7 +86,8 @@ function ballPath(world: BolWorld): BolBall[] {
 
 /** Em quanto tempo (s) a raposa chega perto da bola, e onde a bola estará: o primeiro ponto da trajetória ao alcance. */
 function intercept(p: BolPlayer, pts: BolBall[]): { t: number; at: BolBall } {
-  const speed = BOL_SPEED * 0.92;
+  // com fôlego, conta que chega correndo (o papel de cada um sai disto)
+  const speed = (p.stam > 30 && !p.tired ? BOL_RUN_SPEED * 0.85 : BOL_SPEED) * 0.92;
   for (let i = 0; i < pts.length; i++) {
     const b = pts[i] as BolBall;
     // bola muito alta não dá para alcançar andando: espera ela descer
@@ -111,6 +121,79 @@ function attackGoal(world: BolWorld, p: BolPlayer, mem: BolBotMemory): BolGoal |
 
 const clamp = (x: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, x));
 
+/** A parede (fora a boca do gol) mais perto de um ponto, e o ponto da parede de frente para ele. */
+function nearestWall(
+  world: BolWorld,
+  x: number,
+  z: number,
+): { e: BolEdge; d: number; fx: number; fz: number } | null {
+  let best: { e: BolEdge; d: number; fx: number; fz: number } | null = null;
+  for (const e of world.field.edges) {
+    if (e.goal >= 0) continue;
+    const d = (x - e.ax) * e.nx + (z - e.az) * e.nz;
+    if (d < 0) continue;
+    const t = (x - e.mx) * e.tx + (z - e.mz) * e.tz;
+    if (Math.abs(t) > e.len / 2) continue;
+    if (!best || d < best.d) best = { e, d, fx: e.mx + e.tx * t, fz: e.mz + e.tz * t };
+  }
+  return best;
+}
+
+/** Planeja subir na parede para pegar uma bola que vai passar alta junto dela (alta demais para pular). */
+function planWall(world: BolWorld, p: BolPlayer, mem: BolBotMemory, pts: BolBall[], now: number) {
+  if (mem.plan || now < mem.planCool || p.stick < BOL_STICK_MIN + 1) return;
+  for (let i = 8; i < pts.length; i++) {
+    const q = pts[i] as BolBall;
+    if (q.y < 3.6 || q.y > 7.2) continue;
+    const w = nearestWall(world, q.x, q.z);
+    if (!w || w.d > 3.2) continue;
+    // só vale ir se dá tempo de chegar e subir: ~10 m/s no chão mais ~6 m/s na parede
+    const need = Math.hypot(w.fx - p.x, w.fz - p.z) / (BOL_RUN_SPEED * 0.8) + (q.y - 0.5) / 5.5;
+    if (need > i * PATH_DT + 0.4 || need < 0.3) continue;
+    mem.plan = { x: w.fx, z: w.fz, y: q.y, until: now + Math.max(1.2, i * PATH_DT + 0.8) };
+    mem.planCool = now + 4;
+    return;
+  }
+}
+
+/**
+ * Bot colado na parede: sobe até a altura da bola, anda ao longo dela até ficar na frente da bola e pula (da parede o
+ * pulo lança para longe dela, e a raposa tenta o mortal na bola). Se o plano venceu, solta e cai.
+ */
+function wallBot(
+  world: BolWorld,
+  p: BolPlayer,
+  mem: BolBotMemory,
+  rng: () => number,
+  now: number,
+): BolInput {
+  const plan = mem.plan;
+  if (p.surf !== 1 || !plan || now > plan.until) {
+    mem.plan = null;
+    return { mx: 0, mz: 0, jump: true };
+  }
+  const tx = -p.wnz;
+  const tz = p.wnx;
+  const lat = (plan.x - p.x) * tx + (plan.z - p.z) * tz;
+  const up = plan.y - 0.8 - p.y;
+  const latIn = clamp(lat / 1.5, -1, 1);
+  if (up < 0.35 && Math.abs(lat) < 2.4 && world.ball.y > 2.4) {
+    // na altura e de frente para a bola: pula e tenta o mortal
+    mem.plan = null;
+    mem.wantFlip = rng() > mem.miss * 0.5;
+    mem.mx = p.wnx;
+    mem.mz = p.wnz;
+    return { mx: p.wnx, mz: p.wnz, jump: true };
+  }
+  const into = up > 0.2 ? 1 : 0;
+  return {
+    mx: -p.wnx * into + tx * latIn,
+    mz: -p.wnz * into + tz * latIn,
+    jump: false,
+    climb: true,
+  };
+}
+
 /**
  * Bot do treino e dos times incompletos. Prevê para onde a bola vai (a mesma física do jogo), decide um papel por
  * time (quem vai na bola, quem apoia e quem guarda o gol), chega no ponto de encontro por trás da bola para chutar em
@@ -142,6 +225,8 @@ export function bolBotInput(
     mem.wz = 0;
     mem.wakeAt = 0;
     mem.jumpAt = 0;
+    mem.run = false;
+    mem.plan = null;
     return STOP;
   }
   const now = botClock(world);
@@ -150,6 +235,7 @@ export function bolBotInput(
   if (now < mem.wakeAt) return STOP;
 
   const b = world.ball;
+  if (p.surf !== 0) return wallBot(world, p, mem, rng, now);
   if (!p.grounded) {
     // no ar: segue para onde ia e tenta o mortal na bola se estiver perto
     if (mem.wantFlip && !p.airJumped) {
@@ -163,14 +249,14 @@ export function bolBotInput(
         };
       }
     }
-    return { mx: mem.mx, mz: mem.mz, jump: false };
+    return { mx: mem.mx, mz: mem.mz, jump: false, run: mem.run };
   }
   mem.wantFlip = false;
   // pulo agendado (para chegar na bola alta no tempo certo)
   if (mem.jumpAt > 0 && now >= mem.jumpAt) {
     mem.jumpAt = 0;
     mem.wantFlip = rng() > mem.miss;
-    return { mx: mem.mx, mz: mem.mz, jump: true };
+    return { mx: mem.mx, mz: mem.mz, jump: true, run: mem.run };
   }
 
   if (now >= mem.next) {
@@ -181,7 +267,7 @@ export function bolBotInput(
   const k = 0.2;
   mem.mx += (mem.wx - mem.mx) * k;
   mem.mz += (mem.wz - mem.mz) * k;
-  return { mx: mem.mx, mz: mem.mz, jump: false };
+  return { mx: mem.mx, mz: mem.mz, jump: false, run: mem.run, climb: !!mem.plan };
 }
 
 function decide(
@@ -217,10 +303,13 @@ function decide(
   let tx: number;
   let tz: number;
   let sprint = 1;
+  /** Distância a partir da qual vale correr (cada papel gasta o fôlego de um jeito); 0 = nunca. */
+  let runFrom = 0;
   /** Ir na bola a toda: a força do toque depende da velocidade com que a raposa chega. */
   let rush = false;
 
   if (mem.role === 'chase') {
+    planWall(world, p, mem, pts, now);
     const hit = intercept(p, pts);
     const at = hit.at;
     // para onde chutar: um canto do gol atacado (troca de lado de vez em quando)
@@ -272,6 +361,18 @@ function decide(
       mem.jumpAt = now + 0.02;
     }
     rush = aligned || toBehind < 0.9;
+    runFrom = 6.5;
+    if (mem.plan) {
+      // subir: corre de frente para a parede (a corrida e a pressão contra o muro é que colam) no ponto da bola
+      const pl = mem.plan;
+      const w = nearestWall(world, pl.x, pl.z);
+      if (w) {
+        tx = pl.x - w.e.nx * 2.5;
+        tz = pl.z - w.e.nz * 2.5;
+        rush = true;
+        runFrom = 2;
+      }
+    }
   } else if (mem.role === 'keeper') {
     // goleiro: na frente do gol, acompanhando a bola; se vem chute, corre para o ponto onde ela cruza a linha
     const e = mine.edge;
@@ -301,6 +402,8 @@ function decide(
       tz = e.mz + e.tz * lat * 0.8 + e.nz * out;
     }
     sprint = 1;
+    // tiro vindo: corre para a linha; senão guarda andando
+    runFrom = cross ? 3.5 : 0;
   } else {
     // apoio: abre um pouco de lado, à frente da bola, pronto para o rebote ou o passe; longe dos colegas
     const ax = aim.edge.mx - b.x;
@@ -321,6 +424,7 @@ function decide(
       }
     }
     sprint = 0.9;
+    runFrom = 11;
   }
   // um pouco de imprecisão: ninguém acerta o ponto exato
   tx += (rng() - 0.5) * 0.5;
@@ -328,6 +432,10 @@ function decide(
   const dx = tx - p.x;
   const dz = tz - p.z;
   const d = Math.hypot(dx, dz);
+  // corre quando está longe do ponto e sobra fôlego; para ao chegar perto (correndo ela freia e vira devagar) ou no fim dele
+  const want = runFrom > 0 && d > (mem.run ? runFrom * 0.55 : runFrom);
+  const spare = p.tired ? false : mem.run ? p.stam > 6 : p.stam > (mem.role === 'chase' ? 28 : 60);
+  mem.run = want && spare;
   if (d < 0.5) {
     mem.wx = 0;
     mem.wz = 0;

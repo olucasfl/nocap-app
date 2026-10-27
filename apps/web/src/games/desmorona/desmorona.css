@@ -354,35 +354,3 @@
   gap: 8px;
   pointer-events: auto;
 }
-/* teclas do jogo na tela (só no computador) */
-.dsm-keys {
-  position: absolute;
-  left: max(14px, env(safe-area-inset-left));
-  bottom: max(14px, env(safe-area-inset-bottom));
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px 16px;
-  padding: 8px 12px;
-  border: 3px solid #1b1535;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.88);
-  color: #1b1535;
-  font: 800 12px var(--font-display, system-ui);
-  text-transform: uppercase;
-  pointer-events: none;
-}
-.dsm-keys span {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-@media (hover: none), (pointer: coarse) {
-  .dsm-keys {
-    display: none;
-  }
-}
-@media (max-height: 460px) {
-  .dsm-keys {
-    display: none;
-  }
-}

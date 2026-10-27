@@ -85,7 +85,7 @@ describe('corrida e fôlego', () => {
     expect(pr.body.stam).toBeGreaterThan(level);
     go(pr, 1, {});
     // devagar: um segundo recarrega bem menos do que um segundo corrido gasta
-    expect(pr.body.stam - level).toBeLessThan(20);
+    expect(pr.body.stam - level).toBeLessThan(30);
   });
 
   it('esgotada, apertar correr avisa ("tired") uma vez por aperto, não a cada passo', () => {

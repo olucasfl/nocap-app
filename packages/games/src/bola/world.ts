@@ -61,6 +61,8 @@ export interface BolInput {
   jump: boolean;
   /** Segurando correr (Shift ou botão): vale se houver fôlego. */
   run?: boolean;
+  /** Só bot: quer colar na parede (um bot só cola quando decidiu subir; uma pessoa cola sempre que corre contra o muro). */
+  climb?: boolean;
 }
 
 /** O que cada raposa fez na partida (aparece na tabela do Tab). */
