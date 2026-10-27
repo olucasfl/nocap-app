@@ -318,3 +318,15 @@
     grid-template-columns: 1fr;
   }
 }
+
+.gm-ver {
+  margin: 0;
+  text-align: center;
+  font-size: 10px;
+  opacity: 0.55;
+}
+@media (max-height: 560px) and (orientation: landscape) {
+  .gm-card > .gm-ver {
+    grid-column: 1 / -1;
+  }
+}

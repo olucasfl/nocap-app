@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import { BUILD_ID } from '@/lib/build-id';
 import { toggleMute, useMuted } from '@/lib/sfx';
 import {
   IcExit,
@@ -258,6 +259,7 @@ export function GameMenu({
               {sure ? 'Toque de novo para sair' : exitLabel}
             </span>
           </button>
+          <p className="gm-note mono gm-ver">versão {BUILD_ID}</p>
         </div>
       </div>
       {invite && (
