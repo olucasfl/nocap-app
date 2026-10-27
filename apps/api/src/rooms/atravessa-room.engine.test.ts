@@ -477,6 +477,36 @@ describe('AtravessaRoomEngine · Checkpoint', () => {
     expect(room.currentPhase).toBe('final');
   });
 
+  it('a chegada é anunciada uma vez por pessoa, na ordem de chegada, com o lugar e o tempo', () => {
+    const { room, clock } = started({ mode: 'checkpoint', size: 'pequeno' });
+    clock.set(startAt());
+    room.tick();
+    const sims = (
+      room as unknown as {
+        runs: Map<
+          string,
+          { mirror: { sim: { finished: boolean; finishTick: number; best: number } } }
+        >;
+      }
+    ).runs;
+    expect(room.drainFinishes()).toEqual([]);
+    // a bia chega antes da ana, mas o servidor soube das duas no mesmo instante: o tick de chegada manda
+    const ana = sims.get('ana')!.mirror.sim;
+    ana.finished = true;
+    ana.finishTick = 4000;
+    const bia = sims.get('bia')!.mirror.sim;
+    bia.finished = true;
+    bia.finishTick = 3500;
+    const first = room.drainFinishes();
+    expect(first.map((f) => [f.name, f.place])).toEqual([
+      ['bia', 1],
+      ['ana', 2],
+    ]);
+    expect(first[0]!.ms).toBe(Math.round((3500 * 1000) / 60));
+    // não repete
+    expect(room.drainFinishes()).toEqual([]);
+  });
+
   it('o pódio põe quem chegou por tempo e depois os outros por distância', () => {
     const { room, clock } = started({
       names: ['ana', 'bia', 'caio', 'duda'],

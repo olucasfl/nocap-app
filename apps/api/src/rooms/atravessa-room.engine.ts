@@ -305,10 +305,38 @@ export class AtravessaRoomEngine extends ColorRoomEngine {
   protected override reset() {
     super.reset();
     this.runs.clear();
+    this.announced.clear();
     this.slots.clear();
     this.world = null;
     this.forceEnd = false;
     this.roundMeters = [];
+  }
+
+  // ---- chegada (Checkpoint) ----
+
+  /** Quem já teve a chegada anunciada nesta corrida (a ordem de chegada vira o lugar). */
+  private announced = new Set<string>();
+
+  /**
+   * Quem acabou de chegar ao fim do mapa e ainda não foi anunciado, na ordem do tick de chegada. A sala manda `fin` a todos
+   * ("fulano finalizou em 1º lugar"). O lugar é a ordem em que o servidor viu a chegada: bate com o tempo na prática.
+   */
+  drainFinishes(): { slot: number; name: string; place: number; ms: number }[] {
+    const fresh: { id: string; tick: number }[] = [];
+    for (const [id, run] of this.runs) {
+      const sim = run.mirror.sim;
+      if (sim.finished && !this.announced.has(id)) fresh.push({ id, tick: sim.finishTick });
+    }
+    fresh.sort((a, b) => a.tick - b.tick);
+    return fresh.map((f) => {
+      this.announced.add(f.id);
+      return {
+        slot: this.slots.get(f.id) ?? 0,
+        name: this.members.get(f.id)?.username ?? '',
+        place: this.announced.size,
+        ms: Math.round((f.tick * 1000) / ATR_TPS),
+      };
+    });
   }
 
   // ---- o que cada aparelho enxerga ----

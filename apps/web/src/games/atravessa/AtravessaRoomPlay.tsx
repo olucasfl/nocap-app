@@ -189,6 +189,10 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
   const [pulse, setPulse] = useState(0);
   /** Só o líder encerra, e com dois toques (um toque sem querer não acaba a partida de todo mundo). */
   const [confirmEnd, setConfirmEnd] = useState(false);
+  /** Avisos de chegada (Checkpoint): "fulano finalizou em 1º lugar", na tela de todos, por alguns segundos. */
+  const [arrivals, setArrivals] = useState<
+    { key: number; text: string; place: number; me: boolean }[]
+  >([]);
   useEffect(() => {
     if (!confirmEnd) return;
     const t = window.setTimeout(() => setConfirmEnd(false), 3000);
@@ -258,6 +262,21 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
         if (list.length > 12) list.shift();
         samples.set(id, list);
       }
+    });
+    // quem chega ao fim (o servidor conta a ordem e manda a todos, inclusive a quem chegou)
+    let arrivalKey = 0;
+    const unsubFin = subscribeRoom('fin', (m) => {
+      const f = m as { slot?: number; name?: string; place?: number } | null;
+      if (!f || typeof f.place !== 'number') return;
+      const id = idOfSlot.get(f.slot ?? -1);
+      const isMe = id === meId;
+      const key = ++arrivalKey;
+      const who = isMe ? 'VOCÊ' : String(f.name ?? '').toUpperCase();
+      setArrivals((a) => [
+        ...a.slice(-2),
+        { key, text: `${who} FINALIZOU EM ${f.place}º LUGAR`, place: f.place as number, me: isMe },
+      ]);
+      window.setTimeout(() => setArrivals((a) => a.filter((x) => x.key !== key)), 5000);
     });
     let acked = 0;
     const unsubAck = subscribeRoom('ack', (m) => {
@@ -529,6 +548,7 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
       window.clearInterval(sender);
       window.clearInterval(uiTimer);
       unsubPos();
+      unsubFin();
       unsubAck();
       ro.disconnect();
       controls.dispose();
@@ -667,6 +687,15 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
         </p>
       )}
 
+      {arrivals.length > 0 && (
+        <div className="atr-fin" aria-live="polite">
+          {arrivals.map((a) => (
+            <p key={a.key} className={`place-${Math.min(a.place, 4)}${a.me ? ' me' : ''}`}>
+              {a.text}
+            </p>
+          ))}
+        </div>
+      )}
       {pulse > 0 && <div className="atr-flash" key={pulse} aria-hidden="true" />}
 
       {ui.over?.kind === 'dead' && (

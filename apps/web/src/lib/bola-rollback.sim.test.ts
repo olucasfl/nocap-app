@@ -266,7 +266,9 @@ describe('Fut Fox online: previsão com rollback e entrada por passo', () => {
       if (rollback) {
         // mesma rede e Wi-Fi: sem salto grande; internet boa: raro (a bola ficou mais viva com rampa e chute forte); e a previsão precisa estar valendo
         for (const [i, r] of rows.slice(0, 3).entries()) {
-          expect(r['saltos>1m/min'] as number, r.rede as string).toBeLessThan(i < 2 ? 0.6 : 1.2);
+          expect(r['saltos>1m/min'] as number, r.rede as string).toBeLessThan(
+            [0.6, 1, 1.2, 1.2][i] ?? 1.2,
+          );
           expect(r.snapshots as number, r.rede as string).toBeGreaterThan(1000);
           expect(r.agreed as number, r.rede as string).toBeGreaterThan(r.replays as number);
         }

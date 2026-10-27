@@ -337,3 +337,57 @@
     top: 132px;
   }
 }
+
+/* Chegada ao fim do mapa (Checkpoint): só letras, com contorno, na tela de todos; o 1º lugar em ouro */
+.atr-fin {
+  position: absolute;
+  left: 50%;
+  top: max(204px, 26vh);
+  transform: translateX(-50%);
+  display: grid;
+  gap: 4px;
+  width: max-content;
+  max-width: 94%;
+  text-align: center;
+  pointer-events: none;
+  z-index: 6;
+}
+.atr-fin p {
+  margin: 0;
+  font: 900 clamp(15px, 4.4vw, 28px) / 1.1 var(--font-display, system-ui);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #fff;
+  -webkit-text-stroke: 5px #1b1535;
+  paint-order: stroke fill;
+  text-shadow: 0 4px 0 #1b1535;
+  animation:
+    atr-fin-in 0.5s cubic-bezier(0.2, 1.5, 0.4, 1) both,
+    atr-fin-out 0.5s ease-in 4.5s both;
+}
+.atr-fin p.place-1 {
+  color: #ffd23f;
+  font-size: clamp(17px, 5vw, 34px);
+}
+.atr-fin p.place-2 {
+  color: #e6e9f2;
+}
+.atr-fin p.place-3 {
+  color: #f0a35e;
+}
+@keyframes atr-fin-in {
+  from {
+    opacity: 0;
+    transform: translateY(-18px) scale(0.6);
+  }
+}
+@keyframes atr-fin-out {
+  to {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .atr-fin p {
+    animation: none;
+  }
+}

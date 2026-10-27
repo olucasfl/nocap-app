@@ -575,7 +575,11 @@ export class AtravessaRoom extends ColorRoom {
 
   protected override afterTick() {
     const engine = this.engine as AtravessaRoomEngine;
-    if (engine.currentPhase === 'play') this.broadcast('pos', engine.positions());
+    if (engine.currentPhase === 'play') {
+      this.broadcast('pos', engine.positions());
+      // Checkpoint: "fulano finalizou em 1º lugar" aparece na tela de todos
+      for (const f of engine.drainFinishes()) this.broadcast('fin', f);
+    }
   }
 }
 

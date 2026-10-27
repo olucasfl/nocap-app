@@ -111,7 +111,7 @@ function roundCorners(pts: readonly Pt[], r: number, steps: number): { pts: Pt[]
     const bl = Math.hypot(bx, bz);
     const dist = r / Math.sin(theta / 2);
     const c: Pt = [v[0] + (bx / bl) * dist, v[1] + (bz / bl) * dist];
-    let a0 = Math.atan2(a[1] - c[1], a[0] - c[0]);
+    const a0 = Math.atan2(a[1] - c[1], a[0] - c[0]);
     const a1 = Math.atan2(b[1] - c[1], b[0] - c[0]);
     let d = a1 - a0;
     while (d > Math.PI) d -= 2 * Math.PI;
