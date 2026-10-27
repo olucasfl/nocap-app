@@ -3,6 +3,7 @@ import { useRouterState } from '@tanstack/react-router';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { router } from '@/router';
 import { canShowUpdate } from '@/lib/update-gate';
+import { appOutdated } from '@/lib/app-version';
 import { useRoom } from '@/lib/rooms';
 import { useUpdateNeeded } from '@/lib/update-state';
 import { usePopupSlot } from '@/lib/popups';
@@ -57,6 +58,33 @@ export function UpdatePrompt() {
     },
   });
   const [updating, setUpdating] = useState(false);
+  // O service worker às vezes não avisa (celular com o app aberto há dias, aba presa): `/version.json` é buscado na rede
+  // e diz se esta versão ainda é a mais nova. Confere ao abrir, ao voltar para o app e a cada minuto.
+  const [stale, setStale] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    const check = () => {
+      void appOutdated().then((old) => alive && old && setStale(true));
+    };
+    check();
+    const t = window.setInterval(check, CHECK_EVERY_MS);
+    const vis = () => document.visibilityState === 'visible' && check();
+    document.addEventListener('visibilitychange', vis);
+    return () => {
+      alive = false;
+      window.clearInterval(t);
+      document.removeEventListener('visibilitychange', vis);
+    };
+  }, []);
+  // uma partida em tela cheia aberta (Fut Fox, Desmorona!, Atravessa!): a versão nova espera ela acabar
+  const [playing, setPlaying] = useState(false);
+  useEffect(() => {
+    if (!needRefresh && !stale) return undefined;
+    const look = () => setPlaying(!!document.querySelector('.dsm-play, .at-play'));
+    look();
+    const t = window.setInterval(look, 800);
+    return () => window.clearInterval(t);
+  }, [needRefresh, stale]);
   // um tempo sem aviso de versão nova: a atualização deu certo, zera a conta de tentativas
   useEffect(() => {
     if (needRefresh) return;
@@ -69,7 +97,7 @@ export function UpdatePrompt() {
     writeTries(tries + 1);
     // a segunda tentativa seguida já vai direto à força; a primeira tenta o jeito normal e, se a
     // página não recarregar, força depois de alguns segundos
-    if (tries >= 1) return void hardReload();
+    if (tries >= 1 || !needRefresh) return void hardReload();
     void updateServiceWorker(true);
     window.setTimeout(() => void hardReload(), FORCE_AFTER_MS);
   };
@@ -77,10 +105,12 @@ export function UpdatePrompt() {
   const inRoom = useRoom((s) => s.snapshot !== null);
   const roomPhase = useRoom((s) => s.snapshot?.phase);
   useEffect(() => {
-    useUpdateNeeded.setState({ needed: needRefresh });
-  }, [needRefresh]);
+    useUpdateNeeded.setState({ needed: needRefresh || stale });
+  }, [needRefresh, stale]);
 
-  const wanted = needRefresh && canShowUpdate(pathname, inRoom, roomPhase);
+  // as entradas dos jogos (Fox Cap!, Atravessa!) também valem: é de lá que se joga offline
+  const gameHub = /^\/(fox-cap|atravessa)(\/|$)/.test(pathname) && !inRoom && !playing;
+  const wanted = (needRefresh || stale) && (gameHub || canShowUpdate(pathname, inRoom, roomPhase));
   // O aviso de versão nova é o mais importante: vai antes de qualquer outro popup.
   const myTurn = usePopupSlot('update', wanted, 0);
   if (!wanted || !myTurn) return null;
