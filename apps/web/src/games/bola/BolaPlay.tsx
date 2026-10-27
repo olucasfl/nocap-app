@@ -298,8 +298,8 @@ export function BolaPlay({
         if (!locked && !uiOpenRef.current && !gameChatOpen()) setMenu(true);
       });
     }
-    // a partida começa com a câmera solta; quem quiser prende na bola (F ou o botão)
-    let ballCam = false;
+    // celular começa com a câmera na bola; computador com a câmera solta (F ou o botão alternam)
+    let ballCam = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
     let aimed = false;
     let yaw = 0;
     let camYaw = 0;
