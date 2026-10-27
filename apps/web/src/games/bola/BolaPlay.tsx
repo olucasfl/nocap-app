@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import {
   BOL_DT,
+  BOL_STICK_MAX,
   BOL_TEAM_COLORS,
   BOL_TEAM_NAMES,
   BolWorld,
@@ -10,6 +11,7 @@ import {
   type BolEvent,
   type BolInfo,
   type BolInput,
+  type BolPlayer,
 } from '@nocap/games';
 import { bolaGain, bolaSfx, crowdStart, crowdStop, crowdSwell } from '@/lib/bola-audio';
 import { sendRoom, useRoom } from '@/lib/rooms';
@@ -100,6 +102,8 @@ interface Hud {
   warn: string;
   winner: number;
   ballCam: boolean;
+  /** Grude que resta (0 a 1) e se está na parede ou no teto: a barrinha aparece quando não está cheia. */
+  stick: number;
   banner: {
     title: string;
     sub: string;
@@ -242,6 +246,7 @@ export function BolaPlay({
     warn: '',
     winner: -1,
     ballCam: false,
+    stick: 1,
     banner: null,
     flash: 0,
     myTeam: 0,
@@ -802,8 +807,18 @@ export function BolaPlay({
           aimed = true;
           camYaw = yaw = Math.atan2(-(world.ball.x - me.x), -(world.ball.z - me.z));
         }
+        const onWall = !!me && me.surf === 1;
         const free = !ballCam || !me;
-        if (free) {
+        if (onWall && me) {
+          // colada na parede: a câmera fica de frente para a parede (quem sobe vê o que está subindo) e estável, sem câmera na bola
+          // nem giro manual: o "para frente" da tela continua sendo "para a parede", então os controles nunca invertem
+          let d = Math.atan2(me.wnx, me.wnz) - camYaw;
+          d = Math.atan2(Math.sin(d), Math.cos(d));
+          const step = d * (1 - Math.exp(-dt * 7));
+          const cap = 4 * dt;
+          camYaw += Math.max(-cap, Math.min(cap, step));
+          yaw = camYaw;
+        } else if (free) {
           yaw += manual;
           // altura da câmera livre: do quase rente ao chão até quase de cima
           pitch = Math.min(1.25, Math.max(0.12, pitch + manualPitch));
@@ -827,8 +842,9 @@ export function BolaPlay({
           }
           yaw = camYaw;
         }
-        if (free) camYaw = yaw;
-        scene.setPitch(free ? pitch : null);
+        if (free && !onWall) camYaw = yaw;
+        // na parede e no teto a câmera fica baixa (no teto, uma câmera alta ficaria acima do vidro)
+        scene.setPitch(me && me.surf !== 0 ? 0.2 : free ? pitch : null);
         scene.setYaw(yaw);
         if (input.mx !== 0 || input.mz !== 0) {
           const sy = Math.sin(yaw);
@@ -889,6 +905,7 @@ export function BolaPlay({
           warn,
           winner: world.winner,
           ballCam,
+          stick: world.player(meId) ? (world.player(meId) as BolPlayer).stick / BOL_STICK_MAX : 1,
           banner,
           flash: flashId,
           myTeam: world.player(meId)?.team ?? -1,
@@ -1198,6 +1215,17 @@ export function BolaPlay({
           </button>
         </>
       )}
+      <div
+        className="bola-stick"
+        data-on={hud.stick < 0.98 ? '1' : '0'}
+        role="progressbar"
+        aria-label="Grude na parede"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(hud.stick * 100)}
+      >
+        <i style={{ transform: `scaleX(${Math.max(0, Math.min(1, hud.stick))})` }} />
+      </div>
       {(tabHeld || pinned) && !menu && (
         <BolaStats
           rows={hud.rows}

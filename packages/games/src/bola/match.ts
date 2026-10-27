@@ -432,7 +432,12 @@ export class BolaMatch {
         r2(p.vy),
         r2(p.vz),
         r2(p.heading),
-        (p.grounded ? 1 : 0) + (p.flipT > 0 ? 2 : 0) + (p.airJumped ? 4 : 0) + (p.flipHit ? 8 : 0),
+        (p.grounded ? 1 : 0) +
+          (p.flipT > 0 ? 2 : 0) +
+          (p.airJumped ? 4 : 0) +
+          (p.flipHit ? 8 : 0) +
+          (p.surf === 1 ? 16 : 0) +
+          (p.surf === 2 ? 32 : 0),
         this.pilots.get(p.id)?.ack ?? 0,
         // o mortal inteiro (tempo, direção): a previsão do aparelho precisa dele para refazer a raposa
         r2(p.flipT),
@@ -441,6 +446,10 @@ export class BolaMatch {
         // a direção pedida no último passo (centésimos): com ela o aparelho prevê as outras raposas acelerando e virando
         Math.round((this.lastInput.get(p.id)?.mx ?? 0) * 100),
         Math.round((this.lastInput.get(p.id)?.mz ?? 0) * 100),
+        // grude que resta e a normal da parede em que está colada
+        r2(p.stick),
+        r2(p.wnx),
+        r2(p.wnz),
       ]),
       ev: this.out,
     };

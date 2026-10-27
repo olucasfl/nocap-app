@@ -26,6 +26,10 @@ export interface NetTgt {
   vz: number;
   h: number;
   fl: number;
+  /** Grude que resta e normal da parede em que está colada (spec 052). */
+  st: number;
+  wx: number;
+  wz: number;
   /** Quando chegou (ms do relógio local). */
   at: number;
 }
@@ -189,6 +193,9 @@ export class BolaNetSync {
       vz: f.b[5]!,
       h: 0,
       fl: 0,
+      st: 0,
+      wx: 0,
+      wz: 0,
       at,
     };
     const rows = new Map<number, NetTgt>();
@@ -202,6 +209,9 @@ export class BolaNetSync {
         vz: r[6]!,
         h: r[7]!,
         fl: r[8]!,
+        st: r[15] ?? 3.2,
+        wx: r[16] ?? 0,
+        wz: r[17] ?? 0,
         at,
       });
     }
@@ -295,6 +305,10 @@ export class BolaNetSync {
       p.grounded = (ra.fl & 1) === 1;
       p.flipT = (ra.fl & 2) === 2 ? 0.3 : 0;
       p.airJumped = (ra.fl & 4) === 4;
+      p.surf = (ra.fl & 16) === 16 ? 1 : (ra.fl & 32) === 32 ? 2 : 0;
+      p.stick = ra.st;
+      p.wnx = ra.wx;
+      p.wnz = ra.wz;
     }
     // a bola é desenhada mais perto do "agora" que as outras raposas: é nela que a sua raposa (já no presente) encosta
     const bb = this.bracket(rt + BALL_AHEAD_MS);

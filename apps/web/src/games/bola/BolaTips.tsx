@@ -25,6 +25,10 @@ export function bolaTipRows(touch: boolean): TipRow[] {
           text: 'Menu: convidar, tabela, trocar de time, espectar, comandos e sair',
         },
         {
+          keys: <b className="bola-tip-tag">Parede</b>,
+          text: 'Corra contra a parede para subir; no teto anda de cabeça para baixo. O grude acaba e ela cai (pular solta)',
+        },
+        {
           keys: <b className="bola-tip-tag">Chat</b>,
           text: 'Botão do balão (em sala): abre e fecha o chat',
         },
@@ -56,6 +60,10 @@ export function bolaTipRows(touch: boolean): TipRow[] {
           text: 'O mouse gira a câmera (clique na tela para prender)',
         },
         { keys: <Key k="F" />, text: 'Prende a câmera na bola ou solta' },
+        {
+          keys: <b className="bola-tip-tag">Parede</b>,
+          text: 'Corra contra a parede para subir; no teto anda de cabeça para baixo. O grude acaba e ela cai (pular solta)',
+        },
         { keys: <Key k="Tab" />, text: 'Segure para ver a tabela de estatísticas' },
         { keys: <Key k="Esc" />, text: 'Menu (convidar, times, espectar, comandos, rede, sair)' },
         { keys: <Key k="T" />, text: 'Abre e fecha o chat da sala (Enter também abre; Esc fecha)' },

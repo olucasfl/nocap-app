@@ -104,7 +104,7 @@ describe('BolaMatch: entrada por passo', () => {
     steps(s, 5);
     const f = s.m.drainFrame(true) as { k: number; p: number[][] };
     expect(f.k).toBeGreaterThan(0);
-    expect(f.p[0]).toHaveLength(15);
+    expect(f.p[0]).toHaveLength(18);
   });
 });
 

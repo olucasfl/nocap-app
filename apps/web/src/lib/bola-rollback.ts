@@ -217,6 +217,10 @@ export class BolaRollback {
       p.flipT = (r[10] as number) ?? 0;
       p.flipDx = (r[11] as number) ?? 0;
       p.flipDz = (r[12] as number) ?? 0;
+      p.surf = (fl & 16) === 16 ? 1 : (fl & 32) === 32 ? 2 : 0;
+      p.stick = (r[15] as number) ?? 3.2;
+      p.wnx = (r[16] as number) ?? 0;
+      p.wnz = (r[17] as number) ?? 0;
       this.noteInput(p.id, r);
     }
     pw.ball.x = f.b[0] as number;
@@ -432,6 +436,10 @@ export class BolaRollback {
       p.flipT = (r[10] as number) ?? 0;
       p.flipDx = (r[11] as number) ?? 0;
       p.flipDz = (r[12] as number) ?? 0;
+      p.surf = (fl & 16) === 16 ? 1 : (fl & 32) === 32 ? 2 : 0;
+      p.stick = (r[15] as number) ?? 3.2;
+      p.wnx = (r[16] as number) ?? 0;
+      p.wnz = (r[17] as number) ?? 0;
       this.noteInput(p.id, r);
       const inp = this.remoteIn.get(p.id);
       for (let i = 0; i < steps; i++) {
@@ -560,6 +568,10 @@ export class BolaRollback {
     me.flipDx = mine.flipDx;
     me.flipDz = mine.flipDz;
     me.flipHit = mine.flipHit;
+    me.surf = mine.surf;
+    me.stick = mine.stick;
+    me.wnx = mine.wnx;
+    me.wnz = mine.wnz;
     if (this.phase === 'play') {
       const b: BolBall = this.draw.ball;
       b.x = s.bx;

@@ -2,6 +2,7 @@ import {
   BOL_AIR_DRAG,
   BOL_BALL_MAX,
   BOL_RAMP_E,
+  BOL_STICK_MAX,
   BOL_HEAD_FLAT,
   BOL_FOX_REST_SPEED,
   BOL_FOX_MU,
@@ -98,6 +99,13 @@ export interface BolPlayer extends BolInfo {
   flipDz: number;
   /** O mortal atual já chutou a bola (um chute por mortal). */
   flipHit: boolean;
+  /** Parede e teto (spec 052): onde está (0 chão/ar, 1 parede, 2 teto), grude que resta e normal da parede. */
+  surf: number;
+  stick: number;
+  wnx: number;
+  wnz: number;
+  ix: number;
+  iz: number;
 }
 
 export interface BolBall {
@@ -237,6 +245,12 @@ export class BolWorld {
       flipDx: 0,
       flipDz: 0,
       flipHit: false,
+      surf: 0,
+      stick: BOL_STICK_MAX,
+      wnx: 0,
+      wnz: 0,
+      ix: 0,
+      iz: 0,
     };
   }
 
@@ -311,6 +325,8 @@ export class BolWorld {
       grounded: true,
       flipT: 0,
       airJumped: false,
+      surf: 0,
+      stick: BOL_STICK_MAX,
     });
   }
 
@@ -332,6 +348,8 @@ export class BolWorld {
         flipT: 0,
         airJumped: false,
         flipHit: false,
+        surf: 0,
+        stick: BOL_STICK_MAX,
       });
     });
   }

@@ -117,7 +117,8 @@ describe('arena: a raposa na rampa', () => {
     });
     let maxY = 0;
     for (let i = 0; i < 120; i++) {
-      w.step(BOL_DT, { t0p0: { mx: -side.nx, mz: -side.nz, jump: false } });
+      // devagar: abaixo de BOL_STICK_ENTRY_SPEED ela sobe a rampa sem colar na parede
+      w.step(BOL_DT, { t0p0: { mx: -side.nx * 0.3, mz: -side.nz * 0.3, jump: false } });
       maxY = Math.max(maxY, p.y);
     }
     expect(maxY).toBeGreaterThan(0.4);

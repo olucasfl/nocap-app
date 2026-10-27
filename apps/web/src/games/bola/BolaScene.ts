@@ -1,7 +1,9 @@
 import * as THREE from 'three';
 import {
   BOL_BALL_R,
+  BOL_CEILING,
   BOL_FLIP_SEC,
+  BOL_FOX_H,
   BOL_GOAL_DEPTH,
   BOL_GOAL_H,
   BOL_TEAM_COLORS,
@@ -17,7 +19,8 @@ import { buildHero, mapEdge } from '../atravessa/models';
 const CAM_DIST = 8.6;
 /** O muro termina acima da rampa (que sobe até BOL_RAMP_R na parede). */
 const WALL_H = 2.8;
-const GLASS_H = 4.2;
+/** O vidro vai do muro até o teto. */
+const GLASS_H = BOL_CEILING - WALL_H - 0.18;
 const NET_DEPTH = BOL_GOAL_DEPTH;
 const PHI = (1 + Math.sqrt(5)) / 2;
 
@@ -28,6 +31,16 @@ interface Fox {
   wasGrounded: boolean;
   lastVy: number;
   dustT: number;
+  /** Última direção de subida na parede (para a raposa não virar de repente ao parar). */
+  wallFwd: THREE.Vector3;
+  /** A virada do corpo (quaternion): muda com suavidade ao colar, ao soltar (com um giro) e ao pousar. */
+  qCur: THREE.Quaternion;
+  /** De onde a virada atual parte e há quanto tempo (s); `spin`: é queda (gira uma volta inteira até ficar em pé). */
+  qFrom: THREE.Quaternion;
+  qT: number;
+  qDur: number;
+  spin: boolean;
+  lastSurf: number;
   /** Nome, cor e time com que foi desenhada. */
   sig: string;
   /** Há quanto tempo o mortal começou (s); -1 fora dele. Local, para valer também para quem vem da rede. */
@@ -35,6 +48,17 @@ interface Fox {
 }
 
 const tmp = new THREE.Vector3();
+const tmp2 = new THREE.Vector3();
+const tmp3 = new THREE.Vector3();
+const tmp4 = new THREE.Vector3();
+const tmp5 = new THREE.Vector3();
+const basis = new THREE.Matrix4();
+const qTarget = new THREE.Quaternion();
+const qSpin = new THREE.Quaternion();
+const eul = new THREE.Euler();
+const axisX = new THREE.Vector3(1, 0, 0);
+/** Raio do corpo da raposa (m): a distância dela até a parede quando colada. */
+const BOL_FOX_R_VIS = 0.5;
 
 /** O campo, a bola e as raposas do Fut Fox. Só desenha: quem manda é o `BolWorld`. */
 export class BolaScene {
@@ -448,7 +472,39 @@ export class BolaScene {
       lamp.position.set(e.ax - e.nx * 4.5, 15.2, e.az - e.nz * 4.5);
       this.scene.add(post, lamp);
     }
+    this.buildRoof();
     this.flushBaked();
+  }
+
+  /** Teto de vidro (quase invisível) na altura em que a bola quica e as raposas andam de cabeça para baixo. */
+  private buildRoof() {
+    const f = this.world.field;
+    const shape = new THREE.Shape(f.edges.map((e) => new THREE.Vector2(e.ax, -e.az)));
+    const roof = new THREE.Mesh(
+      new THREE.ShapeGeometry(shape),
+      new THREE.MeshBasicMaterial({
+        color: 0xbfe8ff,
+        transparent: true,
+        opacity: 0.07,
+        side: THREE.DoubleSide,
+        depthWrite: false,
+      }),
+    );
+    roof.rotation.x = -Math.PI / 2;
+    roof.position.y = BOL_CEILING;
+    roof.renderOrder = 1;
+    this.scene.add(roof);
+    // barras de luz no teto: dão a noção de superfície quando a raposa está lá em cima
+    const bar = new THREE.MeshBasicMaterial({ color: 0xfff1b0, transparent: true, opacity: 0.55 });
+    const maxX = f.edges.reduce((m, e) => Math.max(m, Math.abs(e.ax)), 0);
+    const maxZ = f.edges.reduce((m, e) => Math.max(m, Math.abs(e.az)), 0);
+    const span = Math.min(maxX, maxZ) * 1.6;
+    for (let i = -2; i <= 2; i++) {
+      const strip = new THREE.Mesh(new THREE.PlaneGeometry(0.35, span), bar);
+      strip.rotation.x = Math.PI / 2;
+      strip.position.set(i * (span / 5), BOL_CEILING - 0.02, 0);
+      this.scene.add(strip);
+    }
   }
 
   private cachedMat(key: string, make: () => THREE.Material): THREE.Material {
@@ -788,9 +844,72 @@ export class BolaScene {
       wasGrounded: true,
       lastVy: 0,
       dustT: 0,
+      wallFwd: new THREE.Vector3(0, 1, 0),
+      qCur: new THREE.Quaternion(),
+      qFrom: new THREE.Quaternion(),
+      qT: 1,
+      qDur: 0.2,
+      spin: false,
+      lastSurf: 0,
       sig: `${p.name}|${p.color}|${p.team}`,
       flipAge: -1,
     });
+  }
+
+  /**
+   * Põe a raposa no mundo e vira o corpo: no chão como sempre; na parede os pés ficam nela e a cabeça aponta para onde sobe
+   * ou anda; no teto ela fica de cabeça para baixo, com os pés no teto.
+   */
+  private orientFox(fox: Fox, p: BolPlayer, dt: number) {
+    const g = fox.group;
+    const up = tmp2;
+    const fwd = tmp3;
+    const target = qTarget;
+    if (p.surf === 0) {
+      g.position.set(p.x, p.y, p.z);
+      target.setFromEuler(eul.set(0, p.heading + Math.PI, 0));
+    } else {
+      if (p.surf === 1) {
+        up.set(p.wnx, 0, p.wnz);
+        // para onde anda na parede: a velocidade projetada nela (para cima quando sobe, de lado quando anda de lado)
+        fwd.set(p.vx, p.vy, p.vz);
+        fwd.addScaledVector(up, -fwd.dot(up));
+        if (fwd.lengthSq() > 0.09) fox.wallFwd.copy(fwd.normalize());
+        fwd.copy(fox.wallFwd);
+        // os pés na parede, o corpo para fora dela
+        g.position.set(
+          p.x - p.wnx * (BOL_FOX_R_VIS - 0.04),
+          p.y + BOL_FOX_H / 2,
+          p.z - p.wnz * (BOL_FOX_R_VIS - 0.04),
+        );
+      } else {
+        up.set(0, -1, 0);
+        fwd.set(Math.sin(p.heading), 0, Math.cos(p.heading));
+        g.position.set(p.x, BOL_CEILING, p.z);
+      }
+      // base: x = y vezes z, com y = em cima do corpo e z = atrás (o modelo olha para -z)
+      const back = tmp4.copy(fwd).negate();
+      const right = tmp5.crossVectors(up, back).normalize();
+      target.setFromRotationMatrix(basis.makeBasis(right, up, back));
+    }
+    if (p.surf !== fox.lastSurf) {
+      // mudou de lugar: colar e pousar viram com suavidade; soltar (cair) gira uma volta inteira até ficar em pé
+      fox.qFrom.copy(fox.qCur);
+      fox.qT = 0;
+      fox.spin = p.surf === 0 && fox.lastSurf !== 0 && !this.reduced;
+      fox.qDur = fox.spin ? 0.6 : 0.18;
+      fox.lastSurf = p.surf;
+    }
+    if (fox.qT < 1) {
+      fox.qT = Math.min(1, fox.qT + dt / fox.qDur);
+      const e = 1 - Math.pow(1 - fox.qT, 3);
+      fox.qCur.copy(fox.qFrom).slerp(target, e);
+      // a queda gira o corpo para a frente (em volta do eixo de lado dele) uma volta, e a volta termina em pé
+      if (fox.spin) fox.qCur.multiply(qSpin.setFromAxisAngle(axisX, (1 - e) * Math.PI * 2));
+    } else {
+      fox.qCur.copy(target);
+    }
+    g.quaternion.copy(fox.qCur);
   }
 
   /** Quem entra no meio da partida (ou muda de nome ao virar bot) ganha o corpo sem refazer o campo. */
@@ -1150,8 +1269,7 @@ export class BolaScene {
     for (const p of this.world.players) {
       const fox = this.foxes.get(p.id);
       if (!fox) continue;
-      fox.group.position.set(p.x, p.y, p.z);
-      fox.group.rotation.y = p.heading + Math.PI;
+      this.orientFox(fox, p, dt);
       // sem sombra no chão: sempre sol
       fox.shadow.visible = false;
       const speed = Math.hypot(p.vx, p.vz);
@@ -1185,6 +1303,7 @@ export class BolaScene {
           );
         }
       }
+      const onSurf = p.surf !== 0;
       const squash = p.grounded
         ? 1 + Math.sin(this.world.clock * 18 + p.x) * 0.04 * Math.min(1, speed / 3)
         : 1.08;
@@ -1196,7 +1315,11 @@ export class BolaScene {
         fox.flipAge += dt;
         if (fox.flipAge >= BOL_FLIP_SEC || this.reduced) fox.flipAge = -1;
       }
-      if (fox.flipAge >= 0) {
+      if (onSurf) {
+        // colada na parede ou no teto: o corpo fica reto (o grupo inteiro já está virado)
+        fox.body.rotation.x = 0;
+        fox.flipAge = -1;
+      } else if (fox.flipAge >= 0) {
         const k = fox.flipAge / BOL_FLIP_SEC;
         const e = 1 - Math.pow(1 - Math.min(1, k * 1.15), 3);
         fox.body.rotation.x = pitch - e * Math.PI * 2;
@@ -1326,10 +1449,12 @@ export class BolaScene {
       this.camFocus.y + se * D + 0.7 + (CAM_DIST - D) * 0.45 + (Math.random() - 0.5) * sh,
       this.camFocus.z + cy * ce * D,
     );
+    // nunca acima do teto de vidro (na parede alta e no teto a câmera ficaria do lado de fora e o sentido da cena se perderia)
+    this.camera.position.y = Math.min(this.camera.position.y, BOL_CEILING - 0.6);
     const aim = () => {
       this.camera.lookAt(
         this.camFocus.x + (b.x - this.camFocus.x) * lookT - sy * 1.2,
-        1 + Math.max(0, b.y - 1) * lookT * 0.5,
+        1 + this.camFocus.y * 0.85 + Math.max(0, b.y - 1) * lookT * 0.5,
         this.camFocus.z + (b.z - this.camFocus.z) * lookT - cy * 1.2,
       );
       this.camera.updateMatrixWorld();

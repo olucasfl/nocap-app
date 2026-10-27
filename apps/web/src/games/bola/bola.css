@@ -1249,3 +1249,34 @@
   font-size: clamp(12px, 2.2vw, 17px);
   -webkit-text-stroke-width: 3px;
 }
+
+/* Barrinha do grude (parede e teto): aparece quando não está cheia; só transform e opacity animam */
+.bola-stick {
+  position: absolute;
+  left: 50%;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  width: min(170px, 38vw);
+  height: 14px;
+  border: 3px solid #1b1535;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.4);
+  overflow: hidden;
+  transform: translateX(-50%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease-out;
+}
+.bola-stick[data-on='1'] {
+  opacity: 1;
+}
+.bola-stick i {
+  display: block;
+  height: 100%;
+  background: #ffd23f;
+  transform-origin: left center;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bola-stick {
+    transition: none;
+  }
+}

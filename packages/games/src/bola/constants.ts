@@ -30,7 +30,8 @@ export const BOL_ROLL_DRAG = 0.7;
 export const BOL_ROLL_DECEL = 1.2;
 export const BOL_AIR_DRAG = 0.03;
 export const BOL_BALL_MAX = 20;
-export const BOL_CEILING = 14;
+/** Teto (m): a bola quica nele e as raposas podem andar nele (por baixo) por um tempo. */
+export const BOL_CEILING = 9;
 /** Parada de verdade: abaixo disto, no chão, a bola conta como "parada". */
 export const BOL_REST_SPEED = 0.5;
 
@@ -43,6 +44,22 @@ export const BOL_AIR_ACCEL = 9;
 export const BOL_JUMP = 7;
 export const BOL_AIR_JUMP = 6.6;
 export const BOL_FOX_GRAVITY = 24;
+
+/**
+ * Andar na parede e no teto (spec 052): correndo para a parede pela rampa a raposa "gruda" e sobe; no teto anda de cabeça
+ * para baixo. O grude acaba em `BOL_STICK_MAX` s (gasta na parede e no teto, recarrega no chão) e ela cai. Pular solta.
+ */
+export const BOL_STICK_MAX = 3.2;
+export const BOL_STICK_REGEN = 1.2;
+/** Grude mínimo para poder colar na parede (evita colar e cair logo em seguida). */
+export const BOL_STICK_MIN = 0.6;
+/** Velocidade (m/s) contra a parede para colar: encostar devagar não gruda. */
+export const BOL_STICK_ENTRY_SPEED = 3.5;
+export const BOL_WALL_SPEED = 6.5;
+export const BOL_WALL_ACCEL = 32;
+export const BOL_CEIL_SPEED = 6;
+/** Pulo da parede: empurrão para longe dela (m/s). */
+export const BOL_WALL_JUMP = 8;
 
 /** Mortal (pulo duplo com direção): impulso da raposa, janela em que o chute vale e alcance extra. */
 export const BOL_FLIP_SEC = 0.5;
