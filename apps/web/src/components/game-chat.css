@@ -1,107 +1,181 @@
-/* Chat por cima da partida: botão pequeno, mensagens que somem e painel que fica até fechar. Só transform e opacity animam. */
+/* Chat por cima da partida: botão pequeno com o número de mensagens novas, mensagens que somem e painel que fica até fechar.
+   Só transform e opacity animam. */
 .gc {
   position: absolute;
   left: max(12px, env(safe-area-inset-left));
-  top: 46%;
+  top: max(112px, calc(env(safe-area-inset-top) + 104px));
   z-index: 40;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   pointer-events: none;
 }
 .gc-btn {
   position: relative;
   display: grid;
   place-items: center;
-  width: 42px;
-  height: 42px;
+  width: 48px;
+  height: 48px;
+  padding: 0;
   border: 3px solid #1b1535;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.92);
-  color: #1b1535;
-  box-shadow: 0 3px 0 #1b1535;
+  border-radius: 16px;
+  background: #ffe27a;
+  color: #fff;
+  box-shadow: 0 4px 0 #1b1535;
   cursor: pointer;
   pointer-events: auto;
+  transition:
+    transform 0.08s,
+    box-shadow 0.08s;
 }
-.gc-btn:active {
-  transform: translateY(2px);
+.gc-btn svg {
+  filter: drop-shadow(0 1px 0 rgba(27, 21, 53, 0.35));
+}
+.gc-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 0 #1b1535;
+}
+.gc-btn:active,
+.gc-btn.is-open {
+  transform: translateY(3px);
   box-shadow: 0 1px 0 #1b1535;
 }
-.gc-btn.new {
-  background: #ffe27a;
+.gc-btn:focus-visible {
+  outline: 3px solid #5b8cff;
+  outline-offset: 3px;
 }
-.gc-btn b {
+.gc-btn.new {
+  background: #ff9d2e;
+  animation: gc-pulse 1.1s ease-in-out 3;
+}
+@keyframes gc-pulse {
+  50% {
+    transform: scale(1.08);
+  }
+}
+.gc-count {
   position: absolute;
-  top: -8px;
-  right: -8px;
-  min-width: 20px;
-  padding: 1px 5px;
-  border: 2px solid #1b1535;
+  top: -9px;
+  right: -9px;
+  min-width: 23px;
+  height: 23px;
+  padding: 0 6px;
+  display: grid;
+  place-items: center;
+  border: 2.5px solid #1b1535;
   border-radius: 999px;
   background: #dc2b36;
   color: #fff;
-  font-size: 11px;
-  line-height: 1.2;
-  text-align: center;
+  font: 900 12px/1 var(--font-display, system-ui);
+  font-variant-numeric: tabular-nums;
+}
+.gc-key {
+  position: absolute;
+  right: -5px;
+  bottom: -9px;
+  padding: 0 5px;
+  border: 2px solid #1b1535;
+  border-radius: 6px;
+  background: #fff;
+  color: #1b1535;
+  font: 900 10px/15px var(--font-display, system-ui);
+  pointer-events: none;
+}
+@media (pointer: coarse) {
+  .gc-hide-touch {
+    display: none !important;
+  }
 }
 .gc-toasts {
   display: grid;
-  gap: 4px;
+  gap: 5px;
   margin: 0;
   padding: 0;
   list-style: none;
-  max-width: min(46vw, 320px);
+  max-width: min(52vw, 340px);
 }
 .gc-toast {
-  padding: 5px 10px;
-  border: 2px solid #1b1535;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.92);
+  position: relative;
+  padding: 6px 12px;
+  border: 2.5px solid #1b1535;
+  border-radius: 6px 14px 14px 14px;
+  background: rgba(255, 255, 255, 0.95);
   color: #1b1535;
   font: 700 13px/1.25 var(--font-display, system-ui);
   overflow-wrap: anywhere;
+  box-shadow: 0 2px 0 #1b1535;
   animation: gc-in 0.2s ease-out;
 }
 .gc-toast b {
   font-weight: 900;
+  color: #c4571a;
 }
 @keyframes gc-in {
   from {
     opacity: 0;
-    transform: translateX(-8px);
+    transform: translateX(-10px);
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .gc-toast {
+  .gc-toast,
+  .gc-btn.new {
     animation: none;
   }
 }
+/* painel aberto */
 .gc-panel {
   position: absolute;
   left: max(12px, env(safe-area-inset-left));
   bottom: max(12px, env(safe-area-inset-bottom));
   z-index: 45;
-  width: min(340px, calc(100% - 24px));
-  height: min(52%, 360px);
+  width: min(360px, calc(100% - 24px));
+  height: min(54%, 380px);
   display: flex;
   flex-direction: column;
   gap: 8px;
   padding: 10px;
   border: 4px solid #1b1535;
-  border-radius: 16px;
+  border-radius: 18px;
   background: #fff;
   color: #1b1535;
-  box-shadow: 0 5px 0 #1b1535;
+  box-shadow: 0 6px 0 #1b1535;
 }
 .gc-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
 }
-.gc-head h2 {
+.gc-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #ffb32e;
+}
+.gc-title h2 {
   margin: 0;
-  font-size: 13px;
-  letter-spacing: 0.08em;
+  color: #1b1535;
+  font: 900 15px var(--font-display, system-ui);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.gc-x {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 2.5px solid #1b1535;
+  border-radius: 10px;
+  background: #fff;
+  color: #1b1535;
+  cursor: pointer;
+}
+.gc-x .gc-key {
+  right: auto;
+  left: -34px;
+  bottom: 6px;
 }
 .gc-panel .ch {
   min-height: 0;
@@ -109,17 +183,93 @@
 }
 .gc-panel .ch-list {
   min-height: 0;
+  background: #f4f4ef;
+  border-width: 2.5px;
 }
+.gc-panel .ch-msg {
+  border-width: 2px;
+  border-radius: 4px 12px 12px 12px;
+}
+.gc-panel .ch-msg.me {
+  border-radius: 12px 4px 12px 12px;
+}
+.gc-panel .ch-input {
+  min-height: 42px;
+  font-size: 16px; /* 16 px: o iPhone não dá zoom ao tocar no campo */
+}
+/* celular em pé e telas estreitas: o painel vira uma folha embaixo, na largura toda */
+@media (max-width: 560px) {
+  .gc-panel {
+    left: 8px;
+    right: 8px;
+    bottom: max(8px, env(safe-area-inset-bottom));
+    width: auto;
+    height: min(46dvh, 340px);
+  }
+  .gc-toasts {
+    max-width: min(60vw, 260px);
+  }
+  /* só o último aviso, numa linha: a notificação não cobre o jogo */
+  .gc-toast:not(.is-latest) {
+    display: none;
+  }
+  .gc-toast {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+/* celular deitado: painel estreito do lado esquerdo, de cima a baixo; notificação de uma linha */
 @media (max-height: 560px) and (orientation: landscape) {
   .gc {
-    top: 36%;
-  }
-  .gc-panel {
-    width: min(300px, 46%);
-    height: calc(100% - 24px);
+    top: max(92px, calc(env(safe-area-inset-top) + 84px));
   }
   .gc-btn {
-    width: 38px;
-    height: 38px;
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
   }
+  .gc-panel {
+    left: max(8px, env(safe-area-inset-left));
+    right: auto;
+    top: 8px;
+    bottom: 8px;
+    width: min(320px, 46%);
+    height: auto;
+    padding: 8px;
+  }
+  .gc-toasts {
+    max-width: min(34vw, 280px);
+  }
+  .gc-toast:not(.is-latest) {
+    display: none;
+  }
+  .gc-toast {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 12px;
+  }
+}
+
+/* quem escreveu: bolinha na cor do time ou da raposa (cinza = espectador) */
+.gc-dot,
+.ch-dot {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  margin-right: 6px;
+  vertical-align: -1px;
+  border: 2px solid #1b1535;
+  border-radius: 50%;
+}
+.ch-dot {
+  margin-right: 0;
+}
+.gc-panel .ch-msg.has-who {
+  border-left: 7px solid var(--who);
+}
+.gc-panel .ch-msg.has-who.me {
+  border-left-width: 2px;
+  border-right: 7px solid var(--who);
 }

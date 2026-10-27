@@ -1,26 +1,87 @@
 import { useEffect, useRef, useState } from 'react';
-import { Message } from '@/components/icons';
 import { ChatPanel } from '@/components/Chat';
 import { useGameChat } from '@/lib/game-chat-state';
-import { at, useRoom, type ChatMessage } from '@/lib/rooms';
+import { BOL_TEAM_COLORS } from '@nocap/games';
+import { at, useRoom, type ChatMessage, type RoomSnapshot } from '@/lib/rooms';
 import './game-chat.css';
 
 /** Quanto tempo uma mensagem nova fica à vista (ms) antes de sumir. */
 const SHOW_MS = 5000;
 
+/** Balão de conversa com três pontinhos: o ícone do chat da partida. */
+function IcChat({ size = 24 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true" focusable="false">
+      <path
+        d="M5 4.5h14a2.5 2.5 0 0 1 2.5 2.5v8a2.5 2.5 0 0 1-2.5 2.5h-6.2L8 21.5v-4H5A2.5 2.5 0 0 1 2.5 15V7A2.5 2.5 0 0 1 5 4.5Z"
+        fill="currentColor"
+        stroke="#1b1535"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+      <circle cx="8.3" cy="11" r="1.35" fill="#1b1535" />
+      <circle cx="12" cy="11" r="1.35" fill="#1b1535" />
+      <circle cx="15.7" cy="11" r="1.35" fill="#1b1535" />
+    </svg>
+  );
+}
+
+const SPECTATOR = '#9a9aa5';
+const hex = (n: number) => `#${n.toString(16).padStart(6, '0')}`;
+
 /**
- * Chat por cima da partida (Fut Fox, Desmorona! e Atravessa! em sala): só um botão pequeno. Quando alguém escreve, a
- * mensagem aparece ao lado por alguns segundos e some. Tocando no botão (ou Enter) o chat abre e fica até a pessoa fechar.
+ * Como a pessoa aparece no chat: no Fut Fox a cor do time; no Desmorona! e no Atravessa! a cor da raposa; quem está de
+ * fora da partida (espectador, entrou depois) fica cinza.
  */
-export function GameChat({ enabled = true }: { enabled?: boolean }) {
+export function chatColor(snapshot: RoomSnapshot, userId: string): string | null {
+  const b = snapshot.bola;
+  if (b) {
+    const team = b.teamOf[userId];
+    return team === undefined || team < 0 ? SPECTATOR : hex(BOL_TEAM_COLORS[team] ?? 0x888888);
+  }
+  const g = snapshot.desmorona ?? snapshot.atravessa;
+  if (g) {
+    const playing = Object.keys(g.slots).length > 0;
+    if (playing && g.slots[userId] === undefined) return SPECTATOR;
+    return g.colors[userId] ?? SPECTATOR;
+  }
+  return null;
+}
+
+const count = (n: number) => (n > 99 ? '99+' : String(n));
+
+/**
+ * Chat por cima da partida (Fut Fox, Desmorona! e Atravessa! em sala). Fechado é só um botão com o número de mensagens
+ * novas; quando alguém escreve, a mensagem aparece ao lado por alguns segundos e some. A tecla T (ou o botão) abre e fecha;
+ * ao abrir o mouse volta a aparecer e o campo de texto já fica pronto. `onClosed` devolve o controle ao jogo (prender o mouse).
+ */
+export function GameChat({
+  enabled = true,
+  onClosed,
+}: {
+  enabled?: boolean;
+  onClosed?: () => void;
+}) {
   const snapshot = useRoom((s) => s.snapshot);
   const messages = useRoom((s) => s.chat);
   const unread = useRoom((s) => s.unread);
   const open = useGameChat((s) => s.open);
-  const setOpen = (v: boolean) => useGameChat.setState({ open: v });
   const [shown, setShown] = useState<ChatMessage[]>([]);
   const lastId = useRef<number | null>(null);
   const timers = useRef(new Map<number, number>());
+  const closedCb = useRef(onClosed);
+  closedCb.current = onClosed;
+
+  const setOpen = (v: boolean) => {
+    if (useGameChat.getState().open === v) return;
+    useGameChat.setState({ open: v });
+    if (v) {
+      // o mouse volta a aparecer para poder clicar e digitar
+      if (document.pointerLockElement) document.exitPointerLock();
+    } else {
+      closedCb.current?.();
+    }
+  };
 
   // mensagem nova (de qualquer pessoa): aparece um instante e some
   useEffect(() => {
@@ -49,52 +110,69 @@ export function GameChat({ enabled = true }: { enabled?: boolean }) {
     [],
   );
 
-  // Enter abre o chat; Esc fecha (sem abrir o menu do jogo junto)
+  // T abre e fecha (Enter também abre); Esc fecha; Enter com o campo vazio fecha (sem abrir o menu do jogo junto)
   useEffect(() => {
-    if (!enabled) return undefined;
+    if (
+      !enabled &&
+      !(import.meta.env.DEV && (window as unknown as { __gameChatDemo?: boolean }).__gameChatDemo)
+    )
+      return undefined;
     const key = (e: KeyboardEvent) => {
-      const typing = e.target instanceof HTMLElement && e.target.closest('input, textarea');
-      if (
-        e.key === 'Enter' &&
-        !typing &&
-        !useGameChat.getState().open &&
-        !document.querySelector('.gm-wrap')
-      ) {
-        e.preventDefault();
-        setOpen(true);
-        if (document.pointerLockElement) document.exitPointerLock();
-      } else if (e.key === 'Escape' && useGameChat.getState().open) {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const input = e.target instanceof HTMLInputElement ? e.target : null;
+      const typing = !!input || (e.target instanceof HTMLElement && !!e.target.closest('textarea'));
+      const isOpen = useGameChat.getState().open;
+      const menuOpen = !!document.querySelector('.gm-wrap');
+      if (e.code === 'Escape' && isOpen) {
         e.preventDefault();
         e.stopImmediatePropagation();
         setOpen(false);
+      } else if (e.code === 'Enter' && isOpen && input && input.value.trim() === '') {
+        e.preventDefault();
+        setOpen(false);
+      } else if (!typing && !menuOpen && !e.repeat && (e.code === 'KeyT' || e.code === 'Enter')) {
+        if (e.code === 'Enter' && isOpen) return;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        setOpen(!isOpen);
       }
     };
     window.addEventListener('keydown', key, true);
     return () => window.removeEventListener('keydown', key, true);
   }, [enabled]);
 
-  if (!enabled || !snapshot || !snapshot.chat.open) return null;
+  const demo =
+    import.meta.env.DEV && !!(window as unknown as { __gameChatDemo?: boolean }).__gameChatDemo;
+  if (!(enabled || demo) || !snapshot || !snapshot.chat.open) return null;
+  const latest = shown[shown.length - 1];
   return (
     <>
       <div className="gc" data-testid="game-chat">
         <button
           type="button"
-          className={`gc-btn${unread > 0 && !open ? ' new' : ''}`}
-          aria-label={unread ? `Chat, ${unread} novas` : 'Chat'}
+          className={`gc-btn${unread > 0 && !open ? ' new' : ''}${open ? ' is-open' : ''}`}
+          aria-label={unread ? `Chat, ${unread} mensagens novas` : 'Chat'}
           aria-expanded={open}
           data-testid="game-chat-btn"
-          onClick={() => {
-            if (document.pointerLockElement) document.exitPointerLock();
-            setOpen(!open);
-          }}
+          onClick={() => setOpen(!open)}
         >
-          <Message size={20} />
-          {unread > 0 && !open && <b className="mono">{unread > 9 ? '9+' : unread}</b>}
+          <IcChat size={26} />
+          {unread > 0 && !open && (
+            <b className="gc-count mono" data-testid="game-chat-count">
+              {count(unread)}
+            </b>
+          )}
+          <kbd className="gc-key gc-hide-touch">T</kbd>
         </button>
         {!open && shown.length > 0 && (
           <ul className="gc-toasts" aria-live="polite">
             {shown.map((m) => (
-              <li key={m.id} className="gc-toast">
+              <li key={m.id} className={`gc-toast${m === latest ? ' is-latest' : ''}`}>
+                <i
+                  className="gc-dot"
+                  style={{ background: chatColor(snapshot, m.userId) ?? '#fff' }}
+                  aria-hidden="true"
+                />
                 <b>{at(m.username)}</b> {m.text}
               </li>
             ))}
@@ -109,17 +187,29 @@ export function GameChat({ enabled = true }: { enabled?: boolean }) {
           data-testid="game-chat-panel"
         >
           <div className="gc-head">
-            <h2 className="mono">CHAT</h2>
+            <span className="gc-title">
+              <IcChat size={20} />
+              <h2>Chat da sala</h2>
+            </span>
             <button
               type="button"
-              className="ch-close"
+              className="gc-x"
+              aria-label="Fechar o chat"
               data-sfx="back"
               onClick={() => setOpen(false)}
             >
-              Fechar
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                <path
+                  d="M6 6l12 12M18 6 6 18"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                />
+              </svg>
+              <kbd className="gc-key gc-hide-touch">Esc</kbd>
             </button>
           </div>
-          <ChatPanel snapshot={snapshot} />
+          <ChatPanel snapshot={snapshot} autoFocus colorOf={(id) => chatColor(snapshot, id)} />
         </div>
       )}
     </>

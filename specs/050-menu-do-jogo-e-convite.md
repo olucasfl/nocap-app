@@ -32,3 +32,5 @@ Os três jogos jogam de lado: menu em duas colunas sem rolar (altura até 460 px
 ## 5. Chat na partida (27/10/2026)
 
 Fut Fox, Desmorona! e Atravessa! em sala têm chat por cima da partida (`GameChat`): só um botão pequeno; mensagem nova aparece ao lado por 5 s e some; tocar no botão (ou Enter) abre o chat, que fica até fechar (Esc ou Fechar). O servidor deixou o chat aberto durante a partida nesses três jogos. As teclas digitadas no chat não viram controle do jogo e soltar o mouse para clicar nele não abre o menu.
+
+O chat ganhou (27/10/2026): botão mais alto, balão com os três pontinhos e **número de mensagens novas** (1, 2... 99+); tecla **T** abre e fecha (Enter também abre; Esc ou Enter com o campo vazio fecha); ao abrir o mouse aparece e o campo já fica pronto, e ao fechar o jogo prende o mouse de novo; celular em pé: folha na largura toda embaixo; deitado: painel estreito à esquerda e aviso de uma linha só. **Quem escreve aparece com cor:** no Fut Fox a do time, no Desmorona! e no Atravessa! a da raposa, e **cinza** para espectador. O painel de rede dessas duas salas vem ligado por padrão (desliga no menu).

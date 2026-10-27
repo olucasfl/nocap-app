@@ -618,3 +618,7 @@ export function sendRoom(type: string, payload?: unknown) {
 }
 
 export const CODE_RE = /^[A-HJ-NP-Z]{4}$/;
+
+// só no desenvolvimento: os testes de ponta a ponta injetam estado para ver telas que dependem de uma sala
+if (import.meta.env.DEV && typeof window !== 'undefined')
+  (window as unknown as { __room?: unknown }).__room = useRoom;

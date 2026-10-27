@@ -153,9 +153,10 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
   const [menu, setMenu] = useState(false);
   const [showNet, setShowNet] = useState(() => {
     try {
-      return localStorage.getItem('nocap-atr-net') === '1';
+      // ligado por padrão (o painel mostra o ping); a pessoa desliga no menu
+      return localStorage.getItem('nocap-atr-net') !== '0';
     } catch {
-      return false;
+      return true;
     }
   });
   const [ping, setPing] = useState(0);

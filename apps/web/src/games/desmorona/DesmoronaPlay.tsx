@@ -143,9 +143,10 @@ export function DesmoronaPlay({
   menuRef.current = menu;
   const [showNet, setShowNet] = useState(() => {
     try {
-      return localStorage.getItem('nocap-dsm-net') === '1';
+      // ligado por padrão (o painel mostra o ping); a pessoa desliga no menu
+      return localStorage.getItem('nocap-dsm-net') !== '0';
     } catch {
-      return false;
+      return true;
     }
   });
   const [ping, setPing] = useState(0);
@@ -597,7 +598,7 @@ export function DesmoronaPlay({
       {hud.phase === 'ready' && !result && (
         <GameTips storageKey={TIPS_KEY} rows={tipRows(touchDevice)} testId="dsm-tips" />
       )}
-      <GameChat enabled={!!online && !result} />
+      <GameChat enabled={!!online && !result} onClosed={() => controls.requestLock()} />
       {menu && !result && (
         <GameMenu
           title="Menu"

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import { Message } from '@/components/icons';
 import { useAuth } from '@/lib/auth';
 import { markChatRead, muteMember, sendChat, useRoom, type RoomSnapshot, at } from '@/lib/rooms';
@@ -10,7 +10,17 @@ const time = (at: number) =>
   new Date(at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
 /** Conversa da sala (spec 014): mensagens, campo de texto e, para o líder, silenciar. */
-export function ChatPanel({ snapshot }: { snapshot: RoomSnapshot }) {
+export function ChatPanel({
+  snapshot,
+  autoFocus = false,
+  colorOf,
+}: {
+  snapshot: RoomSnapshot;
+  /** Já abre com o campo de texto pronto para digitar. */
+  autoFocus?: boolean;
+  /** Cor de quem escreveu (time, raposa ou cinza de espectador); sem isso as mensagens ficam sem cor. */
+  colorOf?: (userId: string) => string | null;
+}) {
   const me = useAuth((s) => s.user?.id);
   const messages = useRoom((s) => s.chat);
   const error = useRoom((s) => s.message);
@@ -70,10 +80,16 @@ export function ChatPanel({ snapshot }: { snapshot: RoomSnapshot }) {
           // Mensagens seguidas da mesma pessoa agrupam: o nome e a hora aparecem uma vez.
           const head = !prev || prev.userId !== m.userId || m.at - prev.at > 60_000;
           const muted = snapshot.chat.muted.includes(m.userId);
+          const who = colorOf?.(m.userId) ?? null;
           return (
-            <li key={m.id} className={`ch-msg${mine ? ' me' : ''}${head ? ' head' : ''}`}>
+            <li
+              key={m.id}
+              className={`ch-msg${mine ? ' me' : ''}${head ? ' head' : ''}${who ? ' has-who' : ''}`}
+              style={who ? ({ ['--who' as string]: who } as CSSProperties) : undefined}
+            >
               {head && (
                 <div className="ch-meta mono">
+                  {who && <i className="ch-dot" style={{ background: who }} aria-hidden="true" />}
                   <b>{at(m.username)}</b>
                   <span>{time(m.at)}</span>
                   {isHost && !mine && (
@@ -120,6 +136,7 @@ export function ChatPanel({ snapshot }: { snapshot: RoomSnapshot }) {
           aria-label="Mensagem"
           autoComplete="off"
           enterKeyHint="send"
+          autoFocus={autoFocus}
         />
         {text.length > MAX - 40 && <span className="ch-count mono">{MAX - text.length}</span>}
         <button
