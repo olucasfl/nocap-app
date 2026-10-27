@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import {
   BOL_DT,
   BOL_TEAM_COLORS,
@@ -1077,15 +1077,31 @@ export function BolaPlay({
           key={hud.banner.id}
           className="bola-banner"
           role="status"
-          style={{
-            borderColor:
-              hud.banner.team >= 0
-                ? `#${(BOL_TEAM_COLORS[hud.banner.team] as number).toString(16).padStart(6, '0')}`
-                : '#1b1535',
-          }}
+          aria-label={hud.banner.title}
+          style={
+            {
+              // as letras entram uma a uma; o resto espera a última chegar
+              '--n': [...hud.banner.title].length,
+              '--bn-fill': hud.banner.team >= 0 ? hexOf(hud.banner.team) : '#ffffff',
+            } as CSSProperties
+          }
         >
-          <strong>{hud.banner.title}</strong>
-          <span>{hud.banner.sub}</span>
+          <strong aria-hidden="true">
+            {(() => {
+              // cada palavra é um bloco que não quebra no meio; o índice da letra segue contando entre as palavras
+              let n = 0;
+              return hud.banner.title.split(' ').map((word, w) => (
+                <span key={w} className="bola-w">
+                  {[...word].map((c) => (
+                    <i key={n} style={{ '--i': n++ } as CSSProperties}>
+                      {c}
+                    </i>
+                  ))}
+                </span>
+              ));
+            })()}
+          </strong>
+          <span className="bola-banner-sub">{hud.banner.sub}</span>
           {hud.banner.kmh !== undefined && hud.banner.kmh > 0 && (
             <b className="bola-banner-speed">Bola a {hud.banner.kmh} km/h</b>
           )}
@@ -1124,9 +1140,11 @@ export function BolaPlay({
         {hud.feed.map((f) => (
           <li
             key={f.id}
-            style={{
-              borderColor: `#${(BOL_TEAM_COLORS[f.team] ?? 0xffffff).toString(16).padStart(6, '0')}`,
-            }}
+            style={
+              {
+                '--c': `#${(BOL_TEAM_COLORS[f.team] ?? 0xffffff).toString(16).padStart(6, '0')}`,
+              } as CSSProperties
+            }
           >
             {f.text}
           </li>

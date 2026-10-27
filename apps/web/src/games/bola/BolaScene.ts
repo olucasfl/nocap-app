@@ -9,6 +9,7 @@ import {
   type BolPlayer,
   type BolWorld,
 } from '@nocap/games';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { buildHero, mapEdge } from '../atravessa/models';
 
 /** Câmera de perseguição: atrás da raposa, olhando por cima do ombro para a bola. */
@@ -26,6 +27,7 @@ interface Fox {
   shadow: THREE.Mesh;
   wasGrounded: boolean;
   lastVy: number;
+  dustT: number;
   /** Nome, cor e time com que foi desenhada. */
   sig: string;
   /** Há quanto tempo o mortal começou (s); -1 fora dele. Local, para valer também para quem vem da rede. */
@@ -77,6 +79,11 @@ export class BolaScene {
   private fovKick = 0;
   private baseFov = 60;
   private glowTex: THREE.Texture | null = null;
+  /** As texturas da torcida: balançam de leve (a torcida pula). */
+  private crowdList: THREE.Texture[] = [];
+  /** O campo inteiro é montado em pedaços pequenos (um por trecho de parede); aqui eles esperam para virar UMA malha por material. */
+  private baked = new Map<THREE.Material, THREE.BufferGeometry[]>();
+  private matCache = new Map<string, THREE.Material>();
   private ballTrailT = 0;
   private glowPoolAdd: THREE.Sprite[] = [];
   private glowPoolNorm: THREE.Sprite[] = [];
@@ -183,9 +190,9 @@ export class BolaScene {
     cv.height = 128;
     const g = cv.getContext('2d');
     if (g) {
-      g.fillStyle = '#58c46a';
+      g.fillStyle = '#5fd072';
       g.fillRect(0, 0, 128, 128);
-      g.fillStyle = '#4cb35f';
+      g.fillStyle = '#45aa57';
       g.fillRect(128, 0, 128, 128);
       for (let i = 0; i < 1400; i++) {
         g.fillStyle = Math.random() < 0.5 ? 'rgba(255,255,255,0.05)' : 'rgba(0,40,0,0.06)';
@@ -276,7 +283,7 @@ export class BolaScene {
       m.rotation.x = -Math.PI / 2;
       m.rotation.z = rot;
       m.position.set(cx, 0.02, cz);
-      this.scene.add(m);
+      this.bake(m);
     };
     // linhas: borda, círculo central, ponto do meio, linha do meio (2 times) e a área de cada gol
     for (const e of f.edges) {
@@ -354,22 +361,33 @@ export class BolaScene {
         grp.rotation.y = -ang;
         // nas paredes ao lado do gol o muro inteiro tem a cor do time dono dele
         const bodyMat = goal
-          ? new THREE.MeshLambertMaterial({ color: hex(teamCol).multiplyScalar(0.7) })
+          ? this.cachedMat(
+              `body${teamCol}`,
+              () => new THREE.MeshLambertMaterial({ color: hex(teamCol).multiplyScalar(0.7) }),
+            )
           : wallBody;
-        const capMat = goal ? new THREE.MeshLambertMaterial({ color: hex(teamCol) }) : wallCap;
+        const capMat = goal
+          ? this.cachedMat(
+              `cap${teamCol}`,
+              () => new THREE.MeshLambertMaterial({ color: hex(teamCol) }),
+            )
+          : wallCap;
         const body = new THREE.Mesh(new THREE.BoxGeometry(len, WALL_H, 0.7), bodyMat);
         body.position.y = WALL_H / 2;
         const cap = new THREE.Mesh(new THREE.BoxGeometry(len, 0.18, 0.9), capMat);
         cap.position.y = WALL_H + 0.09;
         const stripe = new THREE.Mesh(
           new THREE.BoxGeometry(len, 0.22, 0.72),
-          new THREE.MeshBasicMaterial({ color: hex(teamCol) }),
+          this.cachedMat(
+            `stripe${teamCol}`,
+            () => new THREE.MeshBasicMaterial({ color: hex(teamCol) }),
+          ),
         );
         stripe.position.y = WALL_H - 0.25;
         const pane = new THREE.Mesh(new THREE.PlaneGeometry(len, GLASS_H), glass);
         pane.position.set(0, WALL_H + 0.18 + GLASS_H / 2, 0.1);
         grp.add(body, cap, stripe, pane);
-        this.scene.add(grp);
+        this.bake(grp);
       };
       if (!goal) {
         piece(e.len, e.mx, e.mz);
@@ -384,14 +402,15 @@ export class BolaScene {
             tex.needsUpdate = true;
             tex.repeat.set(key, 1);
             crowdTex.set(key, tex);
+            this.crowdList.push(tex);
           }
           const step = new THREE.Mesh(
             new THREE.BoxGeometry(short ? e.len + 0.9 : Math.max(1, e.len - 1), h, 2.6),
-            new THREE.MeshLambertMaterial({ map: tex }),
+            this.cachedMat(`step${key}`, () => new THREE.MeshLambertMaterial({ map: tex })),
           );
           step.position.set(e.mx - e.nx * (1.9 + i * 2.6), h / 2, e.mz - e.nz * (1.9 + i * 2.6));
           step.rotation.y = -ang;
-          this.scene.add(step);
+          this.bake(step);
         }
         continue;
       }
@@ -401,7 +420,16 @@ export class BolaScene {
       piece(side, e.mx + e.tx * off, e.mz + e.tz * off);
       this.buildGoal(goal.team, e.mx, e.mz, e.nx, e.nz, goal.halfW);
     }
-    // holofotes nos cantos para dar escala
+    // holofotes nos cantos para dar escala (com um halo de luz)
+    const haloMat = new THREE.SpriteMaterial({
+      map: this.glow(),
+      color: 0xfff1b0,
+      transparent: true,
+      opacity: 0.55,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      fog: false,
+    });
     for (const e of f.edges) {
       if (e.len < 6) continue;
       const post = new THREE.Mesh(
@@ -409,6 +437,10 @@ export class BolaScene {
         new THREE.MeshLambertMaterial({ color: 0x5b5f9e }),
       );
       post.position.set(e.ax - e.nx * 4.5, 7.5, e.az - e.nz * 4.5);
+      const halo = new THREE.Sprite(haloMat);
+      halo.position.set(e.ax - e.nx * 4.5, 15.2, e.az - e.nz * 4.5);
+      halo.scale.setScalar(9);
+      this.scene.add(halo);
       const lamp = new THREE.Mesh(
         new THREE.BoxGeometry(2.4, 0.6, 1.2),
         new THREE.MeshBasicMaterial({ color: 0xfff6c8 }),
@@ -416,6 +448,44 @@ export class BolaScene {
       lamp.position.set(e.ax - e.nx * 4.5, 15.2, e.az - e.nz * 4.5);
       this.scene.add(post, lamp);
     }
+    this.flushBaked();
+  }
+
+  private cachedMat(key: string, make: () => THREE.Material): THREE.Material {
+    let m = this.matCache.get(key);
+    if (!m) {
+      m = make();
+      this.matCache.set(key, m);
+    }
+    return m;
+  }
+
+  /** Guarda a malha (com a posição de mundo já aplicada) para fundir com as outras do mesmo material. */
+  private bake(obj: THREE.Object3D) {
+    obj.updateMatrixWorld(true);
+    obj.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (!m.isMesh) return;
+      const geo = m.geometry.clone();
+      geo.applyMatrix4(m.matrixWorld);
+      const mat = m.material as THREE.Material;
+      const list = this.baked.get(mat) ?? [];
+      list.push(geo);
+      this.baked.set(mat, list);
+      m.geometry.dispose();
+    });
+  }
+
+  /** Funde o que foi guardado: uma malha por material (dezenas de peças viram poucas chamadas de desenho). */
+  private flushBaked() {
+    for (const [mat, list] of this.baked) {
+      const merged =
+        list.length === 1 ? (list[0] as THREE.BufferGeometry) : mergeGeometries(list, false);
+      if (!merged) continue;
+      this.scene.add(new THREE.Mesh(merged, mat));
+      if (list.length > 1) for (const g of list) g.dispose();
+    }
+    this.baked.clear();
   }
 
   /** Rampa entre o chão e as paredes: um quarto de cilindro côncavo ao longo de cada trecho de parede (menos na boca dos gols). */
@@ -452,16 +522,19 @@ export class BolaScene {
       geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
       geo.setIndex(idx);
       geo.computeVertexNormals();
-      this.scene.add(new THREE.Mesh(geo, mat));
+      this.bake(new THREE.Mesh(geo, mat));
       // friso luminoso onde a rampa encontra o muro: mostra de longe onde a bola começa a subir
       const tm = (t0 + t1) / 2;
       const line = new THREE.Mesh(
         new THREE.PlaneGeometry(t1 - t0, 0.16),
-        new THREE.MeshBasicMaterial({ color: tint ?? 0xffd23f, side: THREE.DoubleSide }),
+        this.cachedMat(
+          `rline${tint ?? 0xffd23f}`,
+          () => new THREE.MeshBasicMaterial({ color: tint ?? 0xffd23f, side: THREE.DoubleSide }),
+        ),
       );
       line.position.set(e.mx + e.tx * tm + e.nx * 0.03, R - 0.05, e.mz + e.tz * tm + e.nz * 0.03);
       line.rotation.y = -Math.atan2(e.tz, e.tx);
-      this.scene.add(line);
+      this.bake(line);
     };
     for (const e of f.edges) {
       const half = e.len / 2 + 0.04;
@@ -714,6 +787,7 @@ export class BolaScene {
       shadow: this.blob(0.55),
       wasGrounded: true,
       lastVy: 0,
+      dustT: 0,
       sig: `${p.name}|${p.color}|${p.team}`,
       flipAge: -1,
     });
@@ -1096,6 +1170,20 @@ export class BolaScene {
           );
         fox.wasGrounded = p.grounded;
         fox.lastVy = p.vy;
+        fox.dustT -= dt;
+        if (p.grounded && speed > 6 && fox.dustT <= 0) {
+          fox.dustT = 0.13;
+          this.addGlow(
+            p.x - Math.sin(p.heading) * 0.45,
+            p.y + 0.15,
+            p.z - Math.cos(p.heading) * 0.45,
+            0xeaf6d6,
+            0.9,
+            0.3,
+            0.3,
+            false,
+          );
+        }
       }
       const squash = p.grounded
         ? 1 + Math.sin(this.world.clock * 18 + p.x) * 0.04 * Math.min(1, speed / 3)
@@ -1115,6 +1203,11 @@ export class BolaScene {
       } else {
         fox.body.rotation.x = pitch;
       }
+    }
+    if (!this.reduced) {
+      const ct = performance.now() / 1000;
+      for (let i = 0; i < this.crowdList.length; i++)
+        (this.crowdList[i] as THREE.Texture).offset.y = Math.sin(ct * 3.2 + i * 1.7) * 0.014;
     }
     // rastro da bola: discreto quando rápida; na cor do time logo depois de um chute
     if (!this.reduced) {
