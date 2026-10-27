@@ -27,4 +27,4 @@ Pedido do Lucas em 26/10/2026. Status: **em andamento (Fut Fox, Desmorona! e Atr
 
 ## 4. Celular deitado (26/10/2026)
 
-Os três jogos jogam de lado: menu em duas colunas sem rolar (altura até 460 px), botão de menu com ícone e a tecla Esc só no teclado, e no Atravessa! **setas na tela** (`DirPad`, só em tela de toque deitada) com o polegar direito, enquanto o esquerdo toca (frente) ou desliza. Desmorona!: joystick flutuante na metade esquerda e Pular grande no canto direito. Fut Fox já tinha o HUD compacto para altura baixa. Testado em 844x390, 667x375 e 568x320 (`e2e/landscape-games.spec.ts`, `e2e/bola-mobile.spec.ts`).
+Os três jogos jogam de lado: menu em duas colunas sem rolar (altura até 460 px), botão de menu com ícone e a tecla Esc só no teclado, . No Atravessa! o controle continua sendo tocar (frente) e deslizar (o Lucas pediu para não ter setas na tela, 26/10/2026). Desmorona!: joystick flutuante na metade esquerda e Pular grande no canto direito. Fut Fox já tinha o HUD compacto para altura baixa. Testado em 844x390, 667x375 e 568x320 (`e2e/landscape-games.spec.ts`, `e2e/bola-mobile.spec.ts`).
