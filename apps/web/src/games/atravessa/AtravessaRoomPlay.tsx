@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { gameChatOpen, isTyping } from '@/lib/game-chat-state';
 import {
   ATR_TPS,
   AtravessaSim,
@@ -12,6 +13,7 @@ import {
   type Dir,
 } from '@nocap/games';
 import { useNavigate } from '@tanstack/react-router';
+import { GameChat } from '@/components/GameChat';
 import { GameMenu, GearButton, NetBadge } from '@/components/GameMenu';
 import { createAtravessaAudio } from '@/lib/atravessa-audio';
 import { useAuth } from '@/lib/auth';
@@ -165,7 +167,7 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
   // a corrida não para: o menu abre por cima e o herói continua (como numa sala de verdade)
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
-      if (e.code === 'Escape' && !e.repeat) setMenu(true);
+      if (e.code === 'Escape' && !e.repeat && !isTyping(e) && !gameChatOpen()) setMenu(true);
     };
     window.addEventListener('keydown', key);
     return () => window.removeEventListener('keydown', key);
@@ -549,6 +551,7 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
       aria-label="Partida do Atravessa! em sala"
     >
       <canvas ref={canvas} className="at-canvas" />
+      <GameChat />
       <div className="at-tools is-left">
         <GearButton onClick={() => setMenu(true)} testId="atr-menu-btn" />
       </div>

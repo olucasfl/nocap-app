@@ -74,11 +74,6 @@ export class DesmoronaRoomEngine extends ColorRoomEngine {
     return mode === 'classico';
   }
 
-  /** Durante a partida o celular é todo do jogo. */
-  protected override chatOpen(): boolean {
-    return this.phase !== 'show' && this.phase !== 'play';
-  }
-
   // ---- pessoas e cores ----
 
   override join(id: string, username: string) {

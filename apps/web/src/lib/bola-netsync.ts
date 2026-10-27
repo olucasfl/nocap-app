@@ -89,6 +89,10 @@ export class BolaNetSync {
   };
   /** O atraso de desenho atual (ms). */
   interpMs: number;
+  /** Menor (chegada - hora do estado) visto: o caminho "limpo" da rede; o que passa disso é variação (jitter). */
+  private offset: number | null = null;
+  /** A maior variação recente (ms), que decai devagar: o atraso de desenho cobre ela. */
+  private dvPeak = 0;
   private gapAvg = 16;
   private gapDev = 0;
   private prevAt = 0;
@@ -151,6 +155,12 @@ export class BolaNetSync {
         at,
       });
     }
+    const stamp = typeof f.t === 'number' ? f.t : Date.now();
+    const d = at - stamp;
+    // o relógio do aparelho x o de quem simula: o menor atraso medido é o "limpo"; sobe só um tiquinho por estado (deriva)
+    this.offset = this.offset === null ? d : Math.min(this.offset + 0.01, d);
+    const dv = d - this.offset;
+    this.dvPeak = Math.max(dv, this.dvPeak * 0.994);
     if (this.prevAt > 0) {
       const gap = at - this.prevAt;
       this.gapAvg += (gap - this.gapAvg) * 0.05;
@@ -163,7 +173,7 @@ export class BolaNetSync {
       this.interpMs += (want - this.interpMs) * (want > this.interpMs ? 0.2 : 0.015);
     }
     this.prevAt = at;
-    this.snaps.push({ t: typeof f.t === 'number' ? f.t : Date.now(), ball, rows });
+    this.snaps.push({ t: stamp, ball, rows });
     if (this.snaps.length > 24) this.snaps.shift();
   }
 
@@ -202,7 +212,8 @@ export class BolaNetSync {
     if (!last) return;
     const now = this.o.now();
     // alvo: o último estado + o que passou desde que chegou - o atraso; o relógio de desenho o persegue suave
-    const target = last.t + (now - last.ball.at) - this.interpMs;
+    // hora de quem simula agora (estimada pelo caminho limpo da rede, não pela última chegada) menos o atraso de desenho
+    const target = now - (this.offset ?? last.ball.at - last.t) - this.interpMs;
     // o relógio de desenho nunca volta para trás: se está adiantado só anda mais devagar, se atrasado anda mais rápido
     // (mexer no atraso de uma vez faria a bola "voltar" no tempo e parecer um teletransporte)
     if (this.renderT === 0 || Math.abs(target - this.renderT) > 700) {

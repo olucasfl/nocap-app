@@ -9,6 +9,8 @@ import {
   type DsmInput,
   type DsmPlayerInfo,
 } from '@nocap/games';
+import { GameChat } from '@/components/GameChat';
+import { gameChatOpen } from '@/lib/game-chat-state';
 import { GameMenu, GearButton, Keycap, NetBadge } from '@/components/GameMenu';
 import { GameTips, type TipRow } from '@/components/GameTips';
 import { IcCamera, IcJump } from '@/games/bola/BolaIcons';
@@ -159,7 +161,8 @@ export function DesmoronaPlay({
   // sem o mouse preso, o Esc do teclado abre o menu (com ele preso, o navegador o consome e soltar o mouse já abre)
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
-      if (e.code === 'Escape' && !menuRef.current && controls.allowLock) setMenu(true);
+      if (e.code === 'Escape' && !menuRef.current && controls.allowLock && !gameChatOpen())
+        setMenu(true);
     };
     window.addEventListener('keydown', key);
     return () => window.removeEventListener('keydown', key);
@@ -203,7 +206,7 @@ export function DesmoronaPlay({
       controls.attachLook(root.current, (l) => {
         setLocked(l);
         // Esc solta o mouse: abre o menu (menos quando a partida acabou de soltar por conta própria)
-        if (!l && controls.allowLock && !menuRef.current) setMenu(true);
+        if (!l && controls.allowLock && !menuRef.current && !gameChatOpen()) setMenu(true);
       });
       // o clique em Jogar/Começar acabou de acontecer: o navegador ainda aceita prender o mouse
       if (mouseUser) controls.requestLock();
@@ -594,6 +597,7 @@ export function DesmoronaPlay({
       {hud.phase === 'ready' && !result && (
         <GameTips storageKey={TIPS_KEY} rows={tipRows(touchDevice)} testId="dsm-tips" />
       )}
+      <GameChat enabled={!!online && !result} />
       {menu && !result && (
         <GameMenu
           title="Menu"

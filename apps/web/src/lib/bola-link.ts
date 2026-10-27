@@ -37,5 +37,6 @@ export const roomLink: BolaLink = {
   onFrame: (cb) => subscribeRoom('bs', (m) => cb(m as BolaFrame)),
   rtt: () => currentRtt(),
   local: false,
-  minDelay: 100,
+  // 70 ms: o atraso de desenho sobe sozinho quando a rede oscila (medido na simulação de rede)
+  minDelay: 70,
 };

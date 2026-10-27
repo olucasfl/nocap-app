@@ -254,12 +254,12 @@ describe('AtravessaRoomEngine · largada', () => {
     expect(room.report('ana', 6, [], 0)).toBe(0);
   });
 
-  it('o chat fecha na largada e na corrida', () => {
+  it('o chat fica aberto na largada e na corrida (botão pequeno por cima da partida)', () => {
     const { room, clock } = started();
-    expect(room.snapshot().chat.open).toBe(false);
+    expect(room.snapshot().chat.open).toBe(true);
     clock.set(startAt());
     room.tick();
-    expect(room.snapshot().chat.open).toBe(false);
+    expect(room.snapshot().chat.open).toBe(true);
   });
 });
 

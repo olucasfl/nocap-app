@@ -1,4 +1,5 @@
 import type { DsmInput } from '@nocap/games';
+import { isTyping } from '@/lib/game-chat-state';
 
 /** Teclas de movimento: W A S D e setas ("cima" é para onde a câmera olha). */
 /** Q e E giram a câmera (no computador, além de arrastar o mouse). */
@@ -195,6 +196,7 @@ export class DsmControls {
   };
 
   private keyDown = (e: KeyboardEvent) => {
+    if (isTyping(e)) return;
     if (e.repeat && e.code !== 'Space') return;
     // a primeira tecla (que conta como gesto da pessoa) já prende o mouse, sem precisar clicar
     if (

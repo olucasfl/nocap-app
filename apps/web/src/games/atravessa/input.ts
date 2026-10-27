@@ -1,4 +1,5 @@
 import type { Dir } from '@nocap/games';
+import { isTyping } from '@/lib/game-chat-state';
 
 /** Quanto o dedo precisa andar (px) para valer como deslize. Menos que isso é toque. */
 export const SWIPE_MIN = 22;
@@ -37,7 +38,7 @@ export interface Controls {
 export function attachControls(el: HTMLElement, onDir: (d: Dir) => void): Controls {
   let usedKeys = false;
   const onKey = (e: KeyboardEvent) => {
-    if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey || isTyping(e)) return;
     const d = KEY_DIR[e.key.toLowerCase()];
     if (d === undefined) return;
     e.preventDefault();

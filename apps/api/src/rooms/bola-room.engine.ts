@@ -93,11 +93,6 @@ export class BolaRoomEngine extends ColorRoomEngine {
     return mode === 'classico';
   }
 
-  /** Durante a partida o celular é todo do jogo. */
-  protected override chatOpen(): boolean {
-    return this.phase !== 'play';
-  }
-
   protected override maybeAdvanceFromPick() {}
 
   protected override toReveal() {

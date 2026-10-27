@@ -115,11 +115,6 @@ export class AtravessaRoomEngine extends ColorRoomEngine {
     return mode === 'infinito' && Number.isInteger(m.rounds) && m.rounds >= 1 && m.rounds <= 10;
   }
 
-  /** Durante a largada e a corrida ninguém digita: o celular é todo da partida. */
-  protected override chatOpen(): boolean {
-    return this.phase !== 'show' && this.phase !== 'play';
-  }
-
   // ---- pessoas e cores ----
 
   override join(id: string, username: string) {

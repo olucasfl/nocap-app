@@ -49,3 +49,7 @@ Modelo novo: a bola anda sempre numa física própria (todas as raposas como des
 O pedido (`bteam`) vai ao servidor, que valida o básico e o repassa ao líder (`bswitch`). O aparelho do líder aplica na partida dele (`BolaMatch.switchTeam`, no worker), manda a lista nova a todos (canal `ctl`) e responde ao servidor (`bswitched`); o servidor só então atualiza os times da sala. Erro (time cheio, bot que já saiu) volta como aviso a quem pediu. Enquanto a partida ainda conecta, o pedido é recusado.
 
 Também: o quadro do fluxo passa a levar o vencedor (`wn`), senão o aparelho online mostrava sempre "Empate" no fim (placar com Azul na frente e "Empate" na tela). E o resultado do líder aceita placar negativo (regra de 3 ou 4 times): antes o servidor o recusava e a partida não fechava.
+
+## Voltou para o servidor (27/10/2026)
+
+Decisão do Lucas: o líder ficava liso e os outros travavam. O servidor volta a simular a partida e todos recebem o mesmo estado; o ponto a ponto fica **desligado** (`FUT_FOX_P2P=1` religa; o código e os testes continuam). O atraso mínimo de desenho no servidor caiu de 100 para 70 ms (sobe sozinho quando a rede oscila) e a hora de desenho passou a ser estimada pelo caminho "limpo" da rede (menor atraso medido) em vez da última chegada, para rajadas do TCP não puxarem o relógio.

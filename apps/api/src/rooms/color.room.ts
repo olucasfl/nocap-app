@@ -634,7 +634,7 @@ export class BolaRoom extends ColorRoom {
 
   protected override makeEngine(opts: ConstructorParameters<typeof ColorRoomEngine>[0]) {
     const engine = new BolaRoomEngine(opts);
-    engine.p2pEnabled = true;
+    engine.p2pEnabled = P2P_ON();
     return engine;
   }
 
@@ -694,6 +694,13 @@ export class BolaRoom extends ColorRoom {
   }
 }
 
+/**
+ * Partida ponto a ponto (o aparelho do líder simula): desligada. O servidor simula e todo mundo recebe o mesmo estado,
+ * então ninguém tem vantagem de latência (decisão do Lucas, 27/10/2026: só o líder ficava liso). Ligue de novo com
+ * `FUT_FOX_P2P=1`.
+ */
+const P2P_ON = () => process.env.FUT_FOX_P2P === '1';
+
 /** Nomes e limites dos jogos que a sala do Fox Cap! pode jogar. */
 const FOX_GAMES = {
   atravessa: { name: 'Atravessa!', make: (o: EngineOpts) => new AtravessaRoomEngine(o) },
@@ -702,7 +709,7 @@ const FOX_GAMES = {
     name: 'Fut Fox',
     make: (o: EngineOpts) => {
       const e = new BolaRoomEngine(o);
-      e.p2pEnabled = true;
+      e.p2pEnabled = P2P_ON();
       return e;
     },
   },

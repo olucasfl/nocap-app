@@ -28,3 +28,7 @@ Pedido do Lucas em 26/10/2026. Status: **em andamento (Fut Fox, Desmorona! e Atr
 ## 4. Celular deitado (26/10/2026)
 
 Os três jogos jogam de lado: menu em duas colunas sem rolar (altura até 460 px), botão de menu com ícone e a tecla Esc só no teclado, . No Atravessa! o controle continua sendo tocar (frente) e deslizar (o Lucas pediu para não ter setas na tela, 26/10/2026). Desmorona!: joystick flutuante na metade esquerda e Pular grande no canto direito. Fut Fox já tinha o HUD compacto para altura baixa. Testado em 844x390, 667x375 e 568x320 (`e2e/landscape-games.spec.ts`, `e2e/bola-mobile.spec.ts`).
+
+## 5. Chat na partida (27/10/2026)
+
+Fut Fox, Desmorona! e Atravessa! em sala têm chat por cima da partida (`GameChat`): só um botão pequeno; mensagem nova aparece ao lado por 5 s e some; tocar no botão (ou Enter) abre o chat, que fica até fechar (Esc ou Fechar). O servidor deixou o chat aberto durante a partida nesses três jogos. As teclas digitadas no chat não viram controle do jogo e soltar o mouse para clicar nele não abre o menu.

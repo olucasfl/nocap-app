@@ -138,7 +138,8 @@ describe('sala do Fut Fox com servidor de verdade', () => {
     await until(() => ana.snap?.phase === 'final' && bia.snap?.phase === 'final');
   }, 40_000);
 
-  it('ponto a ponto: o pedido de troca de time vai ao líder pelo servidor e a resposta dele vale', async () => {
+  it('ponto a ponto (ligado por FUT_FOX_P2P): o pedido de troca de time vai ao líder pelo servidor e a resposta dele vale', async () => {
+    process.env.FUT_FOX_P2P = '1';
     const created = await new Client(url).create('bola', { token: 'cai' });
     const cai = watch(created);
     const duda = watch(await new Client(url).joinById(created.roomId, { token: 'duda' }));
@@ -168,5 +169,6 @@ describe('sala do Fut Fox com servidor de verdade', () => {
       error: 'O time Vermelho está cheio',
     });
     await until(() => duda.errors.includes('O time Vermelho está cheio'));
+    delete process.env.FUT_FOX_P2P;
   }, 30_000);
 });

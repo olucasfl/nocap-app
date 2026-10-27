@@ -17,6 +17,8 @@ import { DsmControls, STICK_RADIUS } from '../desmorona/controls';
 import '../desmorona/desmorona.css';
 import './bola.css';
 import { roomLink, type BolaLink } from '@/lib/bola-link';
+import { GameChat } from '@/components/GameChat';
+import { gameChatOpen, isTyping } from '@/lib/game-chat-state';
 import { BolaNetSync } from '@/lib/bola-netsync';
 import { BUILD_ID } from '@/lib/build-id';
 import { BolaMenu } from './BolaMenu';
@@ -286,7 +288,7 @@ export function BolaPlay({
     if (root.current) {
       // Esc solta o mouse: abre as configurações, onde ficam os botões
       controls.attachLook(root.current, (locked) => {
-        if (!locked && !uiOpenRef.current) setMenu(true);
+        if (!locked && !uiOpenRef.current && !gameChatOpen()) setMenu(true);
       });
     }
     // a partida começa com a câmera solta; quem quiser prende na bola (F ou o botão)
@@ -316,6 +318,7 @@ export function BolaPlay({
       if (!ballCam) yaw = camYaw;
     };
     const onKey = (e: KeyboardEvent) => {
+      if (isTyping(e)) return;
       if (e.code === 'KeyF' && !e.repeat) camToggle.current();
       if (!e.repeat && !world.player(meId)) {
         if (e.code === 'KeyQ' || e.code === 'ArrowLeft') specNav.current(-1);
@@ -1140,6 +1143,7 @@ export function BolaPlay({
         </div>
       )}
       {hud.myTeam >= 0 && !over && <BolaTips touch={touchDevice} />}
+      <GameChat enabled={!!online && !over} />
       {!over && hud.myTeam >= 0 && (
         <>
           <button
