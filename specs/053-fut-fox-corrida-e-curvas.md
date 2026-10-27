@@ -91,6 +91,12 @@ Pedido do Lucas: uma tela final mais bonita, intuitiva e organizada, com o placa
 
 No Fut Fox e no Desmorona!, ao começar cada partida em celular com a tela em pé aparece, no alto e sem pegar toque, "Vire a tela na horizontal para ter uma imersão melhor" (`components/RotateHint.tsx`): não cobre o tutorial nem a largada, some sozinho em 7 s e na hora em que a tela é virada. Não aparece no computador nem com o celular deitado.
 
+## 2m. Fut Fox no celular: botões, dica do joystick e câmera (27/10/2026)
+
+- **Botões novos** (só em tela de toque; o computador não mudou): Pular (amarelo, 94 px), Correr (azul, 72 px, com o número do fôlego numa pílula em cima; escurece correndo e fica vermelho esgotado) e Câmera (pílula "CÂMERA / BOLA" ou "LIVRE") agrupados no arco do polegar direito: Pular no canto, Correr à esquerda dele e Câmera acima. Estilo Pop Brutal: borda grossa, sombra dura, afunda ao apertar. O texto de Correr agora fica centrado (o botão é uma coluna flex com ícone e rótulo). Deitado, tudo encolhe (80 e 68 px).
+- **Dica do joystick:** antes da primeira vez que a pessoa mexe nesta partida, um cartão à esquerda mostra um joystick tracejado com o botão passeando e o texto "MEXA AQUI / para mover sua raposa"; some ao primeiro toque. Fica por baixo do tutorial.
+- **Câmera com a raposa andando:** o botão trocava só no clique, que o celular perde quando outro dedo está no joystick. Agora troca no instante do toque (pointerdown) e o clique que vem depois não troca de novo (janela de 700 ms). Testado: com o dedo apertado no joystick, a câmera trocou de Bola para Livre.
+
 ## 3. Limites e riscos
 
 - Cinco toques no Shift abrem as "Teclas de Aderência" do Windows; está avisado em Comandos, mas não há tecla alternativa.

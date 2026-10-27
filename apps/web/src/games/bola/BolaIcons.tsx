@@ -87,6 +87,12 @@ export const IcBall = (p: P) => (
     <path d="M12 8.2l3.4 2.5-1.3 4h-4.2l-1.3-4L12 8.2ZM12 3.5v4.7M15.4 10.7l4.3-1.4M14.1 14.7l2.6 3.6M9.9 14.7l-2.6 3.6M8.6 10.7L4.3 9.3" />
   </Ico>
 );
+/** Correr: duas setas para a frente. */
+export const IcRun = (p: P) => (
+  <Ico {...p}>
+    <path d="M5 6.5 10.5 12 5 17.5M12.5 6.5 18 12l-5.5 5.5" />
+  </Ico>
+);
 export const IcJump = (p: P) => (
   <Ico {...p}>
     <path d="M12 19V6M6.5 11.5 12 6l5.5 5.5" />

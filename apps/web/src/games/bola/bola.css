@@ -121,17 +121,6 @@
   text-transform: uppercase;
   cursor: pointer;
 }
-@media (pointer: coarse) {
-  .bola-cam kbd {
-    display: none;
-  }
-  /* ao lado do botão de pular (à esquerda dele, na mesma altura): nunca por cima */
-  .bola-cam {
-    left: auto;
-    right: calc(max(22px, env(safe-area-inset-right)) + 84px + 10px);
-    bottom: calc(max(22px, env(safe-area-inset-bottom)) + 23px);
-  }
-}
 @media (prefers-reduced-motion: reduce) {
   .bola-feed li,
   .bola-banner {
@@ -1390,60 +1379,6 @@
   flex: none;
 }
 
-/* Botão de correr (celular): liga e desliga; o número do fôlego fica em cima */
-.bola-run {
-  position: absolute;
-  right: calc(max(22px, env(safe-area-inset-right)) + 10px);
-  bottom: calc(max(22px, env(safe-area-inset-bottom)) + 84px + 34px);
-  width: 64px;
-  height: 64px;
-  border: 4px solid rgba(27, 21, 53, 0.9);
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.8);
-  color: #1b1535;
-  font: 800 11px var(--font-display, system-ui);
-  text-transform: uppercase;
-  touch-action: none;
-  cursor: pointer;
-}
-.bola-run[data-on='1'] {
-  background: rgba(77, 141, 255, 0.85);
-  color: #fff;
-}
-.bola-run[data-tired='1'] {
-  background: rgba(229, 72, 77, 0.35);
-}
-.bola-run:active {
-  transform: scale(0.94);
-}
-.bola-run-n {
-  position: absolute;
-  left: 50%;
-  bottom: calc(100% + 6px);
-  transform: translateX(-50%);
-  padding: 2px 8px;
-  border: 3px solid #1b1535;
-  border-radius: 999px;
-  background: #fff;
-  font: 800 13px var(--font-display, system-ui);
-  font-variant-numeric: tabular-nums;
-  color: #1b1535;
-}
-.bola-run[data-tired='1'] .bola-run-n {
-  background: #ff8d90;
-  animation: bola-nope-n 0.28s ease-out;
-}
-@keyframes bola-nope-n {
-  20% {
-    transform: translateX(calc(-50% - 5px));
-  }
-  45% {
-    transform: translateX(calc(-50% + 5px));
-  }
-  70% {
-    transform: translateX(calc(-50% - 2px));
-  }
-}
 /* No computador a corrida é o Shift: o botão só existe em telas de toque. */
 @media (hover: hover) and (pointer: fine) {
   .bola-show-touch {
@@ -1455,5 +1390,254 @@
   .bola-run[data-tired='1'] .bola-run-n {
     transition: none;
     animation: none;
+  }
+}
+
+/* ===== Botões de toque do Fut Fox (celular): pular, correr e câmera, juntos no arco do polegar direito ===== */
+@media (pointer: coarse) {
+  .bola-pad {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    margin: 0;
+    padding: 0;
+    border: 4px solid #1b1535;
+    background: #fff;
+    color: #1b1535;
+    font: 900 12px/1 var(--font-display, system-ui);
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    text-align: center;
+    cursor: pointer;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    box-shadow:
+      0 5px 0 #1b1535,
+      inset 0 -5px 0 rgba(27, 21, 53, 0.14);
+    transition: transform 0.06s ease-out;
+  }
+  .bola-pad:active {
+    transform: translateY(3px);
+    box-shadow:
+      0 2px 0 #1b1535,
+      inset 0 -3px 0 rgba(27, 21, 53, 0.14);
+  }
+  .bola-pad > span,
+  .bola-pad > svg {
+    flex: none;
+  }
+  .bola-pad-jump {
+    --pad-edge: max(18px, env(safe-area-inset-right));
+    --pad-bottom: max(20px, env(safe-area-inset-bottom));
+    right: var(--pad-edge);
+    bottom: var(--pad-bottom);
+    width: 94px;
+    height: 94px;
+    border-radius: 50%;
+    background: #ffd23f;
+    font-size: 13px;
+  }
+  .bola-pad-run {
+    right: calc(max(18px, env(safe-area-inset-right)) + 94px + 14px);
+    bottom: calc(max(20px, env(safe-area-inset-bottom)) + 6px);
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: #4d8dff;
+    color: #fff;
+    font-size: 11px;
+  }
+  .bola-pad-run span {
+    text-shadow:
+      0 1px 0 #1b1535,
+      1px 0 0 #1b1535,
+      -1px 0 0 #1b1535,
+      0 -1px 0 #1b1535;
+  }
+  .bola-pad-run[data-on='1'] {
+    background: #2f6fe0;
+    box-shadow:
+      0 5px 0 #1b1535,
+      0 0 0 5px rgba(77, 141, 255, 0.4),
+      inset 0 -5px 0 rgba(27, 21, 53, 0.14);
+  }
+  .bola-pad-run[data-tired='1'] {
+    background: #e5484d;
+  }
+  .bola-pad-run .bola-run-n {
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 9px);
+    transform: translateX(-50%);
+    padding: 3px 9px;
+    border: 3px solid #1b1535;
+    border-radius: 999px;
+    background: #fff;
+    color: #1b1535;
+    font: 900 13px/1 var(--font-display, system-ui);
+    font-variant-numeric: tabular-nums;
+    box-shadow: 0 2px 0 #1b1535;
+  }
+  .bola-pad-run[data-tired='1'] .bola-run-n {
+    background: #ff8d90;
+    animation: bola-nope-n 0.28s ease-out;
+  }
+  .bola-pad-cam {
+    right: calc(max(18px, env(safe-area-inset-right)) + 6px);
+    bottom: calc(max(20px, env(safe-area-inset-bottom)) + 94px + 16px);
+    left: auto;
+    min-width: 108px;
+    height: 50px;
+    border-radius: 16px;
+    padding: 0 12px;
+  }
+  .bola-pad-cam .bola-cam-touch {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
+  .bola-cam-lbl {
+    display: grid;
+    gap: 1px;
+    text-align: left;
+  }
+  .bola-cam-lbl small {
+    font: 800 9px/1 var(--font-display, system-ui);
+    letter-spacing: 0.08em;
+    opacity: 0.65;
+  }
+  .bola-cam-lbl b {
+    font: 900 15px/1 var(--font-display, system-ui);
+  }
+  .bola-pad-cam[aria-pressed='false'] {
+    background: #ffe9c7;
+  }
+  .bola-pad-cam[aria-pressed='true'] {
+    background: #d9ecff;
+  }
+}
+
+/* Dica do joystick, antes da primeira vez que a pessoa mexe (à esquerda, onde o polegar vai) */
+.bola-move-hint {
+  position: absolute;
+  left: max(20px, env(safe-area-inset-left));
+  bottom: max(28px, env(safe-area-inset-bottom));
+  width: min(170px, 42vw);
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  padding: 12px 10px 10px;
+  border: 3px solid #1b1535;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #1b1535;
+  text-align: center;
+  pointer-events: none;
+  animation: bola-hint-in 0.4s ease-out both;
+}
+.bola-move-hint b {
+  font: 900 16px/1 var(--font-display, system-ui);
+  text-transform: uppercase;
+}
+.bola-move-hint small {
+  font: 700 12px/1.25 var(--font-body, system-ui);
+  opacity: 0.8;
+}
+.bola-move-ring {
+  position: relative;
+  display: block;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 4px;
+  border: 3px dashed #1b1535;
+  border-radius: 50%;
+  background: rgba(77, 141, 255, 0.18);
+}
+.bola-move-ring i {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 26px;
+  height: 26px;
+  margin: -13px 0 0 -13px;
+  border: 3px solid #1b1535;
+  border-radius: 50%;
+  background: #4d8dff;
+  animation: bola-knob 2.4s ease-in-out infinite;
+}
+@keyframes bola-knob {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(15px, 0);
+  }
+  50% {
+    transform: translate(0, -15px);
+  }
+  75% {
+    transform: translate(-15px, 0);
+  }
+}
+@keyframes bola-hint-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+@media (hover: hover) and (pointer: fine) {
+  .bola-move-hint {
+    display: none;
+  }
+}
+/* Celular deitado: botões e dica menores, para não cobrir o campo */
+@media (max-height: 460px) and (pointer: coarse) {
+  .bola-pad-jump {
+    width: 80px;
+    height: 80px;
+    font-size: 12px;
+  }
+  .bola-pad-run {
+    right: calc(max(18px, env(safe-area-inset-right)) + 80px + 12px);
+    width: 68px;
+    height: 68px;
+    font-size: 10px;
+  }
+  .bola-pad-cam {
+    bottom: calc(max(20px, env(safe-area-inset-bottom)) + 80px + 14px);
+    min-width: 98px;
+    height: 44px;
+  }
+}
+@media (max-height: 460px) {
+  .bola-move-hint {
+    width: 150px;
+    padding: 8px 8px 7px;
+  }
+  .bola-move-ring {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 2px;
+  }
+  .bola-move-ring i {
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bola-pad,
+  .bola-move-hint,
+  .bola-move-ring i,
+  .bola-pad-run[data-tired='1'] .bola-run-n {
+    animation: none;
+    transition: none;
   }
 }

@@ -25,7 +25,7 @@ import { BolaNetSync } from '@/lib/bola-netsync';
 import { BUILD_ID } from '@/lib/build-id';
 import { BolaMenu } from './BolaMenu';
 import { BolaTips } from './BolaTips';
-import { IcBall, IcCamera, IcEye, IcGear, IcJump, Key } from './BolaIcons';
+import { IcBall, IcCamera, IcEye, IcGear, IcJump, IcRun, Key } from './BolaIcons';
 import { BolaTeams } from './BolaTeams';
 import { BolaScene } from './BolaScene';
 import { BolaStats, type StatRow } from './BolaStats';
@@ -256,6 +256,13 @@ export function BolaPlay({
   /** Sobe a cada "não" (correr sem fôlego): reinicia o tremor da barra. */
   const [nope, setNope] = useState(0);
   const [stick, setStick] = useState<{ ox: number; oy: number; x: number; y: number } | null>(null);
+  /** Já mexeu o joystick nesta partida: a dica "mexa aqui" some. */
+  const [moved, setMoved] = useState(false);
+  useEffect(() => {
+    if (stick) setMoved(true);
+  }, [stick]);
+  /** Hora do último toque no botão da câmera: o clique que vem junto com o toque não troca de novo. */
+  const camTouchAt = useRef(0);
   const [hud, setHud] = useState<Hud>({
     phase: 'countdown',
     count: 3,
@@ -1069,6 +1076,15 @@ export function BolaPlay({
   return (
     <div ref={root} className="dsm-play" data-testid="bola-play">
       <canvas ref={canvas} className="dsm-canvas" aria-label="Campo do Fut Fox" />
+      {touchDevice && !moved && hud.myTeam >= 0 && !over && (
+        <div className="bola-move-hint" aria-hidden="true">
+          <span className="bola-move-ring">
+            <i />
+          </span>
+          <b>Mexa aqui</b>
+          <small>para mover sua raposa</small>
+        </div>
+      )}
       <div ref={zone} className="dsm-zone" aria-hidden="true">
         {stick && knob && (
           <div className="dsm-stick" style={{ left: stick.ox, top: stick.oy }}>
@@ -1265,19 +1281,19 @@ export function BolaPlay({
         <>
           <button
             type="button"
-            className="dsm-jump"
+            className="dsm-jump bola-pad bola-pad-jump"
             aria-label="Pular"
             onPointerDown={(e) => {
               e.preventDefault();
               controls.pressJump();
             }}
           >
-            <IcJump size={22} />
-            Pular
+            <IcJump size={30} />
+            <span>Pular</span>
           </button>
           <button
             type="button"
-            className="bola-run bola-show-touch"
+            className="bola-run bola-pad bola-pad-run bola-show-touch"
             aria-label="Correr"
             data-tired={hud.tired ? '1' : '0'}
             data-on={hud.running ? '1' : '0'}
@@ -1298,12 +1314,23 @@ export function BolaPlay({
             <b key={nope} className="bola-run-n">
               {hud.stam}
             </b>
-            Correr
+            <IcRun size={26} />
+            <span>Correr</span>
           </button>
           <button
             type="button"
-            className="bola-cam"
-            onClick={() => camToggle.current()}
+            className="bola-cam bola-pad bola-pad-cam"
+            onPointerDown={(e) => {
+              // no toque troca na hora, mesmo com o outro dedo no joystick (o clique que vem depois do toque não conta de novo)
+              if (e.pointerType === 'mouse') return;
+              e.preventDefault();
+              camTouchAt.current = performance.now();
+              camToggle.current();
+            }}
+            onClick={() => {
+              if (performance.now() - camTouchAt.current < 700) return;
+              camToggle.current();
+            }}
             aria-pressed={!hud.ballCam}
           >
             <span className="bola-cam-dot bola-hide-touch" aria-hidden="true" />
@@ -1313,9 +1340,12 @@ export function BolaPlay({
                 Pressione <Key k="F" /> para alternar
               </small>
             </span>
-            <span className="bola-show-touch">
-              <IcCamera size={18} />
-              {hud.ballCam ? 'Câmera solta' : 'Câmera na bola'}
+            <span className="bola-show-touch bola-cam-touch">
+              <IcCamera size={22} />
+              <span className="bola-cam-lbl">
+                <small>Câmera</small>
+                <b>{hud.ballCam ? 'Bola' : 'Livre'}</b>
+              </span>
             </span>
           </button>
         </>
