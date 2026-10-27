@@ -200,13 +200,13 @@ export class DsmControls {
     this.jumpQueued = true;
   };
 
-  /** Celular: toca no botão para correr e toca de novo para parar. */
-  toggleRun = () => {
-    this.runToggled = !this.runToggled;
-    this.runPressed = this.runToggled;
+  /** Celular: o botão de correr funciona como o Shift: segurando corre, soltando para (`true` ao apertar, `false` ao soltar). */
+  holdRun = (on: boolean) => {
+    if (on && !this.runToggled) this.runPressed = true;
+    this.runToggled = on;
   };
 
-  /** Desliga a corrida do botão (acabou o fôlego: não volta a correr sozinha quando recarregar). */
+  /** Solta a corrida do botão (o dedo saiu, a partida acabou). */
   clearRun = () => {
     this.runToggled = false;
   };

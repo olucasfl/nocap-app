@@ -819,8 +819,6 @@ export function BolaPlay({
           bolaSfx.nope();
           setNope((n) => n + 1);
         }
-        // o botão do celular desliga sozinho ao esgotar (senão voltaria a correr ao recarregar)
-        if (me?.tired && controls.runOn) controls.clearRun();
         const pressed = input.jump;
         if (input.jump) jumpUntil = now + JUMP_BUFFER_MS;
         input.jump = false;
@@ -1268,13 +1266,21 @@ export function BolaPlay({
             type="button"
             className="bola-run bola-show-touch"
             aria-label="Correr"
-            aria-pressed={controls.runOn}
             data-tired={hud.tired ? '1' : '0'}
             data-on={hud.running ? '1' : '0'}
             onPointerDown={(e) => {
               e.preventDefault();
-              controls.toggleRun();
+              // segurando corre, soltando para (como o Shift no computador); o dedo fica "preso" no botão até soltar
+              try {
+                e.currentTarget.setPointerCapture(e.pointerId);
+              } catch {
+                /* sem captura (ponteiro já solto): o pointerup/cancel ainda para a corrida */
+              }
+              controls.holdRun(true);
             }}
+            onPointerUp={() => controls.holdRun(false)}
+            onPointerCancel={() => controls.holdRun(false)}
+            onLostPointerCapture={() => controls.holdRun(false)}
           >
             <b key={nope} className="bola-run-n">
               {hud.stam}

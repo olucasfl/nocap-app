@@ -1406,7 +1406,7 @@
   touch-action: none;
   cursor: pointer;
 }
-.bola-run[aria-pressed='true'] {
+.bola-run[data-on='1'] {
   background: rgba(77, 141, 255, 0.85);
   color: #fff;
 }
