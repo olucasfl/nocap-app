@@ -28,8 +28,8 @@
 }
 .at-score {
   position: absolute;
-  top: 14px;
-  left: 14px;
+  top: max(14px, env(safe-area-inset-top));
+  left: max(14px, env(safe-area-inset-left));
   min-width: 64px;
   padding: 6px 14px;
   background: var(--paper);
@@ -55,7 +55,7 @@
 .at-toast {
   position: absolute;
   top: 78px;
-  left: 14px;
+  left: max(14px, env(safe-area-inset-left));
   padding: 7px 14px;
   background: var(--paper);
   color: var(--ink);
@@ -89,8 +89,8 @@
 .at-pausebtn {
   appearance: none;
   position: absolute;
-  top: 14px;
-  right: 14px;
+  top: max(14px, env(safe-area-inset-top));
+  right: max(14px, env(safe-area-inset-right));
   width: 44px;
   height: 44px;
   display: grid;

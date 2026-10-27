@@ -13,3 +13,9 @@ Pedido do Lucas em 27/10/2026: "caso eu queira virar de lado o meu celular no ap
 
 - `e2e/landscape-app.spec.ts`: 10 telas em 667x375, 844x390 e 568x320, sem rolagem para o lado (e capturas para revisar).
 - `e2e/layout-sweep.spec.ts` (já tinha o tamanho deitado 844x390) segue passando.
+
+## Áreas seguras (notch / ilha / cantos arredondados)
+
+- `responsive.css` define `--sa-left/right/top/bottom` = `env(safe-area-inset-*) / var(--ui-zoom)`. O `.app` usa zoom no celular deitado e o `env()` é encolhido por ele, então a divisão é obrigatória.
+- Barra lateral, `.app`, FAB do chat e HUD dos jogos usam esses valores (`max(14px, env(...))` fora do `.app`).
+- Teste: `e2e/safe-area.spec.ts` simula iPhone 17 Pro, iPhone SE e Android com recorte via `Emulation.setSafeAreaInsetsOverride`. Não substitui teste em aparelho real.

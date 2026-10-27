@@ -37,12 +37,12 @@
 }
 
 .atr-score {
-  top: 14px;
-  left: 14px;
+  top: max(14px, env(safe-area-inset-top));
+  left: max(14px, env(safe-area-inset-left));
 }
 .atr-clock {
   position: absolute;
-  top: 14px;
+  top: max(14px, env(safe-area-inset-top));
   left: 50%;
   transform: translateX(-50%);
   padding: 6px 14px;
@@ -68,8 +68,8 @@
 
 .atr-rank {
   position: absolute;
-  top: 14px;
-  right: 14px;
+  top: max(14px, env(safe-area-inset-top));
+  right: max(14px, env(safe-area-inset-right));
   width: min(210px, 46vw);
   margin: 0;
   padding: 6px;
@@ -120,8 +120,8 @@
 .atr-end {
   appearance: none;
   position: absolute;
-  left: 14px;
-  bottom: 14px;
+  left: max(14px, env(safe-area-inset-left));
+  bottom: max(14px, env(safe-area-inset-bottom));
   padding: 8px 12px;
   background: var(--paper);
   color: var(--ink);
@@ -187,7 +187,7 @@
 .atr-watch {
   position: absolute;
   left: 50%;
-  bottom: 14px;
+  bottom: max(14px, env(safe-area-inset-bottom));
   transform: translateX(-50%);
   display: flex;
   align-items: center;
