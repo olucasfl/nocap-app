@@ -68,3 +68,31 @@ Pedido do Lucas: voltar ao líder, mas sem lagar para o outro. Como ficou:
 - **Quadro compacto no canal direto:** o aparelho de quem não é líder avisa (`hello q:1` no canal `ctl`) que entende o formato compacto; só quando todos entendem o worker do líder manda o quadro em inteiros (menos da metade dos bytes).
 - **Líder desenha no máximo ~80 quadros por segundo** (antes ~165): o processador que desenha também envia os estados aos outros, e com ele ocupado os envios saíam irregulares (o outro aparelho recebia ~47 de 60 estados por segundo mesmo com ping de 1 ms).
 - Não testado ainda com dois aparelhos em redes diferentes. O painel de rede do outro aparelho (`P2P N ms · estados/s`) é o que mostra se melhorou.
+
+## Bola refeita (rollback leve) e hora do passo (27/10/2026)
+
+Relato do Lucas: mesmo com 1 ms de ping (duas pessoas na mesma rede) a bola teletransportava. Com 1 ms a rede está descartada, então a causa é do nosso código. Duas causas achadas lendo o código, e o simulador do modelo antigo (`local`) não as mostrava:
+
+1. **Carimbo do quadro oscilava.** `drainFrame` mandava a hora do envio, mas o estado é do último passo (o laço acorda a cada 8 ms e o passo é de 16,7 ms): o estado podia estar até um passo atrás do carimbo. A 26 m/s isso é ~0,4 m de erro de posição da bola. Agora o carimbo é a hora do passo (`t0 + passos x 1/60 s`).
+2. **A bola local era empurrada por raposas atrasadas.** As outras raposas são desenhadas ~50 a 100 ms no passado; a bola "local" batia nelas atrasadas e depois era puxada de volta ao líder, o que aparece como salto ou teleporte logo depois de um contato.
+
+Novo modelo `replay` (`BolaNetSync`, `ballModel: 'replay'`, padrão no jogo): a cada quadro a bola volta ao último estado do líder e a conta é refeita até agora, passo a passo, com todas as raposas onde estão agora (a própria pela previsão, guardada num histórico; as outras estendidas pela velocidade). Quando chega um estado novo, a diferença entre a conta antiga e a nova no instante de agora vira um erro que encolhe em ~0,1 s (o mesmo ajuste visual do rl-like), e acima de 4 m não é suavizado (gol, reinício).
+
+Medido no simulador (5 sementes x 120 s por rede; saltos = bola andando mais do que a velocidade desenhada explica):
+
+| rede | saltos >0,4 m/min: local -> replay | saltos >1 m/min: local -> replay | defasagem média (m): local -> replay |
+|---|---|---|---|
+| LAN | 15,6 -> 0 | 0,3 -> 0 | 0,56 -> 0,19 |
+| Wi-Fi bom | 5,4 -> 0,4 | 0,1 -> 0,1 | 0,42 -> 0,15 |
+| internet boa | 9 -> 0,2 | 0 -> 0,1 | 0,46 -> 0,11 |
+| internet ruim | 12,2 -> 0,5 | 0,2 -> 0,3 | 0,51 -> 0,24 |
+
+O simulador **não reproduz tudo** que acontece nos aparelhos (já falhou uma vez), então a validação final é jogar.
+
+Outras mudanças desta rodada (pedidos do Lucas):
+- **Velocidade da bola proporcional à raposa:** `BOL_BALL_MAX` 26 -> 20 m/s (2,5x a corrida da raposa, que é 8 m/s; no rl-like a bola vai a ~2,6x o carro). Menos velocidade também é menos erro na tela.
+- **Marca no chão sob a bola** quando ela voa (anel e disco brancos que crescem um pouco com a altura e somem rente ao chão), como no rl-like.
+- **Velocidade da bola no gol**: o evento de gol traz `speed` (m/s) e o aviso mostra "Bola a N km/h".
+
+### Próximo passo planejado (estilo rl-like)
+O rl-like (https://github.com/JatinMunjal2k/rl-like, estudado em 27/10) faz: entrada carimbada por tick e aplicada pelo anfitrião no tick certo (repete a última se atrasar); cliente simula alguns ticks à frente e ajusta a velocidade do relógio para manter ~3 ticks de folga; estado completo comparado tick a tick e, se discordar, volta ao estado e refaz com as entradas ainda não confirmadas; correção vira deslocamento visual que some em ~0,1 s. Falta para nós: tick no quadro, entrada por tick, estado completo das raposas no quadro (tempo restante do mortal, direção, `flipHit`) e uma flag de previsão no `BolWorld`. Depois: arena com cantos arredondados e rampas e física da bola no estilo dele (decisão do Lucas, 27/10).

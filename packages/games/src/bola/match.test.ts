@@ -37,6 +37,21 @@ function run(
   }
 }
 
+describe('BolaMatch: carimbo do quadro', () => {
+  it('a hora do quadro é a do passo (1/60 s exato), mesmo com o laço acordando fora de fase', () => {
+    const s = make();
+    const ts: number[] = [];
+    // quadros a cada 8 ms mas passos a cada 16,67 ms: a hora enviada não pode oscilar com o relógio
+    for (let i = 0; i < 400; i++) {
+      s.clock.advance(8);
+      if (s.m.tick() > 0) ts.push(s.m.drainFrame(true)?.t as number);
+    }
+    expect(ts.length).toBeGreaterThan(100);
+    for (let i = 1; i < ts.length; i++)
+      expect((ts[i] as number) - (ts[i - 1] as number)).toBeCloseTo(1000 / 60, 0);
+  });
+});
+
 describe('BolaMatch', () => {
   it('monta os corpos (pessoas e bots) com vagas estáveis e a lista para os aparelhos', () => {
     const { m } = make();

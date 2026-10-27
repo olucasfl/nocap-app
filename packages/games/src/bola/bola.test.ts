@@ -1,7 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { BOL_BALL_MAX, describe, expect, it } from 'vitest';
 import { createRng } from '../core/rng';
 import { bolBotInput, newBolBotMemory } from './bots';
 import {
+  BOL_BALL_MAX,
   BOL_BALL_R,
   BOL_GOAL_DEPTH,
   BOL_GOAL_H,
@@ -363,6 +364,10 @@ describe('gol', () => {
     expect(w.scores).toEqual([1, 0]);
     const goal = w.drainEvents().find((e) => e.type === 'goal');
     expect(goal).toMatchObject({ goalTeam: 1, scorerId: 't0p0', scorerTeam: 0, own: false });
+    // a velocidade da bola no gol vai no evento (o aviso mostra em km/h) e respeita o teto do jogo
+    const sp = (goal as { speed: number }).speed;
+    expect(sp).toBeGreaterThan(8);
+    expect(sp).toBeLessThanOrEqual(BOL_BALL_MAX + 1e-6);
   });
 
   it('gol contra: o ponto vai para o último time de fora que tocou na bola, nunca para o time que levou o gol', () => {

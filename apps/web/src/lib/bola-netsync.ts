@@ -1,5 +1,7 @@
 import {
+  BOL_BALL_R,
   BOL_DT,
+  BOL_GRAVITY,
   BOL_SUBSTEPS,
   BolPredictor,
   type BolBall,
@@ -45,9 +47,11 @@ export interface NetSyncOptions {
   meId: string;
   /**
    * Como a bola é desenhada: `interp` = estados do líder interpolados (+ bola de mentira só depois de um toque);
-   * `local` = a bola anda sempre numa física própria no aparelho e é puxada, sem salto, para onde o líder diz que ela está.
+   * `local` = a bola anda sempre numa física própria no aparelho e é puxada, sem salto, para onde o líder diz que ela está;
+   * `replay` = a cada quadro a bola volta ao último estado do líder e a conta é refeita até agora, com todas as raposas
+   * onde estão agora (a própria pela previsão, as outras estendidas pela velocidade); o erro que sobra some em ~0,1 s.
    */
-  ballModel?: 'interp' | 'local';
+  ballModel?: 'interp' | 'local' | 'replay';
   /** Bola local: as outras raposas empurram a bola na posição de agora (estimada), não na de desenho (atrasada). Padrão: desligado (a simulação não mostrou ganho). */
   presentOthers?: boolean;
   /** O menor atraso de desenho (ms) que o caminho aguenta. */
@@ -75,6 +79,27 @@ export interface NetSyncStats {
   /** Vezes em que faltou estado novo e o desenho precisou extrapolar. */
   extrapolations: number;
 }
+
+/** Onde a própria raposa (prevista) esteve, para refazer a conta da bola com ela no lugar certo. */
+interface OwnSample {
+  /** Relógio local (ms) do fim do passo. */
+  t: number;
+  x: number;
+  y: number;
+  z: number;
+  vx: number;
+  vy: number;
+  vz: number;
+  heading: number;
+  flipT: number;
+  flipDx: number;
+  flipDz: number;
+}
+
+/** Quanto tempo (s) o erro de uma correção leva para sumir (a bola desenhada = refeita + erro que encolhe). */
+const FADE_S = 0.1;
+/** Acima disto (m) a correção não é suavizada: a bola foi para outro lugar (gol, reinício). */
+const SNAP_M = 4;
 
 const lerp = (a: number, b: number, u: number) => a + (b - a) * u;
 /** A bola é desenhada este tanto (ms) mais perto do presente que as outras raposas. */
@@ -111,6 +136,13 @@ export class BolaNetSync {
   private readonly local: BolBall = { x: 0, y: 1, z: 0, vx: 0, vy: 0, vz: 0 };
   private readonly auth: BolBall = { x: 0, y: 1, z: 0, vx: 0, vy: 0, vz: 0 };
   private localReady = false;
+  private lastDt = 1 / 60;
+  private readonly ownHist: OwnSample[] = [];
+  /** O estado do líder de onde a bola refeita partiu no quadro anterior. */
+  private rpSnap: NetSnap | null = null;
+  private readonly rpOff = { x: 0, y: 0, z: 0 };
+  private readonly rpA: BolBall = { x: 0, y: 1, z: 0, vx: 0, vy: 0, vz: 0 };
+  private readonly rpB: BolBall = { x: 0, y: 1, z: 0, vx: 0, vy: 0, vz: 0 };
 
   constructor(
     private readonly world: BolWorld,
@@ -122,6 +154,7 @@ export class BolaNetSync {
 
   /** A bola desenhada neste instante é a "de mentira" (toque previsto ainda não confirmado). */
   get ghostActive(): boolean {
+    if (this.o.ballModel === 'replay') return false;
     return this.o.ballModel === 'local' ? this.touchHold > 0 : this.lbFade > 0;
   }
 
@@ -208,6 +241,7 @@ export class BolaNetSync {
 
   /** Um quadro de desenho: põe no mundo os outros, a bola e a própria raposa. */
   update(dt: number, input: { mx: number; mz: number }, pressed: boolean) {
+    this.lastDt = dt;
     const { world } = this;
     const { meId } = this.o;
     const last = this.snaps[this.snaps.length - 1];
@@ -263,6 +297,7 @@ export class BolaNetSync {
     if (!me || !row) {
       this.predReady = false;
       if (this.o.ballModel === 'local') this.stepLocal(dt, null, last);
+      else if (this.o.ballModel === 'replay') this.stepReplay(null, last);
       return;
     }
     const pred = this.pred;
@@ -307,7 +342,9 @@ export class BolaNetSync {
       });
       this.predReady = world.phase !== 'countdown';
       this.predAcc = 0;
+      this.ownHist.length = 0;
       if (this.o.ballModel === 'local') this.stepLocal(dt, null, last);
+      else if (this.o.ballModel === 'replay') this.stepReplay(null, last);
       return;
     }
     this.predAcc += dt;
@@ -323,7 +360,22 @@ export class BolaNetSync {
       world.pushOutOfFoxes(me);
       pred.body.x = me.x;
       pred.body.z = me.z;
-      if (world.phase === 'play') {
+      if (this.o.ballModel === 'replay') {
+        this.ownHist.push({
+          t: now - this.predAcc * 1000,
+          x: me.x,
+          y: me.y,
+          z: me.z,
+          vx: me.vx,
+          vy: me.vy,
+          vz: me.vz,
+          heading: me.heading,
+          flipT: me.flipT,
+          flipDx: me.flipDx,
+          flipDz: me.flipDz,
+        });
+        if (this.ownHist.length > 90) this.ownHist.shift();
+      } else if (world.phase === 'play') {
         if (this.touchHold <= 0 && this.lbFade <= 0) {
           // sem toque recente só se testa o contato: a bola desenhada não anda um passo à frente, e só vira "de mentira" se foi tocada
           Object.assign(this.probe, ball);
@@ -360,6 +412,10 @@ export class BolaNetSync {
       this.stats.predPulls++;
     }
     syncMe();
+    if (this.o.ballModel === 'replay') {
+      this.stepReplay(me, last);
+      return;
+    }
     if (this.o.ballModel === 'local') {
       this.stepLocal(dt, me, last);
       return;
@@ -404,6 +460,142 @@ export class BolaNetSync {
       ball.vy = lerp(ball.vy, lb.vy, w);
       ball.vz = lerp(ball.vz, lb.vz, w);
     }
+  }
+
+  /** A própria raposa prevista no relógio local `tl` (ms), entre as duas amostras mais próximas. */
+  private ownAt(tl: number, into: BolPlayer): boolean {
+    const h = this.ownHist;
+    if (h.length === 0) return false;
+    let hi = h.length - 1;
+    while (hi > 0 && (h[hi - 1] as OwnSample).t >= tl) hi--;
+    const b = h[hi] as OwnSample;
+    const a = (h[Math.max(0, hi - 1)] as OwnSample) ?? b;
+    const u = b.t > a.t ? Math.min(1, Math.max(0, (tl - a.t) / (b.t - a.t))) : 1;
+    into.x = lerp(a.x, b.x, u);
+    into.y = lerp(a.y, b.y, u);
+    into.z = lerp(a.z, b.z, u);
+    into.vx = b.vx;
+    into.vy = b.vy;
+    into.vz = b.vz;
+    into.heading = b.heading;
+    into.flipT = b.flipT;
+    into.flipDx = b.flipDx;
+    into.flipDz = b.flipDz;
+    into.flipHit = false;
+    return true;
+  }
+
+  /**
+   * Refaz a conta da bola: parte do estado do líder `from` e anda até agora, passo a passo, com as raposas onde estão
+   * agora e não onde foram desenhadas (as outras estendidas pela própria velocidade, a nossa pela previsão). É o que
+   * faltava no modelo local: lá a bola "local" era tocada por raposas atrasadas e depois puxada de volta ao líder.
+   */
+  private replayFrom(from: NetSnap, me: BolPlayer | null, now: number, out: BolBall) {
+    const { world } = this;
+    const offset = this.offset ?? from.ball.at - from.t;
+    const t0 = from.t + offset;
+    const span = Math.min(0.6, Math.max(0, (now - t0) / 1000));
+    out.x = from.ball.x;
+    out.y = from.ball.y;
+    out.z = from.ball.z;
+    out.vx = from.ball.vx;
+    out.vy = from.ball.vy;
+    out.vz = from.ball.vz;
+    if (span <= 0) return;
+    const slotOf = this.o.slotOf();
+    const saved = world.players.map((p) => ({
+      p,
+      x: p.x,
+      y: p.y,
+      z: p.z,
+      vx: p.vx,
+      vy: p.vy,
+      vz: p.vz,
+      heading: p.heading,
+      flipT: p.flipT,
+      flipDx: p.flipDx,
+      flipDz: p.flipDz,
+      flipHit: p.flipHit,
+    }));
+    const n = Math.max(1, Math.ceil(span / (BOL_DT / BOL_SUBSTEPS)));
+    const h = span / n;
+    for (let i = 0; i < n; i++) {
+      const el = (i + 0.5) * h;
+      for (const p of world.players) {
+        if (p === me && this.ownAt(t0 + el * 1000, p)) continue;
+        const slot = slotOf.get(p.id);
+        const row = slot === undefined ? undefined : from.rows.get(slot);
+        if (!row) continue;
+        const air = (row.fl & 1) === 0;
+        p.x = row.x + row.vx * el;
+        p.z = row.z + row.vz * el;
+        p.y = air ? Math.max(0, row.y + row.vy * el - 0.5 * BOL_GRAVITY * el * el) : row.y;
+        p.vx = row.vx;
+        p.vy = row.vy;
+        p.vz = row.vz;
+        p.heading = row.h;
+        p.flipT = (row.fl & 2) === 2 ? 0.3 : 0;
+        const sp = Math.hypot(row.vx, row.vz);
+        p.flipDx = sp > 0.5 ? row.vx / sp : Math.sin(row.h);
+        p.flipDz = sp > 0.5 ? row.vz / sp : Math.cos(row.h);
+        p.flipHit = false;
+      }
+      world.ghostBall(out, undefined, h);
+    }
+    for (const s of saved)
+      Object.assign(s.p, {
+        x: s.x,
+        y: s.y,
+        z: s.z,
+        vx: s.vx,
+        vy: s.vy,
+        vz: s.vz,
+        heading: s.heading,
+        flipT: s.flipT,
+        flipDx: s.flipDx,
+        flipDz: s.flipDz,
+        flipHit: s.flipHit,
+      });
+  }
+
+  /**
+   * Bola "refeita" (rollback): a cada quadro a bola volta ao último estado do líder e a conta é refeita até agora. Quando
+   * chega um estado novo, a diferença entre a conta antiga e a nova no instante de agora vira um erro que encolhe em
+   * ~0,1 s: a bola não anda "até" o lugar certo, só deixa de estar errada aos poucos.
+   */
+  private stepReplay(me: BolPlayer | null, last: NetSnap) {
+    const { world } = this;
+    const ball = world.ball;
+    if (world.phase !== 'play') {
+      this.rpSnap = null;
+      this.rpOff.x = this.rpOff.y = this.rpOff.z = 0;
+      return;
+    }
+    const now = this.o.now();
+    const off = this.rpOff;
+    if (this.rpSnap && this.rpSnap !== last) {
+      // estado novo: quanto a conta nova muda a bola de agora em relação à conta anterior
+      this.replayFrom(this.rpSnap, me, now, this.rpA);
+      this.replayFrom(last, me, now, this.rpB);
+      off.x += this.rpA.x - this.rpB.x;
+      off.y += this.rpA.y - this.rpB.y;
+      off.z += this.rpA.z - this.rpB.z;
+      if (Math.hypot(off.x, off.y, off.z) > SNAP_M) off.x = off.y = off.z = 0;
+    } else if (!this.rpSnap) {
+      off.x = off.y = off.z = 0;
+    }
+    this.rpSnap = last;
+    this.replayFrom(last, me, now, this.rpB);
+    const k = Math.exp(-this.lastDt / FADE_S);
+    off.x *= k;
+    off.y *= k;
+    off.z *= k;
+    ball.x = this.rpB.x + off.x;
+    ball.y = Math.max(BOL_BALL_R, this.rpB.y + off.y);
+    ball.z = this.rpB.z + off.z;
+    ball.vx = this.rpB.vx;
+    ball.vy = this.rpB.vy;
+    ball.vz = this.rpB.vz;
   }
 
   /**

@@ -109,6 +109,8 @@ interface Hud {
     /** Prorrogação com times de fora: quem segue e quem vira espectador. */
     stay?: number[];
     out?: number[];
+    /** Velocidade da bola no gol (km/h). */
+    kmh?: number;
   } | null;
   /** Sobe a cada gol: reinicia o brilho da tela. */
   flash: number;
@@ -428,7 +430,13 @@ export function BolaPlay({
           sub = `${nameOf(e.ownerId)} (${tn(e.goalTeam)}) · ponto para o time ${tn(e.scorerTeam)}`;
         }
         push(`${title} · ${sub}`, e.scorerTeam);
-        banner = { title, sub, team: e.scorerTeam, id: feedId++ };
+        banner = {
+          title,
+          sub,
+          team: e.scorerTeam,
+          id: feedId++,
+          kmh: Math.round(e.speed * 3.6),
+        };
         window.clearTimeout(bannerTimer);
         bannerTimer = window.setTimeout(() => {
           banner = null;
@@ -579,7 +587,7 @@ export function BolaPlay({
     const sync = new BolaNetSync(world, {
       meId,
       minDelay: link.minDelay,
-      ballModel: 'local',
+      ballModel: 'replay',
       rtt: () => link.rtt(),
       now: () => performance.now(),
       slotOf: () => slotOf,
@@ -642,6 +650,7 @@ export function BolaPlay({
             ownerId: idOfSlot(e.ow),
             noTouch: !!e.nt,
             assistId: idOfSlot(e.as),
+            speed: typeof e.sp === 'number' ? e.sp : 0,
           };
         case 'nogoal':
           return { type: 'nogoal', goalTeam: e.gt as number, ownerId: idOfSlot(e.ow) };
@@ -1068,6 +1077,9 @@ export function BolaPlay({
         >
           <strong>{hud.banner.title}</strong>
           <span>{hud.banner.sub}</span>
+          {hud.banner.kmh !== undefined && hud.banner.kmh > 0 && (
+            <b className="bola-banner-speed">Bola a {hud.banner.kmh} km/h</b>
+          )}
           {hud.banner.stay && hud.banner.out && (
             <div className="bola-ot" aria-label="Quem continua e quem espectou">
               <div className="bola-ot-row">

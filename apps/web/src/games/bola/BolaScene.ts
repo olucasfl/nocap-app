@@ -42,6 +42,9 @@ export class BolaScene {
   private closedKey = '';
   private ball: THREE.Mesh;
   private ballShadow: THREE.Mesh;
+  /** Marca no chão sob a bola: aparece quando ela voa e mostra onde ela está na horizontal. */
+  private landRing!: THREE.Mesh;
+  private landDisc!: THREE.Mesh;
   private yaw = 0;
   /** Altura da câmera em radianos; `null` = automática (câmera na bola). */
   private pitch: number | null = null;
@@ -107,6 +110,31 @@ export class BolaScene {
     this.buildField();
     this.ball = this.buildBall();
     this.ballShadow = this.blob(BOL_BALL_R * 1.1);
+    this.landRing = new THREE.Mesh(
+      new THREE.RingGeometry(0.74, 1, 48),
+      new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0,
+        side: THREE.DoubleSide,
+        depthWrite: false,
+      }),
+    );
+    this.landDisc = new THREE.Mesh(
+      new THREE.CircleGeometry(0.74, 40),
+      new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+      }),
+    );
+    for (const m of [this.landRing, this.landDisc]) {
+      m.rotation.x = -Math.PI / 2;
+      m.renderOrder = 2;
+      m.visible = false;
+      this.scene.add(m);
+    }
     for (const p of world.players) this.addFox(p);
   }
 
@@ -926,6 +954,23 @@ export class BolaScene {
     }
   }
 
+  /** O anel cresce um pouco com a altura e só aparece quando a bola sai do chão (rente a ele seria redundante). */
+  private updateLandingMark(x: number, y: number, z: number) {
+    const height = Math.max(0, y - BOL_BALL_R);
+    const fade = this.world.phase === 'play' ? Math.min(1, height / 0.6) : 0;
+    const on = fade > 0.02;
+    this.landRing.visible = on;
+    this.landDisc.visible = on;
+    if (!on) return;
+    const r = 1 + Math.min(1.6, height * 0.05);
+    this.landRing.position.set(x, 0.04, z);
+    this.landDisc.position.set(x, 0.035, z);
+    this.landRing.scale.set(r, r, 1);
+    this.landDisc.scale.set(r, r, 1);
+    (this.landRing.material as THREE.MeshBasicMaterial).opacity = 0.95 * fade;
+    (this.landDisc.material as THREE.MeshBasicMaterial).opacity = 0.24 * fade;
+  }
+
   shakeNow(amount: number) {
     this.shake = Math.max(this.shake, amount);
   }
@@ -941,6 +986,7 @@ export class BolaScene {
       this.ball.rotation.z -= (b.vx * dt) / BOL_BALL_R;
     }
     this.ballShadow.visible = false;
+    this.updateLandingMark(b.x, b.y, b.z);
     for (const p of this.world.players) {
       const fox = this.foxes.get(p.id);
       if (!fox) continue;

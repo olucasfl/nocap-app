@@ -61,7 +61,7 @@ export function simulate(
   p: Profile,
   seconds: number,
   seed = 7,
-  ballModel: 'interp' | 'local' = 'interp',
+  ballModel: 'interp' | 'local' | 'replay' = 'interp',
   minDelay = 45,
   presentOthers = false,
 ): SimResult {
@@ -269,7 +269,7 @@ export function simulate(
 describe('Fut Fox online: bola desenhada no aparelho do outro jogador', () => {
   it('mede teletransportes por perfil de rede', () => {
     const SEEDS = [1, 2, 3, 4, 5];
-    for (const model of ['interp', 'local'] as const) {
+    for (const model of ['interp', 'local', 'replay'] as const) {
       const rows = PROFILES.map((p) => {
         const rs = SEEDS.map((sd) => simulate(p, 120, sd, model));
         const sum = (f: (r: SimResult) => number) => rs.reduce((s, r) => s + f(r), 0);
@@ -308,7 +308,7 @@ describe('Fut Fox online: bola desenhada no aparelho do outro jogador', () => {
         })),
       );
       console.log('modelo da bola:', model);
-      if (model === 'local')
+      if (model !== 'interp')
         for (const r of rows) expect((r.big * 60) / r.seconds, r.profile).toBeLessThan(1);
       expect(rows).toHaveLength(PROFILES.length);
     }

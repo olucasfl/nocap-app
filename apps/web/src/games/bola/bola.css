@@ -65,6 +65,10 @@
 .bola-banner span {
   font: 700 clamp(13px, 2.4vw, 18px) var(--font-display, system-ui);
 }
+.bola-banner .bola-banner-speed {
+  font: 900 clamp(15px, 2.8vw, 22px) var(--font-display, system-ui);
+  text-transform: uppercase;
+}
 @keyframes bola-pop {
   from {
     opacity: 0;

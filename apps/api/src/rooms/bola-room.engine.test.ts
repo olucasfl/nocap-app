@@ -277,11 +277,12 @@ describe('sala do Fut Fox: partida', () => {
     expect(f.p.find((r) => r[0] === 0)![2]).toBeGreaterThan(0.2);
   });
 
-  it('cada quadro leva a hora do servidor', () => {
+  it('cada quadro leva a hora do passo da simulação (no máximo um passo atrás do relógio)', () => {
     const s = playing();
     run(s, 1);
     const f = s.room.drainFrame() as { t: number };
-    expect(f.t).toBe(s.clock.now);
+    expect(f.t).toBeLessThanOrEqual(s.clock.now);
+    expect(s.clock.now - f.t).toBeLessThan(1000 / 60 + 1);
   });
 
   it('o fluxo de quadros traz bola, corpos e estatísticas, e os gols viram evento com vagas', () => {

@@ -134,6 +134,8 @@ export type BolEvent =
       ownerId: string | null;
       noTouch: boolean;
       assistId: string | null;
+      /** Velocidade da bola (m/s) na hora do gol. */
+      speed: number;
     }
   /** Sem toque e com 3 ou 4 times não há como decidir: ninguém pontua e a bola volta ao centro. */
   | { type: 'nogoal'; goalTeam: number; ownerId: string | null }
@@ -708,6 +710,7 @@ export class BolWorld {
       ownerId,
       noTouch,
       assistId,
+      speed: Math.hypot(this.ball.vx, this.ball.vy, this.ball.vz),
     });
     if (this.golden) {
       this.finish(scorerTeam);

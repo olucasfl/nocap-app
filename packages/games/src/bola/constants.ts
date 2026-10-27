@@ -27,7 +27,7 @@ export const BOL_WALL_E = 0.6;
 export const BOL_ROLL_DRAG = 0.7;
 export const BOL_ROLL_DECEL = 1.2;
 export const BOL_AIR_DRAG = 0.03;
-export const BOL_BALL_MAX = 26;
+export const BOL_BALL_MAX = 20;
 export const BOL_CEILING = 14;
 /** Parada de verdade: abaixo disto, no chão, a bola conta como "parada". */
 export const BOL_REST_SPEED = 0.5;

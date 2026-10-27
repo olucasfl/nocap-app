@@ -70,6 +70,9 @@ export class BolaMatch {
   private rng: () => number;
   private last: number;
   private acc = 0;
+  /** Hora (ms) em que a partida nasceu e quantos passos já andou: o carimbo do quadro é a hora do passo, não a do envio. */
+  private readonly t0: number;
+  private ticks = 0;
   private botSeq = 0;
   private out: Record<string, unknown>[] = [];
   private statsAt = 0;
@@ -108,6 +111,7 @@ export class BolaMatch {
       else this.brains.set(p.id, this.newBrain(p.team, this.slots.get(p.id) ?? 0));
     }
     this.last = this.now();
+    this.t0 = this.last;
   }
 
   private botId() {
@@ -248,6 +252,7 @@ export class BolaMatch {
       }
     }
     w.step(BOL_DT, inputs);
+    this.ticks++;
     for (const e of w.drainEvents()) this.collect(e);
   }
 
@@ -283,6 +288,7 @@ export class BolaMatch {
           ow: this.slotOf(e.ownerId),
           nt: e.noTouch,
           as: this.slotOf(e.assistId),
+          sp: Math.round(e.speed * 10) / 10,
         });
         this.markDirty();
         break;
@@ -343,8 +349,12 @@ export class BolaMatch {
     const b = w.ball;
     const t = this.now();
     const frame: Record<string, unknown> = {
-      /** Hora de quem simula (ms) deste estado: o aparelho interpola pela hora, não pela chegada. */
-      t,
+      /**
+       * Hora de quem simula (ms) deste estado: o aparelho interpola pela hora, não pela chegada. É a hora do PASSO
+       * (início + passos x 1/60 s), não a do envio: o laço acorda a cada 8 ms e o estado pode estar até um passo atrás
+       * do relógio, o que fazia a bola, a 20 m/s, ser desenhada até ~0,4 m fora do lugar.
+       */
+      t: Math.round((this.t0 + this.ticks * BOL_DT * 1000) * 10) / 10,
       ph: codes[w.phase],
       tm: r2(w.timer),
       ck: Math.round(w.clock * 10) / 10,
