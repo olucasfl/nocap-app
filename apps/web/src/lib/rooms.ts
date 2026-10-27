@@ -206,6 +206,8 @@ export interface RoomSnapshot {
   final: FinalRow[] | null;
   /** Chat da sala: aberto agora? e quem o líder silenciou. */
   chat: { open: boolean; muted: string[] };
+  /** O id desta pessoa na sala (vale também para convidados). */
+  me?: string | null;
   impostor?: ImpostorState;
   eco?: EcoRoomState;
   atravessa?: AtravessaRoomState;
@@ -623,3 +625,24 @@ export const CODE_RE = /^[A-HJ-NP-Z]{4}$/;
 // só no desenvolvimento: os testes de ponta a ponta injetam estado para ver telas que dependem de uma sala
 if (import.meta.env.DEV && typeof window !== 'undefined')
   (window as unknown as { __room?: unknown }).__room = useRoom;
+
+/**
+ * O id desta pessoa na sala. Quem tem conta usa o da conta; convidado (só apelido) não tem conta no aparelho, então o
+ * servidor manda o id dele dentro do estado do jogo (`me`). Sem isso um convidado era tratado como espectador.
+ */
+export function meOf(snapshot: RoomSnapshot | null, userId?: string): string | undefined {
+  return (
+    userId ??
+    snapshot?.me ??
+    snapshot?.bola?.me ??
+    snapshot?.desmorona?.me ??
+    snapshot?.atravessa?.me ??
+    undefined
+  );
+}
+
+export function useMeId(): string | undefined {
+  const userId = useAuth((st) => st.user?.id);
+  const snapshot = useRoom((st) => st.snapshot);
+  return meOf(snapshot, userId);
+}

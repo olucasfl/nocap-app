@@ -294,6 +294,14 @@ describe('sala do Fut Fox: partida', () => {
   });
 });
 
+describe('sala do Fut Fox: quem está olhando', () => {
+  it('o estado traz o id de quem olha (convidado não tem conta no aparelho)', () => {
+    const s = lobby(['ana', 'bia']);
+    expect((s.room.snapshot('bia') as unknown as { me: string | null }).me).toBe('bia');
+    expect((s.room.snapshot('ana') as unknown as { me: string | null }).me).toBe('ana');
+  });
+});
+
 describe('sala do Fut Fox: partida ponto a ponto (spec 048)', () => {
   const net = (room: BolaRoomEngine, id = 'ana') =>
     (

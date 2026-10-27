@@ -1,9 +1,16 @@
-import { useAuth } from '@/lib/auth';
 import { GuestNotice } from '@/components/GuestNotice';
 import { useIsGuest } from '@/lib/auth';
 import { useState } from 'react';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
-import { closeRoom, leaveRoom, sendRoom, useRoom, type RoomSnapshot, at } from '@/lib/rooms';
+import {
+  closeRoom,
+  leaveRoom,
+  sendRoom,
+  useRoom,
+  type RoomSnapshot,
+  at,
+  useMeId,
+} from '@/lib/rooms';
 import { meters, raceTime, roomColor } from '@/games/atravessa/AtravessaReveal';
 
 /** Atravessa!: o que cada um fez. Infinito = metros somados; Checkpoint = tempo da chegada, ou a distância de quem não chegou. */
@@ -34,7 +41,7 @@ function AtravessaScore({
  * (mudando as regras, se quiser). Os outros aguardam.
  */
 export function Final({ snapshot }: { snapshot: RoomSnapshot }) {
-  const me = useAuth((s) => s.user?.id);
+  const me = useMeId();
   const message = useRoom((s) => s.message);
   const [closing, setClosing] = useState(false);
   const impostor =

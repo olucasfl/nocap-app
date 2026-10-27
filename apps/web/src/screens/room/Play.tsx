@@ -1,6 +1,5 @@
 import { generateColorRound, generateColorStart, type Hsb } from '@nocap/games';
-import { useAuth } from '@/lib/auth';
-import { sendRoom, type RoomSnapshot, at } from '@/lib/rooms';
+import { sendRoom, type RoomSnapshot, at, useMeId } from '@/lib/rooms';
 import { toHex } from '@/games/color/hex';
 import { PickScreen } from '@/games/color/screens/PickScreen';
 import { ShowScreen } from '@/games/color/screens/ShowScreen';
@@ -43,7 +42,7 @@ function Waiting({ snapshot }: { snapshot: RoomSnapshot }) {
 }
 
 function Reveal({ snapshot }: { snapshot: RoomSnapshot }) {
-  const me = useAuth((s) => s.user?.id);
+  const me = useMeId();
   const round = snapshot.round!;
   const isHost = snapshot.hostId === me;
   const last = round.index + 1 >= round.total;
@@ -90,7 +89,7 @@ export function Play({ snapshot }: { snapshot: RoomSnapshot }) {
   if (snapshot.game === 'atravessa') return <AtravessaReveal snapshot={snapshot} />;
   if (snapshot.game === 'time') return <TimePlay snapshot={snapshot} />;
   if (snapshot.game === 'impostor') return <ImpostorPlay snapshot={snapshot} />;
-  const me = useAuth((s) => s.user?.id);
+  const me = useMeId();
   const round = snapshot.round!;
   const mine = snapshot.members.find((m) => m.id === me);
 

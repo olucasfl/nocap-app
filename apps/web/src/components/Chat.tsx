@@ -1,7 +1,14 @@
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import { Message } from '@/components/icons';
-import { useAuth } from '@/lib/auth';
-import { markChatRead, muteMember, sendChat, useRoom, type RoomSnapshot, at } from '@/lib/rooms';
+import {
+  markChatRead,
+  muteMember,
+  sendChat,
+  useRoom,
+  type RoomSnapshot,
+  at,
+  useMeId,
+} from '@/lib/rooms';
 import './chat.css';
 
 const MAX = 200;
@@ -21,7 +28,7 @@ export function ChatPanel({
   /** Cor de quem escreveu (time, raposa ou cinza de espectador); sem isso as mensagens ficam sem cor. */
   colorOf?: (userId: string) => string | null;
 }) {
-  const me = useAuth((s) => s.user?.id);
+  const me = useMeId();
   const messages = useRoom((s) => s.chat);
   const error = useRoom((s) => s.message);
   const [text, setText] = useState('');

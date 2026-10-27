@@ -1,5 +1,4 @@
-import { useAuth } from '@/lib/auth';
-import type { RoomSnapshot } from '@/lib/rooms';
+import { useMeId, type RoomSnapshot } from '@/lib/rooms';
 import { HostLobby } from './lobby/HostLobby';
 import { BolaLobby } from './lobby/BolaLobby';
 import { FoxLobby } from './lobby/FoxLobby';
@@ -11,7 +10,7 @@ import { MemberLobby } from './lobby/MemberLobby';
  * assume, a tela troca sozinha.
  */
 export function Lobby({ snapshot }: { snapshot: RoomSnapshot }) {
-  const me = useAuth((s) => s.user?.id);
+  const me = useMeId();
   const leader = snapshot.members.find((m) => m.id === snapshot.hostId);
 
   if (snapshot.game === 'foxcap') return <FoxLobby snapshot={snapshot} me={me} />;

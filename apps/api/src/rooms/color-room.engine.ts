@@ -112,15 +112,7 @@ export class ColorRoomEngine {
   protected readonly maxPlayers: number;
   /** Qual jogo esta sala joga; o `TimeRoomEngine` troca. */
   readonly game:
-    | 'color'
-    | 'time'
-    | 'impostor'
-    | 'eco'
-    | 'atravessa'
-    | 'desmorona'
-    | 'bola'
-    | 'foxcap' =
-    'color';
+    'color' | 'time' | 'impostor' | 'eco' | 'atravessa' | 'desmorona' | 'bola' | 'foxcap' = 'color';
   /** Menos gente que isto não joga (o Intruso precisa de 3 para votar). */
   protected readonly minPlayers: number = MIN_PLAYERS;
   /** Salvar o pódio como partida de sala (o Intruso não salva). */
@@ -597,6 +589,8 @@ export class ColorRoomEngine {
       final:
         this.phase === 'final' ? this.finalRows().map(({ answers: _answers, ...r }) => r) : null,
       chat: { open: this.chatOpen(), muted: this.chat.mutedList() },
+      /** O id de quem está olhando (convidado não tem conta no aparelho, então o id vem daqui). */
+      me: viewerId ?? null,
       ...this.extraSnapshot(viewerId),
     };
   }
