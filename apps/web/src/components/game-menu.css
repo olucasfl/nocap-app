@@ -286,7 +286,7 @@
 }
 
 /* celular deitado: o menu vira duas colunas para caber sem rolar */
-@media (max-height: 460px) and (orientation: landscape) {
+@media (max-height: 560px) and (orientation: landscape) {
   .gm-card {
     width: min(660px, 100%);
     grid-template-columns: 1fr 1fr;
