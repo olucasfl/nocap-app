@@ -15,6 +15,7 @@ import {
   BOL_ROOM_MAX,
   DSM_MAX_PLAYERS,
   IMPOSTOR_MAX_PLAYERS,
+  packBolaFrame,
 } from '@nocap/games';
 import {
   GUEST_PREFIX,
@@ -53,6 +54,8 @@ interface AuthData {
   username: string;
   /** Entrou sem conta (só apelido). */
   guest?: boolean;
+  /** O aparelho entende o quadro compacto do Fut Fox (`q: 1` ao entrar). */
+  q?: boolean;
 }
 
 type GuestRequest = {
@@ -261,7 +264,7 @@ export class ColorRoom extends Room {
     return { id: GUEST_PREFIX + randomUUID(), username: checked.nick, guest: true };
   }
 
-  onJoin(client: Client, _options: unknown, auth: AuthData) {
+  onJoin(client: Client, options: unknown, auth: AuthData) {
     try {
       // Mesma conta em outro aparelho: o aparelho antigo sai.
       for (const other of this.clients) {
@@ -274,7 +277,12 @@ export class ColorRoom extends Room {
     } catch (e) {
       throw new ServerError(409, e instanceof RoomError ? e.message : 'Não foi possível entrar');
     }
-    client.userData = { id: auth.id, username: auth.username, guest: auth.guest };
+    client.userData = {
+      id: auth.id,
+      username: auth.username,
+      guest: auth.guest,
+      q: (options as { q?: unknown } | null)?.q === 1,
+    };
     // Entrou de novo por uma conexão nova (link, código): a espera da conexão antiga não vale mais,
     // senão ela expiraria depois e tiraria da sala quem está jogando.
     this.cancelWaiting(auth.id);
@@ -623,6 +631,45 @@ export class DesmoronaRoom extends ColorRoom {
   }
 }
 
+/** Medidor do envio do Fut Fox: quantos quadros saíram no último segundo e o maior intervalo entre dois. */
+interface SendStat {
+  n: number;
+  max: number;
+  last: number;
+  since: number;
+}
+const sendStats = new WeakMap<object, SendStat>();
+
+/**
+ * Manda o quadro a todo mundo: compacto para quem avisou que entende, o de sempre para os outros (um aparelho com o site
+ * velho). Uma vez por segundo o quadro leva `sv: [quadros enviados, maior intervalo em ms]`, que o painel de rede mostra:
+ * separa "o servidor engasgou" de "a rede está ruim".
+ */
+function sendFrame(room: { clients: Iterable<Client> }, frame: Record<string, unknown>) {
+  const now = performance.now();
+  const st = sendStats.get(room) ?? { n: 0, max: 0, last: 0, since: now };
+  sendStats.set(room, st);
+  if (st.last > 0) st.max = Math.max(st.max, now - st.last);
+  st.last = now;
+  st.n++;
+  let out = frame;
+  if (now - st.since >= 1000) {
+    out = { ...frame, sv: [st.n, Math.round(st.max)] };
+    st.n = 0;
+    st.max = 0;
+    st.since = now;
+  }
+  const compact: Client[] = [];
+  const legacy: Client[] = [];
+  for (const c of room.clients)
+    ((c.userData as AuthData | undefined)?.q ? compact : legacy).push(c);
+  if (compact.length > 0) {
+    const packed = packBolaFrame(out);
+    for (const c of compact) c.send('bs', packed);
+  }
+  for (const c of legacy) c.send('bs', out);
+}
+
 /**
  * Sala do Fut Fox (spec 046, fase 2). O servidor simula tudo; os aparelhos mandam só a entrada ("bin") e recebem o
  * estado ("bs") a cada tick. Times, formato e bots no lobby: "bteam", "bformat", "bbots"; "bend" encerra a partida.
@@ -679,7 +726,7 @@ export class BolaRoom extends ColorRoom {
   protected override afterTick() {
     const engine = this.engine as BolaRoomEngine;
     const frame = engine.drainFrame();
-    if (frame) this.broadcast('bs', frame);
+    if (frame) sendFrame(this, frame);
     const out = engine.drainP2pOut();
     for (const sw of out.switches) {
       this.clients

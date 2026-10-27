@@ -48,6 +48,8 @@ export interface NetSyncOptions {
    * `local` = a bola anda sempre numa física própria no aparelho e é puxada, sem salto, para onde o líder diz que ela está.
    */
   ballModel?: 'interp' | 'local';
+  /** Bola local: as outras raposas empurram a bola na posição de agora (estimada), não na de desenho (atrasada). Padrão: desligado (a simulação não mostrou ganho). */
+  presentOthers?: boolean;
   /** O menor atraso de desenho (ms) que o caminho aguenta. */
   minDelay: number;
   /** Ida e volta até quem simula (ms). */
@@ -439,6 +441,20 @@ export class BolaNetSync {
     } else {
       const h = BOL_DT / BOL_SUBSTEPS;
       let acc = dt;
+      // as outras raposas são desenhadas atrasadas; quem empurra a bola de verdade (no servidor) está no presente
+      const moved: { p: BolPlayer; x: number; z: number }[] = [];
+      if (this.o.presentOthers === true) {
+        const slotOf = this.o.slotOf();
+        for (const p of world.players) {
+          if (p === me) continue;
+          const slot = slotOf.get(p.id);
+          const row = slot === undefined ? undefined : last.rows.get(slot);
+          if (!row) continue;
+          moved.push({ p, x: p.x, z: p.z });
+          p.x = row.x + row.vx * lead;
+          p.z = row.z + row.vz * lead;
+        }
+      }
       while (acc > 1e-9) {
         const s = Math.min(h, acc);
         acc -= s;
@@ -447,6 +463,10 @@ export class BolaNetSync {
           this.touchHold = 0.35;
           this.stats.ghostHits++;
         }
+      }
+      for (const m of moved) {
+        m.p.x = m.x;
+        m.p.z = m.z;
       }
       // logo depois de um toque próprio a bola quase não é puxada: o chute aparece inteiro até o líder confirmar
       if (this.touchHold > 0) this.touchHold = Math.max(0, this.touchHold - dt);

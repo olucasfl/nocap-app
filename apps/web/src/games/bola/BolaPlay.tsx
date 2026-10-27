@@ -79,6 +79,8 @@ interface NetFrame {
   gd: number;
   /** Quem venceu (-1 = empate): vale no fim da partida. */
   wn?: number;
+  /** Medidor do servidor, uma vez por segundo: [quadros enviados, maior intervalo em ms]. */
+  sv?: [number, number];
   /** Prorrogação: times que ficaram de fora. */
   go?: number[];
   gs?: number;
@@ -209,9 +211,14 @@ export function BolaPlay({
       return false;
     }
   });
-  const [net, setNet] = useState<{ ping: number; fps: number; delay: number; draw: number } | null>(
-    null,
-  );
+  const [net, setNet] = useState<{
+    ping: number;
+    fps: number;
+    delay: number;
+    draw: number;
+    /** O servidor: quadros enviados no último segundo e o maior intervalo entre dois (ms). */
+    srv: [number, number] | null;
+  } | null>(null);
   const toggleNet = () =>
     setShowNet((v) => {
       try {
@@ -545,6 +552,7 @@ export function BolaPlay({
     let lastEv = 0;
     let frames = 0;
     let draws = 0;
+    let srv: [number, number] | null = null;
     let netTimer = 0;
     if (online) {
       netTimer = window.setInterval(() => {
@@ -553,6 +561,7 @@ export function BolaPlay({
           fps: frames,
           delay: Math.round(sync.interpMs),
           draw: draws,
+          srv,
         });
         frames = 0;
         draws = 0;
@@ -672,6 +681,7 @@ export function BolaPlay({
           const f = m as unknown as NetFrame;
           if (!f || !Array.isArray(f.p)) return;
           frames++;
+          if (Array.isArray(f.sv)) srv = f.sv;
           syncRoster();
           const phases = { c: 'countdown', p: 'play', g: 'goal', o: 'over' } as const;
           world.phase = phases[f.ph] ?? world.phase;
@@ -1013,7 +1023,12 @@ export function BolaPlay({
         <div className="bola-net" data-testid="bola-net" aria-label="Rede">
           <b>{online.link?.local ? 'líder' : online.link ? 'p2p' : 'servidor'}</b>
           {!online.link?.local && <span>{net.ping} ms</span>}
-          <span>{net.fps}/s</span>
+          <span title="estados recebidos por segundo">{net.fps}/s</span>
+          {net.srv && (
+            <span title="servidor: estados enviados por segundo e maior intervalo entre dois">
+              srv {net.srv[0]}/s · {net.srv[1]} ms
+            </span>
+          )}
           <span title="atraso de desenho dos outros jogadores">{net.delay} ms</span>
           <span title="quadros desenhados por segundo neste aparelho">{net.draw} fps</span>
           <span title="versão do app">v{BUILD_ID}</span>

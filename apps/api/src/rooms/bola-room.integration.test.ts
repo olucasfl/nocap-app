@@ -171,4 +171,31 @@ describe('sala do Fut Fox com servidor de verdade', () => {
     await until(() => duda.errors.includes('O time Vermelho está cheio'));
     delete process.env.FUT_FOX_P2P;
   }, 30_000);
+
+  it('quadro compacto só para quem avisou (q: 1); os outros recebem o de sempre; o servidor manda o medidor (sv)', async () => {
+    const created = await new Client(url).create('bola', { token: 'eva', q: 1 });
+    const eva = watch(created);
+    const fabio = watch(await new Client(url).joinById(created.roomId, { token: 'fabio' }));
+    await until(() => eva.snap?.bola.teamOf.fabio !== undefined);
+    fabio.room.send('ready', { ready: true });
+    await wait(100);
+    eva.room.send('start');
+    await until(() => eva.frames.length > 5 && fabio.frames.length > 5, 15_000);
+    const compact = eva.frames[eva.frames.length - 1] as unknown as { q?: number; b: number[] };
+    const legacy = fabio.frames[fabio.frames.length - 1] as unknown as { q?: number; b: number[] };
+    expect(compact.q).toBe(1);
+    expect(compact.b.every(Number.isInteger)).toBe(true);
+    expect(legacy.q).toBeUndefined();
+    // o medidor chega uma vez por segundo
+    await until(
+      () => eva.frames.some((f) => Array.isArray((f as unknown as { sv?: number[] }).sv)),
+      4000,
+    );
+    const sv = (
+      eva.frames.find((f) => Array.isArray((f as unknown as { sv?: number[] }).sv)) as unknown as {
+        sv: number[];
+      }
+    ).sv;
+    expect(sv[0]).toBeGreaterThan(20);
+  }, 30_000);
 });

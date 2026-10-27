@@ -63,6 +63,7 @@ export function simulate(
   seed = 7,
   ballModel: 'interp' | 'local' = 'interp',
   minDelay = 45,
+  presentOthers = false,
 ): SimResult {
   const rnd = lcg(seed);
   let T = 1_000_000;
@@ -92,6 +93,7 @@ export function simulate(
     meId: 'bia',
     minDelay,
     ballModel,
+    presentOthers,
     rtt: () => p.rtt,
     now: () => T,
     slotOf: () => slotOf,

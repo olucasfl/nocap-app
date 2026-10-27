@@ -53,3 +53,10 @@ Também: o quadro do fluxo passa a levar o vencedor (`wn`), senão o aparelho on
 ## Voltou para o servidor (27/10/2026)
 
 Decisão do Lucas: o líder ficava liso e os outros travavam. O servidor volta a simular a partida e todos recebem o mesmo estado; o ponto a ponto fica **desligado** (`FUT_FOX_P2P=1` religa; o código e os testes continuam). O atraso mínimo de desenho no servidor caiu de 100 para 70 ms (sobe sozinho quando a rede oscila) e a hora de desenho passou a ser estimada pelo caminho "limpo" da rede (menor atraso medido) em vez da última chegada, para rajadas do TCP não puxarem o relógio.
+
+## Servidor mais leve e medido (27/10/2026)
+
+- **Bola mais lenta:** `BOL_BALL_MAX` 32 -> 26 m/s (decisão do Lucas). O erro na tela é, grosso modo, velocidade x atraso: menos velocidade, menos erro.
+- **Quadro compacto:** quem entra na sala com `q: 1` (o site novo) recebe posições e velocidades em centésimos inteiros (`packBolaFrame`/`unpackBolaFrame`): ~210 bytes em vez de ~460 com 6 raposas. O site velho continua recebendo o quadro de sempre.
+- **Medidor do servidor:** uma vez por segundo o quadro leva `sv: [quadros enviados, maior intervalo em ms]` e o painel de rede mostra `srv N/s · X ms`. Serve para separar "servidor engasgando" de "rede ruim" no teste com o servidor de verdade.
+- Testado e **descartado**: a bola local reagir às raposas dos outros na posição de agora (`presentOthers`) não mostrou ganho na simulação (fica desligado). Rollback/determinismo e "bola por pessoa" foram avaliados e não valem o risco (cálculos de ponto flutuante podem divergir entre navegadores).

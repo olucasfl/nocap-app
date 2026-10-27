@@ -1,3 +1,4 @@
+import { unpackBolaFrame } from '@nocap/games';
 import { currentRtt, sendRoomQuiet, subscribeRoom } from './rooms';
 
 /** Um quadro do fluxo da partida (ver `BolaMatch.drainFrame`). */
@@ -34,7 +35,10 @@ export interface BolaLink {
 /** O jeito de sempre: o servidor da sala simula e manda o fluxo `bs`. */
 export const roomLink: BolaLink = {
   sendInput: (v) => sendRoomQuiet('bin', v),
-  onFrame: (cb) => subscribeRoom('bs', (m) => cb(m as BolaFrame)),
+  onFrame: (cb) =>
+    subscribeRoom('bs', (m) =>
+      cb(unpackBolaFrame(m as Record<string, unknown>) as unknown as BolaFrame),
+    ),
   rtt: () => currentRtt(),
   local: false,
   // 70 ms: o atraso de desenho sobe sozinho quando a rede oscila (medido na simulação de rede)

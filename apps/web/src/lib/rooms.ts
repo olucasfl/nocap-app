@@ -534,9 +534,10 @@ export function setGuestNickname(nick: string) {
 }
 
 /** Como a pessoa se apresenta à sala: pela conta ou, sem conta, só pelo apelido. */
-function entryOptions(): { token: string } | { guest: true; nickname: string } {
+function entryOptions(): { token: string; q: 1 } | { guest: true; nickname: string; q: 1 } {
   const token = getToken();
-  return token ? { token } : { guest: true, nickname: getGuestNickname() };
+  // `q: 1` = este site entende o quadro compacto do Fut Fox (menor e mais rápido de mandar)
+  return token ? { token, q: 1 } : { guest: true, nickname: getGuestNickname(), q: 1 };
 }
 
 export async function createRoom(game: RoomGame = 'color') {
