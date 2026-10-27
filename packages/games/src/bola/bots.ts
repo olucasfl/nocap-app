@@ -34,6 +34,13 @@ export interface BolBotMemory {
   plan: { x: number; z: number; y: number; until: number } | null;
   /** Hora a partir da qual pode planejar outra subida (não vive pendurado na parede). */
   planCool: number;
+  /** Anti-preso: onde estava e quando foi a última checagem, quantas seguidas sem sair do lugar, e até quando sai do aperto. */
+  sx: number;
+  sz: number;
+  sAt: number;
+  stuckN: number;
+  freeUntil: number;
+  freeA: number;
 }
 
 export const newBolBotMemory = (target = 0, miss = 0.2): BolBotMemory => ({
@@ -52,6 +59,12 @@ export const newBolBotMemory = (target = 0, miss = 0.2): BolBotMemory => ({
   run: false,
   plan: null,
   planCool: 0,
+  sx: 0,
+  sz: 0,
+  sAt: 0,
+  stuckN: 0,
+  freeUntil: 0,
+  freeA: 0,
 });
 
 const STOP: BolInput = { mx: 0, mz: 0, jump: false };
@@ -227,6 +240,9 @@ export function bolBotInput(
     mem.jumpAt = 0;
     mem.run = false;
     mem.plan = null;
+    mem.sAt = 0;
+    mem.stuckN = 0;
+    mem.freeUntil = 0;
     return STOP;
   }
   const now = botClock(world);
@@ -235,7 +251,32 @@ export function bolBotInput(
   if (now < mem.wakeAt) return STOP;
 
   const b = world.ball;
+  // o plano de subir na parede vale por pouco tempo, no chão ou colado (sem isto o bot que não consegue colar empurra o muro para sempre)
+  if (mem.plan && now > mem.plan.until) mem.plan = null;
   if (p.surf !== 0) return wallBot(world, p, mem, rng, now);
+  // anti-preso: querendo andar e sem sair do lugar (muro, canto, rede) por ~1,2 s: vai para o meio do campo, de lado, por um instante
+  if (now >= mem.sAt) {
+    const moved = Math.hypot(p.x - mem.sx, p.z - mem.sz);
+    const wants = Math.hypot(mem.wx, mem.wz) > 0.5;
+    mem.stuckN = wants && p.grounded && moved < 0.3 ? mem.stuckN + 1 : 0;
+    mem.sx = p.x;
+    mem.sz = p.z;
+    mem.sAt = now + 0.6;
+    if (mem.stuckN >= 2) {
+      mem.stuckN = 0;
+      mem.plan = null;
+      mem.jumpAt = 0;
+      mem.freeUntil = now + 0.9;
+      // para o centro, com um desvio para um lado ou outro (não repete a mesma tentativa)
+      mem.freeA = Math.atan2(-p.x, -p.z) + (rng() < 0.5 ? -1 : 1) * (0.4 + rng() * 0.6);
+      mem.next = 0;
+    }
+  }
+  if (now < mem.freeUntil) {
+    mem.mx = Math.sin(mem.freeA);
+    mem.mz = Math.cos(mem.freeA);
+    return { mx: mem.mx, mz: mem.mz, jump: false };
+  }
   if (!p.grounded) {
     // no ar: segue para onde ia e tenta o mortal na bola se estiver perto
     if (mem.wantFlip && !p.airJumped) {

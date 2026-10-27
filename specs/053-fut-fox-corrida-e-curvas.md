@@ -11,7 +11,7 @@ Pedido do Lucas em 27/10/2026. Status: **em andamento (motor, rede e tela feitos
 
 ## 2. Como ficou
 
-- **Corrida** (`body.ts`, `constants.ts`): 11,5 m/s correndo (o mortal é 11), aceleração 18 contra 40 andando. Fôlego 100, gasta 100 em 2,8 s, congela 2 s ao parar de correr, recarrega 16 por segundo. Esgotou: volta a andar, espera 2,5 s e só corre de novo com 20 ou mais (sem isso a pessoa corria "picotado" com 1 de fôlego). Só corre com direção, e não na parede, no teto nem no mortal.
+- **Corrida** (`body.ts`, `constants.ts`): 12,2 m/s correndo (o mortal é 10: o pulo duplo com direção é mais lento que correr), aceleração 18 contra 40 andando. Fôlego 100, gasta 100 em 2,8 s, congela 2 s ao parar de correr, recarrega 16 por segundo. Esgotou: volta a andar, espera 2,5 s e só corre de novo com 20 ou mais (sem isso a pessoa corria "picotado" com 1 de fôlego). Só corre com direção, e não na parede, no teto nem no mortal.
 - **Rede**: o terceiro número de cada passo da entrada é um conjunto de bits (1 pulo, 2 correr; o formato antigo mandava 0 ou 1, então segue valendo). O quadro leva o fôlego (coluna 18, inteiro) e os bits 64 (correndo) e 128 (esgotada) nos flags. A previsão com rollback e o preditor simples rodam a mesma conta; as outras raposas são previstas correndo pelo bit 64.
 - **Tela**: `controls.ts` tem Shift (segurar) e o botão do celular (segurando corre, soltando para, como o Shift). O "não" sai na hora do aperto, no aparelho (barra treme, som `nope`), sem esperar o servidor. Barra e botão animam só `transform` e `opacity`.
 - **Atrito da bola**: Coulomb na parede (`BOL_WALL_MU` 0,3: a batida de lado perde parte da velocidade que corre ao longo dela) e freio de rolagem na rampa (`BOL_RAMP_DRAG` 0,5, `BOL_RAMP_DECEL` 0,8). Com 0,45 os bots faziam quase metade dos gols; 0,3 manteve o ritmo.
@@ -22,7 +22,7 @@ Pedido do Lucas em 27/10/2026. Status: **em andamento (motor, rede e tela feitos
 - **Embaixo à esquerda (computador):** "CÂMERA DA BOLA" ou "CÂMERA LIVRE" em texto solto, com "Pressione F para alternar". No celular segue o botão de antes.
 - **Embaixo à direita (computador):** medidor circular do fôlego, sempre visível, com o número no meio e a tecla Shift. É um anel de 28 segmentos (cada um só liga e desliga a opacidade, para respeitar "só transform e opacity"); fica vermelho esgotado e treme ao tentar correr sem fôlego. No celular, o número fica em cima do botão Correr.
 - **Rastro:** enquanto corre, a raposa deixa um fio de luz na cor do time (brilhos que somem em 0,5 s); as outras raposas aparecem correndo pelo bit 64 do quadro. Desligado com movimento reduzido.
-- Corrida a 11,5 m/s (o Lucas pediu "um pouco mais rápido, mas não muito"; o mortal fica em 11 e vale pelo chute).
+- Corrida a 11,5 m/s, depois 12,2 (o Lucas pediu "um pouco mais rápido, mas não muito"; o mortal fica em 11 e vale pelo chute).
 
 ## 2c. Bots (27/10/2026)
 
@@ -67,6 +67,11 @@ Pedido do Lucas: depois de um tempo, com gente ainda jogando, começam ondas de 
 - **Mais rápidos:** as velocidades do plano passaram de 0,45 e 1 para 0,85 e 1 e o custo por ladrilho pisado caiu de 1,1 para 0,5: média de ~4,75 m/s (77% dos 6,2 da raposa; antes ~3,5). As primeiras mortes de bot vêm aos ~65 s (eram 90 a 107 s com o planejador lento e 35 s no original).
 - **Caçadores:** cada bot decide, a cada 2,5 a 6 s, se caça (35% a 65% de chance, conforme o perfil); fora da caçada só aproveita a chance (30% do interesse). Caçando, o bot corre para onde o alvo vai estar (passar na frente), prefere a pessoa (peso 2,2 no empurrão, escolha do alvo e aproximação) e valoriza muito o empurrão que joga o outro onde não há chão (3 pontos, 15 se cai). Medido: ~30 empurrões em uma "pessoa" em ~80 s e ela morre antes dos bots em 2 de 3 partidas.
 - Teste `bots caçadores` em `desmorona.test.ts`.
+
+## 2j. Fut Fox: velocidades e bot preso na parede (27/10/2026)
+
+- **Velocidades:** corrida 12,2 m/s (era 11,5) e mortal (pulo duplo com direção) 10 m/s (era 11): o mortal agora é mais lento que correr.
+- **Bug do bot preso:** o plano de subir na parede só vencia quando o bot estava colado; se não conseguia colar (sem grude ou sem velocidade) ele ficava empurrando o muro para sempre. Agora o plano vence também no chão. Além disso, há uma proteção geral: querendo andar e sem sair do lugar por ~1,2 s (muro, canto, rede), o bot se afasta para o meio do campo, de lado, por 0,9 s. Teste em `preso.test.ts` (reproduz o caso e mede janelas de 3 s paradas).
 
 ## 3. Limites e riscos
 

@@ -49,10 +49,10 @@ export const BOL_AIR_ACCEL = 9;
 export const BOL_JUMP = 7;
 export const BOL_AIR_JUMP = 6.6;
 /**
- * Corrida (spec 053): Shift/botão. Um pouco acima do mortal (11): a corrida já é rápida, o mortal vale pelo chute. Acelera mais devagar que
+ * Corrida (spec 053): Shift/botão. Acima do mortal (10): o pulo duplo com direção é mais lento que correr, e vale pelo chute. Acelera mais devagar que
  * andar (a raposa leva mais tempo para virar e parar correndo).
  */
-export const BOL_RUN_SPEED = 11.5;
+export const BOL_RUN_SPEED = 12.2;
 export const BOL_RUN_ACCEL = 18;
 /** Fôlego de 0 a 100: gasta correndo, fica parado `HOLD` s depois de correr e só então recarrega (devagar). */
 export const BOL_STAM_MAX = 100;
@@ -83,7 +83,7 @@ export const BOL_WALL_JUMP = 8;
 /** Mortal (pulo duplo com direção): impulso da raposa, janela em que o chute vale e alcance extra. */
 export const BOL_FLIP_SEC = 0.5;
 export const BOL_FLIP_WINDOW = 0.4;
-export const BOL_FLIP_SPEED = 11;
+export const BOL_FLIP_SPEED = 10;
 export const BOL_FLIP_LIFT = 5.4;
 export const BOL_FLIP_REACH = 0.35;
 /** Velocidade mínima da bola, na direção do mortal, logo após o chute (m/s), mais esta fração da velocidade da raposa. */
