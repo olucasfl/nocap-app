@@ -1,14 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import type { AtravessaInput, AtravessaResult } from '@nocap/games';
-import { BackButton } from '@/components/BackButton';
-import { HubCard, HubHero, HubNote, HubSteps, HubTabs } from '@/components/GameHub';
-import { AtravessaArt, FriendsArt } from '@/components/HubArt';
 import { Loader } from '@/components/Loader';
 import { MuteButton } from '@/components/MuteButton';
 import { SaveNote } from '@/components/GuestNotice';
-import { RoomBanner } from '@/components/RoomBanner';
 import { useAuth } from '@/lib/auth';
 import { soloSession } from '@/lib/solo-session';
 import { fetchStats, type Stats } from '@/lib/stats';
@@ -43,84 +39,7 @@ const serverBest = (stats: Stats | undefined) =>
     (stats?.modes.find((m) => m.game === 'atravessa' && m.mode === 'infinito')?.best ?? 0) / 10,
   );
 
-const HOW = [
-  'Pule de faixa em faixa e chegue o mais longe que der. Cada linha nova vale um ponto.',
-  'Desvie dos carros e do trem (a luz vermelha avisa). No rio, pise nas toras e nas pedras, nunca na água.',
-  'Parado numa faixa de descanso, um perigo desce pela sua coluna: pule para o lado.',
-  'O cenário muda a cada trecho: grama, deserto e, mais longe, a noite.',
-];
-
 const seedOf = () => crypto.randomUUID().replace(/-/g, '').slice(0, 12);
-
-function AtravessaMenu({ onStart, busy }: { onStart: () => void; busy: boolean }) {
-  const [tab, setTab] = useState<'jogar' | 'como'>('jogar');
-  const user = useAuth((s) => s.user);
-  const stats = useQuery({ queryKey: ['stats'], queryFn: fetchStats, enabled: !!user });
-  const best = user ? Math.max(localBest(), serverBest(stats.data)) : 0;
-  return (
-    <section className="screen gh">
-      <BackButton to="/" label="Jogos" />
-      <HubHero
-        accent="red"
-        art={<AtravessaArt />}
-        title="Atravessa!"
-        text="Pule, desvie e atravesse tudo. Sem fim: vale a distância."
-        stats={best > 0 ? [{ label: 'Seu recorde', value: `${best} linhas` }] : undefined}
-      />
-      <RoomBanner />
-      <HubTabs
-        value={tab}
-        onChange={setTab}
-        tabs={[
-          { id: 'jogar', label: 'Jogar' },
-          { id: 'como', label: 'Como jogar' },
-        ]}
-      />
-      {tab === 'jogar' ? (
-        <>
-          <div className="gh-modes">
-            <HubCard
-              tone="red"
-              art={<AtravessaArt />}
-              name="Infinito"
-              desc="Pule sem parar: vale a distância que você alcançar."
-              tags={['Sem fim', 'Offline']}
-              tag={best > 0 ? `Recorde ${best} linhas` : 'Sem recorde ainda'}
-              cta={busy ? 'Preparando...' : 'Jogar'}
-              disabled={busy}
-              onClick={onStart}
-              testId="atravessa-play"
-            />
-            <HubCard
-              tone="blue"
-              art={<FriendsArt />}
-              name="Com amigos"
-              desc="Cada um com a sua cor, no mesmo mapa."
-              tags={['2 a 8 jogadores', 'Sala com código']}
-              cta="Jogar com amigos"
-              to="/sala"
-              search={{ jogo: 'atravessa' }}
-              testId="atravessa-friends"
-            />
-          </div>
-          {!user && (
-            <HubNote>
-              Entre na sua conta para salvar no ranking, no histórico e nos recordes.
-            </HubNote>
-          )}
-        </>
-      ) : (
-        <>
-          <HubSteps title="Como jogar" steps={HOW} />
-          <HubNote>
-            No celular: toque pula para a frente e deslizar vai para o lado ou para trás. No
-            computador: W A S D.
-          </HubNote>
-        </>
-      )}
-    </section>
-  );
-}
 
 const VERDICT: Record<string, string> = {
   veiculo: 'ATROPELADO',
@@ -288,7 +207,7 @@ export function AtravessaGame() {
           setPhase('final');
         }}
         // vindo do Fox Cap!: sair da partida volta para lá
-        onQuit={() => (direct.treino ? void navigate({ to: '/fox-cap' }) : setPhase('menu'))}
+        onQuit={() => void navigate({ to: '/fox-cap' })}
         onRestart={() => void begin()}
         onOfflineInvite={() => void navigate({ to: '/fox-cap', search: { aba: 'amigos' } })}
       />
@@ -305,7 +224,6 @@ export function AtravessaGame() {
           <MuteButton />
         </div>
       </header>
-      {phase === 'menu' && <AtravessaMenu onStart={() => void begin()} busy={busy} />}
       {phase === 'final' && result && (
         <AtravessaFinal
           result={result}
@@ -314,7 +232,7 @@ export function AtravessaGame() {
           steps={steps}
           busy={busy}
           onAgain={() => void begin()}
-          onMenu={() => setPhase('menu')}
+          onMenu={() => void navigate({ to: '/fox-cap' })}
         />
       )}
     </Page>

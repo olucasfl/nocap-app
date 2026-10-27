@@ -23,7 +23,6 @@ const ROUTES: [string, string][] = [
   ['criar', '/criar-conta'],
   ['sala', '/sala?jogo=color'],
   ['foxcap', '/fox-cap'],
-  ['dsm', '/fox-cap/desmorona'],
 ];
 const SIZES: [string, number, number][] = [
   ['phone', 390, 844],

@@ -4,6 +4,7 @@ import {
   createRouter,
   lazyRouteComponent,
   Outlet,
+  redirect,
 } from '@tanstack/react-router';
 import { BottomNav } from '@/components/BottomNav';
 import type { GameTab } from '@/components/GameTabs';
@@ -155,6 +156,10 @@ const atravessaRoute = createRoute({
   path: '/atravessa',
   validateSearch: (search: Record<string, unknown>): { treino?: 1 } =>
     search.treino === 1 || search.treino === '1' ? { treino: 1 } : {},
+  // a tela antiga do jogo não existe mais: tudo começa no Fox Cap! (só a partida offline vem direto, com ?treino=1)
+  beforeLoad: ({ search }) => {
+    if (!search.treino) throw redirect({ to: '/fox-cap' });
+  },
   component: lazyRouteComponent(() => import('@/games/atravessa/AtravessaPage'), 'AtravessaPage'),
 });
 
@@ -166,16 +171,21 @@ const foxCapRoute = createRoute({
   component: lazyRouteComponent(() => import('@/games/desmorona/FoxCapPage'), 'FoxCapPage'),
 });
 
+// os endereços das telas antigas do Desmorona! e do Fut Fox levam ao Fox Cap! (links e favoritos antigos continuam valendo)
 const desmoronaRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/fox-cap/desmorona',
-  component: lazyRouteComponent(() => import('@/games/desmorona/DesmoronaPage'), 'DesmoronaPage'),
+  beforeLoad: () => {
+    throw redirect({ to: '/fox-cap' });
+  },
 });
 
 const bolaRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/fox-cap/bola',
-  component: lazyRouteComponent(() => import('@/games/bola/BolaPage'), 'BolaPage'),
+  beforeLoad: () => {
+    throw redirect({ to: '/fox-cap' });
+  },
 });
 
 const apertaRoute = createRoute({

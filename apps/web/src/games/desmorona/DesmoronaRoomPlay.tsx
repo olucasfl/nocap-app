@@ -33,7 +33,7 @@ export function DesmoronaRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
         online={online}
         dead={Object.keys(info?.dead ?? {})}
         onExit={() => {
-          void leaveRoom().then(() => navigate({ to: '/fox-cap/desmorona' }));
+          void leaveRoom().then(() => navigate({ to: '/fox-cap' }));
         }}
       />
     </div>

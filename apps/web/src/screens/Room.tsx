@@ -111,15 +111,9 @@ function Entry({
             ? '/tempo'
             : game === 'eco'
               ? '/eco'
-              : game === 'atravessa'
-                ? '/atravessa'
-                : game === 'desmorona'
-                  ? '/fox-cap/desmorona'
-                  : game === 'bola'
-                    ? '/fox-cap/bola'
-                    : game === 'foxcap'
-                      ? '/fox-cap'
-                      : '/cor'
+              : game === 'atravessa' || game === 'desmorona' || game === 'bola' || game === 'foxcap'
+                ? '/fox-cap'
+                : '/cor'
         }
         label="Voltar ao jogo"
       />
@@ -192,9 +186,14 @@ export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomG
     if (snapshot || !lastGame || message) return;
     if (status !== 'closed' && status !== 'idle') return;
     clearLastGame();
-    if (lastGame === 'desmorona') void navigate({ to: '/fox-cap/desmorona' });
-    else if (lastGame === 'bola') void navigate({ to: '/fox-cap/bola' });
-    else if (lastGame === 'foxcap') void navigate({ to: '/fox-cap' });
+    // os jogos do Fox Cap! (Fut Fox, Desmorona!, Atravessa!) voltam para a tela do Fox Cap!
+    if (
+      lastGame === 'desmorona' ||
+      lastGame === 'bola' ||
+      lastGame === 'foxcap' ||
+      lastGame === 'atravessa'
+    )
+      void navigate({ to: '/fox-cap' });
     else void navigate({ to: GAME_PAGE[lastGame], search: { aba: 'friends' } });
   }, [snapshot, lastGame, message, status, navigate]);
   // Dentro da sala o endereço é sempre o link dela (/sala/ABCD), para copiar do navegador e mandar.

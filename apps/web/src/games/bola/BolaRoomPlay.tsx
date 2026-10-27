@@ -108,7 +108,7 @@ export function BolaRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
   if (!b) return null;
   const isHost = snapshot.hostId === b.me;
   const onExit = () => {
-    void leaveRoom().then(() => navigate({ to: '/fox-cap/bola' }));
+    void leaveRoom().then(() => navigate({ to: '/fox-cap' }));
   };
 
   if (!link || fail) {

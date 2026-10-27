@@ -24,3 +24,7 @@ Pedido do Lucas em 26/10/2026. Status: **implementada; falta jogar com amigos re
 
 - Trocar o jogo só no lobby (não durante a partida).
 - As salas criadas pelo botão "Com amigos" dentro de cada jogo (por exemplo `/sala?jogo=bola`) continuam existindo, fixas no jogo.
+
+## Telas antigas removidas (27/10/2026)
+
+As páginas próprias do Fut Fox, do Desmorona! e do Atravessa! (menus com "Jogar", "Como jogar" e "Com amigos") saíram: o Fox Cap! é a única entrada. `/fox-cap/bola`, `/fox-cap/desmorona` e `/atravessa` (sem `?treino=1`) redirecionam para `/fox-cap`; sair de uma partida (offline ou em sala) e o fim do Atravessa! voltam para o Fox Cap!.

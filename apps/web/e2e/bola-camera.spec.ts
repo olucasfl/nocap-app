@@ -9,12 +9,12 @@ test('câmera na bola mantém a bola no quadro; câmera livre gira sem saltos', 
 }, info) => {
   test.skip(info.project.name !== 'desktop', 'um projeto basta');
   test.setTimeout(300_000);
-  await page.goto('/fox-cap/bola');
+  await page.goto('/fox-cap');
   await page
     .getByRole('button', { name: 'Agora não' })
     .click({ timeout: 1500 })
     .catch(() => undefined);
-  await page.getByTestId('bola-play-btn').click();
+  await page.getByTestId('foxcap-bola').click();
   await page.getByTestId('bola-fmt-2x2').click();
   await page.getByTestId('bola-start').click();
   await expect(page.getByTestId('bola-play')).toBeVisible();

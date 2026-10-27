@@ -160,3 +160,25 @@ test('menu: Controles e Convidar abrem POR CIMA do menu, nunca atrás', async ({
   await expect(page.getByTestId('invite-dialog')).toBeVisible();
   expect(await onTop('[data-testid="invite-dialog"] .gm-card')).toBe(true);
 });
+
+test('as telas antigas dos jogos não existem mais: os endereços levam ao Fox Cap!', async ({
+  page,
+}) => {
+  for (const url of ['/fox-cap/bola', '/fox-cap/desmorona', '/atravessa']) {
+    await page.goto(url);
+    await expect(page).toHaveURL(/\/fox-cap$/);
+    await expect(page.getByTestId('foxcap-bola')).toBeVisible();
+  }
+});
+
+test('sair da partida offline volta ao Fox Cap! (e não a uma tela antiga)', async ({ page }) => {
+  await page.getByTestId('foxcap-bola').click();
+  await page.getByTestId('bola-fmt-2x2').click();
+  await page.getByTestId('bola-start').click();
+  await expect(page.getByTestId('bola-play')).toBeVisible();
+  await page.getByTestId('bola-gear').click();
+  await page.getByTestId('bola-menu-exit').click();
+  await page.getByTestId('bola-menu-exit').click();
+  await expect(page).toHaveURL(/\/fox-cap$/);
+  await expect(page.getByTestId('foxcap-bola')).toBeVisible();
+});
