@@ -417,3 +417,13 @@ describe('sala do Fut Fox: partida ponto a ponto (spec 048)', () => {
     expect(snap(s.room, 'bia').winner).toBe(-1);
   });
 });
+
+describe('sala do Fut Fox: convite no meio da partida', () => {
+  it('a sala aceita entrar em partida, como espectador, e por isso aceita convidar', () => {
+    const s = playing();
+    expect(s.room.currentPhase).toBe('play');
+    expect(s.room.joinableInPlay).toBe(true);
+    s.room.join('caio', 'caio');
+    expect(s.room.has('caio')).toBe(true);
+  });
+});

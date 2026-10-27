@@ -107,6 +107,10 @@ export class BolaRoomEngine extends ColorRoomEngine {
 
   // ---- pessoas ----
 
+  override get joinableInPlay(): boolean {
+    return true;
+  }
+
   override join(id: string, username: string) {
     const existing = this.members.get(id);
     if (existing) {

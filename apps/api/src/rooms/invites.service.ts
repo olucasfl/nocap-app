@@ -4,7 +4,7 @@ import { limiter } from '../common/rate-limit';
 import { FriendsService } from '../friends/friends.service';
 import { InvitesStore } from './invites.store';
 
-/** Convites para sala: para qualquer pessoa com conta, e só enquanto a sala está no lobby e tem vaga. */
+/** Convites para sala: para qualquer pessoa com conta, e só enquanto a sala está no lobby (ou, no Fut Fox, em partida) e tem vaga. */
 @Injectable()
 export class InvitesService {
   readonly store = new InvitesStore();
@@ -39,8 +39,11 @@ export class InvitesService {
     try {
       const room = await matchMaker.getRoomById(code);
       if (!room || room.locked) return false;
-      const metadata = room.metadata as { phase?: string } | undefined;
-      return metadata?.phase === 'lobby' && room.clients < room.maxClients;
+      const metadata = room.metadata as { phase?: string; joinable?: boolean } | undefined;
+      return (
+        (metadata?.phase === 'lobby' || metadata?.joinable === true) &&
+        room.clients < room.maxClients
+      );
     } catch {
       return false;
     }

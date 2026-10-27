@@ -426,7 +426,7 @@ export class ColorRoom extends Room {
     try {
       if (me?.guest) throw new RoomError('Crie uma conta para convidar amigos.');
       if (!me || !roomDeps.invites) return;
-      if (this.engine.currentPhase !== 'lobby') {
+      if (this.engine.currentPhase !== 'lobby' && !this.engine.joinableInPlay) {
         throw new RoomError('Só dá para convidar no lobby');
       }
       const sent = await roomDeps.invites.send(me, String(username ?? ''), this.roomId, (id) =>
@@ -440,7 +440,10 @@ export class ColorRoom extends Room {
 
   protected publish() {
     // A fase vai nos metadados da sala: é como o serviço de convites sabe se ela ainda está no lobby.
-    void this.setMetadata({ phase: this.engine.currentPhase });
+    void this.setMetadata({
+      phase: this.engine.currentPhase,
+      joinable: this.engine.joinableInPlay,
+    });
     // Cada pessoa recebe o próprio estado: no Intruso, papel, cor e dica são secretos.
     for (const client of this.clients) {
       client.send('snapshot', this.engine.snapshot((client.userData as AuthData | undefined)?.id));

@@ -22,7 +22,7 @@ Pedido do Lucas em 26/10/2026. Status: **em andamento (Fut Fox, Desmorona! e Atr
 
 ## 3. Limites
 
-- Entrar numa sala do Desmorona! ou do Atravessa! no meio da rodada ainda não é possível (a sala recusa: "A partida já começou"); o convite serve para o convidado já estar no lobby quando a rodada acabar. No Fut Fox já é possível (entra como espectador).
+- Entrar numa sala do Desmorona! ou do Atravessa! no meio da rodada ainda não é possível (a sala recusa: "A partida já começou"); o convite serve para o convidado já estar no lobby quando a rodada acabar. No Fut Fox já é possível (entra como espectador). **Correção (27/10/2026):** o servidor só aceitava `invite` no lobby (e a lista de convites do convidado só mostrava salas no lobby), então "Chamar" no meio da partida do Fut Fox não fazia nada. Agora o motor declara `joinableInPlay` (só o Fut Fox) e vale para os dois.
 - O painel de rede dessas duas salas mostra só o ping até o servidor.
 
 ## 4. Celular deitado (26/10/2026)

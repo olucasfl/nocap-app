@@ -526,6 +526,11 @@ export class ColorRoomEngine {
     });
   }
 
+  /** Dá para entrar (e ser convidado) com a rodada em andamento? Só o Fut Fox: a pessoa chega como espectadora. */
+  get joinableInPlay(): boolean {
+    return false;
+  }
+
   get currentPhase(): Phase {
     return this.phase;
   }
