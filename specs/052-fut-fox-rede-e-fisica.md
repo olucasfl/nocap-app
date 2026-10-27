@@ -35,3 +35,8 @@ Medido no simulador de rede (`bola-rollback.sim.test.ts`, líder real, rede com 
 ## 5. Fases seguintes (ordem)
 4. Visual: mapa, iluminação, raposas, efeitos e animações (começou: sombra, rastro, poeira, friso).
 5. Teste em todos os aparelhos (computador, celular em pé e deitado, online, treino, 2 a 4 times).
+
+## 6. Cartaz do gol (27/10/2026, pedido do Lucas)
+- Só letras, sem fundo: "GOL DE <NOME>" na cor do time que ganhou o ponto, entrando letra por letra, e a velocidade pequena embaixo ("60 KM/H"). Sem lista de eventos.
+- **De quem é o gol:** de quem tocou por último sem ser do time que levou o gol, mesmo que o time dono do gol só tenha empurrado a bola para dentro (3 times: o amarelo toca, o azul põe no gol azul: é gol do amarelo; o azul ganha 1 gol contra nas estatísticas e o amarelo 1 gol). O evento `goal` traz `scorerId` = esse autor e `own` só é verdadeiro quando ninguém de outro time tocou.
+- Ninguém de outro time tocou: "GOL CONTRA" (com 2 times o ponto vai para o outro time); com 3 ou 4 times ninguém pontua, o aviso diz "GOL CONTRA" e, pequeno, que ninguém pontua porque ninguém do outro time tocou.

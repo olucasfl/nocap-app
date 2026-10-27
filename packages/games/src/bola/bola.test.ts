@@ -383,11 +383,13 @@ describe('gol', () => {
     expect(w.drainEvents().find((e) => e.type === 'goal')).toMatchObject({
       goalTeam: 0,
       scorerTeam: 2,
-      scorerId: null,
+      // o gol é de quem tocou por último sem ser do time que levou o gol (o amarelo, no exemplo do Lucas), e não "contra"
+      scorerId: 't2p0',
       ownerId: 't0p0',
-      own: true,
+      own: false,
     });
     expect(w.player('t0p0')!.stats.ownGoals).toBe(1);
+    expect(w.player('t2p0')!.stats.goals).toBe(1);
   });
 
   it('gol contra com 2 times e sem toque do outro time: o ponto vai para o outro time', () => {

@@ -410,9 +410,9 @@ export function BolaPlay({
           break;
       }
       if (e.type === 'goal') {
-        // só o nome de quem fez o gol (em gol contra, quem tocou) na cor do time que ganhou o ponto, e a velocidade pequena embaixo
-        const who = e.noTouch ? null : e.own ? e.ownerId : e.scorerId;
-        const title = who ? `GOL DE ${nameOf(who).toUpperCase()}` : 'GOL';
+        // o gol é de quem tocou por último sem ser do time que levou o gol (mesmo que o time dele só tenha empurrado para dentro),
+        // na cor do time que ganhou o ponto. Ninguém de outro time tocou: "GOL CONTRA" (com 2 times o ponto vai para o outro)
+        const title = e.scorerId ? `GOL DE ${nameOf(e.scorerId).toUpperCase()}` : 'GOL CONTRA';
         const sub = '';
         banner = {
           title,
@@ -430,10 +430,8 @@ export function BolaPlay({
         flashId++;
       } else if (e.type === 'nogoal') {
         banner = {
-          title: 'SEM GOL',
-          sub: e.ownerId
-            ? `Gol contra de ${nameOf(e.ownerId)} e ninguém de outro time tocou na bola: a bola volta ao centro`
-            : 'Ninguém tocou na bola: a bola volta ao centro',
+          title: 'GOL CONTRA',
+          sub: 'Ninguém pontua: ninguém do outro time tocou na bola',
           team: -1,
           id: feedId++,
         };

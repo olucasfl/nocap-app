@@ -762,16 +762,21 @@ export class BolWorld {
     if (this.field.teams > 2 && !this.golden)
       this.scores[goalTeam] = (this.scores[goalTeam] ?? 0) - 1;
     const noTouch = !last;
-    const own = ownerId !== null || noTouch;
+    // gol contra "de verdade": ninguém de outro time tocou na bola. Se alguém de outro time tocou por último antes
+    // (o time dono do gol só empurrou para dentro), o gol é desse alguém, com o time dele.
+    const own = credit === null;
     let assistId: string | null = null;
     if (ownerId) {
       const owner = this.player(ownerId);
       if (owner) owner.stats.ownGoals += 1;
-    } else if (last) {
-      const who = this.player(last.id);
+    }
+    if (credit) {
+      const who = this.player(credit.id);
       if (who) who.stats.goals += 1;
       const prev = this.prevTouch;
+      // assistência só no gol normal (o último toque foi do próprio autor)
       if (
+        credit === last &&
         prev &&
         prev.team === last.team &&
         prev.id !== last.id &&
@@ -787,7 +792,7 @@ export class BolWorld {
     this.events.push({
       type: 'goal',
       goalTeam,
-      scorerId: ownerId ? null : (last?.id ?? null),
+      scorerId: credit ? credit.id : null,
       scorerTeam,
       own,
       ownerId,

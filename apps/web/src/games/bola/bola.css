@@ -1243,3 +1243,9 @@
   -webkit-text-stroke-width: 4px;
   animation-delay: calc(var(--n, 4) * 55ms + 200ms);
 }
+
+/* aviso pequeno embaixo do título (por exemplo, "ninguém pontua") */
+.bola-banner .bola-banner-sub {
+  font-size: clamp(12px, 2.2vw, 17px);
+  -webkit-text-stroke-width: 3px;
+}
