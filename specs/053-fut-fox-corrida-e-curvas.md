@@ -34,6 +34,10 @@ Pedido do Lucas em 27/10/2026. Status: **em andamento (motor, rede e tela feitos
 
 Os comandos antes apareciam o jogo todo (uma caixa de teclas fixa) e voltavam a cada partida (a dica só valia como vista ao tocar em "Entendi"). Agora a dica aparece só na primeira partida da pessoa, durante a contagem de 3 s, e vale como vista assim que aparece (`GameTips markOnShow`); a caixa fixa foi removida. Para rever: Config. (Esc) e Controles.
 
+## 2e. Desmorona!: câmera igual à solta do Fut Fox (27/10/2026)
+
+A câmera do Desmorona! agora orbita a raposa como a câmera solta do Fut Fox: 8,6 m de distância, acompanha com a mesma suavidade, giro e altura (0,12 a 1,25 rad, começa em 0,5) escolhidos pela pessoa (mouse, dedo na metade direita, Q e E) e campo de visão de 60 graus (78 em tela em pé). Um quadro nunca gira a câmera além do limite (mesmo cuidado do Fut Fox). As camadas acima da raposa continuam ficando transparentes.
+
 ## 3. Limites e riscos
 
 - Cinco toques no Shift abrem as "Teclas de Aderência" do Windows; está avisado em Comandos, mas não há tecla alternativa.

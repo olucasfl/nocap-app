@@ -233,6 +233,7 @@ export function DesmoronaPlay({
       if (mouseUser) controls.requestLock();
     }
     let yaw = 0;
+    let pitch = 0.5;
     controls.allowLock = true;
 
     let phase: Hud['phase'] = 'ready';
@@ -403,8 +404,15 @@ export function DesmoronaPlay({
         if (input.jump) jumpUntil = now + JUMP_BUFFER_MS;
         input.jump = false;
         // a câmera gira com o mouse, o dedo (metade direita) ou Q e E; o movimento é sempre relativo a ela
-        yaw += controls.takeYaw(dt);
+        // igual à câmera solta do Fut Fox: um quadro nunca gira mais que isso, e a altura vai do quase rente ao quase de cima
+        const cap = 0.3 * Math.max(1, dt * 60);
+        yaw += Math.max(-cap, Math.min(cap, controls.takeYaw(dt)));
+        pitch = Math.min(
+          1.25,
+          Math.max(0.12, pitch + Math.max(-0.2, Math.min(0.2, controls.takePitch()))),
+        );
         scene.setYaw(yaw);
+        scene.setPitch(pitch);
         if (import.meta.env.DEV) (window as unknown as { __dsmYaw?: number }).__dsmYaw = yaw;
         if (input.mx !== 0 || input.mz !== 0) {
           const sy = Math.sin(yaw);

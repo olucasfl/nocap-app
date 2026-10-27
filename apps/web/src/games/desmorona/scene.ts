@@ -22,9 +22,8 @@ const WAVE_COLOR = new THREE.Color(0xff9d2e);
 const STEP_MIX = 0.35;
 
 /** Câmera: atrás (para o sul) e acima, sempre olhando para o norte; W é sempre "para cima" na tela. */
-const CAM_BACK = 11;
-const CAM_UP = 9.5;
-const CAM_LOOK_UP = 1.2;
+/** A mesma câmera solta do Fut Fox: orbita a raposa a 8,6 m, com o giro e a altura (o ângulo) escolhidos pela pessoa. */
+const CAM_DIST = 8.6;
 
 interface LayerMesh {
   mesh: THREE.InstancedMesh;
@@ -98,6 +97,8 @@ export class DsmScene {
   private lava: THREE.Mesh;
   /** Giro da câmera em volta da raposa (rad); 0 = atrás, olhando para -Z. */
   private yaw = 0;
+  /** Altura da câmera (rad acima do horizonte). */
+  private pitch = 0.5;
   private camFocus = new THREE.Vector3();
   private shake = 0;
   private size = { w: 0, h: 0 };
@@ -296,7 +297,7 @@ export class DsmScene {
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / Math.max(1, h);
     // celular em pé: abre o campo de visão para a arena caber
-    this.camera.fov = this.camera.aspect < 1 ? 74 : 58;
+    this.camera.fov = this.camera.aspect < 1 ? 78 : 60;
     this.camera.updateProjectionMatrix();
   }
 
@@ -540,21 +541,23 @@ export class DsmScene {
     // câmera
     const target = this.world.players.find((p) => p.id === focusId);
     if (target) {
-      this.camFocus.lerp(tmpP.set(target.x, target.y, target.z), 1 - Math.exp(-dt * 7));
+      this.camFocus.lerp(tmpP.set(target.x, target.y, target.z), 1 - Math.exp(-dt * 10));
 
       this.shake = Math.max(0, this.shake - dt * 2.4);
       const sh = this.reduced ? 0 : this.shake * 0.35;
       const sy = Math.sin(this.yaw);
       const cy = Math.cos(this.yaw);
+      const ce = Math.cos(this.pitch);
+      const se = Math.sin(this.pitch);
       this.camera.position.set(
-        this.camFocus.x + sy * CAM_BACK + (Math.random() - 0.5) * sh,
-        this.camFocus.y + CAM_UP + (Math.random() - 0.5) * sh,
-        this.camFocus.z + cy * CAM_BACK,
+        this.camFocus.x + sy * ce * CAM_DIST + (Math.random() - 0.5) * sh,
+        this.camFocus.y + se * CAM_DIST + 0.7 + (Math.random() - 0.5) * sh,
+        this.camFocus.z + cy * ce * CAM_DIST,
       );
       this.camera.lookAt(
-        this.camFocus.x - sy * 1.5,
-        this.camFocus.y + CAM_LOOK_UP,
-        this.camFocus.z - cy * 1.5,
+        this.camFocus.x - sy * 1.2,
+        1 + this.camFocus.y * 0.85,
+        this.camFocus.z - cy * 1.2,
       );
       this.fadeUpperLayers(dt, target.y);
     }
@@ -564,6 +567,10 @@ export class DsmScene {
 
   setYaw(yaw: number) {
     this.yaw = yaw;
+  }
+
+  setPitch(pitch: number) {
+    this.pitch = pitch;
   }
 
   /** Sacode a câmera (empurrão sofrido). */
