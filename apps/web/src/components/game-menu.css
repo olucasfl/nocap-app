@@ -342,3 +342,16 @@
   max-height: calc(100dvh - 32px);
   overflow-y: auto;
 }
+
+/* convidar usa o tema do app (claro ou escuro): o painel de dentro é feito com as cores do tema */
+.gm-card.is-wide {
+  background: var(--paper);
+  color: var(--ink);
+  border-color: var(--ink);
+}
+.gm-card.is-wide .gm-item {
+  background: var(--white, #fff);
+  color: var(--ink, #1b1535);
+  border-color: var(--ink, #1b1535);
+  box-shadow: 0 3px 0 var(--ink, #1b1535);
+}

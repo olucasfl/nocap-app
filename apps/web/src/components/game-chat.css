@@ -134,11 +134,11 @@
   flex-direction: column;
   gap: 8px;
   padding: 10px;
-  border: 4px solid #1b1535;
+  border: 4px solid var(--ink, #1b1535);
   border-radius: 18px;
-  background: #fff;
-  color: #1b1535;
-  box-shadow: 0 6px 0 #1b1535;
+  background: var(--paper, #fff);
+  color: var(--ink, #1b1535);
+  box-shadow: 0 6px 0 var(--ink, #1b1535);
 }
 .gc-head {
   display: flex;
@@ -154,7 +154,7 @@
 }
 .gc-title h2 {
   margin: 0;
-  color: #1b1535;
+  color: var(--ink, #1b1535);
   font: 900 15px var(--font-display, system-ui);
   text-transform: uppercase;
   letter-spacing: 0.02em;
@@ -166,10 +166,10 @@
   width: 34px;
   height: 34px;
   padding: 0;
-  border: 2.5px solid #1b1535;
+  border: 2.5px solid var(--ink, #1b1535);
   border-radius: 10px;
-  background: #fff;
-  color: #1b1535;
+  background: var(--white, #fff);
+  color: var(--ink, #1b1535);
   cursor: pointer;
 }
 .gc-x .gc-key {
@@ -183,7 +183,7 @@
 }
 .gc-panel .ch-list {
   min-height: 0;
-  background: #f4f4ef;
+  background: var(--white, #f4f4ef);
   border-width: 2.5px;
 }
 .gc-panel .ch-msg {
