@@ -9,6 +9,9 @@ import {
   DSM_LAVA_DEPTH,
   DSM_LAYERS,
   DSM_MAX_FALL,
+  DSM_KNOCK_DECAY,
+  DSM_PUSH,
+  DSM_PUSH_GAIN,
   DSM_PUSH_MIN_SPEED,
   DSM_SPEED,
   DSM_TILE_LIFE,
@@ -53,6 +56,10 @@ export interface DsmBotMemory {
   wobble: number;
   /** Já apertou o pulo do chão neste plano. */
   jumped: boolean;
+  /** Está caçando alguém agora (de tempos em tempos decide caçar; entre uma caçada e outra só aproveita a chance). */
+  hunting: boolean;
+  /** Hora (s do jogo) em que decide de novo se caça. */
+  huntCheck: number;
 }
 
 export const newBotMemory = (patience = 0, aggro = 0): DsmBotMemory => ({
@@ -69,6 +76,8 @@ export const newBotMemory = (patience = 0, aggro = 0): DsmBotMemory => ({
   thinkAt: 0,
   wobble: 0,
   jumped: false,
+  hunting: false,
+  huntCheck: 0,
 });
 
 const STOP: DsmInput = { mx: 0, mz: 0, jump: false };
@@ -291,6 +300,8 @@ function safeDist(world: DsmWorld, stepped: Map<DsmTile, number>, s: Sim): numbe
 }
 
 interface Foe {
+  /** É uma pessoa (os bots preferem ela). */
+  human: boolean;
   x: number;
   y: number;
   z: number;
@@ -324,6 +335,7 @@ function rate(
   const state = { jumped: false };
   const startLayer = p.grounded ? p.layer : -1;
   let t = world.t;
+  /** O melhor empurrão que este plano dá (nota). */
   let hit = 0;
   // enquanto ensaia, o bot lembra o tempo no ar sem chão
   for (let i = 0; i < SIM_STEPS + 45; i++) {
@@ -335,13 +347,26 @@ function rate(
     stepSim(world, stepped, t, s, phase ? mx : 0, phase ? mz : 0, jump);
     t += SIM_DT;
     if (s.y < LAVA_Y) return -500 + (t - world.t) * 40;
-    if (aggro > 0 && hit === 0 && phase) {
+    if (aggro > 0 && phase) {
       for (const f of foes) {
         const fx = f.x + f.vx * (t - world.t);
         const fz = f.z + f.vz * (t - world.t);
-        if (Math.abs(f.y - s.y) < 1.1 && Math.hypot(fx - s.x, fz - s.z) < 0.95) {
-          if (Math.hypot(s.vx, s.vz) > DSM_PUSH_MIN_SPEED) hit = 1;
-        }
+        const dx = fx - s.x;
+        const dz = fz - s.z;
+        const d = Math.hypot(dx, dz);
+        if (Math.abs(f.y - s.y) >= 1.1 || d >= 0.95) continue;
+        const closing = (s.vx * dx + s.vz * dz) / Math.max(d, 1e-6);
+        if (closing <= DSM_PUSH_MIN_SPEED) continue;
+        // para onde o empurrão leva o outro: se ali não há chão, é uma queda (o que o bot quer)
+        const nx = dx / Math.max(d, 1e-6);
+        const nz = dz / Math.max(d, 1e-6);
+        const slide = (DSM_PUSH + closing * DSM_PUSH_GAIN) / DSM_KNOCK_DECAY;
+        const tt = t + 0.25;
+        const falls =
+          !support(world, stepped, tt, s.layer, fx + nx * slide * 0.5, fz + nz * slide * 0.5) ||
+          !support(world, stepped, tt, s.layer, fx + nx * slide, fz + nz * slide);
+        const value = (3 + (falls ? 12 : 0)) * (f.human ? 2.2 : 1);
+        if (value > hit) hit = value;
       }
     }
   }
@@ -351,7 +376,7 @@ function rate(
   if (startLayer >= 0) score -= (s.layer - startLayer) * 9;
   else score -= s.layer * 3;
   // cada ladrilho pisado some em menos de 1 s: andar devagar, só no que precisa, faz o chão durar
-  score -= 1.1 * stepped.size;
+  score -= 0.5 * stepped.size;
   score += 1.6 * Math.min(9, roomAround(world, stepped, t, s, plan.a, foes));
   // o ladrilho em que termina já está contando: quanto menos vida, pior (vai ter que sair logo)
   const here = support(world, stepped, t, s.layer, s.x, s.z);
@@ -368,7 +393,16 @@ function rate(
   // (e pular o tempo todo evita pisar nos ladrilhos mas é de coelho, não de jogador: o pulo só entra para vencer um buraco ou se salvar)
   if (state.jumped) score -= 5.5;
   if (plan.air > 0 && s.airJumped) score -= 3;
-  score += hit * 2.5 * aggro;
+  score += hit * aggro;
+  // caçando: aproximar-se de quem está por perto (as pessoas contam mais)
+  if (aggro > 0.5 && foes.length > 0) {
+    let near = 12;
+    for (const f of foes) {
+      const d = Math.hypot(f.x + f.vx * 0.5 - s.x, f.z + f.vz * 0.5 - s.z) - (f.human ? 5 : 0);
+      if (d < near) near = d;
+    }
+    score -= 0.3 * Math.max(0, near);
+  }
   return score;
 }
 
@@ -379,7 +413,7 @@ function candidates(grounded: boolean): Plan[] {
     const a = (k / ANGLES) * Math.PI * 2;
     if (grounded) {
       // no chão: andando devagar ou correndo; pular só na borda do ladrilho (ou assim que puder, para vencer um buraco)
-      for (const v of [0.45, 1]) {
+      for (const v of [0.85, 1]) {
         for (const j of [0, 1, 2] as const) out.push({ a, j, air: j === 1 ? 1 : 0, v });
       }
     } else {
@@ -404,16 +438,38 @@ export function botInput(
 ): DsmInput {
   if (!p.alive) return STOP;
   if (world.t >= mem.thinkAt || !mem.plan) {
-    // quem está por perto na mesma camada: o bot foge de onde eles gastam o chão (e o agressivo corre atrás para empurrar)
+    // quem está por perto na mesma camada: o bot foge de onde eles gastam o chão e, caçando, vai atrás deles
     const foes: Foe[] = [];
     for (const o of world.players) {
       if (o === p || !o.alive || Math.abs(o.y - p.y) > 1.1) continue;
       const d = Math.hypot(o.x - p.x, o.z - p.z);
-      if (d < 9) foes.push({ x: o.x, y: o.y, z: o.z, vx: o.vx, vz: o.vz });
+      if (d < 16) foes.push({ human: !o.bot, x: o.x, y: o.y, z: o.z, vx: o.vx, vz: o.vz });
     }
+    // de tempos em tempos decide caçar (nem sempre: uns são mais caçadores); entre uma caçada e outra só aproveita a chance
+    if (world.t >= mem.huntCheck) {
+      mem.huntCheck = world.t + 2.5 + rng() * 3.5;
+      mem.hunting = rng() < 0.35 + 0.6 * mem.aggro;
+    }
+    const eff = mem.hunting ? 1 : 0.3;
     const plans = candidates(p.grounded || p.coyote > 0);
+    if (mem.hunting && p.grounded) {
+      // passar na frente: corre para onde o alvo vai estar (a pessoa primeiro), a toda velocidade
+      const targets = [...foes].sort(
+        (a, b) =>
+          Math.hypot(a.x - p.x, a.z - p.z) -
+          (a.human ? 6 : 0) -
+          (Math.hypot(b.x - p.x, b.z - p.z) - (b.human ? 6 : 0)),
+      );
+      for (const f of targets.slice(0, 2)) {
+        const d = Math.hypot(f.x - p.x, f.z - p.z);
+        const lead = Math.min(0.9, d / (DSM_SPEED * 1.1));
+        const tx = f.x + f.vx * lead;
+        const tz = f.z + f.vz * lead;
+        plans.push({ a: Math.atan2(tx - p.x, tz - p.z), j: 0, air: 0, v: 1 });
+      }
+    }
     const scored = plans.map((plan) => {
-      let sc = rate(world, p, plan, foes, mem.aggro);
+      let sc = rate(world, p, plan, foes, eff);
       // não fica trocando de ideia a cada instante: o plano atual leva uma folga
       const cur = mem.plan;
       if (cur && cur.a === plan.a) sc += 0.7;

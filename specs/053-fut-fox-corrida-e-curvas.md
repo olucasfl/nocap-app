@@ -62,6 +62,12 @@ Pedido do Lucas: depois de um tempo, com gente ainda jogando, começam ondas de 
 - **Rede:** a onda só usa a semente e a geometria, então todo aparelho marca os mesmos ladrilhos na mesma hora (a única dependência é em que camadas há raposas, que vem dos relatos de posição).
 - Código: `world.ts` (`updateWaves`, `shapeWave`, eventos `wave` e `wavefall`, `DsmWaveInfo`), `constants.ts` (`DSM_WAVE_*`), `bots.ts`, `scene.ts` (cor pulsante), `DesmoronaPlay.tsx` (aviso e sons) e `desmorona.css`.
 
+## 2i. Desmorona!: bots mais rápidos e caçadores (27/10/2026)
+
+- **Mais rápidos:** as velocidades do plano passaram de 0,45 e 1 para 0,85 e 1 e o custo por ladrilho pisado caiu de 1,1 para 0,5: média de ~4,75 m/s (77% dos 6,2 da raposa; antes ~3,5). As primeiras mortes de bot vêm aos ~65 s (eram 90 a 107 s com o planejador lento e 35 s no original).
+- **Caçadores:** cada bot decide, a cada 2,5 a 6 s, se caça (35% a 65% de chance, conforme o perfil); fora da caçada só aproveita a chance (30% do interesse). Caçando, o bot corre para onde o alvo vai estar (passar na frente), prefere a pessoa (peso 2,2 no empurrão, escolha do alvo e aproximação) e valoriza muito o empurrão que joga o outro onde não há chão (3 pontos, 15 se cai). Medido: ~30 empurrões em uma "pessoa" em ~80 s e ela morre antes dos bots em 2 de 3 partidas.
+- Teste `bots caçadores` em `desmorona.test.ts`.
+
 ## 3. Limites e riscos
 
 - Cinco toques no Shift abrem as "Teclas de Aderência" do Windows; está avisado em Comandos, mas não há tecla alternativa.

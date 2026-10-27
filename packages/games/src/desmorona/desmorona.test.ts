@@ -501,3 +501,50 @@ describe('ondas de queda', () => {
     expect(caught / seen).toBeLessThan(0.3);
   }, 90_000);
 });
+
+describe('bots caçadores', () => {
+  it('andam rápido (perto da velocidade da raposa), caçam a pessoa de tempos em tempos e ainda duram', () => {
+    let speedSum = 0;
+    let speedN = 0;
+    let pushesAtHuman = 0;
+    let firstBotDeath = 0;
+    for (const seed of ['cacada1', 'cacada2']) {
+      // p0 é "a pessoa" (não é bot para o jogo, mas uma cabeça de bot a controla)
+      const list = Array.from({ length: 4 }, (_, i) => ({
+        id: `p${i}`,
+        name: `P${i}`,
+        color: 0xff7d26,
+        bot: i > 0,
+      }));
+      const w = new DsmWorld(seed, list);
+      let i = 0;
+      const mem = new Map(
+        w.players.map((p) => [
+          p.id,
+          newBotMemory((i % 4) * 0.15, p.id === 'p0' ? 0 : i++ % 3 === 0 ? 0.5 : 0),
+        ]),
+      );
+      const rng = createRng(`${seed}:bots`);
+      while (!w.ended && w.t < 80) {
+        const inputs: Record<string, DsmInput> = {};
+        for (const p of w.players) inputs[p.id] = botInput(w, p, mem.get(p.id)!, rng);
+        for (const p of w.players) {
+          if (p.bot && p.alive && p.grounded && w.t > 3) {
+            speedSum += Math.hypot(p.vx, p.vz);
+            speedN++;
+          }
+        }
+        w.step(DSM_DT, inputs);
+        for (const e of w.drainEvents()) {
+          if (e.type === 'push' && e.to === 'p0') pushesAtHuman++;
+          if (e.type === 'dead' && e.id !== 'p0' && firstBotDeath === 0) firstBotDeath = w.t;
+        }
+      }
+    }
+    // a raposa anda a 6,2 m/s: média de pelo menos 4 m/s (incluindo as paradas para pensar e os pulos)
+    expect(speedSum / speedN).toBeGreaterThan(4);
+    expect(pushesAtHuman).toBeGreaterThan(15);
+    // ... sem se esgotar rápido: nenhum bot morre antes de 40 s
+    expect(firstBotDeath === 0 || firstBotDeath > 40).toBe(true);
+  }, 90_000);
+});
