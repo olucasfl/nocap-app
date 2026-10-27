@@ -147,8 +147,8 @@ export function buildField(teams: number, perTeam: number): BolField {
     radius = 5.5;
     goalOfOriginal = (i) => (i % 2 === 0 ? i / 2 : -1);
   } else {
-    const hx = n === 2 ? 16 + 4.5 * k : 22 + 4 * k;
-    const hz = n === 2 ? 10 + 3 * k : hx;
+    const hx = n === 2 ? 18 + 5 * k : 22 + 4 * k;
+    const hz = n === 2 ? 11.5 + 3.4 * k : hx;
     base = [
       [hx, -hz],
       [hx, hz],

@@ -46,3 +46,6 @@ Medido no simulador de rede (`bola-rollback.sim.test.ts`, líder real, rede com 
 - Estado novo por corpo: `surf` (0 chão/ar, 1 parede, 2 teto), `stick`, normal da parede `wnx`/`wnz`; vai no quadro (bits 16 e 32 das flags e três números por raposa) e a previsão com rollback usa.
 - **Câmera:** o mundo nunca vira (a câmera fica sempre com o céu em cima). Na parede ela se alinha sozinha de frente para a parede e não gira nem vai para a bola, então "para frente" na tela continua sendo "para a parede" e os controles nunca invertem; fica baixa na parede e no teto e nunca passa do teto de vidro.
 - **Animação:** na parede o corpo deita de lado (pés na parede, cabeça para onde sobe ou anda); no teto fica de cabeça para baixo; ao soltar ou cair gira uma volta inteira até ficar em pé. Barrinha do grude embaixo da tela.
+
+## 8. Campo de 2 times um pouco maior (27/10/2026)
+Formatos 1x1, 2x2 e 3x3 (2 times): meio-comprimento 16 + 4,5k -> 18 + 5k e meia-largura 10 + 3k -> 11,5 + 3,4k (cerca de 12% maior: 1x1 de 41x26 m para 46x30 m; 2x2 de 50x32 para 56x37; 3x3 de 59x38 para 66x43). 3 e 4 times ficam como estavam.
