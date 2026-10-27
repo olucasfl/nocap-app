@@ -4,6 +4,7 @@ import type { AddressInfo } from 'node:net';
 import { resolve } from 'node:path';
 import { Server } from 'colyseus';
 import { WebSocketTransport } from '@colyseus/ws-transport';
+import { buildField } from '@nocap/games';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { Auth } from '../auth/auth';
 import { BolaRoom, roomDeps } from './color.room';
@@ -56,6 +57,8 @@ interface Snap {
   };
 }
 interface Frame {
+  /** Passo da simulação (spec 052). */
+  k: number;
   ph: string;
   ck: number;
   p: number[][];
@@ -148,6 +151,41 @@ describe('sala do Fut Fox com servidor de verdade', () => {
     const lastTick = ana.frames[ana.frames.length - 1]!;
     expect(rowOf(lastTick)[9]).toBeGreaterThanOrEqual(sentTick - 4);
     expect(typeof lastTick.k).toBe('number');
+    // parede (spec 052): a bia corre contra o muro mais perto, pela rampa, e o quadro passa a trazer o grude e a normal da parede
+    const fld = buildField(2, 1);
+    const maxX = fld.edges.reduce((m, e) => Math.max(m, Math.abs(e.ax)), 0);
+    let wallSeen = false;
+    let wallRow: number[] | null = null;
+    for (let i = 0; i < 200 && !wallSeen; i++) {
+      const fr = ana.frames[ana.frames.length - 1]!;
+      const r = rowOf(fr);
+      // primeiro sai da boca do gol onde a corrida anterior a deixou (para o meio), depois corre para o muro comprido mais perto
+      const inGoal = Math.abs(r[1]!) > maxX - 1;
+      let dx = -Math.sign(r[1]!);
+      let dz = 0;
+      if (!inGoal) {
+        const long = fld.edges.filter((e) => e.goal < 0 && e.len > 10);
+        const edge = long.reduce((m, e) => {
+          const d = (r[1]! - e.ax) * e.nx + (r[3]! - e.az) * e.nz;
+          const dm = (r[1]! - m.ax) * m.nx + (r[3]! - m.az) * m.nz;
+          return d < dm ? e : m;
+        });
+        dx = -edge.nx;
+        dz = -edge.nz;
+      }
+      bia.room.send('bin', [fr.k + 3, 1, Math.round(dx * 100), Math.round(dz * 100), 0]);
+      await wait(33);
+      const now = rowOf(ana.frames[ana.frames.length - 1]!);
+      if (((now[8] as number) & 16) === 16) {
+        wallSeen = true;
+        wallRow = now;
+      }
+    }
+    expect(wallSeen).toBe(true);
+    // a linha do corpo tem o grude (0 a 3,2) e a normal da parede (módulo 1)
+    expect(wallRow![15]).toBeGreaterThan(0);
+    expect(wallRow![15]).toBeLessThanOrEqual(3.2);
+    expect(Math.hypot(wallRow![16]!, wallRow![17]!)).toBeGreaterThan(0.9);
     // o líder encerra
     ana.room.send('bend');
     await until(() => ana.snap?.phase === 'final' && bia.snap?.phase === 'final');
