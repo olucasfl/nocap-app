@@ -54,8 +54,14 @@ export function GameTips({
     setOpen(false);
     onDone?.();
   };
-  return (
-    <div className="gm-tips" role="dialog" aria-label={title} data-testid={testId ?? 'game-tips'}>
+  const card = (
+    <div
+      className={`gm-tips${forced ? ' is-modal' : ''}`}
+      role="dialog"
+      aria-label={title}
+      data-testid={testId ?? 'game-tips'}
+      onClick={(e) => e.stopPropagation()}
+    >
       <h2>{title}</h2>
       <ul>
         {rows.map((r, i) => (
@@ -69,5 +75,13 @@ export function GameTips({
         Entendi
       </button>
     </div>
+  );
+  // aberto pelo menu: janela por cima de tudo (inclusive do menu), fechando ao tocar fora
+  return forced ? (
+    <div className="gm-wrap is-top" onClick={done}>
+      {card}
+    </div>
+  ) : (
+    card
   );
 }

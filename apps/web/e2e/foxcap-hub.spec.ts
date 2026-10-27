@@ -134,3 +134,29 @@ test('Fut Fox 4 times: avisos e cartaz ficam abaixo do placar e do tempo, nunca 
     if (box && board) expect(box.y).toBeGreaterThanOrEqual(board.y + board.height - 1);
   }
 });
+
+test('menu: Controles e Convidar abrem POR CIMA do menu, nunca atrás', async ({ page }) => {
+  await page.getByTestId('foxcap-desmorona').click();
+  await page.getByTestId('dsm-start').click();
+  await expect(page.getByTestId('dsm-play')).toBeVisible();
+  await page
+    .getByTestId('game-tips-ok')
+    .click({ timeout: 8000 })
+    .catch(() => undefined);
+  await page.getByTestId('dsm-menu-btn').click();
+  await page.getByTestId('dsm-menu-controls').click();
+  const onTop = async (sel: string) =>
+    page.evaluate((s) => {
+      const el = document.querySelector(s) as HTMLElement;
+      const r = el.getBoundingClientRect();
+      const at = document.elementFromPoint(r.x + r.width / 2, r.y + 20);
+      return !!at && el.contains(at);
+    }, sel);
+  await expect(page.locator('.gm-tips.is-modal')).toBeVisible();
+  expect(await onTop('.gm-tips.is-modal')).toBe(true);
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.gm-tips.is-modal')).toHaveCount(0);
+  await page.getByTestId('dsm-menu-invite').click();
+  await expect(page.getByTestId('invite-dialog')).toBeVisible();
+  expect(await onTop('[data-testid="invite-dialog"] .gm-card')).toBe(true);
+});

@@ -20,7 +20,7 @@ export function InviteDialog({
   const snapshot = useRoom((s) => s.snapshot);
   return (
     <div
-      className="gm-wrap"
+      className="gm-wrap is-top"
       role="dialog"
       aria-modal="true"
       aria-label="Convidar"

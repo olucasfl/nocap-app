@@ -330,3 +330,15 @@
     grid-column: 1 / -1;
   }
 }
+
+/* controles abertos pelo menu: uma janela por cima do menu, nunca atrás dele */
+.gm-wrap.is-top {
+  z-index: 90;
+}
+.gm-tips.is-modal {
+  position: static;
+  transform: none;
+  width: min(480px, 100%);
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+}
