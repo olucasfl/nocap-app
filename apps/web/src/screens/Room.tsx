@@ -267,7 +267,7 @@ export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomG
     return <DesmoronaRoomPlay snapshot={snapshot} />;
   }
 
-  if (snapshot?.game === 'bola' && snapshot.phase === 'play') {
+  if (snapshot?.game === 'bola' && (snapshot.phase === 'play' || snapshot.phase === 'final')) {
     return <BolaRoomPlay snapshot={snapshot} />;
   }
 

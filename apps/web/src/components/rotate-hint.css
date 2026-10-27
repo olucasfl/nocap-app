@@ -1,0 +1,58 @@
+/* Aviso de "vire a tela" (celular em pé). Pequeno, no alto, sem pegar toque. Só transform e opacity animam. */
+.rh {
+  position: absolute;
+  left: 50%;
+  top: max(62px, calc(env(safe-area-inset-top) + 54px));
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 92%;
+  padding: 7px 12px;
+  border: 3px solid #1b1535;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  color: #1b1535;
+  font: 800 12px/1.2 var(--font-display, system-ui);
+  pointer-events: none;
+  transform: translateX(-50%);
+  animation: rh-life var(--rh-s, 7s) ease-in-out both;
+}
+.rh-icon {
+  flex: none;
+  animation: rh-turn 1.6s ease-in-out infinite;
+}
+@keyframes rh-life {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-8px);
+  }
+  6%,
+  88% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-4px);
+  }
+}
+@keyframes rh-turn {
+  0%,
+  25% {
+    transform: rotate(0);
+  }
+  60%,
+  100% {
+    transform: rotate(-90deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rh {
+    animation: none;
+  }
+  .rh-icon {
+    animation: none;
+    transform: rotate(-90deg);
+  }
+}

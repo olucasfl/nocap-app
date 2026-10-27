@@ -14,6 +14,7 @@ import { GameChat } from '@/components/GameChat';
 import { gameChatOpen } from '@/lib/game-chat-state';
 import { GameMenu, GearButton, Keycap, NetBadge } from '@/components/GameMenu';
 import { GameTips, type TipRow } from '@/components/GameTips';
+import { RotateHint } from '@/components/RotateHint';
 import { IcCamera, IcJump } from '@/games/bola/BolaIcons';
 import { dsmSfx } from '@/lib/desmorona-audio';
 import { currentRtt, sendRoomQuiet, serverNow, subscribeRoom } from '@/lib/rooms';
@@ -689,6 +690,7 @@ export function DesmoronaPlay({
           items={[{ text: `${ping} ms`, title: 'ida e volta até o servidor' }]}
         />
       )}
+      {!result && <RotateHint />}
       {hud.phase === 'ready' && !result && (
         <GameTips storageKey={TIPS_KEY} rows={tipRows(touchDevice)} testId="dsm-tips" markOnShow />
       )}

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { roomLink, type BolaLink, type BolaRosterRow } from '@/lib/bola-link';
 import { BolaHostSession, BolaPeerSession } from '@/lib/bola-p2p';
-import { leaveRoom, sendRoom, type RoomSnapshot } from '@/lib/rooms';
+import { at, closeRoom, leaveRoom, sendRoom, useRoom, type RoomSnapshot } from '@/lib/rooms';
 import { BolaPlay, type BolaSetup } from './BolaPlay';
 import '../desmorona/desmorona.css';
 import './bola.css';
@@ -29,6 +29,7 @@ export function BolaRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
   const p2pSetup = b?.setup ?? null;
   const [p2p, setP2p] = useState<P2p>({ kind: 'none' });
   const [fail, setFail] = useState('');
+  const message = useRoom((s) => s.message);
   const [liveRoster, setLiveRoster] = useState<BolaRosterRow[] | null>(null);
   const sessionRef = useRef<P2p>({ kind: 'none' });
 
@@ -143,6 +144,28 @@ export function BolaRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
             : undefined
         }
         onExit={onExit}
+        roomFinal={{
+          active: snapshot.phase === 'final',
+          scores: b.scores,
+          winner: b.winner ?? -1,
+          mode: {
+            kind: 'room',
+            members: snapshot.members.map((m) => ({
+              id: m.id,
+              name: m.guest ? m.username : at(m.username),
+              team: b.teamOf[m.id] ?? -1,
+              connected: m.connected,
+              rematch: m.rematch,
+              host: m.isHost,
+            })),
+            voted: !!snapshot.members.find((m) => m.id === b.me)?.rematch,
+            isHost,
+            message: message || undefined,
+            onVote: (again) => sendRoom('vote', { again }),
+            onLeave: onExit,
+            onClose: () => closeRoom(),
+          },
+        }}
       />
     </div>
   );

@@ -29,6 +29,8 @@ import { IcBall, IcCamera, IcEye, IcGear, IcJump, Key } from './BolaIcons';
 import { BolaTeams } from './BolaTeams';
 import { BolaScene } from './BolaScene';
 import { BolaStats, type StatRow } from './BolaStats';
+import { BolaFinal, type FinalMode } from './BolaFinal';
+import { RotateHint } from '@/components/RotateHint';
 
 const BOT_NAMES = [
   'Faísca',
@@ -181,6 +183,7 @@ export function BolaPlay({
   onAgain,
   onEnd,
   onOfflineInvite,
+  roomFinal,
 }: {
   setup: BolaSetup;
   /** Partida em sala: o servidor simula; aqui só desenha e manda a entrada. */
@@ -191,6 +194,13 @@ export function BolaPlay({
   onEnd?: () => void;
   /** Partida offline: "Convidar" leva para criar uma sala com amigos. */
   onOfflineInvite?: () => void;
+  /** Sala no pódio (fase final): a tela de fim mostra o placar do servidor e a votação de jogar de novo. */
+  roomFinal?: {
+    active: boolean;
+    scores: number[];
+    winner: number;
+    mode: Extract<FinalMode, { kind: 'room' }>;
+  };
 }) {
   const rosterRef = useRef<BolaRosterRow[]>(online?.roster ?? []);
   rosterRef.current = online?.roster ?? rosterRef.current;
@@ -240,7 +250,8 @@ export function BolaPlay({
       return !v;
     });
   const statsOn = useRef(false);
-  statsOn.current = tabHeld || pinned || menu || teamsOpen;
+  const roomOver = !!roomFinal?.active;
+  statsOn.current = tabHeld || pinned || menu || teamsOpen || roomOver;
   const uiOpenRef = useRef(false);
   /** Sobe a cada "não" (correr sem fôlego): reinicia o tremor da barra. */
   const [nope, setNope] = useState(0);
@@ -969,15 +980,16 @@ export function BolaPlay({
           flash: flashId,
           myTeam: world.player(meId)?.team ?? -1,
           // a tabela só é montada quando aparece: sem custo no resto da partida
-          rows: statsOn.current
-            ? world.players.map((p) => ({
-                id: p.id,
-                name: p.name,
-                team: p.team,
-                bot: !!p.bot,
-                ...p.stats,
-              }))
-            : [],
+          rows:
+            statsOn.current || world.phase === 'over'
+              ? world.players.map((p) => ({
+                  id: p.id,
+                  name: p.name,
+                  team: p.team,
+                  bot: !!p.bot,
+                  ...p.stats,
+                }))
+              : [],
           possession: [...world.possession],
         });
       }
@@ -1031,7 +1043,7 @@ export function BolaPlay({
       window.removeEventListener('resize', measure);
     };
   }, []);
-  const finished = hud.phase === 'over';
+  const finished = hud.phase === 'over' || roomOver;
   const uiOpen = menu || pinned || tabHeld || finished;
   uiOpenRef.current = uiOpen;
   useEffect(() => {
@@ -1048,7 +1060,7 @@ export function BolaPlay({
         return { x: (dx / len) * k * STICK_RADIUS, y: (dy / len) * k * STICK_RADIUS };
       })()
     : null;
-  const over = hud.phase === 'over';
+  const over = hud.phase === 'over' || roomOver;
   const touchDevice = useMemo(
     () => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches,
     [],
@@ -1247,6 +1259,7 @@ export function BolaPlay({
         </div>
       )}
       {hud.myTeam >= 0 && !over && <BolaTips touch={touchDevice} />}
+      {!over && <RotateHint />}
       <GameChat enabled={!!online && !over} onClosed={(was) => was && controls.resumeLock()} />
       {!over && hud.myTeam >= 0 && (
         <>
@@ -1407,33 +1420,16 @@ export function BolaPlay({
         />
       )}
       {over && (
-        <div className="dsm-over" role="dialog" aria-modal="true" aria-label="Resultado">
-          <div className="dsm-over-card">
-            <h2>
-              {hud.winner < 0
-                ? 'Empate'
-                : hud.winner === 0
-                  ? 'Você venceu!'
-                  : `Time ${BOL_TEAM_NAMES[hud.winner]} venceu`}
-            </h2>
-            <ol>
-              {hud.scores.map((s, i) => (
-                <li key={i} className={i === 0 ? 'is-you' : ''}>
-                  <span>{s}</span> {BOL_TEAM_NAMES[i]}
-                  {i === 0 ? ' (seu time)' : ''}
-                </li>
-              ))}
-            </ol>
-            <div className="dsm-over-btns">
-              <button type="button" className="dsm-btn" onClick={onAgain} data-testid="bola-again">
-                Jogar de novo
-              </button>
-              <button type="button" className="dsm-btn is-ghost" onClick={onExit}>
-                Voltar
-              </button>
-            </div>
-          </div>
-        </div>
+        <BolaFinal
+          scores={roomFinal?.active ? roomFinal.scores : hud.scores}
+          winner={roomFinal?.active ? roomFinal.winner : hud.winner}
+          rows={hud.rows}
+          possession={hud.possession}
+          myTeam={hud.myTeam}
+          meId={meId}
+          clock={fmt(setup.minutes * 60)}
+          mode={roomFinal ? roomFinal.mode : { kind: 'training', onAgain, onExit }}
+        />
       )}
     </div>
   );

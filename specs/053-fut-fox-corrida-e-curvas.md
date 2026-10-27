@@ -73,6 +73,24 @@ Pedido do Lucas: depois de um tempo, com gente ainda jogando, começam ondas de 
 - **Velocidades:** corrida 12,2 m/s (era 11,5) e mortal (pulo duplo com direção) 10 m/s (era 11): o mortal agora é mais lento que correr.
 - **Bug do bot preso:** o plano de subir na parede só vencia quando o bot estava colado; se não conseguia colar (sem grude ou sem velocidade) ele ficava empurrando o muro para sempre. Agora o plano vence também no chão. Além disso, há uma proteção geral: querendo andar e sem sair do lugar por ~1,2 s (muro, canto, rede), o bot se afasta para o meio do campo, de lado, por 0,9 s. Teste em `preso.test.ts` (reproduz o caso e mede janelas de 3 s paradas).
 
+## 2k. Fut Fox: tela de fim de partida (27/10/2026)
+
+Pedido do Lucas: uma tela final mais bonita, intuitiva e organizada, com o placar animado de cada um, estatísticas bem organizadas, "jogar de novo" mostrando quem já topou e quem não, e botões de sair e encerrar.
+
+- **`BolaFinal.tsx`** (+ `bola-final.css`), a mesma tela no treino e na sala:
+  - **Título animado:** "Vitória!", "Derrota", "Empate!" ou "Time X venceu" (espectador), com as letras entrando uma a uma, e o cartão na cor do resultado.
+  - **Placar dos times:** posição (empate divide), nome, o número subindo de 0 até o placar, barra de posse de bola, "seu time" e "vencedor".
+  - **Destaques:** Artilheiro, Garçom (assistências) e Mais toques.
+  - **Estatísticas por time:** uma linha por raposa com G, A, GC, T e M (legenda embaixo), você em amarelo, bots marcados e o **MVP** (gols pesam mais, depois assistências, mortais e toques; gol contra tira).
+  - **Sala:** painel "Jogar de novo?" com a contagem "x de n", uma barra e a lista de cada pessoa (cor do time, líder, você) com "Quer jogar", "Pensando…" ou "Saiu". Botões: Jogar de novo (vira "Mudei de ideia"), Sair da sala e, para o líder, Encerrar sala (com confirmação). Quando todos votam a sala volta ao lobby, como antes.
+  - **Treino:** "Jogar de novo" e "Voltar".
+- **Ligações:** na sala o Fut Fox continua na tela da partida também na fase `final` (`Room.tsx`), então as estatísticas vêm do mundo que o aparelho já tem (o servidor pede o último quadro de estatísticas ao acabar) e o placar e o vencedor, do snapshot. O voto usa o mesmo `vote` da tela de pódio das outras salas.
+- **Celular:** em pé o painel de jogar de novo e os botões vêm logo depois do placar (as estatísticas rolam por baixo); deitado, tudo em duas colunas. Tudo que anima é só `transform` e `opacity`, e com movimento reduzido nada anima.
+
+## 2l. "Vire a tela" no celular em pé (27/10/2026)
+
+No Fut Fox e no Desmorona!, ao começar cada partida em celular com a tela em pé aparece, no alto e sem pegar toque, "Vire a tela na horizontal para ter uma imersão melhor" (`components/RotateHint.tsx`): não cobre o tutorial nem a largada, some sozinho em 7 s e na hora em que a tela é virada. Não aparece no computador nem com o celular deitado.
+
 ## 3. Limites e riscos
 
 - Cinco toques no Shift abrem as "Teclas de Aderência" do Windows; está avisado em Comandos, mas não há tecla alternativa.
