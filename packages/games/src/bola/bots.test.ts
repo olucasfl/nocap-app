@@ -77,7 +77,8 @@ describe('bots do Fut Fox', () => {
     const rs = Array.from({ length: 4 }, (_, k) => play(`fx${k}`, 2, 3, 120));
     const avg = (f: (r: (typeof rs)[number]) => number) =>
       rs.reduce((a, r) => a + f(r), 0) / rs.length;
-    expect(avg((r) => r.goals)).toBeGreaterThan(2.5);
+    // a bola ficou mais lenta (20 m/s) e há rampa nas paredes: a média caiu um pouco, e o bot antigo fazia ~1,6
+    expect(avg((r) => r.goals)).toBeGreaterThan(2);
     // antes: ~131 graus/s de troca de direção
     expect(avg((r) => r.turnRate)).toBeLessThan(115);
     expect(avg((r) => r.stillPct)).toBeLessThan(30);

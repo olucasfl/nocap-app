@@ -32,6 +32,9 @@ export interface BolBody {
   flipHit: boolean;
 }
 
+/** Até quanto acima do chão uma raposa que estava no chão ainda "gruda" nele (descendo a rampa), em m. */
+const BOL_STICK = 0.3;
+
 export type BodyEvent = 'jump' | 'airjump' | 'flip' | 'land';
 
 /** Aperto de pulo, mortal e aceleração. Vale para o servidor e para o preditor do aparelho. */
@@ -93,12 +96,15 @@ export function moveBody(
   field: BolField,
   emit?: (e: BodyEvent) => void,
 ): void {
+  const wasGrounded = p.grounded;
   p.vy -= BOL_FOX_GRAVITY * h;
   p.x += p.vx * h;
   p.y += p.vy * h;
   p.z += p.vz * h;
-  if (p.y <= 0) {
-    p.y = 0;
+  // o chão sobe pela rampa perto das paredes; quem estava no chão e desce a rampa acompanha o chão (não "voa" a cada passo)
+  const floor = field.floorAt(p.x, p.z);
+  if (p.y <= floor || (wasGrounded && p.vy <= 0 && p.y - floor < BOL_STICK)) {
+    p.y = floor;
     p.vy = 0;
     if (!p.grounded) {
       p.grounded = true;

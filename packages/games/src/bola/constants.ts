@@ -19,10 +19,12 @@ export const BOL_TEAM_COLORS = [0xe5484d, 0x3e7bfa, 0xf5c518, 0x30a46c] as const
 /** Bola. */
 export const BOL_BALL_R = 0.9;
 export const BOL_GRAVITY = 14;
-export const BOL_FLOOR_E = 0.55;
+export const BOL_FLOOR_E = 0.6;
 /** Atrito do quique: a bola perde um pouco de velocidade lateral cada vez que bate no chão forte. */
 export const BOL_BOUNCE_GRIP = 0.97;
 export const BOL_WALL_E = 0.6;
+/** Quique da bola na rampa entre o chão e a parede (só batidas fortes quicam; as leves deslizam). */
+export const BOL_RAMP_E = 0.5;
 /** Freio da bola rolando: proporcional à velocidade (rápida freia mais) mais um freio fixo (m/s²), para ela parar de verdade. */
 export const BOL_ROLL_DRAG = 0.7;
 export const BOL_ROLL_DECEL = 1.2;
@@ -55,6 +57,15 @@ export const BOL_FLIP_KICK_LIFT = 3.5;
 
 /** Contato: o quanto o corpo devolve a bola e a velocidade mínima de encontro para valer como toque. */
 export const BOL_FOX_E = 0.2;
+/** Abaixo desta velocidade de encontro (m/s) o contato é seco (sem quique nem chute extra): a bola repousa sem tremer. */
+export const BOL_FOX_REST_SPEED = 1.5;
+/** Atrito do contato raposa-bola (Coulomb): em cima da cabeça a bola acompanha a raposa em vez de deslizar. */
+export const BOL_FOX_MU = 0.9;
+/** Em cima da cabeça a normal é achatada por este fator (1 = esfera, 0 = chapa plana): dá para equilibrar a bola. */
+export const BOL_HEAD_FLAT = 0.3;
+/** Chute extra: velocidade de encontro x este fator é somada à bola (como o impulso extra do carro no rl-like); a subida pesa menos. */
+export const BOL_HIT_BOOST = 0.4;
+export const BOL_HIT_LIFT = 0.35;
 export const BOL_TOUCH_MIN = 0.4;
 
 /** Gol. */

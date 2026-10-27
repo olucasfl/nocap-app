@@ -1,3 +1,4 @@
+import { BolaRollback } from './bola-rollback';
 import {
   BOL_BALL_R,
   BOL_DT,
@@ -39,6 +40,8 @@ export interface NetSnap {
 /** O que do quadro do fluxo interessa ao movimento: hora, bola e corpos. */
 export interface NetMotion {
   t?: number;
+  /** Passo da simulação deste estado (spec 052). */
+  k?: number;
   b: number[];
   p: number[][];
 }
@@ -52,6 +55,8 @@ export interface NetSyncOptions {
    * onde estão agora (a própria pela previsão, as outras estendidas pela velocidade); o erro que sobra some em ~0,1 s.
    */
   ballModel?: 'interp' | 'local' | 'replay';
+  /** Previsão com rollback da própria raposa e da bola, com entrada por passo (spec 052). Vale só com líder que manda `k`. */
+  rollback?: boolean;
   /** Bola local: as outras raposas empurram a bola na posição de agora (estimada), não na de desenho (atrasada). Padrão: desligado (a simulação não mostrou ganho). */
   presentOthers?: boolean;
   /** O menor atraso de desenho (ms) que o caminho aguenta. */
@@ -137,6 +142,8 @@ export class BolaNetSync {
   private readonly auth: BolBall = { x: 0, y: 1, z: 0, vx: 0, vy: 0, vz: 0 };
   private localReady = false;
   private lastDt = 1 / 60;
+  /** A previsão com rollback (quando ligada). */
+  readonly rb: BolaRollback | null;
   private readonly ownHist: OwnSample[] = [];
   /** O estado do líder de onde a bola refeita partiu no quadro anterior. */
   private rpSnap: NetSnap | null = null;
@@ -150,6 +157,14 @@ export class BolaNetSync {
   ) {
     this.interpMs = Math.max(o.minDelay, 80);
     this.pred = new BolPredictor(world.field);
+    this.rb = o.rollback
+      ? new BolaRollback(world, { meId: o.meId, rtt: o.rtt, slotOf: o.slotOf, onMove: o.onMove })
+      : null;
+  }
+
+  /** O pacote de entrada por passo a mandar ao líder (`null` se não há nada novo ou a previsão não está valendo). */
+  inputPacket(): number[] | null {
+    return this.rb?.inputPacket() ?? null;
   }
 
   /** A bola desenhada neste instante é a "de mentira" (toque previsto ainda não confirmado). */
@@ -210,6 +225,7 @@ export class BolaNetSync {
     this.prevAt = at;
     this.snaps.push({ t: stamp, ball, rows });
     if (this.snaps.length > 24) this.snaps.shift();
+    if (this.rb && typeof f.k === 'number') this.rb.onFrame({ k: f.k, b: f.b, p: f.p });
   }
 
   /** Entre quais dois estados estamos em `t` (ou, se faltar estado novo, o último com um pouco de extrapolação). */
@@ -294,6 +310,13 @@ export class BolaNetSync {
     const me = world.player(meId);
     const slot = slotOf.get(meId);
     const row = slot === undefined ? undefined : last.rows.get(slot);
+    if (this.rb) {
+      this.rb.update(dt, input, pressed, world.phase, !!me && !!row);
+      if (this.rb.active) {
+        this.rb.apply();
+        return;
+      }
+    }
     if (!me || !row) {
       this.predReady = false;
       if (this.o.ballModel === 'local') this.stepLocal(dt, null, last);

@@ -1,6 +1,12 @@
 import {
   BOL_AIR_DRAG,
   BOL_BALL_MAX,
+  BOL_RAMP_E,
+  BOL_HEAD_FLAT,
+  BOL_FOX_REST_SPEED,
+  BOL_FOX_MU,
+  BOL_HIT_BOOST,
+  BOL_HIT_LIFT,
   BOL_BALL_R,
   BOL_BAR_R,
   BOL_CEILING,
@@ -384,6 +390,39 @@ export class BolWorld {
     if (this.phase === 'play') this.tickMatch(dt);
   }
 
+  /**
+   * Cliente online (spec 052): um passo de PREVISÃO. Anda a bola e as raposas como `step`, mas sem fases, relógio, gol,
+   * toque nem estatística (isso é do líder), e as raposas em `remote` não recebem entrada: seguem a própria velocidade
+   * (o corpo delas é refeito a cada estado que chega do líder). A própria raposa e a bola andam pela mesma conta do líder.
+   */
+  stepPredict(
+    dt: number,
+    inputs: Readonly<Record<string, BolInput>>,
+    remote: ReadonlySet<string>,
+  ): void {
+    const evs = this.events.length;
+    this.ghost = true;
+    try {
+      for (const p of this.players)
+        if (!remote.has(p.id)) this.control(p, inputs[p.id] ?? NO_INPUT, dt);
+      const h = dt / BOL_SUBSTEPS;
+      for (let i = 0; i < BOL_SUBSTEPS; i++) {
+        for (const p of this.players) this.moveFox(p, h);
+        this.separateFoxes();
+        if (this.phase === 'play') this.moveBall(h);
+      }
+    } finally {
+      this.ghost = false;
+      // eventos de previsão não valem (o líder é quem decide); o som do pulo vem do chamador
+      const mine = this.events.slice(evs);
+      this.events.length = evs;
+      this.predEvents = mine;
+    }
+  }
+
+  /** Eventos do último `stepPredict` (pulo, pulo duplo, mortal): o aparelho toca o som na hora. */
+  predEvents: BolEvent[] = [];
+
   private tickMatch(dt: number): void {
     this.clock += dt;
     if (this.lastTouch)
@@ -546,6 +585,7 @@ export class BolWorld {
       b.y = BOL_CEILING - BOL_BALL_R;
       if (b.vy > 0) b.vy = -b.vy * BOL_WALL_E;
     }
+    this.rampBall();
     if (this.wallsAndGoals()) return;
     if (only) this.touchFox(only);
     else if (only === undefined) for (const p of this.players) this.touchFox(p);
@@ -555,6 +595,45 @@ export class BolWorld {
       b.vx *= k;
       b.vy *= k;
       b.vz *= k;
+    }
+  }
+
+  /**
+   * Rampa entre o chão e as paredes: um quarto de cilindro côncavo (centro a `rampR` da parede e a `rampR` de altura). O
+   * centro da bola fica dentro do círculo de raio `rampR - raio da bola`; passando disso a bola é empurrada de volta e a
+   * velocidade reflete na normal da rampa. É assim que a bola sobe e "curva" pelas paredes em vez de bater seca.
+   */
+  private rampBall(): void {
+    const b = this.ball;
+    const R = this.field.rampR;
+    if (b.y >= R) return;
+    const lim = R - BOL_BALL_R;
+    for (const e of this.field.edges) {
+      const d = (b.x - e.ax) * e.nx + (b.z - e.az) * e.nz;
+      if (d >= R) continue;
+      const t = (b.x - e.mx) * e.tx + (b.z - e.mz) * e.tz;
+      if (Math.abs(t) > e.len / 2 + 0.05) continue;
+      if (e.goal >= 0) {
+        const g = this.field.goals[e.goal];
+        if (g && !this.out[g.team] && Math.abs(t) <= g.halfW) continue;
+      }
+      const dd = R - d;
+      const dy = R - b.y;
+      const dist = Math.hypot(dd, dy);
+      if (dist <= lim || dist < 1e-6) continue;
+      const k = lim / dist;
+      b.x += e.nx * (R - dd * k - d);
+      b.z += e.nz * (R - dd * k - d);
+      b.y = R - dy * k;
+      const nh = dd / dist;
+      const nv = dy / dist;
+      const vn = (b.vx * e.nx + b.vz * e.nz) * nh + b.vy * nv;
+      if (vn < 0) {
+        const j = (1 + (-vn > 1.5 ? BOL_RAMP_E : 0)) * vn;
+        b.vx -= j * e.nx * nh;
+        b.vz -= j * e.nz * nh;
+        b.vy -= j * nv;
+      }
     }
   }
 
@@ -579,6 +658,10 @@ export class BolWorld {
         }
       }
       if (d >= BOL_BALL_R) continue;
+      // o plano de um trecho só vale perto do próprio trecho: os arcos dos cantos têm planos inclinados que, estendidos,
+      // cortariam a boca do gol (a bola entrando seria rebatida por um trecho que está a metros dali)
+      const along = (b.x - e.mx) * e.tx + (b.z - e.mz) * e.tz;
+      if (Math.abs(along) > e.len / 2 + BOL_BALL_R) continue;
       b.x += e.nx * (BOL_BALL_R - d);
       b.z += e.nz * (BOL_BALL_R - d);
       const vn = b.vx * e.nx + b.vz * e.nz;
@@ -721,7 +804,12 @@ export class BolWorld {
     this.timer = BOL_GOAL_PAUSE;
   }
 
-  /** Contato bola-raposa. Só conta como toque se os corpos realmente se sobrepõem e se aproximam. */
+  /**
+   * Contato bola-raposa. Só conta como toque se os corpos realmente se sobrepõem e se aproximam. Três coisas dão o "peso":
+   * - o chute leva a bola mais forte quanto mais rápida a raposa vai (`BOL_HIT_BOOST`, como o impulso extra do rl-like);
+   * - a bola não quica em batida leve (abaixo de `BOL_FOX_REST_SPEED` o contato é seco), então ela repousa sem tremer;
+   * - em cima da cabeça o contato tem atrito e a calota é achatada (`BOL_HEAD_FLAT`): dá para equilibrar a bola e levá-la.
+   */
   private touchFox(p: BolPlayer): void {
     const b = this.ball;
     const flipping = p.flipT > 0 && BOL_FLIP_SEC - p.flipT <= BOL_FLIP_WINDOW && !p.flipHit;
@@ -743,17 +831,57 @@ export class BolWorld {
       ny /= dist;
       nz /= dist;
     }
-    const push = min - (dist < 1e-6 ? 0 : dist);
-    b.x += nx * push;
-    b.y += ny * push;
-    b.z += nz * push;
-    const vn = (b.vx - p.vx) * nx + (b.vy - p.vy) * ny + (b.vz - p.vz) * nz;
+    // bola em cima: a calota da cabeça é achatada (a normal quase vertical) e a bola só sobe, sem escorregar para o lado
+    const onTop = ny > 0.45 && b.y > p.y + BOL_FOX_H - BOL_FOX_R;
+    let rx = nx;
+    let ry = ny;
+    let rz = nz;
+    if (onTop) {
+      rx *= BOL_HEAD_FLAT;
+      rz *= BOL_HEAD_FLAT;
+      const l = Math.hypot(rx, ry, rz);
+      rx /= l;
+      ry /= l;
+      rz /= l;
+      const h2 = (b.x - p.x) ** 2 + (b.z - p.z) ** 2;
+      b.y = Math.max(b.y, cy + Math.sqrt(Math.max(0, min * min - h2)));
+    } else {
+      const push = min - (dist < 1e-6 ? 0 : dist);
+      b.x += nx * push;
+      b.y += ny * push;
+      b.z += nz * push;
+    }
+    const rvx = b.vx - p.vx;
+    const rvy = b.vy - p.vy;
+    const rvz = b.vz - p.vz;
+    const vn = rvx * rx + rvy * ry + rvz * rz;
     let power = 0;
     if (vn < 0) {
-      b.vx -= (1 + BOL_FOX_E) * vn * nx;
-      b.vy -= (1 + BOL_FOX_E) * vn * ny;
-      b.vz -= (1 + BOL_FOX_E) * vn * nz;
       power = -vn;
+      const e = power > BOL_FOX_REST_SPEED ? BOL_FOX_E : 0;
+      const jn = (1 + e) * power;
+      b.vx += jn * rx;
+      b.vy += jn * ry;
+      b.vz += jn * rz;
+      // atrito de Coulomb: leva a velocidade lateral relativa para a da raposa, no máximo `mu x impulso normal`
+      const tx = rvx - vn * rx;
+      const ty = rvy - vn * ry;
+      const tz = rvz - vn * rz;
+      const tl = Math.hypot(tx, ty, tz);
+      if (tl > 1e-6) {
+        const jt = Math.min(tl, BOL_FOX_MU * jn);
+        b.vx -= (tx / tl) * jt;
+        b.vy -= (ty / tl) * jt;
+        b.vz -= (tz / tl) * jt;
+      }
+      // chute: mais velocidade da raposa, mais a bola é jogada para longe (a subida conta menos que o avanço)
+      if (power > BOL_FOX_REST_SPEED && !onTop) {
+        const hl = Math.hypot(nx, ny * BOL_HIT_LIFT, nz) || 1;
+        const extra = power * BOL_HIT_BOOST;
+        b.vx += (nx / hl) * extra;
+        b.vy += ((ny * BOL_HIT_LIFT) / hl) * extra;
+        b.vz += (nz / hl) * extra;
+      }
     }
     let touched = power > BOL_TOUCH_MIN;
     if (flipping) {

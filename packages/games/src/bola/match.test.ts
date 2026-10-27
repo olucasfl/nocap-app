@@ -52,6 +52,62 @@ describe('BolaMatch: carimbo do quadro', () => {
   });
 });
 
+describe('BolaMatch: entrada por passo', () => {
+  /** Anda `n` passos da partida (um por chamada). */
+  const steps = (s: ReturnType<typeof make>, n: number) => {
+    for (let i = 0; i < n; i++) {
+      s.clock.advance(17);
+      s.m.tick();
+    }
+  };
+  const k = (s: ReturnType<typeof make>) => s.m.drainFrame(true)?.k as number;
+
+  it('a entrada vale no passo carimbado, nem antes nem depois', () => {
+    const s = make();
+    steps(s, 200); // contagem e começo da partida
+    const t0 = k(s);
+    // direção +x só a partir de t0 + 10
+    const pack: number[] = [t0 + 10, 3];
+    for (let i = 0; i < 3; i++) pack.push(100, 0, 0);
+    s.m.input('ana', pack);
+    const ana = s.m.world.player('ana')!;
+    const x0 = ana.x;
+    steps(s, 6);
+    expect(Math.abs(ana.x - x0)).toBeLessThan(0.05); // ainda não chegou o passo da entrada
+    steps(s, 12);
+    expect(ana.vx).toBeGreaterThan(1);
+  });
+
+  it('o aperto de pulo que chega atrasado não se perde', () => {
+    const s = make();
+    steps(s, 200);
+    const t0 = k(s);
+    s.m.input('ana', [t0 - 5, 1, 0, 0, 1]); // passo que já passou
+    steps(s, 3);
+    expect(s.m.world.player('ana')!.grounded).toBe(false);
+  });
+
+  it('confirma o último passo recebido e ignora pacote inválido', () => {
+    const s = make();
+    steps(s, 5);
+    s.m.input('ana', [50, 2, 0, 0, 0, 0, 0, 0]);
+    s.m.input('ana', [60, 3, 0, 0, 0]); // tamanho não bate
+    s.m.input('ana', [Number.NaN, 1, 0, 0, 0]);
+    steps(s, 1);
+    const f = s.m.drainFrame(true) as { p: number[][] };
+    const slot = s.m.slotOf('ana');
+    expect((f.p.find((r) => r[0] === slot) as number[])[9]).toBe(51);
+  });
+
+  it('o quadro leva o passo e o mortal inteiro das raposas', () => {
+    const s = make();
+    steps(s, 5);
+    const f = s.m.drainFrame(true) as { k: number; p: number[][] };
+    expect(f.k).toBeGreaterThan(0);
+    expect(f.p[0]).toHaveLength(15);
+  });
+});
+
 describe('BolaMatch', () => {
   it('monta os corpos (pessoas e bots) com vagas estáveis e a lista para os aparelhos', () => {
     const { m } = make();

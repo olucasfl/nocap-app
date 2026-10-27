@@ -42,6 +42,10 @@ export interface BolField {
   spawn(team: number, index: number, count: number): BolSpawn;
   /** O ponto está dentro das paredes, com folga `margin`? */
   inside(x: number, z: number, margin?: number): boolean;
+  /** Raio da rampa que liga o chão às paredes (m): a bola e as raposas sobem por ela. */
+  rampR: number;
+  /** Altura do chão em (x, z): 0 no meio do campo e sobe pela rampa perto das paredes (menos na boca dos gols). */
+  floorAt(x: number, z: number): number;
 }
 
 type Pt = readonly [number, number];
@@ -76,41 +80,92 @@ function makeEdges(pts: readonly Pt[], goalOf: (edgeIndex: number) => number): B
   });
 }
 
+/** Raio da rampa entre o chão e as paredes (m). */
+export const BOL_RAMP_R = 2.2;
+
 /**
- * Monta o campo de um formato: retângulo com cantos cortados (2 times), hexágono (3) ou quadrado com cantos cortados (4).
- * Os cantos cortados tiram os cantinhos onde a bola ficaria presa. O campo cresce com o tamanho do maior time.
+ * Arredonda os cantos de um polígono convexo (sentido anti-horário ou horário) com arcos de raio `r`. Devolve os pontos e,
+ * para cada aresta de saída, o índice da aresta ORIGINAL de onde veio (-1 nos arcos): os gols ficam nas arestas retas.
+ */
+function roundCorners(pts: readonly Pt[], r: number, steps: number): { pts: Pt[]; from: number[] } {
+  const n = pts.length;
+  const out: Pt[] = [];
+  const from: number[] = [];
+  for (let i = 0; i < n; i++) {
+    const v = pts[i] as Pt;
+    const p = pts[(i + n - 1) % n] as Pt;
+    const q = pts[(i + 1) % n] as Pt;
+    const ux = p[0] - v[0];
+    const uz = p[1] - v[1];
+    const wx = q[0] - v[0];
+    const wz = q[1] - v[1];
+    const ul = Math.hypot(ux, uz);
+    const wl = Math.hypot(wx, wz);
+    const cosT = (ux * wx + uz * wz) / (ul * wl);
+    const theta = Math.acos(Math.max(-1, Math.min(1, cosT)));
+    const t = r / Math.tan(theta / 2);
+    const a: Pt = [v[0] + (ux / ul) * t, v[1] + (uz / ul) * t];
+    const b: Pt = [v[0] + (wx / wl) * t, v[1] + (wz / wl) * t];
+    const bx = ux / ul + wx / wl;
+    const bz = uz / ul + wz / wl;
+    const bl = Math.hypot(bx, bz);
+    const dist = r / Math.sin(theta / 2);
+    const c: Pt = [v[0] + (bx / bl) * dist, v[1] + (bz / bl) * dist];
+    let a0 = Math.atan2(a[1] - c[1], a[0] - c[0]);
+    const a1 = Math.atan2(b[1] - c[1], b[0] - c[0]);
+    let d = a1 - a0;
+    while (d > Math.PI) d -= 2 * Math.PI;
+    while (d < -Math.PI) d += 2 * Math.PI;
+    // o arco: o ponto de entrada A, os do meio e o de saída B; as arestas entre eles são do arco
+    for (let k = 0; k <= steps; k++) {
+      const ang = a0 + (d * k) / steps;
+      out.push([c[0] + Math.cos(ang) * r, c[1] + Math.sin(ang) * r]);
+      // aresta que sai deste ponto: arco, menos a última (do ponto B até o A do próximo canto, que é reta da original i)
+      from.push(k === steps ? i : -1);
+    }
+  }
+  return { pts: out, from };
+}
+
+/**
+ * Monta o campo de um formato: retângulo (2 times), hexágono (3) ou quadrado (4), com os cantos arredondados (arcos) para a
+ * bola não ficar presa, e uma rampa entre o chão e as paredes. O campo cresce com o tamanho do maior time.
  */
 export function buildField(teams: number, perTeam: number): BolField {
   const n = Math.max(2, Math.min(4, Math.round(teams)));
   const k = Math.max(1, Math.round(perTeam));
-  let pts: Pt[];
-  let goalOf: (i: number) => number;
+  let base: Pt[];
+  let radius: number;
+  let goalOfOriginal: (i: number) => number;
   if (n === 3) {
     const apothem = 22 + 4.5 * k;
-    const radius = apothem / Math.cos(Math.PI / 6);
-    pts = Array.from({ length: 6 }, (_, i) => {
+    const circ = apothem / Math.cos(Math.PI / 6);
+    base = Array.from({ length: 6 }, (_, i) => {
       const a = Math.PI / 6 + (i * Math.PI) / 3;
-      return [Math.cos(a) * radius, Math.sin(a) * radius] as const;
+      return [Math.cos(a) * circ, Math.sin(a) * circ] as const;
     });
-    goalOf = (i) => (i % 2 === 0 ? i / 2 : -1);
+    radius = 5.5;
+    goalOfOriginal = (i) => (i % 2 === 0 ? i / 2 : -1);
   } else {
     const hx = n === 2 ? 16 + 4.5 * k : 22 + 4 * k;
     const hz = n === 2 ? 10 + 3 * k : hx;
-    const c = n === 2 ? 4.5 : 8;
-    pts = [
-      [hx, -(hz - c)],
-      [hx, hz - c],
-      [hx - c, hz],
-      [-(hx - c), hz],
-      [-hx, hz - c],
-      [-hx, -(hz - c)],
-      [-(hx - c), -hz],
-      [hx - c, -hz],
+    base = [
+      [hx, -hz],
+      [hx, hz],
+      [-hx, hz],
+      [-hx, -hz],
     ];
-    // lados: 0 leste, 2 norte, 4 oeste, 6 sul
-    const table: Record<number, number> = n === 2 ? { 4: 0, 0: 1 } : { 4: 0, 0: 1, 6: 2, 2: 3 };
-    goalOf = (i) => table[i] ?? -1;
+    radius = n === 2 ? 6 : 9;
+    // lados: 0 leste, 1 norte, 2 oeste, 3 sul
+    const table: Record<number, number> = n === 2 ? { 2: 0, 0: 1 } : { 2: 0, 0: 1, 3: 2, 1: 3 };
+    goalOfOriginal = (i) => table[i] ?? -1;
   }
+  const rounded = roundCorners(base, radius, 6);
+  const pts = rounded.pts;
+  const goalOf = (i: number) => {
+    const o = rounded.from[i] ?? -1;
+    return o < 0 ? -1 : goalOfOriginal(o);
+  };
   const edges = makeEdges(pts, goalOf);
   const goals: BolGoal[] = [];
   for (const e of edges) {
@@ -133,7 +188,26 @@ export function buildField(teams: number, perTeam: number): BolField {
     const z = g.edge.mz + g.edge.nz * (g.depth - along) + g.edge.tz * lateral;
     return { x, z, heading: Math.atan2(-x, -z) };
   };
-  return { teams: n, perTeam: k, edges, goals, spawn, inside };
+  const rampR = BOL_RAMP_R;
+  const floorAt = (x: number, z: number): number => {
+    let h = 0;
+    for (const e of edges) {
+      const d = (x - e.ax) * e.nx + (z - e.az) * e.nz;
+      if (d >= rampR) continue;
+      const t = (x - e.mx) * e.tx + (z - e.mz) * e.tz;
+      if (Math.abs(t) > e.len / 2 + 0.05) continue;
+      // a boca do gol não tem rampa: a raposa e a bola entram no gol
+      if (e.goal >= 0) {
+        const g = goals[e.goal];
+        if (g && Math.abs(t) <= g.halfW) continue;
+      }
+      const dd = Math.max(0, d);
+      const y = rampR - Math.sqrt(Math.max(0, rampR * rampR - (rampR - dd) * (rampR - dd)));
+      if (y > h) h = y;
+    }
+    return h;
+  };
+  return { teams: n, perTeam: k, edges, goals, spawn, inside, rampR, floorAt };
 }
 
 /** Folga mínima das raposas ao nascer: sempre longe das paredes. */

@@ -29,8 +29,14 @@ interface Pilot {
   /** Contador de pulos do cliente; a partida vê quando sobe. */
   seen: number | null;
   pending: number;
+  /** Último número recebido: o de sequência (entrada antiga) ou o do passo mais novo (entrada por passo). */
   ack: number;
+  /** Entrada por passo (spec 052): a entrada de cada passo vem carimbada e é aplicada no passo certo. */
+  queue: Map<number, { mx: number; mz: number; jump: boolean }>;
 }
+
+/** Quantos passos adiante do relógio da partida uma entrada pode vir (um aparelho confuso não enche a fila). */
+const MAX_INPUT_LEAD = 240;
 
 const finite = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n);
 const r2 = (n: number) => Math.round(n * 100) / 100;
@@ -73,6 +79,8 @@ export class BolaMatch {
   /** Hora (ms) em que a partida nasceu e quantos passos já andou: o carimbo do quadro é a hora do passo, não a do envio. */
   private readonly t0: number;
   private ticks = 0;
+  /** A entrada de cada corpo no último passo (pessoa ou bot): vai no quadro para o aparelho prever as outras raposas. */
+  private lastInput = new Map<string, { mx: number; mz: number }>();
   private botSeq = 0;
   private out: Record<string, unknown>[] = [];
   private statsAt = 0;
@@ -123,7 +131,7 @@ export class BolaMatch {
   }
 
   private newPilot(): Pilot {
-    return { mx: 0, mz: 0, seen: null, pending: 0, ack: 0 };
+    return { mx: 0, mz: 0, seen: null, pending: 0, ack: 0, queue: new Map() };
   }
 
   private newBrain(team: number, i: number): BolBotMemory {
@@ -153,10 +161,21 @@ export class BolaMatch {
     return id === null ? -1 : (this.slots.get(id) ?? -1);
   }
 
-  /** A entrada da própria raposa: [mx, mz, contador de pulos, número de sequência]. Inválido é ignorado. */
+  /**
+   * A entrada da própria raposa. Dois formatos:
+   * - antigo, 4 números: [mx, mz, contador de pulos, número de sequência] (vale na hora que chega);
+   * - por passo, 2 + 3n números: [primeiro passo, n, (mx x 100, mz x 100, pulo 0/1) para cada passo]. Cada entrada vale no
+   *   passo em que foi dada (o aparelho roda alguns passos à frente), e o pacote repete os últimos passos para a perda de
+   *   um não custar um aperto de pulo.
+   * Inválido é ignorado.
+   */
   input(id: string, v: unknown): void {
     const pilot = this.pilots.get(id);
-    if (!pilot || !Array.isArray(v) || v.length !== 4 || !v.every(finite)) return;
+    if (!pilot || !Array.isArray(v) || !v.every(finite)) return;
+    if (v.length !== 4) {
+      this.stepInput(pilot, v as number[]);
+      return;
+    }
     const [mx, mz, jumps, seq] = v as number[];
     const mag = Math.hypot(mx!, mz!);
     const k = mag > 1 ? 1 / mag : 1;
@@ -170,6 +189,33 @@ export class BolaMatch {
       pilot.seen = j;
     }
     pilot.ack = Math.max(pilot.ack, Math.trunc(seq!));
+  }
+
+  private stepInput(pilot: Pilot, v: number[]) {
+    const first = Math.trunc(v[0]!);
+    const n = Math.trunc(v[1]!);
+    if (n < 1 || n > 16 || v.length !== 2 + 3 * n || first < 0) return;
+    for (let i = 0; i < n; i++) {
+      const tick = first + i;
+      if (tick > this.ticks + MAX_INPUT_LEAD) break;
+      let mx = (v[2 + 3 * i] as number) / 100;
+      let mz = (v[3 + 3 * i] as number) / 100;
+      const mag = Math.hypot(mx, mz);
+      if (mag > 1) {
+        mx /= mag;
+        mz /= mag;
+      }
+      const jump = v[4 + 3 * i] === 1;
+      if (tick > pilot.ack) {
+        // passo novo para a partida: se já passou, a direção vale daqui para frente e o pulo não se perde
+        if (tick < this.ticks) {
+          pilot.mx = mx;
+          pilot.mz = mz;
+          if (jump) pilot.pending = Math.min(3, pilot.pending + 1);
+        } else pilot.queue.set(tick, { mx, mz, jump });
+      }
+    }
+    pilot.ack = Math.max(pilot.ack, first + n - 1);
   }
 
   /** Troca de time no meio da partida: o corpo antigo vira bot; no time novo, assume um bot ou ocupa uma vaga livre. */
@@ -239,6 +285,14 @@ export class BolaMatch {
     for (const p of w.players) {
       const pilot = this.pilots.get(p.id);
       if (pilot && !p.bot && !this.away.has(p.id)) {
+        const q = pilot.queue.get(this.ticks);
+        if (q) {
+          pilot.mx = q.mx;
+          pilot.mz = q.mz;
+          if (q.jump) pilot.pending = Math.min(3, pilot.pending + 1);
+        }
+        if (pilot.queue.size > 0)
+          for (const t of pilot.queue.keys()) if (t <= this.ticks) pilot.queue.delete(t);
         const jump = pilot.pending > 0;
         if (jump) pilot.pending -= 1;
         inputs[p.id] = { mx: pilot.mx, mz: pilot.mz, jump };
@@ -251,6 +305,7 @@ export class BolaMatch {
         inputs[p.id] = bolBotInput(w, p, brain, this.rng);
       }
     }
+    for (const id of Object.keys(inputs)) this.lastInput.set(id, inputs[id] as BolInput);
     w.step(BOL_DT, inputs);
     this.ticks++;
     for (const e of w.drainEvents()) this.collect(e);
@@ -355,6 +410,8 @@ export class BolaMatch {
        * do relógio, o que fazia a bola, a 20 m/s, ser desenhada até ~0,4 m fora do lugar.
        */
       t: Math.round((this.t0 + this.ticks * BOL_DT * 1000) * 10) / 10,
+      /** Passo da simulação deste estado: as entradas por passo e a previsão do aparelho contam nele. */
+      k: this.ticks,
       ph: codes[w.phase],
       tm: r2(w.timer),
       ck: Math.round(w.clock * 10) / 10,
@@ -375,8 +432,15 @@ export class BolaMatch {
         r2(p.vy),
         r2(p.vz),
         r2(p.heading),
-        (p.grounded ? 1 : 0) + (p.flipT > 0 ? 2 : 0) + (p.airJumped ? 4 : 0),
+        (p.grounded ? 1 : 0) + (p.flipT > 0 ? 2 : 0) + (p.airJumped ? 4 : 0) + (p.flipHit ? 8 : 0),
         this.pilots.get(p.id)?.ack ?? 0,
+        // o mortal inteiro (tempo, direção): a previsão do aparelho precisa dele para refazer a raposa
+        r2(p.flipT),
+        r2(p.flipDx),
+        r2(p.flipDz),
+        // a direção pedida no último passo (centésimos): com ela o aparelho prevê as outras raposas acelerando e virando
+        Math.round((this.lastInput.get(p.id)?.mx ?? 0) * 100),
+        Math.round((this.lastInput.get(p.id)?.mz ?? 0) * 100),
       ]),
       ev: this.out,
     };

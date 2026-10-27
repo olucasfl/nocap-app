@@ -14,7 +14,8 @@ import { buildHero, mapEdge } from '../atravessa/models';
 /** Câmera de perseguição: atrás da raposa, olhando por cima do ombro para a bola. */
 /** Distância da câmera até a raposa (m). */
 const CAM_DIST = 8.6;
-const WALL_H = 1.3;
+/** O muro termina acima da rampa (que sobe até BOL_RAMP_R na parede). */
+const WALL_H = 2.8;
 const GLASS_H = 4.2;
 const NET_DEPTH = BOL_GOAL_DEPTH;
 const PHI = (1 + Math.sqrt(5)) / 2;
@@ -23,6 +24,8 @@ interface Fox {
   group: THREE.Group;
   body: THREE.Object3D;
   shadow: THREE.Mesh;
+  wasGrounded: boolean;
+  lastVy: number;
   /** Nome, cor e time com que foi desenhada. */
   sig: string;
   /** Há quanto tempo o mortal começou (s); -1 fora dele. Local, para valer também para quem vem da rede. */
@@ -276,8 +279,11 @@ export class BolaScene {
       this.scene.add(m);
     };
     // linhas: borda, círculo central, ponto do meio, linha do meio (2 times) e a área de cada gol
-    for (const e of f.edges)
-      strip(e.mx + e.nx * 0.55, e.mz + e.nz * 0.55, e.len - 0.6, 0.22, -Math.atan2(e.tz, e.tx));
+    for (const e of f.edges) {
+      const off = f.rampR + 0.3;
+      strip(e.mx + e.nx * off, e.mz + e.nz * off, e.len + 0.05, 0.22, -Math.atan2(e.tz, e.tx));
+    }
+    this.buildRamps();
     const ring = new THREE.Mesh(new THREE.RingGeometry(5.4, 5.62, 64), lineMat);
     ring.rotation.x = -Math.PI / 2;
     ring.position.y = 0.02;
@@ -334,12 +340,15 @@ export class BolaScene {
       side: THREE.DoubleSide,
       depthWrite: false,
     });
+    const crowdTex = new Map<number, THREE.Texture>();
     for (const e of f.edges) {
       const ang = Math.atan2(e.tz, e.tx);
       const goal = e.goal >= 0 ? f.goals[e.goal] : undefined;
       const teamCol = goal ? (BOL_TEAM_COLORS[goal.team] ?? 0xffffff) : 0xffd23f;
       const piece = (len: number, cx: number, cz: number) => {
         if (len <= 0.05) return;
+        // trechos curtos (os arcos dos cantos) passam um pouco do fim para não deixar fresta entre um e o outro
+        len += e.len < 6 ? 0.3 : 0;
         const grp = new THREE.Group();
         grp.position.set(cx - e.nx * 0.35, 0, cz - e.nz * 0.35);
         grp.rotation.y = -ang;
@@ -356,7 +365,7 @@ export class BolaScene {
           new THREE.BoxGeometry(len, 0.22, 0.72),
           new THREE.MeshBasicMaterial({ color: hex(teamCol) }),
         );
-        stripe.position.y = WALL_H * 0.55;
+        stripe.position.y = WALL_H - 0.25;
         const pane = new THREE.Mesh(new THREE.PlaneGeometry(len, GLASS_H), glass);
         pane.position.set(0, WALL_H + 0.18 + GLASS_H / 2, 0.1);
         grp.add(body, cap, stripe, pane);
@@ -365,13 +374,19 @@ export class BolaScene {
       if (!goal) {
         piece(e.len, e.mx, e.mz);
         // arquibancada em 3 degraus
+        const short = e.len < 6;
         for (let i = 0; i < 3; i++) {
           const h = 2.4 + i * 1.7;
-          const tex = crowd.clone();
-          tex.needsUpdate = true;
-          tex.repeat.set(Math.max(1, e.len / 14), 1);
+          const key = Math.max(1, Math.round(e.len / 14));
+          let tex = crowdTex.get(key);
+          if (!tex) {
+            tex = crowd.clone();
+            tex.needsUpdate = true;
+            tex.repeat.set(key, 1);
+            crowdTex.set(key, tex);
+          }
           const step = new THREE.Mesh(
-            new THREE.BoxGeometry(Math.max(1, e.len - 1), h, 2.6),
+            new THREE.BoxGeometry(short ? e.len + 0.9 : Math.max(1, e.len - 1), h, 2.6),
             new THREE.MeshLambertMaterial({ map: tex }),
           );
           step.position.set(e.mx - e.nx * (1.9 + i * 2.6), h / 2, e.mz - e.nz * (1.9 + i * 2.6));
@@ -388,6 +403,7 @@ export class BolaScene {
     }
     // holofotes nos cantos para dar escala
     for (const e of f.edges) {
+      if (e.len < 6) continue;
       const post = new THREE.Mesh(
         new THREE.CylinderGeometry(0.25, 0.35, 15, 8),
         new THREE.MeshLambertMaterial({ color: 0x5b5f9e }),
@@ -399,6 +415,64 @@ export class BolaScene {
       );
       lamp.position.set(e.ax - e.nx * 4.5, 15.2, e.az - e.nz * 4.5);
       this.scene.add(post, lamp);
+    }
+  }
+
+  /** Rampa entre o chão e as paredes: um quarto de cilindro côncavo ao longo de cada trecho de parede (menos na boca dos gols). */
+  private buildRamps() {
+    const f = this.world.field;
+    const R = f.rampR;
+    const steps = 8;
+    const mat = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
+    const low = new THREE.Color(0x56c274);
+    const high = new THREE.Color(0x2f8a4b);
+    const piece = (e: (typeof f.edges)[number], t0: number, t1: number, tint: number | null) => {
+      if (t1 - t0 < 0.05) return;
+      const pos: number[] = [];
+      const col: number[] = [];
+      const idx: number[] = [];
+      const tone = tint === null ? null : new THREE.Color(tint);
+      for (let j = 0; j <= steps; j++) {
+        // d = distância da parede; y = altura da rampa nesse ponto
+        const d = R - (R * j) / steps;
+        const y = R - Math.sqrt(Math.max(0, R * R - (R - d) * (R - d)));
+        const c = low.clone().lerp(high, y / R);
+        if (tone) c.lerp(tone, 0.35 * (y / R));
+        for (const t of [t0, t1]) {
+          pos.push(e.mx + e.tx * t + e.nx * d, y, e.mz + e.tz * t + e.nz * d);
+          col.push(c.r, c.g, c.b);
+        }
+        if (j > 0) {
+          const a = (j - 1) * 2;
+          idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
+        }
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+      geo.setIndex(idx);
+      geo.computeVertexNormals();
+      this.scene.add(new THREE.Mesh(geo, mat));
+      // friso luminoso onde a rampa encontra o muro: mostra de longe onde a bola começa a subir
+      const tm = (t0 + t1) / 2;
+      const line = new THREE.Mesh(
+        new THREE.PlaneGeometry(t1 - t0, 0.16),
+        new THREE.MeshBasicMaterial({ color: tint ?? 0xffd23f, side: THREE.DoubleSide }),
+      );
+      line.position.set(e.mx + e.tx * tm + e.nx * 0.03, R - 0.05, e.mz + e.tz * tm + e.nz * 0.03);
+      line.rotation.y = -Math.atan2(e.tz, e.tx);
+      this.scene.add(line);
+    };
+    for (const e of f.edges) {
+      const half = e.len / 2 + 0.04;
+      const goal = e.goal >= 0 ? f.goals[e.goal] : undefined;
+      if (!goal) {
+        piece(e, -half, half, null);
+        continue;
+      }
+      const tint = BOL_TEAM_COLORS[goal.team] ?? null;
+      piece(e, -half, -goal.halfW, tint);
+      piece(e, goal.halfW, half, tint);
     }
   }
 
@@ -638,6 +712,8 @@ export class BolaScene {
       group,
       body,
       shadow: this.blob(0.55),
+      wasGrounded: true,
+      lastVy: 0,
       sig: `${p.name}|${p.color}|${p.team}`,
       flipAge: -1,
     });
@@ -956,15 +1032,16 @@ export class BolaScene {
 
   /** O anel cresce um pouco com a altura e só aparece quando a bola sai do chão (rente a ele seria redundante). */
   private updateLandingMark(x: number, y: number, z: number) {
-    const height = Math.max(0, y - BOL_BALL_R);
+    const floor = this.world.field.floorAt(x, z);
+    const height = Math.max(0, y - BOL_BALL_R - floor);
     const fade = this.world.phase === 'play' ? Math.min(1, height / 0.6) : 0;
     const on = fade > 0.02;
     this.landRing.visible = on;
     this.landDisc.visible = on;
     if (!on) return;
     const r = 1 + Math.min(1.6, height * 0.05);
-    this.landRing.position.set(x, 0.04, z);
-    this.landDisc.position.set(x, 0.035, z);
+    this.landRing.position.set(x, floor + 0.06, z);
+    this.landDisc.position.set(x, floor + 0.055, z);
     this.landRing.scale.set(r, r, 1);
     this.landDisc.scale.set(r, r, 1);
     (this.landRing.material as THREE.MeshBasicMaterial).opacity = 0.95 * fade;
@@ -985,7 +1062,16 @@ export class BolaScene {
       this.ball.rotation.x += (b.vz * dt) / BOL_BALL_R;
       this.ball.rotation.z -= (b.vx * dt) / BOL_BALL_R;
     }
-    this.ballShadow.visible = false;
+    {
+      const floor = this.world.field.floorAt(b.x, b.z);
+      const h = Math.max(0, b.y - BOL_BALL_R - floor);
+      const sh = this.ballShadow;
+      sh.visible = this.world.phase !== 'over';
+      sh.position.set(b.x, floor + 0.05, b.z);
+      const k = 1 + Math.min(1.2, h * 0.08);
+      sh.scale.set(k, k, 1);
+      (sh.material as THREE.MeshBasicMaterial).opacity = Math.max(0.08, 0.32 - h * 0.025);
+    }
     this.updateLandingMark(b.x, b.y, b.z);
     for (const p of this.world.players) {
       const fox = this.foxes.get(p.id);
@@ -995,6 +1081,22 @@ export class BolaScene {
       // sem sombra no chão: sempre sol
       fox.shadow.visible = false;
       const speed = Math.hypot(p.vx, p.vz);
+      // poeira ao pousar de um pulo (e um fiapo ao arrancar correndo)
+      if (!this.reduced) {
+        if (p.grounded && !fox.wasGrounded && fox.lastVy < -3)
+          this.addGlow(
+            p.x,
+            p.y + 0.25,
+            p.z,
+            0xeef7d8,
+            1.5 + Math.min(1.2, -fox.lastVy * 0.12),
+            0.45,
+            0.4,
+            false,
+          );
+        fox.wasGrounded = p.grounded;
+        fox.lastVy = p.vy;
+      }
       const squash = p.grounded
         ? 1 + Math.sin(this.world.clock * 18 + p.x) * 0.04 * Math.min(1, speed / 3)
         : 1.08;
@@ -1031,7 +1133,7 @@ export class BolaScene {
             0.34,
             0.5 + this.kickTrail * 0.4,
           );
-        } else if (sp > 16) {
+        } else if (sp > 11) {
           this.ballTrailT = 0.03;
           this.addGlow(b.x, b.y, b.z, 0xffffff, 1.2, 0.22, 0.3);
         }

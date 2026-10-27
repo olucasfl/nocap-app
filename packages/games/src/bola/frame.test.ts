@@ -7,8 +7,8 @@ describe('quadro compacto do Fut Fox', () => {
     ph: 'p',
     b: [1.234, 0.9, -4.567, 7.81, -0.02, 3.3],
     p: [
-      [0, 12.34, 0, -3.21, 4.56, 0, 7.89, 1.57, 5, 123],
-      [3, -29.5, 2.2, 8.88, -1.1, 6.5, 0.01, -3.14, 0, 7],
+      [0, 12.34, 0, -3.21, 4.56, 0, 7.89, 1.57, 5, 123, 0.31, 0.6, -0.8, 100, -50],
+      [3, -29.5, 2.2, 8.88, -1.1, 6.5, 0.01, -3.14, 0, 7, 0, 0, 0, 0, 0],
     ],
     ev: [{ t: 'goal', n: 4 }],
   };
@@ -24,7 +24,10 @@ describe('quadro compacto do Fut Fox', () => {
     back.b.forEach((v, i) => expect(v).toBeCloseTo(frame.b[i]!, 2));
     back.p.forEach((r, i) =>
       r.forEach((v, j) =>
-        expect(v).toBeCloseTo((frame.p[i] as number[])[j]!, j === 0 || j >= 8 ? 5 : 2),
+        expect(v).toBeCloseTo(
+          (frame.p[i] as number[])[j]!,
+          j === 0 || j === 8 || j === 9 || j >= 13 ? 5 : 2,
+        ),
       ),
     );
   });

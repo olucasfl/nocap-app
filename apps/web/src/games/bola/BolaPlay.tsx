@@ -588,6 +588,7 @@ export function BolaPlay({
       meId,
       minDelay: link.minDelay,
       ballModel: 'replay',
+      rollback: true,
       rtt: () => link.rtt(),
       now: () => performance.now(),
       slotOf: () => slotOf,
@@ -599,6 +600,7 @@ export function BolaPlay({
         }
       },
     });
+    if (import.meta.env.DEV) (window as unknown as { __bolaSync?: BolaNetSync }).__bolaSync = sync;
     const idOfSlot = (s: unknown) => (typeof s === 'number' ? (slotId.get(s) ?? null) : null);
     const syncRoster = () => {
       const all = rosterRef.current;
@@ -762,6 +764,12 @@ export function BolaPlay({
     }
     const sendInput = () => {
       if (!online || !world.player(meId)) return;
+      // previsão com rollback valendo: a entrada vai por passo (o líder a aplica no passo certo); só manda se há passo novo
+      if (sync.rb?.active) {
+        const pkt = sync.inputPacket();
+        if (pkt) link.sendInput(pkt);
+        return;
+      }
       link.sendInput([
         Math.round(sentInput.mx * 100) / 100,
         Math.round(sentInput.mz * 100) / 100,
@@ -773,6 +781,7 @@ export function BolaPlay({
     const smoothOnline = (dt: number, input: { mx: number; mz: number }, pressed: boolean) => {
       syncRoster();
       sync.update(dt, input, pressed);
+      if (sync.rb?.active) sendInput();
     };
 
     let last = performance.now();

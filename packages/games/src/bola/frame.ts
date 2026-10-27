@@ -16,7 +16,7 @@ export function packBolaFrame(f: Frame): Frame {
     ...f,
     q: 1,
     b: b.map(q),
-    // [vaga, x, y, z, vx, vy, vz, direção, flags, ack]: só flags e ack já são inteiros
+    // [vaga, x, y, z, vx, vy, vz, direção, flags, ack, tempo do mortal, direção do mortal x, z, entrada x, z (centésimos)]: só flags, ack e a entrada já são inteiros
     p: p.map((r) => [
       r[0],
       q(r[1]!),
@@ -28,6 +28,11 @@ export function packBolaFrame(f: Frame): Frame {
       q(r[7]!),
       r[8],
       r[9],
+      q(r[10] ?? 0),
+      q(r[11] ?? 0),
+      q(r[12] ?? 0),
+      r[13] ?? 0,
+      r[14] ?? 0,
     ]),
   };
 }
@@ -53,6 +58,11 @@ export function unpackBolaFrame<T extends Frame>(f: T): T {
       u(r[7]!),
       r[8],
       r[9],
+      u(r[10] ?? 0),
+      u(r[11] ?? 0),
+      u(r[12] ?? 0),
+      r[13] ?? 0,
+      r[14] ?? 0,
     ]),
   } as unknown as T;
 }

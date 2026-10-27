@@ -135,6 +135,19 @@ describe('sala do Fut Fox com servidor de verdade', () => {
     expect(Math.abs(rowOf(last)[1]! - x0)).toBeGreaterThan(0.3);
     expect(rowOf(last)[9]).toBeGreaterThan(0);
     expect(last.b).toHaveLength(6);
+    // entrada por passo (spec 052): a bia volta para a esquerda, cada passo carimbado 3 passos à frente do estado que viu
+    const x1 = rowOf(ana.frames[ana.frames.length - 1]!)[1]!;
+    let sentTick = 0;
+    for (let i = 0; i < 20; i++) {
+      const k = ana.frames[ana.frames.length - 1]!.k as number;
+      sentTick = k + 3;
+      bia.room.send('bin', [sentTick, 1, -100, 0, 0]);
+      await wait(33);
+    }
+    await until(() => rowOf(ana.frames[ana.frames.length - 1]!)[1]! < x1 - 0.5);
+    const lastTick = ana.frames[ana.frames.length - 1]!;
+    expect(rowOf(lastTick)[9]).toBeGreaterThanOrEqual(sentTick - 4);
+    expect(typeof lastTick.k).toBe('number');
     // o líder encerra
     ana.room.send('bend');
     await until(() => ana.snap?.phase === 'final' && bia.snap?.phase === 'final');

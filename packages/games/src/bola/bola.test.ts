@@ -1,4 +1,4 @@
-import { BOL_BALL_MAX, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { createRng } from '../core/rng';
 import { bolBotInput, newBolBotMemory } from './bots';
 import {
