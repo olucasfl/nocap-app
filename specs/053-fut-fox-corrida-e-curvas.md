@@ -44,6 +44,11 @@ A câmera do Desmorona! agora orbita a raposa como a câmera solta do Fut Fox: 8
 - **Câmera:** a conta de copiar do Fut Fox "olhar para 1 + 0,85 x altura" só serve perto de y = 0; nas camadas de baixo (altura negativa) a câmera olhava vários metros acima da raposa e ela ia para a borda da tela. Agora olha sempre 1 m acima do foco.
 - **Esc ao espectar:** ao morrer o jogo solta o mouse (para os botões de espectar) e o atalho do Esc exigia o mouse preso; agora `spectating` também vale.
 
+## 2g. Fut Fox: câmera na bola (27/10/2026)
+
+- **Na parede** a câmera na bola era ignorada (ficava só de frente para a parede, sem a bola). Agora ela continua de frente para a parede (o "para frente" segue subindo, então os controles não invertem) mas gira até ~60 graus para o lado da bola e a mira tende para ela (até 30%), com memória do lado quando a bola fica atrás de quem sobe (não pula de um lado a outro).
+- **No chão**: o giro agora tem velocidade e aceleração limitadas (começa e para sem tranco) e a força do giro cresce sem degrau com a distância da bola (antes havia um degrau em 1,4 m); a bola que a câmera segue é levemente suavizada (correção da rede e quique não balançam), e a altura e a mira (inclusive o "a bola nunca sai do quadro") são suavizadas.
+
 ## 3. Limites e riscos
 
 - Cinco toques no Shift abrem as "Teclas de Aderência" do Windows; está avisado em Comandos, mas não há tecla alternativa.

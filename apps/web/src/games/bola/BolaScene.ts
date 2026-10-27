@@ -79,6 +79,12 @@ export class BolaScene {
   private yaw = 0;
   /** Altura da câmera em radianos; `null` = automática (câmera na bola). */
   private pitch: number | null = null;
+  /** Câmera na bola: altura e mira suavizadas (a bola quicando ou corrigida pela rede não balança a câmera). */
+  private elevS: number | null = null;
+  private baseLookS = 0.2;
+  private extraS = 0;
+  /** Câmera fixa (parede, teto, livre): quanto olhar para a bola (0 a 1; 0 = só na raposa). */
+  private lookBias = 0;
   private camDist = CAM_DIST;
   private camFocus = new THREE.Vector3();
   private size = { w: 0, h: 0 };
@@ -1044,6 +1050,10 @@ export class BolaScene {
     this.pitch = p;
   }
 
+  setLookBias(k: number) {
+    this.lookBias = k;
+  }
+
   setYaw(yaw: number) {
     this.yaw = yaw;
   }
@@ -1491,11 +1501,16 @@ export class BolaScene {
     const sh = this.reduced ? 0 : this.shake * 0.3;
     const auto = this.pitch === null;
     const toBall = Math.hypot(b.x - this.camFocus.x, b.z - this.camFocus.z);
-    // câmera na bola: sobe quando a bola está longe ou alta, para o campo e a bola caberem no quadro
-    const elev = auto
+    // câmera na bola: sobe quando a bola está longe ou alta, para o campo e a bola caberem no quadro (suavizado: sem balançar)
+    const elevRaw = auto
       ? 0.46 + Math.min(0.3, toBall / 70) + Math.min(0.15, Math.max(0, b.y - 1) / 25)
       : (this.pitch as number);
-    let lookT = auto ? Math.min(0.7, Math.max(0.2, 0.2 + toBall / 45)) : 0;
+    const kEl = 1 - Math.exp(-dt * (auto ? 4.5 : 12));
+    this.elevS = this.elevS === null ? elevRaw : this.elevS + (elevRaw - this.elevS) * kEl;
+    const elev = this.elevS;
+    const baseRaw = auto ? Math.min(0.7, Math.max(0.2, 0.2 + toBall / 45)) : this.lookBias;
+    this.baseLookS += (baseRaw - this.baseLookS) * (1 - Math.exp(-dt * 5));
+    let lookT = this.baseLookS;
     const sy = Math.sin(this.yaw);
     const cy = Math.cos(this.yaw);
     const ce = Math.cos(elev);
@@ -1527,13 +1542,18 @@ export class BolaScene {
     };
     aim();
     if (auto) {
-      // a bola nunca sai do quadro: se estiver perto da borda, a câmera olha mais para ela
-      for (let i = 0; i < 4 && lookT < 0.95; i++) {
+      // a bola nunca sai do quadro: se estiver perto da borda, a câmera olha mais para ela (esse acréscimo também é suavizado)
+      let extra = 0;
+      for (let i = 0; i < 12 && lookT < 0.95; i++) {
         tmp.set(b.x, b.y, b.z).project(this.camera);
         if (Math.abs(tmp.x) < 0.78 && tmp.y < 0.78 && tmp.y > -0.8 && tmp.z < 1) break;
-        lookT += 0.2;
+        lookT += 0.08;
+        extra += 0.08;
         aim();
       }
+      this.extraS += (extra - this.extraS) * (1 - Math.exp(-dt * (extra > this.extraS ? 12 : 4)));
+      lookT = Math.min(0.95, this.baseLookS + this.extraS);
+      aim();
     }
     this.renderer.render(this.scene, this.camera);
   }

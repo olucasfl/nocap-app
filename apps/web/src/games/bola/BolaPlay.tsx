@@ -319,6 +319,12 @@ export function BolaPlay({
     let aimed = false;
     let yaw = 0;
     let camYaw = 0;
+    /** Velocidade de giro da câmera (rad/s), com aceleração limitada: começa e para sem tranco. */
+    let camYawVel = 0;
+    /** Bola suavizada para a câmera (correções da rede e quiques não balançam a câmera). */
+    let camBall: { x: number; z: number } | null = null;
+    /** Lado do giro na parede quando a bola está bem atrás (não fica trocando de lado). */
+    let wallSide = 1;
     let pitch = 0.5;
     let turnKick = 0;
     if (import.meta.env.DEV)
@@ -831,42 +837,69 @@ export function BolaPlay({
         }
         const onWall = !!me && me.surf === 1;
         const free = !ballCam || !me;
-        if (onWall && me) {
-          // colada na parede: a câmera fica de frente para a parede (quem sobe vê o que está subindo) e estável, sem câmera na bola
-          // nem giro manual: o "para frente" da tela continua sendo "para a parede", então os controles nunca invertem
-          let d = Math.atan2(me.wnx, me.wnz) - camYaw;
+        // a bola que a câmera acompanha: levemente suavizada
+        if (!camBall) camBall = { x: world.ball.x, z: world.ball.z };
+        else {
+          const kb = 1 - Math.exp(-dt * 12);
+          camBall.x += (world.ball.x - camBall.x) * kb;
+          camBall.z += (world.ball.z - camBall.z) * kb;
+        }
+        /** Gira a câmera para `want` com velocidade e aceleração limitadas (sem trancos). */
+        const turnTo = (want: number, gate: number, maxVel: number) => {
+          let d = want - camYaw;
           d = Math.atan2(Math.sin(d), Math.cos(d));
-          const step = d * (1 - Math.exp(-dt * 7));
-          const cap = 4 * dt;
-          camYaw += Math.max(-cap, Math.min(cap, step));
+          const targetVel = Math.max(
+            -maxVel,
+            Math.min(maxVel, d * (7 + 6 * Math.min(1, Math.abs(d) / 1.2)) * gate),
+          );
+          const acc = 14 * dt;
+          camYawVel += Math.max(-acc, Math.min(acc, targetVel - camYawVel));
+          camYaw += camYawVel * dt;
+        };
+        if (onWall && me) {
+          // colada na parede: a câmera fica de frente para a parede (quem sobe vê o que está subindo) e estável. Com a câmera na
+          // bola ela gira um pouco para o lado da bola (no máximo ~60 graus), o suficiente para ver a jogada sem inverter os controles:
+          // "para frente" na tela continua subindo a parede
+          const wallYaw = Math.atan2(me.wnx, me.wnz);
+          let aim = wallYaw;
+          if (!free && camBall) {
+            const dx = camBall.x - me.x;
+            const dz = camBall.z - me.z;
+            if (Math.hypot(dx, dz) > 1.5) {
+              let d = Math.atan2(-dx, -dz) - wallYaw;
+              d = Math.atan2(Math.sin(d), Math.cos(d));
+              // bola quase atrás de quem sobe: mantém o lado em que já estava, para a câmera não pular de um lado para o outro
+              if (Math.abs(d) > 2.8) d = Math.abs(d) * wallSide;
+              else wallSide = Math.sign(d) || wallSide;
+              aim = wallYaw + Math.max(-1.05, Math.min(1.05, d));
+            }
+          }
+          turnTo(aim, 1, 3.2);
           yaw = camYaw;
         } else if (free) {
           yaw += manual;
+          camYawVel = 0;
           // altura da câmera livre: do quase rente ao chão até quase de cima
           pitch = Math.min(1.25, Math.max(0.12, pitch + manualPitch));
-        } else {
-          const dx = world.ball.x - me.x;
-          const dz = world.ball.z - me.z;
+        } else if (camBall) {
+          const dx = camBall.x - me.x;
+          const dz = camBall.z - me.z;
           const dist = Math.hypot(dx, dz);
-          // com a bola colada na raposa o giro quase para (senão a câmera rodopia ao driblar)
-          if (dist > 1.4) {
-            const want = Math.atan2(-dx, -dz);
-            let d = want - camYaw;
-            d = Math.atan2(Math.sin(d), Math.cos(d));
-            // giro mais rápido quanto maior o desvio, e mais calmo quando a bola está perto
-            const rate =
-              (6 + 9 * Math.min(1, Math.abs(d) / 1.4)) *
-              Math.min(1, Math.max(0.25, (dist - 1.4) / 4));
-            // nunca gira mais rápido que isso: a bola cruzando perto da raposa não vira a câmera de repente
-            const step = d * (1 - Math.exp(-dt * rate));
-            const cap = 2.2 * dt;
-            camYaw += Math.max(-cap, Math.min(cap, step));
-          }
+          // com a bola colada na raposa o giro quase para (senão a câmera rodopia ao driblar): a força cresce com a distância,
+          // sem degrau
+          const t = Math.min(1, Math.max(0, (dist - 1) / 3.5));
+          turnTo(Math.atan2(-dx, -dz), t * t * (3 - 2 * t), 2.6);
           yaw = camYaw;
         }
         if (free && !onWall) camYaw = yaw;
         // na parede e no teto a câmera fica baixa (no teto, uma câmera alta ficaria acima do vidro)
         scene.setPitch(me && me.surf !== 0 ? 0.2 : free ? pitch : null);
+        // na parede e no teto com a câmera na bola, a mira tende para a bola (sem perder a raposa de vista)
+        scene.setLookBias(
+          me && me.surf !== 0 && !free
+            ? Math.min(0.3, 5 / Math.max(1, Math.hypot(world.ball.x - me.x, world.ball.z - me.z)))
+            : 0,
+        );
         scene.setYaw(yaw);
         if (input.mx !== 0 || input.mz !== 0) {
           const sy = Math.sin(yaw);
