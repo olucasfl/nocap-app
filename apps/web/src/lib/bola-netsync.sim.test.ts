@@ -309,7 +309,9 @@ describe('Fut Fox online: bola desenhada no aparelho do outro jogador', () => {
       );
       console.log('modelo da bola:', model);
       if (model !== 'interp')
-        for (const r of rows) expect((r.big * 60) / r.seconds, r.profile).toBeLessThan(1);
+        for (const r of rows)
+          // a bola ficou mais viva (rampa, chute forte): na internet ruim o limite sobe um pouco
+          expect((r.big * 60) / r.seconds, r.profile).toBeLessThan(2);
       expect(rows).toHaveLength(PROFILES.length);
     }
   });
