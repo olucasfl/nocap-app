@@ -156,6 +156,8 @@ export function DesmoronaPlay({
   const [result, setResult] = useState<DsmResult | null>(null);
   const controls = useMemo(() => new DsmControls(), []);
   const spectate = useRef({ index: 0 });
+  /** Eliminado e assistindo: o mouse fica solto (para os botões), mas o Esc ainda abre o menu. */
+  const spectating = useRef(false);
   const api = useRef<{ next: (d: number) => void } | null>(null);
   const noteTimer = useRef<number | null>(null);
   const [menu, setMenu] = useState(false);
@@ -182,7 +184,12 @@ export function DesmoronaPlay({
   // sem o mouse preso, o Esc do teclado abre o menu (com ele preso, o navegador o consome e soltar o mouse já abre)
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
-      if (e.code === 'Escape' && !menuRef.current && controls.allowLock && !gameChatOpen())
+      if (
+        e.code === 'Escape' &&
+        !menuRef.current &&
+        (controls.allowLock || spectating.current) &&
+        !gameChatOpen()
+      )
         setMenu(true);
     };
     window.addEventListener('keydown', key);
@@ -474,6 +481,7 @@ export function DesmoronaPlay({
               dsmSfx.dead(e.id === meId);
               if (e.id === meId) {
                 if (online) sendRoomQuiet('ddead');
+                spectating.current = true;
                 controls.allowLock = false;
                 controls.releaseLock();
                 say('Você foi eliminado. Assista os outros!');
@@ -491,6 +499,7 @@ export function DesmoronaPlay({
       scene.render(dt, focus);
       if (world.ended && phase !== 'over') {
         phase = 'over';
+        spectating.current = false;
         const st = world.standings();
         dsmSfx.win(world.winnerId === meId);
         controls.allowLock = false;

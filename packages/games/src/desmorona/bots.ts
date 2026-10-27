@@ -27,6 +27,8 @@ interface Plan {
   a: number | null;
   j: GroundJump;
   air: AirJump;
+  /** Quanto da velocidade máxima (0 a 1): andar devagar, de ladrilho em ladrilho, gasta bem menos chão que correr. */
+  v: number;
 }
 
 /** O que cada bot lembra entre um passo e outro. */
@@ -61,7 +63,7 @@ export const newBotMemory = (patience = 0, aggro = 0): DsmBotMemory => ({
   until: 0,
   patience,
   aggro,
-  skill: Math.min(0.96, 0.82 + patience * 0.3),
+  skill: Math.min(0.99, 0.93 + patience * 0.2),
   plan: null,
   planAt: 0,
   thinkAt: 0,
@@ -240,6 +242,7 @@ function roomAround(
   t: number,
   s: Sim,
   heading: number | null,
+  foes: readonly Foe[],
 ): number {
   const c = worldToHex(s.x, s.z);
   let sum = 0;
@@ -253,6 +256,13 @@ function roomAround(
       const d = Math.hypot(tile.x - s.x, tile.z - s.z);
       if (d < 0.6 || d > 6) continue;
       let w = (1 - d / 6.5) * (tile.status === 'firme' ? 1 : 0.35);
+      // onde os outros estão o chão vai sumir logo: vale menos (e a disputa por ele é um risco)
+      for (const f of foes) {
+        if (Math.hypot(f.x - tile.x, f.z - tile.z) < 2.3) {
+          w *= 0.4;
+          break;
+        }
+      }
       // chão na frente vale um pouco mais que atrás: dá para seguir correndo
       if (heading !== null) {
         const dot = ((tile.x - s.x) * Math.sin(heading) + (tile.z - s.z) * Math.cos(heading)) / d;
@@ -293,8 +303,8 @@ function rate(
     coyote: p.coyote,
     airJumped: p.airJumped,
   };
-  const mx = plan.a === null ? 0 : Math.sin(plan.a);
-  const mz = plan.a === null ? 0 : Math.cos(plan.a);
+  const mx = plan.a === null ? 0 : Math.sin(plan.a) * plan.v;
+  const mz = plan.a === null ? 0 : Math.cos(plan.a) * plan.v;
   const state = { jumped: false };
   const startLayer = p.grounded ? p.layer : -1;
   let t = world.t;
@@ -321,10 +331,12 @@ function rate(
   }
   if (!s.grounded) return -300;
   let score = 20;
-  // descer de camada é perder chão grande; só vale se não houver saída
-  if (startLayer >= 0) score -= (s.layer - startLayer) * 2.2;
-  else score -= s.layer * 0.4;
-  score += 1.6 * Math.min(9, roomAround(world, stepped, t, s, plan.a));
+  // descer de camada é perder todo o chão de cima: só vale se não houver saída (quem fica em cima ainda tem as de baixo)
+  if (startLayer >= 0) score -= (s.layer - startLayer) * 9;
+  else score -= s.layer * 3;
+  // cada ladrilho pisado some em menos de 1 s: andar devagar, só no que precisa, faz o chão durar
+  score -= 1.1 * stepped.size;
+  score += 1.6 * Math.min(9, roomAround(world, stepped, t, s, plan.a, foes));
   // o ladrilho em que termina já está contando: quanto menos vida, pior (vai ter que sair logo)
   const here = support(world, stepped, t, s.layer, s.x, s.z);
   if (here) {
@@ -332,20 +344,26 @@ function rate(
     score -= Math.max(0, 0.45 - left) * 14;
   }
   // pular sem precisar custa fôlego e é arriscado: só vale quando ajuda
-  if (state.jumped) score -= 1.6;
-  if (plan.air > 0 && s.airJumped) score -= 2.2;
+  // (e pular o tempo todo evita pisar nos ladrilhos mas é de coelho, não de jogador: o pulo só entra para vencer um buraco ou se salvar)
+  if (state.jumped) score -= 5.5;
+  if (plan.air > 0 && s.airJumped) score -= 3;
   score += hit * 2.5 * aggro;
   return score;
 }
 
-/** Todos os planos que o bot considera: 16 direções (ou parar) × quando pular. */
+/** Todos os planos que o bot considera: direção × velocidade (andar devagar ou correr) × quando pular. */
 function candidates(grounded: boolean): Plan[] {
-  const out: Plan[] = [{ a: null, j: 0, air: 0 }];
-  const js: GroundJump[] = grounded ? [0, 1, 2] : [0];
+  const out: Plan[] = [{ a: null, j: 0, air: 0, v: 0 }];
   for (let k = 0; k < ANGLES; k++) {
     const a = (k / ANGLES) * Math.PI * 2;
-    for (const j of js) {
-      for (const air of [0, 1, 2] as const) out.push({ a, j, air });
+    if (grounded) {
+      // no chão: andando devagar ou correndo; pular só na borda do ladrilho (ou assim que puder, para vencer um buraco)
+      for (const v of [0.45, 1]) {
+        for (const j of [0, 1, 2] as const) out.push({ a, j, air: j === 1 ? 1 : 0, v });
+      }
+    } else {
+      // no ar: pulo duplo nenhum, no ponto mais alto ou já caindo (para se salvar)
+      for (const air of [0, 1, 2] as const) out.push({ a, j: 0, air, v: 1 });
     }
   }
   return out;
@@ -365,13 +383,12 @@ export function botInput(
 ): DsmInput {
   if (!p.alive) return STOP;
   if (world.t >= mem.thinkAt || !mem.plan) {
+    // quem está por perto na mesma camada: o bot foge de onde eles gastam o chão (e o agressivo corre atrás para empurrar)
     const foes: Foe[] = [];
-    if (mem.aggro > 0) {
-      for (const o of world.players) {
-        if (o === p || !o.alive || Math.abs(o.y - p.y) > 1.1) continue;
-        const d = Math.hypot(o.x - p.x, o.z - p.z);
-        if (d < 5) foes.push({ x: o.x, y: o.y, z: o.z, vx: o.vx, vz: o.vz });
-      }
+    for (const o of world.players) {
+      if (o === p || !o.alive || Math.abs(o.y - p.y) > 1.1) continue;
+      const d = Math.hypot(o.x - p.x, o.z - p.z);
+      if (d < 9) foes.push({ x: o.x, y: o.y, z: o.z, vx: o.vx, vz: o.vz });
     }
     const plans = candidates(p.grounded || p.coyote > 0);
     const scored = plans.map((plan) => {
@@ -385,7 +402,7 @@ export function botInput(
     // quem acerta menos às vezes escolhe a 2ª ou 3ª melhor (se ela não for desastre)
     let pick = scored[0] as { plan: Plan; sc: number };
     const slip = 1 - mem.skill;
-    if (rng() < slip * 1.6) {
+    if (rng() < slip * 1.2) {
       const alt = scored[1 + Math.floor(rng() * 2)];
       if (alt && alt.sc > pick.sc - 4 && alt.sc > -100) pick = alt;
     }
@@ -397,8 +414,8 @@ export function botInput(
     mem.thinkAt = world.t + 0.1 + rng() * 0.08 + (1 - mem.skill) * 0.9 * rng();
   }
   const plan = mem.plan as Plan;
-  const mx = plan.a === null ? 0 : Math.sin(plan.a + mem.wobble);
-  const mz = plan.a === null ? 0 : Math.cos(plan.a + mem.wobble);
+  const mx = plan.a === null ? 0 : Math.sin(plan.a + mem.wobble) * plan.v;
+  const mz = plan.a === null ? 0 : Math.cos(plan.a + mem.wobble) * plan.v;
   const sim: Sim = {
     x: p.x,
     y: p.y,

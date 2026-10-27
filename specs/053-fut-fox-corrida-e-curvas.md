@@ -38,6 +38,12 @@ Os comandos antes apareciam o jogo todo (uma caixa de teclas fixa) e voltavam a 
 
 A câmera do Desmorona! agora orbita a raposa como a câmera solta do Fut Fox: 8,6 m de distância, acompanha com a mesma suavidade, giro e altura (0,12 a 1,25 rad, começa em 0,5) escolhidos pela pessoa (mouse, dedo na metade direita, Q e E) e campo de visão de 60 graus (78 em tela em pé). Um quadro nunca gira a câmera além do limite (mesmo cuidado do Fut Fox). As camadas acima da raposa continuam ficando transparentes.
 
+## 2f. Desmorona!: bots, câmera e Esc ao espectar (27/10/2026)
+
+- **Bots:** viviam ~35 s antes da primeira morte porque corriam a toda velocidade e cada ladrilho pisado some em 0,85 s (gastavam o chão 3 vezes mais rápido que o preciso). O planejador (1 s à frente, ~65 planos por decisão) agora escolhe também a velocidade (devagar ou correndo), cobra 1,1 por ladrilho pisado, 9 por camada perdida, desvalora o chão onde os outros estão e cobra 5,5 por pulo (sem isso eles descobrem que pular sem parar evita pisar e ficam 83% do tempo no ar). Errar de propósito diminuiu (skill 0,93 a 0,99). Medido em 4 bots: primeira morte aos ~90 a 107 s (antes 35 s), partida de ~100 a 120 s, 0,3 a 0,4 pulos por segundo, 20 a 26% do tempo no ar.
+- **Câmera:** a conta de copiar do Fut Fox "olhar para 1 + 0,85 x altura" só serve perto de y = 0; nas camadas de baixo (altura negativa) a câmera olhava vários metros acima da raposa e ela ia para a borda da tela. Agora olha sempre 1 m acima do foco.
+- **Esc ao espectar:** ao morrer o jogo solta o mouse (para os botões de espectar) e o atalho do Esc exigia o mouse preso; agora `spectating` também vale.
+
 ## 3. Limites e riscos
 
 - Cinco toques no Shift abrem as "Teclas de Aderência" do Windows; está avisado em Comandos, mas não há tecla alternativa.

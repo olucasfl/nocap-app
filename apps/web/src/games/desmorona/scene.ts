@@ -556,7 +556,8 @@ export class DsmScene {
       );
       this.camera.lookAt(
         this.camFocus.x - sy * 1.2,
-        1 + this.camFocus.y * 0.85,
+        // sempre um pouco acima da raposa, em qualquer camada (as de baixo têm altura negativa)
+        this.camFocus.y + 1,
         this.camFocus.z - cy * 1.2,
       );
       this.fadeUpperLayers(dt, target.y);
