@@ -463,7 +463,13 @@ export function BolaPlay({
           bannerTimer = window.setTimeout(() => {
             banner = null;
           }, 5200);
-        } else warn = 'Gol de ouro! Quem marcar ganha';
+        } else {
+          warn = 'Gol de ouro! Quem marcar ganha';
+          window.clearTimeout(warnTimer);
+          warnTimer = window.setTimeout(() => {
+            warn = '';
+          }, 4500);
+        }
       } else if (e.type === 'ballreset') {
         warn = 'Bola parada: de volta ao centro';
         window.clearTimeout(warnTimer);
@@ -973,7 +979,8 @@ export function BolaPlay({
               aria-label={hud.golden ? 'Tempo da prorrogação' : 'Tempo que falta'}
             >
               {fmt(hud.clock)}
-              {hud.golden && <small>Prorrogação · gol de ouro</small>}
+              {/* o aviso aparece só no começo da prorrogação e some (fica a cor laranja do relógio) */}
+              {hud.golden && hud.clock < 5 && <small>Prorrogação · gol de ouro</small>}
             </div>
             <ScoreChip team={1} score={hud.scores[1] ?? 0} />
           </div>
