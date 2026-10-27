@@ -5,7 +5,6 @@ import {
   DSM_LAVA_DEPTH,
   DSM_TILE_LIFE,
   DSM_TILE_THICK,
-  DSM_WAVE_LIFE,
   hexKey,
   layerY,
   type DsmEvent,
@@ -345,7 +344,10 @@ export class DsmScene {
         for (const [i, t] of (this.layers[e.layer]?.tiles ?? []).entries()) {
           if (t.status === 'pisado') this.hot.add(`${e.layer}:${i}`);
         }
-        this.shake = Math.max(this.shake, 0.5);
+        this.shake = Math.max(this.shake, 0.15);
+      } else if (e.type === 'wavefall') {
+        // o aviso acabou: os ladrilhos marcados começam a cair
+        this.shake = Math.max(this.shake, 0.45);
       } else if (e.type === 'land' && e.id === focusId) {
         this.shake = Math.max(this.shake, 0.18);
       } else if (e.type === 'dead' && e.id === focusId) {
@@ -358,8 +360,16 @@ export class DsmScene {
     const base = tmpC.set(LAYER_COLORS[t.layer] as number);
     if (t.status === 'pisado') {
       const crack = this.world.crack(t);
-      if (t.wave) base.lerp(WAVE_COLOR, 0.65);
-      else {
+      if (t.wave) {
+        // aviso da onda: laranja que vai ficando vermelho e pisca cada vez mais rápido até cair (parado com movimento reduzido)
+        const total = Math.max(0.2, t.breakAt - t.markAt);
+        const prog = Math.min(1, Math.max(0, 1 - (t.breakAt - this.world.t) / total));
+        const pulse = this.reduced ? 0.6 : 0.5 + 0.5 * Math.sin(this.world.t * (5 + 12 * prog));
+        base.lerp(
+          tmpC2.copy(WAVE_COLOR).lerp(CRACK_COLOR, prog * 0.75),
+          0.55 + 0.3 * pulse + 0.1 * prog,
+        );
+      } else {
         // um clarão curto ao pisar, que assenta num tom mais claro do que o ladrilho firme
         const s = Math.max(0, this.world.t - (this.stepAt.get(`${t.layer}:${i}`) ?? this.world.t));
         const flash = this.reduced ? 0 : 0.45 * Math.exp(-s * 10);
@@ -378,7 +388,7 @@ export class DsmScene {
   private animateTile(lm: LayerMesh, i: number, t: DsmTile, key: string) {
     const now = this.world.t;
     const s = Math.max(0, now - (this.stepAt.get(key) ?? now));
-    const total = t.wave ? DSM_WAVE_LIFE : (DSM_TILE_LIFE[t.layer] ?? 1);
+    const total = t.wave ? Math.max(0.2, t.breakAt - t.markAt) : (DSM_TILE_LIFE[t.layer] ?? 1);
     const prog = Math.min(1, Math.max(0, 1 - (t.breakAt - now) / total));
     const crack = this.world.crack(t);
     let dy = -0.04 * prog - crack * 0.05;

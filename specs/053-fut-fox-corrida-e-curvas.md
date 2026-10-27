@@ -49,6 +49,19 @@ A câmera do Desmorona! agora orbita a raposa como a câmera solta do Fut Fox: 8
 - **Na parede** a câmera na bola era ignorada (ficava só de frente para a parede, sem a bola). Agora ela continua de frente para a parede (o "para frente" segue subindo, então os controles não invertem) mas gira até ~60 graus para o lado da bola e a mira tende para ela (até 30%), com memória do lado quando a bola fica atrás de quem sobe (não pula de um lado a outro).
 - **No chão**: o giro agora tem velocidade e aceleração limitadas (começa e para sem tranco) e a força do giro cresce sem degrau com a distância da bola (antes havia um degrau em 1,4 m); a bola que a câmera segue é levemente suavizada (correção da rede e quique não balançam), e a altura e a mira (inclusive o "a bola nunca sai do quadro") são suavizadas.
 
+## 2h. Desmorona!: ondas de queda com aviso (27/10/2026)
+
+Pedido do Lucas: depois de um tempo, com gente ainda jogando, começam ondas de queda com aviso prévio (nada brusco, para ninguém morrer por sorte ou azar), mostrando os ladrilhos que vão quebrar para dar tempo de fugir, de um jeito legal e interativo.
+
+- **Quando:** a 1ª onda marca ladrilhos aos 32 s; as seguintes vêm a cada 24 s (encurta 8% por onda, mínimo 12 s), contando do fim da anterior (nunca duas ao mesmo tempo). Passados 130 s toda onda leva a camada inteira (a partida nunca passa de ~4 min).
+- **Aviso:** os ladrilhos marcados ficam laranja e vão ficando vermelhos, piscando cada vez mais rápido, por 3,4 s na 1ª onda (encurta 0,25 s por onda até 2,2 s). Na tela: "ONDA DE QUEDA", o que fazer ("Uma fatia vai cair: saia das áreas vermelhas") e uma barra que esvazia até cair; sirene ao marcar, toques aos 3, 2 e 1 s e meio segundo antes (o último mais agudo), estrondo e tremida ao cair.
+- **Formatos** (sorteados pela semente, sem repetir o anterior; a 1ª é sempre uma fatia): **fatia** (arco de 90° que cresce 25° por onda, o centro nunca entra), **metade** (um lado do chão), **anel** (faixa de 2 anéis: fugir para dentro ou para fora), **chuva** (blocos de 7 ladrilhos que caem em momentos diferentes), **borda** (os anéis de fora; sobra o miolo).
+- **Justiça:** uma onda comum marca no máximo 62% dos ladrilhos da camada (sempre sobra chão e nunca a camada toda). Os ladrilhos caem em ondulação (0,8 s) depois do aviso, nunca durante ele. Quem cai vai para a camada de baixo; só morre se for a última (lava).
+- **Em todas as camadas com gente:** a onda atinge cada camada com raposa viva (antes só a mais alta, e bots e pessoas que já desceram ficavam de fora). O texto do aviso é o da camada em que você está.
+- **Bots:** fogem das áreas marcadas (penalidade crescente por estar em ladrilho marcado e pelo caminho até o chão firme mais perto; ladrilho marcado não conta como saída). Medido: menos de 30% estão em cima de ladrilho marcado quando ele começa a cair.
+- **Rede:** a onda só usa a semente e a geometria, então todo aparelho marca os mesmos ladrilhos na mesma hora (a única dependência é em que camadas há raposas, que vem dos relatos de posição).
+- Código: `world.ts` (`updateWaves`, `shapeWave`, eventos `wave` e `wavefall`, `DsmWaveInfo`), `constants.ts` (`DSM_WAVE_*`), `bots.ts`, `scene.ts` (cor pulsante), `DesmoronaPlay.tsx` (aviso e sons) e `desmorona.css`.
+
 ## 3. Limites e riscos
 
 - Cinco toques no Shift abrem as "Teclas de Aderência" do Windows; está avisado em Comandos, mas não há tecla alternativa.

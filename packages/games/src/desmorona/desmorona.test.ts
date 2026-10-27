@@ -7,6 +7,10 @@ import {
   DSM_GRACE_SEC,
   DSM_LAYERS,
   DSM_TILE_LIFE,
+  DSM_WAVE_FIRST,
+  DSM_WAVE_MAX_SHARE,
+  DSM_WAVE_WARN,
+  DSM_WAVE_WARN_MIN,
   dsmLayerRadii,
 } from './constants';
 import { hexCount, hexToWorld, layerY, worldToHex } from './hex';
@@ -389,4 +393,111 @@ describe('bots inteligentes', () => {
     // quase nunca morre com o pulo duplo guardado
     expect(withSpare / Math.max(1, deaths)).toBeLessThan(0.2);
   }, 60_000);
+});
+
+describe('ondas de queda', () => {
+  /** Roda o mundo parado (só o tempo passando) e junta o que as ondas fizeram. */
+  function runWaves(seed: string, until: number) {
+    const w = new DsmWorld(seed, infos(4));
+    w.goOnline('p0');
+    const waves: {
+      t: number;
+      index: number;
+      pattern: string;
+      fallAt: number;
+      layer: number;
+      share: number;
+    }[] = [];
+    const falls: number[] = [];
+    const earlyBreaks: number[] = [];
+    let current: (typeof waves)[number] | null = null;
+    while (w.t < until) {
+      w.step(DSM_DT);
+      for (const e of w.drainEvents()) {
+        if (e.type === 'wave') {
+          const layerTiles = [...w.tiles.values()].filter(
+            (t) => t.layer === e.layer && t.status !== 'caiu',
+          );
+          const marked = layerTiles.filter((t) => t.wave && t.markAt === w.t).length;
+          current = {
+            t: w.t,
+            index: e.index,
+            pattern: e.pattern,
+            fallAt: e.fallAt,
+            layer: e.layer,
+            share: marked / Math.max(1, layerTiles.length),
+          };
+          waves.push(current);
+        } else if (e.type === 'wavefall') falls.push(w.t);
+        else if (e.type === 'break' && current) {
+          const t = w.tile(e.layer, e.q, e.r);
+          if (t?.wave && t.markAt === current.t && w.t < current.fallAt - 1e-6)
+            earlyBreaks.push(w.t);
+        }
+      }
+    }
+    return { w, waves, falls, earlyBreaks };
+  }
+
+  it('a 1ª onda chega na hora, é uma fatia e avisa por ~3,4 s antes de qualquer ladrilho cair', () => {
+    const { waves, falls, earlyBreaks } = runWaves('ondas', 60);
+    const first = waves[0]!;
+    expect(first.t).toBeGreaterThanOrEqual(DSM_WAVE_FIRST);
+    expect(first.t).toBeLessThan(DSM_WAVE_FIRST + 0.1);
+    expect(first.pattern).toBe('fatia');
+    expect(first.fallAt - first.t).toBeCloseTo(DSM_WAVE_WARN, 1);
+    expect(falls[0]!).toBeGreaterThanOrEqual(first.fallAt - 1e-6);
+    // nenhum ladrilho marcado cai durante o aviso
+    expect(earlyBreaks).toEqual([]);
+  });
+
+  it('variam de formato, o aviso encurta até o mínimo e sempre sobra chão (nunca mais que 62% da camada)', () => {
+    const { waves } = runWaves('ondas2', 125);
+    expect(waves.length).toBeGreaterThanOrEqual(4);
+    const patterns = new Set(waves.map((x) => x.pattern));
+    expect(patterns.size).toBeGreaterThanOrEqual(3);
+    for (let i = 1; i < waves.length; i++) {
+      expect(waves[i]!.pattern).not.toBe(waves[i - 1]!.pattern);
+    }
+    const warns = waves.map((x) => x.fallAt - x.t);
+    expect(warns[1]!).toBeLessThan(warns[0]!);
+    for (const x of warns) expect(x).toBeGreaterThanOrEqual(DSM_WAVE_WARN_MIN - 0.02);
+    for (const x of waves) expect(x.share).toBeLessThanOrEqual(DSM_WAVE_MAX_SHARE + 0.02);
+  });
+
+  it('são iguais em todo aparelho: a mesma semente dá as mesmas ondas', () => {
+    const a = runWaves('igual', 100).waves.map((x) => `${x.t.toFixed(3)}:${x.pattern}:${x.layer}`);
+    const b = runWaves('igual', 100).waves.map((x) => `${x.t.toFixed(3)}:${x.pattern}:${x.layer}`);
+    expect(a.length).toBeGreaterThan(2);
+    expect(a).toEqual(b);
+  });
+
+  it('os bots fogem: poucos estão em cima de um ladrilho marcado quando ele começa a cair', () => {
+    let caught = 0;
+    let seen = 0;
+    for (const seed of ['fuga1', 'fuga2', 'fuga3']) {
+      const w = new DsmWorld(seed, infos(6));
+      let i = 0;
+      const mem = new Map(
+        w.players.map((p) => [p.id, newBotMemory((i % 4) * 0.15, i++ % 3 === 0 ? 0.5 : 0)]),
+      );
+      const rng = createRng(`${seed}:bots`);
+      while (!w.ended && w.t < 200) {
+        const inputs: Record<string, DsmInput> = {};
+        for (const p of w.players) inputs[p.id] = botInput(w, p, mem.get(p.id)!, rng);
+        w.step(DSM_DT, inputs);
+        for (const e of w.drainEvents()) {
+          if (e.type !== 'wavefall') continue;
+          for (const p of w.players) {
+            if (!p.alive || !p.grounded) continue;
+            seen++;
+            const t = w.standingTile(p.layer, p.x, p.z);
+            if (t?.wave && t.status === 'pisado') caught++;
+          }
+        }
+      }
+    }
+    expect(seen).toBeGreaterThan(5);
+    expect(caught / seen).toBeLessThan(0.3);
+  }, 90_000);
 });

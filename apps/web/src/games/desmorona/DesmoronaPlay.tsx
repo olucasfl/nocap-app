@@ -8,6 +8,7 @@ import {
   createRng,
   type DsmInput,
   type DsmPlayerInfo,
+  type DsmWavePattern,
 } from '@nocap/games';
 import { GameChat } from '@/components/GameChat';
 import { gameChatOpen } from '@/lib/game-chat-state';
@@ -92,9 +93,21 @@ interface Hud {
   phase: 'ready' | 'play' | 'over';
   count: number;
   note: string;
+  /** Onda de queda em aviso (barra regressiva e texto). */
+  wave: { index: number; pattern: DsmWavePattern; secs: number; fell: boolean } | null;
   dead: boolean;
   watching: string;
 }
+
+/** O que cada formato de onda pede da pessoa (pt-BR). */
+const WAVE_TEXT: Record<DsmWavePattern, string> = {
+  fatia: 'Uma fatia vai cair: saia das áreas vermelhas',
+  metade: 'Metade do chão vai cair: vá para o outro lado',
+  anel: 'Um anel vai cair: fuja para dentro ou para fora',
+  chuva: 'Blocos vão cair: fique longe dos vermelhos',
+  borda: 'A borda vai cair: vá para o meio',
+  tudo: 'Tudo vai cair: desça para a camada de baixo',
+};
 
 const seedOf = () => crypto.randomUUID().replace(/-/g, '').slice(0, 12);
 
@@ -143,6 +156,7 @@ export function DesmoronaPlay({
     phase: 'ready',
     count: 3,
     note: '',
+    wave: null,
     dead: false,
     watching: '',
   });
@@ -253,6 +267,16 @@ export function DesmoronaPlay({
     let jumpUntil = 0;
     let raf = 0;
     let note = '';
+    /** A onda em aviso: quando começou, quando cai e qual toque da contagem é o próximo. */
+    let waveUi: {
+      index: number;
+      pattern: DsmWavePattern;
+      from: number;
+      fallAt: number;
+      fell: boolean;
+      hideAt: number;
+      tick: number;
+    } | null = null;
     const say = (text: string) => {
       note = text;
       if (noteTimer.current !== null) window.clearTimeout(noteTimer.current);
@@ -475,8 +499,28 @@ export function DesmoronaPlay({
                 if (e.to === meId) scene.shakeNow(0.5);
               } else dsmSfx.bump(false);
             } else if (e.type === 'wave') {
+              // as áreas marcadas ficam vermelhas e piscando até cair: o aviso na tela conta o tempo que resta (a onda vem uma
+              // vez por camada com gente; o texto é o da camada em que você está)
+              const mine = me();
+              const myLayer = mine.grounded ? mine.layer : Math.max(0, mine.deepest);
+              if (!waveUi || waveUi.index !== e.index) dsmSfx.waveWarn();
+              if (!waveUi || waveUi.index !== e.index || e.layer === myLayer) {
+                waveUi = {
+                  index: e.index,
+                  pattern: e.pattern,
+                  from: world.t,
+                  fallAt: e.fallAt,
+                  fell: false,
+                  hideAt: 0,
+                  tick: 3,
+                };
+              }
+            } else if (e.type === 'wavefall') {
               dsmSfx.wave();
-              say('Onda de queda!');
+              if (waveUi) {
+                waveUi.fell = true;
+                waveUi.hideAt = now + 1400;
+              }
             } else if (e.type === 'dead') {
               dsmSfx.dead(e.id === meId);
               if (e.id === meId) {
@@ -510,6 +554,18 @@ export function DesmoronaPlay({
           seconds: world.t,
         });
       }
+      // toques da contagem da onda: 3, 2, 1 s e meio segundo antes de cair
+      if (waveUi && !waveUi.fell) {
+        const left = waveUi.fallAt - world.t;
+        if (waveUi.tick > 0 && left <= waveUi.tick) {
+          dsmSfx.waveTick(false);
+          waveUi.tick = waveUi.tick > 1 ? waveUi.tick - 1 : 0;
+        } else if (waveUi.tick === 0 && left <= 0.5) {
+          dsmSfx.waveTick(true);
+          waveUi.tick = -1;
+        }
+      }
+      if (waveUi && waveUi.fell && now > waveUi.hideAt) waveUi = null;
       if (now - hudAt > 120) {
         hudAt = now;
         const m = me();
@@ -523,6 +579,14 @@ export function DesmoronaPlay({
           phase,
           count: 0,
           note,
+          wave: waveUi
+            ? {
+                index: waveUi.index,
+                pattern: waveUi.pattern,
+                secs: Math.max(0.5, waveUi.fallAt - waveUi.from),
+                fell: waveUi.fell,
+              }
+            : null,
           dead: !m.alive,
           watching,
         });
@@ -584,6 +648,15 @@ export function DesmoronaPlay({
         </div>
       )}
       {hud.note && hud.phase !== 'ready' && <div className="dsm-note">{hud.note}</div>}
+      {hud.wave && hud.phase === 'play' && !result && (
+        <div className="dsm-wave" key={hud.wave.index} data-fell={hud.wave.fell ? '1' : '0'}>
+          <b>{hud.wave.fell ? 'Caiu!' : 'Onda de queda'}</b>
+          <span>{WAVE_TEXT[hud.wave.pattern]}</span>
+          <span className="dsm-wave-bar" aria-hidden="true">
+            <i style={{ animationDuration: `${hud.wave.secs}s` }} />
+          </span>
+        </div>
+      )}
       {hud.dead && !result && (
         <div className="dsm-spec">
           <button type="button" onClick={() => api.current?.next(-1)} aria-label="Raposa anterior">

@@ -354,3 +354,78 @@
   gap: 8px;
   pointer-events: auto;
 }
+
+/* Aviso da onda de queda: só texto e uma barra que esvazia até os ladrilhos caírem (só transform e opacity animam) */
+.dsm-wave {
+  position: absolute;
+  left: 50%;
+  top: max(70px, calc(env(safe-area-inset-top) + 62px));
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  width: max-content;
+  max-width: 92%;
+  transform: translateX(-50%);
+  text-align: center;
+  pointer-events: none;
+  animation: dsm-wave-in 0.3s ease-out both;
+}
+.dsm-wave b {
+  font: 900 clamp(20px, 4.4vw, 32px) / 1 var(--font-display, system-ui);
+  text-transform: uppercase;
+  color: #ff8d2e;
+  -webkit-text-stroke: 6px #1b1535;
+  paint-order: stroke fill;
+}
+.dsm-wave[data-fell='1'] b {
+  color: #ff4d4d;
+}
+.dsm-wave > span:not(.dsm-wave-bar) {
+  font: 800 clamp(12px, 2.6vw, 16px) / 1.2 var(--font-display, system-ui);
+  color: #fff;
+  -webkit-text-stroke: 4px #1b1535;
+  paint-order: stroke fill;
+}
+.dsm-wave-bar {
+  display: block;
+  width: min(240px, 60vw);
+  height: 10px;
+  margin-top: 2px;
+  border: 3px solid #1b1535;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.45);
+  overflow: hidden;
+}
+.dsm-wave-bar i {
+  display: block;
+  height: 100%;
+  background: #ff4d4d;
+  transform-origin: left center;
+  animation: dsm-wave-bar linear forwards;
+}
+.dsm-wave[data-fell='1'] .dsm-wave-bar i {
+  animation: none;
+  transform: scaleX(0);
+}
+@keyframes dsm-wave-bar {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+@keyframes dsm-wave-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-10px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dsm-wave {
+    animation: none;
+  }
+  .dsm-wave-bar i {
+    animation: none;
+  }
+}

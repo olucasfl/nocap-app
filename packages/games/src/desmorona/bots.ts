@@ -253,9 +253,10 @@ function roomAround(
       const own = stepped.get(tile);
       if (own !== undefined) continue;
       if (tile.status === 'pisado' && tile.breakAt - t < 0.7) continue;
+      // ladrilho marcado por uma onda: vai cair, não conta como saída
       const d = Math.hypot(tile.x - s.x, tile.z - s.z);
       if (d < 0.6 || d > 6) continue;
-      let w = (1 - d / 6.5) * (tile.status === 'firme' ? 1 : 0.35);
+      let w = (1 - d / 6.5) * (tile.status === 'firme' ? 1 : tile.wave ? 0.03 : 0.35);
       // onde os outros estão o chão vai sumir logo: vale menos (e a disputa por ele é um risco)
       for (const f of foes) {
         if (Math.hypot(f.x - tile.x, f.z - tile.z) < 2.3) {
@@ -272,6 +273,21 @@ function roomAround(
     }
   }
   return sum;
+}
+
+/** Distância até o chão firme (fora de onda) mais perto na camada: para onde fugir de uma onda. */
+function safeDist(world: DsmWorld, stepped: Map<DsmTile, number>, s: Sim): number {
+  const c = worldToHex(s.x, s.z);
+  let best = 9;
+  for (let dq = -5; dq <= 5; dq++) {
+    for (let dr = Math.max(-5, -dq - 5); dr <= Math.min(5, -dq + 5); dr++) {
+      const tile = world.tiles.get(hexKey(s.layer, c.q + dq, c.r + dr));
+      if (!tile || tile.status !== 'firme' || stepped.has(tile)) continue;
+      const d = Math.hypot(tile.x - s.x, tile.z - s.z);
+      if (d < best) best = d;
+    }
+  }
+  return best;
 }
 
 interface Foe {
@@ -342,6 +358,11 @@ function rate(
   if (here) {
     const left = (stepped.get(here) ?? (here.status === 'pisado' ? here.breakAt : t + 9)) - t;
     score -= Math.max(0, 0.45 - left) * 14;
+  }
+  // em cima de um ladrilho que uma onda vai derrubar: quanto mais perto de cair, mais urgente sair, e a saída é o chão firme mais perto
+  if (here && here.wave && here.status === 'pisado') {
+    const urgency = Math.min(1, Math.max(0.25, 1 - (here.breakAt - t) / 4));
+    score -= 14 * urgency + 1.4 * safeDist(world, stepped, s);
   }
   // pular sem precisar custa fôlego e é arriscado: só vale quando ajuda
   // (e pular o tempo todo evita pisar nos ladrilhos mas é de coelho, não de jogador: o pulo só entra para vencer um buraco ou se salvar)

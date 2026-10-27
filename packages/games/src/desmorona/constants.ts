@@ -49,17 +49,30 @@ export const DSM_GRACE_SEC = 0.4;
 /** Abaixo da última camada por tanto, a lava pega a raposa e ela é eliminada. */
 export const DSM_LAVA_DEPTH = 6;
 
-/** Ondas: derrubam uma fatia da camada de cima, avisadas com tremida. Garantem o fim em 3 a 4 minutos. */
-export const DSM_WAVE_FIRST = 55;
-export const DSM_WAVE_EVERY = 36;
-export const DSM_WAVE_MIN_EVERY = 16;
-export const DSM_WAVE_SHRINK = 0.9;
-/** A fatia começa com 70° e cresce a cada onda. */
-export const DSM_WAVE_ARC0 = 70;
-export const DSM_WAVE_ARC_GROW = 40;
-export const DSM_WAVE_LIFE = 1.1;
+/**
+ * Ondas de queda (27/10/2026): com a partida andando, a onda marca ladrilhos da camada de cima e eles caem depois de um
+ * aviso longo (as áreas ficam vermelhas e piscam cada vez mais rápido): dá tempo de sobra para fugir, então ninguém
+ * morre de sorte ou azar. Cada onda tem um formato (fatia, metade, anel, chuva ou borda), nunca marca a camada toda
+ * e, a cada onda, o aviso encurta um pouco e o intervalo também. Passado `ALL_AFTER` toda onda leva a camada inteira
+ * e a partida nunca passa de ~4 minutos.
+ */
+export const DSM_WAVE_FIRST = 32;
+export const DSM_WAVE_EVERY = 24;
+export const DSM_WAVE_MIN_EVERY = 12;
+export const DSM_WAVE_SHRINK = 0.92;
+/** Aviso (s) antes do primeiro ladrilho cair: a 1ª onda avisa mais, e a cada onda o aviso encurta até o mínimo. */
+export const DSM_WAVE_WARN = 3.4;
+export const DSM_WAVE_WARN_MIN = 2.2;
+export const DSM_WAVE_WARN_STEP = 0.25;
+/** Os ladrilhos marcados não caem todos juntos: caem em sequência durante este tempo (s), como uma ondulação. */
+export const DSM_WAVE_RIPPLE = 0.8;
+/** Uma onda comum marca no máximo esta parte dos ladrilhos que sobram na camada: sempre sobra chão. */
+export const DSM_WAVE_MAX_SHARE = 0.62;
+/** A fatia começa com 90° e cresce a cada onda. */
+export const DSM_WAVE_ARC0 = 90;
+export const DSM_WAVE_ARC_GROW = 25;
 /** Passado este tempo toda onda derruba a camada inteira: a partida nunca passa de ~4 minutos. */
-export const DSM_WAVE_ALL_AFTER = 150;
+export const DSM_WAVE_ALL_AFTER = 130;
 
 export const DSM_MIN_PLAYERS = 2;
 export const DSM_MAX_PLAYERS = 8;

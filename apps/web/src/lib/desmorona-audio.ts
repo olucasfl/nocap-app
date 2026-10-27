@@ -111,7 +111,16 @@ export const dsmSfx = {
   fall() {
     noise(1800, 220, 0.7, 0.42, 0.2);
   },
-  /** onda chegando: estrondo */
+  /** onda marcou ladrilhos (começa o aviso): sirene curta que sobe */
+  waveWarn() {
+    tone('triangle', 330, 520, 0.28, 0.16);
+    tone('triangle', 330, 520, 0.28, 0.16, 0.34);
+  },
+  /** contagem do aviso: um toque seco (mais agudo no último) */
+  waveTick(last = false) {
+    tone('square', last ? 880 : 620, last ? 880 : 620, 0.07, 0.09);
+  },
+  /** onda caindo: estrondo */
   wave() {
     noise(120, 700, 0.6, 0.6, 0.3);
     tone('sawtooth', 70, 110, 0.5, 0.08);

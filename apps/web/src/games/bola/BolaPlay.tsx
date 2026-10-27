@@ -890,10 +890,13 @@ export function BolaPlay({
           const t = Math.min(1, Math.max(0, (dist - 1) / 3.5));
           turnTo(Math.atan2(-dx, -dz), t * t * (3 - 2 * t), 2.6);
           yaw = camYaw;
+          // a altura continua nas suas mãos (mouse), como na câmera solta
+          pitch = Math.min(1.25, Math.max(0.12, pitch + manualPitch));
         }
         if (free && !onWall) camYaw = yaw;
         // na parede e no teto a câmera fica baixa (no teto, uma câmera alta ficaria acima do vidro)
-        scene.setPitch(me && me.surf !== 0 ? 0.2 : free ? pitch : null);
+        // câmera na bola = a mesma da solta (mesma altura e mira, a raposa sempre no mesmo lugar da tela); só o giro vem da bola
+        scene.setPitch(me && me.surf !== 0 ? 0.2 : pitch);
         // na parede e no teto com a câmera na bola, a mira tende para a bola (sem perder a raposa de vista)
         scene.setLookBias(
           me && me.surf !== 0 && !free

@@ -15,6 +15,7 @@ import {
   DSM_CRACK_SEC,
   DSM_GRACE_SEC,
   DSM_GRAVITY,
+  DSM_HEX_SIZE,
   DSM_JUMP,
   DSM_LAVA_DEPTH,
   DSM_LAYERS,
@@ -28,11 +29,29 @@ import {
   DSM_WAVE_ARC_GROW,
   DSM_WAVE_EVERY,
   DSM_WAVE_FIRST,
-  DSM_WAVE_LIFE,
+  DSM_WAVE_MAX_SHARE,
+  DSM_WAVE_RIPPLE,
+  DSM_WAVE_WARN,
+  DSM_WAVE_WARN_MIN,
+  DSM_WAVE_WARN_STEP,
   DSM_WAVE_MIN_EVERY,
   DSM_WAVE_SHRINK,
 } from './constants';
 import { hexKey, hexRing, hexToWorld, hexesOfRadius, layerY, worldToHex } from './hex';
+
+/** Formatos das ondas de queda. */
+export type DsmWavePattern = 'fatia' | 'metade' | 'anel' | 'chuva' | 'borda' | 'tudo';
+
+/** A onda em andamento (o aviso na tela lê isto). */
+export interface DsmWaveInfo {
+  index: number;
+  layer: number;
+  pattern: DsmWavePattern;
+  /** Hora do jogo em que o aviso começou e em que os ladrilhos começam a cair. */
+  from: number;
+  fallAt: number;
+  announced: boolean;
+}
 
 export type DsmTileStatus = 'firme' | 'pisado' | 'caiu';
 
@@ -45,8 +64,10 @@ export interface DsmTile {
   status: DsmTileStatus;
   /** Hora (s do jogo) em que o ladrilho quebra, quando pisado. */
   breakAt: number;
-  /** Veio de uma onda (aparece diferente). */
+  /** Veio de uma onda (aparece diferente: vermelho e piscando durante o aviso). */
   wave: boolean;
+  /** Hora em que a onda marcou o ladrilho: do aviso até `breakAt`. */
+  markAt: number;
 }
 
 export interface DsmPlayerInfo {
@@ -98,7 +119,10 @@ export type DsmEvent =
   | { type: 'land'; id: string; layer: number }
   | { type: 'step'; id: string; layer: number; q: number; r: number }
   | { type: 'break'; layer: number; q: number; r: number }
-  | { type: 'wave'; layer: number; index: number }
+  /** A onda marcou ladrilhos (começa o aviso). */
+  | { type: 'wave'; layer: number; index: number; pattern: DsmWavePattern; fallAt: number }
+  /** O aviso acabou: os ladrilhos marcados começam a cair. */
+  | { type: 'wavefall'; layer: number; index: number }
   | { type: 'fall'; id: string; layer: number }
   | { type: 'dead'; id: string }
   | { type: 'airjump'; id: string }
@@ -125,6 +149,9 @@ export class DsmWorld {
   readonly deaths: string[] = [];
   /** Quantas ondas já aconteceram. */
   waves = 0;
+  /** A onda em andamento (aviso ou queda); `null` entre ondas. */
+  wave: DsmWaveInfo | null = null;
+  private lastPattern: DsmWavePattern | null = null;
   private nextWave = DSM_WAVE_FIRST;
   private waveEvery = DSM_WAVE_EVERY;
   private rng: () => number;
@@ -150,6 +177,7 @@ export class DsmWorld {
           status: 'firme',
           breakAt: 0,
           wave: false,
+          markAt: 0,
         });
       }
     }
@@ -490,33 +518,147 @@ export class DsmWorld {
   }
 
   private updateWaves(): void {
+    const w = this.wave;
+    if (w) {
+      if (!w.announced && this.t >= w.fallAt) {
+        w.announced = true;
+        this.events.push({ type: 'wavefall', layer: w.layer, index: w.index });
+      }
+      // a onda acaba quando o último ladrilho marcado caiu
+      if (w.announced && this.t >= w.fallAt + DSM_WAVE_RIPPLE + 0.1) this.wave = null;
+    }
     if (this.t < this.nextWave) return;
     this.waves += 1;
-    this.nextWave = this.t + this.waveEvery;
+    const warn = Math.max(DSM_WAVE_WARN_MIN, DSM_WAVE_WARN - (this.waves - 1) * DSM_WAVE_WARN_STEP);
+    // a próxima conta a partir do fim desta (nunca duas ao mesmo tempo)
+    this.nextWave = this.t + warn + DSM_WAVE_RIPPLE + this.waveEvery;
     this.waveEvery = Math.max(DSM_WAVE_MIN_EVERY, this.waveEvery * DSM_WAVE_SHRINK);
-    // a onda vai na camada mais alta que ainda tem chão
-    let layer = 0;
-    while (layer < DSM_LAYERS && this.tilesLeft(layer).length === 0) layer++;
-    if (layer >= DSM_LAYERS) return;
-    const arc =
-      this.t > DSM_WAVE_ALL_AFTER
-        ? 360
-        : Math.min(360, DSM_WAVE_ARC0 + (this.waves - 1) * DSM_WAVE_ARC_GROW);
-    const start = this.rng() * 360;
-    for (const t of this.tilesLeft(layer)) {
-      if (t.status === 'caiu') continue;
-      const ang = ((Math.atan2(t.z, t.x) * 180) / Math.PI + 360) % 360;
-      const d = (ang - start + 360) % 360;
-      // o ladrilho do centro entra em qualquer onda de 360°
-      if (d <= arc || hexRing(t.q, t.r) === 0) {
-        if (t.status === 'firme' || t.breakAt > this.t + DSM_WAVE_LIFE) {
-          t.status = 'pisado';
-          t.breakAt = this.t + DSM_WAVE_LIFE;
-          t.wave = true;
+    // a onda vai em cada camada onde há raposa viva (quem já desceu também tem que prestar atenção); sem ninguém, na mais alta
+    const layers = new Set<number>();
+    for (const p of this.players) {
+      if (p.alive) layers.add(p.grounded ? p.layer : Math.max(0, p.deepest));
+    }
+    if (layers.size === 0) {
+      let top = 0;
+      while (top < DSM_LAYERS && this.tilesLeft(top).length === 0) top++;
+      if (top < DSM_LAYERS) layers.add(top);
+    }
+    const all = this.t > DSM_WAVE_ALL_AFTER;
+    const pattern: DsmWavePattern = all ? 'tudo' : this.pickPattern();
+    const fallAt = this.t + warn;
+    let first: number | null = null;
+    for (const layer of [...layers].sort((x, y) => x - y)) {
+      const tiles = this.tilesLeft(layer);
+      if (tiles.length === 0) continue;
+      // cada ladrilho marcado leva uma "ordem de queda" de 0 a 1 (a ondulação): quem cai primeiro, quem cai por último
+      const picked = this.shapeWave(pattern, tiles, layer);
+      if (!all) {
+        // sempre sobra chão: se passou do limite, tira os que cairiam por último
+        const max = Math.max(1, Math.floor(tiles.length * DSM_WAVE_MAX_SHARE));
+        if (picked.length > max) {
+          picked.sort((a, b) => a.order - b.order);
+          picked.length = max;
+        }
+        // camadas quase acabadas: pelo menos um ladrilho sempre fica
+        if (picked.length >= tiles.length && tiles.length > 1) picked.pop();
+      }
+      let marked = 0;
+      for (const { tile, order } of picked) {
+        const at = fallAt + order * DSM_WAVE_RIPPLE;
+        if (tile.status === 'firme' || tile.breakAt > at) {
+          tile.status = 'pisado';
+          tile.breakAt = at;
+          tile.wave = true;
+          tile.markAt = this.t;
+          marked++;
         }
       }
+      if (marked === 0) continue;
+      if (first === null) first = layer;
+      this.events.push({ type: 'wave', layer, index: this.waves, pattern, fallAt });
     }
-    this.events.push({ type: 'wave', layer, index: this.waves });
+    if (first === null) return;
+    this.wave = {
+      index: this.waves,
+      layer: first,
+      pattern,
+      from: this.t,
+      fallAt,
+      announced: false,
+    };
+    this.lastPattern = pattern;
+  }
+
+  /** O formato da próxima onda: a 1ª é sempre uma fatia (fácil de ler); depois sorteia, sem repetir o anterior. */
+  private pickPattern(): DsmWavePattern {
+    if (this.waves <= 1) return 'fatia';
+    const all: DsmWavePattern[] = ['fatia', 'metade', 'anel', 'chuva', 'borda'];
+    const options = all.filter((p) => p !== this.lastPattern);
+    return options[Math.floor(this.rng() * options.length)] as DsmWavePattern;
+  }
+
+  /** Quais ladrilhos o formato derruba e em que ordem (0 = primeiro, 1 = último). Só usa a geometria e o sorteio da semente. */
+  private shapeWave(
+    pattern: DsmWavePattern,
+    tiles: DsmTile[],
+    layer: number,
+  ): { tile: DsmTile; order: number }[] {
+    const radius = this.radii[layer] ?? 3;
+    const out: { tile: DsmTile; order: number }[] = [];
+    const ring = (t: DsmTile) => hexRing(t.q, t.r);
+    if (pattern === 'tudo') {
+      for (const t of tiles) out.push({ tile: t, order: ring(t) / Math.max(1, radius) });
+    } else if (pattern === 'fatia') {
+      const arc = Math.min(200, DSM_WAVE_ARC0 + (this.waves - 1) * DSM_WAVE_ARC_GROW);
+      const start = this.rng() * 360;
+      for (const t of tiles) {
+        const ang = ((Math.atan2(t.z, t.x) * 180) / Math.PI + 360) % 360;
+        const d = (ang - start + 360) % 360;
+        // o centro nunca entra numa fatia (quem foge para o meio sempre se salva dela)
+        if (d <= arc && ring(t) > 0) out.push({ tile: t, order: d / Math.max(1, arc) });
+      }
+    } else if (pattern === 'metade') {
+      const dir = this.rng() * Math.PI * 2;
+      const dx = Math.cos(dir);
+      const dz = Math.sin(dir);
+      const reach = Math.max(1, radius * 1.9);
+      for (const t of tiles) {
+        const along = t.x * dx + t.z * dz;
+        if (along > 0.4) out.push({ tile: t, order: Math.min(1, along / reach) });
+      }
+    } else if (pattern === 'anel') {
+      // uma faixa de 2 anéis: fugir para dentro ou para fora dela
+      const k = 1 + Math.floor(this.rng() * Math.max(1, radius - 2));
+      for (const t of tiles) {
+        const r = ring(t);
+        if (r === k || r === k + 1) out.push({ tile: t, order: (r - k) / 2 });
+      }
+    } else if (pattern === 'chuva') {
+      // blocos soltos de 7 ladrilhos: cada um cai num momento, e dá para ver onde vem
+      const n = Math.min(9, 4 + Math.floor(this.waves / 2));
+      const centers: DsmTile[] = [];
+      for (let i = 0; i < n && tiles.length > 0; i++) {
+        centers.push(tiles[Math.floor(this.rng() * tiles.length)] as DsmTile);
+      }
+      const seen = new Set<DsmTile>();
+      centers.forEach((c, i) => {
+        for (const t of tiles) {
+          if (seen.has(t)) continue;
+          if (Math.hypot(t.x - c.x, t.z - c.z) <= DSM_HEX_SIZE * 2.1) {
+            seen.add(t);
+            out.push({ tile: t, order: i / Math.max(1, n - 1) });
+          }
+        }
+      });
+    } else {
+      // borda: os anéis de fora para dentro; sobra o miolo
+      const w = Math.min(radius - 1, 2 + Math.floor(this.waves / 2));
+      for (const t of tiles) {
+        const r = ring(t);
+        if (r > radius - w) out.push({ tile: t, order: (radius - r) / Math.max(1, w) });
+      }
+    }
+    return out;
   }
 
   private checkLava(): void {
