@@ -51,9 +51,9 @@ describe('corrida e fôlego', () => {
     expect(speed(run)).toBeLessThan(speed(walk));
   });
 
-  it('o fôlego acaba em cerca de 3,5 s; esgotada, volta a andar e só corre de novo com o mínimo', () => {
+  it('o fôlego acaba em cerca de 2,8 s; esgotada, volta a andar e só corre de novo com o mínimo', () => {
     const pr = mk();
-    go(pr, 3, { run: true });
+    go(pr, 2.4, { run: true });
     expect(pr.body.stam).toBeGreaterThan(5);
     expect(pr.body.running).toBe(true);
     go(pr, 1, { run: true });

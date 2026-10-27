@@ -11,7 +11,7 @@ Pedido do Lucas em 27/10/2026. Status: **em andamento (motor, rede e tela feitos
 
 ## 2. Como ficou
 
-- **Corrida** (`body.ts`, `constants.ts`): 11,5 m/s correndo (o mortal é 11), aceleração 18 contra 40 andando. Fôlego 100, gasta 100 em 3,5 s, congela 2 s ao parar de correr, recarrega 12 por segundo. Esgotou: volta a andar, espera 2,5 s e só corre de novo com 20 ou mais (sem isso a pessoa corria "picotado" com 1 de fôlego). Só corre com direção, e não na parede, no teto nem no mortal.
+- **Corrida** (`body.ts`, `constants.ts`): 11,5 m/s correndo (o mortal é 11), aceleração 18 contra 40 andando. Fôlego 100, gasta 100 em 2,8 s, congela 2 s ao parar de correr, recarrega 12 por segundo. Esgotou: volta a andar, espera 2,5 s e só corre de novo com 20 ou mais (sem isso a pessoa corria "picotado" com 1 de fôlego). Só corre com direção, e não na parede, no teto nem no mortal.
 - **Rede**: o terceiro número de cada passo da entrada é um conjunto de bits (1 pulo, 2 correr; o formato antigo mandava 0 ou 1, então segue valendo). O quadro leva o fôlego (coluna 18, inteiro) e os bits 64 (correndo) e 128 (esgotada) nos flags. A previsão com rollback e o preditor simples rodam a mesma conta; as outras raposas são previstas correndo pelo bit 64.
 - **Tela**: `controls.ts` tem Shift (segurar) e o botão do celular (liga e desliga, desliga sozinho ao esgotar). O "não" sai na hora do aperto, no aparelho (barra treme, som `nope`), sem esperar o servidor. Barra e botão animam só `transform` e `opacity`.
 - **Atrito da bola**: Coulomb na parede (`BOL_WALL_MU` 0,3: a batida de lado perde parte da velocidade que corre ao longo dela) e freio de rolagem na rampa (`BOL_RAMP_DRAG` 0,5, `BOL_RAMP_DECEL` 0,8). Com 0,45 os bots faziam quase metade dos gols; 0,3 manteve o ritmo.
@@ -28,6 +28,6 @@ Pedido do Lucas em 27/10/2026. Status: **em andamento (motor, rede e tela feitos
 
 - Cinco toques no Shift abrem as "Teclas de Aderência" do Windows; está avisado em Comandos, mas não há tecla alternativa.
 - Bots não correm.
-- Os valores (10,5, 3,5 s, 2 s, 12 por segundo, 20) são palpite: ajustar jogando, tudo em `constants.ts`.
+- Os valores (10,5, 2,8 s, 2 s, 12 por segundo, 20) são palpite: ajustar jogando, tudo em `constants.ts`.
 - A raposa no teto junto da parede ainda não inclina com a curva (fica de cabeça para baixo, reta).
 - O servidor sobe antes (Render) e o web depois; quem ainda tem a versão antiga só não corre.

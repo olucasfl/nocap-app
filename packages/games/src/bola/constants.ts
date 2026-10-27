@@ -56,7 +56,7 @@ export const BOL_RUN_SPEED = 11.5;
 export const BOL_RUN_ACCEL = 18;
 /** Fôlego de 0 a 100: gasta correndo, fica parado `HOLD` s depois de correr e só então recarrega (devagar). */
 export const BOL_STAM_MAX = 100;
-export const BOL_STAM_DRAIN = 100 / 3.5;
+export const BOL_STAM_DRAIN = 100 / 2.8;
 export const BOL_STAM_HOLD = 2;
 export const BOL_STAM_REGEN = 12;
 /** Esgotou: só volta a correr com este tanto (senão a pessoa picotaria a corrida com 1 de fôlego) e demora a recarregar. */
