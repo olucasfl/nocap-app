@@ -1282,63 +1282,112 @@
 }
 
 /* Corrida e fôlego (spec 053). Só transform e opacity animam; sem emoji. */
-.bola-stam {
+/* Medidor circular do fôlego (computador), embaixo à direita e sempre visível, como o boost do Rocket League */
+.bola-gauge {
   position: absolute;
-  left: 50%;
-  bottom: calc(max(16px, env(safe-area-inset-bottom)) + 30px);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transform: translateX(-50%);
-  opacity: 0;
+  right: max(26px, env(safe-area-inset-right));
+  bottom: max(22px, env(safe-area-inset-bottom));
+  width: 118px;
+  height: 118px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 2px;
   pointer-events: none;
-  transition: opacity 0.2s ease-out;
 }
-.bola-stam[data-on='1'] {
-  opacity: 1;
+.bola-gauge::before {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  background: rgba(27, 21, 53, 0.55);
 }
-.bola-stam-bar {
-  display: block;
-  width: min(150px, 32vw);
-  height: 14px;
-  border: 3px solid #1b1535;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.4);
-  overflow: hidden;
-}
-.bola-stam-bar i {
-  display: block;
+.bola-gauge svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
   height: 100%;
-  background: #4d8dff;
-  transform-origin: left center;
+  fill: #ffd23f;
+  filter: drop-shadow(0 0 3px rgba(27, 21, 53, 0.9));
 }
-.bola-stam[data-tired='1'] .bola-stam-bar i {
-  background: #e5484d;
+.bola-gauge[data-run='1'] svg {
+  fill: #ffe98a;
 }
-.bola-stam b {
-  min-width: 2.2ch;
-  font: 800 13px var(--font-display, system-ui);
+.bola-gauge[data-tired='1'] svg {
+  fill: #e5484d;
+}
+.bola-gauge b {
+  position: relative;
+  font: 900 38px/1 var(--font-display, system-ui);
+  font-variant-numeric: tabular-nums;
   color: #fff;
-  -webkit-text-stroke: 3px #1b1535;
+  -webkit-text-stroke: 5px #1b1535;
   paint-order: stroke fill;
-  text-align: left;
 }
-.bola-stam[data-nope='1'] {
-  animation: bola-nope 0.28s ease-out;
-}
-.bola-stam[data-tired='1'] b {
+.bola-gauge[data-tired='1'] b {
   color: #ff8d90;
 }
-@keyframes bola-nope {
+.bola-gauge .bola-keycap {
+  position: relative;
+}
+.bola-gauge[data-nope='1'] {
+  animation: bola-nope-g 0.28s ease-out;
+}
+@keyframes bola-nope-g {
   20% {
-    transform: translateX(calc(-50% - 6px));
+    transform: translateX(-6px);
   }
   45% {
-    transform: translateX(calc(-50% + 6px));
+    transform: translateX(6px);
   }
   70% {
-    transform: translateX(calc(-50% - 3px));
+    transform: translateX(-3px);
   }
+}
+
+/* Câmera (computador): texto solto embaixo à esquerda, como no Rocket League */
+@media (hover: hover) and (pointer: fine) {
+  .bola-cam {
+    left: max(26px, env(safe-area-inset-left));
+    bottom: max(24px, env(safe-area-inset-bottom));
+    padding: 0;
+    min-height: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    color: #fff;
+    gap: 10px;
+    text-align: left;
+  }
+  .bola-cam-txt {
+    display: grid;
+    gap: 2px;
+  }
+  .bola-cam-txt b {
+    font: 900 22px/1 var(--font-display, system-ui);
+    text-transform: uppercase;
+    -webkit-text-stroke: 5px #1b1535;
+    paint-order: stroke fill;
+  }
+  .bola-cam-txt small {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font: 800 11px/1 var(--font-display, system-ui);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    -webkit-text-stroke: 3px #1b1535;
+    paint-order: stroke fill;
+  }
+}
+.bola-cam-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #e5484d;
+  border: 3px solid #1b1535;
+  flex: none;
 }
 
 /* Botão de correr (celular): liga e desliga; o número do fôlego fica em cima */
@@ -1402,8 +1451,7 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .bola-stam,
-  .bola-stam[data-nope='1'],
+  .bola-gauge[data-nope='1'],
   .bola-run[data-tired='1'] .bola-run-n {
     transition: none;
     animation: none;

@@ -31,6 +31,8 @@ interface Fox {
   wasGrounded: boolean;
   lastVy: number;
   dustT: number;
+  /** Intervalo até o próximo pedaço do rastro de corrida. */
+  trailT: number;
   /** Última direção de subida na parede (para a raposa não virar de repente ao parar). */
   wallFwd: THREE.Vector3;
   /** A virada do corpo (quaternion): muda com suavidade ao colar, ao soltar (com um giro) e ao pousar. */
@@ -896,6 +898,7 @@ export class BolaScene {
       wasGrounded: true,
       lastVy: 0,
       dustT: 0,
+      trailT: 0,
       wallFwd: new THREE.Vector3(0, 1, 0),
       qCur: new THREE.Quaternion(),
       qFrom: new THREE.Quaternion(),
@@ -1355,6 +1358,17 @@ export class BolaScene {
           );
         }
       }
+      // rastro de corrida: um fio de luz na cor do time que fica para trás enquanto ela corre
+      if (p.running && !this.reduced) {
+        fox.trailT -= dt;
+        if (fox.trailT <= 0) {
+          fox.trailT = 0.022;
+          const bx = p.x - Math.sin(p.heading) * 0.55;
+          const bz = p.z - Math.cos(p.heading) * 0.55;
+          this.addGlow(bx, p.y + 0.55, bz, BOL_TEAM_COLORS[p.team] ?? 0xffffff, 1.5, 0.5, 0.55);
+          this.addGlow(bx, p.y + 0.55, bz, 0xffffff, 0.6, 0.26, 0.5);
+        }
+      } else fox.trailT = 0;
       const onSurf = p.surf !== 0;
       const squash = p.grounded
         ? 1 + Math.sin(this.world.clock * 18 + p.x) * 0.04 * Math.min(1, speed / 3)

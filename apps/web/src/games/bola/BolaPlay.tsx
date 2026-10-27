@@ -45,6 +45,8 @@ const BOT_NAMES = [
 ];
 /** Quanto tempo um toque de pulo espera uma chance de valer (pousar, ou o pulo duplo estar livre). */
 const JUMP_BUFFER_MS = 140;
+/** Segmentos do medidor de fôlego (anel). */
+const GAUGE_SEGS = 28;
 
 export interface BolaSetup {
   teams: number;
@@ -1249,16 +1251,24 @@ export function BolaPlay({
             onClick={() => camToggle.current()}
             aria-pressed={!hud.ballCam}
           >
-            <Key k="F" className="bola-hide-touch" />
-            <IcCamera size={18} />
-            {hud.ballCam ? 'Câmera solta' : 'Câmera na bola'}
+            <span className="bola-cam-dot bola-hide-touch" aria-hidden="true" />
+            <span className="bola-cam-txt bola-hide-touch">
+              <b>{hud.ballCam ? 'Câmera da bola' : 'Câmera livre'}</b>
+              <small>
+                Pressione <Key k="F" /> para alternar
+              </small>
+            </span>
+            <span className="bola-show-touch">
+              <IcCamera size={18} />
+              {hud.ballCam ? 'Câmera solta' : 'Câmera na bola'}
+            </span>
           </button>
         </>
       )}
       <div
         key={`stam${nope}`}
-        className="bola-stam bola-hide-touch"
-        data-on={hud.stam < 99 || hud.running || hud.tired ? '1' : '0'}
+        className="bola-gauge bola-hide-touch"
+        data-run={hud.running ? '1' : '0'}
         data-tired={hud.tired ? '1' : '0'}
         data-nope={nope > 0 ? '1' : '0'}
         role="progressbar"
@@ -1267,11 +1277,22 @@ export function BolaPlay({
         aria-valuemax={100}
         aria-valuenow={hud.stam}
       >
-        <Key k="Shift" />
-        <span className="bola-stam-bar">
-          <i style={{ transform: `scaleX(${Math.max(0, Math.min(1, hud.stam / 100))})` }} />
-        </span>
+        <svg viewBox="-60 -60 120 120" aria-hidden="true">
+          {Array.from({ length: GAUGE_SEGS }, (_, i) => (
+            <rect
+              key={i}
+              x={-3.2}
+              y={-55}
+              width={6.4}
+              height={11}
+              rx={2}
+              transform={`rotate(${i * (360 / GAUGE_SEGS)})`}
+              opacity={i < Math.round((hud.stam / 100) * GAUGE_SEGS) ? 1 : 0.16}
+            />
+          ))}
+        </svg>
         <b>{hud.stam}</b>
+        <Key k="Shift" />
       </div>
       <div
         className="bola-stick"

@@ -306,6 +306,7 @@ export class BolaNetSync {
       p.flipT = (ra.fl & 2) === 2 ? 0.3 : 0;
       p.airJumped = (ra.fl & 4) === 4;
       p.surf = (ra.fl & 16) === 16 ? 1 : (ra.fl & 32) === 32 ? 2 : 0;
+      p.running = (ra.fl & 64) === 64;
       p.stick = ra.st;
       p.wnx = ra.wx;
       p.wnz = ra.wz;
