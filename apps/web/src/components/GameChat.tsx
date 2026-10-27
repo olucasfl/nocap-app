@@ -60,7 +60,8 @@ export function GameChat({
   onClosed,
 }: {
   enabled?: boolean;
-  onClosed?: () => void;
+  /** O chat fechou; `wasLocked` diz se o mouse estava preso à câmera antes de abrir (então deve voltar a ficar). */
+  onClosed?: (wasLocked: boolean) => void;
 }) {
   const snapshot = useRoom((s) => s.snapshot);
   const messages = useRoom((s) => s.chat);
@@ -71,15 +72,23 @@ export function GameChat({
   const timers = useRef(new Map<number, number>());
   const closedCb = useRef(onClosed);
   closedCb.current = onClosed;
+  const wasLocked = useRef(false);
 
   const setOpen = (v: boolean) => {
     if (useGameChat.getState().open === v) return;
     useGameChat.setState({ open: v });
     if (v) {
-      // o mouse volta a aparecer para poder clicar e digitar
+      // o mouse volta a aparecer para poder clicar e digitar (e lembra se estava preso, para prender de novo ao fechar)
+      wasLocked.current = !!document.pointerLockElement;
       if (document.pointerLockElement) document.exitPointerLock();
     } else {
-      closedCb.current?.();
+      // o Esc que fechou o chat ainda está sendo tratado pelo navegador (que solta o mouse preso): prender no mesmo instante
+      // faria o jogo achar que a pessoa soltou de propósito e abrir o menu. Espera o Esc passar.
+      const was = wasLocked.current;
+      wasLocked.current = false;
+      window.setTimeout(() => {
+        if (!useGameChat.getState().open) closedCb.current?.(was);
+      }, 250);
     }
   };
 

@@ -130,6 +130,15 @@ export class DsmControls {
     if (document.pointerLockElement) document.exitPointerLock();
   }
 
+  /**
+   * Volta a prender o mouse depois de um painel (o chat). O navegador não conta o Esc como gesto da pessoa, então se o
+   * pedido agora falhar a próxima tecla ou clique prende (o jogo deixa de achar que a pessoa soltou de propósito).
+   */
+  resumeLock() {
+    this.escaped = false;
+    this.requestLock();
+  }
+
   /** Prende o ponteiro (precisa de um clique ou toque da pessoa). Esc solta. */
   requestLock() {
     if (!this.allowLock) return;

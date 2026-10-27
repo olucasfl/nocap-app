@@ -598,7 +598,7 @@ export function DesmoronaPlay({
       {hud.phase === 'ready' && !result && (
         <GameTips storageKey={TIPS_KEY} rows={tipRows(touchDevice)} testId="dsm-tips" />
       )}
-      <GameChat enabled={!!online && !result} onClosed={() => controls.requestLock()} />
+      <GameChat enabled={!!online && !result} onClosed={(was) => was && controls.resumeLock()} />
       {menu && !result && (
         <GameMenu
           title="Menu"

@@ -1143,7 +1143,7 @@ export function BolaPlay({
         </div>
       )}
       {hud.myTeam >= 0 && !over && <BolaTips touch={touchDevice} />}
-      <GameChat enabled={!!online && !over} onClosed={() => controls.requestLock()} />
+      <GameChat enabled={!!online && !over} onClosed={(was) => was && controls.resumeLock()} />
       {!over && hud.myTeam >= 0 && (
         <>
           <button
