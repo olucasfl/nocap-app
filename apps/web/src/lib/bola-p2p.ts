@@ -1,3 +1,4 @@
+import { unpackBolaFrame } from '@nocap/games';
 import type { BolaFrame, BolaLink, BolaRosterRow } from './bola-link';
 import { sendRoomQuiet, subscribeRoom, type BolaRoomState } from './rooms';
 
@@ -32,6 +33,8 @@ interface HostPeer {
   ctl: RTCDataChannel | null;
   cands: RTCIceCandidateInit[];
   remoteSet: boolean;
+  /** Este aparelho entende o quadro compacto. */
+  q: boolean;
 }
 
 export interface HostResult {
@@ -105,7 +108,7 @@ export class BolaHostSession {
 
   private newPeer(id: string): HostPeer {
     const pc = new RTCPeerConnection(ICE);
-    const peer: HostPeer = { id, pc, game: null, ctl: null, cands: [], remoteSet: false };
+    const peer: HostPeer = { id, pc, game: null, ctl: null, cands: [], remoteSet: false, q: false };
     this.peers.set(id, peer);
     pc.onicecandidate = (e) => {
       if (e.candidate) signal(id, { cand: e.candidate.toJSON() });
@@ -139,13 +142,22 @@ export class BolaHostSession {
   private onCtl(peer: HostPeer, data: unknown) {
     if (typeof data !== 'string') return;
     try {
-      const m = JSON.parse(data) as { t?: string; ts?: number };
-      if (m.t === 'ping' && peer.ctl?.readyState === 'open') {
+      const m = JSON.parse(data) as { t?: string; ts?: number; q?: number };
+      if (m.t === 'hello') {
+        peer.q = m.q === 1;
+        this.sendFormat();
+      } else if (m.t === 'ping' && peer.ctl?.readyState === 'open') {
         peer.ctl.send(JSON.stringify({ t: 'pong', ts: m.ts }));
       }
     } catch {
       /* ignora */
     }
+  }
+
+  /** Quadro compacto só quando todos os aparelhos conectados o entendem (um site velho precisa do quadro de sempre). */
+  private sendFormat() {
+    const all = this.peers.size > 0 && [...this.peers.values()].every((p) => p.q);
+    this.worker?.postMessage({ t: 'fmt', q: all });
   }
 
   /** Quem saiu (ou perdeu a conexão) vira bot no lugar; a lista nova volta do worker e vai a todos. */
@@ -156,6 +168,7 @@ export class BolaHostSession {
     peer.pc.close();
     if (this.worker && !this.finished) this.worker.postMessage({ t: 'toBot', id });
     this.worker?.postMessage({ t: 'rate', everyPeerFrame: this.peers.size <= PEERS_FULL_RATE });
+    this.sendFormat();
   }
 
   /** Começa a simular (todos os aparelhos já conectaram, ou o líder está sozinho). */
@@ -169,6 +182,7 @@ export class BolaHostSession {
       setup: this.setup,
       everyPeerFrame: this.peers.size <= PEERS_FULL_RATE,
     });
+    this.sendFormat();
   }
 
   private onWorker(m: WorkerOut) {
@@ -287,7 +301,7 @@ export class BolaPeerSession {
     this.game.onmessage = (e) => {
       if (typeof e.data !== 'string') return;
       try {
-        const f = JSON.parse(e.data) as BolaFrame;
+        const f = unpackBolaFrame(JSON.parse(e.data) as BolaFrame);
         for (const cb of this.frameCbs) cb(f);
       } catch {
         /* quadro ilegível: ignora */
@@ -298,6 +312,8 @@ export class BolaPeerSession {
       if (this.open || this.game.readyState !== 'open' || this.ctl.readyState !== 'open') return;
       this.open = true;
       window.clearTimeout(this.failTimer);
+      // avisa o líder que entende o quadro compacto
+      this.ctl.send(JSON.stringify({ t: 'hello', q: 1 }));
       this.pingTimer = window.setInterval(() => this.ping(), 500);
       this.ping();
       this.h.onOpen();

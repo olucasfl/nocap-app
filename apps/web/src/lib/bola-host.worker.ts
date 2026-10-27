@@ -1,5 +1,5 @@
 /// <reference lib="webworker" />
-import { BOL_TEAM_COLORS, BolaMatch, type BolInfo } from '@nocap/games';
+import { BOL_TEAM_COLORS, BolaMatch, packBolaFrame, type BolInfo } from '@nocap/games';
 
 /**
  * A partida do Fut Fox do aparelho do líder (spec 048), numa thread só dela. A simulação não pode esperar a tela
@@ -22,6 +22,7 @@ interface Setup {
 type In =
   | { t: 'init'; setup: Setup; everyPeerFrame: boolean }
   | { t: 'rate'; everyPeerFrame: boolean }
+  | { t: 'fmt'; q: boolean }
   | { t: 'input'; id: string; v: unknown }
   | { t: 'toBot'; id: string }
   | { t: 'switch'; id: string; name: string; team: number; bot: string | null }
@@ -32,6 +33,8 @@ const EVENT_KEEP_MS = 600;
 let match: BolaMatch | null = null;
 let timer = 0;
 let everyPeerFrame = true;
+/** Todos os aparelhos conectados entendem o quadro compacto (menos bytes por envio). */
+let compact = false;
 let n = 0;
 let finished = false;
 const evBuf: { at: number; e: Record<string, unknown> }[] = [];
@@ -58,7 +61,7 @@ function loop() {
       out.st = pendingSt;
       pendingSt = null;
     }
-    peer = JSON.stringify(out);
+    peer = JSON.stringify(compact ? packBolaFrame(out) : out);
   }
   n++;
   post({ t: 'frame', local, peer });
@@ -98,6 +101,9 @@ self.onmessage = (ev: MessageEvent<In>) => {
     }
     case 'rate':
       everyPeerFrame = msg.everyPeerFrame;
+      break;
+    case 'fmt':
+      compact = msg.q;
       break;
     case 'input':
       match?.input(msg.id, msg.v);

@@ -60,3 +60,11 @@ Decisão do Lucas: o líder ficava liso e os outros travavam. O servidor volta a
 - **Quadro compacto:** quem entra na sala com `q: 1` (o site novo) recebe posições e velocidades em centésimos inteiros (`packBolaFrame`/`unpackBolaFrame`): ~210 bytes em vez de ~460 com 6 raposas. O site velho continua recebendo o quadro de sempre.
 - **Medidor do servidor:** uma vez por segundo o quadro leva `sv: [quadros enviados, maior intervalo em ms]` e o painel de rede mostra `srv N/s · X ms`. Serve para separar "servidor engasgando" de "rede ruim" no teste com o servidor de verdade.
 - Testado e **descartado**: a bola local reagir às raposas dos outros na posição de agora (`presentOthers`) não mostrou ganho na simulação (fica desligado). Rollback/determinismo e "bola por pessoa" foram avaliados e não valem o risco (cálculos de ponto flutuante podem divergir entre navegadores).
+
+## Ponto a ponto de volta, melhorado para quem não é o líder (27/10/2026)
+
+Pedido do Lucas: voltar ao líder, mas sem lagar para o outro. Como ficou:
+- **Ligado por padrão** (`FUT_FOX_P2P=0` no servidor desliga e o servidor simula tudo). O servidor continua como reserva se alguém não conectar em 7 s.
+- **Quadro compacto no canal direto:** o aparelho de quem não é líder avisa (`hello q:1` no canal `ctl`) que entende o formato compacto; só quando todos entendem o worker do líder manda o quadro em inteiros (menos da metade dos bytes).
+- **Líder desenha no máximo ~80 quadros por segundo** (antes ~165): o processador que desenha também envia os estados aos outros, e com ele ocupado os envios saíam irregulares (o outro aparelho recebia ~47 de 60 estados por segundo mesmo com ping de 1 ms).
+- Não testado ainda com dois aparelhos em redes diferentes. O painel de rede do outro aparelho (`P2P N ms · estados/s`) é o que mostra se melhorou.

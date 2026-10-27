@@ -742,11 +742,11 @@ export class BolaRoom extends ColorRoom {
 }
 
 /**
- * Partida ponto a ponto (o aparelho do líder simula): desligada. O servidor simula e todo mundo recebe o mesmo estado,
- * então ninguém tem vantagem de latência (decisão do Lucas, 27/10/2026: só o líder ficava liso). Ligue de novo com
- * `FUT_FOX_P2P=1`.
+ * Partida ponto a ponto do Fut Fox: o aparelho do líder simula e os outros conectam direto a ele (WebRTC), com o servidor
+ * como reserva se alguém não conectar. Ligada por padrão (27/10/2026): entre dois amigos no Brasil o caminho direto é bem
+ * menor que ir ao servidor. `FUT_FOX_P2P=0` desliga e o servidor passa a simular tudo.
  */
-const P2P_ON = () => process.env.FUT_FOX_P2P === '1';
+const P2P_ON = () => process.env.FUT_FOX_P2P !== '0';
 
 /** Nomes e limites dos jogos que a sala do Fox Cap! pode jogar. */
 const FOX_GAMES = {

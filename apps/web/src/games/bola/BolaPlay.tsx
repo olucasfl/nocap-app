@@ -773,7 +773,14 @@ export function BolaPlay({
     let prevPhase: string = world.phase;
     let jumpUntil = 0;
     let raf = 0;
+    // O aparelho do líder simula e envia os estados aos outros pelo mesmo processador que desenha: em tela de 144 a 165 Hz
+    // ele gastava tudo em desenhar e os envios saíam irregulares (os outros recebiam ~47 de 60 estados). Desenha no máximo ~80/s.
+    const capDraw = !!online?.link?.local;
+    let lastDrawAt = 0;
     const tick = (now: number) => {
+      // quadro pulado: o laço de fora já agenda o próximo
+      if (capDraw && now - lastDrawAt < 12) return;
+      lastDrawAt = now;
       draws++;
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;

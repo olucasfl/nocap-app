@@ -79,6 +79,8 @@ function watch(room: ClientRoom): Seen {
 }
 
 beforeAll(async () => {
+  // estes testes cobrem o servidor simulando; o ponto a ponto tem o seu teste (liga a variável nele)
+  process.env.FUT_FOX_P2P = '0';
   http = createServer();
   game = new Server({ transport: new WebSocketTransport({ server: http }) });
   game.define('bola', BolaRoom);
@@ -169,7 +171,7 @@ describe('sala do Fut Fox com servidor de verdade', () => {
       error: 'O time Vermelho está cheio',
     });
     await until(() => duda.errors.includes('O time Vermelho está cheio'));
-    delete process.env.FUT_FOX_P2P;
+    process.env.FUT_FOX_P2P = '0';
   }, 30_000);
 
   it('quadro compacto só para quem avisou (q: 1); os outros recebem o de sempre; o servidor manda o medidor (sv)', async () => {
