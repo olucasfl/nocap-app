@@ -61,6 +61,14 @@ export const atravessaTipRows = (touch: boolean): TipRow[] =>
           keys: <b className="gm-tag">Corra</b>,
           text: 'Parar demais derruba você: continue avançando',
         },
+        {
+          keys: <b className="gm-tag">Menu</b>,
+          text: 'Botão Menu: pausa, convidar, comandos e sair',
+        },
+        {
+          keys: <b className="gm-tag">Chat</b>,
+          text: 'Botão do balão (em sala): abre e fecha o chat',
+        },
       ]
     : [
         {
@@ -76,6 +84,14 @@ export const atravessaTipRows = (touch: boolean): TipRow[] =>
         },
         { keys: <b className="gm-tag">Setas</b>, text: 'Fazem o mesmo que W A S D' },
         { keys: <Keycap k="Esc" touchHide={false} />, text: 'Pausa e abre o menu (P também)' },
+        {
+          keys: <Keycap k="T" touchHide={false} />,
+          text: 'Abre e fecha o chat da sala (Enter também abre; Esc fecha)',
+        },
+        {
+          keys: <b className="gm-tag">Toque</b>,
+          text: 'No celular: toque = frente, deslizar = direção',
+        },
       ];
 
 const clamp01 = (x: number) => Math.max(0, Math.min(1, x));

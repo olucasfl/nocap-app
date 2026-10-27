@@ -216,7 +216,7 @@ export function GameMenu({
           >
             <span className="gm-item-main">
               <IcKeyboard size={20} />
-              Controles
+              Comandos
             </span>
           </button>
           {net && (
@@ -278,6 +278,7 @@ export function GameMenu({
       {showTips && (
         <GameTips
           storageKey={tipsKey}
+          title="Comandos"
           rows={tips}
           forced
           onDone={() => setShowTips(false)}

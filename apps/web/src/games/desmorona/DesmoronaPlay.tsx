@@ -35,6 +35,18 @@ const tipRows = (touch: boolean): TipRow[] =>
           keys: <b className="gm-tag">Corra</b>,
           text: 'Andar quebra o chão: não pare, e pule os buracos',
         },
+        {
+          keys: <b className="gm-tag">Menu</b>,
+          text: 'Botão Menu: convidar, comandos, som e sair',
+        },
+        {
+          keys: <b className="gm-tag">Chat</b>,
+          text: 'Botão do balão (em sala): abre e fecha o chat',
+        },
+        {
+          keys: <b className="gm-tag">‹ ›</b>,
+          text: 'Depois de cair: troca quem você assiste',
+        },
       ]
     : [
         {
@@ -55,7 +67,15 @@ const tipRows = (touch: boolean): TipRow[] =>
         { keys: <IcCamera size={20} />, text: 'O mouse gira a câmera (clique para prender)' },
         {
           keys: <Keycap k="Esc" touchHide={false} />,
-          text: 'Menu: convidar, controles, som e sair',
+          text: 'Menu: convidar, comandos, som e sair',
+        },
+        {
+          keys: <Keycap k="T" touchHide={false} />,
+          text: 'Abre e fecha o chat da sala (Enter também abre; Esc fecha)',
+        },
+        {
+          keys: <b className="gm-tag">‹ ›</b>,
+          text: 'Depois de cair: troca quem você assiste (botões na tela)',
         },
       ];
 
