@@ -1,17 +1,15 @@
 import { BOL_TEAM_NAMES } from '@nocap/games';
-import { GameMenu, Keycap } from '@/components/GameMenu';
+import { GameMenu } from '@/components/GameMenu';
 import { bolaTipRows, BOLA_TIPS_KEY } from './BolaTips';
-import { IcCamera, IcEye, IcFlag, IcTable, IcTeams } from './BolaIcons';
+import { IcEye, IcFlag, IcTable, IcTeams } from './BolaIcons';
 
 /** Menu da partida (Esc): o comum dos jogos mais o que é do Fut Fox: tabela, câmera, time ou espectar e encerrar. */
 export function BolaMenu({
   myTeam,
-  ballCam,
   online,
   touch,
   onClose,
   onStats,
-  onCam,
   netPanel,
   onTeams,
   onEnd,
@@ -20,13 +18,11 @@ export function BolaMenu({
 }: {
   /** Time de quem joga; -1 = espectador. */
   myTeam: number;
-  ballCam: boolean;
   /** Partida em sala (convidar mostra o código e os amigos). */
   online: boolean;
   touch: boolean;
   onClose: () => void;
   onStats: () => void;
-  onCam: () => void;
   /** Só online: liga e desliga o painel de rede (ping e estados por segundo). */
   netPanel?: { on: boolean; toggle: () => void };
   onTeams: () => void;
@@ -52,18 +48,8 @@ export function BolaMenu({
           id: 'stats',
           icon: <IcTable size={20} />,
           label: 'Tabela de estatísticas',
-          hint: <Keycap k="Tab" />,
           onClick: onStats,
           testId: 'bola-menu-stats',
-        },
-        {
-          id: 'cam',
-          icon: <IcCamera size={20} />,
-          label: ballCam && !spectating ? 'Soltar a câmera' : 'Prender a câmera na bola',
-          hint: <Keycap k="F" />,
-          onClick: onCam,
-          disabled: spectating,
-          testId: 'bola-menu-cam',
         },
         {
           id: 'teams',

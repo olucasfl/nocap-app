@@ -1184,7 +1184,6 @@ export function BolaPlay({
       {menu && !over && !teamsOpen && (
         <BolaMenu
           myTeam={hud.myTeam}
-          ballCam={hud.ballCam}
           onClose={() => {
             setMenu(false);
             setTeamsOpen(false);
@@ -1193,7 +1192,6 @@ export function BolaPlay({
             setMenu(false);
             setPinned(true);
           }}
-          onCam={() => camToggle.current()}
           online={!!online}
           touch={touchDevice}
           onOfflineInvite={onOfflineInvite}
