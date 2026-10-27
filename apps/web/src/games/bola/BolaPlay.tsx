@@ -97,7 +97,6 @@ interface Hud {
   clock: number;
   scores: number[];
   golden: boolean;
-  feed: { id: number; text: string; team: number }[];
   warn: string;
   winner: number;
   ballCam: boolean;
@@ -240,7 +239,6 @@ export function BolaPlay({
     clock: 0,
     scores: [],
     golden: false,
-    feed: [],
     warn: '',
     winner: -1,
     ballCam: false,
@@ -348,18 +346,11 @@ export function BolaPlay({
     window.addEventListener('blur', onBlur);
 
     let feedId = 0;
-    let feed: Hud['feed'] = [];
     let warn = '';
     let warnTimer = 0;
     let bannerTimer = 0;
     let flashId = 0;
     let banner: Hud['banner'] = null;
-    const push = (text: string, team: number) => {
-      feed = [...feed.slice(-3), { id: feedId++, text, team }];
-      window.setTimeout(() => {
-        feed = feed.filter((f) => f.text !== text);
-      }, 4200);
-    };
     const nameOf = (id: string | null) => world.players.find((p) => p.id === id)?.name ?? 'Alguém';
 
     /** Volume de um som pela distância até a sua raposa (ou até a bola, se você só assiste). */
@@ -419,17 +410,10 @@ export function BolaPlay({
           break;
       }
       if (e.type === 'goal') {
-        const tn = (t: number) => BOL_TEAM_NAMES[t] ?? '';
-        let title = 'GOL!';
-        let sub = `${nameOf(e.scorerId)} · time ${tn(e.scorerTeam)}`;
-        if (e.noTouch) {
-          title = `GOL CONTRA DO TIME ${tn(e.goalTeam).toUpperCase()}`;
-          sub = `Ninguém tocou na bola · ponto para o time ${tn(e.scorerTeam)}`;
-        } else if (e.own) {
-          title = 'GOL CONTRA';
-          sub = `${nameOf(e.ownerId)} (${tn(e.goalTeam)}) · ponto para o time ${tn(e.scorerTeam)}`;
-        }
-        push(`${title} · ${sub}`, e.scorerTeam);
+        // só o nome de quem fez o gol (em gol contra, quem tocou) na cor do time que ganhou o ponto, e a velocidade pequena embaixo
+        const who = e.noTouch ? null : e.own ? e.ownerId : e.scorerId;
+        const title = who ? `GOL DE ${nameOf(who).toUpperCase()}` : 'GOL';
+        const sub = '';
         banner = {
           title,
           sub,
@@ -904,7 +888,6 @@ export function BolaPlay({
             : Math.max(0, world.durationSec - world.clock),
           scores: [...world.scores],
           golden: world.golden,
-          feed,
           warn,
           winner: world.winner,
           ballCam,
@@ -1101,9 +1084,9 @@ export function BolaPlay({
               ));
             })()}
           </strong>
-          <span className="bola-banner-sub">{hud.banner.sub}</span>
+          {hud.banner.sub && <span className="bola-banner-sub">{hud.banner.sub}</span>}
           {hud.banner.kmh !== undefined && hud.banner.kmh > 0 && (
-            <b className="bola-banner-speed">Bola a {hud.banner.kmh} km/h</b>
+            <b className="bola-banner-speed">{hud.banner.kmh} km/h</b>
           )}
           {hud.banner.stay && hud.banner.out && (
             <div className="bola-ot" aria-label="Quem continua e quem espectou">
@@ -1136,20 +1119,6 @@ export function BolaPlay({
         </div>
       )}
       {hud.warn && <div className="dsm-note bola-warn">{hud.warn}</div>}
-      <ul className="bola-feed" aria-live="polite">
-        {hud.feed.map((f) => (
-          <li
-            key={f.id}
-            style={
-              {
-                '--c': `#${(BOL_TEAM_COLORS[f.team] ?? 0xffffff).toString(16).padStart(6, '0')}`,
-              } as CSSProperties
-            }
-          >
-            {f.text}
-          </li>
-        ))}
-      </ul>
       {hud.phase === 'countdown' && (
         <div className="dsm-count" aria-live="assertive">
           {hud.count > 0 ? hud.count : 'Já!'}

@@ -77,7 +77,6 @@ for (const ph of phones) {
       gear: await box(page, '.bola-gear'),
       score: await box(page, '.bola-board-row .bola-team'),
       banner: await box(page, '.bola-banner'),
-      feed: await box(page, '.bola-feed li'),
       jump: await box(page, '.dsm-jump'),
       cam: await box(page, '.bola-cam'),
     };

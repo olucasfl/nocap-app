@@ -1122,6 +1122,9 @@
   box-shadow: none;
   gap: 4px;
   color: #fff;
+  /* sem isto o cartaz (que parte do meio da tela) só teria metade da largura e quebraria em duas linhas */
+  width: max-content;
+  max-width: 94%;
   animation: bola-banner-out 0.5s ease-in 4.2s both;
 }
 .bola-banner strong {
@@ -1232,27 +1235,11 @@
   }
 }
 
-/* A lista de eventos também sem fundo: texto com contorno e uma bolinha na cor do time */
-.bola-feed li {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: none;
+/* velocidade da bola no gol: pequena, embaixo do nome */
+.bola-banner .bola-banner-speed {
+  font-size: clamp(13px, 2.2vw, 18px);
+  letter-spacing: 0.08em;
   color: #fff;
-  font: 800 14px var(--font-display, system-ui);
-  -webkit-text-stroke: 4px #1b1535;
-  paint-order: stroke fill;
-  text-shadow: 0 2px 0 #1b1535;
-}
-.bola-feed li::before {
-  content: '';
-  flex: none;
-  width: 12px;
-  height: 12px;
-  border: 3px solid #1b1535;
-  border-radius: 50%;
-  background: var(--c, #fff);
+  -webkit-text-stroke-width: 4px;
+  animation-delay: calc(var(--n, 4) * 55ms + 200ms);
 }
