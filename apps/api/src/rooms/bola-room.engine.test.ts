@@ -291,7 +291,7 @@ describe('sala do Fut Fox: partida', () => {
     const f = s.room.drainFrame() as { b: number[]; p: number[][]; ev: unknown[]; st?: unknown };
     expect(f.b).toHaveLength(6);
     expect(f.p).toHaveLength(2);
-    expect(f.p[0]).toHaveLength(18);
+    expect(f.p[0]).toHaveLength(19);
   });
 });
 

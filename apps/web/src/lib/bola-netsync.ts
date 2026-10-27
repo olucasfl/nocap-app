@@ -266,7 +266,7 @@ export class BolaNetSync {
   }
 
   /** Um quadro de desenho: põe no mundo os outros, a bola e a própria raposa. */
-  update(dt: number, input: { mx: number; mz: number }, pressed: boolean) {
+  update(dt: number, input: { mx: number; mz: number; run?: boolean }, pressed: boolean) {
     this.lastDt = dt;
     const { world } = this;
     const { meId } = this.o;
@@ -353,6 +353,9 @@ export class BolaNetSync {
       me.flipDx = bd.flipDx;
       me.flipDz = bd.flipDz;
       me.flipHit = bd.flipHit;
+      me.stam = bd.stam;
+      me.tired = bd.tired;
+      me.running = bd.running;
     };
     // onde quem simula deve estar agora: o estado + o tempo desde que chegou + a ida da rede (no máximo 40 ms)
     const lead = Math.min(
@@ -388,9 +391,13 @@ export class BolaNetSync {
     if (pressed) this.pressLatch = true;
     while (this.predAcc >= BOL_DT) {
       this.predAcc -= BOL_DT;
-      pred.step(BOL_DT, { mx: input.mx, mz: input.mz, jump: this.pressLatch }, (e) => {
-        if (e === 'jump' || e === 'airjump' || e === 'flip') this.o.onMove?.(e);
-      });
+      pred.step(
+        BOL_DT,
+        { mx: input.mx, mz: input.mz, jump: this.pressLatch, run: input.run },
+        (e) => {
+          if (e === 'jump' || e === 'airjump' || e === 'flip') this.o.onMove?.(e);
+        },
+      );
       this.pressLatch = false;
       syncMe();
       // não atravessa as outras raposas: o corpo previsto sai de dentro delas já neste passo

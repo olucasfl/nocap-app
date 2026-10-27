@@ -29,6 +29,11 @@ export const BOL_RAMP_E = 0.5;
 export const BOL_ROLL_DRAG = 0.7;
 export const BOL_ROLL_DECEL = 1.2;
 export const BOL_AIR_DRAG = 0.03;
+/** Atrito da bola na parede (Coulomb): a batida de lado perde parte da velocidade que corre ao longo dela. */
+export const BOL_WALL_MU = 0.3;
+/** Rolando pela rampa: freio proporcional e fixo (m/s²), um pouco menor que o do chão, para a bola ainda subir e curvar. */
+export const BOL_RAMP_DRAG = 0.5;
+export const BOL_RAMP_DECEL = 0.8;
 export const BOL_BALL_MAX = 20;
 /** Teto (m): a bola quica nele e as raposas podem andar nele (por baixo) por um tempo. */
 export const BOL_CEILING = 9;
@@ -43,6 +48,20 @@ export const BOL_ACCEL = 40;
 export const BOL_AIR_ACCEL = 9;
 export const BOL_JUMP = 7;
 export const BOL_AIR_JUMP = 6.6;
+/**
+ * Corrida (spec 053): Shift/botão. Um pouco abaixo do mortal (11), que continua sendo o impulso. Acelera mais devagar que
+ * andar (a raposa leva mais tempo para virar e parar correndo).
+ */
+export const BOL_RUN_SPEED = 10.5;
+export const BOL_RUN_ACCEL = 18;
+/** Fôlego de 0 a 100: gasta correndo, fica parado `HOLD` s depois de correr e só então recarrega (devagar). */
+export const BOL_STAM_MAX = 100;
+export const BOL_STAM_DRAIN = 100 / 3.5;
+export const BOL_STAM_HOLD = 2;
+export const BOL_STAM_REGEN = 12;
+/** Esgotou: só volta a correr com este tanto (senão a pessoa picotaria a corrida com 1 de fôlego) e demora a recarregar. */
+export const BOL_STAM_MIN = 20;
+export const BOL_STAM_TIRED_HOLD = 2.5;
 export const BOL_FOX_GRAVITY = 24;
 
 /**

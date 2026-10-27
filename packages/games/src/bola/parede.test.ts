@@ -53,7 +53,8 @@ describe('parede e teto', () => {
     }
     expect(wall).toBe(true);
     expect(ceil).toBe(true);
-    expect(maxY).toBeGreaterThan(BOL_CEILING - BOL_FOX_H - 0.01);
+    // junto da parede o teto é a curva (começa a `rampR` abaixo dele): a raposa chega até ali
+    expect(maxY).toBeGreaterThan(BOL_CEILING - w.field.rampR - BOL_FOX_H - 0.3);
   });
 
   it('o grude acaba: ela cai da parede ou do teto, pousa no chão e o grude recarrega', () => {

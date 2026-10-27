@@ -48,6 +48,10 @@ export class DsmControls {
   private keys = { up: false, down: false, left: false, right: false };
   private stick: { id: number; ox: number; oy: number; x: number; y: number } | null = null;
   private jumpQueued = false;
+  /** Correr (Fut Fox): Shift segurado no computador; no celular o botão liga e desliga. */
+  private runHeld = false;
+  private runToggled = false;
+  private runPressed = false;
   private onStick: ((s: { ox: number; oy: number; x: number; y: number } | null) => void) | null =
     null;
   private zone: HTMLElement | null = null;
@@ -196,7 +200,30 @@ export class DsmControls {
     this.jumpQueued = true;
   };
 
+  /** Celular: toca no botão para correr e toca de novo para parar. */
+  toggleRun = () => {
+    this.runToggled = !this.runToggled;
+    this.runPressed = this.runToggled;
+  };
+
+  /** Desliga a corrida do botão (acabou o fôlego: não volta a correr sozinha quando recarregar). */
+  clearRun = () => {
+    this.runToggled = false;
+  };
+
+  get runOn(): boolean {
+    return this.runToggled;
+  }
+
+  /** Um aperto novo de correr desde a última vez que perguntou (para avisar quando não há fôlego). */
+  takeRunPress(): boolean {
+    const v = this.runPressed;
+    this.runPressed = false;
+    return v;
+  }
+
   private reset = () => {
+    this.runHeld = false;
     this.keys = { up: false, down: false, left: false, right: false };
     this.turn = 0;
     this.lookPtr = null;
@@ -216,6 +243,11 @@ export class DsmControls {
     )
       this.requestLock();
     const k = KEYS[e.code];
+    if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
+      if (!this.runHeld) this.runPressed = true;
+      this.runHeld = true;
+      return;
+    }
     if (this.turnKeys && e.code === 'KeyQ') this.turn = -1;
     else if (this.turnKeys && e.code === 'KeyE') this.turn = 1;
     else if (k) {
@@ -230,7 +262,8 @@ export class DsmControls {
 
   private keyUp = (e: KeyboardEvent) => {
     const k = KEYS[e.code];
-    if (e.code === 'KeyQ' || e.code === 'KeyE') this.turn = 0;
+    if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') this.runHeld = false;
+    else if (e.code === 'KeyQ' || e.code === 'KeyE') this.turn = 0;
     else if (k) this.keys[k] = false;
   };
 
@@ -255,7 +288,7 @@ export class DsmControls {
   };
 
   /** A direção e o pulo de agora (o pulo é "consumido": cada toque vale um pulo). */
-  read(): DsmInput {
+  read(): DsmInput & { run: boolean } {
     let mx = (this.keys.right ? 1 : 0) - (this.keys.left ? 1 : 0);
     let mz = (this.keys.down ? 1 : 0) - (this.keys.up ? 1 : 0);
     if (this.stick) {
@@ -267,6 +300,6 @@ export class DsmControls {
     }
     const jump = this.jumpQueued;
     this.jumpQueued = false;
-    return { mx, mz, jump };
+    return { mx, mz, jump, run: this.runHeld || this.runToggled };
   }
 }

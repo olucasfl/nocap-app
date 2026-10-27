@@ -104,6 +104,10 @@ interface Hud {
   ballCam: boolean;
   /** Grude que resta (0 a 1) e se está na parede ou no teto: a barrinha aparece quando não está cheia. */
   stick: number;
+  /** Fôlego da corrida (0 a 100) e se está esgotado ou correndo. */
+  stam: number;
+  tired: boolean;
+  running: boolean;
   banner: {
     title: string;
     sub: string;
@@ -236,6 +240,8 @@ export function BolaPlay({
   const statsOn = useRef(false);
   statsOn.current = tabHeld || pinned || menu || teamsOpen;
   const uiOpenRef = useRef(false);
+  /** Sobe a cada "não" (correr sem fôlego): reinicia o tremor da barra. */
+  const [nope, setNope] = useState(0);
   const [stick, setStick] = useState<{ ox: number; oy: number; x: number; y: number } | null>(null);
   const [hud, setHud] = useState<Hud>({
     phase: 'countdown',
@@ -247,6 +253,9 @@ export function BolaPlay({
     winner: -1,
     ballCam: false,
     stick: 1,
+    stam: 100,
+    tired: false,
+    running: false,
     banner: null,
     flash: 0,
     myTeam: 0,
@@ -765,7 +774,11 @@ export function BolaPlay({
       ]);
     };
     const inputTimer = online ? window.setInterval(sendInput, 25) : 0;
-    const smoothOnline = (dt: number, input: { mx: number; mz: number }, pressed: boolean) => {
+    const smoothOnline = (
+      dt: number,
+      input: { mx: number; mz: number; run?: boolean },
+      pressed: boolean,
+    ) => {
       syncRoster();
       sync.update(dt, input, pressed);
       if (sync.rb?.active) sendInput();
@@ -792,7 +805,14 @@ export function BolaPlay({
       const me = world.player(meId);
       if (!document.hidden) {
         if (!online) acc += dt;
-        const input = me ? controls.read() : { mx: 0, mz: 0, jump: false };
+        const input = me ? controls.read() : { mx: 0, mz: 0, jump: false, run: false };
+        // quis correr sem fôlego: o aviso (som e barra) sai na hora do aperto, não depois de uma volta no servidor
+        if (controls.takeRunPress() && me && (me.tired || me.stam <= 0)) {
+          bolaSfx.nope();
+          setNope((n) => n + 1);
+        }
+        // o botão do celular desliga sozinho ao esgotar (senão voltaria a correr ao recarregar)
+        if (me?.tired && controls.runOn) controls.clearRun();
         const pressed = input.jump;
         if (input.jump) jumpUntil = now + JUMP_BUFFER_MS;
         input.jump = false;
@@ -877,7 +897,7 @@ export function BolaPlay({
           }
           const jumpNow = !!me && jumpUntil > now && (me.grounded || !me.airJumped);
           if (jumpNow) jumpUntil = 0;
-          inputs[meId] = { mx: input.mx, mz: input.mz, jump: jumpNow };
+          inputs[meId] = { mx: input.mx, mz: input.mz, jump: jumpNow, run: input.run };
           world.step(BOL_DT, inputs);
           for (const e of world.drainEvents()) onEvent(e);
         }
@@ -906,6 +926,9 @@ export function BolaPlay({
           winner: world.winner,
           ballCam,
           stick: world.player(meId) ? (world.player(meId) as BolPlayer).stick / BOL_STICK_MAX : 1,
+          stam: world.player(meId) ? Math.round((world.player(meId) as BolPlayer).stam) : 100,
+          tired: !!world.player(meId)?.tired,
+          running: !!world.player(meId)?.running,
           banner,
           flash: flashId,
           myTeam: world.player(meId)?.team ?? -1,
@@ -1205,6 +1228,23 @@ export function BolaPlay({
           </button>
           <button
             type="button"
+            className="bola-run bola-show-touch"
+            aria-label="Correr"
+            aria-pressed={controls.runOn}
+            data-tired={hud.tired ? '1' : '0'}
+            data-on={hud.running ? '1' : '0'}
+            onPointerDown={(e) => {
+              e.preventDefault();
+              controls.toggleRun();
+            }}
+          >
+            <b key={nope} className="bola-run-n">
+              {hud.stam}
+            </b>
+            Correr
+          </button>
+          <button
+            type="button"
             className="bola-cam"
             onClick={() => camToggle.current()}
             aria-pressed={!hud.ballCam}
@@ -1215,6 +1255,24 @@ export function BolaPlay({
           </button>
         </>
       )}
+      <div
+        key={`stam${nope}`}
+        className="bola-stam bola-hide-touch"
+        data-on={hud.stam < 99 || hud.running || hud.tired ? '1' : '0'}
+        data-tired={hud.tired ? '1' : '0'}
+        data-nope={nope > 0 ? '1' : '0'}
+        role="progressbar"
+        aria-label="Fôlego"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={hud.stam}
+      >
+        <Key k="Shift" />
+        <span className="bola-stam-bar">
+          <i style={{ transform: `scaleX(${Math.max(0, Math.min(1, hud.stam / 100))})` }} />
+        </span>
+        <b>{hud.stam}</b>
+      </div>
       <div
         className="bola-stick"
         data-on={hud.stick < 0.98 ? '1' : '0'}

@@ -31,14 +31,17 @@ import {
   BOL_GRAVITY,
   BOL_POST_R,
   BOL_REST_SPEED,
+  BOL_RAMP_DECEL,
+  BOL_RAMP_DRAG,
   BOL_ROLL_DRAG,
+  BOL_WALL_MU,
   BOL_STILL_SEC,
   BOL_SUBSTEPS,
   BOL_TOUCH_MIN,
   BOL_WALL_E,
   BOL_WARN_LEFT,
 } from './constants';
-import { controlBody, moveBody } from './body';
+import { controlBody, freshStamina, moveBody } from './body';
 import { buildField, type BolField } from './field';
 
 export interface BolInfo {
@@ -56,6 +59,8 @@ export interface BolInput {
   mx: number;
   mz: number;
   jump: boolean;
+  /** Segurando correr (Shift ou botão): vale se houver fôlego. */
+  run?: boolean;
 }
 
 /** O que cada raposa fez na partida (aparece na tabela do Tab). */
@@ -104,6 +109,12 @@ export interface BolPlayer extends BolInfo {
   stick: number;
   wnx: number;
   wnz: number;
+  /** Fôlego da corrida (ver `body.ts`). */
+  stam: number;
+  stamHold: number;
+  tired: boolean;
+  running: boolean;
+  runKey: boolean;
   ix: number;
   iz: number;
 }
@@ -247,6 +258,7 @@ export class BolWorld {
       flipHit: false,
       surf: 0,
       stick: BOL_STICK_MAX,
+      ...freshStamina(),
       wnx: 0,
       wnz: 0,
       ix: 0,
@@ -327,6 +339,7 @@ export class BolWorld {
       airJumped: false,
       surf: 0,
       stick: BOL_STICK_MAX,
+      ...freshStamina(),
     });
   }
 
@@ -350,6 +363,7 @@ export class BolWorld {
         flipHit: false,
         surf: 0,
         stick: BOL_STICK_MAX,
+        ...freshStamina(),
       });
     });
   }
@@ -485,6 +499,7 @@ export class BolWorld {
   /** Aperto de pulo, mortal e aceleração (a mesma conta do preditor do aparelho: ver `body.ts`). */
   private control(p: BolPlayer, input: BolInput, dt: number): void {
     controlBody(p, input, dt, (e) => {
+      if (e === 'tired' || e === 'land') return;
       if (e === 'jump') this.events.push({ type: 'jump', id: p.id });
       else this.events.push({ type: 'airjump', id: p.id, flip: e === 'flip' });
     });
@@ -603,7 +618,7 @@ export class BolWorld {
       b.y = BOL_CEILING - BOL_BALL_R;
       if (b.vy > 0) b.vy = -b.vy * BOL_WALL_E;
     }
-    this.rampBall();
+    this.rampBall(h);
     if (this.wallsAndGoals()) return;
     if (only) this.touchFox(only);
     else if (only === undefined) for (const p of this.players) this.touchFox(p);
@@ -621,7 +636,18 @@ export class BolWorld {
    * centro da bola fica dentro do círculo de raio `rampR - raio da bola`; passando disso a bola é empurrada de volta e a
    * velocidade reflete na normal da rampa. É assim que a bola sobe e "curva" pelas paredes em vez de bater seca.
    */
-  private rampBall(): void {
+  private rampBall(h: number): void {
+    this.rampSide(h, true);
+    // o teto tem a mesma curva: espelha a bola (altura e velocidade vertical), usa a rampa do chão e desespelha
+    const b = this.ball;
+    b.y = BOL_CEILING - b.y;
+    b.vy = -b.vy;
+    this.rampSide(h, false);
+    b.y = BOL_CEILING - b.y;
+    b.vy = -b.vy;
+  }
+
+  private rampSide(h: number, skipGoal: boolean): void {
     const b = this.ball;
     const R = this.field.rampR;
     if (b.y >= R) return;
@@ -631,7 +657,7 @@ export class BolWorld {
       if (d >= R) continue;
       const t = (b.x - e.mx) * e.tx + (b.z - e.mz) * e.tz;
       if (Math.abs(t) > e.len / 2 + 0.05) continue;
-      if (e.goal >= 0) {
+      if (skipGoal && e.goal >= 0) {
         const g = this.field.goals[e.goal];
         if (g && !this.out[g.team] && Math.abs(t) <= g.halfW) continue;
       }
@@ -651,6 +677,14 @@ export class BolWorld {
         b.vx -= j * e.nx * nh;
         b.vz -= j * e.nz * nh;
         b.vy -= j * nv;
+      }
+      // encostada na rampa a bola rola: freia como no chão (sem isto ela subia e descia a curva quase sem perder velocidade)
+      const sp = Math.hypot(b.vx, b.vy, b.vz);
+      if (sp > 0) {
+        const k = Math.max(0, sp - (BOL_RAMP_DRAG * sp + BOL_RAMP_DECEL) * h) / sp;
+        b.vx *= k;
+        b.vy *= k;
+        b.vz *= k;
       }
     }
   }
@@ -685,8 +719,18 @@ export class BolWorld {
       const vn = b.vx * e.nx + b.vz * e.nz;
       if (vn < 0) {
         if (-vn > 5) this.events.push({ type: 'wall', power: -vn });
-        b.vx -= (1 + BOL_WALL_E) * vn * e.nx;
-        b.vz -= (1 + BOL_WALL_E) * vn * e.nz;
+        const jn = (1 + BOL_WALL_E) * -vn;
+        b.vx += jn * e.nx;
+        b.vz += jn * e.nz;
+        // atrito: tira velocidade da parte que corre ao longo da parede (horizontal e para cima), no máximo BOL_WALL_MU * impulso
+        const vt = b.vx * e.tx + b.vz * e.tz;
+        const slide = Math.hypot(vt, b.vy);
+        if (slide > 1e-6) {
+          const k = Math.max(0, slide - BOL_WALL_MU * jn) / slide;
+          b.vx -= vt * e.tx * (1 - k);
+          b.vz -= vt * e.tz * (1 - k);
+          b.vy *= k;
+        }
       }
     }
     // traves: cilindros finos nas duas pontas da boca do gol

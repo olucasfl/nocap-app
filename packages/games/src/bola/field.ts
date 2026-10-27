@@ -46,6 +46,8 @@ export interface BolField {
   rampR: number;
   /** Altura do chão em (x, z): 0 no meio do campo e sobe pela rampa perto das paredes (menos na boca dos gols). */
   floorAt(x: number, z: number): number;
+  /** Quanto o teto desce nesse ponto: a mesma curva do chão, espelhada (inclusive sobre a boca do gol, onde há muro acima do gol). */
+  ceilDrop(x: number, z: number): number;
 }
 
 type Pt = readonly [number, number];
@@ -189,7 +191,7 @@ export function buildField(teams: number, perTeam: number): BolField {
     return { x, z, heading: Math.atan2(-x, -z) };
   };
   const rampR = BOL_RAMP_R;
-  const floorAt = (x: number, z: number): number => {
+  const curve = (x: number, z: number, skipGoal: boolean): number => {
     let h = 0;
     for (const e of edges) {
       const d = (x - e.ax) * e.nx + (z - e.az) * e.nz;
@@ -197,7 +199,7 @@ export function buildField(teams: number, perTeam: number): BolField {
       const t = (x - e.mx) * e.tx + (z - e.mz) * e.tz;
       if (Math.abs(t) > e.len / 2 + 0.05) continue;
       // a boca do gol não tem rampa: a raposa e a bola entram no gol
-      if (e.goal >= 0) {
+      if (skipGoal && e.goal >= 0) {
         const g = goals[e.goal];
         if (g && Math.abs(t) <= g.halfW) continue;
       }
@@ -207,7 +209,9 @@ export function buildField(teams: number, perTeam: number): BolField {
     }
     return h;
   };
-  return { teams: n, perTeam: k, edges, goals, spawn, inside, rampR, floorAt };
+  const floorAt = (x: number, z: number): number => curve(x, z, true);
+  const ceilDrop = (x: number, z: number): number => curve(x, z, false);
+  return { teams: n, perTeam: k, edges, goals, spawn, inside, rampR, floorAt, ceilDrop };
 }
 
 /** Folga mínima das raposas ao nascer: sempre longe das paredes. */

@@ -17,6 +17,14 @@ import {
   BOL_STICK_MAX,
   BOL_STICK_MIN,
   BOL_STICK_REGEN,
+  BOL_RUN_ACCEL,
+  BOL_RUN_SPEED,
+  BOL_STAM_DRAIN,
+  BOL_STAM_HOLD,
+  BOL_STAM_MAX,
+  BOL_STAM_MIN,
+  BOL_STAM_REGEN,
+  BOL_STAM_TIRED_HOLD,
   BOL_SUBSTEPS,
   BOL_WALL_ACCEL,
   BOL_WALL_JUMP,
@@ -50,14 +58,66 @@ export interface BolBody {
   /** A direção pedida no último passo (para decidir se gruda na parede). Não vai pela rede. */
   ix: number;
   iz: number;
+  /** Fôlego (0 a 100), segundos que ele ainda fica parado antes de recarregar, e se está esgotado (só volta a correr com BOL_STAM_MIN). */
+  stam: number;
+  stamHold: number;
+  tired: boolean;
+  /** Correndo neste passo (vai pela rede só como um bit, para os outros verem). */
+  running: boolean;
+  /** Estava pedindo para correr no passo anterior (acha o aperto novo, para o "não" de quando falta fôlego). Não vai pela rede. */
+  runKey: boolean;
   /** Bot não cola na parede. */
   bot?: boolean;
+}
+
+/** O fôlego de quem acabou de nascer. */
+export const freshStamina = () => ({
+  stam: BOL_STAM_MAX,
+  stamHold: 0,
+  tired: false,
+  running: false,
+  runKey: false,
+});
+
+/** Fôlego: gasta correndo, congela por um tempo ao parar e só então recarrega. Devolve se está correndo neste passo. */
+function updateStamina(
+  p: BolBody,
+  input: BolInput,
+  mag: number,
+  dt: number,
+  can: boolean,
+  emit?: (e: BodyEvent) => void,
+): boolean {
+  const ask = !!input.run && mag > 0.3;
+  // aperto novo sem poder correr (esgotado): o aparelho mostra e toca o "não"
+  if (input.run && !p.runKey && can && (p.tired || p.stam <= 0)) emit?.('tired');
+  p.runKey = !!input.run;
+  if (ask && can && !p.tired && p.stam > 0) {
+    p.stam -= BOL_STAM_DRAIN * dt;
+    p.stamHold = BOL_STAM_HOLD;
+    if (p.stam <= 0) {
+      p.stam = 0;
+      p.tired = true;
+      p.stamHold = BOL_STAM_TIRED_HOLD;
+      p.running = false;
+      return false;
+    }
+    p.running = true;
+    return true;
+  }
+  p.running = false;
+  if (p.stamHold > 0) p.stamHold = Math.max(0, p.stamHold - dt);
+  else {
+    p.stam = Math.min(BOL_STAM_MAX, p.stam + BOL_STAM_REGEN * dt);
+    if (p.tired && p.stam >= BOL_STAM_MIN) p.tired = false;
+  }
+  return false;
 }
 
 /** Até quanto acima do chão uma raposa que estava no chão ainda "gruda" nele (descendo a rampa), em m. */
 const BOL_STICK = 0.3;
 
-export type BodyEvent = 'jump' | 'airjump' | 'flip' | 'land';
+export type BodyEvent = 'jump' | 'airjump' | 'flip' | 'land' | 'tired';
 
 /** Aperto de pulo, mortal e aceleração. Vale para o servidor e para o preditor do aparelho. */
 export function controlBody(
@@ -71,6 +131,8 @@ export function controlBody(
   const iz = mag > 1 ? input.mz / mag : input.mz;
   p.ix = ix;
   p.iz = iz;
+  // na parede e no teto não corre; no meio do mortal também não
+  const running = updateStamina(p, input, mag, dt, p.surf === 0 && p.flipT <= 0, emit);
   if (p.surf !== 0) {
     controlSurface(p, input, ix, iz, mag, dt, emit);
     return;
@@ -104,13 +166,15 @@ export function controlBody(
     p.flipT = Math.max(0, p.flipT - dt);
     return;
   }
-  const a = (p.grounded ? BOL_ACCEL : BOL_AIR_ACCEL) * dt;
-  const dx = ix * BOL_SPEED - p.vx;
-  const dz = iz * BOL_SPEED - p.vz;
+  const top = running ? BOL_RUN_SPEED : BOL_SPEED;
+  // correndo a raposa acelera mais devagar (vira e começa a correr com mais "peso"); soltar a corrida freia como andando
+  const a = (p.grounded ? (running ? BOL_RUN_ACCEL : BOL_ACCEL) : BOL_AIR_ACCEL) * dt;
+  const dx = ix * top - p.vx;
+  const dz = iz * top - p.vz;
   const d = Math.hypot(dx, dz);
   if (d <= a) {
-    p.vx = ix * BOL_SPEED;
-    p.vz = iz * BOL_SPEED;
+    p.vx = ix * top;
+    p.vz = iz * top;
   } else {
     p.vx += (dx / d) * a;
     p.vz += (dz / d) * a;
@@ -336,8 +400,9 @@ function moveWall(p: BolBody, h: number, field: BolField): void {
     p.airJumped = false;
     return;
   }
-  if (p.y + BOL_FOX_H >= BOL_CEILING) {
-    p.y = BOL_CEILING - BOL_FOX_H;
+  const top = BOL_CEILING - field.ceilDrop(p.x, p.z) - BOL_FOX_H;
+  if (p.y >= top) {
+    p.y = top;
     p.vy = 0;
     p.surf = 2;
   }
@@ -345,11 +410,12 @@ function moveWall(p: BolBody, h: number, field: BolField): void {
 
 /** Um passo no teto: pendurada (o corpo segue do mesmo tamanho, para baixo), anda como no chão e gasta o grude. */
 function moveCeiling(p: BolBody, h: number, field: BolField): void {
-  p.y = BOL_CEILING - BOL_FOX_H;
   p.vy = 0;
   p.x += p.vx * h;
   p.z += p.vz * h;
   clampWalls(p, field, false);
+  // o teto curva até a parede como o chão: a raposa pendurada sobe e desce a curva
+  p.y = BOL_CEILING - field.ceilDrop(p.x, p.z) - BOL_FOX_H;
   p.stick -= h;
   if (p.stick <= 0) {
     p.stick = 0;
@@ -385,6 +451,7 @@ export class BolPredictor {
     wnz: 0,
     ix: 0,
     iz: 0,
+    ...freshStamina(),
   };
   constructor(private readonly field: BolField) {}
 

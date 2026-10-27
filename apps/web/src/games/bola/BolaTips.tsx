@@ -13,6 +13,10 @@ export function bolaTipRows(touch: boolean): TipRow[] {
         },
         { keys: <IcJump size={20} />, text: 'Toque em Pular; de novo no ar, pulo duplo' },
         {
+          keys: <b className="bola-tip-tag">Correr</b>,
+          text: 'Toque em Correr para ligar e desligar. O número é o fôlego (0 a 100): gasta correndo e recarrega devagar',
+        },
+        {
           keys: <b className="bola-tip-tag">Mortal</b>,
           text: 'Pule duas vezes mexendo o joystick: o mortal chuta a bola',
         },
@@ -46,6 +50,10 @@ export function bolaTipRows(touch: boolean): TipRow[] {
           text: 'Mover a raposa',
         },
         { keys: <Key k="Espaço" wide />, text: 'Pular; de novo no ar, pulo duplo' },
+        {
+          keys: <Key k="Shift" wide />,
+          text: 'Segure para correr. A barra é o fôlego (0 a 100): gasta correndo, fica parada um tempo ao soltar e recarrega devagar',
+        },
         {
           keys: (
             <>

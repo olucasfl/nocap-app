@@ -315,6 +315,7 @@ export class BolaScene {
       strip(e.mx + e.nx * off, e.mz + e.nz * off, e.len + 0.05, 0.22, -Math.atan2(e.tz, e.tx));
     }
     this.buildRamps();
+    this.buildCeilingCurves();
     const ring = new THREE.Mesh(new THREE.RingGeometry(5.4, 5.62, 64), lineMat);
     ring.rotation.x = -Math.PI / 2;
     ring.position.y = 0.02;
@@ -602,6 +603,57 @@ export class BolaScene {
       const tint = BOL_TEAM_COLORS[goal.team] ?? null;
       piece(e, -half, -goal.halfW, tint);
       piece(e, goal.halfW, half, tint);
+    }
+  }
+
+  /**
+   * Curva entre a parede e o teto: a mesma rampa do chão, espelhada, em vidro. Vai por toda a parede (também sobre a boca
+   * dos gols, onde há muro acima do gol), porque a física curva o teto ali também.
+   */
+  private buildCeilingCurves() {
+    const f = this.world.field;
+    const R = f.rampR;
+    const steps = 8;
+    const mat = this.cachedMat(
+      'ceil-curve',
+      () =>
+        new THREE.MeshBasicMaterial({
+          color: 0xbfe8ff,
+          transparent: true,
+          opacity: 0.14,
+          side: THREE.DoubleSide,
+          depthWrite: false,
+        }),
+    );
+    const line = this.cachedMat(
+      'ceil-line',
+      () => new THREE.MeshBasicMaterial({ color: 0xfff1b0, transparent: true, opacity: 0.6 }),
+    );
+    for (const e of f.edges) {
+      const half = e.len / 2 + 0.04;
+      const pos: number[] = [];
+      const idx: number[] = [];
+      for (let j = 0; j <= steps; j++) {
+        const d = R - (R * j) / steps;
+        const y = BOL_CEILING - (R - Math.sqrt(Math.max(0, R * R - (R - d) * (R - d))));
+        for (const t of [-half, half])
+          pos.push(e.mx + e.tx * t + e.nx * d, y, e.mz + e.tz * t + e.nz * d);
+        if (j > 0) {
+          const a = (j - 1) * 2;
+          idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
+        }
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      geo.setIndex(idx);
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.renderOrder = 1;
+      this.bake(mesh);
+      // friso de luz onde o muro encontra a curva: mostra de longe onde o teto começa a curvar
+      const strip = new THREE.Mesh(new THREE.PlaneGeometry(half * 2, 0.16), line);
+      strip.position.set(e.mx + e.nx * 0.03, BOL_CEILING - R + 0.05, e.mz + e.nz * 0.03);
+      strip.rotation.y = -Math.atan2(e.tz, e.tx);
+      this.bake(strip);
     }
   }
 

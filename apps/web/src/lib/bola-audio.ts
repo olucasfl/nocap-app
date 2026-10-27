@@ -70,6 +70,7 @@ const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v
 export const bolaGain = (dist: number) => clamp(1 - dist / 55, 0.25, 1);
 
 let lastTouch = 0;
+let lastNope = 0;
 let lastBounce = 0;
 let lastWall = 0;
 
@@ -96,6 +97,14 @@ export const bolaSfx = {
   jump(g = 1) {
     noise(500, 1300, 0.9, 0.1, 0.13 * g);
     tone('sine', 320, 560, 0.09, 0.12 * g);
+  },
+  /** quis correr sem fôlego: dois tons baixos e secos, curtos ("não") */
+  nope() {
+    const now = performance.now();
+    if (now - lastNope < 180) return;
+    lastNope = now;
+    tone('square', 170, 120, 0.07, 0.09);
+    tone('square', 130, 90, 0.09, 0.09, 0.07);
   },
   /** pulo duplo; com `flip`, o mortal (um assobio mais longo) */
   airjump(flip: boolean, g = 1) {

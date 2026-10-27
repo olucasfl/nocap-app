@@ -1280,3 +1280,132 @@
     transition: none;
   }
 }
+
+/* Corrida e fôlego (spec 053). Só transform e opacity animam; sem emoji. */
+.bola-stam {
+  position: absolute;
+  left: 50%;
+  bottom: calc(max(16px, env(safe-area-inset-bottom)) + 30px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transform: translateX(-50%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease-out;
+}
+.bola-stam[data-on='1'] {
+  opacity: 1;
+}
+.bola-stam-bar {
+  display: block;
+  width: min(150px, 32vw);
+  height: 14px;
+  border: 3px solid #1b1535;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.4);
+  overflow: hidden;
+}
+.bola-stam-bar i {
+  display: block;
+  height: 100%;
+  background: #4d8dff;
+  transform-origin: left center;
+}
+.bola-stam[data-tired='1'] .bola-stam-bar i {
+  background: #e5484d;
+}
+.bola-stam b {
+  min-width: 2.2ch;
+  font: 800 13px var(--font-display, system-ui);
+  color: #fff;
+  -webkit-text-stroke: 3px #1b1535;
+  paint-order: stroke fill;
+  text-align: left;
+}
+.bola-stam[data-nope='1'] {
+  animation: bola-nope 0.28s ease-out;
+}
+.bola-stam[data-tired='1'] b {
+  color: #ff8d90;
+}
+@keyframes bola-nope {
+  20% {
+    transform: translateX(calc(-50% - 6px));
+  }
+  45% {
+    transform: translateX(calc(-50% + 6px));
+  }
+  70% {
+    transform: translateX(calc(-50% - 3px));
+  }
+}
+
+/* Botão de correr (celular): liga e desliga; o número do fôlego fica em cima */
+.bola-run {
+  position: absolute;
+  right: calc(max(22px, env(safe-area-inset-right)) + 10px);
+  bottom: calc(max(22px, env(safe-area-inset-bottom)) + 84px + 34px);
+  width: 64px;
+  height: 64px;
+  border: 4px solid rgba(27, 21, 53, 0.9);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.8);
+  color: #1b1535;
+  font: 800 11px var(--font-display, system-ui);
+  text-transform: uppercase;
+  touch-action: none;
+  cursor: pointer;
+}
+.bola-run[aria-pressed='true'] {
+  background: rgba(77, 141, 255, 0.85);
+  color: #fff;
+}
+.bola-run[data-tired='1'] {
+  background: rgba(229, 72, 77, 0.35);
+}
+.bola-run:active {
+  transform: scale(0.94);
+}
+.bola-run-n {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 6px);
+  transform: translateX(-50%);
+  padding: 2px 8px;
+  border: 3px solid #1b1535;
+  border-radius: 999px;
+  background: #fff;
+  font: 800 13px var(--font-display, system-ui);
+  font-variant-numeric: tabular-nums;
+  color: #1b1535;
+}
+.bola-run[data-tired='1'] .bola-run-n {
+  background: #ff8d90;
+  animation: bola-nope-n 0.28s ease-out;
+}
+@keyframes bola-nope-n {
+  20% {
+    transform: translateX(calc(-50% - 5px));
+  }
+  45% {
+    transform: translateX(calc(-50% + 5px));
+  }
+  70% {
+    transform: translateX(calc(-50% - 2px));
+  }
+}
+/* No computador a corrida é o Shift: o botão só existe em telas de toque. */
+@media (hover: hover) and (pointer: fine) {
+  .bola-show-touch {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bola-stam,
+  .bola-stam[data-nope='1'],
+  .bola-run[data-tired='1'] .bola-run-n {
+    transition: none;
+    animation: none;
+  }
+}

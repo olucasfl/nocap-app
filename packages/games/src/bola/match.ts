@@ -26,13 +26,15 @@ const STATS_EVERY = 1;
 interface Pilot {
   mx: number;
   mz: number;
+  /** Segurando correr. */
+  run: boolean;
   /** Contador de pulos do cliente; a partida vê quando sobe. */
   seen: number | null;
   pending: number;
   /** Último número recebido: o de sequência (entrada antiga) ou o do passo mais novo (entrada por passo). */
   ack: number;
   /** Entrada por passo (spec 052): a entrada de cada passo vem carimbada e é aplicada no passo certo. */
-  queue: Map<number, { mx: number; mz: number; jump: boolean }>;
+  queue: Map<number, { mx: number; mz: number; jump: boolean; run: boolean }>;
 }
 
 /** Quantos passos adiante do relógio da partida uma entrada pode vir (um aparelho confuso não enche a fila). */
@@ -131,7 +133,7 @@ export class BolaMatch {
   }
 
   private newPilot(): Pilot {
-    return { mx: 0, mz: 0, seen: null, pending: 0, ack: 0, queue: new Map() };
+    return { mx: 0, mz: 0, run: false, seen: null, pending: 0, ack: 0, queue: new Map() };
   }
 
   private newBrain(team: number, i: number): BolBotMemory {
@@ -164,7 +166,7 @@ export class BolaMatch {
   /**
    * A entrada da própria raposa. Dois formatos:
    * - antigo, 4 números: [mx, mz, contador de pulos, número de sequência] (vale na hora que chega);
-   * - por passo, 2 + 3n números: [primeiro passo, n, (mx x 100, mz x 100, pulo 0/1) para cada passo]. Cada entrada vale no
+   * - por passo, 2 + 3n números: [primeiro passo, n, (mx x 100, mz x 100, bits: 1 pulo, 2 correr) para cada passo]. Cada entrada vale no
    *   passo em que foi dada (o aparelho roda alguns passos à frente), e o pacote repete os últimos passos para a perda de
    *   um não custar um aperto de pulo.
    * Inválido é ignorado.
@@ -181,6 +183,7 @@ export class BolaMatch {
     const k = mag > 1 ? 1 / mag : 1;
     pilot.mx = mx! * k;
     pilot.mz = mz! * k;
+    pilot.run = false;
     const j = Math.trunc(jumps!);
     // o primeiro relato só combina o contador; depois, cada aumento é um aperto (no máximo 3 por vez)
     if (pilot.seen === null || j < pilot.seen) pilot.seen = j;
@@ -205,14 +208,18 @@ export class BolaMatch {
         mx /= mag;
         mz /= mag;
       }
-      const jump = v[4 + 3 * i] === 1;
+      // o terceiro número de cada passo é um conjunto de bits: 1 = pulo, 2 = correr (o formato antigo só mandava 0 ou 1)
+      const bits = v[4 + 3 * i] as number;
+      const jump = (bits & 1) === 1;
+      const run = (bits & 2) === 2;
       if (tick > pilot.ack) {
         // passo novo para a partida: se já passou, a direção vale daqui para frente e o pulo não se perde
         if (tick < this.ticks) {
           pilot.mx = mx;
           pilot.mz = mz;
+          pilot.run = run;
           if (jump) pilot.pending = Math.min(3, pilot.pending + 1);
-        } else pilot.queue.set(tick, { mx, mz, jump });
+        } else pilot.queue.set(tick, { mx, mz, jump, run });
       }
     }
     pilot.ack = Math.max(pilot.ack, first + n - 1);
@@ -289,13 +296,14 @@ export class BolaMatch {
         if (q) {
           pilot.mx = q.mx;
           pilot.mz = q.mz;
+          pilot.run = q.run;
           if (q.jump) pilot.pending = Math.min(3, pilot.pending + 1);
         }
         if (pilot.queue.size > 0)
           for (const t of pilot.queue.keys()) if (t <= this.ticks) pilot.queue.delete(t);
         const jump = pilot.pending > 0;
         if (jump) pilot.pending -= 1;
-        inputs[p.id] = { mx: pilot.mx, mz: pilot.mz, jump };
+        inputs[p.id] = { mx: pilot.mx, mz: pilot.mz, jump, run: pilot.run };
       } else {
         let brain = this.brains.get(p.id);
         if (!brain) {
@@ -437,7 +445,9 @@ export class BolaMatch {
           (p.airJumped ? 4 : 0) +
           (p.flipHit ? 8 : 0) +
           (p.surf === 1 ? 16 : 0) +
-          (p.surf === 2 ? 32 : 0),
+          (p.surf === 2 ? 32 : 0) +
+          (p.running ? 64 : 0) +
+          (p.tired ? 128 : 0),
         this.pilots.get(p.id)?.ack ?? 0,
         // o mortal inteiro (tempo, direção): a previsão do aparelho precisa dele para refazer a raposa
         r2(p.flipT),
@@ -450,6 +460,8 @@ export class BolaMatch {
         r2(p.stick),
         r2(p.wnx),
         r2(p.wnz),
+        // fôlego da corrida (0 a 100, inteiro)
+        Math.round(p.stam),
       ]),
       ev: this.out,
     };

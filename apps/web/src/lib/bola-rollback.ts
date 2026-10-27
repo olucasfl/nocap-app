@@ -82,9 +82,10 @@ interface Input {
   mx: number;
   mz: number;
   jump: boolean;
+  run: boolean;
 }
 
-const NEUTRAL: Input = { mx: 0, mz: 0, jump: false };
+const NEUTRAL: Input = { mx: 0, mz: 0, jump: false, run: false };
 const lerp = (a: number, b: number, u: number) => a + (b - a) * u;
 
 /** Corpo e bola de um passo: o que a tela desenha e o que a comparação com o líder usa. */
@@ -221,6 +222,9 @@ export class BolaRollback {
       p.stick = (r[15] as number) ?? 3.2;
       p.wnx = (r[16] as number) ?? 0;
       p.wnz = (r[17] as number) ?? 0;
+      p.stam = (r[18] as number) ?? 100;
+      p.running = (fl & 64) === 64;
+      p.tired = (fl & 128) === 128;
       this.noteInput(p.id, r);
     }
     pw.ball.x = f.b[0] as number;
@@ -235,7 +239,13 @@ export class BolaRollback {
   private noteInput(id: string, r: number[]) {
     if (id === this.o.meId) return;
     if (typeof r[13] === 'number' && typeof r[14] === 'number') {
-      this.remoteIn.set(id, { mx: r[13] / 100, mz: r[14] / 100, jump: false });
+      this.remoteIn.set(id, {
+        mx: r[13] / 100,
+        mz: r[14] / 100,
+        jump: false,
+        // vê pelos flags do quadro se a outra raposa está correndo (bit 64)
+        run: ((r[8] as number) & 64) === 64,
+      });
       this.remote.delete(id);
     } else {
       this.remoteIn.delete(id);
@@ -440,6 +450,9 @@ export class BolaRollback {
       p.stick = (r[15] as number) ?? 3.2;
       p.wnx = (r[16] as number) ?? 0;
       p.wnz = (r[17] as number) ?? 0;
+      p.stam = (r[18] as number) ?? 100;
+      p.running = (fl & 64) === 64;
+      p.tired = (fl & 128) === 128;
       this.noteInput(p.id, r);
       const inp = this.remoteIn.get(p.id);
       for (let i = 0; i < steps; i++) {
@@ -498,7 +511,7 @@ export class BolaRollback {
   /** Um quadro de tela: anda a previsão no ritmo do relógio ajustado e deixa o erro visual sumir. */
   update(
     dt: number,
-    input: { mx: number; mz: number },
+    input: { mx: number; mz: number; run?: boolean },
     pressed: boolean,
     phase: BolPhase,
     inGame: boolean,
@@ -521,6 +534,7 @@ export class BolaRollback {
       mx: Math.round(input.mx * 100) / 100,
       mz: Math.round(input.mz * 100) / 100,
       jump: false,
+      run: !!input.run,
     };
     this.acc += dt * this.scale;
     let steps = 0;
@@ -572,6 +586,9 @@ export class BolaRollback {
     me.stick = mine.stick;
     me.wnx = mine.wnx;
     me.wnz = mine.wnz;
+    me.stam = mine.stam;
+    me.tired = mine.tired;
+    me.running = mine.running;
     if (this.phase === 'play') {
       const b: BolBall = this.draw.ball;
       b.x = s.bx;
@@ -599,7 +616,8 @@ export class BolaRollback {
         continue;
       }
       if (n === 0) out.push(t, 0);
-      out.push(Math.round(i.mx * 100), Math.round(i.mz * 100), i.jump ? 1 : 0);
+      // bits do terceiro número: 1 pulo, 2 correr
+      out.push(Math.round(i.mx * 100), Math.round(i.mz * 100), (i.jump ? 1 : 0) + (i.run ? 2 : 0));
       n++;
     }
     if (n === 0) return null;
