@@ -46,7 +46,12 @@ export function ClassicPlay({
     setSlotsState(next);
     setCursorState(at);
   }, []);
-  const clearEntry = useCallback(() => setEntry(Array<string>(LENGTH).fill(''), 0), [setEntry]);
+  // true depois que a pessoa escolhe uma casa: aí a letra fica na casa; digitando "normal" a seleção vai passando
+  const manualRef = useRef(false);
+  const clearEntry = useCallback(() => {
+    manualRef.current = false;
+    setEntry(Array<string>(LENGTH).fill(''), 0);
+  }, [setEntry]);
   const [toast, setToast] = useState<{ text: string; tone: 'bad' | 'good' | '' } | null>(null);
   const [shake, setShake] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -89,7 +94,7 @@ export function ClassicPlay({
   const open = run?.state === 'open';
 
   const busyRef = useRef(false);
-  /** Põe a letra na casa selecionada e a seleção permanece nela. */
+  /** Põe a letra na casa selecionada e a seleção sempre volta uma casa. */
   const type = useCallback(
     (l: string) => {
       if (busyRef.current) return;
@@ -97,23 +102,39 @@ export function ClassicPlay({
       const next = [...slotsRef.current];
       const at = cursorRef.current;
       next[at] = l;
-      // A seleção nunca anda sozinha: só muda por toque, clique ou seta.
-      setEntry(next, at);
+      let to = at;
+      if (!manualRef.current) {
+        for (let k = 1; k < LENGTH; k++) {
+          const i = (at + k) % LENGTH;
+          if (next[i] === '') {
+            to = i;
+            break;
+          }
+        }
+      }
+      setEntry(next, to);
     },
     [setEntry],
   );
-  /** Apaga a letra da casa selecionada; a seleção permanece nela. */
+  /** Apaga a letra da casa selecionada; a seleção sempre volta uma casa. */
   const erase = useCallback(() => {
     if (busyRef.current) return;
     const next = [...slotsRef.current];
     const at = cursorRef.current;
-    next[at] = '';
-    setEntry(next, at);
+    manualRef.current = false;
+    if (next[at] !== '') {
+      next[at] = '';
+      setEntry(next, Math.max(0, at - 1));
+    } else if (at > 0) {
+      next[at - 1] = '';
+      setEntry(next, at - 1);
+    }
   }, [setEntry]);
   /** Seleciona uma casa da linha (toque, clique ou seta). */
   const pick = useCallback(
     (i: number) => {
       if (busyRef.current) return;
+      manualRef.current = true;
       setEntry([...slotsRef.current], Math.max(0, Math.min(LENGTH - 1, i)));
     },
     [setEntry],

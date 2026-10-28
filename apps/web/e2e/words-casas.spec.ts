@@ -60,6 +60,18 @@ for (const [name, viewport, touch] of [
     await expect(page.getByTestId('slot-0-4')).toContainText(answer[4]!);
     await expect(page.getByTestId('slot-0-4')).toHaveClass(/cur/);
 
+    // apagar limpa a casa e volta uma; depois, digitando normal, a seleção passa sozinha
+    await page.getByTestId('backspace').click();
+    await expect(page.getByTestId('slot-0-4')).toHaveText('');
+    await expect(page.getByTestId('slot-0-3')).toHaveClass(/cur/);
+    await page.getByTestId('backspace').click();
+    await expect(page.getByTestId('slot-0-3')).toHaveText('');
+    await expect(page.getByTestId('slot-0-2')).toHaveClass(/cur/);
+    await page.getByTestId('slot-0-3').click();
+    await page.getByTestId(`key-${answer[3]}`).click();
+    await page.getByTestId('slot-0-4').click();
+    await page.getByTestId(`key-${answer[4]}`).click();
+
     // faltando letras o Enter não gasta tentativa
     await page.getByTestId('enter').click();
     await expect(page.getByTestId('row-0-0')).toHaveCount(0);
