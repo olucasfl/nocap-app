@@ -4,7 +4,7 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { ApiError } from '@/lib/api-client';
 import { wordsAudio } from '@/lib/words-audio';
 import { ClassicEnd } from './ClassicEnd';
-import { ColorLegend, Pill, TileLoader, useTyped, WordsShell } from './words-kit';
+import { ColorLegend, Pill, TileLoader, WordsShell } from './words-kit';
 import type { ReactNode } from 'react';
 import type { ClassicEngine } from './classic-engine';
 import { MODE_LABEL, type ClassicMode, type RunView } from './words-api';
@@ -34,7 +34,19 @@ export function ClassicPlay({
 }) {
   const [run, setRun] = useState<RunView | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [typed, setTyped, typedRef] = useTyped();
+  // a linha que está sendo escrita: 5 casas, cada uma com uma letra ou vazia, e a casa selecionada (`cursor`). A pessoa
+  // pode escolher a casa (toque, clique ou setas) e escrever ali, sem ter que digitar a palavra toda desde a 1ª letra
+  const [slots, setSlotsState] = useState<string[]>(() => Array<string>(LENGTH).fill(''));
+  const [cursor, setCursorState] = useState(0);
+  const slotsRef = useRef<string[]>(slots);
+  const cursorRef = useRef(0);
+  const setEntry = useCallback((next: string[], at: number) => {
+    slotsRef.current = next;
+    cursorRef.current = at;
+    setSlotsState(next);
+    setCursorState(at);
+  }, []);
+  const clearEntry = useCallback(() => setEntry(Array<string>(LENGTH).fill(''), 0), [setEntry]);
   const [toast, setToast] = useState<{ text: string; tone: 'bad' | 'good' | '' } | null>(null);
   const [shake, setShake] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -52,14 +64,14 @@ export function ClassicPlay({
     setError(null);
     setResultReady(true);
     setEndCollapsed(false);
-    setTyped(() => '');
+    clearEntry();
     engine
       .start()
       .then(setRun)
       .catch((e: unknown) =>
         setError(e instanceof ApiError ? e.message : 'Não deu para começar a partida'),
       );
-  }, [engine]);
+  }, [engine, clearEntry]);
 
   useEffect(begin, [begin]);
 
@@ -77,22 +89,52 @@ export function ClassicPlay({
   const open = run?.state === 'open';
 
   const busyRef = useRef(false);
+  /** Põe a letra na casa selecionada e passa para a próxima casa vazia (à direita, dando a volta). */
   const type = useCallback(
     (l: string) => {
       if (busyRef.current) return;
       wordsAudio.key();
-      setTyped((t) => ([...t].length < LENGTH ? t + l : t));
+      const next = [...slotsRef.current];
+      const at = cursorRef.current;
+      next[at] = l;
+      let to = at;
+      for (let k = 1; k < LENGTH; k++) {
+        const i = (at + k) % LENGTH;
+        if (next[i] === '') {
+          to = i;
+          break;
+        }
+      }
+      setEntry(next, to);
     },
-    [setTyped],
+    [setEntry],
   );
+  /** Apaga a letra da casa selecionada; se ela já está vazia, volta uma casa e apaga a de lá. */
   const erase = useCallback(() => {
-    if (!busyRef.current) setTyped((t) => [...t].slice(0, -1).join(''));
-  }, [setTyped]);
+    if (busyRef.current) return;
+    const next = [...slotsRef.current];
+    const at = cursorRef.current;
+    if (next[at] !== '') {
+      next[at] = '';
+      setEntry(next, at);
+    } else if (at > 0) {
+      next[at - 1] = '';
+      setEntry(next, at - 1);
+    }
+  }, [setEntry]);
+  /** Seleciona uma casa da linha (toque, clique ou seta). */
+  const pick = useCallback(
+    (i: number) => {
+      if (busyRef.current) return;
+      setEntry([...slotsRef.current], Math.max(0, Math.min(LENGTH - 1, i)));
+    },
+    [setEntry],
+  );
 
   const submit = useCallback(async () => {
     if (!run || !open || busy) return;
-    const word = typedRef.current;
-    if ([...word].length < LENGTH) {
+    const word = slotsRef.current.join('');
+    if (slotsRef.current.some((l) => l === '')) {
       setShake(true);
       wordsAudio.invalid();
       say('Faltam letras');
@@ -132,7 +174,7 @@ export function ClassicPlay({
       }
       if (next.state === 'won') setWinRow(next.used - 1);
       setRun(next);
-      setTyped(() => '');
+      clearEntry();
       window.setTimeout(() => setFlipRow(null), 1800);
     } catch (e) {
       setShake(true);
@@ -147,7 +189,7 @@ export function ClassicPlay({
       busyRef.current = false;
       setBusy(false);
     }
-  }, [run, open, busy, typedRef, say, setTyped]);
+  }, [run, open, busy, say, clearEntry]);
 
   useEffect(() => {
     if (!open) return;
@@ -155,14 +197,20 @@ export function ClassicPlay({
       if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
       if (ev.key === 'Enter') void submit();
       else if (ev.key === 'Backspace') erase();
-      else {
+      else if (ev.key === 'ArrowLeft') {
+        ev.preventDefault();
+        pick(cursorRef.current - 1);
+      } else if (ev.key === 'ArrowRight') {
+        ev.preventDefault();
+        pick(cursorRef.current + 1);
+      } else {
         const k = wordKey(ev.key);
         if (k.length === 1 && /[a-z]/.test(k)) type(k);
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [open, submit, type, erase, setTyped]);
+  }, [open, submit, type, erase, pick]);
 
   if (error) {
     return (
@@ -242,7 +290,7 @@ export function ClassicPlay({
                 const letters = row
                   ? [...word!]
                   : typingHere
-                    ? [...typed].concat(Array(LENGTH).fill('')).slice(0, LENGTH)
+                    ? slots
                     : Array<string>(LENGTH).fill('');
                 const animating = flipRow === r && !!row;
                 return (
@@ -254,8 +302,18 @@ export function ClassicPlay({
                     {letters.map((ch, c) => (
                       <div
                         key={`${c}-${ch}`}
-                        className={`cw-tile${row ? ' rev' : ''}${ch && !row ? ' filled' : ''}${typingHere && c === [...typed].length ? ' cur' : ''}`}
+                        className={`cw-tile${row ? ' rev' : ''}${ch && !row ? ' filled' : ''}${typingHere && c === cursor ? ' cur' : ''}${typingHere ? ' pick' : ''}`}
                         style={{ '--i': c } as CSSProperties}
+                        {...(typingHere
+                          ? {
+                              role: 'button',
+                              tabIndex: -1,
+                              'aria-label': `Casa ${c + 1}${ch ? `: ${ch.toUpperCase()}` : ', vazia'}`,
+                              'aria-pressed': c === cursor,
+                              'data-testid': `slot-${b}-${c}`,
+                              onClick: () => pick(c),
+                            }
+                          : {})}
                       >
                         <div className="cw-card">
                           <div className="cw-face front">{ch}</div>
@@ -276,82 +334,85 @@ export function ClassicPlay({
         </div>
       </div>
 
-      {open || !resultReady ? (
-        <>
-          <ColorLegend />
-          <div className={`cw-dock${open ? '' : ' locked'}`}>
-            {ROWS.map((letters, ri) => (
-              <div className="cw-krow" key={ri}>
-                {ri === 2 && (
-                  <button
-                    type="button"
-                    className="cw-key wide"
-                    aria-label="Enviar"
-                    onClick={() => void submit()}
-                    data-testid="enter"
-                  >
-                    <svg viewBox="0 0 24 24" className="cw-ico" aria-hidden="true">
-                      <path d="M20 5v6a3 3 0 0 1-3 3H5" />
-                      <path d="M9 9l-4 5 4 5" />
-                    </svg>
-                  </button>
-                )}
-                {[...letters].map((l) => {
-                  const colored = keys.some((k) => k.has(l));
-                  return (
+      {/* no celular deitado o tabuleiro ocupa a esquerda e o teclado (ou o resultado) a direita: ver `.cw-side` */}
+      <div className="cw-side">
+        {open || !resultReady ? (
+          <>
+            <ColorLegend />
+            <div className={`cw-dock${open ? '' : ' locked'}`}>
+              {ROWS.map((letters, ri) => (
+                <div className="cw-krow" key={ri}>
+                  {ri === 2 && (
                     <button
                       type="button"
-                      key={l}
-                      className={`cw-key${colored ? ' has-color' : ''}${used.has(l) ? ' used' : ''}`}
-                      aria-label={used.has(l) ? `${l} (já foi: não tem na palavra)` : l}
-                      data-testid={`key-${l}`}
-                      onClick={() => type(l)}
+                      className="cw-key wide"
+                      aria-label="Enviar"
+                      onClick={() => void submit()}
+                      data-testid="enter"
                     >
-                      <span className="cw-key-bg" aria-hidden="true">
-                        {keys.map((k, i) => (
-                          <i key={i} className={k.get(l) ?? ''} />
-                        ))}
-                      </span>
-                      <span className="cw-key-l">{l.toUpperCase()}</span>
+                      <svg viewBox="0 0 24 24" className="cw-ico" aria-hidden="true">
+                        <path d="M20 5v6a3 3 0 0 1-3 3H5" />
+                        <path d="M9 9l-4 5 4 5" />
+                      </svg>
                     </button>
-                  );
-                })}
-                {ri === 2 && (
-                  <button
-                    type="button"
-                    className="cw-key wide"
-                    aria-label="Apagar"
-                    onClick={erase}
-                    data-testid="backspace"
-                  >
-                    <svg viewBox="0 0 24 24" className="cw-ico" aria-hidden="true">
-                      <path d="M9 5h11a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H9l-6-7z" />
-                      <path d="M12.5 9.5l5 5M17.5 9.5l-5 5" />
-                    </svg>
-                  </button>
-                )}
-              </div>
-            ))}
-            {engine.canGiveUp && (
-              <button
-                type="button"
-                className="cw-giveup"
-                onClick={() => setAskGiveUp(true)}
-                data-testid="giveup"
-              >
-                Desistir
-              </button>
-            )}
-          </div>
-        </>
-      ) : (
-        <ClassicEnd
-          run={run}
-          collapsed={endCollapsed}
-          onToggle={() => setEndCollapsed((c) => !c)}
-          actions={endActions(run)}
-        />
-      )}
+                  )}
+                  {[...letters].map((l) => {
+                    const colored = keys.some((k) => k.has(l));
+                    return (
+                      <button
+                        type="button"
+                        key={l}
+                        className={`cw-key${colored ? ' has-color' : ''}${used.has(l) ? ' used' : ''}`}
+                        aria-label={used.has(l) ? `${l} (já foi: não tem na palavra)` : l}
+                        data-testid={`key-${l}`}
+                        onClick={() => type(l)}
+                      >
+                        <span className="cw-key-bg" aria-hidden="true">
+                          {keys.map((k, i) => (
+                            <i key={i} className={k.get(l) ?? ''} />
+                          ))}
+                        </span>
+                        <span className="cw-key-l">{l.toUpperCase()}</span>
+                      </button>
+                    );
+                  })}
+                  {ri === 2 && (
+                    <button
+                      type="button"
+                      className="cw-key wide"
+                      aria-label="Apagar"
+                      onClick={erase}
+                      data-testid="backspace"
+                    >
+                      <svg viewBox="0 0 24 24" className="cw-ico" aria-hidden="true">
+                        <path d="M9 5h11a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H9l-6-7z" />
+                        <path d="M12.5 9.5l5 5M17.5 9.5l-5 5" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              ))}
+              {engine.canGiveUp && (
+                <button
+                  type="button"
+                  className="cw-giveup"
+                  onClick={() => setAskGiveUp(true)}
+                  data-testid="giveup"
+                >
+                  Desistir
+                </button>
+              )}
+            </div>
+          </>
+        ) : (
+          <ClassicEnd
+            run={run}
+            collapsed={endCollapsed}
+            onToggle={() => setEndCollapsed((c) => !c)}
+            actions={endActions(run)}
+          />
+        )}
+      </div>
 
       <ConfirmDialog
         open={askGiveUp}

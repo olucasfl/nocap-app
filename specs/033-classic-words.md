@@ -129,3 +129,12 @@ Salas (corrida, duelo, poderes); modo difícil; Daily de Dueto e de Quarteto; pa
 - **Fim da partida:** não mostra nota; mostra quantas tentativas usou ("acertou em N de M"). A nota continua existindo no servidor só para o ranking do Daily.
 - **Compartilhar foi removido** (texto e imagem).
 - **Envio instantâneo:** `GET /words/wclassic/accepted` entrega a lista (cache de 1 dia); palavra inválida é recusada na hora no aparelho. Palavra válida é enviada ao servidor com a linha em estado de carregamento (onda animada, só `transform`/`opacity`) e depois vira. O servidor faz um único `UPDATE ... array_append ... RETURNING` por jogada.
+
+
+## Casas livres, teclado na tela e tela de jogo (28/10/2026, pedido do Lucas)
+
+- **Escolher a casa:** a linha que está sendo escrita tem 5 casas e uma delas fica selecionada (borda tracejada). A pessoa pode **tocar ou clicar numa casa** e escrever ali, ou mover a seleção com **ArrowLeft e ArrowRight**, sem digitar a palavra toda desde a 1ª letra (ex.: já sabe um R e um A: toca na 4ª casa, R, e a seleção anda sozinha para a próxima casa vazia, A). Escrever numa casa que já tem letra troca a letra. O **Backspace** apaga a letra da casa selecionada; se ela está vazia, volta uma casa e apaga a de lá. O **Enter** só envia com as 5 casas preenchidas (senão balança e avisa "Faltam letras", sem gastar tentativa). Funciona igual no Daily, nas fases (1, 2 e 4 palavras) e em todo aparelho; no Dueto e no Quarteto qualquer tabuleiro aberto aceita a escolha da coluna.
+- **Teclado na tela em todo aparelho:** o teclado clicável é o mesmo no celular e no computador (o do computador estava cortado embaixo da janela).
+- **Tela de jogo e o `zoom` do app:** o app inteiro usa `zoom` (1,15 e 1,3 no computador; 0,72 a 0,86 no celular deitado, spec 045) e a tela de jogo usava `height: 100dvh` sem descontar o zoom: no computador o conteúdo passava da janela (teclado e resultado cortados) e no celular deitado tudo encolhia a 72%. Agora a altura é `100dvh / zoom` e, com menos de 520 px de altura, a tela de jogo não usa zoom.
+- **Celular deitado:** tabuleiro à esquerda (casas de ~47 px, antes ~33 px) e teclado ou resultado à direita (`.cw-side`).
+- Teste: `e2e/words-casas.spec.ts` (computador, celular em pé e deitado).
