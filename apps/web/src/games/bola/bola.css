@@ -1431,26 +1431,24 @@
   .bola-pad > svg {
     flex: none;
   }
-  .bola-pad-jump {
-    --pad-edge: max(18px, env(safe-area-inset-right));
-    --pad-bottom: max(20px, env(safe-area-inset-bottom));
-    right: var(--pad-edge);
-    bottom: var(--pad-bottom);
-    width: 94px;
-    height: 94px;
-    border-radius: 50%;
-    background: #ffd23f;
-    font-size: 13px;
-  }
-  .bola-pad-run {
+  .bola-pad.bola-pad-jump {
     right: calc(max(18px, env(safe-area-inset-right)) + 94px + 14px);
     bottom: calc(max(20px, env(safe-area-inset-bottom)) + 6px);
     width: 72px;
     height: 72px;
     border-radius: 50%;
+    background: #ffd23f;
+    font-size: 11px;
+  }
+  .bola-pad-run {
+    right: max(18px, env(safe-area-inset-right));
+    bottom: max(20px, env(safe-area-inset-bottom));
+    width: 94px;
+    height: 94px;
+    border-radius: 50%;
     background: #4d8dff;
     color: #fff;
-    font-size: 11px;
+    font-size: 13px;
   }
   .bola-pad-run span {
     text-shadow:
@@ -1488,8 +1486,8 @@
     animation: bola-nope-n 0.28s ease-out;
   }
   .bola-pad-cam {
-    right: calc(max(18px, env(safe-area-inset-right)) + 6px);
-    bottom: calc(max(20px, env(safe-area-inset-bottom)) + 94px + 16px);
+    right: calc(max(18px, env(safe-area-inset-right)) + 94px + 14px);
+    bottom: calc(max(20px, env(safe-area-inset-bottom)) + 6px + 72px + 14px);
     left: auto;
     min-width: 108px;
     height: 50px;
@@ -1528,7 +1526,7 @@
   position: absolute;
   left: max(20px, env(safe-area-inset-left));
   bottom: max(28px, env(safe-area-inset-bottom));
-  width: min(170px, 42vw);
+  width: min(138px, 36vw);
   display: grid;
   justify-items: center;
   gap: 3px;
@@ -1599,19 +1597,20 @@
 }
 /* Celular deitado: botões e dica menores, para não cobrir o campo */
 @media (max-height: 460px) and (pointer: coarse) {
-  .bola-pad-jump {
+  .bola-pad-run {
     width: 80px;
     height: 80px;
     font-size: 12px;
   }
-  .bola-pad-run {
+  .bola-pad.bola-pad-jump {
     right: calc(max(18px, env(safe-area-inset-right)) + 80px + 12px);
-    width: 68px;
-    height: 68px;
+    width: 62px;
+    height: 62px;
     font-size: 10px;
   }
   .bola-pad-cam {
-    bottom: calc(max(20px, env(safe-area-inset-bottom)) + 80px + 14px);
+    right: calc(max(18px, env(safe-area-inset-right)) + 80px + 12px);
+    bottom: calc(max(20px, env(safe-area-inset-bottom)) + 6px + 62px + 12px);
     min-width: 98px;
     height: 44px;
   }

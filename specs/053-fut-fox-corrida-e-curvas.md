@@ -93,9 +93,13 @@ No Fut Fox e no Desmorona!, ao começar cada partida em celular com a tela em p�
 
 ## 2m. Fut Fox no celular: botões, dica do joystick e câmera (27/10/2026)
 
-- **Botões novos** (só em tela de toque; o computador não mudou): Pular (amarelo, 94 px), Correr (azul, 72 px, com o número do fôlego numa pílula em cima; escurece correndo e fica vermelho esgotado) e Câmera (pílula "CÂMERA / BOLA" ou "LIVRE") agrupados no arco do polegar direito: Pular no canto, Correr à esquerda dele e Câmera acima. Estilo Pop Brutal: borda grossa, sombra dura, afunda ao apertar. O texto de Correr agora fica centrado (o botão é uma coluna flex com ícone e rótulo). Deitado, tudo encolhe (80 e 68 px).
+- **Botões novos** (só em tela de toque; o computador não mudou): Correr (azul, 94 px, no canto, com o número do fôlego numa pílula em cima; escurece correndo e fica vermelho esgotado), Pular (amarelo, 72 px, à esquerda dele) e Câmera (pílula "CÂMERA / BOLA" ou "LIVRE", acima do Pular, longe da pílula do fôlego), agrupados no arco do polegar direito (a pedido do Lucas, Correr e Pular trocaram de lugar e a câmera saiu de cima do número do fôlego). Estilo Pop Brutal: borda grossa, sombra dura, afunda ao apertar. O texto de Correr agora fica centrado (o botão é uma coluna flex com ícone e rótulo). Deitado, tudo encolhe (80 e 68 px).
 - **Dica do joystick:** antes da primeira vez que a pessoa mexe nesta partida, um cartão à esquerda mostra um joystick tracejado com o botão passeando e o texto "MEXA AQUI / para mover sua raposa"; some ao primeiro toque. Fica por baixo do tutorial.
 - **Câmera com a raposa andando:** o botão trocava só no clique, que o celular perde quando outro dedo está no joystick. Agora troca no instante do toque (pointerdown) e o clique que vem depois não troca de novo (janela de 700 ms). Testado: com o dedo apertado no joystick, a câmera trocou de Bola para Livre.
+
+## 2n. Desmorona!: celular (28/10/2026)
+
+Mesmo tratamento do Fut Fox: botão Pular novo (amarelo, 94 px, com ícone, no estilo Pop Brutal), dica "MEXA AQUI / para mover sua raposa" com o joystick tracejado antes do primeiro toque (some ao mexer) e o **joystick mais bonito**: anel escuro de 128 px com aro claro e botão branco de borda grossa e sombra dura. As classes do joystick (`dsm-stick`, `dsm-knob`) são as mesmas do Fut Fox, que ganhou o joystick novo junto. As regras dos botões usam duas classes (`.bola-pad.bola-pad-jump`, `.dsm-pad.dsm-pad-jump`) para a ordem de carregamento do CSS não decidir qual ganha.
 
 ## 3. Limites e riscos
 

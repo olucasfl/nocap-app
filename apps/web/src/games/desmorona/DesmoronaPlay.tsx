@@ -162,6 +162,11 @@ export function DesmoronaPlay({
     watching: '',
   });
   const [stick, setStick] = useState<{ ox: number; oy: number; x: number; y: number } | null>(null);
+  /** Já mexeu o joystick nesta partida: a dica "mexa aqui" some. */
+  const [moved, setMoved] = useState(false);
+  useEffect(() => {
+    if (stick) setMoved(true);
+  }, [stick]);
   const [locked, setLocked] = useState(false);
   const mouseUser = useMemo(
     () =>
@@ -671,17 +676,27 @@ export function DesmoronaPlay({
           </button>
         </div>
       )}
+      {touchDevice && !moved && !hud.dead && hud.phase !== 'over' && !result && (
+        <div className="dsm-move-hint" aria-hidden="true">
+          <span className="dsm-move-ring">
+            <i />
+          </span>
+          <b>Mexa aqui</b>
+          <small>para mover sua raposa</small>
+        </div>
+      )}
       {!hud.dead && hud.phase !== 'over' && (
         <button
           type="button"
-          className="dsm-jump"
+          className="dsm-jump dsm-pad dsm-pad-jump"
           aria-label="Pular"
           onPointerDown={(e) => {
             e.preventDefault();
             controls.pressJump();
           }}
         >
-          Pular
+          <IcJump size={30} />
+          <span>Pular</span>
         </button>
       )}
       {online && showNet && !result && (
