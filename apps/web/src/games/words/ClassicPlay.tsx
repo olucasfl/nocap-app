@@ -89,7 +89,7 @@ export function ClassicPlay({
   const open = run?.state === 'open';
 
   const busyRef = useRef(false);
-  /** Põe a letra na casa selecionada e avança só para a vizinha vazia. */
+  /** Põe a letra na casa selecionada e a seleção permanece nela. */
   const type = useCallback(
     (l: string) => {
       if (busyRef.current) return;
@@ -97,24 +97,18 @@ export function ClassicPlay({
       const next = [...slotsRef.current];
       const at = cursorRef.current;
       next[at] = l;
-      // Só avança para a casa vizinha se ela estiver vazia; senão fica onde está (não volta à primeira).
-      const to = at + 1 < LENGTH && next[at + 1] === '' ? at + 1 : at;
-      setEntry(next, to);
+      // A seleção nunca anda sozinha: só muda por toque, clique ou seta.
+      setEntry(next, at);
     },
     [setEntry],
   );
-  /** Apaga a letra da casa selecionada; se ela já está vazia, volta uma casa e apaga a de lá. */
+  /** Apaga a letra da casa selecionada; a seleção permanece nela. */
   const erase = useCallback(() => {
     if (busyRef.current) return;
     const next = [...slotsRef.current];
     const at = cursorRef.current;
-    if (next[at] !== '') {
-      next[at] = '';
-      setEntry(next, at);
-    } else if (at > 0) {
-      next[at - 1] = '';
-      setEntry(next, at - 1);
-    }
+    next[at] = '';
+    setEntry(next, at);
   }, [setEntry]);
   /** Seleciona uma casa da linha (toque, clique ou seta). */
   const pick = useCallback(
