@@ -46,10 +46,7 @@ export function ClassicPlay({
     setSlotsState(next);
     setCursorState(at);
   }, []);
-  // true depois que a pessoa escolhe uma casa: aí a letra fica na casa; digitando "normal" a seleção vai passando
-  const manualRef = useRef(false);
   const clearEntry = useCallback(() => {
-    manualRef.current = false;
     setEntry(Array<string>(LENGTH).fill(''), 0);
   }, [setEntry]);
   const [toast, setToast] = useState<{ text: string; tone: 'bad' | 'good' | '' } | null>(null);
@@ -103,13 +100,12 @@ export function ClassicPlay({
       const at = cursorRef.current;
       next[at] = l;
       let to = at;
-      if (!manualRef.current) {
-        for (let k = 1; k < LENGTH; k++) {
-          const i = (at + k) % LENGTH;
-          if (next[i] === '') {
-            to = i;
-            break;
-          }
+      // passa para a próxima casa vazia; no fim, conta de novo a partir da primeira
+      for (let k = 1; k < LENGTH; k++) {
+        const i = (at + k) % LENGTH;
+        if (next[i] === '') {
+          to = i;
+          break;
         }
       }
       setEntry(next, to);
@@ -121,7 +117,6 @@ export function ClassicPlay({
     if (busyRef.current) return;
     const next = [...slotsRef.current];
     const at = cursorRef.current;
-    manualRef.current = false;
     if (next[at] !== '') {
       next[at] = '';
       setEntry(next, Math.max(0, at - 1));
@@ -134,7 +129,6 @@ export function ClassicPlay({
   const pick = useCallback(
     (i: number) => {
       if (busyRef.current) return;
-      manualRef.current = true;
       setEntry([...slotsRef.current], Math.max(0, Math.min(LENGTH - 1, i)));
     },
     [setEntry],
