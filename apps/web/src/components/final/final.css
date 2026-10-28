@@ -1,0 +1,463 @@
+/* Telas de fim de partida do Atravessa! e do Desmorona! (spec 054). Só transform e opacity animam; sem emoji; Pop Brutal. */
+.fz {
+  --ink: #1b1535;
+  --fa: #ff7d26; /* cor do tema */
+  --fb: #6a3cff; /* cor de apoio */
+  --fhead: #ffd9b8;
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right))
+    max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+  background: rgba(10, 14, 36, 0.78);
+  overflow: auto;
+  animation: fz-fade 0.3s ease-out both;
+}
+.fz[data-theme='atr'] {
+  --fa: #ffd23f;
+  --fb: #2f5bff;
+  --fhead: #dfe6ff;
+}
+.fz-card {
+  width: min(1040px, 100%);
+  max-height: 100%;
+  overflow: auto;
+  display: grid;
+  gap: 14px;
+  padding: 16px 18px 18px;
+  border: 4px solid var(--ink);
+  border-radius: 20px;
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 0 8px 0 var(--ink);
+  outline: none;
+  animation: fz-pop 0.45s cubic-bezier(0.2, 1.3, 0.4, 1) both;
+}
+.fz-head {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 14px 10px 14px;
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+  text-align: center;
+  background: var(--fhead);
+  overflow: hidden;
+}
+.fz-card[data-tone='win'] .fz-head {
+  background: var(--fa);
+}
+.fz-card[data-tone='lose'] .fz-head {
+  background: #e9e7f7;
+}
+.fz-head > :not(.fz-deco) {
+  position: relative;
+}
+.fz-deco {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.fz-kicker {
+  font: 800 12px var(--font-display, system-ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+.fz-title {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  font: 900 clamp(28px, 7vw, 56px) / 1 var(--font-display, system-ui);
+  text-transform: uppercase;
+}
+.fz-title i {
+  display: inline-block;
+  font-style: normal;
+  animation: fz-letter 0.5s cubic-bezier(0.2, 1.5, 0.4, 1) both;
+  animation-delay: calc(var(--i) * 45ms + 150ms);
+}
+.fz-sub {
+  margin: 0;
+  font: 600 15px var(--font-body, system-ui);
+  opacity: 0.85;
+}
+
+/* Corpo: o conteúdo do jogo à esquerda e a revanche à direita; em tela estreita empilha */
+.fz-cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(260px, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+.fz-main {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+/* Cartões de destaque */
+.fz-stats {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+}
+.fz-stats li {
+  display: grid;
+  gap: 1px;
+  padding: 8px 12px;
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  background: #f1f1fa;
+  animation: fz-rise 0.4s ease-out both;
+  animation-delay: var(--d, 0ms);
+}
+.fz-stats small {
+  font: 800 11px var(--font-display, system-ui);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.65;
+}
+.fz-stats b {
+  font: 900 20px/1.1 var(--font-display, system-ui);
+  font-variant-numeric: tabular-nums;
+}
+.fz-stats span {
+  font: 700 13px var(--font-body, system-ui);
+  opacity: 0.8;
+}
+
+/* Lista de classificação */
+.fz-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+.fz-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 34px 14px minmax(0, 1fr) auto;
+  grid-template-areas: 'pos dot name val' '. . bar bar';
+  align-items: center;
+  gap: 2px 8px;
+  padding: 8px 12px;
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  background: #fff;
+  animation: fz-rise 0.4s ease-out both;
+  animation-delay: var(--d, 0ms);
+}
+.fz-row.is-you {
+  background: #fff3c4;
+  box-shadow: 0 3px 0 var(--ink);
+}
+.fz-row.is-first {
+  background: #ffe27a;
+}
+.fz-pos {
+  grid-area: pos;
+  font: 900 18px var(--font-display, system-ui);
+  opacity: 0.6;
+}
+.fz-dot {
+  grid-area: dot;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+}
+.fz-name {
+  grid-area: name;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 6px;
+  font: 800 16px/1.15 var(--font-display, system-ui);
+  overflow-wrap: anywhere;
+}
+.fz-name small {
+  font: 800 10px var(--font-display, system-ui);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: #fff;
+}
+.fz-name small.is-bot {
+  background: #9a97b5;
+}
+.fz-val {
+  grid-area: val;
+  text-align: right;
+  font: 900 16px var(--font-display, system-ui);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.fz-val small {
+  display: block;
+  font: 700 11px var(--font-body, system-ui);
+  opacity: 0.7;
+}
+.fz-bar {
+  grid-area: bar;
+  display: block;
+  height: 8px;
+  border-radius: 999px;
+  background: #e4e2f0;
+  overflow: hidden;
+}
+.fz-bar i {
+  display: block;
+  height: 100%;
+  background: var(--fb);
+  transform-origin: left center;
+  animation: fz-grow 0.8s ease-out both;
+  animation-delay: var(--d, 0ms);
+}
+.fz-row.is-first .fz-bar i {
+  background: var(--ink);
+}
+
+/* Revanche */
+.fz-vote {
+  display: grid;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+  background: #f1f1fa;
+}
+.fz-vote-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.fz-vote-head h3 {
+  margin: 0;
+  font: 900 20px var(--font-display, system-ui);
+  text-transform: uppercase;
+}
+.fz-vote-head span {
+  font: 800 14px var(--font-display, system-ui);
+  font-variant-numeric: tabular-nums;
+}
+.fz-meter {
+  height: 10px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: #fff;
+  overflow: hidden;
+}
+.fz-meter i {
+  display: block;
+  height: 100%;
+  background: var(--fa);
+  transform-origin: left center;
+  transition: transform 0.35s ease-out;
+}
+.fz-members {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 5px;
+}
+.fz-members li {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  background: #fff;
+}
+.fz-members li[data-state='yes'] {
+  background: #d9f7e6;
+}
+.fz-members li[data-state='off'] {
+  opacity: 0.55;
+}
+.fz-members li i {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+}
+.fz-mname {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 6px;
+  align-items: baseline;
+  min-width: 0;
+  font: 800 14px var(--font-display, system-ui);
+  overflow-wrap: anywhere;
+}
+.fz-mname small {
+  font: 700 10px var(--font-body, system-ui);
+  opacity: 0.65;
+  text-transform: uppercase;
+}
+.fz-members b {
+  font: 700 12px var(--font-body, system-ui);
+  white-space: nowrap;
+}
+.fz-hint {
+  margin: 0;
+  font: 600 13px var(--font-body, system-ui);
+  opacity: 0.8;
+}
+.fz-error {
+  margin: 0;
+  font: 700 13px var(--font-body, system-ui);
+  color: #b3202a;
+}
+.fz-btns {
+  display: grid;
+  gap: 8px;
+}
+.fz-btn {
+  min-height: 48px;
+  padding: 8px 14px;
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  background: var(--fa);
+  color: var(--ink);
+  font: 900 16px var(--font-display, system-ui);
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 4px 0 var(--ink);
+  text-align: center;
+  text-decoration: none;
+  display: grid;
+  place-items: center;
+}
+.fz-btn:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--ink);
+}
+.fz-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.fz-btn.is-ghost {
+  background: #fff;
+}
+.fz-btn.is-danger {
+  background: #ff5d6c;
+}
+.fz-btn:focus-visible {
+  outline: 3px solid var(--fb);
+  outline-offset: 2px;
+}
+
+@keyframes fz-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes fz-pop {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.96);
+  }
+}
+@keyframes fz-letter {
+  from {
+    opacity: 0;
+    transform: translateY(0.5em) scale(0.6);
+  }
+}
+@keyframes fz-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+@keyframes fz-grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+/* Celular em pé e telas estreitas */
+@media (max-width: 760px) {
+  .fz-cols {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .fz-card {
+    padding: 12px;
+    gap: 10px;
+  }
+}
+/* Celular deitado: pouca altura, então tudo compacto e o corpo em duas colunas */
+@media (orientation: landscape) and (max-height: 520px) {
+  .fz {
+    padding: max(6px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right))
+      max(6px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+  }
+  .fz-card {
+    gap: 8px;
+    padding: 8px 12px 10px;
+    border-width: 3px;
+    border-radius: 14px;
+  }
+  .fz-head {
+    padding: 6px 8px;
+    gap: 1px;
+  }
+  .fz-title {
+    font-size: clamp(22px, 5vw, 34px);
+  }
+  .fz-sub {
+    font-size: 13px;
+  }
+  .fz-cols {
+    grid-template-columns: minmax(0, 1.4fr) minmax(220px, 1fr);
+    gap: 8px;
+  }
+  .fz-row {
+    padding: 5px 10px;
+  }
+  .fz-btn {
+    min-height: 40px;
+    font-size: 14px;
+  }
+  .fz-stats li {
+    padding: 5px 10px;
+  }
+  .fz-stats b {
+    font-size: 16px;
+  }
+  .fz-vote {
+    padding: 8px 10px;
+    gap: 6px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fz,
+  .fz-card,
+  .fz-title i,
+  .fz-row,
+  .fz-stats li,
+  .fz-bar i,
+  .fz-deco * {
+    animation: none !important;
+  }
+  .fz-meter i {
+    transition: none;
+  }
+}

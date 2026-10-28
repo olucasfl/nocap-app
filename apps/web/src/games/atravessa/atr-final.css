@@ -1,0 +1,92 @@
+/* Tema do fim do Atravessa!: estrada com faixas correndo, azul-noite e amarelo (spec 054). */
+.fz[data-theme='atr'] .fz-head {
+  background: #cdd9ff;
+}
+.fz[data-theme='atr'] .fz-card[data-tone='win'] .fz-head {
+  background: #ffd23f;
+}
+.fz[data-theme='atr'] .fz-row.is-first {
+  background: #fff1b8;
+}
+.atrf-lane {
+  position: absolute;
+  left: 0;
+  width: 56px;
+  height: 6px;
+  border-radius: 3px;
+  background: #1b1535;
+  opacity: 0.18;
+  top: calc(14% + var(--k) * 22%);
+  animation: atrf-run 3.6s linear infinite;
+  animation-delay: calc(var(--k) * -900ms);
+}
+.atrf-lane:nth-child(even) {
+  animation-direction: reverse;
+}
+@keyframes atrf-run {
+  from {
+    transform: translateX(-80px);
+  }
+  to {
+    transform: translateX(110vw);
+  }
+}
+.atrf-hero {
+  display: grid;
+  gap: 4px;
+  justify-items: center;
+  padding: 14px 10px;
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+  background: #1b1535;
+  color: #fff;
+  text-align: center;
+}
+.atrf-badge {
+  padding: 3px 12px;
+  border: 3px solid var(--ink);
+  border-radius: 999px;
+  background: #ffd23f;
+  color: var(--ink);
+  font: 900 12px var(--font-display, system-ui);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.atrf-label {
+  font: 800 12px var(--font-display, system-ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+.atrf-big {
+  font: 900 clamp(64px, 16vw, 112px) / 1 var(--font-display, system-ui);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
+  color: #ffd23f;
+}
+.atrf-hint {
+  font: 700 13px var(--font-body, system-ui);
+  opacity: 0.85;
+}
+.atrf-note {
+  font: 600 12px var(--font-body, system-ui);
+  text-align: center;
+  opacity: 0.8;
+}
+.atrf-note:empty {
+  display: none;
+}
+@media (orientation: landscape) and (max-height: 520px) {
+  .atrf-hero {
+    padding: 8px;
+  }
+  .atrf-big {
+    font-size: clamp(44px, 12vw, 72px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .atrf-lane {
+    animation: none;
+    left: 12%;
+  }
+}

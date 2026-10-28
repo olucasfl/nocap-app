@@ -14,6 +14,7 @@ import { GameChat } from '@/components/GameChat';
 import { gameChatOpen } from '@/lib/game-chat-state';
 import { GameMenu, GearButton, Keycap, NetBadge } from '@/components/GameMenu';
 import { GameTips, type TipRow } from '@/components/GameTips';
+import { DesmoronaFinal, type DsmFinalRow } from './DesmoronaFinal';
 import { RotateHint } from '@/components/RotateHint';
 import { IcCamera, IcJump } from '@/games/bola/BolaIcons';
 import { dsmSfx } from '@/lib/desmorona-audio';
@@ -83,7 +84,7 @@ const tipRows = (touch: boolean): TipRow[] =>
 
 export interface DsmResult {
   winnerId: string;
-  standings: { id: string; name: string; you: boolean }[];
+  standings: DsmFinalRow[];
   seconds: number;
 }
 
@@ -556,7 +557,15 @@ export function DesmoronaPlay({
         controls.releaseLock();
         setResult({
           winnerId: world.winnerId ?? '',
-          standings: st.map((p) => ({ id: p.id, name: p.name, you: p.id === meId })),
+          standings: st.map((p) => ({
+            id: p.id,
+            name: p.name,
+            color: `#${p.color.toString(16).padStart(6, '0')}`,
+            you: p.id === meId,
+            bot: p.bot,
+            fellAt: p.id === world.winnerId && p.alive ? null : p.deadAt,
+            floor: p.deepest >= 0 ? p.deepest + 1 : undefined,
+          })),
           seconds: world.t,
         });
       }
@@ -739,34 +748,12 @@ export function DesmoronaPlay({
           actions={[]}
         />
       )}
-      {result && (
-        <div className="dsm-over" role="dialog" aria-modal="true" aria-label="Resultado">
-          <div className="dsm-over-card">
-            <h2>
-              {result.winnerId === 'me'
-                ? 'Você venceu!'
-                : `${result.standings[0]?.name ?? 'Alguém'} venceu`}
-            </h2>
-            <ol>
-              {result.standings.map((s, i) => (
-                <li key={s.id} className={s.you ? 'is-you' : ''}>
-                  <span>{i + 1}º</span> {s.name}
-                  {s.you ? ' (você)' : ''}
-                </li>
-              ))}
-            </ol>
-            <div className="dsm-over-btns">
-              {onAgain && (
-                <button type="button" className="dsm-btn" onClick={onAgain} data-testid="dsm-again">
-                  Jogar de novo
-                </button>
-              )}
-              <button type="button" className="dsm-btn is-ghost" onClick={onExit}>
-                Voltar
-              </button>
-            </div>
-          </div>
-        </div>
+      {result && !online && (
+        <DesmoronaFinal
+          rows={result.standings}
+          seconds={result.seconds}
+          mode={{ kind: 'training', onAgain, onExit }}
+        />
       )}
     </div>
   );

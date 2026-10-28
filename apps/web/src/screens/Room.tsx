@@ -20,6 +20,8 @@ import { Lobby } from './room/Lobby';
 import { Play } from './room/Play';
 import { AtravessaRoomPlay } from '@/games/atravessa/AtravessaRoomPlay';
 import { DesmoronaRoomPlay } from '@/games/desmorona/DesmoronaRoomPlay';
+import { DesmoronaRoomFinal } from '@/games/desmorona/DesmoronaRoomFinal';
+import { AtravessaRoomFinalPage } from '@/games/atravessa/AtravessaRoomFinalPage';
 import { BolaRoomPlay } from '@/games/bola/BolaRoomPlay';
 import './account.css';
 import './friends.css';
@@ -267,6 +269,12 @@ export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomG
     return <DesmoronaRoomPlay snapshot={snapshot} />;
   }
 
+  if (snapshot?.game === 'atravessa' && snapshot.phase === 'final') {
+    return <AtravessaRoomFinalPage snapshot={snapshot} />;
+  }
+  if (snapshot?.game === 'desmorona' && snapshot.phase === 'final') {
+    return <DesmoronaRoomFinal snapshot={snapshot} />;
+  }
   if (snapshot?.game === 'bola' && (snapshot.phase === 'play' || snapshot.phase === 'final')) {
     return <BolaRoomPlay snapshot={snapshot} />;
   }

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
-import type { AtravessaInput, AtravessaResult } from '@nocap/games';
+import { ATR_TPS, type AtravessaInput, type AtravessaResult } from '@nocap/games';
 import { Loader } from '@/components/Loader';
 import { MuteButton } from '@/components/MuteButton';
 import { SaveNote } from '@/components/GuestNotice';
@@ -9,6 +9,7 @@ import { useAuth } from '@/lib/auth';
 import { soloSession } from '@/lib/solo-session';
 import { fetchStats, type Stats } from '@/lib/stats';
 import { AtravessaPlay } from './AtravessaPlay';
+import { AtravessaSoloFinal } from './AtravessaFinal';
 import { useSaveAtravessa, type AtravessaRunInfo } from './useSaveAtravessa';
 import './atravessa.css';
 import { Page } from '@/components/Page';
@@ -41,17 +42,6 @@ const serverBest = (stats: Stats | undefined) =>
 
 const seedOf = () => crypto.randomUUID().replace(/-/g, '').slice(0, 12);
 
-const VERDICT: Record<string, string> = {
-  veiculo: 'ATROPELADO',
-  trem: 'O TREM PASSOU',
-  agua: 'CAIU NA ÁGUA',
-  arrastado: 'A TORA TE LEVOU',
-  afundou: 'AFUNDOU',
-  mordido: 'O CROCODILO MORDEU',
-  atingido: 'FOI VARRIDO',
-  parado: 'PAROU DEMAIS',
-};
-
 function AtravessaFinal({
   result,
   before,
@@ -70,63 +60,18 @@ function AtravessaFinal({
   onMenu: () => void;
 }) {
   const save = useSaveAtravessa(run, steps);
-  const guest = save === 'guest';
-  const rows = result.score;
-  const isRecord = !guest && rows > before;
-  const best = Math.max(rows, before);
   return (
-    <section className="screen atf">
-      <div className="atf-verdict">
-        <span className="mono atf-kicker">ATRAVESSA! · INFINITO</span>
-        <h1>{VERDICT[result.end ?? 'parado']}</h1>
-      </div>
-      <div className="atf-score">
-        {isRecord && (
-          <span className="atf-badge mono">{before > 0 ? 'NOVO RECORDE' : 'PRIMEIRO RECORDE'}</span>
-        )}
-        <span className="mono atf-label">LINHAS</span>
-        <div className="atf-big">
-          <b>{rows}</b>
-        </div>
-        {!guest && (
-          <span className="mono atf-hint">
-            {isRecord
-              ? before > 0
-                ? `+${rows - before} sobre o recorde anterior`
-                : 'Esse é o seu primeiro resultado'
-              : `Seu recorde: ${best}`}
-          </span>
-        )}
-      </div>
-      <SaveNote className="mono atf-note" save={save} />
-      <div className="stack atf-actions">
-        <button
-          type="button"
-          className="btn alt"
-          data-sfx="start"
-          disabled={busy}
-          onClick={onAgain}
-        >
-          {busy ? 'Preparando...' : 'Jogar de novo'}
-        </button>
-        {!guest && (
-          <Link
-            to="/ranking"
-            search={{ jogo: 'atravessa', modo: 'infinito' } as never}
-            className="btn ghost"
-            data-sfx="select"
-          >
-            Ver ranking
-          </Link>
-        )}
-        <button type="button" className="btn ghost" data-sfx="back" onClick={onMenu}>
-          Voltar ao menu
-        </button>
-        <Link to="/" className="btn ghost">
-          Voltar aos jogos
-        </Link>
-      </div>
-    </section>
+    <AtravessaSoloFinal
+      end={result.end}
+      rows={result.score}
+      seconds={result.ticks / ATR_TPS}
+      before={before}
+      guest={save === 'guest'}
+      note={<SaveNote className="mono" save={save} />}
+      busy={busy}
+      onAgain={onAgain}
+      onMenu={onMenu}
+    />
   );
 }
 

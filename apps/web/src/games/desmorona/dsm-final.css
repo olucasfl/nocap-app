@@ -1,0 +1,121 @@
+/* Tema do fim do Desmorona!: pôr do sol, ladrilhos caindo e pódio de degraus (spec 054). */
+.fz[data-theme='dsm'] .fz-head {
+  background: #ffc58f;
+}
+.fz[data-theme='dsm'] .fz-card[data-tone='win'] .fz-head {
+  background: #ff9d2e;
+}
+.dsf-tile {
+  position: absolute;
+  top: -24px;
+  left: calc(var(--k) * 15% + 3%);
+  width: 22px;
+  height: 22px;
+  border: 3px solid #1b1535;
+  background: #fff;
+  opacity: 0.55;
+  animation: dsf-fall 3.2s ease-in infinite;
+  animation-delay: calc(var(--k) * 330ms);
+}
+.dsf-tile:nth-child(even) {
+  background: #6a3cff;
+}
+@keyframes dsf-fall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(190px) rotate(90deg);
+    opacity: 0;
+  }
+}
+.dsf-podium {
+  margin: 0;
+  padding: 6px 4px 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: 8px;
+}
+.dsf-pod {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  min-width: 0;
+  animation: fz-rise 0.5s ease-out both;
+  animation-delay: var(--d, 0ms);
+}
+.dsf-fox {
+  width: 34px;
+  height: 34px;
+  border: 3px solid #1b1535;
+  border-radius: 50% 50% 40% 40%;
+}
+.dsf-pod.p1 .dsf-fox {
+  width: 44px;
+  height: 44px;
+}
+.dsf-pod-name {
+  max-width: 100%;
+  font: 800 14px/1.1 var(--font-display, system-ui);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.dsf-pod.is-you .dsf-pod-name {
+  background: #ffe27a;
+  padding: 0 6px;
+  border-radius: 6px;
+}
+.dsf-block {
+  display: grid;
+  place-items: start center;
+  width: 100%;
+  padding-top: 6px;
+  border: 3px solid #1b1535;
+  border-radius: 10px 10px 0 0;
+  background: #fff;
+  font: 900 22px var(--font-display, system-ui);
+}
+.dsf-pod.p1 .dsf-block {
+  height: 92px;
+  background: #ffd23f;
+}
+.dsf-pod.p2 .dsf-block {
+  height: 68px;
+  background: #e4e2f0;
+}
+.dsf-pod.p3 .dsf-block {
+  height: 50px;
+  background: #ffc58f;
+}
+@media (orientation: landscape) and (max-height: 520px) {
+  .dsf-pod.p1 .dsf-block {
+    height: 56px;
+  }
+  .dsf-pod.p2 .dsf-block {
+    height: 42px;
+  }
+  .dsf-pod.p3 .dsf-block {
+    height: 32px;
+  }
+  .dsf-fox {
+    width: 24px;
+    height: 24px;
+  }
+  .dsf-pod.p1 .dsf-fox {
+    width: 30px;
+    height: 30px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dsf-tile {
+    animation: none;
+    opacity: 0.35;
+    top: 40px;
+  }
+}

@@ -55,5 +55,6 @@
 | 051 | [O app inteiro no celular deitado](051-app-no-celular-deitado.md) | 9 | implementada (27/10/2026); falta ver em aparelhos reais |
 | 052 | [Fut Fox liso online, arena, física e visual](052-fut-fox-rede-e-fisica.md) | 9 | em andamento (27/10/2026): fase 1 (rede) pronta; arena, física e visual em seguida |
 | 053 | [Fut Fox: corrida com fôlego, atrito da bola e curva do teto](053-fut-fox-corrida-e-curvas.md) | 9 | em andamento (27/10/2026): motor, rede e tela feitos; falta ver na tela e jogar |
+| 054 | [Telas de fim de partida do Atravessa! e do Desmorona!](054-telas-de-fim-atravessa-desmorona.md) | 9 | em andamento (28/10/2026): telas feitas e testadas offline; falta ver a da sala com 2 navegadores |
 
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.
