@@ -47,25 +47,26 @@ for (const [name, viewport, touch] of [
       expect(box.y + box.height, `${id} dentro da janela`).toBeLessThanOrEqual(viewport.height + 1);
     }
 
-    // escolhe a 4ª casa e escreve a 4ª e a 5ª letras: a seleção anda sozinha para a próxima casa vazia
+    // escolhe a 4ª casa e escreve a 4ª e a 5ª letras: a seleção anda só para a vizinha vazia e depois fica na casa
     await page.getByTestId('slot-0-3').click();
     await page.getByTestId(`key-${answer[3]}`).click();
     await page.getByTestId(`key-${answer[4]}`).click();
     await expect(page.getByTestId('slot-0-3')).toContainText(answer[3]!);
     await expect(page.getByTestId('slot-0-4')).toContainText(answer[4]!);
-    await expect(page.getByTestId('slot-0-0')).toHaveClass(/cur/);
+    await expect(page.getByTestId('slot-0-4')).toHaveClass(/cur/);
 
     // as setas movem a seleção
-    await page.keyboard.press('ArrowRight');
-    await expect(page.getByTestId('slot-0-1')).toHaveClass(/cur/);
     await page.keyboard.press('ArrowLeft');
-    await expect(page.getByTestId('slot-0-0')).toHaveClass(/cur/);
+    await expect(page.getByTestId('slot-0-3')).toHaveClass(/cur/);
+    await page.keyboard.press('ArrowRight');
+    await expect(page.getByTestId('slot-0-4')).toHaveClass(/cur/);
 
     // faltando letras o Enter não gasta tentativa
     await page.getByTestId('enter').click();
     await expect(page.getByTestId('row-0-0')).toHaveCount(0);
 
     // completa o resto, clicando as letras, e envia
+    await page.getByTestId('slot-0-0').click();
     for (const l of answer.slice(0, 3)) await page.getByTestId(`key-${l}`).click();
     await page.getByTestId('enter').click();
     await expect(page.getByTestId('row-0-0')).toBeVisible();

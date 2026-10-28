@@ -89,7 +89,7 @@ export function ClassicPlay({
   const open = run?.state === 'open';
 
   const busyRef = useRef(false);
-  /** Põe a letra na casa selecionada e passa para a próxima casa vazia (à direita, dando a volta). */
+  /** Põe a letra na casa selecionada e avança só para a vizinha vazia. */
   const type = useCallback(
     (l: string) => {
       if (busyRef.current) return;
@@ -97,14 +97,8 @@ export function ClassicPlay({
       const next = [...slotsRef.current];
       const at = cursorRef.current;
       next[at] = l;
-      let to = at;
-      for (let k = 1; k < LENGTH; k++) {
-        const i = (at + k) % LENGTH;
-        if (next[i] === '') {
-          to = i;
-          break;
-        }
-      }
+      // Só avança para a casa vizinha se ela estiver vazia; senão fica onde está (não volta à primeira).
+      const to = at + 1 < LENGTH && next[at + 1] === '' ? at + 1 : at;
       setEntry(next, to);
     },
     [setEntry],
