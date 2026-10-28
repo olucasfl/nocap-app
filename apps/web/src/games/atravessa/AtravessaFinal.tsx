@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { Link } from '@tanstack/react-router';
-import { clock, pace } from '@/components/final/math';
+import { clock } from '@/components/final/math';
 import { FinalShell, type FinalTone } from '@/components/final/FinalShell';
 import { RematchPanel, type RematchRoom } from '@/components/final/RematchPanel';
 import { useCountUp } from '@/components/final/useCountUp';
@@ -87,11 +87,6 @@ export function AtravessaSoloFinal({
               <small>Tempo</small>
               <b>{clock(seconds)}</b>
               <span>de corrida</span>
-            </li>
-            <li style={{ '--d': '420ms' } as CSSProperties}>
-              <small>Ritmo</small>
-              <b>{pace(rows, seconds).toLocaleString('pt-BR')}</b>
-              <span>linhas por minuto</span>
             </li>
             {!guest && (
               <li style={{ '--d': '540ms' } as CSSProperties}>
