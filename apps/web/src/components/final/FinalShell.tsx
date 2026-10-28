@@ -16,6 +16,7 @@ export function FinalShell({
   deco,
   label,
   testId,
+  footer,
   children,
 }: {
   theme: 'dsm' | 'atr';
@@ -26,6 +27,8 @@ export function FinalShell({
   deco?: ReactNode;
   label: string;
   testId: string;
+  /** Botões de ação: ficam fixos embaixo do cartão, e o resto rola por cima. */
+  footer: ReactNode;
   children: ReactNode;
 }) {
   const card = useRef<HTMLDivElement>(null);
@@ -42,21 +45,24 @@ export function FinalShell({
       data-testid={testId}
     >
       <div className="fz-card" data-tone={tone} ref={card} tabIndex={-1}>
-        <header className="fz-head">
-          <div className="fz-deco" aria-hidden="true">
-            {deco}
-          </div>
-          <span className="fz-kicker">{kicker}</span>
-          <h2 className="fz-title" aria-label={title}>
-            {[...title].map((ch, i) => (
-              <i key={i} aria-hidden="true" style={{ '--i': i } as CSSProperties}>
-                {ch === ' ' ? '\u00a0' : ch}
-              </i>
-            ))}
-          </h2>
-          {sub && <p className="fz-sub">{sub}</p>}
-        </header>
-        {children}
+        <div className="fz-body">
+          <header className="fz-head">
+            <div className="fz-deco" aria-hidden="true">
+              {deco}
+            </div>
+            <span className="fz-kicker">{kicker}</span>
+            <h2 className="fz-title" aria-label={title}>
+              {[...title].map((ch, i) => (
+                <i key={i} aria-hidden="true" style={{ '--i': i } as CSSProperties}>
+                  {ch === ' ' ? '\u00a0' : ch}
+                </i>
+              ))}
+            </h2>
+            {sub && <p className="fz-sub">{sub}</p>}
+          </header>
+          {children}
+        </div>
+        <div className="fz-foot">{footer}</div>
       </div>
     </div>
   );

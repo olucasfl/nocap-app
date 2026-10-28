@@ -564,7 +564,6 @@ export function DesmoronaPlay({
             you: p.id === meId,
             bot: p.bot,
             fellAt: p.id === world.winnerId && p.alive ? null : p.deadAt,
-            floor: p.deepest >= 0 ? p.deepest + 1 : undefined,
           })),
           seconds: world.t,
         });

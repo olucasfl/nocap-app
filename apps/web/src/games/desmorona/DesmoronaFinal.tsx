@@ -1,7 +1,12 @@
 import type { CSSProperties } from 'react';
 import { clock } from '@/components/final/math';
 import { FinalShell, type FinalTone } from '@/components/final/FinalShell';
-import { RematchPanel, TrainingActions, type RematchRoom } from '@/components/final/RematchPanel';
+import {
+  RematchActions,
+  RematchPanel,
+  TrainingActions,
+  type RematchRoom,
+} from '@/components/final/RematchPanel';
 import { useCountUp } from '@/components/final/useCountUp';
 import './dsm-final.css';
 
@@ -14,8 +19,6 @@ export interface DsmFinalRow {
   bot?: boolean;
   /** Quando caiu (s de jogo); null = ficou de pé até o fim. */
   fellAt: number | null;
-  /** Andar mais fundo que alcançou (1 a 6); só no treino. */
-  floor?: number;
 }
 
 export type DsmFinalMode =
@@ -83,10 +86,6 @@ export function DesmoronaFinal({
 
   const fallen = rows.filter((r) => r.fellAt !== null);
   const first = [...fallen].sort((a, b) => (a.fellAt as number) - (b.fellAt as number))[0];
-  const deepest = rows.reduce<DsmFinalRow | null>(
-    (best, r) => (r.floor && (!best || r.floor > (best.floor ?? 0)) ? r : best),
-    null,
-  );
   const shownSeconds = useCountUp(Math.round(seconds), 450, 800);
 
   return (
@@ -98,11 +97,18 @@ export function DesmoronaFinal({
       sub={sub}
       label="Resultado do Desmorona!"
       testId="dsm-final"
+      footer={
+        mode.kind === 'room' ? (
+          <RematchActions room={mode.room} />
+        ) : (
+          <TrainingActions onAgain={mode.onAgain} onExit={mode.onExit} />
+        )
+      }
       deco={Array.from({ length: 7 }, (_, i) => (
         <i key={i} className="dsf-tile" style={{ '--k': i } as CSSProperties} />
       ))}
     >
-      <div className="fz-cols">
+      <div className={`fz-cols${mode.kind === 'room' ? '' : ' is-solo'}`}>
         <div className="fz-main">
           {rows.length >= 3 && <Podium rows={rows} />}
 
@@ -117,13 +123,6 @@ export function DesmoronaFinal({
                 <small>Caiu primeiro</small>
                 <b style={{ color: first.color }}>{first.name}</b>
                 <span>aos {clock(first.fellAt as number)}</span>
-              </li>
-            )}
-            {deepest && (
-              <li style={{ '--d': '540ms' } as CSSProperties}>
-                <small>Foi mais fundo</small>
-                <b style={{ color: deepest.color }}>{deepest.name}</b>
-                <span>até o andar {deepest.floor}</span>
               </li>
             )}
           </ul>
@@ -157,17 +156,11 @@ export function DesmoronaFinal({
           </ol>
         </div>
 
-        <aside>
-          {mode.kind === 'room' ? (
+        {mode.kind === 'room' && (
+          <aside>
             <RematchPanel room={mode.room} />
-          ) : (
-            <TrainingActions
-              note="Treino contra bots: não entra no ranking."
-              onAgain={mode.onAgain}
-              onExit={mode.onExit}
-            />
-          )}
-        </aside>
+          </aside>
+        )}
       </div>
     </FinalShell>
   );

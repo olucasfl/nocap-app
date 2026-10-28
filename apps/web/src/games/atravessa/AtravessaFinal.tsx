@@ -2,7 +2,7 @@ import type { CSSProperties, ReactNode } from 'react';
 import { Link } from '@tanstack/react-router';
 import { clock } from '@/components/final/math';
 import { FinalShell, type FinalTone } from '@/components/final/FinalShell';
-import { RematchPanel, type RematchRoom } from '@/components/final/RematchPanel';
+import { RematchActions, RematchPanel, type RematchRoom } from '@/components/final/RematchPanel';
 import { useCountUp } from '@/components/final/useCountUp';
 import './atr-final.css';
 
@@ -61,8 +61,35 @@ export function AtravessaSoloFinal({
       label="Resultado do Atravessa!"
       testId="atr-final"
       deco={roadDeco}
+      footer={
+        <div className="fz-btns">
+          <button
+            type="button"
+            className="fz-btn"
+            disabled={busy}
+            onClick={onAgain}
+            data-sfx="start"
+            data-testid="final-again"
+          >
+            {busy ? 'Preparando…' : 'Jogar de novo'}
+          </button>
+          {!guest && (
+            <Link
+              to="/ranking"
+              search={{ jogo: 'atravessa', modo: 'infinito' } as never}
+              className="fz-btn is-ghost"
+              data-sfx="select"
+            >
+              Ver ranking
+            </Link>
+          )}
+          <button type="button" className="fz-btn is-ghost" onClick={onMenu} data-sfx="back">
+            Voltar
+          </button>
+        </div>
+      }
     >
-      <div className="fz-cols">
+      <div className="fz-cols is-solo">
         <div className="fz-main">
           <div className="atrf-hero">
             {isRecord && (
@@ -98,38 +125,6 @@ export function AtravessaSoloFinal({
           </ul>
           <div className="atrf-note">{note}</div>
         </div>
-        <aside>
-          <section className="fz-vote" aria-label="Próximo passo">
-            <div className="fz-vote-head">
-              <h3>E agora?</h3>
-            </div>
-            <div className="fz-btns">
-              <button
-                type="button"
-                className="fz-btn"
-                disabled={busy}
-                onClick={onAgain}
-                data-sfx="start"
-                data-testid="final-again"
-              >
-                {busy ? 'Preparando…' : 'Jogar de novo'}
-              </button>
-              {!guest && (
-                <Link
-                  to="/ranking"
-                  search={{ jogo: 'atravessa', modo: 'infinito' } as never}
-                  className="fz-btn is-ghost"
-                  data-sfx="select"
-                >
-                  Ver ranking
-                </Link>
-              )}
-              <button type="button" className="fz-btn is-ghost" onClick={onMenu} data-sfx="back">
-                Voltar
-              </button>
-            </div>
-          </section>
-        </aside>
       </div>
     </FinalShell>
   );
@@ -194,6 +189,7 @@ export function AtravessaRoomFinal({
       label="Resultado do Atravessa!"
       testId="atr-final"
       deco={roadDeco}
+      footer={<RematchActions room={room} />}
     >
       <div className="fz-cols">
         <div className="fz-main">

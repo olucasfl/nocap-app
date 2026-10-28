@@ -28,9 +28,12 @@ async function fitsEverywhere(page: Page, testId: string, shot: string) {
     expect(card!.x, `${s.name}: cartão`).toBeGreaterThanOrEqual(-1);
     expect(card!.x + card!.width, `${s.name}: cartão`).toBeLessThanOrEqual(s.w + 1);
     expect(card!.y + card!.height, `${s.name}: cartão`).toBeLessThanOrEqual(s.h + 1);
+    // os botões ficam fixos embaixo do cartão, sem rolar, e não cobrem o ranking
     const btn = page.getByTestId('final-again').or(page.getByTestId('final-exit')).first();
-    await btn.scrollIntoViewIfNeeded();
     await expect(btn).toBeInViewport();
+    const foot = await root.locator('.fz-foot').boundingBox();
+    const body = await root.locator('.fz-body').boundingBox();
+    expect(foot!.y, `${s.name}: rodapé abaixo do conteúdo`).toBeGreaterThanOrEqual(body!.y + body!.height - 1);
     await page.screenshot({ path: `test-results/${shot}-${s.name}.png` });
   }
 }

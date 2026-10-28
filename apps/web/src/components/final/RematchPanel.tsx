@@ -22,54 +22,45 @@ export type RematchRoom = {
   onClose: () => void;
 };
 
-/** Treino: jogar de novo ou voltar. */
+/** Treino: jogar de novo ou voltar (vai no rodapé fixo da tela). */
 export function TrainingActions({
-  note,
   onAgain,
   onExit,
   busy,
 }: {
-  note: string;
   onAgain?: () => void;
   onExit: () => void;
   busy?: boolean;
 }) {
   return (
-    <section className="fz-vote" aria-label="Próximo passo">
-      <div className="fz-vote-head">
-        <h3>E agora?</h3>
-      </div>
-      <p className="fz-hint">{note}</p>
-      <div className="fz-btns">
-        {onAgain && (
-          <button
-            type="button"
-            className="fz-btn"
-            onClick={onAgain}
-            disabled={busy}
-            data-sfx="start"
-            data-testid="final-again"
-          >
-            {busy ? 'Preparando…' : 'Jogar de novo'}
-          </button>
-        )}
+    <div className="fz-btns">
+      {onAgain && (
         <button
           type="button"
-          className="fz-btn is-ghost"
-          onClick={onExit}
-          data-sfx="back"
-          data-testid="final-exit"
+          className="fz-btn"
+          onClick={onAgain}
+          disabled={busy}
+          data-sfx="start"
+          data-testid="final-again"
         >
-          Voltar
+          {busy ? 'Preparando…' : 'Jogar de novo'}
         </button>
-      </div>
-    </section>
+      )}
+      <button
+        type="button"
+        className="fz-btn is-ghost"
+        onClick={onExit}
+        data-sfx="back"
+        data-testid="final-exit"
+      >
+        Voltar
+      </button>
+    </div>
   );
 }
 
 /** A votação de "jogar de novo" da sala: quem quer, quem pensa, quem saiu, e os botões de votar, sair e encerrar. */
 export function RematchPanel({ room }: { room: RematchRoom }) {
-  const [closing, setClosing] = useState(false);
   const here = room.members.filter((m) => m.connected);
   const votes = here.filter((m) => m.rematch).length;
   const everyone = room.members.every((m) => !m.connected || m.rematch);
@@ -112,6 +103,15 @@ export function RematchPanel({ room }: { room: RematchRoom }) {
           {room.message}
         </p>
       )}
+    </section>
+  );
+}
+
+/** Votar, sair e (o líder) encerrar a sala; vai no rodapé fixo da tela. */
+export function RematchActions({ room }: { room: RematchRoom }) {
+  const [closing, setClosing] = useState(false);
+  return (
+    <>
       <div className="fz-btns">
         <button
           type="button"
@@ -155,6 +155,6 @@ export function RematchPanel({ room }: { room: RematchRoom }) {
         }}
         onCancel={() => setClosing(false)}
       />
-    </section>
+    </>
   );
 }
