@@ -90,40 +90,29 @@ export function ppGuideHit(
   const base = drop
     ? Math.min(4.2, Math.max(1.6, hs))
     : Math.min(opts.hMax ?? 10.5, Math.max(3.6, hs));
-  const scales = [1, 1.15, 0.9, 1.3, 1.55, 1.8, 2.1, 0.8, 0.68, 0.58];
+  const scales = [1, 1.3, 1.8, 0.8, 0.6];
   // primeiro mantém a direção da mão; se não há jogada boa assim (cantinho demais), fecha o ângulo aos poucos
   // direções a tentar: a da mão, depois fechando o ângulo e, por fim, puxando para o centro da mesa (quem bate de um canto
   // precisa jogar para dentro, senão a bola nunca cai na mesa)
   const inward = -Math.sign(b.x || 1);
-  const dirs = lateral
-    ? [
-        ux,
-        ux * 0.75,
-        ux * 0.5,
-        ux * 0.25,
-        0,
-        inward * 0.12,
-        inward * 0.24,
-        inward * 0.36,
-        inward * 0.5,
-      ]
-    : [ux];
+  const dirs = lateral ? [ux, ux * 0.5, 0, inward * 0.15, inward * 0.3, inward * 0.5] : [ux];
+  const vys: number[] = [];
+  for (let vy = opts.vyLo ?? -3; vy <= 6.01; vy += 0.6) vys.push(vy);
+  vys.sort((u, v) => Math.abs(u - b.vy) - Math.abs(v - b.vy));
   for (const lx of dirs) {
     const lz = Math.sqrt(Math.max(0, 1 - lx * lx)) * Math.sign(uz || fwd);
     for (const sc of scales) {
       const h = Math.min((opts.hMax ?? 10.5) + 1, base * sc);
+      // a primeira jogada boa, olhando as alturas da mais parecida com a da mão para a mais diferente (para na primeira)
       let best = Number.NaN;
-      let bestD = 1e9;
-      for (let vy = opts.vyLo ?? -3; vy <= 6.01; vy += 0.4) {
+      for (const vy of vys) {
         ppCopyBall(b, guide);
         guide.vx = lx * h;
         guide.vz = lz * h;
         guide.vy = vy;
-        if (!ppLanding(guide, side, drop).ok) continue;
-        const d = Math.abs(vy - b.vy);
-        if (d < bestD) {
-          bestD = d;
+        if (ppLanding(guide, side, drop).ok) {
           best = vy;
+          break;
         }
       }
       if (!Number.isNaN(best)) {
@@ -159,8 +148,8 @@ export function ppFixNet(b: PpBall, side: number): void {
   };
   if (clears(b)) return;
   ppCopyBall(b, guide);
-  for (let k = 0; k < 40; k++) {
-    guide.vy += 0.3;
+  for (let k = 0; k < 20; k++) {
+    guide.vy += 0.5;
     if (clears(guide)) {
       b.vy = guide.vy;
       return;

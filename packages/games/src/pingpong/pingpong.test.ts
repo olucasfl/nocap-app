@@ -608,3 +608,28 @@ describe('a rede não derruba a batida', () => {
     }
   });
 });
+
+describe('a batida não trava o jogo', () => {
+  it('resolver uma batida (inclusive com a ajuda) leva poucos milissegundos, em média', () => {
+    let total = 0;
+    let n = 0;
+    for (const vz of [1.5, 5, 8])
+      for (const vx of [-6, 0, 6])
+        for (const bx of [-3, 0, 3])
+          for (const bz of [3.8, 0.8])
+            for (const bvz of [3, 12]) {
+              const b = ppNewBall();
+              b.x = bx;
+              b.y = 1.6;
+              b.z = bz;
+              b.vy = -1;
+              b.vz = bvz;
+              const t0 = performance.now();
+              ppPaddleHit(b, 0, { x: bx, y: 1.6, vx, vy: 0, vz, reach: 3.8 - bz });
+              total += performance.now() - t0;
+              n++;
+            }
+    // antes da otimização a média passava de 5 ms (e o pior caso de 80 ms): era o "engasgo" ao bater
+    expect(total / n).toBeLessThan(4);
+  });
+});

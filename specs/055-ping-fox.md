@@ -211,3 +211,8 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 - **Placar e avisos** em vidro escuro (como a referência), com o **nome de quem joga** (conta, apelido da sala ou "Você") e "Ponto de {nome}". Dica de saque no mesmo estilo.
 - **Ritmo**: `PP_WORLD_SPEED` = 0,8: o mundo anda a 80% do tempo real (mesma trajetória, mais devagar), como os níveis fáceis do Online Pingpang.
 - **Guia de posição** (opção do menu Esc, ligada por padrão, guardada no aparelho): para a bola que vem na sua direção, pontos finos no chão marcam por onde ela passa depois do quique (o primeiro é o do quique; os seguintes mostram o caminho se você esperar) e mudam enquanto a bola anda. Não diz onde bater; só dá a referência.
+
+### Rodada 18 (01/11/2026): sem engasgo ao bater, ritmo um pouco mais rápido
+
+- **Engasgo da raquete para a frente**: dois motivos. (1) A ajuda de leitura buscava jogadas demais em cada batida (média 5,8 ms e pior caso de 80 ms no computador, bem pior no celular): agora olha primeiro as alturas mais parecidas com a da mão e para na primeira boa, com menos direções e tamanhos (média 1,5 ms, pior caso 22 ms; teste de regressão). (2) O ponteiro era projetado na altura da raquete, que acompanha a bola: perto da bola o alvo "andava" sozinho (efeito de volta no tempo); agora é projetado numa altura fixa (`PP_REST_Y`).
+- **Ritmo**: `PP_WORLD_SPEED` de 0,8 para 0,9.

@@ -11,6 +11,7 @@ import {
   PP_PAD_Z,
   PP_REACH_NET,
   PP_REACH_BACK,
+  PP_REST_Y,
   ppPadStepZ,
   ppParseNetEvent,
   ppPredictCross,
@@ -280,7 +281,7 @@ export function PingPlay({
       const p = scene.pointerToTable(
         (e.clientX - r.left) / r.width,
         (e.clientY - r.top) / r.height,
-        match.pad(myIdx).y,
+        PP_REST_Y,
       );
       me.x = Math.max(-PP_PAD_X, Math.min(PP_PAD_X, scene.simX(p.x)));
       zt = clampZ(PP_PAD_Z - p.z);
