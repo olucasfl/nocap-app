@@ -214,3 +214,10 @@ a:focus-visible,
 :root .cg-sw.b .tag {
   color: var(--on-accent);
 }
+
+/* Sem zoom por pinça em lugar nenhum; rolagem e toques continuam. */
+html,
+body {
+  touch-action: pan-x pan-y;
+  -webkit-text-size-adjust: 100%;
+}

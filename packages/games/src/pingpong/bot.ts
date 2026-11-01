@@ -1,6 +1,6 @@
 import { ppCopyBall, ppNewBall } from './ball';
 import { ppLanding } from './assist';
-import { PP_PAD_R, PP_SERVE_FRONT, PP_TOSS_V, PP_TOSS_Y, PP_W } from './constants';
+import { PP_PAD_R, PP_PAD_Z, PP_SERVE_FRONT, PP_TOSS_V, PP_TOSS_Y, PP_W } from './constants';
 import { PpMatch, ppIdleInput, type PpInput, type PpSwing } from './match';
 import { ppPaddleHit } from './paddle';
 import { ppPredictCross, type PpCrossing } from './predict';
@@ -22,6 +22,9 @@ export interface PpBotLevel {
   /** Espera (s) antes de sacar. */
   serveWait: number;
 }
+
+/** O bot estende a raquete até aqui para encontrar a bola (alcança também bolas que morrem curtas). */
+const BOT_REACH = 0.45;
 
 export type PpBotName = 'facil' | 'medio' | 'dificil';
 
@@ -124,7 +127,7 @@ export class PpBot {
         this.swing = { vx: 0, vy: 0, vz: 0 };
       }
       if (!this.pred && m.t >= lv.reaction) {
-        this.pred = ppPredictCross(m.ball, p);
+        this.pred = ppPredictCross(m.ball, p, BOT_REACH);
         if (this.pred) this.plan(m, p, this.pred);
       }
       if (this.pred) {
@@ -166,7 +169,7 @@ export class PpBot {
     // a bola na altura da raquete: sai do lançamento e desce com a velocidade da queda
     b.x = m.ball.x;
     b.y = 1.65;
-    b.z = s * (2.45 - PP_SERVE_FRONT);
+    b.z = s * (PP_PAD_Z - PP_SERVE_FRONT);
     b.vy = -Math.sqrt(
       Math.max(0.5, 2 * 8 * (PP_TOSS_Y + (PP_TOSS_V * PP_TOSS_V) / (2 * 8) - 1.65)),
     );
@@ -180,7 +183,7 @@ export class PpBot {
     const free = opp.x >= 0 ? -1 : 1;
     const aimX = free * (0.15 + 0.55 * this.level.aim) * (PP_W / 2) * (0.6 + 0.4 * this.rng());
     const choice = this.best(c.ball, p, this.level.power, aimX, c.x, c.y);
-    this.swing = { vx: choice.vx, vy: choice.vy, vz: choice.vz };
+    this.swing = { vx: choice.vx, vy: choice.vy, vz: choice.vz, reach: BOT_REACH };
     this.goalX = c.x - choice.off * PP_PAD_R;
     this.goalY = c.y;
   }
@@ -202,7 +205,7 @@ export class PpBot {
         for (const vy of VY) {
           for (const vx of VX) {
             ppCopyBall(ball, trial);
-            const info = ppPaddleHit(trial, p, { x: padX - off * PP_PAD_R, y: padY, vx, vy, vz });
+            const info = ppPaddleHit(trial, p, { x: padX - off * PP_PAD_R, y: padY, vx, vy, vz }, false);
             if (info.speed > power) continue;
             const land = ppLanding(trial, p);
             if (!land.ok) continue;

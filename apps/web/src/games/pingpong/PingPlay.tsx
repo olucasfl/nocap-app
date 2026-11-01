@@ -7,6 +7,9 @@ import {
   PpNetSim,
   createRng,
   ppIdleInput,
+  PP_PAD_X,
+  PP_PAD_Y_MAX,
+  PP_PAD_Y_MIN,
   ppPadStep,
   ppParseNetEvent,
   ppPredictCross,
@@ -202,8 +205,8 @@ export function PingPlay({
       }
       // dedo: a raquete anda o tanto que o dedo anda a partir de onde ela estava (o dedo não pula a raquete de lugar)
       if (start || !anchor) anchor = { px: p.x, py: p.y, tx: me.x, ty: me.y };
-      me.x = Math.max(-1.9, Math.min(1.9, anchor.tx + scene.simX(p.x - anchor.px)));
-      me.y = Math.max(0.55, Math.min(2.3, anchor.ty + (p.y - anchor.py)));
+      me.x = Math.max(-PP_PAD_X, Math.min(PP_PAD_X, anchor.tx + scene.simX(p.x - anchor.px)));
+      me.y = Math.max(PP_PAD_Y_MIN, Math.min(PP_PAD_Y_MAX, anchor.ty + (p.y - anchor.py)));
     };
     let downAt = 0;
     let downX = 0;
@@ -236,6 +239,10 @@ export function PingPlay({
       }
     };
     const onCtx = (e: Event) => e.preventDefault();
+    // Segurar na tela abria a lupa/seleção do iOS: bloqueia o toque longo e a seleção.
+    const onTouch = (e: TouchEvent) => e.preventDefault();
+    zn.addEventListener('touchstart', onTouch, { passive: false });
+    zn.addEventListener('selectstart', onCtx);
     zn.addEventListener('pointerdown', onDown);
     zn.addEventListener('pointermove', onMove);
     zn.addEventListener('pointerup', onUp);
@@ -435,8 +442,8 @@ export function PingPlay({
         const kx = (keys.r ? 1 : 0) - (keys.l ? 1 : 0);
         const ky = (keys.u ? 1 : 0) - (keys.d ? 1 : 0);
         if (kx || ky) {
-          me.x = Math.max(-1.9, Math.min(1.9, me.x + scene.simX(kx) * 3.2 * dt));
-          me.y = Math.max(0.55, Math.min(2.3, me.y + ky * 3.2 * dt));
+          me.x = Math.max(-PP_PAD_X, Math.min(PP_PAD_X, me.x + scene.simX(kx) * 3.2 * dt));
+          me.y = Math.max(PP_PAD_Y_MIN, Math.min(PP_PAD_Y_MAX, me.y + ky * 3.2 * dt));
         }
         me.serve = now < serveUntil;
         // só nos testes: uma entrada de bot (ou de um "jogador" programado) no lugar do mouse
@@ -527,6 +534,8 @@ export function PingPlay({
       zn.removeEventListener('pointermove', onMove);
       zn.removeEventListener('pointerup', onUp);
       zn.removeEventListener('contextmenu', onCtx);
+      zn.removeEventListener('touchstart', onTouch);
+      zn.removeEventListener('selectstart', onCtx);
       ro.disconnect();
       scene.dispose();
       delete (window as unknown as { __ping?: unknown }).__ping;

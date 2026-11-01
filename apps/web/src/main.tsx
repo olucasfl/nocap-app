@@ -69,4 +69,16 @@ if (import.meta.env.DEV && window.location.pathname === '/dev/sons') {
   );
 }
 
+// iOS ignora user-scalable=no: bloqueia o gesto de pinça e o zoom por toque duplo em todo o app.
+for (const ev of ['gesturestart', 'gesturechange', 'gestureend']) {
+  document.addEventListener(ev, (e) => e.preventDefault());
+}
+document.addEventListener(
+  'touchmove',
+  (e) => {
+    if (e.touches.length > 1) e.preventDefault();
+  },
+  { passive: false },
+);
+
 requestAnimationFrame(hideSplash);

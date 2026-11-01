@@ -23,9 +23,9 @@ const scratch = ppNewBall();
 const out = ppNewStepOut();
 
 /** Prevê onde a bola cruza o plano da raquete de `p` (mesma física do jogo); `null` se ela morre antes. */
-export function ppPredictCross(b: PpBall, p: number): PpCrossing | null {
+export function ppPredictCross(b: PpBall, p: number, reach = 0): PpCrossing | null {
   const s = p === 0 ? 1 : -1;
-  const plane = s * PP_PAD_Z;
+  const plane = s * (PP_PAD_Z - reach);
   ppCopyBall(b, scratch);
   for (let i = 0; i < 1200; i++) {
     const z0 = scratch.z;

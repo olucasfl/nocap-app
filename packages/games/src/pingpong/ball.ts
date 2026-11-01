@@ -1,9 +1,7 @@
+import { ppTune } from './tune';
 import {
-  PP_DRAG,
   PP_DT,
-  PP_G,
   PP_L,
-  PP_MAGNUS,
   PP_NET_H,
   PP_NET_KEEP,
   PP_NET_OVER,
@@ -85,9 +83,10 @@ const ppClampSpin = (b: PpBall) => {
 export function ppStepBall(b: PpBall, out: PpStepOut): void {
   const dt = PP_DT;
   const sp = Math.hypot(b.vx, b.vy, b.vz);
-  b.vx += (-PP_DRAG * sp * b.vx + PP_MAGNUS * (b.wy * b.vz - b.wz * b.vy)) * dt;
-  b.vy += (-PP_G - PP_DRAG * sp * b.vy + PP_MAGNUS * (b.wz * b.vx - b.wx * b.vz)) * dt;
-  b.vz += (-PP_DRAG * sp * b.vz + PP_MAGNUS * (b.wx * b.vy - b.wy * b.vx)) * dt;
+  const { drag, magnus, g } = ppTune;
+  b.vx += (-drag * sp * b.vx + magnus * (b.wy * b.vz - b.wz * b.vy)) * dt;
+  b.vy += (-g - drag * sp * b.vy + magnus * (b.wz * b.vx - b.wx * b.vz)) * dt;
+  b.vz += (-drag * sp * b.vz + magnus * (b.wx * b.vy - b.wy * b.vx)) * dt;
   const py = b.y;
   b.x += b.vx * dt;
   b.y += b.vy * dt;

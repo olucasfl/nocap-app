@@ -102,3 +102,14 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 - **API:** `PingRoomEngine` (`apps/api/src/rooms/ping-room.engine.ts`) e `PingRoom` (`color.room.ts`, mensagens `phit`, `ptoss`, `ppad`, `psync`; `pev`, `prej`, `ppads` de volta), registrada no Fox Cap! (`pickgame`) e em `main.ts`. 7 testes do motor e 1 de integração com Colyseus.
 - **Web:** o Fox Cap! "Com amigos" tem "Ping Fox!" entre os jogos; `PingRoomPlay` (partida) e `PingRoomFinal` (pódio com os números e a votação de revanche) em `apps/web/src/games/pingpong`. A partida em sala usa a mesma `PingPlay` do treino.
 - **Pódio:** a sala espera 2,5 s depois do último ponto, e manda duração, maior troca, bola mais rápida, smashes e batidas de cada um.
+
+
+## Ajustes de 01/11/2026 (batida mais fácil, mesa maior)
+
+- Mesa 25% maior (`PP_L` 5,25, `PP_W` 2,9); plano da raquete mais perto da mesa (`PP_PAD_Z = L/2 + 0,1`).
+- **Ajuda de leitura** (`ppGuideHit`, `assist.ts`): se a física mandaria a bola na rede, para fora ou curta demais (que morre antes de a raquete alcançar), troca só a altura da saída (e, se preciso, um pouco da força) pela jogada boa mais parecida com a da mão. Direção para os lados e efeito continuam do jogador; bola boa não é alterada. Mão parada sai reta para a frente.
+- Raquete espera 0,3 m à frente quando a bola vem (`PP_REACH_WAIT`) e é puxada de leve para a bola perto do plano (ímã).
+- Saque fácil: a bola descendo na frente da raquete é rebatida mesmo com a mão parada; o ímã alinha a raquete na horizontal.
+- Bots prevêem o cruzamento com 0,45 m de alcance (`BOT_REACH`).
+- Celular: sem zoom por pinça em todo o app (viewport, `touch-action`, `gesturestart`); a tela de jogo bloqueia seleção/lupa do iOS.
+- Tela final: `.fz-body` não encolhe cabeçalho e placar em telas baixas.

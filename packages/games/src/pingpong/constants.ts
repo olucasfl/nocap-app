@@ -1,14 +1,14 @@
 /** Ping Fox! (spec 055). Unidades em metros e segundos; x é a largura, y a altura, z o comprimento da mesa. */
 
 /** Comprimento (z) e largura (x) da mesa e altura do tampo. */
-export const PP_L = 4.2;
-export const PP_W = 2.3;
+export const PP_L = 5.25;
+export const PP_W = 2.9;
 export const PP_TOP = 1.0;
 /** A rede fica em z = 0 e sobe isto acima do tampo. */
-export const PP_NET_H = 0.24;
+export const PP_NET_H = 0.28;
 /** A rede passa um pouco dos lados da mesa (os postes). */
 export const PP_NET_OVER = 0.15;
-export const PP_R = 0.075;
+export const PP_R = 0.09;
 export const PP_G = 8;
 
 /** Passo fixo: 4 subpassos por tick de 60 Hz (a bola rápida não atravessa nada). */
@@ -32,9 +32,9 @@ export const PP_PAD_MU = 0.9;
 export const PP_NET_KEEP = 0.25;
 
 /** Raquete: raio do disco, distância do plano atrás da ponta, alcance do ponteiro. */
-export const PP_PAD_R = 0.32;
-export const PP_PAD_Z = PP_L / 2 + 0.35;
-export const PP_PAD_X = 1.9;
+export const PP_PAD_R = 0.4;
+export const PP_PAD_Z = PP_L / 2 + 0.1;
+export const PP_PAD_X = 2.3;
 export const PP_PAD_Y_MIN = 0.55;
 export const PP_PAD_Y_MAX = 2.3;
 /** Velocidade máxima e rigidez com que a raquete persegue o ponteiro (uma mão que acompanha, sem teletransportar). */
@@ -49,13 +49,17 @@ export const PP_PAD_STIFF = 36;
 export const PP_REACH_MAX = 0.7;
 /** Rapidez (m/s) abaixo da qual a raquete fica parada em z, e quanto de alcance cada m/s a mais dá. */
 export const PP_REACH_DEAD = 0.8;
-export const PP_REACH_GAIN = 0.12;
+/** Velocidade para a frente por m/s de mão (acima da zona morta) e quanto de alcance cada m/s para a frente dá. */
+export const PP_Z_GAIN = 1;
+export const PP_REACH_PER_VZ = 0.1;
 /** Com que rapidez o alcance sobe (rápido: a raquete "dispara") e desce (mais devagar: a raquete recolhe). */
 export const PP_REACH_RISE = 20;
 export const PP_REACH_FALL = 8;
 /** Velocidade máxima para a frente (m/s). */
 export const PP_VZ_MAX = 7.5;
 /** Quem vai sacar já estende a raquete um pouco, para a bola estar ao alcance de um golpe curto. */
+/** Alcance de espera de quem vai rebater: a raquete já fica um pouco à frente do plano de espera. */
+export const PP_REACH_WAIT = 0.3;
 export const PP_REACH_SERVE = 0.1;
 
 /**
@@ -66,13 +70,15 @@ export const PP_REACH_SERVE = 0.1;
 export const PP_TILT_BASE = 0.26;
 export const PP_TILT_VY = 0.05;
 export const PP_TILT_VX = 0.03;
+/** Quanto a face se fecha com a força para a frente (quem bate forte bate mais reto): mantém a bola na mesa. */
+export const PP_TILT_VZ = 0.04;
 export const PP_TILT_OFF = 0.16;
 /** O quanto da velocidade da mão passa para a bola (a raquete é leve e a bola escapa): menos sensível, mais perdoa. */
 export const PP_PAD_COUPLE = 0.7;
 /** Velocidade máxima da bola depois da batida (impossível de devolver acima disto). */
-export const PP_V_MAX = 13;
+export const PP_V_MAX = 14;
 /** A bola que sai mais rápido que isto, descendo, conta como smash (só para o efeito e o som). */
-export const PP_SMASH_SPEED = 9.5;
+export const PP_SMASH_SPEED = 10.5;
 
 /** Saque: impulso do lançamento (a bola sobe pouco e desce), altura da mão e quanto a bola fica à frente da raquete. */
 export const PP_TOSS_V = 3.2;

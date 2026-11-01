@@ -471,9 +471,9 @@
   overflow: hidden;
 }
 .fz-body {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 14px;
-  align-content: start;
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -513,4 +513,10 @@
   --fa: #ff7d26;
   --fb: #2f5bff;
   --fhead: #cdd9ff;
+}
+
+/* Nada dentro do corpo encolhe: o que não cabe rola (antes o cabeçalho e o placar se espremiam em tela baixa) */
+.fz-body > * {
+  flex: 0 0 auto;
+  min-width: 0;
 }

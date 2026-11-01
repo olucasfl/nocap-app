@@ -1,16 +1,11 @@
 import type { PpBall } from './ball';
+import { ppTune } from './tune';
+import { ppGuideHit } from './assist';
 import {
-  PP_PAD_COUPLE,
-  PP_PAD_E,
-  PP_PAD_MU,
   PP_PAD_R,
   PP_R,
   PP_SMASH_SPEED,
   PP_SPIN_MAX,
-  PP_TILT_BASE,
-  PP_TILT_OFF,
-  PP_TILT_VX,
-  PP_TILT_VY,
   PP_V_MAX,
 } from './constants';
 
@@ -44,10 +39,12 @@ const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
  * Como a face fica pelo movimento da mão: subir abre a face (a bola sobe), descer fecha (a bola desce), e o movimento
  * para o lado vira a face para o lado. Devolve a inclinação para cima (`pitch`) e para o lado (`yaw`), em radianos.
  */
-export function ppPaddleTilt(vx: number, vy: number): { pitch: number; yaw: number } {
+export function ppPaddleTilt(vx: number, vy: number, vz = 0): { pitch: number; yaw: number } {
+  const t = ppTune;
   return {
-    pitch: clamp(PP_TILT_BASE + PP_TILT_VY * clamp(vy, -8, 8), -0.5, 0.75),
-    yaw: clamp(PP_TILT_VX * clamp(vx, -8, 8), -0.35, 0.35),
+    // subir abre a face; descer fecha; bater forte para a frente fecha um pouco (a bola vai mais reta e rápida)
+    pitch: clamp(t.tiltBase + t.tiltVy * clamp(vy, -8, 8) - t.tiltVz * clamp(vz, 0, 8), -0.5, 0.75),
+    yaw: clamp(t.tiltVx * clamp(vx, -8, 8), -0.35, 0.35),
   };
 }
 
@@ -58,23 +55,29 @@ export function ppPaddleTilt(vx: number, vy: number): { pitch: number; yaw: numb
  * atrito com a mão passando pela bola vira efeito (a mesma conta do quique). Nada corrige a batida: descer demais vai na
  * rede, subir demais sai da mesa. Altera `b` no lugar.
  */
-export function ppPaddleHit(b: PpBall, side: number, pad: PpPaddleMotion): PpHitInfo {
+export function ppPaddleHit(
+  b: PpBall,
+  side: number,
+  pad: PpPaddleMotion,
+  guide = true,
+): PpHitInfo {
   const forward = side === 0 ? -1 : 1;
   const ox = clamp((b.x - pad.x) / PP_PAD_R, -1.25, 1.25);
   const oy = clamp((b.y - pad.y) / PP_PAD_R, -1.25, 1.25);
-  const tilt = ppPaddleTilt(pad.vx, pad.vy);
+  const t = ppTune;
+  const tilt = ppPaddleTilt(pad.vx, pad.vy, pad.vz);
   // normal da face: para a rede, inclinada para cima (abertura) e para o lado, com um pouco de curva pelo contato
-  let nx = Math.sin(tilt.yaw) + PP_TILT_OFF * ox;
-  let ny = Math.sin(tilt.pitch) + PP_TILT_OFF * 0.5 * oy;
+  let nx = Math.sin(tilt.yaw) + t.tiltOff * ox;
+  let ny = Math.sin(tilt.pitch) + t.tiltOff * 0.5 * oy;
   let nz = forward * Math.cos(tilt.pitch) * Math.cos(tilt.yaw);
   const nl = Math.hypot(nx, ny, nz);
   nx /= nl;
   ny /= nl;
   nz /= nl;
 
-  const pvx = pad.vx * PP_PAD_COUPLE;
-  const pvy = pad.vy * PP_PAD_COUPLE;
-  const pvz = forward * pad.vz * PP_PAD_COUPLE;
+  const pvx = pad.vx * t.couple;
+  const pvy = pad.vy * t.couple;
+  const pvz = forward * pad.vz * t.couple;
 
   // velocidade relativa à raquete
   let rx = b.vx - pvx;
@@ -83,8 +86,8 @@ export function ppPaddleHit(b: PpBall, side: number, pad: PpPaddleMotion): PpHit
   const rn = rx * nx + ry * ny + rz * nz;
   // a bola precisa vir de encontro à face (se a face já a persegue mais rápido, não há batida de verdade)
   const vnEff = Math.min(rn, -0.3);
-  const jn = -(1 + PP_PAD_E) * vnEff;
-  const away = -PP_PAD_E * vnEff;
+  const jn = -(1 + t.padE) * vnEff;
+  const away = -t.padE * vnEff;
   rx += (away - rn) * nx;
   ry += (away - rn) * ny;
   rz += (away - rn) * nz;
@@ -105,7 +108,7 @@ export function ppPaddleHit(b: PpBall, side: number, pad: PpPaddleMotion): PpHit
   let wy = b.wy;
   let wz = b.wz;
   if (us > 1e-9) {
-    const jt = Math.min((2 / 7) * us, PP_PAD_MU * jn);
+    const jt = Math.min((2 / 7) * us, t.padMu * jn);
     const dx = -ux / us;
     const dy = -uy / us;
     const dz = -uz / us;
@@ -143,6 +146,7 @@ export function ppPaddleHit(b: PpBall, side: number, pad: PpPaddleMotion): PpHit
   b.wx = wx;
   b.wy = wy;
   b.wz = wz;
-  const speed = Math.hypot(vx, vy, vz);
+  if (guide) ppGuideHit(b, side);
+  const speed = Math.hypot(b.vx, b.vy, b.vz);
   return { speed, smash: speed >= PP_SMASH_SPEED && vy < -1, quality, spin: wx };
 }

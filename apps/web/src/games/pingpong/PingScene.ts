@@ -520,8 +520,8 @@ export class PingScene {
     const k = 1 - Math.exp(-4 * dt);
     const tx = bx * 0.18;
     const cam = this.camera;
-    const baseZ = portrait ? 6.3 : 5.6;
-    const baseY = portrait ? 3.2 : 2.7;
+    const baseZ = portrait ? 6.9 : 6.0;
+    const baseY = portrait ? 3.5 : 2.9;
     cam.position.x = lerp(cam.position.x, tx * 0.7, k);
     cam.position.y = baseY;
     cam.position.z = baseZ;
@@ -741,7 +741,7 @@ export class PingScene {
       const side = v === 0 ? 1 : -1;
       slot.g.position.set(px, py, side * PP_PAD_Z - side * reach);
       slot.g.rotation.set(0, v === 0 ? 0 : Math.PI, 0);
-      const tilt = ppPaddleTilt(pad.vx, pad.vy);
+      const tilt = ppPaddleTilt(pad.vx, pad.vy, pad.vz);
       const yawView = this.flip ? -tilt.yaw : tilt.yaw;
       const k = 1 - Math.exp(-28 * dt);
       const cur = this.padTilt[v] ?? { pitch: 0, yaw: 0 };

@@ -219,7 +219,7 @@ describe('regras', () => {
 
   it('saque em que a raquete não avança até a bola cai na própria mesa: falta, e na segunda falta é ponto do outro', () => {
     const m = new PpMatch(0);
-    const hold = { ...ppIdleInput(), x: 0, y: 1.65 };
+    const hold = { ...ppIdleInput(), x: 0, y: 0.6 };
     const faults: PpEvent[] = [];
     for (let n = 0; n < 2; n++) {
       faults.push(...run(m, 3, hold, ppIdleInput()));
@@ -231,6 +231,15 @@ describe('regras', () => {
     const point = faults.find((e) => e.type === 'point');
     expect(point && point.type === 'point' && point.winner).toBe(1);
     expect(m.score).toEqual([0, 1]);
+  });
+
+  it('saque fácil: a bola descendo na frente da raquete parada é rebatida e cai na mesa do outro lado', () => {
+    const m = new PpMatch(0);
+    const hold = { ...ppIdleInput(), x: 0, y: 1.5 };
+    const ev = [...run(m, 3, hold, ppIdleInput()), ...run(m, 3, { ...hold, serve: true }, ppIdleInput())];
+    ev.push(...run(m, 200, hold, ppIdleInput()));
+    expect(ev.some((e) => e.type === 'hit' && e.serve)).toBe(true);
+    expect(ev.some((e) => e.type === 'fault')).toBe(false);
   });
 
   it('antes do quique na sua metade a raquete deixa a bola passar (sem voleio)', () => {
@@ -272,7 +281,7 @@ describe('a batida de verdade', () => {
   };
   const hit = (vx: number, vy: number, vz: number) => {
     const b = incoming();
-    const info = ppPaddleHit(b, 0, { x: 0, y: 1.3, vx, vy, vz });
+    const info = ppPaddleHit(b, 0, { x: 0, y: 1.3, vx, vy, vz }, false);
     return { b, info };
   };
 
@@ -357,7 +366,32 @@ describe('bots', () => {
 
   it('o difícil ganha do fácil na maioria das partidas', () => {
     let wins = 0;
-    for (let i = 0; i < 6; i++) if (play('dificil', 'facil', 'n' + i).m.winner === 0) wins++;
-    expect(wins).toBeGreaterThanOrEqual(5);
+    for (let i = 0; i < 10; i++) if (play('dificil', 'facil', 'n' + i).m.winner === 0) wins++;
+    expect(wins).toBeGreaterThanOrEqual(7);
+  });
+});
+
+describe('ajuda de leitura da batida', () => {
+  const swing = (vy: number, vz: number) => {
+    const b = ppNewBall();
+    b.x = 0;
+    b.y = 1.3;
+    b.z = 2.7;
+    b.vy = -1;
+    b.vz = 3;
+    ppPaddleHit(b, 0, { x: 0, y: 1.3, vx: 0, vy, vz });
+    return ppLanding(b, 0);
+  };
+  it('batida fraca e batida forte passam a rede e caem na mesa do outro lado', () => {
+    const strokes: [number, number][] = [
+      [0, 0.5],
+      [1, 2],
+      [2, 4],
+      [-2, 6],
+      [3, 7.5],
+    ];
+    for (const [vy, vz] of strokes) {
+      expect(swing(vy, vz).ok).toBe(true);
+    }
   });
 });

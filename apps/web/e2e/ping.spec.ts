@@ -124,7 +124,7 @@ const humanDriver = () => {
       }),
     );
   const to = (x: number, y: number) => {
-    const q = g.scene.project(g.scene.simX(x), y, 2.45);
+    const q = g.scene.project(g.scene.simX(x), y, 2.725);
     return [r.left + q.nx * r.width, r.top + q.ny * r.height] as const;
   };
   const ease = (y0: number, y1: number, k: number) => y0 + (y1 - y0) * (k * k * (3 - 2 * k));

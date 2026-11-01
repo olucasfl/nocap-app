@@ -6,3 +6,4 @@ export * from './match';
 export * from './bot';
 export * from './predict';
 export * from './netsim';
+export * from './tune';

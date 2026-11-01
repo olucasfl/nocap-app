@@ -22,10 +22,12 @@ import {
   PP_RALLY_MAX,
   PP_REACH_DEAD,
   PP_REACH_FALL,
-  PP_REACH_GAIN,
+  PP_REACH_PER_VZ,
+  PP_Z_GAIN,
   PP_REACH_MAX,
   PP_REACH_RISE,
   PP_REACH_SERVE,
+  PP_REACH_WAIT,
   PP_SERVE_AUTO,
   PP_SERVE_FRONT,
   PP_SUB,
@@ -72,6 +74,11 @@ export interface PpPaddle {
   swing: number;
 }
 
+/** Velocidade para a frente (m/s) que a raquete leva para a bola, pela rapidez da mão (m/s). */
+export function ppForwardSpeed(handSpeed: number): number {
+  return Math.max(0, Math.min(PP_VZ_MAX, (handSpeed - PP_REACH_DEAD) * PP_Z_GAIN));
+}
+
 /**
  * A mão segue o ponteiro como uma mola com velocidade limitada, e o alcance para a frente acompanha a rapidez dela:
  * parada, a raquete fica no plano de espera; mexida rápido, ela avança e leva a bola junto. `minReach` mantém a raquete
@@ -91,14 +98,12 @@ export function ppPadStep(pad: PpPaddle, tx: number, ty: number, dt: number, min
   pad.vy = vy;
   pad.x += vx * dt;
   pad.y += vy * dt;
-  const want = Math.max(
-    minReach,
-    Math.min(PP_REACH_MAX, (Math.hypot(vx, vy) - PP_REACH_DEAD) * PP_REACH_GAIN),
-  );
+  // a velocidade para a frente vem da rapidez da mão, na hora (quanto mais rápido a mão, mais forte a batida); o alcance
+  // (onde a raquete está em z) acompanha essa velocidade
+  pad.vz = ppForwardSpeed(Math.hypot(vx, vy));
+  const want = Math.max(minReach, Math.min(PP_REACH_MAX, pad.vz * PP_REACH_PER_VZ));
   const rate = want > pad.reach ? PP_REACH_RISE : PP_REACH_FALL;
-  const next = pad.reach + (want - pad.reach) * Math.min(1, rate * dt);
-  pad.vz = Math.max(-PP_VZ_MAX, Math.min(PP_VZ_MAX, (next - pad.reach) / dt));
-  pad.reach = next;
+  pad.reach += (want - pad.reach) * Math.min(1, rate * dt);
   pad.swing = Math.max(0, pad.swing - dt * 6);
 }
 
@@ -261,9 +266,41 @@ export class PpMatch {
   private movePad(p: number, inp: PpInput): void {
     const pad = this.pad(p);
     // quem vai sacar já estende a raquete um pouco: a bola fica ao alcance de um golpe curto
-    const stance =
-      p === this.server && (this.phase === 'serve' || this.phase === 'toss') ? PP_REACH_SERVE : 0;
-    ppPadStep(pad, inp.x, inp.y, PP_TICK, stance);
+    const serving = p === this.server && (this.phase === 'serve' || this.phase === 'toss');
+    // e quem vai rebater também: com a bola vindo, a raquete já espera um pouco à frente (alcança bola curta)
+    const b0 = this.ball;
+    // saque fácil: a bola descendo bem na frente da raquete é rebatida mesmo com a mão parada
+    const serveReady =
+      serving &&
+      this.phase === 'toss' &&
+      b0.vy < 0 &&
+      b0.y < pad.y + 0.12 &&
+      Math.hypot(b0.x - pad.x, b0.y - pad.y) < PP_PAD_R * 0.8;
+    const stance = serving
+      ? serveReady
+        ? PP_SERVE_FRONT + 0.12
+        : PP_REACH_SERVE
+      : this.phase === 'rally' && this.expect === p
+        ? PP_REACH_WAIT
+        : 0;
+    // ímã: a raquete é puxada para a bola quando ela está chegando (saque na descida, rebatida perto do plano)
+    let tx = inp.x;
+    let ty = inp.y;
+    if (!inp.swing) {
+      const b = this.ball;
+      let w = 0;
+      if (serving && this.phase === 'toss') w = 0.7;
+      else if (this.phase === 'rally' && this.expect === p) {
+        const s = PpMatch.sign(p);
+        const dz = (s * PP_PAD_Z - b.z) * s;
+        if (dz > -0.2 && dz < 1.4 && b.vz * s > 0) w = 0.55 * (1 - Math.max(0, dz) / 1.4);
+      }
+      if (w > 0) {
+        tx += (b.x - tx) * w;
+        if (!serving) ty += (b.y - ty) * w * 0.8;
+      }
+    }
+    ppPadStep(pad, tx, ty, PP_TICK, stance);
     // um bot pede a batida pronta: a velocidade da mão no contato vem dele
     const sw = inp.swing ?? null;
     this.swingNow[p === 0 ? 0 : 1] = sw;
