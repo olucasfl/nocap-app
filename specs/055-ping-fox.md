@@ -226,3 +226,10 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 
 - **Causa de "a bola passa por dentro da raquete do bot e cai"**: bola mansa (corte) que quica duas vezes na mesa do bot, bem perto da linha de fundo, antes de chegar ao plano da raquete dele. A previsão dele ignorava o segundo quique e ele esperava no lugar errado. Agora `ppPredictCross` sabe quantos quiques já houve na mesa (`bouncesSoFar`); quando a bola morreria antes do plano normal, o bot avança a raquete por cima da mesa (`BOT_REACH_DEEP`, 1,3 m) e bate na bola ali.
 - Resultado nas partidas bot contra bot (3 jogos de 100 s): difícil 30 x 0 contra o fácil, médio 31 x 4 contra o fácil, difícil e médio parelhos. O nível difícil agora reage mais cedo, corre mais, erra menos a posição e mira sempre no canto livre. Teste novo: o difícil faz mais de 3x os pontos do fácil.
+
+### Rodada 21 (01/11/2026): mais emoção, batida forte que vai forte, efeito que faz sentido
+
+- **Mais rápido**: `PP_WORLD_SPEED` 1,2; teto da bola `PP_V_MAX` 14 → 22 m/s e a saída da batida agora é `0,6·entrada + 4 + 13·força da mão`: mão rápida manda a bola de verdade (drive de ~100 a 120 km/h na escala do jogo). Bots: 0,4 a 0,7 batidas por segundo.
+- **Efeito com sentido**: topspin pesado quanto mais forte o drive (40 a 62 rad/s), corte mais forte na empurrada lenta, curva só varrendo para o lado. **O efeito que a bola traz agora conta** (antes o bot devolvia sempre reto): topspin que chega vira menos topspin (ou corte) na saída e faz a bola pular; corte afunda; efeito de lado desvia um pouco. Os bots calculam a devolução já com isso.
+- **Curtinha (drop shot)**: toque levíssimo com a raquete no meio da mesa ou perto da rede passa a rede e cai logo depois.
+- **Rastro simples**: uma linha fina e clara que só aparece com a bola rápida (o smash cronometrado mantém o roxo), sem brilho.

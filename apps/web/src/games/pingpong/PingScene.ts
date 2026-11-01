@@ -955,11 +955,12 @@ export class PingScene {
         if (q) pts.setXYZ(i, q.x, q.y, q.z);
       }
       pts.needsUpdate = true;
-      this.trailLine.visible = inFlight;
+      this.trailLine.visible = inFlight && (m.trailTier > 0 || speed > 6);
       const lm = this.trailLine.material as THREE.LineBasicMaterial;
       const tr = m.trailTier;
       lm.color.setHex(tr >= 3 ? 0xe7b8ff : tr === 2 ? 0xb455ff : tr === 1 ? 0x9a5bff : 0xffffff);
-      lm.opacity = tr > 0 ? 0.9 : 0.3;
+      // rastro simples: some quando a bola está devagar e fica mais firme (sem brilho) quando ela está rápida
+      lm.opacity = tr > 0 ? 0.9 : clamp((speed - 5) / 14, 0, 1) * 0.5;
     }
 
     // raquetes: a de quem olha é a primeira (perto da câmera), a do outro lado é a segunda. A raquete avança com a mão

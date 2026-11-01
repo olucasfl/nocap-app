@@ -279,6 +279,20 @@ describe('regras', () => {
     }
   });
 
+  it('toque levíssimo com a raquete no meio da mesa é a curtinha: passa a rede e cai logo depois', () => {
+    const b = ppNewBall();
+    b.x = 0;
+    b.y = 1.3;
+    b.z = 1.9;
+    b.vy = -1;
+    b.vz = 3;
+    const info = ppPaddleHit(b, 0, { x: 0, y: 1.3, vx: 0, vy: 0, vz: 1, reach: 1.9 });
+    expect(info.stroke).toBe('curta');
+    const land = ppLanding(b, 0, true);
+    expect(land.ok).toBe(true);
+    expect(Math.abs(land.z)).toBeLessThan(1.4);
+  });
+
   it('antes do quique na sua metade a raquete deixa a bola passar (sem voleio)', () => {
     const m = new PpMatch(0);
     // bola vindo da raquete 0 direto para o fundo: a raquete 1 está no lugar certo mas ainda não houve quique

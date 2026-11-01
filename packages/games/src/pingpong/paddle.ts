@@ -97,6 +97,9 @@ export function ppPaddleTilt(vx: number, vy: number, vz = 0): { pitch: number; y
  */
 export function ppPaddleHit(b: PpBall, side: number, pad: PpPaddleMotion, guide = true): PpHitInfo {
   const forward = side === 0 ? -1 : 1;
+  const inWx = b.wx;
+  const inWy = b.wy;
+  const inWz = b.wz;
   const inVx = b.vx;
   const inVy = b.vy;
   const inVz = b.vz;
@@ -208,28 +211,32 @@ export function ppPaddleHit(b: PpBall, side: number, pad: PpPaddleMotion, guide 
     vx *= 1 - 0.25 * lift;
     vz *= 1 - 0.25 * lift;
     stroke = back ? 'lob' : 'bloqueio';
-    spinFwd = back ? 18 : 0;
-  } else if (nearNet && fwdPow < 4.6 && !high) {
+    spinFwd = back ? 22 : 0;
+  } else if (
+    (nearNet && fwdPow < 4.6 && !high) ||
+    (fwdPow < 1.7 && !high && vin > 0.5 && reach > 1.2)
+  ) {
     // toque curto perto da rede: a bola mal passa e cai logo depois (com corte)
     stroke = 'curta';
     drop = true;
-    spinFwd = -34;
+    spinFwd = -46;
   } else if (lat > 5.5 && fwdPow > 3) {
     // mão varrendo para o lado: efeito de lado, a bola faz curva
     stroke = 'curva';
     spinSide = Math.sign(pad.vx) * Math.min(30, 5 * lat) * (side === 0 ? 1 : -1);
-    spinFwd = 12;
+    spinFwd = 18;
   } else if (fwdPow < 3.4 && !high) {
     // empurrada devagar: corte (backspin), a bola vai baixa e morre na mesa
     stroke = 'corte';
-    spinFwd = -(26 + 18 * (1 - fwdPow / 3.4));
+    spinFwd = -(34 + 22 * (1 - fwdPow / 3.4));
     if (low) vy *= 0.6;
   } else if (fwdPow < 8.2) {
     stroke = 'topspin';
-    spinFwd = 24 + 6 * (fwdPow - 3.4);
+    spinFwd = 30 + 8 * (fwdPow - 3.4);
   } else {
     stroke = 'drive';
-    spinFwd = 14;
+    // bater forte = topspin pesado: a bola desce rápido depois de passar a rede
+    spinFwd = Math.min(62, 40 + 6 * (fwdPow - 8.2));
   }
   if (tier > 0) {
     const S = PP_SMASH_V[tier] ?? 11.5;
@@ -246,10 +253,24 @@ export function ppPaddleHit(b: PpBall, side: number, pad: PpPaddleMotion, guide 
     vx *= 0.7;
     vz *= 0.45;
   }
+  // o efeito que a bola traz conta: bola com topspin que chega na raquete sai com menos efeito (ou com corte) e pula mais;
+  // bola com corte afunda; efeito de lado desvia um pouco (bloquear bola com efeito exige mão)
+  {
+    const hs = Math.hypot(vx, vz);
+    if (hs > 0.2) {
+      const ux = vx / hs;
+      const uz = vz / hs;
+      const topRel = inWx * uz - inWz * ux; // < 0: veio com topspin (em relação à saída)
+      spinFwd += 0.35 * topRel;
+      spinSide += -0.3 * inWy;
+      if (tier === 0) {
+        vy += Math.max(-1.2, Math.min(1.2, -0.02 * topRel));
+        vx += Math.max(-0.8, Math.min(0.8, 0.014 * inWy));
+      }
+    }
+  }
   const cap =
-    (drop ? 0.3 * vin + 2.4 : 0.5 * vin + 3.6) +
-    10.5 * power * (drop ? 0.3 : 1) +
-    (smashing ? 4.5 : 0);
+    (drop ? 0.3 * vin + 2.4 : 0.6 * vin + 4) + 13 * power * (drop ? 0.3 : 1) + (smashing ? 4.5 : 0);
   const sp = Math.hypot(vx, vy, vz);
   const lim = tier > 0 ? 30 : Math.min(PP_V_MAX, cap);
   if (sp > lim) {

@@ -78,7 +78,7 @@ export const PP_TILT_OFF = 0.05;
 /** O quanto da velocidade da mão passa para a bola (a raquete é leve e a bola escapa): menos sensível, mais perdoa. */
 export const PP_PAD_COUPLE = 0.7;
 /** Velocidade máxima da bola depois da batida (impossível de devolver acima disto). */
-export const PP_V_MAX = 14;
+export const PP_V_MAX = 22;
 /** A bola que sai mais rápido que isto, descendo, conta como smash (só para o efeito e o som). */
 export const PP_SMASH_SPEED = 10.5;
 
@@ -142,4 +142,4 @@ export const PP_SMASH_V = [0, 12, 17, 24] as const;
  * O ritmo do jogo: o mundo anda a esta fração do tempo real (bola mais lenta, mais tempo para ler a jogada), como nos
  * níveis fáceis do Online Pingpang. A trajetória é a mesma, só passa mais devagar.
  */
-export const PP_WORLD_SPEED = 1;
+export const PP_WORLD_SPEED = 1.2;
