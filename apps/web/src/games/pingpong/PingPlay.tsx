@@ -93,7 +93,7 @@ const tipRows = (touch: boolean): TipRow[] =>
     : [
         {
           keys: <b className="gm-tag">Mouse</b>,
-          text: 'A raquete vai até onde o mouse aponta na mesa (até a rede)',
+          text: 'A raquete anda com o mouse, até a rede e para trás. O cursor fica preso no jogo: Esc solta e abre o menu',
         },
         {
           keys: <b className="gm-tag">Impulso</b>,
@@ -194,6 +194,8 @@ export function PingPlay({
   const trackRef = useRef<HTMLDivElement>(null);
   const cursorRef = useRef<HTMLSpanElement>(null);
   menuRef.current = menu;
+  if (menu && typeof document !== 'undefined' && document.pointerLockElement)
+    document.exitPointerLock?.();
   const [result, setResult] = useState<{
     winner: number;
     score: [number, number];
@@ -203,6 +205,9 @@ export function PingPlay({
     () => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches,
     [],
   );
+  useEffect(() => {
+    if (menu && document.pointerLockElement) document.exitPointerLock?.();
+  }, [menu]);
   const closeMenu = () => setMenu(false);
 
   useEffect(() => {
@@ -295,12 +300,34 @@ export function PingPlay({
       if (e.pointerType !== 'mouse' && primaryId !== null && e.pointerId !== primaryId) return;
       primaryId = e.pointerId;
       aim(e);
+      // mouse: prende o cursor no jogo (ele não sai da tela no meio da batida); Esc solta e abre o menu
+      if (e.pointerType === 'mouse' && e.isTrusted && document.pointerLockElement !== zn) {
+        try {
+          void (zn.requestPointerLock?.() as Promise<void> | undefined)?.catch?.(() => undefined);
+        } catch {
+          /* sem suporte: o mouse segue absoluto */
+        }
+      }
     };
     const onMove = (e: PointerEvent) => {
       if (menuRef.current) return;
       if (e.pointerType !== 'mouse' && (!pointerDown || e.pointerId !== primaryId)) return;
+      if (e.pointerType === 'mouse' && document.pointerLockElement === zn) {
+        // cursor preso: a raquete anda o que o mouse andou (cada pixel vira uma fração de metro)
+        me.x = Math.max(-PP_PAD_X, Math.min(PP_PAD_X, me.x + scene.simX(e.movementX * 0.0125)));
+        zt = clampZ(zt - e.movementY * 0.0145);
+        return;
+      }
       aim(e);
     };
+    // soltar o cursor (Esc) no meio da partida abre o menu; abrir o menu solta o cursor
+    let wasLocked = false;
+    const onLockChange = () => {
+      const locked = document.pointerLockElement === zn;
+      if (wasLocked && !locked && !menuRef.current && !finished && phase === 'play') setMenu(true);
+      wasLocked = locked;
+    };
+    document.addEventListener('pointerlockchange', onLockChange);
     const onUp = (e: PointerEvent) => {
       if (e.pointerType !== 'mouse' && e.pointerId === primaryId) {
         pointerDown = false;
@@ -639,6 +666,8 @@ export function PingPlay({
       window.removeEventListener('keyup', ku);
       window.removeEventListener('orientationchange', remeasure);
       window.removeEventListener('resize', remeasure);
+      document.removeEventListener('pointerlockchange', onLockChange);
+      if (document.pointerLockElement === zn) document.exitPointerLock?.();
       zn.removeEventListener('pointerdown', onDown);
       zn.removeEventListener('pointermove', onMove);
       zn.removeEventListener('pointerup', onUp);

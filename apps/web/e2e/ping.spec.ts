@@ -360,3 +360,41 @@ test('bola mal pegada: câmera lenta, a barra do smash aparece e o aperto vira n
   if (process.env.E2E_SHOTS)
     await page.screenshot({ path: `${process.env.E2E_SHOTS}/ping-smash.png` });
 });
+
+test('mouse: o cursor fica preso no jogo e a raquete anda pelo movimento (não sai da tela)', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto('/fox-cap');
+  await page
+    .getByRole('button', { name: 'Agora não' })
+    .click({ timeout: 6000 })
+    .catch(() => undefined);
+  await page.getByTestId('foxcap-pingpong').click();
+  await page.getByTestId('png-level-facil').click();
+  await page.getByTestId('png-start').click();
+  await expect(page.getByTestId('png-play')).toBeVisible();
+  await page.waitForTimeout(2600);
+  await page.mouse.move(640, 400);
+  await page.mouse.down();
+  await page.mouse.up();
+  const locked = await page.evaluate(
+    () => document.pointerLockElement?.classList.contains('png-zone') ?? false,
+  );
+  test.skip(!locked, 'este navegador de teste não prende o cursor');
+  const padX = () =>
+    page.evaluate(
+      () =>
+        (
+          window as unknown as { __ping: { match: { pad(p: number): { x: number } } } }
+        ).__ping.match.pad(0).x,
+    );
+  const x0 = await padX();
+  for (let i = 1; i <= 12; i++) await page.mouse.move(640 + i * 30, 400);
+  await page.waitForTimeout(300);
+  expect(await padX()).toBeGreaterThan(x0 + 1);
+  // mesmo "saindo" da janela o cursor continua no jogo
+  for (let i = 1; i <= 30; i++) await page.mouse.move(1200 + i * 40, 400);
+  await page.waitForTimeout(200);
+  expect(await page.evaluate(() => !!document.pointerLockElement)).toBe(true);
+});

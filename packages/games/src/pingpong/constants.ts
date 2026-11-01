@@ -142,4 +142,4 @@ export const PP_SMASH_V = [0, 12, 17, 24] as const;
  * O ritmo do jogo: o mundo anda a esta fração do tempo real (bola mais lenta, mais tempo para ler a jogada), como nos
  * níveis fáceis do Online Pingpang. A trajetória é a mesma, só passa mais devagar.
  */
-export const PP_WORLD_SPEED = 0.9;
+export const PP_WORLD_SPEED = 1;

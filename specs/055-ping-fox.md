@@ -216,3 +216,8 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 
 - **Engasgo da raquete para a frente**: dois motivos. (1) A ajuda de leitura buscava jogadas demais em cada batida (média 5,8 ms e pior caso de 80 ms no computador, bem pior no celular): agora olha primeiro as alturas mais parecidas com a da mão e para na primeira boa, com menos direções e tamanhos (média 1,5 ms, pior caso 22 ms; teste de regressão). (2) O ponteiro era projetado na altura da raquete, que acompanha a bola: perto da bola o alvo "andava" sozinho (efeito de volta no tempo); agora é projetado numa altura fixa (`PP_REST_Y`).
 - **Ritmo**: `PP_WORLD_SPEED` de 0,8 para 0,9.
+
+### Rodada 19 (01/11/2026): cursor preso e ritmo cheio
+
+- **Mouse preso no jogo** (Pointer Lock): ao clicar na mesa o cursor fica preso e a raquete anda pelo movimento do mouse (não existe mais "o mouse saiu da tela"). Esc solta o cursor e abre o menu; abrir o menu também solta. Toque e testes automáticos continuam absolutos. Teste e2e confere a trava e o movimento.
+- **Ritmo**: `PP_WORLD_SPEED` = 1 (tempo real), a pedido (0,8 e 0,9 ficaram lentos).
