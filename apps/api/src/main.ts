@@ -14,6 +14,7 @@ import {
   BolaRoom,
   FoxRoom,
   DesmoronaRoom,
+  PingRoom,
   ColorRoom,
   EcoRoom,
   ImpostorRoom,
@@ -54,6 +55,7 @@ async function bootstrap() {
   rooms.define('eco', EcoRoom);
   rooms.define('atravessa', AtravessaRoom);
   rooms.define('desmorona', DesmoronaRoom);
+  rooms.define('pingpong', PingRoom);
   rooms.define('bola', BolaRoom);
   rooms.define('foxcap', FoxRoom);
   const port = Number(process.env.PORT ?? 3333);

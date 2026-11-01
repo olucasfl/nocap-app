@@ -10,9 +10,11 @@ import { AtravessaRoomEngine } from './atravessa-room.engine';
 import { BolaRoomEngine } from './bola-room.engine';
 import { FoxLobbyEngine } from './fox-lobby.engine';
 import { DesmoronaRoomEngine } from './desmorona-room.engine';
+import { PingRoomEngine } from './ping-room.engine';
 import {
   ATR_ROOM_MAX_PLAYERS,
   BOL_ROOM_MAX,
+  PP_ROOM_MAX,
   DSM_MAX_PLAYERS,
   IMPOSTOR_MAX_PLAYERS,
   packBolaFrame,
@@ -466,6 +468,7 @@ export class ColorRoom extends Room {
           game === 'atravessa' ||
           game === 'desmorona' ||
           game === 'bola' ||
+          game === 'pingpong' ||
           game === 'foxcap'
             ? 'color'
             : game,
@@ -755,10 +758,64 @@ export class BolaRoom extends ColorRoom {
  */
 const P2P_ON = () => process.env.FUT_FOX_P2P !== '0';
 
+/**
+ * Sala do Ping Fox! (spec 055, fase 3). A sala é árbitra: recebe "phit" (batida) e "ptoss" (lançamento) de quem joga,
+ * confere e repassa como "pev" ao outro e aos que assistem; se recusar, manda "prej" a quem enviou. A posição da raquete
+ * ("ppad") só serve para o outro desenhar e sai como "ppads" cerca de 30 vezes por segundo.
+ */
+const padsAt = new WeakMap<object, number>();
+
+export class PingRoom extends ColorRoom {
+  override maxClients = PP_ROOM_MAX;
+  protected override tickMs = 16;
+
+  protected override makeEngine(opts: ConstructorParameters<typeof ColorRoomEngine>[0]) {
+    return new PingRoomEngine(opts);
+  }
+
+  protected override registerGameMessages() {
+    const engine = () => this.engine as PingRoomEngine;
+    const idOf = (c: Client) => (c.userData as AuthData | undefined)?.id;
+    const onEvent = (c: Client, m: unknown) => {
+      const id = idOf(c);
+      if (!id) return;
+      const res = engine().receive(id, m);
+      if (res.accepted) {
+        for (const other of this.clients) if (other !== c) other.send('pev', [res.accepted]);
+      } else if (res.rejected) {
+        c.send('prej', res.rejected);
+      }
+    };
+    this.onMessage('phit', onEvent);
+    this.onMessage('ptoss', onEvent);
+    this.onMessage('ppad', (c, m) => {
+      const id = idOf(c);
+      if (id) engine().report(id, m);
+    });
+    // quem entra (ou volta) no meio da partida pede tudo que já aconteceu
+    this.onMessage('psync', (c) => c.send('pev', engine().history()));
+  }
+
+  protected override afterTick() {
+    const engine = this.engine as PingRoomEngine;
+    if (engine.currentPhase !== 'play') return;
+    const out = engine.drainOutbox();
+    if (out.length > 0) this.broadcast('pev', out);
+    // o estado fica fora da classe: dentro de uma sala do Fox Cap! este método roda com `this` de outra sala
+    const now = Date.now();
+    if (now - (padsAt.get(this) ?? 0) >= 33) {
+      padsAt.set(this, now);
+      const frame = engine.padsFrame();
+      if (frame.length > 0) this.broadcast('ppads', frame);
+    }
+  }
+}
+
 /** Nomes e limites dos jogos que a sala do Fox Cap! pode jogar. */
 const FOX_GAMES = {
   atravessa: { name: 'Atravessa!', make: (o: EngineOpts) => new AtravessaRoomEngine(o) },
   desmorona: { name: 'Desmorona!', make: (o: EngineOpts) => new DesmoronaRoomEngine(o) },
+  pingpong: { name: 'Ping Fox!', make: (o: EngineOpts) => new PingRoomEngine(o) },
   bola: {
     name: 'Fut Fox',
     make: (o: EngineOpts) => {
@@ -796,6 +853,7 @@ export class FoxRoom extends ColorRoom {
       ['atravessa', AtravessaRoom],
       ['desmorona', DesmoronaRoom],
       ['bola', BolaRoom],
+      ['pingpong', PingRoom],
     ] as const) {
       const twin = Object.create(this) as { onMessage: unknown };
       twin.onMessage = (type: string | number, cb: (c: Client, m: unknown) => void) => {
@@ -840,15 +898,19 @@ export class FoxRoom extends ColorRoom {
   protected override step() {
     const now = Date.now();
     // o Fut Fox roda a cada passo de 16 ms; os outros jogos, a cada 100 ms (como as salas deles)
-    if (this.engine.game !== 'bola' && now - this.lastStep < 92) return;
+    if (this.engine.game !== 'bola' && this.engine.game !== 'pingpong' && now - this.lastStep < 92)
+      return;
     this.lastStep = now;
     super.step();
   }
 
   protected override afterTick() {
-    const proto = { atravessa: AtravessaRoom, desmorona: DesmoronaRoom, bola: BolaRoom }[
-      this.engine.game as FoxGame
-    ]?.prototype as unknown as { afterTick?: () => void } | undefined;
+    const proto = {
+      atravessa: AtravessaRoom,
+      desmorona: DesmoronaRoom,
+      bola: BolaRoom,
+      pingpong: PingRoom,
+    }[this.engine.game as FoxGame]?.prototype as unknown as { afterTick?: () => void } | undefined;
     proto?.afterTick?.call(this);
   }
 }

@@ -49,6 +49,36 @@ export interface PpPaddle {
 }
 
 export type PpPhase = 'serve' | 'toss' | 'rally' | 'point' | 'over';
+
+/** Uma batida já resolvida: quem bateu e a bola logo depois (para mandar pela rede ou aplicar de novo). */
+export interface PpHitRecord {
+  p: number;
+  serve: boolean;
+  smash: boolean;
+  kmh: number;
+  quality: PpHitQuality;
+  assisted: boolean;
+  spin: number;
+  /** x, y, z, vx, vy, vz, wx, wy, wz da bola depois da batida. */
+  b: number[];
+}
+
+/** O estado que a partida precisa para voltar no tempo (a raquete não entra: só serve para detectar batida). */
+export interface PpSnapshot {
+  tick: number;
+  b: number[];
+  phase: PpPhase;
+  server: number;
+  lastHitter: number;
+  bounces: [number, number];
+  serveFaults: number;
+  rally: number;
+  bestKmh: number;
+  t: number;
+  winner: number;
+  score: [number, number];
+  firstServer: number;
+}
 export type PpReason = 'miss' | 'own' | 'out' | 'net' | 'serve';
 
 export type PpEvent =
@@ -122,6 +152,20 @@ export class PpMatch {
   private prev = ppNewBall();
   private smashHeld: [boolean, boolean] = [false, false];
   private serveWas: [boolean, boolean] = [false, false];
+  /**
+   * Modo rede (spec 055, fase 3): as batidas e o lançamento chegam como eventos (`applyHit`, `tossReq`); só o jogador
+   * `localPlayer` detecta a própria batida. Fora disso a partida é uma função dos eventos e do tick.
+   */
+  net = false;
+  localPlayer = -1;
+  /** Reaplicando o passado (depois de voltar no tempo): nada é detectado, tudo vem do registro de eventos. */
+  replay = false;
+  /** Pedido de lançamento para este tick (x da bola), vindo de um evento ou da entrada de quem saca. */
+  tossReq: number | null = null;
+  /** Batidas e lançamentos deste jogador que a rede ainda não mandou (esvaziados por quem usa o modo rede). */
+  hitOut: (PpHitRecord & { t: number })[] = [];
+  tossOut: { t: number; x: number }[] = [];
+  private pendingHit: PpHitRecord | null = null;
 
   constructor(firstServer = 0) {
     this.firstServer = firstServer;
@@ -185,7 +229,8 @@ export class PpMatch {
     for (let p = 0; p < 2; p++) {
       const inp = p === 0 ? inputs[0] : inputs[1];
       this.smashHeld[p === 0 ? 0 : 1] = inp.smash;
-      this.movePad(p, inp);
+      // na rede só a raquete de quem joga aqui se mexe pela entrada; a do outro vem do fluxo de raquetes
+      if (!this.net || p === this.localPlayer) this.movePad(p, inp);
     }
     if (this.phase === 'point') {
       this.ballFall();
@@ -203,22 +248,49 @@ export class PpMatch {
       const press = inp.serve && !this.serveWas[sv];
       this.serveWas[0] = inputs[0].serve;
       this.serveWas[1] = inputs[1].serve;
-      if (press || this.t >= PP_SERVE_AUTO) {
-        this.phase = 'toss';
-        this.t = 0;
-        this.ball.vy = PP_TOSS_V;
-        this.events.push({ type: 'toss', p: this.server });
+      if (this.net) {
+        // na rede o lançamento é um evento; quem saca aqui cria o seu na hora em que aperta
+        if (this.tossReq === null && press && sv === this.localPlayer && !this.replay) {
+          this.tossReq = this.pad(sv).x;
+          this.tossOut.push({ t: this.tick, x: this.tossReq });
+        }
+        if (this.tossReq !== null) this.startToss(this.tossReq);
+        this.tossReq = null;
+      } else if (press || this.t >= PP_SERVE_AUTO) {
+        this.startToss(this.pad(sv).x);
       }
       return;
     }
     this.serveWas[0] = inputs[0].serve;
     this.serveWas[1] = inputs[1].serve;
+    this.tossReq = null;
     for (let i = 0; i < PP_SUB; i++) {
       if (this.phase !== 'toss' && this.phase !== 'rally') break;
       this.subStep();
     }
     if (this.phase === 'rally' && this.t > PP_RALLY_MAX) this.letReplay();
     if (this.phase === 'toss' && this.t > 4) this.serveFault(this.server);
+    // a batida detectada neste tick vai para a rede com a bola do fim do tick (o resto do tick já passou)
+    if (this.pendingHit) {
+      const b = this.ball;
+      this.pendingHit.b = [b.x, b.y, b.z, b.vx, b.vy, b.vz, b.wx, b.wy, b.wz];
+      this.hitOut.push({ ...this.pendingHit, t: this.tick });
+      this.pendingHit = null;
+    }
+  }
+
+  /** O lançamento: a bola sobe da mão de quem saca (no x dado) e espera a raquete. */
+  private startToss(x: number): void {
+    this.phase = 'toss';
+    this.t = 0;
+    this.ball.x = x;
+    this.ball.y = PP_TOSS_Y;
+    this.ball.z = this.handZ(this.server);
+    this.ball.vx = 0;
+    this.ball.vy = PP_TOSS_V;
+    this.ball.vz = 0;
+    this.ball.wx = this.ball.wy = this.ball.wz = 0;
+    this.events.push({ type: 'toss', p: this.server });
   }
 
   /** Depois do ponto a bola só cai (para a cena ficar viva). */
@@ -245,6 +317,7 @@ export class PpMatch {
       this.onDead();
       return;
     }
+    if (this.net && (this.replay || this.localPlayer < 0)) return;
     if (this.phase === 'toss') this.tryServeHit();
     else this.tryReturn();
   }
@@ -253,6 +326,7 @@ export class PpMatch {
   private tryServeHit(): void {
     const b = this.ball;
     const p = this.server;
+    if (this.net && p !== this.localPlayer) return;
     const pad = this.pad(p);
     if (b.vy >= 0) return;
     if (this.prev.y - PP_R < pad.y || b.y - PP_R >= pad.y) {
@@ -267,6 +341,7 @@ export class PpMatch {
   /** A devolução: a bola cruza o plano da raquete de quem deve rebater, depois de 1 quique do seu lado. */
   private tryReturn(): void {
     const p = this.expect;
+    if (this.net && p !== this.localPlayer) return;
     const s = PpMatch.sign(p);
     if ((this.bounces[p] ?? 0) < 1) return;
     const b = this.ball;
@@ -296,25 +371,112 @@ export class PpMatch {
       serve,
     );
     pad.swing = 1;
+    const kmh = ppKmh(info.speed);
+    this.commitHit(p, serve, smash && !serve, kmh, info.quality, info.assisted, info.spin);
+    if (this.net) {
+      this.pendingHit = {
+        p,
+        serve,
+        smash: smash && !serve,
+        kmh,
+        quality: info.quality,
+        assisted: info.assisted,
+        spin: info.spin,
+        b: [],
+      };
+    }
+  }
+
+  private commitHit(
+    p: number,
+    serve: boolean,
+    smash: boolean,
+    kmh: number,
+    quality: PpHitQuality,
+    assisted: boolean,
+    spin: number,
+  ): void {
     this.lastHitter = p;
     this.bounces = [0, 0];
     this.rally++;
-    const kmh = ppKmh(info.speed);
     if (kmh > this.bestKmh) this.bestKmh = kmh;
     if (this.phase === 'toss') {
       this.phase = 'rally';
       this.t = 0;
     }
-    this.events.push({
-      type: 'hit',
-      p,
-      kmh,
-      smash,
-      quality: info.quality,
-      assisted: info.assisted,
-      spin: info.spin,
-      serve,
-    });
+    this.events.push({ type: 'hit', p, kmh, smash, quality, assisted, spin, serve });
+  }
+
+  /** Aplica uma batida resolvida por quem bateu (vinda da rede ou do registro): a bola passa a ser a do registro. */
+  applyHit(r: PpHitRecord): void {
+    if (this.phase !== 'toss' && this.phase !== 'rally') return;
+    const b = this.ball;
+    const v = r.b;
+    if (v.length !== 9) return;
+    [b.x, b.y, b.z, b.vx, b.vy, b.vz, b.wx, b.wy, b.wz] = v as [
+      number,
+      number,
+      number,
+      number,
+      number,
+      number,
+      number,
+      number,
+      number,
+    ];
+    this.pad(r.p).swing = 1;
+    this.commitHit(r.p, r.serve, r.smash, r.kmh, r.quality, r.assisted, r.spin);
+  }
+
+  /** Foto do estado de agora (para voltar no tempo quando uma batida chega atrasada). */
+  snapshot(): PpSnapshot {
+    const b = this.ball;
+    return {
+      tick: this.tick,
+      b: [b.x, b.y, b.z, b.vx, b.vy, b.vz, b.wx, b.wy, b.wz],
+      phase: this.phase,
+      server: this.server,
+      lastHitter: this.lastHitter,
+      bounces: [this.bounces[0], this.bounces[1]],
+      serveFaults: this.serveFaults,
+      rally: this.rally,
+      bestKmh: this.bestKmh,
+      t: this.t,
+      winner: this.winner,
+      score: [this.score[0], this.score[1]],
+      firstServer: this.firstServer,
+    };
+  }
+
+  restore(s: PpSnapshot): void {
+    const b = this.ball;
+    [b.x, b.y, b.z, b.vx, b.vy, b.vz, b.wx, b.wy, b.wz] = s.b as [
+      number,
+      number,
+      number,
+      number,
+      number,
+      number,
+      number,
+      number,
+      number,
+    ];
+    this.tick = s.tick;
+    this.phase = s.phase;
+    this.server = s.server;
+    this.lastHitter = s.lastHitter;
+    this.bounces = [s.bounces[0], s.bounces[1]];
+    this.serveFaults = s.serveFaults;
+    this.rally = s.rally;
+    this.bestKmh = s.bestKmh;
+    this.t = s.t;
+    this.winner = s.winner;
+    this.score[0] = s.score[0];
+    this.score[1] = s.score[1];
+    this.firstServer = s.firstServer;
+    this.events = [];
+    this.pendingHit = null;
+    this.tossReq = null;
   }
 
   private onBounce(side: number): void {
