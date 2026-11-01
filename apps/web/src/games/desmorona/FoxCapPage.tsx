@@ -200,7 +200,7 @@ export function FoxCapPage() {
                 <h2>Criar sala</h2>
                 <p className="mono">
                   A sala nasce sem jogo. Você convida a galera e escolhe o jogo lá dentro (Fut Fox,
-                  Atravessa! ou Desmorona!), e pode trocar quando quiser.
+                  Ping Fox!, Atravessa! ou Desmorona!), e pode trocar quando quiser.
                 </p>
                 <button
                   type="button"

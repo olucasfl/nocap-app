@@ -46,6 +46,7 @@ export const MIN_PLAYERS: Record<RoomGame, number> = {
   desmorona: 2,
   // com bots, uma pessoa só já joga
   bola: 1,
+  pingpong: 2,
   foxcap: 1,
 };
 
@@ -53,6 +54,7 @@ export const GAME_NAME: Record<RoomGame, string> = {
   atravessa: 'Atravessa!',
   desmorona: 'Desmorona!',
   bola: 'Fut Fox',
+  pingpong: 'Ping Fox!',
   foxcap: 'Fox Cap!',
   color: 'Mesmíssima',
   time: 'Já Deu?',
@@ -69,6 +71,7 @@ export const GAME_OF: Record<RoomGame, string> = {
   atravessa: 'do Atravessa!',
   desmorona: 'do Desmorona!',
   bola: 'do Fut Fox',
+  pingpong: 'do Ping Fox!',
   foxcap: 'do Fox Cap!',
 };
 
@@ -83,6 +86,13 @@ const SIZE_NAME: Record<string, string> = {
 /** Modos de cada jogo na sala, com uma linha que explica cada um. */
 export const MODES: Record<RoomGame, { id: string; label: string; note: string }[]> = {
   foxcap: [],
+  pingpong: [
+    {
+      id: 'classico',
+      label: 'Pingue-pongue',
+      note: 'Pingue-pongue 1 contra 1 até 11 pontos (2 de diferença). Os 2 primeiros da sala jogam e os outros assistem. A raquete vai para onde você aponta, a batida é automática, e o efeito vem do movimento. Sem ranking.',
+    },
+  ],
   bola: [
     {
       id: 'classico',
@@ -167,6 +177,7 @@ export const modeOf = (s: RoomSnapshot) => MODES[s.game].find((m) => m.id === s.
 export function rulesSummary(s: RoomSnapshot): string {
   if (s.game === 'foxcap') return 'Fox Cap! · sem jogo escolhido';
   if (s.game === 'desmorona') return 'Desmorona! · Último de pé';
+  if (s.game === 'pingpong') return 'Ping Fox! · 1 contra 1 · 11 pontos';
   if (s.game === 'bola' && s.bola) {
     const f = s.bola.format;
     return `Fut Fox · ${Array.from({ length: f.teams }, () => f.perTeam).join('x')} · ${f.minutes} min`;
@@ -188,7 +199,8 @@ export function rulesSummary(s: RoomSnapshot): string {
 }
 
 export function rulesFor(s: RoomSnapshot): RuleDef[] {
-  if (s.game === 'desmorona' || s.game === 'bola' || s.game === 'foxcap') return [];
+  if (s.game === 'desmorona' || s.game === 'bola' || s.game === 'pingpong' || s.game === 'foxcap')
+    return [];
   const out: RuleDef[] = [];
   const cfg = s.settings;
 

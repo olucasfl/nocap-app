@@ -127,6 +127,16 @@ describe('partida em rede (PpNetSim)', () => {
     expect(snap(A)).toEqual(snap(S));
   });
 
+  it('quem entra no meio refaz a partida pelo histórico da sala e chega ao mesmo placar', () => {
+    const r = run({ seed: 'n4', a: 'medio', b: 'medio', lag: 4, jitter: 2, ticks: 6000 });
+    // um aparelho novo recebe o histórico antes de andar (como `psync`) e depois anda até o tick da sala
+    const late = new PpNetSim(0, -1);
+    for (const ev of r.S.history()) late.add(ev);
+    while (late.tick < r.S.tick) late.advanceTo(Math.min(late.tick + 500, r.S.tick));
+    expect(snap(late)).toEqual(snap(r.S));
+    expect(r.S.match.score[0] + r.S.match.score[1]).toBeGreaterThan(3);
+  });
+
   it('a sala recusa batida de quem não é a vez e batida velha demais', () => {
     const S = new PpNetSim(0, -1, true);
     S.advanceTo(200);

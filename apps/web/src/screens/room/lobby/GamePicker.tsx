@@ -9,6 +9,12 @@ export const FOX_GAMES = [
     cap: 'até 15',
   },
   {
+    id: 'pingpong',
+    name: 'Ping Fox!',
+    note: 'Pingue-pongue 1 contra 1 com efeito e smash.',
+    cap: 'até 8',
+  },
+  {
     id: 'atravessa',
     name: 'Atravessa!',
     note: 'Atravesse estrada e rio, cada um com a sua cor.',

@@ -123,7 +123,8 @@ export class PpNetSim {
     while (this.match.tick < target && guard++ < 600) this.stepOne(input, (t) => evs.push(t));
     if (this.match.tick % 240 === 0) {
       for (const [k, t] of this.seen) if (t < this.match.tick - RING * 2) this.seen.delete(k);
-      this.log = this.log.filter((e) => e.t >= this.match.tick - RING);
+      // a sala guarda tudo (quem entra no meio ou volta refaz a partida pelo histórico); os aparelhos só o que cabe na volta no tempo
+      if (!this.authority) this.log = this.log.filter((e) => e.t >= this.match.tick - RING);
     }
     return evs;
   }

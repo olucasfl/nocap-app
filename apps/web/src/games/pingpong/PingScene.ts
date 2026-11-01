@@ -113,6 +113,9 @@ export class PingScene {
   private shake = 0;
   private fovKick = 0;
   private time = 0;
+  /** Quem olha: 0 ou 1 (quem joga do lado de lá vê a mesa girada, como se estivesse perto da câmera). */
+  private me = 0;
+  private flip = false;
 
   // estado do tick anterior (para interpolar)
   private prev = {
@@ -127,9 +130,11 @@ export class PingScene {
   constructor(
     canvas: HTMLCanvasElement,
     private match: PpMatch,
-    opts: { oppColor: number; oppName: string; reduced: boolean },
+    opts: { oppColor: number; oppName: string; reduced: boolean; me?: number },
     private reduced = opts.reduced,
   ) {
+    this.me = opts.me === 1 ? 1 : 0;
+    this.flip = this.me === 1;
     const touch = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
     this.renderer = new THREE.WebGLRenderer({
       canvas,
@@ -544,7 +549,7 @@ export class PingScene {
   private placeCamera(dt: number) {
     const portrait = this.camera.aspect < 1;
     const m = this.match;
-    const bx = m.ball.x;
+    const bx = this.vx(m.ball.x);
     const k = 1 - Math.exp(-4 * dt);
     const tx = bx * 0.18;
     const cam = this.camera;
@@ -591,6 +596,11 @@ export class PingScene {
     };
   }
 
+  /** O x da vista (o da tela) no x do motor. */
+  simX(viewX: number): number {
+    return this.flip ? -viewX : viewX;
+  }
+
   /** Onde o anel de alcance está agora (null se a bola não vem para você). */
   reticle(): { x: number; y: number } | null {
     return this.crossAt ? { x: this.crossAt.x, y: this.crossAt.y } : null;
@@ -622,28 +632,31 @@ export class PingScene {
   }
 
   /** Reage aos eventos do motor (faíscas, anéis, rede, tremida). */
-  handle(events: readonly PpEvent[], me: number) {
+  handle(events: readonly PpEvent[], me: number = this.me) {
     const m = this.match;
+    const bx = this.vx(m.ball.x);
+    const bz = this.vz(m.ball.z);
     for (const e of events) {
       if (e.type === 'hit') {
-        const side = e.p === 0 ? 1 : -1;
+        // para onde a bola vai, na tela: de quem é a minha vista, sai para o fundo (-z); de quem está do outro lado, para perto
+        const dirZ = e.p === this.me ? -1 : 1;
         const power = clamp((e.kmh - 20) / 80, 0, 1);
         this.burst(
-          m.ball.x,
+          bx,
           m.ball.y,
-          m.ball.z,
-          -side,
+          bz,
+          dirZ,
           e.smash ? 16 : 8 + Math.round(power * 4),
           e.smash ? 0xffc27a : 0xffffff,
         );
         if (e.smash) {
           this.shake = Math.max(this.shake, 1);
           this.fovKick = 1;
-          this.ringAt(m.ball.x, PP_TOP + 0.01, m.ball.z, 0xff7d26, 0.5, 5);
+          this.ringAt(bx, PP_TOP + 0.01, bz, 0xff7d26, 0.5, 5);
         } else if (e.p === me) this.shake = Math.max(this.shake, 0.18 + power * 0.25);
         this.jump();
       } else if (e.type === 'bounce') {
-        this.ringAt(e.x, PP_TOP + 0.006, e.z, 0xffffff, 0.32, 3);
+        this.ringAt(this.vx(e.x), PP_TOP + 0.006, this.vz(e.z), 0xffffff, 0.32, 3);
       } else if (e.type === 'net') {
         this.netShake = 1;
         this.shake = Math.max(this.shake, 0.4);
@@ -685,6 +698,14 @@ export class PingScene {
     r.m.visible = true;
   }
 
+  /** Do mundo do motor para o da tela: quem joga de lá vê x e z invertidos. */
+  private vx(x: number) {
+    return this.flip ? -x : x;
+  }
+  private vz(z: number) {
+    return this.flip ? -z : z;
+  }
+
   private tmp = new THREE.Vector3();
   private axis = new THREE.Vector3();
 
@@ -698,14 +719,15 @@ export class PingScene {
     let a = pv.valid ? clamp(alpha, 0, 1) : 1;
     if (pv.valid && Math.hypot(cur.x - pv.ball.x, cur.y - pv.ball.y, cur.z - pv.ball.z) > 1.2)
       a = 1;
-    const bx = lerp(pv.ball.x, cur.x, a);
+    const bx = this.vx(lerp(pv.ball.x, cur.x, a));
     const by = lerp(pv.ball.y, cur.y, a);
-    const bz = lerp(pv.ball.z, cur.z, a);
+    const bz = this.vz(lerp(pv.ball.z, cur.z, a));
     this.ball.position.set(bx, by, bz);
     // giro: o eixo e a rapidez vêm do efeito (rad/s), um pouco abrandados para a faixa continuar legível
     const w = Math.hypot(cur.wx, cur.wy, cur.wz);
     if (w > 0.5 && m.phase !== 'serve') {
-      this.axis.set(cur.wx / w, cur.wy / w, cur.wz / w);
+      // girar o mundo meia volta em y inverte x e z, e o eixo do efeito vai junto
+      this.axis.set(this.vx(cur.wx) / w, cur.wy / w, this.vz(cur.wz) / w);
       this.ballMesh.rotateOnWorldAxis(this.axis, w * 0.45 * dt);
     }
 
@@ -743,35 +765,37 @@ export class PingScene {
       (s.material as THREE.SpriteMaterial).opacity = clamp((speed - 3) / 10, 0, 1) * 0.5 * k;
     }
 
-    // raquetes
-    for (let i = 0; i < 2; i++) {
+    // raquetes: a de quem olha é a primeira (perto da câmera), a do outro lado é a segunda
+    for (let v = 0; v < 2; v++) {
+      const i = v === 0 ? this.me : 1 - this.me;
       const pad = m.pad(i);
       const pp = pv.pads[i] ?? { x: pad.x, y: pad.y };
-      const px = lerp(pp.x, pad.x, a);
+      const px = this.vx(lerp(pp.x, pad.x, a));
       const py = lerp(pp.y, pad.y, a);
-      const slot = this.pads[i];
+      const slot = this.pads[v];
       if (!slot) continue;
-      const side = i === 0 ? 1 : -1;
+      const side = v === 0 ? 1 : -1;
       // a batida: a raquete vai para a frente e gira, e volta
       const sw = pad.swing;
       const fwd = Math.sin((1 - sw) * Math.PI) * (sw > 0 ? 0.55 : 0);
       slot.g.position.set(px, py, side * PP_PAD_Z - side * fwd);
-      slot.g.rotation.set(0, i === 0 ? 0 : Math.PI, 0);
+      slot.g.rotation.set(0, v === 0 ? 0 : Math.PI, 0);
+      const vvx = this.vx(pad.vx);
       slot.blade.rotation.set(
         -0.18 +
           clamp(pad.vy * 0.02, -0.25, 0.25) +
           (sw > 0 ? -Math.sin((1 - sw) * Math.PI) * 0.55 : 0),
-        clamp(pad.vx * 0.025, -0.3, 0.3),
-        clamp(-pad.vx * 0.02, -0.25, 0.25),
+        clamp(vvx * 0.025, -0.3, 0.3),
+        clamp(-vvx * 0.02, -0.25, 0.25),
       );
     }
 
     // raposa do outro lado: acompanha a raquete, com um balanço
-    const opp = m.pad(1);
-    this.foxX = lerp(this.foxX, opp.x * 0.7, 1 - Math.exp(-9 * dt));
+    const opp = m.pad(1 - this.me);
+    this.foxX = lerp(this.foxX, this.vx(opp.x) * 0.7, 1 - Math.exp(-9 * dt));
     this.fox.position.x = this.foxX;
     this.fox.position.y = Math.abs(Math.sin(this.time * 3)) * 0.04;
-    this.fox.rotation.z = clamp(opp.vx * 0.012, -0.12, 0.12);
+    this.fox.rotation.z = clamp(this.vx(opp.vx) * 0.012, -0.12, 0.12);
     if (this.tag) this.tag.position.x = this.foxX;
     const padO = this.pads[1];
     if (padO) {
@@ -800,7 +824,7 @@ export class PingScene {
     this.netShake = Math.max(0, this.netShake - dt * 2.2);
     this.net.rotation.x = Math.sin(this.time * 38) * 0.05 * this.netShake;
 
-    this.updateMarks(dt, px0(pv, m, a));
+    this.updateMarks(dt, px0(pv, m, a, this.me, this.flip));
     this.updateFx(dt);
     this.placeCamera(dt);
     this.renderer.render(this.scene, this.camera);
@@ -811,11 +835,13 @@ export class PingScene {
     const now = performance.now();
     if (now - this.predAt > 45) {
       this.predAt = now;
-      const toMe = m.phase === 'rally' && m.expect === 0 && m.ball.vz > 0.2;
-      this.bounceAt = toMe && m.bounces[0] === 0 ? ppNextBounce(m.ball) : null;
-      if (this.bounceAt && this.bounceAt.z < 0) this.bounceAt = null;
-      const c = toMe ? ppPredictCross(m.ball, 0) : null;
-      this.crossAt = c ? { x: c.x, y: c.y, t: c.t } : null;
+      const sgn = this.me === 0 ? 1 : -1;
+      const toMe = m.phase === 'rally' && m.expect === this.me && m.ball.vz * sgn > 0.2;
+      const nb = toMe && (m.bounces[this.me] ?? 0) === 0 ? ppNextBounce(m.ball) : null;
+      // só mostra o quique que cai na minha metade
+      this.bounceAt = nb && nb.z * sgn > 0 ? { x: this.vx(nb.x), z: this.vz(nb.z), t: nb.t } : null;
+      const c = toMe ? ppPredictCross(m.ball, this.me) : null;
+      this.crossAt = c ? { x: this.vx(c.x), y: c.y, t: c.t } : null;
     }
     const b = this.bounceAt;
     this.bounceMark.visible = !!b;
@@ -888,13 +914,16 @@ export class PingScene {
   }
 }
 
-/** A raquete de quem joga, já interpolada (para o anel de alcance saber se está no lugar). */
+/** A raquete de quem olha, já interpolada e na vista da tela (para o anel de alcance saber se está no lugar). */
 function px0(
   pv: { pads: { x: number; y: number }[]; valid: boolean },
   m: PpMatch,
   a: number,
+  me: number,
+  flip: boolean,
 ): { x: number; y: number } {
-  const p = pv.pads[0];
-  const c = m.pad(0);
-  return p ? { x: lerp(p.x, c.x, a), y: lerp(p.y, c.y, a) } : { x: c.x, y: c.y };
+  const p = pv.pads[me];
+  const c = m.pad(me);
+  const x = p ? lerp(p.x, c.x, a) : c.x;
+  return { x: flip ? -x : x, y: p ? lerp(p.y, c.y, a) : c.y };
 }

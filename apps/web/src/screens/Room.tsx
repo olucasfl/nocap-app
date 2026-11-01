@@ -23,6 +23,8 @@ import { DesmoronaRoomPlay } from '@/games/desmorona/DesmoronaRoomPlay';
 import { DesmoronaRoomFinal } from '@/games/desmorona/DesmoronaRoomFinal';
 import { AtravessaRoomFinalPage } from '@/games/atravessa/AtravessaRoomFinalPage';
 import { BolaRoomPlay } from '@/games/bola/BolaRoomPlay';
+import { PingRoomPlay } from '@/games/pingpong/PingRoomPlay';
+import { PingRoomFinal } from '@/games/pingpong/PingRoomFinal';
 import './account.css';
 import './friends.css';
 import './room.css';
@@ -52,7 +54,7 @@ function Header({ round }: { round?: string }) {
 
 /** A página de cada jogo (o Intruso é jogado a partir da Mesmíssima). */
 const GAME_PAGE: Record<
-  Exclude<RoomGame, 'desmorona' | 'bola' | 'foxcap'>,
+  Exclude<RoomGame, 'desmorona' | 'bola' | 'pingpong' | 'foxcap'>,
   '/cor' | '/tempo' | '/eco' | '/atravessa'
 > = {
   color: '/cor',
@@ -65,6 +67,7 @@ const GAME_PAGE: Record<
 const GAME_NAME: Record<RoomGame, string> = {
   desmorona: 'Desmorona!',
   bola: 'Fut Fox',
+  pingpong: 'Ping Fox!',
   foxcap: 'Fox Cap!',
   color: 'Mesmíssima',
   time: 'Já Deu?',
@@ -75,8 +78,10 @@ const GAME_NAME: Record<RoomGame, string> = {
 
 const ENTRY_LEAD: Record<RoomGame, string> = {
   foxcap:
-    'Sala do Fox Cap!: a sala nasce sem jogo. Dentro dela você convida a galera e escolhe (e troca) o jogo: Fut Fox, Atravessa! ou Desmorona!.',
+    'Sala do Fox Cap!: a sala nasce sem jogo. Dentro dela você convida a galera e escolhe (e troca) o jogo: Fut Fox, Ping Fox!, Atravessa! ou Desmorona!.',
   bola: 'Fut Fox com os amigos: futebol de raposas com 2, 3 ou 4 times, até 15 pessoas na sala (12 jogam e o resto assiste). Você escolhe o formato e completa os times com bots dentro da sala.',
+  pingpong:
+    'Ping Fox! com os amigos: pingue-pongue 1 contra 1 até 11 pontos, com efeito e smash. Os 2 primeiros da sala jogam e o resto assiste. Até 8 pessoas.',
   desmorona:
     'Desmorona! com os amigos: todo mundo cai do céu, o chão some a cada passo e vence o último de pé. De 2 a 8 pessoas.',
   eco: 'Jogue o Ecooo com amigos: Corrida (todo mundo repete a mesma sequência e quem errar sai) ou Siga o Líder (um cria, os outros repetem). Você escolhe dentro da sala.',
@@ -192,6 +197,7 @@ export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomG
     if (
       lastGame === 'desmorona' ||
       lastGame === 'bola' ||
+      lastGame === 'pingpong' ||
       lastGame === 'foxcap' ||
       lastGame === 'atravessa'
     )
@@ -269,6 +275,12 @@ export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomG
     return <DesmoronaRoomPlay snapshot={snapshot} />;
   }
 
+  if (snapshot?.game === 'pingpong' && (snapshot.phase === 'show' || snapshot.phase === 'play')) {
+    return <PingRoomPlay snapshot={snapshot} />;
+  }
+  if (snapshot?.game === 'pingpong' && snapshot.phase === 'final') {
+    return <PingRoomFinal snapshot={snapshot} />;
+  }
   if (snapshot?.game === 'atravessa' && snapshot.phase === 'final') {
     return <AtravessaRoomFinalPage snapshot={snapshot} />;
   }

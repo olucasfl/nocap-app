@@ -72,7 +72,7 @@ export const PP_TOSS_Y = 1.25;
 export const PP_POINTS = 11;
 /** Pausa depois do ponto e rally máximo antes de anular (s). */
 export const PP_POINT_PAUSE = 1.5;
-export const PP_RALLY_MAX = 14;
+export const PP_RALLY_MAX = 30;
 /** Saque automático se quem saca não faz nada (s). */
 export const PP_SERVE_AUTO = 6;
 
@@ -80,3 +80,5 @@ export const PP_SERVE_AUTO = 6;
 export const PP_ROOM_MAX = 8;
 export const PP_ROOM_COUNTDOWN_MS = 4000;
 export const PP_ROOM_AWAY_MS = 25_000;
+/** Depois do último ponto a sala espera isto antes de mostrar o pódio. */
+export const PP_ROOM_OVER_MS = 2500;

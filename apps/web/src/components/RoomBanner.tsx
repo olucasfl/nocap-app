@@ -14,6 +14,7 @@ const GAME_NAME: Record<RoomGame, string> = {
   atravessa: 'Atravessa!',
   desmorona: 'Desmorona!',
   bola: 'Fut Fox',
+  pingpong: 'Ping Fox!',
   foxcap: 'Fox Cap!',
 };
 

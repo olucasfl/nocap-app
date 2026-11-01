@@ -4,11 +4,13 @@ import {
   PP_PAD_Y_MIN,
   PP_ROOM_AWAY_MS,
   PP_ROOM_COUNTDOWN_MS,
+  PP_ROOM_OVER_MS,
   PP_ROOM_MAX,
   PP_TICK,
   PpNetSim,
   ppParseNetEvent,
   type PpNetEvent,
+  type PpTimedEvent,
 } from '@nocap/games';
 import { ColorRoomEngine, RoomError, type EngineOptions, type FinalRow } from './color-room.engine';
 
@@ -47,6 +49,9 @@ export class PingRoomEngine extends ColorRoomEngine {
   private away = new Map<string, number>();
   private forfeiter: string | null = null;
   private dirty = false;
+  /** Quando a partida acabou (o pódio espera um pouco para o último ponto ser visto). */
+  private overAt = 0;
+  private stats = { longest: 0, fastest: 0, smashes: [0, 0], hits: [0, 0] };
 
   constructor(opts: EngineOptions) {
     super({ ...opts, maxPlayers: PP_ROOM_MAX });
@@ -116,6 +121,8 @@ export class PingRoomEngine extends ColorRoomEngine {
     this.pads = [null, null];
     this.away.clear();
     this.forfeiter = null;
+    this.overAt = 0;
+    this.stats = { longest: 0, fastest: 0, smashes: [0, 0], hits: [0, 0] };
     this.phase = 'show';
     this.phaseEndsAt = this.startAt;
   }
@@ -125,6 +132,24 @@ export class PingRoomEngine extends ColorRoomEngine {
     return Math.max(0, Math.floor((this.now() - this.startAt) / (PP_TICK * 1000)));
   }
 
+  /** Anda a partida da sala até agora e guarda os números do pódio. */
+  private advance(): void {
+    if (!this.sim) return;
+    this.collect(this.sim.advanceTo(this.currentTick()));
+    this.outbox.push(...this.sim.outgoing());
+  }
+
+  private collect(events: PpTimedEvent[]): void {
+    for (const { e } of events) {
+      if (e.type === 'hit') {
+        const i = e.p === 0 ? 0 : 1;
+        this.stats.hits[i] = (this.stats.hits[i] ?? 0) + 1;
+        if (e.smash) this.stats.smashes[i] = (this.stats.smashes[i] ?? 0) + 1;
+        if (e.kmh > this.stats.fastest) this.stats.fastest = e.kmh;
+      } else if (e.type === 'point' && e.rally > this.stats.longest) this.stats.longest = e.rally;
+    }
+  }
+
   /** O evento de um jogador (batida ou lançamento): confere e manda repassar ou desfazer. */
   receive(id: string, raw: unknown): PingReceive {
     const none: PingReceive = { accepted: null, rejected: null };
@@ -132,10 +157,11 @@ export class PingRoomEngine extends ColorRoomEngine {
     const slot = this.slotOf(id);
     const ev = ppParseNetEvent(raw);
     if (slot < 0 || !ev) return none;
-    this.sim.advanceTo(this.currentTick());
+    this.advance();
     if (!this.sim.validate(ev, slot)) return { accepted: null, rejected: ev };
     const res = this.sim.add(ev);
     if (!res.ok) return { accepted: null, rejected: ev };
+    this.collect(res.events);
     this.dirty = true;
     return { accepted: ev, rejected: null };
   }
@@ -213,13 +239,15 @@ export class PingRoomEngine extends ColorRoomEngine {
       }
     }
     const before = this.sim.match.score[0] + this.sim.match.score[1];
-    this.sim.advanceTo(this.currentTick());
-    this.outbox.push(...this.sim.outgoing());
+    this.advance();
     const after = this.sim.match.score[0] + this.sim.match.score[1];
     if (this.sim.match.phase === 'over') {
-      this.phase = 'final';
-      this.phaseEndsAt = null;
-      return true;
+      if (this.overAt === 0) this.overAt = t;
+      if (t - this.overAt >= PP_ROOM_OVER_MS) {
+        this.phase = 'final';
+        this.phaseEndsAt = null;
+        return true;
+      }
     }
     const changed = this.dirty || after !== before;
     this.dirty = false;
@@ -254,6 +282,15 @@ export class PingRoomEngine extends ColorRoomEngine {
         players: started ? this.players : null,
         score: this.sim ? [this.sim.match.score[0], this.sim.match.score[1]] : [0, 0],
         forfeit: this.forfeiter,
+        stats: this.sim
+          ? {
+              seconds: Math.round(this.sim.tick / 60),
+              longest: this.stats.longest,
+              fastest: this.stats.fastest,
+              smashes: this.stats.smashes,
+              hits: this.stats.hits,
+            }
+          : null,
       },
     };
   }

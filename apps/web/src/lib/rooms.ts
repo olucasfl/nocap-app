@@ -11,7 +11,15 @@ import { ApiError, apiBase, apiClient } from './api-client';
 import { getToken, useAuth } from './auth';
 
 export type RoomGame =
-  'color' | 'time' | 'impostor' | 'eco' | 'atravessa' | 'desmorona' | 'bola' | 'foxcap';
+  | 'color'
+  | 'time'
+  | 'impostor'
+  | 'eco'
+  | 'atravessa'
+  | 'desmorona'
+  | 'bola'
+  | 'pingpong'
+  | 'foxcap';
 export type Phase =
   | 'lobby'
   | 'intro'
@@ -154,6 +162,26 @@ export interface DesmoronaRoomState {
   winnerId: string | null;
 }
 
+/** O Ping Fox! em sala (spec 055, fase 3): quem joga, quem saca primeiro e a hora da largada. As batidas vêm em "pev". */
+export interface PingRoomState {
+  me: string | null;
+  startAt: number | null;
+  firstServer: number;
+  /** Quem joga: [vaga 0 (perto da câmera no motor), vaga 1]. Null no lobby. */
+  players: [string, string] | null;
+  score: [number, number];
+  /** Quem saiu no meio (perdeu). */
+  forfeit: string | null;
+  /** Números da partida, depois do fim. */
+  stats?: {
+    seconds: number;
+    longest: number;
+    fastest: number;
+    smashes: [number, number];
+    hits: [number, number];
+  };
+}
+
 /** O Fut Fox em sala (spec 046): formato, times, bots e quem está em campo. O fluxo da partida vem em "bs". */
 export interface BolaRoomState {
   me: string | null;
@@ -213,6 +241,7 @@ export interface RoomSnapshot {
   atravessa?: AtravessaRoomState;
   desmorona?: DesmoronaRoomState;
   bola?: BolaRoomState;
+  pingpong?: PingRoomState;
 }
 
 /** Estado do Intruso, por pessoa: cor, dica e papéis só chegam a quem pode vê-los. */
@@ -285,7 +314,18 @@ async function client() {
 let room: Room | null = null;
 
 /** Mensagens frequentes da sala (as posições do Atravessa!) não passam pelo estado: quem quer, assina. */
-type LiveType = 'pos' | 'ack' | 'dsteps' | 'dpushed' | 'bs' | 'rtc' | 'bswitch' | 'fin';
+type LiveType =
+  | 'pos'
+  | 'ack'
+  | 'dsteps'
+  | 'dpushed'
+  | 'bs'
+  | 'rtc'
+  | 'bswitch'
+  | 'fin'
+  | 'pev'
+  | 'prej'
+  | 'ppads';
 const live: Record<LiveType, Set<(m: unknown) => void>> = {
   pos: new Set(),
   ack: new Set(),
@@ -295,6 +335,9 @@ const live: Record<LiveType, Set<(m: unknown) => void>> = {
   rtc: new Set(),
   bswitch: new Set(),
   fin: new Set(),
+  pev: new Set(),
+  prej: new Set(),
+  ppads: new Set(),
 };
 /** Só no desenvolvimento e nos testes de tela: injeta uma mensagem como se tivesse vindo da sala. */
 if (import.meta.env.DEV)
@@ -401,7 +444,19 @@ function attach(r: Room) {
     r.send('ping', { t0: Date.now(), rtt: lastRtt });
   }, 20_000);
 
-  for (const type of ['pos', 'ack', 'dsteps', 'dpushed', 'bs', 'rtc', 'bswitch', 'fin'] as const)
+  for (const type of [
+    'pos',
+    'ack',
+    'dsteps',
+    'dpushed',
+    'bs',
+    'rtc',
+    'bswitch',
+    'fin',
+    'pev',
+    'prej',
+    'ppads',
+  ] as const)
     r.onMessage(type, (m: unknown) => live[type].forEach((fn) => fn(m)));
   r.onMessage('chat', (m: ChatMessage) =>
     useRoom.setState((s) => ({

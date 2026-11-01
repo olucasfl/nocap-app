@@ -1,18 +1,24 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   PP_BOT_LEVELS,
+  PP_TICK,
   PpBot,
   PpMatch,
+  PpNetSim,
   createRng,
   ppIdleInput,
+  ppParseNetEvent,
   type PpBotName,
   type PpEvent,
   type PpInput,
+  type PpTimedEvent,
 } from '@nocap/games';
+import { GameChat } from '@/components/GameChat';
 import { GameMenu, GearButton, Keycap } from '@/components/GameMenu';
 import { GameTips, type TipRow } from '@/components/GameTips';
 import { RotateHint } from '@/components/RotateHint';
 import { pingSfx } from '@/lib/ping-audio';
+import { sendRoomQuiet, serverNow, subscribeRoom } from '@/lib/rooms';
 import { PingFinal, type PingStats } from './PingFinal';
 import { PingScene } from './PingScene';
 import './ping.css';
@@ -71,14 +77,31 @@ const BOT_COLORS: Record<PpBotName, number> = {
   dificil: 0x9a6bff,
 };
 
-/** Uma partida do Ping Fox! contra um bot (treino): roda o motor num passo fixo de 60 Hz e desenha com interpolação. */
+/** A partida em sala: quem joga (0 ou 1; -1 assiste), quem saca primeiro e a hora da largada no relógio da sala. */
+export interface PingOnline {
+  me: number;
+  firstServer: number;
+  startAt: number;
+  names: [string, string];
+  colors: [number, number];
+}
+
+/** Quantos ticks (200 ms) um ponto espera antes de aparecer: uma batida atrasada ainda pode desfazê-lo. */
+const POINT_GRACE = 12;
+
+/**
+ * Uma partida do Ping Fox!: contra um bot (treino, `level`) ou em sala (`online`). Roda o motor num passo fixo de 60 Hz
+ * e desenha com interpolação. Na sala a partida é a mesma `PpNetSim` da sala: só as batidas e os saques viajam.
+ */
 export function PingPlay({
-  level,
+  level = 'medio',
+  online,
   onExit,
   onAgain,
   onOfflineInvite,
 }: {
-  level: PpBotName;
+  level?: PpBotName;
+  online?: PingOnline;
   onExit: () => void;
   onAgain?: () => void;
   onOfflineInvite?: () => void;
@@ -120,12 +143,20 @@ export function PingPlay({
       typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
     const seed = crypto.randomUUID();
     const rng = createRng(seed);
-    const match = new PpMatch(rng() < 0.5 ? 0 : 1);
-    const bot = new PpBot(PP_BOT_LEVELS[level], rng);
+    // treino: a partida e o bot ficam aqui; sala: a `PpNetSim` é a mesma da sala e só as batidas viajam
+    const net = online ? new PpNetSim(online.firstServer, online.me) : null;
+    const match = net ? net.match : new PpMatch(rng() < 0.5 ? 0 : 1);
+    const bot = net ? null : new PpBot(PP_BOT_LEVELS[level], rng);
+    /** Quem sou eu na partida (quem assiste vê a mesa como o jogador 0). */
+    const myIdx = online ? Math.max(0, online.me) : 0;
+    const oppIdx = 1 - myIdx;
+    const spectator = !!online && online.me < 0;
+    const oppName = online ? (online.names[oppIdx] ?? 'Adversário') : BOT_NAMES[level];
     const scene = new PingScene(cv, match, {
-      oppColor: BOT_COLORS[level],
-      oppName: BOT_NAMES[level],
+      oppColor: online ? (online.colors[oppIdx] ?? 0x9a6bff) : BOT_COLORS[level],
+      oppName,
       reduced,
+      me: myIdx,
     });
 
     const me: PpInput = ppIdleInput();
@@ -159,7 +190,7 @@ export function PingPlay({
         (e.clientY - r.top) / r.height,
         e.pointerType === 'touch' ? TOUCH_LIFT : 0,
       );
-      me.x = p.x;
+      me.x = scene.simX(p.x);
       me.y = p.y;
     };
     let downAt = 0;
@@ -236,17 +267,19 @@ export function PingPlay({
         if (e.type === 'toss') pingSfx.toss();
         else if (e.type === 'hit') {
           const power = Math.max(0, Math.min(1, (e.kmh - 20) / 80));
-          pingSfx.hit(power, e.smash, e.p === 0);
+          const mine = e.p === myIdx && !spectator;
+          pingSfx.hit(power, e.smash, mine);
           stats.hits[e.p === 0 ? 0 : 1]++;
-          if (e.smash && e.p === 0) stats.smashes++;
+          if (e.smash && mine) stats.smashes++;
           if (e.kmh > stats.fastest) stats.fastest = e.kmh;
+          if (mine && 'vibrate' in navigator) navigator.vibrate?.(e.smash ? 18 : 8);
           setHud((h) => ({
             ...h,
             rally: match.rally,
             speed: {
               kmh: e.kmh,
               id: ++speedId,
-              mine: e.p === 0,
+              mine,
               tag: e.smash ? 'SMASH' : e.quality === 'sweet' ? 'PERFEITA' : undefined,
             },
           }));
@@ -254,26 +287,31 @@ export function PingPlay({
         else if (e.type === 'net') pingSfx.net();
         else if (e.type === 'fault') {
           pingSfx.fault();
+          const mine = e.p === myIdx && !spectator;
           setHud((h) => ({
             ...h,
             banner: {
               text: 'Falta de saque',
-              sub: e.p === 0 ? 'Mais uma e o ponto é dele' : 'Ele errou o saque',
+              sub: mine ? 'Mais uma e o ponto é dele' : 'Errou o saque',
               id: ++bannerId,
               tone: 'info',
             },
           }));
         } else if (e.type === 'point') {
-          const won = e.winner === 0;
+          const won = e.winner === myIdx && !spectator;
           pingSfx.point(won);
           stats.points[e.winner === 0 ? 0 : 1]++;
           if (e.rally > stats.longest) stats.longest = e.rally;
           const near = Math.max(e.score[0], e.score[1]) >= 10;
-          if (near && !reduced) {
+          if (near && !reduced && !net) {
             slow = 0.35;
             slowUntil = performance.now() + 900;
           }
-          const who = won ? 'você' : BOT_NAMES[level];
+          const who = spectator
+            ? (online?.names[e.winner === 0 ? 0 : 1] ?? '')
+            : e.winner === myIdx
+              ? 'você'
+              : oppName;
           setHud((h) => ({
             ...h,
             score: e.score,
@@ -282,21 +320,83 @@ export function PingPlay({
               text: `Ponto de ${who}`,
               sub: e.best > 0 ? `${e.best} km/h na melhor batida` : undefined,
               id: ++bannerId,
-              tone: won ? 'win' : 'lose',
+              tone: won ? 'win' : spectator ? 'info' : 'lose',
             },
           }));
         } else if (e.type === 'game') {
-          pingSfx.win(e.winner === 0);
+          pingSfx.win(e.winner === myIdx && !spectator);
           finished = true;
           stats.seconds = match.tick / 60;
-          window.setTimeout(() => {
-            phase = 'over';
-            setHud((h) => ({ ...h, phase: 'over' }));
-            setResult({ winner: e.winner, score: e.score, stats: { ...stats } });
-          }, 1500);
+          // na sala o servidor leva ao pódio sozinho (a tela de fim é a da sala)
+          if (!net) {
+            window.setTimeout(() => {
+              phase = 'over';
+              setHud((h) => ({ ...h, phase: 'over' }));
+              setResult({ winner: e.winner, score: e.score, stats: { ...stats } });
+            }, 1500);
+          }
         }
       }
-      scene.handle(events, 0);
+      scene.handle(events, spectator ? -1 : myIdx);
+    };
+
+    // ---- sala: eventos de batida, raquete do outro e histórico ----
+    const unsubs: (() => void)[] = [];
+    /** Pontos esperando a folga de 200 ms (uma batida atrasada ainda pode desfazê-los). */
+    const waiting: PpTimedEvent[] = [];
+    const feed = (list: PpTimedEvent[]) => {
+      const now: PpEvent[] = [];
+      for (const t of list) {
+        // o que aconteceu há mais de ~300 ms (voltou à sala, aba parada) não faz som nem aviso: só o placar acerta
+        if (t.tick < match.tick - 20) continue;
+        if (t.e.type === 'point' || t.e.type === 'game') waiting.push(t);
+        else now.push(t.e);
+      }
+      if (now.length) react(now);
+    };
+    const oppTarget = { x: 0, y: 1.3, smash: false };
+    /** Já chegou o histórico da sala (quem entra no meio ou volta só começa a andar depois dele). */
+    let synced = !net;
+    let padSendAt = 0;
+    if (net && online) {
+      unsubs.push(
+        subscribeRoom('pev', (m) => {
+          if (!Array.isArray(m)) return;
+          synced = true;
+          for (const raw of m) {
+            const ev = ppParseNetEvent(raw);
+            if (ev) feed(net.add(ev).events);
+          }
+        }),
+        subscribeRoom('prej', (m) => {
+          const ev = ppParseNetEvent(m);
+          if (ev) feed(net.remove(ev));
+        }),
+        subscribeRoom('ppads', (m) => {
+          if (!Array.isArray(m)) return;
+          for (const row of m as number[][]) {
+            if (row[0] === oppIdx) {
+              oppTarget.x = row[1] ?? 0;
+              oppTarget.y = row[2] ?? 1.3;
+              oppTarget.smash = row[3] === 1;
+            }
+          }
+        }),
+      );
+      sendRoomQuiet('psync');
+    }
+    const flushWaiting = () => {
+      while (waiting.length > 0) {
+        const t = waiting[0] as PpTimedEvent;
+        if (match.tick < t.tick + POINT_GRACE) break;
+        waiting.shift();
+        // o ponto só vale se, passada a folga, a partida ainda o tem (senão uma batida atrasada o desfez)
+        if (t.e.type === 'point') {
+          const total = match.score[0] + match.score[1];
+          if (total < t.e.score[0] + t.e.score[1]) continue;
+        }
+        react([t.e]);
+      }
     };
 
     let raf = 0;
@@ -306,56 +406,108 @@ export function PingPlay({
       raf = requestAnimationFrame(frame);
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
-      const paused = menuRef.current;
+      const paused = !net && menuRef.current;
       if (phase === 'ready') {
-        const left = 3 - Math.floor((now - readyAt) / 700);
-        if (left !== ready) {
-          ready = left;
-          if (left >= 0) pingSfx.count(left);
-          setHud((h) => ({ ...h, count: Math.max(0, left) }));
+        const left = online
+          ? Math.ceil((online.startAt - serverNow()) / 1000)
+          : 3 - Math.floor((now - readyAt) / 700);
+        const shown = online ? Math.min(3, left) : left;
+        if (shown !== ready) {
+          ready = shown;
+          if (shown >= 0 && shown <= 3) pingSfx.count(shown);
+          setHud((h) => ({ ...h, count: Math.max(0, shown) }));
         }
-        if (left < 0) {
+        if (online ? serverNow() >= online.startAt : left < 0) {
           phase = 'play';
           setHud((h) => ({ ...h, phase: 'play' }));
         }
       }
-      if (phase === 'play' && !paused && !finished) {
+      let alpha = 1;
+      if (phase === 'play' && !finished) {
         // setas e WASD movem a raquete (alternativa ao mouse)
         const kx = (keys.r ? 1 : 0) - (keys.l ? 1 : 0);
         const ky = (keys.u ? 1 : 0) - (keys.d ? 1 : 0);
         if (kx || ky) {
-          me.x = Math.max(-1.9, Math.min(1.9, me.x + kx * 3.2 * dt));
+          me.x = Math.max(-1.9, Math.min(1.9, me.x + scene.simX(kx) * 3.2 * dt));
           me.y = Math.max(0.55, Math.min(2.3, me.y + ky * 3.2 * dt));
         }
-        if (slow < 1 && now > slowUntil) slow = 1;
-        acc += dt * slow;
-        let guard = 0;
-        while (acc >= 1 / 60 && guard++ < 6) {
-          me.serve = now < serveUntil;
-          me.smash = mouseSmash || keySmash || smashRef.current;
-          scene.snap();
-          match.step([me, bot.input(match, 1)]);
-          const ev = match.drain();
-          if (ev.length) react(ev);
-          acc -= 1 / 60;
+        me.serve = now < serveUntil;
+        me.smash = mouseSmash || keySmash || smashRef.current;
+        if (net && online) {
+          // hora da partida pelo relógio da sala; o passo é fixo e a tela interpola entre os dois últimos
+          const exact = (serverNow() - online.startAt) / (PP_TICK * 1000);
+          const target = Math.floor(exact);
+          const input = spectator ? null : me;
+          const timed: PpTimedEvent[] = [];
+          let guard = 0;
+          // sem o histórico não anda (uma batida antiga que chegasse depois não teria como ser aplicada)
+          while (synced && net.tick < target && guard++ < 1500) {
+            if (net.tick === target - 1) scene.snap();
+            // alcançando o passado (voltou à sala, aba parada): ninguém "bate" no que já passou, vale só o registro
+            net.match.replay = target - net.tick > 30;
+            timed.push(...net.advanceTo(net.tick + 1, input));
+          }
+          net.match.replay = false;
+          feed(timed);
+          for (const ev of net.outgoing()) sendRoomQuiet(ev.k === 'toss' ? 'ptoss' : 'phit', ev);
+          flushWaiting();
+          alpha = Math.max(0, Math.min(1, exact - target));
+          // a raquete do outro chega a 30 vezes por segundo: aqui ela suaviza até lá
+          const op = match.pad(oppIdx);
+          op.vx = (oppTarget.x - op.x) * 16;
+          op.vy = (oppTarget.y - op.y) * 16;
+          op.x += op.vx * dt;
+          op.y += op.vy * dt;
+          if (!spectator && now - padSendAt > 33) {
+            padSendAt = now;
+            sendRoomQuiet('ppad', [
+              Math.round(me.x * 100) / 100,
+              Math.round(me.y * 100) / 100,
+              me.smash ? 1 : 0,
+            ]);
+          }
+        } else if (!paused && bot) {
+          if (slow < 1 && now > slowUntil) slow = 1;
+          acc += dt * slow;
+          let guard = 0;
+          while (acc >= 1 / 60 && guard++ < 6) {
+            scene.snap();
+            match.step([me, bot.input(match, 1)]);
+            const ev = match.drain();
+            if (ev.length) react(ev);
+            acc -= 1 / 60;
+          }
+          if (guard >= 6) acc = 0;
+          alpha = acc * 60;
         }
-        if (guard >= 6) acc = 0;
       }
-      scene.render(dt, phase === 'play' && !paused ? acc * 60 : 1);
+      scene.render(dt, phase === 'play' && !paused ? alpha : 1);
       if (now - hudAt > 120) {
         hudAt = now;
+        const sync = !net || waiting.length === 0;
         setHud((h) =>
-          h.server === match.server && h.matchPhase === match.phase && h.rally === match.rally
+          h.server === match.server &&
+          h.matchPhase === match.phase &&
+          h.rally === match.rally &&
+          (!sync || (h.score[0] === match.score[0] && h.score[1] === match.score[1]))
             ? h
-            : { ...h, server: match.server, matchPhase: match.phase, rally: match.rally },
+            : {
+                ...h,
+                server: match.server,
+                matchPhase: match.phase,
+                rally: match.rally,
+                // o placar da sala acompanha a partida (vale depois da folga de cada ponto)
+                score: sync && net ? [match.score[0], match.score[1]] : h.score,
+              },
         );
       }
     };
     raf = requestAnimationFrame(frame);
 
-    (window as unknown as { __ping?: unknown }).__ping = { match, scene };
+    (window as unknown as { __ping?: unknown }).__ping = { match, scene, net };
     return () => {
       cancelAnimationFrame(raf);
+      for (const off of unsubs) off();
       window.removeEventListener('keydown', kd);
       window.removeEventListener('keyup', ku);
       zn.removeEventListener('pointerdown', onDown);
@@ -366,7 +518,7 @@ export function PingPlay({
       scene.dispose();
       delete (window as unknown as { __ping?: unknown }).__ping;
     };
-  }, [level]);
+  }, [level, online]);
 
   // botão de smash do celular (segurar): o laço do jogo lê `smashRef` a cada tick
   const smashDown = () => {
@@ -378,8 +530,17 @@ export function PingPlay({
     setSmashOn(false);
   };
 
-  const myServe = hud.matchPhase === 'serve' && hud.server === 0 && hud.phase === 'play';
-  const names = ['Você', BOT_NAMES[level]];
+  const myIdx = online ? Math.max(0, online.me) : 0;
+  const spectating = !!online && online.me < 0;
+  const oppIdx = 1 - myIdx;
+  const myServe =
+    !spectating && hud.matchPhase === 'serve' && hud.server === myIdx && hud.phase === 'play';
+  const names = online
+    ? [
+        spectating ? (online.names[0] ?? '') : 'Você',
+        spectating ? (online.names[1] ?? '') : (online.names[oppIdx] ?? 'Adversário'),
+      ]
+    : ['Você', BOT_NAMES[level]];
 
   return (
     <div ref={root} className="png-play" data-testid="png-play">
@@ -387,16 +548,16 @@ export function PingPlay({
       <div ref={zone} className="png-zone" aria-hidden="true" />
       <div className="png-hud">
         <div className="png-score" role="status" aria-label="Placar" data-testid="png-score">
-          <span className={`png-side${hud.server === 0 ? ' is-serving' : ''}`}>
+          <span className={`png-side${hud.server === myIdx ? ' is-serving' : ''}`}>
             <i aria-hidden="true" />
             <small>{names[0]}</small>
-            <b>{hud.score[0]}</b>
+            <b>{hud.score[myIdx] ?? 0}</b>
           </span>
           <span className="png-sep" aria-hidden="true">
             :
           </span>
-          <span className={`png-side is-right${hud.server === 1 ? ' is-serving' : ''}`}>
-            <b>{hud.score[1]}</b>
+          <span className={`png-side is-right${hud.server === oppIdx ? ' is-serving' : ''}`}>
+            <b>{hud.score[oppIdx] ?? 0}</b>
             <small>{names[1]}</small>
             <i aria-hidden="true" />
           </span>
@@ -406,14 +567,14 @@ export function PingPlay({
         </div>
       </div>
       {hud.rally >= 4 && hud.matchPhase === 'rally' && (
-        <div className="png-rally" key={hud.rally} aria-hidden="true">
+        <div className="png-rally" key={`rally-${hud.rally}`} aria-hidden="true">
           Troca <b>{hud.rally}</b>
         </div>
       )}
       {hud.speed && (
         <div
           className={`png-speed${hud.speed.mine ? ' is-mine' : ''}`}
-          key={hud.speed.id}
+          key={`speed-${hud.speed.id}`}
           aria-hidden="true"
         >
           {hud.speed.tag && <em>{hud.speed.tag}</em>}
@@ -421,7 +582,11 @@ export function PingPlay({
         </div>
       )}
       {hud.banner && (
-        <div className={`png-banner is-${hud.banner.tone}`} key={hud.banner.id} role="status">
+        <div
+          className={`png-banner is-${hud.banner.tone}`}
+          key={`banner-${hud.banner.id}`}
+          role="status"
+        >
           <b>{hud.banner.text}</b>
           {hud.banner.sub && <span>{hud.banner.sub}</span>}
         </div>
@@ -437,12 +602,16 @@ export function PingPlay({
           <span>{touchDevice ? 'Toque na tela' : 'Clique ou aperte Espaço'}</span>
         </div>
       )}
-      {hud.matchPhase === 'serve' && hud.server === 1 && hud.phase === 'play' && !hud.banner && (
-        <div className="png-serve-hint is-them">
-          <b>{BOT_NAMES[level]} vai sacar</b>
-          <span>Prepare a raquete</span>
-        </div>
-      )}
+      {!spectating &&
+        hud.matchPhase === 'serve' &&
+        hud.server === oppIdx &&
+        hud.phase === 'play' &&
+        !hud.banner && (
+          <div className="png-serve-hint is-them">
+            <b>{names[1]} vai sacar</b>
+            <span>Prepare a raquete</span>
+          </div>
+        )}
       {touchDevice && hud.phase !== 'over' && (
         <button
           type="button"
@@ -460,6 +629,7 @@ export function PingPlay({
           Smash
         </button>
       )}
+      {online && <GameChat enabled />}
       <RotateHint />
       {hud.phase === 'ready' && (
         <GameTips storageKey={TIPS_KEY} rows={tipRows(touchDevice)} testId="png-tips" markOnShow />
@@ -470,7 +640,7 @@ export function PingPlay({
           testPrefix="png-menu"
           tipsKey={TIPS_KEY}
           tips={tipRows(touchDevice)}
-          online={false}
+          online={!!online}
           onClose={closeMenu}
           onExit={onExit}
           onOfflineInvite={onOfflineInvite}

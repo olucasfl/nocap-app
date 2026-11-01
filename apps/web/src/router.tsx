@@ -94,7 +94,16 @@ const roomRoute = createRoute({
   validateSearch: (
     search: Record<string, unknown>,
   ): {
-    jogo?: 'color' | 'time' | 'impostor' | 'eco' | 'atravessa' | 'desmorona' | 'bola' | 'foxcap';
+    jogo?:
+      | 'color'
+      | 'time'
+      | 'impostor'
+      | 'eco'
+      | 'atravessa'
+      | 'desmorona'
+      | 'bola'
+      | 'pingpong'
+      | 'foxcap';
   } =>
     search.jogo === 'color' ||
     search.jogo === 'time' ||
@@ -102,6 +111,7 @@ const roomRoute = createRoute({
     search.jogo === 'eco' ||
     search.jogo === 'atravessa' ||
     search.jogo === 'desmorona' ||
+    search.jogo === 'pingpong' ||
     search.jogo === 'bola' ||
     search.jogo === 'foxcap'
       ? { jogo: search.jogo }

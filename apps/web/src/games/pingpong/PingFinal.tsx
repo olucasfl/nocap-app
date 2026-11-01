@@ -39,14 +39,17 @@ export function PingFinal({
   names,
   stats,
   mode,
+  you = 0,
 }: {
   winner: number;
   score: [number, number];
   names: [string, string];
   stats: PingStats;
   mode: PingFinalMode;
+  /** Qual dos dois é quem olha (-1 = assistiu). No treino é sempre o primeiro. */
+  you?: number;
 }) {
-  const tone: FinalTone = winner === 0 ? 'win' : 'lose';
+  const tone: FinalTone = you < 0 ? 'watch' : winner === you ? 'win' : 'lose';
   const a = useCountUp(score[0], 350, 800);
   const b = useCountUp(score[1], 450, 800);
   const total = Math.max(1, stats.points[0] + stats.points[1]);
@@ -55,11 +58,19 @@ export function PingFinal({
       theme="png"
       tone={tone}
       kicker="Ping Fox! · fim de partida"
-      title={winner === 0 ? 'Você venceu!' : `${names[1]} venceu`}
+      title={
+        you < 0
+          ? `${names[winner]} venceu`
+          : winner === you
+            ? 'Você venceu!'
+            : `${names[winner]} venceu`
+      }
       sub={
-        winner === 0
-          ? 'Boa! A mesa é sua.'
-          : `Placar final ${score[0]} a ${score[1]}. A revanche está logo aí.`
+        you < 0
+          ? `Placar final ${score[0]} a ${score[1]}.`
+          : winner === you
+            ? 'Boa! A mesa é sua.'
+            : `Placar final ${score[0]} a ${score[1]}. A revanche está logo aí.`
       }
       label="Resultado do Ping Fox!"
       testId="png-final"
@@ -117,7 +128,7 @@ export function PingFinal({
             {[0, 1].map((i) => (
               <li
                 key={i}
-                className={`fz-row${i === 0 ? ' is-you' : ''}${i === winner ? ' is-first' : ''}`}
+                className={`fz-row${i === you ? ' is-you' : ''}${i === winner ? ' is-first' : ''}`}
                 style={{ '--d': `${500 + i * 80}ms` } as CSSProperties}
               >
                 <span className="fz-pos">{i === winner ? '1º' : '2º'}</span>
@@ -128,7 +139,7 @@ export function PingFinal({
                 />
                 <span className="fz-name">
                   {names[i]}
-                  {i === 0 && <small>você</small>}
+                  {i === you && <small>você</small>}
                 </span>
                 <span className="fz-val">
                   {stats.points[i]} {stats.points[i] === 1 ? 'ponto' : 'pontos'}

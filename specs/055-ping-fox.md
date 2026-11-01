@@ -1,6 +1,6 @@
 # Spec 055: Ping Fox! (pingue-pongue 1x1 das raposas)
 
-Pedido do Lucas em 01/11/2026. Status: **em andamento. Fases 1 e 2 (motor e treino offline no Fox Cap!) prontas; falta a fase 3 (sala online).**
+Pedido do Lucas em 01/11/2026. Status: **em andamento. Fases 1, 2 e 3 (motor, treino offline e sala online 1x1 no Fox Cap!) prontas; falta jogar de verdade com amigos e no celular real para afinar velocidade e ajuda de mira.**
 
 ## 1. O que o Lucas pediu
 
@@ -46,14 +46,18 @@ Mesa de 4,2 m (eixo z) por 2,3 m (eixo x), tampo a 1,0 m, rede de 0,3 m, bola de
 - Depois de cada batida a bola tem que quicar **primeiro na mesa do adversário**; quicar na sua é falta. O saque cai direto na mesa do adversário.
 - Quem devolve só pode bater **depois de 1 quique** na sua metade e antes do 2º. Antes do quique a raquete deixa a bola passar (sem voleio); se a bola for longe demais sem quicar, o ponto é de quem rebateu.
 - Bola que bate na rede e passa vale; bola que cai de volta no lado de quem bateu é falta.
-- Rally de mais de 14 s sem resolver: ponto anulado e saque repetido (rede de segurança).
+- Rally de mais de 30 s sem resolver: ponto anulado e saque repetido (rede de segurança).
 
-## 4. Rede (fase 2; plano)
+## 4. Rede (fase 3, pronta em 01/11/2026)
 
-- Mesma ideia do Fut Fox: **o líder simula** por P2P (WebRTC) e o servidor é a reserva; o cliente é um só (`PpLink`).
-- **A bola só muda quando alguém bate.** Entre batidas ela é uma trajetória que os dois aparelhos calculam sozinhos (mesmo código determinístico), então não há tremida nem teletransporte. Só o **evento de batida** viaja: `{tick, posição, velocidade, spin}`. Quique, rede e ponto saem da mesma conta nos dois lados; o líder é o árbitro e manda o placar.
-- **Sua batida é instantânea para você:** o aparelho de quem bate decide a própria batida (predição), manda o evento e o outro vê um instante depois (metade do ping). Ping alto só atrasa o que o adversário vê, nunca a sua raquete.
-- Raquete do adversário é interpolada (como as raposas do Fut Fox); a sua é local.
+- **A partida é uma função dos eventos e do tick.** `PpNetSim` (`packages/games/src/pingpong/netsim.ts`) roda a mesma `PpMatch` no aparelho de cada jogador, nos que assistem e na sala (árbitra). Entre dois eventos a bola é uma trajetória determinística que todos calculam igual: não há tremida nem teletransporte. Só dois eventos viajam: **lançamento do saque** `{t, p, x}` e **batida** `{t, p, bola depois da batida, km/h, smash, qualidade, efeito}` (`t` = tick da partida, contado do relógio da sala a 60 por segundo).
+- **Cada jogador decide a própria batida na hora**, sem esperar a rede (o aparelho detecta o contato com a raquete na sua simulação, manda o evento e já segue). A sala confere (`validate`: era a vez, a bola estava perto, velocidade e efeito possíveis, não é velha demais) e repassa ao outro (`pev`); se recusar manda `prej` e quem enviou desfaz.
+- **Evento atrasado volta no tempo:** a simulação guarda uma foto por tick (1,6 s) e, quando chega um evento do passado, restaura a foto, aplica o evento e refaz o caminho até agora. A bola de quem recebe "alcança" a de quem bateu. Ponto, banner e placar só aparecem 200 ms depois (uma batida atrasada ainda pode desfazê-lo).
+- **Saque parado:** a sala lança sozinha depois de 6 s. **Quem entra no meio ou volta** manda `psync` e recebe todo o histórico; só começa a andar depois dele (a sala guarda todos os eventos). Quem cai da rede tem 25 s para voltar; quem sai perde.
+- A raquete do outro vem em `ppads` (30 por segundo) e é só visual. Quem joga do lado de lá vê a mesa girada (a cena espelha x e z), como se estivesse perto da câmera.
+- Os 2 primeiros da sala jogam; os outros (até 8) assistem. Sem ranking.
+- **Medido:** com 80 ms e 200 ms de atraso (variação de 3 a 4 ticks) três aparelhos simulados terminam com o mesmo placar (`netsim.test.ts`); a sala com Colyseus de verdade e duas janelas de navegador jogam rallies de 14+ batidas com as duas telas iguais, e uma janela recarregada no meio refaz a partida e segue (`e2e/ping-online.spec.ts`, precisa do servidor só de salas: `apps/api/scripts/rooms-only.ts`).
+- **Fica para depois:** caminho direto por WebRTC (como no Fut Fox) para cortar a ida e volta ao servidor. Com este desenho o atraso só adia o que o outro vê (metade do ping), nunca a sua raquete, então a prioridade caiu.
 
 ## 5. Offline: bots
 
@@ -86,3 +90,9 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 - **Web** em `apps/web/src/games/pingpong`: `PingScene` (Three.js: mesa arredondada com linhas, rede com malha, raquete de dois lados com borracha e cabo, bola com faixa de giro e brilho, raposa do outro lado com braço, sombra da bola no tampo, anel de quique, anel de alcance, rastro, faíscas), `PingPlay` (passo fixo de 60 Hz com interpolação entre ticks para telas de 120/144 Hz; mouse ou dedo projetado no plano da raquete; clique ou toque saca; botão direito, Espaço ou botão na tela dão smash; câmera lenta no ponto decisivo), `PingFinal` (tela de fim), `PingPicker` (nível), som em `lib/ping-audio.ts`.
 - **Fox Cap!**: cartão "Ping Fox! Treino" (offline) com "Como jogar?".
 - **E2E** `e2e/ping.spec.ts`: abre e saca; quem segue o anel devolve a bola; celular em pé, deitado e deitado pequeno (HUD cabe, o dedo leva a raquete); tela de fim nos 4 tamanhos.
+
+## 10. Como ficou a sala (fase 3, 01/11/2026)
+
+- **API:** `PingRoomEngine` (`apps/api/src/rooms/ping-room.engine.ts`) e `PingRoom` (`color.room.ts`, mensagens `phit`, `ptoss`, `ppad`, `psync`; `pev`, `prej`, `ppads` de volta), registrada no Fox Cap! (`pickgame`) e em `main.ts`. 7 testes do motor e 1 de integração com Colyseus.
+- **Web:** o Fox Cap! "Com amigos" tem "Ping Fox!" entre os jogos; `PingRoomPlay` (partida) e `PingRoomFinal` (pódio com os números e a votação de revanche) em `apps/web/src/games/pingpong`. A partida em sala usa a mesma `PingPlay` do treino.
+- **Pódio:** a sala espera 2,5 s depois do último ponto, e manda duração, maior troca, bola mais rápida, smashes e batidas de cada um.

@@ -56,6 +56,6 @@
 | 052 | [Fut Fox liso online, arena, física e visual](052-fut-fox-rede-e-fisica.md) | 9 | em andamento (27/10/2026): fase 1 (rede) pronta; arena, física e visual em seguida |
 | 053 | [Fut Fox: corrida com fôlego, atrito da bola e curva do teto](053-fut-fox-corrida-e-curvas.md) | 9 | em andamento (27/10/2026): motor, rede e tela feitos; falta ver na tela e jogar |
 | 054 | [Telas de fim de partida do Atravessa! e do Desmorona!](054-telas-de-fim-atravessa-desmorona.md) | 9 | em andamento (28/10/2026): telas feitas e testadas offline; falta ver a da sala com 2 navegadores |
-| 055 | [Ping Fox! (pingue-pongue 1x1 das raposas)](055-ping-fox.md) | 9 | em andamento (01/11/2026): motor e treino offline prontos; falta a sala online |
+| 055 | [Ping Fox! (pingue-pongue 1x1 das raposas)](055-ping-fox.md) | 9 | em andamento (01/11/2026): motor, treino offline e sala online prontos; falta jogar com amigos |
 
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.
