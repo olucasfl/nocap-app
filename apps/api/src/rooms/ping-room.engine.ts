@@ -3,6 +3,7 @@ import {
   PP_PAD_Y_MAX,
   PP_PAD_Y_MIN,
   PP_REACH_NET,
+  PP_REACH_BACK,
   PP_ROOM_AWAY_MS,
   PP_ROOM_COUNTDOWN_MS,
   PP_ROOM_OVER_MS,
@@ -175,7 +176,7 @@ export class PingRoomEngine extends ColorRoomEngine {
     this.pads[slot === 0 ? 0 : 1] = [
       r2(clamp(x!, -PP_PAD_X, PP_PAD_X)),
       r2(clamp(y!, PP_PAD_Y_MIN, PP_PAD_Y_MAX)),
-      r2(clamp(reach!, 0, PP_REACH_NET)),
+      r2(clamp(reach!, -PP_REACH_BACK, PP_REACH_NET)),
       this.now(),
     ];
   }

@@ -143,3 +143,9 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 - **A raquete vira para o lado** em que a mão vai (roll).
 - **Saque novo**: a bola fica parada na frente da raquete (sem gravidade, a `PP_SERVE_FRONT` do plano) e o saque é a raquetada para a frente. Sem lançamento, sem barra, sem evento de rede de saque; a sala faz um saque mansinho se ninguém bater em `PP_SERVE_AUTO` s. No saque a raquete só se afasta 0,3 m do meio (onde a bola espera).
 - Rede: o fluxo `ppad` agora leva `[x, y, alcance]` (era o 3º valor `smash` sem uso).
+
+### Rodada 6 (01/11/2026)
+
+- A bola do saque acompanha a raquete de quem saca (sacar de qualquer lugar); sem o limite de 0,3 m.
+- A raquete também vai para trás do plano de espera (`PP_REACH_BACK` = 0,95 m); só o avanço recolhe sozinho no dedo.
+- Câmera mais baixa, mais aberta (FOV 50) e mais perto: a mesa fica bem maior na tela; no celular deitado a câmera chega ainda mais perto.

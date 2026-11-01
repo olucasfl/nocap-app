@@ -648,8 +648,9 @@ export class PingScene {
     const k = 1 - Math.exp(-4 * dt);
     const tx = bx * 0.18;
     const cam = this.camera;
-    const baseZ = portrait ? 8.4 : 6.4;
-    const baseY = portrait ? 5.0 : 3.9;
+    const wide = this.camera.aspect > 1.8; // celular deitado: pouca altura, a câmera chega mais perto
+    const baseZ = portrait ? 7.4 : wide ? 4.7 : 5.2;
+    const baseY = portrait ? 4.1 : wide ? 2.6 : 2.9;
     cam.position.x = lerp(cam.position.x, tx * 0.7, k);
     cam.position.y = baseY;
     cam.position.z = baseZ;
@@ -661,8 +662,8 @@ export class PingScene {
     }
     cam.position.x += sx;
     cam.position.y += sy;
-    cam.lookAt(tx, 0.9, -0.2);
-    const fov = (portrait ? 56 : 42) + this.fovKick * 5;
+    cam.lookAt(tx, 0.95, -0.9);
+    const fov = (portrait ? 58 : 50) + this.fovKick * 5;
     if (Math.abs(cam.fov - fov) > 0.01) {
       cam.fov = fov;
       cam.updateProjectionMatrix();

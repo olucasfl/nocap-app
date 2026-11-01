@@ -39,6 +39,7 @@ import {
   PP_SERVE_Y,
   PP_SERVE_WAIT,
   PP_REACH_NET,
+  PP_REACH_BACK,
   PP_Z_SPEED,
   PP_Z_STIFF,
   PP_REST_Y,
@@ -143,7 +144,7 @@ export function ppPadStepZ(pad: PpPaddle, tx: number, ty: number, tz: number, dt
   pad.vx = vx;
   // a altura é automática: a subida e descida dela não conta como golpe
   pad.vy = Math.max(-1, Math.min(1, vy * 0.2));
-  const goal = Math.max(0, Math.min(PP_REACH_NET, tz));
+  const goal = Math.max(-PP_REACH_BACK, Math.min(PP_REACH_NET, tz));
   const vz = Math.max(-PP_Z_SPEED, Math.min(PP_Z_SPEED, (goal - pad.reach) * PP_Z_STIFF));
   pad.reach += vz * dt;
   pad.vz = Math.max(0, Math.min(PP_HAND_VZ_MAX, vz));
@@ -300,7 +301,7 @@ export class PpMatch {
   private holdBall(): void {
     const b = this.ball;
     const p = this.server;
-    b.x = 0;
+    b.x = this.pad(p).x;
     b.y = PP_SERVE_Y;
     b.z = this.handZ(p);
     b.vx = b.vy = b.vz = 0;
@@ -323,9 +324,7 @@ export class PpMatch {
         Math.abs(b.z - planeZ) < 3
       )
         ty = b.y;
-      // no saque a bola está no meio: a raquete só pode sair um pouco dele (dá para escolher o lado pelo golpe)
-      const serving = p === this.server && (this.phase === 'serve' || this.phase === 'toss');
-      ppPadStepZ(pad, serving ? Math.max(-0.3, Math.min(0.3, inp.x)) : inp.x, ty, inp.z, PP_TICK);
+      ppPadStepZ(pad, inp.x, ty, inp.z, PP_TICK);
       this.swingNow[p === 0 ? 0 : 1] = null;
       return;
     }
@@ -374,6 +373,8 @@ export class PpMatch {
       // na rede só a raquete de quem joga aqui se mexe pela entrada; a do outro vem do fluxo de raquetes
       if (!this.net || p === this.localPlayer) this.movePad(p, inp);
     }
+    // saque: a bola acompanha a raquete de quem saca (dá para sacar de qualquer lugar)
+    if (this.phase === 'serve' || this.phase === 'toss') this.ball.x = this.pad(this.server).x;
     if (this.phase === 'point') {
       this.ballFall();
       if (this.t >= PP_POINT_PAUSE) this.nextServe();

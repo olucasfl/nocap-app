@@ -10,6 +10,7 @@ import {
   PP_PAD_X,
   PP_PAD_Z,
   PP_REACH_NET,
+  PP_REACH_BACK,
   ppPadStepZ,
   ppParseNetEvent,
   ppPredictCross,
@@ -179,7 +180,7 @@ export function PingPlay({
     let mouseLast = false;
     let lastMoveAt = 0;
     let prev: { x: number; z: number } | null = null;
-    const clampZ = (v: number) => Math.max(0, Math.min(PP_REACH_NET, v));
+    const clampZ = (v: number) => Math.max(-PP_REACH_BACK, Math.min(PP_REACH_NET, v));
     const keys = { l: false, r: false, u: false, d: false };
     let ready = 3;
     const readyAt = performance.now();
@@ -451,10 +452,10 @@ export function PingPlay({
           lastMoveAt = performance.now();
         } else if (!pointerDown && !mouseLast) {
           // sem mão no controle a raquete volta para o plano de espera
-          zt = clampZ(zt - 3 * dt);
+          zt = zt > 0 ? Math.max(0, zt - 3 * dt) : zt;
         }
         // dedo parado no meio do caminho: a raquete vai recolhendo
-        if (pointerDown && performance.now() - lastMoveAt > 160) zt = clampZ(zt - 2.4 * dt);
+        if (pointerDown && performance.now() - lastMoveAt > 160) zt = zt > 0 ? Math.max(0, zt - 2.4 * dt) : zt;
         me.z = zt;
         // só nos testes: uma entrada de bot (ou de um "jogador" programado) no lugar do mouse
         const forced = (window as unknown as { __pingForce?: PpInput }).__pingForce;

@@ -249,8 +249,8 @@ for (const size of [
       await page.waitForTimeout(300);
       const x1 = await pad();
       await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-      // (no saque a raquete só se afasta 0,3 m do meio, onde a bola espera)
-      expect(x1).toBeGreaterThan(x0 + 0.2);
+      // (a bola do saque acompanha a raquete)
+      expect(x1).toBeGreaterThan(x0 + 0.3);
       if (process.env.E2E_SHOTS)
         await page.screenshot({ path: `${process.env.E2E_SHOTS}/ping-${size.name}.png` });
     });

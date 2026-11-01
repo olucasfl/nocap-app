@@ -100,6 +100,8 @@ export const PP_SERVE_Y = 1.5;
 export const PP_SERVE_WAIT = 0.9;
 /** Alcance até a rede: a raquete passeia por cima da mesa (reach 0 = plano de espera; NET = quase na rede). */
 export const PP_REACH_NET = 2.45;
+/** E para trás: a raquete pode ficar atrás do plano de espera (m). */
+export const PP_REACH_BACK = 0.95;
 /** Rapidez e rigidez do avanço/recuo da raquete (m/s, 1/s). */
 export const PP_Z_SPEED = 15;
 export const PP_Z_STIFF = 34;
