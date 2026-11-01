@@ -4,7 +4,13 @@ import { BackButton } from '@/components/BackButton';
 import { Field } from '@/components/Field';
 import { HubHero, HubModeCard, HubNote, HubTabs } from '@/components/GameHub';
 import { HowToPlay, type HowGame } from '@/components/HowToPlay';
-import { AtravessaArt, BolaArt, DesmoronaTrainingArt, FoxCapArt } from '@/components/HubArt';
+import {
+  AtravessaArt,
+  BolaArt,
+  DesmoronaTrainingArt,
+  FoxCapArt,
+  PingArt,
+} from '@/components/HubArt';
 import { Loader } from '@/components/Loader';
 import { MuteButton } from '@/components/MuteButton';
 import { NicknameDialog } from '@/components/NicknameDialog';
@@ -15,6 +21,8 @@ import { useRoomEntry } from '@/lib/my-room';
 import { BolaPicker } from '../bola/BolaPicker';
 import type { BolaSetup } from '../bola/BolaPlay';
 import { DesmoronaPicker } from './DesmoronaPicker';
+import { PingPicker } from '../pingpong/PingPicker';
+import type { PpBotName } from '@nocap/games';
 import '@/screens/account.css';
 import '@/screens/room.css';
 
@@ -23,8 +31,9 @@ const BolaPlay = lazy(() => import('../bola/BolaPlay').then((m) => ({ default: m
 const DesmoronaPlay = lazy(() =>
   import('./DesmoronaPlay').then((m) => ({ default: m.DesmoronaPlay })),
 );
+const PingPlay = lazy(() => import('../pingpong/PingPlay').then((m) => ({ default: m.PingPlay })));
 
-type Flow = 'bola-pick' | 'bola-play' | 'dsm-pick' | 'dsm-play' | null;
+type Flow = 'bola-pick' | 'bola-play' | 'dsm-pick' | 'dsm-play' | 'png-pick' | 'png-play' | null;
 
 /**
  * Fox Cap! (spec 049): a aba "Offline" tem cada modo com "Jogar" (entra na partida sem passar por outra tela) e
@@ -40,6 +49,7 @@ export function FoxCapPage() {
   const [help, setHelp] = useState<HowGame | null>(null);
   const [bola, setBola] = useState<BolaSetup>({ teams: 2, perTeam: 2, minutes: 3 });
   const [bots, setBots] = useState(5);
+  const [pingLevel, setPingLevel] = useState<PpBotName>('medio');
   const [round, setRound] = useState(0);
   const [code, setCode] = useState('');
   const entry = useRoomEntry({ resume: true });
@@ -78,6 +88,22 @@ export function FoxCapPage() {
             onExit={() => setFlow(null)}
             // cada partida pergunta de novo contra quantas raposas jogar
             onAgain={() => setFlow('dsm-pick')}
+          />
+        </Suspense>
+      </div>
+    );
+  }
+
+  if (flow === 'png-play') {
+    return (
+      <div className="png-screen">
+        <Suspense fallback={<Loader />}>
+          <PingPlay
+            key={round}
+            level={pingLevel}
+            onExit={() => setFlow(null)}
+            onAgain={() => setRound((r) => r + 1)}
+            onOfflineInvite={goFriends}
           />
         </Suspense>
       </div>
@@ -135,6 +161,17 @@ export function FoxCapPage() {
                 helpTestId="help-desmorona"
               />
               <HubModeCard
+                tone="blue"
+                art={<PingArt />}
+                name="Ping Fox! Treino"
+                desc="Pingue-pongue 1 contra 1 contra um bot. Efeito, smash e rally."
+                tags={['1x1', 'Offline']}
+                onPlay={() => setFlow('png-pick')}
+                onHelp={() => setHelp('pingpong')}
+                testId="foxcap-pingpong"
+                helpTestId="help-pingpong"
+              />
+              <HubModeCard
                 tone="green"
                 art={<BolaArt />}
                 name="Fut Fox Treino"
@@ -147,8 +184,8 @@ export function FoxCapPage() {
               />
             </div>
             <HubNote>
-              O Atravessa! guarda recorde e ranking. O Desmorona! e o Fut Fox são só diversão: sem
-              ranking nem histórico.
+              O Atravessa! guarda recorde e ranking. O Desmorona!, o Fut Fox e o Ping Fox! são só
+              diversão: sem ranking nem histórico.
             </HubNote>
           </>
         ) : (
@@ -214,6 +251,14 @@ export function FoxCapPage() {
           setup={bola}
           onChange={setBola}
           onStart={() => setFlow('bola-play')}
+          onCancel={() => setFlow(null)}
+        />
+      )}
+      {flow === 'png-pick' && (
+        <PingPicker
+          level={pingLevel}
+          onChange={setPingLevel}
+          onStart={() => setFlow('png-play')}
           onCancel={() => setFlow(null)}
         />
       )}

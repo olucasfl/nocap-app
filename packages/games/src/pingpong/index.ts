@@ -4,3 +4,4 @@ export * from './assist';
 export * from './paddle';
 export * from './match';
 export * from './bot';
+export * from './predict';

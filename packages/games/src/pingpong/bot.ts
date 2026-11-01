@@ -1,6 +1,7 @@
-import { PP_EV_FLOOR, ppCopyBall, ppNewBall, ppNewStepOut, ppStepBall, type PpBall } from './ball';
+import { ppCopyBall, ppNewBall } from './ball';
 import { ppLanding } from './assist';
-import { PP_PAD_R, PP_PAD_Z, PP_W } from './constants';
+import { PP_PAD_R, PP_W } from './constants';
+import { ppPredictCross, type PpCrossing } from './predict';
 import { PpMatch, ppIdleInput, type PpInput } from './match';
 import { ppPaddleHit } from './paddle';
 
@@ -28,47 +29,12 @@ export const PP_BOT_LEVELS: Record<PpBotName, PpBotLevel> = {
   dificil: { reaction: 0.15, speed: 9, err: 0.035, smash: 0.55, aim: 0.9, serveWait: 0.8 },
 };
 
-interface Crossing {
-  x: number;
-  y: number;
-  /** Tempo até cruzar o plano da raquete (s). */
-  t: number;
-  ball: PpBall;
-}
-
-const scratch = ppNewBall();
-const out = ppNewStepOut();
-
-/** Prevê onde a bola cruza o plano da raquete de `p` (mesma física do jogo). */
-function predict(b: PpBall, p: number): Crossing | null {
-  const s = p === 0 ? 1 : -1;
-  const plane = s * PP_PAD_Z;
-  ppCopyBall(b, scratch);
-  for (let i = 0; i < 1200; i++) {
-    const z0 = scratch.z;
-    const x0 = scratch.x;
-    const y0 = scratch.y;
-    out.ev = 0;
-    ppStepBall(scratch, out);
-    if (out.ev & PP_EV_FLOOR) return null;
-    if ((z0 - plane) * s < 0 && (scratch.z - plane) * s >= 0) {
-      const k = (plane - z0) / (scratch.z - z0);
-      const c = ppCopyBall(scratch, ppNewBall());
-      c.x = x0 + (scratch.x - x0) * k;
-      c.y = y0 + (scratch.y - y0) * k;
-      c.z = plane;
-      return { x: c.x, y: c.y, t: (i + k) / 240, ball: c };
-    }
-  }
-  return null;
-}
-
 /** Um jogador de mentira: manda as mesmas entradas que uma pessoa mandaria (cursor, smash, saque). */
 export class PpBot {
   private cx = 0;
   private cy = 1.3;
   private seen = -1;
-  private pred: Crossing | null = null;
+  private pred: PpCrossing | null = null;
   private goalX = 0;
   private goalY = 1.3;
   private errX = 0;
@@ -122,7 +88,7 @@ export class PpBot {
         this.wantSmash = false;
       }
       if (!this.pred && m.t >= lv.reaction) {
-        this.pred = predict(m.ball, p);
+        this.pred = ppPredictCross(m.ball, p);
         if (this.pred) this.plan(m, p, this.pred);
       }
       if (this.pred) {
@@ -157,7 +123,7 @@ export class PpBot {
   }
 
   /** Escolhe o ponto de contato (para onde a bola vai) e o smash para esta bola. */
-  private plan(m: PpMatch, p: number, c: Crossing): void {
+  private plan(m: PpMatch, p: number, c: PpCrossing): void {
     const lv = this.level;
     const opp = m.pad(1 - p);
     // quer mandar para o lado oposto de onde o adversário está, com mais ou menos capricho

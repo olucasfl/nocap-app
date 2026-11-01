@@ -1,0 +1,87 @@
+/* Tema do fim do Ping Fox!: mesa azul, bolinhas quicando e placar grande (spec 055). */
+.fz[data-theme='png'] .fz-head {
+  background: #cdd9ff;
+}
+.fz[data-theme='png'] .fz-card[data-tone='win'] .fz-head {
+  background: #ffd23f;
+}
+.pnf-ball {
+  position: absolute;
+  bottom: -4px;
+  left: calc(var(--k) * 17% + 6%);
+  width: 18px;
+  height: 18px;
+  border: 3px solid #1b1535;
+  border-radius: 50%;
+  background: #fff;
+  opacity: 0.6;
+  animation: pnf-bounce 1.6s ease-in-out infinite;
+  animation-delay: calc(var(--k) * 210ms);
+}
+.pnf-ball:nth-child(even) {
+  background: #ff7d26;
+}
+@keyframes pnf-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-70px);
+  }
+}
+.pnf-board {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+  background: #2f5bff;
+  color: #fff;
+  box-shadow: 0 4px 0 var(--ink);
+}
+.pnf-side {
+  display: grid;
+  justify-items: center;
+  gap: 0;
+  min-width: 0;
+  opacity: 0.8;
+}
+.pnf-side.is-winner {
+  opacity: 1;
+}
+.pnf-side small {
+  max-width: 100%;
+  font: 800 12px var(--font-display, system-ui);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+.pnf-side b {
+  font: 900 clamp(52px, 12vw, 92px) / 1 var(--font-display, system-ui);
+  font-variant-numeric: tabular-nums;
+}
+.pnf-side.is-winner b {
+  color: #ffd23f;
+}
+.pnf-vs {
+  font: 900 26px var(--font-display, system-ui);
+  opacity: 0.7;
+}
+@media (orientation: landscape) and (max-height: 520px) {
+  .pnf-side b {
+    font-size: clamp(36px, 9vw, 56px);
+  }
+  .pnf-board {
+    padding: 6px 10px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pnf-ball {
+    animation: none;
+    bottom: 6px;
+  }
+}

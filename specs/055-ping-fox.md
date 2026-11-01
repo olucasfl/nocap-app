@@ -1,6 +1,6 @@
 # Spec 055: Ping Fox! (pingue-pongue 1x1 das raposas)
 
-Pedido do Lucas em 01/11/2026. Status: **em andamento (fase 1: motor e treino offline; fase 2: sala online).**
+Pedido do Lucas em 01/11/2026. Status: **em andamento. Fases 1 e 2 (motor e treino offline no Fox Cap!) prontas; falta a fase 3 (sala online).**
 
 ## 1. O que o Lucas pediu
 
@@ -78,3 +78,11 @@ Mesa de 4,2 m (eixo z) por 2,3 m (eixo x), tampo a 1,0 m, rede de 0,3 m, bola de
 ## 8. Testes
 
 Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutua), rede, regras de falta e ponto, saque, troca de saque, fim de partida, determinismo (mesma entrada, mesmo resultado), bot contra bot sem travar. Web: e2e do treino nos tamanhos de tela.
+
+## 9. Como ficou (fases 1 e 2, 01/11/2026)
+
+- **Motor** em `packages/games/src/pingpong` (`constants`, `ball`, `paddle`, `assist`, `predict`, `match`, `bot`, 16 testes): física da bola com arrasto, Magnus, quique com troca de efeito por velocidade, rede e chão; batida com face curva, atrito da borracha, levantada e ajuste de abertura para a bola que desce; ajuda de mira só para erro pequeno (±20° de inclinação, ±10° de direção); regras, saque (falta repete, 2ª falta dá o ponto), placar, bots Fácil/Médio/Difícil que usam a mesma física para escolher o ponto de contato.
+- **Medido em partidas bot contra bot** (6 partidas por nível): troca média de 5 a 6 batidas (máx. 14), bola a ~45 km/h de média no número do jogo e até ~95 no smash; o Difícil vence o Fácil em 5 de 6.
+- **Web** em `apps/web/src/games/pingpong`: `PingScene` (Three.js: mesa arredondada com linhas, rede com malha, raquete de dois lados com borracha e cabo, bola com faixa de giro e brilho, raposa do outro lado com braço, sombra da bola no tampo, anel de quique, anel de alcance, rastro, faíscas), `PingPlay` (passo fixo de 60 Hz com interpolação entre ticks para telas de 120/144 Hz; mouse ou dedo projetado no plano da raquete; clique ou toque saca; botão direito, Espaço ou botão na tela dão smash; câmera lenta no ponto decisivo), `PingFinal` (tela de fim), `PingPicker` (nível), som em `lib/ping-audio.ts`.
+- **Fox Cap!**: cartão "Ping Fox! Treino" (offline) com "Como jogar?".
+- **E2E** `e2e/ping.spec.ts`: abre e saca; quem segue o anel devolve a bola; celular em pé, deitado e deitado pequeno (HUD cabe, o dedo leva a raquete); tela de fim nos 4 tamanhos.

@@ -22,6 +22,15 @@ export const HOW_TO_PLAY = {
     ],
     keys: 'Computador: W A S D, Espaço pula (de novo no ar, pulo duplo), mouse gira a câmera. Celular: joystick e dedo à direita.',
   },
+  pingpong: {
+    title: 'Ping Fox! Treino',
+    points: [
+      'Pingue-pongue 1 contra 1 até 11 pontos (com 2 de diferença). A bola precisa quicar uma vez na sua metade antes de você rebater.',
+      'A raquete vai para onde o mouse (ou o dedo) está, e a batida é automática. Bata com a borda para mandar a bola para o lado; mexa a raquete para dar efeito.',
+      'Segure o smash na hora da batida: mais força, mas a ajuda de mira cai pela metade. O anel verde mostra por onde a bola vai passar.',
+    ],
+    keys: 'Computador: mouse move, clique saca, botão direito (ou Espaço) segurado dá smash. Celular: arraste, toque para sacar e segure Smash.',
+  },
   bola: {
     title: 'Fut Fox Treino',
     points: [

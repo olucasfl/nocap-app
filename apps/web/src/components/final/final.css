@@ -508,3 +508,9 @@
     padding: 6px 12px 8px;
   }
 }
+
+.fz[data-theme='png'] {
+  --fa: #ff7d26;
+  --fb: #2f5bff;
+  --fhead: #cdd9ff;
+}

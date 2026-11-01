@@ -851,6 +851,51 @@ export function DesmoronaTrainingArt() {
   );
 }
 
+/** Ping Fox!: a mesa azul vista de trás, a rede, a bola no ar e a raquete da raposa. */
+export function PingArt() {
+  return (
+    <svg className="ha ha-ping" viewBox="0 0 200 150" aria-hidden="true">
+      <rect width="200" height="150" fill="#cdd9ff" />
+      <ellipse cx="100" cy="132" rx="84" ry="10" fill="#1b1535" opacity="0.22" />
+      <g transform="translate(76 4) scale(0.34)">
+        <FoxBody />
+      </g>
+      <path d="M52 124 L148 124 L130 70 L70 70 Z" fill="#2f5bff" {...stroke} strokeWidth={3.5} />
+      <path
+        d="M56 118 L144 118 L127 74 L73 74 Z"
+        fill="none"
+        stroke="#fff"
+        strokeWidth="2"
+        opacity="0.9"
+      />
+      <line x1="100" y1="74" x2="100" y2="118" stroke="#fff" strokeWidth="2" opacity="0.9" />
+      <path d="M62 98 L138 98 L134 84 L66 84 Z" fill="#1b1535" opacity="0.18" />
+      <line x1="62" y1="98" x2="138" y2="98" stroke="#fff" strokeWidth="3" />
+      <line x1="64" y1="84" x2="136" y2="84" stroke="#fff" strokeWidth="1.5" opacity="0.8" />
+      <rect x="58" y="82" width="5" height="19" rx="2" fill="#1b1535" />
+      <rect x="137" y="82" width="5" height="19" rx="2" fill="#1b1535" />
+      <g className="ha-ball-ping">
+        <circle cx="120" cy="52" r="8" fill="#fff" {...stroke} strokeWidth={3} />
+        <path d="M113 51 Q120 56 127 51" fill="none" stroke="#ff7d26" strokeWidth="3" />
+      </g>
+      <g transform="translate(36 96) rotate(-18)">
+        <rect
+          x="-3"
+          y="14"
+          width="6"
+          height="22"
+          rx="2"
+          fill="#c58a4a"
+          {...stroke}
+          strokeWidth={2.5}
+        />
+        <circle cx="0" cy="0" r="17" fill="#e3262f" {...stroke} strokeWidth={3.5} />
+        <circle cx="0" cy="0" r="10" fill="#ff5a63" opacity="0.6" />
+      </g>
+    </svg>
+  );
+}
+
 /** Fut Fox: campo verde visto de cima, bola e uma raposa. */
 export function BolaArt() {
   return (

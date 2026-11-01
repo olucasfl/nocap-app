@@ -1,0 +1,420 @@
+/* Ping Fox! (spec 055): tela cheia da partida, HUD e escolha do nível. Só transform e opacity animam; sem emoji. */
+.png-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: #15102e;
+}
+.png-play {
+  touch-action: none;
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  background: #15102e;
+}
+.png-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.png-zone {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
+  cursor: none;
+}
+.png-hud {
+  position: absolute;
+  top: max(10px, env(safe-area-inset-top));
+  left: max(10px, env(safe-area-inset-left));
+  right: max(10px, env(safe-area-inset-right));
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  pointer-events: none;
+}
+.png-hud-end {
+  position: absolute;
+  right: 0;
+  top: 0;
+  display: flex;
+  gap: 8px;
+  pointer-events: auto;
+}
+.png-score {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 16px;
+  border: 3px solid #1b1535;
+  border-radius: 999px;
+  background: #fff;
+  color: #1b1535;
+  box-shadow: 0 4px 0 #1b1535;
+}
+.png-side {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.png-side small {
+  max-width: 22vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 800 11px var(--font-display, system-ui);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.png-side b {
+  min-width: 1.1ch;
+  text-align: center;
+  font: 900 30px/1 var(--font-display, system-ui);
+  font-variant-numeric: tabular-nums;
+}
+.png-side i {
+  width: 12px;
+  height: 12px;
+  border: 2px solid #1b1535;
+  border-radius: 50%;
+  background: transparent;
+  opacity: 0.25;
+}
+.png-side.is-serving i {
+  background: #ffd23f;
+  opacity: 1;
+}
+.png-sep {
+  font: 900 26px var(--font-display, system-ui);
+  opacity: 0.5;
+}
+.png-rally {
+  position: absolute;
+  top: calc(max(10px, env(safe-area-inset-top)) + 58px);
+  left: 50%;
+  translate: -50% 0;
+  padding: 4px 14px;
+  border: 3px solid #1b1535;
+  border-radius: 999px;
+  background: #ffe27a;
+  color: #1b1535;
+  font: 800 13px var(--font-display, system-ui);
+  text-transform: uppercase;
+  animation: png-pop 0.25s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+  pointer-events: none;
+}
+.png-rally b {
+  font-size: 18px;
+}
+.png-speed {
+  position: absolute;
+  top: calc(max(10px, env(safe-area-inset-top)) + 62px);
+  right: max(14px, env(safe-area-inset-right));
+  display: grid;
+  justify-items: end;
+  color: #fff;
+  font: 800 13px var(--font-display, system-ui);
+  text-shadow: 0 2px 0 #1b1535;
+  animation: png-speed 1.1s ease-out both;
+  pointer-events: none;
+}
+.png-speed b {
+  font-size: 30px;
+  font-variant-numeric: tabular-nums;
+}
+.png-speed.is-mine b {
+  color: #ffd23f;
+}
+.png-speed em {
+  font-style: normal;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  color: #ffd23f;
+}
+.png-banner {
+  position: absolute;
+  top: 17%;
+  left: 50%;
+  translate: -50% 0;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 10px 22px;
+  border: 4px solid #1b1535;
+  border-radius: 16px;
+  background: #fff;
+  color: #1b1535;
+  text-align: center;
+  box-shadow: 0 6px 0 #1b1535;
+  animation: png-banner 1.6s ease-out both;
+  pointer-events: none;
+  max-width: 90vw;
+}
+.png-banner b {
+  font: 900 clamp(20px, 5vw, 32px) / 1.05 var(--font-display, system-ui);
+  text-transform: uppercase;
+}
+.png-banner span {
+  font: 700 13px var(--font-body, system-ui);
+  opacity: 0.8;
+}
+.png-banner.is-win {
+  background: #ffd23f;
+}
+.png-banner.is-lose {
+  background: #e9e7f7;
+}
+.png-count {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font: 900 clamp(90px, 22vw, 180px) / 1 var(--font-display, system-ui);
+  color: #fff;
+  text-shadow: 0 8px 0 #1b1535;
+  pointer-events: none;
+  animation: png-count 0.7s ease-out infinite;
+}
+.png-serve-hint {
+  position: absolute;
+  left: 50%;
+  bottom: max(26px, calc(env(safe-area-inset-bottom) + 20px));
+  translate: -50% 0;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 8px 18px;
+  border: 3px solid #1b1535;
+  border-radius: 14px;
+  background: #ffd23f;
+  color: #1b1535;
+  text-align: center;
+  pointer-events: none;
+  animation: png-hint 1.1s ease-in-out infinite alternate;
+}
+.png-serve-hint.is-them {
+  background: #fff;
+  animation: none;
+}
+.png-serve-hint b {
+  font: 900 16px var(--font-display, system-ui);
+  text-transform: uppercase;
+}
+.png-serve-hint span {
+  font: 700 12px var(--font-body, system-ui);
+}
+.png-smash {
+  position: absolute;
+  right: max(18px, env(safe-area-inset-right));
+  bottom: max(20px, env(safe-area-inset-bottom));
+  width: 92px;
+  height: 92px;
+  border: 4px solid #1b1535;
+  border-radius: 50%;
+  background: #ff7d26;
+  color: #1b1535;
+  font: 900 15px var(--font-display, system-ui);
+  text-transform: uppercase;
+  box-shadow: 0 5px 0 #1b1535;
+  touch-action: none;
+  cursor: pointer;
+}
+.png-smash.is-on {
+  transform: translateY(4px);
+  box-shadow: 0 1px 0 #1b1535;
+  background: #ffb84d;
+}
+
+@keyframes png-pop {
+  from {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+}
+@keyframes png-speed {
+  0% {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+  12% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes png-banner {
+  0% {
+    transform: translateY(14px) scale(0.9);
+    opacity: 0;
+  }
+  10%,
+  80% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-8px) scale(1);
+    opacity: 0;
+  }
+}
+@keyframes png-count {
+  from {
+    transform: scale(1.25);
+    opacity: 0.2;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+@keyframes png-hint {
+  to {
+    transform: translateY(-4px);
+  }
+}
+
+/* Escolha do nível */
+.png-pick {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  padding: 12px;
+  background: rgba(10, 14, 36, 0.62);
+}
+.png-pick-card {
+  width: min(440px, 100%);
+  max-height: 100%;
+  overflow: auto;
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+  border: 4px solid #1b1535;
+  border-radius: 18px;
+  background: #fff;
+  color: #1b1535;
+  box-shadow: 0 6px 0 #1b1535;
+}
+.png-pick-card h2 {
+  margin: 0;
+  font: 900 26px var(--font-display, system-ui);
+  text-transform: uppercase;
+}
+.png-pick-card p {
+  margin: 0;
+  font-size: 12px;
+  opacity: 0.7;
+}
+.png-levels {
+  display: grid;
+  gap: 8px;
+}
+.png-level {
+  display: grid;
+  gap: 2px;
+  padding: 10px 14px;
+  border: 3px solid #1b1535;
+  border-radius: 12px;
+  background: #f1f1fa;
+  color: #1b1535;
+  text-align: left;
+  cursor: pointer;
+}
+.png-level b {
+  font: 900 18px var(--font-display, system-ui);
+  text-transform: uppercase;
+}
+.png-level span {
+  font: 600 13px var(--font-body, system-ui);
+  opacity: 0.8;
+}
+.png-level.is-on {
+  background: #ffd23f;
+  box-shadow: 0 4px 0 #1b1535;
+}
+.png-pick-btns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+}
+.png-btn {
+  min-height: 48px;
+  border: 3px solid #1b1535;
+  border-radius: 12px;
+  background: #ff7d26;
+  color: #1b1535;
+  font: 900 16px var(--font-display, system-ui);
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 4px 0 #1b1535;
+}
+.png-btn.is-ghost {
+  background: #fff;
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .png-score {
+    padding: 3px 12px;
+  }
+  .png-side b {
+    font-size: 24px;
+  }
+  .png-smash {
+    width: 74px;
+    height: 74px;
+    font-size: 13px;
+  }
+  .png-banner {
+    top: 22%;
+    padding: 6px 16px;
+  }
+  .png-serve-hint {
+    bottom: 12px;
+    padding: 4px 14px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .png-rally,
+  .png-speed,
+  .png-banner,
+  .png-count,
+  .png-serve-hint {
+    animation: none;
+  }
+  .png-speed {
+    opacity: 1;
+  }
+}
+
+/* Telas estreitas (celular em pé): placar compacto à esquerda, dica de saque fora do botão de smash */
+@media (max-width: 560px) {
+  .png-hud {
+    justify-content: flex-start;
+  }
+  .png-score {
+    gap: 6px;
+    padding: 4px 12px;
+  }
+  .png-side small {
+    display: none;
+  }
+  .png-side b {
+    font-size: 26px;
+  }
+  .png-serve-hint {
+    left: max(12px, env(safe-area-inset-left));
+    translate: none;
+    max-width: calc(100vw - 150px);
+  }
+}
