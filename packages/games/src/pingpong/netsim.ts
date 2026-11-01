@@ -1,4 +1,12 @@
-import { PP_PAD_R, PP_PAD_X, PP_SERVE_AUTO, PP_SPIN_MAX, PP_TICK, PP_V_MAX } from './constants';
+import {
+  PP_PAD_R,
+  PP_PAD_X,
+  PP_REACH_MAX,
+  PP_SERVE_AUTO,
+  PP_SPIN_MAX,
+  PP_TICK,
+  PP_V_MAX,
+} from './constants';
 import {
   PpMatch,
   ppIdleInput,
@@ -221,7 +229,8 @@ export class PpNetSim {
     if (s.expect !== ev.p) return false;
     if (!ev.serve && (s.bounces[ev.p] ?? 0) < 1) return false;
     const d = Math.hypot(ev.b[0]! - s.ball.x, ev.b[1]! - s.ball.y, ev.b[2]! - s.ball.z);
-    if (d > PP_PAD_R + 0.5) return false;
+    // a raquete avança até PP_REACH_MAX do plano de espera: o contato pode estar um pouco mais perto da rede
+    if (d > PP_PAD_R + PP_REACH_MAX + 0.5) return false;
     if (Math.hypot(ev.b[3]!, ev.b[4]!, ev.b[5]!) > PP_V_MAX * 1.1) return false;
     if (Math.hypot(ev.b[6]!, ev.b[7]!, ev.b[8]!) > PP_SPIN_MAX * 1.1) return false;
     return true;
@@ -251,7 +260,6 @@ export function ppParseNetEvent(v: unknown): PpNetEvent | null {
     smash: e.smash === true,
     kmh: Math.round(e.kmh),
     quality: q,
-    assisted: e.assisted === true,
     spin: e.spin,
     b: e.b as number[],
   };

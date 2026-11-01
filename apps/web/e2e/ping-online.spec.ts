@@ -12,59 +12,36 @@ test.skip(!process.env.E2E_ROOMS, 'precisa do servidor de salas (E2E_ROOMS=1)');
 test.beforeEach(({ page: _page }, info) => {
   test.skip(info.project.name !== 'desktop', 'um projeto basta');
 });
-test.setTimeout(180_000);
+test.setTimeout(240_000);
 
 async function nick(page: Page, name: string) {
   await page.getByRole('dialog').locator('input').first().fill(name);
   await page.getByRole('button', { name: 'Entrar na sala' }).click();
 }
 
-/** O "jogador": segue o anel de alcance e saca quando é a vez dele. */
+/** O "jogador": um bot do próprio jogo no lugar do mouse (cada janela joga um lado). */
 const drive = (page: Page) =>
   page.evaluate(() => {
-    const zone = document.querySelector('.png-zone') as HTMLElement;
-    const r = zone.getBoundingClientRect();
-    const fire = (type: string, x: number, y: number, extra: PointerEventInit = {}) =>
-      zone.dispatchEvent(
-        new PointerEvent(type, {
-          clientX: x,
-          clientY: y,
-          pointerType: 'mouse',
-          bubbles: true,
-          pointerId: 1,
-          ...extra,
-        }),
-      );
     const w = window as unknown as {
       __ping: {
-        match: { phase: string; server: number; lastHitter: number };
+        match: { lastHitter: number };
         net: { localPlayer: number };
-        scene: {
-          reticle(): { x: number; y: number } | null;
-          project(x: number, y: number, z: number): { nx: number; ny: number };
-        };
+        Bot: new (lv: unknown, rng: () => number) => { input(m: unknown, p: number): unknown };
+        levels: Record<string, unknown>;
       };
+      __pingForce?: unknown;
       __hits: number;
     };
+    const g = w.__ping;
+    const me = g.net.localPlayer;
+    const bot = new g.Bot(g.levels.medio, Math.random);
     w.__hits = 0;
     let last = -1;
     setInterval(() => {
-      const g = w.__ping;
-      if (!g?.net) return;
-      const m = g.match;
-      const me = g.net.localPlayer;
-      const tgt = g.scene.reticle();
-      if (tgt) {
-        const q = g.scene.project(tgt.x, tgt.y, 2.45);
-        fire('pointermove', r.left + q.nx * r.width, r.top + q.ny * r.height);
-      } else if (m.phase === 'serve' && m.server === me) {
-        const q = g.scene.project(0, 1.35, 2.45);
-        fire('pointermove', r.left + q.nx * r.width, r.top + q.ny * r.height);
-        fire('pointerdown', r.left + q.nx * r.width, r.top + q.ny * r.height, { button: 0 });
-      }
-      if (m.lastHitter === me && last !== me) w.__hits++;
-      last = m.lastHitter;
-    }, 40);
+      w.__pingForce = bot.input(g.match, me);
+      if (g.match.lastHitter === me && last !== me) w.__hits++;
+      last = g.match.lastHitter;
+    }, 16);
   });
 
 const read = (page: Page) =>
@@ -118,13 +95,13 @@ test('duas janelas jogam pela sala: as duas telas andam iguais e as batidas dos 
 
   await drive(A);
   await drive(B);
-  await A.waitForTimeout(25_000);
+  await A.waitForTimeout(40_000);
   const [ra, rb] = await Promise.all([read(A), read(B)]);
   // os dois aparelhos estão na mesma partida (mesmo placar, mesma troca) e os dois bateram na bola
   expect(ra.score, JSON.stringify({ ra, rb })).toEqual(rb.score);
   expect(Math.abs(ra.tick - rb.tick)).toBeLessThan(30);
-  expect(ra.hits).toBeGreaterThanOrEqual(4);
-  expect(rb.hits).toBeGreaterThanOrEqual(4);
+  expect(ra.hits).toBeGreaterThanOrEqual(3);
+  expect(rb.hits).toBeGreaterThanOrEqual(3);
   // quem joga do lado de lá vê a mesa como se estivesse perto da câmera: o nome do outro aparece no placar
   await expect(B.getByTestId('png-score')).toContainText('Ana');
   await expect(A.getByTestId('png-score')).toContainText('Bia');
@@ -136,7 +113,7 @@ test('duas janelas jogam pela sala: as duas telas andam iguais e as batidas dos 
     () => (window as unknown as { __ping?: { net: unknown } }).__ping?.net != null,
   );
   await drive(B);
-  await B.waitForTimeout(12_000);
+  await B.waitForTimeout(25_000);
   const [pa, pb] = await Promise.all([read(A), read(B)]);
   expect(pb.score, JSON.stringify({ pa, pb })).toEqual(pa.score);
   expect(Math.abs(pa.tick - pb.tick)).toBeLessThan(30);

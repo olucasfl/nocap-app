@@ -90,7 +90,7 @@ export const MODES: Record<RoomGame, { id: string; label: string; note: string }
     {
       id: 'classico',
       label: 'Pingue-pongue',
-      note: 'Pingue-pongue 1 contra 1 até 11 pontos (2 de diferença). Os 2 primeiros da sala jogam e os outros assistem. A raquete vai para onde você aponta, a batida é automática, e o efeito vem do movimento. Sem ranking.',
+      note: 'Pingue-pongue 1 contra 1 até 11 pontos (2 de diferença). Os 2 primeiros da sala jogam e os outros assistem. A raquete segue a sua mão e bate na bola de verdade: mais rápido, mais forte; de baixo para cima levanta; de cima para baixo desce com efeito. Sem ranking.',
     },
   ],
   bola: [

@@ -9,7 +9,6 @@ import {
   type PpBall,
 } from './ball';
 import {
-  PP_L,
   PP_PAD_R,
   PP_PAD_SPEED,
   PP_PAD_STIFF,
@@ -21,31 +20,86 @@ import {
   PP_POINTS,
   PP_R,
   PP_RALLY_MAX,
+  PP_REACH_DEAD,
+  PP_REACH_FALL,
+  PP_REACH_GAIN,
+  PP_REACH_MAX,
+  PP_REACH_RISE,
+  PP_REACH_SERVE,
   PP_SERVE_AUTO,
+  PP_SERVE_FRONT,
   PP_SUB,
   PP_TICK,
   PP_TOSS_V,
   PP_TOSS_Y,
+  PP_VZ_MAX,
 } from './constants';
 import { ppPaddleHit, type PpHitQuality } from './paddle';
 
-/** O que cada jogador manda por tick: para onde a raquete vai (plano x, y), smash e saque (borda de subida). */
+/**
+ * Uma batida "pronta" (só para os bots): a velocidade que a mão teria na hora do contato. Uma pessoa não manda isto: a
+ * velocidade da raquete dela vem do movimento do ponteiro.
+ */
+export interface PpSwing {
+  vx: number;
+  vy: number;
+  /** Para a frente, em direção à rede. */
+  vz: number;
+  /** Se vier, o alcance da raquete neste tick (no saque o bot estende a raquete até a bola). */
+  reach?: number;
+}
+
+/** O que cada jogador manda por tick: para onde a raquete vai (plano x, y) e saque (borda de subida). */
 export interface PpInput {
   x: number;
   y: number;
-  smash: boolean;
   serve: boolean;
+  swing?: PpSwing;
 }
 
-export const ppIdleInput = (): PpInput => ({ x: 0, y: 1.3, smash: false, serve: false });
+export const ppIdleInput = (): PpInput => ({ x: 0, y: 1.3, serve: false });
 
 export interface PpPaddle {
   x: number;
   y: number;
   vx: number;
   vy: number;
-  /** 0 a 1: animação da batida (só para desenhar). */
+  /** Quanto a raquete avançou para a frente do plano de espera (m); cresce com a rapidez da mão. */
+  reach: number;
+  /** Velocidade para a frente (m/s). */
+  vz: number;
+  /** 0 a 1: pulso depois de uma batida (só para desenhar). */
   swing: number;
+}
+
+/**
+ * A mão segue o ponteiro como uma mola com velocidade limitada, e o alcance para a frente acompanha a rapidez dela:
+ * parada, a raquete fica no plano de espera; mexida rápido, ela avança e leva a bola junto. `minReach` mantém a raquete
+ * um pouco adiantada (quem vai sacar). Usada pela partida e para suavizar a raquete do outro jogador na rede.
+ */
+export function ppPadStep(pad: PpPaddle, tx: number, ty: number, dt: number, minReach = 0): void {
+  const cx = Math.max(-PP_PAD_X, Math.min(PP_PAD_X, tx));
+  const cy = Math.max(PP_PAD_Y_MIN, Math.min(PP_PAD_Y_MAX, ty));
+  let vx = (cx - pad.x) * PP_PAD_STIFF;
+  let vy = (cy - pad.y) * PP_PAD_STIFF;
+  const sp = Math.hypot(vx, vy);
+  if (sp > PP_PAD_SPEED) {
+    vx *= PP_PAD_SPEED / sp;
+    vy *= PP_PAD_SPEED / sp;
+  }
+  pad.vx = vx;
+  pad.vy = vy;
+  pad.x += vx * dt;
+  pad.y += vy * dt;
+  const want = Math.max(
+    minReach,
+    Math.min(PP_REACH_MAX, (Math.hypot(vx, vy) - PP_REACH_DEAD) * PP_REACH_GAIN),
+  );
+  const rate = want > pad.reach ? PP_REACH_RISE : PP_REACH_FALL;
+  const next = pad.reach + (want - pad.reach) * Math.min(1, rate * dt);
+  pad.vz = Math.max(-PP_VZ_MAX, Math.min(PP_VZ_MAX, (next - pad.reach) / dt));
+  pad.reach = next;
+  pad.swing = Math.max(0, pad.swing - dt * 6);
 }
 
 export type PpPhase = 'serve' | 'toss' | 'rally' | 'point' | 'over';
@@ -57,7 +111,6 @@ export interface PpHitRecord {
   smash: boolean;
   kmh: number;
   quality: PpHitQuality;
-  assisted: boolean;
   spin: number;
   /** x, y, z, vx, vy, vz, wx, wy, wz da bola depois da batida. */
   b: number[];
@@ -90,7 +143,6 @@ export type PpEvent =
       kmh: number;
       smash: boolean;
       quality: PpHitQuality;
-      assisted: boolean;
       spin: number;
       serve: boolean;
     }
@@ -114,7 +166,6 @@ export function ppServerFor(first: number, a: number, b: number): number {
   return first ^ (Math.floor(total / 2) & 1);
 }
 
-const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 /** m/s do jogo em km/h do número que se mostra (a bola é maior que a real, então multiplica). */
 export const ppKmh = (ms: number) => Math.round(ms * 3.6 * 1.7);
 
@@ -125,8 +176,8 @@ export const ppKmh = (ms: number) => Math.round(ms * 3.6 * 1.7);
 export class PpMatch {
   readonly ball: PpBall = ppNewBall();
   readonly pads: [PpPaddle, PpPaddle] = [
-    { x: 0, y: 1.3, vx: 0, vy: 0, swing: 0 },
-    { x: 0, y: 1.3, vx: 0, vy: 0, swing: 0 },
+    { x: 0, y: 1.3, vx: 0, vy: 0, reach: 0, vz: 0, swing: 0 },
+    { x: 0, y: 1.3, vx: 0, vy: 0, reach: 0, vz: 0, swing: 0 },
   ];
   readonly score: [number, number] = [0, 0];
   phase: PpPhase = 'serve';
@@ -146,11 +197,15 @@ export class PpMatch {
   tick = 0;
   winner = -1;
   events: PpEvent[] = [];
-  /** 0 a 1: força da ajuda de mira de cada jogador. */
-  assist: [number, number] = [1, 1];
   private out = ppNewStepOut();
   private prev = ppNewBall();
-  private smashHeld: [boolean, boolean] = [false, false];
+  /** A raquete de cada um no começo do tick (x, y, alcance): os subpassos da bola interpolam daqui até o fim do tick. */
+  private before: [number, number, number][] = [
+    [0, 1.3, 0],
+    [0, 1.3, 0],
+  ];
+  /** Batida pronta que um bot pediu para este tick. */
+  private swingNow: [PpSwing | null, PpSwing | null] = [null, null];
   private serveWas: [boolean, boolean] = [false, false];
   /**
    * Modo rede (spec 055, fase 3): as batidas e o lançamento chegam como eventos (`applyHit`, `tossReq`); só o jogador
@@ -188,9 +243,9 @@ export class PpMatch {
     return this.lastHitter < 0 ? this.server : 1 - this.lastHitter;
   }
 
-  /** Posição da mão de quem saca (a bola pousa aqui antes do lançamento). */
+  /** Onde a bola fica na mão de quem saca: um pouco à frente da raquete (z). */
   handZ(p: number): number {
-    return PpMatch.sign(p) * (PP_L / 2 + 0.2);
+    return PpMatch.sign(p) * (PP_PAD_Z - PP_SERVE_FRONT);
   }
 
   private holdBall(): void {
@@ -205,21 +260,20 @@ export class PpMatch {
 
   private movePad(p: number, inp: PpInput): void {
     const pad = this.pad(p);
-    const tx = clamp(inp.x, -PP_PAD_X, PP_PAD_X);
-    const ty = clamp(inp.y, PP_PAD_Y_MIN, PP_PAD_Y_MAX);
-    // mola amortecida com velocidade limitada: a raquete segue o ponteiro sem "teletransportar"
-    let vx = (tx - pad.x) * PP_PAD_STIFF;
-    let vy = (ty - pad.y) * PP_PAD_STIFF;
-    const sp = Math.hypot(vx, vy);
-    if (sp > PP_PAD_SPEED) {
-      vx *= PP_PAD_SPEED / sp;
-      vy *= PP_PAD_SPEED / sp;
+    // quem vai sacar já estende a raquete um pouco: a bola fica ao alcance de um golpe curto
+    const stance =
+      p === this.server && (this.phase === 'serve' || this.phase === 'toss') ? PP_REACH_SERVE : 0;
+    ppPadStep(pad, inp.x, inp.y, PP_TICK, stance);
+    // um bot pede a batida pronta: a velocidade da mão no contato vem dele
+    const sw = inp.swing ?? null;
+    this.swingNow[p === 0 ? 0 : 1] = sw;
+    if (sw) {
+      pad.vx = sw.vx;
+      pad.vy = sw.vy;
+      pad.vz = sw.vz;
+      // o bot não "dispara" a raquete pela rapidez do cursor: o alcance é o de espera, ou o que ele mandar
+      pad.reach = sw.reach ?? stance;
     }
-    pad.vx = vx;
-    pad.vy = vy;
-    pad.x += vx * PP_TICK;
-    pad.y += vy * PP_TICK;
-    pad.swing = Math.max(0, pad.swing - PP_TICK * 6);
   }
 
   /** Um tick (1/60 s) com as entradas dos dois jogadores. */
@@ -228,7 +282,8 @@ export class PpMatch {
     this.t += PP_TICK;
     for (let p = 0; p < 2; p++) {
       const inp = p === 0 ? inputs[0] : inputs[1];
-      this.smashHeld[p === 0 ? 0 : 1] = inp.smash;
+      const pad = this.pad(p);
+      this.before[p === 0 ? 0 : 1] = [pad.x, pad.y, pad.reach];
       // na rede só a raquete de quem joga aqui se mexe pela entrada; a do outro vem do fluxo de raquetes
       if (!this.net || p === this.localPlayer) this.movePad(p, inp);
     }
@@ -266,7 +321,7 @@ export class PpMatch {
     this.tossReq = null;
     for (let i = 0; i < PP_SUB; i++) {
       if (this.phase !== 'toss' && this.phase !== 'rally') break;
-      this.subStep();
+      this.subStep(i);
     }
     if (this.phase === 'rally' && this.t > PP_RALLY_MAX) this.letReplay();
     if (this.phase === 'toss' && this.t > 4) this.serveFault(this.server);
@@ -301,7 +356,7 @@ export class PpMatch {
     }
   }
 
-  private subStep(): void {
+  private subStep(sub: number): void {
     const b = this.ball;
     ppCopyBall(b, this.prev);
     this.out.ev = 0;
@@ -317,70 +372,67 @@ export class PpMatch {
       this.onDead();
       return;
     }
-    if (this.net && (this.replay || this.localPlayer < 0)) return;
-    if (this.phase === 'toss') this.tryServeHit();
-    else this.tryReturn();
+    this.tryContact(sub);
   }
 
-  /** O saque: a bola que desce cruza a altura da raquete de quem saca, perto dela. */
-  private tryServeHit(): void {
-    const b = this.ball;
-    const p = this.server;
-    if (this.net && p !== this.localPlayer) return;
-    const pad = this.pad(p);
-    if (b.vy >= 0) return;
-    if (this.prev.y - PP_R < pad.y || b.y - PP_R >= pad.y) {
-      // só dispara quando passa por pad.y descendo
-      if (!(this.prev.y >= pad.y && b.y < pad.y)) return;
+  /**
+   * O contato da raquete com a bola, de verdade: o plano da raquete se move (avança com a mão) e a bola também; há batida
+   * quando um passa pelo outro (varredura, nunca atravessa) dentro do disco da raquete. No saque quem bate é quem saca,
+   * contra a bola lançada; depois, quem deve devolver, só depois de 1 quique na sua metade.
+   */
+  private tryContact(sub: number): void {
+    let p: number;
+    if (this.phase === 'toss') p = this.server;
+    else {
+      p = this.expect;
+      if ((this.bounces[p] ?? 0) < 1) return;
     }
-    const dx = b.x - pad.x;
-    if (Math.abs(dx) > PP_PAD_R + PP_R * 0.5) return;
-    this.hit(p, true);
-  }
-
-  /** A devolução: a bola cruza o plano da raquete de quem deve rebater, depois de 1 quique do seu lado. */
-  private tryReturn(): void {
-    const p = this.expect;
-    if (this.net && p !== this.localPlayer) return;
+    if (this.net && (this.replay || p !== this.localPlayer)) return;
     const s = PpMatch.sign(p);
-    if ((this.bounces[p] ?? 0) < 1) return;
+    const pad = this.pad(p);
+    const [x0, y0, r0] = this.before[p === 0 ? 0 : 1] as [number, number, number];
+    const k0 = sub / PP_SUB;
+    const k1 = (sub + 1) / PP_SUB;
+    const plane = (k: number) => s * (PP_PAD_Z - (r0 + (pad.reach - r0) * k));
     const b = this.ball;
     const pr = this.prev;
-    const plane = s * PP_PAD_Z;
-    if (!((pr.z - plane) * s < 0 && (b.z - plane) * s >= 0)) return;
-    const k = (plane - pr.z) / (b.z - pr.z);
-    const cx = pr.x + (b.x - pr.x) * k;
-    const cy = pr.y + (b.y - pr.y) * k;
-    const pad = this.pad(p);
-    if (Math.hypot(cx - pad.x, cy - pad.y) > PP_PAD_R + PP_R * 0.5) return;
+    const f0 = (pr.z - plane(k0)) * s;
+    const f1 = (b.z - plane(k1)) * s;
+    if (!(f0 < 0 && f1 >= 0)) return;
+    const t = f0 / (f0 - f1);
+    const k = k0 + (k1 - k0) * t;
+    const cx = pr.x + (b.x - pr.x) * t;
+    const cy = pr.y + (b.y - pr.y) * t;
+    const px = x0 + (pad.x - x0) * k;
+    const py = y0 + (pad.y - y0) * k;
+    if (Math.hypot(cx - px, cy - py) > PP_PAD_R + PP_R * 0.7) return;
     b.x = cx;
     b.y = cy;
-    b.z = plane;
-    this.hit(p, false);
+    // a bola sai da face (para o lado da rede), sem ficar presa dentro da raquete
+    b.z = plane(k) - s * 0.01;
+    this.hit(p, this.phase === 'toss', px, py);
   }
 
-  private hit(p: number, serve: boolean): void {
+  private hit(p: number, serve: boolean, px: number, py: number): void {
     const pad = this.pad(p);
-    const smash = p === 0 ? this.smashHeld[0] : this.smashHeld[1];
-    const info = ppPaddleHit(
-      this.ball,
-      p,
-      pad,
-      smash && !serve,
-      p === 0 ? this.assist[0] : this.assist[1],
-      serve,
-    );
+    const sw = this.swingNow[p === 0 ? 0 : 1];
+    const info = ppPaddleHit(this.ball, p, {
+      x: px,
+      y: py,
+      vx: sw ? sw.vx : pad.vx,
+      vy: sw ? sw.vy : pad.vy,
+      vz: sw ? sw.vz : pad.vz,
+    });
     pad.swing = 1;
     const kmh = ppKmh(info.speed);
-    this.commitHit(p, serve, smash && !serve, kmh, info.quality, info.assisted, info.spin);
+    this.commitHit(p, serve, info.smash, kmh, info.quality, info.spin);
     if (this.net) {
       this.pendingHit = {
         p,
         serve,
-        smash: smash && !serve,
+        smash: info.smash,
         kmh,
         quality: info.quality,
-        assisted: info.assisted,
         spin: info.spin,
         b: [],
       };
@@ -393,7 +445,6 @@ export class PpMatch {
     smash: boolean,
     kmh: number,
     quality: PpHitQuality,
-    assisted: boolean,
     spin: number,
   ): void {
     this.lastHitter = p;
@@ -404,7 +455,7 @@ export class PpMatch {
       this.phase = 'rally';
       this.t = 0;
     }
-    this.events.push({ type: 'hit', p, kmh, smash, quality, assisted, spin, serve });
+    this.events.push({ type: 'hit', p, kmh, smash, quality, spin, serve });
   }
 
   /** Aplica uma batida resolvida por quem bateu (vinda da rede ou do registro): a bola passa a ser a do registro. */
@@ -425,7 +476,7 @@ export class PpMatch {
       number,
     ];
     this.pad(r.p).swing = 1;
-    this.commitHit(r.p, r.serve, r.smash, r.kmh, r.quality, r.assisted, r.spin);
+    this.commitHit(r.p, r.serve, r.smash, r.kmh, r.quality, r.spin);
   }
 
   /** Foto do estado de agora (para voltar no tempo quando uma batida chega atrasada). */

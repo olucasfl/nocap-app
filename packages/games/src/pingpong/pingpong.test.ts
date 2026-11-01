@@ -2,9 +2,18 @@ import { describe, expect, it } from 'vitest';
 import { createRng } from '../core/rng';
 import { PP_EV_FLOOR, PP_EV_NET, PP_EV_TABLE, ppNewBall, ppNewStepOut, ppStepBall } from './ball';
 import { ppLanding } from './assist';
-import { PP_NET_H, PP_R, PP_TOP, PP_W } from './constants';
+import { PP_NET_H, PP_R, PP_TOP, PP_V_MAX, PP_VZ_MAX, PP_W } from './constants';
 import { PpBot, PP_BOT_LEVELS } from './bot';
-import { PpMatch, ppIdleInput, ppServerFor, type PpEvent, type PpInput } from './match';
+import { ppPaddleHit } from './paddle';
+import {
+  PpMatch,
+  ppIdleInput,
+  ppPadStep,
+  ppServerFor,
+  type PpEvent,
+  type PpInput,
+  type PpPaddle,
+} from './match';
 
 const out = ppNewStepOut();
 /** Passo até acontecer `bit` (ou acabar o tempo) e devolve quantos subpassos levou. */
@@ -131,8 +140,8 @@ describe('física da bola', () => {
   });
 });
 
-describe('ajuda de mira', () => {
-  it('uma bola boa passa direto; uma bola na rede por pouco é consertada', () => {
+describe('previsão de onde a bola cai', () => {
+  it('uma bola boa cai na mesa do outro lado; uma bola baixa demais bate na rede', () => {
     const good = ppNewBall();
     good.z = 2;
     good.y = 1.5;
@@ -185,16 +194,21 @@ describe('regras', () => {
     expect(ppServerFor(0, 11, 11)).toBe(0);
   });
 
-  it('o saque: lança, a raquete embaixo rebate e a bola vai para o lado de lá', () => {
+  it('o saque: a bola sobe, desce e a raquete que avança bate nela de verdade, mandando-a para o outro lado', () => {
     const m = new PpMatch(0);
-    const under = { ...ppIdleInput(), x: 0, y: 1.35 };
-    run(m, 5, under, ppIdleInput());
+    const hold = { ...ppIdleInput(), x: 0, y: 1.65 };
+    run(m, 5, hold, ppIdleInput());
     expect(m.phase).toBe('serve');
-    const toss = run(m, 3, { ...under, serve: true }, ppIdleInput());
+    const toss = run(m, 3, { ...hold, serve: true }, ppIdleInput());
     expect(toss.some((e) => e.type === 'toss')).toBe(true);
     let hit: PpEvent | undefined;
-    for (let i = 0; i < 120 && !hit; i++) {
-      m.step([under, ppIdleInput()]);
+    for (let i = 0; i < 150 && !hit; i++) {
+      // a mão espera a bola descer até a altura da raquete e então avança batendo para a frente e um pouco para cima
+      const go = m.ball.vy < 0 && m.ball.y <= 1.7;
+      m.step([
+        go ? { ...hold, swing: { vx: 0, vy: 3, vz: 4.5, reach: 0.34 } } : hold,
+        ppIdleInput(),
+      ]);
       hit = m.drain().find((e) => e.type === 'hit');
     }
     expect(hit && hit.type === 'hit' && hit.serve).toBe(true);
@@ -203,17 +217,15 @@ describe('regras', () => {
     expect(ppLanding(m.ball, 0).ok).toBe(true);
   });
 
-  it('saque que não é rebatido cai na própria mesa: falta, e na segunda falta é ponto do outro', () => {
+  it('saque em que a raquete não avança até a bola cai na própria mesa: falta, e na segunda falta é ponto do outro', () => {
     const m = new PpMatch(0);
-    const under = { ...ppIdleInput(), x: 0, y: 1.35 };
-    const away = { ...ppIdleInput(), x: 1.8, y: 1.35 };
+    const hold = { ...ppIdleInput(), x: 0, y: 1.65 };
     const faults: PpEvent[] = [];
     for (let n = 0; n < 2; n++) {
-      faults.push(...run(m, 3, under, ppIdleInput()));
-      faults.push(...run(m, 3, { ...under, serve: true }, ppIdleInput()));
-      // a raquete sai de baixo da bola logo depois do lançamento
-      faults.push(...run(m, 150, away, ppIdleInput()));
-      faults.push(...run(m, 3, under, ppIdleInput()));
+      faults.push(...run(m, 3, hold, ppIdleInput()));
+      faults.push(...run(m, 3, { ...hold, serve: true }, ppIdleInput()));
+      faults.push(...run(m, 150, hold, ppIdleInput()));
+      faults.push(...run(m, 3, hold, ppIdleInput()));
     }
     expect(faults.filter((e) => e.type === 'fault').length).toBe(2);
     const point = faults.find((e) => e.type === 'point');
@@ -245,6 +257,77 @@ describe('regras', () => {
     expect(a.m.score).toEqual(b.m.score);
     expect(a.m.tick).toBe(b.m.tick);
     expect(a.m.ball.x).toBe(b.m.ball.x);
+  });
+});
+
+describe('a batida de verdade', () => {
+  const incoming = () => {
+    const b = ppNewBall();
+    b.x = 0;
+    b.y = 1.3;
+    b.z = 2.45;
+    b.vz = 5;
+    b.vy = -1.5;
+    return b;
+  };
+  const hit = (vx: number, vy: number, vz: number) => {
+    const b = incoming();
+    const info = ppPaddleHit(b, 0, { x: 0, y: 1.3, vx, vy, vz });
+    return { b, info };
+  };
+
+  it('quanto mais rápido a raquete vai para a frente, mais rápido a bola vai (parada, devolve fraco)', () => {
+    const still = hit(0, 0, 0).info.speed;
+    const soft = hit(0, 0, 2.5).info.speed;
+    const hard = hit(0, 0, 6).info.speed;
+    expect(still).toBeLessThan(soft);
+    expect(soft).toBeLessThan(hard);
+    expect(still).toBeLessThan(6.5);
+  });
+
+  it('de baixo para cima levanta a bola (lob) e de cima para baixo a manda para baixo', () => {
+    const up = hit(0, 4, 2.5).b;
+    const flat = hit(0, 0, 2.5).b;
+    const down = hit(0, -4, 2.5).b;
+    expect(up.vy).toBeGreaterThan(flat.vy);
+    expect(flat.vy).toBeGreaterThan(down.vy);
+    expect(up.vy).toBeGreaterThan(1);
+    expect(down.vy).toBeLessThan(0);
+  });
+
+  it('o efeito vem do movimento: subir dá topspin (a bola mergulha) e descer dá backspin', () => {
+    const up = hit(0, 4, 3).b;
+    const down = hit(0, -4, 3).b;
+    expect(up.wx).toBeLessThan(0); // topspin para quem bate de perto da câmera
+    expect(down.wx).toBeGreaterThan(0);
+    expect(up.wx).toBeLessThan(down.wx);
+  });
+
+  it('o movimento para o lado vira a bola para o lado', () => {
+    const left = hit(-4, 1, 3).b;
+    const right = hit(4, 1, 3).b;
+    expect(right.vx).toBeGreaterThan(left.vx);
+    expect(Math.abs(right.vx)).toBeGreaterThan(0.3);
+  });
+
+  it('a bola nunca sai mais rápida que o limite, nem com a raquete a toda', () => {
+    const { info } = hit(8, 8, 12);
+    expect(info.speed).toBeLessThanOrEqual(PP_V_MAX + 1e-9);
+  });
+
+  it('a mão acompanha o ponteiro e o alcance cresce com a rapidez (parada, a raquete fica no plano de espera)', () => {
+    const slow: PpPaddle = { x: 0, y: 1.3, vx: 0, vy: 0, reach: 0, vz: 0, swing: 0 };
+    for (let i = 0; i < 20; i++) ppPadStep(slow, 0.2, 1.3, 1 / 60);
+    expect(slow.reach).toBeLessThan(0.05);
+    const fast: PpPaddle = { x: 0, y: 1.3, vx: 0, vy: 0, reach: 0, vz: 0, swing: 0 };
+    let peak = 0;
+    for (let i = 0; i < 12; i++) {
+      ppPadStep(fast, 0.2 * i, 1.3 + 0.12 * i, 1 / 60);
+      peak = Math.max(peak, fast.vz);
+    }
+    expect(fast.reach).toBeGreaterThan(0.25);
+    expect(peak).toBeGreaterThan(2);
+    expect(peak).toBeLessThanOrEqual(PP_VZ_MAX);
   });
 });
 

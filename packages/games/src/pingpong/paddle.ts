@@ -1,32 +1,29 @@
 import type { PpBall } from './ball';
 import {
+  PP_PAD_COUPLE,
   PP_PAD_E,
   PP_PAD_MU,
   PP_PAD_R,
-  PP_PUSH,
-  PP_LIFT,
-  PP_PUSH_SMASH,
-  PP_PUSH_SERVE,
-  PP_TILT_SERVE,
-  PP_ASSIST_SERVE,
   PP_R,
-  PP_TILT_SMASH,
-  PP_TILT_UP,
-  PP_TILT_X,
-  PP_TILT_Y,
-  PP_V_MAX,
-  PP_ASSIST,
-  PP_ASSIST_SMASH,
+  PP_SMASH_SPEED,
   PP_SPIN_MAX,
+  PP_TILT_BASE,
+  PP_TILT_OFF,
+  PP_TILT_VX,
+  PP_TILT_VY,
+  PP_V_MAX,
 } from './constants';
-import { ppAssist } from './assist';
 
-/** Raquete: onde está e com que velocidade se mexe (plano vertical x, y). */
+/**
+ * A raquete na hora da batida: onde está e com que velocidade se mexe. `vz` é a velocidade PARA A FRENTE (em direção à
+ * rede), sempre positiva quando a mão avança.
+ */
 export interface PpPaddleMotion {
   x: number;
   y: number;
   vx: number;
   vy: number;
+  vz: number;
 }
 
 export type PpHitQuality = 'edge' | 'normal' | 'sweet';
@@ -34,59 +31,58 @@ export type PpHitQuality = 'edge' | 'normal' | 'sweet';
 export interface PpHitInfo {
   /** Velocidade da bola depois da batida (m/s). */
   speed: number;
+  /** Bola rápida e descendo: o "smash" (só para o efeito e o som). */
   smash: boolean;
   quality: PpHitQuality;
-  /** A ajuda de mira corrigiu a batida. */
-  assisted: boolean;
-  /** Efeito em torno do eixo x depois da batida (rad/s): negativo = topspin para quem bate de perto da câmera. */
+  /** Efeito em torno do eixo x depois da batida (rad/s). */
   spin: number;
 }
 
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 
 /**
- * A batida: a face é um disco levemente curvo (o ponto de contato desvia a bola), a borracha tem restituição e atrito
- * (o movimento da raquete vira efeito, a mesma conta do quique) e o empurrão para a frente soma potência. Depois a
- * ajuda de mira conserta o que era falta por pouco. Altera `b` no lugar.
+ * Como a face fica pelo movimento da mão: subir abre a face (a bola sobe), descer fecha (a bola desce), e o movimento
+ * para o lado vira a face para o lado. Devolve a inclinação para cima (`pitch`) e para o lado (`yaw`), em radianos.
  */
-export function ppPaddleHit(
-  b: PpBall,
-  side: number,
-  pad: PpPaddleMotion,
-  smash: boolean,
-  assistScale = 1,
-  serve = false,
-): PpHitInfo {
+export function ppPaddleTilt(vx: number, vy: number): { pitch: number; yaw: number } {
+  return {
+    pitch: clamp(PP_TILT_BASE + PP_TILT_VY * clamp(vy, -8, 8), -0.5, 0.75),
+    yaw: clamp(PP_TILT_VX * clamp(vx, -8, 8), -0.35, 0.35),
+  };
+}
+
+/**
+ * A batida de verdade: a bola e a raquete (um disco com borracha) se encontram, e o resultado vem só da física. A
+ * velocidade da raquete (para a frente, para cima ou para baixo, para o lado) soma com a da bola; a face inclinada
+ * decide para onde a bola vai (para cima se a mão sobe, para baixo se desce); a borracha tem restituição e atrito, e o
+ * atrito com a mão passando pela bola vira efeito (a mesma conta do quique). Nada corrige a batida: descer demais vai na
+ * rede, subir demais sai da mesa. Altera `b` no lugar.
+ */
+export function ppPaddleHit(b: PpBall, side: number, pad: PpPaddleMotion): PpHitInfo {
   const forward = side === 0 ? -1 : 1;
   const ox = clamp((b.x - pad.x) / PP_PAD_R, -1.25, 1.25);
   const oy = clamp((b.y - pad.y) / PP_PAD_R, -1.25, 1.25);
-  let nx = PP_TILT_X * ox;
-  // quem rebate uma bola que desce abre a face para ela subir (a bola que sobe pede a face mais fechada)
-  let ny =
-    PP_TILT_UP +
-    0.07 * clamp(-b.vy / 3, -1, 1.5) +
-    PP_TILT_Y * oy +
-    0.03 * clamp(pad.vy, -4, 4) +
-    (smash ? PP_TILT_SMASH : 0) +
-    (serve ? PP_TILT_SERVE : 0);
-  let nz = forward;
+  const tilt = ppPaddleTilt(pad.vx, pad.vy);
+  // normal da face: para a rede, inclinada para cima (abertura) e para o lado, com um pouco de curva pelo contato
+  let nx = Math.sin(tilt.yaw) + PP_TILT_OFF * ox;
+  let ny = Math.sin(tilt.pitch) + PP_TILT_OFF * 0.5 * oy;
+  let nz = forward * Math.cos(tilt.pitch) * Math.cos(tilt.yaw);
   const nl = Math.hypot(nx, ny, nz);
   nx /= nl;
   ny /= nl;
   nz /= nl;
 
-  const push = serve ? PP_PUSH_SERVE : smash ? PP_PUSH_SMASH : PP_PUSH;
-  const pvx = pad.vx;
-  const pvy = pad.vy + (smash ? 0 : PP_LIFT);
-  const pvz = forward * push;
+  const pvx = pad.vx * PP_PAD_COUPLE;
+  const pvy = pad.vy * PP_PAD_COUPLE;
+  const pvz = forward * pad.vz * PP_PAD_COUPLE;
 
   // velocidade relativa à raquete
   let rx = b.vx - pvx;
   let ry = b.vy - pvy;
   let rz = b.vz - pvz;
   const rn = rx * nx + ry * ny + rz * nz;
-  // a bola vem na raquete: garante um mínimo de aproximação (bola que "foge" mais rápido que a raquete)
-  const vnEff = Math.min(rn, -0.8);
+  // a bola precisa vir de encontro à face (se a face já a persegue mais rápido, não há batida de verdade)
+  const vnEff = Math.min(rn, -0.3);
   const jn = -(1 + PP_PAD_E) * vnEff;
   const away = -PP_PAD_E * vnEff;
   rx += (away - rn) * nx;
@@ -117,34 +113,16 @@ export function ppPaddleHit(
     ry += jt * dy;
     rz += jt * dz;
     const k = jt / (0.4 * PP_R);
-    // w += -(k) (n x d)
     wx += -k * (ny * dz - nz * dy);
     wy += -k * (nz * dx - nx * dz);
     wz += -k * (nx * dy - ny * dx);
   }
 
-  // de volta ao referencial da mesa
   let vx = rx + pvx;
   let vy = ry + pvy;
   let vz = rz + pvz;
-
-  // qualidade pelo ponto de contato
   const off = Math.hypot(ox, oy);
-  let quality: PpHitQuality = 'normal';
-  if (off > 0.85) {
-    quality = 'edge';
-    vx *= 0.78;
-    vy *= 0.78;
-    vz *= 0.78;
-    wx *= 0.6;
-    wy *= 0.6;
-    wz *= 0.6;
-  } else if (off < 0.15) {
-    quality = 'sweet';
-    vx *= 1.06;
-    vy *= 1.06;
-    vz *= 1.06;
-  }
+  const quality: PpHitQuality = off > 0.85 ? 'edge' : off < 0.15 ? 'sweet' : 'normal';
   const sp = Math.hypot(vx, vy, vz);
   if (sp > PP_V_MAX) {
     const k = PP_V_MAX / sp;
@@ -165,17 +143,6 @@ export function ppPaddleHit(
   b.wx = wx;
   b.wy = wy;
   b.wz = wz;
-
-  const assisted = ppAssist(
-    b,
-    side,
-    (serve ? PP_ASSIST_SERVE : smash ? PP_ASSIST_SMASH : PP_ASSIST) * assistScale,
-  );
-  return {
-    speed: Math.hypot(b.vx, b.vy, b.vz),
-    smash,
-    quality,
-    assisted,
-    spin: b.wx,
-  };
+  const speed = Math.hypot(vx, vy, vz);
+  return { speed, smash: speed >= PP_SMASH_SPEED && vy < -1, quality, spin: wx };
 }

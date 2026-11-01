@@ -1,6 +1,6 @@
 # Spec 055: Ping Fox! (pingue-pongue 1x1 das raposas)
 
-Pedido do Lucas em 01/11/2026. Status: **em andamento. Fases 1, 2 e 3 (motor, treino offline e sala online 1x1 no Fox Cap!) prontas; falta jogar de verdade com amigos e no celular real para afinar velocidade e ajuda de mira.**
+Pedido do Lucas em 01/11/2026. Status: **em andamento. Fases 1, 2 e 3 (motor, treino offline e sala online 1x1 no Fox Cap!) prontas; a batida foi refeita em 02/11/2026 (seção 3); falta jogar de verdade com amigos e no celular real para afinar a faixa de acerto.**
 
 ## 1. O que o Lucas pediu
 
@@ -16,36 +16,42 @@ Pedido do Lucas em 01/11/2026. Status: **em andamento. Fases 1, 2 e 3 (motor, tr
 - **Visual:** Three.js, Pop Brutal (formas simples, contorno grosso, cores chapadas). Mesa, rede, raquetes e bola recebem o capricho; o cenário é um chão e um fundo liso.
 - **Partida:** 11 pontos com diferença de 2; o saque troca a cada 2 pontos (a cada 1 no empate em 10-10).
 
-## 3. Mecânica da batida (o coração do jogo)
+## 3. Mecânica da batida (refeita em 02/11/2026: a raquete bate na bola de verdade)
 
-Mesa de 4,2 m (eixo z) por 2,3 m (eixo x), tampo a 1,0 m, rede de 0,3 m, bola de raio 0,075 m, gravidade 9 m/s². Você fica atrás da ponta perto da câmera (jogador 0); o adversário, na ponta de lá.
+O Lucas pediu: **nada de "bater no símbolo da bola"**. A raquete tem que bater direto na bola, com física: jogar a raquete para a frente manda a bola rápido, deixar fraco manda fraco, bater de cima para baixo dá efeito e desce (pode ir na rede), de baixo para cima levanta (lob, pode sair), e dá para dar efeito. O saque tinha que ficar intuitivo, a bola não podia "subir do nada" e nada podia ser rápido a ponto de ser impossível.
+
+Mesa de 4,2 m (eixo z) por 2,3 m (eixo x), tampo a 1,0 m, rede de 0,24 m, bola de raio 0,075 m, gravidade 8 m/s². Você fica atrás da ponta perto da câmera (jogador 0); o adversário, na ponta de lá.
 
 ### 3.1 Controle
 
-- **A raquete segue o ponteiro** (mouse ou dedo): o ponteiro é projetado num plano vertical logo atrás da sua ponta da mesa, então a raquete aparece onde você aponta. No celular o plano fica uns 70 px acima do dedo, para o dedo não cobrir a raquete.
-- **A batida é automática:** quando a bola cruza o plano da raquete (teste de varredura, nunca atravessa) e o disco da raquete a alcança, ela é rebatida. O que você decide é **onde** a raquete está e **como ela se mexe**.
-- **Smash:** segurar o botão (clique direito, Espaço ou o botão na tela) na hora da batida dá potência e achata a bola, mas a ajuda de mira cai pela metade (mais risco).
-- **Saque:** um toque (clique, Espaço ou toque) lança a bola para cima; ela cai e é rebatida sozinha na altura da raquete. Mover a raquete para o lado antes da batida muda a direção.
+- **A raquete segue a mão** (mouse ou dedo): o ponteiro é projetado num plano vertical logo atrás da sua ponta da mesa, e a raquete vai até lá como uma mola com velocidade limitada (nunca teletransporta). **No celular o dedo é relativo**: a raquete anda o tanto que o dedo anda, a partir de onde ela estava (sem pular para onde o dedo encosta).
+- **Não há anel nem alvo.** A bola tem só a sombra no tampo. Quem bate é a raquete, de verdade: o disco da raquete encontra a bola e a física decide.
+- **"Jogar a raquete":** quanto mais rápido a mão se mexe, mais a raquete **avança para a frente** (alcance, até 0,7 m) e leva a bola junto. A velocidade da raquete (para a frente, para cima ou para baixo, para o lado) entra inteira na batida.
+- **Saque:** clique (ou toque, ou Espaço) lança a bola, que sobe uns 0,6 m e desce **na frente da raquete**; você bate nela passando a mão rápido para a frente. O melhor momento é no alto, quando a bola quase para. O saque cai direto na mesa do adversário.
+- Sem botão de smash: o smash é uma passada rápida de cima para baixo.
 
 ### 3.2 Física da bola
 
-- Gravidade, **arrasto** do ar e **efeito Magnus** (a bola com topspin mergulha, com backspin flutua, com efeito lateral curva).
-- **Quique na mesa** com restituição 0,88 e atrito que **troca spin por velocidade** (modelo de esfera sólida: o topspin acelera a bola ao quicar, o backspin freia).
-- **Rede:** a bola que bate na rede perde velocidade e cai do lado de onde veio.
+- Gravidade, **arrasto do ar** forte (a bolinha é leve: a bola rápida perde velocidade e a que sobe demais cai), **efeito Magnus** (topspin mergulha, backspin flutua, efeito lateral curva).
+- **Quique na mesa** com restituição 0,88 e atrito que troca efeito por velocidade (esfera sólida).
+- **Rede:** a bola que bate perde velocidade e cai do lado de onde veio.
 - Passo fixo de 1/240 s (4 subpassos por tick de 60 Hz), determinístico.
 
-### 3.3 Resposta da raquete
+### 3.3 A batida (nada corrige o resultado)
 
-- **Mira pelo ponto de contato:** a face é levemente "curva": bater com o lado direito da raquete manda para a direita, com o de cima manda para cima. Quanto mais longe do centro, mais a bola desvia.
-- **Efeito pelo movimento:** a velocidade da raquete na hora da batida (para cima = topspin, para baixo = backspin, para o lado = efeito lateral) passa pelo atrito da borracha para a bola. É a mesma conta do quique.
-- **Potência:** velocidade da raquete + empurrão fixo para a frente (maior no smash) + restituição da borracha 0,62. Borda da raquete (>85% do raio) rebate fraco; o miolo perfeito (<15%) dá um bônus pequeno.
-- **Ajuda de mira:** se a batida física ia dar falta (rede ou fora da mesa), o jogo procura a correção mais próxima de inclinação e direção; **só corrige pequenos erros** (até 14° de inclinação e 10° de direção com a ajuda cheia). Erro grande continua sendo falta. Quem bate bem não sente a ajuda.
+- **Contato por varredura:** o plano da raquete (que avança com a mão) e a bola se movem, e há batida quando um passa pelo outro dentro do disco (raio 0,32 m), sem atravessar nunca.
+- **Face inclinada pelo movimento:** subir abre a face (a bola sobe: lob), descer fecha (a bola desce), o movimento lateral vira a face para o lado, e o ponto de contato desvia um pouco (a borracha é levemente curva).
+- **Borracha:** restituição 0,62 e atrito 0,9; o atrito com a mão passando pela bola vira **efeito**: subir dá topspin, descer dá backspin. A raquete é leve: só 70% da velocidade da mão passa para a bola, o que alarga a margem de acerto.
+- **Limite:** a bola nunca sai a mais de 13 m/s (cerca de 80 no número que se mostra).
+- **Sem ajuda de mira, sem "levantada" automática:** descer demais vai na rede; subir demais ou bater forte demais sai da mesa. A região que acerta é uma faixa em diagonal (subir mais pede bater menos forte), com cerca de 2 m/s de folga.
+- **Medido (`pingpong.test.ts`):** parada, a raquete devolve fraco; mais rápido para a frente, mais rápida a bola; de baixo para cima levanta e dá topspin; de cima para baixo desce e dá backspin; o movimento para o lado vira a bola para o lado; a bola nunca passa do limite; a raquete só avança com a mão rápida. Uma "pessoa" programada que dá uma passada suave para cima e para a frente devolve cerca de metade das bolas do bot Fácil; a mão sem passada (devagar) quase não devolve.
 
 ### 3.4 Regras
 
 - Depois de cada batida a bola tem que quicar **primeiro na mesa do adversário**; quicar na sua é falta. O saque cai direto na mesa do adversário.
 - Quem devolve só pode bater **depois de 1 quique** na sua metade e antes do 2º. Antes do quique a raquete deixa a bola passar (sem voleio); se a bola for longe demais sem quicar, o ponto é de quem rebateu.
 - Bola que bate na rede e passa vale; bola que cai de volta no lado de quem bateu é falta.
+- Saque sem batida (a bola cai) é falta: a primeira repete, a segunda dá o ponto ao outro.
 - Rally de mais de 30 s sem resolver: ponto anulado e saque repetido (rede de segurança).
 
 ## 4. Rede (fase 3, pronta em 01/11/2026)
@@ -61,12 +67,12 @@ Mesa de 4,2 m (eixo z) por 2,3 m (eixo x), tampo a 1,0 m, rede de 0,3 m, bola de
 
 ## 5. Offline: bots
 
-3 dificuldades (Fácil, Médio, Difícil). O bot prevê onde a bola cruza o plano dele (mesma física), se move com velocidade limitada e atraso de reação, escolhe o lado para onde devolver e erra de propósito conforme o nível. Smash em bola alta.
+3 dificuldades (Fácil, Médio, Difícil). O bot prevê onde a bola cruza o plano dele (mesma física), se move com velocidade limitada e atraso de reação e **escolhe a batida** (a velocidade da mão: para cima ou para baixo, para o lado e para a frente) entre as que fazem a bola cair na mesa do outro lado, perto do canto livre; a força da mão varia conforme o nível e o Fácil não bate forte.
 
 ## 6. Câmera, gráficos e leitura da jogada
 
-- Câmera atrás da sua ponta, um pouco elevada, fixa; um leve deslocamento lateral acompanha a bola e o campo de visão abre no smash.
-- **Marcador de quique:** anel no tampo onde a bola vai quicar (como a marca no chão do Fut Fox) e **anel de alcance** no plano da raquete mostrando por onde a bola vai passar.
+- Câmera atrás da sua ponta, um pouco elevada, fixa; um leve deslocamento lateral acompanha a bola e o campo de visão abre nas bolas muito rápidas.
+- **Só a sombra da bola** no tampo e no chão para ler altura e lugar (nenhum anel nem alvo: a batida é da raquete na bola). A sua raquete é meio transparente para a bola continuar à vista quando passa por ela.
 - Bola com rastro de luz e linha de spin visível girando; amassa no quique.
 - **Banner de ponto** só com texto ("PONTO DE <NOME>") e velocidade da melhor batida em km/h.
 - Câmera lenta curta no ponto de set e no ponto da partida.
@@ -85,11 +91,11 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 
 ## 9. Como ficou (fases 1 e 2, 01/11/2026)
 
-- **Motor** em `packages/games/src/pingpong` (`constants`, `ball`, `paddle`, `assist`, `predict`, `match`, `bot`, 16 testes): física da bola com arrasto, Magnus, quique com troca de efeito por velocidade, rede e chão; batida com face curva, atrito da borracha, levantada e ajuste de abertura para a bola que desce; ajuda de mira só para erro pequeno (±20° de inclinação, ±10° de direção); regras, saque (falta repete, 2ª falta dá o ponto), placar, bots Fácil/Médio/Difícil que usam a mesma física para escolher o ponto de contato.
-- **Medido em partidas bot contra bot** (6 partidas por nível): troca média de 5 a 6 batidas (máx. 14), bola a ~45 km/h de média no número do jogo e até ~95 no smash; o Difícil vence o Fácil em 5 de 6.
-- **Web** em `apps/web/src/games/pingpong`: `PingScene` (Three.js: mesa arredondada com linhas, rede com malha, raquete de dois lados com borracha e cabo, bola com faixa de giro e brilho, raposa do outro lado com braço, sombra da bola no tampo, anel de quique, anel de alcance, rastro, faíscas), `PingPlay` (passo fixo de 60 Hz com interpolação entre ticks para telas de 120/144 Hz; mouse ou dedo projetado no plano da raquete; clique ou toque saca; botão direito, Espaço ou botão na tela dão smash; câmera lenta no ponto decisivo), `PingFinal` (tela de fim), `PingPicker` (nível), som em `lib/ping-audio.ts`.
+- **Motor** em `packages/games/src/pingpong` (`constants`, `ball`, `paddle`, `assist`, `predict`, `match`, `bot`, 16 testes): física da bola com arrasto, Magnus, quique com troca de efeito por velocidade, rede e chão; batida física (contato por varredura com a raquete que avança com a mão, face inclinada pelo movimento, restituição e atrito da borracha), sem ajuda de mira; regras, saque (falta repete, 2ª falta dá o ponto), placar, bots Fácil/Médio/Difícil que usam a mesma física para escolher o ponto de contato.
+- **Medido em partidas bot contra bot** (6 partidas por nível): o Difícil vence o Fácil em 5 de 6, as partidas terminam e há trocas de várias batidas; a velocidade da bola fica na faixa de 20 a 80 no número do jogo.
+- **Web** em `apps/web/src/games/pingpong`: `PingScene` (Three.js: mesa arredondada com linhas, rede com malha, raquete de dois lados com borracha e cabo que avança e se inclina com a mão, bola com faixa de giro e brilho, raposa do outro lado com braço, sombra da bola, rastro, faíscas), `PingPlay` (passo fixo de 60 Hz com interpolação entre ticks para telas de 120/144 Hz; mouse projetado no plano da raquete e dedo relativo; clique ou toque saca; câmera lenta no ponto decisivo), `PingFinal` (tela de fim), `PingPicker` (nível), som em `lib/ping-audio.ts`.
 - **Fox Cap!**: cartão "Ping Fox! Treino" (offline) com "Como jogar?".
-- **E2E** `e2e/ping.spec.ts`: abre e saca; quem segue o anel devolve a bola; celular em pé, deitado e deitado pequeno (HUD cabe, o dedo leva a raquete); tela de fim nos 4 tamanhos.
+- **E2E** `e2e/ping.spec.ts`: abre e saca; uma "pessoa" que dá a passada certa (de baixo para cima e para a frente) devolve a bola do bot; celular em pé, deitado e deitado pequeno (HUD cabe, o dedo leva a raquete); tela de fim nos 4 tamanhos.
 
 ## 10. Como ficou a sala (fase 3, 01/11/2026)
 

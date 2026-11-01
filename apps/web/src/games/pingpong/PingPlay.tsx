@@ -7,7 +7,9 @@ import {
   PpNetSim,
   createRng,
   ppIdleInput,
+  ppPadStep,
   ppParseNetEvent,
+  ppPredictCross,
   type PpBotName,
   type PpEvent,
   type PpInput,
@@ -24,33 +26,40 @@ import { PingScene } from './PingScene';
 import './ping.css';
 
 const TIPS_KEY = 'nocap-ping-tips';
-/** A raquete fica acima do dedo (celular) para o dedo não cobrir. */
-const TOUCH_LIFT = 0.5;
 
 const tipRows = (touch: boolean): TipRow[] =>
   touch
     ? [
-        { keys: <b className="gm-tag">Arraste</b>, text: 'A raquete vai para onde o dedo está' },
-        { keys: <b className="gm-tag">Toque</b>, text: 'Saca (quando for a sua vez)' },
         {
-          keys: <b className="gm-tag">Smash</b>,
-          text: 'Segure o botão na hora da batida: mais força, mais risco',
+          keys: <b className="gm-tag">Arraste</b>,
+          text: 'Mexa o dedo para mover a raquete (ela não pula de lugar)',
         },
         {
-          keys: <b className="gm-tag">Dica</b>,
-          text: 'O anel verde mostra por onde a bola vai passar',
+          keys: <b className="gm-tag">Rápido</b>,
+          text: 'Quanto mais rápido você mexe o dedo, mais forte a raquete bate na bola',
+        },
+        {
+          keys: <b className="gm-tag">Subir / descer</b>,
+          text: 'De baixo para cima a bola sobe (lob, pode sair); de cima para baixo ela desce e ganha efeito (pode ir na rede)',
+        },
+        {
+          keys: <b className="gm-tag">Toque</b>,
+          text: 'Saca: a bola sobe e você bate nela para a frente',
         },
       ]
     : [
-        { keys: <b className="gm-tag">Mouse</b>, text: 'A raquete vai para onde o mouse está' },
-        { keys: <Keycap k="Clique" wide touchHide={false} />, text: 'Saca (ou Espaço)' },
+        { keys: <b className="gm-tag">Mouse</b>, text: 'A raquete segue o mouse' },
         {
-          keys: <Keycap k="Botão direito" wide touchHide={false} />,
-          text: 'Segure na batida: smash (ou segure Espaço)',
+          keys: <b className="gm-tag">Rápido</b>,
+          text: 'Quanto mais rápido você mexe o mouse, mais forte a raquete bate na bola',
         },
         {
-          keys: <b className="gm-tag">Dica</b>,
-          text: 'Bata com a borda para a bola ir para o lado; mexa a raquete para dar efeito',
+          keys: <b className="gm-tag">Subir / descer</b>,
+          text: 'De baixo para cima a bola sobe (lob, pode sair); de cima para baixo ela desce e ganha efeito (pode ir na rede)',
+        },
+        {
+          keys: <Keycap k="Clique" wide touchHide={false} />,
+          text: 'Saca: a bola sobe e você bate nela para a frente (ou Espaço)',
         },
         { keys: <Keycap k="Esc" touchHide={false} />, text: 'Menu' },
       ];
@@ -131,8 +140,6 @@ export function PingPlay({
     () => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches,
     [],
   );
-  const smashRef = useRef(false);
-  const [smashOn, setSmashOn] = useState(false);
   const closeMenu = () => setMenu(false);
 
   useEffect(() => {
@@ -161,8 +168,6 @@ export function PingPlay({
 
     const me: PpInput = ppIdleInput();
     let serveUntil = 0;
-    let mouseSmash = false;
-    let keySmash = false;
     const keys = { l: false, r: false, u: false, d: false };
     let ready = 3;
     const readyAt = performance.now();
@@ -182,16 +187,23 @@ export function PingPlay({
     };
     let finished = false;
 
-    // ---- entrada: a raquete segue o ponteiro (projetado no plano da raquete) ----
-    const toPlane = (e: PointerEvent) => {
+    // ---- entrada: a raquete segue o ponteiro (projetado no plano da raquete); no dedo é relativo (não pula) ----
+    let anchor: { px: number; py: number; tx: number; ty: number } | null = null;
+    const toPlane = (e: PointerEvent, start = false) => {
       const r = zn.getBoundingClientRect();
       const p = scene.pointerToPlane(
         (e.clientX - r.left) / r.width,
         (e.clientY - r.top) / r.height,
-        e.pointerType === 'touch' ? TOUCH_LIFT : 0,
       );
-      me.x = scene.simX(p.x);
-      me.y = p.y;
+      if (e.pointerType === 'mouse') {
+        me.x = scene.simX(p.x);
+        me.y = p.y;
+        return;
+      }
+      // dedo: a raquete anda o tanto que o dedo anda a partir de onde ela estava (o dedo não pula a raquete de lugar)
+      if (start || !anchor) anchor = { px: p.x, py: p.y, tx: me.x, ty: me.y };
+      me.x = Math.max(-1.9, Math.min(1.9, anchor.tx + scene.simX(p.x - anchor.px)));
+      me.y = Math.max(0.55, Math.min(2.3, anchor.ty + (p.y - anchor.py)));
     };
     let downAt = 0;
     let downX = 0;
@@ -199,10 +211,9 @@ export function PingPlay({
     const onDown = (e: PointerEvent) => {
       if (menuRef.current) return;
       zn.setPointerCapture?.(e.pointerId);
-      toPlane(e);
+      toPlane(e, true);
       if (e.pointerType === 'mouse') {
-        if (e.button === 2) mouseSmash = true;
-        else serveUntil = performance.now() + 120;
+        if (e.button === 0) serveUntil = performance.now() + 120;
       } else {
         downAt = performance.now();
         downX = e.clientX;
@@ -214,10 +225,8 @@ export function PingPlay({
       toPlane(e);
     };
     const onUp = (e: PointerEvent) => {
-      if (e.pointerType === 'mouse') {
-        if (e.button === 2) mouseSmash = false;
-        return;
-      }
+      if (e.pointerType === 'mouse') return;
+      anchor = null;
       // toque curto e parado = sacar
       if (
         performance.now() - downAt < 280 &&
@@ -241,7 +250,6 @@ export function PingPlay({
       if (e.code === 'Space') {
         e.preventDefault();
         if (down && !e.repeat) serveUntil = performance.now() + 120;
-        keySmash = down;
         return;
       }
       const k = e.key.toLowerCase();
@@ -354,7 +362,7 @@ export function PingPlay({
       }
       if (now.length) react(now);
     };
-    const oppTarget = { x: 0, y: 1.3, smash: false };
+    const oppTarget = { x: 0, y: 1.3 };
     /** Já chegou o histórico da sala (quem entra no meio ou volta só começa a andar depois dele). */
     let synced = !net;
     let padSendAt = 0;
@@ -378,7 +386,6 @@ export function PingPlay({
             if (row[0] === oppIdx) {
               oppTarget.x = row[1] ?? 0;
               oppTarget.y = row[2] ?? 1.3;
-              oppTarget.smash = row[3] === 1;
             }
           }
         }),
@@ -432,7 +439,14 @@ export function PingPlay({
           me.y = Math.max(0.55, Math.min(2.3, me.y + ky * 3.2 * dt));
         }
         me.serve = now < serveUntil;
-        me.smash = mouseSmash || keySmash || smashRef.current;
+        // só nos testes: uma entrada de bot (ou de um "jogador" programado) no lugar do mouse
+        const forced = (window as unknown as { __pingForce?: PpInput }).__pingForce;
+        if (forced) {
+          me.x = forced.x;
+          me.y = forced.y;
+          me.serve = forced.serve;
+          me.swing = forced.swing;
+        }
         if (net && online) {
           // hora da partida pelo relógio da sala; o passo é fixo e a tela interpola entre os dois últimos
           const exact = (serverNow() - online.startAt) / (PP_TICK * 1000);
@@ -453,18 +467,10 @@ export function PingPlay({
           flushWaiting();
           alpha = Math.max(0, Math.min(1, exact - target));
           // a raquete do outro chega a 30 vezes por segundo: aqui ela suaviza até lá
-          const op = match.pad(oppIdx);
-          op.vx = (oppTarget.x - op.x) * 16;
-          op.vy = (oppTarget.y - op.y) * 16;
-          op.x += op.vx * dt;
-          op.y += op.vy * dt;
+          ppPadStep(match.pad(oppIdx), oppTarget.x, oppTarget.y, dt);
           if (!spectator && now - padSendAt > 33) {
             padSendAt = now;
-            sendRoomQuiet('ppad', [
-              Math.round(me.x * 100) / 100,
-              Math.round(me.y * 100) / 100,
-              me.smash ? 1 : 0,
-            ]);
+            sendRoomQuiet('ppad', [Math.round(me.x * 100) / 100, Math.round(me.y * 100) / 100, 0]);
           }
         } else if (!paused && bot) {
           if (slow < 1 && now > slowUntil) slow = 1;
@@ -504,7 +510,14 @@ export function PingPlay({
     };
     raf = requestAnimationFrame(frame);
 
-    (window as unknown as { __ping?: unknown }).__ping = { match, scene, net };
+    (window as unknown as { __ping?: unknown }).__ping = {
+      match,
+      scene,
+      net,
+      predict: ppPredictCross,
+      Bot: PpBot,
+      levels: PP_BOT_LEVELS,
+    };
     return () => {
       cancelAnimationFrame(raf);
       for (const off of unsubs) off();
@@ -519,16 +532,6 @@ export function PingPlay({
       delete (window as unknown as { __ping?: unknown }).__ping;
     };
   }, [level, online]);
-
-  // botão de smash do celular (segurar): o laço do jogo lê `smashRef` a cada tick
-  const smashDown = () => {
-    smashRef.current = true;
-    setSmashOn(true);
-  };
-  const smashUp = () => {
-    smashRef.current = false;
-    setSmashOn(false);
-  };
 
   const myIdx = online ? Math.max(0, online.me) : 0;
   const spectating = !!online && online.me < 0;
@@ -599,7 +602,11 @@ export function PingPlay({
       {myServe && !hud.banner && (
         <div className="png-serve-hint" data-testid="png-serve-hint">
           <b>Sua vez de sacar</b>
-          <span>{touchDevice ? 'Toque na tela' : 'Clique ou aperte Espaço'}</span>
+          <span>
+            {touchDevice
+              ? 'Toque para lançar a bola e bata nela'
+              : 'Clique para lançar a bola e bata nela'}
+          </span>
         </div>
       )}
       {!spectating &&
@@ -612,23 +619,6 @@ export function PingPlay({
             <span>Prepare a raquete</span>
           </div>
         )}
-      {touchDevice && hud.phase !== 'over' && (
-        <button
-          type="button"
-          className={`png-smash${smashOn ? ' is-on' : ''}`}
-          aria-label="Smash"
-          data-testid="png-smash"
-          onPointerDown={(e) => {
-            e.preventDefault();
-            e.currentTarget.setPointerCapture?.(e.pointerId);
-            smashDown();
-          }}
-          onPointerUp={smashUp}
-          onPointerCancel={smashUp}
-        >
-          Smash
-        </button>
-      )}
       {online && <GameChat enabled />}
       <RotateHint />
       {hud.phase === 'ready' && (

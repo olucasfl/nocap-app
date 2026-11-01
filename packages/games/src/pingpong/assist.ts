@@ -8,7 +8,7 @@ import {
   PP_EV_TABLE,
   type PpBall,
 } from './ball';
-import { PP_ASSIST_PITCH, PP_ASSIST_YAW, PP_L, PP_NET_H, PP_R, PP_TOP, PP_W } from './constants';
+import { PP_L, PP_NET_H, PP_R, PP_TOP, PP_W } from './constants';
 
 /** Onde uma jogada vai quicar (se for boa). */
 export interface PpLanding {
@@ -55,57 +55,4 @@ export function ppLanding(b: PpBall, side: number): PpLanding {
     }
   }
   return { ok: false, x: s.x, z: s.z, clear };
-}
-
-/** Candidatos (variação de inclinação e direção em graus, até o dobro do alcance) do mais perto ao mais longe. */
-const candidates: { dp: number; dy: number; cost: number }[] = (() => {
-  const list: { dp: number; dy: number; cost: number }[] = [];
-  const sp = 1;
-  const sy = 1.5;
-  for (let p = -2 * PP_ASSIST_PITCH; p <= 2 * PP_ASSIST_PITCH; p += sp) {
-    for (let y = -2 * PP_ASSIST_YAW; y <= 2 * PP_ASSIST_YAW; y += sy) {
-      const cost = (p / PP_ASSIST_PITCH) ** 2 + (y / PP_ASSIST_YAW) ** 2;
-      if (cost <= 4 + 1e-9) list.push({ dp: p, dy: y, cost });
-    }
-  }
-  list.sort((a, b) => a.cost - b.cost);
-  return list;
-})();
-
-const rad = Math.PI / 180;
-
-/**
- * Ajuda de mira: se a batida física ia dar falta, procura a correção mais próxima de inclinação e direção (mesma
- * velocidade, mesmo efeito) que dê uma bola boa. Só corrige o que está ao alcance de `strength` (0 a 1); erro maior
- * continua sendo falta. Devolve se mudou a bola.
- */
-export function ppAssist(b: PpBall, side: number, strength: number): boolean {
-  if (strength <= 0) return false;
-  if (ppLanding(b, side).ok) return false;
-  const forward = side === 0 ? -1 : 1;
-  const speed = Math.hypot(b.vx, b.vy, b.vz);
-  const fz = b.vz * forward;
-  const h = Math.hypot(b.vx, b.vz);
-  const yaw0 = Math.atan2(b.vx, fz);
-  const pitch0 = Math.atan2(b.vy, h);
-  const lim = strength * strength;
-  const trial = ppNewBall();
-  for (const c of candidates) {
-    if (c.cost > lim + 1e-9) break;
-    const yaw = yaw0 + c.dy * rad;
-    const pitch = pitch0 + c.dp * rad;
-    if (Math.abs(yaw) > 80 * rad) continue;
-    ppCopyBall(b, trial);
-    const hh = speed * Math.cos(pitch);
-    trial.vx = hh * Math.sin(yaw);
-    trial.vz = forward * hh * Math.cos(yaw);
-    trial.vy = speed * Math.sin(pitch);
-    if (ppLanding(trial, side).ok) {
-      b.vx = trial.vx;
-      b.vy = trial.vy;
-      b.vz = trial.vz;
-      return true;
-    }
-  }
-  return false;
 }

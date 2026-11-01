@@ -11,7 +11,7 @@ export const FOX_GAMES = [
   {
     id: 'pingpong',
     name: 'Ping Fox!',
-    note: 'Pingue-pongue 1 contra 1 com efeito e smash.',
+    note: 'Pingue-pongue 1 contra 1: a raquete bate de verdade.',
     cap: 'até 8',
   },
   {

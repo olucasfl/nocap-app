@@ -12,8 +12,7 @@ import {
   PP_R,
   PP_TOP,
   PP_W,
-  ppNextBounce,
-  ppPredictCross,
+  ppPaddleTilt,
   type PpEvent,
   type PpMatch,
 } from '@nocap/games';
@@ -21,7 +20,6 @@ import { buildHero, mapEdge } from '../atravessa/models';
 
 const INK = 0x1b1535;
 const ORANGE = 0xff7d26;
-const YELLOW = 0xffd23f;
 
 function canvasTex(
   w: number,
@@ -101,18 +99,13 @@ export class PingScene {
   private net: THREE.Group;
   private netShake = 0;
   // marcadores
-  private bounceMark: THREE.Mesh;
-  private crossMark: THREE.Mesh;
-  private crossMat: THREE.MeshBasicMaterial;
-  private predAt = 0;
-  private bounceAt: { x: number; z: number; t: number } | null = null;
-  private crossAt: { x: number; y: number; t: number } | null = null;
   // efeitos
   private sparks: Spark[] = [];
   private rings: Ring[] = [];
   private shake = 0;
   private fovKick = 0;
   private time = 0;
+  private padTilt: { pitch: number; yaw: number }[] = [];
   /** Quem olha: 0 ou 1 (quem joga do lado de lá vê a mesa girada, como se estivesse perto da câmera). */
   private me = 0;
   private flip = false;
@@ -121,8 +114,8 @@ export class PingScene {
   private prev = {
     ball: { x: 0, y: 1.25, z: 2.5 },
     pads: [
-      { x: 0, y: 1.3 },
-      { x: 0, y: 1.3 },
+      { x: 0, y: 1.3, reach: 0 },
+      { x: 0, y: 1.3, reach: 0 },
     ],
     valid: false,
   };
@@ -260,32 +253,6 @@ export class PingScene {
     this.scene.add(this.tag);
 
     // marcadores de leitura
-    this.bounceMark = new THREE.Mesh(
-      new THREE.RingGeometry(0.1, 0.14, 40),
-      new THREE.MeshBasicMaterial({
-        color: YELLOW,
-        transparent: true,
-        opacity: 0.9,
-        depthWrite: false,
-      }),
-    );
-    this.bounceMark.rotation.x = -Math.PI / 2;
-    this.bounceMark.visible = false;
-    this.scene.add(this.bounceMark);
-    this.crossMat = new THREE.MeshBasicMaterial({
-      color: 0xffffff,
-      transparent: true,
-      opacity: 0.0,
-      depthWrite: false,
-    });
-    this.crossMark = new THREE.Mesh(
-      new THREE.RingGeometry(PP_PAD_R - 0.035, PP_PAD_R, 56),
-      this.crossMat,
-    );
-    this.crossMark.position.z = PP_PAD_Z + 0.02;
-    this.crossMark.visible = false;
-    this.scene.add(this.crossMark);
-
     for (let i = 0; i < 6; i++) {
       const m = new THREE.Mesh(
         new THREE.RingGeometry(0.06, 0.085, 32),
@@ -601,11 +568,6 @@ export class PingScene {
     return this.flip ? -viewX : viewX;
   }
 
-  /** Onde o anel de alcance está agora (null se a bola não vem para você). */
-  reticle(): { x: number; y: number } | null {
-    return this.crossAt ? { x: this.crossAt.x, y: this.crossAt.y } : null;
-  }
-
   /** Onde um ponto do mundo cai na tela (0 a 1 de cada lado); serve aos testes e às dicas. */
   project(x: number, y: number, z: number): { nx: number; ny: number } {
     this.camera.updateMatrixWorld();
@@ -621,8 +583,8 @@ export class PingScene {
     this.prev.ball.x = m.ball.x;
     this.prev.ball.y = m.ball.y;
     this.prev.ball.z = m.ball.z;
-    this.prev.pads[0] = { x: m.pad(0).x, y: m.pad(0).y };
-    this.prev.pads[1] = { x: m.pad(1).x, y: m.pad(1).y };
+    this.prev.pads[0] = { x: m.pad(0).x, y: m.pad(0).y, reach: m.pad(0).reach };
+    this.prev.pads[1] = { x: m.pad(1).x, y: m.pad(1).y, reach: m.pad(1).reach };
     this.prev.valid = true;
   }
 
@@ -765,29 +727,30 @@ export class PingScene {
       (s.material as THREE.SpriteMaterial).opacity = clamp((speed - 3) / 10, 0, 1) * 0.5 * k;
     }
 
-    // raquetes: a de quem olha é a primeira (perto da câmera), a do outro lado é a segunda
+    // raquetes: a de quem olha é a primeira (perto da câmera), a do outro lado é a segunda. A raquete avança com a mão
+    // (alcance) e a face se inclina como na batida: subir abre a face, descer fecha, o lado vira a face para o lado.
     for (let v = 0; v < 2; v++) {
       const i = v === 0 ? this.me : 1 - this.me;
       const pad = m.pad(i);
-      const pp = pv.pads[i] ?? { x: pad.x, y: pad.y };
+      const pp = pv.pads[i] ?? { x: pad.x, y: pad.y, reach: pad.reach };
       const px = this.vx(lerp(pp.x, pad.x, a));
       const py = lerp(pp.y, pad.y, a);
+      const reach = lerp(pp.reach, pad.reach, a);
       const slot = this.pads[v];
       if (!slot) continue;
       const side = v === 0 ? 1 : -1;
-      // a batida: a raquete vai para a frente e gira, e volta
-      const sw = pad.swing;
-      const fwd = Math.sin((1 - sw) * Math.PI) * (sw > 0 ? 0.55 : 0);
-      slot.g.position.set(px, py, side * PP_PAD_Z - side * fwd);
+      slot.g.position.set(px, py, side * PP_PAD_Z - side * reach);
       slot.g.rotation.set(0, v === 0 ? 0 : Math.PI, 0);
-      const vvx = this.vx(pad.vx);
-      slot.blade.rotation.set(
-        -0.18 +
-          clamp(pad.vy * 0.02, -0.25, 0.25) +
-          (sw > 0 ? -Math.sin((1 - sw) * Math.PI) * 0.55 : 0),
-        clamp(vvx * 0.025, -0.3, 0.3),
-        clamp(-vvx * 0.02, -0.25, 0.25),
-      );
+      const tilt = ppPaddleTilt(pad.vx, pad.vy);
+      const yawView = this.flip ? -tilt.yaw : tilt.yaw;
+      const k = 1 - Math.exp(-28 * dt);
+      const cur = this.padTilt[v] ?? { pitch: 0, yaw: 0 };
+      cur.pitch = lerp(cur.pitch, tilt.pitch, k);
+      cur.yaw = lerp(cur.yaw, yawView, k);
+      this.padTilt[v] = cur;
+      // com a batida o disco dá um pequeno "tapa" na bola: a raquete se inclina um instante para a frente
+      const pulse = pad.swing > 0 ? Math.sin(pad.swing * Math.PI) * 0.18 : 0;
+      slot.blade.rotation.set(cur.pitch - pulse, v === 0 ? -cur.yaw : cur.yaw, 0);
     }
 
     // raposa do outro lado: acompanha a raquete, com um balanço
@@ -824,43 +787,9 @@ export class PingScene {
     this.netShake = Math.max(0, this.netShake - dt * 2.2);
     this.net.rotation.x = Math.sin(this.time * 38) * 0.05 * this.netShake;
 
-    this.updateMarks(dt, px0(pv, m, a, this.me, this.flip));
     this.updateFx(dt);
     this.placeCamera(dt);
     this.renderer.render(this.scene, this.camera);
-  }
-
-  private updateMarks(dt: number, myPad: { x: number; y: number }) {
-    const m = this.match;
-    const now = performance.now();
-    if (now - this.predAt > 45) {
-      this.predAt = now;
-      const sgn = this.me === 0 ? 1 : -1;
-      const toMe = m.phase === 'rally' && m.expect === this.me && m.ball.vz * sgn > 0.2;
-      const nb = toMe && (m.bounces[this.me] ?? 0) === 0 ? ppNextBounce(m.ball) : null;
-      // só mostra o quique que cai na minha metade
-      this.bounceAt = nb && nb.z * sgn > 0 ? { x: this.vx(nb.x), z: this.vz(nb.z), t: nb.t } : null;
-      const c = toMe ? ppPredictCross(m.ball, this.me) : null;
-      this.crossAt = c ? { x: this.vx(c.x), y: c.y, t: c.t } : null;
-    }
-    const b = this.bounceAt;
-    this.bounceMark.visible = !!b;
-    if (b) {
-      this.bounceMark.position.set(b.x, PP_TOP + 0.006, b.z);
-      const pulse = 1 + Math.sin(this.time * 12) * 0.12;
-      this.bounceMark.scale.set(pulse, pulse, pulse);
-    }
-    const c = this.crossAt;
-    this.crossMark.visible = !!c;
-    if (c) {
-      const x = clamp(c.x, -PP_PAD_X, PP_PAD_X);
-      const y = clamp(c.y, PP_PAD_Y_MIN, PP_PAD_Y_MAX);
-      this.crossMark.position.x = lerp(this.crossMark.position.x, x, 1 - Math.exp(-20 * dt));
-      this.crossMark.position.y = lerp(this.crossMark.position.y, y, 1 - Math.exp(-20 * dt));
-      const near = Math.hypot(myPad.x - x, myPad.y - y) < PP_PAD_R * 0.55;
-      this.crossMat.color.setHex(near ? 0x33c27f : 0xffffff);
-      this.crossMat.opacity = near ? 0.95 : 0.55;
-    }
   }
 
   private updateFx(dt: number) {
@@ -912,18 +841,4 @@ export class PingScene {
     this.glow.dispose();
     this.renderer.dispose();
   }
-}
-
-/** A raquete de quem olha, já interpolada e na vista da tela (para o anel de alcance saber se está no lugar). */
-function px0(
-  pv: { pads: { x: number; y: number }[]; valid: boolean },
-  m: PpMatch,
-  a: number,
-  me: number,
-  flip: boolean,
-): { x: number; y: number } {
-  const p = pv.pads[me];
-  const c = m.pad(me);
-  const x = p ? lerp(p.x, c.x, a) : c.x;
-  return { x: flip ? -x : x, y: p ? lerp(p.y, c.y, a) : c.y };
 }

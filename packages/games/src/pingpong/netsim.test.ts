@@ -148,7 +148,6 @@ describe('partida em rede (PpNetSim)', () => {
       smash: false,
       kmh: 50,
       quality: 'normal',
-      assisted: false,
       spin: 0,
       b: [0, 1.4, -2.4, 0, 1, 7, 0, 0, 0],
     };

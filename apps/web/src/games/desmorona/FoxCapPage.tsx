@@ -164,7 +164,7 @@ export function FoxCapPage() {
                 tone="blue"
                 art={<PingArt />}
                 name="Ping Fox! Treino"
-                desc="Pingue-pongue 1 contra 1 contra um bot. Efeito, smash e rally."
+                desc="Pingue-pongue 1 contra 1 contra um bot. A raquete bate de verdade: força, lob e efeito."
                 tags={['1x1', 'Offline']}
                 onPlay={() => setFlow('png-pick')}
                 onHelp={() => setHelp('pingpong')}

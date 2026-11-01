@@ -88,10 +88,86 @@ test('treino: abre, saca, a bola cruza a rede e a raquete segue o mouse', async 
   expect(s2!.score[0] + s2!.score[1]).toBeGreaterThan(0);
 });
 
-test('quem segue o anel de alcance devolve a bola e faz ponto contra o bot fácil', async ({
+/** Uma "pessoa" no navegador: espera embaixo do ponto onde a bola vai passar e dá a passada para cima e para a frente. */
+const humanDriver = () => {
+  const g = (
+    window as unknown as {
+      __ping: {
+        match: {
+          phase: string;
+          server: number;
+          expect: number;
+          rally: number;
+          t: number;
+          lastHitter: number;
+          ball: { y: number; vy: number; x: number };
+        };
+        scene: {
+          project(x: number, y: number, z: number): { nx: number; ny: number };
+          simX(x: number): number;
+        };
+        predict(ball: unknown, p: number): { x: number; y: number; t: number } | null;
+      };
+    }
+  ).__ping;
+  const zone = document.querySelector('.png-zone') as HTMLElement;
+  const r = zone.getBoundingClientRect();
+  const fire = (type: string, x: number, y: number, extra: PointerEventInit = {}) =>
+    zone.dispatchEvent(
+      new PointerEvent(type, {
+        clientX: x,
+        clientY: y,
+        pointerType: 'mouse',
+        bubbles: true,
+        pointerId: 1,
+        ...extra,
+      }),
+    );
+  const to = (x: number, y: number) => {
+    const q = g.scene.project(g.scene.simX(x), y, 2.45);
+    return [r.left + q.nx * r.width, r.top + q.ny * r.height] as const;
+  };
+  const ease = (y0: number, y1: number, k: number) => y0 + (y1 - y0) * (k * k * (3 - 2 * k));
+  let plan: { x: number; y: number; t0: number } | null = null;
+  let seen = -1;
+  let last = -1;
+  const w = window as unknown as { __hits: number };
+  w.__hits = 0;
+  setInterval(() => {
+    const m = g.match;
+    if (m.lastHitter === 0 && last !== 0) w.__hits++;
+    last = m.lastHitter;
+    if (m.phase === 'serve' && m.server === 0) {
+      const [x, y] = to(0, 1.5);
+      fire('pointermove', x, y);
+      if (m.t > 0.8) fire('pointerdown', x, y, { button: 0 });
+    } else if (m.phase === 'toss' && m.server === 0) {
+      // a bola sobe e desce: a mão sobe ao encontro dela, em passada
+      const k = Math.max(0, Math.min(1, (1.95 - m.ball.y) / 0.5));
+      const [x, y] = to(m.ball.x, ease(1.5, 1.85, m.ball.vy < 0 ? k : 0));
+      fire('pointermove', x, y);
+    } else if (m.phase === 'rally' && m.expect === 0) {
+      if (m.rally !== seen) {
+        seen = m.rally;
+        plan = null;
+      }
+      if (!plan) {
+        const c = g.predict(m.ball, 0);
+        if (c) plan = { x: c.x, y: c.y, t0: m.t + c.t };
+      }
+      if (plan) {
+        const k = Math.max(0, Math.min(1, 1 - (plan.t0 - m.t) / 0.23));
+        const [x, y] = to(plan.x, ease(plan.y - 0.36, plan.y + 0.22, k));
+        fire('pointermove', x, y);
+      }
+    }
+  }, 16);
+};
+
+test('uma pessoa que dá a passada certa (de baixo para cima, para a frente) devolve a bola do bot', async ({
   page,
 }) => {
-  test.setTimeout(150_000);
+  test.setTimeout(170_000);
   await page.setViewportSize({ width: 1280, height: 720 });
   await page.goto('/fox-cap');
   await page
@@ -103,64 +179,14 @@ test('quem segue o anel de alcance devolve a bola e faz ponto contra o bot fáci
   await page.getByTestId('png-start').click();
   await expect(page.getByTestId('png-play')).toBeVisible();
   await page.waitForTimeout(2600);
-  // o "jogador": a cada 40 ms, leva o mouse até o anel de alcance e saca quando é a vez
-  const stats = await page.evaluate(
-    () =>
-      new Promise<{ myHits: number; score: number[]; rally: number }>((resolve) => {
-        const w = window as unknown as {
-          __ping: {
-            match: {
-              phase: string;
-              server: number;
-              lastHitter: number;
-              score: number[];
-              rally: number;
-            };
-            scene: {
-              reticle(): { x: number; y: number } | null;
-              project(x: number, y: number, z: number): { nx: number; ny: number };
-            };
-          };
-        };
-        const zone = document.querySelector('.png-zone') as HTMLElement;
-        const r = zone.getBoundingClientRect();
-        const fire = (type: string, x: number, y: number, extra: PointerEventInit = {}) =>
-          zone.dispatchEvent(
-            new PointerEvent(type, {
-              clientX: x,
-              clientY: y,
-              pointerType: 'mouse',
-              bubbles: true,
-              pointerId: 1,
-              ...extra,
-            }),
-          );
-        let myHits = 0;
-        let last = -1;
-        let best = 0;
-        const t0 = performance.now();
-        const iv = setInterval(() => {
-          const m = w.__ping.match;
-          const tgt = w.__ping.scene.reticle();
-          if (tgt) {
-            const p = w.__ping.scene.project(tgt.x, tgt.y, 2.45);
-            fire('pointermove', r.left + p.nx * r.width, r.top + p.ny * r.height);
-          } else if (m.phase === 'serve' && m.server === 0) {
-            const p = w.__ping.scene.project(0, 1.35, 2.45);
-            fire('pointermove', r.left + p.nx * r.width, r.top + p.ny * r.height);
-            fire('pointerdown', r.left + p.nx * r.width, r.top + p.ny * r.height, { button: 0 });
-          }
-          if (m.lastHitter === 0 && last !== 0) myHits++;
-          last = m.lastHitter;
-          best = Math.max(best, m.rally);
-          if (myHits >= 6 || performance.now() - t0 > 100_000) {
-            clearInterval(iv);
-            resolve({ myHits, score: [...m.score], rally: best });
-          }
-        }, 40);
-      }),
-  );
-  expect(stats.myHits, JSON.stringify(stats)).toBeGreaterThanOrEqual(4);
+  await page.evaluate(humanDriver);
+  // com tempo uma passada boa devolve várias bolas (a física é de verdade: a mão rápida demais manda para fora)
+  await expect
+    .poll(() => page.evaluate(() => (window as unknown as { __hits: number }).__hits), {
+      timeout: 120_000,
+      intervals: [1000],
+    })
+    .toBeGreaterThanOrEqual(5);
 });
 
 for (const size of [
@@ -170,7 +196,7 @@ for (const size of [
 ]) {
   test.describe(`Ping Fox! em ${size.name}`, () => {
     test.use({ viewport: { width: size.w, height: size.h }, isMobile: true, hasTouch: true });
-    test('HUD e botão de smash cabem e a raquete segue o dedo', async ({ page }) => {
+    test('o HUD cabe e a raquete segue o dedo (sem pular)', async ({ page }) => {
       await page.goto('/fox-cap');
       await page
         .getByRole('button', { name: 'Agora não' })
@@ -194,7 +220,6 @@ for (const size of [
       };
       await fits('[data-testid="png-score"]');
       await fits('[data-testid="png-menu-btn"]');
-      await fits('[data-testid="png-smash"]');
       // o dedo leva a raquete: arrasta para a direita e confere
       const cdp = await page.context().newCDPSession(page);
       const pad = () =>

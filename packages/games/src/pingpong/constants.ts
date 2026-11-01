@@ -5,11 +5,11 @@ export const PP_L = 4.2;
 export const PP_W = 2.3;
 export const PP_TOP = 1.0;
 /** A rede fica em z = 0 e sobe isto acima do tampo. */
-export const PP_NET_H = 0.3;
+export const PP_NET_H = 0.24;
 /** A rede passa um pouco dos lados da mesa (os postes). */
 export const PP_NET_OVER = 0.15;
 export const PP_R = 0.075;
-export const PP_G = 9.0;
+export const PP_G = 8;
 
 /** Passo fixo: 4 subpassos por tick de 60 Hz (a bola rápida não atravessa nada). */
 export const PP_TICK = 1 / 60;
@@ -17,10 +17,10 @@ export const PP_SUB = 4;
 export const PP_DT = PP_TICK / PP_SUB;
 
 /** Arrasto do ar (a = -k |v| v) e efeito Magnus (a = k (w x v)). */
-export const PP_DRAG = 0.018;
-export const PP_MAGNUS = 0.005;
+export const PP_DRAG = 0.07;
+export const PP_MAGNUS = 0.0095;
 /** Efeito máximo (rad/s). */
-export const PP_SPIN_MAX = 140;
+export const PP_SPIN_MAX = 170;
 
 /** Quique na mesa: restituição vertical e atrito (areia da mesa). */
 export const PP_TABLE_E = 0.88;
@@ -37,36 +37,47 @@ export const PP_PAD_Z = PP_L / 2 + 0.35;
 export const PP_PAD_X = 1.9;
 export const PP_PAD_Y_MIN = 0.55;
 export const PP_PAD_Y_MAX = 2.3;
-/** Velocidade máxima e rigidez com que a raquete persegue o ponteiro. */
-export const PP_PAD_SPEED = 11;
-export const PP_PAD_STIFF = 30;
+/** Velocidade máxima e rigidez com que a raquete persegue o ponteiro (uma mão que acompanha, sem teletransportar). */
+export const PP_PAD_SPEED = 13;
+export const PP_PAD_STIFF = 36;
 
-/** Empurrão para a frente na batida normal e no smash (m/s). */
-export const PP_PUSH = 2.2;
-export const PP_PUSH_SMASH = 8;
-/** O saque: empurrão maior, face mais aberta e ajuda de mira mais larga (a bola sai de trás da linha). */
-export const PP_PUSH_SERVE = 4.6;
-export const PP_TILT_SERVE = 0.3;
-export const PP_ASSIST_SERVE = 1.9;
-/** Inclinação da face: desvio pelo ponto de contato, abertura fixa e efeito do movimento vertical. */
-export const PP_TILT_X = 0.3;
-export const PP_TILT_Y = 0.15;
-export const PP_TILT_UP = 0.08;
-/** Levantada da raquete (m/s) que acompanha toda batida que não é smash: a bola que desce sai com um arco. */
-export const PP_LIFT = 0.8;
-export const PP_TILT_SMASH = -0.24;
-/** Velocidade máxima da bola depois da batida. */
-export const PP_V_MAX = 19;
+/**
+ * A raquete é uma peça física: além de x e y ela tem um alcance para a frente (`reach`, em direção à rede) que cresce
+ * com a rapidez com que a mão se mexe, então "jogar a raquete" é mexer o mouse (ou o dedo) rápido. A velocidade da
+ * raquete (x, y e para a frente) entra inteira na batida.
+ */
+export const PP_REACH_MAX = 0.7;
+/** Rapidez (m/s) abaixo da qual a raquete fica parada em z, e quanto de alcance cada m/s a mais dá. */
+export const PP_REACH_DEAD = 0.8;
+export const PP_REACH_GAIN = 0.12;
+/** Com que rapidez o alcance sobe (rápido: a raquete "dispara") e desce (mais devagar: a raquete recolhe). */
+export const PP_REACH_RISE = 20;
+export const PP_REACH_FALL = 8;
+/** Velocidade máxima para a frente (m/s). */
+export const PP_VZ_MAX = 7.5;
+/** Quem vai sacar já estende a raquete um pouco, para a bola estar ao alcance de um golpe curto. */
+export const PP_REACH_SERVE = 0.1;
 
-/** Ajuda de mira: o quanto ela alcança (graus) com a ajuda cheia, e a força padrão. */
-export const PP_ASSIST_PITCH = 20;
-export const PP_ASSIST_YAW = 10;
-export const PP_ASSIST = 1;
-export const PP_ASSIST_SMASH = 0.5;
+/**
+ * Inclinação da face. A abertura vem do movimento vertical da mão: subir abre a face (a bola sobe, lob), descer a
+ * fecha (a bola desce, e pode ir na rede). O movimento lateral vira a face para o lado. O ponto de contato desvia um
+ * pouco (a borracha é levemente curva).
+ */
+export const PP_TILT_BASE = 0.26;
+export const PP_TILT_VY = 0.05;
+export const PP_TILT_VX = 0.03;
+export const PP_TILT_OFF = 0.16;
+/** O quanto da velocidade da mão passa para a bola (a raquete é leve e a bola escapa): menos sensível, mais perdoa. */
+export const PP_PAD_COUPLE = 0.7;
+/** Velocidade máxima da bola depois da batida (impossível de devolver acima disto). */
+export const PP_V_MAX = 13;
+/** A bola que sai mais rápido que isto, descendo, conta como smash (só para o efeito e o som). */
+export const PP_SMASH_SPEED = 9.5;
 
-/** Saque: impulso para cima do lançamento e altura da mão. */
-export const PP_TOSS_V = 4.3;
+/** Saque: impulso do lançamento (a bola sobe pouco e desce), altura da mão e quanto a bola fica à frente da raquete. */
+export const PP_TOSS_V = 3.2;
 export const PP_TOSS_Y = 1.25;
+export const PP_SERVE_FRONT = 0.21;
 
 /** Placar. */
 export const PP_POINTS = 11;
