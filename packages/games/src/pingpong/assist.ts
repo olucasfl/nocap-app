@@ -26,7 +26,7 @@ const out = ppNewStepOut();
  * Simula a bola até o primeiro quique na mesa. `side` é quem bateu (0 = perto da câmera): a bola tem que passar a rede
  * com folga e quicar primeiro na mesa do outro lado, dentro das linhas.
  */
-export function ppLanding(b: PpBall, side: number): PpLanding {
+export function ppLanding(b: PpBall, side: number, drop = false): PpLanding {
   const s = ppCopyBall(b, scratch);
   const hs = side === 0 ? 1 : -1;
   let clear = 9;
@@ -51,13 +51,13 @@ export function ppLanding(b: PpBall, side: number): PpLanding {
         crossed &&
         clear >= 0.03 &&
         Math.abs(out.bx) <= PP_W / 2 - 0.06 &&
-        depth >= 1.1 &&
+        depth >= (drop ? 0.25 : 1.1) &&
         depth <= PP_L / 2 - 0.04;
       res = { ok, x: out.bx, z: out.bz, clear };
       if (!ok) return res;
     }
     // depois do quique a bola ainda tem que chegar até onde a raquete alcança, senão ninguém rebate
-    if (res && Math.abs(s.z) >= PP_L / 2 - 0.02) return res;
+    if (res && (drop || Math.abs(s.z) >= PP_L / 2 - 0.02)) return res;
   }
   return { ok: false, x: s.x, z: s.z, clear };
 }
@@ -69,8 +69,8 @@ const guide = ppNewBall();
  * só o necessário (a altura da saída e, se preciso, um pouco da força) pela jogada boa mais parecida com a que a mão
  * fez. A direção para os lados e o efeito continuam sendo do jogador. Se a jogada já é boa, não mexe em nada.
  */
-export function ppGuideHit(b: PpBall, side: number): void {
-  if (ppLanding(b, side).ok) return;
+export function ppGuideHit(b: PpBall, side: number, drop = false): void {
+  if (ppLanding(b, side, drop).ok) return;
   const fwd = side === 0 ? -1 : 1;
   let hs = Math.hypot(b.vx, b.vz);
   let ux = b.vx / hs;
@@ -81,14 +81,14 @@ export function ppGuideHit(b: PpBall, side: number): void {
     ux = 0;
     uz = fwd;
   }
-  const base = Math.min(10.5, Math.max(3.2, hs));
-  const scales = [1, 1.15, 0.9, 1.3, 0.8, 0.68, 0.58];
+  const base = drop ? Math.min(4.2, Math.max(1.6, hs)) : Math.min(10.5, Math.max(3.6, hs));
+  const scales = [1, 1.15, 0.9, 1.3, 1.55, 1.8, 2.1, 0.8, 0.68, 0.58];
   // primeiro mantém a direção da mão; se não há jogada boa assim (cantinho demais), fecha o ângulo aos poucos
   for (const lat of [1, 0.75, 0.5, 0.25, 0]) {
     const lx = ux * lat;
     const lz = Math.sqrt(Math.max(0, 1 - lx * lx)) * Math.sign(uz || fwd);
     for (const sc of scales) {
-      const h = Math.min(11, base * sc);
+      const h = Math.min(11.5, base * sc);
       let best = Number.NaN;
       let bestD = 1e9;
       for (let vy = -3; vy <= 6.01; vy += 0.4) {
@@ -96,7 +96,7 @@ export function ppGuideHit(b: PpBall, side: number): void {
         guide.vx = lx * h;
         guide.vz = lz * h;
         guide.vy = vy;
-        if (!ppLanding(guide, side).ok) continue;
+        if (!ppLanding(guide, side, drop).ok) continue;
         const d = Math.abs(vy - b.vy);
         if (d < bestD) {
           bestD = d;

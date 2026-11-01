@@ -567,7 +567,7 @@ export class PingScene {
   /** Raquete: lâmina de borracha vermelha de um lado e preta do outro, aro de madeira, cabo e a pata de raposa. */
   private buildPaddle(mine: boolean): THREE.Group {
     const g = new THREE.Group();
-    const r = PP_PAD_R * 0.94;
+    const r = 0.34;
     const face = (color: number, z: number, flip: boolean) => {
       const m = new THREE.Mesh(
         new THREE.CircleGeometry(r * 0.96, 48),
@@ -641,16 +641,59 @@ export class PingScene {
 
   // ---------- câmera e entrada ----------
 
+  private camZ = 7;
+  private camY = 3.4;
+  private camDirty = true;
+  /**
+   * Afasta a câmera (na mesma inclinação) só até a mesa inteira e a raquete caberem na tela, em qualquer formato de
+   * aparelho (celular em pé, deitado, computador).
+   */
+  private fitCamera() {
+    this.camDirty = false;
+    const cam = this.camera;
+    const portrait = cam.aspect < 1;
+    cam.fov = portrait ? 54 : 46;
+    cam.updateProjectionMatrix();
+    const pts: [number, number, number][] = [];
+    const hx = PP_W / 2 + 0.35;
+    for (const sx of [-1, 1]) {
+      pts.push([sx * hx, PP_TOP, PP_L / 2 + 0.35], [sx * hx, PP_TOP, -PP_L / 2 - 0.1]);
+      pts.push([sx * 0.5, 1.9, PP_PAD_Z], [sx * 0.5, 0.9, PP_PAD_Z]);
+    }
+    const ratio = portrait ? 0.56 : 0.5;
+    const v = new THREE.Vector3();
+    for (let z = portrait ? 6 : 5; z < 40; z += 0.12) {
+      cam.position.set(0, z * ratio, z);
+      cam.lookAt(0, 0.9, -0.6);
+      cam.updateMatrixWorld();
+      let ok = true;
+      for (const p of pts) {
+        v.set(p[0], p[1], p[2]).project(cam);
+        if (Math.abs(v.x) > 0.94 || v.y < -0.93 || v.y > 0.8) {
+          ok = false;
+          break;
+        }
+      }
+      if (ok) {
+        this.camZ = z;
+        this.camY = z * ratio;
+        return;
+      }
+    }
+    this.camZ = 12;
+    this.camY = 6;
+  }
+
   private placeCamera(dt: number) {
     const portrait = this.camera.aspect < 1;
     const m = this.match;
     const bx = this.vx(m.ball.x);
     const k = 1 - Math.exp(-4 * dt);
+    if (this.camDirty) this.fitCamera();
     const tx = bx * 0.18;
     const cam = this.camera;
-    const wide = this.camera.aspect > 1.8; // celular deitado: pouca altura, a câmera chega mais perto
-    const baseZ = portrait ? 7.4 : wide ? 4.7 : 5.2;
-    const baseY = portrait ? 4.1 : wide ? 2.6 : 2.9;
+    const baseZ = this.camZ;
+    const baseY = this.camY;
     cam.position.x = lerp(cam.position.x, tx * 0.7, k);
     cam.position.y = baseY;
     cam.position.z = baseZ;
@@ -662,8 +705,8 @@ export class PingScene {
     }
     cam.position.x += sx;
     cam.position.y += sy;
-    cam.lookAt(tx, 0.95, -0.9);
-    const fov = (portrait ? 58 : 50) + this.fovKick * 5;
+    cam.lookAt(tx, 0.9, -0.6);
+    const fov = (portrait ? 54 : 46) + this.fovKick * 5;
     if (Math.abs(cam.fov - fov) > 0.01) {
       cam.fov = fov;
       cam.updateProjectionMatrix();
@@ -676,6 +719,7 @@ export class PingScene {
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / Math.max(1, h);
     this.camera.updateProjectionMatrix();
+    this.camDirty = true;
   }
 
   private ray = new THREE.Raycaster();

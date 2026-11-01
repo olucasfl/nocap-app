@@ -1,11 +1,11 @@
 /** Ping Fox! (spec 055). Unidades em metros e segundos; x é a largura, y a altura, z o comprimento da mesa. */
 
 /** Comprimento (z) e largura (x) da mesa e altura do tampo. */
-export const PP_L = 5.25;
-export const PP_W = 2.9;
+export const PP_L = 6.3;
+export const PP_W = 3.5;
 export const PP_TOP = 1.0;
 /** A rede fica em z = 0 e sobe isto acima do tampo. */
-export const PP_NET_H = 0.28;
+export const PP_NET_H = 0.32;
 /** A rede passa um pouco dos lados da mesa (os postes). */
 export const PP_NET_OVER = 0.15;
 export const PP_R = 0.09;
@@ -34,7 +34,7 @@ export const PP_NET_KEEP = 0.25;
 /** Raquete: raio do disco, distância do plano atrás da ponta, alcance do ponteiro. */
 export const PP_PAD_R = 0.5;
 export const PP_PAD_Z = PP_L / 2 + 0.2;
-export const PP_PAD_X = 2.3;
+export const PP_PAD_X = 2.75;
 export const PP_PAD_Y_MIN = 0.55;
 export const PP_PAD_Y_MAX = 3.0;
 /** Quanto uma bola pode ter passado do plano da raquete (m) e ainda ser alcançada. */
@@ -99,7 +99,7 @@ export const PP_SERVE_FRONT = 0.8;
 export const PP_SERVE_Y = 1.5;
 export const PP_SERVE_WAIT = 0.9;
 /** Alcance até a rede: a raquete passeia por cima da mesa (reach 0 = plano de espera; NET = quase na rede). */
-export const PP_REACH_NET = 2.45;
+export const PP_REACH_NET = PP_PAD_Z - 0.4;
 /** E para trás: a raquete pode ficar atrás do plano de espera (m). */
 export const PP_REACH_BACK = 0.95;
 /** Rapidez e rigidez do avanço/recuo da raquete (m/s, 1/s). */

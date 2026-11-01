@@ -31,6 +31,18 @@ import './ping.css';
 
 const TIPS_KEY = 'nocap-ping-tips';
 
+/** O nome do golpe que aparece junto da velocidade (o golpe comum não aparece). */
+const STROKE_TAG: Record<string, string | undefined> = {
+  drive: 'DRIVE',
+  topspin: 'TOPSPIN',
+  corte: 'CORTE',
+  curva: 'CURVA',
+  curta: 'CURTINHA',
+  bloqueio: 'BLOQUEIO',
+  lob: 'LOB',
+  smash: 'SMASH',
+};
+
 const tipRows = (touch: boolean): TipRow[] =>
   touch
     ? [
@@ -43,8 +55,12 @@ const tipRows = (touch: boolean): TipRow[] =>
           text: 'A força da batida é a rapidez com que você joga a raquete para a frente; a direção é para onde você bate',
         },
         {
-          keys: <b className="gm-tag">Defesa e smash</b>,
-          text: 'Contra uma bola forte, deixe a raquete mansa: a bola sobe em lob. Bola alta e batida forte vira smash',
+          keys: <b className="gm-tag">Golpes</b>,
+          text: 'Devagar = corte; médio = topspin; muito rápido = drive; varrer para o lado = curva; bater perto da rede = curtinha; bola alta + forte = smash',
+        },
+        {
+          keys: <b className="gm-tag">Defesa</b>,
+          text: 'Contra uma bola forte, deixe a raquete mansa: bloqueio. Recuada (para trás) a bola sobe em lob',
         },
         {
           keys: <b className="gm-tag">Saque</b>,
@@ -61,8 +77,12 @@ const tipRows = (touch: boolean): TipRow[] =>
           text: 'A força da batida é a rapidez com que você leva o mouse para a frente; a direção é para onde você bate',
         },
         {
-          keys: <b className="gm-tag">Defesa e smash</b>,
-          text: 'Contra uma bola forte, deixe a raquete mansa: a bola sobe em lob. Bola alta e batida forte vira smash',
+          keys: <b className="gm-tag">Golpes</b>,
+          text: 'Devagar = corte; médio = topspin; muito rápido = drive; varrer para o lado = curva; bater perto da rede = curtinha; bola alta + forte = smash',
+        },
+        {
+          keys: <b className="gm-tag">Defesa</b>,
+          text: 'Contra uma bola forte, deixe a raquete mansa: bloqueio. Recuada (para trás) a bola sobe em lob',
         },
         {
           keys: <b className="gm-tag">Saque</b>,
@@ -299,7 +319,9 @@ export function PingPlay({
               kmh: e.kmh,
               id: ++speedId,
               mine,
-              tag: e.smash ? 'SMASH' : e.quality === 'sweet' ? 'PERFEITA' : undefined,
+              tag: e.smash
+                ? 'SMASH'
+                : (STROKE_TAG[e.stroke] ?? (e.quality === 'sweet' ? 'PERFEITA' : undefined)),
             },
           }));
         } else if (e.type === 'bounce') pingSfx.bounce(e.impact);
@@ -455,7 +477,8 @@ export function PingPlay({
           zt = zt > 0 ? Math.max(0, zt - 3 * dt) : zt;
         }
         // dedo parado no meio do caminho: a raquete vai recolhendo
-        if (pointerDown && performance.now() - lastMoveAt > 160) zt = zt > 0 ? Math.max(0, zt - 2.4 * dt) : zt;
+        if (pointerDown && performance.now() - lastMoveAt > 160)
+          zt = zt > 0 ? Math.max(0, zt - 2.4 * dt) : zt;
         me.z = zt;
         // só nos testes: uma entrada de bot (ou de um "jogador" programado) no lugar do mouse
         const forced = (window as unknown as { __pingForce?: PpInput }).__pingForce;

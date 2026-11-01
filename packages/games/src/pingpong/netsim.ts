@@ -1,3 +1,4 @@
+import { PP_STROKES, type PpStroke } from './paddle';
 import {
   PP_PAD_R,
   PP_PAD_X,
@@ -262,6 +263,7 @@ export function ppParseNetEvent(v: unknown): PpNetEvent | null {
     kmh: Math.round(e.kmh),
     quality: q,
     spin: e.spin,
+    stroke: PP_STROKES.includes(e.stroke as PpStroke) ? (e.stroke as PpStroke) : 'normal',
     b: e.b as number[],
   };
 }

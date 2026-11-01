@@ -46,7 +46,7 @@ import {
   PP_HAND_VZ_MAX,
   PP_VZ_MAX,
 } from './constants';
-import { ppPaddleHit, type PpHitQuality } from './paddle';
+import { ppPaddleHit, type PpHitQuality, type PpStroke } from './paddle';
 import { ppGuideHit } from './assist';
 
 /**
@@ -161,6 +161,7 @@ export interface PpHitRecord {
   kmh: number;
   quality: PpHitQuality;
   spin: number;
+  stroke?: PpStroke;
   /** x, y, z, vx, vy, vz, wx, wy, wz da bola depois da batida. */
   b: number[];
 }
@@ -194,6 +195,7 @@ export type PpEvent =
       quality: PpHitQuality;
       spin: number;
       serve: boolean;
+      stroke: PpStroke;
     }
   | { type: 'bounce'; side: number; x: number; z: number; impact: number }
   | { type: 'net' }
@@ -526,10 +528,11 @@ export class PpMatch {
       vx: sw ? sw.vx : pad.vx,
       vy: sw ? sw.vy : pad.vy,
       vz: sw ? sw.vz : pad.vz,
+      reach: pad.reach,
     });
     pad.swing = 1;
     const kmh = ppKmh(info.speed);
-    this.commitHit(p, serve, info.smash, kmh, info.quality, info.spin);
+    this.commitHit(p, serve, info.smash, kmh, info.quality, info.spin, info.stroke);
     if (this.net) {
       this.pendingHit = {
         p,
@@ -538,6 +541,7 @@ export class PpMatch {
         kmh,
         quality: info.quality,
         spin: info.spin,
+        stroke: info.stroke,
         b: [],
       };
     }
@@ -550,6 +554,7 @@ export class PpMatch {
     kmh: number,
     quality: PpHitQuality,
     spin: number,
+    stroke: PpStroke = 'normal',
   ): void {
     this.lastHitter = p;
     this.bounces = [0, 0];
@@ -558,7 +563,7 @@ export class PpMatch {
     if (this.phase === 'toss') this.phase = 'rally';
     // o limite de tempo é por batida: bola parada no ar nunca trava a partida, e uma batida não cai junto do limite
     this.t = 0;
-    this.events.push({ type: 'hit', p, kmh, smash, quality, spin, serve });
+    this.events.push({ type: 'hit', p, kmh, smash, quality, spin, serve, stroke });
   }
 
   /** Aplica uma batida resolvida por quem bateu (vinda da rede ou do registro): a bola passa a ser a do registro. */
@@ -579,7 +584,7 @@ export class PpMatch {
       number,
     ];
     this.pad(r.p).swing = 1;
-    this.commitHit(r.p, r.serve, r.smash, r.kmh, r.quality, r.spin);
+    this.commitHit(r.p, r.serve, r.smash, r.kmh, r.quality, r.spin, r.stroke ?? 'normal');
   }
 
   /** Foto do estado de agora (para voltar no tempo quando uma batida chega atrasada). */

@@ -297,12 +297,44 @@ describe('a batida de verdade', () => {
     expect(down.vy).toBeLessThan(0);
   });
 
-  it('o efeito vem do movimento: subir dá topspin (a bola mergulha) e descer dá backspin', () => {
-    const up = hit(0, 4, 3).b;
-    const down = hit(0, -4, 3).b;
-    expect(up.wx).toBeLessThan(0); // topspin para quem bate de perto da câmera
-    expect(down.wx).toBeGreaterThan(0);
-    expect(up.wx).toBeLessThan(down.wx);
+  it('cada jeito de jogar a raquete dá um golpe: corte, topspin, drive, curva, curta, lob e smash', () => {
+    const stroke = (
+      m: { vx?: number; vz: number; reach?: number },
+      ball?: { y?: number; vz?: number },
+    ) => {
+      const b = ppNewBall();
+      b.x = 0;
+      b.y = ball?.y ?? 1.3;
+      b.z = 3.2;
+      b.vy = -1;
+      b.vz = ball?.vz ?? 4;
+      const info = ppPaddleHit(b, 0, {
+        x: 0,
+        y: b.y,
+        vx: m.vx ?? 0,
+        vy: 0,
+        vz: m.vz,
+        reach: m.reach,
+      });
+      return { info, b };
+    };
+    const corte = stroke({ vz: 1.8 });
+    expect(corte.info.stroke).toBe('corte');
+    expect(corte.b.wx).toBeGreaterThan(0); // backspin
+    const top = stroke({ vz: 5.5 });
+    expect(top.info.stroke).toBe('topspin');
+    expect(top.b.wx).toBeLessThan(0); // topspin
+    expect(stroke({ vz: 10 }).info.stroke).toBe('drive');
+    const curva = stroke({ vz: 4.5, vx: 6 });
+    expect(curva.info.stroke).toBe('curva');
+    expect(Math.abs(curva.b.wy)).toBeGreaterThan(10);
+    const curta = stroke({ vz: 2, reach: 2.8 });
+    expect(curta.info.stroke).toBe('curta');
+    expect(ppLanding(curta.b, 0, true).ok).toBe(true);
+    expect(Math.abs(ppLanding(curta.b, 0, true).z)).toBeLessThan(1.2);
+    expect(stroke({ vz: 0, reach: -0.6 }, { vz: 10 }).info.stroke).toBe('lob');
+    expect(stroke({ vz: 0 }, { vz: 10 }).info.stroke).toBe('bloqueio');
+    expect(stroke({ vz: 8 }, { y: 2.1 }).info.stroke).toBe('smash');
   });
 
   it('o movimento para o lado vira a bola para o lado', () => {

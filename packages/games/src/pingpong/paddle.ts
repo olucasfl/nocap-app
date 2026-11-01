@@ -5,6 +5,7 @@ import {
   PP_AIM,
   PP_NET_H,
   PP_PAD_R,
+  PP_PAD_Z,
   PP_R,
   PP_SMASH_SPEED,
   PP_SPIN_MAX,
@@ -22,9 +23,26 @@ export interface PpPaddleMotion {
   vx: number;
   vy: number;
   vz: number;
+  /** Alcance da raquete (0 = plano de espera, positivo = rumo à rede, negativo = recuada). */
+  reach?: number;
 }
 
 export type PpHitQuality = 'edge' | 'normal' | 'sweet';
+
+/** Os golpes: cada um sai de um jeito de jogar a raquete (força do avanço, lado, onde bate, altura da bola). */
+export type PpStroke =
+  'normal' | 'drive' | 'topspin' | 'corte' | 'curva' | 'curta' | 'bloqueio' | 'lob' | 'smash';
+export const PP_STROKES: readonly PpStroke[] = [
+  'normal',
+  'drive',
+  'topspin',
+  'corte',
+  'curva',
+  'curta',
+  'bloqueio',
+  'lob',
+  'smash',
+];
 
 export interface PpHitInfo {
   /** Velocidade da bola depois da batida (m/s). */
@@ -34,6 +52,7 @@ export interface PpHitInfo {
   quality: PpHitQuality;
   /** Efeito em torno do eixo x depois da batida (rad/s). */
   spin: number;
+  stroke: PpStroke;
 }
 
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
@@ -140,14 +159,58 @@ export function ppPaddleHit(b: PpBall, side: number, pad: PpPaddleMotion, guide 
   const smashing = high && pad.vz > 6 && power > 0.55;
   // pontaria: o movimento lateral da mão leva a bola para o lado
   vx += pad.vx * PP_AIM * (0.4 + 0.6 * power);
-  if (power < 0.35 && vin > 6) {
-    // bloqueio: a defesa de uma bola forte sobe em arco (lob) em vez de voltar reta e rápida
-    const lift = (1 - power / 0.35) * Math.min(1, vin / 11);
+  const fwdPow = pad.vz;
+  const lat = Math.abs(pad.vx);
+  const reach = pad.reach ?? 0;
+  const nearNet = reach > PP_PAD_Z - 1.5; // bateu perto da rede
+  const low = b.y < PP_TOP + PP_NET_H + 0.3;
+  let stroke: PpStroke = 'normal';
+  let drop = false;
+  // efeito extra do golpe (rad/s): topspin (+) e backspin (-) em torno do eixo da trajetória, e efeito de lado
+  let spinFwd = 0;
+  let spinSide = 0;
+  const blocking = power < 0.35 && vin > 6;
+  if (smashing) {
+    stroke = 'smash';
+  } else if (blocking) {
+    // defesa de bola forte com a mão mansa: sobe em arco; recuado (atrás do plano) o arco é mais alto (lob)
+    const back = reach < -0.25;
+    const lift = (1 - power / 0.35) * Math.min(1, vin / 11) * (back ? 1.7 : 1);
     vy += 3.4 * lift;
     vx *= 1 - 0.25 * lift;
     vz *= 1 - 0.25 * lift;
+    stroke = back ? 'lob' : 'bloqueio';
+    spinFwd = back ? 18 : 0;
+  } else if (nearNet && fwdPow < 4.6 && !high) {
+    // toque curto perto da rede: a bola mal passa e cai logo depois (com corte)
+    stroke = 'curta';
+    drop = true;
+    spinFwd = -34;
+  } else if (lat > 4.2 && fwdPow > 2.6) {
+    // mão varrendo para o lado: efeito de lado, a bola faz curva
+    stroke = 'curva';
+    spinSide = Math.sign(pad.vx) * Math.min(52, 10 * lat) * (side === 0 ? 1 : -1);
+    spinFwd = 12;
+  } else if (fwdPow < 3.4 && !high) {
+    // empurrada devagar: corte (backspin), a bola vai baixa e morre na mesa
+    stroke = 'corte';
+    spinFwd = -(26 + 18 * (1 - fwdPow / 3.4));
+    if (low) vy *= 0.6;
+  } else if (fwdPow < 8.2) {
+    stroke = 'topspin';
+    spinFwd = 24 + 6 * (fwdPow - 3.4);
+  } else {
+    stroke = 'drive';
+    spinFwd = 14;
   }
-  const cap = 0.5 * vin + 3.6 + 10.5 * power + (smashing ? 4.5 : 0);
+  if (drop) {
+    vx *= 0.7;
+    vz *= 0.45;
+  }
+  const cap =
+    (drop ? 0.3 * vin + 2.4 : 0.5 * vin + 3.6) +
+    10.5 * power * (drop ? 0.3 : 1) +
+    (smashing ? 4.5 : 0);
   const sp = Math.hypot(vx, vy, vz);
   const lim = Math.min(PP_V_MAX, cap);
   if (sp > lim) {
@@ -163,13 +226,29 @@ export function ppPaddleHit(b: PpBall, side: number, pad: PpPaddleMotion, guide 
     wy *= k;
     wz *= k;
   }
+  // o efeito do golpe se soma ao do atrito: topspin gira a bola "para a frente" (ela cai mais rápido), corte ao contrário
+  const hh = Math.hypot(vx, vz);
+  if (hh > 0.2 && (spinFwd || spinSide)) {
+    const ux = vx / hh;
+    const uz = vz / hh;
+    wx += spinFwd * uz;
+    wz += -spinFwd * ux;
+    wy += spinSide;
+  }
   b.vx = vx;
   b.vy = vy;
   b.vz = vz;
   b.wx = wx;
   b.wy = wy;
   b.wz = wz;
-  if (guide) ppGuideHit(b, side);
+  const ws2 = Math.hypot(b.wx, b.wy, b.wz);
+  if (ws2 > PP_SPIN_MAX) {
+    const k = PP_SPIN_MAX / ws2;
+    b.wx *= k;
+    b.wy *= k;
+    b.wz *= k;
+  }
+  if (guide) ppGuideHit(b, side, drop);
   const speed = Math.hypot(b.vx, b.vy, b.vz);
-  return { speed, smash: speed >= PP_SMASH_SPEED && vy < -1, quality, spin: wx };
+  return { speed, smash: speed >= PP_SMASH_SPEED && vy < -1, quality, spin: wx, stroke };
 }

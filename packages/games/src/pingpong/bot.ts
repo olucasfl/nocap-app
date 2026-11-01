@@ -200,7 +200,7 @@ export class PpBot {
             const info = ppPaddleHit(
               trial,
               p,
-              { x: padX - off * PP_PAD_R, y: padY, vx, vy, vz },
+              { x: padX - off * PP_PAD_R, y: padY, vx, vy, vz, reach: BOT_REACH },
               false,
             );
             if (info.speed > power) continue;
