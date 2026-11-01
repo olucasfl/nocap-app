@@ -69,7 +69,7 @@ const guide = ppNewBall();
  * só o necessário (a altura da saída e, se preciso, um pouco da força) pela jogada boa mais parecida com a que a mão
  * fez. A direção para os lados e o efeito continuam sendo do jogador. Se a jogada já é boa, não mexe em nada.
  */
-export function ppGuideHit(b: PpBall, side: number, drop = false): void {
+export function ppGuideHit(b: PpBall, side: number, drop = false, lateral = true): void {
   if (ppLanding(b, side, drop).ok) return;
   const fwd = side === 0 ? -1 : 1;
   let hs = Math.hypot(b.vx, b.vz);
@@ -84,7 +84,7 @@ export function ppGuideHit(b: PpBall, side: number, drop = false): void {
   const base = drop ? Math.min(4.2, Math.max(1.6, hs)) : Math.min(10.5, Math.max(3.6, hs));
   const scales = [1, 1.15, 0.9, 1.3, 1.55, 1.8, 2.1, 0.8, 0.68, 0.58];
   // primeiro mantém a direção da mão; se não há jogada boa assim (cantinho demais), fecha o ângulo aos poucos
-  for (const lat of [1, 0.75, 0.5, 0.25, 0]) {
+  for (const lat of lateral ? [1, 0.75, 0.5, 0.25, 0] : [1]) {
     const lx = ux * lat;
     const lz = Math.sqrt(Math.max(0, 1 - lx * lx)) * Math.sign(uz || fwd);
     for (const sc of scales) {

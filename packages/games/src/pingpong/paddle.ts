@@ -3,6 +3,8 @@ import { ppTune } from './tune';
 import { ppGuideHit } from './assist';
 import {
   PP_AIM,
+  PP_ASSIST_LATERAL_POWER,
+  PP_ASSIST_MAX_POWER,
   PP_NET_H,
   PP_PAD_R,
   PP_PAD_Z,
@@ -248,7 +250,10 @@ export function ppPaddleHit(b: PpBall, side: number, pad: PpPaddleMotion, guide 
     b.wy *= k;
     b.wz *= k;
   }
-  if (guide) ppGuideHit(b, side, drop);
+  // A ajuda é para o que sai torto sem querer: batida de força (mão rápida) não é corrigida e pode sair da mesa ou ir
+  // na rede; batida média só ganha ajuda na altura; a mansa também no ângulo.
+  if (guide && (power < PP_ASSIST_MAX_POWER || vin < 0.5))
+    ppGuideHit(b, side, drop, power < PP_ASSIST_LATERAL_POWER);
   const speed = Math.hypot(b.vx, b.vy, b.vz);
   return { speed, smash: speed >= PP_SMASH_SPEED && vy < -1, quality, spin: wx, stroke };
 }

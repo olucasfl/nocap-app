@@ -651,7 +651,7 @@ export class PingScene {
   private fitCamera() {
     this.camDirty = false;
     const cam = this.camera;
-    cam.fov = 54;
+    cam.fov = 56;
     cam.updateProjectionMatrix();
     const pts: [number, number, number][] = [];
     const hx = PP_W / 2 + 0.35;
@@ -659,7 +659,7 @@ export class PingScene {
       pts.push([sx * hx, PP_TOP, PP_L / 2 + 0.35], [sx * hx, PP_TOP, -PP_L / 2 - 0.1]);
       pts.push([sx * 0.5, 1.9, PP_PAD_Z], [sx * 0.5, 0.9, PP_PAD_Z]);
     }
-    const ratio = 0.56; // a mesma inclinação em pé e deitado: a visão é parecida, só cabe mais para os lados
+    const ratio = 0.58; // a mesma inclinação em pé e deitado: a visão é parecida, só cabe mais para os lados
     const v = new THREE.Vector3();
     for (let z = 6; z < 40; z += 0.1) {
       cam.position.set(0, z * ratio, z);
@@ -668,7 +668,7 @@ export class PingScene {
       let ok = true;
       for (const p of pts) {
         v.set(p[0], p[1], p[2]).project(cam);
-        if (Math.abs(v.x) > 0.94 || v.y < -0.93 || v.y > 0.8) {
+        if (Math.abs(v.x) > 0.86 || v.y < -0.9 || v.y > 0.74) {
           ok = false;
           break;
         }
@@ -704,7 +704,7 @@ export class PingScene {
     cam.position.x += sx;
     cam.position.y += sy;
     cam.lookAt(tx, 0.9, -0.6);
-    const fov = 54 + this.fovKick * 5;
+    const fov = 56 + this.fovKick * 5;
     if (Math.abs(cam.fov - fov) > 0.01) {
       cam.fov = fov;
       cam.updateProjectionMatrix();

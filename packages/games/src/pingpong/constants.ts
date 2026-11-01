@@ -101,7 +101,11 @@ export const PP_SERVE_WAIT = 0.9;
 /** Alcance até a rede: a raquete passeia por cima da mesa (reach 0 = plano de espera; NET = quase na rede). */
 export const PP_REACH_NET = PP_PAD_Z - 0.4;
 /** E para trás: a raquete pode ficar atrás do plano de espera (m). */
-export const PP_REACH_BACK = 0.95;
+export const PP_REACH_BACK = 1.7;
+/** Batida com a mão acima disto (0 a 1) é de força: sem ajuda, e pode sair da mesa ou ir na rede. */
+export const PP_ASSIST_MAX_POWER = 0.62;
+/** Abaixo disto a ajuda também fecha o ângulo para os lados; entre os dois só corrige a altura. */
+export const PP_ASSIST_LATERAL_POWER = 0.45;
 /** Rapidez e rigidez do avanço/recuo da raquete (m/s, 1/s). */
 export const PP_Z_SPEED = 15;
 export const PP_Z_STIFF = 34;

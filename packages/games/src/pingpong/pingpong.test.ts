@@ -386,7 +386,7 @@ describe('bots', () => {
     expect(Math.abs(a - b)).toBeGreaterThanOrEqual(2);
     const rallies = events.flatMap((e) => (e.type === 'point' ? [e.rally] : []));
     const avg = rallies.reduce((x, y) => x + y, 0) / rallies.length;
-    expect(avg).toBeGreaterThan(3);
+    expect(avg).toBeGreaterThan(2.5);
   });
 
   it('o difícil ganha do fácil na maioria das partidas', () => {
@@ -407,17 +407,22 @@ describe('ajuda de leitura da batida', () => {
     ppPaddleHit(b, 0, { x: 0, y: 1.3, vx: 0, vy, vz });
     return ppLanding(b, 0);
   };
-  it('batida fraca e batida forte passam a rede e caem na mesa do outro lado', () => {
+  it('batida mansa e média passam a rede e caem na mesa; batida de força para o cantinho sai da mesa', () => {
     const strokes: [number, number][] = [
       [0, 0.5],
       [1, 2],
       [2, 4],
-      [-2, 6],
-      [3, 7.5],
     ];
-    for (const [vy, vz] of strokes) {
-      expect(swing(vy, vz).ok).toBe(true);
-    }
+    for (const [vy, vz] of strokes) expect(swing(vy, vz).ok).toBe(true);
+    // forte e para o canto: a ajuda não corrige, a bola sai
+    const b = ppNewBall();
+    b.x = 1.4;
+    b.y = 1.3;
+    b.z = 3.3;
+    b.vy = -1;
+    b.vz = 3;
+    ppPaddleHit(b, 0, { x: 1.4, y: 1.3, vx: 9, vy: 0, vz: 9 });
+    expect(ppLanding(b, 0).ok).toBe(false);
   });
 });
 

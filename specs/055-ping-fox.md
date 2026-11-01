@@ -160,3 +160,8 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 
 - **A raquete fica embaixo do dedo**: o toque (e o mouse) é projetado na altura atual da raquete e é para onde ela vai (x e alcance z); sem controle relativo, sem recolher sozinha. O teste e2e confere que o centro da raquete na tela cai perto do dedo.
 - **Mesma visão em pé e deitado**: `fitCamera` usa a mesma inclinação e o mesmo FOV nos dois; só afasta o necessário para caber (deitado cabe mais para os lados). Ao girar o aparelho o tamanho é medido de novo (`orientationchange`/`resize`).
+
+### Rodada 9 (01/11/2026): a bola pode sair
+
+- A ajuda de leitura só vale para o que sai torto sem querer: batida de **força** (mão com poder ≥ 0,62, `PP_ASSIST_MAX_POWER`) não é corrigida e pode sair da mesa ou ir na rede; a **média** só ganha ajuda na altura; a **mansa** também no ângulo (`PP_ASSIST_LATERAL_POWER`). O saque (bola parada) continua sempre ajudado. Efeito de verdade (curva, topspin) continua valendo: a bola pode sair e voltar por causa dele, sem a ajuda.
+- Visão mais ampla (margens maiores no `fitCamera`, FOV 56) e a raquete vai mais para trás (`PP_REACH_BACK` 1,7 m).
