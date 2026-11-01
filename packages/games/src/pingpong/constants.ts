@@ -106,9 +106,9 @@ export const PP_REACH_BACK = 1.7;
 export const PP_ASSIST_MAX_POWER = 0.62;
 /** Abaixo disto a ajuda também fecha o ângulo para os lados; entre os dois só corrige a altura. */
 export const PP_ASSIST_LATERAL_POWER = 0.45;
-/** Rapidez e rigidez do avanço/recuo da raquete (m/s, 1/s). */
-export const PP_Z_SPEED = 15;
-export const PP_Z_STIFF = 34;
+/** A raquete (jogo de verdade) segue a mão: rapidez máxima (m/s) e rigidez (1/s; com o passo de 1/60 s, 55 é quase colar). */
+export const PP_FOLLOW_SPEED = 45;
+export const PP_FOLLOW_STIFF = 55;
 /** Altura de espera da raquete (a altura acompanha a bola que vem). */
 export const PP_REST_Y = 1.45;
 /** A mão passa no máximo isto para a frente na batida (m/s). */

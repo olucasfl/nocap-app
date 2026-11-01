@@ -42,8 +42,8 @@ import {
   PP_SERVE_WAIT,
   PP_REACH_NET,
   PP_REACH_BACK,
-  PP_Z_SPEED,
-  PP_Z_STIFF,
+  PP_FOLLOW_SPEED,
+  PP_FOLLOW_STIFF,
   PP_REST_Y,
   PP_HAND_VZ_MAX,
   PP_VZ_MAX,
@@ -146,20 +146,21 @@ export function ppSmashTier(cursor: number): number {
 export function ppPadStepZ(pad: PpPaddle, tx: number, ty: number, tz: number, dt: number): void {
   const cx = Math.max(-PP_PAD_X, Math.min(PP_PAD_X, tx));
   const cy = Math.max(PP_PAD_Y_MIN, Math.min(PP_PAD_Y_MAX, ty));
-  let vx = (cx - pad.x) * PP_PAD_STIFF;
-  let vy = (cy - pad.y) * PP_PAD_STIFF;
-  const sp = Math.hypot(vx, vy);
-  if (sp > PP_PAD_SPEED) {
-    vx *= PP_PAD_SPEED / sp;
-    vy *= PP_PAD_SPEED / sp;
-  }
+  // a raquete acompanha o dedo quase colada (rigidez perto do máximo estável para o passo de 1/60 s) e só a velocidade
+  // dela é limitada: nada de atraso quando o dedo vai rápido
+  const vx = Math.max(-PP_FOLLOW_SPEED, Math.min(PP_FOLLOW_SPEED, (cx - pad.x) * PP_FOLLOW_STIFF));
+  const vy = Math.max(-PP_FOLLOW_SPEED, Math.min(PP_FOLLOW_SPEED, (cy - pad.y) * PP_FOLLOW_STIFF));
   pad.x += vx * dt;
   pad.y += vy * dt;
-  pad.vx = vx;
+  // para a batida só conta uma mão de verdade (até ~10 m/s para os lados)
+  pad.vx = Math.max(-10, Math.min(10, vx));
   // a altura é automática: a subida e descida dela não conta como golpe
   pad.vy = Math.max(-1, Math.min(1, vy * 0.2));
   const goal = Math.max(-PP_REACH_BACK, Math.min(PP_REACH_NET, tz));
-  const vz = Math.max(-PP_Z_SPEED, Math.min(PP_Z_SPEED, (goal - pad.reach) * PP_Z_STIFF));
+  const vz = Math.max(
+    -PP_FOLLOW_SPEED,
+    Math.min(PP_FOLLOW_SPEED, (goal - pad.reach) * PP_FOLLOW_STIFF),
+  );
   pad.reach += vz * dt;
   pad.vz = Math.max(0, Math.min(PP_HAND_VZ_MAX, vz));
   pad.swing = Math.max(0, pad.swing - dt * 6);

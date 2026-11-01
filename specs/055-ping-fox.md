@@ -198,3 +198,7 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 
 - **Saque de qualquer lugar**: a ajuda de leitura agora também joga para o centro da mesa (`inward`): quem saca ou rebate de um canto precisa mandar a bola para dentro, senão ela nunca caía na mesa (era a falta e a rede do saque). Teste novo: sacar de 5 posições e 3 rapidezes nunca dá falta e a bola cai do outro lado.
 - **Câmera deitada mais atrás** (`× 1,28` em telas largas): mais espaço para mexer a raquete para os lados.
+
+### Rodada 16 (01/11/2026): a raquete cola no dedo
+
+- A raquete (jogo de verdade) seguia com rigidez 36 e teto de 13 m/s: quando o dedo ia rápido ela ficava para trás. Agora `PP_FOLLOW_STIFF` = 55 (quase o máximo estável para o passo de 1/60 s) e `PP_FOLLOW_SPEED` = 45 m/s: um pulo de 3 m chega em menos de 0,2 s (teste). A velocidade que entra na batida continua limitada a uma mão de verdade (±10 m/s para os lados, `PP_HAND_VZ_MAX` para a frente).

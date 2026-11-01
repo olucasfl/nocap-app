@@ -223,6 +223,18 @@ describe('regras', () => {
     expect(m.phase === 'rally' || m.phase === 'point').toBe(true);
   });
 
+  it('a raquete acompanha o dedo sem atraso: um pulo de 3 m para o lado chega em menos de 0,2 s', () => {
+    const pad: PpPaddle = { x: -1.5, y: 1.4, vx: 0, vy: 0, reach: 0, vz: 0, swing: 0 };
+    let ticks = 0;
+    while (Math.abs(pad.x - 1.5) > 0.15 && ticks < 60) {
+      ppPadStepZ(pad, 1.5, 1.4, 0, 1 / 60);
+      ticks++;
+    }
+    expect(ticks).toBeLessThanOrEqual(11);
+    // e a velocidade que entra na batida não passa de uma mão de verdade
+    expect(Math.abs(pad.vx)).toBeLessThanOrEqual(10);
+  });
+
   it('com a mão (z), a raquete vai até a rede e a força vem do impulso para a frente', () => {
     const pad: PpPaddle = { x: 0, y: 1.3, vx: 0, vy: 0, reach: 0, vz: 0, swing: 0 };
     let top = 0;
