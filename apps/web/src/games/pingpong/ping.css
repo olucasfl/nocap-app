@@ -3,7 +3,7 @@
   position: fixed;
   inset: 0;
   z-index: 40;
-  background: #15102e;
+  background: #0a0e26;
 }
 .png-play {
   touch-action: none;
@@ -14,7 +14,7 @@
   -webkit-user-select: none;
   -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
-  background: #15102e;
+  background: #0a0e26;
 }
 .png-canvas {
   position: absolute;

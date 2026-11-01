@@ -137,8 +137,8 @@ export class PingScene {
     });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, touch ? 1.7 : 2));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
-    this.scene.background = new THREE.Color(0x15102e);
-    this.scene.fog = new THREE.Fog(0x15102e, 22, 60);
+    this.scene.background = new THREE.Color(0x0a0e26);
+    this.scene.fog = new THREE.Fog(0x0a0e26, 26, 70);
     mapEdge.uEdge.value = 1e6;
 
     this.scene.add(new THREE.HemisphereLight(0xffffff, 0x3a3170, 2.1));
@@ -155,42 +155,22 @@ export class PingScene {
     // bola
     this.ball = new THREE.Group();
     const bt = canvasTex(256, 128, (g) => {
-      g.fillStyle = '#ffffff';
+      g.fillStyle = '#f6f4ee';
       g.fillRect(0, 0, 256, 128);
-      g.fillStyle = '#ff7d26';
-      g.fillRect(0, 50, 256, 28); // faixa no equador: mostra o giro
-      g.fillRect(0, 0, 22, 128); // e uma de polo a polo
-      g.fillStyle = '#1b1535';
-      g.fillRect(0, 46, 256, 4);
-      g.fillRect(0, 78, 256, 4);
+      // marca pequena e discreta: dá para ver o giro sem enfeitar a bola
+      g.fillStyle = '#c9c6bd';
+      g.fillRect(0, 60, 256, 8);
+      g.fillStyle = '#9a9890';
+      g.font = '700 22px sans-serif';
+      g.textAlign = 'center';
+      g.fillText('***', 64, 50);
     });
     this.ballMesh = new THREE.Mesh(
-      new THREE.SphereGeometry(PP_R, 28, 18),
-      new THREE.MeshStandardMaterial({
-        map: bt,
-        roughness: 0.35,
-        metalness: 0,
-        emissive: 0xffffff,
-        emissiveIntensity: 0.12,
-      }),
+      new THREE.SphereGeometry(PP_R, 32, 20),
+      new THREE.MeshStandardMaterial({ map: bt, roughness: 0.45, metalness: 0 }),
     );
-    const outline = new THREE.Mesh(
-      new THREE.SphereGeometry(PP_R * 1.14, 20, 12),
-      new THREE.MeshBasicMaterial({ color: INK, side: THREE.BackSide }),
-    );
-    const halo = new THREE.Sprite(
-      new THREE.SpriteMaterial({
-        map: this.glow,
-        color: 0xffd9a0,
-        transparent: true,
-        opacity: 0.55,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-      }),
-    );
-    halo.scale.setScalar(PP_R * 7);
-    this.ball.add(this.ballMesh, outline, halo);
-    this.ball.scale.setScalar(1.3);
+    this.ball.add(this.ballMesh);
+    this.ball.scale.setScalar(1.25);
     this.scene.add(this.ball);
     this.ballShadow = new THREE.Mesh(
       new THREE.CircleGeometry(PP_R * 1.15, 20),
@@ -207,7 +187,7 @@ export class PingScene {
       const s = new THREE.Sprite(
         new THREE.SpriteMaterial({
           map: this.glow,
-          color: i % 2 ? 0xffffff : 0xffc27a,
+          color: 0xdfe9ff,
           transparent: true,
           opacity: 0,
           depthWrite: false,
@@ -230,7 +210,7 @@ export class PingScene {
           const mats = Array.isArray(mm.material) ? mm.material : mm.material ? [mm.material] : [];
           for (const mt of mats) {
             mt.transparent = true;
-            mt.opacity = Math.min(mt.opacity, 0.6);
+            mt.opacity = Math.min(mt.opacity, 0.88);
             mt.depthWrite = false;
           }
         });
@@ -289,22 +269,31 @@ export class PingScene {
 
   // ---------- construção ----------
 
-  /** O cenário: ginásio com arquibancada ao fundo, faixa "no cap!", luzes no teto e o tapete de quadra. */
+  /**
+   * O cenário, de ginásio de campeonato: piso escuro com a marca grande, tapete de quadra azul, placas de LED em volta,
+   * torcida em silhueta na arquibancada e refletores. Tudo em tons escuros para a mesa e a bola se destacarem.
+   */
   private buildScenery() {
     const S = this.scene;
-    // tapete de quadra debaixo da mesa
+    // tapete de quadra azul-escuro debaixo da mesa, com linhas brancas
     const mat = new THREE.Mesh(
-      new THREE.PlaneGeometry(PP_W + 5.5, PP_L + 7),
+      new THREE.PlaneGeometry(PP_W + 6, PP_L + 7.5),
       new THREE.MeshLambertMaterial({
         map: canvasTex(256, 256, (g) => {
-          g.fillStyle = '#2b2a7a';
+          g.fillStyle = '#16307a';
           g.fillRect(0, 0, 256, 256);
-          g.strokeStyle = '#ffffff';
-          g.lineWidth = 6;
-          g.strokeRect(10, 10, 236, 236);
-          g.strokeStyle = '#ff7d26';
-          g.lineWidth = 4;
-          g.strokeRect(22, 22, 212, 212);
+          g.strokeStyle = 'rgba(255,255,255,0.85)';
+          g.lineWidth = 5;
+          g.strokeRect(8, 8, 240, 240);
+          // arranhados leves do piso
+          g.strokeStyle = 'rgba(255,255,255,0.05)';
+          g.lineWidth = 1;
+          for (let i = 0; i < 24; i++) {
+            g.beginPath();
+            g.moveTo(Math.random() * 256, Math.random() * 256);
+            g.lineTo(Math.random() * 256, Math.random() * 256);
+            g.stroke();
+          }
         }),
       }),
     );
@@ -312,115 +301,135 @@ export class PingScene {
     mat.position.y = 0.003;
     S.add(mat);
 
-    // parede do fundo
-    const wallZ = -15;
-    const wall = new THREE.Mesh(
-      new THREE.PlaneGeometry(46, 16),
+    // marca grande no piso (como nos ginásios de campeonato)
+    const logo = new THREE.Mesh(
+      new THREE.PlaneGeometry(14, 3.6),
       new THREE.MeshBasicMaterial({
-        map: canvasTex(512, 160, (g) => {
-          const gr = g.createLinearGradient(0, 0, 0, 160);
-          gr.addColorStop(0, '#1b1546');
-          gr.addColorStop(1, '#3a2a8f');
-          g.fillStyle = gr;
-          g.fillRect(0, 0, 512, 160);
-          g.fillStyle = 'rgba(255,255,255,0.06)';
-          for (let x = 0; x < 512; x += 64) g.fillRect(x, 0, 3, 160);
-        }),
-        fog: false,
-      }),
-    );
-    wall.position.set(0, 8, wallZ);
-    S.add(wall);
-    // faixa grande "no cap!"
-    const banner = new THREE.Mesh(
-      new THREE.PlaneGeometry(11, 2.6),
-      new THREE.MeshBasicMaterial({
-        map: canvasTex(512, 120, (g) => {
-          g.fillStyle = '#ff7d26';
-          g.fillRect(0, 0, 512, 120);
-          g.fillStyle = '#15102e';
-          g.fillRect(0, 0, 512, 8);
-          g.fillRect(0, 112, 512, 8);
-          g.font = '900 78px "Arial Black", Impact, sans-serif';
+        map: canvasTex(512, 128, (g) => {
+          g.clearRect(0, 0, 512, 128);
+          g.font = '900 96px "Arial Black", Impact, sans-serif';
           g.textAlign = 'center';
           g.textBaseline = 'middle';
-          g.fillStyle = '#15102e';
-          g.fillText('no cap!', 262, 66);
-          g.fillStyle = '#ffffff';
-          g.fillText('no cap!', 256, 60);
+          g.fillStyle = 'rgba(255,255,255,0.10)';
+          g.fillText('NO CAP!', 256, 68);
+        }),
+        transparent: true,
+        depthWrite: false,
+      }),
+    );
+    logo.rotation.x = -Math.PI / 2;
+    logo.position.set(0, 0.004, PP_L / 2 + 3.4);
+    S.add(logo);
+
+    // placas de LED em volta da quadra (fundo e laterais)
+    const board = (w: number, x: number, z: number, ry: number, hue: number) => {
+      const b = new THREE.Mesh(
+        new THREE.BoxGeometry(w, 0.95, 0.12),
+        new THREE.MeshBasicMaterial({
+          map: canvasTex(512, 64, (g) => {
+            const gr = g.createLinearGradient(0, 0, 512, 0);
+            gr.addColorStop(0, hue ? '#c4232d' : '#1d4fd8');
+            gr.addColorStop(0.5, hue ? '#2a1b66' : '#102a7a');
+            gr.addColorStop(1, hue ? '#1d4fd8' : '#c4232d');
+            g.fillStyle = gr;
+            g.fillRect(0, 0, 512, 64);
+            g.fillStyle = 'rgba(255,255,255,0.9)';
+            g.font = '900 38px "Arial Black", Impact, sans-serif';
+            g.textAlign = 'center';
+            g.textBaseline = 'middle';
+            g.fillText('NO CAP!', 128, 34);
+            g.fillText('NO CAP!', 384, 34);
+          }),
+        }),
+      );
+      b.position.set(x, 0.48, z);
+      b.rotation.y = ry;
+      S.add(b);
+    };
+    const wallZ = -12;
+    for (const x of [-9, 0, 9]) board(9, x, wallZ, 0, x === 0 ? 1 : 0);
+    for (const sx of [-1, 1]) {
+      board(9, sx * 13.5, wallZ + 4.2, (sx * -Math.PI) / 2, 0);
+      board(9, sx * 13.5, wallZ + 13.2, (sx * -Math.PI) / 2, 1);
+      board(9, sx * 13.5, wallZ + 22.2, (sx * -Math.PI) / 2, 0);
+    }
+
+    // parede escura do fundo
+    const wall = new THREE.Mesh(
+      new THREE.PlaneGeometry(60, 18),
+      new THREE.MeshBasicMaterial({
+        map: canvasTex(256, 96, (g) => {
+          const gr = g.createLinearGradient(0, 0, 0, 96);
+          gr.addColorStop(0, '#05081c');
+          gr.addColorStop(1, '#16204f');
+          g.fillStyle = gr;
+          g.fillRect(0, 0, 256, 96);
         }),
         fog: false,
       }),
     );
-    banner.position.set(0, 7, wallZ + 0.05);
-    S.add(banner);
-    // arquibancada: degraus com a torcida (cubos coloridos)
-    const colors = [0xff7d26, 0x9a6bff, 0x2fd5a3, 0xffd23f, 0x4aa8ff, 0xff5c8a];
-    const step = new THREE.MeshLambertMaterial({ color: 0x241c4d });
+    wall.position.set(0, 9, wallZ - 3.5);
+    S.add(wall);
+
+    // arquibancada com a torcida em silhueta (tons escuros, só uns toques de cor)
+    const tones = [0x1a2145, 0x232b57, 0x2b2f5e, 0x1d2a4f, 0x30264f, 0x7a2a3a, 0x2a4f8f];
+    const step = new THREE.MeshLambertMaterial({ color: 0x151a3a });
     const crowd = new THREE.InstancedMesh(
-      new THREE.BoxGeometry(0.5, 0.7, 0.4),
+      new THREE.CapsuleGeometry(0.2, 0.34, 2, 6),
       new THREE.MeshLambertMaterial({ color: 0xffffff }),
-      3 * 36,
+      3 * 46,
     );
     const m4 = new THREE.Matrix4();
     const c = new THREE.Color();
     let n = 0;
     for (let row = 0; row < 3; row++) {
-      const z = wallZ + 1.6 + (2 - row) * 1.4;
-      const y = 0.6 + row * 0.9;
-      const st = new THREE.Mesh(new THREE.BoxGeometry(34, 0.5 + row * 0.9, 1.3), step);
-      st.position.set(0, (0.5 + row * 0.9) / 2, z);
+      const z = wallZ - 0.4 - row * 1.25;
+      const y = 0.95 + row * 0.95;
+      const st = new THREE.Mesh(new THREE.BoxGeometry(46, 0.5 + row * 0.95, 1.2), step);
+      st.position.set(0, (0.5 + row * 0.95) / 2 + 0.3, z);
       S.add(st);
-      for (let i = 0; i < 36; i++) {
-        const seed = Math.sin((row * 36 + i) * 12.9898) * 43758.5453;
+      for (let i = 0; i < 46; i++) {
+        const seed = Math.sin((row * 46 + i) * 12.9898) * 43758.5453;
         const r = seed - Math.floor(seed);
-        m4.makeTranslation(-15 + i * 0.86 + (row % 2) * 0.4, y + 0.55 + r * 0.12, z);
+        m4.makeTranslation(-21 + i * 0.93 + (row % 2) * 0.4, y + 0.55 + r * 0.1, z);
         crowd.setMatrixAt(n, m4);
         crowd.setColorAt(
           n,
-          c.setHex(colors[Math.floor(r * colors.length) % colors.length] ?? 0xffffff),
+          c.setHex(tones[Math.floor(r * tones.length) % tones.length] ?? 0x1a2145),
         );
         n++;
       }
     }
     S.add(crowd);
-    // luzes no teto
-    const lamp = new THREE.MeshBasicMaterial({ color: 0xfff3c4, fog: false });
-    for (let i = -2; i <= 2; i++) {
-      const bar = new THREE.Mesh(new THREE.BoxGeometry(5, 0.14, 0.4), lamp);
-      bar.position.set(i * 6.5, 9.2, -6);
+
+    // refletores no teto, com um brilho leve
+    const lamp = new THREE.MeshBasicMaterial({ color: 0xf4f7ff, fog: false });
+    for (let i = -3; i <= 3; i++) {
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.12, 0.5), lamp);
+      bar.position.set(i * 5.2, 9.4, -3);
       S.add(bar);
       const glow = new THREE.Sprite(
         new THREE.SpriteMaterial({
           map: this.glow,
-          color: 0xfff3c4,
+          color: 0xdfe9ff,
           transparent: true,
-          opacity: 0.35,
+          opacity: 0.16,
           depthWrite: false,
           blending: THREE.AdditiveBlending,
           fog: false,
         }),
       );
-      glow.scale.set(7, 3, 1);
-      glow.position.set(i * 6.5, 9, -6);
+      glow.scale.set(6, 2.4, 1);
+      glow.position.set(i * 5.2, 9.2, -3);
       S.add(glow);
-    }
-    // placas laterais baixas com as cores do jogo
-    for (const sx of [-1, 1]) {
-      const board = new THREE.Mesh(
-        new THREE.BoxGeometry(0.3, 1.1, 18),
-        new THREE.MeshLambertMaterial({ color: sx < 0 ? 0xff7d26 : 0x9a6bff }),
-      );
-      board.position.set(sx * 8.5, 0.55, -4);
-      S.add(board);
     }
   }
 
   private buildFloor() {
     const tex = canvasTex(256, 256, (g) => {
-      g.fillStyle = '#1d1740';
+      g.fillStyle = '#0f1334';
       g.fillRect(0, 0, 256, 256);
-      g.fillStyle = '#241c4d';
+      g.fillStyle = '#12173b';
       g.fillRect(0, 0, 128, 128);
       g.fillRect(128, 128, 128, 128);
     });
@@ -458,17 +467,21 @@ export class PingScene {
     const slabH = 0.14;
     const slab = new THREE.Mesh(
       new RoundedBoxGeometry(PP_W + 0.08, slabH, PP_L + 0.08, 4, 0.035),
-      new THREE.MeshStandardMaterial({ color: 0x1e3fc4, roughness: 0.55, metalness: 0.05 }),
+      new THREE.MeshStandardMaterial({ color: 0x14308f, roughness: 0.5, metalness: 0.05 }),
     );
     slab.position.y = PP_TOP - slabH / 2;
     g.add(slab);
     // tampo com as linhas
     const tex = canvasTex(768, 1404, (c) => {
-      c.fillStyle = '#2f5bff';
+      c.fillStyle = '#2f6fcf';
+      c.fillRect(0, 0, 768, 1404);
+      const gr = c.createLinearGradient(0, 0, 0, 1404);
+      gr.addColorStop(0, 'rgba(255,255,255,0.10)');
+      gr.addColorStop(0.5, 'rgba(255,255,255,0)');
+      gr.addColorStop(1, 'rgba(0,0,0,0.12)');
+      c.fillStyle = gr;
       c.fillRect(0, 0, 768, 1404);
       // faixas de brilho bem suaves, para o tampo não parecer um bloco chapado
-      c.fillStyle = 'rgba(255,255,255,0.045)';
-      for (let y = 0; y < 1404; y += 156) c.fillRect(0, y, 768, 78);
       c.strokeStyle = '#ffffff';
       c.lineWidth = 12;
       c.strokeRect(18, 18, 768 - 36, 1404 - 36);
@@ -489,11 +502,11 @@ export class PingScene {
     // a borda de baixo e as pernas
     const apron = new THREE.Mesh(
       new THREE.BoxGeometry(PP_W - 0.5, 0.12, PP_L - 0.5),
-      new THREE.MeshLambertMaterial({ color: INK }),
+      new THREE.MeshLambertMaterial({ color: 0xb3202b }),
     );
     apron.position.y = PP_TOP - slabH - 0.06;
     g.add(apron);
-    const legMat = new THREE.MeshLambertMaterial({ color: 0x2a2150 });
+    const legMat = new THREE.MeshLambertMaterial({ color: 0x1b2a66 });
     for (const sx of [-1, 1])
       for (const sz of [-1, 1]) {
         const leg = new THREE.Mesh(new THREE.BoxGeometry(0.14, PP_TOP - slabH, 0.14), legMat);
@@ -501,7 +514,7 @@ export class PingScene {
         g.add(leg);
         const foot = new THREE.Mesh(
           new THREE.BoxGeometry(0.26, 0.05, 0.26),
-          new THREE.MeshLambertMaterial({ color: INK }),
+          new THREE.MeshLambertMaterial({ color: 0xb3202b }),
         );
         foot.position.set(sx * (PP_W / 2 - 0.3), 0.025, sz * (PP_L / 2 - 0.35));
         g.add(foot);
@@ -651,7 +664,7 @@ export class PingScene {
   private fitCamera() {
     this.camDirty = false;
     const cam = this.camera;
-    cam.fov = 56;
+    cam.fov = 42;
     cam.updateProjectionMatrix();
     const pts: [number, number, number][] = [];
     const hx = PP_W / 2 + 0.35;
@@ -659,7 +672,7 @@ export class PingScene {
       pts.push([sx * hx, PP_TOP, PP_L / 2 + 0.35], [sx * hx, PP_TOP, -PP_L / 2 - 0.1]);
       pts.push([sx * 0.5, 1.9, PP_PAD_Z], [sx * 0.5, 0.9, PP_PAD_Z]);
     }
-    const ratio = 0.58; // a mesma inclinação em pé e deitado: a visão é parecida, só cabe mais para os lados
+    const ratio = 0.46; // a mesma inclinação em pé e deitado: a visão é parecida, só cabe mais para os lados
     const v = new THREE.Vector3();
     for (let z = 6; z < 40; z += 0.1) {
       cam.position.set(0, z * ratio, z);
@@ -704,7 +717,7 @@ export class PingScene {
     cam.position.x += sx;
     cam.position.y += sy;
     cam.lookAt(tx, 0.9, -0.6);
-    const fov = 56 + this.fovKick * 5;
+    const fov = 42 + this.fovKick * 3;
     if (Math.abs(cam.fov - fov) > 0.01) {
       cam.fov = fov;
       cam.updateProjectionMatrix();
@@ -784,32 +797,25 @@ export class PingScene {
         // para onde a bola vai, na tela: de quem é a minha vista, sai para o fundo (-z); de quem está do outro lado, para perto
         const dirZ = e.p === this.me ? -1 : 1;
         const power = clamp((e.kmh - 20) / 80, 0, 1);
+        // poucas faíscas pequenas e brancas; o smash cronometrado leva faíscas roxas
         this.burst(
           bx,
           m.ball.y,
           bz,
           dirZ,
-          e.smash ? 16 : 8 + Math.round(power * 4),
-          e.smash ? 0xffc27a : 0xffffff,
+          e.tier > 0 ? 8 + e.tier * 3 : 3 + Math.round(power * 3),
+          e.tier > 0 ? 0xb98bff : 0xffffff,
         );
         if (e.tier > 0) {
-          // smash cronometrado: estouro roxo, mais forte quanto melhor o acerto
-          this.burst(bx, m.ball.y, bz, dirZ, 12 + e.tier * 8, 0xb455ff);
-          this.ringAt(bx, PP_TOP + 0.01, bz, 0xb455ff, 0.6 + e.tier * 0.15, 6);
-          this.shake = Math.max(this.shake, 0.6 + e.tier * 0.25);
-          this.fovKick = 0.6 + e.tier * 0.2;
-        } else if (e.stroke === 'subida') {
-          this.ringAt(bx, PP_TOP + 0.01, bz, 0xffd23f, 0.45, 4);
-          this.shake = Math.max(this.shake, 0.35);
-        }
-        if (e.smash) {
-          this.shake = Math.max(this.shake, 1);
-          this.fovKick = 1;
-          this.ringAt(bx, PP_TOP + 0.01, bz, 0xff7d26, 0.5, 5);
-        } else if (e.p === me) this.shake = Math.max(this.shake, 0.18 + power * 0.25);
+          this.shake = Math.max(this.shake, 0.35 + e.tier * 0.15);
+          this.fovKick = 0.3 + e.tier * 0.1;
+        } else if (e.smash) {
+          this.shake = Math.max(this.shake, 0.5);
+          this.fovKick = 0.4;
+        } else if (e.p === me) this.shake = Math.max(this.shake, 0.08 + power * 0.14);
         this.jump();
       } else if (e.type === 'bounce') {
-        this.ringAt(this.vx(e.x), PP_TOP + 0.006, this.vz(e.z), 0xffffff, 0.32, 3);
+        // sem anel: só a sombra e o som contam o quique
       } else if (e.type === 'net') {
         this.netShake = 1;
         this.shake = Math.max(this.shake, 0.4);
@@ -825,14 +831,14 @@ export class PingScene {
     let made = 0;
     for (const p of this.sparks) {
       if (p.life > 0) continue;
-      p.life = p.max = 0.28 + Math.random() * 0.22;
+      p.life = p.max = 0.18 + Math.random() * 0.14;
       p.s.position.set(x, y, z);
       const a = Math.random() * Math.PI * 2;
       const sp = 1 + Math.random() * 3;
       p.vx = Math.cos(a) * sp * 0.7;
       p.vy = Math.sin(a) * sp * 0.7 + 0.6;
       p.vz = dirZ * (0.6 + Math.random() * 1.6);
-      p.size = 0.07 + Math.random() * 0.1;
+      p.size = 0.035 + Math.random() * 0.05;
       (p.s.material as THREE.SpriteMaterial).color.setHex(color);
       p.s.visible = true;
       if (++made >= n) break;
@@ -903,8 +909,8 @@ export class PingScene {
     this.trailPos.unshift({ x: bx, y: by, z: bz });
     if (this.trailPos.length > this.trail.length) this.trailPos.pop();
     const tier = m.trailTier;
-    const showTrail = (speed > 5.5 || tier > 0) && m.phase !== 'serve' && !this.reduced;
-    const heat = tier > 0 ? 1 : clamp((speed - 5.5) / 8, 0, 1);
+    const showTrail = (speed > 9 || tier > 0) && m.phase !== 'serve' && !this.reduced;
+    const heat = tier > 0 ? 1 : clamp((speed - 9) / 7, 0, 1);
     for (let i = 0; i < this.trail.length; i++) {
       const s = this.trail[i];
       const p = this.trailPos[i + 1];
@@ -916,22 +922,12 @@ export class PingScene {
       const k = 1 - i / this.trail.length;
       s.visible = true;
       s.position.set(p.x, p.y, p.z);
-      s.scale.setScalar(PP_R * (3.4 + 3 * heat + tier * 1.4) * k + 0.03);
+      s.scale.setScalar(PP_R * (2 + 1.6 * heat + tier * 0.7) * k + 0.02);
       const sm = s.material as THREE.SpriteMaterial;
-      sm.opacity = (0.25 + 0.6 * heat) * k;
-      // bola rápida deixa um rastro de fogo; a mais forte (smash) é quase branca
+      sm.opacity = (0.1 + 0.32 * heat) * k;
+      // só um borrão de movimento claro; o smash cronometrado leva um rastro roxo, mais claro quanto melhor o acerto
       sm.color.setHex(
-        tier > 0
-          ? tier >= 3
-            ? 0xe7b8ff
-            : tier === 2
-              ? 0xb455ff
-              : 0x8a4bd6
-          : heat > 0.7
-            ? 0xfff0c8
-            : heat > 0.35
-              ? 0xff9a3d
-              : 0xffc27a,
+        tier >= 3 ? 0xd9b3ff : tier === 2 ? 0xa86bff : tier === 1 ? 0x8a58e0 : 0xdfe9ff,
       );
     }
 

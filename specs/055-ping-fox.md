@@ -186,3 +186,10 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 
 - Pesquisa (Table Tennis Touch, Octo Pong, projetos de física no GitHub): a força vem da rapidez do golpe, o efeito da direção do movimento e a posição do contato desvia a bola; nenhum jogo analisado deixa a rede decidir a jogada de quem bate forte.
 - `ppFixNet` (`assist.ts`): batida de força continua podendo sair (longa ou aberta), mas se a bola bateria na rede ou cairia antes dela, só a altura da saída sobe o necessário (folga de 7 cm). Numa grade de 810 batidas de teste: ~76% na mesa, 21% fora (força), 1% rede, 1% na própria mesa.
+
+### Rodada 14 (01/11/2026): visual de campeonato (inspirado no Ping Pong Fury)
+
+- **Cenário**: ginásio escuro (piso azul-marinho, tapete de quadra com linhas brancas e a marca "NO CAP!" no piso), placas de LED azul e vermelha em volta, torcida em silhueta escura, refletores com brilho leve. Sem as cores vivas de antes.
+- **Mesa e bola**: tampo azul com degradê suave, linhas brancas, borda e pernas em azul-escuro com detalhes vermelhos; bola branca fosca com marca discreta (sem aura nem contorno).
+- **Efeitos mais discretos**: faíscas pequenas e brancas, sem anéis coloridos, tremor menor, vinheta escura (não mais roxa) na câmera lenta, rastro só como borrão de movimento claro em bola rápida; o smash cronometrado mantém o rastro e as faíscas roxas.
+- **Câmera**: inclinação mais baixa e FOV 42, como nas referências (a distância continua se ajustando para a mesa caber).
