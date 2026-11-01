@@ -32,7 +32,7 @@ export const PP_PAD_MU = 0.9;
 export const PP_NET_KEEP = 0.25;
 
 /** Raquete: raio do disco, distância do plano atrás da ponta, alcance do ponteiro. */
-export const PP_PAD_R = 0.4;
+export const PP_PAD_R = 0.5;
 export const PP_PAD_Z = PP_L / 2 + 0.2;
 export const PP_PAD_X = 2.3;
 export const PP_PAD_Y_MIN = 0.55;

@@ -32,7 +32,7 @@ export const PP_BOT_LEVELS: Record<PpBotName, PpBotLevel> = {
   facil: {
     reaction: 0.4,
     speed: 4.4,
-    err: 0.3,
+    err: 0.5,
     swingErr: 0.3,
     aim: 0.15,
     power: 6.2,

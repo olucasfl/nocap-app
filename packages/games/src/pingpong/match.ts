@@ -35,13 +35,11 @@ import {
   PP_SERVE_FRONT,
   PP_SUB,
   PP_TICK,
-  PP_REACH_DEEP,
   ppTossSpeed,
   PP_TOSS_Y,
   PP_VZ_MAX,
 } from './constants';
 import { ppPaddleHit, type PpHitQuality } from './paddle';
-import { ppPredictCross, type PpCrossing } from './predict';
 
 /**
  * Uma batida "pronta" (só para os bots): a velocidade que a mão teria na hora do contato. Uma pessoa não manda isto: a
@@ -221,11 +219,6 @@ export class PpMatch {
   /** Batida pronta que um bot pediu para este tick. */
   private swingNow: [PpSwing | null, PpSwing | null] = [null, null];
   private serveWas: [boolean, boolean] = [false, false];
-  private icpt: [{ c: PpCrossing; deep: number } | null, { c: PpCrossing; deep: number } | null] = [
-    null,
-    null,
-  ];
-  private icptAt: [number | null, number | null] = [null, null];
   /**
    * Modo rede (spec 055, fase 3): as batidas e o lançamento chegam como eventos (`applyHit`, `tossReq`); só o jogador
    * `localPlayer` detecta a própria batida. Fora disso a partida é uma função dos eventos e do tick.
@@ -291,50 +284,16 @@ export class PpMatch {
       b0.vy < 0 &&
       b0.y < pad.y + 0.12 &&
       Math.hypot(b0.x - pad.x, b0.y - pad.y) < PP_PAD_R * 0.8;
-    let stance = serving
+    const stance = serving
       ? serveReady
         ? PP_SERVE_FRONT + 0.12
         : PP_REACH_SERVE
       : this.phase === 'rally' && this.expect === p
         ? PP_REACH_WAIT
         : 0;
-    // Auto-posição: a bola que vem é sempre alcançável. A raquete é levada ao ponto onde ela vai cruzar (a pessoa só
-    // escolhe o resto: força, direção, efeito). Bola muito rápida (smash do outro) dá menos tempo e menos ajuda: aí o
-    // ponto é de quem bateu melhor, não de quem "errou a bola".
-    let tx = inp.x;
-    let ty = inp.y;
-    if (!inp.swing && !inp.manual) {
-      const b = this.ball;
-      if (serving && this.phase === 'toss') {
-        tx += (b.x - tx) * 0.8;
-      } else if (!(this.phase === 'rally' && this.expect === p)) {
-        this.icpt[p === 0 ? 0 : 1] = null;
-      } else if (b.vz * PpMatch.sign(p) > 0) {
-        const side = p === 0 ? 0 : 1;
-        if (this.tick % 4 === 0 || !this.icpt[side]) {
-          let c = ppPredictCross(b, p, PP_REACH_WAIT);
-          let deep = 0;
-          if (!c) {
-            // bola curta: morre antes do plano; a raquete avança por cima da mesa para alcançá-la
-            c = ppPredictCross(b, p, PP_REACH_DEEP);
-            deep = PP_REACH_DEEP;
-          }
-          this.icpt[side] = c ? { c, deep } : null;
-          this.icptAt[side] = this.tick;
-        }
-        const cur = this.icpt[side];
-        if (cur) {
-          const left = cur.c.t - (this.tick - (this.icptAt[side] ?? this.tick)) / 60;
-          const sp = Math.hypot(cur.c.ball.vx, cur.c.ball.vy, cur.c.ball.vz);
-          const help = sp < 10 ? 1 : Math.max(0.2, 1 - ((sp - 10) / 4) * 0.8);
-          const near = Math.max(0, Math.min(1, (1.0 - left) / 0.5));
-          const w = help * near;
-          tx += (cur.c.x - tx) * w;
-          ty += (cur.c.y - ty) * w;
-          if (cur.deep > 0 && w > 0.5) stance = Math.max(stance, cur.deep);
-        }
-      }
-    }
+    // A raquete vai só aonde a mão da pessoa manda: nada de ir sozinha até a bola.
+    const tx = inp.x;
+    const ty = inp.y;
     ppPadStep(pad, tx, ty, PP_TICK, stance);
     // um bot pede a batida pronta: a velocidade da mão no contato vem dele
     const sw = inp.swing ?? null;
@@ -463,7 +422,7 @@ export class PpMatch {
     }
     if (this.net && (this.replay || p !== this.localPlayer)) return;
     // bola a ponto de quicar na mesa: o quique acontece no mesmo tick e a batida chegaria tarde para quem confere
-    if (this.ball.vy < 0 && this.ball.y < PP_TOP + PP_R + 0.12 && Math.abs(this.ball.z) <= PP_L / 2)
+    if (this.ball.vy < 0 && this.ball.y < PP_TOP + PP_R + 0.22 && Math.abs(this.ball.z) <= PP_L / 2 + 0.6)
       return;
     const s = PpMatch.sign(p);
     const pad = this.pad(p);

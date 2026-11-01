@@ -129,3 +129,8 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 - **Saque com barra**: segurar (clique, toque ou Espaço) faz a barra subir e descer; soltar lança a bola com `ppTossSpeed(v)` (3 a 6,6 m/s; no alto a bola chega a ~4 m). O valor `v` viaja no evento `toss` da rede (`v` opcional, padrão 0,5).
 - **Visual**: rastro de fogo na bola rápida (mais claro no smash), cenário de ginásio (arquibancada, faixa "no cap!", luzes, tapete de quadra).
 - Bots com erro de posição maior para as partidas terminarem; testes ajustados.
+
+### Rodada 4 (01/11/2026): a raquete é da mão
+
+- Removida a auto-posição: a raquete vai só aonde a mão da pessoa manda. A força e a direção da batida seguem o movimento (velocidade, ângulo, lado) e a ajuda de leitura só corrige a altura se o golpe sairia na rede ou fora. Para não ser injusto sem a ajuda de posição, o disco da raquete ficou maior (`PP_PAD_R` 0,5) e a bola que passou do plano ainda pode ser pega (`PP_CATCH`).
+- Não bate na bola a ponto de quicar na mesa (o servidor refaria o quique antes da batida chegar).

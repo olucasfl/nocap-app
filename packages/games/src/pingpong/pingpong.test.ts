@@ -399,33 +399,7 @@ describe('ajuda de leitura da batida', () => {
   });
 });
 
-describe('jogo justo: sempre dá para acertar a bola', () => {
-  it('quem joga com a mão quase nunca perde ponto por não alcançar a bola (a raquete se posiciona)', () => {
-    for (const lvl of ['facil', 'medio'] as const) {
-      const rng = createRng('justo' + lvl);
-      const m = new PpMatch(0);
-      const bot = new PpBot(PP_BOT_LEVELS[lvl], rng);
-      let missed = 0;
-      let points = 0;
-      for (let i = 0; i < 60 * 300 && m.phase !== 'over'; i++) {
-        const human = {
-          x: Math.sin(i / 90) * 0.8,
-          y: 1.3,
-          serve: m.phase === 'serve' && i % 30 < 5,
-          tossV: 0.3,
-        };
-        m.step([human, bot.input(m, 1)]);
-        for (const e of m.drain()) {
-          if (e.type !== 'point') continue;
-          points++;
-          if (e.winner === 1 && e.reason === 'miss') missed++;
-        }
-      }
-      expect(points).toBeGreaterThan(5);
-      expect(missed).toBeLessThanOrEqual(1);
-    }
-  });
-
+describe('golpes e saque', () => {
   it('o saque sobe mais alto com a barra cheia do que com a barra baixa', () => {
     const peak = (v: number) => {
       const m = new PpMatch(0);
