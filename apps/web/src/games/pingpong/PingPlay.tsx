@@ -194,8 +194,6 @@ export function PingPlay({
   const trackRef = useRef<HTMLDivElement>(null);
   const cursorRef = useRef<HTMLSpanElement>(null);
   menuRef.current = menu;
-  if (menu && typeof document !== 'undefined' && document.pointerLockElement)
-    document.exitPointerLock?.();
   const [result, setResult] = useState<{
     winner: number;
     score: [number, number];
@@ -205,9 +203,11 @@ export function PingPlay({
     () => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches,
     [],
   );
+  // o cursor só fica preso durante a partida: no menu, nos comandos do começo e na tela do fim ele volta a aparecer
   useEffect(() => {
-    if (menu && document.pointerLockElement) document.exitPointerLock?.();
-  }, [menu]);
+    if ((menu || result || hud.phase !== 'play') && document.pointerLockElement)
+      document.exitPointerLock?.();
+  }, [menu, result, hud.phase]);
   const closeMenu = () => setMenu(false);
 
   useEffect(() => {
@@ -301,7 +301,13 @@ export function PingPlay({
       primaryId = e.pointerId;
       aim(e);
       // mouse: prende o cursor no jogo (ele não sai da tela no meio da batida); Esc solta e abre o menu
-      if (e.pointerType === 'mouse' && e.isTrusted && document.pointerLockElement !== zn) {
+      if (
+        e.pointerType === 'mouse' &&
+        e.isTrusted &&
+        phase === 'play' &&
+        !finished &&
+        document.pointerLockElement !== zn
+      ) {
         try {
           void (zn.requestPointerLock?.() as Promise<void> | undefined)?.catch?.(() => undefined);
         } catch {
@@ -453,6 +459,8 @@ export function PingPlay({
         } else if (e.type === 'game') {
           pingSfx.win(e.winner === myIdx && !spectator);
           finished = true;
+          // fim da partida: o cursor volta a aparecer (a tela do fim e os botões precisam dele)
+          if (document.pointerLockElement) document.exitPointerLock?.();
           stats.seconds = match.tick / 60;
           // na sala o servidor leva ao pódio sozinho (a tela de fim é a da sala)
           if (!net) {

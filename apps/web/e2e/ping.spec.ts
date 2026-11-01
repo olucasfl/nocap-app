@@ -397,4 +397,8 @@ test('mouse: o cursor fica preso no jogo e a raquete anda pelo movimento (não s
   for (let i = 1; i <= 30; i++) await page.mouse.move(1200 + i * 40, 400);
   await page.waitForTimeout(200);
   expect(await page.evaluate(() => !!document.pointerLockElement)).toBe(true);
+  // no menu (Esc) o cursor volta a aparecer
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('png-menu-continue')).toBeVisible();
+  await expect.poll(() => page.evaluate(() => !!document.pointerLockElement)).toBe(false);
 });
