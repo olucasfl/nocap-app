@@ -633,3 +633,23 @@ describe('a batida não trava o jogo', () => {
     expect(total / n).toBeLessThan(4);
   });
 });
+
+describe('o bot alcança a bola que morre curta', () => {
+  it('o bot difícil devolve as bolas curtas do fácil: quase todos os pontos são dele', () => {
+    let pa = 0;
+    let pb = 0;
+    for (let g = 0; g < 2; g++) {
+      const rng = createRng('curtas' + g);
+      const m = new PpMatch(g);
+      const a = new PpBot(PP_BOT_LEVELS.dificil, rng);
+      const b = new PpBot(PP_BOT_LEVELS.facil, rng);
+      for (let i = 0; i < 60 * 80 && m.phase !== 'over'; i++) {
+        m.step([a.input(m, 0), b.input(m, 1)]);
+        m.drain();
+      }
+      pa += m.score[0];
+      pb += m.score[1];
+    }
+    expect(pa).toBeGreaterThan(pb * 3);
+  });
+});

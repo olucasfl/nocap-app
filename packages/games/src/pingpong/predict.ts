@@ -23,7 +23,13 @@ const scratch = ppNewBall();
 const out = ppNewStepOut();
 
 /** Prevê onde a bola cruza o plano da raquete de `p` (mesma física do jogo); `null` se ela morre antes. */
-export function ppPredictCross(b: PpBall, p: number, reach = 0): PpCrossing | null {
+export function ppPredictCross(
+  b: PpBall,
+  p: number,
+  reach = 0,
+  /** Quantos quiques a bola já deu na mesa de `p` (para saber se ela morre, no 2º quique, antes de chegar). -1 = ignora. */
+  bouncesSoFar = -1,
+): PpCrossing | null {
   const s = p === 0 ? 1 : -1;
   const plane = s * (PP_PAD_Z - reach);
   ppCopyBall(b, scratch);
@@ -34,6 +40,10 @@ export function ppPredictCross(b: PpBall, p: number, reach = 0): PpCrossing | nu
     out.ev = 0;
     ppStepBall(scratch, out);
     if (out.ev & PP_EV_FLOOR) return null;
+    if (bouncesSoFar >= 0 && out.ev & PP_EV_TABLE && out.side === (p === 0 ? 0 : 1)) {
+      bouncesSoFar++;
+      if (bouncesSoFar >= 2) return null; // morre na mesa antes de chegar ao plano
+    }
     if ((z0 - plane) * s < 0 && (scratch.z - plane) * s >= 0) {
       const k = (plane - z0) / (scratch.z - z0);
       const c = ppCopyBall(scratch, ppNewBall());

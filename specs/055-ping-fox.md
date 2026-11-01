@@ -221,3 +221,8 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 
 - **Mouse preso no jogo** (Pointer Lock): ao clicar na mesa o cursor fica preso e a raquete anda pelo movimento do mouse (não existe mais "o mouse saiu da tela"). Esc solta o cursor e abre o menu; abrir o menu também solta. Toque e testes automáticos continuam absolutos. Teste e2e confere a trava e o movimento.
 - **Ritmo**: `PP_WORLD_SPEED` = 1 (tempo real), a pedido (0,8 e 0,9 ficaram lentos).
+
+### Rodada 20 (01/11/2026): o bot alcança as bolas curtas
+
+- **Causa de "a bola passa por dentro da raquete do bot e cai"**: bola mansa (corte) que quica duas vezes na mesa do bot, bem perto da linha de fundo, antes de chegar ao plano da raquete dele. A previsão dele ignorava o segundo quique e ele esperava no lugar errado. Agora `ppPredictCross` sabe quantos quiques já houve na mesa (`bouncesSoFar`); quando a bola morreria antes do plano normal, o bot avança a raquete por cima da mesa (`BOT_REACH_DEEP`, 1,3 m) e bate na bola ali.
+- Resultado nas partidas bot contra bot (3 jogos de 100 s): difícil 30 x 0 contra o fácil, médio 31 x 4 contra o fácil, difícil e médio parelhos. O nível difícil agora reage mais cedo, corre mais, erra menos a posição e mira sempre no canto livre. Teste novo: o difícil faz mais de 3x os pontos do fácil.

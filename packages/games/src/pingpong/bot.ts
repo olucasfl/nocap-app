@@ -27,6 +27,8 @@ export interface PpBotLevel {
 
 /** O bot estende a raquete até aqui para encontrar a bola (alcança também bolas que morrem curtas). */
 const BOT_REACH = 0.2;
+/** Para bola curta, que morre na mesa antes do plano normal: o bot avança a raquete por cima da mesa. */
+const BOT_REACH_DEEP = 1.3;
 
 export type PpBotName = 'facil' | 'medio' | 'dificil';
 
@@ -51,15 +53,16 @@ export const PP_BOT_LEVELS: Record<PpBotName, PpBotLevel> = {
     serveWait: 1,
     smashErr: 0.16,
   },
+  // difícil: reage cedo, corre mais, quase não erra a posição, devolve forte para o canto livre e acerta o smash
   dificil: {
-    reaction: 0.15,
-    speed: 9,
-    err: 0.07,
-    swingErr: 0.06,
-    aim: 0.9,
-    power: 10,
-    serveWait: 0.8,
-    smashErr: 0.05,
+    reaction: 0.1,
+    speed: 11,
+    err: 0.04,
+    swingErr: 0.04,
+    aim: 1,
+    power: 11,
+    serveWait: 0.6,
+    smashErr: 0.03,
   },
 };
 
@@ -82,6 +85,7 @@ export class PpBot {
   private errX = 0;
   private errY = 0;
   private swing: PpSwing = { vx: 0, vy: 0, vz: 0 };
+  private predReach = BOT_REACH;
   private popAt = -1;
   private popTapped = false;
   private popTarget = 0.5;
@@ -147,7 +151,12 @@ export class PpBot {
         this.swing = { vx: 0, vy: 0, vz: 0 };
       }
       if (!this.pred && m.t >= lv.reaction) {
-        this.pred = ppPredictCross(m.ball, p, BOT_REACH);
+        this.predReach = BOT_REACH;
+        this.pred = ppPredictCross(m.ball, p, BOT_REACH, m.bounces[p] ?? 0);
+        if (!this.pred) {
+          this.predReach = BOT_REACH_DEEP;
+          this.pred = ppPredictCross(m.ball, p, BOT_REACH_DEEP, m.bounces[p] ?? 0);
+        }
         if (this.pred) this.plan(m, p, this.pred);
       }
       if (this.pred) {
@@ -199,8 +208,8 @@ export class PpBot {
     const opp = m.pad(1 - p);
     const free = opp.x >= 0 ? -1 : 1;
     const aimX = free * (0.15 + 0.55 * this.level.aim) * (PP_W / 2) * (0.6 + 0.4 * this.rng());
-    const choice = this.best(c.ball, p, this.level.power, aimX, c.x, c.y);
-    this.swing = { vx: choice.vx, vy: choice.vy, vz: choice.vz, reach: BOT_REACH };
+    const choice = this.best(c.ball, p, this.level.power, aimX, c.x, c.y, this.predReach);
+    this.swing = { vx: choice.vx, vy: choice.vy, vz: choice.vz, reach: this.predReach };
     this.goalX = c.x - choice.off * PP_PAD_R;
     this.goalY = c.y;
   }
@@ -213,6 +222,7 @@ export class PpBot {
     aimX: number,
     padX = ball.x,
     padY = ball.y,
+    reachNow = BOT_REACH,
   ): PpSwing & { off: number } {
     let pick: (PpSwing & { off: number }) | null = null;
     let bestScore = Infinity;
@@ -225,7 +235,7 @@ export class PpBot {
             const info = ppPaddleHit(
               trial,
               p,
-              { x: padX - off * PP_PAD_R, y: padY, vx, vy, vz, reach: BOT_REACH },
+              { x: padX - off * PP_PAD_R, y: padY, vx, vy, vz, reach: reachNow },
               false,
             );
             if (info.speed > power) continue;
