@@ -133,6 +133,8 @@ export function PingPlay({
   });
   const [menu, setMenu] = useState(false);
   const menuRef = useRef(false);
+  const barRef = useRef<HTMLDivElement>(null);
+  const barWrapRef = useRef<HTMLDivElement>(null);
   menuRef.current = menu;
   const [result, setResult] = useState<{
     winner: number;
@@ -169,8 +171,30 @@ export function PingPlay({
       me: myIdx,
     });
 
-    const me: PpInput = ppIdleInput();
+    const me: PpInput = { ...ppIdleInput(), manual: false };
     let serveUntil = 0;
+    // saque: segurar carrega a barra (sobe e desce), soltar lança a bola com a altura que a barra marcava
+    let charging = false;
+    let chargeAt = 0;
+    let barV = 0;
+    const barValue = (t: number) => {
+      const ph = (t / 760) % 2;
+      return ph < 1 ? ph : 2 - ph;
+    };
+    const canCharge = () =>
+      !spectator && match.phase === 'serve' && match.server === myIdx && phase === 'play';
+    const startCharge = () => {
+      if (charging || !canCharge()) return false;
+      charging = true;
+      chargeAt = performance.now();
+      return true;
+    };
+    const releaseCharge = () => {
+      if (!charging) return;
+      charging = false;
+      me.tossV = barV;
+      serveUntil = performance.now() + 120;
+    };
     const keys = { l: false, r: false, u: false, d: false };
     let ready = 3;
     const readyAt = performance.now();
@@ -208,19 +232,14 @@ export function PingPlay({
       me.x = Math.max(-PP_PAD_X, Math.min(PP_PAD_X, anchor.tx + scene.simX(p.x - anchor.px)));
       me.y = Math.max(PP_PAD_Y_MIN, Math.min(PP_PAD_Y_MAX, anchor.ty + (p.y - anchor.py)));
     };
-    let downAt = 0;
-    let downX = 0;
-    let downY = 0;
     const onDown = (e: PointerEvent) => {
       if (menuRef.current) return;
       zn.setPointerCapture?.(e.pointerId);
       toPlane(e, true);
       if (e.pointerType === 'mouse') {
-        if (e.button === 0) serveUntil = performance.now() + 120;
+        if (e.button === 0 && !startCharge()) serveUntil = performance.now() + 120;
       } else {
-        downAt = performance.now();
-        downX = e.clientX;
-        downY = e.clientY;
+        startCharge();
       }
     };
     const onMove = (e: PointerEvent) => {
@@ -228,15 +247,9 @@ export function PingPlay({
       toPlane(e);
     };
     const onUp = (e: PointerEvent) => {
+      releaseCharge();
       if (e.pointerType === 'mouse') return;
       anchor = null;
-      // toque curto e parado = sacar
-      if (
-        performance.now() - downAt < 280 &&
-        Math.hypot(e.clientX - downX, e.clientY - downY) < 16
-      ) {
-        serveUntil = performance.now() + 120;
-      }
     };
     const onCtx = (e: Event) => e.preventDefault();
     // Segurar na tela abria a lupa/seleção do iOS: bloqueia o toque longo e a seleção.
@@ -256,7 +269,8 @@ export function PingPlay({
       if (menuRef.current) return;
       if (e.code === 'Space') {
         e.preventDefault();
-        if (down && !e.repeat) serveUntil = performance.now() + 120;
+        if (down && !e.repeat && !startCharge()) serveUntil = performance.now() + 120;
+        if (!down) releaseCharge();
         return;
       }
       const k = e.key.toLowerCase();
@@ -445,6 +459,16 @@ export function PingPlay({
           me.x = Math.max(-PP_PAD_X, Math.min(PP_PAD_X, me.x + scene.simX(kx) * 3.2 * dt));
           me.y = Math.max(PP_PAD_Y_MIN, Math.min(PP_PAD_Y_MAX, me.y + ky * 3.2 * dt));
         }
+        if (charging) {
+          if (!canCharge()) charging = false;
+          else {
+            barV = barValue(performance.now() - chargeAt);
+            if (barRef.current) barRef.current.style.transform = `scaleY(${barV.toFixed(3)})`;
+            if (barWrapRef.current) barWrapRef.current.dataset.sweet = barV > 0.86 ? '1' : '0';
+          }
+        } else if (barRef.current && canCharge()) {
+          barRef.current.style.transform = 'scaleY(0)';
+        }
         me.serve = now < serveUntil;
         // só nos testes: uma entrada de bot (ou de um "jogador" programado) no lugar do mouse
         const forced = (window as unknown as { __pingForce?: PpInput }).__pingForce;
@@ -609,14 +633,20 @@ export function PingPlay({
         </div>
       )}
       {myServe && !hud.banner && (
-        <div className="png-serve-hint" data-testid="png-serve-hint">
-          <b>Sua vez de sacar</b>
-          <span>
-            {touchDevice
-              ? 'Toque para lançar a bola e bata nela'
-              : 'Clique para lançar a bola e bata nela'}
-          </span>
-        </div>
+        <>
+          <div className="png-serve-hint" data-testid="png-serve-hint">
+            <b>Sua vez de sacar</b>
+            <span>
+              {touchDevice
+                ? 'Segure a tela: a barra sobe e desce. Solte no alto para lançar a bola lá em cima'
+                : 'Segure o clique (ou Espaço): a barra sobe e desce. Solte no alto para lançar a bola lá em cima'}
+            </span>
+          </div>
+          <div className="png-bar" ref={barWrapRef} data-testid="png-serve-bar" aria-hidden="true">
+            <div className="png-bar-fill" ref={barRef} />
+            <i className="png-bar-sweet" />
+          </div>
+        </>
       )}
       {!spectating &&
         hud.matchPhase === 'serve' &&

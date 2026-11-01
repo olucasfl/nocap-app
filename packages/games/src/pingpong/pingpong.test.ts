@@ -398,3 +398,64 @@ describe('ajuda de leitura da batida', () => {
     }
   });
 });
+
+describe('jogo justo: sempre dá para acertar a bola', () => {
+  it('quem joga com a mão quase nunca perde ponto por não alcançar a bola (a raquete se posiciona)', () => {
+    for (const lvl of ['facil', 'medio'] as const) {
+      const rng = createRng('justo' + lvl);
+      const m = new PpMatch(0);
+      const bot = new PpBot(PP_BOT_LEVELS[lvl], rng);
+      let missed = 0;
+      let points = 0;
+      for (let i = 0; i < 60 * 300 && m.phase !== 'over'; i++) {
+        const human = {
+          x: Math.sin(i / 90) * 0.8,
+          y: 1.3,
+          serve: m.phase === 'serve' && i % 30 < 5,
+          tossV: 0.3,
+        };
+        m.step([human, bot.input(m, 1)]);
+        for (const e of m.drain()) {
+          if (e.type !== 'point') continue;
+          points++;
+          if (e.winner === 1 && e.reason === 'miss') missed++;
+        }
+      }
+      expect(points).toBeGreaterThan(5);
+      expect(missed).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('o saque sobe mais alto com a barra cheia do que com a barra baixa', () => {
+    const peak = (v: number) => {
+      const m = new PpMatch(0);
+      const idle = ppIdleInput();
+      run(m, 3, idle, idle);
+      let top = 0;
+      m.step([{ ...idle, serve: true, tossV: v }, idle]);
+      for (let i = 0; i < 80 && m.phase === 'toss'; i++) {
+        m.step([idle, idle]);
+        top = Math.max(top, m.ball.y);
+      }
+      return top;
+    };
+    expect(peak(1)).toBeGreaterThan(peak(0) + 1.5);
+  });
+
+  it('bola mansa não vira foguete: devolvida com a mão parada sai devagar, e bola forte bloqueada sobe em lob', () => {
+    const hit = (vz: number, vy: number, hand: number) => {
+      const b = ppNewBall();
+      b.x = 0;
+      b.y = 1.3;
+      b.z = 2.9;
+      b.vz = vz;
+      b.vy = vy;
+      ppPaddleHit(b, 0, { x: 0, y: 1.3, vx: 0, vy: 0, vz: hand });
+      return b;
+    };
+    expect((({ vx, vy, vz }) => Math.hypot(vx, vy, vz))(hit(2.5, 0, 0))).toBeLessThan(8);
+    const block = hit(11, -1, 0);
+    expect(block.vy).toBeGreaterThan(1.5);
+    expect(ppLanding(block, 0).ok).toBe(true);
+  });
+});

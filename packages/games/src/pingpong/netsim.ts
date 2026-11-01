@@ -19,7 +19,8 @@ import {
 
 /** O que viaja pela rede: o lançamento do saque e a batida resolvida por quem bateu. `t` é o tick da partida. */
 export type PpNetEvent =
-  { k: 'toss'; t: number; p: number; x: number } | ({ k: 'hit'; t: number } & PpHitRecord);
+  | { k: 'toss'; t: number; p: number; x: number; v?: number }
+  | ({ k: 'hit'; t: number } & PpHitRecord);
 
 const RING = 96;
 /** Bateu atrasado até isto (ticks) ainda vale; mais velho que isso a sala recusa. */
@@ -84,8 +85,10 @@ export class PpNetSim {
     const n = m.tick + 1;
     if (m.phase === 'serve') {
       const te = this.tossAt(n);
-      if (te && te.k === 'toss') m.tossReq = te.x;
-      else if (this.authority && !m.replay && m.t + PP_TICK >= PP_SERVE_AUTO) {
+      if (te && te.k === 'toss') {
+        m.tossReq = te.x;
+        m.tossReqV = te.v ?? 0.5;
+      } else if (this.authority && !m.replay && m.t + PP_TICK >= PP_SERVE_AUTO) {
         const ev: PpNetEvent = { k: 'toss', t: n, p: m.server, x: m.pad(m.server).x };
         this.log.push(ev);
         this.out.push(ev);
@@ -103,7 +106,7 @@ export class PpNetSim {
       this.out.push(ev);
     }
     for (const t of m.tossOut) {
-      const ev: PpNetEvent = { k: 'toss', t: t.t, p: m.server, x: t.x };
+      const ev: PpNetEvent = { k: 'toss', t: t.t, p: m.server, x: t.x, v: t.v };
       this.native.add(key(ev));
       this.log.push(ev);
       this.out.push(ev);
@@ -207,7 +210,10 @@ export class PpNetSim {
       while (s.tick < target) {
         const n = s.tick + 1;
         const tossAt = others.find((e) => e.k === 'toss' && e.t === n);
-        if (tossAt && tossAt.k === 'toss') s.tossReq = tossAt.x;
+        if (tossAt && tossAt.k === 'toss') {
+          s.tossReq = tossAt.x;
+          s.tossReqV = tossAt.v ?? 0.5;
+        }
         s.step(idle);
         for (const e of others) if (e.k === 'hit' && e.t === n) s.applyHit(e);
         s.drain();
@@ -215,7 +221,10 @@ export class PpNetSim {
     };
     stepTo(ev.t - 1);
     const toss = others.find((e) => e.k === 'toss' && e.t === ev.t);
-    if (toss && toss.k === 'toss') s.tossReq = toss.x;
+    if (toss && toss.k === 'toss') {
+      s.tossReq = toss.x;
+      s.tossReqV = toss.v ?? 0.5;
+    }
     if (ev.k === 'toss') {
       if (s.phase !== 'serve' || s.server !== ev.p) return false;
       if (!Number.isFinite(ev.x) || Math.abs(ev.x) > PP_PAD_X + 0.01) return false;
@@ -247,7 +256,10 @@ export function ppParseNetEvent(v: unknown): PpNetEvent | null {
   if (!Number.isInteger(e.t) || (e.p !== 0 && e.p !== 1)) return null;
   const t = e.t as number;
   const p = e.p as number;
-  if (e.k === 'toss') return finite(e.x) ? { k: 'toss', t, p, x: e.x } : null;
+  if (e.k === 'toss')
+    return finite(e.x)
+      ? { k: 'toss', t, p, x: e.x, v: finite(e.v) ? Math.max(0, Math.min(1, e.v)) : 0.5 }
+      : null;
   if (e.k !== 'hit') return null;
   const q = e.quality;
   if (q !== 'edge' && q !== 'normal' && q !== 'sweet') return null;

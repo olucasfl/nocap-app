@@ -1,6 +1,6 @@
 import { ppCopyBall, ppNewBall } from './ball';
 import { ppLanding } from './assist';
-import { PP_PAD_R, PP_PAD_Z, PP_SERVE_FRONT, PP_TOSS_V, PP_TOSS_Y, PP_W } from './constants';
+import { PP_PAD_R, PP_PAD_Z, PP_SERVE_FRONT, PP_TOSS_Y, ppTossSpeed, PP_W } from './constants';
 import { PpMatch, ppIdleInput, type PpInput, type PpSwing } from './match';
 import { ppPaddleHit } from './paddle';
 import { ppPredictCross, type PpCrossing } from './predict';
@@ -32,7 +32,7 @@ export const PP_BOT_LEVELS: Record<PpBotName, PpBotLevel> = {
   facil: {
     reaction: 0.4,
     speed: 4.4,
-    err: 0.34,
+    err: 0.3,
     swingErr: 0.3,
     aim: 0.15,
     power: 6.2,
@@ -41,7 +41,7 @@ export const PP_BOT_LEVELS: Record<PpBotName, PpBotLevel> = {
   medio: {
     reaction: 0.25,
     speed: 6.4,
-    err: 0.19,
+    err: 0.17,
     swingErr: 0.15,
     aim: 0.5,
     power: 8,
@@ -106,6 +106,7 @@ export class PpBot {
         this.serveTick = m.tick;
         this.serveSwing = null;
       }
+      inp.tossV = 0.06;
       if (m.t >= lv.serveWait) inp.serve = true;
     } else if (m.phase === 'toss' && m.server === p) {
       // a bola sobe e desce na frente da raquete: o bot espera na altura dela e bate para a frente quando passa
@@ -170,9 +171,7 @@ export class PpBot {
     b.x = m.ball.x;
     b.y = 1.65;
     b.z = s * (PP_PAD_Z - PP_SERVE_FRONT);
-    b.vy = -Math.sqrt(
-      Math.max(0.5, 2 * 8 * (PP_TOSS_Y + (PP_TOSS_V * PP_TOSS_V) / (2 * 8) - 1.65)),
-    );
+    b.vy = -Math.sqrt(Math.max(0.5, 2 * 8 * (PP_TOSS_Y + ppTossSpeed(0.06) ** 2 / (2 * 8) - 1.65)));
     const choice = this.best(b, p, Math.max(lv.power, 8.5), (this.rng() - 0.5) * 0.9 * lv.aim);
     return { vx: choice.vx, vy: choice.vy, vz: choice.vz };
   }

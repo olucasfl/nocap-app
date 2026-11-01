@@ -121,3 +121,11 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 - Câmera mais longe e com campo de visão maior.
 - O limite de 30 s do rally passa a contar desde a última batida.
 - Bots: erro de posição maior (para as partidas terminarem) e preferem bolas menos altas.
+
+### Rodada 3 (01/11/2026): acertar sempre, golpes com sentido, saque com barra, cenário
+
+- **Sempre acerta a bola**: quem joga com a mão (entrada sem `manual`) tem a raquete levada ao ponto previsto de cruzamento da bola (`ppPredictCross`, recalculado a cada 4 ticks). Bola curta que morre antes do plano é alcançada avançando a raquete (`PP_REACH_DEEP`). Bola muito rápida (> 10 m/s) dá menos ajuda (até 20%): o ponto é de quem bateu melhor, não de quem "errou a bola". Bots e testes usam `swing` ou `manual`.
+- **Golpes com sentido** (`paddle.ts`): a saída é limitada pela bola que veio (`0,5·vin + 3,6 + 10,5·força da mão`), então bola mansa com mão mansa não vira foguete; mão parada contra bola forte é bloqueio e sobe em lob; mão para baixo e forte sobre bola alta é smash (+4,5 m/s de teto); o lado da mão leva a bola para o cantinho (`PP_AIM`) e dá efeito. A ajuda de leitura (`ppGuideHit`) agora também fecha o ângulo se o cantinho sair da mesa.
+- **Saque com barra**: segurar (clique, toque ou Espaço) faz a barra subir e descer; soltar lança a bola com `ppTossSpeed(v)` (3 a 6,6 m/s; no alto a bola chega a ~4 m). O valor `v` viaja no evento `toss` da rede (`v` opcional, padrão 0,5).
+- **Visual**: rastro de fogo na bola rápida (mais claro no smash), cenário de ginásio (arquibancada, faixa "no cap!", luzes, tapete de quadra).
+- Bots com erro de posição maior para as partidas terminarem; testes ajustados.

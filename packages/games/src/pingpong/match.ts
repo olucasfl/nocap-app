@@ -35,11 +35,13 @@ import {
   PP_SERVE_FRONT,
   PP_SUB,
   PP_TICK,
-  PP_TOSS_V,
+  PP_REACH_DEEP,
+  ppTossSpeed,
   PP_TOSS_Y,
   PP_VZ_MAX,
 } from './constants';
 import { ppPaddleHit, type PpHitQuality } from './paddle';
+import { ppPredictCross, type PpCrossing } from './predict';
 
 /**
  * Uma batida "pronta" (só para os bots): a velocidade que a mão teria na hora do contato. Uma pessoa não manda isto: a
@@ -59,10 +61,14 @@ export interface PpInput {
   x: number;
   y: number;
   serve: boolean;
+  /** Altura do lançamento escolhida na barra (0 a 1), lida na hora em que `serve` sobe. */
+  tossV?: number;
+  /** Sem ajuda de posição (quem não joga, e os testes): a raquete só vai aonde o ponteiro manda. */
+  manual?: boolean;
   swing?: PpSwing;
 }
 
-export const ppIdleInput = (): PpInput => ({ x: 0, y: 1.3, serve: false });
+export const ppIdleInput = (): PpInput => ({ x: 0, y: 1.3, serve: false, manual: true });
 
 export interface PpPaddle {
   x: number;
@@ -215,6 +221,11 @@ export class PpMatch {
   /** Batida pronta que um bot pediu para este tick. */
   private swingNow: [PpSwing | null, PpSwing | null] = [null, null];
   private serveWas: [boolean, boolean] = [false, false];
+  private icpt: [{ c: PpCrossing; deep: number } | null, { c: PpCrossing; deep: number } | null] = [
+    null,
+    null,
+  ];
+  private icptAt: [number | null, number | null] = [null, null];
   /**
    * Modo rede (spec 055, fase 3): as batidas e o lançamento chegam como eventos (`applyHit`, `tossReq`); só o jogador
    * `localPlayer` detecta a própria batida. Fora disso a partida é uma função dos eventos e do tick.
@@ -225,9 +236,10 @@ export class PpMatch {
   replay = false;
   /** Pedido de lançamento para este tick (x da bola), vindo de um evento ou da entrada de quem saca. */
   tossReq: number | null = null;
+  tossReqV = 0.5;
   /** Batidas e lançamentos deste jogador que a rede ainda não mandou (esvaziados por quem usa o modo rede). */
   hitOut: (PpHitRecord & { t: number })[] = [];
-  tossOut: { t: number; x: number }[] = [];
+  tossOut: { t: number; x: number; v: number }[] = [];
   private pendingHit: PpHitRecord | null = null;
 
   constructor(firstServer = 0) {
@@ -279,28 +291,48 @@ export class PpMatch {
       b0.vy < 0 &&
       b0.y < pad.y + 0.12 &&
       Math.hypot(b0.x - pad.x, b0.y - pad.y) < PP_PAD_R * 0.8;
-    const stance = serving
+    let stance = serving
       ? serveReady
         ? PP_SERVE_FRONT + 0.12
         : PP_REACH_SERVE
       : this.phase === 'rally' && this.expect === p
         ? PP_REACH_WAIT
         : 0;
-    // ímã: a raquete é puxada para a bola quando ela está chegando (saque na descida, rebatida perto do plano)
+    // Auto-posição: a bola que vem é sempre alcançável. A raquete é levada ao ponto onde ela vai cruzar (a pessoa só
+    // escolhe o resto: força, direção, efeito). Bola muito rápida (smash do outro) dá menos tempo e menos ajuda: aí o
+    // ponto é de quem bateu melhor, não de quem "errou a bola".
     let tx = inp.x;
     let ty = inp.y;
-    if (!inp.swing) {
+    if (!inp.swing && !inp.manual) {
       const b = this.ball;
-      let w = 0;
-      if (serving && this.phase === 'toss') w = 0.7;
-      else if (this.phase === 'rally' && this.expect === p) {
-        const s = PpMatch.sign(p);
-        const dz = (s * PP_PAD_Z - b.z) * s;
-        if (dz > -0.2 && dz < 1.4 && b.vz * s > 0) w = 0.55 * (1 - Math.max(0, dz) / 1.4);
-      }
-      if (w > 0) {
-        tx += (b.x - tx) * w;
-        if (!serving) ty += (b.y - ty) * w * 0.8;
+      if (serving && this.phase === 'toss') {
+        tx += (b.x - tx) * 0.8;
+      } else if (!(this.phase === 'rally' && this.expect === p)) {
+        this.icpt[p === 0 ? 0 : 1] = null;
+      } else if (b.vz * PpMatch.sign(p) > 0) {
+        const side = p === 0 ? 0 : 1;
+        if (this.tick % 4 === 0 || !this.icpt[side]) {
+          let c = ppPredictCross(b, p, PP_REACH_WAIT);
+          let deep = 0;
+          if (!c) {
+            // bola curta: morre antes do plano; a raquete avança por cima da mesa para alcançá-la
+            c = ppPredictCross(b, p, PP_REACH_DEEP);
+            deep = PP_REACH_DEEP;
+          }
+          this.icpt[side] = c ? { c, deep } : null;
+          this.icptAt[side] = this.tick;
+        }
+        const cur = this.icpt[side];
+        if (cur) {
+          const left = cur.c.t - (this.tick - (this.icptAt[side] ?? this.tick)) / 60;
+          const sp = Math.hypot(cur.c.ball.vx, cur.c.ball.vy, cur.c.ball.vz);
+          const help = sp < 10 ? 1 : Math.max(0.2, 1 - ((sp - 10) / 4) * 0.8);
+          const near = Math.max(0, Math.min(1, (1.0 - left) / 0.5));
+          const w = help * near;
+          tx += (cur.c.x - tx) * w;
+          ty += (cur.c.y - ty) * w;
+          if (cur.deep > 0 && w > 0.5) stance = Math.max(stance, cur.deep);
+        }
       }
     }
     ppPadStep(pad, tx, ty, PP_TICK, stance);
@@ -347,12 +379,14 @@ export class PpMatch {
         // na rede o lançamento é um evento; quem saca aqui cria o seu na hora em que aperta
         if (this.tossReq === null && press && sv === this.localPlayer && !this.replay) {
           this.tossReq = this.pad(sv).x;
-          this.tossOut.push({ t: this.tick, x: this.tossReq });
+          this.tossReqV = Math.max(0, Math.min(1, inp.tossV ?? 0.5));
+          this.tossOut.push({ t: this.tick, x: this.tossReq, v: this.tossReqV });
         }
-        if (this.tossReq !== null) this.startToss(this.tossReq);
+        if (this.tossReq !== null) this.startToss(this.tossReq, this.tossReqV);
         this.tossReq = null;
+        this.tossReqV = 0.5;
       } else if (press || this.t >= PP_SERVE_AUTO) {
-        this.startToss(this.pad(sv).x);
+        this.startToss(this.pad(sv).x, press ? Math.max(0, Math.min(1, inp.tossV ?? 0.5)) : 0.5);
       }
       return;
     }
@@ -375,14 +409,14 @@ export class PpMatch {
   }
 
   /** O lançamento: a bola sobe da mão de quem saca (no x dado) e espera a raquete. */
-  private startToss(x: number): void {
+  private startToss(x: number, v = 0.5): void {
     this.phase = 'toss';
     this.t = 0;
     this.ball.x = x;
     this.ball.y = PP_TOSS_Y;
     this.ball.z = this.handZ(this.server);
     this.ball.vx = 0;
-    this.ball.vy = PP_TOSS_V;
+    this.ball.vy = ppTossSpeed(v);
     this.ball.vz = 0;
     this.ball.wx = this.ball.wy = this.ball.wz = 0;
     this.events.push({ type: 'toss', p: this.server });

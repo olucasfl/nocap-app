@@ -83,27 +83,32 @@ export function ppGuideHit(b: PpBall, side: number): void {
   }
   const base = Math.min(10.5, Math.max(3.2, hs));
   const scales = [1, 1.15, 0.9, 1.3, 0.8, 0.68, 0.58];
-  for (const sc of scales) {
-    const h = Math.min(11, base * sc);
-    let best = Number.NaN;
-    let bestD = 1e9;
-    for (let vy = -3; vy <= 6.01; vy += 0.4) {
-      ppCopyBall(b, guide);
-      guide.vx = ux * h;
-      guide.vz = uz * h;
-      guide.vy = vy;
-      if (!ppLanding(guide, side).ok) continue;
-      const d = Math.abs(vy - b.vy);
-      if (d < bestD) {
-        bestD = d;
-        best = vy;
+  // primeiro mantém a direção da mão; se não há jogada boa assim (cantinho demais), fecha o ângulo aos poucos
+  for (const lat of [1, 0.75, 0.5, 0.25, 0]) {
+    const lx = ux * lat;
+    const lz = Math.sqrt(Math.max(0, 1 - lx * lx)) * Math.sign(uz || fwd);
+    for (const sc of scales) {
+      const h = Math.min(11, base * sc);
+      let best = Number.NaN;
+      let bestD = 1e9;
+      for (let vy = -3; vy <= 6.01; vy += 0.4) {
+        ppCopyBall(b, guide);
+        guide.vx = lx * h;
+        guide.vz = lz * h;
+        guide.vy = vy;
+        if (!ppLanding(guide, side).ok) continue;
+        const d = Math.abs(vy - b.vy);
+        if (d < bestD) {
+          bestD = d;
+          best = vy;
+        }
       }
-    }
-    if (!Number.isNaN(best)) {
-      b.vx = ux * h;
-      b.vz = uz * h;
-      b.vy = best;
-      return;
+      if (!Number.isNaN(best)) {
+        b.vx = lx * h;
+        b.vz = lz * h;
+        b.vy = best;
+        return;
+      }
     }
   }
 }

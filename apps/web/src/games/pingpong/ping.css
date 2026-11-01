@@ -397,3 +397,38 @@
     max-width: calc(100vw - 150px);
   }
 }
+
+/* barra do saque: sobe e desce enquanto se segura; solte no alto para lançar a bola mais alto */
+.png-bar {
+  position: absolute;
+  right: max(18px, env(safe-area-inset-right));
+  top: 50%;
+  width: 26px;
+  height: min(46vh, 280px);
+  margin-top: calc(min(46vh, 280px) / -2);
+  border: 3px solid #fff;
+  border-radius: 14px;
+  background: rgba(21, 16, 46, 0.7);
+  overflow: hidden;
+  pointer-events: none;
+  box-shadow: 4px 4px 0 var(--orange, #ff7d26);
+}
+.png-bar-fill {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, #2fd5a3, #ffd23f 70%, #ff7d26);
+  transform: scaleY(0);
+  transform-origin: bottom;
+}
+.png-bar-sweet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 14%;
+  border-bottom: 3px dashed #fff;
+  background: rgba(255, 255, 255, 0.18);
+}
+.png-bar[data-sweet='1'] {
+  box-shadow: 0 0 0 4px #ffd23f;
+}

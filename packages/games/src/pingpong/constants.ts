@@ -84,6 +84,15 @@ export const PP_SMASH_SPEED = 10.5;
 
 /** Saque: impulso do lançamento (a bola sobe pouco e desce), altura da mão e quanto a bola fica à frente da raquete. */
 export const PP_TOSS_V = 3.2;
+/** O saque escolhe a altura do lançamento (0 a 1, pela barra): velocidade de subida da bola. */
+export const PP_TOSS_V_MIN = 3.0;
+export const PP_TOSS_V_MAX = 6.6;
+export const ppTossSpeed = (v: number): number =>
+  PP_TOSS_V_MIN + (PP_TOSS_V_MAX - PP_TOSS_V_MIN) * Math.max(0, Math.min(1, v));
+/** Alcance extra (m) para a bola curta, que morre antes do plano normal da raquete. */
+export const PP_REACH_DEEP = 0.65;
+/** Quanto o movimento lateral da mão desvia a bola (pontaria). */
+export const PP_AIM = 0.42;
 export const PP_TOSS_Y = 1.25;
 export const PP_SERVE_FRONT = 0.21;
 

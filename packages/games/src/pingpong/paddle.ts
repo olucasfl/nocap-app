@@ -1,7 +1,16 @@
 import type { PpBall } from './ball';
 import { ppTune } from './tune';
 import { ppGuideHit } from './assist';
-import { PP_PAD_R, PP_R, PP_SMASH_SPEED, PP_SPIN_MAX, PP_V_MAX } from './constants';
+import {
+  PP_AIM,
+  PP_NET_H,
+  PP_PAD_R,
+  PP_R,
+  PP_SMASH_SPEED,
+  PP_SPIN_MAX,
+  PP_TOP,
+  PP_V_MAX,
+} from './constants';
 
 /**
  * A raquete na hora da batida: onde está e com que velocidade se mexe. `vz` é a velocidade PARA A FRENTE (em direção à
@@ -51,6 +60,9 @@ export function ppPaddleTilt(vx: number, vy: number, vz = 0): { pitch: number; y
  */
 export function ppPaddleHit(b: PpBall, side: number, pad: PpPaddleMotion, guide = true): PpHitInfo {
   const forward = side === 0 ? -1 : 1;
+  const inVx = b.vx;
+  const inVy = b.vy;
+  const inVz = b.vz;
   const ox = clamp((b.x - pad.x) / PP_PAD_R, -1.25, 1.25);
   const oy = clamp((b.y - pad.y) / PP_PAD_R, -1.25, 1.25);
   const t = ppTune;
@@ -115,9 +127,29 @@ export function ppPaddleHit(b: PpBall, side: number, pad: PpPaddleMotion, guide 
   let vz = rz + pvz;
   const off = Math.hypot(ox, oy);
   const quality: PpHitQuality = off > 0.85 ? 'edge' : off < 0.15 ? 'sweet' : 'normal';
+
+  // O golpe tem que fazer sentido: a bola sai com a força da que veio mais a da mão. Bola mansa e mão mansa não
+  // viram 80 km/h do nada; bola forte devolvida com a mão parada é um bloqueio (sobe em lob); a mão forte e para baixo
+  // sobre bola alta é o smash.
+  const vin = Math.hypot(inVx, inVy, inVz);
+  const hand = Math.hypot(pad.vx, pad.vy, pad.vz);
+  const power = Math.max(0, Math.min(1, hand / 9));
+  const high = b.y > PP_TOP + 0.55 + PP_NET_H;
+  const smashing = high && pad.vy < -2 && power > 0.55;
+  // pontaria: o movimento lateral da mão leva a bola para o lado
+  vx += pad.vx * PP_AIM * (0.4 + 0.6 * power);
+  if (power < 0.35 && vin > 6) {
+    // bloqueio: a defesa de uma bola forte sobe em arco (lob) em vez de voltar reta e rápida
+    const lift = (1 - power / 0.35) * Math.min(1, vin / 11);
+    vy += 3.4 * lift;
+    vx *= 1 - 0.25 * lift;
+    vz *= 1 - 0.25 * lift;
+  }
+  const cap = 0.5 * vin + 3.6 + 10.5 * power + (smashing ? 4.5 : 0);
   const sp = Math.hypot(vx, vy, vz);
-  if (sp > PP_V_MAX) {
-    const k = PP_V_MAX / sp;
+  const lim = Math.min(PP_V_MAX, cap);
+  if (sp > lim) {
+    const k = lim / sp;
     vx *= k;
     vy *= k;
     vz *= k;
