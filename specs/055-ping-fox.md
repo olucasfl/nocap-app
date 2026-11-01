@@ -202,3 +202,12 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 ### Rodada 16 (01/11/2026): a raquete cola no dedo
 
 - A raquete (jogo de verdade) seguia com rigidez 36 e teto de 13 m/s: quando o dedo ia rápido ela ficava para trás. Agora `PP_FOLLOW_STIFF` = 55 (quase o máximo estável para o passo de 1/60 s) e `PP_FOLLOW_SPEED` = 45 m/s: um pulo de 3 m chega em menos de 0,2 s (teste). A velocidade que entra na batida continua limitada a uma mão de verdade (±10 m/s para os lados, `PP_HAND_VZ_MAX` para a frente).
+
+### Rodada 17 (01/11/2026): visual e câmera no estilo do 3D Table Tennis, ritmo do Online Pingpang
+
+- **Visual** (referência: Kerim-hash/3d-ping-pong, só como inspiração de cores e enquadramento): salão escuro com fundo em degradê, piso cinza-escuro, tapete vermelho, mesa azul `#1d4e9e` com linhas brancas, pernas cinza, raquetes de madeira (a sua vermelha, a do adversário preta), bola branca com faixa laranja, sombras de verdade (`shadowMap`), tom de cinema (ACES). Saiu o cenário de ginásio (arquibancada, placas de LED). A raposa continua, menor e mais ao fundo.
+- **Câmera**: mesma inclinação e FOV 50 da referência, olhando para o fundo da mesa; `fitCamera` continua afastando só o que o aparelho precisar (celular em pé e deitado, computador).
+- **Efeito na bola**: anel em torno do eixo do giro, vermelho = topspin, azul = corte, amarelo = efeito de lado; rastro em linha fina (o smash cronometrado mantém o rastro roxo).
+- **Placar e avisos** em vidro escuro (como a referência), com o **nome de quem joga** (conta, apelido da sala ou "Você") e "Ponto de {nome}". Dica de saque no mesmo estilo.
+- **Ritmo**: `PP_WORLD_SPEED` = 0,8: o mundo anda a 80% do tempo real (mesma trajetória, mais devagar), como os níveis fáceis do Online Pingpang.
+- **Guia de posição** (opção do menu Esc, ligada por padrão, guardada no aparelho): para a bola que vem na sua direção, pontos finos no chão marcam por onde ela passa depois do quique (o primeiro é o do quique; os seguintes mostram o caminho se você esperar) e mudam enquanto a bola anda. Não diz onde bater; só dá a referência.

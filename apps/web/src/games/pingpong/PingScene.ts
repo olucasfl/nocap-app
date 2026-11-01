@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import {
+  PP_EV_FLOOR,
+  PP_EV_TABLE,
   PP_L,
   PP_NET_H,
   PP_NET_OVER,
@@ -12,7 +14,11 @@ import {
   PP_R,
   PP_TOP,
   PP_W,
+  ppCopyBall,
+  ppNewBall,
+  ppNewStepOut,
   ppPaddleTilt,
+  ppStepBall,
   type PpEvent,
   type PpMatch,
 } from '@nocap/games';
@@ -86,6 +92,14 @@ export class PingScene {
   private ballMesh: THREE.Mesh;
   private ballShadow: THREE.Mesh;
   private trail: THREE.Sprite[] = [];
+  private spinRing!: THREE.Mesh;
+  /** Guia de posição: pontos discretos no chão por onde a bola vai passar depois do quique. */
+  private guideDots: THREE.Mesh[] = [];
+  private guideOn = true;
+  private guideAt = 0;
+  private guideBall = ppNewBall();
+  private guideOut = ppNewStepOut();
+  private trailLine!: THREE.Line;
   private trailPos: { x: number; y: number; z: number }[] = [];
   // raquetes
   private pads: { g: THREE.Group; blade: THREE.Group }[] = [];
@@ -137,17 +151,42 @@ export class PingScene {
     });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, touch ? 1.7 : 2));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
-    this.scene.background = new THREE.Color(0x0a0e26);
-    this.scene.fog = new THREE.Fog(0x0a0e26, 26, 70);
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.05;
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    // salão escuro (fundo em degradê), como no 3D Table Tennis de referência
+    this.scene.background = canvasTex(2, 256, (g) => {
+      const gr = g.createLinearGradient(0, 0, 0, 256);
+      gr.addColorStop(0, '#0b0d12');
+      gr.addColorStop(0.55, '#171a22');
+      gr.addColorStop(1, '#2a2f3b');
+      g.fillStyle = gr;
+      g.fillRect(0, 0, 2, 256);
+    });
+    this.scene.fog = new THREE.Fog(0x2a2f3b, 19, 56);
     mapEdge.uEdge.value = 1e6;
 
-    this.scene.add(new THREE.HemisphereLight(0xffffff, 0x3a3170, 2.1));
-    const sun = new THREE.DirectionalLight(0xffffff, 1.5);
-    sun.position.set(3, 9, 5);
-    this.scene.add(sun);
+    this.scene.add(new THREE.HemisphereLight(0xd6deff, 0x2a2d35, 1.0));
+    const sun = new THREE.DirectionalLight(0xffffff, 1.9);
+    sun.position.set(4.2, 14.5, 6.4);
+    sun.target.position.set(0, PP_TOP, 0);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(touch ? 1024 : 2048, touch ? 1024 : 2048);
+    sun.shadow.camera.near = 2;
+    sun.shadow.camera.far = 34;
+    sun.shadow.camera.left = -7;
+    sun.shadow.camera.right = 7;
+    sun.shadow.camera.top = 7;
+    sun.shadow.camera.bottom = -7;
+    sun.shadow.bias = -0.0006;
+    sun.shadow.normalBias = 0.02;
+    this.scene.add(sun, sun.target);
+    const fill = new THREE.DirectionalLight(0x9fb4ff, 0.7);
+    fill.position.set(-8, 8, -5);
+    this.scene.add(fill);
 
     this.buildFloor();
-    this.buildScenery();
     this.buildTable();
     this.net = this.buildNet();
     this.scene.add(this.net);
@@ -155,35 +194,75 @@ export class PingScene {
     // bola
     this.ball = new THREE.Group();
     const bt = canvasTex(256, 128, (g) => {
-      g.fillStyle = '#f6f4ee';
+      g.fillStyle = '#ffffff';
       g.fillRect(0, 0, 256, 128);
-      // marca pequena e discreta: dá para ver o giro sem enfeitar a bola
-      g.fillStyle = '#c9c6bd';
-      g.fillRect(0, 60, 256, 8);
-      g.fillStyle = '#9a9890';
-      g.font = '700 22px sans-serif';
-      g.textAlign = 'center';
-      g.fillText('***', 64, 50);
+      g.fillStyle = '#f28c28';
+      g.fillRect(0, 56, 256, 16); // faixa no equador
+      g.fillRect(60, 0, 14, 128); // e duas de polo a polo: dá para ver o giro
+      g.fillRect(188, 0, 14, 128);
     });
     this.ballMesh = new THREE.Mesh(
       new THREE.SphereGeometry(PP_R, 32, 20),
       new THREE.MeshStandardMaterial({ map: bt, roughness: 0.45, metalness: 0 }),
     );
+    this.ballMesh.castShadow = true;
     this.ball.add(this.ballMesh);
     this.ball.scale.setScalar(1.25);
+    // anel do efeito: gira em torno do eixo do giro; vermelho = topspin, azul = corte, amarelo = efeito de lado
+    this.spinRing = new THREE.Mesh(
+      new THREE.TorusGeometry(PP_R * 2.3, PP_R * 0.1, 8, 48),
+      new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.8,
+        depthWrite: false,
+      }),
+    );
+    this.spinRing.visible = false;
+    this.scene.add(this.spinRing);
+    for (let i = 0; i < 7; i++) {
+      const d = new THREE.Mesh(
+        new THREE.RingGeometry(0.11, 0.17, 28),
+        new THREE.MeshBasicMaterial({
+          color: 0xffffff,
+          transparent: true,
+          opacity: 0,
+          depthWrite: false,
+        }),
+      );
+      d.rotation.x = -Math.PI / 2;
+      d.visible = false;
+      this.guideDots.push(d);
+      this.scene.add(d);
+    }
+    // rastro: uma linha fina que acompanha a bola
+    const tg = new THREE.BufferGeometry();
+    tg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(28 * 3), 3));
+    this.trailLine = new THREE.Line(
+      tg,
+      new THREE.LineBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.3,
+        depthWrite: false,
+      }),
+    );
+    this.trailLine.frustumCulled = false;
+    this.trailLine.visible = false;
+    this.scene.add(this.trailLine);
     this.scene.add(this.ball);
     this.ballShadow = new THREE.Mesh(
       new THREE.CircleGeometry(PP_R * 1.15, 20),
       new THREE.MeshBasicMaterial({
         color: 0x000000,
         transparent: true,
-        opacity: 0.4,
+        opacity: 0.22,
         depthWrite: false,
       }),
     );
     this.ballShadow.rotation.x = -Math.PI / 2;
     this.scene.add(this.ballShadow);
-    for (let i = 0; i < 24; i++) {
+    for (let i = 0; i < 28; i++) {
       const s = new THREE.Sprite(
         new THREE.SpriteMaterial({
           map: this.glow,
@@ -225,12 +304,12 @@ export class PingScene {
     this.scene.add(this.arm, this.paw);
 
     this.fox = buildHero({ fur: opts.oppColor, own: true });
-    this.fox.scale.setScalar(1.7);
+    this.fox.scale.setScalar(1.25);
     this.fox.rotation.y = Math.PI;
-    this.fox.position.set(0, 0, -(PP_PAD_Z + 1.2));
+    this.fox.position.set(0, 0, -(PP_PAD_Z + 2.3));
     this.scene.add(this.fox);
     this.tag = this.nameTag(opts.oppName);
-    this.tag.position.set(0, 2.5, -(PP_PAD_Z + 1.2));
+    this.tag.position.set(0, 2.2, -(PP_PAD_Z + 2.3));
     this.scene.add(this.tag);
 
     // marcadores de leitura
@@ -269,197 +348,23 @@ export class PingScene {
 
   // ---------- construção ----------
 
-  /**
-   * O cenário, de ginásio de campeonato: piso escuro com a marca grande, tapete de quadra azul, placas de LED em volta,
-   * torcida em silhueta na arquibancada e refletores. Tudo em tons escuros para a mesa e a bola se destacarem.
-   */
-  private buildScenery() {
-    const S = this.scene;
-    // tapete de quadra azul-escuro debaixo da mesa, com linhas brancas
-    const mat = new THREE.Mesh(
-      new THREE.PlaneGeometry(PP_W + 6, PP_L + 7.5),
-      new THREE.MeshLambertMaterial({
-        map: canvasTex(256, 256, (g) => {
-          g.fillStyle = '#16307a';
-          g.fillRect(0, 0, 256, 256);
-          g.strokeStyle = 'rgba(255,255,255,0.85)';
-          g.lineWidth = 5;
-          g.strokeRect(8, 8, 240, 240);
-          // arranhados leves do piso
-          g.strokeStyle = 'rgba(255,255,255,0.05)';
-          g.lineWidth = 1;
-          for (let i = 0; i < 24; i++) {
-            g.beginPath();
-            g.moveTo(Math.random() * 256, Math.random() * 256);
-            g.lineTo(Math.random() * 256, Math.random() * 256);
-            g.stroke();
-          }
-        }),
-      }),
-    );
-    mat.rotation.x = -Math.PI / 2;
-    mat.position.y = 0.003;
-    S.add(mat);
-
-    // marca grande no piso (como nos ginásios de campeonato)
-    const logo = new THREE.Mesh(
-      new THREE.PlaneGeometry(14, 3.6),
-      new THREE.MeshBasicMaterial({
-        map: canvasTex(512, 128, (g) => {
-          g.clearRect(0, 0, 512, 128);
-          g.font = '900 96px "Arial Black", Impact, sans-serif';
-          g.textAlign = 'center';
-          g.textBaseline = 'middle';
-          g.fillStyle = 'rgba(255,255,255,0.10)';
-          g.fillText('NO CAP!', 256, 68);
-        }),
-        transparent: true,
-        depthWrite: false,
-      }),
-    );
-    logo.rotation.x = -Math.PI / 2;
-    logo.position.set(0, 0.004, PP_L / 2 + 3.4);
-    S.add(logo);
-
-    // placas de LED em volta da quadra (fundo e laterais)
-    const board = (w: number, x: number, z: number, ry: number, hue: number) => {
-      const b = new THREE.Mesh(
-        new THREE.BoxGeometry(w, 0.95, 0.12),
-        new THREE.MeshBasicMaterial({
-          map: canvasTex(512, 64, (g) => {
-            const gr = g.createLinearGradient(0, 0, 512, 0);
-            gr.addColorStop(0, hue ? '#c4232d' : '#1d4fd8');
-            gr.addColorStop(0.5, hue ? '#2a1b66' : '#102a7a');
-            gr.addColorStop(1, hue ? '#1d4fd8' : '#c4232d');
-            g.fillStyle = gr;
-            g.fillRect(0, 0, 512, 64);
-            g.fillStyle = 'rgba(255,255,255,0.9)';
-            g.font = '900 38px "Arial Black", Impact, sans-serif';
-            g.textAlign = 'center';
-            g.textBaseline = 'middle';
-            g.fillText('NO CAP!', 128, 34);
-            g.fillText('NO CAP!', 384, 34);
-          }),
-        }),
-      );
-      b.position.set(x, 0.48, z);
-      b.rotation.y = ry;
-      S.add(b);
-    };
-    const wallZ = -12;
-    for (const x of [-9, 0, 9]) board(9, x, wallZ, 0, x === 0 ? 1 : 0);
-    for (const sx of [-1, 1]) {
-      board(9, sx * 13.5, wallZ + 4.2, (sx * -Math.PI) / 2, 0);
-      board(9, sx * 13.5, wallZ + 13.2, (sx * -Math.PI) / 2, 1);
-      board(9, sx * 13.5, wallZ + 22.2, (sx * -Math.PI) / 2, 0);
-    }
-
-    // parede escura do fundo
-    const wall = new THREE.Mesh(
-      new THREE.PlaneGeometry(60, 18),
-      new THREE.MeshBasicMaterial({
-        map: canvasTex(256, 96, (g) => {
-          const gr = g.createLinearGradient(0, 0, 0, 96);
-          gr.addColorStop(0, '#05081c');
-          gr.addColorStop(1, '#16204f');
-          g.fillStyle = gr;
-          g.fillRect(0, 0, 256, 96);
-        }),
-        fog: false,
-      }),
-    );
-    wall.position.set(0, 9, wallZ - 3.5);
-    S.add(wall);
-
-    // arquibancada com a torcida em silhueta (tons escuros, só uns toques de cor)
-    const tones = [0x1a2145, 0x232b57, 0x2b2f5e, 0x1d2a4f, 0x30264f, 0x7a2a3a, 0x2a4f8f];
-    const step = new THREE.MeshLambertMaterial({ color: 0x151a3a });
-    const crowd = new THREE.InstancedMesh(
-      new THREE.CapsuleGeometry(0.2, 0.34, 2, 6),
-      new THREE.MeshLambertMaterial({ color: 0xffffff }),
-      3 * 46,
-    );
-    const m4 = new THREE.Matrix4();
-    const c = new THREE.Color();
-    let n = 0;
-    for (let row = 0; row < 3; row++) {
-      const z = wallZ - 0.4 - row * 1.25;
-      const y = 0.95 + row * 0.95;
-      const st = new THREE.Mesh(new THREE.BoxGeometry(46, 0.5 + row * 0.95, 1.2), step);
-      st.position.set(0, (0.5 + row * 0.95) / 2 + 0.3, z);
-      S.add(st);
-      for (let i = 0; i < 46; i++) {
-        const seed = Math.sin((row * 46 + i) * 12.9898) * 43758.5453;
-        const r = seed - Math.floor(seed);
-        m4.makeTranslation(-21 + i * 0.93 + (row % 2) * 0.4, y + 0.55 + r * 0.1, z);
-        crowd.setMatrixAt(n, m4);
-        crowd.setColorAt(
-          n,
-          c.setHex(tones[Math.floor(r * tones.length) % tones.length] ?? 0x1a2145),
-        );
-        n++;
-      }
-    }
-    S.add(crowd);
-
-    // refletores no teto, com um brilho leve
-    const lamp = new THREE.MeshBasicMaterial({ color: 0xf4f7ff, fog: false });
-    for (let i = -3; i <= 3; i++) {
-      const bar = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.12, 0.5), lamp);
-      bar.position.set(i * 5.2, 9.4, -3);
-      S.add(bar);
-      const glow = new THREE.Sprite(
-        new THREE.SpriteMaterial({
-          map: this.glow,
-          color: 0xdfe9ff,
-          transparent: true,
-          opacity: 0.16,
-          depthWrite: false,
-          blending: THREE.AdditiveBlending,
-          fog: false,
-        }),
-      );
-      glow.scale.set(6, 2.4, 1);
-      glow.position.set(i * 5.2, 9.2, -3);
-      S.add(glow);
-    }
-  }
-
   private buildFloor() {
-    const tex = canvasTex(256, 256, (g) => {
-      g.fillStyle = '#0f1334';
-      g.fillRect(0, 0, 256, 256);
-      g.fillStyle = '#12173b';
-      g.fillRect(0, 0, 128, 128);
-      g.fillRect(128, 128, 128, 128);
-    });
-    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-    tex.repeat.set(14, 14);
+    // piso do salão e tapete vermelho debaixo da mesa (como no jogo de referência)
     const floor = new THREE.Mesh(
-      new THREE.CircleGeometry(24, 48),
-      new THREE.MeshLambertMaterial({ map: tex }),
+      new THREE.PlaneGeometry(140, 140),
+      new THREE.MeshStandardMaterial({ color: 0x23272f, roughness: 0.95 }),
     );
     floor.rotation.x = -Math.PI / 2;
+    floor.receiveShadow = true;
     this.scene.add(floor);
-    // sombra mole da mesa no chão
-    const blob = new THREE.Mesh(
-      new THREE.PlaneGeometry(PP_W + 2.2, PP_L + 2.4),
-      new THREE.MeshBasicMaterial({
-        map: canvasTex(128, 128, (g) => {
-          const r = g.createRadialGradient(64, 64, 8, 64, 64, 64);
-          r.addColorStop(0, 'rgba(0,0,0,0.55)');
-          r.addColorStop(0.6, 'rgba(0,0,0,0.3)');
-          r.addColorStop(1, 'rgba(0,0,0,0)');
-          g.fillStyle = r;
-          g.fillRect(0, 0, 128, 128);
-        }),
-        transparent: true,
-        depthWrite: false,
-      }),
+    const mat = new THREE.Mesh(
+      new THREE.PlaneGeometry(PP_W * 4.3, PP_L * 3.4),
+      new THREE.MeshStandardMaterial({ color: 0x6e2222, roughness: 0.9 }),
     );
-    blob.rotation.x = -Math.PI / 2;
-    blob.position.y = 0.004;
-    this.scene.add(blob);
+    mat.rotation.x = -Math.PI / 2;
+    mat.position.y = 0.004;
+    mat.receiveShadow = true;
+    this.scene.add(mat);
   }
 
   private buildTable() {
@@ -467,13 +372,13 @@ export class PingScene {
     const slabH = 0.14;
     const slab = new THREE.Mesh(
       new RoundedBoxGeometry(PP_W + 0.08, slabH, PP_L + 0.08, 4, 0.035),
-      new THREE.MeshStandardMaterial({ color: 0x14308f, roughness: 0.5, metalness: 0.05 }),
+      new THREE.MeshStandardMaterial({ color: 0x10203c, roughness: 0.55, metalness: 0.05 }),
     );
     slab.position.y = PP_TOP - slabH / 2;
     g.add(slab);
     // tampo com as linhas
     const tex = canvasTex(768, 1404, (c) => {
-      c.fillStyle = '#2f6fcf';
+      c.fillStyle = '#1d4e9e';
       c.fillRect(0, 0, 768, 1404);
       const gr = c.createLinearGradient(0, 0, 0, 1404);
       gr.addColorStop(0, 'rgba(255,255,255,0.10)');
@@ -502,11 +407,15 @@ export class PingScene {
     // a borda de baixo e as pernas
     const apron = new THREE.Mesh(
       new THREE.BoxGeometry(PP_W - 0.5, 0.12, PP_L - 0.5),
-      new THREE.MeshLambertMaterial({ color: 0xb3202b }),
+      new THREE.MeshLambertMaterial({ color: 0x10203c }),
     );
     apron.position.y = PP_TOP - slabH - 0.06;
     g.add(apron);
-    const legMat = new THREE.MeshLambertMaterial({ color: 0x1b2a66 });
+    const legMat = new THREE.MeshStandardMaterial({
+      color: 0x2b2f36,
+      roughness: 0.7,
+      metalness: 0.2,
+    });
     for (const sx of [-1, 1])
       for (const sz of [-1, 1]) {
         const leg = new THREE.Mesh(new THREE.BoxGeometry(0.14, PP_TOP - slabH, 0.14), legMat);
@@ -514,11 +423,18 @@ export class PingScene {
         g.add(leg);
         const foot = new THREE.Mesh(
           new THREE.BoxGeometry(0.26, 0.05, 0.26),
-          new THREE.MeshLambertMaterial({ color: 0xb3202b }),
+          new THREE.MeshStandardMaterial({ color: 0x2b2f36, roughness: 0.7 }),
         );
         foot.position.set(sx * (PP_W / 2 - 0.3), 0.025, sz * (PP_L / 2 - 0.35));
         g.add(foot);
       }
+    g.traverse((o) => {
+      const mm = o as THREE.Mesh;
+      if (mm.isMesh) {
+        mm.castShadow = true;
+        mm.receiveShadow = true;
+      }
+    });
     this.scene.add(g);
   }
 
@@ -593,7 +509,7 @@ export class PingScene {
     // a face de bater olha para -z (a rede) quando a raquete é a de perto; o grupo gira para a do outro lado
     const rim = new THREE.Mesh(
       new THREE.CylinderGeometry(r, r, 0.05, 48),
-      new THREE.MeshLambertMaterial({ color: 0xe0b878 }),
+      new THREE.MeshLambertMaterial({ color: 0xc9a46a }),
     );
     rim.rotation.x = Math.PI / 2;
     const outline = new THREE.Mesh(
@@ -601,11 +517,16 @@ export class PingScene {
       new THREE.MeshBasicMaterial({ color: INK, side: THREE.BackSide }),
     );
     outline.rotation.x = Math.PI / 2;
-    g.add(outline, rim, face(0xe3262f, -0.027, true), face(0x1b1535, 0.027, false));
+    g.add(
+      outline,
+      rim,
+      face(mine ? 0xd62b2b : 0x1e1e22, -0.027, true),
+      face(mine ? 0xd62b2b : 0x1e1e22, 0.027, false),
+    );
     // cabo
     const handle = new THREE.Mesh(
       new THREE.BoxGeometry(0.085, 0.2, 0.07),
-      new THREE.MeshLambertMaterial({ color: 0xc58a4a }),
+      new THREE.MeshLambertMaterial({ color: 0xc9a46a }),
     );
     handle.position.set(0, -r - 0.07, 0);
     const handleLine = new THREE.Mesh(
@@ -664,7 +585,7 @@ export class PingScene {
   private fitCamera() {
     this.camDirty = false;
     const cam = this.camera;
-    cam.fov = 42;
+    cam.fov = 50;
     cam.updateProjectionMatrix();
     const pts: [number, number, number][] = [];
     const hx = PP_W / 2 + 0.35;
@@ -676,7 +597,7 @@ export class PingScene {
     const v = new THREE.Vector3();
     for (let z = 6; z < 40; z += 0.1) {
       cam.position.set(0, z * ratio, z);
-      cam.lookAt(0, 0.9, -0.6);
+      cam.lookAt(0, 0.8, -1.2);
       cam.updateMatrixWorld();
       let ok = true;
       for (const p of pts) {
@@ -718,8 +639,8 @@ export class PingScene {
     }
     cam.position.x += sx;
     cam.position.y += sy;
-    cam.lookAt(tx, 0.9, -0.6);
-    const fov = 42 + this.fovKick * 3;
+    cam.lookAt(tx, 0.8, -1.2);
+    const fov = 50 + this.fovKick * 3;
     if (Math.abs(cam.fov - fov) > 0.01) {
       cam.fov = fov;
       cam.updateProjectionMatrix();
@@ -747,6 +668,77 @@ export class PingScene {
       x: clamp(this.hitPoint.x, -PP_PAD_X, PP_PAD_X),
       y: clamp(this.hitPoint.y + lift, PP_PAD_Y_MIN, PP_PAD_Y_MAX),
     };
+  }
+
+  /** Liga ou desliga o guia de posição (opção do menu). */
+  setGuide(on: boolean) {
+    this.guideOn = on;
+    if (!on) for (const d of this.guideDots) d.visible = false;
+  }
+
+  /**
+   * O guia: para a bola que vem na sua direção, marca no chão (sem dizer "bata aqui") por onde ela passa depois do
+   * quique: o primeiro ponto é o do quique (bater na hora do quique), os seguintes mostram o caminho se você esperar. Vai
+   * mudando enquanto a bola anda.
+   */
+  private updateGuide(dt: number) {
+    const m = this.match;
+    const b = m.ball;
+    const sign = this.me === 0 ? 1 : -1;
+    const show =
+      this.guideOn &&
+      m.phase === 'rally' &&
+      m.expect === this.me &&
+      b.vz * sign > 0 &&
+      !this.reduced;
+    if (!show) {
+      for (const d of this.guideDots) d.visible = false;
+      return;
+    }
+    this.guideAt -= dt;
+    if (this.guideAt <= 0) {
+      this.guideAt = 0.05;
+      const s = ppCopyBall(b, this.guideBall);
+      const out = this.guideOut;
+      let bounced = (m.bounces[this.me] ?? 0) >= 1;
+      let n = 0;
+      let sinceDot = 0;
+      const put = (x: number, z: number, k: number) => {
+        const d = this.guideDots[n];
+        if (!d) return;
+        const onTable = Math.abs(x) <= PP_W / 2 && Math.abs(z) <= PP_L / 2;
+        d.visible = true;
+        d.position.set(this.vx(x), (onTable ? PP_TOP : 0.004) + 0.012, this.vz(z));
+        const mt = d.material as THREE.MeshBasicMaterial;
+        mt.opacity = clamp(0.5 - k * 0.055, 0.12, 0.5);
+        d.scale.setScalar(k === 0 ? 1.1 : 0.85);
+        n++;
+      };
+      if (bounced) put(b.x, b.z, 0);
+      for (let i = 0; i < 700 && n < 7; i++) {
+        out.ev = 0;
+        ppStepBall(s, out);
+        if (out.ev & PP_EV_FLOOR) break;
+        if (out.ev & PP_EV_TABLE) {
+          if (!bounced && out.side === this.me) {
+            bounced = true;
+            put(out.bx, out.bz, 0);
+            sinceDot = 0;
+            continue;
+          }
+          if (bounced) break; // segundo quique na sua mesa: a bola morreu
+        }
+        if (bounced) {
+          sinceDot++;
+          if (sinceDot >= 22) {
+            sinceDot = 0;
+            if (Math.abs(s.z) > PP_PAD_Z + 1.2) break;
+            put(s.x, s.z, n);
+          }
+        }
+      }
+      for (let i = n; i < this.guideDots.length; i++) this.guideDots[i]!.visible = false;
+    }
   }
 
   private tablePlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -1.4);
@@ -873,6 +865,7 @@ export class PingScene {
   render(dt: number, alpha: number) {
     if (this.disposed) return;
     this.time += dt;
+    this.updateGuide(dt);
     const m = this.match;
     const cur = m.ball;
     const pv = this.prev;
@@ -911,7 +904,7 @@ export class PingScene {
     this.trailPos.unshift({ x: bx, y: by, z: bz });
     if (this.trailPos.length > this.trail.length) this.trailPos.pop();
     const tier = m.trailTier;
-    const showTrail = (speed > 9 || tier > 0) && m.phase !== 'serve' && !this.reduced;
+    const showTrail = tier > 0 && m.phase !== 'serve' && !this.reduced;
     const heat = tier > 0 ? 1 : clamp((speed - 9) / 7, 0, 1);
     for (let i = 0; i < this.trail.length; i++) {
       const s = this.trail[i];
@@ -931,6 +924,42 @@ export class PingScene {
       sm.color.setHex(
         tier >= 3 ? 0xd9b3ff : tier === 2 ? 0xa86bff : tier === 1 ? 0x8a58e0 : 0xdfe9ff,
       );
+    }
+
+    // anel do efeito (eixo e cor do giro) e rastro em linha
+    {
+      const w = Math.hypot(cur.wx, cur.wy, cur.wz);
+      if (m.phase === 'rally' && w > 14 && !this.reduced) {
+        const ax = this.vx(cur.wx) / w;
+        const ay = cur.wy / w;
+        const az = this.vz(cur.wz) / w;
+        this.spinRing.visible = true;
+        this.spinRing.position.set(bx, by, bz);
+        this.spinRing.quaternion.setFromUnitVectors(
+          new THREE.Vector3(0, 0, 1),
+          new THREE.Vector3(ax, ay, az),
+        );
+        const hh = Math.hypot(cur.vx, cur.vz) || 1;
+        const top = (cur.wx * (cur.vz / hh) - cur.wz * (cur.vx / hh)) * -1;
+        const side = Math.abs(cur.wy);
+        const col = side > Math.abs(top) ? 0xffe27a : top > 0 ? 0xff8a73 : 0x8ec5ff;
+        const mt = this.spinRing.material as THREE.MeshBasicMaterial;
+        mt.color.setHex(col);
+        mt.opacity = 0.35 + 0.5 * clamp(w / 60, 0, 1);
+      } else this.spinRing.visible = false;
+      const pts = this.trailLine.geometry.attributes.position as THREE.BufferAttribute;
+      const n = Math.min(this.trailPos.length, 28);
+      const inFlight = m.phase === 'rally' && !this.reduced && n > 2;
+      for (let i = 0; i < 28; i++) {
+        const q = this.trailPos[Math.min(i, n - 1)];
+        if (q) pts.setXYZ(i, q.x, q.y, q.z);
+      }
+      pts.needsUpdate = true;
+      this.trailLine.visible = inFlight;
+      const lm = this.trailLine.material as THREE.LineBasicMaterial;
+      const tr = m.trailTier;
+      lm.color.setHex(tr >= 3 ? 0xe7b8ff : tr === 2 ? 0xb455ff : tr === 1 ? 0x9a5bff : 0xffffff);
+      lm.opacity = tr > 0 ? 0.9 : 0.3;
     }
 
     // raquetes: a de quem olha é a primeira (perto da câmera), a do outro lado é a segunda. A raquete avança com a mão

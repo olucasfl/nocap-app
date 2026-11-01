@@ -39,6 +39,7 @@ import {
   ppTossSpeed,
   PP_SERVE_Y,
   PP_SLOW,
+  PP_WORLD_SPEED,
   PP_SMASH_PERIOD,
   PP_SERVE_WAIT,
   PP_REACH_NET,
@@ -478,7 +479,7 @@ export class PpMatch {
     // saque: a bola fica parada (sem gravidade) na frente da raquete até levar a raquetada
     if (this.phase === 'toss') return void this.tryContact(sub);
     this.out.ev = 0;
-    ppStepBall(b, this.out, this.popup ? PP_SLOW : 1);
+    ppStepBall(b, this.out, (this.popup ? PP_SLOW : 1) * PP_WORLD_SPEED);
     const o = this.out;
     if (o.ev & PP_EV_NET) this.events.push({ type: 'net' });
     if (o.ev & PP_EV_TABLE) {

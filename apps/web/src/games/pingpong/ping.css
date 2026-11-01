@@ -385,11 +385,21 @@
     gap: 6px;
     padding: 4px 12px;
   }
+  .png-score {
+    max-width: calc(100vw - 118px);
+    gap: 5px;
+    padding: 4px 10px;
+  }
+  .png-side:not(.is-right) small {
+    flex-shrink: 0;
+  }
   .png-side small {
-    display: none;
+    max-width: 30vw;
+    font-size: 10px;
+    letter-spacing: 0.06em;
   }
   .png-side b {
-    font-size: 26px;
+    font-size: 24px;
   }
   .png-serve-hint {
     left: max(12px, env(safe-area-inset-left));
@@ -517,4 +527,85 @@
 }
 .png-smash[data-tier='1'] b {
   color: #ff8b82;
+}
+
+/* ---- visual escuro de vidro (placar, avisos e dicas), como no 3D Table Tennis de referência ---- */
+.png-score {
+  gap: 14px;
+  padding: 8px 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  background: rgba(16, 18, 24, 0.82);
+  color: #f3f4f7;
+  box-shadow: none;
+  backdrop-filter: blur(8px);
+}
+.png-side small {
+  max-width: 28vw;
+  font: 600 12px var(--font-body, system-ui);
+  letter-spacing: 0.12em;
+  color: #9aa3b5;
+}
+.png-side b {
+  font: 700 32px/1 var(--font-display, system-ui);
+}
+.png-side i {
+  border: 0;
+  background: rgba(255, 255, 255, 0.14);
+  opacity: 1;
+}
+.png-side.is-serving i {
+  background: #ff5a3c;
+  box-shadow: 0 0 10px #ff5a3c;
+}
+.png-sep {
+  opacity: 0.35;
+}
+.png-banner {
+  top: 24%;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  color: #f3f4f7;
+  text-shadow: 0 6px 30px rgba(0, 0, 0, 0.7);
+}
+.png-banner.is-win,
+.png-banner.is-lose {
+  background: none;
+}
+.png-banner b {
+  font: 800 clamp(26px, 6vw, 56px) / 1.05 var(--font-display, system-ui);
+  letter-spacing: 0.08em;
+}
+.png-banner span {
+  font: 600 14px var(--font-body, system-ui);
+  letter-spacing: 0.14em;
+  color: #9aa3b5;
+}
+.png-serve-hint,
+.png-serve-hint.is-them {
+  padding: 8px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  background: rgba(16, 18, 24, 0.82);
+  color: #f3f4f7;
+  backdrop-filter: blur(8px);
+  animation: none;
+}
+.png-serve-hint b {
+  font: 700 15px var(--font-display, system-ui);
+  letter-spacing: 0.1em;
+}
+.png-serve-hint span {
+  font: 500 12px var(--font-body, system-ui);
+  color: #9aa3b5;
+}
+.png-rally {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(16, 18, 24, 0.82);
+  color: #f3f4f7;
+}
+.png-speed {
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
 }

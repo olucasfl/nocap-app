@@ -21,15 +21,31 @@ import {
 } from '@nocap/games';
 import { GameChat } from '@/components/GameChat';
 import { GameMenu, GearButton, Keycap } from '@/components/GameMenu';
+import { IcTable } from '@/games/bola/BolaIcons';
 import { GameTips, type TipRow } from '@/components/GameTips';
 import { RotateHint } from '@/components/RotateHint';
 import { pingSfx } from '@/lib/ping-audio';
-import { sendRoomQuiet, serverNow, subscribeRoom } from '@/lib/rooms';
+import { getGuestNickname, sendRoomQuiet, serverNow, subscribeRoom } from '@/lib/rooms';
+import { useAuth } from '@/lib/auth';
 import { PingFinal, type PingStats } from './PingFinal';
 import { PingScene } from './PingScene';
 import './ping.css';
 
 const TIPS_KEY = 'nocap-ping-tips';
+const GUIDE_KEY = 'nocap-ping-guide';
+const readGuide = (): boolean => {
+  try {
+    return localStorage.getItem(GUIDE_KEY) !== '0';
+  } catch {
+    return true;
+  }
+};
+
+/** O nome de quem joga aqui: o da conta, o apelido da sala ou, na falta dos dois, "Você". */
+function myDisplayName(online?: { me: number; names: [string, string] }): string {
+  if (online && online.me >= 0) return online.names[online.me] ?? 'Você';
+  return useAuth.getState().user?.username || getGuestNickname() || 'Você';
+}
 
 /** O nome do golpe que aparece junto da velocidade (o golpe comum não aparece). */
 const STROKE_TAG: Record<string, string | undefined> = {
@@ -172,6 +188,8 @@ export function PingPlay({
   });
   const [menu, setMenu] = useState(false);
   const menuRef = useRef(false);
+  const sceneRef = useRef<PingScene | null>(null);
+  const [guide, setGuide] = useState(readGuide);
   const trackRef = useRef<HTMLDivElement>(null);
   const cursorRef = useRef<HTMLSpanElement>(null);
   menuRef.current = menu;
@@ -203,6 +221,7 @@ export function PingPlay({
     const oppIdx = 1 - myIdx;
     const spectator = !!online && online.me < 0;
     const oppName = online ? (online.names[oppIdx] ?? 'Adversário') : BOT_NAMES[level];
+    const myName = myDisplayName(online);
     const scene = new PingScene(cv, match, {
       oppColor: online ? (online.colors[oppIdx] ?? 0x9a6bff) : BOT_COLORS[level],
       oppName,
@@ -210,6 +229,8 @@ export function PingPlay({
       me: myIdx,
     });
 
+    sceneRef.current = scene;
+    scene.setGuide(readGuide());
     const me: PpInput = { ...ppIdleInput(), manual: false };
     // controle: x pela mão; z (alcance, de volta até a rede) pelo movimento "para a frente" da mão
     let zt = 0;
@@ -388,7 +409,7 @@ export function PingPlay({
           const who = spectator
             ? (online?.names[e.winner === 0 ? 0 : 1] ?? '')
             : e.winner === myIdx
-              ? 'você'
+              ? myName
               : oppName;
           setHud((h) => ({
             ...h,
@@ -639,10 +660,10 @@ export function PingPlay({
     hud.phase === 'play';
   const names = online
     ? [
-        spectating ? (online.names[0] ?? '') : 'Você',
+        spectating ? (online.names[0] ?? '') : myDisplayName(online),
         spectating ? (online.names[1] ?? '') : (online.names[oppIdx] ?? 'Adversário'),
       ]
-    : ['Você', BOT_NAMES[level]];
+    : [myDisplayName(), BOT_NAMES[level]];
 
   return (
     <div ref={root} className="png-play" data-testid="png-play">
@@ -758,7 +779,26 @@ export function PingPlay({
           onClose={closeMenu}
           onExit={onExit}
           onOfflineInvite={onOfflineInvite}
-          actions={[]}
+          actions={[
+            {
+              id: 'guide',
+              icon: <IcTable size={20} />,
+              label: 'Guia de posição',
+              hint: <span className="gm-cur">{guide ? 'Ligado' : 'Desligado'}</span>,
+              pressed: guide,
+              testId: 'png-menu-guide',
+              onClick: () => {
+                const next = !guide;
+                setGuide(next);
+                sceneRef.current?.setGuide(next);
+                try {
+                  localStorage.setItem(GUIDE_KEY, next ? '1' : '0');
+                } catch {
+                  /* sem storage: vale só nesta partida */
+                }
+              },
+            },
+          ]}
         />
       )}
       {result && (
