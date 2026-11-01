@@ -132,7 +132,7 @@ const humanDriver = () => {
     const q = g.scene.project(g.scene.simX(x), 1.4, z);
     return [r.left + q.nx * r.width, r.top + q.ny * r.height] as const;
   };
-  const PAD_Z = 2.825;
+  const PAD_Z = 3.825;
   let plan: { x: number; t0: number } | null = null;
   let seen = -1;
   let last = -1;
@@ -261,7 +261,7 @@ for (const size of [
         };
         const g = w.__ping;
         const pd = g.match.pad(0);
-        const q = g.scene.project(g.scene.simX(pd.x), pd.y, 3.35 - pd.reach);
+        const q = g.scene.project(g.scene.simX(pd.x), pd.y, 3.825 - pd.reach);
         const r = (document.querySelector('.png-zone') as HTMLElement).getBoundingClientRect();
         return { x: r.left + q.nx * r.width, y: r.top + q.ny * r.height };
       });

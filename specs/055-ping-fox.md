@@ -177,3 +177,7 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 - **Barra de tempo** (só para quem recebe): vermelho / verde / verde perfeito passando rápido (`ppSmashCursor`, por ticks, `PP_SMASH_PERIOD` = 50). Aperta com o mouse, o outro dedo, toque ou Espaço (`smashTap`); o nível vem de onde a barra estava (1 vermelho, 2 verde, 3 perfeito). Quem não aperta rebate normal.
 - **O smash**: na raquetada seguinte a bola sai de cima para baixo com `PP_SMASH_V` = 12 / 17 / 24 m/s e sempre cai na mesa (quem acertou a barra merece o ponto), com **rastro roxo** (mais claro quanto melhor) e estouro roxo. O nível viaja no evento de batida (`tier`); o aperto em si é local, então a rede não muda.
 - Bots também apertam a barra, mais certos no difícil (`smashErr`).
+
+### Rodada 12 (01/11/2026)
+
+- Mesa 15% maior: `PP_L` 7,25, `PP_W` 4, rede 0,36, `PP_PAD_X` 3,1. A câmera se ajusta sozinha (`fitCamera`), então na tela a mesa continua cabendo inteira; o que cresce é o espaço em relação à raquete e à bola.
