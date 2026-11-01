@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createRng } from '../core/rng';
 import { PpBot, PP_BOT_LEVELS, type PpBotName } from './bot';
-import { PpNetSim, type PpNetEvent } from './netsim';
+import { PpNetSim, ppParseNetEvent, type PpNetEvent } from './netsim';
 
 interface Msg {
   at: number;
@@ -157,5 +157,27 @@ describe('partida em rede (PpNetSim)', () => {
     expect(S.validate(fake, 1)).toBe(false); // velha demais
     expect(S.validate({ ...fake, t: 199 }, 1)).toBe(false); // não é a vez (ninguém sacou)
     expect(S.validate({ ...fake, t: 199 }, 0)).toBe(false); // outro jogador
+  });
+});
+
+describe('o smash cronometrado viaja na batida', () => {
+  it('o evento de batida leva o golpe e o nível, e valores estranhos são limpos', () => {
+    const base = {
+      k: 'hit',
+      t: 10,
+      p: 0,
+      serve: false,
+      smash: true,
+      kmh: 90,
+      quality: 'normal',
+      spin: 1,
+      b: [0, 1.5, 1, 0, -5, -15, 0, 0, 0],
+    };
+    const ok = ppParseNetEvent({ ...base, stroke: 'smash', tier: 3 });
+    expect(ok && ok.k === 'hit' && ok.tier).toBe(3);
+    expect(ok && ok.k === 'hit' && ok.stroke).toBe('smash');
+    const odd = ppParseNetEvent({ ...base, stroke: 'lixo', tier: 99 });
+    expect(odd && odd.k === 'hit' && odd.stroke).toBe('normal');
+    expect(odd && odd.k === 'hit' && odd.tier).toBe(3);
   });
 });

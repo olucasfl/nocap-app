@@ -21,6 +21,8 @@ export interface PpBotLevel {
   power: number;
   /** Espera (s) antes de sacar. */
   serveWait: number;
+  /** Erro (na barra do smash, 0 a 1) de quem aperta para o smash: menor = acerta mais o verde. */
+  smashErr: number;
 }
 
 /** O bot estende a raquete até aqui para encontrar a bola (alcança também bolas que morrem curtas). */
@@ -37,6 +39,7 @@ export const PP_BOT_LEVELS: Record<PpBotName, PpBotLevel> = {
     aim: 0.15,
     power: 6.2,
     serveWait: 1.2,
+    smashErr: 0.32,
   },
   medio: {
     reaction: 0.25,
@@ -46,6 +49,7 @@ export const PP_BOT_LEVELS: Record<PpBotName, PpBotLevel> = {
     aim: 0.5,
     power: 8,
     serveWait: 1,
+    smashErr: 0.16,
   },
   dificil: {
     reaction: 0.15,
@@ -55,6 +59,7 @@ export const PP_BOT_LEVELS: Record<PpBotName, PpBotLevel> = {
     aim: 0.9,
     power: 10,
     serveWait: 0.8,
+    smashErr: 0.05,
   },
 };
 
@@ -77,6 +82,9 @@ export class PpBot {
   private errX = 0;
   private errY = 0;
   private swing: PpSwing = { vx: 0, vy: 0, vz: 0 };
+  private popAt = -1;
+  private popTapped = false;
+  private popTarget = 0.5;
   private serveSwing: PpSwing | null = null;
   private serveTick = -1;
 
@@ -98,6 +106,23 @@ export class PpBot {
     let gy = 1.3;
     let speed = lv.speed * 0.6;
     let swing: PpSwing = { vx: 0, vy: 0, vz: 0 };
+
+    // bola mal pegada do outro lado: o bot também aperta a barra do smash, mais ou menos certo conforme o nível
+    if (m.popup && m.expect === p) {
+      if (this.popAt !== m.rally) {
+        this.popAt = m.rally;
+        this.popTapped = false;
+        this.popTarget = 0.5 + this.gauss() * lv.smashErr;
+      }
+      if (
+        !this.popTapped &&
+        m.popupTicks > lv.reaction * 60 &&
+        Math.abs(m.smashCursor() - this.popTarget) < 0.04
+      ) {
+        m.smashTap(p);
+        this.popTapped = true;
+      }
+    }
 
     if (m.phase === 'serve' && m.server === p) {
       gx = this.cx;

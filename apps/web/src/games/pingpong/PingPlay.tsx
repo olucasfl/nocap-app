@@ -41,7 +41,9 @@ const STROKE_TAG: Record<string, string | undefined> = {
   bloqueio: 'BLOQUEIO',
   lob: 'LOB',
   smash: 'SMASH',
+  subida: 'MAL PEGADA',
 };
+const TIER_TAG = ['', 'SMASH FRACO', 'SMASH FORTE', 'SMASH PERFEITO'];
 
 const tipRows = (touch: boolean): TipRow[] =>
   touch
@@ -61,6 +63,10 @@ const tipRows = (touch: boolean): TipRow[] =>
         {
           keys: <b className="gm-tag">Defesa</b>,
           text: 'Contra uma bola forte, deixe a raquete mansa: bloqueio. Recuada (para trás) a bola sobe em lob',
+        },
+        {
+          keys: <b className="gm-tag">Smash</b>,
+          text: 'Se uma bola forte pegar na borda da raquete, ela sobe e o jogo vai em câmera lenta: quem recebe aperta na hora em que a barra passa pelo verde para dar um smash',
         },
         {
           keys: <b className="gm-tag">Saque</b>,
@@ -85,6 +91,10 @@ const tipRows = (touch: boolean): TipRow[] =>
           text: 'Contra uma bola forte, deixe a raquete mansa: bloqueio. Recuada (para trás) a bola sobe em lob',
         },
         {
+          keys: <b className="gm-tag">Smash</b>,
+          text: 'Se uma bola forte pegar na borda da raquete, ela sobe e o jogo vai em câmera lenta: quem recebe aperta na hora em que a barra passa pelo verde para dar um smash',
+        },
+        {
           keys: <b className="gm-tag">Saque</b>,
           text: 'A bola fica parada na sua frente: jogue a raquete para a frente e bata nela',
         },
@@ -100,6 +110,9 @@ interface Hud {
   matchPhase: string;
   banner: { text: string; sub?: string; id: number; tone: 'win' | 'lose' | 'info' } | null;
   speed: { kmh: number; id: number; mine: boolean; tag?: string } | null;
+  /** Bola mal pegada: câmera lenta (todos veem) e, para quem recebe, a barra do smash (`on`) e o nível já apertado. */
+  slow: boolean;
+  smash: { on: boolean; tier: number };
 }
 
 const BOT_NAMES: Record<PpBotName, string> = {
@@ -152,11 +165,15 @@ export function PingPlay({
     server: 0,
     rally: 0,
     matchPhase: 'serve',
+    slow: false,
+    smash: { on: false, tier: 0 },
     banner: null,
     speed: null,
   });
   const [menu, setMenu] = useState(false);
   const menuRef = useRef(false);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const cursorRef = useRef<HTMLSpanElement>(null);
   menuRef.current = menu;
   const [result, setResult] = useState<{
     winner: number;
@@ -220,6 +237,23 @@ export function PingPlay({
     // ---- entrada: a raquete fica sempre embaixo do dedo (ou do mouse): o ponto tocado, projetado na altura da raquete,
     // é para onde ela vai (x para os lados, z para a frente/trás). A força da batida é o impulso do avanço; a direção,
     // para onde a mão vai ----
+    let primaryId: number | null = null;
+    // bola mal pegada: quem recebe aperta (mouse, outro dedo, toque ou Espaço) e o nível vem de onde a barra está
+    const smashWindow = () =>
+      !spectator && phase === 'play' && !finished && match.popup && match.expect === myIdx;
+    let tapValue = -1;
+    const tapSmash = () => {
+      if (!smashWindow()) return false;
+      const c = match.smashCursor();
+      const tier = match.smashTap(myIdx);
+      if (tier > 0) {
+        tapValue = c;
+        pingSfx.toss();
+        if ('vibrate' in navigator) navigator.vibrate?.(14);
+        setHud((h) => ({ ...h, smash: { on: true, tier } }));
+      }
+      return true;
+    };
     const aim = (e: PointerEvent) => {
       const r = zn.getBoundingClientRect();
       const p = scene.pointerToTable(
@@ -234,15 +268,22 @@ export function PingPlay({
     const onDown = (e: PointerEvent) => {
       if (menuRef.current) return;
       zn.setPointerCapture?.(e.pointerId);
+      tapSmash();
+      // outro dedo (o que aperta o smash) não leva a raquete: só o primeiro dedo mexe nela
+      if (e.pointerType !== 'mouse' && primaryId !== null && e.pointerId !== primaryId) return;
+      primaryId = e.pointerId;
       aim(e);
     };
     const onMove = (e: PointerEvent) => {
       if (menuRef.current) return;
-      if (e.pointerType !== 'mouse' && !pointerDown) return;
+      if (e.pointerType !== 'mouse' && (!pointerDown || e.pointerId !== primaryId)) return;
       aim(e);
     };
     const onUp = (e: PointerEvent) => {
-      if (e.pointerType !== 'mouse') pointerDown = false;
+      if (e.pointerType !== 'mouse' && e.pointerId === primaryId) {
+        pointerDown = false;
+        primaryId = null;
+      }
     };
     const onCtx = (e: Event) => e.preventDefault();
     // Segurar na tela abria a lupa/seleção do iOS: bloqueia o toque longo e a seleção.
@@ -262,6 +303,7 @@ export function PingPlay({
       if (menuRef.current) return;
       if (e.code === 'Space') {
         e.preventDefault();
+        if (down && !e.repeat) tapSmash();
         return;
       }
       const k = e.key.toLowerCase();
@@ -311,9 +353,12 @@ export function PingPlay({
               kmh: e.kmh,
               id: ++speedId,
               mine,
-              tag: e.smash
-                ? 'SMASH'
-                : (STROKE_TAG[e.stroke] ?? (e.quality === 'sweet' ? 'PERFEITA' : undefined)),
+              tag:
+                e.tier > 0
+                  ? TIER_TAG[e.tier]
+                  : e.smash
+                    ? 'SMASH'
+                    : (STROKE_TAG[e.stroke] ?? (e.quality === 'sweet' ? 'PERFEITA' : undefined)),
             },
           }));
         } else if (e.type === 'bounce') pingSfx.bounce(e.impact);
@@ -520,6 +565,21 @@ export function PingPlay({
         }
       }
       scene.render(dt, phase === 'play' && !paused ? alpha : 1);
+      {
+        const win = smashWindow();
+        const slowNow = match.popup && phase === 'play';
+        if (win && cursorRef.current && trackRef.current) {
+          const c = tapValue >= 0 ? tapValue : match.smashCursor();
+          const w = Math.max(0, trackRef.current.offsetWidth - cursorRef.current.offsetWidth);
+          cursorRef.current.style.transform = `translateX(${(c * w).toFixed(1)}px)`;
+        }
+        if (!match.popup) tapValue = -1;
+        setHud((h) =>
+          h.slow === slowNow && h.smash.on === win && (win || h.smash.tier === 0)
+            ? h
+            : { ...h, slow: slowNow, smash: { on: win, tier: win ? h.smash.tier : 0 } },
+        );
+      }
       if (now - hudAt > 120) {
         hudAt = now;
         const sync = !net || waiting.length === 0;
@@ -636,6 +696,31 @@ export function PingPlay({
       {hud.phase === 'ready' && (
         <div className="png-count" aria-live="assertive">
           {hud.count > 0 ? hud.count : 'Já!'}
+        </div>
+      )}
+      <div className={`png-slowfx${hud.slow ? ' on' : ''}`} aria-hidden="true" />
+      {hud.smash.on && (
+        <div className="png-smash" data-testid="png-smash" data-tier={hud.smash.tier}>
+          <b>
+            {hud.smash.tier === 3
+              ? 'PERFEITO!'
+              : hud.smash.tier === 2
+                ? 'VERDE! SMASH FORTE'
+                : hud.smash.tier === 1
+                  ? 'VERMELHO: SMASH FRACO'
+                  : 'SMASH! Toque no verde'}
+          </b>
+          <div className="png-smash-track" ref={trackRef}>
+            <i className="png-smash-red" />
+            <i className="png-smash-green" />
+            <i className="png-smash-perfect" />
+            <span className="png-smash-cursor" ref={cursorRef} />
+          </div>
+          <small>
+            {touchDevice
+              ? 'Toque com o outro dedo na hora certa'
+              : 'Clique (ou Espaço) na hora certa'}
+          </small>
         </div>
       )}
       {myServe && !hud.banner && (

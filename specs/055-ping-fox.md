@@ -169,3 +169,11 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 ### Rodada 10 (01/11/2026): a raquete inclina com o lado
 
 - A inclinação (roll) da raquete vem da posição na mesa: no meio fica reta, à esquerda inclina para a esquerda, à direita para a direita (até ~55°), como no Ping Pong Fury; o movimento da mão só soma um pouco. O cabo ficou mais curto e, sobre a mesa, a raquete sobe 0,22 m só na tela: o cabo não entra mais no tampo.
+
+### Rodada 11 (01/11/2026): bola mal pegada e smash cronometrado
+
+- **A subida**: se uma bola forte (`PP_POPUP_VIN` = 7,5 m/s) pega na *borda* da raquete (qualidade `edge`), o golpe vira `subida`: a bola sobe em arco (e a ajuda a faz cair na mesa do outro lado). Pegar inteira não faz nada de especial.
+- **Câmera lenta** (`PP_SLOW` = 0,4): enquanto a bola está no ar depois da subida, a física anda a 40% do tempo (mesma trajetória, mais devagar), para todos os aparelhos e igual na sala (`popup`, `popupTicks`, `trailTier` entram na foto/volta no tempo).
+- **Barra de tempo** (só para quem recebe): vermelho / verde / verde perfeito passando rápido (`ppSmashCursor`, por ticks, `PP_SMASH_PERIOD` = 50). Aperta com o mouse, o outro dedo, toque ou Espaço (`smashTap`); o nível vem de onde a barra estava (1 vermelho, 2 verde, 3 perfeito). Quem não aperta rebate normal.
+- **O smash**: na raquetada seguinte a bola sai de cima para baixo com `PP_SMASH_V` = 12 / 17 / 24 m/s e sempre cai na mesa (quem acertou a barra merece o ponto), com **rastro roxo** (mais claro quanto melhor) e estouro roxo. O nível viaja no evento de batida (`tier`); o aperto em si é local, então a rede não muda.
+- Bots também apertam a barra, mais certos no difícil (`smashErr`).

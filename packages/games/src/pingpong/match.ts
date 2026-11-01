@@ -37,6 +37,8 @@ import {
   PP_TICK,
   ppTossSpeed,
   PP_SERVE_Y,
+  PP_SLOW,
+  PP_SMASH_PERIOD,
   PP_SERVE_WAIT,
   PP_REACH_NET,
   PP_REACH_BACK,
@@ -124,6 +126,18 @@ export function ppPadStep(pad: PpPaddle, tx: number, ty: number, dt: number, min
   pad.swing = Math.max(0, pad.swing - dt * 6);
 }
 
+/** Onde a barra de tempo do smash está depois de `ticks` ticks da subida (0 a 1, vai e volta). */
+export function ppSmashCursor(ticks: number): number {
+  const ph = (ticks % PP_SMASH_PERIOD) / PP_SMASH_PERIOD;
+  return ph < 0.5 ? ph * 2 : 2 - ph * 2;
+}
+
+/** O nível do smash para a posição da barra: 3 = bem no meio do verde, 2 = verde, 1 = vermelho. */
+export function ppSmashTier(cursor: number): number {
+  const d = Math.abs(cursor - 0.5);
+  return d < 0.07 ? 3 : d < 0.22 ? 2 : 1;
+}
+
 /**
  * Raquete do jogo de verdade: x segue a mão, a altura acompanha a bola (ou fica em repouso) e o alcance (z) vai de onde está
  * até onde a mão pede, em velocidade limitada. A velocidade para a frente (`vz`) é a do próprio avanço: a força da batida
@@ -162,6 +176,7 @@ export interface PpHitRecord {
   quality: PpHitQuality;
   spin: number;
   stroke?: PpStroke;
+  tier?: number;
   /** x, y, z, vx, vy, vz, wx, wy, wz da bola depois da batida. */
   b: number[];
 }
@@ -181,6 +196,9 @@ export interface PpSnapshot {
   winner: number;
   score: [number, number];
   firstServer: number;
+  popup?: boolean;
+  popupTicks?: number;
+  trailTier?: number;
 }
 export type PpReason = 'miss' | 'own' | 'out' | 'net' | 'serve';
 
@@ -196,7 +214,10 @@ export type PpEvent =
       spin: number;
       serve: boolean;
       stroke: PpStroke;
+      /** Nível do smash (1 a 3), 0 = não foi smash cronometrado. */
+      tier: number;
     }
+  | { type: 'smashtap'; p: number; tier: number }
   | { type: 'bounce'; side: number; x: number; z: number; impact: number }
   | { type: 'net' }
   | { type: 'fault'; p: number }
@@ -258,6 +279,14 @@ export class PpMatch {
   /** Batida pronta que um bot pediu para este tick. */
   private swingNow: [PpSwing | null, PpSwing | null] = [null, null];
   private serveWas: [boolean, boolean] = [false, false];
+  /** Bola mal pegada no ar: câmera lenta e quem recebe pode dar smash (batida na hora certa da barra). */
+  popup = false;
+  /** Ticks desde a subida (a barra de tempo anda por eles: igual em todos os aparelhos). */
+  popupTicks = 0;
+  /** Nível do smash que está na bola (1 a 3), para o rastro roxo; 0 = nenhum. */
+  trailTier = 0;
+  /** Nível pedido por quem vai receber (só este aparelho decide: a batida é que viaja). */
+  smashQ: [number, number] = [0, 0];
   /**
    * Modo rede (spec 055, fase 3): as batidas e o lançamento chegam como eventos (`applyHit`, `tossReq`); só o jogador
    * `localPlayer` detecta a própria batida. Fora disso a partida é uma função dos eventos e do tick.
@@ -368,6 +397,7 @@ export class PpMatch {
   step(inputs: [PpInput, PpInput]): void {
     this.tick++;
     this.t += PP_TICK;
+    if (this.popup) this.popupTicks++;
     for (let p = 0; p < 2; p++) {
       const inp = p === 0 ? inputs[0] : inputs[1];
       const pad = this.pad(p);
@@ -446,7 +476,7 @@ export class PpMatch {
     // saque: a bola fica parada (sem gravidade) na frente da raquete até levar a raquetada
     if (this.phase === 'toss') return void this.tryContact(sub);
     this.out.ev = 0;
-    ppStepBall(b, this.out);
+    ppStepBall(b, this.out, this.popup ? PP_SLOW : 1);
     const o = this.out;
     if (o.ev & PP_EV_NET) this.events.push({ type: 'net' });
     if (o.ev & PP_EV_TABLE) {
@@ -519,6 +549,20 @@ export class PpMatch {
     this.hit(p, this.phase === 'toss', px, py);
   }
 
+  /** Onde está a barra de tempo do smash (0 a 1), parada em 0 fora da subida. */
+  smashCursor(): number {
+    return ppSmashCursor(this.popupTicks);
+  }
+
+  /** A pessoa que recebe a bola mal pegada aperta: o nível do smash vem de onde a barra está. Devolve o nível (0 = não vale). */
+  smashTap(p: number): number {
+    if (!this.popup || this.expect !== p || (this.smashQ[p] ?? 0) > 0) return 0;
+    const tier = ppSmashTier(this.smashCursor());
+    this.smashQ[p === 0 ? 0 : 1] = tier;
+    this.events.push({ type: 'smashtap', p, tier });
+    return tier;
+  }
+
   private hit(p: number, serve: boolean, px: number, py: number): void {
     const pad = this.pad(p);
     const sw = this.swingNow[p === 0 ? 0 : 1];
@@ -529,10 +573,11 @@ export class PpMatch {
       vy: sw ? sw.vy : pad.vy,
       vz: sw ? sw.vz : pad.vz,
       reach: pad.reach,
+      smash: this.popup ? (this.smashQ[p === 0 ? 0 : 1] ?? 0) : 0,
     });
     pad.swing = 1;
     const kmh = ppKmh(info.speed);
-    this.commitHit(p, serve, info.smash, kmh, info.quality, info.spin, info.stroke);
+    this.commitHit(p, serve, info.smash, kmh, info.quality, info.spin, info.stroke, info.tier);
     if (this.net) {
       this.pendingHit = {
         p,
@@ -542,6 +587,7 @@ export class PpMatch {
         quality: info.quality,
         spin: info.spin,
         stroke: info.stroke,
+        tier: info.tier,
         b: [],
       };
     }
@@ -555,6 +601,7 @@ export class PpMatch {
     quality: PpHitQuality,
     spin: number,
     stroke: PpStroke = 'normal',
+    tier = 0,
   ): void {
     this.lastHitter = p;
     this.bounces = [0, 0];
@@ -563,7 +610,11 @@ export class PpMatch {
     if (this.phase === 'toss') this.phase = 'rally';
     // o limite de tempo é por batida: bola parada no ar nunca trava a partida, e uma batida não cai junto do limite
     this.t = 0;
-    this.events.push({ type: 'hit', p, kmh, smash, quality, spin, serve, stroke });
+    this.popup = stroke === 'subida';
+    this.popupTicks = 0;
+    this.smashQ = [0, 0];
+    this.trailTier = tier;
+    this.events.push({ type: 'hit', p, kmh, smash, quality, spin, serve, stroke, tier });
   }
 
   /** Aplica uma batida resolvida por quem bateu (vinda da rede ou do registro): a bola passa a ser a do registro. */
@@ -584,7 +635,16 @@ export class PpMatch {
       number,
     ];
     this.pad(r.p).swing = 1;
-    this.commitHit(r.p, r.serve, r.smash, r.kmh, r.quality, r.spin, r.stroke ?? 'normal');
+    this.commitHit(
+      r.p,
+      r.serve,
+      r.smash,
+      r.kmh,
+      r.quality,
+      r.spin,
+      r.stroke ?? 'normal',
+      r.tier ?? 0,
+    );
   }
 
   /** Foto do estado de agora (para voltar no tempo quando uma batida chega atrasada). */
@@ -604,6 +664,9 @@ export class PpMatch {
       winner: this.winner,
       score: [this.score[0], this.score[1]],
       firstServer: this.firstServer,
+      popup: this.popup,
+      popupTicks: this.popupTicks,
+      trailTier: this.trailTier,
     };
   }
 
@@ -633,6 +696,10 @@ export class PpMatch {
     this.score[0] = s.score[0];
     this.score[1] = s.score[1];
     this.firstServer = s.firstServer;
+    this.popup = s.popup ?? false;
+    this.popupTicks = s.popupTicks ?? 0;
+    this.trailTier = s.trailTier ?? 0;
+    this.smashQ = [0, 0];
     this.events = [];
     this.pendingHit = null;
     this.tossReq = null;
@@ -684,6 +751,8 @@ export class PpMatch {
   }
 
   private letReplay(): void {
+    this.popup = false;
+    this.trailTier = 0;
     this.phase = 'serve';
     this.t = 0;
     this.lastHitter = -1;
@@ -706,6 +775,8 @@ export class PpMatch {
     });
     this.serveFaults = 0;
     this.t = 0;
+    this.popup = false;
+    this.trailTier = 0;
     const done = Math.max(a, b) >= PP_POINTS && Math.abs(a - b) >= 2;
     if (done) {
       this.phase = 'over';

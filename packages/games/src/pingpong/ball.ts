@@ -80,8 +80,8 @@ const ppClampSpin = (b: PpBall) => {
  * Um subpasso (1/240 s): gravidade, arrasto, Magnus, quique na mesa (com troca de efeito por velocidade), rede e chão.
  * Escreve em `out` o que aconteceu (os bits de `ev` só são ligados, quem chama zera antes).
  */
-export function ppStepBall(b: PpBall, out: PpStepOut): void {
-  const dt = PP_DT;
+export function ppStepBall(b: PpBall, out: PpStepOut, scale = 1): void {
+  const dt = PP_DT * scale;
   const sp = Math.hypot(b.vx, b.vy, b.vz);
   const { drag, magnus, g } = ppTune;
   b.vx += (-drag * sp * b.vx + magnus * (b.wy * b.vz - b.wz * b.vy)) * dt;

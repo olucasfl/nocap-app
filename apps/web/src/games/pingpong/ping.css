@@ -432,3 +432,89 @@
 .png-bar[data-sweet='1'] {
   box-shadow: 0 0 0 4px #ffd23f;
 }
+
+/* bola mal pegada: câmera lenta (clima roxo nas bordas) e a barra de tempo do smash */
+.png-slowfx {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s ease-out;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(154, 107, 255, 0) 45%,
+    rgba(110, 40, 220, 0.5) 100%
+  );
+}
+.png-slowfx.on {
+  opacity: 1;
+}
+.png-smash {
+  position: absolute;
+  left: 50%;
+  bottom: max(18px, env(safe-area-inset-bottom));
+  width: min(88vw, 520px);
+  margin-left: calc(min(88vw, 520px) / -2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+  color: #fff;
+  text-align: center;
+}
+.png-smash b {
+  font-size: 18px;
+  text-shadow: 2px 2px 0 #15102e;
+}
+.png-smash small {
+  font-size: 12px;
+  opacity: 0.9;
+}
+.png-smash-track {
+  position: relative;
+  width: 100%;
+  height: 34px;
+  border: 3px solid #fff;
+  border-radius: 12px;
+  background: #d8342f;
+  overflow: hidden;
+  box-shadow: 4px 4px 0 #15102e;
+}
+.png-smash-red {
+  position: absolute;
+  inset: 0;
+}
+.png-smash-green {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 28%;
+  width: 44%;
+  background: #2fd16f;
+}
+.png-smash-perfect {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 43%;
+  width: 14%;
+  background: #b6ff6a;
+  box-shadow: 0 0 10px #b6ff6a;
+}
+.png-smash-cursor {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  left: 0;
+  width: 8px;
+  border-radius: 4px;
+  background: #fff;
+  border: 2px solid #15102e;
+}
+.png-smash[data-tier='3'] b {
+  color: #d6ff6a;
+}
+.png-smash[data-tier='1'] b {
+  color: #ff8b82;
+}

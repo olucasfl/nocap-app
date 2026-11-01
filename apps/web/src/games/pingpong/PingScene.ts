@@ -792,6 +792,16 @@ export class PingScene {
           e.smash ? 16 : 8 + Math.round(power * 4),
           e.smash ? 0xffc27a : 0xffffff,
         );
+        if (e.tier > 0) {
+          // smash cronometrado: estouro roxo, mais forte quanto melhor o acerto
+          this.burst(bx, m.ball.y, bz, dirZ, 12 + e.tier * 8, 0xb455ff);
+          this.ringAt(bx, PP_TOP + 0.01, bz, 0xb455ff, 0.6 + e.tier * 0.15, 6);
+          this.shake = Math.max(this.shake, 0.6 + e.tier * 0.25);
+          this.fovKick = 0.6 + e.tier * 0.2;
+        } else if (e.stroke === 'subida') {
+          this.ringAt(bx, PP_TOP + 0.01, bz, 0xffd23f, 0.45, 4);
+          this.shake = Math.max(this.shake, 0.35);
+        }
         if (e.smash) {
           this.shake = Math.max(this.shake, 1);
           this.fovKick = 1;
@@ -892,8 +902,9 @@ export class PingScene {
     const speed = Math.hypot(cur.vx, cur.vy, cur.vz);
     this.trailPos.unshift({ x: bx, y: by, z: bz });
     if (this.trailPos.length > this.trail.length) this.trailPos.pop();
-    const showTrail = speed > 5.5 && m.phase !== 'serve' && !this.reduced;
-    const heat = clamp((speed - 5.5) / 8, 0, 1);
+    const tier = m.trailTier;
+    const showTrail = (speed > 5.5 || tier > 0) && m.phase !== 'serve' && !this.reduced;
+    const heat = tier > 0 ? 1 : clamp((speed - 5.5) / 8, 0, 1);
     for (let i = 0; i < this.trail.length; i++) {
       const s = this.trail[i];
       const p = this.trailPos[i + 1];
@@ -905,11 +916,23 @@ export class PingScene {
       const k = 1 - i / this.trail.length;
       s.visible = true;
       s.position.set(p.x, p.y, p.z);
-      s.scale.setScalar(PP_R * (3.4 + 3 * heat) * k + 0.03);
+      s.scale.setScalar(PP_R * (3.4 + 3 * heat + tier * 1.4) * k + 0.03);
       const sm = s.material as THREE.SpriteMaterial;
       sm.opacity = (0.25 + 0.6 * heat) * k;
       // bola rápida deixa um rastro de fogo; a mais forte (smash) é quase branca
-      sm.color.setHex(heat > 0.7 ? 0xfff0c8 : heat > 0.35 ? 0xff9a3d : 0xffc27a);
+      sm.color.setHex(
+        tier > 0
+          ? tier >= 3
+            ? 0xe7b8ff
+            : tier === 2
+              ? 0xb455ff
+              : 0x8a4bd6
+          : heat > 0.7
+            ? 0xfff0c8
+            : heat > 0.35
+              ? 0xff9a3d
+              : 0xffc27a,
+      );
     }
 
     // raquetes: a de quem olha é a primeira (perto da câmera), a do outro lado é a segunda. A raquete avança com a mão
@@ -922,7 +945,8 @@ export class PingScene {
       const rawZ = PP_PAD_Z - lerp(pp.reach, pad.reach, a);
       // sobre a mesa a raquete sobe um pouco (o cabo não entra no tampo)
       const overTable =
-        clamp((PP_L / 2 + 0.25 - rawZ) / 0.35, 0, 1) * clamp((PP_W / 2 + 0.45 - Math.abs(px)) / 0.35, 0, 1);
+        clamp((PP_L / 2 + 0.25 - rawZ) / 0.35, 0, 1) *
+        clamp((PP_W / 2 + 0.45 - Math.abs(px)) / 0.35, 0, 1);
       const py = lerp(pp.y, pad.y, a) + 0.22 * overTable;
       const reach = lerp(pp.reach, pad.reach, a);
       const slot = this.pads[v];

@@ -10,6 +10,8 @@ import {
   ppIdleInput,
   ppPadStep,
   ppPadStepZ,
+  ppSmashCursor,
+  ppSmashTier,
   ppServerFor,
   type PpEvent,
   type PpInput,
@@ -442,5 +444,91 @@ describe('golpes e saque', () => {
     const block = hit(11, -1, 0);
     expect(block.vy).toBeGreaterThan(1.5);
     expect(ppLanding(block, 0).ok).toBe(true);
+  });
+});
+
+describe('bola mal pegada e smash cronometrado', () => {
+  const incoming = (x: number, vz: number) => {
+    const b = ppNewBall();
+    b.x = x;
+    b.y = 1.4;
+    b.z = 3.3;
+    b.vy = -0.5;
+    b.vz = vz;
+    return b;
+  };
+
+  it('bola forte pega na borda da raquete sobe (subida); pega inteira, nada acontece', () => {
+    const edge = incoming(0.46, 10);
+    const info = ppPaddleHit(edge, 0, { x: 0, y: 1.4, vx: 0, vy: 0, vz: 1 });
+    expect(info.quality).toBe('edge');
+    expect(info.stroke).toBe('subida');
+    expect(edge.vy).toBeGreaterThan(3.5);
+    expect(ppLanding(edge, 0).ok).toBe(true);
+    const clean = incoming(0.02, 10);
+    expect(ppPaddleHit(clean, 0, { x: 0, y: 1.4, vx: 0, vy: 0, vz: 1 }).stroke).not.toBe('subida');
+    // bola mansa na borda não vira subida
+    const soft = incoming(0.46, 4);
+    expect(ppPaddleHit(soft, 0, { x: 0, y: 1.4, vx: 0, vy: 0, vz: 1 }).stroke).not.toBe('subida');
+  });
+
+  it('o smash por nível: vermelho é mais fraco, verde forte, verde perfeito muito rápido, e todos caem na mesa', () => {
+    const speeds = [1, 2, 3].map((tier) => {
+      const b = ppNewBall();
+      b.x = 0;
+      b.y = 2.2;
+      b.z = 1.2; // a raquete foi à frente, perto da rede
+      b.vy = -1;
+      b.vz = 1;
+      const info = ppPaddleHit(b, 0, { x: 0, y: 2.2, vx: 0, vy: 0, vz: 7, smash: tier });
+      expect(info.stroke).toBe('smash');
+      expect(info.tier).toBe(tier);
+      expect(b.vy).toBeLessThan(-2);
+      expect(ppLanding(b, 0).ok).toBe(true);
+      return info.speed;
+    });
+    expect(speeds[0]).toBeLessThan(speeds[1]!);
+    expect(speeds[1]).toBeLessThan(speeds[2]!);
+    expect(speeds[2]).toBeGreaterThan(16);
+  });
+
+  it('na partida: a subida liga a câmera lenta, a barra anda por ticks e o aperto vira o nível do smash', () => {
+    const m = new PpMatch(0);
+    m.phase = 'rally';
+    m.applyHit({
+      p: 1,
+      serve: false,
+      smash: false,
+      kmh: 40,
+      quality: 'edge',
+      spin: 0,
+      stroke: 'subida',
+      b: [0, 2.6, -1.5, 0, 2, 2, 0, 0, 0],
+    });
+    expect(m.popup).toBe(true);
+    const slow = new PpMatch(0);
+    slow.phase = 'rally';
+    slow.applyHit({
+      p: 1,
+      serve: false,
+      smash: false,
+      kmh: 40,
+      quality: 'normal',
+      spin: 0,
+      stroke: 'normal',
+      b: [0, 2.6, -1.5, 0, 2, 2, 0, 0, 0],
+    });
+    expect(slow.popup).toBe(false);
+    for (let i = 0; i < 12; i++) {
+      m.step([ppIdleInput(), ppIdleInput()]);
+      slow.step([ppIdleInput(), ppIdleInput()]);
+    }
+    // mesma jogada, menos caminho andado (câmera lenta)
+    expect(Math.abs(m.ball.z - -1.5)).toBeLessThan(Math.abs(slow.ball.z - -1.5) * 0.6);
+    expect(m.popupTicks).toBe(12);
+    expect(ppSmashTier(ppSmashCursor(12))).toBe(3); // no meio do verde
+    expect(m.smashTap(0)).toBe(3);
+    expect(m.smashTap(0)).toBe(0); // um aperto por bola
+    expect(ppSmashTier(ppSmashCursor(0))).toBe(1); // na ponta é vermelho
   });
 });

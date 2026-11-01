@@ -8,6 +8,8 @@ import {
   PP_NET_H,
   PP_PAD_R,
   PP_PAD_Z,
+  PP_POPUP_VIN,
+  PP_SMASH_V,
   PP_R,
   PP_SMASH_SPEED,
   PP_SPIN_MAX,
@@ -27,13 +29,24 @@ export interface PpPaddleMotion {
   vz: number;
   /** Alcance da raquete (0 = plano de espera, positivo = rumo à rede, negativo = recuada). */
   reach?: number;
+  /** Nível do smash cronometrado (1 a 3) para esta batida; 0 ou ausente = nenhum. */
+  smash?: number;
 }
 
 export type PpHitQuality = 'edge' | 'normal' | 'sweet';
 
 /** Os golpes: cada um sai de um jeito de jogar a raquete (força do avanço, lado, onde bate, altura da bola). */
 export type PpStroke =
-  'normal' | 'drive' | 'topspin' | 'corte' | 'curva' | 'curta' | 'bloqueio' | 'lob' | 'smash';
+  | 'normal'
+  | 'drive'
+  | 'topspin'
+  | 'corte'
+  | 'curva'
+  | 'curta'
+  | 'bloqueio'
+  | 'lob'
+  | 'smash'
+  | 'subida';
 export const PP_STROKES: readonly PpStroke[] = [
   'normal',
   'drive',
@@ -44,6 +57,7 @@ export const PP_STROKES: readonly PpStroke[] = [
   'bloqueio',
   'lob',
   'smash',
+  'subida',
 ];
 
 export interface PpHitInfo {
@@ -55,6 +69,8 @@ export interface PpHitInfo {
   /** Efeito em torno do eixo x depois da batida (rad/s). */
   spin: number;
   stroke: PpStroke;
+  /** Nível do smash cronometrado desta batida (0 = nenhum). */
+  tier: number;
 }
 
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
@@ -171,8 +187,17 @@ export function ppPaddleHit(b: PpBall, side: number, pad: PpPaddleMotion, guide 
   // efeito extra do golpe (rad/s): topspin (+) e backspin (-) em torno do eixo da trajetória, e efeito de lado
   let spinFwd = 0;
   let spinSide = 0;
+  const tier = Math.max(0, Math.min(3, Math.round(pad.smash ?? 0)));
   const blocking = power < 0.35 && vin > 6;
-  if (smashing) {
+  if (tier > 0) {
+    // smash cronometrado (barra na hora certa): desce forte e rápido; o nível dá a velocidade
+    stroke = 'smash';
+    spinFwd = 38;
+  } else if (quality === 'edge' && vin >= PP_POPUP_VIN) {
+    // bola forte pega na borda da raquete: sobe mal (a câmera lenta e o smash de quem recebe vêm daí)
+    stroke = 'subida';
+    spinFwd = 10;
+  } else if (smashing) {
     stroke = 'smash';
   } else if (blocking) {
     // defesa de bola forte com a mão mansa: sobe em arco; recuado (atrás do plano) o arco é mais alto (lob)
@@ -205,6 +230,17 @@ export function ppPaddleHit(b: PpBall, side: number, pad: PpPaddleMotion, guide 
     stroke = 'drive';
     spinFwd = 14;
   }
+  if (tier > 0) {
+    const S = PP_SMASH_V[tier] ?? 11.5;
+    const ux = Math.max(-0.55, Math.min(0.55, pad.vx * 0.08));
+    vx = ux * S * 0.8;
+    vz = forward * Math.sqrt(1 - ux * ux) * S * 0.8;
+    vy = -S * 0.5;
+  } else if (stroke === 'subida') {
+    vx *= 0.5;
+    vz *= 0.5;
+    vy = Math.max(vy, 0) + 5.6;
+  }
   if (drop) {
     vx *= 0.7;
     vz *= 0.45;
@@ -214,7 +250,7 @@ export function ppPaddleHit(b: PpBall, side: number, pad: PpPaddleMotion, guide 
     10.5 * power * (drop ? 0.3 : 1) +
     (smashing ? 4.5 : 0);
   const sp = Math.hypot(vx, vy, vz);
-  const lim = Math.min(PP_V_MAX, cap);
+  const lim = tier > 0 ? 30 : Math.min(PP_V_MAX, cap);
   if (sp > lim) {
     const k = lim / sp;
     vx *= k;
@@ -252,8 +288,21 @@ export function ppPaddleHit(b: PpBall, side: number, pad: PpPaddleMotion, guide 
   }
   // A ajuda é para o que sai torto sem querer: batida de força (mão rápida) não é corrigida e pode sair da mesa ou ir
   // na rede; batida média só ganha ajuda na altura; a mansa também no ângulo.
-  if (guide && (power < PP_ASSIST_MAX_POWER || vin < 0.5))
+  if (tier > 0) {
+    // o smash cronometrado sempre cai na mesa (quem acertou a barra merece o ponto), só que muito rápido
+    ppGuideHit(b, side, false, false, { vyLo: -16, hMax: 24 });
+  } else if (stroke === 'subida') {
+    ppGuideHit(b, side, false, true);
+  } else if (guide && (power < PP_ASSIST_MAX_POWER || vin < 0.5)) {
     ppGuideHit(b, side, drop, power < PP_ASSIST_LATERAL_POWER);
+  }
   const speed = Math.hypot(b.vx, b.vy, b.vz);
-  return { speed, smash: speed >= PP_SMASH_SPEED && vy < -1, quality, spin: wx, stroke };
+  return {
+    speed,
+    smash: tier > 0 || (speed >= PP_SMASH_SPEED && vy < -1),
+    quality,
+    spin: wx,
+    stroke,
+    tier,
+  };
 }

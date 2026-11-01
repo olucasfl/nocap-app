@@ -128,3 +128,12 @@ export const PP_ROOM_COUNTDOWN_MS = 4000;
 export const PP_ROOM_AWAY_MS = 25_000;
 /** Depois do último ponto a sala espera isto antes de mostrar o pódio. */
 export const PP_ROOM_OVER_MS = 2500;
+
+/** Bola mal pegada (pegou na borda da raquete uma bola forte): sobe, o jogo vai em câmera lenta e quem recebe pode dar smash. */
+export const PP_SLOW = 0.4;
+/** Velocidade mínima (m/s) da bola que chega para uma pegada na borda virar "subida". */
+export const PP_POPUP_VIN = 7.5;
+/** A barra de tempo do smash vai e volta neste tempo (ticks de 1/60 s). */
+export const PP_SMASH_PERIOD = 50;
+/** Velocidade (m/s) do smash por nível de acerto: 1 = vermelho (fraco), 2 = verde (forte), 3 = verde perfeito. */
+export const PP_SMASH_V = [0, 12, 17, 24] as const;

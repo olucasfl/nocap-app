@@ -315,3 +315,48 @@ test('tela de fim: aparece com o placar e os botões, em qualquer tamanho', asyn
   await page.getByTestId('final-again').click();
   await expect(page.getByTestId('png-final')).toHaveCount(0);
 });
+
+test('bola mal pegada: câmera lenta, a barra do smash aparece e o aperto vira nível', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto('/fox-cap');
+  await page
+    .getByRole('button', { name: 'Agora não' })
+    .click({ timeout: 6000 })
+    .catch(() => undefined);
+  await page.getByTestId('foxcap-pingpong').click();
+  await page.getByTestId('png-level-facil').click();
+  await page.getByTestId('png-start').click();
+  await expect(page.getByTestId('png-play')).toBeVisible();
+  await page.waitForTimeout(2600);
+  // a Raposa devolve uma bola mal pegada: sobe e vem para você
+  await page.evaluate(() => {
+    const g = (
+      window as unknown as {
+        __ping: {
+          match: {
+            phase: string;
+            applyHit(r: unknown): void;
+          };
+        };
+      }
+    ).__ping;
+    g.match.phase = 'rally';
+    g.match.applyHit({
+      p: 1,
+      serve: false,
+      smash: false,
+      kmh: 40,
+      quality: 'edge',
+      spin: 0,
+      stroke: 'subida',
+      b: [0, 2.8, -0.5, 0, 3, 2.2, 0, 0, 0],
+    });
+  });
+  await expect(page.getByTestId('png-smash')).toBeVisible({ timeout: 4000 });
+  await page.keyboard.press('Space');
+  await expect(page.getByTestId('png-smash')).toHaveAttribute('data-tier', /[123]/);
+  if (process.env.E2E_SHOTS)
+    await page.screenshot({ path: `${process.env.E2E_SHOTS}/ping-smash.png` });
+});
