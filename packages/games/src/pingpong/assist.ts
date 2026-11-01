@@ -120,3 +120,35 @@ export function ppGuideHit(
     }
   }
 }
+
+/**
+ * A rede nunca decide a batida sozinha: se a bola, do jeito que saiu, bate na rede ou cai antes dela, só a altura da
+ * saída sobe o necessário para passar (com folga). Fora isso (longa demais, aberta demais) a batida é da pessoa.
+ * Vale para as batidas fortes, que não passam pela ajuda completa.
+ */
+export function ppFixNet(b: PpBall, side: number): void {
+  const hs = side === 0 ? 1 : -1;
+  const clears = (t: PpBall): boolean => {
+    const s = ppCopyBall(t, scratch);
+    for (let i = 0; i < 960; i++) {
+      const z0 = s.z;
+      out.ev = 0;
+      ppStepBall(s, out);
+      if (out.ev & PP_EV_NET) return false;
+      // quicou na própria mesa antes de chegar à rede
+      if (out.ev & PP_EV_TABLE && z0 * hs > 0 && s.z * hs > 0) return false;
+      if (out.ev & PP_EV_FLOOR) return false;
+      if (z0 * hs >= 0 && s.z * hs < 0) return s.y - PP_R - (PP_TOP + PP_NET_H) >= 0.07;
+    }
+    return false;
+  };
+  if (clears(b)) return;
+  ppCopyBall(b, guide);
+  for (let k = 0; k < 40; k++) {
+    guide.vy += 0.3;
+    if (clears(guide)) {
+      b.vy = guide.vy;
+      return;
+    }
+  }
+}

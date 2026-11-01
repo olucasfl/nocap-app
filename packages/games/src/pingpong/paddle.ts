@@ -1,6 +1,6 @@
 import type { PpBall } from './ball';
 import { ppTune } from './tune';
-import { ppGuideHit } from './assist';
+import { ppFixNet, ppGuideHit } from './assist';
 import {
   PP_AIM,
   PP_ASSIST_LATERAL_POWER,
@@ -295,6 +295,9 @@ export function ppPaddleHit(b: PpBall, side: number, pad: PpPaddleMotion, guide 
     ppGuideHit(b, side, false, true);
   } else if (guide && (power < PP_ASSIST_MAX_POWER || vin < 0.5)) {
     ppGuideHit(b, side, drop, power < PP_ASSIST_LATERAL_POWER);
+  } else if (guide) {
+    // batida de força: pode sair longa ou aberta, mas a rede não derruba (só a altura sobe o que precisa)
+    ppFixNet(b, side);
   }
   const speed = Math.hypot(b.vx, b.vy, b.vz);
   return {

@@ -181,3 +181,8 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 ### Rodada 12 (01/11/2026)
 
 - Mesa 15% maior: `PP_L` 7,25, `PP_W` 4, rede 0,36, `PP_PAD_X` 3,1. A câmera se ajusta sozinha (`fitCamera`), então na tela a mesa continua cabendo inteira; o que cresce é o espaço em relação à raquete e à bola.
+
+### Rodada 13 (01/11/2026): a rede não decide a batida
+
+- Pesquisa (Table Tennis Touch, Octo Pong, projetos de física no GitHub): a força vem da rapidez do golpe, o efeito da direção do movimento e a posição do contato desvia a bola; nenhum jogo analisado deixa a rede decidir a jogada de quem bate forte.
+- `ppFixNet` (`assist.ts`): batida de força continua podendo sair (longa ou aberta), mas se a bola bateria na rede ou cairia antes dela, só a altura da saída sobe o necessário (folga de 7 cm). Numa grade de 810 batidas de teste: ~76% na mesa, 21% fora (força), 1% rede, 1% na própria mesa.

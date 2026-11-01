@@ -532,3 +532,35 @@ describe('bola mal pegada e smash cronometrado', () => {
     expect(ppSmashTier(ppSmashCursor(0))).toBe(1); // na ponta é vermelho
   });
 });
+
+describe('a rede não derruba a batida', () => {
+  it('batida de força (sem a ajuda completa) nunca vai na rede por baixo: só a altura sobe o que precisa', () => {
+    const hits = [
+      [4.5, 0, 3.8],
+      [8, 0, 2.8],
+      [10, 3, 1.5],
+      [6, -4, 3.8],
+    ];
+    for (const [vz, vx, z] of hits) {
+      const b = ppNewBall();
+      b.x = 0;
+      b.y = 1.4;
+      b.z = z!;
+      b.vy = -0.5;
+      b.vz = 7;
+      ppPaddleHit(b, 0, { x: 0, y: 1.4, vx: vx!, vy: 0, vz: vz!, reach: 3.825 - z! });
+      const s = ppNewStepOut();
+      let crossed = false;
+      let net = false;
+      for (let i = 0; i < 2400 && !net; i++) {
+        const z0 = b.z;
+        s.ev = 0;
+        ppStepBall(b, s);
+        if (z0 > 0 && b.z <= 0) crossed = true;
+        if (s.ev & PP_EV_NET) net = true;
+        if (crossed || s.ev & PP_EV_FLOOR) break;
+      }
+      expect(net).toBe(false);
+    }
+  });
+});
