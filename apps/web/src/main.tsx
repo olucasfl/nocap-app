@@ -9,6 +9,8 @@ import { UpdatePrompt } from '@/components/UpdatePrompt';
 import { flushQueuedMatches } from '@/games/color/submit';
 import { installGlobalSounds } from '@/lib/sfx';
 import { restoreSession } from '@/lib/auth';
+import { MY_ROOM_KEY } from '@/lib/my-room';
+import { setOnRoomGone } from '@/lib/rooms';
 import { listenForInstall } from '@/lib/install';
 import { installTheme } from '@/lib/theme';
 import '@/styles/tokens.css';
@@ -28,6 +30,12 @@ const queryClient = new QueryClient({
       refetchOnReconnect: true,
     },
   },
+});
+
+// Saiu da sala: o aviso "Você está na sala" some na hora e só volta a perguntar ao servidor depois que ele confirmou a saída.
+setOnRoomGone((settled) => {
+  if (settled) void queryClient.invalidateQueries({ queryKey: MY_ROOM_KEY });
+  else queryClient.setQueryData(MY_ROOM_KEY, null);
 });
 
 // Partidas guardadas sem conexão saem ao abrir o app e sempre que a rede voltar.

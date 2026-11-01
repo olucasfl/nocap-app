@@ -47,7 +47,12 @@ async function bootstrap() {
   roomDeps.repo = app.get(RoomsRepository);
   roomDeps.invites = app.get(InvitesService);
   const rooms = new Server({
-    transport: new WebSocketTransport({ server: app.getHttpServer() }),
+    // Celular em segundo plano ou rede fraca demoram a responder: 5 s entre toques e 4 falhas (~25 s) antes de derrubar.
+    transport: new WebSocketTransport({
+      server: app.getHttpServer(),
+      pingInterval: 5000,
+      pingMaxRetries: 4,
+    }),
   });
   rooms.define('color', ColorRoom);
   rooms.define('time', TimeRoom);

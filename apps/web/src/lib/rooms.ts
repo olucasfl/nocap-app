@@ -422,9 +422,11 @@ function attach(r: Room) {
   r.onMessage('snapshot', (s: RoomSnapshot) => {
     for (const m of s.members) if (m.guest) guestNames.add(m.username);
     // sala do Fox Cap!: ao sair, a pessoa volta ao Fox Cap! (e não à página do jogo que estava no lobby)
+    lastAlive = Date.now();
     set({ snapshot: s, status: 'connected', lastGame: s.flex ? 'foxcap' : s.game });
   });
   r.onMessage('pong', (m: { t0?: number; ts?: number }) => {
+    lastAlive = Date.now();
     if (typeof m?.t0 === 'number' && typeof m?.ts === 'number') {
       lastRtt = Math.max(0, Date.now() - m.t0);
       const offset = m.ts - (m.t0 + Date.now()) / 2;
@@ -486,11 +488,62 @@ function attach(r: Room) {
     if (code === 4000) return finish('');
     if (code === 4001) return finish('Você foi removido da sala.');
     if (code === 4002) return finish('Você entrou nessa sala por outro aparelho.');
+    // A conexão morreu: a referência velha sai (senão a reconexão achava que "já estava conectado" e nunca tentava).
+    room = null;
     void reconnect();
   });
+  watch(r);
 }
 
-function finish(message: string) {
+/** O app limpa o registro da sala da conta (o aviso "Você está na sala"): `false` = já some da tela; `true` = confirma com o servidor. */
+let onRoomGone: ((settled: boolean) => void) | null = null;
+export function setOnRoomGone(fn: ((settled: boolean) => void) | null) {
+  onRoomGone = fn;
+}
+
+/**
+ * Conexão "meio morta" (troca de rede, aparelho que dormiu): o navegador demora a notar. Se a sala não responde
+ * ao ping, fecha a conexão na hora para a reconexão começar, e ao voltar para o app ou à internet confere já.
+ */
+let lastAlive = 0;
+let watching = false;
+function checkAlive(r: Room, wait = 4000) {
+  if (room !== r) return;
+  const sent = Date.now();
+  r.send('ping', { t0: sent, rtt: lastRtt });
+  setTimeout(() => {
+    if (room !== r || lastAlive >= sent) return;
+    // sem resposta: fecha; o `onLeave` assume daqui
+    try {
+      r.connection.close(4999, 'sem resposta');
+    } catch {
+      /* já fechada */
+    }
+  }, wait);
+}
+function watch(r: Room) {
+  lastAlive = Date.now();
+  if (watching || typeof document === 'undefined') return;
+  watching = true;
+  const check = () => {
+    if (room) checkAlive(room);
+    else nudge?.();
+  };
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') check();
+  });
+  window.addEventListener('online', check);
+  window.addEventListener('pageshow', check);
+  // e de vez em quando, com a aba aberta
+  setInterval(() => {
+    if (room && Date.now() - lastAlive > 25_000) checkAlive(room);
+  }, 10_000);
+  void r;
+}
+/** Acorda a espera entre tentativas de reconexão (a pessoa voltou para o app ou a internet voltou). */
+let nudge: (() => void) | null = null;
+
+function finish(message: string, voluntary = false) {
   room = null;
   epoch++;
   remember(null);
@@ -503,17 +556,32 @@ function finish(message: string) {
     chat: [],
     unread: 0,
   });
+  // Saída da pessoa: o registro do servidor só é confirmado depois do HTTP de saída (`leaveRoom`).
+  onRoomGone?.(false);
+  if (!voluntary) onRoomGone?.(true);
 }
 
+/** Só uma reconexão por vez (a conexão pode cair de novo, ou vários gatilhos chamarem juntos). */
+let reconnecting: Promise<void> | null = null;
+
 /**
- * Queda de conexão (tela bloqueada, rede): tenta voltar por até ~1 minuto. Ao recarregar a
- * página a sala pode já ter sumido (servidor reiniciou), então lá são poucas tentativas.
+ * Queda de conexão (tela bloqueada, rede): tenta voltar por até ~1 minuto, logo de cara e depois com pausas que
+ * crescem; voltar para o app ou à internet acorda a espera. Ao recarregar a página a sala pode já ter sumido
+ * (servidor reiniciou), então lá são poucas tentativas.
  */
-async function reconnect(tries = 30) {
+function reconnect(tries = 30): Promise<void> {
+  reconnecting ??= doReconnect(tries).finally(() => {
+    reconnecting = null;
+  });
+  return reconnecting;
+}
+
+async function doReconnect(tries: number) {
   const token = sessionStorage.getItem(TOKEN_KEY);
   if (!token) return finish('A conexão com a sala caiu.');
   const mine = epoch;
   set({ status: 'reconnecting' });
+  const started = Date.now();
   for (let i = 0; i < tries; i++) {
     if (room || epoch !== mine) return; // conectou por outro caminho, ou a pessoa já saiu
     try {
@@ -525,12 +593,24 @@ async function reconnect(tries = 30) {
       }
       attach(back);
       return;
-    } catch {
-      await new Promise((r) => setTimeout(r, 2000));
+    } catch (e) {
+      // A sala não existe mais (servidor reiniciou ou a vaga expirou): insistir só deixa a tela travada.
+      const gone = /expired|not found|invalid|disposed|4212|4202/i.test(
+        e instanceof Error ? e.message : String(e),
+      );
+      if (gone && (tries < 30 || i >= 3 || Date.now() - started > 8000)) break;
+      await new Promise<void>((ok) => {
+        const t = setTimeout(ok, Math.min(3000, 800 + i * 400));
+        nudge = () => {
+          clearTimeout(t);
+          ok();
+        };
+      });
+      nudge = null;
     }
   }
   if (room || epoch !== mine) return;
-  finish(tries < 30 ? '' : 'Não deu para voltar para a sala.');
+  finish(tries < 30 ? '' : 'Não deu para voltar para a sala. Entre de novo pelo código.');
 }
 
 let resuming: Promise<boolean> | null = null;
@@ -638,13 +718,14 @@ export const leaveRoomOnServer = () =>
  */
 export async function leaveRoom(): Promise<void> {
   const r = room;
-  finish('');
+  finish('', true);
   const viaSocket = r
     ? Promise.race([r.leave(true), new Promise((ok) => setTimeout(ok, 1500))]).catch(
         () => undefined,
       )
     : Promise.resolve();
   await Promise.all([viaSocket, leaveRoomOnServer().catch(() => undefined)]);
+  onRoomGone?.(true);
 }
 
 /** Convida um amigo para a sala em que estou (só no lobby). */
@@ -681,6 +762,12 @@ export function sendRoom(type: string, payload?: unknown) {
 }
 
 export const CODE_RE = /^[A-HJ-NP-Z]{4}$/;
+
+// só no desenvolvimento: derruba a conexão da sala como se a rede tivesse caído (teste da reconexão)
+if (import.meta.env.DEV && typeof window !== 'undefined')
+  (window as unknown as { __dropRoom?: () => void }).__dropRoom = () => {
+    room?.connection.close(4998, 'teste');
+  };
 
 // só no desenvolvimento: os testes de ponta a ponta injetam estado para ver telas que dependem de uma sala
 if (import.meta.env.DEV && typeof window !== 'undefined')

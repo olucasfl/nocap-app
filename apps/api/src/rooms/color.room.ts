@@ -35,7 +35,7 @@ const TICK_MS = 250;
 /** Quanto tempo alguém com a tela bloqueada tem para voltar no meio da partida. */
 const RECONNECT_SECONDS = 60;
 /** No lobby e no pódio a vaga não fica presa tanto tempo: voltar é só entrar pelo código. */
-const LOBBY_RECONNECT_SECONDS = 25;
+const LOBBY_RECONNECT_SECONDS = 45;
 
 /** Dependências que o Nest injeta na inicialização (o Colyseus instancia a sala sozinho). */
 export const roomDeps: {

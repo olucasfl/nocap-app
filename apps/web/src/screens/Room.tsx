@@ -212,6 +212,11 @@ export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomG
   useEffect(() => {
     if (inRoom) sfx.roomJoin();
   }, [inRoom]);
+  // Quem já esteve na sala (ou está entrando) não é "recém-chegado pelo link": ao sair, a tela não pode puxá-lo de volta.
+  useEffect(() => {
+    if (snapshot || status === 'connecting' || status === 'connected' || status === 'reconnecting')
+      autoJoined.current = true;
+  }, [snapshot, status]);
 
   useEffect(() => {
     let alive = true;
