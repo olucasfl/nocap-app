@@ -294,7 +294,7 @@ export function ppPaddleHit(b: PpBall, side: number, pad: PpPaddleMotion, guide 
   } else if (stroke === 'subida') {
     ppGuideHit(b, side, false, true);
   } else if (guide && (power < PP_ASSIST_MAX_POWER || vin < 0.5)) {
-    ppGuideHit(b, side, drop, power < PP_ASSIST_LATERAL_POWER);
+    ppGuideHit(b, side, drop, power < PP_ASSIST_LATERAL_POWER || vin < 0.5);
   } else if (guide) {
     // batida de força: pode sair longa ou aberta, mas a rede não derruba (só a altura sobe o que precisa)
     ppFixNet(b, side);

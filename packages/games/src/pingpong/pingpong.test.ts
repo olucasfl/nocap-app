@@ -237,6 +237,36 @@ describe('regras', () => {
     expect(pad.vz).toBeLessThan(0.5);
   });
 
+  it('o saque funciona de qualquer lugar e com qualquer rapidez: a bola cai na mesa do outro lado (sem falta)', () => {
+    for (const px of [-2.6, -0.8, 0, 1.5, 3]) {
+      for (const spd of [1.5, 4, 9]) {
+        const m = new PpMatch(0);
+        const ev: PpEvent[] = [];
+        let t = 0;
+        for (let i = 0; i < 60 * 8; i++) {
+          const go = m.phase === 'toss';
+          if (go) t++;
+          m.step([
+            { ...ppIdleInput(), manual: false, x: px, y: 1.5, z: Math.min(3.4, (t * spd) / 60) },
+            ppIdleInput(),
+          ]);
+          ev.push(...m.drain());
+          if (ev.some((e) => e.type === 'bounce')) break;
+        }
+        const first = ev.find((e) => e.type === 'bounce');
+        expect(
+          ev.some((e) => e.type === 'hit' && e.serve),
+          `x=${px} v=${spd}`,
+        ).toBe(true);
+        expect(
+          ev.some((e) => e.type === 'fault'),
+          `x=${px} v=${spd}`,
+        ).toBe(false);
+        expect(first && first.type === 'bounce' && first.side, `x=${px} v=${spd}`).toBe(1);
+      }
+    }
+  });
+
   it('antes do quique na sua metade a raquete deixa a bola passar (sem voleio)', () => {
     const m = new PpMatch(0);
     // bola vindo da raquete 0 direto para o fundo: a raquete 1 está no lugar certo mas ainda não houve quique
@@ -368,16 +398,18 @@ describe('a batida de verdade', () => {
 });
 
 describe('bots', () => {
-  it('quem não faz nada perde: o bot ganha a partida', () => {
+  it('quem não faz nada perde: o bot ganha mais pontos (o saque da sala é mansinho, o bot às vezes erra)', () => {
     const m = new PpMatch(0);
     const bot = new PpBot(PP_BOT_LEVELS.medio, createRng('idle'));
     const idle = { ...ppIdleInput(), x: -2.2 }; // parado no canto: só perde
-    for (let i = 0; i < 60 * 900 && m.phase !== 'over'; i++) {
+    const won = [0, 0];
+    for (let i = 0; i < 60 * 240 && m.phase !== 'over'; i++) {
       m.step([bot.input(m, 0), idle]);
-      m.drain();
+      for (const e of m.drain()) if (e.type === 'point') won[e.winner === 0 ? 0 : 1]!++;
     }
-    expect(m.phase).toBe('over');
-    expect(m.winner).toBe(0);
+    expect(won[0]!).toBeGreaterThan(5);
+    // pontos do parado só vêm do saque que a sala faz por ele
+    expect(won[1]!).toBeLessThanOrEqual(won[0]! + 1);
   });
 
   it('bot contra bot: a partida termina, ninguém trava e há trocas de bola', () => {

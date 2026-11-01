@@ -193,3 +193,8 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 - **Mesa e bola**: tampo azul com degradê suave, linhas brancas, borda e pernas em azul-escuro com detalhes vermelhos; bola branca fosca com marca discreta (sem aura nem contorno).
 - **Efeitos mais discretos**: faíscas pequenas e brancas, sem anéis coloridos, tremor menor, vinheta escura (não mais roxa) na câmera lenta, rastro só como borrão de movimento claro em bola rápida; o smash cronometrado mantém o rastro e as faíscas roxas.
 - **Câmera**: inclinação mais baixa e FOV 42, como nas referências (a distância continua se ajustando para a mesa caber).
+
+### Rodada 15 (01/11/2026)
+
+- **Saque de qualquer lugar**: a ajuda de leitura agora também joga para o centro da mesa (`inward`): quem saca ou rebate de um canto precisa mandar a bola para dentro, senão ela nunca caía na mesa (era a falta e a rede do saque). Teste novo: sacar de 5 posições e 3 rapidezes nunca dá falta e a bola cai do outro lado.
+- **Câmera deitada mais atrás** (`× 1,28` em telas largas): mais espaço para mexer a raquete para os lados.

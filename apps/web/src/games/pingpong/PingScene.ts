@@ -687,8 +687,10 @@ export class PingScene {
         }
       }
       if (ok) {
-        this.camZ = z;
-        this.camY = z * ratio;
+        // deitado a pessoa quer enxergar mais e mexer a raquete para os lados: a câmera fica mais para trás
+        const back = cam.aspect > 1.5 ? 1.28 : 1;
+        this.camZ = z * back;
+        this.camY = z * back * ratio;
         return;
       }
     }

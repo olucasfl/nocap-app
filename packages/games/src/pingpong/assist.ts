@@ -92,8 +92,23 @@ export function ppGuideHit(
     : Math.min(opts.hMax ?? 10.5, Math.max(3.6, hs));
   const scales = [1, 1.15, 0.9, 1.3, 1.55, 1.8, 2.1, 0.8, 0.68, 0.58];
   // primeiro mantém a direção da mão; se não há jogada boa assim (cantinho demais), fecha o ângulo aos poucos
-  for (const lat of lateral ? [1, 0.75, 0.5, 0.25, 0] : [1]) {
-    const lx = ux * lat;
+  // direções a tentar: a da mão, depois fechando o ângulo e, por fim, puxando para o centro da mesa (quem bate de um canto
+  // precisa jogar para dentro, senão a bola nunca cai na mesa)
+  const inward = -Math.sign(b.x || 1);
+  const dirs = lateral
+    ? [
+        ux,
+        ux * 0.75,
+        ux * 0.5,
+        ux * 0.25,
+        0,
+        inward * 0.12,
+        inward * 0.24,
+        inward * 0.36,
+        inward * 0.5,
+      ]
+    : [ux];
+  for (const lx of dirs) {
     const lz = Math.sqrt(Math.max(0, 1 - lx * lx)) * Math.sign(uz || fwd);
     for (const sc of scales) {
       const h = Math.min((opts.hMax ?? 10.5) + 1, base * sc);
