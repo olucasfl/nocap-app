@@ -36,10 +36,17 @@ import {
   PP_SUB,
   PP_TICK,
   ppTossSpeed,
-  PP_TOSS_Y,
+  PP_SERVE_Y,
+  PP_SERVE_WAIT,
+  PP_REACH_NET,
+  PP_Z_SPEED,
+  PP_Z_STIFF,
+  PP_REST_Y,
+  PP_HAND_VZ_MAX,
   PP_VZ_MAX,
 } from './constants';
 import { ppPaddleHit, type PpHitQuality } from './paddle';
+import { ppGuideHit } from './assist';
 
 /**
  * Uma batida "pronta" (só para os bots): a velocidade que a mão teria na hora do contato. Uma pessoa não manda isto: a
@@ -63,6 +70,8 @@ export interface PpInput {
   tossV?: number;
   /** Sem ajuda de posição (quem não joga, e os testes): a raquete só vai aonde o ponteiro manda. */
   manual?: boolean;
+  /** Alcance pedido (m, 0 a PP_REACH_NET): onde a raquete está entre o fundo e a rede. Sem isso vale o modo antigo (bots, testes). */
+  z?: number;
   swing?: PpSwing;
 }
 
@@ -111,6 +120,33 @@ export function ppPadStep(pad: PpPaddle, tx: number, ty: number, dt: number, min
   const want = Math.max(minReach, Math.min(PP_REACH_MAX, pad.vz * PP_REACH_PER_VZ));
   const rate = want > pad.reach ? PP_REACH_RISE : PP_REACH_FALL;
   pad.reach += (want - pad.reach) * Math.min(1, rate * dt);
+  pad.swing = Math.max(0, pad.swing - dt * 6);
+}
+
+/**
+ * Raquete do jogo de verdade: x segue a mão, a altura acompanha a bola (ou fica em repouso) e o alcance (z) vai de onde está
+ * até onde a mão pede, em velocidade limitada. A velocidade para a frente (`vz`) é a do próprio avanço: a força da batida
+ * vem do impulso de quem joga a raquete para a frente.
+ */
+export function ppPadStepZ(pad: PpPaddle, tx: number, ty: number, tz: number, dt: number): void {
+  const cx = Math.max(-PP_PAD_X, Math.min(PP_PAD_X, tx));
+  const cy = Math.max(PP_PAD_Y_MIN, Math.min(PP_PAD_Y_MAX, ty));
+  let vx = (cx - pad.x) * PP_PAD_STIFF;
+  let vy = (cy - pad.y) * PP_PAD_STIFF;
+  const sp = Math.hypot(vx, vy);
+  if (sp > PP_PAD_SPEED) {
+    vx *= PP_PAD_SPEED / sp;
+    vy *= PP_PAD_SPEED / sp;
+  }
+  pad.x += vx * dt;
+  pad.y += vy * dt;
+  pad.vx = vx;
+  // a altura é automática: a subida e descida dela não conta como golpe
+  pad.vy = Math.max(-1, Math.min(1, vy * 0.2));
+  const goal = Math.max(0, Math.min(PP_REACH_NET, tz));
+  const vz = Math.max(-PP_Z_SPEED, Math.min(PP_Z_SPEED, (goal - pad.reach) * PP_Z_STIFF));
+  pad.reach += vz * dt;
+  pad.vz = Math.max(0, Math.min(PP_HAND_VZ_MAX, vz));
   pad.swing = Math.max(0, pad.swing - dt * 6);
 }
 
@@ -264,8 +300,8 @@ export class PpMatch {
   private holdBall(): void {
     const b = this.ball;
     const p = this.server;
-    b.x = this.pad(p).x;
-    b.y = PP_TOSS_Y;
+    b.x = 0;
+    b.y = PP_SERVE_Y;
     b.z = this.handZ(p);
     b.vx = b.vy = b.vz = 0;
     b.wx = b.wy = b.wz = 0;
@@ -273,6 +309,26 @@ export class PpMatch {
 
   private movePad(p: number, inp: PpInput): void {
     const pad = this.pad(p);
+    if (inp.z !== undefined && !inp.swing) {
+      // jogo de verdade: a mão manda x e o alcance (z); a altura acompanha a bola
+      const b = this.ball;
+      const s = PpMatch.sign(p);
+      const planeZ = s * (PP_PAD_Z - pad.reach);
+      let ty = PP_REST_Y;
+      if (p === this.server && (this.phase === 'serve' || this.phase === 'toss')) ty = b.y;
+      else if (
+        this.phase === 'rally' &&
+        this.expect === p &&
+        b.vz * s > 0 &&
+        Math.abs(b.z - planeZ) < 3
+      )
+        ty = b.y;
+      // no saque a bola está no meio: a raquete só pode sair um pouco dele (dá para escolher o lado pelo golpe)
+      const serving = p === this.server && (this.phase === 'serve' || this.phase === 'toss');
+      ppPadStepZ(pad, serving ? Math.max(-0.3, Math.min(0.3, inp.x)) : inp.x, ty, inp.z, PP_TICK);
+      this.swingNow[p === 0 ? 0 : 1] = null;
+      return;
+    }
     // quem vai sacar já estende a raquete um pouco: a bola fica ao alcance de um golpe curto
     const serving = p === this.server && (this.phase === 'serve' || this.phase === 'toss');
     // e quem vai rebater também: com a bola vindo, a raquete já espera um pouco à frente (alcança bola curta)
@@ -329,24 +385,8 @@ export class PpMatch {
     }
     if (this.phase === 'serve') {
       this.holdBall();
-      const sv = this.server === 0 ? 0 : 1;
-      const inp = inputs[sv];
-      const press = inp.serve && !this.serveWas[sv];
-      this.serveWas[0] = inputs[0].serve;
-      this.serveWas[1] = inputs[1].serve;
-      if (this.net) {
-        // na rede o lançamento é um evento; quem saca aqui cria o seu na hora em que aperta
-        if (this.tossReq === null && press && sv === this.localPlayer && !this.replay) {
-          this.tossReq = this.pad(sv).x;
-          this.tossReqV = Math.max(0, Math.min(1, inp.tossV ?? 0.5));
-          this.tossOut.push({ t: this.tick, x: this.tossReq, v: this.tossReqV });
-        }
-        if (this.tossReq !== null) this.startToss(this.tossReq, this.tossReqV);
-        this.tossReq = null;
-        this.tossReqV = 0.5;
-      } else if (press || this.t >= PP_SERVE_AUTO) {
-        this.startToss(this.pad(sv).x, press ? Math.max(0, Math.min(1, inp.tossV ?? 0.5)) : 0.5);
-      }
+      // a bola fica parada na frente da raquete de quem saca; depois de um instante já dá para bater
+      if (this.t >= PP_SERVE_WAIT) this.startToss(0);
       return;
     }
     this.serveWas[0] = inputs[0].serve;
@@ -357,7 +397,7 @@ export class PpMatch {
       this.subStep(i);
     }
     if (this.phase === 'rally' && this.t > PP_RALLY_MAX) this.letReplay();
-    if (this.phase === 'toss' && this.t > 4) this.serveFault(this.server);
+    if (this.phase === 'toss' && this.t > PP_SERVE_AUTO) this.autoServe();
     // a batida detectada neste tick vai para a rede com a bola do fim do tick (o resto do tick já passou)
     if (this.pendingHit) {
       const b = this.ball;
@@ -368,17 +408,25 @@ export class PpMatch {
   }
 
   /** O lançamento: a bola sobe da mão de quem saca (no x dado) e espera a raquete. */
-  private startToss(x: number, v = 0.5): void {
+  private startToss(x: number): void {
     this.phase = 'toss';
     this.t = 0;
     this.ball.x = x;
-    this.ball.y = PP_TOSS_Y;
+    this.ball.y = PP_SERVE_Y;
     this.ball.z = this.handZ(this.server);
-    this.ball.vx = 0;
-    this.ball.vy = ppTossSpeed(v);
-    this.ball.vz = 0;
+    this.ball.vx = this.ball.vy = this.ball.vz = 0;
     this.ball.wx = this.ball.wy = this.ball.wz = 0;
     this.events.push({ type: 'toss', p: this.server });
+  }
+
+  /** Quem não saca a tempo tem o saque feito pela sala: um golpe mansinho, igual em todos os aparelhos. */
+  private autoServe(): void {
+    const p = this.server;
+    const b = this.ball;
+    b.vz = -PpMatch.sign(p) * 3.4;
+    b.vy = 1.2;
+    ppGuideHit(b, p);
+    this.commitHit(p, true, false, ppKmh(Math.hypot(b.vx, b.vy, b.vz)), 'normal', 0);
   }
 
   /** Depois do ponto a bola só cai (para a cena ficar viva). */
@@ -392,6 +440,8 @@ export class PpMatch {
   private subStep(sub: number): void {
     const b = this.ball;
     ppCopyBall(b, this.prev);
+    // saque: a bola fica parada (sem gravidade) na frente da raquete até levar a raquetada
+    if (this.phase === 'toss') return void this.tryContact(sub);
     this.out.ev = 0;
     ppStepBall(b, this.out);
     const o = this.out;
@@ -399,7 +449,7 @@ export class PpMatch {
     if (o.ev & PP_EV_TABLE) {
       this.events.push({ type: 'bounce', side: o.side, x: o.bx, z: o.bz, impact: o.impact });
       this.onBounce(o.side);
-      if (this.phase !== 'toss' && this.phase !== 'rally') return;
+      if (this.phase !== 'rally') return;
     }
     if (o.ev & PP_EV_FLOOR || Math.abs(b.z) > 9 || Math.abs(b.x) > 7 || b.y > 8) {
       this.onDead();
@@ -422,7 +472,11 @@ export class PpMatch {
     }
     if (this.net && (this.replay || p !== this.localPlayer)) return;
     // bola a ponto de quicar na mesa: o quique acontece no mesmo tick e a batida chegaria tarde para quem confere
-    if (this.ball.vy < 0 && this.ball.y < PP_TOP + PP_R + 0.22 && Math.abs(this.ball.z) <= PP_L / 2 + 0.6)
+    if (
+      this.ball.vy < 0 &&
+      this.ball.y < PP_TOP + PP_R + 0.22 &&
+      Math.abs(this.ball.z) <= PP_L / 2 + 0.6
+    )
       return;
     const s = PpMatch.sign(p);
     const pad = this.pad(p);

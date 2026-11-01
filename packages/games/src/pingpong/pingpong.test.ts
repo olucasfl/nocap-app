@@ -9,6 +9,7 @@ import {
   PpMatch,
   ppIdleInput,
   ppPadStep,
+  ppPadStepZ,
   ppServerFor,
   type PpEvent,
   type PpInput,
@@ -194,21 +195,17 @@ describe('regras', () => {
     expect(ppServerFor(0, 11, 11)).toBe(0);
   });
 
-  it('o saque: a bola sobe, desce e a raquete que avança bate nela de verdade, mandando-a para o outro lado', () => {
+  it('o saque: a bola fica parada na frente da raquete e a raquetada para a frente manda a bola ao outro lado', () => {
     const m = new PpMatch(0);
-    const hold = { ...ppIdleInput(), x: 0, y: 1.65 };
-    run(m, 5, hold, ppIdleInput());
-    expect(m.phase).toBe('serve');
-    const toss = run(m, 3, { ...hold, serve: true }, ppIdleInput());
-    expect(toss.some((e) => e.type === 'toss')).toBe(true);
+    const hold = { ...ppIdleInput(), x: 0, y: 1.5 };
+    run(m, 70, hold, ppIdleInput());
+    expect(m.phase).toBe('toss');
+    const y0 = m.ball.y;
+    run(m, 30, hold, ppIdleInput());
+    expect(m.ball.y).toBe(y0); // parada: sem gravidade
     let hit: PpEvent | undefined;
-    for (let i = 0; i < 150 && !hit; i++) {
-      // a mão espera a bola descer até a altura da raquete e então avança batendo para a frente e um pouco para cima
-      const go = m.ball.vy < 0 && m.ball.y <= 1.7;
-      m.step([
-        go ? { ...hold, swing: { vx: 0, vy: 3, vz: 4.5, reach: 0.34 } } : hold,
-        ppIdleInput(),
-      ]);
+    for (let i = 0; i < 60 && !hit; i++) {
+      m.step([{ ...hold, swing: { vx: 0, vy: 0, vz: 6, reach: 1.1 } }, ppIdleInput()]);
       hit = m.drain().find((e) => e.type === 'hit');
     }
     expect(hit && hit.type === 'hit' && hit.serve).toBe(true);
@@ -217,32 +214,25 @@ describe('regras', () => {
     expect(ppLanding(m.ball, 0).ok).toBe(true);
   });
 
-  it('saque em que a raquete não avança até a bola cai na própria mesa: falta, e na segunda falta é ponto do outro', () => {
+  it('quem não saca a tempo tem o saque feito pela sala (mansinho) e a partida segue', () => {
     const m = new PpMatch(0);
-    const hold = { ...ppIdleInput(), x: 0, y: 0.6 };
-    const faults: PpEvent[] = [];
-    for (let n = 0; n < 2; n++) {
-      faults.push(...run(m, 3, hold, ppIdleInput()));
-      faults.push(...run(m, 3, { ...hold, serve: true }, ppIdleInput()));
-      faults.push(...run(m, 150, hold, ppIdleInput()));
-      faults.push(...run(m, 3, hold, ppIdleInput()));
-    }
-    expect(faults.filter((e) => e.type === 'fault').length).toBe(2);
-    const point = faults.find((e) => e.type === 'point');
-    expect(point && point.type === 'point' && point.winner).toBe(1);
-    expect(m.score).toEqual([0, 1]);
+    const ev = run(m, 60 * 12, ppIdleInput(), ppIdleInput());
+    expect(ev.some((e) => e.type === 'hit' && e.serve)).toBe(true);
+    expect(m.phase === 'rally' || m.phase === 'point').toBe(true);
   });
 
-  it('saque fácil: a bola descendo na frente da raquete parada é rebatida e cai na mesa do outro lado', () => {
-    const m = new PpMatch(0);
-    const hold = { ...ppIdleInput(), x: 0, y: 1.5 };
-    const ev = [
-      ...run(m, 3, hold, ppIdleInput()),
-      ...run(m, 3, { ...hold, serve: true }, ppIdleInput()),
-    ];
-    ev.push(...run(m, 200, hold, ppIdleInput()));
-    expect(ev.some((e) => e.type === 'hit' && e.serve)).toBe(true);
-    expect(ev.some((e) => e.type === 'fault')).toBe(false);
+  it('com a mão (z), a raquete vai até a rede e a força vem do impulso para a frente', () => {
+    const pad: PpPaddle = { x: 0, y: 1.3, vx: 0, vy: 0, reach: 0, vz: 0, swing: 0 };
+    let top = 0;
+    for (let i = 0; i < 40; i++) {
+      ppPadStepZ(pad, 0, 1.4, 2.4, 1 / 60);
+      top = Math.max(top, pad.vz);
+    }
+    expect(pad.reach).toBeGreaterThan(2.2);
+    expect(top).toBeGreaterThan(8);
+    // parada lá na frente, a força é zero
+    for (let i = 0; i < 20; i++) ppPadStepZ(pad, 0, 1.4, 2.4, 1 / 60);
+    expect(pad.vz).toBeLessThan(0.5);
   });
 
   it('antes do quique na sua metade a raquete deixa a bola passar (sem voleio)', () => {
@@ -347,7 +337,7 @@ describe('bots', () => {
   it('quem não faz nada perde: o bot ganha a partida', () => {
     const m = new PpMatch(0);
     const bot = new PpBot(PP_BOT_LEVELS.medio, createRng('idle'));
-    const idle = ppIdleInput();
+    const idle = { ...ppIdleInput(), x: -2.2 }; // parado no canto: só perde
     for (let i = 0; i < 60 * 900 && m.phase !== 'over'; i++) {
       m.step([bot.input(m, 0), idle]);
       m.drain();
@@ -400,22 +390,6 @@ describe('ajuda de leitura da batida', () => {
 });
 
 describe('golpes e saque', () => {
-  it('o saque sobe mais alto com a barra cheia do que com a barra baixa', () => {
-    const peak = (v: number) => {
-      const m = new PpMatch(0);
-      const idle = ppIdleInput();
-      run(m, 3, idle, idle);
-      let top = 0;
-      m.step([{ ...idle, serve: true, tossV: v }, idle]);
-      for (let i = 0; i < 80 && m.phase === 'toss'; i++) {
-        m.step([idle, idle]);
-        top = Math.max(top, m.ball.y);
-      }
-      return top;
-    };
-    expect(peak(1)).toBeGreaterThan(peak(0) + 1.5);
-  });
-
   it('bola mansa não vira foguete: devolvida com a mão parada sai devagar, e bola forte bloqueada sobe em lob', () => {
     const hit = (vz: number, vy: number, hand: number) => {
       const b = ppNewBall();

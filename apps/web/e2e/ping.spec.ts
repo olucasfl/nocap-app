@@ -106,7 +106,11 @@ const humanDriver = () => {
           project(x: number, y: number, z: number): { nx: number; ny: number };
           simX(x: number): number;
         };
-        predict(ball: unknown, p: number): { x: number; y: number; t: number } | null;
+        predict(
+          ball: unknown,
+          p: number,
+          reach?: number,
+        ): { x: number; y: number; t: number } | null;
       };
     }
   ).__ping;
@@ -123,14 +127,16 @@ const humanDriver = () => {
         ...extra,
       }),
     );
-  const to = (x: number, y: number) => {
-    const q = g.scene.project(g.scene.simX(x), y, 2.825);
+  // o mouse aponta para um ponto da mesa (x, z): a raquete vai até lá. y = altura do plano de controle
+  const to = (x: number, z: number) => {
+    const q = g.scene.project(g.scene.simX(x), 1.4, z);
     return [r.left + q.nx * r.width, r.top + q.ny * r.height] as const;
   };
-  const ease = (y0: number, y1: number, k: number) => y0 + (y1 - y0) * (k * k * (3 - 2 * k));
-  let plan: { x: number; y: number; t0: number } | null = null;
+  const PAD_Z = 2.825;
+  let plan: { x: number; t0: number } | null = null;
   let seen = -1;
   let last = -1;
+  let toss0 = -1;
   const w = window as unknown as { __hits: number };
   w.__hits = 0;
   setInterval(() => {
@@ -138,13 +144,14 @@ const humanDriver = () => {
     if (m.lastHitter === 0 && last !== 0) w.__hits++;
     last = m.lastHitter;
     if (m.phase === 'serve' && m.server === 0) {
-      const [x, y] = to(0, 1.5);
+      const [x, y] = to(0, PAD_Z - 0.2);
       fire('pointermove', x, y);
-      if (m.t > 0.8) fire('pointerdown', x, y, { button: 0 });
+      toss0 = -1;
     } else if (m.phase === 'toss' && m.server === 0) {
-      // a bola sobe e desce: a mão sobe ao encontro dela, em passada
-      const k = Math.max(0, Math.min(1, (1.95 - m.ball.y) / 0.5));
-      const [x, y] = to(m.ball.x, ease(1.5, 1.85, m.ball.vy < 0 ? k : 0));
+      // a bola está parada na frente da raquete: a mão avança em passada e bate nela
+      if (toss0 < 0) toss0 = m.t;
+      const k = Math.max(0, Math.min(1, (m.t - toss0 - 0.2) / 0.22));
+      const [x, y] = to(0, PAD_Z - (0.2 + 1.6 * k));
       fire('pointermove', x, y);
     } else if (m.phase === 'rally' && m.expect === 0) {
       if (m.rally !== seen) {
@@ -152,12 +159,13 @@ const humanDriver = () => {
         plan = null;
       }
       if (!plan) {
-        const c = g.predict(m.ball, 0);
-        if (c) plan = { x: c.x, y: c.y, t0: m.t + c.t };
+        const c = g.predict(m.ball, 0, 1.0);
+        if (c) plan = { x: c.x, t0: m.t + c.t };
       }
       if (plan) {
-        const k = Math.max(0, Math.min(1, 1 - (plan.t0 - m.t) / 0.23));
-        const [x, y] = to(plan.x, ease(plan.y - 0.36, plan.y + 0.22, k));
+        // espera atrás e avança de modo que passe pelo plano de contato (alcance 1,0 m) quando a bola chegar
+        const k = Math.max(0, Math.min(1, 1 - (plan.t0 - m.t) / 0.24));
+        const [x, y] = to(plan.x, PAD_Z - (0.3 + 1.4 * k));
         fire('pointermove', x, y);
       }
     }
@@ -241,7 +249,8 @@ for (const size of [
       await page.waitForTimeout(300);
       const x1 = await pad();
       await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-      expect(x1).toBeGreaterThan(x0 + 0.3);
+      // (no saque a raquete só se afasta 0,3 m do meio, onde a bola espera)
+      expect(x1).toBeGreaterThan(x0 + 0.2);
       if (process.env.E2E_SHOTS)
         await page.screenshot({ path: `${process.env.E2E_SHOTS}/ping-${size.name}.png` });
     });

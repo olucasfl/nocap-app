@@ -67,6 +67,9 @@ export function ppPaddleHit(b: PpBall, side: number, pad: PpPaddleMotion, guide 
   const oy = clamp((b.y - pad.y) / PP_PAD_R, -1.25, 1.25);
   const t = ppTune;
   const tilt = ppPaddleTilt(pad.vx, pad.vy, pad.vz);
+  const high = b.y > PP_TOP + 0.55 + PP_NET_H;
+  // bola alta: a face fecha e a batida rápida vira smash (desce na mesa)
+  if (high) tilt.pitch -= 0.3 * Math.min(1, pad.vz / 6);
   // normal da face: para a rede, inclinada para cima (abertura) e para o lado, com um pouco de curva pelo contato
   let nx = Math.sin(tilt.yaw) + t.tiltOff * ox;
   let ny = Math.sin(tilt.pitch) + t.tiltOff * 0.5 * oy;
@@ -134,8 +137,7 @@ export function ppPaddleHit(b: PpBall, side: number, pad: PpPaddleMotion, guide 
   const vin = Math.hypot(inVx, inVy, inVz);
   const hand = Math.hypot(pad.vx, pad.vy, pad.vz);
   const power = Math.max(0, Math.min(1, hand / 9));
-  const high = b.y > PP_TOP + 0.55 + PP_NET_H;
-  const smashing = high && pad.vy < -2 && power > 0.55;
+  const smashing = high && pad.vz > 6 && power > 0.55;
   // pontaria: o movimento lateral da mão leva a bola para o lado
   vx += pad.vx * PP_AIM * (0.4 + 0.6 * power);
   if (power < 0.35 && vin > 6) {

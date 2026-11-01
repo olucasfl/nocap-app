@@ -2,6 +2,7 @@ import {
   PP_PAD_X,
   PP_PAD_Y_MAX,
   PP_PAD_Y_MIN,
+  PP_REACH_NET,
   PP_ROOM_AWAY_MS,
   PP_ROOM_COUNTDOWN_MS,
   PP_ROOM_OVER_MS,
@@ -170,16 +171,16 @@ export class PingRoomEngine extends ColorRoomEngine {
   report(id: string, v: unknown): void {
     const slot = this.slotOf(id);
     if (slot < 0 || !this.live || !Array.isArray(v) || v.length !== 3 || !v.every(finite)) return;
-    const [x, y, smash] = v as number[];
+    const [x, y, reach] = v as number[];
     this.pads[slot === 0 ? 0 : 1] = [
       r2(clamp(x!, -PP_PAD_X, PP_PAD_X)),
       r2(clamp(y!, PP_PAD_Y_MIN, PP_PAD_Y_MAX)),
-      smash ? 1 : 0,
+      r2(clamp(reach!, 0, PP_REACH_NET)),
       this.now(),
     ];
   }
 
-  /** As raquetes para o fluxo "ppads": [vaga, x, y, smash]. */
+  /** As raquetes para o fluxo "ppads": [vaga, x, y, alcance]. */
   padsFrame(): number[][] {
     const out: number[][] = [];
     this.pads.forEach((p, i) => {

@@ -105,7 +105,7 @@ export class PingScene {
   private shake = 0;
   private fovKick = 0;
   private time = 0;
-  private padTilt: { pitch: number; yaw: number }[] = [];
+  private padTilt: { pitch: number; yaw: number; roll: number }[] = [];
   /** Quem olha: 0 ou 1 (quem joga do lado de lá vê a mesa girada, como se estivesse perto da câmera). */
   private me = 0;
   private flip = false;
@@ -648,8 +648,8 @@ export class PingScene {
     const k = 1 - Math.exp(-4 * dt);
     const tx = bx * 0.18;
     const cam = this.camera;
-    const baseZ = portrait ? 8.2 : 7.2;
-    const baseY = portrait ? 4.0 : 3.3;
+    const baseZ = portrait ? 8.4 : 6.4;
+    const baseY = portrait ? 5.0 : 3.9;
     cam.position.x = lerp(cam.position.x, tx * 0.7, k);
     cam.position.y = baseY;
     cam.position.z = baseZ;
@@ -661,8 +661,8 @@ export class PingScene {
     }
     cam.position.x += sx;
     cam.position.y += sy;
-    cam.lookAt(tx, 1.05, -0.6);
-    const fov = (portrait ? 60 : 48) + this.fovKick * 5;
+    cam.lookAt(tx, 0.9, -0.2);
+    const fov = (portrait ? 56 : 42) + this.fovKick * 5;
     if (Math.abs(cam.fov - fov) > 0.01) {
       cam.fov = fov;
       cam.updateProjectionMatrix();
@@ -689,6 +689,15 @@ export class PingScene {
       x: clamp(this.hitPoint.x, -PP_PAD_X, PP_PAD_X),
       y: clamp(this.hitPoint.y + lift, PP_PAD_Y_MIN, PP_PAD_Y_MAX),
     };
+  }
+
+  private tablePlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -1.4);
+  /** Onde o ponteiro cai num plano horizontal na altura da raquete (sobre a mesa): x e profundidade z da vista. */
+  pointerToTable(nx: number, ny: number): { x: number; z: number } {
+    this.camera.updateMatrixWorld();
+    this.ray.setFromCamera(new THREE.Vector2(nx * 2 - 1, -(ny * 2 - 1)), this.camera);
+    if (!this.ray.ray.intersectPlane(this.tablePlane, this.hitPoint)) return { x: 0, z: PP_PAD_Z };
+    return { x: this.hitPoint.x, z: this.hitPoint.z };
   }
 
   /** O x da vista (o da tela) no x do motor. */
@@ -876,13 +885,16 @@ export class PingScene {
       const tilt = ppPaddleTilt(pad.vx, pad.vy, pad.vz);
       const yawView = this.flip ? -tilt.yaw : tilt.yaw;
       const k = 1 - Math.exp(-28 * dt);
-      const cur = this.padTilt[v] ?? { pitch: 0, yaw: 0 };
+      const cur = this.padTilt[v] ?? { pitch: 0, yaw: 0, roll: 0 };
+      // a raquete vira para o lado em que a mão vai (a cabeça acompanha o movimento)
+      const rollGoal = clamp(this.vx(pad.vx) * 0.075, -0.6, 0.6) * (v === 0 ? -1 : 1);
+      cur.roll = lerp(cur.roll, rollGoal, k);
       cur.pitch = lerp(cur.pitch, tilt.pitch, k);
       cur.yaw = lerp(cur.yaw, yawView, k);
       this.padTilt[v] = cur;
       // com a batida o disco dá um pequeno "tapa" na bola: a raquete se inclina um instante para a frente
       const pulse = pad.swing > 0 ? Math.sin(pad.swing * Math.PI) * 0.18 : 0;
-      slot.blade.rotation.set(cur.pitch - pulse, v === 0 ? -cur.yaw : cur.yaw, 0);
+      slot.blade.rotation.set(cur.pitch - pulse, v === 0 ? -cur.yaw : cur.yaw, cur.roll);
     }
 
     // raposa do outro lado: acompanha a raquete, com um balanço

@@ -1,6 +1,6 @@
 import { ppCopyBall, ppNewBall } from './ball';
 import { ppLanding } from './assist';
-import { PP_PAD_R, PP_PAD_Z, PP_SERVE_FRONT, PP_TOSS_Y, ppTossSpeed, PP_W } from './constants';
+import { PP_PAD_R, PP_PAD_Z, PP_SERVE_FRONT, PP_SERVE_Y, PP_W } from './constants';
 import { PpMatch, ppIdleInput, type PpInput, type PpSwing } from './match';
 import { ppPaddleHit } from './paddle';
 import { ppPredictCross, type PpCrossing } from './predict';
@@ -101,22 +101,16 @@ export class PpBot {
 
     if (m.phase === 'serve' && m.server === p) {
       gx = this.cx;
-      gy = 1.65;
-      if (this.serveTick < 0) {
-        this.serveTick = m.tick;
-        this.serveSwing = null;
-      }
-      inp.tossV = 0.06;
-      if (m.t >= lv.serveWait) inp.serve = true;
+      gy = PP_SERVE_Y;
+      this.serveSwing = null;
     } else if (m.phase === 'toss' && m.server === p) {
-      // a bola sobe e desce na frente da raquete: o bot espera na altura dela e bate para a frente quando passa
+      // a bola está parada na frente da raquete: espera um instante e a rebate para a frente
       const b = m.ball;
       gx = b.x;
-      gy = 1.65;
+      gy = b.y;
       speed = 12;
       if (!this.serveSwing) this.serveSwing = this.planServe(m, p);
-      swing = this.serveSwing;
-      if (b.vy < 0 && b.y <= this.cy + 0.04) swing = { ...swing, reach: PP_SERVE_FRONT + 0.08 };
+      if (m.t >= lv.serveWait) swing = { ...this.serveSwing, reach: PP_SERVE_FRONT + 0.1 };
     } else if (m.phase === 'rally' && m.expect === p) {
       this.serveTick = -1;
       // a bola vem: depois do tempo de reação, prevê onde ela cruza, escolhe a batida e corre para lá
@@ -167,11 +161,10 @@ export class PpBot {
     const lv = this.level;
     const b = ppNewBall();
     const s = PpMatch.sign(p);
-    // a bola na altura da raquete: sai do lançamento e desce com a velocidade da queda
+    // a bola parada na frente da raquete
     b.x = m.ball.x;
-    b.y = 1.65;
+    b.y = PP_SERVE_Y;
     b.z = s * (PP_PAD_Z - PP_SERVE_FRONT);
-    b.vy = -Math.sqrt(Math.max(0.5, 2 * 8 * (PP_TOSS_Y + ppTossSpeed(0.06) ** 2 / (2 * 8) - 1.65)));
     const choice = this.best(b, p, Math.max(lv.power, 8.5), (this.rng() - 0.5) * 0.9 * lv.aim);
     return { vx: choice.vx, vy: choice.vy, vz: choice.vz };
   }

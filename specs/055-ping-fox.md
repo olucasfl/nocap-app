@@ -134,3 +134,12 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 
 - Removida a auto-posição: a raquete vai só aonde a mão da pessoa manda. A força e a direção da batida seguem o movimento (velocidade, ângulo, lado) e a ajuda de leitura só corrige a altura se o golpe sairia na rede ou fora. Para não ser injusto sem a ajuda de posição, o disco da raquete ficou maior (`PP_PAD_R` 0,5) e a bola que passou do plano ainda pode ser pega (`PP_CATCH`).
 - Não bate na bola a ponto de quicar na mesa (o servidor refaria o quique antes da batida chegar).
+
+### Rodada 5 (01/11/2026): controle no estilo Ping Pong Fury
+
+- **Mesa maior na tela**: a câmera chega mais perto e olha de cima, a mesa ocupa ~45% da largura (como no jogo de referência).
+- **A raquete passeia até a rede**: o controle tem dois eixos, x (lados) e z (alcance, de 0 = fundo até `PP_REACH_NET` = quase na rede). Mouse: a raquete vai até o ponto da mesa onde o mouse aponta. Dedo: arrastar para os lados move, arrastar para a frente avança, parar recolhe devagar. Teclado: setas. A altura da raquete acompanha a bola (`ppPadStepZ`).
+- **A força é o impulso**: `pad.vz` é a velocidade do avanço da raquete (até `PP_HAND_VZ_MAX`); a direção vem do movimento lateral da mão (`PP_AIM`). Mão mansa contra bola forte = bloqueio em lob; bola alta + avanço forte = smash.
+- **A raquete vira para o lado** em que a mão vai (roll).
+- **Saque novo**: a bola fica parada na frente da raquete (sem gravidade, a `PP_SERVE_FRONT` do plano) e o saque é a raquetada para a frente. Sem lançamento, sem barra, sem evento de rede de saque; a sala faz um saque mansinho se ninguém bater em `PP_SERVE_AUTO` s. No saque a raquete só se afasta 0,3 m do meio (onde a bola espera).
+- Rede: o fluxo `ppad` agora leva `[x, y, alcance]` (era o 3º valor `smash` sem uso).

@@ -94,7 +94,19 @@ export const PP_REACH_DEEP = 0.65;
 /** Quanto o movimento lateral da mão desvia a bola (pontaria). */
 export const PP_AIM = 0.42;
 export const PP_TOSS_Y = 1.25;
-export const PP_SERVE_FRONT = 0.21;
+export const PP_SERVE_FRONT = 0.8;
+/** A bola do saque fica parada na frente da raquete (altura) e o saque começa depois deste tempo (s). */
+export const PP_SERVE_Y = 1.5;
+export const PP_SERVE_WAIT = 0.9;
+/** Alcance até a rede: a raquete passeia por cima da mesa (reach 0 = plano de espera; NET = quase na rede). */
+export const PP_REACH_NET = 2.45;
+/** Rapidez e rigidez do avanço/recuo da raquete (m/s, 1/s). */
+export const PP_Z_SPEED = 15;
+export const PP_Z_STIFF = 34;
+/** Altura de espera da raquete (a altura acompanha a bola que vem). */
+export const PP_REST_Y = 1.45;
+/** A mão passa no máximo isto para a frente na batida (m/s). */
+export const PP_HAND_VZ_MAX = 11;
 
 /** Placar. */
 export const PP_POINTS = 11;
@@ -102,7 +114,7 @@ export const PP_POINTS = 11;
 export const PP_POINT_PAUSE = 1.5;
 export const PP_RALLY_MAX = 30;
 /** Saque automático se quem saca não faz nada (s). */
-export const PP_SERVE_AUTO = 6;
+export const PP_SERVE_AUTO = 9;
 
 /** Sala (fase 3): quantas pessoas cabem (2 jogam, as outras assistem), contagem do começo e tempo para voltar da queda. */
 export const PP_ROOM_MAX = 8;
