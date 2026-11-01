@@ -165,3 +165,7 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 
 - A ajuda de leitura só vale para o que sai torto sem querer: batida de **força** (mão com poder ≥ 0,62, `PP_ASSIST_MAX_POWER`) não é corrigida e pode sair da mesa ou ir na rede; a **média** só ganha ajuda na altura; a **mansa** também no ângulo (`PP_ASSIST_LATERAL_POWER`). O saque (bola parada) continua sempre ajudado. Efeito de verdade (curva, topspin) continua valendo: a bola pode sair e voltar por causa dele, sem a ajuda.
 - Visão mais ampla (margens maiores no `fitCamera`, FOV 56) e a raquete vai mais para trás (`PP_REACH_BACK` 1,7 m).
+
+### Rodada 10 (01/11/2026): a raquete inclina com o lado
+
+- A inclinação (roll) da raquete vem da posição na mesa: no meio fica reta, à esquerda inclina para a esquerda, à direita para a direita (até ~55°), como no Ping Pong Fury; o movimento da mão só soma um pouco. O cabo ficou mais curto e, sobre a mesa, a raquete sobe 0,22 m só na tela: o cabo não entra mais no tampo.

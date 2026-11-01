@@ -591,15 +591,15 @@ export class PingScene {
     g.add(outline, rim, face(0xe3262f, -0.027, true), face(0x1b1535, 0.027, false));
     // cabo
     const handle = new THREE.Mesh(
-      new THREE.BoxGeometry(0.085, 0.3, 0.07),
+      new THREE.BoxGeometry(0.085, 0.2, 0.07),
       new THREE.MeshLambertMaterial({ color: 0xc58a4a }),
     );
-    handle.position.set(0, -r - 0.1, 0);
+    handle.position.set(0, -r - 0.07, 0);
     const handleLine = new THREE.Mesh(
       new THREE.BoxGeometry(0.1, 0.05, 0.08),
       new THREE.MeshLambertMaterial({ color: INK }),
     );
-    handleLine.position.set(0, -r - 0.2, 0);
+    handleLine.position.set(0, -r - 0.13, 0);
     g.add(handle, handleLine);
     if (mine) {
       // a pata de quem joga segura o cabo (a raposa fica "atrás da câmera")
@@ -608,12 +608,12 @@ export class PingScene {
         new THREE.MeshLambertMaterial({ color: ORANGE }),
       );
       paw.scale.set(1, 0.9, 1.05);
-      paw.position.set(0, -r - 0.2, 0.03);
+      paw.position.set(0, -r - 0.13, 0.03);
       const cuff = new THREE.Mesh(
         new THREE.CylinderGeometry(0.1, 0.1, 0.06, 16),
         new THREE.MeshLambertMaterial({ color: 0xfff3e2 }),
       );
-      cuff.position.set(0, -r - 0.33, 0.03);
+      cuff.position.set(0, -r - 0.22, 0.03);
       g.add(paw, cuff);
     }
     const holder = new THREE.Group();
@@ -919,7 +919,11 @@ export class PingScene {
       const pad = m.pad(i);
       const pp = pv.pads[i] ?? { x: pad.x, y: pad.y, reach: pad.reach };
       const px = this.vx(lerp(pp.x, pad.x, a));
-      const py = lerp(pp.y, pad.y, a);
+      const rawZ = PP_PAD_Z - lerp(pp.reach, pad.reach, a);
+      // sobre a mesa a raquete sobe um pouco (o cabo não entra no tampo)
+      const overTable =
+        clamp((PP_L / 2 + 0.25 - rawZ) / 0.35, 0, 1) * clamp((PP_W / 2 + 0.45 - Math.abs(px)) / 0.35, 0, 1);
+      const py = lerp(pp.y, pad.y, a) + 0.22 * overTable;
       const reach = lerp(pp.reach, pad.reach, a);
       const slot = this.pads[v];
       if (!slot) continue;
@@ -931,7 +935,11 @@ export class PingScene {
       const k = 1 - Math.exp(-28 * dt);
       const cur = this.padTilt[v] ?? { pitch: 0, yaw: 0, roll: 0 };
       // a raquete vira para o lado em que a mão vai (a cabeça acompanha o movimento)
-      const rollGoal = clamp(this.vx(pad.vx) * 0.075, -0.6, 0.6) * (v === 0 ? -1 : 1);
+      // a raquete se inclina conforme o lado da mesa em que está: no meio fica reta, à direita inclina para a direita, à
+      // esquerda para a esquerda (o cabo sai de cima da mesa), mais um pouco do movimento da mão
+      const rollGoal =
+        clamp((this.vx(pad.x) / PP_PAD_X) * 0.85 + this.vx(pad.vx) * 0.012, -0.95, 0.95) *
+        (v === 0 ? -1 : 1);
       cur.roll = lerp(cur.roll, rollGoal, k);
       cur.pitch = lerp(cur.pitch, tilt.pitch, k);
       cur.yaw = lerp(cur.yaw, yawView, k);
