@@ -236,7 +236,10 @@ describe('regras', () => {
   it('saque fácil: a bola descendo na frente da raquete parada é rebatida e cai na mesa do outro lado', () => {
     const m = new PpMatch(0);
     const hold = { ...ppIdleInput(), x: 0, y: 1.5 };
-    const ev = [...run(m, 3, hold, ppIdleInput()), ...run(m, 3, { ...hold, serve: true }, ppIdleInput())];
+    const ev = [
+      ...run(m, 3, hold, ppIdleInput()),
+      ...run(m, 3, { ...hold, serve: true }, ppIdleInput()),
+    ];
     ev.push(...run(m, 200, hold, ppIdleInput()));
     expect(ev.some((e) => e.type === 'hit' && e.serve)).toBe(true);
     expect(ev.some((e) => e.type === 'fault')).toBe(false);
@@ -334,7 +337,7 @@ describe('a batida de verdade', () => {
       ppPadStep(fast, 0.2 * i, 1.3 + 0.12 * i, 1 / 60);
       peak = Math.max(peak, fast.vz);
     }
-    expect(fast.reach).toBeGreaterThan(0.25);
+    expect(fast.reach).toBeGreaterThan(0.15);
     expect(peak).toBeGreaterThan(2);
     expect(peak).toBeLessThanOrEqual(PP_VZ_MAX);
   });

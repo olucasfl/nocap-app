@@ -2,6 +2,7 @@ import {
   PP_PAD_R,
   PP_PAD_X,
   PP_REACH_MAX,
+  PP_CATCH,
   PP_SERVE_AUTO,
   PP_SPIN_MAX,
   PP_TICK,
@@ -230,7 +231,7 @@ export class PpNetSim {
     if (!ev.serve && (s.bounces[ev.p] ?? 0) < 1) return false;
     const d = Math.hypot(ev.b[0]! - s.ball.x, ev.b[1]! - s.ball.y, ev.b[2]! - s.ball.z);
     // a raquete avança até PP_REACH_MAX do plano de espera: o contato pode estar um pouco mais perto da rede
-    if (d > PP_PAD_R + PP_REACH_MAX + 0.5) return false;
+    if (d > PP_PAD_R + PP_REACH_MAX + PP_CATCH + 0.5) return false;
     if (Math.hypot(ev.b[3]!, ev.b[4]!, ev.b[5]!) > PP_V_MAX * 1.1) return false;
     if (Math.hypot(ev.b[6]!, ev.b[7]!, ev.b[8]!) > PP_SPIN_MAX * 1.1) return false;
     return true;

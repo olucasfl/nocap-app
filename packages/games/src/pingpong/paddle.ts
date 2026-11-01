@@ -1,13 +1,7 @@
 import type { PpBall } from './ball';
 import { ppTune } from './tune';
 import { ppGuideHit } from './assist';
-import {
-  PP_PAD_R,
-  PP_R,
-  PP_SMASH_SPEED,
-  PP_SPIN_MAX,
-  PP_V_MAX,
-} from './constants';
+import { PP_PAD_R, PP_R, PP_SMASH_SPEED, PP_SPIN_MAX, PP_V_MAX } from './constants';
 
 /**
  * A raquete na hora da batida: onde está e com que velocidade se mexe. `vz` é a velocidade PARA A FRENTE (em direção à
@@ -55,12 +49,7 @@ export function ppPaddleTilt(vx: number, vy: number, vz = 0): { pitch: number; y
  * atrito com a mão passando pela bola vira efeito (a mesma conta do quique). Nada corrige a batida: descer demais vai na
  * rede, subir demais sai da mesa. Altera `b` no lugar.
  */
-export function ppPaddleHit(
-  b: PpBall,
-  side: number,
-  pad: PpPaddleMotion,
-  guide = true,
-): PpHitInfo {
+export function ppPaddleHit(b: PpBall, side: number, pad: PpPaddleMotion, guide = true): PpHitInfo {
   const forward = side === 0 ? -1 : 1;
   const ox = clamp((b.x - pad.x) / PP_PAD_R, -1.25, 1.25);
   const oy = clamp((b.y - pad.y) / PP_PAD_R, -1.25, 1.25);

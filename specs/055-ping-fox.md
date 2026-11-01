@@ -113,3 +113,11 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 - Bots prevêem o cruzamento com 0,45 m de alcance (`BOT_REACH`).
 - Celular: sem zoom por pinça em todo o app (viewport, `touch-action`, `gesturestart`); a tela de jogo bloqueia seleção/lupa do iOS.
 - Tela final: `.fz-body` não encolhe cabeçalho e placar em telas baixas.
+
+### Rodada 2 (01/11/2026)
+
+- Bola que passou do plano da raquete ainda pode ser pega (até `PP_CATCH` = 3 m atrás) se a raquete estiver em cima dela; só no rally e só para quem joga com mão (bots não).
+- Raquete fora da mesa: `PP_PAD_Z = L/2 + 0,2` e alcance máximo 0,2 m (não entra mais na mesa); `PP_PAD_Y_MAX` 3,0.
+- Câmera mais longe e com campo de visão maior.
+- O limite de 30 s do rally passa a contar desde a última batida.
+- Bots: erro de posição maior (para as partidas terminarem) e preferem bolas menos altas.

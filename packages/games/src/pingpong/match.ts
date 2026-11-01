@@ -19,6 +19,8 @@ import {
   PP_POINT_PAUSE,
   PP_POINTS,
   PP_R,
+  PP_TOP,
+  PP_L,
   PP_RALLY_MAX,
   PP_REACH_DEAD,
   PP_REACH_FALL,
@@ -28,6 +30,7 @@ import {
   PP_REACH_RISE,
   PP_REACH_SERVE,
   PP_REACH_WAIT,
+  PP_CATCH,
   PP_SERVE_AUTO,
   PP_SERVE_FRONT,
   PP_SUB,
@@ -425,6 +428,9 @@ export class PpMatch {
       if ((this.bounces[p] ?? 0) < 1) return;
     }
     if (this.net && (this.replay || p !== this.localPlayer)) return;
+    // bola a ponto de quicar na mesa: o quique acontece no mesmo tick e a batida chegaria tarde para quem confere
+    if (this.ball.vy < 0 && this.ball.y < PP_TOP + PP_R + 0.12 && Math.abs(this.ball.z) <= PP_L / 2)
+      return;
     const s = PpMatch.sign(p);
     const pad = this.pad(p);
     const [x0, y0, r0] = this.before[p === 0 ? 0 : 1] as [number, number, number];
@@ -435,7 +441,20 @@ export class PpMatch {
     const pr = this.prev;
     const f0 = (pr.z - plane(k0)) * s;
     const f1 = (b.z - plane(k1)) * s;
-    if (!(f0 < 0 && f1 >= 0)) return;
+    if (!(f0 < 0 && f1 >= 0)) {
+      // bola que já passou do plano: ainda dá para alcançar (pegar de volta) enquanto a raquete estiver em cima dela
+      if (
+        this.phase === 'rally' &&
+        !this.swingNow[p === 0 ? 0 : 1] &&
+        f1 > 0 &&
+        f1 < PP_CATCH &&
+        Math.hypot(b.x - pad.x, b.y - pad.y) <= PP_PAD_R + PP_R
+      ) {
+        b.z = plane(k1) - s * 0.01;
+        this.hit(p, false, pad.x, pad.y);
+      }
+      return;
+    }
     const t = f0 / (f0 - f1);
     const k = k0 + (k1 - k0) * t;
     const cx = pr.x + (b.x - pr.x) * t;
@@ -488,10 +507,9 @@ export class PpMatch {
     this.bounces = [0, 0];
     this.rally++;
     if (kmh > this.bestKmh) this.bestKmh = kmh;
-    if (this.phase === 'toss') {
-      this.phase = 'rally';
-      this.t = 0;
-    }
+    if (this.phase === 'toss') this.phase = 'rally';
+    // o limite de tempo é por batida: bola parada no ar nunca trava a partida, e uma batida não cai junto do limite
+    this.t = 0;
     this.events.push({ type: 'hit', p, kmh, smash, quality, spin, serve });
   }
 

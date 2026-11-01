@@ -520,8 +520,8 @@ export class PingScene {
     const k = 1 - Math.exp(-4 * dt);
     const tx = bx * 0.18;
     const cam = this.camera;
-    const baseZ = portrait ? 6.9 : 6.0;
-    const baseY = portrait ? 3.5 : 2.9;
+    const baseZ = portrait ? 8.2 : 7.2;
+    const baseY = portrait ? 4.0 : 3.3;
     cam.position.x = lerp(cam.position.x, tx * 0.7, k);
     cam.position.y = baseY;
     cam.position.z = baseZ;
@@ -534,7 +534,7 @@ export class PingScene {
     cam.position.x += sx;
     cam.position.y += sy;
     cam.lookAt(tx, 1.05, -0.6);
-    const fov = (portrait ? 57 : 43) + this.fovKick * 5;
+    const fov = (portrait ? 60 : 48) + this.fovKick * 5;
     if (Math.abs(cam.fov - fov) > 0.01) {
       cam.fov = fov;
       cam.updateProjectionMatrix();

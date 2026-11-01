@@ -33,10 +33,12 @@ export const PP_NET_KEEP = 0.25;
 
 /** Raquete: raio do disco, distância do plano atrás da ponta, alcance do ponteiro. */
 export const PP_PAD_R = 0.4;
-export const PP_PAD_Z = PP_L / 2 + 0.1;
+export const PP_PAD_Z = PP_L / 2 + 0.2;
 export const PP_PAD_X = 2.3;
 export const PP_PAD_Y_MIN = 0.55;
-export const PP_PAD_Y_MAX = 2.3;
+export const PP_PAD_Y_MAX = 3.0;
+/** Quanto uma bola pode ter passado do plano da raquete (m) e ainda ser alcançada. */
+export const PP_CATCH = 3;
 /** Velocidade máxima e rigidez com que a raquete persegue o ponteiro (uma mão que acompanha, sem teletransportar). */
 export const PP_PAD_SPEED = 13;
 export const PP_PAD_STIFF = 36;
@@ -46,7 +48,7 @@ export const PP_PAD_STIFF = 36;
  * com a rapidez com que a mão se mexe, então "jogar a raquete" é mexer o mouse (ou o dedo) rápido. A velocidade da
  * raquete (x, y e para a frente) entra inteira na batida.
  */
-export const PP_REACH_MAX = 0.7;
+export const PP_REACH_MAX = 0.2;
 /** Rapidez (m/s) abaixo da qual a raquete fica parada em z, e quanto de alcance cada m/s a mais dá. */
 export const PP_REACH_DEAD = 0.8;
 /** Velocidade para a frente por m/s de mão (acima da zona morta) e quanto de alcance cada m/s para a frente dá. */
@@ -59,7 +61,7 @@ export const PP_REACH_FALL = 8;
 export const PP_VZ_MAX = 7.5;
 /** Quem vai sacar já estende a raquete um pouco, para a bola estar ao alcance de um golpe curto. */
 /** Alcance de espera de quem vai rebater: a raquete já fica um pouco à frente do plano de espera. */
-export const PP_REACH_WAIT = 0.3;
+export const PP_REACH_WAIT = 0.15;
 export const PP_REACH_SERVE = 0.1;
 
 /**

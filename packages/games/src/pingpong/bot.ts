@@ -24,7 +24,7 @@ export interface PpBotLevel {
 }
 
 /** O bot estende a raquete até aqui para encontrar a bola (alcança também bolas que morrem curtas). */
-const BOT_REACH = 0.45;
+const BOT_REACH = 0.2;
 
 export type PpBotName = 'facil' | 'medio' | 'dificil';
 
@@ -32,7 +32,7 @@ export const PP_BOT_LEVELS: Record<PpBotName, PpBotLevel> = {
   facil: {
     reaction: 0.4,
     speed: 4.4,
-    err: 0.18,
+    err: 0.34,
     swingErr: 0.3,
     aim: 0.15,
     power: 6.2,
@@ -41,7 +41,7 @@ export const PP_BOT_LEVELS: Record<PpBotName, PpBotLevel> = {
   medio: {
     reaction: 0.25,
     speed: 6.4,
-    err: 0.08,
+    err: 0.19,
     swingErr: 0.15,
     aim: 0.5,
     power: 8,
@@ -50,7 +50,7 @@ export const PP_BOT_LEVELS: Record<PpBotName, PpBotLevel> = {
   dificil: {
     reaction: 0.15,
     speed: 9,
-    err: 0.03,
+    err: 0.07,
     swingErr: 0.06,
     aim: 0.9,
     power: 10,
@@ -205,7 +205,12 @@ export class PpBot {
         for (const vy of VY) {
           for (const vx of VX) {
             ppCopyBall(ball, trial);
-            const info = ppPaddleHit(trial, p, { x: padX - off * PP_PAD_R, y: padY, vx, vy, vz }, false);
+            const info = ppPaddleHit(
+              trial,
+              p,
+              { x: padX - off * PP_PAD_R, y: padY, vx, vy, vz },
+              false,
+            );
             if (info.speed > power) continue;
             const land = ppLanding(trial, p);
             if (!land.ok) continue;
@@ -214,6 +219,7 @@ export class PpBot {
               Math.abs(land.x - aimX) * (0.4 + this.level.aim) +
               Math.abs(info.speed - power * 0.7) * 0.05 +
               Math.max(0, 0.12 - land.clear) * 4 +
+              Math.max(0, trial.vy - 1.5) * 0.35 +
               this.rng() * (0.25 - 0.2 * this.level.aim);
             if (score < bestScore) {
               bestScore = score;

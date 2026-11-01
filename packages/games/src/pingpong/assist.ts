@@ -57,7 +57,7 @@ export function ppLanding(b: PpBall, side: number): PpLanding {
       if (!ok) return res;
     }
     // depois do quique a bola ainda tem que chegar até onde a raquete alcança, senão ninguém rebate
-    if (res && Math.abs(s.z) >= PP_PAD_Z - 0.55) return res;
+    if (res && Math.abs(s.z) >= PP_L / 2 - 0.02) return res;
   }
   return { ok: false, x: s.x, z: s.z, clear };
 }
