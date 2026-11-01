@@ -21,6 +21,7 @@ import {
   PP_R,
   PP_TOP,
   PP_L,
+  PP_W,
   PP_RALLY_MAX,
   PP_REACH_DEAD,
   PP_REACH_FALL,
@@ -505,13 +506,19 @@ export class PpMatch {
       if ((this.bounces[p] ?? 0) < 1) return;
     }
     if (this.net && (this.replay || p !== this.localPlayer)) return;
-    // bola a ponto de quicar na mesa: o quique acontece no mesmo tick e a batida chegaria tarde para quem confere
-    if (
-      this.ball.vy < 0 &&
-      this.ball.y < PP_TOP + PP_R + 0.22 &&
-      Math.abs(this.ball.z) <= PP_L / 2 + 0.6
-    )
-      return;
+    // na rede: bola que vai quicar na mesa ainda neste tick não é batida (quem confere refaria o quique antes da batida
+    // chegar). Fora da rede (contra o bot) não há quem confira: bola baixa também se rebate.
+    if (this.net) {
+      const bb = this.ball;
+      const gap = bb.y - PP_R - PP_TOP;
+      if (
+        bb.vy < 0 &&
+        gap < -bb.vy * PP_TICK * 1.4 + 0.01 &&
+        Math.abs(bb.x) <= PP_W / 2 + 0.05 &&
+        Math.abs(bb.z) <= PP_L / 2 + 0.05
+      )
+        return;
+    }
     const s = PpMatch.sign(p);
     const pad = this.pad(p);
     const [x0, y0, r0] = this.before[p === 0 ? 0 : 1] as [number, number, number];

@@ -71,10 +71,10 @@ export const PP_REACH_SERVE = 0.1;
  */
 export const PP_TILT_BASE = 0.26;
 export const PP_TILT_VY = 0.05;
-export const PP_TILT_VX = 0.03;
+export const PP_TILT_VX = 0.012;
 /** Quanto a face se fecha com a força para a frente (quem bate forte bate mais reto): mantém a bola na mesa. */
 export const PP_TILT_VZ = 0.04;
-export const PP_TILT_OFF = 0.16;
+export const PP_TILT_OFF = 0.05;
 /** O quanto da velocidade da mão passa para a bola (a raquete é leve e a bola escapa): menos sensível, mais perdoa. */
 export const PP_PAD_COUPLE = 0.7;
 /** Velocidade máxima da bola depois da batida (impossível de devolver acima disto). */

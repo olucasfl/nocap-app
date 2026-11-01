@@ -134,9 +134,10 @@ export function ppPaddleHit(b: PpBall, side: number, pad: PpPaddleMotion, guide 
   rz += (away - rn) * nz;
 
   // atrito: velocidade do ponto de contato (v - R w x n), parte tangencial
-  const wxn = b.wy * nz - b.wz * ny;
-  const wyn = b.wz * nx - b.wx * nz;
-  const wzn = b.wx * ny - b.wy * nx;
+  // o efeito que a bola trazia não entra na conta: o que sai da raquete só depende do golpe (nada de desvio "aleatório")
+  const wxn = 0;
+  const wyn = 0;
+  const wzn = 0;
   let ux = rx - PP_R * wxn;
   let uy = ry - PP_R * wyn;
   let uz = rz - PP_R * wzn;
@@ -145,9 +146,9 @@ export function ppPaddleHit(b: PpBall, side: number, pad: PpPaddleMotion, guide 
   uy -= un * ny;
   uz -= un * nz;
   const us = Math.hypot(ux, uy, uz);
-  let wx = b.wx;
-  let wy = b.wy;
-  let wz = b.wz;
+  let wx = 0;
+  let wy = 0;
+  let wz = 0;
   if (us > 1e-9) {
     const jt = Math.min((2 / 7) * us, t.padMu * jn);
     const dx = -ux / us;
@@ -213,10 +214,10 @@ export function ppPaddleHit(b: PpBall, side: number, pad: PpPaddleMotion, guide 
     stroke = 'curta';
     drop = true;
     spinFwd = -34;
-  } else if (lat > 4.2 && fwdPow > 2.6) {
+  } else if (lat > 5.5 && fwdPow > 3) {
     // mão varrendo para o lado: efeito de lado, a bola faz curva
     stroke = 'curva';
-    spinSide = Math.sign(pad.vx) * Math.min(52, 10 * lat) * (side === 0 ? 1 : -1);
+    spinSide = Math.sign(pad.vx) * Math.min(30, 5 * lat) * (side === 0 ? 1 : -1);
     spinFwd = 12;
   } else if (fwdPow < 3.4 && !high) {
     // empurrada devagar: corte (backspin), a bola vai baixa e morre na mesa
@@ -265,6 +266,10 @@ export function ppPaddleHit(b: PpBall, side: number, pad: PpPaddleMotion, guide 
     wz *= k;
   }
   // o efeito do golpe se soma ao do atrito: topspin gira a bola "para a frente" (ela cai mais rápido), corte ao contrário
+  // o efeito vem só do golpe (corte, topspin, curva): o atrito da borracha não gira a bola para o lado por conta própria
+  wx = 0;
+  wy = 0;
+  wz = 0;
   const hh = Math.hypot(vx, vz);
   if (hh > 0.2 && (spinFwd || spinSide)) {
     const ux = vx / hh;
