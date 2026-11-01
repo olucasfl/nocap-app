@@ -197,9 +197,6 @@ export function PingPlay({
     // controle: x pela mão; z (alcance, de volta até a rede) pelo movimento "para a frente" da mão
     let zt = 0;
     let pointerDown = false;
-    let mouseLast = false;
-    let lastMoveAt = 0;
-    let prev: { x: number; z: number } | null = null;
     const clampZ = (v: number) => Math.max(-PP_REACH_BACK, Math.min(PP_REACH_NET, v));
     const keys = { l: false, r: false, u: false, d: false };
     let ready = 3;
@@ -220,48 +217,32 @@ export function PingPlay({
     };
     let finished = false;
 
-    // ---- entrada: mouse = posição sobre a mesa (a raquete vai até onde o mouse aponta); dedo = relativo (arrastar para a
-    // frente avança a raquete, parar recolhe). A força da batida é o impulso do avanço; a direção, para onde a mão vai ----
-    const tablePoint = (e: PointerEvent) => {
+    // ---- entrada: a raquete fica sempre embaixo do dedo (ou do mouse): o ponto tocado, projetado na altura da raquete,
+    // é para onde ela vai (x para os lados, z para a frente/trás). A força da batida é o impulso do avanço; a direção,
+    // para onde a mão vai ----
+    const aim = (e: PointerEvent) => {
       const r = zn.getBoundingClientRect();
-      return scene.pointerToTable((e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height);
+      const p = scene.pointerToTable(
+        (e.clientX - r.left) / r.width,
+        (e.clientY - r.top) / r.height,
+        match.pad(myIdx).y,
+      );
+      me.x = Math.max(-PP_PAD_X, Math.min(PP_PAD_X, scene.simX(p.x)));
+      zt = clampZ(PP_PAD_Z - p.z);
+      pointerDown = true;
     };
     const onDown = (e: PointerEvent) => {
       if (menuRef.current) return;
       zn.setPointerCapture?.(e.pointerId);
-      const p = tablePoint(e);
-      if (e.pointerType === 'mouse') {
-        mouseLast = true;
-        me.x = Math.max(-PP_PAD_X, Math.min(PP_PAD_X, scene.simX(p.x)));
-        zt = clampZ(PP_PAD_Z - p.z);
-      } else {
-        pointerDown = true;
-        prev = p;
-        lastMoveAt = performance.now();
-      }
+      aim(e);
     };
     const onMove = (e: PointerEvent) => {
       if (menuRef.current) return;
-      const p = tablePoint(e);
-      if (e.pointerType === 'mouse') {
-        mouseLast = true;
-        me.x = Math.max(-PP_PAD_X, Math.min(PP_PAD_X, scene.simX(p.x)));
-        zt = clampZ(PP_PAD_Z - p.z);
-        return;
-      }
-      if (!pointerDown || !prev) return;
-      const dx = p.x - prev.x;
-      const dz = p.z - prev.z;
-      prev = p;
-      me.x = Math.max(-PP_PAD_X, Math.min(PP_PAD_X, me.x + scene.simX(dx)));
-      zt = clampZ(zt - dz * 1.15);
-      if (Math.hypot(dx, dz) > 0.004) lastMoveAt = performance.now();
+      if (e.pointerType !== 'mouse' && !pointerDown) return;
+      aim(e);
     };
     const onUp = (e: PointerEvent) => {
-      if (e.pointerType !== 'mouse') {
-        pointerDown = false;
-        prev = null;
-      }
+      if (e.pointerType !== 'mouse') pointerDown = false;
     };
     const onCtx = (e: Event) => e.preventDefault();
     // Segurar na tela abria a lupa/seleção do iOS: bloqueia o toque longo e a seleção.
@@ -298,6 +279,17 @@ export function PingPlay({
       scene.resize(Math.max(1, Math.round(r.width)), Math.max(1, Math.round(r.height)));
     });
     ro.observe(zn);
+    // girar o aparelho: o navegador demora a informar o tamanho novo, então confere de novo logo depois
+    const remeasure = () => {
+      for (const ms of [60, 300, 800]) {
+        setTimeout(() => {
+          const rr = zn.getBoundingClientRect();
+          scene.resize(Math.max(1, Math.round(rr.width)), Math.max(1, Math.round(rr.height)));
+        }, ms);
+      }
+    };
+    window.addEventListener('orientationchange', remeasure);
+    window.addEventListener('resize', remeasure);
     const r0 = zn.getBoundingClientRect();
     scene.resize(Math.max(1, Math.round(r0.width)), Math.max(1, Math.round(r0.height)));
 
@@ -469,16 +461,7 @@ export function PingPlay({
         const kx = (keys.r ? 1 : 0) - (keys.l ? 1 : 0);
         const ky = (keys.u ? 1 : 0) - (keys.d ? 1 : 0);
         if (kx) me.x = Math.max(-PP_PAD_X, Math.min(PP_PAD_X, me.x + scene.simX(kx) * 3.2 * dt));
-        if (ky) {
-          zt = clampZ(zt + ky * 9 * dt);
-          lastMoveAt = performance.now();
-        } else if (!pointerDown && !mouseLast) {
-          // sem mão no controle a raquete volta para o plano de espera
-          zt = zt > 0 ? Math.max(0, zt - 3 * dt) : zt;
-        }
-        // dedo parado no meio do caminho: a raquete vai recolhendo
-        if (pointerDown && performance.now() - lastMoveAt > 160)
-          zt = zt > 0 ? Math.max(0, zt - 2.4 * dt) : zt;
+        if (ky) zt = clampZ(zt + ky * 9 * dt);
         me.z = zt;
         // só nos testes: uma entrada de bot (ou de um "jogador" programado) no lugar do mouse
         const forced = (window as unknown as { __pingForce?: PpInput }).__pingForce;
@@ -572,6 +555,8 @@ export function PingPlay({
       for (const off of unsubs) off();
       window.removeEventListener('keydown', kd);
       window.removeEventListener('keyup', ku);
+      window.removeEventListener('orientationchange', remeasure);
+      window.removeEventListener('resize', remeasure);
       zn.removeEventListener('pointerdown', onDown);
       zn.removeEventListener('pointermove', onMove);
       zn.removeEventListener('pointerup', onUp);

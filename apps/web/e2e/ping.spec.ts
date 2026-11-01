@@ -248,6 +248,25 @@ for (const size of [
         });
       await page.waitForTimeout(300);
       const x1 = await pad();
+      // a raquete fica embaixo do dedo: o centro dela na tela cai perto de onde o dedo está
+      const under = await page.evaluate(() => {
+        const w = window as unknown as {
+          __ping: {
+            match: { pad(p: number): { x: number; y: number; reach: number } };
+            scene: {
+              project(x: number, y: number, z: number): { nx: number; ny: number };
+              simX(x: number): number;
+            };
+          };
+        };
+        const g = w.__ping;
+        const pd = g.match.pad(0);
+        const q = g.scene.project(g.scene.simX(pd.x), pd.y, 3.35 - pd.reach);
+        const r = (document.querySelector('.png-zone') as HTMLElement).getBoundingClientRect();
+        return { x: r.left + q.nx * r.width, y: r.top + q.ny * r.height };
+      });
+      expect(Math.abs(under.x - size.w * 0.8)).toBeLessThan(size.w * 0.12);
+      expect(Math.abs(under.y - y)).toBeLessThan(size.h * 0.2);
       await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
       // (a bola do saque acompanha a raquete)
       expect(x1).toBeGreaterThan(x0 + 0.3);

@@ -651,8 +651,7 @@ export class PingScene {
   private fitCamera() {
     this.camDirty = false;
     const cam = this.camera;
-    const portrait = cam.aspect < 1;
-    cam.fov = portrait ? 54 : 46;
+    cam.fov = 54;
     cam.updateProjectionMatrix();
     const pts: [number, number, number][] = [];
     const hx = PP_W / 2 + 0.35;
@@ -660,9 +659,9 @@ export class PingScene {
       pts.push([sx * hx, PP_TOP, PP_L / 2 + 0.35], [sx * hx, PP_TOP, -PP_L / 2 - 0.1]);
       pts.push([sx * 0.5, 1.9, PP_PAD_Z], [sx * 0.5, 0.9, PP_PAD_Z]);
     }
-    const ratio = portrait ? 0.56 : 0.5;
+    const ratio = 0.56; // a mesma inclinação em pé e deitado: a visão é parecida, só cabe mais para os lados
     const v = new THREE.Vector3();
-    for (let z = portrait ? 6 : 5; z < 40; z += 0.12) {
+    for (let z = 6; z < 40; z += 0.1) {
       cam.position.set(0, z * ratio, z);
       cam.lookAt(0, 0.9, -0.6);
       cam.updateMatrixWorld();
@@ -685,7 +684,6 @@ export class PingScene {
   }
 
   private placeCamera(dt: number) {
-    const portrait = this.camera.aspect < 1;
     const m = this.match;
     const bx = this.vx(m.ball.x);
     const k = 1 - Math.exp(-4 * dt);
@@ -706,7 +704,7 @@ export class PingScene {
     cam.position.x += sx;
     cam.position.y += sy;
     cam.lookAt(tx, 0.9, -0.6);
-    const fov = (portrait ? 54 : 46) + this.fovKick * 5;
+    const fov = 54 + this.fovKick * 5;
     if (Math.abs(cam.fov - fov) > 0.01) {
       cam.fov = fov;
       cam.updateProjectionMatrix();
@@ -738,7 +736,8 @@ export class PingScene {
 
   private tablePlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -1.4);
   /** Onde o ponteiro cai num plano horizontal na altura da raquete (sobre a mesa): x e profundidade z da vista. */
-  pointerToTable(nx: number, ny: number): { x: number; z: number } {
+  pointerToTable(nx: number, ny: number, planeY = 1.4): { x: number; z: number } {
+    this.tablePlane.constant = -planeY;
     this.camera.updateMatrixWorld();
     this.ray.setFromCamera(new THREE.Vector2(nx * 2 - 1, -(ny * 2 - 1)), this.camera);
     if (!this.ray.ray.intersectPlane(this.tablePlane, this.hitPoint)) return { x: 0, z: PP_PAD_Z };

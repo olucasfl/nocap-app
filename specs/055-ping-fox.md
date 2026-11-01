@@ -155,3 +155,8 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 - Mesa 20% maior no mundo (`PP_L` 6,3, `PP_W` 3,5, rede 0,32) e a raquete desenhada menor (raio 0,34): a raquete deixou de dominar a tela. O disco de contato continua generoso.
 - **Câmera que cabe** (`fitCamera`): afasta a câmera, na mesma inclinação, só até a mesa inteira e a raquete caberem no aparelho. Resolve o celular deitado cortado (bug) em qualquer formato.
 - **9 golpes** (`PpStroke`), definidos pelo jeito de jogar a raquete (avanço, lado, onde bate, altura da bola) e com efeito de verdade na bola: normal, **corte** (avanço lento, backspin), **topspin** (avanço médio), **drive** (avanço muito rápido, reto), **curva** (varrer para o lado, efeito de lado), **curta** (perto da rede, cai logo depois), **bloqueio** (mão mansa contra bola forte), **lob** (bloqueio recuado, arco alto) e **smash** (bola alta + avanço forte). O nome aparece junto da velocidade, viaja no evento `hit` (`stroke`) e a ajuda de leitura respeita a curtinha (`drop`).
+
+### Rodada 8 (01/11/2026)
+
+- **A raquete fica embaixo do dedo**: o toque (e o mouse) é projetado na altura atual da raquete e é para onde ela vai (x e alcance z); sem controle relativo, sem recolher sozinha. O teste e2e confere que o centro da raquete na tela cai perto do dedo.
+- **Mesma visão em pé e deitado**: `fitCamera` usa a mesma inclinação e o mesmo FOV nos dois; só afasta o necessário para caber (deitado cabe mais para os lados). Ao girar o aparelho o tamanho é medido de novo (`orientationchange`/`resize`).
