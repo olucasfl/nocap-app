@@ -333,3 +333,8 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 - A bola desenhada em sala virou `PpBallView` (`ball-view.ts`, sem THREE) e ganhou uma simulação de rede (`ball-view.sim.test.ts`: dois bots, sala, atraso e variação por trecho, aparelho B desenhando a 60 quadros/s) que conta "saltos" (passo maior que o de qualquer bola) e "voltas" (a bola desenhada anda contra o sentido da bola).
 - Dois defeitos achados e corrigidos: (1) a espera na raquete dele terminava com um pulo de até 1,4 m quando a batida não vinha (ele errou): agora sai deslizando; (2) a sua própria batida com a bola desenhada ainda "chegando atrasada" fazia a bola ir até a sua raquete e voltar (o "rollback" que se via): agora a sua batida zera o atraso (`localHit`). Também o erro visual passou a sumir mais devagar (3/s, antes 9/s) e a espera subiu para 0,3 s.
 - Resultado nos perfis de rede (boa, média, ruim, 150 s cada): saltos 5/3/65 -> 0/0/0 e voltas 16/18/71 -> 0/0/≤3; o pior passo extra caiu de 1,3 m para < 0,15 m. Em troca a bola desenhada fica em média ~0,3 m longe da bola da partida no instante da sua batida (era 0,26).
+
+### Rodada 40: voltar do segundo plano no celular
+
+- Bug: sair do app no meio de uma partida e voltar deixava a raquete parada. O iOS cancela o toque ao sair da tela (`pointercancel`) e o jogo só ouvia `pointerup`: o dedo antigo ficava como "o dedo da raquete" para sempre e todo toque novo (outro `pointerId`) era ignorado como se fosse o dedo do smash.
+- Correção: `pointercancel`, `lostpointercapture`, `visibilitychange`, `pageshow` e `blur` zeram o estado do toque; e um dedo novo assume a raquete se o antigo já perdeu a captura. E2E com toque cancelado de verdade reproduz o defeito e passa com a correção.

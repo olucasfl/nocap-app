@@ -561,3 +561,56 @@ test('celular: toque (mesmo com tremidinha) lança a bola; arrastar leva a raque
     .toBe(true);
   await ctx.close();
 });
+
+test('celular: sair do app no meio do toque e voltar não trava a raquete', async ({ browser }) => {
+  const ctx = await browser.newContext({
+    viewport: { width: 844, height: 390 },
+    hasTouch: true,
+    isMobile: true,
+  });
+  const page = await ctx.newPage();
+  await page.goto('/fox-cap');
+  await page
+    .getByRole('button', { name: 'Agora não' })
+    .click({ timeout: 6000 })
+    .catch(() => undefined);
+  await page.getByTestId('foxcap-pingpong').click();
+  await page.getByTestId('png-level-facil').click();
+  await page.getByTestId('png-start').click();
+  await expect(page.getByTestId('png-play')).toBeVisible();
+  await page.waitForTimeout(2600);
+  await page
+    .getByTestId('game-tips-ok')
+    .click({ timeout: 2000 })
+    .catch(() => undefined);
+  await expect(page.locator('.png-count')).toHaveCount(0, { timeout: 20000 });
+  const padX = () =>
+    page.evaluate(
+      () =>
+        (
+          window as unknown as { __ping: { match: { pad(p: number): { x: number } } } }
+        ).__ping.match.pad(0).x,
+    );
+  const cdp = await ctx.newCDPSession(page);
+  const touch = (type: string, x: number, y: number, id = 1) =>
+    cdp.send('Input.dispatchTouchEvent', {
+      type,
+      touchPoints: type === 'touchEnd' || type === 'touchCancel' ? [] : [{ x, y, id }],
+    });
+  // o dedo mexe a raquete para a direita
+  await touch('touchStart', 300, 250);
+  for (let i = 1; i <= 6; i++) await touch('touchMove', 300 + i * 40, 250);
+  await page.waitForTimeout(400);
+  const right = await padX();
+  // o app vai para o segundo plano: o toque é cancelado e o dedo nunca "solta"
+  await touch('touchCancel', 0, 0);
+  await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+  await page.waitForTimeout(300);
+  // volta e mexe para a esquerda: a raquete tem que seguir o dedo novo
+  await touch('touchStart', 600, 250, 2);
+  for (let i = 1; i <= 6; i++) await touch('touchMove', 600 - i * 70, 250, 2);
+  await page.waitForTimeout(500);
+  const left = await padX();
+  expect(left).toBeLessThan(right - 0.5);
+  await ctx.close();
+});

@@ -329,6 +329,21 @@ export function PingPlay({
       zt = clampZ(PP_PAD_Z - p.z);
       pointerDown = true;
     };
+    const primaryAlive = (): boolean => {
+      if (primaryId === null) return false;
+      try {
+        return zn.hasPointerCapture(primaryId);
+      } catch {
+        return false;
+      }
+    };
+    // volta ao estado de "ninguém tocando": o toque que a raquete seguia acabou (ou nunca avisou que acabou)
+    const resetPointers = () => {
+      pointerDown = false;
+      primaryId = null;
+      tap = null;
+      serveFrames = 0;
+    };
     const onDown = (e: PointerEvent) => {
       if (menuRef.current) return;
       // com o cursor preso o navegador pode recusar a captura: isso não pode impedir o saque
@@ -339,6 +354,9 @@ export function PingPlay({
       }
       tapSmash();
       // outro dedo (o que aperta o smash) não leva a raquete: só o primeiro dedo mexe nela
+      // o dedo que mexia a raquete pode ter sumido sem avisar (o app foi para o segundo plano): sem a captura dele, o
+      // dedo novo assume a raquete
+      if (primaryId !== null && !primaryAlive()) resetPointers();
       if (e.pointerType !== 'mouse' && primaryId !== null && e.pointerId !== primaryId) return;
       primaryId = e.pointerId;
       // com o cursor preso o ponteiro não diz onde a raquete está: o clique não mexe nela
@@ -417,6 +435,20 @@ export function PingPlay({
     zn.addEventListener('pointerdown', onDown);
     zn.addEventListener('pointermove', onMove);
     zn.addEventListener('pointerup', onUp);
+    // iOS cancela o toque (e solta a captura) quando o app sai da tela ou outro app interrompe: sem isso a raquete
+    // ficava esperando um dedo que não existe mais
+    const onCancel = (e: PointerEvent) => {
+      if (e.pointerType !== 'mouse' && e.pointerId === primaryId) resetPointers();
+    };
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') resetPointers();
+    };
+    const onPageShow = () => resetPointers();
+    zn.addEventListener('pointercancel', onCancel);
+    zn.addEventListener('lostpointercapture', onCancel);
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('pageshow', onPageShow);
+    window.addEventListener('blur', resetPointers);
     zn.addEventListener('contextmenu', onCtx);
 
     const onKey = (e: KeyboardEvent, down: boolean) => {
@@ -846,6 +878,11 @@ export function PingPlay({
       zn.removeEventListener('pointerdown', onDown);
       zn.removeEventListener('pointermove', onMove);
       zn.removeEventListener('pointerup', onUp);
+      zn.removeEventListener('pointercancel', onCancel);
+      zn.removeEventListener('lostpointercapture', onCancel);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('pageshow', onPageShow);
+      window.removeEventListener('blur', resetPointers);
       zn.removeEventListener('contextmenu', onCtx);
       zn.removeEventListener('touchstart', onTouch);
       zn.removeEventListener('selectstart', onCtx);
