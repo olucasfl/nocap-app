@@ -822,3 +822,47 @@
     display: none;
   }
 }
+
+/* medidor do saque: sobe e desce com a bola; verde é o melhor momento */
+.png-serve-gauge {
+  position: absolute;
+  right: max(14px, env(safe-area-inset-right));
+  top: 50%;
+  translate: 0 -50%;
+  width: 12px;
+  height: clamp(110px, 30vh, 220px);
+  border-radius: 8px;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  pointer-events: none;
+  z-index: 5;
+}
+.png-serve-gauge i {
+  display: block;
+}
+.png-serve-gauge .z-high {
+  flex: 39;
+  background: #d84a4a;
+  border-radius: 8px 8px 0 0;
+}
+.png-serve-gauge .z-good {
+  flex: 28;
+  background: #e8b53a;
+}
+.png-serve-gauge .z-best {
+  flex: 33;
+  background: #3fd07a;
+  border-radius: 0 0 8px 8px;
+}
+.png-serve-gauge b {
+  position: absolute;
+  left: -5px;
+  top: -3px;
+  width: 22px;
+  height: 6px;
+  border-radius: 3px;
+  background: #fff;
+  box-shadow: 0 0 0 2px rgba(16, 18, 24, 0.9);
+  will-change: transform;
+}

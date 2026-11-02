@@ -154,6 +154,14 @@ export interface PingOnline {
 
 /** Quantos ticks (200 ms) um ponto espera antes de aparecer: uma batida atrasada ainda pode desfazê-lo. */
 const POINT_GRACE = 12;
+/** O nome do saque pela altura em que a bola foi batida (a qualidade do saque vem da altura). */
+const SERVE_TAG: Record<string, string> = {
+  sweet: 'SAQUE PERFEITO',
+  normal: 'SAQUE BOM',
+  edge: 'SAQUE ALTO',
+};
+const GAUGE_TOP = 3;
+const GAUGE_BOTTOM = 1.2;
 
 /**
  * Uma partida do Ping Fox!: contra um bot (treino, `level`) ou em sala (`online`). Roda o motor num passo fixo de 60 Hz
@@ -190,6 +198,7 @@ export function PingPlay({
   const [menu, setMenu] = useState(false);
   const menuRef = useRef(false);
   const sceneRef = useRef<PingScene | null>(null);
+  const gaugeRef = useRef<HTMLElement | null>(null);
   const [guide, setGuide] = useState(readGuide);
   const lockTriedRef = useRef(false);
   const [locked, setLocked] = useState(false);
@@ -247,6 +256,8 @@ export function PingPlay({
     // controle: x pela mão; z (alcance, de volta até a rede) pelo movimento "para a frente" da mão
     let zt = 0;
     let pointerDown = false;
+    // o toque que pode virar saque: onde começou e se já arrastou
+    let tap: { x: number; y: number; t: number; moved: boolean } | null = null;
     const clampZ = (v: number) => Math.max(-PP_REACH_BACK, Math.min(PP_REACH_NET, v));
     const keys = { l: false, r: false, u: false, d: false };
     let ready = 3;
@@ -345,11 +356,17 @@ export function PingPlay({
         }
         return;
       }
+      // dedo: arrastar leva a raquete para outro lugar; só um toque (soltar sem arrastar) lança a bola
+      if (e.pointerType !== 'mouse') {
+        tap = { x: e.clientX, y: e.clientY, t: performance.now(), moved: false };
+        return;
+      }
       triggerServe();
     };
     const onMove = (e: PointerEvent) => {
       if (menuRef.current) return;
       if (e.pointerType !== 'mouse' && (!pointerDown || e.pointerId !== primaryId)) return;
+      if (tap && Math.hypot(e.clientX - tap.x, e.clientY - tap.y) > 12) tap.moved = true;
       if (e.pointerType === 'mouse' && document.pointerLockElement === zn) {
         // cursor preso: a raquete anda o que o mouse andou (cada pixel vira uma fração de metro)
         me.x = Math.max(-PP_PAD_X, Math.min(PP_PAD_X, me.x + scene.simX(e.movementX * 0.0125)));
@@ -370,6 +387,10 @@ export function PingPlay({
     document.addEventListener('pointerlockchange', onLockChange);
     const onUp = (e: PointerEvent) => {
       if (e.pointerType !== 'mouse' && e.pointerId === primaryId) {
+        const t = tap;
+        tap = null;
+        if (t && !t.moved && performance.now() - t.t < 600 && e.type === 'pointerup')
+          triggerServe();
         pointerDown = false;
         primaryId = null;
       }
@@ -450,7 +471,9 @@ export function PingPlay({
                   ? TIER_TAG[e.tier]
                   : e.smash
                     ? 'SMASH'
-                    : (STROKE_TAG[e.stroke] ?? (e.quality === 'sweet' ? 'PERFEITA' : undefined)),
+                    : e.serve
+                      ? SERVE_TAG[e.quality]
+                      : (STROKE_TAG[e.stroke] ?? (e.quality === 'sweet' ? 'PERFEITA' : undefined)),
             },
           }));
         } else if (e.type === 'bounce') pingSfx.bounce(e.impact);
@@ -678,6 +701,12 @@ export function PingPlay({
         }
       }
       scene.render(dt, phase === 'play' && !paused ? alpha : 1);
+      // medidor do saque: o marcador desce com a bola (só transform)
+      if (gaugeRef.current && match.phase === 'toss') {
+        const g = gaugeRef.current;
+        const f = Math.max(0, Math.min(1, (GAUGE_TOP - match.ball.y) / (GAUGE_TOP - GAUGE_BOTTOM)));
+        g.style.transform = `translateY(${(f * (g.parentElement?.clientHeight ?? 0)).toFixed(1)}px)`;
+      }
       {
         const win = smashWindow();
         const slowNow = match.popup && phase === 'play';
@@ -868,12 +897,29 @@ export function PingPlay({
         )}
       {myServe && (
         <div className="png-serve-hint" data-testid="png-serve-hint">
-          <b>{touchDevice ? 'Toque na tela' : 'Clique'} para lançar a bola</b>
-          <span>
-            {touchDevice
-              ? 'e arraste o dedo para a frente para bater'
-              : 'e leve o mouse para a frente para bater'}
-          </span>
+          {hud.matchPhase === 'toss' ? (
+            <>
+              <b>Bata quando a bola descer até a zona verde</b>
+              <span>Lá em cima o saque sai fraco; na zona verde sai forte</span>
+            </>
+          ) : (
+            <>
+              <b>{touchDevice ? 'Toque na tela' : 'Clique'} para lançar a bola</b>
+              <span>
+                {touchDevice
+                  ? 'depois bata nela com a raquete quando ela descer'
+                  : 'depois bata nela com a raquete quando ela descer'}
+              </span>
+            </>
+          )}
+        </div>
+      )}
+      {myServe && hud.matchPhase === 'toss' && (
+        <div className="png-serve-gauge" data-testid="png-serve-gauge" aria-hidden="true">
+          <i className="z-high" />
+          <i className="z-good" />
+          <i className="z-best" />
+          <b ref={gaugeRef as React.RefObject<HTMLElement>} />
         </div>
       )}
       {!spectating &&

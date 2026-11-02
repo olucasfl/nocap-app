@@ -704,7 +704,7 @@ describe('a batida não trava o jogo', () => {
 });
 
 describe('o bot alcança a bola que morre curta', () => {
-  it('o bot difícil devolve as bolas curtas do fácil: quase todos os pontos são dele', () => {
+  it('o bot difícil devolve as bolas curtas do fácil: a maioria esmagadora dos pontos é dele', () => {
     let pa = 0;
     let pb = 0;
     for (let g = 0; g < 2; g++) {
@@ -719,6 +719,76 @@ describe('o bot alcança a bola que morre curta', () => {
       pa += m.score[0];
       pb += m.score[1];
     }
-    expect(pa).toBeGreaterThan(pb * 3);
+    // o bot também pega na borda de vez em quando (dá a barra do smash ao outro), então não é 3x
+    expect(pa).toBeGreaterThan(pb * 2);
+  });
+});
+
+describe('saque pela altura da bola', () => {
+  const serveAt = (y: number, x = 0) => {
+    const b = ppNewBall();
+    b.x = x;
+    b.y = y;
+    b.z = 3;
+    b.vy = -4;
+    const info = ppPaddleHit(b, 0, {
+      x,
+      y,
+      vx: 0,
+      vy: 0,
+      vz: 3,
+      reach: 0.9,
+      serve: true,
+    } as Parameters<typeof ppPaddleHit>[2]);
+    return { b, info };
+  };
+  it('bater no alto é fraco e no ponto certo é mais forte; os três caem na mesa', () => {
+    const alto = serveAt(2.6);
+    const bom = serveAt(2.0);
+    const certo = serveAt(1.6);
+    expect(alto.info.quality).toBe('edge');
+    expect(bom.info.quality).toBe('normal');
+    expect(certo.info.quality).toBe('sweet');
+    expect(certo.info.speed).toBeGreaterThan(bom.info.speed);
+    expect(bom.info.speed).toBeGreaterThan(alto.info.speed);
+    for (const s of [alto, bom, certo]) expect(ppLanding(s.b, 0, false).ok).toBe(true);
+  });
+});
+
+describe('smash cronometrado', () => {
+  const rates = (tier: number) => {
+    const rng = createRng('smash-rate-' + tier);
+    let ok = 0;
+    const n = 400;
+    for (let i = 0; i < n; i++) {
+      const b = ppNewBall();
+      const side = i % 2;
+      const fwd = side === 0 ? -1 : 1;
+      b.x = (rng() - 0.5) * 3.6;
+      b.y = 1.3 + rng() * 1.2;
+      b.z = -fwd * (2.2 + rng() * 1);
+      b.vx = (rng() - 0.5) * 4;
+      b.vy = -1 - rng() * 4;
+      b.vz = -fwd * -(4 + rng() * 6);
+      const pad = {
+        x: b.x + (rng() - 0.5) * 0.4,
+        y: b.y + (rng() - 0.5) * 0.4,
+        vx: (rng() - 0.5) * 6,
+        vy: (rng() - 0.5) * 4,
+        vz: 1 + rng() * 6,
+        reach: 0.3,
+        smash: tier,
+      } as Parameters<typeof ppPaddleHit>[2];
+      ppPaddleHit(b, side, pad);
+      if (ppLanding(b, side, false).ok) ok++;
+    }
+    return ok / n;
+  };
+  it('o verde do meio (nível 3) sempre cai dentro da mesa e vai forte', () => {
+    expect(rates(3)).toBe(1);
+  });
+  it('os outros níveis acertam quase sempre (o erro é raro)', () => {
+    expect(rates(2)).toBeGreaterThan(0.9);
+    expect(rates(1)).toBeGreaterThan(0.85);
   });
 });

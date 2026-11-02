@@ -1,6 +1,6 @@
 import type { PpBall } from './ball';
 import { ppTune } from './tune';
-import { ppFixNet, ppGuideHit } from './assist';
+import { ppFixNet, ppGuideHit, ppSmashFix } from './assist';
 import {
   PP_AIM,
   PP_ASSIST_LATERAL_POWER,
@@ -9,6 +9,7 @@ import {
   PP_PAD_R,
   PP_PAD_Z,
   PP_POPUP_VIN,
+  ppServeTier,
   PP_SMASH_V,
   PP_R,
   PP_SMASH_SPEED,
@@ -100,6 +101,8 @@ export function ppPaddleTilt(vx: number, vy: number, vz = 0): { pitch: number; y
 export function ppPaddleHit(b: PpBall, side: number, pad: PpPaddleMotion, guide = true): PpHitInfo {
   const forward = side === 0 ? -1 : 1;
   const isServe = pad.serve === true;
+  // a altura da bola na batida decide a qualidade do saque (bater lá em cima é fraco; no ponto certo é forte)
+  const serveTier = isServe ? ppServeTier(b.y) : 1;
   const inWx = b.wx;
   const inWy = b.wy;
   const inWz = b.wz;
@@ -173,7 +176,9 @@ export function ppPaddleHit(b: PpBall, side: number, pad: PpPaddleMotion, guide 
   let vy = ry + pvy;
   let vz = rz + pvz;
   const off = Math.hypot(ox, oy);
-  const quality: PpHitQuality = off > 0.85 ? 'edge' : off < 0.15 ? 'sweet' : 'normal';
+  let quality: PpHitQuality = off > 0.85 ? 'edge' : off < 0.15 ? 'sweet' : 'normal';
+  // no saque a qualidade é a do momento da batida (altura da bola), não a do ponto da raquete
+  if (isServe) quality = serveTier === 2 ? 'sweet' : serveTier === 1 ? 'normal' : 'edge';
 
   // O golpe tem que fazer sentido: a bola sai com a força da que veio mais a da mão. Bola mansa e mão mansa não
   // viram 80 km/h do nada; bola forte devolvida com a mão parada é um bloqueio (sobe em lob); a mão forte e para baixo
@@ -200,7 +205,7 @@ export function ppPaddleHit(b: PpBall, side: number, pad: PpPaddleMotion, guide 
     // smash cronometrado (barra na hora certa): desce forte e rápido; o nível dá a velocidade
     stroke = 'smash';
     spinFwd = 38;
-  } else if (quality === 'edge' && vin >= PP_POPUP_VIN) {
+  } else if (!isServe && quality === 'edge' && vin >= PP_POPUP_VIN) {
     // bola forte pega na borda da raquete: sobe mal (a câmera lenta e o smash de quem recebe vêm daí)
     stroke = 'subida';
     spinFwd = 10;
@@ -315,11 +320,29 @@ export function ppPaddleHit(b: PpBall, side: number, pad: PpPaddleMotion, guide 
     b.wy *= k;
     b.wz *= k;
   }
+  if (isServe && tier === 0) {
+    // saque: bola alta sai mansa; no ponto certo sai com mais força (e a ajuda ainda a põe na mesa)
+    const hs = Math.hypot(b.vx, b.vz);
+    const want = serveTier === 2 ? 8.2 : serveTier === 1 ? 6 : 4.2;
+    if (hs > 0.5) {
+      const k = serveTier === 0 ? Math.min(1, want / hs) : Math.max(1, want / hs);
+      b.vx *= k;
+      b.vz *= k;
+    } else {
+      b.vz = (side === 0 ? -1 : 1) * want;
+    }
+    if (serveTier === 2) {
+      b.wx *= 1.5;
+      b.wz *= 1.5;
+    }
+  }
   // A ajuda é para o que sai torto sem querer: batida de força (mão rápida) não é corrigida e pode sair da mesa ou ir
   // na rede; batida média só ganha ajuda na altura; a mansa também no ângulo.
   if (tier > 0) {
     // o smash cronometrado sempre cai na mesa (quem acertou a barra merece o ponto), só que muito rápido
     ppGuideHit(b, side, false, false, { vyLo: -16, hMax: 24 });
+    // o verde do meio nunca erra: se a ajuda normal não achou jogada, procura uma mais larga (cai dentro e forte)
+    if (tier >= 3) ppSmashFix(b, side, 10);
   } else if (stroke === 'subida') {
     ppGuideHit(b, side, false, true);
   } else if (guide && (power < PP_ASSIST_MAX_POWER || isServe)) {

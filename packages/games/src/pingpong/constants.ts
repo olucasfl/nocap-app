@@ -122,6 +122,12 @@ export const PP_POINTS = 11;
 export const PP_POINT_PAUSE = 1.5;
 export const PP_RALLY_MAX = 30;
 /** Saque automático se quem saca não faz nada (s). */
+/** Saque pela altura da bola na batida (m): acima de ALTO é cedo demais (fraco); entre BOM e ALTO é bom; abaixo é o ponto certo (forte). */
+export const PP_SERVE_ALTO = 2.3;
+export const PP_SERVE_BOM = 1.8;
+/** Nível do saque pela altura em que a bola foi batida: 0 = alto (fraco), 1 = bom, 2 = perfeito (mais força e efeito). */
+export const ppServeTier = (y: number): 0 | 1 | 2 => (y > PP_SERVE_ALTO ? 0 : y > PP_SERVE_BOM ? 1 : 2);
+
 export const PP_SERVE_AUTO = 9;
 
 /** Sala (fase 3): quantas pessoas cabem (2 jogam, as outras assistem), contagem do começo e tempo para voltar da queda. */
@@ -134,7 +140,7 @@ export const PP_ROOM_OVER_MS = 2500;
 /** Bola mal pegada (pegou na borda da raquete uma bola forte): sobe, o jogo vai em câmera lenta e quem recebe pode dar smash. */
 export const PP_SLOW = 0.4;
 /** Velocidade mínima (m/s) da bola que chega para uma pegada na borda virar "subida". */
-export const PP_POPUP_VIN = 7.5;
+export const PP_POPUP_VIN = 6;
 /** A barra de tempo do smash vai e volta neste tempo (ticks de 1/60 s). */
 export const PP_SMASH_PERIOD = 50;
 /** Velocidade (m/s) do smash por nível de acerto: 1 = vermelho (fraco), 2 = verde (forte), 3 = verde perfeito. */

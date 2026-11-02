@@ -8,6 +8,7 @@ import {
   PP_TOSS_DEFAULT,
   PP_W,
   ppTossSpeed,
+  PP_POPUP_VIN,
 } from './constants';
 import { PpMatch, ppIdleInput, type PpInput, type PpSwing } from './match';
 import { ppPaddleHit } from './paddle';
@@ -31,6 +32,8 @@ export interface PpBotLevel {
   serveWait: number;
   /** Erro (na barra do smash, 0 a 1) de quem aperta para o smash: menor = acerta mais o verde. */
   smashErr: number;
+  /** Chance (0 a 1) de pegar na borda uma bola forte (a bola sobe mal e quem recebe ganha o smash cronometrado). */
+  mishit: number;
 }
 
 /** O bot estende a raquete até aqui para encontrar a bola (alcança também bolas que morrem curtas). */
@@ -50,6 +53,7 @@ export const PP_BOT_LEVELS: Record<PpBotName, PpBotLevel> = {
     power: 10,
     serveWait: 1.2,
     smashErr: 0.32,
+    mishit: 0.2,
   },
   medio: {
     reaction: 0.25,
@@ -60,6 +64,7 @@ export const PP_BOT_LEVELS: Record<PpBotName, PpBotLevel> = {
     power: 14,
     serveWait: 1,
     smashErr: 0.16,
+    mishit: 0.14,
   },
   // difícil: reage cedo, corre mais, quase não erra a posição, devolve forte para o canto livre e acerta o smash
   dificil: {
@@ -71,6 +76,7 @@ export const PP_BOT_LEVELS: Record<PpBotName, PpBotLevel> = {
     power: 19,
     serveWait: 0.6,
     smashErr: 0.03,
+    mishit: 0.06,
   },
 };
 
@@ -184,6 +190,14 @@ export class PpBot {
         this.pred = null;
         this.errX = this.gauss() * lv.err;
         this.errY = this.gauss() * lv.err;
+        // de vez em quando o bot pega na borda da raquete uma bola forte: ela sobe mal e dá a barra do smash a quem recebe
+        const vin = Math.hypot(m.ball.vx, m.ball.vy, m.ball.vz);
+        if (vin >= PP_POPUP_VIN && this.rng() < lv.mishit) {
+          const a = this.rng() * Math.PI * 2;
+          const r = PP_PAD_R * (0.95 + 0.1 * this.rng());
+          this.errX = Math.cos(a) * r;
+          this.errY = Math.sin(a) * r;
+        }
         this.swing = { vx: 0, vy: 0, vz: 0 };
       }
       if (!this.pred && m.t >= lv.reaction) {

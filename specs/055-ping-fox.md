@@ -270,3 +270,10 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 - Lobby do Ping Fox! em sala igual ao do Fut Fox: dois times (Laranja e Roxo) de uma vaga, espectadores, "Entrar", "Entrar no lugar" do bot e "Virar espectador"; o líder põe "+ Bot" no lado vazio e escolhe o nível (fácil, médio, difícil) ou tira o bot. Começar só com os dois lados ocupados e quem joga pronto; uma pessoa sozinha joga contra o bot.
 - Servidor (`PingRoomEngine`): vagas, bot e mensagens `pteam`/`pbot`. O bot é jogado pela própria sala (a `PpNetSim` da sala usa o lado do bot como `localPlayer`): detecta as batidas dele e as transmite em `pev` como as de uma pessoa; a raquete dele sai em `ppads`. Sem ranking.
 - Testes: motor (bot saca e rebate, lobby), e2e online sozinho com bot.
+
+### Rodada 28: saque por altura, smash que aparece mais, smash do meio que nunca erra, saque no celular
+
+- **Saque pela altura da bola** (`ppServeTier`): lançou, a bola sobe e desce; a altura em que a raquete a pega decide o saque. Acima de 2,3 m (alto) sai fraco; entre 1,8 e 2,3 é bom; abaixo de 1,8 é o ponto certo: mais força e mais efeito. A ajuda ainda põe a bola na mesa. O nível vira o nome do saque ("SAQUE ALTO/BOM/PERFEITO") e há um medidor vertical (vermelho/amarelo/verde) com um marcador que desce com a bola, e o aviso muda para "Bata quando a bola descer até a zona verde".
+- **Smash mais frequente:** o bot agora pega na borda uma bola forte de vez em quando (`mishit`: fácil 20%, médio 14%, difícil 6%) e a bola que vale a "subida" passou de 7,5 para 6 m/s. O teste de ordem dos bots passou de 3x para 2x pontos (o bot também erra de propósito).
+- **Smash do verde do meio** (nível 3) nunca erra: `ppSmashFix` procura uma saída larga que caia na mesa e vá forte (teste: 100% em 400 casos). Os outros níveis acertam quase sempre (>90% e >85%), mas podem errar.
+- **Celular:** só um toque (soltar sem arrastar) lança a bola; arrastar leva a raquete para outro lugar sem lançar.

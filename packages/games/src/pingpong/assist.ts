@@ -156,3 +156,36 @@ export function ppFixNet(b: PpBall, side: number): void {
     }
   }
 }
+
+/**
+ * Garantia do smash perfeito (o verde do meio): a bola cai dentro da mesa, e o mais forte possível. Procura, da maior
+ * velocidade para baixo, uma saída que pouse na mesa mantendo a direção da mão; se a direção não dá, fecha o ângulo.
+ */
+export function ppSmashFix(b: PpBall, side: number, minSpeed = 9): void {
+  if (ppLanding(b, side, false).ok) return;
+  const fwd = side === 0 ? -1 : 1;
+  const hs0 = Math.hypot(b.vx, b.vz);
+  const ux0 = hs0 > 0.5 ? b.vx / hs0 : 0;
+  const inward = -Math.sign(b.x || 1);
+  const dirs = [ux0, ux0 * 0.6, ux0 * 0.3, 0, inward * 0.15, inward * 0.3, inward * 0.5];
+  const vys: number[] = [];
+  for (let vy = -18; vy <= 5; vy += 0.5) vys.push(vy);
+  vys.sort((u, v) => Math.abs(u - b.vy) - Math.abs(v - b.vy));
+  for (let h = Math.max(minSpeed, Math.min(24, Math.hypot(b.vx, b.vz) + 4)); h >= 5; h -= 1.5) {
+    for (const lx of dirs) {
+      const lz = Math.sqrt(Math.max(0, 1 - lx * lx)) * fwd;
+      for (const vy of vys) {
+        ppCopyBall(b, guide);
+        guide.vx = lx * h;
+        guide.vz = lz * h;
+        guide.vy = vy;
+        if (ppLanding(guide, side, false).ok) {
+          b.vx = lx * h;
+          b.vz = lz * h;
+          b.vy = vy;
+          return;
+        }
+      }
+    }
+  }
+}
