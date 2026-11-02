@@ -497,6 +497,8 @@ test('celular: toque (mesmo com tremidinha) lança a bola; arrastar leva a raque
     .getByTestId('game-tips-ok')
     .click({ timeout: 2000 })
     .catch(() => undefined);
+  // espera a contagem do começo acabar (a partida só aceita o toque depois dela)
+  await expect(page.locator('.png-count')).toHaveCount(0, { timeout: 20000 });
   const force = () =>
     page.evaluate(() => {
       const m = (
@@ -530,6 +532,14 @@ test('celular: toque (mesmo com tremidinha) lança a bola; arrastar leva a raque
       type,
       touchPoints: type === 'touchEnd' ? [] : [{ x, y, id: 1 }],
     });
+  // guarda se a bola chegou a ser lançada (a fase 'toss' dura pouco e uma leitura solta pode perdê-la)
+  await page.evaluate(() => {
+    (window as unknown as { __saw: boolean }).__saw = false;
+    setInterval(() => {
+      const w = window as unknown as { __saw: boolean; __ping: { match: { phase: string } } };
+      if (w.__ping.match.phase === 'toss') w.__saw = true;
+    }, 10);
+  });
   // arrastar 120 px: leva a raquete e NÃO lança
   await force();
   await touch('touchStart', 300, 250);
@@ -542,6 +552,10 @@ test('celular: toque (mesmo com tremidinha) lança a bola; arrastar leva a raque
   await touch('touchMove', 428, 254);
   await page.waitForTimeout(350);
   await touch('touchEnd', 0, 0);
-  await expect.poll(phase, { timeout: 3000 }).toBe('toss');
+  await expect
+    .poll(() => page.evaluate(() => (window as unknown as { __saw: boolean }).__saw), {
+      timeout: 4000,
+    })
+    .toBe(true);
   await ctx.close();
 });

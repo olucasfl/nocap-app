@@ -315,3 +315,9 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 
 - Bug: apertar o verde só dava o nível do smash, mas a raquete ainda dependia da mão estar em cima da bola; com a mão longe a bola descia na sua mesa e o ponto era perdido. Agora, depois do aperto (`smashQ > 0`) a raquete vai sozinha até a bola (de lado, na altura e para a frente, `movePad`), e uma bola colada na mesa sobe um pouco para o smash poder passar para o outro lado.
 - Teste: 150 smashs no meio do verde com a mão em qualquer lugar: >95% batem na bola e todos os que batem fazem o primeiro quique no lado do outro, sem rede (antes quase todos erravam).
+
+### Rodada 37: gráfico e som no celular
+
+- **Gráfico:** no celular a cena era desenhada a no máximo 1,7x (um iPhone tem 3x) e sem suavização de bordas: granulado. Agora desenha na densidade da tela (até 3x) com um teto de 4,2 milhões de pixels por quadro (`PingScene.MAX_PIXELS`); com densidade 2x ou mais a suavização de bordas fica desligada (a resolução já faz esse papel e pesa menos); se o aparelho engasgar por mais de 1,5 s a resolução desce sozinha (mínimo 1,25x). Computador sem mudança.
+- **Som:** no celular o barramento de som ganhou passa-baixa (6,5 kHz) e passa-alta (140 Hz), compressor mais firme e nível 0,55x, e as ondas quadrada e serra viram triangular (menos áspero, não estoura no alto-falante). Computador sem mudança.
+- **Saque no celular:** o pulso do saque passou a ser contado em quadros (2) e o toque usa a hora do próprio evento, para um quadro lento não perder o toque.

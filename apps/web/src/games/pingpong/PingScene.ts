@@ -192,11 +192,15 @@ export class PingScene {
     const touch = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
     this.renderer = new THREE.WebGLRenderer({
       canvas,
-      antialias: !touch,
+      antialias: !touch || (window.devicePixelRatio || 1) < 2,
       alpha: false,
       powerPreference: 'high-performance',
     });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, touch ? 1.7 : 2));
+    // celular: tela de alta densidade (iPhone = 3x) desenhada em quase toda a resolução, com um teto de pixels para não
+    // pesar; se o aparelho não aguentar, a resolução desce sozinha (veja `adapt`)
+    this.maxRatio = Math.min(window.devicePixelRatio || 1, touch ? 3 : 2);
+    this.ratio = this.maxRatio;
+    this.renderer.setPixelRatio(this.ratio);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.05;
@@ -694,9 +698,35 @@ export class PingScene {
     }
   }
 
+  private maxRatio = 1;
+  private ratio = 1;
+  private slowFor = 0;
+  /** Teto de pixels desenhados por quadro (largura x altura x densidade²): tela grande de celular continua nítida e leve. */
+  private static readonly MAX_PIXELS = 4_200_000;
+
+  private applyRatio(w: number, h: number) {
+    const cap = Math.sqrt(PingScene.MAX_PIXELS / Math.max(1, w * h));
+    const r = Math.max(1, Math.min(this.ratio, cap));
+    if (Math.abs(this.renderer.getPixelRatio() - r) > 0.01) this.renderer.setPixelRatio(r);
+  }
+
+  /** Se os quadros demoram muito por um bom tempo, baixa um pouco a resolução (nunca abaixo de 1,25). */
+  private adapt(dt: number) {
+    if (dt > 0.25) return;
+    if (dt > 0.034) this.slowFor += dt;
+    else this.slowFor = Math.max(0, this.slowFor - dt * 2);
+    if (this.slowFor > 1.5 && this.ratio > 1.3) {
+      this.ratio = Math.max(1.25, this.ratio * 0.8);
+      this.slowFor = 0;
+      this.applyRatio(this.size.w, this.size.h);
+      this.renderer.setSize(this.size.w, this.size.h, false);
+    }
+  }
+
   resize(w: number, h: number) {
     if (w === this.size.w && h === this.size.h) return;
     this.size = { w, h };
+    this.applyRatio(w, h);
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / Math.max(1, h);
     this.camera.updateProjectionMatrix();
@@ -911,6 +941,7 @@ export class PingScene {
 
   render(dt: number, alpha: number) {
     if (this.disposed) return;
+    this.adapt(dt);
     this.time += dt;
     this.updateGuide(dt);
     const m = this.match;

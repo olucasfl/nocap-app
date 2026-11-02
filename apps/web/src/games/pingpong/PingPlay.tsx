@@ -290,7 +290,8 @@ export function PingPlay({
     // é para onde ela vai (x para os lados, z para a frente/trás). A força da batida é o impulso do avanço; a direção,
     // para onde a mão vai ----
     // saque: o clique (ou toque, ou Espaço) lança a bola para cima e a raquetada na descida é o saque
-    let serveUntil = 0;
+    // quadros em que o saque fica apertado: contado em quadros (e não em milissegundos) para um quadro lento não perder o toque
+    let serveFrames = 0;
     const canServe = () =>
       !spectator &&
       phase === 'play' &&
@@ -298,7 +299,7 @@ export function PingPlay({
       match.phase === 'serve' &&
       match.server === myIdx;
     const triggerServe = () => {
-      if (canServe()) serveUntil = performance.now() + 120;
+      if (canServe()) serveFrames = 2;
     };
     let primaryId: number | null = null;
     // bola mal pegada: quem recebe aperta (mouse, outro dedo, toque ou Espaço) e o nível vem de onde a barra está
@@ -366,7 +367,8 @@ export function PingPlay({
       }
       // dedo: arrastar leva a raquete para outro lugar; só um toque (soltar sem arrastar) lança a bola
       if (e.pointerType !== 'mouse') {
-        tap = { x: e.clientX, y: e.clientY, t: performance.now() };
+        // a hora do próprio evento (não a do processamento): um quadro lento não pode transformar o toque em "toque longo"
+        tap = { x: e.clientX, y: e.clientY, t: e.timeStamp };
         return;
       }
       triggerServe();
@@ -400,7 +402,7 @@ export function PingPlay({
         if (
           t &&
           Math.hypot(e.clientX - t.x, e.clientY - t.y) <= TAP_SLOP &&
-          performance.now() - t.t < 900
+          e.timeStamp - t.t < 900
         )
           triggerServe();
         pointerDown = false;
@@ -657,7 +659,8 @@ export function PingPlay({
         if (kx) me.x = Math.max(-PP_PAD_X, Math.min(PP_PAD_X, me.x + scene.simX(kx) * 3.2 * dt));
         if (ky) zt = clampZ(zt + ky * 9 * dt);
         me.z = zt;
-        me.serve = performance.now() < serveUntil;
+        me.serve = serveFrames > 0;
+        if (serveFrames > 0) serveFrames--;
         // só nos testes: uma entrada de bot (ou de um "jogador" programado) no lugar do mouse
         const forced = (window as unknown as { __pingForce?: PpInput }).__pingForce;
         if (forced) {

@@ -4,15 +4,41 @@ import { audioKit } from './sfx';
  * Sons do Ping Fox!, sintetizados em Web Audio como os do Desmorona! (sem arquivos), respeitando o mudo do `sfx`.
  * A batida da raquete e o quique são os sons que mais se repetem: curtos, secos e com o tom subindo com a velocidade.
  */
+/** Celular: o alto-falante é pequeno e estoura fácil (e o fone também). Som mais macio e mais baixo; no computador fica como estava. */
+const phone = (): boolean => {
+  try {
+    return typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+  } catch {
+    return false;
+  }
+};
 let bus: { ctx: AudioContext; node: AudioNode } | null = null;
 function busFor(kit: NonNullable<ReturnType<typeof audioKit>>): AudioNode {
   if (!bus || bus.ctx !== kit.ctx) {
+    const small = phone();
     const comp = kit.ctx.createDynamicsCompressor();
-    comp.threshold.value = -14;
-    comp.ratio.value = 5;
+    comp.threshold.value = small ? -24 : -14;
+    comp.knee.value = small ? 18 : 30;
+    comp.ratio.value = small ? 10 : 5;
+    comp.attack.value = small ? 0.002 : 0.003;
     comp.release.value = 0.12;
-    comp.connect(kit.out);
-    bus = { ctx: kit.ctx, node: comp };
+    if (small) {
+      // sem agudos ásperos e sem graves que o alto-falante não toca; nível mais baixo para sobrar folga
+      const lp = kit.ctx.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.value = 6500;
+      lp.Q.value = 0.4;
+      const hp = kit.ctx.createBiquadFilter();
+      hp.type = 'highpass';
+      hp.frequency.value = 140;
+      const level = kit.ctx.createGain();
+      level.gain.value = 0.55;
+      hp.connect(lp).connect(comp).connect(level).connect(kit.out);
+      bus = { ctx: kit.ctx, node: hp };
+    } else {
+      comp.connect(kit.out);
+      bus = { ctx: kit.ctx, node: comp };
+    }
   }
   return bus.node;
 }
@@ -24,7 +50,8 @@ function tone(type: OscillatorType, f0: number, f1: number, dur: number, peak: n
   const t = ctx.currentTime + delay;
   const o = ctx.createOscillator();
   const g = ctx.createGain();
-  o.type = type;
+  // no celular a onda quadrada e a serra soam ásperas e estouram: triangular, mais macia
+  o.type = phone() && (type === 'square' || type === 'sawtooth') ? 'triangle' : type;
   o.frequency.setValueAtTime(f0, t);
   if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(f1, t + dur);
   g.gain.setValueAtTime(0.0001, t);
