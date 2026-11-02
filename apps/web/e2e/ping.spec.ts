@@ -547,6 +547,8 @@ test('celular: toque (mesmo com tremidinha) lança a bola; arrastar leva a raque
   await touch('touchEnd', 0, 0);
   await page.waitForTimeout(500);
   expect(await phase()).toBe('serve');
+  await force();
+  await page.waitForTimeout(300);
   // toque com tremidinha de 10 px e um tempinho parado: lança
   await touch('touchStart', 420, 250);
   await touch('touchMove', 428, 254);

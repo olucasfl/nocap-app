@@ -289,7 +289,7 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 
 ### Rodada 31: toque que lança a bola no celular
 
-- Toque = o dedo sobe a até 26 px de onde desceu, em até 0,9 s (uma tremidinha ou ficar parado conta). Arrastar de verdade (soltar longe de onde desceu) só leva a raquete e não lança. Antes, qualquer movimento acima de 12 px já cancelava o saque. E2E com toque de verdade (CDP) cobre os dois casos.
+- Toque = o dedo sobe a até 26 px de onde desceu, sem limite prático de tempo (3 s; uma tremidinha ou ficar parado conta). Arrastar de verdade (soltar longe de onde desceu) só leva a raquete e não lança. Antes, qualquer movimento acima de 12 px já cancelava o saque. E2E com toque de verdade (CDP) cobre os dois casos.
 
 ### Rodada 32: batida forte com efeito só contra bola lenta
 

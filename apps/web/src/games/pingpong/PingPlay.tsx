@@ -402,7 +402,7 @@ export function PingPlay({
         if (
           t &&
           Math.hypot(e.clientX - t.x, e.clientY - t.y) <= TAP_SLOP &&
-          e.timeStamp - t.t < 900
+          e.timeStamp - t.t < 3000
         )
           triggerServe();
         pointerDown = false;
