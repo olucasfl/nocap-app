@@ -471,6 +471,7 @@ export function PingPlay({
           pingSfx.hit(power, e.smash, mine);
           stats.hits[e.p === 0 ? 0 : 1]++;
           if (e.smash && mine) stats.smashes++;
+          if (mine && net) scene.localHit();
           if (e.tier > 0 && !mine) {
             const id = ++speedId;
             setHud((h) => ({ ...h, oppTap: { tier: e.tier, id } }));
