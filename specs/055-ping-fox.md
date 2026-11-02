@@ -297,6 +297,6 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 
 ### Rodada 33: ver a velocidade da bola que vem e escala de velocidade bem aberta
 
-- **Visual:** a bola que vem para mim ganha um halo na cor do nível (verde = lenta, amarelo = média, vermelho = rápida; `ppIncomingTier`, pela velocidade horizontal: < 4,5 lenta, < 10 média, o resto rápida) e uma etiqueta pequena embaixo ("BOLA LENTA: bata forte", "BOLA MÉDIA", "BOLA RÁPIDA"). A lenta é a hora do golpe forte com efeito (cai na mesa); nas outras, bater forte demais pode sair.
+- **Visual:** a etiqueta embaixo mostra o nível da bola que vem (verde = lenta, amarelo = média, vermelho = rápida; o halo em volta da bola foi tirado a pedido; `ppIncomingTier`, pela velocidade horizontal: < 4,5 lenta, < 10 média, o resto rápida) e uma etiqueta pequena embaixo ("BOLA LENTA: bata forte", "BOLA MÉDIA", "BOLA RÁPIDA"). A lenta é a hora do golpe forte com efeito (cai na mesa); nas outras, bater forte demais pode sair.
 - **Velocidades** (`PP_SPEED_LADDER`, pela rapidez da mão): lenta 3,4 a 7, média 10 a 12,5, rápida 17 a 25 m/s (`PP_V_MAX` 22 -> 25). A forte sai bem mais rápida que a média e a média bem mais que a lenta.
 - **Rastro:** só aparece de verdade nas rápidas (> 12 m/s), um pouco mais claro e com tom quente acima de 16 m/s.

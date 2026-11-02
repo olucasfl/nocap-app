@@ -90,8 +90,6 @@ export class PingScene {
 
   // bola
   private ball: THREE.Group;
-  /** Halo da bola que vem para mim: verde = lenta (dá para bater forte), amarelo = média, vermelho = rápida. */
-  private halo!: THREE.Sprite;
   /** Nível da bola que vem para mim agora (0 lenta, 1 média, 2 rápida; -1 = não vem). */
   incoming = -1;
   private ballMesh: THREE.Mesh;
@@ -258,18 +256,6 @@ export class PingScene {
     );
     this.ballMesh.castShadow = true;
     this.ball.add(this.ballMesh);
-    this.halo = new THREE.Sprite(
-      new THREE.SpriteMaterial({
-        map: glowTex(),
-        color: 0xffffff,
-        transparent: true,
-        opacity: 0,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-      }),
-    );
-    this.halo.scale.setScalar(PP_R * 9);
-    this.ball.add(this.halo);
     this.ball.scale.setScalar(1.25);
     // anel do efeito: gira em torno do eixo do giro; vermelho = topspin, azul = corte, amarelo = efeito de lado
     this.spinRing = new THREE.Mesh(
@@ -989,18 +975,9 @@ export class PingScene {
     const by = sy;
     const bz = this.vz(sz);
     this.ball.position.set(bx, by, bz);
-    // a cor do halo diz a velocidade da bola que vem para mim (a lenta é a hora de bater forte)
-    {
-      const comes = m.phase === 'rally' && m.expect === this.me;
-      const tierNow = comes ? ppIncomingTier(Math.hypot(cur.vx, cur.vz)) : -1;
-      this.incoming = tierNow;
-      const hm = this.halo.material as THREE.SpriteMaterial;
-      if (tierNow < 0) hm.opacity = 0;
-      else {
-        hm.color.setHex(tierNow === 0 ? 0x3fe08a : tierNow === 1 ? 0xffd34d : 0xff5a4a);
-        hm.opacity = tierNow === 0 ? 0.85 : tierNow === 1 ? 0.4 : 0.6;
-      }
-    }
+    // nível da bola que vem para mim (usado só pela etiqueta da tela)
+    this.incoming =
+      m.phase === 'rally' && m.expect === this.me ? ppIncomingTier(Math.hypot(cur.vx, cur.vz)) : -1;
     // giro: o eixo e a rapidez vêm do efeito (rad/s), um pouco abrandados para a faixa continuar legível
     const w = Math.hypot(cur.wx, cur.wy, cur.wz);
     if (w > 0.5 && m.phase !== 'serve') {
