@@ -199,6 +199,7 @@ export function PingPlay({
   const menuRef = useRef(false);
   const sceneRef = useRef<PingScene | null>(null);
   const gaugeRef = useRef<HTMLElement | null>(null);
+  const gaugeBoxRef = useRef<HTMLDivElement | null>(null);
   const [guide, setGuide] = useState(readGuide);
   const lockTriedRef = useRef(false);
   const [locked, setLocked] = useState(false);
@@ -707,6 +708,19 @@ export function PingPlay({
         const f = Math.max(0, Math.min(1, (GAUGE_TOP - match.ball.y) / (GAUGE_TOP - GAUGE_BOTTOM)));
         g.style.transform = `translateY(${(f * (g.parentElement?.clientHeight ?? 0)).toFixed(1)}px)`;
       }
+      // e o medidor fica ao lado da bola (do lado da tela com mais espaço), na altura dela
+      if (gaugeBoxRef.current && root.current && match.phase === 'toss') {
+        const box = gaugeBoxRef.current;
+        const W = root.current.clientWidth;
+        const H = root.current.clientHeight;
+        const pt = scene.project(match.ball.x, 2.1, match.ball.z);
+        const gh = box.clientHeight || 120;
+        const side = pt.nx * W > W * 0.6 ? -1 : 1;
+        const x = pt.nx * W + side * 56 - (side < 0 ? 12 : 0);
+        const y = Math.max(8, Math.min(H - gh - 8, pt.ny * H - gh / 2));
+        box.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
+        box.style.visibility = 'visible';
+      }
       {
         const win = smashWindow();
         const slowNow = match.popup && phase === 'play';
@@ -915,7 +929,12 @@ export function PingPlay({
         </div>
       )}
       {myServe && hud.matchPhase === 'toss' && (
-        <div className="png-serve-gauge" data-testid="png-serve-gauge" aria-hidden="true">
+        <div
+          ref={gaugeBoxRef}
+          className="png-serve-gauge"
+          data-testid="png-serve-gauge"
+          aria-hidden="true"
+        >
           <i className="z-high" />
           <i className="z-good" />
           <i className="z-best" />

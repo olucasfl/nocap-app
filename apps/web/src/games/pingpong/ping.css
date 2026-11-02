@@ -826,9 +826,9 @@
 /* medidor do saque: sobe e desce com a bola; verde é o melhor momento */
 .png-serve-gauge {
   position: absolute;
-  right: max(14px, env(safe-area-inset-right));
-  top: 50%;
-  translate: 0 -50%;
+  left: 0;
+  top: 0;
+  visibility: hidden;
   width: 12px;
   height: clamp(110px, 30vh, 220px);
   border-radius: 8px;
