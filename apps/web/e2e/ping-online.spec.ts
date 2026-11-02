@@ -119,3 +119,35 @@ test('duas janelas jogam pela sala: as duas telas andam iguais e as batidas dos 
   expect(Math.abs(pa.tick - pb.tick)).toBeLessThan(30);
   expect(pb.hits).toBeGreaterThanOrEqual(1);
 });
+
+test('sozinho com um bot do outro lado: o líder põe o bot no lobby e a partida anda', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1100, height: 700 });
+  await page.goto('/fox-cap');
+  await page
+    .getByRole('button', { name: 'Agora não' })
+    .click({ timeout: 8000 })
+    .catch(() => undefined);
+  await page.getByText('Com amigos', { exact: true }).first().click();
+  await page.getByTestId('foxcap-friends').click();
+  await nick(page, 'Ana');
+  await page.waitForURL(/\/sala\//);
+  await page.getByRole('tab', { name: /Regras/i }).click();
+  await page.getByTestId('pick-pingpong').click();
+  // dois times, uma vaga cada: o lado vazio ganha um bot
+  await page.getByRole('tab', { name: /Jogadores/i }).click();
+  await expect(page.getByTestId('ping-side-0')).toBeVisible();
+  await expect(page.getByTestId('ping-start-room')).toBeDisabled();
+  await page.getByTestId('ping-level-facil').click();
+  await page.getByTestId('ping-bot-add-1').click();
+  await expect(page.getByTestId('ping-start-room')).toBeEnabled();
+  await page.getByTestId('ping-start-room').click();
+  await page.getByTestId('png-play').waitFor({ timeout: 20_000 });
+  await drive(page);
+  await page.waitForTimeout(30_000);
+  const r = await read(page);
+  // o bot da sala saca e rebate: houve troca de bolas e o relógio da partida andou
+  expect(r.tick).toBeGreaterThan(600);
+  expect(r.score[0]! + r.score[1]!).toBeGreaterThan(0);
+});

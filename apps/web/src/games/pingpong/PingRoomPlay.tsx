@@ -18,7 +18,10 @@ export function PingRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
   const key = players ? players.join('|') : '';
   const online = useMemo<PingOnline | null>(() => {
     if (!players || startAt === null) return null;
-    const nameOf = (id: string) => at(snapshot.members.find((m) => m.id === id)?.username);
+    const nameOf = (id: string) =>
+      id === 'bot'
+        ? (snapshot.pingpong?.lobby?.botName ?? 'Raposa')
+        : at(snapshot.members.find((m) => m.id === id)?.username);
     return {
       me: players.indexOf(me),
       firstServer,

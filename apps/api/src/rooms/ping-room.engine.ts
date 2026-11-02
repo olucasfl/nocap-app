@@ -9,13 +9,17 @@ import {
   PP_ROOM_OVER_MS,
   PP_ROOM_MAX,
   PP_TICK,
+  PpBot,
+  PP_BOT_LEVELS,
   PpNetSim,
   ppParseNetEvent,
+  type PpBotName,
   type PpNetEvent,
   type PpTimedEvent,
 } from '@nocap/games';
 import { ColorRoomEngine, RoomError, type EngineOptions, type FinalRow } from './color-room.engine';
 
+const BOT_ID = 'bot';
 const finite = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n);
 const r2 = (n: number) => Math.round(n * 100) / 100;
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
@@ -39,6 +43,15 @@ export class PingRoomEngine extends ColorRoomEngine {
   override readonly persistable = false;
   protected override readonly answerPhase = 'play' as const;
   protected override readonly modes: readonly string[] = ['classico'];
+  protected override readonly minPlayers = 1;
+
+  /** Quem ocupa cada lado da mesa no lobby (null = vaga livre ou do bot). Quem não está aqui assiste. */
+  private slots: [string | null, string | null] = [null, null];
+  /** Quem escolheu assistir (não é posto numa vaga sozinho). */
+  private watchers = new Set<string>();
+  /** O bot do outro lado (o líder põe no lobby): vaga e nível. */
+  private bot: { slot: 0 | 1; level: PpBotName } | null = null;
+  private botBrain: PpBot | null = null;
 
   private startAt = 0;
   private firstServer = 0;
@@ -70,6 +83,84 @@ export class PingRoomEngine extends ColorRoomEngine {
   override join(id: string, username: string) {
     super.join(id, username);
     this.away.delete(id);
+    if (this.phase === 'lobby') this.seat(id);
+  }
+
+  /** Põe a pessoa na primeira vaga livre (sem bot); se não houver, ela assiste. */
+  private seat(id: string) {
+    if (this.slots.includes(id) || this.watchers.has(id)) return;
+    const i = [0, 1].find((k) => this.slots[k] === null && this.bot?.slot !== k);
+    if (i !== undefined) this.slots[i] = id;
+  }
+
+  /** Quem já estava na sala quando o jogo foi escolhido também ganha a sua vaga. */
+  private ensureSeats() {
+    for (const k of [0, 1] as const) {
+      const id = this.slots[k];
+      if (id && !this.members.has(id)) this.slots[k] = null;
+    }
+    const ordered = [...this.members.values()]
+      .filter((m) => m.connected)
+      .sort((a, b) => a.joinedAt - b.joinedAt);
+    for (const m of ordered) this.seat(m.id);
+  }
+
+  /** Entra numa vaga livre (0 ou 1), troca por um bot dela, ou vira espectador (-1). */
+  setSlot(id: string, slot: unknown) {
+    this.requirePhase('lobby');
+    if (!this.members.has(id)) throw new RoomError('Você não está na sala');
+    if (slot !== -1 && slot !== 0 && slot !== 1) throw new RoomError('Esse lado não existe');
+    this.ensureSeats();
+    for (const k of [0, 1] as const) if (this.slots[k] === id) this.slots[k] = null;
+    if (slot === -1) {
+      this.watchers.add(id);
+    } else {
+      if (this.slots[slot] && this.slots[slot] !== id)
+        throw new RoomError('Esse lado já tem alguém');
+      // entrar no lugar do bot tira o bot
+      if (this.bot?.slot === slot) this.bot = null;
+      this.watchers.delete(id);
+      this.slots[slot] = id;
+    }
+    this.dirty = true;
+  }
+
+  /** O líder põe um bot numa vaga livre (com nível) ou tira o bot (`slot` nulo). */
+  setBot(id: string, slot: unknown, level: unknown) {
+    this.requireHost(id);
+    this.requirePhase('lobby');
+    this.ensureSeats();
+    if (slot === null || slot === undefined) {
+      this.bot = null;
+    } else {
+      if (slot !== 0 && slot !== 1) throw new RoomError('Esse lado não existe');
+      if (this.slots[slot]) throw new RoomError('Esse lado já tem uma pessoa');
+      const lv =
+        typeof level === 'string' && level in PP_BOT_LEVELS ? (level as PpBotName) : 'medio';
+      this.bot = { slot, level: lv };
+      // só há um bot: o do outro lado
+    }
+    this.dirty = true;
+  }
+
+  override start(id: string) {
+    this.requireHost(id);
+    this.requirePhase('lobby');
+    this.ensureSeats();
+    const filled = ([0, 1] as const).every((k) => this.slots[k] || this.bot?.slot === k);
+    if (!filled) throw new RoomError('Falta alguém (ou um bot) do outro lado da mesa');
+    const waiting = this.slots.some((sid) => {
+      if (!sid || sid === this.hostId) return false;
+      const m = this.members.get(sid);
+      return !!m && m.connected && !m.ready && !this.committed.has(sid);
+    });
+    if (waiting) throw new RoomError('Falta gente marcar "pronto"');
+    this.committed.clear();
+    this.rematchVotes.clear();
+    this.seed = this.newSeed();
+    this.rounds = [];
+    this.roundIndex = -1;
+    this.beginRound();
   }
 
   override disconnect(id: string) {
@@ -97,10 +188,12 @@ export class PingRoomEngine extends ColorRoomEngine {
 
   /** Quem joga (os 2 primeiros conectados, na ordem de chegada). */
   private pickPlayers(): [string, string] {
-    const ordered = [...this.members.values()]
-      .filter((m) => m.connected)
-      .sort((a, b) => a.joinedAt - b.joinedAt);
-    return [ordered[0]!.id, ordered[1]!.id];
+    this.ensureSeats();
+    const at = (k: 0 | 1) => this.slots[k] ?? (this.bot?.slot === k ? BOT_ID : null);
+    const a = at(0);
+    const b = at(1);
+    if (!a || !b) throw new RoomError('Falta alguém (ou um bot) do outro lado da mesa');
+    return [a, b];
   }
 
   // ---- partida ----
@@ -118,7 +211,11 @@ export class PingRoomEngine extends ColorRoomEngine {
     for (const ch of this.seed) h = (h * 31 + ch.charCodeAt(0)) | 0;
     this.firstServer = h & 1;
     this.startAt = this.now() + PP_ROOM_COUNTDOWN_MS;
-    this.sim = new PpNetSim(this.firstServer, -1, true);
+    // com bot, a sala é quem joga o lado dele: detecta as batidas do bot e as transmite como as de uma pessoa
+    const botSlot = this.players[0] === BOT_ID ? 0 : this.players[1] === BOT_ID ? 1 : -1;
+    this.sim = new PpNetSim(this.firstServer, botSlot, true);
+    this.botBrain =
+      botSlot >= 0 && this.bot ? new PpBot(PP_BOT_LEVELS[this.bot.level], Math.random) : null;
     this.outbox = [];
     this.pads = [null, null];
     this.away.clear();
@@ -137,7 +234,15 @@ export class PingRoomEngine extends ColorRoomEngine {
   /** Anda a partida da sala até agora e guarda os números do pódio. */
   private advance(): void {
     if (!this.sim) return;
-    this.collect(this.sim.advanceTo(this.currentTick()));
+    const target = this.currentTick();
+    const brain = this.botBrain;
+    const slot = this.sim.localPlayer;
+    if (brain && slot >= 0) {
+      // o bot decide a cada tick, como faria uma pessoa mexendo o mouse
+      while (this.sim.tick < target) {
+        this.collect(this.sim.advanceTo(this.sim.tick + 1, brain.input(this.sim.match, slot)));
+      }
+    } else this.collect(this.sim.advanceTo(target));
     this.outbox.push(...this.sim.outgoing());
   }
 
@@ -187,6 +292,12 @@ export class PingRoomEngine extends ColorRoomEngine {
     this.pads.forEach((p, i) => {
       if (p) out.push([i, p[0]!, p[1]!, p[2]!]);
     });
+    // a raquete do bot sai da própria partida da sala
+    const sim = this.sim;
+    if (sim && this.botBrain && sim.localPlayer >= 0) {
+      const pad = sim.match.pad(sim.localPlayer);
+      out.push([sim.localPlayer, r2(pad.x), r2(pad.y), r2(pad.reach)]);
+    }
     return out;
   }
 
@@ -220,6 +331,7 @@ export class PingRoomEngine extends ColorRoomEngine {
   protected override reset() {
     super.reset();
     this.sim = null;
+    this.botBrain = null;
     this.players = null;
     this.outbox = [];
     this.forfeiter = null;
@@ -256,12 +368,18 @@ export class PingRoomEngine extends ColorRoomEngine {
     return changed;
   }
 
+  private botName(): string {
+    const lv = this.bot?.level ?? 'medio';
+    return `Raposa ${lv === 'facil' ? 'Fácil' : lv === 'dificil' ? 'Difícil' : 'Média'}`;
+  }
+
   // ---- resultado ----
 
   override finalRows(): FinalRow[] {
     if (!this.players || !this.sim) return [];
     const [a, b] = this.sim.match.score;
-    const names = (id: string) => this.members.get(id)?.username ?? 'Jogador';
+    const names = (id: string) =>
+      id === BOT_ID ? this.botName() : (this.members.get(id)?.username ?? 'Jogador');
     let winner = a === b ? -1 : a > b ? 0 : 1;
     if (this.forfeiter) winner = this.slotOf(this.forfeiter) === 0 ? 1 : 0;
     const rows = this.players.map((id, i) => ({
@@ -271,10 +389,11 @@ export class PingRoomEngine extends ColorRoomEngine {
       placement: winner < 0 ? 1 : winner === i ? 1 : 2,
       answers: [],
     }));
-    return rows.sort((x, y) => x.placement - y.placement);
+    return rows.filter((r) => r.userId !== BOT_ID).sort((x, y) => x.placement - y.placement);
   }
 
   protected override extraSnapshot(viewerId?: string): Record<string, unknown> {
+    if (this.phase === 'lobby') this.ensureSeats();
     const started = this.phase !== 'lobby' && !!this.players;
     return {
       pingpong: {
@@ -282,6 +401,11 @@ export class PingRoomEngine extends ColorRoomEngine {
         startAt: started ? this.startAt : null,
         firstServer: this.firstServer,
         players: started ? this.players : null,
+        lobby: {
+          slots: this.slots,
+          bot: this.bot,
+          botName: this.botName(),
+        },
         score: this.sim ? [this.sim.match.score[0], this.sim.match.score[1]] : [0, 0],
         forfeit: this.forfeiter,
         stats: this.sim

@@ -786,6 +786,13 @@ export class PingRoom extends ColorRoom {
         c.send('prej', res.rejected);
       }
     };
+    // lobby: lado da mesa e bot (só o líder põe o bot)
+    this.onMessage('pteam', (c, m: { slot?: unknown }) =>
+      this.act(c, (id) => engine().setSlot(id, m?.slot)),
+    );
+    this.onMessage('pbot', (c, m: { slot?: unknown; level?: unknown }) =>
+      this.act(c, (id) => engine().setBot(id, m?.slot ?? null, m?.level)),
+    );
     this.onMessage('phit', onEvent);
     this.onMessage('ptoss', onEvent);
     this.onMessage('ppad', (c, m) => {

@@ -172,6 +172,12 @@ export interface PingRoomState {
   score: [number, number];
   /** Quem saiu no meio (perdeu). */
   forfeit: string | null;
+  /** Os dois lados da mesa no lobby: quem senta em cada um e o bot (o do outro lado). */
+  lobby?: {
+    slots: [string | null, string | null];
+    bot: { slot: 0 | 1; level: 'facil' | 'medio' | 'dificil' } | null;
+    botName: string;
+  };
   /** Números da partida, depois do fim. */
   stats?: {
     seconds: number;

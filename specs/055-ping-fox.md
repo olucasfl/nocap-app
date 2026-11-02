@@ -264,3 +264,9 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 - Pedido: ao bater do outro lado a bola "aparecia na metade do caminho". Causa: a batida chega com atraso `D` e a simulação já a tinha levado `D` adiante.
 - Agora a bola desenhada recomeça onde ele bateu (`PpNetSim.ballAt`, foto do tick já refeita) e alcança a simulação em ~0,2 s (`PingScene.lag`, some a 0,7 tick por tick); o erro residual ainda desliza em ~0,12 s. Velocidades não foram mexidas, como pedido.
 - E2E online com duas janelas passa; ping real ainda não foi medido.
+
+### Rodada 27: lobby de dois times e bot na sala
+
+- Lobby do Ping Fox! em sala igual ao do Fut Fox: dois times (Laranja e Roxo) de uma vaga, espectadores, "Entrar", "Entrar no lugar" do bot e "Virar espectador"; o líder põe "+ Bot" no lado vazio e escolhe o nível (fácil, médio, difícil) ou tira o bot. Começar só com os dois lados ocupados e quem joga pronto; uma pessoa sozinha joga contra o bot.
+- Servidor (`PingRoomEngine`): vagas, bot e mensagens `pteam`/`pbot`. O bot é jogado pela própria sala (a `PpNetSim` da sala usa o lado do bot como `localPlayer`): detecta as batidas dele e as transmite em `pev` como as de uma pessoa; a raquete dele sai em `ppads`. Sem ranking.
+- Testes: motor (bot saca e rebate, lobby), e2e online sozinho com bot.

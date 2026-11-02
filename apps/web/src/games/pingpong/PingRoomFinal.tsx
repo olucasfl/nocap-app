@@ -20,7 +20,10 @@ export function PingRoomFinal({ snapshot }: { snapshot: RoomSnapshot }) {
   const navigate = useNavigate();
   const info = snapshot.pingpong;
   const players = info?.players ?? null;
-  const nameOf = (id: string) => at(snapshot.members.find((m) => m.id === id)?.username);
+  const nameOf = (id: string) =>
+    id === 'bot'
+      ? (snapshot.pingpong?.lobby?.botName ?? 'Raposa')
+      : at(snapshot.members.find((m) => m.id === id)?.username);
   const score = info?.score ?? [0, 0];
   // quem saiu no meio perdeu; senão vence o maior placar
   const forfeitIdx = info?.forfeit && players ? players.indexOf(info.forfeit) : -1;

@@ -60,6 +60,50 @@ describe('sala do Ping Fox!', () => {
     expect(() => room.start('ana')).toThrow(RoomError);
   });
 
+  it('com um bot do outro lado uma pessoa só começa e joga: o bot saca, rebate e marca ponto', () => {
+    let t = T0;
+    const room = new PingRoomEngine({ code: 'ABCD', now: () => t, newSeed: () => 'seed-bot' });
+    room.join('ana', 'ana');
+    room.setBot('ana', 1, 'facil');
+    room.start('ana');
+    const snap = (room.snapshot('ana') as unknown as { pingpong: { players: string[] } }).pingpong;
+    expect(snap.players).toEqual(['ana', 'bot']);
+    t += PP_ROOM_COUNTDOWN_MS;
+    room.tick();
+    let hits = 0;
+    for (let i = 0; i < 60 * 40; i++) {
+      t += TICK_MS;
+      room.tick();
+      for (const ev of room.drainOutbox()) if (ev.k === 'hit' && ev.p === 1) hits++;
+    }
+    // a pessoa não faz nada: o bot saca (e a sala o transmite) e a partida anda sem travar
+    expect(hits).toBeGreaterThan(0);
+    expect(room.padsFrame().some((p) => p[0] === 1)).toBe(true);
+  });
+
+  it('lobby: lados, bot só em vaga livre, entrar no lugar do bot e começar exige os dois lados', () => {
+    const room = new PingRoomEngine({ code: 'ABCD', now: () => T0, newSeed: () => 's' });
+    room.join('ana', 'ana');
+    expect(() => room.start('ana')).toThrow(RoomError);
+    expect(() => room.setBot('ana', 0, 'medio')).toThrow(RoomError);
+    room.setBot('ana', 1, 'medio');
+    room.join('bia', 'bia');
+    // a Bia chegou e o lado 1 era do bot: ela fica assistindo até pedir a vaga
+    const lobby = () =>
+      (
+        room.snapshot('ana') as unknown as {
+          pingpong: { lobby: { slots: (string | null)[]; bot: { slot: number } | null } };
+        }
+      ).pingpong.lobby;
+    expect(lobby().slots).toEqual(['ana', null]);
+    room.setSlot('bia', 1);
+    expect(lobby().slots).toEqual(['ana', 'bia']);
+    expect(lobby().bot).toBeNull();
+    room.setSlot('bia', -1);
+    expect(lobby().slots).toEqual(['ana', null]);
+    expect(() => room.start('ana')).toThrow(RoomError);
+  });
+
   it('dois aparelhos com bots jogam por ela: os três terminam com o mesmo placar', () => {
     const { room, clock } = started(['ana', 'bia']);
     const first = info(room).firstServer;

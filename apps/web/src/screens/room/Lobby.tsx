@@ -1,6 +1,7 @@
 import { useMeId, type RoomSnapshot } from '@/lib/rooms';
 import { HostLobby } from './lobby/HostLobby';
 import { BolaLobby } from './lobby/BolaLobby';
+import { PingLobby } from './lobby/PingLobby';
 import { FoxLobby } from './lobby/FoxLobby';
 import { MemberLobby } from './lobby/MemberLobby';
 
@@ -15,6 +16,7 @@ export function Lobby({ snapshot }: { snapshot: RoomSnapshot }) {
 
   if (snapshot.game === 'foxcap') return <FoxLobby snapshot={snapshot} me={me} />;
   if (snapshot.game === 'bola') return <BolaLobby snapshot={snapshot} me={me} />;
+  if (snapshot.game === 'pingpong') return <PingLobby snapshot={snapshot} me={me} />;
   if (snapshot.hostId === me) return <HostLobby snapshot={snapshot} me={me} />;
   return <MemberLobby snapshot={snapshot} me={me} leaderName={leader?.username ?? 'líder'} />;
 }
