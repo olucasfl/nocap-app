@@ -246,3 +246,8 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 - Saque assistido: com a bola subindo a raquete fica um pouco atrás dela e, na descida, avança por cima (o plano da raquete precisa atravessar a bola); a mão fora de posição não faz mais errar.
 - Avisos (clique na tela e saque) menores, discretos e sem pulsar; no celular deitado ficam em uma linha, sem cobrir a mesa.
 - E2E "saque com o mouse de verdade" (clique real, mouse preso) cobre o caso.
+
+### Rodada 24: saque sem piloto automático
+
+- Removido o auxílio que avançava a raquete sozinho na descida da bola: quem bate é a mão. Se a raquete já está em cima da bola quando ela desce, a bola bate nela (pegada fraca); com a mão atrás da bola e parada, não há batida (falta de saque).
+- Testes: mão parada não saca sozinha; mão que avança saca.

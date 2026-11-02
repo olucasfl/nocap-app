@@ -358,15 +358,7 @@ export class PpMatch {
       )
         ty = b.y;
       // saque fácil: a bola lançada descendo bem na frente da raquete é alcançada mesmo sem a mão avançar (um toque basta)
-      let tz = inp.z;
-      if (p === this.server && this.phase === 'toss') {
-        const aligned = b.vy < 0 && b.y < pad.y + 0.2 && Math.abs(b.x - pad.x) < PP_PAD_R * 0.9;
-        // a raquete só bate se o plano dela atravessa a bola: com a bola subindo ela fica um pouco atrás da bola
-        // (mesmo que a mão esteja mais à frente) e, na descida, avança por cima dela
-        tz = aligned
-          ? Math.max(PP_SERVE_FRONT + 0.25, Math.min(tz, PP_SERVE_FRONT + 0.5))
-          : Math.min(tz, PP_SERVE_FRONT - 0.15);
-      }
+      const tz = inp.z;
       ppPadStepZ(pad, inp.x, ty, tz, PP_TICK);
       this.swingNow[p === 0 ? 0 : 1] = null;
       return;
@@ -553,7 +545,7 @@ export class PpMatch {
     if (!(f0 < 0 && f1 >= 0)) {
       // bola que já passou do plano: ainda dá para alcançar (pegar de volta) enquanto a raquete estiver em cima dela
       if (
-        this.phase === 'rally' &&
+        (this.phase === 'rally' || this.phase === 'toss') &&
         !this.swingNow[p === 0 ? 0 : 1] &&
         f1 > 0 &&
         f1 < PP_CATCH &&

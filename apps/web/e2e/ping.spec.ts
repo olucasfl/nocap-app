@@ -70,7 +70,11 @@ test('treino: abre, saca, a bola cruza a rede e a raquete segue o mouse', async 
   for (let i = 0; i < 80; i++) {
     const s = await state();
     if (s && s.phase === 'serve' && s.server === 0) {
-      await page.mouse.click(640, 420);
+      await page.mouse.click(640, 420); // prende o mouse
+      await page.mouse.click(640, 420); // lança a bola
+      // a mão avança na descida da bola (é ela que bate)
+      await page.waitForTimeout(650);
+      await page.mouse.move(640, 300, { steps: 6 });
       break;
     }
     if (s && s.phase === 'rally') break;
