@@ -60,6 +60,22 @@ describe('sala do Ping Fox!', () => {
     expect(() => room.start('ana')).toThrow(RoomError);
   });
 
+  it('o líder encerra a partida com o placar de agora; quem não é líder não pode', () => {
+    const { room, clock } = started(['ana', 'bia']);
+    clock.advance(PP_ROOM_COUNTDOWN_MS);
+    room.tick();
+    expect(room.currentPhase).toBe('play');
+    expect(() => room.endNow('bia')).toThrow(RoomError);
+    room.endNow('ana');
+    expect(room.currentPhase).toBe('final');
+    expect(
+      room
+        .finalRows()
+        .map((r) => r.userId)
+        .sort(),
+    ).toEqual(['ana', 'bia']);
+  });
+
   it('com um bot do outro lado uma pessoa só começa e joga: o bot saca, rebate e marca ponto', () => {
     let t = T0;
     const room = new PingRoomEngine({ code: 'ABCD', now: () => t, newSeed: () => 'seed-bot' });

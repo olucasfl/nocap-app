@@ -373,3 +373,7 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 ### Rodada 47: sala encerrada volta para a tela do jogo
 
 - Antes: ao encerrar (ou ser removido), a pessoa ficava na tela de entrada de sala, que por padrão é a da Mesmíssima ("Jogue Mesmíssima com amigos"). Agora o motivo vira um aviso rápido (`showNotice`, `RoomToast` na raiz do app, vale em qualquer tela) e a pessoa volta para a tela do jogo da sala (Fox Cap! para Fut Fox, Ping Fox!, Atravessa! e Desmorona!; a página do jogo para os outros). E2E `encerrar a sala` confere a URL `/fox-cap`, o aviso e que a tela da Mesmíssima não aparece.
+
+### Rodada 48: encerrar a partida (líder)
+
+- O menu do Ping Fox! em sala ganhou "Encerrar a partida" (só o líder, pede um segundo toque): acaba a partida na hora com o placar de agora e as duas telas vão para o fim (como no Fut Fox). Mensagem `pend` -> `PingRoomEngine.endNow`. O "Encerrar a sala" (apaga a sala) continua ao lado. Testes: motor (só o líder) e e2e com duas janelas (só o líder vê o botão; as duas vão para o fim).

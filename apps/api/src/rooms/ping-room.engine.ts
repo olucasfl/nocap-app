@@ -317,6 +317,16 @@ export class PingRoomEngine extends ColorRoomEngine {
     return this.sim?.history() ?? [];
   }
 
+  /** O líder encerra a partida com o placar de agora (empate = os dois em primeiro). */
+  endNow(id: string) {
+    this.requireHost(id);
+    if (this.phase !== 'show' && this.phase !== 'play')
+      throw new RoomError('Não há partida para encerrar');
+    this.phase = 'final';
+    this.phaseEndsAt = null;
+    this.dirty = true;
+  }
+
   private forfeit(id: string) {
     if (!this.live || this.forfeiter) return;
     this.forfeiter = id;

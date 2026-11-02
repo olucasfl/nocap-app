@@ -825,6 +825,8 @@ export class PingRoom extends ColorRoom {
     this.onMessage('pbot', (c, m: { slot?: unknown; level?: unknown }) =>
       this.act(c, (id) => engine().setBot(id, m?.slot ?? null, m?.level)),
     );
+    // o líder encerra a partida com o placar de agora
+    this.onMessage('pend', (c) => this.act(c, (id) => engine().endNow(id)));
     this.onMessage('phit', onEvent);
     this.onMessage('ptoss', onEvent);
     this.onMessage('ppad', (c, m) => {

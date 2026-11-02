@@ -201,3 +201,52 @@ test('encerrar a sala: todo mundo sai e ninguém fica preso no "entrando na sala
     await expect(page.getByText('Mesmíssima')).toHaveCount(0);
   }
 });
+
+test('o líder encerra a partida pelo menu e as duas telas vão para o fim', async ({ browser }) => {
+  const mk = async () => {
+    const ctx = await browser.newContext({
+      viewport: { width: 1100, height: 700 },
+      locale: 'pt-BR',
+    });
+    return ctx.newPage();
+  };
+  const A = await mk();
+  await A.goto('/fox-cap');
+  await A.getByRole('button', { name: 'Agora não' })
+    .click({ timeout: 8000 })
+    .catch(() => undefined);
+  await A.getByText('Com amigos', { exact: true }).first().click();
+  await A.getByTestId('foxcap-friends').click();
+  await nick(A, 'Ana');
+  await A.waitForURL(/\/sala\//);
+  const code = A.url().split('/sala/')[1]!.slice(0, 4);
+  const B = await mk();
+  await B.goto('/fox-cap');
+  await B.getByRole('button', { name: 'Agora não' })
+    .click({ timeout: 8000 })
+    .catch(() => undefined);
+  await B.getByText('Com amigos', { exact: true }).first().click();
+  await B.getByLabel('Código da sala').fill(code);
+  await B.getByRole('button', { name: 'Entrar', exact: true }).click();
+  await nick(B, 'Bia');
+  await B.waitForURL(/\/sala\//);
+  await A.getByRole('tab', { name: /Regras/i }).click();
+  await A.getByTestId('pick-pingpong').click();
+  await B.getByRole('button', { name: /ESTOU PRONTO/i }).click();
+  await A.getByRole('button', { name: /COMEÇAR/i }).click();
+  await A.getByTestId('png-play').waitFor({ timeout: 20_000 });
+  await B.getByTestId('png-play').waitFor({ timeout: 20_000 });
+  await A.waitForTimeout(6000);
+  // só o líder tem o botão
+  await B.keyboard.press('Escape');
+  await expect(B.getByTestId('png-menu')).toBeVisible();
+  await expect(B.getByTestId('png-menu-end')).toHaveCount(0);
+  await B.getByTestId('png-menu-continue').click();
+  // o líder encerra (pede um segundo toque)
+  await A.keyboard.press('Escape');
+  await A.getByTestId('png-menu-end').click();
+  await A.getByTestId('png-menu-end').click();
+  for (const page of [A, B]) {
+    await expect(page.getByTestId('png-final-a')).toBeVisible({ timeout: 15000 });
+  }
+});

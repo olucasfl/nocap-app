@@ -22,12 +22,21 @@ import {
 } from '@nocap/games';
 import { GameChat } from '@/components/GameChat';
 import { GameMenu, GearButton, Keycap, NetBadge } from '@/components/GameMenu';
-import { IcTable } from '@/games/bola/BolaIcons';
+import { IcFlag, IcTable } from '@/games/bola/BolaIcons';
 import { GameTips, type TipRow } from '@/components/GameTips';
 import { RotateHint } from '@/components/RotateHint';
 import { pingSfx } from '@/lib/ping-audio';
 import { BUILD_ID } from '@/lib/build-id';
-import { currentRtt, getGuestNickname, sendRoomQuiet, serverNow, subscribeRoom } from '@/lib/rooms';
+import {
+  currentRtt,
+  getGuestNickname,
+  sendRoom,
+  sendRoomQuiet,
+  serverNow,
+  subscribeRoom,
+  useMeId,
+  useRoom,
+} from '@/lib/rooms';
 import { useAuth } from '@/lib/auth';
 import { PingPeer, type PingPeerMsg } from '@/lib/ping-p2p';
 import { PingFinal, type PingStats } from './PingFinal';
@@ -212,6 +221,10 @@ export function PingPlay({
   const oppBarRef = useRef<HTMLDivElement | null>(null);
   const oppCurRef = useRef<HTMLSpanElement | null>(null);
   const [guide, setGuide] = useState(readGuide);
+  // só o líder da sala encerra a partida
+  const myUserId = useMeId();
+  const hostId = useRoom((s) => s.snapshot?.hostId);
+  const isLeader = !!online && !!myUserId && hostId === myUserId;
   // painel de rede e fps (desligado por padrão; liga no menu)
   const [showNet, setShowNet] = useState(() => {
     try {
@@ -1215,6 +1228,21 @@ export function PingPlay({
           onOfflineInvite={onOfflineInvite}
           net={{ on: showNet, toggle: toggleNet }}
           actions={[
+            ...(isLeader
+              ? [
+                  {
+                    id: 'end',
+                    icon: <IcFlag size={20} />,
+                    label: 'Encerrar a partida',
+                    armed: 'Toque de novo para encerrar',
+                    onClick: () => {
+                      closeMenu();
+                      sendRoom('pend');
+                    },
+                    testId: 'png-menu-end',
+                  },
+                ]
+              : []),
             {
               id: 'guide',
               icon: <IcTable size={20} />,
