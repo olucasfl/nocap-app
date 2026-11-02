@@ -239,3 +239,10 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 - **Saque como nos outros jogos**: clique (ou toque, ou Espaço) lança a bola para cima e a raquetada na descida é o saque (sempre com a ajuda de leitura, de qualquer lugar da mesa). O saque de bola parada (rodada 5) segurava a bola por 0,9 s sem deixar bater e depois "piscava" (som e movimento de lançamento): era o bug do "primeiro segundo que não deixa sacar". Agora `startToss(x, v)` volta a ser o lançamento (evento `toss` na rede, com a sala lançando sozinha após `PP_SERVE_AUTO` e a bola que ninguém rebate virando falta). Dica no PC e no celular: "Clique/Toque para lançar a bola e bata nela com a raquete".
 - **Aviso no PC**: enquanto o mouse não está preso, "Clique na tela para prender o mouse e jogar com mais imersão"; o primeiro clique só prende (não saca).
 - **Bot variado** (`pickIntent`): a cada bola o bot sorteia o que fazer (empurrar com corte, topspin, drive, curva com efeito de lado, bloqueio em arco), com pesos por nível (o difícil ataca e varre mais), e escolhe a batida que realiza essa intenção; a força máxima de cada nível subiu (10, 14, 19 m/s) para o bot conseguir bater forte. Devolve com velocidades de ~43 a ~87 km/h e golpes variados.
+
+### Rodada 23: saque que funciona de verdade
+
+- Causa do "clico e não vai": com o cursor preso o navegador recusa `setPointerCapture` e a exceção abortava o clique antes do saque. Agora a captura é opcional.
+- Saque assistido: com a bola subindo a raquete fica um pouco atrás dela e, na descida, avança por cima (o plano da raquete precisa atravessar a bola); a mão fora de posição não faz mais errar.
+- Avisos (clique na tela e saque) menores, discretos e sem pulsar; no celular deitado ficam em uma linha, sem cobrir a mesa.
+- E2E "saque com o mouse de verdade" (clique real, mouse preso) cobre o caso.

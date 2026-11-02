@@ -402,9 +402,7 @@
     font-size: 24px;
   }
   .png-serve-hint {
-    left: max(12px, env(safe-area-inset-left));
-    translate: none;
-    max-width: calc(100vw - 150px);
+    max-width: calc(100vw - 24px);
   }
 }
 
@@ -610,20 +608,181 @@
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
 }
 
-/* aviso no PC: o mouse ainda não está preso no jogo */
+/* avisos grandes e bem visíveis: lock do mouse (PC) e saque */
 .png-lock-hint {
   position: absolute;
   left: 50%;
-  top: calc(max(10px, env(safe-area-inset-top)) + 64px);
+  top: 22%;
   translate: -50% 0;
-  padding: 7px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  background: rgba(16, 18, 24, 0.82);
-  color: #f3f4f7;
-  font: 600 13px var(--font-body, system-ui);
-  letter-spacing: 0.04em;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 16px 28px;
+  border: 2px solid #ff5a3c;
+  border-radius: 18px;
+  background: rgba(16, 18, 24, 0.9);
+  color: #fff;
   text-align: center;
+  box-shadow: 0 0 28px rgba(255, 90, 60, 0.45);
   pointer-events: none;
-  max-width: 90vw;
+  max-width: calc(100vw - 32px);
+  animation: png-attention 1s ease-in-out infinite alternate;
+}
+.png-lock-hint b {
+  font: 800 clamp(22px, 4.2vw, 36px) / 1.05 var(--font-display, system-ui);
+  letter-spacing: 0.08em;
+}
+.png-lock-hint span {
+  font: 600 clamp(13px, 2vw, 16px) var(--font-body, system-ui);
+  color: #cdd3df;
+}
+.png-lock-hint svg {
+  color: #ff5a3c;
+}
+.png-serve-hint,
+.png-serve-hint.is-them {
+  left: 50%;
+  translate: -50% 0;
+  bottom: max(18px, calc(env(safe-area-inset-bottom) + 14px));
+  max-width: calc(100vw - 24px);
+  padding: 14px 26px;
+  border: 2px solid #ff5a3c;
+  border-radius: 18px;
+  background: rgba(16, 18, 24, 0.92);
+  box-shadow: 0 0 28px rgba(255, 90, 60, 0.45);
+  gap: 4px;
+}
+.png-serve-hint:not(.is-them) {
+  animation: png-attention 1s ease-in-out infinite alternate;
+}
+.png-serve-hint.is-them {
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: none;
+  padding: 10px 20px;
+}
+.png-serve-hint small {
+  font: 700 clamp(11px, 1.6vw, 13px) var(--font-body, system-ui);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #ff8a73;
+}
+.png-serve-hint b {
+  font: 800 clamp(20px, 3.8vw, 32px) / 1.1 var(--font-display, system-ui);
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+.png-serve-hint span {
+  font: 600 clamp(12px, 1.8vw, 15px) var(--font-body, system-ui);
+  color: #cdd3df;
+}
+@keyframes png-attention {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.04);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .png-lock-hint,
+  .png-serve-hint {
+    animation: none !important;
+  }
+}
+@media (orientation: landscape) and (max-height: 520px) {
+  .png-lock-hint {
+    top: 18%;
+    padding: 8px 18px;
+    gap: 2px;
+  }
+  .png-lock-hint svg {
+    display: none;
+  }
+  .png-serve-hint:not(.is-them) {
+    padding: 8px 18px;
+    gap: 1px;
+  }
+  .png-serve-hint small {
+    display: none;
+  }
+}
+
+/* ajustes finais: os avisos ficam bem visíveis sem cobrir a mesa nem a raposa do outro lado */
+.png-lock-hint {
+  top: 72px;
+}
+.png-serve-hint:not(.is-them) {
+  width: min(calc(100vw - 24px), 440px);
+}
+.png-serve-hint b {
+  text-wrap: balance;
+}
+@media (orientation: landscape) and (max-height: 520px) {
+  .png-lock-hint {
+    top: 58px;
+  }
+  .png-serve-hint:not(.is-them) {
+    width: auto;
+    bottom: 6px;
+    padding: 5px 16px;
+  }
+  .png-serve-hint b {
+    font-size: clamp(15px, 3.2vw, 20px);
+    white-space: nowrap;
+  }
+  .png-serve-hint span {
+    display: none;
+  }
+}
+
+/* versão clean: avisos menores, discretos, sem pulsar */
+.png-lock-hint,
+.png-serve-hint:not(.is-them) {
+  animation: none !important;
+  padding: 8px 16px;
+  border-width: 1px;
+  border-radius: 12px;
+  box-shadow: none;
+  gap: 2px;
+  background: rgba(16, 18, 24, 0.82);
+}
+.png-lock-hint {
+  top: 64px;
+}
+.png-lock-hint svg {
+  display: none;
+}
+.png-lock-hint b {
+  font-size: clamp(15px, 2vw, 20px);
+  letter-spacing: 0.06em;
+}
+.png-lock-hint span,
+.png-serve-hint span {
+  font-size: clamp(11px, 1.4vw, 13px);
+}
+.png-serve-hint:not(.is-them) {
+  width: auto;
+  max-width: calc(100vw - 24px);
+}
+.png-serve-hint b {
+  font-size: clamp(15px, 2.2vw, 20px);
+  text-wrap: balance;
+}
+.png-serve-hint small {
+  display: none;
+}
+@media (orientation: landscape) and (max-height: 520px) {
+  .png-lock-hint {
+    top: 54px;
+  }
+  .png-serve-hint:not(.is-them) {
+    bottom: 6px;
+    padding: 4px 14px;
+  }
+  .png-serve-hint b {
+    white-space: nowrap;
+  }
+  .png-serve-hint span {
+    display: none;
+  }
 }

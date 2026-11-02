@@ -228,6 +228,37 @@ describe('regras', () => {
     expect(ev.some((e) => e.type === 'fault')).toBe(true);
   });
 
+  it('saque fácil: só o clique já saca (a raquete alcança a bola que desce na frente dela, sem precisar de golpe)', () => {
+    for (const px of [-2.2, 0, 2.4]) {
+      const m = new PpMatch(0);
+      const ev: PpEvent[] = [];
+      let clicked = false;
+      for (let i = 0; i < 60 * 6; i++) {
+        m.step([
+          {
+            ...ppIdleInput(),
+            manual: false,
+            x: px,
+            y: 1.5,
+            z: 0,
+            serve: m.phase === 'serve' && !clicked && i > 20,
+          },
+          ppIdleInput(),
+        ]);
+        if (m.phase === 'toss') clicked = true;
+        ev.push(...m.drain());
+        if (ev.some((e) => e.type === 'bounce')) break;
+      }
+      expect(
+        ev.some((e) => e.type === 'hit' && e.serve),
+        `x=${px}`,
+      ).toBe(true);
+      expect(ev.some((e) => e.type === 'fault')).toBe(false);
+      const first = ev.find((e) => e.type === 'bounce');
+      expect(first && first.type === 'bounce' && first.side).toBe(1);
+    }
+  });
+
   it('com a mão (z), a raquete vai até a rede e a força vem do impulso para a frente', () => {
     const pad: PpPaddle = { x: 0, y: 1.3, vx: 0, vy: 0, reach: 0, vz: 0, swing: 0 };
     let top = 0;

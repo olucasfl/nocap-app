@@ -99,7 +99,7 @@ export const PP_SERVE_FRONT = 0.8;
 export const PP_SERVE_Y = 1.5;
 export const PP_SERVE_WAIT = 0.9;
 /** A altura padrão do lançamento do saque (0 a 1, em `ppTossSpeed`): a bola sobe uns 1 m e cai na raquete. */
-export const PP_TOSS_DEFAULT = 0.35;
+export const PP_TOSS_DEFAULT = 0.5;
 /** Alcance até a rede: a raquete passeia por cima da mesa (reach 0 = plano de espera; NET = quase na rede). */
 export const PP_REACH_NET = PP_PAD_Z - 0.4;
 /** E para trás: a raquete pode ficar atrás do plano de espera (m). */

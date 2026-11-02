@@ -404,3 +404,68 @@ test('mouse: o cursor fica preso no jogo e a raquete anda pelo movimento (não s
   await expect(page.getByTestId('png-menu-continue')).toBeVisible();
   await expect.poll(() => page.evaluate(() => !!document.pointerLockElement)).toBe(false);
 });
+
+test('saque com o mouse de verdade: o clique lança a bola e a raquete bate nela (sem mexer o mouse)', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto('/fox-cap');
+  await page
+    .getByRole('button', { name: 'Agora não' })
+    .click({ timeout: 6000 })
+    .catch(() => undefined);
+  await page.getByTestId('foxcap-pingpong').click();
+  await page.getByTestId('png-level-facil').click();
+  await page.getByTestId('png-start').click();
+  await expect(page.getByTestId('png-play')).toBeVisible();
+  await page.waitForTimeout(2600);
+  await page
+    .getByTestId('game-tips-ok')
+    .click({ timeout: 2000 })
+    .catch(() => undefined);
+  // o aviso do mouse aparece grande até a pessoa clicar
+  await expect(page.getByTestId('png-lock-hint')).toBeVisible();
+  // a vez de sacar é sua
+  await page.evaluate(() => {
+    const m = (
+      window as unknown as {
+        __ping: {
+          match: {
+            server: number;
+            phase: string;
+            lastHitter: number;
+            bounces: number[];
+            rally: number;
+            t: number;
+          };
+        };
+      }
+    ).__ping.match;
+    m.server = 0;
+    m.phase = 'serve';
+    m.lastHitter = -1;
+    m.bounces = [0, 0];
+    m.rally = 0;
+    m.t = 0;
+  });
+  await expect(page.getByTestId('png-serve-hint')).toBeVisible();
+  await page.mouse.move(640, 420);
+  await page.mouse.click(640, 420); // o primeiro clique prende o mouse (se o navegador deixar)
+  const locked = await page.evaluate(() => !!document.pointerLockElement);
+  if (locked) await expect(page.getByTestId('png-lock-hint')).toHaveCount(0);
+  await page.mouse.click(640, 420); // o segundo lança a bola
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => {
+          const g = (
+            window as unknown as {
+              __ping: { match: { rally: number; lastHitter: number; phase: string } };
+            }
+          ).__ping.match;
+          return g.rally >= 1 && g.lastHitter === 0;
+        }),
+      { timeout: 6000 },
+    )
+    .toBe(true);
+});

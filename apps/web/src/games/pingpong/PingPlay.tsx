@@ -191,7 +191,10 @@ export function PingPlay({
   const menuRef = useRef(false);
   const sceneRef = useRef<PingScene | null>(null);
   const [guide, setGuide] = useState(readGuide);
+  const lockTriedRef = useRef(false);
   const [locked, setLocked] = useState(false);
+  /** O navegador não prendeu o cursor (ou a pessoa não quer): o aviso some e o mouse funciona solto. */
+  const [lockFailed, setLockFailed] = useState(false);
   const trackRef = useRef<HTMLDivElement>(null);
   const cursorRef = useRef<HTMLSpanElement>(null);
   menuRef.current = menu;
@@ -208,6 +211,8 @@ export function PingPlay({
   useEffect(() => {
     if ((menu || result || hud.phase !== 'play') && document.pointerLockElement)
       document.exitPointerLock?.();
+    // depois do menu (ou do fim), o primeiro clique volta a só prender o cursor
+    if (menu || result) lockTriedRef.current = false;
   }, [menu, result, hud.phase]);
   const closeMenu = () => setMenu(false);
 
@@ -306,12 +311,18 @@ export function PingPlay({
     };
     const onDown = (e: PointerEvent) => {
       if (menuRef.current) return;
-      zn.setPointerCapture?.(e.pointerId);
+      // com o cursor preso o navegador pode recusar a captura: isso não pode impedir o saque
+      try {
+        zn.setPointerCapture?.(e.pointerId);
+      } catch {
+        /* sem captura */
+      }
       tapSmash();
       // outro dedo (o que aperta o smash) não leva a raquete: só o primeiro dedo mexe nela
       if (e.pointerType !== 'mouse' && primaryId !== null && e.pointerId !== primaryId) return;
       primaryId = e.pointerId;
-      aim(e);
+      // com o cursor preso o ponteiro não diz onde a raquete está: o clique não mexe nela
+      if (!(e.pointerType === 'mouse' && document.pointerLockElement === zn)) aim(e);
       // mouse: o primeiro clique prende o cursor no jogo (ele não sai da tela no meio da batida); Esc solta e abre o menu
       if (
         e.pointerType === 'mouse' &&
@@ -319,8 +330,14 @@ export function PingPlay({
         phase === 'play' &&
         !finished &&
         typeof zn.requestPointerLock === 'function' &&
+        !lockTriedRef.current &&
         document.pointerLockElement !== zn
       ) {
+        // só a primeira vez: se o navegador não prender o cursor, o clique seguinte já saca (não fica preso nesse passo)
+        lockTriedRef.current = true;
+        window.setTimeout(() => {
+          if (document.pointerLockElement !== zn) setLockFailed(true);
+        }, 500);
         try {
           void (zn.requestPointerLock() as Promise<void> | undefined)?.catch?.(() => undefined);
         } catch {
@@ -346,6 +363,7 @@ export function PingPlay({
     const onLockChange = () => {
       const locked = document.pointerLockElement === zn;
       if (wasLocked && !locked && !menuRef.current && !finished && phase === 'play') setMenu(true);
+      if (locked) setLockFailed(false);
       wasLocked = locked;
       setLocked(locked);
     };
@@ -804,6 +822,7 @@ export function PingPlay({
       )}
       {!touchDevice &&
         !locked &&
+        !lockFailed &&
         hud.phase === 'play' &&
         !menu &&
         !result &&
@@ -811,16 +830,32 @@ export function PingPlay({
         typeof document !== 'undefined' &&
         'requestPointerLock' in document.documentElement && (
           <div className="png-lock-hint" data-testid="png-lock-hint">
-            Clique na tela para prender o mouse e jogar com mais imersão
+            <svg viewBox="0 0 24 32" width="26" height="34" aria-hidden="true">
+              <rect
+                x="3"
+                y="2"
+                width="18"
+                height="28"
+                rx="9"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.4"
+              />
+              <line x1="12" y1="2" x2="12" y2="12" stroke="currentColor" strokeWidth="2.4" />
+              <rect x="10.4" y="5" width="3.2" height="5" rx="1.6" fill="currentColor" />
+            </svg>
+            <b>CLIQUE NA TELA</b>
+            <span>para prender o mouse e jogar com mais imersão</span>
           </div>
         )}
       {myServe && !hud.banner && (
         <div className="png-serve-hint" data-testid="png-serve-hint">
-          <b>Sua vez de sacar</b>
+          <small>Sua vez de sacar</small>
+          <b>{touchDevice ? 'TOQUE NA TELA' : 'CLIQUE'} para lançar a bola</b>
           <span>
             {touchDevice
-              ? 'Toque na tela para lançar a bola e bata nela com a raquete'
-              : 'Clique para lançar a bola e bata nela com a raquete'}
+              ? 'Depois bata nela com a raquete: arraste o dedo para a frente'
+              : 'Depois bata nela com a raquete: leve o mouse para a frente'}
           </span>
         </div>
       )}

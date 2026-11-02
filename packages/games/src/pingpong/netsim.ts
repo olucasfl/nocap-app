@@ -92,11 +92,11 @@ export class PpNetSim {
         m.tossReqV = te.v ?? 0.5;
       } else if (this.authority && !m.replay && m.t + PP_TICK >= PP_SERVE_AUTO) {
         // quem não saca a tempo tem o lançamento feito pela sala (e a bola cai: falta)
-        const ev: PpNetEvent = { k: 'toss', t: n, p: m.server, x: m.pad(m.server).x, v: 0.35 };
+        const ev: PpNetEvent = { k: 'toss', t: n, p: m.server, x: m.pad(m.server).x, v: 0.5 };
         this.log.push(ev);
         this.out.push(ev);
         m.tossReq = ev.x;
-        m.tossReqV = 0.35;
+        m.tossReqV = 0.5;
       }
     }
     const inputs: [PpInput, PpInput] =
