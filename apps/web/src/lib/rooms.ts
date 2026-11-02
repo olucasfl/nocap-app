@@ -486,12 +486,7 @@ function attach(r: Room) {
   );
   r.onMessage('chatHistory', (list: ChatMessage[]) => set({ chat: list, unread: 0 }));
   r.onMessage('notice', (m: { text?: unknown }) => {
-    if (typeof m?.text !== 'string') return;
-    const id = Date.now();
-    set({ notice: { text: m.text, id } });
-    setTimeout(() => {
-      if (useRoom.getState().notice?.id === id) set({ notice: null });
-    }, 4500);
+    if (typeof m?.text === 'string') showNotice(m.text);
   });
   r.onMessage('closed', () => finish('A sala foi encerrada pelo líder.'));
   r.onMessage('error', (m: string) => set({ message: m }));
@@ -727,6 +722,15 @@ export async function joinRoom(code: string) {
 
 /** O código da sala em que este aparelho está conectado (vale já na conexão, antes do primeiro estado). */
 export const currentRoomCode = (): string | null => room?.roomId ?? null;
+
+/** Aviso rápido por cima de qualquer tela (quem saiu, sala encerrada): some sozinho. */
+export function showNotice(text: string) {
+  const id = Date.now();
+  useRoom.setState({ notice: { text, id } });
+  setTimeout(() => {
+    if (useRoom.getState().notice?.id === id) useRoom.setState({ notice: null });
+  }, 4500);
+}
 
 export function clearLastGame() {
   useRoom.setState({ lastGame: null });

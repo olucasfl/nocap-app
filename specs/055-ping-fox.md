@@ -369,3 +369,7 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 ### Rodada 46: o ping do painel
 
 - O ping do painel (e o do Fut Fox quando joga pela sala) era a última medida até o servidor, feita só a cada 20 s: uma medida tirada com o jogo carregando (navegador ocupado) ficava na tela por 20 s com 190-250 ms. Agora a medida é a cada 2 s e o que se mostra é a mediana das últimas 5 (`currentRtt`), que o relógio da partida (`offsets`) também usa. No Fut Fox pelo canal direto o ping mostrado é o do aparelho com o outro (`rttMs`), não o do servidor, e por isso é bem menor.
+
+### Rodada 47: sala encerrada volta para a tela do jogo
+
+- Antes: ao encerrar (ou ser removido), a pessoa ficava na tela de entrada de sala, que por padrão é a da Mesmíssima ("Jogue Mesmíssima com amigos"). Agora o motivo vira um aviso rápido (`showNotice`, `RoomToast` na raiz do app, vale em qualquer tela) e a pessoa volta para a tela do jogo da sala (Fox Cap! para Fut Fox, Ping Fox!, Atravessa! e Desmorona!; a página do jogo para os outros). E2E `encerrar a sala` confere a URL `/fox-cap`, o aviso e que a tela da Mesmíssima não aparece.

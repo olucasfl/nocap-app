@@ -221,3 +221,33 @@ body {
   touch-action: pan-x pan-y;
   -webkit-text-size-adjust: 100%;
 }
+
+/* aviso rápido por cima de qualquer tela (sala encerrada, quem saiu) */
+.rm-toast {
+  position: fixed;
+  top: max(12px, env(safe-area-inset-top));
+  left: 50%;
+  translate: -50% 0;
+  z-index: 60;
+  max-width: calc(100vw - 32px);
+  padding: 8px 16px;
+  border: 2px solid var(--ink, #1b1230);
+  border-radius: 999px;
+  background: var(--paper, #fff);
+  color: var(--ink, #1b1230);
+  font-size: 13px;
+  box-shadow: 0 3px 0 var(--ink, #1b1230);
+  pointer-events: none;
+  animation: rm-toast-in 0.2s ease-out;
+}
+@keyframes rm-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rm-toast {
+    animation: none;
+  }
+}

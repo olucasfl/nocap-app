@@ -13,7 +13,7 @@ import { useAuth } from '@/lib/auth';
 import { sfx } from '@/lib/sfx';
 import { useOnline } from '@/lib/network';
 import { useUpdateNeeded } from '@/lib/update-state';
-import { clearLastGame, resumeRoom, useRoom, type RoomGame } from '@/lib/rooms';
+import { clearLastGame, resumeRoom, showNotice, useRoom, type RoomGame } from '@/lib/rooms';
 import { ChatDock } from '@/components/Chat';
 import { Final } from './room/Final';
 import { Lobby } from './room/Lobby';
@@ -173,24 +173,9 @@ function Entry({
 }
 
 /** `/sala` e `/sala/ABCD`: entra pelo código do link, ou mostra a sala em que você já está. */
+/** `/sala` e `/sala/ABCD`: entra pelo código do link, ou mostra a sala em que você já está. */
 export function RoomPage(props: { code?: string; game?: RoomGame }) {
-  return (
-    <>
-      <RoomPageInner {...props} />
-      <RoomToast />
-    </>
-  );
-}
-
-/** Aviso rápido por cima de qualquer tela da sala (quem saiu). */
-function RoomToast() {
-  const notice = useRoom((s) => s.notice);
-  if (!notice) return null;
-  return (
-    <p key={notice.id} className="rm-toast mono" role="status" data-testid="room-toast">
-      {notice.text}
-    </p>
-  );
+  return <RoomPageInner {...props} />;
 }
 
 function RoomPageInner({ code, game = 'color' }: { code?: string; game?: RoomGame }) {
@@ -208,11 +193,16 @@ function RoomPageInner({ code, game = 'color' }: { code?: string; game?: RoomGam
   const inRoom = !!snapshot;
 
   // Saiu da sala (por conta própria): volta para a página do jogo dela, na aba de amigos.
-  // Se houve um aviso (expulso, sala encerrada), fica na entrada para a pessoa ler.
+  // Se houve um aviso (expulso, sala encerrada), ele aparece na tela de destino.
   useEffect(() => {
-    if (snapshot || !lastGame || message) return;
+    if (snapshot || !lastGame) return;
     if (status !== 'closed' && status !== 'idle') return;
     clearLastGame();
+    // o motivo (sala encerrada, removido...) vira um aviso na tela para onde a pessoa volta, não uma tela de entrada de sala
+    if (message) {
+      showNotice(message);
+      useRoom.setState({ message: '' });
+    }
     // os jogos do Fox Cap! (Fut Fox, Desmorona!, Atravessa!) voltam para a tela do Fox Cap!
     if (
       lastGame === 'desmorona' ||

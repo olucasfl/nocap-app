@@ -191,16 +191,13 @@ test('encerrar a sala: todo mundo sai e ninguém fica preso no "entrando na sala
   await A.getByRole('button', { name: 'Encerrar', exact: true }).first().click({ timeout: 15000 });
   await A.getByRole('button', { name: 'Encerrar', exact: true }).last().click({ timeout: 15000 });
   for (const page of [A, B]) {
-    // saiu da sala: ou lê o aviso de sala encerrada, ou já voltou para a tela dos jogos
-    await expect
-      .poll(
-        async () =>
-          (await page.getByText(/sala foi encerrada/i).count()) > 0 || !/\/sala\//.test(page.url()),
-        { timeout: 15000 },
-      )
-      .toBe(true);
-    // e nada de carregando eterno
-    await page.waitForTimeout(2000);
+    // todo mundo volta para a tela do jogo (Fox Cap!), com o aviso, e nunca para a tela de entrada da Mesmíssima
+    await expect(page).toHaveURL(/\/fox-cap/, { timeout: 15000 });
+    await expect(page.getByTestId('room-toast')).toContainText(/sala foi encerrada/i, {
+      timeout: 5000,
+    });
+    await page.waitForTimeout(1500);
     await expect(page.getByText('Entrando na sala')).toHaveCount(0);
+    await expect(page.getByText('Mesmíssima')).toHaveCount(0);
   }
 });

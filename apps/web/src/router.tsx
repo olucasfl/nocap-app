@@ -11,6 +11,7 @@ import type { GameTab } from '@/components/GameTabs';
 import { LoadFailed } from '@/components/LoadFailed';
 import { PageLoader } from '@/components/Loader';
 import { NetworkStatus } from '@/components/NetworkStatus';
+import { RoomToast } from '@/components/RoomToast';
 import { PullToRefresh } from '@/components/PullToRefresh';
 import { parseRankingsSearch, type RankingsSearch } from '@/lib/ranking';
 import { GuestWelcome } from '@/components/GuestWelcome';
@@ -37,6 +38,7 @@ const rootRoute = createRootRoute({
       <PresenceBeat />
       <ProgressSync />
       <GuestWelcome />
+      <RoomToast />
     </>
   ),
 });
