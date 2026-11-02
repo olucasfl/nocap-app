@@ -293,4 +293,4 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 
 ### Rodada 32: batida forte com efeito só contra bola lenta
 
-- Bola que chega **devagar** (< 7 m/s, `PP_SLOW_IN`): dá para bater forte e com efeito (topspin, de lado, da direita para a esquerda): a bola desce na mesa e sai rápida (teste: >95% caem, >60% saem a mais de 11 m/s). Bola que chega **rápida**: a batida forte não é corrigida e sai da mesa na maior parte das vezes (<60% caem), é preciso controle.
+- Bola que chega **devagar** (< 4,5 m/s, `PP_SLOW_IN`): dá para bater forte e com efeito (topspin, de lado, da direita para a esquerda): a bola desce na mesa e sai rápida (teste: >95% caem, >60% saem a mais de 11 m/s). Bola que chega **rápida**: a batida forte não é corrigida e sai da mesa na maior parte das vezes (<60% caem), é preciso controle.

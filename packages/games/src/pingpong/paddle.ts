@@ -77,7 +77,7 @@ export interface PpHitInfo {
 }
 
 /** Bola que chega mais devagar que isto (m/s) deixa bater forte e com efeito sem sair da mesa; mais rápida, a batida forte pode sair. */
-const PP_SLOW_IN = 7;
+const PP_SLOW_IN = 4.5;
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 
 /**

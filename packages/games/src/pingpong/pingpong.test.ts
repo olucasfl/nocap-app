@@ -944,11 +944,12 @@ describe('batida forte com efeito: depende da bola que chega', () => {
     return { ok: ok / n, fast: fast / n };
   };
   it('bola lenta: a batida forte de lado cai na mesa e sai rápida', () => {
-    const r = run(4);
+    const r = run(3);
     expect(r.ok).toBeGreaterThan(0.95);
     expect(r.fast).toBeGreaterThan(0.6);
   });
-  it('bola rápida: a batida forte de lado pode sair (precisa de controle)', () => {
-    expect(run(14).ok).toBeLessThan(0.6);
+  it('bola de velocidade normal: a batida forte de lado sai da mesa na maior parte das vezes', () => {
+    expect(run(9).ok).toBeLessThan(0.45);
+    expect(run(14).ok).toBeLessThan(0.45);
   });
 });

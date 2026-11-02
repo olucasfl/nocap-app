@@ -34,7 +34,8 @@ function run(opts: {
   let rejected = 0;
   let accepted = 0;
   const sims = { A, B, S };
-  for (let n = 1; n <= opts.ticks + 60; n++) {
+  // depois que os bots param, a rede ainda esvazia o que está a caminho (uma batida do último tick demora a chegar)
+  for (let n = 1; n <= opts.ticks + 60 || (q.length > 0 && n <= opts.ticks + 400); n++) {
     const drain = n > opts.ticks;
     // entrega o que chegou
     for (let i = q.length - 1; i >= 0; i--) {
