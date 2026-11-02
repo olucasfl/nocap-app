@@ -96,6 +96,8 @@ export const PP_AIM = 0.42;
 export const PP_TOSS_Y = 1.25;
 /** No saque a raquete pega a bola que está até esta distância (m) à frente do plano dela, se a mão vai para a frente. */
 export const PP_SERVE_REACH_SLACK = 0.9;
+/** No saque a raquete pega a bola até este múltiplo do raio dela (mais generosa que na troca). */
+export const PP_SERVE_TOL = 1.5;
 export const PP_SERVE_FRONT = 0.8;
 /** A bola do saque fica parada na frente da raquete (altura) e o saque começa depois deste tempo (s). */
 export const PP_SERVE_Y = 1.5;

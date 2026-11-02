@@ -35,6 +35,7 @@ import {
   PP_SERVE_AUTO,
   PP_SERVE_FRONT,
   PP_SERVE_REACH_SLACK,
+  PP_SERVE_TOL,
   PP_SUB,
   PP_TICK,
   ppTossSpeed,
@@ -549,7 +550,7 @@ export class PpMatch {
       f1 < 0 &&
       f1 > -PP_SERVE_REACH_SLACK &&
       pad.vz > 1.2 &&
-      Math.hypot(b.x - pad.x, b.y - pad.y) <= PP_PAD_R + PP_R * 0.7
+      Math.hypot(b.x - pad.x, b.y - pad.y) <= PP_PAD_R * PP_SERVE_TOL + PP_R
     ) {
       // saque: qualquer avanço da mão para a bola que está logo à frente a pega, mesmo sem a raquete chegar ao plano exato
       b.z = plane(k1) - s * 0.01;
@@ -576,7 +577,9 @@ export class PpMatch {
     const cy = pr.y + (b.y - pr.y) * t;
     const px = x0 + (pad.x - x0) * k;
     const py = y0 + (pad.y - y0) * k;
-    if (Math.hypot(cx - px, cy - py) > PP_PAD_R + PP_R * 0.7) return;
+    // no saque a raquete é mais generosa: pegou perto da bola, pegou
+    const tol = this.phase === 'toss' ? PP_PAD_R * PP_SERVE_TOL + PP_R : PP_PAD_R + PP_R * 0.7;
+    if (Math.hypot(cx - px, cy - py) > tol) return;
     b.x = cx;
     b.y = cy;
     // a bola sai da face (para o lado da rede), sem ficar presa dentro da raquete

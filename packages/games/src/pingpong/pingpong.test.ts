@@ -827,3 +827,88 @@ describe('saque: qualquer avanço da mão pega a bola', () => {
     }
   });
 });
+
+describe('saque nunca erra a mesa', () => {
+  it('qualquer força, direção e altura: a bola do saque cai na mesa do outro lado', () => {
+    const rng = createRng('serve-never-misses');
+    let bad = 0;
+    const n = 3000;
+    for (let i = 0; i < n; i++) {
+      const side = i % 2;
+      const b = ppNewBall();
+      b.x = (rng() - 0.5) * 6.2;
+      b.y = 1.2 + rng() * 1.8;
+      b.z = (side === 0 ? 1 : -1) * 3.0;
+      b.vx = 0;
+      b.vy = -rng() * 5;
+      b.vz = 0;
+      ppPaddleHit(b, side, {
+        x: b.x + (rng() - 0.5) * 0.6,
+        y: b.y + (rng() - 0.5) * 0.6,
+        vx: (rng() - 0.5) * 18,
+        vy: (rng() - 0.5) * 12,
+        vz: rng() * 14,
+        reach: rng() * 1.5,
+        serve: true,
+      } as Parameters<typeof ppPaddleHit>[2]);
+      if (!ppLanding(b, side, false).ok) bad++;
+    }
+    expect(bad).toBe(0);
+  });
+});
+
+describe('saque de ponta a ponta', () => {
+  it('com a mão em qualquer lugar e momento a bola batida cai na mesa (sem rede nem falta)', () => {
+    const rng = createRng('serve-e2e');
+    const res: Record<string, number> = {};
+    for (let k = 0; k < 400; k++) {
+      const m = new PpMatch(0);
+      const px = (rng() - 0.5) * 6;
+      const zHand = rng() * 1.6;
+      const delay = Math.floor(rng() * 40);
+      const swingX = (rng() - 0.5) * 2; // moves x target while swinging
+      let clicked = false;
+      let tossT = -1;
+      const ev: PpEvent[] = [];
+      for (let i = 0; i < 60 * 5; i++) {
+        if (m.phase === 'toss' && tossT < 0) tossT = i;
+        const sw = tossT >= 0 && i - tossT > delay;
+        m.step([
+          {
+            ...ppIdleInput(),
+            manual: false,
+            x: px + (sw ? swingX : 0),
+            y: 1.5,
+            z: sw ? zHand : 0,
+            serve: m.phase === 'serve' && !clicked && i > 20,
+          },
+          ppIdleInput(),
+        ]);
+        if (m.phase === 'toss') clicked = true;
+        ev.push(...m.drain());
+        if (
+          ev.some((e) => e.type === 'point' || e.type === 'fault') ||
+          ev.filter((e) => e.type === 'bounce').length >= 2
+        )
+          break;
+      }
+      const hit = ev.some((e) => e.type === 'hit');
+      const net = ev.some((e) => e.type === 'net');
+      const fault = ev.some((e) => e.type === 'fault');
+      const b1 = ev.find((e) => e.type === 'bounce') as any;
+      const key = !hit
+        ? 'sem-batida'
+        : net
+          ? 'rede'
+          : fault
+            ? 'falta'
+            : b1?.side === 1
+              ? 'mesa-ok'
+              : 'outro:' + JSON.stringify(b1);
+      res[key] = (res[key] ?? 0) + 1;
+    }
+    // bateu na bola: sempre cai na mesa (nada de rede nem falta); só não bate quem tirou a mão de perto da bola
+    expect(Object.keys(res).filter((k) => k !== 'mesa-ok' && k !== 'sem-batida')).toEqual([]);
+    expect(res['mesa-ok'] ?? 0).toBeGreaterThan(380);
+  });
+});

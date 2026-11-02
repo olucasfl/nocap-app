@@ -281,3 +281,8 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 ### Rodada 29: o saque pega com qualquer avanço da mão
 
 - Antes a bola só era batida se o plano da raquete atravessasse o plano dela; uma batida curta (a mão avança mas não chega até a bola) passava sem pegar. Agora, no saque, a mão indo para a frente (>1,2 m/s) pega a bola que está até 0,9 m à frente do plano da raquete, se estiver ao alcance na lateral e na altura (`PP_SERVE_REACH_SLACK`). A direção e a hora continuam sendo suas; mão parada continua sem sacar.
+
+### Rodada 30: o saque não erra a mesa
+
+- Bateu na bola no saque, com qualquer força, direção, altura (vermelho, amarelo ou verde): a bola cai na mesa do outro lado (teste com 3000 batidas aleatórias e com 400 saques de ponta a ponta no motor: nenhuma rede nem falta).
+- A raquete do saque é mais generosa (`PP_SERVE_TOL` 1,5x o raio): perto da bola já pega. Só não bate quem tira a mão para longe da bola.
