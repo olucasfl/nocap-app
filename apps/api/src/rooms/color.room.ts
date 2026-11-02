@@ -824,7 +824,7 @@ export class PingRoom extends ColorRoom {
     if (out.length > 0) this.broadcast('pev', out);
     // o estado fica fora da classe: dentro de uma sala do Fox Cap! este método roda com `this` de outra sala
     const now = Date.now();
-    if (now - (padsAt.get(this) ?? 0) >= 33) {
+    if (now - (padsAt.get(this) ?? 0) >= 20) {
       padsAt.set(this, now);
       const frame = engine.padsFrame();
       if (frame.length > 0) this.broadcast('ppads', frame);

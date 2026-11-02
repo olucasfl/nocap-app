@@ -574,6 +574,11 @@ export function PingPlay({
     scene.online = !!net;
     scene.sim = net;
     const oppTarget = { x: 0, y: 1.3, z: 0 };
+    // a raquete do outro chega ~50 vezes por segundo: aqui ela segue o alvo com a velocidade que ele vinha tendo e um
+    // suavizado curto (sem degraus a cada pacote e sem atraso grande)
+    const oppVel = { x: 0, y: 0, z: 0 };
+    const oppSmooth = { x: 0, y: 1.3, z: 0 };
+    let oppAt = performance.now();
     /** Já chegou o histórico da sala (quem entra no meio ou volta só começa a andar depois dele). */
     let synced = !net;
     let padSendAt = 0;
@@ -605,9 +610,19 @@ export function PingPlay({
           if (!Array.isArray(m)) return;
           for (const row of m as number[][]) {
             if (row[0] === oppIdx) {
-              oppTarget.x = row[1] ?? 0;
-              oppTarget.y = row[2] ?? 1.3;
-              oppTarget.z = row[3] ?? 0;
+              const nx = row[1] ?? 0;
+              const ny = row[2] ?? 1.3;
+              const nz = row[3] ?? 0;
+              const t = performance.now();
+              const dtp = Math.max(0.008, (t - oppAt) / 1000);
+              const lim = (v: number, m: number) => Math.max(-m, Math.min(m, v));
+              oppVel.x = lim((nx - oppTarget.x) / dtp, 25);
+              oppVel.y = lim((ny - oppTarget.y) / dtp, 6);
+              oppVel.z = lim((nz - oppTarget.z) / dtp, 25);
+              oppTarget.x = nx;
+              oppTarget.y = ny;
+              oppTarget.z = nz;
+              oppAt = t;
             }
           }
         }),
@@ -696,8 +711,16 @@ export function PingPlay({
           flushWaiting();
           alpha = Math.max(0, Math.min(1, exact - target));
           // a raquete do outro chega a 30 vezes por segundo: aqui ela suaviza até lá
-          ppPadStepZ(match.pad(oppIdx), oppTarget.x, oppTarget.y, oppTarget.z, dt);
-          if (!spectator && now - padSendAt > 33) {
+          {
+            // alvo = último pacote + o que ele andaria desde então (no máximo 60 ms), e o desenho persegue esse alvo
+            const ahead = Math.min(0.06, (performance.now() - oppAt) / 1000);
+            const k = 1 - Math.exp(-dt * 26);
+            oppSmooth.x += (oppTarget.x + oppVel.x * ahead - oppSmooth.x) * k;
+            oppSmooth.y += (oppTarget.y + oppVel.y * ahead - oppSmooth.y) * k;
+            oppSmooth.z += (oppTarget.z + oppVel.z * ahead - oppSmooth.z) * k;
+            ppPadStepZ(match.pad(oppIdx), oppSmooth.x, oppSmooth.y, oppSmooth.z, dt);
+          }
+          if (!spectator && now - padSendAt > 20) {
             padSendAt = now;
             {
               const mine = match.pad(myIdx);

@@ -960,7 +960,12 @@ export class PingScene {
     let sz = lerp(pv.ball.z, cur.z, a);
     if (this.online) {
       if (this.lag > 0) {
-        this.lag = Math.max(0, this.lag - dt * 60 * 0.7);
+        // a bola desenhada alcança a da partida sem correr: o tempo que falta até chegar em mim decide a pressa (a
+        // diferença some devagar quando a bola ainda tem caminho e um pouco mais rápido quando ela já está perto)
+        const toMe = Math.abs(PP_PAD_Z - Math.abs(cur.z));
+        const remain = Math.max(0.2, toMe / Math.max(2, Math.abs(cur.vz)));
+        const rate = clamp(this.lag / (0.8 * remain), 4, 24);
+        this.lag = Math.max(0, this.lag - dt * rate);
         const d = this.delayed(a);
         sx = d.x;
         sy = d.y;
@@ -983,7 +988,7 @@ export class PingScene {
             z: this.shown.z - this.err.z,
           };
         this.hold.t += dt;
-        if (this.hold.t < 0.3) {
+        if (this.hold.t < 0.2) {
           sx = this.hold.x;
           sy = this.hold.y;
           sz = this.hold.z;
