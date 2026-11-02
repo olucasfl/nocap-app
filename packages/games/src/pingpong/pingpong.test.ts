@@ -953,3 +953,53 @@ describe('batida forte com efeito: depende da bola que chega', () => {
     expect(run(14).ok).toBeLessThan(0.45);
   });
 });
+
+describe('lenta, média e rápida bem separadas', () => {
+  const out = (hand: number) => {
+    const b = ppNewBall();
+    b.x = 0;
+    b.y = 1.3;
+    b.z = 3.3;
+    b.vz = 7;
+    b.vy = -1;
+    return ppPaddleHit(b, 0, { x: 0, y: 1.3, vx: 0, vy: 0, vz: hand, reach: 0.4 } as never).speed;
+  };
+  it('a batida forte sai bem mais rápida que a média, e a média mais que a lenta', () => {
+    const lenta = out(2.5);
+    const media = out(5.5);
+    const rapida = out(9.5);
+    expect(media).toBeGreaterThan(lenta + 2);
+    expect(rapida).toBeGreaterThan(media + 5);
+    expect(rapida).toBeGreaterThan(16);
+    expect(media).toBeLessThan(13);
+  });
+});
+
+describe('bola lenta de verdade', () => {
+  it('uma empurrada mansa sai em arco lento (pouca velocidade para a frente) e ainda cai na mesa', () => {
+    const rng = createRng('lentas');
+    let ok = 0;
+    let slow = 0;
+    const n = 300;
+    for (let i = 0; i < n; i++) {
+      const b = ppNewBall();
+      b.x = (rng() - 0.5) * 3;
+      b.y = 1.2 + rng() * 0.5;
+      b.z = 3.3;
+      b.vz = 3 + rng() * 7;
+      b.vy = -1 - rng();
+      const info = ppPaddleHit(b, 0, {
+        x: b.x,
+        y: b.y,
+        vx: (rng() - 0.5) * 2,
+        vy: 0,
+        vz: 1 + rng() * 1.5,
+        reach: 0.3,
+      } as never);
+      if (ppLanding(b, 0, false).ok) ok++;
+      if (Math.hypot(b.vx, b.vz) < 6.5 && info.speed > 0) slow++;
+    }
+    expect(ok / n).toBeGreaterThan(0.95);
+    expect(slow / n).toBeGreaterThan(0.6);
+  });
+});

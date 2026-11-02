@@ -11,6 +11,7 @@ import {
   PP_PAD_Y_MAX,
   PP_PAD_Y_MIN,
   PP_PAD_Z,
+  ppIncomingTier,
   PP_R,
   PP_TOP,
   PP_W,
@@ -89,6 +90,10 @@ export class PingScene {
 
   // bola
   private ball: THREE.Group;
+  /** Halo da bola que vem para mim: verde = lenta (dá para bater forte), amarelo = média, vermelho = rápida. */
+  private halo!: THREE.Sprite;
+  /** Nível da bola que vem para mim agora (0 lenta, 1 média, 2 rápida; -1 = não vem). */
+  incoming = -1;
   private ballMesh: THREE.Mesh;
   private ballShadow: THREE.Mesh;
   private trail: THREE.Sprite[] = [];
@@ -253,6 +258,18 @@ export class PingScene {
     );
     this.ballMesh.castShadow = true;
     this.ball.add(this.ballMesh);
+    this.halo = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: glowTex(),
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+      }),
+    );
+    this.halo.scale.setScalar(PP_R * 9);
+    this.ball.add(this.halo);
     this.ball.scale.setScalar(1.25);
     // anel do efeito: gira em torno do eixo do giro; vermelho = topspin, azul = corte, amarelo = efeito de lado
     this.spinRing = new THREE.Mesh(
@@ -972,6 +989,18 @@ export class PingScene {
     const by = sy;
     const bz = this.vz(sz);
     this.ball.position.set(bx, by, bz);
+    // a cor do halo diz a velocidade da bola que vem para mim (a lenta é a hora de bater forte)
+    {
+      const comes = m.phase === 'rally' && m.expect === this.me;
+      const tierNow = comes ? ppIncomingTier(Math.hypot(cur.vx, cur.vz)) : -1;
+      this.incoming = tierNow;
+      const hm = this.halo.material as THREE.SpriteMaterial;
+      if (tierNow < 0) hm.opacity = 0;
+      else {
+        hm.color.setHex(tierNow === 0 ? 0x3fe08a : tierNow === 1 ? 0xffd34d : 0xff5a4a);
+        hm.opacity = tierNow === 0 ? 0.85 : tierNow === 1 ? 0.4 : 0.6;
+      }
+    }
     // giro: o eixo e a rapidez vêm do efeito (rad/s), um pouco abrandados para a faixa continuar legível
     const w = Math.hypot(cur.wx, cur.wy, cur.wz);
     if (w > 0.5 && m.phase !== 'serve') {
@@ -1000,7 +1029,7 @@ export class PingScene {
     if (this.trailPos.length > this.trail.length) this.trailPos.pop();
     const tier = m.trailTier;
     const showTrail = tier > 0 && m.phase !== 'serve' && !this.reduced;
-    const heat = tier > 0 ? 1 : clamp((speed - 9) / 7, 0, 1);
+    const heat = tier > 0 ? 1 : clamp((speed - 12) / 8, 0, 1);
     for (let i = 0; i < this.trail.length; i++) {
       const s = this.trail[i];
       const p = this.trailPos[i + 1];
@@ -1014,7 +1043,7 @@ export class PingScene {
       s.position.set(p.x, p.y, p.z);
       s.scale.setScalar(PP_R * (2 + 1.6 * heat + tier * 0.7) * k + 0.02);
       const sm = s.material as THREE.SpriteMaterial;
-      sm.opacity = (0.1 + 0.32 * heat) * k;
+      sm.opacity = (0.08 + 0.4 * heat) * k;
       // só um borrão de movimento claro; o smash cronometrado leva um rastro roxo, mais claro quanto melhor o acerto
       sm.color.setHex(
         tier >= 3 ? 0xd9b3ff : tier === 2 ? 0xa86bff : tier === 1 ? 0x8a58e0 : 0xdfe9ff,
@@ -1050,12 +1079,22 @@ export class PingScene {
         if (q) pts.setXYZ(i, q.x, q.y, q.z);
       }
       pts.needsUpdate = true;
-      this.trailLine.visible = inFlight && (m.trailTier > 0 || speed > 6);
+      this.trailLine.visible = inFlight && (m.trailTier > 0 || speed > 12);
       const lm = this.trailLine.material as THREE.LineBasicMaterial;
       const tr = m.trailTier;
-      lm.color.setHex(tr >= 3 ? 0xe7b8ff : tr === 2 ? 0xb455ff : tr === 1 ? 0x9a5bff : 0xffffff);
+      lm.color.setHex(
+        tr >= 3
+          ? 0xe7b8ff
+          : tr === 2
+            ? 0xb455ff
+            : tr === 1
+              ? 0x9a5bff
+              : speed > 16
+                ? 0xffe3b0
+                : 0xffffff,
+      );
       // rastro simples: some quando a bola está devagar e fica mais firme (sem brilho) quando ela está rápida
-      lm.opacity = tr > 0 ? 0.9 : clamp((speed - 5) / 14, 0, 1) * 0.5;
+      lm.opacity = tr > 0 ? 0.9 : clamp((speed - 12) / 9, 0, 1) * 0.8;
     }
 
     // raquetes: a de quem olha é a primeira (perto da câmera), a do outro lado é a segunda. A raquete avança com a mão

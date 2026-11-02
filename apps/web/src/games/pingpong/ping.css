@@ -866,3 +866,44 @@
   box-shadow: 0 0 0 2px rgba(16, 18, 24, 0.9);
   will-change: transform;
 }
+
+/* velocidade da bola que vem para mim: etiqueta pequena embaixo, na cor do halo da bola */
+.png-speed-chip {
+  position: absolute;
+  left: 50%;
+  bottom: max(14px, calc(env(safe-area-inset-bottom) + 8px));
+  translate: -50% 0;
+  padding: 5px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(16, 18, 24, 0.7);
+  font: 700 12px / 1.2 var(--font-body, system-ui);
+  letter-spacing: 0.1em;
+  color: #fff;
+  opacity: 0;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 4;
+}
+.png-speed-chip.is-0 {
+  opacity: 1;
+  border-color: #3fe08a;
+  color: #3fe08a;
+}
+.png-speed-chip.is-1 {
+  opacity: 0.8;
+  border-color: #ffd34d;
+  color: #ffd34d;
+}
+.png-speed-chip.is-2 {
+  opacity: 1;
+  border-color: #ff5a4a;
+  color: #ff5a4a;
+}
+@media (orientation: landscape) and (max-height: 520px) {
+  .png-speed-chip {
+    bottom: 6px;
+    font-size: 11px;
+    padding: 3px 10px;
+  }
+}

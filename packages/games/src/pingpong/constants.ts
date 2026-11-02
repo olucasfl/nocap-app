@@ -78,7 +78,7 @@ export const PP_TILT_OFF = 0.05;
 /** O quanto da velocidade da mão passa para a bola (a raquete é leve e a bola escapa): menos sensível, mais perdoa. */
 export const PP_PAD_COUPLE = 0.7;
 /** Velocidade máxima da bola depois da batida (impossível de devolver acima disto). */
-export const PP_V_MAX = 22;
+export const PP_V_MAX = 25;
 /** A bola que sai mais rápido que isto, descendo, conta como smash (só para o efeito e o som). */
 export const PP_SMASH_SPEED = 10.5;
 
@@ -155,3 +155,35 @@ export const PP_SMASH_V = [0, 12, 17, 24] as const;
  * níveis fáceis do Online Pingpang. A trajetória é a mesma, só passa mais devagar.
  */
 export const PP_WORLD_SPEED = 1.2;
+
+/**
+ * A velocidade que a bola sai pela rapidez da mão (m/s da mão -> m/s da bola): lenta (corte, empurrada), média e rápida
+ * bem separadas, para a batida forte parecer forte e a média parecer média.
+ */
+/** Bola que chega com velocidade horizontal (para a frente e para o lado) menor que isto (m/s) é "lenta": deixa bater forte e com efeito sem sair da mesa. */
+export const PP_SLOW_IN = 4.5;
+/** Até aqui (m/s, horizontal) a bola que chega é "média"; acima é "rápida" (a batida forte dela pode sair). */
+export const PP_MED_IN = 10;
+/** Nível da bola que chega pela velocidade: 0 lenta, 1 média, 2 rápida. */
+export const ppIncomingTier = (speed: number): 0 | 1 | 2 =>
+  speed < PP_SLOW_IN ? 0 : speed < PP_MED_IN ? 1 : 2;
+export const PP_SPEED_LADDER: readonly (readonly [number, number])[] = [
+  [0, 3.4],
+  [2, 4.2],
+  [3.5, 7],
+  [5.5, 10.5],
+  [7, 12.5],
+  [8.5, 17],
+  [10, 22],
+  [12, 25],
+];
+export function ppLadderSpeed(hand: number): number {
+  const L = PP_SPEED_LADDER;
+  if (hand <= L[0]![0]) return L[0]![1];
+  for (let i = 1; i < L.length; i++) {
+    const [h1, s1] = L[i]!;
+    const [h0, s0] = L[i - 1]!;
+    if (hand <= h1) return s0 + ((s1 - s0) * (hand - h0)) / (h1 - h0);
+  }
+  return L[L.length - 1]![1];
+}

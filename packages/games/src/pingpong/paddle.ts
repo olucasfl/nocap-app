@@ -10,6 +10,8 @@ import {
   PP_PAD_Z,
   PP_POPUP_VIN,
   ppServeTier,
+  ppLadderSpeed,
+  PP_SLOW_IN,
   PP_SMASH_V,
   PP_R,
   PP_SMASH_SPEED,
@@ -76,8 +78,6 @@ export interface PpHitInfo {
   tier: number;
 }
 
-/** Bola que chega mais devagar que isto (m/s) deixa bater forte e com efeito sem sair da mesa; mais rápida, a batida forte pode sair. */
-const PP_SLOW_IN = 4.5;
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 
 /**
@@ -279,6 +279,26 @@ export function ppPaddleHit(b: PpBall, side: number, pad: PpPaddleMotion, guide 
       }
     }
   }
+  // lenta, média e rápida bem separadas: a rapidez da mão decide a velocidade da bola (bloqueio, lob, subida, saque e smash
+  // têm a sua)
+  if (
+    tier === 0 &&
+    !isServe &&
+    !drop &&
+    stroke !== 'bloqueio' &&
+    stroke !== 'lob' &&
+    stroke !== 'subida' &&
+    stroke !== 'curta'
+  ) {
+    const sp0 = Math.hypot(vx, vy, vz);
+    const want = ppLadderSpeed(hand);
+    if (sp0 > 0.5) {
+      const k = want / sp0;
+      vx *= k;
+      vy *= k;
+      vz *= k;
+    }
+  }
   const cap =
     (drop ? 0.3 * vin + 2.4 : 0.6 * vin + 4) + 13 * power * (drop ? 0.3 : 1) + (smashing ? 4.5 : 0);
   const sp = Math.hypot(vx, vy, vz);
@@ -349,7 +369,7 @@ export function ppPaddleHit(b: PpBall, side: number, pad: PpPaddleMotion, guide 
     ppGuideHit(b, side, false, true);
   } else if (guide && (power < PP_ASSIST_MAX_POWER || isServe)) {
     ppGuideHit(b, side, drop, power < PP_ASSIST_LATERAL_POWER || isServe);
-  } else if (guide && vin < PP_SLOW_IN) {
+  } else if (guide && Math.hypot(inVx, inVz) < PP_SLOW_IN) {
     // bola que chega devagar: dá para bater forte e com efeito (topspin, de lado) e ela desce na mesa rápida
     ppGuideHit(b, side, false, true, { vyLo: -9, hMax: 22 });
   } else if (guide) {
