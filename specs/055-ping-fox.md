@@ -277,3 +277,7 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 - **Smash mais frequente:** o bot agora pega na borda uma bola forte de vez em quando (`mishit`: fácil 20%, médio 14%, difícil 6%) e a bola que vale a "subida" passou de 7,5 para 6 m/s. O teste de ordem dos bots passou de 3x para 2x pontos (o bot também erra de propósito).
 - **Smash do verde do meio** (nível 3) nunca erra: `ppSmashFix` procura uma saída larga que caia na mesa e vá forte (teste: 100% em 400 casos). Os outros níveis acertam quase sempre (>90% e >85%), mas podem errar.
 - **Celular:** só um toque (soltar sem arrastar) lança a bola; arrastar leva a raquete para outro lugar sem lançar.
+
+### Rodada 29: o saque pega com qualquer avanço da mão
+
+- Antes a bola só era batida se o plano da raquete atravessasse o plano dela; uma batida curta (a mão avança mas não chega até a bola) passava sem pegar. Agora, no saque, a mão indo para a frente (>1,2 m/s) pega a bola que está até 0,9 m à frente do plano da raquete, se estiver ao alcance na lateral e na altura (`PP_SERVE_REACH_SLACK`). A direção e a hora continuam sendo suas; mão parada continua sem sacar.

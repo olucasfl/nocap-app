@@ -34,6 +34,7 @@ import {
   PP_CATCH,
   PP_SERVE_AUTO,
   PP_SERVE_FRONT,
+  PP_SERVE_REACH_SLACK,
   PP_SUB,
   PP_TICK,
   ppTossSpeed,
@@ -542,6 +543,19 @@ export class PpMatch {
     const pr = this.prev;
     const f0 = (pr.z - plane(k0)) * s;
     const f1 = (b.z - plane(k1)) * s;
+    if (
+      this.phase === 'toss' &&
+      !this.swingNow[p === 0 ? 0 : 1] &&
+      f1 < 0 &&
+      f1 > -PP_SERVE_REACH_SLACK &&
+      pad.vz > 1.2 &&
+      Math.hypot(b.x - pad.x, b.y - pad.y) <= PP_PAD_R + PP_R * 0.7
+    ) {
+      // saque: qualquer avanço da mão para a bola que está logo à frente a pega, mesmo sem a raquete chegar ao plano exato
+      b.z = plane(k1) - s * 0.01;
+      this.hit(p, true, pad.x, pad.y);
+      return;
+    }
     if (!(f0 < 0 && f1 >= 0)) {
       // bola que já passou do plano: ainda dá para alcançar (pegar de volta) enquanto a raquete estiver em cima dela
       if (

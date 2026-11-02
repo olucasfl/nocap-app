@@ -792,3 +792,38 @@ describe('smash cronometrado', () => {
     expect(rates(1)).toBeGreaterThan(0.85);
   });
 });
+
+describe('saque: qualquer avanço da mão pega a bola', () => {
+  it('bater para a frente com a bola na altura da raquete sempre pega, mesmo curto', () => {
+    for (const zf of [0.3, 0.5, 0.7, 1.2, 1.6]) {
+      for (const px of [-2, 0, 2.2]) {
+        const m = new PpMatch(0);
+        const ev: PpEvent[] = [];
+        let clicked = false;
+        let swingFrom = -1;
+        for (let i = 0; i < 60 * 4; i++) {
+          if (m.phase === 'toss' && swingFrom < 0 && m.ball.vy < 0 && m.ball.y < 2.15)
+            swingFrom = i;
+          m.step([
+            {
+              ...ppIdleInput(),
+              manual: false,
+              x: px,
+              y: 1.5,
+              z: swingFrom >= 0 ? zf : 0,
+              serve: m.phase === 'serve' && !clicked && i > 20,
+            },
+            ppIdleInput(),
+          ]);
+          if (m.phase === 'toss') clicked = true;
+          ev.push(...m.drain());
+          if (ev.some((e) => e.type === 'hit' || e.type === 'fault')) break;
+        }
+        expect(
+          ev.some((e) => e.type === 'hit' && e.serve),
+          `z=${zf} x=${px}`,
+        ).toBe(true);
+      }
+    }
+  });
+});

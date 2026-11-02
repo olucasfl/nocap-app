@@ -94,6 +94,8 @@ export const PP_REACH_DEEP = 0.65;
 /** Quanto o movimento lateral da mão desvia a bola (pontaria). */
 export const PP_AIM = 0.42;
 export const PP_TOSS_Y = 1.25;
+/** No saque a raquete pega a bola que está até esta distância (m) à frente do plano dela, se a mão vai para a frente. */
+export const PP_SERVE_REACH_SLACK = 0.9;
 export const PP_SERVE_FRONT = 0.8;
 /** A bola do saque fica parada na frente da raquete (altura) e o saque começa depois deste tempo (s). */
 export const PP_SERVE_Y = 1.5;
