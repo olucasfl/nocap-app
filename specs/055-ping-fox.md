@@ -391,3 +391,8 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 - **Direção:** no saque o arrasto para o lado pesa 2,6x mais na direção da bola (a ajuda continua pondo na mesa): arrastar 1,6 m para cada lado manda a bola ~1,7 m para o lado.
 - **Celular:** dedo pousado e parado por 220 ms lança a bola sem soltar (`HOLD_LAUNCH_MS`) e o dedo continua na raquete para arrastar e sacar; arrastar antes só reposiciona (o toque curto e soltar ainda lança, como antes). Os avisos do saque explicam isso.
 - Testes: motor (não saca com a bola no alto; direção para os dois lados) e e2e do gesto inteiro no celular (dedo parado lança; mexer com a bola no alto não saca; arrastar quando ela desce saca).
+
+### Rodada 51: a bola não sai tão fácil nem tão rápida
+
+- Relato: "eu nem tô botando tanta força, é muito rápido e a bola tá saindo da mesa". Causa: na rodada 34 esticamos a escala da mão (até 24 m/s) e a velocidade da bola por ela, mas a ajuda que põe a bola na mesa continuou valendo só até uma força na escala antiga (power 0,62 = mão de 5,6 m/s), que no celular se passa fácil. Medido: mão de 6 a 8 m/s (bola a ~12 m/s) já saía em 12% das vezes.
+- Agora a escala da mão vai até 30 m/s (`PP_HAND_VZ_MAX`; lateral até 20), a velocidade da bola pela mão está mais esticada (`PP_SPEED_LADDER`: média 10,5 m/s precisa de mão de 7,4; 14,5 m/s, de 14,8; 20,5 m/s, de 23; 25 m/s, de 28) e a ajuda vale até mão de 14 m/s (`PP_ASSIST_HAND`; 9 m/s para mudar a direção). Dentro da mesa: mão até 8 m/s 100% (bola a ~10 m/s), 8 a 14 96-92%, 14 a 18 88%, 18 a 24 73%, 24+ 44%. Quem bate muito forte ainda pode errar; força média não.

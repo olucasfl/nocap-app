@@ -3,8 +3,8 @@ import { ppTune } from './tune';
 import { ppFixNet, ppGuideHit, ppLanding, ppSmashFix } from './assist';
 import {
   PP_AIM,
-  PP_ASSIST_LATERAL_POWER,
-  PP_ASSIST_MAX_POWER,
+  PP_ASSIST_HAND,
+  PP_ASSIST_LATERAL_HAND,
   PP_NET_H,
   PP_PAD_R,
   PP_PAD_Z,
@@ -379,8 +379,12 @@ export function ppPaddleHit(b: PpBall, side: number, pad: PpPaddleMotion, guide 
     }
   } else if (stroke === 'subida') {
     ppGuideHit(b, side, false, true);
-  } else if (guide && (power < PP_ASSIST_MAX_POWER || isServe)) {
-    ppGuideHit(b, side, drop, power < PP_ASSIST_LATERAL_POWER || isServe);
+  } else if (guide && (hand < PP_ASSIST_HAND || isServe)) {
+    // bola que chega bem devagar deixa também mudar a direção e a ajuda pode usar mais força (batida forte de lado)
+    const slowIn = Math.hypot(inVx, inVz) < PP_SLOW_IN;
+    ppGuideHit(b, side, drop, hand < PP_ASSIST_LATERAL_HAND || isServe || (slowIn && !drop), {
+      ...(isServe ? {} : { vyLo: slowIn ? -5 : -3, hMax: slowIn ? 20 : 16 }),
+    });
   } else if (guide && Math.hypot(inVx, inVz) < PP_SLOW_IN) {
     // bola que chega devagar: dá para bater forte e com efeito (topspin, de lado) e ela desce na mesa rápida
     ppGuideHit(b, side, false, true, { vyLo: -5, hMax: 20 });

@@ -157,7 +157,7 @@ export function ppPadStepZ(pad: PpPaddle, tx: number, ty: number, tz: number, dt
   pad.x += vx * dt;
   pad.y += vy * dt;
   // para a batida só conta uma mão de verdade (até ~16 m/s para os lados)
-  pad.vx = Math.max(-16, Math.min(16, vx));
+  pad.vx = Math.max(-20, Math.min(20, vx));
   // a altura é automática: a subida e descida dela não conta como golpe
   pad.vy = Math.max(-1, Math.min(1, vy * 0.2));
   const goal = Math.max(-PP_REACH_BACK, Math.min(PP_REACH_NET, tz));

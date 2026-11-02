@@ -109,9 +109,14 @@ export const PP_REACH_NET = PP_PAD_Z - 0.4;
 /** E para trás: a raquete pode ficar atrás do plano de espera (m). */
 export const PP_REACH_BACK = 1.7;
 /** Batida com a mão acima disto (0 a 1) é de força: sem ajuda, e pode sair da mesa ou ir na rede. */
-export const PP_ASSIST_MAX_POWER = 0.62;
 /** Abaixo disto a ajuda também fecha o ângulo para os lados; entre os dois só corrige a altura. */
-export const PP_ASSIST_LATERAL_POWER = 0.45;
+/**
+ * A ajuda para a bola cair na mesa vale até esta rapidez da mão (m/s) na escala nova da mão (até 30 m/s): acima disso a
+ * batida é de força de verdade e pode sair; abaixo, a bola de velocidade média sempre cai na mesa.
+ */
+export const PP_ASSIST_HAND = 14;
+/** Até esta rapidez (m/s) a ajuda também pode mudar a direção para os lados. */
+export const PP_ASSIST_LATERAL_HAND = 9;
 /** A raquete (jogo de verdade) segue a mão: rapidez máxima (m/s) e rigidez (1/s; com o passo de 1/60 s, 55 é quase colar). */
 export const PP_FOLLOW_SPEED = 45;
 export const PP_FOLLOW_STIFF = 55;
@@ -119,7 +124,7 @@ export const PP_FOLLOW_STIFF = 55;
 export const PP_REST_Y = 1.45;
 /** A mão passa no máximo isto para a frente na batida (m/s). */
 /** Velocidade máxima da mão para a frente (m/s) que conta na batida: a batida mais forte pede um dedo realmente rápido. */
-export const PP_HAND_VZ_MAX = 24;
+export const PP_HAND_VZ_MAX = 30;
 
 /** Placar. */
 export const PP_POINTS = 11;
@@ -172,14 +177,14 @@ export const ppIncomingTier = (speed: number): 0 | 1 | 2 =>
   speed < PP_SLOW_IN ? 0 : speed < PP_MED_IN ? 1 : 2;
 export const PP_SPEED_LADDER: readonly (readonly [number, number])[] = [
   [0, 3.4],
-  [2, 4.2],
-  [3.5, 7],
-  [5.5, 10.5],
-  [8, 12.5],
-  [11, 14.5],
-  [14, 17],
-  [17, 20.5],
-  [21, 25],
+  [2.7, 4.2],
+  [4.7, 7],
+  [7.4, 10.5],
+  [10.8, 12.5],
+  [14.8, 14.5],
+  [19, 17],
+  [23, 20.5],
+  [28, 25],
 ];
 export function ppLadderSpeed(hand: number): number {
   const L = PP_SPEED_LADDER;
