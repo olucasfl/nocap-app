@@ -19,15 +19,18 @@ export interface BallViewTuning {
   errDecay: number;
   /** Maior atraso (ticks) que a bola desenhada aceita ter. */
   maxLag: number;
+  /** Pressa (por segundo) do deslize logo depois da SUA batida: a bola tem que sair da sua raquete. */
+  hitDecay: number;
 }
 
 export const DEFAULT_BALL_VIEW: BallViewTuning = {
-  holdMax: 0.3,
+  holdMax: 0.25,
   catchMin: 4,
-  catchMax: 24,
-  catchFrac: 0.8,
-  errDecay: 3,
+  catchMax: 48,
+  catchFrac: 0.3,
+  errDecay: 6,
   maxLag: 18,
+  hitDecay: 30,
 };
 
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
@@ -42,6 +45,8 @@ export class PpBallView {
   shown = { x: 0, y: 1.25, z: 2.5 };
   private err = { x: 0, y: 0, z: 0 };
   lag = 0;
+  /** Segundos que ainda faltam do deslize rápido da sua batida. */
+  private fast = 0;
   private hold: { t: number; x: number; y: number; z: number; released: boolean } | null = null;
   sim: BallHistory | null = null;
   /** Só para diagnóstico: quanto tempo a bola está esperando na raquete dele (-1 = não espera). */
@@ -94,6 +99,7 @@ export class PpBallView {
     if (Math.hypot(e.x, e.y, e.z) > 5) e.x = e.y = e.z = 0;
     this.lag = 0;
     this.hold = null;
+    this.fast = 0.35;
   }
 
   /** Um quadro: `base` é a bola da partida já interpolada entre os dois últimos ticks. Devolve onde desenhar. */
@@ -143,7 +149,9 @@ export class PpBallView {
         this.err.z = this.hold.z - sz;
       }
     } else this.hold = null;
-    const k = Math.exp(-dt * tn.errDecay);
+    // logo depois da sua batida a bola sai da sua raquete (deslize rápido); no resto do tempo o erro some mais devagar
+    this.fast = Math.max(0, this.fast - dt);
+    const k = Math.exp(-dt * (this.fast > 0 ? tn.hitDecay : tn.errDecay));
     this.err.x *= k;
     this.err.y *= k;
     this.err.z *= k;

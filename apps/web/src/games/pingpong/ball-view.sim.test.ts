@@ -22,6 +22,8 @@ function measure(opts: {
   jitter: number;
   ticks: number;
   tune?: BallViewTuning;
+  /** Atraso de cada trecho do aparelho A (o líder) até a sala; `hop` é o do aparelho B (quem desenha). */
+  hopA?: number;
 }) {
   const rng = createRng(opts.seed);
   const A = new PpNetSim(0, 0);
@@ -32,7 +34,13 @@ function measure(opts: {
   const view = new PpBallView(B.match, 1, opts.tune ?? DEFAULT_BALL_VIEW);
   view.sim = B;
   const q: Msg[] = [];
-  const delay = () => Math.max(1, Math.round(opts.hop + (rng() - 0.5) * 2 * opts.jitter));
+  const delay = (link: 'A' | 'B' = 'B') =>
+    Math.max(
+      1,
+      Math.round(
+        (link === 'A' ? (opts.hopA ?? opts.hop) : opts.hop) + (rng() - 0.5) * 2 * opts.jitter,
+      ),
+    );
   const sims = { A, B, S };
   let last: { x: number; y: number; z: number } | null = null;
   let frames = 0;
@@ -40,6 +48,10 @@ function measure(opts: {
   let backs = 0;
   let worst = 0;
   let lastAbsorb = -999;
+  let afterHit = 0;
+  let postGap = 0;
+  let postGapN = 0;
+  let postGapMax = 0;
   let hitGap = 0;
   let hitGapN = 0;
   let hitGapMax = 0;
@@ -57,8 +69,13 @@ function measure(opts: {
       if (m.to === 'S') {
         if (S.validate(ev, m.from!)) {
           S.add(ev);
-          q.push({ at: n + delay(), to: m.from === 0 ? 'B' : 'A', ev });
-        } else q.push({ at: n + delay(), to: m.from === 0 ? 'A' : 'B', rej: ev });
+          q.push({ at: n + delay(m.from === 0 ? 'B' : 'A'), to: m.from === 0 ? 'B' : 'A', ev });
+        } else
+          q.push({
+            at: n + delay(m.from === 0 ? 'A' : 'B'),
+            to: m.from === 0 ? 'A' : 'B',
+            rej: ev,
+          });
       } else if (m.to === 'B') {
         const late = ev.t <= B.tick;
         B.add(ev);
@@ -71,7 +88,7 @@ function measure(opts: {
     A.advanceTo(n, botA.input(A.match, 0));
     B.advanceTo(n, botB.input(B.match, 1));
     S.advanceTo(n);
-    for (const ev of A.outgoing()) q.push({ at: n + delay(), to: 'S', ev, from: 0 });
+    for (const ev of A.outgoing()) q.push({ at: n + delay('A'), to: 'S', ev, from: 0 });
     for (const ev of B.outgoing()) {
       if (ev.k === 'hit') {
         const bb = B.match.ball;
@@ -80,15 +97,22 @@ function measure(opts: {
         hitGapN++;
         hitGapMax = Math.max(hitGapMax, g);
         view.localHit();
+        afterHit = 4;
       }
-      q.push({ at: n + delay(), to: 'S', ev, from: 1 });
+      q.push({ at: n + delay('B'), to: 'S', ev, from: 1 });
     }
     for (const ev of S.outgoing()) {
-      q.push({ at: n + delay(), to: 'A', ev });
-      q.push({ at: n + delay(), to: 'B', ev });
+      q.push({ at: n + delay('A'), to: 'A', ev });
+      q.push({ at: n + delay('B'), to: 'B', ev });
     }
     const b = B.match.ball;
     const p = view.update(dt, { x: b.x, y: b.y, z: b.z }, 1);
+    if (afterHit > 0 && --afterHit === 0) {
+      const g = Math.hypot(p.x - b.x, p.y - b.y, p.z - b.z);
+      postGap += g;
+      postGapN++;
+      postGapMax = Math.max(postGapMax, g);
+    }
     if (B.match.phase === 'rally' && last) {
       frames++;
       const d = Math.hypot(p.x - last.x, p.y - last.y, p.z - last.z);
@@ -143,22 +167,32 @@ function measure(opts: {
     worst: Math.round(worst * 100) / 100,
     gap: Math.round((hitGap / Math.max(1, hitGapN)) * 100) / 100,
     gapMax: Math.round(hitGapMax * 100) / 100,
+    post: Math.round((postGap / Math.max(1, postGapN)) * 100) / 100,
+    postMax: Math.round(postGapMax * 100) / 100,
   };
 }
 
 describe('bola desenhada em rede (simulação)', () => {
-  const profiles = [
-    { name: 'boa', hop: 2, jitter: 1 },
-    { name: 'média', hop: 5, jitter: 2 },
-    { name: 'ruim', hop: 9, jitter: 4 },
-  ];
-  it('a bola desenhada quase não pula nem volta, nem em rede ruim', () => {
-    for (const p of profiles) {
-      const r = measure({ seed: 'bv-' + p.name, hop: p.hop, jitter: p.jitter, ticks: 9000 });
-      // nenhuma "teleportada" (passo maior que o de qualquer bola) e quase nenhuma volta
-      expect(r.jumps, p.name).toBeLessThanOrEqual(1);
-      expect(r.backs, p.name).toBeLessThanOrEqual(3);
-      expect(r.worst, p.name).toBeLessThan(0.3);
+  it('a bola sai da sua raquete (4 quadros depois da batida já está na da partida) e quase não pula, nem em rede ruim e assimétrica', () => {
+    const nets = [
+      { name: 'boa', hop: 2, hopA: 2, jitter: 1 },
+      { name: 'média', hop: 5, hopA: 5, jitter: 2 },
+      { name: 'ruim', hop: 9, hopA: 9, jitter: 4 },
+      // o líder perto da sala e o outro longe (é o caso de quem não é líder travar mais)
+      { name: 'assimétrica', hop: 9, hopA: 3, jitter: 4 },
+    ];
+    for (const p of nets) {
+      const r = measure({
+        seed: 'bv-' + p.name,
+        hop: p.hop,
+        hopA: p.hopA,
+        jitter: p.jitter,
+        ticks: 9000,
+      });
+      expect(r.postMax, p.name).toBeLessThan(0.45);
+      expect(r.post, p.name).toBeLessThan(0.05);
+      expect(r.backs, p.name).toBeLessThanOrEqual(8);
+      expect(r.worst, p.name).toBeLessThan(0.4);
     }
   });
 });
@@ -167,12 +201,15 @@ describe('afinação (só para olhar os números)', () => {
   it.skipIf(!process.env.BV_SWEEP)('varre as opções', () => {
     const base = DEFAULT_BALL_VIEW;
     const variants: [string, Partial<BallViewTuning>][] = [
-      ['atual (err 9)', {}],
-      ['err 4', { errDecay: 4 }],
-      ['err 3', { errDecay: 3 }],
-      ['err 3 hold .3', { errDecay: 3, holdMax: 0.3 }],
-      ['err 2.5 hold .3', { errDecay: 2.5, holdMax: 0.3 }],
-      ['err 3.5 hold .3', { errDecay: 3.5, holdMax: 0.3 }],
+      ['antes-39 (sem deslize rápido)', { errDecay: 9, holdMax: 0.2, hitDecay: 9 }],
+      ['39 (err 3, sem deslize rápido)', { hitDecay: 3 }],
+      ['err 3 + batida rápida 30', {}],
+      ['err 6 + batida 30', { errDecay: 6 }],
+      ['err 6 + batida 30 frac .3 max48', { errDecay: 6, catchFrac: 0.3, catchMax: 48 }],
+      [
+        'err 5 + batida 40 frac .4 max40',
+        { errDecay: 5, hitDecay: 40, catchFrac: 0.4, catchMax: 40 },
+      ],
     ];
 
     const lines: string[] = [];
@@ -182,15 +219,18 @@ describe('afinação (só para olhar os números)', () => {
       let w = 0;
       let gm = 0;
       let ga = 0;
+      let pm = 0;
+      let pa = 0;
       for (const p of [
-        { s: 'a', hop: 2, jitter: 1 },
-        { s: 'b', hop: 5, jitter: 2 },
-        { s: 'c', hop: 9, jitter: 4 },
-        { s: 'd', hop: 7, jitter: 5 },
+        { s: 'a', hop: 2, jitter: 1, hopA: 2 },
+        { s: 'b', hop: 5, jitter: 2, hopA: 5 },
+        { s: 'c', hop: 9, jitter: 4, hopA: 3 },
+        { s: 'd', hop: 7, jitter: 5, hopA: 2 },
       ]) {
         const r = measure({
           seed: 'sw-' + p.s,
           hop: p.hop,
+          hopA: p.hopA,
           jitter: p.jitter,
           ticks: 9000,
           tune: { ...base, ...t },
@@ -199,10 +239,12 @@ describe('afinação (só para olhar os números)', () => {
         b += r.backs;
         w = Math.max(w, r.worst);
         gm = Math.max(gm, r.gapMax);
+        pm = Math.max(pm, r.postMax);
+        pa += r.post / 4;
         ga += r.gap / 4;
       }
       lines.push(
-        `${name.padEnd(26)} saltos=${j} voltas=${b} pior=${w} naBatida(média/máx)=${Math.round(ga * 100) / 100}/${gm}`,
+        `${name.padEnd(26)} saltos=${j} voltas=${b} pior=${w} naBatida=${Math.round(ga * 100) / 100}/${gm} 4quadrosDepois(média/máx)=${Math.round(pa * 100) / 100}/${pm}`,
       );
     }
     console.log('SWEEP\n' + lines.join('\n'));

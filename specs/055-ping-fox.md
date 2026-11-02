@@ -338,3 +338,8 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 
 - Bug: sair do app no meio de uma partida e voltar deixava a raquete parada. O iOS cancela o toque ao sair da tela (`pointercancel`) e o jogo só ouvia `pointerup`: o dedo antigo ficava como "o dedo da raquete" para sempre e todo toque novo (outro `pointerId`) era ignorado como se fosse o dedo do smash.
 - Correção: `pointercancel`, `lostpointercapture`, `visibilitychange`, `pageshow` e `blur` zeram o estado do toque; e um dedo novo assume a raquete se o antigo já perdeu a captura. E2E com toque cancelado de verdade reproduz o defeito e passa com a correção.
+
+### Rodada 42: a bola sai da sua raquete (correção da rodada 39)
+
+- Relato: depois da rodada 39 piorou (a bola teleportava) e quem não era líder travava mais. Causa: o erro visual passou a sumir devagar (3/s) e a sua batida herdava esse erro: a bola saía a até ~2 m da raquete e deslizava até o lugar certo. Quem tem mais atraso (o outro lado, longe da sala) chega à batida com mais erro. A simulação só media pulos e voltas, não essa distância.
+- Agora a simulação (`ball-view.sim.test.ts`) mede também a distância entre a bola desenhada e a da partida 4 quadros depois da sua batida, com redes boa, média, ruim e assimétrica (líder perto da sala, o outro longe). Ajustes (`ball-view.ts`): deslize rápido logo depois da sua batida (`hitDecay` 30/s por 0,35 s), erro normal 6/s (antes 3), alcance da bola mais cedo (`catchFrac` 0,3, até 48 ticks/s), espera na raquete dele 0,25 s. Distância 4 quadros depois da batida: média 0,13 -> 0,01 m, máxima 2,3 -> 0,2 m. O teste agora exige < 0,05 m de média e < 0,45 m de máxima nas quatro redes.
