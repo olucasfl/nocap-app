@@ -24,7 +24,6 @@ import {
   type PpMatch,
 } from '@nocap/games';
 import { buildHero, mapEdge } from '../atravessa/models';
-import { PpBallView, type BallHistory } from './ball-view';
 
 const INK = 0x1b1535;
 const ORANGE = 0xff7d26;
@@ -138,21 +137,48 @@ export class PingScene {
 
   /** Partida online: a bola do outro lado espera um instante pela batida dele e os saltos de correção viram deslizes. */
   online = false;
-  private view!: PpBallView;
-  /** Quem guarda o histórico da partida em rede (para a bola desenhada recomeçar de onde o outro bateu). */
-  set sim(v: BallHistory | null) {
-    this.view.sim = v;
-  }
+  // erro visual: quando a partida refaz o passado (batida do outro chegou atrasada) a bola desenhada não pula,
+  // desliza do lugar onde estava para o lugar certo em ~0,12 s (mesma ideia do Fut Fox, spec 052)
+  private shown = { x: 0, y: 1.25, z: 2.5 };
+  private err = { x: 0, y: 0, z: 0 };
+  /** Quanto a bola desenhada está atrás da simulação (ticks): a batida do outro chegou atrasada e a bola sai da raquete dele. */
+  private lag = 0;
+  sim: { tick: number; ballAt(t: number): { x: number; y: number; z: number } | null } | null =
+    null;
+  private hold: { t: number; x: number; y: number; z: number } | null = null;
 
-  /** A sua própria batida: a bola desenhada deixa de chegar atrasada e desliza para a da partida. */
-  localHit() {
-    this.view.localHit();
-  }
-
-  /** Chamar logo depois de a partida refazer o passado. */
+  /** Chamar logo depois de a partida refazer o passado: guarda a diferença entre o que estava na tela e o novo estado. */
   absorb(lateTicks = 0) {
-    this.view.absorb(lateTicks);
+    // a bola desenhada recomeça de onde o outro bateu e alcança a simulação aos poucos (nada de aparecer no meio do caminho)
+    this.lag = Math.max(0, Math.min(18, lateTicks));
+    const c = this.delayed(1);
+    const e = this.err;
+    e.x = this.shown.x - c.x;
+    e.y = this.shown.y - c.y;
+    e.z = this.shown.z - c.z;
+    const m = Math.hypot(e.x, e.y, e.z);
+    if (m > 5) {
+      e.x = e.y = e.z = 0;
+    }
     this.prev.valid = false;
+    this.hold = null;
+  }
+
+  /** A bola da simulação `lag` ticks atrás (interpolada entre dois ticks). `a` é a fração do tick de agora. */
+  private delayed(a: number): { x: number; y: number; z: number } {
+    const c = this.match.ball;
+    const n = this.sim;
+    if (!n || this.lag <= 0.01) return { x: c.x, y: c.y, z: c.z };
+    const pos = n.tick + a - this.lag;
+    const lo = n.ballAt(pos);
+    const hi = n.ballAt(pos + 1);
+    if (!lo || !hi) return { x: c.x, y: c.y, z: c.z };
+    const f = pos - Math.floor(pos);
+    return {
+      x: lo.x + (hi.x - lo.x) * f,
+      y: lo.y + (hi.y - lo.y) * f,
+      z: lo.z + (hi.z - lo.z) * f,
+    };
   }
 
   constructor(
@@ -162,7 +188,6 @@ export class PingScene {
     private reduced = opts.reduced,
   ) {
     this.me = opts.me === 1 ? 1 : 0;
-    this.view = new PpBallView(match, this.me);
     this.flip = this.me === 1;
     const touch = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
     this.renderer = new THREE.WebGLRenderer({
@@ -938,15 +963,52 @@ export class PingScene {
     let sy = lerp(pv.ball.y, cur.y, a);
     let sz = lerp(pv.ball.z, cur.z, a);
     if (this.online) {
-      const v = this.view.update(dt, { x: sx, y: sy, z: sz }, a);
-      sx = v.x;
-      sy = v.y;
-      sz = v.z;
-    } else {
-      this.view.shown.x = sx;
-      this.view.shown.y = sy;
-      this.view.shown.z = sz;
+      if (this.lag > 0) {
+        // a bola desenhada alcança a da partida sem correr: o tempo que falta até chegar em mim decide a pressa (a
+        // diferença some devagar quando a bola ainda tem caminho e um pouco mais rápido quando ela já está perto)
+        const toMe = Math.abs(PP_PAD_Z - Math.abs(cur.z));
+        const remain = Math.max(0.2, toMe / Math.max(2, Math.abs(cur.vz)));
+        const rate = clamp(this.lag / (0.8 * remain), 4, 24);
+        this.lag = Math.max(0, this.lag - dt * rate);
+        const d = this.delayed(a);
+        sx = d.x;
+        sy = d.y;
+        sz = d.z;
+      }
+      // a bola passou da raquete do outro lado e a batida dele ainda não chegou: ela espera ali (até 0,3 s)
+      const opp = 1 - this.me;
+      const so = opp === 0 ? 1 : -1;
+      const past =
+        m.phase === 'rally' &&
+        m.expect === opp &&
+        (m.bounces[opp] ?? 0) >= 1 &&
+        (cur.z - so * (PP_PAD_Z - m.pad(opp).reach)) * so > 0;
+      if (past) {
+        if (!this.hold)
+          this.hold = {
+            t: 0,
+            x: this.shown.x - this.err.x,
+            y: this.shown.y - this.err.y,
+            z: this.shown.z - this.err.z,
+          };
+        this.hold.t += dt;
+        if (this.hold.t < 0.2) {
+          sx = this.hold.x;
+          sy = this.hold.y;
+          sz = this.hold.z;
+        }
+      } else this.hold = null;
+      const k = Math.exp(-dt * 9);
+      this.err.x *= k;
+      this.err.y *= k;
+      this.err.z *= k;
+      sx += this.err.x;
+      sy += this.err.y;
+      sz += this.err.z;
     }
+    this.shown.x = sx;
+    this.shown.y = sy;
+    this.shown.z = sz;
     const bx = this.vx(sx);
     const by = sy;
     const bz = this.vz(sz);

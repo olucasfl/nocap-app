@@ -155,7 +155,7 @@ export interface PingOnline {
 }
 
 /** Quantos ticks (200 ms) um ponto espera antes de aparecer: uma batida atrasada ainda pode desfazê-lo. */
-const POINT_GRACE = 33;
+const POINT_GRACE = 12;
 /** O nome do saque pela altura em que a bola foi batida (a qualidade do saque vem da altura). */
 const SERVE_TAG: Record<string, string> = {
   sweet: 'SAQUE PERFEITO',
@@ -503,7 +503,6 @@ export function PingPlay({
           pingSfx.hit(power, e.smash, mine);
           stats.hits[e.p === 0 ? 0 : 1]++;
           if (e.smash && mine) stats.smashes++;
-          if (mine && net) scene.localHit();
           if (e.tier > 0 && !mine) {
             const id = ++speedId;
             setHud((h) => ({ ...h, oppTap: { tier: e.tier, id } }));
@@ -609,8 +608,9 @@ export function PingPlay({
     const oppTarget = { x: 0, y: 1.3, z: 0 };
     const oppVel = { x: 0, y: 0, z: 0 };
     const oppSmooth = { x: 0, y: 1.3, z: 0 };
-    /** Hora (relógio da sala) do último pacote da raquete dele que valeu: pacote repetido ou fora de ordem é ignorado. */
-    let oppAt = 0;
+    // a raquete do outro chega ~50 vezes por segundo: aqui ela segue o alvo com a velocidade que ele vinha tendo e um
+    // suavizado curto (sem degraus a cada pacote e sem atraso grande)
+    let oppAt = performance.now();
     /** Já chegou o histórico da sala (quem entra no meio ou volta só começa a andar depois dele). */
     let synced = !net;
     let padSendAt = 0;
@@ -623,22 +623,6 @@ export function PingPlay({
           for (const raw of m) {
             const ev = ppParseNetEvent(raw);
             if (ev) {
-              if (
-                ev.k === 'hit' &&
-                ev.p === oppIdx &&
-                !(window as unknown as { __pingNoSnap?: boolean }).__pingNoSnap
-              ) {
-                // a batida dele chegou: a raquete dele está em cima da bola nesse instante (nunca fica para trás da bola)
-                const reach = Math.max(
-                  -1.7,
-                  Math.min(PP_PAD_Z - 0.4, PP_PAD_Z - Math.abs(ev.b[2] ?? PP_PAD_Z)),
-                );
-                oppTarget.x = oppSmooth.x = ev.b[0] ?? 0;
-                oppTarget.y = oppSmooth.y = Math.max(0.55, Math.min(3, ev.b[1] ?? 1.3));
-                oppTarget.z = oppSmooth.z = reach;
-                oppVel.x = oppVel.y = oppVel.z = 0;
-                oppAt = Math.max(oppAt, serverNow());
-              }
               const late = ev.t <= net.tick;
               const r = net.add(ev);
               if (late && r.ok) scene.absorb(net.tick - ev.t);
@@ -661,17 +645,12 @@ export function PingPlay({
               const nx = row[1] ?? 0;
               const ny = row[2] ?? 1.3;
               const nz = row[3] ?? 0;
-              // a hora em que ele mexeu a raquete (a sala repete a última posição, então repetido não conta)
-              const t = row[4] ?? serverNow();
-              if (t <= oppAt) continue;
-              const dtp = (t - oppAt) / 1000;
-              if (oppAt > 0 && dtp > 0.008 && dtp < 0.5) {
-                const lim = (v: number, m: number) => Math.max(-m, Math.min(m, v));
-                // velocidade dele pela hora dele, suavizada um pouco (pacote isolado não dá tranco)
-                oppVel.x = 0.6 * oppVel.x + 0.4 * lim((nx - oppTarget.x) / dtp, 28);
-                oppVel.y = 0.6 * oppVel.y + 0.4 * lim((ny - oppTarget.y) / dtp, 6);
-                oppVel.z = 0.6 * oppVel.z + 0.4 * lim((nz - oppTarget.z) / dtp, 28);
-              }
+              const t = performance.now();
+              const dtp = Math.max(0.008, (t - oppAt) / 1000);
+              const lim = (v: number, m: number) => Math.max(-m, Math.min(m, v));
+              oppVel.x = lim((nx - oppTarget.x) / dtp, 25);
+              oppVel.y = lim((ny - oppTarget.y) / dtp, 6);
+              oppVel.z = lim((nz - oppTarget.z) / dtp, 25);
               oppTarget.x = nx;
               oppTarget.y = ny;
               oppTarget.z = nz;
@@ -765,15 +744,12 @@ export function PingPlay({
           alpha = Math.max(0, Math.min(1, exact - target));
           // a raquete do outro chega a 30 vezes por segundo: aqui ela suaviza até lá
           {
-            // alvo = o último pacote + o que ele andou desde que mexeu (a idade vem da hora do pacote); sem pacote novo por um
-            // tempo, a velocidade some aos poucos para a raquete não sair voando
-            const age = oppAt > 0 ? Math.max(0, (serverNow() - oppAt) / 1000) : 0;
-            const ahead = Math.min(0.04, age * 0.4);
-            const fade = age > 0.12 ? Math.max(0, 1 - (age - 0.12) / 0.2) : 1;
-            const k = 1 - Math.exp(-dt * 50);
-            oppSmooth.x += (oppTarget.x + oppVel.x * ahead * fade - oppSmooth.x) * k;
-            oppSmooth.y += (oppTarget.y + oppVel.y * ahead * fade - oppSmooth.y) * k;
-            oppSmooth.z += (oppTarget.z + oppVel.z * ahead * fade - oppSmooth.z) * k;
+            // alvo = último pacote + o que ele andaria desde então (no máximo 60 ms), e o desenho persegue esse alvo
+            const ahead = Math.min(0.06, (performance.now() - oppAt) / 1000);
+            const k = 1 - Math.exp(-dt * 26);
+            oppSmooth.x += (oppTarget.x + oppVel.x * ahead - oppSmooth.x) * k;
+            oppSmooth.y += (oppTarget.y + oppVel.y * ahead - oppSmooth.y) * k;
+            oppSmooth.z += (oppTarget.z + oppVel.z * ahead - oppSmooth.z) * k;
             ppPadStepZ(match.pad(oppIdx), oppSmooth.x, oppSmooth.y, oppSmooth.z, dt);
           }
           if (!spectator && now - padSendAt > 20) {
@@ -784,7 +760,6 @@ export function PingPlay({
                 Math.round(mine.x * 100) / 100,
                 Math.round(mine.y * 100) / 100,
                 Math.round(mine.reach * 100) / 100,
-                Math.round(serverNow()),
               ]);
             }
           }
