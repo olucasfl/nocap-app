@@ -1483,6 +1483,47 @@ a.wd-card:hover .wd-card-go {
   font-size: 11px;
   text-transform: uppercase;
 }
+.cw-gold-word {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+  margin-top: 4px;
+}
+.cw-gold-word > div,
+.cw-gold-row {
+  display: flex;
+  gap: 5px;
+}
+.cw-gold-word .mono {
+  font-size: 11px;
+  text-transform: uppercase;
+}
+.cw-gold-replay {
+  justify-self: start;
+  margin-top: 4px;
+  padding: 6px 12px;
+  border: var(--border);
+  border-radius: 10px;
+  background: #111111;
+  color: #f4f4ef;
+  font: 700 12px var(--font-mono);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.cw-gold-rows {
+  display: grid;
+  gap: 5px;
+  margin-top: 4px;
+}
+.cw-gold-row .cw-ex {
+  width: 34px;
+  height: 34px;
+  font-size: 17px;
+  text-transform: uppercase;
+}
+.cw-gold-word .cw-ex {
+  text-transform: uppercase;
+}
 .cw-gold-rank {
   justify-self: center;
   font: 700 12px var(--font-mono);

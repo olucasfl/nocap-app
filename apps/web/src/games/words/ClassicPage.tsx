@@ -1,4 +1,5 @@
 import { useState, type CSSProperties } from 'react';
+import { decodePattern } from '@nocap/games';
 import { Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { PlayGate } from '@/components/PlayGate';
@@ -31,6 +32,7 @@ const STEPS = [
 export function ClassicPage() {
   const user = useAuth((s) => s.user);
   const [tab, setTab] = useState<'jogar' | 'regras'>('jogar');
+  const [replay, setReplay] = useState(false);
   const daily = useQuery({
     queryKey: ['words', 'daily'],
     queryFn: fetchDaily,
@@ -108,6 +110,43 @@ export function ClassicPage() {
                   <span className="mono">
                     {run!.used} de {run!.tries} tentativas · a próxima palavra sai à meia-noite
                   </span>
+                  {run!.answers?.[0] && (
+                    <div className="cw-gold-word" data-testid="daily-word">
+                      <span className="mono">A palavra era</span>
+                      <div aria-label={`A palavra era ${run!.answers[0].toUpperCase()}`}>
+                        {[...run!.answers[0]].map((ch, i) => (
+                          <span key={i} className="cw-ex hit">
+                            {ch}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    className="cw-gold-replay"
+                    aria-expanded={replay}
+                    onClick={() => setReplay((v) => !v)}
+                    data-testid="daily-replay"
+                  >
+                    {replay ? 'Esconder o jogo' : 'Ver como foi o meu jogo'}
+                  </button>
+                  {replay && (
+                    <div className="cw-gold-rows" data-testid="daily-rows">
+                      {run!.guesses.map((g, r) => {
+                        const cells = decodePattern(run!.boards[0]!.rows[r]!);
+                        return (
+                          <div key={r} className="cw-gold-row">
+                            {[...g].map((ch, c) => (
+                              <span key={c} className={`cw-ex ${cells[c]}`}>
+                                {ch}
+                              </span>
+                            ))}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <Link
