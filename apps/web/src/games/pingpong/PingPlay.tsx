@@ -657,6 +657,16 @@ export function PingPlay({
       if (now.length) react(now);
     };
     scene.online = !!net;
+    /**
+     * Move a raquete do outro até o alvo. A mola dela só é estável até uns 36 ms por passo: em quadro lento (celular a 30 fps
+     * ou menos) um passo só passava do ponto e oscilava (o boneco do adversário piscando). Aqui o quadro vira passos de no
+     * máximo ~8 ms.
+     */
+    const stepOppPad = (frameDt: number) => {
+      const steps = Math.max(1, Math.min(20, Math.ceil(frameDt * 120)));
+      for (let i = 0; i < steps; i++)
+        ppPadStepZ(match.pad(oppIdx), oppSmooth.x, oppSmooth.y, oppSmooth.z, frameDt / steps);
+    };
     scene.sim = net;
     const oppTarget = { x: 0, y: 1.3, z: 0 };
     const oppVel = { x: 0, y: 0, z: 0 };
@@ -686,13 +696,18 @@ export function PingPlay({
       feed(r.events);
     };
     /** A raquete do outro (da sala ou direto): o alvo e a velocidade dele. */
-    const setOppPad = (nx: number, ny: number, nz: number) => {
+    const setOppPad = (nx: number, ny: number, nz: number, senderDt?: number) => {
       const t = performance.now();
-      const dtp = Math.max(0.008, (t - oppAt) / 1000);
-      const lim = (v: number, m: number) => Math.max(-m, Math.min(m, v));
-      oppVel.x = lim((nx - oppTarget.x) / dtp, 25);
-      oppVel.y = lim((ny - oppTarget.y) / dtp, 6);
-      oppVel.z = lim((nz - oppTarget.z) / dtp, 25);
+      // a velocidade vem da hora de quem mandou (um pacote que chega colado no outro, em rajada, não vira velocidade
+      // enorme); sem hora, da hora em que o pacote chegou
+      const dtp = senderDt !== undefined ? senderDt : Math.max(0.008, (t - oppAt) / 1000);
+      if (dtp > 0.008 && dtp < 0.3) {
+        const lim = (v: number, m: number) => Math.max(-m, Math.min(m, v));
+        const lx = senderDt !== undefined ? 14 : 25;
+        oppVel.x = lim((nx - oppTarget.x) / dtp, lx);
+        oppVel.y = lim((ny - oppTarget.y) / dtp, 6);
+        oppVel.z = lim((nz - oppTarget.z) / dtp, lx);
+      }
       oppTarget.x = nx;
       oppTarget.y = ny;
       oppTarget.z = nz;
@@ -700,6 +715,11 @@ export function PingPlay({
     };
     // canal direto com o outro aparelho (WebRTC, sem espera de retransmissão): a sala continua valendo como reserva
     let peerPadAt = 0;
+    // pacotes da raquete dele pela hora de quem mandou: a tela desenha ~40 ms atrás, interpolando entre eles, e a
+    // chegada irregular (jitter, pacote fora de ordem, rajada) não vira tranco
+    const padBuf: { ts: number; x: number; y: number; z: number }[] = [];
+    let padOff = Infinity;
+    const PAD_DELAY = 40;
     const peer =
       net &&
       online &&
@@ -710,7 +730,28 @@ export function PingPlay({
       !(window as unknown as { __pingNoP2P?: boolean }).__pingNoP2P
         ? new PingPeer(online.ids[1 - online.me] as string, online.me === 0, (m: PingPeerMsg) => {
             if (Array.isArray(m.e)) for (const raw of m.e) onNetEvent(raw);
-            if (m.p && m.p.length === 3 && m.p.every((n) => Number.isFinite(n))) {
+            // canal sem ordem: cada pacote entra no buffer pela hora de quem mandou, na ordem certa
+            if (
+              m.p &&
+              m.p.length === 3 &&
+              m.p.every((n) => Number.isFinite(n)) &&
+              m.t !== undefined
+            ) {
+              const arrived = performance.now();
+              peerPadAt = arrived;
+              // a diferença entre a hora local e a do outro: o menor valor visto é o pacote mais rápido (sem atraso extra)
+              padOff = Math.min(
+                padOff === Infinity ? arrived - m.t : padOff + 0.002,
+                arrived - m.t,
+              );
+              if (!padBuf.some((q) => q.ts === m.t)) {
+                const item = { ts: m.t, x: m.p[0], y: m.p[1], z: m.p[2] };
+                let i = padBuf.length;
+                while (i > 0 && padBuf[i - 1]!.ts > item.ts) i--;
+                padBuf.splice(i, 0, item);
+                if (padBuf.length > 40) padBuf.shift();
+              }
+            } else if (m.p && m.p.length === 3 && m.p.every((n) => Number.isFinite(n))) {
               peerPadAt = performance.now();
               setOppPad(m.p[0], m.p[1], m.p[2]);
             }
@@ -855,13 +896,31 @@ export function PingPlay({
           alpha = Math.max(0, Math.min(1, exact - target));
           // a raquete do outro chega a 30 vezes por segundo: aqui ela suaviza até lá
           {
-            // alvo = último pacote + o que ele andaria desde então (no máximo 60 ms), e o desenho persegue esse alvo
-            const ahead = Math.min(0.06, (performance.now() - oppAt) / 1000);
-            const k = 1 - Math.exp(-dt * 26);
-            oppSmooth.x += (oppTarget.x + oppVel.x * ahead - oppSmooth.x) * k;
-            oppSmooth.y += (oppTarget.y + oppVel.y * ahead - oppSmooth.y) * k;
-            oppSmooth.z += (oppTarget.z + oppVel.z * ahead - oppSmooth.z) * k;
-            ppPadStepZ(match.pad(oppIdx), oppSmooth.x, oppSmooth.y, oppSmooth.z, dt);
+            // canal direto: a raquete dele sai do buffer (hora de quem mandou, ~40 ms atrás, interpolada); sem pacote novo
+            // por um tempo, vale o caminho de sempre (a sala)
+            if (padBuf.length >= 2 && performance.now() - peerPadAt < 500) {
+              const tt = performance.now() - padOff - PAD_DELAY;
+              let k0 = padBuf.length - 1;
+              while (k0 > 0 && padBuf[k0 - 1]!.ts > tt) k0--;
+              const a0 = padBuf[Math.max(0, k0 - 1)]!;
+              const b0 = padBuf[Math.min(padBuf.length - 1, k0)]!;
+              let f = b0.ts > a0.ts ? (tt - a0.ts) / (b0.ts - a0.ts) : 1;
+              // passou do último pacote (atraso na rede): segue a mesma direção por pouco tempo e depois segura
+              f = Math.max(0, Math.min(1.6, f));
+              const kk = 1 - Math.exp(-dt * 60);
+              oppSmooth.x += (a0.x + (b0.x - a0.x) * f - oppSmooth.x) * kk;
+              oppSmooth.y += (a0.y + (b0.y - a0.y) * f - oppSmooth.y) * kk;
+              oppSmooth.z += (a0.z + (b0.z - a0.z) * f - oppSmooth.z) * kk;
+              stepOppPad(dt);
+            } else {
+              // alvo = último pacote + o que ele andaria desde então (no máximo 60 ms), e o desenho persegue esse alvo
+              const ahead = Math.min(0.04, (performance.now() - oppAt) / 1000);
+              const k = 1 - Math.exp(-dt * 26);
+              oppSmooth.x += (oppTarget.x + oppVel.x * ahead - oppSmooth.x) * k;
+              oppSmooth.y += (oppTarget.y + oppVel.y * ahead - oppSmooth.y) * k;
+              oppSmooth.z += (oppTarget.z + oppVel.z * ahead - oppSmooth.z) * k;
+              stepOppPad(dt);
+            }
           }
           if (!spectator && now - padSendAt > 20) {
             padSendAt = now;

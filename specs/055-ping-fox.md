@@ -377,3 +377,10 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 ### Rodada 48: encerrar a partida (líder)
 
 - O menu do Ping Fox! em sala ganhou "Encerrar a partida" (só o líder, pede um segundo toque): acaba a partida na hora com o placar de agora e as duas telas vão para o fim (como no Fut Fox). Mensagem `pend` -> `PingRoomEngine.endNow`. O "Encerrar a sala" (apaga a sala) continua ao lado. Testes: motor (só o líder) e e2e com duas janelas (só o líder vê o botão; as duas vão para o fim).
+
+### Rodada 49: o boneco do adversário piscando no celular
+
+- Relato: no PC (líder) tudo certo; no celular da outra pessoa o boneco do líder piscava quando ele se movia.
+- Causa (reproduzida com o aparelho do outro lado em CPU 6x mais lenta, `LAG_CPU_OTHER`): a raquete do adversário é movida por `ppPadStepZ`, uma mola rígida (rigidez 55) que só é estável até ~36 ms por passo; a tela a chamava com o tempo do quadro inteiro. A 164 fps está tudo bem; a 20-30 fps ou menos a mola passa do ponto e oscila a cada quadro. Antes: 268 piscadas em 40 s, oscilação média de 2,3 m por quadro; agora 25 piscadas e 0,05 m.
+- Correções (`PingPlay.tsx`, `lib/ping-p2p.ts`): o quadro vira passos de no máximo ~8 ms (`stepOppPad`); os pacotes da raquete pelo canal direto levam número e hora de quem mandou, entram num buffer ordenado e a tela desenha ~40 ms atrás interpolando (pacote fora de ordem, em rajada ou perdido não vira tranco); a velocidade usa a hora de quem mandou, não a de chegada.
+- O teste `ping-lag.spec.ts` agora roda o aparelho do outro lado com CPU 4x mais lenta por padrão e falha se a raquete do adversário oscilar mais de 0,3 m por quadro.

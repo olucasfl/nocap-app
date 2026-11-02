@@ -205,6 +205,25 @@ function paddleLag(own: Rec, seen: Rec) {
   };
 }
 
+/** Quanto a raquete do adversário "pisca" na tela: segunda diferença da posição (um tranco para um lado e volta) por quadro. */
+function paddleFlicker(rec: Rec, own = false) {
+  const R = rec.rows.filter((r) => r[1]);
+  const [cx, cz] = own ? [9, 10] : [11, 12];
+  let flicks = 0;
+  let sum = 0;
+  let n = 0;
+  for (let i = 2; i < R.length; i++) {
+    const a = R[i - 2]!;
+    const b = R[i - 1]!;
+    const c = R[i]!;
+    const d2 = Math.hypot(c[cx]! - 2 * b[cx]! + a[cx]!, c[cz]! - 2 * b[cz]! + a[cz]!);
+    sum += d2;
+    n++;
+    if (d2 > 0.25) flicks++;
+  }
+  return { flicks, mediaSegundaDiferenca: Math.round((sum / Math.max(1, n)) * 1000) / 1000 };
+}
+
 function ballStats(rec: Rec) {
   const R = rec.rows;
   let jumps = 0;
@@ -318,6 +337,13 @@ test('duas janelas com atraso de rede: a bola e a raquete do adversário andam l
   await A.getByRole('button', { name: /COMEÇAR/i }).click();
   await A.getByTestId('png-play').waitFor({ timeout: 30_000 });
   await B.getByTestId('png-play').waitFor({ timeout: 30_000 });
+  // celular lento: o aparelho do outro desenha poucos quadros por segundo (LAG_CPU_OTHER = quantas vezes mais lento)
+  {
+    const cdp = await B.context().newCDPSession(B);
+    await cdp.send('Emulation.setCPUThrottlingRate', {
+      rate: Number(process.env.LAG_CPU_OTHER ?? 4),
+    });
+  }
   await drive(A);
   await drive(B);
   await A.waitForTimeout(3000);
@@ -343,6 +369,31 @@ test('duas janelas com atraso de rede: a bola e a raquete do adversário andam l
   const aSeesB = paddleLag(rb, ra);
   const bSeesA = paddleLag(ra, rb);
   console.log(
+    'PISCA líder vê o outro:',
+    JSON.stringify(paddleFlicker(ra)),
+    `(na origem ${paddleFlicker(rb, true).flicks})`,
+    '| outro vê o líder:',
+    JSON.stringify(paddleFlicker(rb)),
+    `(na origem ${paddleFlicker(ra, true).flicks})`,
+  );
+  if (process.env.LAG_FLICK_DEBUG) {
+    const R = ra.rows.filter((r) => r[1]);
+    let shown = 0;
+    for (let i = 2; i < R.length && shown < 3; i++) {
+      const d2 = Math.hypot(
+        R[i]![11]! - 2 * R[i - 1]![11]! + R[i - 2]![11]!,
+        R[i]![12]! - 2 * R[i - 1]![12]! + R[i - 2]![12]!,
+      );
+      if (d2 > 0.25) {
+        shown++;
+        const rows = R.slice(Math.max(0, i - 4), i + 3).map(
+          (r) => `t${r[0]! % 100000}:x${r[11]!.toFixed(2)},z${r[12]!.toFixed(2)}`,
+        );
+        console.log('FLICK', rows.join(' '));
+      }
+    }
+  }
+  console.log(
     'LAG tela do líder(' + lead + 'ms)',
     JSON.stringify(ballStats(ra)),
     'raquete do outro:',
@@ -358,6 +409,16 @@ test('duas janelas com atraso de rede: a bola e a raquete do adversário andam l
   // trava de regressão com a rede simulada (líder 20 ms, outro 80 ms, picos de 350 ms no WebSocket, canal direto com 3% de
   // perda): com o canal direto aberto a bola não pode pular nem cair da mesa e voltar, e a raquete do outro não pode
   // chegar muito atrasada (pelo WebSocket ela chegava 170 a 340 ms atrasada)
+  // o boneco do adversário na tela de um celular lento não pode piscar (a raquete dele era uma mola que oscilava em quadro
+  // lento: 268 piscadas e 2,3 m de oscilação média por quadro)
+  expect(
+    paddleFlicker(rb).mediaSegundaDiferenca,
+    'oscilação da raquete do líder na tela do outro (m)',
+  ).toBeLessThan(0.3);
+  expect(
+    paddleFlicker(ra).mediaSegundaDiferenca,
+    'oscilação da raquete do outro na tela do líder (m)',
+  ).toBeLessThan(0.3);
   if (!process.env.LAG_NOP2P) {
     expect(await open(A), 'canal direto do líder').toBe(true);
     expect(await open(B), 'canal direto do outro').toBe(true);

@@ -20,6 +20,10 @@ export interface PingPeerMsg {
   e?: unknown[];
   /** A raquete de quem mandou: x, y e alcance. */
   p?: [number, number, number];
+  /** Número do pacote (cresce a cada envio): pacote velho que chega depois de um novo é descartado. */
+  n?: number;
+  /** Hora de quem mandou (ms do relógio dele): a velocidade da raquete sai dela, não da hora em que o pacote chegou. */
+  t?: number;
 }
 
 interface SignalIn {
@@ -37,6 +41,7 @@ export class PingPeer {
   private retry: number | null = null;
   private tries = 0;
   private closed = false;
+  private seq = 0;
 
   constructor(
     private readonly otherId: string,
@@ -131,7 +136,7 @@ export class PingPeer {
     const now = performance.now();
     for (const ev of newEvents) this.recent.push({ at: now, ev });
     this.recent = this.recent.filter((r) => now - r.at < REPEAT_MS);
-    const msg: PingPeerMsg = {};
+    const msg: PingPeerMsg = { n: ++this.seq, t: Math.round(now) };
     if (this.recent.length > 0) msg.e = this.recent.map((r) => r.ev);
     if (pad) msg.p = pad;
     if (msg.e === undefined && msg.p === undefined) return;
