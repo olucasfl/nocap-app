@@ -258,3 +258,9 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 - Correção (`PingScene.absorb`, `scene.online`): o erro visual da bola guarda a diferença entre a tela e o novo estado e some em ~0,12 s (como o erro visual do Fut Fox); a bola que passou da raquete do outro lado espera ali até 0,3 s pela batida dele; o relógio da partida é seguido devagar (máx. 0,4 ms por quadro) em vez de pular.
 - Mantido: a bola determinística nos dois aparelhos, só batida e saque viajam (já era a ideia do tick/rede do Fut Fox).
 - Não medido com ping real: o ambiente de teste desenha ~1-8 quadros/s; vale conferir jogando com amigos.
+
+### Rodada 26: bola sai da raquete dele (sem aparecer no meio do caminho)
+
+- Pedido: ao bater do outro lado a bola "aparecia na metade do caminho". Causa: a batida chega com atraso `D` e a simulação já a tinha levado `D` adiante.
+- Agora a bola desenhada recomeça onde ele bateu (`PpNetSim.ballAt`, foto do tick já refeita) e alcança a simulação em ~0,2 s (`PingScene.lag`, some a 0,7 tick por tick); o erro residual ainda desliza em ~0,12 s. Velocidades não foram mexidas, como pedido.
+- E2E online com duas janelas passa; ping real ainda não foi medido.

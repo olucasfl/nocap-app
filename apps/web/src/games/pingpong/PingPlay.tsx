@@ -527,6 +527,7 @@ export function PingPlay({
       if (now.length) react(now);
     };
     scene.online = !!net;
+    scene.sim = net;
     const oppTarget = { x: 0, y: 1.3, z: 0 };
     /** Já chegou o histórico da sala (quem entra no meio ou volta só começa a andar depois dele). */
     let synced = !net;
@@ -542,7 +543,7 @@ export function PingPlay({
             if (ev) {
               const late = ev.t <= net.tick;
               const r = net.add(ev);
-              if (late && r.ok) scene.absorb();
+              if (late && r.ok) scene.absorb(net.tick - ev.t);
               feed(r.events);
             }
           }

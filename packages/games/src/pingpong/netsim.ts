@@ -77,6 +77,12 @@ export class PpNetSim {
     return s && s.tick === tick ? s : null;
   }
 
+  /** Onde a bola estava ao fim do tick `tick` (da foto guardada, já refeita se a partida voltou no tempo). */
+  ballAt(tick: number): { x: number; y: number; z: number } | null {
+    const s = this.snapAt(Math.floor(tick));
+    return s ? { x: s.b[0] ?? 0, y: s.b[1] ?? 0, z: s.b[2] ?? 0 } : null;
+  }
+
   private tossAt(n: number): PpNetEvent | undefined {
     return this.log.find((e) => e.k === 'toss' && e.t === n);
   }

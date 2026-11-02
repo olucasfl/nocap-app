@@ -140,11 +140,17 @@ export class PingScene {
   // desliza do lugar onde estava para o lugar certo em ~0,12 s (mesma ideia do Fut Fox, spec 052)
   private shown = { x: 0, y: 1.25, z: 2.5 };
   private err = { x: 0, y: 0, z: 0 };
+  /** Quanto a bola desenhada está atrás da simulação (ticks): a batida do outro chegou atrasada e a bola sai da raquete dele. */
+  private lag = 0;
+  sim: { tick: number; ballAt(t: number): { x: number; y: number; z: number } | null } | null =
+    null;
   private hold: { t: number; x: number; y: number; z: number } | null = null;
 
   /** Chamar logo depois de a partida refazer o passado: guarda a diferença entre o que estava na tela e o novo estado. */
-  absorb() {
-    const c = this.match.ball;
+  absorb(lateTicks = 0) {
+    // a bola desenhada recomeça de onde o outro bateu e alcança a simulação aos poucos (nada de aparecer no meio do caminho)
+    this.lag = Math.max(0, Math.min(18, lateTicks));
+    const c = this.delayed(1);
     const e = this.err;
     e.x = this.shown.x - c.x;
     e.y = this.shown.y - c.y;
@@ -155,6 +161,23 @@ export class PingScene {
     }
     this.prev.valid = false;
     this.hold = null;
+  }
+
+  /** A bola da simulação `lag` ticks atrás (interpolada entre dois ticks). `a` é a fração do tick de agora. */
+  private delayed(a: number): { x: number; y: number; z: number } {
+    const c = this.match.ball;
+    const n = this.sim;
+    if (!n || this.lag <= 0.01) return { x: c.x, y: c.y, z: c.z };
+    const pos = n.tick + a - this.lag;
+    const lo = n.ballAt(pos);
+    const hi = n.ballAt(pos + 1);
+    if (!lo || !hi) return { x: c.x, y: c.y, z: c.z };
+    const f = pos - Math.floor(pos);
+    return {
+      x: lo.x + (hi.x - lo.x) * f,
+      y: lo.y + (hi.y - lo.y) * f,
+      z: lo.z + (hi.z - lo.z) * f,
+    };
   }
 
   constructor(
@@ -904,6 +927,13 @@ export class PingScene {
     let sy = lerp(pv.ball.y, cur.y, a);
     let sz = lerp(pv.ball.z, cur.z, a);
     if (this.online) {
+      if (this.lag > 0) {
+        this.lag = Math.max(0, this.lag - dt * 60 * 0.7);
+        const d = this.delayed(a);
+        sx = d.x;
+        sy = d.y;
+        sz = d.z;
+      }
       // a bola passou da raquete do outro lado e a batida dele ainda não chegou: ela espera ali (até 0,3 s)
       const opp = 1 - this.me;
       const so = opp === 0 ? 1 : -1;
