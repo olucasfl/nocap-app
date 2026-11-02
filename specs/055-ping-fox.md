@@ -313,7 +313,7 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 
 ### Rodada 36: acertou o verde do smash, a bola é batida
 
-- Bug: apertar o verde só dava o nível do smash, mas a raquete ainda dependia da mão estar em cima da bola; com a mão longe a bola descia na sua mesa e o ponto era perdido. Agora, depois do aperto (`smashQ > 0`) a raquete vai sozinha até a bola (de lado, na altura e para a frente, `movePad`), e uma bola colada na mesa sobe um pouco para o smash poder passar para o outro lado.
+- Bug: apertar o verde só dava o nível do smash e, com a mão longe, a bola descia na sua mesa. A raquete NÃO vai sozinha até a bola (decisão do Lucas: o movimento do smash é dele); o que a ajuda garante é que a bola do smash nunca quique na própria mesa (nível 3 sempre dentro da mesa e forte; níveis 1 e 2 podem sair longe ou na rede, mas não voltam para o seu lado).
 - Teste: 150 smashs no meio do verde com a mão em qualquer lugar: >95% batem na bola e todos os que batem fazem o primeiro quique no lado do outro, sem rede (antes quase todos erravam).
 
 ### Rodada 37: gráfico e som no celular

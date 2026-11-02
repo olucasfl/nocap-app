@@ -1004,57 +1004,35 @@ describe('bola lenta de verdade', () => {
   });
 });
 
-describe('quem acerta a barra do smash bate na bola', () => {
-  it('apertou o verde (mesmo sem a mão perto da bola): a raquete vai até ela e o smash passa para o outro lado', () => {
-    const rng = createRng('smash-assist');
-    let hits = 0;
-    let landed = 0;
-    const n = 150;
-    for (let k = 0; k < n; k++) {
-      const m = new PpMatch(1);
-      m.phase = 'rally';
-      m.lastHitter = 1;
-      m.bounces = [0, 0];
-      m.popup = true;
-      m.popupTicks = 0;
-      const b = m.ball;
-      b.x = (rng() - 0.5) * 3;
-      b.y = 2 + rng() * 1.5;
-      b.z = 0.3 + rng() * 0.8;
-      b.vx = (rng() - 0.5) * 1.5;
-      b.vy = 3 + rng() * 2;
-      b.vz = 0.5 + rng() * 1.2;
-      b.wx = b.wy = b.wz = 0;
-      const padx = (rng() - 0.5) * 4;
-      const ev: PpEvent[] = [];
-      for (let i = 0; i < 60 * 8; i++) {
-        // aperta bem no meio do verde (a barra passa por 0,5 por volta do tick 12)
-        if (i === 12) m.smashTap(0);
-        m.step([{ ...ppIdleInput(), manual: false, x: padx, y: 1.5, z: 0 }, ppIdleInput()]);
-        ev.push(...m.drain());
-        if (ev.some((e) => e.type === 'hit' || e.type === 'point')) break;
+describe('o smash nunca quica na própria mesa', () => {
+  it('verde claro, verde e vermelho: a bola do smash nunca cai do seu lado (pode sair, mas não volta para a sua mesa)', () => {
+    for (const tier of [1, 2, 3]) {
+      const rng = createRng('smash-own-' + tier);
+      let own = 0;
+      const n = 1500;
+      for (let i = 0; i < n; i++) {
+        const side = i % 2;
+        const fwd = side === 0 ? -1 : 1;
+        const b = ppNewBall();
+        b.x = (rng() - 0.5) * 3.4;
+        b.y = 1.05 + rng() * 2.2;
+        b.z = -fwd * (0.3 + rng() * 3);
+        b.vx = (rng() - 0.5) * 3;
+        b.vy = -3 + rng() * 6;
+        b.vz = -fwd * -(1 + rng() * 8);
+        ppPaddleHit(b, side, {
+          x: b.x,
+          y: b.y,
+          vx: (rng() - 0.5) * 8,
+          vy: (rng() - 0.5) * 3,
+          vz: rng() * 14,
+          reach: rng() * 1.2,
+          smash: tier,
+        } as Parameters<typeof ppPaddleHit>[2]);
+        const L = ppLanding(b, side, false);
+        if (!L.ok && L.z * (side === 0 ? 1 : -1) > 0.3) own++;
       }
-      // segue a bola até a primeira batida na mesa: tem que ser do lado do outro, sem rede
-      const afterHit: PpEvent[] = [];
-      for (
-        let i = 0;
-        i < 60 * 3 &&
-        !afterHit.some((e) => e.type === 'bounce' || e.type === 'net' || e.type === 'point');
-        i++
-      ) {
-        m.step([{ ...ppIdleInput(), manual: false, x: padx, y: 1.5, z: 0 }, ppIdleInput()]);
-        afterHit.push(...m.drain());
-      }
-      const first = afterHit.find(
-        (e) => e.type === 'bounce' || e.type === 'net' || e.type === 'point',
-      );
-      const h = ev.find((e) => e.type === 'hit');
-      if (h && h.type === 'hit' && h.p === 0 && h.tier > 0) {
-        hits++;
-        if (first && first.type === 'bounce' && first.side === 1) landed++;
-      }
+      expect(own, `nível ${tier}`).toBe(0);
     }
-    expect(hits / n).toBeGreaterThan(0.95);
-    expect(landed).toBe(hits);
   });
 });

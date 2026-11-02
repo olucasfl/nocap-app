@@ -362,15 +362,8 @@ export class PpMatch {
       )
         ty = b.y;
       // saque fácil: a bola lançada descendo bem na frente da raquete é alcançada mesmo sem a mão avançar (um toque basta)
-      let tz = inp.z;
-      let tx = inp.x;
-      // quem acertou a barra do smash merece o ponto: a raquete vai sozinha até a bola (de lado, na altura e para a frente)
-      if (this.popup && this.expect === p && (this.smashQ[p === 0 ? 0 : 1] ?? 0) > 0) {
-        tx = b.x;
-        ty = b.y;
-        tz = PP_PAD_Z - s * b.z + 0.35;
-      }
-      ppPadStepZ(pad, tx, ty, tz, PP_TICK);
+      const tz = inp.z;
+      ppPadStepZ(pad, inp.x, ty, tz, PP_TICK);
       this.swingNow[p === 0 ? 0 : 1] = null;
       return;
     }

@@ -1,6 +1,6 @@
 import type { PpBall } from './ball';
 import { ppTune } from './tune';
-import { ppFixNet, ppGuideHit, ppSmashFix } from './assist';
+import { ppFixNet, ppGuideHit, ppLanding, ppSmashFix } from './assist';
 import {
   PP_AIM,
   PP_ASSIST_LATERAL_POWER,
@@ -371,6 +371,11 @@ export function ppPaddleHit(b: PpBall, side: number, pad: PpPaddleMotion, guide 
     ppGuideHit(b, side, false, false, { vyLo: -16, hMax: 24 });
     // o verde do meio nunca erra: se a ajuda normal não achou jogada, procura uma mais larga (cai dentro e forte)
     if (tier >= 3) ppSmashFix(b, side, 10);
+    else {
+      // os outros verdes e o vermelho podem errar (longa, na rede), mas o smash nunca quica na própria mesa
+      const L = ppLanding(b, side, false);
+      if (!L.ok && L.z * (side === 0 ? 1 : -1) > 0.3) ppSmashFix(b, side, tier === 2 ? 9 : 7);
+    }
   } else if (stroke === 'subida') {
     ppGuideHit(b, side, false, true);
   } else if (guide && (power < PP_ASSIST_MAX_POWER || isServe)) {
