@@ -848,14 +848,13 @@ export function PingPlay({
             <span>para prender o mouse e jogar com mais imersão</span>
           </div>
         )}
-      {myServe && !hud.banner && (
+      {myServe && (
         <div className="png-serve-hint" data-testid="png-serve-hint">
-          <small>Sua vez de sacar</small>
-          <b>{touchDevice ? 'TOQUE NA TELA' : 'CLIQUE'} para lançar a bola</b>
+          <b>{touchDevice ? 'Toque na tela' : 'Clique'} para lançar a bola</b>
           <span>
             {touchDevice
-              ? 'Depois bata nela com a raquete: arraste o dedo para a frente'
-              : 'Depois bata nela com a raquete: leve o mouse para a frente'}
+              ? 'e arraste o dedo para a frente para bater'
+              : 'e leve o mouse para a frente para bater'}
           </span>
         </div>
       )}
