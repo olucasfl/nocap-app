@@ -251,3 +251,10 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 
 - Removido o auxílio que avançava a raquete sozinho na descida da bola: quem bate é a mão. Se a raquete já está em cima da bola quando ela desce, a bola bate nela (pegada fraca); com a mão atrás da bola e parada, não há batida (falta de saque).
 - Testes: mão parada não saca sozinha; mão que avança saca.
+
+### Rodada 25: online liso (mesma ideia do Fut Fox, spec 052)
+
+- Causa do teletransporte: a batida do outro chega atrasada (ping), a partida volta no tempo e refaz até agora, e a bola desenhada pulava a distância que andou nesse atraso; além disso a bola passava reto da raquete dele enquanto a batida não chegava e depois voltava. O relógio da sala (mediana) também saltava alguns ms e a partida pulava ticks.
+- Correção (`PingScene.absorb`, `scene.online`): o erro visual da bola guarda a diferença entre a tela e o novo estado e some em ~0,12 s (como o erro visual do Fut Fox); a bola que passou da raquete do outro lado espera ali até 0,3 s pela batida dele; o relógio da partida é seguido devagar (máx. 0,4 ms por quadro) em vez de pular.
+- Mantido: a bola determinística nos dois aparelhos, só batida e saque viajam (já era a ideia do tick/rede do Fut Fox).
+- Não medido com ping real: o ambiente de teste desenha ~1-8 quadros/s; vale conferir jogando com amigos.

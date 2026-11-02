@@ -134,6 +134,29 @@ export class PingScene {
     valid: false,
   };
 
+  /** Partida online: a bola do outro lado espera um instante pela batida dele e os saltos de correção viram deslizes. */
+  online = false;
+  // erro visual: quando a partida refaz o passado (batida do outro chegou atrasada) a bola desenhada não pula,
+  // desliza do lugar onde estava para o lugar certo em ~0,12 s (mesma ideia do Fut Fox, spec 052)
+  private shown = { x: 0, y: 1.25, z: 2.5 };
+  private err = { x: 0, y: 0, z: 0 };
+  private hold: { t: number; x: number; y: number; z: number } | null = null;
+
+  /** Chamar logo depois de a partida refazer o passado: guarda a diferença entre o que estava na tela e o novo estado. */
+  absorb() {
+    const c = this.match.ball;
+    const e = this.err;
+    e.x = this.shown.x - c.x;
+    e.y = this.shown.y - c.y;
+    e.z = this.shown.z - c.z;
+    const m = Math.hypot(e.x, e.y, e.z);
+    if (m > 5) {
+      e.x = e.y = e.z = 0;
+    }
+    this.prev.valid = false;
+    this.hold = null;
+  }
+
   constructor(
     canvas: HTMLCanvasElement,
     private match: PpMatch,
@@ -871,11 +894,53 @@ export class PingScene {
     const pv = this.prev;
     // posição desenhada = mistura do tick anterior com o de agora (sem mistura se a bola "pulou")
     let a = pv.valid ? clamp(alpha, 0, 1) : 1;
-    if (pv.valid && Math.hypot(cur.x - pv.ball.x, cur.y - pv.ball.y, cur.z - pv.ball.z) > 1.2)
+    if (
+      pv.valid &&
+      !this.online &&
+      Math.hypot(cur.x - pv.ball.x, cur.y - pv.ball.y, cur.z - pv.ball.z) > 1.2
+    )
       a = 1;
-    const bx = this.vx(lerp(pv.ball.x, cur.x, a));
-    const by = lerp(pv.ball.y, cur.y, a);
-    const bz = this.vz(lerp(pv.ball.z, cur.z, a));
+    let sx = lerp(pv.ball.x, cur.x, a);
+    let sy = lerp(pv.ball.y, cur.y, a);
+    let sz = lerp(pv.ball.z, cur.z, a);
+    if (this.online) {
+      // a bola passou da raquete do outro lado e a batida dele ainda não chegou: ela espera ali (até 0,3 s)
+      const opp = 1 - this.me;
+      const so = opp === 0 ? 1 : -1;
+      const past =
+        m.phase === 'rally' &&
+        m.expect === opp &&
+        (m.bounces[opp] ?? 0) >= 1 &&
+        (cur.z - so * (PP_PAD_Z - m.pad(opp).reach)) * so > 0;
+      if (past) {
+        if (!this.hold)
+          this.hold = {
+            t: 0,
+            x: this.shown.x - this.err.x,
+            y: this.shown.y - this.err.y,
+            z: this.shown.z - this.err.z,
+          };
+        this.hold.t += dt;
+        if (this.hold.t < 0.3) {
+          sx = this.hold.x;
+          sy = this.hold.y;
+          sz = this.hold.z;
+        }
+      } else this.hold = null;
+      const k = Math.exp(-dt * 9);
+      this.err.x *= k;
+      this.err.y *= k;
+      this.err.z *= k;
+      sx += this.err.x;
+      sy += this.err.y;
+      sz += this.err.z;
+    }
+    this.shown.x = sx;
+    this.shown.y = sy;
+    this.shown.z = sz;
+    const bx = this.vx(sx);
+    const by = sy;
+    const bz = this.vz(sz);
     this.ball.position.set(bx, by, bz);
     // giro: o eixo e a rapidez vêm do efeito (rad/s), um pouco abrandados para a faixa continuar legível
     const w = Math.hypot(cur.wx, cur.wy, cur.wz);

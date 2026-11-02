@@ -526,10 +526,12 @@ export function PingPlay({
       }
       if (now.length) react(now);
     };
+    scene.online = !!net;
     const oppTarget = { x: 0, y: 1.3, z: 0 };
     /** Já chegou o histórico da sala (quem entra no meio ou volta só começa a andar depois dele). */
     let synced = !net;
     let padSendAt = 0;
+    let clockOff: number | null = null;
     if (net && online) {
       unsubs.push(
         subscribeRoom('pev', (m) => {
@@ -537,12 +539,21 @@ export function PingPlay({
           synced = true;
           for (const raw of m) {
             const ev = ppParseNetEvent(raw);
-            if (ev) feed(net.add(ev).events);
+            if (ev) {
+              const late = ev.t <= net.tick;
+              const r = net.add(ev);
+              if (late && r.ok) scene.absorb();
+              feed(r.events);
+            }
           }
         }),
         subscribeRoom('prej', (m) => {
           const ev = ppParseNetEvent(m);
-          if (ev) feed(net.remove(ev));
+          if (ev) {
+            const evs = net.remove(ev);
+            scene.absorb();
+            feed(evs);
+          }
         }),
         subscribeRoom('ppads', (m) => {
           if (!Array.isArray(m)) return;
@@ -614,7 +625,13 @@ export function PingPlay({
         }
         if (net && online) {
           // hora da partida pelo relógio da sala; o passo é fixo e a tela interpola entre os dois últimos
-          const exact = (serverNow() - online.startAt) / (PP_TICK * 1000);
+          // relógio suavizado: o relógio da sala é uma mediana que de vez em quando salta alguns ms; a partida não pode
+          // dar um pulo de ticks por isso (a bola "teletransportava"), então ele só é seguido devagar
+          const pn = performance.now();
+          const raw = serverNow() - pn;
+          if (clockOff === null || Math.abs(raw - clockOff) > 400) clockOff = raw;
+          else clockOff += Math.max(-0.4, Math.min(0.4, raw - clockOff));
+          const exact = (pn + clockOff - online.startAt) / (PP_TICK * 1000);
           const target = Math.floor(exact);
           const input = spectator ? null : me;
           const timed: PpTimedEvent[] = [];
