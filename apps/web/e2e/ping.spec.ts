@@ -144,14 +144,16 @@ const humanDriver = () => {
     if (m.lastHitter === 0 && last !== 0) w.__hits++;
     last = m.lastHitter;
     if (m.phase === 'serve' && m.server === 0) {
+      // clica para lançar a bola
       const [x, y] = to(0, PAD_Z - 0.2);
       fire('pointermove', x, y);
+      if (m.t > 0.8) fire('pointerdown', x, y, { button: 0 });
       toss0 = -1;
     } else if (m.phase === 'toss' && m.server === 0) {
-      // a bola está parada na frente da raquete: a mão avança em passada e bate nela
-      if (toss0 < 0) toss0 = m.t;
-      const k = Math.max(0, Math.min(1, (m.t - toss0 - 0.2) / 0.22));
-      const [x, y] = to(0, PAD_Z - (0.2 + 1.6 * k));
+      // a bola subiu e cai: na descida a mão avança em passada e bate nela
+      if (toss0 < 0 && m.ball.vy < 0 && m.ball.y < 1.95) toss0 = m.t;
+      const k = toss0 < 0 ? 0 : Math.max(0, Math.min(1, (m.t - toss0) / 0.12));
+      const [x, y] = to(0, PAD_Z - (0.2 + 1.5 * k));
       fire('pointermove', x, y);
     } else if (m.phase === 'rally' && m.expect === 0) {
       if (m.rally !== seen) {

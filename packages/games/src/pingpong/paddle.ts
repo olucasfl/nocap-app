@@ -31,6 +31,8 @@ export interface PpPaddleMotion {
   reach?: number;
   /** Nível do smash cronometrado (1 a 3) para esta batida; 0 ou ausente = nenhum. */
   smash?: number;
+  /** É a raquetada do saque (sempre com a ajuda de leitura, e nunca curtinha). */
+  serve?: boolean;
 }
 
 export type PpHitQuality = 'edge' | 'normal' | 'sweet';
@@ -97,6 +99,7 @@ export function ppPaddleTilt(vx: number, vy: number, vz = 0): { pitch: number; y
  */
 export function ppPaddleHit(b: PpBall, side: number, pad: PpPaddleMotion, guide = true): PpHitInfo {
   const forward = side === 0 ? -1 : 1;
+  const isServe = pad.serve === true;
   const inWx = b.wx;
   const inWy = b.wy;
   const inWz = b.wz;
@@ -214,7 +217,7 @@ export function ppPaddleHit(b: PpBall, side: number, pad: PpPaddleMotion, guide 
     spinFwd = back ? 22 : 0;
   } else if (
     (nearNet && fwdPow < 4.6 && !high) ||
-    (fwdPow < 1.7 && !high && vin > 0.5 && reach > 1.2)
+    (fwdPow < 1.7 && !high && !isServe && reach > 1.2)
   ) {
     // toque curto perto da rede: a bola mal passa e cai logo depois (com corte)
     stroke = 'curta';
@@ -319,8 +322,8 @@ export function ppPaddleHit(b: PpBall, side: number, pad: PpPaddleMotion, guide 
     ppGuideHit(b, side, false, false, { vyLo: -16, hMax: 24 });
   } else if (stroke === 'subida') {
     ppGuideHit(b, side, false, true);
-  } else if (guide && (power < PP_ASSIST_MAX_POWER || vin < 0.5)) {
-    ppGuideHit(b, side, drop, power < PP_ASSIST_LATERAL_POWER || vin < 0.5);
+  } else if (guide && (power < PP_ASSIST_MAX_POWER || isServe)) {
+    ppGuideHit(b, side, drop, power < PP_ASSIST_LATERAL_POWER || isServe);
   } else if (guide) {
     // batida de força: pode sair longa ou aberta, mas a rede não derruba (só a altura sobe o que precisa)
     ppFixNet(b, side);

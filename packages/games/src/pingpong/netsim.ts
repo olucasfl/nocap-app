@@ -85,6 +85,20 @@ export class PpNetSim {
   private stepOne(input: PpInput | null, emit: ((t: PpTimedEvent) => void) | null) {
     const m = this.match;
     const n = m.tick + 1;
+    if (m.phase === 'serve') {
+      const te = this.tossAt(n);
+      if (te && te.k === 'toss') {
+        m.tossReq = te.x;
+        m.tossReqV = te.v ?? 0.5;
+      } else if (this.authority && !m.replay && m.t + PP_TICK >= PP_SERVE_AUTO) {
+        // quem não saca a tempo tem o lançamento feito pela sala (e a bola cai: falta)
+        const ev: PpNetEvent = { k: 'toss', t: n, p: m.server, x: m.pad(m.server).x, v: 0.35 };
+        this.log.push(ev);
+        this.out.push(ev);
+        m.tossReq = ev.x;
+        m.tossReqV = 0.35;
+      }
+    }
     const inputs: [PpInput, PpInput] =
       input && !m.replay ? (this.localPlayer === 0 ? [input, idle[1]] : [idle[0], input]) : idle;
     m.step(inputs);

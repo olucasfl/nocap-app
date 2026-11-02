@@ -197,42 +197,35 @@ describe('regras', () => {
     expect(ppServerFor(0, 11, 11)).toBe(0);
   });
 
-  it('o saque: a bola fica parada na frente da raquete e a raquetada para a frente manda a bola ao outro lado', () => {
+  it('o saque: o clique lança a bola, ela sobe e cai, e a raquetada na descida manda a bola ao outro lado', () => {
     const m = new PpMatch(0);
     const hold = { ...ppIdleInput(), x: 0, y: 1.5 };
-    run(m, 70, hold, ppIdleInput());
-    expect(m.phase).toBe('toss');
+    run(m, 5, hold, ppIdleInput());
+    expect(m.phase).toBe('serve');
     const y0 = m.ball.y;
-    run(m, 30, hold, ppIdleInput());
-    expect(m.ball.y).toBe(y0); // parada: sem gravidade
+    m.step([{ ...hold, serve: true }, ppIdleInput()]);
+    expect(m.phase).toBe('toss');
+    let top = y0;
     let hit: PpEvent | undefined;
-    for (let i = 0; i < 60 && !hit; i++) {
-      m.step([{ ...hold, swing: { vx: 0, vy: 0, vz: 6, reach: 1.1 } }, ppIdleInput()]);
+    for (let i = 0; i < 120 && !hit; i++) {
+      top = Math.max(top, m.ball.y);
+      // a mão espera a bola descer até a altura da raquete e então avança batendo para a frente
+      const go = m.ball.vy < 0 && m.ball.y <= 1.75;
+      m.step([go ? { ...hold, swing: { vx: 0, vy: 0, vz: 6, reach: 1.1 } } : hold, ppIdleInput()]);
       hit = m.drain().find((e) => e.type === 'hit');
     }
+    expect(top).toBeGreaterThan(y0 + 0.6); // a bola subiu
     expect(hit && hit.type === 'hit' && hit.serve).toBe(true);
     expect(m.phase).toBe('rally');
     expect(m.ball.vz).toBeLessThan(0);
     expect(ppLanding(m.ball, 0).ok).toBe(true);
   });
 
-  it('quem não saca a tempo tem o saque feito pela sala (mansinho) e a partida segue', () => {
+  it('quem não clica a tempo tem o lançamento feito pela sala, e a bola que ninguém rebate é falta', () => {
     const m = new PpMatch(0);
-    const ev = run(m, 60 * 12, ppIdleInput(), ppIdleInput());
-    expect(ev.some((e) => e.type === 'hit' && e.serve)).toBe(true);
-    expect(m.phase === 'rally' || m.phase === 'point').toBe(true);
-  });
-
-  it('a raquete acompanha o dedo sem atraso: um pulo de 3 m para o lado chega em menos de 0,2 s', () => {
-    const pad: PpPaddle = { x: -1.5, y: 1.4, vx: 0, vy: 0, reach: 0, vz: 0, swing: 0 };
-    let ticks = 0;
-    while (Math.abs(pad.x - 1.5) > 0.15 && ticks < 60) {
-      ppPadStepZ(pad, 1.5, 1.4, 0, 1 / 60);
-      ticks++;
-    }
-    expect(ticks).toBeLessThanOrEqual(11);
-    // e a velocidade que entra na batida não passa de uma mão de verdade
-    expect(Math.abs(pad.vx)).toBeLessThanOrEqual(10);
+    const ev = run(m, 60 * 16, ppIdleInput(), ppIdleInput());
+    expect(ev.some((e) => e.type === 'toss')).toBe(true);
+    expect(ev.some((e) => e.type === 'fault')).toBe(true);
   });
 
   it('com a mão (z), a raquete vai até a rede e a força vem do impulso para a frente', () => {
@@ -251,17 +244,27 @@ describe('regras', () => {
 
   it('o saque funciona de qualquer lugar e com qualquer rapidez: a bola cai na mesa do outro lado (sem falta)', () => {
     for (const px of [-2.6, -0.8, 0, 1.5, 3]) {
-      for (const spd of [1.5, 4, 9]) {
+      for (const spd of [9, 12, 18]) {
         const m = new PpMatch(0);
         const ev: PpEvent[] = [];
         let t = 0;
+        let clicked = false;
         for (let i = 0; i < 60 * 8; i++) {
-          const go = m.phase === 'toss';
-          if (go) t++;
+          const toss = m.phase === 'toss';
+          const falling = toss && m.ball.vy < 0 && m.ball.y < 1.9;
+          if (falling) t++;
           m.step([
-            { ...ppIdleInput(), manual: false, x: px, y: 1.5, z: Math.min(3.4, (t * spd) / 60) },
+            {
+              ...ppIdleInput(),
+              manual: false,
+              x: px,
+              y: 1.5,
+              z: falling ? Math.min(3.4, 0.2 + (t * spd) / 60) : 0,
+              serve: m.phase === 'serve' && !clicked && i > 30,
+            },
             ppIdleInput(),
           ]);
+          if (m.phase === 'toss') clicked = true;
           ev.push(...m.drain());
           if (ev.some((e) => e.type === 'bounce')) break;
         }

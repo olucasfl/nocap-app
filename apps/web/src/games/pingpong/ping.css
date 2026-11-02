@@ -609,3 +609,21 @@
 .png-speed {
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
 }
+
+/* aviso no PC: o mouse ainda não está preso no jogo */
+.png-lock-hint {
+  position: absolute;
+  left: 50%;
+  top: calc(max(10px, env(safe-area-inset-top)) + 64px);
+  translate: -50% 0;
+  padding: 7px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  background: rgba(16, 18, 24, 0.82);
+  color: #f3f4f7;
+  font: 600 13px var(--font-body, system-ui);
+  letter-spacing: 0.04em;
+  text-align: center;
+  pointer-events: none;
+  max-width: 90vw;
+}

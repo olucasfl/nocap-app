@@ -1,6 +1,14 @@
 import { ppCopyBall, ppNewBall } from './ball';
 import { ppLanding } from './assist';
-import { PP_PAD_R, PP_PAD_Z, PP_SERVE_FRONT, PP_SERVE_Y, PP_W } from './constants';
+import {
+  PP_PAD_R,
+  PP_PAD_Z,
+  PP_SERVE_FRONT,
+  PP_SERVE_Y,
+  PP_TOSS_DEFAULT,
+  PP_W,
+  ppTossSpeed,
+} from './constants';
 import { PpMatch, ppIdleInput, type PpInput, type PpSwing } from './match';
 import { ppPaddleHit } from './paddle';
 import { ppPredictCross, type PpCrossing } from './predict';
@@ -39,7 +47,7 @@ export const PP_BOT_LEVELS: Record<PpBotName, PpBotLevel> = {
     err: 0.5,
     swingErr: 0.3,
     aim: 0.15,
-    power: 6.2,
+    power: 10,
     serveWait: 1.2,
     smashErr: 0.32,
   },
@@ -49,7 +57,7 @@ export const PP_BOT_LEVELS: Record<PpBotName, PpBotLevel> = {
     err: 0.17,
     swingErr: 0.15,
     aim: 0.5,
-    power: 8,
+    power: 14,
     serveWait: 1,
     smashErr: 0.16,
   },
@@ -60,7 +68,7 @@ export const PP_BOT_LEVELS: Record<PpBotName, PpBotLevel> = {
     err: 0.04,
     swingErr: 0.04,
     aim: 1,
-    power: 11,
+    power: 19,
     serveWait: 0.6,
     smashErr: 0.03,
   },
@@ -69,8 +77,32 @@ export const PP_BOT_LEVELS: Record<PpBotName, PpBotLevel> = {
 /** As batidas que o bot sabe dar: velocidade da mão para cima/baixo, para o lado e para a frente. */
 const VY = [-4, -2.5, -1, 0, 1, 2, 3, 4, 5.5, 7];
 const VX = [-2, -1, 0, 1, 2];
-const VZ = [1, 2, 3, 4, 5, 6, 7.5];
+const VZ = [1, 2, 3, 4, 5, 6, 7.5, 9, 10.5];
 const OFFS = [-0.4, 0, 0.4];
+
+/** O que o bot quer fazer com a bola: cada intenção é um jeito diferente de bater (força, efeito, altura). */
+type Intent = 'empurrar' | 'topspin' | 'drive' | 'curva' | 'bloquear';
+const INTENT: Record<
+  Intent,
+  { speed: number; stroke: readonly string[]; vz: readonly number[]; vx: readonly number[] }
+> = {
+  // empurrada com corte, devagar
+  empurrar: { speed: 0.34, stroke: ['corte'], vz: [1, 2, 3], vx: [-2, -1, 0, 1, 2] },
+  // topspin de arco, médio
+  topspin: { speed: 0.6, stroke: ['topspin'], vz: [4, 5, 6, 7.5], vx: [-2, -1, 0, 1, 2] },
+  // drive: forte e reto, com topspin pesado
+  drive: { speed: 0.95, stroke: ['drive', 'smash'], vz: [8.4, 9, 10.5, 12], vx: [-2, -1, 0, 1, 2] },
+  // curva: varrendo para o lado, efeito de lado
+  curva: { speed: 0.7, stroke: ['curva'], vz: [4, 6, 7.5], vx: [-7, -6, 6, 7] },
+  // bloqueio: mão mansa contra bola forte, sobe em arco
+  bloquear: { speed: 0.4, stroke: ['bloqueio', 'lob'], vz: [0.4, 1], vx: [-1, 0, 1] },
+};
+/** Pesos de cada intenção por nível (o difícil ataca mais, o fácil empurra). */
+const INTENT_WEIGHTS: Record<PpBotName, Record<Intent, number>> = {
+  facil: { empurrar: 0.45, topspin: 0.35, drive: 0.1, curva: 0.05, bloquear: 0.05 },
+  medio: { empurrar: 0.22, topspin: 0.33, drive: 0.25, curva: 0.15, bloquear: 0.05 },
+  dificil: { empurrar: 0.1, topspin: 0.28, drive: 0.37, curva: 0.2, bloquear: 0.05 },
+};
 
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 
@@ -86,6 +118,7 @@ export class PpBot {
   private errY = 0;
   private swing: PpSwing = { vx: 0, vy: 0, vz: 0 };
   private predReach = BOT_REACH;
+  private intent: Intent = 'topspin';
   private popAt = -1;
   private popTapped = false;
   private popTarget = 0.5;
@@ -132,14 +165,17 @@ export class PpBot {
       gx = this.cx;
       gy = PP_SERVE_Y;
       this.serveSwing = null;
+      inp.tossV = PP_TOSS_DEFAULT;
+      if (m.t >= lv.serveWait) inp.serve = true;
     } else if (m.phase === 'toss' && m.server === p) {
-      // a bola está parada na frente da raquete: espera um instante e a rebate para a frente
+      // a bola subiu: o bot espera na altura da raquete e a rebate para a frente quando ela desce
       const b = m.ball;
       gx = b.x;
-      gy = b.y;
+      gy = 1.65;
       speed = 12;
       if (!this.serveSwing) this.serveSwing = this.planServe(m, p);
-      if (m.t >= lv.serveWait) swing = { ...this.serveSwing, reach: PP_SERVE_FRONT + 0.1 };
+      swing = this.serveSwing;
+      if (b.vy < 0 && b.y <= this.cy + 0.04) swing = { ...swing, reach: PP_SERVE_FRONT + 0.1 };
     } else if (m.phase === 'rally' && m.expect === p) {
       this.serveTick = -1;
       // a bola vem: depois do tempo de reação, prevê onde ela cruza, escolhe a batida e corre para lá
@@ -195,12 +231,36 @@ export class PpBot {
     const lv = this.level;
     const b = ppNewBall();
     const s = PpMatch.sign(p);
-    // a bola parada na frente da raquete
+    // a bola na altura da raquete, descendo com a velocidade da queda do lançamento
     b.x = m.ball.x;
-    b.y = PP_SERVE_Y;
+    b.y = 1.65;
     b.z = s * (PP_PAD_Z - PP_SERVE_FRONT);
+    b.vy = -Math.sqrt(Math.max(1, ppTossSpeed(PP_TOSS_DEFAULT) ** 2 - 2 * 8 * (1.65 - PP_SERVE_Y)));
     const choice = this.best(b, p, Math.max(lv.power, 8.5), (this.rng() - 0.5) * 0.9 * lv.aim);
     return { vx: choice.vx, vy: choice.vy, vz: choice.vz };
+  }
+
+  /** Sorteia o que fazer com esta bola: bola forte que chega pede bloqueio; bola mansa e alta pede ataque. */
+  private pickIntent(c: PpCrossing): Intent {
+    const name =
+      (Object.keys(PP_BOT_LEVELS) as PpBotName[]).find((k) => PP_BOT_LEVELS[k] === this.level) ??
+      'medio';
+    const w = { ...INTENT_WEIGHTS[name] };
+    const vin = Math.hypot(c.ball.vx, c.ball.vy, c.ball.vz);
+    if (vin > 13) {
+      w.bloquear += 0.4;
+      w.drive *= 0.5;
+    } else if (vin < 6) {
+      w.drive *= 1.4;
+      w.topspin *= 1.2;
+    }
+    if (c.y > 1.9) w.drive += 0.4; // bola alta: ataque
+    let t = this.rng() * (w.empurrar + w.topspin + w.drive + w.curva + w.bloquear);
+    for (const k of ['empurrar', 'topspin', 'drive', 'curva', 'bloquear'] as Intent[]) {
+      t -= w[k];
+      if (t <= 0) return k;
+    }
+    return 'topspin';
   }
 
   /** Escolhe a batida e o ponto de contato para a bola que vem (mesma física do jogo). */
@@ -208,6 +268,7 @@ export class PpBot {
     const opp = m.pad(1 - p);
     const free = opp.x >= 0 ? -1 : 1;
     const aimX = free * (0.15 + 0.55 * this.level.aim) * (PP_W / 2) * (0.6 + 0.4 * this.rng());
+    this.intent = this.pickIntent(c);
     const choice = this.best(c.ball, p, this.level.power, aimX, c.x, c.y, this.predReach);
     this.swing = { vx: choice.vx, vy: choice.vy, vz: choice.vz, reach: this.predReach };
     this.goalX = c.x - choice.off * PP_PAD_R;
@@ -227,35 +288,45 @@ export class PpBot {
     let pick: (PpSwing & { off: number }) | null = null;
     let bestScore = Infinity;
     const trial = ppNewBall();
-    for (const off of OFFS) {
-      for (const vz of VZ) {
-        for (const vy of VY) {
-          for (const vx of VX) {
-            ppCopyBall(ball, trial);
-            const info = ppPaddleHit(
-              trial,
-              p,
-              { x: padX - off * PP_PAD_R, y: padY, vx, vy, vz, reach: reachNow },
-              false,
-            );
-            if (info.speed > power) continue;
-            const land = ppLanding(trial, p);
-            if (!land.ok) continue;
-            // prefere cair no alvo, com folga sobre a rede e sem bolas esquisitas (muito altas ou muito fortes)
-            const score =
-              Math.abs(land.x - aimX) * (0.4 + this.level.aim) +
-              Math.abs(info.speed - power * 0.7) * 0.05 +
-              Math.max(0, 0.12 - land.clear) * 4 +
-              Math.max(0, trial.vy - 1.5) * 0.35 +
-              this.rng() * (0.25 - 0.2 * this.level.aim);
-            if (score < bestScore) {
-              bestScore = score;
-              pick = { vx, vy, vz, off };
+    const it = INTENT[this.intent];
+    const serving = ball.vx === 0 && ball.vy === 0 && ball.vz === 0;
+    const vzs = serving ? VZ : it.vz;
+    const vxs = serving ? VX : it.vx;
+    const tryList = (vzList: readonly number[], vxList: readonly number[], want: boolean) => {
+      for (const off of OFFS) {
+        for (const vz of vzList) {
+          for (const vy of VY) {
+            for (const vx of vxList) {
+              ppCopyBall(ball, trial);
+              const info = ppPaddleHit(
+                trial,
+                p,
+                { x: padX - off * PP_PAD_R, y: padY, vx, vy, vz, reach: reachNow },
+                false,
+              );
+              if (info.speed > power) continue;
+              const land = ppLanding(trial, p);
+              if (!land.ok) continue;
+              // prefere o que a intenção pede (força, tipo de golpe), cair no alvo, com folga sobre a rede e sem bolas esquisitas
+              const score =
+                Math.abs(land.x - aimX) * (0.2 + this.level.aim * 0.6) +
+                Math.abs(info.speed - power * it.speed) * 0.3 +
+                (want && !it.stroke.includes(info.stroke) ? 1.2 : 0) +
+                Math.max(0, 0.12 - land.clear) * 4 +
+                Math.max(0, trial.vy - 1.5) * 0.25 +
+                this.rng() * (0.25 - 0.2 * this.level.aim);
+              if (score < bestScore) {
+                bestScore = score;
+                pick = { vx, vy, vz, off };
+              }
             }
           }
         }
       }
-    }
+    };
+    tryList(vzs, vxs, !serving);
+    // a intenção não coube nesta bola (ex.: drive de uma bola que morre curta): cai para a grade geral
+    if (!pick) tryList(VZ, VX, false);
     const ch = pick ?? { vx: 0, vy: 2.5, vz: 4.5, off: 0 };
     // a mão nunca é exata: a força varia conforme o nível
     const k = 1 + this.gauss() * this.level.swingErr * 0.5;

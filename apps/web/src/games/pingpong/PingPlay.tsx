@@ -87,7 +87,7 @@ const tipRows = (touch: boolean): TipRow[] =>
         },
         {
           keys: <b className="gm-tag">Saque</b>,
-          text: 'A bola fica parada na sua frente: jogue a raquete para a frente e bata nela',
+          text: 'Clique (ou toque) para lançar a bola e bata nela com a raquete na descida',
         },
       ]
     : [
@@ -191,6 +191,7 @@ export function PingPlay({
   const menuRef = useRef(false);
   const sceneRef = useRef<PingScene | null>(null);
   const [guide, setGuide] = useState(readGuide);
+  const [locked, setLocked] = useState(false);
   const trackRef = useRef<HTMLDivElement>(null);
   const cursorRef = useRef<HTMLSpanElement>(null);
   menuRef.current = menu;
@@ -264,6 +265,17 @@ export function PingPlay({
     // ---- entrada: a raquete fica sempre embaixo do dedo (ou do mouse): o ponto tocado, projetado na altura da raquete,
     // é para onde ela vai (x para os lados, z para a frente/trás). A força da batida é o impulso do avanço; a direção,
     // para onde a mão vai ----
+    // saque: o clique (ou toque, ou Espaço) lança a bola para cima e a raquetada na descida é o saque
+    let serveUntil = 0;
+    const canServe = () =>
+      !spectator &&
+      phase === 'play' &&
+      !finished &&
+      match.phase === 'serve' &&
+      match.server === myIdx;
+    const triggerServe = () => {
+      if (canServe()) serveUntil = performance.now() + 120;
+    };
     let primaryId: number | null = null;
     // bola mal pegada: quem recebe aperta (mouse, outro dedo, toque ou Espaço) e o nível vem de onde a barra está
     const smashWindow = () =>
@@ -300,20 +312,23 @@ export function PingPlay({
       if (e.pointerType !== 'mouse' && primaryId !== null && e.pointerId !== primaryId) return;
       primaryId = e.pointerId;
       aim(e);
-      // mouse: prende o cursor no jogo (ele não sai da tela no meio da batida); Esc solta e abre o menu
+      // mouse: o primeiro clique prende o cursor no jogo (ele não sai da tela no meio da batida); Esc solta e abre o menu
       if (
         e.pointerType === 'mouse' &&
         e.isTrusted &&
         phase === 'play' &&
         !finished &&
+        typeof zn.requestPointerLock === 'function' &&
         document.pointerLockElement !== zn
       ) {
         try {
-          void (zn.requestPointerLock?.() as Promise<void> | undefined)?.catch?.(() => undefined);
+          void (zn.requestPointerLock() as Promise<void> | undefined)?.catch?.(() => undefined);
         } catch {
           /* sem suporte: o mouse segue absoluto */
         }
+        return;
       }
+      triggerServe();
     };
     const onMove = (e: PointerEvent) => {
       if (menuRef.current) return;
@@ -332,6 +347,7 @@ export function PingPlay({
       const locked = document.pointerLockElement === zn;
       if (wasLocked && !locked && !menuRef.current && !finished && phase === 'play') setMenu(true);
       wasLocked = locked;
+      setLocked(locked);
     };
     document.addEventListener('pointerlockchange', onLockChange);
     const onUp = (e: PointerEvent) => {
@@ -358,7 +374,10 @@ export function PingPlay({
       if (menuRef.current) return;
       if (e.code === 'Space') {
         e.preventDefault();
-        if (down && !e.repeat) tapSmash();
+        if (down && !e.repeat) {
+          tapSmash();
+          triggerServe();
+        }
         return;
       }
       const k = e.key.toLowerCase();
@@ -565,6 +584,7 @@ export function PingPlay({
         if (kx) me.x = Math.max(-PP_PAD_X, Math.min(PP_PAD_X, me.x + scene.simX(kx) * 3.2 * dt));
         if (ky) zt = clampZ(zt + ky * 9 * dt);
         me.z = zt;
+        me.serve = performance.now() < serveUntil;
         // só nos testes: uma entrada de bot (ou de um "jogador" programado) no lugar do mouse
         const forced = (window as unknown as { __pingForce?: PpInput }).__pingForce;
         if (forced) {
@@ -782,13 +802,25 @@ export function PingPlay({
           </small>
         </div>
       )}
+      {!touchDevice &&
+        !locked &&
+        hud.phase === 'play' &&
+        !menu &&
+        !result &&
+        !spectating &&
+        typeof document !== 'undefined' &&
+        'requestPointerLock' in document.documentElement && (
+          <div className="png-lock-hint" data-testid="png-lock-hint">
+            Clique na tela para prender o mouse e jogar com mais imersão
+          </div>
+        )}
       {myServe && !hud.banner && (
         <div className="png-serve-hint" data-testid="png-serve-hint">
           <b>Sua vez de sacar</b>
           <span>
             {touchDevice
-              ? 'A bola fica parada na sua frente: arraste o dedo para a frente e bata nela'
-              : 'A bola fica parada na sua frente: leve a raquete para a frente com o mouse e bata nela'}
+              ? 'Toque na tela para lançar a bola e bata nela com a raquete'
+              : 'Clique para lançar a bola e bata nela com a raquete'}
           </span>
         </div>
       )}
