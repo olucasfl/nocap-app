@@ -24,7 +24,7 @@ export interface BallViewTuning {
 }
 
 export const DEFAULT_BALL_VIEW: BallViewTuning = {
-  holdMax: 0.25,
+  holdMax: 0.55,
   catchMin: 4,
   catchMax: 48,
   catchFrac: 0.3,
@@ -127,7 +127,10 @@ export class PpBallView {
       m.expect === opp &&
       (m.bounces[opp] ?? 0) >= 1 &&
       (cur.z - so * (PP_PAD_Z - m.pad(opp).reach)) * so > 0;
-    if (past) {
+    // a bola espera na raquete dele enquanto a batida pode estar a caminho, inclusive depois de a partida já ter marcado o
+    // ponto (o ponto só aparece depois de uma folga): sem isso a bola desenhada despencava da mesa e voltava
+    const holding = past || (this.hold !== null && !this.hold.released && m.phase === 'point');
+    if (holding) {
       if (!this.hold)
         this.hold = {
           t: 0,

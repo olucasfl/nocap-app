@@ -174,12 +174,16 @@ export class PingScene {
     // celular: tela de alta densidade (iPhone = 3x) desenhada em quase toda a resolução, com um teto de pixels para não
     // pesar; se o aparelho não aguentar, a resolução desce sozinha (veja `adapt`)
     this.maxRatio = Math.min(window.devicePixelRatio || 1, touch ? 3 : 2);
-    this.ratio = this.maxRatio;
+    this.ratio = (window as unknown as { __pingLowFx?: boolean }).__pingLowFx
+      ? 0.35
+      : this.maxRatio;
     this.renderer.setPixelRatio(this.ratio);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.05;
-    this.renderer.shadowMap.enabled = true;
+    // só nos testes de ponta a ponta (sem placa de vídeo): desenho bem leve para a tela andar a muitos quadros por segundo
+    const lowFx = (window as unknown as { __pingLowFx?: boolean }).__pingLowFx === true;
+    this.renderer.shadowMap.enabled = !lowFx;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     // salão escuro (fundo em degradê), como no 3D Table Tennis de referência
     this.scene.background = canvasTex(2, 256, (g) => {
@@ -681,7 +685,7 @@ export class PingScene {
 
   private applyRatio(w: number, h: number) {
     const cap = Math.sqrt(PingScene.MAX_PIXELS / Math.max(1, w * h));
-    const r = Math.max(1, Math.min(this.ratio, cap));
+    const r = Math.max(Math.min(1, this.ratio), Math.min(this.ratio, cap));
     if (Math.abs(this.renderer.getPixelRatio() - r) > 0.01) this.renderer.setPixelRatio(r);
   }
 

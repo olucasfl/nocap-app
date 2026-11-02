@@ -276,13 +276,17 @@ export class PingRoomEngine extends ColorRoomEngine {
   /** Posição da raquete de um jogador (cerca de 30 por segundo): só serve para o outro desenhar. */
   report(id: string, v: unknown): void {
     const slot = this.slotOf(id);
-    if (slot < 0 || !this.live || !Array.isArray(v) || v.length !== 3 || !v.every(finite)) return;
-    const [x, y, reach] = v as number[];
+    if (slot < 0 || !this.live || !Array.isArray(v) || (v.length !== 3 && v.length !== 4)) return;
+    if (!v.every(finite)) return;
+    const [x, y, reach, at] = v as number[];
+    const now = this.now();
+    // a hora em que a pessoa mexeu (relógio da sala): sem ela, vale a hora que chegou
+    const sent = at !== undefined && Math.abs(at - now) < 5000 ? at : now;
     this.pads[slot === 0 ? 0 : 1] = [
       r2(clamp(x!, -PP_PAD_X, PP_PAD_X)),
       r2(clamp(y!, PP_PAD_Y_MIN, PP_PAD_Y_MAX)),
       r2(clamp(reach!, -PP_REACH_BACK, PP_REACH_NET)),
-      this.now(),
+      sent,
     ];
   }
 
@@ -290,13 +294,13 @@ export class PingRoomEngine extends ColorRoomEngine {
   padsFrame(): number[][] {
     const out: number[][] = [];
     this.pads.forEach((p, i) => {
-      if (p) out.push([i, p[0]!, p[1]!, p[2]!]);
+      if (p) out.push([i, p[0]!, p[1]!, p[2]!, p[3]!]);
     });
     // a raquete do bot sai da própria partida da sala
     const sim = this.sim;
     if (sim && this.botBrain && sim.localPlayer >= 0) {
       const pad = sim.match.pad(sim.localPlayer);
-      out.push([sim.localPlayer, r2(pad.x), r2(pad.y), r2(pad.reach)]);
+      out.push([sim.localPlayer, r2(pad.x), r2(pad.y), r2(pad.reach), this.now()]);
     }
     return out;
   }
