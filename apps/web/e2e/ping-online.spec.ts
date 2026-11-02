@@ -139,8 +139,12 @@ test('sozinho com um bot do outro lado: o líder põe o bot no lobby e a partida
   await page.getByRole('tab', { name: /Jogadores/i }).click();
   await expect(page.getByTestId('ping-side-0')).toBeVisible();
   await expect(page.getByTestId('ping-start-room')).toBeDisabled();
-  await page.getByTestId('ping-level-facil').click();
   await page.getByTestId('ping-bot-add-1').click();
+  // o nível vem em Médio e muda por um botão ao lado do bot
+  await expect(page.getByTestId('ping-bot-level')).toContainText('Médio');
+  await page.getByTestId('ping-bot-level').click();
+  await page.getByTestId('ping-level-facil').click();
+  await expect(page.getByTestId('ping-bot-level')).toContainText('Fácil');
   await expect(page.getByTestId('ping-start-room')).toBeEnabled();
   await page.getByTestId('ping-start-room').click();
   await page.getByTestId('png-play').waitFor({ timeout: 20_000 });

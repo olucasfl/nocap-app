@@ -31,17 +31,8 @@ function pingHint(snapshot: RoomSnapshot): { text: string; ok: boolean } {
 }
 
 /** Dois times de uma vaga (como o Fut Fox): a pessoa entra, o líder põe um bot no lado vazio. */
-function SidesPanel({
-  snapshot,
-  me,
-  level,
-  setLevel,
-}: {
-  snapshot: RoomSnapshot;
-  me: string | undefined;
-  level: string;
-  setLevel: (l: string) => void;
-}) {
+function SidesPanel({ snapshot, me }: { snapshot: RoomSnapshot; me: string | undefined }) {
+  const [picking, setPicking] = useState(false);
   const lobby = snapshot.pingpong?.lobby;
   const isHost = snapshot.hostId === me;
   const slots = lobby?.slots ?? [null, null];
@@ -97,6 +88,17 @@ function SidesPanel({
                       {isHost && (
                         <button
                           type="button"
+                          className="bola-mini on"
+                          aria-expanded={picking}
+                          onClick={() => setPicking((v) => !v)}
+                          data-testid="ping-bot-level"
+                        >
+                          Nível: {LEVELS.find((l) => l.id === lobby?.bot?.level)?.label ?? 'Médio'}
+                        </button>
+                      )}
+                      {isHost && (
+                        <button
+                          type="button"
                           className="bola-mini"
                           onClick={() => sendRoom('pbot', { slot: null })}
                           data-testid="ping-bot-remove"
@@ -104,6 +106,28 @@ function SidesPanel({
                           Tirar
                         </button>
                       )}
+                    </span>
+                  </li>
+                )}
+                {hasBot && isHost && picking && (
+                  <li className="is-free">
+                    <span className="bola-acts" role="radiogroup" aria-label="Nível do bot">
+                      {LEVELS.map((l) => (
+                        <button
+                          key={l.id}
+                          type="button"
+                          role="radio"
+                          aria-checked={lobby?.bot?.level === l.id}
+                          className={`bola-mini${lobby?.bot?.level === l.id ? ' on' : ''}`}
+                          onClick={() => {
+                            sendRoom('pbot', { slot: k, level: l.id });
+                            setPicking(false);
+                          }}
+                          data-testid={`ping-level-${l.id}`}
+                        >
+                          {l.label}
+                        </button>
+                      ))}
                     </span>
                   </li>
                 )}
@@ -125,7 +149,7 @@ function SidesPanel({
                         <button
                           type="button"
                           className="bola-mini"
-                          onClick={() => sendRoom('pbot', { slot: k, level })}
+                          onClick={() => sendRoom('pbot', { slot: k, level: 'medio' })}
                           data-testid={`ping-bot-add-${k}`}
                         >
                           + Bot
@@ -139,29 +163,6 @@ function SidesPanel({
           );
         })}
       </div>
-      {isHost && (
-        <div className="bola-format">
-          <div className="mono rm-label">NÍVEL DO BOT</div>
-          <div className="rm-seg" role="radiogroup" aria-label="Nível do bot">
-            {LEVELS.map((l) => (
-              <button
-                key={l.id}
-                type="button"
-                role="radio"
-                aria-checked={(lobby?.bot?.level ?? level) === l.id}
-                onClick={() => {
-                  setLevel(l.id);
-                  const b = lobby?.bot;
-                  if (b) sendRoom('pbot', { slot: b.slot, level: l.id });
-                }}
-                data-testid={`ping-level-${l.id}`}
-              >
-                {l.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
       <section className="bola-lobby-spec">
         <h3>
           Espectadores<small>{watching.length}</small>
@@ -192,7 +193,6 @@ function SidesPanel({
 /** O lobby do Ping Fox! em sala: os dois times lado a lado, bot opcional, como no Fut Fox. */
 export function PingLobby({ snapshot, me }: { snapshot: RoomSnapshot; me: string | undefined }) {
   const [closing, setClosing] = useState(false);
-  const [level, setLevel] = useState('medio');
   const isHost = snapshot.hostId === me;
   const mine = snapshot.members.find((m) => m.id === me);
   const hint = pingHint(snapshot);
@@ -203,7 +203,7 @@ export function PingLobby({ snapshot, me }: { snapshot: RoomSnapshot; me: string
     <LobbyShell
       snapshot={snapshot}
       me={me}
-      members={() => <SidesPanel snapshot={snapshot} me={me} level={level} setLevel={setLevel} />}
+      members={() => <SidesPanel snapshot={snapshot} me={me} />}
       rules={null}
       invite={<InvitePanel snapshot={snapshot} />}
       footer={
