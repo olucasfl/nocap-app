@@ -967,7 +967,7 @@ describe('lenta, média e rápida bem separadas', () => {
   it('a batida forte sai bem mais rápida que a média, e a média mais que a lenta', () => {
     const lenta = out(2.5);
     const media = out(5.5);
-    const rapida = out(9.5);
+    const rapida = out(17);
     expect(media).toBeGreaterThan(lenta + 2);
     expect(rapida).toBeGreaterThan(media + 5);
     expect(rapida).toBeGreaterThan(16);

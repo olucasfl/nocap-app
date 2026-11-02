@@ -300,7 +300,11 @@ export function ppPaddleHit(b: PpBall, side: number, pad: PpPaddleMotion, guide 
     }
   }
   const cap =
-    (drop ? 0.3 * vin + 2.4 : 0.6 * vin + 4) + 13 * power * (drop ? 0.3 : 1) + (smashing ? 4.5 : 0);
+    (drop ? 0.3 * vin + 2.4 : 0.6 * vin + 4) +
+    13 * power * (drop ? 0.3 : 1) +
+    // mão muito rápida (acima de 9 m/s) ainda soma: só o dedo que realmente corre chega à bola mais rápida
+    (drop ? 0 : 0.7 * Math.max(0, hand - 9)) +
+    (smashing ? 4.5 : 0);
   const sp = Math.hypot(vx, vy, vz);
   const lim = tier > 0 ? 30 : Math.min(PP_V_MAX, cap);
   if (sp > lim) {
@@ -371,7 +375,7 @@ export function ppPaddleHit(b: PpBall, side: number, pad: PpPaddleMotion, guide 
     ppGuideHit(b, side, drop, power < PP_ASSIST_LATERAL_POWER || isServe);
   } else if (guide && Math.hypot(inVx, inVz) < PP_SLOW_IN) {
     // bola que chega devagar: dá para bater forte e com efeito (topspin, de lado) e ela desce na mesa rápida
-    ppGuideHit(b, side, false, true, { vyLo: -9, hMax: 22 });
+    ppGuideHit(b, side, false, true, { vyLo: -5, hMax: 20 });
   } else if (guide) {
     // batida de força: pode sair longa ou aberta, mas a rede não derruba (só a altura sobe o que precisa)
     ppFixNet(b, side);

@@ -97,7 +97,7 @@ const INTENT: Record<
   // topspin de arco, médio
   topspin: { speed: 0.6, stroke: ['topspin'], vz: [4, 5, 6, 7.5], vx: [-2, -1, 0, 1, 2] },
   // drive: forte e reto, com topspin pesado
-  drive: { speed: 0.95, stroke: ['drive', 'smash'], vz: [8.4, 9, 10.5, 12], vx: [-2, -1, 0, 1, 2] },
+  drive: { speed: 0.95, stroke: ['drive', 'smash'], vz: [10, 12, 14, 17], vx: [-2, -1, 0, 1, 2] },
   // curva: varrendo para o lado, efeito de lado
   curva: { speed: 0.7, stroke: ['curva'], vz: [4, 6, 7.5], vx: [-7, -6, 6, 7] },
   // bloqueio: mão mansa contra bola forte, sobe em arco

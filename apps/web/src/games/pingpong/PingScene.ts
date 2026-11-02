@@ -90,8 +90,6 @@ export class PingScene {
 
   // bola
   private ball: THREE.Group;
-  /** Nível da bola que vem para mim agora (0 lenta, 1 média, 2 rápida; -1 = não vem). */
-  incoming = -1;
   private ballMesh: THREE.Mesh;
   private ballShadow: THREE.Mesh;
   private trail: THREE.Sprite[] = [];
@@ -259,7 +257,7 @@ export class PingScene {
     this.ball.scale.setScalar(1.25);
     // anel do efeito: gira em torno do eixo do giro; vermelho = topspin, azul = corte, amarelo = efeito de lado
     this.spinRing = new THREE.Mesh(
-      new THREE.TorusGeometry(PP_R * 2.3, PP_R * 0.1, 8, 48),
+      new THREE.TorusGeometry(PP_R * 2.3, PP_R * 0.16, 8, 48),
       new THREE.MeshBasicMaterial({
         color: 0xffffff,
         transparent: true,
@@ -975,9 +973,6 @@ export class PingScene {
     const by = sy;
     const bz = this.vz(sz);
     this.ball.position.set(bx, by, bz);
-    // nível da bola que vem para mim (usado só pela etiqueta da tela)
-    this.incoming =
-      m.phase === 'rally' && m.expect === this.me ? ppIncomingTier(Math.hypot(cur.vx, cur.vz)) : -1;
     // giro: o eixo e a rapidez vêm do efeito (rad/s), um pouco abrandados para a faixa continuar legível
     const w = Math.hypot(cur.wx, cur.wy, cur.wz);
     if (w > 0.5 && m.phase !== 'serve') {
@@ -1030,23 +1025,24 @@ export class PingScene {
     // anel do efeito (eixo e cor do giro) e rastro em linha
     {
       const w = Math.hypot(cur.wx, cur.wy, cur.wz);
-      if (m.phase === 'rally' && w > 14 && !this.reduced) {
-        const ax = this.vx(cur.wx) / w;
-        const ay = cur.wy / w;
-        const az = this.vz(cur.wz) / w;
+      if (m.phase === 'rally') {
+        // o círculo em volta da bola: o eixo é o do efeito (se a bola quase não gira, fica de frente) e a cor diz a
+        // velocidade da bola, indo ou vindo: verde = lenta, amarelo = média, vermelho = rápida
         this.spinRing.visible = true;
         this.spinRing.position.set(bx, by, bz);
-        this.spinRing.quaternion.setFromUnitVectors(
-          new THREE.Vector3(0, 0, 1),
-          new THREE.Vector3(ax, ay, az),
-        );
-        const hh = Math.hypot(cur.vx, cur.vz) || 1;
-        const top = (cur.wx * (cur.vz / hh) - cur.wz * (cur.vx / hh)) * -1;
-        const side = Math.abs(cur.wy);
-        const col = side > Math.abs(top) ? 0xffe27a : top > 0 ? 0xff8a73 : 0x8ec5ff;
+        if (w > 14) {
+          const ax = this.vx(cur.wx) / w;
+          const ay = cur.wy / w;
+          const az = this.vz(cur.wz) / w;
+          this.spinRing.quaternion.setFromUnitVectors(
+            new THREE.Vector3(0, 0, 1),
+            new THREE.Vector3(ax, ay, az),
+          );
+        } else this.spinRing.quaternion.identity();
+        const tierNow = ppIncomingTier(Math.hypot(cur.vx, cur.vz));
         const mt = this.spinRing.material as THREE.MeshBasicMaterial;
-        mt.color.setHex(col);
-        mt.opacity = 0.35 + 0.5 * clamp(w / 60, 0, 1);
+        mt.color.setHex(tierNow === 0 ? 0x3fe08a : tierNow === 1 ? 0xffd34d : 0xff5a4a);
+        mt.opacity = 0.75 + 0.2 * clamp(w / 60, 0, 1);
       } else this.spinRing.visible = false;
       const pts = this.trailLine.geometry.attributes.position as THREE.BufferAttribute;
       const n = Math.min(this.trailPos.length, 28);

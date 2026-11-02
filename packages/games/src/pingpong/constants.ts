@@ -118,7 +118,8 @@ export const PP_FOLLOW_STIFF = 55;
 /** Altura de espera da raquete (a altura acompanha a bola que vem). */
 export const PP_REST_Y = 1.45;
 /** A mão passa no máximo isto para a frente na batida (m/s). */
-export const PP_HAND_VZ_MAX = 11;
+/** Velocidade máxima da mão para a frente (m/s) que conta na batida: a batida mais forte pede um dedo realmente rápido. */
+export const PP_HAND_VZ_MAX = 24;
 
 /** Placar. */
 export const PP_POINTS = 11;
@@ -172,10 +173,11 @@ export const PP_SPEED_LADDER: readonly (readonly [number, number])[] = [
   [2, 4.2],
   [3.5, 7],
   [5.5, 10.5],
-  [7, 12.5],
-  [8.5, 17],
-  [10, 22],
-  [12, 25],
+  [8, 12.5],
+  [11, 14.5],
+  [14, 17],
+  [17, 20.5],
+  [21, 25],
 ];
 export function ppLadderSpeed(hand: number): number {
   const L = PP_SPEED_LADDER;

@@ -202,7 +202,6 @@ export function PingPlay({
   const sceneRef = useRef<PingScene | null>(null);
   const gaugeRef = useRef<HTMLElement | null>(null);
   const gaugeBoxRef = useRef<HTMLDivElement | null>(null);
-  const chipRef = useRef<HTMLDivElement | null>(null);
   const [guide, setGuide] = useState(readGuide);
   const lockTriedRef = useRef(false);
   const [locked, setLocked] = useState(false);
@@ -709,23 +708,6 @@ export function PingPlay({
         }
       }
       scene.render(dt, phase === 'play' && !paused ? alpha : 1);
-      // a velocidade da bola que vem: a etiqueta pequena embaixo acompanha a cor do halo da bola
-      if (chipRef.current) {
-        const t = phase === 'play' && !finished ? scene.incoming : -1;
-        const chip = chipRef.current;
-        if (chip.dataset.t !== String(t)) {
-          chip.dataset.t = String(t);
-          chip.textContent =
-            t === 0
-              ? 'BOLA LENTA: bata forte'
-              : t === 1
-                ? 'BOLA MÉDIA'
-                : t === 2
-                  ? 'BOLA RÁPIDA'
-                  : '';
-          chip.className = `png-speed-chip${t >= 0 ? ` is-${t}` : ''}`;
-        }
-      }
       // medidor do saque: o marcador desce com a bola (só transform)
       if (gaugeRef.current && match.phase === 'toss') {
         const g = gaugeRef.current;
@@ -933,7 +915,6 @@ export function PingPlay({
             <span>para prender o mouse e jogar com mais imersão</span>
           </div>
         )}
-      <div ref={chipRef} className="png-speed-chip" aria-hidden="true" />
       {myServe && (
         <div className="png-serve-hint" data-testid="png-serve-hint">
           {hud.matchPhase === 'toss' ? (
