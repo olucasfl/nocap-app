@@ -957,3 +957,19 @@
 .png-smash b {
   font-size: clamp(16px, 4.2vw, 22px);
 }
+
+/* painel de rede e fps (desligado por padrão): pequeno, em linhas que quebram sem sair da tela */
+.png-play .gm-net {
+  top: max(64px, calc(env(safe-area-inset-top) + 56px));
+  flex-wrap: wrap;
+  row-gap: 0;
+  max-width: min(calc(100vw - 24px), 560px);
+  border-radius: 12px;
+  font-size: 10px;
+  line-height: 1.5;
+  padding: 3px 10px;
+  z-index: 6;
+}
+.png-play .gm-net span {
+  white-space: nowrap;
+}

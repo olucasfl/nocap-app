@@ -614,3 +614,35 @@ test('celular: sair do app no meio do toque e voltar não trava a raquete', asyn
   expect(left).toBeLessThan(right - 0.5);
   await ctx.close();
 });
+
+test('painel de rede e fps: desligado por padrão, liga e desliga no menu e lembra', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1100, height: 650 });
+  await page.goto('/fox-cap');
+  await page
+    .getByRole('button', { name: 'Agora não' })
+    .click({ timeout: 6000 })
+    .catch(() => undefined);
+  await page.getByTestId('foxcap-pingpong').click();
+  await page.getByTestId('png-level-facil').click();
+  await page.getByTestId('png-start').click();
+  await expect(page.getByTestId('png-play')).toBeVisible();
+  await page.waitForTimeout(2600);
+  await page
+    .getByTestId('game-tips-ok')
+    .click({ timeout: 2000 })
+    .catch(() => undefined);
+  // vem desligado
+  await expect(page.getByTestId('net-badge')).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await page.getByTestId('png-menu-net').click();
+  await page.getByTestId('png-menu-continue').click();
+  await expect(page.getByTestId('net-badge')).toBeVisible();
+  await expect(page.getByTestId('net-badge')).toContainText('fps');
+  // desliga de novo
+  await page.keyboard.press('Escape');
+  await page.getByTestId('png-menu-net').click();
+  await page.getByTestId('png-menu-continue').click();
+  await expect(page.getByTestId('net-badge')).toHaveCount(0);
+});

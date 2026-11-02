@@ -21,12 +21,13 @@ import {
   type PpTimedEvent,
 } from '@nocap/games';
 import { GameChat } from '@/components/GameChat';
-import { GameMenu, GearButton, Keycap } from '@/components/GameMenu';
+import { GameMenu, GearButton, Keycap, NetBadge } from '@/components/GameMenu';
 import { IcTable } from '@/games/bola/BolaIcons';
 import { GameTips, type TipRow } from '@/components/GameTips';
 import { RotateHint } from '@/components/RotateHint';
 import { pingSfx } from '@/lib/ping-audio';
-import { getGuestNickname, sendRoomQuiet, serverNow, subscribeRoom } from '@/lib/rooms';
+import { BUILD_ID } from '@/lib/build-id';
+import { currentRtt, getGuestNickname, sendRoomQuiet, serverNow, subscribeRoom } from '@/lib/rooms';
 import { useAuth } from '@/lib/auth';
 import { PingPeer, type PingPeerMsg } from '@/lib/ping-p2p';
 import { PingFinal, type PingStats } from './PingFinal';
@@ -211,6 +212,42 @@ export function PingPlay({
   const oppBarRef = useRef<HTMLDivElement | null>(null);
   const oppCurRef = useRef<HTMLSpanElement | null>(null);
   const [guide, setGuide] = useState(readGuide);
+  // painel de rede e fps (desligado por padrão; liga no menu)
+  const [showNet, setShowNet] = useState(() => {
+    try {
+      return localStorage.getItem('nocap-ping-net') === '1';
+    } catch {
+      return false;
+    }
+  });
+  const toggleNet = () =>
+    setShowNet((v) => {
+      try {
+        localStorage.setItem('nocap-ping-net', v ? '0' : '1');
+      } catch {
+        /* sem armazenamento: vale só nesta partida */
+      }
+      return !v;
+    });
+  const showNetRef = useRef(showNet);
+  showNetRef.current = showNet;
+  /** O que o painel mostra (atualizado duas vezes por segundo só com o painel ligado). */
+  const [netInfo, setNetInfo] = useState({
+    fps: 0,
+    ping: 0,
+    direct: false,
+    late: 0,
+    lateMax: 0,
+    fixes: 0,
+    rejected: 0,
+  });
+  /** Contas da rede, escritas pela partida e lidas pelo painel. */
+  const netStats = useRef({
+    frames: 0,
+    late: [] as { at: number; ms: number }[],
+    rejected: 0,
+    peer: null as { open: boolean } | null,
+  });
   const lockTriedRef = useRef(false);
   const [locked, setLocked] = useState(false);
   /** O navegador não prendeu o cursor (ou a pessoa não quer): o aviso some e o mouse funciona solto. */
@@ -625,7 +662,14 @@ export function PingPlay({
       if (!ev) return;
       const late = ev.t <= net.tick;
       const r = net.add(ev);
-      if (late && r.ok) scene.absorb(net.tick - ev.t);
+      if (late && r.ok) {
+        scene.absorb(net.tick - ev.t);
+        // a batida chegou depois do tick dela: quanto atrasou (ms) e uma correção a mais
+        netStats.current.late.push({
+          at: performance.now(),
+          ms: (net.tick - ev.t) * PP_TICK * 1000,
+        });
+      }
       feed(r.events);
     };
     /** A raquete do outro (da sala ou direto): o alvo e a velocidade dele. */
@@ -661,6 +705,30 @@ export function PingPlay({
         : null;
     peer?.start();
     if (peer) unsubs.push(() => peer.close());
+    netStats.current.peer = peer;
+    // o painel de rede: contas a cada meio segundo (só quando ele está ligado)
+    {
+      let framesAt = 0;
+      const iv = window.setInterval(() => {
+        const st = netStats.current;
+        const fps = (st.frames - framesAt) * 2;
+        framesAt = st.frames;
+        if (!showNetRef.current) return;
+        const now = performance.now();
+        st.late = st.late.filter((l) => now - l.at < 10_000);
+        const ms = st.late.map((l) => l.ms);
+        setNetInfo({
+          fps,
+          ping: Math.round(currentRtt()),
+          direct: !!st.peer?.open,
+          late: ms.length ? Math.round(ms.reduce((a, b) => a + b, 0) / ms.length) : 0,
+          lateMax: ms.length ? Math.round(Math.max(...ms)) : 0,
+          fixes: st.late.length * 6,
+          rejected: st.rejected,
+        });
+      }, 500);
+      unsubs.push(() => window.clearInterval(iv));
+    }
     if (net && online) {
       unsubs.push(
         subscribeRoom('pev', (m) => {
@@ -671,6 +739,7 @@ export function PingPlay({
         subscribeRoom('prej', (m) => {
           const ev = ppParseNetEvent(m);
           if (ev) {
+            netStats.current.rejected++;
             const evs = net.remove(ev);
             scene.absorb();
             feed(evs);
@@ -706,6 +775,7 @@ export function PingPlay({
     let hudAt = 0;
     const frame = (now: number) => {
       raf = requestAnimationFrame(frame);
+      netStats.current.frames++;
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
       const paused = !net && menuRef.current;
@@ -993,6 +1063,29 @@ export function PingPlay({
         </div>
       )}
       <div className={`png-slowfx${hud.slow ? ' on' : ''}`} aria-hidden="true" />
+      {showNet && (
+        <NetBadge
+          mode={online ? (netInfo.direct ? 'direto' : 'pela sala') : 'treino'}
+          items={[
+            { text: `${netInfo.fps} fps`, title: 'quadros desenhados por segundo neste aparelho' },
+            ...(online
+              ? [
+                  { text: `${netInfo.ping} ms`, title: 'ida e volta até a sala' },
+                  {
+                    text: `batida +${netInfo.late} ms (máx ${netInfo.lateMax})`,
+                    title: 'quanto a batida do outro demorou a chegar nos últimos 10 s',
+                  },
+                  {
+                    text: `${netInfo.fixes} corr./min`,
+                    title: 'vezes em que a partida voltou no tempo por uma batida atrasada',
+                  },
+                  { text: `${netInfo.rejected} recus.`, title: 'batidas que a sala recusou' },
+                ]
+              : []),
+            { text: `v${BUILD_ID}`, title: 'versão do app' },
+          ]}
+        />
+      )}
       <div ref={oppBarRef} className="png-opp-smash" aria-hidden="true">
         <small>SMASH: {names[1] ? names[1].toUpperCase() : 'ADVERSÁRIO'}</small>
         <div className="png-opp-track">
@@ -1120,6 +1213,7 @@ export function PingPlay({
           onClose={closeMenu}
           onExit={onExit}
           onOfflineInvite={onOfflineInvite}
+          net={{ on: showNet, toggle: toggleNet }}
           actions={[
             {
               id: 'guide',

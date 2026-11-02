@@ -276,7 +276,8 @@ test('duas janelas com atraso de rede: a bola e a raquete do adversário andam l
       locale: 'pt-BR',
     });
     await ctx.addInitScript(
-      'window.__pingLowFx = true;' + (process.env.LAG_NOP2P ? 'window.__pingNoP2P = true;' : ''),
+      "window.__pingLowFx = true; localStorage.setItem('nocap-ping-net', '1');" +
+        (process.env.LAG_NOP2P ? 'window.__pingNoP2P = true;' : ''),
     );
     await ctx.addInitScript(
       lagScript(
@@ -325,6 +326,17 @@ test('duas janelas com atraso de rede: a bola e a raquete do adversário andam l
       () => !!(window as unknown as { __ping: { peer?: { open: boolean } } }).__ping.peer?.open,
     );
   console.log('P2P aberto: líder', await open(A), 'outro', await open(B));
+  // o painel de rede (ligado só neste teste) mostra o canal direto e os números
+  const badge = (pg: Page) => pg.getByTestId('net-badge').innerText();
+  console.log('PAINEL líder:', (await badge(A)).replace(/\n/g, ' '));
+  console.log('PAINEL outro:', (await badge(B)).replace(/\n/g, ' '));
+  if (!process.env.LAG_NOP2P) {
+    await expect(A.getByTestId('net-badge')).toContainText('direto');
+    await expect(B.getByTestId('net-badge')).toContainText('direto');
+  }
+  await A.screenshot({
+    path: '/tmp/claude-0/-home-user-nocap-app/599484f6-d22b-5257-a81d-39f0e3e6d941/scratchpad/painel-rede.png',
+  });
   await A.waitForTimeout(12_000); // contagem + primeiras trocas
   const [ra, rb] = await Promise.all([record(A, 40_000), record(B, 40_000)]);
   // o que o líder (A) vê do outro (B) e vice-versa
