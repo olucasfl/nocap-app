@@ -173,7 +173,27 @@ function Entry({
 }
 
 /** `/sala` e `/sala/ABCD`: entra pelo código do link, ou mostra a sala em que você já está. */
-export function RoomPage({ code, game = 'color' }: { code?: string; game?: RoomGame }) {
+export function RoomPage(props: { code?: string; game?: RoomGame }) {
+  return (
+    <>
+      <RoomPageInner {...props} />
+      <RoomToast />
+    </>
+  );
+}
+
+/** Aviso rápido por cima de qualquer tela da sala (quem saiu). */
+function RoomToast() {
+  const notice = useRoom((s) => s.notice);
+  if (!notice) return null;
+  return (
+    <p key={notice.id} className="rm-toast mono" role="status" data-testid="room-toast">
+      {notice.text}
+    </p>
+  );
+}
+
+function RoomPageInner({ code, game = 'color' }: { code?: string; game?: RoomGame }) {
   const online = useOnline();
   const { status: authStatus } = useAuth();
   const { status, snapshot, lastGame, message } = useRoom();

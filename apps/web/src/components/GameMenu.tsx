@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { BUILD_ID } from '@/lib/build-id';
 import { toggleMute, useMuted } from '@/lib/sfx';
+import { closeRoom, useMeId, useRoom } from '@/lib/rooms';
 import {
   IcExit,
   IcGear,
@@ -105,7 +106,7 @@ export function GameMenu({
   online,
   onClose,
   onExit,
-  exitLabel = 'Sair da partida',
+  exitLabel,
   onOfflineInvite,
   escCloses = true,
 }: {
@@ -128,7 +129,13 @@ export function GameMenu({
   escCloses?: boolean;
 }) {
   const muted = useMuted();
+  // na sala: "Sair da sala" só tira a pessoa; "Encerrar a sala" (só o líder) apaga a sala para todo mundo
+  const meId = useMeId();
+  const hostId = useRoom((s) => s.snapshot?.hostId);
+  const canCloseRoom = online && !!meId && hostId === meId;
+  const leaveText = exitLabel ?? (online ? 'Sair da sala' : 'Sair da partida');
   const [sure, setSure] = useState(false);
+  const [sureClose, setSureClose] = useState(false);
   const [armed, setArmed] = useState<string | null>(null);
   const [invite, setInvite] = useState(false);
   const [showTips, setShowTips] = useState(false);
@@ -256,9 +263,24 @@ export function GameMenu({
           >
             <span className="gm-item-main">
               <IcExit size={18} />
-              {sure ? 'Toque de novo para sair' : exitLabel}
+              {sure ? 'Toque de novo para sair' : leaveText}
             </span>
           </button>
+          {canCloseRoom && (
+            <button
+              type="button"
+              className={`gm-item is-danger${sureClose ? ' is-sure' : ''}`}
+              onClick={() => (sureClose ? closeRoom() : setSureClose(true))}
+              onBlur={() => setSureClose(false)}
+              data-testid={`${testPrefix}-close-room`}
+            >
+              <span className="gm-item-main">
+                <IcExit size={18} />
+                {sureClose ? 'Toque de novo para encerrar' : 'Encerrar a sala'}
+              </span>
+              <span className="gm-cur">Tira todo mundo</span>
+            </button>
+          )}
           <p className="gm-note mono gm-ver">versão {BUILD_ID}</p>
         </div>
       </div>

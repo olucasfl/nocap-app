@@ -213,3 +213,5 @@ Fut Fox fluidez online (26/10/2026): mortal com impulso 6,4 (`Math.max` com a ve
 - Bug "sair e voltar sozinho": em `/sala/ABCD` a entrada automática pelo link disparava de novo ao sair. Agora só roda uma vez e nunca depois de a pessoa ter estado na sala. O aviso "Você está na sala" some na hora e só pergunta ao servidor depois da saída confirmada (`setOnRoomGone`).
 - Servidor: ping 5 s × 4 falhas (era 3 s × 2), espera de reconexão no lobby/pódio 45 s (era 25).
 - Teste: `apps/web/e2e/salas-conexao.spec.ts` (E2E_ROOMS=1): 3 quedas seguidas voltam sozinhas; sair não puxa de volta.
+
+**Encerrar e sair da sala (todos os jogos online):** "Encerrar a sala" (só o líder; no lobby, no menu Esc da partida e no fim) manda `closed` a todos e apaga a sala (`ColorRoom` `close`); "Sair da sala" tira só quem saiu e a sala manda `notice` + mensagem de sistema no chat ("Fulano saiu da sala."), mostrada num aviso rápido em qualquer tela da sala (`RoomToast`). Voltar só por convite ou código; trocar de aba reconecta sozinho. Testes: `fox-room.integration.test.ts` (4 jogos x encerrar e sair).

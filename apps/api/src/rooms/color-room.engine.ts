@@ -183,6 +183,11 @@ export class ColorRoomEngine {
     this.checkRematch();
   }
 
+  /** Apelido de quem está (ou estava) na sala. */
+  nameOf(id: string): string | undefined {
+    return this.members.get(id)?.username;
+  }
+
   /** Saiu de vez (ou foi expulso, ou a reconexão expirou). */
   leave(id: string) {
     this.members.delete(id);

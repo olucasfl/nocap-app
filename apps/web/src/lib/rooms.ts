@@ -294,6 +294,8 @@ interface RoomState {
   chat: ChatMessage[];
   /** Mensagens de outras pessoas que ainda não vi (chat fechado). */
   unread: number;
+  /** Aviso rápido da sala (alguém saiu): some sozinho. */
+  notice: { text: string; id: number } | null;
 }
 
 export const useRoom = create<RoomState>(() => ({
@@ -305,6 +307,7 @@ export const useRoom = create<RoomState>(() => ({
   lastGame: null,
   chat: [],
   unread: 0,
+  notice: null,
 }));
 
 /** Quanto tempo o botão Convidar fica em "Enviado" antes de poder chamar a pessoa de novo. */
@@ -473,6 +476,14 @@ function attach(r: Room) {
     })),
   );
   r.onMessage('chatHistory', (list: ChatMessage[]) => set({ chat: list, unread: 0 }));
+  r.onMessage('notice', (m: { text?: unknown }) => {
+    if (typeof m?.text !== 'string') return;
+    const id = Date.now();
+    set({ notice: { text: m.text, id } });
+    setTimeout(() => {
+      if (useRoom.getState().notice?.id === id) set({ notice: null });
+    }, 4500);
+  });
   r.onMessage('closed', () => finish('A sala foi encerrada pelo líder.'));
   r.onMessage('error', (m: string) => set({ message: m }));
   r.onMessage('invited', (m: { username: string }) => {
@@ -559,6 +570,7 @@ function finish(message: string, voluntary = false) {
     invited: [],
     invitedEver: [],
     message,
+    notice: null,
     chat: [],
     unread: 0,
   });

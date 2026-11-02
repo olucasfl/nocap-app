@@ -17,6 +17,7 @@ interface ClientRoom {
   roomId: string;
   connection: { close(): void };
   send(type: string, message?: unknown): void;
+  leave(consented?: boolean): Promise<number>;
   onMessage(type: string, callback: (message: never) => void): void;
 }
 interface ClientApi {
@@ -58,12 +59,16 @@ interface Seen {
   room: ClientRoom;
   snap: Snap | null;
   errors: string[];
+  closed: boolean;
+  notices: string[];
 }
 
 function watch(room: ClientRoom): Seen {
-  const seen: Seen = { room, snap: null, errors: [] };
+  const seen: Seen = { room, snap: null, errors: [], closed: false, notices: [] };
   room.onMessage('snapshot', ((s: Snap) => (seen.snap = s)) as never);
   room.onMessage('error', ((e: string) => seen.errors.push(e)) as never);
+  room.onMessage('closed', (() => (seen.closed = true)) as never);
+  room.onMessage('notice', ((n: { text: string }) => seen.notices.push(n.text)) as never);
   room.onMessage('*' as never, (() => undefined) as never);
   open.push(room);
   return seen;
@@ -137,4 +142,47 @@ describe('sala do Fox Cap! com servidor de verdade', () => {
     ana.room.send('pickgame', { game: 'atravessa' });
     await until(() => ana.snap?.game === 'atravessa' && bia.snap?.game === 'atravessa');
   }, 30_000);
+});
+
+describe('encerrar e sair da sala (todos os jogos)', () => {
+  for (const g of ['atravessa', 'desmorona', 'pingpong', 'bola'] as const) {
+    it(`${g}: só o líder encerra; encerrar tira todo mundo e apaga a sala; ninguém volta pelo código`, async () => {
+      const ana = watch(await new Client(url).create('foxcap', { token: 'ana' }));
+      const code = ana.room.roomId;
+      const bia = watch(await new Client(url).joinById(code, { token: 'bia' }));
+      const caio = watch(await new Client(url).joinById(code, { token: 'caio' }));
+      await until(() => ana.snap?.members.length === 3);
+      ana.room.send('pickgame', { game: g });
+      await until(() => ana.snap?.game === g && caio.snap?.game === g);
+      bia.room.send('close');
+      await until(() => bia.errors.length > 0);
+      expect(bia.errors[0]).toContain('líder');
+      expect(ana.closed || bia.closed || caio.closed).toBe(false);
+      ana.room.send('close');
+      await until(() => ana.closed && bia.closed && caio.closed);
+      await wait(200);
+      // a sala foi apagada: o código não entra mais e ninguém fica "preso" nela
+      await expect(new Client(url).joinById(code, { token: 'bia' })).rejects.toBeTruthy();
+      for (const u of ['ana', 'bia', 'caio']) expect(roomDeps.activeRooms.has(u)).toBe(false);
+    }, 30_000);
+
+    it(`${g}: sair da sala tira só quem saiu e todo mundo vê o aviso`, async () => {
+      const ana = watch(await new Client(url).create('foxcap', { token: 'ana' }));
+      const code = ana.room.roomId;
+      const bia = watch(await new Client(url).joinById(code, { token: 'bia' }));
+      const caio = watch(await new Client(url).joinById(code, { token: 'caio' }));
+      await until(() => ana.snap?.members.length === 3);
+      ana.room.send('pickgame', { game: g });
+      await until(() => ana.snap?.game === g);
+      await caio.room.leave(true);
+      await until(() => ana.notices.length > 0 && bia.notices.length > 0);
+      expect(ana.notices[0]).toBe('caio saiu da sala.');
+      await until(() => ana.snap?.members.length === 2);
+      expect(ana.closed).toBe(false);
+      expect(roomDeps.activeRooms.has('caio')).toBe(false);
+      // a sala segue de pé e quem saiu volta só com o código
+      const back = watch(await new Client(url).joinById(code, { token: 'caio' }));
+      await until(() => back.snap?.members.length === 3);
+    }, 30_000);
+  }
 });

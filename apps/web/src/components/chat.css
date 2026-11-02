@@ -225,3 +225,12 @@
   text-transform: uppercase;
   cursor: pointer;
 }
+
+.ch-sys {
+  align-self: center;
+  list-style: none;
+  padding: 2px 10px;
+  font-size: 12px;
+  opacity: 0.7;
+  text-align: center;
+}

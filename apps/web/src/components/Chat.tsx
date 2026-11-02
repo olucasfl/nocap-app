@@ -82,6 +82,12 @@ export function ChatPanel({
       >
         {messages.length === 0 && <li className="ch-empty mono">NINGUÉM FALOU AINDA.</li>}
         {messages.map((m, i) => {
+          if (m.userId === 'system')
+            return (
+              <li key={m.id} className="ch-sys mono">
+                {m.text}
+              </li>
+            );
           const mine = m.userId === me;
           const prev = messages[i - 1];
           // Mensagens seguidas da mesma pessoa agrupam: o nome e a hora aparecem uma vez.

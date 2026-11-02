@@ -304,7 +304,9 @@ export class ColorRoom extends Room {
     // Já foi tirada pelo servidor (`dropClient`): a vaga e o registro já foram liberados.
     if (why === 'gone') return;
     if (consented) {
+      const name = this.engine.nameOf(user.id) ?? user.username;
       this.engine.leave(user.id);
+      this.announceLeft(name);
       this.cancelWaiting(user.id);
       this.forget(user.id);
       return this.afterLeave();
@@ -321,13 +323,23 @@ export class ColorRoom extends Room {
       // Só expulsa se a espera ainda era esta e a pessoa não voltou por outra conexão.
       const stale = this.waiting.get(user.id) === wait;
       if (stale && !this.isLive(user.id)) {
+        const name = this.engine.nameOf(user.id) ?? user.username;
         this.engine.leave(user.id);
+        this.announceLeft(name);
         this.forget(user.id);
       }
     } finally {
       if (this.waiting.get(user.id) === wait) this.waiting.delete(user.id);
     }
     this.afterLeave();
+  }
+
+  /** Todo mundo que ficou vê quem saiu (na conversa e num aviso rápido na tela). */
+  private announceLeft(name: string) {
+    if (this.clients.length === 0) return;
+    const text = `${name} saiu da sala.`;
+    this.broadcast('chat', this.engine.chat.system(text));
+    this.broadcast('notice', { text });
   }
 
   private graceSeconds() {
@@ -385,8 +397,10 @@ export class ColorRoom extends Room {
       this.forget(userId);
       return false;
     }
+    const name = this.engine.nameOf(userId);
     this.engine.leave(userId);
     this.dropClient(userId, 4000);
+    if (name) this.announceLeft(name);
     this.afterLeave();
     return true;
   }

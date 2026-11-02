@@ -53,6 +53,14 @@ export class RoomChat {
     return message;
   }
 
+  /** Aviso da própria sala (quem saiu, quem entrou): aparece na conversa de todos, sem autor. */
+  system(text: string): ChatMessage {
+    const message = { id: ++this.seq, userId: 'system', username: '', text, at: this.now() };
+    this.messages.push(message);
+    if (this.messages.length > CHAT_HISTORY) this.messages.shift();
+    return message;
+  }
+
   /** Silencia ou libera; devolve `true` se agora está silenciado. */
   toggleMute(userId: string): boolean {
     if (this.muted.delete(userId)) return false;
