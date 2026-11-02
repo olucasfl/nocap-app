@@ -103,6 +103,8 @@ export function ppPaddleTilt(vx: number, vy: number, vz = 0): { pitch: number; y
 export function ppPaddleHit(b: PpBall, side: number, pad: PpPaddleMotion, guide = true): PpHitInfo {
   const forward = side === 0 ? -1 : 1;
   const isServe = pad.serve === true;
+  // smash cronometrado com a bola colada na mesa (acabou de quicar): sobe um pouco para a raquete poder mandar a bola para o outro lado
+  if ((pad.smash ?? 0) > 0 && b.y < PP_TOP + PP_R + 0.2) b.y = PP_TOP + PP_R + 0.2;
   // a altura da bola na batida decide a qualidade do saque (bater lá em cima é fraco; no ponto certo é forte)
   const serveTier = isServe ? ppServeTier(b.y) : 1;
   const inWx = b.wx;

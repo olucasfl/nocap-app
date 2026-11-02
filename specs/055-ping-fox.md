@@ -310,3 +310,8 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 
 - A sua barra do smash agora diz "TOQUE NA TELA: SMASH NO VERDE!" (e, embaixo, clique/toque na hora que a barrinha estiver no verde).
 - Quando o smash é do adversário, a barrinha aparece em cima da cabeça dele ("SMASH: nome"), com o marcador andando como a sua. Onde ele apertou: contra o bot a barra congela no ponto do aperto (`PpMatch.smashCur`); online (o aperto só chega com a batida dele) aparece uma etiqueta "PERFEITO! / ACERTOU O VERDE / ERROU: VERMELHO" no momento da batida.
+
+### Rodada 36: acertou o verde do smash, a bola é batida
+
+- Bug: apertar o verde só dava o nível do smash, mas a raquete ainda dependia da mão estar em cima da bola; com a mão longe a bola descia na sua mesa e o ponto era perdido. Agora, depois do aperto (`smashQ > 0`) a raquete vai sozinha até a bola (de lado, na altura e para a frente, `movePad`), e uma bola colada na mesa sobe um pouco para o smash poder passar para o outro lado.
+- Teste: 150 smashs no meio do verde com a mão em qualquer lugar: >95% batem na bola e todos os que batem fazem o primeiro quique no lado do outro, sem rede (antes quase todos erravam).

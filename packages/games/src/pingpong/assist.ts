@@ -169,9 +169,9 @@ export function ppSmashFix(b: PpBall, side: number, minSpeed = 9): void {
   const inward = -Math.sign(b.x || 1);
   const dirs = [ux0, ux0 * 0.6, ux0 * 0.3, 0, inward * 0.15, inward * 0.3, inward * 0.5];
   const vys: number[] = [];
-  for (let vy = -18; vy <= 5; vy += 0.5) vys.push(vy);
+  for (let vy = -18; vy <= 8; vy += 0.5) vys.push(vy);
   vys.sort((u, v) => Math.abs(u - b.vy) - Math.abs(v - b.vy));
-  for (let h = Math.max(minSpeed, Math.min(24, Math.hypot(b.vx, b.vz) + 4)); h >= 5; h -= 1.5) {
+  for (let h = Math.max(minSpeed, Math.min(24, Math.hypot(b.vx, b.vz) + 4)); h >= 2.5; h -= 1) {
     for (const lx of dirs) {
       const lz = Math.sqrt(Math.max(0, 1 - lx * lx)) * fwd;
       for (const vy of vys) {
