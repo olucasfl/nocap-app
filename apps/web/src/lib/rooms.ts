@@ -363,9 +363,15 @@ export function subscribeRoom(type: LiveType, fn: (m: unknown) => void): () => v
 let epoch = 0;
 let offsets: number[] = [];
 let lastRtt = 0;
+/** As últimas idas e voltas medidas (ms): a mediana delas é o que se mostra, para uma medida isolada (a página ocupada, um pico) não valer. */
+let rtts: number[] = [];
 
-/** Última ida e volta medida até o servidor (ms). */
-export const currentRtt = (): number => lastRtt;
+/** Ida e volta até o servidor (ms): a mediana das últimas medidas. */
+export const currentRtt = (): number => {
+  if (rtts.length === 0) return lastRtt;
+  const sorted = [...rtts].sort((a, b) => a - b);
+  return sorted[Math.floor(sorted.length / 2)]!;
+};
 
 export function serverNow(): number {
   const median =
@@ -438,22 +444,25 @@ function attach(r: Room) {
     lastAlive = Date.now();
     if (typeof m?.t0 === 'number' && typeof m?.ts === 'number') {
       lastRtt = Math.max(0, Date.now() - m.t0);
+      rtts = [...rtts, lastRtt].slice(-5);
       const offset = m.ts - (m.t0 + Date.now()) / 2;
       offsets = [...offsets, offset].slice(-5);
     }
   });
   offsets = [];
   lastRtt = 0;
+  rtts = [];
   r.send('ping', { t0: Date.now(), rtt: lastRtt });
   // Logo depois, de novo: o primeiro já leva o tempo de ida e volta que o servidor usa na Arena.
   setTimeout(() => room === r && r.send('ping', { t0: Date.now(), rtt: lastRtt }), 1500);
+  // a cada 2 s (antes 20 s): o ping do painel e o relógio da partida acompanham a rede de agora, não a de 20 s atrás
   const pingInterval = setInterval(() => {
     if (room !== r) {
       clearInterval(pingInterval);
       return;
     }
     r.send('ping', { t0: Date.now(), rtt: lastRtt });
-  }, 20_000);
+  }, 2_000);
 
   for (const type of [
     'pos',

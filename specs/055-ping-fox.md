@@ -365,3 +365,7 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 - A bola que espera na raquete dele agora sai deslizando se a batida não vem (ele errou), sem pulo.
 - Medido (`ping-lag.spec.ts`, duas janelas com atraso injetado, líder 20 ms e outro 80 ms de ida, picos de 350 ms no WebSocket): raquete do outro 170-190 ms -> 100 ms de atraso; bola caindo da mesa e voltando 4 e 2 -> 0; pulos 7 e 7 -> 0; quadros com a bola impossivelmente rápida 12 e 8 -> 0. Rede ruim (60/150 ms, picos de 400 ms, 5% de perda no canal direto): raquete 320-410 ms -> 90-100 ms; pulos 9 e 9 -> 0 e 0. Sem canal direto (reserva) ainda há teleportes raros com travadas fortes, porque o TCP é assim.
 - Ainda não testado com duas pessoas em redes reais. Não substitui jogar.
+
+### Rodada 46: o ping do painel
+
+- O ping do painel (e o do Fut Fox quando joga pela sala) era a última medida até o servidor, feita só a cada 20 s: uma medida tirada com o jogo carregando (navegador ocupado) ficava na tela por 20 s com 190-250 ms. Agora a medida é a cada 2 s e o que se mostra é a mediana das últimas 5 (`currentRtt`), que o relógio da partida (`offsets`) também usa. No Fut Fox pelo canal direto o ping mostrado é o do aparelho com o outro (`rttMs`), não o do servidor, e por isso é bem menor.
