@@ -160,6 +160,8 @@ const SERVE_TAG: Record<string, string> = {
   normal: 'SAQUE BOM',
   edge: 'SAQUE ALTO',
 };
+/** Quanto o dedo pode se mexer (px) e ainda valer como toque para lançar a bola. */
+const TAP_SLOP = 26;
 const GAUGE_TOP = 3;
 const GAUGE_BOTTOM = 1.2;
 
@@ -258,7 +260,7 @@ export function PingPlay({
     let zt = 0;
     let pointerDown = false;
     // o toque que pode virar saque: onde começou e se já arrastou
-    let tap: { x: number; y: number; t: number; moved: boolean } | null = null;
+    let tap: { x: number; y: number; t: number } | null = null;
     const clampZ = (v: number) => Math.max(-PP_REACH_BACK, Math.min(PP_REACH_NET, v));
     const keys = { l: false, r: false, u: false, d: false };
     let ready = 3;
@@ -359,7 +361,7 @@ export function PingPlay({
       }
       // dedo: arrastar leva a raquete para outro lugar; só um toque (soltar sem arrastar) lança a bola
       if (e.pointerType !== 'mouse') {
-        tap = { x: e.clientX, y: e.clientY, t: performance.now(), moved: false };
+        tap = { x: e.clientX, y: e.clientY, t: performance.now() };
         return;
       }
       triggerServe();
@@ -367,7 +369,6 @@ export function PingPlay({
     const onMove = (e: PointerEvent) => {
       if (menuRef.current) return;
       if (e.pointerType !== 'mouse' && (!pointerDown || e.pointerId !== primaryId)) return;
-      if (tap && Math.hypot(e.clientX - tap.x, e.clientY - tap.y) > 12) tap.moved = true;
       if (e.pointerType === 'mouse' && document.pointerLockElement === zn) {
         // cursor preso: a raquete anda o que o mouse andou (cada pixel vira uma fração de metro)
         me.x = Math.max(-PP_PAD_X, Math.min(PP_PAD_X, me.x + scene.simX(e.movementX * 0.0125)));
@@ -390,7 +391,12 @@ export function PingPlay({
       if (e.pointerType !== 'mouse' && e.pointerId === primaryId) {
         const t = tap;
         tap = null;
-        if (t && !t.moved && performance.now() - t.t < 600 && e.type === 'pointerup')
+        // toque = o dedo sobe perto de onde desceu (um tremidinha não conta); arrastar de verdade, não
+        if (
+          t &&
+          Math.hypot(e.clientX - t.x, e.clientY - t.y) <= TAP_SLOP &&
+          performance.now() - t.t < 900
+        )
           triggerServe();
         pointerDown = false;
         primaryId = null;

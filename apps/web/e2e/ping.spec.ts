@@ -473,3 +473,75 @@ test('saque com o mouse de verdade: o clique lança a bola e a raquete bate nela
     )
     .toBe(true);
 });
+
+test('celular: toque (mesmo com tremidinha) lança a bola; arrastar leva a raquete sem lançar', async ({
+  browser,
+}) => {
+  const ctx = await browser.newContext({
+    viewport: { width: 844, height: 390 },
+    hasTouch: true,
+    isMobile: true,
+  });
+  const page = await ctx.newPage();
+  await page.goto('/fox-cap');
+  await page
+    .getByRole('button', { name: 'Agora não' })
+    .click({ timeout: 6000 })
+    .catch(() => undefined);
+  await page.getByTestId('foxcap-pingpong').click();
+  await page.getByTestId('png-level-facil').click();
+  await page.getByTestId('png-start').click();
+  await expect(page.getByTestId('png-play')).toBeVisible();
+  await page.waitForTimeout(2600);
+  await page
+    .getByTestId('game-tips-ok')
+    .click({ timeout: 2000 })
+    .catch(() => undefined);
+  const force = () =>
+    page.evaluate(() => {
+      const m = (
+        window as unknown as {
+          __ping: {
+            match: {
+              server: number;
+              phase: string;
+              lastHitter: number;
+              bounces: number[];
+              rally: number;
+              t: number;
+            };
+          };
+        }
+      ).__ping.match;
+      m.server = 0;
+      m.phase = 'serve';
+      m.lastHitter = -1;
+      m.bounces = [0, 0];
+      m.rally = 0;
+      m.t = 0;
+    });
+  const phase = () =>
+    page.evaluate(
+      () => (window as unknown as { __ping: { match: { phase: string } } }).__ping.match.phase,
+    );
+  const cdp = await ctx.newCDPSession(page);
+  const touch = async (type: string, x: number, y: number) =>
+    cdp.send('Input.dispatchTouchEvent', {
+      type,
+      touchPoints: type === 'touchEnd' ? [] : [{ x, y, id: 1 }],
+    });
+  // arrastar 120 px: leva a raquete e NÃO lança
+  await force();
+  await touch('touchStart', 300, 250);
+  for (let i = 1; i <= 6; i++) await touch('touchMove', 300 + i * 20, 250);
+  await touch('touchEnd', 0, 0);
+  await page.waitForTimeout(500);
+  expect(await phase()).toBe('serve');
+  // toque com tremidinha de 10 px e um tempinho parado: lança
+  await touch('touchStart', 420, 250);
+  await touch('touchMove', 428, 254);
+  await page.waitForTimeout(350);
+  await touch('touchEnd', 0, 0);
+  await expect.poll(phase, { timeout: 3000 }).toBe('toss');
+  await ctx.close();
+});

@@ -286,3 +286,7 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 
 - Bateu na bola no saque, com qualquer força, direção, altura (vermelho, amarelo ou verde): a bola cai na mesa do outro lado (teste com 3000 batidas aleatórias e com 400 saques de ponta a ponta no motor: nenhuma rede nem falta).
 - A raquete do saque é mais generosa (`PP_SERVE_TOL` 1,5x o raio): perto da bola já pega. Só não bate quem tira a mão para longe da bola.
+
+### Rodada 31: toque que lança a bola no celular
+
+- Toque = o dedo sobe a até 26 px de onde desceu, em até 0,9 s (uma tremidinha ou ficar parado conta). Arrastar de verdade (soltar longe de onde desceu) só leva a raquete e não lança. Antes, qualquer movimento acima de 12 px já cancelava o saque. E2E com toque de verdade (CDP) cobre os dois casos.
