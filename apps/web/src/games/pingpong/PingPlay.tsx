@@ -130,6 +130,8 @@ interface Hud {
   /** Bola mal pegada: câmera lenta (todos veem) e, para quem recebe, a barra do smash (`on`) e o nível já apertado. */
   slow: boolean;
   smash: { on: boolean; tier: number };
+  /** Onde o adversário apertou o smash dele (some sozinho). */
+  oppTap: { tier: number; id: number } | null;
 }
 
 const BOT_NAMES: Record<PpBotName, string> = {
@@ -194,6 +196,7 @@ export function PingPlay({
     matchPhase: 'serve',
     slow: false,
     smash: { on: false, tier: 0 },
+    oppTap: null,
     banner: null,
     speed: null,
   });
@@ -202,6 +205,8 @@ export function PingPlay({
   const sceneRef = useRef<PingScene | null>(null);
   const gaugeRef = useRef<HTMLElement | null>(null);
   const gaugeBoxRef = useRef<HTMLDivElement | null>(null);
+  const oppBarRef = useRef<HTMLDivElement | null>(null);
+  const oppCurRef = useRef<HTMLSpanElement | null>(null);
   const [guide, setGuide] = useState(readGuide);
   const lockTriedRef = useRef(false);
   const [locked, setLocked] = useState(false);
@@ -464,6 +469,14 @@ export function PingPlay({
           pingSfx.hit(power, e.smash, mine);
           stats.hits[e.p === 0 ? 0 : 1]++;
           if (e.smash && mine) stats.smashes++;
+          if (e.tier > 0 && !mine) {
+            const id = ++speedId;
+            setHud((h) => ({ ...h, oppTap: { tier: e.tier, id } }));
+            window.setTimeout(
+              () => setHud((h) => (h.oppTap?.id === id ? { ...h, oppTap: null } : h)),
+              1500,
+            );
+          }
           if (e.kmh > stats.fastest) stats.fastest = e.kmh;
           if (mine && 'vibrate' in navigator) navigator.vibrate?.(e.smash ? 18 : 8);
           setHud((h) => ({
@@ -708,6 +721,28 @@ export function PingPlay({
         }
       }
       scene.render(dt, phase === 'play' && !paused ? alpha : 1);
+      // a barra do smash do adversário fica em cima da cabeça dele, com onde ele apertou
+      if (oppBarRef.current && root.current) {
+        const bar = oppBarRef.current;
+        const show =
+          phase === 'play' && !finished && !spectator && match.popup && match.expect === oppIdx;
+        if (!show) bar.style.visibility = 'hidden';
+        else {
+          const pt = scene.project(0, 2.95, -(PP_PAD_Z + 2.3));
+          const W = root.current.clientWidth;
+          const H = root.current.clientHeight;
+          const bw = bar.clientWidth || 150;
+          bar.style.transform = `translate(${(pt.nx * W - bw / 2).toFixed(1)}px, ${(pt.ny * H - 30).toFixed(1)}px)`;
+          const tapped = (match.smashQ[oppIdx === 0 ? 0 : 1] ?? 0) > 0;
+          const c = tapped ? (match.smashCur[oppIdx === 0 ? 0 : 1] ?? 0.5) : match.smashCursor();
+          if (oppCurRef.current) {
+            const tw = oppCurRef.current.parentElement?.clientWidth ?? 0;
+            oppCurRef.current.style.transform = `translateX(${(c * Math.max(0, tw - 6)).toFixed(1)}px)`;
+          }
+          bar.classList.toggle('is-tapped', tapped);
+          bar.style.visibility = 'visible';
+        }
+      }
       // medidor do saque: o marcador desce com a bola (só transform)
       if (gaugeRef.current && match.phase === 'toss') {
         const g = gaugeRef.current;
@@ -863,6 +898,24 @@ export function PingPlay({
         </div>
       )}
       <div className={`png-slowfx${hud.slow ? ' on' : ''}`} aria-hidden="true" />
+      <div ref={oppBarRef} className="png-opp-smash" aria-hidden="true">
+        <small>SMASH: {names[1] ? names[1].toUpperCase() : 'ADVERSÁRIO'}</small>
+        <div className="png-opp-track">
+          <i className="r" />
+          <i className="g" />
+          <i className="p" />
+          <span ref={oppCurRef} />
+        </div>
+      </div>
+      {hud.oppTap && (
+        <div key={hud.oppTap.id} className={`png-opp-tap is-${hud.oppTap.tier}`}>
+          {hud.oppTap.tier === 3
+            ? 'PERFEITO!'
+            : hud.oppTap.tier === 2
+              ? 'ACERTOU O VERDE'
+              : 'ERROU: VERMELHO'}
+        </div>
+      )}
       {hud.smash.on && (
         <div className="png-smash" data-testid="png-smash" data-tier={hud.smash.tier}>
           <b>
@@ -872,7 +925,7 @@ export function PingPlay({
                 ? 'VERDE! SMASH FORTE'
                 : hud.smash.tier === 1
                   ? 'VERMELHO: SMASH FRACO'
-                  : 'SMASH! Toque no verde'}
+                  : 'TOQUE NA TELA: SMASH NO VERDE!'}
           </b>
           <div className="png-smash-track" ref={trackRef}>
             <i className="png-smash-red" />
@@ -882,8 +935,8 @@ export function PingPlay({
           </div>
           <small>
             {touchDevice
-              ? 'Toque com o outro dedo na hora certa'
-              : 'Clique (ou Espaço) na hora certa'}
+              ? 'Toque na tela com o outro dedo quando a barrinha estiver no verde'
+              : 'Clique na tela (ou Espaço) quando a barrinha estiver no verde'}
           </small>
         </div>
       )}

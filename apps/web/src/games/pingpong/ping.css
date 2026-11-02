@@ -866,3 +866,94 @@
   box-shadow: 0 0 0 2px rgba(16, 18, 24, 0.9);
   will-change: transform;
 }
+
+/* smash do adversário: a barrinha em cima da cabeça dele e onde ele apertou */
+.png-opp-smash {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 150px;
+  visibility: hidden;
+  pointer-events: none;
+  text-align: center;
+  color: #fff;
+  z-index: 4;
+}
+.png-opp-smash small {
+  display: block;
+  margin-bottom: 3px;
+  font: 700 10px / 1.1 var(--font-body, system-ui);
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+.png-opp-track {
+  position: relative;
+  height: 14px;
+  border: 2px solid #fff;
+  border-radius: 8px;
+  background: #d8342f;
+  overflow: hidden;
+}
+.png-opp-track i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+.png-opp-track .r {
+  inset: 0;
+}
+.png-opp-track .g {
+  left: 28%;
+  width: 44%;
+  background: #2fd16f;
+}
+.png-opp-track .p {
+  left: 43%;
+  width: 14%;
+  background: #b6ff6a;
+}
+.png-opp-track span {
+  position: absolute;
+  top: -1px;
+  bottom: -1px;
+  left: 0;
+  width: 6px;
+  border-radius: 3px;
+  background: #fff;
+  border: 1px solid #15102e;
+  will-change: transform;
+}
+.png-opp-smash.is-tapped .png-opp-track {
+  box-shadow: 0 0 0 2px #ffd34d;
+}
+.png-opp-tap {
+  position: absolute;
+  left: 50%;
+  top: 22%;
+  translate: -50% 0;
+  padding: 4px 14px;
+  border-radius: 999px;
+  background: rgba(16, 18, 24, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  font: 800 13px / 1.2 var(--font-body, system-ui);
+  letter-spacing: 0.08em;
+  color: #fff;
+  pointer-events: none;
+  z-index: 4;
+}
+.png-opp-tap.is-3 {
+  color: #d6ff6a;
+  border-color: #d6ff6a;
+}
+.png-opp-tap.is-2 {
+  color: #2fd16f;
+  border-color: #2fd16f;
+}
+.png-opp-tap.is-1 {
+  color: #ff8b82;
+  border-color: #ff8b82;
+}
+.png-smash b {
+  font-size: clamp(16px, 4.2vw, 22px);
+}

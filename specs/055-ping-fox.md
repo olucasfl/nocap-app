@@ -305,3 +305,8 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 
 - **Velocidade:** a mão rápida contava só até 11 m/s para a frente e 10 para os lados (qualquer arrancada já era "o máximo"). Agora conta até 24 e 16 (`PP_HAND_VZ_MAX`) e a escada ficou mais esticada (`PP_SPEED_LADDER`): média 10 a 12,5 m/s (mão 5,5 a 8), rápida 14,5 a 25 só com a mão realmente rápida (11 a 21). Um movimento "meio rápido" agora vira uma bola média alta, não a mais rápida. O bot difícil bate o drive com mão de 10 a 17.
 - **Cor da velocidade no círculo em volta da bola** (o do efeito): verde = lenta, amarelo = média, vermelho = rápida, indo ou vindo, sempre durante a troca (a etiqueta de texto e o halo saíram).
+
+### Rodada 35: smash com aviso claro e a barra do adversário
+
+- A sua barra do smash agora diz "TOQUE NA TELA: SMASH NO VERDE!" (e, embaixo, clique/toque na hora que a barrinha estiver no verde).
+- Quando o smash é do adversário, a barrinha aparece em cima da cabeça dele ("SMASH: nome"), com o marcador andando como a sua. Onde ele apertou: contra o bot a barra congela no ponto do aperto (`PpMatch.smashCur`); online (o aperto só chega com a batida dele) aparece uma etiqueta "PERFEITO! / ACERTOU O VERDE / ERROU: VERMELHO" no momento da batida.

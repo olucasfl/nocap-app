@@ -287,6 +287,8 @@ export class PpMatch {
   popup = false;
   /** Ticks desde a subida (a barra de tempo anda por eles: igual em todos os aparelhos). */
   popupTicks = 0;
+  /** Onde a barra estava quando cada um apertou o smash (só para mostrar ao outro lado). */
+  smashCur: [number, number] = [0.5, 0.5];
   /** Nível do smash que está na bola (1 a 3), para o rastro roxo; 0 = nenhum. */
   trailTier = 0;
   /** Nível pedido por quem vai receber (só este aparelho decide: a batida é que viaja). */
@@ -596,6 +598,7 @@ export class PpMatch {
   smashTap(p: number): number {
     if (!this.popup || this.expect !== p || (this.smashQ[p] ?? 0) > 0) return 0;
     const tier = ppSmashTier(this.smashCursor());
+    this.smashCur[p === 0 ? 0 : 1] = this.smashCursor();
     this.smashQ[p === 0 ? 0 : 1] = tier;
     this.events.push({ type: 'smashtap', p, tier });
     return tier;
