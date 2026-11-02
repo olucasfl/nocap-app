@@ -129,6 +129,8 @@ export const PP_RALLY_MAX = 30;
 /** Saque automático se quem saca não faz nada (s). */
 /** Saque pela altura da bola na batida (m): acima de ALTO é cedo demais (fraco); entre BOM e ALTO é bom; abaixo é o ponto certo (forte). */
 export const PP_SERVE_ALTO = 2.3;
+/** A raquete só pega a bola do saque depois que ela começa a descer e abaixo desta altura (m): movimentinho com a bola lá em cima não saca. */
+export const PP_SERVE_HIT_MAX = 2.55;
 export const PP_SERVE_BOM = 1.8;
 /** Nível do saque pela altura em que a bola foi batida: 0 = alto (fraco), 1 = bom, 2 = perfeito (mais força e efeito). */
 export const ppServeTier = (y: number): 0 | 1 | 2 => (y > PP_SERVE_ALTO ? 0 : y > PP_SERVE_BOM ? 1 : 2);

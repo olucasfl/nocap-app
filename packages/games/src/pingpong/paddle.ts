@@ -192,7 +192,8 @@ export function ppPaddleHit(b: PpBall, side: number, pad: PpPaddleMotion, guide 
   const power = Math.max(0, Math.min(1, hand / 9));
   const smashing = high && pad.vz > 6 && power > 0.55;
   // pontaria: o movimento lateral da mão leva a bola para o lado
-  vx += pad.vx * PP_AIM * (0.4 + 0.6 * power);
+  // no saque arrastar para o lado decide com mais força para onde a bola vai (a ajuda ainda a põe na mesa)
+  vx += pad.vx * PP_AIM * (0.4 + 0.6 * power) * (isServe ? 2.6 : 1);
   const fwdPow = pad.vz;
   const lat = Math.abs(pad.vx);
   const reach = pad.reach ?? 0;

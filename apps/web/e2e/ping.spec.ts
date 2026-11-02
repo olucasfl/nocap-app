@@ -646,3 +646,98 @@ test('painel de rede e fps: desligado por padrão, liga e desliga no menu e lemb
   await page.getByTestId('png-menu-continue').click();
   await expect(page.getByTestId('net-badge')).toHaveCount(0);
 });
+
+test('celular: dedo parado lança a bola sem soltar; depois arrasta para sacar quando ela desce', async ({
+  browser,
+}) => {
+  const ctx = await browser.newContext({
+    viewport: { width: 844, height: 390 },
+    hasTouch: true,
+    isMobile: true,
+  });
+  const page = await ctx.newPage();
+  await page.goto('/fox-cap');
+  await page
+    .getByRole('button', { name: 'Agora não' })
+    .click({ timeout: 6000 })
+    .catch(() => undefined);
+  await page.getByTestId('foxcap-pingpong').click();
+  await page.getByTestId('png-level-facil').click();
+  await page.getByTestId('png-start').click();
+  await expect(page.getByTestId('png-play')).toBeVisible();
+  await page.waitForTimeout(2600);
+  await page
+    .getByTestId('game-tips-ok')
+    .click({ timeout: 2000 })
+    .catch(() => undefined);
+  await expect(page.locator('.png-count')).toHaveCount(0, { timeout: 20000 });
+  await page.evaluate(() => {
+    const m = (
+      window as unknown as {
+        __ping: {
+          match: {
+            server: number;
+            phase: string;
+            lastHitter: number;
+            bounces: number[];
+            rally: number;
+            t: number;
+          };
+        };
+      }
+    ).__ping.match;
+    m.server = 0;
+    m.phase = 'serve';
+    m.lastHitter = -1;
+    m.bounces = [0, 0];
+    m.rally = 0;
+    m.t = 0;
+  });
+  // o gesto inteiro roda dentro da página (toques de verdade demoram demais num navegador sem placa de vídeo): dedo
+  // pousa e fica parado (a bola sobe sem soltar), mexe um pouco com a bola no alto (não saca) e depois arrasta para a
+  // frente e para a direita quando a bola desce (aí saca), sempre com o dedo na tela
+  const out = await page.evaluate(async () => {
+    const zn = document.querySelector('.png-zone') as HTMLElement;
+    const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    const ev = (type: string, x: number, y: number) =>
+      zn.dispatchEvent(
+        new PointerEvent(type, {
+          pointerId: 7,
+          pointerType: 'touch',
+          isPrimary: true,
+          clientX: x,
+          clientY: y,
+          bubbles: true,
+        }),
+      );
+    const m = (
+      window as unknown as {
+        __ping: { match: { phase: string; rally: number; ball: { y: number; vy: number } } };
+      }
+    ).__ping.match;
+    ev('pointerdown', 420, 300);
+    const t0 = performance.now();
+    while (m.phase !== 'toss' && performance.now() - t0 < 2000) await wait(5);
+    const launched = m.phase === 'toss';
+    // bola no alto: mexe um pouco
+    ev('pointermove', 424, 296);
+    ev('pointermove', 428, 292);
+    await wait(16);
+    const earlyHit = m.rally;
+    // bola descendo: arrasta para a frente
+    const t1 = performance.now();
+    while (!(m.ball.vy < 0 && m.ball.y < 2.5) && performance.now() - t1 < 1500) await wait(4);
+    for (let i = 1; i <= 14; i++) {
+      ev('pointermove', 428 + i * 3, 292 - i * 18);
+      await wait(14);
+    }
+    await wait(300);
+    const rally = m.rally;
+    ev('pointerup', 470, 170);
+    return { launched, earlyHit, rally };
+  });
+  expect(out.launched).toBe(true);
+  expect(out.earlyHit).toBe(0);
+  expect(out.rally).toBeGreaterThanOrEqual(1);
+  await ctx.close();
+});

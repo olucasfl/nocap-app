@@ -177,6 +177,8 @@ const SERVE_TAG: Record<string, string> = {
 };
 /** Quanto o dedo pode se mexer (px) e ainda valer como toque para lançar a bola. */
 const TAP_SLOP = 26;
+/** Dedo parado por este tempo (ms) no começo do saque lança a bola sem soltar. */
+const HOLD_LAUNCH_MS = 220;
 const GAUGE_TOP = 3;
 const GAUGE_BOTTOM = 1.2;
 
@@ -318,7 +320,7 @@ export function PingPlay({
     let zt = 0;
     let pointerDown = false;
     // o toque que pode virar saque: onde começou e se já arrastou
-    let tap: { x: number; y: number; t: number } | null = null;
+    let tap: { x: number; y: number; t: number; launched: boolean; moved: boolean } | null = null;
     const clampZ = (v: number) => Math.max(-PP_REACH_BACK, Math.min(PP_REACH_NET, v));
     const keys = { l: false, r: false, u: false, d: false };
     let ready = 3;
@@ -439,7 +441,16 @@ export function PingPlay({
       // dedo: arrastar leva a raquete para outro lugar; só um toque (soltar sem arrastar) lança a bola
       if (e.pointerType !== 'mouse') {
         // a hora do próprio evento (não a do processamento): um quadro lento não pode transformar o toque em "toque longo"
-        tap = { x: e.clientX, y: e.clientY, t: e.timeStamp };
+        tap = { x: e.clientX, y: e.clientY, t: e.timeStamp, launched: false, moved: false };
+        // dedo pousado e parado: a bola sobe e o dedo continua na raquete (não precisa soltar); arrastar antes disso só
+        // reposiciona
+        const mine = tap;
+        window.setTimeout(() => {
+          if (tap === mine && !mine.launched && !mine.moved && canServe()) {
+            mine.launched = true;
+            triggerServe();
+          }
+        }, HOLD_LAUNCH_MS);
         return;
       }
       triggerServe();
@@ -447,6 +458,9 @@ export function PingPlay({
     const onMove = (e: PointerEvent) => {
       if (menuRef.current) return;
       if (e.pointerType !== 'mouse' && (!pointerDown || e.pointerId !== primaryId)) return;
+      // arrastou antes de a bola subir: é reposicionar a raquete, não lançar
+      if (tap && !tap.launched && Math.hypot(e.clientX - tap.x, e.clientY - tap.y) > TAP_SLOP)
+        tap.moved = true;
       if (e.pointerType === 'mouse' && document.pointerLockElement === zn) {
         // cursor preso: a raquete anda o que o mouse andou (cada pixel vira uma fração de metro)
         me.x = Math.max(-PP_PAD_X, Math.min(PP_PAD_X, me.x + scene.simX(e.movementX * 0.0125)));
@@ -472,6 +486,7 @@ export function PingPlay({
         // toque = o dedo sobe perto de onde desceu (um tremidinha não conta); arrastar de verdade, não
         if (
           t &&
+          !t.launched &&
           Math.hypot(e.clientX - t.x, e.clientY - t.y) <= TAP_SLOP &&
           e.timeStamp - t.t < 3000
         )
@@ -1232,16 +1247,20 @@ export function PingPlay({
         <div className="png-serve-hint" data-testid="png-serve-hint">
           {hud.matchPhase === 'toss' ? (
             <>
-              <b>Bata quando a bola descer até a zona verde</b>
-              <span>Lá em cima o saque sai fraco; na zona verde sai forte</span>
+              <b>Espere a bola descer até a zona verde</b>
+              <span>
+                {touchDevice
+                  ? 'Com o dedo na raquete, arraste para o lado que quer sacar'
+                  : 'Arraste para o lado que quer sacar e bata'}
+              </span>
             </>
           ) : (
             <>
-              <b>{touchDevice ? 'Toque na tela' : 'Clique'} para lançar a bola</b>
+              <b>{touchDevice ? 'Segure o dedo parado' : 'Clique'} para lançar a bola</b>
               <span>
                 {touchDevice
-                  ? 'depois bata nela com a raquete quando ela descer'
-                  : 'depois bata nela com a raquete quando ela descer'}
+                  ? 'sem soltar: depois arraste para sacar (arrastar antes só muda o lugar)'
+                  : 'depois arraste a raquete quando a bola descer'}
               </span>
             </>
           )}

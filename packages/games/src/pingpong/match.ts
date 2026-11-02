@@ -36,6 +36,7 @@ import {
   PP_SERVE_FRONT,
   PP_SERVE_REACH_SLACK,
   PP_SERVE_TOL,
+  PP_SERVE_HIT_MAX,
   PP_SUB,
   PP_TICK,
   ppTossSpeed,
@@ -523,6 +524,8 @@ export class PpMatch {
       if ((this.bounces[p] ?? 0) < 1) return;
     }
     if (this.net && (this.replay || p !== this.localPlayer)) return;
+    // saque: nada de pegar a bola subindo ou lá no alto; é preciso esperar ela descer
+    if (this.phase === 'toss' && !(this.ball.vy < 0 && this.ball.y <= PP_SERVE_HIT_MAX)) return;
     // na rede: bola que vai quicar na mesa ainda neste tick não é batida (quem confere refaria o quique antes da batida
     // chegar). Fora da rede (contra o bot) não há quem confira: bola baixa também se rebate.
     if (this.net) {
@@ -569,7 +572,8 @@ export class PpMatch {
         Math.hypot(b.x - pad.x, b.y - pad.y) <= PP_PAD_R + PP_R
       ) {
         b.z = plane(k1) - s * 0.01;
-        this.hit(p, false, pad.x, pad.y);
+        // a bola do saque que cai na raquete já parada também é saque (nível pela altura, ajuda para a mesa)
+        this.hit(p, this.phase === 'toss', pad.x, pad.y);
       }
       return;
     }

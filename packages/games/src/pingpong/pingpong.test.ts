@@ -865,13 +865,14 @@ describe('saque de ponta a ponta', () => {
       const m = new PpMatch(0);
       const px = (rng() - 0.5) * 6;
       const zHand = rng() * 1.6;
-      const delay = Math.floor(rng() * 40);
+      const delay = Math.floor(rng() * 20);
       const swingX = (rng() - 0.5) * 2; // moves x target while swinging
       let clicked = false;
       let tossT = -1;
       const ev: PpEvent[] = [];
       for (let i = 0; i < 60 * 5; i++) {
-        if (m.phase === 'toss' && tossT < 0) tossT = i;
+        // a mão só começa quando a bola começa a descer (é o que se faz de verdade: espera a bola descer)
+        if (m.phase === 'toss' && tossT < 0 && m.ball.vy < 0 && m.ball.y <= 2.55) tossT = i;
         const sw = tossT >= 0 && i - tossT > delay;
         m.step([
           {
@@ -1034,5 +1035,67 @@ describe('o smash nunca quica na própria mesa', () => {
       }
       expect(own, `nível ${tier}`).toBe(0);
     }
+  });
+});
+
+describe('saque: esperar a bola descer e escolher o lado', () => {
+  const playServe = (
+    swingWhen: (m: PpMatch) => boolean,
+    drag: number,
+    px = 0,
+  ): { ev: PpEvent[]; hitY: number | null } => {
+    const m = new PpMatch(0);
+    const ev: PpEvent[] = [];
+    let clicked = false;
+    let hitY: number | null = null;
+    for (let i = 0; i < 60 * 5; i++) {
+      const sw = m.phase === 'toss' && swingWhen(m);
+      const yBefore = m.ball.y;
+      m.step([
+        {
+          ...ppIdleInput(),
+          manual: false,
+          // o dedo arrasta para o lado enquanto avança
+          x: px + (sw ? drag : 0),
+          y: 1.5,
+          z: sw ? 1.1 : 0,
+          serve: m.phase === 'serve' && !clicked && i > 20,
+        },
+        ppIdleInput(),
+      ]);
+      if (m.phase === 'toss') clicked = true;
+      const got = m.drain();
+      if (hitY === null && got.some((e) => e.type === 'hit')) hitY = yBefore;
+      ev.push(...got);
+      if (ev.some((e) => e.type === 'bounce' || e.type === 'fault')) break;
+    }
+    return { ev, hitY };
+  };
+  it('mexer a mão com a bola subindo ou lá no alto não saca: só depois que ela desce', () => {
+    for (const px of [-2, 0, 2]) {
+      const r = playServe((m) => m.ball.vy > -2.5 || m.ball.y > 2.7, 0, px);
+      const first = r.ev.find((e) => e.type === 'hit');
+      // a mão se mexeu o tempo todo, mas a batida só vale com a bola descendo e abaixo da altura limite
+      expect(first && first.type === 'hit' && first.serve).toBe(true);
+      expect(r.hitY).not.toBeNull();
+      expect(r.hitY!).toBeLessThanOrEqual(2.6);
+    }
+  });
+  it('arrastar para a direita ou para a esquerda na batida manda a bola para esse lado', () => {
+    const when = (m: PpMatch) => m.ball.vy < 0 && m.ball.y <= 2.4;
+    const land = (drag: number) => {
+      const r = playServe(when, drag, 0);
+      const b = r.ev.find((e) => e.type === 'bounce');
+      return b && b.type === 'bounce' ? { side: b.side, x: b.x } : null;
+    };
+    const left = land(-1.6);
+    const mid = land(0);
+    const right = land(1.6);
+    expect(left && mid && right).toBeTruthy();
+    expect(left!.side).toBe(1);
+    expect(right!.side).toBe(1);
+    // a bola cai mais à esquerda, no meio e mais à direita, na ordem do arrasto
+    expect(right!.x).toBeGreaterThan(mid!.x + 0.25);
+    expect(left!.x).toBeLessThan(mid!.x - 0.25);
   });
 });

@@ -384,3 +384,10 @@ Motor: quique e conservação, sinal do efeito (topspin mergulha, backspin flutu
 - Causa (reproduzida com o aparelho do outro lado em CPU 6x mais lenta, `LAG_CPU_OTHER`): a raquete do adversário é movida por `ppPadStepZ`, uma mola rígida (rigidez 55) que só é estável até ~36 ms por passo; a tela a chamava com o tempo do quadro inteiro. A 164 fps está tudo bem; a 20-30 fps ou menos a mola passa do ponto e oscila a cada quadro. Antes: 268 piscadas em 40 s, oscilação média de 2,3 m por quadro; agora 25 piscadas e 0,05 m.
 - Correções (`PingPlay.tsx`, `lib/ping-p2p.ts`): o quadro vira passos de no máximo ~8 ms (`stepOppPad`); os pacotes da raquete pelo canal direto levam número e hora de quem mandou, entram num buffer ordenado e a tela desenha ~40 ms atrás interpolando (pacote fora de ordem, em rajada ou perdido não vira tranco); a velocidade usa a hora de quem mandou, não a de chegada.
 - O teste `ping-lag.spec.ts` agora roda o aparelho do outro lado com CPU 4x mais lenta por padrão e falha se a raquete do adversário oscilar mais de 0,3 m por quadro.
+
+### Rodada 50: saque menos sensível e com direção
+
+- **Esperar a bola descer** (`PP_SERVE_HIT_MAX` 2,55 m): a raquete só pega a bola do saque depois que ela começa a descer e abaixo dessa altura; mexer a mão com a bola subindo ou no alto não saca mais (PC e celular). A bola que cai na raquete já parada também conta como saque (antes valia como batida comum).
+- **Direção:** no saque o arrasto para o lado pesa 2,6x mais na direção da bola (a ajuda continua pondo na mesa): arrastar 1,6 m para cada lado manda a bola ~1,7 m para o lado.
+- **Celular:** dedo pousado e parado por 220 ms lança a bola sem soltar (`HOLD_LAUNCH_MS`) e o dedo continua na raquete para arrastar e sacar; arrastar antes só reposiciona (o toque curto e soltar ainda lança, como antes). Os avisos do saque explicam isso.
+- Testes: motor (não saca com a bola no alto; direção para os dois lados) e e2e do gesto inteiro no celular (dedo parado lança; mexer com a bola no alto não saca; arrastar quando ela desce saca).
