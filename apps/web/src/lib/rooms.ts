@@ -505,6 +505,8 @@ function attach(r: Room) {
     if (code === 4000) return finish('');
     if (code === 4001) return finish('Você foi removido da sala.');
     if (code === 4002) return finish('Você entrou nessa sala por outro aparelho.');
+    // 4003: o líder encerrou a sala (chega junto do aviso `closed`, e vale se o aviso se perder)
+    if (code === 4003) return finish('A sala foi encerrada pelo líder.');
     // A conexão morreu: a referência velha sai (senão a reconexão achava que "já estava conectado" e nunca tentava).
     room = null;
     void reconnect();

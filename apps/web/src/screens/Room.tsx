@@ -263,7 +263,9 @@ function RoomPageInner({ code, game = 'color' }: { code?: string; game?: RoomGam
     !snapshot &&
     (status === 'connecting' ||
       entry.busy ||
-      (!!code && !autoTried && !entry.error && !entry.nick.open));
+      // esperando a entrada automática do link: só vale para quem chegou pelo link e ainda não esteve em sala nenhuma
+      // (quem já esteve e a sala acabou, ou foi encerrada, não volta a ficar "entrando" para sempre)
+      (!!code && !autoTried && !autoJoined.current && !entry.error && !entry.nick.open));
 
   if (authStatus === 'loading' || resuming) {
     return (

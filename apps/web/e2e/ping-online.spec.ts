@@ -155,3 +155,52 @@ test('sozinho com um bot do outro lado: o líder põe o bot no lobby e a partida
   expect(r.tick).toBeGreaterThan(600);
   expect(r.score[0]! + r.score[1]!).toBeGreaterThan(0);
 });
+
+test('encerrar a sala: todo mundo sai e ninguém fica preso no "entrando na sala"', async ({
+  browser,
+}) => {
+  const mk = async () => {
+    const ctx = await browser.newContext({
+      viewport: { width: 1100, height: 700 },
+      locale: 'pt-BR',
+    });
+    return ctx.newPage();
+  };
+  const A = await mk();
+  await A.goto('/fox-cap');
+  await A.getByRole('button', { name: 'Agora não' })
+    .click({ timeout: 8000 })
+    .catch(() => undefined);
+  await A.getByText('Com amigos', { exact: true }).first().click();
+  await A.getByTestId('foxcap-friends').click();
+  await nick(A, 'Ana');
+  await A.waitForURL(/\/sala\//);
+  const code = A.url().split('/sala/')[1]!.slice(0, 4);
+  const B = await mk();
+  await B.goto('/fox-cap');
+  await B.getByRole('button', { name: 'Agora não' })
+    .click({ timeout: 8000 })
+    .catch(() => undefined);
+  await B.getByText('Com amigos', { exact: true }).first().click();
+  await B.getByLabel('Código da sala').fill(code);
+  await B.getByRole('button', { name: 'Entrar', exact: true }).click();
+  await nick(B, 'Bia');
+  await B.waitForURL(/\/sala\//);
+  await expect(A.getByText('Bia').first()).toBeVisible({ timeout: 15000 });
+  // a Ana encerra a sala
+  await A.getByRole('button', { name: 'Encerrar', exact: true }).first().click({ timeout: 15000 });
+  await A.getByRole('button', { name: 'Encerrar', exact: true }).last().click({ timeout: 15000 });
+  for (const page of [A, B]) {
+    // saiu da sala: ou lê o aviso de sala encerrada, ou já voltou para a tela dos jogos
+    await expect
+      .poll(
+        async () =>
+          (await page.getByText(/sala foi encerrada/i).count()) > 0 || !/\/sala\//.test(page.url()),
+        { timeout: 15000 },
+      )
+      .toBe(true);
+    // e nada de carregando eterno
+    await page.waitForTimeout(2000);
+    await expect(page.getByText('Entrando na sala')).toHaveCount(0);
+  }
+});

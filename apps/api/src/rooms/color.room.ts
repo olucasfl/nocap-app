@@ -166,6 +166,15 @@ export class ColorRoom extends Room {
       if (!id) return;
       if (!this.engine.isHost(id)) return c.send('error', 'Só o líder pode encerrar a sala');
       this.broadcast('closed');
+      // todo mundo sai com o código "encerrada" (4003): ninguém tenta voltar para uma sala que deixou de existir, nem quem
+      // estava com a conexão caída esperando para reconectar
+      for (const userId of [...this.waiting.keys()]) this.cancelWaiting(userId);
+      for (const cl of [...this.clients]) {
+        const uid = (cl.userData as AuthData | undefined)?.id;
+        this.dismissed.set(cl.sessionId, 'gone');
+        if (uid) this.forget(uid);
+        cl.leave(4003);
+      }
       void this.disconnect();
     });
     // Sincronia de relógio: o aparelho mede o desvio para o relógio do servidor.
