@@ -76,6 +76,8 @@ export interface PpHitInfo {
   tier: number;
 }
 
+/** Bola que chega mais devagar que isto (m/s) deixa bater forte e com efeito sem sair da mesa; mais rápida, a batida forte pode sair. */
+const PP_SLOW_IN = 7;
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 
 /**
@@ -347,6 +349,9 @@ export function ppPaddleHit(b: PpBall, side: number, pad: PpPaddleMotion, guide 
     ppGuideHit(b, side, false, true);
   } else if (guide && (power < PP_ASSIST_MAX_POWER || isServe)) {
     ppGuideHit(b, side, drop, power < PP_ASSIST_LATERAL_POWER || isServe);
+  } else if (guide && vin < PP_SLOW_IN) {
+    // bola que chega devagar: dá para bater forte e com efeito (topspin, de lado) e ela desce na mesa rápida
+    ppGuideHit(b, side, false, true, { vyLo: -9, hMax: 22 });
   } else if (guide) {
     // batida de força: pode sair longa ou aberta, mas a rede não derruba (só a altura sobe o que precisa)
     ppFixNet(b, side);

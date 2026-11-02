@@ -529,13 +529,13 @@ describe('ajuda de leitura da batida', () => {
       [2, 4],
     ];
     for (const [vy, vz] of strokes) expect(swing(vy, vz).ok).toBe(true);
-    // forte e para o canto: a ajuda não corrige, a bola sai
+    // forte e para o canto contra uma bola rápida: a ajuda não corrige, a bola sai
     const b = ppNewBall();
     b.x = 1.4;
     b.y = 1.3;
     b.z = 3.3;
     b.vy = -1;
-    b.vz = 3;
+    b.vz = 12;
     ppPaddleHit(b, 0, { x: 1.4, y: 1.3, vx: 9, vy: 0, vz: 9 });
     expect(ppLanding(b, 0).ok).toBe(false);
   });
@@ -910,5 +910,45 @@ describe('saque de ponta a ponta', () => {
     // bateu na bola: sempre cai na mesa (nada de rede nem falta); só não bate quem tirou a mão de perto da bola
     expect(Object.keys(res).filter((k) => k !== 'mesa-ok' && k !== 'sem-batida')).toEqual([]);
     expect(res['mesa-ok'] ?? 0).toBeGreaterThan(380);
+  });
+});
+
+describe('batida forte com efeito: depende da bola que chega', () => {
+  const run = (vinTarget: number) => {
+    const rng = createRng('forte-' + vinTarget);
+    let ok = 0;
+    let fast = 0;
+    const n = 600;
+    for (let i = 0; i < n; i++) {
+      const side = i % 2;
+      const fwd = side === 0 ? -1 : 1;
+      const b = ppNewBall();
+      b.x = (rng() - 0.5) * 3;
+      b.y = 1.2 + rng() * 0.6;
+      b.z = -fwd * (3 + rng() * 0.4);
+      b.vz = -fwd * vinTarget * 0.9;
+      b.vy = -1 - rng() * 1.5;
+      b.vx = (rng() - 0.5) * 1.5;
+      const dir = rng() < 0.5 ? -1 : 1;
+      const info = ppPaddleHit(b, side, {
+        x: b.x,
+        y: b.y,
+        vx: dir * (6 + rng() * 5),
+        vy: rng() * 3,
+        vz: 4 + rng() * 6,
+        reach: 0.4,
+      } as Parameters<typeof ppPaddleHit>[2]);
+      if (ppLanding(b, side, false).ok) ok++;
+      if (info.speed > 11) fast++;
+    }
+    return { ok: ok / n, fast: fast / n };
+  };
+  it('bola lenta: a batida forte de lado cai na mesa e sai rápida', () => {
+    const r = run(4);
+    expect(r.ok).toBeGreaterThan(0.95);
+    expect(r.fast).toBeGreaterThan(0.6);
+  });
+  it('bola rápida: a batida forte de lado pode sair (precisa de controle)', () => {
+    expect(run(14).ok).toBeLessThan(0.6);
   });
 });
