@@ -28,6 +28,7 @@ export function PingRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
       startAt,
       names: [nameOf(players[0]), nameOf(players[1])],
       colors: PING_COLORS,
+      ids: [players[0], players[1]],
     };
     // os nomes só mudam se mudarem as pessoas: o placar do snapshot não recria a cena
   }, [key, startAt, firstServer, me]);

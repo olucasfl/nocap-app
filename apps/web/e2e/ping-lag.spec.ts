@@ -12,7 +12,14 @@ test.beforeEach(({ page: _page }, info) => {
 test.setTimeout(300_000);
 
 /** Atrasa tudo o que passa pelo WebSocket da página (ida e volta), mantendo a ordem. */
-const lagScript = (oneWayMs: number, jitterMs: number, spikeProb = 0, spikeMs = 0) => `
+const lagScript = (
+  oneWayMs: number,
+  jitterMs: number,
+  spikeProb = 0,
+  spikeMs = 0,
+  p2pMs = 60,
+  p2pLoss = 0.03,
+) => `
 (() => {
   const NativeWS = window.WebSocket;
   const delay = () => Math.max(0, ${oneWayMs} + (Math.random() - 0.5) * 2 * ${jitterMs} + (Math.random() < ${spikeProb} ? ${spikeMs} : 0));
@@ -59,6 +66,13 @@ const lagScript = (oneWayMs: number, jitterMs: number, spikeProb = 0, spikeMs = 
   }
   LagWS.CONNECTING = 0; LagWS.OPEN = 1; LagWS.CLOSING = 2; LagWS.CLOSED = 3;
   window.WebSocket = LagWS;
+  // o canal direto (WebRTC) é "UDP": atraso e perda de pacote, sem travar os seguintes
+  const nativeSend = RTCDataChannel.prototype.send;
+  RTCDataChannel.prototype.send = function (d) {
+    if (Math.random() < ${p2pLoss}) return;
+    const ch = this;
+    setTimeout(() => { try { nativeSend.call(ch, d); } catch (e) {} }, Math.max(0, ${p2pMs} + (Math.random() - 0.5) * 2 * ${jitterMs}));
+  };
 })();`;
 
 async function nick(page: Page, name: string) {
@@ -205,7 +219,21 @@ function ballStats(rec: Rec) {
     const d = Math.hypot(b[2]! - a[2]!, b[3]! - a[3]!, b[4]! - a[4]!);
     const extra = d - 26 * dt;
     worst = Math.max(worst, extra);
-    if (extra > 0.4) jumps++;
+    if (extra > 0.4) {
+      jumps++;
+      if (process.env.LAG_DEBUG)
+        console.log(
+          'JUMP',
+          'extra=' + extra.toFixed(2),
+          'dt=' + dt.toFixed(3),
+          'expect=' + a[13],
+          'rally=' + a[14],
+          'simY=' + a[5]!.toFixed(2),
+          'simZ=' + a[6]!.toFixed(2) + '->' + b[6]!.toFixed(2),
+          'tela z=' + a[4]!.toFixed(2) + '->' + b[4]!.toFixed(2),
+          'x=' + a[2]!.toFixed(2) + '->' + b[2]!.toFixed(2),
+        );
+    }
     // bola desenhada abaixo da mesa durante a troca e que depois volta a aparecer acima dela na mesma troca
     if (a[3]! < 0.85 && b[3]! >= 0.85 && a[14] === b[14]) fallThenBack++;
     if (d / dt > 40) fastFrames++;
@@ -248,7 +276,7 @@ test('duas janelas com atraso de rede: a bola e a raquete do adversário andam l
       locale: 'pt-BR',
     });
     await ctx.addInitScript(
-      'window.__pingLowFx = true;' + (process.env.LAG_NOSNAP ? 'window.__pingNoSnap = true;' : ''),
+      'window.__pingLowFx = true;' + (process.env.LAG_NOP2P ? 'window.__pingNoP2P = true;' : ''),
     );
     await ctx.addInitScript(
       lagScript(
@@ -291,6 +319,12 @@ test('duas janelas com atraso de rede: a bola e a raquete do adversário andam l
   await B.getByTestId('png-play').waitFor({ timeout: 30_000 });
   await drive(A);
   await drive(B);
+  await A.waitForTimeout(3000);
+  const open = async (pg: Page) =>
+    pg.evaluate(
+      () => !!(window as unknown as { __ping: { peer?: { open: boolean } } }).__ping.peer?.open,
+    );
+  console.log('P2P aberto: líder', await open(A), 'outro', await open(B));
   await A.waitForTimeout(12_000); // contagem + primeiras trocas
   const [ra, rb] = await Promise.all([record(A, 40_000), record(B, 40_000)]);
   // o que o líder (A) vê do outro (B) e vice-versa
@@ -309,17 +343,24 @@ test('duas janelas com atraso de rede: a bola e a raquete do adversário andam l
     JSON.stringify(bSeesA),
   );
   expect(ra.rows.length).toBeGreaterThan(200);
-  // trava de regressão com a rede simulada (líder 20 ms, outro 80 ms, picos de 350 ms): a versão aprovada pelo Lucas
-  // (rodada 38) fica nestes números com bots; piorar muito daqui é piorar o jogo
-  for (const [nome, r] of [
-    ['líder', ballStats(ra)],
-    ['outro', ballStats(rb)],
-  ] as const) {
-    expect(r.fallThenBack, `${nome}: bola caiu da mesa e voltou`).toBeLessThanOrEqual(3);
-    expect(r.jumps, `${nome}: pulos da bola`).toBeLessThanOrEqual(10);
-    expect(r.worst, `${nome}: maior salto da bola (m)`).toBeLessThan(1.6);
-    expect(r.fastFrames, `${nome}: quadros com a bola impossivelmente rápida`).toBeLessThanOrEqual(
-      16,
-    );
+  // trava de regressão com a rede simulada (líder 20 ms, outro 80 ms, picos de 350 ms no WebSocket, canal direto com 3% de
+  // perda): com o canal direto aberto a bola não pode pular nem cair da mesa e voltar, e a raquete do outro não pode
+  // chegar muito atrasada (pelo WebSocket ela chegava 170 a 340 ms atrasada)
+  if (!process.env.LAG_NOP2P) {
+    expect(await open(A), 'canal direto do líder').toBe(true);
+    expect(await open(B), 'canal direto do outro').toBe(true);
+    for (const [nome, r, pad] of [
+      ['líder', ballStats(ra), aSeesB],
+      ['outro', ballStats(rb), bSeesA],
+    ] as const) {
+      expect(r.fallThenBack, `${nome}: bola caiu da mesa e voltou`).toBeLessThanOrEqual(1);
+      expect(r.jumps, `${nome}: pulos da bola`).toBeLessThanOrEqual(3);
+      expect(r.worst, `${nome}: maior salto da bola (m)`).toBeLessThan(1.3);
+      expect(
+        r.fastFrames,
+        `${nome}: quadros com a bola impossivelmente rápida`,
+      ).toBeLessThanOrEqual(6);
+      expect(pad.lagMs, `${nome}: atraso da raquete do outro (ms)`).toBeLessThanOrEqual(150);
+    }
   }
 });

@@ -28,6 +28,7 @@ import { RotateHint } from '@/components/RotateHint';
 import { pingSfx } from '@/lib/ping-audio';
 import { getGuestNickname, sendRoomQuiet, serverNow, subscribeRoom } from '@/lib/rooms';
 import { useAuth } from '@/lib/auth';
+import { PingPeer, type PingPeerMsg } from '@/lib/ping-p2p';
 import { PingFinal, type PingStats } from './PingFinal';
 import { PingScene } from './PingScene';
 import './ping.css';
@@ -152,6 +153,8 @@ export interface PingOnline {
   startAt: number;
   names: [string, string];
   colors: [number, number];
+  /** Quem joga em cada vaga (para abrir o canal direto com o outro aparelho). */
+  ids?: [string, string];
 }
 
 /** Quantos ticks (200 ms) um ponto espera antes de aparecer: uma batida atrasada ainda pode desfazê-lo. */
@@ -615,20 +618,55 @@ export function PingPlay({
     let synced = !net;
     let padSendAt = 0;
     let clockOff: number | null = null;
+    /** Uma batida ou lançamento que chegou (da sala ou direto do outro aparelho; repetido não conta). */
+    const onNetEvent = (raw: unknown) => {
+      if (!net) return;
+      const ev = ppParseNetEvent(raw);
+      if (!ev) return;
+      const late = ev.t <= net.tick;
+      const r = net.add(ev);
+      if (late && r.ok) scene.absorb(net.tick - ev.t);
+      feed(r.events);
+    };
+    /** A raquete do outro (da sala ou direto): o alvo e a velocidade dele. */
+    const setOppPad = (nx: number, ny: number, nz: number) => {
+      const t = performance.now();
+      const dtp = Math.max(0.008, (t - oppAt) / 1000);
+      const lim = (v: number, m: number) => Math.max(-m, Math.min(m, v));
+      oppVel.x = lim((nx - oppTarget.x) / dtp, 25);
+      oppVel.y = lim((ny - oppTarget.y) / dtp, 6);
+      oppVel.z = lim((nz - oppTarget.z) / dtp, 25);
+      oppTarget.x = nx;
+      oppTarget.y = ny;
+      oppTarget.z = nz;
+      oppAt = t;
+    };
+    // canal direto com o outro aparelho (WebRTC, sem espera de retransmissão): a sala continua valendo como reserva
+    let peerPadAt = 0;
+    const peer =
+      net &&
+      online &&
+      online.ids &&
+      online.ids[1 - online.me] !== 'bot' &&
+      online.me >= 0 &&
+      !spectator &&
+      !(window as unknown as { __pingNoP2P?: boolean }).__pingNoP2P
+        ? new PingPeer(online.ids[1 - online.me] as string, online.me === 0, (m: PingPeerMsg) => {
+            if (Array.isArray(m.e)) for (const raw of m.e) onNetEvent(raw);
+            if (m.p && m.p.length === 3 && m.p.every((n) => Number.isFinite(n))) {
+              peerPadAt = performance.now();
+              setOppPad(m.p[0], m.p[1], m.p[2]);
+            }
+          })
+        : null;
+    peer?.start();
+    if (peer) unsubs.push(() => peer.close());
     if (net && online) {
       unsubs.push(
         subscribeRoom('pev', (m) => {
           if (!Array.isArray(m)) return;
           synced = true;
-          for (const raw of m) {
-            const ev = ppParseNetEvent(raw);
-            if (ev) {
-              const late = ev.t <= net.tick;
-              const r = net.add(ev);
-              if (late && r.ok) scene.absorb(net.tick - ev.t);
-              feed(r.events);
-            }
-          }
+          for (const raw of m) onNetEvent(raw);
         }),
         subscribeRoom('prej', (m) => {
           const ev = ppParseNetEvent(m);
@@ -641,21 +679,9 @@ export function PingPlay({
         subscribeRoom('ppads', (m) => {
           if (!Array.isArray(m)) return;
           for (const row of m as number[][]) {
-            if (row[0] === oppIdx) {
-              const nx = row[1] ?? 0;
-              const ny = row[2] ?? 1.3;
-              const nz = row[3] ?? 0;
-              const t = performance.now();
-              const dtp = Math.max(0.008, (t - oppAt) / 1000);
-              const lim = (v: number, m: number) => Math.max(-m, Math.min(m, v));
-              oppVel.x = lim((nx - oppTarget.x) / dtp, 25);
-              oppVel.y = lim((ny - oppTarget.y) / dtp, 6);
-              oppVel.z = lim((nz - oppTarget.z) / dtp, 25);
-              oppTarget.x = nx;
-              oppTarget.y = ny;
-              oppTarget.z = nz;
-              oppAt = t;
-            }
+            // com o canal direto aberto, a raquete vem dele (a da sala é mais velha e repetida)
+            if (row[0] === oppIdx && performance.now() - peerPadAt > 600)
+              setOppPad(row[1] ?? 0, row[2] ?? 1.3, row[3] ?? 0);
           }
         }),
       );
@@ -739,7 +765,9 @@ export function PingPlay({
           }
           net.match.replay = false;
           feed(timed);
-          for (const ev of net.outgoing()) sendRoomQuiet(ev.k === 'toss' ? 'ptoss' : 'phit', ev);
+          const fresh = net.outgoing();
+          for (const ev of fresh) sendRoomQuiet(ev.k === 'toss' ? 'ptoss' : 'phit', ev);
+          if (fresh.length > 0) peer?.send(fresh);
           flushWaiting();
           alpha = Math.max(0, Math.min(1, exact - target));
           // a raquete do outro chega a 30 vezes por segundo: aqui ela suaviza até lá
@@ -756,11 +784,14 @@ export function PingPlay({
             padSendAt = now;
             {
               const mine = match.pad(myIdx);
-              sendRoomQuiet('ppad', [
+              const row: [number, number, number] = [
                 Math.round(mine.x * 100) / 100,
                 Math.round(mine.y * 100) / 100,
                 Math.round(mine.reach * 100) / 100,
-              ]);
+              ];
+              // o canal direto leva a raquete (e repete as batidas recentes); a sala só quando ele não está aberto
+              if (peer?.open) peer.send([], row);
+              else sendRoomQuiet('ppad', row);
             }
           }
         } else if (!paused && bot) {
@@ -861,6 +892,7 @@ export function PingPlay({
       match,
       scene,
       net,
+      peer,
       predict: ppPredictCross,
       Bot: PpBot,
       levels: PP_BOT_LEVELS,

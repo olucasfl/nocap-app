@@ -809,6 +809,15 @@ export class PingRoom extends ColorRoom {
         c.send('prej', res.rejected);
       }
     };
+    // canal direto entre os dois aparelhos (WebRTC): a sala só repassa a sinalização
+    this.onMessage('rtc', (c, m: { to?: unknown; data?: unknown }) => {
+      const from = idOf(c);
+      if (!from || typeof m?.to !== 'string' || typeof m.data !== 'object' || m.data === null)
+        return;
+      if (JSON.stringify(m.data).length > 12_000) return;
+      const target = this.clients.find((x) => idOf(x) === m.to);
+      target?.send('rtc', { from, data: m.data });
+    });
     // lobby: lado da mesa e bot (só o líder põe o bot)
     this.onMessage('pteam', (c, m: { slot?: unknown }) =>
       this.act(c, (id) => engine().setSlot(id, m?.slot)),

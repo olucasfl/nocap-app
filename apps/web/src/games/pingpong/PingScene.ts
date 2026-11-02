@@ -145,7 +145,7 @@ export class PingScene {
   private lag = 0;
   sim: { tick: number; ballAt(t: number): { x: number; y: number; z: number } | null } | null =
     null;
-  private hold: { t: number; x: number; y: number; z: number } | null = null;
+  private hold: { t: number; x: number; y: number; z: number; released: boolean } | null = null;
 
   /** Chamar logo depois de a partida refazer o passado: guarda a diferença entre o que estava na tela e o novo estado. */
   absorb(lateTicks = 0) {
@@ -990,12 +990,19 @@ export class PingScene {
             x: this.shown.x - this.err.x,
             y: this.shown.y - this.err.y,
             z: this.shown.z - this.err.z,
+            released: false,
           };
         this.hold.t += dt;
         if (this.hold.t < 0.2) {
           sx = this.hold.x;
           sy = this.hold.y;
           sz = this.hold.z;
+        } else if (!this.hold.released) {
+          // a batida não veio (ele errou): a bola sai da espera deslizando, sem pulo
+          this.hold.released = true;
+          this.err.x = this.hold.x - sx;
+          this.err.y = this.hold.y - sy;
+          this.err.z = this.hold.z - sz;
         }
       } else this.hold = null;
       const k = Math.exp(-dt * 9);

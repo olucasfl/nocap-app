@@ -26,7 +26,7 @@ export type PpNetEvent =
 
 const RING = 96;
 /** Bateu atrasado até isto (ticks) ainda vale; mais velho que isso a sala recusa. */
-export const PP_LATE_TICKS = 24;
+export const PP_LATE_TICKS = 70;
 
 const idle: [PpInput, PpInput] = [ppIdleInput(), ppIdleInput()];
 const key = (e: PpNetEvent) => `${e.k}:${e.t}:${e.p}`;
@@ -206,7 +206,8 @@ export class PpNetSim {
    */
   validate(ev: PpNetEvent, sender: number): boolean {
     if (ev.p !== sender || (ev.p !== 0 && ev.p !== 1)) return false;
-    if (!Number.isInteger(ev.t) || ev.t > this.match.tick + 6) return false;
+    // o relógio de um aparelho pode estar uns 0,5 s à frente do da sala (celular, rede ruim): a batida "do futuro" ainda vale
+    if (!Number.isInteger(ev.t) || ev.t > this.match.tick + 30) return false;
     if (ev.t < this.match.tick - PP_LATE_TICKS) return false;
     // ponto de partida: a foto mais perto antes do tick do evento (o evento pode estar um pouco no futuro)
     const base = this.snapAt(Math.min(ev.t - 1, this.match.tick));
