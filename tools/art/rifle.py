@@ -10,7 +10,7 @@ import sys
 import bpy
 
 sys.path.insert(0, os.path.dirname(__file__))
-from common import arc_pts, box, cyl, material, photo, profile, reset, studio  # noqa: E402
+from common import arc_pts, box, cyl, material, photo, profile, reset, studio, flatten_for_gltf  # noqa: E402
 
 OUT = os.path.join(os.path.dirname(__file__), 'out')
 os.makedirs(OUT, exist_ok=True)
@@ -109,5 +109,7 @@ studio(res=(1024, 576), samples=48)
 photo(os.path.join(OUT, 'rifle-lado.png'), (0.08, -1.85, 0.0), (0.08, 0, -0.07), lens=50)
 photo(os.path.join(OUT, 'rifle-34.png'), (0.95, -1.5, 0.48), (0.08, 0, -0.07), lens=50)
 photo(os.path.join(OUT, 'rifle-frente.png'), (1.4, -0.65, 0.28), (0.08, 0, -0.06), lens=55)
+flatten_for_gltf()
+bpy.ops.export_scene.gltf(filepath=os.path.join(OUT, 'rifle.glb'), export_format='GLB', export_apply=True)
 bpy.ops.wm.save_as_mainfile(filepath=os.path.join(OUT, 'rifle.blend'))
 print('FEITO')

@@ -6,6 +6,7 @@ Como rodar (fora do repositório, nada disso entra no package.json):
 Convenção: X para a frente (boca da arma em +X), Y para o lado, Z para cima; metros.
 """
 import math
+import os
 
 import bmesh
 import bpy
@@ -124,6 +125,8 @@ def material(name, color, metal=0.0, rough=0.5, wear=0.0, bump=0.0, scale=40.0):
         nt.links.new(base, mix.inputs['Color1'])
         base = mix.outputs['Color']
     nt.links.new(base, bsdf.inputs['Base Color'])
+    # o glTF só leva a cor sólida do material (os nós de ruído/desgaste não exportam): guarda a cor principal no próprio Base Color
+    bsdf.inputs['Base Color'].default_value = (color[0], color[1], color[2], 1)
     bsdf.inputs['Metallic'].default_value = metal
     bsdf.inputs['Roughness'].default_value = rough
     if bump > 0:
@@ -178,6 +181,8 @@ def studio(res=(1280, 720), samples=64):
 
 
 def photo(path, loc, look=(0, 0, 0), lens=70):
+    if os.environ.get('ART_SKIP_RENDER'):
+        return
     cam = bpy.data.cameras.new('cam')
     cam.lens = lens
     co = bpy.data.objects.new('cam', cam)
@@ -219,3 +224,19 @@ def child(parent, o):
     o.parent = parent
     o.matrix_parent_inverse = parent.matrix_world.inverted()
     return o
+
+
+def flatten_for_gltf():
+    """O glTF só leva a cor sólida: solta os nós de ruído/desgaste do Base Color (a cor principal já está no valor do material).
+    Também tira do arquivo o estúdio de fotos (chão, luzes, câmeras), que não faz parte da peça."""
+    for o in list(bpy.data.objects):
+        if o.name == 'floor' or o.type in ('LIGHT', 'CAMERA'):
+            bpy.data.objects.remove(o, do_unlink=True)
+    for m in bpy.data.materials:
+        if not m.use_nodes:
+            continue
+        for n in m.node_tree.nodes:
+            if n.type == 'BSDF_PRINCIPLED':
+                for name in ('Base Color', 'Normal'):
+                    for lk in list(n.inputs[name].links):
+                        m.node_tree.links.remove(lk)

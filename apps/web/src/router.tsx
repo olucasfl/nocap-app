@@ -200,6 +200,12 @@ const bolaRoute = createRoute({
   },
 });
 
+const foxShotTestRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/fox-cap/fox-shot-teste',
+  component: lazyRouteComponent(() => import('@/games/foxshot/FoxShotTestPage'), 'FoxShotTestPage'),
+});
+
 const apertaRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/arcade/aperta',
@@ -292,6 +298,7 @@ const routeTree = rootRoute.addChildren([
   bolaRoute,
   apertaRoute,
   blocksRoute,
+  foxShotTestRoute,
   wordsRoute,
   wordsClassicRoute,
   wordsClassicPlayRoute,

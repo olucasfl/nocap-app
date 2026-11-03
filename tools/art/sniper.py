@@ -8,7 +8,7 @@ import sys
 import bpy
 
 sys.path.insert(0, os.path.dirname(__file__))
-from common import arc_pts, box, child, cut, cyl, material, photo, profile, reset, sphere, studio  # noqa: E402
+from common import arc_pts, box, child, cut, cyl, material, photo, profile, reset, sphere, studio, flatten_for_gltf  # noqa: E402
 
 OUT = os.path.join(os.path.dirname(__file__), 'out')
 os.makedirs(OUT, exist_ok=True)
@@ -88,5 +88,7 @@ for o in parts:
 studio(res=(1024, 576), samples=48)
 photo(os.path.join(OUT, 'sniper-lado.png'), (0.18, -2.2, 0.0), (0.18, 0, -0.01), lens=50)
 photo(os.path.join(OUT, 'sniper-34.png'), (1.2, -1.7, 0.55), (0.18, 0, -0.01), lens=50)
+flatten_for_gltf()
+bpy.ops.export_scene.gltf(filepath=os.path.join(OUT, 'sniper.glb'), export_format='GLB', export_apply=True)
 bpy.ops.wm.save_as_mainfile(filepath=os.path.join(OUT, 'sniper.blend'))
 print('FEITO')

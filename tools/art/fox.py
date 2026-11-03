@@ -14,7 +14,7 @@ import bpy
 from mathutils import Euler, Vector
 
 sys.path.insert(0, os.path.dirname(__file__))
-from common import material, photo, reset, studio  # noqa: E402
+from common import material, photo, reset, studio, flatten_for_gltf  # noqa: E402
 
 OUT = sys.argv[-1]
 os.makedirs(OUT, exist_ok=True)
@@ -304,6 +304,7 @@ photo(os.path.join(OUT, 'raposa-34.png'), (2.0, -2.4, 1.1), (0.0, 0, 0.62), lens
 for t in arm.animation_data.nla_tracks:
     t.mute = False
 arm.animation_data.action = None
+flatten_for_gltf()
 bpy.ops.export_scene.gltf(filepath=os.path.join(OUT, 'fox.glb'), export_format='GLB', export_apply=True,
                           export_animations=True, export_animation_mode='NLA_TRACKS', export_nla_strips=True)
 tris = sum(len(p.vertices) - 2 for p in body.data.polygons)

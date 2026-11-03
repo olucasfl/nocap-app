@@ -14,7 +14,7 @@ import bpy
 from mathutils import Vector
 
 sys.path.insert(0, os.path.dirname(__file__))
-from common import material, photo, studio  # noqa: E402
+from common import material, photo, studio, flatten_for_gltf  # noqa: E402
 
 SRC, OUT = sys.argv[-2], sys.argv[-1]
 bpy.context.preferences.filepaths.use_scripts_auto_execute = False
@@ -101,6 +101,7 @@ photo(os.path.join(OUT, 'ak-lado.png'), (0.0, -1.9, 0.0), (0.0, 0, -0.07), lens=
 photo(os.path.join(OUT, 'ak-34.png'), (0.85, -1.45, 0.45), (0.0, 0, -0.07), lens=50)
 for n in ('Bullet', 'Casing'):
     bpy.data.objects[n].hide_render = False
+flatten_for_gltf()
 bpy.ops.export_scene.gltf(filepath=os.path.join(OUT, 'ak.glb'), export_format='GLB', export_apply=True, export_animations=False)
 bpy.ops.wm.save_as_mainfile(filepath=os.path.join(OUT, 'ak.blend'))
 tris = sum(len(p.vertices) - 2 for o in meshes for p in o.evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh().polygons)

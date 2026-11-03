@@ -7,7 +7,7 @@ import sys
 import bpy
 
 sys.path.insert(0, os.path.dirname(__file__))
-from common import arc_pts, box, child, cyl, material, photo, profile, reset, studio  # noqa: E402
+from common import arc_pts, box, child, cyl, material, photo, profile, reset, studio, flatten_for_gltf  # noqa: E402
 
 OUT = os.path.join(os.path.dirname(__file__), 'out')
 os.makedirs(OUT, exist_ok=True)
@@ -81,5 +81,7 @@ for o in parts:
 studio(res=(1024, 576), samples=48)
 photo(os.path.join(OUT, 'pistola-lado.png'), (0.12, -0.9, 0.02), (0.1, 0, -0.04), lens=62)
 photo(os.path.join(OUT, 'pistola-34.png'), (0.55, -0.7, 0.28), (0.1, 0, -0.04), lens=62)
+flatten_for_gltf()
+bpy.ops.export_scene.gltf(filepath=os.path.join(OUT, 'pistol.glb'), export_format='GLB', export_apply=True)
 bpy.ops.wm.save_as_mainfile(filepath=os.path.join(OUT, 'pistola.blend'))
 print('FEITO')

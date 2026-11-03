@@ -23,3 +23,6 @@ apps/web/playwright-report/
 
 # capturas soltas de testes (caminho do Windows vira pasta)
 apps/web/[A-Za-z]:*
+
+# modelos de terceiros do Fox Shot! (licença a confirmar): só para testar, não versionar
+apps/web/public/models/foxshot/ref/

@@ -13,7 +13,7 @@ import bpy
 from mathutils import Vector
 
 sys.path.insert(0, os.path.dirname(__file__))
-from common import material, photo, studio  # noqa: E402
+from common import material, photo, studio, flatten_for_gltf  # noqa: E402
 
 SRC, OUT = sys.argv[-2], sys.argv[-1]
 bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -110,5 +110,6 @@ sc.render.resolution_percentage = 100
 studio(res=(1024, 576), samples=48)
 photo(os.path.join(OUT, 'l96-lado.png'), (0.0, -2.2, 0.0), (0.0, 0, 0.0), lens=50)
 photo(os.path.join(OUT, 'l96-34.png'), (1.2, -1.7, 0.55), (0.0, 0, 0.0), lens=50)
+flatten_for_gltf()
 bpy.ops.export_scene.gltf(filepath=os.path.join(OUT, 'l96.glb'), export_format='GLB', export_apply=True, export_animations=False)
 print('FEITO partes', len(parts), 'tris', tris, 'eixo', axis, 'ang', round(math.degrees(ang)), 'escala', round(scale, 3))

@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState, type FormEvent } from 'react';
-import { useNavigate, useSearch } from '@tanstack/react-router';
+import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import { BackButton } from '@/components/BackButton';
 import { Field } from '@/components/Field';
 import { HubHero, HubModeCard, HubNote, HubTabs } from '@/components/GameHub';
@@ -183,6 +183,9 @@ export function FoxCapPage() {
                 helpTestId="help-bola"
               />
             </div>
+            <Link to="/fox-cap/fox-shot-teste" className="btn" data-sfx="start" data-testid="foxcap-foxshot">
+              Fox Shot! (teste de visual e tiro)
+            </Link>
             <HubNote>
               O Atravessa! guarda recorde e ranking. O Desmorona!, o Fut Fox e o Ping Fox! são só
               diversão: sem ranking nem histórico.
