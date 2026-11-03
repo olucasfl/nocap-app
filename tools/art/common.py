@@ -187,3 +187,27 @@ def photo(path, loc, look=(0, 0, 0), lens=70):
     bpy.context.scene.camera = co
     bpy.context.scene.render.filepath = path
     bpy.ops.render.render(write_still=True)
+
+
+def cut(obj, cutter, keep_cutter=False):
+    """Subtrai `cutter` de `obj` (boolean) e aplica: abre furos (aro de dedão da coronha, janelas, estrias)."""
+    m = obj.modifiers.new('cut', 'BOOLEAN')
+    m.operation = 'DIFFERENCE'
+    m.object = cutter
+    m.solver = 'EXACT'
+    bpy.context.view_layer.objects.active = obj
+    bpy.ops.object.modifier_apply(modifier='cut')
+    if not keep_cutter:
+        bpy.data.objects.remove(cutter, do_unlink=True)
+    return obj
+
+
+def sphere(name, r, loc, mat=None, segs=24):
+    bpy.ops.mesh.primitive_uv_sphere_add(radius=r, location=loc, segments=segs, ring_count=segs // 2)
+    o = bpy.context.object
+    o.name = name
+    for p in o.data.polygons:
+        p.use_smooth = True
+    if mat:
+        o.data.materials.append(mat)
+    return o
