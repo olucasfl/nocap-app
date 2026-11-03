@@ -33,7 +33,6 @@ export const FS_SHOP: FsShopCategory[] = [
     items: [
       { id: 'vest', name: 'Colete', price: 650, kind: 'armor', armor: { points: 100, helmet: false } },
       { id: 'vesthelm', name: 'Colete e capacete', price: 1000, kind: 'armor', armor: { points: 100, helmet: true } },
-      { id: 'knife', name: 'Faca', price: 0, kind: 'weapon', weapon: 'knife', note: 'Sempre com você.' },
       { id: 'kit', name: 'Kit de desarme', price: 400, kind: 'armor', soon: true },
     ],
   },
@@ -95,10 +94,8 @@ export function fsBuy(loadout: FsLoadout, itemId: string): FsBuyResult {
   if (!item) return { ok: false, reason: 'unknown' };
   if (item.soon) return { ok: false, reason: 'soon' };
   if (item.armor) return { ok: true, armor: item.armor };
-  if (item.weapon === 'knife') {
-    loadout.switchTo(2);
-    return { ok: true };
-  }
+  // a faca já vem de série e não se compra, vende nem larga
+  if (item.weapon === 'knife') return { ok: false, reason: 'unknown' };
   if (item.weapon) {
     const w = FS_WEAPONS[item.weapon];
     const i = FsLoadoutIndex[w.slot];

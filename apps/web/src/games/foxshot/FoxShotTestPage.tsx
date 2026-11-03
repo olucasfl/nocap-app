@@ -35,6 +35,7 @@ import {
   FsTopBar,
   FsVitals,
   type FeedItem,
+  type FsSlotInfo,
   type FsPlayerRow,
   type MinimapData,
 } from './FsHud';
@@ -79,6 +80,8 @@ interface Hud {
   mag: number;
   weapon: string;
   weaponId: FsWeaponId;
+  slots: FsSlotInfo[];
+  current: number;
   reloading: boolean;
   scoped: boolean;
   spreadPx: number;
@@ -122,6 +125,9 @@ export function FoxShotTestPage() {
   const setShop = useCallback((v: boolean) => {
     shopRef.current = v;
     setShopState(v);
+    // a loja precisa do cursor: solta o mouse ao abrir e prende de novo ao fechar
+    if (v) ctl.current?.releaseLock();
+    else if (!pausedRef.current) ctl.current?.requestLock();
   }, []);
   const ctl = useRef<FsControls | null>(null);
   const pausedRef = useRef(true);
@@ -181,7 +187,7 @@ export function FoxShotTestPage() {
       },
       (locked) => {
         // o mouse soltou (Esc ou clique fora): abre o menu; prendeu: some o menu
-        if (!locked && !pausedRef.current) setPaused(true);
+        if (!locked && !pausedRef.current && !shopRef.current) setPaused(true);
         if (locked) {
           setPaused(false);
           setNeedClick(false);
@@ -191,6 +197,11 @@ export function FoxShotTestPage() {
 
     // Esc com o menu aberto volta ao jogo (com o mouse preso, o navegador já consome o Esc e solta o mouse)
     const onKey = (e: KeyboardEvent) => {
+      if (e.code === 'Escape' && shopRef.current) {
+        e.preventDefault();
+        setShop(false);
+        return;
+      }
       if (
         e.code === 'Escape' &&
         pausedRef.current &&
@@ -233,7 +244,7 @@ export function FoxShotTestPage() {
     const view = { yaw: 0, pitch: 0, rYaw: 0, rPitch: 0 };
     const me = { hp: 100, armor: 100 };
     const stats: MyStats = { kills: 0, deaths: 0, hs: 0, damage: 0 };
-    const loadout = new FsLoadout('ak', 'pistol');
+    const loadout = new FsLoadout(null, 'pistol');
     const targets = new Map<string, TargetState>(
       FS_TARGETS.map((t) => [
         t.id,
@@ -636,6 +647,8 @@ export function FoxShotTestPage() {
           mag: loadout.weapon.mag,
           weapon: loadout.weapon.name,
           weaponId: loadout.weapon.id,
+          slots: loadout.slots.map((sl, i) => ({ id: sl?.id ?? null, name: sl ? FS_WEAPONS[sl.id].name : '', key: i + 1 })),
+          current: loadout.current,
           reloading: loadout.reloading,
           scoped,
           spreadPx: Math.min(60, fsSpreadDeg(loadout.weapon, mvs, loadout.slot.gun) * 4),
@@ -706,6 +719,25 @@ export function FoxShotTestPage() {
         target(id: string) {
           return { ...targets.get(id)! };
         },
+        reload() {
+          loadout.drawT = 0;
+          loadout.slot.ammo = 0;
+          handle(loadout.update(0.001, { trigger: false, reload: true }, { moving: false, airborne: false, ads: false }, 'me'));
+        },
+        knife(kind: 'slash' | 'stab' | 'inspect') {
+          loadout.drawT = 0;
+          loadout.cooldown = 0;
+          loadout.update(0.001, { trigger: false, reload: false }, { moving: false, airborne: false, ads: false }, 'me');
+          handle(
+            loadout.update(
+              0.001,
+              { trigger: kind === 'slash', reload: false, alt: kind === 'stab', inspect: kind === 'inspect' },
+              { moving: false, airborne: false, ads: false },
+              'me',
+            ),
+          );
+        },
+        pose: (kind: 'slash' | 'stab' | 'inspect' | null, u?: number) => scene.debugKnife(kind, u),
         stats: () => ({ ...stats }),
         mover,
         drops: () => drops.map((d) => ({ id: d.id, ammo: d.ammo })),
@@ -788,9 +820,15 @@ export function FoxShotTestPage() {
             ammo={hud.ammo}
             mag={hud.mag}
             reloading={hud.reloading}
+            slots={hud.slots}
+            current={hud.current}
           />
           {shop && !paused && (
-            <FsShop onBuy={(i) => buyRef.current(i)} onClose={() => setShop(false)} />
+            <FsShop
+              onBuy={(i) => buyRef.current(i)}
+              onClose={() => setShop(false)}
+              owned={hud.slots.flatMap((x) => (x.id ? [x.id] : []))}
+            />
           )}
           {board && <FsScoreboard players={hud.players} timeLeft={hud.timeLeft} />}
           {needClick && !paused && (

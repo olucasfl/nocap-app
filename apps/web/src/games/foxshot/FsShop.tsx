@@ -9,10 +9,14 @@ import { WeaponIcon } from './fs-icons';
 export function FsShop({
   onBuy,
   onClose,
+  owned,
 }: {
   onBuy: (item: FsShopItem) => void;
   onClose: () => void;
+  /** Ids dos itens que a pessoa já tem em uso (aparecem marcados). */
+  owned: string[];
 }) {
+  const [toast, setToast] = useState<{ key: number; text: string } | null>(null);
   const [col, setCol] = useState<number | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
 
@@ -20,6 +24,9 @@ export function FsShop({
     if (item.soon) return;
     onBuy(item);
     setFlash(item.id);
+    const key = Date.now();
+    setToast({ key, text: `Comprou: ${item.name}` });
+    window.setTimeout(() => setToast((t) => (t && t.key === key ? null : t)), 1650);
     window.setTimeout(() => setFlash((f) => (f === item.id ? null : f)), 350);
   };
 
@@ -49,6 +56,11 @@ export function FsShop({
 
   return (
     <div className="fss" role="dialog" aria-label="Loja" data-testid="fs-shop">
+      {toast && (
+        <div key={toast.key} className="fss-toast" role="status" data-testid="fs-shop-toast">
+          {toast.text}
+        </div>
+      )}
       <div className="fss-head">
         <b>Loja</b>
         <span className="mono">Dinheiro: $ ∞</span>
@@ -71,7 +83,7 @@ export function FsShop({
                 <li key={it.id}>
                   <button
                     type="button"
-                    className={`fss-item${it.soon ? ' soon' : ''}${flash === it.id ? ' bought' : ''}`}
+                    className={`fss-item${it.soon ? ' soon' : ''}${owned.includes(it.id) ? ' own' : ''}${flash === it.id ? ' bought' : ''}`}
                     disabled={it.soon}
                     onClick={() => buy(it)}
                     data-testid={`fs-buy-${it.id}`}
@@ -80,7 +92,7 @@ export function FsShop({
                     <span>{it.name}</span>
                     {it.weapon && <WeaponIcon id={it.weapon} className="fss-ico" />}
                     <em className="mono">
-                      {it.soon ? 'em breve' : it.price > 0 ? `$${it.price}` : 'grátis'}
+                      {it.soon ? 'em breve' : owned.includes(it.id) ? 'em uso' : `$${it.price}`}
                     </em>
                   </button>
                 </li>

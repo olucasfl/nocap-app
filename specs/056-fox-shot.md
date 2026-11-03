@@ -192,7 +192,7 @@ Rede: tiro é leve (10 jogadores a 20 a 30 estados por segundo, algumas dezenas 
 
 - Três espaços: 1 primária, 2 secundária, 3 faca (nunca sai). Começa com fuzil e pistola; a sniper vem da loja.
 - Ctrl agacha (câmera desce, anda mais devagar, mira mais fechada); Shift anda devagar e sem passos; F inspeciona; G larga; E pega; B abre a loja. Tudo remapeável no menu (Comandos).
-- Faca: botão de atirar corta (40), o de mirar estoca (65, recarga 1 s), alcance 1,7 m, sem atravessar parede.
+- Faca: botão de atirar corta (35), o de mirar estoca (70, recarga 1 s), alcance 1,7 m, sem atravessar parede.
 - Loja (B): colunas Equipamento, Pistolas, Intermediárias, Fuzis, Granadas; dinheiro infinito; itens futuros ficam apagados ("em breve", `soon` em `FS_SHOP`). Comprar a arma que já tem só enche o carregador; comprar outra no mesmo espaço larga a antiga no chão.
 - Armas no chão: no máximo 6 (a mais antiga some) e cada uma some em 25 s.
 - Braços e faca: modelo do Lucas (`tools/art/arms_knife.py` converte para `public/models/foxshot/ref/arms_knife.glb`, fora do git até confirmar a licença); sem o arquivo entra uma faca simples. A pose de segurar é o primeiro quadro da animação `inspect`.

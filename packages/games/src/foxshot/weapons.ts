@@ -84,10 +84,10 @@ export const FS_WEAPONS: Record<FsWeaponId, FsWeapon> = {
   },
   knife: {
     id: 'knife', name: 'Faca', slot: 'knife', auto: false, rpm: 120, mag: 0, reload: 0, draw: 0.6,
-    damage: 40, armorRatio: 0.85, rangeMod: 1, headMult: 1, legMult: 1, penPower: 0,
+    damage: 35, armorRatio: 0.85, rangeMod: 1, headMult: 1, legMult: 1, penPower: 0,
     recoil: [[0, 0]], recoilResetS: 0.2, recoilRecover: 20,
     spread: { stand: 0, move: 0, air: 0, ads: 0, adsMove: 0 }, bloom: 0, bloomPerShot: 0,
-    moveMul: 1.1, adsFov: 0, boltS: 0, melee: { range: 1.7, stab: 65, stabCd: 1.0 }, inspect: 4.8,
+    moveMul: 1.1, adsFov: 0, boltS: 0, melee: { range: 1.7, stab: 70, stabCd: 1.0 }, inspect: 4.8,
   },
 };
 

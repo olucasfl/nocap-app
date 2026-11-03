@@ -4,8 +4,6 @@ import { expect, test, type Page } from '@playwright/test';
  * Fox Shot! (fase 0): a arena de teste carrega com os modelos, o HUD aparece e as regras de dano estilo CS valem na tela de
  * verdade: fuzil mata de cabeça com ou sem capacete, pistola não mata de cabeça com capacete, sniper mata no corpo.
  */
-  buy(id: string): void;
-};
 const fs = <T>(page: Page, fn: string, ...args: unknown[]) =>
   page.evaluate(
     ([f, a]) =>
@@ -31,7 +29,7 @@ test('a arena carrega, mostra o HUD e o medidor de desempenho', async ({ page },
   test.skip(info.project.name !== 'desktop', 'um projeto basta');
   await page.setViewportSize({ width: 1280, height: 720 });
   await open(page);
-  await expect(page.getByTestId('fs-ammo')).toContainText('30');
+  await expect(page.getByTestId('fs-ammo')).toContainText('12');
   await expect(page.getByTestId('fs-menu')).toBeVisible();
   await expect(page.getByTestId('fs-bars')).toBeVisible();
   if (process.env.FS_SHOTS) {
@@ -39,6 +37,7 @@ test('a arena carrega, mostra o HUD e o medidor de desempenho', async ({ page },
     // sem o cartão de pausa (o mouse não prende em teste): fotos da cena
     await page.getByTestId('fsm-resume').click();
     for (const [i, name] of ['fuzil', 'pistola', 'faca', 'sniper'].entries()) {
+      if (name === 'fuzil') await fs(page, 'buy', 'ak');
       if (name === 'sniper') await fs(page, 'buy', 'sniper');
       await fs(page, 'weapon', name === 'sniper' ? 0 : i);
       await fs(page, 'teleport', 0, 9);
@@ -56,6 +55,7 @@ test('dano estilo CS nos alvos', async ({ page }, info) => {
   // fuzil (arma 0): cabeça mata sem colete (t1) e com colete e capacete (t3)
   for (const id of ['t1', 't3']) {
     await fs(page, 'teleport', 0, 14);
+    await fs(page, 'buy', 'ak');
     await fs(page, 'weapon', 0);
     await fs(page, 'aimAt', id, 'head');
     await fs(page, 'shoot', 1);
@@ -213,7 +213,9 @@ test('faca, agachar, loja e armas no chão', async ({ page }, info) => {
   for (const c of ['equipment', 'pistols', 'mid', 'rifles', 'grenades'])
     await expect(page.getByTestId(`fs-shop-col-${c}`)).toBeVisible();
   await expect(page.getByTestId('fs-buy-smg1')).toBeDisabled();
-  // comprar a sniper: o fuzil cai no chão; comprar de novo não larga nada
+  // sem primária ainda: comprar o fuzil não larga nada; trocar pela sniper larga o fuzil; repetir não larga
+  await page.getByTestId('fs-buy-ak').dispatchEvent('click');
+  expect((await fs<unknown[]>(page, 'drops')).length).toBe(0);
   await page.getByTestId('fs-buy-sniper').dispatchEvent('click');
   expect((await fs<unknown[]>(page, 'drops')).length).toBe(1);
   await page.getByTestId('fs-buy-sniper').dispatchEvent('click');
@@ -225,9 +227,51 @@ test('faca, agachar, loja e armas no chão', async ({ page }, info) => {
   expect((await fs<unknown[]>(page, 'drops')).length).toBeLessThanOrEqual(6);
   await page.keyboard.press('KeyB');
   await expect(page.getByTestId('fs-shop')).toHaveCount(0);
+  // G larga a arma da mão; com a faca na mão não larga nada
+  const n0 = (await fs<unknown[]>(page, 'drops')).length;
+  await page.keyboard.press('KeyG');
+  await page.waitForTimeout(400);
+  expect((await fs<unknown[]>(page, 'drops')).length).toBeGreaterThanOrEqual(Math.min(6, n0));
+  await page.keyboard.press('Digit3');
+  await page.waitForTimeout(300);
+  const nk = (await fs<unknown[]>(page, 'drops')).length;
+  await page.keyboard.press('KeyG');
+  await page.waitForTimeout(400);
+  expect((await fs<unknown[]>(page, 'drops')).length).toBe(nk);
   if (process.env.FS_SHOTS) {
     await page.keyboard.press('Digit3');
     await page.waitForTimeout(900);
     await page.screenshot({ path: `${process.env.FS_SHOTS}/faca.png` });
+  }
+});
+
+test('fotos das mãos (só com FS_SHOTS)', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop' || !process.env.FS_SHOTS, 'só para conferir o visual');
+  test.setTimeout(240_000);
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await open(page);
+  await page.getByTestId('fsm-resume').click();
+  const shot = (n: string) => page.screenshot({ path: `${process.env.FS_SHOTS}/${n}.png` });
+  for (const [id, i] of [['ak', 0], ['pistol', 1], ['sniper', 0]] as const) {
+    await fs(page, 'buy', id);
+    await fs(page, 'weapon', i);
+    await page.waitForTimeout(1200);
+    await shot(`m-${id}-hold`);
+    await fs(page, 'reload');
+    await page.waitForTimeout(700);
+    await shot(`m-${id}-rl1`);
+    await page.waitForTimeout(500);
+    await shot(`m-${id}-rl2`);
+    await page.waitForTimeout(2500);
+  }
+  await fs(page, 'weapon', 2);
+  await page.waitForTimeout(1200);
+  await shot('m-knife-hold');
+  for (const [kind, us] of [['slash', [0.22, 0.5, 0.75]], ['stab', [0.28, 0.45, 0.8]], ['inspect', [0.08, 0.3, 0.45, 0.65]]] as const) {
+    for (const u of us) {
+      await fs(page, 'pose', kind, u);
+      await page.waitForTimeout(250);
+      await shot(`m-knife-${kind}-${Math.round(u * 100)}`);
+    }
   }
 });

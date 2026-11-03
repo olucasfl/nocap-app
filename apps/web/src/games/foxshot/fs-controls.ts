@@ -100,12 +100,22 @@ export class FsControls {
 
   requestLock() {
     if (this.touch || !this.root || this.locked) return;
+    const root = this.root;
+    // movimento "cru" do mouse: sem a aceleração do sistema, então a mira anda sempre a mesma distância por centímetro
+    const plain = () => {
+      try {
+        void (root.requestPointerLock() as unknown as Promise<void> | undefined)?.catch?.(() => undefined);
+      } catch {
+        /* sem permissão: o próximo clique tenta de novo */
+      }
+    };
     try {
-      void (this.root.requestPointerLock() as unknown as Promise<void> | undefined)?.catch?.(
-        () => undefined,
-      );
+      const p = root.requestPointerLock({ unadjustedMovement: true } as unknown as undefined) as unknown as
+        | Promise<void>
+        | undefined;
+      if (p && typeof p.catch === 'function') p.catch(plain);
     } catch {
-      /* sem permissão: o próximo clique tenta de novo */
+      plain();
     }
   }
 
@@ -232,6 +242,8 @@ export class FsControls {
   };
   private mm = (e: MouseEvent) => {
     if (!this.locked || !this.enabled) return;
+    // alguns navegadores soltam um salto absurdo de vez em quando (o "flick"): descarta o que nenhuma mão faz em 1 evento
+    if (Math.abs(e.movementX) > 400 || Math.abs(e.movementY) > 400) return;
     this.dx += e.movementX;
     this.dy += e.movementY;
   };
@@ -242,7 +254,7 @@ export class FsControls {
       if (
         e.target instanceof HTMLElement &&
         this.root?.contains(e.target) &&
-        !e.target.closest('button')
+        !e.target.closest('button, .fss')
       )
         this.requestLock();
       return;

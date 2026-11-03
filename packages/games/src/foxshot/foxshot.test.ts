@@ -231,9 +231,10 @@ describe('arma na mão', () => {
 describe('três armas: primária, secundária e faca', () => {
   const idle = { moving: false, airborne: false, ads: false };
 
-  it('começa com fuzil, pistola e faca; a faca é o espaço 3 e nunca sai', () => {
-    const l = new FsLoadout();
-    expect(l.slots.map((s) => s?.id)).toEqual(['ak', 'pistol', 'knife']);
+  it('o jogo começa só com pistola e faca; a faca é o espaço 3, não se compra e nunca sai', () => {
+    const l = new FsLoadout(null, 'pistol');
+    expect(l.slots.map((s) => s?.id)).toEqual([undefined, 'pistol', 'knife']);
+    expect(fsBuy(l, 'knife').ok).toBe(false);
     expect(l.drop(2)).toBeNull();
     expect(l.slots[2]?.id).toBe('knife');
   });
@@ -300,7 +301,7 @@ describe('três armas: primária, secundária e faca', () => {
   it('a loja tem 5 colunas e só itens reais podem ser comprados', () => {
     expect(FS_SHOP).toHaveLength(5);
     const real = FS_SHOP.flatMap((c) => c.items).filter((i) => !i.soon);
-    expect(real.map((i) => i.id).sort()).toEqual(['ak', 'knife', 'pistol', 'sniper', 'vest', 'vesthelm']);
+    expect(real.map((i) => i.id).sort()).toEqual(['ak', 'pistol', 'sniper', 'vest', 'vesthelm']);
   });
 });
 

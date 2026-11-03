@@ -185,30 +185,54 @@ export function FsVitals({ hp, armor }: { hp: number; armor: number }) {
   );
 }
 
-/** Arma e munição, limpos, no canto de baixo à direita. */
+export interface FsSlotInfo {
+  id: FsWeaponId | null;
+  name: string;
+  /** Tecla do espaço (1, 2, 3). */
+  key: number;
+}
+
+/**
+ * Armas embaixo à direita, no desenho do CS: uma linha por espaço (1 primária, 2 secundária, 3 faca) com o ícone da arma;
+ * a que está na mão fica maior, com o nome e a munição em destaque.
+ */
 export function FsAmmo({
   weapon,
   id,
   ammo,
   mag,
   reloading,
+  slots,
+  current,
 }: {
   weapon: string;
   id: FsWeaponId;
   ammo: number;
   mag: number;
   reloading: boolean;
+  slots: FsSlotInfo[];
+  current: number;
 }) {
   return (
-    <div className={`fsh-ammo${ammo === 0 && !reloading ? ' empty' : ''}`} data-testid="fs-ammo">
+    <div className={`fsh-ammo${ammo === 0 && mag > 0 && !reloading ? ' empty' : ''}`} data-testid="fs-ammo">
       <div className="fsh-ammo-n">
-        <b>{reloading ? '...' : ammo}</b>
-        <span>/ {mag}</span>
+        <b>{mag > 0 ? (reloading ? '...' : ammo) : ''}</b>
+        {mag > 0 && <span>/ {mag}</span>}
       </div>
-      <div className="fsh-wname">
-        <WeaponIcon id={id} className="fsh-w" />
-        <small>{weapon}</small>
-      </div>
+      <ul className="fsh-slots" aria-label="Armas">
+        {slots.map((s, i) =>
+          s.id ? (
+            <li key={s.key} className={i === current ? 'on' : ''} data-testid={`fs-slot-${s.key}`}>
+              <i>{s.key}</i>
+              <WeaponIcon id={s.id} className="fsh-w" />
+              {i === current && <small>{s.name}</small>}
+            </li>
+          ) : null,
+        )}
+      </ul>
+      <span className="fsh-sr">
+        {weapon} {id}
+      </span>
     </div>
   );
 }

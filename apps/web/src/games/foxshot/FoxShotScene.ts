@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import { FsHands, KNIFE_HOLD, KNIFE_INSPECT, KNIFE_SLASH, KNIFE_STAB, makeKnife, sampleKnife, type KnifeKey } from './FsHands';
 import { FS_ARENA, FS_TARGETS, type FsBox, type FsWeaponId } from '@nocap/games';
 
 export type Quality = 'low' | 'mid' | 'high';
@@ -44,8 +45,8 @@ const VM: Record<FsWeaponId, VmCfg> = {
     bolt: ['Bolt'],
     slide: [],
   },
-  // braços + faca (modelo do Lucas): ombros perto da câmera, punhos a ~35 cm
-  knife: { scale: 0.7, hip: [0.02, -0.24, -0.32], ads: [0.02, -0.24, -0.32], mag: [], bolt: [], slide: [], rotY: Math.PI },
+  // a faca e as mãos são desenhadas em FsHands, já no espaço da câmera
+  knife: { scale: 1, hip: [0, 0, 0], ads: [0, 0, 0], mag: [], bolt: [], slide: [], rotY: 0 },
 };
 
 /** Os modelos de referência têm outra origem (Glock no centro do ferrolho, L96 no centro da arma): posições à parte. */
@@ -274,9 +275,11 @@ export class FoxShotScene {
   private drawK = 1;
   private reloadK = -1;
   private boltK = -1;
-  private armsMixer: THREE.AnimationMixer | null = null;
-  private armsActions: Record<string, THREE.AnimationAction> = {};
-  private swing = { kind: 'slash' as 'slash' | 'stab', t: 1 };
+  private hands = new FsHands();
+  private knifeObj = makeKnife();
+  private knifeAnim: { keys: KnifeKey[]; t: number; dur: number; inspect: boolean; freeze?: boolean } | null = null;
+  /** Onde as mãos seguram cada arma (no espaço do modelo da arma). */
+  private grips = new Map<FsWeaponId, { r: THREE.Vector3; l: THREE.Vector3 }>();
   private view = { fov: 75 };
   usingRef = { ak: false, pistol: false, sniper: false, knife: false } as Record<FsWeaponId, boolean>;
 
@@ -445,45 +448,27 @@ export class FoxShotScene {
       );
       this.weapons.set(id, holder);
       this.vmPivot.add(holder);
-    });
-    // braços + faca: opcional (o arquivo não vai para o repositório por causa da licença); sem ele, uma faca simples
-    const arms = await tryLoad(['ref/arms_knife.glb']).catch(() => null);
-    const kHolder = new THREE.Group();
-    if (arms) {
-      this.usingRef.knife = true;
-      arms.g.scene.traverse((o) => {
-        const m = o as THREE.Mesh;
-        if (m.isMesh) {
-          m.castShadow = false;
-          m.frustumCulled = false;
-        }
+      // onde as patas pegam: cabo/gatilho atrás e a mão da frente mais adiante, em frações da caixa do modelo
+      const L = box.max.x - box.min.x;
+      const Hh = box.max.y - box.min.y;
+      const zc = (box.min.z + box.max.z) / 2;
+      const f: Record<string, [number, number, number, number]> = {
+        ak: [0.34, 0.3, 0.62, 0.5],
+        pistol: [0.3, 0.5, 0.4, 0.32],
+        sniper: [0.3, 0.3, 0.55, 0.4],
+      };
+      const q = f[id]!;
+      this.grips.set(id, {
+        r: new THREE.Vector3(box.min.x + L * q[0], box.min.y + Hh * q[1], zc),
+        l: new THREE.Vector3(box.min.x + L * q[2], box.min.y + Hh * q[3], zc),
       });
-      kHolder.add(arms.g.scene);
-      this.armsMixer = new THREE.AnimationMixer(arms.g.scene);
-      for (const clip of arms.g.animations) this.armsActions[clip.name] = this.armsMixer.clipAction(clip);
-      const ins = this.armsActions.inspect;
-      if (ins) {
-        // a pose de segurar é o primeiro quadro da animação de inspeção
-        ins.setLoop(THREE.LoopOnce, 1);
-        ins.clampWhenFinished = true;
-        ins.play();
-        ins.paused = true;
-        ins.time = 0;
-        this.armsMixer.update(0);
-      }
-    } else {
-      const steel = new THREE.MeshStandardMaterial({ color: 0xc9ced6, metalness: 0.9, roughness: 0.3 });
-      const grip = new THREE.MeshStandardMaterial({ color: 0x23262d, roughness: 0.7 });
-      const blade = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.035, 0.22), steel);
-      blade.position.set(0, 0, -0.16);
-      const hand = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.04, 0.11), grip);
-      hand.position.set(0, 0, -0.02);
-      kHolder.add(blade, hand);
-    }
+    });
+    const kHolder = new THREE.Group();
     kHolder.visible = false;
     this.muzzle.set('knife', new THREE.Vector3());
     this.weapons.set('knife', kHolder);
     this.vmPivot.add(kHolder);
+    this.vm.add(this.hands.group, this.knifeObj);
     // raposas-alvo
     for (const spec of FS_TARGETS) {
       const root = new THREE.Group();
@@ -575,7 +560,7 @@ export class FoxShotScene {
       g.rotation.y = cfg.rotY ?? Math.PI / 2;
     }
     this.nodes.clear();
-    this.swing.t = 1;
+    this.knifeAnim = null;
     this.drawK = instant ? 1 : 0;
     this.reloadK = -1;
     this.boltK = -1;
@@ -614,27 +599,21 @@ export class FoxShotScene {
   }
   /** Corte (botão de atirar) ou estocada (botão de mirar) com a faca. */
   knifeSwing(kind: 'slash' | 'stab') {
-    this.swing = { kind, t: 0 };
-    const a = this.armsActions.inspect;
-    if (a) {
-      a.stop();
-      a.play();
-      a.paused = true;
-      a.time = 0;
-    }
+    this.knifeAnim = kind === 'slash' ? { keys: KNIFE_SLASH, t: 0, dur: 0.35, inspect: false } : { keys: KNIFE_STAB, t: 0, dur: 0.55, inspect: false };
   }
-  /** Inspeção da faca (tecla F): toca a animação do modelo do começo ao fim. */
-  knifeInspect(on: boolean) {
-    const a = this.armsActions.inspect;
-    if (!a) return;
-    if (on) {
-      a.reset();
-      a.paused = false;
-      a.play();
-    } else {
-      a.paused = true;
-      a.time = 0;
+  /** Só para conferir o visual: congela a animação num ponto (0 a 1). */
+  debugKnife(kind: 'slash' | 'stab' | 'inspect' | null, u = 0) {
+    if (!kind) {
+      this.knifeAnim = null;
+      return;
     }
+    const keys = kind === 'slash' ? KNIFE_SLASH : kind === 'stab' ? KNIFE_STAB : KNIFE_INSPECT;
+    this.knifeAnim = { keys, t: u * 4.8, dur: 4.8, inspect: false, freeze: true };
+  }
+  /** Inspeção da faca (tecla F): levanta, gira e mostra a lâmina. */
+  knifeInspect(on: boolean) {
+    if (on) this.knifeAnim = { keys: KNIFE_INSPECT, t: 0, dur: 4.8, inspect: true };
+    else if (this.knifeAnim?.inspect) this.knifeAnim = null;
   }
   // ---- armas no chão (a página limita quantas existem)
   private drops = new Map<number, THREE.Object3D>();
@@ -708,7 +687,6 @@ export class FoxShotScene {
       (p.airborne ? 0.01 : 0);
     const z = cfg.hip[2] + (cfg.ads[2] - cfg.hip[2]) * this.adsK + this.kickZ * 0.04;
     this.vm.position.set(x, y, z);
-    this.armsMixer?.update(dt);
     let pitch = this.kickRot * 0.02 - (1 - this.drawK) * 0.7;
     let roll = 0;
     // recarga: a arma abaixa e inclina enquanto o carregador sai e volta
@@ -736,21 +714,8 @@ export class FoxShotScene {
       roll += phase * 0.12;
       if (b > 0.7) this.boltK = -1;
     } else if (bolt) bolt.position.x = 0;
-    // faca: corte varre da direita para a esquerda; estocada empurra para a frente
-    let yawSw = 0;
-    if (this.swing.t < 1) {
-      this.swing.t = Math.min(1, this.swing.t + dt / (this.swing.kind === 'slash' ? 0.32 : 0.4));
-      const k = Math.sin(this.swing.t * Math.PI);
-      if (this.swing.kind === 'slash') {
-        yawSw = k * 0.55;
-        roll += k * 0.5;
-        this.vm.position.x -= k * 0.08;
-      } else {
-        this.vm.position.z -= k * 0.22;
-        pitch += k * 0.1;
-      }
-    }
-    this.vm.rotation.set(pitch, yawSw, roll);
+    this.vm.rotation.set(pitch, 0, roll);
+    this.updateHands(dt, cfg, mag, bolt);
     this.vmPivot.rotation.set(0, 0, 0);
     // clarão
     if (this.flashT > 0) {
@@ -772,6 +737,72 @@ export class FoxShotScene {
         Math.max(0, this.flashT / 0.045) * 0.95 + 0.05;
       if (this.adsK > 0.9 && this.cur === 'sniper') this.flash.visible = false;
     } else this.flash.visible = false;
+  }
+
+  private readonly hv = {
+    r: new THREE.Vector3(),
+    l: new THREE.Vector3(),
+    ra: new THREE.Vector3(),
+    la: new THREE.Vector3(),
+    m: new THREE.Vector3(),
+  };
+
+  /** Põe as patas no lugar: na faca, seguindo a pose da animação; nas armas, no cabo e na mão da frente (a esquerda vai ao carregador na recarga). */
+  private updateHands(dt: number, cfg: VmCfg, mag: THREE.Object3D | null, bolt: THREE.Object3D | null) {
+    const h = this.hv;
+    const fwd = new THREE.Vector3(0, 0, -0.2);
+    if (this.cur === 'knife') {
+      this.knifeObj.visible = true;
+      let pose: KnifeKey = { t: 0, p: KNIFE_HOLD.p, r: KNIFE_HOLD.r, l: KNIFE_HOLD.l };
+      const a = this.knifeAnim;
+      if (a) {
+        if (!a.freeze) a.t += dt;
+        const u = a.t / a.dur;
+        if (u >= 1) this.knifeAnim = null;
+        else pose = sampleKnife(a.keys, u);
+      }
+      // um respiro leve quando parado
+      const br = Math.sin(this.t * 1.4) * 0.004;
+      h.r.set(pose.p[0], pose.p[1] + br, pose.p[2]);
+      h.l.set(pose.l[0], pose.l[1] + br, pose.l[2]);
+      this.knifeObj.position.copy(h.r);
+      this.knifeObj.rotation.set(pose.r[0], pose.r[1], pose.r[2], 'YXZ');
+      h.ra.copy(h.r).add(fwd);
+      h.la.copy(h.l).add(fwd);
+      // a pata direita acompanha o giro da faca
+      h.ra.copy(h.r).add(new THREE.Vector3(0, 0, -0.2).applyEuler(this.knifeObj.rotation));
+      this.hands.set(h.r, h.ra, h.l, h.la);
+      return;
+    }
+    this.knifeObj.visible = false;
+    const g = this.weapons.get(this.cur);
+    const grip = this.grips.get(this.cur);
+    if (!g || !grip) return;
+    this.vm.updateMatrixWorld(true);
+    const toVm = (p: THREE.Vector3, out: THREE.Vector3) => out.copy(this.vm.worldToLocal(g.localToWorld(p.clone())));
+    toVm(grip.r, h.r);
+    toVm(grip.l, h.l);
+    // recarga: a mão da frente vai ao carregador e o acompanha para fora e para dentro
+    if (this.reloadK >= 0 && mag) {
+      const r = Math.min(1, this.reloadK);
+      const blend = r < 0.12 ? r / 0.12 : r < 0.78 ? 1 : Math.max(0, 1 - (r - 0.78) / 0.2);
+      mag.getWorldPosition(h.m);
+      this.vm.worldToLocal(h.m);
+      h.m.y -= 0.045;
+      h.l.lerp(h.m, blend);
+    }
+    // ferrolho da sniper: a mão de trás larga o cabo e puxa a alavanca
+    if (bolt && this.boltK > -0.5 && this.cur === 'sniper') {
+      const b = this.boltK;
+      const ph = b < 0 ? 0 : b < 0.35 ? b / 0.35 : b < 0.7 ? 1 - (b - 0.35) / 0.35 : 0;
+      bolt.getWorldPosition(h.m);
+      this.vm.worldToLocal(h.m);
+      h.r.lerp(h.m, Math.min(1, ph * 3));
+    }
+    h.ra.copy(h.r).add(fwd);
+    h.la.copy(h.l).add(fwd);
+    this.hands.set(h.r, h.ra, h.l, h.la);
+    void cfg;
   }
 
   // ---- alvos
