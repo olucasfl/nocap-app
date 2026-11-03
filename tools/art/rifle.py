@@ -48,7 +48,7 @@ add(profile('RearSightRamp', [(0.12, 0.052), (0.21, 0.064), (0.21, 0.070), (0.12
 add(box('RearSightLeaf', (0.012, 0.028, 0.014), (0.168, 0, 0.078), 0.002, dark))
 # ---- guarda-mãos de madeira
 add(profile('HandguardLower', [(0.118, 0.030), (0.285, 0.026), (0.292, -0.002), (0.278, -0.034), (0.118, -0.036)], 0.054, wood, 0.010))
-add(profile('HandguardUpper', [(0.130, 0.046), (0.280, 0.040), (0.284, 0.058), (0.215, 0.066), (0.130, 0.064)], 0.040, wood, 0.008))
+add(profile('HandguardUpper', [(0.130, 0.030), (0.280, 0.028), (0.284, 0.058), (0.215, 0.066), (0.130, 0.064)], 0.040, wood, 0.008))
 add(box('HandguardRetainer', (0.014, 0.046, 0.074), (0.292, 0, 0.012), 0.003, fox))
 for i in range(4):
     add(box(f'Groove{i}', (0.020, 0.0565, 0.006), (0.165 + i * 0.03, 0, -0.012), 0.0008, dark))
@@ -57,10 +57,10 @@ add(cyl('Barrel', 0.0085, 0.50, (0.235, 0, 0.012), 'X', dark))
 add(cyl('GasTube', 0.0090, 0.255, (0.235, 0, 0.034), 'X', steel))
 add(cyl('CleaningRod', 0.0042, 0.34, (0.285, 0, -0.012), 'X', steel))
 add(box('GasBlock', (0.034, 0.030, 0.046), (0.355, 0, 0.024), 0.004, dark))
-add(box('FrontSightBase', (0.030, 0.024, 0.040), (0.392, 0, 0.034), 0.004, dark))
-add(box('FrontEarL', (0.010, 0.004, 0.034), (0.392, 0.0095, 0.078), 0.001, dark))
-add(box('FrontEarR', (0.010, 0.004, 0.034), (0.392, -0.0095, 0.078), 0.001, dark))
-add(box('FrontPost', (0.004, 0.004, 0.044), (0.392, 0, 0.082), 0.0005, dark))
+add(box('FrontSightBase', (0.030, 0.024, 0.064), (0.392, 0, 0.044), 0.004, dark))
+add(box('FrontEarL', (0.010, 0.004, 0.034), (0.392, 0.0095, 0.084), 0.001, dark))
+add(box('FrontEarR', (0.010, 0.004, 0.034), (0.392, -0.0095, 0.084), 0.001, dark))
+add(box('FrontPost', (0.004, 0.004, 0.044), (0.392, 0, 0.090), 0.0005, dark))
 add(cyl('BayonetLug', 0.006, 0.020, (0.372, 0, -0.012), 'X', dark))
 add(cyl('MuzzleNut', 0.0125, 0.020, (0.440, 0, 0.012), 'X', dark, bevel=0.002))
 add(cyl('MuzzleBrake', 0.0112, 0.044, (0.472, 0, 0.012), 'X', dark, bevel=0.002))
@@ -77,7 +77,7 @@ trig.name = 'Trigger'
 parts.append(trig)
 # ---- carregador banana com nervuras (peça móvel; as nervuras são filhas dele)
 def centerline(n=16):
-    return [(0.092 + 0.095 * (i / n) ** 1.75, -0.034 - 0.225 * (i / n)) for i in range(n + 1)]
+    return [(0.092 + 0.125 * (i / n) ** 1.5, -0.034 - 0.225 * (i / n)) for i in range(n + 1)]
 
 
 def band(dx0, dx1, n=16):
@@ -93,7 +93,7 @@ for i, dx in enumerate((-0.014, 0.0, 0.014)):
     r = profile(f'MagRib{i}', band(dx - 0.0035, dx + 0.0035), 0.0305, steel, 0.0008)
     r.parent = mag
     ribs.append(r)
-add(profile('MagFloor', [(0.172, -0.252), (0.232, -0.262), (0.236, -0.276), (0.168, -0.266)], 0.034, fox, 0.002))
+add(profile('MagFloor', [(0.187, -0.254), (0.250, -0.266), (0.254, -0.280), (0.183, -0.270)], 0.034, fox, 0.002))
 add(box('MagWell', (0.072, 0.036, 0.026), (0.092, 0, -0.042), 0.003, steel))
 add(box('MagCatch', (0.012, 0.030, 0.020), (0.040, 0, -0.058), 0.002, dark))
 # alavanca de armar (lado direito, com a bolinha laranja)
