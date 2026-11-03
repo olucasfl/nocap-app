@@ -1,3 +1,8 @@
 *.blend
 *.blend1
 __pycache__/
+# modelo de terceiros (licença a confirmar): não versionar o arquivo nem as fotos até ter a licença
+out/ak-ref-*.png
+out/ak.glb
+out/ak-lado.png
+out/ak-34.png
