@@ -228,6 +228,18 @@ describe('arma na mão', () => {
   });
 });
 
+describe('faca: dano fixo', () => {
+  it('corte 35 e estocada 70 em qualquer região, com ou sem colete e capacete', () => {
+    const k = FS_WEAPONS.knife;
+    for (const zone of ['head', 'chest', 'belly', 'legs'] as const)
+      for (const armor of [0, 100]) {
+        const h = { zone, dist: 1, armor, helmet: armor > 0, wall: 1 };
+        expect(fsDamage(k, h).hp).toBe(35);
+        expect(fsDamage({ ...k, damage: k.melee!.stab }, h).hp).toBe(70);
+      }
+  });
+});
+
 describe('três armas: primária, secundária e faca', () => {
   const idle = { moving: false, airborne: false, ads: false };
 

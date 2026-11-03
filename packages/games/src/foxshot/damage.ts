@@ -32,6 +32,8 @@ export interface FsDamage {
  * (cabeça) só passa `armorRatio` × 0,5 do dano e o colete gasta o resto pela metade. Pernas nunca têm proteção.
  */
 export function fsDamage(w: FsWeapon, h: FsHitInfo): FsDamage {
+  // faca: dano fixo (35 no corte, 70 na estocada), igual no corpo todo, sem colete, distância ou parede
+  if (w.melee) return { hp: Math.round(w.damage), armorLoss: 0, raw: w.damage, protectedByArmor: false };
   const zoneMult = h.zone === 'legs' ? w.legMult : FS_ZONE_MULT[h.zone];
   const raw = w.damage * Math.pow(w.rangeMod, h.dist / 50) * zoneMult * h.wall;
   const protectedByArmor = h.zone === 'head' ? h.helmet : h.zone === 'legs' ? false : h.armor > 0;

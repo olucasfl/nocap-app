@@ -358,7 +358,7 @@ export function FoxShotTestPage() {
       const kw = FS_WEAPONS.knife;
       const eye: [number, number, number] = [mover.x, mover.y + fsEyeHeight(mover), mover.z];
       const dir = fsDir(view.yaw + view.rYaw, view.pitch + view.rPitch);
-      const w = kind === 'stab' ? { ...kw, dmg: kw.melee!.stab } : kw;
+      const w = kind === 'stab' ? { ...kw, damage: kw.melee!.stab } : kw;
       const tr = fsTrace(w, eye, dir, FS_ARENA, bodies(), kw.melee!.range);
       scene.knifeSwing(kind);
       fsAudio.shot('knife');
