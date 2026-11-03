@@ -19,10 +19,25 @@ import {
 import { fsAudio } from '@/lib/foxshot-audio';
 import { FoxShotScene, type Quality } from './FoxShotScene';
 import { FsControls } from './fs-controls';
+import { fsSettings, useFsSettings } from './fs-settings';
+import { FsMenu } from './FsMenu';
+import {
+  FsAmmo,
+  FsCrosshair,
+  FsKillFeed,
+  FsMinimap,
+  FsScoreboard,
+  FsTelemetry,
+  FsTopBar,
+  FsVitals,
+  type FeedItem,
+  type FsPlayerRow,
+  type MinimapData,
+} from './FsHud';
 import './foxshot.css';
 
 const STEP = 1 / 120;
-const BASE_FOV = 75;
+const MATCH_S = 300;
 const REVIVE_S = 3;
 const WEAPON_ORDER: FsWeaponId[] = ['ak', 'pistol', 'sniper'];
 
@@ -31,6 +46,14 @@ interface TargetState {
   armor: number;
   alive: boolean;
   reviveAt: number;
+  deaths: number;
+}
+
+interface MyStats {
+  kills: number;
+  deaths: number;
+  hs: number;
+  damage: number;
 }
 
 interface Hud {
@@ -41,10 +64,12 @@ interface Hud {
   weapon: string;
   weaponId: FsWeaponId;
   reloading: boolean;
-  locked: boolean;
   scoped: boolean;
   spreadPx: number;
   fps: number;
+  timeLeft: number;
+  players: FsPlayerRow[];
+  me: MyStats;
   tris: number;
   calls: number;
   level: Quality;
@@ -60,7 +85,8 @@ interface Marker {
 
 /**
  * Fox Shot!, fase 0 (spec 056): arena de teste para sentir o visual, o tiro, o recuo de cada arma e o dano estilo CS contra
- * alvos parados (sem colete, com colete, com colete e capacete) a várias distâncias. Sem bots que jogam, sem sala e sem pontuação.
+ * alvos parados (sem colete, com colete, com colete e capacete). HUD no desenho do CS: tempo e jogadores em cima, mapa à
+ * esquerda, abates à direita, vida e colete embaixo à esquerda, arma e munição à direita; Tab abre o placar e Esc o menu.
  */
 export function FoxShotTestPage() {
   const root = useRef<HTMLDivElement>(null);
@@ -70,9 +96,24 @@ export function FoxShotTestPage() {
   const [portrait, setPortrait] = useState(false);
   const [hud, setHud] = useState<Hud | null>(null);
   const [marker, setMarker] = useState<Marker | null>(null);
-  const [showPerf, setShowPerf] = useState(true);
+  const [feed, setFeed] = useState<FeedItem[]>([]);
+  const [paused, setPausedState] = useState(true);
+  const [board, setBoard] = useState(false);
+  const [needClick, setNeedClick] = useState(false);
   const ctl = useRef<FsControls | null>(null);
+  const pausedRef = useRef(true);
+  const endMatchRef = useRef<() => void>(() => undefined);
+  const mini = useRef<MinimapData>({ x: 0, z: 0, yaw: 0, targets: [] });
+  const getMini = useCallback(() => mini.current, []);
+  const settings = useFsSettings();
   const touch = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+
+  const setPaused = useCallback((v: boolean) => {
+    pausedRef.current = v;
+    setPausedState(v);
+    if (ctl.current) ctl.current.enabled = !v;
+    if (v) setNeedClick(false);
+  }, []);
 
   useEffect(() => {
     const onResize = () => setPortrait(touch && window.innerHeight > window.innerWidth);
@@ -92,6 +133,7 @@ export function FoxShotTestPage() {
     let dead = false;
     const controls = new FsControls();
     ctl.current = controls;
+    controls.enabled = false;
     controls.attach(
       el,
       (s) => {
@@ -110,38 +152,80 @@ export function FoxShotTestPage() {
           k.style.transform = `translate(${dx}px, ${dy}px)`;
         }
       },
-      (locked) => setHud((h) => (h ? { ...h, locked } : h)),
+      (locked) => {
+        // o mouse soltou (Esc ou clique fora): abre o menu; prendeu: some o menu
+        if (!locked && !pausedRef.current) setPaused(true);
+        if (locked) {
+          setPaused(false);
+          setNeedClick(false);
+        }
+      },
     );
+
+    // Esc com o menu aberto volta ao jogo (com o mouse preso, o navegador já consome o Esc e solta o mouse)
+    const onKey = (e: KeyboardEvent) => {
+      if (
+        e.code === 'Escape' &&
+        pausedRef.current &&
+        !e.repeat &&
+        !document.querySelector('.fsm-binds .listen')
+      ) {
+        e.preventDefault();
+        resume();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    const resume = () => {
+      setPaused(false);
+      if (!touch) {
+        controls.requestLock();
+        // o navegador pode recusar prender o mouse logo depois do Esc: pede um clique
+        window.setTimeout(() => {
+          if (!controls.locked && !pausedRef.current) setNeedClick(true);
+        }, 350);
+      }
+    };
+    resumeRef.current = resume;
 
     const scene = new FoxShotScene(cv);
     const resize = () => scene.resize(el.clientWidth, el.clientHeight);
     resize();
     const ro = new ResizeObserver(resize);
     ro.observe(el);
-    scene.setQuality(touch ? 'mid' : 'high');
+    let appliedQ = '';
+    const applyQuality = () => {
+      const q = fsSettings().quality;
+      if (q === appliedQ) return;
+      appliedQ = q;
+      scene.setQuality(q === 'auto' ? (touch ? 'mid' : 'high') : q);
+    };
+    applyQuality();
 
     // ---- estado do jogo
     const mover = fsNewMover(FS_SPAWN.x, FS_SPAWN.z);
-    const view = { yaw: (FS_SPAWN.yaw * 180) / Math.PI - 180, pitch: 0, rYaw: 0, rPitch: 0 };
-    view.yaw = 0;
-    const me = { hp: 100, armor: 100, helmet: true };
+    const view = { yaw: 0, pitch: 0, rYaw: 0, rPitch: 0 };
+    const me = { hp: 100, armor: 100 };
+    const stats: MyStats = { kills: 0, deaths: 0, hs: 0, damage: 0 };
     const loadout = new FsLoadout(WEAPON_ORDER);
     const targets = new Map<string, TargetState>(
-      FS_TARGETS.map((t) => [t.id, { hp: 100, armor: t.armor, alive: true, reviveAt: 0 }]),
+      FS_TARGETS.map((t) => [
+        t.id,
+        { hp: 100, armor: t.armor, alive: true, reviveAt: 0, deaths: 0 },
+      ]),
     );
     let markerKey = 0;
+    let feedKey = 0;
     let magInPlayed = false;
     let stepT = 0;
-    let frames = 0;
     let acc = 0;
     let slowT = 0;
     let fastT = 0;
     let hudT = 0;
     let boltAt = -1;
     let clock = 0;
+    let matchStart = 0;
     let last = performance.now();
     let fps = 60;
-    const cap = (touch ? 'mid' : 'high') as Quality;
 
     const bodies = (): FsBody[] =>
       FS_TARGETS.map((t) => {
@@ -151,6 +235,30 @@ export function FoxShotTestPage() {
 
     const showMarker = (kind: Marker['kind'], text: string) =>
       setMarker({ key: ++markerKey, kind, text });
+
+    const resetMatch = () => {
+      stats.kills = stats.deaths = stats.hs = stats.damage = 0;
+      for (const t of FS_TARGETS) {
+        const s = targets.get(t.id)!;
+        s.alive = true;
+        s.hp = 100;
+        s.armor = t.armor;
+        s.deaths = 0;
+        scene.reviveTarget(t.id);
+      }
+      matchStart = clock;
+      setFeed([]);
+    };
+    endMatchRef.current = () => {
+      resetMatch();
+      resume();
+    };
+
+    const pushFeed = (weapon: FsWeaponId, victim: string, head: boolean) => {
+      const key = ++feedKey;
+      setFeed((f) => [...f.slice(-4), { key, killer: 'Você', weapon, victim, head, you: true }]);
+      window.setTimeout(() => setFeed((f) => f.filter((x) => x.key !== key)), 6000);
+    };
 
     const fire = (
       id: FsWeaponId,
@@ -174,15 +282,21 @@ export function FoxShotTestPage() {
       } else if (tr.kind === 'player' && tr.targetId && tr.damage) {
         const st = targets.get(tr.targetId)!;
         const d = tr.damage;
+        stats.damage += Math.min(st.hp, d.hp);
         st.hp -= d.hp;
         st.armor = Math.max(0, st.armor - d.armorLoss);
         scene.puff(to, tr.zone === 'head' ? 0xffd45a : 0xff9a4a, 0.4, 0.3);
         if (st.hp <= 0) {
           st.alive = false;
+          st.deaths++;
           st.reviveAt = clock + REVIVE_S;
+          stats.kills++;
+          if (tr.zone === 'head') stats.hs++;
           scene.killTarget(tr.targetId);
           fsAudio.hit('kill');
           showMarker('kill', tr.zone === 'head' ? 'CABEÇA' : 'ABATE');
+          const spec = FS_TARGETS.find((t) => t.id === tr.targetId)!;
+          pushFeed(id, `Raposa ${FS_TARGETS.indexOf(spec) + 1}`, tr.zone === 'head');
         } else {
           scene.hitTarget(tr.targetId);
           const kind = tr.zone === 'head' ? 'head' : d.protectedByArmor ? 'armor' : 'body';
@@ -190,7 +304,6 @@ export function FoxShotTestPage() {
           showMarker(kind, `-${d.hp}`);
         }
       }
-      // o recuo da arma: a mira sobe e vai de lado pelo padrão da arma
       view.rPitch += shot.kickPitch;
       view.rYaw += shot.kickYaw;
     };
@@ -218,121 +331,169 @@ export function FoxShotTestPage() {
       handle(ev);
     };
 
+    const players = (): FsPlayerRow[] => [
+      {
+        id: 'me',
+        name: 'Você',
+        you: true,
+        alive: true,
+        armor: me.armor,
+        kills: stats.kills,
+        deaths: stats.deaths,
+        hs: stats.hs,
+        damage: stats.damage,
+      },
+      ...FS_TARGETS.map((t, i) => {
+        const s = targets.get(t.id)!;
+        return {
+          id: t.id,
+          name: `Raposa ${i + 1}`,
+          you: false,
+          alive: s.alive,
+          armor: s.armor,
+          kills: 0,
+          deaths: s.deaths,
+          hs: 0,
+          damage: 0,
+        };
+      }),
+    ];
+
     const frame = (now: number) => {
       if (dead) return;
       raf = requestAnimationFrame(frame);
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
-      clock += dt;
-      frames++;
       fps += (1 / Math.max(dt, 1e-3) - fps) * 0.05;
+      const st = fsSettings();
+      applyQuality();
+      const baseFov = st.fov;
+      const isPaused = pausedRef.current;
       const inp = controls.read();
       const w = loadout.weapon;
-      const adsScale = Math.min(1, (w.adsFov || 62) / BASE_FOV) * (inp.ads ? 1 : 1);
-      const look = controls.takeLook(inp.ads ? adsScale : 1);
-      view.yaw += look.yaw;
-      view.pitch = Math.max(-88, Math.min(88, view.pitch + look.pitch));
-      if (inp.pick >= 0) switchTo(inp.pick);
-      else if (inp.cycle) switchTo((loadout.current + 1) % loadout.slots.length);
+      let speed = Math.hypot(mover.vx, mover.vz);
+      let adsOn = false;
 
-      // movimento em passo fixo
-      const speed0 = Math.hypot(mover.vx, mover.vz);
-      const adsOn = inp.ads && !loadout.reloading;
-      const mul = loadout.weapon.moveMul * (adsOn ? 0.65 : 1);
-      acc += dt;
-      while (acc >= STEP) {
-        acc -= STEP;
-        fsStepMover(
-          mover,
-          { fwd: inp.fwd, strafe: inp.strafe, jump: inp.jump, yaw: view.yaw, speedMul: mul },
-          STEP,
-          FS_ARENA,
-        );
-        inp.jump = false;
-      }
-      const speed = Math.hypot(mover.vx, mover.vz);
-      if (mover.onGround && speed > 1.5) {
-        stepT -= dt * (speed / 3.4);
-        if (stepT <= 0) {
-          fsAudio.step();
-          stepT = 0.5;
-        }
-      }
-      if (speed0 < 0.5 && speed >= 0.5) stepT = 0.05;
+      if (!isPaused) {
+        clock += dt;
+        adsOn = inp.ads && !loadout.reloading;
+        const adsScale = Math.min(1, (w.adsFov || 62) / baseFov) * st.adsSens;
+        const look = controls.takeLook(adsOn ? adsScale : 1);
+        view.yaw += look.yaw;
+        view.pitch = Math.max(-88, Math.min(88, view.pitch + look.pitch));
+        if (inp.pick >= 0) switchTo(inp.pick);
+        else if (inp.cycle) switchTo((loadout.current + 1) % loadout.slots.length);
 
-      // arma
-      const mv = { moving: speed > 0.8, airborne: !mover.onGround, ads: adsOn };
-      handle(loadout.update(dt, { trigger: inp.trigger, reload: inp.reload }, mv, 'me'));
-      if (loadout.reloading) {
-        const p = 1 - loadout.reloadT / loadout.weapon.reload;
-        scene.setReloadProgress(p);
-        if (p > 0.55 && !magInPlayed) {
-          magInPlayed = true;
-          fsAudio.magIn();
+        const speed0 = speed;
+        const mul = loadout.weapon.moveMul * (adsOn ? 0.65 : 1);
+        acc += dt;
+        while (acc >= STEP) {
+          acc -= STEP;
+          fsStepMover(
+            mover,
+            { fwd: inp.fwd, strafe: inp.strafe, jump: inp.jump, yaw: view.yaw, speedMul: mul },
+            STEP,
+            FS_ARENA,
+          );
+          inp.jump = false;
         }
-      }
-      if (boltAt > 0 && clock >= boltAt) {
-        boltAt = -1;
-        fsAudio.bolt();
-      }
-      // o recuo volta devagar enquanto não atira
-      const since = loadout.slot.gun.since;
-      if (since > 0.08) {
-        const rec = loadout.weapon.recoilRecover * dt;
-        const dec = (v: number) => (Math.abs(v) <= rec ? 0 : v - Math.sign(v) * rec);
-        view.rPitch = dec(view.rPitch);
-        view.rYaw = dec(view.rYaw);
-      }
-      // alvos revivem
-      for (const t of FS_TARGETS) {
-        const s = targets.get(t.id)!;
-        if (!s.alive && clock >= s.reviveAt) {
-          s.alive = true;
-          s.hp = 100;
-          s.armor = t.armor;
-          scene.reviveTarget(t.id);
+        speed = Math.hypot(mover.vx, mover.vz);
+        if (mover.onGround && speed > 1.5) {
+          stepT -= dt * (speed / 3.4);
+          if (stepT <= 0) {
+            fsAudio.step();
+            stepT = 0.5;
+          }
         }
+        if (speed0 < 0.5 && speed >= 0.5) stepT = 0.05;
+
+        const mv = { moving: speed > 0.8, airborne: !mover.onGround, ads: adsOn };
+        handle(loadout.update(dt, { trigger: inp.trigger, reload: inp.reload }, mv, 'me'));
+        if (loadout.reloading) {
+          const p = 1 - loadout.reloadT / loadout.weapon.reload;
+          scene.setReloadProgress(p);
+          if (p > 0.55 && !magInPlayed) {
+            magInPlayed = true;
+            fsAudio.magIn();
+          }
+        }
+        if (boltAt > 0 && clock >= boltAt) {
+          boltAt = -1;
+          fsAudio.bolt();
+        }
+        if (loadout.slot.gun.since > 0.08) {
+          const rec = loadout.weapon.recoilRecover * dt;
+          const dec = (v: number) => (Math.abs(v) <= rec ? 0 : v - Math.sign(v) * rec);
+          view.rPitch = dec(view.rPitch);
+          view.rYaw = dec(view.rYaw);
+        }
+        for (const t of FS_TARGETS) {
+          const s = targets.get(t.id)!;
+          if (!s.alive && clock >= s.reviveAt) {
+            s.alive = true;
+            s.hp = 100;
+            s.armor = t.armor;
+            scene.reviveTarget(t.id);
+          }
+        }
+        if (clock - matchStart >= MATCH_S) resetMatch();
       }
+      setBoardState(inp.board && !isPaused);
 
       const scoped = adsOn && loadout.weapon.adsFov > 0;
       const adsTarget = adsOn ? 1 : 0;
-      const fov = BASE_FOV + ((loadout.weapon.adsFov || 62) - BASE_FOV) * (adsOn ? 1 : 0);
+      const fov = baseFov + ((loadout.weapon.adsFov || 62) - baseFov) * (adsOn ? 1 : 0);
       scene.setView(
         mover.x,
         mover.y + FS_MOVE.eye,
         mover.z,
         view.yaw + view.rYaw,
         view.pitch + view.rPitch,
-        THREE.MathUtils.lerp(scene.fovNow ?? BASE_FOV, fov, Math.min(1, dt * 12)),
+        THREE.MathUtils.lerp(scene.fovNow ?? baseFov, fov, Math.min(1, dt * 12)),
       );
-      scene.update(dt, { speed, adsTarget, airborne: !mover.onGround });
+      scene.update(isPaused ? 0 : dt, { speed, adsTarget, airborne: !mover.onGround });
       scene.render();
 
-      // qualidade automática pelo fps
-      if (dt > 1 / 42) {
-        slowT += dt;
-        fastT = 0;
-      } else if (dt < 1 / 56) {
-        fastT += dt;
-        slowT = Math.max(0, slowT - dt);
+      // qualidade automática pelo fps (só quando a pessoa deixa em "Automática")
+      if (st.quality === 'auto' && !isPaused) {
+        const cap = (touch ? 'mid' : 'high') as Quality;
+        if (dt > 1 / 42) {
+          slowT += dt;
+          fastT = 0;
+        } else if (dt < 1 / 56) {
+          fastT += dt;
+          slowT = Math.max(0, slowT - dt);
+        }
+        if (slowT > 1.6 && scene.level !== 'low') {
+          scene.setQuality(scene.level === 'high' ? 'mid' : 'low');
+          slowT = 0;
+        } else if (
+          fastT > 8 &&
+          ((scene.level === 'low' && cap !== ('low' as Quality)) ||
+            (scene.level === 'mid' && cap === 'high'))
+        ) {
+          scene.setQuality(scene.level === 'low' ? 'mid' : 'high');
+          fastT = 0;
+        }
       }
-      if (slowT > 1.6 && scene.level !== 'low') {
-        scene.setQuality(scene.level === 'high' ? 'mid' : 'low');
-        slowT = 0;
-      } else if (
-        fastT > 8 &&
-        ((scene.level === 'low' && cap !== ('low' as Quality)) ||
-          (scene.level === 'mid' && cap === 'high'))
-      ) {
-        scene.setQuality(scene.level === 'low' ? 'mid' : 'high');
-        fastT = 0;
-      }
+
+      mini.current = {
+        x: mover.x,
+        z: mover.z,
+        yaw: view.yaw,
+        targets: FS_TARGETS.map((t) => ({
+          x: t.x,
+          z: t.z,
+          alive: targets.get(t.id)!.alive,
+          armor: targets.get(t.id)!.armor,
+        })),
+      };
 
       hudT += dt;
       if (hudT > 0.1) {
         hudT = 0;
-        const st = scene.stats();
-        const spread = fsSpreadDeg(loadout.weapon, mv, loadout.slot.gun);
+        const sc = scene.stats();
+        const mvs = { moving: speed > 0.8, airborne: !mover.onGround, ads: adsOn };
         setHud({
           hp: me.hp,
           armor: me.armor,
@@ -341,12 +502,14 @@ export function FoxShotTestPage() {
           weapon: loadout.weapon.name,
           weaponId: loadout.weapon.id,
           reloading: loadout.reloading,
-          locked: controls.locked || touch,
           scoped,
-          spreadPx: Math.min(90, 6 + spread * 7),
+          spreadPx: Math.min(60, fsSpreadDeg(loadout.weapon, mvs, loadout.slot.gun) * 4),
           fps: Math.round(fps),
-          tris: st.tris,
-          calls: st.calls,
+          timeLeft: MATCH_S - (clock - matchStart),
+          players: players(),
+          me: { ...stats },
+          tris: sc.tris,
+          calls: sc.calls,
           level: scene.level,
           dpr: Math.round(scene.renderer.getPixelRatio() * 100) / 100,
           ref: (['ak', 'pistol', 'sniper'] as FsWeaponId[])
@@ -384,13 +547,13 @@ export function FoxShotTestPage() {
           mover.z = z;
         },
         shoot(count = 1) {
-          const out: { kind: string; zone?: string; hp?: number; killed: boolean }[] = [];
+          // solta o gatilho antes (a pistola só atira em clique novo)
+          handle(loadout.update(0.001, { trigger: false, reload: false }, { moving: false, airborne: false, ads: true }, 'me'));
           for (let i = 0; i < count; i++) {
             loadout.slot.gun.since = 99;
             loadout.drawT = 0;
             loadout.cooldown = 0;
             loadout.slot.ammo = Math.max(loadout.slot.ammo, 1);
-            const before = [...targets.values()].map((s) => s.hp).join();
             handle(
               loadout.update(
                 0.001,
@@ -399,14 +562,7 @@ export function FoxShotTestPage() {
                 'me',
               ),
             );
-            out.push({
-              kind: 'shot',
-              killed: [...targets.values()].some((s) => !s.alive),
-              hp: undefined,
-              zone: before,
-            });
           }
-          return out;
         },
         weapon(i: number) {
           switchTo(i);
@@ -415,6 +571,7 @@ export function FoxShotTestPage() {
         target(id: string) {
           return { ...targets.get(id)! };
         },
+        stats: () => ({ ...stats }),
         loadout,
         view,
       };
@@ -424,11 +581,15 @@ export function FoxShotTestPage() {
       dead = true;
       cancelAnimationFrame(raf);
       ro.disconnect();
+      window.removeEventListener('keydown', onKey);
       controls.detach();
       scene.dispose();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [touch]);
 
+  const resumeRef = useRef<() => void>(() => undefined);
+  const setBoardState = useCallback((v: boolean) => setBoard((b) => (b === v ? b : v)), []);
   const press = useCallback(
     (name: 'fire' | 'ads' | 'jump' | 'reload' | 'cycle', down: boolean) =>
       ctl.current?.setTouch(name, down),
@@ -445,23 +606,13 @@ export function FoxShotTestPage() {
 
       {hud && status === 'ready' && (
         <>
-          {hud.scoped && (
+          {hud.scoped ? (
             <div className="fs-scope" aria-hidden="true">
               <i />
               <b />
             </div>
-          )}
-          {!hud.scoped && (
-            <div
-              className="fs-cross"
-              style={{ ['--g' as string]: `${hud.spreadPx}px` }}
-              aria-hidden="true"
-            >
-              <i />
-              <i />
-              <i />
-              <i />
-            </div>
+          ) : (
+            <FsCrosshair spreadPx={hud.spreadPx} />
           )}
           {marker && (
             <div
@@ -474,70 +625,48 @@ export function FoxShotTestPage() {
               <b>{marker.text}</b>
             </div>
           )}
-          <div className="fs-bars" data-testid="fs-bars">
-            <div className="fs-bar hp">
-              <span>VIDA</span>
-              <b>{hud.hp}</b>
-              <i style={{ transform: `scaleX(${hud.hp / 100})` }} />
-            </div>
-            <div className="fs-bar ar">
-              <span>COLETE</span>
-              <b>{hud.armor}</b>
-              <i style={{ transform: `scaleX(${hud.armor / 100})` }} />
-            </div>
-          </div>
-          <div className="fs-ammo" data-testid="fs-ammo">
-            <small className="mono">{hud.weapon}</small>
-            <b>{hud.reloading ? '...' : hud.ammo}</b>
-            <span className="mono">/ {hud.mag}</span>
-            <div className="fs-slots mono">
-              {WEAPON_ORDER.map((id, i) => (
-                <i key={id} className={id === hud.weaponId ? 'on' : ''}>
-                  {i + 1}
-                </i>
-              ))}
-            </div>
-          </div>
-          {showPerf && (
-            <div className="fs-perf mono" data-testid="fs-perf" aria-label="Desempenho">
-              <b>{hud.fps} FPS</b>
-              <span>
-                {Math.round(hud.tris / 1000)} mil triângulos · {hud.calls} desenhos
-              </span>
-              <span>
-                qualidade {hud.level === 'high' ? 'alta' : hud.level === 'mid' ? 'média' : 'baixa'}{' '}
-                · resolução {hud.dpr}x
-              </span>
-              {hud.ref && <span>modelos de referência: {hud.ref}</span>}
+          <FsTopBar
+            players={hud.players}
+            timeLeft={hud.timeLeft}
+            kills={hud.me.kills}
+            deaths={hud.me.deaths}
+          />
+          {settings.showMinimap && <FsMinimap get={getMini} />}
+          {settings.showTelemetry && (
+            <FsTelemetry
+              fps={hud.fps}
+              tris={hud.tris}
+              calls={hud.calls}
+              level={hud.level}
+              dpr={hud.dpr}
+              ref={hud.ref}
+            />
+          )}
+          <FsKillFeed items={feed} />
+          <FsVitals hp={hud.hp} armor={hud.armor} />
+          <FsAmmo
+            weapon={hud.weapon}
+            id={hud.weaponId}
+            ammo={hud.ammo}
+            mag={hud.mag}
+            reloading={hud.reloading}
+          />
+          {board && <FsScoreboard players={hud.players} timeLeft={hud.timeLeft} />}
+          {needClick && !paused && (
+            <div className="fs-hint mono" data-testid="fs-needclick">
+              Clique na tela para prender o mouse
             </div>
           )}
-          <div className="fs-top">
-            <Link to="/fox-cap" className="fs-back" data-sfx="back">
-              Voltar
-            </Link>
-            <button type="button" className="fs-tool" onClick={() => setShowPerf((v) => !v)}>
-              Desempenho
-            </button>
-          </div>
-          {!hud.locked && !touch && (
-            <div className="fs-pause" data-testid="fs-pause">
-              <div className="fs-card">
-                <h2>Fox Shot! (teste)</h2>
-                <p className="mono">Clique para jogar. Esc solta o mouse.</p>
-                <ul className="mono">
-                  <li>WASD: andar · Espaço: pular</li>
-                  <li>Mouse: mirar · botão esquerdo: atirar · direito: mira</li>
-                  <li>R: recarregar · 1, 2, 3 ou roda: trocar de arma</li>
-                  <li>Alvos: sem colete, colete, colete e capacete</li>
-                </ul>
-                <button type="button" className="btn" onClick={() => ctl.current?.requestLock()}>
-                  Jogar
-                </button>
-              </div>
-            </div>
-          )}
-          {touch && (
+          {touch && !paused && (
             <>
+              <button
+                type="button"
+                className="fs-menubtn"
+                onClick={() => setPaused(true)}
+                data-testid="fs-menubtn"
+              >
+                Menu
+              </button>
               <div className="fs-stick" ref={stickEl} aria-hidden="true">
                 <i />
               </div>
@@ -588,6 +717,13 @@ export function FoxShotTestPage() {
                 </button>
               </div>
             </>
+          )}
+          {paused && !portrait && (
+            <FsMenu
+              touch={touch}
+              onResume={() => resumeRef.current()}
+              onEnd={() => endMatchRef.current()}
+            />
           )}
         </>
       )}

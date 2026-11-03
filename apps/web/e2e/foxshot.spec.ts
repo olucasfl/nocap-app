@@ -37,11 +37,12 @@ test('a arena carrega, mostra o HUD e o medidor de desempenho', async ({ page },
   await page.setViewportSize({ width: 1280, height: 720 });
   await open(page);
   await expect(page.getByTestId('fs-ammo')).toContainText('30');
+  await expect(page.getByTestId('fs-menu')).toBeVisible();
   await expect(page.getByTestId('fs-bars')).toBeVisible();
   if (process.env.FS_SHOTS) {
-    await page.screenshot({ path: `${process.env.FS_SHOTS}/desktop-pausa.png` });
+    await page.screenshot({ path: `${process.env.FS_SHOTS}/desktop-menu.png` });
     // sem o cartão de pausa (o mouse não prende em teste): fotos da cena
-    await page.addStyleTag({ content: '.fs-pause{display:none!important}' });
+    await page.getByTestId('fsm-resume').click();
     for (const [i, name] of ['fuzil', 'pistola', 'sniper'].entries()) {
       await fs(page, 'weapon', i);
       await fs(page, 'teleport', 0, 9);
@@ -103,7 +104,10 @@ test('celular deitado: HUD de toque e arena (foto)', async ({ browser }, info) =
   });
   const page = await ctx.newPage();
   await open(page);
+  await expect(page.getByTestId('fs-menu')).toBeVisible();
+  await page.getByTestId('fsm-resume').click();
   await expect(page.locator('.fs-tbtns')).toBeVisible();
+  await expect(page.getByTestId('fs-radar')).toBeVisible();
   await page.waitForTimeout(800);
   if (process.env.FS_SHOTS) await page.screenshot({ path: `${process.env.FS_SHOTS}/celular.png` });
   await ctx.close();
@@ -124,4 +128,51 @@ test('celular em pé pede para girar o aparelho', async ({ browser }, info) => {
     .catch(() => undefined);
   await expect(page.getByTestId('fs-rotate')).toBeVisible();
   await ctx.close();
+});
+
+test('menu do Esc: personalizar, comandos com troca de tecla, placar e kill feed', async ({
+  page,
+}, info) => {
+  test.skip(info.project.name !== 'desktop', 'um projeto basta');
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await open(page);
+  // personalizar: a sensibilidade e a cor da mira ficam salvas
+  await page.getByTestId('fsm-tab-personalizar').click();
+  await expect(page.getByTestId('fsm-custom')).toBeVisible();
+  await page.getByRole('radio', { name: 'Verde' }).click();
+  if (process.env.FS_SHOTS)
+    await page.screenshot({ path: `${process.env.FS_SHOTS}/desktop-personalizar.png` });
+  // comandos: trocar "Recarregar" de R para F
+  await page.getByTestId('fsm-tab-comandos').click();
+  await expect(page.getByTestId('bind-reload')).toHaveText('R');
+  await page.getByTestId('bind-reload').click();
+  await page.keyboard.press('KeyF');
+  await expect(page.getByTestId('bind-reload')).toHaveText('F');
+  if (process.env.FS_SHOTS)
+    await page.screenshot({ path: `${process.env.FS_SHOTS}/desktop-comandos.png` });
+  const saved = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem('nocap-fs-settings') ?? '{}'),
+  );
+  expect(saved.binds.reload).toBe('KeyF');
+  expect(saved.crossColor).toBe('green');
+  // continuar e jogar: abate com a cabeça aparece no kill feed e no placar (Tab)
+  await page.getByTestId('fsm-tab-jogo').click();
+  await page.getByTestId('fsm-resume').click();
+  await page.addStyleTag({ content: '.fs-hint{display:none!important}' });
+  await fs(page, 'teleport', 0, 14);
+  await fs(page, 'weapon', 0);
+  await fs(page, 'aimAt', 't1', 'head');
+  await fs(page, 'shoot', 1);
+  await expect(page.getByTestId('fs-feed')).toContainText('Raposa 1');
+  await expect(page.getByTestId('fs-feed')).toContainText('CABEÇA');
+  await page.keyboard.down('Tab');
+  await expect(page.getByTestId('fs-board')).toBeVisible();
+  if (process.env.FS_SHOTS)
+    await page.screenshot({ path: `${process.env.FS_SHOTS}/desktop-placar.png` });
+  await page.keyboard.up('Tab');
+  await expect(page.getByTestId('fs-board')).toHaveCount(0);
+  await expect(page.getByTestId('fs-topbar')).toBeVisible();
+  await expect(page.getByTestId('fs-radar')).toBeVisible();
+  if (process.env.FS_SHOTS)
+    await page.screenshot({ path: `${process.env.FS_SHOTS}/desktop-hud.png` });
 });

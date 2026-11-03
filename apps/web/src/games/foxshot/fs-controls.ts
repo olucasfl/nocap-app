@@ -1,8 +1,8 @@
 import { isTyping } from '@/lib/game-chat-state';
 import { stickVector, STICK_RADIUS } from '../desmorona/controls';
+import { fsSettings } from './fs-settings';
 
-/** Graus por pixel do mouse (preso à tela) e por pixel arrastado no celular. */
-const MOUSE_DEG = 0.09;
+/** Graus por pixel arrastado no celular (o do mouse vem das configurações). */
 const TOUCH_DEG = 0.2;
 
 export interface FsFrameInput {
@@ -15,6 +15,8 @@ export interface FsFrameInput {
   /** Arma escolhida por tecla (0 a 2) ou -1; `cycle` troca para a próxima (celular e roda do mouse). */
   pick: number;
   cycle: boolean;
+  /** Placar (Tab) segurado. */
+  board: boolean;
 }
 
 /**
@@ -23,7 +25,7 @@ export interface FsFrameInput {
  */
 export class FsControls {
   private keys = new Set<string>();
-  private mouse = { left: false, right: false };
+  private mouse = { left: false, right: false, middle: false };
   private touchBtn = { fire: false, ads: false, jump: false, reload: false };
   private pickKey = -1;
   private cycleQueued = false;
@@ -39,6 +41,8 @@ export class FsControls {
   private onLock: ((locked: boolean) => void) | null = null;
   /** Falso quando um menu está aberto: ignora a entrada. */
   enabled = true;
+  /** Tecla do jogo não faz a ação padrão do navegador enquanto o jogo está em primeiro plano. */
+  captureOn = true;
   readonly touch = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
 
   attach(root: HTMLElement, onStick?: FsControls['onStick'], onLock?: (locked: boolean) => void) {
@@ -118,20 +122,32 @@ export class FsControls {
 
   /** Giro acumulado desde a última leitura, em graus (yaw para a esquerda positivo, pitch para cima positivo). */
   takeLook(adsScale = 1): { yaw: number; pitch: number } {
-    const k = (this.touch ? TOUCH_DEG : MOUSE_DEG) * adsScale;
-    const out = { yaw: -this.dx * k, pitch: -this.dy * k };
+    const st = fsSettings();
+    const k = (this.touch ? TOUCH_DEG : st.sens) * adsScale;
+    const out = { yaw: -this.dx * k, pitch: -this.dy * k * (st.invertY ? -1 : 1) };
     this.dx = 0;
     this.dy = 0;
     return out;
   }
 
+  /** Alguma das teclas ligadas à ação está apertada? (`code` do teclado; Mouse0/1/2 são botões do mouse) */
+  private held(action: keyof ReturnType<typeof fsSettings>['binds']): boolean {
+    const code = fsSettings().binds[action];
+    if (code === 'Mouse0') return this.mouse.left;
+    if (code === 'Mouse2') return this.mouse.right;
+    if (code === 'Mouse1') return this.mouse.middle;
+    return this.keys.has(code);
+  }
+
   read(): FsFrameInput {
     const k = this.keys;
+    const arrows = (c: string) => k.has(c);
     let fwd =
-      (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0);
+      (this.held('forward') || arrows('ArrowUp') ? 1 : 0) -
+      (this.held('back') || arrows('ArrowDown') ? 1 : 0);
     let strafe =
-      (k.has('KeyD') || k.has('ArrowRight') ? 1 : 0) -
-      (k.has('KeyA') || k.has('ArrowLeft') ? 1 : 0);
+      (this.held('right') || arrows('ArrowRight') ? 1 : 0) -
+      (this.held('left') || arrows('ArrowLeft') ? 1 : 0);
     if (this.stick) {
       const v = stickVector(
         this.stick.x - this.stick.ox,
@@ -143,9 +159,9 @@ export class FsControls {
     }
     fwd = Math.max(-1, Math.min(1, fwd));
     strafe = Math.max(-1, Math.min(1, strafe));
-    const jump = this.jumpQueued || k.has('Space');
+    const jump = this.jumpQueued || this.held('jump');
     this.jumpQueued = false;
-    const reload = this.reloadQueued || k.has('KeyR');
+    const reload = this.reloadQueued || this.held('reload');
     this.reloadQueued = false;
     const cycle = this.cycleQueued;
     this.cycleQueued = false;
@@ -156,17 +172,18 @@ export class FsControls {
       fwd: on ? fwd : 0,
       strafe: on ? strafe : 0,
       jump: on && jump,
-      trigger: on && (this.mouse.left || this.touchBtn.fire),
-      ads: on && (this.mouse.right || this.touchBtn.ads),
+      trigger: on && (this.held('fire') || this.touchBtn.fire),
+      ads: on && (this.held('ads') || this.touchBtn.ads),
       reload: on && reload,
       pick: on ? pick : -1,
       cycle: on && cycle,
+      board: this.held('scoreboard'),
     };
   }
 
   private reset = () => {
     this.keys.clear();
-    this.mouse.left = this.mouse.right = false;
+    this.mouse.left = this.mouse.right = this.mouse.middle = false;
     this.touchBtn = { fire: false, ads: false, jump: false, reload: false };
     this.stick = null;
     this.look = null;
@@ -175,12 +192,13 @@ export class FsControls {
 
   private kd = (e: KeyboardEvent) => {
     if (e.ctrlKey || e.metaKey || e.altKey || isTyping(e)) return;
-    if (e.code === 'Digit1') this.pickKey = 0;
-    else if (e.code === 'Digit2') this.pickKey = 1;
-    else if (e.code === 'Digit3') this.pickKey = 2;
-    else if (e.code === 'KeyQ') this.cycleQueued = true;
-    if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code))
-      e.preventDefault();
+    const b = fsSettings().binds;
+    if (e.code === b.slot1) this.pickKey = 0;
+    else if (e.code === b.slot2) this.pickKey = 1;
+    else if (e.code === b.slot3) this.pickKey = 2;
+    else if (e.code === b.next) this.cycleQueued = true;
+    // teclas do jogo não rolam a página nem mudam o foco (Tab abre o placar)
+    if (this.captureOn && (Object.values(b).includes(e.code) || e.code.startsWith('Arrow'))) e.preventDefault();
     this.keys.add(e.code);
   };
   private ku = (e: KeyboardEvent) => this.keys.delete(e.code);
@@ -206,17 +224,19 @@ export class FsControls {
     }
     if (e.button === 0) this.mouse.left = true;
     if (e.button === 2) this.mouse.right = true;
+    if (e.button === 1) this.mouse.middle = true;
   };
   private mu = (e: MouseEvent) => {
     if (e.button === 0) this.mouse.left = false;
     if (e.button === 2) this.mouse.right = false;
+    if (e.button === 1) this.mouse.middle = false;
   };
   private ctx = (e: Event) => {
     if (this.root && e.target instanceof Node && this.root.contains(e.target)) e.preventDefault();
   };
   private plc = () => {
     if (!this.locked) {
-      this.mouse.left = this.mouse.right = false;
+      this.mouse.left = this.mouse.right = this.mouse.middle = false;
     }
     this.onLock?.(this.locked);
   };

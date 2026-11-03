@@ -46,8 +46,22 @@ const VM: Record<FsWeaponId, VmCfg> = {
 
 /** Os modelos de referência têm outra origem (Glock no centro do ferrolho, L96 no centro da arma): posições à parte. */
 const VM_REF: Partial<Record<FsWeaponId, VmCfg>> = {
-  pistol: { scale: 1.0, hip: [0.14, -0.1, -0.34], ads: [0.0, -0.058, -0.28], mag: ['Magazine'], bolt: [], slide: ['Slide'] },
-  sniper: { scale: 0.62, hip: [0.2, -0.13, -0.48], ads: [0.0, -0.06, -0.42], mag: ['Ammunition1'], bolt: [], slide: [] },
+  pistol: {
+    scale: 1.0,
+    hip: [0.14, -0.1, -0.34],
+    ads: [0.0, -0.058, -0.28],
+    mag: ['Magazine'],
+    bolt: [],
+    slide: ['Slide'],
+  },
+  sniper: {
+    scale: 0.62,
+    hip: [0.2, -0.13, -0.48],
+    ads: [0.0, -0.06, -0.42],
+    mag: ['Ammunition1'],
+    bolt: [],
+    slide: [],
+  },
 };
 const TEX = 256;
 
@@ -132,7 +146,8 @@ function materials(): Record<FsBox['mat'] | 'ground', THREE.MeshStandardMaterial
     g.fillRect(0, 0, TEX, TEX);
     noise(g, 80, 3);
     g.fillStyle = 'rgba(0,0,0,.08)';
-    for (let i = 0; i < 40; i++) g.fillRect(Math.random() * TEX, Math.random() * TEX, 30 + Math.random() * 40, 2);
+    for (let i = 0; i < 40; i++)
+      g.fillRect(Math.random() * TEX, Math.random() * TEX, 30 + Math.random() * 40, 2);
     g.strokeStyle = 'rgba(40,35,30,.45)';
     g.lineWidth = 3;
     g.strokeRect(0, 0, TEX, TEX);
