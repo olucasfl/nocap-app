@@ -7,7 +7,7 @@ import sys
 import bpy
 
 sys.path.insert(0, os.path.dirname(__file__))
-from common import arc_pts, box, cyl, material, photo, profile, reset, studio  # noqa: E402
+from common import arc_pts, box, child, cyl, material, photo, profile, reset, studio  # noqa: E402
 
 OUT = os.path.join(os.path.dirname(__file__), 'out')
 os.makedirs(OUT, exist_ok=True)
@@ -35,28 +35,28 @@ parts.append(slide)
 fr = []
 for i in range(7):
     s = box(f'Serration{i}', (0.0028, 0.0316, 0.026), (-0.080 + i * 0.0065, 0, 0.034), 0.0006, steel)
-    s.parent = slide
+    child(slide, s)
 fr.append(None)
 port = box('EjectionPort', (0.050, 0.002, 0.016), (0.018, R * 0.0152, 0.040), 0.0006, steel)
-port.parent = slide
+child(slide, port)
 fsight = box('FrontSight', (0.012, 0.006, 0.008), (0.083, 0, 0.054), 0.001, slide_m)
-fsight.parent = slide
+child(slide, fsight)
 rsight = box('RearSight', (0.012, 0.016, 0.007), (-0.088, 0, 0.054), 0.001, slide_m)
-rsight.parent = slide
+child(slide, rsight)
 cap = box('SlideCap', (0.006, 0.031, 0.034), (0.090, 0, 0.033), 0.002, fox)
-cap.parent = slide
+child(slide, cap)
 # ---- armação: parte de baixo do ferrolho, guarda-mato longo e cabo inclinado com carregador
 add(profile('Frame', [(-0.098, 0.016), (0.088, 0.016), (0.088, 0.000), (0.052, -0.003), (0.052, -0.026), (0.034, -0.032), (-0.004, -0.030), (-0.008, -0.004), (-0.012, -0.003), (-0.034, -0.004)], 0.026, frame_m, 0.003))
-add(profile('Grip', [(-0.104, 0.016), (-0.012, -0.002), (-0.020, -0.050), (-0.050, -0.118), (-0.122, -0.118)], 0.030, frame_m, 0.005))
+add(profile('Grip', [(-0.100, 0.016), (-0.012, -0.002), (-0.028, -0.050), (-0.046, -0.112), (-0.108, -0.112)], 0.030, frame_m, 0.005))
 add(profile('TriggerGuard', arc_pts(0.030, -0.014, 0.024, 0.017, 180, 360, 12), 0.010, frame_m, 0.0015))
-add(profile('BackStrap', [(-0.104, 0.016), (-0.125, 0.012), (-0.128, -0.050), (-0.122, -0.118), (-0.116, -0.118)], 0.026, steel, 0.002))
+add(profile('BackStrap', [(-0.100, 0.016), (-0.116, 0.012), (-0.120, -0.050), (-0.114, -0.112), (-0.108, -0.112)], 0.026, steel, 0.002))
 trig = profile('Trigger', [(0.020, -0.012), (0.027, -0.012), (0.030, -0.034), (0.022, -0.034)], 0.007, steel, 0.001)
 trig.name = 'Trigger'
 parts.append(trig)
-mag = box('Magazine', (0.068, 0.026, 0.020), (-0.088, 0, -0.124), 0.004, steel)
+mag = box('Magazine', (0.056, 0.026, 0.020), (-0.078, 0, -0.118), 0.004, steel)
 parts.append(mag)
-add(box('MagFloorPlate', (0.074, 0.030, 0.010), (-0.090, 0, -0.139), 0.003, fox))
-add(box('GripPanelL', (0.050, 0.002, 0.070), (-0.074, 0.0155, -0.058), 0.002, steel, rot=(0, math.radians(14), 0)))
+add(box('MagFloorPlate', (0.064, 0.030, 0.010), (-0.080, 0, -0.131), 0.003, fox))
+add(box('GripPanelL', (0.040, 0.002, 0.066), (-0.066, 0.0155, -0.055), 0.002, steel, rot=(0, math.radians(14), 0)))
 add(box('SlideStop', (0.024, 0.003, 0.008), (-0.040, R * 0.0145, 0.010), 0.001, steel))
 add(box('Rail', (0.040, 0.020, 0.006), (0.062, 0, -0.008), 0.001, steel))
 # ---- cano e silenciador longo (com anéis laranja)

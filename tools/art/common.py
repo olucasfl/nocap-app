@@ -211,3 +211,11 @@ def sphere(name, r, loc, mat=None, segs=24):
     if mat:
         o.data.materials.append(mat)
     return o
+
+
+def child(parent, o):
+    """Prende `o` a `parent` mantendo onde `o` está no mundo (sem somar a posição do pai de novo)."""
+    bpy.context.view_layer.update()
+    o.parent = parent
+    o.matrix_parent_inverse = parent.matrix_world.inverted()
+    return o

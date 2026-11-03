@@ -8,7 +8,7 @@ import sys
 import bpy
 
 sys.path.insert(0, os.path.dirname(__file__))
-from common import arc_pts, box, cut, cyl, material, photo, profile, reset, sphere, studio  # noqa: E402
+from common import arc_pts, box, child, cut, cyl, material, photo, profile, reset, sphere, studio  # noqa: E402
 
 OUT = os.path.join(os.path.dirname(__file__), 'out')
 os.makedirs(OUT, exist_ok=True)
@@ -47,8 +47,8 @@ stock = profile('Stock', [(-0.160, 0.034), (-0.300, 0.038), (-0.440, 0.036), (-0
 hole = cyl('ThumbHole', 0.034, 0.10, (-0.245, 0, -0.026), 'Y')
 cut(stock, hole)
 parts.append(stock)
-add(box('CheekRiser', (0.130, 0.040, 0.020), (-0.330, 0, 0.056), 0.006, chassis))
-add(cyl('RiserKnob', 0.010, 0.016, (-0.260, R * 0.024, 0.046), 'Y', fox, bevel=0.002))
+add(box('CheekRiser', (0.130, 0.040, 0.020), (-0.330, 0, 0.047), 0.006, chassis))
+add(cyl('RiserKnob', 0.010, 0.016, (-0.260, R * 0.024, 0.047), 'Y', fox, bevel=0.002))
 add(box('ButtPad', (0.032, 0.046, 0.170), (-0.478, 0, -0.070), 0.006, rubber))
 add(box('ButtSpacer', (0.012, 0.046, 0.170), (-0.456, 0, -0.070), 0.002, fox))
 add(profile('TriggerGuard', arc_pts(0.005, -0.040, 0.050, 0.043, 180, 360, 12), 0.012, metal, 0.0015))
@@ -64,9 +64,9 @@ bolt = cyl('BoltBody', 0.0135, 0.07, (-0.12, 0, 0.026), 'X', steel, bevel=0.002)
 bolt.name = 'Bolt'
 parts.append(bolt)
 arm = cyl('BoltArm', 0.0055, 0.075, (-0.115, R * 0.040, 0.026), 'Y', steel)
-arm.parent = bolt
+child(bolt, arm)
 knob = sphere('BoltKnob', 0.0155, (-0.115, R * 0.082, 0.026), fox)
-knob.parent = bolt
+child(bolt, knob)
 # ---- luneta
 add(cyl('ScopeTube', 0.0165, 0.34, (0.0, 0, 0.088), 'X', metal, bevel=0.002))
 add(cyl('ScopeObjective', 0.0285, 0.075, (0.2, 0, 0.088), 'X', metal, bevel=0.003))
@@ -80,11 +80,6 @@ for i, x in enumerate((-0.07, 0.10)):
     add(box(f'Mount{i}', (0.040, 0.034, 0.030), (x, 0, 0.050), 0.004, metal))
     add(cyl(f'Ring{i}', 0.0215, 0.030, (x, 0, 0.088), 'X', metal, bevel=0.002))
 add(box('RailBase', (0.26, 0.030, 0.012), (0.0, 0, 0.034), 0.002, metal))
-# ---- bipé dobrado sob o guarda-mão
-add(box('BipodMount', (0.030, 0.034, 0.016), (0.48, 0, -0.046), 0.003, metal))
-for i, s in enumerate((-1, 1)):
-    add(cyl(f'BipodLeg{i}', 0.0045, 0.115, (0.50, s * 0.020, -0.060), 'X', steel))
-
 root = bpy.data.objects.new('Sniper', None)
 bpy.context.collection.objects.link(root)
 for o in parts:
