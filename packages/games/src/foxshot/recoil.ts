@@ -18,12 +18,14 @@ export interface FsMoveState {
   moving: boolean;
   airborne: boolean;
   ads: boolean;
+  /** Agachado: a dispersão é menor. */
+  crouch?: boolean;
 }
 
 /** Cone de dispersão atual (graus) pelo estado do jogador e pelo que a rajada já acumulou. */
 export function fsSpreadDeg(w: FsWeapon, m: FsMoveState, g: FsGunState): number {
   const base = m.airborne ? w.spread.air : m.ads ? (m.moving ? w.spread.adsMove : w.spread.ads) : m.moving ? w.spread.move : w.spread.stand;
-  return base + g.bloom;
+  return (base + g.bloom) * (m.crouch && !m.airborne ? 0.65 : 1);
 }
 
 export interface FsShot {

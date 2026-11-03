@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { fsDamage, fsKills, FS_HP, type FsHitInfo } from './damage';
 import { FsLoadout } from './gun';
+import { FS_SHOP, fsBuy } from './shop';
 import { FS_ARENA } from './map';
-import { fsNewMover, fsStepMover, FS_MOVE } from './movement';
+import { fsBodyHeight, fsEyeHeight, fsNewMover, fsQuiet, fsStepMover, FS_MOVE } from './movement';
 import { fsFire, fsNewGunState } from './recoil';
 import { fsDir, fsTrace, type FsBody } from './trace';
 import { FS_WEAPONS } from './weapons';
@@ -205,8 +206,7 @@ describe('arma na mão', () => {
   });
 
   it('a sniper tem o ferrolho: não atira de novo antes de 1,4 s', () => {
-    const l = new FsLoadout();
-    l.switchTo(2);
+    const l = new FsLoadout('sniper', 'pistol');
     l.drawT = 0;
     let shots = 0;
     for (let i = 0; i < 70; i++) {
@@ -225,5 +225,116 @@ describe('arma na mão', () => {
     for (let i = 0; i < 160; i++) l.update(1 / 60, { trigger: false, reload: false }, idle, 'p');
     expect(l.reloading).toBe(false);
     expect(l.slot.ammo).toBe(30);
+  });
+});
+
+describe('três armas: primária, secundária e faca', () => {
+  const idle = { moving: false, airborne: false, ads: false };
+
+  it('começa com fuzil, pistola e faca; a faca é o espaço 3 e nunca sai', () => {
+    const l = new FsLoadout();
+    expect(l.slots.map((s) => s?.id)).toEqual(['ak', 'pistol', 'knife']);
+    expect(l.drop(2)).toBeNull();
+    expect(l.slots[2]?.id).toBe('knife');
+  });
+
+  it('a faca corta com o botão de atirar e estoca com o de mirar (mais dano, mais espera)', () => {
+    const l = new FsLoadout();
+    l.switchTo(2);
+    l.drawT = 0;
+    const a = l.update(0.016, { trigger: true, reload: false }, idle, 'p');
+    expect(a).toEqual([expect.objectContaining({ type: 'melee', kind: 'slash' })]);
+    // não corta de novo enquanto espera
+    expect(l.update(0.016, { trigger: false, reload: false }, idle, 'p')).toEqual([]);
+    l.cooldown = 0;
+    const b = l.update(0.016, { trigger: false, reload: false, alt: true }, idle, 'p');
+    expect(b).toEqual([expect.objectContaining({ type: 'melee', kind: 'stab' })]);
+    expect(l.cooldown).toBeGreaterThan(0.9);
+    expect(FS_WEAPONS.knife.melee!.stab).toBeGreaterThan(FS_WEAPONS.knife.damage);
+  });
+
+  it('F inspeciona a faca parada e qualquer ataque ou troca interrompe', () => {
+    const l = new FsLoadout();
+    l.switchTo(2);
+    l.drawT = 0;
+    const ev = l.update(0.016, { trigger: false, reload: false, inspect: true }, idle, 'p');
+    expect(ev[0]).toMatchObject({ type: 'inspect' });
+    expect(l.inspecting).toBe(true);
+    l.update(0.016, { trigger: true, reload: false }, idle, 'p');
+    expect(l.inspecting).toBe(false);
+  });
+
+  it('comprar uma arma do mesmo espaço troca e devolve a antiga (para cair no chão)', () => {
+    const l = new FsLoadout();
+    const r = fsBuy(l, 'sniper');
+    expect(r.ok).toBe(true);
+    expect(r.dropped?.id).toBe('ak');
+    expect(l.slots[0]?.id).toBe('sniper');
+    expect(l.weapon.id).toBe('sniper');
+    // pistola nova no espaço 2 não mexe na primária
+    expect(l.slots[0]?.id).toBe('sniper');
+    // comprar de novo a mesma arma só enche o carregador (nada cai no chão)
+    l.slots[1]!.ammo = 1;
+    const again = fsBuy(l, 'pistol');
+    expect(again.ok).toBe(true);
+    expect(again.dropped).toBeUndefined();
+    expect(l.slots[1]!.ammo).toBe(FS_WEAPONS.pistol.mag);
+  });
+
+  it('item "em breve" não compra e o colete vira armadura', () => {
+    const l = new FsLoadout();
+    expect(fsBuy(l, 'smg1')).toMatchObject({ ok: false, reason: 'soon' });
+    expect(fsBuy(l, 'vesthelm').armor).toEqual({ points: 100, helmet: true });
+    expect(fsBuy(l, 'xxx')).toMatchObject({ ok: false, reason: 'unknown' });
+  });
+
+  it('soltar a primária leva para a secundária', () => {
+    const l = new FsLoadout();
+    const d = l.drop(0);
+    expect(d?.id).toBe('ak');
+    expect(l.slots[0]).toBeNull();
+    expect(l.weapon.id).toBe('pistol');
+    expect(l.switchTo(0)).toEqual([]);
+  });
+
+  it('a loja tem 5 colunas e só itens reais podem ser comprados', () => {
+    expect(FS_SHOP).toHaveLength(5);
+    const real = FS_SHOP.flatMap((c) => c.items).filter((i) => !i.soon);
+    expect(real.map((i) => i.id).sort()).toEqual(['ak', 'knife', 'pistol', 'sniper', 'vest', 'vesthelm']);
+  });
+});
+
+describe('agachar e andar devagar', () => {
+  const run = (inp: Partial<Parameters<typeof fsStepMover>[1]>, secs = 1.5) => {
+    const m = fsNewMover(5, 18);
+    for (let i = 0; i < secs * 120; i++) fsStepMover(m, { fwd: 1, strafe: 0, jump: false, yaw: 0, speedMul: 1, ...inp }, 1 / 120, FS_ARENA);
+    return m;
+  };
+
+  it('Ctrl agacha: o corpo e os olhos descem e a velocidade cai', () => {
+    const m = run({ crouch: true });
+    expect(m.crouchK).toBe(1);
+    expect(fsBodyHeight(m)).toBeCloseTo(FS_MOVE.crouchHeight);
+    expect(fsEyeHeight(m)).toBeCloseTo(FS_MOVE.crouchEye);
+    const stand = run({});
+    expect(Math.hypot(m.vx, m.vz)).toBeLessThan(Math.hypot(stand.vx, stand.vz) * 0.6);
+  });
+
+  it('Shift anda mais devagar e sem barulho', () => {
+    const walk = run({ walk: true });
+    const stand = run({});
+    expect(Math.hypot(walk.vx, walk.vz)).toBeCloseTo(Math.hypot(stand.vx, stand.vz) * FS_MOVE.walkMul, 0);
+    expect(fsQuiet({ walk: true })).toBe(true);
+    expect(fsQuiet({ crouch: true })).toBe(true);
+    expect(fsQuiet({})).toBe(false);
+  });
+
+  it('não levanta com um teto baixo em cima', () => {
+    const m = fsNewMover(0, 0);
+    m.crouchK = 1;
+    const low = [{ min: [-2, 1.0, -2] as [number, number, number], max: [2, 2, 2] as [number, number, number], pen: 0, mat: 'wall' as const }];
+    for (let i = 0; i < 100; i++) fsStepMover(m, { fwd: 0, strafe: 0, jump: false, yaw: 0, speedMul: 1, crouch: true }, 1 / 120, low);
+    for (let i = 0; i < 100; i++) fsStepMover(m, { fwd: 0, strafe: 0, jump: false, yaw: 0, speedMul: 1, crouch: false }, 1 / 120, low);
+    expect(m.crouchK).toBeGreaterThan(0.5);
   });
 });

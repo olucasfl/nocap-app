@@ -1,7 +1,7 @@
 /** Armas do Fox Shot! (spec 056): números iniciais, no estilo do CS, para ajustar jogando. Distâncias em metros, ângulos em graus. */
 
-export type FsWeaponId = 'ak' | 'pistol' | 'sniper';
-export type FsSlot = 'primary' | 'secondary';
+export type FsWeaponId = 'ak' | 'pistol' | 'sniper' | 'knife';
+export type FsSlot = 'primary' | 'secondary' | 'knife';
 
 export interface FsWeapon {
   id: FsWeaponId;
@@ -42,6 +42,10 @@ export interface FsWeapon {
   adsFov: number;
   /** Depois de cada tiro, tempo até poder atirar de novo além do rpm (ferrolho). */
   boltS: number;
+  /** Corpo a corpo: alcance (m), dano e espera da estocada (botão de mirar). */
+  melee?: { range: number; stab: number; stabCd: number };
+  /** Duração da animação de inspecionar (s); 0 = não tem. */
+  inspect: number;
 }
 
 /** Padrão de rajada do fuzil: sobe forte nos 8 primeiros tiros e depois balança para os lados. */
@@ -62,22 +66,32 @@ export const FS_WEAPONS: Record<FsWeaponId, FsWeapon> = {
     damage: 36, armorRatio: 1.55, rangeMod: 0.98, headMult: 4, legMult: 0.75, penPower: 1,
     recoil: akPattern(), recoilResetS: 0.35, recoilRecover: 10,
     spread: { stand: 0.25, move: 2.4, air: 4.5, ads: 0.2, adsMove: 1.6 }, bloom: 2.2, bloomPerShot: 0.12,
-    moveMul: 0.92, adsFov: 0, boltS: 0,
+    moveMul: 0.92, adsFov: 0, boltS: 0, inspect: 0,
   },
   pistol: {
     id: 'pistol', name: 'Pistola', slot: 'secondary', auto: false, rpm: 400, mag: 12, reload: 1.7, draw: 0.5,
     damage: 34, armorRatio: 0.5, rangeMod: 0.45, headMult: 4, legMult: 0.75, penPower: 0.6,
     recoil: [[1.6, 0.25], [1.5, -0.3], [1.4, 0.35], [1.3, -0.2]], recoilResetS: 0.3, recoilRecover: 16,
     spread: { stand: 0.3, move: 1.8, air: 3.6, ads: 0.25, adsMove: 1.2 }, bloom: 1.2, bloomPerShot: 0.35,
-    moveMul: 1, adsFov: 0, boltS: 0,
+    moveMul: 1, adsFov: 0, boltS: 0, inspect: 0,
   },
   sniper: {
     id: 'sniper', name: 'Sniper', slot: 'primary', auto: false, rpm: 40, mag: 5, reload: 3.2, draw: 1.1,
     damage: 115, armorRatio: 1.95, rangeMod: 0.99, headMult: 4, legMult: 1, penPower: 1.6,
     recoil: [[4.2, 0.4]], recoilResetS: 1.2, recoilRecover: 6,
     spread: { stand: 6.5, move: 9, air: 12, ads: 0, adsMove: 4 }, bloom: 0, bloomPerShot: 0,
-    moveMul: 0.8, adsFov: 28, boltS: 1.45,
+    moveMul: 0.8, adsFov: 28, boltS: 1.45, inspect: 0,
+  },
+  knife: {
+    id: 'knife', name: 'Faca', slot: 'knife', auto: false, rpm: 120, mag: 0, reload: 0, draw: 0.6,
+    damage: 40, armorRatio: 0.85, rangeMod: 1, headMult: 1, legMult: 1, penPower: 0,
+    recoil: [[0, 0]], recoilResetS: 0.2, recoilRecover: 20,
+    spread: { stand: 0, move: 0, air: 0, ads: 0, adsMove: 0 }, bloom: 0, bloomPerShot: 0,
+    moveMul: 1.1, adsFov: 0, boltS: 0, melee: { range: 1.7, stab: 65, stabCd: 1.0 }, inspect: 4.8,
   },
 };
 
-export const FS_SLOTS: Record<FsSlot, FsWeaponId[]> = { primary: ['ak', 'sniper'], secondary: ['pistol'] };
+export const FS_SLOTS: Record<FsSlot, FsWeaponId[]> = { primary: ['ak', 'sniper'], secondary: ['pistol'], knife: ['knife'] };
+
+/** A ordem dos 3 espaços: 1 primária, 2 secundária, 3 faca. */
+export const FS_SLOT_ORDER: FsSlot[] = ['primary', 'secondary', 'knife'];

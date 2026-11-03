@@ -5,3 +5,4 @@ export * from './map';
 export * from './trace';
 export * from './movement';
 export * from './gun';
+export * from './shop';

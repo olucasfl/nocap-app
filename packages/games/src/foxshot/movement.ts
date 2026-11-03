@@ -9,9 +9,11 @@ export interface FsMover {
   vy: number;
   vz: number;
   onGround: boolean;
+  /** Agachando: 0 de pé, 1 agachado (muda de forma suave). */
+  crouchK: number;
 }
 
-export const FS_MOVE = { radius: 0.3, height: 1.3, eye: 1.2, run: 5.2, accel: 55, friction: 11, airAccel: 14, jump: 5.0, gravity: 15, stepUp: 0.35 };
+export const FS_MOVE = { radius: 0.3, height: 1.3, eye: 1.2, crouchHeight: 0.95, crouchEye: 0.85, run: 5.2, walkMul: 0.5, crouchMul: 0.45, accel: 55, friction: 11, airAccel: 14, jump: 5.0, gravity: 15, stepUp: 0.35 };
 
 export interface FsMoveInput {
   /** Para a frente (+1) e para o lado direito (+1). */
@@ -22,12 +24,22 @@ export interface FsMoveInput {
   yaw: number;
   /** Multiplicador de velocidade (da arma na mão, mirando...). */
   speedMul: number;
+  /** Ctrl: agacha. */
+  crouch?: boolean;
+  /** Shift: anda devagar e sem fazer barulho. */
+  walk?: boolean;
 }
 
-export const fsNewMover = (x: number, z: number): FsMover => ({ x, y: 0, z, vx: 0, vy: 0, vz: 0, onGround: true });
+/** Altura do corpo e dos olhos agora (m). */
+export const fsBodyHeight = (m: FsMover) => FS_MOVE.height + (FS_MOVE.crouchHeight - FS_MOVE.height) * m.crouchK;
+export const fsEyeHeight = (m: FsMover) => FS_MOVE.eye + (FS_MOVE.crouchEye - FS_MOVE.eye) * m.crouchK;
+/** Anda sem fazer barulho (Shift ou agachado)? */
+export const fsQuiet = (inp: Pick<FsMoveInput, 'crouch' | 'walk'>) => !!(inp.crouch || inp.walk);
+
+export const fsNewMover = (x: number, z: number): FsMover => ({ x, y: 0, z, vx: 0, vy: 0, vz: 0, onGround: true, crouchK: 0 });
 
 const overlaps = (m: FsMover, b: FsBox, r = FS_MOVE.radius) =>
-  m.x + r > b.min[0] && m.x - r < b.max[0] && m.z + r > b.min[2] && m.z - r < b.max[2] && m.y + FS_MOVE.height > b.min[1] && m.y < b.max[1];
+  m.x + r > b.min[0] && m.x - r < b.max[0] && m.z + r > b.min[2] && m.z - r < b.max[2] && m.y + fsBodyHeight(m) > b.min[1] && m.y < b.max[1];
 
 /** Um passo de movimento (use dt fixo, ex. 1/120): aceleração, atrito, pulo, gravidade e colisão com as caixas. */
 export function fsStepMover(m: FsMover, inp: FsMoveInput, dt: number, boxes: readonly FsBox[]): void {
@@ -42,7 +54,15 @@ export function fsStepMover(m: FsMover, inp: FsMoveInput, dt: number, boxes: rea
     wx /= len;
     wz /= len;
   }
-  const maxV = FS_MOVE.run * inp.speedMul;
+  // agachar é suave; só levanta se não houver teto em cima
+  const wantCrouch = !!inp.crouch;
+  if (wantCrouch) m.crouchK = Math.min(1, m.crouchK + dt * 9);
+  else if (m.crouchK > 0) {
+    const test = { ...m, crouchK: Math.max(0, m.crouchK - dt * 9) };
+    if (!boxes.some((b) => overlaps(test, b))) m.crouchK = test.crouchK;
+  }
+  const slow = m.crouchK > 0.5 ? FS_MOVE.crouchMul : inp.walk ? FS_MOVE.walkMul : 1;
+  const maxV = FS_MOVE.run * inp.speedMul * slow;
   if (m.onGround) {
     // atrito
     const sp = Math.hypot(m.vx, m.vz);
@@ -95,7 +115,7 @@ export function fsStepMover(m: FsMover, inp: FsMoveInput, dt: number, boxes: rea
     if (m.vy <= 0) {
       m.y = b.max[1];
       m.onGround = true;
-    } else m.y = b.min[1] - FS_MOVE.height;
+    } else m.y = b.min[1] - fsBodyHeight(m);
     m.vy = 0;
   }
   if (m.y <= 0) {
