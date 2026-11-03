@@ -157,3 +157,22 @@ Objetivo: o Lucas **olhar e sentir** o visual, os sons e o início do tiro, **an
 7. Página de teste em `/fox-cap/fox-shot-teste` (sem sala, sem pontuação).
 
 Não faz parte da fase 0: bots que jogam, mata-mata completo, online, tela final, ranking.
+
+## 13. Orçamento de desempenho (03/11/2026)
+
+Pergunta do Lucas: "não está complexo ou pesado para rodar online com amigos, sem travar e no celular?". Resposta: **não está pesado se seguirmos este orçamento; os arquivos de hoje ainda estão acima dele e serão reduzidos.**
+
+| Item | Hoje | Meta | Como chega lá |
+|---|---|---|---|
+| Raposa (3ª pessoa) | ~7 mil triângulos | 3 a 4,5 mil (e ~1,5 mil de longe) | menos segmentos nas esferas, LOD por distância |
+| Fuzil / sniper na mão | ~11 mil | 6 a 8 mil | reduzir o que não aparece na mira |
+| Pistola | ~17 mil | 5 a 6 mil | decimar mais (o Lucas liberou) |
+| Arma na mão dos outros (3ª pessoa) | igual à da mão | ~1,5 mil | versão baixa |
+| Cena inteira (10 raposas + mapa) | n/d | < 150 mil triângulos, < 150 chamadas de desenho | mapa mesclado/instanciado |
+| Luz e sombra | n/d | luz assada no mapa; **uma** sombra dinâmica (raposa e arma) | sem pós-processamento |
+| Resolução no celular | n/d | razão de pixels 1,0 a 1,5 (sobe/desce sozinha pelo fps) | `applyRatio` como no Ping Fox! |
+| Texturas | n/d | atlas 1024, KTX2 | 1 material por grupo |
+
+O que mais pesa no celular não é o número de triângulos, e sim **sombra, resolução e material realista (PBR)**. Por isso: qualidade automática por fps (baixo = sem sombra, resolução menor, raposas simples), medidor de fps e de peso visível na fase 0, e teste no celular do Lucas **antes** de gastar mais em arte.
+
+Rede: tiro é leve (10 jogadores a 20 a 30 estados por segundo, algumas dezenas de bytes por jogador). O risco é **variação do atraso**, que se resolve com: servidor autoritativo a 30 Hz, previsão do próprio movimento, interpolação dos outros (~100 ms), compensação de atraso no tiro e relógio medido (mesmas lições do Ping Fox!). Primeiro a fase offline contra bots, que isola o desempenho gráfico da rede.
