@@ -11,6 +11,7 @@ export interface FsPlayerRow {
   armor: number;
   kills: number;
   deaths: number;
+  assists: number;
   hs: number;
   damage: number;
 }
@@ -21,7 +22,11 @@ export interface FeedItem {
   weapon: FsWeaponId;
   victim: string;
   head: boolean;
+  /** Fui eu que matei? */
   you: boolean;
+  /** Quem deu a assistência (se houve) e se fui eu. */
+  assist?: string;
+  youAssist?: boolean;
 }
 
 export interface MinimapData {
@@ -81,8 +86,9 @@ export function FsKillFeed({ items }: { items: FeedItem[] }) {
   return (
     <ul className="fsh-feed" aria-live="polite" data-testid="fs-feed">
       {items.map((f) => (
-        <li key={f.key} className={f.you ? 'you' : ''}>
+        <li key={f.key} className={f.you || f.youAssist ? 'mine' : 'other'} data-testid={f.you || f.youAssist ? 'fs-feed-mine' : 'fs-feed-other'}>
           <b>{f.killer}</b>
+          {f.assist && <span className="fsh-assist"> + {f.assist}</span>}
           <WeaponIcon id={f.weapon} className="fsh-feed-w" />
           {f.head && (
             <span className="fsh-hs" title="Cabeça">
@@ -317,8 +323,8 @@ export function FsScoreboard({ players, timeLeft }: { players: FsPlayerRow[]; ti
               <th />
               <th>Jogador</th>
               <th>Abates</th>
+              <th>Assist.</th>
               <th>Mortes</th>
-              <th>Colete</th>
               <th>% cabeça</th>
               <th>Dano</th>
             </tr>
@@ -334,8 +340,8 @@ export function FsScoreboard({ players, timeLeft }: { players: FsPlayerRow[]; ti
                   {p.you ? ' (você)' : ''}
                 </td>
                 <td>{p.kills}</td>
+                <td>{p.assists}</td>
                 <td>{p.deaths}</td>
-                <td>{p.armor > 0 ? 'sim' : 'não'}</td>
                 <td>{p.kills > 0 ? Math.round((p.hs / p.kills) * 100) : 0}</td>
                 <td>{p.damage}</td>
               </tr>

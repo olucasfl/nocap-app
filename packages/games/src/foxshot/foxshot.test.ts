@@ -8,6 +8,7 @@ import { fsFire, fsNewGunState } from './recoil';
 import { fsDir, fsTrace, type FsBody } from './trace';
 import { FS_WEAPONS } from './weapons';
 import { FS_BOTS, fsBotStep, fsNewBot } from './bots';
+import { fsAssister } from './assist';
 
 const hit = (o: Partial<FsHitInfo>): FsHitInfo => ({ zone: 'chest', dist: 10, armor: 0, helmet: false, wall: 1, ...o });
 
@@ -510,5 +511,22 @@ describe('movimento estilo CS', () => {
     expect(climb(1.0, true).y).toBeCloseTo(1.0, 1);
     expect(climb(1.25, true).y).toBeCloseTo(1.25, 1);
     expect(climb(1.6, true).y).toBeLessThan(0.2);
+  });
+});
+
+describe('assistência', () => {
+  it('dei dano e outro matou: assistência para mim', () => {
+    expect(fsAssister([{ attacker: 'eu', time: 10 }, { attacker: 'k', time: 12 }], 'k', 13)).toBe('eu');
+  });
+  it('dei dano, outro deu dano depois de mim e um terceiro matou: não conto (só vale quem bateu logo antes)', () => {
+    const log = [{ attacker: 'eu', time: 10 }, { attacker: 'b', time: 11 }, { attacker: 'k', time: 12 }];
+    expect(fsAssister(log, 'k', 13)).toBe('b');
+  });
+  it('dano muito antigo não conta', () => {
+    expect(fsAssister([{ attacker: 'eu', time: 0 }, { attacker: 'k', time: 60 }], 'k', 61)).toBeNull();
+  });
+  it('o matador não ganha assistência e sem outro dano não há assistência', () => {
+    expect(fsAssister([{ attacker: 'k', time: 5 }, { attacker: 'k', time: 6 }], 'k', 7)).toBeNull();
+    expect(fsAssister([], 'k', 7)).toBeNull();
   });
 });

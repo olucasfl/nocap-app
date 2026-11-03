@@ -108,7 +108,7 @@ function load(): FsSettings {
 
 interface Store extends FsSettings {
   set: (patch: Partial<FsSettings>) => void;
-  /** Põe `code` na ação; se outra ação já usava, as duas trocam de tecla. */
+  /** Põe `code` na ação. Se outra ação já usava a mesma tecla, as duas ficam e o menu avisa o conflito. */
   bind: (action: FsAction, code: string) => void;
   reset: () => void;
 }
@@ -121,8 +121,6 @@ export const useFsSettings = create<Store>((set, get) => ({
   },
   bind: (action, code) => {
     const binds = { ...get().binds };
-    const other = (Object.keys(binds) as FsAction[]).find((a) => a !== action && binds[a] === code);
-    if (other) binds[other] = binds[action];
     binds[action] = code;
     set({ binds });
     persist(get());

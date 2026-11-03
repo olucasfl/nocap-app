@@ -7,3 +7,4 @@ export * from './movement';
 export * from './gun';
 export * from './shop';
 export * from './bots';
+export * from './assist';

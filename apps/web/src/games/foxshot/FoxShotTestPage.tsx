@@ -86,6 +86,8 @@ interface TargetState {
 interface MyStats {
   kills: number;
   deaths: number;
+  /** Assistências: só existem com mais de um jogador dando dano (online); aqui fica em 0. */
+  assists: number;
   hs: number;
   damage: number;
 }
@@ -266,7 +268,7 @@ export function FoxShotTestPage() {
     const mover = fsNewMover(FS_SPAWN.x, FS_SPAWN.z);
     const view = { yaw: 0, pitch: 0, rYaw: 0, rPitch: 0 };
     const me = { hp: 100, armor: 0, helmet: false };
-    const stats: MyStats = { kills: 0, deaths: 0, hs: 0, damage: 0 };
+    const stats: MyStats = { kills: 0, deaths: 0, assists: 0, hs: 0, damage: 0 };
     const loadout = new FsLoadout(null, 'pistol');
     const targets = new Map<string, TargetState>(
       ALL_TARGETS.map((t) => [
@@ -307,7 +309,7 @@ export function FoxShotTestPage() {
       setMarker({ key: ++markerKey, kind, text });
 
     const resetMatch = () => {
-      stats.kills = stats.deaths = stats.hs = stats.damage = 0;
+      stats.kills = stats.deaths = stats.assists = stats.hs = stats.damage = 0;
       for (const t of ALL_TARGETS) {
         const s = targets.get(t.id)!;
         s.alive = true;
@@ -441,6 +443,7 @@ export function FoxShotTestPage() {
         armor: me.armor,
         kills: stats.kills,
         deaths: stats.deaths,
+        assists: stats.assists,
         hs: stats.hs,
         damage: stats.damage,
       },
@@ -454,6 +457,7 @@ export function FoxShotTestPage() {
           armor: s.armor,
           kills: 0,
           deaths: s.deaths,
+          assists: 0,
           hs: 0,
           damage: 0,
         };
@@ -812,6 +816,8 @@ export function FoxShotTestPage() {
       .load()
       .then(() => {
         if (dead) return;
+        // a arma inicial é a pistola: o modelo na mão tem de ser o dela (antes aparecia o fuzil)
+        scene.selectWeapon(loadout.weapon.id, true);
         setStatus('ready');
         last = performance.now();
         raf = requestAnimationFrame(frame);

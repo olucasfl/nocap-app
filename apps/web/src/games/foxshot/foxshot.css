@@ -346,8 +346,19 @@
   font: 700 12px var(--font-display, system-ui);
   animation: fsh-in 0.2s ease-out both;
 }
-.fsh-feed li.you {
-  border-color: #ff7d26;
+.fsh-feed li.other {
+  opacity: 0.72;
+  font-weight: 600;
+}
+/* meu abate ou minha assistência: mais forte e com borda vermelha (como no CS) */
+.fsh-feed li.mine {
+  border-color: #ff3b30;
+  border-width: 3px;
+  background: rgba(60, 12, 16, 0.85);
+  font-size: 13px;
+}
+.fsh-assist {
+  opacity: 0.85;
 }
 .fsh-feed-w {
   width: 38px;
@@ -933,3 +944,8 @@
 .fsh-helm { align-self: center; padding: 2px 6px; border: 2px solid #1b1535; background: rgba(12, 16, 38, 0.74); color: #7fa6ff; font: 900 10px var(--font-display, system-ui); letter-spacing: 0.1em; text-transform: uppercase; }
 
 .fss-toast.warn { background: #c4571a; }
+
+/* tecla repetida em duas ações */
+.fsm-binds li.conflict { border-color: #ff3b30; }
+.fsm-binds li.conflict button { border-color: #ff3b30; }
+.fsm-warn { display: block; margin-top: 2px; font: 700 10px var(--font-display, system-ui); color: #ff6a5e; letter-spacing: 0.02em; }

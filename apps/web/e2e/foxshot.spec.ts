@@ -163,6 +163,8 @@ test('menu do Esc: personalizar, comandos com troca de tecla, placar e kill feed
     JSON.parse(localStorage.getItem('nocap-fs-settings') ?? '{}'),
   );
   expect(saved.binds.reload).toBe('KeyF');
+  // F também é "Inspecionar": o menu avisa o conflito
+  await expect(page.getByTestId('conflict-reload')).toContainText('Inspecionar');
   expect(saved.crossColor).toBe('green');
   // continuar e jogar: abate com a cabeça aparece no kill feed e no placar (Tab)
   await page.getByTestId('fsm-tab-jogo').click();
@@ -174,8 +176,11 @@ test('menu do Esc: personalizar, comandos com troca de tecla, placar e kill feed
   await fs(page, 'shoot', 1);
   await expect(page.getByTestId('fs-feed')).toContainText('Raposa 1');
   await expect(page.getByTestId('fs-feed')).toContainText('CABEÇA');
+  await expect(page.getByTestId('fs-feed-mine').first()).toBeVisible();
   await page.keyboard.down('Tab');
   await expect(page.getByTestId('fs-board')).toBeVisible();
+  await expect(page.getByTestId('fs-board')).toContainText('Assist.');
+  await expect(page.getByTestId('fs-board')).not.toContainText('Colete');
   if (process.env.FS_SHOTS)
     await page.screenshot({ path: `${process.env.FS_SHOTS}/desktop-placar.png` });
   await page.keyboard.up('Tab');

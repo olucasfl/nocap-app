@@ -148,9 +148,18 @@ function Commands({ touch }: { touch: boolean }) {
         Clique numa ação e aperte a nova tecla (ou botão do mouse). Esc cancela. Setas também andam.
       </p>
       <ul className="fsm-binds">
-        {FS_ACTIONS.map((a) => (
-          <li key={a.id}>
-            <span>{a.label}</span>
+        {FS_ACTIONS.map((a) => {
+          const clash = FS_ACTIONS.filter((o) => o.id !== a.id && binds[o.id] === binds[a.id]);
+          return (
+          <li key={a.id} className={clash.length ? 'conflict' : ''}>
+            <span>
+              {a.label}
+              {clash.length > 0 && (
+                <small className="fsm-warn" role="alert" data-testid={`conflict-${a.id}`}>
+                  Em conflito com: {clash.map((c) => c.label).join(', ')}
+                </small>
+              )}
+            </span>
             <button
               type="button"
               className={listen === a.id ? 'listen' : ''}
@@ -160,7 +169,8 @@ function Commands({ touch }: { touch: boolean }) {
               {listen === a.id ? 'Aperte...' : bindLabel(binds[a.id])}
             </button>
           </li>
-        ))}
+          );
+        })}
         <li className="fixed">
           <span>Soltar o mouse / abrir este menu</span>
           <b className="mono">Esc</b>
