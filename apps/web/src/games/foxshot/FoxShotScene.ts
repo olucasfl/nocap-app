@@ -630,6 +630,16 @@ export class FoxShotScene {
     this.drops.set(h, o);
     return h;
   }
+  /** Move uma arma no chão (em voo ou parada; parada ela balança de leve). */
+  setDrop(h: number, x: number, y: number, z: number, landed: boolean) {
+    const o = this.drops.get(h);
+    if (!o) return;
+    o.position.set(x, y, z);
+    this.dropFloat.set(h, landed);
+    if (!landed) o.rotation.x += 0.2;
+    else o.rotation.x = 0;
+  }
+  private dropFloat = new Map<number, boolean>();
   removeDrop(h: number) {
     const o = this.drops.get(h);
     if (!o) return;
@@ -899,7 +909,7 @@ export class FoxShotScene {
       q.s.scale.setScalar(q.grow * (0.4 + k * 1.2));
       (q.s.material as THREE.SpriteMaterial).opacity = (1 - k) * 0.8;
     }
-    for (const o of this.drops.values()) o.position.y = 0.14 + Math.sin(this.t * 2 + o.position.x) * 0.02;
+    for (const [h, o] of this.drops) if (this.dropFloat.get(h) !== false) o.position.y = 0.14 + Math.sin(this.t * 2 + o.position.x) * 0.02;
     this.updateViewmodel(dt, { ...p, ads: p.adsTarget > 0.5 });
   }
 

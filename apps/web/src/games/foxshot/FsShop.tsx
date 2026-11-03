@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { FS_SHOP, type FsShopItem } from '@nocap/games';
 import { WeaponIcon } from './fs-icons';
+import { bindLabel, useFsSettings } from './fs-settings';
 
 /**
  * A loja (tecla B), no desenho do CS: uma coluna por categoria. Números escolhem a coluna e depois o item; também dá para
@@ -16,6 +17,7 @@ export function FsShop({
   /** Ids dos itens que a pessoa já tem em uso (aparecem marcados). */
   owned: string[];
 }) {
+  const buyKey = useFsSettings((st) => st.binds.buy);
   const [toast, setToast] = useState<{ key: number; text: string } | null>(null);
   const [col, setCol] = useState<number | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
@@ -33,7 +35,7 @@ export function FsShop({
   useEffect(() => {
     const kd = (e: KeyboardEvent) => {
       const n = e.code.startsWith('Digit') ? Number(e.code.slice(5)) : NaN;
-      if (e.code === 'KeyB') {
+      if (e.code === buyKey) {
         e.preventDefault();
         e.stopImmediatePropagation();
         onClose();
@@ -52,7 +54,7 @@ export function FsShop({
     window.addEventListener('keydown', kd, true);
     return () => window.removeEventListener('keydown', kd, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [col]);
+  }, [col, buyKey]);
 
   return (
     <div className="fss" role="dialog" aria-label="Loja" data-testid="fs-shop">
@@ -65,7 +67,7 @@ export function FsShop({
         <b>Loja</b>
         <span className="mono">Dinheiro: $ ∞</span>
         <span className="mono fss-key">
-          {col === null ? 'Aperte 1 a 5 para escolher a coluna' : 'Aperte o número do item'} · B fecha
+          {col === null ? 'Aperte 1 a 5 para escolher a coluna' : 'Aperte o número do item'} · {bindLabel(buyKey)} fecha
         </span>
       </div>
       <div className="fss-cols">

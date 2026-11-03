@@ -228,6 +228,18 @@ describe('arma na mão', () => {
   });
 });
 
+describe('faca: um golpe por clique', () => {
+  it('segurar o botão não repete o golpe', () => {
+    const l = new FsLoadout(null, 'pistol');
+    l.switchTo(2);
+    l.drawT = 0;
+    let n = 0;
+    for (let i = 0; i < 600; i++)
+      n += l.update(1 / 120, { trigger: true, reload: false }, { moving: false, airborne: false, ads: false }, 'p').filter((e) => e.type === 'melee').length;
+    expect(n).toBe(1);
+  });
+});
+
 describe('faca: dano fixo', () => {
   it('corte 35 e estocada 70 em qualquer região, com ou sem colete e capacete', () => {
     const k = FS_WEAPONS.knife;

@@ -22,7 +22,7 @@ import {
 import { fsAudio } from '@/lib/foxshot-audio';
 import { FoxShotScene, type Quality } from './FoxShotScene';
 import { FsControls } from './fs-controls';
-import { fsSettings, useFsSettings } from './fs-settings';
+import { bindLabel, fsSettings, useFsSettings } from './fs-settings';
 import { FsMenu } from './FsMenu';
 import { FsShop } from './FsShop';
 import {
@@ -56,6 +56,12 @@ interface Drop {
   x: number;
   z: number;
   at: number;
+  /** Em voo (jogada com G): altura e velocidade. */
+  y: number;
+  vx: number;
+  vy: number;
+  vz: number;
+  flying: boolean;
 }
 
 interface TargetState {
@@ -76,12 +82,15 @@ interface MyStats {
 interface Hud {
   hp: number;
   armor: number;
+  helmet: boolean;
   ammo: number;
   mag: number;
   weapon: string;
   weaponId: FsWeaponId;
   slots: FsSlotInfo[];
   current: number;
+  /** Arma no chão que está sob a mira (nome) e se dá para pegar daqui. */
+  look: { name: string; near: boolean } | null;
   reloading: boolean;
   scoped: boolean;
   spreadPx: number;
@@ -242,7 +251,7 @@ export function FoxShotTestPage() {
     // ---- estado do jogo
     const mover = fsNewMover(FS_SPAWN.x, FS_SPAWN.z);
     const view = { yaw: 0, pitch: 0, rYaw: 0, rPitch: 0 };
-    const me = { hp: 100, armor: 100 };
+    const me = { hp: 100, armor: 0, helmet: false };
     const stats: MyStats = { kills: 0, deaths: 0, hs: 0, damage: 0 };
     const loadout = new FsLoadout(null, 'pistol');
     const targets = new Map<string, TargetState>(
@@ -367,7 +376,11 @@ export function FoxShotTestPage() {
     };
     const handle = (events: ReturnType<FsLoadout['update']>) => {
       for (const e of events) {
-        if (e.type === 'fire') fire(e.weapon.id, e.shot);
+        if (e.type === 'fire') {
+          fire(e.weapon.id, e.shot);
+          // o último tiro: avisa que acabou a munição
+          if (loadout.slot.ammo === 0) fsAudio.empty();
+        }
         else if (e.type === 'melee') melee(e.kind);
         else if (e.type === 'inspect') scene.knifeInspect(true);
         else if (e.type === 'dry') fsAudio.dry();
@@ -425,7 +438,45 @@ export function FoxShotTestPage() {
         const old = drops.shift()!;
         scene.removeDrop(old.h);
       }
-      drops.push({ h: scene.addDrop(id, x, z), id, ammo, x, z, at: clock });
+      drops.push({ h: scene.addDrop(id, x, z), id, ammo, x, z, at: clock, y: 0.14, vx: 0, vy: 0, vz: 0, flying: false });
+    };
+    /** G: joga a arma num arremesso curto para onde a mira aponta (cai a uns 2 metros). */
+    const throwWeapon = (id: FsWeaponId, ammo: number) => {
+      const dir = fsDir(view.yaw + view.rYaw, view.pitch + view.rPitch);
+      const hs = Math.hypot(dir[0], dir[2]) || 1;
+      const sp = 3.2;
+      addDrop(id, ammo, mover.x, mover.z);
+      const d = drops[drops.length - 1]!;
+      d.y = mover.y + fsEyeHeight(mover) - 0.25;
+      d.vx = (dir[0] / hs) * sp * (0.6 + 0.4 * (hs));
+      d.vz = (dir[2] / hs) * sp * (0.6 + 0.4 * (hs));
+      d.vy = Math.max(-1.5, Math.min(2.5, dir[1] * 3 + 1.2));
+      d.flying = true;
+    };
+    const stepDrops = (dt: number) => {
+      for (const d of drops) {
+        if (!d.flying) continue;
+        d.vy -= 12 * dt;
+        const nx = d.x + d.vx * dt,
+          nz = d.z + d.vz * dt,
+          ny = d.y + d.vy * dt;
+        // parede ou caixa: para o avanço e deixa cair
+        const hit = FS_ARENA.some(
+          (b) => nx > b.min[0] && nx < b.max[0] && nz > b.min[2] && nz < b.max[2] && ny > b.min[1] && ny < b.max[1],
+        );
+        if (hit) {
+          d.vx = d.vz = 0;
+        } else {
+          d.x = nx;
+          d.z = nz;
+        }
+        d.y = ny;
+        if (d.y <= 0.14) {
+          d.y = 0.14;
+          d.flying = false;
+        }
+        scene.setDrop(d.h, d.x, d.y, d.z, !d.flying);
+      }
     };
     const dropAhead = (id: FsWeaponId, ammo: number) => {
       const yaw = (view.yaw * Math.PI) / 180;
@@ -435,7 +486,11 @@ export function FoxShotTestPage() {
     buyRef.current = (item) => {
       const r = fsBuy(loadout, item.id);
       if (!r.ok) return;
-      if (r.armor) me.armor = r.armor.points;
+      if (r.armor) {
+        me.armor = r.armor.points;
+        // comprar só o colete não tira o capacete que já tem
+        me.helmet = me.helmet || r.armor.helmet;
+      }
       if (r.dropped) dropAhead(r.dropped.id, r.dropped.ammo);
       afterEquip();
       fsAudio.draw();
@@ -468,10 +523,11 @@ export function FoxShotTestPage() {
         if (inp.drop) {
           const d = loadout.drop();
           if (d) {
-            dropAhead(d.id, d.ammo);
+            throwWeapon(d.id, d.ammo);
             afterEquip();
           }
         }
+        stepDrops(dt);
         if (inp.pickup) {
           let best: Drop | null = null;
           let bd = PICK_R;
@@ -640,9 +696,30 @@ export function FoxShotTestPage() {
         hudT = 0;
         const sc = scene.stats();
         const mvs = { moving: speed > 0.8, airborne: !mover.onGround, ads: adsOn };
+        // arma no chão sob a mira: perto do centro da tela e a poucos metros
+        let look: Hud['look'] = null;
+        {
+          const eyeY = mover.y + fsEyeHeight(mover);
+          const dir = fsDir(view.yaw + view.rYaw, view.pitch + view.rPitch);
+          let best = 1e9;
+          for (const d of drops) {
+            const vx = d.x - mover.x,
+              vy = 0.15 - eyeY,
+              vz = d.z - mover.z;
+            const dist = Math.hypot(vx, vy, vz);
+            if (dist > 4.5 || dist < 0.2) continue;
+            const cos = (vx * dir[0] + vy * dir[1] + vz * dir[2]) / dist;
+            // cone de ~7 graus, um pouco mais folgado quando está perto
+            if (cos < Math.cos((7 + 6 / dist) * (Math.PI / 180)) || dist >= best) continue;
+            best = dist;
+            look = { name: FS_WEAPONS[d.id].name, near: dist <= PICK_R };
+          }
+        }
         setHud({
+          look,
           hp: me.hp,
           armor: me.armor,
+          helmet: me.helmet,
           ammo: loadout.slot.ammo,
           mag: loadout.weapon.mag,
           weapon: loadout.weapon.name,
@@ -784,6 +861,12 @@ export function FoxShotTestPage() {
           ) : (
             <FsCrosshair spreadPx={hud.spreadPx} />
           )}
+          {hud.look && !hud.scoped && (
+            <div className="fs-look" data-testid="fs-look" aria-hidden="true">
+              <b>{hud.look.name}</b>
+              {hud.look.near && <span className="mono">{bindLabel(settings.binds.pickup)} pegar</span>}
+            </div>
+          )}
           {marker && (
             <div
               key={marker.key}
@@ -813,7 +896,7 @@ export function FoxShotTestPage() {
             />
           )}
           <FsKillFeed items={feed} />
-          <FsVitals hp={hud.hp} armor={hud.armor} />
+          <FsVitals hp={hud.hp} armor={hud.armor} helmet={hud.helmet} />
           <FsAmmo
             weapon={hud.weapon}
             id={hud.weaponId}
@@ -827,7 +910,11 @@ export function FoxShotTestPage() {
             <FsShop
               onBuy={(i) => buyRef.current(i)}
               onClose={() => setShop(false)}
-              owned={hud.slots.flatMap((x) => (x.id ? [x.id] : []))}
+              owned={[
+                ...hud.slots.flatMap((x) => (x.id ? [x.id] : [])),
+                ...(hud.armor > 0 ? ['vest'] : []),
+                ...(hud.armor > 0 && hud.helmet ? ['vesthelm'] : []),
+              ]}
             />
           )}
           {board && <FsScoreboard players={hud.players} timeLeft={hud.timeLeft} />}

@@ -129,7 +129,16 @@ export const fsAudio = {
     }
   },
   dry() {
-    burst({ type: 'bandpass', freq: 3200, q: 3, dur: 0.012, peak: 0.12 });
+    // gatilho vazio: clique seco e audível
+    burst({ type: 'bandpass', freq: 2600, q: 2.5, dur: 0.018, peak: 0.4 });
+    tone('square', 320, 220, 0.03, 0.12, 0.004);
+  },
+  /** Acabou a munição: dois cliques descendo, depois do último tiro. */
+  empty() {
+    burst({ type: 'bandpass', freq: 3000, q: 3, dur: 0.014, peak: 0.28, delay: 0.14 });
+    tone('triangle', 520, 380, 0.05, 0.2, 0.16);
+    burst({ type: 'bandpass', freq: 2200, q: 3, dur: 0.014, peak: 0.24, delay: 0.26 });
+    tone('triangle', 380, 260, 0.06, 0.18, 0.28);
   },
   /** Fases da recarga: tirar o carregador, colocar, puxar o ferrolho. */
   magOut() {

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { FS_ARENA, FS_TARGETS, type FsWeaponId } from '@nocap/games';
 import { HeartIcon, SkullIcon, VestIcon, WeaponIcon } from './fs-icons';
-import { CROSS_COLORS, useFsSettings } from './fs-settings';
+import { bindLabel, CROSS_COLORS, useFsSettings } from './fs-settings';
 
 export interface FsPlayerRow {
   id: string;
@@ -170,7 +170,7 @@ export function FsMinimap({ get }: { get: () => MinimapData }) {
 }
 
 /** Vida e colete, limpos, no canto de baixo à esquerda. */
-export function FsVitals({ hp, armor }: { hp: number; armor: number }) {
+export function FsVitals({ hp, armor, helmet }: { hp: number; armor: number; helmet: boolean }) {
   return (
     <div className={`fsh-vitals${hp <= 25 ? ' low' : ''}`} data-testid="fs-bars">
       <div>
@@ -180,6 +180,11 @@ export function FsVitals({ hp, armor }: { hp: number; armor: number }) {
       <div className="ar">
         <VestIcon className="fsh-ic" />
         <b>{armor}</b>
+        {helmet && (
+          <span className="fsh-helm" data-testid="fs-helmet">
+            capacete
+          </span>
+        )}
       </div>
     </div>
   );
@@ -213,6 +218,7 @@ export function FsAmmo({
   slots: FsSlotInfo[];
   current: number;
 }) {
+  const binds = useFsSettings((st) => st.binds);
   return (
     <div className={`fsh-ammo${ammo === 0 && mag > 0 && !reloading ? ' empty' : ''}`} data-testid="fs-ammo">
       <div className="fsh-ammo-n">
@@ -223,7 +229,7 @@ export function FsAmmo({
         {slots.map((s, i) =>
           s.id ? (
             <li key={s.key} className={i === current ? 'on' : ''} data-testid={`fs-slot-${s.key}`}>
-              <i>{s.key}</i>
+              <i>{bindLabel(binds[`slot${s.key}` as 'slot1'])}</i>
               <WeaponIcon id={s.id} className="fsh-w" />
               {i === current && <small>{s.name}</small>}
             </li>
@@ -293,6 +299,7 @@ export function FsCrosshair({ spreadPx }: { spreadPx: number }) {
 
 /** Placar (Tab): todos os jogadores com abates, mortes, % de cabeça e dano, como o do CS. */
 export function FsScoreboard({ players, timeLeft }: { players: FsPlayerRow[]; timeLeft: number }) {
+  const binds = useFsSettings((st) => st.binds);
   const rows = [...players].sort((a, b) => b.kills - a.kills || a.deaths - b.deaths);
   return (
     <div className="fsh-board" role="dialog" aria-label="Placar" data-testid="fs-board">
@@ -343,7 +350,7 @@ export function FsScoreboard({ players, timeLeft }: { players: FsPlayerRow[]; ti
             ))}
           </tbody>
         </table>
-        <footer className="mono">Segure Tab para ver o placar</footer>
+        <footer className="mono">Segure {bindLabel(binds.scoreboard)} para ver o placar</footer>
       </div>
     </div>
   );

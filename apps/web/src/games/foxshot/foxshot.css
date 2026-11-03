@@ -921,3 +921,13 @@
 .fss-item.own { border-color: #ffd23f; }
 .fss-item.own em { color: #ffd23f; opacity: 1; }
 @media (prefers-reduced-motion: reduce) { .fss-toast { animation: none; } }
+
+/* nome da arma no chão, logo abaixo da mira */
+.fs-look { position: absolute; left: 50%; top: calc(50% + 34px); transform: translateX(-50%); display: grid; justify-items: center; gap: 2px; pointer-events: none; z-index: 6;
+  text-shadow: 0 1px 0 #1b1535, 0 0 8px rgba(0, 0, 0, 0.7); animation: fs-look-in 0.12s ease-out; }
+.fs-look b { font: 900 13px var(--font-display, system-ui); letter-spacing: 0.12em; text-transform: uppercase; color: #fff; }
+.fs-look span { font-size: 10px; color: #ffd23f; letter-spacing: 0.08em; }
+@keyframes fs-look-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .fs-look { animation: none; } }
+
+.fsh-helm { align-self: center; padding: 2px 6px; border: 2px solid #1b1535; background: rgba(12, 16, 38, 0.74); color: #7fa6ff; font: 900 10px var(--font-display, system-ui); letter-spacing: 0.1em; text-transform: uppercase; }

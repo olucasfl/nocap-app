@@ -213,6 +213,11 @@ test('faca, agachar, loja e armas no chão', async ({ page }, info) => {
   for (const c of ['equipment', 'pistols', 'mid', 'rifles', 'grenades'])
     await expect(page.getByTestId(`fs-shop-col-${c}`)).toBeVisible();
   await expect(page.getByTestId('fs-buy-smg1')).toBeDisabled();
+  // começa sem colete nem capacete; comprar mostra os dois
+  await expect(page.getByTestId('fs-helmet')).toHaveCount(0);
+  await page.getByTestId('fs-buy-vesthelm').dispatchEvent('click');
+  await expect(page.getByTestId('fs-helmet')).toBeVisible();
+  await expect(page.getByTestId('fs-buy-vesthelm')).toContainText('em uso');
   // sem primária ainda: comprar o fuzil não larga nada; trocar pela sniper larga o fuzil; repetir não larga
   await page.getByTestId('fs-buy-ak').dispatchEvent('click');
   expect((await fs<unknown[]>(page, 'drops')).length).toBe(0);
@@ -227,6 +232,11 @@ test('faca, agachar, loja e armas no chão', async ({ page }, info) => {
   expect((await fs<unknown[]>(page, 'drops')).length).toBeLessThanOrEqual(6);
   await page.keyboard.press('KeyB');
   await expect(page.getByTestId('fs-shop')).toHaveCount(0);
+  // olhando para a arma no chão aparece o nome dela perto da mira
+  await page.evaluate(() => {
+    (window as unknown as { __fs: { view: { pitch: number } } }).__fs.view.pitch = -41;
+  });
+  await expect(page.getByTestId('fs-look')).toBeVisible();
   // G larga a arma da mão; com a faca na mão não larga nada
   const n0 = (await fs<unknown[]>(page, 'drops')).length;
   await page.keyboard.press('KeyG');
