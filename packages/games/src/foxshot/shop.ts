@@ -82,7 +82,7 @@ export const fsShopItem = (id: string): FsShopItem | undefined => FS_SHOP.flatMa
 
 export interface FsBuyResult {
   ok: boolean;
-  reason?: 'unknown' | 'soon';
+  reason?: 'unknown' | 'soon' | 'owned';
   /** A arma que estava no espaço e cai no chão. */
   dropped?: { id: FsWeaponId; ammo: number };
   armor?: { points: number; helmet: boolean };
@@ -99,12 +99,8 @@ export function fsBuy(loadout: FsLoadout, itemId: string): FsBuyResult {
   if (item.weapon) {
     const w = FS_WEAPONS[item.weapon];
     const i = FsLoadoutIndex[w.slot];
-    // já tem essa arma: só enche o carregador (assim a compra repetida não faz cair arma no chão)
-    if (loadout.slots[i]?.id === item.weapon) {
-      loadout.slots[i]!.ammo = w.mag;
-      loadout.switchTo(i);
-      return { ok: true };
-    }
+    // quem já tem essa arma não compra de novo (nada cai no chão nem enche o carregador)
+    if (loadout.slots[i]?.id === item.weapon) return { ok: false, reason: 'owned' };
     const old = loadout.slots[i];
     const prev = loadout.equip(item.weapon);
     return { ok: true, dropped: prev && old ? { id: prev, ammo: old.ammo } : undefined };

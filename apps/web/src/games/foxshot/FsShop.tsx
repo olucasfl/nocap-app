@@ -18,15 +18,21 @@ export function FsShop({
   owned: string[];
 }) {
   const buyKey = useFsSettings((st) => st.binds.buy);
-  const [toast, setToast] = useState<{ key: number; text: string } | null>(null);
+  const [toast, setToast] = useState<{ key: number; text: string; warn?: boolean } | null>(null);
   const [col, setCol] = useState<number | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
 
   const buy = (item: FsShopItem) => {
     if (item.soon) return;
+    const key = Date.now();
+    // quem já tem o item não compra de novo
+    if (owned.includes(item.id)) {
+      setToast({ key, text: `Você já tem: ${item.name}`, warn: true });
+      window.setTimeout(() => setToast((t) => (t && t.key === key ? null : t)), 1650);
+      return;
+    }
     onBuy(item);
     setFlash(item.id);
-    const key = Date.now();
     setToast({ key, text: `Comprou: ${item.name}` });
     window.setTimeout(() => setToast((t) => (t && t.key === key ? null : t)), 1650);
     window.setTimeout(() => setFlash((f) => (f === item.id ? null : f)), 350);
@@ -54,12 +60,12 @@ export function FsShop({
     window.addEventListener('keydown', kd, true);
     return () => window.removeEventListener('keydown', kd, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [col, buyKey]);
+  }, [col, buyKey, owned]);
 
   return (
     <div className="fss" role="dialog" aria-label="Loja" data-testid="fs-shop">
       {toast && (
-        <div key={toast.key} className="fss-toast" role="status" data-testid="fs-shop-toast">
+        <div key={toast.key} className={`fss-toast${toast.warn ? ' warn' : ''}`} role="status" data-testid="fs-shop-toast">
           {toast.text}
         </div>
       )}

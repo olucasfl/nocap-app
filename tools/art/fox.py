@@ -271,6 +271,25 @@ for f, a in ((0, 0), (20, 1), (40, 0)):
             'thigh.R': (0, 0, -78), 'shin.R': (0, 0, 120), 'foot.R': (0, 0, -42),
             'upperarm.L': (0, 0, -50), 'forearm.L': (0, 0, -65), 'upperarm.R': (0, 0, -58), 'forearm.R': (0, 0, -62),
             'head': (0, 0, 6), 'tail1': (0, 0, 4 * a), 'tail2': (0, 0, 7 * a), 'tail3': (0, 0, 10 * a)})
+# crouchwalk: anda agachada (24 quadros, repete): joelhos dobrados e passos curtos
+acts['crouchwalk'] = action('crouchwalk')
+for i, f in enumerate((0, 6, 12, 18, 24)):
+    ph = i / 4 * 2 * math.pi
+    sw = math.sin(ph)
+    key(f, {'hips.loc': (0, 0, -0.31 + 0.015 * abs(math.cos(ph))), 'spine': (0, 0, -8),
+            'thigh.L': (0, 0, -78 + 20 * sw), 'shin.L': (0, 0, 120 - 18 * sw), 'foot.L': (0, 0, -42),
+            'thigh.R': (0, 0, -78 - 20 * sw), 'shin.R': (0, 0, 120 + 18 * sw), 'foot.R': (0, 0, -42),
+            'upperarm.L': (0, 0, -50), 'forearm.L': (0, 0, -65), 'upperarm.R': (0, 0, -58), 'forearm.R': (0, 0, -62),
+            'head': (0, 0, 6), 'tail1': (0, 0, 6 * sw), 'tail2': (0, 0, 9 * sw), 'tail3': (0, 0, 12 * sw)})
+# jump: agacha, estica no ar, encolhe as pernas e amortece na aterrissagem (40 quadros, não repete)
+acts['jump'] = action('jump')
+ARMS = {'upperarm.L': (0, 0, -50), 'forearm.L': (0, 0, -65), 'upperarm.R': (0, 0, -58), 'forearm.R': (0, 0, -62)}
+for f, hl, th, sh, ft, ar in ((0, 0, 0, 0, 0, 0), (7, -0.17, -50, 85, -32, 0), (13, 0.04, 8, 5, 25, 0), (22, 0.06, -42, 75, -10, 1), (32, 0.0, -10, 15, 5, 0), (37, -0.12, -45, 80, -30, 0), (40, 0, 0, 0, 0, 0)):
+    d = dict(ARMS)
+    d.update({'hips.loc': (0, 0, hl), 'thigh.L': (0, 0, th), 'shin.L': (0, 0, sh), 'foot.L': (0, 0, ft),
+              'thigh.R': (0, 0, th), 'shin.R': (0, 0, sh), 'foot.R': (0, 0, ft),
+              'spine': (0, 0, -10 if hl < 0 else -2), 'tail1': (0, 0, -10 * ar + 6), 'tail2': (0, 0, -14 * ar + 8)})
+    key(f, d)
 # hit: sacode para trás (12 quadros)
 acts['hit'] = action('hit')
 for f, a in ((0, 0), (3, 1), (12, 0)):

@@ -3,7 +3,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { FsHands, KNIFE_HOLD, KNIFE_INSPECT, KNIFE_SLASH, KNIFE_STAB, makeKnife, sampleKnife, type KnifeKey } from './FsHands';
-import { FS_ARENA, FS_TARGETS, type FsBox, type FsWeaponId } from '@nocap/games';
+import { FS_ARENA, FS_BOTS, FS_TARGETS, type FsBox, type FsWeaponId } from '@nocap/games';
 
 export type Quality = 'low' | 'mid' | 'high';
 
@@ -23,7 +23,7 @@ interface VmCfg {
 const VM: Record<FsWeaponId, VmCfg> = {
   ak: {
     scale: 0.8,
-    hip: [0.2, -0.2, -0.34],
+    hip: [0.14, -0.17, -0.4],
     ads: [0.0, -0.138, -0.3],
     mag: ['Magazine'],
     bolt: ['ChargingHandle', 'EjectionHandle'],
@@ -53,7 +53,7 @@ const VM: Record<FsWeaponId, VmCfg> = {
 const VM_REF: Partial<Record<FsWeaponId, VmCfg>> = {
   pistol: {
     scale: 1.0,
-    hip: [0.14, -0.1, -0.34],
+    hip: [0.1, -0.085, -0.38],
     ads: [0.0, -0.058, -0.28],
     mag: ['Magazine'],
     bolt: [],
@@ -61,7 +61,7 @@ const VM_REF: Partial<Record<FsWeaponId, VmCfg>> = {
   },
   sniper: {
     scale: 0.62,
-    hip: [0.2, -0.13, -0.48],
+    hip: [0.14, -0.11, -0.52],
     ads: [0.0, -0.06, -0.42],
     mag: ['Ammunition1'],
     bolt: [],
@@ -222,6 +222,13 @@ interface FoxView {
   actions: Record<string, THREE.AnimationAction>;
   label: THREE.Sprite;
   hitT: number;
+  /** Animação tocando agora (bots) e a velocidade dela. */
+  anim: string;
+  /** Morte: empurrão que perde força e giro de queda. */
+  vel: THREE.Vector3;
+  fall: number;
+  dead: boolean;
+  home: THREE.Vector3;
 }
 
 interface Puff {
@@ -477,8 +484,8 @@ export class FoxShotScene {
     this.weapons.set('knife', kHolder);
     this.vmPivot.add(kHolder);
     this.vm.add(this.hands.group, this.knifeObj);
-    // raposas-alvo
-    for (const spec of FS_TARGETS) {
+    // raposas-alvo e bots de treino
+    const makeFox = (id: string, x: number, z: number, yaw: number, text: string, color: string) => {
       const root = new THREE.Group();
       const model = SkeletonUtils.clone(fox.g.scene);
       model.traverse((o) => {
@@ -489,15 +496,14 @@ export class FoxShotScene {
         }
       });
       root.add(model);
-      root.position.set(spec.x, 0, spec.z);
-      // olham para a posição de nascimento do jogador (0, 14)
-      root.rotation.y = Math.atan2(-(14 - spec.z), 0 - spec.x);
+      root.position.set(x, 0, z);
+      root.rotation.y = yaw;
       const mixer = new THREE.AnimationMixer(model);
       const actions: Record<string, THREE.AnimationAction> = {};
       for (const clip of fox.g.animations) actions[clip.name] = mixer.clipAction(clip);
       actions.idle?.play();
       if (actions.idle) actions.idle.time = Math.random() * 2;
-      for (const n of ['hit'])
+      for (const n of ['hit', 'jump'])
         if (actions[n]) {
           actions[n]!.setLoop(THREE.LoopOnce, 1);
           actions[n]!.clampWhenFinished = false;
@@ -506,11 +512,27 @@ export class FoxShotScene {
         actions.death.setLoop(THREE.LoopOnce, 1);
         actions.death.clampWhenFinished = true;
       }
-      const label = labelSprite(spec.label, spec.armor > 0 ? '#2f5bff' : '#c4571a');
+      const label = labelSprite(text, color);
       label.position.set(0, 1.85, 0);
       root.add(label);
       this.scene.add(root);
-      this.foxes.set(spec.id, { root, mixer, actions, label, hitT: 0 });
+      this.foxes.set(id, { root, mixer, actions, label, hitT: 0, anim: 'idle', vel: new THREE.Vector3(), fall: 0, dead: false, home: new THREE.Vector3(x, 0, z) });
+    };
+    for (const spec of FS_TARGETS) {
+      // olham para a posição de nascimento do jogador (0, 14)
+      makeFox(spec.id, spec.x, spec.z, Math.atan2(-(14 - spec.z), 0 - spec.x), spec.label, spec.armor > 0 ? '#2f5bff' : '#c4571a');
+    }
+    for (const spec of FS_BOTS) {
+      makeFox(spec.id, spec.x, spec.z, 0, spec.label, '#1f7a3a');
+      // o nome do movimento fica na placa da raia, não em cima do bot
+      this.foxes.get(spec.id)!.label.visible = false;
+    }
+    // placas da faixa de bots
+    for (const spec of FS_BOTS) {
+      const sign = labelSprite(spec.label, '#1b1535');
+      sign.position.set(-19.2, 1.5, spec.z);
+      sign.scale.set(2.2, 0.55, 1);
+      this.scene.add(sign);
     }
     this.selectWeapon('ak', true);
   }
@@ -977,10 +999,44 @@ export class FoxShotScene {
   killTarget(id: string) {
     const f = this.foxes.get(id);
     if (!f) return;
-    f.actions.hit?.stop();
-    f.actions.idle?.stop();
-    f.actions.death?.reset().play();
+    f.dead = true;
+    for (const a of Object.values(f.actions)) a.stop();
+    f.root.position.y = 0;
+    // a raposa vai para trás do tiro enquanto cai: queda de costas com a animação de morte
+    f.actions.death?.reset().setEffectiveWeight(1).play();
     f.label.visible = false;
+  }
+  /** Põe um bot no lugar (posição, direção, altura) e troca a animação com transição suave. */
+  setBot(id: string, x: number, y: number, z: number, heading: number, anim: string, speed: number) {
+    const f = this.foxes.get(id);
+    if (!f || f.dead) return;
+    f.root.position.set(x, y, z);
+    f.root.rotation.y = -heading;
+    const key = anim;
+    if (f.anim !== key) {
+      const next = f.actions[anim];
+      const prev = f.actions[f.anim];
+      if (next) {
+        if (anim === 'jump') next.reset().setEffectiveWeight(1).fadeIn(0.08).play();
+        else next.reset().setEffectiveWeight(1).fadeIn(0.15).play();
+      }
+      prev?.fadeOut(0.15);
+      f.anim = key;
+    }
+    const cur = f.actions[f.anim];
+    if (cur) cur.setEffectiveTimeScale(speed);
+  }
+  /** Empurrão ao morrer: a raposa escorrega para longe do tiro e perde velocidade. */
+  knock(id: string, dx: number, dz: number, power: number) {
+    const f = this.foxes.get(id);
+    if (!f) return;
+    const l = Math.hypot(dx, dz) || 1;
+    f.vel.set((dx / l) * power, 0, (dz / l) * power);
+  }
+  /** Afunda no chão (0 a 1) antes de sumir. */
+  sinkTarget(id: string, k: number) {
+    const f = this.foxes.get(id);
+    if (f) f.root.position.y = -1.1 * k;
   }
   /** Agacha ou levanta a raposa-alvo (a animação `crouch` entra e sai suave). */
   setTargetCrouch(id: string, on: boolean) {
@@ -997,9 +1053,13 @@ export class FoxShotScene {
   reviveTarget(id: string) {
     const f = this.foxes.get(id);
     if (!f) return;
-    f.actions.death?.stop();
-    f.actions.idle?.reset().play();
-    f.label.visible = true;
+    f.dead = false;
+    f.vel.set(0, 0, 0);
+    f.root.position.copy(f.home);
+    for (const a of Object.values(f.actions)) a.stop();
+    f.actions.idle?.reset().setEffectiveWeight(1).play();
+    f.anim = 'idle';
+    f.label.visible = !FS_BOTS.some((b) => b.id === id);
   }
 
   // ---- efeitos
@@ -1048,7 +1108,13 @@ export class FoxShotScene {
 
   // ---- laço
   update(dt: number, p: { speed: number; adsTarget: number; airborne: boolean }) {
-    for (const f of this.foxes.values()) f.mixer.update(dt);
+    for (const f of this.foxes.values()) {
+      f.mixer.update(dt);
+      if (f.dead && f.vel.lengthSq() > 1e-4) {
+        f.root.position.addScaledVector(f.vel, dt);
+        f.vel.multiplyScalar(Math.exp(-3.2 * dt));
+      }
+    }
     for (const t of this.tracers) {
       if (t.t >= t.dur) {
         t.m.visible = false;

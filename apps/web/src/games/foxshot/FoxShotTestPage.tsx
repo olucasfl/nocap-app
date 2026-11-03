@@ -4,7 +4,10 @@ import * as THREE from 'three';
 import {
   FS_ARENA,
   FS_SPAWN,
+  FS_BOTS,
   FS_TARGETS,
+  fsBotStep,
+  fsNewBot,
   FS_WEAPONS,
   FsLoadout,
   fsDir,
@@ -43,8 +46,12 @@ import './foxshot.css';
 
 const STEP = 1 / 120;
 const MATCH_S = 300;
-const REVIVE_S = 3;
+/** A raposa cai (~1 s), fica no chão e afunda antes de nascer outra. */
+const REVIVE_S = 3.6;
 /** Armas soltas no chão: no máximo isto (as mais antigas somem) e somem sozinhas depois de um tempo, para não pesar. */
+/** Alvos parados e bots de treino: tudo o que leva tiro. */
+const ALL_TARGETS = [...FS_TARGETS, ...FS_BOTS];
+const PICK_AUTO_R = 0.9;
 const DROP_MAX = 6;
 const DROP_LIFE_S = 25;
 const PICK_R = 1.8;
@@ -56,6 +63,8 @@ interface Drop {
   x: number;
   z: number;
   at: number;
+  /** Não pega sozinho até esse instante (a que você acabou de jogar). */
+  noPick: number;
   /** Em voo (jogada com G): altura e velocidade. */
   y: number;
   vx: number;
@@ -257,7 +266,7 @@ export function FoxShotTestPage() {
     const stats: MyStats = { kills: 0, deaths: 0, hs: 0, damage: 0 };
     const loadout = new FsLoadout(null, 'pistol');
     const targets = new Map<string, TargetState>(
-      FS_TARGETS.map((t) => [
+      ALL_TARGETS.map((t) => [
         t.id,
         { hp: 100, armor: t.armor, crouch: 0, alive: true, reviveAt: 0, deaths: 0 },
       ]),
@@ -277,10 +286,18 @@ export function FoxShotTestPage() {
     let last = performance.now();
     let fps = 60;
 
+    const botSt = new Map(FS_BOTS.map((b) => [b.id, fsNewBot(b)]));
+    const posOf = (id: string): [number, number, number] => {
+      const b = botSt.get(id);
+      if (b) return [b.x, b.y, b.z];
+      const t = FS_TARGETS.find((x) => x.id === id)!;
+      return [t.x, 0, t.z];
+    };
     const bodies = (): FsBody[] =>
-      FS_TARGETS.map((t) => {
+      ALL_TARGETS.map((t) => {
         const s = targets.get(t.id)!;
-        return { id: t.id, pos: [t.x, 0, t.z], alive: s.alive, armor: s.armor, helmet: t.helmet, crouch: s.crouch };
+        const b = botSt.get(t.id);
+        return { id: t.id, pos: posOf(t.id), alive: s.alive, armor: s.armor, helmet: t.helmet, crouch: b ? b.crouch : s.crouch };
       });
 
     const showMarker = (kind: Marker['kind'], text: string) =>
@@ -288,7 +305,7 @@ export function FoxShotTestPage() {
 
     const resetMatch = () => {
       stats.kills = stats.deaths = stats.hs = stats.damage = 0;
-      for (const t of FS_TARGETS) {
+      for (const t of ALL_TARGETS) {
         const s = targets.get(t.id)!;
         s.alive = true;
         s.hp = 100;
@@ -334,8 +351,10 @@ export function FoxShotTestPage() {
           scene.killTarget(tr.targetId);
           fsAudio.hit('kill');
           showMarker('kill', tr.zone === 'head' ? 'CABEÇA' : 'ABATE');
-          const spec = FS_TARGETS.find((t) => t.id === tr.targetId)!;
-          pushFeed(id, `Raposa ${FS_TARGETS.indexOf(spec) + 1}`, tr.zone === 'head');
+          const tp = posOf(tr.targetId);
+          scene.knock(tr.targetId, tp[0] - mover.x, tp[2] - mover.z, id === 'knife' ? 2.2 : id === 'pistol' ? 2.6 : id === 'sniper' ? 5.2 : 3.6);
+          const bi = FS_BOTS.findIndex((t) => t.id === tr.targetId);
+          pushFeed(id, bi >= 0 ? `Bot ${bi + 1}` : `Raposa ${FS_TARGETS.findIndex((t) => t.id === tr.targetId) + 1}`, tr.zone === 'head');
         } else {
           scene.hitTarget(tr.targetId);
           const kind = tr.zone === 'head' ? 'head' : d.protectedByArmor ? 'armor' : 'body';
@@ -422,11 +441,11 @@ export function FoxShotTestPage() {
         hs: stats.hs,
         damage: stats.damage,
       },
-      ...FS_TARGETS.map((t, i) => {
+      ...ALL_TARGETS.map((t, i) => {
         const s = targets.get(t.id)!;
         return {
           id: t.id,
-          name: `Raposa ${i + 1}`,
+          name: i < FS_TARGETS.length ? `Raposa ${i + 1}` : `Bot ${i - FS_TARGETS.length + 1}`,
           you: false,
           alive: s.alive,
           armor: s.armor,
@@ -445,7 +464,7 @@ export function FoxShotTestPage() {
         const old = drops.shift()!;
         scene.removeDrop(old.h);
       }
-      drops.push({ h: scene.addDrop(id, x, z), id, ammo, x, z, at: clock, y: 0.14, vx: 0, vy: 0, vz: 0, flying: false });
+      drops.push({ h: scene.addDrop(id, x, z), id, ammo, x, z, at: clock, noPick: clock + 1.6, y: 0.14, vx: 0, vy: 0, vz: 0, flying: false });
     };
     /** G: joga a arma num arremesso curto para onde a mira aponta (cai a uns 2 metros). */
     const throwWeapon = (id: FsWeaponId, ammo: number) => {
@@ -535,6 +554,18 @@ export function FoxShotTestPage() {
           }
         }
         stepDrops(dt);
+        // pega sozinho (sem olhar) a arma do chão cujo espaço está vazio: é só passar por cima
+        for (let i = drops.length - 1; i >= 0; i--) {
+          const d = drops[i]!;
+          if (d.flying || clock < d.noPick) continue;
+          if (Math.hypot(d.x - mover.x, d.z - mover.z) > PICK_AUTO_R) continue;
+          if (loadout.slots[FsLoadout.slotIndex(FS_WEAPONS[d.id].slot)]) continue;
+          drops.splice(i, 1);
+          scene.removeDrop(d.h);
+          loadout.equip(d.id, d.ammo);
+          afterEquip();
+          fsAudio.draw();
+        }
         if (inp.pickup) {
           let best: Drop | null = null;
           let bd = PICK_R;
@@ -643,12 +674,26 @@ export function FoxShotTestPage() {
           view.rPitch = dec(view.rPitch);
           view.rYaw = dec(view.rYaw);
         }
-        for (const t of FS_TARGETS) {
+        // bots andando, pulando e girando
+        for (const b of FS_BOTS) {
+          const bs = botSt.get(b.id)!;
+          if (!targets.get(b.id)!.alive) continue;
+          fsBotStep(bs, b, dt);
+          scene.setBot(b.id, bs.x, bs.y, bs.z, bs.h, bs.anim, bs.animSpeed);
+        }
+        for (const t of ALL_TARGETS) {
           const s = targets.get(t.id)!;
+          if (!s.alive) {
+            // nos últimos 0,8 s do tempo morto o corpo afunda no chão
+            const sink = (clock - (s.reviveAt - 0.8)) / 0.8;
+            if (sink > 0) scene.sinkTarget(t.id, Math.min(1, sink));
+          }
           if (!s.alive && clock >= s.reviveAt) {
             s.alive = true;
             s.hp = 100;
             s.armor = t.armor;
+            const spec = FS_BOTS.find((b) => b.id === t.id);
+            if (spec) botSt.set(t.id, fsNewBot(spec));
             scene.reviveTarget(t.id);
           }
         }
@@ -697,9 +742,9 @@ export function FoxShotTestPage() {
         x: mover.x,
         z: mover.z,
         yaw: view.yaw,
-        targets: FS_TARGETS.map((t) => ({
-          x: t.x,
-          z: t.z,
+        targets: ALL_TARGETS.map((t) => ({
+          x: posOf(t.id)[0],
+          z: posOf(t.id)[2],
           alive: targets.get(t.id)!.alive,
           armor: targets.get(t.id)!.armor,
         })),
@@ -772,10 +817,10 @@ export function FoxShotTestPage() {
     if (import.meta.env.DEV) {
       (window as unknown as { __fs?: unknown }).__fs = {
         aimAt(id: string, zone: 'head' | 'chest' | 'legs' = 'chest') {
-          const t = FS_TARGETS.find((x) => x.id === id)!;
+          const tp = posOf(id);
           const y = zone === 'head' ? 1.17 : zone === 'chest' ? 0.9 : 0.3;
-          const dx = t.x - mover.x,
-            dz = t.z - mover.z,
+          const dx = tp[0] - mover.x,
+            dz = tp[2] - mover.z,
             dy = y - (mover.y + fsEyeHeight(mover));
           view.yaw = (Math.atan2(-dx, -dz) * 180) / Math.PI;
           view.pitch = (Math.atan2(dy, Math.hypot(dx, dz)) * 180) / Math.PI;
@@ -828,6 +873,8 @@ export function FoxShotTestPage() {
             ),
           );
         },
+        bot: (id: string) => ({ ...botSt.get(id)!, alive: targets.get(id)!.alive }),
+        pos: (id: string) => posOf(id),
         crouchTarget(id: string, on: boolean) {
           targets.get(id)!.crouch = on ? 1 : 0;
           scene.setTargetCrouch(id, on);

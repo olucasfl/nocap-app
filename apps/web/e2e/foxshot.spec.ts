@@ -295,6 +295,24 @@ test('fotos das mãos (só com FS_SHOTS)', async ({ page }, info) => {
   await fs(page, 'weapon', 2);
   await page.waitForTimeout(1200);
   await shot('m-knife-hold');
+  // faixa de bots e morte
+  await fs(page, 'teleport', -6, -10);
+  await fs(page, 'weapon', 0);
+  await fs(page, 'aimAt', 'b2', 'chest');
+  await page.waitForTimeout(1500);
+  await shot('m-bots-1');
+  await page.waitForTimeout(1200);
+  await shot('m-bots-2');
+  await fs(page, 'aimAt', 'b3', 'chest');
+  await page.waitForTimeout(600);
+  await shot('m-bots-3');
+  await fs(page, 'teleport', -7, -18.2);
+  await fs(page, 'aimAt', 'b5', 'head');
+  await fs(page, 'shoot', 1);
+  for (const t of [250, 450, 900]) {
+    await page.waitForTimeout(t);
+    await shot(`m-death-${t}`);
+  }
   for (const [kind, us] of [['slash', [0.22, 0.5, 0.75]], ['stab', [0.28, 0.45, 0.8]], ['inspect', [0.08, 0.3, 0.45, 0.65]]] as const) {
     for (const u of us) {
       await fs(page, 'pose', kind, u);
@@ -302,4 +320,36 @@ test('fotos das mãos (só com FS_SHOTS)', async ({ page }, info) => {
       await shot(`m-knife-${kind}-${Math.round(u * 100)}`);
     }
   }
+});
+
+test('bots de treino andam, agacham, pulam, morrem caindo e nascem de novo', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop', 'um projeto basta');
+  test.setTimeout(200_000);
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await open(page);
+  await page.getByTestId('fsm-resume').click();
+  type Bot = { x: number; y: number; z: number; crouch: number; anim: string; alive: boolean };
+  const bot = (id: string) => fs<Bot>(page, 'bot', id);
+  const x0 = (await bot('b1')).x;
+  await page.waitForTimeout(2500);
+  expect(Math.abs((await bot('b1')).x - x0), 'o bot anda').toBeGreaterThan(1);
+  // pulo: em algum momento sai do chão
+  let maxY = 0;
+  for (let i = 0; i < 25; i++) {
+    maxY = Math.max(maxY, (await bot('b4')).y);
+    await page.waitForTimeout(150);
+  }
+  expect(maxY, 'o bot pula').toBeGreaterThan(0.3);
+  await page.waitForTimeout(2000);
+  expect((await bot('b3')).crouch, 'o bot agachado').toBeGreaterThan(0.9);
+  // mata o bot que gira (b5): cai, afunda e nasce de novo
+  await fs(page, 'buy', 'ak');
+  await fs(page, 'weapon', 0);
+  await fs(page, 'teleport', -7, -18.2);
+  await fs(page, 'aimAt', 'b5', 'head');
+  await fs(page, 'shoot', 1);
+  expect((await bot('b5')).alive, 'bot morreu').toBe(false);
+  await page.waitForTimeout(8000);
+  await expect.poll(async () => (await bot('b5')).alive, { timeout: 20_000 }).toBe(true);
+  expect((await bot('b5')).alive, 'nasceu outro').toBe(true);
 });

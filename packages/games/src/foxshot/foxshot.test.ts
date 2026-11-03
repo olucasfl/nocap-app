@@ -7,6 +7,7 @@ import { fsBodyHeight, fsEyeHeight, fsNewMover, fsQuiet, fsStepMover, FS_MOVE } 
 import { fsFire, fsNewGunState } from './recoil';
 import { fsDir, fsTrace, type FsBody } from './trace';
 import { FS_WEAPONS } from './weapons';
+import { FS_BOTS, fsBotStep, fsNewBot } from './bots';
 
 const hit = (o: Partial<FsHitInfo>): FsHitInfo => ({ zone: 'chest', dist: 10, armor: 0, helmet: false, wall: 1, ...o });
 
@@ -312,12 +313,12 @@ describe('três armas: primária, secundária e faca', () => {
     expect(l.weapon.id).toBe('sniper');
     // pistola nova no espaço 2 não mexe na primária
     expect(l.slots[0]?.id).toBe('sniper');
-    // comprar de novo a mesma arma só enche o carregador (nada cai no chão)
+    // quem já tem a arma não compra de novo: nada muda
     l.slots[1]!.ammo = 1;
     const again = fsBuy(l, 'pistol');
-    expect(again.ok).toBe(true);
-    expect(again.dropped).toBeUndefined();
-    expect(l.slots[1]!.ammo).toBe(FS_WEAPONS.pistol.mag);
+    expect(again).toMatchObject({ ok: false, reason: 'owned' });
+    expect(l.slots[1]!.ammo).toBe(1);
+    expect(fsBuy(l, 'sniper')).toMatchObject({ ok: false, reason: 'owned' });
   });
 
   it('item "em breve" não compra e o colete vira armadura', () => {
@@ -375,5 +376,39 @@ describe('agachar e andar devagar', () => {
     for (let i = 0; i < 100; i++) fsStepMover(m, { fwd: 0, strafe: 0, jump: false, yaw: 0, speedMul: 1, crouch: true }, 1 / 120, low);
     for (let i = 0; i < 100; i++) fsStepMover(m, { fwd: 0, strafe: 0, jump: false, yaw: 0, speedMul: 1, crouch: false }, 1 / 120, low);
     expect(m.crouchK).toBeGreaterThan(0.5);
+  });
+});
+
+describe('bots de treino', () => {
+  const run = (id: string, secs: number) => {
+    const spec = FS_BOTS.find((b) => b.id === id)!;
+    const st = fsNewBot(spec);
+    const seen = new Set<string>();
+    let maxY = 0;
+    for (let i = 0; i < secs * 60; i++) {
+      fsBotStep(st, spec, 1 / 60);
+      seen.add(st.anim);
+      maxY = Math.max(maxY, st.y);
+    }
+    return { st, seen, maxY, spec };
+  };
+  it('o que anda vai e volta sem sair da raia', () => {
+    const { st, spec, seen } = run('b1', 20);
+    expect(seen.has('run')).toBe(true);
+    expect(st.x).toBeGreaterThanOrEqual(Math.min(spec.x, spec.x1) - 0.01);
+    expect(st.x).toBeLessThanOrEqual(Math.max(spec.x, spec.x1) + 0.01);
+  });
+  it('shift anda mais devagar e agachado usa a animação de agachado', () => {
+    const a = run('b1', 3).st.x - -18;
+    const b = run('b2', 3).st.x - -18;
+    expect(b).toBeLessThan(a * 0.7);
+    expect(run('b3', 4).seen.has('crouchwalk')).toBe(true);
+    expect(run('b3', 4).st.crouch).toBeGreaterThan(0.99);
+  });
+  it('o que pula sai do chão e volta; o que gira muda de direção', () => {
+    const j = run('b4', 5);
+    expect(j.maxY).toBeGreaterThan(0.5);
+    expect(j.seen.has('jump')).toBe(true);
+    expect(run('b5', 3).st.h).toBeGreaterThan(Math.PI / 2 + 1);
   });
 });
