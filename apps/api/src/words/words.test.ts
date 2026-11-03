@@ -25,9 +25,18 @@ describe('listas de palavras', () => {
     expect(lists.canonical('xxxxx')).toBeNull();
   });
 
+  it('aceita o feminino de adjetivos comuns que a base original não trazia (lenta, macia, única...)', () => {
+    for (const w of ['lenta', 'macia', 'unica', 'otima', 'outra', 'plena'])
+      expect(lists.canonical(w)).not.toBeNull();
+    expect(lists.canonical('unica')).toBe('única');
+  });
+
   it('quando a lista acaba, repete em outra ordem, igual para todos e sem repetir dentro da volta', () => {
     const size = lists.dailyWords.length;
-    const day = (n: number) => new Date(Date.parse(WORDS_DAILY_EPOCH + 'T00:00:00Z') + n * 86_400_000).toISOString().slice(0, 10);
+    const day = (n: number) =>
+      new Date(Date.parse(WORDS_DAILY_EPOCH + 'T00:00:00Z') + n * 86_400_000)
+        .toISOString()
+        .slice(0, 10);
     const lap1 = Array.from({ length: size }, (_, i) => lists.daily(day(size + i)).word);
     expect(new Set(lap1).size).toBe(size);
     expect(lap1).not.toEqual(lists.dailyWords);
@@ -54,7 +63,8 @@ function setup() {
       return r && r.userId === userId ? r : null;
     },
     daily: async (userId: string, game: string, day: string) =>
-      [...rows.values()].find((r) => r.userId === userId && r.game === game && r.day === day) ?? null,
+      [...rows.values()].find((r) => r.userId === userId && r.game === game && r.day === day) ??
+      null,
     runsOf: async (userId: string, game: string) =>
       [...rows.values()].filter((r) => r.userId === userId && r.game === game),
     recentAnswers: async (userId: string) =>
@@ -86,7 +96,12 @@ function setup() {
   };
   const matches = {
     playerOfUser: async () => 'player-1',
-    save: async (m: { matchId: string; ranked: boolean; kind: string; scored: { totalTenths: number } }) => {
+    save: async (m: {
+      matchId: string;
+      ranked: boolean;
+      kind: string;
+      scored: { totalTenths: number };
+    }) => {
       saved.push({ ...m, scoredTenths: m.scored.totalTenths });
       return { duplicate: false };
     },
@@ -96,7 +111,7 @@ function setup() {
   return { service, rows, saved };
 }
 
-describe('Classic Word\'s no servidor', () => {
+describe("Classic Word's no servidor", () => {
   it('o Daily de hoje é um só: começa, retoma aberto e recusa depois de terminar', async () => {
     const { service, rows } = setup();
     const first = await service.start('wclassic', 'u1', 'classic', 'daily');
@@ -122,7 +137,9 @@ describe('Classic Word\'s no servidor', () => {
     expect(view.state).toBe('won');
     expect(view.answers).toEqual([answer]);
     expect(view.nota).toBe(10);
-    expect(saved).toEqual([expect.objectContaining({ matchId: run.id, ranked: true, kind: 'daily' })]);
+    expect(saved).toEqual([
+      expect.objectContaining({ matchId: run.id, ranked: true, kind: 'daily' }),
+    ]);
     await expect(service.move('u1', run.id, answer)).rejects.toThrow();
   });
 
@@ -149,7 +166,9 @@ describe('Classic Word\'s no servidor', () => {
     const again = await service.start('wclassic', 'u1', 'classic', 'solo');
     expect(again.id).toBe(first.id);
     await service.giveUp('u1', first.id);
-    const open = [...rows.values()].filter((r) => r.kind === 'solo' && r.mode === 'classic' && r.state === 'open');
+    const open = [...rows.values()].filter(
+      (r) => r.kind === 'solo' && r.mode === 'classic' && r.state === 'open',
+    );
     expect(open).toHaveLength(1);
     expect(open[0]!.id).not.toBe(first.id);
     const next = await service.start('wclassic', 'u1', 'classic', 'solo');

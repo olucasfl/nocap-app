@@ -56,6 +56,7 @@ aboiz
 abola
 abole
 aboli
+abona
 abono
 abram
 abras
@@ -129,6 +130,7 @@ aches
 achou
 acibe
 acica
+ácida
 ácido
 ácies
 acila
@@ -251,6 +253,7 @@ advir
 aedes
 aedos
 aerar
+aérea
 aéreo
 afaga
 afago
@@ -413,6 +416,7 @@ ajuri
 ajuru
 alabá
 alabê
+alada
 alado
 alaga
 alago
@@ -533,6 +537,7 @@ aluir
 alujá
 álula
 alume
+aluna
 aluno
 alvão
 alvar
@@ -571,6 +576,7 @@ ameju
 amela
 amelê
 amelo
+amena
 ameno
 améns
 amial
@@ -598,6 +604,7 @@ amomo
 amora
 amoré
 amota
+ampla
 amplo
 amuar
 amuos
@@ -820,6 +827,7 @@ ardia
 ardil
 ardor
 ardra
+árdua
 árduo
 areal
 areão
@@ -862,6 +870,7 @@ arguo
 aribé
 aricá
 aricó
+árida
 árido
 áries
 arife
@@ -1094,6 +1103,7 @@ aviam
 avião
 aviar
 avias
+ávida
 ávido
 aviei
 aviem
@@ -1352,6 +1362,7 @@ bemol
 bença
 bengo
 benim
+benta
 bento
 benza
 benze
@@ -1608,6 +1619,7 @@ boxar
 bóxer
 boxes
 bozós
+braba
 brabo
 braça
 braço
@@ -1661,6 +1673,7 @@ broxa
 bruaá
 bruco
 bruma
+bruna
 bruno
 bruta
 bruto
@@ -2335,6 +2348,7 @@ clivo
 clona
 clone
 clono
+clora
 cloro
 close
 clous
@@ -2688,6 +2702,7 @@ cúlis
 culpa
 culpe
 culpo
+culta
 culto
 cumaí
 cumãs
@@ -3006,6 +3021,7 @@ dizes
 dizia
 djins
 dlins
+doada
 doado
 doais
 doará
@@ -3135,6 +3151,7 @@ ducto
 duela
 duele
 duelo
+dueta
 dueto
 dugão
 dulia
@@ -3350,6 +3367,7 @@ erbia
 érebo
 éreis
 éreos
+ereta
 ereto
 ergam
 ergas
@@ -3462,6 +3480,7 @@ exame
 exara
 exare
 exaro
+exata
 exato
 exiba
 exibe
@@ -4405,6 +4424,7 @@ gozos
 gozou
 graal
 graça
+grada
 grade
 grado
 grafa
@@ -4417,6 +4437,7 @@ grano
 grans
 grãos
 grapa
+grata
 grato
 graus
 grava
@@ -4683,6 +4704,7 @@ iates
 iavés
 ibaró
 ibeji
+ibera
 ibero
 ibins
 ibira
@@ -4770,6 +4792,7 @@ imole
 imolo
 imoto
 ímpar
+ímpia
 ímpio
 impõe
 impor
@@ -4786,6 +4809,7 @@ inalo
 inamu
 inana
 inane
+inata
 inato
 inçar
 incas
@@ -4859,6 +4883,7 @@ ipetê
 ipins
 ipuãs
 ipuca
+irada
 irado
 iraís
 irara
@@ -4897,6 +4922,7 @@ issés
 issos
 istmo
 istos
+ítala
 ítalo
 itapu
 itauá
@@ -4997,6 +5023,7 @@ jebus
 jecas
 jegue
 jeira
+jeita
 jeito
 jejás
 jejes
@@ -5165,6 +5192,7 @@ lagar
 lagoa
 lagos
 laias
+laica
 laico
 laido
 laitu
@@ -5281,6 +5309,7 @@ légua
 legue
 leiam
 leias
+leiga
 leigo
 leino
 leira
@@ -5307,6 +5336,7 @@ leneu
 lenha
 lenho
 lenir
+lenta
 lente
 lento
 leoas
@@ -5320,6 +5350,7 @@ leram
 lerão
 lerás
 lerca
+lerda
 lerdo
 lerei
 lerem
@@ -5630,6 +5661,7 @@ maces
 macha
 machê
 macho
+macia
 macio
 macis
 macla
@@ -5649,6 +5681,7 @@ magal
 magas
 magia
 magma
+magna
 magno
 mágoa
 magoe
@@ -5805,6 +5838,7 @@ medro
 megas
 meião
 meias
+meiga
 meigo
 meios
 melai
@@ -5985,6 +6019,7 @@ mitos
 mitra
 miuás
 miúça
+miúda
 miúde
 miúdo
 miuis
@@ -6041,6 +6076,7 @@ mogol
 mogos
 moíam
 moías
+moída
 moído
 moios
 moira
@@ -6106,6 +6142,7 @@ morro
 morsa
 morse
 morso
+morta
 morte
 morto
 mosas
@@ -6668,6 +6705,7 @@ onixe
 ontem
 onzes
 opaba
+opaca
 opaco
 opado
 opala
@@ -6765,6 +6803,7 @@ ostra
 ostro
 ótica
 ótico
+ótima
 ótimo
 otins
 otite
@@ -6789,6 +6828,7 @@ ousou
 outão
 outar
 outos
+outra
 outro
 ouvem
 ouves
@@ -7174,6 +7214,7 @@ pifas
 pifei
 pifem
 pifes
+pifia
 pífio
 pifou
 pifre
@@ -7295,6 +7336,7 @@ plane
 plano
 platô
 plebe
+plena
 pleno
 plexo
 plica
@@ -8134,6 +8176,7 @@ rubis
 rublo
 rubor
 rubos
+rubra
 rubro
 ruçar
 ruche
@@ -8171,6 +8214,7 @@ rugou
 rugue
 ruíam
 ruías
+ruída
 ruído
 ruína
 ruins
@@ -9101,6 +9145,7 @@ temeu
 temia
 temor
 temos
+tempa
 tempo
 tenar
 tenaz
@@ -9139,6 +9184,7 @@ teria
 tério
 terma
 termo
+terna
 terno
 terol
 terra
@@ -9650,6 +9696,7 @@ umbra
 umbro
 umbus
 úmero
+úmida
 úmido
 umiri
 unais
@@ -9674,7 +9721,9 @@ unhas
 uniam
 união
 unias
+única
 único
+unida
 unido
 unirá
 untai
