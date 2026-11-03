@@ -211,14 +211,6 @@ function BlocksStart({
             </div>
           ))}
         >
-          <ol className="bk-howto">
-            {HOW[open].map((t, i) => (
-              <li key={i}>
-                <b>{i + 1}</b>
-                <span>{t}</span>
-              </li>
-            ))}
-          </ol>
           {resumable && (
             <div className="bk-resume" role="group" aria-label="Partida em andamento">
               <span className="mono bk-resume-kicker">PARTIDA EM ANDAMENTO</span>
