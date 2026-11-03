@@ -4,6 +4,7 @@ import type { FsWeaponId } from '@nocap/games';
 const PATHS: Record<FsWeaponId, string> = {
   ak: 'M2 19 L20 14 L50 14 L54 12 L92 12 L92 15 L56 16 L50 17 L40 17 L36 31 L30 31 L32 17 L22 18 L15 31 L9 31 L12 21 Z',
   pistol: 'M24 10 H74 V18 H48 L42 32 H30 L34 18 H24 Z',
+  knife: 'M6 26 L10 20 L58 12 L84 15 L60 24 L36 27 L14 32 Z',
   sniper: 'M2 21 H28 L32 17 H46 V12 H58 V17 H98 V19 H58 V21 H46 L40 30 H34 L36 24 H2 Z',
 };
 

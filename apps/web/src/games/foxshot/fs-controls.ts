@@ -17,6 +17,14 @@ export interface FsFrameInput {
   cycle: boolean;
   /** Placar (Tab) segurado. */
   board: boolean;
+  /** Ctrl: agacha. Shift: anda devagar e sem barulho. */
+  crouch: boolean;
+  walk: boolean;
+  /** Teclas de um toque só (F inspeciona, B loja, G larga, E pega). */
+  inspect: boolean;
+  buy: boolean;
+  drop: boolean;
+  pickup: boolean;
 }
 
 /**
@@ -31,6 +39,7 @@ export class FsControls {
   private cycleQueued = false;
   private reloadQueued = false;
   private jumpQueued = false;
+  private once = { inspect: false, buy: false, drop: false, pickup: false };
   private dx = 0;
   private dy = 0;
   private stick: { id: number; ox: number; oy: number; x: number; y: number } | null = null;
@@ -168,6 +177,8 @@ export class FsControls {
     const pick = this.pickKey;
     this.pickKey = -1;
     const on = this.enabled;
+    const { inspect, buy, drop, pickup } = this.once;
+    this.once = { inspect: false, buy: false, drop: false, pickup: false };
     return {
       fwd: on ? fwd : 0,
       strafe: on ? strafe : 0,
@@ -178,6 +189,12 @@ export class FsControls {
       pick: on ? pick : -1,
       cycle: on && cycle,
       board: this.held('scoreboard'),
+      crouch: on && this.held('crouch'),
+      walk: on && this.held('walk'),
+      inspect: on && inspect,
+      buy: buy,
+      drop: on && drop,
+      pickup: on && pickup,
     };
   }
 
@@ -191,8 +208,16 @@ export class FsControls {
   };
 
   private kd = (e: KeyboardEvent) => {
-    if (e.ctrlKey || e.metaKey || e.altKey || isTyping(e)) return;
+    if (isTyping(e)) return;
     const b = fsSettings().binds;
+    // Ctrl é a tecla de agachar: só deixa passar os atalhos do navegador quando não é uma tecla do jogo (Ctrl+R etc.)
+    if ((e.ctrlKey || e.metaKey || e.altKey) && !Object.values(b).includes(e.code)) return;
+    if (!e.repeat) {
+      if (e.code === b.inspect) this.once.inspect = true;
+      else if (e.code === b.buy) this.once.buy = true;
+      else if (e.code === b.drop) this.once.drop = true;
+      else if (e.code === b.pickup) this.once.pickup = true;
+    }
     if (e.code === b.slot1) this.pickKey = 0;
     else if (e.code === b.slot2) this.pickKey = 1;
     else if (e.code === b.slot3) this.pickKey = 2;

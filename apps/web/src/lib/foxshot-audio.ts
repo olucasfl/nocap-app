@@ -106,7 +106,11 @@ const jit = (v: number, k = 0.06) => v * (1 + (Math.random() * 2 - 1) * k);
 
 export const fsAudio = {
   /** Tiro de cada arma. */
-  shot(id: 'ak' | 'pistol' | 'sniper') {
+  shot(id: 'ak' | 'pistol' | 'sniper' | 'knife') {
+    if (id === 'knife') {
+      burst({ type: 'bandpass', freq: jit(2800), q: 1.2, dur: 0.12, peak: 0.16 });
+      return;
+    }
     if (id === 'ak') {
       burst({ type: 'bandpass', freq: jit(1900), q: 0.7, dur: 0.11, peak: 0.55 });
       burst({ type: 'highpass', freq: 4500, dur: 0.02, peak: 0.35 });
@@ -162,6 +166,11 @@ export const fsAudio = {
   },
   impact() {
     burst({ type: 'bandpass', freq: 1700, q: 1, dur: 0.05, peak: 0.12 });
+  },
+  /** Faca acertando alguém. */
+  stab() {
+    burst({ type: 'bandpass', freq: 900, q: 1.5, dur: 0.06, peak: 0.3 });
+    tone('sine', 180, 90, 0.08, 0.3);
   },
   step() {
     burst({ type: 'lowpass', freq: jit(420, 0.15), q: 0.8, dur: 0.045, peak: 0.07 });

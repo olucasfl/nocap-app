@@ -3,12 +3,15 @@ import { Link } from '@tanstack/react-router';
 import * as THREE from 'three';
 import {
   FS_ARENA,
-  FS_MOVE,
   FS_SPAWN,
   FS_TARGETS,
   FS_WEAPONS,
   FsLoadout,
   fsDir,
+  fsBuy,
+  fsEyeHeight,
+  fsQuiet,
+  type FsShopItem,
   fsNewMover,
   fsSpreadDeg,
   fsStepMover,
@@ -21,6 +24,7 @@ import { FoxShotScene, type Quality } from './FoxShotScene';
 import { FsControls } from './fs-controls';
 import { fsSettings, useFsSettings } from './fs-settings';
 import { FsMenu } from './FsMenu';
+import { FsShop } from './FsShop';
 import {
   FsAmmo,
   FsCrosshair,
@@ -39,7 +43,19 @@ import './foxshot.css';
 const STEP = 1 / 120;
 const MATCH_S = 300;
 const REVIVE_S = 3;
-const WEAPON_ORDER: FsWeaponId[] = ['ak', 'pistol', 'sniper'];
+/** Armas soltas no chão: no máximo isto (as mais antigas somem) e somem sozinhas depois de um tempo, para não pesar. */
+const DROP_MAX = 6;
+const DROP_LIFE_S = 25;
+const PICK_R = 1.8;
+
+interface Drop {
+  h: number;
+  id: FsWeaponId;
+  ammo: number;
+  x: number;
+  z: number;
+  at: number;
+}
 
 interface TargetState {
   hp: number;
@@ -100,6 +116,13 @@ export function FoxShotTestPage() {
   const [paused, setPausedState] = useState(true);
   const [board, setBoard] = useState(false);
   const [needClick, setNeedClick] = useState(false);
+  const [shop, setShopState] = useState(false);
+  const shopRef = useRef(false);
+  const buyRef = useRef<(item: FsShopItem) => void>(() => undefined);
+  const setShop = useCallback((v: boolean) => {
+    shopRef.current = v;
+    setShopState(v);
+  }, []);
   const ctl = useRef<FsControls | null>(null);
   const pausedRef = useRef(true);
   const endMatchRef = useRef<() => void>(() => undefined);
@@ -112,7 +135,11 @@ export function FoxShotTestPage() {
     pausedRef.current = v;
     setPausedState(v);
     if (ctl.current) ctl.current.enabled = !v;
-    if (v) setNeedClick(false);
+    if (v) {
+      setNeedClick(false);
+      shopRef.current = false;
+      setShopState(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -206,7 +233,7 @@ export function FoxShotTestPage() {
     const view = { yaw: 0, pitch: 0, rYaw: 0, rPitch: 0 };
     const me = { hp: 100, armor: 100 };
     const stats: MyStats = { kills: 0, deaths: 0, hs: 0, damage: 0 };
-    const loadout = new FsLoadout(WEAPON_ORDER);
+    const loadout = new FsLoadout('ak', 'pistol');
     const targets = new Map<string, TargetState>(
       FS_TARGETS.map((t) => [
         t.id,
@@ -260,22 +287,11 @@ export function FoxShotTestPage() {
       window.setTimeout(() => setFeed((f) => f.filter((x) => x.key !== key)), 6000);
     };
 
-    const fire = (
+    const applyHit = (
       id: FsWeaponId,
-      shot: { kickPitch: number; kickYaw: number; devYaw: number; devPitch: number },
+      tr: ReturnType<typeof fsTrace>,
+      to: THREE.Vector3,
     ) => {
-      const w = FS_WEAPONS[id];
-      const eye: [number, number, number] = [mover.x, mover.y + FS_MOVE.eye, mover.z];
-      const dir = fsDir(
-        view.yaw + view.rYaw + shot.devYaw,
-        view.pitch + view.rPitch + shot.devPitch,
-      );
-      const tr = fsTrace(w, eye, dir, FS_ARENA, bodies());
-      const from = scene.muzzleWorld();
-      const to = new THREE.Vector3(tr.point[0], tr.point[1], tr.point[2]);
-      scene.tracer(from, to);
-      scene.fireFx(id === 'sniper' ? 2.4 : id === 'pistol' ? 0.5 : 1);
-      fsAudio.shot(id);
       if (tr.kind === 'world') {
         scene.puff(to, 0xd8c8a8, 0.3, 0.4);
         fsAudio.impact();
@@ -304,13 +320,45 @@ export function FoxShotTestPage() {
           showMarker(kind, `-${d.hp}`);
         }
       }
+    };
+
+    const fire = (
+      id: FsWeaponId,
+      shot: { kickPitch: number; kickYaw: number; devYaw: number; devPitch: number },
+    ) => {
+      const w = FS_WEAPONS[id];
+      const eye: [number, number, number] = [mover.x, mover.y + fsEyeHeight(mover), mover.z];
+      const dir = fsDir(
+        view.yaw + view.rYaw + shot.devYaw,
+        view.pitch + view.rPitch + shot.devPitch,
+      );
+      const tr = fsTrace(w, eye, dir, FS_ARENA, bodies());
+      const from = scene.muzzleWorld();
+      const to = new THREE.Vector3(tr.point[0], tr.point[1], tr.point[2]);
+      scene.tracer(from, to);
+      scene.fireFx(id === 'sniper' ? 2.4 : id === 'pistol' ? 0.5 : 1);
+      fsAudio.shot(id);
+      applyHit(id, tr, to);
       view.rPitch += shot.kickPitch;
       view.rYaw += shot.kickYaw;
     };
 
+    const melee = (kind: 'slash' | 'stab') => {
+      const kw = FS_WEAPONS.knife;
+      const eye: [number, number, number] = [mover.x, mover.y + fsEyeHeight(mover), mover.z];
+      const dir = fsDir(view.yaw + view.rYaw, view.pitch + view.rPitch);
+      const w = kind === 'stab' ? { ...kw, dmg: kw.melee!.stab } : kw;
+      const tr = fsTrace(w, eye, dir, FS_ARENA, bodies(), kw.melee!.range);
+      scene.knifeSwing(kind);
+      fsAudio.shot('knife');
+      if (tr.kind === 'player') fsAudio.stab();
+      applyHit('knife', tr, new THREE.Vector3(tr.point[0], tr.point[1], tr.point[2]));
+    };
     const handle = (events: ReturnType<FsLoadout['update']>) => {
       for (const e of events) {
         if (e.type === 'fire') fire(e.weapon.id, e.shot);
+        else if (e.type === 'melee') melee(e.kind);
+        else if (e.type === 'inspect') scene.knifeInspect(true);
         else if (e.type === 'dry') fsAudio.dry();
         else if (e.type === 'reload') {
           fsAudio.magOut();
@@ -359,6 +407,29 @@ export function FoxShotTestPage() {
       }),
     ];
 
+    // ---- armas no chão
+    const drops: Drop[] = [];
+    const addDrop = (id: FsWeaponId, ammo: number, x: number, z: number) => {
+      if (drops.length >= DROP_MAX) {
+        const old = drops.shift()!;
+        scene.removeDrop(old.h);
+      }
+      drops.push({ h: scene.addDrop(id, x, z), id, ammo, x, z, at: clock });
+    };
+    const dropAhead = (id: FsWeaponId, ammo: number) => {
+      const yaw = (view.yaw * Math.PI) / 180;
+      addDrop(id, ammo, mover.x - Math.sin(yaw) * 1.2, mover.z - Math.cos(yaw) * 1.2);
+    };
+    const afterEquip = () => scene.selectWeapon(loadout.weapon.id);
+    buyRef.current = (item) => {
+      const r = fsBuy(loadout, item.id);
+      if (!r.ok) return;
+      if (r.armor) me.armor = r.armor.points;
+      if (r.dropped) dropAhead(r.dropped.id, r.dropped.ammo);
+      afterEquip();
+      fsAudio.draw();
+    };
+
     const frame = (now: number) => {
       if (dead) return;
       raf = requestAnimationFrame(frame);
@@ -376,11 +447,47 @@ export function FoxShotTestPage() {
 
       if (!isPaused) {
         clock += dt;
-        adsOn = inp.ads && !loadout.reloading;
+        adsOn = inp.ads && !loadout.reloading && !loadout.weapon.melee;
         const adsScale = Math.min(1, (w.adsFov || 62) / baseFov) * st.adsSens;
         const look = controls.takeLook(adsOn ? adsScale : 1);
         view.yaw += look.yaw;
         view.pitch = Math.max(-88, Math.min(88, view.pitch + look.pitch));
+        if (inp.buy) setShop(!shopRef.current);
+        const shopOpen = shopRef.current;
+        if (inp.drop) {
+          const d = loadout.drop();
+          if (d) {
+            dropAhead(d.id, d.ammo);
+            afterEquip();
+          }
+        }
+        if (inp.pickup) {
+          let best: Drop | null = null;
+          let bd = PICK_R;
+          for (const d of drops) {
+            const dd = Math.hypot(d.x - mover.x, d.z - mover.z);
+            if (dd < bd) {
+              bd = dd;
+              best = d;
+            }
+          }
+          if (best) {
+            drops.splice(drops.indexOf(best), 1);
+            scene.removeDrop(best.h);
+            const old = loadout.slots[FsLoadout.slotIndex(FS_WEAPONS[best.id].slot)];
+            const prev = loadout.equip(best.id, best.ammo);
+            if (prev && old) dropAhead(prev, old.ammo);
+            afterEquip();
+            fsAudio.draw();
+          }
+        }
+        for (let i = drops.length - 1; i >= 0; i--) {
+          if (clock - drops[i]!.at > DROP_LIFE_S) {
+            scene.removeDrop(drops[i]!.h);
+            drops.splice(i, 1);
+          }
+        }
+        if (shopOpen) inp.pick = -1;
         if (inp.pick >= 0) switchTo(inp.pick);
         else if (inp.cycle) switchTo((loadout.current + 1) % loadout.slots.length);
 
@@ -391,14 +498,23 @@ export function FoxShotTestPage() {
           acc -= STEP;
           fsStepMover(
             mover,
-            { fwd: inp.fwd, strafe: inp.strafe, jump: inp.jump, yaw: view.yaw, speedMul: mul },
+            {
+              fwd: inp.fwd,
+              strafe: inp.strafe,
+              jump: inp.jump,
+              yaw: view.yaw,
+              speedMul: mul,
+              crouch: inp.crouch,
+              walk: inp.walk,
+            },
             STEP,
             FS_ARENA,
           );
           inp.jump = false;
         }
         speed = Math.hypot(mover.vx, mover.vz);
-        if (mover.onGround && speed > 1.5) {
+        const quiet = fsQuiet({ crouch: inp.crouch, walk: inp.walk });
+        if (mover.onGround && speed > 1.5 && !quiet) {
           stepT -= dt * (speed / 3.4);
           if (stepT <= 0) {
             fsAudio.step();
@@ -407,8 +523,27 @@ export function FoxShotTestPage() {
         }
         if (speed0 < 0.5 && speed >= 0.5) stepT = 0.05;
 
-        const mv = { moving: speed > 0.8, airborne: !mover.onGround, ads: adsOn };
-        handle(loadout.update(dt, { trigger: inp.trigger, reload: inp.reload }, mv, 'me'));
+        const mv = {
+          moving: speed > 0.8,
+          airborne: !mover.onGround,
+          ads: adsOn,
+          crouch: mover.crouchK > 0.5,
+        };
+        const wasInspecting = loadout.inspecting;
+        handle(
+          loadout.update(
+            dt,
+            {
+              trigger: inp.trigger && !shopOpen,
+              reload: inp.reload,
+              alt: inp.ads && !shopOpen,
+              inspect: inp.inspect,
+            },
+            mv,
+            'me',
+          ),
+        );
+        if (wasInspecting && !loadout.inspecting) scene.knifeInspect(false);
         if (loadout.reloading) {
           const p = 1 - loadout.reloadT / loadout.weapon.reload;
           scene.setReloadProgress(p);
@@ -445,7 +580,7 @@ export function FoxShotTestPage() {
       const fov = baseFov + ((loadout.weapon.adsFov || 62) - baseFov) * (adsOn ? 1 : 0);
       scene.setView(
         mover.x,
-        mover.y + FS_MOVE.eye,
+        mover.y + fsEyeHeight(mover),
         mover.z,
         view.yaw + view.rYaw,
         view.pitch + view.rPitch,
@@ -537,7 +672,7 @@ export function FoxShotTestPage() {
           const y = zone === 'head' ? 1.17 : zone === 'chest' ? 0.9 : 0.3;
           const dx = t.x - mover.x,
             dz = t.z - mover.z,
-            dy = y - (mover.y + FS_MOVE.eye);
+            dy = y - (mover.y + fsEyeHeight(mover));
           view.yaw = (Math.atan2(-dx, -dz) * 180) / Math.PI;
           view.pitch = (Math.atan2(dy, Math.hypot(dx, dz)) * 180) / Math.PI;
           view.rPitch = view.rYaw = 0;
@@ -572,6 +707,9 @@ export function FoxShotTestPage() {
           return { ...targets.get(id)! };
         },
         stats: () => ({ ...stats }),
+        mover,
+        drops: () => drops.map((d) => ({ id: d.id, ammo: d.ammo })),
+        buy: (id: string) => buyRef.current({ id } as FsShopItem),
         loadout,
         view,
       };
@@ -651,6 +789,9 @@ export function FoxShotTestPage() {
             mag={hud.mag}
             reloading={hud.reloading}
           />
+          {shop && !paused && (
+            <FsShop onBuy={(i) => buyRef.current(i)} onClose={() => setShop(false)} />
+          )}
           {board && <FsScoreboard players={hud.players} timeLeft={hud.timeLeft} />}
           {needClick && !paused && (
             <div className="fs-hint mono" data-testid="fs-needclick">
@@ -706,6 +847,14 @@ export function FoxShotTestPage() {
                   aria-label="Recarregar"
                 >
                   RECARGA
+                </button>
+                <button
+                  type="button"
+                  className="fs-tb"
+                  onClick={() => setShop(!shopRef.current)}
+                  aria-label="Loja"
+                >
+                  LOJA
                 </button>
                 <button
                   type="button"

@@ -187,3 +187,13 @@ Rede: tiro é leve (10 jogadores a 20 a 30 estados por segundo, algumas dezenas 
 - Modelos: `apps/web/public/models/foxshot/{fox,rifle,pistol,sniper}.glb` (feitos no Blender por `tools/art`). Os modelos de referência do Lucas (AK, Glock, L96A1) são carregados de `models/foxshot/ref/` **se existirem**; essa pasta não é versionada (licença a confirmar).
 - Testes de tela (`e2e/foxshot.spec.ts`): carrega e mostra o HUD, regras de dano contra alvos de verdade (fuzil mata de cabeça com e sem capacete, pistola não mata de cabeça com capacete, sniper mata no corpo com colete e capacete), HUD de toque no celular deitado e aviso de girar em pé.
 - Falta: sentir o tiro e o recuo jogando, medir fps em celular de verdade, gravações de som, mapa final, bots que jogam (fase 1).
+
+## 15. Espaços de arma, faca, agachar, loja (implementado na fase 0)
+
+- Três espaços: 1 primária, 2 secundária, 3 faca (nunca sai). Começa com fuzil e pistola; a sniper vem da loja.
+- Ctrl agacha (câmera desce, anda mais devagar, mira mais fechada); Shift anda devagar e sem passos; F inspeciona; G larga; E pega; B abre a loja. Tudo remapeável no menu (Comandos).
+- Faca: botão de atirar corta (40), o de mirar estoca (65, recarga 1 s), alcance 1,7 m, sem atravessar parede.
+- Loja (B): colunas Equipamento, Pistolas, Intermediárias, Fuzis, Granadas; dinheiro infinito; itens futuros ficam apagados ("em breve", `soon` em `FS_SHOP`). Comprar a arma que já tem só enche o carregador; comprar outra no mesmo espaço larga a antiga no chão.
+- Armas no chão: no máximo 6 (a mais antiga some) e cada uma some em 25 s.
+- Braços e faca: modelo do Lucas (`tools/art/arms_knife.py` converte para `public/models/foxshot/ref/arms_knife.glb`, fora do git até confirmar a licença); sem o arquivo entra uma faca simples. A pose de segurar é o primeiro quadro da animação `inspect`.
+- Pendente: mãos segurando fuzil, pistola e sniper, e as animações de recarga (referências: AUG para sniper, G3 para fuzil, Desert Eagle para pistola; os arquivos são personagens completos e precisam ser retargetados).

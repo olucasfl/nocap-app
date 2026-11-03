@@ -4,12 +4,7 @@ import { expect, test, type Page } from '@playwright/test';
  * Fox Shot! (fase 0): a arena de teste carrega com os modelos, o HUD aparece e as regras de dano estilo CS valem na tela de
  * verdade: fuzil mata de cabeça com ou sem capacete, pistola não mata de cabeça com capacete, sniper mata no corpo.
  */
-type Fs = {
-  aimAt(id: string, zone?: string): void;
-  teleport(x: number, z: number): void;
-  shoot(n?: number): unknown;
-  weapon(i: number): void;
-  target(id: string): { hp: number; armor: number; alive: boolean };
+  buy(id: string): void;
 };
 const fs = <T>(page: Page, fn: string, ...args: unknown[]) =>
   page.evaluate(
@@ -43,8 +38,9 @@ test('a arena carrega, mostra o HUD e o medidor de desempenho', async ({ page },
     await page.screenshot({ path: `${process.env.FS_SHOTS}/desktop-menu.png` });
     // sem o cartão de pausa (o mouse não prende em teste): fotos da cena
     await page.getByTestId('fsm-resume').click();
-    for (const [i, name] of ['fuzil', 'pistola', 'sniper'].entries()) {
-      await fs(page, 'weapon', i);
+    for (const [i, name] of ['fuzil', 'pistola', 'faca', 'sniper'].entries()) {
+      if (name === 'sniper') await fs(page, 'buy', 'sniper');
+      await fs(page, 'weapon', name === 'sniper' ? 0 : i);
       await fs(page, 'teleport', 0, 9);
       await fs(page, 'aimAt', 't3', 'chest');
       await page.waitForTimeout(900);
@@ -83,9 +79,10 @@ test('dano estilo CS nos alvos', async ({ page }, info) => {
   const t5 = await fs<{ alive: boolean; hp: number }>(page, 'target', 't5');
   expect(t5.alive, 'pistola, cabeça, com capacete').toBe(true);
   expect(t5.hp).toBeLessThan(100);
-  // sniper (arma 2): corpo com colete e capacete mata
+  // sniper: comprada na loja (entra no lugar da primária)
   await fs(page, 'teleport', 14, -10);
-  await fs(page, 'weapon', 2);
+  await fs(page, 'buy', 'sniper');
+  await fs(page, 'weapon', 0);
   await fs(page, 'aimAt', 't7', 'chest');
   await fs(page, 'shoot', 1);
   expect(
@@ -175,4 +172,62 @@ test('menu do Esc: personalizar, comandos com troca de tecla, placar e kill feed
   await expect(page.getByTestId('fs-radar')).toBeVisible();
   if (process.env.FS_SHOTS)
     await page.screenshot({ path: `${process.env.FS_SHOTS}/desktop-hud.png` });
+});
+
+test('faca, agachar, loja e armas no chão', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop', 'um projeto basta');
+  test.setTimeout(240_000);
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await open(page);
+  await page.getByTestId('fsm-resume').click();
+  // 3 espaços: tecla 3 pega a faca
+  await page.keyboard.press('Digit3');
+  await page.waitForTimeout(300);
+  await expect(page.getByTestId('fs-ammo')).toContainText('Faca');
+  // faca: corta de perto (t1 em (0, 3)? teleporta colado no alvo)
+  await fs(page, 'teleport', 0, 4.5);
+  await fs(page, 'aimAt', 't1', 'chest');
+  const before = await fs<{ hp: number }>(page, 'target', 't1');
+  await page.evaluate(() => {
+    const h = (window as unknown as { __fs: { loadout: { drawT: number } } }).__fs;
+    h.loadout.drawT = 0;
+  });
+  // Ctrl agacha (a câmera desce) e solta levanta
+  await page.keyboard.down('ControlLeft');
+  await page.waitForTimeout(600);
+  const crouched = await page.evaluate(
+    () => (window as unknown as { __fs: { mover: { crouchK: number } } }).__fs.mover.crouchK,
+  );
+  expect(crouched).toBeGreaterThan(0.9);
+  await page.keyboard.up('ControlLeft');
+  await page.waitForTimeout(600);
+  expect(
+    await page.evaluate(
+      () => (window as unknown as { __fs: { mover: { crouchK: number } } }).__fs.mover.crouchK,
+    ),
+  ).toBeLessThan(0.1);
+  void before;
+  // B abre a loja com 5 colunas; itens futuros ficam apagados
+  await page.keyboard.press('KeyB');
+  await expect(page.getByTestId('fs-shop')).toBeVisible();
+  for (const c of ['equipment', 'pistols', 'mid', 'rifles', 'grenades'])
+    await expect(page.getByTestId(`fs-shop-col-${c}`)).toBeVisible();
+  await expect(page.getByTestId('fs-buy-smg1')).toBeDisabled();
+  // comprar a sniper: o fuzil cai no chão; comprar de novo não larga nada
+  await page.getByTestId('fs-buy-sniper').dispatchEvent('click');
+  expect((await fs<unknown[]>(page, 'drops')).length).toBe(1);
+  await page.getByTestId('fs-buy-sniper').dispatchEvent('click');
+  expect((await fs<unknown[]>(page, 'drops')).length).toBe(1);
+  // alternar fuzil e sniper pela loja nunca passa de 6 armas no chão
+  for (let i = 0; i < 12; i++) {
+    await page.getByTestId(i % 2 ? 'fs-buy-sniper' : 'fs-buy-ak').dispatchEvent('click');
+  }
+  expect((await fs<unknown[]>(page, 'drops')).length).toBeLessThanOrEqual(6);
+  await page.keyboard.press('KeyB');
+  await expect(page.getByTestId('fs-shop')).toHaveCount(0);
+  if (process.env.FS_SHOTS) {
+    await page.keyboard.press('Digit3');
+    await page.waitForTimeout(900);
+    await page.screenshot({ path: `${process.env.FS_SHOTS}/faca.png` });
+  }
 });
