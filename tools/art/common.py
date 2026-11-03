@@ -146,7 +146,7 @@ def studio(res=(1280, 720), samples=64):
     w = bpy.data.worlds.new('w')
     w.use_nodes = True
     bg = w.node_tree.nodes['Background']
-    bg.inputs['Color'].default_value = (0.16, 0.17, 0.2, 1)
+    bg.inputs['Color'].default_value = (0.05, 0.055, 0.07, 1)
     bg.inputs['Strength'].default_value = 0.9
     sc.world = w
 
@@ -171,7 +171,7 @@ def studio(res=(1280, 720), samples=64):
     bm.to_mesh(floor)
     bm.free()
     fo = bpy.data.objects.new('floor', floor)
-    fo.location = (0, 0, -0.22)
+    fo.location = (0, 0, -0.3)
     bpy.context.collection.objects.link(fo)
     fm = material('floor', (0.12, 0.12, 0.14), 0.0, 0.8)
     fo.data.materials.append(fm)
