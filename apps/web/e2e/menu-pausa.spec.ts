@@ -67,7 +67,9 @@ for (const game of GAMES) {
         .click({ timeout: 25_000 })
         .catch(() => undefined);
     }
-    await A.waitForTimeout(6000);
+    // o botão do menu aparece com a partida na tela (sem esperar muito: no Desmorona! as raposas paradas caem em ~20 s)
+    await A.getByRole('button', { name: 'Abrir o menu' }).waitFor({ timeout: 30_000 });
+    await B.getByRole('button', { name: 'Abrir o menu' }).waitFor({ timeout: 30_000 });
 
     const menu = (p: Page) => p.locator('[data-testid$="-menu"]');
     // Esc abre; Esc de novo fecha (e não reabre)
