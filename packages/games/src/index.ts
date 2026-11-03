@@ -16,4 +16,5 @@ export * from './words';
 export * from './aperta';
 export * from './desmorona';
 export * from './pingpong';
+export * from './foxshot';
 export * from './bola';
