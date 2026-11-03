@@ -72,14 +72,15 @@
 
 /* ---- partida */
 .bk-play {
-  --bw: max(190px, min(calc(100vw - 32px), 440px, calc(100vh - 372px)));
+  --bw: max(190px, min(calc(100vw - 32px - env(safe-area-inset-left) - env(safe-area-inset-right)), 440px, calc(100vh - 372px)));
   position: fixed;
   inset: 0;
   z-index: 50;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: max(10px, env(safe-area-inset-top)) 16px max(10px, env(safe-area-inset-bottom));
+  padding: max(10px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+    max(10px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
   background: var(--paper);
   color: var(--ink);
   touch-action: none;
@@ -90,7 +91,7 @@
 }
 @supports (height: 100dvh) {
   .bk-play {
-    --bw: max(190px, min(calc(100vw - 32px), 440px, calc(100dvh - 372px)));
+    --bw: max(190px, min(calc(100vw - 32px - env(safe-area-inset-left) - env(safe-area-inset-right)), 440px, calc(100dvh - 372px)));
   }
 }
 .bk-top {
@@ -934,7 +935,9 @@
     justify-content: center;
     align-items: start;
     padding-top: max(6px, env(safe-area-inset-top));
-    padding-bottom: 6px;
+    padding-bottom: max(6px, env(safe-area-inset-bottom));
+    /* a grade e o painel ocupam só o que sobra entre as laterais seguras (câmera frontal, cantos) */
+    --bw: max(190px, min(calc(100vh - 70px), calc((100vw - env(safe-area-inset-left) - env(safe-area-inset-right)) * 0.52)));
   }
   .bk-top {
     grid-area: top;

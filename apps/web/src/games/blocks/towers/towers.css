@@ -23,8 +23,8 @@
 .tw-top {
   position: absolute;
   top: max(10px, env(safe-area-inset-top));
-  left: 12px;
-  right: 12px;
+  left: max(12px, env(safe-area-inset-left));
+  right: max(12px, env(safe-area-inset-right));
   z-index: 3;
   display: flex;
   align-items: flex-start;
@@ -105,7 +105,7 @@
 .tw-score {
   position: absolute;
   top: calc(max(10px, env(safe-area-inset-top)) + 66px);
-  left: 12px;
+  left: max(12px, env(safe-area-inset-left));
   z-index: 2;
   display: flex;
   align-items: center;
@@ -157,7 +157,7 @@
 .tw-chips {
   position: absolute;
   top: calc(max(10px, env(safe-area-inset-top)) + 66px);
-  right: 12px;
+  right: max(12px, env(safe-area-inset-right));
   z-index: 2;
   display: grid;
   gap: 6px;
@@ -380,10 +380,10 @@
    que é onde a torre cresce. */
 .tw-controls {
   position: absolute;
-  left: 50%;
+  left: calc(50% + (env(safe-area-inset-left) - env(safe-area-inset-right)) / 2);
   bottom: 0;
   z-index: 3;
-  width: min(100%, 540px);
+  width: min(calc(100% - env(safe-area-inset-left) - env(safe-area-inset-right)), 540px);
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
