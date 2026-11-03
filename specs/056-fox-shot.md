@@ -1,6 +1,6 @@
 # Spec 056: Fox Shot! (tiro das raposas) — RASCUNHO PARA DISCUSSÃO
 
-Pedido do Lucas em 03/11/2026. Status: **rascunho: nada foi construído. Falta o Lucas responder as dúvidas da seção 9 (várias mexem em regras permanentes).**
+Pedido do Lucas em 03/11/2026. Status: **rascunho: nada foi construído. O Lucas respondeu as dúvidas em 03/11/2026 (seção 10); falta confirmar o modo (mata-mata) e aprovar a fase 0.**
 
 ## 1. O que o Lucas pediu
 
@@ -115,3 +115,18 @@ Ideias para considerar (sem compromisso):
 - **Escolha de arma com pré-visualização** girando (a arte das armas vira vitrine).
 - **Marca de abates na arma** (contador).
 - Modo futuro: **Rei do morro** ou **Pega-bandeira**, por serem simples de explicar.
+
+## 10. Decisões do Lucas (03/11/2026)
+
+1. **Exceção de visual aprovada:** a cena 3D do Fox Shot! pode ser mais realista (PBR, luz e sombra). Menus, HUD, lobby e telas finais continuam Pop Brutal. (Falta registrar a exceção nomeada em `RULES.md` quando a fase 0 for aprovada.)
+2. **Sem sangue** aprovado (flash, "poof", boné cai).
+3. **Arte das armas: o Claude faz tudo** (o Lucas não tem artista nem modelos). Sem Blender aqui: os modelos são gerados por código com geometria de verdade (perfis extrudados com chanfro, torneados, peças móveis separadas) e texturas desenhadas por código (metal, desgaste, empunhadura, mapa de relevo), conferidos por **fotos da cena** e refinados em uma **vitrine de armas** (página de teste que gira a arma). Pacotes CC0 só entram se um baixar bem e servir de ponto de partida.
+4. **Raposa em pé**, com animações **simples**: parada (respira, cauda balança), correr/andar/de lado, atirar (coice do corpo), recarregar, tomar acerto e cair ("poof"). Tudo por código (articulações e senoides/molas), sem arquivo de animação.
+5. **Primeira pessoa.**
+6. **Computador e celular** (iPhone e Android, todos os tamanhos): **no celular só joga deitado**; em pé aparece o aviso "gire o aparelho". Respeita áreas seguras (câmera frontal, laterais, barra do Android).
+7. **12 pessoas por sala: até 10 jogando e 2 espectadores** (nossa sala hoje vai até 15).
+8. **Bala estilo CS:** não é instantânea, mas também não demora; **sem queda**, vai reto para onde mirou; pequeno atraso para chegar (a bala viaja uns 300 a 400 m/s: ~0,1 a 0,2 s a 40 m). Para "pegou para mim, pegou para todos": **o servidor decide o acerto no instante do disparo** (compensação de atraso) e a bala visível só leva o resultado até o alvo; o dano e o marcador aparecem quando a bala chega.
+9. **Sons gravados liberados**, desde que combinem com a estética do jogo.
+10. **Servidor autoritativo aprovado.**
+11. **Qualidade automática:** aparelho fraco fica mais feio (menos sombra, menos efeitos, menos resolução) e o forte fica mais bonito e mais renderizado. Mede o fps e sobe ou desce de nível sozinho.
+12. **Modo:** a proposta (mata-mata por tempo, todos contra todos) segue de pé; o Lucas ainda não confirmou.
