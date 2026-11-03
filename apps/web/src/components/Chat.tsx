@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
-import { Message } from '@/components/icons';
 import {
   markChatRead,
   muteMember,
@@ -162,61 +161,5 @@ export function ChatPanel({
         </button>
       </form>
     </div>
-  );
-}
-
-/**
- * Durante a partida: botão com o contador de não lidas e uma gaveta com a conversa. Quando o
- * jogo fecha o chat (Já Deu? na contagem, Intruso nas rodadas) some tudo, inclusive o contador.
- */
-export function ChatDock({ snapshot }: { snapshot: RoomSnapshot }) {
-  const unread = useRoom((s) => s.unread);
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    if (!open) return;
-    const esc = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
-    window.addEventListener('keydown', esc);
-    return () => window.removeEventListener('keydown', esc);
-  }, [open]);
-
-  if (!snapshot.chat.open) return null;
-  return (
-    <>
-      <button
-        type="button"
-        className={`ch-fab${unread > 0 ? ' new' : ''}`}
-        data-sfx="select"
-        aria-label={unread ? `Chat, ${unread} novas` : 'Chat'}
-        onClick={() => setOpen(true)}
-      >
-        <Message size={22} />
-        Chat
-        {unread > 0 && <b className="mono">{unread > 9 ? '9+' : unread}</b>}
-      </button>
-      {open && (
-        <div className="ch-backdrop" onClick={() => setOpen(false)}>
-          <div
-            className="ch-drawer"
-            role="dialog"
-            aria-label="Chat da sala"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="ch-head">
-              <h2 className="mono">CHAT</h2>
-              <button
-                type="button"
-                className="ch-close"
-                data-sfx="back"
-                onClick={() => setOpen(false)}
-              >
-                Fechar
-              </button>
-            </div>
-            <ChatPanel snapshot={snapshot} />
-          </div>
-        </div>
-      )}
-    </>
   );
 }

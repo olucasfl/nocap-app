@@ -9,7 +9,7 @@ import './game-chat.css';
 const SHOW_MS = 5000;
 
 /** Balão de conversa com três pontinhos: o ícone do chat da partida. */
-function IcChat({ size = 24 }: { size?: number }) {
+export function IcChat({ size = 24 }: { size?: number }) {
   return (
     <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true" focusable="false">
       <path
@@ -48,6 +48,56 @@ export function chatColor(snapshot: RoomSnapshot, userId: string): string | null
   return null;
 }
 
+/** Mensagens novas (de qualquer pessoa) que aparecem um instante ao lado do botão e somem; com o painel aberto não mostra. */
+function useChatToasts(open: boolean, byUnread = false): ChatMessage[] {
+  const messages = useRoom((s) => s.chat);
+  const unread = useRoom((s) => s.unread);
+  const prevUnread = useRef(unread);
+  const [shown, setShown] = useState<ChatMessage[]>([]);
+  const lastId = useRef<number | null>(null);
+  const timers = useRef(new Map<number, number>());
+  // No saguão a sala pode montar o chat depois da mensagem chegar: "não lida" nova (só de quem não sou eu, depois do histórico)
+  // é o sinal certo de mensagem ao vivo.
+  useEffect(() => {
+    if (!byUnread) return;
+    const was = prevUnread.current;
+    prevUnread.current = unread;
+    const last = messages[messages.length - 1];
+    if (unread <= was || open || !last || last.userId === 'system') return;
+    setShown((cur) => [...cur.filter((m) => m.id !== last.id).slice(-2), last]);
+    const t = window.setTimeout(() => {
+      setShown((cur) => cur.filter((m) => m.id !== last.id));
+      timers.current.delete(last.id);
+    }, SHOW_MS);
+    timers.current.set(last.id, t);
+  }, [unread]);
+  useEffect(() => {
+    if (byUnread) return;
+    const last = messages[messages.length - 1];
+    if (lastId.current === null) {
+      // primeira leitura (histórico da sala, mesmo vazio): não mostra mensagens velhas
+      lastId.current = last?.id ?? -1;
+      return;
+    }
+    if (!last || last.id === lastId.current) return;
+    lastId.current = last.id;
+    if (open || last.userId === 'system') return;
+    setShown((cur) => [...cur.slice(-2), last]);
+    const t = window.setTimeout(() => {
+      setShown((cur) => cur.filter((m) => m.id !== last.id));
+      timers.current.delete(last.id);
+    }, SHOW_MS);
+    timers.current.set(last.id, t);
+  }, [messages, open]);
+  useEffect(
+    () => () => {
+      for (const t of timers.current.values()) window.clearTimeout(t);
+    },
+    [],
+  );
+  return shown;
+}
+
 const count = (n: number) => (n > 99 ? '99+' : String(n));
 
 /**
@@ -64,12 +114,9 @@ export function GameChat({
   onClosed?: (wasLocked: boolean) => void;
 }) {
   const snapshot = useRoom((s) => s.snapshot);
-  const messages = useRoom((s) => s.chat);
   const unread = useRoom((s) => s.unread);
   const open = useGameChat((s) => s.open);
-  const [shown, setShown] = useState<ChatMessage[]>([]);
-  const lastId = useRef<number | null>(null);
-  const timers = useRef(new Map<number, number>());
+  const shown = useChatToasts(open);
   const closedCb = useRef(onClosed);
   closedCb.current = onClosed;
   const wasLocked = useRef(false);
@@ -92,28 +139,8 @@ export function GameChat({
     }
   };
 
-  // mensagem nova (de qualquer pessoa): aparece um instante e some
-  useEffect(() => {
-    const last = messages[messages.length - 1];
-    if (!last) return;
-    if (lastId.current === null) {
-      // primeira leitura (histórico da sala): não mostra mensagens velhas
-      lastId.current = last.id;
-      return;
-    }
-    if (last.id === lastId.current) return;
-    lastId.current = last.id;
-    if (open) return;
-    setShown((cur) => [...cur.slice(-2), last]);
-    const t = window.setTimeout(() => {
-      setShown((cur) => cur.filter((m) => m.id !== last.id));
-      timers.current.delete(last.id);
-    }, SHOW_MS);
-    timers.current.set(last.id, t);
-  }, [messages, open]);
   useEffect(
     () => () => {
-      for (const t of timers.current.values()) window.clearTimeout(t);
       useGameChat.setState({ open: false });
     },
     [],
@@ -216,6 +243,75 @@ export function GameChat({
                 />
               </svg>
               <kbd className="gc-key gc-hide-touch">Esc</kbd>
+            </button>
+          </div>
+          <ChatPanel snapshot={snapshot} autoFocus colorOf={(id) => chatColor(snapshot, id)} />
+        </div>
+      )}
+    </>
+  );
+}
+
+/**
+ * Chat da sala fora da partida (saguão, Mesmíssima...): o mesmo visual do chat do jogo. Botão no canto, a mensagem nova
+ * aparece ao lado por alguns segundos e o painel abre como uma folha no canto, com a conversa à vista.
+ */
+export function RoomChatDock({ snapshot }: { snapshot: RoomSnapshot }) {
+  const unread = useRoom((s) => s.unread);
+  const [open, setOpen] = useState(false);
+  const shown = useChatToasts(open, true);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const esc = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    window.addEventListener('keydown', esc);
+    return () => window.removeEventListener('keydown', esc);
+  }, [open]);
+
+  if (!snapshot.chat.open) return null;
+  const latest = shown[shown.length - 1];
+  return (
+    <>
+      <div className="gc dock" data-testid="room-chat">
+        <button
+          type="button"
+          className={`gc-btn${unread > 0 && !open ? ' new' : ''}${open ? ' is-open' : ''}`}
+          aria-label={unread ? `Chat, ${unread} mensagens novas` : 'Chat'}
+          aria-expanded={open}
+          data-sfx="select"
+          data-testid="room-chat-btn"
+          onClick={() => setOpen((v) => !v)}
+        >
+          <IcChat size={26} />
+          {unread > 0 && !open && <b className="gc-count mono">{count(unread)}</b>}
+        </button>
+        {!open && shown.length > 0 && (
+          <ul className="gc-toasts" aria-live="polite">
+            {shown.map((m) => (
+              <li key={m.id} className={`gc-toast${m === latest ? ' is-latest' : ''}`}>
+                <b>{at(m.username)}</b> {m.text}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+      {open && (
+        <div className="gc-panel dock" role="dialog" aria-label="Chat da sala" data-testid="room-chat-panel">
+          <div className="gc-head">
+            <span className="gc-title">
+              <IcChat size={20} />
+              <h2>Chat da sala</h2>
+            </span>
+            <button
+              type="button"
+              className="gc-x"
+              aria-label="Fechar o chat"
+              data-sfx="back"
+              onClick={() => setOpen(false)}
+            >
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+              </svg>
             </button>
           </div>
           <ChatPanel snapshot={snapshot} autoFocus colorOf={(id) => chatColor(snapshot, id)} />

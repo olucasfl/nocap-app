@@ -273,3 +273,48 @@
   border-left-width: 2px;
   border-right: 7px solid var(--who);
 }
+
+/* Chat da sala fora da partida: fixo no canto de baixo, à direita, junto da coluna do app */
+.gc.dock {
+  position: fixed;
+  left: auto;
+  top: auto;
+  right: max(14px, calc(50% - 330px), env(safe-area-inset-right));
+  bottom: max(14px, env(safe-area-inset-bottom));
+  flex-direction: row-reverse;
+  z-index: 40;
+}
+.gc.dock .gc-toast {
+  border-radius: 14px 14px 4px 14px;
+}
+.gc-panel.dock {
+  position: fixed;
+  left: auto;
+  top: auto;
+  right: max(14px, calc(50% - 330px), env(safe-area-inset-right));
+  bottom: max(14px, env(safe-area-inset-bottom));
+  width: min(380px, calc(100% - 28px));
+  height: min(60dvh, 460px);
+  z-index: 45;
+}
+@media (max-width: 560px) {
+  .gc-panel.dock {
+    left: 8px;
+    right: 8px;
+    width: auto;
+    height: min(62dvh, 460px);
+  }
+}
+@media (max-height: 560px) and (orientation: landscape) {
+  .gc.dock {
+    top: auto;
+  }
+  .gc-panel.dock {
+    left: auto;
+    right: max(8px, env(safe-area-inset-right));
+    top: 8px;
+    bottom: 8px;
+    height: auto;
+    width: min(340px, 50%);
+  }
+}

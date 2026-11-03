@@ -388,7 +388,7 @@
   color: var(--orange);
 }
 /* Chip da classificação (cores por faixa, sem os efeitos grandes do carimbo) */
-.gc {
+.tgc {
   padding: 1px 6px;
   border: 2px solid var(--ink);
   border-radius: 8px;
@@ -396,31 +396,31 @@
   color: var(--ink);
   white-space: nowrap;
 }
-.gc-perfect {
+.tgc-perfect {
   background: var(--yellow);
   color: var(--on-accent);
 }
-.gc-near {
+.tgc-near {
   background: var(--green);
   color: var(--on-accent);
 }
-.gc-great {
+.tgc-great {
   background: var(--blue);
   color: var(--on-blue);
 }
-.gc-pass {
+.tgc-pass {
   background: var(--pink);
   color: var(--on-accent);
 }
-.gc-meh {
+.tgc-meh {
   border-style: dashed;
 }
-.gc-bad {
+.tgc-bad {
   background: var(--orange);
   color: var(--on-accent);
 }
-.gc-awful,
-.gc-zero {
+.tgc-awful,
+.tgc-zero {
   background: var(--ink);
   color: var(--orange);
 }

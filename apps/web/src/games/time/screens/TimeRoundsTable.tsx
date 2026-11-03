@@ -40,7 +40,7 @@ export function TimeRoundsTable({
             <span className="mono tt-v tt-diff">{formatDiff(r.answer - r.target)}</span>
             <span className="tt-score">
               <b>{r.score.toFixed(1)}</b>
-              <i className={`gc gc-${grade.id}`}>{grade.word}</i>
+              <i className={`tgc tgc-${grade.id}`}>{grade.word}</i>
               {passed && (
                 <em className={passed[i] ? 'ok' : 'bad'}>{passed[i] ? 'passou' : 'perdeu vida'}</em>
               )}

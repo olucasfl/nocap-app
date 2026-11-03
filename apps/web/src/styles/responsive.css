@@ -322,7 +322,8 @@
 
 /* O botão do chat fica no canto da janela: com o menu lateral a coluna não é mais o centro da tela. */
 @media (min-width: 768px) {
-  .ch-fab {
+  .gc.dock,
+  .gc-panel.dock {
     right: calc(24px + var(--sa-right));
     bottom: calc(24px + var(--sa-bottom));
   }

@@ -14,7 +14,7 @@ import { sfx } from '@/lib/sfx';
 import { useOnline } from '@/lib/network';
 import { useUpdateNeeded } from '@/lib/update-state';
 import { clearLastGame, resumeRoom, showNotice, useRoom, type RoomGame } from '@/lib/rooms';
-import { ChatDock } from '@/components/Chat';
+import { RoomChatDock } from '@/components/GameChat';
 import { Final } from './room/Final';
 import { Lobby } from './room/Lobby';
 import { Play } from './room/Play';
@@ -354,7 +354,7 @@ function RoomPageInner({ code, game = 'color' }: { code?: string; game?: RoomGam
           'big',
         ].includes(snapshot.phase) && <Play snapshot={snapshot} />}
       {snapshot?.phase === 'final' && <Final snapshot={snapshot} />}
-      {snapshot && <ChatDock snapshot={snapshot} />}
+      {snapshot && <RoomChatDock snapshot={snapshot} />}
     </Page>
   );
 }
