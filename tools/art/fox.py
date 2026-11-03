@@ -263,6 +263,14 @@ acts['reload'] = action('reload')
 for f, a in ((0, 0), (10, 1), (22, 1), (34, 0.4), (45, 0)):
     key(f, {'upperarm.L': (0, 0, -55 + 25 * a), 'forearm.L': (0, 0, -60 - 25 * a), 'hand.L': (0, 0, 25 * a),
             'upperarm.R': (0, 0, -60), 'forearm.R': (0, 0, -60), 'spine': (0, 0, 8 * a), 'head': (0, 0, 12 * a)})
+# crouch: agachada segurando a arma (corpo desce ~0,35 m, joelhos dobrados; 40 quadros, respira)
+acts['crouch'] = action('crouch')
+for f, a in ((0, 0), (20, 1), (40, 0)):
+    key(f, {'hips.loc': (0, 0, -0.31), 'spine': (0, 0, -8 + 1.5 * a), 'chest': (0, 0, 1 * a),
+            'thigh.L': (0, 0, -78), 'shin.L': (0, 0, 120), 'foot.L': (0, 0, -42),
+            'thigh.R': (0, 0, -78), 'shin.R': (0, 0, 120), 'foot.R': (0, 0, -42),
+            'upperarm.L': (0, 0, -50), 'forearm.L': (0, 0, -65), 'upperarm.R': (0, 0, -58), 'forearm.R': (0, 0, -62),
+            'head': (0, 0, 6), 'tail1': (0, 0, 4 * a), 'tail2': (0, 0, 7 * a), 'tail3': (0, 0, 10 * a)})
 # hit: sacode para trás (12 quadros)
 acts['hit'] = action('hit')
 for f, a in ((0, 0), (3, 1), (12, 0)):
@@ -296,7 +304,7 @@ def pose_frame(clip, f):
 
 
 photo(os.path.join(OUT, 'raposa-parada.png'), (0.0, -3.0, 0.65), (0.0, 0, 0.62), lens=60) if False else None
-for clip, f, tag in (('idle', 0, 'parada'), ('run', 3, 'correndo'), ('shoot', 2, 'atirando')):
+for clip, f, tag in (('idle', 0, 'parada'), ('run', 3, 'correndo'), ('shoot', 2, 'atirando'), ('crouch', 10, 'agachada')):
     pose_frame(clip, f)
     photo(os.path.join(OUT, f'raposa-{tag}-lado.png'), (0.0, -3.2, 0.65), (0.0, 0, 0.62), lens=60)
 pose_frame('idle', 0)

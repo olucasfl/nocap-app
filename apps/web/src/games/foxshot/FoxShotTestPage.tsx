@@ -67,6 +67,8 @@ interface Drop {
 interface TargetState {
   hp: number;
   armor: number;
+  /** 1 agachada (a cabeça e o corpo descem na mira), 0 de pé. */
+  crouch: number;
   alive: boolean;
   reviveAt: number;
   deaths: number;
@@ -257,7 +259,7 @@ export function FoxShotTestPage() {
     const targets = new Map<string, TargetState>(
       FS_TARGETS.map((t) => [
         t.id,
-        { hp: 100, armor: t.armor, alive: true, reviveAt: 0, deaths: 0 },
+        { hp: 100, armor: t.armor, crouch: 0, alive: true, reviveAt: 0, deaths: 0 },
       ]),
     );
     let markerKey = 0;
@@ -278,7 +280,7 @@ export function FoxShotTestPage() {
     const bodies = (): FsBody[] =>
       FS_TARGETS.map((t) => {
         const s = targets.get(t.id)!;
-        return { id: t.id, pos: [t.x, 0, t.z], alive: s.alive, armor: s.armor, helmet: t.helmet };
+        return { id: t.id, pos: [t.x, 0, t.z], alive: s.alive, armor: s.armor, helmet: t.helmet, crouch: s.crouch };
       });
 
     const showMarker = (kind: Marker['kind'], text: string) =>
@@ -825,6 +827,10 @@ export function FoxShotTestPage() {
               'me',
             ),
           );
+        },
+        crouchTarget(id: string, on: boolean) {
+          targets.get(id)!.crouch = on ? 1 : 0;
+          scene.setTargetCrouch(id, on);
         },
         reloadAt: (u: number | null) => scene.debugReload(u),
         inspectGun: () => {

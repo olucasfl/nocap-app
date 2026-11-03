@@ -11,9 +11,13 @@ export interface FsBody {
   alive: boolean;
   armor: number;
   helmet: boolean;
+  /** Agachado (0 de pé, 1 agachado): a cabeça e o corpo descem junto com a raposa. */
+  crouch?: number;
 }
 
 /** Medidas da raposa (m): cabeça é esfera; corpo, três cilindros verticais. */
+/** Quanto o corpo encolhe agachado (altura 0,95 m contra 1,3 m de pé). */
+export const FS_CROUCH_K = 0.95 / 1.3;
 export const FS_BODY = { headY: 1.17, headR: 0.15, chestY0: 0.76, chestY1: 1.04, chestR: 0.22, bellyY0: 0.5, bellyY1: 0.76, bellyR: 0.2, legR: 0.16, top: 1.4 };
 
 /** Entra/sai de uma caixa pelo método das lâminas; devolve null se o raio não encontra. */
@@ -67,14 +71,17 @@ function rayCyl(o: Vec3, d: Vec3, cx: number, cz: number, r: number, y0: number,
 /** Primeira região do corpo que o raio toca, com a distância. */
 export function fsRayBody(o: Vec3, d: Vec3, body: FsBody, maxT: number): { t: number; zone: FsZone } | null {
   const [x, y, z] = body.pos;
+  // agachado: tudo desce na mesma proporção (a esfera da cabeça mantém o tamanho)
+  const k = 1 + ((body.crouch ?? 0) * (FS_CROUCH_K - 1));
+  const H = (v: number) => v * k;
   const cands: { t: number; zone: FsZone }[] = [];
-  const th = raySphere(o, d, [x, y + FS_BODY.headY, z], FS_BODY.headR);
+  const th = raySphere(o, d, [x, y + H(FS_BODY.headY), z], FS_BODY.headR);
   if (th !== null) cands.push({ t: th, zone: 'head' });
-  const tc = rayCyl(o, d, x, z, FS_BODY.chestR, y + FS_BODY.chestY0, y + FS_BODY.chestY1);
+  const tc = rayCyl(o, d, x, z, FS_BODY.chestR, y + H(FS_BODY.chestY0), y + H(FS_BODY.chestY1));
   if (tc !== null) cands.push({ t: tc, zone: 'chest' });
-  const tb = rayCyl(o, d, x, z, FS_BODY.bellyR, y + FS_BODY.bellyY0, y + FS_BODY.bellyY1);
+  const tb = rayCyl(o, d, x, z, FS_BODY.bellyR, y + H(FS_BODY.bellyY0), y + H(FS_BODY.bellyY1));
   if (tb !== null) cands.push({ t: tb, zone: 'belly' });
-  const tl = rayCyl(o, d, x, z, FS_BODY.legR, y, y + FS_BODY.bellyY0);
+  const tl = rayCyl(o, d, x, z, FS_BODY.legR, y, y + H(FS_BODY.bellyY0));
   if (tl !== null) cands.push({ t: tl, zone: 'legs' });
   const best = cands.filter((c) => c.t <= maxT).sort((a, b) => a.t - b.t)[0];
   return best ?? null;

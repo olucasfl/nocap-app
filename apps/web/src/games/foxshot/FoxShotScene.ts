@@ -982,6 +982,18 @@ export class FoxShotScene {
     f.actions.death?.reset().play();
     f.label.visible = false;
   }
+  /** Agacha ou levanta a raposa-alvo (a animação `crouch` entra e sai suave). */
+  setTargetCrouch(id: string, on: boolean) {
+    const f = this.foxes.get(id);
+    if (!f?.actions.crouch || !f.actions.idle) return;
+    if (on) {
+      f.actions.crouch.reset().setEffectiveWeight(1).fadeIn(0.18).play();
+      f.actions.idle.fadeOut(0.18);
+    } else {
+      f.actions.idle.reset().fadeIn(0.18).play();
+      f.actions.crouch.fadeOut(0.18);
+    }
+  }
   reviveTarget(id: string) {
     const f = this.foxes.get(id);
     if (!f) return;

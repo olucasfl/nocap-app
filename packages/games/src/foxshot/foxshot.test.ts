@@ -228,6 +228,20 @@ describe('arma na mão', () => {
   });
 });
 
+describe('agachado: o corpo desce junto', () => {
+  const w = FS_WEAPONS.ak;
+  const body = (crouch: number): FsBody => ({ id: 'b', pos: [0, 0, -10], alive: true, armor: 0, helmet: false, crouch });
+  it('tiro na altura da cabeça de pé passa por cima de quem está agachado; na cabeça nova acerta', () => {
+    const standingHead: [number, number, number] = [0, 1.17, 0];
+    const dir = fsDir(0, 0);
+    expect(fsTrace(w, standingHead, dir, [], [body(0)]).kind).toBe('player');
+    expect(fsTrace(w, standingHead, dir, [], [body(1)]).kind).toBe('none');
+    const crouchHead: [number, number, number] = [0, 1.17 * (0.95 / 1.3), 0];
+    const t = fsTrace(w, crouchHead, dir, [], [body(1)]);
+    expect(t.zone).toBe('head');
+  });
+});
+
 describe('faca: um golpe por clique', () => {
   it('segurar o botão não repete o golpe', () => {
     const l = new FsLoadout(null, 'pistol');

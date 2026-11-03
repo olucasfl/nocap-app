@@ -199,3 +199,9 @@ Rede: tiro é leve (10 jogadores a 20 a 30 estados por segundo, algumas dezenas 
 - Armas no chão: no máximo 6 (a mais antiga some) e cada uma some em 25 s.
 - Braços e faca: modelo do Lucas (`tools/art/arms_knife.py` converte para `public/models/foxshot/ref/arms_knife.glb`, fora do git até confirmar a licença); sem o arquivo entra uma faca simples. A pose de segurar é o primeiro quadro da animação `inspect`.
 - Pendente: mãos segurando fuzil, pistola e sniper, e as animações de recarga (referências: AUG para sniper, G3 para fuzil, Desert Eagle para pistola; os arquivos são personagens completos e precisam ser retargetados).
+
+## 16. Recarga em fases, inspeção das armas e agachar (implementado)
+
+- Recarga: mão da frente vai ao carregador, ele sai e cai (some em 0,9 s), a mão busca outro atrás e embaixo, traz, encaixa, puxa o ferrolho (fuzil/sniper) ou solta a trava (pistola) e volta ao apoio. Baseada na análise do movimento das mãos nas referências (AUG, G3, Desert Eagle: aproximar, soltar, pegar outro, encaixar, carregar, voltar). Não usa os arquivos das referências, só o tempo e a sequência.
+- Inspeção (F) nas armas: olha de um lado, do outro e volta (3,0 a 3,8 s); cancela ao atirar, recarregar ou trocar.
+- Agachar: a raposa tem o clipe `crouch` (fox.glb) e `FsBody.crouch` desce a cabeça e o corpo no tiro (`FS_CROUCH_K` = 0,95/1,3). Quando o online existir, o estado agachado precisa viajar na rede e alimentar os dois (clipe e `FsBody.crouch`).

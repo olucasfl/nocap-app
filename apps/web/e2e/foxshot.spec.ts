@@ -63,6 +63,17 @@ test('dano estilo CS nos alvos', async ({ page }, info) => {
       false,
     );
   }
+  // agachada: o tiro na altura da cabeça de pé passa por cima; levantou, mata
+  await fs(page, 'teleport', 0, 14);
+  await fs(page, 'weapon', 0);
+  await fs(page, 'crouchTarget', 't2', true);
+  await fs(page, 'aimAt', 't2', 'head');
+  await fs(page, 'shoot', 1);
+  expect((await fs<{ alive: boolean }>(page, 'target', 't2')).alive, 'agachada não é atingida na cabeça de pé').toBe(true);
+  await fs(page, 'crouchTarget', 't2', false);
+  await fs(page, 'aimAt', 't2', 'head');
+  await fs(page, 'shoot', 1);
+  expect((await fs<{ alive: boolean }>(page, 'target', 't2')).alive, 'de pé, a mesma mira mata').toBe(false);
   // pistola (arma 1) de perto: sem capacete a cabeça mata (t1 revive depois de 3 s; usa t4 perto)
   await fs(page, 'teleport', -14, -1);
   await fs(page, 'weapon', 1);
