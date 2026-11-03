@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { fsDamage, fsKills, FS_HP, type FsHitInfo } from './damage';
 import { FsLoadout } from './gun';
 import { FS_SHOP, fsBuy } from './shop';
-import { FS_ARENA } from './map';
+import { FS_ARENA, type FsBox } from './map';
 import { fsBodyHeight, fsEyeHeight, fsNewMover, fsQuiet, fsStepMover, FS_MOVE } from './movement';
 import { fsFire, fsNewGunState } from './recoil';
 import { fsDir, fsTrace, type FsBody } from './trace';
@@ -243,6 +243,28 @@ describe('agachado: o corpo desce junto', () => {
   });
 });
 
+describe('gatilho com memória', () => {
+  it('o clique um instante antes de a sniper poder atirar dispara assim que puder', () => {
+    const l = new FsLoadout('sniper', 'pistol');
+    l.drawT = 0;
+    const mv = { moving: false, airborne: false, ads: true };
+    const fired = (ev: ReturnType<FsLoadout['update']>) => ev.some((e) => e.type === 'fire');
+    expect(fired(l.update(0.016, { trigger: true, reload: false }, mv, 'p'))).toBe(true);
+    l.update(0.016, { trigger: false, reload: false }, mv, 'p');
+    // espera quase terminar o ferrolho e clica um pouco antes
+    let t = 0;
+    while (l.cooldown > 0.15) {
+      l.update(0.016, { trigger: false, reload: false }, mv, 'p');
+      t += 0.016;
+    }
+    expect(fired(l.update(0.016, { trigger: true, reload: false }, mv, 'p'))).toBe(false);
+    let got = false;
+    for (let i = 0; i < 30 && !got; i++) got = fired(l.update(0.016, { trigger: false, reload: false }, mv, 'p'));
+    expect(got).toBe(true);
+    expect(t).toBeGreaterThan(0);
+  });
+});
+
 describe('faca: um golpe por clique', () => {
   it('segurar o botão não repete o golpe', () => {
     const l = new FsLoadout(null, 'pistol');
@@ -410,5 +432,83 @@ describe('bots de treino', () => {
     expect(j.maxY).toBeGreaterThan(0.5);
     expect(j.seen.has('jump')).toBe(true);
     expect(run('b5', 3).st.h).toBeGreaterThan(Math.PI / 2 + 1);
+  });
+});
+
+describe('movimento estilo CS', () => {
+  const none: FsBox[] = [];
+  const step = (m: ReturnType<typeof fsNewMover>, inp: Partial<Parameters<typeof fsStepMover>[1]>, secs: number, boxes: readonly FsBox[] = none) => {
+    for (let i = 0; i < Math.round(secs * 120); i++) fsStepMover(m, { fwd: 0, strafe: 0, jump: false, yaw: 0, speedMul: 1, ...inp }, 1 / 120, boxes);
+  };
+  const speed = (m: ReturnType<typeof fsNewMover>) => Math.hypot(m.vx, m.vz);
+
+  it('ao soltar a tecla o corpo desliza um pouco e para; apertar o lado oposto freia mais rápido', () => {
+    const a = fsNewMover(0, 0);
+    step(a, { strafe: 1 }, 1);
+    expect(speed(a)).toBeCloseTo(FS_MOVE.run, 1);
+    step(a, {}, 0.1);
+    expect(speed(a)).toBeGreaterThan(1); // ainda desliza
+    step(a, {}, 1.5);
+    expect(speed(a)).toBeLessThan(0.01); // e para
+    const b = fsNewMover(0, 0);
+    step(b, { strafe: 1 }, 1);
+    step(b, { strafe: -1 }, 0.1);
+    const c = fsNewMover(0, 0);
+    step(c, { strafe: 1 }, 1);
+    step(c, {}, 0.1);
+    expect(speed(b)).toBeLessThan(speed(c)); // contra-strafe freia mais do que só soltar
+  });
+
+  it('no ar, virar a câmera e apertar o lado ganha velocidade acima da corrida (strafe jump)', () => {
+    const m = fsNewMover(0, 0);
+    step(m, { fwd: 1 }, 1);
+    const base = speed(m);
+    let yaw = 0;
+    for (let hop = 0; hop < 6; hop++) {
+      m.onGround = true;
+      fsStepMover(m, { fwd: 0, strafe: 1, jump: true, yaw, speedMul: 1 }, 1 / 120, none);
+      for (let i = 0; i < 100 && !m.onGround; i++) {
+        yaw -= 0.5; // gira a câmera enquanto aperta D
+        fsStepMover(m, { fwd: 0, strafe: 1, jump: false, yaw, speedMul: 1 }, 1 / 120, none);
+      }
+    }
+    expect(speed(m)).toBeGreaterThan(base * 1.15);
+  });
+
+  it('o pulo vai a cerca de 0,95 m e dura cerca de 0,63 s', () => {
+    const m = fsNewMover(0, 0);
+    let top = 0;
+    let t = 0;
+    fsStepMover(m, { fwd: 0, strafe: 0, jump: true, yaw: 0, speedMul: 1 }, 1 / 120, none);
+    while (!m.onGround && t < 3) {
+      fsStepMover(m, { fwd: 0, strafe: 0, jump: false, yaw: 0, speedMul: 1 }, 1 / 120, none);
+      top = Math.max(top, m.y);
+      t += 1 / 120;
+    }
+    expect(top).toBeGreaterThan(0.85);
+    expect(top).toBeLessThan(1.05);
+    expect(t).toBeGreaterThan(0.55);
+    expect(t).toBeLessThan(0.75);
+  });
+
+  const climb = (h: number, crouch: boolean) => {
+    const ledge: FsBox[] = [{ min: [-5, 0, -80], max: [5, h, -3], pen: 0, mat: 'metal' }];
+    const m = fsNewMover(0, 0);
+    // corre até 1,3 m da borda, pula e (se quiser) agacha no ar
+    let jumped = false;
+    for (let i = 0; i < 120 * 4; i++) {
+      const near = m.z < -3 + 1.3 + FS_MOVE.radius;
+      const jump = near && !jumped && m.onGround;
+      if (jump) jumped = true;
+      fsStepMover(m, { fwd: 1, strafe: 0, jump, yaw: 0, speedMul: 1, crouch: crouch && jumped && !m.onGround }, 1 / 120, ledge);
+    }
+    return m;
+  };
+  it('pulo simples sobe em 0,7 m, não em 1,0 m; pulo + Ctrl sobe em 1,0 m e em 1,25 m; 1,6 m nunca', () => {
+    expect(climb(0.7, false).y).toBeCloseTo(0.7, 1);
+    expect(climb(1.0, false).y).toBeLessThan(0.2);
+    expect(climb(1.0, true).y).toBeCloseTo(1.0, 1);
+    expect(climb(1.25, true).y).toBeCloseTo(1.25, 1);
+    expect(climb(1.6, true).y).toBeLessThan(0.2);
   });
 });

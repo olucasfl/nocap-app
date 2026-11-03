@@ -3,7 +3,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { FsHands, KNIFE_HOLD, KNIFE_INSPECT, KNIFE_SLASH, KNIFE_STAB, makeKnife, sampleKnife, type KnifeKey } from './FsHands';
-import { FS_ARENA, FS_BOTS, FS_TARGETS, type FsBox, type FsWeaponId } from '@nocap/games';
+import { FS_ARENA, FS_BOTS, FS_MOVE_SIGNS, FS_TARGETS, type FsBox, type FsWeaponId } from '@nocap/games';
 
 export type Quality = 'low' | 'mid' | 'high';
 
@@ -244,6 +244,8 @@ interface Tracer {
   to: THREE.Vector3;
   t: number;
   dur: number;
+  th: number;
+  tail: number;
 }
 
 /**
@@ -526,6 +528,13 @@ export class FoxShotScene {
       makeFox(spec.id, spec.x, spec.z, 0, spec.label, '#1f7a3a');
       // o nome do movimento fica na placa da raia, não em cima do bot
       this.foxes.get(spec.id)!.label.visible = false;
+    }
+    // placas da área de teste de movimento
+    for (const sg of FS_MOVE_SIGNS) {
+      const sign = labelSprite(sg.text, '#1b1535');
+      sign.position.set(sg.x, sg.y, sg.z);
+      sign.scale.set(sg.text.length > 20 ? 5.2 : 2.4, sg.text.length > 20 ? 0.9 : 0.6, 1);
+      this.scene.add(sign);
     }
     // placas da faixa de bots
     for (const spec of FS_BOTS) {
@@ -1063,28 +1072,38 @@ export class FoxShotScene {
   }
 
   // ---- efeitos
-  tracer(from: THREE.Vector3, to: THREE.Vector3) {
+  /** Rastro da bala: pistola fino e curto, fuzil médio, sniper grosso, longo e mais demorado. */
+  tracer(from: THREE.Vector3, to: THREE.Vector3, weapon: FsWeaponId = 'ak') {
     const len = from.distanceTo(to);
     if (len < 1) return;
+    const st = {
+      pistol: { th: 0.007, tail: 2.5, min: 0.07, speed: 380, color: 0xffe7b0 },
+      ak: { th: 0.014, tail: 4.5, min: 0.09, speed: 380, color: 0xffc866 },
+      sniper: { th: 0.036, tail: 16, min: 0.2, speed: 300, color: 0xffa83a },
+      knife: { th: 0.007, tail: 1, min: 0.05, speed: 380, color: 0xffffff },
+    }[weapon];
     let tr = this.tracers.find((t) => t.t >= t.dur);
     if (!tr) {
       const m = new THREE.Mesh(
-        new THREE.BoxGeometry(0.012, 0.012, 1),
+        new THREE.BoxGeometry(1, 1, 1),
         new THREE.MeshBasicMaterial({
           color: 0xffd58a,
           transparent: true,
-          opacity: 0.9,
+          opacity: 0.95,
           fog: false,
         }),
       );
       this.scene.add(m);
-      tr = { m, from: new THREE.Vector3(), to: new THREE.Vector3(), t: 0, dur: 0 };
+      tr = { m, from: new THREE.Vector3(), to: new THREE.Vector3(), t: 0, dur: 0, th: 0.012, tail: 3 };
       this.tracers.push(tr);
     }
     tr.from.copy(from);
     tr.to.copy(to);
     tr.t = 0;
-    tr.dur = Math.max(0.05, len / 380);
+    tr.dur = Math.max(st.min, len / st.speed);
+    tr.th = st.th;
+    tr.tail = st.tail;
+    (tr.m.material as THREE.MeshBasicMaterial).color.setHex(st.color);
     tr.m.visible = true;
   }
 
@@ -1124,9 +1143,9 @@ export class FoxShotScene {
       const k = Math.min(1, t.t / t.dur);
       const len = t.from.distanceTo(t.to);
       const head = t.from.clone().lerp(t.to, k);
-      const tail = t.from.clone().lerp(t.to, Math.max(0, k - 3 / len));
+      const tail = t.from.clone().lerp(t.to, Math.max(0, k - t.tail / len));
       t.m.position.copy(head).add(tail).multiplyScalar(0.5);
-      t.m.scale.set(1, 1, Math.max(0.05, head.distanceTo(tail)));
+      t.m.scale.set(t.th, t.th, Math.max(0.05, head.distanceTo(tail)));
       t.m.lookAt(head);
     }
     for (const q of this.puffs) {

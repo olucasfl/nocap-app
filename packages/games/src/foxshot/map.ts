@@ -38,8 +38,24 @@ export const FS_ARENA: readonly FsBox[] = [
   b(14, 0, -2, 16, 0.3, 2, 0.5, 'metal'),
   b(16, 0, -2, 18, 0.6, 2, 0.5, 'metal'),
   b(18, 0, -2, 19.9, 0.9, 2, 0.5, 'metal'),
+  // teste do pulo (lado leste): corra de oeste para leste e pule. Pulo simples sobe até ~0,9 m; pulo + Ctrl (agachar no ar) até ~1,25 m
+  b(15.5, 0, 4, 19.9, 0.35, 6, 0.5, 'metal'),
+  b(15.5, 0, 7, 19.9, 0.7, 9, 0.5, 'metal'),
+  b(15.5, 0, 10, 19.9, 1.0, 12, 0.5, 'metal'),
+  b(15.5, 0, 13, 19.9, 1.25, 15, 0.5, 'metal'),
+  b(15.5, 0, 16, 19.9, 1.6, 18, 0.5, 'metal'),
   // pilar
   b(-1, 0, 6, 0.4, 3.5, 7.4, 0, 'wall'),
+];
+
+/** Placas da área de teste de movimento (só para a cena). */
+export const FS_MOVE_SIGNS: readonly { text: string; x: number; y: number; z: number }[] = [
+  { text: 'degrau 0,35', x: 15.2, y: 1.2, z: 5 },
+  { text: 'pulo 0,7', x: 15.2, y: 1.5, z: 8 },
+  { text: 'pulo + ctrl 1,0', x: 15.2, y: 1.8, z: 11 },
+  { text: 'pulo + ctrl 1,25', x: 15.2, y: 2.1, z: 14 },
+  { text: 'impossível 1,6', x: 15.2, y: 2.4, z: 17 },
+  { text: 'bunny hop: segure espaço, gire o mouse e aperte A ou D', x: 0, y: 2.6, z: 10 },
 ];
 
 export const FS_SPAWN = { x: 0, y: 0, z: 14, yaw: Math.PI };

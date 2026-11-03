@@ -100,6 +100,9 @@ interface Hud {
   weaponId: FsWeaponId;
   slots: FsSlotInfo[];
   current: number;
+  /** Velocidade no chão (m/s) e abertura da mira (para borrar a luneta andando). */
+  speed: number;
+  blur: number;
   /** Arma no chão que está sob a mira (nome) e se dá para pegar daqui. */
   look: { name: string; near: boolean } | null;
   reloading: boolean;
@@ -377,7 +380,7 @@ export function FoxShotTestPage() {
       const tr = fsTrace(w, eye, dir, FS_ARENA, bodies());
       const from = scene.muzzleWorld();
       const to = new THREE.Vector3(tr.point[0], tr.point[1], tr.point[2]);
-      scene.tracer(from, to);
+      scene.tracer(from, to, id);
       scene.fireFx(id === 'sniper' ? 2.4 : id === 'pistol' ? 0.5 : 1);
       fsAudio.shot(id);
       applyHit(id, tr, to);
@@ -783,6 +786,8 @@ export function FoxShotTestPage() {
           mag: loadout.weapon.mag,
           weapon: loadout.weapon.name,
           weaponId: loadout.weapon.id,
+          speed: Math.round(speed * 10) / 10,
+          blur: Math.min(1, fsSpreadDeg(loadout.weapon, mvs, loadout.slot.gun) / 6),
           slots: loadout.slots.map((sl, i) => ({ id: sl?.id ?? null, name: sl ? FS_WEAPONS[sl.id].name : '', key: i + 1 })),
           current: loadout.current,
           reloading: loadout.reloading,
@@ -926,8 +931,8 @@ export function FoxShotTestPage() {
         <>
           {hud.scoped ? (
             <div className="fs-scope" aria-hidden="true">
-              <i />
-              <b />
+              <i style={{ filter: `blur(${(hud.blur * 2.4).toFixed(1)}px)` }} />
+              <b style={{ filter: `blur(${(hud.blur * 2.4).toFixed(1)}px)` }} />
             </div>
           ) : (
             <FsCrosshair spreadPx={hud.spreadPx} />
@@ -963,6 +968,7 @@ export function FoxShotTestPage() {
               calls={hud.calls}
               level={hud.level}
               dpr={hud.dpr}
+              speed={hud.speed}
               ref={hud.ref}
             />
           )}

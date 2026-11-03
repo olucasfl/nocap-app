@@ -249,6 +249,7 @@ export function FsTelemetry({
   calls,
   level,
   dpr,
+  speed,
   ref,
 }: {
   fps: number;
@@ -256,11 +257,13 @@ export function FsTelemetry({
   calls: number;
   level: string;
   dpr: number;
+  speed: number;
   ref: string;
 }) {
   return (
     <div className="fsh-tele mono" data-testid="fs-perf" aria-label="Desempenho">
       <b className={fps < 30 ? 'bad' : fps < 50 ? 'mid' : ''}>{fps} FPS</b>
+      <span data-testid="fs-speed">velocidade {speed.toFixed(1)} m/s</span>
       <span>
         {Math.round(tris / 1000)} mil triângulos · {calls} desenhos
       </span>

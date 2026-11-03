@@ -32,6 +32,7 @@ test('a arena carrega, mostra o HUD e o medidor de desempenho', async ({ page },
   await expect(page.getByTestId('fs-ammo')).toContainText('12');
   await expect(page.getByTestId('fs-menu')).toBeVisible();
   await expect(page.getByTestId('fs-bars')).toBeVisible();
+  await expect(page.getByTestId('fs-speed')).toContainText('m/s');
   if (process.env.FS_SHOTS) {
     await page.screenshot({ path: `${process.env.FS_SHOTS}/desktop-menu.png` });
     // sem o cartão de pausa (o mouse não prende em teste): fotos da cena

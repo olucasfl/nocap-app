@@ -13,7 +13,19 @@ export interface FsMover {
   crouchK: number;
 }
 
-export const FS_MOVE = { radius: 0.3, height: 1.3, eye: 1.2, crouchHeight: 0.95, crouchEye: 0.85, run: 5.2, walkMul: 0.5, crouchMul: 0.45, accel: 55, friction: 11, airAccel: 14, jump: 5.0, gravity: 15, stepUp: 0.35 };
+/**
+ * Movimento no desenho do Counter-Strike (motor Source), em metros: atrito no chão (desliza ao soltar), aceleração por
+ * "velocidade na direção desejada" (frear apertando o lado oposto é rápido), aceleração no ar com teto de 0,62 m/s na conta
+ * (é isso que permite girar a câmera e apertar A/D no ar para ganhar velocidade: strafe e bunny hop) e pulo alto.
+ * Valores proporcionais aos do CS (250 u/s de corrida, sv_accelerate 5,5, sv_friction 4, sv_stopspeed 75 u/s, sv_airaccelerate 12,
+ * teto aéreo 30 u/s), reduzidos para a raposa (1,3 m).
+ */
+export const FS_MOVE = {
+  radius: 0.3, height: 1.3, eye: 1.2, crouchHeight: 0.95, crouchEye: 0.85,
+  run: 5.2, walkMul: 0.52, crouchMul: 0.34,
+  accel: 5.5, friction: 4, stopSpeed: 1.56, airAccel: 12, airCap: 0.62,
+  jump: 6.0, gravity: 19, stepUp: 0.35, maxSpeed: 15, crouchRate: 14,
+};
 
 export interface FsMoveInput {
   /** Para a frente (+1) e para o lado direito (+1). */
@@ -41,7 +53,7 @@ export const fsNewMover = (x: number, z: number): FsMover => ({ x, y: 0, z, vx: 
 const overlaps = (m: FsMover, b: FsBox, r = FS_MOVE.radius) =>
   m.x + r > b.min[0] && m.x - r < b.max[0] && m.z + r > b.min[2] && m.z - r < b.max[2] && m.y + fsBodyHeight(m) > b.min[1] && m.y < b.max[1];
 
-/** Um passo de movimento (use dt fixo, ex. 1/120): aceleração, atrito, pulo, gravidade e colisão com as caixas. */
+/** Um passo de movimento (use dt fixo, ex. 1/120): pulo, atrito, aceleração (chão ou ar), gravidade e colisão com as caixas. */
 export function fsStepMover(m: FsMover, inp: FsMoveInput, dt: number, boxes: readonly FsBox[]): void {
   const yaw = (inp.yaw * Math.PI) / 180;
   // frente = (-sin, -cos); direita = (cos, -sin)
@@ -54,36 +66,66 @@ export function fsStepMover(m: FsMover, inp: FsMoveInput, dt: number, boxes: rea
     wx /= len;
     wz /= len;
   }
-  // agachar é suave; só levanta se não houver teto em cima
-  const wantCrouch = !!inp.crouch;
-  if (wantCrouch) m.crouchK = Math.min(1, m.crouchK + dt * 9);
-  else if (m.crouchK > 0) {
-    const test = { ...m, crouchK: Math.max(0, m.crouchK - dt * 9) };
-    if (!boxes.some((b) => overlaps(test, b))) m.crouchK = test.crouchK;
+  const wl = Math.min(1, len);
+  const dl = len || 1;
+  const dirX = wx / dl, dirZ = wz / dl;
+
+  // agachar: no chão a cabeça desce; no ar os pés sobem (o corpo encolhe por baixo), como no CS: é o "pulo + Ctrl" que sobe em caixas altas
+  const dH = FS_MOVE.height - FS_MOVE.crouchHeight;
+  if (inp.crouch) {
+    const k = Math.min(1, m.crouchK + dt * FS_MOVE.crouchRate);
+    if (!m.onGround) m.y += (k - m.crouchK) * dH;
+    m.crouchK = k;
+  } else if (m.crouchK > 0) {
+    const k = Math.max(0, m.crouchK - dt * FS_MOVE.crouchRate);
+    const test = { ...m, crouchK: k, y: m.onGround ? m.y : m.y - (m.crouchK - k) * dH };
+    // só levanta se couber (teto no chão; chão ou caixa embaixo no ar)
+    if (test.y >= 0 && !boxes.some((b) => overlaps(test, b))) {
+      m.crouchK = k;
+      m.y = test.y;
+    }
   }
   const slow = m.crouchK > 0.5 ? FS_MOVE.crouchMul : inp.walk ? FS_MOVE.walkMul : 1;
   const maxV = FS_MOVE.run * inp.speedMul * slow;
-  if (m.onGround) {
-    // atrito
-    const sp = Math.hypot(m.vx, m.vz);
-    if (sp > 0) {
-      const drop = Math.min(sp, Math.max(sp, 1) * FS_MOVE.friction * dt);
-      m.vx *= (sp - drop) / sp;
-      m.vz *= (sp - drop) / sp;
-    }
-  }
-  const accel = m.onGround ? FS_MOVE.accel : FS_MOVE.airAccel;
-  const wantX = wx * maxV, wantZ = wz * maxV;
-  const dvx = wantX - m.vx, dvz = wantZ - m.vz;
-  const dl = Math.hypot(dvx, dvz);
-  if (dl > 0) {
-    const a = Math.min(dl, accel * dt);
-    m.vx += (dvx / dl) * a;
-    m.vz += (dvz / dl) * a;
-  }
+  const wishSpeed = maxV * wl;
+
+  // pulo: sai do chão antes do atrito (segurar o pulo no pouso mantém a velocidade: bunny hop)
   if (m.onGround && inp.jump) {
     m.vy = FS_MOVE.jump;
     m.onGround = false;
+  }
+  if (m.onGround) {
+    // atrito: abaixo de stopSpeed a queda é constante (para de vez), acima é proporcional
+    const sp = Math.hypot(m.vx, m.vz);
+    if (sp > 0) {
+      const drop = Math.max(sp, FS_MOVE.stopSpeed) * FS_MOVE.friction * dt;
+      const ns = Math.max(0, sp - drop);
+      m.vx *= ns / sp;
+      m.vz *= ns / sp;
+    }
+    if (wl > 0) {
+      const cur = m.vx * dirX + m.vz * dirZ;
+      const add = wishSpeed - cur;
+      if (add > 0) {
+        const a = Math.min(add, FS_MOVE.accel * dt * wishSpeed);
+        m.vx += dirX * a;
+        m.vz += dirZ * a;
+      }
+    }
+  } else if (wl > 0) {
+    // ar: a conta usa um teto baixo (airCap), então só se ganha velocidade em direções quase perpendiculares ao movimento
+    const cur = m.vx * dirX + m.vz * dirZ;
+    const add = Math.min(wishSpeed, FS_MOVE.airCap) - cur;
+    if (add > 0) {
+      const a = Math.min(add, FS_MOVE.airAccel * dt * wishSpeed);
+      m.vx += dirX * a;
+      m.vz += dirZ * a;
+    }
+  }
+  const hs = Math.hypot(m.vx, m.vz);
+  if (hs > FS_MOVE.maxSpeed) {
+    m.vx *= FS_MOVE.maxSpeed / hs;
+    m.vz *= FS_MOVE.maxSpeed / hs;
   }
   m.vy -= FS_MOVE.gravity * dt;
 

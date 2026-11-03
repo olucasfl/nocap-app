@@ -38,6 +38,8 @@ export class FsLoadout {
   cooldown = 0;
   inspectT = 0;
   private triggerWas = false;
+  /** Clique dado um instante antes de a arma poder atirar: dispara assim que puder (até 0,3 s). */
+  private buffered = 0;
   private altWas = false;
 
   constructor(primary: FsWeaponId | null = 'ak', secondary: FsWeaponId | null = 'pistol') {
@@ -116,7 +118,13 @@ export class FsLoadout {
     if (this.drawT > 0) this.drawT = Math.max(0, this.drawT - dt);
     if (this.cooldown > 0) this.cooldown = Math.max(0, this.cooldown - dt);
     if (this.inspectT > 0) this.inspectT = Math.max(0, this.inspectT - dt);
-    const pressed = input.trigger && !this.triggerWas;
+    let pressed = input.trigger && !this.triggerWas;
+    if (pressed && !w.auto && !w.melee && (this.cooldown > 0 || this.drawT > 0) && this.reloadT <= 0) this.buffered = 0.3;
+    else if (this.buffered > 0) this.buffered = Math.max(0, this.buffered - dt);
+    if (this.buffered > 0 && this.drawT <= 0 && this.cooldown <= 0 && this.reloadT <= 0 && !w.auto) {
+      pressed = true;
+      this.buffered = 0;
+    }
     const altPressed = !!input.alt && !this.altWas;
     this.triggerWas = input.trigger;
     this.altWas = !!input.alt;
