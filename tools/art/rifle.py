@@ -1,4 +1,8 @@
-"""Fuzil de assalto do Fox Shot! (tipo AK): modelo com peças móveis separadas e fotos para aprovação."""
+"""Fuzil de assalto do Fox Shot! com o formato de um AK-47 (coronha em degrau, caixa estampada, guarda-mão de madeira,
+tubo de gás, massa de mira alta, carregador banana com nervuras). Peças móveis separadas e fotos para aprovação.
+
+Convenção: X para a frente (boca em +X), Y para a esquerda da arma, Z para cima; a origem é o gatilho. Comprimento ~0,83 m.
+"""
 import math
 import os
 import sys
@@ -19,6 +23,8 @@ poly = material('polymer', (0.045, 0.045, 0.05), metal=0.0, rough=0.62, wear=0.3
 fox = material('foxaccent', (1.0, 0.36, 0.06), metal=0.0, rough=0.45, wear=0.4, scale=30)
 
 parts = []
+R = -1  # lado direito da arma (de onde se vê a janela de ejeção): -Y
+
 
 def add(o, name=None):
     if name:
@@ -26,77 +32,82 @@ def add(o, name=None):
     parts.append(o)
     return o
 
-# ---- corpo
-add(box('Receiver', (0.40, 0.046, 0.066), (-0.02, 0, 0.0), 0.004, steel))
-add(box('DustCover', (0.36, 0.044, 0.030), (-0.02, 0, 0.046), 0.006, steel))
-add(box('RearBlock', (0.05, 0.04, 0.05), (-0.20, 0, 0.012), 0.004, dark))
-# ---- cano, tubo de gás e mira
-add(cyl('Barrel', 0.0082, 0.42, (0.36, 0, 0.018), 'X', dark))
-add(cyl('GasTube', 0.0078, 0.30, (0.30, 0, 0.046), 'X', steel))
-add(box('GasBlock', (0.045, 0.026, 0.05), (0.50, 0, 0.034), 0.004, dark))
-add(box('FrontSightBase', (0.03, 0.022, 0.028), (0.56, 0, 0.04), 0.003, dark))
-add(box('FrontSightPost', (0.006, 0.006, 0.034), (0.565, 0, 0.074), 0.001, dark))
-add(cyl('MuzzleBrake', 0.0135, 0.058, (0.605, 0, 0.018), 'X', dark, bevel=0.002))
-for i in range(3):
-    add(cyl(f'MuzzleSlot{i}', 0.0142, 0.004, (0.59 + i * 0.012, 0, 0.018), 'X', steel))
-add(box('RearSightRamp', (0.07, 0.03, 0.016), (0.07, 0, 0.074), 0.003, dark))
-add(box('RearSightLeaf', (0.012, 0.03, 0.02), (0.045, 0, 0.088), 0.002, dark))
-# ---- guarda-mão de madeira
-add(box('HandguardLower', (0.25, 0.052, 0.046), (0.28, 0, -0.005), 0.009, wood))
-add(box('HandguardUpper', (0.22, 0.046, 0.026), (0.27, 0, 0.038), 0.008, wood))
-add(box('HandguardCap', (0.012, 0.054, 0.05), (0.41, 0, -0.003), 0.003, fox))
-# ---- coronha e cabo
-add(profile('Stock', [(-0.17, 0.034), (-0.46, 0.030), (-0.475, -0.085), (-0.44, -0.095), (-0.17, -0.034)], 0.040, wood, 0.01))
-add(profile('ButtPlate', [(-0.462, 0.032), (-0.478, 0.03), (-0.49, -0.086), (-0.472, -0.095)], 0.044, poly, 0.003))
-add(profile('PistolGrip', [(-0.075, -0.030), (-0.03, -0.030), (-0.055, -0.150), (-0.105, -0.150)], 0.036, wood, 0.008))
-add(profile('GripCap', [(-0.106, -0.150), (-0.055, -0.150), (-0.055, -0.162), (-0.108, -0.162)], 0.038, fox, 0.003))
-# ---- guarda-mato e gatilho
-add(profile('TriggerGuard', arc_pts(0.0, -0.035, 0.040, 0.033, 180, 360, 12), 0.012, steel, 0.0015))
-# ---- peças móveis (cada uma é um objeto, para animar no jogo)
-def banana(n=14, w=0.028):
-    right, left = [], []
-    for i in range(n + 1):
-        t = i / n
-        cx, cz = 0.085 + 0.13 * t ** 1.7, -0.03 - 0.215 * t
-        right.append((cx + w, cz))
-        left.append((cx - w, cz))
-    return right + left[::-1]
+
+# ---- caixa da culatra (estampada, longa e baixa) e tampa superior
+add(box('Receiver', (0.235, 0.040, 0.062), (0.005, 0, -0.004), 0.003, steel))
+add(profile('DustCover', [(-0.112, 0.027), (0.115, 0.027), (0.125, 0.034), (0.10, 0.052), (-0.085, 0.056), (-0.112, 0.040)], 0.038, steel, 0.006))
+add(box('Trunnion', (0.03, 0.044, 0.066), (0.125, 0, -0.004), 0.004, dark))
+add(box('RearBlock', (0.026, 0.040, 0.055), (-0.118, 0, 0.002), 0.004, dark))
+# janela de ejeção, alavanca de segurança e alavanca de armar (lado direito)
+add(box('EjectionPort', (0.085, 0.002, 0.030), (0.018, R * 0.0205, 0.012), 0.0006, dark))
+add(profile('SafetyLever', [(-0.095, -0.012), (-0.012, 0.012), (0.012, 0.016), (0.022, 0.010), (-0.005, 0.000), (-0.080, -0.026)], 0.004, steel, 0.0008, y=R * 0.024))
+for i, x in enumerate((-0.09, -0.04, 0.0, 0.05, 0.095)):
+    add(cyl(f'Rivet{i}', 0.0036, 0.003, (x, R * 0.0212, -0.022), 'Y', dark))
+# ---- mira traseira (sobre o cano, logo à frente da caixa) e tampa do tubo de gás
+add(profile('RearSightRamp', [(0.12, 0.052), (0.21, 0.064), (0.21, 0.070), (0.12, 0.068)], 0.026, dark, 0.002))
+add(box('RearSightLeaf', (0.012, 0.028, 0.014), (0.168, 0, 0.078), 0.002, dark))
+# ---- guarda-mãos de madeira
+add(profile('HandguardLower', [(0.118, 0.030), (0.285, 0.026), (0.292, -0.002), (0.278, -0.034), (0.118, -0.036)], 0.054, wood, 0.010))
+add(profile('HandguardUpper', [(0.130, 0.046), (0.280, 0.040), (0.284, 0.058), (0.215, 0.066), (0.130, 0.064)], 0.040, wood, 0.008))
+add(box('HandguardRetainer', (0.014, 0.046, 0.074), (0.292, 0, 0.012), 0.003, fox))
+for i in range(4):
+    add(box(f'Groove{i}', (0.020, 0.0565, 0.006), (0.165 + i * 0.03, 0, -0.012), 0.0008, dark))
+# ---- cano, tubo de gás, massa de mira e boca
+add(cyl('Barrel', 0.0085, 0.50, (0.235, 0, 0.012), 'X', dark))
+add(cyl('GasTube', 0.0090, 0.255, (0.235, 0, 0.034), 'X', steel))
+add(cyl('CleaningRod', 0.0042, 0.34, (0.285, 0, -0.012), 'X', steel))
+add(box('GasBlock', (0.034, 0.030, 0.046), (0.355, 0, 0.024), 0.004, dark))
+add(box('FrontSightBase', (0.030, 0.024, 0.040), (0.392, 0, 0.034), 0.004, dark))
+add(box('FrontEarL', (0.010, 0.004, 0.034), (0.392, 0.0095, 0.078), 0.001, dark))
+add(box('FrontEarR', (0.010, 0.004, 0.034), (0.392, -0.0095, 0.078), 0.001, dark))
+add(box('FrontPost', (0.004, 0.004, 0.044), (0.392, 0, 0.082), 0.0005, dark))
+add(cyl('BayonetLug', 0.006, 0.020, (0.372, 0, -0.012), 'X', dark))
+add(cyl('MuzzleNut', 0.0125, 0.020, (0.440, 0, 0.012), 'X', dark, bevel=0.002))
+add(cyl('MuzzleBrake', 0.0112, 0.044, (0.472, 0, 0.012), 'X', dark, bevel=0.002))
+add(box('MuzzleSlant', (0.034, 0.020, 0.010), (0.472, 0, 0.026), 0.002, dark, rot=(0, math.radians(-12), 0)))
+# ---- coronha de madeira com degrau e placa da soleira
+add(profile('Stock', [(-0.105, 0.027), (-0.185, 0.025), (-0.222, 0.013), (-0.290, 0.004), (-0.352, -0.002), (-0.362, -0.118), (-0.335, -0.127), (-0.230, -0.078), (-0.105, -0.043)], 0.036, wood, 0.009))
+add(profile('ButtPlate', [(-0.352, 0.000), (-0.368, -0.002), (-0.372, -0.121), (-0.356, -0.128)], 0.040, poly, 0.003))
+# ---- cabo de pistola inclinado e guarda-mato
+add(profile('PistolGrip', [(-0.038, -0.034), (-0.088, -0.034), (-0.128, -0.150), (-0.078, -0.156)], 0.032, wood, 0.008))
+add(profile('GripCap', [(-0.130, -0.150), (-0.078, -0.157), (-0.077, -0.166), (-0.133, -0.160)], 0.036, fox, 0.003))
+add(profile('TriggerGuard', arc_pts(0.012, -0.034, 0.044, 0.037, 180, 360, 14), 0.012, steel, 0.0015))
+trig = profile('Trigger', [(0.002, -0.034), (0.012, -0.034), (0.020, -0.070), (0.009, -0.070)], 0.010, dark, 0.001)
+trig.name = 'Trigger'
+parts.append(trig)
+# ---- carregador banana com nervuras (peça móvel; as nervuras são filhas dele)
+def centerline(n=16):
+    return [(0.092 + 0.095 * (i / n) ** 1.75, -0.034 - 0.225 * (i / n)) for i in range(n + 1)]
 
 
-mag = profile('Magazine', banana(), 0.030, dark, 0.004)
+def band(dx0, dx1, n=16):
+    c = centerline(n)
+    return [(x + dx1, z) for x, z in c] + [(x + dx0, z) for x, z in c][::-1]
+
+
+mag = profile('Magazine', band(-0.028, 0.028), 0.028, dark, 0.004)
 mag.name = 'Magazine'
 parts.append(mag)
-add(profile('MagFloor', [(0.178, -0.246), (0.236, -0.246), (0.242, -0.26), (0.172, -0.26)], 0.034, fox, 0.002))
-for i in range(4):
-    add(box(f'MagRib{i}', (0.052, 0.032, 0.003), (0.1 + 0.012 * i + 0.01 * i * i * 0.3, 0, -0.07 - 0.04 * i), 0.0005, steel, rot=(0, math.radians(-14), 0)))
-add(box('MagWell', (0.07, 0.036, 0.024), (0.085, 0, -0.045), 0.003, steel))
-trig = profile('Trigger', [(-0.010, -0.034), (0.002, -0.034), (0.008, -0.066), (-0.003, -0.066)], 0.010, dark, 0.001)
-trig.name = 'Trigger'; parts.append(trig)
-add(box('ChargingHandle', (0.045, 0.012, 0.012), (0.01, 0.034, 0.05), 0.002, dark))
-add(cyl('ChargingKnob', 0.011, 0.014, (0.0, 0.040, 0.05), 'Y', fox, bevel=0.002))
-add(box('SafetyLever', (0.09, 0.004, 0.02), (-0.06, 0.025, 0.004), 0.001, steel))
-add(box('EjectionPort', (0.06, 0.002, 0.026), (-0.01, 0.0235, 0.03), 0.0005, dark))
+ribs = []
+for i, dx in enumerate((-0.014, 0.0, 0.014)):
+    r = profile(f'MagRib{i}', band(dx - 0.0035, dx + 0.0035), 0.0305, steel, 0.0008)
+    r.parent = mag
+    ribs.append(r)
+add(profile('MagFloor', [(0.172, -0.252), (0.232, -0.262), (0.236, -0.276), (0.168, -0.266)], 0.034, fox, 0.002))
+add(box('MagWell', (0.072, 0.036, 0.026), (0.092, 0, -0.042), 0.003, steel))
+add(box('MagCatch', (0.012, 0.030, 0.020), (0.040, 0, -0.058), 0.002, dark))
+# alavanca de armar (lado direito, com a bolinha laranja)
+add(box('ChargingHandle', (0.040, 0.012, 0.010), (0.075, R * 0.030, 0.034), 0.002, dark))
+add(cyl('ChargingKnob', 0.011, 0.014, (0.060, R * 0.038, 0.034), 'Y', fox, bevel=0.002))
 
-# detalhes: rebites, ventilação do guarda-mão, anel da massa de mira
-for i, x in enumerate((-0.18, -0.10, 0.0, 0.09, 0.17)):
-    add(cyl(f'Rivet{i}', 0.0042, 0.003, (x, -0.0245, 0.012), 'Y', dark))
-for i in range(6):
-    add(box(f'Vent{i}', (0.014, 0.0545, 0.016), (0.19 + i * 0.03, 0, -0.012), 0.001, dark))
-add(cyl('SightHood', 0.0155, 0.014, (0.558, 0, 0.056), 'X', dark, bevel=0.002))
-add(box('MagCatch', (0.012, 0.03, 0.02), (0.045, 0, -0.058), 0.002, dark))
-add(box('Trunnion', (0.03, 0.05, 0.07), (0.18, 0, 0.0), 0.004, dark))
-
-# um pai para mover/rodar tudo junto
 root = bpy.data.objects.new('Rifle', None)
 bpy.context.collection.objects.link(root)
 for o in parts:
     o.parent = root
 
-# ---- fotos
 studio(res=(1024, 576), samples=48)
-root.rotation_euler = (0, 0, 0)
-photo(os.path.join(OUT, 'rifle-lado.png'), (0.05, -1.9, 0.0), (0.05, 0, -0.07), lens=50)
-photo(os.path.join(OUT, 'rifle-34.png'), (0.95, -1.45, 0.5), (0.04, 0, -0.07), lens=50)
-photo(os.path.join(OUT, 'rifle-frente.png'), (1.5, -0.7, 0.3), (0.08, 0, -0.06), lens=55)
+photo(os.path.join(OUT, 'rifle-lado.png'), (0.06, -1.7, 0.0), (0.05, 0, -0.07), lens=50)
+photo(os.path.join(OUT, 'rifle-34.png'), (0.85, -1.4, 0.45), (0.05, 0, -0.07), lens=50)
+photo(os.path.join(OUT, 'rifle-frente.png'), (1.4, -0.65, 0.28), (0.08, 0, -0.06), lens=55)
 bpy.ops.wm.save_as_mainfile(filepath=os.path.join(OUT, 'rifle.blend'))
 print('FEITO')
