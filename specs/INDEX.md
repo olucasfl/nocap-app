@@ -59,6 +59,4 @@
 | 055 | [Ping Fox! (pingue-pongue 1x1 das raposas)](055-ping-fox.md) | 9 | em andamento (01/11/2026): motor, treino offline e sala online prontos; falta jogar com amigos |
 | 056 | [Fox Shot! (tiro das raposas)](056-fox-shot.md) | 10 | rascunho (03/11/2026): plano e dúvidas; nada construído |
 
- → em andamento → concluída. Criar uma nova: `/spec <nome>`.
-
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.
