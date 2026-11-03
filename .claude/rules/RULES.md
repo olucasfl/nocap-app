@@ -12,7 +12,7 @@ Padrão: negar por padrão, abrir exceções nomeadas, dizer o que fazer em vez 
 - Colocar sala personalizada no ranking.
 - Mostrar cronômetro, número, barra, som ou animação rítmica durante a contagem do jogo do Tempo.
 - Usar distância RGB para nota de cor (use ΔE2000 em Lab).
-- Usar emoji, gradiente genérico, Inter/Roboto, ou cores fora dos tokens Pop Brutal. Única exceção (decisão do Lucas em 21/10/2026): a tela do Aperta! (spec 038) usa o tema espaço, com tokens próprios `--space-*` definidos em um só arquivo, gradientes de sombreamento nos astros e as fontes Chakra Petch e Space Grotesk. O resto do app continua Pop Brutal, e emoji continua proibido em todo lugar.
+- Usar emoji, gradiente genérico, Inter/Roboto, ou cores fora dos tokens Pop Brutal. Única exceção (decisão do Lucas em 21/10/2026): a tela do Aperta! (spec 038) usa o tema espaço, com tokens próprios `--space-*` definidos em um só arquivo, gradientes de sombreamento nos astros e as fontes Chakra Petch e Space Grotesk. O resto do app continua Pop Brutal, e emoji continua proibido em todo lugar. Segunda exceção (decisão do Lucas em 03/11/2026, spec 056): a **cena 3D do Fox Shot!** (mapa, raposas, armas, efeitos) usa visual mais realista, com materiais PBR, luz e sombra, modelos feitos no Blender por script (`tools/art/`, só ferramenta de trabalho, fora do `package.json`) e sons gravados que combinem com o jogo; menus, HUD, lobby e telas finais do Fox Shot! seguem Pop Brutal.
 - Animar propriedades que não sejam `transform`/`opacity`.
 - Mudar uma decisão da seção 2 do `docs/PROJECT-BRIEF.md` sem pedir.
 

@@ -125,8 +125,35 @@ Ideias para considerar (sem compromisso):
 5. **Primeira pessoa.**
 6. **Computador e celular** (iPhone e Android, todos os tamanhos): **no celular só joga deitado**; em pé aparece o aviso "gire o aparelho". Respeita áreas seguras (câmera frontal, laterais, barra do Android).
 7. **12 pessoas por sala: até 10 jogando e 2 espectadores** (nossa sala hoje vai até 15).
-8. **Bala estilo CS:** não é instantânea, mas também não demora; **sem queda**, vai reto para onde mirou; pequeno atraso para chegar (a bala viaja uns 300 a 400 m/s: ~0,1 a 0,2 s a 40 m). Para "pegou para mim, pegou para todos": **o servidor decide o acerto no instante do disparo** (compensação de atraso) e a bala visível só leva o resultado até o alvo; o dano e o marcador aparecem quando a bala chega.
+8. **Bala igual ao CS (revisado em 03/11/2026): instantânea (hitscan)**, sem queda, vai exatamente aonde a mira aponta; o rastro luminoso é só visual. O servidor valida o acerto no instante do disparo com compensação de atraso ("pegou para mim, pegou para todos"). **Recuo diferente em cada arma** (padrão de recuo fixo por arma, como a rajada do CS).
 9. **Sons gravados liberados**, desde que combinem com a estética do jogo.
 10. **Servidor autoritativo aprovado.**
 11. **Qualidade automática:** aparelho fraco fica mais feio (menos sombra, menos efeitos, menos resolução) e o forte fica mais bonito e mais renderizado. Mede o fps e sobe ou desce de nível sozinho.
-12. **Modo:** a proposta (mata-mata por tempo, todos contra todos) segue de pé; o Lucas ainda não confirmou.
+12. **Modo (revisado):** o primeiro modo é o **mata-mata** (todos contra todos, por tempo).
+
+## 11. Regras de dano e recuo estilo CS (pedido do Lucas, 03/11/2026)
+
+Valores iniciais para ajustar jogando (nada é definitivo):
+
+- **Vida 100.** **Colete** (corpo) e **capacete** (cabeça) opcionais, como o "kevlar + capacete" do CS.
+- **Cálculo (igual ao CS):** dano base × multiplicador da região (cabeça ×4, tronco ×1, barriga ×1,25, pernas ×0,75) × queda por distância (`alcance^(distância/50 m)`). Com colete na região, o dano na vida é `dano × fator de armadura da arma × 0,5` e o colete perde o resto.
+- **Headshot do fuzil (tipo AK-47):** **mata com ou sem capacete** (dano base 36 × 4 = 144; com capacete e fator 1,55 dá ~111 ≥ 100).
+- **Pistola:** o dano **depende da distância**, e o **colete/capacete decide**: de perto e sem capacete o tiro na cabeça mata; com capacete ou de longe **não mata** (fator de armadura baixo, 0,5). Cada pistola futura terá o seu número (umas matam com colete, outras não).
+- **Sniper (tipo AWP):** **mata com qualquer acerto**, com colete ou sem, em qualquer parte do corpo. **Não mata se o tiro atravessou parede (varado):** o dano cai pela espessura do material.
+- **Penetração:** paredes e caixas finas deixam o tiro passar com dano reduzido; paredes grossas bloqueiam. Cada arma tem seu poder de penetração (a sniper mais, a pistola menos).
+- **Recuo por arma:** cada arma tem seu **padrão de recuo** (uma sequência fixa de deslocamentos da mira por tiro, com um pouco de aleatoriedade), **precisão do primeiro tiro**, **dispersão ao andar e ao pular**, e **tempo de recuperação**. O fuzil sobe e vai para um lado; a pistola dá coices curtos; a sniper dá um coice grande e **só tem precisão parado e mirando**.
+- **Marcadores:** acerto no corpo, na cabeça e abate (cada um com som diferente).
+
+## 12. Fase 0 detalhada (o que será construído agora)
+
+Objetivo: o Lucas **olhar e sentir** o visual, os sons e o início do tiro, **antes** do modo contra bots.
+
+1. **Arte (Blender por script, em `tools/art/`)**: **3 armas** (1 fuzil, 1 pistola, 1 sniper) com peças móveis e **fotos** de cada uma para o Lucas aprovar o estilo; **1 raposa em pé** com esqueleto.
+2. **Animações iniciais:** raposa (parada, correr, atirar, recarregar, cair); armas na mão (sacar, atirar, recarregar, parada).
+3. **Mapa de teste:** uma arena pequena com o "começo do estilo" dos mapas finais: chão, paredes, caixas, uma rampa, cobertura, luz e sombra assada.
+4. **Jogabilidade mínima:** movimento (WASD e mouse; celular deitado), 3 armas trocáveis com **recuo próprio**, mira (ADS), recarga, tiro instantâneo com rastro, marcador de acerto, **alvos e uns bots parados** para testar **headshot, colete e distância**.
+5. **Sons gravados** (tiros, recarga, passos, acerto) que combinem com o jogo.
+6. **Qualidade automática** pelo fps.
+7. Página de teste em `/fox-cap/fox-shot-teste` (sem sala, sem pontuação).
+
+Não faz parte da fase 0: bots que jogam, mata-mata completo, online, tela final, ranking.
