@@ -42,35 +42,47 @@ def _obj(o, name, mat, bone):
     return o
 
 
-def ell(name, c, r, mat, bone, rot=(0, 0, 0), segs=(14, 8)):
-    bpy.ops.mesh.primitive_uv_sphere_add(segments=segs[0], ring_count=segs[1], location=c, rotation=rot)
-    o = bpy.context.object
-    o.scale = r
-    bpy.ops.object.transform_apply(scale=True, rotation=True)
+def _from_bm(bm, name, mat, bone, M):
+    import bmesh as _bm
+    _bm.ops.transform(bm, matrix=M, verts=bm.verts)
+    me = bpy.data.meshes.new(name)
+    bm.to_mesh(me)
+    bm.free()
+    o = bpy.data.objects.new(name, me)
+    bpy.context.collection.objects.link(o)
     return _obj(o, name, mat, bone)
 
 
+def ell(name, c, r, mat, bone, rot=(0, 0, 0), segs=(14, 8)):
+    import bmesh as _bm
+    from mathutils import Matrix
+    bm = _bm.new()
+    _bm.ops.create_uvsphere(bm, u_segments=segs[0], v_segments=segs[1], radius=1.0)
+    M = Matrix.Translation(c) @ Euler(rot, 'XYZ').to_matrix().to_4x4() @ Matrix.Diagonal((r[0], r[1], r[2], 1))
+    return _from_bm(bm, name, mat, bone, M)
+
+
 def limb(name, p0, p1, r0, r1, mat, bone, segs=(12, 8)):
+    import bmesh as _bm
+    from mathutils import Matrix
     a, b = Vector(p0), Vector(p1)
     v = b - a
     mid = (a + b) / 2
     q = Vector((0, 0, 1)).rotation_difference(v.normalized())
-    bpy.ops.mesh.primitive_uv_sphere_add(segments=segs[0], ring_count=segs[1], location=mid)
-    o = bpy.context.object
     rr = (r0 + r1) / 2
-    o.scale = (rr, rr, v.length / 2 + rr * 0.7)
-    bpy.ops.object.transform_apply(scale=True)
-    o.rotation_mode = 'QUATERNION'
-    o.rotation_quaternion = q
-    bpy.ops.object.transform_apply(rotation=True)
-    return _obj(o, name, mat, bone)
+    bm = _bm.new()
+    _bm.ops.create_uvsphere(bm, u_segments=segs[0], v_segments=segs[1], radius=1.0)
+    M = Matrix.Translation(mid) @ q.to_matrix().to_4x4() @ Matrix.Diagonal((rr, rr, v.length / 2 + rr * 0.7, 1))
+    return _from_bm(bm, name, mat, bone, M)
 
 
 def cone(name, c, r, h, mat, bone, rot):
-    bpy.ops.mesh.primitive_cone_add(vertices=10, radius1=r, radius2=0.004, depth=h, location=c, rotation=rot)
-    o = bpy.context.object
-    bpy.ops.object.transform_apply(rotation=True)
-    return _obj(o, name, mat, bone)
+    import bmesh as _bm
+    from mathutils import Matrix
+    bm = _bm.new()
+    _bm.ops.create_cone(bm, cap_ends=True, segments=10, radius1=r, radius2=0.004, depth=h)
+    M = Matrix.Translation(c) @ Euler(rot, 'XYZ').to_matrix().to_4x4()
+    return _from_bm(bm, name, mat, bone, M)
 
 
 def box(name, c, size, mat, bone, bevel=0.012):
