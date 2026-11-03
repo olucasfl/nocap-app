@@ -178,7 +178,8 @@ export class FsControls {
     }
     fwd = Math.max(-1, Math.min(1, fwd));
     strafe = Math.max(-1, Math.min(1, strafe));
-    const jump = this.jumpQueued || this.held('jump');
+    // pular exige apertar de novo (segurar o espaço não repete o pulo)
+    const jump = this.jumpQueued;
     this.jumpQueued = false;
     const reload = this.reloadQueued || this.held('reload');
     this.reloadQueued = false;
@@ -228,6 +229,7 @@ export class FsControls {
       else if (e.code === b.drop) this.once.drop = true;
       else if (e.code === b.pickup) this.once.pickup = true;
     }
+    if (e.code === b.jump && !e.repeat) this.jumpQueued = true;
     if (e.code === b.slot1) this.pickKey = 0;
     else if (e.code === b.slot2) this.pickKey = 1;
     else if (e.code === b.slot3) this.pickKey = 2;
@@ -259,6 +261,7 @@ export class FsControls {
         this.requestLock();
       return;
     }
+    if (fsSettings().binds.jump === `Mouse${e.button}`) this.jumpQueued = true;
     if (e.button === 0) this.mouse.left = true;
     if (e.button === 2) this.mouse.right = true;
     if (e.button === 1) this.mouse.middle = true;

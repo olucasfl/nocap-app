@@ -17,13 +17,13 @@ export interface FsMover {
  * Movimento no desenho do Counter-Strike (motor Source), em metros: atrito no chão (desliza ao soltar), aceleração por
  * "velocidade na direção desejada" (frear apertando o lado oposto é rápido), aceleração no ar com teto de 0,62 m/s na conta
  * (é isso que permite girar a câmera e apertar A/D no ar para ganhar velocidade: strafe e bunny hop) e pulo alto.
- * Valores proporcionais aos do CS (250 u/s de corrida, sv_accelerate 5,5, sv_friction 4, sv_stopspeed 75 u/s, sv_airaccelerate 12,
+ * Valores proporcionais aos do CS (250 u/s de corrida, sv_accelerate 5,5, sv_friction 4 (aqui 6,5: desliza menos), sv_stopspeed 75 u/s, sv_airaccelerate 12,
  * teto aéreo 30 u/s), reduzidos para a raposa (1,3 m).
  */
 export const FS_MOVE = {
   radius: 0.3, height: 1.3, eye: 1.2, crouchHeight: 0.95, crouchEye: 0.85,
   run: 5.2, walkMul: 0.52, crouchMul: 0.34,
-  accel: 5.5, friction: 4, stopSpeed: 1.56, airAccel: 12, airCap: 0.62,
+  accel: 9, friction: 6.5, stopSpeed: 1.9, airAccel: 12, airCap: 0.62,
   jump: 6.0, gravity: 19, stepUp: 0.35, maxSpeed: 15, crouchRate: 14,
 };
 

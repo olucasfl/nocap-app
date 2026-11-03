@@ -282,6 +282,7 @@ export function FoxShotTestPage() {
     let chargePlayed = false;
     let stepT = 0;
     let acc = 0;
+    let jumpBuf = 0;
     let slowT = 0;
     let fastT = 0;
     let hudT = 0;
@@ -606,14 +607,17 @@ export function FoxShotTestPage() {
         const speed0 = speed;
         const mul = loadout.weapon.moveMul * (adsOn ? 0.65 : 1);
         acc += dt;
+        // o clique de pular vale por 0,15 s: apertar um pouco antes de pousar já pula no pouso (bunny hop sem segurar a tecla)
+        if (inp.jump) jumpBuf = 0.15;
         while (acc >= STEP) {
           acc -= STEP;
+          const wasGround = mover.onGround;
           fsStepMover(
             mover,
             {
               fwd: inp.fwd,
               strafe: inp.strafe,
-              jump: inp.jump,
+              jump: jumpBuf > 0,
               yaw: view.yaw,
               speedMul: mul,
               crouch: inp.crouch,
@@ -622,7 +626,8 @@ export function FoxShotTestPage() {
             STEP,
             FS_ARENA,
           );
-          inp.jump = false;
+          if (wasGround && !mover.onGround && jumpBuf > 0) jumpBuf = 0;
+          jumpBuf = Math.max(0, jumpBuf - STEP);
         }
         speed = Math.hypot(mover.vx, mover.vz);
         const quiet = fsQuiet({ crouch: inp.crouch, walk: inp.walk });
