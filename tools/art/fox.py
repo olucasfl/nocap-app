@@ -232,14 +232,20 @@ def action(name):
     return a
 
 
-def lowest_z():
+def lowest_z(skip_tail=False):
     dg = bpy.context.evaluated_depsgraph_get()
     zs = []
     for o in bpy.data.objects:
         if o.type == 'MESH':
             ev = o.evaluated_get(dg)
             mw = ev.matrix_world
-            zs += [(mw @ v.co).z for v in ev.data.vertices]
+            names = [g.name for g in o.vertex_groups]
+            for v in ev.data.vertices:
+                if skip_tail and v.groups:
+                    g = max(v.groups, key=lambda x: x.weight)
+                    if g.group < len(names) and names[g.group].startswith('tail'):
+                        continue
+                zs.append((mw @ v.co).z)
     return min(zs)
 
 
@@ -420,15 +426,22 @@ def death_keys(sign, lift):
 
 
 def lowest_for(sign):
-    t = action('tmp2')
-    d = dict(death_keys(sign, 0.0))[45]
-    key(0, d)
-    bpy.context.scene.frame_set(0)
-    bpy.context.view_layer.update()
-    z = lowest_z()
-    arm.animation_data.action = None
-    bpy.data.actions.remove(t)
-    return -z
+    """Altura que a raiz precisa subir para o corpo deitado encostar no chão (itera até o ponto mais baixo ficar em 0)."""
+    lift = 0.0
+    for _ in range(6):
+        t = action('tmp2')
+        d = dict(death_keys(sign, lift))[45]
+        key(0, d)
+        bpy.context.scene.frame_set(0)
+        bpy.context.view_layer.update()
+        z = lowest_z(skip_tail=True)  # a cauda pode entrar no chão (fica escondida), o corpo não
+        arm.animation_data.action = None
+        bpy.data.actions.remove(t)
+        if abs(z) < 0.003:
+            break
+        lift += -z
+    print('RESIDUO chao', sign, round(z, 4))
+    return lift
 
 
 for _name, _sign in (('death_back', 1), ('death_front', -1)):

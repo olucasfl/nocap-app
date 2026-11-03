@@ -22,7 +22,7 @@ export interface FsMover {
  */
 export const FS_MOVE = {
   radius: 0.3, height: 1.3, eye: 1.2, crouchHeight: 0.95, crouchEye: 0.85,
-  run: 5.2, walkMul: 0.52, crouchMul: 0.34,
+  run: 5.2, walkMul: 0.52, crouchMul: 0.5,
   accel: 9, friction: 6.5, stopSpeed: 1.9, airAccel: 12, airCap: 0.62,
   jump: 6.0, gravity: 19, stepUp: 0.35, maxSpeed: 15, crouchRate: 14,
 };
@@ -67,7 +67,8 @@ export function fsStepMover(m: FsMover, inp: FsMoveInput, dt: number, boxes: rea
     wz /= len;
   }
   const wl = Math.min(1, len);
-  const dl = len || 1;
+  // direção desejada unitária (wx, wz já foram limitados a 1; dividir pelo comprimento ORIGINAL encolhia a diagonal)
+  const dl = Math.hypot(wx, wz) || 1;
   const dirX = wx / dl, dirZ = wz / dl;
 
   // agachar: no chão a cabeça desce; no ar os pés sobem (o corpo encolhe por baixo), como no CS: é o "pulo + Ctrl" que sobe em caixas altas

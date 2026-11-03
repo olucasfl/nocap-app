@@ -12,6 +12,21 @@ const phone = (): boolean => {
   }
 };
 
+/** Vozes tocando ao mesmo tempo: passando do limite, sons de pouca importância (passos) são descartados para não embolar nem estourar. */
+let voices = 0;
+const MAX_VOICES = 28;
+function track(node: AudioScheduledSourceNode) {
+  voices++;
+  node.addEventListener('ended', () => {
+    voices = Math.max(0, voices - 1);
+  });
+}
+function ready(kit: NonNullable<ReturnType<typeof audioKit>>, important: boolean): boolean {
+  // o navegador suspende o áudio até haver um gesto: acorda quando o jogo já está rodando
+  if (kit.ctx.state === 'suspended') void kit.ctx.resume().catch(() => undefined);
+  return important || voices < MAX_VOICES;
+}
+
 let bus: { ctx: AudioContext; node: AudioNode } | null = null;
 let noiseBuf: { ctx: AudioContext; buf: AudioBuffer } | null = null;
 
@@ -62,9 +77,11 @@ function burst(opts: {
   peak: number;
   delay?: number;
   freqEnd?: number;
+  /** Som que nunca pode ser cortado (tiro, clique de arma vazia). */
+  important?: boolean;
 }) {
   const kit = audioKit();
-  if (!kit || kit.muted()) return;
+  if (!kit || kit.muted() || !ready(kit, opts.important !== false)) return;
   const { ctx } = kit;
   const t = ctx.currentTime + (opts.delay ?? 0);
   const src = ctx.createBufferSource();
@@ -80,13 +97,14 @@ function burst(opts: {
   g.gain.exponentialRampToValueAtTime(opts.peak, t + 0.002);
   g.gain.exponentialRampToValueAtTime(0.0001, t + 0.002 + opts.dur);
   src.connect(f).connect(g).connect(busFor(kit));
+  track(src);
   src.start(t, Math.random() * 0.5);
   src.stop(t + opts.dur + 0.05);
 }
 
 function tone(type: OscillatorType, f0: number, f1: number, dur: number, peak: number, delay = 0) {
   const kit = audioKit();
-  if (!kit || kit.muted()) return;
+  if (!kit || kit.muted() || !ready(kit, true)) return;
   const { ctx } = kit;
   const t = ctx.currentTime + delay;
   const o = ctx.createOscillator();
@@ -98,6 +116,7 @@ function tone(type: OscillatorType, f0: number, f1: number, dur: number, peak: n
   g.gain.exponentialRampToValueAtTime(peak, t + 0.003);
   g.gain.exponentialRampToValueAtTime(0.0001, t + 0.003 + dur);
   o.connect(g).connect(busFor(kit));
+  track(o);
   o.start(t);
   o.stop(t + dur + 0.05);
 }
@@ -129,10 +148,11 @@ export const fsAudio = {
     }
   },
   dry() {
-    // gatilho puxado sem bala: o "clique" do cão batendo no vazio (estalo seco + pancada metálica curta)
-    burst({ type: 'highpass', freq: 2200, dur: 0.01, peak: 0.45 });
-    burst({ type: 'bandpass', freq: 800, q: 4, dur: 0.035, peak: 0.4, delay: 0.004 });
-    tone('triangle', 2600, 2100, 0.025, 0.07, 0.006);
+    // gatilho puxado sem bala: o "clique" do cão batendo no vazio, bem audível (estalo agudo + pancada metálica + eco curto)
+    burst({ type: 'highpass', freq: 1500, dur: 0.022, peak: 0.9 });
+    burst({ type: 'bandpass', freq: 650, q: 3, dur: 0.06, peak: 0.8, delay: 0.004 });
+    tone('triangle', 2300, 1500, 0.05, 0.22, 0.003);
+    burst({ type: 'highpass', freq: 1800, dur: 0.012, peak: 0.35, delay: 0.07 });
   },
   /** Acabou a munição: dois cliques descendo, depois do último tiro. */
   empty() {
@@ -183,7 +203,9 @@ export const fsAudio = {
     tone('sine', 180, 90, 0.08, 0.3);
   },
   step() {
-    burst({ type: 'lowpass', freq: jit(420, 0.15), q: 0.8, dur: 0.045, peak: 0.07 });
+    // passo: pancada surda do pé (grave) + o atrito da sola, num volume que dá para ouvir por cima dos tiros
+    burst({ type: 'lowpass', freq: jit(900, 0.15), q: 0.9, dur: 0.07, peak: 0.55, important: false });
+    burst({ type: 'bandpass', freq: jit(2200, 0.2), q: 1.2, dur: 0.03, peak: 0.16, delay: 0.005, important: false });
   },
   jump() {
     burst({ type: 'lowpass', freq: 500, dur: 0.06, peak: 0.1 });

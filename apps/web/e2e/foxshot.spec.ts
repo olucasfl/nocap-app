@@ -235,6 +235,7 @@ test('faca, agachar, loja e armas no chão', async ({ page }, info) => {
   await page.getByTestId('fs-buy-vesthelm').dispatchEvent('click');
   await expect(page.getByTestId('fs-helmet')).toBeVisible();
   await expect(page.getByTestId('fs-buy-vesthelm')).toContainText('em uso');
+  if (process.env.FS_SHOTS) await page.screenshot({ path: `${process.env.FS_SHOTS}/loja.png` });
   // sem primária ainda: comprar o fuzil não larga nada; trocar pela sniper larga o fuzil; repetir não larga
   await page.getByTestId('fs-buy-ak').dispatchEvent('click');
   expect((await fs<unknown[]>(page, 'drops')).length).toBe(0);

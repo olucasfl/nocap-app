@@ -229,6 +229,9 @@ interface FoxView {
   fall: number;
   dead: boolean;
   home: THREE.Vector3;
+  /** Giro suave do corpo para cair na direção do tiro. */
+  turn: { from: number; to: number; t: number } | null;
+  yaw0: number;
 }
 
 interface Puff {
@@ -519,7 +522,7 @@ export class FoxShotScene {
       label.position.set(0, 1.85, 0);
       root.add(label);
       this.scene.add(root);
-      this.foxes.set(id, { root, mixer, actions, label, hitT: 0, anim: 'idle', vel: new THREE.Vector3(), fall: 0, dead: false, home: new THREE.Vector3(x, 0, z) });
+      this.foxes.set(id, { root, mixer, actions, label, hitT: 0, anim: 'idle', vel: new THREE.Vector3(), fall: 0, dead: false, home: new THREE.Vector3(x, 0, z), turn: null, yaw0: yaw });
     };
     for (const spec of FS_TARGETS) {
       // olham para a posição de nascimento do jogador (0, 14)
@@ -1015,12 +1018,22 @@ export class FoxShotScene {
     f.dead = true;
     for (const a of Object.values(f.actions)) a.stop();
     f.root.position.y = 0;
-    const fwd = new THREE.Vector3(Math.cos(f.root.rotation.y), 0, -Math.sin(f.root.rotation.y));
-    const toShooter = new THREE.Vector3(fromX - f.root.position.x, 0, fromZ - f.root.position.z);
-    const front = fwd.dot(toShooter) > 0;
-    const clip = front ? f.actions.death_back : f.actions.death_front;
-    clip?.reset().setEffectiveWeight(1).play();
-    f.vel.copy(fwd).multiplyScalar(front ? -power : power);
+    // a queda segue a direção da bala (de quem atirou para o alvo): de costas (a raposa de frente para o tiro) ou de bruços
+    // (de costas para o tiro), o que exigir menos giro; o corpo gira rápido para alinhar antes de desabar
+    let dx = f.root.position.x - fromX;
+    let dz = f.root.position.z - fromZ;
+    const l = Math.hypot(dx, dz) || 1;
+    dx /= l;
+    dz /= l;
+    const wrap = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
+    const cur = f.root.rotation.y;
+    const thBack = Math.atan2(dz, -dx); // frente = contra o tiro: cai de costas
+    const thFront = Math.atan2(-dz, dx); // frente = a favor do tiro: cai de bruços
+    const useBack = Math.abs(wrap(thBack - cur)) <= Math.abs(wrap(thFront - cur));
+    const target = useBack ? thBack : thFront;
+    f.turn = { from: cur, to: cur + wrap(target - cur), t: 0 };
+    (useBack ? f.actions.death_back : f.actions.death_front)?.reset().setEffectiveWeight(1).play();
+    f.vel.set(dx * power, 0, dz * power);
     f.label.visible = false;
   }
   /** Some de vez (sem animação) quando acaba o tempo do corpo no chão. */
@@ -1076,9 +1089,11 @@ export class FoxShotScene {
     const f = this.foxes.get(id);
     if (!f) return;
     f.dead = false;
+    f.turn = null;
     f.root.visible = true;
     f.vel.set(0, 0, 0);
     f.root.position.copy(f.home);
+    f.root.rotation.y = f.yaw0;
     for (const a of Object.values(f.actions)) a.stop();
     f.actions.idle?.reset().setEffectiveWeight(1).play();
     f.anim = 'idle';
@@ -1143,6 +1158,11 @@ export class FoxShotScene {
   update(dt: number, p: { speed: number; adsTarget: number; airborne: boolean }) {
     for (const f of this.foxes.values()) {
       f.mixer.update(dt);
+      if (f.turn) {
+        f.turn.t = Math.min(1, f.turn.t + dt / 0.18);
+        f.root.rotation.y = f.turn.from + (f.turn.to - f.turn.from) * f.turn.t;
+        if (f.turn.t >= 1) f.turn = null;
+      }
       if (f.dead && f.vel.lengthSq() > 1e-4) {
         f.root.position.addScaledVector(f.vel, dt);
         f.vel.multiplyScalar(Math.exp(-3.2 * dt));

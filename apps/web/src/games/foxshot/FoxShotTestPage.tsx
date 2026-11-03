@@ -249,6 +249,15 @@ export function FoxShotTestPage() {
     const resume = () => {
       setPaused(false);
       if (!touch) {
+        // tela cheia + trava de teclado: o navegador deixa de fechar a aba com Ctrl+W (e de recarregar com Ctrl+R) enquanto joga
+        if (fsSettings().lockKeys) {
+          const root = document.documentElement;
+          const nav = navigator as Navigator & { keyboard?: { lock?: (keys: string[]) => Promise<void> } };
+          const lock = () =>
+            nav.keyboard?.lock?.(['KeyA', 'KeyB', 'KeyD', 'KeyE', 'KeyF', 'KeyG', 'KeyN', 'KeyQ', 'KeyR', 'KeyS', 'KeyT', 'KeyW', 'Digit1', 'Digit2', 'Digit3', 'Tab']).catch(() => undefined);
+          if (document.fullscreenElement) void lock();
+          else void root.requestFullscreen?.().then(lock).catch(() => undefined);
+        }
         controls.requestLock();
         // o navegador pode recusar prender o mouse logo depois do Esc: pede um clique
         window.setTimeout(() => {
@@ -921,7 +930,22 @@ export function FoxShotTestPage() {
       };
     }
 
+    // se tentarem fechar a aba jogando (Ctrl+W, por exemplo), o navegador pergunta antes
+    const beforeUnload = (e: BeforeUnloadEvent) => {
+      if (pausedRef.current || touch) return;
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', beforeUnload);
+
     return () => {
+      window.removeEventListener('beforeunload', beforeUnload);
+      try {
+        (navigator as Navigator & { keyboard?: { unlock?: () => void } }).keyboard?.unlock?.();
+        if (document.fullscreenElement) void document.exitFullscreen();
+      } catch {
+        /* sem tela cheia para sair */
+      }
       dead = true;
       cancelAnimationFrame(raf);
       ro.disconnect();
@@ -982,6 +1006,7 @@ export function FoxShotTestPage() {
             deaths={hud.me.deaths}
           />
           {settings.showMinimap && <FsMinimap get={getMini} />}
+          <div className="fsh-rcol">
           {settings.showTelemetry && (
             <FsTelemetry
               fps={hud.fps}
@@ -994,6 +1019,7 @@ export function FoxShotTestPage() {
             />
           )}
           <FsKillFeed items={feed} />
+          </div>
           <FsVitals hp={hud.hp} armor={hud.armor} helmet={hud.helmet} />
           <FsAmmo
             weapon={hud.weapon}
@@ -1008,6 +1034,9 @@ export function FoxShotTestPage() {
             <FsShop
               onBuy={(i) => buyRef.current(i)}
               onClose={() => setShop(false)}
+              equipped={hud.slots}
+              armor={hud.armor}
+              helmet={hud.helmet}
               owned={[
                 ...hud.slots.flatMap((x) => (x.id ? [x.id] : [])),
                 ...(hud.armor > 0 ? ['vest'] : []),

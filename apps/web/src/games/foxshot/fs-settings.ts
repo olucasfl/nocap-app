@@ -71,6 +71,8 @@ export interface FsSettings {
   crossDynamic: boolean;
   showTelemetry: boolean;
   showMinimap: boolean;
+  /** Joga em tela cheia e trava as teclas do navegador (Ctrl+W, Ctrl+R, Ctrl+T...) enquanto joga. */
+  lockKeys: boolean;
   /** 'auto' deixa o jogo subir e descer a qualidade pelo fps. */
   quality: 'auto' | 'low' | 'mid' | 'high';
   binds: Record<FsAction, string>;
@@ -89,6 +91,7 @@ export const FS_DEFAULTS: FsSettings = {
   crossDynamic: true,
   showTelemetry: true,
   showMinimap: true,
+  lockKeys: true,
   quality: 'auto',
   binds: { ...FS_DEFAULT_BINDS },
 };

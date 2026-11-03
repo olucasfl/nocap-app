@@ -40,6 +40,8 @@ export class FsLoadout {
   private triggerWas = false;
   /** Clique dado um instante antes de a arma poder atirar: dispara assim que puder (até 0,3 s). */
   private buffered = 0;
+  /** Depois do clique de arma vazia, a recarga começa em instantes (dá para ouvir o clique antes do som de tirar o carregador). */
+  private dryPending = 0;
   private altWas = false;
 
   constructor(primary: FsWeaponId | null = 'ak', secondary: FsWeaponId | null = 'pistol') {
@@ -132,11 +134,12 @@ export class FsLoadout {
     // corpo a corpo: botão de atirar corta, o de mirar estoca
     if (w.melee) {
       if (this.drawT <= 0 && this.cooldown <= 0) {
-        if (pressed || (input.trigger && w.auto)) {
+        // clicar uma vez golpeia uma vez; segurar continua golpeando (corte mais rápido, estocada mais lenta)
+        if (input.trigger) {
           this.inspectT = 0;
-          this.cooldown = 60 / w.rpm + 0.12;
+          this.cooldown = 0.5;
           ev.push({ type: 'melee', kind: 'slash', weapon: w });
-        } else if (altPressed) {
+        } else if (input.alt) {
           this.inspectT = 0;
           this.cooldown = w.melee.stabCd;
           ev.push({ type: 'melee', kind: 'stab', weapon: w });
@@ -152,6 +155,14 @@ export class FsLoadout {
     if (input.inspect && w.inspect > 0 && this.ready && this.inspectT <= 0 && !this.reloading) {
       this.inspectT = w.inspect;
       ev.push({ type: 'inspect', weapon: w });
+    }
+    if (this.dryPending > 0) {
+      this.dryPending -= dt;
+      if (this.dryPending <= 0 && s.ammo <= 0 && this.reloadT <= 0 && this.drawT <= 0) {
+        this.reloadT = w.reload;
+        ev.push({ type: 'reload', weapon: w });
+        return ev;
+      }
     }
     if (this.reloadT > 0) {
       this.reloadT -= dt;
@@ -174,8 +185,8 @@ export class FsLoadout {
       if (s.ammo <= 0) {
         if (pressed) {
           ev.push({ type: 'dry', weapon: w });
-          this.reloadT = w.reload;
-          ev.push({ type: 'reload', weapon: w });
+          this.dryPending = 0.3;
+          this.cooldown = 0.3;
         }
         return ev;
       }

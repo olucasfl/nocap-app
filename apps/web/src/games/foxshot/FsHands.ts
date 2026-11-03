@@ -152,28 +152,71 @@ export class FsHands {
   }
 }
 
-/** A faca: lâmina de aço com ponta, guarda e cabo escuro; origem na mão, ponta para -Z. */
+/**
+ * A faca tática: lâmina preta com ponta, fio de aço brilhante, costas serrilhadas, canal central, guarda com argola para o
+ * dedo, cabo emborrachado com ranhuras e argola no fim. Origem na mão, ponta para -Z, fio para baixo.
+ */
 export function makeKnife(): THREE.Group {
   const g = new THREE.Group();
-  const shape = new THREE.Shape();
-  shape.moveTo(0, -0.012);
-  shape.lineTo(0.17, -0.012);
-  shape.lineTo(0.225, 0.004);
-  shape.lineTo(0.17, 0.017);
-  shape.lineTo(0, 0.017);
-  shape.closePath();
-  const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.006, bevelEnabled: false });
-  geo.translate(0, 0, -0.003);
-  geo.applyMatrix4(new THREE.Matrix4().makeBasis(new THREE.Vector3(0, 0, -1), new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, -1, 0)));
-  const steel = new THREE.MeshStandardMaterial({ color: 0xd3d9e0, metalness: 0.9, roughness: 0.28 });
-  const blade = new THREE.Mesh(geo, steel);
-  blade.position.z = -0.02;
-  const guard = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.02, 0.008), DARK);
+  const matrix = new THREE.Matrix4().makeBasis(new THREE.Vector3(0, 0, -1), new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, -1, 0));
+  const extrude = (shape: THREE.Shape, depth: number, z0 = 0) => {
+    const geo = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: false });
+    geo.translate(0, 0, z0 - depth / 2);
+    geo.applyMatrix4(matrix);
+    return geo;
+  };
+  // lâmina: fio reto embaixo (v = -0,014), costas em cima com 5 dentes de serra e ponta curva
+  const blade = new THREE.Shape();
+  blade.moveTo(0, -0.014);
+  blade.lineTo(0.17, -0.014);
+  blade.quadraticCurveTo(0.225, -0.012, 0.245, 0.006);
+  blade.lineTo(0.2, 0.014);
+  for (let i = 0; i < 5; i++) {
+    const x1 = 0.185 - i * 0.026;
+    blade.lineTo(x1, 0.018);
+    blade.lineTo(x1 - 0.013, 0.014);
+  }
+  blade.lineTo(0, 0.02);
+  blade.closePath();
+  const dark = new THREE.MeshStandardMaterial({ color: 0x23272e, metalness: 0.55, roughness: 0.42 });
+  const steel = new THREE.MeshStandardMaterial({ color: 0xdfe4ea, metalness: 0.95, roughness: 0.18 });
+  const rubber = new THREE.MeshStandardMaterial({ color: 0x15161a, roughness: 0.85, metalness: 0.05 });
+  const b = new THREE.Mesh(extrude(blade, 0.007), dark);
+  b.position.z = -0.02;
+  // fio: faixa fina de aço na borda de baixo
+  const edge = new THREE.Shape();
+  edge.moveTo(0.004, -0.0145);
+  edge.lineTo(0.171, -0.0145);
+  edge.quadraticCurveTo(0.226, -0.0125, 0.247, 0.0055);
+  edge.lineTo(0.238, 0.0075);
+  edge.quadraticCurveTo(0.218, -0.0045, 0.168, -0.0075);
+  edge.lineTo(0.004, -0.0075);
+  edge.closePath();
+  const e = new THREE.Mesh(extrude(edge, 0.0078), steel);
+  e.position.z = -0.02;
+  // canal central (sulco claro ao longo da lâmina)
+  const fuller = new THREE.Mesh(new THREE.BoxGeometry(0.0075, 0.0035, 0.15), steel);
+  fuller.position.set(0, 0.0045, -0.11);
+  // guarda com argola para o dedo
+  const guard = new THREE.Mesh(new THREE.BoxGeometry(0.052, 0.022, 0.009), dark);
   guard.position.z = -0.018;
-  const grip = new THREE.Mesh(new THREE.CylinderGeometry(0.017, 0.019, 0.11, 10), DARK);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.014, 0.004, 8, 16), steel);
+  ring.position.set(0, -0.026, -0.006);
+  ring.rotation.y = Math.PI / 2;
+  // cabo com ranhuras de borracha
+  const grip = new THREE.Mesh(new THREE.CylinderGeometry(0.0165, 0.0185, 0.115, 12), rubber);
   grip.rotation.x = Math.PI / 2;
-  grip.position.z = 0.04;
-  g.add(blade, guard, grip);
+  grip.position.z = 0.043;
+  g.add(b, e, fuller, guard, ring, grip);
+  for (let i = 0; i < 6; i++) {
+    const r = new THREE.Mesh(new THREE.TorusGeometry(0.0182, 0.0016, 6, 14), dark);
+    r.position.z = -0.005 + i * 0.019;
+    g.add(r);
+  }
+  // argola no fim do cabo
+  const pommel = new THREE.Mesh(new THREE.TorusGeometry(0.013, 0.004, 8, 16), steel);
+  pommel.position.z = 0.105;
+  g.add(pommel);
   g.traverse((o) => {
     o.frustumCulled = false;
   });

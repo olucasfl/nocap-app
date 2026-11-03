@@ -281,6 +281,11 @@ function Customize() {
         onChange={(v) => s.set({ quality: v })}
       />
       <Toggle
+        label="Tela cheia e travar teclas (Ctrl+W não fecha o jogo)"
+        value={s.lockKeys}
+        onChange={(v) => s.set({ lockKeys: v })}
+      />
+      <Toggle
         label="Mapa no canto"
         value={s.showMinimap}
         onChange={(v) => s.set({ showMinimap: v })}

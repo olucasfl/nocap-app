@@ -870,43 +870,6 @@
   }
 }
 
-/* ---- loja (B) ---- */
-.fss {
-  position: absolute;
-  inset: 0;
-  z-index: 30;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 10px;
-  padding: max(12px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
-  background: rgba(10, 12, 30, 0.7);
-  color: #fff;
-}
-.fss-head { display: flex; gap: 14px; align-items: baseline; flex-wrap: wrap; }
-.fss-head b { font: 900 22px var(--font-display, system-ui); }
-.fss-key { margin-left: auto; opacity: 0.75; font-size: 11px; }
-.fss-cols { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
-.fss-col { border: 3px solid #1b1535; background: rgba(12, 16, 38, 0.85); min-width: 0; }
-.fss-col.on { border-color: #ffd23f; }
-.fss-col h4 { margin: 0; padding: 8px; font: 900 12px var(--font-display, system-ui); background: #1b1535; cursor: pointer; }
-.fss-col ul { list-style: none; margin: 0; padding: 6px; display: grid; gap: 6px; }
-.fss-item {
-  width: 100%; display: grid; grid-template-columns: 18px 1fr; gap: 2px 6px; align-items: center; text-align: left;
-  padding: 8px 6px; border: 2px solid #1b1535; background: #2a2f5a; color: #fff;
-  font: 800 11px var(--font-display, system-ui); cursor: pointer;
-}
-.fss-item i { font-style: normal; color: #ffd23f; grid-row: 1; }
-.fss-item .fss-ico { grid-column: 2; width: 54px; height: 22px; }
-.fss-item em { grid-column: 2; font-style: normal; opacity: 0.8; font-size: 10px; }
-.fss-item.soon { opacity: 0.35; cursor: default; }
-.fss-item.bought { background: #3fae5c; }
-.fss-close { align-self: flex-end; padding: 8px 14px; border: 3px solid #1b1535; background: #ffd23f; color: #1b1535; font: 900 12px var(--font-display, system-ui); cursor: pointer; }
-@media (max-height: 460px) {
-  .fss-col ul { padding: 4px; gap: 4px; }
-  .fss-item { padding: 5px; }
-}
-
 /* armas em linhas (1, 2, 3): a da mão fica maior, com nome */
 .fsh-slots { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 4px; justify-items: end; }
 .fsh-slots li { display: flex; align-items: center; gap: 8px; padding: 3px 8px; opacity: 0.6; border-right: 4px solid transparent; }
@@ -924,14 +887,6 @@
 .fs-scope i { left: 0; right: 0; top: calc(50% - 1px); height: 2px; opacity: 0.85; }
 .fs-scope b { top: 0; bottom: 0; left: calc(50% - 1px); width: 2px; opacity: 0.85; }
 
-/* loja: aviso de compra e item em uso */
-.fss-toast { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); padding: 10px 18px; border: 3px solid #1b1535; background: #3fae5c; color: #fff;
-  font: 900 15px var(--font-display, system-ui); animation: fss-pop 1.6s ease-out forwards; pointer-events: none; }
-@keyframes fss-pop { 0% { opacity: 0; transform: translateX(-50%) translateY(-14px) scale(0.9); } 12% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.06); }
-  20% { transform: translateX(-50%) scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateX(-50%) translateY(-6px); } }
-.fss-item.own { border-color: #ffd23f; }
-.fss-item.own em { color: #ffd23f; opacity: 1; }
-@media (prefers-reduced-motion: reduce) { .fss-toast { animation: none; } }
 
 /* nome da arma no chão, logo abaixo da mira */
 .fs-look { position: absolute; left: 50%; top: calc(50% + 34px); transform: translateX(-50%); display: grid; justify-items: center; gap: 2px; pointer-events: none; z-index: 6;
@@ -943,9 +898,66 @@
 
 .fsh-helm { align-self: center; padding: 2px 6px; border: 2px solid #1b1535; background: rgba(12, 16, 38, 0.74); color: #7fa6ff; font: 900 10px var(--font-display, system-ui); letter-spacing: 0.1em; text-transform: uppercase; }
 
-.fss-toast.warn { background: #c4571a; }
 
 /* tecla repetida em duas ações */
 .fsm-binds li.conflict { border-color: #ff3b30; }
 .fsm-binds li.conflict button { border-color: #ff3b30; }
 .fsm-warn { display: block; margin-top: 2px; font: 700 10px var(--font-display, system-ui); color: #ff6a5e; letter-spacing: 0.02em; }
+
+/* telemetria e kill feed numa coluna só: o feed desce sozinho conforme a telemetria cresce */
+.fsh-rcol { position: absolute; right: max(12px, env(safe-area-inset-right)); top: max(8px, env(safe-area-inset-top)); display: flex; flex-direction: column; align-items: flex-end; gap: 8px; pointer-events: none; z-index: 4; }
+.fsh-rcol .fsh-tele, .fsh-rcol .fsh-feed { position: static; }
+
+/* ---- loja (B): seções com cartões ---- */
+.fss { position: absolute; inset: 0; z-index: 30; display: flex; flex-direction: column; justify-content: center; gap: 10px; color: #fff;
+  padding: max(10px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  background: radial-gradient(ellipse at 50% 40%, rgba(24, 28, 64, 0.82), rgba(6, 8, 22, 0.94)); }
+.fss-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+.fss-head b { font: 900 26px var(--font-display, system-ui); letter-spacing: 0.04em; text-transform: uppercase; }
+.fss-money { padding: 2px 10px; border: 3px solid #1b1535; background: #ffd23f; color: #1b1535; font-weight: 900; font-size: 15px; }
+.fss-key { margin-left: auto; opacity: 0.75; font-size: 11px; }
+.fss-cols { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; align-items: start; }
+.fss-col { min-width: 0; border: 3px solid #1b1535; background: rgba(14, 18, 44, 0.9); box-shadow: 4px 4px 0 #1b1535; }
+.fss-col.on { outline: 3px solid #ffd23f; outline-offset: 2px; }
+.fss-col h4 { display: flex; align-items: center; gap: 8px; margin: 0; padding: 7px 10px; background: var(--tone); color: #fff; cursor: pointer;
+  font: 900 12px var(--font-display, system-ui); letter-spacing: 0.1em; text-transform: uppercase; }
+.fss-col h4 i { display: grid; place-items: center; width: 18px; height: 18px; border: 2px solid #1b1535; background: #fff; color: #1b1535; font-style: normal; font-size: 11px; }
+.fss-col ul { list-style: none; margin: 0; padding: 8px; display: grid; gap: 8px; }
+.fss-item { position: relative; width: 100%; display: grid; grid-template-rows: auto auto; grid-template-columns: 1fr auto; align-items: end; gap: 2px 8px; min-height: 84px;
+  padding: 8px 10px; text-align: left; color: #fff; cursor: pointer; border: 3px solid #1b1535; background: rgba(255, 255, 255, 0.07);
+  font: 800 11px var(--font-display, system-ui); transition: transform 0.12s ease-out; }
+.fss-item:hover:not(.soon) { transform: translateY(-2px); background: rgba(255, 255, 255, 0.13); }
+.fss-item:active:not(.soon) { transform: scale(0.97); }
+.fss-n { position: absolute; top: 5px; left: 8px; font: 900 10px var(--font-display, system-ui); font-style: normal; opacity: 0.7; }
+.fss-art { grid-column: 1 / -1; grid-row: 1; display: grid; place-items: center; padding-top: 6px; }
+.fss-ico { width: 100%; max-width: 124px; height: 40px; color: #eaf0ff; filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.5)); }
+.fss-ico.vest { max-width: 46px; height: 40px; color: #7fa6ff; }
+.fss-blank { width: 70%; height: 3px; background: rgba(255, 255, 255, 0.16); }
+.fss-name { grid-row: 2; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
+.fss-price { grid-row: 2; font-style: normal; font-size: 11px; color: #ffd23f; }
+.fss-tag { position: absolute; top: 0; right: 0; padding: 2px 8px; background: #3fae5c; color: #fff; font: 900 9px var(--font-display, system-ui); letter-spacing: 0.1em; text-transform: uppercase; border-left: 3px solid #1b1535; border-bottom: 3px solid #1b1535; }
+.fss-item.own { border-color: #3fae5c; background: rgba(63, 174, 92, 0.2); box-shadow: inset 0 0 18px rgba(63, 174, 92, 0.35), 3px 3px 0 #1b1535; }
+.fss-item.own .fss-price { color: #8ff0a7; }
+.fss-item.bought { animation: fss-buy 0.5s ease-out; }
+@keyframes fss-buy { 0% { transform: scale(1); } 30% { transform: scale(1.06); } 100% { transform: scale(1); } }
+.fss-item.soon { opacity: 0.4; cursor: default; border-style: dashed; }
+.fss-toast { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); padding: 10px 20px; border: 3px solid #1b1535; background: #3fae5c; color: #fff; z-index: 2;
+  font: 900 15px var(--font-display, system-ui); letter-spacing: 0.04em; text-transform: uppercase; box-shadow: 4px 4px 0 #1b1535; animation: fss-pop 1.6s ease-out forwards; pointer-events: none; }
+.fss-toast.warn { background: #c4571a; }
+@keyframes fss-pop { 0% { opacity: 0; transform: translateX(-50%) translateY(-14px) scale(0.9); } 12% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.06); }
+  20% { transform: translateX(-50%) scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateX(-50%) translateY(-6px); } }
+.fss-mine { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 10px; border: 3px solid #1b1535; background: rgba(14, 18, 44, 0.9); box-shadow: 4px 4px 0 #1b1535; }
+.fss-mine-t { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; margin-right: 4px; }
+.fss-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border: 2px solid #3fae5c; background: rgba(63, 174, 92, 0.18); }
+.fss-chip.empty { border-color: rgba(255, 255, 255, 0.2); background: transparent; opacity: 0.5; }
+.fss-chip i { font: 900 10px var(--font-display, system-ui); font-style: normal; opacity: 0.8; }
+.fss-chip b { font: 800 11px var(--font-display, system-ui); text-transform: uppercase; letter-spacing: 0.06em; }
+.fss-chip-ico { width: 34px; height: 14px; color: #eaf0ff; }
+.fss-close { margin-left: auto; padding: 7px 16px; border: 3px solid #1b1535; background: #ffd23f; color: #1b1535; font: 900 12px var(--font-display, system-ui); cursor: pointer; }
+@media (max-height: 520px) {
+  .fss { gap: 6px; }
+  .fss-col ul { padding: 5px; gap: 5px; }
+  .fss-item { min-height: 62px; padding: 5px 8px; }
+  .fss-ico { height: 28px; }
+}
+@media (prefers-reduced-motion: reduce) { .fss-toast, .fss-item.bought { animation: none; } .fss-item { transition: none; } }

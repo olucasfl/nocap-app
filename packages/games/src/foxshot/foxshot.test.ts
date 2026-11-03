@@ -244,6 +244,21 @@ describe('agachado: o corpo desce junto', () => {
   });
 });
 
+describe('arma vazia', () => {
+  it('puxar o gatilho sem bala faz o clique e só depois começa a recarregar', () => {
+    const l = new FsLoadout('ak', 'pistol');
+    l.drawT = 0;
+    l.slot.ammo = 0;
+    const mv = { moving: false, airborne: false, ads: false };
+    const ev = l.update(0.016, { trigger: true, reload: false }, mv, 'p');
+    expect(ev.map((e) => e.type)).toEqual(['dry']);
+    expect(l.reloading).toBe(false);
+    let reloaded = false;
+    for (let i = 0; i < 40 && !reloaded; i++) reloaded = l.update(0.016, { trigger: false, reload: false }, mv, 'p').some((e) => e.type === 'reload');
+    expect(reloaded).toBe(true);
+  });
+});
+
 describe('gatilho com memória', () => {
   it('o clique um instante antes de a sniper poder atirar dispara assim que puder', () => {
     const l = new FsLoadout('sniper', 'pistol');
@@ -266,15 +281,31 @@ describe('gatilho com memória', () => {
   });
 });
 
-describe('faca: um golpe por clique', () => {
-  it('segurar o botão não repete o golpe', () => {
+describe('faca: clique golpeia uma vez, segurar repete', () => {
+  it('segurar o botão esquerdo corta de 0,5 em 0,5 s e o direito estoca de 1 em 1 s', () => {
     const l = new FsLoadout(null, 'pistol');
     l.switchTo(2);
     l.drawT = 0;
+    const mv = { moving: false, airborne: false, ads: false };
     let n = 0;
-    for (let i = 0; i < 600; i++)
-      n += l.update(1 / 120, { trigger: true, reload: false }, { moving: false, airborne: false, ads: false }, 'p').filter((e) => e.type === 'melee').length;
-    expect(n).toBe(1);
+    for (let i = 0; i < 600; i++) n += l.update(1 / 120, { trigger: true, reload: false }, mv, 'p').filter((e) => e.type === 'melee').length;
+    expect(n).toBeGreaterThanOrEqual(9);
+    expect(n).toBeLessThanOrEqual(11);
+    // um clique só: um golpe
+    const c = new FsLoadout(null, 'pistol');
+    c.switchTo(2);
+    c.drawT = 0;
+    let one = c.update(1 / 120, { trigger: true, reload: false }, mv, 'p').filter((e) => e.type === 'melee').length;
+    for (let i = 0; i < 300; i++) one += c.update(1 / 120, { trigger: false, reload: false }, mv, 'p').filter((e) => e.type === 'melee').length;
+    expect(one).toBe(1);
+    // segurar o direito: estocadas mais espaçadas que os cortes
+    const r = new FsLoadout(null, 'pistol');
+    r.switchTo(2);
+    r.drawT = 0;
+    let st = 0;
+    for (let i = 0; i < 600; i++) st += r.update(1 / 120, { trigger: false, reload: false, alt: true }, mv, 'p').filter((e) => e.type === 'melee' && e.kind === 'stab').length;
+    expect(st).toBeGreaterThanOrEqual(4);
+    expect(st).toBeLessThanOrEqual(6);
   });
 });
 
@@ -474,6 +505,16 @@ describe('movimento estilo CS', () => {
       }
     }
     expect(speed(m)).toBeGreaterThan(base * 1.15);
+  });
+
+  it('andar na diagonal (de pé ou agachado) mantém a velocidade, sem perder tudo', () => {
+    for (const crouch of [false, true]) {
+      const d = fsNewMover(0, 0);
+      step(d, { fwd: 1, strafe: 1, crouch }, 2);
+      const r = fsNewMover(0, 0);
+      step(r, { fwd: 1, crouch }, 2);
+      expect(speed(d)).toBeGreaterThan(speed(r) * 0.97);
+    }
   });
 
   it('o pulo vai a cerca de 0,95 m e dura cerca de 0,63 s', () => {
