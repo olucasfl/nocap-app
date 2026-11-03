@@ -64,10 +64,25 @@ tris = 0
 parts.sort(key=lambda o: -len(o.data.polygons))
 for o in parts:
     k = kind(o)
+    o['kind'] = k
     count[k] = count.get(k, 0) + 1
     o.name = f'{k}{count[k]}'
     o.data.materials.clear()
     o.data.materials.append(MAT[k])
+    if k == 'Ammunition' and count[k] == 1:
+        o.data.materials[0] = fox  # o maior pedaço "de munição" é o carregador: laranja de raposa
+    if k == 'Body' and count[k] == 1:
+        # a coronha e a parte de baixo do guarda-mão são polímero verde; a caixa de culatra em cima fica metálica
+        o.data.materials.append(chassis)
+        ys = [v.co.y for v in o.data.vertices]
+        zs = [v.co.z for v in o.data.vertices]
+        y0, y1, z0, z1 = min(ys), max(ys), min(zs), max(zs)
+        for poly in o.data.polygons:
+            cy = sum(o.data.vertices[i].co.y for i in poly.vertices) / len(poly.vertices)
+            cz = sum(o.data.vertices[i].co.z for i in poly.vertices) / len(poly.vertices)
+            t = (cy - y0) / (y1 - y0)
+            if t < 0.46 or cz < z0 + 0.42 * (z1 - z0):
+                poly.material_index = 1
     bpy.context.view_layer.objects.active = o
     bpy.ops.object.shade_auto_smooth(angle=math.radians(38))
     tris += sum(len(p.vertices) - 2 for p in o.data.polygons)
@@ -80,7 +95,7 @@ mx = Vector((max(c[i] for c in allc) for i in range(3)))
 size = mx - mn
 axis = max(range(3), key=lambda i: size[i])
 scale = 1.18 / [max((o.matrix_world @ Vector(b))[axis] for o in parts for b in o.bound_box) - min((o.matrix_world @ Vector(b))[axis] for o in parts for b in o.bound_box)][0]
-stock_c = center([o for o in parts if kind(o) == 'Stock'][0])
+stock_c = center([o for o in parts if o['kind'] == 'Stock'][0])
 rest = Vector((sum(c[i] for c in allc) / len(allc) for i in range(3)))
 d = rest - stock_c
 ang = math.atan2(d.y, d.x) if axis != 2 else 0
