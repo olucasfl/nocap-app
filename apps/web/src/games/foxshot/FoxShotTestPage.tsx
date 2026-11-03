@@ -20,6 +20,7 @@ import {
   fsStepMover,
   fsTrace,
   type FsBody,
+  type FsBox,
   type FsWeaponId,
 } from '@nocap/games';
 import { fsAudio } from '@/lib/foxshot-audio';
@@ -146,13 +147,20 @@ export function FoxShotTestPage() {
   const [needClick, setNeedClick] = useState(false);
   const [shop, setShopState] = useState(false);
   const shopRef = useRef(false);
+  const shopClosedAt = useRef(0);
   const buyRef = useRef<(item: FsShopItem) => void>(() => undefined);
   const setShop = useCallback((v: boolean) => {
     shopRef.current = v;
     setShopState(v);
     // a loja precisa do cursor: solta o mouse ao abrir e prende de novo ao fechar
     if (v) ctl.current?.releaseLock();
-    else if (!pausedRef.current) ctl.current?.requestLock();
+    else {
+      shopClosedAt.current = performance.now();
+      // prende o mouse de novo só depois do Esc/B: pedir na hora faz o navegador soltar em seguida e abrir o menu de opções
+      window.setTimeout(() => {
+        if (!shopRef.current && !pausedRef.current) ctl.current?.requestLock();
+      }, 160);
+    }
   }, []);
   const ctl = useRef<FsControls | null>(null);
   const pausedRef = useRef(true);
@@ -212,7 +220,7 @@ export function FoxShotTestPage() {
       },
       (locked) => {
         // o mouse soltou (Esc ou clique fora): abre o menu; prendeu: some o menu
-        if (!locked && !pausedRef.current && !shopRef.current) setPaused(true);
+        if (!locked && !pausedRef.current && !shopRef.current && performance.now() - shopClosedAt.current > 600) setPaused(true);
         if (locked) {
           setPaused(false);
           setNeedClick(false);
@@ -354,11 +362,9 @@ export function FoxShotTestPage() {
           st.reviveAt = clock + REVIVE_S;
           stats.kills++;
           if (tr.zone === 'head') stats.hs++;
-          scene.killTarget(tr.targetId);
+          scene.killTarget(tr.targetId, mover.x, mover.z, id === 'knife' ? 0.8 : id === 'pistol' ? 1.0 : id === 'sniper' ? 2.8 : 1.4);
           fsAudio.hit('kill');
           showMarker('kill', tr.zone === 'head' ? 'CABEÇA' : 'ABATE');
-          const tp = posOf(tr.targetId);
-          scene.knock(tr.targetId, tp[0] - mover.x, tp[2] - mover.z, id === 'knife' ? 2.2 : id === 'pistol' ? 2.6 : id === 'sniper' ? 5.2 : 3.6);
           const bi = FS_BOTS.findIndex((t) => t.id === tr.targetId);
           pushFeed(id, bi >= 0 ? `Bot ${bi + 1}` : `Raposa ${FS_TARGETS.findIndex((t) => t.id === tr.targetId) + 1}`, tr.zone === 'head');
         } else {
@@ -406,8 +412,6 @@ export function FoxShotTestPage() {
       for (const e of events) {
         if (e.type === 'fire') {
           fire(e.weapon.id, e.shot);
-          // o último tiro: avisa que acabou a munição
-          if (loadout.slot.ammo === 0) fsAudio.empty();
         }
         else if (e.type === 'melee') melee(e.kind);
         else if (e.type === 'inspect') {
@@ -609,6 +613,15 @@ export function FoxShotTestPage() {
         acc += dt;
         // o clique de pular vale por 0,15 s: apertar um pouco antes de pousar já pula no pouso (bunny hop sem segurar a tecla)
         if (inp.jump) jumpBuf = 0.15;
+        // quem está vivo é um obstáculo (dá para esbarrar); quem morreu deixa de ser (dá para passar por cima)
+        const solids: FsBox[] = [...FS_ARENA];
+        for (const t of ALL_TARGETS) {
+          if (!targets.get(t.id)!.alive) continue;
+          const p = posOf(t.id);
+          const bs = botSt.get(t.id);
+          const h = 1.3 + ((0.95 / 1.3 - 1) * 1.3) * (bs ? bs.crouch : targets.get(t.id)!.crouch);
+          solids.push({ min: [p[0] - 0.3, p[1], p[2] - 0.3], max: [p[0] + 0.3, p[1] + h, p[2] + 0.3], pen: 0, mat: 'crate' });
+        }
         while (acc >= STEP) {
           acc -= STEP;
           const wasGround = mover.onGround;
@@ -624,7 +637,7 @@ export function FoxShotTestPage() {
               walk: inp.walk,
             },
             STEP,
-            FS_ARENA,
+            solids,
           );
           if (wasGround && !mover.onGround && jumpBuf > 0) jumpBuf = 0;
           jumpBuf = Math.max(0, jumpBuf - STEP);
@@ -695,11 +708,8 @@ export function FoxShotTestPage() {
         }
         for (const t of ALL_TARGETS) {
           const s = targets.get(t.id)!;
-          if (!s.alive) {
-            // nos últimos 0,8 s do tempo morto o corpo afunda no chão
-            const sink = (clock - (s.reviveAt - 0.8)) / 0.8;
-            if (sink > 0) scene.sinkTarget(t.id, Math.min(1, sink));
-          }
+          // o corpo fica no chão e some de repente 1 s antes de nascer outro
+          if (!s.alive && clock >= s.reviveAt - 1) scene.hideTarget(t.id);
           if (!s.alive && clock >= s.reviveAt) {
             s.alive = true;
             s.hp = 100;

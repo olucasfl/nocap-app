@@ -274,7 +274,7 @@ test('faca, agachar, loja e armas no chão', async ({ page }, info) => {
 
 test('fotos das mãos (só com FS_SHOTS)', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop' || !process.env.FS_SHOTS, 'só para conferir o visual');
-  test.setTimeout(240_000);
+  test.setTimeout(540_000);
   await page.setViewportSize({ width: 1280, height: 720 });
   await open(page);
   await page.getByTestId('fsm-resume').click();
@@ -315,10 +315,19 @@ test('fotos das mãos (só com FS_SHOTS)', async ({ page }, info) => {
   await fs(page, 'teleport', -7, -18.2);
   await fs(page, 'aimAt', 'b5', 'head');
   await fs(page, 'shoot', 1);
-  for (const t of [250, 450, 900]) {
+  for (const t of [200, 300, 500, 900]) {
     await page.waitForTimeout(t);
     await shot(`m-death-${t}`);
   }
+  // agachado (b3) de perto
+  await fs(page, 'teleport', -6, -14.6);
+  await fs(page, 'aimAt', 'b3', 'chest');
+  await page.waitForTimeout(1200);
+  await shot('m-crouchbot');
+  await fs(page, 'weapon', 0);
+  await fs(page, 'inspectGun');
+  await page.waitForTimeout(1500);
+  await shot('m-insp-sniper');
   for (const [kind, us] of [['slash', [0.22, 0.5, 0.75]], ['stab', [0.28, 0.45, 0.8]], ['inspect', [0.08, 0.3, 0.45, 0.65]]] as const) {
     for (const u of us) {
       await fs(page, 'pose', kind, u);

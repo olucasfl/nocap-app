@@ -23,7 +23,7 @@ interface VmCfg {
 const VM: Record<FsWeaponId, VmCfg> = {
   ak: {
     scale: 0.8,
-    hip: [0.14, -0.17, -0.4],
+    hip: [0.16, -0.18, -0.37],
     ads: [0.0, -0.138, -0.3],
     mag: ['Magazine'],
     bolt: ['ChargingHandle', 'EjectionHandle'],
@@ -53,7 +53,7 @@ const VM: Record<FsWeaponId, VmCfg> = {
 const VM_REF: Partial<Record<FsWeaponId, VmCfg>> = {
   pistol: {
     scale: 1.0,
-    hip: [0.1, -0.085, -0.38],
+    hip: [0.115, -0.09, -0.35],
     ads: [0.0, -0.058, -0.28],
     mag: ['Magazine'],
     bolt: [],
@@ -61,7 +61,7 @@ const VM_REF: Partial<Record<FsWeaponId, VmCfg>> = {
   },
   sniper: {
     scale: 0.62,
-    hip: [0.14, -0.11, -0.52],
+    hip: [0.16, -0.12, -0.48],
     ads: [0.0, -0.06, -0.42],
     mag: ['Ammunition1'],
     bolt: [],
@@ -510,10 +510,11 @@ export class FoxShotScene {
           actions[n]!.setLoop(THREE.LoopOnce, 1);
           actions[n]!.clampWhenFinished = false;
         }
-      if (actions.death) {
-        actions.death.setLoop(THREE.LoopOnce, 1);
-        actions.death.clampWhenFinished = true;
-      }
+      for (const dn of ['death_back', 'death_front'])
+        if (actions[dn]) {
+          actions[dn]!.setLoop(THREE.LoopOnce, 1);
+          actions[dn]!.clampWhenFinished = true;
+        }
       const label = labelSprite(text, color);
       label.position.set(0, 1.85, 0);
       root.add(label);
@@ -777,11 +778,10 @@ export class FoxShotScene {
         const e = (x: number) => x * x * (3 - 2 * x);
         const up = e(Math.min(1, u / 0.15)) * (1 - e(Math.max(0, (u - 0.85) / 0.15)));
         const side = u < 0.15 ? 0 : u < 0.45 ? e((u - 0.15) / 0.3) : u < 0.55 ? 1 : u < 0.85 ? 1 - 2 * e((u - 0.55) / 0.3) : -1 + e((u - 0.85) / 0.15);
-        yawAdd += side * 1.0;
-        roll += side * 0.25 + up * 0.1;
-        pitch += up * 0.2;
-        this.vm.position.x += -up * 0.1;
-        this.vm.position.y += up * 0.04;
+        // a arma gira pouco e fica perto das mãos (girar muito esticava os braços e aparecia uma "terceira mão")
+        yawAdd += side * 0.5;
+        roll += side * 0.14 + up * 0.05;
+        pitch += up * 0.1;
       }
     }
     // pistola: o ferrolho volta no tiro; sniper: o ferrolho (alavanca) trabalha depois do tiro
@@ -1005,15 +1005,28 @@ export class FoxShotScene {
     f.actions.hit.reset().play();
     f.hitT = 0.4;
   }
-  killTarget(id: string) {
+  /**
+   * Morte: a raposa fica mole e desaba. Tiro vindo de frente: cai de costas (para longe de quem atirou); vindo de trás: de
+   * bruços. Escorrega um pouco com o impulso da bala e fica no chão (sem colisão) até sumir.
+   */
+  killTarget(id: string, fromX: number, fromZ: number, power: number) {
     const f = this.foxes.get(id);
     if (!f) return;
     f.dead = true;
     for (const a of Object.values(f.actions)) a.stop();
     f.root.position.y = 0;
-    // a raposa vai para trás do tiro enquanto cai: queda de costas com a animação de morte
-    f.actions.death?.reset().setEffectiveWeight(1).play();
+    const fwd = new THREE.Vector3(Math.cos(f.root.rotation.y), 0, -Math.sin(f.root.rotation.y));
+    const toShooter = new THREE.Vector3(fromX - f.root.position.x, 0, fromZ - f.root.position.z);
+    const front = fwd.dot(toShooter) > 0;
+    const clip = front ? f.actions.death_back : f.actions.death_front;
+    clip?.reset().setEffectiveWeight(1).play();
+    f.vel.copy(fwd).multiplyScalar(front ? -power : power);
     f.label.visible = false;
+  }
+  /** Some de vez (sem animação) quando acaba o tempo do corpo no chão. */
+  hideTarget(id: string) {
+    const f = this.foxes.get(id);
+    if (f) f.root.visible = false;
   }
   /** Põe um bot no lugar (posição, direção, altura) e troca a animação com transição suave. */
   setBot(id: string, x: number, y: number, z: number, heading: number, anim: string, speed: number) {
@@ -1063,6 +1076,7 @@ export class FoxShotScene {
     const f = this.foxes.get(id);
     if (!f) return;
     f.dead = false;
+    f.root.visible = true;
     f.vel.set(0, 0, 0);
     f.root.position.copy(f.home);
     for (const a of Object.values(f.actions)) a.stop();

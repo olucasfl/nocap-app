@@ -129,9 +129,10 @@ export const fsAudio = {
     }
   },
   dry() {
-    // gatilho vazio: clique seco e audível
-    burst({ type: 'bandpass', freq: 2600, q: 2.5, dur: 0.018, peak: 0.4 });
-    tone('square', 320, 220, 0.03, 0.12, 0.004);
+    // gatilho puxado sem bala: o "clique" do cão batendo no vazio (estalo seco + pancada metálica curta)
+    burst({ type: 'highpass', freq: 2200, dur: 0.01, peak: 0.45 });
+    burst({ type: 'bandpass', freq: 800, q: 4, dur: 0.035, peak: 0.4, delay: 0.004 });
+    tone('triangle', 2600, 2100, 0.025, 0.07, 0.006);
   },
   /** Acabou a munição: dois cliques descendo, depois do último tiro. */
   empty() {

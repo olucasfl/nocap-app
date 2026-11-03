@@ -87,9 +87,9 @@ class Arm {
       const g = new THREE.CylinderGeometry(r1, r0, 1, 12);
       return new THREE.Mesh(g, SLEEVE);
     };
-    this.upper = cyl(0.04, 0.035);
-    this.fore = cyl(0.035, 0.03);
-    this.elbow = new THREE.Mesh(new THREE.SphereGeometry(0.037, 12, 10), SLEEVE);
+    this.upper = cyl(0.032, 0.028);
+    this.fore = cyl(0.028, 0.025);
+    this.elbow = new THREE.Mesh(new THREE.SphereGeometry(0.03, 12, 10), SLEEVE);
     // pata: palma redonda, quatro dedos curvos e o polegar (tudo pequeno, para ficar barato)
     const palm = new THREE.Mesh(new THREE.SphereGeometry(0.05, 14, 12), PAW);
     palm.scale.set(1, 0.85, 1.15);
@@ -123,7 +123,7 @@ class Arm {
     this.d.normalize();
     const h = Math.sqrt(Math.max(0, this.len * this.len - (dist / 2) ** 2));
     // cotovelo para baixo e um pouco para fora
-    this.pole.set(0.35 * this.side, -1, 0.15);
+    this.pole.set(0.7 * this.side, -1, 0.35);
     this.pole.addScaledVector(this.d, -this.pole.dot(this.d)).normalize();
     this.e.copy(S).addScaledVector(this.d, dist / 2).addScaledVector(this.pole, h);
     const end = S.clone().addScaledVector(this.d, dist);
@@ -139,8 +139,8 @@ class Arm {
 /** As duas patas de raposa na tela: braço laranja com pata branca, cada uma presa a um ombro perto da câmera. */
 export class FsHands {
   readonly group = new THREE.Group();
-  private r = new Arm(1, new THREE.Vector3(0.26, -0.42, 0.2));
-  private l = new Arm(-1, new THREE.Vector3(-0.26, -0.42, 0.2));
+  private r = new Arm(1, new THREE.Vector3(0.3, -0.5, 0.3));
+  private l = new Arm(-1, new THREE.Vector3(-0.3, -0.5, 0.3));
 
   constructor() {
     this.group.add(this.r.group, this.l.group);
