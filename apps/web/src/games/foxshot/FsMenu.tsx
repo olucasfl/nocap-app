@@ -286,7 +286,7 @@ function Customize() {
 }
 type FsSettingsQuality = 'auto' | 'low' | 'mid' | 'high';
 
-/** Menu do Esc do Fox Shot!: jogo (continuar, encerrar, sair), personalizar e comandos. */
+/** Menu do Esc do Counter Fox: jogo (continuar, encerrar, sair), personalizar e comandos. */
 export function FsMenu({
   touch,
   onResume,
@@ -309,7 +309,7 @@ export function FsMenu({
     <div className="fsm" role="dialog" aria-modal="true" aria-label="Menu" data-testid="fs-menu">
       <div className="fsm-card">
         <header>
-          <h2>Fox Shot!</h2>
+          <h2>Counter Fox</h2>
           <nav role="tablist" aria-label="Seções">
             {TABS.map(([id, label]) => (
               <button
@@ -352,7 +352,7 @@ export function FsMenu({
                 data-sfx="back"
                 data-testid="fsm-exit"
               >
-                Sair do Fox Shot!
+                Sair do Counter Fox
               </Link>
               {children}
               <p className="fsm-hint mono">

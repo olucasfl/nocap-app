@@ -1,5 +1,7 @@
 # Spec 056: Fox Shot! (tiro das raposas) — RASCUNHO PARA DISCUSSÃO
 
+> Nome do jogo: **Counter Fox** (decisão do Lucas em 03/11/2026; antes "Fox Shot!"). O código e esta spec mantêm o nome interno `foxshot`.
+
 Pedido do Lucas em 03/11/2026. Status: **rascunho: nada foi construído. O Lucas respondeu as dúvidas em 03/11/2026 (seção 10); falta confirmar o modo (mata-mata) e aprovar a fase 0.**
 
 ## 1. O que o Lucas pediu

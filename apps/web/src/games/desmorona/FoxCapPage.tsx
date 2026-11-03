@@ -184,7 +184,7 @@ export function FoxCapPage() {
               />
             </div>
             <Link to="/fox-cap/fox-shot-teste" className="btn" data-sfx="start" data-testid="foxcap-foxshot">
-              Fox Shot! (teste de visual e tiro)
+              Counter Fox (teste de visual e tiro)
             </Link>
             <HubNote>
               O Atravessa! guarda recorde e ranking. O Desmorona!, o Fut Fox e o Ping Fox! são só

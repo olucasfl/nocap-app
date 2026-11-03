@@ -140,6 +140,11 @@ export class FsLoadout {
       return ev;
     }
 
+    // inspecionar (F) com a arma parada: não vale recarregando, sacando ou depois de atirar
+    if (input.inspect && w.inspect > 0 && this.ready && this.inspectT <= 0 && !this.reloading) {
+      this.inspectT = w.inspect;
+      ev.push({ type: 'inspect', weapon: w });
+    }
     if (this.reloadT > 0) {
       this.reloadT -= dt;
       if (this.reloadT <= 0) {

@@ -263,6 +263,7 @@ export function FoxShotTestPage() {
     let markerKey = 0;
     let feedKey = 0;
     let magInPlayed = false;
+    let chargePlayed = false;
     let stepT = 0;
     let acc = 0;
     let slowT = 0;
@@ -382,12 +383,16 @@ export function FoxShotTestPage() {
           if (loadout.slot.ammo === 0) fsAudio.empty();
         }
         else if (e.type === 'melee') melee(e.kind);
-        else if (e.type === 'inspect') scene.knifeInspect(true);
+        else if (e.type === 'inspect') {
+          if (e.weapon.id === 'knife') scene.knifeInspect(true);
+          else scene.gunInspect(true, e.weapon.inspect);
+        }
         else if (e.type === 'dry') fsAudio.dry();
         else if (e.type === 'reload') {
           fsAudio.magOut();
           scene.startReload();
           magInPlayed = false;
+          chargePlayed = false;
         } else if (e.type === 'reloaded') {
           scene.endReload();
           if (e.weapon.id === 'sniper') fsAudio.bolt();
@@ -610,13 +615,20 @@ export function FoxShotTestPage() {
             'me',
           ),
         );
-        if (wasInspecting && !loadout.inspecting) scene.knifeInspect(false);
+        if (wasInspecting && !loadout.inspecting) {
+          scene.knifeInspect(false);
+          scene.gunInspect(false);
+        }
         if (loadout.reloading) {
           const p = 1 - loadout.reloadT / loadout.weapon.reload;
           scene.setReloadProgress(p);
-          if (p > 0.55 && !magInPlayed) {
+          if (p > 0.68 && !magInPlayed) {
             magInPlayed = true;
             fsAudio.magIn();
+          }
+          if (p > 0.82 && !chargePlayed) {
+            chargePlayed = true;
+            fsAudio.bolt();
           }
         }
         if (boltAt > 0 && clock >= boltAt) {
@@ -814,6 +826,12 @@ export function FoxShotTestPage() {
             ),
           );
         },
+        reloadAt: (u: number | null) => scene.debugReload(u),
+        inspectGun: () => {
+          loadout.drawT = 0;
+          loadout.cooldown = 0;
+          handle(loadout.update(0.001, { trigger: false, reload: false, inspect: true }, { moving: false, airborne: false, ads: false }, 'me'));
+        },
         pose: (kind: 'slash' | 'stab' | 'inspect' | null, u?: number) => scene.debugKnife(kind, u),
         stats: () => ({ ...stats }),
         mover,
@@ -1005,7 +1023,7 @@ export function FoxShotTestPage() {
         <div className="fs-rotate" role="alert" data-testid="fs-rotate">
           <div className="fs-card">
             <h2>Gire o aparelho</h2>
-            <p className="mono">O Fox Shot! só joga com o celular deitado.</p>
+            <p className="mono">O Counter Fox só joga com o celular deitado.</p>
             <Link to="/fox-cap" className="btn ghost">
               Voltar
             </Link>

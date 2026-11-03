@@ -267,11 +267,18 @@ test('fotos das mãos (só com FS_SHOTS)', async ({ page }, info) => {
     await fs(page, 'weapon', i);
     await page.waitForTimeout(1200);
     await shot(`m-${id}-hold`);
-    await fs(page, 'reload');
-    await page.waitForTimeout(700);
-    await shot(`m-${id}-rl1`);
-    await page.waitForTimeout(500);
-    await shot(`m-${id}-rl2`);
+    for (const u of [0.12, 0.2, 0.36, 0.55, 0.68, 0.84]) {
+      await fs(page, 'reloadAt', null);
+      await fs(page, 'reloadAt', u);
+      await page.waitForTimeout(u === 0.2 ? 350 : 250);
+      await shot(`m-${id}-rl-${Math.round(u * 100)}`);
+    }
+    await fs(page, 'reloadAt', null);
+    await fs(page, 'inspectGun');
+    for (const t of [700, 1200]) {
+      await page.waitForTimeout(t);
+      await shot(`m-${id}-insp-${t}`);
+    }
     await page.waitForTimeout(2500);
   }
   await fs(page, 'weapon', 2);

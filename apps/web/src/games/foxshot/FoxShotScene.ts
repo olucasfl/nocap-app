@@ -276,6 +276,14 @@ export class FoxShotScene {
   private reloadK = -1;
   private boltK = -1;
   private hands = new FsHands();
+  /** Recarga: carregador novo na mão, carregador velho caindo e o que já foi feito. */
+  private heldMag: THREE.Object3D | null = null;
+  private fallMag: { o: THREE.Object3D; v: THREE.Vector3; w: THREE.Vector3; t: number } | null = null;
+  private magDropped = false;
+  private boltPhase = 0;
+  /** Inspeção da arma (F): 0 a 1 enquanto toca, -1 parada. */
+  private inspK = -1;
+  private inspDur = 3;
   private knifeObj = makeKnife();
   private knifeAnim: { keys: KnifeKey[]; t: number; dur: number; inspect: boolean; freeze?: boolean } | null = null;
   /** Onde as mãos seguram cada arma (no espaço do modelo da arma). */
@@ -561,6 +569,13 @@ export class FoxShotScene {
     }
     this.nodes.clear();
     this.knifeAnim = null;
+    this.inspK = -1;
+    this.magDropped = false;
+    // os carregadores soltos são do modelo da arma anterior
+    if (this.heldMag) this.vm.remove(this.heldMag);
+    this.heldMag = null;
+    if (this.fallMag) this.vm.remove(this.fallMag.o);
+    this.fallMag = null;
     this.drawK = instant ? 1 : 0;
     this.reloadK = -1;
     this.boltK = -1;
@@ -600,6 +615,11 @@ export class FoxShotScene {
   /** Corte (botão de atirar) ou estocada (botão de mirar) com a faca. */
   knifeSwing(kind: 'slash' | 'stab') {
     this.knifeAnim = kind === 'slash' ? { keys: KNIFE_SLASH, t: 0, dur: 0.35, inspect: false } : { keys: KNIFE_STAB, t: 0, dur: 0.55, inspect: false };
+  }
+  /** Inspeção da arma na mão (F): olha de um lado, do outro e volta. */
+  gunInspect(on: boolean, seconds = 3) {
+    this.inspK = on ? 0 : -1;
+    this.inspDur = seconds;
   }
   /** Só para conferir o visual: congela a animação num ponto (0 a 1). */
   debugKnife(kind: 'slash' | 'stab' | 'inspect' | null, u = 0) {
@@ -645,6 +665,10 @@ export class FoxShotScene {
     if (!o) return;
     this.scene.remove(o);
     this.drops.delete(h);
+  }
+  /** Só para conferir o visual: põe a recarga num ponto (0 a 1) ou desliga (null). */
+  debugReload(u: number | null) {
+    this.reloadK = u ?? -1;
   }
   startReload() {
     this.reloadK = 0;
@@ -699,32 +723,62 @@ export class FoxShotScene {
     this.vm.position.set(x, y, z);
     let pitch = this.kickRot * 0.02 - (1 - this.drawK) * 0.7;
     let roll = 0;
-    // recarga: a arma abaixa e inclina enquanto o carregador sai e volta
+    let yawAdd = 0;
+    // recarga em fases (ver updateHands): a arma só gira um pouco para mostrar o carregador; o carregador de verdade é animado lá
     const mag = this.node(cfg.mag);
     const slide = this.node(cfg.slide);
     if (this.reloadK >= 0) {
       const r = Math.min(1, this.reloadK);
-      const dip = Math.sin(Math.min(1, r * 1.15) * Math.PI);
-      pitch -= dip * 0.55;
-      roll += dip * 0.28;
-      this.vm.position.y -= dip * 0.07;
-      if (mag) {
-        const out = r < 0.25 ? r / 0.25 : r < 0.5 ? 1 : r < 0.7 ? 1 - (r - 0.5) / 0.2 : 0;
-        mag.position.y = -out * 0.28;
+      const tilt = Math.min(1, r / 0.1) * (r > 0.75 ? Math.max(0, 1 - (r - 0.75) / 0.2) : 1);
+      pitch += tilt * 0.22;
+      roll += tilt * 0.55;
+      yawAdd += tilt * 0.22;
+      this.vm.position.x -= tilt * 0.14;
+      this.vm.position.y += tilt * 0.1;
+      if (r > 0.68 && r < 0.74) pitch += Math.sin(((r - 0.68) / 0.06) * Math.PI) * 0.05;
+    } else if (mag) mag.visible = true;
+    // inspeção: olha a arma de um lado, do outro e volta
+    if (this.inspK >= 0) {
+      this.inspK += dt / this.inspDur;
+      const u = this.inspK;
+      if (u >= 1) this.inspK = -1;
+      else {
+        const e = (x: number) => x * x * (3 - 2 * x);
+        const up = e(Math.min(1, u / 0.15)) * (1 - e(Math.max(0, (u - 0.85) / 0.15)));
+        const side = u < 0.15 ? 0 : u < 0.45 ? e((u - 0.15) / 0.3) : u < 0.55 ? 1 : u < 0.85 ? 1 - 2 * e((u - 0.55) / 0.3) : -1 + e((u - 0.85) / 0.15);
+        yawAdd += side * 1.0;
+        roll += side * 0.25 + up * 0.1;
+        pitch += up * 0.2;
+        this.vm.position.x += -up * 0.1;
+        this.vm.position.y += up * 0.04;
       }
-    } else if (mag) mag.position.y = 0;
+    }
     // pistola: o ferrolho volta no tiro; sniper: o ferrolho (alavanca) trabalha depois do tiro
     if (slide) slide.position.x = -Math.max(0, this.kickZ) * 0.05;
     const bolt = this.node(cfg.bolt);
+    let phase = 0;
     if (this.boltK > -0.5) {
       this.boltK += dt;
-      const b = this.boltK;
-      const phase = b < 0 ? 0 : b < 0.35 ? b / 0.35 : b < 0.7 ? 1 - (b - 0.35) / 0.35 : 0;
-      if (bolt) bolt.position.x = -phase * 0.1;
+      const bk = this.boltK;
+      phase = bk < 0 ? 0 : bk < 0.35 ? bk / 0.35 : bk < 0.7 ? 1 - (bk - 0.35) / 0.35 : 0;
       roll += phase * 0.12;
-      if (b > 0.7) this.boltK = -1;
-    } else if (bolt) bolt.position.x = 0;
-    this.vm.rotation.set(pitch, 0, roll);
+      if (bk > 0.7) this.boltK = -1;
+    }
+    // recarga: no fim, o ferrolho/ferrolho de carregar é puxado (fuzil e sniper) ou a trava da pistola é solta
+    if (this.reloadK >= 0) {
+      const r = this.reloadK;
+      if (slide) {
+        const sp = r > 0.74 && r < 0.84 ? Math.sin(((r - 0.74) / 0.1) * Math.PI) : 0;
+        slide.position.x = -sp * 0.05;
+        phase = Math.max(phase, sp);
+      } else {
+        const sp = r > 0.78 && r < 0.9 ? Math.sin(((r - 0.78) / 0.12) * Math.PI) : 0;
+        phase = Math.max(phase, sp);
+      }
+    }
+    this.boltPhase = phase;
+    if (bolt) bolt.position.x = -phase * (this.cur === 'sniper' ? 0.1 : 0.05);
+    this.vm.rotation.set(pitch, yawAdd, roll);
     this.updateHands(dt, cfg, mag, bolt);
     this.vmPivot.rotation.set(0, 0, 0);
     // clarão
@@ -756,6 +810,120 @@ export class FoxShotScene {
     la: new THREE.Vector3(),
     m: new THREE.Vector3(),
   };
+
+  /** Clona o carregador para um objeto solto (cai, fica na mão) no espaço da arma na câmera. */
+  private cloneMag(mag: THREE.Object3D): THREE.Object3D {
+    const o = mag.clone(true);
+    o.visible = true;
+    o.traverse((c) => {
+      (c as THREE.Mesh).frustumCulled = false;
+    });
+    this.vm.add(o);
+    return o;
+  }
+
+  private static smooth(x: number) {
+    const c = Math.min(1, Math.max(0, x));
+    return c * c * (3 - 2 * c);
+  }
+
+  /**
+   * Recarga em fases, no desenho das animações de referência (AUG, G3, Desert Eagle): a mão da frente vai ao carregador, ele sai
+   * e cai, a mão vai buscar outro (atrás e embaixo), traz, encaixa com um empurrão, puxa o ferrolho (ou solta a trava) e volta ao
+   * apoio. O carregador velho cai de verdade (some em meio segundo) e o novo vem na mão.
+   */
+  private reloadHands(
+    h: { r: THREE.Vector3; l: THREE.Vector3; m: THREE.Vector3 },
+    mag: THREE.Object3D | null,
+    bolt: THREE.Object3D | null,
+  ) {
+    const r = this.reloadK;
+    if (r < 0 || !mag) {
+      if (this.heldMag) this.heldMag.visible = false;
+      if (this.fallMag && this.fallMag.t > 0.6) this.fallMag.o.visible = false;
+      this.magDropped = false;
+      return;
+    }
+    const E = FoxShotScene.smooth;
+    // onde o carregador fica na arma (espaço da câmera) e como está virado
+    const rel = new THREE.Matrix4().copy(this.vm.matrixWorld).invert().multiply(mag.matrixWorld);
+    const p0 = new THREE.Vector3();
+    const q0 = new THREE.Quaternion();
+    const sc = new THREE.Vector3();
+    rel.decompose(p0, q0, sc);
+    const F = h.l.clone();
+    const Mw = p0.clone();
+    const pouch = p0.clone().add(new THREE.Vector3(-0.1, -0.24, 0.12));
+    let C = F.clone();
+    const cn = bolt ?? this.node(this.cfg().slide);
+    if (cn) {
+      cn.getWorldPosition(h.m);
+      C = this.vm.worldToLocal(h.m.clone());
+    }
+    // chaves da mão da frente: [fração da recarga, alvo]
+    const keys: [number, THREE.Vector3][] = [
+      [0, F],
+      [0.12, Mw],
+      [0.22, Mw.clone().add(new THREE.Vector3(0, -0.07, 0))],
+      [0.36, pouch],
+      [0.5, pouch],
+      [0.6, Mw.clone().add(new THREE.Vector3(0, -0.14, 0.02))],
+      [0.7, Mw],
+      [0.76, Mw],
+      [0.82, C],
+      [0.88, C],
+      [1, F],
+    ];
+    let i = 0;
+    while (i < keys.length - 2 && r > keys[i + 1]![0]) i++;
+    const [t0, a0] = keys[i]!;
+    const [t1, a1] = keys[i + 1]!;
+    h.l.lerpVectors(a0, a1, E((r - t0) / Math.max(1e-6, t1 - t0)));
+
+    // o carregador: segue a mão até soltar (cai), some da arma até o novo ser encaixado
+    if (r >= 0.2 && !this.magDropped) {
+      this.magDropped = true;
+      if (this.fallMag) this.vm.remove(this.fallMag.o);
+      const o = this.cloneMag(mag);
+      o.position.copy(p0);
+      o.quaternion.copy(q0);
+      o.scale.copy(sc);
+      this.fallMag = { o, v: new THREE.Vector3(0.05, -0.25, 0.15), w: new THREE.Vector3(2.2, 0.8, 1.4), t: 0 };
+    }
+    mag.visible = r < 0.2 || r >= 0.7;
+    if (r < 0.2 && r > 0.12) {
+      // o carregador sai junto com a mão (puxado para baixo)
+      mag.position.y = -E((r - 0.12) / 0.08) * 0.06;
+    } else mag.position.y = 0;
+    const f = this.fallMag;
+    if (f) {
+      if (r >= 0.2 && f.t < 0.9) {
+        f.t += 1 / 60;
+        f.v.y -= 2.8 * (1 / 60);
+        f.o.position.addScaledVector(f.v, 1 / 60);
+        f.o.rotation.x += f.w.x * (1 / 60);
+        f.o.rotation.y += f.w.y * (1 / 60);
+        f.o.rotation.z += f.w.z * (1 / 60);
+      }
+      f.o.visible = r >= 0.2 && f.t < 0.9;
+    }
+    // carregador novo: sai do bolso na mão e sobe até encaixar
+    if (r >= 0.5 && r < 0.7) {
+      if (!this.heldMag) this.heldMag = this.cloneMag(mag);
+      const hm = this.heldMag;
+      hm.scale.copy(sc);
+      hm.visible = true;
+      hm.position.copy(h.l).add(new THREE.Vector3(0, 0.03, 0));
+      hm.quaternion.copy(q0).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(0.25 * (1 - E((r - 0.6) / 0.1)), 0, 0)));
+    } else if (this.heldMag) this.heldMag.visible = false;
+
+    // mão de trás: na sniper puxa o ferrolho no fim da recarga
+    if (bolt && this.cur === 'sniper' && this.boltPhase > 0) {
+      bolt.getWorldPosition(h.m);
+      this.vm.worldToLocal(h.m);
+      h.r.lerp(h.m, Math.min(1, this.boltPhase * 3));
+    }
+  }
 
   /** Põe as patas no lugar: na faca, seguindo a pose da animação; nas armas, no cabo e na mão da frente (a esquerda vai ao carregador na recarga). */
   private updateHands(dt: number, cfg: VmCfg, mag: THREE.Object3D | null, bolt: THREE.Object3D | null) {
@@ -792,23 +960,7 @@ export class FoxShotScene {
     const toVm = (p: THREE.Vector3, out: THREE.Vector3) => out.copy(this.vm.worldToLocal(g.localToWorld(p.clone())));
     toVm(grip.r, h.r);
     toVm(grip.l, h.l);
-    // recarga: a mão da frente vai ao carregador e o acompanha para fora e para dentro
-    if (this.reloadK >= 0 && mag) {
-      const r = Math.min(1, this.reloadK);
-      const blend = r < 0.12 ? r / 0.12 : r < 0.78 ? 1 : Math.max(0, 1 - (r - 0.78) / 0.2);
-      mag.getWorldPosition(h.m);
-      this.vm.worldToLocal(h.m);
-      h.m.y -= 0.045;
-      h.l.lerp(h.m, blend);
-    }
-    // ferrolho da sniper: a mão de trás larga o cabo e puxa a alavanca
-    if (bolt && this.boltK > -0.5 && this.cur === 'sniper') {
-      const b = this.boltK;
-      const ph = b < 0 ? 0 : b < 0.35 ? b / 0.35 : b < 0.7 ? 1 - (b - 0.35) / 0.35 : 0;
-      bolt.getWorldPosition(h.m);
-      this.vm.worldToLocal(h.m);
-      h.r.lerp(h.m, Math.min(1, ph * 3));
-    }
+    this.reloadHands(h, mag, bolt);
     h.ra.copy(h.r).add(fwd);
     h.la.copy(h.l).add(fwd);
     this.hands.set(h.r, h.ra, h.l, h.la);
