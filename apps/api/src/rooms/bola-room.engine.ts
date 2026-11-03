@@ -372,6 +372,7 @@ export class BolaRoomEngine extends ColorRoomEngine {
         if (!m.connected) away.push(m.id);
       }
     }
+    this.resetPause();
     this.match = new BolaMatch({
       teams,
       perTeam,
@@ -380,7 +381,7 @@ export class BolaRoomEngine extends ColorRoomEngine {
       humans,
       bots: this.bots,
       away,
-      now: () => this.now(),
+      now: () => this.gnow(),
     });
     this.phase = 'play';
     this.phaseEndsAt = null;
@@ -514,6 +515,10 @@ export class BolaRoomEngine extends ColorRoomEngine {
     this.requirePhase('play');
     this.match?.endNow();
     this.dirty = true;
+  }
+
+  protected override pausable(): boolean {
+    return true;
   }
 
   override tick(): boolean {

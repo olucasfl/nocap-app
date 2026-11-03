@@ -21,6 +21,7 @@ import {
   type PpTimedEvent,
 } from '@nocap/games';
 import { GameChat } from '@/components/GameChat';
+import { PauseOverlay } from '@/components/PauseOverlay';
 import { GameMenu, GearButton, Keycap, NetBadge } from '@/components/GameMenu';
 import { IcFlag, IcTable } from '@/games/bola/BolaIcons';
 import { GameTips, type TipRow } from '@/components/GameTips';
@@ -33,6 +34,7 @@ import {
   sendRoom,
   sendRoomQuiet,
   serverNow,
+  pausedMs,
   subscribeRoom,
   useMeId,
   useRoom,
@@ -890,7 +892,7 @@ export function PingPlay({
           const raw = serverNow() - pn;
           if (clockOff === null || Math.abs(raw - clockOff) > 400) clockOff = raw;
           else clockOff += Math.max(-0.4, Math.min(0.4, raw - clockOff));
-          const exact = (pn + clockOff - online.startAt) / (PP_TICK * 1000);
+          const exact = (pn + clockOff - pausedMs() - online.startAt) / (PP_TICK * 1000);
           const target = Math.floor(exact);
           const input = spectator ? null : me;
           const timed: PpTimedEvent[] = [];
@@ -1290,6 +1292,7 @@ export function PingPlay({
           </div>
         )}
       {online && <GameChat enabled />}
+      {online && <PauseOverlay />}
       <RotateHint />
       {hud.phase === 'ready' && (
         <GameTips storageKey={TIPS_KEY} rows={tipRows(touchDevice)} testId="png-tips" markOnShow />
@@ -1305,22 +1308,12 @@ export function PingPlay({
           onExit={onExit}
           onOfflineInvite={onOfflineInvite}
           net={{ on: showNet, toggle: toggleNet }}
+          endMatch={{
+            label: 'Encerrar a partida',
+            onClick: () => sendRoom('pend'),
+            testId: 'png-menu-end',
+          }}
           actions={[
-            ...(isLeader
-              ? [
-                  {
-                    id: 'end',
-                    icon: <IcFlag size={20} />,
-                    label: 'Encerrar a partida',
-                    armed: 'Toque de novo para encerrar',
-                    onClick: () => {
-                      closeMenu();
-                      sendRoom('pend');
-                    },
-                    testId: 'png-menu-end',
-                  },
-                ]
-              : []),
             {
               id: 'guide',
               icon: <IcTable size={20} />,

@@ -26,6 +26,7 @@ type In =
   | { t: 'input'; id: string; v: unknown }
   | { t: 'toBot'; id: string }
   | { t: 'switch'; id: string; name: string; team: number; bot: string | null }
+  | { t: 'pause'; on: boolean }
   | { t: 'end' }
   | { t: 'stop' };
 
@@ -39,12 +40,16 @@ let n = 0;
 let finished = false;
 const evBuf: { at: number; e: Record<string, unknown> }[] = [];
 let pendingSt: unknown = null;
+/** Pausa do líder: o relógio da partida para (e o tempo parado não conta quando volta). */
+let pausedAt: number | null = null;
+let skipped = 0;
+const clock = () => (pausedAt ?? Date.now()) - skipped;
 
 const post = (m: unknown) => (self as unknown as { postMessage(x: unknown): void }).postMessage(m);
 
 function loop() {
   const m = match;
-  if (!m || finished) return;
+  if (!m || finished || pausedAt !== null) return;
   // só sai quadro quando a partida andou: sem quadros repetidos
   if (m.tick() === 0) return;
   const frame = m.drainFrame(true);
@@ -93,12 +98,19 @@ self.onmessage = (ev: MessageEvent<In>) => {
         humans,
         bots: s.bots,
         away: s.away,
-        now: () => Date.now(),
+        now: clock,
       });
       // 8 ms: acorda duas vezes por passo e nunca atrasa um passo inteiro por causa do relógio
       timer = setInterval(loop, 8) as unknown as number;
       break;
     }
+    case 'pause':
+      if (msg.on && pausedAt === null) pausedAt = Date.now();
+      else if (!msg.on && pausedAt !== null) {
+        skipped += Date.now() - pausedAt;
+        pausedAt = null;
+      }
+      break;
     case 'rate':
       everyPeerFrame = msg.everyPeerFrame;
       break;

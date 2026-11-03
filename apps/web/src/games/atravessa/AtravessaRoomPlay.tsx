@@ -14,6 +14,7 @@ import {
 } from '@nocap/games';
 import { useNavigate } from '@tanstack/react-router';
 import { GameChat } from '@/components/GameChat';
+import { PauseOverlay } from '@/components/PauseOverlay';
 import { GameMenu, GearButton, NetBadge } from '@/components/GameMenu';
 import { createAtravessaAudio } from '@/lib/atravessa-audio';
 import { useAuth } from '@/lib/auth';
@@ -23,7 +24,7 @@ import {
   leaveRoom,
   sendRoom,
   sendRoomQuiet,
-  serverNow,
+  gameNow,
   subscribeRoom,
   type RoomSnapshot,
 } from '@/lib/rooms';
@@ -187,17 +188,10 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
   const [hint, setHint] = useState(true);
   /** O brilho verde da tela ao passar por um checkpoint pela primeira vez (`n` muda a cada um, para recomeçar). */
   const [pulse, setPulse] = useState(0);
-  /** Só o líder encerra, e com dois toques (um toque sem querer não acaba a partida de todo mundo). */
-  const [confirmEnd, setConfirmEnd] = useState(false);
   /** Avisos de chegada (Checkpoint): "fulano finalizou em 1º lugar", na tela de todos, por alguns segundos. */
   const [arrivals, setArrivals] = useState<
     { key: number; text: string; place: number; me: boolean }[]
   >([]);
-  useEffect(() => {
-    if (!confirmEnd) return;
-    const t = window.setTimeout(() => setConfirmEnd(false), 3000);
-    return () => window.clearTimeout(t);
-  }, [confirmEnd]);
   const ctl = useRef<{ cycle: (dir: 1 | -1) => void } | null>(null);
 
   useEffect(() => {
@@ -230,7 +224,7 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
     const world = atravessaRoomWorld(seed, cfg.mode, cfg.size);
     const sim = new AtravessaSim(seed, world, atravessaRoomRules(cfg.mode, cfg.size, slotOf(meId)));
     const audio = createAtravessaAudio();
-    const worldTick = () => Math.floor(((serverNow() - startAt) * ATR_TPS) / 1000);
+    const worldTick = () => Math.floor(((gameNow() - startAt) * ATR_TPS) / 1000);
     // quem recarrega a página no meio da rodada não tem como retomar o herói: só assiste
     const late = worldTick() > 120;
 
@@ -370,7 +364,7 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
       const watched = spectating && watch ? rows.find((r) => r.id === watch) : undefined;
       const clockMs = sim.finished
         ? (sim.finishTick * 1000) / ATR_TPS
-        : Math.max(0, serverNow() - startAt);
+        : Math.max(0, gameNow() - startAt);
       const next: Ui = {
         count: wt < 0 ? Math.ceil(-wt / ATR_TPS) : wt < 45 ? 'go' : null,
         meters: myRow,
@@ -560,7 +554,6 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
   }, [seed]);
 
   const touch = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
-  const isHost = snapshot.hostId === meId;
   const checkpointMode = info.mode === 'checkpoint';
   const members = snapshot.members;
 
@@ -573,6 +566,7 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
     >
       <canvas ref={canvas} className="at-canvas" />
       <GameChat />
+      <PauseOverlay />
       <div className="at-tools is-left">
         <GearButton onClick={() => setMenu(true)} testId="atr-menu-btn" />
       </div>
@@ -599,6 +593,11 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
           onClose={() => setMenu(false)}
           onExit={() => {
             void leaveRoom().then(() => navigate({ to: '/fox-cap' }));
+          }}
+          endMatch={{
+            label: checkpointMode ? 'Encerrar a corrida' : 'Encerrar a rodada',
+            onClick: () => sendRoom('endround'),
+            testId: 'atr-menu-end',
           }}
           actions={[]}
         />
@@ -655,25 +654,6 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
           </li>
         ))}
       </ol>
-
-      {isHost && (
-        <button
-          type="button"
-          className={`atr-end mono${confirmEnd ? ' sure' : ''}`}
-          data-sfx="select"
-          onClick={() => {
-            if (!confirmEnd) return setConfirmEnd(true);
-            setConfirmEnd(false);
-            sendRoom('endround');
-          }}
-        >
-          {confirmEnd
-            ? 'TOQUE DE NOVO PARA ENCERRAR'
-            : checkpointMode
-              ? 'ENCERRAR CORRIDA'
-              : 'ENCERRAR RODADA'}
-        </button>
-      )}
 
       {ui.count !== null && (
         <div className="atr-count" aria-live="assertive" key={String(ui.count)}>

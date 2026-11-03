@@ -194,6 +194,7 @@ export class AtravessaRoomEngine extends ColorRoomEngine {
     this.forceEnd = false;
     const seed = this.roundSeed();
     this.world = atravessaRoomWorld(seed, this.roomMode, this.cfg.size);
+    this.resetPause();
     this.startAt = this.now() + ATR_ROOM_COUNTDOWN_MS;
     this.runs.clear();
     this.slots.clear();
@@ -219,7 +220,8 @@ export class AtravessaRoomEngine extends ColorRoomEngine {
    * ou `null` se o relato não valeu.
    */
   report(id: string, tick: unknown, inputs: unknown, from: unknown): number | null {
-    const t = this.now();
+    // relógio do jogo: não anda na pausa (quem relata parado fica no mesmo tick)
+    const t = this.gnow();
     // a largada tem hora marcada: o primeiro relato pode chegar antes de a sala virar de fase
     const racing = this.phase === 'play' || (this.phase === 'show' && t >= this.startAt);
     if (!racing) return null;
@@ -255,8 +257,12 @@ export class AtravessaRoomEngine extends ColorRoomEngine {
     return true;
   }
 
+  protected override pausable(): boolean {
+    return true;
+  }
+
   override tick(): boolean {
-    const t = this.now();
+    const t = this.gnow();
     if (this.phase === 'show') {
       if (t < this.startAt) return false;
       this.phase = 'play';
@@ -273,7 +279,7 @@ export class AtravessaRoomEngine extends ColorRoomEngine {
       return false;
     }
     if (this.phase === 'reveal') {
-      if (this.phaseEndsAt === null || t < this.phaseEndsAt) return false;
+      if (this.phaseEndsAt === null || this.now() < this.phaseEndsAt) return false;
       this.finishReveal();
       return true;
     }
@@ -343,7 +349,7 @@ export class AtravessaRoomEngine extends ColorRoomEngine {
 
   /** Estado dos heróis no fluxo `pos` (10 por segundo durante a corrida). */
   positions(): AtravessaPos[] {
-    const t = this.now();
+    const t = this.gnow();
     const out: AtravessaPos[] = [];
     for (const [id, run] of this.runs) {
       const sim = run.mirror.sim;

@@ -1,0 +1,244 @@
+/* Telas de fim do Block Classic (bkc) e do Block Tower (twr): o tema do modo no cabeçalho e o resumo da partida.
+   Só transform e opacity animam. */
+.fz[data-theme='bkc'] {
+  --fa: #ffd23f;
+  --fb: #2f5bff;
+  --fhead: #cfe0ff;
+}
+.fz[data-theme='twr'] {
+  --fa: #ff9d2e;
+  --fb: #6a3cff;
+  --fhead: #ffe2c2;
+}
+.fz[data-theme='bkc'] .fz-card[data-tone='draw'] .fz-head {
+  background: #cfe0ff;
+}
+.fz[data-theme='twr'] .fz-card[data-tone='lose'] .fz-head {
+  background: #e8dcf7;
+}
+
+/* Block Classic: blocos coloridos caindo atrás do título */
+.bkx-fall {
+  position: absolute;
+  top: -26px;
+  left: calc(var(--k) * 12.5% + 2%);
+  width: 22px;
+  height: 22px;
+  border: 3px solid #1b1535;
+  border-radius: 5px;
+  background: #ff5d5d;
+  opacity: 0;
+  animation: bkx-fall 3.4s ease-in infinite;
+  animation-delay: calc(var(--k) * 380ms);
+}
+.bkx-fall:nth-child(3n + 2) {
+  background: #2f5bff;
+}
+.bkx-fall:nth-child(3n) {
+  background: #3cbf6b;
+}
+@keyframes bkx-fall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.7;
+  }
+  100% {
+    transform: translateY(200px) rotate(80deg);
+    opacity: 0;
+  }
+}
+
+/* Block Tower: a torre sobe, peça por peça */
+.bkx-tower {
+  position: absolute;
+  right: 6%;
+  bottom: 0;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+}
+.bkx-tower i {
+  display: block;
+  width: 46px;
+  height: 18px;
+  margin-top: -3px;
+  border: 3px solid #1b1535;
+  border-radius: 4px;
+  background: #fff;
+  opacity: 0;
+  animation: bkx-stack 0.5s ease-out forwards;
+  animation-delay: calc(0.3s + var(--k) * 140ms);
+}
+.bkx-tower i:nth-child(even) {
+  background: #ff9d2e;
+  width: 38px;
+}
+.bkx-tower i:nth-child(3n) {
+  background: #6a3cff;
+  transform: translateX(4px);
+}
+@keyframes bkx-stack {
+  from {
+    opacity: 0;
+    transform: translateY(-24px);
+  }
+  to {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+}
+
+/* O número grande */
+.bkx-hero {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 14px 12px;
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+  background: #f1f1fa;
+  animation: fz-rise 0.45s ease-out both;
+  animation-delay: 200ms;
+}
+.bkx-label {
+  font: 800 12px var(--font-display, system-ui);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.65;
+}
+.bkx-big {
+  font: 900 clamp(44px, 12vw, 84px) / 1 var(--font-display, system-ui);
+  font-variant-numeric: tabular-nums;
+}
+.bkx-record {
+  display: grid;
+  gap: 6px;
+  width: min(420px, 100%);
+  text-align: center;
+}
+.bkx-record span {
+  font: 700 13px var(--font-body, system-ui);
+  opacity: 0.8;
+}
+
+/* Joinhas e PERFECTs */
+.bkx-praise {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.bkx-seal {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 10px 8px;
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  background: #fff;
+  animation: fz-rise 0.4s ease-out both;
+  animation-delay: var(--d, 0ms);
+}
+.bkx-seal b {
+  font: 900 28px/1 var(--font-display, system-ui);
+  font-variant-numeric: tabular-nums;
+}
+.bkx-seal span {
+  font: 800 11px var(--font-display, system-ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+.bkx-seal.is-perfect > i {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border: 3px solid var(--ink);
+  border-radius: 50%;
+  background: #ffd23f;
+  font: 900 28px var(--font-display, system-ui);
+  font-style: normal;
+}
+.bkx-note {
+  text-align: center;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bkx-fall {
+    animation: none;
+  }
+  .bkx-tower i {
+    animation: none;
+    opacity: 0.35;
+  }
+}
+
+/* Colunas: uma só em pé; duas em tela larga e no celular deitado (placar e selos à esquerda, números à direita) */
+.bkx-cols {
+  display: grid;
+  gap: 12px;
+}
+.bkx-col {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  min-width: 0;
+}
+@media (min-width: 761px), (orientation: landscape) and (max-height: 520px) {
+  .bkx-cols {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    align-items: start;
+  }
+}
+@media (orientation: landscape) and (max-height: 520px) {
+  .bkx-cols {
+    gap: 8px;
+  }
+  .bkx-col {
+    gap: 6px;
+  }
+  .bkx-hero {
+    padding: 8px;
+    gap: 3px;
+  }
+  .bkx-big {
+    font-size: clamp(36px, 11vh, 56px);
+  }
+  .bkx-seal {
+    grid-auto-flow: column;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 6px;
+  }
+  .bkx-seal > svg,
+  .bkx-seal.is-perfect > i {
+    width: 30px;
+    height: 30px;
+    font-size: 16px;
+  }
+  .bkx-seal b {
+    font-size: 20px;
+  }
+  .bkx-record span {
+    font-size: 11px;
+  }
+  .fz-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 5px;
+  }
+  .fz-stats li {
+    padding: 4px 8px;
+  }
+  .fz-stats b {
+    font-size: 16px;
+  }
+  .fz-stats span {
+    font-size: 11px;
+  }
+  .bkx-tower {
+    display: none;
+  }
+}

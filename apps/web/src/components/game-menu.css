@@ -356,3 +356,17 @@
   border-color: var(--ink, #1b1535);
   box-shadow: 0 3px 0 var(--ink, #1b1535);
 }
+
+/* Encerrar a sala: sempre o último botão, vermelho cheio (o Sair fica logo acima, discreto) */
+.gm-item.is-danger.is-close {
+  background: #dc2b36;
+  border-color: #1b1535;
+  color: #fff;
+}
+.gm-item.is-danger.is-close.is-sure {
+  background: #8f1119;
+}
+.gm-item.gm-pause {
+  background: #5b8cff;
+  color: #fff;
+}

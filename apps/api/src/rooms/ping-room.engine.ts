@@ -165,7 +165,7 @@ export class PingRoomEngine extends ColorRoomEngine {
 
   override disconnect(id: string) {
     super.disconnect(id);
-    if (this.isPlayer(id) && this.live) this.away.set(id, this.now());
+    if (this.isPlayer(id) && this.live) this.away.set(id, this.gnow());
   }
 
   override leave(id: string) {
@@ -210,6 +210,7 @@ export class PingRoomEngine extends ColorRoomEngine {
     let h = 0;
     for (const ch of this.seed) h = (h * 31 + ch.charCodeAt(0)) | 0;
     this.firstServer = h & 1;
+    this.resetPause();
     this.startAt = this.now() + PP_ROOM_COUNTDOWN_MS;
     // com bot, a sala é quem joga o lado dele: detecta as batidas do bot e as transmite como as de uma pessoa
     const botSlot = this.players[0] === BOT_ID ? 0 : this.players[1] === BOT_ID ? 1 : -1;
@@ -228,7 +229,7 @@ export class PingRoomEngine extends ColorRoomEngine {
 
   /** Tick da partida agora (o relógio da sala; negativo na contagem vira 0). */
   currentTick(): number {
-    return Math.max(0, Math.floor((this.now() - this.startAt) / (PP_TICK * 1000)));
+    return Math.max(0, Math.floor((this.gnow() - this.startAt) / (PP_TICK * 1000)));
   }
 
   /** Anda a partida da sala até agora e guarda os números do pódio. */
@@ -351,8 +352,12 @@ export class PingRoomEngine extends ColorRoomEngine {
     this.forfeiter = null;
   }
 
+  protected override pausable(): boolean {
+    return true;
+  }
+
   override tick(): boolean {
-    const t = this.now();
+    const t = this.gnow();
     if (this.phase === 'show') {
       if (t < this.startAt) return false;
       this.phase = 'play';

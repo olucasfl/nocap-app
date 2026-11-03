@@ -24,6 +24,7 @@ import {
   type SavedRun,
 } from './storage';
 import { TowersPlay, type TowersEnd } from './towers/TowersPlay';
+import { BlocksFinal, TowersFinal } from './BlocksFinals';
 import { SaveNote } from '@/components/GuestNotice';
 import { useSaveBlocks, type BlocksRunInfo } from './useSaveBlocks';
 import './blocks.css';
@@ -275,286 +276,6 @@ function BlocksStart({
   );
 }
 
-/** O fim da partida: pontos, recorde, joinhas, PERFECTs e o que fazer a seguir. */
-function BlocksFinal({
-  mode,
-  end,
-  before,
-  run,
-  busy,
-  onAgain,
-  onMenu,
-}: {
-  mode: BlocksMode;
-  end: BlocksEnd;
-  before: number;
-  run: BlocksRunInfo;
-  busy: boolean;
-  onAgain: () => void;
-  onMenu: () => void;
-}) {
-  const [save, retry] = useSaveBlocks(run, mode, end.moves);
-  const score = end.result.score;
-  const guest = save === 'guest';
-  // Sem conta não há recorde: só a nota desta partida.
-  const isRecord = !guest && score > before;
-  const best = Math.max(score, before);
-  const pct = best > 0 ? Math.round((score / best) * 100) : 0;
-  return (
-    <section className="screen bkf">
-      <BlockDefs />
-      <div className="bkf-verdict">
-        <span className="mono bkf-kicker">BLOCK&apos;S · BLOCK CLASSIC</span>
-        <h1>SEM ESPAÇO</h1>
-        <p className="mono">Nenhuma das peças que sobraram cabe no tabuleiro.</p>
-      </div>
-
-      <div className="bkf-score">
-        {isRecord && (
-          <span className="bkf-badge mono">
-            <Star size={16} /> {before > 0 ? 'NOVO RECORDE' : 'PRIMEIRO RECORDE'}
-          </span>
-        )}
-        <span className="mono bkf-label">PONTOS</span>
-        <div className="bkf-big">
-          <b>{score.toLocaleString('pt-BR')}</b>
-        </div>
-        {!guest && (
-          <>
-            <div className="bkf-meter" aria-label={`${pct}% do seu recorde`}>
-              <i style={{ transform: `scaleX(${Math.min(1, pct / 100)})` }} />
-            </div>
-            <span className="mono bkf-hint">
-              {isRecord
-                ? before > 0
-                  ? `+${score - before} pontos sobre o recorde anterior`
-                  : 'Esse é o seu primeiro resultado neste modo'
-                : `${pct}% do seu recorde`}
-            </span>
-          </>
-        )}
-      </div>
-
-      <div className="bkf-praise">
-        <div className="bkf-praise-item">
-          <ThumbSeal size={54} />
-          <b>{end.thumbs}</b>
-          <span className="mono">JOINHAS</span>
-        </div>
-        <div className="bkf-praise-item perfect">
-          <i aria-hidden="true">P</i>
-          <b>{end.perfects}</b>
-          <span className="mono">PERFECT</span>
-        </div>
-      </div>
-
-      <dl className="bkf-stats">
-        {!guest && (
-          <div>
-            <dt className="mono">SEU RECORDE</dt>
-            <dd>{best.toLocaleString('pt-BR')}</dd>
-          </div>
-        )}
-        <div>
-          <dt className="mono">LINHAS LIMPAS</dt>
-          <dd>{end.result.lines}</dd>
-        </div>
-        <div>
-          <dt className="mono">MAIOR COMBO</dt>
-          <dd>x{end.result.bestStreak}</dd>
-        </div>
-        <div>
-          <dt className="mono">JOGADAS</dt>
-          <dd>{end.result.moves}</dd>
-        </div>
-        <div>
-          <dt className="mono">DICAS USADAS</dt>
-          <dd>{end.hintsUsed}/3</dd>
-        </div>
-        {!guest && (
-          <div>
-            <dt className="mono">RECORDE ANTERIOR</dt>
-            <dd>{before > 0 ? before : '-'}</dd>
-          </div>
-        )}
-      </dl>
-
-      <SaveNote className="mono bkf-note" save={save} onRetry={retry} />
-
-      <div className="stack bkf-actions">
-        <button
-          type="button"
-          className="btn alt"
-          data-sfx="start"
-          disabled={busy}
-          onClick={onAgain}
-        >
-          {busy ? 'Preparando...' : 'Jogar de novo'}
-        </button>
-        {!guest && (
-          <>
-            <Link
-              to="/ranking"
-              search={{ jogo: 'blocks', modo: mode }}
-              className="btn ghost"
-              data-sfx="select"
-            >
-              Ver ranking
-            </Link>
-            <Link
-              to="/ranking"
-              search={{ jogo: 'blocks', modo: mode, quem: 'friends' }}
-              className="btn ghost"
-              data-sfx="select"
-            >
-              Ranking dos amigos
-            </Link>
-          </>
-        )}
-        <button type="button" className="btn ghost" data-sfx="back" onClick={onMenu}>
-          Voltar ao menu
-        </button>
-        <Link to="/" className="btn ghost">
-          Voltar aos jogos
-        </Link>
-      </div>
-    </section>
-  );
-}
-
-const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
-
-/** O fim do Block Towers: peças empilhadas, recorde e o resumo da torre. */
-function TowersFinal({
-  end,
-  before,
-  run,
-  busy,
-  onAgain,
-  onMenu,
-}: {
-  end: TowersEnd;
-  before: number;
-  run: BlocksRunInfo;
-  busy: boolean;
-  onAgain: () => void;
-  onMenu: () => void;
-}) {
-  const [save, retry] = useSaveBlocks(run, 'towers', end.moves);
-  const score = end.score;
-  const guest = save === 'guest';
-  // Sem conta não há recorde: só a nota desta partida.
-  const isRecord = !guest && score > before;
-  const best = Math.max(score, before);
-  const pct = best > 0 ? Math.round((score / best) * 100) : 0;
-  return (
-    <section className="screen bkf">
-      <div className="bkf-verdict">
-        <span className="mono bkf-kicker">BLOCK&apos;S · BLOCK TOWERS</span>
-        <h1>SEM VIDAS</h1>
-        <p className="mono">
-          {end.collapses > 0
-            ? 'A torre desabou. Mais cuidado no equilíbrio, ou use a vinha e o cimento.'
-            : 'Peças demais caíram da torre. Procure apoios largos e planos.'}
-        </p>
-      </div>
-
-      <div className="bkf-score">
-        {isRecord && (
-          <span className="bkf-badge mono">{before > 0 ? 'NOVO RECORDE' : 'PRIMEIRO RECORDE'}</span>
-        )}
-        <span className="mono bkf-label">PEÇAS EMPILHADAS</span>
-        <div className="bkf-big">
-          <b>{score}</b>
-        </div>
-        {!guest && (
-          <>
-            <div className="bkf-meter" aria-label={`${pct}% do seu recorde`}>
-              <i style={{ transform: `scaleX(${Math.min(1, pct / 100)})` }} />
-            </div>
-            <span className="mono bkf-hint">
-              {isRecord
-                ? before > 0
-                  ? `+${score - before} peças sobre o recorde anterior`
-                  : 'Esse é o seu primeiro resultado neste modo'
-                : `${pct}% do seu recorde`}
-            </span>
-          </>
-        )}
-      </div>
-
-      <dl className="bkf-stats">
-        {!guest && (
-          <div>
-            <dt className="mono">SEU RECORDE</dt>
-            <dd>{best}</dd>
-          </div>
-        )}
-        <div>
-          <dt className="mono">PEÇAS JOGADAS</dt>
-          <dd>{end.pieces}</dd>
-        </div>
-        <div>
-          <dt className="mono">TEMPO</dt>
-          <dd>{clock(end.time)}</dd>
-        </div>
-        <div>
-          <dt className="mono">MAGIAS</dt>
-          <dd>{end.spells}</dd>
-        </div>
-        <div>
-          <dt className="mono">PEÇAS CAÍDAS</dt>
-          <dd>{end.falls}</dd>
-        </div>
-        <div>
-          <dt className="mono">CAIU TUDO</dt>
-          <dd>{end.collapses}x</dd>
-        </div>
-      </dl>
-
-      <SaveNote className="mono bkf-note" save={save} onRetry={retry} />
-
-      <div className="stack bkf-actions">
-        <button
-          type="button"
-          className="btn alt"
-          data-sfx="start"
-          disabled={busy}
-          onClick={onAgain}
-        >
-          {busy ? 'Preparando...' : 'Jogar de novo'}
-        </button>
-        {!guest && (
-          <>
-            <Link
-              to="/ranking"
-              search={{ jogo: 'blocks', modo: 'towers' }}
-              className="btn ghost"
-              data-sfx="select"
-            >
-              Ver ranking
-            </Link>
-            <Link
-              to="/ranking"
-              search={{ jogo: 'blocks', modo: 'towers', quem: 'friends' }}
-              className="btn ghost"
-              data-sfx="select"
-            >
-              Ranking dos amigos
-            </Link>
-          </>
-        )}
-        <button type="button" className="btn ghost" data-sfx="back" onClick={onMenu}>
-          Voltar ao menu
-        </button>
-        <Link to="/" className="btn ghost">
-          Voltar aos jogos
-        </Link>
-      </div>
-    </section>
-  );
-}
-
 /** O Block's: menu de modos, partida em tela cheia e fim. */
 export function BlocksGame() {
   const [phase, setPhase] = useState<Phase>('menu');
@@ -616,6 +337,34 @@ export function BlocksGame() {
     });
     setPhase('play');
   };
+
+  // só nos testes de layout (dev): abre a tela final de cada modo sem jogar uma partida inteira
+  if (import.meta.env.DEV) {
+    (window as unknown as { __blocksFinal?: (m: UiMode, record: boolean) => void }).__blocksFinal =
+      (m, record) => {
+        setBefore(record ? 900 : 4000);
+        setMode(m);
+        if (m === 'towers')
+          setTowersEnd({
+            score: 23,
+            pieces: 31,
+            time: 412,
+            spells: 3,
+            falls: 5,
+            collapses: 1,
+            moves: [],
+          });
+        else
+          setEnd({
+            result: { score: 2480, lines: 31, bestStreak: 4, moves: 58 } as BlocksEnd['result'],
+            moves: [],
+            thumbs: 12,
+            perfects: 3,
+            hintsUsed: 1,
+          });
+        setPhase('final');
+      };
+  }
 
   if (phase === 'play' && mode === 'towers') {
     return (
@@ -694,7 +443,6 @@ export function BlocksGame() {
       )}
       {phase === 'final' && mode !== 'towers' && end && (
         <BlocksFinal
-          mode={mode}
           end={end}
           before={before}
           run={run}

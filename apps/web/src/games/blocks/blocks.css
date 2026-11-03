@@ -1214,3 +1214,52 @@
   font-size: 22px;
   font-weight: 800;
 }
+
+/* Ficha do modo no celular deitado: lista de passos e partida guardada mais compactas */
+@media (orientation: landscape) and (max-height: 520px) {
+  .bk-howto {
+    gap: 4px;
+  }
+  .bk-howto li {
+    padding: 4px 8px;
+    font-size: 11.5px;
+    gap: 8px;
+  }
+  .bk-howto b {
+    width: 20px;
+    height: 20px;
+    font-size: 12px;
+  }
+  .bk-resume {
+    padding: 8px;
+    gap: 6px;
+  }
+  .bk-meta {
+    font-size: 10px;
+  }
+}
+
+/* no celular deitado os botões vêm primeiro (a lista de passos fica por baixo) */
+@media (orientation: landscape) and (max-height: 520px) {
+  .ms-actions > * {
+    order: 3;
+  }
+  .ms-actions > .bk-resume {
+    order: 0;
+  }
+  .ms-actions > .btn {
+    order: 1;
+  }
+  .ms-actions > .btn.ghost:last-child {
+    order: 2;
+  }
+  .ms-actions > .bk-meta {
+    order: 4;
+  }
+  .ms.blocks .bk-rule {
+    padding: 6px 8px;
+  }
+  .ms.blocks .bk-rule b {
+    font-size: 17px;
+  }
+}

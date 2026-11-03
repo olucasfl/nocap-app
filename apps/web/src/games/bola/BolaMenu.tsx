@@ -1,7 +1,7 @@
 import { BOL_TEAM_NAMES } from '@nocap/games';
 import { GameMenu } from '@/components/GameMenu';
 import { bolaTipRows, BOLA_TIPS_KEY } from './BolaTips';
-import { IcEye, IcFlag, IcTable, IcTeams } from './BolaIcons';
+import { IcEye, IcTable, IcTeams } from './BolaIcons';
 
 /** Menu da partida (Esc): o comum dos jogos mais o que é do Fut Fox: tabela, câmera, time ou espectar e encerrar. */
 export function BolaMenu({
@@ -43,6 +43,9 @@ export function BolaMenu({
       onClose={onClose}
       onExit={onExit}
       onOfflineInvite={onOfflineInvite}
+      endMatch={
+        onEnd ? { label: 'Encerrar a partida', onClick: onEnd, testId: 'bola-menu-end' } : undefined
+      }
       actions={[
         {
           id: 'stats',
@@ -63,18 +66,6 @@ export function BolaMenu({
           onClick: onTeams,
           testId: 'bola-menu-teams',
         },
-        ...(onEnd
-          ? [
-              {
-                id: 'end',
-                icon: <IcFlag size={20} />,
-                label: 'Encerrar a partida',
-                armed: 'Toque de novo para encerrar',
-                onClick: onEnd,
-                testId: 'bola-menu-end',
-              },
-            ]
-          : []),
       ]}
     />
   );

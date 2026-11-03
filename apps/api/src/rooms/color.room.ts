@@ -161,6 +161,8 @@ export class ColorRoom extends Room {
     );
     this.onMessage('invite', (c, m: { username?: string }) => void this.invite(c, m?.username));
     // Só o líder encerra: todo mundo é avisado e sai, e a sala deixa de existir.
+    this.onMessage('pause', (c) => this.act(c, (id) => this.engine.pauseGame(id)));
+    this.onMessage('resume', (c) => this.act(c, (id) => this.engine.resumeGame(id)));
     this.onMessage('close', (c) => {
       const id = (c.userData as AuthData | undefined)?.id;
       if (!id) return;
@@ -202,6 +204,11 @@ export class ColorRoom extends Room {
 
   /** Um passo da sala: avança o motor, publica o estado se mudou e deixa o jogo transmitir o que é dele. */
   protected step() {
+    if (this.engine.paused) {
+      if (this.engine.tickPause()) this.publish();
+      this.afterTick();
+      return;
+    }
     if (this.engine.tick()) this.publish();
     this.afterTick();
   }
@@ -643,6 +650,7 @@ export class DesmoronaRoom extends ColorRoom {
       this.act(c, (id) => engine().setColor(id, String(m?.hex ?? ''))),
     );
     this.onMessage('uncolor', (c) => this.act(c, (id) => engine().clearColor(id)));
+    this.onMessage('dend', (c) => this.act(c, (id) => engine().endNow(id)));
     this.onMessage('ddead', (c) => {
       const id = idOf(c);
       if (id) engine().die(id);

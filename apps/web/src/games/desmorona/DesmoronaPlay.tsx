@@ -11,6 +11,7 @@ import {
   type DsmWavePattern,
 } from '@nocap/games';
 import { GameChat } from '@/components/GameChat';
+import { PauseOverlay } from '@/components/PauseOverlay';
 import { gameChatOpen } from '@/lib/game-chat-state';
 import { GameMenu, GearButton, Keycap, NetBadge } from '@/components/GameMenu';
 import { GameTips, type TipRow } from '@/components/GameTips';
@@ -18,7 +19,7 @@ import { DesmoronaFinal, type DsmFinalRow } from './DesmoronaFinal';
 import { RotateHint } from '@/components/RotateHint';
 import { IcCamera, IcJump } from '@/games/bola/BolaIcons';
 import { dsmSfx } from '@/lib/desmorona-audio';
-import { currentRtt, sendRoomQuiet, serverNow, subscribeRoom } from '@/lib/rooms';
+import { currentRtt, gameNow, sendRoom, sendRoomQuiet, serverNow, subscribeRoom } from '@/lib/rooms';
 import { DsmControls, STICK_RADIUS } from './controls';
 import { DsmScene } from './scene';
 
@@ -462,7 +463,7 @@ export function DesmoronaPlay({
         }
         if (online) {
           // o relógio do jogo é o da sala: todo mundo vê o chão cair na mesma hora
-          const target = (serverNow() - online.startAt) / 1000;
+          const target = (gameNow() - online.startAt) / 1000;
           acc = Math.min(Math.max(0, target - world.t), 1);
           driveRemotes(dt, now);
           for (const id of deadRef.current) if (id !== meId || m.alive) world.markDead(id);
@@ -718,6 +719,7 @@ export function DesmoronaPlay({
         <GameTips storageKey={TIPS_KEY} rows={tipRows(touchDevice)} testId="dsm-tips" markOnShow />
       )}
       <GameChat enabled={!!online && !result} onClosed={(was) => was && controls.resumeLock()} />
+      {online && !result && <PauseOverlay />}
       {menu && !result && (
         <GameMenu
           title="Menu"
@@ -744,6 +746,11 @@ export function DesmoronaPlay({
           onClose={closeMenu}
           onExit={onExit}
           onOfflineInvite={onOfflineInvite}
+          endMatch={{
+            label: 'Encerrar a partida',
+            onClick: () => sendRoom('dend'),
+            testId: 'dsm-menu-end',
+          }}
           actions={[]}
         />
       )}

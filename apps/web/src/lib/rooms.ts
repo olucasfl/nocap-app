@@ -240,6 +240,8 @@ export interface RoomSnapshot {
   final: FinalRow[] | null;
   /** Chat da sala: aberto agora? e quem o líder silenciou. */
   chat: { open: boolean; muted: string[] };
+  /** Pausa do jogo (só o líder): `at` = hora (do servidor) em que parou, `resumeAt` = fim da contagem de volta, `total` = pausado até aqui. */
+  pause?: RoomPause | null;
   /** O id desta pessoa na sala (vale também para convidados). */
   me?: string | null;
   impostor?: ImpostorState;
@@ -373,11 +375,41 @@ export const currentRtt = (): number => {
   return sorted[Math.floor(sorted.length / 2)]!;
 };
 
+export interface RoomPause {
+  at: number | null;
+  resumeAt: number | null;
+  total: number;
+}
+
 export function serverNow(): number {
   const median =
     offsets.length > 0 ? [...offsets].sort((a, b) => a - b)[Math.floor(offsets.length / 2)]! : 0;
   return Date.now() + median;
 }
+
+/**
+ * Quanto tempo de jogo já foi "comido" por pausas (ms): cresce em tempo real enquanto pausado e fica parado depois. O
+ * relógio do jogo é a hora do servidor menos isto, então tudo que anda por ele congela na pausa e continua de onde parou.
+ */
+export function pausedMs(): number {
+  const p = useRoom.getState().snapshot?.pause;
+  if (!p) return 0;
+  const now = serverNow();
+  if (p.at === null) return p.total;
+  // a contagem de volta acabou: vale já, sem esperar o estado novo chegar
+  if (p.resumeAt !== null && now >= p.resumeAt) return p.total + (p.resumeAt - p.at);
+  return p.total + (now - p.at);
+}
+
+/** O jogo está parado agora? (pausado e a contagem de volta ainda não acabou) */
+export function gameFrozen(): boolean {
+  const p = useRoom.getState().snapshot?.pause;
+  if (!p || p.at === null) return false;
+  return !(p.resumeAt !== null && serverNow() >= p.resumeAt);
+}
+
+/** A hora do jogo (servidor, sem pausas). */
+export const gameNow = (): number => serverNow() - pausedMs();
 
 /** Converte um instante do relógio do servidor para o relógio deste aparelho. */
 export const toLocal = (serverMs: number): number => serverMs - (serverNow() - Date.now());

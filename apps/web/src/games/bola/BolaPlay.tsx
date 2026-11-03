@@ -20,6 +20,7 @@ import '../desmorona/desmorona.css';
 import './bola.css';
 import { roomLink, type BolaLink } from '@/lib/bola-link';
 import { GameChat } from '@/components/GameChat';
+import { PauseOverlay } from '@/components/PauseOverlay';
 import { gameChatOpen, isTyping } from '@/lib/game-chat-state';
 import { BolaNetSync } from '@/lib/bola-netsync';
 import { BUILD_ID } from '@/lib/build-id';
@@ -1277,6 +1278,7 @@ export function BolaPlay({
       {hud.myTeam >= 0 && !over && <BolaTips touch={touchDevice} />}
       {!over && <RotateHint />}
       <GameChat enabled={!!online && !over} onClosed={(was) => was && controls.resumeLock()} />
+      {online && !over && <PauseOverlay />}
       {!over && hud.myTeam >= 0 && (
         <>
           <button

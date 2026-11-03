@@ -11,9 +11,14 @@ async function nick(page: Page, name: string) {
   await page.getByRole('button', { name: 'Entrar na sala' }).click();
 }
 const skipIntro = (page: Page) =>
-  page.getByRole('button', { name: 'Agora não' }).click({ timeout: 8000 }).catch(() => undefined);
+  page
+    .getByRole('button', { name: 'Agora não' })
+    .click({ timeout: 8000 })
+    .catch(() => undefined);
 
-test('chat do saguão: mensagem nova aparece ao lado do botão e o painel mostra a conversa', async ({ browser }, info) => {
+test('chat do saguão: mensagem nova aparece ao lado do botão e o painel mostra a conversa', async ({
+  browser,
+}, info) => {
   const mk = async (w: number, h: number) => {
     const ctx = await browser.newContext({ viewport: { width: w, height: h }, locale: 'pt-BR' });
     return ctx.newPage();

@@ -296,7 +296,12 @@ export function RoomChatDock({ snapshot }: { snapshot: RoomSnapshot }) {
         )}
       </div>
       {open && (
-        <div className="gc-panel dock" role="dialog" aria-label="Chat da sala" data-testid="room-chat-panel">
+        <div
+          className="gc-panel dock"
+          role="dialog"
+          aria-label="Chat da sala"
+          data-testid="room-chat-panel"
+        >
           <div className="gc-head">
             <span className="gc-title">
               <IcChat size={20} />
@@ -310,7 +315,12 @@ export function RoomChatDock({ snapshot }: { snapshot: RoomSnapshot }) {
               onClick={() => setOpen(false)}
             >
               <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-                <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                <path
+                  d="M6 6l12 12M18 6 6 18"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                />
               </svg>
             </button>
           </div>

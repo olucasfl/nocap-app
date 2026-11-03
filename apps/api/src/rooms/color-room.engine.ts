@@ -69,6 +69,9 @@ export type Phase =
 
 export class RoomError extends Error {}
 
+/** Quanto dura a contagem de volta depois de despausar. */
+export const PAUSE_COUNTDOWN_MS = 3000;
+
 interface Member {
   id: string;
   username: string;
@@ -112,8 +115,15 @@ export class ColorRoomEngine {
   protected readonly maxPlayers: number;
   /** Qual jogo esta sala joga; o `TimeRoomEngine` troca. */
   readonly game:
-    'color' | 'time' | 'impostor' | 'eco' | 'atravessa' | 'desmorona' | 'bola' | 'pingpong' | 'foxcap' =
-    'color';
+    | 'color'
+    | 'time'
+    | 'impostor'
+    | 'eco'
+    | 'atravessa'
+    | 'desmorona'
+    | 'bola'
+    | 'pingpong'
+    | 'foxcap' = 'color';
   /** Menos gente que isto não joga (o Intruso precisa de 3 para votar). */
   protected readonly minPlayers: number = MIN_PLAYERS;
   /** Salvar o pódio como partida de sala (o Intruso não salva). */
@@ -268,6 +278,61 @@ export class ColorRoomEngine {
 
   get hostName(): string | null {
     return (this.hostId && this.members.get(this.hostId)?.username) || null;
+  }
+
+  // ---- pausa (só o líder; Fut Fox, Desmorona!, Atravessa! e Ping Fox!) ----
+
+  /** Pausa em curso: `at` = hora (da sala) em que parou, `resumeAt` = fim da contagem de volta (3 s). */
+  private pauseAt: number | null = null;
+  private pauseResumeAt: number | null = null;
+  /** Quanto tempo a partida atual ficou pausada, somado (o relógio do jogo = hora da sala menos isto). */
+  private pausedTotal = 0;
+
+  /** O jogo desta sala sabe pausar? (os motores com partida em tempo real ligam.) */
+  protected pausable(): boolean {
+    return false;
+  }
+
+  get paused(): boolean {
+    return this.pauseAt !== null;
+  }
+
+  /** O relógio do jogo: a hora da sala sem os tempos de pausa (congela enquanto pausado). */
+  protected gnow(): number {
+    return (this.pauseAt ?? this.now()) - this.pausedTotal;
+  }
+
+  /** Nova partida (ou rodada): zera a pausa. */
+  protected resetPause() {
+    this.pauseAt = null;
+    this.pauseResumeAt = null;
+    this.pausedTotal = 0;
+  }
+
+  pauseGame(id: string) {
+    this.requireHost(id);
+    this.requirePhase('play');
+    if (!this.pausable()) throw new RoomError('Este jogo não pausa');
+    if (this.pauseAt !== null) return;
+    this.pauseAt = this.now();
+    this.pauseResumeAt = null;
+  }
+
+  /** Despausa: o jogo volta depois de uma contagem de 3 segundos. */
+  resumeGame(id: string) {
+    this.requireHost(id);
+    if (this.pauseAt === null || this.pauseResumeAt !== null) return;
+    this.pauseResumeAt = this.now() + PAUSE_COUNTDOWN_MS;
+  }
+
+  /** Enquanto pausado a sala só espera a contagem acabar. Devolve `true` quando o estado mudou. */
+  tickPause(): boolean {
+    if (this.pauseAt === null || this.pauseResumeAt === null || this.now() < this.pauseResumeAt)
+      return false;
+    this.pausedTotal += this.pauseResumeAt - this.pauseAt;
+    this.pauseAt = null;
+    this.pauseResumeAt = null;
+    return true;
   }
 
   // ---- lobby ----
@@ -600,6 +665,10 @@ export class ColorRoomEngine {
       final:
         this.phase === 'final' ? this.finalRows().map(({ answers: _answers, ...r }) => r) : null,
       chat: { open: this.chatOpen(), muted: this.chat.mutedList() },
+      /** Pausa: `at`/`resumeAt` (hora da sala) e `total` já pausado; o relógio do jogo é a hora menos `total` (e para em `at`). */
+      pause: this.pausable()
+        ? { at: this.pauseAt, resumeAt: this.pauseResumeAt, total: this.pausedTotal }
+        : null,
       /** O id de quem está olhando (convidado não tem conta no aparelho, então o id vem daqui). */
       me: viewerId ?? null,
       ...this.extraSnapshot(viewerId),

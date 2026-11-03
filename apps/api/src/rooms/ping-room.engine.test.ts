@@ -217,4 +217,46 @@ describe('sala do Ping Fox!', () => {
     expect(room.currentPhase).toBe('final');
     expect(room.finalRows()[0]?.userId).toBe('ana');
   });
+
+  describe('pausa', () => {
+    const pauseOf = (room: PingRoomEngine) =>
+      (
+        room.snapshot('ana') as unknown as {
+          pause: { at: number | null; resumeAt: number | null; total: number } | null;
+        }
+      ).pause;
+
+    it('só o líder pausa; o relógio do jogo congela e volta depois da contagem de 3 s', () => {
+      const { room, clock } = started();
+      clock.advance(PP_ROOM_COUNTDOWN_MS + 2000);
+      room.tick();
+      expect(room.currentPhase).toBe('play');
+      expect(() => room.pauseGame('bia')).toThrow(RoomError);
+      const before = room.currentTick();
+      room.pauseGame('ana');
+      expect(room.paused).toBe(true);
+      expect(pauseOf(room)?.at).toBe(clock.now);
+      clock.advance(30_000);
+      // pausado o tick do jogo não anda
+      expect(room.currentTick()).toBe(before);
+      expect(() => room.resumeGame('bia')).toThrow(RoomError);
+      room.resumeGame('ana');
+      clock.advance(2900);
+      expect(room.tickPause()).toBe(false);
+      expect(room.currentTick()).toBe(before);
+      clock.advance(100);
+      expect(room.tickPause()).toBe(true);
+      expect(room.paused).toBe(false);
+      expect(pauseOf(room)?.total).toBe(33_000);
+      // logo depois de voltar o jogo continua de onde parou (e não 33 s à frente)
+      expect(Math.abs(room.currentTick() - before)).toBeLessThanOrEqual(2);
+      clock.advance(1000);
+      expect(room.currentTick() - before).toBeGreaterThanOrEqual(Math.floor(1000 / TICK_MS) - 2);
+    });
+
+    it('não pausa na contagem da largada', () => {
+      const { room } = started();
+      expect(() => room.pauseGame('ana')).toThrow(RoomError);
+    });
+  });
 });

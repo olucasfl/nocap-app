@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
-import { decodePattern, keyboardState, wordKey, type Cell } from '@nocap/games';
+import { colorKey, decodePattern, keyboardState, wordKey, type Cell } from '@nocap/games';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { ApiError } from '@/lib/api-client';
 import { wordsAudio } from '@/lib/words-audio';
@@ -54,6 +54,8 @@ export function ClassicPlay({
   const [busy, setBusy] = useState(false);
   const [flipRow, setFlipRow] = useState<number | null>(null);
   const [winRow, setWinRow] = useState<number | null>(null);
+  // quantas letras da linha que está virando já apareceram no teclado (acompanha a virada, letra a letra)
+  const [kbCount, setKbCount] = useState(0);
   const [askGiveUp, setAskGiveUp] = useState(false);
   // o resultado só aparece depois que a última linha termina de virar
   const [resultReady, setResultReady] = useState(true);
@@ -158,6 +160,9 @@ export function ClassicPlay({
     try {
       const next = await engine.send(run, word);
       setFlipRow(next.used - 1);
+      // o teclado só descobre cada cor quando a casa dela vira (meio da virada: 0,3 s + 0,26 s por casa)
+      setKbCount(0);
+      for (let j = 0; j < LENGTH; j++) window.setTimeout(() => setKbCount(j + 1), 300 + j * 260);
       const fresh = next.boards.find((b) => b.rows[next.used - 1] !== undefined)?.rows[
         next.used - 1
       ];
@@ -236,9 +241,22 @@ export function ClassicPlay({
   }
 
   const decoded: Cell[][][] = run.boards.map((b) => b.rows.map(decodePattern));
-  const keys = run.boards.map((b, i) =>
-    keyboardState(run.guesses.slice(0, b.rows.length), decoded[i]!),
-  );
+  const keys = run.boards.map((b, i) => {
+    const rows = decoded[i]!;
+    // a linha que está virando entra no teclado aos poucos; as de antes já estão lá
+    const flipping = flipRow !== null && rows[flipRow] ? flipRow : null;
+    const upto = flipping ?? rows.length;
+    const state = keyboardState(run.guesses.slice(0, upto), rows.slice(0, upto));
+    if (flipping !== null) {
+      const rank: Record<Cell, number> = { miss: 0, near: 1, hit: 2 };
+      const row = rows[flipping]!;
+      [...colorKey(run.guesses[flipping]!)].slice(0, kbCount).forEach((letter, j) => {
+        const cur = state.get(letter);
+        if (!cur || rank[row[j]!] > rank[cur]) state.set(letter, row[j]!);
+      });
+    }
+    return state;
+  });
   // letras que já sabemos que não existem (cinza em todos os tabuleiros ainda abertos): ficam marcadas como
   // "já foi", mas continuam clicáveis (a pessoa pode testar palavras só para eliminar letras)
   const open0 = run.boards.map((b, i) => (b.solvedAt === null ? i : -1)).filter((i) => i >= 0);

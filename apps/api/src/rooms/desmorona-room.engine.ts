@@ -136,6 +136,7 @@ export class DesmoronaRoomEngine extends ColorRoomEngine {
   protected override beginRound() {
     this.roundIndex = 0;
     this.rounds[0] = {};
+    this.resetPause();
     this.startAt = this.now() + DSM_ROOM_COUNTDOWN_MS;
     this.steps.clear();
     this.outbox = [];
@@ -162,12 +163,12 @@ export class DesmoronaRoomEngine extends ColorRoomEngine {
   }
 
   private get racing(): boolean {
-    return this.phase === 'play' || (this.phase === 'show' && this.now() >= this.startAt);
+    return this.phase === 'play' || (this.phase === 'show' && this.gnow() >= this.startAt);
   }
 
   /** Segundos de jogo agora (negativo na contagem). */
   private clock(): number {
-    return (this.now() - this.startAt) / 1000;
+    return (this.gnow() - this.startAt) / 1000;
   }
 
   /** O relato de posição da própria raposa (cerca de 15 por segundo). Inválido é ignorado. */
@@ -177,7 +178,7 @@ export class DesmoronaRoomEngine extends ColorRoomEngine {
     if (!r || !r.alive || !Array.isArray(v) || v.length !== 7 || !v.every(finite)) return;
     const [x, y, z, vx, vz, heading, flags] = v as number[];
     if (Math.abs(x!) > 80 || Math.abs(z!) > 80 || y! > 40 || y! < -120) return;
-    const t = this.now();
+    const t = this.gnow();
     if (t - r.lastPosAt < MIN_POS_GAP_MS && r.pos) return;
     r.lastPosAt = t;
     r.pos = [r2(x!), r2(y!), r2(z!), r2(vx!), r2(vz!), r2(heading!), Math.trunc(flags!)];
@@ -273,8 +274,12 @@ export class DesmoronaRoomEngine extends ColorRoomEngine {
     this.deathCount = 0;
   }
 
+  protected override pausable(): boolean {
+    return true;
+  }
+
   override tick(): boolean {
-    const t = this.now();
+    const t = this.gnow();
     if (this.phase === 'show') {
       if (t < this.startAt) return false;
       this.phase = 'play';
@@ -296,6 +301,13 @@ export class DesmoronaRoomEngine extends ColorRoomEngine {
     const changed = this.dirty;
     this.dirty = false;
     return changed;
+  }
+
+  /** O líder encerra a partida agora (sem vencedor se ainda há mais de uma raposa de pé). */
+  endNow(id: string) {
+    this.requireHost(id);
+    this.requirePhase('play');
+    this.finish();
   }
 
   private finish() {

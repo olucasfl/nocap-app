@@ -1,13 +1,14 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { BUILD_ID } from '@/lib/build-id';
 import { toggleMute, useMuted } from '@/lib/sfx';
-import { closeRoom, useMeId, useRoom } from '@/lib/rooms';
+import { closeRoom, sendRoom, useMeId, useRoom } from '@/lib/rooms';
 import {
   IcExit,
   IcGear,
   IcInvite,
   IcKeyboard,
   IcNet,
+  IcFlag,
   IcPlay,
   IcSound,
 } from '@/games/bola/BolaIcons';
@@ -109,6 +110,7 @@ export function GameMenu({
   exitLabel,
   onOfflineInvite,
   escCloses = true,
+  endMatch,
 }: {
   title?: string;
   testPrefix: string;
@@ -127,12 +129,16 @@ export function GameMenu({
   onOfflineInvite?: () => void;
   /** Esc fecha o menu. Desligue onde a tela já trata o Esc por conta própria (o Atravessa! pausa e volta com ele). */
   escCloses?: boolean;
+  /** Só o líder: encerra a partida com o resultado de agora (o mesmo botão, no mesmo lugar, em todos os jogos). */
+  endMatch?: { label: string; onClick: () => void; testId?: string };
 }) {
   const muted = useMuted();
   // na sala: "Sair da sala" só tira a pessoa; "Encerrar a sala" (só o líder) apaga a sala para todo mundo
   const meId = useMeId();
   const hostId = useRoom((s) => s.snapshot?.hostId);
   const canCloseRoom = online && !!meId && hostId === meId;
+  const paused = useRoom((s) => s.snapshot?.pause?.at != null);
+  const pausable = useRoom((s) => !!s.snapshot?.pause);
   const leaveText = exitLabel ?? (online ? 'Sair da sala' : 'Sair da partida');
   const [sure, setSure] = useState(false);
   const [sureClose, setSureClose] = useState(false);
@@ -150,6 +156,8 @@ export function GameMenu({
         else setShowTips(false);
       } else if (escCloses) {
         e.preventDefault();
+        // o jogo por baixo não pode tratar o mesmo Esc (senão fecharia e abriria o menu de novo)
+        e.stopImmediatePropagation();
         onClose();
       }
     };
@@ -177,6 +185,35 @@ export function GameMenu({
             <IcPlay size={18} />
             {continueLabel}
           </button>
+          {canCloseRoom && pausable && (
+            <button
+              type="button"
+              className="gm-item gm-pause"
+              onClick={() => {
+                sendRoom(paused ? 'resume' : 'pause');
+                onClose();
+              }}
+              data-testid={`${testPrefix}-pause`}
+            >
+              <span className="gm-item-main">
+                <IcPause size={20} />
+                {paused ? 'Despausar' : 'Pausar o jogo'}
+              </span>
+              <span className="gm-cur">{paused ? 'Volta em 3 segundos' : 'Para todo mundo'}</span>
+            </button>
+          )}
+          {canCloseRoom && endMatch && (
+            <ArmedItem
+              icon={<IcFlag size={20} />}
+              label={endMatch.label}
+              armedLabel="Toque de novo para encerrar"
+              onConfirm={() => {
+                onClose();
+                endMatch.onClick();
+              }}
+              testId={endMatch.testId ?? `${testPrefix}-end`}
+            />
+          )}
           {actions.map((a) => {
             const isArmed = armed === a.id;
             return (
@@ -269,7 +306,7 @@ export function GameMenu({
           {canCloseRoom && (
             <button
               type="button"
-              className={`gm-item is-danger${sureClose ? ' is-sure' : ''}`}
+              className={`gm-item is-danger is-close${sureClose ? ' is-sure' : ''}`}
               onClick={() => (sureClose ? closeRoom() : setSureClose(true))}
               onBlur={() => setSureClose(false)}
               data-testid={`${testPrefix}-close-room`}
@@ -308,5 +345,45 @@ export function GameMenu({
         />
       )}
     </>
+  );
+}
+
+/** Botão que pede um segundo toque para valer (fica vermelho com o texto de confirmação). */
+function ArmedItem({
+  icon,
+  label,
+  armedLabel,
+  onConfirm,
+  testId,
+}: {
+  icon: ReactNode;
+  label: string;
+  armedLabel: string;
+  onConfirm: () => void;
+  testId: string;
+}) {
+  const [sure, setSure] = useState(false);
+  return (
+    <button
+      type="button"
+      className={`gm-item${sure ? ' is-sure' : ''}`}
+      onClick={() => (sure ? onConfirm() : setSure(true))}
+      onBlur={() => setSure(false)}
+      data-testid={testId}
+    >
+      <span className="gm-item-main">
+        {icon}
+        {sure ? armedLabel : label}
+      </span>
+    </button>
+  );
+}
+
+function IcPause({ size = 20 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true" focusable="false">
+      <rect x="6" y="5" width="4.5" height="14" rx="1.2" fill="currentColor" />
+      <rect x="13.5" y="5" width="4.5" height="14" rx="1.2" fill="currentColor" />
+    </svg>
   );
 }

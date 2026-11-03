@@ -1,6 +1,6 @@
 import { unpackBolaFrame } from '@nocap/games';
 import type { BolaFrame, BolaLink, BolaRosterRow } from './bola-link';
-import { sendRoomQuiet, subscribeRoom, type BolaRoomState } from './rooms';
+import { gameFrozen, sendRoomQuiet, subscribeRoom, type BolaRoomState } from './rooms';
 
 /**
  * Partida ponto a ponto do Fut Fox (spec 048): o aparelho do líder simula a partida e os outros aparelhos conectam a ele
@@ -46,6 +46,7 @@ export interface HostResult {
 export class BolaHostSession {
   private peers = new Map<string, HostPeer>();
   private worker: Worker | null = null;
+  private pauseTimer = 0;
   private unsub: () => void;
   private unsubSwitch: () => void;
   private frameCbs = new Set<(f: BolaFrame) => void>();
@@ -177,6 +178,14 @@ export class BolaHostSession {
     const w = new Worker(new URL('./bola-host.worker.ts', import.meta.url), { type: 'module' });
     this.worker = w;
     w.onmessage = (ev: MessageEvent) => this.onWorker(ev.data as WorkerOut);
+    // pausa do líder da sala: a partida daqui congela junto (o relógio dela para)
+    let frozen = false;
+    this.pauseTimer = window.setInterval(() => {
+      const now = gameFrozen();
+      if (now === frozen) return;
+      frozen = now;
+      this.worker?.postMessage({ t: 'pause', on: now });
+    }, 60);
     w.postMessage({
       t: 'init',
       setup: this.setup,
@@ -225,6 +234,7 @@ export class BolaHostSession {
   }
 
   dispose() {
+    window.clearInterval(this.pauseTimer);
     this.worker?.postMessage({ t: 'stop' });
     this.worker?.terminate();
     this.worker = null;
