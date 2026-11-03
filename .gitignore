@@ -25,4 +25,4 @@ apps/web/playwright-report/
 apps/web/[A-Za-z]:*
 
 # modelos de terceiros do Fox Shot! (licença a confirmar): só para testar, não versionar
-apps/web/public/models/foxshot/ref/
+apps/web/public/models/foxshot/ref/arms_knife.glb
