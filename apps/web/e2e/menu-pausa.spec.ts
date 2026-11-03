@@ -51,6 +51,12 @@ for (const game of GAMES) {
 
     await A.getByRole('tab', { name: /Regras/i }).click();
     await A.getByTestId(`pick-${game}`).click();
+    if (game === 'atravessa' || game === 'desmorona') {
+      // nesses dois cada raposa precisa de uma cor para ficar pronta
+      await A.getByRole('tab', { name: /Jogadores/i }).click();
+      await A.getByRole('radio').first().click();
+      await B.getByRole('radio').last().click();
+    }
     await B.getByRole('button', { name: /ESTOU PRONTO/i }).click({ timeout: 15_000 });
     await expect(A.getByRole('button', { name: /COMEÇAR/i })).toBeEnabled({ timeout: 15_000 });
     await A.getByRole('button', { name: /COMEÇAR/i }).click();
