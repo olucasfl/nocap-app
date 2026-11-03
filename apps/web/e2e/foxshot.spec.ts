@@ -11,13 +11,24 @@ type Fs = {
   weapon(i: number): void;
   target(id: string): { hp: number; armor: number; alive: boolean };
 };
-const fs = <T,>(page: Page, fn: string, ...args: unknown[]) =>
-  page.evaluate(([f, a]) => ((window as unknown as { __fs: Record<string, (...x: unknown[]) => unknown> }).__fs[f as string] as (...x: unknown[]) => T)(...(a as unknown[])), [fn, args] as [string, unknown[]]) as Promise<T>;
+const fs = <T>(page: Page, fn: string, ...args: unknown[]) =>
+  page.evaluate(
+    ([f, a]) =>
+      (
+        (window as unknown as { __fs: Record<string, (...x: unknown[]) => unknown> }).__fs[
+          f as string
+        ] as (...x: unknown[]) => T
+      )(...(a as unknown[])),
+    [fn, args] as [string, unknown[]],
+  ) as Promise<T>;
 
 async function open(page: Page) {
   await page.goto('/fox-cap/fox-shot-teste');
   await expect(page.getByTestId('fs-perf')).toBeVisible({ timeout: 40_000 });
-  await page.getByRole('button', { name: 'Agora não' }).click({ timeout: 4000 }).catch(() => undefined);
+  await page
+    .getByRole('button', { name: 'Agora não' })
+    .click({ timeout: 4000 })
+    .catch(() => undefined);
   await page.waitForTimeout(500);
 }
 
@@ -51,14 +62,19 @@ test('dano estilo CS nos alvos', async ({ page }, info) => {
     await fs(page, 'weapon', 0);
     await fs(page, 'aimAt', id, 'head');
     await fs(page, 'shoot', 1);
-    expect((await fs<{ alive: boolean }>(page, 'target', id)).alive, `fuzil, cabeça, ${id}`).toBe(false);
+    expect((await fs<{ alive: boolean }>(page, 'target', id)).alive, `fuzil, cabeça, ${id}`).toBe(
+      false,
+    );
   }
   // pistola (arma 1) de perto: sem capacete a cabeça mata (t1 revive depois de 3 s; usa t4 perto)
   await fs(page, 'teleport', -14, -1);
   await fs(page, 'weapon', 1);
   await fs(page, 'aimAt', 't4', 'head');
   await fs(page, 'shoot', 1);
-  expect((await fs<{ alive: boolean }>(page, 'target', 't4')).alive, 'pistola, cabeça, sem capacete, perto').toBe(false);
+  expect(
+    (await fs<{ alive: boolean }>(page, 'target', 't4')).alive,
+    'pistola, cabeça, sem capacete, perto',
+  ).toBe(false);
   // pistola contra colete e capacete: não mata de cabeça
   await fs(page, 'teleport', 8, -1);
   await fs(page, 'aimAt', 't5', 'head');
@@ -71,12 +87,20 @@ test('dano estilo CS nos alvos', async ({ page }, info) => {
   await fs(page, 'weapon', 2);
   await fs(page, 'aimAt', 't7', 'chest');
   await fs(page, 'shoot', 1);
-  expect((await fs<{ alive: boolean }>(page, 'target', 't7')).alive, 'sniper, corpo, colete e capacete').toBe(false);
+  expect(
+    (await fs<{ alive: boolean }>(page, 'target', 't7')).alive,
+    'sniper, corpo, colete e capacete',
+  ).toBe(false);
 });
 
 test('celular deitado: HUD de toque e arena (foto)', async ({ browser }, info) => {
   test.skip(info.project.name !== 'desktop', 'um projeto basta');
-  const ctx = await browser.newContext({ viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 });
+  const ctx = await browser.newContext({
+    viewport: { width: 844, height: 390 },
+    hasTouch: true,
+    isMobile: true,
+    deviceScaleFactor: 2,
+  });
   const page = await ctx.newPage();
   await open(page);
   await expect(page.locator('.fs-tbtns')).toBeVisible();
@@ -87,10 +111,17 @@ test('celular deitado: HUD de toque e arena (foto)', async ({ browser }, info) =
 
 test('celular em pé pede para girar o aparelho', async ({ browser }, info) => {
   test.skip(info.project.name !== 'desktop', 'um projeto basta');
-  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+  const ctx = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    hasTouch: true,
+    isMobile: true,
+  });
   const page = await ctx.newPage();
   await page.goto('/fox-cap/fox-shot-teste');
-  await page.getByRole('button', { name: 'Agora não' }).click({ timeout: 1500 }).catch(() => undefined);
+  await page
+    .getByRole('button', { name: 'Agora não' })
+    .click({ timeout: 1500 })
+    .catch(() => undefined);
   await expect(page.getByTestId('fs-rotate')).toBeVisible();
   await ctx.close();
 });

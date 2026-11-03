@@ -176,3 +176,14 @@ Pergunta do Lucas: "não está complexo ou pesado para rodar online com amigos, 
 O que mais pesa no celular não é o número de triângulos, e sim **sombra, resolução e material realista (PBR)**. Por isso: qualidade automática por fps (baixo = sem sombra, resolução menor, raposas simples), medidor de fps e de peso visível na fase 0, e teste no celular do Lucas **antes** de gastar mais em arte.
 
 Rede: tiro é leve (10 jogadores a 20 a 30 estados por segundo, algumas dezenas de bytes por jogador). O risco é **variação do atraso**, que se resolve com: servidor autoritativo a 30 Hz, previsão do próprio movimento, interpolação dos outros (~100 ms), compensação de atraso no tiro e relógio medido (mesmas lições do Ping Fox!). Primeiro a fase offline contra bots, que isola o desempenho gráfico da rede.
+
+## 14. Fase 0 implementada (03/11/2026)
+
+- Página de teste: `/fox-cap/fox-shot-teste` (botão "Fox Shot! (teste de visual e tiro)" no Fox Cap!, aba Offline). Sem sala, sem bots que jogam, sem pontuação.
+- Lógica pura em `packages/games/src/foxshot` (21 testes): dano estilo CS (`fsDamage`), recuo e dispersão por arma (`fsFire`, semente por jogador e número do tiro), raio com penetração (`fsTrace`), movimento com colisão (`fsStepMover`), arma na mão com munição, recarga, troca e ferrolho (`FsLoadout`), mapa e alvos (`FS_ARENA`, `FS_TARGETS`).
+- Cena (`FoxShotScene`): arena com texturas por código, céu, luz com uma sombra, reflexo para os metais, 7 raposas-alvo com esqueleto e animação, arma na mão em passe próprio, clarão, rastro e poeira. Qualidade automática (baixa, média, alta) pelo fps e painel de desempenho.
+- Entrada: computador (WASD, mouse preso, botão esquerdo atira, direito mira, R, 1 a 3, roda) e celular deitado (joystick flutuante, arrastar para olhar, botões; em pé pede para girar).
+- Sons sintetizados em Web Audio (provisórios; gravações entram depois, spec seção 9, pergunta 10).
+- Modelos: `apps/web/public/models/foxshot/{fox,rifle,pistol,sniper}.glb` (feitos no Blender por `tools/art`). Os modelos de referência do Lucas (AK, Glock, L96A1) são carregados de `models/foxshot/ref/` **se existirem**; essa pasta não é versionada (licença a confirmar).
+- Testes de tela (`e2e/foxshot.spec.ts`): carrega e mostra o HUD, regras de dano contra alvos de verdade (fuzil mata de cabeça com e sem capacete, pistola não mata de cabeça com capacete, sniper mata no corpo com colete e capacete), HUD de toque no celular deitado e aviso de girar em pé.
+- Falta: sentir o tiro e o recuo jogando, medir fps em celular de verdade, gravações de som, mapa final, bots que jogam (fase 1).
