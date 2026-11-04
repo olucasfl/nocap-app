@@ -1,6 +1,6 @@
 # 058: Pendências: online do Counter Fox mais firme e salvar dados universal
 
-Status: rascunho (04/11/2026). **Só levantamento: nada disto foi feito ainda.** Pedido do Lucas para fazermos depois.
+Status: rascunho (04/11/2026). **Só levantamento: nada disto foi feito ainda.** Pedido do Lucas para fazermos depois. Ordem do online decidida: 1) medir e corrigir o servidor, 2) protótipo WebRTC (líder simula) e comparar.
 
 ## 1. Online do Counter Fox: travadas e tiros pouco confiáveis
 
@@ -28,7 +28,7 @@ Como seria no Counter Fox (**líder simula**, igual ao Fut Fox):
 - Custa: **vantagem do líder** (ping zero para ele) e o líder saindo derruba a partida (no Fut Fox a partida acaba); **trapaça possível** (o líder controla a simulação), o que combina com o que já temos (sala com amigos, nunca entra em ranking, regra 2 do RULES.md); o líder precisa de upload para 9 jogadores (estimativa: ~100 KB/s com 30 quadros por segundo, a confirmar); algumas redes não conectam P2P sem um servidor de retransmissão (TURN), que é custo novo.
 - **Não resolve sozinho** o que depende do nosso código: tiro pouco confiável vem também de `viewTick`, interpolação e janela de atraso, que continuam valendo (a compensação de atraso precisa existir no líder).
 
-Recomendação: **fazer a medição e as correções do servidor primeiro** (valem como reserva e mostram quanto da trava é rede e quanto é nosso código) e **depois prototipar o líder-simula**, reaproveitando `lib/bola-p2p.ts` / `bola-link.ts`. Se o protótipo ficar claramente melhor, vira o padrão com o servidor de reserva. Decisão do Lucas: aprovar essa ordem ou ir direto para o WebRTC.
+Recomendação: **fazer a medição e as correções do servidor primeiro** (valem como reserva e mostram quanto da trava é rede e quanto é nosso código) e **depois prototipar o líder-simula**, reaproveitando `lib/bola-p2p.ts` / `bola-link.ts`. Se o protótipo ficar claramente melhor, vira o padrão com o servidor de reserva. **Decisão do Lucas (04/11/2026): seguir essa ordem.** Fase 1: medir e corrigir o servidor. Fase 2: protótipo do líder-simula com WebRTC e comparar com a fase 1 (mesmo teste: ping, perda, tiros da sniper em cima de uma raposa parada e em movimento). Só vira padrão se ficar melhor; o servidor continua como reserva.
 
 ### Plano de trabalho proposto
 1. **Medir primeiro**: painel de depuração (dev) com ping, jitter, idade do quadro, passos por segundo da sala, tamanho do pacote, erro de previsão e quantos tiros foram "fora da janela de atraso". Gravar uma partida de teste com 2 pessoas e 8 bots.
