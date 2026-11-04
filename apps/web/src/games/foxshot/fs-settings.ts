@@ -105,7 +105,7 @@ export const FS_DEFAULTS: FsSettings = {
   crossDynamic: true,
   showTelemetry: true,
   showMinimap: true,
-  fullscreenLock: false,
+  fullscreenLock: true,
   quality: 'auto',
   binds: { ...FS_DEFAULT_BINDS },
 };
@@ -117,6 +117,11 @@ function load(): FsSettings {
     const raw = localStorage.getItem(KEY);
     if (!raw) return { ...FS_DEFAULTS, binds: { ...FS_DEFAULT_BINDS } };
     const p = JSON.parse(raw) as Partial<FsSettings>;
+    // a trava de teclas (Ctrl+W) passou a vir ligada: quem já tinha salvo "desligada" recebe a nova padrão uma vez
+    if (localStorage.getItem(KEY + '-lock2') !== '1') {
+      p.fullscreenLock = true;
+      localStorage.setItem(KEY + '-lock2', '1');
+    }
     return { ...FS_DEFAULTS, ...p, binds: { ...FS_DEFAULT_BINDS, ...(p.binds ?? {}) } };
   } catch {
     return { ...FS_DEFAULTS, binds: { ...FS_DEFAULT_BINDS } };

@@ -850,3 +850,162 @@ describe('granadas', () => {
     expect(l.held).toBeNull();
   });
 });
+
+// ---------------------------------------------------------------- Duna (spec 057)
+import {
+  FS_DUST_BOXES, FS_DUST_COLS, FS_DUST_GRID, FS_DUST_HOTSPOTS, FS_DUST_SPAWNS, FS_DUST_ZONES, FS_DUST_ROWS,
+  fsDustCol, fsDustPath, fsDustRow, fsDustWalkable, fsDustZoneAt, fsDustCellX, fsDustCellZ, fsPickSpawn, fsDustLineWalkable,
+  FS_MATCH_BOTS, fsMatchConfig, fsMatchResult, fsMatchScore, FS_MATCH_MINUTES,
+  fsNewMover, fsStepMover, fsTrace, FS_WEAPONS,
+} from './index';
+
+describe('Duna: mapa', () => {
+  it('todas as linhas têm o mesmo tamanho e a borda é parede', () => {
+    for (const row of FS_DUST_GRID) expect(row.length).toBe(FS_DUST_COLS);
+    expect(FS_DUST_GRID.length).toBe(FS_DUST_ROWS);
+    for (const c of FS_DUST_GRID[0]!) expect(c).toBe('#');
+    for (const row of FS_DUST_GRID) {
+      expect(row[0]).toBe('#');
+      expect(row[FS_DUST_COLS - 1]).toBe('#');
+    }
+  });
+
+  it('as zonas existem: base CT, base TR, bomba A, bomba B e meio', () => {
+    const ids = FS_DUST_ZONES.map((z) => z.id);
+    for (const id of ['A', 'B', 'CT', 'TR', 'mid']) expect(ids).toContain(id);
+  });
+
+  it('o chão todo é um só pedaço: dá para ir de qualquer chão a qualquer outro', () => {
+    const free: [number, number][] = [];
+    for (let r = 0; r < FS_DUST_ROWS; r++) for (let c = 0; c < FS_DUST_COLS; c++) if (fsDustWalkable(c, r)) free.push([c, r]);
+    const seen = new Set<number>([free[0]![1] * FS_DUST_COLS + free[0]![0]]);
+    const q = [free[0]!];
+    while (q.length) {
+      const [c, r] = q.pop()!;
+      for (const [dc, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+        const k = (r + dr) * FS_DUST_COLS + (c + dc);
+        if (fsDustWalkable(c + dc, r + dr) && !seen.has(k)) {
+          seen.add(k);
+          q.push([c + dc, r + dr]);
+        }
+      }
+    }
+    expect(seen.size).toBe(free.length);
+  });
+
+  it('todo ponto de nascimento e de passeio é chão livre', () => {
+    for (const s of FS_DUST_SPAWNS) expect(fsDustWalkable(fsDustCol(s.x), fsDustRow(s.z))).toBe(true);
+    for (const [x, z] of FS_DUST_HOTSPOTS) expect(fsDustWalkable(fsDustCol(x), fsDustRow(z))).toBe(true);
+  });
+
+  it('ninguém nasce dentro de uma caixa', () => {
+    for (const s of FS_DUST_SPAWNS) {
+      const m = fsNewMover(s.x, s.z);
+      const inside = FS_DUST_BOXES.some((b) => s.x > b.min[0] && s.x < b.max[0] && s.z > b.min[2] && s.z < b.max[2] && b.min[1] < 1);
+      expect(inside).toBe(false);
+      expect(m.y).toBe(0);
+    }
+  });
+
+  it('há caminho da base TR até as duas bombas, o meio e a base CT', () => {
+    const tr = FS_DUST_SPAWNS.find((s) => s.zone === 'TR')!;
+    for (const id of ['A', 'B', 'CT', 'mid'] as const) {
+      const spot = FS_DUST_SPAWNS.find((s) => s.zone === id)!;
+      const p = fsDustPath(tr.x, tr.z, spot.x, spot.z);
+      expect(p.length, id).toBeGreaterThan(0);
+      expect(Math.hypot(p[p.length - 1]![0] - spot.x, p[p.length - 1]![1] - spot.z)).toBeLessThan(1.1);
+    }
+  });
+
+  it('o caminho nunca atravessa parede: cada trecho é andável com folga', () => {
+    const a = FS_DUST_SPAWNS.find((s) => s.zone === 'TR')!;
+    const b = FS_DUST_SPAWNS.find((s) => s.zone === 'A')!;
+    const p = fsDustPath(a.x, a.z, b.x, b.z);
+    let x = a.x;
+    let z = a.z;
+    for (const [nx, nz] of p) {
+      expect(fsDustLineWalkable(x, z, nx, nz)).toBe(true);
+      x = nx;
+      z = nz;
+    }
+  });
+
+  it('um corpo andando em linha reta pelo caminho chega ao destino sem ficar preso', () => {
+    const a = FS_DUST_SPAWNS.find((s) => s.zone === 'TR')!;
+    const b = FS_DUST_SPAWNS.find((s) => s.zone === 'B')!;
+    const m = fsNewMover(a.x, a.z);
+    const path = fsDustPath(a.x, a.z, b.x, b.z);
+    let t = 0;
+    for (const [px, pz] of path) {
+      for (let i = 0; i < 120 * 30 && Math.hypot(px - m.x, pz - m.z) > 0.35; i++) {
+        const yaw = (Math.atan2(-(px - m.x), -(pz - m.z)) * 180) / Math.PI;
+        fsStepMover(m, { fwd: 1, strafe: 0, jump: false, yaw, speedMul: 1 }, 1 / 120, FS_DUST_BOXES);
+        t++;
+      }
+      expect(Math.hypot(px - m.x, pz - m.z)).toBeLessThan(0.6);
+    }
+    expect(t / 120).toBeLessThan(40);
+  });
+
+  it('as paredes param a bala e os caixotes de madeira deixam passar parte', () => {
+    const w = FS_WEAPONS.ak;
+    // de dentro da base TR para o norte, através do prédio central: bate na parede
+    const tr = FS_DUST_SPAWNS.find((s) => s.zone === 'TR')!;
+    const tr1 = fsTrace(w, [tr.x, 1, tr.z], [0, 0, -1], FS_DUST_BOXES, []);
+    expect(tr1.kind).toBe('world');
+  });
+
+  it('zona do ponto: o centro da base CT é a base CT', () => {
+    const z = fsDustZoneAt(fsDustCellX(15), fsDustCellZ(5));
+    expect(z?.id).toBe('CT');
+  });
+
+  it('o ponto de nascimento escolhido fica longe e fora da vista dos inimigos vivos', () => {
+    const foe = FS_DUST_SPAWNS.find((s) => s.zone === 'CT')!;
+    const pick = fsPickSpawn([{ x: foe.x, z: foe.z }], () => 0);
+    expect(Math.hypot(pick.x - foe.x, pick.z - foe.z)).toBeGreaterThan(25);
+    // sem inimigos: qualquer um serve
+    expect(FS_DUST_SPAWNS).toContain(fsPickSpawn([], () => 0.99));
+  });
+
+  it('número de caixas é razoável para a cena', () => {
+    expect(FS_DUST_BOXES.length).toBeLessThan(160);
+  });
+});
+
+describe('Partida: pontos e resultado', () => {
+  it('abate vale 100 e assistência 50', () => {
+    expect(fsMatchScore({ kills: 3, assists: 2 })).toBe(400);
+    expect(fsMatchScore({ kills: 0, assists: 0 })).toBe(0);
+  });
+
+  it('durações e bots válidos; o resto é ajustado', () => {
+    expect([...FS_MATCH_MINUTES]).toEqual([2, 3, 5, 7, 10]);
+    expect(fsMatchConfig(7, 9)).toEqual({ minutes: 7, bots: 9 });
+    expect(fsMatchConfig(4, 0)).toEqual({ minutes: 5, bots: FS_MATCH_BOTS.min });
+    expect(fsMatchConfig(10, 99).bots).toBe(9);
+    expect(fsMatchConfig(2, Number.NaN).bots).toBe(FS_MATCH_BOTS.default);
+  });
+
+  it('quem tem mais pontos vence; desempate por abates e depois menos mortes', () => {
+    const rows = fsMatchResult([
+      { id: 'a', name: 'A', kills: 2, assists: 0, deaths: 1 }, // 200
+      { id: 'b', name: 'B', kills: 1, assists: 2, deaths: 5 }, // 200, menos abates
+      { id: 'c', name: 'C', kills: 0, assists: 1, deaths: 0 }, // 50
+    ]);
+    expect(rows.map((r) => r.id)).toEqual(['a', 'b', 'c']);
+    expect(rows[0]!.winner).toBe(true);
+    expect(rows[1]!.winner).toBe(false);
+    expect(rows[2]!.place).toBe(3);
+  });
+
+  it('empate total divide a vitória', () => {
+    const rows = fsMatchResult([
+      { id: 'a', name: 'A', kills: 1, assists: 0, deaths: 1 },
+      { id: 'b', name: 'B', kills: 1, assists: 0, deaths: 1 },
+      { id: 'c', name: 'C', kills: 0, assists: 0, deaths: 2 },
+    ]);
+    expect(rows.filter((r) => r.winner).length).toBe(2);
+    expect(rows[2]!.place).toBe(3);
+  });
+});

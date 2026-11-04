@@ -6,7 +6,7 @@ export interface FsBox {
   /** 0 = maciça (nada atravessa); 0,5 = madeira fina; 0,75 = tábua. A bala atravessa se `pen × poder da arma` > 0. */
   pen: number;
   /** Só para a cena: tipo de material. */
-  mat: 'wall' | 'crate' | 'wood' | 'metal' | 'floorpad';
+  mat: 'wall' | 'crate' | 'wood' | 'metal' | 'floorpad' | 'brick';
 }
 
 const b = (x0: number, y0: number, z0: number, x1: number, y1: number, z1: number, pen: number, mat: FsBox['mat']): FsBox => ({

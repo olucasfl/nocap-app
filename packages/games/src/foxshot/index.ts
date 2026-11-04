@@ -9,3 +9,5 @@ export * from './shop';
 export * from './bots';
 export * from './assist';
 export * from './grenades';
+export * from './dust';
+export * from './match';
