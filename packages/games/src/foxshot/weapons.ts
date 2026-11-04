@@ -58,7 +58,8 @@ function akPattern(): [number, number][] {
     const pitch = i < 8 ? 0.95 - i * 0.04 : 0.28;
     const sway = Math.min(1, i / 7);
     const yaw = (i < 12 ? -0.1 - i * 0.045 : 0.16 * Math.sin((i - 12) * 0.9 + 0.4)) * sway * 1.6 + (i > 12 ? (i % 2 ? 0.07 : -0.05) : 0);
-    out.push([pitch, yaw]);
+    // mais recuo (pedido do Lucas): o fuzil sobe e balança 1,6x mais
+    out.push([pitch * 1.6, yaw * 1.6]);
   }
   return out;
 }
@@ -73,7 +74,7 @@ function smgPattern(): [number, number][] {
 /** Fuzil leve: sobe de forma regular e puxa um pouco para a direita (diferente do padrão do outro fuzil). */
 function m4Pattern(): [number, number][] {
   const out: [number, number][] = [];
-  for (let i = 0; i < 25; i++) out.push([i < 10 ? 0.62 - i * 0.025 : 0.34, i < 6 ? 0.03 * i : 0.12 + Math.sin(i * 0.7) * 0.05]);
+  for (let i = 0; i < 25; i++) out.push([(i < 10 ? 0.62 - i * 0.025 : 0.34) * 1.7, (i < 6 ? 0.03 * i : 0.12 + Math.sin(i * 0.7) * 0.05) * 1.7]);
   return out;
 }
 
@@ -82,7 +83,7 @@ export const FS_WEAPONS: Record<FsWeaponId, FsWeapon> = {
     id: 'ak', name: 'AK-47', slot: 'primary', auto: true, rpm: 600, mag: 30, reload: 2.4, draw: 0.9,
     damage: 36, armorRatio: 1.55, rangeMod: 0.98, headMult: 4, legMult: 0.75, penPower: 1,
     recoil: akPattern(), recoilResetS: 0.35, recoilRecover: 10,
-    spread: { stand: 0.25, move: 3.6, air: 6, ads: 0.2, adsMove: 2.6 }, bloom: 2.2, bloomPerShot: 0.12,
+    spread: { stand: 0.25, move: 3.6, air: 6, ads: 0.2, adsMove: 2.6 }, bloom: 3.4, bloomPerShot: 0.2,
     moveMul: 0.92, adsFov: 0, boltS: 0, inspect: 3.4,
   },
   pistol: {
@@ -128,7 +129,7 @@ export const FS_WEAPONS: Record<FsWeaponId, FsWeapon> = {
     id: 'm4', name: 'M4A1', slot: 'primary', auto: true, rpm: 700, mag: 25, reload: 2.3, draw: 0.85,
     damage: 31, armorRatio: 1.4, rangeMod: 0.985, headMult: 4, legMult: 0.75, penPower: 0.85,
     recoil: m4Pattern(), recoilResetS: 0.32, recoilRecover: 12,
-    spread: { stand: 0.2, move: 3.2, air: 5.5, ads: 0.15, adsMove: 2.2 }, bloom: 1.8, bloomPerShot: 0.1,
+    spread: { stand: 0.2, move: 3.2, air: 5.5, ads: 0.15, adsMove: 2.2 }, bloom: 3.0, bloomPerShot: 0.18,
     moveMul: 0.95, adsFov: 0, boltS: 0, inspect: 3.4,
   },
   usp: {

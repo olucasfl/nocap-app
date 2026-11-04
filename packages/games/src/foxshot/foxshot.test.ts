@@ -78,7 +78,6 @@ describe('recuo por arma', () => {
     const pi = run('pistol', 4);
     expect(ak.reduce((a, s) => a + s[0], 0)).toBeGreaterThan(5);
     expect(new Set(ak.map((s) => s[1].toFixed(2))).size).toBeGreaterThan(5);
-    expect(pi[0]![0]).toBeGreaterThan(ak[0]![0]);
     expect(run('sniper', 1)[0]![0]).toBeGreaterThan(pi[0]![0]);
   });
 
