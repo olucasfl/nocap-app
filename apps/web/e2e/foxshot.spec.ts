@@ -130,7 +130,7 @@ test('granadas: explosiva dá dano por distância e a de luz cega só quem olha'
   await fs(page, 'blastAt', 'flash', 0, 10);
   await page.waitForTimeout(1500);
   expect(await fs<number>(page, 'blind'), 'de costas não cega').toBeLessThan(0.5);
-  await fs(page, 'blastAt', 'flash', 0, 19);
+  await fs(page, 'blastAt', 'flash', 0, 16.5);
   await expect.poll(async () => fs<number>(page, 'blind'), { timeout: 15_000 }).toBeGreaterThan(1);
 });
 

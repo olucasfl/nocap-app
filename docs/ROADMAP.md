@@ -123,6 +123,7 @@ Ainda sem prioridade definida contra as salas do Ecooo. Cada item tem a sua spec
 - [x] Mapa Duna (inspirado na Dust 2), partida de mata-mata com 1 a 9 bots, 10 pontos por abate e 5 por assistência, tempo de 2 a 10 min, tela de preparar e de resultado.
 - [ ] Jogar e ajustar: dificuldade dos bots, equilíbrio das armas, visual do mapa, desempenho no celular.
 - [x] Menu principal e opções do Counter Fox, sala online (lobby com abas, chat, convite) e servidor autoritativo do mata-mata (spec 057 §8).
+- [x] Mapa de Treino (8 áreas, pista de distância, estande), mapa grande (M), cartão no Fox Cap!, convidar e entrar/espectar no meio da partida, só com conta, ícones de arma dos modelos 3D (spec 057 §8b).
 - [ ] Online: arma no chão e controles de celular; bomba de verdade e ranking: fora da spec 057.
 
 ## Etapa 6: produção

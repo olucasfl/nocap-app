@@ -163,6 +163,8 @@ Tiro em primeira pessoa das raposas, em `packages/games/src/foxshot` (lógica pu
 - **Bots** (`dm.ts`): cérebro puro (percepção por visão e som, combate, armas, granadas) que usa o mesmo movimento e a mesma dispersão do jogador; a página (`FoxShotTestPage.tsx`) aplica o dano (`dealDamage`: vida, colete, abate, assistência, placar).
 - **Online** (`netsim.ts`, `foxshot-room.engine.ts`, `FoxShotRoom`): o servidor roda o mesmo jogo (`FsNetSim`, 60 passos por segundo) e manda o quadro ~20 vezes por segundo (`fss`); o aparelho prevê o próprio movimento e interpola os outros. O menu e o lobby temáticos estão em `CounterFoxPage.tsx` e `screens/room/lobby/CounterFoxLobby.tsx`.
 
+- **Treino e espectar (spec 057 §8b)**: `FS_ARENA` em `packages/games/src/foxshot/map.ts` (oito áreas, `FS_TRAIN_AREAS`) é o Mapa de Treino, aberto por `FoxShotTestPage`; `FsNetSim.joinAs` + `FoxShotRoomEngine.joinPlay` (mensagem `fsplay`) deixam quem chega no meio da partida jogar ou espectar; `FoxShotRoomPlay` usa uma raposa de cena por posição da lista (`s0`..`s9`) e câmera de espectador. Ícones de arma: `tools/art/bake-weapon-icons.mjs` → `public/icons/foxshot`.
+
 ## 13. Histórico removido (19/10/2026)
 
 A aba e a tela de Histórico, `GET /me/matches`, `GET /me/matches/:id/room` e a "atividade recente" do perfil de amigo foram removidas. As tabelas `matches`/`match_players` continuam, mas só como fonte de Ranking, recordes e Daily (as respostas de cada partida não são mais gravadas: `answers` fica nulo). O app mostra só rótulos de jogo/modo em `apps/web/src/lib/labels.ts`.

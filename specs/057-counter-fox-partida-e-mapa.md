@@ -83,6 +83,18 @@ Assistência: o último dano de outro jogador antes do abate, em até 10 s (`fsA
 - **Cliente**: prevê o próprio movimento com o mesmo `fsStepMover`, refaz as entradas não vistas ao receber o quadro (correção suave: a câmera desliza o erro), interpola os outros 100 ms atrás, e o relógio da simulação segue o tempo real (tela lenta roda vários passos por quadro).
 - Quem sai no meio vira bot. Sem ranking nem histórico. Sem arma no chão (largar e pegar) online e sem controles de celular nesta versão.
 
+## 8b. Mapa de Treino, mapa grande, convites, espectar e conta (04/11/2026)
+
+- **Mapa de Treino** (`packages/games/src/foxshot/map.ts`; o antigo mapa de teste deixou de existir e a rota `/fox-cap/fox-shot-teste` redireciona): entrada pelo menu, Jogar → Mapa de Treino. Avenida central (nascimento) e oito áreas: *Alvos e coletes*, *Bots andando* (andar, shift, agachado, pulando, girando), *Estande de tiro*, *Movimento* (degraus, pulos até 1,6 m, túnel baixo, bunny hop), *Granadas* (muro de 3 m), *Paredes e materiais* (madeira fina, caixote, metal, parede, tábua) e a **Pista de distância**, uma sala só para os bonecos a 20, 40, 60 e 80 m do risco de tiro (entra-se pelas portas do fundo das salas do sul). Loja com dinheiro infinito (B).
+- **Estande**: sem vidro. Cada atirador (uma arma de fogo por cabine) atira sempre reto para o paredão do fundo, em rajadas do estilo da arma, nunca mira em ninguém; quem passa na frente leva o tiro. Só atiram com a pessoa dentro do estande.
+- **Mapa grande (M)** no treino, no mata-mata offline e no online (e espectando): norte para cima, camadas de chão/obstáculos/paredes, nomes das áreas e seta de onde se está. **Esc fecha** (como na loja: o mouse solta ao abrir e prende ao fechar).
+- **Placas** do treino: painéis escuros com faixa laranja, texto inteiro (duas linhas se comprido), com profundidade e aparecendo conforme a distância.
+- **Fox Cap!**: o Counter Fox é o primeiro cartão (mesmo formato dos outros modos, só "Jogar") e a lista fica de 2 em 2.
+- **Convidar** (aba da sala e menu Esc da partida): enviar convite, copiar código e link, buscar @usuário, Chamar e Chamar de novo, igual às outras salas. Vale com a partida rolando.
+- **Entrar no meio da partida**: a sala aceita convite/código com a partida em andamento (até 15 pessoas). Quem chega vê *Entrar para jogar* ou *Entrar para espectar*. Espectando, a câmera segue um jogador (Esquerda/Direita trocam) e o botão *Entrar para jogar* continua disponível: `fsplay` faz a pessoa voltar ao corpo que virou bot, tomar o lugar de um bot ou ganhar uma raposa nova (`FsNetSim.joinAs`, máx. 10 jogadores).
+- **Só com conta**: sem conta o Counter Fox mostra o aviso com *Criar conta*, *Entrar* e *Voltar* (depois do login volta ao jogo); o servidor recusa convidado em sala do Counter Fox.
+- **Ícones das armas** (HUD, loja, kill feed): silhueta lateral dos mesmos modelos 3D, gerada por `tools/art/bake-weapon-icons.mjs` em `apps/web/public/icons/foxshot/*.png` e pintada por máscara.
+
 ## 9. Fora do escopo
 
 Online, bomba de verdade (A/B são só pontos de referência do mapa), dificuldade dos bots, rampas inclinadas (só degraus/plataformas), ranking.
