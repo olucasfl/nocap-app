@@ -270,9 +270,13 @@
 .fsh-players li.vest {
   border-color: #7fa6ff;
 }
+.fsh-players li.ct {
+  background: #3f82ff;
+  color: #fff;
+}
 .fsh-players li.you {
   border-color: #7dff9a;
-  background: #3cbf6b;
+  box-shadow: 0 0 0 2px rgba(125, 255, 154, 0.35);
 }
 .fsh-players li.dead {
   opacity: 0.45;

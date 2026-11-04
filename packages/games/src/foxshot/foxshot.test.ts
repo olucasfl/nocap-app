@@ -963,7 +963,7 @@ import {
   FS_DUST_BOXES, FS_DUST_COLS, FS_DUST_GRID, FS_DUST_HOTSPOTS, FS_DUST_SPAWNS, FS_DUST_ZONES, FS_DUST_ROWS,
   fsDustLevel, fsDustCol, fsDustPath, fsDustRow, fsDustWalkable, fsDustZoneAt, fsDustCellX, fsDustCellZ, fsPickSpawn, fsDustLineWalkable,
   fsDmNew, fsDmStep, fsDmFlash, type FsDmFoe, type FsDmAction,
-  fsFlinch, fsFlinchAt, fsDustDecor, FsNetSim, fsNetParseInput, type FsNetCmd,
+  fsFlinch, fsFlinchAt, fsDustDecor, FS_DUST_MARKS, fsDustWalkable, fsDustCol, fsDustRow, FsNetSim, fsNetParseInput, type FsNetCmd,
   FS_MATCH_BOTS, fsMatchConfig, fsMatchResult, fsMatchScore, FS_MATCH_MINUTES,
 } from './index';
 
@@ -1445,5 +1445,30 @@ describe('Simulação do servidor (mata-mata online)', () => {
     }
     expect(sim.players.get('n')!.lastSeq).toBeGreaterThan(0);
     expect(before).toBeDefined();
+  });
+});
+
+describe('Times (cor): contra-terrorista azul e terrorista laranja, alternando por ordem de entrada', () => {
+  it('a 1ª pessoa é azul, a 2ª laranja, a 3ª azul; os bots seguem a alternância', () => {
+    const sim = new FsNetSim({ minutes: 2, humans: [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }, { id: 'c', name: 'C' }], bots: 3, rng: createRng('times') });
+    const team = (id: string) => sim.players.get(id)!.team;
+    expect([team('a'), team('b'), team('c')]).toEqual([0, 1, 0]);
+    expect([team('b1'), team('b2'), team('b3')]).toEqual([1, 0, 1]);
+    const f = sim.frame();
+    expect(f.p.map((r) => (r[8]! & 128) !== 0)).toEqual([false, true, false, true, false, true]);
+  });
+  it('quem entra no meio continua a alternância (a 4ª pessoa é laranja)', () => {
+    const sim = new FsNetSim({ minutes: 2, humans: [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }, { id: 'c', name: 'C' }], bots: 2, rng: createRng('meio') });
+    expect(sim.joinAs('d', 'D')).toBe(true);
+    expect(sim.players.get('d')!.team).toBe(1);
+    expect(sim.joinAs('e', 'E')).toBe(true);
+    expect(sim.players.get('e')!.team).toBe(0);
+  });
+  it('as marcações do mapa têm as duas bombas e as duas bases, com área e ponto livre', () => {
+    expect(FS_DUST_MARKS.map((m) => m.id).sort()).toEqual(['A', 'B', 'CT', 'T']);
+    for (const m of FS_DUST_MARKS) {
+      expect(m.x > m.x0 && m.x < m.x1 && m.z > m.z0 && m.z < m.z1, m.id).toBe(true);
+      expect(fsDustWalkable(fsDustCol(m.x), fsDustRow(m.z)), `${m.id} livre`).toBe(true);
+    }
   });
 });

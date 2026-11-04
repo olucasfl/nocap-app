@@ -164,8 +164,8 @@ export interface FsDustZone extends FsCellRect {
 export const FS_DUST_ZONES: readonly FsDustZone[] = [
   { id: 'A', name: 'Bomba A', c0: 38, r0: 9, c1: 53, r1: 17 },
   { id: 'B', name: 'Bomba B', c0: 6, r0: 9, c1: 17, r1: 24 },
-  { id: 'CT', name: 'Base CT', c0: 20, r0: 12, c1: 35, r1: 22 },
-  { id: 'TR', name: 'Base TR', c0: 4, r0: 53, c1: 29, r1: 60 },
+  { id: 'CT', name: 'Base Contra-Terrorista', c0: 20, r0: 12, c1: 35, r1: 22 },
+  { id: 'TR', name: 'Base Terrorista', c0: 4, r0: 53, c1: 29, r1: 60 },
   { id: 'mid', name: 'Meio', c0: 26, r0: 23, c1: 29, r1: 52 },
   { id: 'tunnels', name: 'Túneis', c0: 6, r0: 25, c1: 16, r1: 52 },
   { id: 'lower', name: 'Túnel baixo', c0: 17, r0: 29, c1: 28, r1: 32 },
@@ -395,10 +395,44 @@ export const FS_DUST_DECALS: readonly FsDustDecal[] = (() => {
 /** Nomes das áreas no mapa grande (M): um ponto de chão livre em cada uma. */
 export const FS_DUST_LABELS: readonly { x: number; z: number; text: string }[] = (
   [
-    [47, 13, 'Bomba A'], [11, 16, 'Bomba B'], [27, 14, 'Base CT'], [16, 57, 'Base TR'], [27, 40, 'Meio'], [11, 40, 'Túneis'],
+    [27, 40, 'Meio'], [11, 40, 'Túneis'],
     [21, 30, 'Túnel baixo'], [51, 26, 'Long A'], [37, 45, 'Pátio'], [39, 23, 'Passarela'], [38, 12, 'Rampa CT'], [18, 14, 'Portas B'],
   ] as [number, number, string][]
 ).map(([c, r, text]) => ({ x: fsDustCellX(c), z: fsDustCellZ(r), text }));
+
+/**
+ * As marcações do mapa pequeno e do mapa grande (M): as duas bombas e as duas bases (terrorista e contra-terrorista), cada uma
+ * com a área marcada (retângulo em metros) e um ponto livre no meio. Dentro da partida só as bombas têm sinal no chão; as bases
+ * só aparecem nos mapas.
+ */
+export interface FsDustMark {
+  id: 'A' | 'B' | 'T' | 'CT';
+  /** Letra ou sigla curta (mapa pequeno). */
+  short: string;
+  /** Nome completo (mapa grande). */
+  name: string;
+  kind: 'site' | 'base';
+  /** Ponto livre no meio da área. */
+  x: number;
+  z: number;
+  x0: number;
+  z0: number;
+  x1: number;
+  z1: number;
+}
+export const FS_DUST_MARKS: readonly FsDustMark[] = (
+  [
+    ['A', 'A', 'Bomba A', 'site', 'A', 47, 13],
+    ['B', 'B', 'Bomba B', 'site', 'B', 11, 16],
+    ['CT', 'CT', 'Base Contra-Terrorista', 'base', 'CT', 27, 14],
+    ['T', 'T', 'Base Terrorista', 'base', 'TR', 16, 57],
+  ] as const
+).map(([id, short, name, kind, zone, c, r]) => {
+  const q = FS_DUST_ZONES.find((z) => z.id === zone)!;
+  const w = fsDustRectWorld(q);
+  const [fc, fr] = fsDustNearestFree(fsDustCellX(c), fsDustCellZ(r));
+  return { id, short, name, kind, x: fsDustCellX(fc), z: fsDustCellZ(fr), x0: w.x0, z0: w.z0, x1: w.x1, z1: w.z1 };
+});
 
 /** Meio-tamanho do mapa em x e z (para o mapa pequeno e a luz). */
 export const FS_DUST_HALF: readonly [number, number] = [(FS_DUST_COLS * FS_CELL) / 2, (FS_DUST_ROWS * FS_CELL) / 2];

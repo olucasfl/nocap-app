@@ -16,6 +16,8 @@ export interface FsPlayerRow {
   damage: number;
   /** Pontos da partida (100 por abate, 50 por assistência); só no mata-mata. */
   points?: number;
+  /** Time (só a cor): contra-terrorista azul ou terrorista laranja. */
+  team?: 'ct' | 't';
 }
 
 export interface FeedItem {
@@ -42,6 +44,87 @@ export interface MinimapData {
   boxes?: readonly { min: readonly [number, number, number]; max: readonly [number, number, number] }[];
   /** Nomes das áreas, para o mapa grande. */
   labels?: readonly { x: number; z: number; text: string }[];
+  /** As bombas A e B e as bases terrorista e contra-terrorista (só no Duna), nos dois mapas. */
+  marks?: readonly FsMapMark[];
+}
+
+export interface FsMapMark {
+  id: 'A' | 'B' | 'T' | 'CT';
+  short: string;
+  name: string;
+  kind: 'site' | 'base';
+  x: number;
+  z: number;
+  x0: number;
+  z0: number;
+  x1: number;
+  z1: number;
+}
+
+const BASE_COLOR = { CT: '63,130,255', T: '255,122,40' } as const;
+const BASE_TEXT = { CT: '#8fbaff', T: '#ffab72' } as const;
+
+/**
+ * Desenha as marcações do mapa: as bases como áreas tingidas (azul para a contra-terrorista, laranja para a terrorista) e as
+ * bombas como um círculo com a letra. `at` leva metros ao canvas; `k` é pixels por metro; `big` mostra os nomes por extenso;
+ * `rot` desfaz a rotação do radar para as letras ficarem em pé.
+ */
+function drawMarks(g: CanvasRenderingContext2D, marks: readonly FsMapMark[], at: (x: number, z: number) => [number, number], k: number, big: boolean, rot = 0, pass: 'area' | 'text' = 'area') {
+  for (const m of marks) {
+    const [ax, az] = at(m.x0, m.z0);
+    const [bx, bz] = at(m.x1, m.z1);
+    const [cx, cz] = at(m.x, m.z);
+    if (pass === 'area') {
+      if (m.kind === 'base') {
+        const col = BASE_COLOR[m.id as 'CT' | 'T'];
+        g.fillStyle = `rgba(${col},${big ? 0.2 : 0.28})`;
+        g.fillRect(ax, az, bx - ax, bz - az);
+        g.strokeStyle = `rgba(${col},0.85)`;
+        g.lineWidth = big ? 2 : 1.2;
+        g.setLineDash([6, 4]);
+        g.strokeRect(ax, az, bx - ax, bz - az);
+        g.setLineDash([]);
+      } else {
+        const r = Math.max(big ? 18 : 8, Math.min(bx - ax, bz - az) * 0.34);
+        g.beginPath();
+        g.arc(cx, cz, r, 0, Math.PI * 2);
+        g.fillStyle = 'rgba(255,179,71,.2)';
+        g.fill();
+        g.lineWidth = big ? 3 : 1.6;
+        g.strokeStyle = 'rgba(255,179,71,.95)';
+        g.stroke();
+      }
+      continue;
+    }
+    // textos por cima de tudo
+    g.save();
+    g.translate(cx, cz);
+    g.rotate(rot);
+    g.lineJoin = 'round';
+    if (m.kind === 'site') {
+      g.font = `900 ${big ? 34 : 15}px "Saira Stencil One", Rajdhani, system-ui, sans-serif`;
+      g.lineWidth = 5;
+      g.strokeStyle = 'rgba(5,8,20,.95)';
+      g.strokeText(m.short, 0, 1);
+      g.fillStyle = '#ffd27a';
+      g.fillText(m.short, 0, 1);
+      if (big) {
+        g.font = '700 14px Rajdhani, system-ui, sans-serif';
+        g.lineWidth = 4;
+        g.strokeText(m.name, 0, 30);
+        g.fillText(m.name, 0, 30);
+      }
+    } else {
+      g.font = `800 ${big ? 17 : 11}px Rajdhani, system-ui, sans-serif`;
+      g.lineWidth = 4;
+      g.strokeStyle = 'rgba(5,8,20,.95)';
+      const text = big ? m.name.toUpperCase() : m.short;
+      g.strokeText(text, 0, 0);
+      g.fillStyle = BASE_TEXT[m.id as 'CT' | 'T'];
+      g.fillText(text, 0, 0);
+    }
+    g.restore();
+  }
 }
 
 export const clock = (s: number) =>
@@ -93,7 +176,7 @@ export function FsTopBar({
           {slots.map((p, i) => (
             <li
               key={i}
-              className={`${p ? (p.alive ? 'on' : 'dead') : 'empty'}${p?.you ? ' you' : ''}${p && p.armor > 0 ? ' vest' : ''}`}
+              className={`${p ? (p.alive ? 'on' : 'dead') : 'empty'}${p?.you ? ' you' : ''}${p && p.armor > 0 ? ' vest' : ''}${p?.team ? ` ${p.team}` : ''}`}
             >
               {p ? <span>{p.you ? 'EU' : p.name.replace(/\D/g, '') || p.name.slice(0, 2)}</span> : <span>?</span>}
               {p && !p.alive && <SkullIcon className="fsh-skull" />}
@@ -164,6 +247,10 @@ export function FsMinimap({ get }: { get: () => MinimapData }) {
           (b.max[2] - b.min[2]) * k,
         );
       }
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      if (d.marks) drawMarks(g, d.marks, (x, z) => [x * k, z * k], k, false, -yaw, 'area');
+      if (d.marks) drawMarks(g, d.marks, (x, z) => [x * k, z * k], k, false, -yaw, 'text');
       for (const t of d.targets) {
         if (!t.alive) continue;
         g.beginPath();
@@ -449,6 +536,10 @@ export function FsBigMap({ get, title }: { get: () => MinimapData; title: string
       const oz = (H - (z1 - z0) * k) / 2 - z0 * k;
       g.fillStyle = 'rgba(12,18,40,.96)';
       g.fillRect(ox + x0 * k, oz + z0 * k, (x1 - x0) * k, (z1 - z0) * k);
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      const at = (x: number, z: number): [number, number] => [ox + x * k, oz + z * k];
+      if (d.marks) drawMarks(g, d.marks, at, k, true, 0, 'area');
       // pisos elevados e vidro primeiro, depois caixotes e as paredes por cima
       const layer = (b: (typeof boxes)[number]) => (b.max[1] <= 1.1 && b.min[1] <= 0.01 && b.max[0] - b.min[0] > 2.5 && b.max[2] - b.min[2] > 2.5 ? 0 : b.max[1] > 2.6 ? 2 : 1);
       for (const pass of [0, 1, 2]) {
@@ -470,6 +561,7 @@ export function FsBigMap({ get, title }: { get: () => MinimapData; title: string
         g.fillStyle = '#ffd27a';
         g.fillText(l.text, tx, tz);
       }
+      if (d.marks) drawMarks(g, d.marks, at, k, true, 0, 'text');
       // você: seta apontando para onde olha (yaw 0 = norte, positivo vira para a esquerda)
       const px = ox + d.x * k;
       const pz = oz + d.z * k;

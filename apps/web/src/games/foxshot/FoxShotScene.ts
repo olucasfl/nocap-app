@@ -11,9 +11,11 @@ import {
   FS_DUST_DECOR,
   FS_DUST_HALF,
   FS_DUST_LABELS,
+  FS_DUST_MARKS,
   FS_MOVE_SIGNS,
   FS_TRAIN_LABELS,
   FS_TARGETS,
+  fsDustFloorY,
   fsDustHeight,
   fsDustRectWorld,
   type FsBotSpec,
@@ -456,6 +458,7 @@ export class FoxShotScene {
   private scene = new THREE.Scene();
   private cam = new THREE.PerspectiveCamera(75, 1, 0.05, 160);
   private signSprites: { sprite: THREE.Sprite; range: number }[] = [];
+  private furMats: { t: THREE.Material; ct: THREE.Material } | null = null;
   private vmScene = new THREE.Scene();
   private vmCam = new THREE.PerspectiveCamera(58, 1, 0.01, 5);
   private sun: THREE.DirectionalLight;
@@ -853,11 +856,99 @@ export class FoxShotScene {
       this.scene.add(sprite);
       this.signSprites.push({ sprite, range });
     }
-    if (this.world.style === 'dust') await this.buildDustProps(loader, base).catch(() => undefined);
+    if (this.world.style === 'dust') {
+      this.buildSiteMarkers();
+      await this.buildDustProps(loader, base).catch(() => undefined);
+    }
     this.selectWeapon('ak', true);
   }
 
   /** Enfeites do Duna (modelos de terceiros, ver docs/CREDITS-3D.md): fachadas, postes, barreiras e o horizonte de prédios, tudo instanciado. */
+  /**
+   * Time da raposa: contra-terrorista com pelo azul, terrorista com o pelo laranja de sempre. Só o material do pelo troca
+   * (os dois materiais são compartilhados entre as raposas).
+   */
+  setTeam(id: string, team: 'ct' | 't') {
+    const f = this.foxes.get(id);
+    if (!f) return;
+    f.root.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (!m.isMesh) return;
+      const mat = m.material as THREE.Material;
+      if (!this.furMats) {
+        if (mat.name !== 'fur') return;
+        const ct = mat.clone() as THREE.MeshStandardMaterial;
+        ct.color.set('#2f6bff');
+        this.furMats = { t: mat, ct };
+      }
+      const cur = m.material as THREE.Material;
+      if (cur === this.furMats.t || cur === this.furMats.ct) m.material = team === 'ct' ? this.furMats.ct : this.furMats.t;
+    });
+  }
+
+  /** O sinal das bombas A e B dentro do jogo: um selo no chão e a letra grande no ar (as bases só aparecem nos mapas). */
+  private buildSiteMarkers() {
+    for (const mk of FS_DUST_MARKS) {
+      if (mk.kind !== 'site') continue;
+      const y = fsDustFloorY(mk.x, mk.z);
+      const c = document.createElement('canvas');
+      c.width = c.height = 512;
+      const g = c.getContext('2d')!;
+      g.clearRect(0, 0, 512, 512);
+      g.lineWidth = 22;
+      g.strokeStyle = 'rgba(255,179,71,0.95)';
+      g.fillStyle = 'rgba(10,16,34,0.35)';
+      g.beginPath();
+      g.arc(256, 256, 228, 0, Math.PI * 2);
+      g.fill();
+      g.stroke();
+      g.lineWidth = 8;
+      g.strokeStyle = 'rgba(255,255,255,0.55)';
+      g.beginPath();
+      g.arc(256, 256, 196, 0, Math.PI * 2);
+      g.stroke();
+      g.fillStyle = 'rgba(255,179,71,0.95)';
+      g.font = '900 300px "Saira Stencil One", Rajdhani, system-ui, sans-serif';
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      g.fillText(mk.short, 256, 276);
+      const tex = new THREE.CanvasTexture(c);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.anisotropy = 4;
+      const floor = new THREE.Mesh(
+        new THREE.PlaneGeometry(6, 6),
+        new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }),
+      );
+      floor.rotation.x = -Math.PI / 2;
+      floor.position.set(mk.x, y + 0.03, mk.z);
+      floor.renderOrder = 2;
+      this.scene.add(floor);
+      // a letra no ar, vista de longe
+      const badge = document.createElement('canvas');
+      badge.width = badge.height = 256;
+      const b = badge.getContext('2d')!;
+      b.fillStyle = 'rgba(10,16,34,0.88)';
+      b.strokeStyle = '#ffb347';
+      b.lineWidth = 14;
+      b.beginPath();
+      b.arc(128, 128, 112, 0, Math.PI * 2);
+      b.fill();
+      b.stroke();
+      b.fillStyle = '#ffb347';
+      b.font = '900 170px "Saira Stencil One", Rajdhani, system-ui, sans-serif';
+      b.textAlign = 'center';
+      b.textBaseline = 'middle';
+      b.fillText(mk.short, 128, 142);
+      const bt = new THREE.CanvasTexture(badge);
+      bt.colorSpace = THREE.SRGBColorSpace;
+      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: bt, transparent: true, depthTest: true, depthWrite: false }));
+      sprite.scale.set(2.4, 2.4, 1);
+      sprite.position.set(mk.x, y + 4.2, mk.z);
+      sprite.renderOrder = 9;
+      this.scene.add(sprite);
+    }
+  }
+
   private async buildDustProps(loader: GLTFLoader, base: string) {
     const names = [...new Set(FS_DUST_DECOR.map((p) => p.model))];
     for (const name of names) {

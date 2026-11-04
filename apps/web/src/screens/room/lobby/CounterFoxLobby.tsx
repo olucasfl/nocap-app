@@ -22,8 +22,8 @@ const TABS: [Tab, string][] = [
 
 const FONTS = 'https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Saira+Stencil+One&display=swap';
 
-/** Cor de cada raposa no lobby (por ordem de chegada). */
-const FUR = ['#ff8a3d', '#6fd6ff', '#9be15d', '#ff6fae', '#ffd24a', '#b28cff', '#ff6a5a', '#5ee0c1', '#f0f0f0', '#ffa64a'];
+/** Cor de cada raposa no lobby: por ordem de chegada alterna contra-terrorista (azul) e terrorista (laranja), como na partida. */
+const FUR = ['#3f82ff', '#ff8a3d'];
 
 /** O que falta para começar o mata-mata (uma linha). */
 function hint(s: RoomSnapshot): { text: string; ok: boolean } {

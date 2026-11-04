@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import * as THREE from 'three';
 import {
+  FS_DUST_MARKS,
   FS_SPAWN,
   fsAssister,
   fsDmFlash,
@@ -1041,6 +1042,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         hs: stats.hs,
         damage: stats.damage,
         points: match ? fsMatchScore(stats) : undefined,
+        team: 'ct',
       },
       ...ALL_TARGETS.map((t) => {
         const s = targets.get(t.id)!;
@@ -1056,6 +1058,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
           hs: s.hs,
           damage: s.damage,
           points: match ? fsMatchScore(s) : undefined,
+          team: isDm(t.id) ? (dmSpecs.findIndex((d) => d.id === t.id) % 2 === 0 ? ('t' as const) : ('ct' as const)) : undefined,
         };
       }),
     ];
@@ -1468,6 +1471,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         yaw: view.yaw,
         boxes: ARENA,
         labels: world.labels,
+        marks: world.style === 'dust' ? FS_DUST_MARKS : undefined,
         // no mata-mata todos são inimigos e o radar não entrega onde estão
         targets: (match ? [] : ALL_TARGETS).map((t) => ({
           x: posOf(t.id)[0],
@@ -1549,6 +1553,8 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         if (dead) return;
         // a arma inicial é a pistola: o modelo na mão tem de ser o dela (antes aparecia o fuzil)
         scene.selectWeapon(loadout.weapon.id, true);
+        // times (só a cor): você é contra-terrorista (azul), o 1º bot terrorista (laranja), o 2º azul...
+        dmSpecs.forEach((d, i) => scene.setTeam(d.id, i % 2 === 0 ? 't' : 'ct'));
         setStatus('ready');
         last = performance.now();
         raf = requestAnimationFrame(frame);

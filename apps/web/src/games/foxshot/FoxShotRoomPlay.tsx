@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import {
   FS_DUST_BOXES,
+  FS_DUST_MARKS,
   FS_GRENADES,
   FS_WEAPONS,
   FsLoadout,
@@ -286,7 +287,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
     let lastK = 0;
     let lastFrameAt = 0;
     let timeLeft = info.minutes * 60;
-    const remotes = new Map<string, { buf: Snap[]; alive: boolean; shown: boolean; weapon: number }>();
+    const remotes = new Map<string, { buf: Snap[]; alive: boolean; shown: boolean; weapon: number; team?: 'ct' | 't' }>();
     for (const id of SLOTS) remotes.set(id, { buf: [], alive: true, shown: false, weapon: 0 });
     const rows = new Map<string, Row>();
     const nades = new Map<number, number>();
@@ -384,6 +385,11 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
         rm.buf.push({ t: now, x: r.x, y: r.y, z: r.z, yaw: r.yaw, crouch: r.crouch, flags: r.flags });
         if (rm.buf.length > 24) rm.buf.shift();
         rm.weapon = r.weapon;
+        const team = (r.flags & 128) !== 0 ? 't' : 'ct';
+        if (rm.team !== team) {
+          rm.team = team;
+          scene.setTeam(key, team);
+        }
         if (alive && (!rm.alive || !rm.shown)) {
           rm.alive = true;
           rm.shown = true;
@@ -876,7 +882,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
         }
       }
 
-      mini.current = { x: mover.x, z: mover.z, yaw: view.yaw, targets: [], boxes: ARENA, labels: world.labels };
+      mini.current = { x: mover.x, z: mover.z, yaw: view.yaw, targets: [], boxes: ARENA, labels: world.labels, marks: FS_DUST_MARKS };
       if (player) setBoardState(inp.board && !isPaused);
 
       hudT += dt;
@@ -888,7 +894,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
           const mine = r.id === meId;
           const k = row?.kills ?? 0;
           const a = row?.assists ?? 0;
-          return { id: r.id, name: r.name, you: mine, alive: mine ? alive : row ? (row.flags & 1) !== 0 : true, armor: mine ? self?.armor ?? 0 : row?.armor ?? 0, kills: k, deaths: row?.deaths ?? 0, assists: a, hs: 0, damage: 0, points: fsMatchScore({ kills: k, assists: a }) };
+          return { id: r.id, name: r.name, you: mine, alive: mine ? alive : row ? (row.flags & 1) !== 0 : true, armor: mine ? self?.armor ?? 0 : row?.armor ?? 0, kills: k, deaths: row?.deaths ?? 0, assists: a, hs: 0, damage: 0, points: fsMatchScore({ kills: k, assists: a }), team: ((row?.flags ?? 0) & 128) !== 0 ? ('t' as const) : ('ct' as const) };
         });
         const mp = players.find((p) => p.you);
         setHud({

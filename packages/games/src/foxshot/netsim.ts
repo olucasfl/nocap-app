@@ -100,6 +100,8 @@ export interface FsNetPlayer {
   firedAt: number;
   /** Última vez que chegou entrada (para marcar quem saiu). */
   heardAt: number;
+  /** Time (só a cor por enquanto, o mata-mata é de todos contra todos): 0 contra-terrorista (azul), 1 terrorista (laranja). */
+  team: 0 | 1;
 }
 
 export interface FsNetOptions {
@@ -162,6 +164,8 @@ export class FsNetSim {
   readonly grenades: { id: number; owner: string; body: FsGrenadeBody }[] = [];
   private events: FsNetEvent[] = [];
   private nadeSeq = 0;
+  /** Quantas pessoas já entraram: a 1ª é contra-terrorista (azul), a 2ª terrorista (laranja), a 3ª azul... */
+  private humansIn = 0;
   private rng: () => number;
   over = false;
 
@@ -175,10 +179,11 @@ export class FsNetSim {
     const botCount = Math.max(0, Math.min(this.cfg.bots, 10 - humans.length));
     const placed: { x: number; z: number }[] = [];
     for (const h of humans) this.addPlayer(h.id, h.name, false, placed);
-    for (let i = 0; i < botCount; i++) this.addPlayer(`b${i + 1}`, `Bot ${i + 1}`, true, placed);
+    // os bots seguem a mesma alternância depois das pessoas
+    for (let i = 0; i < botCount; i++) this.addPlayer(`b${i + 1}`, `Bot ${i + 1}`, true, placed, ((humans.length + i) % 2) as 0 | 1);
   }
 
-  private addPlayer(id: string, name: string, bot: boolean, placed: { x: number; z: number }[]) {
+  private addPlayer(id: string, name: string, bot: boolean, placed: { x: number; z: number }[], botTeam: 0 | 1 = 0) {
     const sp = fsPickSpawn(placed, this.rng, this.boxes);
     placed.push({ x: sp.x, z: sp.z });
     const mover = fsNewMover(sp.x, sp.z);
@@ -186,7 +191,7 @@ export class FsNetSim {
     const p: FsNetPlayer = {
       id, name, bot, mover, yaw: sp.yaw, pitch: 0, hp: 100, armor: 0, helmet: false, alive: true, respawnAt: 0,
       loadout: new FsLoadout(null, 'pistol'), kills: 0, assists: 0, deaths: 0, hs: 0, damage: 0, queue: [], last: null, lastSeq: 0,
-      hist: [], brain: null, dmgLog: [], flinch: { mul: 1, dur: 0 }, flinchAt: -1e9, firedAt: -1e9, heardAt: 0,
+      hist: [], brain: null, dmgLog: [], flinch: { mul: 1, dur: 0 }, flinchAt: -1e9, firedAt: -1e9, heardAt: 0, team: bot ? botTeam : ((this.humansIn++ % 2) as 0 | 1),
     };
     if (bot) {
       p.brain = fsDmNew(id, sp.x, sp.z, sp.yaw, fsDmPickWeapon(this.rng), this.rng, sp.y);
@@ -255,6 +260,7 @@ export class FsNetSim {
     p.loadout = new FsLoadout(null, 'pistol');
     p.dmgLog = [];
     p.heardAt = this.tick;
+    p.team = (this.humansIn++ % 2) as 0 | 1;
     this.players.set(id, p);
     this.roster[old.i] = { id, name, bot: false };
     this.respawn(p);
@@ -561,14 +567,14 @@ export class FsNetSim {
   /**
    * O quadro de todo mundo (vai a todos). Cada jogador é uma linha de números inteiros pequenos:
    * [índice, x·100, y·100, z·100, yaw·10, pitch·10, vida, colete, bandeiras, arma, agachado·100, último número de entrada, abates, assist., mortes]
-   * Bandeiras: 1 vivo, 2 capacete, 4 bot, 8 atirou agora há pouco, 16 recarregando, 32 no chão, 64 andando.
+   * Bandeiras: 1 vivo, 2 capacete, 4 bot, 8 atirou agora há pouco, 16 recarregando, 32 no chão, 64 andando, 128 terrorista (laranja; sem a bandeira é contra-terrorista, azul).
    */
   frame(): { k: number; left: number; p: number[][]; g: number[][] } {
     const p: number[][] = [];
     this.roster.forEach((r, i) => {
       const q = this.players.get(r.id)!;
       const sp = Math.hypot(q.mover.vx, q.mover.vz);
-      const flags = (q.alive ? 1 : 0) | (q.helmet ? 2 : 0) | (q.bot ? 4 : 0) | (this.tick - q.firedAt < 12 ? 8 : 0) | (!q.bot && q.loadout.reloading ? 16 : 0) | (q.mover.onGround ? 32 : 0) | (sp > 0.8 ? 64 : 0);
+      const flags = (q.alive ? 1 : 0) | (q.helmet ? 2 : 0) | (q.bot ? 4 : 0) | (this.tick - q.firedAt < 12 ? 8 : 0) | (!q.bot && q.loadout.reloading ? 16 : 0) | (q.mover.onGround ? 32 : 0) | (sp > 0.8 ? 64 : 0) | (q.team === 1 ? 128 : 0);
       const wid = q.bot ? q.brain!.weapon : q.loadout.weapon.id;
       p.push([
         i, Math.round(q.mover.x * 100), Math.round(q.mover.y * 100), Math.round(q.mover.z * 100),
