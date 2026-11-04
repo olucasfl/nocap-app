@@ -112,8 +112,9 @@ export function fsDmPickWeapon(rng: () => number): FsDmWeapon {
   return 'ak';
 }
 
-export function fsDmNew(id: string, x: number, z: number, yaw: number, weapon: FsDmWeapon, rng: () => number): FsDmBrain {
+export function fsDmNew(id: string, x: number, z: number, yaw: number, weapon: FsDmWeapon, rng: () => number, y = 0): FsDmBrain {
   const m = fsNewMover(x, z);
+  m.y = y;
   return {
     id, mover: m, yaw, pitch: 0, weapon, ammo: FS_WEAPONS[weapon].mag, reloadT: 0, cool: 0.6, burstLeft: 0, gun: fsNewGunState(),
     nades: { frag: rng() < 0.45 ? 1 : 0, flash: rng() < 0.45 ? 1 : 0 },

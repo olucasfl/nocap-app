@@ -855,9 +855,9 @@ describe('granadas', () => {
 // ---------------------------------------------------------------- Duna (spec 057)
 import {
   FS_DUST_BOXES, FS_DUST_COLS, FS_DUST_GRID, FS_DUST_HOTSPOTS, FS_DUST_SPAWNS, FS_DUST_ZONES, FS_DUST_ROWS,
-  fsDustCol, fsDustPath, fsDustRow, fsDustWalkable, fsDustZoneAt, fsDustCellX, fsDustCellZ, fsPickSpawn, fsDustLineWalkable,
+  fsDustLevel, fsDustCol, fsDustPath, fsDustRow, fsDustWalkable, fsDustZoneAt, fsDustCellX, fsDustCellZ, fsPickSpawn, fsDustLineWalkable,
   fsDmNew, fsDmStep, fsDmFlash, type FsDmFoe, type FsDmAction,
-  fsFlinch, fsFlinchAt,
+  fsFlinch, fsFlinchAt, fsDustDecor,
   FS_MATCH_BOTS, fsMatchConfig, fsMatchResult, fsMatchScore, FS_MATCH_MINUTES,
 } from './index';
 
@@ -877,7 +877,7 @@ describe('Duna: mapa', () => {
     for (const id of ['A', 'B', 'CT', 'TR', 'mid']) expect(ids).toContain(id);
   });
 
-  it('o chão todo é um só pedaço: dá para ir de qualquer chão a qualquer outro', () => {
+  it('o chão todo é um só pedaço: dá para ir de qualquer chão a qualquer outro subindo no máximo um degrau', () => {
     const free: [number, number][] = [];
     for (let r = 0; r < FS_DUST_ROWS; r++) for (let c = 0; c < FS_DUST_COLS; c++) if (fsDustWalkable(c, r)) free.push([c, r]);
     const seen = new Set<number>([free[0]![1] * FS_DUST_COLS + free[0]![0]]);
@@ -886,13 +886,25 @@ describe('Duna: mapa', () => {
       const [c, r] = q.pop()!;
       for (const [dc, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
         const k = (r + dr) * FS_DUST_COLS + (c + dc);
-        if (fsDustWalkable(c + dc, r + dr) && !seen.has(k)) {
+        if (fsDustWalkable(c + dc, r + dr) && Math.abs(fsDustLevel(c + dc, r + dr) - fsDustLevel(c, r)) <= 1 && !seen.has(k)) {
           seen.add(k);
           q.push([c + dc, r + dr]);
         }
       }
     }
-    expect(seen.size).toBe(free.length);
+    expect(free.length - seen.size).toBe(0);
+  });
+
+  it('nenhum corredor é estreito demais: todo chão tem folga de ao menos 2 células em uma direção', () => {
+    for (let r = 0; r < FS_DUST_ROWS; r++) {
+      for (let c = 0; c < FS_DUST_COLS; c++) {
+        if (fsDustLevel(c, r) < 0) continue;
+        const h = (fsDustLevel(c - 1, r) >= 0 ? 1 : 0) + (fsDustLevel(c + 1, r) >= 0 ? 1 : 0);
+        const v = (fsDustLevel(c, r - 1) >= 0 ? 1 : 0) + (fsDustLevel(c, r + 1) >= 0 ? 1 : 0);
+        // célula sozinha (sem vizinha em nenhuma direção) seria um buraco inalcançável
+        expect(h + v, `${c},${r}`).toBeGreaterThan(0);
+      }
+    }
   });
 
   it('todo ponto de nascimento e de passeio é chão livre', () => {
@@ -903,7 +915,7 @@ describe('Duna: mapa', () => {
   it('ninguém nasce dentro de uma caixa', () => {
     for (const s of FS_DUST_SPAWNS) {
       const m = fsNewMover(s.x, s.z);
-      const inside = FS_DUST_BOXES.some((b) => s.x > b.min[0] && s.x < b.max[0] && s.z > b.min[2] && s.z < b.max[2] && b.min[1] < 1);
+      const inside = FS_DUST_BOXES.some((b) => s.x > b.min[0] && s.x < b.max[0] && s.z > b.min[2] && s.z < b.max[2] && b.min[1] < s.y + 1 && b.max[1] > s.y + 0.35);
       expect(inside).toBe(false);
       expect(m.y).toBe(0);
     }
@@ -936,6 +948,7 @@ describe('Duna: mapa', () => {
     const a = FS_DUST_SPAWNS.find((s) => s.zone === 'TR')!;
     const b = FS_DUST_SPAWNS.find((s) => s.zone === 'B')!;
     const m = fsNewMover(a.x, a.z);
+    m.y = a.y;
     const path = fsDustPath(a.x, a.z, b.x, b.z);
     let t = 0;
     for (const [px, pz] of path) {
@@ -958,7 +971,7 @@ describe('Duna: mapa', () => {
   });
 
   it('zona do ponto: o centro da base CT é a base CT', () => {
-    const z = fsDustZoneAt(fsDustCellX(15), fsDustCellZ(5));
+    const z = fsDustZoneAt(fsDustCellX(28), fsDustCellZ(17));
     expect(z?.id).toBe('CT');
   });
 
@@ -971,7 +984,7 @@ describe('Duna: mapa', () => {
   });
 
   it('número de caixas é razoável para a cena', () => {
-    expect(FS_DUST_BOXES.length).toBeLessThan(160);
+    expect(FS_DUST_BOXES.length).toBeLessThan(400);
   });
 });
 
@@ -1022,24 +1035,24 @@ describe('Bots do mata-mata', () => {
   const cell = (c: number, r: number) => [fsDustCellX(c), fsDustCellZ(r)] as const;
 
   it('vê um inimigo em campo aberto e atira nele', () => {
-    const [x, z] = cell(23, 24);
-    const [fx, fz] = cell(23, 14);
+    const [x, z] = cell(27, 48);
+    const [fx, fz] = cell(27, 28);
     const b = fsDmNew('b', x, z, 0, 'ak', rng);
     const acts = run(b, [{ id: 'p', x: fx, y: 0, z: fz, crouch: 0, noisy: false }], 3);
     expect(acts.some((a) => a.type === 'fire')).toBe(true);
   });
 
   it('não atira em quem está atrás da parede', () => {
-    const [x, z] = cell(5, 20);
-    const [fx, fz] = cell(8, 20); // atrás do prédio dos túneis
+    const [x, z] = cell(11, 40);
+    const [fx, fz] = cell(27, 40); // do outro lado da parede entre o túnel e o Meio
     const b = fsDmNew('b', x, z, -90, 'ak', rng);
     const acts = run(b, [{ id: 'p', x: fx, y: 0, z: fz, crouch: 0, noisy: false }], 3);
     expect(acts.some((a) => a.type === 'fire')).toBe(false);
   });
 
   it('com o carregador vazio recarrega e depois volta a atirar', () => {
-    const [x, z] = cell(23, 24);
-    const [fx, fz] = cell(23, 16);
+    const [x, z] = cell(29, 51);
+    const [fx, fz] = cell(29, 44);
     const b = fsDmNew('b', x, z, 0, 'pistol', rng);
     b.ammo = 1;
     const acts = run(b, [{ id: 'p', x: fx, y: 0, z: fz, crouch: 0, noisy: false }], 8);
@@ -1048,20 +1061,21 @@ describe('Bots do mata-mata', () => {
   });
 
   it('sozinho passeia pelo mapa sem ficar preso e sem atravessar parede', () => {
-    const [x, z] = cell(5, 26);
+    const [x, z] = cell(8, 56);
     const b = fsDmNew('b', x, z, 0, 'm4', rng);
+    b.mover.y = 0.3;
     const seen = new Set<string>();
     for (let t = 0; t < 90; t += 0.016) {
       fsDmStep(b, { now: t, dt: 0.016, rng, foes: [] });
       seen.add(`${Math.floor(b.mover.x / 6)},${Math.floor(b.mover.z / 6)}`);
       expect(fsDustWalkable(fsDustCol(b.mover.x), fsDustRow(b.mover.z))).toBe(true);
     }
-    expect(seen.size).toBeGreaterThan(8);
+    expect(seen.size).toBeGreaterThan(14);
   });
 
   it('cego pela luz não atira', () => {
-    const [x, z] = cell(23, 24);
-    const [fx, fz] = cell(23, 14);
+    const [x, z] = cell(27, 48);
+    const [fx, fz] = cell(27, 28);
     const b = fsDmNew('b', x, z, 0, 'ak', rng);
     fsDmFlash(b, 5);
     const acts = run(b, [{ id: 'p', x: fx, y: 0, z: fz, crouch: 0, noisy: false }], 3);
@@ -1069,8 +1083,8 @@ describe('Bots do mata-mata', () => {
   });
 
   it('escopeta não atira de longe', () => {
-    const [x, z] = cell(23, 26);
-    const [fx, fz] = cell(23, 12);
+    const [x, z] = cell(27, 50);
+    const [fx, fz] = cell(27, 25);
     const b = fsDmNew('b', x, z, 0, 'shotgun', rng);
     const acts = run(b, [{ id: 'p', x: fx, y: 0, z: fz, crouch: 0, noisy: false }], 1.5);
     expect(acts.some((a) => a.type === 'fire')).toBe(false);
@@ -1089,5 +1103,20 @@ describe('Tiro recebido desacelera', () => {
     expect(fsFlinchAt(f, f.dur / 2)).toBeGreaterThan(f.mul);
     expect(fsFlinchAt(f, f.dur)).toBe(1);
     expect(f.dur).toBeLessThanOrEqual(0.7);
+  });
+});
+
+describe('Duna: enfeites', () => {
+  it('a decoração é sempre a mesma e tem prédios, arcos e postes', () => {
+    const a = fsDustDecor();
+    const b = fsDustDecor();
+    expect(a).toEqual(b);
+    for (const m of ['arch_a', 'lamp', 'bld_a']) expect(a.some((p) => p.model === m), m).toBe(true);
+    expect(a.length).toBeLessThan(400);
+  });
+  it('nenhum prédio fica sobre o chão andável', () => {
+    for (const p of fsDustDecor().filter((q) => q.model.startsWith('bld_'))) {
+      expect(fsDustWalkable(fsDustCol(p.x), fsDustRow(p.z))).toBe(false);
+    }
   });
 });

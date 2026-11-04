@@ -1,0 +1,126 @@
+[
+ {
+  "src": "street.usdz",
+  "names": [
+   "Building_01_Building_001_0"
+  ],
+  "out": "bld_a.glb",
+  "axis": "w",
+  "size": 9
+ },
+ {
+  "src": "street.usdz",
+  "names": [
+   "Building_04_Building_004_0"
+  ],
+  "out": "bld_b.glb",
+  "axis": "w",
+  "size": 8
+ },
+ {
+  "src": "street.usdz",
+  "names": [
+   "Building_06_Building_006_0"
+  ],
+  "out": "bld_c.glb",
+  "axis": "w",
+  "size": 9
+ },
+ {
+  "src": "street.usdz",
+  "names": [
+   "Building_08_Building_008_0"
+  ],
+  "out": "bld_d.glb",
+  "axis": "w",
+  "size": 9
+ },
+ {
+  "src": "street.usdz",
+  "names": [
+   "Building_09_Building_009_0"
+  ],
+  "out": "bld_tower.glb",
+  "axis": "w",
+  "size": 7
+ },
+ {
+  "src": "street.usdz",
+  "names": [
+   "Building_10_Building_0010_0"
+  ],
+  "out": "bld_e.glb",
+  "axis": "w",
+  "size": 8
+ },
+ {
+  "src": "road.usdz",
+  "names": [
+   "StreetLampSingle_Lamp_0"
+  ],
+  "out": "lamp.glb",
+  "axis": "z",
+  "size": 5.5,
+  "px": 512
+ },
+ {
+  "src": "road.usdz",
+  "names": [
+   "Traffic_Light_"
+  ],
+  "out": "trafficlight.glb",
+  "axis": "z",
+  "size": 4.5,
+  "px": 512
+ },
+ {
+  "src": "road.usdz",
+  "names": [
+   "PVCBarriersA_Rambu_0"
+  ],
+  "out": "barrier.glb",
+  "axis": "w",
+  "size": 1.6,
+  "px": 512
+ },
+ {
+  "src": "road.usdz",
+  "names": [
+   "Railing2m_Railing_0"
+  ],
+  "out": "railing.glb",
+  "axis": "w",
+  "size": 2,
+  "px": 512
+ },
+ {
+  "src": "wall.usdz",
+  "names": [
+   "Object_"
+  ],
+  "out": "wall_panel.glb",
+  "axis": "z",
+  "size": 3.2,
+  "px": 512
+ },
+ {
+  "src": "castle.usdz",
+  "names": [
+   "Object_3"
+  ],
+  "out": "arch_a.glb",
+  "axis": "x",
+  "size": 2.9,
+  "px": 512
+ },
+ {
+  "src": "castle.usdz",
+  "names": [
+   "Object_2"
+  ],
+  "out": "arch_b.glb",
+  "axis": "x",
+  "size": 2.9,
+  "px": 512
+ }
+]

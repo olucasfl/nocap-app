@@ -7,10 +7,12 @@ import {
   FS_ARENA,
   FS_BOTS,
   FS_DUST_BOXES,
+  FS_DUST_DECALS,
+  FS_DUST_DECOR,
   FS_DUST_HALF,
-  FS_DUST_ZONES,
   FS_MOVE_SIGNS,
   FS_TARGETS,
+  fsDustHeight,
   fsDustRectWorld,
   type FsBotSpec,
   type FsBox,
@@ -202,6 +204,84 @@ function materials(): Record<FsBox['mat'] | 'ground', THREE.MeshStandardMaterial
     }
     noise(g, 45);
   });
+  // ---- texturas do Duna (geradas por código, nada de arquivo): reboco ocre, arenito em blocos, ladrilho, pedra e terra
+  const rnd = (a: number, b: number) => a + Math.random() * (b - a);
+  const plaster = canvasTex((g) => {
+    g.fillStyle = '#d6b273';
+    g.fillRect(0, 0, TEX, TEX);
+    for (let i = 0; i < 26; i++) {
+      g.fillStyle = `rgba(${Math.random() > 0.5 ? '120,80,30' : '255,235,190'},${rnd(0.04, 0.12)})`;
+      g.fillRect(rnd(0, TEX), rnd(0, TEX), rnd(30, 120), rnd(14, 60));
+    }
+    g.fillStyle = 'rgba(95,60,25,.28)';
+    g.fillRect(0, TEX - 22, TEX, 22);
+    g.fillStyle = 'rgba(255,240,200,.35)';
+    g.fillRect(0, TEX - 24, TEX, 2);
+    noise(g, 34);
+  });
+  const sandstone = canvasTex((g) => {
+    g.fillStyle = '#c79d62';
+    g.fillRect(0, 0, TEX, TEX);
+    for (let r = 0; r < 4; r++) {
+      for (let c = -1; c < 3; c++) {
+        const x = c * 128 + (r % 2 ? 64 : 0);
+        const v = rnd(0.94, 1.08);
+        g.fillStyle = `rgb(${(200 * v) | 0},${(162 * v) | 0},${(108 * v) | 0})`;
+        g.fillRect(x + 3, r * 64 + 3, 122, 58);
+      }
+    }
+    noise(g, 40);
+  });
+  const tile = canvasTex((g) => {
+    g.fillStyle = '#69808f';
+    g.fillRect(0, 0, TEX, TEX);
+    for (let r = 0; r < 4; r++) {
+      for (let c = 0; c < 4; c++) {
+        g.fillStyle = (r + c) % 2 ? '#7a909e' : '#72889a';
+        g.fillRect(c * 64 + 3, r * 64 + 3, 58, 58);
+      }
+    }
+    noise(g, 36);
+  });
+  const cobble = canvasTex((g) => {
+    g.fillStyle = '#4d463d';
+    g.fillRect(0, 0, TEX, TEX);
+    for (let i = 0; i < 70; i++) {
+      const x = rnd(0, TEX);
+      const y = rnd(0, TEX);
+      const w = rnd(30, 52);
+      const h = rnd(22, 38);
+      const v = rnd(0.85, 1.12);
+      g.fillStyle = `rgb(${(138 * v) | 0},${(124 * v) | 0},${(104 * v) | 0})`;
+      g.beginPath();
+      g.roundRect(x, y, w, h, 8);
+      g.fill();
+    }
+    noise(g, 44);
+  });
+  const concrete = canvasTex((g) => {
+    g.fillStyle = '#a6a39b';
+    g.fillRect(0, 0, TEX, TEX);
+    g.strokeStyle = 'rgba(60,58,52,.5)';
+    g.lineWidth = 4;
+    g.strokeRect(1, 1, TEX - 2, TEX - 2);
+    for (let i = 0; i < 20; i++) {
+      g.fillStyle = `rgba(80,76,66,${rnd(0.03, 0.09)})`;
+      g.fillRect(rnd(0, TEX), rnd(0, TEX), rnd(30, 100), rnd(20, 70));
+    }
+    noise(g, 50);
+  });
+  const dirt = canvasTex((g) => {
+    g.fillStyle = '#b89c6c';
+    g.fillRect(0, 0, TEX, TEX);
+    for (let i = 0; i < 60; i++) {
+      g.fillStyle = `rgba(${Math.random() > 0.5 ? '90,64,30' : '236,214,160'},${rnd(0.05, 0.14)})`;
+      g.beginPath();
+      g.ellipse(rnd(0, TEX), rnd(0, TEX), rnd(8, 34), rnd(4, 16), rnd(0, 3), 0, Math.PI * 2);
+      g.fill();
+    }
+    noise(g, 70, 3);
+  });
   const mk = (map: THREE.Texture, rough: number, metalness = 0) =>
     new THREE.MeshStandardMaterial({ map, roughness: rough, metalness });
   return {
@@ -211,6 +291,12 @@ function materials(): Record<FsBox['mat'] | 'ground', THREE.MeshStandardMaterial
     metal: mk(metal, 0.5, 0.5),
     floorpad: mk(ground, 0.95),
     brick: mk(brick, 0.9),
+    plaster: mk(plaster, 0.95),
+    sandstone: mk(sandstone, 0.92),
+    tile: mk(tile, 0.8),
+    cobble: mk(cobble, 0.95),
+    concrete: mk(concrete, 0.95),
+    dirt: mk(dirt, 1),
     ground: mk(ground, 0.95),
   };
 }
@@ -492,44 +578,57 @@ export class FoxShotScene {
     if (dust) this.buildDustDecor();
   }
 
-  /** Marcas no chão do Duna: A laranja e B azul nos pátios, a cor de cada equipe nas bases (só decoração, sem colisão). */
+  /** Chão do Duna: cada zona com o seu piso (terra, pedra, ladrilho, tijolo) e as marcas de A, B e das bases. Só decoração, sem colisão. */
   private buildDustDecor() {
-    const paint = (id: string, color: string, letter: string, inset: number) => {
-      const z = FS_DUST_ZONES.find((q) => q.id === id)!;
-      const r = fsDustRectWorld(z);
-      const w = r.x1 - r.x0 - inset * 2;
-      const d = r.z1 - r.z0 - inset * 2;
-      const tex = canvasTex((g) => {
-        g.clearRect(0, 0, TEX, TEX);
-        g.fillStyle = color;
-        g.globalAlpha = 0.33;
-        g.fillRect(0, 0, TEX, TEX);
-        g.globalAlpha = 0.85;
-        g.strokeStyle = color;
-        g.lineWidth = 10;
-        g.strokeRect(5, 5, TEX - 10, TEX - 10);
-        if (letter) {
-          g.fillStyle = color;
-          g.font = '900 150px system-ui, sans-serif';
-          g.textAlign = 'center';
-          g.textBaseline = 'middle';
-          g.fillText(letter, TEX / 2, TEX / 2 + 8);
-        }
-      });
-      tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
-      const m = new THREE.Mesh(
-        new THREE.PlaneGeometry(w, d),
-        new THREE.MeshStandardMaterial({ map: tex, transparent: true, roughness: 1, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }),
-      );
+    const mats = materials();
+    for (const d of FS_DUST_DECALS) {
+      const w = d.x1 - d.x0;
+      const h = d.z1 - d.z0;
+      const geo = new THREE.PlaneGeometry(w, h);
+      const uv = geo.attributes.uv as THREE.BufferAttribute;
+      for (let i = 0; i < uv.count; i++) uv.setXY(i, (uv.getX(i) * w) / 2, (uv.getY(i) * h) / 2);
+      const m = new THREE.Mesh(geo, mats[d.mat]);
+      m.material = (m.material as THREE.MeshStandardMaterial).clone();
+      (m.material as THREE.MeshStandardMaterial).polygonOffset = true;
+      (m.material as THREE.MeshStandardMaterial).polygonOffsetFactor = -1;
       m.rotation.x = -Math.PI / 2;
-      m.position.set((r.x0 + r.x1) / 2, 0.012, (r.z0 + r.z1) / 2);
+      m.position.set((d.x0 + d.x1) / 2, 0.006, (d.z0 + d.z1) / 2);
       m.receiveShadow = true;
       this.scene.add(m);
+    }
+    const paint = (id: string, color: string, letter: string, c0: number, r0: number, c1: number, r1: number) => {
+      const r = fsDustRectWorld({ c0, r0, c1, r1 });
+      const w = r.x1 - r.x0;
+      const d = r.z1 - r.z0;
+      const tex = canvasTex((g) => {
+        g.clearRect(0, 0, TEX, TEX);
+        g.globalAlpha = 0.9;
+        g.strokeStyle = color;
+        g.lineWidth = 8;
+        g.strokeRect(5, 5, TEX - 10, TEX - 10);
+        g.globalAlpha = 0.5;
+        g.fillStyle = color;
+        g.font = '900 170px system-ui, sans-serif';
+        g.textAlign = 'center';
+        g.textBaseline = 'middle';
+        g.fillText(letter, TEX / 2, TEX / 2 + 8);
+      });
+      tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
+      const y = fsDustHeight(Math.floor((c0 + c1) / 2), Math.floor((r0 + r1) / 2)) + 0.014;
+      const sz = Math.min(w, d);
+      const m = new THREE.Mesh(
+        new THREE.PlaneGeometry(sz, sz),
+        new THREE.MeshStandardMaterial({ map: tex, transparent: true, roughness: 1, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3 }),
+      );
+      m.rotation.x = -Math.PI / 2;
+      m.position.set((r.x0 + r.x1) / 2, y, (r.z0 + r.z1) / 2);
+      this.scene.add(m);
+      void id;
     };
-    paint('A', '#ff7d26', 'A', 2);
-    paint('B', '#2f7bff', 'B', 2);
-    paint('CT', '#4aa3ff', 'CT', 2.2);
-    paint('TR', '#ff9a3a', 'TR', 2.6);
+    paint('A', '#ff7d26', 'A', 44, 12, 52, 16);
+    paint('B', '#2f7bff', 'B', 8, 19, 16, 23);
+    paint('CT', '#4aa3ff', 'CT', 23, 19, 32, 22);
+    paint('TR', '#ff9a3a', 'TR', 6, 56, 14, 60);
   }
 
   /** Carrega raposa e armas. Tenta primeiro os modelos de referência (se existirem) e cai nos modelos do jogo. */
@@ -695,7 +794,45 @@ export class FoxShotScene {
       sign.scale.set(2.2, 0.55, 1);
       this.scene.add(sign);
     }
+    if (this.world.style === 'dust') await this.buildDustProps(loader, base).catch(() => undefined);
     this.selectWeapon('ak', true);
+  }
+
+  /** Enfeites do Duna (modelos de terceiros, ver docs/CREDITS-3D.md): fachadas, postes, barreiras e o horizonte de prédios, tudo instanciado. */
+  private async buildDustProps(loader: GLTFLoader, base: string) {
+    const names = [...new Set(FS_DUST_DECOR.map((p) => p.model))];
+    for (const name of names) {
+      let gltf;
+      try {
+        gltf = await loader.loadAsync(`${base}map/${name}.glb`);
+      } catch {
+        continue;
+      }
+      const root = gltf.scene;
+      root.updateMatrixWorld(true);
+      const hgt = Math.max(0.01, new THREE.Box3().setFromObject(root).getSize(new THREE.Vector3()).y);
+      const places = FS_DUST_DECOR.filter((p) => p.model === name);
+      root.traverse((o) => {
+        const m = o as THREE.Mesh;
+        if (!m.isMesh) return;
+        const inst = new THREE.InstancedMesh(m.geometry, m.material, places.length);
+        const rel = m.matrixWorld.clone();
+        const q = new THREE.Quaternion();
+        const e = new THREE.Euler();
+        places.forEach((p, i) => {
+          const k = p.h > 0 ? p.h / hgt : 1;
+          e.set(0, p.rot, 0);
+          q.setFromEuler(e);
+          const mat = new THREE.Matrix4().compose(new THREE.Vector3(p.x, p.y, p.z), q, new THREE.Vector3(k, k, k));
+          inst.setMatrixAt(i, mat.multiply(rel));
+        });
+        inst.instanceMatrix.needsUpdate = true;
+        inst.frustumCulled = false;
+        inst.castShadow = !name.startsWith('bld_');
+        inst.receiveShadow = true;
+        this.scene.add(inst);
+      });
+    }
   }
 
   // ---- câmera e tamanho

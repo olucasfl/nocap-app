@@ -13,27 +13,30 @@ Uma partida de **mata-mata** (deathmatch) do Counter Fox contra bots, no primeir
 - Quem morre renasce depois de 3 s num ponto de nascimento longe dos inimigos (sem colete; você mantém as armas que comprou, a loja continua com dinheiro infinito; bots escolhem uma arma ao nascer).
 - Salas personalizadas/partidas com bots **nunca** entram em ranking (regra 2 do RULES.md).
 
-## 2. O mapa Duna (28 x 34 células de 2 m = 56 x 68 m)
+## 2. O mapa Duna (57 x 68 células de 1 m = 57 x 68 m, chão em degraus de 0,3 m)
 
-Lido da Dust 2 (vista de cima do OBJ): base dos terroristas no sul/oeste, base dos CTs no norte/centro, bombas A (nordeste) e B (noroeste), meio, túneis, Long A.
+Reformulado em 04/11/2026 depois do primeiro teste do Lucas ("muito simples, áreas abertas do nada, caixas soltas, túnel aleatório"). O esqueleto agora segue o **princípio** da Dust 2 (corredores estreitos, portas, salas fechadas, três rotas, dois pátios de bomba, alturas diferentes), feito em retângulos próprios (`FS_DUST_CARVES` em `dust.ts`); o que não é retângulo de chão é parede.
+
+**Três rotas a partir da Base TR (sul):**
+1. **Oeste, Túneis:** pátio de saída, túnel coberto de 3 m e 10 m de comprimento, cruzamento; dali sobe ao **B** (norte) ou segue pelo **Túnel baixo** (coberto, um degrau abaixo) até o Meio.
+2. **Centro, Meio:** corredor de 4 m com **portas** de 2 m no meio, até a **Base CT**; do Meio sai a **Passarela**, uma rampa em degraus que sobe ao **A**.
+3. **Leste, Pátio e Long A:** pátio, **portas do Long** (3 m), e o corredor largo do Long, que sobe em degraus até o **A**.
 
 | Lugar | O que é |
 |---|---|
-| **Base TR** | sala grande no canto sudoeste, três saídas: túneis (norte), meio (norte/leste), Long A (leste) |
-| **Base CT** | sala no topo, no centro: saídas para o B (portas do B, oeste), o A (rampa CT, leste) e o meio (sul) |
-| **Bomba A** | pátio no nordeste com plataforma (0,9 m, sobe pulando) e caixotes; entradas: Long A (sul), Passarela (oeste), Rampa CT |
-| **Bomba B** | pátio no noroeste com caixotes empilhados e plataforma; entradas: Túneis (sul) e Portas do B (leste) |
-| **Meio** | corredor central, de 4 m de largura, do norte (sala do meio) à base TR; caixotes como cobertura |
-| **Túneis / Túnel baixo** | corredores cobertos (teto) a oeste; o túnel baixo liga os túneis ao meio |
-| **Passarela** | liga o topo do meio ao A |
-| **Long A** | corredor largo a leste, de 8 m, da base TR ao A |
+| **Base TR** | sala larga no sul (nível 1) com blocos que a dividem em baias; 3 saídas |
+| **Base CT** | sala no norte (nível 0, mais baixa) com dois blocos que formam pistas; liga ao B (portas do B, 2 m), ao A (Rampa CT) e ao Meio |
+| **Bomba A** | plataforma alta (nível 3, +0,9 m) no nordeste, com um degrau extra, caixotes e um bloco; 3 entradas: Long (sul), Passarela (sudoeste) e Rampa CT (oeste) |
+| **Bomba B** | sala no noroeste (nível 2) com bloco central, plataforma e caixotes; 2 entradas: Túneis (sul) e Portas do B (leste) |
+| **Túneis / Túnel baixo** | corredores estreitos e cobertos de tijolo |
 
-Os blocos são caixas (como `FS_ARENA`): paredes de 4,2 m (maciças), caixotes de 1,2 m (madeira, atravessável pela bala), caixotes altos de 2,4 m e plataformas de 0,9 m.
-O mapa é um desenho em texto (`FS_DUST_GRID`) de que saem as caixas, os pontos de nascimento, as zonas (nomes) e a malha de navegação dos bots.
+Alturas: níveis de 0,3 m (`FS_DUST_STEP`); o corpo sobe 1 degrau andando (limite do movimento) e o bot só anda entre células com diferença de até 1 nível. Plataformas altas (0,9 m) sobem pulando.
+O mundo é uma lista de retângulos de chão com nível, zona e piso; dela saem as caixas de colisão (paredes juntadas, pisos elevados, caixotes, tetos), os pontos de nascimento, a navegação e os enfeites.
 
 ## 3. Visual (livre, decisão do Lucas: "o que vier na sua cabeça")
 
-Arenito quente e céu claro. Paredes de reboco areia, túneis de tijolo escuro com teto, caixotes de madeira, plataformas de metal; os pátios têm marcas no chão, **A** laranja e **B** azul, e as bases têm a cor da equipe (CT azul-claro, TR laranja). A regra do visual realista (RULES.md, 2ª exceção) vale para o mapa; menus, HUD e telas finais seguem Pop Brutal.
+Arenito quente. Cada zona tem o seu piso (terra na base TR e no pátio, pedra no Meio e nos túneis, ladrilho na Base CT, arenito nas bombas, concreto nas rampas) e as paredes mudam com a zona (tijolo nos túneis, arenito nas bombas e na CT, reboco nas ruas). Os pátios de bomba têm marcas no chão, **A** laranja e **B** azul, e as bases a cor da equipe.
+**Enfeites com modelos de terceiros** (ver `docs/CREDITS-3D.md`): fachadas com arcos coladas nas paredes das salas, postes, barreiras e grades, e prédios de vários tamanhos sobre o miolo maciço e em volta do mapa, formando um horizonte (no lugar de paredes retas e vazias). Sem colisão. A regra do visual realista (RULES.md, 2ª exceção) vale para o mapa; menus, HUD e telas finais seguem Pop Brutal.
 
 ## 4. Bots de mata-mata
 

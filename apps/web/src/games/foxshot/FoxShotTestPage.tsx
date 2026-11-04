@@ -335,6 +335,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
     // ---- o mundo: a arena de teste ou o Duna com os bots do mata-mata
     const dmNames = Array.from({ length: match?.bots ?? 0 }, (_, i) => `Bot ${i + 1}`);
     const dmSpecs: FsTargetSpec[] = [];
+    const dmSpawnY = new Map<string, number>();
     const firstSpawn = match ? fsPickSpawn([]) : null;
     if (match) {
       const placed: { x: number; z: number }[] = [{ x: firstSpawn!.x, z: firstSpawn!.z }];
@@ -342,6 +343,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         const sp = fsPickSpawn(placed);
         placed.push({ x: sp.x, z: sp.z });
         dmSpecs.push({ id: `d${i + 1}`, label: n, x: sp.x, z: sp.z, armor: 0, helmet: false });
+        dmSpawnY.set(`d${i + 1}`, sp.y);
       });
     }
     const world = match ? fsWorldDust(dmSpecs.map((d) => ({ id: d.id, x: d.x, z: d.z }))) : FS_WORLD_TEST;
@@ -366,6 +368,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
 
     // ---- estado do jogo
     const mover = fsNewMover(firstSpawn?.x ?? FS_SPAWN.x, firstSpawn?.z ?? FS_SPAWN.z);
+    mover.y = firstSpawn?.y ?? 0;
     const view = { yaw: firstSpawn?.yaw ?? 0, pitch: 0, rYaw: 0, rPitch: 0 };
     const me = { hp: 100, armor: 0, helmet: false };
     const stats: MyStats = { kills: 0, deaths: 0, assists: 0, hs: 0, damage: 0 };
@@ -745,7 +748,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       return 'kill';
     }
     /** Põe um bot do mata-mata em campo (cérebro, arma, colete). `x, z, yaw` vêm do ponto de nascimento. */
-    function initBot(id: string, x: number, z: number, yaw: number) {
+    function initBot(id: string, x: number, z: number, yaw: number, y = 0) {
       const spec = dmSpecs.find((d) => d.id === id)!;
       const st = targets.get(id)!;
       st.alive = true;
@@ -754,7 +757,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       const vest = rnd() < 0.55;
       st.armor = vest ? 100 : 0;
       spec.helmet = vest && rnd() < 0.5;
-      brains.set(id, fsDmNew(id, x, z, yaw, fsDmPickWeapon(rnd), rnd));
+      brains.set(id, fsDmNew(id, x, z, yaw, fsDmPickWeapon(rnd), rnd, y));
       const bs = fsNewBot({ ...spec, kind: 'turn', x, z, x1: x, z1: z });
       bs.h = fsDmHeading(yaw);
       botSt.set(id, bs);
@@ -769,11 +772,11 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
     };
     function spawnBot(id: string) {
       const sp = fsPickSpawn(aliveFoes(id), rnd);
-      initBot(id, sp.x, sp.z, sp.yaw);
+      initBot(id, sp.x, sp.z, sp.yaw, sp.y);
       scene.reviveTarget(id);
-      scene.setBot(id, sp.x, 0, sp.z, botSt.get(id)!.h, 'idle', 1);
+      scene.setBot(id, sp.x, sp.y, sp.z, botSt.get(id)!.h, 'idle', 1);
     }
-    for (const d of dmSpecs) initBot(d.id, d.x, d.z, firstSpawn ? (Math.atan2(d.x, d.z) * 180) / Math.PI + 180 : 0);
+    for (const d of dmSpecs) initBot(d.id, d.x, d.z, firstSpawn ? (Math.atan2(d.x, d.z) * 180) / Math.PI + 180 : 0, dmSpawnY.get(d.id) ?? 0);
 
     // ---- os bots do mata-mata jogando
     const foesFor = (self: string): FsDmFoe[] => {
@@ -1142,7 +1145,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         }
         mover.x = sp.x;
         mover.z = sp.z;
-        mover.y = 0;
+        mover.y = 'y' in sp ? (sp as { y: number }).y : 0;
         mover.vx = mover.vz = mover.vy = 0;
         prev.x = mover.x;
         prev.y = 0;
