@@ -202,45 +202,42 @@ const RECIPES: Record<string, Recipe> = {
 };
 
 /**
- * Passo suave (piso de concreto/terra seca, sapato macio): três partes calculadas em amostras, todas com subida suave (sem
- * clique) e sem agudo metálico:
- *  1. calcanhar: ruído filtrado bem grave (~220 Hz), a "batida" abafada;
- *  2. ponta do pé: um pouco depois, mais fraca e mais clara (~800 Hz), o "rolar" do pé no chão;
- *  3. grãozinho: um raspar de areia bem baixinho (~2,5 kHz) para o som não ficar sintético.
- * 5 variações com frequências e tempos sorteados, para os passos seguidos não soarem iguais.
+ * Passo bem suave (sapato macio em piso firme): é o "chf" curto do solado, não uma pancada.
+ *  1. corpo: ruído filtrado em faixa média (~500 a 1800 Hz), entrada lenta (~10 ms) e queda rápida: o roçar/apoio da sola;
+ *  2. calcanhar: só um sopro grave (~130 Hz) por baixo, bem fraco, para dar peso sem virar "tum";
+ *  3. ponta do pé: um segundo "chf" menor, um instante depois (o pé rola e assenta).
+ * 5 variações com tempos e filtros sorteados; fim com descida suave (sem corte seco).
  */
 function stepBuffer(ctx: BaseAudioContext, v: number): AudioBuffer {
   const sr = ctx.sampleRate;
-  const n = Math.floor(sr * 0.22);
+  const n = Math.floor(sr * 0.2);
   const buf = ctx.createBuffer(1, n, sr);
   const d = buf.getChannelData(0);
-  // filtro passa-baixa de dois polos (dois filtros de um polo em série) para uma curva macia
-  const onePole = (fc: number) => 1 - Math.exp((-2 * Math.PI * fc) / sr);
-  const heel = { a: onePole(190 + v * 25), y1: 0, y2: 0 };
-  const toe = { a: onePole(700 + v * 90), y1: 0, y2: 0 };
-  const grit = { a: onePole(2600 + v * 150), y1: 0, y2: 0, hp: 0 };
-  const toeAt = 0.034 + v * 0.004;
+  const pole = (fc: number) => 1 - Math.exp((-2 * Math.PI * fc) / sr);
+  const aHi = pole(1500 + v * 140);
+  const aLo = pole(480 + v * 40);
+  const aHeel = pole(120 + v * 12);
+  let hi = 0;
+  let lo = 0;
+  let heel = 0;
+  const toeAt = 0.05 + v * 0.004;
   const smooth = (x: number) => x * x * (3 - 2 * x);
   for (let i = 0; i < n; i++) {
     const t = i / sr;
     const w = Math.random() * 2 - 1;
-    heel.y1 += heel.a * (w - heel.y1);
-    heel.y2 += heel.a * (heel.y1 - heel.y2);
-    toe.y1 += toe.a * (w - toe.y1);
-    toe.y2 += toe.a * (toe.y1 - toe.y2);
-    grit.y1 += grit.a * (w - grit.y1);
-    grit.hp = grit.y1 - (grit.y2 += 0.02 * (grit.y1 - grit.y2)); // tira o grave do grão
-    const eHeel = smooth(Math.min(1, t / 0.007)) * Math.exp(-t * 42);
+    hi += aHi * (w - hi);
+    lo += aLo * (w - lo);
+    heel += aHeel * (w - heel);
+    const band = hi - lo; // faixa média
+    const e1 = smooth(Math.min(1, t / 0.01)) * Math.exp(-t * 46);
     const tt = Math.max(0, t - toeAt);
-    const eToe = smooth(Math.min(1, tt / 0.01)) * Math.exp(-tt * 55) * (t >= toeAt ? 1 : 0);
-    const eGrit = smooth(Math.min(1, t / 0.012)) * Math.exp(-t * 30);
-    d[i] = heel.y2 * 5.2 * eHeel + toe.y2 * 3.2 * eToe * 0.5 + grit.hp * 0.5 * eGrit * 0.18;
+    const e2 = t >= toeAt ? smooth(Math.min(1, tt / 0.01)) * Math.exp(-tt * 60) : 0;
+    d[i] = band * 4.2 * (e1 + 0.45 * e2) + heel * 2.4 * e1 * 0.35;
   }
   let peak = 0;
   for (let i = 0; i < n; i++) peak = Math.max(peak, Math.abs(d[i]!));
-  for (let i = 0; i < n; i++) d[i] = (d[i]! / (peak || 1)) * 0.85;
-  // some no fim em vez de cortar seco
-  const fadeN = Math.floor(sr * 0.02);
+  for (let i = 0; i < n; i++) d[i] = (d[i]! / (peak || 1)) * 0.8;
+  const fadeN = Math.floor(sr * 0.025);
   for (let i = 0; i < fadeN; i++) d[n - 1 - i] = d[n - 1 - i]! * (i / fadeN);
   return buf;
 }
@@ -430,7 +427,7 @@ export const fsAudio = {
   },
   /** Seu passo (fica na orelha, baixo). */
   step() {
-    play('step', { gain: 0.16, minor: true });
+    play('step', { gain: 0.07, minor: true });
   },
   jump() {
     play('jump', { minor: true });
@@ -486,7 +483,7 @@ export const fsAudio = {
     }
     p.connect(busFor(kit));
     // o passo dos outros é mais forte que o seu (que fica na orelha), para dar para ouvir de longe
-    play('step', { gain: 0.5 * fade, minor: true, dest: p });
+    play('step', { gain: 0.28 * fade, minor: true, dest: p });
     window.setTimeout(() => p.disconnect(), 400);
   },
 };

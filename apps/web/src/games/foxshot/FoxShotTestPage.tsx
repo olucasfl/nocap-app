@@ -109,7 +109,9 @@ interface Hud {
   weaponId: FsWeaponId;
   /** Conta os tiros que você levou (cada um dispara o clarão vermelho) e se está morto esperando renascer. */
   hurtKey: number;
+  heavyKey: number;
   dead: boolean;
+  respawnIn: number;
   slots: FsSlotInfo[];
   current: number;
   /** Velocidade no chão (m/s) e abertura da mira (para borrar a luneta andando). */
@@ -372,7 +374,13 @@ export function FoxShotTestPage() {
     const shootersOff = import.meta.env.DEV && (() => { try { return localStorage.getItem('fs-no-shooters') === '1'; } catch { return false; } })();
     const shooterSt = new Map(FS_BOTS.filter((b) => b.kind === 'shoot').map((b) => [b.id, fsNewShooter()]));
     let deadUntil = 0;
+    let deadSince = 0;
     let hurtKey = 0;
+    let heavyKey = 0;
+    /** Tremor da câmera ao levar tiro (graus); decai sozinho. */
+    let shake = 0;
+    /** Dano recebido na última 1,2 s (para saber quando é "muito dano"). */
+    let recent: { t: number; d: number }[] = [];
     const pushFeedDeath = (killer: string, weapon: FsWeaponId, head: boolean) => {
       const key = ++feedKey;
       setFeed((f) => [...f.slice(-4), { key, killer, weapon, victim: 'Você', head, you: false, youVictim: true }]);
@@ -405,10 +413,17 @@ export function FoxShotTestPage() {
         me.armor = Math.max(0, me.armor - d.armorLoss);
         hurtKey++;
         fsAudio.hurt();
+        // tiro na cabeça que não mata: a câmera treme forte; os outros tiros sacodem leve
+        shake = Math.max(shake, tr.zone === 'head' && me.hp > 0 ? 2.6 : 0.5);
+        // muito dano de uma vez (35+ num tiro ou 55+ em 1,2 s): efeito vermelho mais forte que depois some
+        recent = recent.filter((r) => clock - r.t < 1.2);
+        recent.push({ t: clock, d: d.hp });
+        if (d.hp >= 35 || recent.reduce((s, r) => s + r.d, 0) >= 55) heavyKey++;
         if (me.hp <= 0) {
           me.hp = 0;
           stats.deaths++;
-          deadUntil = clock + 2.6;
+          deadUntil = clock + 3;
+          deadSince = clock;
           pushFeedDeath(b.label.replace('atirador ', 'Atirador '), wid, tr.zone === 'head');
         }
       }
@@ -644,6 +659,9 @@ export function FoxShotTestPage() {
       const isPaused = pausedRef.current;
       const inp = controls.read();
       const playerDead = clock < deadUntil;
+      // cai a câmera ao morrer (0 a 1 em 0,7 s)
+      const deathK = playerDead ? Math.min(1, (clock - deadSince) / 0.7) : 0;
+      scene.hideViewmodel = deathK > 0.15;
       if (playerDead) {
         inp.fwd = inp.strafe = 0;
         inp.jump = inp.trigger = inp.ads = inp.reload = inp.crouch = inp.walk = inp.inspect = inp.buy = inp.drop = inp.pickup = false;
@@ -874,13 +892,18 @@ export function FoxShotTestPage() {
       const fov = baseFov + ((loadout.weapon.adsFov || 62) - baseFov) * (adsOn ? 1 : 0);
       // física em passos fixos de 1/120 s: interpola para a câmera andar liso em qualquer taxa de quadros
       const alpha = isPaused ? 1 : Math.min(1, acc / STEP);
+      // tremor: passa rápido e some em ~0,5 s
+      if (!isPaused) shake *= Math.exp(-6 * dt);
+      const sk = shake > 0.02 ? shake : 0;
+      const e = deathK * deathK * (3 - 2 * deathK);
       scene.setView(
         prev.x + (mover.x - prev.x) * alpha,
-        prev.y + (mover.y - prev.y) * alpha + fsEyeHeight(mover),
+        prev.y + (mover.y - prev.y) * alpha + fsEyeHeight(mover) - e * (fsEyeHeight(mover) - 0.22),
         prev.z + (mover.z - prev.z) * alpha,
-        view.yaw + view.rYaw,
-        view.pitch + view.rPitch,
+        view.yaw + view.rYaw + (sk ? Math.sin(clock * 83) * sk : 0),
+        view.pitch + view.rPitch + (sk ? Math.cos(clock * 71) * sk : 0) + e * 18,
         THREE.MathUtils.lerp(scene.fovNow ?? baseFov, fov, Math.min(1, dt * 12)),
+        (sk ? Math.sin(clock * 97) * sk * 0.6 : 0) + e * 24,
       );
       fsAudio.listener(mover.x, mover.y + fsEyeHeight(mover), mover.z, fsDir(view.yaw + view.rYaw, view.pitch + view.rPitch));
       scene.update(isPaused ? 0 : dt, { speed, adsTarget, airborne: !mover.onGround });
@@ -950,7 +973,9 @@ export function FoxShotTestPage() {
           look,
           hp: me.hp,
           hurtKey,
+          heavyKey,
           dead: clock < deadUntil,
+          respawnIn: Math.max(0, deadUntil - clock),
           armor: me.armor,
           helmet: me.helmet,
           ammo: loadout.slot.ammo,
@@ -1056,6 +1081,8 @@ export function FoxShotTestPage() {
         bot: (id: string) => ({ ...botSt.get(id)!, alive: targets.get(id)!.alive }),
         pos: (id: string) => posOf(id),
         hp: () => me.hp,
+        ads: (on: boolean) => controls.setTouch('ads', on),
+        vm: () => scene.debugVm(),
         crouchTarget(id: string, on: boolean) {
           targets.get(id)!.crouch = on ? 1 : 0;
           scene.setTargetCrouch(id, on);
@@ -1166,10 +1193,14 @@ export function FoxShotTestPage() {
           )}
           <FsKillFeed items={feed} />
           </div>
-          {hud.hurtKey > 0 && <div key={hud.hurtKey} className="fs-hurt" aria-hidden="true" />}
-          {hud.dead && (
-            <div className="fs-dead" role="status" data-testid="fs-dead">
-              Você morreu
+          {hud.hurtKey > 0 && !hud.dead && <div key={`h${hud.hurtKey}`} className="fs-hurt" aria-hidden="true" />}
+          {hud.heavyKey > 0 && !hud.dead && <div key={`v${hud.heavyKey}`} className="fs-hurt heavy" aria-hidden="true" />}
+          {hud.dead && !paused && (
+            <div className="fs-deadscreen" role="status" data-testid="fs-dead">
+              <b>Você morreu</b>
+              <span className="mono" data-testid="fs-respawn">
+                Renascendo em {hud.respawnIn.toFixed(1)}
+              </span>
             </div>
           )}
           <FsVitals hp={hud.hp} armor={hud.armor} helmet={hud.helmet} />

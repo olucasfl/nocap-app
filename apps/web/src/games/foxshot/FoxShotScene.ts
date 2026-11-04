@@ -595,9 +595,11 @@ export class FoxShotScene {
     return this.quality;
   }
 
-  setView(x: number, y: number, z: number, yawDeg: number, pitchDeg: number, fov: number) {
+  /** Mostra ou esconde a arma na mão (some quando o jogador morre). */
+  hideViewmodel = false;
+  setView(x: number, y: number, z: number, yawDeg: number, pitchDeg: number, fov: number, rollDeg = 0) {
     this.cam.position.set(x, y, z);
-    this.cam.rotation.set((pitchDeg * Math.PI) / 180, (yawDeg * Math.PI) / 180, 0, 'YXZ');
+    this.cam.rotation.set((pitchDeg * Math.PI) / 180, (yawDeg * Math.PI) / 180, (rollDeg * Math.PI) / 180, 'YXZ');
     if (Math.abs(fov - this.view.fov) > 0.01) {
       this.view.fov = fov;
       this.cam.fov = fov;
@@ -732,6 +734,10 @@ export class FoxShotScene {
   /** Só para conferir o visual: põe a recarga num ponto (0 a 1) ou desliga (null). */
   debugReload(u: number | null) {
     this.reloadK = u ?? -1;
+  }
+  /** Só para conferir: posição e giro da arma na tela (para achar tremedeira). */
+  debugVm() {
+    return [this.vm.position.x, this.vm.position.y, this.vm.position.z, this.vm.rotation.x, this.vm.rotation.y, this.vm.rotation.z, this.cam.fov];
   }
   startReload() {
     this.reloadK = 0;
@@ -1241,7 +1247,7 @@ export class FoxShotScene {
     this.renderer.clear();
     this.renderer.render(this.scene, this.cam);
     // a arma em passe próprio (a profundidade zera para ela nunca atravessar parede)
-    if (this.adsK < 0.97 || this.cur !== 'sniper') {
+    if (!this.hideViewmodel && (this.adsK < 0.97 || this.cur !== 'sniper')) {
       this.renderer.clearDepth();
       this.renderer.render(this.vmScene, this.vmCam);
     }
