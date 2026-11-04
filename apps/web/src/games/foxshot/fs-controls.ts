@@ -72,6 +72,12 @@ export class FsControls {
     document.addEventListener('mousedown', this.md);
     document.addEventListener('mouseup', this.mu);
     document.addEventListener('contextmenu', this.ctx);
+    // o botão direito pode chegar por outros caminhos (extensão de gestos do mouse, menu do navegador): o estado dos botões também é
+    // lido dos eventos de ponteiro e de movimento, e o menu do navegador nunca abre durante o jogo
+    window.addEventListener('contextmenu', this.ctxAll, true);
+    document.addEventListener('pointerdown', this.syncPtr, true);
+    document.addEventListener('pointerup', this.syncPtr, true);
+    document.addEventListener('auxclick', this.ctxAll, true);
     document.addEventListener('pointerlockchange', this.plc);
     root.addEventListener('pointerdown', this.pd);
     root.addEventListener('pointermove', this.pm);
@@ -88,6 +94,10 @@ export class FsControls {
     document.removeEventListener('mousedown', this.md);
     document.removeEventListener('mouseup', this.mu);
     document.removeEventListener('contextmenu', this.ctx);
+    window.removeEventListener('contextmenu', this.ctxAll, true);
+    document.removeEventListener('pointerdown', this.syncPtr, true);
+    document.removeEventListener('pointerup', this.syncPtr, true);
+    document.removeEventListener('auxclick', this.ctxAll, true);
     document.removeEventListener('pointerlockchange', this.plc);
     const r = this.root;
     if (r) {
@@ -256,7 +266,22 @@ export class FsControls {
   private wheel = (e: WheelEvent) => {
     if (this.enabled && this.locked && Math.abs(e.deltaY) > 4) this.cycleQueued = true;
   };
+  /** Lê os botões apertados do próprio evento (cura um botão que ficou "preso" ou um clique que não chegou). */
+  private syncBtn(e: { buttons: number }) {
+    if (!this.locked || !this.enabled) return;
+    this.mouse.left = (e.buttons & 1) !== 0;
+    this.mouse.right = (e.buttons & 2) !== 0;
+    this.mouse.middle = (e.buttons & 4) !== 0;
+  }
+  private syncPtr = (e: PointerEvent) => {
+    if (e.pointerType === 'mouse') this.syncBtn(e);
+  };
+  /** Durante o jogo o menu do botão direito do navegador (e o clique auxiliar) nunca aparece. */
+  private ctxAll = (e: Event) => {
+    if (this.root && (this.locked || this.enabled)) e.preventDefault();
+  };
   private mm = (e: MouseEvent) => {
+    this.syncBtn(e);
     if (!this.locked || !this.enabled) return;
     // alguns navegadores soltam um salto absurdo de vez em quando (o "flick"): descarta o que nenhuma mão faz em 1 evento
     if (Math.abs(e.movementX) > 400 || Math.abs(e.movementY) > 400) return;
@@ -281,9 +306,10 @@ export class FsControls {
     if (e.button === 1) this.mouse.middle = true;
   };
   private mu = (e: MouseEvent) => {
-    if (e.button === 0) this.mouse.left = false;
-    if (e.button === 2) this.mouse.right = false;
-    if (e.button === 1) this.mouse.middle = false;
+    // só solta o botão que subiu (outro que continua apertado fica)
+    if (e.button === 0 && !(e.buttons & 1)) this.mouse.left = false;
+    if (e.button === 2 && !(e.buttons & 2)) this.mouse.right = false;
+    if (e.button === 1 && !(e.buttons & 4)) this.mouse.middle = false;
   };
   private ctx = (e: Event) => {
     if (this.root && e.target instanceof Node && this.root.contains(e.target)) e.preventDefault();
