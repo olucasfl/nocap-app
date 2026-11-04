@@ -990,6 +990,20 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
         <i />
         <i />
       </div>
+      {!mePlayer && !decided && snapshot.phase !== 'lobby' && (
+            <div className="fsr-choice" role="dialog" aria-modal="true" aria-label="Entrar na partida" data-testid="fsr-choice">
+              <div className="fsr-choice-card">
+                <small>A PARTIDA JÁ COMEÇOU</small>
+                <h2>Como você quer entrar?</h2>
+                <button type="button" className="cfh-btn" onClick={playNow} data-sfx="start" data-testid="fsr-choice-play">
+                  Entrar para jogar
+                </button>
+                <button type="button" className="cfh-btn ghost" onClick={() => setDecided(true)} data-sfx="back" data-testid="fsr-choice-watch">
+                  Entrar para espectar
+                </button>
+              </div>
+            </div>
+          )}
       {status === 'loading' && <div className="fs-load mono">CARREGANDO O DUNA...</div>}
       {status === 'error' && <div className="fs-load mono">Não deu para carregar os modelos. Atualize a página.</div>}
       {h && status === 'ready' && (
@@ -1055,20 +1069,6 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
           {needClick && !paused && (
             <div className="fs-hint mono" data-testid="fs-needclick">
               Clique na tela para prender o mouse
-            </div>
-          )}
-          {spectating && !decided && snapshot.phase !== 'lobby' && (
-            <div className="fsr-choice" role="dialog" aria-modal="true" aria-label="Entrar na partida" data-testid="fsr-choice">
-              <div className="fsr-choice-card">
-                <small>A PARTIDA JÁ COMEÇOU</small>
-                <h2>Como você quer entrar?</h2>
-                <button type="button" className="cfh-btn" onClick={playNow} data-sfx="start" data-testid="fsr-choice-play">
-                  Entrar para jogar
-                </button>
-                <button type="button" className="cfh-btn ghost" onClick={() => setDecided(true)} data-sfx="back" data-testid="fsr-choice-watch">
-                  Entrar para espectar
-                </button>
-              </div>
             </div>
           )}
           {inviteOpen && <InviteDialog onClose={() => setInviteOpen(false)} />}

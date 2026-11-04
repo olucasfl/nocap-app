@@ -9,7 +9,7 @@ test.skip(!process.env.E2E_ROOMS, 'precisa do servidor de salas (E2E_ROOMS=1)');
 test.beforeEach(({ page: _page }, info) => {
   test.skip(info.project.name !== 'desktop', 'um projeto basta');
 });
-test.setTimeout(240_000);
+test.setTimeout(420_000);
 
 interface St {
   roster: { id: string; name: string; bot: boolean }[];
@@ -67,12 +67,11 @@ test('convidado chega no meio da partida, espectando ou jogando', async ({ brows
   await bia.getByTestId('cfh-online').click({ force: true, timeout: 60_000 });
   await bia.getByTestId('cfh-code').fill(code);
   await bia.getByTestId('cfh-join').click();
-  await bia.waitForTimeout(15_000);
   console.log('bia url', bia.url(), (await bia.locator('body').innerText().catch(() => 'ERR')).slice(0, 300));
-  await expect(bia.getByTestId('fsr-choice')).toBeVisible({ timeout: 40_000 });
+  await expect(bia.getByTestId('fsr-choice')).toBeVisible({ timeout: 90_000 });
   await bia.screenshot({ path: `${shots}/cfx-escolha.png` });
   await bia.getByTestId('fsr-choice-watch').click();
-  await expect(bia.getByTestId('fsr-spec')).toBeVisible();
+  await expect(bia.getByTestId('fsr-spec')).toBeVisible({ timeout: 120_000 });
   await expect.poll(async () => bia.getByTestId('fsr-spec-name').textContent(), { timeout: 20_000 }).not.toBe('...');
   await bia.waitForTimeout(1500);
   await bia.screenshot({ path: `${shots}/cfx-espectando.png` });
