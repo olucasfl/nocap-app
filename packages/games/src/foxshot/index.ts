@@ -11,3 +11,4 @@ export * from './assist';
 export * from './grenades';
 export * from './dust';
 export * from './match';
+export * from './dm';

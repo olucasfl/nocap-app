@@ -1,3 +1,4 @@
+import { createRng } from '../core/rng';
 import { describe, expect, it } from 'vitest';
 import { fsDamage, fsIsBackstab, fsKills, FS_HP, type FsHitInfo } from './damage';
 import { FsLoadout } from './gun';
@@ -855,6 +856,7 @@ describe('granadas', () => {
 import {
   FS_DUST_BOXES, FS_DUST_COLS, FS_DUST_GRID, FS_DUST_HOTSPOTS, FS_DUST_SPAWNS, FS_DUST_ZONES, FS_DUST_ROWS,
   fsDustCol, fsDustPath, fsDustRow, fsDustWalkable, fsDustZoneAt, fsDustCellX, fsDustCellZ, fsPickSpawn, fsDustLineWalkable,
+  fsDmNew, fsDmStep, fsDmFlash, type FsDmFoe, type FsDmAction,
   FS_MATCH_BOTS, fsMatchConfig, fsMatchResult, fsMatchScore, FS_MATCH_MINUTES,
 } from './index';
 
@@ -1006,5 +1008,70 @@ describe('Partida: pontos e resultado', () => {
     ]);
     expect(rows.filter((r) => r.winner).length).toBe(2);
     expect(rows[2]!.place).toBe(3);
+  });
+});
+
+describe('Bots do mata-mata', () => {
+  const rng = createRng('dm-test');
+  const run = (b: ReturnType<typeof fsDmNew>, foes: FsDmFoe[], secs: number) => {
+    const acts: FsDmAction[] = [];
+    for (let t = 0; t < secs; t += 0.016) acts.push(...fsDmStep(b, { now: t, dt: 0.016, rng, foes }));
+    return acts;
+  };
+  const cell = (c: number, r: number) => [fsDustCellX(c), fsDustCellZ(r)] as const;
+
+  it('vê um inimigo em campo aberto e atira nele', () => {
+    const [x, z] = cell(23, 24);
+    const [fx, fz] = cell(23, 14);
+    const b = fsDmNew('b', x, z, 0, 'ak', rng);
+    const acts = run(b, [{ id: 'p', x: fx, y: 0, z: fz, crouch: 0, noisy: false }], 3);
+    expect(acts.some((a) => a.type === 'fire')).toBe(true);
+  });
+
+  it('não atira em quem está atrás da parede', () => {
+    const [x, z] = cell(5, 20);
+    const [fx, fz] = cell(8, 20); // atrás do prédio dos túneis
+    const b = fsDmNew('b', x, z, -90, 'ak', rng);
+    const acts = run(b, [{ id: 'p', x: fx, y: 0, z: fz, crouch: 0, noisy: false }], 3);
+    expect(acts.some((a) => a.type === 'fire')).toBe(false);
+  });
+
+  it('com o carregador vazio recarrega e depois volta a atirar', () => {
+    const [x, z] = cell(23, 24);
+    const [fx, fz] = cell(23, 16);
+    const b = fsDmNew('b', x, z, 0, 'pistol', rng);
+    b.ammo = 1;
+    const acts = run(b, [{ id: 'p', x: fx, y: 0, z: fz, crouch: 0, noisy: false }], 8);
+    expect(acts.some((a) => a.type === 'reload')).toBe(true);
+    expect(acts.filter((a) => a.type === 'fire').length).toBeGreaterThan(2);
+  });
+
+  it('sozinho passeia pelo mapa sem ficar preso e sem atravessar parede', () => {
+    const [x, z] = cell(5, 26);
+    const b = fsDmNew('b', x, z, 0, 'm4', rng);
+    const seen = new Set<string>();
+    for (let t = 0; t < 90; t += 0.016) {
+      fsDmStep(b, { now: t, dt: 0.016, rng, foes: [] });
+      seen.add(`${Math.floor(b.mover.x / 6)},${Math.floor(b.mover.z / 6)}`);
+      expect(fsDustWalkable(fsDustCol(b.mover.x), fsDustRow(b.mover.z))).toBe(true);
+    }
+    expect(seen.size).toBeGreaterThan(8);
+  });
+
+  it('cego pela luz não atira', () => {
+    const [x, z] = cell(23, 24);
+    const [fx, fz] = cell(23, 14);
+    const b = fsDmNew('b', x, z, 0, 'ak', rng);
+    fsDmFlash(b, 5);
+    const acts = run(b, [{ id: 'p', x: fx, y: 0, z: fz, crouch: 0, noisy: false }], 3);
+    expect(acts.some((a) => a.type === 'fire')).toBe(false);
+  });
+
+  it('escopeta não atira de longe', () => {
+    const [x, z] = cell(23, 26);
+    const [fx, fz] = cell(23, 12);
+    const b = fsDmNew('b', x, z, 0, 'shotgun', rng);
+    const acts = run(b, [{ id: 'p', x: fx, y: 0, z: fz, crouch: 0, noisy: false }], 1.5);
+    expect(acts.some((a) => a.type === 'fire')).toBe(false);
   });
 });
