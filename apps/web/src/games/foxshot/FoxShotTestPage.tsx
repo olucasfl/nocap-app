@@ -678,6 +678,7 @@ export function FoxShotTestPage() {
 
         const mv = {
           moving: speed > 0.8,
+          speed,
           airborne: !mover.onGround,
           ads: adsOn,
           crouch: mover.crouchK > 0.5,
@@ -810,7 +811,8 @@ export function FoxShotTestPage() {
       if (hudT > 0.1) {
         hudT = 0;
         const sc = scene.stats();
-        const mvs = { moving: speed > 0.8, airborne: !mover.onGround, ads: adsOn };
+        const mvs = { moving: speed > 0.8,
+          speed, airborne: !mover.onGround, ads: adsOn };
         // arma no chão sob a mira: perto do centro da tela e a poucos metros
         let look: Hud['look'] = null;
         {

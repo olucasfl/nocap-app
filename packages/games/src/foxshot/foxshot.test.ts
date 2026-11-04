@@ -4,7 +4,7 @@ import { FsLoadout } from './gun';
 import { FS_SHOP, fsBuy } from './shop';
 import { FS_ARENA, type FsBox } from './map';
 import { fsBodyHeight, fsEyeHeight, fsNewMover, fsQuiet, fsStepMover, FS_MOVE } from './movement';
-import { fsFire, fsNewGunState } from './recoil';
+import { fsFire, fsNewGunState, fsSpreadDeg } from './recoil';
 import { fsDir, fsTrace, type FsBody } from './trace';
 import { FS_WEAPONS } from './weapons';
 import { FS_BOTS, fsBotStep, fsNewBot } from './bots';
@@ -552,6 +552,28 @@ describe('movimento estilo CS', () => {
     expect(climb(1.0, true).y).toBeCloseTo(1.0, 1);
     expect(climb(1.25, true).y).toBeCloseTo(1.25, 1);
     expect(climb(1.6, true).y).toBeLessThan(0.2);
+  });
+});
+
+describe('contra-strafe: tiro reto quando o boneco para', () => {
+  it('a dispersão acompanha a velocidade real: parado preciso, correndo espalhado, freando volta a ficar preciso', () => {
+    const w = FS_WEAPONS.ak;
+    const g = fsNewGunState();
+    const at = (speed: number) => fsSpreadDeg(w, { moving: speed > 0.8, airborne: false, ads: false, speed }, g);
+    expect(at(0)).toBeCloseTo(w.spread.stand, 5);
+    expect(at(5.2)).toBeCloseTo(w.spread.move, 5);
+    expect(at(0.5)).toBeLessThan(at(2));
+    expect(at(2)).toBeLessThan(at(5.2));
+    // A solto e D apertado: a velocidade passa por perto de zero e o tiro sai reto
+    const m = fsNewMover(0, 0);
+    for (let i = 0; i < 120; i++) fsStepMover(m, { fwd: 0, strafe: -1, jump: false, yaw: 0, speedMul: 1 }, 1 / 120, []);
+    let best = 99;
+    for (let i = 0; i < 60; i++) {
+      fsStepMover(m, { fwd: 0, strafe: 1, jump: false, yaw: 0, speedMul: 1 }, 1 / 120, []);
+      best = Math.min(best, Math.hypot(m.vx, m.vz));
+    }
+    expect(best).toBeLessThan(0.9);
+    expect(at(best)).toBeCloseTo(w.spread.stand, 5);
   });
 });
 

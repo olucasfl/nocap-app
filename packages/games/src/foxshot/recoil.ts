@@ -18,13 +18,20 @@ export interface FsMoveState {
   moving: boolean;
   airborne: boolean;
   ads: boolean;
+  /** Velocidade horizontal real (m/s). Quando informada, a dispersão cresce com ela, e não só com "está andando": no instante em que o
+   *  boneco freia e para (A solta, D apertado) o tiro sai reto, como o contra-strafe do CS. */
+  speed?: number;
   /** Agachado: a dispersão é menor. */
   crouch?: boolean;
 }
 
 /** Cone de dispersão atual (graus) pelo estado do jogador e pelo que a rajada já acumulou. */
 export function fsSpreadDeg(w: FsWeapon, m: FsMoveState, g: FsGunState): number {
-  const base = m.airborne ? w.spread.air : m.ads ? (m.moving ? w.spread.adsMove : w.spread.ads) : m.moving ? w.spread.move : w.spread.stand;
+  const still = m.ads ? w.spread.ads : w.spread.stand;
+  const move = m.ads ? w.spread.adsMove : w.spread.move;
+  // com a velocidade real: perfeito abaixo de 0,9 m/s, espalhado total a partir de 3,2 m/s, gradual no meio
+  const k = m.speed === undefined ? (m.moving ? 1 : 0) : Math.min(1, Math.max(0, (m.speed - 0.9) / 2.3));
+  const base = m.airborne ? w.spread.air : still + (move - still) * k;
   return (base + g.bloom) * (m.crouch && !m.airborne ? 0.65 : 1);
 }
 
