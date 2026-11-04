@@ -110,6 +110,8 @@ interface Hud {
   /** Conta os tiros que você levou (cada um dispara o clarão vermelho) e se está morto esperando renascer. */
   hurtKey: number;
   heavyKey: number;
+  hurtAge: number;
+  heavyAge: number;
   dead: boolean;
   respawnIn: number;
   slots: FsSlotInfo[];
@@ -377,6 +379,8 @@ export function FoxShotTestPage() {
     let deadSince = 0;
     let hurtKey = 0;
     let heavyKey = 0;
+    let hurtAt = -1e9;
+    let heavyAt = -1e9;
     /** Tremor da câmera ao levar tiro (graus); decai sozinho. */
     let shake = 0;
     /** Dano recebido na última 1,2 s (para saber quando é "muito dano"). */
@@ -412,13 +416,17 @@ export function FoxShotTestPage() {
         me.hp -= d.hp;
         me.armor = Math.max(0, me.armor - d.armorLoss);
         hurtKey++;
+        hurtAt = performance.now();
         fsAudio.hurt();
         // tiro na cabeça que não mata: a câmera treme forte; os outros tiros sacodem leve
         shake = Math.max(shake, tr.zone === 'head' && me.hp > 0 ? 2.6 : 0.5);
         // muito dano de uma vez (35+ num tiro ou 55+ em 1,2 s): efeito vermelho mais forte que depois some
         recent = recent.filter((r) => clock - r.t < 1.2);
         recent.push({ t: clock, d: d.hp });
-        if (d.hp >= 35 || recent.reduce((s, r) => s + r.d, 0) >= 55) heavyKey++;
+        if (d.hp >= 35 || recent.reduce((s, r) => s + r.d, 0) >= 55) {
+          heavyKey++;
+          heavyAt = performance.now();
+        }
         if (me.hp <= 0) {
           me.hp = 0;
           stats.deaths++;
@@ -438,6 +446,7 @@ export function FoxShotTestPage() {
       id: FsWeaponId,
       tr: ReturnType<typeof fsTrace>,
       to: THREE.Vector3,
+      pool?: { total: number; kind: 'head' | 'armor' | 'body' },
     ) => {
       if (tr.kind === 'world') {
         scene.puff(to, 0xd8c8a8, 0.3, 0.4);
@@ -463,8 +472,14 @@ export function FoxShotTestPage() {
         } else {
           scene.hitTarget(tr.targetId);
           const kind = tr.zone === 'head' ? 'head' : d.protectedByArmor ? 'armor' : 'body';
-          fsAudio.hit(kind);
-          showMarker(kind, `-${d.hp}`);
+          if (pool) {
+            // escopeta: os projéteis do mesmo tiro somam o dano e mostram um marcador só
+            pool.total += d.hp;
+            if (kind === 'head' || pool.kind === 'body') pool.kind = kind;
+          } else {
+            fsAudio.hit(kind);
+            showMarker(kind, `-${d.hp}`);
+          }
         }
       }
     };
@@ -478,12 +493,18 @@ export function FoxShotTestPage() {
       const from = scene.muzzleWorld();
       // escopeta: cada projétil é um raio (com o desvio dele); as outras armas, um só
       const rays = shot.pellets ?? [{ devYaw: shot.devYaw, devPitch: shot.devPitch }];
+      const pool = shot.pellets ? { total: 0, kind: 'body' as 'head' | 'armor' | 'body' } : undefined;
+      const killsBefore = stats.kills;
       for (const ray of rays) {
         const dir = fsDir(view.yaw + view.rYaw + ray.devYaw, view.pitch + view.rPitch + ray.devPitch);
         const tr = fsTrace(w, eye, dir, FS_ARENA, bodies());
         const to = new THREE.Vector3(tr.point[0], tr.point[1], tr.point[2]);
         scene.tracer(from, to, id);
-        applyHit(id, tr, to);
+        applyHit(id, tr, to, pool);
+      }
+      if (pool && pool.total > 0 && stats.kills === killsBefore) {
+        fsAudio.hit(pool.kind);
+        showMarker(pool.kind, `-${pool.total}`);
       }
       scene.fireFx(({ sniper: 2.4, shotgun: 3.2, pistol: 0.5, usp: 0.28, smg: 0.8, m4: 0.95, ak: 1, knife: 0 } as Record<FsWeaponId, number>)[id]);
       fsAudio.shot(id);
@@ -975,6 +996,8 @@ export function FoxShotTestPage() {
           hp: me.hp,
           hurtKey,
           heavyKey,
+          hurtAge: (performance.now() - hurtAt) / 1000,
+          heavyAge: (performance.now() - heavyAt) / 1000,
           dead: clock < deadUntil,
           respawnIn: Math.max(0, deadUntil - clock),
           armor: me.armor,
@@ -1194,8 +1217,8 @@ export function FoxShotTestPage() {
           )}
           <FsKillFeed items={feed} />
           </div>
-          {hud.hurtKey > 0 && !hud.dead && <div key={`h${hud.hurtKey}`} className="fs-hurt" aria-hidden="true" />}
-          {hud.heavyKey > 0 && !hud.dead && <div key={`v${hud.heavyKey}`} className="fs-hurt heavy" aria-hidden="true" />}
+          {hud.hurtAge < 0.45 && !hud.dead && <div key={`h${hud.hurtKey}`} className="fs-hurt" aria-hidden="true" />}
+          {hud.heavyAge < 1.7 && !hud.dead && <div key={`v${hud.heavyKey}`} className="fs-hurt heavy" aria-hidden="true" />}
           {hud.dead && !paused && (
             <div className="fs-deadscreen" role="status" data-testid="fs-dead">
               <b>Você morreu</b>

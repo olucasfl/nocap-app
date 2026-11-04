@@ -27,7 +27,22 @@ bpy.ops.mesh.select_all(action='SELECT')
 bpy.ops.mesh.separate(type='LOOSE')
 bpy.ops.object.mode_set(mode='OBJECT')
 parts = {p.name: p for p in bpy.data.objects if p.type == 'MESH'}
-ROLE = {'mp5.014': 'Magazine', 'mp5.022': 'Trigger', 'mp5.010': 'ForeGrip', 'mp5.023': 'Suppressor', 'mp5.013': 'Suppressor', 'mp5.017': 'Grip',
+# mira de ponto vermelho: o bloco fica OCO (sem as faces da frente e de trás) e o vidro sai, para dar para ver o alvo e a mira através dele
+import bmesh  # noqa: E402
+if 'mp5.025' in parts:
+    bpy.data.objects.remove(parts.pop('mp5.025'), do_unlink=True)
+sight = parts.get('mp5.021')
+if sight:
+    bm = bmesh.new()
+    bm.from_mesh(sight.data)
+    bm.faces.ensure_lookup_table()
+    bmesh.ops.delete(bm, geom=[f for f in bm.faces if abs(f.normal.x) > 0.7], context='FACES')
+    bm.to_mesh(sight.data)
+    bm.free()
+    sight.data.update()
+    for f in sight.data.polygons:
+        pass
+ROLE = {'mp5.021': 'Sight', 'mp5.014': 'Magazine', 'mp5.022': 'Trigger', 'mp5.010': 'ForeGrip', 'mp5.023': 'Suppressor', 'mp5.013': 'Suppressor', 'mp5.017': 'Grip',
         'mp5.015': 'Grip'}
 groups = {}
 for n, p in parts.items():
@@ -59,7 +74,7 @@ dark = material('darksteel', (0.035, 0.037, 0.042), metal=0.7, rough=0.45, wear=
 steel = material('steel', (0.12, 0.125, 0.135), metal=0.95, rough=0.33, wear=0.8, bump=0.1, scale=60)
 poly = material('polymer', (0.02, 0.022, 0.025), metal=0.0, rough=0.7, wear=0.3, scale=30)
 fox = material('foxaccent', (1.0, 0.36, 0.06), metal=0.0, rough=0.45, wear=0.4, scale=30)
-PICK = {'Body': dark, 'Magazine': poly, 'Trigger': steel, 'ForeGrip': fox, 'Suppressor': steel, 'Grip': poly}
+PICK = {'Sight': dark, 'Body': dark, 'Magazine': poly, 'Trigger': steel, 'ForeGrip': fox, 'Suppressor': steel, 'Grip': poly}
 for role, j in final.items():
     j.data.materials.clear()
     j.data.materials.append(PICK[role])

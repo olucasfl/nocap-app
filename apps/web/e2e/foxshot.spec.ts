@@ -209,7 +209,7 @@ test('faca, agachar, loja e armas no chão', async ({ page }, info) => {
   // 3 espaços: tecla 3 pega a faca
   await page.keyboard.press('Digit3');
   await page.waitForTimeout(300);
-  await expect(page.getByTestId('fs-ammo')).toContainText('Garra');
+  await expect(page.getByTestId('fs-ammo')).toContainText('Faca');
   // faca: corta de perto (t1 em (0, 3)? teleporta colado no alvo)
   await fs(page, 'teleport', 0, 4.5);
   await fs(page, 'aimAt', 't1', 'chest');
@@ -295,6 +295,13 @@ test('fotos das mãos (só com FS_SHOTS)', async ({ page }, info) => {
     await fs(page, 'weapon', i);
     await page.waitForTimeout(1200);
     await shot(`m-${id}-hold`);
+    if (id === 'smg') {
+      await fs(page, 'ads', true);
+      await page.waitForTimeout(900);
+      await shot('m-smg-ads');
+      await fs(page, 'ads', false);
+      await page.waitForTimeout(500);
+    }
     for (const u of [0.12, 0.2, 0.36, 0.55, 0.68, 0.84]) {
       await fs(page, 'reloadAt', null);
       await fs(page, 'reloadAt', u);
@@ -406,7 +413,7 @@ test('escopeta: de perto mata com um tiro, de longe quase não acerta', async ({
   await page.getByTestId('fsm-resume').click();
   await fs(page, 'buy', 'shotgun');
   await fs(page, 'weapon', 0);
-  await expect(page.getByTestId('fs-ammo')).toContainText('Trovão');
+  await expect(page.getByTestId('fs-ammo')).toContainText('SPAS-12');
   // t1 (sem colete) em (-8, 2): a 4 m, um tiro mata
   await fs(page, 'teleport', -8, 6);
   await fs(page, 'aimAt', 't1', 'chest');

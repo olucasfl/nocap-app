@@ -490,12 +490,12 @@ export class FoxShotScene {
       const zc = (box.min.z + box.max.z) / 2;
       const f: Record<string, [number, number, number, number]> = {
         ak: [0.34, 0.3, 0.62, 0.5],
-        pistol: [0.3, 0.5, 0.4, 0.32],
+        pistol: [0.3, 0.42, 0.4, 0.32],
         sniper: [0.3, 0.3, 0.55, 0.4],
         smg: [0.42, 0.28, 0.2, 0.2],
         shotgun: [0.34, 0.32, 0.62, 0.48],
         m4: [0.34, 0.3, 0.64, 0.5],
-        usp: [0.52, 0.42, 0.62, 0.26],
+        usp: [0.46, 0.3, 0.62, 0.26],
       };
       const q = f[id]!;
       this.grips.set(id, {
@@ -1052,6 +1052,7 @@ export class FoxShotScene {
     const h = this.hv;
     const fwd = new THREE.Vector3(0, 0, -0.2);
     if (this.cur === 'knife') {
+      this.hands.setLeftVisible(true);
       this.knifeObj.visible = true;
       let pose: KnifeKey = { t: 0, p: KNIFE_HOLD.p, r: KNIFE_HOLD.r, l: KNIFE_HOLD.l };
       const a = this.knifeAnim;
@@ -1082,6 +1083,10 @@ export class FoxShotScene {
     const toVm = (p: THREE.Vector3, out: THREE.Vector3) => out.copy(this.vm.worldToLocal(g.localToWorld(p.clone())));
     toVm(grip.r, h.r);
     toVm(grip.l, h.l);
+    // pistola: uma mão só no cabo; a outra fica fora da tela e só entra para recarregar
+    const oneHand = this.cur === 'pistol' || this.cur === 'usp';
+    if (oneHand) h.l.set(-0.28, -0.5, -0.12);
+    this.hands.setLeftVisible(!oneHand || this.reloadK >= 0);
     this.reloadHands(h, mag, bolt);
     h.ra.copy(h.r).add(fwd);
     h.la.copy(h.l).add(fwd);

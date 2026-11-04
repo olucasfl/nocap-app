@@ -171,6 +171,11 @@ export class FsHands {
     this.group.add(this.r.group, this.l.group);
   }
 
+  /** Pistolas se seguram com uma mão só: a esquerda fica escondida (aparece só na recarga). */
+  setLeftVisible(v: boolean) {
+    this.l.group.visible = v;
+  }
+
   set(right: THREE.Vector3, rightAim: THREE.Vector3, left: THREE.Vector3, leftAim: THREE.Vector3) {
     this.r.reach(right, rightAim);
     this.l.reach(left, leftAim);

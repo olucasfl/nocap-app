@@ -644,6 +644,26 @@ describe('armas novas', () => {
     expect(far).toBeLessThan(mid * 0.5);
     expect(far).toBeLessThan(40);
   });
+  it('escopeta: todos os projéteis acertando mata, metade dá cerca de metade do dano, um só dá pouco', () => {
+    const body: FsBody = { id: 'b', pos: [0, 0, -3], alive: true, armor: 0, helmet: false };
+    const dmg = (n: number) => {
+      let total = 0;
+      for (let i = 0; i < n; i++) {
+        const t = fsTrace(FS_WEAPONS.shotgun, [0, 0.9, 0], fsDir(0, 0), [], [body]);
+        total += t.damage!.hp;
+      }
+      return total;
+    };
+    expect(dmg(9)).toBeGreaterThanOrEqual(FS_HP);
+    expect(dmg(4)).toBeLessThan(dmg(9) * 0.55);
+    expect(dmg(4)).toBeGreaterThan(dmg(9) * 0.35);
+    expect(dmg(1)).toBeLessThan(25);
+    // com colete também mata se todos acertam
+    const vest: FsBody = { ...body, armor: 100 };
+    let withVest = 0;
+    for (let i = 0; i < 9; i++) withVest += fsTrace(FS_WEAPONS.shotgun, [0, 0.9, 0], fsDir(0, 0), [], [vest]).damage!.hp;
+    expect(withVest).toBeGreaterThanOrEqual(FS_HP);
+  });
   it('alcance do som: a silenciada quase não se ouve, a escopeta se ouve longe', () => {
     expect(FS_HEAR_RANGE.usp).toBeLessThan(FS_HEAR_RANGE.pistol);
     expect(FS_HEAR_RANGE.shotgun).toBeGreaterThan(FS_HEAR_RANGE.smg);
