@@ -72,10 +72,10 @@ test('dano estilo CS nos alvos do mapa de treino', async ({ page }, info) => {
   const t5 = await fs<{ alive: boolean; hp: number }>(page, 'target', 't5');
   expect(t5.alive, 'pistola, cabeça, com capacete').toBe(true);
   expect(t5.hp).toBeLessThan(100);
-  // sniper na pista de tiro longo (40 m): corpo, colete
+  // sniper na pista de distância (30 m): corpo, colete
   await fs(page, 'buy', 'sniper');
   await fs(page, 'weapon', 0);
-  await fs(page, 'teleport', -11, 0);
+  await fs(page, 'teleport', -33, 34.5);
   await fs(page, 'aimAt', 't7', 'chest');
   await fs(page, 'shoot', 1);
   expect(await alive(page, 't7'), 'sniper, corpo, colete').toBe(false);
@@ -92,7 +92,7 @@ test('escopeta: de perto mata com um tiro, de longe quase não acerta', async ({
   await fs(page, 'aimAt', 't1', 'chest');
   await fs(page, 'shoot', 1);
   expect(await alive(page, 't1'), 'de perto mata').toBe(false);
-  await fs(page, 'teleport', -17, 0);
+  await fs(page, 'teleport', -17, 31.5);
   await fs(page, 'aimAt', 't8', 'chest');
   await fs(page, 'shoot', 1);
   const far = await fs<{ alive: boolean; hp: number }>(page, 'target', 't8');
@@ -171,7 +171,10 @@ test('estande: os atiradores só atiram para a frente, e só quando a pessoa est
   // dentro da galeria, de frente para eles: nunca levam tiro (atiram só para o norte, para o paredão)
   await fs(page, 'teleport', 31, -11);
   await expect.poll(async () => fs<number>(page, 'rangeShots'), { timeout: 90_000, message: 'os atiradores atiraram de verdade' }).toBeGreaterThan(5);
-  expect(await fs<number>(page, 'hp'), 'na galeria o tiro não vem na sua direção').toBe(100);
+  expect(await fs<number>(page, 'hp'), 'atrás do atirador o tiro não vem na sua direção').toBe(100);
+  // passar na frente de um atirador (entre ele e o paredão) leva o tiro reto dele
+  await fs(page, 'teleport', 31, -22);
+  await expect.poll(async () => fs<number>(page, 'hp'), { timeout: 120_000, message: 'na frente do atirador leva o tiro' }).toBeLessThan(100);
 });
 
 test('M abre o mapa grande com onde estou e Esc fecha', async ({ page }, info) => {
@@ -212,10 +215,13 @@ test('fotos do mapa de treino (só com FS_SHOTS)', async ({ page }, info) => {
     await page.screenshot({ path: `${process.env.FS_SHOTS}/train-${name}.png` });
   };
   await look('avenue', -41, 0, -90);
-  await look('targets', -30, -11, 180);
-  await look('walkers', 0, -10.5, 180);
-  await look('gallery', 30, -10.5, 180);
-  await look('move', -41, 20, 0);
-  await look('nades', 0, 12, 0);
-  await look('walls', 30, 11, 0);
+  await look('targets', -30, -11, 0);
+  await look('walkers', 0, -10.5, 0);
+  await look('range', 30, -11, 0);
+  await look('range-front', 31, -23, 180);
+  await look('move', -41, 20, 180);
+  await look('nades', 0, 12, 180);
+  await look('walls', 30, 11, 180);
+  await look('distance', -41, 33, -90);
+  await look('distance-door', 7, 22, 180);
 });

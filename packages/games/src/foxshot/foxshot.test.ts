@@ -703,15 +703,16 @@ describe('atiradores do estande (só atiram para a frente)', () => {
       expect(tr.kind).toBe('world');
       expect(tr.point[2]).toBeLessThan(-26);
       expect(Math.abs(tr.point[0] - sh.x)).toBeLessThan(0.5);
-      // e a galeria (z de -13 a -9) fica atrás: o tiro nunca vai para lá
-      expect(tr.point[2]).toBeLessThan(FS_TRAIN_GALLERY.z0);
+      // e o tiro nunca vai para trás (o corredor da avenida fica a sul): bate no paredão do fundo, dentro do estande
+      expect(tr.point[2]).toBeGreaterThan(FS_TRAIN_GALLERY.z0);
     }
   });
-  it('a galeria é separada do estande por vidro que não deixa passar bala', () => {
-    const through = fsTrace(FS_WEAPONS.sniper, [30, 1, -10], [0, 0, -1], FS_ARENA, []);
-    expect(through.kind).toBe('world');
-    expect(through.point[2]).toBeGreaterThan(-13.5);
-    expect(FS_ARENA.some((bx) => bx.mat === 'glass')).toBe(true);
+  it('quem passa na frente de um atirador leva o tiro (o tiro é reto e acerta o corpo)', () => {
+    const sh = shooters.find((x) => x.weapon === 'ak')!;
+    const body = { id: 'me', pos: [sh.x, 0, sh.z - 5] as [number, number, number], alive: true, armor: 0, helmet: false, crouch: 0 };
+    const tr = fsTrace(FS_WEAPONS.ak, [sh.x, 1, sh.z - 0.4], [0, 0, -1], FS_ARENA, [body]);
+    expect(tr.kind).toBe('player');
+    expect(tr.damage!.hp).toBeGreaterThan(0);
   });
   it('atiram no ritmo da arma: fuzil em rajadas, pistola tiro a tiro, sniper devagar; ninguém atira sem parar', () => {
     const run = (w: 'pistol' | 'ak' | 'sniper', secs = 20) => {
@@ -738,11 +739,16 @@ describe('atiradores do estande (só atiram para a frente)', () => {
 describe('Mapa de Treino', () => {
   const inside = (x: number, z: number, a: (typeof FS_TRAIN_AREAS)[number]) => x > a.x0 && x < a.x1 && z > a.z0 && z < a.z1;
   const solid = (x: number, z: number) => FS_ARENA.some((bx) => bx.max[1] > 1 && x > bx.min[0] - 0.3 && x < bx.max[0] + 0.3 && z > bx.min[2] - 0.3 && z < bx.max[2] + 0.3);
-  it('tem as sete áreas e o nascimento está na avenida, livre', () => {
-    expect(FS_TRAIN_AREAS.map((a) => a.id).sort()).toEqual(['avenue', 'move', 'nades', 'range', 'targets', 'walkers', 'walls']);
+  it('tem as oito áreas (a pista de distância é só dos alvos de distância) e o nascimento está na avenida, livre', () => {
+    expect(FS_TRAIN_AREAS.map((a) => a.id).sort()).toEqual(['avenue', 'distance', 'move', 'nades', 'range', 'targets', 'walkers', 'walls']);
     expect(inside(FS_SPAWN.x, FS_SPAWN.z, FS_TRAIN_AREAS.find((a) => a.id === 'avenue')!)).toBe(true);
     expect(solid(FS_SPAWN.x, FS_SPAWN.z)).toBe(false);
-    expect(FS_ARENA_HALF).toEqual([45, 27]);
+    expect(FS_ARENA_HALF).toEqual([45, 39]);
+    // os bonecos de distância ficam todos na pista de distância, nenhum na avenida
+    for (const id of ['t6', 't7', 't8', 't9']) {
+      const t = FS_TARGETS.find((x) => x.id === id)!;
+      expect(inside(t.x, t.z, FS_TRAIN_AREAS.find((a) => a.id === 'distance')!), id).toBe(true);
+    }
   });
   it('de qualquer ponto de nascimento dá para chegar a cada sala pela porta (andando em linha reta e pelas portas)', () => {
     // da avenida até o centro de cada sala, passando pela porta (x = -30, 0 ou 30)
@@ -759,6 +765,19 @@ describe('Mapa de Treino', () => {
       }
       expect(Math.abs(m.z - tz), `sala ${dx}`).toBeLessThan(1);
     }
+  });
+  it('dá para andar das salas do sul até a pista de distância pelas portas do fundo', () => {
+    for (const x of [-20, 7, 30]) {
+      const m = fsNewMover(x, 20);
+      for (let i = 0; i < 120 * 4 && m.z < 31; i++) fsStepMover(m, { fwd: 1, strafe: 0, jump: false, yaw: 180, speedMul: 1 }, 1 / 120, FS_ARENA);
+      expect(m.z, `porta ${x}`).toBeGreaterThan(30);
+    }
+  });
+  it('o estande não tem vidro: dá para entrar na frente de um atirador', () => {
+    expect(FS_ARENA.some((b) => b.mat === 'glass')).toBe(false);
+    const m = fsNewMover(19, -11);
+    for (let i = 0; i < 120 * 2; i++) fsStepMover(m, { fwd: 1, strafe: 0, jump: false, yaw: 0, speedMul: 1 }, 1 / 120, FS_ARENA);
+    expect(m.z).toBeLessThan(-17);
   });
   it('os alvos e bots estão cada um dentro da sua sala e fora das paredes', () => {
     const all = [...FS_TARGETS, ...FS_BOTS];

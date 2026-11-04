@@ -138,6 +138,12 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
       setShopState(false);
     }
   }, []);
+  const setMap = useCallback((v: boolean) => {
+    bigMapRef.current = v;
+    setBigMap(v);
+    if (v) ctl.current?.releaseLock();
+    else window.setTimeout(() => !bigMapRef.current && !shopRef.current && !pausedRef.current && ctl.current?.requestLock(), 160);
+  }, []);
   const setShop = useCallback((v: boolean) => {
     shopRef.current = v;
     setShopState(v);
@@ -174,7 +180,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
       el,
       () => undefined,
       (locked) => {
-        if (!locked && !pausedRef.current && !shopRef.current) setPaused(true);
+        if (!locked && !pausedRef.current && !shopRef.current && !bigMapRef.current) setPaused(true);
         if (locked) {
           setPaused(false);
           setNeedClick(false);
@@ -192,18 +198,15 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
       if (!isPlayerNow() && !e.repeat) {
         if (e.code === 'ArrowRight' || e.code === 'KeyD') cycleFollow(1);
         else if (e.code === 'ArrowLeft' || e.code === 'KeyA') cycleFollow(-1);
-        else if (e.code === 'KeyM' && !pausedRef.current) {
-          bigMapRef.current = !bigMapRef.current;
-          setBigMap(bigMapRef.current);
-        } else if (e.code === 'Tab' && !pausedRef.current) {
+        else if (e.code === 'KeyM' && !pausedRef.current) setMap(!bigMapRef.current);
+        else if (e.code === 'Tab' && !pausedRef.current) {
           e.preventDefault();
           setBoard(true);
         }
       }
       if (e.code === 'Escape' && bigMapRef.current) {
         e.preventDefault();
-        bigMapRef.current = false;
-        setBigMap(false);
+        setMap(false);
         return;
       }
       if (e.code === 'Escape' && shopRef.current) {
@@ -667,10 +670,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
         const look = controls.takeLook(adsOn ? adsScale : 1);
         view.yaw += look.yaw;
         view.pitch = Math.max(-88, Math.min(88, view.pitch + look.pitch));
-        if (inp.map) {
-          bigMapRef.current = !bigMapRef.current;
-          setBigMap(bigMapRef.current);
-        }
+        if (inp.map) setMap(!bigMapRef.current);
         if (inp.buy) setShop(!shopRef.current);
         const shopOpen = shopRef.current;
         if (alive) {

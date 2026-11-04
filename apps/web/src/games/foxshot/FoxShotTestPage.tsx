@@ -220,6 +220,18 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
   }, []);
   const ctl = useRef<FsControls | null>(null);
   const pausedRef = useRef(true);
+  /** O mapa grande se comporta como a loja: solta o mouse ao abrir (o Esc chega e fecha) e prende de novo ao fechar. */
+  const setMap = useCallback((v: boolean) => {
+    bigMapRef.current = v;
+    setBigMap(v);
+    if (v) ctl.current?.releaseLock();
+    else {
+      shopClosedAt.current = performance.now();
+      window.setTimeout(() => {
+        if (!bigMapRef.current && !shopRef.current && !pausedRef.current) ctl.current?.requestLock();
+      }, 160);
+    }
+  }, []);
   const endMatchRef = useRef<() => void>(() => undefined);
   const mini = useRef<MinimapData>({ x: 0, z: 0, yaw: 0, targets: [] });
   const getMini = useCallback(() => mini.current, []);
@@ -277,7 +289,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       (locked) => {
         if (endedRef.current) return;
         // o mouse soltou (Esc ou clique fora): abre o menu; prendeu: some o menu
-        if (!locked && !pausedRef.current && !shopRef.current && performance.now() - shopClosedAt.current > 600) setPaused(true);
+        if (!locked && !pausedRef.current && !shopRef.current && !bigMapRef.current && performance.now() - shopClosedAt.current > 600) setPaused(true);
         if (locked) {
           setPaused(false);
           setNeedClick(false);
@@ -290,8 +302,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       if (endedRef.current) return;
       if (e.code === 'Escape' && bigMapRef.current) {
         e.preventDefault();
-        bigMapRef.current = false;
-        setBigMap(false);
+        setMap(false);
         return;
       }
       if (e.code === 'Escape' && shopRef.current) {
@@ -518,10 +529,13 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       for (let i = 0; i < pellets; i++) {
         const spread = wid === 'shotgun' ? 3 : 0.8;
         const dir = fsDir(yawDeg + (Math.random() - 0.5) * spread, (Math.random() - 0.5) * spread * 0.6);
-        const tr = fsTrace(w, origin, dir, ARENA, []);
+        // o tiro é reto: quem passa na frente do atirador leva (ele não mira em ninguém)
+        const me1: FsBody[] = clock >= deadUntil ? [{ id: 'me', pos: [mover.x, mover.y, mover.z], alive: true, armor: me.armor, helmet: me.helmet, crouch: mover.crouchK }] : [];
+        const tr = fsTrace(w, origin, dir, ARENA, me1);
         last = new THREE.Vector3(tr.point[0], tr.point[1], tr.point[2]);
         scene.tracer(new THREE.Vector3(origin[0], origin[1], origin[2]), last, wid);
         if (tr.kind === 'world') scene.puff(last, 0xd8c8a8, 0.3, 0.4);
+        else if (tr.kind === 'player' && tr.damage) hurtPlayer(tr.damage.hp, tr.damage.armorLoss, tr.zone === 'head', b.label, wid, undefined, { x: bs.x, z: bs.z });
       }
       scene.puff(new THREE.Vector3(origin[0], origin[1], origin[2]), 0xffd27a, 0.25, 0.1);
       fsAudio.shotAt(wid, bs.x, 1, bs.z, mover.x, mover.z);
@@ -1162,10 +1176,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         const look = controls.takeLook(adsOn ? adsScale : 1);
         view.yaw += look.yaw;
         view.pitch = Math.max(-88, Math.min(88, view.pitch + look.pitch));
-        if (inp.map) {
-          bigMapRef.current = !bigMapRef.current;
-          setBigMap(bigMapRef.current);
-        }
+        if (inp.map) setMap(!bigMapRef.current);
         if (inp.buy) setShop(!shopRef.current);
         const shopOpen = shopRef.current;
         if (inp.drop) {

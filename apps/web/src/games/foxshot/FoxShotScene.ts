@@ -327,6 +327,63 @@ function worldUV(geo: THREE.BoxGeometry, sx: number, sy: number, sz: number) {
   }
 }
 
+/**
+ * Placa do mapa de treino: painel escuro com faixa laranja e o texto inteiro (quebra em duas linhas se for comprido, sem cortar).
+ * Tem profundidade (as paredes escondem) e some com a distância: as de nome de sala aparecem de longe, as pequenas só de perto.
+ */
+function signSprite(text: string, big: boolean): { sprite: THREE.Sprite; range: number } {
+  const font = `700 ${big ? 46 : 36}px Rajdhani, "Segoe UI", system-ui, sans-serif`;
+  const probe = document.createElement('canvas').getContext('2d')!;
+  probe.font = font;
+  const up = text.toUpperCase();
+  const maxChars = big ? 26 : 20;
+  let lines = [up];
+  if (up.length > maxChars) {
+    // quebra no espaço mais perto do meio
+    const mid = up.length / 2;
+    let cut = -1;
+    for (let i = 0; i < up.length; i++) if (up[i] === ' ' && (cut < 0 || Math.abs(i - mid) < Math.abs(cut - mid))) cut = i;
+    if (cut > 0) lines = [up.slice(0, cut), up.slice(cut + 1)];
+  }
+  const px = big ? 46 : 36;
+  const lh = Math.round(px * 1.15);
+  const padX = Math.round(px * 0.7);
+  const padY = Math.round(px * 0.38);
+  const bar = 10;
+  const textW = Math.max(...lines.map((l) => probe.measureText(l).width));
+  const w = Math.ceil(textW + padX * 2 + bar);
+  const h = lines.length * lh + padY * 2;
+  const c = document.createElement('canvas');
+  c.width = w + 8;
+  c.height = h + 8;
+  const g = c.getContext('2d')!;
+  g.translate(4, 4);
+  g.fillStyle = 'rgba(10,16,34,0.94)';
+  g.strokeStyle = 'rgba(255,255,255,0.35)';
+  g.lineWidth = 3;
+  g.beginPath();
+  g.roundRect(0, 0, w, h, 12);
+  g.fill();
+  g.stroke();
+  g.fillStyle = '#ff6a2b';
+  g.beginPath();
+  g.roundRect(0, 0, bar, h, [12, 0, 0, 12]);
+  g.fill();
+  g.font = font;
+  g.fillStyle = '#f4efe6';
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  lines.forEach((l, i) => g.fillText(l, bar + (w - bar) / 2, padY + lh * (i + 0.5) + 2));
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 4;
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, depthTest: true, depthWrite: false, transparent: true }));
+  const per = big ? 0.0058 : 0.0052;
+  sprite.scale.set(c.width * per, c.height * per, 1);
+  sprite.renderOrder = 10;
+  return { sprite, range: big ? 42 : 15 };
+}
+
 function labelSprite(text: string, color: string): THREE.Sprite {
   const c = document.createElement('canvas');
   c.width = 256;
@@ -398,6 +455,7 @@ export class FoxShotScene {
   readonly renderer: THREE.WebGLRenderer;
   private scene = new THREE.Scene();
   private cam = new THREE.PerspectiveCamera(75, 1, 0.05, 160);
+  private signSprites: { sprite: THREE.Sprite; range: number }[] = [];
   private vmScene = new THREE.Scene();
   private vmCam = new THREE.PerspectiveCamera(58, 1, 0.01, 5);
   private sun: THREE.DirectionalLight;
@@ -790,11 +848,10 @@ export class FoxShotScene {
     }
     // placas no ar (nome das salas, o que fazer em cada canto, marcas de distância)
     for (const sg of this.world.signs) {
-      const sign = labelSprite(sg.text, sg.big ? '#10213f' : '#1b1535');
-      sign.position.set(sg.x, sg.y, sg.z);
-      const w = Math.min(sg.big ? 10 : 6, Math.max(1.8, sg.text.length * (sg.big ? 0.32 : 0.2)));
-      sign.scale.set(w, w * (sg.big ? 0.2 : 0.22), 1);
-      this.scene.add(sign);
+      const { sprite, range } = signSprite(sg.text, !!sg.big);
+      sprite.position.set(sg.x, sg.y, sg.z);
+      this.scene.add(sprite);
+      this.signSprites.push({ sprite, range });
     }
     if (this.world.style === 'dust') await this.buildDustProps(loader, base).catch(() => undefined);
     this.selectWeapon('ak', true);
@@ -1661,6 +1718,13 @@ export class FoxShotScene {
 
   // ---- laço
   update(dt: number, p: { speed: number; adsTarget: number; airborne: boolean }) {
+    // placas: aparecem com a distância (some aos poucos nos últimos 8 m)
+    for (const sg of this.signSprites) {
+      const d = sg.sprite.position.distanceTo(this.cam.position);
+      const o = Math.max(0, Math.min(1, (sg.range - d) / 8));
+      sg.sprite.visible = o > 0.02;
+      (sg.sprite.material as THREE.SpriteMaterial).opacity = o;
+    }
     for (const f of this.foxes.values()) {
       f.mixer.update(dt);
       if (f.turn) {
