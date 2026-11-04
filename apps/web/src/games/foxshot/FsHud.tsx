@@ -51,13 +51,11 @@ export function FsTopBar({
   timeLeft,
   kills,
   deaths,
-  points,
 }: {
   players: FsPlayerRow[];
   timeLeft: number;
   kills: number;
   deaths: number;
-  points?: number;
 }) {
   // mata-mata: todos em fila, do que tem mais pontos para o que tem menos, cada um com a pontuação embaixo (como o CS2)
   if (players.some((p) => p.points !== undefined)) {

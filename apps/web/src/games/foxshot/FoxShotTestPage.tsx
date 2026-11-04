@@ -35,7 +35,6 @@ import {
   FS_SHOOTER,
   fsNewShooter,
   fsShooterStep,
-  fsDamage,
   fsFlinch,
   fsFlinchAt,
   fsBotStep,
