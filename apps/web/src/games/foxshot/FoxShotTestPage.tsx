@@ -236,6 +236,13 @@ export function FoxShotTestPage() {
         setShop(false);
         return;
       }
+      // com o teclado travado (tela cheia) o Esc chega aqui em vez de soltar o mouse sozinho: abre o menu do jogo
+      if (e.code === 'Escape' && !pausedRef.current && !e.repeat) {
+        e.preventDefault();
+        setPaused(true);
+        controls.releaseLock();
+        return;
+      }
       if (
         e.code === 'Escape' &&
         pausedRef.current &&
@@ -251,11 +258,11 @@ export function FoxShotTestPage() {
       setPaused(false);
       if (!touch) {
         // tela cheia + trava de teclado: o navegador deixa de fechar a aba com Ctrl+W (e de recarregar com Ctrl+R) enquanto joga
-        if (fsSettings().lockKeys) {
+        if (fsSettings().fullscreenLock) {
           const root = document.documentElement;
           const nav = navigator as Navigator & { keyboard?: { lock?: (keys: string[]) => Promise<void> } };
           const lock = () =>
-            nav.keyboard?.lock?.(['KeyA', 'KeyB', 'KeyD', 'KeyE', 'KeyF', 'KeyG', 'KeyN', 'KeyQ', 'KeyR', 'KeyS', 'KeyT', 'KeyW', 'Digit1', 'Digit2', 'Digit3', 'Tab']).catch(() => undefined);
+            nav.keyboard?.lock?.(['KeyA', 'KeyB', 'KeyD', 'KeyE', 'KeyF', 'KeyG', 'KeyN', 'KeyQ', 'KeyR', 'KeyS', 'KeyT', 'KeyW', 'Digit1', 'Digit2', 'Digit3', 'Tab', 'Escape']).catch(() => undefined);
           if (document.fullscreenElement) void lock();
           else void root.requestFullscreen?.().then(lock).catch(() => undefined);
         }

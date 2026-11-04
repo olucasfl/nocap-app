@@ -70,6 +70,40 @@ function busFor(kit: NonNullable<ReturnType<typeof audioKit>>): AudioNode {
   return bus.node;
 }
 
+/**
+ * Passos pré-gerados: 4 variações calculadas uma vez em buffers (pancada grave do calcanhar + raspar leve), tocadas com UM nó
+ * cada. Gerar o passo a cada pisada com filtros e osciladores picotava o som quando o jogo oscilava de fps.
+ */
+let stepBufs: { ctx: AudioContext; list: AudioBuffer[] } | null = null;
+function stepBuffers(ctx: AudioContext): AudioBuffer[] {
+  if (stepBufs && stepBufs.ctx === ctx) return stepBufs.list;
+  const sr = ctx.sampleRate;
+  const list: AudioBuffer[] = [];
+  for (let v = 0; v < 4; v++) {
+    const n = Math.floor(sr * 0.16);
+    const buf = ctx.createBuffer(1, n, sr);
+    const d = buf.getChannelData(0);
+    const f0 = 85 + v * 9;
+    const a = 0.1 + v * 0.02; // quanto menor, mais abafado o ruído
+    let lp = 0;
+    let ph = 0;
+    for (let i = 0; i < n; i++) {
+      const t = i / sr;
+      lp += a * (Math.random() * 2 - 1 - lp);
+      const thump = Math.sin((ph += (2 * Math.PI * (f0 * Math.exp(-t * 6) + 45)) / sr)) * Math.exp(-t * 32) * 0.7;
+      const scuff = lp * Math.exp(-t * 36) * 1.6;
+      const fade = Math.min(1, i / (sr * 0.003));
+      d[i] = (thump + scuff) * fade;
+    }
+    let peak = 0;
+    for (let i = 0; i < n; i++) peak = Math.max(peak, Math.abs(d[i]!));
+    for (let i = 0; i < n; i++) d[i] = (d[i]! / (peak || 1)) * 0.9;
+    list.push(buf);
+  }
+  stepBufs = { ctx, list };
+  return list;
+}
+
 function noiseBuffer(ctx: AudioContext): AudioBuffer {
   if (!noiseBuf || noiseBuf.ctx !== ctx) {
     const buf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
@@ -215,10 +249,18 @@ export const fsAudio = {
     tone('sine', 180, 90, 0.08, 0.3);
   },
   step() {
-    // passo no chão: pancada surda e curta do calcanhar (grave) + um raspar leve da sola, sem agudo metálico (nada de "lata")
-    burst({ type: 'lowpass', freq: jit(380, 0.2), q: 0.5, dur: 0.07, peak: 0.1, important: false });
-    tone('sine', jit(95, 0.15), 52, 0.08, 0.08, 0);
-    burst({ type: 'lowpass', freq: jit(1500, 0.2), q: 0.4, dur: 0.05, peak: 0.025, delay: 0.012, important: false });
+    const kit = audioKit();
+    if (!kit || kit.muted() || !ready(kit, false)) return;
+    const { ctx } = kit;
+    const list = stepBuffers(ctx);
+    const src = ctx.createBufferSource();
+    src.buffer = list[Math.floor(Math.random() * list.length)]!;
+    src.playbackRate.value = 0.94 + Math.random() * 0.12;
+    const g = ctx.createGain();
+    g.gain.value = gainOf(0.22);
+    src.connect(g).connect(outFor(kit));
+    track(src, g);
+    src.start();
   },
   /** Onde está o ouvinte (a câmera) e para onde olha: usado para o som dos passos dos outros vir da direção certa. */
   listener(x: number, y: number, z: number, fwd: [number, number, number]) {
@@ -255,7 +297,7 @@ export const fsAudio = {
     if (d > 18) return;
     const fade = d > 12 ? Math.max(0, (18 - d) / 6) : 1;
     const p = kit.ctx.createPanner();
-    p.panningModel = 'HRTF';
+    p.panningModel = 'equalpower'; // HRTF criado a cada passo pesava e picotava o som
     p.distanceModel = 'inverse';
     p.refDistance = 1.5;
     p.rolloffFactor = 1.6;

@@ -282,8 +282,8 @@ function Customize() {
       />
       <Toggle
         label="Tela cheia e travar teclas (Ctrl+W não fecha o jogo)"
-        value={s.lockKeys}
-        onChange={(v) => s.set({ lockKeys: v })}
+        value={s.fullscreenLock}
+        onChange={(v) => s.set({ fullscreenLock: v })}
       />
       <Toggle
         label="Mapa no canto"
