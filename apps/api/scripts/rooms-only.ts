@@ -15,7 +15,19 @@ import {
   roomDeps,
 } from '../src/rooms/color.room';
 
-const http = createServer();
+// respostas mínimas do que o site pergunta a quem tem conta (sala atual, convites, sair da sala); o resto é do servidor de verdade
+const http = createServer((req, res) => {
+  res.setHeader('access-control-allow-origin', req.headers.origin ?? '*');
+  res.setHeader('access-control-allow-headers', 'authorization, content-type');
+  res.setHeader('access-control-allow-methods', 'GET, POST, OPTIONS');
+  if (req.method === 'OPTIONS') return void res.writeHead(204).end();
+  res.setHeader('content-type', 'application/json');
+  const url = req.url ?? '';
+  if (url.startsWith('/me/room/leave')) return void res.end('{"left":true}');
+  if (url.startsWith('/me/room')) return void res.end('{"room":null}');
+  if (url.startsWith('/me/invites')) return void res.end('[]');
+  res.writeHead(404).end('{}');
+});
 const server = new Server({ transport: new WebSocketTransport({ server: http }) });
 for (const [name, room] of [
   ['foxcap', FoxRoom],
