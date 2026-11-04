@@ -857,7 +857,7 @@ import {
   FS_DUST_BOXES, FS_DUST_COLS, FS_DUST_GRID, FS_DUST_HOTSPOTS, FS_DUST_SPAWNS, FS_DUST_ZONES, FS_DUST_ROWS,
   fsDustLevel, fsDustCol, fsDustPath, fsDustRow, fsDustWalkable, fsDustZoneAt, fsDustCellX, fsDustCellZ, fsPickSpawn, fsDustLineWalkable,
   fsDmNew, fsDmStep, fsDmFlash, type FsDmFoe, type FsDmAction,
-  fsFlinch, fsFlinchAt, fsDustDecor,
+  fsFlinch, fsFlinchAt, fsDustDecor, FsNetSim, fsNetParseInput, type FsNetCmd,
   FS_MATCH_BOTS, fsMatchConfig, fsMatchResult, fsMatchScore, FS_MATCH_MINUTES,
 } from './index';
 
@@ -1122,5 +1122,192 @@ describe('Duna: enfeites', () => {
       const r0 = fsDustRow(p.z);
       for (let dr = -8; dr <= 8; dr++) for (let dc = -8; dc <= 8; dc++) expect(fsDustLevel(c0 + dc, r0 + dr) < 0, `${c0},${r0}`).toBe(true);
     }
+  });
+});
+
+describe('Simulação do servidor (mata-mata online)', () => {
+  const baseIn = { fwd: 0, strafe: 0, jump: false, crouch: false, walk: false, yaw: 0, pitch: 0, trigger: false, alt: false, reload: false, inspect: false, viewTick: 0 };
+  let seqN = 0;
+  const inp = (o: Partial<typeof baseIn> & { cmds?: FsNetCmd[] } = {}) => ({ ...baseIn, seq: ++seqN, ...o });
+  const aim = (a: { x: number; y: number; z: number }, b: { x: number; z: number }, yEye = 1.2) => ({
+    yaw: ((Math.atan2(-(b.x - a.x), -(b.z - a.z)) * 180) / Math.PI + 360) % 360,
+    pitch: (Math.atan2(0.9 - yEye, Math.hypot(b.x - a.x, b.z - a.z)) * 180) / Math.PI,
+  });
+  /** Dois humanos, sem bots, com um ao alcance e à vista do outro na Base TR. */
+  const duel = () => {
+    const sim = new FsNetSim({ minutes: 2, humans: [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }, { id: 'c', name: 'C' }], bots: 1, rng: createRng('duel') });
+    for (const [id, x, z] of [['a', 9, 54], ['b', 9, 59], ['c', 10, 54]] as const) {
+      const p = sim.players.get(id)!;
+      p.mover.x = fsDustCellX(x);
+      p.mover.z = fsDustCellZ(z);
+      p.mover.y = 0.3;
+      p.hist = [];
+    }
+    // os bots não atrapalham o teste
+    sim.players.get('b1')!.alive = false;
+    sim.players.get('b1')!.respawnAt = 1e9;
+    return sim;
+  };
+  const shoot = (sim: FsNetSim, from: string, to: string, ticks = 90) => {
+    const a = sim.players.get(from)!;
+    const b = sim.players.get(to)!;
+    for (let i = 0; i < ticks; i++) {
+      const ang = aim({ x: a.mover.x, y: a.mover.y, z: a.mover.z }, { x: b.mover.x, z: b.mover.z }, a.mover.y + 1.2);
+      sim.pushInput(from, inp({ ...ang, trigger: i % 2 === 0, viewTick: sim.tick }));
+      for (const id of ['a', 'b', 'c']) if (id !== from) sim.pushInput(id, inp({ yaw: 0 }));
+      sim.step();
+    }
+  };
+
+  it('a sala tem no máximo 10 jogadores contando os bots', () => {
+    const humans = Array.from({ length: 4 }, (_, i) => ({ id: `h${i}`, name: `H${i}` }));
+    const sim = new FsNetSim({ minutes: 5, humans, bots: 9 });
+    expect(sim.roster.length).toBe(10);
+    expect(sim.roster.filter((r) => r.bot).length).toBe(6);
+  });
+
+  it('a entrada vinda da rede é conferida e limpa', () => {
+    expect(fsNetParseInput(null)).toBeNull();
+    expect(fsNetParseInput({ seq: 'x' })).toBeNull();
+    const ok = fsNetParseInput({ seq: 3, fwd: 9, strafe: -9, yaw: -90, pitch: 500, cmds: [{ t: 'buy', id: 'ak' }, { t: 'slot', i: 7 }, { t: 'x' }] })!;
+    expect(ok.fwd).toBe(1);
+    expect(ok.strafe).toBe(-1);
+    expect(ok.yaw).toBe(270);
+    expect(ok.pitch).toBe(88);
+    expect(ok.cmds).toEqual([{ t: 'buy', id: 'ak' }]);
+  });
+
+  it('o servidor anda o corpo igual ao aparelho (previsão sem diferença)', () => {
+    const sim = duel();
+    const a = sim.players.get('a')!;
+    const mine = fsNewMover(a.mover.x, a.mover.z);
+    mine.y = a.mover.y;
+    for (let i = 0; i < 90; i++) {
+      const o = inp({ fwd: 1, strafe: i % 40 < 20 ? 1 : 0, jump: i === 30, yaw: 20 });
+      sim.pushInput('a', o);
+      sim.step();
+      for (let k = 0; k < 2; k++) {
+        fsStepMover(mine, { fwd: o.fwd, strafe: o.strafe, jump: o.jump && k === 0, yaw: o.yaw, speedMul: FS_WEAPONS.pistol.moveMul, crouch: false, walk: false }, 1 / 120, FS_DUST_BOXES);
+      }
+    }
+    expect(Math.hypot(a.mover.x - mine.x, a.mover.z - mine.z)).toBeLessThan(1e-6);
+    expect(a.mover.y).toBeCloseTo(mine.y, 6);
+    expect(a.lastSeq).toBeGreaterThan(80);
+  });
+
+  it('entrada repetida ou velha é ignorada', () => {
+    const sim = duel();
+    const o = inp({ fwd: 1 });
+    sim.pushInput('a', o);
+    sim.pushInput('a', o);
+    expect(sim.players.get('a')!.queue.length).toBe(1);
+    sim.step();
+    sim.pushInput('a', o);
+    expect(sim.players.get('a')!.queue.length).toBe(0);
+  });
+
+  it('um abate dá 10 pontos, a assistência dá 5, e o abatido renasce em 3 s', () => {
+    const sim = duel();
+    // A bate primeiro (tiros curtos), depois C termina
+    shoot(sim, 'a', 'b', 1);
+    const hpAfterA = sim.players.get('b')!.hp;
+    expect(hpAfterA).toBeLessThan(100);
+    shoot(sim, 'c', 'b', 150);
+    const b = sim.players.get('b')!;
+    expect(b.alive).toBe(false);
+    expect(sim.players.get('c')!.kills).toBe(1);
+    expect(sim.points('c')).toBe(10);
+    expect(sim.players.get('a')!.assists).toBe(1);
+    expect(sim.points('a')).toBe(5);
+    const evs = sim.drainEvents();
+    expect(evs.some((e) => e.k === 'kill' && e.killer === 'c' && e.victim === 'b' && e.assist === 'a')).toBe(true);
+    for (let i = 0; i < 181; i++) sim.step();
+    expect(b.alive).toBe(true);
+    expect(b.hp).toBe(100);
+    expect(sim.drainEvents().some((e) => e.k === 'spawn' && e.id === 'b')).toBe(true);
+  });
+
+  it('compensação de atraso: acerta onde o alvo estava na tela de quem atirou', () => {
+    const sim = duel();
+    const a = sim.players.get('a')!;
+    const b = sim.players.get('b')!;
+    // B ficou parado por 10 passos e depois saiu do lugar (3 m para o lado)
+    for (let i = 0; i < 10; i++) sim.step();
+    const was = { x: b.mover.x, z: b.mover.z };
+    const viewTick = sim.tick;
+    b.mover.x += 3;
+    for (let i = 0; i < 4; i++) sim.step();
+    // A mira onde B estava há 4 passos e a tela dele mostrava o passo `viewTick`
+    const ang = aim({ x: a.mover.x, y: a.mover.y, z: a.mover.z }, was, a.mover.y + 1.2);
+    sim.drainEvents();
+    sim.pushInput('a', inp({ ...ang, trigger: true, viewTick }));
+    sim.step();
+    expect(sim.drainEvents().some((e) => e.k === 'hit' && e.by === 'a' && e.vic === 'b')).toBe(true);
+    // sem compensação (tela atual) erraria
+    const sim2 = duel();
+    const a2 = sim2.players.get('a')!;
+    const b2 = sim2.players.get('b')!;
+    for (let i = 0; i < 10; i++) sim2.step();
+    const was2 = { x: b2.mover.x, z: b2.mover.z };
+    b2.mover.x += 3;
+    for (let i = 0; i < 40; i++) sim2.step();
+    sim2.drainEvents();
+    sim2.pushInput('a', inp({ ...aim({ x: a2.mover.x, y: a2.mover.y, z: a2.mover.z }, was2, a2.mover.y + 1.2), trigger: true, viewTick: sim2.tick }));
+    sim2.step();
+    expect(sim2.drainEvents().some((e) => e.k === 'hit')).toBe(false);
+  });
+
+  it('comprar arma e colete pela entrada funciona no servidor', () => {
+    const sim = duel();
+    sim.pushInput('a', inp({ cmds: [{ t: 'buy', id: 'ak' }, { t: 'buy', id: 'vesthelm' }] }));
+    sim.step();
+    const a = sim.players.get('a')!;
+    expect(a.loadout.slots[0]?.id).toBe('ak');
+    expect(a.armor).toBe(100);
+    expect(a.helmet).toBe(true);
+  });
+
+  it('granada explosiva machuca quem está perto e credita quem jogou', () => {
+    const sim = duel();
+    const a = sim.players.get('a')!;
+    const b = sim.players.get('b')!;
+    b.mover.x = a.mover.x;
+    b.mover.z = a.mover.z - 6;
+    sim.pushInput('a', inp({ cmds: [{ t: 'buy', id: 'frag' }, { t: 'nade', k: 'frag' }] }));
+    sim.step();
+    for (let i = 0; i < 40; i++) sim.step();
+    // solta o botão para lançar: segura e solta perto de B (força baixa)
+    const ang = aim({ x: a.mover.x, y: a.mover.y, z: a.mover.z }, { x: b.mover.x, z: b.mover.z }, 1.2);
+    sim.pushInput('a', inp({ ...ang, trigger: true }));
+    for (let i = 0; i < 4; i++) sim.step();
+    sim.pushInput('a', inp({ ...ang, trigger: false }));
+    for (let i = 0; i < 60 * 4; i++) sim.step();
+    const evs = sim.drainEvents();
+    expect(evs.some((e) => e.k === 'nade' && e.by === 'a')).toBe(true);
+    expect(evs.some((e) => e.k === 'boom')).toBe(true);
+  });
+
+  it('o quadro tem uma linha por jogador e a partida acaba no tempo, com tabela', () => {
+    const sim = new FsNetSim({ minutes: 2, humans: [{ id: 'a', name: 'A' }], bots: 2, rng: createRng('fim') });
+    const f = sim.frame();
+    expect(f.p.length).toBe(3);
+    expect(f.p[0]!.length).toBe(15);
+    expect(f.left).toBe(2 * 60 * 60);
+    for (let i = 0; i < 2 * 60 * 60 + 5; i++) sim.step();
+    expect(sim.over).toBe(true);
+    expect(sim.drainEvents().some((e) => e.k === 'over')).toBe(true);
+    const rows = sim.results();
+    expect(rows.length).toBe(3);
+    expect(rows.some((r) => r.winner)).toBe(true);
+  });
+
+  it('os bots do servidor andam, lutam entre si e pontuam', () => {
+    const sim = new FsNetSim({ minutes: 2, humans: [{ id: 'a', name: 'A' }], bots: 5, rng: createRng('bots') });
+    const start = sim.roster.filter((r) => r.bot).map((r) => ({ ...sim.players.get(r.id)!.mover }));
+    for (let i = 0; i < 60 * 60; i++) sim.step();
+    const moved = sim.roster.filter((r) => r.bot).filter((r, i) => Math.hypot(sim.players.get(r.id)!.mover.x - start[i]!.x, sim.players.get(r.id)!.mover.z - start[i]!.z) > 3).length;
+    expect(moved).toBeGreaterThanOrEqual(3);
+    const total = [...sim.players.values()].reduce((s, p) => s + p.kills + p.deaths, 0);
+    expect(total).toBeGreaterThan(0);
   });
 });
